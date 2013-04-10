@@ -310,6 +310,26 @@ static void menu_stack_push(unsigned menu_id)
   EVENT CALLBACKS (AND RELATED)
   ============================================================ */
 
+#ifdef HAVE_SHADER_MANAGER
+static void shader_manager_get_str_filter(char *type_str,
+      size_t sizeof_type_str, unsigned pass)
+{
+   switch (shader.pass[pass].filter)
+   {
+      case RARCH_FILTER_LINEAR:
+         strlcpy(type_str, "Linear", sizeof_type_str);
+         break;
+
+      case RARCH_FILTER_NEAREST:
+         strlcpy(type_str, "Nearest", sizeof_type_str);
+         break;
+
+      case RARCH_FILTER_UNSPEC:
+         strlcpy(type_str, "Don't care", sizeof_type_str);
+         break;
+   }
+}
+#endif
 
 static void populate_setting_item(void *data, unsigned input)
 {
@@ -760,10 +780,77 @@ static void populate_setting_item(void *data, unsigned input)
          strlcpy(current_item->setting_text, "", sizeof(current_item->setting_text));
          strlcpy(current_item->comment, "INFO - Save current shader settings to a CGP file.", sizeof(current_item->comment));
          break;
+      case SHADERMAN_SHADER_PASSES:
+         strlcpy(current_item->text, "Shader passes", sizeof(current_item->text));
+         snprintf(current_item->setting_text, sizeof(current_item->setting_text), "%u", shader.passes);
+         strlcpy(current_item->comment, "INFO - Set the amount of shader passes.", sizeof(current_item->comment));
+         break;
       case SHADERMAN_APPLY_CHANGES:
          strlcpy(current_item->text, "Apply changes", sizeof(current_item->text));
          strlcpy(current_item->setting_text, "", sizeof(current_item->setting_text));
          strlcpy(current_item->comment, "INFO - Apply the changes made below.", sizeof(current_item->comment));
+         break;
+      case SHADERMAN_SHADER_0:
+      case SHADERMAN_SHADER_1:
+      case SHADERMAN_SHADER_2:
+      case SHADERMAN_SHADER_3:
+      case SHADERMAN_SHADER_4:
+      case SHADERMAN_SHADER_5:
+      case SHADERMAN_SHADER_6:
+      case SHADERMAN_SHADER_7:
+         {
+            char type_str[256];
+            uint8_t index = (currentsetting - SHADERMAN_SHADER_0) / 3;
+            if (*shader.pass[index].source.cg)
+               fill_pathname_base(type_str,
+                     shader.pass[index].source.cg, sizeof(type_str));
+            else
+               strlcpy(type_str, "N/A", sizeof(type_str));
+            snprintf(current_item->text, sizeof(current_item->text), "Shader #%d", index);
+            strlcpy(current_item->setting_text, type_str, sizeof(current_item->setting_text));
+            strlcpy(current_item->comment, "INFO - Select the shader.", sizeof(current_item->comment));
+         }
+         break;
+      case SHADERMAN_SHADER_0_FILTER:
+      case SHADERMAN_SHADER_1_FILTER:
+      case SHADERMAN_SHADER_2_FILTER:
+      case SHADERMAN_SHADER_3_FILTER:
+      case SHADERMAN_SHADER_4_FILTER:
+      case SHADERMAN_SHADER_5_FILTER:
+      case SHADERMAN_SHADER_6_FILTER:
+      case SHADERMAN_SHADER_7_FILTER:
+         {
+            char type_str[256];
+            uint8_t index = (currentsetting - SHADERMAN_SHADER_0) / 3;
+            snprintf(current_item->text, sizeof(current_item->text), "Shader #%d filter", index);
+            shader_manager_get_str_filter(type_str, sizeof(type_str), index);
+            strlcpy(current_item->setting_text, type_str, sizeof(current_item->setting_text));
+            strlcpy(current_item->comment, "INFO - Select the filtering.", sizeof(current_item->comment));
+         }
+         break;
+      case SHADERMAN_SHADER_0_SCALE:
+      case SHADERMAN_SHADER_1_SCALE:
+      case SHADERMAN_SHADER_2_SCALE:
+      case SHADERMAN_SHADER_3_SCALE:
+      case SHADERMAN_SHADER_4_SCALE:
+      case SHADERMAN_SHADER_5_SCALE:
+      case SHADERMAN_SHADER_6_SCALE:
+      case SHADERMAN_SHADER_7_SCALE:
+         {
+            char type_str[256];
+            uint8_t index = (currentsetting - SHADERMAN_SHADER_0) / 3;
+            unsigned scale = shader.pass[index].fbo.scale_x;
+            
+            snprintf(current_item->text, sizeof(current_item->text), "Shader #%d scale", index);
+
+            if (!scale)
+               strlcpy(type_str, "Don't care", sizeof(type_str));
+            else
+               snprintf(type_str, sizeof(type_str), "%ux", scale);
+
+            strlcpy(current_item->setting_text, type_str, sizeof(current_item->setting_text));
+            strlcpy(current_item->comment, "INFO - Select the scaling factor of this pass.", sizeof(current_item->comment));
+         }
          break;
 #endif
    }
@@ -1033,6 +1120,8 @@ static void browser_render(void *data)
    }
 }
 
+static unsigned shader_choice_set_shader_slot = 0;
+
 static int select_file(uint8_t menu_type, uint64_t input)
 {
    char extensions[128];
@@ -1081,6 +1170,8 @@ static int select_file(uint8_t menu_type, uint64_t input)
          {
 #ifdef HAVE_SHADER_MANAGER
             case SHADER_CHOICE:
+               strlcpy(shader.pass[shader_choice_set_shader_slot].source.cg, path,
+                     sizeof(shader.pass[shader_choice_set_shader_slot].source.cg));
                break;
             case PRESET_CHOICE:
                {
@@ -2212,8 +2303,6 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
             menu_stack_push(INGAME_MENU_SHADER_MANAGER);
          }
          break;
-#endif
-#ifdef HAVE_SHADER_MANAGER
       case SHADERMAN_LOAD_CGP:
          if ((input & (1ULL << RMENU_DEVICE_NAV_LEFT)) || (input & (1ULL << RMENU_DEVICE_NAV_RIGHT)) || (input & (1ULL << RMENU_DEVICE_NAV_B)))
          {
@@ -2233,7 +2322,127 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
          }
 #endif
          break;
+      case SHADERMAN_SHADER_PASSES:
+         if (input & (1ULL << RMENU_DEVICE_NAV_LEFT))
+            if (shader.passes)
+               shader.passes--;
+         if ((input & (1ULL << RMENU_DEVICE_NAV_RIGHT)) || (input & (1ULL << RMENU_DEVICE_NAV_B)))
+            if (shader.passes < RMENU_MAX_SHADERS)
+               shader.passes++;
+         if (input & (1ULL << RMENU_DEVICE_NAV_START))
+            shader.passes= 0;
+         break;
       case SHADERMAN_AUTOSTART_CGP_ON_STARTUP:
+         break;
+      case SHADERMAN_SHADER_0:
+      case SHADERMAN_SHADER_1:
+      case SHADERMAN_SHADER_2:
+      case SHADERMAN_SHADER_3:
+      case SHADERMAN_SHADER_4:
+      case SHADERMAN_SHADER_5:
+      case SHADERMAN_SHADER_6:
+      case SHADERMAN_SHADER_7:
+         {
+            uint8_t index = (switchvalue - SHADERMAN_SHADER_0) / 3;
+            struct gfx_shader_pass *pass = &shader.pass[index];
+
+            if ((input & (1ULL << RMENU_DEVICE_NAV_RIGHT)) || (input & (1ULL << RMENU_DEVICE_NAV_B)) ||
+                  (input & (1ULL << RMENU_DEVICE_NAV_LEFT)))
+            {
+               shader_choice_set_shader_slot = index;
+               menu_stack_push(SHADER_CHOICE);
+               filebrowser_set_root_and_ext(tmpBrowser, EXT_SHADERS, g_settings.video.shader_dir);
+            }
+
+            if (input & (1ULL << RMENU_DEVICE_NAV_START))
+               *pass->source.cg = '\0';
+         }
+         break;
+      case SHADERMAN_SHADER_0_FILTER:
+      case SHADERMAN_SHADER_1_FILTER:
+      case SHADERMAN_SHADER_2_FILTER:
+      case SHADERMAN_SHADER_3_FILTER:
+      case SHADERMAN_SHADER_4_FILTER:
+      case SHADERMAN_SHADER_5_FILTER:
+      case SHADERMAN_SHADER_6_FILTER:
+      case SHADERMAN_SHADER_7_FILTER:
+         {
+            uint8_t index = (switchvalue - SHADERMAN_SHADER_0) / 3;
+
+            if ((input & (1ULL << RMENU_DEVICE_NAV_RIGHT)) || (input & (1ULL << RMENU_DEVICE_NAV_B)) ||
+                  (input & (1ULL << RMENU_DEVICE_NAV_LEFT)))
+            {
+               unsigned delta = (input & (1ULL << RMENU_DEVICE_NAV_LEFT)) ? 2 : 1;
+               shader.pass[index].filter = (enum gfx_filter_type)((shader.pass[index].filter + delta) % 3);
+            }
+
+            if (input & (1ULL << RMENU_DEVICE_NAV_START))
+               shader.pass[index].filter = RARCH_FILTER_UNSPEC;
+         }
+         break;
+      case SHADERMAN_SHADER_0_SCALE:
+      case SHADERMAN_SHADER_1_SCALE:
+      case SHADERMAN_SHADER_2_SCALE:
+      case SHADERMAN_SHADER_3_SCALE:
+      case SHADERMAN_SHADER_4_SCALE:
+      case SHADERMAN_SHADER_5_SCALE:
+      case SHADERMAN_SHADER_6_SCALE:
+      case SHADERMAN_SHADER_7_SCALE:
+         {
+            uint8_t index = (switchvalue - SHADERMAN_SHADER_0) / 3;
+            unsigned scale = shader.pass[index].fbo.scale_x;
+
+            if (input & (1ULL << RMENU_DEVICE_NAV_LEFT))
+            {
+               if (scale)
+               {
+                  shader.pass[index].fbo.scale_x = shader.pass[index].fbo.scale_y = scale - 1;
+                  shader.pass[index].fbo.valid = scale - 1;
+               }
+            }
+
+            if ((input & (1ULL << RMENU_DEVICE_NAV_RIGHT)) || (input & (1ULL << RMENU_DEVICE_NAV_B)))
+            {
+               if (scale < 5)
+               {
+                  shader.pass[index].fbo.scale_x = shader.pass[index].fbo.scale_y = scale + 1;
+                  shader.pass[index].fbo.valid = scale + 1;
+               }
+            }
+
+            if (input & (1ULL << RMENU_DEVICE_NAV_START))
+            {
+               shader.pass[index].fbo.scale_x = shader.pass[index].fbo.scale_y = 0;
+               shader.pass[index].fbo.valid = false;
+            }
+         }
+         break;
+      case SHADERMAN_APPLY_CHANGES:
+         if ((input & (1ULL << RMENU_DEVICE_NAV_RIGHT)) || (input & (1ULL << RMENU_DEVICE_NAV_B)) ||
+               (input & (1ULL << RMENU_DEVICE_NAV_START)) || (input & (1ULL << RMENU_DEVICE_NAV_LEFT)))
+         {
+            bool ret = false;
+
+            if (shader.passes)
+            {
+               char cgp_path[PATH_MAX];
+               const char *shader_dir = *g_settings.video.shader_dir ?
+                  g_settings.video.shader_dir : g_settings.system_directory;
+               fill_pathname_join(cgp_path, shader_dir, "rgui.cgp", sizeof(cgp_path));
+               config_file_t *conf = config_file_new(NULL);
+               if (!conf)
+                  return 0;
+               gfx_shader_write_conf_cgp(conf, &shader);
+               config_file_write(conf, cgp_path);
+               config_file_free(conf);
+               ret = video_set_shader_func(RARCH_SHADER_CG, cgp_path); 
+            }
+            else
+               ret = video_set_shader_func(RARCH_SHADER_CG, NULL);
+
+            if (!ret)
+               RARCH_ERR("Setting RGUI CGP failed.\n");
+         }
          break;
 #endif
    }
@@ -2290,6 +2499,36 @@ static int select_setting(uint8_t menu_type, uint64_t input)
       case INGAME_MENU_SHADER_MANAGER:
          first_setting = FIRST_SHADERMAN_SETTING;
          max_settings = MAX_NO_OF_SHADERMAN_SETTINGS;
+
+         switch (shader.passes)
+         {
+            case 0:
+               break;
+            case 1:
+               max_settings = SHADERMAN_SHADER_0_SCALE+1;
+               break;
+            case 2:
+               max_settings = SHADERMAN_SHADER_1_SCALE+1;
+               break;
+            case 3:
+               max_settings = SHADERMAN_SHADER_2_SCALE+1;
+               break;
+            case 4:
+               max_settings = SHADERMAN_SHADER_3_SCALE+1;
+               break;
+            case 5:
+               max_settings = SHADERMAN_SHADER_4_SCALE+1;
+               break;
+            case 6:
+               max_settings = SHADERMAN_SHADER_5_SCALE+1;
+               break;
+            case 7:
+               max_settings = SHADERMAN_SHADER_6_SCALE+1;
+               break;
+            case 8:
+               max_settings = SHADERMAN_SHADER_7_SCALE+1;
+               break;
+         }
          break;
 #endif
    }
