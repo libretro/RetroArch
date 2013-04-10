@@ -232,9 +232,27 @@ static void rmenu_gfx_free(void)
 {
 #ifdef _XBOX1
 #ifdef HAVE_MENU_PANEL
-   texture_image_free(menu_panel);
+   if (menu_panel->vertex_buf)
+   {
+      menu_panel->vertex_buf->Release();
+      menu_panel->vertex_buf = NULL;
+   }
+   if (menu_panel->pixels)
+   {
+      menu_panel->pixels->Release();
+      menu_panel->pixels = NULL;
+   }
 #endif
-   texture_image_free(menu_texture);
+   if (menu_texture->vertex_buf)
+   {
+      menu_texture->vertex_buf->Release();
+      menu_texture->vertex_buf = NULL;
+   }
+   if (menu_texture->pixels)
+   {
+      menu_texture->pixels->Release();
+      menu_texture->pixels = NULL;
+   }
 #else
 #ifdef HAVE_MENU_PANEL
    if (menu_panel)
@@ -1052,7 +1070,16 @@ static int select_file(uint8_t menu_type, uint64_t input)
                if (menu_texture)
                {
 #ifdef _XBOX
-                  texture_image_free(menu_texture);
+                  if (menu_texture->vertex_buf)
+                  {
+                     menu_texture->vertex_buf->Release();
+                     menu_texture->vertex_buf = NULL;
+                  }
+                  if (menu_texture->pixels)
+                  {
+                     menu_texture->pixels->Release();
+                     menu_texture->pixels = NULL;
+                  }
 #else
                   free(menu_texture->pixels);
                   menu_texture->pixels = NULL;

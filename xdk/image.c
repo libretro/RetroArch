@@ -54,23 +54,6 @@ bool texture_image_load(const char *path, struct texture_image *out_img)
    return true;
 }
 
-void texture_image_free(struct texture_image *out_img)
-{
-   // free the vertex buffer
-   if (out_img->vertex_buf)
-   {
-      out_img->vertex_buf->Release();
-      out_img->vertex_buf = NULL;
-   }
-
-   // free the texture
-   if (out_img->pixels)
-   {
-      out_img->pixels->Release();
-      out_img->pixels = NULL;
-   }
-}
-
 bool texture_image_render(struct texture_image *out_img)
 {
    xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;

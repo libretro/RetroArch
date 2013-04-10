@@ -39,7 +39,6 @@ struct texture_image
 };
 
 #ifdef _XBOX1
-void texture_image_free(struct texture_image *out_img);
 bool texture_image_render(struct texture_image *out_img);
 #endif
 
