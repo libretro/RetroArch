@@ -3335,7 +3335,7 @@ static int menu_input_process(uint8_t menu_type, uint64_t old_state)
           * a cleaner way of telling RMenu that the menu stack should be popped
           * for a submenu when doing the menu quit hotkey */
          if (menu_type == INGAME_MENU_CORE_OPTIONS || menu_type == INGAME_MENU_RESIZE
-               || menu_type == LIBRETRO_CHOICE
+               || menu_type == LIBRETRO_CHOICE || menu_type == INGAME_MENU_SCREENSHOT
 #ifdef HAVE_SHADER_MANAGER
                || menu_type == INGAME_MENU_SHADER_MANAGER
 #endif
