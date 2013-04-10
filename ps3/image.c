@@ -300,7 +300,7 @@ bool texture_image_load(const char *path, struct texture_image *out_img)
       if (!ps3graphics_load_png(path, out_img))
       {
          free(out_img->pixels);
-	 return false;
+         return false;
       }
    }
    else
@@ -308,7 +308,7 @@ bool texture_image_load(const char *path, struct texture_image *out_img)
       if (!ps3graphics_load_jpeg(path, out_img))
       {
          free(out_img->pixels);
-	 return false;
+         return false;
       }
    }
 

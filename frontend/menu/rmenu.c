@@ -211,43 +211,6 @@ static const char *menu_drive_mapping_next(void)
   RMENU GRAPHICS
   ============================================================ */
 
-#ifdef HAVE_OPENGL
-GLuint menu_texture_id;
-#endif
-
-static void texture_image_border_load(const char *path)
-{
-#ifdef HAVE_OPENGL
-   gl_t *gl = driver.video_data;
-
-   if (!gl)
-      return;
-
-   glGenTextures(1, &menu_texture_id);
-
-   RARCH_LOG("Loading texture image for menu...\n");
-   if (!texture_image_load(path, &menu_texture))
-   {
-      RARCH_ERR("Failed to load texture image for menu.\n");
-      return;
-   }
-
-   glBindTexture(GL_TEXTURE_2D, menu_texture_id);
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, gl->border_type);
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, gl->border_type);
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-
-   glTexImage2D(GL_TEXTURE_2D, 0, RARCH_GL_INTERNAL_FORMAT32,
-         menu_texture.width, menu_texture.height, 0,
-         RARCH_GL_TEXTURE_TYPE32, RARCH_GL_FORMAT32, menu_texture.pixels);
-
-   glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
-
-   free(menu_texture.pixels);
-#endif
-}
-
 static void rmenu_gfx_init(void)
 {
 #ifdef _XBOX1
@@ -258,41 +221,7 @@ static void rmenu_gfx_init(void)
    if (g_extern.lifecycle_mode_state & (1ULL << MODE_MENU_LOW_RAM_MODE_ENABLE))
       return;
 
-#ifdef _XBOX1
    texture_image_load(g_extern.menu_texture_path, &menu_texture);
-#else
-   texture_image_border_load(g_extern.menu_texture_path);
-#endif
-}
-
-static void rmenu_gfx_frame(void *data)
-{
-   (void)data;
-#if defined(HAVE_OPENGL)
-   gl_t *gl = (gl_t*)data;
-
-   gl_shader_use(gl, RARCH_CG_MENU_SHADER_INDEX);
-   gl_set_viewport(gl, gl->win_width, gl->win_height, true, false);
-
-   if (gl->shader)
-   {
-      gl->shader->set_params(gl->win_width, gl->win_height, 
-            gl->win_width, gl->win_height, 
-            gl->win_width, gl->win_height, 
-            g_extern.frame_count, NULL, NULL, NULL, 0);
-   }
-
-   glActiveTexture(GL_TEXTURE0);
-   glBindTexture(GL_TEXTURE_2D, menu_texture_id);
-
-   gl->coords.vertex = vertexes_flipped;
-
-   gl_shader_set_coords(gl, &gl->coords, &gl->mvp);
-   glDrawArrays(GL_TRIANGLE_STRIP, 0, 4); 
-
-   glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
-   gl_set_viewport(gl, gl->win_width, gl->win_height, false, true);
-#endif
 }
 
 static void rmenu_gfx_free(void)
@@ -1106,11 +1035,7 @@ static int select_file(uint8_t menu_type, uint64_t input)
                config_read_keybinds(path);
                break;
             case BORDER_CHOICE:
-#ifdef _XBOX1
                texture_image_load(path, &menu_texture);
-#else
-               texture_image_border_load(path);
-#endif
                strlcpy(g_extern.menu_texture_path, path, sizeof(g_extern.menu_texture_path));
                break;
             case LIBRETRO_CHOICE:
@@ -3169,8 +3094,18 @@ bool menu_iterate(void)
             driver.video_poke->set_blend(driver.video_data, true);
       }
 
+      // draw last frame for loading messages
+      if (driver.video_poke && driver.video_poke->set_texture_enable)
+      {
+         driver.video_poke->set_texture_frame(driver.video_data, menu_texture.pixels,
+               true, menu_texture.width, menu_texture.height, 1.0f);
+         driver.video_poke->set_texture_enable(driver.video_data, true);
+      }
+
       rarch_render_cached_frame();
-      rmenu_gfx_frame(driver.video_data);
+
+      if (driver.video_poke && driver.video_poke->set_texture_enable)
+         driver.video_poke->set_texture_enable(driver.video_data, false);
    }
 
    //first button input frame
