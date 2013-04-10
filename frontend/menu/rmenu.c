@@ -47,6 +47,12 @@
 
 static bool set_libretro_core_as_launch;
 
+struct texture_image menu_texture;
+
+#ifdef _XBOX1
+struct texture_image menu_panel;
+#endif
+
 filebrowser_t *browser;
 filebrowser_t *tmpBrowser;
 unsigned currently_selected_controller_menu = 0;
@@ -220,7 +226,7 @@ static void texture_image_border_load(const char *path)
    glGenTextures(1, &menu_texture_id);
 
    RARCH_LOG("Loading texture image for menu...\n");
-   if (!texture_image_load(path, &g_extern.console.menu_texture))
+   if (!texture_image_load(path, &menu_texture))
    {
       RARCH_ERR("Failed to load texture image for menu.\n");
       return;
@@ -233,53 +239,29 @@ static void texture_image_border_load(const char *path)
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 
    glTexImage2D(GL_TEXTURE_2D, 0, RARCH_GL_INTERNAL_FORMAT32,
-         g_extern.console.menu_texture.width, g_extern.console.menu_texture.height, 0,
-         RARCH_GL_TEXTURE_TYPE32, RARCH_GL_FORMAT32, g_extern.console.menu_texture.pixels);
+         menu_texture.width, menu_texture.height, 0,
+         RARCH_GL_TEXTURE_TYPE32, RARCH_GL_FORMAT32, menu_texture.pixels);
 
    glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
 
-   free(g_extern.console.menu_texture.pixels);
+   free(menu_texture.pixels);
 #endif
 }
 
 static void rmenu_gfx_init(void)
 {
-#ifdef _XBOX1
-   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
-   texture_image_load("D:\\Media\\menuMainRomSelectPanel.png", &g_extern.console.menu_panel);
-#endif
-
    if (g_extern.lifecycle_mode_state & (1ULL << MODE_MENU_LOW_RAM_MODE_ENABLE))
       return;
 
 #ifdef _XBOX1
-   strlcpy(g_extern.console.menu_texture_path,"D:\\Media\\main-menu_480p.png",
-         sizeof(g_extern.console.menu_texture_path));
+   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
+   texture_image_load("D:\\Media\\menuMainRomSelectPanel.png", &menu_panel);
+#endif
 
-   texture_image_load(g_extern.console.menu_texture_path, &g_extern.console.menu_texture);
-
+#ifdef _XBOX1
+   texture_image_load(g_extern.menu_texture_path, &menu_texture);
 #else
-   texture_image_border_load(g_extern.console.menu_texture_path);
-#endif
-}
-
-static void rmenu_gfx_draw_panel(rarch_position_t *position)
-{
-#ifdef _XBOX1
-   g_extern.console.menu_panel.x = position->x;
-   g_extern.console.menu_panel.y = position->y;
-   g_extern.console.menu_panel.width = 510;
-   g_extern.console.menu_panel.height = 20;
-   texture_image_render(&g_extern.console.menu_panel);
-#endif
-}
-
-static void rmenu_gfx_draw_bg(rarch_position_t *position)
-{
-#ifdef _XBOX1
-   g_extern.console.menu_texture.x = 0;
-   g_extern.console.menu_texture.y = 0;
-   texture_image_render(&g_extern.console.menu_texture);
+   texture_image_border_load(g_extern.menu_texture_path);
 #endif
 }
 
@@ -316,8 +298,8 @@ static void rmenu_gfx_frame(void *data)
 static void rmenu_gfx_free(void)
 {
 #ifdef _XBOX1
-   texture_image_free(&g_extern.console.menu_texture);
-   texture_image_free(&g_extern.console.menu_panel);
+   texture_image_free(&menu_texture);
+   texture_image_free(&menu_panel);
 #endif
 }
 
@@ -397,7 +379,7 @@ static void populate_setting_item(void *data, unsigned input)
          break;
 #endif
       case SETTING_EMU_SKIN:
-         fill_pathname_base(fname, g_extern.console.menu_texture_path, sizeof(fname));
+         fill_pathname_base(fname, g_extern.menu_texture_path, sizeof(fname));
          strlcpy(current_item->text, "Menu Skin", sizeof(current_item->text));
          strlcpy(current_item->setting_text, fname, sizeof(current_item->setting_text));
          strlcpy(current_item->comment, "INFO - Select a skin for the menu.", sizeof(current_item->comment));
@@ -953,8 +935,11 @@ static void display_menubar(uint8_t menu_type)
          break;
    }
 
-   rarch_position_t position = {0};
-   rmenu_gfx_draw_bg(&position);
+#ifdef _XBOX1
+   menu_texture.x = 0;
+   menu_texture.y = 0;
+   texture_image_render(&menu_texture);
+#endif
    
    font_parms.x = CORE_MSG_POSITION_X;
    font_parms.y = CORE_MSG_POSITION_Y;
@@ -1045,10 +1030,13 @@ static void browser_render(void *data)
       const char *current_pathname = filebrowser_get_current_path(b);
       if (strcmp(current_pathname, b->current_dir.list->elems[i].data) == 0)
       {
-         rarch_position_t position = {0};
-         font_parms.x = POSITION_X; 
-         position.y = y_increment; 
-         rmenu_gfx_draw_panel(&position);
+#ifdef _XBOX1
+         menu_panel.x = 0;
+         menu_panel.y = y_increment;
+         menu_panel.width = 510;
+         menu_panel.height = 20;
+         texture_image_render(&menu_panel);
+#endif
       }
 
       font_parms.x = POSITION_X; 
@@ -1118,10 +1106,12 @@ static int select_file(uint8_t menu_type, uint64_t input)
                config_read_keybinds(path);
                break;
             case BORDER_CHOICE:
-#ifdef __CELLOS_LV2__
+#ifdef _XBOX1
+               texture_image_load(path);
+#else
                texture_image_border_load(path);
-               strlcpy(g_extern.console.menu_texture_path, path, sizeof(g_extern.console.menu_texture_path));
 #endif
+               strlcpy(g_extern.menu_texture_path, path, sizeof(g_extern.menu_texture_path));
                break;
             case LIBRETRO_CHOICE:
                strlcpy(g_settings.libretro, path, sizeof(g_settings.libretro));
@@ -1508,7 +1498,7 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
          }
          if (input & (1ULL << RMENU_DEVICE_NAV_START))
          {
-            if (!texture_image_load(default_paths.menu_border_file, &g_extern.console.menu_texture))
+            if (!texture_image_load(default_paths.menu_border_file, &menu_texture))
             {
                RARCH_ERR("Failed to load texture image for menu.\n");
                return false;
@@ -2323,11 +2313,13 @@ static int select_setting(uint8_t menu_type, uint64_t input)
       if (item.enum_id != selected)
          continue;
 
-      rarch_position_t position = {0};
-      position.x = POSITION_X;
-      position.y = y_increment;
-
-      rmenu_gfx_draw_panel(&position);
+#ifdef _XBOX1
+      menu_panel.x = POSITION_X;
+      menu_panel.y = y_increment;
+      menu_panel.width = 510;
+      menu_panel.height = 20;
+      texture_image_render(&menu_panel);
+#endif
 
       font_parms.x = POSITION_X; 
       font_parms.y = COMMENT_POSITION_Y;

@@ -38,14 +38,6 @@ enum gfx_ctx_api
    GFX_CTX_OPENVG_API
 };
 
-typedef struct rarch_position
-{
-   float x;
-   float y;
-   float width;
-   float height;
-} rarch_position_t;
-
 typedef void (*gfx_ctx_proc_t)(void);
 
 typedef struct gfx_ctx_driver

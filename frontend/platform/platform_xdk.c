@@ -305,6 +305,7 @@ static void get_environment_settings(int argc, char *argv[])
    strlcpy(default_paths.filesystem_root_dir, "D:", sizeof(default_paths.filesystem_root_dir));
    strlcpy(default_paths.filebrowser_startup_dir, "D:", sizeof(default_paths.filebrowser_startup_dir));
    strlcpy(g_settings.screenshot_directory, "D:\\screenshots", sizeof(g_settings.screenshot_directory));
+   snprintf(default_paths.menu_border_file, "D:\\Media\\main-menu_480p.png", sizeof(default_paths.menu_border_file));
 #elif defined(_XBOX360)
    strlcpy(default_paths.core_dir, "game:", sizeof(default_paths.core_dir));
    strlcpy(default_paths.filesystem_root_dir, "game:\\", sizeof(default_paths.filesystem_root_dir));

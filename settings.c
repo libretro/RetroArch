@@ -265,7 +265,7 @@ void config_set_defaults(void)
    strlcpy(g_extern.console.main_wrap.default_rom_startup_dir, default_paths.filebrowser_startup_dir, sizeof(g_extern.console.main_wrap.default_rom_startup_dir));
    strlcpy(g_extern.console.main_wrap.default_savestate_dir, default_paths.savestate_dir, sizeof(g_extern.console.main_wrap.default_savestate_dir));
 #ifdef HAVE_RMENU
-   strlcpy(g_extern.console.menu_texture_path, default_paths.menu_border_file, sizeof(g_extern.console.menu_texture_path));
+   strlcpy(g_extern.menu_texture_path, default_paths.menu_border_file, sizeof(g_extern.menu_texture_path));
 #endif
 
    g_settings.video.aspect_ratio_idx = aspect_ratio_idx;
@@ -483,7 +483,7 @@ bool config_load_file(const char *path)
 
 #ifdef HAVE_RMENU
    if (config_get_path(conf, "menu_texture_path", tmp_str, sizeof(tmp_str)))
-      strlcpy(g_extern.console.menu_texture_path, tmp_str, sizeof(g_extern.console.menu_texture_path));
+      strlcpy(g_extern.menu_texture_path, tmp_str, sizeof(g_extern.menu_texture_path));
 
    int low_ram_mode = 0;
    if (config_get_int(conf, "rmenu_low_ram_mode_enable", &low_ram_mode))
@@ -1214,7 +1214,7 @@ bool config_save_file(const char *path)
    config_set_int(conf, "custom_viewport_y", g_extern.console.screen.viewports.custom_vp.y);
    config_set_string(conf, "default_rom_startup_dir", g_extern.console.main_wrap.default_rom_startup_dir);
 #ifdef HAVE_RMENU
-   config_set_string(conf, "menu_texture_path", g_extern.console.menu_texture_path);
+   config_set_string(conf, "menu_texture_path", g_extern.menu_texture_path);
 #endif
    config_set_float(conf, "video_font_size", g_settings.video.font_size);
 

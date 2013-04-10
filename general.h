@@ -38,10 +38,6 @@
 #include "config.h"
 #endif
 
-#ifdef HAVE_RMENU
-#include "gfx/image.h"
-#endif
-
 // Platform-specific headers
 // PS3
 #if defined(__CELLOS_LV2__) && !defined(__PSL1GHT__)
@@ -333,6 +329,9 @@ struct global
    bool has_set_save_path;
    bool has_set_state_path;
 
+#ifdef HAVE_RMENU
+   char menu_texture_path[PATH_MAX];
+#endif
    char config_path[PATH_MAX];
    char append_config_path[PATH_MAX];
 
@@ -590,11 +589,6 @@ struct global
       {
          oskutil_params oskutil_handle;
       } misc;
-#endif
-#ifdef HAVE_RMENU
-      struct texture_image menu_texture;
-      char menu_texture_path[PATH_MAX];
-      struct texture_image menu_panel;
 #endif
    } console;
 
