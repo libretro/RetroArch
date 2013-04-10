@@ -1488,7 +1488,9 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
    }
 #endif
 
+#ifdef HAVE_RMENU
    if (!(lifecycle_mode_state & (1ULL << MODE_MENU_DRAW)))
+#endif
       context_swap_buffers_func();
 
 #if !defined(HAVE_OPENGLES) && defined(HAVE_FFMPEG)
