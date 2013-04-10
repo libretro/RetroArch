@@ -668,6 +668,67 @@ static void *xdk_d3d_init(const video_info_t *video, const input_driver_t **inpu
 extern struct texture_image *menu_texture;
 #endif
 
+#ifdef _XBOX1
+bool texture_image_render(struct texture_image *out_img)
+{
+   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
+
+   if (out_img->pixels == NULL || out_img->vertex_buf == NULL)
+      return false;
+
+   int x = out_img->x;
+   int y = out_img->y;
+   int w = out_img->width;
+   int h = out_img->height;
+
+   float fX = static_cast<float>(x);
+   float fY = static_cast<float>(y);
+
+   // create the new vertices
+   DrawVerticeFormats newVerts[] =
+   {
+      // x,           y,              z,     color, u ,v
+      {fX,            fY,             0.0f,  0,     0, 0},
+      {fX + w,        fY,             0.0f,  0,     1, 0},
+      {fX + w,        fY + h,         0.0f,  0,     1, 1},
+      {fX,            fY + h,         0.0f,  0,     0, 1}
+   };
+
+   // load the existing vertices
+   DrawVerticeFormats *pCurVerts;
+
+   HRESULT ret = out_img->vertex_buf->Lock(0, 0, (unsigned char**)&pCurVerts, 0);
+
+   if (FAILED(ret))
+   {
+      RARCH_ERR("Error occurred during m_pVertexBuffer->Lock().\n");
+      return false;
+   }
+
+   // copy the new verts over the old verts
+   memcpy(pCurVerts, newVerts, 4 * sizeof(DrawVerticeFormats));
+
+   out_img->vertex_buf->Unlock();
+
+   d3d->d3d_render_device->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE);
+   d3d->d3d_render_device->SetRenderState(D3DRS_SRCBLEND,  D3DBLEND_SRCALPHA);
+   d3d->d3d_render_device->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
+
+   // also blend the texture with the set alpha value
+   d3d->d3d_render_device->SetTextureStageState(0, D3DTSS_ALPHAOP, D3DTOP_MODULATE);
+   d3d->d3d_render_device->SetTextureStageState(0, D3DTSS_ALPHAARG1, D3DTA_DIFFUSE);
+   d3d->d3d_render_device->SetTextureStageState(0, D3DTSS_ALPHAARG2, D3DTA_TEXTURE);
+
+   // draw the quad
+   d3d->d3d_render_device->SetTexture(0, out_img->pixels);
+   d3d->d3d_render_device->SetStreamSource(0, out_img->vertex_buf, sizeof(DrawVerticeFormats));
+   d3d->d3d_render_device->SetVertexShader(D3DFVF_CUSTOMVERTEX);
+   d3d->d3d_render_device->DrawPrimitive(D3DPT_QUADLIST, 0, 1);
+
+   return true;
+}
+#endif
+
 #if defined(HAVE_RGUI) || defined(HAVE_RMENU)
 
 static inline void xdk_d3d_draw_texture(void *data)

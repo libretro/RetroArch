@@ -75,5 +75,6 @@ typedef struct xdk_d3d_video
 } xdk_d3d_video_t;
 
 extern void xdk_d3d_generate_pp(D3DPRESENT_PARAMETERS *d3dpp, const video_info_t *video);
+extern bool texture_image_render(struct texture_image *out_img);
 
 #endif

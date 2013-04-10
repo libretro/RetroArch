@@ -38,10 +38,6 @@ struct texture_image
 #endif
 };
 
-#ifdef _XBOX1
-bool texture_image_render(struct texture_image *out_img);
-#endif
-
 bool texture_image_load(const char *path, struct texture_image* img);
 
 #endif
