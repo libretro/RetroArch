@@ -377,7 +377,7 @@ static void render_messagebox(rgui_handle_t *rgui, const char *message)
 }
 
 #ifdef HAVE_SHADER_MANAGER
-static void shader_manager_get_str(rgui_handle_t *rgui,
+static void shader_manager_get_str(struct gfx_shader *shader,
       char *type_str, size_t type_str_size, unsigned type);
 static int shader_manager_toggle_setting(rgui_handle_t *rgui, unsigned setting, rgui_action_t action);
 #endif
@@ -451,7 +451,7 @@ static void render_text(rgui_handle_t *rgui)
             w = 5;
          }
          else
-            shader_manager_get_str(rgui, type_str, sizeof(type_str), type);
+            shader_manager_get_str(&rgui->shader, type_str, sizeof(type_str), type);
       }
       else
 #endif
@@ -1254,30 +1254,28 @@ static int shader_manager_toggle_setting(rgui_handle_t *rgui, unsigned setting, 
    return 0;
 }
 
-static void shader_manager_get_str(rgui_handle_t *rgui,
+static void shader_manager_get_str(struct gfx_shader *shader,
       char *type_str, size_t type_str_size, unsigned type)
 {
    if (type == RGUI_SETTINGS_SHADER_APPLY)
       *type_str = '\0';
    else if (type == RGUI_SETTINGS_SHADER_PASSES)
-      snprintf(type_str, type_str_size, "%u", rgui->shader.passes);
+      snprintf(type_str, type_str_size, "%u", shader->passes);
    else
    {
       unsigned pass = (type - RGUI_SETTINGS_SHADER_0) / 3;
       switch ((type - RGUI_SETTINGS_SHADER_0) % 3)
       {
          case 0:
-            if (*rgui->shader.pass[pass].source.cg)
-            {
+            if (*shader->pass[pass].source.cg)
                fill_pathname_base(type_str,
-                     rgui->shader.pass[pass].source.cg, type_str_size);
-            }
+                     shader->pass[pass].source.cg, type_str_size);
             else
                strlcpy(type_str, "N/A", type_str_size);
             break;
 
          case 1:
-            switch (rgui->shader.pass[pass].filter)
+            switch (shader->pass[pass].filter)
             {
                case RARCH_FILTER_LINEAR:
                   strlcpy(type_str, "Linear", type_str_size);
@@ -1295,7 +1293,7 @@ static void shader_manager_get_str(rgui_handle_t *rgui,
 
          case 2:
          {
-            unsigned scale = rgui->shader.pass[pass].fbo.scale_x;
+            unsigned scale = shader->pass[pass].fbo.scale_x;
             if (!scale)
                strlcpy(type_str, "Don't care", type_str_size);
             else

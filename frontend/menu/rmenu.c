@@ -36,18 +36,20 @@
 #include "../../driver.h"
 #include "../../general.h"
 
-#define EXT_IMAGES "png|PNG|jpg|JPG|JPEG|jpeg"
-#define EXT_SHADERS "cg|CG"
-#define EXT_CGP_PRESETS "cgp|CGP"
-#define EXT_INPUT_PRESETS "cfg|CFG"
-
-#if defined(HAVE_CG) || defined(HAVE_HLSL) || defined(HAVE_GLSL)
-#define HAVE_SHADER_MANAGER
+#ifdef HAVE_SHADER_MANAGER
+#include "../../gfx/shader_parse.h"
 #endif
 
 #ifdef _XBOX1
-#define HAVE_MENU_PANEL
+#define JPEG_FORMATS ""
+#else
+#define JPEG_FORMATS "|jpg|JPG|JPEG|jpeg"
 #endif
+
+#define EXT_IMAGES "png|PNG"JPEG_FORMATS
+#define EXT_SHADERS "cg"
+#define EXT_CGP_PRESETS "cgp"
+#define EXT_INPUT_PRESETS "cfg|CFG"
 
 static bool set_libretro_core_as_launch;
 
@@ -59,6 +61,10 @@ struct texture_image *menu_panel;
 filebrowser_t *browser;
 filebrowser_t *tmpBrowser;
 unsigned currently_selected_controller_menu = 0;
+
+#ifdef HAVE_SHADER_MANAGER
+struct gfx_shader shader;
+#endif
 
 static const struct retro_keybind _rmenu_nav_binds[] = {
    { 0, 0, NULL, (enum retro_key)0, (1ULL << RETRO_DEVICE_ID_JOYPAD_UP) | (1ULL << RARCH_ANALOG_LEFT_Y_DPAD_UP), 0 },
@@ -342,7 +348,8 @@ static void populate_setting_item(void *data, unsigned input)
 #ifdef HAVE_SHADER_MANAGER
       case SETTING_SHADER_PRESETS:
          strlcpy(current_item->text, "Shader Presets (CGP)", sizeof(current_item->text));
-         strlcpy(current_item->comment, "INFO - Select a [CG Preset] script.", sizeof(current_item->comment));
+         strlcpy(current_item->setting_text, "", sizeof(current_item->setting_text));
+         strlcpy(current_item->comment, "INFO - Select a CGP file.", sizeof(current_item->comment));
          break;
 #endif
       case SETTING_EMU_SKIN:
@@ -426,7 +433,7 @@ static void populate_setting_item(void *data, unsigned input)
       case SETTING_APPLY_SHADER_PRESET_ON_STARTUP:
          strlcpy(current_item->text, "APPLY SHADER PRESET ON STARTUP", sizeof(current_item->text));
          strlcpy(current_item->setting_text, "", sizeof(current_item->setting_text));
-         strlcpy(current_item->comment, "INFO - Automatically load the currently selected [CG Preset] file on startup.", sizeof(current_item->comment));
+         strlcpy(current_item->comment, "INFO - Auto-load at startup the current shader settings.", sizeof(current_item->comment));
          break;
 #endif
       case SETTING_DEFAULT_VIDEO_ALL:
@@ -673,7 +680,7 @@ static void populate_setting_item(void *data, unsigned input)
       case SETTING_SAVE_SHADER_PRESET:
          strlcpy(current_item->text, "SAVE SETTINGS AS CGP PRESET", sizeof(current_item->text));
          strlcpy(current_item->setting_text, "", sizeof(current_item->setting_text));
-         strlcpy(current_item->comment, "INFO - Save the current video settings to a [CG Preset] (CGP) file.", sizeof(current_item->comment));
+         strlcpy(current_item->comment, "INFO - Save current shader settings to a CGP file.", sizeof(current_item->comment));
          break;
 #endif
       case INGAME_MENU_LOAD_STATE:
@@ -706,6 +713,13 @@ static void populate_setting_item(void *data, unsigned input)
          strlcpy(current_item->setting_text, "", sizeof(current_item->setting_text));
          strlcpy(current_item->comment, "Set core-specific options.", sizeof(current_item->comment));
          break;
+#ifdef HAVE_SHADER_MANAGER
+      case INGAME_MENU_SHADER_MANAGER_MODE:
+         strlcpy(current_item->text, "ShaderMan", sizeof(current_item->text));
+         strlcpy(current_item->setting_text, "", sizeof(current_item->setting_text));
+         strlcpy(current_item->comment, "Set and manage shader options.", sizeof(current_item->comment));
+         break;
+#endif
       case INGAME_MENU_FRAME_ADVANCE:
          strlcpy(current_item->text, "Frame Advance", sizeof(current_item->text));
          strlcpy(current_item->setting_text, "", sizeof(current_item->setting_text));
@@ -802,6 +816,9 @@ static void display_menubar(uint8_t menu_type)
          break;
       case CONTROLS_MENU:
       case INGAME_MENU_CORE_OPTIONS:
+#ifdef HAVE_SHADER_MANAGER
+      case INGAME_MENU_SHADER_MANAGER:
+#endif
       case INGAME_MENU_RESIZE:
          if (driver.input->set_keybinds)
             driver.input->set_keybinds(&key_label_l, 0, 0, 0, (1ULL << KEYBINDS_ACTION_GET_BIND_LABEL));
@@ -847,6 +864,11 @@ static void display_menubar(uint8_t menu_type)
       case INGAME_MENU_CORE_OPTIONS:
          strlcpy(title, "Core Options", sizeof(title));
          break;
+#ifdef HAVE_SHADER_MANAGER
+      case INGAME_MENU_SHADER_MANAGER:
+         strlcpy(title, "Shader Manager", sizeof(title));
+         break;
+#endif
       case INGAME_MENU_RESIZE:
          strlcpy(title, "Resize Menu", sizeof(title));
          break;
@@ -1027,7 +1049,7 @@ static int select_file(uint8_t menu_type, uint64_t input)
          break;
       case PRESET_CHOICE:
          strlcpy(extensions, EXT_CGP_PRESETS, sizeof(extensions));
-         strlcpy(comment, "INFO - Select a shader preset.", sizeof(comment));
+         strlcpy(comment, "INFO - Select a CGP file.", sizeof(comment));
          break;
       case INPUT_PRESET_CHOICE:
          strlcpy(extensions, EXT_INPUT_PRESETS, sizeof(extensions));
@@ -1059,7 +1081,16 @@ static int select_file(uint8_t menu_type, uint64_t input)
             case SHADER_CHOICE:
                break;
             case PRESET_CHOICE:
-               strlcpy(g_extern.file_state.cgp_path, path, sizeof(g_extern.file_state.cgp_path));
+               {
+                  config_file_t *conf = NULL;
+
+                  strlcpy(g_extern.file_state.cgp_path, path, sizeof(g_extern.file_state.cgp_path));
+
+                  conf = config_file_new(path);
+                  if (conf)
+                     gfx_shader_read_conf_cgp(conf, &shader);
+                  config_file_free(conf);
+               }
                break;
 #endif
             case INPUT_PRESET_CHOICE:
@@ -2134,6 +2165,12 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
          if (input & (1ULL << RMENU_DEVICE_NAV_B))
             menu_stack_push(INGAME_MENU_CORE_OPTIONS);
          break;
+#ifdef HAVE_SHADER_MANAGER
+      case INGAME_MENU_SHADER_MANAGER_MODE:
+         if (input & (1ULL << RMENU_DEVICE_NAV_B))
+            menu_stack_push(INGAME_MENU_SHADER_MANAGER);
+         break;
+#endif
       case INGAME_MENU_SCREENSHOT_MODE:
          if (input & (1ULL << RMENU_DEVICE_NAV_B))
             menu_stack_push(INGAME_MENU_SCREENSHOT);
@@ -2974,6 +3011,39 @@ static int ingame_menu_core_options(uint8_t menu_type, uint64_t input)
    return 0;
 }
 
+#ifdef HAVE_SHADER_MANAGER
+static int ingame_menu_shader_manager(uint8_t menu_type, uint64_t input)
+{
+   static unsigned shader_opt_selected = 0;
+   float y_increment = POSITION_Y_START;
+
+   (void)menu_type;
+   (void)input;
+
+   (void)shader_opt_selected;
+
+   if (input & (1ULL << RMENU_DEVICE_NAV_A))
+   {
+      menu_stack_pop();
+      g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU_DRAW);
+   }
+
+   display_menubar(menu_type);
+
+   y_increment += POSITION_Y_INCREMENT;
+
+   font_params_t font_parms = {0};
+   font_parms.x = POSITION_X; 
+   font_parms.y = y_increment;
+   font_parms.scale = CURRENT_PATH_FONT_SIZE;
+   font_parms.color = WHITE;
+
+   (void)font_parms;
+
+   return 0;
+}
+#endif
+
 static int ingame_menu_screenshot(uint8_t menu_type, uint64_t input)
 {
    g_extern.lifecycle_mode_state &= ~(1ULL << MODE_MENU_DRAW);
@@ -3043,7 +3113,11 @@ static int menu_input_process(uint8_t menu_type, uint64_t old_state)
           * a cleaner way of telling RMenu that the menu stack should be popped
           * for a submenu when doing the menu quit hotkey */
          if (menu_type == INGAME_MENU_CORE_OPTIONS || menu_type == INGAME_MENU_RESIZE
-               || menu_type == LIBRETRO_CHOICE)
+               || menu_type == LIBRETRO_CHOICE
+#ifdef HAVE_SHADER_MANAGER
+               || menu_type == INGAME_MENU_SHADER_MANAGER
+#endif
+               )
          {
             menu_stack_pop();
             g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU_DRAW);
@@ -3233,6 +3307,11 @@ bool menu_iterate(void)
       case INGAME_MENU_CORE_OPTIONS:
          input_entry_ret = ingame_menu_core_options(menu_id, input);
          break;
+#ifdef HAVE_SHADER_MANAGER
+      case INGAME_MENU_SHADER_MANAGER:
+         input_entry_ret = ingame_menu_shader_manager(menu_id, input);
+         break;
+#endif
       case INGAME_MENU_SCREENSHOT:
          input_entry_ret = ingame_menu_screenshot(menu_id, input);
          break;
