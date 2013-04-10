@@ -59,38 +59,6 @@ static const char *stock_cg_program =
       "   return color * tex2D(s0, tex);"
       "}";
 
-static const char *menu_cg_program =
-      "struct input"
-      "{"
-         "float2 video_size;"
-         "float2 texture_size;"
-         "float2 output_size;"
-         "float frame_count;"
-         "float frame_direction;"
-         "float frame_rotation;"
-      "};"
-      "void main_vertex"
-      "("
-         "float4 position : POSITION,"
-         "out float4 oPosition : POSITION,"
-         "uniform float4x4 modelViewProj,"
-         "float4 color : COLOR,"
-         "out float4 oColor : COLOR,"
-         "float2 tex_border : TEXCOORD1,"
-         "out float2 otex_border : TEXCOORD1,"
-         "uniform input IN"
-      ")"
-      "{"
-         "oPosition = mul(modelViewProj, position);"
-         "oColor = color;"
-         "otex_border = tex_border;"
-      "}"
-      "float4 main_fragment (float2 tex_border : TEXCOORD1, uniform sampler2D bg : TEXUNIT0, uniform input IN) : COLOR"
-      "{"
-         "float4 background = tex2D(bg, tex_border);"
-         "return background;"
-      "}";
-
 #ifdef RARCH_CG_DEBUG
 static void cg_error_handler(CGcontext ctx, CGerror error, void *data)
 {
@@ -249,9 +217,6 @@ void gl_cg_set_params(unsigned width, unsigned height,
       set_param_1f(prg[active_index].frame_cnt_f, (float)frame_count);
       set_param_1f(prg[active_index].frame_cnt_v, (float)frame_count);
    }
-
-   if (active_index == RARCH_CG_MENU_SHADER_INDEX)
-      return;
 
    // Set orig texture.
    CGparameter param = prg[active_index].orig.tex;
@@ -524,11 +489,6 @@ static bool load_plain(const char *path)
    return true;
 }
 
-static bool load_menu_shader(void)
-{
-   return load_program(RARCH_CG_MENU_SHADER_INDEX, menu_cg_program, false);
-}
-
 #define print_buf(buf, ...) snprintf(buf, sizeof(buf), __VA_ARGS__)
 
 #ifdef HAVE_OPENGLES2
@@ -761,9 +721,6 @@ static void set_program_attributes(unsigned i)
    prg[i].frame_dir_v = cgGetNamedParameter(prg[i].vprg, "IN.frame_direction");
    prg[i].mvp = cgGetNamedParameter(prg[i].vprg, "modelViewProj");
 
-   if (i == RARCH_CG_MENU_SHADER_INDEX)
-      return;
-
    prg[i].orig.tex = cgGetNamedParameter(prg[i].fprg, "ORIG.texture");
    prg[i].orig.vid_size_v = cgGetNamedParameter(prg[i].vprg, "ORIG.video_size");
    prg[i].orig.vid_size_f = cgGetNamedParameter(prg[i].fprg, "ORIG.video_size");
@@ -870,15 +827,10 @@ bool gl_cg_init(const char *path)
          return false;
    }
 
-   if (!load_menu_shader())
-      return false;
-
    prg[0].mvp = cgGetNamedParameter(prg[0].vprg, "modelViewProj");
 
    for (unsigned i = 1; i <= cg_shader->passes; i++)
       set_program_attributes(i);
-
-   set_program_attributes(RARCH_CG_MENU_SHADER_INDEX);
 
    cgGLBindProgram(prg[1].fprg);
    cgGLBindProgram(prg[1].vprg);
