@@ -1146,12 +1146,26 @@ static int shader_manager_toggle_setting(rgui_handle_t *rgui, unsigned setting, 
          config_file_write(conf, cgp_path);
          config_file_free(conf);
          ret = video_set_shader_func(RARCH_SHADER_CG, cgp_path); 
+
+         // Makes sure that we use RGUI CGP shader on driver reinit.
+         // Only do this when the cgp actually works to avoid potential errors.
+         if (ret)
+         {
+            strlcpy(g_settings.video.shader_path, cgp_path, sizeof(g_settings.video.shader_path));
+            g_settings.video.shader_enable = true;
+         }
       }
       else
+      {
          ret = video_set_shader_func(RARCH_SHADER_CG, NULL);
+         g_settings.video.shader_enable = false;
+      }
 
       if (!ret)
+      {
          RARCH_ERR("Setting RGUI CGP failed.\n");
+         g_settings.video.shader_enable = false;
+      }
    }
    else if (setting == RGUI_SETTINGS_SHADER_PASSES)
    {
