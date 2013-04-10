@@ -657,9 +657,6 @@ void gl_init_fbo(void *data, unsigned width, unsigned height)
    if (scale_last.valid)
       gl->fbo_pass++;
 
-   if (gl->fbo_pass <= 0)
-      gl->fbo_pass = 1;
-
    if (!scale.valid)
    {
       scale.scale_x = 1.0f;
@@ -1343,6 +1340,10 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
 
    gl_shader_use_func(gl, 1);
 
+#ifdef IOS // Apparently the viewport is lost each frame, thanks apple.
+   gl_set_viewport(gl, gl->win_width, gl->win_height, false, true);
+#endif
+
 #ifdef HAVE_FBO
    // Render to texture in first pass.
    if (gl->fbo_inited)
@@ -1362,10 +1363,6 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
       // On resize, we might have to recreate our FBOs due to "Viewport" scale, and set a new viewport.
       gl_update_resize(gl);
    }
-
-#ifdef IOS // Apparently the viewport is lost each frame, thanks apple.
-   gl_set_viewport(gl, gl->win_width, gl->win_height, false, true);
-#endif
 
    if (frame) // Can be NULL for frame dupe / NULL render.
    {
