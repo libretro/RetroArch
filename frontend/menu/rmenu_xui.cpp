@@ -1436,7 +1436,17 @@ bool menu_iterate(void)
          }
    }
 
+   if (driver.video_poke && driver.video_poke->set_texture_enable)
+   {
+      driver.video_poke->set_texture_frame(driver.video_data, NULL,
+         true, 0, 0, 1.0f);
+      driver.video_poke->set_texture_enable(driver.video_data, false);
+   }
+
    rarch_render_cached_frame();
+
+   if (driver.video_poke && driver.video_poke->set_texture_enable)
+      driver.video_poke->set_texture_enable(driver.video_data, false);
 
    switch(input_loop)
    {
@@ -1455,7 +1465,7 @@ bool menu_iterate(void)
 
    msg = msg_queue_pull(g_extern.msg_queue);
 
-   if (msg)
+   if (msg && (g_extern.lifecycle_mode_state & (1ULL << MODE_INFO_DRAW)))
    {
       if (driver.video_poke->set_osd_msg)
          driver.video_poke->set_osd_msg(driver.video_data, msg, NULL);

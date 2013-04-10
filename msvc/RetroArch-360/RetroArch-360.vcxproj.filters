@@ -21,9 +21,6 @@
     <Filter Include="Source Files\media">
       <UniqueIdentifier>{b7d54b1f-ffda-45f9-8175-7bf67010253d}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Source Files\console">
-      <UniqueIdentifier>{e45d1737-2bab-4209-87c0-3d66cf3aee07}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Header Files\compat">
       <UniqueIdentifier>{cf25b88e-c7b2-4823-876a-ed0dd8020821}</UniqueIdentifier>
     </Filter>
@@ -35,9 +32,6 @@
     </Filter>
     <Filter Include="Source Files\media\shaders">
       <UniqueIdentifier>{3a05047b-b9ec-4821-bb28-d1b0e9e3e8bb}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Source Files\console\griffin">
-      <UniqueIdentifier>{c868cc96-a0ac-4672-a4ca-dd7c28277972}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>

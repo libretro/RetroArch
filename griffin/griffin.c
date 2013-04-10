@@ -450,7 +450,7 @@ MENU
 #include "../frontend/menu/rgui.c"
 #endif
 
-#if defined(_XBOX360)
+#if defined(HAVE_RMENU_XUI)
 #include "../frontend/menu/rmenu_xui.cpp"
 #endif
 
