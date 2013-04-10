@@ -647,12 +647,6 @@ static bool load_preset(const char *path)
       RARCH_WARN("Too many shaders ... Capping shader amount to %d.\n", RARCH_CG_MAX_SHADERS - 3);
       cg_shader->passes = RARCH_CG_MAX_SHADERS - 3;
    }
-   // If we aren't using last pass non-FBO shader, 
-   // this shader will be assumed to be "fixed-function".
-   // Just use prg[0] for that pass, which will be
-   // pass-through.
-   prg[cg_shader->passes + 1] = prg[0]; 
-
    for (unsigned i = 0; i < cg_shader->passes; i++)
    {
       if (!load_shader(path, i))
@@ -828,9 +822,14 @@ bool gl_cg_init(const char *path)
    }
 
    prg[0].mvp = cgGetNamedParameter(prg[0].vprg, "modelViewProj");
-
    for (unsigned i = 1; i <= cg_shader->passes; i++)
       set_program_attributes(i);
+
+   // If we aren't using last pass non-FBO shader, 
+   // this shader will be assumed to be "fixed-function".
+   // Just use prg[0] for that pass, which will be
+   // pass-through.
+   prg[cg_shader->passes + 1] = prg[0]; 
 
    cgGLBindProgram(prg[1].fprg);
    cgGLBindProgram(prg[1].vprg);
