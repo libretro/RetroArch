@@ -250,13 +250,13 @@ static void texture_image_border_load(const char *path)
 
 static void rmenu_gfx_init(void)
 {
-   if (g_extern.lifecycle_mode_state & (1ULL << MODE_MENU_LOW_RAM_MODE_ENABLE))
-      return;
-
 #ifdef _XBOX1
    xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
    texture_image_load("D:\\Media\\menuMainRomSelectPanel.png", &menu_panel);
 #endif
+
+   if (g_extern.lifecycle_mode_state & (1ULL << MODE_MENU_LOW_RAM_MODE_ENABLE))
+      return;
 
 #ifdef _XBOX1
    texture_image_load(g_extern.menu_texture_path, &menu_texture);
