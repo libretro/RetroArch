@@ -664,6 +664,25 @@ static void *xdk_d3d_init(const video_info_t *video, const input_driver_t **inpu
    return d3d;
 }
 
+#ifdef HAVE_RMENU
+extern struct texture_image menu_texture;
+#endif
+
+#if defined(HAVE_RGUI) || defined(HAVE_RMENU)
+
+static inline void xdk_d3d_draw_texture(void *data)
+{
+   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)data;
+
+#ifdef HAVE_RMENU
+   menu_texture.x = 0;
+   menu_texture.y = 0;
+
+   texture_image_render(&menu_texture);
+#endif
+}
+#endif
+
 static bool xdk_d3d_frame(void *data, const void *frame,
       unsigned width, unsigned height, unsigned pitch, const char *msg)
 {
@@ -829,6 +848,11 @@ static bool xdk_d3d_frame(void *data, const void *frame,
    }
 #endif
 
+#if defined(HAVE_RGUI) || defined(HAVE_RMENU)
+   if (d3d->rgui_texture_enable)
+      xdk_d3d_draw_texture(d3d);
+#endif
+
 #if defined(_XBOX1)
    float mem_width  = font_x + 30;
    float mem_height = font_y + 50;
@@ -874,14 +898,15 @@ static bool xdk_d3d_frame(void *data, const void *frame,
       d3d->font_ctx->render_msg(d3d, msg, &font_parms);
    }
 
+#if defined(_XBOX360)
    if (lifecycle_mode_state & (1ULL << MODE_MENU_DRAW))
-   {
-#ifdef _XBOX360
       menu_iterate_xui();
-#endif
-   }
    else
       gfx_ctx_xdk_swap_buffers();
+#elif defined(_XBOX1)
+   if (!(lifecycle_mode_state & (1ULL << MODE_MENU_DRAW)))
+      gfx_ctx_xdk_swap_buffers();
+#endif
 
    return true;
 }

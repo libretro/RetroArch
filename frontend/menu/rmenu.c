@@ -863,12 +863,6 @@ static void display_menubar(uint8_t menu_type)
             driver.video_poke->set_osd_msg(driver.video_data, msg, &font_parms);
          break;
    }
-
-#ifdef _XBOX1
-   menu_texture.x = 0;
-   menu_texture.y = 0;
-   texture_image_render(&menu_texture);
-#endif
    
    font_parms.x = CORE_MSG_POSITION_X;
    font_parms.y = CORE_MSG_POSITION_Y;
