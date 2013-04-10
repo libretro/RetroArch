@@ -468,7 +468,7 @@ static void populate_setting_item(void *data, unsigned input)
       case SETTING_DEFAULT_AUDIO_ALL:
          strlcpy(current_item->text, "DEFAULTS", sizeof(current_item->text));
          strlcpy(current_item->setting_text, "", sizeof(current_item->setting_text));
-         strlcpy(current_item->comment, "INFO -Reset all these settings.", sizeof(current_item->comment));
+         strlcpy(current_item->comment, "INFO - Reset all these settings.", sizeof(current_item->comment));
          break;
       case SETTING_EMU_CURRENT_SAVE_STATE_SLOT:
          strlcpy(current_item->text, "Current save state slot", sizeof(current_item->text));
@@ -553,7 +553,7 @@ static void populate_setting_item(void *data, unsigned input)
       case SETTING_PATH_SAVESTATES_DIRECTORY:
          strlcpy(current_item->text, "Savestate Directory", sizeof(current_item->text));
          strlcpy(current_item->setting_text, g_extern.console.main_wrap.default_savestate_dir, sizeof(current_item->setting_text));
-         strlcpy(current_item->comment, "INFO - Dir where savestates will be saved to.", sizeof(current_item->comment));
+         strlcpy(current_item->comment, "INFO - Directory where savestates will be saved to.", sizeof(current_item->comment));
          break;
       case SETTING_PATH_SRAM_DIRECTORY:
          strlcpy(current_item->text, "SRAM Directory", sizeof(current_item->text));
@@ -1141,7 +1141,7 @@ static int select_file(uint8_t menu_type, uint64_t input)
       driver.input->set_keybinds(&key_label_start, 0, 0, 0, (1ULL << KEYBINDS_ACTION_GET_BIND_LABEL));
    }
 
-   snprintf(comment, sizeof(comment), "[%s] - return to settings [%s] - Reset Startdir", key_label_x.desc, key_label_start.desc);
+   snprintf(comment, sizeof(comment), "[%s] - Return [%s] - Reset", key_label_x.desc, key_label_start.desc);
    font_parms.y = COMMENT_TWO_POSITION_Y;
    font_parms.color = YELLOW;
 
@@ -1254,7 +1254,7 @@ static int select_directory(uint8_t menu_type, uint64_t input)
       driver.input->set_keybinds(&key_label_start, 0, 0, 0, (1ULL << KEYBINDS_ACTION_GET_BIND_LABEL));
    }
 
-   snprintf(msg, sizeof(msg), "[%s] - Enter dir | [%s] - Go back", key_label_b.desc, key_label_x.desc);
+   snprintf(msg, sizeof(msg), "[%s] - Enter dir | [%s] - Return", key_label_b.desc, key_label_x.desc);
 
    font_parms.x = POSITION_X; 
    font_parms.y = COMMENT_TWO_POSITION_Y;
@@ -1264,14 +1264,14 @@ static int select_directory(uint8_t menu_type, uint64_t input)
    if (driver.video_poke->set_osd_msg)
       driver.video_poke->set_osd_msg(driver.video_data, msg, &font_parms);
 
-   snprintf(msg, sizeof(msg), "[%s] - Reset to startdir", key_label_start.desc);
+   snprintf(msg, sizeof(msg), "[%s] - Reset", key_label_start.desc);
 
    font_parms.y = COMMENT_TWO_POSITION_Y + (POSITION_Y_INCREMENT * 1);
 
    if (driver.video_poke->set_osd_msg)
       driver.video_poke->set_osd_msg(driver.video_data, msg, &font_parms);
 
-   snprintf(msg, sizeof(msg), "INFO - Browse to a directory and assign it as the path by\npressing [%s].", key_label_y.desc);
+   snprintf(msg, sizeof(msg), "INFO - Select a dir as path by\npressing [%s].", key_label_y.desc);
 
    font_parms.y = COMMENT_POSITION_Y;
    font_parms.color = WHITE;
