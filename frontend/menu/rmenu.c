@@ -362,7 +362,7 @@ static void populate_setting_item(void *data, unsigned input)
          else
          {
             strlcpy(current_item->setting_text, "OFF", sizeof(current_item->setting_text));
-            strlcpy(current_item->comment, "INFO - Will not load skin at startup to save up on RAM.", sizeof(current_item->comment));
+            strlcpy(current_item->comment, "INFO - Enable this and restart to free up more RAM.", sizeof(current_item->comment));
          }
          break;
       case SETTING_FONT_SIZE:
@@ -376,17 +376,17 @@ static void populate_setting_item(void *data, unsigned input)
          strlcpy(current_item->comment, "INFO - Select an [Aspect Ratio].", sizeof(current_item->comment));
          break;
       case SETTING_HW_TEXTURE_FILTER:
-         strlcpy(current_item->text, "Hardware filtering #1", sizeof(current_item->text));
+         strlcpy(current_item->text, "Hardware filtering", sizeof(current_item->text));
          if (g_settings.video.smooth)
          {
             strlcpy(current_item->setting_text, "Bilinear", sizeof(current_item->setting_text));
-            strlcpy(current_item->comment, "INFO - Hardware filtering #1 is set to Bilinear.",
+            strlcpy(current_item->comment, "INFO - Hardware filtering is set to Bilinear.",
                   sizeof(current_item->comment));
          }
          else
          {
             strlcpy(current_item->setting_text, "Point", sizeof(current_item->setting_text));
-            strlcpy(current_item->comment, "INFO - Hardware filtering #1 is set to Point.",
+            strlcpy(current_item->comment, "INFO - Hardware filtering is set to Point.",
                   sizeof(current_item->comment));
          }
          break;
@@ -432,7 +432,7 @@ static void populate_setting_item(void *data, unsigned input)
       case SETTING_DEFAULT_VIDEO_ALL:
          strlcpy(current_item->text, "DEFAULTS", sizeof(current_item->text));
          strlcpy(current_item->setting_text, "", sizeof(current_item->setting_text));
-         strlcpy(current_item->comment, "INFO - Set all [General Video Settings] back to their 'DEFAULT' values.", sizeof(current_item->comment));
+         strlcpy(current_item->comment, "INFO - Reset all these settings.", sizeof(current_item->comment));
          break;
       case SETTING_SOUND_MODE:
          strlcpy(current_item->text, "Sound Output", sizeof(current_item->text));
@@ -468,7 +468,7 @@ static void populate_setting_item(void *data, unsigned input)
       case SETTING_DEFAULT_AUDIO_ALL:
          strlcpy(current_item->text, "DEFAULTS", sizeof(current_item->text));
          strlcpy(current_item->setting_text, "", sizeof(current_item->setting_text));
-         strlcpy(current_item->comment, "INFO - Set all [General Audio Settings] back to their 'DEFAULT' values.", sizeof(current_item->comment));
+         strlcpy(current_item->comment, "INFO -Reset all these settings.", sizeof(current_item->comment));
          break;
       case SETTING_EMU_CURRENT_SAVE_STATE_SLOT:
          strlcpy(current_item->text, "Current save state slot", sizeof(current_item->text));
@@ -504,13 +504,13 @@ static void populate_setting_item(void *data, unsigned input)
       case SETTING_EMU_REWIND_GRANULARITY:
          strlcpy(current_item->text, "Rewind granularity", sizeof(current_item->text));
          snprintf(current_item->setting_text, sizeof(current_item->setting_text), "%d", g_settings.rewind_granularity);
-         strlcpy(current_item->comment, "INFO - Set the amount of frames to 'rewind'.\nIncrease this to lower CPU usage.", sizeof(current_item->comment));
+         strlcpy(current_item->comment, "INFO - Set the amount of frames to 'rewind'.", sizeof(current_item->comment));
          break;
       case SETTING_RARCH_DEFAULT_EMU:
          strlcpy(current_item->text, "Default libretro core", sizeof(current_item->text));
          fill_pathname_base(fname, g_settings.libretro, sizeof(fname));
          strlcpy(current_item->setting_text, fname, sizeof(current_item->setting_text));
-         strlcpy(current_item->comment, "INFO - Select a default libretro core to launch at start-up.", sizeof(current_item->comment));
+         strlcpy(current_item->comment, "INFO - Select a default libretro core.", sizeof(current_item->comment));
          break;
       case SETTING_QUIT_RARCH:
          strlcpy(current_item->text, "Quit RetroArch and save settings ", sizeof(current_item->text));
@@ -521,12 +521,12 @@ static void populate_setting_item(void *data, unsigned input)
          strlcpy(current_item->text, "Mute Audio", sizeof(current_item->text));
          if (g_extern.audio_data.mute)
          {
-            strlcpy(current_item->comment, "INFO - [Audio Mute] is set to 'ON'. The game audio will be muted.", sizeof(current_item->comment));
+            strlcpy(current_item->comment, "INFO - the game audio will be muted.", sizeof(current_item->comment));
             strlcpy(current_item->setting_text, "ON", sizeof(current_item->setting_text));
          }
          else
          {
-            strlcpy(current_item->comment, "INFO - [Audio Mute] is set to 'OFF'.", sizeof(current_item->comment));
+            strlcpy(current_item->comment, "INFO - game audio will be on.", sizeof(current_item->comment));
             strlcpy(current_item->setting_text, "OFF", sizeof(current_item->setting_text));
          }
          break;
@@ -553,7 +553,7 @@ static void populate_setting_item(void *data, unsigned input)
       case SETTING_PATH_SAVESTATES_DIRECTORY:
          strlcpy(current_item->text, "Savestate Directory", sizeof(current_item->text));
          strlcpy(current_item->setting_text, g_extern.console.main_wrap.default_savestate_dir, sizeof(current_item->setting_text));
-         strlcpy(current_item->comment, "INFO - Set the default path where all the savestate files will be saved to.", sizeof(current_item->comment));
+         strlcpy(current_item->comment, "INFO - Dir where savestates will be saved to.", sizeof(current_item->comment));
          break;
       case SETTING_PATH_SRAM_DIRECTORY:
          strlcpy(current_item->text, "SRAM Directory", sizeof(current_item->text));
@@ -570,7 +570,7 @@ static void populate_setting_item(void *data, unsigned input)
       case SETTING_PATH_SYSTEM:
          strlcpy(current_item->text, "System Directory", sizeof(current_item->text));
          strlcpy(current_item->setting_text, g_settings.system_directory, sizeof(current_item->setting_text));
-         strlcpy(current_item->comment, "INFO - Set the default [System directory] path. System files like\nBIOS files, etc. will be stored here.", sizeof(current_item->comment));
+         strlcpy(current_item->comment, "INFO - Set the default [System directory] path.", sizeof(current_item->comment));
          break;
       case SETTING_ENABLE_SRAM_PATH:
          snprintf(current_item->text, sizeof(current_item->text), "Custom SRAM Dir Enable");
