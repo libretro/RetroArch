@@ -216,9 +216,9 @@ static const char *menu_drive_mapping_next(void)
 
 static void rmenu_gfx_init(void)
 {
-   menu_texture = calloc(1, sizeof(*menu_texture));
+   menu_texture = (texture_image*)calloc(1, sizeof(*menu_texture));
 #ifdef HAVE_MENU_PANEL
-   menu_panel = calloc(1, sizeof(*menu_panel));
+   menu_panel = (texture_image*)calloc(1, sizeof(*menu_panel));
    texture_image_load("D:\\Media\\menuMainRomSelectPanel.png", menu_panel);
 #endif
 
@@ -1057,7 +1057,7 @@ static int select_file(uint8_t menu_type, uint64_t input)
                   free(menu_texture->pixels);
                   menu_texture->pixels = NULL;
 #endif
-                  menu_texture = calloc(1, sizeof(*menu_texture));
+                  menu_texture = (texture_image*)calloc(1, sizeof(*menu_texture));
                }
                texture_image_load(path, menu_texture);
                strlcpy(g_extern.menu_texture_path, path, sizeof(g_extern.menu_texture_path));
