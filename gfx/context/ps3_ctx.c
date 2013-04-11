@@ -18,6 +18,12 @@
 #include "../../ps3/sdk_defines.h"
 #include "../../console/rarch_console.h"
 
+#ifdef HAVE_LIBDBGFONT
+#ifndef __PSL1GHT__
+#include <cell/dbgfont.h>
+#endif
+#endif
+
 #ifndef __PSL1GHT__
 #include <sys/spu_initialize.h>
 #endif
@@ -194,7 +200,10 @@ static bool gfx_ctx_has_focus(void)
 
 static void gfx_ctx_swap_buffers(void)
 {
-#if defined(HAVE_PSGL)
+#ifdef HAVE_LIBDBGFONT
+   cellDbgFontDraw();
+#endif
+#ifdef HAVE_PSGL
    psglSwap();
 #endif
 #ifdef HAVE_SYSUTILS

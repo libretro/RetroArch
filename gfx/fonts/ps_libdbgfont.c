@@ -23,15 +23,13 @@
 #define DbgFontConfig SceDbgFontConfig
 #define DbgFontInit sceDbgFontInit
 #define DbgFontExit sceDbgFontExit
-#define DbgFontDraw sceDbgFontFlush
 #elif defined(__CELLOS_LV2__)
 #include <cell/dbgfont.h>
-#define SCE_DBGFONT_BUFSIZE_LARGE 512
+#define SCE_DBGFONT_BUFSIZE_LARGE 1024
 #define DbgFontPrint(x, y, scale, color, msg) cellDbgFontPrintf(x, y, scale, color, msg)
 #define DbgFontConfig CellDbgFontConfig
 #define DbgFontInit cellDbgFontInit
 #define DbgFontExit cellDbgFontExit
-#define DbgFontDraw cellDbgFontDraw
 #endif
 
 static bool gl_init_font(void *data, const char *font_path, float font_size)
@@ -94,7 +92,10 @@ static void gl_render_msg(void *data, const char *msg, void *parms)
    if (!params)
       DbgFontPrint(x, y, scale - 0.01f, WHITE, msg);
 
-   DbgFontDraw();
+#ifdef SN_TARGET_PSP2
+   /* FIXME - if we ever get around to this port, move this out to some better place */
+   sceDbgFontFlush();
+#endif
 }
 
 const gl_font_renderer_t libdbg_font = {
