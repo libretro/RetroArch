@@ -1339,6 +1339,13 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
    uint64_t lifecycle_mode_state = g_extern.lifecycle_mode_state;
    (void)lifecycle_mode_state;
 
+#ifdef __CELLOS_LV2__
+   /* FIXME - check if it makes sense for all other platforms to do a glClear 
+    * at start of gl_frame as well - if so, we can drop this ifdef and make
+    * it implicit */
+   glClear(GL_COLOR_BUFFER_BIT);
+#endif
+
    gl_shader_use_func(gl, 1);
 
 #ifdef IOS // Apparently the viewport is lost each frame, thanks apple.

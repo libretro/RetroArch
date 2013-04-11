@@ -3423,31 +3423,21 @@ bool menu_iterate(void)
 
    g_extern.frame_count++;
 
-   if ((g_extern.lifecycle_mode_state & (1ULL << MODE_MENU_LOW_RAM_MODE_ENABLE)))
+   if (!(g_extern.lifecycle_mode_state & (1ULL << MODE_MENU_LOW_RAM_MODE_ENABLE)))
    {
-#if defined(HAVE_OPENGL)
-      glClear(GL_COLOR_BUFFER_BIT);
-#elif defined(HAVE_D3D8) || defined(HAVE_D3D9)
-      xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
-      LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)d3d->d3d_render_device;
-      d3dr->Clear(0, NULL, D3DCLEAR_TARGET, 0xff000000, 1.0f, 0);
-#endif
-   }
-   else
-   {
-      // draw last frame for loading messages
       if (driver.video_poke && driver.video_poke->set_texture_enable)
       {
          driver.video_poke->set_texture_frame(driver.video_data, menu_texture->pixels,
                true, menu_texture->width, menu_texture->height, 1.0f);
          driver.video_poke->set_texture_enable(driver.video_data, true);
       }
-
-      rarch_render_cached_frame();
-
-      if (driver.video_poke && driver.video_poke->set_texture_enable)
-         driver.video_poke->set_texture_enable(driver.video_data, false);
    }
+
+   // draw last frame for loading messages
+   rarch_render_cached_frame();
+
+   if (driver.video_poke && driver.video_poke->set_texture_enable)
+      driver.video_poke->set_texture_enable(driver.video_data, false);
 
    //first button input frame
    uint64_t input_state_first_frame = 0;
