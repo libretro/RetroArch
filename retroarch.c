@@ -35,14 +35,13 @@
 #include "compat/getopt_rarch.h"
 #include "compat/posix_string.h"
 
-#if defined(_WIN32) && !defined(_XBOX)
+#ifdef _WIN32
+#ifdef _XBOX
+#include <xtl.h>
+#else
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
-#elif defined(_XBOX)
-#include <xtl.h>
 #endif
-
-#ifdef _WIN32
 #include "msvc/msvc_compat.h"
 #endif
 

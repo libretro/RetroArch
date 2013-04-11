@@ -27,14 +27,16 @@
 #include "hash.h"
 #include "file_extract.h"
 
-#if defined(_WIN32) && !defined(_XBOX)
-#include <io.h>
-#include <fcntl.h>
-#include <windows.h>
-#elif defined(_XBOX)
+#ifdef _WIN32
+#ifdef _XBOX
 #include <xtl.h>
 #define setmode _setmode
 #define INVALID_FILE_ATTRIBUTES -1
+#else
+#include <io.h>
+#include <fcntl.h>
+#include <windows.h>
+#endif
 #endif
 
 // Dump stuff to file.

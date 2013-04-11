@@ -51,15 +51,13 @@
 #endif
 
 // Windows
-#if defined(_WIN32) && !defined(_XBOX)
+#ifdef _WIN32
+#ifdef _XBOX
+#include <xtl.h>
+#else
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
-#include "msvc/msvc_compat.h"
 #endif
-
-// XBox
-#if defined(_XBOX)
-#include <xtl.h>
 #include "msvc/msvc_compat.h"
 #endif
 

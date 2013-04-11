@@ -29,20 +29,18 @@
 #endif
 #endif
 
-#ifdef _XBOX
-#include <xtl.h>
-#endif
-
-#if defined(_WIN32) && !defined(_XBOX)
-#include <io.h>
-#include <fcntl.h>
-#include <windows.h>
+#if defined(_WIN32)
 #ifdef _MSC_VER
 #define setmode _setmode
 #endif
-#elif defined(_XBOX)
-#define setmode _setmode
+#ifdef _XBOX
+#include <xtl.h>
 #define INVALID_FILE_ATTRIBUTES -1
+#else
+#include <io.h>
+#include <fcntl.h>
+#include <windows.h>
+#endif
 #else
 #include <sys/types.h>
 #include <sys/stat.h>

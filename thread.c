@@ -16,11 +16,13 @@
 #include "thread.h"
 #include <stdlib.h>
 
-#if defined(_WIN32) && !defined(_XBOX)
+#if defined(_WIN32)
+#ifdef _XBOX
+#include <xtl.h>
+#else
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
-#elif defined(_XBOX)
-#include <xtl.h>
+#endif
 #elif defined(GEKKO)
 #include "thread/gx_pthread.h"
 #else
