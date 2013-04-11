@@ -932,8 +932,9 @@ static bool xdk_d3d_frame(void *data, const void *frame,
 #endif
 
 #if defined(HAVE_RGUI) || defined(HAVE_RMENU)
-#ifdef HAVE_RMENU_XUI
-   if (lifecycle_mode_state & (1ULL << MODE_MENU_DRAW))
+
+#if defined(HAVE_RMENU_XUI) || defined(HAVE_RGUI)
+   if (d3d->rgui_texture_enable)
 #endif
       xdk_d3d_draw_texture(d3d);
 #endif
