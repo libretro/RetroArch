@@ -179,9 +179,6 @@ static void gfx_ctx_check_window(bool *quit,
    *quit = false;
    *resize = false;
 
-#ifdef HAVE_SYSUTILS
-   cellSysutilCheckCallback();
-#endif
 
    if (gl->quitting)
       *quit = true;
@@ -199,6 +196,9 @@ static void gfx_ctx_swap_buffers(void)
 {
 #if defined(HAVE_PSGL)
    psglSwap();
+#endif
+#ifdef HAVE_SYSUTILS
+   cellSysutilCheckCallback();
 #endif
 }
 
