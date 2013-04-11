@@ -1062,7 +1062,13 @@ static void browser_update(void *data, uint64_t input, const char *extensions)
    else if (input & (1ULL << RMENU_DEVICE_NAV_L2))
       action = FILEBROWSER_ACTION_SCROLL_UP;
    else if (input & (1ULL << RMENU_DEVICE_NAV_A))
-      action = FILEBROWSER_ACTION_CANCEL;
+   {
+      char tmp_str[256];
+      fill_pathname_parent_dir(tmp_str, b->directory_path, sizeof(tmp_str));
+
+      if (tmp_str[0] != '\0')
+         action = FILEBROWSER_ACTION_CANCEL;
+   }
    else if (input & (1ULL << RMENU_DEVICE_NAV_START))
    {
       action = FILEBROWSER_ACTION_RESET;

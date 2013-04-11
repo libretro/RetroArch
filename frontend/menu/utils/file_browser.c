@@ -19,31 +19,28 @@
 #include "../../../file.h"
 #include "file_browser.h"
 
-static bool directory_parse(void *data, unsigned stack_size, 
-const char *path, const char * extensions)
+static bool directory_parse(void *data, const char *path, const char * extensions)
 {
    filebrowser_t *filebrowser = (filebrowser_t*)data;
 
    struct string_list *list = dir_list_new(path, extensions, true);
 
-   if(list != NULL)
-   {
-      strlcpy(filebrowser->directory_path, path, sizeof(filebrowser->directory_path));
-
-      if(filebrowser->current_dir.list != NULL)
-         dir_list_free(filebrowser->current_dir.list);
-
-      filebrowser->current_dir.list = list;
-      filebrowser->current_dir.ptr   = 0;
-      filebrowser->directory_stack_size = stack_size;
-      strlcpy(filebrowser->extensions, extensions, sizeof(filebrowser->extensions));
-
-      dir_list_sort(filebrowser->current_dir.list, true);
-      
-      return true;
-   }
-   else
+   if(list == NULL)
       return false;
+
+   strlcpy(filebrowser->directory_path, path, sizeof(filebrowser->directory_path));
+
+   if(filebrowser->current_dir.list != NULL)
+      dir_list_free(filebrowser->current_dir.list);
+
+   filebrowser->current_dir.list = list;
+   filebrowser->current_dir.ptr   = 0;
+   strlcpy(filebrowser->extensions, extensions, sizeof(filebrowser->extensions));
+
+   dir_list_sort(filebrowser->current_dir.list, true);
+
+   return true;
+
 }
 
 void filebrowser_free(void *data)
@@ -65,35 +62,6 @@ void filebrowser_set_root_and_ext(void *data, const char *ext, const char *root_
 
    strlcpy(filebrowser->root_dir, root_dir, sizeof(filebrowser->root_dir));
    filebrowser_iterate(filebrowser, FILEBROWSER_ACTION_RESET);
-}
-
-
-static bool filebrowser_pop_directory (void *data)
-{
-   filebrowser_t *filebrowser = (filebrowser_t*)data;
-   bool ret = true;
-   char previous_dir[PATH_MAX], directory_path_tmp[PATH_MAX];
-   unsigned pop_dir = filebrowser->directory_stack_size;
-
-   if (filebrowser->directory_stack_size > 0)
-      pop_dir -= 1;
-
-   fill_pathname_parent_dir(previous_dir, filebrowser->directory_path, sizeof(previous_dir));
-   strlcpy(directory_path_tmp, filebrowser->directory_path, sizeof(directory_path_tmp));
-
-   //test first if previous directory can be accessed
-   ret = directory_parse(filebrowser, pop_dir, previous_dir,
-   filebrowser->extensions);
-
-   if(!ret)
-   {
-      //revert to previous directory
-      strlcpy(filebrowser->directory_path, directory_path_tmp, sizeof(filebrowser->directory_path));
-      ret = directory_parse(filebrowser, pop_dir, filebrowser->directory_path,
-      filebrowser->extensions);
-   }
-
-   return ret;
 }
 
 const char *filebrowser_get_current_path (void *data)
@@ -141,14 +109,15 @@ bool filebrowser_iterate(void *data, unsigned action)
          entries_to_scroll, filebrowser->current_dir.list->size-1));
          break;
       case FILEBROWSER_ACTION_OK:
-         ret = directory_parse(filebrowser, filebrowser->directory_stack_size + 1,
-               filebrowser_get_current_path(filebrowser), filebrowser->extensions);
+         ret = directory_parse(filebrowser, filebrowser_get_current_path(filebrowser), filebrowser->extensions);
          break;
       case FILEBROWSER_ACTION_CANCEL:
-         ret = filebrowser_pop_directory(filebrowser);
+         fill_pathname_parent_dir(filebrowser->directory_path, filebrowser->directory_path, sizeof(filebrowser->directory_path));
+
+         ret = directory_parse(filebrowser, filebrowser->directory_path, filebrowser->extensions);
          break;
       case FILEBROWSER_ACTION_RESET:
-         ret = directory_parse(filebrowser, 0, filebrowser->root_dir, filebrowser->extensions);
+         ret = directory_parse(filebrowser, filebrowser->root_dir, filebrowser->extensions);
          break;
       case FILEBROWSER_ACTION_PATH_ISDIR:
          ret = filebrowser->current_dir.list->elems[filebrowser->current_dir.ptr].attr.b;

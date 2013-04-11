@@ -21,7 +21,6 @@
 
 typedef struct
 {
-   unsigned char directory_stack_size;
    char directory_path[PATH_MAX]; 
    struct {
       struct string_list *list;
