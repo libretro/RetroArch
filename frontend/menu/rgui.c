@@ -232,8 +232,13 @@ rgui_handle_t *rgui_init(const char *base_path,
    char cgp_path[PATH_MAX];
    const char *shader_dir = *g_settings.video.shader_dir ?
       g_settings.video.shader_dir : g_settings.system_directory;
-   fill_pathname_join(cgp_path, shader_dir, "rgui.cgp", sizeof(cgp_path));
+   fill_pathname_join(cgp_path, shader_dir, "rgui.glslp", sizeof(cgp_path));
    config_file_t *conf = config_file_new(cgp_path);
+   if (!conf)
+   {
+      fill_pathname_join(cgp_path, shader_dir, "rgui.cgp", sizeof(cgp_path));
+      conf = config_file_new(cgp_path);
+   }
    if (conf)
       gfx_shader_read_conf_cgp(conf, &rgui->shader);
    config_file_free(conf);
@@ -1119,6 +1124,34 @@ static void rgui_settings_shader_manager_populate_entries(rgui_handle_t *rgui)
    }
 }
 
+static enum rarch_shader_type shader_manager_get_type(const struct gfx_shader *shader)
+{
+   // All shader types must be the same, or we cannot use it.
+   enum rarch_shader_type type = RARCH_SHADER_NONE;
+
+   for (unsigned i = 0; i < shader->passes; i++)
+   {
+      enum rarch_shader_type pass_type = gfx_shader_parse_type(shader->pass[i].source.cg,
+            RARCH_SHADER_NONE);
+
+      switch (pass_type)
+      {
+         case RARCH_SHADER_CG:
+         case RARCH_SHADER_GLSL:
+            if (type == RARCH_SHADER_NONE)
+               type = pass_type;
+            else if (type != pass_type)
+               return RARCH_SHADER_NONE;
+            break;
+
+         default:
+            return RARCH_SHADER_NONE;
+      }
+   }
+
+   return type;
+}
+
 static int shader_manager_toggle_setting(rgui_handle_t *rgui, unsigned setting, rgui_action_t action)
 {
    unsigned dist_shader = setting - RGUI_SETTINGS_SHADER_0;
@@ -1132,20 +1165,26 @@ static int shader_manager_toggle_setting(rgui_handle_t *rgui, unsigned setting, 
 
       RARCH_LOG("Applying shader ...\n");
 
+      enum rarch_shader_type type = shader_manager_get_type(&rgui->shader);
+
       bool ret = false;
-      if (rgui->shader.passes)
+      if (rgui->shader.passes && type != RARCH_SHADER_NONE)
       {
+         const char *conf_path = type == RARCH_SHADER_GLSL ? "rgui.glslp" : "rgui.cgp";
+
          char cgp_path[PATH_MAX];
          const char *shader_dir = *g_settings.video.shader_dir ?
             g_settings.video.shader_dir : g_settings.system_directory;
-         fill_pathname_join(cgp_path, shader_dir, "rgui.cgp", sizeof(cgp_path));
+         fill_pathname_join(cgp_path, shader_dir, conf_path, sizeof(cgp_path));
          config_file_t *conf = config_file_new(NULL);
          if (!conf)
             return 0;
          gfx_shader_write_conf_cgp(conf, &rgui->shader);
          config_file_write(conf, cgp_path);
          config_file_free(conf);
-         ret = video_set_shader_func(RARCH_SHADER_CG, cgp_path); 
+
+         RARCH_LOG("Setting RGUI shader: %s.\n", cgp_path);
+         ret = video_set_shader_func(type, cgp_path); 
 
          // Makes sure that we use RGUI CGP shader on driver reinit.
          // Only do this when the cgp actually works to avoid potential errors.
@@ -1640,7 +1679,7 @@ static bool directory_parse(rgui_handle_t *rgui, const char *directory, unsigned
       exts = EXT_EXECUTABLES;
 #ifdef HAVE_SHADER_MANAGER
    else if (menu_type_is_shader_browser(menu_type))
-      exts = "cg";
+      exts = "cg|glsl";
 #endif
    else if (rgui->info.valid_extensions)
       exts = rgui->info.valid_extensions;
