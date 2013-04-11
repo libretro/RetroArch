@@ -217,15 +217,24 @@ def hack_source_fragment(source):
          source.insert(index, 'uniform int FrameDirection;')
          break
 
+   samplers = []
    for line in source:
       if ('TEXUNIT0' in line) and ('semantic' not in line):
-         sampler = line.split(':')[2].split(' ')[1]
-         log('Fragment: Sampler:', sampler)
+         main_sampler = (line.split(':')[2].split(' ')[1], 'Texture')
+         samplers.append(main_sampler)
+         log('Fragment: Sampler:', main_sampler[0], '->', main_sampler[1])
          break
+      elif '//var sampler2D' in line:
+         orig_name = line.split(' ')[2]
+         new_name = line.split(':')[2].split(' ')[1]
+         samplers.append((new_name, orig_name))
+         log('Fragment: Sampler:', new_name, '->', orig_name)
+
 
    ret = []
    for line in source:
-      ret.append(line.replace(sampler, 'Texture'))
+      for sampler in samplers:
+         ret.append(line.replace(sampler[0], sampler[1]))
 
    ret = destructify_varyings(ret)
    return ret
