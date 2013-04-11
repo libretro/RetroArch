@@ -1051,7 +1051,6 @@ static void gx_viewport_info(void *data, struct rarch_viewport *vp)
 
 static const video_poke_interface_t gx_poke_interface = {
    NULL,
-   NULL,
    gx_set_aspect_ratio,
    gx_apply_state_changes,
    gx_set_texture_frame,
