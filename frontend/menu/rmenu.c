@@ -58,6 +58,7 @@ struct texture_image *menu_texture;
 struct texture_image *menu_panel;
 #endif
 
+static bool menu_bg_show = true;
 filebrowser_t *browser;
 filebrowser_t *tmpBrowser;
 unsigned currently_selected_controller_menu = 0;
@@ -219,6 +220,7 @@ static const char *menu_drive_mapping_next(void)
 /*============================================================
   RMENU GRAPHICS
   ============================================================ */
+
 
 static void rmenu_gfx_init(void)
 {
@@ -2921,18 +2923,13 @@ static int ingame_menu_resize(uint8_t menu_type, uint64_t input)
    if (input & (1ULL << RMENU_DEVICE_NAV_A))
    {
       menu_stack_pop();
-      g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU_DRAW);
+      menu_bg_show = true;
    }
 
    if ((input & (1ULL << RMENU_DEVICE_NAV_Y)))
-   {
-      if (g_extern.lifecycle_mode_state & (1ULL << MODE_MENU_DRAW))
-         g_extern.lifecycle_mode_state &= ~(1ULL << MODE_MENU_DRAW);
-      else
-         g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU_DRAW);
-   }
+      menu_bg_show = !menu_bg_show;
 
-   if (g_extern.lifecycle_mode_state & (1ULL << MODE_MENU_DRAW))
+   if (menu_bg_show)
    {
       char viewport_x[32];
       char viewport_y[32];
@@ -3191,10 +3188,7 @@ static int ingame_menu_core_options(uint8_t menu_type, uint64_t input)
    float y_increment = POSITION_Y_START;
 
    if (input & (1ULL << RMENU_DEVICE_NAV_A))
-   {
       menu_stack_pop();
-      g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU_DRAW);
-   }
 
    display_menubar(menu_type);
 
@@ -3266,14 +3260,14 @@ static int ingame_menu_core_options(uint8_t menu_type, uint64_t input)
 
 static int ingame_menu_screenshot(uint8_t menu_type, uint64_t input)
 {
-   g_extern.lifecycle_mode_state &= ~(1ULL << MODE_MENU_DRAW);
+   menu_bg_show = false;
 
    if (g_extern.lifecycle_mode_state & (1ULL << MODE_MENU_INGAME))
    {
       if (input & (1ULL << RMENU_DEVICE_NAV_A))
       {
          menu_stack_pop();
-         g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU_DRAW);
+         menu_bg_show = true;
       }
 
 #ifdef HAVE_SCREENSHOTS
@@ -3340,7 +3334,7 @@ static int menu_input_process(uint8_t menu_type, uint64_t old_state)
                )
          {
             menu_stack_pop();
-            g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU_DRAW);
+            menu_bg_show = true;
          }
 
          int ret = -1;
@@ -3408,8 +3402,6 @@ bool menu_iterate(void)
          selected = FIRST_INGAME_MENU_SETTING;
          menu_stack_push(INGAME_MENU);
       }
-
-      g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU_DRAW);
 
 #ifndef __CELLOS_LV2__
       rmenu_gfx_init();
@@ -3559,7 +3551,7 @@ bool menu_iterate(void)
       {
          driver.video_poke->set_texture_frame(driver.video_data, menu_texture->pixels,
                true, menu_texture->width, menu_texture->height, 1.0f);
-         driver.video_poke->set_texture_enable(driver.video_data, true);
+         driver.video_poke->set_texture_enable(driver.video_data, menu_bg_show);
       }
    }
 
@@ -3579,8 +3571,6 @@ deinit:
    // press and holding L3 + R3 in the emulation loop (lasts for 30 frame ticks)
    if (!(g_extern.lifecycle_state & (1ULL << RARCH_FRAMEADVANCE)))
       g_extern.delay_timer[0] = g_extern.frame_count + 30;
-
-   g_extern.lifecycle_mode_state &= ~(1ULL << MODE_MENU_DRAW);
 
 #ifdef _XBOX1
    rmenu_gfx_free();
