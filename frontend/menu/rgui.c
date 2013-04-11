@@ -2044,7 +2044,6 @@ bool menu_iterate(void)
          rgui->need_refresh = true;
       }
 
-      g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU_DRAW);
       g_extern.lifecycle_mode_state &= ~(1ULL << MODE_MENU_PREINIT);
    }
 
@@ -2168,7 +2167,6 @@ deinit:
    if (!(g_extern.lifecycle_state & (1ULL << RARCH_FRAMEADVANCE)))
       g_extern.delay_timer[0] = g_extern.frame_count + 30;
 
-   g_extern.lifecycle_mode_state &= ~(1ULL << MODE_MENU_DRAW);
    g_extern.lifecycle_mode_state &= ~(1ULL << MODE_MENU_INGAME);
 
    return false;

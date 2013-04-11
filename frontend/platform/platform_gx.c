@@ -374,9 +374,7 @@ static void system_process_args(int argc, char *argv[])
       g_extern.lifecycle_mode_state |= (1ULL << MODE_LOAD_GAME);
 
       rgui_iterate(rgui, RGUI_ACTION_MESSAGE);
-      g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU_DRAW);
       rarch_render_cached_frame();
-      g_extern.lifecycle_mode_state &= ~(1ULL << MODE_MENU_DRAW);
       g_extern.lifecycle_mode_state &= ~(1ULL << MODE_MENU);
       g_extern.lifecycle_mode_state |= (1ULL << MODE_INIT);
    }
