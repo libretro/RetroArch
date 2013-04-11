@@ -3402,7 +3402,6 @@ bool menu_iterate(void)
    static uint64_t input = 0;
    static uint64_t old_state = 0;
    font_params_t font_parms = {0};
-   DEVICE_CAST device_ptr = (DEVICE_CAST)driver.video_data;
 
    if (g_extern.lifecycle_mode_state & (1ULL << MODE_MENU_PREINIT))
    {
@@ -3423,21 +3422,6 @@ bool menu_iterate(void)
 
    g_extern.frame_count++;
 
-   if (!(g_extern.lifecycle_mode_state & (1ULL << MODE_MENU_LOW_RAM_MODE_ENABLE)))
-   {
-      if (driver.video_poke && driver.video_poke->set_texture_enable)
-      {
-         driver.video_poke->set_texture_frame(driver.video_data, menu_texture->pixels,
-               true, menu_texture->width, menu_texture->height, 1.0f);
-         driver.video_poke->set_texture_enable(driver.video_data, true);
-      }
-   }
-
-   // draw last frame for loading messages
-   rarch_render_cached_frame();
-
-   if (driver.video_poke && driver.video_poke->set_texture_enable)
-      driver.video_poke->set_texture_enable(driver.video_data, false);
 
    //first button input frame
    uint64_t input_state_first_frame = 0;
@@ -3564,14 +3548,28 @@ bool menu_iterate(void)
          driver.video_poke->set_osd_msg(driver.video_data, msg, &font_parms);
    }
 
-   device_ptr->ctx_driver->swap_buffers();
-
    if (g_extern.lifecycle_mode_state & (1ULL << MODE_MENU_INGAME_EXIT) &&
          g_extern.lifecycle_mode_state & (1ULL << MODE_MENU_INGAME))
    {
       menu_stack_pop();
       g_extern.lifecycle_mode_state &= ~((1ULL << MODE_MENU_INGAME) | (1ULL << MODE_MENU_INGAME_EXIT));
    }
+
+   if (!(g_extern.lifecycle_mode_state & (1ULL << MODE_MENU_LOW_RAM_MODE_ENABLE)))
+   {
+      if (driver.video_poke && driver.video_poke->set_texture_enable)
+      {
+         driver.video_poke->set_texture_frame(driver.video_data, menu_texture->pixels,
+               true, menu_texture->width, menu_texture->height, 1.0f);
+         driver.video_poke->set_texture_enable(driver.video_data, true);
+      }
+   }
+
+   // draw last frame for loading messages
+   rarch_render_cached_frame();
+
+   if (driver.video_poke && driver.video_poke->set_texture_enable)
+      driver.video_poke->set_texture_enable(driver.video_data, false);
 
    if (input_entry_ret != 0 || input_process_ret != 0)
       goto deinit;
