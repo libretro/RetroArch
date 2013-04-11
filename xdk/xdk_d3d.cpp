@@ -731,6 +731,10 @@ bool texture_image_render(struct texture_image *out_img)
 
 #if defined(HAVE_RGUI) || defined(HAVE_RMENU)
 
+#ifdef HAVE_MENU_PANEL
+extern struct texture_image *menu_panel;
+#endif
+
 static inline void xdk_d3d_draw_texture(void *data)
 {
    xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)data;
@@ -741,11 +745,23 @@ static inline void xdk_d3d_draw_texture(void *data)
    menu_texture->x = 0;
    menu_texture->y = 0;
 
-   d3d->d3d_render_device->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_ONE);
-   d3d->d3d_render_device->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
-   d3d->d3d_render_device->SetRenderState(D3DRS_ALPHABLENDENABLE, true);
-   texture_image_render(menu_texture);
-   d3d->d3d_render_device->SetRenderState(D3DRS_ALPHABLENDENABLE, false);
+   if (d3d->rgui_texture_enable)
+   {
+      d3d->d3d_render_device->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_ONE);
+      d3d->d3d_render_device->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
+      d3d->d3d_render_device->SetRenderState(D3DRS_ALPHABLENDENABLE, true);
+      texture_image_render(menu_texture);
+      d3d->d3d_render_device->SetRenderState(D3DRS_ALPHABLENDENABLE, false);
+   }
+
+#ifdef HAVE_MENU_PANEL
+   if ((menu_panel->x != 0) || (menu_panel->y != 0))
+   {
+      texture_image_render(menu_panel);
+      menu_panel->x = 0;
+      menu_panel->y = 0;
+   }
+#endif
 #endif
 }
 #endif
@@ -918,8 +934,6 @@ static bool xdk_d3d_frame(void *data, const void *frame,
 #if defined(HAVE_RGUI) || defined(HAVE_RMENU)
 #ifdef HAVE_RMENU_XUI
    if (lifecycle_mode_state & (1ULL << MODE_MENU_DRAW))
-#else
-   if (d3d->rgui_texture_enable)
 #endif
       xdk_d3d_draw_texture(d3d);
 #endif
@@ -969,8 +983,7 @@ static bool xdk_d3d_frame(void *data, const void *frame,
       d3d->font_ctx->render_msg(d3d, msg, &font_parms);
    }
 
-   if (!(lifecycle_mode_state & (1ULL << MODE_MENU_DRAW)))
-      gfx_ctx_xdk_swap_buffers();
+   gfx_ctx_xdk_swap_buffers();
 
    return true;
 }

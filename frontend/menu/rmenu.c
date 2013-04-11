@@ -1107,7 +1107,6 @@ static void browser_render(void *data)
          menu_panel->y = y_increment;
          menu_panel->width = 510;
          menu_panel->height = 20;
-         texture_image_render(menu_panel);
       }
 #endif
 
@@ -2581,7 +2580,6 @@ static int select_setting(uint8_t menu_type, uint64_t input)
       menu_panel->y = y_increment;
       menu_panel->width = 510;
       menu_panel->height = 20;
-      texture_image_render(menu_panel);
 #endif
 
       font_parms.x = POSITION_X; 
