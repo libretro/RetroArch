@@ -320,7 +320,7 @@ void global_uninit_drivers(void)
 {
    if (driver.video_data)
    {
-#ifdef RARCH_CONSOLE
+#if defined(RARCH_CONSOLE) || defined(__BLACKBERRY_QNX__)
       driver.video->stop();
 #endif
       driver.video_data = NULL;

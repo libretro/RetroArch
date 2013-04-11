@@ -54,6 +54,8 @@ int rarch_main(int argc, char *argv[])
       {
 	     if (g_extern.main_is_init)
 	        rarch_main_deinit();
+	     else
+	        global_uninit_drivers();
 
 	     struct rarch_main_wrap args = {0};
 
