@@ -65,7 +65,7 @@ static void gfx_ctx_destroy(void)
    eglDestroyContext(g_egl_dpy, g_egl_ctx);
    eglDestroySurface(g_egl_dpy, g_egl_surf);
    eglTerminate(g_egl_dpy);
-   eglReleaseThread();
+   //eglReleaseThread();
 
    g_egl_dpy = EGL_NO_DISPLAY;
    g_egl_surf = EGL_NO_SURFACE;
