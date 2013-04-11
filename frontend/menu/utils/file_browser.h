@@ -51,6 +51,4 @@ void filebrowser_set_root_and_ext(void *data, const char *ext, const char *root_
 void filebrowser_free(void *data);
 bool filebrowser_iterate(void *data, unsigned action);
 
-void *filebrowser_init(const char *start_dir, const char *extensions);
-
 #endif /* FILEBROWSER_H_ */

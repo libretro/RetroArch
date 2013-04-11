@@ -3368,11 +3368,21 @@ static int menu_input_process(uint8_t menu_type, uint64_t old_state)
 
 void menu_init(void)
 {
-   browser    = (filebrowser_t*)filebrowser_init(g_extern.console.main_wrap.default_rom_startup_dir, g_extern.system.valid_extensions);
-   tmpBrowser = (filebrowser_t*)filebrowser_init(default_paths.filesystem_root_dir, "");
+   browser =    (filebrowser_t*)calloc(1, sizeof(*browser));
+   tmpBrowser = (filebrowser_t*)calloc(1, sizeof(*tmpBrowser));
 
-   filebrowser_set_root_and_ext(browser, g_extern.system.valid_extensions, g_extern.console.main_wrap.default_rom_startup_dir);
-   filebrowser_set_root_and_ext(tmpBrowser, NULL, default_paths.filesystem_root_dir);
+   strlcpy(browser->extensions, g_extern.system.valid_extensions,
+         sizeof(browser->extensions));
+   strlcpy(browser->root_dir, g_extern.console.main_wrap.default_rom_startup_dir,
+         sizeof(browser->root_dir));
+
+   strlcpy(tmpBrowser->extensions, "",
+         sizeof(tmpBrowser->extensions));
+   strlcpy(tmpBrowser->root_dir, default_paths.filesystem_root_dir,
+         sizeof(tmpBrowser->root_dir));
+
+   filebrowser_iterate(browser, FILEBROWSER_ACTION_RESET);
+   filebrowser_iterate(tmpBrowser, FILEBROWSER_ACTION_RESET);
 
    menu_stack_push(FILE_BROWSER_MENU);
 

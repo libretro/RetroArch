@@ -46,13 +46,6 @@ const char *path, const char * extensions)
       return false;
 }
 
-void *filebrowser_init(const char *start_dir, const char *extensions)
-{
-   filebrowser_t *filebrowser = (filebrowser_t*)calloc(1, sizeof(*filebrowser));
-   directory_parse(filebrowser, 0, start_dir, extensions);
-   return filebrowser;
-}
-
 void filebrowser_free(void *data)
 {
    filebrowser_t *filebrowser = (filebrowser_t*)data;

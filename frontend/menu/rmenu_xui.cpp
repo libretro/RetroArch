@@ -1337,8 +1337,21 @@ void menu_init (void)
       return;
    }
 
-   browser = (filebrowser_t*)filebrowser_init(default_paths.filebrowser_startup_dir, g_extern.system.valid_extensions);
-   tmp_browser = (filebrowser_t*)filebrowser_init(default_paths.filebrowser_startup_dir, "");
+   browser =    (filebrowser_t*)calloc(1, sizeof(*browser));
+   tmpBrowser = (filebrowser_t*)calloc(1, sizeof(*tmpBrowser));
+
+   strlcpy(browser->extensions, g_extern.system.valid_extensions,
+         sizeof(browser->extensions));
+   strlcpy(browser->root_dir, default_paths.filebrowser_startup_dir,
+         sizeof(browser->root_dir));
+
+   strlcpy(tmpBrowser->extensions, "",
+         sizeof(tmpBrowser->extensions));
+   strlcpy(tmpBrowser->root_dir, default_paths.filebrowser_startup_dir,
+         sizeof(tmpBrowser->root_dir));
+
+   filebrowser_iterate(browser, FILEBROWSER_ACTION_RESET);
+   filebrowser_iterate(tmpBrowser, FILEBROWSER_ACTION_RESET);
 }
 
 void menu_free (void)
