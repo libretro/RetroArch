@@ -19,11 +19,11 @@
 #include "../../../file.h"
 #include "file_browser.h"
 
-static bool directory_parse(void *data, const char *path, const char * extensions)
+static bool directory_parse(void *data, const char *path)
 {
    filebrowser_t *filebrowser = (filebrowser_t*)data;
 
-   struct string_list *list = dir_list_new(path, extensions, true);
+   struct string_list *list = dir_list_new(path, filebrowser->extensions, true);
 
    if(list == NULL)
       return false;
@@ -35,7 +35,6 @@ static bool directory_parse(void *data, const char *path, const char * extension
 
    filebrowser->current_dir.list = list;
    filebrowser->current_dir.ptr   = 0;
-   strlcpy(filebrowser->extensions, extensions, sizeof(filebrowser->extensions));
 
    dir_list_sort(filebrowser->current_dir.list, true);
 
@@ -109,15 +108,15 @@ bool filebrowser_iterate(void *data, unsigned action)
          entries_to_scroll, filebrowser->current_dir.list->size-1));
          break;
       case FILEBROWSER_ACTION_OK:
-         ret = directory_parse(filebrowser, filebrowser_get_current_path(filebrowser), filebrowser->extensions);
+         ret = directory_parse(filebrowser, filebrowser_get_current_path(filebrowser));
          break;
       case FILEBROWSER_ACTION_CANCEL:
          fill_pathname_parent_dir(filebrowser->directory_path, filebrowser->directory_path, sizeof(filebrowser->directory_path));
 
-         ret = directory_parse(filebrowser, filebrowser->directory_path, filebrowser->extensions);
+         ret = directory_parse(filebrowser, filebrowser->directory_path);
          break;
       case FILEBROWSER_ACTION_RESET:
-         ret = directory_parse(filebrowser, filebrowser->root_dir, filebrowser->extensions);
+         ret = directory_parse(filebrowser, filebrowser->root_dir);
          break;
       case FILEBROWSER_ACTION_PATH_ISDIR:
          ret = filebrowser->current_dir.list->elems[filebrowser->current_dir.ptr].attr.b;
