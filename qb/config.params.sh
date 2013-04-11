@@ -1,4 +1,4 @@
-HAVE_RGUI=no            # Enable RGUI
+HAVE_RGUI=yes           # Disable RGUI
 HAVE_DYNAMIC=yes        # Disable dynamic loading of libretro library
 HAVE_SDL=auto           # SDL support
 HAVE_LIBRETRO=          # libretro library used
