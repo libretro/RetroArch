@@ -578,14 +578,3 @@ void fill_pathname_application_path(char *buf, size_t size)
 #endif
 }
 #endif
-
-size_t convert_char_to_wchar(wchar_t *out_wchar, const char *in_char, size_t size)
-{
-   return mbstowcs(out_wchar, in_char, size / sizeof(wchar_t));
-}
-
-size_t convert_wchar_to_char(char *out_char, const wchar_t *in_wchar, size_t size)
-{
-   return wcstombs(out_char, in_wchar, size);
-}
-

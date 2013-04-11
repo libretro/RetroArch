@@ -63,7 +63,7 @@ static void xfonts_render_msg(void *data, const char *msg, void *parms)
 
    d3d->d3d_render_device->GetBackBuffer(-1, D3DBACKBUFFER_TYPE_MONO, &pFrontBuffer);
 
-   convert_char_to_wchar(str, msg, sizeof(str));
+   mbstowcs(str, msg, sizeof(str) / sizeof(wchar_t));
    debug_font->TextOut(pFrontBuffer, str, (unsigned)-1, x, y);
 
    pFrontBuffer->Release();

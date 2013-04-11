@@ -298,7 +298,7 @@ static void menu_settings_create_menu_item_label_w(wchar_t *strwbuf, unsigned se
          break;
    }
 
-   convert_char_to_wchar(strwbuf, str, size);
+   mbstowcs(strwbuf, str, size / sizeof(wchar_t));
 }
 
 static void browser_update(filebrowser_t * b, uint64_t input, const char *extensions);
@@ -309,7 +309,7 @@ static void filebrowser_fetch_directory_entries(filebrowser_t * browser, uint64_
    CXuiTextElement *rompath_title = &m_list_path;
    browser_update(browser, action, browser->extensions); 
 
-   convert_char_to_wchar(strw_buffer, browser->directory_path, sizeof(strw_buffer));
+   mbstowcs(strw_buffer, browser->directory_path, sizeof(strw_buffer) / sizeof(wchar_t));
    rompath_title->SetText(strw_buffer);
 
    romlist->DeleteItems(0, romlist->GetItemCount());
@@ -319,7 +319,7 @@ static void filebrowser_fetch_directory_entries(filebrowser_t * browser, uint64_
    {
       char fname_tmp[256];
       fill_pathname_base(fname_tmp, browser->current_dir.list->elems[i].data, sizeof(fname_tmp));
-      convert_char_to_wchar(strw_buffer, fname_tmp, sizeof(strw_buffer));
+      mbstowcs(strw_buffer, fname_tmp, sizeof(strw_buffer) / sizeof(wchar_t));
       romlist->SetText(i, strw_buffer);
    }
 }
@@ -382,7 +382,7 @@ HRESULT CRetroArchFileBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHandle
    if(hObjPressed == m_list)
    {
       int index = m_list.GetCurSel();
-      convert_wchar_to_char(str_buffer, (const wchar_t *)m_list.GetText(index), sizeof(str_buffer));
+      wcstombs(str_buffer, (const wchar_t *)m_list.GetText(index), sizeof(str_buffer));
       if(path_file_exists(browser->current_dir.list->elems[index].data))
       {
          snprintf(path, sizeof(path), "%s\\%s", browser->directory_path, str_buffer);
@@ -450,12 +450,12 @@ HRESULT CRetroArchControls::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
 
       snprintf(buttons[i], sizeof(buttons[i]), "%s #%d: %s", 
             g_settings.input.binds[controlno][i].desc, controlno, key_label.desc);
-      convert_char_to_wchar(strw_buffer, buttons[i], sizeof(strw_buffer)); 
+      mbstowcs(strw_buffer, buttons[i], sizeof(strw_buffer) / sizeof(wchar_t));
       m_controlslist.SetText(i, strw_buffer);
    }
 
    set_dpad_emulation_label(controlno, buttons[0], sizeof(buttons[0]));
-   convert_char_to_wchar(strw_buffer, buttons[0], sizeof(strw_buffer));
+   mbstowcs(strw_buffer, buttons[0], sizeof(strw_buffer) / sizeof(wchar_t));
    m_controlslist.SetText(SETTING_CONTROLS_DPAD_EMULATION, strw_buffer);
    m_controlslist.SetText(SETTING_CONTROLS_DEFAULT_ALL, L"Reset all buttons to default");
 
@@ -484,7 +484,7 @@ HRESULT CRetroArchControls::OnControlNavigate(
       snprintf(buttons[i], sizeof(buttons[i]), "%s #%d: %s", 
             g_settings.input.binds[controlno][i].desc, controlno, 
             key_label.desc);
-      convert_char_to_wchar(strw_buffer, buttons[i], sizeof(strw_buffer));
+      mbstowcs(strw_buffer, buttons[i], sizeof(strw_buffer) / sizeof(wchar_t));
       m_controlslist.SetText(i, strw_buffer);
    }
 
@@ -531,7 +531,7 @@ HRESULT CRetroArchControls::OnControlNavigate(
 
                   snprintf(button, sizeof(button), "%s #%d: %s",
                         g_settings.input.binds[controlno][current_index].desc, controlno, key_label.desc);
-                  convert_char_to_wchar(strw_buffer, button, sizeof(strw_buffer));
+                  mbstowcs(strw_buffer, button, sizeof(strw_buffer) / sizeof(wchar_t));
                   m_controlslist.SetText(current_index, strw_buffer);
                }
                break;
@@ -579,7 +579,7 @@ HRESULT CRetroArchControls::OnControlNavigate(
                   snprintf(button, sizeof(button), "%s #%d: %s",
                         g_settings.input.binds[controlno][current_index].desc, controlno, 
                         key_label.desc);
-                  convert_char_to_wchar(strw_buffer, button, sizeof(strw_buffer));
+                  mbstowcs(strw_buffer, button, sizeof(strw_buffer) / sizeof(wchar_t));
                   m_controlslist.SetText(current_index, strw_buffer);
                }
                break;
@@ -592,7 +592,7 @@ HRESULT CRetroArchControls::OnControlNavigate(
 
    set_dpad_emulation_label(controlno, button, sizeof(button));
 
-   convert_char_to_wchar(strw_buffer, button, sizeof(strw_buffer));
+   mbstowcs(strw_buffer, button, sizeof(strw_buffer) / sizeof(wchar_t));
    m_controlslist.SetText(SETTING_CONTROLS_DPAD_EMULATION, strw_buffer);
    m_controlslist.SetText(SETTING_CONTROLS_DEFAULT_ALL, L"Reset all buttons to default");
 
@@ -631,7 +631,7 @@ HRESULT CRetroArchControls::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled 
 
                snprintf(buttons[i], sizeof(buttons[i]), "%s #%d: %s", 
                      g_settings.input.binds[controlno][i].desc, controlno,  key_label.desc);
-               convert_char_to_wchar(strw_buffer, buttons[i], sizeof(strw_buffer));
+               mbstowcs(strw_buffer, buttons[i], sizeof(strw_buffer) / sizeof(wchar_t));
                m_controlslist.SetText(i, strw_buffer);
             }
             break;
@@ -651,7 +651,7 @@ HRESULT CRetroArchControls::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled 
                snprintf(buttons[current_index], sizeof(buttons[current_index]), "%s #%d: %s",
                      g_settings.input.binds[controlno][current_index].desc, controlno, 
                      key_label.desc);
-               convert_char_to_wchar(strw_buffer, buttons[current_index], sizeof(strw_buffer));
+               mbstowcs(strw_buffer, buttons[current_index], sizeof(strw_buffer) / sizeof(wchar_t));
                m_controlslist.SetText(current_index, strw_buffer);
             }
             break;
@@ -660,7 +660,7 @@ HRESULT CRetroArchControls::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled 
 
    set_dpad_emulation_label(controlno, buttons[current_index], sizeof(buttons[current_index]));
 
-   convert_char_to_wchar(strw_buffer, buttons[current_index], sizeof(strw_buffer));
+   mbstowcs(strw_buffer, buttons[current_index], sizeof(strw_buffer) / sizeof(wchar_t));
    m_controlslist.SetText(SETTING_CONTROLS_DPAD_EMULATION, strw_buffer);
    m_controlslist.SetText(SETTING_CONTROLS_DEFAULT_ALL, L"Reset all buttons to default");
 
@@ -1118,12 +1118,10 @@ HRESULT CRetroArchShaderBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHand
    {
       int index = m_list.GetCurSel();
       if(path_file_exists(tmp_browser->current_dir.list->elems[index].data))
-      {
-         convert_wchar_to_char(str_buffer, (const wchar_t *)m_list.GetText(index), sizeof(str_buffer));
-      }
+         wcstombs(str_buffer, (const wchar_t *)m_list.GetText(index), sizeof(str_buffer));
       else if(tmp_browser->current_dir.list->elems[index].attr.b)
       {
-         convert_wchar_to_char(str_buffer, (const wchar_t *)m_list.GetText(index), sizeof(str_buffer));
+         wcstombs(str_buffer, (const wchar_t *)m_list.GetText(index), sizeof(str_buffer));
          snprintf(path, sizeof(path), "%s\\%s", tmp_browser->directory_path, str_buffer);
          filebrowser_set_root_and_ext(tmp_browser, "cg|CG", path);
          uint64_t action = (1ULL << RMENU_DEVICE_NAV_B);
@@ -1158,7 +1156,7 @@ HRESULT CRetroArchCoreBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHandle
    if(hObjPressed == m_list)
    {
       int index = m_list.GetCurSel();
-      convert_wchar_to_char(str_buffer, (const wchar_t *)m_list.GetText(index), sizeof(str_buffer));
+      wcstombs(str_buffer, (const wchar_t *)m_list.GetText(index), sizeof(str_buffer));
       if(path_file_exists(tmp_browser->current_dir.list->elems[index].data))
       {
          snprintf(g_extern.fullpath, sizeof(g_extern.fullpath), "%s\\%s", tmp_browser->directory_path, str_buffer);
@@ -1191,7 +1189,7 @@ HRESULT CRetroArchMain::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
    GetChildById(L"XuiTxtCoreText", &m_core);
    GetChildById(L"XuiBtnLibretroCore", &m_change_libretro_core);
 
-   convert_char_to_wchar(strw_buffer, g_extern.title_buf, sizeof(strw_buffer));
+   mbstowcs(strw_buffer, g_extern.title_buf, sizeof(strw_buffer) / sizeof(wchar_t));
    m_core.SetText(strw_buffer);
    menu_settings_create_menu_item_label_w(strw_buffer, S_LBL_RARCH_VERSION, sizeof(strw_buffer));
    m_title.SetText(strw_buffer);

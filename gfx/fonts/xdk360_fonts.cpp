@@ -460,7 +460,7 @@ static void xdk_render_msg(void *driver, const char *str_msg, void *parms)
       y = 120;
    }
 
-   convert_char_to_wchar(msg, str_msg, sizeof(msg));
+   mbstowcs(msg, str_msg, sizeof(msg) / sizeof(wchar_t));
 
    if (msg != NULL || msg[0] != L'\0')
    {
