@@ -1,6 +1,6 @@
 DOWNLOAD_SHADERS	= 1
 SHADER_DIR     := media/shaders
-SHADER_XML_DIR := media/shaders_xml
+SHADER_GLSL_DIR := media/shaders_glsl
 
 SHADER_DEST_PS3_DIR := ps3/pkg/USRDIR/cores/shaders
 
@@ -39,7 +39,7 @@ ifeq ($(DOWNLOAD_SHADERS),1)
 endif
 
 convert-xml:
-	$(PYTHON) tools/cg2xml.py $(SHADER_DIR) $(SHADER_XML_DIR)
+	$(PYTHON) tools/cg2glsl.py $(SHADER_DIR) $(SHADER_GLSL_DIR)
 
 deploy-ps3: checkout-shaders
 	@if test -d $(SHADER_DEST_PS3_DIR); then \

@@ -161,7 +161,7 @@ static RASettingData* custom_action(NSString* action)
          
       [NSArray arrayWithObjects:@"GPU Shader",         
          boolean_setting(config, @"video_shader_enable", @"Enable Shader", @"false"),
-         subpath_setting(config, @"video_shader", @"Shader", @"", shader_path, @"shader"),
+         subpath_setting(config, @"video_shader", @"Shader", @"", shader_path, @"glsl"),
          nil],
 
       [NSArray arrayWithObjects:@"Audio",

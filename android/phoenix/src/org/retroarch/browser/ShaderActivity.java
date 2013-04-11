@@ -11,7 +11,7 @@ public class ShaderActivity extends DirectoryActivity {
 		if (shaderDir.exists())
 			super.setStartDirectory(shaderDir.getAbsolutePath());
 		
-		super.addAllowedExt(".shader");
+		super.addAllowedExt(".glsl");
 		super.setPathSettingKey("video_shader");
 		super.onCreate(savedInstanceState);
 	}
