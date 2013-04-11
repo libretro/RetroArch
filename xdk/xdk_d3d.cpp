@@ -741,7 +741,11 @@ static inline void xdk_d3d_draw_texture(void *data)
    menu_texture->x = 0;
    menu_texture->y = 0;
 
+   d3d->d3d_render_device->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_ONE);
+   d3d->d3d_render_device->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
+   d3d->d3d_render_device->SetRenderState(D3DRS_ALPHABLENDENABLE, true);
    texture_image_render(menu_texture);
+   d3d->d3d_render_device->SetRenderState(D3DRS_ALPHABLENDENABLE, false);
 #endif
 }
 #endif
@@ -1012,18 +1016,6 @@ static void xdk_d3d_set_aspect_ratio(void *data, unsigned aspectratio_index)
 
 static void xdk_d3d_set_filtering(void *data, unsigned index, bool set_smooth) { }
 
-static void xdk_d3d_set_blend(void *data, bool enable)
-{
-   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)data;
-
-   if(enable)
-   {
-      d3d->d3d_render_device->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_ONE);
-      d3d->d3d_render_device->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
-   }
-   d3d->d3d_render_device->SetRenderState(D3DRS_ALPHABLENDENABLE, enable);
-}
-
 static void xdk_d3d_apply_state_changes(void *data)
 {
    xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)data;
@@ -1059,7 +1051,6 @@ static void xdk_d3d_set_osd_msg(void *data, const char *msg, void *userdata)
 }
 
 static const video_poke_interface_t d3d_poke_interface = {
-   xdk_d3d_set_blend,
    xdk_d3d_set_filtering,
 #ifdef HAVE_FBO
    NULL,

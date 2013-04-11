@@ -71,7 +71,6 @@ class D3DVideo
       bool set_shader(const std::string &path);
       void process_shader();
 
-      void set_blend(bool state);
       void set_filtering(unsigned index, bool smooth);
       void set_font_rect(font_params_t *params);
 

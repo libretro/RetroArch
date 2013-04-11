@@ -41,7 +41,6 @@ enum thread_cmd
    CMD_OVERLAY_SET_ALPHA,
 #endif
 
-   CMD_POKE_SET_BLEND,
    CMD_POKE_SET_FILTERING,
 #ifdef HAVE_FBO
    CMD_POKE_SET_FBO_STATE,
@@ -275,11 +274,6 @@ static void thread_loop(void *data)
             thread_reply(thr, CMD_OVERLAY_SET_ALPHA);
             break;
 #endif
-
-         case CMD_POKE_SET_BLEND:
-            thr->poke->set_blend(thr->driver_data, thr->cmd_data.b);
-            thread_reply(thr, CMD_POKE_SET_BLEND);
-            break;
 
          case CMD_POKE_SET_FILTERING:
             thr->poke->set_filtering(thr->driver_data,
@@ -616,14 +610,6 @@ static void thread_get_overlay_interface(void *data, const video_overlay_interfa
 }
 #endif
 
-static void thread_set_blend(void *data, bool enable)
-{
-   thread_video_t *thr = (thread_video_t*)data;
-   thr->cmd_data.b = enable;
-   thread_send_cmd(thr, CMD_POKE_SET_BLEND);
-   thread_wait_reply(thr, CMD_POKE_SET_BLEND);
-}
-
 static void thread_set_filtering(void *data, unsigned index, bool smooth)
 {
    thread_video_t *thr = (thread_video_t*)data;
@@ -686,7 +672,6 @@ static void thread_apply_state_changes(void *data)
 }
 
 static const video_poke_interface_t thread_poke = {
-   thread_set_blend,
    thread_set_filtering,
 #ifdef HAVE_FBO
    NULL,

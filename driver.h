@@ -331,7 +331,6 @@ typedef struct video_overlay_interface
 // Only used by RGUI atm.
 typedef struct video_poke_interface
 {
-   void (*set_blend)(void *data, bool enable);
    void (*set_filtering)(void *data, unsigned index, bool smooth);
 #ifdef HAVE_FBO
    uintptr_t (*get_current_framebuffer)(void *data);

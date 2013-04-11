@@ -963,18 +963,6 @@ void D3DVideo::resize(unsigned new_width, unsigned new_height)
    }
 }
 
-void D3DVideo::set_blend(bool state)
-{
-   if (state)
-   {
-      dev->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE);
-      dev->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
-      dev->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
-   }
-   else
-      dev->SetRenderState(D3DRS_ALPHABLENDENABLE, FALSE);
-}
-
 void D3DVideo::set_filtering(unsigned index, bool smooth)
 {
    gfx_filter_type filter_type = smooth ? RARCH_FILTER_LINEAR : RARCH_FILTER_NEAREST;
@@ -1112,7 +1100,9 @@ void D3DVideo::overlay_render(overlay_t &overlay)
    overlay.vert_buf->Unlock();
 
    // enable alpha
-   set_blend(true);
+   dev->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE);
+   dev->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
+   dev->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
 
    // set vertex decl for overlay
    D3DVERTEXELEMENT9 vElems[4] = {
@@ -1165,7 +1155,7 @@ void D3DVideo::overlay_render(overlay_t &overlay)
    }
 
    //restore previous state
-   set_blend(false);
+   dev->SetRenderState(D3DRS_ALPHABLENDENABLE, FALSE);
    dev->SetViewport(&final_viewport);
 }
 
@@ -1399,11 +1389,6 @@ static void d3d9_get_overlay_interface(void *data, const video_overlay_interface
 }
 #endif
 
-static void d3d9_set_blend(void *data, bool enable)
-{
-   reinterpret_cast<D3DVideo*>(data)->set_blend(enable);
-}
-
 static void d3d9_set_filtering(void *data, unsigned index, bool smooth)
 {
    reinterpret_cast<D3DVideo*>(data)->set_filtering(index, smooth);
@@ -1457,7 +1442,6 @@ static void d3d9_set_rgui_texture_enable(void *data, bool state)
 #endif
 
 static const video_poke_interface_t d3d9_poke_interface = {
-   d3d9_set_blend,
    d3d9_set_filtering,
 #ifdef HAVE_FBO
    d3d9_get_current_framebuffer,

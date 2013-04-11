@@ -1320,6 +1320,7 @@ static inline void gl_draw_texture(void *data)
    gl_shader_use_func(gl, 0);
    gl_shader_set_coords_func(gl, &gl->coords, &gl->mvp_no_rot);
 
+   glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
    glEnable(GL_BLEND);
    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
    glDisable(GL_BLEND);
@@ -1805,10 +1806,8 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
       return NULL;
    }
 
-#ifndef RARCH_CONSOLE
    context_update_window_title_func(true);
    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-#endif
 
    if (!resolve_extensions(gl))
    {
@@ -2328,17 +2327,6 @@ static void gl_set_aspect_ratio(void *data, unsigned aspectratio_index)
    gl->should_resize = true;
 }
 
-static void gl_set_blend(void *data, bool enable)
-{
-   if (enable)
-   {
-      glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
-      glEnable(GL_BLEND);
-   }
-   else
-      glDisable(GL_BLEND);
-}
-
 #if defined(HAVE_RGUI) || defined(HAVE_RMENU)
 static void gl_set_texture_frame(void *data,
       const void *frame, bool rgb32, unsigned width, unsigned height,
@@ -2413,7 +2401,6 @@ static void gl_show_mouse(void *data, bool state)
 }
 
 static const video_poke_interface_t gl_poke_interface = {
-   gl_set_blend,
    gl_set_filtering,
 #ifdef HAVE_FBO
    gl_get_current_framebuffer,

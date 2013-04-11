@@ -3435,12 +3435,6 @@ bool menu_iterate(void)
    }
    else
    {
-      if (g_extern.lifecycle_mode_state & (1ULL << MODE_MENU_DRAW))
-      {
-         if (driver.video_poke->set_blend)
-            driver.video_poke->set_blend(driver.video_data, true);
-      }
-
       // draw last frame for loading messages
       if (driver.video_poke && driver.video_poke->set_texture_enable)
       {
@@ -3581,12 +3575,6 @@ bool menu_iterate(void)
    }
 
    device_ptr->ctx_driver->swap_buffers();
-
-   if (g_extern.lifecycle_mode_state & (1ULL << MODE_MENU_DRAW))
-   {
-      if (driver.video_poke->set_blend)
-         driver.video_poke->set_blend(driver.video_data, false);
-   }
 
    if (g_extern.lifecycle_mode_state & (1ULL << MODE_MENU_INGAME_EXIT) &&
          g_extern.lifecycle_mode_state & (1ULL << MODE_MENU_INGAME))
