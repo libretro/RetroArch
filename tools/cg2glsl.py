@@ -35,6 +35,7 @@ def replace_global_vertex(source):
          ('POSITION', 'VertexCoord'),
          ('TEXCOORD0', 'TexCoord'),
          ('TEXCOORD', 'TexCoord'),
+         ('TEXCOORD1', 'LUTTexCoord'),
          ('uniform vec4 _modelViewProj1[4]', 'uniform mat4 MVPMatrix'),
          ('_modelViewProj1', 'MVPMatrix'),
          ('MVPMatrix[0]', 'MVPMatrix_[0]'),
@@ -45,6 +46,7 @@ def replace_global_vertex(source):
          ('_IN1._texture_size', 'TextureSize'),
          ('_IN1._output_size', 'OutputSize'),
          ('_IN1._frame_count', 'FrameCount'),
+         ('_IN1._frame_direction', 'FrameDirection'),
          ('FrameCount', 'float(FrameCount)'),
          ('input', 'input_dummy'), # 'input' is reserved in GLSL.
          ('output', 'output_dummy'), # 'output' is reserved in GLSL.
@@ -69,6 +71,14 @@ def translate_varyings(varyings, source):
 def destructify_varyings(source):
    # We have to change varying structs that Cg support to single varyings for GL. Varying structs aren't supported until later versions
    # of GLSL.
+
+   # Global structs are sometimes used to store temporary data.
+   # Don't try to remove this as it breaks compile.
+   vout_lines = []
+   for line in source:
+      if ('//var' in line) and ('$vout$' in line):
+         vout_lines.append(line)
+
    struct_types = []
    for line in source:
       if 'struct' in line:
@@ -97,7 +107,7 @@ def destructify_varyings(source):
    variables = []
 
    # Don't include useless varyings like IN.video_size, IN.texture_size, etc as they are not actual varyings ...
-   for i in filter(lambda v: ('_video_size' not in v) and ('_texture_size' not in v) and '_output_size' not in v, varyings_tmp):
+   for i in filter(lambda v: ('_video_size' not in v) and ('_texture_size' not in v) and ('_output_size' not in v) and ('_frame_count' not in v) and ('_frame_direction' not in v), varyings_tmp):
       varyings.append(i)
 
    # Find any global variable struct that is supposed to be the output varying, and redirect all references to it to
@@ -111,8 +121,13 @@ def destructify_varyings(source):
       for struct in struct_types:
          if struct in line:
             variable = line.split(' ')[1].split(';')[0]
-            log('Found struct variable for', struct + ':', variable)
-            variables.append(variable)
+
+            # Only redirect if the struct is actually used as vertex output.
+            for vout_line in vout_lines:
+               if variable in vout_line:
+                  log('Found struct variable for', struct + ':', variable)
+                  variables.append(variable)
+                  break
 
    varyings_dict = translate_varyings(varyings_name, source)
    log('Varyings dict:', varyings_dict)
@@ -151,6 +166,7 @@ def hack_source_vertex(source):
          source.insert(index, 'uniform mediump vec2 OutputSize;')
          source.insert(index, '#ifdef GL_ES')
          source.insert(index, 'uniform int FrameCount;')
+         source.insert(index, 'uniform int FrameDirection;')
 
          source.insert(index, """
          mat4 transpose_(mat4 matrix)
@@ -174,6 +190,7 @@ def replace_global_fragment(source):
          ('_IN1._texture_size', 'TextureSize'),
          ('_IN1._output_size', 'OutputSize'),
          ('_IN1._frame_count', 'FrameCount'),
+         ('_IN1._frame_direction', 'FrameDirection'),
          ('FrameCount', 'float(FrameCount)'),
          ('input', 'input_dummy'),
          ('output', 'output_dummy'), # 'output' is reserved in GLSL.
@@ -197,6 +214,7 @@ def hack_source_fragment(source):
          source.insert(index, 'uniform mediump vec2 OutputSize;')
          source.insert(index, '#ifdef GL_ES')
          source.insert(index, 'uniform int FrameCount;')
+         source.insert(index, 'uniform int FrameDirection;')
          break
 
    for line in source:
