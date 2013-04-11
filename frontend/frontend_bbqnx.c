@@ -34,7 +34,8 @@ int rarch_main(int argc, char *argv[])
    strlcpy(g_settings.libretro, "app/native/lib", sizeof(g_settings.libretro));
 
    config_load();
-   global_init_drivers();
+   init_drivers_pre();
+   init_drivers();
 
    g_extern.verbose = true;
 
@@ -55,7 +56,7 @@ int rarch_main(int argc, char *argv[])
 	     if (g_extern.main_is_init)
 	        rarch_main_deinit();
 	     else
-	        global_uninit_drivers();
+	        uninit_drivers();
 
 	     struct rarch_main_wrap args = {0};
 
