@@ -230,10 +230,7 @@ begin_loop:
          audio_start_func();
 
       // Main loop
-      do
-      {
-         input_async_poll_func();
-      } while (rarch_main_iterate());
+      while (rarch_main_iterate());
 
       if (g_extern.lifecycle_mode_state & (1ULL << MODE_VIDEO_THROTTLE_ENABLE))
          audio_stop_func();
