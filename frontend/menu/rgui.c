@@ -1814,13 +1814,14 @@ int rgui_iterate(rgui_handle_t *rgui, rgui_action_t action)
                unsigned type = 0;
                const char *dir = NULL;
                rgui_list_pop(rgui->menu_stack);
-               rgui_list_get_last(rgui->menu_stack, &dir, &type, NULL);
+               rgui_list_get_last(rgui->menu_stack, &dir, &type, &directory_ptr);
                while (type != RGUI_SETTINGS_SHADER_MANAGER)
                {
                   rgui_list_pop(rgui->menu_stack);
-                  rgui_list_get_last(rgui->menu_stack, &dir, &type, NULL);
+                  rgui_list_get_last(rgui->menu_stack, &dir, &type, &directory_ptr);
                }
                rgui->need_refresh = true;
+               rgui->selection_ptr = directory_ptr;
             }
             else
 #endif
