@@ -100,7 +100,7 @@ void hlsl_set_proj_matrix(XMMATRIX rotation_value)
 #define set_param_1f(param, x, constanttable) \
    if (param) constanttable->SetFloat(d3d_device_ptr, param, x)
 
-void hlsl_set_params(unsigned width, unsigned height,
+static void hlsl_set_params(unsigned width, unsigned height,
       unsigned tex_width, unsigned tex_height,
       unsigned out_width, unsigned out_height,
       unsigned frame_count)
@@ -128,9 +128,6 @@ void hlsl_set_params(unsigned width, unsigned height,
    set_param_1f(prg[active_index].frame_cnt_v, frame_cnt, prg[active_index].v_ctable);
    set_param_1f(prg[active_index].frame_dir_v, g_extern.frame_is_reverse ? -1.0 : 1.0,prg[active_index].v_ctable);
 
-   /* TODO: Move to D3DXMATRIX here */
-   if(prg[active_index].mvp)
-      prg[active_index].v_ctable->SetMatrix(d3d_device_ptr, prg[active_index].mvp, (D3DXMATRIX*)&prg[active_index].mvp_val);
 
    /* TODO - set lookup textures/FBO textures/state parameters/etc */
 }
@@ -333,7 +330,7 @@ static bool load_preset(const char *path)
    return true;
 }
 
-bool hlsl_init(const char *path, IDirect3DDevice9 * device_ptr)
+static bool hlsl_init(const char *path, IDirect3DDevice9 * device_ptr)
 {
    if (!device_ptr)
       return false;
@@ -362,7 +359,7 @@ bool hlsl_init(const char *path, IDirect3DDevice9 * device_ptr)
 }
 
 // Full deinit.
-void hlsl_deinit(void)
+static void hlsl_deinit(void)
 {
    if (!hlsl_active)
       return;
@@ -370,7 +367,7 @@ void hlsl_deinit(void)
    hlsl_deinit_state();
 }
 
-void hlsl_use(unsigned index)
+static void hlsl_use(unsigned index)
 {
    if (hlsl_active && prg[index].vprg && prg[index].fprg)
    {
@@ -380,7 +377,7 @@ void hlsl_use(unsigned index)
    }
 }
 
-unsigned d3d_hlsl_num(void)
+static unsigned hlsl_num(void)
 {
    if (hlsl_active)
       return cg_shader->passes;
@@ -388,7 +385,7 @@ unsigned d3d_hlsl_num(void)
       return 0;
 }
 
-bool hlsl_filter_type(unsigned index, bool *smooth)
+static bool hlsl_filter_type(unsigned index, bool *smooth)
 {
    if (hlsl_active && index)
    {
@@ -401,10 +398,36 @@ bool hlsl_filter_type(unsigned index, bool *smooth)
       return false;
 }
 
-void hlsl_shader_scale(unsigned index, struct gfx_fbo_scale *scale)
+static void hlsl_shader_scale(unsigned index, struct gfx_fbo_scale *scale)
 {
    if (hlsl_active && index)
       *scale = cg_shader->pass[index - 1].fbo;
    else
       scale->valid = false;
 }
+
+static bool hlsl_set_mvp(const math_matrix *mat)
+{
+   /* TODO: Move to D3DXMATRIX here */
+   if(hlsl_active && prg[active_index].mvp)
+   {
+      prg[active_index].v_ctable->SetMatrix(d3d_device_ptr, prg[active_index].mvp, (D3DXMATRIX*)&prg[active_index].mvp_val);
+      return true;
+   }
+   else
+      return false;
+}
+
+const gl_shader_backend_t hlsl_backend = {
+   hlsl_init,
+   hlsl_deinit,
+   hlsl_set_params,
+   hlsl_use,
+   hlsl_num,
+   hlsl_filter_type,
+   hlsl_shader_scale,
+   NULL, /* hlsl_set_coords */
+   hlsl_set_mvp,
+
+   RARCH_SHADER_HLSL,
+};

@@ -147,7 +147,7 @@ static void gl_cg_reset_attrib(void)
    cg_attrib_index = 0;
 }
 
-bool gl_cg_set_mvp(const math_matrix *mat)
+static bool gl_cg_set_mvp(const math_matrix *mat)
 {
    if (cg_active && prg[active_index].mvp)
    {
@@ -167,7 +167,7 @@ bool gl_cg_set_mvp(const math_matrix *mat)
    } \
 } while(0)
 
-bool gl_cg_set_coords(const struct gl_coords *coords)
+static bool gl_cg_set_coords(const struct gl_coords *coords)
 {
    if (!cg_active)
       return false;
@@ -185,7 +185,7 @@ bool gl_cg_set_coords(const struct gl_coords *coords)
 #define set_param_1f(param, x) \
    if (param) cgGLSetParameter1f(param, x)
 
-void gl_cg_set_params(unsigned width, unsigned height, 
+static void gl_cg_set_params(unsigned width, unsigned height, 
       unsigned tex_width, unsigned tex_height,
       unsigned out_width, unsigned out_height,
       unsigned frame_count,
@@ -378,7 +378,7 @@ static void gl_cg_deinit_context_state(void)
 }
 
 // Full deinit.
-void gl_cg_deinit(void)
+static void gl_cg_deinit(void)
 {
    if (!cg_active)
       return;
@@ -386,6 +386,8 @@ void gl_cg_deinit(void)
    gl_cg_deinit_state();
    gl_cg_deinit_context_state();
 }
+
+static bool gl_cg_init(const char *path);
 
 // Deinit as much as possible without resetting context (broken on PS3),
 // and reinit cleanly.
@@ -774,7 +776,7 @@ static void set_program_attributes(unsigned i)
    }
 }
 
-bool gl_cg_init(const char *path)
+static bool gl_cg_init(const char *path)
 {
 #ifdef HAVE_CG_RUNTIME_COMPILER
    cgRTCgcInit();
@@ -838,7 +840,7 @@ bool gl_cg_init(const char *path)
    return true;
 }
 
-void gl_cg_use(unsigned index)
+static void gl_cg_use(unsigned index)
 {
    if (cg_active && prg[index].vprg && prg[index].fprg)
    {
@@ -850,7 +852,7 @@ void gl_cg_use(unsigned index)
    }
 }
 
-unsigned gl_cg_num(void)
+static unsigned gl_cg_num(void)
 {
    if (cg_active)
       return cg_shader->passes;
@@ -858,7 +860,7 @@ unsigned gl_cg_num(void)
       return 0;
 }
 
-bool gl_cg_filter_type(unsigned index, bool *smooth)
+static bool gl_cg_filter_type(unsigned index, bool *smooth)
 {
    if (cg_active && index)
    {
@@ -871,7 +873,7 @@ bool gl_cg_filter_type(unsigned index, bool *smooth)
       return false;
 }
 
-void gl_cg_shader_scale(unsigned index, struct gfx_fbo_scale *scale)
+static void gl_cg_shader_scale(unsigned index, struct gfx_fbo_scale *scale)
 {
    if (cg_active && index)
       *scale = cg_shader->pass[index - 1].fbo;

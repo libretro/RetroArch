@@ -132,9 +132,30 @@ static void check_window(void *data)
 static bool hlsl_shader_init(void)
 {
    xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
-   const char *shader_path = g_settings.video.shader_path;
+   const gl_shader_backend_t *backend = NULL;
 
-   return hlsl_init(shader_path, d3d->d3d_render_device);
+   const char *shader_path = g_settings.video.shader_path;
+   enum rarch_shader_type type = gfx_shader_parse_type(shader_path, DEFAULT_SHADER_TYPE);
+   
+   switch (type)
+   {
+#ifdef HAVE_HLSL
+      case RARCH_SHADER_HLSL:
+         RARCH_LOG("[D3D]: Using HLSL shader backend.\n");
+         backend = &hlsl_backend;
+         break;
+#endif
+   }
+
+   if (!backend)
+   {
+      RARCH_ERR("[GL]: Didn't find valid shader backend. Continuing without shaders.\n");
+      return true;
+   }
+
+
+   d3d->shader = backend;
+   return d3d->shader->init(shader_path);
 }
 #endif
 
@@ -651,7 +672,7 @@ static void *xdk_d3d_init(const video_info_t *video, const input_driver_t **inpu
       return NULL;
    }
 
-   RARCH_LOG("D3D: Loaded %u program(s).\n", d3d_hlsl_num());
+   RARCH_LOG("D3D: Loaded %u program(s).\n", d3d->shader->num_func());
 #endif
 
 #if 0 /* ifdef HAVE_FBO */
@@ -842,15 +863,17 @@ static bool xdk_d3d_frame(void *data, const void *frame,
    d3dr->SetTexture(0, d3d->lpTexture);
 
 #ifdef HAVE_HLSL
-   hlsl_use(1);
+   if (d3d->shader)
+      d3d->shader->use(1);
 #endif
 
 #if 0 /* ifdef HAVE_FBO */
    if (d3d->fbo_inited)
    {
 #ifdef HAVE_HLSL
-      hlsl_set_params(width, height, d3d->tex_w, d3d->tex_h, g_settings.video.fbo.scale_x * width,
-            g_settings.video.fbo.scale_y * height, g_extern.frame_count);
+      if (d3d->shader)
+         d3d->shader->set_params(width, height, d3d->tex_w, d3d->tex_h, g_settings.video.fbo.scale_x * width,
+               g_settings.video.fbo.scale_y * height, g_extern.frame_count);
 #endif
       D3DVIEWPORT vp = {0};
       vp.Width  = g_settings.video.fbo.scale_x * width;
@@ -865,8 +888,9 @@ static bool xdk_d3d_frame(void *data, const void *frame,
 #endif
    {
 #ifdef HAVE_HLSL
-      hlsl_set_params(width, height, d3d->tex_w, d3d->tex_h, d3d->win_width,
-            d3d->win_height, g_extern.frame_count);
+      if (d3d->shader)
+         d3d->shader->set_params(width, height, d3d->tex_w, d3d->tex_h, d3d->win_width,
+               d3d->win_height, g_extern.frame_count);
 #endif
    }
 
@@ -916,8 +940,10 @@ static bool xdk_d3d_frame(void *data, const void *frame,
 
 #ifdef HAVE_HLSL
       hlsl_use(2);
-      hlsl_set_params(g_settings.video.fbo.scale_x * width, g_settings.video.fbo.scale_y * height, g_settings.video.fbo.scale_x * d3d->tex_w, g_settings.video.fbo.scale_y * d3d->tex_h, d3d->win_width,
-            d3d->win_height, g_extern.frame_count);
+
+      if (d3d->shader)
+         d3d->shader->set_params(g_settings.video.fbo.scale_x * width, g_settings.video.fbo.scale_y * height, g_settings.video.fbo.scale_x * d3d->tex_w, g_settings.video.fbo.scale_y * d3d->tex_h, d3d->win_width,
+               d3d->win_height, g_extern.frame_count);
 #endif
       xdk_d3d_set_viewport(false);
 

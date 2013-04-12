@@ -21,22 +21,10 @@
 #include "../boolean.h"
 #include <stdint.h>
 
-bool hlsl_init(const char *path, IDirect3DDevice9 *device_ptr);
-
-void hlsl_deinit(void);
-
 void hlsl_set_proj_matrix(XMMATRIX rotation_value);
 
-void hlsl_set_params(unsigned width, unsigned height,
-      unsigned tex_width, unsigned tex_height,
-      unsigned out_width, unsigned out_height,
-      unsigned frame_count);
-
-void hlsl_use(unsigned index);
-
-bool hlsl_load_shader(unsigned index, const char *path);
-unsigned d3d_hlsl_num(void);
-
 #define RARCH_HLSL_MAX_SHADERS 16
+
+extern const gl_shader_backend_t hlsl_backend;
 
 #endif
