@@ -27,7 +27,7 @@ static bool directory_parse(void *data, const char *path)
    if(!list)
       return false;
    
-   dir_list_sort(filebrowser->current_dir.list, true);
+   dir_list_sort(list, true);
 
    filebrowser->current_dir.ptr   = 0;
    strlcpy(filebrowser->directory_path, path, sizeof(filebrowser->directory_path));
@@ -62,7 +62,7 @@ void filebrowser_set_root_and_ext(void *data, const char *ext, const char *root_
    filebrowser_iterate(filebrowser, FILEBROWSER_ACTION_RESET);
 }
 
-const char *filebrowser_get_current_path (void *data)
+static inline const char *filebrowser_get_current_path (void *data)
 {
    filebrowser_t *filebrowser = (filebrowser_t*)data;
    return filebrowser->current_dir.list->elems[filebrowser->current_dir.ptr].data;
@@ -124,6 +124,8 @@ bool filebrowser_iterate(void *data, unsigned action)
       default:
          break;
    }
+
+   strlcpy(filebrowser->current_path, filebrowser_get_current_path(filebrowser), sizeof(filebrowser->current_path));
 
    return ret;
 }

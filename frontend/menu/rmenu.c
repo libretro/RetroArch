@@ -1108,7 +1108,7 @@ static void browser_render(void *data)
 
 #ifdef HAVE_MENU_PANEL
       //check if this is the currently selected file
-      const char *current_pathname = filebrowser_get_current_path(b);
+      const char *current_pathname = b->current_path;
       if (strcmp(current_pathname, b->current_dir.list->elems[i].data) == 0)
       {
          menu_panel->x = 0;
@@ -1171,7 +1171,7 @@ static int select_file(uint8_t menu_type, uint64_t input)
          ret = filebrowser_iterate(filebrowser, FILEBROWSER_ACTION_OK);
       else
       {
-         strlcpy(path, filebrowser_get_current_path(filebrowser), sizeof(path));
+         strlcpy(path, filebrowser->current_path, sizeof(path));
 
          switch(menu_type)
          {
@@ -1308,7 +1308,7 @@ static int select_directory(uint8_t menu_type, uint64_t input)
    {
       if (is_dir)
       {
-         strlcpy(path, filebrowser_get_current_path(filebrowser), sizeof(path));
+         strlcpy(path, filebrowser->current_path, sizeof(path));
 
          switch(menu_type)
          {
@@ -2788,7 +2788,7 @@ static int select_rom(uint8_t menu_type, uint64_t input)
       }
       else
       {
-         strlcpy(g_extern.fullpath, filebrowser_get_current_path(filebrowser), sizeof(g_extern.fullpath));
+         strlcpy(g_extern.fullpath, filebrowser->current_path, sizeof(g_extern.fullpath));
          g_extern.lifecycle_mode_state |= (1ULL << MODE_LOAD_GAME);
       }
    }

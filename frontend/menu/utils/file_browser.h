@@ -26,6 +26,7 @@ typedef struct
       struct string_list *list;
       size_t ptr;
    } current_dir;
+   char current_path[PATH_MAX];
    char root_dir[PATH_MAX];
    char extensions[PATH_MAX];
 } filebrowser_t;
@@ -45,7 +46,6 @@ typedef enum
    FILEBROWSER_ACTION_NOOP
 } filebrowser_action_t;
 
-const char * filebrowser_get_current_path (void *data);
 void filebrowser_set_root_and_ext(void *data, const char *ext, const char *root_dir);
 void filebrowser_free(void *data);
 bool filebrowser_iterate(void *data, unsigned action);
