@@ -24,19 +24,18 @@ static bool directory_parse(void *data, const char *path)
    filebrowser_t *filebrowser = (filebrowser_t*)data;
 
    struct string_list *list = dir_list_new(path, filebrowser->extensions, true);
-
-   if(list == NULL)
+   if(!list)
       return false;
+   
+   dir_list_sort(filebrowser->current_dir.list, true);
 
+   filebrowser->current_dir.ptr   = 0;
    strlcpy(filebrowser->directory_path, path, sizeof(filebrowser->directory_path));
 
-   if(filebrowser->current_dir.list != NULL)
+   if(filebrowser->current_dir.list)
       dir_list_free(filebrowser->current_dir.list);
 
    filebrowser->current_dir.list = list;
-   filebrowser->current_dir.ptr   = 0;
-
-   dir_list_sort(filebrowser->current_dir.list, true);
 
    return true;
 
