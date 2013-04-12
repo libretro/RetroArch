@@ -567,7 +567,7 @@ static void gl_glsl_free_shader(void)
    glsl_shader = NULL;
 }
 
-bool gl_glsl_init(const char *path)
+static bool gl_glsl_init(const char *path)
 {
 #if !defined(HAVE_OPENGLES2) && !defined(HAVE_OPENGL_MODERN) && !defined(__APPLE__)
    // Load shader functions.
@@ -726,7 +726,7 @@ bool gl_glsl_init(const char *path)
    return true;
 }
 
-void gl_glsl_deinit(void)
+static void gl_glsl_deinit(void)
 {
    if (glsl_enable)
    {
@@ -756,7 +756,7 @@ void gl_glsl_deinit(void)
    gl_glsl_reset_attrib();
 }
 
-void gl_glsl_set_params(unsigned width, unsigned height, 
+static void gl_glsl_set_params(unsigned width, unsigned height, 
       unsigned tex_width, unsigned tex_height, 
       unsigned out_width, unsigned out_height,
       unsigned frame_count,
@@ -935,7 +935,7 @@ void gl_glsl_set_params(unsigned width, unsigned height,
    }
 }
 
-bool gl_glsl_set_mvp(const math_matrix *mat)
+static bool gl_glsl_set_mvp(const math_matrix *mat)
 {
    if (!glsl_enable || !glsl_shader->modern)
       return false;
@@ -947,7 +947,7 @@ bool gl_glsl_set_mvp(const math_matrix *mat)
    return true;
 }
 
-bool gl_glsl_set_coords(const struct gl_coords *coords)
+static bool gl_glsl_set_coords(const struct gl_coords *coords)
 {
    if (!glsl_enable || !glsl_shader->modern)
       return false;
@@ -988,7 +988,7 @@ bool gl_glsl_set_coords(const struct gl_coords *coords)
    return true;
 }
 
-void gl_glsl_use(unsigned index)
+static void gl_glsl_use(unsigned index)
 {
    if (glsl_enable)
    {
@@ -999,12 +999,12 @@ void gl_glsl_use(unsigned index)
    }
 }
 
-unsigned gl_glsl_num(void)
+static unsigned gl_glsl_num(void)
 {
    return glsl_shader->passes;
 }
 
-bool gl_glsl_filter_type(unsigned index, bool *smooth)
+static bool gl_glsl_filter_type(unsigned index, bool *smooth)
 {
    if (glsl_enable && index)
    {
@@ -1017,7 +1017,7 @@ bool gl_glsl_filter_type(unsigned index, bool *smooth)
       return false;
 }
 
-void gl_glsl_shader_scale(unsigned index, struct gfx_fbo_scale *scale)
+static void gl_glsl_shader_scale(unsigned index, struct gfx_fbo_scale *scale)
 {
    if (glsl_enable && index)
       *scale = glsl_shader->pass[index - 1].fbo;
