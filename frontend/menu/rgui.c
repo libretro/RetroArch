@@ -1714,7 +1714,7 @@ static bool directory_parse(rgui_handle_t *rgui, const char *directory, unsigned
          path = path_basename(path);
 
       rgui_list_push(ctx, path,
-            is_dir ? menu_type : RGUI_FILE_PLAIN, 0);
+            is_dir ? RGUI_FILE_DIRECTORY : RGUI_FILE_PLAIN, 0);
    }
 
    string_list_free(list);
