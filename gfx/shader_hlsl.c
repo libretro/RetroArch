@@ -15,6 +15,7 @@
  */
 
 #include "shader_hlsl.h"
+#include "shader_parse.h"
 #ifdef _XBOX
 #include <xtl.h>
 #endif
@@ -85,21 +86,13 @@ static IDirect3DDevice9 *d3d_device_ptr;
 static struct hlsl_program prg[RARCH_HLSL_MAX_SHADERS] = {0};
 static bool hlsl_active = false;
 static unsigned active_index = 0;
-static unsigned hlsl_shader_num = 0;
 
+static struct gfx_shader *cg_shader;
 
 void hlsl_set_proj_matrix(XMMATRIX rotation_value)
 {
    if (hlsl_active)
       prg[active_index].mvp_val = rotation_value;
-}
-
-unsigned d3d_hlsl_num(void)
-{
-   if (hlsl_active)
-      return hlsl_shader_num;
-   else
-      return 0;
 }
 
 #define set_param_2f(param, xy, constanttable) \
@@ -138,6 +131,8 @@ void hlsl_set_params(unsigned width, unsigned height,
    /* TODO: Move to D3DXMATRIX here */
    if(prg[active_index].mvp)
       prg[active_index].v_ctable->SetMatrix(d3d_device_ptr, prg[active_index].mvp, (D3DXMATRIX*)&prg[active_index].mvp_val);
+
+   /* TODO - set lookup textures/FBO textures/state parameters/etc */
 }
 
 static bool load_program(unsigned index, const char *prog, bool path_is_file)
@@ -166,7 +161,7 @@ static bool load_program(unsigned index, const char *prog, bool path_is_file)
 
    if (ret_fp < 0 || ret_vp < 0 || listing_v || listing_f)
    {
-      RARCH_ERR("HLSL error:\n");
+      RARCH_ERR("Cg/HLSL error:\n");
       if(listing_f)
          RARCH_ERR("Fragment:\n%s\n", (char*)listing_f->GetBufferPointer());
       if(listing_v)
@@ -189,9 +184,9 @@ end:
    return ret;
 }
 
-static bool load_stock(unsigned program_id)
+static bool load_stock(void)
 {
-   if (!load_program(program_id, stock_hlsl_program, false))
+   if (!load_program(0, stock_hlsl_program, false))
    {
       RARCH_ERR("Failed to compile passthrough shader, is something wrong with your environment?\n");
       return false;
@@ -216,57 +211,43 @@ static void set_program_attributes(unsigned i)
    prg[i].mvp_val     = XMMatrixIdentity();
 }
 
-bool hlsl_load_shader(unsigned index, const char *path)
+static bool load_shader(const char *cgp_path, unsigned i)
 {
-   bool retval = true;
+   char path_buf[PATH_MAX];
+   fill_pathname_resolve_relative(path_buf, cgp_path,
+      cg_shader->pass[i].source.cg, sizeof(path_buf));
 
-   if (!hlsl_active || index == 0)
-      retval = false;
+   RARCH_LOG("Loading Cg/HLSL shader: \"%s\".\n", path_buf);
 
-   // FIXME: This could cause corruption issues if prg[index] == prg[0]
-   // (Set earlier if path == NULL).
-   if(retval)
-   {
-      if (path)
-      {
-         if (load_program(index, path, true))
-            set_program_attributes(index);
-         else
-         {
-            // Always make sure we have a valid shader.
-            prg[index] = prg[0];
-            retval = false;
-         }
-      }
-      else
-         prg[index] = prg[0];
-   }
-   else
-      goto end; // if retval is false, skip to end label
+   if (!load_program(i + 1, path_buf, true))
+      return false;
 
-   hlsl_active = true;
-   active_index = index;
-   d3d_device_ptr->SetVertexShader(prg[index].vprg);
-   d3d_device_ptr->SetPixelShader(prg[index].fprg);
-end:
-   return retval;
+   return true;
 }
 
 static bool load_plain(const char *path)
 {
-   if (!load_stock(0))
+   if (!load_stock())
       return false;
 
-   RARCH_LOG("Loading HLSL file: %s\n", path);
+   cg_shader = (struct gfx_shader*)calloc(1, sizeof(*cg_shader));
+   if (!cg_shader)
+      return false;
 
-   if (!load_program(1, path, true))
+   cg_shader->passes = 1;
+
+   if (path && path[0] != '\0')
    {
-      RARCH_ERR("Failed to load HLSL shader %s into first-pass.\n", path);
+      RARCH_LOG("Loading Cg/HLSL file: %s\n", path);
+      strlcpy(cg_shader->pass[0].source.cg, path, sizeof(cg_shader->pass[0].source.cg));
+      if (!load_program(1, path, true))
+         return false;
+   }
+   else
+   {
+      RARCH_LOG("Loading stock Cg/HLSL file.\n");
       prg[1] = prg[0];
    }
-
-   prg[1] = prg[0];
-   hlsl_shader_num = 1;
 
    return true;
 }
@@ -300,11 +281,56 @@ static void hlsl_deinit_state(void)
    memset(prg, 0, sizeof(prg));
 
    d3d_device_ptr = NULL;
+
+   free(cg_shader);
+   cg_shader = NULL;
 }
 
 static bool load_preset(const char *path)
 {
-   return false;
+   if (!load_stock())
+      return false;
+
+   RARCH_LOG("Loading Cg meta-shader: %s\n", path);
+   config_file_t *conf = config_file_new(path);
+
+   if (!conf)
+   {
+      RARCH_ERR("Failed to load preset.\n");
+      return false;
+   }
+
+   if (!cg_shader)
+      cg_shader = (struct gfx_shader*)calloc(1, sizeof(*cg_shader));
+   if (!cg_shader)
+      return false;
+
+   if (!gfx_shader_read_conf_cgp(conf, cg_shader))
+   {
+      RARCH_ERR("Failed to parse CGP file.\n");
+      config_file_free(conf);
+      return false;
+   }
+
+   config_file_free(conf);
+
+   if (cg_shader->passes > RARCH_HLSL_MAX_SHADERS - 3)
+   {
+      RARCH_WARN("Too many shaders ... Capping shader amount to %d.\n", RARCH_HLSL_MAX_SHADERS - 3);
+      cg_shader->passes = RARCH_HLSL_MAX_SHADERS - 3;
+   }
+   for (unsigned i = 0; i < cg_shader->passes; i++)
+   {
+      if (!load_shader(path, i))
+      {
+         RARCH_ERR("Failed to load shaders ...\n");
+         return false;
+      }
+   }
+
+   /* TODO - textures / imports */
+
+   return true;
 }
 
 bool hlsl_init(const char *path, IDirect3DDevice9 * device_ptr)
@@ -314,7 +340,7 @@ bool hlsl_init(const char *path, IDirect3DDevice9 * device_ptr)
 
    d3d_device_ptr = device_ptr;
 
-   if (strstr(path, ".cgp"))
+   if (path && strcmp(path_get_extension(path), ".cgp") == 0)
    {
       if (!load_preset(path))
          return false;
@@ -322,30 +348,17 @@ bool hlsl_init(const char *path, IDirect3DDevice9 * device_ptr)
    else
    {
       if (!load_plain(path))
-      {
-         RARCH_ERR("Loading of HLSL shader %s failed.\n", path);
          return false;
-      }
    }
-   for(unsigned i = 1; i <= hlsl_shader_num; i++)
+
+   for(unsigned i = 1; i <= cg_shader->passes; i++)
       set_program_attributes(i);
 
-   active_index = 1;
-   d3d_device_ptr->SetVertexShader(prg[active_index].vprg);
-   d3d_device_ptr->SetPixelShader(prg[active_index].fprg);
+   d3d_device_ptr->SetVertexShader(prg[1].vprg);
+   d3d_device_ptr->SetPixelShader(prg[1].fprg);
 
    hlsl_active = true;
    return true;
-}
-
-void hlsl_use(unsigned index)
-{
-   if (hlsl_active)
-   {
-      active_index = index;
-      d3d_device_ptr->SetVertexShader(prg[index].vprg);
-      d3d_device_ptr->SetPixelShader(prg[index].fprg);
-   }
 }
 
 // Full deinit.
@@ -355,4 +368,43 @@ void hlsl_deinit(void)
       return;
 
    hlsl_deinit_state();
+}
+
+void hlsl_use(unsigned index)
+{
+   if (hlsl_active && prg[index].vprg && prg[index].fprg)
+   {
+      active_index = index;
+      d3d_device_ptr->SetVertexShader(prg[index].vprg);
+      d3d_device_ptr->SetPixelShader(prg[index].fprg);
+   }
+}
+
+unsigned d3d_hlsl_num(void)
+{
+   if (hlsl_active)
+      return cg_shader->passes;
+   else
+      return 0;
+}
+
+bool hlsl_filter_type(unsigned index, bool *smooth)
+{
+   if (hlsl_active && index)
+   {
+      if (cg_shader->pass[index - 1].filter == RARCH_FILTER_UNSPEC)
+         return false;
+      *smooth = cg_shader->pass[index - 1].filter = RARCH_FILTER_LINEAR;
+      return true;
+   }
+   else
+      return false;
+}
+
+void hlsl_shader_scale(unsigned index, struct gfx_fbo_scale *scale)
+{
+   if (hlsl_active && index)
+      *scale = cg_shader->pass[index - 1].fbo;
+   else
+      scale->valid = false;
 }
