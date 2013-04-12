@@ -302,7 +302,7 @@ static void menu_settings_create_menu_item_label_w(wchar_t *strwbuf, unsigned se
 
 static void browser_update(void *data, uint64_t input, const char *extensions);
 
-static void filebrowser_fetch_directory_entries(filebrowser_t * browser, uint64_t action)
+static void filebrowser_fetch_directory_entries(uint64_t action)
 {
    CXuiList *romlist = &m_list;
    CXuiTextElement *rompath_title = &m_list_path;
@@ -355,7 +355,7 @@ static void browser_update(void *data, uint64_t input, const char *extensions)
             g_extern.console.main_wrap.default_rom_startup_dir);
       strlcpy(browser->current_dir.extensions, extensions,
          sizeof(browser->current_dir.extensions));
-      filebrowser_fetch_directory_entries(browser, (1ULL << RMENU_DEVICE_NAV_B));
+      filebrowser_fetch_directory_entries(1ULL << RMENU_DEVICE_NAV_B);
    }
 
    if(action != FILEBROWSER_ACTION_NOOP)
@@ -376,7 +376,7 @@ HRESULT CRetroArchFileBrowser::OnInit(XUIMessageInit * pInitData, BOOL& bHandled
       default_paths.filebrowser_startup_dir);
 
    uint64_t action = (1ULL << RMENU_DEVICE_NAV_B);
-   filebrowser_fetch_directory_entries(browser, action);
+   filebrowser_fetch_directory_entries(action);
 
    return 0;
 }
@@ -401,7 +401,7 @@ HRESULT CRetroArchFileBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHandle
          snprintf(path, sizeof(path), "%s\\%s", browser->current_dir.directory_path, str_buffer);
          uint64_t action = (1ULL << RMENU_DEVICE_NAV_B);
          filebrowser_set_root_and_ext(browser, g_extern.system.valid_extensions, path);
-         filebrowser_fetch_directory_entries(browser, action);
+         filebrowser_fetch_directory_entries(action);
       }
    }
    else if (hObjPressed == m_dir_game)
@@ -409,7 +409,7 @@ HRESULT CRetroArchFileBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHandle
       filebrowser_set_root_and_ext(browser, g_extern.system.valid_extensions,
             g_extern.console.main_wrap.default_rom_startup_dir);
       uint64_t action = (1ULL << RMENU_DEVICE_NAV_B);
-      filebrowser_fetch_directory_entries(browser, action);
+      filebrowser_fetch_directory_entries(action);
    }
 
    bHandled = TRUE;
@@ -696,7 +696,6 @@ HRESULT CRetroArchSettings::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
 HRESULT CRetroArchSettings::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled )
 {
    int current_index;
-   HRESULT hr;
    process_input_ret = 0;
 
    if ( hObjPressed == m_settingslist)
@@ -1111,7 +1110,7 @@ HRESULT CRetroArchShaderBrowser::OnInit(XUIMessageInit * pInitData, BOOL& bHandl
 
    filebrowser_set_root_and_ext(browser, "cg", "game:\\media\\shaders");
    uint64_t action = (1ULL << RMENU_DEVICE_NAV_B);
-   filebrowser_fetch_directory_entries(browser, action);
+   filebrowser_fetch_directory_entries(action);
 
    return 0;
 }
@@ -1132,7 +1131,7 @@ HRESULT CRetroArchShaderBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHand
          snprintf(path, sizeof(path), "%s\\%s", browser->current_dir.directory_path, str_buffer);
          filebrowser_set_root_and_ext(browser, "cg", path);
          uint64_t action = (1ULL << RMENU_DEVICE_NAV_B);
-         filebrowser_fetch_directory_entries(browser, action);
+         filebrowser_fetch_directory_entries(action);
       }
    }
 
@@ -1149,7 +1148,7 @@ HRESULT CRetroArchCoreBrowser::OnInit(XUIMessageInit * pInitData, BOOL& bHandled
 
    filebrowser_set_root_and_ext(browser, "xex|XEX", "game:");
    uint64_t action = (1ULL << RMENU_DEVICE_NAV_B);
-   filebrowser_fetch_directory_entries(browser, action);
+   filebrowser_fetch_directory_entries(action);
 
    return 0;
 }
@@ -1176,7 +1175,7 @@ HRESULT CRetroArchCoreBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHandle
          snprintf(path, sizeof(path), "%s\\%s", browser->current_dir.directory_path, str_buffer);
          filebrowser_set_root_and_ext(browser, "xex|XEX", path);
          uint64_t action = (1ULL << RMENU_DEVICE_NAV_B);
-         filebrowser_fetch_directory_entries(browser, action);
+         filebrowser_fetch_directory_entries(action);
       }
    }
 
