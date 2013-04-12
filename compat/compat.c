@@ -149,9 +149,9 @@ static void shuffle_block(char **begin, char **last, char **end)
    const char **tmp = (const char**)calloc(len, sizeof(const char*));
    rarch_assert(tmp);
 
-   memcpy(tmp, begin, sizeof(tmp));
-   memmove(begin, last, (end - last) * sizeof(char*));
-   memcpy(end - len, tmp, sizeof(tmp));
+   memcpy(tmp, begin, len * sizeof(const char*));
+   memmove(begin, last, (end - last) * sizeof(const char*));
+   memcpy(end - len, tmp, len * sizeof(const char*));
 
    free(tmp);
 }
