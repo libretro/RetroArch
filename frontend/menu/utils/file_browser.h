@@ -21,14 +21,18 @@
 
 typedef struct
 {
+   size_t ptr;
    char directory_path[PATH_MAX]; 
-   struct {
-      struct string_list *list;
-      size_t ptr;
-   } current_dir;
-   char current_path[PATH_MAX];
-   char root_dir[PATH_MAX];
    char extensions[PATH_MAX];
+   char root_dir[PATH_MAX];
+   char path[PATH_MAX];
+} filebrowser_dir_type_t;
+
+typedef struct
+{
+   struct string_list *list;
+   filebrowser_dir_type_t current_dir;
+   filebrowser_dir_type_t prev_dir;
 } filebrowser_t;
 
 typedef enum
@@ -42,6 +46,7 @@ typedef enum
    FILEBROWSER_ACTION_SCROLL_UP,
    FILEBROWSER_ACTION_SCROLL_DOWN,
    FILEBROWSER_ACTION_RESET,
+   FILEBROWSER_ACTION_RESET_CURRENT_DIR,
    FILEBROWSER_ACTION_PATH_ISDIR,
    FILEBROWSER_ACTION_NOOP
 } filebrowser_action_t;
