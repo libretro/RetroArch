@@ -68,21 +68,42 @@ def translate_varyings(varyings, source):
 
    return dictionary
 
+def no_uniform(elem):
+   banned = [
+         '_video_size',
+         '_texture_size',
+         '_output_size',
+         '_frame_count',
+         '_frame_direction',
+         'sampler2D'
+   ]
+
+   for ban in banned:
+      if ban in elem:
+         return False
+   return True
+
 def destructify_varyings(source):
-   # We have to change varying structs that Cg support to single varyings for GL. Varying structs aren't supported until later versions
+   #for line in source:
+   #   log('  ', line)
+
+   # We have to change varying structs that Cg support to single varyings for GL.
+   # Varying structs aren't supported until later versions
    # of GLSL.
 
    # Global structs are sometimes used to store temporary data.
    # Don't try to remove this as it breaks compile.
    vout_lines = []
    for line in source:
-      if ('//var' in line) and ('$vout$' in line):
+      if ('//var' in line) and (('$vout.' in line) or ('$vin.' in line)):
          vout_lines.append(line)
 
    struct_types = []
    for line in source:
       if 'struct' in line:
-         struct_types.append(line.split(' ')[1])
+         struct_type = line.split(' ')[1]
+         if struct_type not in struct_types:
+            struct_types.append(struct_type)
 
    log('Struct types:', struct_types)
 
@@ -92,11 +113,13 @@ def destructify_varyings(source):
    # Find all varyings in structs and make them "global" varyings.
    for struct in struct_types:
       for i, line in enumerate(source):
-         if 'struct ' + struct in line:
+         if ('struct ' + struct) in line:
             j = i + 1
             while (j < len(source)) and ('};' not in source[j]):
                j += 1
-            varyings.extend(['varying ' + string for string in source[i + 1 : j]])
+
+            lines = ['varying ' + string for string in source[i + 1 : j]]
+            varyings.extend(lines)
             names = [string.strip().split(' ')[1].split(';')[0].strip() for string in source[i + 1 : j]]
             varyings_name.extend(names)
             log('Found elements in struct', struct + ':', names)
@@ -107,7 +130,7 @@ def destructify_varyings(source):
    variables = []
 
    # Don't include useless varyings like IN.video_size, IN.texture_size, etc as they are not actual varyings ...
-   for i in filter(lambda v: ('_video_size' not in v) and ('_texture_size' not in v) and ('_output_size' not in v) and ('_frame_count' not in v) and ('_frame_direction' not in v), varyings_tmp):
+   for i in filter(no_uniform, varyings_tmp):
       varyings.append(i)
 
    # Find any global variable struct that is supposed to be the output varying, and redirect all references to it to
@@ -149,6 +172,58 @@ def destructify_varyings(source):
 
    return source
 
+def translate_varying(cg):
+   #log('Translate:', cg)
+   translations = {
+      'ORIG.tex_coord'  : 'OrigTexCoord',
+      'PREV.tex_coord'  : 'PrevTexCoord',
+      'PREV1.tex_coord' : 'Prev1TexCoord',
+      'PREV2.tex_coord' : 'Prev2TexCoord',
+      'PREV3.tex_coord' : 'Prev3TexCoord',
+      'PREV4.tex_coord' : 'Prev4TexCoord',
+      'PREV5.tex_coord' : 'Prev5TexCoord',
+      'PREV6.tex_coord' : 'Prev6TexCoord',
+      'PASS1.tex_coord' : 'Pass1TexCoord',
+      'PASS2.tex_coord' : 'Pass2TexCoord',
+      'PASS3.tex_coord' : 'Pass3TexCoord',
+      'PASS4.tex_coord' : 'Pass4TexCoord',
+      'PASS5.tex_coord' : 'Pass5TexCoord',
+      'PASS6.tex_coord' : 'Pass6TexCoord',
+      'PASS7.tex_coord' : 'Pass7TexCoord',
+      'PASS8.tex_coord' : 'Pass8TexCoord',
+   }
+
+   if cg in translations:
+      return translations[cg]
+   else:
+      return cg
+
+
+def replace_varyings(source):
+   ret = []
+   translations = []
+   attribs = []
+   for index, line in enumerate(source):
+      if ('//var' in line) and ('$vin.' in line):
+         orig = line.split(' ')[2]
+         translated = translate_varying(orig)
+         if translated != orig and translated not in attribs:
+            cg_attrib = line.split(':')[2].split(' ')[1]
+            translations.append((cg_attrib, translated))
+            attribs.append(translated)
+
+   for index, line in enumerate(source):
+      if 'void main()' in line:
+         for attrib in attribs:
+            source.insert(index, 'attribute vec2 ' + attrib + ';')
+         break
+
+   for line in source:
+      for trans in translations:
+         line = line.replace(trans[0], trans[1])
+      ret.append(line)
+
+   return ret
 
 def hack_source_vertex(source):
    transpose_index = 2
@@ -182,6 +257,7 @@ def hack_source_vertex(source):
          break
 
    source = destructify_varyings(source)
+   source = replace_varyings(source)
    return source
 
 def replace_global_fragment(source):
@@ -201,7 +277,34 @@ def replace_global_fragment(source):
 
    return source
 
+def translate_texture(cg):
+   log('Translate:', cg)
+   translations = {
+      'ORIG.texture'  : 'OrigTexture',
+      'PREV.texture'  : 'PrevTexture',
+      'PREV1.texture' : 'Prev1Texture',
+      'PREV2.texture' : 'Prev2Texture',
+      'PREV3.texture' : 'Prev3Texture',
+      'PREV4.texture' : 'Prev4Texture',
+      'PREV5.texture' : 'Prev5Texture',
+      'PREV6.texture' : 'Prev6Texture',
+      'PASS1.texture' : 'Pass1Texture',
+      'PASS2.texture' : 'Pass2Texture',
+      'PASS3.texture' : 'Pass3Texture',
+      'PASS4.texture' : 'Pass4Texture',
+      'PASS5.texture' : 'Pass5Texture',
+      'PASS6.texture' : 'Pass6Texture',
+      'PASS7.texture' : 'Pass7Texture',
+      'PASS8.texture' : 'Pass8Texture',
+   }
+
+   if cg in translations:
+      return translations[cg]
+   else:
+      return cg
+
 def hack_source_fragment(source):
+   ref_index = 0
    for index, line in enumerate(source):
       if 'void main()' in line:
          source.insert(index, '#endif')
@@ -215,26 +318,36 @@ def hack_source_fragment(source):
          source.insert(index, '#ifdef GL_ES')
          source.insert(index, 'uniform int FrameCount;')
          source.insert(index, 'uniform int FrameDirection;')
+         ref_index = index
          break
 
    samplers = []
+   added_samplers = []
+   translated_samplers = []
    for line in source:
       if ('TEXUNIT0' in line) and ('semantic' not in line):
          main_sampler = (line.split(':')[2].split(' ')[1], 'Texture')
          samplers.append(main_sampler)
          log('Fragment: Sampler:', main_sampler[0], '->', main_sampler[1])
-         break
       elif '//var sampler2D' in line:
-         orig_name = line.split(' ')[2]
+         cg_texture = line.split(' ')[2]
+         translated = translate_texture(cg_texture)
+         if translated != cg_texture and translated not in translated_samplers:
+            translated_samplers.append(translated)
+            added_samplers.append('uniform sampler2D ' + translated + ';')
+         orig_name = translated
          new_name = line.split(':')[2].split(' ')[1]
          samplers.append((new_name, orig_name))
          log('Fragment: Sampler:', new_name, '->', orig_name)
 
+   for sampler in added_samplers:
+      source.insert(ref_index, sampler)
 
    ret = []
    for line in source:
       for sampler in samplers:
-         ret.append(line.replace(sampler[0], sampler[1]))
+         line = line.replace(sampler[0], sampler[1])
+      ret.append(line)
 
    ret = destructify_varyings(ret)
    return ret
@@ -282,7 +395,9 @@ def convert(source, dest):
    # Cg think we're using row-major matrices, but we're using column major.
    # Also, Cg tends to compile matrix multiplications as dot products in GLSL.
    # Hack in a fix for this.
+   log('Hacking vertex')
    vertex_source   = hack_source_vertex(vertex_source)
+   log('Hacking fragment')
    fragment_source = hack_source_fragment(fragment_source)
 
    # We compile to GLES, but we really just want modern GL ...
