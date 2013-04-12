@@ -22,25 +22,6 @@
 #include "../config.def.h"
 #include "menu/rmenu.h"
 
-#if defined(__CELLOS_LV2__)
-#include "platform/platform_ps3_exec.c"
-#include "platform/platform_ps3.c"
-#elif defined(GEKKO)
-#ifdef HW_RVL
-#include "platform/platform_gx_exec.c"
-#endif
-#include "platform/platform_gx.c"
-#elif defined(_XBOX)
-#include "platform/platform_xdk_exec.c"
-#include "platform/platform_xdk.c"
-#elif defined(PSP)
-#include "platform/platform_psp.c"
-#endif
-
-#undef main
-
-default_paths_t default_paths;
-
 static inline void inl_logger_init(void)
 {
 #if defined(HAVE_LOGGER)
@@ -62,6 +43,25 @@ static inline void inl_logger_deinit(void)
    g_extern.log_file = NULL;
 #endif
 }
+
+#if defined(__CELLOS_LV2__)
+#include "platform/platform_ps3_exec.c"
+#include "platform/platform_ps3.c"
+#elif defined(GEKKO)
+#ifdef HW_RVL
+#include "platform/platform_gx_exec.c"
+#endif
+#include "platform/platform_gx.c"
+#elif defined(_XBOX)
+#include "platform/platform_xdk_exec.c"
+#include "platform/platform_xdk.c"
+#elif defined(PSP)
+#include "platform/platform_psp.c"
+#endif
+
+#undef main
+
+default_paths_t default_paths;
 
 /* If a CORE executable of name CORE.extension exists, rename filename
  * to a more sane name. */
