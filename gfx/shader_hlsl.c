@@ -103,7 +103,10 @@ void hlsl_set_proj_matrix(XMMATRIX rotation_value)
 static void hlsl_set_params(unsigned width, unsigned height,
       unsigned tex_width, unsigned tex_height,
       unsigned out_width, unsigned out_height,
-      unsigned frame_count)
+      unsigned frame_counter,
+      const struct gl_tex_info *info,
+      const struct gl_tex_info *prev_info,
+      const struct gl_tex_info *fbo_info, unsigned fbo_info_cnt)
 {
    if (!hlsl_active)
       return;
@@ -111,7 +114,7 @@ static void hlsl_set_params(unsigned width, unsigned height,
    const float ori_size[2] = { (float)width,     (float)height     };
    const float tex_size[2] = { (float)tex_width, (float)tex_height };
    const float out_size[2] = { (float)out_width, (float)out_height };
-   float frame_cnt = frame_count;
+   float frame_cnt = frame_counter;
 
    prg[active_index].f_ctable->SetDefaults(d3d_device_ptr);
    prg[active_index].v_ctable->SetDefaults(d3d_device_ptr);
@@ -330,12 +333,9 @@ static bool load_preset(const char *path)
    return true;
 }
 
-static bool hlsl_init(const char *path, IDirect3DDevice9 * device_ptr)
+static bool hlsl_init(const char *path)
 {
-   if (!device_ptr)
-      return false;
-
-   d3d_device_ptr = device_ptr;
+   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
 
    if (path && strcmp(path_get_extension(path), ".cgp") == 0)
    {
@@ -351,8 +351,9 @@ static bool hlsl_init(const char *path, IDirect3DDevice9 * device_ptr)
    for(unsigned i = 1; i <= cg_shader->passes; i++)
       set_program_attributes(i);
 
-   d3d_device_ptr->SetVertexShader(prg[1].vprg);
-   d3d_device_ptr->SetPixelShader(prg[1].fprg);
+   d3d_device_ptr = d3d->d3d_render_device;
+   d3d->d3d_render_device->SetVertexShader(prg[1].vprg);
+   d3d->d3d_render_device->SetPixelShader(prg[1].fprg);
 
    hlsl_active = true;
    return true;

@@ -171,10 +171,11 @@ static void xdk_d3d_free(void *data)
    if (!d3d)
       return;
 
-#ifdef HAVE_HLSL
-   hlsl_deinit();
-#endif
    d3d->font_ctx->deinit(d3d);
+
+   if (d3d->shader)
+      d3d->shader->deinit();
+   d3d->shader = NULL;
 
    d3d->ctx_driver->destroy();
 
@@ -254,6 +255,9 @@ static void xdk_d3d_set_viewport(bool force_full)
    vp.MinZ   = m_zNear;
    vp.MaxZ   = m_zFar;
    d3dr->SetViewport(&vp);
+
+   if (d3d->shader)
+      d3d->shader->set_mvp(NULL);
 
 #ifdef _XBOX1
    font_x = vp.X;
@@ -672,7 +676,7 @@ static void *xdk_d3d_init(const video_info_t *video, const input_driver_t **inpu
       return NULL;
    }
 
-   RARCH_LOG("D3D: Loaded %u program(s).\n", d3d->shader->num_func());
+   RARCH_LOG("D3D: Loaded %u program(s).\n", d3d->shader->num_shaders());
 #endif
 
 #if 0 /* ifdef HAVE_FBO */
@@ -888,9 +892,12 @@ static bool xdk_d3d_frame(void *data, const void *frame,
 #endif
    {
 #ifdef HAVE_HLSL
+
       if (d3d->shader)
          d3d->shader->set_params(width, height, d3d->tex_w, d3d->tex_h, d3d->win_width,
-               d3d->win_height, g_extern.frame_count);
+               d3d->win_height, g_extern.frame_count,
+      /* TODO - missing a bunch of params at the end */
+NULL, NULL, NULL, 0);
 #endif
    }
 
