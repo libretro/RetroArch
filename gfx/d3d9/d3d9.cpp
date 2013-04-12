@@ -1396,7 +1396,7 @@ static void d3d9_set_filtering(void *data, unsigned index, bool smooth)
 
 static uintptr_t d3d9_get_current_framebuffer(void *data)
 {
-   return NULL;
+   return 0;
 }
 
 static retro_proc_address_t d3d9_get_proc_address(void *data, const char *sym)
