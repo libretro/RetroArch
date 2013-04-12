@@ -173,9 +173,11 @@ static void xdk_d3d_free(void *data)
 
    d3d->font_ctx->deinit(d3d);
 
+#ifdef HAVE_HLSL
    if (d3d->shader)
       d3d->shader->deinit();
    d3d->shader = NULL;
+#endif
 
    d3d->ctx_driver->destroy();
 
@@ -256,8 +258,10 @@ static void xdk_d3d_set_viewport(bool force_full)
    vp.MaxZ   = m_zFar;
    d3dr->SetViewport(&vp);
 
+#ifdef HAVE_HLSL
    if (d3d->shader)
       d3d->shader->set_mvp(NULL);
+#endif
 
 #ifdef _XBOX1
    font_x = vp.X;
