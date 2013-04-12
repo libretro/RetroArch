@@ -125,6 +125,11 @@ def destructify_varyings(source):
             log('Found elements in struct', struct + ':', names)
             last_struct_decl_line = j
 
+            # Must have explicit uniform sampler2D in struct.
+            for index in range(i, j + 1):
+               if 'sampler2D' in source[index]:
+                  source[index] = ''
+
    varyings_tmp = varyings
    varyings = []
    variables = []
@@ -169,6 +174,12 @@ def destructify_varyings(source):
       for varying_name in varyings_name:
          if varying_name in varyings_dict:
             source[index] = source[index].replace(varying_name, varyings_dict[varying_name])
+
+   # Replace union <struct>. Sometimes we get collision in vertex and fragment.
+   for index, line in enumerate(source):
+      for struct_type in struct_types:
+         line = line.replace('uniform ' + struct_type, struct_type)
+      source[index] = line
 
    return source
 
