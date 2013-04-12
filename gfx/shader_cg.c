@@ -19,6 +19,7 @@
 #endif
 
 #include "shader_cg.h"
+#include "shader_common.h"
 #include <Cg/cg.h>
 #include <Cg/cgGL.h>
 #include "../general.h"

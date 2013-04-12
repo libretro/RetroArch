@@ -17,9 +17,15 @@
 #define SHADER_COMMON_H__
 
 #include "../boolean.h"
+
+#ifdef HAVE_CONFIG_H
+#include "../config.h"
+#endif
+
 #ifdef HAVE_OPENGL
 #include "gl_common.h"
 #endif
+
 #include "gfx_context.h"
 #include "shader_parse.h"
 #include "math/matrix.h"
