@@ -14,11 +14,9 @@
 
 #include <pshpack4.h>
 
-// Do extern "C" for C++
-#if defined(__cplusplus) && !defined(XBOXINTERNAL_NO_EXTERN_C)
+#ifdef __cplusplus
 extern "C" {
-#endif // __cplusplus
-
+#endif
 
 // Don't do __declspec(dllimport) for things like emulators
 #if defined(NTSYSAPI) && defined(DONT_IMPORT_INTERNAL)
@@ -930,10 +928,9 @@ XeLoadSection(
 #define STATUS_TOO_MANY_SECRETS			0xC0000156
 #define STATUS_REGION_MISMATCH			0xC0050001
 
-// End extern "C" for C++
-#if defined(__cplusplus) && !defined(XBOXINTERNAL_NO_EXTERN_C)
+#ifdef __cplusplus
 };
-#endif // __cplusplus
+#endif
 
 #include <poppack.h>
 

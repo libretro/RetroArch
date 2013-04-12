@@ -19,6 +19,48 @@
 #include <xtl.h>
 #endif
 
+static const char *stock_hlsl_program =
+      "void main_vertex"
+      "("
+      "  float4 position : POSITION,"
+      "  float4 color    : COLOR,"
+      ""
+      "  uniform float4x4 modelViewProj,"
+      ""
+      "  float4 texCoord : TEXCOORD0,"
+      "  out float4 oPosition : POSITION,"
+      "  out float4 oColor : COLOR,"
+      "  out float2 otexCoord : TEXCOORD"
+      ")"
+      "{"
+      "  oPosition = mul(modelViewProj, position);"
+	   "  oColor = color;"
+      "  otexCoord = texCoord;"
+      "}"
+      ""
+      "struct output"
+      "{"
+      "  float4 color: COLOR; "
+      "};"
+      ""
+      "struct input"
+      "{"
+      "  float2 video_size;"
+      "  float2 texture_size;"
+      "  float2 output_size;"
+	   "  float frame_count;"
+	   "  float frame_direction;"
+	   "  float frame_rotation;"
+      "};"
+      ""
+      "output main_fragment(float2 texCoord : TEXCOORD0," 
+      "uniform sampler2D decal : TEXUNIT0, uniform input IN)"
+      "{"
+      "  output OUT;"
+      "  OUT.color = tex2D(decal, texCoord);"
+      "  return OUT;"
+      "}";
+
 struct hlsl_program
 {
    IDirect3DVertexShader9 *vprg;
@@ -45,45 +87,6 @@ static bool hlsl_active = false;
 static unsigned active_index = 0;
 static unsigned hlsl_shader_num = 0;
 
-static const char *stock_hlsl_program =
-      "void main_vertex                                                "
-      "(                                                               "
-      "   float4 position : POSITION,                                  "
-	  "   float4 color    : COLOR,                                     "
-      "   float4 texCoord : TEXCOORD0,                                 "
-      "   uniform float4x4 modelViewProj,                              "
-      "   out float4 oPosition : POSITION,                             "
-	  "   out float4 oColor : COLOR,                                   "
-      "   out float2 otexCoord : TEXCOORD                              "
-      ")                                                               "
-      "{                                                               "
-      "   oPosition = mul(modelViewProj, position);                    "
-	  "   oColor = color;                                              "
-      "   otexCoord = texCoord;                                        "
-      "}                                                               "
-      "                                                                "
-      "struct output                                                   "
-      "{                                                               "
-      "   float4 color: COLOR;                                         "
-      "};                                                              "
-      "                                                                "
-      "struct input                                                    "
-      "{                                                               "
-      "   float2 video_size;                                           "
-      "   float2 texture_size;                                         "
-      "   float2 output_size;                                          "
-	  "   float frame_count;                                           "
-	  "   float frame_direction;                                       "
-	  "   float frame_rotation;                                        "
-      "};                                                              "
-      "                                                                "
-      "output main_fragment(float2 texCoord : TEXCOORD0,               " 
-      "uniform sampler2D decal : TEXUNIT0, uniform input IN)           "
-      "{                                                               "
-      "   output OUT;                                                  "
-      "   OUT.color = tex2D(decal, texCoord);                          "
-      "   return OUT;                                                  "
-      "}                                                               ";
 
 void hlsl_set_proj_matrix(XMMATRIX rotation_value)
 {
@@ -155,9 +158,9 @@ static bool load_program(unsigned index, const char *prog, bool path_is_file)
    else
    {
       /* TODO - crashes currently - to do with 'end of line' of stock shader */
-      ret_fp = D3DXCompileShader(prog, (UINT)strlen(prog), NULL, NULL,
+      ret_fp = D3DXCompileShader(prog, strlen(prog), NULL, NULL,
             "main_fragment", "ps_3_0", 0, &code_f, &listing_f, &prg[index].f_ctable );
-      ret_vp = D3DXCompileShader(prog, (UINT)strlen(prog), NULL, NULL,
+      ret_vp = D3DXCompileShader(prog, strlen(prog), NULL, NULL,
             "main_vertex", "vs_3_0", 0, &code_v, &listing_v, &prg[index].v_ctable );
    }
 
@@ -227,14 +230,12 @@ bool hlsl_load_shader(unsigned index, const char *path)
       if (path)
       {
          if (load_program(index, path, true))
-         {
             set_program_attributes(index);
-         }
          else
          {
             // Always make sure we have a valid shader.
             prg[index] = prg[0];
-		    retval = false;
+            retval = false;
          }
       }
       else
@@ -280,7 +281,7 @@ static void hlsl_deinit_progs(void)
          prg[i].vprg->Release();
 
       prg[i].fprg = NULL;
-	  prg[i].vprg = NULL;
+      prg[i].vprg = NULL;
    }
 
    if (prg[0].fprg)
