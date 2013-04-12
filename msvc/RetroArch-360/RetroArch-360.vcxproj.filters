@@ -30,9 +30,6 @@
     <Filter Include="Source Files\media\hd">
       <UniqueIdentifier>{76fa04d8-4379-4b8c-ae79-2aa78d380e06}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Source Files\media\shaders">
-      <UniqueIdentifier>{3a05047b-b9ec-4821-bb28-d1b0e9e3e8bb}</UniqueIdentifier>
-    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\griffin\griffin.c">

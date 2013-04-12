@@ -124,7 +124,7 @@
     </Link>
     <Deploy>
       <DeploymentType>CopyToHardDrive</DeploymentType>
-      <DeploymentFiles>$(RemoteRoot)=$(ImagePath);$(RemoteRoot)\media=$(OutDir)media;$(RemoteRoot)\media\shaders=$(OutDir)media\shaders</DeploymentFiles>
+      <DeploymentFiles>$(RemoteRoot)=$(ImagePath);$(RemoteRoot)\media=$(OutDir)media</DeploymentFiles>
       <ForceCopy>true</ForceCopy>
     </Deploy>
     <ImageXex>
@@ -161,7 +161,7 @@
       <StackCommitSize>524288</StackCommitSize>
     </Link>
     <Deploy>
-      <DeploymentFiles>$(RemoteRoot)=$(ImagePath);$(RemoteRoot)\media=$(OutDir)media;$(RemoteRoot)\media\shaders=$(OutDir)media\shaders</DeploymentFiles>
+      <DeploymentFiles>$(RemoteRoot)=$(ImagePath);$(RemoteRoot)\media=$(OutDir)media</DeploymentFiles>
       <ForceCopy>true</ForceCopy>
       <DeploymentType>CopyToHardDrive</DeploymentType>
     </Deploy>
@@ -204,7 +204,7 @@
       <StackCommitSize>524288</StackCommitSize>
     </Link>
     <Deploy>
-      <DeploymentFiles>$(RemoteRoot)=$(ImagePath);$(RemoteRoot)\media=$(OutDir)media;$(RemoteRoot)\media\shaders=$(OutDir)media\shaders</DeploymentFiles>
+      <DeploymentFiles>$(RemoteRoot)=$(ImagePath);$(RemoteRoot)\media=$(OutDir)media</DeploymentFiles>
       <ForceCopy>true</ForceCopy>
       <DeploymentType>CopyToHardDrive</DeploymentType>
     </Deploy>
@@ -246,7 +246,7 @@
       <StackCommitSize>524288</StackCommitSize>
     </Link>
     <Deploy>
-      <DeploymentFiles>$(RemoteRoot)=$(ImagePath);$(RemoteRoot)\media=$(OutDir)media;$(RemoteRoot)\media\shaders=$(OutDir)media\shaders</DeploymentFiles>
+      <DeploymentFiles>$(RemoteRoot)=$(ImagePath);$(RemoteRoot)\media=$(OutDir)media</DeploymentFiles>
       <ForceCopy>true</ForceCopy>
       <DeploymentType>CopyToHardDrive</DeploymentType>
     </Deploy>
@@ -288,7 +288,7 @@
     </Link>
     <Deploy>
       <DeploymentType>CopyToHardDrive</DeploymentType>
-      <DeploymentFiles>$(RemoteRoot)=$(ImagePath);$(RemoteRoot)\media=$(OutDir)media;$(RemoteRoot)\media\shaders=$(OutDir)media\shaders</DeploymentFiles>
+      <DeploymentFiles>$(RemoteRoot)=$(ImagePath);$(RemoteRoot)\media=$(OutDir)media</DeploymentFiles>
       <ForceCopy>true</ForceCopy>
     </Deploy>
     <ImageXex>
@@ -331,7 +331,7 @@
       <ForceCopy>true</ForceCopy>
     </Deploy>
     <Deploy>
-      <DeploymentFiles>$(RemoteRoot)=$(ImagePath);$(RemoteRoot)\media=$(OutDir)media;$(RemoteRoot)\media\shaders=$(OutDir)media\shaders</DeploymentFiles>
+      <DeploymentFiles>$(RemoteRoot)=$(ImagePath);$(RemoteRoot)\media=$(OutDir)media</DeploymentFiles>
       <DeploymentType>CopyToHardDrive</DeploymentType>
     </Deploy>
     <ImageXex>
