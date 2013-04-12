@@ -299,21 +299,12 @@ static void menu_stack_pop(void)
 {
    if (browser->prev_dir.directory_path[0] != '\0')
    {
-      strlcpy(browser->current_dir.directory_path, browser->prev_dir.directory_path,
-            sizeof(browser->current_dir.directory_path));
-      strlcpy(browser->current_dir.extensions, browser->prev_dir.extensions,
-            sizeof(browser->current_dir.extensions));
-      strlcpy(browser->current_dir.root_dir, browser->prev_dir.root_dir,
-            sizeof(browser->current_dir.root_dir));
+      memcpy(&browser->current_dir, &browser->prev_dir, sizeof(*(&browser->current_dir)));
       filebrowser_iterate(browser, FILEBROWSER_ACTION_RESET_CURRENT_DIR);
       browser->current_dir.ptr = browser->prev_dir.ptr;
       strlcpy(browser->current_dir.path, browser->prev_dir.path,
             sizeof(browser->current_dir.path));
-      browser->prev_dir.ptr = 0;
-      browser->prev_dir.path[0] = '\0';
-      browser->prev_dir.directory_path[0] = '\0';
-      browser->prev_dir.extensions[0] = '\0';
-      browser->prev_dir.root_dir[0] = '\0';
+      memset(&browser->prev_dir, 0, sizeof(*(&browser->prev_dir)));
    }
 
    if (stack_idx > 1)
@@ -324,14 +315,7 @@ static void menu_stack_push(unsigned menu_id, bool prev_dir)
 {
    if (prev_dir)
    {
-      strlcpy(browser->prev_dir.directory_path, browser->current_dir.directory_path,
-            sizeof(browser->prev_dir.directory_path));
-      strlcpy(browser->prev_dir.extensions, browser->current_dir.extensions,
-            sizeof(browser->prev_dir.extensions));
-      strlcpy(browser->prev_dir.root_dir, browser->current_dir.root_dir,
-            sizeof(browser->prev_dir.root_dir));
-      strlcpy(browser->prev_dir.path, browser->current_dir.path,
-            sizeof(browser->prev_dir.path));
+      memcpy(&browser->prev_dir, &browser->current_dir, sizeof(*(&browser->prev_dir)));
       browser->prev_dir.ptr = browser->current_dir.ptr;
    }
 
