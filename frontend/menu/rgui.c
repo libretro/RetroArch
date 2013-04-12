@@ -1932,7 +1932,6 @@ static const struct retro_keybind _menu_nav_binds[] = {
    { 0, 0, NULL, 0, GX_GC_B | GX_CLASSIC_B | GX_WIIMOTE_B | GX_WIIMOTE_1, 0 },
    { 0, 0, NULL, 0, GX_GC_START | GX_CLASSIC_PLUS | GX_WIIMOTE_PLUS, 0 },
    { 0, 0, NULL, 0, GX_GC_Z_TRIGGER | GX_CLASSIC_MINUS | GX_WIIMOTE_MINUS, 0 },
-   { 0, 0, NULL, 0, GX_WIIMOTE_HOME | GX_CLASSIC_HOME, 0 },
 #elif defined(HW_DOL)
    { 0, 0, NULL, 0, GX_GC_UP | GX_GC_LSTICK_UP | GX_GC_RSTICK_UP, 0 },
    { 0, 0, NULL, 0, GX_GC_DOWN | GX_GC_LSTICK_DOWN | GX_GC_RSTICK_DOWN, 0 },
@@ -1943,7 +1942,6 @@ static const struct retro_keybind _menu_nav_binds[] = {
    { 0, 0, NULL, 0, GX_GC_START, 0 },
    { 0, 0, NULL, 0, GX_GC_Z_TRIGGER, 0 },
    { 0, 0, NULL, 0, GX_WIIMOTE_HOME, 0 },
-   { 0, 0, NULL, 0, GX_QUIT_KEY, 0 },
 #else
    { 0, 0, NULL, (enum retro_key)0, (1ULL << RETRO_DEVICE_ID_JOYPAD_UP), 0 },
    { 0, 0, NULL, (enum retro_key)0, (1ULL << RETRO_DEVICE_ID_JOYPAD_DOWN), 0 },
@@ -1954,7 +1952,6 @@ static const struct retro_keybind _menu_nav_binds[] = {
    { 0, 0, NULL, (enum retro_key)0, (1ULL << RETRO_DEVICE_ID_JOYPAD_START), 0 },
    { 0, 0, NULL, (enum retro_key)0, (1ULL << RETRO_DEVICE_ID_JOYPAD_SELECT), 0 },
    { 0, 0, NULL, (enum retro_key)0, (1ULL << RARCH_MENU_TOGGLE), 0 },
-   { 0, 0, NULL, (enum retro_key)0, (1ULL << RARCH_QUIT_KEY), 0 },
 #endif
 };
 
@@ -1973,7 +1970,6 @@ enum
    DEVICE_NAV_START,
    DEVICE_NAV_SELECT,
    DEVICE_NAV_MENU,
-   DEVICE_NAV_QUIT,
    RMENU_DEVICE_NAV_LAST
 };
 
@@ -2035,7 +2031,6 @@ static uint64_t menu_input_state(void)
             RETRO_DEVICE_JOYPAD, 0, i) ? (1ULL << i) : 0;
 
    input_state |= driver.input->key_pressed(driver.input_data, RARCH_MENU_TOGGLE) ? (1ULL << DEVICE_NAV_MENU) : 0;
-   input_state |= driver.input->key_pressed(driver.input_data, RARCH_QUIT_KEY) ? (1ULL << DEVICE_NAV_QUIT) : 0;
 
 #ifdef HAVE_OVERLAY
    for (unsigned i = 0; i < RMENU_DEVICE_NAV_LAST; i++)
@@ -2065,7 +2060,6 @@ static uint64_t menu_input_state(void)
    }
 
    input_state |= input_key_pressed_func(RARCH_MENU_TOGGLE) ? (1ULL << DEVICE_NAV_MENU) : 0;
-   input_state |= input_key_pressed_func(RARCH_QUIT_KEY) ? (1ULL << DEVICE_NAV_QUIT) : 0;
 #endif
 
    return input_state;
@@ -2114,7 +2108,7 @@ bool menu_iterate(void)
    input_state = menu_input_state();
 
    trigger_state = input_state & ~old_input_state;
-   do_held = (input_state & ((1ULL << DEVICE_NAV_UP) | (1ULL << DEVICE_NAV_DOWN) | (1ULL << DEVICE_NAV_LEFT) | (1ULL << DEVICE_NAV_RIGHT))) && !(input_state & ((1ULL << DEVICE_NAV_MENU) | (1ULL << DEVICE_NAV_QUIT)));
+   do_held = (input_state & ((1ULL << DEVICE_NAV_UP) | (1ULL << DEVICE_NAV_DOWN) | (1ULL << DEVICE_NAV_LEFT) | (1ULL << DEVICE_NAV_RIGHT))) && !(input_state & ((1ULL << DEVICE_NAV_MENU)));
 
    if(do_held)
    {
@@ -2158,13 +2152,6 @@ bool menu_iterate(void)
       action = RGUI_ACTION_START;
    else if (trigger_state & (1ULL << DEVICE_NAV_START))
       action = RGUI_ACTION_SETTINGS;
-#ifdef GEKKO
-   else if (trigger_state & (1ULL << DEVICE_NAV_QUIT))
-   {
-      g_extern.lifecycle_mode_state |= (1ULL << MODE_EXIT);
-      goto deinit;
-   }
-#endif
 
    input_entry_ret = 0;
    input_process_ret = 0;

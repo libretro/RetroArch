@@ -525,9 +525,6 @@ static void gx_input_poll(void *data)
          *state_cur |= (down & WPAD_BUTTON_LEFT) ? GX_WIIMOTE_DOWN : 0;
          *state_cur |= (down & WPAD_BUTTON_RIGHT) ? GX_WIIMOTE_UP : 0;
 
-         if((down & WPAD_BUTTON_HOME) && (down & WPAD_BUTTON_B))
-            *state_cur |= GX_QUIT_KEY;
-
          expansion_t *exp = &wpaddata->exp;
 
          if (type == WPAD_EXP_CLASSIC)
@@ -547,10 +544,6 @@ static void gx_input_poll(void *data)
             *state_cur |= (down & WPAD_CLASSIC_BUTTON_FULL_R) ? GX_CLASSIC_R_TRIGGER : 0;
             *state_cur |= (down & WPAD_CLASSIC_BUTTON_ZL) ? GX_CLASSIC_ZL_TRIGGER : 0;
             *state_cur |= (down & WPAD_CLASSIC_BUTTON_ZR) ? GX_CLASSIC_ZR_TRIGGER : 0;
-
-            if((down & WPAD_CLASSIC_BUTTON_HOME) && (down & WPAD_CLASSIC_BUTTON_ZL) 
-                  && (down & WPAD_CLASSIC_BUTTON_ZR))
-               *state_cur |= GX_QUIT_KEY;
 
             if (dpad_emulation)
             {
@@ -666,9 +659,6 @@ static void gx_input_poll(void *data)
             *state_cur |= (y > GC_JOYSTICK_THRESHOLD) ? GX_GC_RSTICK_UP : 0;
          }
 
-         if ((*state_cur & (GX_GC_LSTICK_DOWN | GX_GC_RSTICK_DOWN | GX_GC_L_TRIGGER | GX_GC_R_TRIGGER)) == (GX_GC_LSTICK_DOWN | GX_GC_RSTICK_DOWN | GX_GC_L_TRIGGER | GX_GC_R_TRIGGER))
-            *state_cur |= GX_QUIT_KEY;
-
          if ((*state_cur & (GX_GC_LSTICK_UP | GX_GC_RSTICK_UP | GX_GC_L_TRIGGER | GX_GC_R_TRIGGER)) == (GX_GC_LSTICK_UP | GX_GC_RSTICK_UP | GX_GC_L_TRIGGER | GX_GC_R_TRIGGER))
             *state_cur |= GX_WIIMOTE_HOME;
       }
@@ -740,17 +730,8 @@ static void gx_input_poll(void *data)
       g_menu = false;
    }
 
-   if (g_quit)
-   {
-      *state_p1 |= GX_QUIT_KEY;
-      g_quit = false;
-   }
-
    if (!(g_extern.frame_count < g_extern.delay_timer[0]))
    {
-      if (*state_p1 & GX_QUIT_KEY)
-         *lifecycle_state |= (1ULL << RARCH_QUIT_KEY);
-
       if (*state_p1 & (GX_WIIMOTE_HOME
 #ifdef HW_RVL
                | GX_CLASSIC_HOME
