@@ -389,17 +389,6 @@ static void gl_cg_deinit(void)
 
 static bool gl_cg_init(const char *path);
 
-// Deinit as much as possible without resetting context (broken on PS3),
-// and reinit cleanly.
-// If this fails, we're kinda screwed without resetting everything on PS3.
-bool gl_cg_reinit(const char *path)
-{
-   if (cg_active)
-      gl_cg_deinit_state();
-
-   return gl_cg_init(path);
-}
-
 #define SET_LISTING(type) \
 { \
    const char *list = cgGetLastListing(cgCtx); \

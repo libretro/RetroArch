@@ -20,10 +20,6 @@
 #include "shader_common.h"
 #include <stdint.h>
 
-bool gl_cg_reinit(const char *path);
-
-// Used on PS3, but not really platform specific.
-
 #define RARCH_CG_MAX_SHADERS 16
 void gl_cg_set_compiler_args(const char **argv);
 
