@@ -122,23 +122,6 @@ typedef OBJECT_ATTRIBUTES *POBJECT_ATTRIBUTES;
 #define OBJ_KERNEL_HANDLE       0x00000200L
 #define OBJ_VALID_ATTRIBUTES    0x000003F2L
 
-// Initializes an OBJECT_ATTRIBUTES.
-// Works as if it were this function:
-// VOID
-// InitializeObjectAttributes(
-//     OUT POBJECT_ATTRIBUTES p,
-//     IN PANSI_STRING n,
-//     IN ULONG a,
-//     IN HANDLE r
-//     )
-// Differences from NT: SECURITY_DESCRIPTOR support is gone.
-#define InitializeObjectAttributes( p, n, a, r ) { \
-    (p)->RootDirectory = r;                             \
-    (p)->Attributes = a;                                \
-    (p)->ObjectName = n;                                \
-    }
-
-
 // CreateDisposition values for NtCreateFile()
 #define FILE_SUPERSEDE                  0x00000000
 #define FILE_OPEN                       0x00000001
@@ -241,7 +224,6 @@ typedef struct _FILE_FS_DEVICE_INFORMATION {
 // Differences from NT: 32 bit address instead of 64.
 typedef ULONG PHYSICAL_ADDRESS, *PPHYSICAL_ADDRESS;
 
-
 // NtCreateFile/NtOpenFile stuff
 #define FILE_SUPERSEDED                 0x00000000
 #define FILE_OPENED                     0x00000001
@@ -253,10 +235,6 @@ typedef ULONG PHYSICAL_ADDRESS, *PPHYSICAL_ADDRESS;
 // NtReadFile/NtWriteFile stuff
 #define FILE_WRITE_TO_END_OF_FILE       0xffffffff
 #define FILE_USE_FILE_POINTER_POSITION  0xfffffffe
-
-
-
-// DeviceIoControl stuff
 
 // Device types
 #define FILE_DEVICE_CD_ROM              0x00000002
@@ -671,60 +649,6 @@ typedef struct _XBE_SECTION {
 #define PAGE_ALIGN(Va) ((PVOID)((ULONG_PTR)(Va) & ~(PAGE_SIZE - 1)))
 
 
-// RtlInitAnsiString:
-// Fills an ANSI_STRING structure to use the specified string.
-//
-// Differences from NT: None.
-NTSYSAPI
-EXPORTNUM(289)
-VOID
-NTAPI
-RtlInitAnsiString(
-	OUT PANSI_STRING DestinationString,
-	IN PCSZ SourceString
-	);
-
-
-// NtCreateFile:
-// Creates or opens a file or device object.
-//
-// Differences from NT: The EaBuffer and EaLength options are gone.
-//     OBJECT_ATTRIBUTES uses ANSI_STRING, so only ANSI filenames work.
-NTSYSAPI
-EXPORTNUM(190)
-NTSTATUS
-NTAPI
-NtCreateFile(
-    OUT PHANDLE FileHandle,
-    IN ACCESS_MASK DesiredAccess,
-    IN POBJECT_ATTRIBUTES ObjectAttributes,
-    OUT PIO_STATUS_BLOCK IoStatusBlock,
-    IN PLARGE_INTEGER AllocationSize OPTIONAL,
-    IN ULONG FileAttributes,
-    IN ULONG ShareAccess,
-    IN ULONG CreateDisposition,
-    IN ULONG CreateOptions
-    );
-
-// NtOpenFile:
-// Opens a file or device object.  Same as calling:
-//   NtCreateFile(FileHandle, DesiredAccess, ObjectAttributes,
-//     IoStatusBlock, NULL, 0, ShareAccess, OPEN_EXISTING, OpenOptions);
-//
-// Differences from NT: See NtCreateFile.
-NTSYSAPI
-EXPORTNUM(202)
-NTSTATUS
-NTAPI
-NtOpenFile(
-    OUT PHANDLE FileHandle,
-    IN ACCESS_MASK DesiredAccess,
-    IN POBJECT_ATTRIBUTES ObjectAttributes,
-    OUT PIO_STATUS_BLOCK IoStatusBlock,
-    IN ULONG ShareAccess,
-    IN ULONG OpenOptions
-    );
-
 // NtReadFile:
 // Reads a file.
 //
@@ -780,27 +704,6 @@ NtQueryVolumeInformationFile(
 	IN FS_INFORMATION_CLASS VolumeInformationClass
 	);
 
-// NtDeviceIoControl:
-// Does an IOCTL on a device.
-//
-// Differences from NT: None known.
-NTSYSAPI
-EXPORTNUM(196)
-NTSTATUS
-NTAPI
-NtDeviceIoControlFile(
-	IN HANDLE FileHandle,
-	IN HANDLE Event OPTIONAL,
-	IN PIO_APC_ROUTINE ApcRoutine OPTIONAL,
-	IN PVOID ApcContext OPTIONAL,
-	OUT PIO_STATUS_BLOCK IoStatusBlock,
-	IN ULONG IoControlCode,
-	IN PVOID InputBuffer OPTIONAL,
-	IN ULONG InputBufferLength,
-	OUT PVOID OutputBuffer OPTIONAL,
-	IN ULONG OutputBufferLength
-	);
-
 // NtClose:
 // Closes a file or other handle.
 //
@@ -845,100 +748,6 @@ NtFreeVirtualMemory(
 
 
 // Kernel-level routines
-
-
-// KeBugCheck:
-// Bug checks the kernel.
-// Same as KeBugCheckEx(BugCheckCode, 0, 0, 0, 0);
-//
-// Differences from NT: None, other than the reaction.
-NTSYSAPI
-EXPORTNUM(95)
-VOID
-NTAPI
-KeBugCheck(
-	IN ULONG BugCheckCode
-	);
-
-// KeBugCheckEx:
-// Bug checks the kernel.
-//
-// Differences from NT: None, other than the reaction.
-NTSYSAPI
-EXPORTNUM(96)
-VOID
-NTAPI
-KeBugCheckEx(
-	IN ULONG      BugCheckCode,
-	IN ULONG_PTR  BugCheckParameter1,
-	IN ULONG_PTR  BugCheckParameter2,
-	IN ULONG_PTR  BugCheckParameter3,
-	IN ULONG_PTR  BugCheckParameter4
-	);
-
-// KeInitializeDpc:
-// Initializes a DPC structure.
-//
-// Differences from NT: This function sets less fields than the NT version.
-NTSYSAPI
-EXPORTNUM(107)
-VOID
-NTAPI
-KeInitializeDpc(
-	IN PKDPC Dpc,
-	IN PKDEFERRED_ROUTINE DeferredRoutine,
-	IN PVOID DeferredContext
-	);
-
-// KeInitializeTimerEx:
-// Initializes a timer.
-//
-// Differences from NT: None.
-NTSYSAPI
-EXPORTNUM(113)
-VOID
-KeInitializeTimerEx(
-	IN OUT PKTIMER Timer,
-	IN TIMER_TYPE Type
-	);
-
-// KeRaiseIrql:
-// Raises IRQL to some value.
-//
-// Differences from NT: None.
-#define KeRaiseIrql KfRaiseIrql
-NTSYSAPI
-EXPORTNUM(190)
-VOID
-__fastcall
-KfRaiseIrql(
-	IN KIRQL NewIrql,
-	OUT PKIRQL OldIrql
-	);
-
-// KeRaiseIrqlToDpcLevel:
-// Raises IRQL to DISPATCH_LEVEL.  Like KeRaiseIrql except returns old level directly.
-//
-// Differences from NT: None.
-NTSYSAPI
-EXPORTNUM(129)
-KIRQL
-NTAPI
-KeRaiseIrqlToDpcLevel(
-	VOID
-	);
-
-// KeLowerIrql:
-// Lowers IRQL.
-#define KeLowerIrql KfLowerIrql
-NTSYSAPI
-EXPORTNUM(161)
-VOID
-__fastcall
-KfLowerIrql(
-	IN KIRQL NewIrql
-	);
-
 
 // MmMapIoSpace:
 // Maps a physical address area into the virtual address space.
@@ -1009,49 +818,6 @@ NTAPI
 MmFreeContiguousMemory(
 	IN PVOID BaseAddress
 	);
-
-
-// DbgPrint
-// Displays a message on the debugger.
-//
-// Differences from NT: Only how this information is displayed changed.
-NTSYSAPI
-EXPORTNUM(8)
-ULONG
-__cdecl
-DbgPrint(
-	IN PCSZ Format,
-	...
-	);
-
-
-// ExAllocatePoolWithTag:
-// Allocates memory from the memory pool.  The Tag parameter is a 4-letter
-// character constant to which to associate the allocation.
-//
-// Differences from NT: There is no PoolType field, as the XBOX only has 1
-//     pool, the non-paged pool.
-NTSYSAPI
-EXPORTNUM(15)
-PVOID
-NTAPI
-ExAllocatePoolWithTag(
-	IN SIZE_T NumberOfBytes,
-	IN ULONG Tag
-	);
-
-// ExFreePool:
-// Frees memory allocated by ExAllocatePool* functions.
-//
-// Differences from NT: None.
-NTSYSAPI
-EXPORTNUM(17)
-VOID
-NTAPI
-ExFreePool(
-	IN PVOID P
-	);
-
 
 // IoCreateSymbolicLink:
 // Creates a symbolic link in the object namespace.
@@ -1125,73 +891,7 @@ ObfDereferenceObject(
     IN PVOID Object
     );
 
-
-// PsTerminateSystemThread:
-// Exits the current system thread.  Must be called from a system thread.
-//
-// Differences from NT: None.
-NTSYSAPI
-EXPORTNUM(258)
-__declspec(noreturn)
-NTSTATUS
-PsTerminateSystemThread(
-	NTSTATUS ExitCode
-	);
-
-
-
 // Kernel routines only in the XBOX
-
-// IoSynchronousDeviceIoControlRequest:
-// NICE.  Makes kernel driver stuff sooooo much easier.  This does a
-// blocking IOCTL on the specified device.
-//
-// New to the XBOX.
-NTSYSAPI
-EXPORTNUM(84)
-NTSTATUS
-NTAPI
-IoSynchronousDeviceIoControlRequest(
-	IN ULONG IoControlCode,
-	IN PDEVICE_OBJECT DeviceObject,
-	IN PVOID InputBuffer OPTIONAL,
-	IN ULONG InputBufferLength,
-	OUT PVOID OutputBuffer OPTIONAL,
-	IN ULONG OutputBufferLength,
-	OUT PDWORD unknown_use_zero OPTIONAL,
-	IN BOOLEAN InternalDeviceIoControl
-	);
-
-// ExQueryNonVolatileSettings
-// Queries saved information, such as the region code.
-//
-// New to the XBOX.
-NTSYSAPI
-EXPORTNUM(24)
-NTSTATUS
-NTAPI
-ExQueryNonVolatileSetting(
-	IN ULONG ValueIndex,
-	OUT PULONG Type,
-	OUT PVOID Value,
-	IN ULONG ValueLength,
-	OUT PULONG ResultLength OPTIONAL
-	);
-
-// ExSaveNonVolatileSettings
-// Writes saved information, such as the region code.
-//
-// New to the XBOX.
-NTSYSAPI
-EXPORTNUM(29)
-NTSTATUS
-NTAPI
-ExSaveNonVolatileSetting(
-	IN ULONG ValueIndex,
-	IN PULONG Type OPTIONAL,
-	IN PVOID Value,
-	IN ULONG ValueLength
-	);
 
 // HalEnableSecureTrayEject:
 // Notifies the SMBUS that ejecting the DVD-ROM should not reset the system.
@@ -1219,84 +919,6 @@ XeLoadSection(
 	IN OUT PXBE_SECTION section
 	);
 
-// XeUnloadSection:
-// Subtracts one from the reference count of the specified section and loads
-// if the count is now below zero.
-//
-// New to the XBOX.
-NTSYSAPI
-EXPORTNUM(328)
-NTSTATUS
-NTAPI
-XeUnloadSection(
-	IN OUT PXBE_SECTION section
-	);
-
-// RtlRip:
-// Traps to the debugger with a certain message, then crashes.
-//
-// New to the XBOX.
-NTSYSAPI
-EXPORTNUM(352)
-VOID
-NTAPI
-RtlRip(
-	IN PCSZ Part1,
-	IN PCSZ Part2,
-	IN PCSZ Part3
-	);
-
-// PsCreateSystemThread:
-// Creates a system thread.  Same as:
-// PsCreateSystemThreadEx(ThreadHandle, NULL, 0x3000, 0, ThreadId, StartContext1,
-//     StartContext2, FALSE, DebugStack, PspSystemThreadStartup);
-//
-// New to the XBOX.  (It is too different from NT to be considered the same)
-NTSYSAPI
-EXPORTNUM(254)
-NTSTATUS
-NTAPI
-PsCreateSystemThread(
-	OUT PHANDLE ThreadHandle,
-	OUT PULONG ThreadId OPTIONAL,
-	IN PVOID StartContext1,
-	IN PVOID StartContext2,
-	IN BOOLEAN DebugStack
-	);
-
-// PsCreateSystemThreadEx:
-// Creates a system thread.
-// ThreadHandle: Receives the thread handle
-// ObjectAttributes: Unsure how this works (everything I've seen uses NULL)
-// KernelStackSize: Size of the allocation for both stack and TLS data
-// TlsDataSize: Size within KernelStackSize to use as TLS data
-// ThreadId: Receives the thread ID number
-// StartContext1: Parameter 1 to StartRoutine
-// StartContext2: Parameter 2 to StartRoutine
-// CreateSuspended: TRUE to create the thread as a suspended thread
-// DebugStack: TRUE to allocate the stack from Debug Kit memory
-// StartRoutine: Called when the thread is created
-//
-// New to the XBOX.
-NTSYSAPI
-EXPORTNUM(255)
-NTSTATUS
-NTAPI
-PsCreateSystemThreadEx(
-	OUT PHANDLE ThreadHandle,
-	IN PVOID ObjectAttributes OPTIONAL,
- 	IN ULONG KernelStackSize,
-	IN ULONG TlsDataSize,
-	OUT PULONG ThreadId OPTIONAL,
-	IN PVOID StartContext1,
-	IN PVOID StartContext2,
-	IN BOOLEAN CreateSuspended,
-	IN BOOLEAN DebugStack,
-	IN PKSTART_ROUTINE StartRoutine
-	);
-
-
-
 // Error codes
 #define STATUS_SUCCESS					0x00000000
 #define STATUS_UNSUCCESSFUL				0xC0000001
@@ -1315,47 +937,9 @@ PsCreateSystemThreadEx(
 
 #include <poppack.h>
 
-// Thanks and credit go to Team Evox
-typedef struct   
-{   
-	DWORD	Data_00;            // Check Block Start   
-	DWORD	Data_04;   
-	DWORD	Data_08;   
-	DWORD	Data_0c;   
-	DWORD	Data_10;            // Check Block End   
-  
-	DWORD	V1_IP;              // 0x14   
-	DWORD	V1_Subnetmask;      // 0x18   
-	DWORD	V1_Defaultgateway;  // 0x1c   
-	DWORD	V1_DNS1;            // 0x20   
-	DWORD	V1_DNS2;            // 0x24   
-
-	DWORD	Data_28;            // Check Block Start   
-	DWORD	Data_2c;   
-	DWORD	Data_30;   
-	DWORD	Data_34;   
-	DWORD	Data_38;            // Check Block End   
-
-	DWORD	V2_Tag;             // V2 Tag "XBV2"   
- 
-	DWORD	Flag;				// 0x40   
-	DWORD	Data_44;   
-
-	DWORD	V2_IP;              // 0x48   
-	DWORD	V2_Subnetmask;      // 0x4c   
-	DWORD	V2_Defaultgateway;  // 0x50   
-	DWORD	V2_DNS1;            // 0x54   
-	DWORD	V2_DNS2;            // 0x58   
-
-	DWORD   Data_xx[0x200-0x5c];
-
-} TXNetConfigParams,*PTXNetConfigParams;   
-
-
 extern "C"
 {
 	// Thanks and credit go to Woodoo
-	extern VOID  WINAPI HalInitiateShutdown(VOID);
 	extern VOID  WINAPI HalWriteSMBusValue(BYTE, BYTE, BOOL, BYTE);
 	extern VOID  WINAPI HalReadSMCTrayState(DWORD* state, DWORD* count);
 
