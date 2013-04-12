@@ -1698,6 +1698,10 @@ static bool directory_parse(rgui_handle_t *rgui, const char *directory, unsigned
 
    dir_list_sort(list, true);
 
+   // Can only have devices as root.
+   if (menu_type == RGUI_FILE_DEVICE)
+      menu_type = RGUI_FILE_DIRECTORY;
+
    for (size_t i = 0; i < list->size; i++)
    {
       bool is_dir = list->elems[i].attr.b;
@@ -1713,8 +1717,10 @@ static bool directory_parse(rgui_handle_t *rgui, const char *directory, unsigned
       if (*directory)
          path = path_basename(path);
 
+      // Push menu_type further down in the chain.
+      // Needed for shader manager currently.
       rgui_list_push(ctx, path,
-            is_dir ? RGUI_FILE_DIRECTORY : RGUI_FILE_PLAIN, 0);
+            is_dir ? menu_type : RGUI_FILE_PLAIN, 0);
    }
 
    string_list_free(list);
