@@ -259,7 +259,7 @@ INPUT
 #include "../ios/RetroArch/input/BTStack/btpad_ps3.c"
 #include "../ios/RetroArch/input/BTStack/btpad_wii.c"
 #elif defined(__BLACKBERRY_QNX__)
-#include "../playbook/qnx_input.c"
+#include "../blackberry-qnx/playbook/qnx_input.c"
 #endif
 
 #if defined(HAVE_NULLINPUT)

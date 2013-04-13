@@ -27,7 +27,7 @@
 				</dictionary>
 				<dictionary>
 					<key>org.eclipse.cdt.make.core.buildLocation</key>
-					<value>${workspace_loc:/CubeRotate/Device-Release}</value>
+					<value>${workspace_loc:/CubeRotate/Device-Debug}</value>
 				</dictionary>
 				<dictionary>
 					<key>org.eclipse.cdt.make.core.contents</key>
@@ -77,17 +77,17 @@
 		<link>
 			<name>src/griffin.c</name>
 			<type>1</type>
-			<locationURI>PARENT-1-PROJECT_LOC/griffin/griffin.c</locationURI>
+			<locationURI>PARENT-2-PROJECT_LOC/griffin/griffin.c</locationURI>
 		</link>
 		<link>
 			<name>src/sinc_neon.S</name>
 			<type>1</type>
-			<locationURI>PARENT-1-PROJECT_LOC/audio/sinc_neon.S</locationURI>
+			<locationURI>PARENT-2-PROJECT_LOC/audio/sinc_neon.S</locationURI>
 		</link>
 		<link>
 			<name>src/utils_neon.S</name>
 			<type>1</type>
-			<locationURI>PARENT-1-PROJECT_LOC/audio/utils_neon.S</locationURI>
+			<locationURI>PARENT-2-PROJECT_LOC/audio/utils_neon.S</locationURI>
 		</link>
 	</linkedResources>
 </projectDescription>
