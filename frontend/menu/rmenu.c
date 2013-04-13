@@ -364,9 +364,11 @@ static void menu_stack_push(unsigned menu_type, bool prev_dir)
       case INGAME_MENU:
          selected = FIRST_INGAME_MENU_SETTING;
          break;
+#ifdef HAVE_SHADER_MANAGER
       case INGAME_MENU_SHADER_MANAGER:
          selected = FIRST_SHADERMAN_SETTING;
          break;
+#endif
       case GENERAL_VIDEO_MENU:
          selected = FIRST_VIDEO_SETTING;
          break;
@@ -2606,8 +2608,12 @@ static int select_setting(uint8_t menu_type, uint64_t input)
    else if (input & (1ULL << RMENU_DEVICE_NAV_R1))
    {
 
-      if (menu_type != CONTROLS_MENU || menu_type != INGAME_MENU_SHADER_MANAGER
-            || menu_type != INGAME_MENU)
+      if (menu_type != CONTROLS_MENU
+#ifdef HAVE_SHADER_MANAGER
+            || menu_type != INGAME_MENU_SHADER_MANAGER
+#endif
+            || menu_type != INGAME_MENU
+            )
          menu_stack_push(menu_type + 1, false);
    }
 
@@ -3334,9 +3340,9 @@ bool menu_iterate(void)
       case LIBRETRO_CHOICE:
 #ifdef HAVE_SHADER_MANAGER
       case CGP_CHOICE:
+      case SHADER_CHOICE:
 #endif
       case INPUT_PRESET_CHOICE:
-      case SHADER_CHOICE:
       case BORDER_CHOICE:
          input_entry_ret = select_file(menu_type, input);
          break;
