@@ -566,7 +566,7 @@ static void gl_update_tex_filter_frame(gl_t *gl)
 {
    bool smooth = false;
    if (!gl_shader_filter_type(gl, 1, &smooth))
-      return;
+      smooth = g_settings.video.smooth;
 
    GLuint new_filt = smooth ? GL_LINEAR : GL_NEAREST;
    if (new_filt == gl->tex_filter)
@@ -589,8 +589,6 @@ static void gl_update_tex_filter_frame(gl_t *gl)
 void gl_init_fbo(void *data, unsigned width, unsigned height)
 {
    gl_t *gl = (gl_t*)data;
-
-   gl_update_tex_filter_frame(gl);
 
    if (gl_shader_num(gl) == 0)
       return;
@@ -1982,6 +1980,8 @@ static bool gl_set_shader(void *data, enum rarch_shader_type type, const char *p
          gl->shader = NULL;
       return false;
    }
+
+   gl_update_tex_filter_frame(gl);
 
 #ifdef HAVE_FBO
    // Set up render to texture again.
