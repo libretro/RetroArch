@@ -396,6 +396,7 @@ static void populate_setting_item(void *data, unsigned input)
          strlcpy(current_item->setting_text, aspectratio_lut[g_settings.video.aspect_ratio_idx].name, sizeof(current_item->setting_text));
          strlcpy(current_item->comment, "INFO - Select an [Aspect Ratio].", sizeof(current_item->comment));
          break;
+#ifndef HAVE_SHADER_MANAGER
       case SETTING_HW_TEXTURE_FILTER:
          strlcpy(current_item->text, "Hardware filtering", sizeof(current_item->text));
          if (g_settings.video.smooth)
@@ -411,6 +412,7 @@ static void populate_setting_item(void *data, unsigned input)
                   sizeof(current_item->comment));
          }
          break;
+#endif
 #ifdef _XBOX1
       case SETTING_FLICKER_FILTER:
          strlcpy(current_item->text, "Flicker Filter", sizeof(current_item->text));
@@ -1630,6 +1632,7 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
                driver.video_poke->set_aspect_ratio(driver.video_data, g_settings.video.aspect_ratio_idx);
          }
          break;
+#ifndef HAVE_SHADER_MANAGER
       case SETTING_HW_TEXTURE_FILTER:
          if ((input & (1ULL << RMENU_DEVICE_NAV_LEFT)) || (input & (1ULL << RMENU_DEVICE_NAV_RIGHT)) || (input & (1ULL << RMENU_DEVICE_NAV_B)))
          {
@@ -1646,6 +1649,7 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
                driver.video_poke->set_filtering(driver.video_data, 1, g_settings.video.smooth);
          }
          break;
+#endif
 #ifdef _XBOX1
       case SETTING_FLICKER_FILTER:
          if (input & (1ULL << RMENU_DEVICE_NAV_LEFT))
