@@ -345,514 +345,6 @@ static void shader_manager_get_str_filter(char *type_str,
 }
 #endif
 
-static void populate_setting_item(void *data, unsigned input)
-{
-   item *current_item = (item*)data;
-   char fname[PATH_MAX];
-   (void)fname;
-
-   unsigned currentsetting = input;
-   current_item->enum_id = input;
-
-   switch (currentsetting)
-   {
-#ifdef __CELLOS_LV2__
-      case SETTING_CHANGE_RESOLUTION:
-         {
-            unsigned width = gfx_ctx_get_resolution_width(g_extern.console.screen.resolutions.list[g_extern.console.screen.resolutions.current.idx]);
-            unsigned height = gfx_ctx_get_resolution_height(g_extern.console.screen.resolutions.list[g_extern.console.screen.resolutions.current.idx]);
-            strlcpy(current_item->text, "Resolution", sizeof(current_item->text));
-            strlcpy(current_item->comment, "INFO - Change the display resolution.", sizeof(current_item->comment));
-            snprintf(current_item->setting_text, sizeof(current_item->setting_text), "%dx%d", width, height);
-         }
-         break;
-      case SETTING_PAL60_MODE:
-         strlcpy(current_item->text, "PAL60 Mode", sizeof(current_item->text));
-         if (g_extern.lifecycle_mode_state & (1ULL << MODE_VIDEO_PAL_TEMPORAL_ENABLE))
-         {
-            strlcpy(current_item->setting_text, "ON", sizeof(current_item->setting_text));
-            strlcpy(current_item->comment, "INFO - [PAL60 Mode is set to 'ON'.\nconverts frames from 60Hz to 50Hz.", sizeof(current_item->comment));
-         }
-         else
-         {
-            strlcpy(current_item->setting_text, "OFF", sizeof(current_item->setting_text));
-            strlcpy(current_item->comment, "INFO - [PAL60 Mode is set to 'OFF'.\nframes are not converted.", sizeof(current_item->comment));
-         }
-         break;
-#endif
-      case SETTING_EMU_SKIN:
-         fill_pathname_base(fname, g_extern.menu_texture_path, sizeof(fname));
-         strlcpy(current_item->text, "Menu Skin", sizeof(current_item->text));
-         strlcpy(current_item->setting_text, fname, sizeof(current_item->setting_text));
-         strlcpy(current_item->comment, "INFO - Select a skin for the menu.", sizeof(current_item->comment));
-         break;
-      case SETTING_FONT_SIZE:
-         strlcpy(current_item->text, "Font Size", sizeof(current_item->text));
-         snprintf(current_item->setting_text, sizeof(current_item->setting_text), "%f", g_settings.video.font_size);
-         strlcpy(current_item->comment, "INFO - Increase or decrease the [Font Size].", sizeof(current_item->comment));
-         break;
-      case SETTING_KEEP_ASPECT_RATIO:
-         strlcpy(current_item->text, "Aspect Ratio", sizeof(current_item->text));
-         strlcpy(current_item->setting_text, aspectratio_lut[g_settings.video.aspect_ratio_idx].name, sizeof(current_item->setting_text));
-         strlcpy(current_item->comment, "INFO - Select an [Aspect Ratio].", sizeof(current_item->comment));
-         break;
-#ifndef HAVE_SHADER_MANAGER
-      case SETTING_HW_TEXTURE_FILTER:
-         strlcpy(current_item->text, "Hardware filtering", sizeof(current_item->text));
-         if (g_settings.video.smooth)
-         {
-            strlcpy(current_item->setting_text, "Bilinear", sizeof(current_item->setting_text));
-            strlcpy(current_item->comment, "INFO - Hardware filtering is set to Bilinear.",
-                  sizeof(current_item->comment));
-         }
-         else
-         {
-            strlcpy(current_item->setting_text, "Point", sizeof(current_item->setting_text));
-            strlcpy(current_item->comment, "INFO - Hardware filtering is set to Point.",
-                  sizeof(current_item->comment));
-         }
-         break;
-#endif
-#ifdef _XBOX1
-      case SETTING_FLICKER_FILTER:
-         strlcpy(current_item->text, "Flicker Filter", sizeof(current_item->text));
-         snprintf(current_item->setting_text, sizeof(current_item->setting_text), "%d", g_extern.console.screen.flicker_filter_index);
-         strlcpy(current_item->comment, "INFO - Toggle the [Flicker Filter].", sizeof(current_item->comment));
-         break;
-      case SETTING_SOFT_DISPLAY_FILTER:
-         strlcpy(current_item->text, "Soft Display Filter", sizeof(current_item->text));
-         snprintf(current_item->setting_text, sizeof(current_item->setting_text), (g_extern.lifecycle_mode_state & (1ULL << MODE_VIDEO_SOFT_FILTER_ENABLE)) ? "ON" : "OFF");
-         strlcpy(current_item->comment, "INFO - Toggle the [Soft Display Filter].", sizeof(current_item->comment));
-         break;
-#endif
-      case SETTING_REFRESH_RATE:
-         strlcpy(current_item->text, "Refresh rate", sizeof(current_item->text));
-         snprintf(current_item->setting_text, sizeof(current_item->setting_text), "%fHz", g_settings.video.refresh_rate);
-         strlcpy(current_item->comment, "INFO - Adjust or decrease [Refresh Rate].", sizeof(current_item->comment));
-         break;
-      case SETTING_THROTTLE_MODE:
-         strlcpy(current_item->text, "Throttle Mode", sizeof(current_item->text));
-         snprintf(current_item->setting_text, sizeof(current_item->setting_text), (g_extern.lifecycle_mode_state & (1ULL << MODE_VIDEO_THROTTLE_ENABLE)) ? "ON" : "OFF");
-         snprintf(current_item->comment, sizeof(current_item->comment), (g_extern.lifecycle_mode_state & (1ULL << MODE_VIDEO_THROTTLE_ENABLE)) ? "INFO - [Throttle Mode] is 'ON' - Vsync is enabled." : "INFO - [Throttle Mode] is 'OFF' - Vsync is disabled.");
-         break;
-      case SETTING_TRIPLE_BUFFERING:
-         strlcpy(current_item->text, "Triple Buffering", sizeof(current_item->text));
-         snprintf(current_item->setting_text, sizeof(current_item->setting_text), (g_extern.lifecycle_mode_state & (1ULL << MODE_VIDEO_TRIPLE_BUFFERING_ENABLE)) ? "ON" : "OFF");
-         snprintf(current_item->comment, sizeof(current_item->comment), (g_extern.lifecycle_mode_state & (1ULL << MODE_VIDEO_TRIPLE_BUFFERING_ENABLE)) ? "INFO - [Triple Buffering] is set to 'ON'." : "INFO - [Triple Buffering] is set to 'OFF'.");
-         break;
-      case SETTING_DEFAULT_VIDEO_ALL:
-         strlcpy(current_item->text, "DEFAULTS", sizeof(current_item->text));
-         strlcpy(current_item->setting_text, "", sizeof(current_item->setting_text));
-         strlcpy(current_item->comment, "INFO - Reset all these settings.", sizeof(current_item->comment));
-         break;
-      case SETTING_SOUND_MODE:
-         strlcpy(current_item->text, "Sound Output", sizeof(current_item->text));
-         switch(g_extern.console.sound.mode)
-         {
-            case SOUND_MODE_NORMAL:
-               strlcpy(current_item->comment, "INFO - [Sound Output] is set to 'Normal'.", sizeof(current_item->comment));
-               strlcpy(current_item->setting_text, "Normal", sizeof(current_item->setting_text));
-               break;
-#ifdef HAVE_RSOUND
-            case SOUND_MODE_RSOUND:
-               strlcpy(current_item->comment, "INFO - [Sound Output] is set to 'RSound'.", sizeof(current_item->comment));
-               strlcpy(current_item->setting_text, "RSound", sizeof(current_item->setting_text));
-               break;
-#endif
-#ifdef HAVE_HEADSET
-            case SOUND_MODE_HEADSET:
-               strlcpy(current_item->comment, "INFO - [Sound Output] is set to USB/Bluetooth Headset.", sizeof(current_item->comment));
-               strlcpy(current_item->setting_text, "USB/Bluetooth Headset", sizeof(current_item->setting_text));
-               break;
-#endif
-            default:
-               break;
-         }
-         break;
-#ifdef HAVE_RSOUND
-      case SETTING_RSOUND_SERVER_IP_ADDRESS:
-         strlcpy(current_item->text, "RSound Server IP Address", sizeof(current_item->text));
-         strlcpy(current_item->setting_text, g_settings.audio.device, sizeof(current_item->setting_text));
-         strlcpy(current_item->comment, "INFO - Enter the IP Address of the [RSound Audio Server]. IP address\nmust be an IPv4 32-bits address, eg: '192.168.1.7'.", sizeof(current_item->comment));
-         break;
-#endif
-      case SETTING_DEFAULT_AUDIO_ALL:
-         strlcpy(current_item->text, "DEFAULTS", sizeof(current_item->text));
-         strlcpy(current_item->setting_text, "", sizeof(current_item->setting_text));
-         strlcpy(current_item->comment, "INFO - Reset all these settings.", sizeof(current_item->comment));
-         break;
-      case SETTING_EMU_CURRENT_SAVE_STATE_SLOT:
-         strlcpy(current_item->text, "Current save state slot", sizeof(current_item->text));
-         snprintf(current_item->setting_text, sizeof(current_item->setting_text), "%d", g_extern.state_slot);
-         strlcpy(current_item->comment, "INFO - Set the currently selected savestate slot.", sizeof(current_item->comment));
-         break;
-         /* emu-specific */
-      case SETTING_EMU_SHOW_DEBUG_INFO_MSG:
-         strlcpy(current_item->text, "Debug info messages", sizeof(current_item->text));
-         snprintf(current_item->setting_text, sizeof(current_item->setting_text), (g_extern.lifecycle_mode_state & (1ULL << MODE_FPS_DRAW)) ? "ON" : "OFF");
-         strlcpy(current_item->comment, "INFO - Show onscreen debug messages.", sizeof(current_item->comment));
-         break;
-      case SETTING_EMU_SHOW_INFO_MSG:
-         strlcpy(current_item->text, "Info messages", sizeof(current_item->text));
-         snprintf(current_item->setting_text, sizeof(current_item->setting_text), (g_extern.lifecycle_mode_state & (1ULL << MODE_INFO_DRAW)) ? "ON" : "OFF");
-         strlcpy(current_item->comment, "INFO - Show onscreen info messages in the menu.", sizeof(current_item->comment));
-         break;
-      case SETTING_EMU_REWIND_ENABLED:
-         strlcpy(current_item->text, "Rewind option", sizeof(current_item->text));
-         if (g_settings.rewind_enable)
-         {
-            strlcpy(current_item->setting_text, "ON", sizeof(current_item->setting_text));
-            strlcpy(current_item->comment, "INFO - [Rewind] feature is set to 'ON'.",
-                  sizeof(current_item->comment));
-         }
-         else
-         {
-            strlcpy(current_item->setting_text, "OFF", sizeof(current_item->setting_text));
-            strlcpy(current_item->comment, "INFO - [Rewind] feature is set to 'OFF'.",
-                  sizeof(current_item->comment));
-         }
-         break;
-      case SETTING_EMU_REWIND_GRANULARITY:
-         strlcpy(current_item->text, "Rewind granularity", sizeof(current_item->text));
-         snprintf(current_item->setting_text, sizeof(current_item->setting_text), "%d", g_settings.rewind_granularity);
-         strlcpy(current_item->comment, "INFO - Set the amount of frames to 'rewind'.", sizeof(current_item->comment));
-         break;
-      case SETTING_RARCH_DEFAULT_EMU:
-         strlcpy(current_item->text, "Default libretro core", sizeof(current_item->text));
-         fill_pathname_base(fname, g_settings.libretro, sizeof(fname));
-         strlcpy(current_item->setting_text, fname, sizeof(current_item->setting_text));
-         strlcpy(current_item->comment, "INFO - Select a default libretro core.", sizeof(current_item->comment));
-         break;
-      case SETTING_QUIT_RARCH:
-         strlcpy(current_item->text, "Quit RetroArch and save settings ", sizeof(current_item->text));
-         strlcpy(current_item->setting_text, "", sizeof(current_item->setting_text));
-         strlcpy(current_item->comment, "INFO - Quits RetroArch and saves the settings.", sizeof(current_item->comment));
-         break;
-      case SETTING_EMU_AUDIO_MUTE:
-         strlcpy(current_item->text, "Mute Audio", sizeof(current_item->text));
-         if (g_extern.audio_data.mute)
-         {
-            strlcpy(current_item->comment, "INFO - the game audio will be muted.", sizeof(current_item->comment));
-            strlcpy(current_item->setting_text, "ON", sizeof(current_item->setting_text));
-         }
-         else
-         {
-            strlcpy(current_item->comment, "INFO - game audio will be on.", sizeof(current_item->comment));
-            strlcpy(current_item->setting_text, "OFF", sizeof(current_item->setting_text));
-         }
-         break;
-#ifdef _XBOX1
-      case SETTING_EMU_AUDIO_SOUND_VOLUME_LEVEL:
-         strlcpy(current_item->text, "Volume Level", sizeof(current_item->text));
-         snprintf(current_item->setting_text, sizeof(current_item->setting_text), g_extern.console.sound.volume_level ? "Loud" : "Normal");
-         if (g_extern.audio_data.mute)
-            strlcpy(current_item->comment, "INFO - Volume level is set to Loud.", sizeof(current_item->comment));
-         else
-            strlcpy(current_item->comment, "INFO - Volume level is set to Normal.", sizeof(current_item->comment));
-         break;
-#endif
-      case SETTING_ENABLE_CUSTOM_BGM:
-         strlcpy(current_item->text, "Custom BGM Option", sizeof(current_item->text));
-         snprintf(current_item->setting_text, sizeof(current_item->setting_text), (g_extern.lifecycle_mode_state & (1ULL << MODE_AUDIO_CUSTOM_BGM_ENABLE)) ? "ON" : "OFF");
-         snprintf(current_item->comment, sizeof(current_item->comment), "INFO - [Custom BGM] is set to '%s'.", (g_extern.lifecycle_mode_state & (1ULL << MODE_AUDIO_CUSTOM_BGM_ENABLE)) ? "ON" : "OFF");
-         break;
-      case SETTING_PATH_DEFAULT_ROM_DIRECTORY:
-         strlcpy(current_item->text, "Startup ROM Directory", sizeof(current_item->text));
-         strlcpy(current_item->setting_text, g_extern.console.main_wrap.default_rom_startup_dir, sizeof(current_item->setting_text));
-         strlcpy(current_item->comment, "INFO - Set the default Startup ROM directory path.", sizeof(current_item->comment));
-         break;
-      case SETTING_PATH_SAVESTATES_DIRECTORY:
-         strlcpy(current_item->text, "Savestate Directory", sizeof(current_item->text));
-         strlcpy(current_item->setting_text, g_extern.console.main_wrap.default_savestate_dir, sizeof(current_item->setting_text));
-         strlcpy(current_item->comment, "INFO - Directory where savestates will be saved to.", sizeof(current_item->comment));
-         break;
-      case SETTING_PATH_SRAM_DIRECTORY:
-         strlcpy(current_item->text, "SRAM Directory", sizeof(current_item->text));
-         strlcpy(current_item->setting_text, g_extern.console.main_wrap.default_sram_dir, sizeof(current_item->setting_text));
-         strlcpy(current_item->comment, "INFO - Set the default SaveRAM directory path.", sizeof(current_item->comment));
-         break;
-#ifdef HAVE_XML
-      case SETTING_PATH_CHEATS:
-         strlcpy(current_item->text, "Cheatfile Directory", sizeof(current_item->text));
-         strlcpy(current_item->setting_text, g_settings.cheat_database, sizeof(current_item->setting_text));
-         strlcpy(current_item->comment, "INFO - Set the default Cheatfile directory path.", sizeof(current_item->comment));
-         break;
-#endif
-      case SETTING_PATH_SYSTEM:
-         strlcpy(current_item->text, "System Directory", sizeof(current_item->text));
-         strlcpy(current_item->setting_text, g_settings.system_directory, sizeof(current_item->setting_text));
-         strlcpy(current_item->comment, "INFO - Set the default [System directory] path.", sizeof(current_item->comment));
-         break;
-      case SETTING_ENABLE_SRAM_PATH:
-         snprintf(current_item->text, sizeof(current_item->text), "Custom SRAM Dir Enable");
-         snprintf(current_item->setting_text, sizeof(current_item->setting_text), (g_extern.lifecycle_mode_state & (1ULL << MODE_LOAD_GAME_SRAM_DIR_ENABLE)) ? "ON" : "OFF");
-         snprintf(current_item->comment, sizeof(current_item->comment), "INFO - [Custom SRAM Dir Path] is set to '%s'.", (g_extern.lifecycle_mode_state & (1ULL << MODE_LOAD_GAME_SRAM_DIR_ENABLE)) ? "ON" : "OFF");
-         break;
-      case SETTING_ENABLE_STATE_PATH:
-         snprintf(current_item->text, sizeof(current_item->text), "Custom Savestate Dir Enable");
-         snprintf(current_item->setting_text, sizeof(current_item->setting_text), (g_extern.lifecycle_mode_state & (1ULL << MODE_LOAD_GAME_STATE_DIR_ENABLE)) ? "ON" : "OFF");
-         snprintf(current_item->comment, sizeof(current_item->comment), "INFO - [Custom Savestate Dir Path] is set to '%s'.", (g_extern.lifecycle_mode_state & (1ULL << MODE_LOAD_GAME_STATE_DIR_ENABLE)) ? "ON" : "OFF");
-         break;
-      case SETTING_CONTROLS_SCHEME:
-         strlcpy(current_item->text, "Control Scheme Preset", sizeof(current_item->text));
-         snprintf(current_item->comment, sizeof(current_item->comment), "INFO - Input scheme preset [%s] is selected.", g_extern.file_state.input_cfg_path);
-         strlcpy(current_item->setting_text, g_extern.file_state.input_cfg_path, sizeof(current_item->setting_text));
-         break;
-      case SETTING_CONTROLS_NUMBER:
-         strlcpy(current_item->text, "Controller No", sizeof(current_item->text));
-         snprintf(current_item->comment, sizeof(current_item->comment), "Controller %d is currently selected.", currently_selected_controller_menu+1);
-         snprintf(current_item->setting_text, sizeof(current_item->setting_text), "%d", currently_selected_controller_menu+1);
-         break;
-      case SETTING_DPAD_EMULATION:
-         strlcpy(current_item->text, "D-Pad Emulation", sizeof(current_item->text));
-         switch(g_settings.input.dpad_emulation[currently_selected_controller_menu])
-         {
-            case ANALOG_DPAD_NONE:
-               snprintf(current_item->comment, sizeof(current_item->comment), "[%s] from Controller %d is mapped to D-pad.", "None", currently_selected_controller_menu+1);
-               strlcpy(current_item->setting_text, "None", sizeof(current_item->setting_text));
-               break;
-            case ANALOG_DPAD_LSTICK:
-               snprintf(current_item->comment, sizeof(current_item->comment), "[%s] from Controller %d is mapped to D-pad.", "Left Stick", currently_selected_controller_menu+1);
-               strlcpy(current_item->setting_text, "Left Stick", sizeof(current_item->setting_text));
-               break;
-            case ANALOG_DPAD_RSTICK:
-               snprintf(current_item->comment, sizeof(current_item->comment), "[%s] from Controller %d is mapped to D-pad.", "Right Stick", currently_selected_controller_menu+1);
-               strlcpy(current_item->setting_text, "Right Stick", sizeof(current_item->setting_text));
-               break;
-         }
-         break;
-      case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_B:
-      case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_Y:
-      case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_SELECT:
-      case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_START:
-      case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_UP:
-      case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_DOWN:
-      case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_LEFT:
-      case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_RIGHT:
-      case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_A:
-      case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_X:
-      case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_L:
-      case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_R:
-      case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_L2:
-      case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_R2:
-      case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_L3:
-      case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_R3:
-         {
-            unsigned id = currentsetting - FIRST_CONTROL_BIND;
-            struct platform_bind key_label;
-            strlcpy(key_label.desc, "Unknown", sizeof(key_label.desc));
-            key_label.joykey = g_settings.input.binds[currently_selected_controller_menu][id].joykey;
-
-            if (driver.input->set_keybinds)
-               driver.input->set_keybinds(&key_label, 0, 0, 0, (1ULL << KEYBINDS_ACTION_GET_BIND_LABEL));
-            strlcpy(current_item->text, g_settings.input.binds[currently_selected_controller_menu][id].desc, sizeof(current_item->text));
-            snprintf(current_item->comment, sizeof(current_item->comment), "INFO - [%s] is mapped to action:\n[%s].", current_item->text, key_label.desc);
-            strlcpy(current_item->setting_text, key_label.desc, sizeof(current_item->setting_text));
-         }
-         break;
-      case SETTING_CONTROLS_SAVE_CUSTOM_CONTROLS:
-         strlcpy(current_item->text, "SAVE CUSTOM CONTROLS", sizeof(current_item->text));
-         strlcpy(current_item->setting_text, "", sizeof(current_item->setting_text));
-         strlcpy(current_item->comment, "INFO - Save the [Custom Controls] settings to file.",  sizeof(current_item->comment));
-         break;
-      case SETTING_CONTROLS_DEFAULT_ALL:
-         strlcpy(current_item->text, "DEFAULTS", sizeof(current_item->text));
-         strlcpy(current_item->setting_text, "", sizeof(current_item->setting_text));
-         strlcpy(current_item->comment, "INFO - Set all Controls settings to defaults.", sizeof(current_item->comment));
-         break;
-      case SETTING_EMU_VIDEO_DEFAULT_ALL:
-         strlcpy(current_item->text, "DEFAULTS", sizeof(current_item->text));
-         strlcpy(current_item->setting_text, "", sizeof(current_item->setting_text));
-         strlcpy(current_item->comment, "INFO - Set all Video settings to defaults.", sizeof(current_item->comment));
-         break;
-      case SETTING_EMU_AUDIO_DEFAULT_ALL:
-         strlcpy(current_item->text, "DEFAULTS", sizeof(current_item->text));
-         strlcpy(current_item->setting_text, "", sizeof(current_item->setting_text));
-         strlcpy(current_item->comment, "INFO - Set all Audio settings to defaults.", sizeof(current_item->comment));
-         break;
-      case SETTING_PATH_DEFAULT_ALL:
-         strlcpy(current_item->text, "DEFAULTS", sizeof(current_item->text));
-         strlcpy(current_item->setting_text, "", sizeof(current_item->setting_text));
-         strlcpy(current_item->comment, "INFO - Set all Path settings to defaults.", sizeof(current_item->comment));
-         break;
-      case SETTING_EMU_DEFAULT_ALL:
-         strlcpy(current_item->text, "DEFAULTS", sizeof(current_item->text));
-         strlcpy(current_item->setting_text, "", sizeof(current_item->setting_text));
-         strlcpy(current_item->comment, "INFO - Set all RetroArch settings to defaults.", sizeof(current_item->comment));
-         break;
-      case INGAME_MENU_LOAD_STATE:
-         strlcpy(current_item->text, "Load State", sizeof(current_item->text));
-         snprintf(current_item->setting_text, sizeof(current_item->setting_text), "%d", g_extern.state_slot);
-         strlcpy(current_item->comment, "Load from current state slot.", sizeof(current_item->comment));
-         break;
-      case INGAME_MENU_SAVE_STATE:
-         strlcpy(current_item->text, "Save State", sizeof(current_item->text));
-         snprintf(current_item->setting_text, sizeof(current_item->setting_text), "%d", g_extern.state_slot);
-         strlcpy(current_item->comment, "Save to current state slot.", sizeof(current_item->comment));
-         break;
-      case INGAME_MENU_ASPECT_RATIO:
-         strlcpy(current_item->text, "Aspect Ratio", sizeof(current_item->text));
-         strlcpy(current_item->setting_text, aspectratio_lut[g_settings.video.aspect_ratio_idx].name, sizeof(current_item->setting_text));
-         strlcpy(current_item->comment, "Change the aspect ratio of the screen.", sizeof(current_item->comment));
-         break;
-      case INGAME_MENU_ROTATION:
-         strlcpy(current_item->text, "Rotation", sizeof(current_item->text));
-         strlcpy(current_item->setting_text, rotation_lut[g_extern.console.screen.orientation], sizeof(current_item->setting_text));
-         strlcpy(current_item->comment, "Change orientation of the screen.", sizeof(current_item->comment));
-         break;
-      case INGAME_MENU_RESIZE_MODE:
-         strlcpy(current_item->text, "Resize Mode", sizeof(current_item->text));
-         strlcpy(current_item->setting_text, "", sizeof(current_item->setting_text));
-         strlcpy(current_item->comment, "Allows you to resize the screen.", sizeof(current_item->comment));
-         break;
-      case INGAME_MENU_CORE_OPTIONS_MODE:
-         strlcpy(current_item->text, "Core Options", sizeof(current_item->text));
-         strlcpy(current_item->setting_text, "", sizeof(current_item->setting_text));
-         strlcpy(current_item->comment, "Set core-specific options.", sizeof(current_item->comment));
-         break;
-#ifdef HAVE_SHADER_MANAGER
-      case INGAME_MENU_SHADER_MANAGER_MODE:
-         strlcpy(current_item->text, "Shader Manager", sizeof(current_item->text));
-         strlcpy(current_item->setting_text, "", sizeof(current_item->setting_text));
-         strlcpy(current_item->comment, "Set and manage shader options.", sizeof(current_item->comment));
-         break;
-#endif
-      case INGAME_MENU_FRAME_ADVANCE:
-         strlcpy(current_item->text, "Frame Advance", sizeof(current_item->text));
-         strlcpy(current_item->setting_text, "", sizeof(current_item->setting_text));
-         strlcpy(current_item->comment, "Press a button to step one frame.", sizeof(current_item->comment));
-         break;
-      case INGAME_MENU_SCREENSHOT_MODE:
-         strlcpy(current_item->text, "Screenshot Mode", sizeof(current_item->text));
-         strlcpy(current_item->setting_text, "", sizeof(current_item->setting_text));
-         strlcpy(current_item->comment, "Take a screenshot.", sizeof(current_item->comment));
-         break;
-      case INGAME_MENU_RESET:
-         strlcpy(current_item->text, "Reset", sizeof(current_item->text));
-         strlcpy(current_item->setting_text, "", sizeof(current_item->setting_text));
-         strlcpy(current_item->comment, "Reset the game.", sizeof(current_item->comment));
-         break;
-      case INGAME_MENU_RETURN_TO_GAME:
-         strlcpy(current_item->text, "Return to Game", sizeof(current_item->text));
-         strlcpy(current_item->setting_text, "", sizeof(current_item->setting_text));
-         strlcpy(current_item->comment, "Change the currently loaded game.", sizeof(current_item->comment));
-         break;
-      case INGAME_MENU_CHANGE_GAME:
-         strlcpy(current_item->text, "Change Game", sizeof(current_item->text));
-         strlcpy(current_item->setting_text, "", sizeof(current_item->setting_text));
-         strlcpy(current_item->comment, "Select another game.", sizeof(current_item->comment));
-         break;
-      case INGAME_MENU_CHANGE_LIBRETRO_CORE:
-         strlcpy(current_item->text, "Change libretro core", sizeof(current_item->text));
-         strlcpy(current_item->setting_text, "", sizeof(current_item->setting_text));
-         strlcpy(current_item->comment, "Choose another libretro core.", sizeof(current_item->comment));
-         break;
-#ifdef HAVE_MULTIMAN
-      case INGAME_MENU_RETURN_TO_MULTIMAN:
-         strlcpy(current_item->text, "Return to multiMAN", sizeof(current_item->text));
-         strlcpy(current_item->setting_text, "", sizeof(current_item->setting_text));
-         strlcpy(current_item->comment, "Quit RetroArch and return to multiMAN.", sizeof(current_item->comment));
-         break;
-#endif
-      case INGAME_MENU_QUIT_RETROARCH:
-         strlcpy(current_item->text, "Quit RetroArch", sizeof(current_item->text));
-         strlcpy(current_item->setting_text, "", sizeof(current_item->setting_text));
-         strlcpy(current_item->comment, "Quit RetroArch.", sizeof(current_item->comment));
-         break;
-      default:
-         break;
-#ifdef HAVE_SHADER_MANAGER
-      case SHADERMAN_LOAD_CGP:
-         strlcpy(current_item->text, "Load CGP", sizeof(current_item->text));
-         strlcpy(current_item->setting_text, "", sizeof(current_item->setting_text));
-         strlcpy(current_item->comment, "INFO - Select a CGP file.", sizeof(current_item->comment));
-         break;
-      case SHADERMAN_AUTOSTART_CGP_ON_STARTUP:
-         strlcpy(current_item->text, "Autostart CGP at startup", sizeof(current_item->text));
-         strlcpy(current_item->setting_text, "", sizeof(current_item->setting_text));
-         strlcpy(current_item->comment, "INFO - Auto-load at startup the current shader settings.", sizeof(current_item->comment));
-         break;
-      case SHADERMAN_SAVE_CGP:
-         strlcpy(current_item->text, "Save CGP", sizeof(current_item->text));
-         strlcpy(current_item->setting_text, "", sizeof(current_item->setting_text));
-         strlcpy(current_item->comment, "INFO - Save current shader settings to a CGP file.", sizeof(current_item->comment));
-         break;
-      case SHADERMAN_SHADER_PASSES:
-         strlcpy(current_item->text, "Shader passes", sizeof(current_item->text));
-         snprintf(current_item->setting_text, sizeof(current_item->setting_text), "%u", shader.passes);
-         strlcpy(current_item->comment, "INFO - Set the amount of shader passes.", sizeof(current_item->comment));
-         break;
-      case SHADERMAN_APPLY_CHANGES:
-         strlcpy(current_item->text, "Apply changes", sizeof(current_item->text));
-         strlcpy(current_item->setting_text, "", sizeof(current_item->setting_text));
-         strlcpy(current_item->comment, "INFO - Apply the changes made below.", sizeof(current_item->comment));
-         break;
-      case SHADERMAN_SHADER_0:
-      case SHADERMAN_SHADER_1:
-      case SHADERMAN_SHADER_2:
-      case SHADERMAN_SHADER_3:
-      case SHADERMAN_SHADER_4:
-      case SHADERMAN_SHADER_5:
-      case SHADERMAN_SHADER_6:
-      case SHADERMAN_SHADER_7:
-         {
-            char type_str[256];
-            uint8_t index = (currentsetting - SHADERMAN_SHADER_0) / 3;
-            if (*shader.pass[index].source.cg)
-               fill_pathname_base(type_str,
-                     shader.pass[index].source.cg, sizeof(type_str));
-            else
-               strlcpy(type_str, "N/A", sizeof(type_str));
-            snprintf(current_item->text, sizeof(current_item->text), "Shader #%d", index);
-            strlcpy(current_item->setting_text, type_str, sizeof(current_item->setting_text));
-            strlcpy(current_item->comment, "INFO - Select the shader.", sizeof(current_item->comment));
-         }
-         break;
-      case SHADERMAN_SHADER_0_FILTER:
-      case SHADERMAN_SHADER_1_FILTER:
-      case SHADERMAN_SHADER_2_FILTER:
-      case SHADERMAN_SHADER_3_FILTER:
-      case SHADERMAN_SHADER_4_FILTER:
-      case SHADERMAN_SHADER_5_FILTER:
-      case SHADERMAN_SHADER_6_FILTER:
-      case SHADERMAN_SHADER_7_FILTER:
-         {
-            char type_str[256];
-            uint8_t index = (currentsetting - SHADERMAN_SHADER_0) / 3;
-            snprintf(current_item->text, sizeof(current_item->text), "Shader #%d filter", index);
-            shader_manager_get_str_filter(type_str, sizeof(type_str), index);
-            strlcpy(current_item->setting_text, type_str, sizeof(current_item->setting_text));
-            strlcpy(current_item->comment, "INFO - Select the filtering.", sizeof(current_item->comment));
-         }
-         break;
-      case SHADERMAN_SHADER_0_SCALE:
-      case SHADERMAN_SHADER_1_SCALE:
-      case SHADERMAN_SHADER_2_SCALE:
-      case SHADERMAN_SHADER_3_SCALE:
-      case SHADERMAN_SHADER_4_SCALE:
-      case SHADERMAN_SHADER_5_SCALE:
-      case SHADERMAN_SHADER_6_SCALE:
-      case SHADERMAN_SHADER_7_SCALE:
-         {
-            char type_str[256];
-            uint8_t index = (currentsetting - SHADERMAN_SHADER_0) / 3;
-            unsigned scale = shader.pass[index].fbo.scale_x;
-            
-            snprintf(current_item->text, sizeof(current_item->text), "Shader #%d scale", index);
-
-            if (!scale)
-               strlcpy(type_str, "Don't care", sizeof(type_str));
-            else
-               snprintf(type_str, sizeof(type_str), "%ux", scale);
-
-            strlcpy(current_item->setting_text, type_str, sizeof(current_item->setting_text));
-            strlcpy(current_item->comment, "INFO - Select the scaling factor of this pass.", sizeof(current_item->comment));
-         }
-         break;
-#endif
-   }
-}
-
 static void display_menubar(uint8_t menu_type)
 {
    char title[32];
@@ -2493,8 +1985,509 @@ static int select_setting(uint8_t menu_type, uint64_t input)
 
    for(i = first_setting; i < max_settings; i++)
    {
-      item item;
-      populate_setting_item(&item, i);
+      char fname[PATH_MAX];
+      char text[PATH_MAX];
+      char comment[PATH_MAX];
+      char setting_text[PATH_MAX];
+      (void)fname;
+
+      switch (i)
+      {
+#ifdef __CELLOS_LV2__
+         case SETTING_CHANGE_RESOLUTION:
+            {
+               unsigned width = gfx_ctx_get_resolution_width(g_extern.console.screen.resolutions.list[g_extern.console.screen.resolutions.current.idx]);
+               unsigned height = gfx_ctx_get_resolution_height(g_extern.console.screen.resolutions.list[g_extern.console.screen.resolutions.current.idx]);
+               strlcpy(text, "Resolution", sizeof(text));
+               strlcpy(comment, "INFO - Change the display resolution.", sizeof(comment));
+               snprintf(setting_text, sizeof(setting_text), "%dx%d", width, height);
+            }
+            break;
+         case SETTING_PAL60_MODE:
+            strlcpy(text, "PAL60 Mode", sizeof(text));
+            if (g_extern.lifecycle_mode_state & (1ULL << MODE_VIDEO_PAL_TEMPORAL_ENABLE))
+            {
+               strlcpy(setting_text, "ON", sizeof(setting_text));
+               strlcpy(comment, "INFO - [PAL60 Mode is set to 'ON'.\nconverts frames from 60Hz to 50Hz.", sizeof(comment));
+            }
+            else
+            {
+               strlcpy(setting_text, "OFF", sizeof(setting_text));
+               strlcpy(comment, "INFO - [PAL60 Mode is set to 'OFF'.\nframes are not converted.", sizeof(comment));
+            }
+            break;
+#endif
+         case SETTING_EMU_SKIN:
+            fill_pathname_base(fname, g_extern.menu_texture_path, sizeof(fname));
+            strlcpy(text, "Menu Skin", sizeof(text));
+            strlcpy(setting_text, fname, sizeof(setting_text));
+            strlcpy(comment, "INFO - Select a skin for the menu.", sizeof(comment));
+            break;
+         case SETTING_FONT_SIZE:
+            strlcpy(text, "Font Size", sizeof(text));
+            snprintf(setting_text, sizeof(setting_text), "%f", g_settings.video.font_size);
+            strlcpy(comment, "INFO - Increase or decrease the [Font Size].", sizeof(comment));
+            break;
+         case SETTING_KEEP_ASPECT_RATIO:
+            strlcpy(text, "Aspect Ratio", sizeof(text));
+            strlcpy(setting_text, aspectratio_lut[g_settings.video.aspect_ratio_idx].name, sizeof(setting_text));
+            strlcpy(comment, "INFO - Select an [Aspect Ratio].", sizeof(comment));
+            break;
+#ifndef HAVE_SHADER_MANAGER
+         case SETTING_HW_TEXTURE_FILTER:
+            strlcpy(text, "Hardware filtering", sizeof(text));
+            if (g_settings.video.smooth)
+            {
+               strlcpy(setting_text, "Bilinear", sizeof(setting_text));
+               strlcpy(comment, "INFO - Hardware filtering is set to Bilinear.",
+                     sizeof(comment));
+            }
+            else
+            {
+               strlcpy(setting_text, "Point", sizeof(setting_text));
+               strlcpy(comment, "INFO - Hardware filtering is set to Point.",
+                     sizeof(comment));
+            }
+            break;
+#endif
+#ifdef _XBOX1
+         case SETTING_FLICKER_FILTER:
+            strlcpy(text, "Flicker Filter", sizeof(text));
+            snprintf(setting_text, sizeof(setting_text), "%d", g_extern.console.screen.flicker_filter_index);
+            strlcpy(comment, "INFO - Toggle the [Flicker Filter].", sizeof(comment));
+            break;
+         case SETTING_SOFT_DISPLAY_FILTER:
+            strlcpy(text, "Soft Display Filter", sizeof(text));
+            snprintf(setting_text, sizeof(setting_text), (g_extern.lifecycle_mode_state & (1ULL << MODE_VIDEO_SOFT_FILTER_ENABLE)) ? "ON" : "OFF");
+            strlcpy(comment, "INFO - Toggle the [Soft Display Filter].", sizeof(comment));
+            break;
+#endif
+         case SETTING_REFRESH_RATE:
+            strlcpy(text, "Refresh rate", sizeof(text));
+            snprintf(setting_text, sizeof(setting_text), "%fHz", g_settings.video.refresh_rate);
+            strlcpy(comment, "INFO - Adjust or decrease [Refresh Rate].", sizeof(comment));
+            break;
+         case SETTING_THROTTLE_MODE:
+            strlcpy(text, "Throttle Mode", sizeof(text));
+            snprintf(setting_text, sizeof(setting_text), (g_extern.lifecycle_mode_state & (1ULL << MODE_VIDEO_THROTTLE_ENABLE)) ? "ON" : "OFF");
+            snprintf(comment, sizeof(comment), (g_extern.lifecycle_mode_state & (1ULL << MODE_VIDEO_THROTTLE_ENABLE)) ? "INFO - [Throttle Mode] is 'ON' - Vsync is enabled." : "INFO - [Throttle Mode] is 'OFF' - Vsync is disabled.");
+            break;
+         case SETTING_TRIPLE_BUFFERING:
+            strlcpy(text, "Triple Buffering", sizeof(text));
+            snprintf(setting_text, sizeof(setting_text), (g_extern.lifecycle_mode_state & (1ULL << MODE_VIDEO_TRIPLE_BUFFERING_ENABLE)) ? "ON" : "OFF");
+            snprintf(comment, sizeof(comment), (g_extern.lifecycle_mode_state & (1ULL << MODE_VIDEO_TRIPLE_BUFFERING_ENABLE)) ? "INFO - [Triple Buffering] is set to 'ON'." : "INFO - [Triple Buffering] is set to 'OFF'.");
+            break;
+         case SETTING_DEFAULT_VIDEO_ALL:
+            strlcpy(text, "DEFAULTS", sizeof(text));
+            strlcpy(setting_text, "", sizeof(setting_text));
+            strlcpy(comment, "INFO - Reset all these settings.", sizeof(comment));
+            break;
+         case SETTING_SOUND_MODE:
+            strlcpy(text, "Sound Output", sizeof(text));
+            switch(g_extern.console.sound.mode)
+            {
+               case SOUND_MODE_NORMAL:
+                  strlcpy(comment, "INFO - [Sound Output] is set to 'Normal'.", sizeof(comment));
+                  strlcpy(setting_text, "Normal", sizeof(setting_text));
+                  break;
+#ifdef HAVE_RSOUND
+               case SOUND_MODE_RSOUND:
+                  strlcpy(comment, "INFO - [Sound Output] is set to 'RSound'.", sizeof(comment));
+                  strlcpy(setting_text, "RSound", sizeof(setting_text));
+                  break;
+#endif
+#ifdef HAVE_HEADSET
+               case SOUND_MODE_HEADSET:
+                  strlcpy(comment, "INFO - [Sound Output] is set to USB/Bluetooth Headset.", sizeof(comment));
+                  strlcpy(setting_text, "USB/Bluetooth Headset", sizeof(setting_text));
+                  break;
+#endif
+               default:
+                  break;
+            }
+            break;
+#ifdef HAVE_RSOUND
+         case SETTING_RSOUND_SERVER_IP_ADDRESS:
+            strlcpy(text, "RSound Server IP Address", sizeof(text));
+            strlcpy(setting_text, g_settings.audio.device, sizeof(setting_text));
+            strlcpy(comment, "INFO - Enter the IP Address of the [RSound Audio Server]. IP address\nmust be an IPv4 32-bits address, eg: '192.168.1.7'.", sizeof(comment));
+            break;
+#endif
+         case SETTING_DEFAULT_AUDIO_ALL:
+            strlcpy(text, "DEFAULTS", sizeof(text));
+            strlcpy(setting_text, "", sizeof(setting_text));
+            strlcpy(comment, "INFO - Reset all these settings.", sizeof(comment));
+            break;
+         case SETTING_EMU_CURRENT_SAVE_STATE_SLOT:
+            strlcpy(text, "Current save state slot", sizeof(text));
+            snprintf(setting_text, sizeof(setting_text), "%d", g_extern.state_slot);
+            strlcpy(comment, "INFO - Set the currently selected savestate slot.", sizeof(comment));
+            break;
+            /* emu-specific */
+         case SETTING_EMU_SHOW_DEBUG_INFO_MSG:
+            strlcpy(text, "Debug info messages", sizeof(text));
+            snprintf(setting_text, sizeof(setting_text), (g_extern.lifecycle_mode_state & (1ULL << MODE_FPS_DRAW)) ? "ON" : "OFF");
+            strlcpy(comment, "INFO - Show onscreen debug messages.", sizeof(comment));
+            break;
+         case SETTING_EMU_SHOW_INFO_MSG:
+            strlcpy(text, "Info messages", sizeof(text));
+            snprintf(setting_text, sizeof(setting_text), (g_extern.lifecycle_mode_state & (1ULL << MODE_INFO_DRAW)) ? "ON" : "OFF");
+            strlcpy(comment, "INFO - Show onscreen info messages in the menu.", sizeof(comment));
+            break;
+         case SETTING_EMU_REWIND_ENABLED:
+            strlcpy(text, "Rewind option", sizeof(text));
+            if (g_settings.rewind_enable)
+            {
+               strlcpy(setting_text, "ON", sizeof(setting_text));
+               strlcpy(comment, "INFO - [Rewind] feature is set to 'ON'.",
+                     sizeof(comment));
+            }
+            else
+            {
+               strlcpy(setting_text, "OFF", sizeof(setting_text));
+               strlcpy(comment, "INFO - [Rewind] feature is set to 'OFF'.",
+                     sizeof(comment));
+            }
+            break;
+         case SETTING_EMU_REWIND_GRANULARITY:
+            strlcpy(text, "Rewind granularity", sizeof(text));
+            snprintf(setting_text, sizeof(setting_text), "%d", g_settings.rewind_granularity);
+            strlcpy(comment, "INFO - Set the amount of frames to 'rewind'.", sizeof(comment));
+            break;
+         case SETTING_RARCH_DEFAULT_EMU:
+            strlcpy(text, "Default libretro core", sizeof(text));
+            fill_pathname_base(fname, g_settings.libretro, sizeof(fname));
+            strlcpy(setting_text, fname, sizeof(setting_text));
+            strlcpy(comment, "INFO - Select a default libretro core.", sizeof(comment));
+            break;
+         case SETTING_QUIT_RARCH:
+            strlcpy(text, "Quit RetroArch and save settings ", sizeof(text));
+            strlcpy(setting_text, "", sizeof(setting_text));
+            strlcpy(comment, "INFO - Quits RetroArch and saves the settings.", sizeof(comment));
+            break;
+         case SETTING_EMU_AUDIO_MUTE:
+            strlcpy(text, "Mute Audio", sizeof(text));
+            if (g_extern.audio_data.mute)
+            {
+               strlcpy(comment, "INFO - the game audio will be muted.", sizeof(comment));
+               strlcpy(setting_text, "ON", sizeof(setting_text));
+            }
+            else
+            {
+               strlcpy(comment, "INFO - game audio will be on.", sizeof(comment));
+               strlcpy(setting_text, "OFF", sizeof(setting_text));
+            }
+            break;
+#ifdef _XBOX1
+         case SETTING_EMU_AUDIO_SOUND_VOLUME_LEVEL:
+            strlcpy(text, "Volume Level", sizeof(text));
+            snprintf(setting_text, sizeof(setting_text), g_extern.console.sound.volume_level ? "Loud" : "Normal");
+            if (g_extern.audio_data.mute)
+               strlcpy(comment, "INFO - Volume level is set to Loud.", sizeof(comment));
+            else
+               strlcpy(comment, "INFO - Volume level is set to Normal.", sizeof(comment));
+            break;
+#endif
+         case SETTING_ENABLE_CUSTOM_BGM:
+            strlcpy(text, "Custom BGM Option", sizeof(text));
+            snprintf(setting_text, sizeof(setting_text), (g_extern.lifecycle_mode_state & (1ULL << MODE_AUDIO_CUSTOM_BGM_ENABLE)) ? "ON" : "OFF");
+            snprintf(comment, sizeof(comment), "INFO - [Custom BGM] is set to '%s'.", (g_extern.lifecycle_mode_state & (1ULL << MODE_AUDIO_CUSTOM_BGM_ENABLE)) ? "ON" : "OFF");
+            break;
+         case SETTING_PATH_DEFAULT_ROM_DIRECTORY:
+            strlcpy(text, "Startup ROM Directory", sizeof(text));
+            strlcpy(setting_text, g_extern.console.main_wrap.default_rom_startup_dir, sizeof(setting_text));
+            strlcpy(comment, "INFO - Set the default Startup ROM directory path.", sizeof(comment));
+            break;
+         case SETTING_PATH_SAVESTATES_DIRECTORY:
+            strlcpy(text, "Savestate Directory", sizeof(text));
+            strlcpy(setting_text, g_extern.console.main_wrap.default_savestate_dir, sizeof(setting_text));
+            strlcpy(comment, "INFO - Directory where savestates will be saved to.", sizeof(comment));
+            break;
+         case SETTING_PATH_SRAM_DIRECTORY:
+            strlcpy(text, "SRAM Directory", sizeof(text));
+            strlcpy(setting_text, g_extern.console.main_wrap.default_sram_dir, sizeof(setting_text));
+            strlcpy(comment, "INFO - Set the default SaveRAM directory path.", sizeof(comment));
+            break;
+#ifdef HAVE_XML
+         case SETTING_PATH_CHEATS:
+            strlcpy(text, "Cheatfile Directory", sizeof(text));
+            strlcpy(setting_text, g_settings.cheat_database, sizeof(setting_text));
+            strlcpy(comment, "INFO - Set the default Cheatfile directory path.", sizeof(comment));
+            break;
+#endif
+         case SETTING_PATH_SYSTEM:
+            strlcpy(text, "System Directory", sizeof(text));
+            strlcpy(setting_text, g_settings.system_directory, sizeof(setting_text));
+            strlcpy(comment, "INFO - Set the default [System directory] path.", sizeof(comment));
+            break;
+         case SETTING_ENABLE_SRAM_PATH:
+            snprintf(text, sizeof(text), "Custom SRAM Dir Enable");
+            snprintf(setting_text, sizeof(setting_text), (g_extern.lifecycle_mode_state & (1ULL << MODE_LOAD_GAME_SRAM_DIR_ENABLE)) ? "ON" : "OFF");
+            snprintf(comment, sizeof(comment), "INFO - [Custom SRAM Dir Path] is set to '%s'.", (g_extern.lifecycle_mode_state & (1ULL << MODE_LOAD_GAME_SRAM_DIR_ENABLE)) ? "ON" : "OFF");
+            break;
+         case SETTING_ENABLE_STATE_PATH:
+            snprintf(text, sizeof(text), "Custom Savestate Dir Enable");
+            snprintf(setting_text, sizeof(setting_text), (g_extern.lifecycle_mode_state & (1ULL << MODE_LOAD_GAME_STATE_DIR_ENABLE)) ? "ON" : "OFF");
+            snprintf(comment, sizeof(comment), "INFO - [Custom Savestate Dir Path] is set to '%s'.", (g_extern.lifecycle_mode_state & (1ULL << MODE_LOAD_GAME_STATE_DIR_ENABLE)) ? "ON" : "OFF");
+            break;
+         case SETTING_CONTROLS_SCHEME:
+            strlcpy(text, "Control Scheme Preset", sizeof(text));
+            snprintf(comment, sizeof(comment), "INFO - Input scheme preset [%s] is selected.", g_extern.file_state.input_cfg_path);
+            strlcpy(setting_text, g_extern.file_state.input_cfg_path, sizeof(setting_text));
+            break;
+         case SETTING_CONTROLS_NUMBER:
+            strlcpy(text, "Controller No", sizeof(text));
+            snprintf(comment, sizeof(comment), "Controller %d is currently selected.", currently_selected_controller_menu+1);
+            snprintf(setting_text, sizeof(setting_text), "%d", currently_selected_controller_menu+1);
+            break;
+         case SETTING_DPAD_EMULATION:
+            strlcpy(text, "D-Pad Emulation", sizeof(text));
+            switch(g_settings.input.dpad_emulation[currently_selected_controller_menu])
+            {
+               case ANALOG_DPAD_NONE:
+                  snprintf(comment, sizeof(comment), "[%s] from Controller %d is mapped to D-pad.", "None", currently_selected_controller_menu+1);
+                  strlcpy(setting_text, "None", sizeof(setting_text));
+                  break;
+               case ANALOG_DPAD_LSTICK:
+                  snprintf(comment, sizeof(comment), "[%s] from Controller %d is mapped to D-pad.", "Left Stick", currently_selected_controller_menu+1);
+                  strlcpy(setting_text, "Left Stick", sizeof(setting_text));
+                  break;
+               case ANALOG_DPAD_RSTICK:
+                  snprintf(comment, sizeof(comment), "[%s] from Controller %d is mapped to D-pad.", "Right Stick", currently_selected_controller_menu+1);
+                  strlcpy(setting_text, "Right Stick", sizeof(setting_text));
+                  break;
+            }
+            break;
+         case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_B:
+         case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_Y:
+         case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_SELECT:
+         case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_START:
+         case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_UP:
+         case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_DOWN:
+         case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_LEFT:
+         case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_RIGHT:
+         case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_A:
+         case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_X:
+         case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_L:
+         case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_R:
+         case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_L2:
+         case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_R2:
+         case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_L3:
+         case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_R3:
+            {
+               unsigned id = i - FIRST_CONTROL_BIND;
+               struct platform_bind key_label;
+               strlcpy(key_label.desc, "Unknown", sizeof(key_label.desc));
+               key_label.joykey = g_settings.input.binds[currently_selected_controller_menu][id].joykey;
+
+               if (driver.input->set_keybinds)
+                  driver.input->set_keybinds(&key_label, 0, 0, 0, (1ULL << KEYBINDS_ACTION_GET_BIND_LABEL));
+               strlcpy(text, g_settings.input.binds[currently_selected_controller_menu][id].desc, sizeof(text));
+               snprintf(comment, sizeof(comment), "INFO - [%s] is mapped to action:\n[%s].", text, key_label.desc);
+               strlcpy(setting_text, key_label.desc, sizeof(setting_text));
+            }
+            break;
+         case SETTING_CONTROLS_SAVE_CUSTOM_CONTROLS:
+            strlcpy(text, "SAVE CUSTOM CONTROLS", sizeof(text));
+            strlcpy(setting_text, "", sizeof(setting_text));
+            strlcpy(comment, "INFO - Save the [Custom Controls] settings to file.",  sizeof(comment));
+            break;
+         case SETTING_CONTROLS_DEFAULT_ALL:
+            strlcpy(text, "DEFAULTS", sizeof(text));
+            strlcpy(setting_text, "", sizeof(setting_text));
+            strlcpy(comment, "INFO - Set all Controls settings to defaults.", sizeof(comment));
+            break;
+         case SETTING_EMU_VIDEO_DEFAULT_ALL:
+            strlcpy(text, "DEFAULTS", sizeof(text));
+            strlcpy(setting_text, "", sizeof(setting_text));
+            strlcpy(comment, "INFO - Set all Video settings to defaults.", sizeof(comment));
+            break;
+         case SETTING_EMU_AUDIO_DEFAULT_ALL:
+            strlcpy(text, "DEFAULTS", sizeof(text));
+            strlcpy(setting_text, "", sizeof(setting_text));
+            strlcpy(comment, "INFO - Set all Audio settings to defaults.", sizeof(comment));
+            break;
+         case SETTING_PATH_DEFAULT_ALL:
+            strlcpy(text, "DEFAULTS", sizeof(text));
+            strlcpy(setting_text, "", sizeof(setting_text));
+            strlcpy(comment, "INFO - Set all Path settings to defaults.", sizeof(comment));
+            break;
+         case SETTING_EMU_DEFAULT_ALL:
+            strlcpy(text, "DEFAULTS", sizeof(text));
+            strlcpy(setting_text, "", sizeof(setting_text));
+            strlcpy(comment, "INFO - Set all RetroArch settings to defaults.", sizeof(comment));
+            break;
+         case INGAME_MENU_LOAD_STATE:
+            strlcpy(text, "Load State", sizeof(text));
+            snprintf(setting_text, sizeof(setting_text), "%d", g_extern.state_slot);
+            strlcpy(comment, "Load from current state slot.", sizeof(comment));
+            break;
+         case INGAME_MENU_SAVE_STATE:
+            strlcpy(text, "Save State", sizeof(text));
+            snprintf(setting_text, sizeof(setting_text), "%d", g_extern.state_slot);
+            strlcpy(comment, "Save to current state slot.", sizeof(comment));
+            break;
+         case INGAME_MENU_ASPECT_RATIO:
+            strlcpy(text, "Aspect Ratio", sizeof(text));
+            strlcpy(setting_text, aspectratio_lut[g_settings.video.aspect_ratio_idx].name, sizeof(setting_text));
+            strlcpy(comment, "Change the aspect ratio of the screen.", sizeof(comment));
+            break;
+         case INGAME_MENU_ROTATION:
+            strlcpy(text, "Rotation", sizeof(text));
+            strlcpy(setting_text, rotation_lut[g_extern.console.screen.orientation], sizeof(setting_text));
+            strlcpy(comment, "Change orientation of the screen.", sizeof(comment));
+            break;
+         case INGAME_MENU_RESIZE_MODE:
+            strlcpy(text, "Resize Mode", sizeof(text));
+            strlcpy(setting_text, "", sizeof(setting_text));
+            strlcpy(comment, "Allows you to resize the screen.", sizeof(comment));
+            break;
+         case INGAME_MENU_CORE_OPTIONS_MODE:
+            strlcpy(text, "Core Options", sizeof(text));
+            strlcpy(setting_text, "", sizeof(setting_text));
+            strlcpy(comment, "Set core-specific options.", sizeof(comment));
+            break;
+#ifdef HAVE_SHADER_MANAGER
+         case INGAME_MENU_SHADER_MANAGER_MODE:
+            strlcpy(text, "Shader Manager", sizeof(text));
+            strlcpy(setting_text, "", sizeof(setting_text));
+            strlcpy(comment, "Set and manage shader options.", sizeof(comment));
+            break;
+#endif
+         case INGAME_MENU_FRAME_ADVANCE:
+            strlcpy(text, "Frame Advance", sizeof(text));
+            strlcpy(setting_text, "", sizeof(setting_text));
+            strlcpy(comment, "Press a button to step one frame.", sizeof(comment));
+            break;
+         case INGAME_MENU_SCREENSHOT_MODE:
+            strlcpy(text, "Screenshot Mode", sizeof(text));
+            strlcpy(setting_text, "", sizeof(setting_text));
+            strlcpy(comment, "Take a screenshot.", sizeof(comment));
+            break;
+         case INGAME_MENU_RESET:
+            strlcpy(text, "Reset", sizeof(text));
+            strlcpy(setting_text, "", sizeof(setting_text));
+            strlcpy(comment, "Reset the game.", sizeof(comment));
+            break;
+         case INGAME_MENU_RETURN_TO_GAME:
+            strlcpy(text, "Return to Game", sizeof(text));
+            strlcpy(setting_text, "", sizeof(setting_text));
+            strlcpy(comment, "Change the currently loaded game.", sizeof(comment));
+            break;
+         case INGAME_MENU_CHANGE_GAME:
+            strlcpy(text, "Change Game", sizeof(text));
+            strlcpy(setting_text, "", sizeof(setting_text));
+            strlcpy(comment, "Select another game.", sizeof(comment));
+            break;
+         case INGAME_MENU_CHANGE_LIBRETRO_CORE:
+            strlcpy(text, "Change libretro core", sizeof(text));
+            strlcpy(setting_text, "", sizeof(setting_text));
+            strlcpy(comment, "Choose another libretro core.", sizeof(comment));
+            break;
+#ifdef HAVE_MULTIMAN
+         case INGAME_MENU_RETURN_TO_MULTIMAN:
+            strlcpy(text, "Return to multiMAN", sizeof(text));
+            strlcpy(setting_text, "", sizeof(setting_text));
+            strlcpy(comment, "Quit RetroArch and return to multiMAN.", sizeof(comment));
+            break;
+#endif
+         case INGAME_MENU_QUIT_RETROARCH:
+            strlcpy(text, "Quit RetroArch", sizeof(text));
+            strlcpy(setting_text, "", sizeof(setting_text));
+            strlcpy(comment, "Quit RetroArch.", sizeof(comment));
+            break;
+         default:
+            break;
+#ifdef HAVE_SHADER_MANAGER
+         case SHADERMAN_LOAD_CGP:
+            strlcpy(text, "Load CGP", sizeof(text));
+            strlcpy(setting_text, "", sizeof(setting_text));
+            strlcpy(comment, "INFO - Select a CGP file.", sizeof(comment));
+            break;
+         case SHADERMAN_AUTOSTART_CGP_ON_STARTUP:
+            strlcpy(text, "Autostart CGP at startup", sizeof(text));
+            strlcpy(setting_text, "", sizeof(setting_text));
+            strlcpy(comment, "INFO - Auto-load at startup the current shader settings.", sizeof(comment));
+            break;
+         case SHADERMAN_SAVE_CGP:
+            strlcpy(text, "Save CGP", sizeof(text));
+            strlcpy(setting_text, "", sizeof(setting_text));
+            strlcpy(comment, "INFO - Save current shader settings to a CGP file.", sizeof(comment));
+            break;
+         case SHADERMAN_SHADER_PASSES:
+            strlcpy(text, "Shader passes", sizeof(text));
+            snprintf(setting_text, sizeof(setting_text), "%u", shader.passes);
+            strlcpy(comment, "INFO - Set the amount of shader passes.", sizeof(comment));
+            break;
+         case SHADERMAN_APPLY_CHANGES:
+            strlcpy(text, "Apply changes", sizeof(text));
+            strlcpy(setting_text, "", sizeof(setting_text));
+            strlcpy(comment, "INFO - Apply the changes made below.", sizeof(comment));
+            break;
+         case SHADERMAN_SHADER_0:
+         case SHADERMAN_SHADER_1:
+         case SHADERMAN_SHADER_2:
+         case SHADERMAN_SHADER_3:
+         case SHADERMAN_SHADER_4:
+         case SHADERMAN_SHADER_5:
+         case SHADERMAN_SHADER_6:
+         case SHADERMAN_SHADER_7:
+            {
+               char type_str[256];
+               uint8_t index = (i - SHADERMAN_SHADER_0) / 3;
+               if (*shader.pass[index].source.cg)
+                  fill_pathname_base(type_str,
+                        shader.pass[index].source.cg, sizeof(type_str));
+               else
+                  strlcpy(type_str, "N/A", sizeof(type_str));
+               snprintf(text, sizeof(text), "Shader #%d", index);
+               strlcpy(setting_text, type_str, sizeof(setting_text));
+               strlcpy(comment, "INFO - Select the shader.", sizeof(comment));
+            }
+            break;
+         case SHADERMAN_SHADER_0_FILTER:
+         case SHADERMAN_SHADER_1_FILTER:
+         case SHADERMAN_SHADER_2_FILTER:
+         case SHADERMAN_SHADER_3_FILTER:
+         case SHADERMAN_SHADER_4_FILTER:
+         case SHADERMAN_SHADER_5_FILTER:
+         case SHADERMAN_SHADER_6_FILTER:
+         case SHADERMAN_SHADER_7_FILTER:
+            {
+               char type_str[256];
+               uint8_t index = (i - SHADERMAN_SHADER_0) / 3;
+               snprintf(text, sizeof(text), "Shader #%d filter", index);
+               shader_manager_get_str_filter(type_str, sizeof(type_str), index);
+               strlcpy(setting_text, type_str, sizeof(setting_text));
+               strlcpy(comment, "INFO - Select the filtering.", sizeof(comment));
+            }
+            break;
+         case SHADERMAN_SHADER_0_SCALE:
+         case SHADERMAN_SHADER_1_SCALE:
+         case SHADERMAN_SHADER_2_SCALE:
+         case SHADERMAN_SHADER_3_SCALE:
+         case SHADERMAN_SHADER_4_SCALE:
+         case SHADERMAN_SHADER_5_SCALE:
+         case SHADERMAN_SHADER_6_SCALE:
+         case SHADERMAN_SHADER_7_SCALE:
+            {
+               char type_str[256];
+               uint8_t index = (i - SHADERMAN_SHADER_0) / 3;
+               unsigned scale = shader.pass[index].fbo.scale_x;
+
+               snprintf(text, sizeof(text), "Shader #%d scale", index);
+
+               if (!scale)
+                  strlcpy(type_str, "Don't care", sizeof(type_str));
+               else
+                  snprintf(type_str, sizeof(type_str), "%ux", scale);
+
+               strlcpy(setting_text, type_str, sizeof(setting_text));
+               strlcpy(comment, "INFO - Select the scaling factor of this pass.", sizeof(comment));
+            }
+            break;
+#endif
+      }
 
       if (!(j < NUM_ENTRY_PER_PAGE))
       {
@@ -2502,11 +2495,10 @@ static int select_setting(uint8_t menu_type, uint64_t input)
          item_page++;
       }
 
-      item.page = item_page;
       items_pages[i] = item_page;
       j++;
 
-      if (item.page != page_number)
+      if (item_page != page_number)
          continue;
 
       y_increment += POSITION_Y_INCREMENT;
@@ -2514,18 +2506,18 @@ static int select_setting(uint8_t menu_type, uint64_t input)
       font_parms.x = POSITION_X; 
       font_parms.y = y_increment;
       font_parms.scale = FONT_SIZE_VARIABLE;
-      font_parms.color = selected == item.enum_id ? YELLOW : WHITE;
+      font_parms.color = (i == selected) ? YELLOW : WHITE;
 
       if (driver.video_poke->set_osd_msg)
-         driver.video_poke->set_osd_msg(driver.video_data, item.text, &font_parms);
+         driver.video_poke->set_osd_msg(driver.video_data, text, &font_parms);
 
       font_parms.x = POSITION_X_CENTER;
       font_parms.color = WHITE;
 
       if (driver.video_poke->set_osd_msg)
-         driver.video_poke->set_osd_msg(driver.video_data, item.setting_text, &font_parms);
+         driver.video_poke->set_osd_msg(driver.video_data, setting_text, &font_parms);
 
-      if (item.enum_id != selected)
+      if (i != selected)
          continue;
 
 #ifdef HAVE_MENU_PANEL
@@ -2538,7 +2530,7 @@ static int select_setting(uint8_t menu_type, uint64_t input)
       font_parms.color = WHITE;
 
       if (driver.video_poke->set_osd_msg)
-         driver.video_poke->set_osd_msg(driver.video_data, item.comment, &font_parms);
+         driver.video_poke->set_osd_msg(driver.video_data, comment, &font_parms);
    }
 
    if (menu_type == INGAME_MENU)

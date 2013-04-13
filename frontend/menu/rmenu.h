@@ -35,15 +35,6 @@
 #define DEVICE_CAST xdk_d3d_video_t*
 #endif
 
-typedef struct
-{
-   unsigned char enum_id;
-   char text[64];
-   char setting_text[64];
-   char comment[192];
-   unsigned char page;
-} item;
-
 enum
 {
    CONFIG_FILE = 0,
