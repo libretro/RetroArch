@@ -327,8 +327,6 @@ static bool gfx_ctx_set_video_mode(
    if (!g_hwnd)
       goto error;
 
-   gfx_ctx_update_window_title(true);
-
    if (!fullscreen || windowed_full)
    {
       ShowWindow(g_hwnd, SW_RESTORE);
