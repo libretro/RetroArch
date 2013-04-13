@@ -89,7 +89,7 @@ class D3DVideo
       void set_rgui_texture_frame(const void *frame,
             bool rgb32, unsigned width, unsigned height,
             float alpha);
-      void set_rgui_texture_enable(bool state);
+      void set_rgui_texture_enable(bool state, bool fullscreen);
 #endif
 
       bool restore();

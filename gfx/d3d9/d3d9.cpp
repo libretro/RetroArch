@@ -1208,9 +1208,10 @@ void D3DVideo::set_rgui_texture_frame(const void *frame,
    }
 }
 
-void D3DVideo::set_rgui_texture_enable(bool state)
+void D3DVideo::set_rgui_texture_enable(bool state, bool fullscreen)
 {
    rgui.enabled = state;
+   rgui.fullscreen = fullscreen;
 }
 #endif
 
@@ -1438,8 +1439,7 @@ static void d3d9_set_rgui_texture_frame(void *data,
 
 static void d3d9_set_rgui_texture_enable(void *data, bool state, bool full_screen)
 {
-   (void)full_screen; // Ignore for now.
-   reinterpret_cast<D3DVideo*>(data)->set_rgui_texture_enable(state);
+   reinterpret_cast<D3DVideo*>(data)->set_rgui_texture_enable(state, full_screen);
 }
 #endif
 
