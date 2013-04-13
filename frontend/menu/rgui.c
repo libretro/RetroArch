@@ -446,7 +446,7 @@ static void render_text(rgui_handle_t *rgui)
       unsigned port = menu_type - RGUI_SETTINGS_CONTROLLER_1;
       
 #ifdef HAVE_SHADER_MANAGER
-      if (type >= RGUI_SETTINGS_SHADER_PRESET &&
+      if (type >= RGUI_SETTINGS_SHADER_FILTER &&
             type <= RGUI_SETTINGS_SHADER_LAST)
       {
          // HACK. Work around that we're using the menu_type as dir type to propagate state correctly.
@@ -456,6 +456,9 @@ static void render_text(rgui_handle_t *rgui)
             strlcpy(type_str, "(DIR)", sizeof(type_str));
             w = 5;
          }
+         else if (type == RGUI_SETTINGS_SHADER_FILTER)
+            snprintf(type_str, sizeof(type_str), "%s",
+                  g_settings.video.smooth ? "Linear" : "Nearest");
          else if (type == RGUI_SETTINGS_SHADER_PRESET)
             strlcpy(type_str, "...", sizeof(type_str));
          else
@@ -675,7 +678,7 @@ static int rgui_settings_toggle_setting(rgui_handle_t *rgui, unsigned setting, r
    (void)rgui;
 
 #ifdef HAVE_SHADER_MANAGER
-   if (setting >= RGUI_SETTINGS_SHADER_PRESET && setting <= RGUI_SETTINGS_SHADER_LAST)
+   if (setting >= RGUI_SETTINGS_SHADER_FILTER && setting <= RGUI_SETTINGS_SHADER_LAST)
       return shader_manager_toggle_setting(rgui, setting, action);
 #endif
    if (setting >= RGUI_SETTINGS_CORE_OPTION_START)
@@ -1107,6 +1110,8 @@ static void rgui_settings_shader_manager_populate_entries(rgui_handle_t *rgui)
    rgui_list_clear(rgui->selection_buf);
    rgui_list_push(rgui->selection_buf, "Apply changes",
          RGUI_SETTINGS_SHADER_APPLY, 0);
+   rgui_list_push(rgui->selection_buf, "Default filter",
+         RGUI_SETTINGS_SHADER_FILTER, 0);
    rgui_list_push(rgui->selection_buf, "Load shader preset",
          RGUI_SETTINGS_SHADER_PRESET, 0);
    rgui_list_push(rgui->selection_buf, "Shader passes",
@@ -1183,7 +1188,25 @@ static int shader_manager_toggle_setting(rgui_handle_t *rgui, unsigned setting, 
    unsigned dist_filter = setting - RGUI_SETTINGS_SHADER_0_FILTER;
    unsigned dist_scale  = setting - RGUI_SETTINGS_SHADER_0_SCALE;
 
-   if (setting == RGUI_SETTINGS_SHADER_APPLY)
+   if (setting == RGUI_SETTINGS_SHADER_FILTER)
+   {
+      switch (action)
+      {
+         case RGUI_ACTION_START:
+            g_settings.video.smooth = true;
+            break;
+
+         case RGUI_ACTION_LEFT:
+         case RGUI_ACTION_RIGHT:
+         case RGUI_ACTION_OK:
+            g_settings.video.smooth = !g_settings.video.smooth;
+            break;
+
+         default:
+            break;
+      }
+   }
+   else if (setting == RGUI_SETTINGS_SHADER_APPLY)
    {
       if (!driver.video->set_shader || action != RGUI_ACTION_OK)
          return 0;

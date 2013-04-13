@@ -469,7 +469,7 @@ static void gl_create_fbo_textures(void *data)
 
    glGenTextures(gl->fbo_pass, gl->fbo_texture);
 
-   GLuint base_filt = gl->tex_filter;
+   GLuint base_filt = g_settings.video.smooth ? GL_LINEAR : GL_NEAREST;
    for (int i = 0; i < gl->fbo_pass; i++)
    {
       glBindTexture(GL_TEXTURE_2D, gl->fbo_texture[i]);
