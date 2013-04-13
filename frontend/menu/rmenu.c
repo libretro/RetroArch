@@ -2639,37 +2639,6 @@ static int select_setting(uint8_t menu_type, uint64_t input)
 
    display_menubar(menu_type);
 
-   if (menu_type == INGAME_MENU)
-      return 0;
-
-   struct platform_bind key_label_l3 = {0};
-   struct platform_bind key_label_r3 = {0};
-   struct platform_bind key_label_start = {0};
-
-   strlcpy(key_label_l3.desc, "Unknown", sizeof(key_label_l3.desc));
-   key_label_l3.joykey = 1ULL << RETRO_DEVICE_ID_JOYPAD_L3;
-   strlcpy(key_label_r3.desc, "Unknown", sizeof(key_label_r3.desc));
-   key_label_r3.joykey = 1ULL << RETRO_DEVICE_ID_JOYPAD_R3;
-   strlcpy(key_label_start.desc, "Unknown", sizeof(key_label_start.desc));
-   key_label_start.joykey = 1ULL << RETRO_DEVICE_ID_JOYPAD_START;
-
-   if (driver.input->set_keybinds)
-   {
-      driver.input->set_keybinds(&key_label_l3, 0, 0, 0, (1ULL << KEYBINDS_ACTION_GET_BIND_LABEL));
-      driver.input->set_keybinds(&key_label_r3, 0, 0, 0, (1ULL << KEYBINDS_ACTION_GET_BIND_LABEL));
-      driver.input->set_keybinds(&key_label_start, 0, 0, 0, (1ULL << KEYBINDS_ACTION_GET_BIND_LABEL));
-   }
-
-   snprintf(msg, sizeof(msg), "[%s] + [%s] - Resume game", key_label_l3.desc, key_label_r3.desc);
-
-   font_parms.x = POSITION_X; 
-   font_parms.y = COMMENT_TWO_POSITION_Y;
-   font_parms.scale = HARDCODE_FONT_SIZE;
-   font_parms.color = YELLOW;
-
-   if (driver.video_poke->set_osd_msg)
-      driver.video_poke->set_osd_msg(driver.video_data, msg, &font_parms);
-
    return 0;
 }
 
