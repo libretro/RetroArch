@@ -38,6 +38,9 @@
 
 #ifdef HAVE_SHADER_MANAGER
 #include "../../gfx/shader_parse.h"
+
+#define EXT_SHADERS "cg"
+#define EXT_CGP_PRESETS "cgp"
 #endif
 
 #ifdef _XBOX1
@@ -47,9 +50,8 @@
 #endif
 
 #define EXT_IMAGES "png|PNG"JPEG_FORMATS
-#define EXT_SHADERS "cg"
-#define EXT_CGP_PRESETS "cgp"
 #define EXT_INPUT_PRESETS "cfg|CFG"
+
 
 static bool set_libretro_core_as_launch;
 
@@ -291,9 +293,56 @@ static rmenu_state_t rmenu_state;
 
 static unsigned char menu_stack_enum_array[10];
 static unsigned stack_idx = 0;
+static uint8_t selected = 0;
+static unsigned shader_choice_set_shader_slot = 0;
+static uint8_t setting_page_number = 0;
 
-static void menu_stack_pop(void)
+static void menu_stack_pop(unsigned menu_type)
 {
+   switch(menu_type)
+   {
+      case GENERAL_VIDEO_MENU:
+         selected = FIRST_INGAME_MENU_SETTING;
+         break;
+      case GENERAL_AUDIO_MENU:
+         selected = FIRST_VIDEO_SETTING;
+         break;
+      case EMU_GENERAL_MENU:
+         selected = FIRST_AUDIO_SETTING;
+         break;
+      case EMU_VIDEO_MENU:
+         selected = FIRST_EMU_SETTING;
+         break;
+      case EMU_AUDIO_MENU:
+         selected = FIRST_EMU_VIDEO_SETTING;
+         break;
+      case PATH_MENU:
+         selected = FIRST_EMU_AUDIO_SETTING;
+         break;
+      case CONTROLS_MENU:
+         selected = FIRST_PATH_SETTING;
+         break;
+      case LIBRETRO_CHOICE:
+      case INGAME_MENU_CORE_OPTIONS:
+      case INGAME_MENU_RESIZE:
+      case INGAME_MENU_SCREENSHOT:
+         menu_bg_show = true;
+         break;
+#ifdef HAVE_SHADER_MANAGER
+      case INGAME_MENU_SHADER_MANAGER:
+         selected = FIRST_INGAME_MENU_SETTING;
+         menu_bg_show = true;
+         break;
+      case CGP_CHOICE:
+         selected = FIRST_SHADERMAN_SETTING;
+         break;
+#endif
+      default:
+         break;
+   }
+
+   setting_page_number = 0;
+
    if (browser->prev_dir.directory_path[0] != '\0')
    {
       memcpy(&browser->current_dir, &browser->prev_dir, sizeof(*(&browser->current_dir)));
@@ -308,15 +357,50 @@ static void menu_stack_pop(void)
       stack_idx--;
 }
 
-static void menu_stack_push(unsigned menu_id, bool prev_dir)
+static void menu_stack_push(unsigned menu_type, bool prev_dir)
 {
+   switch (menu_type)
+   {
+      case INGAME_MENU:
+         selected = FIRST_INGAME_MENU_SETTING;
+         break;
+      case INGAME_MENU_SHADER_MANAGER:
+         selected = FIRST_SHADERMAN_SETTING;
+         break;
+      case GENERAL_VIDEO_MENU:
+         selected = FIRST_VIDEO_SETTING;
+         break;
+      case GENERAL_AUDIO_MENU:
+         selected = FIRST_AUDIO_SETTING;
+         break;
+      case EMU_GENERAL_MENU:
+         selected = FIRST_EMU_SETTING;
+         break;
+      case EMU_VIDEO_MENU:
+         selected = FIRST_EMU_VIDEO_SETTING;
+         break;
+      case EMU_AUDIO_MENU:
+         selected = FIRST_EMU_AUDIO_SETTING;
+         break;
+      case PATH_MENU:
+         selected = FIRST_PATH_SETTING;
+         break;
+      case CONTROLS_MENU:
+         selected = FIRST_CONTROLS_SETTING_PAGE_1;
+         break;
+      default:
+         break;
+   }
+
+   setting_page_number = 0;
+
    if (prev_dir)
    {
       memcpy(&browser->prev_dir, &browser->current_dir, sizeof(*(&browser->prev_dir)));
       browser->prev_dir.ptr = browser->current_dir.ptr;
    }
 
-   menu_stack_enum_array[stack_idx] = menu_id;
+   menu_stack_enum_array[stack_idx] = menu_type;
    stack_idx++;
 }
 
@@ -410,12 +494,14 @@ static void display_menubar(uint8_t menu_type)
 
    switch(menu_type)
    {
+#ifdef HAVE_SHADER_MANAGER
       case SHADER_CHOICE:
          strlcpy(title, "Shaders", sizeof(title));
          break;
-      case PRESET_CHOICE:
-         strlcpy(title, "Shader", sizeof(title));
+      case CGP_CHOICE:
+         strlcpy(title, "CGP", sizeof(title));
          break;
+#endif
       case BORDER_CHOICE:
          strlcpy(title, "Borders", sizeof(title));
          break;
@@ -479,8 +565,10 @@ static void display_menubar(uint8_t menu_type)
 
    switch(menu_type)
    {
+#ifdef HAVE_SHADER_MANAGER
       case SHADER_CHOICE:
-      case PRESET_CHOICE:
+      case CGP_CHOICE:
+#endif
       case BORDER_CHOICE:
       case LIBRETRO_CHOICE:
       case INPUT_PRESET_CHOICE:
@@ -604,7 +692,6 @@ static void browser_render(void *data)
    }
 }
 
-static unsigned shader_choice_set_shader_slot = 0;
 
 static int select_file(uint8_t menu_type, uint64_t input)
 {
@@ -617,14 +704,16 @@ static int select_file(uint8_t menu_type, uint64_t input)
 
    switch(menu_type)
    {
+#ifdef HAVE_SHADER_MANAGER
       case SHADER_CHOICE:
          strlcpy(extensions, EXT_SHADERS, sizeof(extensions));
          strlcpy(comment, "INFO - Select a shader.", sizeof(comment));
          break;
-      case PRESET_CHOICE:
+      case CGP_CHOICE:
          strlcpy(extensions, EXT_CGP_PRESETS, sizeof(extensions));
          strlcpy(comment, "INFO - Select a CGP file.", sizeof(comment));
          break;
+#endif
       case INPUT_PRESET_CHOICE:
          strlcpy(extensions, EXT_INPUT_PRESETS, sizeof(extensions));
          strlcpy(comment, "INFO - Select an input preset.", sizeof(comment));
@@ -656,7 +745,7 @@ static int select_file(uint8_t menu_type, uint64_t input)
                strlcpy(shader.pass[shader_choice_set_shader_slot].source.cg, path,
                      sizeof(shader.pass[shader_choice_set_shader_slot].source.cg));
                break;
-            case PRESET_CHOICE:
+            case CGP_CHOICE:
                {
                   config_file_t *conf = NULL;
 
@@ -668,7 +757,7 @@ static int select_file(uint8_t menu_type, uint64_t input)
                   config_file_free(conf);
 
 #ifdef HAVE_CG
-                  if (!video_set_shader_func(RARCH_SHADER_CG, path))
+                  if (!video_set_shader_func(RARCH_SHADER_CG, shader.passes ? path : NULL))
                      RARCH_ERR("Setting CGP failed.\n");
 #else
                      RARCH_WARN("Setting CGP not yet implemented.\n");
@@ -732,7 +821,7 @@ static int select_file(uint8_t menu_type, uint64_t input)
       pop_menu_stack = true;
 
    if (pop_menu_stack)
-      menu_stack_pop();
+      menu_stack_pop(menu_type);
 
    font_parms.x = POSITION_X; 
    font_parms.y = COMMENT_POSITION_Y;
@@ -821,7 +910,7 @@ static int select_directory(uint8_t menu_type, uint64_t input)
    }
 
    if (pop_menu_stack)
-      menu_stack_pop();
+      menu_stack_pop(menu_type);
 
    if (!ret)
       msg_queue_push(g_extern.msg_queue, "ERROR - Failed to open directory.", 1, 180);
@@ -955,8 +1044,6 @@ static bool osk_callback_enter_filename_init(void *data)
 
 #endif
 #endif
-
-static uint8_t selected = 0;
 
 
 static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t input)
@@ -1691,14 +1778,13 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
       case INGAME_MENU_SHADER_MANAGER_MODE:
          if (input & (1ULL << RMENU_DEVICE_NAV_B))
          {
-            selected = FIRST_SHADERMAN_SETTING;
             menu_stack_push(INGAME_MENU_SHADER_MANAGER, false);
          }
          break;
       case SHADERMAN_LOAD_CGP:
          if ((input & (1ULL << RMENU_DEVICE_NAV_LEFT)) || (input & (1ULL << RMENU_DEVICE_NAV_RIGHT)) || (input & (1ULL << RMENU_DEVICE_NAV_B)))
          {
-            menu_stack_push(PRESET_CHOICE, true);
+            menu_stack_push(CGP_CHOICE, true);
             filebrowser_set_root_and_ext(browser, EXT_CGP_PRESETS, g_settings.video.shader_dir);
          }
          if (input & (1ULL << RMENU_DEVICE_NAV_START))
@@ -1814,10 +1900,10 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
                (input & (1ULL << RMENU_DEVICE_NAV_START)) || (input & (1ULL << RMENU_DEVICE_NAV_LEFT)))
          {
             bool ret = false;
+            char cgp_path[PATH_MAX];
 
             if (shader.passes)
             {
-               char cgp_path[PATH_MAX];
                const char *shader_dir = *g_settings.video.shader_dir ?
                   g_settings.video.shader_dir : g_settings.system_directory;
                fill_pathname_join(cgp_path, shader_dir, "rgui.cgp", sizeof(cgp_path));
@@ -1827,10 +1913,9 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
                gfx_shader_write_conf_cgp(conf, &shader);
                config_file_write(conf, cgp_path);
                config_file_free(conf);
-               ret = video_set_shader_func(RARCH_SHADER_CG, cgp_path); 
             }
-            else
-               ret = video_set_shader_func(RARCH_SHADER_CG, NULL);
+
+            ret = video_set_shader_func(RARCH_SHADER_CG, shader.passes ? cgp_path : NULL); 
 
             if (!ret)
                RARCH_ERR("Setting RGUI CGP failed.\n");
@@ -1845,7 +1930,6 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
 static int select_setting(uint8_t menu_type, uint64_t input)
 {
    static uint8_t first_setting = FIRST_VIDEO_SETTING;
-   static uint8_t page_number = 0;
    uint8_t items_pages[SETTING_LAST] = {0};
    uint8_t max_settings = 0;
 
@@ -1890,11 +1974,11 @@ static int select_setting(uint8_t menu_type, uint64_t input)
 #ifdef HAVE_SHADER_MANAGER
       case INGAME_MENU_SHADER_MANAGER:
          first_setting = FIRST_SHADERMAN_SETTING;
-         max_settings = MAX_NO_OF_SHADERMAN_SETTINGS;
 
          switch (shader.passes)
          {
             case 0:
+               max_settings = MAX_NO_OF_SHADERMAN_SETTINGS;
                break;
             case 1:
                max_settings = SHADERMAN_SHADER_0_SCALE+1;
@@ -2445,7 +2529,7 @@ static int select_setting(uint8_t menu_type, uint64_t input)
       items_pages[i] = item_page;
       j++;
 
-      if (item_page != page_number)
+      if (item_page != setting_page_number)
          continue;
 
       y_increment += POSITION_Y_INCREMENT;
@@ -2497,8 +2581,8 @@ static int select_setting(uint8_t menu_type, uint64_t input)
       else
          selected--;
 
-      if (items_pages[selected] != page_number)
-         page_number = items_pages[selected];
+      if (items_pages[selected] != setting_page_number)
+         setting_page_number = items_pages[selected];
    }
       
    if (input & (1ULL << RMENU_DEVICE_NAV_DOWN))
@@ -2507,76 +2591,19 @@ static int select_setting(uint8_t menu_type, uint64_t input)
 
       if (selected >= max_settings)
          selected = first_setting; 
-      if (items_pages[selected] != page_number)
-         page_number = items_pages[selected];
+      if (items_pages[selected] != setting_page_number)
+         setting_page_number = items_pages[selected];
    }
 
    /* back to ROM menu if CIRCLE is pressed */
    if ((input & (1ULL << RMENU_DEVICE_NAV_L1)) || (input & (1ULL << RMENU_DEVICE_NAV_A)))
-   {
-      switch(menu_type)
-      {
-         case GENERAL_VIDEO_MENU:
-            break;
-         case GENERAL_AUDIO_MENU:
-            selected = FIRST_VIDEO_SETTING;
-            break;
-         case EMU_GENERAL_MENU:
-            selected = FIRST_AUDIO_SETTING;
-            break;
-         case EMU_VIDEO_MENU:
-            selected = FIRST_EMU_SETTING;
-            break;
-         case EMU_AUDIO_MENU:
-            selected = FIRST_EMU_VIDEO_SETTING;
-            break;
-         case PATH_MENU:
-            selected = FIRST_EMU_AUDIO_SETTING;
-            break;
-         case CONTROLS_MENU:
-            selected = FIRST_PATH_SETTING;
-            break;
-#ifdef HAVE_SHADER_MANAGER
-         case INGAME_MENU_SHADER_MANAGER:
-            selected = FIRST_INGAME_MENU_SETTING;
-            break;
-#endif
-         default:
-            break;
-      }
-      menu_stack_pop();
-      page_number = 0;
-   }
+      menu_stack_pop(menu_type);
    else if (input & (1ULL << RMENU_DEVICE_NAV_R1))
    {
-      switch(menu_type)
-      {
-         case GENERAL_VIDEO_MENU:
-            if (menu_type == GENERAL_VIDEO_MENU)
-               selected = FIRST_AUDIO_SETTING;
-         case GENERAL_AUDIO_MENU:
-            if (menu_type == GENERAL_AUDIO_MENU)
-               selected = FIRST_EMU_SETTING;
-         case EMU_GENERAL_MENU:
-            if (menu_type == EMU_GENERAL_MENU)
-               selected = FIRST_EMU_VIDEO_SETTING;
-         case EMU_VIDEO_MENU:
-            if (menu_type == EMU_VIDEO_MENU)
-               selected = FIRST_EMU_AUDIO_SETTING;
-         case EMU_AUDIO_MENU:
-            if (menu_type == EMU_AUDIO_MENU)
-               selected = FIRST_PATH_SETTING;
-         case PATH_MENU:
-            if (menu_type == PATH_MENU)
-               selected = FIRST_CONTROLS_SETTING_PAGE_1;
 
-            menu_stack_push(menu_type + 1, false);
-            page_number = 0;
-            break;
-         case CONTROLS_MENU:
-         default:
-            break;
-      }
+      if (menu_type != CONTROLS_MENU || menu_type != INGAME_MENU_SHADER_MANAGER
+            || menu_type != INGAME_MENU)
+         menu_stack_push(menu_type + 1, false);
    }
 
    ret = set_setting_action(menu_type, selected, input);
@@ -2740,10 +2767,7 @@ static int ingame_menu_resize(uint8_t menu_type, uint64_t input)
    }
 
    if (input & (1ULL << RMENU_DEVICE_NAV_A))
-   {
-      menu_stack_pop();
-      menu_bg_show = true;
-   }
+      menu_stack_pop(menu_type);
 
    if ((input & (1ULL << RMENU_DEVICE_NAV_Y)))
       menu_bg_show = !menu_bg_show;
@@ -3007,7 +3031,7 @@ static int ingame_menu_core_options(uint8_t menu_type, uint64_t input)
    float y_increment = POSITION_Y_START;
 
    if (input & (1ULL << RMENU_DEVICE_NAV_A))
-      menu_stack_pop();
+      menu_stack_pop(menu_type);
 
    y_increment += POSITION_Y_INCREMENT;
 
@@ -3084,10 +3108,7 @@ static int ingame_menu_screenshot(uint8_t menu_type, uint64_t input)
    if (g_extern.lifecycle_mode_state & (1ULL << MODE_MENU_INGAME))
    {
       if (input & (1ULL << RMENU_DEVICE_NAV_A))
-      {
-         menu_stack_pop();
-         menu_bg_show = true;
-      }
+         menu_stack_pop(menu_type);
 
 #ifdef HAVE_SCREENSHOTS
       if (input & (1ULL << RMENU_DEVICE_NAV_B))
@@ -3151,10 +3172,7 @@ static int menu_input_process(uint8_t menu_type, uint64_t old_state)
                || menu_type == INGAME_MENU_SHADER_MANAGER
 #endif
                )
-         {
-            menu_stack_pop();
-            menu_bg_show = true;
-         }
+            menu_stack_pop(menu_type);
 
          int ret = -1;
          if (g_extern.lifecycle_mode_state & (1ULL << MODE_MENU_INGAME))
@@ -3219,10 +3237,7 @@ bool menu_iterate(void)
    if (g_extern.lifecycle_mode_state & (1ULL << MODE_MENU_PREINIT))
    {
       if (g_extern.lifecycle_mode_state & (1ULL << MODE_MENU_INGAME))
-      {
-         selected = FIRST_INGAME_MENU_SETTING;
          menu_stack_push(INGAME_MENU, false);
-      }
 
 #ifndef __CELLOS_LV2__
       rmenu_gfx_init();
@@ -3296,28 +3311,30 @@ bool menu_iterate(void)
    int input_entry_ret = 0;
    int input_process_ret = 0;
 
-   unsigned menu_id = menu_stack_enum_array[stack_idx - 1];
+   unsigned menu_type = menu_stack_enum_array[stack_idx - 1];
 
-   switch(menu_id)
+   switch(menu_type)
    {
       case INGAME_MENU_RESIZE:
-         input_entry_ret = ingame_menu_resize(menu_id, input);
+         input_entry_ret = ingame_menu_resize(menu_type, input);
          break;
       case INGAME_MENU_CORE_OPTIONS:
-         input_entry_ret = ingame_menu_core_options(menu_id, input);
+         input_entry_ret = ingame_menu_core_options(menu_type, input);
          break;
       case INGAME_MENU_SCREENSHOT:
-         input_entry_ret = ingame_menu_screenshot(menu_id, input);
+         input_entry_ret = ingame_menu_screenshot(menu_type, input);
          break;
       case FILE_BROWSER_MENU:
-         input_entry_ret = select_rom(menu_id, input);
+         input_entry_ret = select_rom(menu_type, input);
          break;
       case LIBRETRO_CHOICE:
-      case PRESET_CHOICE:
+#ifdef HAVE_SHADER_MANAGER
+      case CGP_CHOICE:
+#endif
       case INPUT_PRESET_CHOICE:
       case SHADER_CHOICE:
       case BORDER_CHOICE:
-         input_entry_ret = select_file(menu_id, input);
+         input_entry_ret = select_file(menu_type, input);
          break;
       case PATH_DEFAULT_ROM_DIR_CHOICE:
       case PATH_SAVESTATES_DIR_CHOICE:
@@ -3326,7 +3343,7 @@ bool menu_iterate(void)
       case PATH_CHEATS_DIR_CHOICE:
 #endif
       case PATH_SYSTEM_DIR_CHOICE:
-         input_entry_ret = select_directory(menu_id, input);
+         input_entry_ret = select_directory(menu_type, input);
          break;
       case GENERAL_VIDEO_MENU:
       case GENERAL_AUDIO_MENU:
@@ -3339,11 +3356,11 @@ bool menu_iterate(void)
 #ifdef HAVE_SHADER_MANAGER
       case INGAME_MENU_SHADER_MANAGER:
 #endif
-         input_entry_ret = select_setting(menu_id, input);
+         input_entry_ret = select_setting(menu_type, input);
          break;
    }
 
-   input_process_ret = menu_input_process(menu_id, old_state);
+   input_process_ret = menu_input_process(menu_type, old_state);
    msg = msg_queue_pull(g_extern.msg_queue);
 
    font_parms.x = MSG_QUEUE_X_POSITION;
@@ -3360,7 +3377,7 @@ bool menu_iterate(void)
    if (g_extern.lifecycle_mode_state & (1ULL << MODE_MENU_INGAME_EXIT) &&
          g_extern.lifecycle_mode_state & (1ULL << MODE_MENU_INGAME))
    {
-      menu_stack_pop();
+      menu_stack_pop(menu_type);
       g_extern.lifecycle_mode_state &= ~((1ULL << MODE_MENU_INGAME) | (1ULL << MODE_MENU_INGAME_EXIT));
    }
 
