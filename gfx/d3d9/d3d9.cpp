@@ -463,7 +463,6 @@ D3DVideo::D3DVideo(const video_info_t *info) :
       win_height = rect.bottom - rect.top;
    }
 
-   gfx_window_title_reset();
    char buffer[128];
    gfx_get_fps(buffer, sizeof(buffer), false);
    std::string title = buffer;
