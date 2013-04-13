@@ -306,7 +306,9 @@ static void thread_loop(void *data)
                   thr->texture.alpha);
             thr->texture.frame_updated = false;
          }
-         thr->poke->set_texture_enable(thr->driver_data, thr->texture.enable);
+
+         if (thr->poke && thr->poke->set_texture_enable)
+            thr->poke->set_texture_enable(thr->driver_data, thr->texture.enable);
 #endif
 
          if (thr->apply_state_changes)
@@ -688,8 +690,14 @@ static const video_poke_interface_t thread_poke = {
 static void thread_get_poke_interface(void *data, const video_poke_interface_t **iface)
 {
    thread_video_t *thr = (thread_video_t*)data;
-   *iface = &thread_poke;
-   thr->driver->poke_interface(thr->driver_data, &thr->poke);
+
+   if (thr->driver->poke_interface)
+   {
+      *iface = &thread_poke;
+      thr->driver->poke_interface(thr->driver_data, &thr->poke);
+   }
+   else
+      *iface = NULL;
 }
 
 #if defined(HAVE_RMENU) || defined(HAVE_RGUI)

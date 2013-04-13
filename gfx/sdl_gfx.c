@@ -197,6 +197,10 @@ static void *sdl_gfx_init(const video_info_t *video, const input_driver_t **inpu
    gfx_set_dwm();
 #endif
 
+#ifdef HAVE_X11
+   XInitThreads();
+#endif
+
    SDL_InitSubSystem(SDL_INIT_VIDEO);
 
    sdl_video_t *vid = (sdl_video_t*)calloc(1, sizeof(*vid));

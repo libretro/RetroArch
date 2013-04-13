@@ -330,6 +330,8 @@ static void *xv_init(const video_info_t *video, const input_driver_t **input, vo
    if (!xv)
       return NULL;
 
+   XInitThreads();
+
    xv->display = XOpenDisplay(NULL);
    struct sigaction sa;
    unsigned adaptor_count = 0;
