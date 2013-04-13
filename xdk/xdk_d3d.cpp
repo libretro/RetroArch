@@ -521,8 +521,7 @@ static void xdk_d3d_reinit_textures(void *data, const video_info_t *video)
    d3d->texture_fmt = video->rgb32 ? D3DFMT_LIN_X8R8G8B8 : D3DFMT_LIN_R5G6B5;
    d3d->base_size   = video->rgb32 ? sizeof(uint32_t) : sizeof(uint16_t);
 
-   //FIXME - temporary hack
-   d3d->tex_w = d3d->tex_h = 512;
+   d3d->tex_w = d3d->tex_h = RARCH_SCALE_BASE * video->input_scale;
 
    if (old_base_size != d3d->base_size || old_width != d3d->tex_w || old_height != d3d->tex_h)
    {
@@ -564,9 +563,8 @@ static void *xdk_d3d_init(const video_info_t *video, const input_driver_t **inpu
    xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
 
    d3d->vsync = video->vsync;
-   /* FIXME: Hack */
-   d3d->tex_w = 512;
-   d3d->tex_h = 512;
+   d3d->tex_w = RARCH_SCALE_BASE * video->input_scale;
+   d3d->tex_h = RARCH_SCALE_BASE * video->input_scale;
 
 #if defined(_XBOX1)
    d3d->ctx_driver = gfx_ctx_init_first(GFX_CTX_DIRECT3D8_API);
@@ -816,8 +814,8 @@ static bool xdk_d3d_frame(void *data, const void *frame,
       d3d->lpTexture->UnlockRect(0);
 
 #if defined(_XBOX1)
-      float tex_w = width;  // / 512.0f;
-      float tex_h = height; // / 512.0f;
+      float tex_w = width;
+      float tex_h = height;
 
       DrawVerticeFormats verts[] = {
          { -1.0f, -1.0f, 1.0f, 0.0f,  tex_h },
