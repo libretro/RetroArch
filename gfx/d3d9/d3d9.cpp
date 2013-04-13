@@ -1293,7 +1293,11 @@ static bool d3d9_set_shader(void *data, enum rarch_shader_type type, const char 
    }
 #endif
 
-   return reinterpret_cast<D3DVideo*>(data)->set_shader(path);
+   std::string shader = "";
+   if (path)
+      shader = path;
+
+   return reinterpret_cast<D3DVideo*>(data)->set_shader(shader);
 }
 
 #if defined(HAVE_RGUI)
