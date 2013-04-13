@@ -198,9 +198,10 @@ static bool menu_type_is_settings(unsigned type)
 
 static bool menu_type_is_shader_browser(unsigned type)
 {
-   return type >= RGUI_SETTINGS_SHADER_0 &&
+   return (type >= RGUI_SETTINGS_SHADER_0 &&
          type <= RGUI_SETTINGS_SHADER_LAST &&
-         ((type - RGUI_SETTINGS_SHADER_0) % 3) == 0;
+         ((type - RGUI_SETTINGS_SHADER_0) % 3) == 0) ||
+      type == RGUI_SETTINGS_SHADER_PRESET;
 }
 
 rgui_handle_t *rgui_init(const char *base_path,
@@ -445,7 +446,7 @@ static void render_text(rgui_handle_t *rgui)
       unsigned port = menu_type - RGUI_SETTINGS_CONTROLLER_1;
       
 #ifdef HAVE_SHADER_MANAGER
-      if (type >= RGUI_SETTINGS_SHADER_APPLY &&
+      if (type >= RGUI_SETTINGS_SHADER_PRESET &&
             type <= RGUI_SETTINGS_SHADER_LAST)
       {
          // HACK. Work around that we're using the menu_type as dir type to propagate state correctly.
@@ -455,6 +456,8 @@ static void render_text(rgui_handle_t *rgui)
             strlcpy(type_str, "(DIR)", sizeof(type_str));
             w = 5;
          }
+         else if (type == RGUI_SETTINGS_SHADER_PRESET)
+            strlcpy(type_str, "...", sizeof(type_str));
          else
             shader_manager_get_str(&rgui->shader, type_str, sizeof(type_str), type);
       }
@@ -536,6 +539,7 @@ static void render_text(rgui_handle_t *rgui)
             case RGUI_SETTINGS_OPEN_FILEBROWSER:
             case RGUI_SETTINGS_CORE_OPTIONS:
             case RGUI_SETTINGS_SHADER_MANAGER:
+            case RGUI_SETTINGS_SHADER_PRESET:
             case RGUI_SETTINGS_CUSTOM_VIEWPORT:
             case RGUI_SETTINGS_CORE:
             case RGUI_SETTINGS_CONTROLLER_1:
@@ -671,7 +675,7 @@ static int rgui_settings_toggle_setting(rgui_handle_t *rgui, unsigned setting, r
    (void)rgui;
 
 #ifdef HAVE_SHADER_MANAGER
-   if (setting >= RGUI_SETTINGS_SHADER_APPLY && setting <= RGUI_SETTINGS_SHADER_LAST)
+   if (setting >= RGUI_SETTINGS_SHADER_PRESET && setting <= RGUI_SETTINGS_SHADER_LAST)
       return shader_manager_toggle_setting(rgui, setting, action);
 #endif
    if (setting >= RGUI_SETTINGS_CORE_OPTION_START)
@@ -1103,6 +1107,8 @@ static void rgui_settings_shader_manager_populate_entries(rgui_handle_t *rgui)
    rgui_list_clear(rgui->selection_buf);
    rgui_list_push(rgui->selection_buf, "Apply changes",
          RGUI_SETTINGS_SHADER_APPLY, 0);
+   rgui_list_push(rgui->selection_buf, "Load shader preset",
+         RGUI_SETTINGS_SHADER_PRESET, 0);
    rgui_list_push(rgui->selection_buf, "Shader passes",
          RGUI_SETTINGS_SHADER_PASSES, 0);
 
@@ -1152,6 +1158,25 @@ static enum rarch_shader_type shader_manager_get_type(const struct gfx_shader *s
    return type;
 }
 
+static void shader_manager_set_preset(enum rarch_shader_type type, const char *path)
+{
+   RARCH_LOG("Setting RGUI shader: %s.\n", path ? path : "N/A (stock)");
+   bool ret = video_set_shader_func(type, path);
+   if (ret)
+   {
+      // Makes sure that we use RGUI CGP shader on driver reinit.
+      // Only do this when the cgp actually works to avoid potential errors.
+      strlcpy(g_settings.video.shader_path, path ? path : "",
+            sizeof(g_settings.video.shader_path));
+      g_settings.video.shader_enable = true;
+   }
+   else
+   {
+      RARCH_ERR("Setting RGUI CGP failed.\n");
+      g_settings.video.shader_enable = false;
+   }
+}
+
 static int shader_manager_toggle_setting(rgui_handle_t *rgui, unsigned setting, rgui_action_t action)
 {
    unsigned dist_shader = setting - RGUI_SETTINGS_SHADER_0;
@@ -1167,7 +1192,6 @@ static int shader_manager_toggle_setting(rgui_handle_t *rgui, unsigned setting, 
 
       enum rarch_shader_type type = shader_manager_get_type(&rgui->shader);
 
-      bool ret = false;
       if (rgui->shader.passes && type != RARCH_SHADER_NONE)
       {
          const char *conf_path = type == RARCH_SHADER_GLSL ? "rgui.glslp" : "rgui.cgp";
@@ -1183,28 +1207,10 @@ static int shader_manager_toggle_setting(rgui_handle_t *rgui, unsigned setting, 
          config_file_write(conf, cgp_path);
          config_file_free(conf);
 
-         RARCH_LOG("Setting RGUI shader: %s.\n", cgp_path);
-         ret = video_set_shader_func(type, cgp_path); 
-
-         // Makes sure that we use RGUI CGP shader on driver reinit.
-         // Only do this when the cgp actually works to avoid potential errors.
-         if (ret)
-         {
-            strlcpy(g_settings.video.shader_path, cgp_path, sizeof(g_settings.video.shader_path));
-            g_settings.video.shader_enable = true;
-         }
+         shader_manager_set_preset(type, cgp_path); 
       }
       else
-      {
-         ret = video_set_shader_func(RARCH_SHADER_CG, NULL);
-         g_settings.video.shader_enable = false;
-      }
-
-      if (!ret)
-      {
-         RARCH_ERR("Setting RGUI CGP failed.\n");
-         g_settings.video.shader_enable = false;
-      }
+         shader_manager_set_preset(RARCH_SHADER_CG, NULL);
    }
    else if (setting == RGUI_SETTINGS_SHADER_PASSES)
    {
@@ -1231,10 +1237,11 @@ static int shader_manager_toggle_setting(rgui_handle_t *rgui, unsigned setting, 
 
       rgui->need_refresh = true;
    }
-   else if ((dist_shader % 3) == 0)
+   else if ((dist_shader % 3) == 0 || setting == RGUI_SETTINGS_SHADER_PRESET)
    {
       dist_shader /= 3;
-      struct gfx_shader_pass *pass = &rgui->shader.pass[dist_shader];
+      struct gfx_shader_pass *pass = setting == RGUI_SETTINGS_SHADER_PRESET ? 
+         &rgui->shader.pass[dist_shader] : NULL;
       switch (action)
       {
          case RGUI_ACTION_LEFT:
@@ -1246,7 +1253,8 @@ static int shader_manager_toggle_setting(rgui_handle_t *rgui, unsigned setting, 
             break;
 
          case RGUI_ACTION_START:
-            *pass->source.cg = '\0';
+            if (pass)
+               *pass->source.cg = '\0';
             break;
 
          default:
@@ -1678,6 +1686,8 @@ static bool directory_parse(rgui_handle_t *rgui, const char *directory, unsigned
    if (core_chooser)
       exts = EXT_EXECUTABLES;
 #ifdef HAVE_SHADER_MANAGER
+   else if (menu_type == RGUI_SETTINGS_SHADER_PRESET)
+      exts = "cgp|glslp";
    else if (menu_type_is_shader_browser(menu_type))
       exts = "cg|glsl";
 #endif
@@ -1810,9 +1820,19 @@ int rgui_iterate(rgui_handle_t *rgui, rgui_action_t action)
 #ifdef HAVE_SHADER_MANAGER
             if (menu_type_is_shader_browser(menu_type))
             {
-               unsigned pass = (menu_type - RGUI_SETTINGS_SHADER_0) / 3;
-               fill_pathname_join(rgui->shader.pass[pass].source.cg,
-                     dir, path, sizeof(rgui->shader.pass[pass].source.cg));
+               if (menu_type == RGUI_SETTINGS_SHADER_PRESET)
+               {
+                  char shader_path[PATH_MAX];
+                  fill_pathname_join(shader_path, dir, path, sizeof(shader_path));
+                  shader_manager_set_preset(gfx_shader_parse_type(shader_path, RARCH_SHADER_NONE),
+                        shader_path);
+               }
+               else
+               {
+                  unsigned pass = (menu_type - RGUI_SETTINGS_SHADER_0) / 3;
+                  fill_pathname_join(rgui->shader.pass[pass].source.cg,
+                        dir, path, sizeof(rgui->shader.pass[pass].source.cg));
+               }
 
                // Pop stack until we hit shader manager again.
                // We don't have to do this in CORE selection because it only
