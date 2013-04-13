@@ -97,6 +97,7 @@ def no_uniform(elem):
          '_video_size',
          '_texture_size',
          '_output_size',
+         '_output_dummy_size',
          '_frame_count',
          '_frame_direction',
          'sampler2D'
