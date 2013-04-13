@@ -33,9 +33,9 @@ def keep_line_if(func, lines):
 def replace_global_vertex(source):
    replace_table = [
          ('POSITION', 'VertexCoord'),
+         ('TEXCOORD1', 'LUTTexCoord'),
          ('TEXCOORD0', 'TexCoord'),
          ('TEXCOORD', 'TexCoord'),
-         ('TEXCOORD1', 'LUTTexCoord'),
          ('uniform vec4 _modelViewProj1[4]', 'uniform mat4 MVPMatrix'),
          ('_modelViewProj1', 'MVPMatrix'),
          ('MVPMatrix[0]', 'MVPMatrix_[0]'),
