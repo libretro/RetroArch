@@ -1635,16 +1635,6 @@ static inline void gl_reinit_textures(void *data, const video_info_t *video)
       glBindTexture(GL_TEXTURE_2D, 0);
       glDeleteTextures(TEXTURES, gl->texture);
 
-      /* FIXME - why is this done? We don't want to do this on PS3 for re-entrancy 
-       * reasons - also, unlike RGUI, the texture is not uploaded every frame
-       * but only set once outside in menu_init - this reiniting of the RGUI
-       * texture might require a rethink */
-#ifndef __CELLOS_LV2__
-#if defined(HAVE_RGUI) || defined(HAVE_RMENU)
-      glDeleteTextures(1, &gl->rgui_texture);
-#endif
-#endif
-
       gl_init_textures(gl, video);
       gl_init_textures_data(gl);
 
