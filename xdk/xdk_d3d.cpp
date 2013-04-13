@@ -34,6 +34,10 @@
 #include "config.h"
 #endif
 
+#ifdef _XBOX1
+#define HAVE_MENU_PANEL
+#endif
+
 #include "../xdk/xdk_resources.h"
 
 #ifdef HAVE_RGUI
