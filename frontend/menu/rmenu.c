@@ -229,9 +229,6 @@ static void rmenu_gfx_init(void)
    texture_image_load("D:\\Media\\menuMainRomSelectPanel.png", menu_panel);
 #endif
 
-   if (g_extern.lifecycle_mode_state & (1ULL << MODE_MENU_LOW_RAM_MODE_ENABLE))
-      return;
-
    texture_image_load(g_extern.menu_texture_path, menu_texture);
 }
 
@@ -388,20 +385,6 @@ static void populate_setting_item(void *data, unsigned input)
          strlcpy(current_item->text, "Menu Skin", sizeof(current_item->text));
          strlcpy(current_item->setting_text, fname, sizeof(current_item->setting_text));
          strlcpy(current_item->comment, "INFO - Select a skin for the menu.", sizeof(current_item->comment));
-         break;
-      case SETTING_EMU_LOW_RAM_MODE_ENABLE:
-         strlcpy(current_item->text, "Low RAM Mode", sizeof(current_item->text));
-         if (g_extern.lifecycle_mode_state & (1ULL <<MODE_MENU_LOW_RAM_MODE_ENABLE) ||
-               g_extern.lifecycle_mode_state & (1ULL << MODE_MENU_LOW_RAM_MODE_ENABLE_PENDING))
-         {
-            strlcpy(current_item->setting_text, "ON", sizeof(current_item->setting_text));
-            strlcpy(current_item->comment, "INFO - Will load skin at startup.", sizeof(current_item->comment));
-         }
-         else
-         {
-            strlcpy(current_item->setting_text, "OFF", sizeof(current_item->setting_text));
-            strlcpy(current_item->comment, "INFO - Enable this and restart to free up more RAM.", sizeof(current_item->comment));
-         }
          break;
       case SETTING_FONT_SIZE:
          strlcpy(current_item->text, "Font Size", sizeof(current_item->text));
@@ -1606,35 +1589,6 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
             {
                RARCH_ERR("Failed to load texture image for menu.\n");
                return false;
-            }
-         }
-         break;
-      case SETTING_EMU_LOW_RAM_MODE_ENABLE:
-         if ((input & (1ULL << RMENU_DEVICE_NAV_LEFT)) || (input & (1ULL << RMENU_DEVICE_NAV_RIGHT)) || (input & (1ULL << RMENU_DEVICE_NAV_B)))
-         {
-            if (!(g_extern.lifecycle_mode_state & (1ULL << MODE_MENU_LOW_RAM_MODE_ENABLE_PENDING)))
-            {
-               if (g_extern.lifecycle_mode_state & (1ULL << MODE_MENU_LOW_RAM_MODE_ENABLE))
-                  g_extern.lifecycle_mode_state &= ~(1ULL << MODE_MENU_LOW_RAM_MODE_ENABLE);
-               else
-                  g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU_LOW_RAM_MODE_ENABLE_PENDING);
-
-               if (g_extern.lifecycle_mode_state & (1ULL << MODE_INFO_DRAW))
-                  msg_queue_push(g_extern.msg_queue, "INFO - You need to restart RetroArch.", 1, 180);
-            }
-         }
-         if (input & (1ULL << RMENU_DEVICE_NAV_START))
-         {
-            if (!(g_extern.lifecycle_mode_state & (1ULL << MODE_MENU_LOW_RAM_MODE_ENABLE)))
-            {
-               if (!(g_extern.lifecycle_mode_state & (1ULL << MODE_MENU_LOW_RAM_MODE_ENABLE_PENDING)))
-               {
-                  g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU_LOW_RAM_MODE_ENABLE);
-                  g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU_LOW_RAM_MODE_ENABLE_PENDING);
-
-                  if (g_extern.lifecycle_mode_state & (1ULL << MODE_INFO_DRAW))
-                     msg_queue_push(g_extern.msg_queue, "INFO - You need to restart RetroArch.", 1, 180);
-               }
             }
          }
          break;
@@ -3534,14 +3488,11 @@ bool menu_iterate(void)
       g_extern.lifecycle_mode_state &= ~((1ULL << MODE_MENU_INGAME) | (1ULL << MODE_MENU_INGAME_EXIT));
    }
 
-   if (!(g_extern.lifecycle_mode_state & (1ULL << MODE_MENU_LOW_RAM_MODE_ENABLE)))
+   if (driver.video_poke && driver.video_poke->set_texture_enable)
    {
-      if (driver.video_poke && driver.video_poke->set_texture_enable)
-      {
-         driver.video_poke->set_texture_frame(driver.video_data, menu_texture->pixels,
-               true, menu_texture->width, menu_texture->height, 1.0f);
-         driver.video_poke->set_texture_enable(driver.video_data, menu_bg_show);
-      }
+      driver.video_poke->set_texture_frame(driver.video_data, menu_texture->pixels,
+            true, menu_texture->width, menu_texture->height, 1.0f);
+      driver.video_poke->set_texture_enable(driver.video_data, menu_bg_show);
    }
 
    // draw last frame for loading messages

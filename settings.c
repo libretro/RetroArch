@@ -482,13 +482,6 @@ bool config_load_file(const char *path)
 #ifdef HAVE_RMENU
    if (config_get_path(conf, "menu_texture_path", tmp_str, sizeof(tmp_str)))
       strlcpy(g_extern.menu_texture_path, tmp_str, sizeof(g_extern.menu_texture_path));
-
-   int low_ram_mode = 0;
-   if (config_get_int(conf, "rmenu_low_ram_mode_enable", &low_ram_mode))
-   {
-      if (low_ram_mode == 1)
-         g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU_LOW_RAM_MODE_ENABLE);
-   }
 #endif
 
    if (config_get_bool(conf, "info_msg_enable", &msg_enable))
@@ -1150,15 +1143,6 @@ bool config_save_file(const char *path)
    config_set_int(conf, "input_autodetect_icade_profile_pad2", input.icade_profile[1]);
    config_set_int(conf, "input_autodetect_icade_profile_pad3", input.icade_profile[2]);
    config_set_int(conf, "input_autodetect_icade_profile_pad4", input.icade_profile[3]);
-#endif
-
-#ifdef HAVE_RMENU
-   if (g_extern.lifecycle_mode_state & (1ULL << MODE_MENU_LOW_RAM_MODE_ENABLE))
-      config_set_int(conf, "rmenu_low_ram_mode_enable", 1);
-   else if (g_extern.lifecycle_mode_state & (1ULL << MODE_MENU_LOW_RAM_MODE_ENABLE_PENDING))
-      config_set_int(conf, "rmenu_low_ram_mode_enable", 1);
-   else
-      config_set_int(conf, "rmenu_low_ram_mode_enable", 0);
 #endif
 
    config_set_bool(conf, "gamma_correction", g_extern.console.screen.gamma_correction);
