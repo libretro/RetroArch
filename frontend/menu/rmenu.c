@@ -2678,12 +2678,6 @@ static int select_setting(uint8_t menu_type, uint64_t input)
    if (driver.video_poke->set_osd_msg)
       driver.video_poke->set_osd_msg(driver.video_data, msg, &font_parms);
 
-   snprintf(msg, sizeof(msg), "[%s] - Reset to default", key_label_start.desc);
-   font_parms.y = COMMENT_TWO_POSITION_Y + (POSITION_Y_INCREMENT * 1);
-
-   if (driver.video_poke->set_osd_msg)
-      driver.video_poke->set_osd_msg(driver.video_data, msg, &font_parms);
-
    return 0;
 }
 
@@ -2766,22 +2760,6 @@ static int select_rom(uint8_t menu_type, uint64_t input)
       driver.video_poke->set_osd_msg(driver.video_data, msg, &font_parms);
 
    display_menubar(menu_type);
-
-   snprintf(msg, sizeof(msg), "[%s] + [%s] - resume game", key_label_l3.desc, key_label_r3.desc);
-
-   font_parms.y = COMMENT_TWO_POSITION_Y;
-   font_parms.color = YELLOW;
-
-   if (driver.video_poke->set_osd_msg)
-      driver.video_poke->set_osd_msg(driver.video_data, msg, &font_parms);
-
-   snprintf(msg, sizeof(msg), "[%s] - Settings", key_label_select.desc);
-
-   font_parms.y = COMMENT_TWO_POSITION_Y + (POSITION_Y_INCREMENT * 1);
-
-   if (driver.video_poke->set_osd_msg)
-      driver.video_poke->set_osd_msg(driver.video_data, msg, &font_parms);
-
    browser_render(browser);
 
    return 0;
