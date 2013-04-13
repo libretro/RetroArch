@@ -562,30 +562,6 @@ void gl_deinit_fbo(void *data)
    }
 }
 
-static void gl_update_tex_filter_frame(gl_t *gl)
-{
-   bool smooth = false;
-   if (!gl_shader_filter_type(gl, 1, &smooth))
-      smooth = g_settings.video.smooth;
-
-   GLuint new_filt = smooth ? GL_LINEAR : GL_NEAREST;
-   if (new_filt == gl->tex_filter)
-      return;
-
-   gl->tex_filter = new_filt;
-   for (unsigned i = 0; i < TEXTURES; i++)
-   {
-      if (gl->texture[i])
-      {
-         glBindTexture(GL_TEXTURE_2D, gl->texture[i]);
-         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, gl->tex_filter);
-         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, gl->tex_filter);
-      }
-   }
-
-   glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
-}
-
 void gl_init_fbo(void *data, unsigned width, unsigned height)
 {
    gl_t *gl = (gl_t*)data;
@@ -1930,6 +1906,30 @@ static bool gl_focus(void *data)
    gl_t *gl = (gl_t*)data;
    (void)gl;
    return context_has_focus_func();
+}
+
+static void gl_update_tex_filter_frame(gl_t *gl)
+{
+   bool smooth = false;
+   if (!gl_shader_filter_type(gl, 1, &smooth))
+      smooth = g_settings.video.smooth;
+
+   GLuint new_filt = smooth ? GL_LINEAR : GL_NEAREST;
+   if (new_filt == gl->tex_filter)
+      return;
+
+   gl->tex_filter = new_filt;
+   for (unsigned i = 0; i < TEXTURES; i++)
+   {
+      if (gl->texture[i])
+      {
+         glBindTexture(GL_TEXTURE_2D, gl->texture[i]);
+         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, gl->tex_filter);
+         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, gl->tex_filter);
+      }
+   }
+
+   glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
 }
 
 #if defined(HAVE_GLSL) || defined(HAVE_CG)
