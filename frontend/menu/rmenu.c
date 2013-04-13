@@ -734,8 +734,6 @@ static int select_file(uint8_t menu_type, uint64_t input)
    if (pop_menu_stack)
       menu_stack_pop();
 
-   display_menubar(menu_type);
-
    font_parms.x = POSITION_X; 
    font_parms.y = COMMENT_POSITION_Y;
    font_parms.scale = HARDCODE_FONT_SIZE;
@@ -744,27 +742,7 @@ static int select_file(uint8_t menu_type, uint64_t input)
    if (driver.video_poke->set_osd_msg)
       driver.video_poke->set_osd_msg(driver.video_data, comment, &font_parms);
 
-   struct platform_bind key_label_x = {0};
-   struct platform_bind key_label_start = {0};
-   strlcpy(key_label_x.desc, "Unknown", sizeof(key_label_x.desc));
-   key_label_x.joykey = 1ULL << RETRO_DEVICE_ID_JOYPAD_X;
-
-   strlcpy(key_label_start.desc, "Unknown", sizeof(key_label_start.desc));
-   key_label_start.joykey = 1ULL << RETRO_DEVICE_ID_JOYPAD_START;
-
-   if (driver.input->set_keybinds)
-   {
-      driver.input->set_keybinds(&key_label_x, 0, 0, 0, (1ULL << KEYBINDS_ACTION_GET_BIND_LABEL));
-      driver.input->set_keybinds(&key_label_start, 0, 0, 0, (1ULL << KEYBINDS_ACTION_GET_BIND_LABEL));
-   }
-
-   snprintf(comment, sizeof(comment), "[%s] - Return [%s] - Reset", key_label_x.desc, key_label_start.desc);
-   font_parms.y = COMMENT_TWO_POSITION_Y;
-   font_parms.color = YELLOW;
-
-   if (driver.video_poke->set_osd_msg)
-      driver.video_poke->set_osd_msg(driver.video_data, comment, &font_parms);
-
+   display_menubar(menu_type);
    browser_render(browser);
 
    return 0;
@@ -848,55 +826,25 @@ static int select_directory(uint8_t menu_type, uint64_t input)
    if (!ret)
       msg_queue_push(g_extern.msg_queue, "ERROR - Failed to open directory.", 1, 180);
 
-   display_menubar(menu_type);
-
-   struct platform_bind key_label_b = {0};
-   struct platform_bind key_label_x = {0};
    struct platform_bind key_label_y = {0};
-   struct platform_bind key_label_start = {0};
 
-   strlcpy(key_label_b.desc, "Unknown", sizeof(key_label_b.desc));
-   key_label_b.joykey = 1ULL << RETRO_DEVICE_ID_JOYPAD_B;
-   strlcpy(key_label_x.desc, "Unknown", sizeof(key_label_x.desc));
-   key_label_x.joykey = 1ULL << RETRO_DEVICE_ID_JOYPAD_X;
    strlcpy(key_label_y.desc, "Unknown", sizeof(key_label_y.desc));
    key_label_y.joykey = 1ULL << RETRO_DEVICE_ID_JOYPAD_Y;
-   strlcpy(key_label_start.desc, "Unknown", sizeof(key_label_start.desc));
-   key_label_start.joykey = 1ULL << RETRO_DEVICE_ID_JOYPAD_START;
 
    if (driver.input->set_keybinds)
-   {
-      driver.input->set_keybinds(&key_label_x, 0, 0, 0, (1ULL << KEYBINDS_ACTION_GET_BIND_LABEL));
       driver.input->set_keybinds(&key_label_y, 0, 0, 0, (1ULL << KEYBINDS_ACTION_GET_BIND_LABEL));
-      driver.input->set_keybinds(&key_label_b, 0, 0, 0, (1ULL << KEYBINDS_ACTION_GET_BIND_LABEL));
-      driver.input->set_keybinds(&key_label_start, 0, 0, 0, (1ULL << KEYBINDS_ACTION_GET_BIND_LABEL));
-   }
-
-   snprintf(msg, sizeof(msg), "[%s] - Enter dir | [%s] - Return", key_label_b.desc, key_label_x.desc);
 
    font_parms.x = POSITION_X; 
-   font_parms.y = COMMENT_TWO_POSITION_Y;
-   font_parms.scale = HARDCODE_FONT_SIZE;
-   font_parms.color = YELLOW;
-
-   if (driver.video_poke->set_osd_msg)
-      driver.video_poke->set_osd_msg(driver.video_data, msg, &font_parms);
-
-   snprintf(msg, sizeof(msg), "[%s] - Reset", key_label_start.desc);
-
-   font_parms.y = COMMENT_TWO_POSITION_Y + (POSITION_Y_INCREMENT * 1);
-
-   if (driver.video_poke->set_osd_msg)
-      driver.video_poke->set_osd_msg(driver.video_data, msg, &font_parms);
-
-   snprintf(msg, sizeof(msg), "INFO - Select a dir as path by\npressing [%s].", key_label_y.desc);
-
    font_parms.y = COMMENT_POSITION_Y;
+   font_parms.scale = HARDCODE_FONT_SIZE;
    font_parms.color = WHITE;
 
+   snprintf(msg, sizeof(msg), "INFO - Select a dir as path by pressing\n[%s].", key_label_y.desc);
+
    if (driver.video_poke->set_osd_msg)
       driver.video_poke->set_osd_msg(driver.video_data, msg, &font_parms);
 
+   display_menubar(menu_type);
    browser_render(browser);
 
    return 0;
@@ -1978,7 +1926,6 @@ static int select_setting(uint8_t menu_type, uint64_t input)
    }
 
    float y_increment = POSITION_Y_START;
-   char msg[256];
    uint8_t i = 0;
    uint8_t j = 0;
    uint8_t item_page = 0;
@@ -2648,26 +2595,12 @@ static int select_rom(uint8_t menu_type, uint64_t input)
    char msg[128];
 
    struct platform_bind key_label_b = {0};
-   struct platform_bind key_label_l3 = {0};
-   struct platform_bind key_label_r3 = {0};
-   struct platform_bind key_label_select = {0};
 
    strlcpy(key_label_b.desc, "Unknown", sizeof(key_label_b.desc));
    key_label_b.joykey = 1ULL << RETRO_DEVICE_ID_JOYPAD_B;
-   strlcpy(key_label_l3.desc, "Unknown", sizeof(key_label_l3.desc));
-   key_label_l3.joykey = 1ULL << RETRO_DEVICE_ID_JOYPAD_L3;
-   strlcpy(key_label_r3.desc, "Unknown", sizeof(key_label_r3.desc));
-   key_label_r3.joykey = 1ULL << RETRO_DEVICE_ID_JOYPAD_R3;
-   strlcpy(key_label_select.desc, "Unknown", sizeof(key_label_select.desc));
-   key_label_select.joykey = 1ULL << RETRO_DEVICE_ID_JOYPAD_SELECT;
 
    if (driver.input->set_keybinds)
-   {
-      driver.input->set_keybinds(&key_label_l3, 0, 0, 0, (1ULL << KEYBINDS_ACTION_GET_BIND_LABEL));
-      driver.input->set_keybinds(&key_label_r3, 0, 0, 0, (1ULL << KEYBINDS_ACTION_GET_BIND_LABEL));
-      driver.input->set_keybinds(&key_label_select, 0, 0, 0, (1ULL << KEYBINDS_ACTION_GET_BIND_LABEL));
       driver.input->set_keybinds(&key_label_b, 0, 0, 0, (1ULL << KEYBINDS_ACTION_GET_BIND_LABEL));
-   }
 
    browser_update(browser, input, g_extern.system.valid_extensions);
 
@@ -3076,8 +3009,6 @@ static int ingame_menu_core_options(uint8_t menu_type, uint64_t input)
    if (input & (1ULL << RMENU_DEVICE_NAV_A))
       menu_stack_pop();
 
-   display_menubar(menu_type);
-
    y_increment += POSITION_Y_INCREMENT;
 
    font_params_t font_parms = {0};
@@ -3140,6 +3071,8 @@ static int ingame_menu_core_options(uint8_t menu_type, uint64_t input)
    }
    else if (driver.video_poke->set_osd_msg)
       driver.video_poke->set_osd_msg(driver.video_data, "No options available.", &font_parms);
+
+   display_menubar(menu_type);
 
    return 0;
 }
