@@ -254,7 +254,6 @@ void config_set_defaults(void)
    strlcpy(g_extern.console.main_wrap.default_sram_dir, default_paths.sram_dir, sizeof(g_extern.console.main_wrap.default_sram_dir));
    g_extern.console.screen.gamma_correction = DEFAULT_GAMMA;
    g_extern.lifecycle_mode_state |= (1ULL << MODE_AUDIO_CUSTOM_BGM_ENABLE);
-   g_extern.lifecycle_mode_state |= (1ULL << MODE_VIDEO_SCREENSHOTS_ENABLE);
    g_extern.lifecycle_mode_state |= (1ULL << MODE_VIDEO_THROTTLE_ENABLE);
    g_extern.lifecycle_mode_state |= (1ULL << MODE_VIDEO_TRIPLE_BUFFERING_ENABLE);
    g_extern.lifecycle_mode_state |= (1ULL << MODE_VIDEO_SOFT_FILTER_ENABLE);
@@ -523,14 +522,6 @@ bool config_load_file(const char *path)
          g_extern.lifecycle_mode_state |= (1ULL << MODE_AUDIO_CUSTOM_BGM_ENABLE);
       else
          g_extern.lifecycle_mode_state &= ~(1ULL << MODE_AUDIO_CUSTOM_BGM_ENABLE);
-   }
-
-   if (config_get_bool(conf, "screenshots_enable", &screenshots_enable))
-   {
-      if (screenshots_enable)
-         g_extern.lifecycle_mode_state |= (1ULL << MODE_VIDEO_SCREENSHOTS_ENABLE);
-      else
-         g_extern.lifecycle_mode_state &= ~(1ULL << MODE_VIDEO_SCREENSHOTS_ENABLE);
    }
 
    if (config_get_bool(conf, "flicker_filter_enable", &flicker_filter_enable))
@@ -1170,11 +1161,6 @@ bool config_save_file(const char *path)
    else
       config_set_int(conf, "rmenu_low_ram_mode_enable", 0);
 #endif
-
-   if (g_extern.lifecycle_mode_state & (1ULL << MODE_VIDEO_SCREENSHOTS_ENABLE))
-      config_set_bool(conf, "screenshots_enable", true);
-   else
-      config_set_bool(conf, "screenshots_enable", false);
 
    config_set_bool(conf, "gamma_correction", g_extern.console.screen.gamma_correction);
 #ifdef _XBOX1

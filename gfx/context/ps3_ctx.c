@@ -85,27 +85,6 @@ static float gfx_ctx_get_aspect_ratio(void)
    return 16.0f/9.0f;
 }
 
-static void rmenu_ctx_ps3_screenshot_enable(bool enable)
-{
-#if(CELL_SDK_VERSION > 0x340000)
-   if(enable)
-   {
-      cellSysmoduleLoadModule(CELL_SYSMODULE_SYSUTIL_SCREENSHOT);
-      CellScreenShotSetParam screenshot_param = {0, 0, 0, 0};
-
-      screenshot_param.photo_title = "RetroArch PS3";
-      screenshot_param.game_title = "RetroArch PS3";
-      cellScreenShotSetParameter (&screenshot_param);
-      cellScreenShotEnable();
-   }
-   else
-   {
-      cellScreenShotDisable();
-      cellSysmoduleUnloadModule(CELL_SYSMODULE_SYSUTIL_SCREENSHOT);
-   }
-#endif
-}
-
 static void gfx_ctx_get_available_resolutions (void)
 {
    bool defaultresolution;
@@ -333,8 +312,5 @@ const gfx_ctx_driver_t gfx_ctx_ps3 = {
    NULL,
    NULL,
    "ps3",
-#ifdef HAVE_RMENU
-   rmenu_ctx_ps3_screenshot_enable,
-#endif
 };
 

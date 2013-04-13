@@ -23,10 +23,6 @@
 #include "../config.h"
 #endif
 
-#if defined(HAVE_RMENU)
-#include "../frontend/menu/rmenu.h"
-#endif
-
 #define MAX_EGLIMAGE_TEXTURES 32
 
 enum gfx_ctx_api
@@ -99,10 +95,6 @@ typedef struct gfx_ctx_driver
 
    // Human readable string.
    const char *ident;
-
-#if defined(HAVE_RMENU)
-   void (*rmenu_screenshot_enable)(bool enable);
-#endif
 } gfx_ctx_driver_t;
 
 extern const gfx_ctx_driver_t gfx_ctx_sdl_gl;

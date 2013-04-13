@@ -80,10 +80,6 @@ static bool gfx_ctx_xdk_window_has_focus(void)
    return true;
 }
 
-static void gfx_ctx_xdk_menu_screenshot_enable(bool enable)
-{
-}
-
 static void gfx_ctx_xdk_update_window_title(bool reset) { }
 
 static void gfx_ctx_xdk_get_video_size(unsigned *width, unsigned *height)
@@ -255,7 +251,4 @@ const gfx_ctx_driver_t gfx_ctx_xdk = {
    NULL,
    NULL,
    "xdk",
-#if defined(HAVE_RMENU)
-   gfx_ctx_xdk_menu_screenshot_enable,
-#endif
 };

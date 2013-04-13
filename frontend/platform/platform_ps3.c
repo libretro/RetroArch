@@ -352,20 +352,17 @@ static void system_init(void)
 static void system_post_init(void)
 {
 #if (CELL_SDK_VERSION > 0x340000) && !defined(__PSL1GHT__)
-   if (g_extern.lifecycle_mode_state & (1ULL << MODE_VIDEO_SCREENSHOTS_ENABLE))
-   {
 #ifdef HAVE_SYSMODULES
-      cellSysmoduleLoadModule(CELL_SYSMODULE_SYSUTIL_SCREENSHOT);
+   cellSysmoduleLoadModule(CELL_SYSMODULE_SYSUTIL_SCREENSHOT);
 #endif
 #ifdef HAVE_SYSUTILS
-      CellScreenShotSetParam screenshot_param = {0, 0, 0, 0};
+   CellScreenShotSetParam screenshot_param = {0, 0, 0, 0};
 
-      screenshot_param.photo_title = "RetroArch PS3";
-      screenshot_param.game_title = "RetroArch PS3";
-      cellScreenShotSetParameter (&screenshot_param);
-      cellScreenShotEnable();
+   screenshot_param.photo_title = "RetroArch PS3";
+   screenshot_param.game_title = "RetroArch PS3";
+   cellScreenShotSetParameter (&screenshot_param);
+   cellScreenShotEnable();
 #endif
-   }
 #ifdef HAVE_SYSUTILS
    if (g_extern.lifecycle_mode_state & (1ULL << MODE_AUDIO_CUSTOM_BGM_ENABLE))
       cellSysutilEnableBgmPlayback();
@@ -410,8 +407,7 @@ static void system_deinit(void)
 
 #ifndef __PSL1GHT__
    /* screenshot PRX */
-   if (g_extern.lifecycle_mode_state & (1ULL << MODE_VIDEO_SCREENSHOTS_ENABLE))
-      cellSysmoduleUnloadModule(CELL_SYSMODULE_SYSUTIL_SCREENSHOT);
+   cellSysmoduleUnloadModule(CELL_SYSMODULE_SYSUTIL_SCREENSHOT);
 #endif
 
    cellSysmoduleUnloadModule(CELL_SYSMODULE_JPGDEC);
