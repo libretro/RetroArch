@@ -1115,10 +1115,7 @@ static void browser_render(void *data)
 #ifdef HAVE_MENU_PANEL
       //check if this is the currently selected file
       if (strcmp(browser->current_dir.path, browser->list->elems[i].data) == 0)
-      {
-         menu_panel->x = 0;
          menu_panel->y = y_increment;
-      }
 #endif
 
       font_parms.x = POSITION_X; 
@@ -2574,7 +2571,6 @@ static int select_setting(uint8_t menu_type, uint64_t input)
          continue;
 
 #ifdef HAVE_MENU_PANEL
-      menu_panel->x = 0;
       menu_panel->y = y_increment;
 #endif
 
