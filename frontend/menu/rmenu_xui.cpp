@@ -1351,6 +1351,10 @@ void menu_init (void)
          sizeof(browser->current_dir.root_dir));
 
    filebrowser_iterate(browser, FILEBROWSER_ACTION_RESET);
+
+   if (driver.video_poke && driver.video_poke->set_texture_enable)
+      driver.video_poke->set_texture_frame(driver.video_data, NULL,
+            true, 0, 0, 1.0f);
 }
 
 void menu_free (void)
@@ -1468,11 +1472,7 @@ bool menu_iterate(void)
    }
 
    if (driver.video_poke && driver.video_poke->set_texture_enable)
-   {
-      driver.video_poke->set_texture_frame(driver.video_data, NULL,
-         true, 0, 0, 1.0f);
       driver.video_poke->set_texture_enable(driver.video_data, true, true);
-   }
 
    rarch_render_cached_frame();
 

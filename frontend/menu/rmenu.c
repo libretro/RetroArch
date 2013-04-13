@@ -3218,6 +3218,10 @@ void menu_init(void)
    menu_stack_push(FILE_BROWSER_MENU, false);
 
    rmenu_gfx_init();
+
+   if (driver.video_poke && driver.video_poke->set_texture_frame)
+      driver.video_poke->set_texture_frame(driver.video_data, menu_texture->pixels,
+            true, menu_texture->width, menu_texture->height, 1.0f);
 }
 
 
@@ -3240,13 +3244,8 @@ bool menu_iterate(void)
       if (g_extern.lifecycle_mode_state & (1ULL << MODE_MENU_INGAME))
          menu_stack_push(INGAME_MENU, false);
 
-#ifndef __CELLOS_LV2__
-      rmenu_gfx_init();
-#endif
-
       g_extern.lifecycle_mode_state &= ~(1ULL << MODE_MENU_PREINIT);
    }
-
 
    //first button input frame
    uint64_t input_state_first_frame = 0;
@@ -3383,11 +3382,7 @@ bool menu_iterate(void)
    }
 
    if (driver.video_poke && driver.video_poke->set_texture_enable)
-   {
-      driver.video_poke->set_texture_frame(driver.video_data, menu_texture->pixels,
-            true, menu_texture->width, menu_texture->height, 1.0f);
       driver.video_poke->set_texture_enable(driver.video_data, menu_bg_show, true);
-   }
 
    // draw last frame for loading messages
    rarch_render_cached_frame();
@@ -3405,10 +3400,6 @@ deinit:
    // press and holding L3 + R3 in the emulation loop (lasts for 30 frame ticks)
    if (!(g_extern.lifecycle_state & (1ULL << RARCH_FRAMEADVANCE)))
       g_extern.delay_timer[0] = g_extern.frame_count + 30;
-
-#ifdef _XBOX1
-   rmenu_gfx_free();
-#endif
 
    return false;
 }
