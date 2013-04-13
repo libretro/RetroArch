@@ -1118,8 +1118,6 @@ static void browser_render(void *data)
       {
          menu_panel->x = 0;
          menu_panel->y = y_increment;
-         menu_panel->width = 610;
-         menu_panel->height = 20;
       }
 #endif
 
@@ -2578,8 +2576,6 @@ static int select_setting(uint8_t menu_type, uint64_t input)
 #ifdef HAVE_MENU_PANEL
       menu_panel->x = 0;
       menu_panel->y = y_increment;
-      menu_panel->width = 610;
-      menu_panel->height = 20;
 #endif
 
       font_parms.x = POSITION_X; 

@@ -700,17 +700,13 @@ extern struct texture_image *menu_texture;
 #endif
 
 #ifdef _XBOX1
-bool texture_image_render(struct texture_image *out_img)
+bool texture_image_render(struct texture_image *out_img,
+                          int x, int y, int w, int h)
 {
    xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
 
    if (out_img->pixels == NULL || out_img->vertex_buf == NULL)
       return false;
-
-   int x = out_img->x;
-   int y = out_img->y;
-   int w = out_img->width;
-   int h = out_img->height;
 
    float fX = static_cast<float>(x);
    float fY = static_cast<float>(y);
@@ -781,14 +777,16 @@ static inline void xdk_d3d_draw_texture(void *data)
       d3d->d3d_render_device->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_ONE);
       d3d->d3d_render_device->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
       d3d->d3d_render_device->SetRenderState(D3DRS_ALPHABLENDENABLE, true);
-      texture_image_render(menu_texture);
+      texture_image_render(menu_texture, menu_texture->x, menu_texture->y,
+         640, 480);
       d3d->d3d_render_device->SetRenderState(D3DRS_ALPHABLENDENABLE, false);
    }
 
 #ifdef HAVE_MENU_PANEL
    if ((menu_panel->x != 0) || (menu_panel->y != 0))
    {
-      texture_image_render(menu_panel);
+      texture_image_render(menu_panel, menu_panel->x, menu_panel->y,
+         610, 20);
       menu_panel->x = 0;
       menu_panel->y = 0;
    }
