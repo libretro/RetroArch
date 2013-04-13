@@ -1471,13 +1471,13 @@ bool menu_iterate(void)
    {
       driver.video_poke->set_texture_frame(driver.video_data, NULL,
          true, 0, 0, 1.0f);
-      driver.video_poke->set_texture_enable(driver.video_data, true);
+      driver.video_poke->set_texture_enable(driver.video_data, true, true);
    }
 
    rarch_render_cached_frame();
 
    if (driver.video_poke && driver.video_poke->set_texture_enable)
-      driver.video_poke->set_texture_enable(driver.video_data, false);
+      driver.video_poke->set_texture_enable(driver.video_data, false, true);
 
    if(process_input_ret != 0)
       goto deinit;
