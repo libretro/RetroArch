@@ -30,7 +30,35 @@ def keep_line_if(func, lines):
       ret.append(i)
    return ret
 
+def replace_global_in(source):
+   split_source = source.split('\n')
+   replace_table = [
+      ('IN.video_size', 'InputSize'),
+      ('IN.texture_size', 'TextureSize'),
+      ('IN.output_size', 'OutputSize'),
+      ('IN.frame_count', 'FrameCount'),
+      ('IN.frame_direction', 'FrameDirection')
+   ]
+
+   for line in split_source:
+      if '//var' in line:
+         for index, replace in enumerate(replace_table):
+            orig = line.split(' ')[2]
+            if replace[0] == orig:
+               replace_table[index] = (line.split(':')[2].split(' ')[1], replace_table[index][1])
+
+   log('Replace globals:', replace_table)
+
+   for replace in replace_table:
+      if replace[0]:
+         source = source.replace(replace[0], replace[1])
+
+   return source
+
+
 def replace_global_vertex(source):
+
+   source = replace_global_in(source)
    replace_table = [
          ('POSITION', 'VertexCoord'),
          ('TEXCOORD1', 'LUTTexCoord'),
@@ -42,11 +70,7 @@ def replace_global_vertex(source):
          ('MVPMatrix[1]', 'MVPMatrix_[1]'),
          ('MVPMatrix[2]', 'MVPMatrix_[2]'),
          ('MVPMatrix[3]', 'MVPMatrix_[3]'),
-         ('_IN1._video_size', 'InputSize'),
-         ('_IN1._texture_size', 'TextureSize'),
-         ('_IN1._output_size', 'OutputSize'),
-         ('_IN1._frame_count', 'FrameCount'),
-         ('_IN1._frame_direction', 'FrameDirection'),
+
          ('FrameCount', 'float(FrameCount)'),
          ('input', 'input_dummy'), # 'input' is reserved in GLSL.
          ('output', 'output_dummy'), # 'output' is reserved in GLSL.
@@ -272,12 +296,8 @@ def hack_source_vertex(source):
    return source
 
 def replace_global_fragment(source):
+   source = replace_global_in(source)
    replace_table = [
-         ('_IN1._video_size', 'InputSize'),
-         ('_IN1._texture_size', 'TextureSize'),
-         ('_IN1._output_size', 'OutputSize'),
-         ('_IN1._frame_count', 'FrameCount'),
-         ('_IN1._frame_direction', 'FrameDirection'),
          ('FrameCount', 'float(FrameCount)'),
          ('input', 'input_dummy'),
          ('output', 'output_dummy'), # 'output' is reserved in GLSL.
