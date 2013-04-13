@@ -471,7 +471,6 @@ bool config_load_file(const char *path)
    bool throttle_enable = false;
    bool triple_buffering_enable = false;
    bool custom_bgm_enable = false;
-   bool screenshots_enable = false;
    bool flicker_filter_enable = false;
    bool soft_filter_enable = false;
    bool sram_dir_enable = false;

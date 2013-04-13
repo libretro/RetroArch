@@ -40,14 +40,6 @@
 #include "../gfx_context.h"
 #include "../fonts/gl_font.h"
 
-#ifdef HAVE_GLSL
-#include "../shader_glsl.h"
-#endif
-
-#ifdef HAVE_CG
-#include "../shader_cg.h"
-#endif
-
 #if defined(HAVE_PSGL)
 static PSGLdevice* gl_device;
 static PSGLcontext* gl_context;

@@ -198,7 +198,6 @@ static bool gfx_ctx_xdk_init(void)
 static bool gfx_ctx_xdk_set_video_mode(
       unsigned width, unsigned height, bool fullscreen)
 {
-   /* TODO: implement */
    return true;
 }
 
