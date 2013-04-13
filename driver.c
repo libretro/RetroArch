@@ -255,7 +255,12 @@ static void adjust_system_rates(void)
    RARCH_LOG("Set audio input rate to: %.2f Hz.\n", g_settings.audio.in_rate);
 
    if (driver.video_data)
-      video_set_nonblock_state_func(!g_settings.video.vsync || g_extern.system.force_nonblock);
+   {
+      if (g_extern.system.force_nonblock)
+         video_set_nonblock_state_func(true);
+      else
+         driver_set_nonblock_state(driver.nonblock_state);
+   }
 }
 
 void driver_set_monitor_refresh_rate(float hz)
@@ -267,7 +272,24 @@ void driver_set_monitor_refresh_rate(float hz)
    g_extern.audio_data.orig_src_ratio =
       g_extern.audio_data.src_ratio =
       (double)g_settings.audio.out_rate / g_settings.audio.in_rate;
+}
 
+void driver_set_nonblock_state(bool nonblock)
+{
+   // Only apply non-block-state for video if we're using vsync.
+   if (g_extern.video_active)
+   {
+      bool video_nb = nonblock;
+      if (!g_settings.video.vsync || !g_extern.system.force_nonblock)
+         video_nb = true;
+      video_set_nonblock_state_func(video_nb);
+   }
+
+   if (g_extern.audio_active)
+      audio_set_nonblock_state_func(g_settings.audio.sync ? nonblock : true);
+
+   g_extern.audio_data.chunk_size = nonblock ?
+      g_extern.audio_data.nonblock_chunk_size : g_extern.audio_data.block_chunk_size;
 }
 
 uintptr_t driver_get_current_framebuffer(void)
@@ -347,6 +369,10 @@ void init_drivers(void)
       g_extern.system.hw_render_callback.context_reset();
 
    init_audio();
+
+   // Keep non-throttled state as good as possible.
+   if (driver.nonblock_state)
+      driver_set_nonblock_state(driver.nonblock_state);
 }
 
 void uninit_drivers(void)

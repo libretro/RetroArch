@@ -49,38 +49,24 @@
 #define RARCH_PERFORMANCE_MODE
 #endif
 
-// To avoid continous switching if we hold the button down, we require that the button must go from pressed, unpressed back to pressed to be able to toggle between then.
+// To avoid continous switching if we hold the button down, we require that the button must go from pressed,
+// unpressed back to pressed to be able to toggle between then.
 static void check_fast_forward_button(void)
 {
    bool new_button_state = input_key_pressed_func(RARCH_FAST_FORWARD_KEY);
    bool new_hold_button_state = input_key_pressed_func(RARCH_FAST_FORWARD_HOLD_KEY);
-   bool update_sync = false;
    static bool old_button_state = false;
    static bool old_hold_button_state = false;
-   static bool syncing_state = false;
 
    if (new_button_state && !old_button_state)
    {
-      syncing_state = !syncing_state;
-      update_sync = true;
+      driver.nonblock_state = !driver.nonblock_state;
+      driver_set_nonblock_state(driver.nonblock_state);
    }
    else if (old_hold_button_state != new_hold_button_state)
    {
-      syncing_state = new_hold_button_state;
-      update_sync = true;
-   }
-
-   if (update_sync)
-   {
-      // Only apply non-block-state for video if we're using vsync.
-      if (g_extern.video_active && g_settings.video.vsync && !g_extern.system.force_nonblock)
-         video_set_nonblock_state_func(syncing_state);
-
-      if (g_extern.audio_active)
-         audio_set_nonblock_state_func(g_settings.audio.sync ? syncing_state : true);
-
-      g_extern.audio_data.chunk_size =
-         syncing_state ? g_extern.audio_data.nonblock_chunk_size : g_extern.audio_data.block_chunk_size;
+      driver.nonblock_state = new_hold_button_state;
+      driver_set_nonblock_state(driver.nonblock_state);
    }
 
    old_button_state = new_button_state;

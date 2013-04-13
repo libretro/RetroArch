@@ -416,6 +416,7 @@ typedef struct driver
 #endif
    bool stdin_claimed;
    bool block_hotkey;
+   bool nonblock_state;
 
    // Opaque handles to currently running window.
    // Used by e.g. input drivers which bind to a window.
@@ -460,6 +461,7 @@ void init_audio(void);
 void uninit_audio(void);
 
 void driver_set_monitor_refresh_rate(float hz);
+void driver_set_nonblock_state(bool nonblock);
 
 // Used by RETRO_ENVIRONMENT_SET_HW_RENDER.
 uintptr_t driver_get_current_framebuffer(void);

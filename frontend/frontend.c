@@ -83,7 +83,10 @@ int main(int argc, char *argv[])
       else if (g_extern.lifecycle_mode_state & (1ULL << MODE_MENU))
       {
          g_extern.lifecycle_mode_state |= 1ULL << MODE_MENU_PREINIT;
+         // Menu should always run with vsync on.
+         video_set_nonblock_state_func(false);
          while (menu_iterate());
+         driver_set_nonblock_state(driver.nonblock_state);
          g_extern.lifecycle_mode_state &= ~(1ULL << MODE_MENU);
       }
       else
