@@ -3496,14 +3496,14 @@ bool menu_iterate(void)
    {
       driver.video_poke->set_texture_frame(driver.video_data, menu_texture->pixels,
             true, menu_texture->width, menu_texture->height, 1.0f);
-      driver.video_poke->set_texture_enable(driver.video_data, menu_bg_show);
+      driver.video_poke->set_texture_enable(driver.video_data, menu_bg_show, true);
    }
 
    // draw last frame for loading messages
    rarch_render_cached_frame();
 
    if (driver.video_poke && driver.video_poke->set_texture_enable)
-      driver.video_poke->set_texture_enable(driver.video_data, false);
+      driver.video_poke->set_texture_enable(driver.video_data, false, true);
 
    if (input_entry_ret != 0 || input_process_ret != 0)
       goto deinit;

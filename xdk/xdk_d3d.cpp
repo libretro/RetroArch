@@ -1087,10 +1087,11 @@ static void xdk_d3d_set_texture_frame(void *data,
    (void)alpha;
 }
 
-static void xdk_d3d_set_texture_enable(void *data, bool state)
+static void xdk_d3d_set_texture_enable(void *data, bool state, bool full_screen)
 {
    xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)data;
    d3d->rgui_texture_enable = state;
+   d3d->rgui_texture_full_screen = full_screen;
 }
 #endif
 

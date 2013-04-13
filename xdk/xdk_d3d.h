@@ -69,6 +69,7 @@ typedef struct xdk_d3d_video
 #endif
 #if defined(HAVE_RGUI) || defined(HAVE_RMENU)
    bool rgui_texture_enable;
+   bool rgui_texture_full_screen;
 #endif
    const d3d_font_renderer_t *font_ctx;
    D3DFORMAT internal_fmt;
