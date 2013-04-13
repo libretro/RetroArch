@@ -81,6 +81,7 @@ typedef struct thread_video
       unsigned height;
       float alpha;
       bool enable;
+      bool full_screen;
    } texture;
 #endif
    bool apply_state_changes;
@@ -308,7 +309,7 @@ static void thread_loop(void *data)
          }
 
          if (thr->poke && thr->poke->set_texture_enable)
-            thr->poke->set_texture_enable(thr->driver_data, thr->texture.enable);
+            thr->poke->set_texture_enable(thr->driver_data, thr->texture.enable, thr->texture.full_screen);
 #endif
 
          if (thr->apply_state_changes)
@@ -655,12 +656,13 @@ static void thread_set_texture_frame(void *data, const void *frame,
    slock_unlock(thr->frame.lock);
 }
 
-static void thread_set_texture_enable(void *data, bool state)
+static void thread_set_texture_enable(void *data, bool state, bool full_screen)
 {
    thread_video_t *thr = (thread_video_t*)data;
 
    slock_lock(thr->frame.lock);
    thr->texture.enable = state;
+   thr->texture.full_screen = full_screen;
    slock_unlock(thr->frame.lock);
 }
 #endif

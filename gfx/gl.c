@@ -1286,7 +1286,16 @@ static inline void gl_draw_texture(void *data)
 
    glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
    glEnable(GL_BLEND);
-   glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+
+   if (gl->rgui_texture_full_screen)
+   {
+      glViewport(0, 0, gl->win_width, gl->win_height);
+      glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+      glViewport(gl->vp.x, gl->vp.y, gl->vp.width, gl->vp.height);
+   }
+   else
+      glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+
    glDisable(GL_BLEND);
 
    gl->coords.tex_coord = gl->tex_coords;
@@ -2345,10 +2354,11 @@ static void gl_set_texture_frame(void *data,
    glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
 }
 
-static void gl_set_texture_enable(void *data, bool state)
+static void gl_set_texture_enable(void *data, bool state, bool full_screen)
 {
    gl_t *gl = (gl_t*)data;
    gl->rgui_texture_enable = state;
+   gl->rgui_texture_full_screen = full_screen;
 }
 #endif
 

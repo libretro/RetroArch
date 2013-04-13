@@ -341,7 +341,7 @@ typedef struct video_poke_interface
 
 #if defined(HAVE_RGUI) || defined(HAVE_RMENU)
    void (*set_texture_frame)(void *data, const void *frame, bool rgb32, unsigned width, unsigned height, float alpha); // Update texture.
-   void (*set_texture_enable)(void *data, bool enable); // Enable/disable rendering.
+   void (*set_texture_enable)(void *data, bool enable, bool full_screen); // Enable/disable rendering.
 #endif
    void (*set_osd_msg)(void *data, const char *msg, void *userdata);
 

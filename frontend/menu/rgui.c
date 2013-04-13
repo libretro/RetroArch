@@ -2163,13 +2163,13 @@ bool menu_iterate(void)
    {
       driver.video_poke->set_texture_frame(driver.video_data, menu_framebuf,
             false, RGUI_WIDTH, RGUI_HEIGHT, 1.0f);
-      driver.video_poke->set_texture_enable(driver.video_data, true);
+      driver.video_poke->set_texture_enable(driver.video_data, true, false);
    }
 
    rarch_render_cached_frame();
 
    if (driver.video_poke && driver.video_poke->set_texture_enable)
-      driver.video_poke->set_texture_enable(driver.video_data, false);
+      driver.video_poke->set_texture_enable(driver.video_data, false, false);
 
    input_process_ret = menu_input_process(NULL, NULL);
 

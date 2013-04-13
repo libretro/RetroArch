@@ -1436,8 +1436,9 @@ static void d3d9_set_rgui_texture_frame(void *data,
    reinterpret_cast<D3DVideo*>(data)->set_rgui_texture_frame(frame, rgb32, width, height, alpha);
 }
 
-static void d3d9_set_rgui_texture_enable(void *data, bool state)
+static void d3d9_set_rgui_texture_enable(void *data, bool state, bool full_screen)
 {
+   (void)full_screen; // Ignore for now.
    reinterpret_cast<D3DVideo*>(data)->set_rgui_texture_enable(state);
 }
 #endif

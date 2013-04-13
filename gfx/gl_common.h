@@ -278,6 +278,7 @@ typedef struct gl
 #if defined(HAVE_RGUI) || defined(HAVE_RMENU)
    GLuint rgui_texture;
    bool rgui_texture_enable;
+   bool rgui_texture_full_screen;
    GLfloat rgui_texture_alpha;
 #endif
 
