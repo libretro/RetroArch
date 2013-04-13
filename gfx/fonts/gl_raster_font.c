@@ -16,6 +16,7 @@
 
 #include "../gfx_common.h"
 #include "../gl_common.h"
+#include "../shader_common.h"
 
 static bool gl_init_font(void *data, const char *font_path, float font_size)
 {
@@ -241,7 +242,9 @@ static void setup_font(void *data, const char *msg, GLfloat scale, GLfloat pos_x
    if (!gl->font)
       return;
 
-   gl_shader_use(gl, 0);
+   if (gl->shader)
+      gl->shader->use(0);
+
    gl_set_viewport(gl, gl->win_width, gl->win_height, false, false);
 
    glEnable(GL_BLEND);

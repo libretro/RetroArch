@@ -286,14 +286,6 @@ static bool gl_shader_init(void *data)
    return gl->shader->init(shader_path);
 }
 
-void gl_shader_use(void *data, unsigned index)
-{
-   gl_t *gl = (gl_t*)data;
-
-   if (gl->shader)
-      gl->shader->use(index);
-}
-
 static inline void gl_shader_deinit(void *data)
 {
    gl_t *gl = (gl_t*)data;
@@ -370,44 +362,8 @@ void gl_shader_set_coords(void *data, const struct gl_coords *coords, const math
 #endif
 }
 
-static inline void gl_shader_set_params(void *data, unsigned width, unsigned height, 
-      unsigned tex_width, unsigned tex_height, 
-      unsigned out_width, unsigned out_height,
-      unsigned frame_count,
-      const struct gl_tex_info *info,
-      const struct gl_tex_info *prev_info,
-      const struct gl_tex_info *fbo_info, unsigned fbo_info_cnt)
-{
-   gl_t *gl = (gl_t*)data;
-
-   if (gl->shader)
-   {
-      gl->shader->set_params(width, height, 
-            tex_width, tex_height, 
-            out_width, out_height, 
-            frame_count, info, prev_info, fbo_info, fbo_info_cnt);
-   }
-}
-
-static inline unsigned gl_shader_num(void *data)
-{
-   gl_t *gl = (gl_t*)data;
-   
-   if (gl->shader)
-      return gl->shader->num_shaders();
-   else
-      return 0;
-}
-
-static bool gl_shader_filter_type(void *data, unsigned index, bool *smooth)
-{
-   gl_t *gl = (gl_t*)data;
-
-   if (gl->shader)
-      return gl->shader->filter_type(index, smooth);
-   else
-      return false;
-}
+#define gl_shader_num(gl) ((gl->shader) ? gl->shader->num_shaders() : 0)
+#define gl_shader_filter_type(gl, index, smooth) ((gl->shader) ? gl->shader->filter_type(index, smooth) : false)
 
 #ifdef HAVE_FBO
 static void gl_shader_scale(void *data, unsigned index, struct gfx_fbo_scale *scale)
@@ -636,15 +592,15 @@ void gl_init_fbo(void *data, unsigned width, unsigned height)
 
    gl_update_tex_filter_frame(gl);
 
-   if (gl_shader_num_func(gl) == 0)
+   if (gl_shader_num(gl) == 0)
       return;
 
    struct gfx_fbo_scale scale, scale_last;
    gl_shader_scale(gl, 1, &scale);
-   gl_shader_scale(gl, gl_shader_num_func(gl), &scale_last);
+   gl_shader_scale(gl, gl_shader_num(gl), &scale_last);
 
    /* we always want FBO to be at least initialized on startup for consoles */
-   if (gl_shader_num_func(gl) == 1 && !scale.valid)
+   if (gl_shader_num(gl) == 1 && !scale.valid)
       return;
 
    if (!load_fbo_proc(gl))
@@ -653,7 +609,7 @@ void gl_init_fbo(void *data, unsigned width, unsigned height)
       return;
    }
 
-   gl->fbo_pass = gl_shader_num_func(gl) - 1;
+   gl->fbo_pass = gl_shader_num(gl) - 1;
    if (scale_last.valid)
       gl->fbo_pass++;
 
@@ -765,7 +721,7 @@ void gl_set_projection(void *data, struct gl_ortho *ortho, bool allow_rotate)
    else
       gl->mvp = gl->mvp_no_rot;
 
-   gl_shader_set_coords_func(gl, &gl->coords, &gl->mvp);
+   gl_shader_set_coords(gl, &gl->coords, &gl->mvp);
 }
 
 void gl_set_viewport(void *data, unsigned width, unsigned height, bool force_full, bool allow_rotate)
@@ -947,19 +903,22 @@ static void gl_frame_fbo(void *data, const struct gl_tex_info *tex_info)
       memcpy(fbo_info->coord, fbo_tex_coords, sizeof(fbo_tex_coords));
 
       pglBindFramebuffer(GL_FRAMEBUFFER, gl->fbo[i]);
-      gl_shader_use_func(gl, i + 1);
+
+      if (gl->shader)
+         gl->shader->use(i + 1);
       glBindTexture(GL_TEXTURE_2D, gl->fbo_texture[i - 1]);
 
       glClear(GL_COLOR_BUFFER_BIT);
 
       // Render to FBO with certain size.
       gl_set_viewport(gl, rect->img_width, rect->img_height, true, false);
-      gl_shader_set_params_func(gl, prev_rect->img_width, prev_rect->img_height, 
+      if (gl->shader)
+         gl->shader->set_params(prev_rect->img_width, prev_rect->img_height, 
             prev_rect->width, prev_rect->height, 
             gl->vp.width, gl->vp.height, g_extern.frame_count, 
             tex_info, gl->prev_info, fbo_tex_info, fbo_tex_info_cnt);
 
-      gl_shader_set_coords_func(gl, &gl->coords, &gl->mvp);
+      gl_shader_set_coords(gl, &gl->coords, &gl->mvp);
       glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
       fbo_tex_info_cnt++;
@@ -980,20 +939,23 @@ static void gl_frame_fbo(void *data, const struct gl_tex_info *tex_info)
 #else
    pglBindFramebuffer(GL_FRAMEBUFFER, 0);
 #endif
-   gl_shader_use_func(gl, gl->fbo_pass + 1);
+   if (gl->shader)
+      gl->shader->use(gl->fbo_pass + 1);
 
    glBindTexture(GL_TEXTURE_2D, gl->fbo_texture[gl->fbo_pass - 1]);
 
    glClear(GL_COLOR_BUFFER_BIT);
    gl_set_viewport(gl, gl->win_width, gl->win_height, false, true);
-   gl_shader_set_params_func(gl, prev_rect->img_width, prev_rect->img_height, 
+
+   if (gl->shader)
+      gl->shader->set_params(prev_rect->img_width, prev_rect->img_height, 
          prev_rect->width, prev_rect->height, 
          gl->vp.width, gl->vp.height, g_extern.frame_count, 
          tex_info, gl->prev_info, fbo_tex_info, fbo_tex_info_cnt);
 
    gl->coords.vertex = vertex_ptr;
 
-   gl_shader_set_coords_func(gl, &gl->coords, &gl->mvp);
+   gl_shader_set_coords(gl, &gl->coords, &gl->mvp);
    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
    gl->coords.tex_coord = gl->tex_coords;
@@ -1272,7 +1234,8 @@ static inline void gl_set_prev_texture(void *data, const struct gl_tex_info *tex
 static inline void gl_set_shader_viewport(void *data, unsigned shader)
 {
    gl_t *gl = (gl_t*)data;
-   gl_shader_use_func(gl, shader);
+   if (gl->shader)
+      gl->shader->use(shader);
    gl_set_viewport(gl, gl->win_width, gl->win_height, false, true);
 }
 
@@ -1317,8 +1280,9 @@ static inline void gl_draw_texture(void *data)
    gl->coords.color = color;
    glBindTexture(GL_TEXTURE_2D, gl->rgui_texture);
 
-   gl_shader_use_func(gl, 0);
-   gl_shader_set_coords_func(gl, &gl->coords, &gl->mvp_no_rot);
+   if (gl->shader)
+      gl->shader->use(0);
+   gl_shader_set_coords(gl, &gl->coords, &gl->mvp_no_rot);
 
    glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
    glEnable(GL_BLEND);
@@ -1346,7 +1310,8 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
    glClear(GL_COLOR_BUFFER_BIT);
 #endif
 
-   gl_shader_use_func(gl, 1);
+   if (gl->shader)
+      gl->shader->use(1);
 
 #ifdef IOS // Apparently the viewport is lost each frame, thanks apple.
    gl_set_viewport(gl, gl->win_width, gl->win_height, false, true);
@@ -1427,13 +1392,15 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
    memcpy(tex_info.coord, gl->tex_coords, sizeof(gl->tex_coords));
 
    glClear(GL_COLOR_BUFFER_BIT);
-   gl_shader_set_params_func(gl, width, height,
+
+   if (gl->shader)
+      gl->shader->set_params(width, height,
          gl->tex_w, gl->tex_h,
          gl->vp.width, gl->vp.height,
          g_extern.frame_count, 
          &tex_info, gl->prev_info, NULL, 0);
 
-   gl_shader_set_coords_func(gl, &gl->coords, &gl->mvp);
+   gl_shader_set_coords(gl, &gl->coords, &gl->mvp);
    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
 #ifdef HAVE_FBO
@@ -1485,7 +1452,8 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
    // Reset state which could easily mess up libretro core.
    if (gl->hw_render_fbo_init)
    {
-      gl_shader_use_func(gl, 0);
+      if (gl->shader)
+         gl->shader->use(0);
       glBindTexture(GL_TEXTURE_2D, 0);
 #ifndef NO_GL_FF_VERTEX
       gl_disable_client_arrays();
@@ -1845,7 +1813,7 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
       return NULL;
    }
 
-   RARCH_LOG("GL: Loaded %u program(s).\n", gl_shader_num_func(gl));
+   RARCH_LOG("GL: Loaded %u program(s).\n", gl_shader_num(gl));
 
    gl->tex_w = RARCH_SCALE_BASE * video->input_scale;
    gl->tex_h = RARCH_SCALE_BASE * video->input_scale;
@@ -1877,7 +1845,7 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    gl->coords.tex_coord      = gl->tex_coords;
    gl->coords.color          = white_color;
    gl->coords.lut_tex_coord  = tex_coords;
-   gl_shader_set_coords_func(gl, &gl->coords, &gl->mvp);
+   gl_shader_set_coords(gl, &gl->coords, &gl->mvp);
 
    // Empty buffer that we use to clear out the texture with on res change.
    gl->empty_buf = calloc(sizeof(uint32_t), gl->tex_w * gl->tex_h);
@@ -2233,13 +2201,15 @@ static void gl_render_overlay(void *data)
       1.0f, 1.0f, 1.0f, gl->overlay_alpha_mod,
    };
 
-   gl_shader_use_func(gl, 0);
+   if (gl->shader)
+      gl->shader->use(0);
+
    glEnable(GL_BLEND);
    gl->coords.vertex    = gl->overlay_vertex_coord;
    gl->coords.tex_coord = gl->overlay_tex_coord;
    gl->coords.color     = white_color_mod;
 
-   gl_shader_set_coords_func(gl, &gl->coords, &gl->mvp_no_rot);
+   gl_shader_set_coords(gl, &gl->coords, &gl->mvp_no_rot);
 
    if (gl->overlay_full_screen)
    {

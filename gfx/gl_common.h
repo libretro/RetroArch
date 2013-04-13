@@ -64,15 +64,6 @@
 #if defined(ANDROID) && defined(HAVE_GRIFFIN)
 #include "../griffin/hook_context.h"
 #else
-#define gl_shader_use_func(vid, num)                 gl_shader_use(vid, num)
-#define gl_shader_num_func(vid)                      gl_shader_num(vid)
-#define gl_shader_set_params_func(vid, width, height, \
-      tex_width, tex_height, out_width, out_height, \
-      frame_count, info, prev_info, fbo_info, fbo_info_cnt) \
-         gl_shader_set_params(vid, width, height, tex_width, tex_height, \
-               out_width, out_height, frame_count, info, prev_info, fbo_info, fbo_info_cnt)
-#define gl_shader_set_coords_func(vid, coords, mat)  gl_shader_set_coords(vid, coords, mat)
-
 #define context_get_video_size_func(win, height)     gl->ctx_driver->get_video_size(win, height)
 #define context_update_window_title_func(var)        gl->ctx_driver->update_window_title(var)
 #define context_destroy_func()                       gl->ctx_driver->destroy()
@@ -358,7 +349,6 @@ extern PFNGLACTIVETEXTUREPROC pglActiveTexture;
 extern const GLfloat vertexes_flipped[];
 extern const GLfloat white_color[];
 
-void gl_shader_use(void *data, unsigned index);
 void gl_set_projection(void *data, struct gl_ortho *ortho, bool allow_rotate);
 void gl_set_viewport(void *data, unsigned width, unsigned height, bool force_full, bool allow_rotate);
 void gl_shader_set_coords(void *data, const struct gl_coords *coords, const math_matrix *mat);
