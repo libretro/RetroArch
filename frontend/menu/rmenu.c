@@ -757,7 +757,7 @@ static int select_file(uint8_t menu_type, uint64_t input)
                   config_file_free(conf);
 
 #ifdef HAVE_CG
-                  if (!video_set_shader_func(RARCH_SHADER_CG, shader.passes ? path : NULL))
+                  if (!video_set_shader_func(RARCH_SHADER_CG, path))
                      RARCH_ERR("Setting CGP failed.\n");
 #else
                      RARCH_WARN("Setting CGP not yet implemented.\n");
@@ -1900,10 +1900,10 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
                (input & (1ULL << RMENU_DEVICE_NAV_START)) || (input & (1ULL << RMENU_DEVICE_NAV_LEFT)))
          {
             bool ret = false;
-            char cgp_path[PATH_MAX];
 
             if (shader.passes)
             {
+               char cgp_path[PATH_MAX];
                const char *shader_dir = *g_settings.video.shader_dir ?
                   g_settings.video.shader_dir : g_settings.system_directory;
                fill_pathname_join(cgp_path, shader_dir, "rgui.cgp", sizeof(cgp_path));
@@ -1913,9 +1913,10 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
                gfx_shader_write_conf_cgp(conf, &shader);
                config_file_write(conf, cgp_path);
                config_file_free(conf);
+               ret = video_set_shader_func(RARCH_SHADER_CG, cgp_path); 
             }
-
-            ret = video_set_shader_func(RARCH_SHADER_CG, shader.passes ? cgp_path : NULL); 
+            else
+               ret = video_set_shader_func(RARCH_SHADER_CG, NULL); 
 
             if (!ret)
                RARCH_ERR("Setting RGUI CGP failed.\n");
