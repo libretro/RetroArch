@@ -16,7 +16,7 @@
 
 #if defined(ANDROID)
 #define context_get_video_size_func(win, height)     gfx_ctx_get_video_size(win, height)
-#define context_update_window_title_func(var)        gfx_ctx_update_window_title(var)
+#define context_update_window_title_func()        gfx_ctx_update_window_title()
 #define context_destroy_func()                       gfx_ctx_destroy()
 
 #define context_translate_aspect_func(width, height) (device_aspect)

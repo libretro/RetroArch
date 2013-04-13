@@ -80,7 +80,7 @@ static bool gfx_ctx_xdk_window_has_focus(void)
    return true;
 }
 
-static void gfx_ctx_xdk_update_window_title(bool reset) { }
+static void gfx_ctx_xdk_update_window_title(void) { }
 
 static void gfx_ctx_xdk_get_video_size(unsigned *width, unsigned *height)
 {

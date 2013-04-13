@@ -975,6 +975,8 @@ static bool gx_frame(void *data, const void *frame,
    VIDEO_SetNextFramebuffer(g_framebuf[g_current_framebuf]);
    VIDEO_Flush();
 
+   g_extern.frame_count++;
+
    return true;
 }
 

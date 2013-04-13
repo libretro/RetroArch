@@ -3409,8 +3409,6 @@ bool menu_iterate(void)
       g_extern.lifecycle_mode_state &= ~(1ULL << MODE_MENU_PREINIT);
    }
 
-   g_extern.frame_count++;
-
 
    //first button input frame
    uint64_t input_state_first_frame = 0;

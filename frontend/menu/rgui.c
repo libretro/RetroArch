@@ -2091,7 +2091,6 @@ bool menu_iterate(void)
    if (driver.video_poke->apply_state_changes)
       driver.video_poke->apply_state_changes(driver.video_data);
 
-   g_extern.frame_count++;
    rarch_input_poll();
 #ifdef HAVE_OVERLAY
    rarch_check_overlay();

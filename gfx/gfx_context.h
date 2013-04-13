@@ -60,7 +60,7 @@ typedef struct gfx_ctx_driver
    float (*translate_aspect)(unsigned, unsigned);
 
    // Asks driver to update window title (FPS, etc).
-   void (*update_window_title)(bool);
+   void (*update_window_title)(void);
 
    // Queries for resize and quit events.
    // Also processes events.

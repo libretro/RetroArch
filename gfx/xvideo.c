@@ -702,6 +702,7 @@ static bool xv_frame(void *data, const void *frame, unsigned width, unsigned hei
    if (gfx_get_fps(buf, sizeof(buf), false))
       XStoreName(xv->display, xv->window, buf);
 
+   g_extern.frame_count++;
    return true;
 }
 

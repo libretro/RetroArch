@@ -946,6 +946,8 @@ void D3DVideo::update_title()
       title += " || Direct3D9";
       SetWindowText(hWnd, title.c_str());
    }
+
+   g_extern.frame_count++;
 }
 
 void D3DVideo::resize(unsigned new_width, unsigned new_height)

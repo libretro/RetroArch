@@ -88,11 +88,8 @@ static void gfx_ctx_wm_set_caption(const char *str)
    SDL_WM_SetCaption(str, NULL);
 }
 
-static void gfx_ctx_update_window_title(bool reset)
+static void gfx_ctx_update_window_title(void)
 {
-   if (reset)
-      gfx_window_title_reset();
-
    char buf[128];
    if (gfx_get_fps(buf, sizeof(buf), false))
       gfx_ctx_wm_set_caption(buf);

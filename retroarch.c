@@ -2959,7 +2959,6 @@ bool rarch_main_iterate(void)
 #endif
 
    pretro_run();
-   g_extern.frame_count++;
 
 #ifdef HAVE_BSV_MOVIE
    if (g_extern.bsv.movie)

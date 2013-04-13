@@ -314,6 +314,7 @@ static bool sdl_gfx_frame(void *data, const void *frame, unsigned width, unsigne
       SDL_WM_SetCaption(buf, NULL);
 
    SDL_Flip(vid->screen);
+   g_extern.frame_count++;
 
    return true;
 }

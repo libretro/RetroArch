@@ -144,11 +144,8 @@ static void gfx_ctx_set_resize(unsigned width, unsigned height)
    (void)height;
 }
 
-static void gfx_ctx_update_window_title(bool reset)
+static void gfx_ctx_update_window_title(void)
 {
-   if (reset)
-      gfx_window_title_reset();
-
    char buf[128];
    if (gfx_get_fps(buf, sizeof(buf), false))
       XStoreName(g_dpy, g_win, buf);
@@ -310,7 +307,6 @@ static bool gfx_ctx_set_video_mode(
 
    g_glx_win = glXCreateWindow(g_dpy, g_fbc, g_win, 0);
 
-   gfx_ctx_update_window_title(true);
    x11_set_window_attr(g_dpy, g_win);
 
    if (fullscreen)

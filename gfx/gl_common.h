@@ -65,7 +65,7 @@
 #include "../griffin/hook_context.h"
 #else
 #define context_get_video_size_func(win, height)     gl->ctx_driver->get_video_size(win, height)
-#define context_update_window_title_func(var)        gl->ctx_driver->update_window_title(var)
+#define context_update_window_title_func()           gl->ctx_driver->update_window_title()
 #define context_destroy_func()                       gl->ctx_driver->destroy()
 #define context_translate_aspect_func(width, height) gl->ctx_driver->translate_aspect(width, height)
 #define context_set_resize_func(width, height)       gl->ctx_driver->set_resize(width, height)
@@ -76,7 +76,6 @@
 #define context_check_window_func(quit, resize, width, height, frame_count) \
    gl->ctx_driver->check_window(quit, resize, width, height, frame_count)
 
-#define context_update_window_title_func(var)        gl->ctx_driver->update_window_title(var)
 #define context_set_video_mode_func(width, height, fullscreen) gl->ctx_driver->set_video_mode(width, height, fullscreen)
 #define context_input_driver_func(input, input_data) gl->ctx_driver->input_driver(input, input_data)
 

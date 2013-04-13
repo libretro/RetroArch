@@ -1443,7 +1443,7 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
 #endif
 
 #if !defined(RARCH_CONSOLE)
-   context_update_window_title_func(false);
+   context_update_window_title_func();
 #endif
 
    RARCH_PERFORMANCE_STOP(frame_run);
@@ -1462,6 +1462,7 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
 #endif
 
    context_swap_buffers_func();
+   g_extern.frame_count++;
 
 #if !defined(HAVE_OPENGLES) && defined(HAVE_FFMPEG)
    if (gl->pbo_readback_enable)
@@ -1778,7 +1779,6 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
       return NULL;
    }
 
-   context_update_window_title_func(true);
    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
    if (!resolve_extensions(gl))

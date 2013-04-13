@@ -194,11 +194,8 @@ static void gfx_ctx_set_resize(unsigned width, unsigned height)
    (void)height;
 }
 
-static void gfx_ctx_update_window_title(bool reset)
+static void gfx_ctx_update_window_title(void)
 {
-   if (reset)
-      gfx_window_title_reset();
-
    char buf[128];
 #if 0
    if (gfx_get_fps(buf, sizeof(buf), false))

@@ -1021,6 +1021,8 @@ NULL, NULL, NULL, 0);
 
    gfx_ctx_xdk_swap_buffers();
 
+   g_extern.frame_count++;
+
    return true;
 }
 

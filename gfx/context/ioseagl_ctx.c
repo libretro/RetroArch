@@ -42,7 +42,7 @@ static bool gfx_ctx_set_video_mode(
    return true;
 }
 
-static void gfx_ctx_update_window_title(bool reset)
+static void gfx_ctx_update_window_title(void)
 {
 }
 

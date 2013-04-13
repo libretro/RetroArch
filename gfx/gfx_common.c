@@ -18,7 +18,7 @@
 #include "../general.h"
 #include "../performance.h"
 
-static float time_to_fps(rarch_time_t last_time, rarch_time_t new_time, int frames)
+static inline float time_to_fps(rarch_time_t last_time, rarch_time_t new_time, int frames)
 {
    return (1000000.0f * frames) / (new_time - last_time);
 }
@@ -69,11 +69,6 @@ bool gfx_get_fps(char *buf, size_t size, bool always_write)
    }
 
    return ret;
-}
-
-void gfx_window_title_reset(void)
-{
-   g_extern.frame_count = 0;
 }
 
 #if defined(_WIN32) && !defined(_XBOX)
