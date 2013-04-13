@@ -87,7 +87,7 @@ def translate_varyings(varyings, source):
       for line in source:
          if (varying in line) and ('//var' in line):
             log('Found line for', varying + ':', line)
-            dictionary[varying] = line.split(':')[0].split('.')[-1].strip()
+            dictionary[varying] = 'VAR' + line.split(':')[0].split('.')[-1].strip()
             break
 
    return dictionary
@@ -109,9 +109,6 @@ def no_uniform(elem):
    return True
 
 def destructify_varyings(source):
-   #for line in source:
-   #   log('  ', line)
-
    # We have to change varying structs that Cg support to single varyings for GL.
    # Varying structs aren't supported until later versions
    # of GLSL.
@@ -124,7 +121,7 @@ def destructify_varyings(source):
          vout_lines.append(line)
 
    struct_types = []
-   for line in source:
+   for line in source[1:]:
       if 'struct' in line:
          struct_type = line.split(' ')[1]
          if struct_type not in struct_types:
@@ -189,11 +186,17 @@ def destructify_varyings(source):
    for varying in varyings:
       source.insert(1, varying)
 
+   log('Variables:', variables)
+   log('Varying names:', varyings_name)
+
    # Replace struct access with global access, e.g. (_co1._c00 => _c00)
    # Also replace mangled Cg name with 'real' name.
    for index, _ in enumerate(source):
       for variable in variables:
-         source[index] = source[index].replace(variable + '.', '');
+         for varying_name in varyings_dict:
+            trans_from = variable + '.' + varying_name
+            trans_to = varyings_dict[varying_name]
+            source[index] = source[index].replace(trans_from, trans_to);
 
    for index, _ in enumerate(source):
       for varying_name in varyings_name:
@@ -234,11 +237,39 @@ def translate_varying(cg):
    else:
       return cg
 
+def translate_texture_size(cg):
+   log('Translate:', cg)
+   translations = {
+      'ORIG.texture_size'  : 'OrigTextureSize',
+      'PREV.texture_size'  : 'PrevTextureSize',
+      'PREV1.texture_size' : 'Prev1TextureSize',
+      'PREV2.texture_size' : 'Prev2TextureSize',
+      'PREV3.texture_size' : 'Prev3TextureSize',
+      'PREV4.texture_size' : 'Prev4TextureSize',
+      'PREV5.texture_size' : 'Prev5TextureSize',
+      'PREV6.texture_size' : 'Prev6TextureSize',
+      'PASS1.texture_size' : 'Pass1TextureSize',
+      'PASS2.texture_size' : 'Pass2TextureSize',
+      'PASS3.texture_size' : 'Pass3TextureSize',
+      'PASS4.texture_size' : 'Pass4TextureSize',
+      'PASS5.texture_size' : 'Pass5TextureSize',
+      'PASS6.texture_size' : 'Pass6TextureSize',
+      'PASS7.texture_size' : 'Pass7TextureSize',
+      'PASS8.texture_size' : 'Pass8TextureSize',
+   }
+
+   if cg in translations:
+      return translations[cg]
+   else:
+      return cg
+
+
 
 def replace_varyings(source):
    ret = []
    translations = []
    attribs = []
+   uniforms = []
    for index, line in enumerate(source):
       if ('//var' in line) and ('$vin.' in line):
          orig = line.split(' ')[2]
@@ -247,11 +278,24 @@ def replace_varyings(source):
             cg_attrib = line.split(':')[2].split(' ')[1]
             translations.append((cg_attrib, translated))
             attribs.append(translated)
+      elif '//var' in line:
+         orig = line.split(' ')[2]
+         translated = translate_texture_size(orig)
+         if translated != orig and translated not in uniforms:
+            cg_uniform = line.split(':')[2].split(' ')[1]
+            translations.append((cg_uniform, translated))
+            uniforms.append(translated)
 
    for index, line in enumerate(source):
       if 'void main()' in line:
          for attrib in attribs:
             source.insert(index, 'attribute vec2 ' + attrib + ';')
+         for uniform in uniforms:
+            source.insert(index, '#endif')
+            source.insert(index, 'uniform vec2 ' + uniform + ';')
+            source.insert(index, '#else')
+            source.insert(index, 'uniform mediump vec2 ' + uniform + ';')
+            source.insert(index, '#ifdef GL_ES')
          break
 
    for line in source:
@@ -309,6 +353,7 @@ def replace_global_fragment(source):
 
    return source
 
+
 def translate_texture(cg):
    log('Translate:', cg)
    translations = {
@@ -353,13 +398,14 @@ def hack_source_fragment(source):
          ref_index = index
          break
 
-   samplers = []
+   translations = []
    added_samplers = []
    translated_samplers = []
+   uniforms = []
    for line in source:
       if ('TEXUNIT0' in line) and ('semantic' not in line):
          main_sampler = (line.split(':')[2].split(' ')[1], 'Texture')
-         samplers.append(main_sampler)
+         translations.append(main_sampler)
          log('Fragment: Sampler:', main_sampler[0], '->', main_sampler[1])
       elif '//var sampler2D' in line:
          cg_texture = line.split(' ')[2]
@@ -369,16 +415,30 @@ def hack_source_fragment(source):
             added_samplers.append('uniform sampler2D ' + translated + ';')
          orig_name = translated
          new_name = line.split(':')[2].split(' ')[1]
-         samplers.append((new_name, orig_name))
+         translations.append((new_name, orig_name))
          log('Fragment: Sampler:', new_name, '->', orig_name)
+      elif '//var' in line:
+         orig = line.split(' ')[2]
+         translated = translate_texture_size(orig)
+         if translated != orig and translated not in uniforms:
+            cg_uniform = line.split(':')[2].split(' ')[1]
+            translations.append((cg_uniform, translated))
+            uniforms.append(translated)
+
 
    for sampler in added_samplers:
       source.insert(ref_index, sampler)
+   for uniform in uniforms:
+      source.insert(ref_index, '#endif')
+      source.insert(ref_index, 'uniform vec2 ' + uniform + ';')
+      source.insert(ref_index, '#else')
+      source.insert(ref_index, 'uniform mediump vec2 ' + uniform + ';')
+      source.insert(ref_index, '#ifdef GL_ES')
 
    ret = []
    for line in source:
-      for sampler in samplers:
-         line = line.replace(sampler[0], sampler[1])
+      for translation in translations:
+         line = line.replace(translation[0], translation[1])
       ret.append(line)
 
    ret = destructify_varyings(ret)
