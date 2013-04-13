@@ -295,7 +295,7 @@ static unsigned char menu_stack_enum_array[10];
 static unsigned stack_idx = 0;
 static uint8_t selected = 0;
 static unsigned shader_choice_set_shader_slot = 0;
-static uint8_t setting_page_number = 0;
+static unsigned setting_page_number = 0;
 
 static void menu_stack_pop(unsigned menu_type)
 {
@@ -1930,7 +1930,7 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
 static int select_setting(uint8_t menu_type, uint64_t input)
 {
    static uint8_t first_setting = FIRST_VIDEO_SETTING;
-   uint8_t items_pages[SETTING_LAST] = {0};
+   uint8_t items_pages[SETTING_LAST_LAST] = {0};
    uint8_t max_settings = 0;
 
    font_params_t font_parms = {0};
