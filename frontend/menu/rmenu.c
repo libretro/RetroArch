@@ -791,6 +791,10 @@ static int select_file(uint8_t menu_type, uint64_t input)
                }
                texture_image_load(path, menu_texture);
                strlcpy(g_extern.menu_texture_path, path, sizeof(g_extern.menu_texture_path));
+
+               if (driver.video_poke && driver.video_poke->set_texture_frame)
+                  driver.video_poke->set_texture_frame(driver.video_data, menu_texture->pixels,
+                        true, menu_texture->width, menu_texture->height, 1.0f);
                break;
             case LIBRETRO_CHOICE:
                strlcpy(g_settings.libretro, path, sizeof(g_settings.libretro));
