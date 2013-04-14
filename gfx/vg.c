@@ -99,7 +99,7 @@ static void *vg_init(const video_info_t *video, const input_driver_t **input, vo
    RARCH_LOG("Detecting screen resolution %ux%u.\n", vg->mScreenWidth, vg->mScreenHeight);
 
    vg->driver->swap_interval(video->vsync ? 1 : 0);
-   vg->driver->update_window_title(true);
+   vg->driver->update_window_title();
 
    vg->mTexType = video->rgb32 ? VG_sXRGB_8888 : VG_sRGB_565;
    vg->mKeepAspect = video->force_aspect;
@@ -387,7 +387,7 @@ static bool vg_frame(void *data, const void *frame, unsigned width, unsigned hei
    if (msg && vg->mFontsOn)
       vg_draw_message(vg, msg);
 
-   vg->driver->update_window_title(false);
+   vg->driver->update_window_title();
 
    RARCH_PERFORMANCE_STOP(vg_fr);
    vg->driver->swap_buffers();
