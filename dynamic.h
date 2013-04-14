@@ -33,7 +33,7 @@
 extern "C" {
 #endif
 
-void init_libretro_sym(void);
+void init_libretro_sym(bool dummy);
 void uninit_libretro_sym(void);
 
 typedef void *dylib_t;

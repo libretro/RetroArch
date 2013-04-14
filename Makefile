@@ -10,6 +10,7 @@ OBJ = frontend/frontend.o \
 		driver.o \
 		settings.o \
 		dynamic.o \
+		dynamic_dummy.o \
 		message.o \
 		rewind.o \
 		gfx/gfx_common.o \

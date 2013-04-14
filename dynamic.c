@@ -31,6 +31,7 @@
 
 #include "boolean.h"
 #include "libretro.h"
+#include "dynamic_dummy.h"
 
 #ifdef NEED_DYNAMIC
 #ifdef _WIN32
@@ -47,10 +48,13 @@
    if (p##x == NULL) { RARCH_ERR("Failed to load symbol: \"%s\"\n", #x); rarch_fail(1, "init_libretro_sym()"); } \
 } while (0)
 
-static dylib_t lib_handle = NULL;
+static dylib_t lib_handle;
+static bool lib_dummy;
 #else
 #define SYM(x) p##x = x
 #endif
+
+#define SYM_DUMMY(x) p##x = libretro_dummy_##x
 
 void (*pretro_init)(void);
 void (*pretro_deinit)(void);
@@ -89,7 +93,7 @@ unsigned (*pretro_get_region)(void);
 void *(*pretro_get_memory_data)(unsigned);
 size_t (*pretro_get_memory_size)(unsigned);
 
-static void set_environment(void);
+static bool environment_cb(unsigned cmd, void *data);
 
 #ifdef HAVE_DYNAMIC
 #if defined(__APPLE__)
@@ -256,6 +260,43 @@ static void load_symbols(void)
    SYM(retro_get_memory_size);
 }
 
+static void load_symbols_dummy(void)
+{
+   SYM_DUMMY(retro_init);
+   SYM_DUMMY(retro_deinit);
+
+   SYM_DUMMY(retro_api_version);
+   SYM_DUMMY(retro_get_system_info);
+   SYM_DUMMY(retro_get_system_av_info);
+
+   SYM_DUMMY(retro_set_environment);
+   SYM_DUMMY(retro_set_video_refresh);
+   SYM_DUMMY(retro_set_audio_sample);
+   SYM_DUMMY(retro_set_audio_sample_batch);
+   SYM_DUMMY(retro_set_input_poll);
+   SYM_DUMMY(retro_set_input_state);
+
+   SYM_DUMMY(retro_set_controller_port_device);
+
+   SYM_DUMMY(retro_reset);
+   SYM_DUMMY(retro_run);
+
+   SYM_DUMMY(retro_serialize_size);
+   SYM_DUMMY(retro_serialize);
+   SYM_DUMMY(retro_unserialize);
+
+   SYM_DUMMY(retro_cheat_reset);
+   SYM_DUMMY(retro_cheat_set);
+
+   SYM_DUMMY(retro_load_game);
+   SYM_DUMMY(retro_load_game_special);
+
+   SYM_DUMMY(retro_unload_game);
+   SYM_DUMMY(retro_get_region);
+   SYM_DUMMY(retro_get_memory_data);
+   SYM_DUMMY(retro_get_memory_size);
+}
+
 void libretro_get_current_core_pathname(char *name, size_t size)
 {
    if (size == 0)
@@ -283,33 +324,40 @@ void libretro_get_current_core_pathname(char *name, size_t size)
    }
 }
 
-void init_libretro_sym(void)
+void init_libretro_sym(bool dummy)
 {
+   lib_dummy = dummy;
    // Guarantee that we can do "dirty" casting.
    // Every OS that this program supports should pass this ...
    rarch_assert(sizeof(void*) == sizeof(void (*)(void)));
 
+   if (lib_dummy)
+      load_symbols_dummy();
+   else
+   {
 #ifdef HAVE_DYNAMIC
-   // Try to verify that -lretro was not linked in from other modules
-   // since loading it dynamically and with -l will fail hard.
-   function_t sym = dylib_proc(NULL, "retro_init");
-   if (sym)
-   {
-      RARCH_ERR("Serious problem. RetroArch wants to load libretro dyamically, but it is already linked.\n"); 
-      RARCH_ERR("This could happen if other modules RetroArch depends on link against libretro directly.\n");
-      RARCH_ERR("Proceeding could cause a crash. Aborting ...\n");
-      rarch_fail(1, "init_libretro_sym()");
-   }
+      // Try to verify that -lretro was not linked in from other modules
+      // since loading it dynamically and with -l will fail hard.
+      function_t sym = dylib_proc(NULL, "retro_init");
+      if (sym)
+      {
+         RARCH_ERR("Serious problem. RetroArch wants to load libretro dyamically, but it is already linked.\n"); 
+         RARCH_ERR("This could happen if other modules RetroArch depends on link against libretro directly.\n");
+         RARCH_ERR("Proceeding could cause a crash. Aborting ...\n");
+         rarch_fail(1, "init_libretro_sym()");
+      }
 
-   if (!*g_settings.libretro)
-   {
-      RARCH_ERR("RetroArch is built for dynamic libretro, but libretro_path is not set. Cannot continue.\n");
-      rarch_fail(1, "init_libretro_sym()");
-   }
+      if (!*g_settings.libretro)
+      {
+         RARCH_ERR("RetroArch is built for dynamic libretro, but libretro_path is not set. Cannot continue.\n");
+         rarch_fail(1, "init_libretro_sym()");
+      }
 #endif
 
-   load_symbols();
-   set_environment();
+      load_symbols();
+   }
+
+   pretro_set_environment(environment_cb);
 }
 
 void uninit_libretro_sym(void)
@@ -317,7 +365,9 @@ void uninit_libretro_sym(void)
 #ifdef HAVE_DYNAMIC
    if (lib_handle)
       dylib_close(lib_handle);
+   lib_handle = NULL;
 #endif
+   lib_dummy = false;
 }
 
 #ifdef NEED_DYNAMIC
@@ -589,10 +639,5 @@ static bool environment_cb(unsigned cmd, void *data)
    }
 
    return true;
-}
-
-static void set_environment(void)
-{
-   pretro_set_environment(environment_cb);
 }
 

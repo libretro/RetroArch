@@ -601,6 +601,8 @@ struct global
    char error_string[1024];
    jmp_buf error_sjlj_context;
    unsigned menu_toggle_behavior;
+
+   bool libretro_dummy;
 };
 
 struct rarch_main_wrap

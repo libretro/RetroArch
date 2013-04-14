@@ -643,6 +643,7 @@ static void print_help(void)
    puts("===================================================================");
    puts("Usage: retroarch [rom file] [options...]");
    puts("\t-h/--help: Show this help message.");
+   puts("\t--menu: Do not require ROM or libretro core to be loaded, starts directly in menu.");
    puts("\t--features: Prints available features compiled into RetroArch.");
    puts("\t-s/--save: Path for save file (*.srm). Required when rom is input from stdin.");
    puts("\t-f/--fullscreen: Start RetroArch in fullscreen regardless of config settings.");
@@ -796,6 +797,8 @@ static void parse_input(int argc, char *argv[])
       rarch_fail(1, "parse_input()");
    }
 
+   g_extern.libretro_dummy = false;
+
    // Make sure we can call parse_input several times ...
    optind = 1;
 
@@ -805,6 +808,7 @@ static void parse_input(int argc, char *argv[])
 #ifdef HAVE_DYNAMIC
       { "libretro", 1, NULL, 'L' },
 #endif
+      { "menu", 0, &val, 'M' },
       { "help", 0, NULL, 'h' },
       { "save", 1, NULL, 's' },
       { "fullscreen", 0, NULL, 'f' },
@@ -1072,6 +1076,10 @@ static void parse_input(int argc, char *argv[])
          case 0:
             switch (val)
             {
+               case 'M':
+                  g_extern.libretro_dummy = true;
+                  break;
+
 #ifdef HAVE_NETPLAY
                case 'p':
                   g_extern.netplay_port = strtoul(optarg, NULL, 0);
@@ -1160,7 +1168,15 @@ static void parse_input(int argc, char *argv[])
       }
    }
 
-   if (optind < argc)
+   if (g_extern.libretro_dummy)
+   {
+      if (optind < argc)
+      {
+         RARCH_ERR("--menu was used, but ROM file was passed as well.\n");
+         rarch_fail(1, "parse_input()");
+      }
+   }
+   else if (optind < argc)
       set_paths(argv[optind]);
    else
       verify_stdin_paths();
@@ -2785,7 +2801,7 @@ int rarch_main_init(int argc, char *argv[])
    validate_cpu_features();
    config_load();
 
-   init_libretro_sym();
+   init_libretro_sym(g_extern.libretro_dummy);
    rarch_init_system_info();
 
    init_drivers_pre();
@@ -2793,33 +2809,36 @@ int rarch_main_init(int argc, char *argv[])
    verify_api_version();
    pretro_init();
 
-   g_extern.use_sram = true;
+   g_extern.use_sram = !g_extern.libretro_dummy;
    bool allow_cheats = true;
 
-   fill_pathnames();
+   if (!g_extern.libretro_dummy)
+   {
+      fill_pathnames();
 
-   if (!init_rom_file(g_extern.game_type))
-      goto error;
+      if (!init_rom_file(g_extern.game_type))
+         goto error;
 
-   set_savestate_auto_index();
+      set_savestate_auto_index();
 
-   init_system_av_info();
 
-   if (!g_extern.sram_load_disable)
-      load_save_files();
-   else
-      RARCH_LOG("Skipping SRAM load.\n");
+      if (!g_extern.sram_load_disable)
+         load_save_files();
+      else
+         RARCH_LOG("Skipping SRAM load.\n");
 
-   load_auto_state();
+      load_auto_state();
 
 #ifdef HAVE_BSV_MOVIE
-   init_movie();
+      init_movie();
 #endif
 
 #ifdef HAVE_NETPLAY
-   init_netplay();
+      init_netplay();
 #endif
+   }
 
+   init_system_av_info();
    init_drivers();
 
 #ifdef HAVE_COMMAND
@@ -2839,9 +2858,9 @@ int rarch_main_init(int argc, char *argv[])
 #endif
 
 #ifdef HAVE_NETPLAY
-   g_extern.use_sram = !g_extern.sram_save_disable && !g_extern.netplay_is_client;
+   g_extern.use_sram = g_extern.use_sram && !g_extern.sram_save_disable && !g_extern.netplay_is_client;
 #else
-   g_extern.use_sram = !g_extern.sram_save_disable;
+   g_extern.use_sram = g_extern.use_sram && !g_extern.sram_save_disable;
 #endif
 
    if (!g_extern.use_sram)
@@ -2878,7 +2897,9 @@ error:
 static inline bool check_enter_rgui(void)
 {
    static bool old_rmenu_toggle = true;
-   bool rmenu_toggle = input_key_pressed_func(RARCH_MENU_TOGGLE);
+
+   // Always go into menu if dummy core is loaded.
+   bool rmenu_toggle = input_key_pressed_func(RARCH_MENU_TOGGLE) || (g_extern.libretro_dummy && !old_rmenu_toggle);
    if (rmenu_toggle && !old_rmenu_toggle)
    {
       if (g_extern.menu_toggle_behavior == 0)
@@ -3005,7 +3026,8 @@ void rarch_main_deinit(void)
    deinit_movie();
 #endif
 
-   save_auto_state();
+   if (!g_extern.libretro_dummy)
+      save_auto_state();
 
    pretro_unload_game();
    pretro_deinit();

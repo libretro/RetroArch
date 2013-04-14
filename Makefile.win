@@ -10,6 +10,7 @@ OBJ = frontend/frontend.o \
 		settings.o \
 		hash.o \
 		dynamic.o \
+		dynamic_dummy.o \
 		message.o \
 		rewind.o \
 		movie.o \
