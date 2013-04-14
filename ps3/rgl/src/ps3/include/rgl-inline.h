@@ -178,6 +178,21 @@ static inline GLuint rglPlatformGetBitsPerPixel (GLenum internalFormat)
  (thisContext->current)[1] = ((cullNearFarEnable) | ((zclampEnable) << 4) | ((cullIgnoreW)<<8)); \
  (thisContext->current) += 2;
 
+#define rglGcmSetVertexAttribOutputMask(thisContext, mask) \
+ (thisContext->current)[0] = (((1) << (18)) | ((0x00001ff4))); \
+ (thisContext->current)[1] = (mask); \
+ (thisContext->current) += 2;
+
+#define rglGcmSetNopCommand(thisContext, i, count) \
+ for(i=0;i<count;i++) \
+  thisContext->current[i] = 0; \
+ thisContext->current += count;
+
+#define rglGcmSetAntiAliasingControl(thisContext, enable, alphaToCoverage, alphaToOne, sampleMask) \
+ (thisContext->current)[0] = (((1) << (18)) | ((0x00001d7c))); \
+ (thisContext->current)[1] = ((enable) | ((alphaToCoverage) << 4) | ((alphaToOne) << 8) | ((sampleMask) << 16)); \
+ (thisContext->current) += 2; 
+
 static inline void rglGcmSetDrawArrays(struct CellGcmContextData *thisContext, uint8_t mode,
       uint32_t first, uint32_t count)
 {
@@ -560,6 +575,11 @@ static inline GLuint rglGcmGetBufferObjectOrigin (GLuint buffer)
    return gcmBuffer->bufferId;
 }
 
+#define CL0039_MIN_PITCH -32768
+#define CL0039_MAX_PITCH 32767
+#define CL0039_MAX_LINES 0x3fffff
+#define CL0039_MAX_ROWS 0x7ff
+
 static inline void rglGcmTransferData
 (
  GLuint dstId,
@@ -581,5 +601,71 @@ static inline void rglGcmTransferData
    (thisContext->current)[2] = 0xFEED0000; /* CELL_GCM_TRANSFER_LOCAL_TO_LOCAL */
    (thisContext->current) += 3;
 
-   cellGcmTransferDataInline(thisContext, dstOffset, dstPitch, srcOffset, srcPitch, bytesPerRow, rowCount);
+   uint32_t colCount;
+   uint32_t rows;
+   uint32_t cols;
+
+   if ((srcPitch == bytesPerRow) && (dstPitch == bytesPerRow))
+   {
+      bytesPerRow *= rowCount;
+      rowCount = 1;
+      srcPitch = 0;
+      dstPitch = 0;
+   }
+
+   if ((srcPitch < CL0039_MIN_PITCH) || (srcPitch > CL0039_MAX_PITCH) ||
+         (dstPitch < CL0039_MIN_PITCH) || (dstPitch > CL0039_MAX_PITCH))
+   {
+      while(--rowCount >= 0)
+      {
+         for(colCount = bytesPerRow; colCount>0; colCount -= cols)
+         {
+            cols = (colCount > CL0039_MAX_LINES) ? CL0039_MAX_LINES : colCount;
+
+            (thisContext->current)[0] = (((8) << (18)) | ((0x0000230C)));
+            (thisContext->current)[1] = (srcOffset + (bytesPerRow - colCount));
+            (thisContext->current)[2] = (dstOffset + (bytesPerRow - colCount));
+            (thisContext->current)[3] = (0);
+            (thisContext->current)[4] = (0);
+            (thisContext->current)[5] = (cols);
+            (thisContext->current)[6] = (1);
+            (thisContext->current)[7] = (((1) << 8) | (1));
+            (thisContext->current)[8] = (0);
+            (thisContext->current) += 9;
+         }
+
+         dstOffset += dstPitch;
+         srcOffset += srcPitch;
+      }
+   }
+   else
+   {
+      for(;rowCount>0; rowCount -= rows)
+      {
+         rows = (rowCount > CL0039_MAX_ROWS) ? CL0039_MAX_ROWS : rowCount;
+
+         for(colCount = bytesPerRow; colCount>0; colCount -= cols)
+         {
+            cols = (colCount > CL0039_MAX_LINES) ? CL0039_MAX_LINES : colCount;
+
+            (thisContext->current)[0] = (((8) << (18)) | ((0x0000230C)));
+            (thisContext->current)[1] = (srcOffset + (bytesPerRow - colCount));
+            (thisContext->current)[2] = (dstOffset + (bytesPerRow - colCount));
+            (thisContext->current)[3] = (srcPitch);
+            (thisContext->current)[4] = (dstPitch);
+            (thisContext->current)[5] = (cols);
+            (thisContext->current)[6] = (rows);
+            (thisContext->current)[7] = (((1) << 8) | (1));
+            (thisContext->current)[8] = (0);
+            (thisContext->current) += 9;
+         }
+
+         srcOffset += rows * srcPitch;
+         dstOffset += rows * dstPitch;
+      }
+   }
+
+   (thisContext->current)[0] = (((1) << (18)) | ((0x00002310)));
+   (thisContext->current)[1] = (0);
+   (thisContext->current) += 2;
 }

@@ -1724,8 +1724,8 @@ GLAPI void APIENTRY glDrawArrays (GLenum mode, GLint first, GLsizei count)
          rglGcmInterpolantState *s = &rglGcmState_i.state.interpolant;
          s->vertexProgramAttribMask = program->header.vertexProgram.attributeOutputMask;
 
-         GCM_FUNC( cellGcmSetVertexAttribOutputMask, (( s->vertexProgramAttribMask) &
-                  s->fragmentProgramAttribMask) );
+         rglGcmSetVertexAttribOutputMask(thisContext, (( s->vertexProgramAttribMask) &
+                  s->fragmentProgramAttribMask));
 
          int count = program->defaultValuesIndexCount;
          for ( int i = 0;i < count;i++ )
@@ -1842,7 +1842,8 @@ GLAPI void APIENTRY glDrawArrays (GLenum mode, GLint first, GLsizei count)
          uint32_t padding_in_word = ( ( 0x10-(((uint32_t)rglGcmState_i.fifo.current)&0xf))&0xf )>>2;
          uint32_t padded_size = ( ((cgprog->constantPushBufferWordSize)<<2) + 0xf )&~0xf;
 
-         GCM_FUNC( cellGcmSetNopCommandUnsafe, padding_in_word );
+         unsigned i;
+         rglGcmSetNopCommand(thisContext, i, padding_in_word );
          memcpy16(rglGcmState_i.fifo.current, cgprog->constantPushBuffer, padded_size);
          rglGcmState_i.fifo.current+=cgprog->constantPushBufferWordSize;
       }
@@ -2938,6 +2939,7 @@ GLAPI void APIENTRY glTextureReferenceSCE( GLenum target, GLuint levels,
 // Set current render target to args
 void rglGcmFifoGlSetRenderTarget (const void *data)
 {
+   CellGcmContextData *thisContext = (CellGcmContextData*)gCellGcmCurrentContext;
    rglGcmRenderTarget *rt = &rglGcmState_i.renderTarget;
    CellGcmSurface *grt = &rglGcmState_i.renderTarget.gcmRenderTarget;
    const rglGcmRenderTargetEx *args = (const rglGcmRenderTargetEx*)data;
@@ -3039,7 +3041,7 @@ void rglGcmFifoGlSetRenderTarget (const void *data)
 
    // Update rt's AA and Swizzling parameters with args
 
-   GCM_FUNC( cellGcmSetAntiAliasingControl, 
+   rglGcmSetAntiAliasingControl(thisContext,
          CELL_GCM_FALSE, 
          CELL_GCM_FALSE,
          CELL_GCM_FALSE, 

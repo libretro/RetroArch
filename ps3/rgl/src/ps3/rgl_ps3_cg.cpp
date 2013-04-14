@@ -2768,9 +2768,7 @@ void PopulateDataForParamResource( CgParameterEntry* paramEntry, CgParameterEntr
    ( *nvParams )->type = ( CGtype )( paramResource->type );
    // sub type for row params of matrix
    for ( int row = 1; row <= ( int )rowCount; row++ )
-   {
       ( *nvParams + row )->type = getMatrixRowType(( CGtype )paramResource->type );
-   }
 
    // varying parameters
    if (( paramEntry->flags & CGPV_MASK ) == CGPV_VARYING )
@@ -2903,9 +2901,7 @@ void PopulateDataForParamResource( CgParameterEntry* paramEntry, CgParameterEntr
                ( *nvParamOffsets )->ucodeCount = embeddedConstantCount;
                unsigned int ec = 0;
                for ( ec = 0; ec < embeddedConstantCount; ec++ )
-               {
                   ( *nvParamOffsets )->ucodeOffset[ec] = *( resPtr++ );
-               }
                // set the field in the nv param
                ( *nvParams )->embeddedConst = ( char* )( *nvParamOffsets ) - nvBinary;
                // forward pointer to nvParamOffsets
@@ -2921,9 +2917,7 @@ void PopulateDataForParamResource( CgParameterEntry* paramEntry, CgParameterEntr
                   ( *nvParamOffsets )->ucodeCount = embeddedConstantCount;
                   unsigned int ec = 0;
                   for ( ec = 0; ec < embeddedConstantCount; ec++ )
-                  {
                      ( *nvParamOffsets )->ucodeOffset[ec] = *( resPtr++ );
-                  }
                   // set the field in the nv param
                   ( *nvParams + row )->embeddedConst = ( char* )( *nvParamOffsets ) - nvBinary;
                   // forward pointer to nvParamOffsets
@@ -2994,9 +2988,7 @@ void PopulateDataForParamResource( CgParameterEntry* paramEntry, CgParameterEntr
       strcpy( *nvParamStrings, semantic );
       // set the name offset in the param (or params if a matrix)
       for ( int row = 0; row <= ( int )rowCount; row++ )
-      {
          ( *nvParams )->semantic = *nvParamStrings - nvBinary;
-      }
       // increment the names cursor
       *nvParamStrings += strlen( semantic ) + 1;
    }
@@ -3006,11 +2998,8 @@ void PopulateDataForParamResource( CgParameterEntry* paramEntry, CgParameterEntr
    for ( unsigned int def = 0; def < defaultIndexCount; def++ )
    {
       CgParameterDefaultValue* defaultIndex = defaultIndexTable + def;
-      if ( defaultIndex->entryIndex == entryIndex )
-      {
-         // found the default for this parameter
+      if ( defaultIndex->entryIndex == entryIndex ) // found the default for this parameter
          defaults = ( float* )consttab->data + defaultIndex->defaultValueIndex;
-      }
    }
    if ( defaults )
    {
@@ -3020,15 +3009,11 @@ void PopulateDataForParamResource( CgParameterEntry* paramEntry, CgParameterEntr
       memcpy( *nvParamDefaults, defaults, defaultsCount * sizeof( float ) );
       // set the field in the param to point to them
       if ( rowCount == 0 )
-      {
          ( *nvParams )->defaultValue = ( char* )( *nvParamDefaults ) - nvBinary;
-      }
       else
       {
          for ( int row = 1; row <= ( int )rowCount; row++ )
-         {
             ( *nvParams + row )->defaultValue = ( char* )( *nvParamDefaults + 4 * ( row - 1 ) ) - nvBinary;
-         }
       }
 
       // forward the buffer pointer
@@ -3039,7 +3024,6 @@ void PopulateDataForParamResource( CgParameterEntry* paramEntry, CgParameterEntr
    // fill other fields, once for the matrix and once for every row
    for ( int row = 0; row <= ( int )rowCount; row++ )
    {
-
       // var
       unsigned int variability = paramEntry->flags & CGPV_MASK;
       if ( variability == CGPV_VARYING )
@@ -3051,9 +3035,7 @@ void PopulateDataForParamResource( CgParameterEntry* paramEntry, CgParameterEntr
       else if ( variability == CGPV_MIXED )
          ( *nvParams )->var = CG_MIXED;
       else
-      {
          ( *nvParams )->var = ( CGenum )0;
-      }
 
       //direction
       unsigned int direction = paramEntry->flags & CGPD_MASK;
@@ -3064,9 +3046,7 @@ void PopulateDataForParamResource( CgParameterEntry* paramEntry, CgParameterEntr
       else if ( direction == CGPD_INOUT )
          ( *nvParams )->direction = CG_INOUT;
       else
-      {
          ( *nvParams )->direction = ( CGenum )0;
-      }
 
       // paramno
       if ( paramEntry->flags & CGPF_GLOBAL )
@@ -3077,9 +3057,7 @@ void PopulateDataForParamResource( CgParameterEntry* paramEntry, CgParameterEntr
       {
          ( *nvParams )->paramno = *localParamNo;
          if ( row == 0 )
-         {
             *localParamNo += 1;
-         }
       }
 
       // isReferenced
@@ -3117,9 +3095,7 @@ void PopulateDataForParamArray( CgParameterEntry* paramEntry, CgParameterEntry* 
    // to get the number of parameters, must recurse over struct fields
    unsigned int numElements = 1;
    for ( unsigned int dim = 0; dim < paramArray->dimensionCount; dim++ )
-   {
       numElements *= paramArray->dimensions[dim];
-   };
 
    // for name handling
    char* prefixIn = prefix;
@@ -3147,9 +3123,7 @@ void PopulateDataForParamArray( CgParameterEntry* paramEntry, CgParameterEntry* 
          sprintf( *nvParamStrings, "%s[%d]", ( strtab->data + paramEntry->nameOffset ), element );
 
          if ( prefix == NULL )
-         {
             prefix = *nvParamStrings;
-         }
 
          *nvParamStrings += strlen( *nvParamStrings );
 
@@ -3223,9 +3197,8 @@ void PopulateDataForParamStruct( CgParameterEntry* paramEntry, CgParameterEntry*
 
    // set the prefix pointer if it is not already set
    if ( prefix == NULL )
-   {
       prefix = *nvParamStrings;
-   }
+
    // add prefix of struct name and .
    // !!! but what about if we are inside an array???  then no struct name?  or is . built in?
    if ( paramEntry->nameOffset > 0 ) // is this the right test???
@@ -5152,10 +5125,7 @@ static unsigned int stringTableFind( std::vector<char> &stringTable, const char*
    while (p && (end-data)>0)
    {
       if (!memcmp(p - length, str, length))
-      {
-         //found
          return (unsigned int)(p - length - &stringTable[0]);
-      }
       data = p+1;	
       p = (char*)memchr(data,'\0',end-data);
    }
@@ -5878,9 +5848,7 @@ int convertNvToElfFromMemory(const void *sourceData, size_t size, int endianness
          if (done)
          {
             if (strlen(sem))
-            {
                strncpy(structuralElement->_semantic,sem,sizeof(structuralElement->_semantic));
-            }
             else
                structuralElement->_semantic[0] = '\0';
          }
