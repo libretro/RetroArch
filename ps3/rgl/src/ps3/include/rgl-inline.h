@@ -163,6 +163,21 @@ static inline GLuint rglPlatformGetBitsPerPixel (GLenum internalFormat)
  (thisContext->current)[8] = (s[3].u); \
  (thisContext->current) += 9;
 
+#define rglGcmSetDitherEnable(thisContext, enable) \
+ (thisContext->current)[0] = (((1) << (18)) | ((0x00000300))); \
+ (thisContext->current)[1] = (enable); \
+ (thisContext->current) += 2;
+
+#define rglGcmSetReferenceCommand(thisContext, ref) \
+ (thisContext->current)[0] = (((1) << (18)) | ((0x00000050))); \
+ (thisContext->current)[1] = (ref); \
+ (thisContext->current) += 2; 
+
+#define rglGcmSetZMinMaxControl(thisContext, cullNearFarEnable, zclampEnable, cullIgnoreW) \
+ (thisContext->current)[0] = (((1) << (18)) | ((0x00001d78))); \
+ (thisContext->current)[1] = ((cullNearFarEnable) | ((zclampEnable) << 4) | ((cullIgnoreW)<<8)); \
+ (thisContext->current) += 2;
+
 static inline void rglGcmSetDrawArrays(struct CellGcmContextData *thisContext, uint8_t mode,
       uint32_t first, uint32_t count)
 {

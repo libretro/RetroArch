@@ -1883,7 +1883,7 @@ GLAPI void APIENTRY glDrawArrays (GLenum mode, GLint first, GLsizei count)
 
          GCM_FUNC( cellGcmSetFragmentProgramLoad, &conf );
 
-         GCM_FUNC( cellGcmSetZMinMaxControl, ( program->header.fragmentProgram.flags & CGF_DEPTHREPLACE ) ? RGLGCM_FALSE : RGLGCM_TRUE, RGLGCM_FALSE, RGLGCM_FALSE );
+         rglGcmSetZMinMaxControl(thisContext, ( program->header.fragmentProgram.flags & CGF_DEPTHREPLACE ) ? RGLGCM_FALSE : RGLGCM_TRUE, RGLGCM_FALSE, RGLGCM_FALSE );
 
          driver->fpLoadProgramId = program->loadProgramId;
          driver->fpLoadProgramOffset = program->loadProgramOffset;

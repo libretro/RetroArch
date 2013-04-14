@@ -1604,10 +1604,11 @@ void rglGcmFifoFlush (void *data)
 
 GLuint rglGcmFifoPutReference (void *data)
 {
+   CellGcmContextData *thisContext = (CellGcmContextData*)gCellGcmCurrentContext;
    rglGcmFifo *fifo = (rglGcmFifo*)data;
    fifo->lastSWReferenceWritten++;
 
-   GCM_FUNC( cellGcmSetReferenceCommand, fifo->lastSWReferenceWritten );
+   rglGcmSetReferenceCommand(thisContext, fifo->lastSWReferenceWritten );
 
    if (( fifo->lastSWReferenceWritten & 0x7fffffff ) == 0 )
       rglGcmFifoFinish( fifo );
@@ -1715,7 +1716,7 @@ void rglGcmSetOpenGLState (void *data)
       GCM_FUNC( cellGcmSetVertexDataArray, i, 0, 0, 0, CELL_GCM_VERTEX_F, CELL_GCM_LOCATION_LOCAL, 0);
    }
 
-   GCM_FUNC( cellGcmSetDitherEnable, RGLGCM_TRUE );
+   rglGcmSetDitherEnable(thisContext, RGLGCM_TRUE );
 
    for ( i = 0; i < RGLGCM_MAX_TEXIMAGE_COUNT; i++ )
    {
@@ -3140,7 +3141,7 @@ GLAPI void RGL_EXPORT psglSwap (void)
    const char * __restrict v = driver->sharedVPConstants;
    GCM_FUNC( cellGcmSetVertexProgramParameterBlock, 0, 8, ( float* )v ); // GCM_PORT_UNTESTED [KHOFF]
 
-   GCM_FUNC( cellGcmSetDitherEnable, RGLGCM_TRUE );
+   rglGcmSetDitherEnable(thisContext, RGLGCM_TRUE );
 
    RGLcontext *context = (RGLcontext*)_CurrentContext;
    context->needValidate = RGL_VALIDATE_ALL;
