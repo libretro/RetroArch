@@ -3058,9 +3058,16 @@ static int ingame_menu_core_options(uint8_t menu_type, uint64_t input)
       for (size_t i = 0; i < opts; i++, font_parms.y += POSITION_Y_INCREMENT)
       {
          char type_str[256];
+
          /* not on same page? */
          if ((i / NUM_ENTRY_PER_PAGE) != (core_opt_selected / NUM_ENTRY_PER_PAGE))
             continue;
+
+#ifdef HAVE_MENU_PANEL
+         //check if this is the currently selected option
+         if (i == core_opt_selected)
+            menu_panel->y = font_parms.y;
+#endif
 
          font_parms.x = POSITION_X; 
          font_parms.color = (core_opt_selected == i) ? YELLOW : WHITE;
@@ -3076,7 +3083,6 @@ static int ingame_menu_core_options(uint8_t menu_type, uint64_t input)
 
          if (driver.video_poke->set_osd_msg)
             driver.video_poke->set_osd_msg(driver.video_data, type_str, &font_parms);
-
       }
 
       if (input & (1ULL << RMENU_DEVICE_NAV_LEFT))
