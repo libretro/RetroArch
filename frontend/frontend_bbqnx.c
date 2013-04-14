@@ -32,15 +32,14 @@ int rarch_main(int argc, char *argv[])
 
    strlcpy(g_extern.config_path, "app/native/retroarch.cfg", sizeof(g_extern.config_path));
    strlcpy(g_settings.libretro, "app/native/lib", sizeof(g_settings.libretro));
+   strlcpy(g_extern.fullpath, "--menu", sizeof(g_extern.fullpath));
 
    config_load();
-   init_drivers_pre();
-   init_drivers();
 
    g_extern.verbose = true;
 
    menu_init();
-   g_extern.lifecycle_mode_state |= 1ULL << MODE_MENU;
+   g_extern.lifecycle_mode_state |= 1ULL << MODE_INIT;
 
    for (;;)
    {
@@ -55,8 +54,6 @@ int rarch_main(int argc, char *argv[])
       {
 	     if (g_extern.main_is_init)
 	        rarch_main_deinit();
-	     else
-	        uninit_drivers();
 
 	     struct rarch_main_wrap args = {0};
 
