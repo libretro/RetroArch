@@ -2141,6 +2141,9 @@ bool menu_iterate(void)
 #ifdef HAVE_OVERLAY
    rarch_check_overlay();
 #endif
+#ifndef RARCH_PERFORMANCE_MODE
+   rarch_check_fullscreen();
+#endif
 
 #ifndef GEKKO
    /* TODO - not sure if correct regarding RARCH_QUIT_KEY */

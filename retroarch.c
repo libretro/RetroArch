@@ -1961,7 +1961,7 @@ static void check_savestates(bool immutable)
 }
 
 #if !defined(RARCH_PERFORMANCE_MODE)
-static bool check_fullscreen(void)
+bool rarch_check_fullscreen(void)
 {
    // If we go fullscreen we drop all drivers and reinit to be safe.
    static bool was_pressed = false;
@@ -2649,7 +2649,7 @@ static void do_state_checks(void)
       check_pause();
       check_oneshot();
 
-      if (check_fullscreen() && g_extern.is_paused)
+      if (rarch_check_fullscreen() && g_extern.is_paused)
          rarch_render_cached_frame();
 
       if (g_extern.is_paused && !g_extern.is_oneshot)
@@ -2686,7 +2686,7 @@ static void do_state_checks(void)
    {
       check_netplay_flip();
 #if !defined(RARCH_PERFORMANCE_MODE)
-      check_fullscreen();
+      rarch_check_fullscreen();
 #endif
    }
 #endif
