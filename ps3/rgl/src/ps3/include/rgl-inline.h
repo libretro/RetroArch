@@ -292,8 +292,14 @@ static inline void rglGcmTransferData
  GLint rowCount
  )
 {
+   struct CellGcmContextData *thisContext = gCellGcmCurrentContext;
    GLuint dstOffset = gmmIdToOffset(dstId) + dstIdOffset;
    GLuint srcOffset = gmmIdToOffset(srcId) + srcIdOffset;
 
-   GCM_FUNC( cellGcmSetTransferData, CELL_GCM_TRANSFER_LOCAL_TO_LOCAL, dstOffset, dstPitch, srcOffset, srcPitch, bytesPerRow, rowCount );
+   (thisContext->current)[0] = (((2) << (18)) | ((0x00002184)));
+   (thisContext->current)[1] = 0xFEED0000; /* CELL_GCM_TRANSFER_LOCAL_TO_LOCAL */
+   (thisContext->current)[2] = 0xFEED0000; /* CELL_GCM_TRANSFER_LOCAL_TO_LOCAL */
+   (thisContext->current) += 3;
+
+   cellGcmTransferDataInline(thisContext, dstOffset, dstPitch, srcOffset, srcPitch, bytesPerRow, rowCount);
 }
