@@ -1233,7 +1233,18 @@ static int shader_manager_toggle_setting(rgui_handle_t *rgui, unsigned setting, 
          shader_manager_set_preset(type, cgp_path); 
       }
       else
-         shader_manager_set_preset(RARCH_SHADER_CG, NULL);
+      {
+         type = gfx_shader_parse_type("", DEFAULT_SHADER_TYPE);
+         if (type == RARCH_SHADER_NONE)
+         {
+#if defined(HAVE_GLSL)
+            type = RARCH_SHADER_GLSL;
+#elif defined(HAVE_CG) || defined(HAVE_HLSL)
+            type = RARCH_SHADER_CG;
+#endif
+         }
+         shader_manager_set_preset(type, NULL);
+      }
    }
    else if (setting == RGUI_SETTINGS_SHADER_PASSES)
    {
