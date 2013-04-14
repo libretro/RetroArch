@@ -805,8 +805,6 @@ static bool xdk_d3d_frame(void *data, const void *frame,
    D3DSurface* pRenderTarget0;
 #endif
 
-   d3dr->Clear(0, NULL, D3DCLEAR_TARGET, 0x00000000, 1.0f, 0);
-
    if (d3d->last_width != width || d3d->last_height != height)
    {
       D3DLOCKED_RECT d3dlr;
