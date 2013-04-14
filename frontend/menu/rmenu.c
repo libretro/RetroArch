@@ -144,11 +144,11 @@ const char drive_mappings[][32] = {
 };
 
 #if defined__CELLOS_LV2__
-unsigned char drive_mapping_idx = 1;
+size_t drive_mapping_idx = 1;
 #elif defined(_XBOX1)
-unsigned char drive_mapping_idx = 2;
+size_t drive_mapping_idx = 2;
 #else
-unsigned char drive_mapping_idx = 0;
+size_t drive_mapping_idx = 0;
 #endif
 
 static const char *menu_drive_mapping_previous(void)
@@ -636,7 +636,7 @@ static void browser_update(void *data, uint64_t input, const char *extensions)
       action = FILEBROWSER_ACTION_SCROLL_UP;
    else if (input & (1ULL << RMENU_DEVICE_NAV_A))
    {
-      char tmp_str[256];
+      char tmp_str[PATH_MAX];
       fill_pathname_parent_dir(tmp_str, browser->current_dir.directory_path, sizeof(tmp_str));
 
       if (tmp_str[0] != '\0')
