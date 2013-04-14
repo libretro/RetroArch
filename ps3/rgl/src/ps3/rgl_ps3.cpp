@@ -927,6 +927,7 @@ static void gmmFreeBlock (void *data)
 
 static void gmmAddPendingFree (void *data)
 {
+   CellGcmContextData *thisContext = (CellGcmContextData*)gCellGcmCurrentContext;
    GmmBlock *pBlock = (GmmBlock*)data;
    GmmAllocator    *pAllocator;
 
@@ -952,7 +953,7 @@ static void gmmAddPendingFree (void *data)
    ++nvFenceCounter;
 
    /* semaphore ID : RGLGCM_SEMA_FENCE, new fence value: nvFenceCounter */
-   GCM_FUNC( cellGcmSetWriteBackEndLabel, RGLGCM_SEMA_FENCE, nvFenceCounter );
+   rglGcmSetWriteBackEndLabel(thisContext, RGLGCM_SEMA_FENCE, nvFenceCounter );
 
    pBlock->fence = nvFenceCounter;
 }
@@ -1415,14 +1416,14 @@ static void gmmFreeAll(void)
 
 static void gmmAllocSweep(void *data)
 {
-   CellGcmContextData *thisContext = (CellGcmContextData*)data;
+   CellGcmContextData *thisContext = (CellGcmContextData*)gCellGcmCurrentContext;
    gmmFreeAll();
 
    if (gmmInternalSweep(thisContext))
    {
       *pLock = 1;
       cachedLockValue = 1;
-      cellGcmSetWriteBackEndLabel(thisContext, GMM_PPU_WAIT_INDEX, 0);
+      rglGcmSetWriteBackEndLabel(thisContext, GMM_PPU_WAIT_INDEX, 0);
 
       cellGcmFlush(thisContext);
    }

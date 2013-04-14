@@ -26,6 +26,22 @@ static inline GLuint rglPlatformGetBitsPerPixel (GLenum internalFormat)
 #define SUBPIXEL_BITS 12
 #define SUBPIXEL_ADJUST (0.5/(1<<SUBPIXEL_BITS))
 
+#define rglGcmSetWriteBackEndLabel(thisContext, index, value) \
+ (thisContext->current)[0] = (((1) << (18)) | ((0x00001d6c))); \
+ (thisContext->current)[1] = 0x10 * index; /* offset */ \
+ (thisContext->current) += 2; \
+ (thisContext->current)[0] = (((1) << (18)) | ((0x00001d70))); \
+ (thisContext->current)[1] = ( value & 0xff00ff00) | ((value >> 16) & 0xff) | (((value >> 0 ) & 0xff) << 16); \
+ (thisContext->current) += 2;
+
+#define rglGcmSetWaitLabel(thisContext, index, value) \
+ (thisContext->current)[0] = (((1) << (18)) | ((0x00000064))); \
+ (thisContext->current)[1] = 0x10 * index; \
+ (thisContext->current) += 2; \
+ (thisContext->current)[0] = (((1) << (18)) | ((0x00000068))); \
+ (thisContext->current)[1] = (value); \
+ (thisContext->current) += 2;
+
 static inline void rglGcmFifoGlViewport(void *data, GLclampf zNear, GLclampf zFar)
 {
    rglGcmViewportState *vp = (rglGcmViewportState*)data;
@@ -273,18 +289,19 @@ inline static void RGLGCM_CALC_COLOR_LE_ARGB8( GLuint *color0, const GLfloat r, 
 // Utility to let RSX wait for complete RSX pipeline idle
 static inline void rglGcmUtilWaitForIdle (void)
 {
+   CellGcmContextData *thisContext = (CellGcmContextData*)gCellGcmCurrentContext;
+
    // set write label command in push buffer, and wait
    // NOTE: this is for RSX to wailt
-   GCM_FUNC( cellGcmSetWriteBackEndLabel, RGLGCM_UTIL_LABEL_INDEX, rglGcmState_i.labelValue );
-   GCM_FUNC( cellGcmSetWaitLabel, RGLGCM_UTIL_LABEL_INDEX, rglGcmState_i.labelValue );
+   rglGcmSetWriteBackEndLabel(thisContext, RGLGCM_UTIL_LABEL_INDEX, rglGcmState_i.labelValue );
+   rglGcmSetWaitLabel(thisContext, RGLGCM_UTIL_LABEL_INDEX, rglGcmState_i.labelValue);
 
    // increment label value for next time. 
    rglGcmState_i.labelValue++; 
 
    // make sure the entire pipe in clear not just the front end 
    // Utility function that does GPU 'finish'.
-   GCM_FUNC( cellGcmSetWriteBackEndLabel, RGLGCM_UTIL_LABEL_INDEX, 
-         rglGcmState_i.labelValue );
+   rglGcmSetWriteBackEndLabel(thisContext, RGLGCM_UTIL_LABEL_INDEX, rglGcmState_i.labelValue );
    cellGcmFlush();
 
    while( *(cellGcmGetLabelAddress( RGLGCM_UTIL_LABEL_INDEX)) != rglGcmState_i.labelValue)
