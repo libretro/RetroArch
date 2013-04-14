@@ -644,6 +644,7 @@ static void print_help(void)
    puts("Usage: retroarch [rom file] [options...]");
    puts("\t-h/--help: Show this help message.");
    puts("\t--menu: Do not require ROM or libretro core to be loaded, starts directly in menu.");
+   puts("\t\tIf no arguments are passed to RetroArch, it is equivalent to using --menu as only argument.");
    puts("\t--features: Prints available features compiled into RetroArch.");
    puts("\t-s/--save: Path for save file (*.srm). Required when rom is input from stdin.");
    puts("\t-f/--fullscreen: Start RetroArch in fullscreen regardless of config settings.");
