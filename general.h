@@ -201,7 +201,6 @@ struct settings
       bool enable;
       unsigned out_rate;
       float in_rate;
-      float rate_step;
       char device[PATH_MAX];
       unsigned latency;
       bool sync;

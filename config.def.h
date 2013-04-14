@@ -329,9 +329,6 @@ static const bool audio_enable = true;
 // Output samplerate
 static const unsigned out_rate = 48000; 
 
-// When changing input rate on-the-fly
-static const float audio_rate_step = 0.25;
-
 // Audio device (e.g. hw:0,0 or /dev/audio). If NULL, will use defaults.
 static const char *audio_device = NULL;
 
