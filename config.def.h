@@ -417,6 +417,8 @@ static const bool input_debug_enable = false;
 static const bool input_autodetect_enable = true;
 #endif
 
+#ifndef IS_SALAMANDER
+
 #ifdef __CELLOS_LV2__
 #define RETRO_DEF_JOYPAD_B (1ULL << RETRO_DEVICE_ID_JOYPAD_B)
 #define RETRO_DEF_JOYPAD_Y (1ULL << RETRO_DEVICE_ID_JOYPAD_Y)
@@ -649,6 +651,8 @@ static const struct retro_keybind retro_keybinds_rest[] = {
    { true, RARCH_ANALOG_RIGHT_Y_DPAD_DOWN, RETRO_LBL_ANALOG_RIGHT_Y_DPAD_D,RETROK_UNKNOWN, NO_BTN, 0, AXIS_NONE },
 #endif
 };
+
+#endif
 
 #endif
 
