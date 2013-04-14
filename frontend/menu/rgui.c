@@ -414,6 +414,15 @@ static void render_text(rgui_handle_t *rgui)
    else
       snprintf(title, sizeof(title), "FILE BROWSER %s", dir);
 
+   // Ensure that directory doesn't overflow terminal.
+   size_t title_len = strlen(title);
+   if (title_len > TERM_WIDTH - 3)
+   {
+      size_t start = title_len - (TERM_WIDTH - 7);
+      memmove(title + 4, title + start, title_len - start + 1);
+      memcpy(title, "... ", 4);
+   }
+
    blit_line(rgui, TERM_START_X + 15, 15, title, true);
 
    blit_line(rgui, TERM_START_X + 15, (TERM_HEIGHT * FONT_HEIGHT_STRIDE) + TERM_START_Y + 2, g_extern.title_buf, true);
