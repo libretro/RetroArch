@@ -1258,7 +1258,6 @@ static inline void gl_draw_texture(void *data)
       gl->shader->use(0);
    gl_shader_set_coords(gl, &gl->coords, &gl->mvp_no_rot);
 
-   glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
    glEnable(GL_BLEND);
 
    if (gl->rgui_texture_full_screen)
