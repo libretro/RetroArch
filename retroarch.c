@@ -793,8 +793,8 @@ static void parse_input(int argc, char *argv[])
 {
    if (argc < 2)
    {
-      print_help();
-      rarch_fail(1, "parse_input()");
+      g_extern.libretro_dummy = true;
+      return;
    }
 
    g_extern.libretro_dummy = false;
