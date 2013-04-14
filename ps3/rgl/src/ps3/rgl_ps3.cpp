@@ -3105,7 +3105,10 @@ GLAPI void RGL_EXPORT psglSwap (void)
       if ( rescIsEnabled( &device->deviceParameters ) )
          cellRescSetWaitFlip(); // GPU will wait until flip actually occurs
       else
-         cellGcmSetWaitFlip(); // GPU will wait until flip actually occurs
+      {
+         // GPU will wait until flip actually occurs
+         rglGcmSetWaitLabel(gCellGcmCurrentContext, 1, 0);
+      }
    }
 
    if ( rescIsEnabled( &device->deviceParameters ) )
@@ -3120,14 +3123,17 @@ GLAPI void RGL_EXPORT psglSwap (void)
       }
    }
    else
-      cellGcmSetFlip((uint8_t)drawBuffer);
+      cellGcmSetFlipUnsafe(gCellGcmCurrentContext, (uint8_t)drawBuffer);
 
    if ( device->deviceParameters.bufferingMode != RGL_BUFFERING_MODE_TRIPLE )
    {
       if ( rescIsEnabled( &device->deviceParameters ) )
          cellRescSetWaitFlip(); // GPU will wait until flip actually occurs
       else
-         cellGcmSetWaitFlip(); // GPU will wait until flip actually occurs
+      {
+         // GPU will wait until flip actually occurs
+         rglGcmSetWaitLabel(gCellGcmCurrentContext, 1, 0);
+      }
    }
 
    rglGcmDriver *driver = (rglGcmDriver*)_CurrentDevice->rasterDriver;

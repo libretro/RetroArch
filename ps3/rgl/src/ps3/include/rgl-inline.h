@@ -90,6 +90,79 @@ static inline GLuint rglPlatformGetBitsPerPixel (GLenum internalFormat)
  (thisContext->current)[1] = (color); \
  (thisContext->current) += 2;
 
+#define rglGcmSetTextureBorder(thisContext, index, texture, border) \
+ uint32_t format, offset, control1, control3, imagerect; \
+ offset = texture->offset; \
+ format = (texture->location + 1) | (texture->cubemap << 2) | (border << 3) | (texture->dimension << 4) | (texture->format << 8) | (texture->mipmap << 16); \
+ imagerect = texture->height | (texture->width << 16); \
+ control1 = texture->remap; \
+ control3 = texture->pitch | (texture->depth << 20); \
+ (thisContext->current)[0] = (((2) << (18)) | ((0x00001a00) + ((index)) * 32)); \
+ (thisContext->current)[1] = (offset); \
+ (thisContext->current)[2] = (format); \
+ (thisContext->current) += 3; \
+ (thisContext->current)[0] = (((1) << (18)) | ((0x00001a18) + ((index)) * 32)); \
+ (thisContext->current)[1] = (imagerect); \
+ (thisContext->current) += 2; \
+ (thisContext->current)[0] = (((1) << (18)) | ((0x00001840) + ((index)) * 4)); \
+ (thisContext->current)[1] = (control3); \
+ (thisContext->current) += 2; \
+ (thisContext->current)[0] = (((1) << (18)) | ((0x00001a10) + ((index)) * 32)); \
+ (thisContext->current)[1] = (control1); \
+ (thisContext->current) += 2;
+
+#define rglGcmSetUserClipPlaneControl(thisContext, plane0, plane1, plane2, plane3, plane4, plane5) \
+ (thisContext->current)[0] = (((1) << (18)) | ((0x00001478))); \
+ (thisContext->current)[1] = ((plane0) | ((plane1) << 4) | ((plane2) << 8) | ((plane3) << 12) | ((plane4) << 16) | ((plane5) << 20)); \
+ (thisContext->current) += 2;
+
+#define rglGcmSetInvalidateTextureCache(thisContext, value) \
+ (thisContext->current)[0] = (((1) << (18)) | ((0x00001fd8))); \
+ (thisContext->current)[1] = (value); \
+ (thisContext->current) += 2;
+
+#define rglGcmSetViewport(thisContext, x, y, w, h, min, max, scale, offset) \
+ CellGcmCast d0,d1; \
+ d0.f = min; \
+ d1.f = max; \
+ CellGcmCast o[4],s[4]; \
+ o[0].f = offset[0]; \
+ o[1].f = offset[1]; \
+ o[2].f = offset[2]; \
+ o[3].f = offset[3]; \
+ s[0].f = scale[0]; \
+ s[1].f = scale[1]; \
+ s[2].f = scale[2]; \
+ s[3].f = scale[3]; \
+ (thisContext->current)[0] = (((2) << (18)) | ((0x00000a00))); \
+ (thisContext->current)[1] = (((x)) | (((w)) << 16)); \
+ (thisContext->current)[2] = (((y)) | (((h)) << 16)); \
+ (thisContext->current) += 3; \
+ (thisContext->current)[0] = (((2) << (18)) | ((0x00000394))); \
+ (thisContext->current)[1] = (d0.u); \
+ (thisContext->current)[2] = (d1.u); \
+ (thisContext->current) += 3; \
+ (thisContext->current)[0] = (((8) << (18)) | ((0x00000a20))); \
+ (thisContext->current)[1] = (o[0].u); \
+ (thisContext->current)[2] = (o[1].u); \
+ (thisContext->current)[3] = (o[2].u); \
+ (thisContext->current)[4] = (o[3].u); \
+ (thisContext->current)[5] = (s[0].u); \
+ (thisContext->current)[6] = (s[1].u); \
+ (thisContext->current)[7] = (s[2].u); \
+ (thisContext->current)[8] = (s[3].u); \
+ (thisContext->current) += 9; \
+ (thisContext->current)[0] = (((8) << (18)) | ((0x00000a20))); \
+ (thisContext->current)[1] = (o[0].u); \
+ (thisContext->current)[2] = (o[1].u); \
+ (thisContext->current)[3] = (o[2].u); \
+ (thisContext->current)[4] = (o[3].u); \
+ (thisContext->current)[5] = (s[0].u); \
+ (thisContext->current)[6] = (s[1].u); \
+ (thisContext->current)[7] = (s[2].u); \
+ (thisContext->current)[8] = (s[3].u); \
+ (thisContext->current) += 9;
+
 static inline void rglGcmSetDrawArrays(struct CellGcmContextData *thisContext, uint8_t mode,
       uint32_t first, uint32_t count)
 {
@@ -152,6 +225,7 @@ static inline void rglGcmSetDrawArrays(struct CellGcmContextData *thisContext, u
 
 static inline void rglGcmFifoGlViewport(void *data, GLclampf zNear, GLclampf zFar)
 {
+   CellGcmContextData *thisContext = (CellGcmContextData*)gCellGcmCurrentContext;
    rglGcmViewportState *vp = (rglGcmViewportState*)data;
    rglGcmRenderTarget *rt = &rglGcmState_i.renderTarget;
 
@@ -214,7 +288,7 @@ static inline void rglGcmFifoGlViewport(void *data, GLclampf zNear, GLclampf zFa
    float scale[4] = { vp->xScale,  vp->yScale,  z_scale, 0.0f};
    float offset[4] = { vp->xCenter,  vp->yCenter,  z_center, 0.0f};
 
-   GCM_FUNC( cellGcmSetViewport, clipX0, clipY0, clipX1 - clipX0,
+   rglGcmSetViewport(thisContext, clipX0, clipY0, clipX1 - clipX0,
          clipY1 - clipY0, zNear, zFar, scale, offset );
 }
 

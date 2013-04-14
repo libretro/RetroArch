@@ -301,9 +301,7 @@ template <int ROWS, int COLS, int ORDER> static void setMatrixSharedvpIndex (voi
    for ( long row = 0; row < ROWS; ++row )
    {
       for ( long col = 0; col < COLS; ++col )
-      {
          tmp[row*4 + col] = dst[row * 4 + col] = ( ORDER == ROW_MAJOR ) ? f[row * COLS + col] : f[col * ROWS + row];
-      }
       for ( long col = COLS; col < 4; ++col ) tmp[row*4 + col] = dst[row*4+col];
    }
 
@@ -323,9 +321,7 @@ template <int ROWS, int COLS, int ORDER> static void setMatrixSharedvpIndexArray
    for ( long row = 0; row < ROWS; ++row )
    {
       for ( long col = 0; col < COLS; ++col )
-      {
          tmp[row*4 + col] = dst[row * 4 + col] = ( ORDER == ROW_MAJOR ) ? f[row * COLS + col] : f[col * ROWS + row];
-      }
       for ( long col = COLS; col < 4; ++col ) tmp[row*4 + col] = dst[row*4+col];
    }
    GCM_FUNC( cellGcmSetVertexProgramParameterBlock, resource, ROWS, tmp );
@@ -1635,8 +1631,10 @@ GLAPI void APIENTRY glDrawArrays (GLenum mode, GLint first, GLsizei count)
 
                // set up the texture unit with the info for the current texture
                // bind texture , control 1,3,format and remap
+               const CellGcmTexture *texture = (const CellGcmTexture*)&platformTexture->gcmTexture;
 
-               GCM_FUNC_SAFE( cellGcmSetTexture, unit, &platformTexture->gcmTexture );
+               rglGcmSetTextureBorder(thisContext, unit, texture, 0x1);
+
                CellGcmContextData *gcm_context = (CellGcmContextData*)&rglGcmState_i.fifo;
                cellGcmReserveMethodSizeInline(gcm_context, 11);
                uint32_t *current = gcm_context->current;
@@ -1721,7 +1719,7 @@ GLAPI void APIENTRY glDrawArrays (GLenum mode, GLint first, GLsizei count)
             rglOutOfSpaceCallback( fifo, spaceInWords );
 
          GCM_FUNC( cellGcmSetVertexProgramLoad, &conf, program->ucode );
-         GCM_FUNC( cellGcmSetUserClipPlaneControl, 0, 0, 0, 0, 0, 0 );
+         rglGcmSetUserClipPlaneControl(thisContext, 0, 0, 0, 0, 0, 0 );
 
          rglGcmInterpolantState *s = &rglGcmState_i.state.interpolant;
          s->vertexProgramAttribMask = program->header.vertexProgram.attributeOutputMask;
@@ -2286,6 +2284,7 @@ void rglPlatformFreeGcmTexture (void *data)
 // Validate texture resources
 static void rglPlatformValidateTextureResources (void *data)
 {
+   CellGcmContextData *thisContext = (CellGcmContextData*)gCellGcmCurrentContext;
    rglTexture *texture = (rglTexture*)data;
    texture->isComplete = GL_TRUE;
 
@@ -2459,7 +2458,7 @@ source:		RGLGCM_SURFACE_SOURCE_TEXTURE,
       if ( bounceBufferId != GMM_ERROR )
          gmmFree( bounceBufferId );
 
-      GCM_FUNC( cellGcmSetInvalidateTextureCache, CELL_GCM_INVALIDATE_TEXTURE );
+      rglGcmSetInvalidateTextureCache(thisContext, CELL_GCM_INVALIDATE_TEXTURE );
    }
 
    // gcmTexture method command
