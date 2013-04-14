@@ -37,7 +37,7 @@ typedef struct rsd
    scond_t *cond;
 } rsd_t;
 
-static ssize_t audio_cb(void *data, size_t bytes, void *userdata)
+static ssize_t rsound_audio_cb(void *data, size_t bytes, void *userdata)
 {
    rsd_t *rsd = (rsd_t*)userdata;
 
@@ -87,7 +87,7 @@ static void *rs_init(const char *device, unsigned rate, unsigned latency)
 
    rsd_set_param(rd, RSD_FORMAT, &format);
 
-   rsd_set_callback(rd, audio_cb, err_cb, 256, rsd);
+   rsd_set_callback(rd, rsound_audio_cb, err_cb, 256, rsd);
 
    if (rsd_start(rd) < 0)
    {

@@ -116,7 +116,8 @@ int rarch_main(int argc, char *argv[])
    get_environment_settings(argc, argv);
    config_load();
 
-   init_libretro_sym();
+   /* FIXME - when dummy loading becomes possible perhaps change this param  */
+   init_libretro_sym(false);
    rarch_init_system_info();
 
    global_init_drivers();
@@ -136,7 +137,8 @@ int rarch_main(int argc, char *argv[])
       config_save_file(g_extern.config_path);
 #endif
 
-   init_libretro_sym();
+   /* FIXME - when dummy loading becomes possible perhaps change this param  */
+   init_libretro_sym(false);
 
    system_post_init();
 
