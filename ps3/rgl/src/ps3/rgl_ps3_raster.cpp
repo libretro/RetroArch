@@ -1351,10 +1351,8 @@ GLAPI void APIENTRY glClear( GLbitfield mask )
 
    GCM_FUNC( cellGcmSetClearColor, 0 );
 
-   GCM_FUNC( cellGcmSetClearSurface, CELL_GCM_CLEAR_R | CELL_GCM_CLEAR_G | 
+   rglGcmSetClearSurface(thisContext, CELL_GCM_CLEAR_R | CELL_GCM_CLEAR_G | 
          CELL_GCM_CLEAR_B | CELL_GCM_CLEAR_A );
-
-
    rglGcmSetInvalidateVertexCache(thisContext);
    rglGcmFifoFlush( &rglGcmState_i.fifo );
 }
@@ -1676,7 +1674,6 @@ GLAPI void APIENTRY glDrawArrays (GLenum mode, GLint first, GLsizei count)
             else
             {
                // Validate incomplete texture by remapping
-               //RGL_REPORT_EXTRA( RGL_REPORT_TEXTURE_INCOMPLETE, "Texture %d bound to unit %d(%s) is incomplete.", texture->name, unit, rglGetGLEnumName( texture->target ) );
                GLuint remap = CELL_GCM_REMAP_MODE(
                      CELL_GCM_TEXTURE_REMAP_ORDER_XYXY,
                      CELL_GCM_TEXTURE_REMAP_FROM_A,
@@ -1688,10 +1685,8 @@ GLAPI void APIENTRY glDrawArrays (GLenum mode, GLint first, GLsizei count)
                      CELL_GCM_TEXTURE_REMAP_ZERO,
                      CELL_GCM_TEXTURE_REMAP_ZERO );
 
-               // disable control 0
-               GCM_FUNC( cellGcmSetTextureControl, unit, CELL_GCM_FALSE, 0, 0, 0 );
-               // set texture remap only
-               GCM_FUNC( cellGcmSetTextureRemap, unit, remap );
+               rglGcmSetTextureControl(thisContext, unit, CELL_GCM_FALSE, 0, 0, 0 ); // disable control 0
+               rglGcmSetTextureRemap(thisContext, unit, remap ); // set texture remap only
             }
          }
       }
@@ -2147,7 +2142,7 @@ beginning:
          break;
    }
 
-   GCM_FUNC_SAFE( cellGcmSetDrawArrays, gcmMode, dparams->firstVertex, dparams->vertexCount );
+   rglGcmSetDrawArrays(thisContext, gcmMode, dparams->firstVertex, dparams->vertexCount );
 }
 
 // must always call this before rglPlatformDraw() to setup rglDrawParams

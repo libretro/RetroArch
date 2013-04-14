@@ -1698,6 +1698,7 @@ void rglGcmFifoInit (void *data, void *dmaControl, unsigned long dmaPushBufferOf
 void rglGcmSetOpenGLState (void *data)
 {
    rglGcmState *rglGcmSt = (rglGcmState*)data;
+   CellGcmContextData *thisContext = (CellGcmContextData*)gCellGcmCurrentContext;
    GLuint i;
 
    // initialize the default OpenGL state
@@ -1727,8 +1728,8 @@ void rglGcmSetOpenGLState (void *data)
       GCM_FUNC( cellGcmSetTextureFilter, i, 0, CELL_GCM_TEXTURE_NEAREST_LINEAR, CELL_GCM_TEXTURE_LINEAR,
             CELL_GCM_TEXTURE_CONVOLUTION_QUINCUNX );
 
-      // update the texture control to setup antisotropic settings
-      GCM_FUNC( cellGcmSetTextureControl, i, CELL_GCM_TRUE, 0, 12 << 8, CELL_GCM_TEXTURE_MAX_ANISO_1 );
+      // update the texture control to setup anisotropic settings
+      rglGcmSetTextureControl(thisContext, i, CELL_GCM_TRUE, 0, 12 << 8, CELL_GCM_TEXTURE_MAX_ANISO_1 );
 
       // update border color
       GCM_FUNC( cellGcmSetTextureBorderColor, i, borderColor );
@@ -2896,7 +2897,7 @@ int rglPlatformCreateDevice (void *data)
          rglGcmFifoGlSetRenderTarget( &gcmDevice->rt );
 
          if (rglGcmState_i.renderTarget.colorFormat)
-            GCM_FUNC( cellGcmSetClearSurface, CELL_GCM_CLEAR_R | CELL_GCM_CLEAR_G | 
+            rglGcmSetClearSurface(thisContext, CELL_GCM_CLEAR_R | CELL_GCM_CLEAR_G | 
                   CELL_GCM_CLEAR_B | CELL_GCM_CLEAR_A );
       }
       // restore parameters
@@ -2914,7 +2915,7 @@ int rglPlatformCreateDevice (void *data)
          rglGcmFifoGlSetRenderTarget( &gcmDevice->rt );
          
          if (rglGcmState_i.renderTarget.colorFormat)
-            GCM_FUNC( cellGcmSetClearSurface, CELL_GCM_CLEAR_R | CELL_GCM_CLEAR_G | 
+            rglGcmSetClearSurface(thisContext, CELL_GCM_CLEAR_R | CELL_GCM_CLEAR_G | 
                   CELL_GCM_CLEAR_B | CELL_GCM_CLEAR_A );
       }
    }

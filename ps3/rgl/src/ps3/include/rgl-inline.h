@@ -56,6 +56,84 @@ static inline GLuint rglPlatformGetBitsPerPixel (GLenum internalFormat)
  (thisContext->current)[1] = 0; \
  (thisContext->current) += 2;
 
+#define rglGcmSetClearSurface(thisContext, mask) \
+ (thisContext->current)[0] = (((1) << (18)) | ((0x00001d94))); \
+ (thisContext->current)[1] = (mask); \
+ (thisContext->current) += 2; \
+ (thisContext->current)[0] = (((1) << (18)) | ((0x00000100))); \
+ (thisContext->current)[1] = 0; \
+ (thisContext->current) += 2;
+
+#define rglGcmSetTextureControl(thisContext, index, enable, minlod, maxlod, maxaniso) \
+ (thisContext->current)[0] = (((1) << (18)) | ((0x00001a0c) + 0x20 * ((index)))); \
+ (thisContext->current)[1] = ((((0) << 2) | ((maxaniso)) << 4) | (((maxlod)) << 7) | (((minlod)) << 19) | ((enable) << 31)); \
+ (thisContext->current) += 2;
+
+#define rglGcmSetTextureRemap(thisContext, index, remap) \
+ (thisContext->current)[0] = (((1) << (18)) | ((0x00001a10) + ((index)) * 32)); \
+ (thisContext->current)[1] = (remap); \
+ (thisContext->current) += 2;
+
+static inline void rglGcmSetDrawArrays(struct CellGcmContextData *thisContext, uint8_t mode,
+      uint32_t first, uint32_t count)
+{
+   uint32_t lcount;
+
+   --count;
+   lcount = count & 0xff;
+   count >>= 8;
+
+   uint32_t loop, rest;
+   loop = count / (2047);
+   rest = count % (2047);
+
+   (thisContext->current)[0] = (((3) << (18)) | ((0x00001714)) | (0x40000000));
+   (thisContext->current)[1] = 0;
+   (thisContext->current)[2] = 0;
+   (thisContext->current)[3] = 0; ; (thisContext->current) += 4;
+
+   (thisContext->current)[0] = (((1) << (18)) | ((0x00001808)));
+   (thisContext->current)[1] = ((mode));
+   (thisContext->current) += 2;
+   
+   (thisContext->current)[0] = (((1) << (18)) | ((0x00001814)));
+   (thisContext->current)[1] = ((first) | ((lcount)<<24));
+   (thisContext->current) += 2;
+   first += lcount + 1;
+
+   uint32_t i,j;
+
+   for(i=0;i<loop;i++)
+   {
+      thisContext->current[0] = ((((2047)) << (18)) | ((0x00001814)) | (0x40000000));
+      thisContext->current++;
+
+      for(j=0;j<(2047);j++)
+      {
+         thisContext->current[0] = ((first) | ((255U)<<24));
+         thisContext->current++;
+         first += 256;
+      }
+   }
+
+   if(rest)
+   {
+      thisContext->current[0] = (((rest) << (18)) | ((0x00001814)) | (0x40000000));
+      thisContext->current++;
+
+      for(j=0;j<rest;j++)
+      {
+         thisContext->current[0] = ((first) | ((255U)<<24));
+         thisContext->current++;
+         first += 256;
+      }
+   }
+
+   (thisContext->current)[0] = (((1) << (18)) | ((0x00001808)));
+   (thisContext->current)[1] = (0);
+   (thisContext->current) += 2;
+}
+
 static inline void rglGcmFifoGlViewport(void *data, GLclampf zNear, GLclampf zFar)
 {
    rglGcmViewportState *vp = (rglGcmViewportState*)data;
