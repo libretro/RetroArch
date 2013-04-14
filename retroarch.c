@@ -107,15 +107,15 @@ static bool take_screenshot_viewport(void)
 
 static bool take_screenshot_raw(void)
 {
-   const uint16_t *data = (const uint16_t*)g_extern.frame_cache.data;
-   unsigned width       = g_extern.frame_cache.width;
-   unsigned height      = g_extern.frame_cache.height;
-   int pitch            = g_extern.frame_cache.pitch;
+   const void *data = g_extern.frame_cache.data;
+   unsigned width   = g_extern.frame_cache.width;
+   unsigned height  = g_extern.frame_cache.height;
+   int pitch        = g_extern.frame_cache.pitch;
 
    // Negative pitch is needed as screenshot takes bottom-up,
    // but we use top-down.
    return screenshot_dump(g_settings.screenshot_directory,
-         data + (height - 1) * (pitch >> 1), 
+         (const uint8_t*)data + (height - 1) * pitch, 
          width, height, -pitch, false);
 }
 

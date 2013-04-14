@@ -725,11 +725,10 @@ static int rgui_settings_toggle_setting(rgui_handle_t *rgui, unsigned setting, r
       case RGUI_SETTINGS_SCREENSHOT:
          if (action == RGUI_ACTION_OK)
          {
-            // FIXME: Forces 16-bit. Doesn't handle 32-bit.
-            const uint16_t *data = (const uint16_t*)g_extern.frame_cache.data;
-            unsigned width       = g_extern.frame_cache.width;
-            unsigned height      = g_extern.frame_cache.height;
-            int pitch            = g_extern.frame_cache.pitch;
+            const void *data = g_extern.frame_cache.data;
+            unsigned width   = g_extern.frame_cache.width;
+            unsigned height  = g_extern.frame_cache.height;
+            int pitch        = g_extern.frame_cache.pitch;
 
 #ifdef RARCH_CONSOLE
             const char *screenshot_dir = default_paths.port_dir;
@@ -740,10 +739,11 @@ static int rgui_settings_toggle_setting(rgui_handle_t *rgui, unsigned setting, r
             // Negative pitch is needed as screenshot takes bottom-up,
             // but we use top-down.
             bool r = screenshot_dump(screenshot_dir,
-                  data + (height - 1) * (pitch >> 1), 
+                  (const uint8_t*)data + (height - 1) * pitch, 
                   width, height, -pitch, false);
 
-            msg_queue_push(g_extern.msg_queue, r ? "Screenshot saved" : "Screenshot failed to save", 1, 90);
+            msg_queue_push(g_extern.msg_queue,
+                  r ? "Screenshot saved" : "Screenshot failed to save", 1, 90);
          }
          break;
 #endif
