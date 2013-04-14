@@ -1594,6 +1594,7 @@ static int rgui_settings_iterate(rgui_handle_t *rgui, rgui_action_t action)
          if (type == RGUI_SETTINGS_OPEN_FILEBROWSER && action == RGUI_ACTION_OK)
          {
             rgui_list_push(rgui->menu_stack, rgui->base_path, RGUI_FILE_DIRECTORY, rgui->selection_ptr);
+            rgui->selection_ptr = 0;
             rgui->need_refresh = true;
          }
          else if ((menu_type_is_settings(type) || type == RGUI_SETTINGS_CORE) && action == RGUI_ACTION_OK)
