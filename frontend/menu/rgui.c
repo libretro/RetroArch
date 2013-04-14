@@ -1543,8 +1543,10 @@ static int rgui_settings_iterate(rgui_handle_t *rgui, rgui_action_t action)
    {
       if (path_is_directory(g_settings.libretro))
          strlcpy(rgui->libretro_dir, g_settings.libretro, sizeof(rgui->libretro_dir));
-      else
+      else if (*g_settings.libretro)
          fill_pathname_basedir(rgui->libretro_dir, g_settings.libretro, sizeof(rgui->libretro_dir));
+      else
+         *rgui->libretro_dir = '\0';
       label = rgui->libretro_dir;
    }
 #elif defined(HAVE_LIBRETRO_MANAGEMENT)
