@@ -1904,10 +1904,11 @@ void rglPsglPlatformInit (void *data)
 void rglPsglPlatformExit(void)
 {
    RGLcontext* LContext = _CurrentContext;
+   CellGcmContextData *thisContext = (CellGcmContextData*)gCellGcmCurrentContext;
 
    if ( LContext )
    {
-      GCM_FUNC_NO_ARGS( cellGcmSetInvalidateVertexCache );
+      rglGcmSetInvalidateVertexCache(thisContext);
       rglGcmFifoFlush( &rglGcmState_i.fifo );
 
       psglMakeCurrent( NULL, NULL );
@@ -2773,6 +2774,7 @@ static void rglSetDisplayMode( const VideoMode *vm, GLushort bitsPerPixel, GLuin
 
 int rglPlatformCreateDevice (void *data)
 {
+   CellGcmContextData *thisContext = (CellGcmContextData*)gCellGcmCurrentContext;
    RGLdevice *device = (RGLdevice*)data;
    rglGcmDevice *gcmDevice = ( rglGcmDevice * )device->platformDevice;
    RGLdeviceParameters* params = &device->deviceParameters;
@@ -2995,7 +2997,7 @@ int rglPlatformCreateDevice (void *data)
       rglSetDisplayMode( vm, gcmDevice->color[0].bpp*8, gcmDevice->color[0].pitch );
 
       cellGcmSetFlipMode( gcmDevice->vsync ? CELL_GCM_DISPLAY_VSYNC : CELL_GCM_DISPLAY_HSYNC );
-      GCM_FUNC_NO_ARGS( cellGcmSetInvalidateVertexCache );
+      rglGcmSetInvalidateVertexCache(thisContext);
       rglGcmFifoFinish( &rglGcmState_i.fifo );
 
       for ( int i = 0; i < params->bufferingMode; ++i )
@@ -3021,8 +3023,9 @@ void rglPlatformDestroyDevice (void *data)
    RGLdevice *device = (RGLdevice*)data;
    rglGcmDevice *gcmDevice = ( rglGcmDevice * )device->platformDevice;
    RGLdeviceParameters *params = &device->deviceParameters;
+   CellGcmContextData *thisContext = (CellGcmContextData*)gCellGcmCurrentContext;
 
-   GCM_FUNC_NO_ARGS( cellGcmSetInvalidateVertexCache );
+   rglGcmSetInvalidateVertexCache(thisContext);
    rglGcmFifoFinish( &rglGcmState_i.fifo );
 
    // Stop flip callback
@@ -3060,6 +3063,7 @@ void rglPlatformDestroyDevice (void *data)
 
 GLAPI void RGL_EXPORT psglSwap (void)
 {
+   CellGcmContextData *thisContext = (CellGcmContextData*)gCellGcmCurrentContext;
    const uint32_t  fence = rglGcmState_i.semaphores->userSemaphores[RGLGCM_SEMA_FENCE].val;
    GmmBlock        *pBlock = NULL;
    GmmBlock        *pTemp = NULL;
@@ -3135,12 +3139,12 @@ GLAPI void RGL_EXPORT psglSwap (void)
    context->needValidate = RGL_VALIDATE_ALL;
    context->attribs->DirtyMask = ( 1 << RGL_MAX_VERTEX_ATTRIBS ) - 1;
 
-   GCM_FUNC_NO_ARGS( cellGcmSetInvalidateVertexCache );
+   rglGcmSetInvalidateVertexCache(thisContext);
    rglGcmFifoFlush( &rglGcmState_i.fifo );
 
    while (sys_semaphore_wait(FlipSem,1000) != CELL_OK);
 
-   GCM_FUNC_NO_ARGS( cellGcmSetInvalidateVertexCache );
+   rglGcmSetInvalidateVertexCache(thisContext);
    rglGcmFifoFlush( &rglGcmState_i.fifo );
 
    if ( device->deviceParameters.bufferingMode == RGL_BUFFERING_MODE_DOUBLE )
@@ -4108,10 +4112,11 @@ RGLcontext *psglGetCurrentContext(void)
 
 void RGL_EXPORT psglDestroyContext (void *data)
 {
+   CellGcmContextData *thisContext = (CellGcmContextData*)gCellGcmCurrentContext;
    RGLcontext *LContext = (RGLcontext*)data;
    if ( _CurrentContext == LContext )
    {
-      GCM_FUNC_NO_ARGS( cellGcmSetInvalidateVertexCache );
+      rglGcmSetInvalidateVertexCache(thisContext);
       rglGcmFifoFinish( &rglGcmState_i.fifo );
    }
 

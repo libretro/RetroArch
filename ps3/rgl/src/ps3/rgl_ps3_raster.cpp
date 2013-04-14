@@ -1234,6 +1234,7 @@ char *rglPlatformBufferObjectMap (void *data, GLenum access)
 {
    rglBufferObject *bufferObject = (rglBufferObject*)data;
    rglGcmBufferObject *rglBuffer = (rglGcmBufferObject*)bufferObject->platformBufferObject;
+   CellGcmContextData *thisContext = (CellGcmContextData*)gCellGcmCurrentContext;
 
    if (rglBuffer->mapCount++ == 0)
    {
@@ -1252,7 +1253,7 @@ char *rglPlatformBufferObjectMap (void *data, GLenum access)
       else
       {
          // must wait in order to read
-         GCM_FUNC_NO_ARGS( cellGcmSetInvalidateVertexCache );
+         rglGcmSetInvalidateVertexCache(thisContext);
          rglGcmFifoFinish( &rglGcmState_i.fifo );
       }
 
@@ -1310,6 +1311,7 @@ GLAPI void APIENTRY glClear( GLbitfield mask )
 {
    RGLcontext*	LContext = _CurrentContext;
    rglGcmDriver *driver = (rglGcmDriver*)_CurrentDevice->rasterDriver;
+   CellGcmContextData *thisContext = (CellGcmContextData*)gCellGcmCurrentContext;
 
    if ( LContext->needValidate & RGL_VALIDATE_FRAMEBUFFER )
    {
@@ -1353,7 +1355,7 @@ GLAPI void APIENTRY glClear( GLbitfield mask )
          CELL_GCM_CLEAR_B | CELL_GCM_CLEAR_A );
 
 
-   GCM_FUNC_NO_ARGS( cellGcmSetInvalidateVertexCache );
+   rglGcmSetInvalidateVertexCache(thisContext);
    rglGcmFifoFlush( &rglGcmState_i.fifo );
 }
 
@@ -1530,7 +1532,8 @@ void rglPlatformFramebuffer::validate (void *data)
 // shader and needed connections between GL state and the shader
 void *rglPlatformRasterInit (void)
 {
-   GCM_FUNC_NO_ARGS( cellGcmSetInvalidateVertexCache );
+   CellGcmContextData *thisContext = (CellGcmContextData*)gCellGcmCurrentContext;
+   rglGcmSetInvalidateVertexCache(thisContext);
    rglGcmFifoFinish( &rglGcmState_i.fifo );
 
    rglGcmDriver *driver = (rglGcmDriver*)malloc(sizeof(rglGcmDriver));
@@ -1577,6 +1580,7 @@ static uint8_t s_dparams_buff[ c_rounded_size_ofrglDrawParams ] __attribute__((a
 GLAPI void APIENTRY glDrawArrays (GLenum mode, GLint first, GLsizei count)
 {
    RGLcontext*	LContext = _CurrentContext;
+   CellGcmContextData *thisContext = (CellGcmContextData*)gCellGcmCurrentContext;
 
    if (RGL_UNLIKELY(!RGLBIT_GET(LContext->attribs->EnabledMask, RGL_ATTRIB_POSITION_INDEX)))
       return;
@@ -2101,7 +2105,7 @@ beginning:
    if ( driver->invalidateVertexCache )
    {
       driver->invalidateVertexCache = GL_FALSE;
-      GCM_FUNC_NO_ARGS( cellGcmSetInvalidateVertexCache );
+      rglGcmSetInvalidateVertexCache(thisContext);
    }
 
    GCM_FUNC( cellGcmSetUpdateFragmentProgramParameter, 

@@ -42,6 +42,20 @@ static inline GLuint rglPlatformGetBitsPerPixel (GLenum internalFormat)
  (thisContext->current)[1] = (value); \
  (thisContext->current) += 2;
 
+#define rglGcmSetInvalidateVertexCache(thisContext) \
+ (thisContext->current)[0] = (((1) << (18)) | ((0x00001710))); \
+ (thisContext->current)[1] = 0; \
+ (thisContext->current) += 2; \
+ (thisContext->current)[0] = (((1) << (18)) | ((0x00001714))); \
+ (thisContext->current)[1] = 0; \
+ (thisContext->current) += 2; \
+ (thisContext->current)[0] = (((1) << (18)) | ((0x00001714))); \
+ (thisContext->current)[1] = 0; \
+ (thisContext->current) += 2; \
+ (thisContext->current)[0] = (((1) << (18)) | ((0x00001714))); \
+ (thisContext->current)[1] = 0; \
+ (thisContext->current) += 2;
+
 static inline void rglGcmFifoGlViewport(void *data, GLclampf zNear, GLclampf zFar)
 {
    rglGcmViewportState *vp = (rglGcmViewportState*)data;
