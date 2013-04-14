@@ -280,7 +280,7 @@ void driver_set_nonblock_state(bool nonblock)
    if (g_extern.video_active)
    {
       bool video_nb = nonblock;
-      if (!g_settings.video.vsync || !g_extern.system.force_nonblock)
+      if (!g_settings.video.vsync || g_extern.system.force_nonblock)
          video_nb = true;
       video_set_nonblock_state_func(video_nb);
    }
