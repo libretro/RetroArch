@@ -1414,11 +1414,8 @@ static void shader_manager_init(rgui_handle_t *rgui)
       const char *shader_dir = *g_settings.video.shader_dir ?
          g_settings.video.shader_dir : g_settings.system_directory;
 
-      if (!conf)
-      {
-         fill_pathname_join(cgp_path, shader_dir, "rgui.glslp", sizeof(cgp_path));
-         conf = config_file_new(cgp_path);
-      }
+      fill_pathname_join(cgp_path, shader_dir, "rgui.glslp", sizeof(cgp_path));
+      conf = config_file_new(cgp_path);
 
       if (!conf)
       {
