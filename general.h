@@ -590,7 +590,6 @@ struct global
 
    struct
    {
-      char cgp_path[PATH_MAX];
       char input_cfg_path[PATH_MAX];
    } file_state;
 
