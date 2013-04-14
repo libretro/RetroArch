@@ -94,27 +94,93 @@ static inline void rglGcmFifoGlViewport(void *data, GLclampf zNear, GLclampf zFa
          clipY1 - clipY0, zNear, zFar, scale, offset );
 }
 
-static inline void rglGcmFifoGlTransferDataVidToVid
-(
- GLuint dstVidId,   
- GLuint dstVidIdOffset,
- GLuint dstPitch,
- GLuint dstX,
- GLuint dstY,
- GLuint srcVidId, 
- GLuint srcVidIdOffset,
- GLuint srcPitch,
- GLuint srcX,
- GLuint srcY,
- GLuint width,            // size in pixel
- GLuint height,
- GLuint bytesPerPixel
- )
-{
-   GLuint dstOffset = gmmIdToOffset(dstVidId) + dstVidIdOffset;
-   GLuint srcOffset = gmmIdToOffset(srcVidId) + srcVidIdOffset;
+#define BLOCKSIZE_MAX_DIMENSIONS 1024
 
-   GCM_FUNC( cellGcmSetTransferImage, CELL_GCM_TRANSFER_LOCAL_TO_LOCAL, dstOffset, dstPitch, dstX, dstY, srcOffset, srcPitch, srcX, srcY, width, height, bytesPerPixel );
+static inline void rglGcmSetTransferImage(struct CellGcmContextData *thisContext, uint8_t mode, uint32_t dstOffset, uint32_t dstPitch, uint32_t dstX, uint32_t dstY, uint32_t srcOffset, uint32_t srcPitch, uint32_t srcX, uint32_t srcY, uint32_t width, uint32_t height, uint32_t bytesPerPixel)
+{
+   (thisContext->current)[0] = (((1) << (18)) | ((0x00006188)));
+   (thisContext->current)[1] = 0xFEED0000; /* CELL_GCM_TRANSFER_LOCAL_TO_LOCAL */
+   (thisContext->current) += 2;
+
+   (thisContext->current)[0] = (((1) << (18)) | ((0x0000C184)));
+   (thisContext->current)[1] = 0xFEED0000; /* CELL_GCM_TRANSFER_LOCAL_TO_LOCAL */
+
+   (thisContext->current) += 2;
+
+   (thisContext->current)[0] = (((1) << (18)) | ((0x0000C198)));
+   (thisContext->current)[1] = ((0x313371C3));
+   (thisContext->current) += 2;
+
+   uint32_t srcFormat = 0;
+   uint32_t dstFormat = 0;
+   uint32_t x;
+   uint32_t y;
+   uint32_t finalDstX;
+   uint32_t finalDstY;
+
+   switch (bytesPerPixel)
+   {
+      case 2:
+         srcFormat = CELL_GCM_TRANSFER_SCALE_FORMAT_R5G6B5;
+         dstFormat = CELL_GCM_TRANSFER_SURFACE_FORMAT_R5G6B5;
+         break;
+      case 4:
+         srcFormat = CELL_GCM_TRANSFER_SCALE_FORMAT_A8R8G8B8;
+         dstFormat = CELL_GCM_TRANSFER_SURFACE_FORMAT_A8R8G8B8;
+         break;
+   }
+
+
+   finalDstX = dstX + width;
+   finalDstY = dstY + height;
+
+   for (y = dstY; y < finalDstY;)
+   {
+      uint32_t dstTop = y & ~(BLOCKSIZE_MAX_DIMENSIONS - 1);
+      uint32_t dstBltHeight = (( (dstTop + BLOCKSIZE_MAX_DIMENSIONS) < finalDstY)
+            ? (dstTop + BLOCKSIZE_MAX_DIMENSIONS) : finalDstY) - y;
+
+      for (x = dstX; x < finalDstX;)
+      {
+         uint32_t dstLeft = x & ~(BLOCKSIZE_MAX_DIMENSIONS - 1);
+         uint32_t dstRight = dstLeft + BLOCKSIZE_MAX_DIMENSIONS;
+         uint32_t dstBltWidth = ((dstRight < finalDstX) ? dstRight : finalDstX) - x;
+         uint32_t dstBlockOffset = bytesPerPixel * (dstLeft & ~(BLOCKSIZE_MAX_DIMENSIONS - 1)) + dstPitch * dstTop;
+         uint32_t srcBlockOffset = bytesPerPixel * (srcX + x-dstX) + srcPitch * (srcY + y-dstY);
+         uint32_t safeDstBltWidth = (dstBltWidth < 16) ? 16 : (dstBltWidth + 1) & ~1;
+
+         (thisContext->current)[0] = (((1) << (18)) | ((0x0000630C)));
+         (thisContext->current)[1] = dstOffset + dstBlockOffset;
+         (thisContext->current) += 2;
+
+         (thisContext->current)[0] = (((2) << (18)) | ((0x00006300)));
+         (thisContext->current)[1] = (dstFormat);
+         (thisContext->current)[2] = ((dstPitch) | ((dstPitch) << 16));
+         (thisContext->current) += 3;
+
+         (thisContext->current)[0] = (((9) << (18)) | ((0x0000C2FC)));
+         (thisContext->current)[1] = (CELL_GCM_TRANSFER_CONVERSION_TRUNCATE);
+         (thisContext->current)[2] = (srcFormat);
+         (thisContext->current)[3] = (CELL_GCM_TRANSFER_OPERATION_SRCCOPY);
+         (thisContext->current)[4] = (((y - dstTop) << 16) | (x - dstLeft));
+         (thisContext->current)[5] = (((dstBltHeight) << 16) | (dstBltWidth));
+         (thisContext->current)[6] = (((y - dstTop) << 16) | (x - dstLeft));
+         (thisContext->current)[7] = (((dstBltHeight) << 16) | (dstBltWidth));
+         (thisContext->current)[8] = 1048576;
+         (thisContext->current)[9] = 1048576;
+         (thisContext->current) += 10;
+
+         (thisContext->current)[0] = (((4) << (18)) | ((0x0000C400)));
+         (thisContext->current)[1] = (((dstBltHeight) << 16) | (safeDstBltWidth));
+         (thisContext->current)[2] = ((srcPitch) | ((CELL_GCM_TRANSFER_ORIGIN_CORNER) << 16) | ((CELL_GCM_TRANSFER_INTERPOLATOR_ZOH) << 24));
+         (thisContext->current)[3] = (srcOffset + srcBlockOffset);
+         (thisContext->current)[4] = 0;
+         (thisContext->current) += 5;
+
+         x += dstBltWidth;
+      }
+      y += dstBltHeight;
+   }
 }
 
 static inline GLuint rglGcmMapMinTextureFilter( GLenum filter )
