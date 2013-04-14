@@ -134,6 +134,13 @@ struct rgui_handle
 #endif
 };
 
+#ifdef HAVE_SHADER_MANAGER
+static void shader_manager_get_str(struct gfx_shader *shader,
+      char *type_str, size_t type_str_size, unsigned type);
+static int shader_manager_toggle_setting(rgui_handle_t *rgui, unsigned setting, rgui_action_t action);
+static void shader_manager_init(rgui_handle_t *rgui);
+#endif
+
 static const unsigned rgui_controller_lut[] = {
    RETRO_DEVICE_ID_JOYPAD_UP,
    RETRO_DEVICE_ID_JOYPAD_DOWN,
@@ -230,19 +237,7 @@ rgui_handle_t *rgui_init(const char *base_path,
    }
 
 #ifdef HAVE_SHADER_MANAGER
-   char cgp_path[PATH_MAX];
-   const char *shader_dir = *g_settings.video.shader_dir ?
-      g_settings.video.shader_dir : g_settings.system_directory;
-   fill_pathname_join(cgp_path, shader_dir, "rgui.glslp", sizeof(cgp_path));
-   config_file_t *conf = config_file_new(cgp_path);
-   if (!conf)
-   {
-      fill_pathname_join(cgp_path, shader_dir, "rgui.cgp", sizeof(cgp_path));
-      conf = config_file_new(cgp_path);
-   }
-   if (conf)
-      gfx_shader_read_conf_cgp(conf, &rgui->shader);
-   config_file_free(conf);
+   shader_manager_init(rgui);
 #endif
 
    return rgui;
@@ -381,12 +376,6 @@ static void render_messagebox(rgui_handle_t *rgui, const char *message)
    blit_line(rgui, x + 8, y + 8, msg, false);
    free(msg);
 }
-
-#ifdef HAVE_SHADER_MANAGER
-static void shader_manager_get_str(struct gfx_shader *shader,
-      char *type_str, size_t type_str_size, unsigned type);
-static int shader_manager_toggle_setting(rgui_handle_t *rgui, unsigned setting, rgui_action_t action);
-#endif
 
 static void render_text(rgui_handle_t *rgui)
 {
@@ -1395,6 +1384,52 @@ static void shader_manager_get_str(struct gfx_shader *shader,
                snprintf(type_str, type_str_size, "%ux", scale);
             break;
          }
+      }
+   }
+}
+
+static void shader_manager_init(rgui_handle_t *rgui)
+{
+   config_file_t *conf = NULL;
+   char cgp_path[PATH_MAX];
+
+   const char *ext = path_get_extension(g_settings.video.shader_path);
+   if (strcmp(ext, "glslp") == 0 || strcmp(ext, "cgp") == 0)
+   {
+      conf = config_file_new(g_settings.video.shader_path);
+      if (conf)
+      {
+         gfx_shader_read_conf_cgp(conf, &rgui->shader);
+         config_file_free(conf);
+      }
+   }
+   else if (strcmp(ext, "glsl") == 0 || strcmp(ext, "cg") == 0)
+   {
+      strlcpy(rgui->shader.pass[0].source.cg, g_settings.video.shader_path,
+            sizeof(rgui->shader.pass[0].source.cg));
+      rgui->shader.passes = 1;
+   }
+   else
+   {
+      const char *shader_dir = *g_settings.video.shader_dir ?
+         g_settings.video.shader_dir : g_settings.system_directory;
+
+      if (!conf)
+      {
+         fill_pathname_join(cgp_path, shader_dir, "rgui.glslp", sizeof(cgp_path));
+         conf = config_file_new(cgp_path);
+      }
+
+      if (!conf)
+      {
+         fill_pathname_join(cgp_path, shader_dir, "rgui.cgp", sizeof(cgp_path));
+         conf = config_file_new(cgp_path);
+      }
+
+      if (conf)
+      {
+         gfx_shader_read_conf_cgp(conf, &rgui->shader);
+         config_file_free(conf);
       }
    }
 }
