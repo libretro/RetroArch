@@ -74,14 +74,47 @@ static int nul_handler(Display *dpy, XErrorEvent *event)
 static void gfx_ctx_get_video_size(unsigned *width, unsigned *height);
 static void gfx_ctx_destroy(void);
 
+static void egl_report_error(void)
+{
+   EGLint error = eglGetError();
+   const char *str = NULL;
+   switch (error)
+   {
+      case EGL_SUCCESS:
+         str = "EGL_SUCCESS";
+         break;
+
+      case EGL_BAD_DISPLAY:
+         str = "EGL_BAD_DISPLAY";
+         break;
+
+      case EGL_BAD_SURFACE:
+         str = "EGL_BAD_SURFACE";
+         break;
+
+      case EGL_BAD_CONTEXT:
+         str = "EGL_BAD_CONTEXT";
+         break;
+
+      default:
+         str = "Unknown";
+         break;
+   }
+
+   RARCH_ERR("[X/EGL]: #0x%x, %s\n", (unsigned)error, str);
+}
+
 static void gfx_ctx_swap_interval(unsigned interval)
 {
    g_interval = interval;
-   if (g_egl_dpy)
+   if (g_egl_dpy && eglGetCurrentContext())
    {
       RARCH_LOG("[X/EGL]: eglSwapInterval(%u)\n", g_interval);
       if (!eglSwapInterval(g_egl_dpy, g_interval))
+      {
          RARCH_ERR("[X/EGL]: eglSwapInterval() failed.\n");
+         egl_report_error();
+      }
    }
 }
 
@@ -357,6 +390,8 @@ static bool gfx_ctx_set_video_mode(
    g_egl_ctx = eglCreateContext(g_egl_dpy, g_config, EGL_NO_CONTEXT,
          (g_api == GFX_CTX_OPENGL_ES_API) ? egl_ctx_gles_attribs : NULL);
 
+   RARCH_LOG("[X/EGL]: Created context: %p.\n", (void*)g_egl_ctx);
+
    if (!g_egl_ctx)
       goto error;
 
@@ -366,6 +401,8 @@ static bool gfx_ctx_set_video_mode(
 
    if (!eglMakeCurrent(g_egl_dpy, g_egl_surf, g_egl_surf, g_egl_ctx))
       goto error;
+
+   RARCH_LOG("[X/EGL]: Current context: %p.\n", (void*)eglGetCurrentContext());
 
    x11_set_window_attr(g_dpy, g_win);
 
