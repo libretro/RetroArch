@@ -19,6 +19,7 @@
 #include <bb/cascades/AbstractPane>
 #include <bb/cascades/QmlDocument>
 #include <bb/cascades/Window>
+#include <bb/cascades/pickers/FilePicker>
 
 #include <math.h>
 
@@ -26,6 +27,9 @@ using namespace bb::cascades;
 
 RetroArch::RetroArch()
 {
+	qmlRegisterType<bb::cascades::pickers::FilePicker>("bb.cascades.pickers", 1, 0, "FilePicker");
+	qmlRegisterUncreatableType<bb::cascades::pickers::FileType>("bb.cascades.pickers", 1, 0, "FileType", "");
+
     // Create a QML document and load the main UI QML file, using build patterns.
     QmlDocument *qml = QmlDocument::create("asset:///mainPage.qml");
 
@@ -58,6 +62,29 @@ RetroArch::~RetroArch()
 void RetroArch::run()
 {
     while (true) {
-
+    	sleep(1);
     }
+}
+
+/*
+ * Properties
+ */
+
+QString RetroArch::getRom()
+{
+	return rom;
+}
+
+void RetroArch::setRom(QString rom)
+{
+	this->rom = rom;
+}
+
+QString RetroArch::getCore()
+{
+	return core;
+}
+void RetroArch::setCore(QString core)
+{
+	this->core = core;
 }
