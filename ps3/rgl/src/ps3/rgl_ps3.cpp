@@ -1705,7 +1705,7 @@ void rglGcmSetOpenGLState (void *data)
    GCM_FUNC( cellGcmSetBlendColor, 0, 0);
    GCM_FUNC( cellGcmSetBlendEquation, RGLGCM_FUNC_ADD, RGLGCM_FUNC_ADD );
    GCM_FUNC( cellGcmSetBlendFunc, RGLGCM_ONE, RGLGCM_ZERO, RGLGCM_ONE, RGLGCM_ZERO );
-   GCM_FUNC( cellGcmSetClearColor, 0 );
+   rglGcmSetClearColor(thisContext, 0 );
    GCM_FUNC( cellGcmSetBlendEnable, RGLGCM_FALSE );
    GCM_FUNC( cellGcmSetBlendEnableMrt, RGLGCM_FALSE, RGLGCM_FALSE, RGLGCM_FALSE );
    GCM_FUNC( cellGcmSetFragmentProgramGammaEnable, RGLGCM_FALSE );
@@ -2880,7 +2880,7 @@ int rglPlatformCreateDevice (void *data)
    v->w = width;
    v->h = height;
    rglGcmFifoGlViewport(v, 0.0f, 1.0f);
-   GCM_FUNC( cellGcmSetClearColor, 0 );
+   rglGcmSetClearColor(thisContext, 0 );
 
    if ( fpColor )
    {

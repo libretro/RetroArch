@@ -74,6 +74,22 @@ static inline GLuint rglPlatformGetBitsPerPixel (GLenum internalFormat)
  (thisContext->current)[1] = (remap); \
  (thisContext->current) += 2;
 
+#define rglGcmSetTransferLocation(thisContext, location) \
+ (thisContext->current)[0] = (((1) << (18)) | ((0x00006188))); \
+ (thisContext->current)[1] = ((0xFEED0000) + location); \
+ (thisContext->current) += 2;
+
+#define rglGcmInlineTransfer(thisContext, dstOffset, srcAdr, sizeInWords, location) \
+ (thisContext->current)[0] = (((1) << (18)) | ((0x00006188))); \
+ (thisContext->current)[1] = ((0xFEED0000) + location); \
+ (thisContext->current) += 2; \
+  cellGcmSetInlineTransferUnsafeInline(thisContext, dstOffset, srcAdr, sizeInWords);
+
+#define rglGcmSetClearColor(thisContext, color) \
+ (thisContext->current)[0] = (((1) << (18)) | ((0x00001d90))); \
+ (thisContext->current)[1] = (color); \
+ (thisContext->current) += 2;
+
 static inline void rglGcmSetDrawArrays(struct CellGcmContextData *thisContext, uint8_t mode,
       uint32_t first, uint32_t count)
 {

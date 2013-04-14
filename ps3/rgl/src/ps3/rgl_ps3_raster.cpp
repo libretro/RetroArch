@@ -84,7 +84,8 @@ void rglPlatformSetVertexRegister4fv (unsigned int reg, const float * __restrict
 //here ec has been advanced and is already on top of the embedded constant count
 template<int SIZE> inline static void swapandsetfp( int ucodeSize, unsigned int loadProgramId, unsigned int loadProgramOffset, unsigned short *ec, const unsigned int   * __restrict v )
 {
-   GCM_FUNC( cellGcmSetTransferLocation, CELL_GCM_LOCATION_LOCAL );
+   CellGcmContextData *thisContext = (CellGcmContextData*)gCellGcmCurrentContext;
+   rglGcmSetTransferLocation(thisContext, CELL_GCM_LOCATION_LOCAL );
    unsigned short count = *( ec++ );
    for ( unsigned long offsetIndex = 0; offsetIndex < count; ++offsetIndex )
    {
@@ -122,6 +123,7 @@ template<int SIZE> static void setVectorTypefp( void *dat, const void* __restric
 
 template<int SIZE> static void setVectorTypeSharedfpIndex (void *data, const void* __restrict v, const int /*index*/ )
 {
+   CellGcmContextData *thisContext = (CellGcmContextData*)gCellGcmCurrentContext;
    CgRuntimeParameter *ptr = (CgRuntimeParameter*)data;
    RGLcontext * LContext = _CurrentContext;
    rglGcmDriver *driver = (rglGcmDriver*)_CurrentDevice->rasterDriver;
@@ -136,7 +138,7 @@ template<int SIZE> static void setVectorTypeSharedfpIndex (void *data, const voi
    values[1] = ( 1 < SIZE ) ? SWAP_IF_BIG_ENDIAN( vi[1] ) : 0;
    values[2] = ( 2 < SIZE ) ? SWAP_IF_BIG_ENDIAN( vi[2] ) : 0;
    values[3] = ( 3 < SIZE ) ? SWAP_IF_BIG_ENDIAN( vi[3] ) : 0;
-   GCM_FUNC( cellGcmInlineTransfer, dstVidOffset, values, 4, 0 );
+   rglGcmInlineTransfer(thisContext, dstVidOffset, values, 4, 0 );
 
    // XXX we don't care about 32bit wrapping, do we ?
    ++LContext->LastFPConstantModification;
@@ -144,6 +146,7 @@ template<int SIZE> static void setVectorTypeSharedfpIndex (void *data, const voi
 
 template<int SIZE> static void setVectorTypeSharedfpIndexArray (void *data, const void* __restrict v, const int index )
 {
+   CellGcmContextData *thisContext = (CellGcmContextData*)gCellGcmCurrentContext;
    CgRuntimeParameter *ptr = (CgRuntimeParameter*)data;
    RGLcontext * LContext = _CurrentContext;
    rglGcmDriver *driver = (rglGcmDriver*)_CurrentDevice->rasterDriver;
@@ -168,7 +171,7 @@ template<int SIZE> static void setVectorTypeSharedfpIndexArray (void *data, cons
    values[1] = ( 1 < SIZE ) ? SWAP_IF_BIG_ENDIAN( vi[1] ) : 0;
    values[2] = ( 2 < SIZE ) ? SWAP_IF_BIG_ENDIAN( vi[2] ) : 0;
    values[3] = ( 3 < SIZE ) ? SWAP_IF_BIG_ENDIAN( vi[3] ) : 0;
-   GCM_FUNC( cellGcmInlineTransfer, dstVidOffset, values, 4, 0 ); 
+   rglGcmInlineTransfer(thisContext, dstVidOffset, values, 4, 0 ); 
 
    // XXX we don't care about 32bit wrapping, do we ?
    ++LContext->LastFPConstantModification;
@@ -330,6 +333,7 @@ template <int ROWS, int COLS, int ORDER> static void setMatrixSharedvpIndexArray
 
 template <int ROWS, int COLS, int ORDER> static void setMatrixSharedfpIndex (void *data, const void* __restrict v, const int /*index*/ )
 {
+   CellGcmContextData *thisContext = (CellGcmContextData*)gCellGcmCurrentContext;
    CgRuntimeParameter *ptr = (CgRuntimeParameter*)data;
    rglGcmDriver *driver = (rglGcmDriver*)_CurrentDevice->rasterDriver;
 
@@ -349,7 +353,7 @@ template <int ROWS, int COLS, int ORDER> static void setMatrixSharedfpIndex (voi
       tmp[row*4 + 2] = (( 2 < COLS ) ? (( ORDER == ROW_MAJOR ) ? u[row * COLS + 2] : u[2 * ROWS + row] ) : 0 );
       tmp[row*4 + 3] = (( 3 < COLS ) ? (( ORDER == ROW_MAJOR ) ? u[row * COLS + 3] : u[3 * ROWS + row] ) : 0 );
    }
-   GCM_FUNC( cellGcmSetTransferLocation, CELL_GCM_LOCATION_LOCAL );
+   rglGcmSetTransferLocation(thisContext, CELL_GCM_LOCATION_LOCAL );
    void *pointer=NULL;
    GCM_FUNC( cellGcmSetInlineTransferPointer, dstVidOffset, 4*ROWS, &pointer);
    float *fp = (float*)pointer;
@@ -369,6 +373,7 @@ template <int ROWS, int COLS, int ORDER> static void setMatrixSharedfpIndex (voi
 
 template <int ROWS, int COLS, int ORDER> static void setMatrixSharedfpIndexArray (void *data, const void* __restrict v, const int index )
 {
+   CellGcmContextData *thisContext = (CellGcmContextData*)gCellGcmCurrentContext;
    CgRuntimeParameter *ptr = (CgRuntimeParameter*)data;
    //TODO: double check for the semi endian swap... not done here, is it done by the RSX ?
    rglGcmDriver *driver = (rglGcmDriver*)_CurrentDevice->rasterDriver;
@@ -398,7 +403,7 @@ template <int ROWS, int COLS, int ORDER> static void setMatrixSharedfpIndexArray
       tmp[row*4 + 3] = (( 3 < COLS ) ? (( ORDER == ROW_MAJOR ) ? u[row * COLS + 3] : u[3 * ROWS + row] ) : 0 );
    }
 
-   GCM_FUNC( cellGcmSetTransferLocation, CELL_GCM_LOCATION_LOCAL );
+   rglGcmSetTransferLocation(thisContext, CELL_GCM_LOCATION_LOCAL );
 
 
    void *pointer=NULL;
@@ -1349,8 +1354,7 @@ GLAPI void APIENTRY glClear( GLbitfield mask )
    if (!driver->rtValid)
       return;
 
-   GCM_FUNC( cellGcmSetClearColor, 0 );
-
+   rglGcmSetClearColor(thisContext, 0 );
    rglGcmSetClearSurface(thisContext, CELL_GCM_CLEAR_R | CELL_GCM_CLEAR_G | 
          CELL_GCM_CLEAR_B | CELL_GCM_CLEAR_A );
    rglGcmSetInvalidateVertexCache(thisContext);
