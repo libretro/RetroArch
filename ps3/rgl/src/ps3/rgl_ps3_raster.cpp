@@ -168,6 +168,7 @@ template<int SIZE> static void setVectorTypeSharedfpIndexArray (void *data, cons
 }
 template<int SIZE> static void setVectorTypeSharedvpIndex (void *data, const void* __restrict v, const int /*index*/ )
 {
+   CellGcmContextData *thisContext = (CellGcmContextData*)gCellGcmCurrentContext;
    CgRuntimeParameter *ptr = (CgRuntimeParameter*)data;
    const float * __restrict f = ( const float * __restrict )v;
    const CgParameterResource *parameterResource = rglGetParameterResource( ptr->program, ptr->parameterEntry );
@@ -182,11 +183,18 @@ template<int SIZE> static void setVectorTypeSharedvpIndex (void *data, const voi
    memcpy(driver->sharedVPConstants + resource * 4 * sizeof( float ),
          dst, 4 * sizeof(float));
 
-   GCM_FUNC( cellGcmSetVertexProgramParameterBlock, resource, 1, dst ); 
+   thisContext->current[0] = (((5) << (18)) | ((0x00001efc)));
+   thisContext->current[1] = resource;
+   thisContext->current += 2;
+
+   __builtin_memcpy(thisContext->current, dst, sizeof(float)*4);
+   thisContext->current += 4;
+   dst += 4; 
 }
 
 template<int SIZE> static void setVectorTypeSharedvpIndexArray (void *data, const void* __restrict v, const int index )
 {
+   CellGcmContextData *thisContext = (CellGcmContextData*)gCellGcmCurrentContext;
    CgRuntimeParameter *ptr = (CgRuntimeParameter*)data;
    const float * __restrict f = ( const float * __restrict )v;
    const CgParameterResource *parameterResource = rglGetParameterResource( ptr->program, ptr->parameterEntry );
@@ -201,7 +209,13 @@ template<int SIZE> static void setVectorTypeSharedvpIndexArray (void *data, cons
    memcpy(driver->sharedVPConstants + resource * 4 * sizeof( float ),
          dst, 4 * sizeof(float));
 
-   GCM_FUNC( cellGcmSetVertexProgramParameterBlock, resource, 1, dst ); 
+   thisContext->current[0] = (((5) << (18)) | ((0x00001efc)));
+   thisContext->current[1] = resource;
+   thisContext->current += 2;
+
+   __builtin_memcpy(thisContext->current, dst, sizeof(float)*4);
+   thisContext->current += 4;
+   dst += 4; 
 }
 
 
