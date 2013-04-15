@@ -61,12 +61,8 @@ struct texture_image *menu_panel;
 #endif
 
 static bool menu_bg_show = true;
-filebrowser_t *browser;
 unsigned currently_selected_controller_menu = 0;
 
-#ifdef HAVE_SHADER_MANAGER
-struct gfx_shader shader;
-#endif
 
 static const struct retro_keybind _rmenu_nav_binds[] = {
    { 0, 0, NULL, (enum retro_key)0, (1ULL << RETRO_DEVICE_ID_JOYPAD_UP) | (1ULL << RARCH_ANALOG_LEFT_Y_DPAD_UP), 0 },
@@ -280,16 +276,20 @@ static void rmenu_gfx_free(void)
   MENU STACK
   ============================================================ */
 
-typedef struct
+struct rmenu_handle
 {
 #ifdef HAVE_OSKUTIL
    unsigned osk_param;
    bool (*osk_init)(void *data);
    bool (*osk_callback)(void *data);
 #endif
-} rmenu_state_t;
+#ifdef HAVE_SHADER_MANAGER
+   struct gfx_shader shader;
+#endif
+   filebrowser_t *browser;
+};
 
-static rmenu_state_t rmenu_state;
+rmenu_handle_t *rmenu;
 
 static unsigned char menu_stack_enum_array[10];
 static unsigned stack_idx = 0;
@@ -343,14 +343,14 @@ static void menu_stack_pop(unsigned menu_type)
 
    setting_page_number = 0;
 
-   if (browser->prev_dir.directory_path[0] != '\0')
+   if (rmenu->browser->prev_dir.directory_path[0] != '\0')
    {
-      memcpy(&browser->current_dir, &browser->prev_dir, sizeof(*(&browser->current_dir)));
-      filebrowser_iterate(browser, FILEBROWSER_ACTION_RESET_CURRENT_DIR);
-      browser->current_dir.ptr = browser->prev_dir.ptr;
-      strlcpy(browser->current_dir.path, browser->prev_dir.path,
-            sizeof(browser->current_dir.path));
-      memset(&browser->prev_dir, 0, sizeof(*(&browser->prev_dir)));
+      memcpy(&rmenu->browser->current_dir, &rmenu->browser->prev_dir, sizeof(*(&rmenu->browser->current_dir)));
+      filebrowser_iterate(rmenu->browser, FILEBROWSER_ACTION_RESET_CURRENT_DIR);
+      rmenu->browser->current_dir.ptr = rmenu->browser->prev_dir.ptr;
+      strlcpy(rmenu->browser->current_dir.path, rmenu->browser->prev_dir.path,
+            sizeof(rmenu->browser->current_dir.path));
+      memset(&rmenu->browser->prev_dir, 0, sizeof(*(&rmenu->browser->prev_dir)));
    }
 
    if (stack_idx > 1)
@@ -398,8 +398,8 @@ static void menu_stack_push(unsigned menu_type, bool prev_dir)
 
    if (prev_dir)
    {
-      memcpy(&browser->prev_dir, &browser->current_dir, sizeof(*(&browser->prev_dir)));
-      browser->prev_dir.ptr = browser->current_dir.ptr;
+      memcpy(&rmenu->browser->prev_dir, &rmenu->browser->current_dir, sizeof(*(&rmenu->browser->prev_dir)));
+      rmenu->browser->prev_dir.ptr = rmenu->browser->current_dir.ptr;
    }
 
    menu_stack_enum_array[stack_idx] = menu_type;
@@ -414,7 +414,7 @@ static void menu_stack_push(unsigned menu_type, bool prev_dir)
 static void shader_manager_get_str_filter(char *type_str,
       size_t sizeof_type_str, unsigned pass)
 {
-   switch (shader.pass[pass].filter)
+   switch (rmenu->shader.pass[pass].filter)
    {
       case RARCH_FILTER_LINEAR:
          strlcpy(type_str, "Linear", sizeof_type_str);
@@ -582,7 +582,7 @@ static void display_menubar(uint8_t menu_type)
       case PATH_SRAM_DIR_CHOICE:
       case PATH_SYSTEM_DIR_CHOICE:
       case FILE_BROWSER_MENU:
-         snprintf(msg, sizeof(msg), "PATH: %s", browser->current_dir.directory_path);
+         snprintf(msg, sizeof(msg), "PATH: %s", rmenu->browser->current_dir.directory_path);
 
          if (driver.video_poke->set_osd_msg)
             driver.video_poke->set_osd_msg(driver.video_data, msg, &font_parms);
@@ -637,7 +637,7 @@ static void browser_update(void *data, uint64_t input, const char *extensions)
    else if (input & (1ULL << RMENU_DEVICE_NAV_A))
    {
       char tmp_str[PATH_MAX];
-      fill_pathname_parent_dir(tmp_str, browser->current_dir.directory_path, sizeof(tmp_str));
+      fill_pathname_parent_dir(tmp_str, rmenu->browser->current_dir.directory_path, sizeof(tmp_str));
 
       if (tmp_str[0] != '\0')
          action = FILEBROWSER_ACTION_CANCEL;
@@ -645,13 +645,13 @@ static void browser_update(void *data, uint64_t input, const char *extensions)
    else if (input & (1ULL << RMENU_DEVICE_NAV_START))
    {
       action = FILEBROWSER_ACTION_RESET;
-      filebrowser_set_root_and_ext(browser, NULL, default_paths.filesystem_root_dir);
-      strlcpy(browser->current_dir.extensions, extensions,
-            sizeof(browser->current_dir.extensions));
+      filebrowser_set_root_and_ext(rmenu->browser, NULL, default_paths.filesystem_root_dir);
+      strlcpy(rmenu->browser->current_dir.extensions, extensions,
+            sizeof(rmenu->browser->current_dir.extensions));
    }
 
    if (action != FILEBROWSER_ACTION_NOOP)
-      ret = filebrowser_iterate(browser, action);
+      ret = filebrowser_iterate(rmenu->browser, action);
 
    if (!ret)
       msg_queue_push(g_extern.msg_queue, "ERROR - Failed to open directory.", 1, 180);
@@ -659,7 +659,7 @@ static void browser_update(void *data, uint64_t input, const char *extensions)
 
 static void browser_render(void *data)
 {
-   unsigned file_count = browser->list->size;
+   unsigned file_count = rmenu->browser->list->size;
    unsigned current_index = 0;
    unsigned page_number = 0;
    unsigned page_base = 0;
@@ -667,7 +667,7 @@ static void browser_render(void *data)
    float y_increment = POSITION_Y_START;
    font_params_t font_parms = {0};
 
-   current_index = browser->current_dir.ptr;
+   current_index = rmenu->browser->current_dir.ptr;
    page_number = current_index / NUM_ENTRY_PER_PAGE;
    page_base = page_number * NUM_ENTRY_PER_PAGE;
 
@@ -676,18 +676,18 @@ static void browser_render(void *data)
    for (i = page_base; i < file_count && i < page_base + NUM_ENTRY_PER_PAGE; ++i)
    {
       char fname_tmp[128];
-      fill_pathname_base(fname_tmp, browser->list->elems[i].data, sizeof(fname_tmp));
+      fill_pathname_base(fname_tmp, rmenu->browser->list->elems[i].data, sizeof(fname_tmp));
       y_increment += POSITION_Y_INCREMENT;
 
 #ifdef HAVE_MENU_PANEL
       //check if this is the currently selected file
-      if (strcmp(browser->current_dir.path, browser->list->elems[i].data) == 0)
+      if (strcmp(rmenu->browser->current_dir.path, rmenu->browser->list->elems[i].data) == 0)
          menu_panel->y = y_increment;
 #endif
 
       font_parms.x = POSITION_X; 
       font_parms.y = y_increment;
-      font_parms.color = i == current_index ? RED : browser->list->elems[i].attr.b ? GREEN : WHITE;
+      font_parms.color = i == current_index ? RED : rmenu->browser->list->elems[i].attr.b ? GREEN : WHITE;
 
       if (driver.video_poke->set_osd_msg)
          driver.video_poke->set_osd_msg(driver.video_data, fname_tmp, &font_parms);
@@ -730,22 +730,22 @@ static int select_file(uint8_t menu_type, uint64_t input)
          break;
    }
 
-   browser_update(browser, input, extensions);
+   browser_update(rmenu->browser, input, extensions);
 
    if (input & (1ULL << RMENU_DEVICE_NAV_B))
    {
-      if (filebrowser_iterate(browser, FILEBROWSER_ACTION_PATH_ISDIR))
-         ret = filebrowser_iterate(browser, FILEBROWSER_ACTION_OK);
+      if (filebrowser_iterate(rmenu->browser, FILEBROWSER_ACTION_PATH_ISDIR))
+         ret = filebrowser_iterate(rmenu->browser, FILEBROWSER_ACTION_OK);
       else
       {
-         strlcpy(path, browser->current_dir.path, sizeof(path));
+         strlcpy(path, rmenu->browser->current_dir.path, sizeof(path));
 
          switch(menu_type)
          {
 #ifdef HAVE_SHADER_MANAGER
             case SHADER_CHOICE:
-               strlcpy(shader.pass[shader_choice_set_shader_slot].source.cg, path,
-                     sizeof(shader.pass[shader_choice_set_shader_slot].source.cg));
+               strlcpy(rmenu->shader.pass[shader_choice_set_shader_slot].source.cg, path,
+                     sizeof(rmenu->shader.pass[shader_choice_set_shader_slot].source.cg));
                break;
             case CGP_CHOICE:
                {
@@ -755,7 +755,7 @@ static int select_file(uint8_t menu_type, uint64_t input)
 
                   conf = config_file_new(path);
                   if (conf)
-                     gfx_shader_read_conf_cgp(conf, &shader);
+                     gfx_shader_read_conf_cgp(conf, &rmenu->shader);
                   config_file_free(conf);
 
                   if (video_set_shader_func(RARCH_SHADER_CG, path))
@@ -839,7 +839,7 @@ static int select_file(uint8_t menu_type, uint64_t input)
       driver.video_poke->set_osd_msg(driver.video_data, comment, &font_parms);
 
    display_menubar(menu_type);
-   browser_render(browser);
+   browser_render(rmenu->browser);
 
    return 0;
 }
@@ -852,15 +852,15 @@ static int select_directory(uint8_t menu_type, uint64_t input)
    char msg[256];
    bool ret = true;
 
-   bool is_dir = filebrowser_iterate(browser, FILEBROWSER_ACTION_PATH_ISDIR);
+   bool is_dir = filebrowser_iterate(rmenu->browser, FILEBROWSER_ACTION_PATH_ISDIR);
    bool pop_menu_stack = false;
-   browser_update(browser, input, "empty");
+   browser_update(rmenu->browser, input, "empty");
 
    if (input & (1ULL << RMENU_DEVICE_NAV_Y))
    {
       if (is_dir)
       {
-         strlcpy(path, browser->current_dir.path, sizeof(path));
+         strlcpy(path, rmenu->browser->current_dir.path, sizeof(path));
 
          switch(menu_type)
          {
@@ -913,7 +913,7 @@ static int select_directory(uint8_t menu_type, uint64_t input)
    else if (input & (1ULL << RMENU_DEVICE_NAV_B))
    {
       if (is_dir)
-         ret = filebrowser_iterate(browser, FILEBROWSER_ACTION_OK);
+         ret = filebrowser_iterate(rmenu->browser, FILEBROWSER_ACTION_OK);
    }
 
    if (pop_menu_stack)
@@ -941,7 +941,7 @@ static int select_directory(uint8_t menu_type, uint64_t input)
       driver.video_poke->set_osd_msg(driver.video_data, msg, &font_parms);
 
    display_menubar(menu_type);
-   browser_render(browser);
+   browser_render(rmenu->browser);
 
    return 0;
 }
@@ -1012,7 +1012,7 @@ static bool osk_callback_enter_filename(void *data)
       int num = wcstombs(tmp_str, g_extern.console.misc.oskutil_handle.text_buf, sizeof(tmp_str));
       tmp_str[num] = 0;
 
-      switch(rmenu_state.osk_param)
+      switch(rmenu->osk_param)
       {
          case CONFIG_FILE:
             break;
@@ -1117,7 +1117,7 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
          if ((input & (1ULL << RMENU_DEVICE_NAV_LEFT)) || (input & (1ULL << RMENU_DEVICE_NAV_RIGHT)) || (input & (1ULL << RMENU_DEVICE_NAV_B)))
          {
             menu_stack_push(BORDER_CHOICE, true);
-            filebrowser_set_root_and_ext(browser, EXT_IMAGES, default_paths.border_dir);
+            filebrowser_set_root_and_ext(rmenu->browser, EXT_IMAGES, default_paths.border_dir);
          }
          if (input & (1ULL << RMENU_DEVICE_NAV_START))
          {
@@ -1298,8 +1298,8 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
          if ((input & (1ULL << RMENU_DEVICE_NAV_LEFT)) || (input & (1ULL << RMENU_DEVICE_NAV_RIGHT)) || (input & (1ULL << RMENU_DEVICE_NAV_B)))
          {
 #ifdef HAVE_OSKUTIL
-            rmenu_state.osk_init = osk_callback_enter_rsound_init;
-            rmenu_state.osk_callback = osk_callback_enter_rsound;
+            rmenu->osk_init = osk_callback_enter_rsound_init;
+            rmenu->osk_callback = osk_callback_enter_rsound;
 #endif
          }
          if (input & (1ULL << RMENU_DEVICE_NAV_START))
@@ -1363,7 +1363,7 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
          if ((input & (1ULL << RMENU_DEVICE_NAV_LEFT)) || (input & (1ULL << RMENU_DEVICE_NAV_RIGHT)) || (input & (1ULL << RMENU_DEVICE_NAV_B)))
          {
             menu_stack_push(LIBRETRO_CHOICE, true);
-            filebrowser_set_root_and_ext(browser, EXT_EXECUTABLES, default_paths.core_dir);
+            filebrowser_set_root_and_ext(rmenu->browser, EXT_EXECUTABLES, default_paths.core_dir);
             set_libretro_core_as_launch = true;
          }
          if (input & (1ULL << RMENU_DEVICE_NAV_START))
@@ -1432,7 +1432,7 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
          if ((input & (1ULL << RMENU_DEVICE_NAV_LEFT)) || (input & (1ULL << RMENU_DEVICE_NAV_RIGHT)) || (input & (1ULL << RMENU_DEVICE_NAV_B)))
          {
             menu_stack_push(PATH_DEFAULT_ROM_DIR_CHOICE, true);
-            filebrowser_set_root_and_ext(browser, "empty", default_paths.filesystem_root_dir);
+            filebrowser_set_root_and_ext(rmenu->browser, "empty", default_paths.filesystem_root_dir);
          }
 
          if (input & (1ULL << RMENU_DEVICE_NAV_START))
@@ -1442,7 +1442,7 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
          if ((input & (1ULL << RMENU_DEVICE_NAV_LEFT)) || (input & (1ULL << RMENU_DEVICE_NAV_RIGHT)) || (input & (1ULL << RMENU_DEVICE_NAV_B)))
          {
             menu_stack_push(PATH_SAVESTATES_DIR_CHOICE, true);
-            filebrowser_set_root_and_ext(browser, "empty", default_paths.filesystem_root_dir);
+            filebrowser_set_root_and_ext(rmenu->browser, "empty", default_paths.filesystem_root_dir);
          }
 
          if (input & (1ULL << RMENU_DEVICE_NAV_START))
@@ -1453,7 +1453,7 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
          if ((input & (1ULL << RMENU_DEVICE_NAV_LEFT)) || (input & (1ULL << RMENU_DEVICE_NAV_RIGHT)) || (input & (1ULL << RMENU_DEVICE_NAV_B)))
          {
             menu_stack_push(PATH_SRAM_DIR_CHOICE, true);
-            filebrowser_set_root_and_ext(browser, "empty", default_paths.filesystem_root_dir);
+            filebrowser_set_root_and_ext(rmenu->browser, "empty", default_paths.filesystem_root_dir);
          }
 
          if (input & (1ULL << RMENU_DEVICE_NAV_START))
@@ -1464,7 +1464,7 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
          if ((input & (1ULL << RMENU_DEVICE_NAV_LEFT)) || (input & (1ULL << RMENU_DEVICE_NAV_RIGHT)) || (input & (1ULL << RMENU_DEVICE_NAV_B)))
          {
             menu_stack_push(PATH_CHEATS_DIR_CHOICE, true);
-            filebrowser_set_root_and_ext(browser, "empty", default_paths.filesystem_root_dir);
+            filebrowser_set_root_and_ext(rmenu->browser, "empty", default_paths.filesystem_root_dir);
          }
 
          if (input & (1ULL << RMENU_DEVICE_NAV_START))
@@ -1475,7 +1475,7 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
          if ((input & (1ULL << RMENU_DEVICE_NAV_LEFT)) || (input & (1ULL << RMENU_DEVICE_NAV_RIGHT)) || (input & (1ULL << RMENU_DEVICE_NAV_B)))
          {
             menu_stack_push(PATH_SYSTEM_DIR_CHOICE, true);
-            filebrowser_set_root_and_ext(browser, "empty", default_paths.system_dir);
+            filebrowser_set_root_and_ext(rmenu->browser, "empty", default_paths.system_dir);
          }
 
          if (input & (1ULL << RMENU_DEVICE_NAV_START))
@@ -1519,7 +1519,7 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
          if ((input & (1ULL << RMENU_DEVICE_NAV_LEFT)) || (input & (1ULL << RMENU_DEVICE_NAV_RIGHT)) || (input & (1ULL << RMENU_DEVICE_NAV_B)) || (input & (1ULL << RMENU_DEVICE_NAV_START)))
          {
             menu_stack_push(INPUT_PRESET_CHOICE, true);
-            filebrowser_set_root_and_ext(browser, EXT_INPUT_PRESETS, default_paths.input_presets_dir);
+            filebrowser_set_root_and_ext(rmenu->browser, EXT_INPUT_PRESETS, default_paths.input_presets_dir);
          }
          break;
       case SETTING_CONTROLS_NUMBER:
@@ -1643,10 +1643,9 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
       case SETTING_CONTROLS_SAVE_CUSTOM_CONTROLS:
          if ((input & (1ULL << RMENU_DEVICE_NAV_LEFT)) || (input & (1ULL << RMENU_DEVICE_NAV_RIGHT)) || (input & (1ULL << RMENU_DEVICE_NAV_B)) || (input & (1ULL << RMENU_DEVICE_NAV_START)))
          {
-            rmenu_state_t *rstate = (rmenu_state_t*)&rmenu_state;
-            rstate->osk_param = INPUT_PRESET_FILE;
-            rstate->osk_init = osk_callback_enter_filename_init;
-            rstate->osk_callback = osk_callback_enter_filename;
+            rmenu->osk_param = INPUT_PRESET_FILE;
+            rmenu->osk_init = osk_callback_enter_filename_init;
+            rmenu->osk_callback = osk_callback_enter_filename;
          }
          break;
 #endif
@@ -1755,7 +1754,7 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
          if (input & (1ULL << RMENU_DEVICE_NAV_B))
          {
             menu_stack_push(LIBRETRO_CHOICE, true);
-            filebrowser_set_root_and_ext(browser, EXT_EXECUTABLES, default_paths.core_dir);
+            filebrowser_set_root_and_ext(rmenu->browser, EXT_EXECUTABLES, default_paths.core_dir);
             set_libretro_core_as_launch = true;
          }
          break;
@@ -1792,7 +1791,7 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
          if ((input & (1ULL << RMENU_DEVICE_NAV_LEFT)) || (input & (1ULL << RMENU_DEVICE_NAV_RIGHT)) || (input & (1ULL << RMENU_DEVICE_NAV_B)))
          {
             menu_stack_push(CGP_CHOICE, true);
-            filebrowser_set_root_and_ext(browser, EXT_CGP_PRESETS, g_settings.video.shader_dir);
+            filebrowser_set_root_and_ext(rmenu->browser, EXT_CGP_PRESETS, g_settings.video.shader_dir);
          }
          if (input & (1ULL << RMENU_DEVICE_NAV_START))
          {
@@ -1805,21 +1804,21 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
 #ifdef HAVE_OSKUTIL
          if ((input & (1ULL << RMENU_DEVICE_NAV_LEFT)) || (input & (1ULL << RMENU_DEVICE_NAV_RIGHT)) || (input & (1ULL << RMENU_DEVICE_NAV_B)))
          {
-            rmenu_state.osk_param = SHADER_PRESET_FILE;
-            rmenu_state.osk_init = osk_callback_enter_filename_init;
-            rmenu_state.osk_callback = osk_callback_enter_filename;
+            rmenu->osk_param = SHADER_PRESET_FILE;
+            rmenu->osk_init = osk_callback_enter_filename_init;
+            rmenu->osk_callback = osk_callback_enter_filename;
          }
 #endif
          break;
       case SHADERMAN_SHADER_PASSES:
          if (input & (1ULL << RMENU_DEVICE_NAV_LEFT))
-            if (shader.passes)
-               shader.passes--;
+            if (rmenu->shader.passes)
+               rmenu->shader.passes--;
          if ((input & (1ULL << RMENU_DEVICE_NAV_RIGHT)) || (input & (1ULL << RMENU_DEVICE_NAV_B)))
-            if (shader.passes < RMENU_MAX_SHADERS)
-               shader.passes++;
+            if (rmenu->shader.passes < RMENU_MAX_SHADERS)
+               rmenu->shader.passes++;
          if (input & (1ULL << RMENU_DEVICE_NAV_START))
-            shader.passes= 0;
+            rmenu->shader.passes= 0;
          break;
       case SHADERMAN_AUTOSTART_CGP_ON_STARTUP:
          break;
@@ -1833,14 +1832,14 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
       case SHADERMAN_SHADER_7:
          {
             uint8_t index = (switchvalue - SHADERMAN_SHADER_0) / 3;
-            struct gfx_shader_pass *pass = &shader.pass[index];
+            struct gfx_shader_pass *pass = &rmenu->shader.pass[index];
 
             if ((input & (1ULL << RMENU_DEVICE_NAV_RIGHT)) || (input & (1ULL << RMENU_DEVICE_NAV_B)) ||
                   (input & (1ULL << RMENU_DEVICE_NAV_LEFT)))
             {
                shader_choice_set_shader_slot = index;
                menu_stack_push(SHADER_CHOICE, true);
-               filebrowser_set_root_and_ext(browser, EXT_SHADERS, g_settings.video.shader_dir);
+               filebrowser_set_root_and_ext(rmenu->browser, EXT_SHADERS, g_settings.video.shader_dir);
             }
 
             if (input & (1ULL << RMENU_DEVICE_NAV_START))
@@ -1862,11 +1861,11 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
                   (input & (1ULL << RMENU_DEVICE_NAV_LEFT)))
             {
                unsigned delta = (input & (1ULL << RMENU_DEVICE_NAV_LEFT)) ? 2 : 1;
-               shader.pass[index].filter = (enum gfx_filter_type)((shader.pass[index].filter + delta) % 3);
+               rmenu->shader.pass[index].filter = (enum gfx_filter_type)((rmenu->shader.pass[index].filter + delta) % 3);
             }
 
             if (input & (1ULL << RMENU_DEVICE_NAV_START))
-               shader.pass[index].filter = RARCH_FILTER_UNSPEC;
+               rmenu->shader.pass[index].filter = RARCH_FILTER_UNSPEC;
          }
          break;
       case SHADERMAN_SHADER_0_SCALE:
@@ -1879,14 +1878,14 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
       case SHADERMAN_SHADER_7_SCALE:
          {
             uint8_t index = (switchvalue - SHADERMAN_SHADER_0) / 3;
-            unsigned scale = shader.pass[index].fbo.scale_x;
+            unsigned scale = rmenu->shader.pass[index].fbo.scale_x;
 
             if (input & (1ULL << RMENU_DEVICE_NAV_LEFT))
             {
                if (scale)
                {
-                  shader.pass[index].fbo.scale_x = shader.pass[index].fbo.scale_y = scale - 1;
-                  shader.pass[index].fbo.valid = scale - 1;
+                  rmenu->shader.pass[index].fbo.scale_x = rmenu->shader.pass[index].fbo.scale_y = scale - 1;
+                  rmenu->shader.pass[index].fbo.valid = scale - 1;
                }
             }
 
@@ -1894,15 +1893,15 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
             {
                if (scale < 5)
                {
-                  shader.pass[index].fbo.scale_x = shader.pass[index].fbo.scale_y = scale + 1;
-                  shader.pass[index].fbo.valid = scale + 1;
+                  rmenu->shader.pass[index].fbo.scale_x = rmenu->shader.pass[index].fbo.scale_y = scale + 1;
+                  rmenu->shader.pass[index].fbo.valid = scale + 1;
                }
             }
 
             if (input & (1ULL << RMENU_DEVICE_NAV_START))
             {
-               shader.pass[index].fbo.scale_x = shader.pass[index].fbo.scale_y = 0;
-               shader.pass[index].fbo.valid = false;
+               rmenu->shader.pass[index].fbo.scale_x = rmenu->shader.pass[index].fbo.scale_y = 0;
+               rmenu->shader.pass[index].fbo.valid = false;
             }
          }
          break;
@@ -1913,7 +1912,7 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
             bool ret = false;
             char cgp_path[PATH_MAX];
 
-            if (shader.passes)
+            if (rmenu->shader.passes)
             {
                const char *shader_dir = *g_settings.video.shader_dir ?
                   g_settings.video.shader_dir : g_settings.system_directory;
@@ -1921,7 +1920,7 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
                config_file_t *conf = config_file_new(NULL);
                if (!conf)
                   return 0;
-               gfx_shader_write_conf_cgp(conf, &shader);
+               gfx_shader_write_conf_cgp(conf, &rmenu->shader);
                config_file_write(conf, cgp_path);
                config_file_free(conf);
             }
@@ -1993,7 +1992,7 @@ static int select_setting(uint8_t menu_type, uint64_t input)
       case INGAME_MENU_SHADER_MANAGER:
          first_setting = FIRST_SHADERMAN_SETTING;
 
-         switch (shader.passes)
+         switch (rmenu->shader.passes)
          {
             case 0:
                max_settings = MAX_NO_OF_SHADERMAN_SETTINGS;
@@ -2465,7 +2464,7 @@ static int select_setting(uint8_t menu_type, uint64_t input)
             break;
          case SHADERMAN_SHADER_PASSES:
             strlcpy(text, "Shader passes", sizeof(text));
-            snprintf(setting_text, sizeof(setting_text), "%u", shader.passes);
+            snprintf(setting_text, sizeof(setting_text), "%u", rmenu->shader.passes);
             strlcpy(comment, "INFO - Set the amount of shader passes.", sizeof(comment));
             break;
          case SHADERMAN_APPLY_CHANGES:
@@ -2484,9 +2483,9 @@ static int select_setting(uint8_t menu_type, uint64_t input)
             {
                char type_str[256];
                uint8_t index = (i - SHADERMAN_SHADER_0) / 3;
-               if (*shader.pass[index].source.cg)
+               if (*rmenu->shader.pass[index].source.cg)
                   fill_pathname_base(type_str,
-                        shader.pass[index].source.cg, sizeof(type_str));
+                        rmenu->shader.pass[index].source.cg, sizeof(type_str));
                else
                   strlcpy(type_str, "N/A", sizeof(type_str));
                snprintf(text, sizeof(text), "Shader #%d", index);
@@ -2522,7 +2521,7 @@ static int select_setting(uint8_t menu_type, uint64_t input)
             {
                char type_str[256];
                uint8_t index = (i - SHADERMAN_SHADER_0) / 3;
-               unsigned scale = shader.pass[index].fbo.scale_x;
+               unsigned scale = rmenu->shader.pass[index].fbo.scale_x;
 
                snprintf(text, sizeof(text), "Shader #%d scale", index);
 
@@ -2651,22 +2650,23 @@ static int select_rom(uint8_t menu_type, uint64_t input)
    if (driver.input->set_keybinds)
       driver.input->set_keybinds(&key_label_b, 0, 0, 0, (1ULL << KEYBINDS_ACTION_GET_BIND_LABEL));
 
-   browser_update(browser, input, g_extern.system.valid_extensions);
+   browser_update(rmenu->browser, input, g_extern.system.valid_extensions);
 
    if (input & (1ULL << RMENU_DEVICE_NAV_SELECT))
       menu_stack_push(GENERAL_VIDEO_MENU, false);
    else if (input & (1ULL << RMENU_DEVICE_NAV_B))
    {
-      if (filebrowser_iterate(browser, FILEBROWSER_ACTION_PATH_ISDIR))
+      if (filebrowser_iterate(rmenu->browser, FILEBROWSER_ACTION_PATH_ISDIR))
       {
-         bool ret = filebrowser_iterate(browser, FILEBROWSER_ACTION_OK);
+         bool ret = filebrowser_iterate(rmenu->browser, FILEBROWSER_ACTION_OK);
 
          if (!ret)
             msg_queue_push(g_extern.msg_queue, "ERROR - Failed to open directory.", 1, 180);
       }
       else
       {
-         strlcpy(g_extern.fullpath, browser->current_dir.path, sizeof(g_extern.fullpath));
+         strlcpy(g_extern.fullpath,
+               rmenu->browser->current_dir.path, sizeof(g_extern.fullpath));
          g_extern.lifecycle_mode_state |= (1ULL << MODE_LOAD_GAME);
       }
    }
@@ -2675,8 +2675,8 @@ static int select_rom(uint8_t menu_type, uint64_t input)
       const char * drive_map = menu_drive_mapping_previous();
       if (drive_map != NULL)
       {
-         filebrowser_set_root_and_ext(browser, g_extern.system.valid_extensions, drive_map);
-         browser_update(browser, 1ULL << RMENU_DEVICE_NAV_B, g_extern.system.valid_extensions);
+         filebrowser_set_root_and_ext(rmenu->browser, g_extern.system.valid_extensions, drive_map);
+         browser_update(rmenu->browser, 1ULL << RMENU_DEVICE_NAV_B, g_extern.system.valid_extensions);
       }
    }
    else if (input & (1ULL << RMENU_DEVICE_NAV_R1))
@@ -2684,12 +2684,12 @@ static int select_rom(uint8_t menu_type, uint64_t input)
       const char * drive_map = menu_drive_mapping_next();
       if (drive_map != NULL)
       {
-         filebrowser_set_root_and_ext(browser, g_extern.system.valid_extensions, drive_map);
-         browser_update(browser, 1ULL << RMENU_DEVICE_NAV_B, g_extern.system.valid_extensions);
+         filebrowser_set_root_and_ext(rmenu->browser, g_extern.system.valid_extensions, drive_map);
+         browser_update(rmenu->browser, 1ULL << RMENU_DEVICE_NAV_B, g_extern.system.valid_extensions);
       }
    }
 
-   if (filebrowser_iterate(browser, FILEBROWSER_ACTION_PATH_ISDIR))
+   if (filebrowser_iterate(rmenu->browser, FILEBROWSER_ACTION_PATH_ISDIR))
       snprintf(msg, sizeof(msg), "INFO - Press [%s] to enter the directory.", key_label_b.desc);
    else
       snprintf(msg, sizeof(msg), "INFO - Press [%s] to load the game.", key_label_b.desc);
@@ -2703,7 +2703,7 @@ static int select_rom(uint8_t menu_type, uint64_t input)
       driver.video_poke->set_osd_msg(driver.video_data, msg, &font_parms);
 
    display_menubar(menu_type);
-   browser_render(browser);
+   browser_render(rmenu->browser);
 
    return 0;
 }
@@ -3230,17 +3230,85 @@ static int menu_input_process(uint8_t menu_type, uint64_t old_state)
   RMENU API
   ============================================================ */
 
+int rmenu_iterate(rmenu_handle_t *rmenu, uint8_t menu_type, uint64_t input)
+{
+#ifdef HAVE_OSKUTIL
+   if (rmenu->osk_init != NULL)
+   {
+      if (rmenu->osk_init(rmenu))
+         rmenu->osk_init = NULL;
+   }
+
+   if (rmenu->osk_callback != NULL)
+   {
+      if (rmenu->osk_callback(rmenu))
+         rmenu->osk_callback = NULL;
+   }
+#endif
+
+   switch(menu_type)
+   {
+      case INGAME_MENU_RESIZE:
+         return ingame_menu_resize(menu_type, input);
+      case INGAME_MENU_CORE_OPTIONS:
+         return ingame_menu_core_options(menu_type, input);
+      case INGAME_MENU_SCREENSHOT:
+         return ingame_menu_screenshot(menu_type, input);
+      case FILE_BROWSER_MENU:
+         return select_rom(menu_type, input);
+      case LIBRETRO_CHOICE:
+#ifdef HAVE_SHADER_MANAGER
+      case CGP_CHOICE:
+      case SHADER_CHOICE:
+#endif
+      case INPUT_PRESET_CHOICE:
+      case BORDER_CHOICE:
+         return select_file(menu_type, input);
+      case PATH_DEFAULT_ROM_DIR_CHOICE:
+      case PATH_SAVESTATES_DIR_CHOICE:
+      case PATH_SRAM_DIR_CHOICE:
+#ifdef HAVE_XML
+      case PATH_CHEATS_DIR_CHOICE:
+#endif
+      case PATH_SYSTEM_DIR_CHOICE:
+         return select_directory(menu_type, input);
+      case GENERAL_VIDEO_MENU:
+      case GENERAL_AUDIO_MENU:
+      case EMU_GENERAL_MENU:
+      case EMU_VIDEO_MENU:
+      case EMU_AUDIO_MENU:
+      case PATH_MENU:
+      case CONTROLS_MENU:
+      case INGAME_MENU:
+#ifdef HAVE_SHADER_MANAGER
+      case INGAME_MENU_SHADER_MANAGER:
+#endif
+         return select_setting(menu_type, input);
+   }
+
+   RARCH_WARN("Menu type %d not implemented, exiting...\n", menu_type);
+   return -1;
+}
+
+rmenu_handle_t *rmenu_init(void)
+{
+   rmenu_handle_t *rmenu = (rmenu_handle_t*)calloc(1, sizeof(*rmenu));
+
+   rmenu->browser =    (filebrowser_t*)calloc(1, sizeof(*(rmenu->browser)));
+
+   strlcpy(rmenu->browser->current_dir.extensions, g_extern.system.valid_extensions,
+         sizeof(rmenu->browser->current_dir.extensions));
+   strlcpy(rmenu->browser->current_dir.root_dir, g_extern.console.main_wrap.default_rom_startup_dir,
+         sizeof(rmenu->browser->current_dir.root_dir));
+
+   filebrowser_iterate(rmenu->browser, FILEBROWSER_ACTION_RESET);
+
+   return rmenu;
+}
 
 void menu_init(void)
 {
-   browser =    (filebrowser_t*)calloc(1, sizeof(*browser));
-
-   strlcpy(browser->current_dir.extensions, g_extern.system.valid_extensions,
-         sizeof(browser->current_dir.extensions));
-   strlcpy(browser->current_dir.root_dir, g_extern.console.main_wrap.default_rom_startup_dir,
-         sizeof(browser->current_dir.root_dir));
-
-   filebrowser_iterate(browser, FILEBROWSER_ACTION_RESET);
+   rmenu = rmenu_init();
 
    menu_stack_push(FILE_BROWSER_MENU, false);
 
@@ -3251,12 +3319,16 @@ void menu_init(void)
             true, menu_texture->width, menu_texture->height, 1.0f);
 }
 
+static void rmenu_free(void)
+{
+   free(rmenu);
+}
 
 void menu_free(void)
 {
    rmenu_gfx_free();
-
-   filebrowser_free(browser);
+   filebrowser_free(rmenu->browser);
+   rmenu_free();
 }
 
 bool menu_iterate(void)
@@ -3321,71 +3393,12 @@ bool menu_iterate(void)
 
    old_state = input_state_first_frame;
 
-#ifdef HAVE_OSKUTIL
-   if (rmenu_state.osk_init != NULL)
-   {
-      if (rmenu_state.osk_init(&rmenu_state))
-         rmenu_state.osk_init = NULL;
-   }
-
-   if (rmenu_state.osk_callback != NULL)
-   {
-      if (rmenu_state.osk_callback(&rmenu_state))
-         rmenu_state.osk_callback = NULL;
-   }
-#endif
-
    int input_entry_ret = 0;
    int input_process_ret = 0;
 
    unsigned menu_type = menu_stack_enum_array[stack_idx - 1];
 
-   switch(menu_type)
-   {
-      case INGAME_MENU_RESIZE:
-         input_entry_ret = ingame_menu_resize(menu_type, input);
-         break;
-      case INGAME_MENU_CORE_OPTIONS:
-         input_entry_ret = ingame_menu_core_options(menu_type, input);
-         break;
-      case INGAME_MENU_SCREENSHOT:
-         input_entry_ret = ingame_menu_screenshot(menu_type, input);
-         break;
-      case FILE_BROWSER_MENU:
-         input_entry_ret = select_rom(menu_type, input);
-         break;
-      case LIBRETRO_CHOICE:
-#ifdef HAVE_SHADER_MANAGER
-      case CGP_CHOICE:
-      case SHADER_CHOICE:
-#endif
-      case INPUT_PRESET_CHOICE:
-      case BORDER_CHOICE:
-         input_entry_ret = select_file(menu_type, input);
-         break;
-      case PATH_DEFAULT_ROM_DIR_CHOICE:
-      case PATH_SAVESTATES_DIR_CHOICE:
-      case PATH_SRAM_DIR_CHOICE:
-#ifdef HAVE_XML
-      case PATH_CHEATS_DIR_CHOICE:
-#endif
-      case PATH_SYSTEM_DIR_CHOICE:
-         input_entry_ret = select_directory(menu_type, input);
-         break;
-      case GENERAL_VIDEO_MENU:
-      case GENERAL_AUDIO_MENU:
-      case EMU_GENERAL_MENU:
-      case EMU_VIDEO_MENU:
-      case EMU_AUDIO_MENU:
-      case PATH_MENU:
-      case CONTROLS_MENU:
-      case INGAME_MENU:
-#ifdef HAVE_SHADER_MANAGER
-      case INGAME_MENU_SHADER_MANAGER:
-#endif
-         input_entry_ret = select_setting(menu_type, input);
-         break;
-   }
+   input_entry_ret = rmenu_iterate(rmenu, menu_type, input);
 
    input_process_ret = menu_input_process(menu_type, old_state);
    msg = msg_queue_pull(g_extern.msg_queue);

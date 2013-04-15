@@ -232,6 +232,8 @@ enum
 #define MAX_NO_OF_SHADERMAN_SETTINGS   SHADERMAN_SHADER_PASSES+1
 #endif
 
+typedef struct rmenu_handle rmenu_handle_t;
+
 void menu_init (void);
 bool menu_iterate(void);
 void menu_free (void);
