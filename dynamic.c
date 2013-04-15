@@ -453,6 +453,7 @@ static bool environment_cb(unsigned cmd, void *data)
          else
             var->value = NULL;
 
+         RARCH_LOG("\t%s\n", var->value ? var->value : "N/A");
          break;
       }
 
