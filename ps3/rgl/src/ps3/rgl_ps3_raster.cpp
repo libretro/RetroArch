@@ -183,13 +183,7 @@ template<int SIZE> static void setVectorTypeSharedvpIndex (void *data, const voi
    memcpy(driver->sharedVPConstants + resource * 4 * sizeof( float ),
          dst, 4 * sizeof(float));
 
-   thisContext->current[0] = (((5) << (18)) | ((0x00001efc)));
-   thisContext->current[1] = resource;
-   thisContext->current += 2;
-
-   __builtin_memcpy(thisContext->current, dst, sizeof(float)*4);
-   thisContext->current += 4;
-   dst += 4;
+   rglGcmSetVertexProgramParameterBlock(thisContext, resource, 1, dst ); 
 }
 
 template<int SIZE> static void setVectorTypeSharedvpIndexArray (void *data, const void* __restrict v, const int index )
@@ -209,13 +203,7 @@ template<int SIZE> static void setVectorTypeSharedvpIndexArray (void *data, cons
    memcpy(driver->sharedVPConstants + resource * 4 * sizeof( float ),
          dst, 4 * sizeof(float));
 
-   thisContext->current[0] = (((5) << (18)) | ((0x00001efc)));
-   thisContext->current[1] = resource;
-   thisContext->current += 2;
-
-   __builtin_memcpy(thisContext->current, dst, sizeof(float)*4);
-   thisContext->current += 4;
-   dst += 4;
+   rglGcmSetVertexProgramParameterBlock(thisContext, resource, 1, dst ); 
 }
 
 
@@ -1773,12 +1761,7 @@ GLAPI void APIENTRY glDrawArrays (GLenum mode, GLint first, GLsizei count)
                case CG_FIXED2:
                case CG_FIXED3:
                case CG_FIXED4:
-                  thisContext->current[0] = (((5) << (18)) | ((0x00001efc)));
-                  thisContext->current[1] = (parameterResource->resource);
-                  thisContext->current += 2;
-                  __builtin_memcpy(thisContext->current, value, sizeof(float)*4);
-                  thisContext->current += 4;
-                  value += 4;
+                  rglGcmSetVertexProgramParameterBlock(thisContext, parameterResource->resource, 1, value );
                   break;
                case CG_FLOAT4x4:
                case CG_HALF4x4:
@@ -1804,17 +1787,7 @@ GLAPI void APIENTRY glDrawArrays (GLenum mode, GLint first, GLsizei count)
                      v2[13] = value[7];
                      v2[14] = value[11];
                      v2[15] = value[15];
-                     const float * __restrict v3 = v2;
-                     thisContext->current[0] = (((17) << (18)) | ((0x00001efc)));
-                     thisContext->current[1] = parameterResource->resource;
-                     thisContext->current += 2;
-
-                     for (i=0; i < 4; ++i)
-                     {
-                        __builtin_memcpy(thisContext->current, v3, sizeof(float)*4);
-                        thisContext->current += 4;
-                        v3 += 4;
-                     }
+                     rglGcmSetVertexProgramParameterBlock(thisContext, parameterResource->resource, 4, v2 );
                   }
                   break;
                case CG_FLOAT3x3:
@@ -1828,18 +1801,7 @@ GLAPI void APIENTRY glDrawArrays (GLenum mode, GLint first, GLsizei count)
                      v2[0] = value[0];v2[1] = value[3];v2[2] = value[6];v2[3] = 0;
                      v2[4] = value[1];v2[5] = value[4];v2[6] = value[7];v2[7] = 0;
                      v2[8] = value[2];v2[9] = value[5];v2[10] = value[8];v2[11] = 0;
-                     const float * __restrict v3 = v2;
-
-                     thisContext->current[0] = (((13) << (18)) | ((0x00001efc)));
-                     thisContext->current[1] = parameterResource->resource;
-                     thisContext->current += 2;
-
-                     for (i=0; i < 3; ++i)
-                     {
-                        __builtin_memcpy(thisContext->current, v3, sizeof(float)*4);
-                        thisContext->current += 4;
-                        v3 += 4;
-                     }
+                     rglGcmSetVertexProgramParameterBlock(thisContext, parameterResource->resource, 3, v2 );
                   }
                   break;
             }
@@ -2131,8 +2093,8 @@ beginning:
       rglGcmSetInvalidateVertexCache(thisContext);
    }
 
-   uint32_t offset = gmmIdToOffset( driver->fpLoadProgramId ) + driver->fpLoadProgramOffset;
-   cellGcmSetUpdateFragmentProgramParameterLocationUnsafeInline(thisContext, offset, CELL_GCM_LOCATION_LOCAL);
+   GCM_FUNC( cellGcmSetUpdateFragmentProgramParameter, 
+         gmmIdToOffset( driver->fpLoadProgramId ) + driver->fpLoadProgramOffset );
 
    uint8_t gcmMode = 0;
 
