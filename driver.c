@@ -363,6 +363,7 @@ void init_drivers(void)
 
    adjust_system_rates();
 
+   g_extern.frame_count = 0;
    init_video_input();
 
    if (g_extern.system.hw_render_callback.context_reset)
