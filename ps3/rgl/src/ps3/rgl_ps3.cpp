@@ -3127,8 +3127,8 @@ GLAPI void RGL_EXPORT psglSwap (void)
 
    rglGcmDriver *driver = (rglGcmDriver*)_CurrentDevice->rasterDriver;
    const char * __restrict v = driver->sharedVPConstants;
-   GCM_FUNC( cellGcmSetVertexProgramParameterBlock, 0, 8, ( float* )v ); // GCM_PORT_UNTESTED [KHOFF]
 
+   rglGcmSetVertexProgramParameterBlock(thisContext, 0, 8, ( float* )v );
    rglGcmSetDitherEnable(thisContext, RGLGCM_TRUE );
 
    RGLcontext *context = (RGLcontext*)_CurrentContext;
