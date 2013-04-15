@@ -228,13 +228,6 @@ CGbool rglPlatformSupportsVertexProgram ( CGprofile p );
 int rglPlatformGenerateFragmentProgram (void *data, const CgProgramHeader *programHeader, const void *ucode, const CgParameterTableHeader *parameterHeader, const char *stringTable, const float *defaultValues );
 CGbool rglPlatformSupportsFragmentProgram ( CGprofile p );
 
-void rglPlatformSetVertexRegister4fv (unsigned int reg, const float * _RGL_RESTRICT v );
-void rglPlatformSetVertexRegisterBlock (unsigned int reg, unsigned int count, const float * _RGL_RESTRICT v );
-void rglPlatformSetFragmentRegister4fv (unsigned int reg, const float * _RGL_RESTRICT v );
-void rglPlatformSetFragmentRegisterBlock (unsigned int reg, unsigned int count, const float * _RGL_RESTRICT v );
-
-void rglPlatformSetBoolVertexRegisters (unsigned int values );
-
 // names API
 
 static inline GLenum rglCgGetSamplerGLTypeFromCgType( CGtype type )
