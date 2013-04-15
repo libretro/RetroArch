@@ -239,6 +239,51 @@ static inline GLuint rglPlatformGetBitsPerPixel (GLenum internalFormat)
  fifo->lastPutWritten = fifo->current; \
  fifo->lastSWReferenceFlushed = fifo->lastSWReferenceWritten;
 
+#define rglGcmSetSurface(thisContext, surface, origin, pixelCenter, log2Width, log2Height) \
+ (thisContext->current)[0] = (((1) << (18)) | ((0x00000194))); \
+ (thisContext->current)[1] = ((0xFEED0000)+surface->colorLocation[0]); \
+ (thisContext->current) += 2; \
+ (thisContext->current)[0] = (((1) << (18)) | ((0x0000018c))); \
+ (thisContext->current)[1] = ((0xFEED0000)+surface->colorLocation[1]); \
+ (thisContext->current) += 2; \
+ (thisContext->current)[0] = (((2) << (18)) | ((0x000001b4))); \
+ (thisContext->current)[1] = ((0xFEED0000)+surface->colorLocation[2]); \
+ (thisContext->current)[2] = ((0xFEED0000)+surface->colorLocation[3]); \
+ (thisContext->current) += 3; \
+ (thisContext->current)[0] = (((1) << (18)) | ((0x00000198))); \
+ (thisContext->current)[1] = ((0xFEED0000)+surface->depthLocation); \
+ (thisContext->current) += 2; \
+ (thisContext->current)[0] = (((6) << (18)) | ((0x00000208))); \
+ (thisContext->current)[1] = ((surface->colorFormat) | ((surface->depthFormat) << 5) | ((surface->type) << 8) | ((surface->antialias) << 12) | ((log2Width) << 16) | ((log2Height) << 24)); \
+ (thisContext->current)[2] = (surface->colorPitch[0]); \
+ (thisContext->current)[3] = (surface->colorOffset[0]); \
+ (thisContext->current)[4] = (surface->depthOffset); \
+ (thisContext->current)[5] = (surface->colorOffset[1]); \
+ (thisContext->current)[6] = (surface->colorPitch[1]); \
+ (thisContext->current) += 7; \
+ (thisContext->current)[0] = (((1) << (18)) | ((0x0000022c))); \
+ (thisContext->current)[1] = (surface->depthPitch); \
+ (thisContext->current) += 2; \
+ (thisContext->current)[0] = (((4) << (18)) | ((0x00000280))); \
+ (thisContext->current)[1] = (surface->colorPitch[2]); \
+ (thisContext->current)[2] = (surface->colorPitch[3]); \
+ (thisContext->current)[3] = (surface->colorOffset[2]); \
+ (thisContext->current)[4] = (surface->colorOffset[3]); \
+ (thisContext->current) += 5; \
+ (thisContext->current)[0] = (((1) << (18)) | ((0x00000220))); \
+ (thisContext->current)[1] = ((surface->colorTarget)); \
+ (thisContext->current) += 2; \
+ (thisContext->current)[0] = (((1) << (18)) | ((0x000002b8))); \
+ (thisContext->current)[1] = ((surface->x) | ((surface->y) << 16)); \
+ (thisContext->current) += 2; \
+ (thisContext->current)[0] = (((2) << (18)) | ((0x00000200))); \
+ (thisContext->current)[1] = ((surface->x) | ((surface->width) << 16)); \
+ (thisContext->current)[2] = ((surface->y) | ((surface->height) << 16));  \
+ (thisContext->current) += 3; \
+ (thisContext->current)[0] = (((1) << (18)) | ((0x00001d88))); \
+ (thisContext->current)[1] = ((surface->height - (((surface->height) & 0x1000) >> 12)) | ((origin) << 12) | ((pixelCenter) << 16)); \
+ (thisContext->current) += 2;
+
 static inline void rglGcmSetFragmentProgramLoad(struct CellGcmContextData *thisContext, const CellCgbFragmentProgramConfiguration *conf, const uint32_t location)
 {
    uint32_t rawData = ((conf->offset)&0x1fffffff);

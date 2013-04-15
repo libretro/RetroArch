@@ -3051,5 +3051,7 @@ void rglGcmFifoGlSetRenderTarget (const void *data)
    else if (grt->height == 1)
       grt->width = 1; 
 
-   GCM_FUNC( cellGcmSetSurface, grt );
+   uint32_t log2Width = 31 - ({__asm__("cntlzw %0,%1" : "=r" (log2Width) : "r" (grt->width)); log2Width;});
+   uint32_t log2Height = 31 - ({__asm__("cntlzw %0,%1" : "=r" (log2Height) : "r" (grt->height)); log2Height;});
+   rglGcmSetSurface(thisContext, grt, CELL_GCM_WINDOW_ORIGIN_BOTTOM, CELL_GCM_WINDOW_PIXEL_CENTER_HALF, log2Width, log2Height);
 }
