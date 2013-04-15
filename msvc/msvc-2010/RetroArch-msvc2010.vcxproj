@@ -213,6 +213,8 @@
     </ClCompile>
     <ClCompile Include="..\..\dynamic.c">
     </ClCompile>
+    <ClCompile Include="..\..\dynamic_dummy.c">
+    </ClCompile>
     <ClCompile Include="..\..\fifo_buffer.c">
     </ClCompile>
     <ClCompile Include="..\..\file.c">
