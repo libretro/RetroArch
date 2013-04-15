@@ -1928,7 +1928,7 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
             else
                cgp_path[0] = '\0';
 
-            ret = video_set_shader_func(RARCH_SHADER_CG, (cgp_path[0] != '\0') ? NULL : cgp_path); 
+            ret = video_set_shader_func(RARCH_SHADER_CG, (cgp_path[0] != '\0') ? cgp_path : NULL); 
 
             if (ret)
                g_settings.video.shader_enable = true;
