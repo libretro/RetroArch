@@ -1408,7 +1408,8 @@ static void shader_manager_init(rgui_handle_t *rgui)
       conf = config_file_new(g_settings.video.shader_path);
       if (conf)
       {
-         gfx_shader_read_conf_cgp(conf, &rgui->shader);
+         if (gfx_shader_read_conf_cgp(conf, &rgui->shader))
+            gfx_shader_resolve_relative(&rgui->shader, g_settings.video.shader_path);
          config_file_free(conf);
       }
    }
@@ -1434,7 +1435,8 @@ static void shader_manager_init(rgui_handle_t *rgui)
 
       if (conf)
       {
-         gfx_shader_read_conf_cgp(conf, &rgui->shader);
+         if (gfx_shader_read_conf_cgp(conf, &rgui->shader))
+            gfx_shader_resolve_relative(&rgui->shader, cgp_path);
          config_file_free(conf);
       }
    }

@@ -252,7 +252,7 @@ static GLint get_attrib(GLuint prog, const char *base)
    return -1;
 }
 
-static bool load_luts(const char *shader_path)
+static bool load_luts(void)
 {
    if (!glsl_shader->luts)
       return true;
@@ -261,16 +261,13 @@ static bool load_luts(const char *shader_path)
 
    for (unsigned i = 0; i < glsl_shader->luts; i++)
    {
-      char tex_path[PATH_MAX];
-      fill_pathname_resolve_relative(tex_path,
-            shader_path, glsl_shader->lut[i].path, sizeof(tex_path));
-
-      RARCH_LOG("Loading texture image from: \"%s\" ...\n", tex_path);
+      RARCH_LOG("Loading texture image from: \"%s\" ...\n",
+            glsl_shader->lut[i].path);
 
       struct texture_image img = {0};
-      if (!texture_image_load(tex_path, &img))
+      if (!texture_image_load(glsl_shader->lut[i].path, &img))
       {
-         RARCH_ERR("Failed to load texture image from: \"%s\"\n", tex_path);
+         RARCH_ERR("Failed to load texture image from: \"%s\"\n", glsl_shader->lut[i].path);
          return false;
       }
 
@@ -422,18 +419,16 @@ static GLuint compile_program(const char *vertex, const char *fragment, unsigned
    return prog;
 }
 
-static bool load_source_path(struct gfx_shader_pass *pass, const char *base, const char *path)
+static bool load_source_path(struct gfx_shader_pass *pass, const char *path)
 {
-   char fullpath[PATH_MAX];
-   fill_pathname_resolve_relative(fullpath, base, path, sizeof(fullpath));
-   if (read_file(fullpath, (void**)&pass->source.xml.vertex) <= 0)
+   if (read_file(path, (void**)&pass->source.xml.vertex) <= 0)
       return false;
 
    pass->source.xml.fragment = strdup(pass->source.xml.vertex);
    return pass->source.xml.fragment && pass->source.xml.vertex;
 }
 
-static bool compile_programs(const char *base, GLuint *gl_prog)
+static bool compile_programs(GLuint *gl_prog)
 {
    for (unsigned i = 0; i < glsl_shader->passes; i++)
    {
@@ -442,7 +437,7 @@ static bool compile_programs(const char *base, GLuint *gl_prog)
       // If we load from GLSLP (CGP),
       // load the file here, and pretend
       // we were really using XML all along.
-      if (*pass->source.cg && !load_source_path(pass, base, pass->source.cg))
+      if (*pass->source.cg && !load_source_path(pass, pass->source.cg))
       {
          RARCH_ERR("Failed to load GLSL shader: %s.\n", pass->source.cg);
          return false;
@@ -658,6 +653,8 @@ static bool gl_glsl_init(const char *path)
       glsl_shader->modern = true;
    }
 
+   gfx_shader_resolve_relative(glsl_shader, path);
+
 #ifdef HAVE_OPENGLES2
    if (!glsl_shader->modern)
    {
@@ -678,13 +675,13 @@ static bool gl_glsl_init(const char *path)
       return false;
    }
 
-   if (!compile_programs(path, &gl_program[1]))
+   if (!compile_programs(&gl_program[1]))
    {
       gl_glsl_free_shader();
       return false;
    }
 
-   if (!load_luts(path))
+   if (!load_luts())
    {
       RARCH_ERR("[GL]: Failed to load LUTs.\n");
       gl_glsl_free_shader();

@@ -1069,3 +1069,31 @@ enum rarch_shader_type gfx_shader_parse_type(const char *path, enum rarch_shader
    return fallback;
 }
 
+void gfx_shader_resolve_relative(struct gfx_shader *shader, const char *ref_path)
+{
+   char tmp_path[PATH_MAX];
+   for (unsigned i = 0; i < shader->passes; i++)
+   {
+      if (!*shader->pass[i].source.cg)
+         continue;
+
+      strlcpy(tmp_path, shader->pass[i].source.cg, sizeof(tmp_path));
+      fill_pathname_resolve_relative(shader->pass[i].source.cg,
+            ref_path, tmp_path, sizeof(shader->pass[i].source.cg));
+   }
+
+   for (unsigned i = 0; i < shader->luts; i++)
+   {
+      strlcpy(tmp_path, shader->lut[i].path, sizeof(tmp_path));
+      fill_pathname_resolve_relative(shader->lut[i].path,
+            ref_path, tmp_path, sizeof(shader->lut[i].path));
+   }
+
+   if (*shader->script_path)
+   {
+      strlcpy(tmp_path, shader->script_path, sizeof(tmp_path));
+      fill_pathname_resolve_relative(shader->script_path,
+            ref_path, tmp_path, sizeof(shader->script_path));
+   }
+}
+

@@ -105,6 +105,8 @@ bool gfx_shader_read_conf_cgp(config_file_t *conf, struct gfx_shader *shader);
 bool gfx_shader_read_xml(const char *path, struct gfx_shader *shader);
 void gfx_shader_write_conf_cgp(config_file_t *conf, const struct gfx_shader *shader);
 
+void gfx_shader_resolve_relative(struct gfx_shader *shader, const char *ref_path);
+
 enum rarch_shader_type gfx_shader_parse_type(const char *path, enum rarch_shader_type fallback);
 
 #ifdef __cplusplus

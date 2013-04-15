@@ -508,7 +508,7 @@ static void load_texture_data(GLuint obj, const struct texture_image *img, bool 
    free(img->pixels);
 }
 
-static bool load_textures(const char *cgp_path)
+static bool load_textures(void)
 {
    if (!cg_shader->luts)
       return true;
@@ -517,14 +517,11 @@ static bool load_textures(const char *cgp_path)
 
    for (unsigned i = 0; i < cg_shader->luts; i++)
    {
-      char image_path[PATH_MAX];
-      fill_pathname_resolve_relative(image_path, cgp_path,
-            cg_shader->lut[i].path, sizeof(image_path));
-
-      RARCH_LOG("Loading image from: \"%s\".\n", image_path);
+      RARCH_LOG("Loading image from: \"%s\".\n",
+            cg_shader->lut[i].path);
 
       struct texture_image img;
-      if (!texture_image_load(image_path, &img))
+      if (!texture_image_load(cg_shader->lut[i].path, &img))
       {
          RARCH_ERR("Failed to load picture ...\n");
          return false;
@@ -538,7 +535,7 @@ static bool load_textures(const char *cgp_path)
    return true;
 }
 
-static bool load_imports(const char *cgp_path)
+static bool load_imports(void)
 {
    struct state_tracker_info tracker_info = {0};
 
@@ -567,12 +564,9 @@ static bool load_imports(const char *cgp_path)
    tracker_info.info_elem = cg_shader->variables;
 
 #ifdef HAVE_PYTHON
-   char script_path[PATH_MAX];
    if (*cg_shader->script_path)
    {
-      fill_pathname_resolve_relative(script_path, cgp_path,
-            cg_shader->script_path, sizeof(script_path));
-      tracker_info.script = script_path;
+      tracker_info.script = cg_shader->script_path;
       tracker_info.script_is_file = true;
    }
 
@@ -586,15 +580,12 @@ static bool load_imports(const char *cgp_path)
    return true;
 }
 
-static bool load_shader(const char *cgp_path, unsigned i)
+static bool load_shader(unsigned i)
 {
-   char path_buf[PATH_MAX];
-   fill_pathname_resolve_relative(path_buf, cgp_path,
-         cg_shader->pass[i].source.cg, sizeof(path_buf));
+   RARCH_LOG("Loading Cg shader: \"%s\".\n",
+         cg_shader->pass[i].source.cg);
 
-   RARCH_LOG("Loading Cg shader: \"%s\".\n", path_buf);
-
-   if (!load_program(i + 1, path_buf, true))
+   if (!load_program(i + 1, cg_shader->pass[i].source.cg, true))
       return false;
 
    return true;
@@ -626,13 +617,7 @@ static bool load_preset(const char *path)
    }
 
    config_file_free(conf);
-
-#if 0 // Debugging
-   config_file_t *save_test = config_file_new(NULL);
-   gfx_shader_write_conf_cgp(conf, cg_shader);
-   config_file_write(save_test, "/tmp/load.cgp");
-   config_file_free(save_test);
-#endif
+   gfx_shader_resolve_relative(cg_shader, path);
 
    if (cg_shader->passes > RARCH_CG_MAX_SHADERS - 3)
    {
@@ -641,20 +626,20 @@ static bool load_preset(const char *path)
    }
    for (unsigned i = 0; i < cg_shader->passes; i++)
    {
-      if (!load_shader(path, i))
+      if (!load_shader(i))
       {
          RARCH_ERR("Failed to load shaders ...\n");
          return false;
       }
    }
 
-   if (!load_textures(path))
+   if (!load_textures())
    {
       RARCH_ERR("Failed to load lookup textures ...\n");
       return false;
    }
 
-   if (!load_imports(path))
+   if (!load_imports())
    {
       RARCH_ERR("Failed to load imports ...\n");
       return false;
