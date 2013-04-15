@@ -43,24 +43,6 @@
 }
 #endif
 
-/* [RSTENSON] To be able to build up buffered push buffers with GCM we need to use the
-// cellGcmSetCurrentBuffer and reset the buffer with cellGcmDefualtCommandBuffer afterwards.
-// Buffer size checks are not handled by these macros because they operate on pointers
-// to data and not cellGcmContextDmas, thus the use of UnsafeInline versions vs Inline as above */
-
-// This for pushing in to a memory buffer verses the actual active fifo
-#define GCM_FUNC_BUFFERED_UNSAFE_INLINED
-
-#ifdef GCM_FUNC_BUFFERED_UNSAFE_INLINED
-#define GCM_FUNC_BUFFERED( GCM_FUNCTION, COMMAND_BUFFER, ...) \
-{ \
-   CellGcmContextData gcmContext; \
-   gcmContext.current = (uint32_t *)COMMAND_BUFFER; \
-   GCM_FUNCTION ## UnsafeInline( &gcmContext, __VA_ARGS__ ); \
-   COMMAND_BUFFER = (typeof(COMMAND_BUFFER))gcmContext.current;   \
-}
-#endif
-
 typedef enum rglGcmEnum
 {
    // gleSetRenderTarget

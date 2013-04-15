@@ -569,9 +569,7 @@ static void setSamplervp (void *data, const void*v, int /* index */)
 
 #undef ROW_MAJOR
 #undef COL_MAJOR
-// Previously from Shader.cpp
 
-//---------------------------------------------------------------------------------------------------------
 #define ROW_MAJOR 0
 #define COL_MAJOR 1
 
@@ -817,7 +815,11 @@ void rglCreatePushBuffer(void *data)
                      if ( parameterEntry->flags & CGP_CONTIGUOUS )
                      {
                         memset( rglGcmCurrent, 0, 4*( 4*registerCount + 3 ) );
-                        GCM_FUNC_BUFFERED( cellGcmSetVertexProgramParameterBlock, rglGcmCurrent, parameterResource->resource, registerCount, ( float* )rglGcmCurrent );
+                        CellGcmContextData gcmContext;
+                        gcmContext.current = (uint32_t*)rglGcmCurrent;
+                        cellGcmSetVertexProgramParameterBlockUnsafeInline(&gcmContext, parameterResource->resource, registerCount, ( float* )rglGcmCurrent );
+                        rglGcmCurrent = (typeof(rglGcmCurrent))gcmContext.current;
+
                         rtParameter->pushBufferPointer = rglGcmCurrent - 4 * registerCount;
                      }
                      else
@@ -830,7 +832,10 @@ void rglCreatePushBuffer(void *data)
                            if ( program->resources[resourceIndex] != 0xffff )
                            {
                               memset( rglGcmCurrent, 0, 4*( 4*registerStride + 3 ) );
-                              GCM_FUNC_BUFFERED( cellGcmSetVertexProgramParameterBlock, rglGcmCurrent, program->resources[resourceIndex], registerStride, ( float* )rglGcmCurrent ); // GCM_PORT_TESTED [KHOFF]
+                              CellGcmContextData gcmContext;
+                              gcmContext.current = (uint32_t*)rglGcmCurrent;
+                              cellGcmSetVertexProgramParameterBlockUnsafeInline(&gcmContext, program->resources[resourceIndex], registerStride, ( float* )rglGcmCurrent );
+                              rglGcmCurrent = (typeof(rglGcmCurrent))gcmContext.current;
                               *( programPushBuffer++ ) = ( unsigned int* )( rglGcmCurrent - 4 * registerStride );
                            }
                            else
@@ -1027,7 +1032,10 @@ void rglCreatePushBuffer(void *data)
    if ( bufferSize > 0 )
    {
       int nopCount = ( program->constantPushBuffer + bufferSize ) - ( unsigned int * )rglGcmCurrent;
-      GCM_FUNC_BUFFERED( cellGcmSetNopCommand, rglGcmCurrent, nopCount ); // GCM_PORT_TESTED [KHOFF]
+      CellGcmContextData gcmContext;
+      gcmContext.current = (uint32_t*)rglGcmCurrent;
+      cellGcmSetNopCommandUnsafeInline(&gcmContext, nopCount);
+      rglGcmCurrent = (typeof(rglGcmCurrent))gcmContext.current;
    }
 }
 
