@@ -1713,7 +1713,7 @@ void rglGcmSetOpenGLState (void *data)
 
    for ( i = 0; i < RGLGCM_ATTRIB_COUNT; i++ )
    {
-      GCM_FUNC( cellGcmSetVertexDataArray, i, 0, 0, 0, CELL_GCM_VERTEX_F, CELL_GCM_LOCATION_LOCAL, 0);
+      rglGcmSetVertexDataArray(thisContext, i, 0, 0, 0, CELL_GCM_VERTEX_F, CELL_GCM_LOCATION_LOCAL, 0);
    }
 
    rglGcmSetDitherEnable(thisContext, RGLGCM_TRUE );

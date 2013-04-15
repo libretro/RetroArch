@@ -26,6 +26,37 @@ static inline GLuint rglPlatformGetBitsPerPixel (GLenum internalFormat)
 #define SUBPIXEL_BITS 12
 #define SUBPIXEL_ADJUST (0.5/(1<<SUBPIXEL_BITS))
 
+#define rglGcmSetVertexData4f(thisContext, index, v) \
+ thisContext->current[0] = (((4) << (18)) | ((0x00001c00) + (index) * 16)); \
+ __builtin_memcpy(&thisContext->current[1], v, sizeof(float)*4); \
+ thisContext->current += 5;
+
+#define rglGcmSetVertexDataArray(thisContext, index, frequency, stride, size, type, location, offset) \
+ (thisContext->current)[0] = (((1) << (18)) | ((0x00001740) + ((index)) * 4)); \
+ (thisContext->current)[1] = ((((frequency)) << 16) | (((stride)) << 8) | (((size)) << 4) | ((type))); \
+ (thisContext->current) += 2; \
+ (thisContext->current)[0] = (((1) << (18)) | ((0x00001680) + ((index)) * 4)); \
+ (thisContext->current)[1] = ((((location)) << 31) | (offset)); \
+ (thisContext->current) += 2;
+
+#define rglGcmSetInlineTransferPointer(thisContext, offset, count, pointer) \
+ (thisContext->current)[0] = (((1) << (18)) | ((0x0000630C))); \
+ (thisContext->current)[1] = (offset & ~63); \
+ (thisContext->current) += 2; \
+ (thisContext->current)[0] = (((2) << (18)) | ((0x00006300))); \
+ (thisContext->current)[1] = (CELL_GCM_TRANSFER_SURFACE_FORMAT_Y32); \
+ (thisContext->current)[2] = ((0x1000) | ((0x1000) << 16)); \
+ (thisContext->current) += 3; \
+ (thisContext->current)[0] = (((3) << (18)) | ((0x0000A304))); \
+ (thisContext->current)[1] = (((0) << 16) | ((offset & 63) >> 2)); \
+ (thisContext->current)[2] = (((1) << 16) | (count)); \
+ (thisContext->current)[3] = (((1) << 16) | (count)); \
+ (thisContext->current) += 4; \
+ thisContext->current[0] = ((((count + 1) & ~1) << (18)) | ((0x0000A400))); \
+ thisContext->current += 1; \
+ pointer = thisContext->current; \
+ thisContext->current += ((count + 1) & ~1);
+
 #define rglGcmSetWriteBackEndLabel(thisContext, index, value) \
  (thisContext->current)[0] = (((1) << (18)) | ((0x00001d6c))); \
  (thisContext->current)[1] = 0x10 * index; /* offset */ \

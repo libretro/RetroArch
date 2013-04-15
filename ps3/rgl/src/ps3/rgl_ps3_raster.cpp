@@ -91,7 +91,8 @@ template<int SIZE> inline static void swapandsetfp( int ucodeSize, unsigned int 
    {
       void *pointer=NULL;
       const int paddedSIZE = (SIZE + 1) & ~1; // even width only	
-      GCM_FUNC( cellGcmSetInlineTransferPointer, gmmIdToOffset( loadProgramId ) + loadProgramOffset + *( ec++ ), paddedSIZE, &pointer);
+      uint32_t var = gmmIdToOffset( loadProgramId ) + loadProgramOffset + *( ec++ );
+      rglGcmSetInlineTransferPointer(thisContext, var, paddedSIZE, pointer);
       float *fp = (float*)pointer;
       float *src = (float*)v;
       for (uint32_t j=0; j<SIZE;j++)
@@ -351,7 +352,7 @@ template <int ROWS, int COLS, int ORDER> static void setMatrixSharedfpIndex (voi
    }
    rglGcmSetTransferLocation(thisContext, CELL_GCM_LOCATION_LOCAL );
    void *pointer=NULL;
-   GCM_FUNC( cellGcmSetInlineTransferPointer, dstVidOffset, 4*ROWS, &pointer);
+   rglGcmSetInlineTransferPointer(thisContext, dstVidOffset, (4*ROWS), pointer);
    float *fp = (float*)pointer;
    float *src = (float*)tmp;
    for (uint32_t j=0; j<ROWS;j++)
@@ -401,9 +402,8 @@ template <int ROWS, int COLS, int ORDER> static void setMatrixSharedfpIndexArray
 
    rglGcmSetTransferLocation(thisContext, CELL_GCM_LOCATION_LOCAL );
 
-
    void *pointer=NULL;
-   GCM_FUNC( cellGcmSetInlineTransferPointer, dstVidOffset, 4*ROWS, &pointer);
+   rglGcmSetInlineTransferPointer(thisContext, dstVidOffset, (4*ROWS), pointer);
    float *fp = (float*)pointer;
    const float *src = (const float*)tmp;
    for (uint32_t j=0; j<4*ROWS;j++)
@@ -2084,13 +2084,13 @@ beginning:
                   break;
             }
 
-            GCM_FUNC( cellGcmSetVertexDataArray, i, freq, stride, size, gcmType, CELL_GCM_LOCATION_LOCAL, gpuOffset );
+            rglGcmSetVertexDataArray(thisContext, i, freq, stride, size, gcmType, CELL_GCM_LOCATION_LOCAL, gpuOffset );
          }
          else
          {
             // attribute is disabled
-            GCM_FUNC( cellGcmSetVertexDataArray, i, 0, 0, 0, CELL_GCM_VERTEX_F, CELL_GCM_LOCATION_LOCAL, 0);
-            GCM_FUNC( cellGcmSetVertexData4f, i, attrib->value );
+            rglGcmSetVertexDataArray(thisContext, i, 0, 0, 0, CELL_GCM_VERTEX_F, CELL_GCM_LOCATION_LOCAL, 0);
+            rglGcmSetVertexData4f(thisContext, i, attrib->value );
          }
       }
       driver->invalidateVertexCache = GL_TRUE;
