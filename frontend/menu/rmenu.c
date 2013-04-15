@@ -3290,6 +3290,53 @@ int rmenu_iterate(rmenu_handle_t *rmenu, uint8_t menu_type, uint64_t input)
    return -1;
 }
 
+#ifdef HAVE_SHADER_MANAGER
+static void shader_manager_init(rmenu_handle_t *rgui)
+{
+   config_file_t *conf = NULL;
+   char cgp_path[PATH_MAX];
+
+   const char *ext = path_get_extension(g_settings.video.shader_path);
+   if (strcmp(ext, "glslp") == 0 || strcmp(ext, "cgp") == 0)
+   {
+      conf = config_file_new(g_settings.video.shader_path);
+      if (conf)
+      {
+         if (gfx_shader_read_conf_cgp(conf, &rgui->shader))
+            gfx_shader_resolve_relative(&rgui->shader, g_settings.video.shader_path);
+         config_file_free(conf);
+      }
+   }
+   else if (strcmp(ext, "glsl") == 0 || strcmp(ext, "cg") == 0)
+   {
+      strlcpy(rgui->shader.pass[0].source.cg, g_settings.video.shader_path,
+            sizeof(rgui->shader.pass[0].source.cg));
+      rgui->shader.passes = 1;
+   }
+   else
+   {
+      const char *shader_dir = *g_settings.video.shader_dir ?
+         g_settings.video.shader_dir : g_settings.system_directory;
+
+      fill_pathname_join(cgp_path, shader_dir, "rgui.glslp", sizeof(cgp_path));
+      conf = config_file_new(cgp_path);
+
+      if (!conf)
+      {
+         fill_pathname_join(cgp_path, shader_dir, "rgui.cgp", sizeof(cgp_path));
+         conf = config_file_new(cgp_path);
+      }
+
+      if (conf)
+      {
+         if (gfx_shader_read_conf_cgp(conf, &rgui->shader))
+            gfx_shader_resolve_relative(&rgui->shader, cgp_path);
+         config_file_free(conf);
+      }
+   }
+}
+#endif
+
 rmenu_handle_t *rmenu_init(void)
 {
    rmenu_handle_t *rmenu = (rmenu_handle_t*)calloc(1, sizeof(*rmenu));
@@ -3302,6 +3349,10 @@ rmenu_handle_t *rmenu_init(void)
          sizeof(rmenu->browser->current_dir.root_dir));
 
    filebrowser_iterate(rmenu->browser, FILEBROWSER_ACTION_RESET);
+
+#ifdef HAVE_SHADER_MANAGER
+   shader_manager_init(rmenu);
+#endif
 
    return rmenu;
 }
