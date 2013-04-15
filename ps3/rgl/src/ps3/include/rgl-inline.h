@@ -224,6 +224,73 @@ static inline GLuint rglPlatformGetBitsPerPixel (GLenum internalFormat)
  (thisContext->current)[1] = ((enable) | ((alphaToCoverage) << 4) | ((alphaToOne) << 8) | ((sampleMask) << 16)); \
  (thisContext->current) += 2; 
 
+#define rglGcmFifoFinish(ref, offset_bytes) \
+ ref = rglGcmFifoPutReference( fifo ); \
+ rglGcmFifoFlush( fifo, offset_bytes ); \
+ while (rglGcmFifoReferenceInUse(fifo, ref)) \
+    sys_timer_usleep(10);
+
+#define rglGcmFifoReadReference(fifo) (fifo->lastHWReferenceRead = *((volatile GLuint *)&fifo->dmaControl->Reference))
+
+#define rglGcmFifoFlush(fifo, offsetInBytes) \
+ cellGcmAddressToOffset( fifo->current, ( uint32_t * )&offsetInBytes ); \
+ cellGcmFlush(); \
+ fifo->dmaControl->Put = offsetInBytes; \
+ fifo->lastPutWritten = fifo->current; \
+ fifo->lastSWReferenceFlushed = fifo->lastSWReferenceWritten;
+
+static inline void rglGcmSetFragmentProgramLoad(struct CellGcmContextData *thisContext, const CellCgbFragmentProgramConfiguration *conf, const uint32_t location)
+{
+   uint32_t rawData = ((conf->offset)&0x1fffffff);
+   uint32_t shCtrl0;
+   uint32_t registerCount;
+   uint32_t texMask;
+   uint32_t inMask;
+   uint32_t texMask2D;
+   uint32_t texMaskCentroid;
+   uint32_t i;
+
+   (thisContext->current)[0] = (((1) << (18)) | ((0x000008e4)));
+   (thisContext->current)[1] = ((location+1) | (rawData));
+   (thisContext->current) += 2;
+
+   inMask = conf->attributeInputMask;
+
+   (thisContext->current)[0] = (((1) << (18)) | ((0x00001ff4)));
+   (thisContext->current)[1] = (inMask);
+   (thisContext->current) += 2;
+
+
+   texMask = conf->texCoordsInputMask;
+   texMask2D = conf->texCoords2D;
+   texMaskCentroid = conf->texCoordsCentroid;
+
+   for(i=0; texMask; i++)
+   {
+      if (texMask&1)
+      {
+         uint32_t hwTexCtrl = (texMask2D & 1) | ((texMaskCentroid & 1) << 4);
+         (thisContext->current)[0] = (((1) << (18)) | ((0x00000b40) + (i) * 4));
+         (thisContext->current)[1] = (hwTexCtrl);
+         (thisContext->current) += 2;
+      }
+      texMask >>= 1;
+      texMask2D >>= 1;
+      texMaskCentroid >>= 1;
+   }
+
+
+   registerCount = conf->registerCount;
+
+   if (registerCount < 2)
+      registerCount = 2;
+
+   shCtrl0 = conf->fragmentControl | (registerCount << 24);
+   (thisContext->current)[0] = (((1) << (18)) | ((0x00001d60)));
+   (thisContext->current)[1] = (shCtrl0);
+   (thisContext->current) += 2;
+}
+
 static inline void rglGcmSetDrawArrays(struct CellGcmContextData *thisContext, uint8_t mode,
       uint32_t first, uint32_t count)
 {
@@ -281,6 +348,60 @@ static inline void rglGcmSetDrawArrays(struct CellGcmContextData *thisContext, u
 
    (thisContext->current)[0] = (((1) << (18)) | ((0x00001808)));
    (thisContext->current)[1] = (0);
+   (thisContext->current) += 2;
+}
+
+static inline void rglGcmSetVertexProgramLoad(struct CellGcmContextData *thisContext, const CellCgbVertexProgramConfiguration *conf, const void *ucode)
+{
+   const uint32_t *rawData;
+   uint32_t instCount;
+   uint32_t instIndex;
+
+   rawData = (const uint32_t*)ucode;
+   instCount = conf->instructionCount;
+   instIndex = conf->instructionSlot;
+
+   uint32_t loop, rest;
+   loop = instCount / 8;
+   rest = (instCount % 8) * 4;
+
+   (thisContext->current)[0] = (((2) << (18)) | ((0x00001e9c)));
+   (thisContext->current)[1] = (instIndex);
+   (thisContext->current)[2] = (instIndex);
+   (thisContext->current) += 3;
+
+   uint32_t i, j;
+
+   for (i = 0; i < loop; i++)
+   {
+      thisContext->current[0] = (((32) << (18)) | ((0x00000b80)));
+
+      __builtin_memcpy(&thisContext->current[1], &rawData[0], sizeof(uint32_t)*16);
+      __builtin_memcpy(&thisContext->current[17], &rawData[16], sizeof(uint32_t)*16);
+
+      thisContext->current += (1 + 32);
+      rawData += 32;
+   }
+
+   if (rest > 0)
+   {
+      thisContext->current[0] = (((rest) << (18)) | ((0x00000b80)));
+      for (j = 0; j < rest; j++)
+         thisContext->current[j+1] = rawData[j];
+      thisContext->current += (1 + rest);
+   }
+
+
+   (thisContext->current)[0] = (((1) << (18)) | ((0x00001ff0)));
+   (thisContext->current)[1] = ((conf->attributeInputMask));
+   (thisContext->current) += 2;
+
+   (thisContext->current)[0] = (((1) << (18)) | ((0x00001ef8)));
+
+   if (conf->registerCount <= 32)
+      (thisContext->current)[1] = ((0xFFFF) | ((32) << 16));
+   else
+      (thisContext->current)[1] = ((0xFFFF) | ((48) << 16));
    (thisContext->current) += 2;
 }
 
@@ -580,14 +701,6 @@ static inline void rglPrintFifoFromGet( unsigned int numWords )
 {
    for ( int i = -numWords; i <= -1; i++ )
       rglPrintIt((( uint32_t* )rglGcmState_i.fifo.lastGetRead )[i] );
-}
-
-// Determine whether a given location in a command buffer has been passed, by 
-// using reference markers.
-static inline GLboolean rglGcmFifoGlTestFenceRef (const GLuint ref)
-{
-   rglGcmFifo *fifo = &rglGcmState_i.fifo;
-   return rglGcmFifoReferenceInUse( fifo, ref );
 }
 
 // Add a reference marker to the command buffer to determine whether a location 

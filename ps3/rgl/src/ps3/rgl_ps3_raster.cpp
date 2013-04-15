@@ -1201,8 +1201,10 @@ GLAPI void APIENTRY glBufferSubData( GLenum target, GLintptr offset, GLsizeiptr 
 char *rglPlatformBufferObjectMap (void *data, GLenum access)
 {
    rglBufferObject *bufferObject = (rglBufferObject*)data;
+   rglGcmFifo *fifo = (rglGcmFifo*)&rglGcmState_i.fifo;
    rglGcmBufferObject *rglBuffer = (rglGcmBufferObject*)bufferObject->platformBufferObject;
    CellGcmContextData *thisContext = (CellGcmContextData*)gCellGcmCurrentContext;
+   GLuint ref;
 
    if (rglBuffer->mapCount++ == 0)
    {
@@ -1220,9 +1222,10 @@ char *rglPlatformBufferObjectMap (void *data, GLenum access)
       }
       else
       {
+         unsigned int offset_bytes = 0;
          // must wait in order to read
          rglGcmSetInvalidateVertexCache(thisContext);
-         rglGcmFifoFinish( &rglGcmState_i.fifo );
+         rglGcmFifoFinish(ref, offset_bytes);
       }
 
       rglBuffer->mapAccess = access;
@@ -1277,9 +1280,11 @@ GLboolean rglPlatformBufferObjectUnmap (void *data)
 
 GLAPI void APIENTRY glClear( GLbitfield mask )
 {
+   unsigned int offset_bytes = 0;
    RGLcontext*	LContext = _CurrentContext;
    rglGcmDriver *driver = (rglGcmDriver*)_CurrentDevice->rasterDriver;
    CellGcmContextData *thisContext = (CellGcmContextData*)gCellGcmCurrentContext;
+   rglGcmFifo * fifo = &rglGcmState_i.fifo;
 
    if ( LContext->needValidate & RGL_VALIDATE_FRAMEBUFFER )
    {
@@ -1321,7 +1326,7 @@ GLAPI void APIENTRY glClear( GLbitfield mask )
    rglGcmSetClearSurface(thisContext, CELL_GCM_CLEAR_R | CELL_GCM_CLEAR_G | 
          CELL_GCM_CLEAR_B | CELL_GCM_CLEAR_A );
    rglGcmSetInvalidateVertexCache(thisContext);
-   rglGcmFifoFlush( &rglGcmState_i.fifo );
+   rglGcmFifoFlush(fifo, offset_bytes);
 }
 
 rglFramebuffer* rglCreateFramebuffer (void)
@@ -1498,8 +1503,12 @@ void rglPlatformFramebuffer::validate (void *data)
 void *rglPlatformRasterInit (void)
 {
    CellGcmContextData *thisContext = (CellGcmContextData*)gCellGcmCurrentContext;
+   rglGcmFifo *fifo = (rglGcmFifo*)&rglGcmState_i.fifo;
+   GLuint ref;
+   unsigned int offset_bytes = 0;
+
    rglGcmSetInvalidateVertexCache(thisContext);
-   rglGcmFifoFinish( &rglGcmState_i.fifo );
+   rglGcmFifoFinish(ref, offset_bytes);
 
    rglGcmDriver *driver = (rglGcmDriver*)malloc(sizeof(rglGcmDriver));
    memset(driver, 0, sizeof(rglGcmDriver));
@@ -1685,7 +1694,7 @@ GLAPI void APIENTRY glDrawArrays (GLenum mode, GLint first, GLsizei count)
          if ( fifo->current + spaceInWords + 1024 > fifo->end )
             rglOutOfSpaceCallback( fifo, spaceInWords );
 
-         GCM_FUNC( cellGcmSetVertexProgramLoad, &conf, program->ucode );
+         rglGcmSetVertexProgramLoad(thisContext, &conf, program->ucode );
          rglGcmSetUserClipPlaneControl(thisContext, 0, 0, 0, 0, 0, 0 );
 
          rglGcmInterpolantState *s = &rglGcmState_i.state.interpolant;
@@ -1849,7 +1858,7 @@ GLAPI void APIENTRY glDrawArrays (GLenum mode, GLint first, GLsizei count)
          /* TODO - look into this */
          conf.fragmentControl |= 0 << CELL_GCM_SHIFT_SET_SHADER_CONTROL_CONTROL_TXP; 
 
-         GCM_FUNC( cellGcmSetFragmentProgramLoad, &conf );
+         rglGcmSetFragmentProgramLoad(thisContext, &conf, CELL_GCM_LOCATION_LOCAL);
 
          rglGcmSetZMinMaxControl(thisContext, ( program->header.fragmentProgram.flags & CGF_DEPTHREPLACE ) ? RGLGCM_FALSE : RGLGCM_TRUE, RGLGCM_FALSE, RGLGCM_FALSE );
 

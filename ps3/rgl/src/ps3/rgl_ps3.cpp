@@ -1576,52 +1576,23 @@ uint32_t gmmAlloc(void *data,
   FIFO BUFFER
   ============================================================ */
 
-void rglGcmFifoFinish (void *data)
-{
-   rglGcmFifo *fifo = (rglGcmFifo*)data;
-   GLuint ref = rglGcmFifoPutReference( fifo );
-
-   rglGcmFifoFlush( fifo );
-
-   while (rglGcmFifoReferenceInUse(fifo, ref))
-      sys_timer_usleep(10);
-}
-
-void rglGcmFifoFlush (void *data)
-{
-   rglGcmFifo *fifo = (rglGcmFifo*)data;
-   unsigned int offsetInBytes = 0;
-
-   cellGcmAddressToOffset( fifo->current, ( uint32_t * )&offsetInBytes );
-
-   cellGcmFlush();
-
-   fifo->dmaControl->Put = offsetInBytes;
-   fifo->lastPutWritten = fifo->current;
-
-   fifo->lastSWReferenceFlushed = fifo->lastSWReferenceWritten;
-}
-
 GLuint rglGcmFifoPutReference (void *data)
 {
    CellGcmContextData *thisContext = (CellGcmContextData*)gCellGcmCurrentContext;
    rglGcmFifo *fifo = (rglGcmFifo*)data;
+   GLuint ref;
+   unsigned int offset_bytes = 0;
+
    fifo->lastSWReferenceWritten++;
 
    rglGcmSetReferenceCommand(thisContext, fifo->lastSWReferenceWritten );
 
    if (( fifo->lastSWReferenceWritten & 0x7fffffff ) == 0 )
-      rglGcmFifoFinish( fifo );
+   {
+      rglGcmFifoFinish(ref, offset_bytes);
+   }
 
    return fifo->lastSWReferenceWritten;
-}
-
-GLuint rglGcmFifoReadReference (void *data)
-{
-   rglGcmFifo *fifo = (rglGcmFifo*)data;
-   GLuint ref = *((volatile GLuint *)&fifo->dmaControl->Reference);
-   fifo->lastHWReferenceRead = ref;
-   return ref;
 }
 
 GLboolean rglGcmFifoReferenceInUse (void *data, GLuint reference)
@@ -1633,10 +1604,13 @@ GLboolean rglGcmFifoReferenceInUse (void *data, GLuint reference)
 
    // has the reference already been flushed out ?
    if (( fifo->lastSWReferenceFlushed - reference ) & 0x80000000 )
-      rglGcmFifoFlush( fifo );
+   {
+      unsigned int offset_bytes = 0;
+      rglGcmFifoFlush(fifo, offset_bytes);
+   }
 
    // read current hw reference
-   rglGcmFifoReadReference( fifo );
+   rglGcmFifoReadReference(fifo);
 
    // compare against hw ref value (accounting wrap)
    if ( !(( fifo->lastHWReferenceRead - reference ) & 0x80000000 ) )
@@ -1680,8 +1654,9 @@ void rglGcmFifoInit (void *data, void *dmaControl, unsigned long dmaPushBufferOf
    // ensure the ref is initted to 0.
    if ( rglGcmFifoReadReference( fifo ) != 0 )
    {
+      unsigned int offset_bytes = 0;
       GCM_FUNC( cellGcmSetReferenceCommand, 0 );
-      rglGcmFifoFlush( fifo ); // Here, we jump to this new buffer
+      rglGcmFifoFlush(fifo, offset_bytes); // Here, we jump to this new buffer
 
       // a finish that waits for 0 specifically.
       while (rglGcmFifoReadReference(fifo) != 0)
@@ -1696,11 +1671,28 @@ void rglGcmFifoInit (void *data, void *dmaControl, unsigned long dmaPushBufferOf
   GL INITIALIZATION
   ============================================================ */
 
-void rglGcmSetOpenGLState (void *data)
+GLboolean rglGcmInitFromRM( rglGcmResource *rmResource )
 {
-   rglGcmState *rglGcmSt = (rglGcmState*)data;
+   rglGcmState *rglGcmSt = &rglGcmState_i;
+   rglGcmFifo *fifo = (rglGcmFifo*)&rglGcmSt->fifo;
    CellGcmContextData *thisContext = (CellGcmContextData*)gCellGcmCurrentContext;
-   GLuint i;
+   GLuint i, ref;
+   unsigned int offset_bytes = 0;
+
+   memset( rglGcmSt, 0, sizeof( *rglGcmSt ) );
+
+   rglGcmSt->localAddress = rmResource->localAddress;
+   rglGcmSt->hostMemoryBase = rmResource->hostMemoryBase;
+   rglGcmSt->hostMemorySize = rmResource->hostMemorySize;
+
+   rglGcmSt->hostNotifierBuffer = NULL; //rmResource->hostNotifierBuffer;
+   rglGcmSt->semaphores = rmResource->semaphores;
+
+   rglGcmFifoInit( &rglGcmSt->fifo, rmResource->dmaControl, rmResource->dmaPushBufferOffset, (uint32_t*)rmResource->dmaPushBuffer, rmResource->dmaPushBufferSize );
+
+   rglGcmFifoFinish(ref, offset_bytes);
+
+   // Set the GPU to a known state
 
    // initialize the default OpenGL state
    GCM_FUNC( cellGcmSetBlendColor, 0, 0);
@@ -1743,29 +1735,10 @@ void rglGcmSetOpenGLState (void *data)
    v->w = RGLGCM_MAX_RT_DIMENSION;
    v->h = RGLGCM_MAX_RT_DIMENSION;
    rglGcmFifoGlViewport(v, 0.0f, 1.0f );
-}
-
-GLboolean rglGcmInitFromRM( rglGcmResource *rmResource )
-{
-   rglGcmState *rglGcmSt = &rglGcmState_i;
-   memset( rglGcmSt, 0, sizeof( *rglGcmSt ) );
-
-   rglGcmSt->localAddress = rmResource->localAddress;
-   rglGcmSt->hostMemoryBase = rmResource->hostMemoryBase;
-   rglGcmSt->hostMemorySize = rmResource->hostMemorySize;
-
-   rglGcmSt->hostNotifierBuffer = NULL; //rmResource->hostNotifierBuffer;
-   rglGcmSt->semaphores = rmResource->semaphores;
-
-   rglGcmFifoInit( &rglGcmSt->fifo, rmResource->dmaControl, rmResource->dmaPushBufferOffset, (uint32_t*)rmResource->dmaPushBuffer, rmResource->dmaPushBufferSize );
-
-   rglGcmFifoFinish( &rglGcmSt->fifo );
-
-   // Set the GPU to a known state
-   rglGcmSetOpenGLState(rglGcmSt);
 
    // wait for setup to complete
-   rglGcmFifoFinish(&rglGcmSt->fifo);
+   offset_bytes = 0;
+   rglGcmFifoFinish(ref, offset_bytes);
 
    return GL_TRUE;
 }
@@ -1907,11 +1880,13 @@ void rglPsglPlatformExit(void)
 {
    RGLcontext* LContext = _CurrentContext;
    CellGcmContextData *thisContext = (CellGcmContextData*)gCellGcmCurrentContext;
+   rglGcmFifo * fifo = &rglGcmState_i.fifo;
 
    if ( LContext )
    {
+      unsigned int offset_bytes = 0;
       rglGcmSetInvalidateVertexCache(thisContext);
-      rglGcmFifoFlush( &rglGcmState_i.fifo );
+      rglGcmFifoFlush(fifo, offset_bytes);
 
       psglMakeCurrent( NULL, NULL );
       rglDeviceExit();
@@ -2335,8 +2310,11 @@ static GLboolean rglDuringDestroyDevice = GL_FALSE;
 //  region is resized or deleted.
 GLboolean rglGcmTryResizeTileRegion( GLuint address, GLuint size, void* data )
 {
+   rglGcmFifo *fifo = (rglGcmFifo*)&rglGcmState_i.fifo;
    rglTiledRegion* region = ( rglTiledRegion* )data;
    int32_t retVal = 0;
+   GLuint ref;
+   unsigned int offset_bytes = 0;
 
    // delete always succeeds
    if ( size == 0 )
@@ -2347,11 +2325,12 @@ GLboolean rglGcmTryResizeTileRegion( GLuint address, GLuint size, void* data )
 
       if ( ! rglDuringDestroyDevice ) 
       {
+         unsigned int offset_bytes = 0;
          // must wait until RSX is completely idle before calling cellGcmUnbindTile 
          rglGcmUtilWaitForIdle(); 
 
          retVal = cellGcmUnbindTile( region->id );
-         rglGcmFifoFinish( &rglGcmState_i.fifo );
+         rglGcmFifoFinish(ref, offset_bytes);
       }
       return GL_TRUE;
    }
@@ -2373,7 +2352,8 @@ GLboolean rglGcmTryResizeTileRegion( GLuint address, GLuint size, void* data )
 
    retVal = cellGcmBindTile( region->id ); 
 
-   rglGcmFifoFinish( &rglGcmState_i.fifo );
+   offset_bytes = 0;
+   rglGcmFifoFinish(ref, offset_bytes);
    return GL_TRUE;
 }
 
@@ -2779,9 +2759,11 @@ int rglPlatformCreateDevice (void *data)
    CellGcmContextData *thisContext = (CellGcmContextData*)gCellGcmCurrentContext;
    RGLdevice *device = (RGLdevice*)data;
    rglGcmDevice *gcmDevice = ( rglGcmDevice * )device->platformDevice;
+   rglGcmFifo *fifo = (rglGcmFifo*)&rglGcmState_i.fifo;
    RGLdeviceParameters* params = &device->deviceParameters;
    rglDuringDestroyDevice = GL_FALSE;
    GLboolean result = 0;
+   GLuint ref;
 
    // Tile memory manager init
    rglGcmTiledMemoryInit();
@@ -2996,11 +2978,12 @@ int rglPlatformCreateDevice (void *data)
    }
    else
    {
+      unsigned int offset_bytes = 0;
       rglSetDisplayMode( vm, gcmDevice->color[0].bpp*8, gcmDevice->color[0].pitch );
 
       cellGcmSetFlipMode( gcmDevice->vsync ? CELL_GCM_DISPLAY_VSYNC : CELL_GCM_DISPLAY_HSYNC );
       rglGcmSetInvalidateVertexCache(thisContext);
-      rglGcmFifoFinish( &rglGcmState_i.fifo );
+      rglGcmFifoFinish(ref, offset_bytes);
 
       for ( int i = 0; i < params->bufferingMode; ++i )
       {
@@ -3023,12 +3006,15 @@ int rglPlatformCreateDevice (void *data)
 void rglPlatformDestroyDevice (void *data)
 {
    RGLdevice *device = (RGLdevice*)data;
+   rglGcmFifo *fifo = (rglGcmFifo*)&rglGcmState_i.fifo;
    rglGcmDevice *gcmDevice = ( rglGcmDevice * )device->platformDevice;
    RGLdeviceParameters *params = &device->deviceParameters;
    CellGcmContextData *thisContext = (CellGcmContextData*)gCellGcmCurrentContext;
+   GLuint ref;
+   unsigned int offset_bytes = 0;
 
    rglGcmSetInvalidateVertexCache(thisContext);
-   rglGcmFifoFinish( &rglGcmState_i.fifo );
+   rglGcmFifoFinish(ref, offset_bytes);
 
    // Stop flip callback
    if ( rescIsEnabled( params ) )
@@ -3070,6 +3056,8 @@ GLAPI void RGL_EXPORT psglSwap (void)
    GmmBlock        *pBlock = NULL;
    GmmBlock        *pTemp = NULL;
    GmmAllocator *pAllocator =  pGmmLocalAllocator;
+   rglGcmFifo * fifo = &rglGcmState_i.fifo;
+   unsigned int offset_bytes = 0;
 
    pBlock = pAllocator->pPendingFreeHead;
 
@@ -3148,12 +3136,12 @@ GLAPI void RGL_EXPORT psglSwap (void)
    context->attribs->DirtyMask = ( 1 << RGL_MAX_VERTEX_ATTRIBS ) - 1;
 
    rglGcmSetInvalidateVertexCache(thisContext);
-   rglGcmFifoFlush( &rglGcmState_i.fifo );
+   rglGcmFifoFlush(fifo, offset_bytes);
 
    while (sys_semaphore_wait(FlipSem,1000) != CELL_OK);
 
    rglGcmSetInvalidateVertexCache(thisContext);
-   rglGcmFifoFlush( &rglGcmState_i.fifo );
+   rglGcmFifoFlush(fifo, offset_bytes);
 
    if ( device->deviceParameters.bufferingMode == RGL_BUFFERING_MODE_DOUBLE )
    {
@@ -4121,11 +4109,15 @@ RGLcontext *psglGetCurrentContext(void)
 void RGL_EXPORT psglDestroyContext (void *data)
 {
    CellGcmContextData *thisContext = (CellGcmContextData*)gCellGcmCurrentContext;
+   rglGcmFifo *fifo = (rglGcmFifo*)&rglGcmState_i.fifo;
    RGLcontext *LContext = (RGLcontext*)data;
+   GLuint ref;
+   unsigned int offset_bytes = 0;
+
    if ( _CurrentContext == LContext )
    {
       rglGcmSetInvalidateVertexCache(thisContext);
-      rglGcmFifoFinish( &rglGcmState_i.fifo );
+      rglGcmFifoFinish(ref, offset_bytes);
    }
 
    while ( LContext->RGLcgContextHead != ( CGcontext )NULL )
