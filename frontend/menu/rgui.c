@@ -115,7 +115,7 @@ struct rgui_handle
 
    rgui_list_t *menu_stack;
    rgui_list_t *selection_buf;
-   unsigned selection_ptr;
+   size_t selection_ptr;
    bool need_refresh;
    bool msg_force;
 
@@ -224,6 +224,7 @@ rgui_handle_t *rgui_init(const char *base_path,
    rgui->menu_stack = (rgui_list_t*)calloc(1, sizeof(rgui_list_t));
    rgui->selection_buf = (rgui_list_t*)calloc(1, sizeof(rgui_list_t));
    rgui_list_push(rgui->menu_stack, base_path, RGUI_FILE_DIRECTORY, 0);
+   rgui_list_push(rgui->menu_stack, "", RGUI_SETTINGS, 0);
 
    if (font_bmp_buf)
       init_font(rgui, font_bmp_buf);
@@ -397,7 +398,7 @@ static void render_text(rgui_handle_t *rgui)
    char title[256];
    const char *dir = NULL;
    unsigned menu_type = 0;
-   rgui_list_get_last(rgui->menu_stack, &dir, &menu_type, NULL);
+   rgui_list_get_last(rgui->menu_stack, &dir, &menu_type);
 
    if (menu_type == RGUI_SETTINGS_CORE)
       strlcpy(title, "CORE SELECTION", sizeof(title));
@@ -437,7 +438,7 @@ static void render_text(rgui_handle_t *rgui)
    {
       const char *path = 0;
       unsigned type = 0;
-      rgui_list_get_at_offset(rgui->selection_buf, i, &path, &type, NULL);
+      rgui_list_get_at_offset(rgui->selection_buf, i, &path, &type);
       char message[256];
       char type_str[256];
       int w = (menu_type >= RGUI_SETTINGS_CONTROLLER_1 && menu_type <= RGUI_SETTINGS_CONTROLLER_4) ? 26 : 19;
@@ -1474,7 +1475,7 @@ static int rgui_viewport_iterate(rgui_handle_t *rgui, rgui_action_t action)
    unsigned win_width = vp.full_width;
    unsigned win_height = vp.full_height;
    unsigned menu_type = 0;
-   rgui_list_get_last(rgui->menu_stack, NULL, &menu_type, NULL);
+   rgui_list_get_last(rgui->menu_stack, NULL, &menu_type);
 
    (void)win_width;
    (void)win_height;
@@ -1530,13 +1531,13 @@ static int rgui_viewport_iterate(rgui_handle_t *rgui, rgui_action_t action)
          break;
 
       case RGUI_ACTION_CANCEL:
-         rgui_list_pop(rgui->menu_stack);
+         rgui_list_pop(rgui->menu_stack, &rgui->selection_ptr);
          if (menu_type == RGUI_SETTINGS_CUSTOM_VIEWPORT_2)
             rgui_list_push(rgui->menu_stack, "", RGUI_SETTINGS_CUSTOM_VIEWPORT, 0);
          break;
 
       case RGUI_ACTION_OK:
-         rgui_list_pop(rgui->menu_stack);
+         rgui_list_pop(rgui->menu_stack, &rgui->selection_ptr);
          if (menu_type == RGUI_SETTINGS_CUSTOM_VIEWPORT)
             rgui_list_push(rgui->menu_stack, "", RGUI_SETTINGS_CUSTOM_VIEWPORT_2, 0);
          break;
@@ -1561,7 +1562,7 @@ static int rgui_viewport_iterate(rgui_handle_t *rgui, rgui_action_t action)
          break;
 
       case RGUI_ACTION_SETTINGS:
-         rgui_list_pop(rgui->menu_stack);
+         rgui_list_pop(rgui->menu_stack, &rgui->selection_ptr);
          break;
 
       case RGUI_ACTION_MESSAGE:
@@ -1572,7 +1573,7 @@ static int rgui_viewport_iterate(rgui_handle_t *rgui, rgui_action_t action)
          break;
    }
 
-   rgui_list_get_last(rgui->menu_stack, NULL, &menu_type, NULL);
+   rgui_list_get_last(rgui->menu_stack, NULL, &menu_type);
 
    render_text(rgui);
 
@@ -1590,7 +1591,7 @@ static int rgui_settings_iterate(rgui_handle_t *rgui, rgui_action_t action)
    unsigned type = 0;
    const char *label = NULL;
    if (action != RGUI_ACTION_REFRESH)
-      rgui_list_get_at_offset(rgui->selection_buf, rgui->selection_ptr, &label, &type, NULL);
+      rgui_list_get_at_offset(rgui->selection_buf, rgui->selection_ptr, &label, &type);
 
 #if defined(HAVE_DYNAMIC)
    if (type == RGUI_SETTINGS_CORE)
@@ -1610,8 +1611,7 @@ static int rgui_settings_iterate(rgui_handle_t *rgui, rgui_action_t action)
 
    const char *dir = NULL;
    unsigned menu_type = 0;
-   size_t directory_ptr = 0;
-   rgui_list_get_last(rgui->menu_stack, &dir, &menu_type, &directory_ptr);
+   rgui_list_get_last(rgui->menu_stack, &dir, &menu_type);
 
    if (rgui->need_refresh)
       action = RGUI_ACTION_NOOP;
@@ -1636,8 +1636,7 @@ static int rgui_settings_iterate(rgui_handle_t *rgui, rgui_action_t action)
       case RGUI_ACTION_SETTINGS:
          if (rgui->menu_stack->size > 1)
          {
-            rgui_list_pop(rgui->menu_stack);
-            rgui->selection_ptr = directory_ptr;
+            rgui_list_pop(rgui->menu_stack, &rgui->selection_ptr);
             rgui->need_refresh = true;
          }
          g_extern.lifecycle_mode_state &= ~(1ULL << MODE_MENU_INGAME);
@@ -1689,7 +1688,7 @@ static int rgui_settings_iterate(rgui_handle_t *rgui, rgui_action_t action)
          break;
    }
 
-   rgui_list_get_last(rgui->menu_stack, &dir, &menu_type, &directory_ptr);
+   rgui_list_get_last(rgui->menu_stack, &dir, &menu_type);
 
    if (rgui->need_refresh && !(menu_type == RGUI_FILE_DIRECTORY || menu_type_is_shader_browser(menu_type) ||
             menu_type == RGUI_FILE_DEVICE || menu_type == RGUI_SETTINGS_CORE))
@@ -1707,7 +1706,10 @@ static int rgui_settings_iterate(rgui_handle_t *rgui, rgui_action_t action)
          rgui_settings_populate_entries(rgui);
    }
 
-   render_text(rgui);
+   // If we go back to file browser, we must refresh.
+   // The file browser state is stale.
+   if (rgui->menu_stack->size > 1)
+      render_text(rgui);
 
    return 0;
 }
@@ -1821,8 +1823,7 @@ int rgui_iterate(rgui_handle_t *rgui, rgui_action_t action)
 {
    const char *dir = 0;
    unsigned menu_type = 0;
-   size_t directory_ptr = 0;
-   rgui_list_get_last(rgui->menu_stack, &dir, &menu_type, &directory_ptr);
+   rgui_list_get_last(rgui->menu_stack, &dir, &menu_type);
    int ret = 0;
 
    if (menu_type_is_settings(menu_type))
@@ -1866,8 +1867,7 @@ int rgui_iterate(rgui_handle_t *rgui, rgui_action_t action)
          if (rgui->menu_stack->size > 1)
          {
             rgui->need_refresh = true;
-            rgui->selection_ptr = directory_ptr;
-            rgui_list_pop(rgui->menu_stack);
+            rgui_list_pop(rgui->menu_stack, &rgui->selection_ptr);
          }
          break;
 
@@ -1878,7 +1878,7 @@ int rgui_iterate(rgui_handle_t *rgui, rgui_action_t action)
 
          const char *path = 0;
          unsigned type = 0;
-         rgui_list_get_at_offset(rgui->selection_buf, rgui->selection_ptr, &path, &type, NULL);
+         rgui_list_get_at_offset(rgui->selection_buf, rgui->selection_ptr, &path, &type);
 
          if (menu_type_is_shader_browser(type) || type == RGUI_FILE_DIRECTORY)
          {
@@ -1919,23 +1919,21 @@ int rgui_iterate(rgui_handle_t *rgui, rgui_action_t action)
                // uses one directory.
                unsigned type = 0;
                const char *dir = NULL;
-               rgui_list_pop(rgui->menu_stack);
-               rgui_list_get_last(rgui->menu_stack, &dir, &type, &directory_ptr);
+               rgui_list_pop(rgui->menu_stack, &rgui->selection_ptr);
+               rgui_list_get_last(rgui->menu_stack, &dir, &type);
                while (type != RGUI_SETTINGS_SHADER_MANAGER)
                {
-                  rgui_list_pop(rgui->menu_stack);
-                  rgui_list_get_last(rgui->menu_stack, &dir, &type, &directory_ptr);
+                  rgui_list_pop(rgui->menu_stack, &rgui->selection_ptr);
+                  rgui_list_get_last(rgui->menu_stack, &dir, &type);
                }
                rgui->need_refresh = true;
-               rgui->selection_ptr = directory_ptr;
             }
             else
 #endif
             if (menu_type == RGUI_SETTINGS_CORE)
             {
-               rgui->selection_ptr = directory_ptr;
                rgui->need_refresh = true;
-               rgui_list_pop(rgui->menu_stack);
+               rgui_list_pop(rgui->menu_stack, &rgui->selection_ptr);
 
 #if defined(HAVE_DYNAMIC)
                fill_pathname_join(g_settings.libretro, rgui->libretro_dir, path, sizeof(g_settings.libretro));
@@ -1983,18 +1981,12 @@ int rgui_iterate(rgui_handle_t *rgui, rgui_action_t action)
          break;
 
       case RGUI_ACTION_SETTINGS:
-         if (menu_type == RGUI_SETTINGS_CORE)
-         {
-            rgui->selection_ptr = directory_ptr;
-            rgui->need_refresh = true;
-            rgui_list_pop(rgui->menu_stack);
-         }
-         else
-         {
-            rgui_list_push(rgui->menu_stack, "", RGUI_SETTINGS, rgui->selection_ptr);
-            rgui->selection_ptr = 0;
-            g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU_INGAME);
-         }
+         rgui->need_refresh = true;
+         while (rgui->menu_stack->size > 1)
+            rgui_list_pop(rgui->menu_stack, &rgui->selection_ptr);
+         rgui_list_push(rgui->menu_stack, "", RGUI_SETTINGS, rgui->selection_ptr);
+         rgui->selection_ptr = 0;
+         g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU_INGAME);
          return rgui_settings_iterate(rgui, RGUI_ACTION_REFRESH);
 
       case RGUI_ACTION_MESSAGE:
@@ -2006,7 +1998,7 @@ int rgui_iterate(rgui_handle_t *rgui, rgui_action_t action)
    }
 
    // refresh values in case the stack changed
-   rgui_list_get_last(rgui->menu_stack, &dir, &menu_type, &directory_ptr);
+   rgui_list_get_last(rgui->menu_stack, &dir, &menu_type);
 
    if (rgui->need_refresh && (menu_type == RGUI_FILE_DIRECTORY || menu_type_is_shader_browser(menu_type) ||
             menu_type == RGUI_FILE_DEVICE || menu_type == RGUI_SETTINGS_CORE))
@@ -2179,11 +2171,7 @@ bool menu_iterate(void)
    if (g_extern.lifecycle_mode_state & (1ULL << MODE_MENU_PREINIT))
    {
       if (g_extern.lifecycle_mode_state & (1ULL << MODE_MENU_INGAME))
-      {
-         rgui_list_push(rgui->menu_stack, "", RGUI_SETTINGS, rgui->selection_ptr);
-         rgui->selection_ptr = 0;
          rgui->need_refresh = true;
-      }
 
       g_extern.lifecycle_mode_state &= ~(1ULL << MODE_MENU_PREINIT);
    }
@@ -2279,16 +2267,6 @@ bool menu_iterate(void)
    if (g_extern.lifecycle_mode_state & (1ULL << MODE_MENU_INGAME_EXIT) &&
          g_extern.lifecycle_mode_state & (1ULL << MODE_MENU_INGAME))
    {
-      if (rgui->menu_stack->size > 1)
-      {
-         const char *dir = NULL;
-         unsigned menu_type = 0;
-         size_t directory_ptr = 0;
-         rgui_list_get_last(rgui->menu_stack, &dir, &menu_type, &directory_ptr);
-         rgui_list_pop(rgui->menu_stack);
-         rgui->selection_ptr = directory_ptr;
-         rgui->need_refresh = true;
-      }
       g_extern.lifecycle_mode_state &= ~((1ULL << MODE_MENU_INGAME) | (1ULL << MODE_MENU_INGAME_EXIT));
    }
 

@@ -50,10 +50,13 @@ void rgui_list_push(void *userdata,
    list->size++;
 }
 
-void rgui_list_pop(rgui_list_t *list)
+void rgui_list_pop(rgui_list_t *list, size_t *directory_ptr)
 {
    if (!(list->size == 0))
       free(list->list[--list->size].path);
+
+   if (directory_ptr)
+      *directory_ptr = list->list[list->size].directory_ptr;
 }
 
 void rgui_list_free(rgui_list_t *list)
@@ -72,19 +75,17 @@ void rgui_list_clear(rgui_list_t *list)
 }
 
 void rgui_list_get_at_offset(const rgui_list_t *list, size_t index,
-      const char **path, unsigned *file_type, size_t *directory_ptr)
+      const char **path, unsigned *file_type)
 {
    if (path)
       *path = list->list[index].path;
    if (file_type)
       *file_type = list->list[index].type;
-   if (directory_ptr)
-      *directory_ptr = list->list[index].directory_ptr;
 }
 
 void rgui_list_get_last(const rgui_list_t *list,
-      const char **path, unsigned *file_type, size_t *directory_ptr)
+      const char **path, unsigned *file_type)
 {
-   if (list->size > 0)
-      rgui_list_get_at_offset(list, list->size - 1, path, file_type, directory_ptr);
+   if (list->size)
+      rgui_list_get_at_offset(list, list->size - 1, path, file_type);
 }

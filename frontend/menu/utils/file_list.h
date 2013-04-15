@@ -33,15 +33,15 @@ typedef struct rgui_list
 void rgui_list_free(rgui_list_t *list);
 
 void rgui_list_push(void *userdata, const char *path,
-      unsigned type, size_t directory_ptr);
-void rgui_list_pop(rgui_list_t *list);
+      unsigned type, size_t current_directory_ptr);
+void rgui_list_pop(rgui_list_t *list, size_t *directory_ptr);
 void rgui_list_clear(rgui_list_t *list);
 
 void rgui_list_get_last(const rgui_list_t *list,
-      const char **path, unsigned *type, size_t *directory_ptr);
+      const char **path, unsigned *type);
 
 void rgui_list_get_at_offset(const rgui_list_t *list, size_t index,
-      const char **path, unsigned *type, size_t *directory_ptr);
+      const char **path, unsigned *type);
 
 #ifdef __cplusplus
 }
