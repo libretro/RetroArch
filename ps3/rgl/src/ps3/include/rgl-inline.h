@@ -284,42 +284,6 @@ static inline GLuint rglPlatformGetBitsPerPixel (GLenum internalFormat)
  (thisContext->current)[1] = ((surface->height - (((surface->height) & 0x1000) >> 12)) | ((origin) << 12) | ((pixelCenter) << 16)); \
  (thisContext->current) += 2;
 
-static inline void rglGcmSetVertexProgramParameterBlock(struct CellGcmContextData *thisContext,
-      uint32_t baseConst, uint32_t constCount, const float * __restrict value)
-{
-   uint32_t blockCount = (constCount*4) >> 5;
-   uint32_t blockRemain = (constCount*4) & 0x1f;
-
-   uint32_t i;
-   for (i=0; i < blockCount; i++)
-   {
-      uint32_t loadAt = baseConst+i*8;
-
-      thisContext->current[0] = (((33) << (18)) | ((0x00001efc)));
-      thisContext->current[1] = (loadAt);
-
-      __builtin_memcpy(&thisContext->current[2], value, sizeof(float)*16);
-      __builtin_memcpy(&thisContext->current[18], &value[16], sizeof(float)*16);
-      thisContext->current += 34;
-      value += 32;
-   }
-
-   if(blockRemain)
-   {
-      thisContext->current[0] = (((blockRemain+1) << (18)) | ((0x00001efc)));
-      thisContext->current[1] = (baseConst + blockCount*8);
-      thisContext->current += 2;
-
-      blockRemain >>= 2;
-      for (i=0; i < blockRemain; ++i)
-      {
-         __builtin_memcpy(thisContext->current, value, sizeof(float)*4);
-         thisContext->current += 4;
-         value += 4;
-      }
-   }
-}
-
 static inline void rglGcmSetFragmentProgramLoad(struct CellGcmContextData *thisContext, const CellCgbFragmentProgramConfiguration *conf, const uint32_t location)
 {
    uint32_t rawData = ((conf->offset)&0x1fffffff);

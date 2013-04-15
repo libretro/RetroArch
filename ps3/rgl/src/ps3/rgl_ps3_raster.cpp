@@ -168,7 +168,6 @@ template<int SIZE> static void setVectorTypeSharedfpIndexArray (void *data, cons
 }
 template<int SIZE> static void setVectorTypeSharedvpIndex (void *data, const void* __restrict v, const int /*index*/ )
 {
-   CellGcmContextData *thisContext = (CellGcmContextData*)gCellGcmCurrentContext;
    CgRuntimeParameter *ptr = (CgRuntimeParameter*)data;
    const float * __restrict f = ( const float * __restrict )v;
    const CgParameterResource *parameterResource = rglGetParameterResource( ptr->program, ptr->parameterEntry );
@@ -183,12 +182,11 @@ template<int SIZE> static void setVectorTypeSharedvpIndex (void *data, const voi
    memcpy(driver->sharedVPConstants + resource * 4 * sizeof( float ),
          dst, 4 * sizeof(float));
 
-   rglGcmSetVertexProgramParameterBlock(thisContext, resource, 1, dst ); 
+   GCM_FUNC( cellGcmSetVertexProgramParameterBlock, resource, 1, dst ); 
 }
 
 template<int SIZE> static void setVectorTypeSharedvpIndexArray (void *data, const void* __restrict v, const int index )
 {
-   CellGcmContextData *thisContext = (CellGcmContextData*)gCellGcmCurrentContext;
    CgRuntimeParameter *ptr = (CgRuntimeParameter*)data;
    const float * __restrict f = ( const float * __restrict )v;
    const CgParameterResource *parameterResource = rglGetParameterResource( ptr->program, ptr->parameterEntry );
@@ -203,7 +201,7 @@ template<int SIZE> static void setVectorTypeSharedvpIndexArray (void *data, cons
    memcpy(driver->sharedVPConstants + resource * 4 * sizeof( float ),
          dst, 4 * sizeof(float));
 
-   rglGcmSetVertexProgramParameterBlock(thisContext, resource, 1, dst ); 
+   GCM_FUNC( cellGcmSetVertexProgramParameterBlock, resource, 1, dst ); 
 }
 
 
@@ -277,7 +275,6 @@ template <int ROWS, int COLS, int ORDER> static void setMatrixvpIndex (void *dat
 template <int ROWS, int COLS, int ORDER, bool isVpIndexArray> static void setMatrixSharedvpIndex (void *data, const void*  __restrict v, const int index )
 {
    CgRuntimeParameter *ptr = (CgRuntimeParameter*)data;
-   CellGcmContextData *thisContext = (CellGcmContextData*)gCellGcmCurrentContext;
    float * __restrict f = ( float* )v;
    float * __restrict dst = ( float* )ptr->pushBufferPointer;
 
@@ -295,7 +292,7 @@ template <int ROWS, int COLS, int ORDER, bool isVpIndexArray> static void setMat
       for ( long col = COLS; col < 4; ++col ) tmp[row*4 + col] = dst[row*4+col];
    }
 
-   rglGcmSetVertexProgramParameterBlock(thisContext, resource, ROWS, (const float*)tmp);
+   GCM_FUNC( cellGcmSetVertexProgramParameterBlock, resource, ROWS, (const float*)tmp);
 }
 
 template <int ROWS, int COLS, int ORDER> static void setMatrixSharedfpIndex (void *data, const void* __restrict v, const int /*index*/ )
@@ -820,7 +817,7 @@ void rglCreatePushBuffer(void *data)
                         memset( rglGcmCurrent, 0, 4*( 4*registerCount + 3 ) );
                         CellGcmContextData gcmContext;
                         gcmContext.current = (uint32_t*)rglGcmCurrent;
-                        rglGcmSetVertexProgramParameterBlock(&gcmContext, parameterResource->resource, registerCount, ( float* )rglGcmCurrent );
+                        cellGcmSetVertexProgramParameterBlockUnsafeInline(&gcmContext, parameterResource->resource, registerCount, ( float* )rglGcmCurrent );
                         rglGcmCurrent = (typeof(rglGcmCurrent))gcmContext.current;
 
                         rtParameter->pushBufferPointer = rglGcmCurrent - 4 * registerCount;
@@ -837,7 +834,7 @@ void rglCreatePushBuffer(void *data)
                               memset( rglGcmCurrent, 0, 4*( 4*registerStride + 3 ) );
                               CellGcmContextData gcmContext;
                               gcmContext.current = (uint32_t*)rglGcmCurrent;
-                              rglGcmSetVertexProgramParameterBlock(&gcmContext, program->resources[resourceIndex], registerStride, ( float* )rglGcmCurrent );
+                              cellGcmSetVertexProgramParameterBlockUnsafeInline(&gcmContext, program->resources[resourceIndex], registerStride, ( float* )rglGcmCurrent );
                               rglGcmCurrent = (typeof(rglGcmCurrent))gcmContext.current;
                               *( programPushBuffer++ ) = ( unsigned int* )( rglGcmCurrent - 4 * registerStride );
                            }
@@ -1761,7 +1758,7 @@ GLAPI void APIENTRY glDrawArrays (GLenum mode, GLint first, GLsizei count)
                case CG_FIXED2:
                case CG_FIXED3:
                case CG_FIXED4:
-                  rglGcmSetVertexProgramParameterBlock(thisContext, parameterResource->resource, 1, value );
+                  GCM_FUNC( cellGcmSetVertexProgramParameterBlock, parameterResource->resource, 1, value ); // GCM_PORT_TESTED [Cedric]
                   break;
                case CG_FLOAT4x4:
                case CG_HALF4x4:
@@ -1787,7 +1784,7 @@ GLAPI void APIENTRY glDrawArrays (GLenum mode, GLint first, GLsizei count)
                      v2[13] = value[7];
                      v2[14] = value[11];
                      v2[15] = value[15];
-                     rglGcmSetVertexProgramParameterBlock(thisContext, parameterResource->resource, 4, v2 );
+                     GCM_FUNC( cellGcmSetVertexProgramParameterBlock, parameterResource->resource, 4, v2 ); // GCM_PORT_TESTED [Cedric]
                   }
                   break;
                case CG_FLOAT3x3:
@@ -1801,7 +1798,7 @@ GLAPI void APIENTRY glDrawArrays (GLenum mode, GLint first, GLsizei count)
                      v2[0] = value[0];v2[1] = value[3];v2[2] = value[6];v2[3] = 0;
                      v2[4] = value[1];v2[5] = value[4];v2[6] = value[7];v2[7] = 0;
                      v2[8] = value[2];v2[9] = value[5];v2[10] = value[8];v2[11] = 0;
-                     rglGcmSetVertexProgramParameterBlock(thisContext, parameterResource->resource, 3, v2 );
+                     GCM_FUNC( cellGcmSetVertexProgramParameterBlock, parameterResource->resource, 3, v2 );
                   }
                   break;
             }
