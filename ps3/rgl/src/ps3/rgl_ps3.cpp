@@ -3126,9 +3126,16 @@ GLAPI void RGL_EXPORT psglSwap (void)
    }
 
    rglGcmDriver *driver = (rglGcmDriver*)_CurrentDevice->rasterDriver;
-   const char * __restrict v = driver->sharedVPConstants;
+   float * __restrict v = (float*)driver->sharedVPConstants;
 
-   rglGcmSetVertexProgramParameterBlock(thisContext, 0, 8, ( float* )v );
+   thisContext->current[0] = (((33) << (18)) | ((0x00001efc)));
+   thisContext->current[1] = 0;
+
+   __builtin_memcpy(&thisContext->current[2], v, sizeof(float)*16);
+   __builtin_memcpy(&thisContext->current[18], &v[16], sizeof(float)*16);
+   thisContext->current += 34;
+   v += 32;
+
    rglGcmSetDitherEnable(thisContext, RGLGCM_TRUE );
 
    RGLcontext *context = (RGLcontext*)_CurrentContext;

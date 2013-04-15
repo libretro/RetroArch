@@ -284,6 +284,11 @@ static inline GLuint rglPlatformGetBitsPerPixel (GLenum internalFormat)
  (thisContext->current)[1] = ((surface->height - (((surface->height) & 0x1000) >> 12)) | ((origin) << 12) | ((pixelCenter) << 16)); \
  (thisContext->current) += 2;
 
+#define rglGcmSetUpdateFragmentProgramParameter(thisContext, offset, location) \
+ (thisContext->current)[0] = (((1) << (18)) | ((0x000008e4))); \
+ (thisContext->current)[1] = ((location+1) | (offset)); \
+ (thisContext->current) += 2;
+
 static inline void rglGcmSetVertexProgramParameterBlock(struct CellGcmContextData *thisContext,
       uint32_t baseConst, uint32_t constCount, const float * __restrict value)
 {
