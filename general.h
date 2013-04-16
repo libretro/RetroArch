@@ -342,6 +342,10 @@ struct global
    char savestate_name[PATH_MAX];
    char xml_name[PATH_MAX];
 
+   // Used on reentrancy to use a savestate dir.
+   char savefile_dir[PATH_MAX];
+   char savestate_dir[PATH_MAX];
+
    bool block_patch;
    bool ups_pref;
    bool bps_pref;

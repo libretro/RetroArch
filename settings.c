@@ -668,6 +668,7 @@ bool config_load_file(const char *path)
    {
       if (path_is_directory(tmp_str))
       {
+         strlcpy(g_extern.savefile_dir, tmp_str, sizeof(g_extern.savefile_dir));
          strlcpy(g_extern.savefile_name_srm, tmp_str, sizeof(g_extern.savefile_name_srm));
          fill_pathname_dir(g_extern.savefile_name_srm, g_extern.basename, ".srm", sizeof(g_extern.savefile_name_srm));
       }
@@ -679,6 +680,7 @@ bool config_load_file(const char *path)
    {
       if (path_is_directory(tmp_str))
       {
+         strlcpy(g_extern.savestate_dir, tmp_str, sizeof(g_extern.savestate_dir));
          strlcpy(g_extern.savestate_name, tmp_str, sizeof(g_extern.savestate_name));
          fill_pathname_dir(g_extern.savestate_name, g_extern.basename, ".state", sizeof(g_extern.savestate_name));
       }

@@ -61,8 +61,8 @@ int main(int argc, char *argv[])
 
          args.verbose       = g_extern.verbose;
          args.config_path   = *g_extern.config_path ? g_extern.config_path : NULL;
-         args.sram_path     = NULL;
-         args.state_path    = NULL;
+         args.sram_path     = *g_extern.savefile_dir ? g_extern.savefile_dir : NULL;
+         args.state_path    = *g_extern.savestate_dir ? g_extern.savestate_dir : NULL;
          args.rom_path      = g_extern.fullpath;
          args.libretro_path = g_settings.libretro;
 

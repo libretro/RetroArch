@@ -1178,6 +1178,12 @@ static void parse_input(int argc, char *argv[])
       set_paths(argv[optind]);
    else
       verify_stdin_paths();
+
+   // Copy SRM/state dirs used, so they can be reused on reentrancy.
+   if (g_extern.has_set_save_path && path_is_directory(g_extern.savefile_name_srm))
+      strlcpy(g_extern.savefile_dir, g_extern.savefile_name_srm, sizeof(g_extern.savefile_dir));
+   if (g_extern.has_set_state_path && path_is_directory(g_extern.savestate_name))
+      strlcpy(g_extern.savestate_dir, g_extern.savestate_name, sizeof(g_extern.savestate_dir));
 }
 
 static void init_controllers(void)
