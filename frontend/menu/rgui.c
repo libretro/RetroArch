@@ -2005,8 +2005,14 @@ int rgui_iterate(rgui_handle_t *rgui, rgui_action_t action)
    {
       rgui->need_refresh = false;
       rgui_list_clear(rgui->selection_buf);
-
       directory_parse(rgui, dir, menu_type, rgui->selection_buf);
+
+      // Before a refresh, we could have deleted a file on disk, causing
+      // selection_ptr to suddendly be out of range. Ensure it doesn't overflow.
+      if (rgui->selection_ptr >= rgui->selection_buf->size && rgui->selection_buf->size)
+         rgui->selection_ptr = rgui->selection_buf->size - 1;
+      else if (!rgui->selection_buf->size)
+         rgui->selection_ptr = 0;
    }
 
    render_text(rgui);
