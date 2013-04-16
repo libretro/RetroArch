@@ -792,13 +792,15 @@ static void verify_stdin_paths(void)
 
 static void parse_input(int argc, char *argv[])
 {
+   g_extern.libretro_dummy = false;
+   g_extern.has_set_save_path = false;
+   g_extern.has_set_state_path = false;
+
    if (argc < 2)
    {
       g_extern.libretro_dummy = true;
       return;
    }
-
-   g_extern.libretro_dummy = false;
 
    // Make sure we can call parse_input several times ...
    optind = 1;
@@ -885,11 +887,6 @@ static void parse_input(int argc, char *argv[])
 #endif
 
    const char *optstring = "hs:fvS:m:p4jJA:g:b:c:B:Y:Z:U:DN:X:" BSV_MOVIE_ARG NETPLAY_ARG DYNAMIC_ARG FFMPEG_RECORD_ARG;
-#ifdef RARCH_CONSOLE
-   // hack - done for reentrancy reasons
-   g_extern.has_set_save_path = false;
-   g_extern.has_set_state_path = false;
-#endif
 
    for (;;)
    {
