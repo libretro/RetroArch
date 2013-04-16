@@ -1410,8 +1410,6 @@ bool menu_iterate(void)
       g_extern.lifecycle_mode_state &= ~(1ULL << MODE_MENU_PREINIT);
    }
 
-   g_extern.frame_count++;
-
    XINPUT_STATE state;
    XInputGetState(0, &state);
 
@@ -1444,7 +1442,6 @@ bool menu_iterate(void)
             process_input_ret = -1;
          }
    }
-
 
    switch(input_loop)
    {
