@@ -3384,10 +3384,8 @@ void menu_free(void)
 
 bool menu_iterate(void)
 {
-   const char *msg;
    static uint64_t input = 0;
    static uint64_t old_state = 0;
-   font_params_t font_parms = {0};
 
    if (g_extern.lifecycle_mode_state & (1ULL << MODE_MENU_PREINIT))
    {
@@ -3452,18 +3450,6 @@ bool menu_iterate(void)
    input_entry_ret = rmenu_iterate(rmenu, menu_type, input);
 
    input_process_ret = menu_input_process(menu_type, old_state);
-   msg = msg_queue_pull(g_extern.msg_queue);
-
-   font_parms.x = MSG_QUEUE_X_POSITION;
-   font_parms.y = MSG_QUEUE_Y_POSITION;
-   font_parms.scale = MSG_QUEUE_FONT_SIZE;
-   font_parms.color = WHITE;
-
-   if (msg && (g_extern.lifecycle_mode_state & (1ULL << MODE_INFO_DRAW)))
-   {
-      if (driver.video_poke->set_osd_msg)
-         driver.video_poke->set_osd_msg(driver.video_data, msg, &font_parms);
-   }
 
    if (g_extern.lifecycle_mode_state & (1ULL << MODE_MENU_INGAME_EXIT) &&
          g_extern.lifecycle_mode_state & (1ULL << MODE_MENU_INGAME))
