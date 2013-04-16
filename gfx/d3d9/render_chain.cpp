@@ -831,10 +831,12 @@ void RenderChain::bind_luts(Pass &pass)
 {
    for (unsigned i = 0; i < luts.size(); i++)
    {
-      CGparameter param = cgGetNamedParameter(pass.fPrg, luts[i].id.c_str());
-      if (param)
+      CGparameter fparam = cgGetNamedParameter(pass.fPrg, luts[i].id.c_str());
+      int bound_index = -1;
+      if (fparam)
       {
-         unsigned index = cgGetParameterResourceIndex(param);
+         unsigned index = cgGetParameterResourceIndex(fparam);
+         bound_index = index;
          dev->SetTexture(index, luts[i].tex);
          dev->SetSamplerState(index, D3DSAMP_MAGFILTER,
                luts[i].smooth ? D3DTEXF_LINEAR : D3DTEXF_POINT);
@@ -843,6 +845,23 @@ void RenderChain::bind_luts(Pass &pass)
          dev->SetSamplerState(index, D3DSAMP_ADDRESSU, D3DTADDRESS_BORDER);
          dev->SetSamplerState(index, D3DSAMP_ADDRESSV, D3DTADDRESS_BORDER);
          bound_tex.push_back(index);
+      }
+
+      CGparameter vparam = cgGetNamedParameter(pass.vPrg, luts[i].id.c_str());
+      if (vparam)
+      {
+         unsigned index = cgGetParameterResourceIndex(vparam);
+         if (index != (unsigned)bound_index)
+         {
+            dev->SetTexture(index, luts[i].tex);
+            dev->SetSamplerState(index, D3DSAMP_MAGFILTER,
+                  luts[i].smooth ? D3DTEXF_LINEAR : D3DTEXF_POINT);
+            dev->SetSamplerState(index, D3DSAMP_MINFILTER,
+                  luts[i].smooth ? D3DTEXF_LINEAR : D3DTEXF_POINT);
+            dev->SetSamplerState(index, D3DSAMP_ADDRESSU, D3DTADDRESS_BORDER);
+            dev->SetSamplerState(index, D3DSAMP_ADDRESSV, D3DTADDRESS_BORDER);
+            bound_tex.push_back(index);
+         }
       }
    }
 }

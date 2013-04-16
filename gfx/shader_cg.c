@@ -264,11 +264,18 @@ static void gl_cg_set_params(unsigned width, unsigned height,
    // Set lookup textures.
    for (unsigned i = 0; i < cg_shader->luts; i++)
    {
-      CGparameter param = cgGetNamedParameter(prg[active_index].fprg, cg_shader->lut[i].id);
-      if (param)
+      CGparameter fparam = cgGetNamedParameter(prg[active_index].fprg, cg_shader->lut[i].id);
+      if (fparam)
       {
-         cgGLSetTextureParameter(param, lut_textures[i]);
-         cgGLEnableTextureParameter(param);
+         cgGLSetTextureParameter(fparam, lut_textures[i]);
+         cgGLEnableTextureParameter(fparam);
+      }
+
+      CGparameter vparam = cgGetNamedParameter(prg[active_index].vprg, cg_shader->lut[i].id);
+      if (vparam)
+      {
+         cgGLSetTextureParameter(vparam, lut_textures[i]);
+         cgGLEnableTextureParameter(vparam);
       }
    }
 
