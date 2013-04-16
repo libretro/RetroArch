@@ -1024,6 +1024,8 @@ void gfx_shader_write_conf_cgp(config_file_t *conf, const struct gfx_shader *sha
       {
          char key[64];
 
+         config_set_string(conf, shader->lut[i].id, shader->lut[i].path);
+
          if (shader->lut[i].filter != RARCH_FILTER_UNSPEC)
          {
             print_buf(key, "%s_linear", shader->lut[i].id);
