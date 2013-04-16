@@ -1402,8 +1402,6 @@ static void ingame_menu_resize (void)
 
 bool menu_iterate(void)
 {
-   const char *msg;
-
    xdk_d3d_video_t *device_ptr = (xdk_d3d_video_t*)driver.video_data;
 
    if (g_extern.lifecycle_mode_state & (1ULL << MODE_MENU_PREINIT))
@@ -1461,14 +1459,6 @@ bool menu_iterate(void)
          break;
       default:
          break;
-   }
-
-   msg = msg_queue_pull(g_extern.msg_queue);
-
-   if (msg && (g_extern.lifecycle_mode_state & (1ULL << MODE_INFO_DRAW)))
-   {
-      if (driver.video_poke->set_osd_msg)
-         driver.video_poke->set_osd_msg(driver.video_data, msg, NULL);
    }
 
    if (driver.video_poke && driver.video_poke->set_texture_enable)
