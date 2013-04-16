@@ -544,6 +544,9 @@ static bool load_textures(void)
 
 static bool load_imports(void)
 {
+   if (!cg_shader->variables)
+      return true;
+
    struct state_tracker_info tracker_info = {0};
 
    for (unsigned i = 0; i < cg_shader->variables; i++)
