@@ -352,13 +352,14 @@ def hack_source_vertex(source):
       elif '//var sampler2D' in line:
          cg_texture = line.split(' ')[2]
          translated = translate_texture(cg_texture)
+         orig_name = translated
          new_name = line.split(':')[2].split(' ')[1]
-         if len(new_name) > 0 and translated != cg_texture and translated not in translated_samplers:
-            translated_samplers.append(translated)
-            added_samplers.append('uniform sampler2D ' + translated + ';')
-            orig_name = translated
+         log('Vertex: Sampler:', new_name, '->', orig_name)
+         if len(new_name) > 0:
+            if translated != cg_texture and translated not in translated_samplers:
+               translated_samplers.append(translated)
+               added_samplers.append('uniform sampler2D ' + translated + ';')
             translations.append((new_name, orig_name))
-            log('Vertex: Sampler:', new_name, '->', orig_name)
 
    for sampler in added_samplers:
       source.insert(ref_index, sampler)
@@ -445,13 +446,14 @@ def hack_source_fragment(source):
       elif '//var sampler2D' in line:
          cg_texture = line.split(' ')[2]
          translated = translate_texture(cg_texture)
+         orig_name = translated
          new_name = line.split(':')[2].split(' ')[1]
-         if len(new_name) > 0 and translated != cg_texture and translated not in translated_samplers:
-            translated_samplers.append(translated)
-            added_samplers.append('uniform sampler2D ' + translated + ';')
-            orig_name = translated
+         log('Fragment: Sampler:', new_name, '->', orig_name)
+         if len(new_name) > 0:
+            if translated != cg_texture and translated not in translated_samplers:
+               translated_samplers.append(translated)
+               added_samplers.append('uniform sampler2D ' + translated + ';')
             translations.append((new_name, orig_name))
-            log('Fragment: Sampler:', new_name, '->', orig_name)
       elif '//var' in line:
          orig = line.split(' ')[2]
          translated = translate_texture_size(orig)
