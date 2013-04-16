@@ -373,8 +373,13 @@ static void hlsl_use(unsigned index)
    if (hlsl_active && prg[index].vprg && prg[index].fprg)
    {
       active_index = index;
+#ifdef _XBOX
+      D3DDevice_SetVertexShader(d3d_device_ptr, prg[index].vprg);
+      D3DDevice_SetPixelShader(d3d_device_ptr, prg[index].fprg);
+#else
       d3d_device_ptr->SetVertexShader(prg[index].vprg);
       d3d_device_ptr->SetPixelShader(prg[index].fprg);
+#endif
    }
 }
 
