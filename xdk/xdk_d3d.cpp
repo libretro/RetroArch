@@ -303,9 +303,9 @@ static void xdk_d3d_set_rotation(void *data, unsigned orientation)
    D3DXMatrixIdentity(&p_out);
    D3DXMatrixRotationZ(&p_rotate, angle);
 
-   d3d->d3d_render_device->SetTransform(D3DTS_WORLD, &p_rotate);
-   d3d->d3d_render_device->SetTransform(D3DTS_VIEW, &p_out);
-   d3d->d3d_render_device->SetTransform(D3DTS_PROJECTION, &p_out);
+   RD3DDevice_SetTransform(d3d->d3d_render_device, D3DTS_WORLD, &p_rotate);
+   RD3DDevice_SetTransform(d3d->d3d_render_device, D3DTS_VIEW, &p_out);
+   RD3DDevice_SetTransform(d3d->d3d_render_device, D3DTS_PROJECTION, &p_out);
 #endif
 }
 
@@ -485,9 +485,8 @@ static void xdk_d3d_init_textures(void *data, const video_info_t *video)
    }
 
    D3DLOCKED_RECT d3dlr;
-   d3d->lpTexture->LockRect(0, &d3dlr, NULL, D3DLOCK_NOSYSLOCK);
+   D3DTexture_LockRect(d3d->lpTexture, 0, &d3dlr, NULL, D3DLOCK_NOSYSLOCK);
    memset(d3dlr.pBits, 0, d3d->tex_w * d3dlr.Pitch);
-   d3d->lpTexture->UnlockRect(0);
 
    d3d->last_width = d3d->tex_w;
    d3d->last_height = d3d->tex_h;
@@ -626,11 +625,11 @@ static void *xdk_d3d_init(const video_info_t *video, const input_driver_t **inpu
    };
 
    BYTE *verts_ptr;
-   d3d->vertex_buf->Lock(0, 0, &verts_ptr, 0);
+   RD3DVertexBuffer_Lock(d3d->vertex_buf, 0, 0, &verts_ptr, 0);
    memcpy(verts_ptr, init_verts, sizeof(init_verts));
-   d3d->vertex_buf->Unlock();
+   RD3DVertexBuffer_Unlock(d3d->vertex_buf);
 
-   d3d->d3d_render_device->SetVertexShader(D3DFVF_XYZ | D3DFVF_TEX1);
+   RD3DDevice_SetVertexShader(d3d->d3d_render_device, D3DFVF_XYZ | D3DFVF_TEX1);
 #elif defined(_XBOX360)
    ret = d3d->d3d_render_device->CreateVertexBuffer(4 * sizeof(DrawVerticeFormats), 
          0, 0, 0, &d3d->vertex_buf, NULL);
@@ -649,9 +648,9 @@ static void *xdk_d3d_init(const video_info_t *video, const input_driver_t **inpu
    };
 
    void *verts_ptr;
-   d3d->vertex_buf->Lock(0, 0, &verts_ptr, 0);
+   RD3DVertexBuffer_Lock(d3d->vertex_buf, 0, 0, &verts_ptr, 0);
    memcpy(verts_ptr, init_verts, sizeof(init_verts));
-   d3d->vertex_buf->Unlock();
+   RD3DVertexBuffer_Unlock(d3d->vertex_buf);
 
    static const D3DVERTEXELEMENT VertexElements[] =
    {
@@ -735,7 +734,7 @@ bool texture_image_render(struct texture_image *out_img,
    // copy the new verts over the old verts
    memcpy(pCurVerts, newVerts, 4 * sizeof(DrawVerticeFormats));
 
-   out_img->vertex_buf->Unlock();
+   RD3DVertexBuffer_Unlock(out_img->vertex_buf);
 
    d3d->d3d_render_device->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE);
    d3d->d3d_render_device->SetRenderState(D3DRS_SRCBLEND,  D3DBLEND_SRCALPHA);
@@ -747,10 +746,10 @@ bool texture_image_render(struct texture_image *out_img,
    d3d->d3d_render_device->SetTextureStageState(0, D3DTSS_ALPHAARG2, D3DTA_TEXTURE);
 
    // draw the quad
-   d3d->d3d_render_device->SetTexture(0, out_img->pixels);
-   d3d->d3d_render_device->SetStreamSource(0, out_img->vertex_buf, sizeof(DrawVerticeFormats));
-   d3d->d3d_render_device->SetVertexShader(D3DFVF_CUSTOMVERTEX);
-   d3d->d3d_render_device->DrawPrimitive(D3DPT_QUADLIST, 0, 1);
+   RD3DDevice_SetTexture(d3d->d3d_render_device, 0, out_img->pixels);
+   IDirect3DDevice8_SetStreamSource(d3d->d3d_render_device, 0, out_img->vertex_buf, sizeof(DrawVerticeFormats));
+   RD3DDevice_SetVertexShader(d3d->d3d_render_device, D3DFVF_CUSTOMVERTEX);
+   RD3DDevice_DrawPrimitive(d3d->d3d_render_device, D3DPT_QUADLIST, 0, 1);
 
    return true;
 }
@@ -798,6 +797,10 @@ static inline void xdk_d3d_draw_texture(void *data)
 static bool xdk_d3d_frame(void *data, const void *frame,
       unsigned width, unsigned height, unsigned pitch, const char *msg)
 {
+#ifndef _XBOX1
+   DWORD fetchConstant;
+   UINT64 pendingMask3;
+#endif
    xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)data;
    LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)d3d->d3d_render_device;
    uint64_t lifecycle_mode_state = g_extern.lifecycle_mode_state;
@@ -809,9 +812,8 @@ static bool xdk_d3d_frame(void *data, const void *frame,
    {
       D3DLOCKED_RECT d3dlr;
 
-      d3d->lpTexture->LockRect(0, &d3dlr, NULL, D3DLOCK_NOSYSLOCK);
+      D3DTexture_LockRect(d3d->lpTexture, 0, &d3dlr, NULL, D3DLOCK_NOSYSLOCK);
       memset(d3dlr.pBits, 0, d3d->tex_w * d3dlr.Pitch);
-      d3d->lpTexture->UnlockRect(0);
 
 #if defined(_XBOX1)
       float tex_w = width;
@@ -847,9 +849,9 @@ static bool xdk_d3d_frame(void *data, const void *frame,
 #elif defined(_XBOX360)
       void *verts_ptr;
 #endif
-      d3d->vertex_buf->Lock(0, 0, &verts_ptr, 0);
+      RD3DVertexBuffer_Lock(d3d->vertex_buf, 0, 0, &verts_ptr, 0);
       memcpy(verts_ptr, verts, sizeof(verts));
-      d3d->vertex_buf->Unlock();
+      RD3DVertexBuffer_Unlock(d3d->vertex_buf);
 
       d3d->last_width = width;
       d3d->last_height = height;
@@ -866,7 +868,7 @@ static bool xdk_d3d_frame(void *data, const void *frame,
    if (d3d->should_resize)
       xdk_d3d_set_viewport(false);
 
-   d3dr->SetTexture(0, d3d->lpTexture);
+   RD3DDevice_SetTexture(d3dr, 0, d3d->lpTexture);
 
 #ifdef HAVE_HLSL
    if (d3d->shader)
@@ -907,7 +909,7 @@ NULL, NULL, NULL, 0);
    {
       unsigned base_size = d3d->base_size;
       D3DLOCKED_RECT d3dlr;
-      d3d->lpTexture->LockRect(0, &d3dlr, NULL, D3DLOCK_NOSYSLOCK);
+      D3DTexture_LockRect(d3d->lpTexture, 0, &d3dlr, NULL, D3DLOCK_NOSYSLOCK);
 
       for (unsigned y = 0; y < height; y++)
       {
@@ -915,7 +917,6 @@ NULL, NULL, NULL, 0);
          uint8_t *out = (uint8_t*)d3dlr.pBits + y * d3dlr.Pitch;
          memcpy(out, in, width * base_size);
       }
-      d3d->lpTexture->UnlockRect(0);
    }
 
    RD3DDevice_SetSamplerState_MinFilter(d3dr, D3DSAMP_MINFILTER, g_settings.video.smooth ? D3DTEXF_LINEAR : D3DTEXF_POINT);
@@ -924,18 +925,16 @@ NULL, NULL, NULL, 0);
    RD3DDevice_SetSamplerState_AddressV(d3dr, D3DSAMP_ADDRESSV, D3DTADDRESS_BORDER);
 
 #if defined(_XBOX1)
-   d3dr->SetVertexShader(D3DFVF_XYZ | D3DFVF_TEX1);
-
-   d3dr->SetStreamSource(0, d3d->vertex_buf, sizeof(DrawVerticeFormats));
-   RD3DDevice_Clear(d3dr, 0, NULL, D3DCLEAR_TARGET, 0xff000000, 1.0f, 0);
+   RD3DDevice_SetVertexShader(d3dr, D3DFVF_XYZ | D3DFVF_TEX1);
+   IDirect3DDevice8_SetStreamSource(d3dr, 0, d3d->vertex_buf, sizeof(DrawVerticeFormats));
 
    d3dr->SetFlickerFilter(g_extern.console.screen.flicker_filter_index);
    d3dr->SetSoftDisplayFilter(g_extern.lifecycle_mode_state & (1ULL << MODE_VIDEO_SOFT_FILTER_ENABLE));
 #elif defined(_XBOX360)
-   d3dr->SetVertexDeclaration(d3d->v_decl);
-   d3dr->SetStreamSource(0, d3d->vertex_buf, 0, sizeof(DrawVerticeFormats));
+   D3DDevice_SetVertexDeclaration(d3dr, d3d->v_decl);
+   D3DDevice_SetStreamSource_Inline(d3dr, 0, d3d->vertex_buf, 0, sizeof(DrawVerticeFormats));
 #endif
-   d3dr->DrawPrimitive(D3DPT_TRIANGLESTRIP, 0, 2);
+   RD3DDevice_DrawPrimitive(d3dr, D3DPT_TRIANGLESTRIP, 0, 2);
 
 #if 0 /* ifdef HAVE_FBO */
    if (d3d->fbo_inited)
@@ -945,7 +944,7 @@ NULL, NULL, NULL, 0);
 
       d3dr->SetRenderTarget(0, pRenderTarget0);
       pRenderTarget0->Release();
-      d3dr->SetTexture(0, &d3d->lpTexture_ot_as16srgb);
+      RD3DDevice_SetTexture(d3dr, 0, &d3d->lpTexture_ot_as16srgb);
 
 #ifdef HAVE_HLSL
       hlsl_use(2);
@@ -960,9 +959,9 @@ NULL, NULL, NULL, 0);
       RD3DDevice_SetSamplerState_MagFilter(d3dr, D3DSAMP_MAGFILTER, g_settings.video.second_pass_smooth ? D3DTEXF_LINEAR : D3DTEXF_POINT);
       RD3DDevice_SetSamplerState_AddressU(d3dr, D3DSAMP_ADDRESSU, D3DTADDRESS_BORDER);
       RD3DDevice_SetSamplerState_AddressV(d3dr, D3DSAMP_ADDRESSV, D3DTADDRESS_BORDER);
-      d3dr->SetVertexDeclaration(d3d->v_decl);
-      d3dr->SetStreamSource(0, d3d->vertex_buf, 0, sizeof(DrawVerticeFormats));
-      d3dr->DrawPrimitive(D3DPT_TRIANGLESTRIP, 0, 2);
+      D3DDevice_SetVertexDeclaration(d3dr, d3d->v_decl);
+      Direct3DDevice_SetStreamSource_Inline(d3dr, 0, d3d->vertex_buf, 0, sizeof(DrawVerticeFormats));
+      RD3DDevice_DrawPrimitive(d3dr, D3DPT_TRIANGLESTRIP, 0, 2);
    }
 #endif
 
