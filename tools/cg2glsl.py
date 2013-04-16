@@ -150,7 +150,7 @@ def destructify_varyings(source):
             # Must have explicit uniform sampler2D in struct.
             for index in range(i, j + 1):
                if 'sampler2D' in source[index]:
-                  source[index] = ''
+                  source[index] = 'float _placeholder{};'.format(index)
 
    varyings_tmp = varyings
    varyings = []
@@ -307,7 +307,7 @@ def replace_varyings(source):
 
 def hack_source_vertex(source):
    transpose_index = 2
-   code_index = 0
+   ref_index = 0
    for index, line in enumerate(source):
       if 'void main()' in line:
          source.insert(index + 2, '    mat4 MVPMatrix_ = transpose_(MVPMatrix);') # transpose() is GLSL 1.20+, doesn't exist in GLSL ES 1.0
@@ -334,7 +334,39 @@ def hack_source_vertex(source):
             return ret;
          }
          """)
+         ref_index = index
          break
+
+   # Fix samplers in vertex shader (supported by GLSL).
+   translations = []
+   added_samplers = []
+   translated_samplers = []
+   struct_texunit0 = False # If True, we have to append uniform sampler2D Texture manually ...
+   for line in source:
+      if ('TEXUNIT0' in line) and ('semantic' not in line):
+         main_sampler = (line.split(':')[2].split(' ')[1], 'Texture')
+         if len(main_sampler[0]) > 0:
+            translations.append(main_sampler)
+            log('Vertex: Sampler:', main_sampler[0], '->', main_sampler[1])
+            struct_texunit0 = '.' in main_sampler[0]
+      elif '//var sampler2D' in line:
+         cg_texture = line.split(' ')[2]
+         translated = translate_texture(cg_texture)
+         new_name = line.split(':')[2].split(' ')[1]
+         if len(new_name) > 0 and translated != cg_texture and translated not in translated_samplers:
+            translated_samplers.append(translated)
+            added_samplers.append('uniform sampler2D ' + translated + ';')
+            orig_name = translated
+            translations.append((new_name, orig_name))
+            log('Vertex: Sampler:', new_name, '->', orig_name)
+
+   for sampler in added_samplers:
+      source.insert(ref_index, sampler)
+   if struct_texunit0:
+      source.insert(ref_index, 'uniform sampler2D Texture;')
+   for index, line in enumerate(source):
+      for translation in translations:
+         source[index] = source[index].replace(translation[0], translation[1])
 
    source = destructify_varyings(source)
    source = replace_varyings(source)
@@ -402,21 +434,24 @@ def hack_source_fragment(source):
    added_samplers = []
    translated_samplers = []
    uniforms = []
+   struct_texunit0 = False # If True, we have to append uniform sampler2D Texture manually ...
    for line in source:
       if ('TEXUNIT0' in line) and ('semantic' not in line):
          main_sampler = (line.split(':')[2].split(' ')[1], 'Texture')
-         translations.append(main_sampler)
-         log('Fragment: Sampler:', main_sampler[0], '->', main_sampler[1])
+         if len(main_sampler[0]) > 0:
+            translations.append(main_sampler)
+            log('Fragment: Sampler:', main_sampler[0], '->', main_sampler[1])
+            struct_texunit0 = '.' in main_sampler[0]
       elif '//var sampler2D' in line:
          cg_texture = line.split(' ')[2]
          translated = translate_texture(cg_texture)
-         if translated != cg_texture and translated not in translated_samplers:
+         new_name = line.split(':')[2].split(' ')[1]
+         if len(new_name) > 0 and translated != cg_texture and translated not in translated_samplers:
             translated_samplers.append(translated)
             added_samplers.append('uniform sampler2D ' + translated + ';')
-         orig_name = translated
-         new_name = line.split(':')[2].split(' ')[1]
-         translations.append((new_name, orig_name))
-         log('Fragment: Sampler:', new_name, '->', orig_name)
+            orig_name = translated
+            translations.append((new_name, orig_name))
+            log('Fragment: Sampler:', new_name, '->', orig_name)
       elif '//var' in line:
          orig = line.split(' ')[2]
          translated = translate_texture_size(orig)
@@ -434,6 +469,8 @@ def hack_source_fragment(source):
       source.insert(ref_index, '#else')
       source.insert(ref_index, 'uniform mediump vec2 ' + uniform + ';')
       source.insert(ref_index, '#ifdef GL_ES')
+   if struct_texunit0:
+      source.insert(ref_index, 'uniform sampler2D Texture;')
 
    ret = []
    for line in source:
