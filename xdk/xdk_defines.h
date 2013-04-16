@@ -35,7 +35,15 @@
 #define direct3d_create_ctx Direct3DCreate8
 #define IDirect3DVertexBuffer IDirect3DVertexBuffer8
 
-#define SetSamplerState SetTextureStageState
+#define SetSamplerState_function(device, sampler, value) \
+ D3D__DirtyFlags |= (D3DDIRTYFLAG_TEXTURE_STATE_0 << 0); \
+ D3D__TextureState[0][sampler] = value;
+
+#define RD3DDevice_SetSamplerState_MinFilter(device, sampler, value) SetSamplerState_function(device, sampler, value)
+#define RD3DDevice_SetSamplerState_MagFilter(device, sampler, value) SetSamplerState_function(device, sampler, value)
+#define RD3DDevice_SetSamplerState_AddressU(device, sampler, value) SetSamplerState_function(device, sampler, value)
+#define RD3DDevice_SetSamplerState_AddressV(device, sampler, value) SetSamplerState_function(device, sampler, value)
+
 #define D3DLOCK_NOSYSLOCK (0)
 
 #define D3DSAMP_ADDRESSU D3DTSS_ADDRESSU
@@ -59,6 +67,11 @@
 
 #define direct3d_create_ctx Direct3DCreate9
 #define IDirect3DVertexDeclaration IDirect3DVertexDeclaration9
+
+#define RD3DDevice_SetSamplerState_MinFilter(device, sampler, value) D3DDevice_SetSamplerState_MinFilter(device, sampler, value)
+#define RD3DDevice_SetSamplerState_MagFilter(device, sampler, value) D3DDevice_SetSamplerState_MagFilter(device, sampler, value)
+#define RD3DDevice_SetSamplerState_AddressU(device, sampler, value) D3DDevice_SetSamplerState_AddressU_Inline(device, sampler, value)
+#define RD3DDevice_SetSamplerState_AddressV(device, sampler, value) D3DDevice_SetSamplerState_AddressV_Inline(device, sampler, value)
 
 #endif
 

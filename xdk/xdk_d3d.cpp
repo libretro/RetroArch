@@ -918,10 +918,10 @@ NULL, NULL, NULL, 0);
       d3d->lpTexture->UnlockRect(0);
    }
 
-   d3dr->SetSamplerState(0, D3DSAMP_MINFILTER, g_settings.video.smooth ? D3DTEXF_LINEAR : D3DTEXF_POINT);
-   d3dr->SetSamplerState(0, D3DSAMP_MAGFILTER, g_settings.video.smooth ? D3DTEXF_LINEAR : D3DTEXF_POINT);
-   d3dr->SetSamplerState(0, D3DSAMP_ADDRESSU, D3DTADDRESS_BORDER);
-   d3dr->SetSamplerState(0, D3DSAMP_ADDRESSV, D3DTADDRESS_BORDER);
+   RD3DDevice_SetSamplerState_MinFilter(d3dr, D3DSAMP_MINFILTER, g_settings.video.smooth ? D3DTEXF_LINEAR : D3DTEXF_POINT);
+   RD3DDevice_SetSamplerState_MagFilter(d3dr, D3DSAMP_MAGFILTER, g_settings.video.smooth ? D3DTEXF_LINEAR : D3DTEXF_POINT);
+   RD3DDevice_SetSamplerState_AddressU(d3dr, D3DSAMP_ADDRESSU, D3DTADDRESS_BORDER);
+   RD3DDevice_SetSamplerState_AddressV(d3dr, D3DSAMP_ADDRESSV, D3DTADDRESS_BORDER);
 
 #if defined(_XBOX1)
    d3dr->SetVertexShader(D3DFVF_XYZ | D3DFVF_TEX1);
@@ -956,10 +956,10 @@ NULL, NULL, NULL, 0);
 #endif
       xdk_d3d_set_viewport(false);
 
-      d3dr->SetSamplerState(0, D3DSAMP_MINFILTER, g_settings.video.second_pass_smooth ? D3DTEXF_LINEAR : D3DTEXF_POINT);
-      d3dr->SetSamplerState(0, D3DSAMP_MAGFILTER, g_settings.video.second_pass_smooth ? D3DTEXF_LINEAR : D3DTEXF_POINT);
-      d3dr->SetSamplerState(0, D3DSAMP_ADDRESSU, D3DTADDRESS_BORDER);
-      d3dr->SetSamplerState(0, D3DSAMP_ADDRESSV, D3DTADDRESS_BORDER);
+      RD3DDevice_SetSamplerState_MinFilter(d3dr, D3DSAMP_MINFILTER, g_settings.video.second_pass_smooth ? D3DTEXF_LINEAR : D3DTEXF_POINT);
+      RD3DDevice_SetSamplerState_MagFilter(d3dr, D3DSAMP_MAGFILTER, g_settings.video.second_pass_smooth ? D3DTEXF_LINEAR : D3DTEXF_POINT);
+      RD3DDevice_SetSamplerState_AddressU(d3dr, D3DSAMP_ADDRESSU, D3DTADDRESS_BORDER);
+      RD3DDevice_SetSamplerState_AddressV(d3dr, D3DSAMP_ADDRESSV, D3DTADDRESS_BORDER);
       d3dr->SetVertexDeclaration(d3d->v_decl);
       d3dr->SetStreamSource(0, d3d->vertex_buf, 0, sizeof(DrawVerticeFormats));
       d3dr->DrawPrimitive(D3DPT_TRIANGLESTRIP, 0, 2);
