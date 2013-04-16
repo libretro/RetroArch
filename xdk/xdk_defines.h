@@ -39,6 +39,9 @@
  D3D__DirtyFlags |= (D3DDIRTYFLAG_TEXTURE_STATE_0 << 0); \
  D3D__TextureState[0][sampler] = value;
 
+#define RD3DDevice_Clear(device, Count, pRects, Flags, Color, Z, Stencil) D3DDevice_Clear(Count, pRects, Flags, Color, Z, Stencil)
+#define RD3DDevice_SetViewport(device, viewport) D3DDevice_SetViewport(viewport)
+#define RD3DDevice_Present(device) D3DDevice_Swap(0)
 #define RD3DDevice_SetSamplerState_MinFilter(device, sampler, value) SetSamplerState_function(device, sampler, value)
 #define RD3DDevice_SetSamplerState_MagFilter(device, sampler, value) SetSamplerState_function(device, sampler, value)
 #define RD3DDevice_SetSamplerState_AddressU(device, sampler, value) SetSamplerState_function(device, sampler, value)
@@ -68,6 +71,9 @@
 #define direct3d_create_ctx Direct3DCreate9
 #define IDirect3DVertexDeclaration IDirect3DVertexDeclaration9
 
+#define RD3DDevice_Clear(device, Count, pRects, Flags, Color, Z, Stencil) D3DDevice_Clear(device, Count, pRects, Flags, Color, Z, Stencil, false)
+#define RD3DDevice_SetViewport(device, viewport) D3DDevice_SetViewport(device, viewport)
+#define RD3DDevice_Present(device) D3DDevice_Present(device)
 #define RD3DDevice_SetSamplerState_MinFilter(device, sampler, value) D3DDevice_SetSamplerState_MinFilter(device, sampler, value)
 #define RD3DDevice_SetSamplerState_MagFilter(device, sampler, value) D3DDevice_SetSamplerState_MagFilter(device, sampler, value)
 #define RD3DDevice_SetSamplerState_AddressU(device, sampler, value) D3DDevice_SetSamplerState_AddressU_Inline(device, sampler, value)

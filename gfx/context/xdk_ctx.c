@@ -69,10 +69,7 @@ static void gfx_ctx_xdk_swap_buffers(void)
 {
    xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
    LPDIRECT3DDEVICE d3dr = d3d->d3d_render_device;
-#ifdef _XBOX1
-   d3dr->EndScene();
-#endif
-   d3dr->Present(NULL, NULL, NULL, NULL);
+   RD3DDevice_Present(d3dr);
 }
 
 static bool gfx_ctx_xdk_window_has_focus(void)

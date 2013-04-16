@@ -212,7 +212,7 @@ static void xdk_d3d_set_viewport(bool force_full)
    int m_viewport_x_temp, m_viewport_y_temp, m_viewport_width_temp, m_viewport_height_temp;
    float m_zNear, m_zFar;
 
-   d3dr->Clear(0, NULL, D3DCLEAR_TARGET, 0xff000000, 1.0f, 0);
+   RD3DDevice_Clear(d3dr, 0, NULL, D3DCLEAR_TARGET, 0xff000000, 1.0f, 0);
 
    d3d->ctx_driver->get_video_size(&width, &height);
    m_viewport_x_temp = 0;
@@ -260,7 +260,7 @@ static void xdk_d3d_set_viewport(bool force_full)
    vp.Y      = m_viewport_y_temp;
    vp.MinZ   = m_zNear;
    vp.MaxZ   = m_zFar;
-   d3dr->SetViewport(&vp);
+   RD3DDevice_SetViewport(d3d->d3d_render_device, &vp);
 
 #ifdef HAVE_HLSL
    if (d3d->shader)
@@ -495,7 +495,7 @@ static void xdk_d3d_init_textures(void *data, const video_info_t *video)
 #if defined(_XBOX1)
    d3d->d3d_render_device->SetRenderState(D3DRS_LIGHTING, FALSE);
 #elif defined(_XBOX360)
-   d3d->d3d_render_device->Clear(0, NULL, D3DCLEAR_TARGET,
+   RD3DDevice_Clear(d3d->d3d_render_device, 0, NULL, D3DCLEAR_TARGET,
          0xff000000, 1.0f, 0);
 #endif
    vp.Width  = d3d->win_width;
@@ -506,7 +506,7 @@ static void xdk_d3d_init_textures(void *data, const video_info_t *video)
 
    vp.MinZ   = 0.0f;
    vp.MaxZ   = 1.0f;
-   d3d->d3d_render_device->SetViewport(&vp);
+   RD3DDevice_SetViewport(d3d->d3d_render_device, &vp);
 
    if (g_extern.console.screen.viewports.custom_vp.width == 0)
       g_extern.console.screen.viewports.custom_vp.width = vp.Width;
@@ -585,7 +585,7 @@ static void *xdk_d3d_init(const video_info_t *video, const input_driver_t **inpu
 
       if (ret != S_OK)
          RARCH_ERR("Failed at CreateDevice.\n");
-      d3d->d3d_render_device->Clear(0, NULL, D3DCLEAR_TARGET, 0xff000000, 1.0f, 0);
+      RD3DDevice_Clear(d3d->d3d_render_device, 0, NULL, D3DCLEAR_TARGET, 0xff000000, 1.0f, 0);
    }
    else
    {
@@ -888,7 +888,7 @@ static bool xdk_d3d_frame(void *data, const void *frame,
       vp.Y      = 0;
       vp.MinZ   = 0.0f;
       vp.MaxZ   = 1.0f;
-      d3dr->SetViewport(&vp);
+      RD3DDevice_SetViewport(d3dr, &vp);
    }
    else
 #endif
@@ -927,7 +927,7 @@ NULL, NULL, NULL, 0);
    d3dr->SetVertexShader(D3DFVF_XYZ | D3DFVF_TEX1);
 
    d3dr->SetStreamSource(0, d3d->vertex_buf, sizeof(DrawVerticeFormats));
-   d3dr->Clear(0, NULL, D3DCLEAR_TARGET, 0xff000000, 1.0f, 0);
+   RD3DDevice_Clear(d3dr, 0, NULL, D3DCLEAR_TARGET, 0xff000000, 1.0f, 0);
 
    d3dr->SetFlickerFilter(g_extern.console.screen.flicker_filter_index);
    d3dr->SetSoftDisplayFilter(g_extern.lifecycle_mode_state & (1ULL << MODE_VIDEO_SOFT_FILTER_ENABLE));
