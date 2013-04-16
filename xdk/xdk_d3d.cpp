@@ -919,8 +919,10 @@ NULL, NULL, NULL, 0);
       }
    }
 
-   RD3DDevice_SetSamplerState_MinFilter(d3dr, D3DSAMP_MINFILTER, g_settings.video.smooth ? D3DTEXF_LINEAR : D3DTEXF_POINT);
-   RD3DDevice_SetSamplerState_MagFilter(d3dr, D3DSAMP_MAGFILTER, g_settings.video.smooth ? D3DTEXF_LINEAR : D3DTEXF_POINT);
+   unsigned filter = g_settings.video.smooth ? D3DTEXF_LINEAR : D3DTEXF_POINT;
+
+   RD3DDevice_SetSamplerState_MinFilter(d3dr, 0, filter);
+   RD3DDevice_SetSamplerState_MagFilter(d3dr, 0, filter);
    RD3DDevice_SetSamplerState_AddressU(d3dr, D3DSAMP_ADDRESSU, D3DTADDRESS_BORDER);
    RD3DDevice_SetSamplerState_AddressV(d3dr, D3DSAMP_ADDRESSV, D3DTADDRESS_BORDER);
 
