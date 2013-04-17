@@ -104,41 +104,9 @@ unsigned rgui_current_gx_resolution = GX_RESOLUTIONS_640_480;
 unsigned RGUI_WIDTH = 320;
 unsigned RGUI_HEIGHT = 240;
 uint16_t menu_framebuf[400 * 240];
-rgui_handle_t *rgui;
-
-struct rgui_handle
-{
-   uint16_t *frame_buf;
-   size_t frame_buf_pitch;
-
-   void *userdata;
-
-   rgui_list_t *menu_stack;
-   rgui_list_t *selection_buf;
-   size_t selection_ptr;
-   bool need_refresh;
-   bool msg_force;
-
-   char base_path[PATH_MAX];
-
-   const uint8_t *font;
-   bool alloc_font;
-
-#ifdef HAVE_DYNAMIC
-   char libretro_dir[PATH_MAX];
-#endif
-   struct retro_system_info info;
 
 #ifdef HAVE_SHADER_MANAGER
-   struct gfx_shader shader;
-#endif
-};
-
-#ifdef HAVE_SHADER_MANAGER
-static void shader_manager_get_str(struct gfx_shader *shader,
-      char *type_str, size_t type_str_size, unsigned type);
 static int shader_manager_toggle_setting(rgui_handle_t *rgui, unsigned setting, rgui_action_t action);
-static void shader_manager_init(rgui_handle_t *rgui);
 #endif
 
 static const unsigned rgui_controller_lut[] = {
@@ -210,6 +178,8 @@ static bool menu_type_is_shader_browser(unsigned type)
          ((type - RGUI_SETTINGS_SHADER_0) % 3) == 0) ||
       type == RGUI_SETTINGS_SHADER_PRESET;
 }
+
+static int rgui_iterate(rgui_handle_t *rgui, rgui_action_t action);
 
 static rgui_handle_t *rgui_init(const char *base_path,
       uint16_t *framebuf, size_t framebuf_pitch,
@@ -1350,100 +1320,6 @@ static int shader_manager_toggle_setting(rgui_handle_t *rgui, unsigned setting, 
    return 0;
 }
 
-static void shader_manager_get_str(struct gfx_shader *shader,
-      char *type_str, size_t type_str_size, unsigned type)
-{
-   if (type == RGUI_SETTINGS_SHADER_APPLY)
-      *type_str = '\0';
-   else if (type == RGUI_SETTINGS_SHADER_PASSES)
-      snprintf(type_str, type_str_size, "%u", shader->passes);
-   else
-   {
-      unsigned pass = (type - RGUI_SETTINGS_SHADER_0) / 3;
-      switch ((type - RGUI_SETTINGS_SHADER_0) % 3)
-      {
-         case 0:
-            if (*shader->pass[pass].source.cg)
-               fill_pathname_base(type_str,
-                     shader->pass[pass].source.cg, type_str_size);
-            else
-               strlcpy(type_str, "N/A", type_str_size);
-            break;
-
-         case 1:
-            switch (shader->pass[pass].filter)
-            {
-               case RARCH_FILTER_LINEAR:
-                  strlcpy(type_str, "Linear", type_str_size);
-                  break;
-
-               case RARCH_FILTER_NEAREST:
-                  strlcpy(type_str, "Nearest", type_str_size);
-                  break;
-
-               case RARCH_FILTER_UNSPEC:
-                  strlcpy(type_str, "Don't care", type_str_size);
-                  break;
-            }
-            break;
-
-         case 2:
-         {
-            unsigned scale = shader->pass[pass].fbo.scale_x;
-            if (!scale)
-               strlcpy(type_str, "Don't care", type_str_size);
-            else
-               snprintf(type_str, type_str_size, "%ux", scale);
-            break;
-         }
-      }
-   }
-}
-
-static void shader_manager_init(rgui_handle_t *rgui)
-{
-   config_file_t *conf = NULL;
-   char cgp_path[PATH_MAX];
-
-   const char *ext = path_get_extension(g_settings.video.shader_path);
-   if (strcmp(ext, "glslp") == 0 || strcmp(ext, "cgp") == 0)
-   {
-      conf = config_file_new(g_settings.video.shader_path);
-      if (conf)
-      {
-         if (gfx_shader_read_conf_cgp(conf, &rgui->shader))
-            gfx_shader_resolve_relative(&rgui->shader, g_settings.video.shader_path);
-         config_file_free(conf);
-      }
-   }
-   else if (strcmp(ext, "glsl") == 0 || strcmp(ext, "cg") == 0)
-   {
-      strlcpy(rgui->shader.pass[0].source.cg, g_settings.video.shader_path,
-            sizeof(rgui->shader.pass[0].source.cg));
-      rgui->shader.passes = 1;
-   }
-   else
-   {
-      const char *shader_dir = *g_settings.video.shader_dir ?
-         g_settings.video.shader_dir : g_settings.system_directory;
-
-      fill_pathname_join(cgp_path, shader_dir, "rgui.glslp", sizeof(cgp_path));
-      conf = config_file_new(cgp_path);
-
-      if (!conf)
-      {
-         fill_pathname_join(cgp_path, shader_dir, "rgui.cgp", sizeof(cgp_path));
-         conf = config_file_new(cgp_path);
-      }
-
-      if (conf)
-      {
-         if (gfx_shader_read_conf_cgp(conf, &rgui->shader))
-            gfx_shader_resolve_relative(&rgui->shader, cgp_path);
-         config_file_free(conf);
-      }
-   }
-}
 #endif
 
 static void rgui_settings_controller_populate_entries(rgui_handle_t *rgui)
@@ -1821,7 +1697,7 @@ static bool directory_parse(rgui_handle_t *rgui, const char *directory, unsigned
    return true;
 }
 
-int rgui_iterate(rgui_handle_t *rgui, rgui_action_t action)
+static int rgui_iterate(rgui_handle_t *rgui, rgui_action_t action)
 {
    const char *dir = 0;
    unsigned menu_type = 0;
@@ -2095,6 +1971,7 @@ static uint16_t trigger_state = 0;
 
 static int menu_input_process(void *data, void *state)
 {
+   (void)data;
    int ret = 0;
 
    if (g_extern.lifecycle_mode_state & (1ULL << MODE_LOAD_GAME))
@@ -2286,4 +2163,3 @@ deinit:
 
    return false;
 }
-

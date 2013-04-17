@@ -188,7 +188,7 @@
     <ClCompile Include="..\..\deps\miniz\miniz.c" />
     <ClCompile Include="..\..\file_extract.c" />
     <ClCompile Include="..\..\frontend\menu\rgui.c" />
-    <ClCompile Include="..\..\frontend\menu\utils\file_list.c" />
+    <ClCompile Include="..\..\frontend\menu\menu_common.c" />
     <ClCompile Include="..\..\gfx\d3d9\d3d9.cpp" />
     <ClCompile Include="..\..\gfx\d3d9\render_chain.cpp" />
     <ClCompile Include="..\..\gfx\fonts\bitmapfont.c" />

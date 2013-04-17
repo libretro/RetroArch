@@ -17,13 +17,7 @@
 #ifndef _RMENU_H_
 #define _RMENU_H_
 
-#if defined(HAVE_CG) || defined(HAVE_HLSL) || defined(HAVE_GLSL)
-#define HAVE_SHADER_MANAGER
-#endif
-
-#ifdef HAVE_SHADER_MANAGER
-#define RMENU_MAX_SHADERS 8
-#endif
+#include "menu_common.h"
 
 #ifdef _XBOX1
 #define HAVE_MENU_PANEL
@@ -200,7 +194,7 @@ enum
    SHADERMAN_SHADER_7,
    SHADERMAN_SHADER_7_FILTER,
    SHADERMAN_SHADER_7_SCALE,
-   SHADERMAN_SHADER_LAST = SHADERMAN_SHADER_0_SCALE + (3 * (RMENU_MAX_SHADERS - 1)),
+   SHADERMAN_SHADER_LAST = SHADERMAN_SHADER_0_SCALE + (3 * (RGUI_MAX_SHADERS - 1)),
    SHADERMAN_LAST,
 #endif
    SETTING_LAST_LAST,
@@ -231,8 +225,6 @@ enum
 #ifdef HAVE_SHADER_MANAGER
 #define MAX_NO_OF_SHADERMAN_SETTINGS   SHADERMAN_SHADER_PASSES+1
 #endif
-
-typedef struct rmenu_handle rmenu_handle_t;
 
 void menu_init (void);
 bool menu_iterate(void);

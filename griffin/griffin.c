@@ -359,9 +359,6 @@ DYNAMIC
 /*============================================================
 FILE
 ============================================================ */
-#ifdef HAVE_FILEBROWSER
-#include "../frontend/menu/utils/file_browser.c"
-#endif
 #include "../file.c"
 #include "../file_path.c"
 
@@ -442,12 +439,15 @@ SCREENSHOTS
 /*============================================================
 MENU
 ============================================================ */
+#if defined(HAVE_RMENU) || defined(HAVE_RGUI) || defined(HAVE_RMENU_XUI)
+#include "../frontend/menu/menu_common.c"
+#endif
+
 #if defined(HAVE_RMENU_GUI)
 #include "../frontend/menu/rmenu.c"
 #endif
 
 #ifdef HAVE_RGUI
-#include "../frontend/menu/utils/file_list.c"
 #include "../frontend/menu/rgui.c"
 #endif
 

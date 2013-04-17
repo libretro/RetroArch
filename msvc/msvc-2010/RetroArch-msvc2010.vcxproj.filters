@@ -231,7 +231,7 @@
     <ClCompile Include="..\..\frontend\menu\rgui.c">
       <Filter>Source Files\rgui</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\frontend\menu\utils\file_list.c">
+    <ClCompile Include="..\..\frontend\menu\menu_common.c">
       <Filter>Source Files\rgui</Filter>
     </ClCompile>
   </ItemGroup>
