@@ -215,64 +215,6 @@ static const char *menu_drive_mapping_next(void)
 #endif
 
 /*============================================================
-  RMENU GRAPHICS
-  ============================================================ */
-
-
-static void rmenu_gfx_init(void)
-{
-   menu_texture = (struct texture_image*)calloc(1, sizeof(*menu_texture));
-#ifdef HAVE_MENU_PANEL
-   menu_panel = (struct texture_image*)calloc(1, sizeof(*menu_panel));
-   texture_image_load("D:\\Media\\menuMainRomSelectPanel.png", menu_panel);
-#endif
-
-   texture_image_load(g_extern.menu_texture_path, menu_texture);
-}
-
-static void rmenu_gfx_free(void)
-{
-#ifdef _XBOX1
-#ifdef HAVE_MENU_PANEL
-   if (menu_panel->vertex_buf)
-   {
-      menu_panel->vertex_buf->Release();
-      menu_panel->vertex_buf = NULL;
-   }
-   if (menu_panel->pixels)
-   {
-      menu_panel->pixels->Release();
-      menu_panel->pixels = NULL;
-   }
-#endif
-   if (menu_texture->vertex_buf)
-   {
-      menu_texture->vertex_buf->Release();
-      menu_texture->vertex_buf = NULL;
-   }
-   if (menu_texture->pixels)
-   {
-      menu_texture->pixels->Release();
-      menu_texture->pixels = NULL;
-   }
-#else
-#ifdef HAVE_MENU_PANEL
-   if (menu_panel)
-   {
-      free(menu_panel->pixels);
-      menu_panel->pixels = NULL;
-   }
-#endif
-
-   if (menu_texture)
-   {
-      free(menu_texture->pixels);
-      menu_texture->pixels = NULL;
-   }
-#endif
-}
-
-/*============================================================
   MENU STACK
   ============================================================ */
 
@@ -3165,6 +3107,7 @@ static int menu_input_process(uint8_t menu_type, uint64_t old_state)
    unsigned width;
    unsigned height;
    unsigned frame_count;
+   int ret = 0;
 
    DEVICE_CAST device_ptr = (DEVICE_CAST)driver.video_data;
 
@@ -3182,7 +3125,7 @@ static int menu_input_process(uint8_t menu_type, uint64_t old_state)
 
       g_extern.lifecycle_mode_state |= (1ULL << MODE_INIT);
       g_extern.lifecycle_mode_state &= ~(1ULL << MODE_LOAD_GAME);
-      return -1;
+      ret = -1;
    }
 
    if (!(g_extern.frame_count < g_extern.delay_timer[0]))
@@ -3202,7 +3145,7 @@ static int menu_input_process(uint8_t menu_type, uint64_t old_state)
                )
             menu_stack_pop(menu_type);
 
-         int ret = -1;
+         ret = -1;
          if (g_extern.lifecycle_mode_state & (1ULL << MODE_MENU_INGAME))
          {
             g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU_INGAME_EXIT);
@@ -3210,7 +3153,6 @@ static int menu_input_process(uint8_t menu_type, uint64_t old_state)
          }
 
          g_extern.lifecycle_mode_state |= (1ULL << MODE_GAME);
-         return ret;
       }
    }
 
@@ -3220,10 +3162,17 @@ static int menu_input_process(uint8_t menu_type, uint64_t old_state)
    if (quit)
    {
       g_extern.lifecycle_mode_state |= (1ULL << MODE_EXIT);
-      return -1;
+      ret = -1;
    }
 
-   return 0;
+   if (g_extern.lifecycle_mode_state & (1ULL << MODE_MENU_INGAME_EXIT) &&
+         g_extern.lifecycle_mode_state & (1ULL << MODE_MENU_INGAME))
+   {
+      menu_stack_pop(menu_type);
+      g_extern.lifecycle_mode_state &= ~((1ULL << MODE_MENU_INGAME) | (1ULL << MODE_MENU_INGAME_EXIT));
+   }
+
+   return ret;
 }
 
 /*============================================================
@@ -3337,7 +3286,7 @@ static void shader_manager_init(rmenu_handle_t *rgui)
 }
 #endif
 
-rmenu_handle_t *rmenu_init(void)
+static rmenu_handle_t *rmenu_init(void)
 {
    rmenu_handle_t *rmenu = (rmenu_handle_t*)calloc(1, sizeof(*rmenu));
 
@@ -3353,6 +3302,20 @@ rmenu_handle_t *rmenu_init(void)
 #ifdef HAVE_SHADER_MANAGER
    shader_manager_init(rmenu);
 #endif
+   
+   menu_stack_push(FILE_BROWSER_MENU, false);
+
+   menu_texture = (struct texture_image*)calloc(1, sizeof(*menu_texture));
+#ifdef HAVE_MENU_PANEL
+   menu_panel = (struct texture_image*)calloc(1, sizeof(*menu_panel));
+   texture_image_load("D:\\Media\\menuMainRomSelectPanel.png", menu_panel);
+#endif
+
+   texture_image_load(g_extern.menu_texture_path, menu_texture);
+
+   if (driver.video_poke && driver.video_poke->set_texture_frame)
+      driver.video_poke->set_texture_frame(driver.video_data, menu_texture->pixels,
+            true, menu_texture->width, menu_texture->height, 1.0f);
 
    return rmenu;
 }
@@ -3360,32 +3323,62 @@ rmenu_handle_t *rmenu_init(void)
 void menu_init(void)
 {
    rmenu = rmenu_init();
-
-   menu_stack_push(FILE_BROWSER_MENU, false);
-
-   rmenu_gfx_init();
-
-   if (driver.video_poke && driver.video_poke->set_texture_frame)
-      driver.video_poke->set_texture_frame(driver.video_data, menu_texture->pixels,
-            true, menu_texture->width, menu_texture->height, 1.0f);
 }
 
 static void rmenu_free(void)
 {
+#ifdef _XBOX1
+#ifdef HAVE_MENU_PANEL
+   if (menu_panel->vertex_buf)
+   {
+      menu_panel->vertex_buf->Release();
+      menu_panel->vertex_buf = NULL;
+   }
+   if (menu_panel->pixels)
+   {
+      menu_panel->pixels->Release();
+      menu_panel->pixels = NULL;
+   }
+#endif
+   if (menu_texture->vertex_buf)
+   {
+      menu_texture->vertex_buf->Release();
+      menu_texture->vertex_buf = NULL;
+   }
+   if (menu_texture->pixels)
+   {
+      menu_texture->pixels->Release();
+      menu_texture->pixels = NULL;
+   }
+#else
+#ifdef HAVE_MENU_PANEL
+   if (menu_panel)
+   {
+      free(menu_panel->pixels);
+      menu_panel->pixels = NULL;
+   }
+#endif
+
+   if (menu_texture)
+   {
+      free(menu_texture->pixels);
+      menu_texture->pixels = NULL;
+   }
+#endif
+
+   filebrowser_free(rmenu->browser);
    free(rmenu);
 }
 
 void menu_free(void)
 {
-   rmenu_gfx_free();
-   filebrowser_free(rmenu->browser);
    rmenu_free();
 }
 
 bool menu_iterate(void)
 {
    static uint64_t input = 0;
-   static uint64_t old_state = 0;
+   static uint64_t old_input_state = 0;
 
    if (g_extern.lifecycle_mode_state & (1ULL << MODE_MENU_PREINIT))
    {
@@ -3407,7 +3400,7 @@ bool menu_iterate(void)
             RETRO_DEVICE_JOYPAD, 0, i) ? (1ULL << i) : 0;
 
    //set first button input frame as trigger
-   input = input_state & ~(old_state);
+   input = input_state & ~(old_input_state);
    //hold onto first button input frame
    input_state_first_frame = input_state;          
 
@@ -3440,34 +3433,21 @@ bool menu_iterate(void)
       }
    }
 
-   old_state = input_state_first_frame;
-
-   int input_entry_ret = 0;
-   int input_process_ret = 0;
+   old_input_state = input_state_first_frame;
 
    unsigned menu_type = menu_stack_enum_array[stack_idx - 1];
+   int input_entry_ret = rmenu_iterate(rmenu, menu_type, input);
 
-   input_entry_ret = rmenu_iterate(rmenu, menu_type, input);
-
-   input_process_ret = menu_input_process(menu_type, old_state);
-
-   if (g_extern.lifecycle_mode_state & (1ULL << MODE_MENU_INGAME_EXIT) &&
-         g_extern.lifecycle_mode_state & (1ULL << MODE_MENU_INGAME))
-   {
-      menu_stack_pop(menu_type);
-      g_extern.lifecycle_mode_state &= ~((1ULL << MODE_MENU_INGAME) | (1ULL << MODE_MENU_INGAME_EXIT));
-   }
-
+   // draw last frame for loading messages
    if (driver.video_poke && driver.video_poke->set_texture_enable)
       driver.video_poke->set_texture_enable(driver.video_data, menu_bg_show, true);
 
-   // draw last frame for loading messages
    rarch_render_cached_frame();
 
    if (driver.video_poke && driver.video_poke->set_texture_enable)
       driver.video_poke->set_texture_enable(driver.video_data, false, true);
 
-   if (input_entry_ret != 0 || input_process_ret != 0)
+   if (input_entry_ret != 0 || menu_input_process(menu_type, old_input_state) != 0)
       goto deinit;
 
    return true;

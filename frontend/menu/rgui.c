@@ -211,7 +211,7 @@ static bool menu_type_is_shader_browser(unsigned type)
       type == RGUI_SETTINGS_SHADER_PRESET;
 }
 
-rgui_handle_t *rgui_init(const char *base_path,
+static rgui_handle_t *rgui_init(const char *base_path,
       uint16_t *framebuf, size_t framebuf_pitch,
       const uint8_t *font_bmp_buf, const uint8_t *font_bin_buf) 
 {
@@ -241,10 +241,12 @@ rgui_handle_t *rgui_init(const char *base_path,
    shader_manager_init(rgui);
 #endif
 
+   rgui_iterate(rgui, RGUI_ACTION_REFRESH);
+
    return rgui;
 }
 
-void rgui_free(rgui_handle_t *rgui)
+static void rgui_free(rgui_handle_t *rgui)
 {
    rgui_list_free(rgui->menu_stack);
    rgui_list_free(rgui->selection_buf);
@@ -2082,8 +2084,6 @@ void menu_init(void)
    rgui = rgui_init(g_settings.rgui_browser_directory,
          menu_framebuf, RGUI_WIDTH * sizeof(uint16_t),
          NULL, bitmap_bin);
-
-   rgui_iterate(rgui, RGUI_ACTION_REFRESH);
 }
 
 void menu_free(void)
@@ -2095,13 +2095,15 @@ static uint16_t trigger_state = 0;
 
 static int menu_input_process(void *data, void *state)
 {
+   int ret = 0;
+
    if (g_extern.lifecycle_mode_state & (1ULL << MODE_LOAD_GAME))
    {
       if (g_extern.fullpath)
          g_extern.lifecycle_mode_state |= (1ULL << MODE_INIT);
 
       g_extern.lifecycle_mode_state &= ~(1ULL << MODE_LOAD_GAME);
-      return -1;
+      ret = -1;
    }
 
    if (!(g_extern.frame_count < g_extern.delay_timer[0]))
@@ -2112,11 +2114,16 @@ static int menu_input_process(void *data, void *state)
             g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU_INGAME_EXIT);
          
          g_extern.lifecycle_mode_state |= (1ULL << MODE_GAME);
-         return -1;
+         ret = -1;
       }
    }
 
-   return 0;
+   if (g_extern.lifecycle_mode_state & (1ULL << MODE_MENU_INGAME_EXIT) &&
+         g_extern.lifecycle_mode_state & (1ULL << MODE_MENU_INGAME))
+      g_extern.lifecycle_mode_state &= ~((1ULL << MODE_MENU_INGAME) 
+            | (1ULL << MODE_MENU_INGAME_EXIT));
+
+   return ret;
 }
 
 static uint64_t menu_input_state(void)
@@ -2170,7 +2177,6 @@ bool menu_iterate(void)
    static bool initial_held = true;
    static bool first_held = false;
    bool do_held;
-   int input_entry_ret, input_process_ret;
    rgui_action_t action;
    uint64_t input_state = 0;
 
@@ -2250,10 +2256,7 @@ bool menu_iterate(void)
    else if (trigger_state & (1ULL << DEVICE_NAV_START))
       action = RGUI_ACTION_SETTINGS;
 
-   input_entry_ret = 0;
-   input_process_ret = 0;
-
-   input_entry_ret = rgui_iterate(rgui, action);
+   int input_entry_ret = rgui_iterate(rgui, action);
 
    // draw last frame for loading messages
    if (driver.video_poke && driver.video_poke->set_texture_enable)
@@ -2268,15 +2271,7 @@ bool menu_iterate(void)
    if (driver.video_poke && driver.video_poke->set_texture_enable)
       driver.video_poke->set_texture_enable(driver.video_data, false, false);
 
-   input_process_ret = menu_input_process(NULL, NULL);
-
-   if (g_extern.lifecycle_mode_state & (1ULL << MODE_MENU_INGAME_EXIT) &&
-         g_extern.lifecycle_mode_state & (1ULL << MODE_MENU_INGAME))
-   {
-      g_extern.lifecycle_mode_state &= ~((1ULL << MODE_MENU_INGAME) | (1ULL << MODE_MENU_INGAME_EXIT));
-   }
-
-   if (input_entry_ret != 0 || input_process_ret != 0)
+   if (input_entry_ret != 0 || (menu_input_process(NULL, NULL) != 0))
       goto deinit;
 
    return true;
