@@ -280,7 +280,7 @@ void filebrowser_update(void *data, uint64_t input, const char *extensions)
       strlcpy(rgui->browser->current_dir.extensions, extensions,
             sizeof(rgui->browser->current_dir.extensions));
 #ifdef HAVE_RMENU_XUI
-      filebrowser_fetch_directory_entries(1ULL << RMENU_DEVICE_NAV_B);
+      filebrowser_fetch_directory_entries(1ULL << DEVICE_NAV_B);
 #endif
    }
 
