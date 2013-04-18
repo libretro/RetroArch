@@ -323,6 +323,12 @@ void rgui_list_get_last(const rgui_list_t *list,
 void menu_init(void)
 {
    rgui = rgui_init();
+
+   if (rgui == NULL)
+   {
+      RARCH_ERR("Could not initialize menu.\n");
+      rarch_fail(1, "menu_init()");
+   }
 }
 
 void menu_free(void)
