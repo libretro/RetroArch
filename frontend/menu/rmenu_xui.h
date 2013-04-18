@@ -62,5 +62,6 @@ enum
 };
 
 bool menu_iterate_xui(void);
+void filebrowser_fetch_directory_entries(uint64_t action);
 
 #endif

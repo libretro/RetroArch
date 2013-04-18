@@ -51,6 +51,7 @@ typedef enum
    FILEBROWSER_ACTION_NOOP
 } filebrowser_action_t;
 
+void filebrowser_update(void *data, uint64_t input, const char *extensions);
 void filebrowser_set_root_and_ext(void *data, const char *ext, const char *root_dir);
 bool filebrowser_iterate(void *data, unsigned action);
 

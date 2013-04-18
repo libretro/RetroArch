@@ -544,46 +544,6 @@ static void display_menubar(uint8_t menu_type)
 #endif
 }
 
-static void browser_update(void *data, uint64_t input, const char *extensions)
-{
-   filebrowser_action_t action = FILEBROWSER_ACTION_NOOP;
-   bool ret = true;
-
-   if (input & (1ULL << DEVICE_NAV_DOWN))
-      action = FILEBROWSER_ACTION_DOWN;
-   else if (input & (1ULL << DEVICE_NAV_UP))
-      action = FILEBROWSER_ACTION_UP;
-   else if (input & (1ULL << DEVICE_NAV_RIGHT))
-      action = FILEBROWSER_ACTION_RIGHT;
-   else if (input & (1ULL << DEVICE_NAV_LEFT))
-      action = FILEBROWSER_ACTION_LEFT;
-   else if (input & (1ULL << DEVICE_NAV_R2))
-      action = FILEBROWSER_ACTION_SCROLL_DOWN;
-   else if (input & (1ULL << DEVICE_NAV_L2))
-      action = FILEBROWSER_ACTION_SCROLL_UP;
-   else if (input & (1ULL << DEVICE_NAV_A))
-   {
-      char tmp_str[PATH_MAX];
-      fill_pathname_parent_dir(tmp_str, rgui->browser->current_dir.directory_path, sizeof(tmp_str));
-
-      if (tmp_str[0] != '\0')
-         action = FILEBROWSER_ACTION_CANCEL;
-   }
-   else if (input & (1ULL << DEVICE_NAV_START))
-   {
-      action = FILEBROWSER_ACTION_RESET;
-      filebrowser_set_root_and_ext(rgui->browser, NULL, default_paths.filesystem_root_dir);
-      strlcpy(rgui->browser->current_dir.extensions, extensions,
-            sizeof(rgui->browser->current_dir.extensions));
-   }
-
-   if (action != FILEBROWSER_ACTION_NOOP)
-      ret = filebrowser_iterate(rgui->browser, action);
-
-   if (!ret)
-      msg_queue_push(g_extern.msg_queue, "ERROR - Failed to open directory.", 1, 180);
-}
-
 static void browser_render(void *data)
 {
    unsigned file_count = rgui->browser->list->size;
@@ -659,7 +619,7 @@ static int select_file(void *data, uint64_t input)
          break;
    }
 
-   browser_update(rgui->browser, input, extensions);
+   filebrowser_update(rgui->browser, input, extensions);
 
    if (input & (1ULL << DEVICE_NAV_B))
    {
@@ -784,7 +744,7 @@ static int select_directory(void *data, uint64_t input)
 
    bool is_dir = filebrowser_iterate(rgui->browser, FILEBROWSER_ACTION_PATH_ISDIR);
    bool pop_menu_stack = false;
-   browser_update(rgui->browser, input, "empty");
+   filebrowser_update(rgui->browser, input, "empty");
 
    if (input & (1ULL << DEVICE_NAV_Y))
    {
@@ -2584,7 +2544,7 @@ static int select_rom(void *data, uint64_t input)
    if (driver.input->set_keybinds)
       driver.input->set_keybinds(&key_label_b, 0, 0, 0, (1ULL << KEYBINDS_ACTION_GET_BIND_LABEL));
 
-   browser_update(rgui->browser, input, g_extern.system.valid_extensions);
+   filebrowser_update(rgui->browser, input, g_extern.system.valid_extensions);
 
    if (input & (1ULL << DEVICE_NAV_SELECT))
       menu_stack_push(GENERAL_VIDEO_MENU, false);
@@ -2610,7 +2570,7 @@ static int select_rom(void *data, uint64_t input)
       if (drive_map != NULL)
       {
          filebrowser_set_root_and_ext(rgui->browser, g_extern.system.valid_extensions, drive_map);
-         browser_update(rgui->browser, 1ULL << DEVICE_NAV_B, g_extern.system.valid_extensions);
+         filebrowser_update(rgui->browser, 1ULL << DEVICE_NAV_B, g_extern.system.valid_extensions);
       }
    }
    else if (input & (1ULL << DEVICE_NAV_R1))
@@ -2619,7 +2579,7 @@ static int select_rom(void *data, uint64_t input)
       if (drive_map != NULL)
       {
          filebrowser_set_root_and_ext(rgui->browser, g_extern.system.valid_extensions, drive_map);
-         browser_update(rgui->browser, 1ULL << DEVICE_NAV_B, g_extern.system.valid_extensions);
+         filebrowser_update(rgui->browser, 1ULL << DEVICE_NAV_B, g_extern.system.valid_extensions);
       }
    }
 

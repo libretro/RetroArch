@@ -299,11 +299,9 @@ static void menu_settings_create_menu_item_label_w(wchar_t *strwbuf, unsigned se
    mbstowcs(strwbuf, str, size / sizeof(wchar_t));
 }
 
-static void browser_update(void *data, uint64_t input, const char *extensions);
-
-static void filebrowser_fetch_directory_entries(uint64_t action)
+void filebrowser_fetch_directory_entries(uint64_t action)
 {
-   browser_update(rgui->browser, action, rgui->browser->current_dir.extensions); 
+   filebrowser_update(rgui->browser, action, rgui->browser->current_dir.extensions); 
 
    mbstowcs(strw_buffer, rgui->browser->current_dir.directory_path, sizeof(strw_buffer) / sizeof(wchar_t));
    XuiTextElementSetText(m_list_path, strw_buffer);
@@ -318,48 +316,6 @@ static void filebrowser_fetch_directory_entries(uint64_t action)
       mbstowcs(strw_buffer, fname_tmp, sizeof(strw_buffer) / sizeof(wchar_t));
       XuiListSetText(m_list, i, strw_buffer);
    }
-}
-
-static void browser_update(void *data, uint64_t input, const char *extensions)
-{
-   filebrowser_action_t action = FILEBROWSER_ACTION_NOOP;
-   bool ret = true;
-
-   if (input & (1ULL << RMENU_DEVICE_NAV_DOWN))
-      action = FILEBROWSER_ACTION_DOWN;
-   else if (input & (1ULL << RMENU_DEVICE_NAV_UP))
-      action = FILEBROWSER_ACTION_UP;
-   else if (input & (1ULL << RMENU_DEVICE_NAV_RIGHT))
-      action = FILEBROWSER_ACTION_RIGHT;
-   else if (input & (1ULL << RMENU_DEVICE_NAV_LEFT))
-      action = FILEBROWSER_ACTION_LEFT;
-   else if (input & (1ULL << RMENU_DEVICE_NAV_R2))
-      action = FILEBROWSER_ACTION_SCROLL_DOWN;
-   else if (input & (1ULL << RMENU_DEVICE_NAV_L2))
-      action = FILEBROWSER_ACTION_SCROLL_UP;
-   else if (input & (1ULL << RMENU_DEVICE_NAV_A))
-   {
-      char tmp_str[256];
-      fill_pathname_parent_dir(tmp_str, rgui->browser->current_dir.directory_path, sizeof(tmp_str));
-
-      if (tmp_str[0] != '\0')
-         action = FILEBROWSER_ACTION_CANCEL;
-   }
-   else if (input & (1ULL << RMENU_DEVICE_NAV_START))
-   {
-      action = FILEBROWSER_ACTION_RESET;
-      filebrowser_set_root_and_ext(rgui->browser, g_extern.system.valid_extensions,
-            g_settings.rgui_browser_directory);
-      strlcpy(rgui->browser->current_dir.extensions, extensions,
-         sizeof(rgui->browser->current_dir.extensions));
-      filebrowser_fetch_directory_entries(1ULL << RMENU_DEVICE_NAV_B);
-   }
-
-   if(action != FILEBROWSER_ACTION_NOOP)
-      ret = filebrowser_iterate(rgui->browser, action);
-
-   if(!ret)
-      msg_queue_push(g_extern.msg_queue, "ERROR - Failed to open directory.", 1, 180);
 }
 
 HRESULT CRetroArchFileBrowser::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)

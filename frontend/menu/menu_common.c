@@ -248,6 +248,49 @@ bool filebrowser_iterate(void *data, unsigned action)
    return ret;
 }
 
+void filebrowser_update(void *data, uint64_t input, const char *extensions)
+{
+   filebrowser_action_t action = FILEBROWSER_ACTION_NOOP;
+   bool ret = true;
+
+   if (input & (1ULL << DEVICE_NAV_DOWN))
+      action = FILEBROWSER_ACTION_DOWN;
+   else if (input & (1ULL << DEVICE_NAV_UP))
+      action = FILEBROWSER_ACTION_UP;
+   else if (input & (1ULL << DEVICE_NAV_RIGHT))
+      action = FILEBROWSER_ACTION_RIGHT;
+   else if (input & (1ULL << DEVICE_NAV_LEFT))
+      action = FILEBROWSER_ACTION_LEFT;
+   else if (input & (1ULL << DEVICE_NAV_R2))
+      action = FILEBROWSER_ACTION_SCROLL_DOWN;
+   else if (input & (1ULL << DEVICE_NAV_L2))
+      action = FILEBROWSER_ACTION_SCROLL_UP;
+   else if (input & (1ULL << DEVICE_NAV_A))
+   {
+      char tmp_str[PATH_MAX];
+      fill_pathname_parent_dir(tmp_str, rgui->browser->current_dir.directory_path, sizeof(tmp_str));
+
+      if (tmp_str[0] != '\0')
+         action = FILEBROWSER_ACTION_CANCEL;
+   }
+   else if (input & (1ULL << DEVICE_NAV_START))
+   {
+      action = FILEBROWSER_ACTION_RESET;
+      filebrowser_set_root_and_ext(rgui->browser, NULL, default_paths.filesystem_root_dir);
+      strlcpy(rgui->browser->current_dir.extensions, extensions,
+            sizeof(rgui->browser->current_dir.extensions));
+#ifdef HAVE_RMENU_XUI
+      filebrowser_fetch_directory_entries(1ULL << RMENU_DEVICE_NAV_B);
+#endif
+   }
+
+   if (action != FILEBROWSER_ACTION_NOOP)
+      ret = filebrowser_iterate(rgui->browser, action);
+
+   if (!ret)
+      msg_queue_push(g_extern.msg_queue, "ERROR - Failed to open directory.", 1, 180);
+}
+
 #else
 
 struct rgui_file
