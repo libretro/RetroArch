@@ -3105,7 +3105,9 @@ static int menu_input_process(void *data, uint64_t old_state)
   RMENU API
   ============================================================ */
 
-int rgui_iterate(rgui_handle_t *rgui, uint64_t input)
+static uint64_t input = 0;
+
+int rgui_iterate(rgui_handle_t *rgui)
 {
    rgui->menu_type = menu_stack_enum_array[stack_idx - 1];
 
@@ -3232,7 +3234,6 @@ void rgui_free(rgui_handle_t *rgui)
 
 bool menu_iterate(void)
 {
-   static uint64_t input = 0;
    static uint64_t old_input_state = 0;
 
    if (g_extern.lifecycle_mode_state & (1ULL << MODE_MENU_PREINIT))
@@ -3289,8 +3290,7 @@ bool menu_iterate(void)
    }
 
    old_input_state = input_state_first_frame;
-
-   int input_entry_ret = rgui_iterate(rgui, input);
+   int input_entry_ret = rgui_iterate(rgui);
 
    // draw last frame for loading messages
    if (driver.video_poke && driver.video_poke->set_texture_enable)
@@ -3301,7 +3301,7 @@ bool menu_iterate(void)
    if (driver.video_poke && driver.video_poke->set_texture_enable)
       driver.video_poke->set_texture_enable(driver.video_data, false, true);
 
-   if (input_entry_ret != 0 || menu_input_process(rgui, old_input_state) != 0)
+   if (menu_input_process(rgui, old_input_state) || input_entry_ret)
       goto deinit;
 
    return true;

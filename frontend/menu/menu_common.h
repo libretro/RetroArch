@@ -65,7 +65,20 @@ enum
    DEVICE_NAV_R3,
    DEVICE_NAV_LAST
 };
-
+#elif defined(HAVE_RGUI)
+enum
+{
+   DEVICE_NAV_UP = 0,
+   DEVICE_NAV_DOWN,
+   DEVICE_NAV_LEFT,
+   DEVICE_NAV_RIGHT,
+   DEVICE_NAV_A,
+   DEVICE_NAV_B,
+   DEVICE_NAV_START,
+   DEVICE_NAV_SELECT,
+   DEVICE_NAV_MENU,
+   DEVICE_NAV_LAST
+};
 #endif
 
 typedef enum
@@ -202,7 +215,7 @@ void menu_init(void);
 bool menu_iterate(void);
 void menu_free(void);
 
-int rgui_iterate(rgui_handle_t *rgui, uint64_t action);
+int rgui_iterate(rgui_handle_t *rgui);
 
 rgui_handle_t *rgui_init(void);
 void rgui_free(rgui_handle_t *rgui);

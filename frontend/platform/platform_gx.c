@@ -372,9 +372,6 @@ static void system_process_args(int argc, char *argv[])
 
       strlcpy(g_extern.fullpath, rom, sizeof(g_extern.fullpath));
       g_extern.lifecycle_mode_state |= (1ULL << MODE_LOAD_GAME);
-
-      rgui_iterate(rgui, RGUI_ACTION_MESSAGE);
-      rarch_render_cached_frame();
       g_extern.lifecycle_mode_state &= ~(1ULL << MODE_MENU);
       g_extern.lifecycle_mode_state |= (1ULL << MODE_INIT);
    }

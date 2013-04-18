@@ -179,6 +179,8 @@ static bool menu_type_is_shader_browser(unsigned type)
       type == RGUI_SETTINGS_SHADER_PRESET;
 }
 
+static void rgui_settings_populate_entries(rgui_handle_t *rgui);
+
 rgui_handle_t *rgui_init(void)
 {
    uint16_t *framebuf = menu_framebuf;
@@ -211,8 +213,8 @@ rgui_handle_t *rgui_init(void)
    rgui->selection_buf = (rgui_list_t*)calloc(1, sizeof(rgui_list_t));
    rgui_list_push(rgui->menu_stack, g_settings.rgui_browser_directory, RGUI_FILE_DIRECTORY, 0);
    rgui_list_push(rgui->menu_stack, "", RGUI_SETTINGS, 0);
-
-   rgui_iterate(rgui, RGUI_ACTION_REFRESH);
+   rgui->selection_ptr = 0;
+   rgui_settings_populate_entries(rgui);
 
    return rgui;
 }
@@ -1697,12 +1699,38 @@ static bool directory_parse(rgui_handle_t *rgui, const char *directory, unsigned
    return true;
 }
 
-int rgui_iterate(rgui_handle_t *rgui, uint64_t action)
+static uint16_t trigger_state = 0;
+
+int rgui_iterate(rgui_handle_t *rgui)
 {
+   uint64_t action = RGUI_ACTION_NOOP;
+
+   // don't run anything first frame, only capture held inputs for old_input_state
+   if (trigger_state & (1ULL << DEVICE_NAV_UP))
+      action = RGUI_ACTION_UP;
+   else if (trigger_state & (1ULL << DEVICE_NAV_DOWN))
+      action = RGUI_ACTION_DOWN;
+   else if (trigger_state & (1ULL << DEVICE_NAV_LEFT))
+      action = RGUI_ACTION_LEFT;
+   else if (trigger_state & (1ULL << DEVICE_NAV_RIGHT))
+      action = RGUI_ACTION_RIGHT;
+   else if (trigger_state & (1ULL << DEVICE_NAV_B))
+      action = RGUI_ACTION_CANCEL;
+   else if (trigger_state & (1ULL << DEVICE_NAV_A))
+      action = RGUI_ACTION_OK;
+   else if (trigger_state & (1ULL << DEVICE_NAV_SELECT))
+      action = RGUI_ACTION_START;
+   else if (trigger_state & (1ULL << DEVICE_NAV_START))
+      action = RGUI_ACTION_SETTINGS;
+
    const char *dir = 0;
    unsigned menu_type = 0;
    rgui_list_get_last(rgui->menu_stack, &dir, &menu_type);
    int ret = 0;
+
+   if (driver.video_poke && driver.video_poke->set_texture_enable)
+      driver.video_poke->set_texture_frame(driver.video_data, menu_framebuf,
+            false, RGUI_WIDTH, RGUI_HEIGHT, 1.0f);
 
    if (menu_type_is_settings(menu_type))
       return rgui_settings_iterate(rgui, action);
@@ -1936,30 +1964,11 @@ static const struct retro_keybind *menu_nav_binds[] = {
    _menu_nav_binds
 };
 
-enum
-{
-   DEVICE_NAV_UP = 0,
-   DEVICE_NAV_DOWN,
-   DEVICE_NAV_LEFT,
-   DEVICE_NAV_RIGHT,
-   DEVICE_NAV_A,
-   DEVICE_NAV_B,
-   DEVICE_NAV_START,
-   DEVICE_NAV_SELECT,
-   DEVICE_NAV_MENU,
-   DEVICE_NAV_LAST
-};
-
-
-/*============================================================
-RMENU API
-============================================================ */
-
-static uint16_t trigger_state = 0;
-
-static int menu_input_process(void *data, void *state)
+static int menu_input_process(void *data, uint64_t old_state)
 {
    (void)data;
+   (void)old_state;
+
    int ret = 0;
 
    if (g_extern.lifecycle_mode_state & (1ULL << MODE_LOAD_GAME))
@@ -2042,7 +2051,6 @@ bool menu_iterate(void)
    static bool initial_held = true;
    static bool first_held = false;
    bool do_held;
-   rgui_action_t action;
    uint64_t input_state = 0;
 
    if (g_extern.lifecycle_mode_state & (1ULL << MODE_MENU_PREINIT))
@@ -2101,42 +2109,18 @@ bool menu_iterate(void)
    }
 
    old_input_state = input_state;
-   action = RGUI_ACTION_NOOP;
-
-   // don't run anything first frame, only capture held inputs for old_input_state
-   if (trigger_state & (1ULL << DEVICE_NAV_UP))
-      action = RGUI_ACTION_UP;
-   else if (trigger_state & (1ULL << DEVICE_NAV_DOWN))
-      action = RGUI_ACTION_DOWN;
-   else if (trigger_state & (1ULL << DEVICE_NAV_LEFT))
-      action = RGUI_ACTION_LEFT;
-   else if (trigger_state & (1ULL << DEVICE_NAV_RIGHT))
-      action = RGUI_ACTION_RIGHT;
-   else if (trigger_state & (1ULL << DEVICE_NAV_B))
-      action = RGUI_ACTION_CANCEL;
-   else if (trigger_state & (1ULL << DEVICE_NAV_A))
-      action = RGUI_ACTION_OK;
-   else if (trigger_state & (1ULL << DEVICE_NAV_SELECT))
-      action = RGUI_ACTION_START;
-   else if (trigger_state & (1ULL << DEVICE_NAV_START))
-      action = RGUI_ACTION_SETTINGS;
-
-   int input_entry_ret = rgui_iterate(rgui, action);
+   int input_entry_ret = rgui_iterate(rgui);
 
    // draw last frame for loading messages
    if (driver.video_poke && driver.video_poke->set_texture_enable)
-   {
-      driver.video_poke->set_texture_frame(driver.video_data, menu_framebuf,
-            false, RGUI_WIDTH, RGUI_HEIGHT, 1.0f);
       driver.video_poke->set_texture_enable(driver.video_data, true, false);
-   }
 
    rarch_render_cached_frame();
 
    if (driver.video_poke && driver.video_poke->set_texture_enable)
       driver.video_poke->set_texture_enable(driver.video_data, false, false);
 
-   if (menu_input_process(NULL, NULL) || input_entry_ret)
+   if (menu_input_process(rgui, old_input_state) || input_entry_ret)
       goto deinit;
 
    return true;
