@@ -187,7 +187,7 @@ class CRetroArchControls: public CXuiSceneImpl
    protected:
       HXUIOBJ m_controlslist;
       CXuiControl m_back;
-      CXuiSlider m_controlnoslider;
+      HXUIOBJ m_controlnoslider;
    public:
       HRESULT OnInit( XUIMessageInit* pInitData, int & bHandled );
       HRESULT OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled );
@@ -441,8 +441,8 @@ HRESULT CRetroArchControls::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
    GetChildById(L"XuiBackButton", &m_back);
    GetChildById(L"XuiControlNoSlider", &m_controlnoslider);
 
-   m_controlnoslider.SetValue(0);
-   m_controlnoslider.GetValue(&controlno);
+   XuiSliderSetValue(m_controlnoslider, 0);
+   XuiSliderGetValue(m_controlnoslider, &controlno);
 
    for(i = 0; i < RARCH_FIRST_META_KEY; i++)
    {
@@ -475,7 +475,7 @@ HRESULT CRetroArchControls::OnControlNavigate(
    int controlno, i, current_index;
 
    current_index = XuiListGetCurSel(m_controlslist, NULL);
-   m_controlnoslider.GetValue(&controlno);
+   XuiSliderGetValue(m_controlnoslider, &controlno);
 
    for(i = 0; i < RARCH_FIRST_META_KEY; i++)
    {
@@ -608,7 +608,7 @@ HRESULT CRetroArchControls::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled 
 {
    int current_index, i, controlno;
    char buttons[RARCH_FIRST_META_KEY][128];
-   m_controlnoslider.GetValue(&controlno);
+   XuiSliderGetValue(m_controlnoslider, &controlno);
    process_input_ret = 0;
 
    if ( hObjPressed == m_controlslist)
