@@ -2126,11 +2126,6 @@ bool menu_iterate(void)
    return true;
 
 deinit:
-   // set a timer delay so that we don't instantly switch back to the menu when
-   // press and holding QUIT in the emulation loop (lasts for 30 frame ticks)
-   if (!(g_extern.lifecycle_state & (1ULL << RARCH_FRAMEADVANCE)))
-      g_extern.delay_timer[0] = g_extern.frame_count + 30;
-
    g_extern.lifecycle_mode_state &= ~(1ULL << MODE_MENU_INGAME);
 
    return false;
