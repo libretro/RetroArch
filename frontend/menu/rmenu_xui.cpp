@@ -1312,7 +1312,7 @@ rgui_handle_t *rgui_init (void)
    if (hr != S_OK)
    {
       RARCH_ERR("Failed initializing XUI application.\n");
-      return;
+      return NULL;
    }
 
    /* Register font */
@@ -1320,21 +1320,21 @@ rgui_handle_t *rgui_init (void)
    if (hr != S_OK)
    {
       RARCH_ERR("Failed to register default typeface.\n");
-      return;
+      return NULL;
    }
 
    hr = app.LoadSkin( L"file://game:/media/rarch_scene_skin.xur");
    if (hr != S_OK)
    {
       RARCH_ERR("Failed to load skin.\n");
-      return;
+      return NULL;
    }
 
    hr = XuiSceneCreate(hdmenus_allowed ? L"file://game:/media/hd/" : L"file://game:/media/sd/", L"rarch_main.xur", NULL, &app.hMainScene);
    if (hr != S_OK)
    {
       RARCH_ERR("Failed to create scene 'rarch_main.xur'.\n");
-      return;
+      return NULL;
    }
 
    hCur = app.hMainScene;
@@ -1342,7 +1342,7 @@ rgui_handle_t *rgui_init (void)
    if (hr != S_OK)
    {
       RARCH_ERR("XuiSceneNavigateFirst failed.\n");
-      return;
+      return NULL;
    }
 
    browser =    (filebrowser_t*)calloc(1, sizeof(*browser));
