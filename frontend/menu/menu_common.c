@@ -155,7 +155,7 @@ static bool directory_parse(void *data, const char *path)
 
 }
 
-void filebrowser_free(void *data)
+static void filebrowser_free(void *data)
 {
    filebrowser_t *filebrowser = (filebrowser_t*)data;
 
@@ -334,4 +334,10 @@ void menu_init(void)
 void menu_free(void)
 {
    rgui_free(rgui);
+
+#ifdef HAVE_FILEBROWSER
+   filebrowser_free(rgui->browser);
+#endif
+
+   free(rgui);
 }

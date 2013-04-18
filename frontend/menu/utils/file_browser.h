@@ -52,7 +52,6 @@ typedef enum
 } filebrowser_action_t;
 
 void filebrowser_set_root_and_ext(void *data, const char *ext, const char *root_dir);
-void filebrowser_free(void *data);
 bool filebrowser_iterate(void *data, unsigned action);
 
 #endif /* FILEBROWSER_H_ */

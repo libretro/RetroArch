@@ -230,8 +230,6 @@ void rgui_free(rgui_handle_t *rgui)
 #ifdef HAVE_DYNAMIC
    libretro_free_system_info(&rgui->info);
 #endif
-
-   free(rgui);
 }
 
 static uint16_t gray_filler(unsigned x, unsigned y)

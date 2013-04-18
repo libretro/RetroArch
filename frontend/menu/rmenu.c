@@ -3308,9 +3308,6 @@ void rgui_free(rgui_handle_t *rgui)
       menu_texture->pixels = NULL;
    }
 #endif
-
-   filebrowser_free(rgui->browser);
-   free(rgui);
 }
 
 bool menu_iterate(void)

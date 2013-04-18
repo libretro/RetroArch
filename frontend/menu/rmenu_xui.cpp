@@ -1364,7 +1364,6 @@ rgui_handle_t *rgui_init (void)
 
 void rgui_free (rgui_handle_t *rgui)
 {
-   filebrowser_free(rgui->browser);
    app.Uninit();
 }
 
