@@ -198,12 +198,21 @@ rgui_handle_t *rgui_init(void)
    else
    {
       RARCH_ERR("no font bmp or bin, abort");
-      return NULL;
       /* TODO - should be refactored - perhaps don't do rarch_fail but instead
        * exit program */
       g_extern.lifecycle_mode_state &= ~((1ULL << MODE_MENU) | (1ULL << MODE_MENU_INGAME) | (1ULL << MODE_GAME));
       g_extern.lifecycle_mode_state |= (1ULL << MODE_EXIT);
+      return NULL;
    }
+
+   strlcpy(rgui->base_path, g_settings.rgui_browser_directory, sizeof(rgui->base_path));
+
+   rgui->menu_stack = (rgui_list_t*)calloc(1, sizeof(rgui_list_t));
+   rgui->selection_buf = (rgui_list_t*)calloc(1, sizeof(rgui_list_t));
+   rgui_list_push(rgui->menu_stack, g_settings.rgui_browser_directory, RGUI_FILE_DIRECTORY, 0);
+   rgui_list_push(rgui->menu_stack, "", RGUI_SETTINGS, 0);
+
+   rgui_iterate(rgui, RGUI_ACTION_REFRESH);
 
    return rgui;
 }
@@ -216,6 +225,9 @@ void rgui_free(rgui_handle_t *rgui)
 #ifdef HAVE_DYNAMIC
    libretro_free_system_info(&rgui->info);
 #endif
+
+   rgui_list_free(rgui->menu_stack);
+   rgui_list_free(rgui->selection_buf);
 }
 
 static uint16_t gray_filler(unsigned x, unsigned y)

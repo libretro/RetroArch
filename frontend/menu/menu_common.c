@@ -392,15 +392,6 @@ void menu_init(void)
          sizeof(rgui->browser->current_dir.root_dir));
 
    filebrowser_iterate(rgui->browser, FILEBROWSER_ACTION_RESET);
-#else
-   strlcpy(rgui->base_path, g_settings.rgui_browser_directory, sizeof(rgui->base_path));
-
-   rgui->menu_stack = (rgui_list_t*)calloc(1, sizeof(rgui_list_t));
-   rgui->selection_buf = (rgui_list_t*)calloc(1, sizeof(rgui_list_t));
-   rgui_list_push(rgui->menu_stack, g_settings.rgui_browser_directory, RGUI_FILE_DIRECTORY, 0);
-   rgui_list_push(rgui->menu_stack, "", RGUI_SETTINGS, 0);
-
-   rgui_iterate(rgui, RGUI_ACTION_REFRESH);
 #endif
 
 #ifdef HAVE_SHADER_MANAGER
@@ -414,9 +405,6 @@ void menu_free(void)
 
 #ifdef HAVE_FILEBROWSER
    filebrowser_free(rgui->browser);
-#else
-   rgui_list_free(rgui->menu_stack);
-   rgui_list_free(rgui->selection_buf);
 #endif
 
    free(rgui);
