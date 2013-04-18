@@ -2148,7 +2148,7 @@ bool menu_iterate(void)
    if (driver.video_poke && driver.video_poke->set_texture_enable)
       driver.video_poke->set_texture_enable(driver.video_data, false, false);
 
-   if (input_entry_ret != 0 || (menu_input_process(NULL, NULL) != 0))
+   if (menu_input_process(NULL, NULL) || input_entry_ret)
       goto deinit;
 
    return true;
