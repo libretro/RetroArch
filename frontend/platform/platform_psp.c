@@ -88,27 +88,6 @@ static int setup_callback(void)
    return thread_id;
 }
 
-void menu_init (void) {}
-
-bool menu_iterate(void)
-{
-   char path[256];
-   snprintf(path, sizeof(path), "%s%s", default_paths.port_dir, "dkc.sfc");
-   RARCH_LOG("game ROM: %s\n", path);
-
-   strlcpy(g_extern.fullpath, path, sizeof(g_extern.fullpath));
-   g_extern.lifecycle_mode_state |= (1ULL << MODE_LOAD_GAME);
-
-   g_extern.lifecycle_mode_state &= ~(1ULL << MODE_MENU);
-   g_extern.lifecycle_mode_state |= (1ULL << MODE_INIT);
-
-   return false;
-}
-
-void menu_free (void)
-{
-}
-
 static void system_init(void)
 {
    //initialize debug screen

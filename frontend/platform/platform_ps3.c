@@ -191,24 +191,6 @@ static void callback_sysutil_exit(uint64_t status, uint64_t param, void *userdat
 }
 #endif
 
-#ifdef __PSL1GHT__
-void menu_init (void)
-{
-}
-
-bool menu_iterate(void)
-{
-   strlcpy(g_extern.fullpath, "/dev_hdd0/game/SSNE10000/USRDIR/mm3.nes", sizeof(g_extern.fullpath));
-   g_extern.lifecycle_mode_state |= (1ULL << MODE_LOAD_GAME);
-
-   return false;
-}
-
-void menu_free (void)
-{
-}
-#endif
-
 static void get_environment_settings(int argc, char *argv[])
 {
    int ret;
