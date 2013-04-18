@@ -18,6 +18,10 @@
 #include "../msvc/msvc_compat.h"
 #endif
 
+#if defined(HAVE_RMENU) || defined(HAVE_RGUI) || defined(HAVE_RMENU_XUI)
+#define HAVE_MENU
+#endif
+
 /*============================================================
 CONSOLE EXTENSIONS
 ============================================================ */
@@ -439,20 +443,16 @@ SCREENSHOTS
 /*============================================================
 MENU
 ============================================================ */
-#if defined(HAVE_RMENU) || defined(HAVE_RGUI) || defined(HAVE_RMENU_XUI)
+#ifdef HAVE_MENU
 #include "../frontend/menu/menu_common.c"
-#endif
 
 #if defined(HAVE_RMENU_GUI)
 #include "../frontend/menu/rmenu.c"
-#endif
-
-#ifdef HAVE_RGUI
+#elif defined(HAVE_RGUI)
 #include "../frontend/menu/rgui.c"
-#endif
-
-#if defined(HAVE_RMENU_XUI)
+#elif defined(HAVE_RMENU_XUI)
 #include "../frontend/menu/rmenu_xui.cpp"
+#endif
 #endif
 
 #ifdef __cplusplus

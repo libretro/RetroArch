@@ -1282,9 +1282,11 @@ HRESULT CRetroArchMain::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled )
    return 0;
 }
 
-void menu_init (void)
+rgui_handle_t *rgui_init (void)
 {
    HRESULT hr;
+
+   rgui_handle_t *rgui = (rgui_handle_t*)calloc(1, sizeof(*rgui));
 
    xdk_d3d_video_t *device_ptr = (xdk_d3d_video_t*)driver.video_data;
 
@@ -1355,9 +1357,11 @@ void menu_init (void)
    if (driver.video_poke && driver.video_poke->set_texture_enable)
       driver.video_poke->set_texture_frame(driver.video_data, NULL,
             true, 0, 0, 1.0f);
+
+   return rgui;
 }
 
-void menu_free (void)
+void rgui_free (rgui_handle_t *rgui)
 {
    filebrowser_free(browser);
    app.Uninit();

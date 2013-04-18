@@ -17,6 +17,8 @@
 #ifndef _RMENU_XUI_H_
 #define _RMENU_XUI_H_
 
+#include "menu_common.h"
+
 enum
 {
    SETTING_EMU_REWIND_ENABLED = 0,
