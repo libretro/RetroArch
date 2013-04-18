@@ -95,35 +95,6 @@ static const struct retro_keybind *rmenu_nav_binds[] = {
    _rmenu_nav_binds
 };
 
-enum
-{
-   DEVICE_NAV_UP = 0,
-   DEVICE_NAV_DOWN,
-   DEVICE_NAV_LEFT,
-   DEVICE_NAV_RIGHT,
-   DEVICE_NAV_UP_ANALOG_L,
-   DEVICE_NAV_DOWN_ANALOG_L,
-   DEVICE_NAV_LEFT_ANALOG_L,
-   DEVICE_NAV_RIGHT_ANALOG_L,
-   DEVICE_NAV_UP_ANALOG_R,
-   DEVICE_NAV_DOWN_ANALOG_R,
-   DEVICE_NAV_LEFT_ANALOG_R,
-   DEVICE_NAV_RIGHT_ANALOG_R,
-   DEVICE_NAV_B,
-   DEVICE_NAV_A,
-   DEVICE_NAV_X,
-   DEVICE_NAV_Y,
-   DEVICE_NAV_START,
-   DEVICE_NAV_SELECT,
-   DEVICE_NAV_L1,
-   DEVICE_NAV_R1,
-   DEVICE_NAV_L2,
-   DEVICE_NAV_R2,
-   DEVICE_NAV_L3,
-   DEVICE_NAV_R3,
-   DEVICE_NAV_LAST
-};
-
 const char drive_mappings[][32] = {
 #if defined(_XBOX1)
    "C:",

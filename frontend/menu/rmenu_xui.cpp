@@ -213,35 +213,6 @@ char str_buffer[PATH_MAX];
 static int process_input_ret = 0;
 static unsigned input_loop = 0;
 
-enum
-{
-   RMENU_DEVICE_NAV_UP = 0,
-   RMENU_DEVICE_NAV_DOWN,
-   RMENU_DEVICE_NAV_LEFT,
-   RMENU_DEVICE_NAV_RIGHT,
-   RMENU_DEVICE_NAV_UP_ANALOG_L,
-   RMENU_DEVICE_NAV_DOWN_ANALOG_L,
-   RMENU_DEVICE_NAV_LEFT_ANALOG_L,
-   RMENU_DEVICE_NAV_RIGHT_ANALOG_L,
-   RMENU_DEVICE_NAV_UP_ANALOG_R,
-   RMENU_DEVICE_NAV_DOWN_ANALOG_R,
-   RMENU_DEVICE_NAV_LEFT_ANALOG_R,
-   RMENU_DEVICE_NAV_RIGHT_ANALOG_R,
-   RMENU_DEVICE_NAV_B,
-   RMENU_DEVICE_NAV_A,
-   RMENU_DEVICE_NAV_X,
-   RMENU_DEVICE_NAV_Y,
-   RMENU_DEVICE_NAV_START,
-   RMENU_DEVICE_NAV_SELECT,
-   RMENU_DEVICE_NAV_L1,
-   RMENU_DEVICE_NAV_R1,
-   RMENU_DEVICE_NAV_L2,
-   RMENU_DEVICE_NAV_R2,
-   RMENU_DEVICE_NAV_L3,
-   RMENU_DEVICE_NAV_R3,
-   RMENU_DEVICE_NAV_LAST
-};
-
 /* Register custom classes */
 HRESULT CRetroArch::RegisterXuiClasses (void)
 {
@@ -328,7 +299,7 @@ HRESULT CRetroArchFileBrowser::OnInit(XUIMessageInit * pInitData, BOOL& bHandled
    filebrowser_set_root_and_ext(rgui->browser, g_extern.system.valid_extensions,
       default_paths.filebrowser_startup_dir);
 
-   uint64_t action = (1ULL << RMENU_DEVICE_NAV_B);
+   uint64_t action = (1ULL << DEVICE_NAV_B);
    filebrowser_fetch_directory_entries(action);
 
    return 0;
@@ -352,7 +323,7 @@ HRESULT CRetroArchFileBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHandle
       else if(rgui->browser->list->elems[index].attr.b)
       {
          snprintf(path, sizeof(path), "%s\\%s", rgui->browser->current_dir.directory_path, str_buffer);
-         uint64_t action = (1ULL << RMENU_DEVICE_NAV_B);
+         uint64_t action = (1ULL << DEVICE_NAV_B);
          filebrowser_set_root_and_ext(rgui->browser, g_extern.system.valid_extensions, path);
          filebrowser_fetch_directory_entries(action);
       }
@@ -361,7 +332,7 @@ HRESULT CRetroArchFileBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHandle
    {
       filebrowser_set_root_and_ext(rgui->browser, g_extern.system.valid_extensions,
             g_settings.rgui_browser_directory);
-      uint64_t action = (1ULL << RMENU_DEVICE_NAV_B);
+      uint64_t action = (1ULL << DEVICE_NAV_B);
       filebrowser_fetch_directory_entries(action);
    }
 
@@ -1062,7 +1033,7 @@ HRESULT CRetroArchShaderBrowser::OnInit(XUIMessageInit * pInitData, BOOL& bHandl
    GetChildById(L"XuiTxtRomPath", &m_list_path);
 
    filebrowser_set_root_and_ext(rgui->browser, "cg", "game:\\media\\shaders");
-   uint64_t action = (1ULL << RMENU_DEVICE_NAV_B);
+   uint64_t action = (1ULL << DEVICE_NAV_B);
    filebrowser_fetch_directory_entries(action);
 
    return 0;
@@ -1083,7 +1054,7 @@ HRESULT CRetroArchShaderBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHand
          wcstombs(str_buffer, (const wchar_t *)XuiListGetText(m_list, index), sizeof(str_buffer));
          snprintf(path, sizeof(path), "%s\\%s", rgui->browser->current_dir.directory_path, str_buffer);
          filebrowser_set_root_and_ext(rgui->browser, "cg", path);
-         uint64_t action = (1ULL << RMENU_DEVICE_NAV_B);
+         uint64_t action = (1ULL << DEVICE_NAV_B);
          filebrowser_fetch_directory_entries(action);
       }
    }
@@ -1100,7 +1071,7 @@ HRESULT CRetroArchCoreBrowser::OnInit(XUIMessageInit * pInitData, BOOL& bHandled
    GetChildById(L"XuiTxtRomPath", &m_list_path);
 
    filebrowser_set_root_and_ext(rgui->browser, "xex|XEX", "game:");
-   uint64_t action = (1ULL << RMENU_DEVICE_NAV_B);
+   uint64_t action = (1ULL << DEVICE_NAV_B);
    filebrowser_fetch_directory_entries(action);
 
    return 0;
@@ -1127,7 +1098,7 @@ HRESULT CRetroArchCoreBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHandle
       {
          snprintf(path, sizeof(path), "%s\\%s", rgui->browser->current_dir.directory_path, str_buffer);
          filebrowser_set_root_and_ext(rgui->browser, "xex|XEX", path);
-         uint64_t action = (1ULL << RMENU_DEVICE_NAV_B);
+         uint64_t action = (1ULL << DEVICE_NAV_B);
          filebrowser_fetch_directory_entries(action);
       }
    }
