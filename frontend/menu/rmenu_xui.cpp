@@ -80,8 +80,8 @@ class CRetroArchMain: public CXuiSceneImpl
       CXuiControl m_settings;
       CXuiControl m_change_libretro_core;
       CXuiControl m_quit;
-      CXuiTextElement m_title;
-      CXuiTextElement m_core;
+      HXUIOBJ m_title;
+      HXUIOBJ m_core;
       CXuiControl m_logoimage;
    public:
       HRESULT OnInit( XUIMessageInit* pInitData, int & bHandled );
@@ -204,7 +204,7 @@ class CRetroArchControls: public CXuiSceneImpl
 
 CRetroArch app;
 CXuiList m_list;
-CXuiTextElement m_list_path;
+HXUIOBJ m_list_path;
 HXUIOBJ hCur;
 filebrowser_t *browser;
 
@@ -305,11 +305,10 @@ static void browser_update(void *data, uint64_t input, const char *extensions);
 static void filebrowser_fetch_directory_entries(uint64_t action)
 {
    CXuiList *romlist = &m_list;
-   CXuiTextElement *rompath_title = &m_list_path;
    browser_update(browser, action, browser->current_dir.extensions); 
 
    mbstowcs(strw_buffer, browser->current_dir.directory_path, sizeof(strw_buffer) / sizeof(wchar_t));
-   rompath_title->SetText(strw_buffer);
+   XuiTextElementSetText(m_list_path, strw_buffer);
 
    romlist->DeleteItems(0, romlist->GetItemCount());
    romlist->InsertItems(0, browser->list->size);
@@ -1196,9 +1195,9 @@ HRESULT CRetroArchMain::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
    GetChildById(L"XuiBtnLibretroCore", &m_change_libretro_core);
 
    mbstowcs(strw_buffer, g_extern.title_buf, sizeof(strw_buffer) / sizeof(wchar_t));
-   m_core.SetText(strw_buffer);
+   XuiTextElementSetText(m_core, strw_buffer);
    menu_settings_create_menu_item_label_w(strw_buffer, S_LBL_RARCH_VERSION, sizeof(strw_buffer));
-   m_title.SetText(strw_buffer);
+   XuiTextElementSetText(m_title, strw_buffer);
 
    return 0;
 }
