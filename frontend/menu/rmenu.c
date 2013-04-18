@@ -801,7 +801,7 @@ static int select_directory(void *data, uint64_t input)
                strlcpy(g_extern.console.main_wrap.default_sram_dir, path, sizeof(g_extern.console.main_wrap.default_sram_dir));
                break;
             case PATH_DEFAULT_ROM_DIR_CHOICE:
-               strlcpy(g_extern.console.main_wrap.default_rom_startup_dir, path, sizeof(g_extern.console.main_wrap.default_rom_startup_dir));
+               strlcpy(g_settings.rgui_browser_directory, path, sizeof(g_settings.rgui_browser_directory));
                break;
 #ifdef HAVE_XML
             case PATH_CHEATS_DIR_CHOICE:
@@ -827,7 +827,7 @@ static int select_directory(void *data, uint64_t input)
             strlcpy(g_extern.console.main_wrap.default_sram_dir, path, sizeof(g_extern.console.main_wrap.default_sram_dir));
             break;
          case PATH_DEFAULT_ROM_DIR_CHOICE:
-            strlcpy(g_extern.console.main_wrap.default_rom_startup_dir, path, sizeof(g_extern.console.main_wrap.default_rom_startup_dir));
+            strlcpy(g_settings.rgui_browser_directory, path, sizeof(g_settings.rgui_browser_directory));
             break;
 #ifdef HAVE_XML
          case PATH_CHEATS_DIR_CHOICE:
@@ -1366,7 +1366,8 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
          }
 
          if (input & (1ULL << DEVICE_NAV_START))
-            strlcpy(g_extern.console.main_wrap.default_rom_startup_dir, default_paths.filesystem_root_dir, sizeof(g_extern.console.main_wrap.default_rom_startup_dir));
+            strlcpy(g_settings.rgui_browser_directory,
+                  default_paths.filesystem_root_dir, sizeof(g_settings.rgui_browser_directory));
          break;
       case SETTING_PATH_SAVESTATES_DIRECTORY:
          if ((input & (1ULL << DEVICE_NAV_LEFT)) || (input & (1ULL << DEVICE_NAV_RIGHT)) || (input & (1ULL << DEVICE_NAV_B)))
@@ -1437,7 +1438,8 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
       case SETTING_PATH_DEFAULT_ALL:
          if ((input & (1ULL << DEVICE_NAV_LEFT)) || (input & (1ULL << DEVICE_NAV_RIGHT)) || (input & (1ULL << DEVICE_NAV_B)) || (input & (1ULL << DEVICE_NAV_START)))
          {
-            strlcpy(g_extern.console.main_wrap.default_rom_startup_dir, "/", sizeof(g_extern.console.main_wrap.default_rom_startup_dir));
+            strlcpy(g_settings.rgui_browser_directory, default_paths.filebrowser_startup_dir,
+                  sizeof(g_settings.rgui_browser_directory));
             strlcpy(g_extern.console.main_wrap.default_savestate_dir, default_paths.port_dir, sizeof(g_extern.console.main_wrap.default_savestate_dir));
 #ifdef HAVE_XML
             strlcpy(g_settings.cheat_database, default_paths.port_dir, sizeof(g_settings.cheat_database));
@@ -2174,7 +2176,7 @@ static int select_setting(void *data, uint64_t input)
             break;
          case SETTING_PATH_DEFAULT_ROM_DIRECTORY:
             strlcpy(text, "Startup ROM Directory", sizeof(text));
-            strlcpy(setting_text, g_extern.console.main_wrap.default_rom_startup_dir, sizeof(setting_text));
+            strlcpy(setting_text, g_settings.rgui_browser_directory, sizeof(setting_text));
             strlcpy(comment, "INFO - Set the default Startup ROM directory path.", sizeof(comment));
             break;
          case SETTING_PATH_SAVESTATES_DIRECTORY:
@@ -3238,19 +3240,6 @@ rgui_handle_t *rgui_init(void)
 {
    rgui_handle_t *rgui = (rgui_handle_t*)calloc(1, sizeof(*rgui));
 
-   rgui->browser =    (filebrowser_t*)calloc(1, sizeof(*(rgui->browser)));
-
-   strlcpy(rgui->browser->current_dir.extensions, g_extern.system.valid_extensions,
-         sizeof(rgui->browser->current_dir.extensions));
-   strlcpy(rgui->browser->current_dir.root_dir, g_extern.console.main_wrap.default_rom_startup_dir,
-         sizeof(rgui->browser->current_dir.root_dir));
-
-   filebrowser_iterate(rgui->browser, FILEBROWSER_ACTION_RESET);
-
-#ifdef HAVE_SHADER_MANAGER
-   shader_manager_init(rgui);
-#endif
-   
    menu_stack_push(FILE_BROWSER_MENU, false);
 
    menu_texture = (struct texture_image*)calloc(1, sizeof(*menu_texture));

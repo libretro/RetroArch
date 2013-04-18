@@ -260,7 +260,6 @@ void config_set_defaults(void)
 
    g_extern.console.screen.orientation = ORIENTATION_NORMAL;
    g_extern.console.screen.resolutions.current.id = 0;
-   strlcpy(g_extern.console.main_wrap.default_rom_startup_dir, default_paths.filebrowser_startup_dir, sizeof(g_extern.console.main_wrap.default_rom_startup_dir));
    strlcpy(g_extern.console.main_wrap.default_savestate_dir, default_paths.savestate_dir, sizeof(g_extern.console.main_wrap.default_savestate_dir));
 #ifdef HAVE_RMENU
    strlcpy(g_extern.menu_texture_path, default_paths.menu_border_file, sizeof(g_extern.menu_texture_path));
@@ -474,9 +473,6 @@ bool config_load_file(const char *path)
    bool soft_filter_enable = false;
    bool sram_dir_enable = false;
    bool state_dir_enable = false;
-
-   if (config_get_path(conf, "default_rom_startup_dir", tmp_str, sizeof(tmp_str)))
-      strlcpy(g_extern.console.main_wrap.default_rom_startup_dir, tmp_str, sizeof(g_extern.console.main_wrap.default_rom_startup_dir));
 
 #ifdef HAVE_RMENU
    if (config_get_path(conf, "menu_texture_path", tmp_str, sizeof(tmp_str)))
@@ -1137,6 +1133,10 @@ bool config_save_file(const char *path)
    config_set_float(conf, "audio_rate_control_delta", g_settings.audio.rate_control_delta);
    config_set_string(conf, "system_directory", g_settings.system_directory);
 
+#if defined(HAVE_RGUI) || defined(HAVE_RMENU)
+   config_set_string(conf, "rgui_browser_directory", g_settings.rgui_browser_directory);
+#endif
+
 #ifdef ANDROID
    config_set_int(conf, "input_back_behavior", input.back_behavior);
    config_set_int(conf, "input_autodetect_icade_profile_pad1", input.icade_profile[0]);
@@ -1181,7 +1181,6 @@ bool config_save_file(const char *path)
    config_set_int(conf, "custom_viewport_height", g_extern.console.screen.viewports.custom_vp.height);
    config_set_int(conf, "custom_viewport_x", g_extern.console.screen.viewports.custom_vp.x);
    config_set_int(conf, "custom_viewport_y", g_extern.console.screen.viewports.custom_vp.y);
-   config_set_string(conf, "default_rom_startup_dir", g_extern.console.main_wrap.default_rom_startup_dir);
 #ifdef HAVE_RMENU
    config_set_string(conf, "menu_texture_path", g_extern.menu_texture_path);
 #endif

@@ -170,6 +170,8 @@ void menu_init(void);
 bool menu_iterate(void);
 void menu_free(void);
 
+int rgui_iterate(rgui_handle_t *rgui, uint64_t action);
+
 rgui_handle_t *rgui_init(void);
 void rgui_free(rgui_handle_t *rgui);
 

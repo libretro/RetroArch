@@ -328,7 +328,6 @@ typedef struct video_overlay_interface
 #endif
 
 // Optionally implemented interface to poke more deeply into video driver.
-// Only used by RGUI atm.
 typedef struct video_poke_interface
 {
    void (*set_filtering)(void *data, unsigned index, bool smooth);

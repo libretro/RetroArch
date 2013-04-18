@@ -1033,8 +1033,9 @@ static void gx_set_texture_frame(void *data, const void *frame,
    gx->menu_data = (uint32_t*)frame;
 }
 
-static void gx_set_texture_enable(void *data, bool enable)
+static void gx_set_texture_enable(void *data, bool enable, bool full_screen)
 {
+   (void)full_screen;
    gx_video_t *gx = (gx_video_t*)data;
    gx->rgui_texture_enable = enable;
 }

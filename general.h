@@ -265,7 +265,7 @@ struct settings
    uint16_t network_cmd_port;
    bool stdin_cmd_enable;
 
-#ifdef HAVE_RGUI
+#if defined(HAVE_RGUI) || defined(HAVE_RMENU)
    char rgui_browser_directory[PATH_MAX];
 #endif
 };
@@ -576,7 +576,6 @@ struct global
 
       struct
       {
-         char default_rom_startup_dir[PATH_MAX];
          char default_savestate_dir[PATH_MAX];
          char default_sram_dir[PATH_MAX];
       } main_wrap;
