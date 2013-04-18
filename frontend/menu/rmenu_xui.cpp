@@ -203,7 +203,7 @@ class CRetroArchControls: public CXuiSceneImpl
 };
 
 CRetroArch app;
-CXuiList m_list;
+HXUIOBJ m_list;
 HXUIOBJ m_list_path;
 HXUIOBJ hCur;
 filebrowser_t *browser;
@@ -304,21 +304,20 @@ static void browser_update(void *data, uint64_t input, const char *extensions);
 
 static void filebrowser_fetch_directory_entries(uint64_t action)
 {
-   CXuiList *romlist = &m_list;
    browser_update(browser, action, browser->current_dir.extensions); 
 
    mbstowcs(strw_buffer, browser->current_dir.directory_path, sizeof(strw_buffer) / sizeof(wchar_t));
    XuiTextElementSetText(m_list_path, strw_buffer);
 
-   romlist->DeleteItems(0, romlist->GetItemCount());
-   romlist->InsertItems(0, browser->list->size);
+   XuiListDeleteItems(m_list, 0, XuiListGetItemCount(m_list));
+   XuiListInsertItems(m_list, 0, browser->list->size);
 
    for(unsigned i = 0; i < browser->list->size; i++)
    {
       char fname_tmp[256];
       fill_pathname_base(fname_tmp, browser->list->elems[i].data, sizeof(fname_tmp));
       mbstowcs(strw_buffer, fname_tmp, sizeof(strw_buffer) / sizeof(wchar_t));
-      romlist->SetText(i, strw_buffer);
+      XuiListSetText(m_list, i, strw_buffer);
    }
 }
 
@@ -387,8 +386,8 @@ HRESULT CRetroArchFileBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHandle
 
    if(hObjPressed == m_list)
    {
-      int index = m_list.GetCurSel();
-      wcstombs(str_buffer, (const wchar_t *)m_list.GetText(index), sizeof(str_buffer));
+      int index = XuiListGetCurSel(m_list, NULL);
+      wcstombs(str_buffer, (const wchar_t *)XuiListGetText(m_list, index), sizeof(str_buffer));
       if(path_file_exists(browser->list->elems[index].data))
       {
          snprintf(path, sizeof(path), "%s\\%s", browser->current_dir.directory_path, str_buffer);
@@ -1121,12 +1120,12 @@ HRESULT CRetroArchShaderBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHand
 
    if(hObjPressed == m_list)
    {
-      int index = m_list.GetCurSel();
+      int index = XuiListGetCurSel(m_list, NULL);
       if(path_file_exists(browser->list->elems[index].data))
-         wcstombs(str_buffer, (const wchar_t *)m_list.GetText(index), sizeof(str_buffer));
+         wcstombs(str_buffer, (const wchar_t *)XuiListGetText(m_list, index), sizeof(str_buffer));
       else if(browser->list->elems[index].attr.b)
       {
-         wcstombs(str_buffer, (const wchar_t *)m_list.GetText(index), sizeof(str_buffer));
+         wcstombs(str_buffer, (const wchar_t *)XuiListGetText(m_list, index), sizeof(str_buffer));
          snprintf(path, sizeof(path), "%s\\%s", browser->current_dir.directory_path, str_buffer);
          filebrowser_set_root_and_ext(browser, "cg", path);
          uint64_t action = (1ULL << RMENU_DEVICE_NAV_B);
@@ -1160,8 +1159,8 @@ HRESULT CRetroArchCoreBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHandle
 
    if(hObjPressed == m_list)
    {
-      int index = m_list.GetCurSel();
-      wcstombs(str_buffer, (const wchar_t *)m_list.GetText(index), sizeof(str_buffer));
+      int index = XuiListGetCurSel(m_list, NULL);
+      wcstombs(str_buffer, (const wchar_t *)XuiListGetText(m_list, index), sizeof(str_buffer));
       if(path_file_exists(browser->list->elems[index].data))
       {
          snprintf(g_extern.fullpath, sizeof(g_extern.fullpath), "%s\\%s", browser->current_dir.directory_path, str_buffer);
