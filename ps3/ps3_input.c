@@ -216,11 +216,8 @@ static void ps3_input_poll(void *data)
          *lifecycle_state |= (1ULL << RARCH_REWIND);
    }
 
-   if (!(g_extern.frame_count < g_extern.delay_timer[0]))
-   {
-      if ((*state_p1 & (1ULL << RETRO_DEVICE_ID_JOYPAD_L3)) && (*state_p1 & (1ULL << RETRO_DEVICE_ID_JOYPAD_R3)))
-         *lifecycle_state |= (1ULL << RARCH_MENU_TOGGLE);
-   }
+   if ((*state_p1 & (1ULL << RETRO_DEVICE_ID_JOYPAD_L3)) && (*state_p1 & (1ULL << RETRO_DEVICE_ID_JOYPAD_R3)))
+      *lifecycle_state |= (1ULL << RARCH_MENU_TOGGLE);
 
    cellPadGetInfo2(&pad_info);
    pads_connected = pad_info.now_connect; 
