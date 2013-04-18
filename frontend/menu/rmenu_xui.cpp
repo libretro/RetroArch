@@ -147,7 +147,7 @@ class CRetroArchShaderBrowser: public CXuiSceneImpl
 class CRetroArchQuickMenu: public CXuiSceneImpl
 {
    protected:
-      CXuiList m_quickmenulist;
+      HXUIOBJ m_quickmenulist;
       CXuiControl m_back;
    public:
       HRESULT OnInit( XUIMessageInit* pInitData, int & bHandled );
@@ -912,16 +912,16 @@ HRESULT CRetroArchQuickMenu::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
    GetChildById(L"XuiBackButton", &m_back);
 
    menu_settings_create_menu_item_label_w(strw_buffer, S_LBL_ROTATION, sizeof(strw_buffer));
-   m_quickmenulist.SetText(MENU_XUI_ITEM_ORIENTATION, strw_buffer);
+   XuiListSetText(m_quickmenulist, MENU_XUI_ITEM_ORIENTATION, strw_buffer);
 
    menu_settings_create_menu_item_label_w(strw_buffer, S_LBL_ASPECT_RATIO, sizeof(strw_buffer));
-   m_quickmenulist.SetText(MENU_XUI_ITEM_ASPECT_RATIO, strw_buffer);
+   XuiListSetText(m_quickmenulist, MENU_XUI_ITEM_ASPECT_RATIO, strw_buffer);
 
    menu_settings_create_menu_item_label_w(strw_buffer, S_LBL_LOAD_STATE_SLOT, sizeof(strw_buffer));
-   m_quickmenulist.SetText(MENU_XUI_ITEM_LOAD_STATE, strw_buffer);
+   XuiListSetText(m_quickmenulist, MENU_XUI_ITEM_LOAD_STATE, strw_buffer);
 
    menu_settings_create_menu_item_label_w(strw_buffer, S_LBL_SAVE_STATE_SLOT, sizeof(strw_buffer));
-   m_quickmenulist.SetText(MENU_XUI_ITEM_SAVE_STATE, strw_buffer);
+   XuiListSetText(m_quickmenulist, MENU_XUI_ITEM_SAVE_STATE, strw_buffer);
 
    return 0;
 }
@@ -931,7 +931,7 @@ HRESULT CRetroArchQuickMenu::OnControlNavigate(XUIMessageControlNavigate *pContr
    bool aspectratio_changed = false;
    int current_index;
 
-   current_index = m_quickmenulist.GetCurSel();
+   current_index = XuiListGetCurSel(m_quickmenulist, NULL);
 
    switch(pControlNavigateData->nControlNavigate)
    {
@@ -942,9 +942,9 @@ HRESULT CRetroArchQuickMenu::OnControlNavigate(XUIMessageControlNavigate *pContr
             case MENU_XUI_ITEM_SAVE_STATE:
                rarch_state_slot_decrease();
                menu_settings_create_menu_item_label_w(strw_buffer, S_LBL_LOAD_STATE_SLOT, sizeof(strw_buffer));
-               m_quickmenulist.SetText(MENU_XUI_ITEM_LOAD_STATE, strw_buffer);
+               XuiListSetText(m_quickmenulist, MENU_XUI_ITEM_LOAD_STATE, strw_buffer);
                menu_settings_create_menu_item_label_w(strw_buffer, S_LBL_SAVE_STATE_SLOT, sizeof(strw_buffer));
-               m_quickmenulist.SetText(MENU_XUI_ITEM_SAVE_STATE, strw_buffer);
+               XuiListSetText(m_quickmenulist, MENU_XUI_ITEM_SAVE_STATE, strw_buffer);
                break;
             case MENU_XUI_ITEM_ASPECT_RATIO:
                settings_set(1ULL << S_ASPECT_RATIO_DECREMENT);
@@ -953,7 +953,7 @@ HRESULT CRetroArchQuickMenu::OnControlNavigate(XUIMessageControlNavigate *pContr
             case MENU_XUI_ITEM_ORIENTATION:
                settings_set(1ULL << S_ROTATION_DECREMENT);
                menu_settings_create_menu_item_label_w(strw_buffer, S_LBL_ROTATION, sizeof(strw_buffer));
-               m_quickmenulist.SetText(MENU_XUI_ITEM_ORIENTATION, strw_buffer);
+               XuiListSetText(m_quickmenulist, MENU_XUI_ITEM_ORIENTATION, strw_buffer);
                driver.video->set_rotation(driver.video_data, g_extern.console.screen.orientation);
                break;
             default:
@@ -967,9 +967,9 @@ HRESULT CRetroArchQuickMenu::OnControlNavigate(XUIMessageControlNavigate *pContr
             case MENU_XUI_ITEM_SAVE_STATE:
                rarch_state_slot_increase();
                menu_settings_create_menu_item_label_w(strw_buffer, S_LBL_LOAD_STATE_SLOT, sizeof(strw_buffer));
-               m_quickmenulist.SetText(MENU_XUI_ITEM_LOAD_STATE, strw_buffer);
+               XuiListSetText(m_quickmenulist, MENU_XUI_ITEM_LOAD_STATE, strw_buffer);
                menu_settings_create_menu_item_label_w(strw_buffer, S_LBL_SAVE_STATE_SLOT, sizeof(strw_buffer));
-               m_quickmenulist.SetText(MENU_XUI_ITEM_SAVE_STATE, strw_buffer);
+               XuiListSetText(m_quickmenulist, MENU_XUI_ITEM_SAVE_STATE, strw_buffer);
                break;
             case MENU_XUI_ITEM_ASPECT_RATIO:
                settings_set(1ULL << S_ASPECT_RATIO_INCREMENT);
@@ -978,7 +978,7 @@ HRESULT CRetroArchQuickMenu::OnControlNavigate(XUIMessageControlNavigate *pContr
             case MENU_XUI_ITEM_ORIENTATION:
                settings_set(1ULL << S_ROTATION_INCREMENT);
                menu_settings_create_menu_item_label_w(strw_buffer, S_LBL_ROTATION, sizeof(strw_buffer));
-               m_quickmenulist.SetText(MENU_XUI_ITEM_ORIENTATION, strw_buffer);
+               XuiListSetText(m_quickmenulist, MENU_XUI_ITEM_ORIENTATION, strw_buffer);
                driver.video->set_rotation(driver.video_data, g_extern.console.screen.orientation);
                break;
             default:
@@ -995,7 +995,7 @@ HRESULT CRetroArchQuickMenu::OnControlNavigate(XUIMessageControlNavigate *pContr
       if (driver.video_poke->set_aspect_ratio)
          driver.video_poke->set_aspect_ratio(driver.video_data, g_settings.video.aspect_ratio_idx);
       menu_settings_create_menu_item_label_w(strw_buffer, S_LBL_ASPECT_RATIO, sizeof(strw_buffer));
-      m_quickmenulist.SetText(MENU_XUI_ITEM_ASPECT_RATIO, strw_buffer);
+      XuiListSetText(m_quickmenulist, MENU_XUI_ITEM_ASPECT_RATIO, strw_buffer);
    }
 
    bHandled = TRUE;
@@ -1023,7 +1023,7 @@ HRESULT CRetroArchQuickMenu::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled
 
    if ( hObjPressed == m_quickmenulist)
    {
-      current_index = m_quickmenulist.GetCurSel();
+      current_index = XuiListGetCurSel(m_quickmenulist, NULL);
 
       switch(current_index)
       {
@@ -1048,19 +1048,19 @@ HRESULT CRetroArchQuickMenu::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled
             if (driver.video_poke->set_aspect_ratio)
                driver.video_poke->set_aspect_ratio(driver.video_data, g_settings.video.aspect_ratio_idx);
             menu_settings_create_menu_item_label_w(strw_buffer, S_LBL_ASPECT_RATIO, sizeof(strw_buffer));
-            m_quickmenulist.SetText(MENU_XUI_ITEM_ASPECT_RATIO, strw_buffer);
+            XuiListSetText(m_quickmenulist, MENU_XUI_ITEM_ASPECT_RATIO, strw_buffer);
             break;
          case MENU_XUI_ITEM_ORIENTATION:
             settings_set(1ULL << S_DEF_ROTATION);
             menu_settings_create_menu_item_label_w(strw_buffer, S_LBL_ROTATION, sizeof(strw_buffer));
-            m_quickmenulist.SetText(MENU_XUI_ITEM_ORIENTATION, strw_buffer);
+            XuiListSetText(m_quickmenulist, MENU_XUI_ITEM_ORIENTATION, strw_buffer);
             driver.video->set_rotation(driver.video_data, g_extern.console.screen.orientation);
             break;
          case MENU_XUI_ITEM_RESIZE_MODE:
             input_loop = INPUT_LOOP_RESIZE_MODE;
             g_settings.video.aspect_ratio_idx = ASPECT_RATIO_CUSTOM;
             menu_settings_create_menu_item_label_w(strw_buffer, S_LBL_ASPECT_RATIO, sizeof(strw_buffer));
-            m_quickmenulist.SetText(MENU_XUI_ITEM_ASPECT_RATIO, strw_buffer);
+            XuiListSetText(m_quickmenulist, MENU_XUI_ITEM_ASPECT_RATIO, strw_buffer);
 
             if (g_extern.lifecycle_mode_state & (1ULL << MODE_INFO_DRAW))
                msg_queue_push(g_extern.msg_queue, "INFO - Resize the screen by moving around the two analog sticks.\n", 1, 270);
