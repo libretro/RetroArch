@@ -1316,14 +1316,19 @@ rgui_handle_t *rgui_init (void)
    }
 
    /* Register font */
-   hr = app.RegisterDefaultTypeface(L"Arial Unicode MS", L"file://game:/media/rarch.ttf" );
+   TypefaceDescriptor typeface = {0};
+   typeface.szTypeface = L"Arial Unicode MS";
+   typeface.szLocator = L"file://game:/media/rarch.ttf";
+   typeface.szReserved1 = NULL;
+   
+   hr = XuiRegisterTypeface( &typeface, TRUE );
    if (hr != S_OK)
    {
       RARCH_ERR("Failed to register default typeface.\n");
       return NULL;
    }
 
-   hr = app.LoadSkin( L"file://game:/media/rarch_scene_skin.xur");
+   hr = XuiLoadVisualFromBinary( L"file://game:/media/rarch_scene_skin.xur", NULL);
    if (hr != S_OK)
    {
       RARCH_ERR("Failed to load skin.\n");
