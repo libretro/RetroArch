@@ -206,7 +206,6 @@ CRetroArch app;
 HXUIOBJ m_list;
 HXUIOBJ m_list_path;
 HXUIOBJ hCur;
-filebrowser_t *browser;
 
 wchar_t strw_buffer[PATH_MAX];
 char str_buffer[PATH_MAX];
@@ -304,18 +303,18 @@ static void browser_update(void *data, uint64_t input, const char *extensions);
 
 static void filebrowser_fetch_directory_entries(uint64_t action)
 {
-   browser_update(browser, action, browser->current_dir.extensions); 
+   browser_update(rgui->browser, action, rgui->browser->current_dir.extensions); 
 
-   mbstowcs(strw_buffer, browser->current_dir.directory_path, sizeof(strw_buffer) / sizeof(wchar_t));
+   mbstowcs(strw_buffer, rgui->browser->current_dir.directory_path, sizeof(strw_buffer) / sizeof(wchar_t));
    XuiTextElementSetText(m_list_path, strw_buffer);
 
    XuiListDeleteItems(m_list, 0, XuiListGetItemCount(m_list));
-   XuiListInsertItems(m_list, 0, browser->list->size);
+   XuiListInsertItems(m_list, 0, rgui->browser->list->size);
 
-   for(unsigned i = 0; i < browser->list->size; i++)
+   for(unsigned i = 0; i < rgui->browser->list->size; i++)
    {
       char fname_tmp[256];
-      fill_pathname_base(fname_tmp, browser->list->elems[i].data, sizeof(fname_tmp));
+      fill_pathname_base(fname_tmp, rgui->browser->list->elems[i].data, sizeof(fname_tmp));
       mbstowcs(strw_buffer, fname_tmp, sizeof(strw_buffer) / sizeof(wchar_t));
       XuiListSetText(m_list, i, strw_buffer);
    }
@@ -341,7 +340,7 @@ static void browser_update(void *data, uint64_t input, const char *extensions)
    else if (input & (1ULL << RMENU_DEVICE_NAV_A))
    {
       char tmp_str[256];
-      fill_pathname_parent_dir(tmp_str, browser->current_dir.directory_path, sizeof(tmp_str));
+      fill_pathname_parent_dir(tmp_str, rgui->browser->current_dir.directory_path, sizeof(tmp_str));
 
       if (tmp_str[0] != '\0')
          action = FILEBROWSER_ACTION_CANCEL;
@@ -349,15 +348,15 @@ static void browser_update(void *data, uint64_t input, const char *extensions)
    else if (input & (1ULL << RMENU_DEVICE_NAV_START))
    {
       action = FILEBROWSER_ACTION_RESET;
-      filebrowser_set_root_and_ext(browser, g_extern.system.valid_extensions,
+      filebrowser_set_root_and_ext(rgui->browser, g_extern.system.valid_extensions,
             g_extern.console.main_wrap.default_rom_startup_dir);
-      strlcpy(browser->current_dir.extensions, extensions,
-         sizeof(browser->current_dir.extensions));
+      strlcpy(rgui->browser->current_dir.extensions, extensions,
+         sizeof(rgui->browser->current_dir.extensions));
       filebrowser_fetch_directory_entries(1ULL << RMENU_DEVICE_NAV_B);
    }
 
    if(action != FILEBROWSER_ACTION_NOOP)
-      ret = filebrowser_iterate(browser, action);
+      ret = filebrowser_iterate(rgui->browser, action);
 
    if(!ret)
       msg_queue_push(g_extern.msg_queue, "ERROR - Failed to open directory.", 1, 180);
@@ -370,7 +369,7 @@ HRESULT CRetroArchFileBrowser::OnInit(XUIMessageInit * pInitData, BOOL& bHandled
    GetChildById(L"XuiTxtRomPath", &m_list_path);
    GetChildById(L"XuiBtnGameDir", &m_dir_game);
 
-   filebrowser_set_root_and_ext(browser, g_extern.system.valid_extensions,
+   filebrowser_set_root_and_ext(rgui->browser, g_extern.system.valid_extensions,
       default_paths.filebrowser_startup_dir);
 
    uint64_t action = (1ULL << RMENU_DEVICE_NAV_B);
@@ -388,23 +387,23 @@ HRESULT CRetroArchFileBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHandle
    {
       int index = XuiListGetCurSel(m_list, NULL);
       wcstombs(str_buffer, (const wchar_t *)XuiListGetText(m_list, index), sizeof(str_buffer));
-      if(path_file_exists(browser->list->elems[index].data))
+      if (path_file_exists(rgui->browser->list->elems[index].data))
       {
-         snprintf(path, sizeof(path), "%s\\%s", browser->current_dir.directory_path, str_buffer);
+         snprintf(path, sizeof(path), "%s\\%s", rgui->browser->current_dir.directory_path, str_buffer);
          strlcpy(g_extern.fullpath, path, sizeof(g_extern.fullpath));
          g_extern.lifecycle_mode_state |= (1ULL << MODE_LOAD_GAME);
       }
-      else if(browser->list->elems[index].attr.b)
+      else if(rgui->browser->list->elems[index].attr.b)
       {
-         snprintf(path, sizeof(path), "%s\\%s", browser->current_dir.directory_path, str_buffer);
+         snprintf(path, sizeof(path), "%s\\%s", rgui->browser->current_dir.directory_path, str_buffer);
          uint64_t action = (1ULL << RMENU_DEVICE_NAV_B);
-         filebrowser_set_root_and_ext(browser, g_extern.system.valid_extensions, path);
+         filebrowser_set_root_and_ext(rgui->browser, g_extern.system.valid_extensions, path);
          filebrowser_fetch_directory_entries(action);
       }
    }
    else if (hObjPressed == m_dir_game)
    {
-      filebrowser_set_root_and_ext(browser, g_extern.system.valid_extensions,
+      filebrowser_set_root_and_ext(rgui->browser, g_extern.system.valid_extensions,
             g_extern.console.main_wrap.default_rom_startup_dir);
       uint64_t action = (1ULL << RMENU_DEVICE_NAV_B);
       filebrowser_fetch_directory_entries(action);
@@ -1106,7 +1105,7 @@ HRESULT CRetroArchShaderBrowser::OnInit(XUIMessageInit * pInitData, BOOL& bHandl
    GetChildById(L"XuiBackButton1", &m_back);
    GetChildById(L"XuiTxtRomPath", &m_list_path);
 
-   filebrowser_set_root_and_ext(browser, "cg", "game:\\media\\shaders");
+   filebrowser_set_root_and_ext(rgui->browser, "cg", "game:\\media\\shaders");
    uint64_t action = (1ULL << RMENU_DEVICE_NAV_B);
    filebrowser_fetch_directory_entries(action);
 
@@ -1121,13 +1120,13 @@ HRESULT CRetroArchShaderBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHand
    if(hObjPressed == m_list)
    {
       int index = XuiListGetCurSel(m_list, NULL);
-      if(path_file_exists(browser->list->elems[index].data))
+      if (path_file_exists(rgui->browser->list->elems[index].data))
          wcstombs(str_buffer, (const wchar_t *)XuiListGetText(m_list, index), sizeof(str_buffer));
-      else if(browser->list->elems[index].attr.b)
+      else if (rgui->browser->list->elems[index].attr.b)
       {
          wcstombs(str_buffer, (const wchar_t *)XuiListGetText(m_list, index), sizeof(str_buffer));
-         snprintf(path, sizeof(path), "%s\\%s", browser->current_dir.directory_path, str_buffer);
-         filebrowser_set_root_and_ext(browser, "cg", path);
+         snprintf(path, sizeof(path), "%s\\%s", rgui->browser->current_dir.directory_path, str_buffer);
+         filebrowser_set_root_and_ext(rgui->browser, "cg", path);
          uint64_t action = (1ULL << RMENU_DEVICE_NAV_B);
          filebrowser_fetch_directory_entries(action);
       }
@@ -1144,7 +1143,7 @@ HRESULT CRetroArchCoreBrowser::OnInit(XUIMessageInit * pInitData, BOOL& bHandled
    GetChildById(L"XuiBackButton1", &m_back);
    GetChildById(L"XuiTxtRomPath", &m_list_path);
 
-   filebrowser_set_root_and_ext(browser, "xex|XEX", "game:");
+   filebrowser_set_root_and_ext(rgui->browser, "xex|XEX", "game:");
    uint64_t action = (1ULL << RMENU_DEVICE_NAV_B);
    filebrowser_fetch_directory_entries(action);
 
@@ -1161,17 +1160,17 @@ HRESULT CRetroArchCoreBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHandle
    {
       int index = XuiListGetCurSel(m_list, NULL);
       wcstombs(str_buffer, (const wchar_t *)XuiListGetText(m_list, index), sizeof(str_buffer));
-      if(path_file_exists(browser->list->elems[index].data))
+      if(path_file_exists(rgui->browser->list->elems[index].data))
       {
-         snprintf(g_extern.fullpath, sizeof(g_extern.fullpath), "%s\\%s", browser->current_dir.directory_path, str_buffer);
+         snprintf(g_extern.fullpath, sizeof(g_extern.fullpath), "%s\\%s", rgui->browser->current_dir.directory_path, str_buffer);
          g_extern.lifecycle_mode_state |= (1ULL << MODE_EXIT);
          g_extern.lifecycle_mode_state |= (1ULL << MODE_EXITSPAWN);
          process_input_ret = -1;
       }
-      else if(browser->list->elems[index].attr.b)
+      else if (rgui->browser->list->elems[index].attr.b)
       {
-         snprintf(path, sizeof(path), "%s\\%s", browser->current_dir.directory_path, str_buffer);
-         filebrowser_set_root_and_ext(browser, "xex|XEX", path);
+         snprintf(path, sizeof(path), "%s\\%s", rgui->browser->current_dir.directory_path, str_buffer);
+         filebrowser_set_root_and_ext(rgui->browser, "xex|XEX", path);
          uint64_t action = (1ULL << RMENU_DEVICE_NAV_B);
          filebrowser_fetch_directory_entries(action);
       }
@@ -1347,14 +1346,14 @@ rgui_handle_t *rgui_init (void)
       return NULL;
    }
 
-   browser =    (filebrowser_t*)calloc(1, sizeof(*browser));
+   rgui->browser =    (filebrowser_t*)calloc(1, sizeof(*rgui->browser));
 
-   strlcpy(browser->current_dir.extensions, g_extern.system.valid_extensions,
-         sizeof(browser->current_dir.extensions));
-   strlcpy(browser->current_dir.root_dir, default_paths.filebrowser_startup_dir,
-         sizeof(browser->current_dir.root_dir));
+   strlcpy(rgui->browser->current_dir.extensions, g_extern.system.valid_extensions,
+         sizeof(rgui->browser->current_dir.extensions));
+   strlcpy(rgui->browser->current_dir.root_dir, default_paths.filebrowser_startup_dir,
+         sizeof(rgui->browser->current_dir.root_dir));
 
-   filebrowser_iterate(browser, FILEBROWSER_ACTION_RESET);
+   filebrowser_iterate(rgui->browser, FILEBROWSER_ACTION_RESET);
 
    if (driver.video_poke && driver.video_poke->set_texture_enable)
       driver.video_poke->set_texture_frame(driver.video_data, NULL,
@@ -1365,7 +1364,7 @@ rgui_handle_t *rgui_init (void)
 
 void rgui_free (rgui_handle_t *rgui)
 {
-   filebrowser_free(browser);
+   filebrowser_free(rgui->browser);
    app.Uninit();
 }
 
