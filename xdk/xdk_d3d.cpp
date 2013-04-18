@@ -212,8 +212,6 @@ static void xdk_d3d_set_viewport(bool force_full)
    int m_viewport_x_temp, m_viewport_y_temp, m_viewport_width_temp, m_viewport_height_temp;
    float m_zNear, m_zFar;
 
-   RD3DDevice_Clear(d3dr, 0, NULL, D3DCLEAR_TARGET, 0xff000000, 1.0f, 0);
-
    d3d->ctx_driver->get_video_size(&width, &height);
    m_viewport_x_temp = 0;
    m_viewport_y_temp = 0;
@@ -807,6 +805,8 @@ static bool xdk_d3d_frame(void *data, const void *frame,
 #if 0 /* ifdef HAVE_FBO */
    D3DSurface* pRenderTarget0;
 #endif
+
+   RD3DDevice_Clear(d3d->d3d_render_device, 0, NULL, D3DCLEAR_TARGET, 0xff000000, 1.0f, 0);
 
    if (d3d->last_width != width || d3d->last_height != height)
    {
