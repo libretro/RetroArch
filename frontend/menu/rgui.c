@@ -1947,7 +1947,7 @@ enum
    DEVICE_NAV_START,
    DEVICE_NAV_SELECT,
    DEVICE_NAV_MENU,
-   RMENU_DEVICE_NAV_LAST
+   DEVICE_NAV_LAST
 };
 
 
@@ -2009,14 +2009,14 @@ static uint64_t menu_input_state(void)
 
    // FIXME: Very ugly. Should do something more uniform.
 #if defined(RARCH_CONSOLE) || defined(ANDROID)
-   for (unsigned i = 0; i < RMENU_DEVICE_NAV_LAST; i++)
+   for (unsigned i = 0; i < DEVICE_NAV_LAST; i++)
       input_state |= driver.input->input_state(driver.input_data, menu_nav_binds, 0,
             RETRO_DEVICE_JOYPAD, 0, i) ? (1ULL << i) : 0;
 
    input_state |= driver.input->key_pressed(driver.input_data, RARCH_MENU_TOGGLE) ? (1ULL << DEVICE_NAV_MENU) : 0;
 
 #ifdef HAVE_OVERLAY
-   for (unsigned i = 0; i < RMENU_DEVICE_NAV_LAST; i++)
+   for (unsigned i = 0; i < DEVICE_NAV_LAST; i++)
       input_state |= driver.overlay_state & menu_nav_binds[0][i].joykey ? (1ULL << i) : 0;
 #endif
 #else

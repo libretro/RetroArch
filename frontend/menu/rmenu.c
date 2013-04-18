@@ -97,31 +97,31 @@ static const struct retro_keybind *rmenu_nav_binds[] = {
 
 enum
 {
-   RMENU_DEVICE_NAV_UP = 0,
-   RMENU_DEVICE_NAV_DOWN,
-   RMENU_DEVICE_NAV_LEFT,
-   RMENU_DEVICE_NAV_RIGHT,
-   RMENU_DEVICE_NAV_UP_ANALOG_L,
-   RMENU_DEVICE_NAV_DOWN_ANALOG_L,
-   RMENU_DEVICE_NAV_LEFT_ANALOG_L,
-   RMENU_DEVICE_NAV_RIGHT_ANALOG_L,
-   RMENU_DEVICE_NAV_UP_ANALOG_R,
-   RMENU_DEVICE_NAV_DOWN_ANALOG_R,
-   RMENU_DEVICE_NAV_LEFT_ANALOG_R,
-   RMENU_DEVICE_NAV_RIGHT_ANALOG_R,
-   RMENU_DEVICE_NAV_B,
-   RMENU_DEVICE_NAV_A,
-   RMENU_DEVICE_NAV_X,
-   RMENU_DEVICE_NAV_Y,
-   RMENU_DEVICE_NAV_START,
-   RMENU_DEVICE_NAV_SELECT,
-   RMENU_DEVICE_NAV_L1,
-   RMENU_DEVICE_NAV_R1,
-   RMENU_DEVICE_NAV_L2,
-   RMENU_DEVICE_NAV_R2,
-   RMENU_DEVICE_NAV_L3,
-   RMENU_DEVICE_NAV_R3,
-   RMENU_DEVICE_NAV_LAST
+   DEVICE_NAV_UP = 0,
+   DEVICE_NAV_DOWN,
+   DEVICE_NAV_LEFT,
+   DEVICE_NAV_RIGHT,
+   DEVICE_NAV_UP_ANALOG_L,
+   DEVICE_NAV_DOWN_ANALOG_L,
+   DEVICE_NAV_LEFT_ANALOG_L,
+   DEVICE_NAV_RIGHT_ANALOG_L,
+   DEVICE_NAV_UP_ANALOG_R,
+   DEVICE_NAV_DOWN_ANALOG_R,
+   DEVICE_NAV_LEFT_ANALOG_R,
+   DEVICE_NAV_RIGHT_ANALOG_R,
+   DEVICE_NAV_B,
+   DEVICE_NAV_A,
+   DEVICE_NAV_X,
+   DEVICE_NAV_Y,
+   DEVICE_NAV_START,
+   DEVICE_NAV_SELECT,
+   DEVICE_NAV_L1,
+   DEVICE_NAV_R1,
+   DEVICE_NAV_L2,
+   DEVICE_NAV_R2,
+   DEVICE_NAV_L3,
+   DEVICE_NAV_R3,
+   DEVICE_NAV_LAST
 };
 
 const char drive_mappings[][32] = {
@@ -549,19 +549,19 @@ static void browser_update(void *data, uint64_t input, const char *extensions)
    filebrowser_action_t action = FILEBROWSER_ACTION_NOOP;
    bool ret = true;
 
-   if (input & (1ULL << RMENU_DEVICE_NAV_DOWN))
+   if (input & (1ULL << DEVICE_NAV_DOWN))
       action = FILEBROWSER_ACTION_DOWN;
-   else if (input & (1ULL << RMENU_DEVICE_NAV_UP))
+   else if (input & (1ULL << DEVICE_NAV_UP))
       action = FILEBROWSER_ACTION_UP;
-   else if (input & (1ULL << RMENU_DEVICE_NAV_RIGHT))
+   else if (input & (1ULL << DEVICE_NAV_RIGHT))
       action = FILEBROWSER_ACTION_RIGHT;
-   else if (input & (1ULL << RMENU_DEVICE_NAV_LEFT))
+   else if (input & (1ULL << DEVICE_NAV_LEFT))
       action = FILEBROWSER_ACTION_LEFT;
-   else if (input & (1ULL << RMENU_DEVICE_NAV_R2))
+   else if (input & (1ULL << DEVICE_NAV_R2))
       action = FILEBROWSER_ACTION_SCROLL_DOWN;
-   else if (input & (1ULL << RMENU_DEVICE_NAV_L2))
+   else if (input & (1ULL << DEVICE_NAV_L2))
       action = FILEBROWSER_ACTION_SCROLL_UP;
-   else if (input & (1ULL << RMENU_DEVICE_NAV_A))
+   else if (input & (1ULL << DEVICE_NAV_A))
    {
       char tmp_str[PATH_MAX];
       fill_pathname_parent_dir(tmp_str, rgui->browser->current_dir.directory_path, sizeof(tmp_str));
@@ -569,7 +569,7 @@ static void browser_update(void *data, uint64_t input, const char *extensions)
       if (tmp_str[0] != '\0')
          action = FILEBROWSER_ACTION_CANCEL;
    }
-   else if (input & (1ULL << RMENU_DEVICE_NAV_START))
+   else if (input & (1ULL << DEVICE_NAV_START))
    {
       action = FILEBROWSER_ACTION_RESET;
       filebrowser_set_root_and_ext(rgui->browser, NULL, default_paths.filesystem_root_dir);
@@ -661,7 +661,7 @@ static int select_file(void *data, uint64_t input)
 
    browser_update(rgui->browser, input, extensions);
 
-   if (input & (1ULL << RMENU_DEVICE_NAV_B))
+   if (input & (1ULL << DEVICE_NAV_B))
    {
       if (filebrowser_iterate(rgui->browser, FILEBROWSER_ACTION_PATH_ISDIR))
          ret = filebrowser_iterate(rgui->browser, FILEBROWSER_ACTION_OK);
@@ -753,7 +753,7 @@ static int select_file(void *data, uint64_t input)
       if (!ret)
          msg_queue_push(g_extern.msg_queue, "INFO - You need to restart RetroArch.", 1, 180);
    }
-   else if (input & (1ULL << RMENU_DEVICE_NAV_X))
+   else if (input & (1ULL << DEVICE_NAV_X))
       pop_menu_stack = true;
 
    if (pop_menu_stack)
@@ -786,7 +786,7 @@ static int select_directory(void *data, uint64_t input)
    bool pop_menu_stack = false;
    browser_update(rgui->browser, input, "empty");
 
-   if (input & (1ULL << RMENU_DEVICE_NAV_Y))
+   if (input & (1ULL << DEVICE_NAV_Y))
    {
       if (is_dir)
       {
@@ -815,7 +815,7 @@ static int select_directory(void *data, uint64_t input)
          pop_menu_stack = true;
       }
    }
-   else if (input & (1ULL << RMENU_DEVICE_NAV_X))
+   else if (input & (1ULL << DEVICE_NAV_X))
    {
       strlcpy(path, default_paths.port_dir, sizeof(path));
       switch(rgui->menu_type)
@@ -840,7 +840,7 @@ static int select_directory(void *data, uint64_t input)
       }
       pop_menu_stack = true;
    }
-   else if (input & (1ULL << RMENU_DEVICE_NAV_B))
+   else if (input & (1ULL << DEVICE_NAV_B))
    {
       if (is_dir)
          ret = filebrowser_iterate(rgui->browser, FILEBROWSER_ACTION_OK);
@@ -883,13 +883,13 @@ static void set_keybind_digital(unsigned default_retro_joypad_id, uint64_t input
 
    unsigned keybind_action = KEYBINDS_ACTION_NONE;
 
-   if (input & (1ULL << RMENU_DEVICE_NAV_LEFT))
+   if (input & (1ULL << DEVICE_NAV_LEFT))
       keybind_action = (1ULL << KEYBINDS_ACTION_DECREMENT_BIND);
 
-   if ((input & (1ULL << RMENU_DEVICE_NAV_RIGHT)) || (input & (1ULL << RMENU_DEVICE_NAV_B)))
+   if ((input & (1ULL << DEVICE_NAV_RIGHT)) || (input & (1ULL << DEVICE_NAV_B)))
       keybind_action = (1ULL << KEYBINDS_ACTION_INCREMENT_BIND);
 
-   if (input & (1ULL << RMENU_DEVICE_NAV_START))
+   if (input & (1ULL << DEVICE_NAV_START))
       keybind_action = (1ULL << KEYBINDS_ACTION_SET_DEFAULT_BIND);
 
 
@@ -991,11 +991,11 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
    {
 #ifdef __CELLOS_LV2__
       case SETTING_CHANGE_RESOLUTION:
-         if (input & (1ULL << RMENU_DEVICE_NAV_RIGHT))
+         if (input & (1ULL << DEVICE_NAV_RIGHT))
             settings_set(1ULL << S_RESOLUTION_NEXT);
-         if (input & (1ULL << RMENU_DEVICE_NAV_LEFT))
+         if (input & (1ULL << DEVICE_NAV_LEFT))
             settings_set(1ULL << S_RESOLUTION_PREVIOUS);
-         if (input & (1ULL << RMENU_DEVICE_NAV_B))
+         if (input & (1ULL << DEVICE_NAV_B))
          {
             if (g_extern.console.screen.resolutions.list[g_extern.console.screen.resolutions.current.idx] == CELL_VIDEO_OUT_RESOLUTION_576)
             {
@@ -1013,7 +1013,7 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
          }
          break;
       case SETTING_PAL60_MODE:
-         if ((input & (1ULL << RMENU_DEVICE_NAV_LEFT)) || (input & (1ULL << RMENU_DEVICE_NAV_RIGHT)) || (input & (1ULL << RMENU_DEVICE_NAV_B)))
+         if ((input & (1ULL << DEVICE_NAV_LEFT)) || (input & (1ULL << DEVICE_NAV_RIGHT)) || (input & (1ULL << DEVICE_NAV_B)))
          {
             if (g_extern.lifecycle_mode_state & (1ULL << MODE_VIDEO_PAL_ENABLE))
             {
@@ -1032,7 +1032,7 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
             }
          }
 
-         if (input & (1ULL << RMENU_DEVICE_NAV_START))
+         if (input & (1ULL << DEVICE_NAV_START))
          {
             if (g_extern.lifecycle_mode_state & (1ULL << MODE_VIDEO_PAL_ENABLE))
             {
@@ -1044,12 +1044,12 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
          break;
 #endif
       case SETTING_EMU_SKIN:
-         if ((input & (1ULL << RMENU_DEVICE_NAV_LEFT)) || (input & (1ULL << RMENU_DEVICE_NAV_RIGHT)) || (input & (1ULL << RMENU_DEVICE_NAV_B)))
+         if ((input & (1ULL << DEVICE_NAV_LEFT)) || (input & (1ULL << DEVICE_NAV_RIGHT)) || (input & (1ULL << DEVICE_NAV_B)))
          {
             menu_stack_push(BORDER_CHOICE, true);
             filebrowser_set_root_and_ext(rgui->browser, EXT_IMAGES, default_paths.border_dir);
          }
-         if (input & (1ULL << RMENU_DEVICE_NAV_START))
+         if (input & (1ULL << DEVICE_NAV_START))
          {
             if (!texture_image_load(default_paths.menu_border_file, menu_texture))
             {
@@ -1059,36 +1059,36 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
          }
          break;
       case SETTING_FONT_SIZE:
-         if (input & (1ULL << RMENU_DEVICE_NAV_LEFT))
+         if (input & (1ULL << DEVICE_NAV_LEFT))
          {
             if (g_settings.video.font_size > 0) 
                g_settings.video.font_size -= 0.01f;
          }
-         if ((input & (1ULL << RMENU_DEVICE_NAV_RIGHT)) || (input & (1ULL << RMENU_DEVICE_NAV_B)))
+         if ((input & (1ULL << DEVICE_NAV_RIGHT)) || (input & (1ULL << DEVICE_NAV_B)))
          {
             if ((g_settings.video.font_size < 2.0f))
                g_settings.video.font_size += 0.01f;
          }
-         if (input & (1ULL << RMENU_DEVICE_NAV_START))
+         if (input & (1ULL << DEVICE_NAV_START))
             g_settings.video.font_size = 1.0f;
          break;
       case INGAME_MENU_ASPECT_RATIO:
       case SETTING_KEEP_ASPECT_RATIO:
-         if (input & (1ULL << RMENU_DEVICE_NAV_LEFT))
+         if (input & (1ULL << DEVICE_NAV_LEFT))
          {
             settings_set(1ULL << S_ASPECT_RATIO_DECREMENT);
 
             if (driver.video_poke->set_aspect_ratio)
                driver.video_poke->set_aspect_ratio(driver.video_data, g_settings.video.aspect_ratio_idx);
          }
-         if (input & (1ULL << RMENU_DEVICE_NAV_RIGHT))
+         if (input & (1ULL << DEVICE_NAV_RIGHT))
          {
             settings_set(1ULL << S_ASPECT_RATIO_INCREMENT);
 
             if (driver.video_poke->set_aspect_ratio)
                driver.video_poke->set_aspect_ratio(driver.video_data, g_settings.video.aspect_ratio_idx);
          }
-         if (input & (1ULL << RMENU_DEVICE_NAV_START))
+         if (input & (1ULL << DEVICE_NAV_START))
          {
             settings_set(1ULL << S_DEF_ASPECT_RATIO);
 
@@ -1098,14 +1098,14 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
          break;
 #ifndef HAVE_SHADER_MANAGER
       case SETTING_HW_TEXTURE_FILTER:
-         if ((input & (1ULL << RMENU_DEVICE_NAV_LEFT)) || (input & (1ULL << RMENU_DEVICE_NAV_RIGHT)) || (input & (1ULL << RMENU_DEVICE_NAV_B)))
+         if ((input & (1ULL << DEVICE_NAV_LEFT)) || (input & (1ULL << DEVICE_NAV_RIGHT)) || (input & (1ULL << DEVICE_NAV_B)))
          {
             settings_set(1ULL << S_HW_TEXTURE_FILTER);
 
             if (driver.video_poke->set_filtering)
                driver.video_poke->set_filtering(driver.video_data, 1, g_settings.video.smooth);
          }
-         if (input & (1ULL << RMENU_DEVICE_NAV_START))
+         if (input & (1ULL << DEVICE_NAV_START))
          {
             settings_set(1ULL << S_DEF_HW_TEXTURE_FILTER);
 
@@ -1116,50 +1116,50 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
 #endif
 #ifdef _XBOX1
       case SETTING_FLICKER_FILTER:
-         if (input & (1ULL << RMENU_DEVICE_NAV_LEFT))
+         if (input & (1ULL << DEVICE_NAV_LEFT))
          {
             if (g_extern.console.screen.flicker_filter_index > 0)
                g_extern.console.screen.flicker_filter_index--;
          }
-         if (input & (1ULL << RMENU_DEVICE_NAV_RIGHT))
+         if (input & (1ULL << DEVICE_NAV_RIGHT))
          {
             if (g_extern.console.screen.flicker_filter_index < 5)
                g_extern.console.screen.flicker_filter_index++;
          }
-         if (input & (1ULL << RMENU_DEVICE_NAV_START))
+         if (input & (1ULL << DEVICE_NAV_START))
             g_extern.console.screen.flicker_filter_index = 0;
          break;
       case SETTING_SOFT_DISPLAY_FILTER:
-         if (input & (1ULL << RMENU_DEVICE_NAV_LEFT) || (input & (1ULL << RMENU_DEVICE_NAV_RIGHT)) || (input & (1ULL << RMENU_DEVICE_NAV_B)))
+         if (input & (1ULL << DEVICE_NAV_LEFT) || (input & (1ULL << DEVICE_NAV_RIGHT)) || (input & (1ULL << DEVICE_NAV_B)))
          {
             if (g_extern.lifecycle_mode_state & (1ULL << MODE_VIDEO_SOFT_FILTER_ENABLE))
                g_extern.lifecycle_mode_state &= ~(1ULL << MODE_VIDEO_SOFT_FILTER_ENABLE);
             else
                g_extern.lifecycle_mode_state |= (1ULL << MODE_VIDEO_SOFT_FILTER_ENABLE);
          }
-         if (input & (1ULL << RMENU_DEVICE_NAV_START))
+         if (input & (1ULL << DEVICE_NAV_START))
             g_extern.lifecycle_mode_state |= (1ULL << MODE_VIDEO_SOFT_FILTER_ENABLE);
          break;
 #endif
       case SETTING_REFRESH_RATE:
-         if (input & (1ULL << RMENU_DEVICE_NAV_LEFT))
+         if (input & (1ULL << DEVICE_NAV_LEFT))
          {
             settings_set(1ULL << S_REFRESH_RATE_DECREMENT);
             driver_set_monitor_refresh_rate(g_settings.video.refresh_rate);
          }
-         if ((input & (1ULL << RMENU_DEVICE_NAV_RIGHT)) || (input & (1ULL << RMENU_DEVICE_NAV_B)))
+         if ((input & (1ULL << DEVICE_NAV_RIGHT)) || (input & (1ULL << DEVICE_NAV_B)))
          {
             settings_set(1ULL << S_REFRESH_RATE_INCREMENT);
             driver_set_monitor_refresh_rate(g_settings.video.refresh_rate);
          }
-         if (input & (1ULL << RMENU_DEVICE_NAV_START))
+         if (input & (1ULL << DEVICE_NAV_START))
          {
             settings_set(1ULL << S_DEF_REFRESH_RATE);
             driver_set_monitor_refresh_rate(g_settings.video.refresh_rate);
          }
          break;
       case SETTING_THROTTLE_MODE:
-         if ((input & (1ULL << RMENU_DEVICE_NAV_LEFT)) || (input & (1ULL << RMENU_DEVICE_NAV_RIGHT)) || (input & (1ULL << RMENU_DEVICE_NAV_B)))
+         if ((input & (1ULL << DEVICE_NAV_LEFT)) || (input & (1ULL << DEVICE_NAV_RIGHT)) || (input & (1ULL << DEVICE_NAV_B)))
          {
             if (!(g_extern.lifecycle_mode_state & (1ULL << MODE_VIDEO_PAL_VSYNC_BLOCK)))
             {
@@ -1167,7 +1167,7 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
                device_ptr->ctx_driver->swap_interval((g_extern.lifecycle_mode_state & (1ULL << MODE_VIDEO_THROTTLE_ENABLE)) ? true : false);
             }
          }
-         if (input & (1ULL << RMENU_DEVICE_NAV_START))
+         if (input & (1ULL << DEVICE_NAV_START))
          {
             if (!(g_extern.lifecycle_mode_state & (1ULL << MODE_VIDEO_PAL_VSYNC_BLOCK)))
             {
@@ -1177,12 +1177,12 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
          }
          break;
       case SETTING_TRIPLE_BUFFERING:
-         if ((input & (1ULL << RMENU_DEVICE_NAV_LEFT)) || (input & (1ULL << RMENU_DEVICE_NAV_RIGHT)) || (input & (1ULL << RMENU_DEVICE_NAV_B)))
+         if ((input & (1ULL << DEVICE_NAV_LEFT)) || (input & (1ULL << DEVICE_NAV_RIGHT)) || (input & (1ULL << DEVICE_NAV_B)))
          {
             settings_set(1ULL << S_TRIPLE_BUFFERING);
             driver.video->restart();
          }
-         if (input & (1ULL << RMENU_DEVICE_NAV_START))
+         if (input & (1ULL << DEVICE_NAV_START))
          {
             settings_set(1ULL << S_DEF_TRIPLE_BUFFERING);
 
@@ -1191,22 +1191,22 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
          }
          break;
       case SETTING_DEFAULT_VIDEO_ALL:
-         if (input & (1ULL << RMENU_DEVICE_NAV_START))
+         if (input & (1ULL << DEVICE_NAV_START))
          {
          }
          break;
       case SETTING_SOUND_MODE:
-         if (input & (1ULL << RMENU_DEVICE_NAV_LEFT))
+         if (input & (1ULL << DEVICE_NAV_LEFT))
          {
             if (g_extern.console.sound.mode != SOUND_MODE_NORMAL)
                g_extern.console.sound.mode--;
          }
-         if ((input & (1ULL << RMENU_DEVICE_NAV_RIGHT)) || (input & (1ULL << RMENU_DEVICE_NAV_B)))
+         if ((input & (1ULL << DEVICE_NAV_RIGHT)) || (input & (1ULL << DEVICE_NAV_B)))
          {
             if (g_extern.console.sound.mode < (SOUND_MODE_LAST-1))
                g_extern.console.sound.mode++;
          }
-         if ((input & (1ULL << RMENU_DEVICE_NAV_UP)) || (input & (1ULL << RMENU_DEVICE_NAV_DOWN)))
+         if ((input & (1ULL << DEVICE_NAV_UP)) || (input & (1ULL << DEVICE_NAV_DOWN)))
          {
 #ifdef HAVE_RSOUND
             if (g_extern.console.sound.mode != SOUND_MODE_RSOUND)
@@ -1215,7 +1215,7 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
                rarch_rsound_start(g_settings.audio.device);
 #endif
          }
-         if (input & (1ULL << RMENU_DEVICE_NAV_START))
+         if (input & (1ULL << DEVICE_NAV_START))
          {
             g_extern.console.sound.mode = SOUND_MODE_NORMAL;
 #ifdef HAVE_RSOUND
@@ -1225,41 +1225,41 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
          break;
 #ifdef HAVE_RSOUND
       case SETTING_RSOUND_SERVER_IP_ADDRESS:
-         if ((input & (1ULL << RMENU_DEVICE_NAV_LEFT)) || (input & (1ULL << RMENU_DEVICE_NAV_RIGHT)) || (input & (1ULL << RMENU_DEVICE_NAV_B)))
+         if ((input & (1ULL << DEVICE_NAV_LEFT)) || (input & (1ULL << DEVICE_NAV_RIGHT)) || (input & (1ULL << DEVICE_NAV_B)))
          {
 #ifdef HAVE_OSKUTIL
             rgui->osk_init = osk_callback_enter_rsound_init;
             rgui->osk_callback = osk_callback_enter_rsound;
 #endif
          }
-         if (input & (1ULL << RMENU_DEVICE_NAV_START))
+         if (input & (1ULL << DEVICE_NAV_START))
             strlcpy(g_settings.audio.device, "0.0.0.0", sizeof(g_settings.audio.device));
          break;
 #endif
       case SETTING_DEFAULT_AUDIO_ALL:
          break;
       case SETTING_EMU_CURRENT_SAVE_STATE_SLOT:
-         if (input & (1ULL << RMENU_DEVICE_NAV_LEFT))
+         if (input & (1ULL << DEVICE_NAV_LEFT))
             settings_set(1ULL << S_SAVESTATE_DECREMENT);
-         if ((input & (1ULL << RMENU_DEVICE_NAV_RIGHT)) || (input & (1ULL << RMENU_DEVICE_NAV_B)))
+         if ((input & (1ULL << DEVICE_NAV_RIGHT)) || (input & (1ULL << DEVICE_NAV_B)))
             settings_set(1ULL << S_SAVESTATE_INCREMENT);
-         if (input & (1ULL << RMENU_DEVICE_NAV_START))
+         if (input & (1ULL << DEVICE_NAV_START))
             settings_set(1ULL << S_DEF_SAVE_STATE);
          break;
       case SETTING_EMU_SHOW_DEBUG_INFO_MSG:
-         if ((input & (1ULL << RMENU_DEVICE_NAV_LEFT)) || (input & (1ULL << RMENU_DEVICE_NAV_RIGHT)) || (input & (1ULL << RMENU_DEVICE_NAV_B)))
+         if ((input & (1ULL << DEVICE_NAV_LEFT)) || (input & (1ULL << DEVICE_NAV_RIGHT)) || (input & (1ULL << DEVICE_NAV_B)))
             settings_set(1ULL << S_INFO_DEBUG_MSG_TOGGLE);
-         if (input & (1ULL << RMENU_DEVICE_NAV_START))
+         if (input & (1ULL << DEVICE_NAV_START))
             settings_set(1ULL << S_DEF_INFO_DEBUG_MSG);
          break;
       case SETTING_EMU_SHOW_INFO_MSG:
-         if ((input & (1ULL << RMENU_DEVICE_NAV_LEFT)) || (input & (1ULL << RMENU_DEVICE_NAV_RIGHT)) || (input & (1ULL << RMENU_DEVICE_NAV_B)))
+         if ((input & (1ULL << DEVICE_NAV_LEFT)) || (input & (1ULL << DEVICE_NAV_RIGHT)) || (input & (1ULL << DEVICE_NAV_B)))
             settings_set(1ULL << S_INFO_MSG_TOGGLE);
-         if (input & (1ULL << RMENU_DEVICE_NAV_START))
+         if (input & (1ULL << DEVICE_NAV_START))
             settings_set(1ULL << S_DEF_INFO_MSG);
          break;
       case SETTING_EMU_REWIND_ENABLED:
-         if ((input & (1ULL << RMENU_DEVICE_NAV_LEFT)) || (input & (1ULL << RMENU_DEVICE_NAV_RIGHT)) || (input & (1ULL << RMENU_DEVICE_NAV_B)))
+         if ((input & (1ULL << DEVICE_NAV_LEFT)) || (input & (1ULL << DEVICE_NAV_RIGHT)) || (input & (1ULL << DEVICE_NAV_B)))
          {
             settings_set(1ULL << S_REWIND);
 
@@ -1269,7 +1269,7 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
                rarch_deinit_rewind();
          }
 
-         if (input & (1ULL << RMENU_DEVICE_NAV_START))
+         if (input & (1ULL << DEVICE_NAV_START))
          {
             if (g_settings.rewind_enable)
             {
@@ -1279,29 +1279,29 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
          }
          break;
       case SETTING_EMU_REWIND_GRANULARITY:
-         if (input & (1ULL << RMENU_DEVICE_NAV_LEFT))
+         if (input & (1ULL << DEVICE_NAV_LEFT))
          {
             if (g_settings.rewind_granularity > 1)
                g_settings.rewind_granularity--;
          }
-         if ((input & (1ULL << RMENU_DEVICE_NAV_RIGHT)) || (input & (1ULL << RMENU_DEVICE_NAV_B)))
+         if ((input & (1ULL << DEVICE_NAV_RIGHT)) || (input & (1ULL << DEVICE_NAV_B)))
             g_settings.rewind_granularity++;
-         if (input & (1ULL << RMENU_DEVICE_NAV_START))
+         if (input & (1ULL << DEVICE_NAV_START))
             g_settings.rewind_granularity = 1;
          break;
       case SETTING_RARCH_DEFAULT_EMU:
-         if ((input & (1ULL << RMENU_DEVICE_NAV_LEFT)) || (input & (1ULL << RMENU_DEVICE_NAV_RIGHT)) || (input & (1ULL << RMENU_DEVICE_NAV_B)))
+         if ((input & (1ULL << DEVICE_NAV_LEFT)) || (input & (1ULL << DEVICE_NAV_RIGHT)) || (input & (1ULL << DEVICE_NAV_B)))
          {
             menu_stack_push(LIBRETRO_CHOICE, true);
             filebrowser_set_root_and_ext(rgui->browser, EXT_EXECUTABLES, default_paths.core_dir);
             set_libretro_core_as_launch = true;
          }
-         if (input & (1ULL << RMENU_DEVICE_NAV_START))
+         if (input & (1ULL << DEVICE_NAV_START))
          {
          }
          break;
       case SETTING_QUIT_RARCH:
-         if ((input & (1ULL << RMENU_DEVICE_NAV_LEFT)) || (input & (1ULL << RMENU_DEVICE_NAV_RIGHT)) || (input & (1ULL << RMENU_DEVICE_NAV_B)) || (input & (1ULL << RMENU_DEVICE_NAV_B)))
+         if ((input & (1ULL << DEVICE_NAV_LEFT)) || (input & (1ULL << DEVICE_NAV_RIGHT)) || (input & (1ULL << DEVICE_NAV_B)) || (input & (1ULL << DEVICE_NAV_B)))
          {
             g_extern.lifecycle_mode_state &= ~((1ULL << MODE_GAME));
             g_extern.lifecycle_mode_state |= (1ULL << MODE_EXIT);
@@ -1309,22 +1309,22 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
          }
          break;
       case SETTING_EMU_AUDIO_MUTE:
-         if ((input & (1ULL << RMENU_DEVICE_NAV_LEFT)) || (input & (1ULL << RMENU_DEVICE_NAV_RIGHT)) || (input & (1ULL << RMENU_DEVICE_NAV_B)))
+         if ((input & (1ULL << DEVICE_NAV_LEFT)) || (input & (1ULL << DEVICE_NAV_RIGHT)) || (input & (1ULL << DEVICE_NAV_B)))
             settings_set(1ULL << S_AUDIO_MUTE);
 
-         if (input & (1ULL << RMENU_DEVICE_NAV_START))
+         if (input & (1ULL << DEVICE_NAV_START))
             settings_set(1ULL << S_DEF_AUDIO_MUTE);
          break;
 #ifdef _XBOX1
       case SETTING_EMU_AUDIO_SOUND_VOLUME_LEVEL:
-         if ((input & (1ULL << RMENU_DEVICE_NAV_LEFT)) || (input & (1ULL << RMENU_DEVICE_NAV_RIGHT)) || (input & (1ULL << RMENU_DEVICE_NAV_B)))
+         if ((input & (1ULL << DEVICE_NAV_LEFT)) || (input & (1ULL << DEVICE_NAV_RIGHT)) || (input & (1ULL << DEVICE_NAV_B)))
          {
             g_extern.console.sound.volume_level = !g_extern.console.sound.volume_level;
             if (g_extern.lifecycle_mode_state & (1ULL << MODE_INFO_DRAW))
                msg_queue_push(g_extern.msg_queue, "INFO - You need to restart RetroArch.", 1, 180);
          }
 
-         if (input & (1ULL << RMENU_DEVICE_NAV_START))
+         if (input & (1ULL << DEVICE_NAV_START))
          {
             g_extern.console.sound.volume_level = 0;
             if (g_extern.lifecycle_mode_state & (1ULL << MODE_INFO_DRAW))
@@ -1333,7 +1333,7 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
          break;
 #endif
       case SETTING_ENABLE_CUSTOM_BGM:
-         if ((input & (1ULL << RMENU_DEVICE_NAV_LEFT)) || (input & (1ULL << RMENU_DEVICE_NAV_RIGHT)) || (input & (1ULL << RMENU_DEVICE_NAV_B)))
+         if ((input & (1ULL << DEVICE_NAV_LEFT)) || (input & (1ULL << DEVICE_NAV_RIGHT)) || (input & (1ULL << DEVICE_NAV_B)))
          {
 #if (CELL_SDK_VERSION > 0x340000)
             if (g_extern.lifecycle_mode_state & (1ULL << MODE_AUDIO_CUSTOM_BGM_ENABLE))
@@ -1347,7 +1347,7 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
 
 #endif
          }
-         if (input & (1ULL << RMENU_DEVICE_NAV_START))
+         if (input & (1ULL << DEVICE_NAV_START))
          {
 #if (CELL_SDK_VERSION > 0x340000)
             g_extern.lifecycle_mode_state |= (1ULL << MODE_AUDIO_CUSTOM_BGM_ENABLE);
@@ -1359,60 +1359,60 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
       case SETTING_EMU_AUDIO_DEFAULT_ALL:
          break;
       case SETTING_PATH_DEFAULT_ROM_DIRECTORY:
-         if ((input & (1ULL << RMENU_DEVICE_NAV_LEFT)) || (input & (1ULL << RMENU_DEVICE_NAV_RIGHT)) || (input & (1ULL << RMENU_DEVICE_NAV_B)))
+         if ((input & (1ULL << DEVICE_NAV_LEFT)) || (input & (1ULL << DEVICE_NAV_RIGHT)) || (input & (1ULL << DEVICE_NAV_B)))
          {
             menu_stack_push(PATH_DEFAULT_ROM_DIR_CHOICE, true);
             filebrowser_set_root_and_ext(rgui->browser, "empty", default_paths.filesystem_root_dir);
          }
 
-         if (input & (1ULL << RMENU_DEVICE_NAV_START))
+         if (input & (1ULL << DEVICE_NAV_START))
             strlcpy(g_extern.console.main_wrap.default_rom_startup_dir, default_paths.filesystem_root_dir, sizeof(g_extern.console.main_wrap.default_rom_startup_dir));
          break;
       case SETTING_PATH_SAVESTATES_DIRECTORY:
-         if ((input & (1ULL << RMENU_DEVICE_NAV_LEFT)) || (input & (1ULL << RMENU_DEVICE_NAV_RIGHT)) || (input & (1ULL << RMENU_DEVICE_NAV_B)))
+         if ((input & (1ULL << DEVICE_NAV_LEFT)) || (input & (1ULL << DEVICE_NAV_RIGHT)) || (input & (1ULL << DEVICE_NAV_B)))
          {
             menu_stack_push(PATH_SAVESTATES_DIR_CHOICE, true);
             filebrowser_set_root_and_ext(rgui->browser, "empty", default_paths.filesystem_root_dir);
          }
 
-         if (input & (1ULL << RMENU_DEVICE_NAV_START))
+         if (input & (1ULL << DEVICE_NAV_START))
             strlcpy(g_extern.console.main_wrap.default_savestate_dir, default_paths.savestate_dir, sizeof(g_extern.console.main_wrap.default_savestate_dir));
 
          break;
       case SETTING_PATH_SRAM_DIRECTORY:
-         if ((input & (1ULL << RMENU_DEVICE_NAV_LEFT)) || (input & (1ULL << RMENU_DEVICE_NAV_RIGHT)) || (input & (1ULL << RMENU_DEVICE_NAV_B)))
+         if ((input & (1ULL << DEVICE_NAV_LEFT)) || (input & (1ULL << DEVICE_NAV_RIGHT)) || (input & (1ULL << DEVICE_NAV_B)))
          {
             menu_stack_push(PATH_SRAM_DIR_CHOICE, true);
             filebrowser_set_root_and_ext(rgui->browser, "empty", default_paths.filesystem_root_dir);
          }
 
-         if (input & (1ULL << RMENU_DEVICE_NAV_START))
+         if (input & (1ULL << DEVICE_NAV_START))
             strlcpy(g_extern.console.main_wrap.default_sram_dir, default_paths.sram_dir, sizeof(g_extern.console.main_wrap.default_sram_dir));
          break;
 #ifdef HAVE_XML
       case SETTING_PATH_CHEATS:
-         if ((input & (1ULL << RMENU_DEVICE_NAV_LEFT)) || (input & (1ULL << RMENU_DEVICE_NAV_RIGHT)) || (input & (1ULL << RMENU_DEVICE_NAV_B)))
+         if ((input & (1ULL << DEVICE_NAV_LEFT)) || (input & (1ULL << DEVICE_NAV_RIGHT)) || (input & (1ULL << DEVICE_NAV_B)))
          {
             menu_stack_push(PATH_CHEATS_DIR_CHOICE, true);
             filebrowser_set_root_and_ext(rmenu->browser, "empty", default_paths.filesystem_root_dir);
          }
 
-         if (input & (1ULL << RMENU_DEVICE_NAV_START))
+         if (input & (1ULL << DEVICE_NAV_START))
             strlcpy(g_settings.cheat_database, default_paths.port_dir, sizeof(g_settings.cheat_database));
          break;
 #endif
       case SETTING_PATH_SYSTEM:
-         if ((input & (1ULL << RMENU_DEVICE_NAV_LEFT)) || (input & (1ULL << RMENU_DEVICE_NAV_RIGHT)) || (input & (1ULL << RMENU_DEVICE_NAV_B)))
+         if ((input & (1ULL << DEVICE_NAV_LEFT)) || (input & (1ULL << DEVICE_NAV_RIGHT)) || (input & (1ULL << DEVICE_NAV_B)))
          {
             menu_stack_push(PATH_SYSTEM_DIR_CHOICE, true);
             filebrowser_set_root_and_ext(rgui->browser, "empty", default_paths.system_dir);
          }
 
-         if (input & (1ULL << RMENU_DEVICE_NAV_START))
+         if (input & (1ULL << DEVICE_NAV_START))
             strlcpy(g_settings.system_directory, default_paths.system_dir, sizeof(g_settings.system_directory));
          break;
       case SETTING_ENABLE_SRAM_PATH:
-         if ((input & (1ULL << RMENU_DEVICE_NAV_LEFT)) || (input & (1ULL << RMENU_DEVICE_NAV_RIGHT)))
+         if ((input & (1ULL << DEVICE_NAV_LEFT)) || (input & (1ULL << DEVICE_NAV_RIGHT)))
          {
             if (g_extern.lifecycle_mode_state & (1ULL << MODE_LOAD_GAME_SRAM_DIR_ENABLE))
                g_extern.lifecycle_mode_state &= ~(1ULL << MODE_LOAD_GAME_SRAM_DIR_ENABLE);
@@ -1420,22 +1420,22 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
                g_extern.lifecycle_mode_state |= (1ULL << MODE_LOAD_GAME_SRAM_DIR_ENABLE);
          }
 
-         if (input & (1ULL << RMENU_DEVICE_NAV_START))
+         if (input & (1ULL << DEVICE_NAV_START))
             g_extern.lifecycle_mode_state |= (1ULL << MODE_LOAD_GAME_SRAM_DIR_ENABLE);
          break;
       case SETTING_ENABLE_STATE_PATH:
-         if ((input & (1ULL << RMENU_DEVICE_NAV_LEFT)) || (input & (1ULL << RMENU_DEVICE_NAV_RIGHT)))
+         if ((input & (1ULL << DEVICE_NAV_LEFT)) || (input & (1ULL << DEVICE_NAV_RIGHT)))
          {
             if (g_extern.lifecycle_mode_state & (1ULL << MODE_LOAD_GAME_STATE_DIR_ENABLE))
                g_extern.lifecycle_mode_state &= ~(1ULL << MODE_LOAD_GAME_STATE_DIR_ENABLE);
             else
                g_extern.lifecycle_mode_state |= (1ULL << MODE_LOAD_GAME_STATE_DIR_ENABLE);
          }
-         if (input & (1ULL << RMENU_DEVICE_NAV_START))
+         if (input & (1ULL << DEVICE_NAV_START))
             g_extern.lifecycle_mode_state |= (1ULL << MODE_LOAD_GAME_STATE_DIR_ENABLE);
          break;
       case SETTING_PATH_DEFAULT_ALL:
-         if ((input & (1ULL << RMENU_DEVICE_NAV_LEFT)) || (input & (1ULL << RMENU_DEVICE_NAV_RIGHT)) || (input & (1ULL << RMENU_DEVICE_NAV_B)) || (input & (1ULL << RMENU_DEVICE_NAV_START)))
+         if ((input & (1ULL << DEVICE_NAV_LEFT)) || (input & (1ULL << DEVICE_NAV_RIGHT)) || (input & (1ULL << DEVICE_NAV_B)) || (input & (1ULL << DEVICE_NAV_START)))
          {
             strlcpy(g_extern.console.main_wrap.default_rom_startup_dir, "/", sizeof(g_extern.console.main_wrap.default_rom_startup_dir));
             strlcpy(g_extern.console.main_wrap.default_savestate_dir, default_paths.port_dir, sizeof(g_extern.console.main_wrap.default_savestate_dir));
@@ -1446,30 +1446,30 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
          }
          break;
       case SETTING_CONTROLS_SCHEME:
-         if ((input & (1ULL << RMENU_DEVICE_NAV_LEFT)) || (input & (1ULL << RMENU_DEVICE_NAV_RIGHT)) || (input & (1ULL << RMENU_DEVICE_NAV_B)) || (input & (1ULL << RMENU_DEVICE_NAV_START)))
+         if ((input & (1ULL << DEVICE_NAV_LEFT)) || (input & (1ULL << DEVICE_NAV_RIGHT)) || (input & (1ULL << DEVICE_NAV_B)) || (input & (1ULL << DEVICE_NAV_START)))
          {
             menu_stack_push(INPUT_PRESET_CHOICE, true);
             filebrowser_set_root_and_ext(rgui->browser, EXT_INPUT_PRESETS, default_paths.input_presets_dir);
          }
          break;
       case SETTING_CONTROLS_NUMBER:
-         if (input & (1ULL << RMENU_DEVICE_NAV_LEFT))
+         if (input & (1ULL << DEVICE_NAV_LEFT))
          {
             if (currently_selected_controller_menu != 0)
                currently_selected_controller_menu--;
          }
 
-         if ((input & (1ULL << RMENU_DEVICE_NAV_RIGHT)) || (input & (1ULL << RMENU_DEVICE_NAV_B)))
+         if ((input & (1ULL << DEVICE_NAV_RIGHT)) || (input & (1ULL << DEVICE_NAV_B)))
          {
             if (currently_selected_controller_menu < 6)
                currently_selected_controller_menu++;
          }
 
-         if (input & (1ULL << RMENU_DEVICE_NAV_START))
+         if (input & (1ULL << DEVICE_NAV_START))
             currently_selected_controller_menu = 0;
          break; 
       case SETTING_DPAD_EMULATION:
-         if (input & (1ULL << RMENU_DEVICE_NAV_LEFT))
+         if (input & (1ULL << DEVICE_NAV_LEFT))
          {
             if (driver.input->set_keybinds)
             {
@@ -1494,7 +1494,7 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
             }
          }
 
-         if ((input & (1ULL << RMENU_DEVICE_NAV_RIGHT)) || (input & (1ULL << RMENU_DEVICE_NAV_B)))
+         if ((input & (1ULL << DEVICE_NAV_RIGHT)) || (input & (1ULL << DEVICE_NAV_B)))
          {
             if (driver.input->set_keybinds)
             {
@@ -1517,7 +1517,7 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
             }
          }
 
-         if (input & (1ULL << RMENU_DEVICE_NAV_START))
+         if (input & (1ULL << DEVICE_NAV_START))
             if (driver.input->set_keybinds)
                   driver.input->set_keybinds(driver.input_data, g_settings.input.device[currently_selected_controller_menu], currently_selected_controller_menu, 0, (1ULL << KEYBINDS_ACTION_SET_ANALOG_DPAD_LSTICK));
          break;
@@ -1571,7 +1571,7 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
          break;
 #ifdef HAVE_OSKUTIL
       case SETTING_CONTROLS_SAVE_CUSTOM_CONTROLS:
-         if ((input & (1ULL << RMENU_DEVICE_NAV_LEFT)) || (input & (1ULL << RMENU_DEVICE_NAV_RIGHT)) || (input & (1ULL << RMENU_DEVICE_NAV_B)) || (input & (1ULL << RMENU_DEVICE_NAV_START)))
+         if ((input & (1ULL << DEVICE_NAV_LEFT)) || (input & (1ULL << DEVICE_NAV_RIGHT)) || (input & (1ULL << DEVICE_NAV_B)) || (input & (1ULL << DEVICE_NAV_START)))
          {
             rgui->osk_param = INPUT_PRESET_FILE;
             rgui->osk_init = osk_callback_enter_filename_init;
@@ -1580,27 +1580,27 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
          break;
 #endif
       case SETTING_CONTROLS_DEFAULT_ALL:
-         if ((input & (1ULL << RMENU_DEVICE_NAV_LEFT)) || (input & (1ULL << RMENU_DEVICE_NAV_RIGHT)) || (input & (1ULL << RMENU_DEVICE_NAV_B)) || (input & (1ULL << RMENU_DEVICE_NAV_START)))
+         if ((input & (1ULL << DEVICE_NAV_LEFT)) || (input & (1ULL << DEVICE_NAV_RIGHT)) || (input & (1ULL << DEVICE_NAV_B)) || (input & (1ULL << DEVICE_NAV_START)))
             if (driver.input->set_keybinds)
                driver.input->set_keybinds(driver.input_data, g_settings.input.device[currently_selected_controller_menu], currently_selected_controller_menu, 0,
                      (1ULL << KEYBINDS_ACTION_SET_DEFAULT_BINDS));
          break;
       case INGAME_MENU_LOAD_STATE:
-         if (input & (1ULL << RMENU_DEVICE_NAV_B))
+         if (input & (1ULL << DEVICE_NAV_B))
          {
             rarch_load_state();
             g_extern.lifecycle_mode_state |= (1ULL << MODE_GAME);
             g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU_INGAME_EXIT);
             return -1;
          }
-         if (input & (1ULL << RMENU_DEVICE_NAV_LEFT))
+         if (input & (1ULL << DEVICE_NAV_LEFT))
             rarch_state_slot_decrease();
-         if (input & (1ULL << RMENU_DEVICE_NAV_RIGHT))
+         if (input & (1ULL << DEVICE_NAV_RIGHT))
             rarch_state_slot_increase();
 
          break;
       case INGAME_MENU_SAVE_STATE:
-         if (input & (1ULL << RMENU_DEVICE_NAV_B))
+         if (input & (1ULL << DEVICE_NAV_B))
          {
             rarch_save_state();
             g_extern.lifecycle_mode_state |= (1ULL << MODE_GAME);
@@ -1608,33 +1608,33 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
             return -1;
          }
 
-         if (input & (1ULL << RMENU_DEVICE_NAV_LEFT))
+         if (input & (1ULL << DEVICE_NAV_LEFT))
             rarch_state_slot_decrease();
-         if (input & (1ULL << RMENU_DEVICE_NAV_RIGHT))
+         if (input & (1ULL << DEVICE_NAV_RIGHT))
             rarch_state_slot_increase();
 
          break;
       case INGAME_MENU_ROTATION:
-         if (input & (1ULL << RMENU_DEVICE_NAV_LEFT))
+         if (input & (1ULL << DEVICE_NAV_LEFT))
          {
             settings_set(1ULL << S_ROTATION_DECREMENT);
             driver.video->set_rotation(NULL, g_extern.console.screen.orientation);
          }
 
-         if ((input & (1ULL << RMENU_DEVICE_NAV_RIGHT)) || (input & (1ULL << RMENU_DEVICE_NAV_B)))
+         if ((input & (1ULL << DEVICE_NAV_RIGHT)) || (input & (1ULL << DEVICE_NAV_B)))
          {
             settings_set(1ULL << S_ROTATION_INCREMENT);
             driver.video->set_rotation(NULL, g_extern.console.screen.orientation);
          }
 
-         if (input & (1ULL << RMENU_DEVICE_NAV_START))
+         if (input & (1ULL << DEVICE_NAV_START))
          {
             settings_set(1ULL << S_DEF_ROTATION);
             driver.video->set_rotation(NULL, g_extern.console.screen.orientation);
          }
          break;
       case INGAME_MENU_FRAME_ADVANCE:
-         if ((input & (1ULL << RMENU_DEVICE_NAV_B)) || (input & (1ULL << RMENU_DEVICE_NAV_R2)) || (input & (1ULL << RMENU_DEVICE_NAV_L2)))
+         if ((input & (1ULL << DEVICE_NAV_B)) || (input & (1ULL << DEVICE_NAV_R2)) || (input & (1ULL << DEVICE_NAV_L2)))
          {
             g_extern.lifecycle_state |= (1ULL << RARCH_FRAMEADVANCE);
             g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU_INGAME_EXIT);
@@ -1643,19 +1643,19 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
          }
          break;
       case INGAME_MENU_RESIZE_MODE:
-         if (input & (1ULL << RMENU_DEVICE_NAV_B))
+         if (input & (1ULL << DEVICE_NAV_B))
             menu_stack_push(INGAME_MENU_RESIZE, false);
          break;
       case INGAME_MENU_CORE_OPTIONS_MODE:
-         if (input & (1ULL << RMENU_DEVICE_NAV_B))
+         if (input & (1ULL << DEVICE_NAV_B))
             menu_stack_push(INGAME_MENU_CORE_OPTIONS, false);
          break;
       case INGAME_MENU_SCREENSHOT_MODE:
-         if (input & (1ULL << RMENU_DEVICE_NAV_B))
+         if (input & (1ULL << DEVICE_NAV_B))
             menu_stack_push(INGAME_MENU_SCREENSHOT, false);
          break;
       case INGAME_MENU_RETURN_TO_GAME:
-         if (input & (1ULL << RMENU_DEVICE_NAV_B))
+         if (input & (1ULL << DEVICE_NAV_B))
          {
             g_extern.lifecycle_mode_state |= (1ULL << MODE_GAME);
             g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU_INGAME_EXIT);
@@ -1663,7 +1663,7 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
          }
          break;
       case INGAME_MENU_CHANGE_GAME:
-         if (input & (1ULL << RMENU_DEVICE_NAV_B))
+         if (input & (1ULL << DEVICE_NAV_B))
          {
             g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU);
             g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU_INGAME_EXIT);
@@ -1672,7 +1672,7 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
          }
          break;
       case INGAME_MENU_RESET:
-         if (input & (1ULL << RMENU_DEVICE_NAV_B))
+         if (input & (1ULL << DEVICE_NAV_B))
          {
             rarch_game_reset();
             g_extern.lifecycle_mode_state |= (1ULL << MODE_GAME);
@@ -1681,7 +1681,7 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
          }
          break;
       case INGAME_MENU_CHANGE_LIBRETRO_CORE:
-         if (input & (1ULL << RMENU_DEVICE_NAV_B))
+         if (input & (1ULL << DEVICE_NAV_B))
          {
             menu_stack_push(LIBRETRO_CHOICE, true);
             filebrowser_set_root_and_ext(rgui->browser, EXT_EXECUTABLES, default_paths.core_dir);
@@ -1690,7 +1690,7 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
          break;
 #ifdef HAVE_MULTIMAN
       case INGAME_MENU_RETURN_TO_MULTIMAN:
-         if (input & (1ULL << RMENU_DEVICE_NAV_B))
+         if (input & (1ULL << DEVICE_NAV_B))
          {
             g_extern.lifecycle_mode_state &= ~(1ULL << MODE_GAME);
             g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU_INGAME_EXIT);
@@ -1702,7 +1702,7 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
          break;
 #endif
       case INGAME_MENU_QUIT_RETROARCH:
-         if (input & (1ULL << RMENU_DEVICE_NAV_B))
+         if (input & (1ULL << DEVICE_NAV_B))
          {
             g_extern.lifecycle_mode_state &= ~(1ULL << MODE_GAME);
             g_extern.lifecycle_mode_state |= (1ULL << MODE_EXIT);
@@ -1712,18 +1712,18 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
          break;
 #ifdef HAVE_SHADER_MANAGER
       case INGAME_MENU_SHADER_MANAGER_MODE:
-         if (input & (1ULL << RMENU_DEVICE_NAV_B))
+         if (input & (1ULL << DEVICE_NAV_B))
          {
             menu_stack_push(INGAME_MENU_SHADER_MANAGER, false);
          }
          break;
       case SHADERMAN_LOAD_CGP:
-         if ((input & (1ULL << RMENU_DEVICE_NAV_LEFT)) || (input & (1ULL << RMENU_DEVICE_NAV_RIGHT)) || (input & (1ULL << RMENU_DEVICE_NAV_B)))
+         if ((input & (1ULL << DEVICE_NAV_LEFT)) || (input & (1ULL << DEVICE_NAV_RIGHT)) || (input & (1ULL << DEVICE_NAV_B)))
          {
             menu_stack_push(CGP_CHOICE, true);
             filebrowser_set_root_and_ext(rgui->browser, EXT_CGP_PRESETS, g_settings.video.shader_dir);
          }
-         if (input & (1ULL << RMENU_DEVICE_NAV_START))
+         if (input & (1ULL << DEVICE_NAV_START))
          {
             g_settings.video.shader_path[0] = '\0';
             video_set_shader_func(RARCH_SHADER_CG, NULL);
@@ -1732,7 +1732,7 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
          break;
       case SHADERMAN_SAVE_CGP:
 #ifdef HAVE_OSKUTIL
-         if ((input & (1ULL << RMENU_DEVICE_NAV_LEFT)) || (input & (1ULL << RMENU_DEVICE_NAV_RIGHT)) || (input & (1ULL << RMENU_DEVICE_NAV_B)))
+         if ((input & (1ULL << DEVICE_NAV_LEFT)) || (input & (1ULL << DEVICE_NAV_RIGHT)) || (input & (1ULL << DEVICE_NAV_B)))
          {
             rgui->osk_param = SHADER_PRESET_FILE;
             rgui->osk_init = osk_callback_enter_filename_init;
@@ -1741,13 +1741,13 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
 #endif
          break;
       case SHADERMAN_SHADER_PASSES:
-         if (input & (1ULL << RMENU_DEVICE_NAV_LEFT))
+         if (input & (1ULL << DEVICE_NAV_LEFT))
             if (rgui->shader.passes)
                rgui->shader.passes--;
-         if ((input & (1ULL << RMENU_DEVICE_NAV_RIGHT)) || (input & (1ULL << RMENU_DEVICE_NAV_B)))
+         if ((input & (1ULL << DEVICE_NAV_RIGHT)) || (input & (1ULL << DEVICE_NAV_B)))
             if (rgui->shader.passes < RGUI_MAX_SHADERS)
                rgui->shader.passes++;
-         if (input & (1ULL << RMENU_DEVICE_NAV_START))
+         if (input & (1ULL << DEVICE_NAV_START))
             rgui->shader.passes= 0;
          break;
       case SHADERMAN_AUTOSTART_CGP_ON_STARTUP:
@@ -1764,15 +1764,15 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
             uint8_t index = (switchvalue - SHADERMAN_SHADER_0) / 3;
             struct gfx_shader_pass *pass = &rgui->shader.pass[index];
 
-            if ((input & (1ULL << RMENU_DEVICE_NAV_RIGHT)) || (input & (1ULL << RMENU_DEVICE_NAV_B)) ||
-                  (input & (1ULL << RMENU_DEVICE_NAV_LEFT)))
+            if ((input & (1ULL << DEVICE_NAV_RIGHT)) || (input & (1ULL << DEVICE_NAV_B)) ||
+                  (input & (1ULL << DEVICE_NAV_LEFT)))
             {
                shader_choice_set_shader_slot = index;
                menu_stack_push(SHADER_CHOICE, true);
                filebrowser_set_root_and_ext(rgui->browser, EXT_SHADERS, g_settings.video.shader_dir);
             }
 
-            if (input & (1ULL << RMENU_DEVICE_NAV_START))
+            if (input & (1ULL << DEVICE_NAV_START))
                *pass->source.cg = '\0';
          }
          break;
@@ -1787,14 +1787,14 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
          {
             uint8_t index = (switchvalue - SHADERMAN_SHADER_0) / 3;
 
-            if ((input & (1ULL << RMENU_DEVICE_NAV_RIGHT)) || (input & (1ULL << RMENU_DEVICE_NAV_B)) ||
-                  (input & (1ULL << RMENU_DEVICE_NAV_LEFT)))
+            if ((input & (1ULL << DEVICE_NAV_RIGHT)) || (input & (1ULL << DEVICE_NAV_B)) ||
+                  (input & (1ULL << DEVICE_NAV_LEFT)))
             {
-               unsigned delta = (input & (1ULL << RMENU_DEVICE_NAV_LEFT)) ? 2 : 1;
+               unsigned delta = (input & (1ULL << DEVICE_NAV_LEFT)) ? 2 : 1;
                rgui->shader.pass[index].filter = (enum gfx_filter_type)((rgui->shader.pass[index].filter + delta) % 3);
             }
 
-            if (input & (1ULL << RMENU_DEVICE_NAV_START))
+            if (input & (1ULL << DEVICE_NAV_START))
                rgui->shader.pass[index].filter = RARCH_FILTER_UNSPEC;
          }
          break;
@@ -1810,7 +1810,7 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
             uint8_t index = (switchvalue - SHADERMAN_SHADER_0) / 3;
             unsigned scale = rgui->shader.pass[index].fbo.scale_x;
 
-            if (input & (1ULL << RMENU_DEVICE_NAV_LEFT))
+            if (input & (1ULL << DEVICE_NAV_LEFT))
             {
                if (scale)
                {
@@ -1819,7 +1819,7 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
                }
             }
 
-            if ((input & (1ULL << RMENU_DEVICE_NAV_RIGHT)) || (input & (1ULL << RMENU_DEVICE_NAV_B)))
+            if ((input & (1ULL << DEVICE_NAV_RIGHT)) || (input & (1ULL << DEVICE_NAV_B)))
             {
                if (scale < 5)
                {
@@ -1828,7 +1828,7 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
                }
             }
 
-            if (input & (1ULL << RMENU_DEVICE_NAV_START))
+            if (input & (1ULL << DEVICE_NAV_START))
             {
                rgui->shader.pass[index].fbo.scale_x = rgui->shader.pass[index].fbo.scale_y = 0;
                rgui->shader.pass[index].fbo.valid = false;
@@ -1836,8 +1836,8 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
          }
          break;
       case SHADERMAN_APPLY_CHANGES:
-         if ((input & (1ULL << RMENU_DEVICE_NAV_RIGHT)) || (input & (1ULL << RMENU_DEVICE_NAV_B)) ||
-               (input & (1ULL << RMENU_DEVICE_NAV_START)) || (input & (1ULL << RMENU_DEVICE_NAV_LEFT)))
+         if ((input & (1ULL << DEVICE_NAV_RIGHT)) || (input & (1ULL << DEVICE_NAV_B)) ||
+               (input & (1ULL << DEVICE_NAV_START)) || (input & (1ULL << DEVICE_NAV_LEFT)))
          {
             bool ret = false;
             char cgp_path[PATH_MAX];
@@ -2514,7 +2514,7 @@ static int select_setting(void *data, uint64_t input)
 
    if (rgui->menu_type == INGAME_MENU)
    {
-      if (input & (1ULL << RMENU_DEVICE_NAV_A))
+      if (input & (1ULL << DEVICE_NAV_A))
       {
          g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU_INGAME_EXIT);
          g_extern.lifecycle_mode_state |= (1ULL << MODE_GAME);
@@ -2522,7 +2522,7 @@ static int select_setting(void *data, uint64_t input)
       }
    }
 
-   if (input & (1ULL << RMENU_DEVICE_NAV_UP))
+   if (input & (1ULL << DEVICE_NAV_UP))
    {
       if (selected == first_setting)
          selected = max_settings-1;
@@ -2533,7 +2533,7 @@ static int select_setting(void *data, uint64_t input)
          setting_page_number = items_pages[selected];
    }
       
-   if (input & (1ULL << RMENU_DEVICE_NAV_DOWN))
+   if (input & (1ULL << DEVICE_NAV_DOWN))
    {
       selected++;
 
@@ -2544,9 +2544,9 @@ static int select_setting(void *data, uint64_t input)
    }
 
    /* back to ROM menu if CIRCLE is pressed */
-   if ((input & (1ULL << RMENU_DEVICE_NAV_L1)) || (input & (1ULL << RMENU_DEVICE_NAV_A)))
+   if ((input & (1ULL << DEVICE_NAV_L1)) || (input & (1ULL << DEVICE_NAV_A)))
       menu_stack_pop(rgui->menu_type);
-   else if (input & (1ULL << RMENU_DEVICE_NAV_R1))
+   else if (input & (1ULL << DEVICE_NAV_R1))
    {
 
       if (rgui->menu_type != CONTROLS_MENU
@@ -2584,9 +2584,9 @@ static int select_rom(void *data, uint64_t input)
 
    browser_update(rgui->browser, input, g_extern.system.valid_extensions);
 
-   if (input & (1ULL << RMENU_DEVICE_NAV_SELECT))
+   if (input & (1ULL << DEVICE_NAV_SELECT))
       menu_stack_push(GENERAL_VIDEO_MENU, false);
-   else if (input & (1ULL << RMENU_DEVICE_NAV_B))
+   else if (input & (1ULL << DEVICE_NAV_B))
    {
       if (filebrowser_iterate(rgui->browser, FILEBROWSER_ACTION_PATH_ISDIR))
       {
@@ -2602,22 +2602,22 @@ static int select_rom(void *data, uint64_t input)
          g_extern.lifecycle_mode_state |= (1ULL << MODE_LOAD_GAME);
       }
    }
-   else if (input & (1ULL << RMENU_DEVICE_NAV_L1))
+   else if (input & (1ULL << DEVICE_NAV_L1))
    {
       const char * drive_map = menu_drive_mapping_previous();
       if (drive_map != NULL)
       {
          filebrowser_set_root_and_ext(rgui->browser, g_extern.system.valid_extensions, drive_map);
-         browser_update(rgui->browser, 1ULL << RMENU_DEVICE_NAV_B, g_extern.system.valid_extensions);
+         browser_update(rgui->browser, 1ULL << DEVICE_NAV_B, g_extern.system.valid_extensions);
       }
    }
-   else if (input & (1ULL << RMENU_DEVICE_NAV_R1))
+   else if (input & (1ULL << DEVICE_NAV_R1))
    {
       const char * drive_map = menu_drive_mapping_next();
       if (drive_map != NULL)
       {
          filebrowser_set_root_and_ext(rgui->browser, g_extern.system.valid_extensions, drive_map);
-         browser_update(rgui->browser, 1ULL << RMENU_DEVICE_NAV_B, g_extern.system.valid_extensions);
+         browser_update(rgui->browser, 1ULL << DEVICE_NAV_B, g_extern.system.valid_extensions);
       }
    }
 
@@ -2652,14 +2652,14 @@ static int ingame_menu_resize(void *data, uint64_t input)
    if (driver.video_poke->set_aspect_ratio)
       driver.video_poke->set_aspect_ratio(driver.video_data, g_settings.video.aspect_ratio_idx);
 
-   if (input & (1ULL << RMENU_DEVICE_NAV_LEFT_ANALOG_L))
+   if (input & (1ULL << DEVICE_NAV_LEFT_ANALOG_L))
    {
 #ifdef _XBOX
       if (g_extern.console.screen.viewports.custom_vp.x >= 4)
 #endif
          g_extern.console.screen.viewports.custom_vp.x -= 4;
    }
-   else if (input & (1ULL << RMENU_DEVICE_NAV_LEFT) && (input & ~(1ULL << RMENU_DEVICE_NAV_LEFT_ANALOG_L)))
+   else if (input & (1ULL << DEVICE_NAV_LEFT) && (input & ~(1ULL << DEVICE_NAV_LEFT_ANALOG_L)))
    {
 #ifdef _XBOX
       if (g_extern.console.screen.viewports.custom_vp.x > 0)
@@ -2667,24 +2667,24 @@ static int ingame_menu_resize(void *data, uint64_t input)
          g_extern.console.screen.viewports.custom_vp.x -= 1;
    }
 
-   if (input & (1ULL << RMENU_DEVICE_NAV_RIGHT_ANALOG_L))
+   if (input & (1ULL << DEVICE_NAV_RIGHT_ANALOG_L))
       g_extern.console.screen.viewports.custom_vp.x += 4;
-   else if (input & (1ULL << RMENU_DEVICE_NAV_RIGHT) && (input & ~(1ULL << RMENU_DEVICE_NAV_RIGHT_ANALOG_L)))
+   else if (input & (1ULL << DEVICE_NAV_RIGHT) && (input & ~(1ULL << DEVICE_NAV_RIGHT_ANALOG_L)))
       g_extern.console.screen.viewports.custom_vp.x += 1;
 
-   if (input & (1ULL << RMENU_DEVICE_NAV_UP_ANALOG_L))
+   if (input & (1ULL << DEVICE_NAV_UP_ANALOG_L))
       g_extern.console.screen.viewports.custom_vp.y += 4;
-   else if (input & (1ULL << RMENU_DEVICE_NAV_UP) && (input & ~(1ULL << RMENU_DEVICE_NAV_UP_ANALOG_L)))
+   else if (input & (1ULL << DEVICE_NAV_UP) && (input & ~(1ULL << DEVICE_NAV_UP_ANALOG_L)))
       g_extern.console.screen.viewports.custom_vp.y += 1;
 
-   if (input & (1ULL << RMENU_DEVICE_NAV_DOWN_ANALOG_L))
+   if (input & (1ULL << DEVICE_NAV_DOWN_ANALOG_L))
    {
 #ifdef _XBOX
       if (g_extern.console.screen.viewports.custom_vp.y >= 4)
 #endif
          g_extern.console.screen.viewports.custom_vp.y -= 4;
    }
-   else if (input & (1ULL << RMENU_DEVICE_NAV_DOWN) && (input & ~(1ULL << RMENU_DEVICE_NAV_DOWN_ANALOG_L)))
+   else if (input & (1ULL << DEVICE_NAV_DOWN) && (input & ~(1ULL << DEVICE_NAV_DOWN_ANALOG_L)))
    {
 #ifdef _XBOX
       if (g_extern.console.screen.viewports.custom_vp.y > 0)
@@ -2692,27 +2692,27 @@ static int ingame_menu_resize(void *data, uint64_t input)
          g_extern.console.screen.viewports.custom_vp.y -= 1;
    }
 
-   if (input & (1ULL << RMENU_DEVICE_NAV_LEFT_ANALOG_R))
+   if (input & (1ULL << DEVICE_NAV_LEFT_ANALOG_R))
       g_extern.console.screen.viewports.custom_vp.width -= 4;
-   else if (input & (1ULL << RMENU_DEVICE_NAV_L1) && (input && ~(1ULL << RMENU_DEVICE_NAV_LEFT_ANALOG_R)))
+   else if (input & (1ULL << DEVICE_NAV_L1) && (input && ~(1ULL << DEVICE_NAV_LEFT_ANALOG_R)))
       g_extern.console.screen.viewports.custom_vp.width -= 1;
 
-   if (input & (1ULL << RMENU_DEVICE_NAV_RIGHT_ANALOG_R))
+   if (input & (1ULL << DEVICE_NAV_RIGHT_ANALOG_R))
       g_extern.console.screen.viewports.custom_vp.width += 4;
-   else if (input & (1ULL << RMENU_DEVICE_NAV_R1) && (input & ~(1ULL << RMENU_DEVICE_NAV_RIGHT_ANALOG_R)))
+   else if (input & (1ULL << DEVICE_NAV_R1) && (input & ~(1ULL << DEVICE_NAV_RIGHT_ANALOG_R)))
       g_extern.console.screen.viewports.custom_vp.width += 1;
 
-   if (input & (1ULL << RMENU_DEVICE_NAV_UP_ANALOG_R))
+   if (input & (1ULL << DEVICE_NAV_UP_ANALOG_R))
       g_extern.console.screen.viewports.custom_vp.height += 4;
-   else if (input & (1ULL << RMENU_DEVICE_NAV_L2) && (input & ~(1ULL << RMENU_DEVICE_NAV_UP_ANALOG_R)))
+   else if (input & (1ULL << DEVICE_NAV_L2) && (input & ~(1ULL << DEVICE_NAV_UP_ANALOG_R)))
       g_extern.console.screen.viewports.custom_vp.height += 1;
 
-   if (input & (1ULL << RMENU_DEVICE_NAV_DOWN_ANALOG_R))
+   if (input & (1ULL << DEVICE_NAV_DOWN_ANALOG_R))
       g_extern.console.screen.viewports.custom_vp.height -= 4;
-   else if (input & (1ULL << RMENU_DEVICE_NAV_R2) && (input & ~(1ULL << RMENU_DEVICE_NAV_DOWN_ANALOG_R)))
+   else if (input & (1ULL << DEVICE_NAV_R2) && (input & ~(1ULL << DEVICE_NAV_DOWN_ANALOG_R)))
       g_extern.console.screen.viewports.custom_vp.height -= 1;
 
-   if (input & (1ULL << RMENU_DEVICE_NAV_X))
+   if (input & (1ULL << DEVICE_NAV_X))
    {
       g_extern.console.screen.viewports.custom_vp.x = 0;
       g_extern.console.screen.viewports.custom_vp.y = 0;
@@ -2720,10 +2720,10 @@ static int ingame_menu_resize(void *data, uint64_t input)
       g_extern.console.screen.viewports.custom_vp.height = device_ptr->win_height;
    }
 
-   if (input & (1ULL << RMENU_DEVICE_NAV_A))
+   if (input & (1ULL << DEVICE_NAV_A))
       menu_stack_pop(rgui->menu_type);
 
-   if ((input & (1ULL << RMENU_DEVICE_NAV_Y)))
+   if ((input & (1ULL << DEVICE_NAV_Y)))
       menu_bg_show = !menu_bg_show;
 
    if (menu_bg_show)
@@ -2985,7 +2985,7 @@ static int ingame_menu_core_options(void *data, uint64_t input)
    static unsigned core_opt_selected = 0;
    float y_increment = POSITION_Y_START;
 
-   if (input & (1ULL << RMENU_DEVICE_NAV_A))
+   if (input & (1ULL << DEVICE_NAV_A))
       menu_stack_pop(rgui->menu_type);
 
    y_increment += POSITION_Y_INCREMENT;
@@ -3029,16 +3029,16 @@ static int ingame_menu_core_options(void *data, uint64_t input)
             driver.video_poke->set_osd_msg(driver.video_data, type_str, &font_parms);
       }
 
-      if (input & (1ULL << RMENU_DEVICE_NAV_LEFT))
+      if (input & (1ULL << DEVICE_NAV_LEFT))
          core_option_prev(g_extern.system.core_options, core_opt_selected);
 
-      if ((input & (1ULL << RMENU_DEVICE_NAV_RIGHT)) || (input & (1ULL << RMENU_DEVICE_NAV_B)))
+      if ((input & (1ULL << DEVICE_NAV_RIGHT)) || (input & (1ULL << DEVICE_NAV_B)))
          core_option_next(g_extern.system.core_options, core_opt_selected);
 
-      if (input & (1ULL << RMENU_DEVICE_NAV_START))
+      if (input & (1ULL << DEVICE_NAV_START))
          core_option_set_default(g_extern.system.core_options, core_opt_selected);
 
-      if (input & (1ULL << RMENU_DEVICE_NAV_UP))
+      if (input & (1ULL << DEVICE_NAV_UP))
       {
          if (core_opt_selected == 0)
             core_opt_selected = core_option_size(g_extern.system.core_options) - 1;
@@ -3046,7 +3046,7 @@ static int ingame_menu_core_options(void *data, uint64_t input)
             core_opt_selected--;
       }
       
-      if (input & (1ULL << RMENU_DEVICE_NAV_DOWN))
+      if (input & (1ULL << DEVICE_NAV_DOWN))
       {
          core_opt_selected++;
 
@@ -3069,11 +3069,11 @@ static int ingame_menu_screenshot(void *data, uint64_t input)
 
    if (g_extern.lifecycle_mode_state & (1ULL << MODE_MENU_INGAME))
    {
-      if (input & (1ULL << RMENU_DEVICE_NAV_A))
+      if (input & (1ULL << DEVICE_NAV_A))
          menu_stack_pop(rgui->menu_type);
 
 #ifdef HAVE_SCREENSHOTS
-      if (input & (1ULL << RMENU_DEVICE_NAV_B))
+      if (input & (1ULL << DEVICE_NAV_B))
       {
          const uint16_t *data = (const uint16_t*)g_extern.frame_cache.data;
          unsigned width       = g_extern.frame_cache.width;
@@ -3123,7 +3123,7 @@ static int menu_input_process(void *data, uint64_t old_state)
 
    if (!(g_extern.frame_count < g_extern.delay_timer[0]))
    {
-      bool return_to_game_enable = (((old_state & (1ULL << RMENU_DEVICE_NAV_L3)) && (old_state & (1ULL << RMENU_DEVICE_NAV_R3)) && g_extern.main_is_init));
+      bool return_to_game_enable = (((old_state & (1ULL << DEVICE_NAV_L3)) && (old_state & (1ULL << DEVICE_NAV_R3)) && g_extern.main_is_init));
 
       if (return_to_game_enable)
       {
@@ -3343,7 +3343,7 @@ bool menu_iterate(void)
 
    driver.input->poll(NULL);
 
-   for (unsigned i = 0; i < RMENU_DEVICE_NAV_LAST; i++)
+   for (unsigned i = 0; i < DEVICE_NAV_LAST; i++)
       input_state |= driver.input->input_state(NULL, rmenu_nav_binds, 0,
             RETRO_DEVICE_JOYPAD, 0, i) ? (1ULL << i) : 0;
 
@@ -3356,14 +3356,14 @@ bool menu_iterate(void)
    input_state = 0;
    driver.input->poll(NULL);
 
-   for (unsigned i = 0; i < RMENU_DEVICE_NAV_LAST; i++)
+   for (unsigned i = 0; i < DEVICE_NAV_LAST; i++)
    {
       input_state |= driver.input->input_state(NULL, rmenu_nav_binds, 0,
             RETRO_DEVICE_JOYPAD, 0, i) ? (1ULL << i) : 0;
    }
 
-   bool analog_sticks_pressed = (input_state & (1ULL << RMENU_DEVICE_NAV_LEFT_ANALOG_L)) || (input_state & (1ULL << RMENU_DEVICE_NAV_RIGHT_ANALOG_L)) || (input_state & (1ULL << RMENU_DEVICE_NAV_UP_ANALOG_L)) || (input_state & (1ULL << RMENU_DEVICE_NAV_DOWN_ANALOG_L)) || (input_state & (1ULL << RMENU_DEVICE_NAV_LEFT_ANALOG_R)) || (input_state & (1ULL << RMENU_DEVICE_NAV_RIGHT_ANALOG_R)) || (input_state & (1ULL << RMENU_DEVICE_NAV_UP_ANALOG_R)) || (input_state & (1ULL << RMENU_DEVICE_NAV_DOWN_ANALOG_R));
-   bool shoulder_buttons_pressed = ((input_state & (1ULL << RMENU_DEVICE_NAV_L2)) || (input_state & (1ULL << RMENU_DEVICE_NAV_R2)));
+   bool analog_sticks_pressed = (input_state & (1ULL << DEVICE_NAV_LEFT_ANALOG_L)) || (input_state & (1ULL << DEVICE_NAV_RIGHT_ANALOG_L)) || (input_state & (1ULL << DEVICE_NAV_UP_ANALOG_L)) || (input_state & (1ULL << DEVICE_NAV_DOWN_ANALOG_L)) || (input_state & (1ULL << DEVICE_NAV_LEFT_ANALOG_R)) || (input_state & (1ULL << DEVICE_NAV_RIGHT_ANALOG_R)) || (input_state & (1ULL << DEVICE_NAV_UP_ANALOG_R)) || (input_state & (1ULL << DEVICE_NAV_DOWN_ANALOG_R));
+   bool shoulder_buttons_pressed = ((input_state & (1ULL << DEVICE_NAV_L2)) || (input_state & (1ULL << DEVICE_NAV_R2)));
    bool do_held = analog_sticks_pressed || shoulder_buttons_pressed;
 
    if (do_held)
