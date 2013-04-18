@@ -185,7 +185,7 @@ class CRetroArchSettings: public CXuiSceneImpl
 class CRetroArchControls: public CXuiSceneImpl
 {
    protected:
-      CXuiList m_controlslist;
+      HXUIOBJ m_controlslist;
       CXuiControl m_back;
       CXuiSlider m_controlnoslider;
    public:
@@ -456,13 +456,13 @@ HRESULT CRetroArchControls::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
       snprintf(buttons[i], sizeof(buttons[i]), "%s #%d: %s", 
             g_settings.input.binds[controlno][i].desc, controlno, key_label.desc);
       mbstowcs(strw_buffer, buttons[i], sizeof(strw_buffer) / sizeof(wchar_t));
-      m_controlslist.SetText(i, strw_buffer);
+      XuiListSetText(m_controlslist, i, strw_buffer);
    }
 
    set_dpad_emulation_label(controlno, buttons[0], sizeof(buttons[0]));
    mbstowcs(strw_buffer, buttons[0], sizeof(strw_buffer) / sizeof(wchar_t));
-   m_controlslist.SetText(SETTING_CONTROLS_DPAD_EMULATION, strw_buffer);
-   m_controlslist.SetText(SETTING_CONTROLS_DEFAULT_ALL, L"Reset all buttons to default");
+   XuiListSetText(m_controlslist, SETTING_CONTROLS_DPAD_EMULATION, strw_buffer);
+   XuiListSetText(m_controlslist, SETTING_CONTROLS_DEFAULT_ALL, L"Reset all buttons to default");
 
    return 0;
 }
@@ -474,7 +474,7 @@ HRESULT CRetroArchControls::OnControlNavigate(
    char buttons[RARCH_FIRST_META_KEY][128];
    int controlno, i, current_index;
 
-   current_index = m_controlslist.GetCurSel();
+   current_index = XuiListGetCurSel(m_controlslist, NULL);
    m_controlnoslider.GetValue(&controlno);
 
    for(i = 0; i < RARCH_FIRST_META_KEY; i++)
@@ -490,7 +490,7 @@ HRESULT CRetroArchControls::OnControlNavigate(
             g_settings.input.binds[controlno][i].desc, controlno, 
             key_label.desc);
       mbstowcs(strw_buffer, buttons[i], sizeof(strw_buffer) / sizeof(wchar_t));
-      m_controlslist.SetText(i, strw_buffer);
+      XuiListSetText(m_controlslist, i, strw_buffer);
    }
 
    switch(pControlNavigateData->nControlNavigate)
@@ -537,7 +537,7 @@ HRESULT CRetroArchControls::OnControlNavigate(
                   snprintf(button, sizeof(button), "%s #%d: %s",
                         g_settings.input.binds[controlno][current_index].desc, controlno, key_label.desc);
                   mbstowcs(strw_buffer, button, sizeof(strw_buffer) / sizeof(wchar_t));
-                  m_controlslist.SetText(current_index, strw_buffer);
+                  XuiListSetText(m_controlslist, current_index, strw_buffer);
                }
                break;
          }
@@ -585,7 +585,7 @@ HRESULT CRetroArchControls::OnControlNavigate(
                         g_settings.input.binds[controlno][current_index].desc, controlno, 
                         key_label.desc);
                   mbstowcs(strw_buffer, button, sizeof(strw_buffer) / sizeof(wchar_t));
-                  m_controlslist.SetText(current_index, strw_buffer);
+                  XuiListSetText(m_controlslist, current_index, strw_buffer);
                }
                break;
          }
@@ -598,8 +598,8 @@ HRESULT CRetroArchControls::OnControlNavigate(
    set_dpad_emulation_label(controlno, button, sizeof(button));
 
    mbstowcs(strw_buffer, button, sizeof(strw_buffer) / sizeof(wchar_t));
-   m_controlslist.SetText(SETTING_CONTROLS_DPAD_EMULATION, strw_buffer);
-   m_controlslist.SetText(SETTING_CONTROLS_DEFAULT_ALL, L"Reset all buttons to default");
+   XuiListSetText(m_controlslist, SETTING_CONTROLS_DPAD_EMULATION, strw_buffer);
+   XuiListSetText(m_controlslist, SETTING_CONTROLS_DEFAULT_ALL, L"Reset all buttons to default");
 
    return 0;
 }
@@ -613,7 +613,7 @@ HRESULT CRetroArchControls::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled 
 
    if ( hObjPressed == m_controlslist)
    {
-      current_index = m_controlslist.GetCurSel();
+      current_index = XuiListGetCurSel(m_controlslist, NULL);
 
       switch(current_index)
       {
@@ -637,7 +637,7 @@ HRESULT CRetroArchControls::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled 
                snprintf(buttons[i], sizeof(buttons[i]), "%s #%d: %s", 
                      g_settings.input.binds[controlno][i].desc, controlno,  key_label.desc);
                mbstowcs(strw_buffer, buttons[i], sizeof(strw_buffer) / sizeof(wchar_t));
-               m_controlslist.SetText(i, strw_buffer);
+               XuiListSetText(m_controlslist, i, strw_buffer);
             }
             break;
          default:
@@ -657,7 +657,7 @@ HRESULT CRetroArchControls::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled 
                      g_settings.input.binds[controlno][current_index].desc, controlno, 
                      key_label.desc);
                mbstowcs(strw_buffer, buttons[current_index], sizeof(strw_buffer) / sizeof(wchar_t));
-               m_controlslist.SetText(current_index, strw_buffer);
+               XuiListSetText(m_controlslist, current_index, strw_buffer);
             }
             break;
       }
@@ -666,8 +666,8 @@ HRESULT CRetroArchControls::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled 
    set_dpad_emulation_label(controlno, buttons[current_index], sizeof(buttons[current_index]));
 
    mbstowcs(strw_buffer, buttons[current_index], sizeof(strw_buffer) / sizeof(wchar_t));
-   m_controlslist.SetText(SETTING_CONTROLS_DPAD_EMULATION, strw_buffer);
-   m_controlslist.SetText(SETTING_CONTROLS_DEFAULT_ALL, L"Reset all buttons to default");
+   XuiListSetText(m_controlslist, SETTING_CONTROLS_DPAD_EMULATION, strw_buffer);
+   XuiListSetText(m_controlslist, SETTING_CONTROLS_DEFAULT_ALL, L"Reset all buttons to default");
 
    bHandled = TRUE;
    return 0;
