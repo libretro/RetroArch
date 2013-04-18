@@ -181,10 +181,14 @@ static bool menu_type_is_shader_browser(unsigned type)
 
 static int rgui_iterate(rgui_handle_t *rgui, rgui_action_t action);
 
-static rgui_handle_t *rgui_init(const char *base_path,
-      uint16_t *framebuf, size_t framebuf_pitch,
-      const uint8_t *font_bmp_buf, const uint8_t *font_bin_buf) 
+rgui_handle_t *rgui_init(void)
 {
+   const char *base_path = g_settings.rgui_browser_directory;
+   uint16_t *framebuf = menu_framebuf;
+   size_t framebuf_pitch = RGUI_WIDTH * sizeof(uint16_t);
+   const uint8_t *font_bmp_buf = NULL;
+   const uint8_t *font_bin_buf = bitmap_bin;
+
    rgui_handle_t *rgui = (rgui_handle_t*)calloc(1, sizeof(*rgui));
 
    rgui->frame_buf = framebuf;
@@ -216,7 +220,7 @@ static rgui_handle_t *rgui_init(const char *base_path,
    return rgui;
 }
 
-static void rgui_free(rgui_handle_t *rgui)
+void rgui_free(rgui_handle_t *rgui)
 {
    rgui_list_free(rgui->menu_stack);
    rgui_list_free(rgui->selection_buf);
@@ -1954,18 +1958,6 @@ enum
 /*============================================================
 RMENU API
 ============================================================ */
-
-void menu_init(void)
-{
-   rgui = rgui_init(g_settings.rgui_browser_directory,
-         menu_framebuf, RGUI_WIDTH * sizeof(uint16_t),
-         NULL, bitmap_bin);
-}
-
-void menu_free(void)
-{
-   rgui_free(rgui);
-}
 
 static uint16_t trigger_state = 0;
 

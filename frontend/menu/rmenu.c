@@ -3234,7 +3234,7 @@ int rgui_iterate(rgui_handle_t *rgui, uint64_t input)
    return -1;
 }
 
-static rgui_handle_t *rmenu_init(void)
+rgui_handle_t *rgui_init(void)
 {
    rgui_handle_t *rgui = (rgui_handle_t*)calloc(1, sizeof(*rgui));
 
@@ -3268,12 +3268,7 @@ static rgui_handle_t *rmenu_init(void)
    return rgui;
 }
 
-void menu_init(void)
-{
-   rgui = rmenu_init();
-}
-
-static void rmenu_free(void)
+void rgui_free(rgui_handle_t *rgui)
 {
 #ifdef _XBOX1
 #ifdef HAVE_MENU_PANEL
@@ -3316,11 +3311,6 @@ static void rmenu_free(void)
 
    filebrowser_free(rgui->browser);
    free(rgui);
-}
-
-void menu_free(void)
-{
-   rmenu_free();
 }
 
 bool menu_iterate(void)

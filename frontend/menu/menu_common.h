@@ -170,6 +170,9 @@ void menu_init(void);
 bool menu_iterate(void);
 void menu_free(void);
 
+rgui_handle_t *rgui_init(void);
+void rgui_free(rgui_handle_t *rgui);
+
 #ifdef HAVE_SHADER_MANAGER
 void shader_manager_init(rgui_handle_t *rgui);
 void shader_manager_get_str(struct gfx_shader *shader,

@@ -319,3 +319,13 @@ void rgui_list_get_last(const rgui_list_t *list,
 }
 
 #endif
+
+void menu_init(void)
+{
+   rgui = rgui_init();
+}
+
+void menu_free(void)
+{
+   rgui_free(rgui);
+}
