@@ -714,6 +714,8 @@ void gl_set_viewport(void *data, unsigned width, unsigned height, bool force_ful
    if (g_settings.video.scale_integer && !force_full)
    {
       gfx_scale_integer(&gl->vp, width, height, g_extern.system.aspect_ratio, gl->keep_aspect);
+      width  = gl->vp.width;
+      height = gl->vp.height;
    }
    else if (gl->keep_aspect && !force_full)
    {
