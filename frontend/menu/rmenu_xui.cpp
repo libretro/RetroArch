@@ -349,7 +349,7 @@ static void browser_update(void *data, uint64_t input, const char *extensions)
    {
       action = FILEBROWSER_ACTION_RESET;
       filebrowser_set_root_and_ext(rgui->browser, g_extern.system.valid_extensions,
-            g_extern.console.main_wrap.default_rom_startup_dir);
+            g_settings.rgui_browser_directory);
       strlcpy(rgui->browser->current_dir.extensions, extensions,
          sizeof(rgui->browser->current_dir.extensions));
       filebrowser_fetch_directory_entries(1ULL << RMENU_DEVICE_NAV_B);
@@ -404,7 +404,7 @@ HRESULT CRetroArchFileBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHandle
    else if (hObjPressed == m_dir_game)
    {
       filebrowser_set_root_and_ext(rgui->browser, g_extern.system.valid_extensions,
-            g_extern.console.main_wrap.default_rom_startup_dir);
+            g_settings.rgui_browser_directory);
       uint64_t action = (1ULL << RMENU_DEVICE_NAV_B);
       filebrowser_fetch_directory_entries(action);
    }
@@ -1345,15 +1345,6 @@ rgui_handle_t *rgui_init (void)
       RARCH_ERR("XuiSceneNavigateFirst failed.\n");
       return NULL;
    }
-
-   rgui->browser =    (filebrowser_t*)calloc(1, sizeof(*rgui->browser));
-
-   strlcpy(rgui->browser->current_dir.extensions, g_extern.system.valid_extensions,
-         sizeof(rgui->browser->current_dir.extensions));
-   strlcpy(rgui->browser->current_dir.root_dir, default_paths.filebrowser_startup_dir,
-         sizeof(rgui->browser->current_dir.root_dir));
-
-   filebrowser_iterate(rgui->browser, FILEBROWSER_ACTION_RESET);
 
    if (driver.video_poke && driver.video_poke->set_texture_enable)
       driver.video_poke->set_texture_frame(driver.video_data, NULL,
