@@ -1219,8 +1219,8 @@ HRESULT CRetroArchMain::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled )
       if (hr < 0)
          RARCH_ERR("Failed to load scene.\n");
 
+      XuiSceneNavigateForward(hCur, false, app.hFileBrowser, XUSER_INDEX_FOCUS);
       hCur = app.hFileBrowser;
-      NavigateForward(app.hFileBrowser);
    }
    else if ( hObjPressed == m_quick_menu)
    {
@@ -1229,8 +1229,8 @@ HRESULT CRetroArchMain::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled )
       if (hr < 0)
          RARCH_ERR("Failed to load scene.\n");
 
+      XuiSceneNavigateForward(hCur, false, app.hQuickMenu, XUSER_INDEX_FOCUS);
       hCur = app.hQuickMenu;
-      NavigateForward(app.hQuickMenu);
    }
    else if ( hObjPressed == m_controls)
    {
@@ -1239,13 +1239,12 @@ HRESULT CRetroArchMain::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled )
       if (hr < 0)
          RARCH_ERR("Failed to load scene.\n");
 
-      hCur = app.hControlsMenu;
-
       if (g_extern.lifecycle_mode_state & (1ULL << MODE_INFO_DRAW))
          msg_queue_push(g_extern.msg_queue,
                "INFO - Press LEFT/RIGHT to change the controls, and press\n[RetroPad Start] to reset a button to default values.", 1, 180);
 
-      NavigateForward(app.hControlsMenu);
+      XuiSceneNavigateForward(hCur, false, app.hControlsMenu, XUSER_INDEX_FOCUS);
+      hCur = app.hControlsMenu;
    }
    else if ( hObjPressed == m_change_libretro_core )
    {
@@ -1253,13 +1252,13 @@ HRESULT CRetroArchMain::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled )
 
       if (hr < 0)
          RARCH_ERR("Failed to load scene.\n");
-      hCur = app.hCoreBrowser;
 
       if (g_extern.lifecycle_mode_state & (1ULL << MODE_INFO_DRAW))
          msg_queue_push(g_extern.msg_queue,
                "INFO - Select a Libretro core from the menu.", 1, 180);
 
-      NavigateForward(app.hCoreBrowser);
+      XuiSceneNavigateForward(hCur, false, app.hCoreBrowser, XUSER_INDEX_FOCUS);
+      hCur = app.hCoreBrowser;
    }
    else if (hObjPressed == m_settings)
    {
@@ -1268,8 +1267,8 @@ HRESULT CRetroArchMain::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled )
       if (hr < 0)
          RARCH_ERR("Failed to load scene.\n");
 
+      XuiSceneNavigateForward(hCur, false, app.hRetroArchSettings, XUSER_INDEX_FOCUS);
       hCur = app.hRetroArchSettings;
-      NavigateForward(app.hRetroArchSettings);
    }
    else if (hObjPressed == m_quit)
    {
@@ -1458,7 +1457,10 @@ bool menu_iterate(void)
       case INPUT_LOOP_MENU:
          app.RunFrame(); /* Update XUI */
          if((state.Gamepad.wButtons & XINPUT_GAMEPAD_B) && hCur != app.hMainScene)
+         {
             XuiSceneNavigateBack(hCur, app.hMainScene, XUSER_INDEX_ANY);
+            hCur = app.hMainScene;
+         }
          break;
       case INPUT_LOOP_RESIZE_MODE:
          ingame_menu_resize();
