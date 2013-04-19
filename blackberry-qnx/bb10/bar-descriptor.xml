@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="utf-8" standalone="no"?>
+<qnx xmlns="http://www.qnx.com/schemas/application/1.0">
+
+<!-- BlackBerry 10 application descriptor file.
+
+    Specifies parameters for identifying, installing, and launching native applications on BlackBerry 10.
+
+-->
+
+    <!-- A universally unique application identifier. Must be unique across all BlackBerry 10 applications.
+         Using a reverse DNS-style name as the id is recommended. (Eg. com.example.ExampleApplication.) Required. -->
+    <id>com.example.RetroArch</id>
+
+    <!-- The name that is displayed in the BlackBerry 10 application installer.
+         May have multiple values for each language. See samples or xsd schema file. Optional. -->
+    <name>RetroArch</name>
+
+    <!-- A string value of the format <0-999>.<0-999>.<0-999> that represents application version which can be used to check for application upgrade.
+         Values can also be 1-part or 2-part. It is not necessary to have a 3-part value.
+         An updated version of application must have a versionNumber value higher than the previous version. Required. -->
+    <versionNumber>1.0.0</versionNumber>
+
+    <!-- Fourth digit segment of the package version. First three segments are taken from the
+         <versionNumber> element.  Must be an integer from 0 to 2^16-1 -->
+    <buildId>1</buildId>
+
+    <!-- Description, displayed in the BlackBerry 10 application installer.
+         May have multiple values for each language. See samples or xsd schema file. Optional. -->
+
+    <!--  Name of author which is used for signing. Must match the developer name of your development certificate. -->
+
+    <initialWindow>
+        <autoOrients>true</autoOrients>
+        <systemChrome>none</systemChrome>
+        <transparent>false</transparent>
+    </initialWindow>
+
+    <!--  The category where the application appears. Either core.games or core.media. -->
+    <category>core.games</category>
+    <configuration name="Device-Debug">
+       <platformArchitecture>armle-v7</platformArchitecture>
+       <asset path="arm/o.le-v7-g/RetroArch-Cascades" entry="true" type="Qnx/Elf">RetroArch-Cascades</asset>
+    </configuration>
+    <configuration name="Device-Release">
+       <entryPointType>Qnx/Cascades</entryPointType>
+       <platformArchitecture>armle-v7</platformArchitecture>
+       <asset path="arm/o.le-v7/RetroArch-Cascades.so" entry="true" type="Qnx/Elf">RetroArch-Cascades.so</asset>
+    </configuration>
+    <configuration name="Device-Profile">
+       <platformArchitecture>armle-v7</platformArchitecture>
+       <asset path="arm-p/o.le-v7-g/RetroArch-Cascades" entry="true" type="Qnx/Elf">RetroArch-Cascades</asset>
+    </configuration>
+
+    <!--  The icon for the application, which should be 114x114. -->
+    <icon>
+        <image></image>
+        <image>icon.png</image>
+    </icon>
+    
+    <!--  The splash screen that will appear when your application is launching. -->
+    <splashScreens>
+       <image></image>
+       <image></image>
+    </splashScreens>
+
+    <!-- Application assets -->
+    <asset path="../../retroarch.cfg">retroarch.cfg</asset>
+    <asset path="lib">lib</asset>
+    <asset path="../../media/overlays">overlays</asset>
+    <asset path="assets">assets</asset>
+    <asset path="assets/images/icon.png">icon.png</asset>
+
+    
+    <!-- Bright theme is used for this application. --> 
+	<cascadesTheme>dark</cascadesTheme>
+    
+    <!-- Request permission to execute native code.  Required for native applications. -->
+    <permission system="true">run_native</permission>
+    <permission>access_shared</permission>
+    <env var="LD_LIBRARY_PATH" value="app/native/lib:/usr/lib/qt4/lib"/>
+
+
+</qnx>

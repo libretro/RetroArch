@@ -26,13 +26,16 @@
 int rarch_main(int argc, char *argv[])
 {
    //Initialize bps
+#ifndef HAVE_BB10
    bps_initialize();
 
    rarch_main_clear_state();
 
-   strlcpy(g_extern.config_path, "app/native/retroarch.cfg", sizeof(g_extern.config_path));
    strlcpy(g_settings.libretro, "app/native/lib", sizeof(g_settings.libretro));
    strlcpy(g_extern.fullpath, "--menu", sizeof(g_extern.fullpath));
+#endif
+
+   strlcpy(g_extern.config_path, "app/native/retroarch.cfg", sizeof(g_extern.config_path));
 
    config_load();
 

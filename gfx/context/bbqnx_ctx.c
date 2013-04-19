@@ -45,7 +45,7 @@ static EGLConfig egl_config;
 static bool g_resize;
 
 screen_context_t screen_ctx;
-static screen_window_t screen_win;
+screen_window_t screen_win;
 static screen_display_t screen_disp;
 
 GLfloat _angle;
@@ -209,6 +209,7 @@ static bool gfx_ctx_init(void)
       goto error;
    }
 
+#ifndef HAVE_BB10
    int angle = atoi(getenv("ORIENTATION"));
 
    screen_display_mode_t screen_mode;
@@ -219,7 +220,8 @@ static bool gfx_ctx_init(void)
    }
 
    int size[2];
-   if (screen_get_window_property_iv(screen_win, SCREEN_PROPERTY_BUFFER_SIZE, size)) {
+   if (screen_get_window_property_iv(screen_win, SCREEN_PROPERTY_BUFFER_SIZE, size))
+   {
       RARCH_ERR("screen_get_window_property_iv [SCREEN_PROPERTY_BUFFER_SIZE] failed.\n");
       goto error;
    }
@@ -243,6 +245,7 @@ static bool gfx_ctx_init(void)
       goto error;
    }
 
+
    if (screen_set_window_property_iv(screen_win, SCREEN_PROPERTY_BUFFER_SIZE, buffer_size))
    {
       RARCH_ERR("screen_set_window_property_iv [SCREEN_PROPERTY_BUFFER_SIZE] failed.\n");
@@ -254,6 +257,7 @@ static bool gfx_ctx_init(void)
       RARCH_ERR("screen_set_window_property_iv [SCREEN_PROPERTY_ROTATION] failed.\n");
       goto error;
    }
+#endif
 
    if (screen_create_window_buffers(screen_win, WINDOW_BUFFERS))
    {
