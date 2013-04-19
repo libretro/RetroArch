@@ -132,6 +132,7 @@ bool ios_init_game_view()
 
       // Show pause button for a few seconds, so people know it's there
       g_pause_indicator_view.alpha = 1.0f;
+      [NSObject cancelPreviousPerformRequestsWithTarget:g_instance];
       [g_instance performSelector:@selector(hidePauseButton) withObject:g_instance afterDelay:3.0f];
    });
 
@@ -143,6 +144,12 @@ bool ios_init_game_view()
 void ios_destroy_game_view()
 {
    dispatch_sync(dispatch_get_main_queue(), ^{
+      // Clear the view, otherwise the last frame form this game will be displayed
+      // briefly on the next game.
+      [g_view bindDrawable];
+      glClear(GL_COLOR_BUFFER_BIT);
+      [g_view display];
+   
       glFinish();
 
       g_view.context = nil;

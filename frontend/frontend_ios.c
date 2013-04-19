@@ -85,6 +85,7 @@ void* rarch_main_ios(void* args)
 
    if (init_ret)
    {
+      rarch_main_clear_state();
       dispatch_async_f(dispatch_get_main_queue(), (void*)1, ios_rarch_exited);
       return 0;
    }

@@ -60,7 +60,7 @@ static void coreaudio_free(void *data)
    free(dev);
 }
 
-static OSStatus audio_cb(void *userdata, AudioUnitRenderActionFlags *action_flags,
+static OSStatus audio_write_cb(void *userdata, AudioUnitRenderActionFlags *action_flags,
       const AudioTimeStamp *time_stamp, UInt32 bus_number,
       UInt32 number_frames, AudioBufferList *io_data)
 {
@@ -170,7 +170,7 @@ static void *coreaudio_init(const char *device, unsigned rate, unsigned latency)
 
    // Set callbacks and finish up
    AURenderCallbackStruct cb = {0};
-   cb.inputProc = audio_cb;
+   cb.inputProc = audio_write_cb;
    cb.inputProcRefCon = dev;
 
    if (AudioUnitSetProperty(dev->dev, kAudioUnitProperty_SetRenderCallback,
