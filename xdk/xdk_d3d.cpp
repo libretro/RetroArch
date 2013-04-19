@@ -206,8 +206,12 @@ static void xdk_convert_texture_to_as16_srgb( D3DTexture *pTexture )
 
 static void xdk_d3d_set_viewport(bool force_full)
 {
+
    xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
    LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)d3d->d3d_render_device;
+
+   RD3DDevice_Clear(d3dr, 0, NULL, D3DCLEAR_TARGET, 0xff000000, 1.0f, 0);
+
    unsigned width, height;      // Set the viewport based on the current resolution
    int m_viewport_x_temp, m_viewport_y_temp, m_viewport_width_temp, m_viewport_height_temp;
    float m_zNear, m_zFar;
@@ -813,7 +817,9 @@ static bool xdk_d3d_frame(void *data, const void *frame,
    D3DSurface* pRenderTarget0;
 #endif
 
+#ifndef _XBOX1
    RD3DDevice_Clear(d3d->d3d_render_device, 0, NULL, D3DCLEAR_TARGET, 0xff000000, 1.0f, 0);
+#endif
 
    if (d3d->last_width != width || d3d->last_height != height)
    {
