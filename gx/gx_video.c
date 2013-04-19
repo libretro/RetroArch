@@ -876,7 +876,6 @@ static bool gx_frame(void *data, const void *frame,
       const char *msg)
 {
    gx_video_t *gx = (gx_video_t*)driver.video_data;
-   bool should_resize = gx->should_resize;
    u8 clear_efb = GX_FALSE;
    uint64_t lifecycle_mode_state = g_extern.lifecycle_mode_state;
 
@@ -888,10 +887,11 @@ static bool gx_frame(void *data, const void *frame,
    if (!frame)
       width = height = 4; // draw a black square in the background
 
-   if(should_resize)
+   if(gx->should_resize)
    {
       gx_resize(gx);
       clear_efb = GX_TRUE;
+      gx->should_resize = false;
    }
 
    while (((g_vsync || gx->rgui_texture_enable)) && !g_draw_done)
