@@ -66,45 +66,45 @@ void libretro_dummy_retro_get_system_av_info(struct retro_system_av_info *info)
    info->geometry.aspect_ratio = 4.0 / 3.0;
 }
 
-static retro_video_refresh_t video_cb;
-static retro_audio_sample_t audio_cb;
-static retro_audio_sample_batch_t audio_batch_cb;
-static retro_environment_t environ_cb;
-static retro_input_poll_t input_poll_cb;
-static retro_input_state_t input_state_cb;
+static retro_video_refresh_t dummy_video_cb;
+static retro_audio_sample_t dummy_audio_cb;
+static retro_audio_sample_batch_t dummy_audio_batch_cb;
+static retro_environment_t dummy_environ_cb;
+static retro_input_poll_t dummy_input_poll_cb;
+static retro_input_state_t dummy_input_state_cb;
 
 void libretro_dummy_retro_set_environment(retro_environment_t cb)
 {
-   environ_cb = cb;
+   dummy_environ_cb = cb;
 
    // We know it's supported, it's internal to RetroArch.
    enum retro_pixel_format fmt = RETRO_PIXEL_FORMAT_RGB565;
-   environ_cb(RETRO_ENVIRONMENT_SET_PIXEL_FORMAT, &fmt);
+   dummy_environ_cb(RETRO_ENVIRONMENT_SET_PIXEL_FORMAT, &fmt);
 }
 
 void libretro_dummy_retro_set_audio_sample(retro_audio_sample_t cb)
 {
-   audio_cb = cb;
+   dummy_audio_cb = cb;
 }
 
 void libretro_dummy_retro_set_audio_sample_batch(retro_audio_sample_batch_t cb)
 {
-   audio_batch_cb = cb;
+   dummy_audio_batch_cb = cb;
 }
 
 void libretro_dummy_retro_set_input_poll(retro_input_poll_t cb)
 {
-   input_poll_cb = cb;
+   dummy_input_poll_cb = cb;
 }
 
 void libretro_dummy_retro_set_input_state(retro_input_state_t cb)
 {
-   input_state_cb = cb;
+   dummy_input_state_cb = cb;
 }
 
 void libretro_dummy_retro_set_video_refresh(retro_video_refresh_t cb)
 {
-   video_cb = cb;
+   dummy_video_cb = cb;
 }
 
 void libretro_dummy_retro_reset(void)
@@ -112,10 +112,10 @@ void libretro_dummy_retro_reset(void)
 
 void libretro_dummy_retro_run(void)
 {
-   input_poll_cb();
+   dummy_input_poll_cb();
    for (unsigned i = 0; i < 320 * 240; i++)
       frame_buf[i] = 4 << 5;
-   video_cb(frame_buf, 320, 240, 640);
+   dummy_video_cb(frame_buf, 320, 240, 640);
 }
 
 // This should never be called, it's only used as a placeholder.
