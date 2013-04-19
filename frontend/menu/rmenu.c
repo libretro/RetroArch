@@ -713,6 +713,7 @@ static int select_directory(void *data, uint64_t input)
 
    bool is_dir = filebrowser_iterate(rgui->browser, FILEBROWSER_ACTION_PATH_ISDIR);
    bool pop_menu_stack = false;
+
    filebrowser_update(rgui->browser, input, "empty");
 
    if (input & (1ULL << DEVICE_NAV_Y))
@@ -2537,19 +2538,13 @@ static int select_rom(void *data, uint64_t input)
    {
       const char * drive_map = menu_drive_mapping_previous();
       if (drive_map != NULL)
-      {
          filebrowser_set_root_and_ext(rgui->browser, g_extern.system.valid_extensions, drive_map);
-         filebrowser_update(rgui->browser, 1ULL << DEVICE_NAV_B, g_extern.system.valid_extensions);
-      }
    }
    else if (input & (1ULL << DEVICE_NAV_R1))
    {
       const char * drive_map = menu_drive_mapping_next();
       if (drive_map != NULL)
-      {
          filebrowser_set_root_and_ext(rgui->browser, g_extern.system.valid_extensions, drive_map);
-         filebrowser_update(rgui->browser, 1ULL << DEVICE_NAV_B, g_extern.system.valid_extensions);
-      }
    }
 
    if (filebrowser_iterate(rgui->browser, FILEBROWSER_ACTION_PATH_ISDIR))
