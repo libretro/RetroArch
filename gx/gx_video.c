@@ -32,7 +32,15 @@
 #include <stdlib.h>
 #include <string.h>
 
+#define GX_OPTS
+
+#ifdef GX_OPTS
+#include "gx_video_inl.h"
+
+#endif
+
 #define SYSMEM1_SIZE 0x01800000
+
 
 void *g_framebuf[2];
 unsigned g_current_framebuf;
@@ -84,6 +92,9 @@ static void retrace_callback(u32 retrace_count)
 
 void gx_set_video_mode(unsigned fbWidth, unsigned lines)
 {
+#ifdef GX_OPTS
+   struct __gx_regdef *__gx = (struct __gx_regdef*)__gxregs;
+#endif
    VIDEO_SetBlack(true);
    VIDEO_Flush();
    gx_video_t *gx = (gx_video_t*)driver.video_data;
@@ -301,6 +312,9 @@ static void setup_video_mode(void)
 
 static void init_texture(unsigned width, unsigned height)
 {
+#ifdef GX_OPTS
+   struct __gx_regdef *__gx = (struct __gx_regdef*)__gxregs;
+#endif
    width &= ~3;
    height &= ~3;
    gx_video_t *gx = (gx_video_t*)driver.video_data;
@@ -876,6 +890,9 @@ static bool gx_frame(void *data, const void *frame,
       const char *msg)
 {
    gx_video_t *gx = (gx_video_t*)driver.video_data;
+#ifdef GX_OPTS
+   struct __gx_regdef *__gx = (struct __gx_regdef*)__gxregs;
+#endif
    u8 clear_efb = GX_FALSE;
    uint64_t lifecycle_mode_state = g_extern.lifecycle_mode_state;
 
@@ -891,11 +908,12 @@ static bool gx_frame(void *data, const void *frame,
    {
       gx_resize(gx);
       clear_efb = GX_TRUE;
-      gx->should_resize = false;
    }
 
    while (((g_vsync || gx->rgui_texture_enable)) && !g_draw_done)
+   {
       LWP_ThreadSleep(g_video_cond);
+   }
 
    if (width != gx_old_width || height != gx_old_height)
    {
@@ -926,13 +944,10 @@ static bool gx_frame(void *data, const void *frame,
 
    GX_InvalidateTexAll();
 
-   //if (frame)
-   {
-      GX_SetCurrentMtx(GX_PNMTX0);
-      GX_LoadTexObj(&g_tex.obj, GX_TEXMAP0);
-      GX_CallDispList(display_list, display_list_size);
-      GX_DrawDone();
-   }
+   GX_SetCurrentMtx(GX_PNMTX0);
+   GX_LoadTexObj(&g_tex.obj, GX_TEXMAP0);
+   GX_CallDispList(display_list, display_list_size);
+   GX_DrawDone();
 
    if (gx->rgui_texture_enable)
    {
