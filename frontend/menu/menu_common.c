@@ -373,6 +373,11 @@ void menu_init(void)
       rarch_fail(1, "menu_init()");
    }
 
+   rgui->trigger_state = 0;
+   rgui->old_input_state = 0;
+   rgui->do_held = false;
+   rgui->frame_buf_show = true;
+
 #ifdef HAVE_FILEBROWSER
    if (!(strlen(g_settings.rgui_browser_directory) > 0))
       strlcpy(g_settings.rgui_browser_directory, default_paths.filebrowser_startup_dir,
@@ -409,3 +414,89 @@ void menu_free(void)
 
    free(rgui);
 }
+
+#ifndef HAVE_RMENU_XUI
+#if defined(HAVE_RMENU) || defined(HAVE_RGUI)
+bool menu_iterate(void)
+{
+   static bool initial_held = true;
+   static bool first_held = false;
+   uint64_t input_state = 0;
+   int input_entry_ret;
+
+   if (g_extern.lifecycle_mode_state & (1ULL << MODE_MENU_PREINIT))
+   {
+      if (g_extern.lifecycle_mode_state & (1ULL << MODE_MENU_INGAME))
+         rgui->need_refresh = true;
+
+      g_extern.lifecycle_mode_state &= ~(1ULL << MODE_MENU_PREINIT);
+   }
+
+   if (driver.video_poke->apply_state_changes)
+      driver.video_poke->apply_state_changes(driver.video_data);
+
+   rarch_input_poll();
+#ifdef HAVE_OVERLAY
+   rarch_check_overlay();
+#endif
+#ifndef RARCH_PERFORMANCE_MODE
+   rarch_check_fullscreen();
+#endif
+
+   if (input_key_pressed_func(RARCH_QUIT_KEY) || !video_alive_func())
+   {
+      g_extern.lifecycle_mode_state |= (1ULL << MODE_GAME);
+      goto deinit;
+   }
+
+   input_state = rgui_input();
+
+   if(rgui->do_held)
+   {
+      if(!first_held)
+      {
+         first_held = true;
+         g_extern.delay_timer[1] = g_extern.frame_count + (initial_held ? 15 : 7);
+      }
+
+      if (!(g_extern.frame_count < g_extern.delay_timer[1]))
+      {
+         first_held = false;
+         rgui->trigger_state = input_state; //second input frame set as current frame
+      }
+
+      initial_held = false;
+   }
+   else
+   {
+      first_held = false;
+      initial_held = true;
+   }
+
+   rgui->old_input_state = input_state;
+   input_entry_ret = rgui_iterate(rgui);
+
+   // draw last frame for loading messages
+   if (driver.video_poke && driver.video_poke->set_texture_enable)
+      driver.video_poke->set_texture_enable(driver.video_data, rgui->frame_buf_show, true);
+
+   rarch_render_cached_frame();
+
+   if (driver.video_poke && driver.video_poke->set_texture_enable)
+      driver.video_poke->set_texture_enable(driver.video_data, false, true);
+
+   if (rgui_input_postprocess(rgui, rgui->old_input_state) || input_entry_ret)
+      goto deinit;
+
+   return true;
+
+deinit:
+#ifdef HAVE_RGUI
+   /* TODO - see if we can remove this */
+   g_extern.lifecycle_mode_state &= ~(1ULL << MODE_MENU_INGAME);
+#endif
+
+   return false;
+}
+#endif
+#endif

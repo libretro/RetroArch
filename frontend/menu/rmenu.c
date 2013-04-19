@@ -60,9 +60,7 @@ struct texture_image *menu_texture;
 struct texture_image *menu_panel;
 #endif
 
-static bool menu_bg_show = true;
 unsigned currently_selected_controller_menu = 0;
-
 
 static const struct retro_keybind _rmenu_nav_binds[] = {
    { 0, 0, NULL, (enum retro_key)0, (1ULL << RETRO_DEVICE_ID_JOYPAD_UP) | (1ULL << RARCH_ANALOG_LEFT_Y_DPAD_UP), 0 },
@@ -245,12 +243,12 @@ static void menu_stack_pop(unsigned menu_type)
       case INGAME_MENU_CORE_OPTIONS:
       case INGAME_MENU_RESIZE:
       case INGAME_MENU_SCREENSHOT:
-         menu_bg_show = true;
+         rgui->frame_buf_show = true;
          break;
 #ifdef HAVE_SHADER_MANAGER
       case INGAME_MENU_SHADER_MANAGER:
          selected = FIRST_INGAME_MENU_SETTING;
-         menu_bg_show = true;
+         rgui->frame_buf_show = true;
          break;
       case CGP_CHOICE:
          selected = FIRST_SHADERMAN_SETTING;
@@ -2657,9 +2655,9 @@ static int ingame_menu_resize(void *data, uint64_t input)
       menu_stack_pop(rgui->menu_type);
 
    if ((input & (1ULL << DEVICE_NAV_Y)))
-      menu_bg_show = !menu_bg_show;
+      rgui->frame_buf_show = !rgui->frame_buf_show;
 
-   if (menu_bg_show)
+   if (rgui->frame_buf_show)
    {
       char viewport_x[32];
       char viewport_y[32];
@@ -2998,7 +2996,7 @@ static int ingame_menu_core_options(void *data, uint64_t input)
 static int ingame_menu_screenshot(void *data, uint64_t input)
 {
    rgui_handle_t *rgui = (rgui_handle_t*)data;
-   menu_bg_show = false;
+   rgui->frame_buf_show = false;
 
    if (g_extern.lifecycle_mode_state & (1ULL << MODE_MENU_INGAME))
    {
@@ -3101,17 +3099,15 @@ int rgui_input_postprocess(void *data, uint64_t old_state)
    return ret;
 }
 
-/*============================================================
-  RMENU API
-  ============================================================ */
-
-static uint64_t trigger_state = 0;
-static uint64_t old_input_state = 0;
-static bool do_held = false;
-
 int rgui_iterate(rgui_handle_t *rgui)
 {
    rgui->menu_type = menu_stack_enum_array[stack_idx - 1];
+
+   if (rgui->need_refresh)
+   {
+      menu_stack_push(INGAME_MENU, false);
+      rgui->need_refresh = false;
+   }
 
 #ifdef HAVE_OSKUTIL
    if (rgui->osk_init != NULL)
@@ -3130,13 +3126,13 @@ int rgui_iterate(rgui_handle_t *rgui)
    switch(rgui->menu_type)
    {
       case INGAME_MENU_RESIZE:
-         return ingame_menu_resize(rgui, trigger_state);
+         return ingame_menu_resize(rgui, rgui->trigger_state);
       case INGAME_MENU_CORE_OPTIONS:
-         return ingame_menu_core_options(rgui, trigger_state);
+         return ingame_menu_core_options(rgui, rgui->trigger_state);
       case INGAME_MENU_SCREENSHOT:
-         return ingame_menu_screenshot(rgui, trigger_state);
+         return ingame_menu_screenshot(rgui, rgui->trigger_state);
       case FILE_BROWSER_MENU:
-         return select_rom(rgui, trigger_state);
+         return select_rom(rgui, rgui->trigger_state);
       case LIBRETRO_CHOICE:
 #ifdef HAVE_SHADER_MANAGER
       case CGP_CHOICE:
@@ -3144,7 +3140,7 @@ int rgui_iterate(rgui_handle_t *rgui)
 #endif
       case INPUT_PRESET_CHOICE:
       case BORDER_CHOICE:
-         return select_file(rgui, trigger_state);
+         return select_file(rgui, rgui->trigger_state);
       case PATH_DEFAULT_ROM_DIR_CHOICE:
       case PATH_SAVESTATES_DIR_CHOICE:
       case PATH_SRAM_DIR_CHOICE:
@@ -3152,7 +3148,7 @@ int rgui_iterate(rgui_handle_t *rgui)
       case PATH_CHEATS_DIR_CHOICE:
 #endif
       case PATH_SYSTEM_DIR_CHOICE:
-         return select_directory(rgui, trigger_state);
+         return select_directory(rgui, rgui->trigger_state);
       case GENERAL_VIDEO_MENU:
       case GENERAL_AUDIO_MENU:
       case EMU_GENERAL_MENU:
@@ -3164,7 +3160,7 @@ int rgui_iterate(rgui_handle_t *rgui)
 #ifdef HAVE_SHADER_MANAGER
       case INGAME_MENU_SHADER_MANAGER:
 #endif
-         return select_setting(rgui, trigger_state);
+         return select_setting(rgui, rgui->trigger_state);
    }
 
    RARCH_WARN("Menu type %d not implemented, exiting...\n", rgui->menu_type);
@@ -3243,88 +3239,11 @@ uint64_t rgui_input(void)
             RETRO_DEVICE_JOYPAD, 0, i) ? (1ULL << i) : 0;
 
    //set first button input frame as trigger
-   trigger_state = input_state & ~(old_input_state);
+   rgui->trigger_state = input_state & ~(rgui->old_input_state);
 
    bool analog_sticks_pressed = (input_state & (1ULL << DEVICE_NAV_LEFT_ANALOG_L)) || (input_state & (1ULL << DEVICE_NAV_RIGHT_ANALOG_L)) || (input_state & (1ULL << DEVICE_NAV_UP_ANALOG_L)) || (input_state & (1ULL << DEVICE_NAV_DOWN_ANALOG_L)) || (input_state & (1ULL << DEVICE_NAV_LEFT_ANALOG_R)) || (input_state & (1ULL << DEVICE_NAV_RIGHT_ANALOG_R)) || (input_state & (1ULL << DEVICE_NAV_UP_ANALOG_R)) || (input_state & (1ULL << DEVICE_NAV_DOWN_ANALOG_R));
    bool shoulder_buttons_pressed = ((input_state & (1ULL << DEVICE_NAV_L2)) || (input_state & (1ULL << DEVICE_NAV_R2)));
-   do_held = analog_sticks_pressed || shoulder_buttons_pressed;
+   rgui->do_held = analog_sticks_pressed || shoulder_buttons_pressed;
 
    return input_state;
-}
-
-bool menu_iterate(void)
-{
-   static bool initial_held = true;
-   static bool first_held = false;
-   uint64_t input_state = 0;
-   int input_entry_ret;
-
-   if (g_extern.lifecycle_mode_state & (1ULL << MODE_MENU_PREINIT))
-   {
-      if (g_extern.lifecycle_mode_state & (1ULL << MODE_MENU_INGAME))
-         menu_stack_push(INGAME_MENU, false);
-
-      g_extern.lifecycle_mode_state &= ~(1ULL << MODE_MENU_PREINIT);
-   }
-
-   if (driver.video_poke->apply_state_changes)
-      driver.video_poke->apply_state_changes(driver.video_data);
-
-   rarch_input_poll();
-#ifdef HAVE_OVERLAY
-   rarch_check_overlay();
-#endif
-#ifndef RARCH_PERFORMANCE_MODE
-   rarch_check_fullscreen();
-#endif
-
-   if (input_key_pressed_func(RARCH_QUIT_KEY) || !video_alive_func())
-   {
-      g_extern.lifecycle_mode_state |= (1ULL << MODE_GAME);
-      goto deinit;
-   }
-
-   input_state = rgui_input();
-
-   if (do_held)
-   {
-      if (!first_held)
-      {
-         first_held = true;
-         g_extern.delay_timer[1] = g_extern.frame_count + (initial_held ? 15 : 7);
-      }
-
-      if (!(g_extern.frame_count < g_extern.delay_timer[1]))
-      {
-         first_held = false;
-         trigger_state = input_state; //second input frame set as current frame
-      }
-
-      initial_held = false;
-   }
-   else
-   {
-      first_held = false;
-      initial_held = true;
-   }
-
-   old_input_state = input_state;
-   input_entry_ret = rgui_iterate(rgui);
-
-   // draw last frame for loading messages
-   if (driver.video_poke && driver.video_poke->set_texture_enable)
-      driver.video_poke->set_texture_enable(driver.video_data, menu_bg_show, true);
-
-   rarch_render_cached_frame();
-
-   if (driver.video_poke && driver.video_poke->set_texture_enable)
-      driver.video_poke->set_texture_enable(driver.video_data, false, true);
-
-   if (rgui_input_postprocess(rgui, old_input_state) || input_entry_ret)
-      goto deinit;
-
-   return true;
-
-deinit:
-   return false;
 }

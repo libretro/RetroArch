@@ -1699,30 +1699,26 @@ static bool directory_parse(rgui_handle_t *rgui, const char *directory, unsigned
    return true;
 }
 
-static bool do_held = false;
-static uint16_t trigger_state = 0;
-static uint64_t old_input_state = 0;
-
 int rgui_iterate(rgui_handle_t *rgui)
 {
    uint64_t action = RGUI_ACTION_NOOP;
 
    // don't run anything first frame, only capture held inputs for old_input_state
-   if (trigger_state & (1ULL << DEVICE_NAV_UP))
+   if (rgui->trigger_state & (1ULL << DEVICE_NAV_UP))
       action = RGUI_ACTION_UP;
-   else if (trigger_state & (1ULL << DEVICE_NAV_DOWN))
+   else if (rgui->trigger_state & (1ULL << DEVICE_NAV_DOWN))
       action = RGUI_ACTION_DOWN;
-   else if (trigger_state & (1ULL << DEVICE_NAV_LEFT))
+   else if (rgui->trigger_state & (1ULL << DEVICE_NAV_LEFT))
       action = RGUI_ACTION_LEFT;
-   else if (trigger_state & (1ULL << DEVICE_NAV_RIGHT))
+   else if (rgui->trigger_state & (1ULL << DEVICE_NAV_RIGHT))
       action = RGUI_ACTION_RIGHT;
-   else if (trigger_state & (1ULL << DEVICE_NAV_B))
+   else if (rgui->trigger_state & (1ULL << DEVICE_NAV_B))
       action = RGUI_ACTION_CANCEL;
-   else if (trigger_state & (1ULL << DEVICE_NAV_A))
+   else if (rgui->trigger_state & (1ULL << DEVICE_NAV_A))
       action = RGUI_ACTION_OK;
-   else if (trigger_state & (1ULL << DEVICE_NAV_SELECT))
+   else if (rgui->trigger_state & (1ULL << DEVICE_NAV_SELECT))
       action = RGUI_ACTION_START;
-   else if (trigger_state & (1ULL << DEVICE_NAV_START))
+   else if (rgui->trigger_state & (1ULL << DEVICE_NAV_START))
       action = RGUI_ACTION_SETTINGS;
 
    const char *dir = 0;
@@ -1984,7 +1980,7 @@ int rgui_input_postprocess(void *data, uint64_t old_state)
 
    if (!(g_extern.frame_count < g_extern.delay_timer[0]))
    {
-      if ((trigger_state & (1ULL << DEVICE_NAV_MENU)) && g_extern.main_is_init)
+      if ((rgui->trigger_state & (1ULL << DEVICE_NAV_MENU)) && g_extern.main_is_init)
       {
          if (g_extern.lifecycle_mode_state & (1ULL << MODE_MENU_INGAME))
             g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU_INGAME_EXIT);
@@ -2002,7 +1998,7 @@ int rgui_input_postprocess(void *data, uint64_t old_state)
    return ret;
 }
 
-static uint64_t rgui_input(void)
+uint64_t rgui_input(void)
 {
    uint64_t input_state = 0;
 
@@ -2044,87 +2040,8 @@ static uint64_t rgui_input(void)
    input_state |= input_key_pressed_func(RARCH_MENU_TOGGLE) ? (1ULL << DEVICE_NAV_MENU) : 0;
 #endif
 
-   trigger_state = input_state & ~old_input_state;
-   do_held = (input_state & ((1ULL << DEVICE_NAV_UP) | (1ULL << DEVICE_NAV_DOWN) | (1ULL << DEVICE_NAV_LEFT) | (1ULL << DEVICE_NAV_RIGHT))) && !(input_state & ((1ULL << DEVICE_NAV_MENU)));
+   rgui->trigger_state = input_state & ~(rgui->old_input_state);
+   rgui->do_held = (input_state & ((1ULL << DEVICE_NAV_UP) | (1ULL << DEVICE_NAV_DOWN) | (1ULL << DEVICE_NAV_LEFT) | (1ULL << DEVICE_NAV_RIGHT))) && !(input_state & ((1ULL << DEVICE_NAV_MENU)));
 
    return input_state;
-}
-
-bool menu_iterate(void)
-{
-   static bool initial_held = true;
-   static bool first_held = false;
-   uint64_t input_state = 0;
-   int input_entry_ret;
-
-   if (g_extern.lifecycle_mode_state & (1ULL << MODE_MENU_PREINIT))
-   {
-      if (g_extern.lifecycle_mode_state & (1ULL << MODE_MENU_INGAME))
-         rgui->need_refresh = true;
-
-      g_extern.lifecycle_mode_state &= ~(1ULL << MODE_MENU_PREINIT);
-   }
-
-   if (driver.video_poke->apply_state_changes)
-      driver.video_poke->apply_state_changes(driver.video_data);
-
-   rarch_input_poll();
-#ifdef HAVE_OVERLAY
-   rarch_check_overlay();
-#endif
-#ifndef RARCH_PERFORMANCE_MODE
-   rarch_check_fullscreen();
-#endif
-
-   if (input_key_pressed_func(RARCH_QUIT_KEY) || !video_alive_func())
-   {
-      g_extern.lifecycle_mode_state |= (1ULL << MODE_GAME);
-      goto deinit;
-   }
-
-   input_state = rgui_input();
-
-   if(do_held)
-   {
-      if(!first_held)
-      {
-         first_held = true;
-         g_extern.delay_timer[1] = g_extern.frame_count + (initial_held ? 15 : 7);
-      }
-
-      if (!(g_extern.frame_count < g_extern.delay_timer[1]))
-      {
-         first_held = false;
-         trigger_state = input_state; //second input frame set as current frame
-      }
-
-      initial_held = false;
-   }
-   else
-   {
-      first_held = false;
-      initial_held = true;
-   }
-
-   old_input_state = input_state;
-   input_entry_ret = rgui_iterate(rgui);
-
-   // draw last frame for loading messages
-   if (driver.video_poke && driver.video_poke->set_texture_enable)
-      driver.video_poke->set_texture_enable(driver.video_data, true, false);
-
-   rarch_render_cached_frame();
-
-   if (driver.video_poke && driver.video_poke->set_texture_enable)
-      driver.video_poke->set_texture_enable(driver.video_data, false, false);
-
-   if (rgui_input_postprocess(rgui, old_input_state) || input_entry_ret)
-      goto deinit;
-
-   return true;
-
-deinit:
-   g_extern.lifecycle_mode_state &= ~(1ULL << MODE_MENU_INGAME);
-
-   return false;
 }
