@@ -1369,7 +1369,6 @@ bool menu_iterate(void)
    {
       case INPUT_LOOP_FILEBROWSER:
       case INPUT_LOOP_MENU:
-         app.RunFrame(); /* Update XUI */
          if((state.Gamepad.wButtons & XINPUT_GAMEPAD_B) && hCur != app.hMainScene)
          {
             XuiSceneNavigateBack(hCur, app.hMainScene, XUSER_INDEX_ANY);
@@ -1406,7 +1405,21 @@ deinit:
 
 bool menu_iterate_xui(void)
 {
-   app.Render();
+   app.RunFrame(); /* Update XUI */
+
+	XuiRenderBegin( app.GetDC(), D3DCOLOR_ARGB( 255, 0, 0, 0 ) );
+
+    D3DXMATRIX matOrigView;
+    XuiRenderGetViewTransform( app.GetDC(), &matOrigView );
+
+	XUIMessage msg;
+    XUIMessageRender msgRender;
+    XuiMessageRender( &msg, &msgRender, app.GetDC(), 0xffffffff, XUI_BLEND_NORMAL );
+    XuiSendMessage( app.GetRootObj(), &msg );
+
+    XuiRenderSetViewTransform( app.GetDC(), &matOrigView );
+
+    XuiRenderEnd( app.GetDC() );
    XuiTimersRun();
    return true;
 }
