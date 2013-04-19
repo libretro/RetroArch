@@ -1699,7 +1699,9 @@ static bool directory_parse(rgui_handle_t *rgui, const char *directory, unsigned
    return true;
 }
 
+static bool do_held = false;
 static uint16_t trigger_state = 0;
+static uint64_t old_input_state = 0;
 
 int rgui_iterate(rgui_handle_t *rgui)
 {
@@ -1964,7 +1966,7 @@ static const struct retro_keybind *menu_nav_binds[] = {
    _menu_nav_binds
 };
 
-static int menu_input_process(void *data, uint64_t old_state)
+int rgui_input_postprocess(void *data, uint64_t old_state)
 {
    (void)data;
    (void)old_state;
@@ -2000,7 +2002,7 @@ static int menu_input_process(void *data, uint64_t old_state)
    return ret;
 }
 
-static uint64_t menu_input_state(void)
+static uint64_t rgui_input(void)
 {
    uint64_t input_state = 0;
 
@@ -2042,16 +2044,18 @@ static uint64_t menu_input_state(void)
    input_state |= input_key_pressed_func(RARCH_MENU_TOGGLE) ? (1ULL << DEVICE_NAV_MENU) : 0;
 #endif
 
+   trigger_state = input_state & ~old_input_state;
+   do_held = (input_state & ((1ULL << DEVICE_NAV_UP) | (1ULL << DEVICE_NAV_DOWN) | (1ULL << DEVICE_NAV_LEFT) | (1ULL << DEVICE_NAV_RIGHT))) && !(input_state & ((1ULL << DEVICE_NAV_MENU)));
+
    return input_state;
 }
 
 bool menu_iterate(void)
 {
-   static uint64_t old_input_state = 0;
    static bool initial_held = true;
    static bool first_held = false;
-   bool do_held;
    uint64_t input_state = 0;
+   int input_entry_ret;
 
    if (g_extern.lifecycle_mode_state & (1ULL << MODE_MENU_PREINIT))
    {
@@ -2072,19 +2076,13 @@ bool menu_iterate(void)
    rarch_check_fullscreen();
 #endif
 
-#ifndef GEKKO
-   /* TODO - not sure if correct regarding RARCH_QUIT_KEY */
    if (input_key_pressed_func(RARCH_QUIT_KEY) || !video_alive_func())
    {
       g_extern.lifecycle_mode_state |= (1ULL << MODE_GAME);
       goto deinit;
    }
-#endif
 
-   input_state = menu_input_state();
-
-   trigger_state = input_state & ~old_input_state;
-   do_held = (input_state & ((1ULL << DEVICE_NAV_UP) | (1ULL << DEVICE_NAV_DOWN) | (1ULL << DEVICE_NAV_LEFT) | (1ULL << DEVICE_NAV_RIGHT))) && !(input_state & ((1ULL << DEVICE_NAV_MENU)));
+   input_state = rgui_input();
 
    if(do_held)
    {
@@ -2109,7 +2107,7 @@ bool menu_iterate(void)
    }
 
    old_input_state = input_state;
-   int input_entry_ret = rgui_iterate(rgui);
+   input_entry_ret = rgui_iterate(rgui);
 
    // draw last frame for loading messages
    if (driver.video_poke && driver.video_poke->set_texture_enable)
@@ -2120,7 +2118,7 @@ bool menu_iterate(void)
    if (driver.video_poke && driver.video_poke->set_texture_enable)
       driver.video_poke->set_texture_enable(driver.video_data, false, false);
 
-   if (menu_input_process(rgui, old_input_state) || input_entry_ret)
+   if (rgui_input_postprocess(rgui, old_input_state) || input_entry_ret)
       goto deinit;
 
    return true;

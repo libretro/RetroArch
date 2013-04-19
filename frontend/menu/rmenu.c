@@ -3025,7 +3025,7 @@ static int ingame_menu_screenshot(void *data, uint64_t input)
    return 0;
 }
 
-static int menu_input_process(void *data, uint64_t old_state)
+int rgui_input_postprocess(void *data, uint64_t old_state)
 {
    rgui_handle_t *rgui = (rgui_handle_t*)data;
    bool quit = false;
@@ -3105,7 +3105,9 @@ static int menu_input_process(void *data, uint64_t old_state)
   RMENU API
   ============================================================ */
 
-static uint64_t input = 0;
+static uint64_t trigger_state = 0;
+static uint64_t old_input_state = 0;
+static bool do_held = false;
 
 int rgui_iterate(rgui_handle_t *rgui)
 {
@@ -3128,13 +3130,13 @@ int rgui_iterate(rgui_handle_t *rgui)
    switch(rgui->menu_type)
    {
       case INGAME_MENU_RESIZE:
-         return ingame_menu_resize(rgui, input);
+         return ingame_menu_resize(rgui, trigger_state);
       case INGAME_MENU_CORE_OPTIONS:
-         return ingame_menu_core_options(rgui, input);
+         return ingame_menu_core_options(rgui, trigger_state);
       case INGAME_MENU_SCREENSHOT:
-         return ingame_menu_screenshot(rgui, input);
+         return ingame_menu_screenshot(rgui, trigger_state);
       case FILE_BROWSER_MENU:
-         return select_rom(rgui, input);
+         return select_rom(rgui, trigger_state);
       case LIBRETRO_CHOICE:
 #ifdef HAVE_SHADER_MANAGER
       case CGP_CHOICE:
@@ -3142,7 +3144,7 @@ int rgui_iterate(rgui_handle_t *rgui)
 #endif
       case INPUT_PRESET_CHOICE:
       case BORDER_CHOICE:
-         return select_file(rgui, input);
+         return select_file(rgui, trigger_state);
       case PATH_DEFAULT_ROM_DIR_CHOICE:
       case PATH_SAVESTATES_DIR_CHOICE:
       case PATH_SRAM_DIR_CHOICE:
@@ -3150,7 +3152,7 @@ int rgui_iterate(rgui_handle_t *rgui)
       case PATH_CHEATS_DIR_CHOICE:
 #endif
       case PATH_SYSTEM_DIR_CHOICE:
-         return select_directory(rgui, input);
+         return select_directory(rgui, trigger_state);
       case GENERAL_VIDEO_MENU:
       case GENERAL_AUDIO_MENU:
       case EMU_GENERAL_MENU:
@@ -3162,7 +3164,7 @@ int rgui_iterate(rgui_handle_t *rgui)
 #ifdef HAVE_SHADER_MANAGER
       case INGAME_MENU_SHADER_MANAGER:
 #endif
-         return select_setting(rgui, input);
+         return select_setting(rgui, trigger_state);
    }
 
    RARCH_WARN("Menu type %d not implemented, exiting...\n", rgui->menu_type);
@@ -3232,9 +3234,30 @@ void rgui_free(rgui_handle_t *rgui)
 #endif
 }
 
+uint64_t rgui_input(void)
+{
+   uint64_t input_state = 0;
+
+   for (unsigned i = 0; i < DEVICE_NAV_LAST; i++)
+      input_state |= driver.input->input_state(NULL, rmenu_nav_binds, 0,
+            RETRO_DEVICE_JOYPAD, 0, i) ? (1ULL << i) : 0;
+
+   //set first button input frame as trigger
+   trigger_state = input_state & ~(old_input_state);
+
+   bool analog_sticks_pressed = (input_state & (1ULL << DEVICE_NAV_LEFT_ANALOG_L)) || (input_state & (1ULL << DEVICE_NAV_RIGHT_ANALOG_L)) || (input_state & (1ULL << DEVICE_NAV_UP_ANALOG_L)) || (input_state & (1ULL << DEVICE_NAV_DOWN_ANALOG_L)) || (input_state & (1ULL << DEVICE_NAV_LEFT_ANALOG_R)) || (input_state & (1ULL << DEVICE_NAV_RIGHT_ANALOG_R)) || (input_state & (1ULL << DEVICE_NAV_UP_ANALOG_R)) || (input_state & (1ULL << DEVICE_NAV_DOWN_ANALOG_R));
+   bool shoulder_buttons_pressed = ((input_state & (1ULL << DEVICE_NAV_L2)) || (input_state & (1ULL << DEVICE_NAV_R2)));
+   do_held = analog_sticks_pressed || shoulder_buttons_pressed;
+
+   return input_state;
+}
+
 bool menu_iterate(void)
 {
-   static uint64_t old_input_state = 0;
+   static bool initial_held = true;
+   static bool first_held = false;
+   uint64_t input_state = 0;
+   int input_entry_ret;
 
    if (g_extern.lifecycle_mode_state & (1ULL << MODE_MENU_PREINIT))
    {
@@ -3244,53 +3267,49 @@ bool menu_iterate(void)
       g_extern.lifecycle_mode_state &= ~(1ULL << MODE_MENU_PREINIT);
    }
 
-   //first button input frame
-   uint64_t input_state_first_frame = 0;
-   uint64_t input_state = 0;
-   static bool first_held = false;
+   if (driver.video_poke->apply_state_changes)
+      driver.video_poke->apply_state_changes(driver.video_data);
 
-   driver.input->poll(NULL);
+   rarch_input_poll();
+#ifdef HAVE_OVERLAY
+   rarch_check_overlay();
+#endif
+#ifndef RARCH_PERFORMANCE_MODE
+   rarch_check_fullscreen();
+#endif
 
-   for (unsigned i = 0; i < DEVICE_NAV_LAST; i++)
-      input_state |= driver.input->input_state(NULL, rmenu_nav_binds, 0,
-            RETRO_DEVICE_JOYPAD, 0, i) ? (1ULL << i) : 0;
-
-   //set first button input frame as trigger
-   input = input_state & ~(old_input_state);
-   //hold onto first button input frame
-   input_state_first_frame = input_state;          
-
-   //second button input frame
-   input_state = 0;
-   driver.input->poll(NULL);
-
-   for (unsigned i = 0; i < DEVICE_NAV_LAST; i++)
+   if (input_key_pressed_func(RARCH_QUIT_KEY) || !video_alive_func())
    {
-      input_state |= driver.input->input_state(NULL, rmenu_nav_binds, 0,
-            RETRO_DEVICE_JOYPAD, 0, i) ? (1ULL << i) : 0;
+      g_extern.lifecycle_mode_state |= (1ULL << MODE_GAME);
+      goto deinit;
    }
 
-   bool analog_sticks_pressed = (input_state & (1ULL << DEVICE_NAV_LEFT_ANALOG_L)) || (input_state & (1ULL << DEVICE_NAV_RIGHT_ANALOG_L)) || (input_state & (1ULL << DEVICE_NAV_UP_ANALOG_L)) || (input_state & (1ULL << DEVICE_NAV_DOWN_ANALOG_L)) || (input_state & (1ULL << DEVICE_NAV_LEFT_ANALOG_R)) || (input_state & (1ULL << DEVICE_NAV_RIGHT_ANALOG_R)) || (input_state & (1ULL << DEVICE_NAV_UP_ANALOG_R)) || (input_state & (1ULL << DEVICE_NAV_DOWN_ANALOG_R));
-   bool shoulder_buttons_pressed = ((input_state & (1ULL << DEVICE_NAV_L2)) || (input_state & (1ULL << DEVICE_NAV_R2)));
-   bool do_held = analog_sticks_pressed || shoulder_buttons_pressed;
+   input_state = rgui_input();
 
    if (do_held)
    {
       if (!first_held)
       {
          first_held = true;
-         g_extern.delay_timer[1] = g_extern.frame_count + 7;
+         g_extern.delay_timer[1] = g_extern.frame_count + (initial_held ? 15 : 7);
       }
 
       if (!(g_extern.frame_count < g_extern.delay_timer[1]))
       {
          first_held = false;
-         input = input_state; //second input frame set as current frame
+         trigger_state = input_state; //second input frame set as current frame
       }
+
+      initial_held = false;
+   }
+   else
+   {
+      first_held = false;
+      initial_held = true;
    }
 
-   old_input_state = input_state_first_frame;
-   int input_entry_ret = rgui_iterate(rgui);
+   old_input_state = input_state;
+   input_entry_ret = rgui_iterate(rgui);
 
    // draw last frame for loading messages
    if (driver.video_poke && driver.video_poke->set_texture_enable)
@@ -3301,7 +3320,7 @@ bool menu_iterate(void)
    if (driver.video_poke && driver.video_poke->set_texture_enable)
       driver.video_poke->set_texture_enable(driver.video_data, false, true);
 
-   if (menu_input_process(rgui, old_input_state) || input_entry_ret)
+   if (rgui_input_postprocess(rgui, old_input_state) || input_entry_ret)
       goto deinit;
 
    return true;
