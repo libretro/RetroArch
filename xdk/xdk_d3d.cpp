@@ -260,11 +260,6 @@ static void xdk_d3d_set_viewport(bool force_full)
    vp.MaxZ   = m_zFar;
    RD3DDevice_SetViewport(d3d->d3d_render_device, &vp);
 
-#ifdef HAVE_HLSL
-   if (d3d->shader)
-      d3d->shader->set_mvp(NULL);
-#endif
-
 #ifdef _XBOX1
    font_x = vp.X;
    font_y = vp.Y;
@@ -866,7 +861,19 @@ static bool xdk_d3d_frame(void *data, const void *frame,
 #endif
 
    if (d3d->should_resize)
+   {
+#ifdef _XBOX1
+      D3DDevice_SetFlickerFilter(g_extern.console.screen.flicker_filter_index);
+      D3DDevice_SetSoftDisplayFilter(g_extern.lifecycle_mode_state & (1ULL << MODE_VIDEO_SOFT_FILTER_ENABLE));
+#endif
       xdk_d3d_set_viewport(false);
+      d3d->should_resize = false;
+   }
+
+#ifdef HAVE_HLSL
+   if (d3d->shader)
+      d3d->shader->set_mvp(NULL);
+#endif
 
    RD3DDevice_SetTexture(d3dr, 0, d3d->lpTexture);
 
@@ -929,9 +936,6 @@ NULL, NULL, NULL, 0);
 #if defined(_XBOX1)
    RD3DDevice_SetVertexShader(d3dr, D3DFVF_XYZ | D3DFVF_TEX1);
    IDirect3DDevice8_SetStreamSource(d3dr, 0, d3d->vertex_buf, sizeof(DrawVerticeFormats));
-
-   d3dr->SetFlickerFilter(g_extern.console.screen.flicker_filter_index);
-   d3dr->SetSoftDisplayFilter(g_extern.lifecycle_mode_state & (1ULL << MODE_VIDEO_SOFT_FILTER_ENABLE));
 #elif defined(_XBOX360)
    D3DDevice_SetVertexDeclaration(d3dr, d3d->v_decl);
    D3DDevice_SetStreamSource_Inline(d3dr, 0, d3d->vertex_buf, 0, sizeof(DrawVerticeFormats));
