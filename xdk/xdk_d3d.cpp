@@ -817,10 +817,6 @@ static bool xdk_d3d_frame(void *data, const void *frame,
    D3DSurface* pRenderTarget0;
 #endif
 
-#ifndef _XBOX1
-   RD3DDevice_Clear(d3d->d3d_render_device, 0, NULL, D3DCLEAR_TARGET, 0xff000000, 1.0f, 0);
-#endif
-
    if (d3d->last_width != width || d3d->last_height != height)
    {
       D3DLOCKED_RECT d3dlr;

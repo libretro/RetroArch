@@ -1803,9 +1803,21 @@ deinit:
 
 bool menu_iterate_xui(void)
 {
+   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
+   LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)d3d->d3d_render_device;
+
    app.RunFrame(); /* Update XUI */
 
 	XuiRenderBegin( app.GetDC(), D3DCOLOR_ARGB( 255, 0, 0, 0 ) );
+
+    D3DVIEWPORT vp = {0};
+    vp.Width  = d3d->win_width;
+    vp.Height = d3d->win_height;
+    vp.X      = 0;
+    vp.Y      = 0;
+    vp.MinZ   = 0.0f;
+    vp.MaxZ   = 1.0f;
+    RD3DDevice_SetViewport(d3dr, &vp); 
 
     D3DXMATRIX matOrigView;
     XuiRenderGetViewTransform( app.GetDC(), &matOrigView );
