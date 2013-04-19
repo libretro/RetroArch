@@ -54,6 +54,7 @@
     <!--  The icon for the application, which should be 114x114. -->
     <icon>
         <image></image>
+        <image>icon.png</image>
     </icon>
     
     <!--  The splash screen that will appear when your application is launching. -->
@@ -63,7 +64,11 @@
     </splashScreens>
 
     <!-- Application assets -->
+    <asset path="../../retroarch.cfg">retroarch.cfg</asset>
+    <asset path="lib">lib</asset>
+    <asset path="../../media/overlays">overlays</asset>
     <asset path="assets">assets</asset>
+    <asset path="assets/images/icon.png">icon.png</asset>
 
     
     <!-- Bright theme is used for this application. --> 

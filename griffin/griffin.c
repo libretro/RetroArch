@@ -401,7 +401,7 @@ MAIN
 #include "../frontend/frontend_ios.c"
 #endif
 
-#if !defined(ANDROID) && !defined(IOS)
+#if !defined(ANDROID) && !defined(IOS) && !(defined(__BLACKBERRY_QNX__) && defined(HAVE_BB10))
 #include "../frontend/frontend.c"
 #endif
 
