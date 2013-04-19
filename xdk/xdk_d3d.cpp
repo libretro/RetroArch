@@ -422,7 +422,7 @@ void xdk_d3d_generate_pp(D3DPRESENT_PARAMETERS *d3dpp, const video_info_t *video
 
    d3dpp->BackBufferFormat                     = D3DFMT_X8R8G8B8;
    d3dpp->FullScreen_PresentationInterval	   = d3d->vsync ? D3DPRESENT_INTERVAL_ONE : D3DPRESENT_INTERVAL_IMMEDIATE;
-   d3dpp->SwapEffect                           = D3DSWAPEFFECT_DISCARD;
+   d3dpp->SwapEffect                           = D3DSWAPEFFECT_COPY;
 #elif defined(_XBOX360)
    if (!(lifecycle_mode_state & (1ULL << MODE_MENU_WIDESCREEN)))
       d3dpp->Flags |= D3DPRESENTFLAG_NO_LETTERBOX;
@@ -692,8 +692,8 @@ extern struct texture_image *menu_texture;
 #endif
 
 #ifdef _XBOX1
-bool texture_image_render(struct texture_image *out_img,
-                          int x, int y, int w, int h)
+static bool texture_image_render(struct texture_image *out_img,
+                          int x, int y, int w, int h, bool force_fullscreen)
 {
    xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
 
@@ -742,6 +742,18 @@ bool texture_image_render(struct texture_image *out_img,
    RD3DDevice_SetTexture(d3d->d3d_render_device, 0, out_img->pixels);
    IDirect3DDevice8_SetStreamSource(d3d->d3d_render_device, 0, out_img->vertex_buf, sizeof(DrawVerticeFormats));
    RD3DDevice_SetVertexShader(d3d->d3d_render_device, D3DFVF_CUSTOMVERTEX);
+
+   if (force_fullscreen)
+   {
+      D3DVIEWPORT vp = {0};
+      vp.Width  = w;
+      vp.Height = h;
+      vp.X      = 0;
+      vp.Y      = 0;
+      vp.MinZ   = 0.0f;
+      vp.MaxZ   = 1.0f;
+      RD3DDevice_SetViewport(d3dr, &vp);
+   }
    RD3DDevice_DrawPrimitive(d3d->d3d_render_device, D3DPT_QUADLIST, 0, 1);
 
    return true;
@@ -770,7 +782,7 @@ static inline void xdk_d3d_draw_texture(void *data)
       d3d->d3d_render_device->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
       d3d->d3d_render_device->SetRenderState(D3DRS_ALPHABLENDENABLE, true);
       texture_image_render(menu_texture, menu_texture->x, menu_texture->y,
-         640, 480);
+         640, 480, true);
       d3d->d3d_render_device->SetRenderState(D3DRS_ALPHABLENDENABLE, false);
    }
 
@@ -778,7 +790,7 @@ static inline void xdk_d3d_draw_texture(void *data)
    if ((menu_panel->x != 0) || (menu_panel->y != 0))
    {
       texture_image_render(menu_panel, menu_panel->x, menu_panel->y,
-         610, 20);
+         610, 20, false);
       menu_panel->x = 0;
       menu_panel->y = 0;
    }
