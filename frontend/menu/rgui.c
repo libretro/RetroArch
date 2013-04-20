@@ -1607,6 +1607,14 @@ static int rgui_settings_iterate(rgui_handle_t *rgui, rgui_action_t action)
             rgui->selection_ptr = 0;
          break;
 
+      case RGUI_ACTION_CANCEL:
+         if (rgui->menu_stack->size > 1)
+         {
+            rgui_list_pop(rgui->menu_stack, &rgui->selection_ptr);
+            rgui->need_refresh = true;
+         }
+         break;
+
       case RGUI_ACTION_LEFT:
       case RGUI_ACTION_RIGHT:
       case RGUI_ACTION_OK:
