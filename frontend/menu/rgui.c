@@ -211,7 +211,6 @@ rgui_handle_t *rgui_init(void)
 
    rgui->menu_stack = (rgui_list_t*)calloc(1, sizeof(rgui_list_t));
    rgui->selection_buf = (rgui_list_t*)calloc(1, sizeof(rgui_list_t));
-   rgui_list_push(rgui->menu_stack, g_settings.rgui_browser_directory, RGUI_FILE_DIRECTORY, 0);
    rgui_list_push(rgui->menu_stack, "", RGUI_SETTINGS, 0);
    rgui->selection_ptr = 0;
    rgui_settings_populate_entries(rgui);
@@ -1042,12 +1041,12 @@ static void rgui_settings_populate_entries(rgui_handle_t *rgui)
    rgui_list_push(rgui->selection_buf, "Core", RGUI_SETTINGS_CORE, 0);
 #endif
    rgui_list_push(rgui->selection_buf, "Core Options", RGUI_SETTINGS_CORE_OPTIONS, 0);
+   rgui_list_push(rgui->selection_buf, "Load Game", RGUI_SETTINGS_OPEN_FILEBROWSER, 0);
 #ifdef HAVE_SHADER_MANAGER
    rgui_list_push(rgui->selection_buf, "Shader Manager", RGUI_SETTINGS_SHADER_MANAGER, 0);
 #endif
-   rgui_list_push(rgui->selection_buf, "Rewind", RGUI_SETTINGS_REWIND_ENABLE, 0);
-   rgui_list_push(rgui->selection_buf, "Rewind granularity", RGUI_SETTINGS_REWIND_GRANULARITY, 0);
-   if (g_extern.main_is_init)
+
+   if (g_extern.main_is_init && !g_extern.libretro_dummy)
    {
       rgui_list_push(rgui->selection_buf, "Save State", RGUI_SETTINGS_SAVESTATE_SAVE, 0);
       rgui_list_push(rgui->selection_buf, "Load State", RGUI_SETTINGS_SAVESTATE_LOAD, 0);
@@ -1055,9 +1054,11 @@ static void rgui_settings_populate_entries(rgui_handle_t *rgui)
       rgui_list_push(rgui->selection_buf, "Take Screenshot", RGUI_SETTINGS_SCREENSHOT, 0);
 #endif
       rgui_list_push(rgui->selection_buf, "Resume Game", RGUI_SETTINGS_RESUME_GAME, 0);
-      rgui_list_push(rgui->selection_buf, "Change Game", RGUI_SETTINGS_OPEN_FILEBROWSER, 0);
       rgui_list_push(rgui->selection_buf, "Restart Game", RGUI_SETTINGS_RESTART_GAME, 0);
    }
+
+   rgui_list_push(rgui->selection_buf, "Rewind", RGUI_SETTINGS_REWIND_ENABLE, 0);
+   rgui_list_push(rgui->selection_buf, "Rewind granularity", RGUI_SETTINGS_REWIND_GRANULARITY, 0);
 #ifdef HW_RVL
    rgui_list_push(rgui->selection_buf, "VI Trap filtering", RGUI_SETTINGS_VIDEO_SOFT_FILTER, 0);
 #endif
@@ -1066,9 +1067,9 @@ static void rgui_settings_populate_entries(rgui_handle_t *rgui)
    rgui_list_push(rgui->selection_buf, "Screen Resolution", RGUI_SETTINGS_VIDEO_RESOLUTION, 0);
    rgui_list_push(rgui->selection_buf, "Gamma", RGUI_SETTINGS_VIDEO_GAMMA, 0);
 #endif
-   rgui_list_push(rgui->selection_buf, "Integer scale", RGUI_SETTINGS_VIDEO_INTEGER_SCALE, 0);
-   rgui_list_push(rgui->selection_buf, "Aspect ratio", RGUI_SETTINGS_VIDEO_ASPECT_RATIO, 0);
-   rgui_list_push(rgui->selection_buf, "Custom ratio", RGUI_SETTINGS_CUSTOM_VIEWPORT, 0);
+   rgui_list_push(rgui->selection_buf, "Integer Scale", RGUI_SETTINGS_VIDEO_INTEGER_SCALE, 0);
+   rgui_list_push(rgui->selection_buf, "Aspect Ratio", RGUI_SETTINGS_VIDEO_ASPECT_RATIO, 0);
+   rgui_list_push(rgui->selection_buf, "Custom Ratio", RGUI_SETTINGS_CUSTOM_VIEWPORT, 0);
    rgui_list_push(rgui->selection_buf, "Rotation", RGUI_SETTINGS_VIDEO_ROTATION, 0);
    rgui_list_push(rgui->selection_buf, "Mute Audio", RGUI_SETTINGS_AUDIO_MUTE, 0);
    rgui_list_push(rgui->selection_buf, "Audio Control Rate", RGUI_SETTINGS_AUDIO_CONTROL_RATE, 0);
@@ -1593,16 +1594,6 @@ static int rgui_settings_iterate(rgui_handle_t *rgui, rgui_action_t action)
             rgui->selection_ptr = 0;
          break;
 
-      case RGUI_ACTION_CANCEL:
-      case RGUI_ACTION_SETTINGS:
-         if (rgui->menu_stack->size > 1)
-         {
-            rgui_list_pop(rgui->menu_stack, &rgui->selection_ptr);
-            rgui->need_refresh = true;
-         }
-         g_extern.lifecycle_mode_state &= ~(1ULL << MODE_MENU_INGAME);
-         break;
-
       case RGUI_ACTION_LEFT:
       case RGUI_ACTION_RIGHT:
       case RGUI_ACTION_OK:
@@ -1673,10 +1664,7 @@ static int rgui_settings_iterate(rgui_handle_t *rgui, rgui_action_t action)
          rgui_settings_populate_entries(rgui);
    }
 
-   // If we go back to file browser, we must refresh.
-   // The file browser state is stale.
-   if (rgui->menu_stack->size > 1)
-      render_text(rgui);
+   render_text(rgui);
 
    return 0;
 }
@@ -1975,8 +1963,6 @@ int rgui_iterate(rgui_handle_t *rgui)
          rgui->need_refresh = true;
          while (rgui->menu_stack->size > 1)
             rgui_list_pop(rgui->menu_stack, &rgui->selection_ptr);
-         rgui_list_push(rgui->menu_stack, "", RGUI_SETTINGS, rgui->selection_ptr);
-         rgui->selection_ptr = 0;
          g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU_INGAME);
          return rgui_settings_iterate(rgui, RGUI_ACTION_REFRESH);
 
