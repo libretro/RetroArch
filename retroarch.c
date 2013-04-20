@@ -3078,6 +3078,8 @@ int rarch_main_init_wrap(const struct rarch_main_wrap *args)
 
    if (args->rom_path)
       argv[argc++] = strdup(args->rom_path);
+   else
+      argv[argc++] = strdup("--menu");
 
    if (args->sram_path)
    {
