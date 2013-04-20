@@ -279,7 +279,8 @@ static bool dirent_is_directory(const char *path, const struct dirent *entry)
 #elif defined(DT_DIR)
    if (entry->d_type == DT_DIR)
       return true;
-   else if (entry->d_type == DT_UNKNOWN) // This can happen on certain file systems.
+   else if (entry->d_type == DT_UNKNOWN // This can happen on certain file systems.
+         || entry->d_type == DT_LNK)
       return path_is_directory(path);
    else
       return false;
