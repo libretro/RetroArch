@@ -529,6 +529,7 @@ static void render_text(rgui_handle_t *rgui)
             case RGUI_SETTINGS_SHADER_MANAGER:
             case RGUI_SETTINGS_SHADER_PRESET:
             case RGUI_SETTINGS_CUSTOM_VIEWPORT:
+            case RGUI_SETTINGS_TOGGLE_FULLSCREEN:
             case RGUI_SETTINGS_CORE:
             case RGUI_SETTINGS_CONTROLLER_1:
             case RGUI_SETTINGS_CONTROLLER_2:
@@ -847,6 +848,15 @@ static int rgui_settings_toggle_setting(rgui_handle_t *rgui, unsigned setting, r
          if (driver.video_poke->set_aspect_ratio)
             driver.video_poke->set_aspect_ratio(driver.video_data, g_settings.video.aspect_ratio_idx);
          break;
+      case RGUI_SETTINGS_TOGGLE_FULLSCREEN:
+         if (action == RGUI_ACTION_OK)
+         {
+            rarch_set_fullscreen(!g_settings.video.fullscreen);
+            // Delay timers have been reset.
+            g_extern.delay_timer[0] = 15;
+            g_extern.delay_timer[1] = 15;
+         }
+         break;
       case RGUI_SETTINGS_VIDEO_ROTATION:
          if (action == RGUI_ACTION_START)
          {
@@ -1070,6 +1080,9 @@ static void rgui_settings_populate_entries(rgui_handle_t *rgui)
    rgui_list_push(rgui->selection_buf, "Integer Scale", RGUI_SETTINGS_VIDEO_INTEGER_SCALE, 0);
    rgui_list_push(rgui->selection_buf, "Aspect Ratio", RGUI_SETTINGS_VIDEO_ASPECT_RATIO, 0);
    rgui_list_push(rgui->selection_buf, "Custom Ratio", RGUI_SETTINGS_CUSTOM_VIEWPORT, 0);
+#ifndef RARCH_CONSOLE
+   rgui_list_push(rgui->selection_buf, "Toggle Fullscreen", RGUI_SETTINGS_TOGGLE_FULLSCREEN, 0);
+#endif
    rgui_list_push(rgui->selection_buf, "Rotation", RGUI_SETTINGS_VIDEO_ROTATION, 0);
    rgui_list_push(rgui->selection_buf, "Mute Audio", RGUI_SETTINGS_AUDIO_MUTE, 0);
    rgui_list_push(rgui->selection_buf, "Audio Control Rate", RGUI_SETTINGS_AUDIO_CONTROL_RATE, 0);
@@ -2051,7 +2064,7 @@ int rgui_input_postprocess(void *data, uint64_t old_state)
       ret = -1;
    }
 
-   if (!(g_extern.frame_count < g_extern.delay_timer[0]))
+   if (g_extern.frame_count >= g_extern.delay_timer[0])
    {
       if ((rgui->trigger_state & (1ULL << DEVICE_NAV_MENU)) && g_extern.main_is_init)
       {

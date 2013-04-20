@@ -1965,7 +1965,19 @@ static void check_savestates(bool immutable)
 }
 
 #if !defined(RARCH_PERFORMANCE_MODE)
-bool rarch_check_fullscreen(void)
+void rarch_set_fullscreen(bool fullscreen)
+{
+   g_settings.video.fullscreen = fullscreen;
+
+   uninit_drivers();
+   init_drivers();
+
+   // Poll input to avoid possibly stale data to corrupt things.
+   if (driver.input)
+      input_poll_func();
+}
+
+static bool check_fullscreen(void)
 {
    // If we go fullscreen we drop all drivers and reinit to be safe.
    static bool was_pressed = false;
@@ -1974,12 +1986,7 @@ bool rarch_check_fullscreen(void)
    if (toggle)
    {
       g_settings.video.fullscreen = !g_settings.video.fullscreen;
-      uninit_drivers();
-      init_drivers();
-
-      // Poll input to avoid possibly stale data to corrupt things.
-      if (driver.input)
-         input_poll_func();
+      rarch_set_fullscreen(g_settings.video.fullscreen);
    }
 
    was_pressed = pressed;
@@ -2653,7 +2660,7 @@ static void do_state_checks(void)
       check_pause();
       check_oneshot();
 
-      if (rarch_check_fullscreen() && g_extern.is_paused)
+      if (check_fullscreen() && g_extern.is_paused)
          rarch_render_cached_frame();
 
       if (g_extern.is_paused && !g_extern.is_oneshot)
@@ -2690,7 +2697,7 @@ static void do_state_checks(void)
    {
       check_netplay_flip();
 #if !defined(RARCH_PERFORMANCE_MODE)
-      rarch_check_fullscreen();
+      check_fullscreen();
 #endif
    }
 #endif

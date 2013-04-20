@@ -439,9 +439,6 @@ bool menu_iterate(void)
 #ifdef HAVE_OVERLAY
    rarch_check_overlay();
 #endif
-#ifndef RARCH_PERFORMANCE_MODE
-   rarch_check_fullscreen();
-#endif
 
    if (input_key_pressed_func(RARCH_QUIT_KEY) || !video_alive_func())
    {
@@ -451,15 +448,15 @@ bool menu_iterate(void)
 
    input_state = rgui_input();
 
-   if(rgui->do_held)
+   if (rgui->do_held)
    {
-      if(!first_held)
+      if (!first_held)
       {
          first_held = true;
          g_extern.delay_timer[1] = g_extern.frame_count + (initial_held ? 15 : 7);
       }
 
-      if (!(g_extern.frame_count < g_extern.delay_timer[1]))
+      if (g_extern.frame_count >= g_extern.delay_timer[1])
       {
          first_held = false;
          rgui->trigger_state = input_state; //second input frame set as current frame

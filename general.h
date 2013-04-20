@@ -694,7 +694,7 @@ void rarch_input_poll(void);
 void rarch_check_overlay(void);
 void rarch_init_rewind(void);
 void rarch_deinit_rewind(void);
-bool rarch_check_fullscreen(void);
+void rarch_set_fullscreen(bool fullscreen);
 
 void rarch_load_state(void);
 void rarch_save_state(void);
