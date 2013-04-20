@@ -138,8 +138,7 @@ static int16_t sdl_pointer_device_state(sdl_input_t *sdl, unsigned index, unsign
       res_y = res_screen_y;
    }
 
-   bool inside = (res_x >= -0x7fff) && (res_x <= 0x7fff) &&
-      (res_y >= -0x7fff) && (res_y <= 0x7fff);
+   bool inside = (res_x >= -0x7fff) && (res_y >= -0x7fff);
 
    if (!inside)
       return 0;

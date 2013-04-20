@@ -127,8 +127,7 @@ static int16_t x_pointer_state(x11_input_t *x11, unsigned index, unsigned id, bo
       res_y = res_screen_y;
    }
 
-   bool inside = (res_x >= -0x7fff) && (res_x <= 0x7fff) &&
-      (res_y >= -0x7fff) && (res_y <= 0x7fff);
+   bool inside = (res_x >= -0x7fff) && (res_y >= -0x7fff);
 
    if (!inside)
       return 0;

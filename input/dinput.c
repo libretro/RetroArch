@@ -255,8 +255,7 @@ static int16_t dinput_pointer_state(struct dinput_input *di, unsigned index, uns
       res_y = res_screen_y;
    }
 
-   bool inside = (res_x >= -0x7fff) && (res_x <= 0x7fff) &&
-      (res_y >= -0x7fff) && (res_y <= 0x7fff);
+   bool inside = (res_x >= -0x7fff) && (res_y >= -0x7fff);
 
    if (!inside)
       return 0;
