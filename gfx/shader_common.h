@@ -30,6 +30,8 @@
 #include "shader_parse.h"
 #include "math/matrix.h"
 
+#define GL_SHADER_STOCK_BLEND (GFX_MAX_SHADERS - 1)
+
 struct gl_shader_backend
 {
    bool (*init)(const char *path);

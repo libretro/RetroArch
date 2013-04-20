@@ -20,11 +20,7 @@
 #include "../boolean.h"
 #include "shader_common.h"
 
-#define RARCH_GLSL_MAX_SHADERS 16
-#define RARCH_GLSL_MENU_SHADER_INDEX (RARCH_GLSL_MAX_SHADERS - 1)
-
 void gl_glsl_set_get_proc_address(gfx_ctx_proc_t (*proc)(const char*));
-
 extern const gl_shader_backend_t gl_glsl_backend;
 
 #endif

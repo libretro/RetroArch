@@ -122,12 +122,12 @@ struct cg_program
    CGparameter frame_dir_v;
    CGparameter mvp;
 
-   struct cg_fbo_params fbo[RARCH_CG_MAX_SHADERS];
+   struct cg_fbo_params fbo[GFX_MAX_SHADERS];
    struct cg_fbo_params orig;
    struct cg_fbo_params prev[PREV_TEXTURES];
 };
 
-static struct cg_program prg[RARCH_CG_MAX_SHADERS];
+static struct cg_program prg[GFX_MAX_SHADERS];
 static const char **cg_arguments;
 static bool cg_active;
 static CGprofile cgVProf, cgFProf;
@@ -138,7 +138,7 @@ static struct gfx_shader *cg_shader;
 static state_tracker_t *state_tracker;
 static GLuint lut_textures[MAX_TEXTURES];
 
-static CGparameter cg_attribs[PREV_TEXTURES + 1 + 4 + RARCH_CG_MAX_SHADERS];
+static CGparameter cg_attribs[PREV_TEXTURES + 1 + 4 + GFX_MAX_SHADERS];
 static unsigned cg_attrib_index;
 
 static void gl_cg_reset_attrib(void)
@@ -195,7 +195,7 @@ static void gl_cg_set_params(unsigned width, unsigned height,
       const struct gl_tex_info *fbo_info,
       unsigned fbo_info_cnt)
 {
-   if (!cg_active || (active_index == 0))
+   if (!cg_active || (active_index == 0) || (active_index == GL_SHADER_STOCK_BLEND))
       return;
 
    // Set frame.
@@ -332,7 +332,7 @@ static void gl_cg_deinit_progs(void)
    cgGLUnbindProgram(cgVProf);
 
    // Programs may alias [0].
-   for (unsigned i = 1; i < RARCH_CG_MAX_SHADERS; i++)
+   for (unsigned i = 1; i < GFX_MAX_SHADERS; i++)
    {
       if (prg[i].fprg && prg[i].fprg != prg[0].fprg)
          cgDestroyProgram(prg[i].fprg);
@@ -629,10 +629,10 @@ static bool load_preset(const char *path)
    config_file_free(conf);
    gfx_shader_resolve_relative(cg_shader, path);
 
-   if (cg_shader->passes > RARCH_CG_MAX_SHADERS - 3)
+   if (cg_shader->passes > GFX_MAX_SHADERS - 3)
    {
-      RARCH_WARN("Too many shaders ... Capping shader amount to %d.\n", RARCH_CG_MAX_SHADERS - 3);
-      cg_shader->passes = RARCH_CG_MAX_SHADERS - 3;
+      RARCH_WARN("Too many shaders ... Capping shader amount to %d.\n", GFX_MAX_SHADERS - 3);
+      cg_shader->passes = GFX_MAX_SHADERS - 3;
    }
    for (unsigned i = 0; i < cg_shader->passes; i++)
    {
@@ -817,6 +817,9 @@ static bool gl_cg_init(const char *path)
    // Just use prg[0] for that pass, which will be
    // pass-through.
    prg[cg_shader->passes + 1] = prg[0]; 
+
+   // No need to apply Android hack in Cg.
+   prg[GL_SHADER_STOCK_BLEND] = prg[0];
 
    cgGLBindProgram(prg[1].fprg);
    cgGLBindProgram(prg[1].vprg);

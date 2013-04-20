@@ -130,7 +130,7 @@ static GLuint gl_teximage[GFX_MAX_TEXTURES];
 
 static state_tracker_t *gl_state_tracker;
 
-static GLint gl_attribs[PREV_TEXTURES + 1 + 4 + RARCH_GLSL_MAX_SHADERS];
+static GLint gl_attribs[PREV_TEXTURES + 1 + 4 + GFX_MAX_SHADERS];
 static unsigned gl_attrib_index;
 
 static gfx_ctx_proc_t (*glsl_get_proc_address)(const char*);
@@ -162,16 +162,39 @@ struct shader_uniforms
    int lut_texture[GFX_MAX_TEXTURES];
    
    struct shader_uniforms_frame orig;
-   struct shader_uniforms_frame pass[RARCH_GLSL_MAX_SHADERS];
+   struct shader_uniforms_frame pass[GFX_MAX_SHADERS];
    struct shader_uniforms_frame prev[PREV_TEXTURES];
 };
 
-static struct shader_uniforms gl_uniforms[RARCH_GLSL_MAX_SHADERS];
+static struct shader_uniforms gl_uniforms[GFX_MAX_SHADERS];
 
 static const char *glsl_prefixes[] = {
    "",
    "ruby",
 };
+
+// Need to duplicate these to work around broken stuff on Android.
+// Must enforce alpha = 1.0 or 32-bit games can potentially go black.
+static const char *stock_vertex_modern =
+   "attribute vec2 TexCoord;\n"
+   "attribute vec2 VertexCoord;\n"
+   "attribute vec4 Color;\n"
+   "uniform mat4 MVPMatrix;\n"
+   "varying vec2 tex_coord;\n"
+   "void main() {\n"
+   "   gl_Position = MVPMatrix * vec4(VertexCoord, 0.0, 1.0);\n"
+   "   tex_coord = TexCoord;\n"
+   "}";
+
+static const char *stock_fragment_modern =
+   "#ifdef GL_ES\n"
+   "precision mediump float;\n"
+   "#endif\n"
+   "uniform sampler2D Texture;\n"
+   "varying vec2 tex_coord;\n"
+   "void main() {\n"
+   "   gl_FragColor = vec4(texture2D(Texture, tex_coord).rgb, 1.0);\n"
+   "}";
 
 static const char *stock_vertex_legacy =
    "varying vec4 color;\n"
@@ -188,7 +211,7 @@ static const char *stock_fragment_legacy =
    "   gl_FragColor = color * texture2D(Texture, gl_TexCoord[0].xy);\n"
    "}";
 
-static const char *stock_vertex_modern =
+static const char *stock_vertex_modern_blend =
    "attribute vec2 TexCoord;\n"
    "attribute vec2 VertexCoord;\n"
    "attribute vec4 Color;\n"
@@ -201,7 +224,7 @@ static const char *stock_vertex_modern =
    "   color = Color;\n"
    "}";
 
-static const char *stock_fragment_modern =
+static const char *stock_fragment_modern_blend =
    "#ifdef GL_ES\n"
    "precision mediump float;\n"
    "#endif\n"
@@ -718,6 +741,19 @@ static bool gl_glsl_init(const char *path)
    gl_program[glsl_shader->passes  + 1] = gl_program[0];
    gl_uniforms[glsl_shader->passes + 1] = gl_uniforms[0];
 
+   if (glsl_shader->modern)
+   {
+      gl_program[GL_SHADER_STOCK_BLEND] = compile_program(stock_vertex_modern_blend,
+            stock_fragment_modern_blend, GL_SHADER_STOCK_BLEND);
+
+      find_uniforms(gl_program[GL_SHADER_STOCK_BLEND], &gl_uniforms[GL_SHADER_STOCK_BLEND]);
+   }
+   else
+   {
+      gl_program[GL_SHADER_STOCK_BLEND] = gl_program[0];
+      gl_uniforms[GL_SHADER_STOCK_BLEND] = gl_uniforms[0];
+   }
+
    gl_glsl_reset_attrib();
 
    return true;
@@ -728,7 +764,7 @@ static void gl_glsl_deinit(void)
    if (glsl_enable)
    {
       pglUseProgram(0);
-      for (unsigned i = 0; i <= glsl_shader->passes; i++)
+      for (unsigned i = 0; i < GFX_MAX_SHADERS; i++)
       {
          if (gl_program[i] == 0 || (i && gl_program[i] == gl_program[0]))
             continue;

@@ -1261,7 +1261,7 @@ static inline void gl_draw_texture(void *data)
    glBindTexture(GL_TEXTURE_2D, gl->rgui_texture);
 
    if (gl->shader)
-      gl->shader->use(0);
+      gl->shader->use(GL_SHADER_STOCK_BLEND);
    gl_shader_set_coords(gl, &gl->coords, &gl->mvp_no_rot);
 
    glEnable(GL_BLEND);
@@ -2205,7 +2205,7 @@ static void gl_render_overlay(void *data)
    };
 
    if (gl->shader)
-      gl->shader->use(0);
+      gl->shader->use(GL_SHADER_STOCK_BLEND);
 
    glEnable(GL_BLEND);
    gl->coords.vertex    = gl->overlay_vertex_coord;
