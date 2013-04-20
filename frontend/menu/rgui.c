@@ -216,6 +216,12 @@ rgui_handle_t *rgui_init(void)
    rgui->selection_ptr = 0;
    rgui_settings_populate_entries(rgui);
 
+   // Make sure that custom viewport is something sane incase we use it
+   // before it's configured.
+   rarch_viewport_t *custom = &g_extern.console.screen.viewports.custom_vp;
+   if (driver.video_data && (!custom->width || !custom->height))
+      driver.video->viewport_info(driver.video_data, custom);
+
    return rgui;
 }
 
@@ -1350,26 +1356,21 @@ static void rgui_settings_controller_populate_entries(rgui_handle_t *rgui)
 
 static int rgui_viewport_iterate(rgui_handle_t *rgui, rgui_action_t action)
 {
-   rarch_viewport_t vp;
-   driver.video->viewport_info(driver.video_data, &vp);
-   unsigned win_width = vp.full_width;
-   unsigned win_height = vp.full_height;
+   rarch_viewport_t *custom = &g_extern.console.screen.viewports.custom_vp;
+
    unsigned menu_type = 0;
    rgui_list_get_last(rgui->menu_stack, NULL, &menu_type);
-
-   (void)win_width;
-   (void)win_height;
 
    switch (action)
    {
       case RGUI_ACTION_UP:
          if (menu_type == RGUI_SETTINGS_CUSTOM_VIEWPORT)
          {
-            g_extern.console.screen.viewports.custom_vp.y -= 1;
-            g_extern.console.screen.viewports.custom_vp.height += 1;
+            custom->y -= 1;
+            custom->height += 1;
          }
          else
-            g_extern.console.screen.viewports.custom_vp.height -= 1;
+            custom->height -= 1;
          if (driver.video_poke->apply_state_changes)
             driver.video_poke->apply_state_changes(driver.video_data);
          break;
@@ -1377,11 +1378,11 @@ static int rgui_viewport_iterate(rgui_handle_t *rgui, rgui_action_t action)
       case RGUI_ACTION_DOWN:
          if (menu_type == RGUI_SETTINGS_CUSTOM_VIEWPORT)
          {
-            g_extern.console.screen.viewports.custom_vp.y += 1;
-            g_extern.console.screen.viewports.custom_vp.height -= 1;
+            custom->y += 1;
+            custom->height -= 1;
          }
          else
-            g_extern.console.screen.viewports.custom_vp.height += 1;
+            custom->height += 1;
          if (driver.video_poke->apply_state_changes)
             driver.video_poke->apply_state_changes(driver.video_data);
          break;
@@ -1389,11 +1390,11 @@ static int rgui_viewport_iterate(rgui_handle_t *rgui, rgui_action_t action)
       case RGUI_ACTION_LEFT:
          if (menu_type == RGUI_SETTINGS_CUSTOM_VIEWPORT)
          {
-            g_extern.console.screen.viewports.custom_vp.x -= 1;
-            g_extern.console.screen.viewports.custom_vp.width += 1;
+            custom->x -= 1;
+            custom->width += 1;
          }
          else
-            g_extern.console.screen.viewports.custom_vp.width -= 1;
+            custom->width -= 1;
          if (driver.video_poke->apply_state_changes)
             driver.video_poke->apply_state_changes(driver.video_data);
          break;
@@ -1401,11 +1402,11 @@ static int rgui_viewport_iterate(rgui_handle_t *rgui, rgui_action_t action)
       case RGUI_ACTION_RIGHT:
          if (menu_type == RGUI_SETTINGS_CUSTOM_VIEWPORT)
          {
-            g_extern.console.screen.viewports.custom_vp.x += 1;
-            g_extern.console.screen.viewports.custom_vp.width -= 1;
+            custom->x += 1;
+            custom->width -= 1;
          }
          else
-            g_extern.console.screen.viewports.custom_vp.width += 1;
+            custom->width += 1;
          if (driver.video_poke->apply_state_changes)
             driver.video_poke->apply_state_changes(driver.video_data);
          break;
@@ -1413,28 +1414,30 @@ static int rgui_viewport_iterate(rgui_handle_t *rgui, rgui_action_t action)
       case RGUI_ACTION_CANCEL:
          rgui_list_pop(rgui->menu_stack, &rgui->selection_ptr);
          if (menu_type == RGUI_SETTINGS_CUSTOM_VIEWPORT_2)
-            rgui_list_push(rgui->menu_stack, "", RGUI_SETTINGS_CUSTOM_VIEWPORT, 0);
+            rgui_list_push(rgui->menu_stack, "", RGUI_SETTINGS_CUSTOM_VIEWPORT,
+                  rgui->selection_ptr);
          break;
 
       case RGUI_ACTION_OK:
          rgui_list_pop(rgui->menu_stack, &rgui->selection_ptr);
          if (menu_type == RGUI_SETTINGS_CUSTOM_VIEWPORT)
-            rgui_list_push(rgui->menu_stack, "", RGUI_SETTINGS_CUSTOM_VIEWPORT_2, 0);
+            rgui_list_push(rgui->menu_stack, "", RGUI_SETTINGS_CUSTOM_VIEWPORT_2,
+                  rgui->selection_ptr);
          break;
 
       case RGUI_ACTION_START:
 #ifdef GEKKO
          if (menu_type == RGUI_SETTINGS_CUSTOM_VIEWPORT)
          {
-            g_extern.console.screen.viewports.custom_vp.width += g_extern.console.screen.viewports.custom_vp.x;
-            g_extern.console.screen.viewports.custom_vp.height += g_extern.console.screen.viewports.custom_vp.y;
-            g_extern.console.screen.viewports.custom_vp.x = 0;
-            g_extern.console.screen.viewports.custom_vp.y = 0;
+            custom->width += custom->x;
+            custom->height += custom->y;
+            custom->x = 0;
+            custom->y = 0;
          }
          else
          {
-            g_extern.console.screen.viewports.custom_vp.width = win_width - g_extern.console.screen.viewports.custom_vp.x;
-            g_extern.console.screen.viewports.custom_vp.height = win_height - g_extern.console.screen.viewports.custom_vp.y;
+            custom->width = win_width - custom->x;
+            custom->height = win_height - custom->y;
          }
 #endif
          if (driver.video_poke->apply_state_changes)
@@ -1457,10 +1460,16 @@ static int rgui_viewport_iterate(rgui_handle_t *rgui, rgui_action_t action)
 
    render_text(rgui);
 
+   const char *base_msg = NULL;
    if (menu_type == RGUI_SETTINGS_CUSTOM_VIEWPORT)
-      render_messagebox(rgui, "Set Upper-Left Corner");
+      base_msg = "Set Upper-Left Corner";
    else if (menu_type == RGUI_SETTINGS_CUSTOM_VIEWPORT_2)
-      render_messagebox(rgui, "Set Bottom-Right Corner");
+      base_msg = "Set Bottom-Right Corner";
+
+   char msg[64];
+   snprintf(msg, sizeof(msg), "%s (%d, %d : %4ux%4u)",
+         base_msg, custom->x, custom->y, custom->width, custom->height); 
+   render_messagebox(rgui, msg);
 
    return 0;
 }
@@ -1541,16 +1550,20 @@ static int rgui_settings_iterate(rgui_handle_t *rgui, rgui_action_t action)
          else if (type == RGUI_SETTINGS_CUSTOM_VIEWPORT && action == RGUI_ACTION_OK)
          {
             rgui_list_push(rgui->menu_stack, "", type, rgui->selection_ptr);
-            g_settings.video.aspect_ratio_idx = ASPECT_RATIO_CUSTOM;
 
+            // Start with something sane.
+            rarch_viewport_t *custom = &g_extern.console.screen.viewports.custom_vp;
+            driver.video->viewport_info(driver.video_data, custom);
+
+            g_settings.video.aspect_ratio_idx = ASPECT_RATIO_CUSTOM;
             if (driver.video_poke->set_aspect_ratio)
-               driver.video_poke->set_aspect_ratio(driver.video_data, g_settings.video.aspect_ratio_idx);
+               driver.video_poke->set_aspect_ratio(driver.video_data,
+                     g_settings.video.aspect_ratio_idx);
          }
          else
          {
             int ret = rgui_settings_toggle_setting(rgui, type, action, menu_type);
-
-            if (ret != 0)
+            if (ret)
                return ret;
          }
          break;

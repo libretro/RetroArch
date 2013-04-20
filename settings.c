@@ -170,6 +170,7 @@ void config_set_defaults(void)
    g_settings.video.crop_overscan = crop_overscan;
    g_settings.video.aspect_ratio = aspect_ratio;
    g_settings.video.aspect_ratio_auto = aspect_ratio_auto; // Let implementation decide if automatic, or 1:1 PAR.
+   g_settings.video.aspect_ratio_idx = aspect_ratio_idx;
    g_settings.video.shader_enable = shader_enable;
    g_settings.video.allow_rotate = allow_rotate;
 
@@ -265,7 +266,6 @@ void config_set_defaults(void)
    strlcpy(g_extern.menu_texture_path, default_paths.menu_border_file, sizeof(g_extern.menu_texture_path));
 #endif
 
-   g_settings.video.aspect_ratio_idx = aspect_ratio_idx;
    g_extern.state_slot = 0;
    g_extern.audio_data.mute = 0;
    g_extern.verbose = true;
@@ -452,7 +452,6 @@ bool config_load_file(const char *path)
    /* TODO - will be refactored later to make it more clean - it's more 
     * important that it works for consoles right now */
    CONFIG_GET_INT(video.aspect_ratio_idx, "aspect_ratio_index");
-   CONFIG_GET_FLOAT(video.aspect_ratio, "video_aspect_ratio");
 
    for (unsigned i = 0; i < MAX_PLAYERS; i++)
    {

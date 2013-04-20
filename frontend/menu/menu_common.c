@@ -476,14 +476,21 @@ bool menu_iterate(void)
    rgui->old_input_state = input_state;
    input_entry_ret = rgui_iterate(rgui);
 
+#ifdef HAVE_RGUI
+#define MENU_TEXTURE_FULLSCREEN false
+#else
+#define MENU_TEXTURE_FULLSCREEN true
+#endif
+
    // draw last frame for loading messages
    if (driver.video_poke && driver.video_poke->set_texture_enable)
-      driver.video_poke->set_texture_enable(driver.video_data, rgui->frame_buf_show, true);
+      driver.video_poke->set_texture_enable(driver.video_data, rgui->frame_buf_show, MENU_TEXTURE_FULLSCREEN);
 
    rarch_render_cached_frame();
 
    if (driver.video_poke && driver.video_poke->set_texture_enable)
-      driver.video_poke->set_texture_enable(driver.video_data, false, true);
+      driver.video_poke->set_texture_enable(driver.video_data, false,
+            MENU_TEXTURE_FULLSCREEN);
 
    if (rgui_input_postprocess(rgui, rgui->old_input_state) || input_entry_ret)
       goto deinit;

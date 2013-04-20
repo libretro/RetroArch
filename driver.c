@@ -24,6 +24,7 @@
 #include "audio/utils.h"
 #include "audio/resampler.h"
 #include "gfx/thread_wrapper.h"
+#include "gfx/gfx_common.h"
 
 #ifdef HAVE_X11
 #include "gfx/context/x11_common.h"
@@ -944,6 +945,10 @@ void init_video_input(void)
 
    if (driver.video->set_rotation && g_extern.system.rotation)
       video_set_rotation_func(g_extern.system.rotation);
+
+   if (driver.video_poke->set_aspect_ratio &&
+         g_settings.video.aspect_ratio_idx != ASPECT_RATIO_CONFIG)
+      driver.video_poke->set_aspect_ratio(driver.video_data, g_settings.video.aspect_ratio_idx);
 
 #ifdef HAVE_X11
    if (driver.display_type == RARCH_DISPLAY_X11)

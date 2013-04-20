@@ -1069,18 +1069,19 @@ static bool xdk_d3d_focus(void *data)
    return gfx_ctx_window_has_focus();
 }
 
-static void xdk_d3d_set_aspect_ratio(void *data, unsigned aspectratio_index)
+static void xdk_d3d_set_aspect_ratio(void *data, unsigned aspect_ratio_idx)
 {
    (void)data;
    xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
 
-   if (g_settings.video.aspect_ratio_idx == ASPECT_RATIO_AUTO)
-      gfx_set_auto_viewport(g_extern.frame_cache.width, g_extern.frame_cache.height);
-   else if (g_settings.video.aspect_ratio_idx == ASPECT_RATIO_CORE)
+   if (aspect_ratio_idx == ASPECT_RATIO_SQUARE)
+      gfx_set_square_pixel_viewport(g_extern.frame_cache.width, g_extern.frame_cache.height);
+   else if (aspect_ratio_idx == ASPECT_RATIO_CORE)
       gfx_set_core_viewport();
+   else if (aspect_ratio_idx == ASPECT_RATIO_CONFIG)
+      gfx_set_config_viewport();
 
-   g_settings.video.aspect_ratio = aspectratio_lut[g_settings.video.aspect_ratio_idx].value;
-   g_settings.video.force_aspect = false;
+   g_settings.video.aspect_ratio = aspectratio_lut[aspect_ratio_idx].value;
    d3d->should_resize = true;
 }
 

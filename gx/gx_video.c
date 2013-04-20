@@ -281,17 +281,18 @@ const char *gx_get_video_mode(void)
    return format;
 }
 
-static void gx_set_aspect_ratio(void *data, unsigned aspectratio_idx)
+static void gx_set_aspect_ratio(void *data, unsigned aspect_ratio_idx)
 {
    gx_video_t *gx = (gx_video_t*)driver.video_data;
 
-   if (g_settings.video.aspect_ratio_idx == ASPECT_RATIO_AUTO)
-      gfx_set_auto_viewport(g_extern.frame_cache.width, g_extern.frame_cache.height);
-   else if(g_settings.video.aspect_ratio_idx == ASPECT_RATIO_CORE)
+   if (aspect_ratio_idx == ASPECT_RATIO_SQUARE)
+      gfx_set_square_pixel_viewport(g_extern.frame_cache.width, g_extern.frame_cache.height);
+   else if (aspect_ratio_idx == ASPECT_RATIO_CORE)
       gfx_set_core_viewport();
+   else if (aspect_ratio_idx == ASPECT_RATIO_CONFIG)
+      gfx_set_config_viewport();
 
-   g_extern.system.aspect_ratio = aspectratio_lut[g_settings.video.aspect_ratio_idx].value;
-   g_settings.video.force_aspect = false;
+   g_extern.system.aspect_ratio = aspectratio_lut[aspect_ratio_idx].value;
    gx->keep_aspect = true;
    gx->should_resize = true;
 }

@@ -57,30 +57,33 @@ typedef struct
 
 enum aspect_ratio
 {
-   ASPECT_RATIO_1_1 = 0,
+   ASPECT_RATIO_4_3 = 0,
+   ASPECT_RATIO_16_9,
+   ASPECT_RATIO_16_10,
+   ASPECT_RATIO_16_15,
+#ifdef RARCH_CONSOLE // None of these aspect ratios make any sense.
+   ASPECT_RATIO_1_1,
    ASPECT_RATIO_2_1,
    ASPECT_RATIO_3_2,
    ASPECT_RATIO_3_4,
    ASPECT_RATIO_4_1,
-   ASPECT_RATIO_4_3,
    ASPECT_RATIO_4_4,
    ASPECT_RATIO_5_4,
    ASPECT_RATIO_6_5,
    ASPECT_RATIO_7_9,
    ASPECT_RATIO_8_3,
    ASPECT_RATIO_8_7,
-   ASPECT_RATIO_16_9,
-   ASPECT_RATIO_16_10,
-   ASPECT_RATIO_16_15,
    ASPECT_RATIO_19_12,
    ASPECT_RATIO_19_14,
    ASPECT_RATIO_30_17,
    ASPECT_RATIO_32_9,
-   ASPECT_RATIO_AUTO,
+#endif
+   ASPECT_RATIO_CONFIG,
+   ASPECT_RATIO_SQUARE,
    ASPECT_RATIO_CORE,
    ASPECT_RATIO_CUSTOM,
 
-   ASPECT_RATIO_END,
+   ASPECT_RATIO_END
 };
 
 #define LAST_ASPECT_RATIO ASPECT_RATIO_CUSTOM
@@ -96,7 +99,7 @@ enum rotation
 
 #define LAST_ORIENTATION (ORIENTATION_END - 1)
 
-extern char rotation_lut[ASPECT_RATIO_END][32];
+extern char rotation_lut[4][32];
 
 /* ABGR color format defines */
 
@@ -120,8 +123,9 @@ struct aspect_ratio_elem
 
 extern struct aspect_ratio_elem aspectratio_lut[ASPECT_RATIO_END];
 
-extern void gfx_set_auto_viewport(unsigned width, unsigned height);
-extern void gfx_set_core_viewport(void);
+void gfx_set_square_pixel_viewport(unsigned width, unsigned height);
+void gfx_set_core_viewport(void);
+void gfx_set_config_viewport(void);
 
 #ifdef __cplusplus
 }

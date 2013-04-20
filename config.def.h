@@ -266,11 +266,13 @@ static const bool aspect_ratio_auto = false; // 1:1 PAR
 
 #if defined(__CELLOS_LV2) || defined(_XBOX360)
 static unsigned aspect_ratio_idx = ASPECT_RATIO_16_9;
-#else
+#elif defined(RARCH_CONSOLE)
 static unsigned aspect_ratio_idx = ASPECT_RATIO_4_3;
+#else
+static unsigned aspect_ratio_idx = ASPECT_RATIO_CONFIG; // Use g_settings.video.aspect_ratio.
 #endif
 
-// Crop overscanned frames (7/8 or 15/15 for interlaced frames).
+// Crop overscanned frames.
 static const bool crop_overscan = true;
 
 // Font size for on-screen messages.

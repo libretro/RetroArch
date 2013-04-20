@@ -702,7 +702,7 @@ void gl_set_viewport(void *data, unsigned width, unsigned height, bool force_ful
 {
    gl_t *gl = (gl_t*)data;
 
-   unsigned x = 0, y = 0;
+   int x = 0, y = 0;
    struct gl_ortho ortho = {0, 1, 0, 1, -1, 1};
 
    float device_aspect = 0.0f;
@@ -725,10 +725,14 @@ void gl_set_viewport(void *data, unsigned width, unsigned height, bool force_ful
 #if defined(HAVE_RGUI) || defined(HAVE_RMENU)
       if (g_settings.video.aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
       {
-         x      = g_extern.console.screen.viewports.custom_vp.x;
-         y      = g_extern.console.screen.viewports.custom_vp.y;
-         width  = g_extern.console.screen.viewports.custom_vp.width;
-         height = g_extern.console.screen.viewports.custom_vp.height;
+         const struct rarch_viewport *custom =
+            &g_extern.console.screen.viewports.custom_vp;
+
+         // GL has bottom-left origin viewport.
+         x      = custom->x;
+         y      = gl->win_height - custom->y - custom->height;
+         width  = custom->width;
+         height = custom->height;
       }
       else
 #endif
@@ -2242,34 +2246,6 @@ static void gl_get_overlay_interface(void *data, const video_overlay_interface_t
 }
 #endif
 
-static void gl_set_filtering(void *data, unsigned index, bool smooth)
-{
-   gl_t *gl = (gl_t*)data;
-
-   GLuint filter = smooth ? GL_LINEAR : GL_NEAREST;
-   if (index == 1)
-   {
-      gl->tex_filter = filter;
-      // Apply to all PREV textures.
-      for (unsigned i = 0; i < TEXTURES; i++)
-      {
-         glBindTexture(GL_TEXTURE_2D, gl->texture[i]);
-         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, filter);
-         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, filter);
-      }
-   }
-#ifdef HAVE_FBO
-   else if (index >= 2 && gl->fbo_inited)
-   {
-      glBindTexture(GL_TEXTURE_2D, gl->fbo_texture[index - 2]);
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, filter);
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, filter);
-   }
-#endif
-
-   glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
-}
-
 #ifdef HAVE_FBO
 static uintptr_t gl_get_current_framebuffer(void *data)
 {
@@ -2284,19 +2260,30 @@ static retro_proc_address_t gl_get_proc_address(void *data, const char *sym)
 }
 #endif
 
-static void gl_set_aspect_ratio(void *data, unsigned aspectratio_index)
+static void gl_set_aspect_ratio(void *data, unsigned aspect_ratio_idx)
 {
    gl_t *gl = (gl_t*)data;
 
-   if (g_settings.video.aspect_ratio_idx == ASPECT_RATIO_AUTO)
-      gfx_set_auto_viewport(g_extern.frame_cache.width, g_extern.frame_cache.height);
-   else if (g_settings.video.aspect_ratio_idx == ASPECT_RATIO_CORE)
-      gfx_set_core_viewport();
+   switch (aspect_ratio_idx)
+   {
+      case ASPECT_RATIO_SQUARE:
+         gfx_set_square_pixel_viewport(g_extern.frame_cache.width, g_extern.frame_cache.height);
+         break;
 
-   g_extern.system.aspect_ratio = aspectratio_lut[g_settings.video.aspect_ratio_idx].value;
-   g_settings.video.force_aspect = false;
+      case ASPECT_RATIO_CORE:
+         gfx_set_core_viewport();
+         break;
+
+      case ASPECT_RATIO_CONFIG:
+         gfx_set_config_viewport();
+         break;
+
+      default:
+         break;
+   }
+
+   g_extern.system.aspect_ratio = aspectratio_lut[aspect_ratio_idx].value;
    gl->keep_aspect = true;
-
    gl->should_resize = true;
 }
 
@@ -2375,7 +2362,7 @@ static void gl_show_mouse(void *data, bool state)
 }
 
 static const video_poke_interface_t gl_poke_interface = {
-   gl_set_filtering,
+   NULL,
 #ifdef HAVE_FBO
    gl_get_current_framebuffer,
    gl_get_proc_address,
