@@ -1242,15 +1242,18 @@ void settings_set(uint64_t settings)
 {
    if (settings & (1ULL << S_ASPECT_RATIO_DECREMENT))
    {
-      if(g_settings.video.aspect_ratio_idx > 0)
+      if (g_settings.video.aspect_ratio_idx > 0)
          g_settings.video.aspect_ratio_idx--;
    }
 
    if (settings & (1ULL << S_ASPECT_RATIO_INCREMENT))
    {
-      if(g_settings.video.aspect_ratio_idx < LAST_ASPECT_RATIO)
+      if (g_settings.video.aspect_ratio_idx < LAST_ASPECT_RATIO)
          g_settings.video.aspect_ratio_idx++;
    }
+
+   if (settings & (1ULL << S_SCALE_INTEGER_TOGGLE))
+      g_settings.video.scale_integer = !g_settings.video.scale_integer;
 
    if (settings & (1ULL << S_AUDIO_MUTE))
       g_extern.audio_data.mute = !g_extern.audio_data.mute;
@@ -1259,8 +1262,12 @@ void settings_set(uint64_t settings)
    {
       if (g_settings.audio.rate_control_delta > 0.0)
          g_settings.audio.rate_control_delta -= 0.001;
-      if (g_settings.audio.rate_control_delta == 0.0)
+
+      if (g_settings.audio.rate_control_delta < 0.0005)
+      {
          g_settings.audio.rate_control = false;
+         g_settings.audio.rate_control_delta = 0.0;
+      }
       else
          g_settings.audio.rate_control = true;
    }
@@ -1369,6 +1376,9 @@ void settings_set(uint64_t settings)
 
    if (settings & (1ULL << S_DEF_ASPECT_RATIO))
       g_settings.video.aspect_ratio_idx = aspect_ratio_idx;
+
+   if (settings & (1ULL << S_DEF_SCALE_INTEGER))
+      g_settings.video.scale_integer = scale_integer;
 
    if (settings & (1ULL << S_DEF_AUDIO_MUTE))
       g_extern.audio_data.mute = false;

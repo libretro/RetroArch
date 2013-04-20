@@ -493,6 +493,9 @@ static void render_text(rgui_handle_t *rgui)
             case RGUI_SETTINGS_VIDEO_GAMMA:
                snprintf(type_str, sizeof(type_str), "%d", g_extern.console.screen.gamma_correction);
                break;
+            case RGUI_SETTINGS_VIDEO_INTEGER_SCALE:
+               strlcpy(type_str, g_settings.video.scale_integer ? "ON" : "OFF", sizeof(type_str));
+               break;
             case RGUI_SETTINGS_VIDEO_ASPECT_RATIO:
                strlcpy(type_str, aspectratio_lut[g_settings.video.aspect_ratio_idx].name, sizeof(type_str));
                break;
@@ -819,6 +822,17 @@ static int rgui_settings_toggle_setting(rgui_handle_t *rgui, unsigned setting, r
             }
          }
          break;
+      case RGUI_SETTINGS_VIDEO_INTEGER_SCALE:
+         if (action == RGUI_ACTION_START)
+            settings_set(1ULL << S_DEF_SCALE_INTEGER);
+         else if (action == RGUI_ACTION_LEFT ||
+               action == RGUI_ACTION_RIGHT ||
+               action == RGUI_ACTION_OK)
+            settings_set(1ULL << S_SCALE_INTEGER_TOGGLE);
+
+         if (driver.video_poke->apply_state_changes)
+            driver.video_poke->apply_state_changes(driver.video_data);
+         break;
       case RGUI_SETTINGS_VIDEO_ASPECT_RATIO:
          if (action == RGUI_ACTION_START)
             settings_set(1ULL << S_DEF_ASPECT_RATIO);
@@ -1048,8 +1062,9 @@ static void rgui_settings_populate_entries(rgui_handle_t *rgui)
    rgui_list_push(rgui->selection_buf, "Screen Resolution", RGUI_SETTINGS_VIDEO_RESOLUTION, 0);
    rgui_list_push(rgui->selection_buf, "Gamma", RGUI_SETTINGS_VIDEO_GAMMA, 0);
 #endif
-   rgui_list_push(rgui->selection_buf, "Aspect Ratio", RGUI_SETTINGS_VIDEO_ASPECT_RATIO, 0);
-   rgui_list_push(rgui->selection_buf, "Custom Ratio", RGUI_SETTINGS_CUSTOM_VIEWPORT, 0);
+   rgui_list_push(rgui->selection_buf, "Integer scale", RGUI_SETTINGS_VIDEO_INTEGER_SCALE, 0);
+   rgui_list_push(rgui->selection_buf, "Aspect ratio", RGUI_SETTINGS_VIDEO_ASPECT_RATIO, 0);
+   rgui_list_push(rgui->selection_buf, "Custom ratio", RGUI_SETTINGS_CUSTOM_VIEWPORT, 0);
    rgui_list_push(rgui->selection_buf, "Rotation", RGUI_SETTINGS_VIDEO_ROTATION, 0);
    rgui_list_push(rgui->selection_buf, "Mute Audio", RGUI_SETTINGS_AUDIO_MUTE, 0);
    rgui_list_push(rgui->selection_buf, "Audio Control Rate", RGUI_SETTINGS_AUDIO_CONTROL_RATE, 0);
