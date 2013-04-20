@@ -964,15 +964,6 @@ void D3DVideo::resize(unsigned new_width, unsigned new_height)
    }
 }
 
-void D3DVideo::set_filtering(unsigned index, bool smooth)
-{
-   gfx_filter_type filter_type = smooth ? RARCH_FILTER_LINEAR : RARCH_FILTER_NEAREST;
-   if (index >= 1 && index <= shader.passes)
-   {
-      shader.pass[index - 1].filter = filter_type;
-   }
-}
-
 #ifdef HAVE_OVERLAY
 bool D3DVideo::overlay_load(const uint32_t *image, unsigned width, unsigned height)
 {
@@ -1395,21 +1386,6 @@ static void d3d9_get_overlay_interface(void *data, const video_overlay_interface
 }
 #endif
 
-static void d3d9_set_filtering(void *data, unsigned index, bool smooth)
-{
-   reinterpret_cast<D3DVideo*>(data)->set_filtering(index, smooth);
-}
-
-static uintptr_t d3d9_get_current_framebuffer(void *data)
-{
-   return 0;
-}
-
-static retro_proc_address_t d3d9_get_proc_address(void *data, const char *sym)
-{
-   return NULL;
-}
-
 static void d3d9_set_aspect_ratio(void *data, unsigned aspectratio_index)
 {
    // TODO: figure out what to do here
@@ -1448,10 +1424,10 @@ static void d3d9_set_rgui_texture_enable(void *data, bool state, bool full_scree
 #endif
 
 static const video_poke_interface_t d3d9_poke_interface = {
-   d3d9_set_filtering,
+   NULL,
 #ifdef HAVE_FBO
-   d3d9_get_current_framebuffer,
-   d3d9_get_proc_address,
+   NULL,
+   NULL,
 #endif
    d3d9_set_aspect_ratio,
    d3d9_apply_state_changes,
