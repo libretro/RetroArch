@@ -220,7 +220,11 @@ rgui_handle_t *rgui_init(void)
    // before it's configured.
    rarch_viewport_t *custom = &g_extern.console.screen.viewports.custom_vp;
    if (driver.video_data && (!custom->width || !custom->height))
+   {
       driver.video->viewport_info(driver.video_data, custom);
+      aspectratio_lut[ASPECT_RATIO_CUSTOM].value =
+         (float)custom->width / custom->height;
+   }
 
    return rgui;
 }
@@ -1376,16 +1380,23 @@ static int rgui_viewport_iterate(rgui_handle_t *rgui, rgui_action_t action)
    unsigned menu_type = 0;
    rgui_list_get_last(rgui->menu_stack, NULL, &menu_type);
 
+   struct retro_game_geometry *geom = &g_extern.system.av_info.geometry;
+   int stride_x = g_settings.video.scale_integer ?
+      geom->base_width : 1;
+   int stride_y = g_settings.video.scale_integer ?
+      geom->base_height : 1;
+
    switch (action)
    {
       case RGUI_ACTION_UP:
          if (menu_type == RGUI_SETTINGS_CUSTOM_VIEWPORT)
          {
-            custom->y -= 1;
-            custom->height += 1;
+            custom->y -= stride_y;
+            custom->height += stride_y;
          }
-         else
-            custom->height -= 1;
+         else if (custom->height >= (unsigned)stride_y)
+            custom->height -= stride_y;
+
          if (driver.video_poke->apply_state_changes)
             driver.video_poke->apply_state_changes(driver.video_data);
          break;
@@ -1393,11 +1404,13 @@ static int rgui_viewport_iterate(rgui_handle_t *rgui, rgui_action_t action)
       case RGUI_ACTION_DOWN:
          if (menu_type == RGUI_SETTINGS_CUSTOM_VIEWPORT)
          {
-            custom->y += 1;
-            custom->height -= 1;
+            custom->y += stride_y;
+            if (custom->height >= stride_y)
+               custom->height -= stride_y;
          }
          else
-            custom->height += 1;
+            custom->height += stride_y;
+
          if (driver.video_poke->apply_state_changes)
             driver.video_poke->apply_state_changes(driver.video_data);
          break;
@@ -1405,11 +1418,12 @@ static int rgui_viewport_iterate(rgui_handle_t *rgui, rgui_action_t action)
       case RGUI_ACTION_LEFT:
          if (menu_type == RGUI_SETTINGS_CUSTOM_VIEWPORT)
          {
-            custom->x -= 1;
-            custom->width += 1;
+            custom->x -= stride_x;
+            custom->width += stride_x;
          }
-         else
-            custom->width -= 1;
+         else if (custom->width >= (unsigned)stride_x)
+            custom->width -= stride_x;
+
          if (driver.video_poke->apply_state_changes)
             driver.video_poke->apply_state_changes(driver.video_data);
          break;
@@ -1417,11 +1431,13 @@ static int rgui_viewport_iterate(rgui_handle_t *rgui, rgui_action_t action)
       case RGUI_ACTION_RIGHT:
          if (menu_type == RGUI_SETTINGS_CUSTOM_VIEWPORT)
          {
-            custom->x += 1;
-            custom->width -= 1;
+            custom->x += stride_x;
+            if (custom->width >= (unsigned)stride_x)
+               custom->width -= stride_x;
          }
          else
-            custom->width += 1;
+            custom->width += stride_x;
+
          if (driver.video_poke->apply_state_changes)
             driver.video_poke->apply_state_changes(driver.video_data);
          break;
@@ -1429,34 +1445,46 @@ static int rgui_viewport_iterate(rgui_handle_t *rgui, rgui_action_t action)
       case RGUI_ACTION_CANCEL:
          rgui_list_pop(rgui->menu_stack, &rgui->selection_ptr);
          if (menu_type == RGUI_SETTINGS_CUSTOM_VIEWPORT_2)
-            rgui_list_push(rgui->menu_stack, "", RGUI_SETTINGS_CUSTOM_VIEWPORT,
+         {
+            rgui_list_push(rgui->menu_stack, "",
+                  RGUI_SETTINGS_CUSTOM_VIEWPORT,
                   rgui->selection_ptr);
+         }
          break;
 
       case RGUI_ACTION_OK:
          rgui_list_pop(rgui->menu_stack, &rgui->selection_ptr);
-         if (menu_type == RGUI_SETTINGS_CUSTOM_VIEWPORT)
-            rgui_list_push(rgui->menu_stack, "", RGUI_SETTINGS_CUSTOM_VIEWPORT_2,
+         if (menu_type == RGUI_SETTINGS_CUSTOM_VIEWPORT
+               && !g_settings.video.scale_integer)
+         {
+            rgui_list_push(rgui->menu_stack, "",
+                  RGUI_SETTINGS_CUSTOM_VIEWPORT_2,
                   rgui->selection_ptr);
+         }
          break;
 
       case RGUI_ACTION_START:
-#ifdef GEKKO
-         if (menu_type == RGUI_SETTINGS_CUSTOM_VIEWPORT)
+         if (!g_settings.video.scale_integer)
          {
-            custom->width += custom->x;
-            custom->height += custom->y;
-            custom->x = 0;
-            custom->y = 0;
+            rarch_viewport_t vp;
+            driver.video->viewport_info(driver.video_data, &vp);
+
+            if (menu_type == RGUI_SETTINGS_CUSTOM_VIEWPORT)
+            {
+               custom->width += custom->x;
+               custom->height += custom->y;
+               custom->x = 0;
+               custom->y = 0;
+            }
+            else
+            {
+               custom->width = vp.full_width - custom->x;
+               custom->height = vp.full_height - custom->y;
+            }
+
+            if (driver.video_poke->apply_state_changes)
+               driver.video_poke->apply_state_changes(driver.video_data);
          }
-         else
-         {
-            custom->width = win_width - custom->x;
-            custom->height = win_height - custom->y;
-         }
-#endif
-         if (driver.video_poke->apply_state_changes)
-            driver.video_poke->apply_state_changes(driver.video_data);
          break;
 
       case RGUI_ACTION_SETTINGS:
@@ -1476,15 +1504,44 @@ static int rgui_viewport_iterate(rgui_handle_t *rgui, rgui_action_t action)
    render_text(rgui);
 
    const char *base_msg = NULL;
-   if (menu_type == RGUI_SETTINGS_CUSTOM_VIEWPORT)
-      base_msg = "Set Upper-Left Corner";
-   else if (menu_type == RGUI_SETTINGS_CUSTOM_VIEWPORT_2)
-      base_msg = "Set Bottom-Right Corner";
-
    char msg[64];
-   snprintf(msg, sizeof(msg), "%s (%d, %d : %4ux%4u)",
-         base_msg, custom->x, custom->y, custom->width, custom->height); 
+
+   if (g_settings.video.scale_integer)
+   {
+      custom->x = 0;
+      custom->y = 0;
+      custom->width = ((custom->width + geom->base_width - 1) / geom->base_width) * geom->base_width;
+      custom->height = ((custom->height + geom->base_height - 1) / geom->base_height) * geom->base_height;
+
+      base_msg = "Set scale";
+      snprintf(msg, sizeof(msg), "%s (%4ux%4u, %u x %u scale)",
+            base_msg,
+            custom->width, custom->height,
+            custom->width / geom->base_width,
+            custom->height / geom->base_height); 
+   }
+   else
+   {
+      if (menu_type == RGUI_SETTINGS_CUSTOM_VIEWPORT)
+         base_msg = "Set Upper-Left Corner";
+      else if (menu_type == RGUI_SETTINGS_CUSTOM_VIEWPORT_2)
+         base_msg = "Set Bottom-Right Corner";
+
+      snprintf(msg, sizeof(msg), "%s (%d, %d : %4ux%4u)",
+            base_msg, custom->x, custom->y, custom->width, custom->height); 
+   }
    render_messagebox(rgui, msg);
+
+   if (!custom->width)
+      custom->width = stride_x;
+   if (!custom->height)
+      custom->height = stride_y;
+
+   aspectratio_lut[ASPECT_RATIO_CUSTOM].value =
+      (float)custom->width / custom->height;
+
+   if (driver.video_poke->apply_state_changes)
+      driver.video_poke->apply_state_changes(driver.video_data);
 
    return 0;
 }
@@ -1569,6 +1626,8 @@ static int rgui_settings_iterate(rgui_handle_t *rgui, rgui_action_t action)
             // Start with something sane.
             rarch_viewport_t *custom = &g_extern.console.screen.viewports.custom_vp;
             driver.video->viewport_info(driver.video_data, custom);
+            aspectratio_lut[ASPECT_RATIO_CUSTOM].value =
+               (float)custom->width / custom->height;
 
             g_settings.video.aspect_ratio_idx = ASPECT_RATIO_CUSTOM;
             if (driver.video_poke->set_aspect_ratio)

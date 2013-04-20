@@ -128,40 +128,53 @@ void gfx_set_dwm(void)
 
 void gfx_scale_integer(struct rarch_viewport *vp, unsigned width, unsigned height, float aspect_ratio, bool keep_aspect)
 {
-   // Use system reported sizes as these define the geometry for the "normal" case.
-   unsigned base_height = g_extern.system.av_info.geometry.base_height;
-   // Account for non-square pixels.
-   // This is sort of contradictory with the goal of integer scale,
-   // but it is desirable in some cases.
-   // If square pixels are used, base_height will be equal to g_extern.system.av_info.base_height.
-   unsigned base_width = (unsigned)roundf(base_height * aspect_ratio);
+   int padding_x = 0;
+   int padding_y = 0;
 
-   unsigned padding_x = 0;
-   unsigned padding_y = 0;
-
-   // Make sure that we don't get 0x scale ...
-   if (width >= base_width && height >= base_height)
+   if (g_settings.video.aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
    {
-      if (keep_aspect) // X/Y scale must be same.
-      {
-         unsigned max_scale = min(width / base_width, height / base_height);
-         padding_x = width - base_width * max_scale;
-         padding_y = height - base_height * max_scale;
-      }
-      else // X/Y can be independent, each scaled as much as possible.
-      {
-         padding_x = width % base_width;
-         padding_y = height % base_height;
-      }
-   }
+      const struct rarch_viewport *custom =
+         &g_extern.console.screen.viewports.custom_vp;
 
-   width     -= padding_x;
-   height    -= padding_y;
+      padding_x = width - custom->width;
+      padding_y = height - custom->height;
+      width = custom->width;
+      height = custom->height;
+   }
+   else
+   {
+      // Use system reported sizes as these define the geometry for the "normal" case.
+      unsigned base_height = g_extern.system.av_info.geometry.base_height;
+      // Account for non-square pixels.
+      // This is sort of contradictory with the goal of integer scale,
+      // but it is desirable in some cases.
+      // If square pixels are used, base_height will be equal to g_extern.system.av_info.base_height.
+      unsigned base_width = (unsigned)roundf(base_height * aspect_ratio);
+
+      // Make sure that we don't get 0x scale ...
+      if (width >= base_width && height >= base_height)
+      {
+         if (keep_aspect) // X/Y scale must be same.
+         {
+            unsigned max_scale = min(width / base_width, height / base_height);
+            padding_x = width - base_width * max_scale;
+            padding_y = height - base_height * max_scale;
+         }
+         else // X/Y can be independent, each scaled as much as possible.
+         {
+            padding_x = width % base_width;
+            padding_y = height % base_height;
+         }
+      }
+
+      width     -= padding_x;
+      height    -= padding_y;
+   }
 
    vp->width  = width;
    vp->height = height;
-   vp->x      = padding_x >> 1;
-   vp->y      = padding_y >> 1;
+   vp->x      = padding_x / 2;
+   vp->y      = padding_y / 2;
 }
 
 struct aspect_ratio_elem aspectratio_lut[ASPECT_RATIO_END] = {
