@@ -34,6 +34,10 @@
 #include "command.h"
 #endif
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #define AUDIO_CHUNK_SIZE_BLOCKING 512
 #define AUDIO_CHUNK_SIZE_NONBLOCKING 2048 // So we don't get complete line-noise when fast-forwarding audio.
 #define AUDIO_MAX_RATIO 16
@@ -511,6 +515,10 @@ extern const input_driver_t input_ios;
 extern const input_driver_t input_null;
 
 #include "driver_funcs.h"
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
 

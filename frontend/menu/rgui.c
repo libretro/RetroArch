@@ -1419,7 +1419,7 @@ static int rgui_viewport_iterate(rgui_handle_t *rgui, rgui_action_t action)
          if (menu_type == RGUI_SETTINGS_CUSTOM_VIEWPORT)
          {
             custom->y += stride_y;
-            if (custom->height >= stride_y)
+            if (custom->height >= (unsigned)stride_y)
                custom->height -= stride_y;
          }
          else
@@ -1797,7 +1797,7 @@ static bool directory_parse(rgui_handle_t *rgui, const char *directory, unsigned
 
 int rgui_iterate(rgui_handle_t *rgui)
 {
-   uint64_t action = RGUI_ACTION_NOOP;
+   rgui_action_t action = RGUI_ACTION_NOOP;
 
    // don't run anything first frame, only capture held inputs for old_input_state
    if (rgui->trigger_state & (1ULL << DEVICE_NAV_UP))

@@ -20,6 +20,10 @@
 #include "libretro.h"
 #include <stddef.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef struct core_option_manager core_option_manager_t;
 
 core_option_manager_t *core_option_new(const char *conf_path, const struct retro_variable *vars);
@@ -42,6 +46,10 @@ void core_option_prev(core_option_manager_t *opt, size_t index);
 
 // Sets default val for an option.
 void core_option_set_default(core_option_manager_t *opt, size_t index);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
 
