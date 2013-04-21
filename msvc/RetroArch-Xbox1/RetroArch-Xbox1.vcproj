@@ -282,6 +282,118 @@
 				StackSize="65536"
 				IncludeDebugInfo="FALSE"/>
 		</Configuration>
+		<Configuration
+			Name="Release_BigStack|Xbox"
+			OutputDirectory="$(ConfigurationName)"
+			IntermediateDirectory="$(ConfigurationName)"
+			ConfigurationType="1"
+			CharacterSet="2">
+			<Tool
+				Name="VCCLCompilerTool"
+				Optimization="3"
+				GlobalOptimizations="TRUE"
+				InlineFunctionExpansion="2"
+				EnableIntrinsicFunctions="TRUE"
+				ImproveFloatingPointConsistency="TRUE"
+				FavorSizeOrSpeed="1"
+				OmitFramePointers="TRUE"
+				EnableFiberSafeOptimizations="TRUE"
+				OptimizeForProcessor="2"
+				AdditionalIncludeDirectories="&quot;$(SolutionDir)\msvc-stdint&quot;;&quot;$(SolutionDir)\msvc-71&quot;"
+				PreprocessorDefinitions="NDEBUG;_XBOX;_XBOX1;HAVE_RMENU;HAVE_RMENU_GUI;RARCH_CONSOLE;HAVE_XINPUT_XBOX1;PACKAGE_VERSION=\&quot;0.9.8.4\&quot;;__STDC_CONSTANT_MACROS;HAVE_ZLIB;HAVE_GRIFFIN;inline=_inline;HAVE_RARCH_MAIN_WRAP;HAVE_RARCH_MAIN_IMPLEMENTATION;HAVE_LIBRETRO_MANAGEMENT;HAVE_RARCH_EXEC;HAVE_VID_CONTEXT;HAVE_DSOUND;HAVE_D3D8;HAVE_FILEBROWSER;WANT_MINIZ;SINC_LOWER_QUALITY"
+				StringPooling="TRUE"
+				RuntimeLibrary="0"
+				BufferSecurityCheck="TRUE"
+				EnableFunctionLevelLinking="TRUE"
+				EnableEnhancedInstructionSet="1"
+				UsePrecompiledHeader="0"
+				WarningLevel="3"
+				Detect64BitPortabilityProblems="FALSE"
+				DebugInformationFormat="3"/>
+			<Tool
+				Name="VCCustomBuildTool"/>
+			<Tool
+				Name="VCLinkerTool"
+				AdditionalDependencies="xapilib.lib d3d8.lib d3dx8.lib xgraphics.lib dsound.lib xonlines.lib xboxkrnl.lib $(TargetDir)libretro_xdk.lib"
+				OutputFile="$(OutDir)/$(ProjectName).exe"
+				LinkIncremental="1"
+				GenerateDebugInformation="TRUE"
+				ProgramDatabaseFile="$(OutDir)/$(ProjectName).pdb"
+				SubSystem="2"
+				OptimizeReferences="2"
+				EnableCOMDATFolding="2"
+				OptimizeForWindows98="1"
+				SetChecksum="TRUE"
+				TargetMachine="1"/>
+			<Tool
+				Name="VCPostBuildEventTool"/>
+			<Tool
+				Name="VCPreBuildEventTool"/>
+			<Tool
+				Name="VCPreLinkEventTool"/>
+			<Tool
+				Name="XboxDeploymentTool"
+				RemotePath="xe:\$(SolutionName)\CORE.xbe"
+				AdditionalFiles="..\..\media\xbox1;roms;system;screenshots"
+				ForceCopy="TRUE"/>
+			<Tool
+				Name="XboxImageTool"
+				StackSize="524288"/>
+		</Configuration>
+		<Configuration
+			Name="Release_LTCG_BigStack|Xbox"
+			OutputDirectory="$(ConfigurationName)"
+			IntermediateDirectory="$(ConfigurationName)"
+			ConfigurationType="1"
+			CharacterSet="2"
+			WholeProgramOptimization="TRUE">
+			<Tool
+				Name="VCCLCompilerTool"
+				Optimization="3"
+				OmitFramePointers="TRUE"
+				OptimizeForProcessor="2"
+				AdditionalIncludeDirectories="&quot;$(SolutionDir)\msvc-stdint&quot;;&quot;$(SolutionDir)\msvc-71&quot;"
+				PreprocessorDefinitions="NDEBUG;_XBOX;_XBOX1;HAVE_RMENU;HAVE_RMENU_GUI;RARCH_CONSOLE;HAVE_XINPUT_XBOX1;PACKAGE_VERSION=\&quot;0.9.8.4\&quot;;__STDC_CONSTANT_MACROS;HAVE_ZLIB;LTCG;HAVE_GRIFFIN;HAVE_RARCH_MAIN_WRAP;HAVE_RARCH_MAIN_IMPLEMENTATION;HAVE_LIBRETRO_MANAGEMENT;HAVE_RARCH_EXEC;HAVE_VID_CONTEXT;HAVE_DSOUND;HAVE_D3D8;HAVE_FILEBROWSER;WANT_MINIZ;SINC_LOWER_QUALITY"
+				StringPooling="TRUE"
+				RuntimeLibrary="0"
+				BufferSecurityCheck="TRUE"
+				EnableFunctionLevelLinking="TRUE"
+				EnableEnhancedInstructionSet="1"
+				UsePrecompiledHeader="0"
+				WarningLevel="3"
+				Detect64BitPortabilityProblems="FALSE"
+				DebugInformationFormat="3"/>
+			<Tool
+				Name="VCCustomBuildTool"/>
+			<Tool
+				Name="VCLinkerTool"
+				AdditionalDependencies="xapilib.lib d3d8ltcg.lib d3dx8.lib xgraphicsltcg.lib dsound.lib xonlines.lib xboxkrnl.lib $(TargetDir)libretro_xdk.lib"
+				OutputFile="$(OutDir)/$(ProjectName).exe"
+				LinkIncremental="1"
+				GenerateDebugInformation="FALSE"
+				ProgramDatabaseFile="$(OutDir)/$(ProjectName).pdb"
+				SubSystem="2"
+				OptimizeReferences="2"
+				EnableCOMDATFolding="2"
+				OptimizeForWindows98="1"
+				SetChecksum="TRUE"
+				TargetMachine="1"/>
+			<Tool
+				Name="VCPostBuildEventTool"/>
+			<Tool
+				Name="VCPreBuildEventTool"/>
+			<Tool
+				Name="VCPreLinkEventTool"/>
+			<Tool
+				Name="XboxDeploymentTool"
+				RemotePath="xe:\$(SolutionName)\CORE.xbe"
+				AdditionalFiles="..\..\media\xbox1;roms;system;screenshots"
+				ForceCopy="TRUE"/>
+			<Tool
+				Name="XboxImageTool"
+				StackSize="524288"
+				IncludeDebugInfo="FALSE"/>
+		</Configuration>
 	</Configurations>
 	<References>
 	</References>
@@ -318,6 +430,18 @@
 				</FileConfiguration>
 				<FileConfiguration
 					Name="Release_LTCG|Xbox">
+					<Tool
+						Name="VCCLCompilerTool"
+						CompileAs="2"/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release_BigStack|Xbox">
+					<Tool
+						Name="VCCLCompilerTool"
+						CompileAs="2"/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release_LTCG_BigStack|Xbox">
 					<Tool
 						Name="VCCLCompilerTool"
 						CompileAs="2"/>

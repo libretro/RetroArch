@@ -13,7 +13,9 @@ Global
 		Profile = Profile
 		Profile_FastCap = Profile_FastCap
 		Release = Release
+		Release_BigStack = Release_BigStack
 		Release_LTCG = Release_LTCG
+		Release_LTCG_BigStack = Release_LTCG_BigStack
 	EndGlobalSection
 	GlobalSection(ProjectConfiguration) = postSolution
 		{0E616FC4-0954-4FE3-935C-B7383B18D325}.Debug.ActiveCfg = Debug|Xbox
@@ -24,8 +26,12 @@ Global
 		{0E616FC4-0954-4FE3-935C-B7383B18D325}.Profile_FastCap.Build.0 = Profile_FastCap|Xbox
 		{0E616FC4-0954-4FE3-935C-B7383B18D325}.Release.ActiveCfg = Release|Xbox
 		{0E616FC4-0954-4FE3-935C-B7383B18D325}.Release.Build.0 = Release|Xbox
+		{0E616FC4-0954-4FE3-935C-B7383B18D325}.Release_BigStack.ActiveCfg = Release_BigStack|Xbox
+		{0E616FC4-0954-4FE3-935C-B7383B18D325}.Release_BigStack.Build.0 = Release_BigStack|Xbox
 		{0E616FC4-0954-4FE3-935C-B7383B18D325}.Release_LTCG.ActiveCfg = Release_LTCG|Xbox
 		{0E616FC4-0954-4FE3-935C-B7383B18D325}.Release_LTCG.Build.0 = Release_LTCG|Xbox
+		{0E616FC4-0954-4FE3-935C-B7383B18D325}.Release_LTCG_BigStack.ActiveCfg = Release_LTCG_BigStack|Xbox
+		{0E616FC4-0954-4FE3-935C-B7383B18D325}.Release_LTCG_BigStack.Build.0 = Release_LTCG_BigStack|Xbox
 		{EA17F7A7-7E66-4E32-9BA3-DEC11E4BBA8E}.Debug.ActiveCfg = Debug|Xbox
 		{EA17F7A7-7E66-4E32-9BA3-DEC11E4BBA8E}.Debug.Build.0 = Debug|Xbox
 		{EA17F7A7-7E66-4E32-9BA3-DEC11E4BBA8E}.Profile.ActiveCfg = Profile|Xbox
@@ -34,8 +40,12 @@ Global
 		{EA17F7A7-7E66-4E32-9BA3-DEC11E4BBA8E}.Profile_FastCap.Build.0 = Profile_FastCap|Xbox
 		{EA17F7A7-7E66-4E32-9BA3-DEC11E4BBA8E}.Release.ActiveCfg = Release|Xbox
 		{EA17F7A7-7E66-4E32-9BA3-DEC11E4BBA8E}.Release.Build.0 = Release|Xbox
+		{EA17F7A7-7E66-4E32-9BA3-DEC11E4BBA8E}.Release_BigStack.ActiveCfg = Release_LTCG|Xbox
+		{EA17F7A7-7E66-4E32-9BA3-DEC11E4BBA8E}.Release_BigStack.Build.0 = Release_LTCG|Xbox
 		{EA17F7A7-7E66-4E32-9BA3-DEC11E4BBA8E}.Release_LTCG.ActiveCfg = Release_LTCG|Xbox
 		{EA17F7A7-7E66-4E32-9BA3-DEC11E4BBA8E}.Release_LTCG.Build.0 = Release_LTCG|Xbox
+		{EA17F7A7-7E66-4E32-9BA3-DEC11E4BBA8E}.Release_LTCG_BigStack.ActiveCfg = Release_LTCG|Xbox
+		{EA17F7A7-7E66-4E32-9BA3-DEC11E4BBA8E}.Release_LTCG_BigStack.Build.0 = Release_LTCG|Xbox
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 	EndGlobalSection
