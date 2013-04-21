@@ -432,9 +432,6 @@ bool menu_iterate(void)
       g_extern.lifecycle_mode_state &= ~(1ULL << MODE_MENU_PREINIT);
    }
 
-   if (driver.video_poke->apply_state_changes)
-      driver.video_poke->apply_state_changes(driver.video_data);
-
    rarch_input_poll();
 #ifdef HAVE_OVERLAY
    rarch_check_overlay();
