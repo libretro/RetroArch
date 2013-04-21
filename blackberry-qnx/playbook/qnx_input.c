@@ -616,7 +616,7 @@ static void qnx_input_set_keybinds(void *data, unsigned device, unsigned port,
             strlcpy(g_settings.input.device_names[port], "Wiimote",
                sizeof(g_settings.input.device_names[port]));
             g_settings.input.device[port] = device;
-            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_B].def_joykey      = SCREEN_Y_GAME_BUTTON;
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_B].def_joykey      = SCREEN_X_GAME_BUTTON;
             g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_Y].def_joykey      = SCREEN_B_GAME_BUTTON;
             g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_SELECT].def_joykey = SCREEN_MENU1_GAME_BUTTON;
             g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_START].def_joykey  = SCREEN_MENU2_GAME_BUTTON;
@@ -624,7 +624,7 @@ static void qnx_input_set_keybinds(void *data, unsigned device, unsigned port,
             g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_DOWN].def_joykey   = SCREEN_DPAD_DOWN_GAME_BUTTON;
             g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_LEFT].def_joykey   = SCREEN_DPAD_LEFT_GAME_BUTTON;
             g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_RIGHT].def_joykey  = SCREEN_DPAD_RIGHT_GAME_BUTTON;
-            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_A].def_joykey      = SCREEN_X_GAME_BUTTON;
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_A].def_joykey      = SCREEN_Y_GAME_BUTTON;
             g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_X].def_joykey      = SCREEN_A_GAME_BUTTON;
             g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_L].def_joykey      = SCREEN_L1_GAME_BUTTON;
             g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_R].def_joykey      = SCREEN_R1_GAME_BUTTON;
