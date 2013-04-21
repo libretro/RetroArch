@@ -946,7 +946,7 @@ void init_video_input(void)
    if (driver.video->set_rotation && g_extern.system.rotation)
       video_set_rotation_func(g_extern.system.rotation);
 
-   if (driver.video_poke->set_aspect_ratio &&
+   if (driver.video_poke && driver.video_poke->set_aspect_ratio &&
          g_settings.video.aspect_ratio_idx != ASPECT_RATIO_CONFIG)
       driver.video_poke->set_aspect_ratio(driver.video_data, g_settings.video.aspect_ratio_idx);
 
