@@ -329,28 +329,9 @@ end:
    return ret;
 }
 
-bool D3DVideo::viewport_need_restore()
-{
-   const rarch_viewport_t &custom = g_extern.console.screen.viewports.custom_vp;
-   if (memcmp(&viewport_state.custom, &custom, sizeof(custom)))
-      return true;
-   if (viewport_state.scale_integer != g_settings.video.scale_integer)
-      return true;
-   if (fabs(viewport_state.aspect_ratio - g_extern.system.aspect_ratio) > 0.0001)
-      return true;
-
-   return false;
-}
-
 void D3DVideo::calculate_rect(unsigned width, unsigned height,
    bool keep, float desired_aspect)
 {
-   const rarch_viewport_t &custom = g_extern.console.screen.viewports.custom_vp;
-
-   viewport_state.custom = custom;
-   viewport_state.scale_integer = g_settings.video.scale_integer;
-   viewport_state.aspect_ratio = desired_aspect;
-
    if (g_settings.video.scale_integer)
    {
       struct rarch_viewport vp = {0};
@@ -363,6 +344,7 @@ void D3DVideo::calculate_rect(unsigned width, unsigned height,
    {
       if (g_settings.video.aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
       {
+         const rarch_viewport_t &custom = g_extern.console.screen.viewports.custom_vp;
          set_viewport(custom.x, custom.y, custom.width, custom.height);
       }
       else
@@ -438,6 +420,7 @@ D3DVideo::D3DVideo(const video_info_t *info) :
    g_pD3D(nullptr), dev(nullptr), font(nullptr),
    rotation(0), needs_restore(false), cgCtx(nullptr)
 {
+   should_resize = false;
    gfx_set_dwm();
 
 #ifdef HAVE_OVERLAY
@@ -609,6 +592,22 @@ bool D3DVideo::frame(const void *frame,
    {
       RARCH_ERR("[D3D9]: Failed to restore.\n");
       return false;
+   }
+
+   if (should_resize)
+   {
+      calculate_rect(screen_width, screen_height, video_info.force_aspect, g_extern.system.aspect_ratio);
+      chain->set_final_viewport(final_viewport);
+      recompute_pass_sizes();
+
+      // render_chain() only clears out viewport, clear out everything.
+      D3DRECT clear_rect;
+      clear_rect.x1 = clear_rect.y1 = 0;
+      clear_rect.x2 = screen_width;
+      clear_rect.y2 = screen_height;
+      dev->Clear(1, &clear_rect, D3DCLEAR_TARGET, 0, 1, 0);
+
+      should_resize = false;
    }
 
    if (!chain->render(frame, width, height, pitch, rotation))
@@ -803,6 +802,22 @@ void D3DVideo::init_multipass()
          shader.pass[i].fbo.type_x = shader.pass[i].fbo.type_y = RARCH_SCALE_INPUT;
       }
    }
+
+   bool use_extra_pass = shader.passes < GFX_MAX_SHADERS && shader.pass[shader.passes - 1].fbo.valid;
+   if (use_extra_pass)
+   {
+      shader.passes++;
+      gfx_shader_pass &dummy_pass = shader.pass[shader.passes - 1];
+      dummy_pass.fbo.scale_x = dummy_pass.fbo.scale_y = 1.0f;
+      dummy_pass.fbo.type_x = dummy_pass.fbo.type_y = RARCH_SCALE_VIEWPORT;
+      dummy_pass.filter = RARCH_FILTER_UNSPEC;
+   }
+   else
+   {
+      gfx_shader_pass &pass = shader.pass[shader.passes - 1];
+      pass.fbo.scale_x = pass.fbo.scale_y = 1.0f;
+      pass.fbo.type_x = pass.fbo.type_y = RARCH_SCALE_VIEWPORT;
+   }
 }
 
 bool D3DVideo::set_shader(const std::string &path)
@@ -839,20 +854,49 @@ void D3DVideo::process_shader()
       init_singlepass();
 }
 
+void D3DVideo::recompute_pass_sizes()
+{
+   try
+   {
+      LinkInfo link_info = {0};
+      link_info.pass = &shader.pass[0];
+      link_info.tex_w = link_info.tex_h = video_info.input_scale * RARCH_SCALE_BASE;
+
+      unsigned current_width = link_info.tex_w;
+      unsigned current_height = link_info.tex_h;
+      unsigned out_width = 0;
+      unsigned out_height = 0;
+
+      chain->set_pass_size(0, current_width, current_height);
+      for (unsigned i = 1; i < shader.passes; i++)
+      {
+         RenderChain::convert_geometry(link_info,
+               out_width, out_height,
+               current_width, current_height, final_viewport);
+
+         link_info.tex_w = next_pow2(out_width);
+         link_info.tex_h = next_pow2(out_height);
+
+         chain->set_pass_size(i, link_info.tex_w, link_info.tex_h);
+
+         current_width = out_width;
+         current_height = out_height;
+
+         link_info.pass = &shader.pass[i];
+      }
+   }
+   catch (const std::exception& e)
+   {
+      RARCH_ERR("[D3D9]: Render chain error: (%s).\n", e.what());
+   }
+}
+
 bool D3DVideo::init_chain(const video_info_t &video_info)
 {
    try
    {
       // Setup information for first pass.
       LinkInfo link_info = {0};
-
-      if (shader.passes == 1 && !shader.pass[0].fbo.valid)
-      {
-         gfx_shader_pass &pass = shader.pass[0];
-         pass.filter = video_info.smooth ? RARCH_FILTER_LINEAR : RARCH_FILTER_NEAREST;
-         pass.fbo.scale_x = pass.fbo.scale_y = 1.0f;
-         pass.fbo.type_x = pass.fbo.type_y = RARCH_SCALE_VIEWPORT;
-      }
 
       link_info.pass = &shader.pass[0];
       link_info.tex_w = link_info.tex_h = video_info.input_scale * RARCH_SCALE_BASE;
@@ -870,8 +914,6 @@ bool D3DVideo::init_chain(const video_info_t &video_info)
       unsigned out_width = 0;
       unsigned out_height = 0;
 
-      bool use_extra_pass = shader.pass[shader.passes - 1].fbo.valid;
-
       for (unsigned i = 1; i < shader.passes; i++)
       {
          RenderChain::convert_geometry(link_info,
@@ -885,32 +927,6 @@ bool D3DVideo::init_chain(const video_info_t &video_info)
          current_width = out_width;
          current_height = out_height;
 
-         if (i == shader.passes - 1 && !use_extra_pass)
-         {
-            gfx_shader_pass &pass = shader.pass[i];
-            pass.filter = video_info.smooth ? RARCH_FILTER_LINEAR : RARCH_FILTER_NEAREST;
-            pass.fbo.scale_x = pass.fbo.scale_y = 1.0f;
-            pass.fbo.type_x = pass.fbo.type_y = RARCH_SCALE_VIEWPORT;
-         }
-
-         chain->add_pass(link_info);
-      }
-
-      if (use_extra_pass)
-      {
-         RenderChain::convert_geometry(link_info,
-               out_width, out_height,
-               current_width, current_height, final_viewport);
-
-         gfx_shader_pass &pass = shader.pass[shader.passes - 1];
-         pass.filter = video_info.smooth ? RARCH_FILTER_LINEAR : RARCH_FILTER_NEAREST;
-         pass.fbo.scale_x = pass.fbo.scale_y = 1.0f;
-         pass.fbo.type_x = pass.fbo.type_y = RARCH_SCALE_VIEWPORT;
-
-         link_info.pass = &pass;
-         link_info.tex_w = next_pow2(out_width);
-         link_info.tex_h = next_pow2(out_height);
-      
          chain->add_pass(link_info);
       }
 
@@ -1409,15 +1425,14 @@ static void d3d9_set_aspect_ratio(void *data, unsigned aspect_ratio_idx)
 
    g_extern.system.aspect_ratio = aspectratio_lut[aspect_ratio_idx].value;
    d3d->info().force_aspect = true;
-   d3d->restore();
+   d3d->should_resize = true;
    return;
 }
 
 static void d3d9_apply_state_changes(void *data)
 {
    D3DVideo *d3d = reinterpret_cast<D3DVideo*>(data);
-   if (d3d->viewport_need_restore())
-      d3d->restore();
+   d3d->should_resize = true;
 }
 
 static void d3d9_set_osd_msg(void *data, const char *msg, void *userdata)

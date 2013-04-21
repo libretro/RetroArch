@@ -95,7 +95,7 @@ class D3DVideo
       bool restore();
       void render_msg(const char *msg, font_params_t *params = nullptr);
 
-      bool viewport_need_restore();
+      bool should_resize;
       inline video_info_t& info() { return video_info; }
 
    private:
@@ -106,13 +106,7 @@ class D3DVideo
       IDirect3DDevice9 *dev;
       LPD3DXFONT font;
 
-      struct
-      {
-         rarch_viewport_t custom;
-         float aspect_ratio;
-         bool scale_integer;
-      } viewport_state;
-
+      void recompute_pass_sizes();
       void calculate_rect(unsigned width, unsigned height, bool keep, float aspect);
       void set_viewport(int x, int y, unsigned width, unsigned height);
       unsigned screen_width;

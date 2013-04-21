@@ -51,6 +51,8 @@ class RenderChain
             PixelFormat fmt,
             const D3DVIEWPORT9 &final_viewport);
 
+      void set_pass_size(unsigned pass, unsigned width, unsigned height);
+      void set_final_viewport(const D3DVIEWPORT9 &final_viewport);
       void add_pass(const LinkInfo &info);
       void add_lut(const std::string &id, const std::string &path, bool smooth);
       void add_state_tracker(std::shared_ptr<state_tracker_t> tracker);

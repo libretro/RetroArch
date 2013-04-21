@@ -108,6 +108,36 @@ void RenderChain::clear()
    luts.clear();
 }
 
+void RenderChain::set_final_viewport(const D3DVIEWPORT9& final_viewport)
+{
+   this->final_viewport = final_viewport;
+}
+
+void RenderChain::set_pass_size(unsigned pass_index, unsigned width, unsigned height)
+{
+   Pass &pass = passes[pass_index];
+   if (width != pass.info.tex_w || height != pass.info.tex_h)
+   {
+      pass.tex->Release();
+      pass.info.tex_w = width;
+      pass.info.tex_h = height;
+
+      if (FAILED(dev->CreateTexture(width, height, 1,
+         D3DUSAGE_RENDERTARGET,
+         passes.back().info.pass->fbo.fp_fbo ? D3DFMT_A32B32G32R32F : D3DFMT_A8R8G8B8,
+         D3DPOOL_DEFAULT,
+         &pass.tex, nullptr)))
+      {
+         throw std::runtime_error("Failed to create texture ...");
+      }
+
+      dev->SetTexture(0, pass.tex);
+      dev->SetSamplerState(0, D3DSAMP_ADDRESSU, D3DTADDRESS_BORDER);
+      dev->SetSamplerState(0, D3DSAMP_ADDRESSV, D3DTADDRESS_BORDER);
+      dev->SetTexture(0, nullptr);
+   }
+}
+
 void RenderChain::add_pass(const LinkInfo &info)
 {
    Pass pass;
@@ -620,7 +650,18 @@ void RenderChain::render_pass(Pass &pass, unsigned pass_index)
    bind_luts(pass);
    bind_tracker(pass, pass_index);
 
-   dev->Clear(0, 0, D3DCLEAR_TARGET, 0, 1, 0);
+   // Clear out whole framebuffer incase we change viewports mid-way to avoid stale garbage.
+   if (pass_index < passes.size())
+   {
+      D3DRECT clear_rect;
+      clear_rect.x1 = clear_rect.y1 = 0;
+      clear_rect.x2 = passes[pass_index].info.tex_w;
+      clear_rect.y2 = passes[pass_index].info.tex_h;
+      dev->Clear(1, &clear_rect, D3DCLEAR_TARGET, 0, 1, 0);
+   }
+   else
+      dev->Clear(0, 0, D3DCLEAR_TARGET, 0, 1, 0);
+
    if (SUCCEEDED(dev->BeginScene()))
    {
       dev->DrawPrimitive(D3DPT_TRIANGLESTRIP, 0, 2);
