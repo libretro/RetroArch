@@ -209,6 +209,13 @@ rgui_handle_t *rgui_init(void)
 
    strlcpy(rgui->base_path, g_settings.rgui_browser_directory, sizeof(rgui->base_path));
 
+#ifdef HAVE_DYNAMIC
+   if (path_is_directory(g_settings.libretro))
+      strlcpy(rgui->libretro_dir, g_settings.libretro, sizeof(rgui->libretro_dir));
+   else if (*g_settings.libretro)
+      fill_pathname_basedir(rgui->libretro_dir, g_settings.libretro, sizeof(rgui->libretro_dir));
+#endif
+
    rgui->menu_stack = (rgui_list_t*)calloc(1, sizeof(rgui_list_t));
    rgui->selection_buf = (rgui_list_t*)calloc(1, sizeof(rgui_list_t));
    rgui_list_push(rgui->menu_stack, "", RGUI_SETTINGS, 0);
@@ -384,7 +391,7 @@ static void render_text(rgui_handle_t *rgui)
    rgui_list_get_last(rgui->menu_stack, &dir, &menu_type);
 
    if (menu_type == RGUI_SETTINGS_CORE)
-      strlcpy(title, "CORE SELECTION", sizeof(title));
+      snprintf(title, sizeof(title), "CORE SELECTION %s", dir);
    else if (menu_type == RGUI_SETTINGS_SHADER_MANAGER)
       strlcpy(title, "SHADER MANAGER", sizeof(title));
    else if (menu_type == RGUI_SETTINGS_CORE_OPTIONS)
@@ -448,7 +455,20 @@ static void render_text(rgui_handle_t *rgui)
       }
       else
 #endif
-      if (type >= RGUI_SETTINGS_CORE_OPTION_START)
+      if (menu_type == RGUI_SETTINGS_CORE)
+      {
+         if (type == RGUI_FILE_PLAIN)
+         {
+            strlcpy(type_str, "(FILE)", sizeof(type_str));
+            w = 6;
+         }
+         else
+         {
+            strlcpy(type_str, "(DIR)", sizeof(type_str));
+            w = 5;
+         }
+      }
+      else if (type >= RGUI_SETTINGS_CORE_OPTION_START)
          strlcpy(type_str, core_option_get_val(g_extern.system.core_options, type - RGUI_SETTINGS_CORE_OPTION_START), sizeof(type_str));
       else
       {
@@ -460,10 +480,6 @@ static void render_text(rgui_handle_t *rgui)
                break;
             case RGUI_FILE_DIRECTORY:
                strlcpy(type_str, "(DIR)", sizeof(type_str));
-               w = 5;
-               break;
-            case RGUI_FILE_DEVICE:
-               strlcpy(type_str, "(DEV)", sizeof(type_str));
                w = 5;
                break;
             case RGUI_SETTINGS_REWIND_ENABLE:
@@ -1572,15 +1588,7 @@ static int rgui_settings_iterate(rgui_handle_t *rgui, rgui_action_t action)
 
 #if defined(HAVE_DYNAMIC)
    if (type == RGUI_SETTINGS_CORE)
-   {
-      if (path_is_directory(g_settings.libretro))
-         strlcpy(rgui->libretro_dir, g_settings.libretro, sizeof(rgui->libretro_dir));
-      else if (*g_settings.libretro)
-         fill_pathname_basedir(rgui->libretro_dir, g_settings.libretro, sizeof(rgui->libretro_dir));
-      else
-         *rgui->libretro_dir = '\0';
       label = rgui->libretro_dir;
-   }
 #elif defined(HAVE_LIBRETRO_MANAGEMENT)
    if (type == RGUI_SETTINGS_CORE)
       label = default_paths.core_dir;
@@ -1672,7 +1680,7 @@ static int rgui_settings_iterate(rgui_handle_t *rgui, rgui_action_t action)
    rgui_list_get_last(rgui->menu_stack, &dir, &menu_type);
 
    if (rgui->need_refresh && !(menu_type == RGUI_FILE_DIRECTORY || menu_type_is_shader_browser(menu_type) ||
-            menu_type == RGUI_FILE_DEVICE || menu_type == RGUI_SETTINGS_CORE))
+            menu_type == RGUI_SETTINGS_CORE))
    {
       rgui->need_refresh = false;
       if ((menu_type >= RGUI_SETTINGS_CONTROLLER_1 && menu_type <= RGUI_SETTINGS_CONTROLLER_4))
@@ -1694,25 +1702,21 @@ static int rgui_settings_iterate(rgui_handle_t *rgui, rgui_action_t action)
 
 static bool directory_parse(rgui_handle_t *rgui, const char *directory, unsigned menu_type, void *ctx)
 {
-   bool core_chooser = menu_type == RGUI_SETTINGS_CORE;
-
    if (!*directory)
    {
 #if defined(GEKKO)
 #ifdef HW_RVL
-      rgui_list_push(ctx, "sd:/", RGUI_FILE_DEVICE, 0);
-      rgui_list_push(ctx, "usb:/", RGUI_FILE_DEVICE, 0);
+      rgui_list_push(ctx, "sd:/", menu_type, 0);
+      rgui_list_push(ctx, "usb:/", menu_type, 0);
 #endif
-      rgui_list_push(ctx, "carda:/", RGUI_FILE_DEVICE, 0);
-      rgui_list_push(ctx, "cardb:/", RGUI_FILE_DEVICE, 0);
-      return true;
+      rgui_list_push(ctx, "carda:/", menu_type, 0);
+      rgui_list_push(ctx, "cardb:/", menu_type, 0);
 #elif defined(_XBOX1)
-      rgui_list_push(ctx, "C:\\", RGUI_FILE_DEVICE, 0);
-      rgui_list_push(ctx, "D:\\", RGUI_FILE_DEVICE, 0);
-      rgui_list_push(ctx, "E:\\", RGUI_FILE_DEVICE, 0);
-      rgui_list_push(ctx, "F:\\", RGUI_FILE_DEVICE, 0);
-      rgui_list_push(ctx, "G:\\", RGUI_FILE_DEVICE, 0);
-      return true;
+      rgui_list_push(ctx, "C:\\", menu_type, 0);
+      rgui_list_push(ctx, "D:\\", menu_type, 0);
+      rgui_list_push(ctx, "E:\\", menu_type, 0);
+      rgui_list_push(ctx, "F:\\", menu_type, 0);
+      rgui_list_push(ctx, "G:\\", menu_type, 0);
 #elif defined(_WIN32)
       unsigned drives = GetLogicalDrives();
       char drive[] = " :\\";
@@ -1720,16 +1724,17 @@ static bool directory_parse(rgui_handle_t *rgui, const char *directory, unsigned
       {
          drive[0] = 'A' + i;
          if (drives & (1 << i))
-            rgui_list_push(ctx, drive, RGUI_FILE_DEVICE, 0);
+            rgui_list_push(ctx, drive, menu_type, 0);
       }
-      return true;
 #elif defined(__CELLOS_LV2__)
-      rgui_list_push(ctx, "app_home:/", RGUI_FILE_DEVICE, 0);
-      rgui_list_push(ctx, "dev_hdd0:/", RGUI_FILE_DEVICE, 0);
-      rgui_list_push(ctx, "dev_hdd1:/", RGUI_FILE_DEVICE, 0);
-      rgui_list_push(ctx, "host_root:/", RGUI_FILE_DEVICE, 0);
-      return true;
+      rgui_list_push(ctx, "app_home:/", menu_type, 0);
+      rgui_list_push(ctx, "dev_hdd0:/", menu_type, 0);
+      rgui_list_push(ctx, "dev_hdd1:/", menu_type, 0);
+      rgui_list_push(ctx, "host_root:/", menu_type, 0);
+#else
+      rgui_list_push(ctx, "/", menu_type, 0);
 #endif
+      return true;
    }
 
 #if defined(GEKKO) && defined(HW_RVL)
@@ -1743,7 +1748,7 @@ static bool directory_parse(rgui_handle_t *rgui, const char *directory, unsigned
 #endif
 
    const char *exts;
-   if (core_chooser)
+   if (menu_type == RGUI_SETTINGS_CORE)
       exts = EXT_EXECUTABLES;
 #ifdef HAVE_SHADER_MANAGER
    else if (menu_type == RGUI_SETTINGS_SHADER_PRESET)
@@ -1756,31 +1761,20 @@ static bool directory_parse(rgui_handle_t *rgui, const char *directory, unsigned
    else
       exts = g_extern.system.valid_extensions;
 
-   char dir[PATH_MAX];
-   if (*directory)
-      strlcpy(dir, directory, sizeof(dir));
-   else
-      strlcpy(dir, "/", sizeof(dir));
-
-   struct string_list *list = dir_list_new(dir, exts, true);
+   struct string_list *list = dir_list_new(directory, exts, true);
    if (!list)
       return false;
 
    dir_list_sort(list, true);
 
-   // Can only have devices as root.
-   if (menu_type == RGUI_FILE_DEVICE)
-      menu_type = RGUI_FILE_DIRECTORY;
-
    for (size_t i = 0; i < list->size; i++)
    {
       bool is_dir = list->elems[i].attr.b;
-      if (core_chooser && (is_dir
+
 #ifdef HAVE_LIBRETRO_MANAGEMENT
-               || strcasecmp(list->elems[i].data, SALAMANDER_FILE) == 0
-#endif
-         ))
+      if (menu_type == RGUI_SETTINGS_CORE && (is_dir || strcasecmp(list->elems[i].data, SALAMANDER_FILE) == 0))
          continue;
+#endif
 
       // Need to preserve slash first time.
       const char *path = list->elems[i].data;
@@ -1882,18 +1876,14 @@ int rgui_iterate(rgui_handle_t *rgui)
          unsigned type = 0;
          rgui_list_get_at_offset(rgui->selection_buf, rgui->selection_ptr, &path, &type);
 
-         if (menu_type_is_shader_browser(type) || type == RGUI_FILE_DIRECTORY)
+         if (menu_type_is_shader_browser(type) ||
+               type == RGUI_SETTINGS_CORE ||
+               type == RGUI_FILE_DIRECTORY)
          {
             char cat_path[PATH_MAX];
             fill_pathname_join(cat_path, dir, path, sizeof(cat_path));
 
             rgui_list_push(rgui->menu_stack, cat_path, type, rgui->selection_ptr);
-            rgui->selection_ptr = 0;
-            rgui->need_refresh = true;
-         }
-         else if (type == RGUI_FILE_DEVICE)
-         {
-            rgui_list_push(rgui->menu_stack, path, RGUI_FILE_DEVICE, rgui->selection_ptr);
             rgui->selection_ptr = 0;
             rgui->need_refresh = true;
          }
@@ -1934,11 +1924,8 @@ int rgui_iterate(rgui_handle_t *rgui)
 #endif
             if (menu_type == RGUI_SETTINGS_CORE)
             {
-               rgui->need_refresh = true;
-               rgui_list_pop(rgui->menu_stack, &rgui->selection_ptr);
-
 #if defined(HAVE_DYNAMIC)
-               fill_pathname_join(g_settings.libretro, rgui->libretro_dir, path, sizeof(g_settings.libretro));
+               fill_pathname_join(g_settings.libretro, dir, path, sizeof(g_settings.libretro));
                libretro_free_system_info(&rgui->info);
                libretro_get_system_info(g_settings.libretro, &rgui->info);
                // Core selection on non-console just updates directory listing.
@@ -1952,6 +1939,15 @@ int rgui_iterate(rgui_handle_t *rgui)
                g_extern.lifecycle_mode_state |= (1ULL << MODE_EXITSPAWN);
                ret = -1;
 #endif
+
+               rgui->need_refresh = true;
+               unsigned type = 0;
+               rgui_list_get_last(rgui->menu_stack, NULL, &type);
+               while (type != RGUI_SETTINGS)
+               {
+                  rgui_list_pop(rgui->menu_stack, &rgui->selection_ptr);
+                  rgui_list_get_last(rgui->menu_stack, NULL, &type);
+               }
             }
             else
             {
@@ -2001,7 +1997,7 @@ int rgui_iterate(rgui_handle_t *rgui)
    rgui_list_get_last(rgui->menu_stack, &dir, &menu_type);
 
    if (rgui->need_refresh && (menu_type == RGUI_FILE_DIRECTORY || menu_type_is_shader_browser(menu_type) ||
-            menu_type == RGUI_FILE_DEVICE || menu_type == RGUI_SETTINGS_CORE))
+            menu_type == RGUI_SETTINGS_CORE))
    {
       rgui->need_refresh = false;
       rgui_list_clear(rgui->selection_buf);
