@@ -848,6 +848,7 @@ static int rgui_settings_toggle_setting(rgui_handle_t *rgui, unsigned setting, r
          if (driver.video_poke->set_aspect_ratio)
             driver.video_poke->set_aspect_ratio(driver.video_data, g_settings.video.aspect_ratio_idx);
          break;
+#ifndef RARCH_PERFORMANCE_MODE
       case RGUI_SETTINGS_TOGGLE_FULLSCREEN:
          if (action == RGUI_ACTION_OK)
          {
@@ -857,6 +858,7 @@ static int rgui_settings_toggle_setting(rgui_handle_t *rgui, unsigned setting, r
             g_extern.delay_timer[1] = 15;
          }
          break;
+#endif
       case RGUI_SETTINGS_VIDEO_ROTATION:
          if (action == RGUI_ACTION_START)
          {
@@ -1080,7 +1082,7 @@ static void rgui_settings_populate_entries(rgui_handle_t *rgui)
    rgui_list_push(rgui->selection_buf, "Integer Scale", RGUI_SETTINGS_VIDEO_INTEGER_SCALE, 0);
    rgui_list_push(rgui->selection_buf, "Aspect Ratio", RGUI_SETTINGS_VIDEO_ASPECT_RATIO, 0);
    rgui_list_push(rgui->selection_buf, "Custom Ratio", RGUI_SETTINGS_CUSTOM_VIEWPORT, 0);
-#ifndef RARCH_CONSOLE
+#ifndef RARCH_PERFORMANCE_MODE
    rgui_list_push(rgui->selection_buf, "Toggle Fullscreen", RGUI_SETTINGS_TOGGLE_FULLSCREEN, 0);
 #endif
    rgui_list_push(rgui->selection_buf, "Rotation", RGUI_SETTINGS_VIDEO_ROTATION, 0);
