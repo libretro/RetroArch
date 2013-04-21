@@ -651,6 +651,7 @@ void RenderChain::render_pass(Pass &pass, unsigned pass_index)
    bind_tracker(pass, pass_index);
 
    // Clear out whole framebuffer incase we change viewports mid-way to avoid stale garbage.
+   // Last pass we render to an already cleared back buffer.
    if (pass_index < passes.size())
    {
       D3DRECT clear_rect;
@@ -659,8 +660,6 @@ void RenderChain::render_pass(Pass &pass, unsigned pass_index)
       clear_rect.y2 = passes[pass_index].info.tex_h;
       dev->Clear(1, &clear_rect, D3DCLEAR_TARGET, 0, 1, 0);
    }
-   else
-      dev->Clear(0, 0, D3DCLEAR_TARGET, 0, 1, 0);
 
    if (SUCCEEDED(dev->BeginScene()))
    {

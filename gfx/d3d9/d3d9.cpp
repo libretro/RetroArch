@@ -600,15 +600,15 @@ bool D3DVideo::frame(const void *frame,
       chain->set_final_viewport(final_viewport);
       recompute_pass_sizes();
 
-      // render_chain() only clears out viewport, clear out everything.
-      D3DRECT clear_rect;
-      clear_rect.x1 = clear_rect.y1 = 0;
-      clear_rect.x2 = screen_width;
-      clear_rect.y2 = screen_height;
-      dev->Clear(1, &clear_rect, D3DCLEAR_TARGET, 0, 1, 0);
-
       should_resize = false;
    }
+
+   // render_chain() only clears out viewport, clear out everything.
+   D3DRECT clear_rect;
+   clear_rect.x1 = clear_rect.y1 = 0;
+   clear_rect.x2 = screen_width;
+   clear_rect.y2 = screen_height;
+   dev->Clear(1, &clear_rect, D3DCLEAR_TARGET, 0, 1, 0);
 
    if (!chain->render(frame, width, height, pitch, rotation))
    {
@@ -1161,17 +1161,6 @@ void D3DVideo::overlay_render(overlay_t &overlay)
       vp_full.MinZ = 0.0f;
       vp_full.MaxZ = 1.0f;
       dev->SetViewport(&vp_full);
-
-      // clear new area
-      D3DRECT clear_rects[2];
-      clear_rects[0].y2 = clear_rects[1].y2 = vp_full.Height;
-      clear_rects[0].y1 = clear_rects[1].y1 = 0;
-      clear_rects[0].x1 = 0;
-      clear_rects[0].x2 = final_viewport.X;
-      clear_rects[1].x1 = final_viewport.X + final_viewport.Width;
-      clear_rects[1].x2 = vp_full.Width;
-
-      dev->Clear(2, clear_rects, D3DCLEAR_TARGET, 0, 1, 0);
    }
 
    // render overlay
