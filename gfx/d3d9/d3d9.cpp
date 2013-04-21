@@ -205,7 +205,7 @@ void D3DVideo::init(const video_info_t &info)
       throw std::runtime_error("Failed to init Font");
 }
 
-void D3DVideo::set_viewport(unsigned x, unsigned y, unsigned width, unsigned height)
+void D3DVideo::set_viewport(int x, int y, unsigned width, unsigned height)
 {
    D3DVIEWPORT9 viewport;
    viewport.X = x;
@@ -325,9 +325,28 @@ end:
    return ret;
 }
 
+bool D3DVideo::viewport_need_restore()
+{
+   const rarch_viewport_t &custom = g_extern.console.screen.viewports.custom_vp;
+   if (memcmp(&viewport_state.custom, &custom, sizeof(custom)))
+      return true;
+   if (viewport_state.scale_integer != g_settings.video.scale_integer)
+      return true;
+   if (fabs(viewport_state.aspect_ratio - g_extern.system.aspect_ratio) > 0.0001)
+      return true;
+
+   return false;
+}
+
 void D3DVideo::calculate_rect(unsigned width, unsigned height,
    bool keep, float desired_aspect)
 {
+   const rarch_viewport_t &custom = g_extern.console.screen.viewports.custom_vp;
+
+   viewport_state.custom = custom;
+   viewport_state.scale_integer = g_settings.video.scale_integer;
+   viewport_state.aspect_ratio = desired_aspect;
+
    if (g_settings.video.scale_integer)
    {
       struct rarch_viewport vp = {0};
@@ -338,18 +357,25 @@ void D3DVideo::calculate_rect(unsigned width, unsigned height,
       set_viewport(0, 0, width, height);
    else
    {
-      float device_aspect = static_cast<float>(width) / static_cast<float>(height);
-      if (fabs(device_aspect - desired_aspect) < 0.001)
-         set_viewport(0, 0, width, height);
-      else if (device_aspect > desired_aspect)
+      if (g_settings.video.aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
       {
-         float delta = (desired_aspect / device_aspect - 1.0) / 2.0 + 0.5;
-         set_viewport(width * (0.5 - delta), 0, 2.0 * width * delta, height);
+         set_viewport(custom.x, custom.y, custom.width, custom.height);
       }
       else
       {
-         float delta = (device_aspect / desired_aspect - 1.0) / 2.0 + 0.5;
-         set_viewport(0, height * (0.5 - delta), width, 2.0 * height * delta);
+         float device_aspect = static_cast<float>(width) / static_cast<float>(height);
+         if (fabs(device_aspect - desired_aspect) < 0.0001)
+            set_viewport(0, 0, width, height);
+         else if (device_aspect > desired_aspect)
+         {
+            float delta = (desired_aspect / device_aspect - 1.0) / 2.0 + 0.5;
+            set_viewport(width * (0.5 - delta), 0, 2.0 * width * delta, height);
+         }
+         else
+         {
+            float delta = (device_aspect / desired_aspect - 1.0) / 2.0 + 0.5;
+            set_viewport(0, height * (0.5 - delta), width, 2.0 * height * delta);
+         }
       }
    }
 }
@@ -1284,46 +1310,6 @@ static bool d3d9_set_shader(void *data, enum rarch_shader_type type, const char 
 
 #if defined(HAVE_RGUI)
 static void d3d9_get_poke_interface(void *data, const video_poke_interface_t **iface);
-
-static void d3d9_start(void)
-{
-   // TODO: check if this actually works
-
-   video_info_t video_info = {0};
-
-   // Might have to supply correct values here.
-   video_info.vsync = g_settings.video.vsync;
-   video_info.force_aspect = false;
-   video_info.smooth = g_settings.video.smooth;
-   video_info.input_scale = 2;
-   video_info.fullscreen = true;
-
-   if (g_settings.video.aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
-   {
-      video_info.width  = g_extern.console.screen.viewports.custom_vp.width;
-      video_info.height = g_extern.console.screen.viewports.custom_vp.height;
-   }
-
-   driver.video_data = d3d9_init(&video_info, NULL, NULL);
-
-   d3d9_get_poke_interface(driver.video_data, &driver.video_poke);
-}
-
-static void d3d9_stop(void)
-{
-   void *data = driver.video_data;
-   driver.video_data = NULL;
-   d3d9_free(data);
-}
-
-static void d3d9_restart(void)
-{
-   if (!driver.video_data)
-	   return;
-
-   d3d9_stop();
-   d3d9_start();
-}
 #endif
 
 #ifdef HAVE_OVERLAY
@@ -1377,22 +1363,45 @@ static void d3d9_get_overlay_interface(void *data, const video_overlay_interface
 }
 #endif
 
-static void d3d9_set_aspect_ratio(void *data, unsigned aspectratio_index)
+static void d3d9_set_aspect_ratio(void *data, unsigned aspect_ratio_idx)
 {
-   // TODO: figure out what to do here
+   D3DVideo *d3d = reinterpret_cast<D3DVideo*>(data);
+
+   switch (aspect_ratio_idx)
+   {
+      case ASPECT_RATIO_SQUARE:
+         gfx_set_square_pixel_viewport(g_extern.frame_cache.width, g_extern.frame_cache.height);
+         break;
+
+      case ASPECT_RATIO_CORE:
+         gfx_set_core_viewport();
+         break;
+
+      case ASPECT_RATIO_CONFIG:
+         gfx_set_config_viewport();
+         break;
+
+      default:
+         break;
+   }
+
+   g_extern.system.aspect_ratio = aspectratio_lut[aspect_ratio_idx].value;
+   d3d->info().force_aspect = true;
+   d3d->restore();
    return;
 }
 
 static void d3d9_apply_state_changes(void *data)
 {
-   // TODO: check if shader dimensions have changed, restore only if true ?
-   //reinterpret_cast<D3DVideo*>(data)->restore();
+   D3DVideo *d3d = reinterpret_cast<D3DVideo*>(data);
+   if (d3d->viewport_need_restore())
+      d3d->restore();
 }
 
 static void d3d9_set_osd_msg(void *data, const char *msg, void *userdata)
 {
    font_params_t *params = (font_params_t*)userdata;
-   reinterpret_cast<D3DVideo*>(data)->render_msg(msg,params);
+   reinterpret_cast<D3DVideo*>(data)->render_msg(msg, params);
 }
 
 static void d3d9_show_mouse(void *data, bool state)
@@ -1447,9 +1456,9 @@ const video_driver_t video_d3d9 = {
    d3d9_free,
    "d3d9",
 #ifdef HAVE_RGUI
-   d3d9_start,
-   d3d9_stop,
-   d3d9_restart,
+   nullptr,
+   nullptr,
+   nullptr,
 #endif
    d3d9_set_rotation,
    d3d9_viewport_info,
