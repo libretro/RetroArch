@@ -604,11 +604,15 @@ bool D3DVideo::frame(const void *frame,
    }
 
    // render_chain() only clears out viewport, clear out everything.
-   D3DRECT clear_rect;
-   clear_rect.x1 = clear_rect.y1 = 0;
-   clear_rect.x2 = screen_width;
-   clear_rect.y2 = screen_height;
-   dev->Clear(1, &clear_rect, D3DCLEAR_TARGET, 0, 1, 0);
+   D3DVIEWPORT9 screen_vp;
+   screen_vp.X = 0;
+   screen_vp.Y = 0;
+   screen_vp.MinZ = 0;
+   screen_vp.MaxZ = 1;
+   screen_vp.Width = screen_width;
+   screen_vp.Height = screen_height;
+   dev->SetViewport(&screen_vp);
+   dev->Clear(0, 0, D3DCLEAR_TARGET, 0, 1, 0);
 
    if (!chain->render(frame, width, height, pitch, rotation))
    {
