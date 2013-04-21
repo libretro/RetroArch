@@ -728,6 +728,9 @@ void D3DVideo::init_singlepass()
    std::memset(&shader, 0, sizeof(shader));
    shader.passes = 1;
    gfx_shader_pass &pass = shader.pass[0];
+   pass.fbo.valid = true;
+   pass.fbo.scale_x = pass.fbo.scale_y = 1.0;
+   pass.fbo.type_x = pass.fbo.type_y = RARCH_SCALE_VIEWPORT;
    strlcpy(pass.source.cg, cg_shader.c_str(), sizeof(pass.source.cg));
 }
 
@@ -1320,16 +1323,8 @@ static bool d3d9_read_viewport(void *data, uint8_t *buffer)
 
 static bool d3d9_set_shader(void *data, enum rarch_shader_type type, const char *path)
 {
-#ifdef HAVE_CG
-   if (type != RARCH_SHADER_CG)
-   {
-      RARCH_ERR("[D3D9]: Only Cg shaders supported.\n");
-      return false;
-   }
-#endif
-
    std::string shader = "";
-   if (path)
+   if (path && type == RARCH_SHADER_CG)
       shader = path;
 
    return reinterpret_cast<D3DVideo*>(data)->set_shader(shader);
