@@ -306,7 +306,7 @@ bool RenderChain::render(const void *data,
 
    end_render();
    set_shaders(fStock, vStock);
-   set_cg_mvp(vStock, final_viewport.Width, final_viewport.Height, rotation);
+   set_cg_mvp(vStock, final_viewport.Width, final_viewport.Height, 0);
    return true;
 }
 
