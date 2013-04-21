@@ -716,9 +716,6 @@ void D3DVideo::init_imports()
 #ifdef HAVE_PYTHON
    if (*shader.script_path)
    {
-      std::string rel_path = shader.script_path;
-      fill_pathname_resolve_relative(shader.script_path, cg_shader.c_str(),
-            rel_path.c_str(), sizeof(shader.script_path));
       tracker_info.script = shader.script_path;
       tracker_info.script_is_file = true;
    }
@@ -741,7 +738,10 @@ void D3DVideo::init_luts()
 {
    for (unsigned i = 0; i < shader.luts; i++)
    {
-      chain->add_lut(shader.lut[i].id, shader.lut[i].path, shader.lut[i].filter == RARCH_FILTER_LINEAR);
+      chain->add_lut(shader.lut[i].id, shader.lut[i].path,
+         shader.lut[i].filter == RARCH_FILTER_UNSPEC ?
+            g_settings.video.smooth :
+            (shader.lut[i].filter == RARCH_FILTER_LINEAR));
    }
 }
 
@@ -761,6 +761,8 @@ void D3DVideo::init_multipass()
 
    config_file_free(conf);
 
+   gfx_shader_resolve_relative(&shader, cg_shader.c_str());
+
    RARCH_LOG("[D3D9 Meta-Cg] Found %d shaders.\n", shader.passes);
 
    for (unsigned i = 0; i < shader.passes; i++)
@@ -770,17 +772,6 @@ void D3DVideo::init_multipass()
          shader.pass[i].fbo.scale_x = shader.pass[i].fbo.scale_y = 1.0f;
          shader.pass[i].fbo.type_x = shader.pass[i].fbo.type_y = RARCH_SCALE_INPUT;
       }
-
-      std::string rel_shader = shader.pass[i].source.cg;
-      fill_pathname_resolve_relative(shader.pass[i].source.cg, cg_shader.c_str(),
-         rel_shader.c_str(), sizeof(shader.pass[i].source.cg));
-   }
-
-   for (unsigned i = 0; i < shader.luts; i++)
-   {
-      std::string rel_lut = shader.lut[i].path;
-      fill_pathname_resolve_relative(shader.lut[i].path, cg_shader.c_str(),
-         rel_lut.c_str(), sizeof(shader.lut[i].path));
    }
 }
 
@@ -812,7 +803,7 @@ bool D3DVideo::set_shader(const std::string &path)
 
 void D3DVideo::process_shader()
 {
-   if (cg_shader.find(".cgp") != std::string::npos)
+   if (strcmp(path_get_extension(cg_shader.c_str()), "cgp") == 0)
       init_multipass();
    else
       init_singlepass();

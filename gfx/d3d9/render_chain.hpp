@@ -147,6 +147,9 @@ class RenderChain
       void render_pass(Pass &pass, unsigned pass_index);
       void log_info(const LinkInfo &info);
 
+      D3DTEXTUREFILTERTYPE translate_filter(enum gfx_filter_type type);
+      D3DTEXTUREFILTERTYPE translate_filter(bool smooth);
+
       void start_render();
       void end_render();
 

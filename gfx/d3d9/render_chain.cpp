@@ -131,7 +131,7 @@ void RenderChain::add_pass(const LinkInfo &info)
 
    if (FAILED(dev->CreateTexture(info.tex_w, info.tex_h, 1,
                D3DUSAGE_RENDERTARGET,
-               passes.back().info.pass->fbo.fp_fbo ? D3DFMT_A32B32G32R32F : D3DFMT_X8R8G8B8,
+               passes.back().info.pass->fbo.fp_fbo ? D3DFMT_A32B32G32R32F : D3DFMT_A8R8G8B8,
                D3DPOOL_DEFAULT,
                &pass.tex, nullptr)))
    {
@@ -280,6 +280,19 @@ bool RenderChain::render(const void *data,
    return true;
 }
 
+D3DTEXTUREFILTERTYPE RenderChain::translate_filter(enum gfx_filter_type type)
+{
+   if (type == RARCH_FILTER_UNSPEC)
+      return g_settings.video.smooth ? D3DTEXF_LINEAR : D3DTEXF_POINT;
+   else
+      return type == RARCH_FILTER_LINEAR ? D3DTEXF_LINEAR : D3DTEXF_POINT;
+}
+
+D3DTEXTUREFILTERTYPE RenderChain::translate_filter(bool smooth)
+{
+   return smooth ? D3DTEXF_LINEAR : D3DTEXF_POINT;
+}
+
 void RenderChain::create_first_pass(const LinkInfo &info, PixelFormat fmt)
 {
    D3DXMATRIX ident;
@@ -319,9 +332,9 @@ void RenderChain::create_first_pass(const LinkInfo &info, PixelFormat fmt)
 
       dev->SetTexture(0, prev.tex[i]);
       dev->SetSamplerState(0, D3DSAMP_MINFILTER,
-            info.pass->filter == RARCH_FILTER_LINEAR ? D3DTEXF_LINEAR : D3DTEXF_POINT);
+            translate_filter(info.pass->filter));
       dev->SetSamplerState(0, D3DSAMP_MAGFILTER,
-            info.pass->filter == RARCH_FILTER_LINEAR ? D3DTEXF_LINEAR : D3DTEXF_POINT);
+            translate_filter(info.pass->filter));
       dev->SetSamplerState(0, D3DSAMP_ADDRESSU, D3DTADDRESS_BORDER);
       dev->SetSamplerState(0, D3DSAMP_ADDRESSV, D3DTADDRESS_BORDER);
       dev->SetTexture(0, nullptr);
@@ -593,9 +606,9 @@ void RenderChain::render_pass(Pass &pass, unsigned pass_index)
    set_shaders(pass.fPrg, pass.vPrg);
    dev->SetTexture(0, pass.tex);
    dev->SetSamplerState(0, D3DSAMP_MINFILTER,
-         pass.info.pass->filter == RARCH_FILTER_LINEAR ? D3DTEXF_LINEAR : D3DTEXF_POINT);
+         translate_filter(pass.info.pass->filter));
    dev->SetSamplerState(0, D3DSAMP_MAGFILTER,
-         pass.info.pass->filter == RARCH_FILTER_LINEAR ? D3DTEXF_LINEAR : D3DTEXF_POINT);
+         translate_filter(pass.info.pass->filter));
 
    dev->SetVertexDeclaration(pass.vertex_decl);
    for (unsigned i = 0; i < 4; i++)
@@ -686,9 +699,9 @@ void RenderChain::bind_orig(Pass &pass)
       unsigned index = cgGetParameterResourceIndex(param);
       dev->SetTexture(index, passes[0].tex);
       dev->SetSamplerState(index, D3DSAMP_MAGFILTER,
-            passes[0].info.pass->filter == RARCH_FILTER_LINEAR ? D3DTEXF_LINEAR : D3DTEXF_POINT);
+            translate_filter(passes[0].info.pass->filter));
       dev->SetSamplerState(index, D3DSAMP_MINFILTER,
-            passes[0].info.pass->filter == RARCH_FILTER_LINEAR ? D3DTEXF_LINEAR : D3DTEXF_POINT);
+            translate_filter(passes[0].info.pass->filter));
       dev->SetSamplerState(index, D3DSAMP_ADDRESSU, D3DTADDRESS_BORDER);
       dev->SetSamplerState(index, D3DSAMP_ADDRESSV, D3DTADDRESS_BORDER);
       bound_tex.push_back(index);
@@ -750,9 +763,9 @@ void RenderChain::bind_prev(Pass &pass)
          bound_tex.push_back(index);
 
          dev->SetSamplerState(index, D3DSAMP_MAGFILTER,
-               passes[0].info.pass->filter == RARCH_FILTER_LINEAR ? D3DTEXF_LINEAR : D3DTEXF_POINT);
+               translate_filter(passes[0].info.pass->filter));
          dev->SetSamplerState(index, D3DSAMP_MINFILTER,
-               passes[0].info.pass->filter == RARCH_FILTER_LINEAR ? D3DTEXF_LINEAR : D3DTEXF_POINT);
+               translate_filter(passes[0].info.pass->filter));
          dev->SetSamplerState(index, D3DSAMP_ADDRESSU, D3DTADDRESS_BORDER);
          dev->SetSamplerState(index, D3DSAMP_ADDRESSV, D3DTADDRESS_BORDER);
       }
@@ -810,9 +823,9 @@ void RenderChain::bind_pass(Pass &pass, unsigned pass_index)
 
          dev->SetTexture(index, passes[i].tex);
          dev->SetSamplerState(index, D3DSAMP_MAGFILTER,
-               passes[i].info.pass->filter == RARCH_FILTER_LINEAR ? D3DTEXF_LINEAR : D3DTEXF_POINT);
+               translate_filter(passes[i].info.pass->filter));
          dev->SetSamplerState(index, D3DSAMP_MINFILTER,
-               passes[i].info.pass->filter == RARCH_FILTER_LINEAR ? D3DTEXF_LINEAR : D3DTEXF_POINT);
+               translate_filter(passes[i].info.pass->filter));
          dev->SetSamplerState(index, D3DSAMP_ADDRESSU, D3DTADDRESS_BORDER);
          dev->SetSamplerState(index, D3DSAMP_ADDRESSV, D3DTADDRESS_BORDER);
       }
@@ -839,9 +852,9 @@ void RenderChain::bind_luts(Pass &pass)
          bound_index = index;
          dev->SetTexture(index, luts[i].tex);
          dev->SetSamplerState(index, D3DSAMP_MAGFILTER,
-               luts[i].smooth ? D3DTEXF_LINEAR : D3DTEXF_POINT);
+               translate_filter(luts[i].smooth));
          dev->SetSamplerState(index, D3DSAMP_MINFILTER,
-               luts[i].smooth ? D3DTEXF_LINEAR : D3DTEXF_POINT);
+               translate_filter(luts[i].smooth));
          dev->SetSamplerState(index, D3DSAMP_ADDRESSU, D3DTADDRESS_BORDER);
          dev->SetSamplerState(index, D3DSAMP_ADDRESSV, D3DTADDRESS_BORDER);
          bound_tex.push_back(index);
@@ -855,9 +868,9 @@ void RenderChain::bind_luts(Pass &pass)
          {
             dev->SetTexture(index, luts[i].tex);
             dev->SetSamplerState(index, D3DSAMP_MAGFILTER,
-                  luts[i].smooth ? D3DTEXF_LINEAR : D3DTEXF_POINT);
+                  translate_filter(luts[i].smooth));
             dev->SetSamplerState(index, D3DSAMP_MINFILTER,
-                  luts[i].smooth ? D3DTEXF_LINEAR : D3DTEXF_POINT);
+                  translate_filter(luts[i].smooth));
             dev->SetSamplerState(index, D3DSAMP_ADDRESSU, D3DTADDRESS_BORDER);
             dev->SetSamplerState(index, D3DSAMP_ADDRESSV, D3DTADDRESS_BORDER);
             bound_tex.push_back(index);
