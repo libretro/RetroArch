@@ -208,8 +208,8 @@ void D3DVideo::init(const video_info_t &info)
 void D3DVideo::set_viewport(int x, int y, unsigned width, unsigned height)
 {
    D3DVIEWPORT9 viewport;
-   viewport.X = x;
-   viewport.Y = y;
+   viewport.X = max(x, 0); // D3D9 doesn't support negative X/Y viewports ...
+   viewport.Y = max(y, 0);
    viewport.Width = width;
    viewport.Height = height;
    viewport.MinZ = 0.0f;
