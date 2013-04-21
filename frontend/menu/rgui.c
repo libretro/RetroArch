@@ -418,7 +418,8 @@ static void render_text(rgui_handle_t *rgui)
 
    blit_line(rgui, TERM_START_X + 15, (TERM_HEIGHT * FONT_HEIGHT_STRIDE) + TERM_START_Y + 2, g_extern.title_buf, true);
 #ifndef __BLACKBERRY_QNX__
-   blit_line(rgui, TERM_HEIGHT - 80, (TERM_HEIGHT * FONT_HEIGHT_STRIDE) + TERM_START_Y + 2, PACKAGE_VERSION, true);
+   blit_line(rgui, TERM_START_X + 15 + (TERM_WIDTH - 13) * FONT_WIDTH_STRIDE,
+         (TERM_HEIGHT * FONT_HEIGHT_STRIDE) + TERM_START_Y + 2, PACKAGE_VERSION, true);
 #endif
 
    unsigned x = TERM_START_X;
