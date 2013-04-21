@@ -14,6 +14,11 @@ mkdir -p ../msvc/RetroArch-Xbox1/Release_LTCG
 for f in *_xdk.lib ; do
    name=`echo "$f" | sed 's/\(_libretro\|\)_xdk.lib$//'`
    echo $name
-   cp -f "$f" ../msvc/RetroArch-Xbox1/Release_LTCG/libretro_xdk.lib
-   cmd.exe /k xdk1_env.bat $name
+   if [ $name = "tyrquake" ] ; then
+   	cp -f "$f" ../msvc/RetroArch-Xbox1/Release_LTCG_BigStack/libretro_xdk.lib
+   	cmd.exe /k xdk1_env_bigstack.bat $name
+   else
+   	cp -f "$f" ../msvc/RetroArch-Xbox1/Release_LTCG/libretro_xdk.lib
+   	cmd.exe /k xdk1_env.bat $name
+   fi
 done
