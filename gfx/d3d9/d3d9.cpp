@@ -41,6 +41,10 @@
 #include <stdint.h>
 #include <iostream>
 #include <cmath>
+#include <algorithm>
+
+#undef min
+#undef max
 
 #define IDI_ICON 1
 #define MAX_MONITORS 9
@@ -208,8 +212,8 @@ void D3DVideo::init(const video_info_t &info)
 void D3DVideo::set_viewport(int x, int y, unsigned width, unsigned height)
 {
    D3DVIEWPORT9 viewport;
-   viewport.X = max(x, 0); // D3D9 doesn't support negative X/Y viewports ...
-   viewport.Y = max(y, 0);
+   viewport.X = std::max(x, 0); // D3D9 doesn't support negative X/Y viewports ...
+   viewport.Y = std::max(y, 0);
    viewport.Width = width;
    viewport.Height = height;
    viewport.MinZ = 0.0f;
@@ -1050,6 +1054,9 @@ void D3DVideo::overlay_set_alpha(float mod)
 
 void D3DVideo::overlay_render(overlay_t &overlay)
 {  
+   if (!overlay.tex)
+      return;
+
    struct overlay_vertex
    {
       float x, y, z;
@@ -1178,8 +1185,7 @@ void D3DVideo::set_rgui_texture_frame(const void *frame,
       if (rgui.tex)
          rgui.tex->Release();
       if (FAILED(dev->CreateTexture(width, height, 1,
-                  0,
-                  rgb32 ? D3DFMT_A8R8G8B8 : D3DFMT_A4R4G4B4,
+                  0, D3DFMT_A8R8G8B8,
                   D3DPOOL_MANAGED,
                   &rgui.tex, nullptr)))
       {
@@ -1197,21 +1203,37 @@ void D3DVideo::set_rgui_texture_frame(const void *frame,
    if (SUCCEEDED(rgui.tex->LockRect(0, &d3dlr, nullptr, D3DLOCK_NOSYSLOCK)))
    {
       if (rgb32)
-         std::memcpy(d3dlr.pBits, frame, height * d3dlr.Pitch);
+      {
+         uint8_t *dst = (uint8_t*)d3dlr.pBits;
+         const uint32_t *src = (const uint32_t*)frame;
+         for (unsigned h = 0; h < height; h++, dst += d3dlr.Pitch, src += width)
+         {
+            std::memcpy(dst, src, width * sizeof(uint32_t));
+            std::memset(dst + width * sizeof(uint32_t), 0, d3dlr.Pitch - width * sizeof(uint32_t));
+         }
+      }
       else
       {
-         for (unsigned h = 0; h < height; h++)
+         uint32_t *dst = (uint32_t*)d3dlr.pBits;
+         const uint16_t *src = (const uint16_t*)frame;
+         for (unsigned h = 0; h < height; h++, dst += d3dlr.Pitch >> 2, src += width)
          {
-            uint16_t *dst = (uint16_t *)d3dlr.pBits + h * width;
-            uint16_t *src = (uint16_t *)frame + h * width;
-
             for (unsigned w = 0; w < width; w++)
             {
-               *dst++ = ((*src & 0xf) << 12) | ((*src >> 4) & 0xfff);
-               src++;
+               uint16_t c = src[w];
+               uint32_t r = (c >> 12) & 0xf;
+               uint32_t g = (c >>  8) & 0xf;
+               uint32_t b = (c >>  4) & 0xf;
+               uint32_t a = (c >>  0) & 0xf;
+               r = ((r << 4) | r) << 16;
+               g = ((g << 4) | g) <<  8;
+               b = ((b << 4) | b) <<  0;
+               a = ((a << 4) | a) << 24;
+               dst[w] = r | g | b | a;
             }
          }
       }
+
       rgui.tex->UnlockRect(0);
    }
 }

@@ -1249,6 +1249,9 @@ static inline void gl_draw_texture(void *data)
 {
    gl_t *gl = (gl_t*)data;
 
+   if (!gl->rgui_texture)
+      return;
+
    const GLfloat color[] = {
       1.0f, 1.0f, 1.0f, gl->rgui_texture_alpha,
       1.0f, 1.0f, 1.0f, gl->rgui_texture_alpha,
