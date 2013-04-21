@@ -208,9 +208,9 @@ struct aspect_ratio_elem aspectratio_lut[ASPECT_RATIO_END] = {
 char rotation_lut[4][32] =
 {
    "Normal",
-   "Vertical",
-   "Flipped",
-   "Flipped Rotated"
+   "90 deg",
+   "180 deg",
+   "270 deg"
 };
 
 void gfx_set_square_pixel_viewport(unsigned width, unsigned height)
