@@ -1,4 +1,4 @@
-RARCH_VERSION		= "0.9.8.4"
+RARCH_VERSION		= "0.9.9-wip1"
 
 DEBUG = 0
 
