@@ -264,13 +264,17 @@ bool RenderChain::render(const void *data,
             out_width, out_height,
             current_width, current_height, final_viewport);
 
+      // Clear out whole FBO.
       D3DVIEWPORT9 viewport = {0};
-      viewport.X = 0;
-      viewport.Y = 0;
-      viewport.Width = out_width;
-      viewport.Height = out_height;
+      viewport.Width = to_pass.info.tex_w;
+      viewport.Height = to_pass.info.tex_h;
       viewport.MinZ = 0.0f;
       viewport.MaxZ = 1.0f;
+      dev->SetViewport(&viewport);
+      dev->Clear(0, 0, D3DCLEAR_TARGET, 0, 1, 0);
+      
+      viewport.Width = out_width;
+      viewport.Height = out_height;
       set_viewport(viewport);
 
       set_vertices(from_pass,
@@ -649,17 +653,6 @@ void RenderChain::render_pass(Pass &pass, unsigned pass_index)
    bind_pass(pass, pass_index);
    bind_luts(pass);
    bind_tracker(pass, pass_index);
-
-   // Clear out whole framebuffer incase we change viewports mid-way to avoid stale garbage.
-   // Last pass we render to an already cleared back buffer.
-   if (pass_index < passes.size())
-   {
-      D3DRECT clear_rect;
-      clear_rect.x1 = clear_rect.y1 = 0;
-      clear_rect.x2 = passes[pass_index].info.tex_w;
-      clear_rect.y2 = passes[pass_index].info.tex_h;
-      dev->Clear(1, &clear_rect, D3DCLEAR_TARGET, 0, 1, 0);
-   }
 
    if (SUCCEEDED(dev->BeginScene()))
    {
