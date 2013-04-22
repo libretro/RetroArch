@@ -491,7 +491,7 @@ static void display_menubar(uint8_t menu_type)
    font_parms.color = WHITE;
 
    if (driver.video_poke->set_osd_msg)
-      driver.video_poke->set_osd_msg(driver.video_data, g_extern.title_buf, &font_parms);
+      driver.video_poke->set_osd_msg(driver.video_data, rgui->info.library_name, &font_parms);
 #ifdef __CELLOS_LV2__
 
    font_parms.x = POSITION_X; 
