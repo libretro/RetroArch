@@ -374,6 +374,12 @@ void uninit_libretro_sym(void)
 #ifndef RARCH_CONSOLE
    lib_dummy = false;
 #endif
+
+   // No longer valid.
+   memset(&g_extern.system.info, 0, sizeof(g_extern.system.info));
+   memset(&g_extern.system.av_info, 0, sizeof(g_extern.system.av_info));
+   memset(&g_extern.frame_cache, 0, sizeof(g_extern.frame_cache));
+   g_extern.system.pix_fmt = RETRO_PIXEL_FORMAT_0RGB1555;
 }
 
 #ifdef NEED_DYNAMIC

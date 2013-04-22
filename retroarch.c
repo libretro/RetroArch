@@ -249,6 +249,11 @@ static void video_frame(const void *data, unsigned width, unsigned height, size_
    if (!g_extern.video_active)
       return;
 
+   g_extern.frame_cache.data   = data;
+   g_extern.frame_cache.width  = width;
+   g_extern.frame_cache.height = height;
+   g_extern.frame_cache.pitch  = pitch;
+
    if (g_extern.system.pix_fmt == RETRO_PIXEL_FORMAT_0RGB1555 && data)
    {
       RARCH_PERFORMANCE_INIT(video_frame_conv);
@@ -307,11 +312,6 @@ static void video_frame(const void *data, unsigned width, unsigned height, size_
    if (!video_frame_func(data, width, height, pitch, msg))
       g_extern.video_active = false;
 #endif
-
-   g_extern.frame_cache.data   = data;
-   g_extern.frame_cache.width  = width;
-   g_extern.frame_cache.height = height;
-   g_extern.frame_cache.pitch  = pitch;
 }
 
 void rarch_render_cached_frame(void)
