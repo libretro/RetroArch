@@ -47,7 +47,7 @@ void libretro_dummy_retro_set_controller_port_device(unsigned port, unsigned dev
 void libretro_dummy_retro_get_system_info(struct retro_system_info *info)
 {
    memset(info, 0, sizeof(*info));
-   info->library_name     = "N/A";
+   info->library_name     = "No Core";
    info->library_version  = "";
    info->need_fullpath    = false;
    info->valid_extensions = ""; // Nothing.

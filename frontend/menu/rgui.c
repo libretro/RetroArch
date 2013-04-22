@@ -213,7 +213,10 @@ rgui_handle_t *rgui_init(void)
    if (path_is_directory(g_settings.libretro))
       strlcpy(rgui->libretro_dir, g_settings.libretro, sizeof(rgui->libretro_dir));
    else if (*g_settings.libretro)
+   {
       fill_pathname_basedir(rgui->libretro_dir, g_settings.libretro, sizeof(rgui->libretro_dir));
+      libretro_get_system_info(g_settings.libretro, &rgui->info);
+   }
 #endif
 
    rgui->menu_stack = (rgui_list_t*)calloc(1, sizeof(rgui_list_t));
@@ -403,7 +406,15 @@ static void render_text(rgui_handle_t *rgui)
          menu_type == RGUI_SETTINGS)
       snprintf(title, sizeof(title), "SETTINGS %s", dir);
    else
-      snprintf(title, sizeof(title), "FILE BROWSER %s", dir);
+   {
+      const char *core_name = rgui->info.library_name;
+      if (!core_name)
+         core_name = g_extern.system.info.library_name;
+      if (!core_name)
+         core_name = "No Core";
+
+      snprintf(title, sizeof(title), "GAME (%s) %s", core_name, dir);
+   }
 
    // Ensure that directory doesn't overflow terminal.
    size_t title_len = strlen(title);
@@ -416,11 +427,19 @@ static void render_text(rgui_handle_t *rgui)
 
    blit_line(rgui, TERM_START_X + 15, 15, title, true);
 
-   blit_line(rgui, TERM_START_X + 15, (TERM_HEIGHT * FONT_HEIGHT_STRIDE) + TERM_START_Y + 2, g_extern.title_buf, true);
+   char title_msg[64];
+   const char *core_name = rgui->info.library_name;
+   if (!core_name)
+      core_name = g_extern.system.info.library_name;
+   if (!core_name)
+      core_name = "No Core";
+
 #ifndef __BLACKBERRY_QNX__
-   blit_line(rgui, TERM_START_X + 15 + (TERM_WIDTH - 13) * FONT_WIDTH_STRIDE,
-         (TERM_HEIGHT * FONT_HEIGHT_STRIDE) + TERM_START_Y + 2, PACKAGE_VERSION, true);
+   snprintf(title_msg, sizeof(title_msg), "RetroArch %s - %s", PACKAGE_VERSION, core_name);
+#else
+   snprintf(title_msg, sizeof(title_msg), "RetroArch - %s", core_name);
 #endif
+   blit_line(rgui, TERM_START_X + 15, (TERM_HEIGHT * FONT_HEIGHT_STRIDE) + TERM_START_Y + 2, title_msg, true);
 
    unsigned x = TERM_START_X;
    unsigned y = TERM_START_Y;
