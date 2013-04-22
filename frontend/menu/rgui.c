@@ -217,6 +217,10 @@ rgui_handle_t *rgui_init(void)
       fill_pathname_basedir(rgui->libretro_dir, g_settings.libretro, sizeof(rgui->libretro_dir));
       libretro_get_system_info(g_settings.libretro, &rgui->info);
    }
+#else
+   // Don't use pretro_*, it can be dummy core. If we're statically linked,
+   // retro_* will always go to the "real" core.
+   retro_get_system_info(&rgui->info);
 #endif
 
    rgui->menu_stack = (rgui_list_t*)calloc(1, sizeof(rgui_list_t));
