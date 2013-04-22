@@ -41,6 +41,8 @@
 #endif
 #endif
 
+static bool lib_dummy;
+
 #ifdef HAVE_DYNAMIC
 #define SYM(x) do { \
    function_t func = dylib_proc(lib_handle, #x); \
@@ -49,7 +51,6 @@
 } while (0)
 
 static dylib_t lib_handle;
-static bool lib_dummy;
 #else
 #define SYM(x) p##x = x
 #endif
@@ -326,18 +327,14 @@ void libretro_get_current_core_pathname(char *name, size_t size)
 
 void init_libretro_sym(bool dummy)
 {
-#ifndef RARCH_CONSOLE
    lib_dummy = dummy;
-#endif
    // Guarantee that we can do "dirty" casting.
    // Every OS that this program supports should pass this ...
    rarch_assert(sizeof(void*) == sizeof(void (*)(void)));
 
-#ifndef RARCH_CONSOLE
    if (lib_dummy)
       load_symbols_dummy();
    else
-#endif
    {
 #ifdef HAVE_DYNAMIC
       // Try to verify that -lretro was not linked in from other modules
@@ -371,9 +368,7 @@ void uninit_libretro_sym(void)
       dylib_close(lib_handle);
    lib_handle = NULL;
 #endif
-#ifndef RARCH_CONSOLE
    lib_dummy = false;
-#endif
 
    // No longer valid.
    memset(&g_extern.system.info, 0, sizeof(g_extern.system.info));

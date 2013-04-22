@@ -378,6 +378,20 @@ void menu_init(void)
    rgui->do_held = false;
    rgui->frame_buf_show = true;
 
+#ifdef HAVE_DYNAMIC
+   if (path_is_directory(g_settings.libretro))
+      strlcpy(rgui->libretro_dir, g_settings.libretro, sizeof(rgui->libretro_dir));
+   else if (*g_settings.libretro)
+   {
+      fill_pathname_basedir(rgui->libretro_dir, g_settings.libretro, sizeof(rgui->libretro_dir));
+      libretro_get_system_info(g_settings.libretro, &rgui->info);
+   }
+#else
+   // Don't use pretro_*, it can be dummy core. If we're statically linked,
+   // retro_* will always go to the "real" core.
+   retro_get_system_info(&rgui->info);
+#endif
+
 #ifdef HAVE_FILEBROWSER
    if (!(strlen(g_settings.rgui_browser_directory) > 0))
       strlcpy(g_settings.rgui_browser_directory, default_paths.filebrowser_startup_dir,

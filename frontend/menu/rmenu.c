@@ -2514,7 +2514,7 @@ static int select_rom(void *data, uint64_t input)
    if (driver.input->set_keybinds)
       driver.input->set_keybinds(&key_label_b, 0, 0, 0, (1ULL << KEYBINDS_ACTION_GET_BIND_LABEL));
 
-   filebrowser_update(rgui->browser, input, g_extern.system.valid_extensions);
+   filebrowser_update(rgui->browser, input, rgui->info.valid_extensions);
 
    if (input & (1ULL << DEVICE_NAV_SELECT))
       menu_stack_push(GENERAL_VIDEO_MENU, false);
@@ -2538,13 +2538,13 @@ static int select_rom(void *data, uint64_t input)
    {
       const char * drive_map = menu_drive_mapping_previous();
       if (drive_map != NULL)
-         filebrowser_set_root_and_ext(rgui->browser, g_extern.system.valid_extensions, drive_map);
+         filebrowser_set_root_and_ext(rgui->browser, rgui->info.valid_extensions, drive_map);
    }
    else if (input & (1ULL << DEVICE_NAV_R1))
    {
       const char * drive_map = menu_drive_mapping_next();
       if (drive_map != NULL)
-         filebrowser_set_root_and_ext(rgui->browser, g_extern.system.valid_extensions, drive_map);
+         filebrowser_set_root_and_ext(rgui->browser, rgui->info.valid_extensions, drive_map);
    }
 
    if (filebrowser_iterate(rgui->browser, FILEBROWSER_ACTION_PATH_ISDIR))

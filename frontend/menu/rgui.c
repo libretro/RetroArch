@@ -209,20 +209,6 @@ rgui_handle_t *rgui_init(void)
 
    strlcpy(rgui->base_path, g_settings.rgui_browser_directory, sizeof(rgui->base_path));
 
-#ifdef HAVE_DYNAMIC
-   if (path_is_directory(g_settings.libretro))
-      strlcpy(rgui->libretro_dir, g_settings.libretro, sizeof(rgui->libretro_dir));
-   else if (*g_settings.libretro)
-   {
-      fill_pathname_basedir(rgui->libretro_dir, g_settings.libretro, sizeof(rgui->libretro_dir));
-      libretro_get_system_info(g_settings.libretro, &rgui->info);
-   }
-#else
-   // Don't use pretro_*, it can be dummy core. If we're statically linked,
-   // retro_* will always go to the "real" core.
-   retro_get_system_info(&rgui->info);
-#endif
-
    rgui->menu_stack = (rgui_list_t*)calloc(1, sizeof(rgui_list_t));
    rgui->selection_buf = (rgui_list_t*)calloc(1, sizeof(rgui_list_t));
    rgui_list_push(rgui->menu_stack, "", RGUI_SETTINGS, 0);
