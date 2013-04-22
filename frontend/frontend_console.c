@@ -177,7 +177,7 @@ int rarch_main(int argc, char *argv[])
          args.config_path   = *g_extern.config_path ? g_extern.config_path : NULL;
          args.sram_path = (g_extern.lifecycle_mode_state & (1ULL << MODE_LOAD_GAME_SRAM_DIR_ENABLE)) ? g_extern.console.main_wrap.default_sram_dir : NULL;
          args.state_path = (g_extern.lifecycle_mode_state & (1ULL << MODE_LOAD_GAME_STATE_DIR_ENABLE)) ? g_extern.console.main_wrap.default_savestate_dir : NULL;
-         args.rom_path = g_extern.fullpath;
+         args.rom_path = *g_extern.fullpath ? g_extern.fullpath : NULL;
          args.libretro_path = g_settings.libretro;
 
          int init_ret = rarch_main_init_wrap(&args);
