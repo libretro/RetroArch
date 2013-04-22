@@ -97,18 +97,10 @@ static void system_init(void)
    setup_callback();
 }
 
-static void system_post_init(void)
-{
-}
-
 static void system_process_args(int argc, char *argv[])
 {
    (void)argc;
    (void)argv;
-}
-
-static void system_deinit_save(void)
-{
 }
 
 static void system_deinit(void)

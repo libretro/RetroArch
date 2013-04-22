@@ -256,10 +256,6 @@ static void get_environment_settings(int argc, char *argv[])
 #endif
 }
 
-static void system_post_init(void)
-{
-}
-
 static void system_init(void)
 {
 #if defined (HAVE_LOGGER) || defined(HAVE_FILE_LOGGER)
@@ -288,10 +284,6 @@ static void system_deinit(void)
 #if defined (HAVE_LOGGER) || defined(HAVE_FILE_LOGGER)
    logger_deinit();
 #endif
-}
-
-static void system_deinit_save(void)
-{
 }
 
 static void system_exitspawn(void)

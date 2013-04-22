@@ -329,10 +329,8 @@ static void system_init(void)
 #ifndef __PSL1GHT__
    sceNpInit(NP_POOL_SIZE, np_pool);
 #endif
-}
 
-static void system_post_init(void)
-{
+#ifndef IS_SALAMANDER
 #if (CELL_SDK_VERSION > 0x340000) && !defined(__PSL1GHT__)
 #ifdef HAVE_SYSMODULES
    cellSysmoduleLoadModule(CELL_SYSMODULE_SYSUTIL_SCREENSHOT);
@@ -346,14 +344,10 @@ static void system_post_init(void)
    cellScreenShotEnable();
 #endif
 #ifdef HAVE_SYSUTILS
-   if (g_extern.lifecycle_mode_state & (1ULL << MODE_AUDIO_CUSTOM_BGM_ENABLE))
-      cellSysutilEnableBgmPlayback();
+   //if (g_extern.lifecycle_mode_state & (1ULL << MODE_AUDIO_CUSTOM_BGM_ENABLE))
+   cellSysutilEnableBgmPlayback();
 #endif
 #endif
-
-#ifdef HAVE_OSKUTIL
-   oskutil_params *osk = &g_extern.console.misc.oskutil_handle;
-   oskutil_init(osk, 0);
 #endif
 }
 
@@ -404,10 +398,6 @@ static void system_deinit(void)
 #endif
 
 #endif
-}
-
-static void system_deinit_save(void)
-{
 }
 
 static void system_exitspawn(void)

@@ -151,9 +151,6 @@ enum
    GX_DEVICE_END
 };
 
-rgui_handle_t *rgui;
-char input_path[1024];
-
 #if defined(HAVE_LOGGER) || defined(HAVE_FILE_LOGGER)
 static devoptab_t dotab_stdout = {
    "stdout",   // device name
@@ -347,21 +344,6 @@ static void system_deinit(void)
 }
 
 #ifndef IS_SALAMANDER
-
-static void system_post_init(void)
-{
-   char core_name[64];
-
-   libretro_get_current_core_pathname(core_name, sizeof(core_name));
-   snprintf(input_path, sizeof(input_path), "%s/%s.cfg", default_paths.input_presets_dir, core_name);
-   config_read_keybinds(input_path);
-}
-
-static void system_deinit_save(void)
-{
-   config_save_keybinds(input_path);
-}
-
 static void system_process_args(int argc, char *argv[])
 {
    if (argc > 2 && argv[1] != NULL && argv[2] != NULL)

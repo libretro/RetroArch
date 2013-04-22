@@ -22,6 +22,8 @@
 #include "../config.def.h"
 #include "menu/rmenu.h"
 
+char input_path[1024];
+
 static inline void inl_logger_init(void)
 {
 #if defined(HAVE_LOGGER)
@@ -140,7 +142,14 @@ int rarch_main(int argc, char *argv[])
    /* FIXME - when dummy loading becomes possible perhaps change this param  */
    init_libretro_sym(false);
 
-   system_post_init();
+#ifdef GEKKO
+   /* Per-core input config loading */
+   char core_name[64];
+
+   libretro_get_current_core_pathname(core_name, sizeof(core_name));
+   snprintf(input_path, sizeof(input_path), "%s/%s.cfg", default_paths.input_presets_dir, core_name);
+   config_read_keybinds(input_path);
+#endif
 
    menu_init();
 
@@ -214,7 +223,10 @@ int rarch_main(int argc, char *argv[])
 
    config_save_file(g_extern.config_path);
 
-   system_deinit_save();
+#ifdef GEKKO
+   /* Per-core input config saving */
+   config_save_keybinds(input_path);
+#endif
 
    if (g_extern.main_is_init)
       rarch_main_deinit();

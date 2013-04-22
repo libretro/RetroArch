@@ -3180,6 +3180,11 @@ rgui_handle_t *rgui_init(void)
       driver.video_poke->set_texture_frame(driver.video_data, menu_texture->pixels,
             true, menu_texture->width, menu_texture->height, 1.0f);
 
+#ifdef HAVE_OSKUTIL
+   oskutil_params *osk = &g_extern.console.misc.oskutil_handle;
+   oskutil_init(osk, 0);
+#endif
+
    return rgui;
 }
 
