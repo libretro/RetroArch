@@ -447,7 +447,7 @@ static void render_text(rgui_handle_t *rgui)
 #ifndef __BLACKBERRY_QNX__
    snprintf(title_msg, sizeof(title_msg), "%s - %s %s", PACKAGE_VERSION, core_name, core_version);
 #else
-   snprintf(title_msg, sizeof(title_msg), "%s - %s %s", core_name, core_version);
+   snprintf(title_msg, sizeof(title_msg), "%s %s", core_name, core_version);
 #endif
    blit_line(rgui, TERM_START_X + 15, (TERM_HEIGHT * FONT_HEIGHT_STRIDE) + TERM_START_Y + 2, title_msg, true);
 
