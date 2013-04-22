@@ -1,5 +1,5 @@
 ------------------------------------------------------------------------------
-RETROARCH XBOX 1 - 0.9.8.4
+RETROARCH XBOX 1 - 0.9.9
 ------------------------------------------------------------------------------
 RetroConsole Level: 1
 Author: Themaister, Squarepusher/Twin Aphex, Freakdave
