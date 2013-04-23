@@ -535,8 +535,8 @@ static void render_text(rgui_handle_t *rgui)
                strlcpy(type_str, aspectratio_lut[g_settings.video.aspect_ratio_idx].name, sizeof(type_str));
                break;
             case RGUI_SETTINGS_VIDEO_ROTATION:
-               snprintf(type_str, sizeof(type_str), "Rotation: %s",
-                     rotation_lut[g_extern.console.screen.orientation]);
+               strlcpy(type_str, rotation_lut[g_extern.console.screen.orientation],
+                     sizeof(type_str));
                break;
             case RGUI_SETTINGS_AUDIO_MUTE:
                if (g_extern.audio_data.mute)
