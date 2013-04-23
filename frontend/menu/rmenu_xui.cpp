@@ -694,7 +694,7 @@ HRESULT CRetroArchFileBrowser::OnInit(XUIMessageInit * pInitData, BOOL& bHandled
    GetChildById(L"XuiTxtRomPath", &m_list_path);
    GetChildById(L"XuiBtnGameDir", &m_dir_game);
 
-   filebrowser_set_root_and_ext(rgui->browser, g_extern.system.valid_extensions,
+   filebrowser_set_root_and_ext(rgui->browser, rgui->info.valid_extensions,
       default_paths.filebrowser_startup_dir);
 
    uint64_t action = (1ULL << DEVICE_NAV_B);
@@ -722,13 +722,13 @@ HRESULT CRetroArchFileBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHandle
       {
          snprintf(path, sizeof(path), "%s\\%s", rgui->browser->current_dir.directory_path, str_buffer);
          uint64_t action = (1ULL << DEVICE_NAV_B);
-         filebrowser_set_root_and_ext(rgui->browser, g_extern.system.valid_extensions, path);
+         filebrowser_set_root_and_ext(rgui->browser, rgui->info.valid_extensions, path);
          filebrowser_fetch_directory_entries(action);
       }
    }
    else if (hObjPressed == m_dir_game)
    {
-      filebrowser_set_root_and_ext(rgui->browser, g_extern.system.valid_extensions,
+      filebrowser_set_root_and_ext(rgui->browser, rgui->info.valid_extensions,
             g_settings.rgui_browser_directory);
       uint64_t action = (1ULL << DEVICE_NAV_B);
       filebrowser_fetch_directory_entries(action);
