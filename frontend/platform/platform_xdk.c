@@ -28,10 +28,6 @@
 
 #include <xbdm.h>
 
-#ifdef _XBOX
-#include "../../xdk/xdk_d3d.h"
-#endif
-
 #include "../../console/rarch_console.h"
 #include "../../conf/config_file.h"
 #include "../../conf/config_file_macros.h"
