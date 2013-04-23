@@ -24,8 +24,6 @@
 #include "../../general.h"
 #include "../../file.h"
 
-#include "../menu/rmenu.h"
-
 #define EMULATOR_CONTENT_DIR "SSNE10000"
 
 #ifndef __PSL1GHT__
