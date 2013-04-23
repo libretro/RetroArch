@@ -20,7 +20,7 @@
 <Pivot>245.362122,102.247192,0.000000</Pivot>
 <NavUp>XuiBtnQuit</NavUp>
 <NavDown>XuiBtnQuickMenu</NavDown>
-<Text>ROM Browser</Text>
+<Text>Load Game</Text>
 </Properties>
 </XuiButton>
 <XuiText>
