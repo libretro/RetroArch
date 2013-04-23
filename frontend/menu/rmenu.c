@@ -2249,18 +2249,18 @@ static int select_setting(void *data, uint64_t input)
             strlcpy(comment, "Change orientation of the screen.", sizeof(comment));
             break;
          case INGAME_MENU_RESIZE_MODE:
-            strlcpy(text, "Resize Mode", sizeof(text));
+            strlcpy(text, "Custom Ratio...", sizeof(text));
             strlcpy(setting_text, "", sizeof(setting_text));
             strlcpy(comment, "Allows you to resize the screen.", sizeof(comment));
             break;
          case INGAME_MENU_CORE_OPTIONS_MODE:
-            strlcpy(text, "Core Options", sizeof(text));
+            strlcpy(text, "Core Options...", sizeof(text));
             strlcpy(setting_text, "", sizeof(setting_text));
             strlcpy(comment, "Set core-specific options.", sizeof(comment));
             break;
 #ifdef HAVE_SHADER_MANAGER
          case INGAME_MENU_SHADER_MANAGER_MODE:
-            strlcpy(text, "Shader Manager", sizeof(text));
+            strlcpy(text, "Shader Manager...", sizeof(text));
             strlcpy(setting_text, "", sizeof(setting_text));
             strlcpy(comment, "Set and manage shader options.", sizeof(comment));
             break;
@@ -2276,22 +2276,22 @@ static int select_setting(void *data, uint64_t input)
             strlcpy(comment, "Take a screenshot.", sizeof(comment));
             break;
          case INGAME_MENU_RESET:
-            strlcpy(text, "Reset", sizeof(text));
+            strlcpy(text, "Restart Game", sizeof(text));
             strlcpy(setting_text, "", sizeof(setting_text));
             strlcpy(comment, "Reset the game.", sizeof(comment));
             break;
          case INGAME_MENU_RETURN_TO_GAME:
-            strlcpy(text, "Return to Game", sizeof(text));
+            strlcpy(text, "Resume Game", sizeof(text));
             strlcpy(setting_text, "", sizeof(setting_text));
-            strlcpy(comment, "Change the currently loaded game.", sizeof(comment));
+            strlcpy(comment, "Resume the currently loaded game.", sizeof(comment));
             break;
          case INGAME_MENU_CHANGE_GAME:
-            strlcpy(text, "Change Game", sizeof(text));
+            strlcpy(text, "Load Game...", sizeof(text));
             strlcpy(setting_text, "", sizeof(setting_text));
-            strlcpy(comment, "Select another game.", sizeof(comment));
+            strlcpy(comment, "Select a game to be loaded.", sizeof(comment));
             break;
          case INGAME_MENU_CHANGE_LIBRETRO_CORE:
-            strlcpy(text, "Change libretro core", sizeof(text));
+            strlcpy(text, "Core...", sizeof(text));
             strlcpy(setting_text, "", sizeof(setting_text));
             strlcpy(comment, "Choose another libretro core.", sizeof(comment));
             break;
