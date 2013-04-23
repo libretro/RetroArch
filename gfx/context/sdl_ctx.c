@@ -196,11 +196,12 @@ static bool gfx_ctx_set_video_mode(
 static void gfx_ctx_set_resize(unsigned width, unsigned height)
 {
 #ifndef __APPLE__ // Resizing on OSX is broken in 1.2 it seems :)
-   static const int resizable = SDL_RESIZABLE;
+   SDL_SetVideoMode(width, height, 0, SDL_OPENGL | (g_fullscreen ? SDL_FULLSCREEN : SDL_RESIZABLE));
 #else
-   static const int resizable = 0;
+   // Resize on OSX is broken.
+   (void)width;
+   (void)height;
 #endif
-   SDL_SetVideoMode(width, height, 0, SDL_OPENGL | (g_fullscreen ? SDL_FULLSCREEN : resizable));
 }
 
 static void gfx_ctx_swap_buffers(void)
