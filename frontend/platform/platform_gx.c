@@ -299,17 +299,13 @@ static void system_init(void)
    fatInitDefault();
 
 #ifdef HAVE_LOGGER
-   inl_logger_init();
    devoptab_list[STD_OUT] = &dotab_stdout;
    devoptab_list[STD_ERR] = &dotab_stdout;
    dotab_stdout.write_r = gx_logger_net;
-#elif defined(HAVE_FILE_LOGGER)
-   inl_logger_init();
-#ifndef IS_SALAMANDER
+#elif defined(HAVE_FILE_LOGGER) && !defined(IS_SALAMANDER)
    devoptab_list[STD_OUT] = &dotab_stdout;
    devoptab_list[STD_ERR] = &dotab_stdout;
    dotab_stdout.write_r = gx_logger_file;
-#endif
 #endif
 
 #if defined(HW_RVL) && !defined(IS_SALAMANDER)
@@ -336,12 +332,7 @@ static void system_exitspawn(void)
 #endif
 }
 
-static void system_deinit(void)
-{
-#if defined(HAVE_LOGGER) || defined(HAVE_FILE_LOGGER)
-   inl_logger_deinit();
-#endif
-}
+static void system_deinit(void) {}
 
 #ifndef IS_SALAMANDER
 static void system_process_args(int argc, char *argv[])

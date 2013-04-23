@@ -24,28 +24,6 @@
 
 char input_path[1024];
 
-static inline void inl_logger_init(void)
-{
-#if defined(HAVE_LOGGER)
-   g_extern.verbose = true;
-   logger_init();
-#elif defined(HAVE_FILE_LOGGER)
-   g_extern.verbose = true;
-   g_extern.log_file = fopen("/retroarch-log.txt", "w");
-#endif
-}
-
-static inline void inl_logger_deinit(void)
-{
-#if defined(HAVE_LOGGER)
-   logger_shutdown();
-#elif defined(HAVE_FILE_LOGGER)
-   if (g_extern.log_file)
-      fclose(g_extern.log_file);
-   g_extern.log_file = NULL;
-#endif
-}
-
 #if defined(__CELLOS_LV2__)
 #include "platform/platform_ps3_exec.c"
 #include "platform/platform_ps3.c"
@@ -110,6 +88,13 @@ static bool libretro_install_core(const char *path_prefix, const char *extension
 int rarch_main(int argc, char *argv[])
 {
    system_init();
+#if defined(HAVE_LOGGER)
+   g_extern.verbose = true;
+   logger_init();
+#elif defined(HAVE_FILE_LOGGER)
+   g_extern.verbose = true;
+   g_extern.log_file = fopen("/retroarch-log.txt", "w");
+#endif
 
    rarch_main_clear_state();
 
@@ -235,6 +220,14 @@ int rarch_main(int argc, char *argv[])
 
 #ifdef PERF_TEST
    rarch_perf_log();
+#endif
+
+#if defined(HAVE_LOGGER)
+   logger_shutdown();
+#elif defined(HAVE_FILE_LOGGER)
+   if (g_extern.log_file)
+      fclose(g_extern.log_file);
+   g_extern.log_file = NULL;
 #endif
 
    system_deinit();

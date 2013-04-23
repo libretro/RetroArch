@@ -320,13 +320,6 @@ static void system_init(void)
 
 #ifndef __PSL1GHT__
    sys_net_initialize_network();
-#endif
-
-#if defined(HAVE_LOGGER) || defined(HAVE_FILE_LOGGER)
-   inl_logger_init();
-#endif
-
-#ifndef __PSL1GHT__
    sceNpInit(NP_POOL_SIZE, np_pool);
 #endif
 
@@ -368,12 +361,7 @@ static void system_deinit(void)
 {
 #ifndef IS_SALAMANDER
 
-#if defined(HAVE_LOGGER) || defined(HAVE_FILE_LOGGER)
-   inl_logger_deinit();
-#endif
-
 #if defined(HAVE_SYSMODULES)
-
 #ifdef HAVE_FREETYPE
    /* Freetype font PRX */
    cellSysmoduleLoadModule(CELL_SYSMODULE_FONTFT);

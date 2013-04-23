@@ -105,12 +105,6 @@ static void system_process_args(int argc, char *argv[])
 
 static void system_deinit(void)
 {
-#ifdef HAVE_FILE_LOGGER
-   if (g_extern.log_file)
-      fclose(g_extern.log_file);
-   g_extern.log_file = NULL;
-#endif
-
    sceKernelExitGame();
 }
 

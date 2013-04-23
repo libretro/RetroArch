@@ -258,10 +258,6 @@ static void get_environment_settings(int argc, char *argv[])
 
 static void system_init(void)
 {
-#if defined (HAVE_LOGGER) || defined(HAVE_FILE_LOGGER)
-   inl_logger_init();
-#endif
-
 #if defined(_XBOX1) && !defined(IS_SALAMANDER)
    // Mount drives
    xbox_io_mount("A:", "cdrom0");
@@ -279,12 +275,7 @@ static void system_process_args(int argc, char *argv[])
    (void)argv;
 }
 
-static void system_deinit(void)
-{
-#if defined (HAVE_LOGGER) || defined(HAVE_FILE_LOGGER)
-   logger_deinit();
-#endif
-}
+static void system_deinit(void) {}
 
 static void system_exitspawn(void)
 {
