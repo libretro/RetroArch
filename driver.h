@@ -368,7 +368,6 @@ typedef struct video_driver
 
 #if defined(HAVE_RMENU) || defined(HAVE_RGUI)
    void (*start)(void);
-   void (*stop)(void);
    void (*restart)(void);
 #endif
 

@@ -343,9 +343,6 @@ void global_uninit_drivers(void)
 {
    if (driver.video_data)
    {
-#ifdef RARCH_CONSOLE
-      driver.video->stop();
-#endif
       driver.video_data = NULL;
    }
 

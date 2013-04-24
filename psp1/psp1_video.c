@@ -181,7 +181,6 @@ static void psp_free(void *data)
 #ifdef RARCH_CONSOLE
 static void psp_start(void) {}
 static void psp_restart(void) {}
-static void psp_stop(void) {}
 #endif
 
 static void psp_set_rotation(void *data, unsigned rotation)
@@ -200,7 +199,6 @@ const video_driver_t video_psp1 = {
 
 #ifdef RARCH_CONSOLE
    psp_start,
-   psp_stop,
    psp_restart,
    NULL,
    NULL,

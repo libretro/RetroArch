@@ -1168,15 +1168,6 @@ static void xdk_d3d_start(void)
    d3d->font_ctx = d3d_font_init_first(d3d, g_settings.video.font_path, 0 /* font size - fixed/unused */);
 }
 
-static void xdk_d3d_stop(void)
-{
-   void *data = driver.video_data;
-
-   xdk_d3d_free(data);
-
-   driver.video_data = NULL;
-}
-
 static void xdk_d3d_restart(void)
 {
    xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
@@ -1213,7 +1204,6 @@ const video_driver_t video_xdk_d3d = {
    xdk_d3d_free,
    "xdk_d3d",
    xdk_d3d_start,
-   xdk_d3d_stop,
    xdk_d3d_restart,
    xdk_d3d_set_rotation,
    NULL, /* viewport_info */

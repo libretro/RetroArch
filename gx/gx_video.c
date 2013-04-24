@@ -416,22 +416,6 @@ static void gx_efb_screenshot(void)
 
 #endif
 
-static void gx_stop(void)
-{
-#ifdef TAKE_EFB_SCREENSHOT_ON_EXIT
-   gx_efb_screenshot();
-#endif
-   GX_DrawDone();
-   GX_AbortFrame();
-   GX_Flush();
-   VIDEO_SetBlack(true);
-   VIDEO_Flush();
-   VIDEO_WaitVSync();
-
-   for (unsigned i = 0; i < 2; i++)
-      free(MEM_K1_TO_K0(g_framebuf[i]));
-}
-
 static void gx_restart(void)
 {
 }
@@ -1017,6 +1001,18 @@ static bool gx_focus(void *data)
 static void gx_free(void *data)
 {
    (void)data;
+#ifdef TAKE_EFB_SCREENSHOT_ON_EXIT
+   gx_efb_screenshot();
+#endif
+   GX_DrawDone();
+   GX_AbortFrame();
+   GX_Flush();
+   VIDEO_SetBlack(true);
+   VIDEO_Flush();
+   VIDEO_WaitVSync();
+
+   for (unsigned i = 0; i < 2; i++)
+      free(MEM_K1_TO_K0(g_framebuf[i]));
 }
 
 static void gx_set_rotation(void *data, unsigned orientation)
@@ -1093,7 +1089,6 @@ const video_driver_t video_gx = {
    .set_rotation = gx_set_rotation,
    .viewport_info = gx_viewport_info,
    .start = gx_start,
-   .stop = gx_stop,
    .restart = gx_restart,
    .poke_interface = gx_get_poke_interface,
 };

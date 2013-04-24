@@ -515,7 +515,6 @@ static void vita_gfx_free(void *data)
 #ifdef RARCH_CONSOLE
 static void vita_gfx_start(void) {}
 static void vita_gfx_restart(void) {}
-static void vita_gfx_stop(void) {}
 #endif
 
 const video_driver_t video_vita = {
@@ -530,7 +529,6 @@ const video_driver_t video_vita = {
 
 #ifdef RARCH_CONSOLE
    vita_gfx_start,
-   vita_gfx_stop,
    vita_gfx_restart,
 #endif
 };

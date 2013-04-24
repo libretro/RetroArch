@@ -706,7 +706,6 @@ static void thread_get_poke_interface(void *data, const video_poke_interface_t *
 // all stubs for now, might not have to implement them unless we want to port this to consoles
 static void thread_start(void) {}
 static void thread_stop(void) {}
-static void thread_restart(void) {}
 #endif
 
 static const video_driver_t video_thread = {
@@ -721,7 +720,6 @@ static const video_driver_t video_thread = {
 #if defined(HAVE_RMENU) || defined(HAVE_RGUI)
    thread_start,
    thread_stop,
-   thread_restart,
 #endif
    thread_set_rotation,
    thread_viewport_info,

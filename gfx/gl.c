@@ -2097,13 +2097,6 @@ static void gl_start(void)
    gl->font_ctx = gl_font_init_first(gl, g_settings.video.font_path, g_settings.video.font_size);
 }
 
-static void gl_stop(void)
-{
-   void *data = driver.video_data;
-   driver.video_data = NULL;
-   gl_free(data);
-}
-
 static void gl_restart(void)
 {
    gl_t *gl = (gl_t*)driver.video_data;
@@ -2111,7 +2104,9 @@ static void gl_restart(void)
    if (!gl)
 	   return;
 
-   gl_stop();
+   void *data = driver.video_data;
+   driver.video_data = NULL;
+   gl_free(data);
 #ifdef HAVE_CG
    gl_cg_invalidate_context();
 #endif
@@ -2405,7 +2400,6 @@ const video_driver_t video_gl = {
 
 #if defined(HAVE_RGUI) || defined(HAVE_RMENU)
    gl_start,
-   gl_stop,
    gl_restart,
 #endif
    gl_set_rotation,

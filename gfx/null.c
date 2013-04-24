@@ -65,7 +65,6 @@ static void null_gfx_free(void *data)
 #ifdef RARCH_CONSOLE
 static void null_gfx_start(void) {}
 static void null_gfx_restart(void) {}
-static void null_gfx_stop(void) {}
 #endif
 
 const video_driver_t video_null = {
@@ -80,7 +79,6 @@ const video_driver_t video_null = {
 
 #ifdef RARCH_CONSOLE
    null_gfx_start,
-   null_gfx_stop,
    null_gfx_restart,
 #endif
 };

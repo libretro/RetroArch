@@ -912,6 +912,17 @@ static bool osk_callback_enter_filename_init(void *data)
 #endif
 #endif
 
+static void rgui_init_textures(void)
+{
+#ifdef HAVE_MENU_PANEL
+   texture_image_load("D:\\Media\\menuMainRomSelectPanel.png", menu_panel);
+#endif
+   texture_image_load(g_extern.menu_texture_path, menu_texture);
+
+   if (driver.video_poke && driver.video_poke->set_texture_frame)
+      driver.video_poke->set_texture_frame(driver.video_data, menu_texture->pixels,
+            true, menu_texture->width, menu_texture->height, 1.0f);
+}
 
 static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t input)
 {
@@ -939,7 +950,9 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
                g_extern.lifecycle_mode_state &= ~(1ULL << MODE_VIDEO_PAL_VSYNC_BLOCK);
             }
 
+
             driver.video->restart();
+            rgui_init_textures();
          }
          break;
       case SETTING_PAL60_MODE:
@@ -959,6 +972,7 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
                }
 
                driver.video->restart();
+               rgui_init_textures();
             }
          }
 
@@ -968,7 +982,9 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
             {
                g_extern.lifecycle_mode_state &= ~(1ULL << MODE_VIDEO_PAL_TEMPORAL_ENABLE);
                g_extern.lifecycle_mode_state &= ~(1ULL << MODE_VIDEO_PAL_VSYNC_BLOCK);
+
                driver.video->restart();
+               rgui_init_textures();
             }
          }
          break;
@@ -1110,14 +1126,19 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
          if ((input & (1ULL << DEVICE_NAV_LEFT)) || (input & (1ULL << DEVICE_NAV_RIGHT)) || (input & (1ULL << DEVICE_NAV_B)))
          {
             settings_set(1ULL << S_TRIPLE_BUFFERING);
+
             driver.video->restart();
+            rgui_init_textures();
          }
          if (input & (1ULL << DEVICE_NAV_START))
          {
             settings_set(1ULL << S_DEF_TRIPLE_BUFFERING);
 
             if (!(g_extern.lifecycle_mode_state & (1ULL << MODE_VIDEO_TRIPLE_BUFFERING_ENABLE)))
+            {
                driver.video->restart();
+               rgui_init_textures();
+            }
          }
          break;
       case SETTING_DEFAULT_VIDEO_ALL:
@@ -3162,6 +3183,7 @@ int rgui_iterate(rgui_handle_t *rgui)
    return -1;
 }
 
+
 rgui_handle_t *rgui_init(void)
 {
    rgui_handle_t *rgui = (rgui_handle_t*)calloc(1, sizeof(*rgui));
@@ -3171,14 +3193,10 @@ rgui_handle_t *rgui_init(void)
    menu_texture = (struct texture_image*)calloc(1, sizeof(*menu_texture));
 #ifdef HAVE_MENU_PANEL
    menu_panel = (struct texture_image*)calloc(1, sizeof(*menu_panel));
-   texture_image_load("D:\\Media\\menuMainRomSelectPanel.png", menu_panel);
 #endif
 
-   texture_image_load(g_extern.menu_texture_path, menu_texture);
+   rgui_init_textures();
 
-   if (driver.video_poke && driver.video_poke->set_texture_frame)
-      driver.video_poke->set_texture_frame(driver.video_data, menu_texture->pixels,
-            true, menu_texture->width, menu_texture->height, 1.0f);
 
 #ifdef HAVE_OSKUTIL
    oskutil_params *osk = &g_extern.console.misc.oskutil_handle;
