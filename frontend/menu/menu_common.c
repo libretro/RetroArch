@@ -405,7 +405,7 @@ void menu_init(void)
       rarch_fail(1, "menu_init()");
    }
 
-   strlcpy(rgui->browser->current_dir.extensions, g_extern.system.valid_extensions,
+   strlcpy(rgui->browser->current_dir.extensions, rgui->info.valid_extensions,
          sizeof(rgui->browser->current_dir.extensions));
    strlcpy(rgui->browser->current_dir.root_dir, g_settings.rgui_browser_directory,
          sizeof(rgui->browser->current_dir.root_dir));
