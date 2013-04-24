@@ -795,7 +795,6 @@ const video_driver_t video_xvideo = {
 #ifdef HAVE_RGUI
    NULL,
    NULL,
-   NULL,
 #endif
 
    NULL,

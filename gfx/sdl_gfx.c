@@ -363,7 +363,6 @@ const video_driver_t video_sdl = {
 #ifdef HAVE_RGUI
    NULL,
    NULL,
-   NULL,
 #endif
 
    NULL,
