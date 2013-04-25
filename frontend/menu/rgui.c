@@ -570,10 +570,13 @@ static void render_text(rgui_handle_t *rgui)
                strlcpy(type_str, "...", sizeof(type_str));
                break;
             case RGUI_SETTINGS_BIND_DEVICE:
-               strlcpy(type_str, g_settings.input.device_names[port], sizeof(type_str));
+            {
+               int map = g_settings.input.joypad_map[port];
+               strlcpy(type_str, g_settings.input.device_names[map], sizeof(type_str));
                break;
+            }
             case RGUI_SETTINGS_BIND_DPAD_EMULATION:
-               switch(g_settings.input.dpad_emulation[port])
+               switch (g_settings.input.dpad_emulation[port])
                {
                   case ANALOG_DPAD_NONE:
                      strlcpy(type_str, "None", sizeof(type_str));

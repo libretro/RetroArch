@@ -35,7 +35,7 @@ struct linuxraw_joypad
    bool buttons[NUM_BUTTONS];
    int16_t axes[NUM_AXES];
 
-   char ident[256];
+   char *ident;
 };
 
 static struct linuxraw_joypad g_pads[MAX_PLAYERS];
@@ -79,7 +79,7 @@ static void linuxraw_joypad_init_pad(const char *path, struct linuxraw_joypad *p
    *pad->ident = '\0';
    if (pad->fd >= 0)
    {
-      if (ioctl(pad->fd, JSIOCGNAME(sizeof(pad->ident)), pad->ident) >= 0)
+      if (ioctl(pad->fd, JSIOCGNAME(sizeof(g_settings.input.device_names[0])), pad->ident) >= 0)
          RARCH_LOG("[Joypad]: Found pad: %s on %s.\n", pad->ident, path);
       else
          RARCH_ERR("[Joypad]: Didn't find ident of %s.\n", path);
@@ -122,8 +122,10 @@ static void handle_plugged_pad(void)
             {
                RARCH_LOG("[Joypad]: Joypad %s disconnected.\n", g_pads[index].ident);
                close(g_pads[index].fd);
-               memset(&g_pads[index], 0, sizeof(g_pads[index]));
+               memset(g_pads[index].buttons, 0, sizeof(g_pads[index].buttons));
+               memset(g_pads[index].axes, 0, sizeof(g_pads[index].axes));
                g_pads[index].fd = -1;
+               *g_pads[index].ident = '\0';
             }
          }
          // Sometimes, device will be created before acess to it is established.
@@ -174,6 +176,7 @@ static bool linuxraw_joypad_init(void)
    {
       struct linuxraw_joypad *pad = &g_pads[i];
       pad->fd = -1;
+      pad->ident = g_settings.input.device_names[i];
       
       char path[PATH_MAX];
       snprintf(path, sizeof(path), "/dev/input/js%u", i);
@@ -181,6 +184,7 @@ static bool linuxraw_joypad_init(void)
       linuxraw_joypad_init_pad(path, pad);
       if (pad->fd >= 0)
          poll_pad(pad);
+
    }
 
    g_notify = inotify_init();
