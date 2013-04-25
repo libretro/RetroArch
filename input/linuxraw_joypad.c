@@ -16,7 +16,13 @@
 #include "input_common.h"
 #include "../general.h"
 #include <unistd.h>
+#include <stdint.h>
+#include <string.h>
+#include <limits.h>
+#include <errno.h>
 #include <sys/types.h>
+#include <sys/inotify.h>
+#include <sys/epoll.h>
 #include <fcntl.h>
 #include <linux/joystick.h>
 
@@ -28,9 +34,13 @@ struct linuxraw_joypad
    int fd;
    bool buttons[NUM_BUTTONS];
    int16_t axes[NUM_AXES];
+
+   char ident[256];
 };
 
 static struct linuxraw_joypad g_pads[MAX_PLAYERS];
+static int g_notify;
+static int g_epoll;
 
 static void poll_pad(struct linuxraw_joypad *pad)
 {
@@ -54,38 +64,137 @@ static void poll_pad(struct linuxraw_joypad *pad)
    }
 }
 
+static void linuxraw_joypad_init_pad(const char *path, struct linuxraw_joypad *pad)
+{
+   if (pad->fd >= 0)
+      return;
+
+   // Device can have just been created, but not made accessible (yet).
+   // IN_ATTRIB will signal when permissions change.
+   if (access(path, R_OK) < 0)
+      return;
+
+   pad->fd = open(path, O_RDONLY | O_NONBLOCK);
+
+   *pad->ident = '\0';
+   if (pad->fd >= 0)
+   {
+      if (ioctl(pad->fd, JSIOCGNAME(sizeof(pad->ident)), pad->ident) >= 0)
+         RARCH_LOG("[Joypad]: Found pad: %s on %s.\n", pad->ident, path);
+      else
+         RARCH_ERR("[Joypad]: Didn't find ident of %s.\n", path);
+
+      struct epoll_event event;
+      event.events = EPOLLIN;
+      event.data.ptr = pad;
+      epoll_ctl(g_epoll, EPOLL_CTL_ADD, pad->fd, &event);
+   }
+   else
+      RARCH_ERR("[Joypad]: Failed to open pad %s (error: %s).\n", path, strerror(errno));
+}
+
+static void handle_plugged_pad(void)
+{
+   size_t event_size = sizeof(struct inotify_event) + NAME_MAX + 1;
+   uint8_t *event_buf = (uint8_t*)calloc(1, event_size);
+   if (!event_buf)
+      return;
+
+   int rc;
+   while ((rc = read(g_notify, event_buf, event_size)) >= 0)
+   {
+      struct inotify_event *event = NULL;
+      // Can read multiple events in one read() call.
+      for (int i = 0; i < rc; i += event->len + sizeof(struct inotify_event))
+      {
+         event = (struct inotify_event*)&event_buf[i];
+
+         if (strstr(event->name, "js") != event->name)
+            continue;
+
+         unsigned index = strtoul(event->name + 2, NULL, 0);
+         if (index >= MAX_PLAYERS)
+            continue;
+
+         if (event->mask & IN_DELETE)
+         {
+            if (g_pads[index].fd >= 0)
+            {
+               RARCH_LOG("[Joypad]: Joypad %s disconnected.\n", g_pads[index].ident);
+               close(g_pads[index].fd);
+               memset(&g_pads[index], 0, sizeof(g_pads[index]));
+               g_pads[index].fd = -1;
+            }
+         }
+         // Sometimes, device will be created before acess to it is established.
+         else if (event->mask & (IN_CREATE | IN_ATTRIB))
+         {
+            char path[PATH_MAX];
+            snprintf(path, sizeof(path), "/dev/input/%s", event->name);
+            linuxraw_joypad_init_pad(path, &g_pads[index]);
+         }
+      }
+   }
+
+   free(event_buf);
+}
+
 static void linuxraw_joypad_poll(void)
 {
-   for (unsigned i = 0; i < MAX_PLAYERS; i++)
-   {
-      struct linuxraw_joypad *pad = &g_pads[i];
-      if (pad->fd < 0)
-         continue;
+   int ret;
+   struct epoll_event events[MAX_PLAYERS + 1];
 
-      poll_pad(pad);
+retry:
+   ret = epoll_wait(g_epoll, events, MAX_PLAYERS + 1, 0);
+   if (ret < 0 && errno == EINTR)
+      goto retry;
+
+   for (int i = 0; i < ret; i++)
+   {
+      if (events[i].data.ptr)
+         poll_pad((struct linuxraw_joypad*)events[i].data.ptr);
+      else
+         handle_plugged_pad();
    }
+}
+
+static void linuxraw_joypad_setup_notify(void)
+{
+   fcntl(g_notify, F_SETFL, fcntl(g_notify, F_GETFL) | O_NONBLOCK);
+   inotify_add_watch(g_notify, "/dev/input", IN_DELETE | IN_CREATE | IN_ATTRIB);
 }
 
 static bool linuxraw_joypad_init(void)
 {
-   bool has_pad = false;
+   g_epoll = epoll_create(MAX_PLAYERS + 1);
+   if (g_epoll < 0)
+      return false;
 
    for (unsigned i = 0; i < MAX_PLAYERS; i++)
    {
       struct linuxraw_joypad *pad = &g_pads[i];
-
+      pad->fd = -1;
+      
       char path[PATH_MAX];
       snprintf(path, sizeof(path), "/dev/input/js%u", i);
-      pad->fd = open(path, O_RDONLY | O_NONBLOCK);
 
-      has_pad |= pad->fd >= 0;
+      linuxraw_joypad_init_pad(path, pad);
+      if (pad->fd >= 0)
+         poll_pad(pad);
    }
 
-   // Get initial state.
-   if (has_pad)
-      linuxraw_joypad_poll();
+   g_notify = inotify_init();
+   if (g_notify >= 0)
+   {
+      linuxraw_joypad_setup_notify();
 
-   return has_pad;
+      struct epoll_event event;
+      event.events = EPOLLIN;
+      event.data.ptr = NULL;
+      epoll_ctl(g_epoll, EPOLL_CTL_ADD, g_notify, &event);
+   }
+
+   return true;
 }
 
 static void linuxraw_joypad_destroy(void)
@@ -99,6 +208,14 @@ static void linuxraw_joypad_destroy(void)
    memset(g_pads, 0, sizeof(g_pads));
    for (unsigned i = 0; i < MAX_PLAYERS; i++)
       g_pads[i].fd = -1;
+
+   if (g_notify >= 0)
+      close(g_notify);
+   g_notify = -1;
+
+   if (g_epoll >= 0)
+      close(g_epoll);
+   g_epoll = -1;
 }
 
 static bool linuxraw_joypad_button(unsigned port, uint16_t joykey)
