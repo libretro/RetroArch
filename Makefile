@@ -78,7 +78,7 @@ endif
 ifneq ($(findstring Linux,$(OS)),)
    LIBS += -lrt
    OBJ += input/linuxraw_input.o input/linuxraw_joypad.o
-   JOYCONFIG_OBJ += input/linuxraw_joypad.o
+   JOYCONFIG_OBJ += tools/linuxraw_joypad.o
 endif
 
 ifeq ($(HAVE_RGUI), 1)
@@ -342,6 +342,7 @@ ifeq ($(NOUNUSED_VARIABLE), yes)
    CFLAGS += -Wno-unused-variable
 endif
 
+
 all: $(TARGET) config.mk
 
 config.mk: configure qb/*
@@ -367,6 +368,10 @@ tools/retrolaunch/retrolaunch: $(RETROLAUNCH_OBJ)
 %.o: %.c config.h config.mk $(HEADERS)
 	@$(if $(Q), $(shell echo echo CC $<),)
 	$(Q)$(CC) $(CFLAGS) $(DEFINES) -c -o $@ $<
+
+tools/linuxraw_joypad.o: input/linuxraw_joypad.c
+	@$(if $(Q), $(shell echo echo CC $<),)
+	$(Q)$(CC) $(CFLAGS) $(DEFINES) -DNO_MSG_QUEUE -c -o $@ $<
 
 %.o: %.S config.h config.mk $(HEADERS)
 	@$(if $(Q), $(shell echo echo AS $<),)

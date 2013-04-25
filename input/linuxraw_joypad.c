@@ -42,6 +42,10 @@ static struct linuxraw_joypad g_pads[MAX_PLAYERS];
 static int g_notify;
 static int g_epoll;
 
+#ifndef NO_MSG_QUEUE
+static bool g_hotplug;
+#endif
+
 static void poll_pad(struct linuxraw_joypad *pad)
 {
    struct js_event event;
@@ -80,7 +84,19 @@ static void linuxraw_joypad_init_pad(const char *path, struct linuxraw_joypad *p
    if (pad->fd >= 0)
    {
       if (ioctl(pad->fd, JSIOCGNAME(sizeof(g_settings.input.device_names[0])), pad->ident) >= 0)
+      {
          RARCH_LOG("[Joypad]: Found pad: %s on %s.\n", pad->ident, path);
+
+#ifndef NO_MSG_QUEUE
+         if (g_hotplug)
+         {
+            char msg[512];
+            snprintf(msg, sizeof(msg), "Joypad #%u (%s) connected.", (unsigned)(pad - g_pads), pad->ident);
+            msg_queue_push(g_extern.msg_queue, msg, 0, 60);
+         }
+#endif
+      }
+
       else
          RARCH_ERR("[Joypad]: Didn't find ident of %s.\n", path);
 
@@ -120,6 +136,15 @@ static void handle_plugged_pad(void)
          {
             if (g_pads[index].fd >= 0)
             {
+#ifndef NO_MSG_QUEUE
+               if (g_hotplug)
+               {
+                  char msg[512];
+                  snprintf(msg, sizeof(msg), "Joypad #%u (%s) disconnected.", index, g_pads[index].ident);
+                  msg_queue_push(g_extern.msg_queue, msg, 0, 60);
+               }
+#endif
+
                RARCH_LOG("[Joypad]: Joypad %s disconnected.\n", g_pads[index].ident);
                close(g_pads[index].fd);
                memset(g_pads[index].buttons, 0, sizeof(g_pads[index].buttons));
@@ -198,6 +223,10 @@ static bool linuxraw_joypad_init(void)
       epoll_ctl(g_epoll, EPOLL_CTL_ADD, g_notify, &event);
    }
 
+#ifndef NO_MSG_QUEUE
+   g_hotplug = true;
+#endif
+
    return true;
 }
 
@@ -220,6 +249,10 @@ static void linuxraw_joypad_destroy(void)
    if (g_epoll >= 0)
       close(g_epoll);
    g_epoll = -1;
+
+#ifndef NO_MSG_QUEUE
+   g_hotplug = false;
+#endif
 }
 
 static bool linuxraw_joypad_button(unsigned port, uint16_t joykey)
