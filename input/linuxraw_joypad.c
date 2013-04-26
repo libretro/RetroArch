@@ -94,8 +94,6 @@ static bool linuxraw_joypad_init_pad(const char *path, struct linuxraw_joypad *p
             snprintf(msg, sizeof(msg), "Joypad #%u (%s) connected.", (unsigned)(pad - g_pads), pad->ident);
             msg_queue_push(g_extern.msg_queue, msg, 0, 60);
          }
-
-         input_config_autoconfigure_joypad(pad - g_pads, pad->ident, "linuxraw");
 #endif
       }
 
@@ -221,9 +219,17 @@ static bool linuxraw_joypad_init(void)
       char path[PATH_MAX];
       snprintf(path, sizeof(path), "/dev/input/js%u", i);
 
-      linuxraw_joypad_init_pad(path, pad);
-      if (pad->fd >= 0)
+      if (linuxraw_joypad_init_pad(path, pad))
+      {
+#ifndef IS_JOYCONFIG
+         input_config_autoconfigure_joypad(i, pad->ident, "linuxraw");
+#endif
          poll_pad(pad);
+      }
+#ifndef IS_JOYCONFIG
+      else
+         input_config_autoconfigure_joypad(i, NULL, NULL);
+#endif
    }
 
    g_notify = inotify_init();
