@@ -361,8 +361,8 @@ void init_drivers(void)
 
    adjust_system_rates();
 
-   // adjust timers first before resetting frame count
-   for (unsigned i = 0; i < sizeof(g_extern.delay_timer) / sizeof(g_extern.delay_timer[0]); i++)
+   // Readjust timers first before resetting frame count.
+   for (unsigned i = 0; i < ARRAY_SIZE(g_extern.delay_timer); i++)
    {
       if (g_extern.delay_timer[i] > g_extern.frame_count)
          g_extern.delay_timer[i] -= g_extern.frame_count;

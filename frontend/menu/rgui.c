@@ -886,12 +886,7 @@ static int rgui_settings_toggle_setting(rgui_handle_t *rgui, unsigned setting, r
 #ifndef RARCH_PERFORMANCE_MODE
       case RGUI_SETTINGS_TOGGLE_FULLSCREEN:
          if (action == RGUI_ACTION_OK)
-         {
             rarch_set_fullscreen(!g_settings.video.fullscreen);
-            // Delay timers have been reset.
-            g_extern.delay_timer[0] = 15;
-            g_extern.delay_timer[1] = 15;
-         }
          break;
 #endif
       case RGUI_SETTINGS_VIDEO_ROTATION:
