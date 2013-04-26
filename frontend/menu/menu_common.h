@@ -181,6 +181,9 @@ typedef struct
    uint64_t trigger_state;
    bool do_held;
 
+   unsigned delay_timer;
+   unsigned delay_count;
+
    uint16_t *frame_buf;
    size_t frame_buf_pitch;
    bool frame_buf_show;

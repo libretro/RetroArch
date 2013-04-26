@@ -2071,7 +2071,6 @@ static const struct retro_keybind *menu_nav_binds[] = {
 int rgui_input_postprocess(void *data, uint64_t old_state)
 {
    (void)data;
-   (void)old_state;
 
    int ret = 0;
 
@@ -2084,16 +2083,15 @@ int rgui_input_postprocess(void *data, uint64_t old_state)
       ret = -1;
    }
 
-   if (g_extern.frame_count >= g_extern.delay_timer[0])
+   if ((rgui->trigger_state & (1ULL << DEVICE_NAV_MENU)) &&
+         g_extern.main_is_init &&
+         !g_extern.libretro_dummy)
    {
-      if ((rgui->trigger_state & (1ULL << DEVICE_NAV_MENU)) && g_extern.main_is_init)
-      {
-         if (g_extern.lifecycle_mode_state & (1ULL << MODE_MENU_INGAME))
-            g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU_INGAME_EXIT);
-         
-         g_extern.lifecycle_mode_state |= (1ULL << MODE_GAME);
-         ret = -1;
-      }
+      if (g_extern.lifecycle_mode_state & (1ULL << MODE_MENU_INGAME))
+         g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU_INGAME_EXIT);
+
+      g_extern.lifecycle_mode_state |= (1ULL << MODE_GAME);
+      ret = -1;
    }
 
    if (g_extern.lifecycle_mode_state & (1ULL << MODE_MENU_INGAME_EXIT) &&
@@ -2146,8 +2144,14 @@ uint64_t rgui_input(void)
    input_state |= input_key_pressed_func(RARCH_MENU_TOGGLE) ? (1ULL << DEVICE_NAV_MENU) : 0;
 #endif
 
-   rgui->trigger_state = input_state & ~(rgui->old_input_state);
-   rgui->do_held = (input_state & ((1ULL << DEVICE_NAV_UP) | (1ULL << DEVICE_NAV_DOWN) | (1ULL << DEVICE_NAV_LEFT) | (1ULL << DEVICE_NAV_RIGHT))) && !(input_state & ((1ULL << DEVICE_NAV_MENU)));
+   rgui->trigger_state = input_state & ~rgui->old_input_state;
+
+   rgui->do_held = (input_state & (
+         (1ULL << DEVICE_NAV_UP) |
+         (1ULL << DEVICE_NAV_DOWN) |
+         (1ULL << DEVICE_NAV_LEFT) |
+         (1ULL << DEVICE_NAV_RIGHT))) &&
+      !(input_state & DEVICE_NAV_MENU);
 
    return input_state;
 }
