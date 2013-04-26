@@ -444,6 +444,7 @@ bool menu_iterate(void)
          rgui->need_refresh = true;
 
       g_extern.lifecycle_mode_state &= ~(1ULL << MODE_MENU_PREINIT);
+      rgui->old_input_state |= 1ULL << DEVICE_NAV_MENU;
    }
 
    rarch_input_poll();
@@ -464,13 +465,14 @@ bool menu_iterate(void)
       if (!first_held)
       {
          first_held = true;
-         g_extern.delay_timer[1] = g_extern.frame_count + (initial_held ? 15 : 7);
+         rgui->delay_timer = initial_held ? 12 : 6;
+         rgui->delay_count = 0;
       }
 
-      if (g_extern.frame_count >= g_extern.delay_timer[1])
+      if (rgui->delay_count >= rgui->delay_timer)
       {
          first_held = false;
-         rgui->trigger_state = input_state; //second input frame set as current frame
+         rgui->trigger_state = input_state;
       }
 
       initial_held = false;
@@ -481,6 +483,7 @@ bool menu_iterate(void)
       initial_held = true;
    }
 
+   rgui->delay_count++;
    rgui->old_input_state = input_state;
    input_entry_ret = rgui_iterate(rgui);
 

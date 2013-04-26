@@ -361,15 +361,6 @@ void init_drivers(void)
 
    adjust_system_rates();
 
-   // Readjust timers first before resetting frame count.
-   for (unsigned i = 0; i < ARRAY_SIZE(g_extern.delay_timer); i++)
-   {
-      if (g_extern.delay_timer[i] > g_extern.frame_count)
-         g_extern.delay_timer[i] -= g_extern.frame_count;
-      else
-         g_extern.delay_timer[i] = 0;
-   }
-
    g_extern.frame_count = 0;
    init_video_input();
 
