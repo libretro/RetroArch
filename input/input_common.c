@@ -865,5 +865,12 @@ void input_config_autoconfigure_joypad(unsigned index, const char *name, const c
 
    string_list_free(list);
 }
+#else
+void input_config_autoconfigure_joypad(unsigned index, const char *name, const char *driver)
+{
+   (void)index;
+   (void)name;
+   (void)driver;
+}
 #endif
 
