@@ -39,14 +39,14 @@ JOYCONFIG_OBJ = tools/retroarch-joyconfig.o \
 	conf/config_file.o \
 	file_path.o \
 	compat/compat.o \
-	input/input_common.o
+	tools/input_common_joyconfig.o
 
 RETROLAUNCH_OBJ = tools/retrolaunch/main.o \
 	tools/retrolaunch/sha1.o \
 	tools/retrolaunch/parser.o \
 	tools/retrolaunch/cd_detect.o \
 	tools/retrolaunch/rl_fnmatch.o \
-	tools/input_common.o \
+	tools/input_common_launch.o \
 	file_path.o \
 	compat/compat.o \
 	conf/config_file.o \
@@ -374,9 +374,13 @@ tools/linuxraw_joypad.o: input/linuxraw_joypad.c
 	@$(if $(Q), $(shell echo echo CC $<),)
 	$(Q)$(CC) $(CFLAGS) $(DEFINES) -DIS_JOYCONFIG -c -o $@ $<
 
-tools/input_common.o: input/input_common.c
+tools/input_common_launch.o: input/input_common.c
 	@$(if $(Q), $(shell echo echo CC $<),)
 	$(Q)$(CC) $(CFLAGS) $(DEFINES) -DIS_RETROLAUNCH -c -o $@ $<
+
+tools/input_common_joyconfig.o: input/input_common.c
+	@$(if $(Q), $(shell echo echo CC $<),)
+	$(Q)$(CC) $(CFLAGS) $(DEFINES) -DIS_JOYCONFIG -c -o $@ $<
 
 %.o: %.S config.h config.mk $(HEADERS)
 	@$(if $(Q), $(shell echo echo AS $<),)

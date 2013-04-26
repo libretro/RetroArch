@@ -189,7 +189,7 @@ static bool dinput_is_pressed(struct dinput_input *di, const struct retro_keybin
       return false;
 
    const struct retro_keybind *bind = &binds[id];
-   return dinput_keyboard_pressed(di, bind->key) || input_joypad_pressed(di->joypad, port, bind);
+   return dinput_keyboard_pressed(di, bind->key) || input_joypad_pressed(di->joypad, port, binds, id);
 }
 
 static bool dinput_key_pressed(void *data, int key)

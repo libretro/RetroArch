@@ -413,11 +413,9 @@ static const unsigned turbo_duty_cycle = 3;
 // Enable input debugging output.
 static const bool input_debug_enable = false;
 
-#ifdef ANDROID
 // Enable input auto-detection. Will attempt to autoconfigure
 // gamepads, plug-and-play style.
 static const bool input_autodetect_enable = true;
-#endif
 
 #ifndef IS_SALAMANDER
 

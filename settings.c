@@ -222,6 +222,8 @@ void config_set_defaults(void)
    for (unsigned i = 1; i < MAX_PLAYERS; i++)
       memcpy(g_settings.input.binds[i], retro_keybinds_rest, sizeof(retro_keybinds_rest));
 
+   memcpy(g_settings.input.autoconf_binds, g_settings.input.binds, sizeof(g_settings.input.binds));
+
    // Verify that binds are in proper order.
    for (int i = 0; i < MAX_PLAYERS; i++)
       for (int j = 0; j < RARCH_BIND_LIST_END; j++)
@@ -234,8 +236,8 @@ void config_set_defaults(void)
    g_settings.input.turbo_duty_cycle = turbo_duty_cycle;
    g_settings.input.overlay_opacity = 1.0f;
    g_settings.input.debug_enable = input_debug_enable;
-#ifdef ANDROID
    g_settings.input.autodetect_enable = input_autodetect_enable;
+#ifdef ANDROID
    g_settings.input.back_behavior = BACK_BUTTON_QUIT;
 #endif
 
@@ -651,8 +653,10 @@ bool config_load_file(const char *path)
    CONFIG_GET_FLOAT(input.overlay_opacity, "input_overlay_opacity");
    CONFIG_GET_BOOL(input.debug_enable, "input_debug_enable");
 
-#ifdef ANDROID
    CONFIG_GET_BOOL(input.autodetect_enable, "input_autodetect_enable");
+   CONFIG_GET_PATH(input.autoconfig_dir, "joypad_autoconfig_dir");
+
+#ifdef ANDROID
    CONFIG_GET_INT(input.back_behavior, "input_back_behavior");
    CONFIG_GET_INT(input.icade_profile[0], "input_autodetect_icade_profile_pad1");
    CONFIG_GET_INT(input.icade_profile[1], "input_autodetect_icade_profile_pad2");

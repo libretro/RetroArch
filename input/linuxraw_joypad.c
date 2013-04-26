@@ -94,6 +94,8 @@ static void linuxraw_joypad_init_pad(const char *path, struct linuxraw_joypad *p
             snprintf(msg, sizeof(msg), "Joypad #%u (%s) connected.", (unsigned)(pad - g_pads), pad->ident);
             msg_queue_push(g_extern.msg_queue, msg, 0, 60);
          }
+
+         input_config_autoconfigure_joypad(pad - g_pads, pad->ident, "linuxraw");
 #endif
       }
 
@@ -151,6 +153,10 @@ static void handle_plugged_pad(void)
                memset(g_pads[index].axes, 0, sizeof(g_pads[index].axes));
                g_pads[index].fd = -1;
                *g_pads[index].ident = '\0';
+
+#ifndef IS_JOYCONFIG
+               input_config_autoconfigure_joypad(index, NULL, NULL);
+#endif
             }
          }
          // Sometimes, device will be created before acess to it is established.
@@ -159,6 +165,11 @@ static void handle_plugged_pad(void)
             char path[PATH_MAX];
             snprintf(path, sizeof(path), "/dev/input/%s", event->name);
             linuxraw_joypad_init_pad(path, &g_pads[index]);
+
+#ifndef IS_JOYCONFIG
+            if (*g_pads[index].ident)
+               input_config_autoconfigure_joypad(index, g_pads[index].ident, "linuxraw");
+#endif
          }
       }
    }

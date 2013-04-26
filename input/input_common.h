@@ -75,7 +75,7 @@ const rarch_joypad_driver_t *input_joypad_find_driver(const char *ident);
 const rarch_joypad_driver_t *input_joypad_init_first(void);
 
 bool input_joypad_pressed(const rarch_joypad_driver_t *driver,
-      unsigned port, const struct retro_keybind *key);
+      unsigned port, const struct retro_keybind *binds, unsigned key);
 
 int16_t input_joypad_analog(const rarch_joypad_driver_t *driver,
       unsigned port, unsigned index, unsigned id, const struct retro_keybind *binds);
@@ -135,6 +135,8 @@ void input_config_parse_joy_button(config_file_t *conf, const char *prefix,
       const char *btn, struct retro_keybind *bind);
 void input_config_parse_joy_axis(config_file_t *conf, const char *prefix,
       const char *axis, struct retro_keybind *bind);
+
+void input_config_autoconfigure_joypad(unsigned index, const char *name, const char *driver);
 
 #endif
 

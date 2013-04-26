@@ -37,6 +37,8 @@
 #include <X11/keysym.h>
 #endif
 
+#include "../file.h"
+
 static const rarch_joypad_driver_t *joypad_drivers[] = {
 #ifndef IS_RETROLAUNCH
 #ifdef HAVE_DINPUT
@@ -95,7 +97,7 @@ const char *input_joypad_name(const rarch_joypad_driver_t *driver, unsigned joyp
 }
 
 bool input_joypad_pressed(const rarch_joypad_driver_t *driver,
-      unsigned port, const struct retro_keybind *key)
+      unsigned port, const struct retro_keybind *binds, unsigned key)
 {
    if (!driver)
       return false;
@@ -104,13 +106,24 @@ bool input_joypad_pressed(const rarch_joypad_driver_t *driver,
    if (joy_index < 0 || joy_index >= MAX_PLAYERS)
       return false;
 
-   if (!key->valid)
+   // Auto-binds are per joypad, not per player.
+   const struct retro_keybind *auto_binds = g_settings.input.autoconf_binds[joy_index];
+
+   if (!binds[key].valid)
       return false;
 
-   if (driver->button(joy_index, (uint16_t)key->joykey))
+   uint64_t joykey = binds[key].joykey;
+   if (joykey == NO_BTN)
+      joykey = auto_binds[key].joykey;
+
+   if (driver->button(joy_index, (uint16_t)joykey))
       return true;
 
-   int16_t axis = driver->axis(joy_index, key->joyaxis);
+   uint32_t joyaxis = binds[key].joyaxis;
+   if (joyaxis == AXIS_NONE)
+      joyaxis = auto_binds[key].joyaxis;
+
+   int16_t axis = driver->axis(joy_index, joyaxis);
    float scaled_axis = (float)abs(axis) / 0x8000;
    return scaled_axis > g_settings.input.axis_threshold;
 }
@@ -122,8 +135,11 @@ int16_t input_joypad_analog(const rarch_joypad_driver_t *driver,
       return 0;
 
    int joy_index = g_settings.input.joypad_map[port];
-   if (joy_index < 0)
+   if (joy_index < 0 || joy_index >= MAX_PLAYERS)
       return 0;
+
+   // Auto-binds are per joypad, not per player.
+   const struct retro_keybind *auto_binds = g_settings.input.autoconf_binds[joy_index];
 
    unsigned id_minus = 0;
    unsigned id_plus  = 0;
@@ -134,16 +150,30 @@ int16_t input_joypad_analog(const rarch_joypad_driver_t *driver,
    if (!bind_minus->valid || !bind_plus->valid)
       return 0;
 
-   int16_t pressed_minus = abs(driver->axis(joy_index, bind_minus->joyaxis));
-   int16_t pressed_plus  = abs(driver->axis(joy_index, bind_plus->joyaxis));
+   uint32_t axis_minus = bind_minus->joyaxis;
+   uint32_t axis_plus  = bind_plus->joyaxis;
+   if (axis_minus == AXIS_NONE)
+      axis_minus = auto_binds[id_minus].joyaxis;
+   if (axis_plus == AXIS_NONE)
+      axis_plus = auto_binds[id_plus].joyaxis;
+
+   int16_t pressed_minus = abs(driver->axis(joy_index, axis_minus));
+   int16_t pressed_plus  = abs(driver->axis(joy_index, axis_plus));
 
    int16_t res = pressed_plus - pressed_minus;
 
    if (res != 0)
       return res;
 
-   int16_t digital_left  = driver->button(joy_index, (uint16_t)bind_minus->joykey) ? -0x7fff : 0;
-   int16_t digital_right = driver->button(joy_index, (uint16_t)bind_plus->joykey)  ?  0x7fff : 0;
+   uint64_t key_minus = bind_minus->joykey;
+   uint64_t key_plus  = bind_plus->joykey;
+   if (key_minus == NO_BTN)
+      key_minus = auto_binds[id_minus].joykey;
+   if (key_plus == NO_BTN)
+      key_plus = auto_binds[id_plus].joykey;
+
+   int16_t digital_left  = driver->button(joy_index, (uint16_t)key_minus) ? -0x7fff : 0;
+   int16_t digital_right = driver->button(joy_index, (uint16_t)key_plus)  ?  0x7fff : 0;
    return digital_right + digital_left;
 }
 
@@ -763,4 +793,70 @@ void input_config_parse_joy_axis(config_file_t *conf, const char *prefix,
       }
    }
 }
+
+#if !defined(IS_JOYCONFIG) && !defined(IS_RETROLAUNCH)
+static void input_autoconfigure_joypad_conf(config_file_t *conf, struct retro_keybind *binds)
+{
+   for (unsigned i = 0; i < RARCH_BIND_LIST_END; i++)
+   {
+      input_config_parse_joy_button(conf, "input", input_config_bind_map[i].base, &binds[i]);
+      input_config_parse_joy_axis(conf, "input", input_config_bind_map[i].base, &binds[i]);
+   }
+}
+
+void input_config_autoconfigure_joypad(unsigned index, const char *name, const char *driver)
+{
+   if (!g_settings.input.autodetect_enable)
+      return;
+
+   for (unsigned i = 0; i < RARCH_BIND_LIST_END; i++)
+   {
+      g_settings.input.autoconf_binds[index][i].joykey = NO_BTN;
+      g_settings.input.autoconf_binds[index][i].joyaxis = AXIS_NONE;
+   }
+
+   if (!name)
+      return;
+
+   if (!*g_settings.input.autoconfig_dir)
+      return;
+
+   struct string_list *list = dir_list_new(g_settings.input.autoconfig_dir, "cfg", false);
+   if (!list)
+      return;
+
+   char ident[1024];
+   char input_driver[1024];
+   for (size_t i = 0; i < list->size; i++)
+   {
+      *ident = *input_driver = '\0';
+
+      config_file_t *conf = config_file_new(list->elems[i].data);
+      if (!conf)
+         continue;
+
+      config_get_array(conf, "input_device", ident, sizeof(ident));
+      config_get_array(conf, "input_driver", input_driver, sizeof(input_driver));
+
+      if (!strcmp(ident, name) && !strcmp(driver, input_driver))
+      {
+         input_autoconfigure_joypad_conf(conf, g_settings.input.autoconf_binds[index]);
+
+         char msg[512];
+         snprintf(msg, sizeof(msg), "Joypad port #%u (%s) configured.",
+               index, name);
+
+         msg_queue_push(g_extern.msg_queue, msg, 0, 60);
+         RARCH_LOG("%s\n", msg);
+
+         config_file_free(conf);
+         break;
+      }
+      else
+         config_file_free(conf);
+   }
+
+   string_list_free(list);
+}
+#endif
 
