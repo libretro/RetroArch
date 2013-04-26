@@ -809,11 +809,16 @@ void input_config_autoconfigure_joypad(unsigned index, const char *name, const c
    if (!g_settings.input.autodetect_enable)
       return;
 
+   // This will be the case if input driver is reinit. No reason to spam autoconfigure messages
+   // every time (fine in log).
+   bool block_osd_spam = g_settings.input.autoconfigured[index] && name;
+
    for (unsigned i = 0; i < RARCH_BIND_LIST_END; i++)
    {
       g_settings.input.autoconf_binds[index][i].joykey = NO_BTN;
       g_settings.input.autoconf_binds[index][i].joyaxis = AXIS_NONE;
    }
+   g_settings.input.autoconfigured[index] = false;
 
    if (!name)
       return;
@@ -840,13 +845,15 @@ void input_config_autoconfigure_joypad(unsigned index, const char *name, const c
 
       if (!strcmp(ident, name) && !strcmp(driver, input_driver))
       {
+         g_settings.input.autoconfigured[index] = true;
          input_autoconfigure_joypad_conf(conf, g_settings.input.autoconf_binds[index]);
 
          char msg[512];
          snprintf(msg, sizeof(msg), "Joypad port #%u (%s) configured.",
                index, name);
 
-         msg_queue_push(g_extern.msg_queue, msg, 0, 60);
+         if (!block_osd_spam)
+            msg_queue_push(g_extern.msg_queue, msg, 0, 60);
          RARCH_LOG("%s\n", msg);
 
          config_file_free(conf);

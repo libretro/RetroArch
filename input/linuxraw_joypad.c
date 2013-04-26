@@ -68,15 +68,15 @@ static void poll_pad(struct linuxraw_joypad *pad)
    }
 }
 
-static void linuxraw_joypad_init_pad(const char *path, struct linuxraw_joypad *pad)
+static bool linuxraw_joypad_init_pad(const char *path, struct linuxraw_joypad *pad)
 {
    if (pad->fd >= 0)
-      return;
+      return false;
 
    // Device can have just been created, but not made accessible (yet).
    // IN_ATTRIB will signal when permissions change.
    if (access(path, R_OK) < 0)
-      return;
+      return false;
 
    pad->fd = open(path, O_RDONLY | O_NONBLOCK);
 
@@ -106,9 +106,13 @@ static void linuxraw_joypad_init_pad(const char *path, struct linuxraw_joypad *p
       event.events = EPOLLIN;
       event.data.ptr = pad;
       epoll_ctl(g_epoll, EPOLL_CTL_ADD, pad->fd, &event);
+      return true;
    }
    else
+   {
       RARCH_ERR("[Joypad]: Failed to open pad %s (error: %s).\n", path, strerror(errno));
+      return false;
+   }
 }
 
 static void handle_plugged_pad(void)
@@ -164,10 +168,10 @@ static void handle_plugged_pad(void)
          {
             char path[PATH_MAX];
             snprintf(path, sizeof(path), "/dev/input/%s", event->name);
-            linuxraw_joypad_init_pad(path, &g_pads[index]);
+            bool ret = linuxraw_joypad_init_pad(path, &g_pads[index]);
 
 #ifndef IS_JOYCONFIG
-            if (*g_pads[index].ident)
+            if (*g_pads[index].ident && ret)
                input_config_autoconfigure_joypad(index, g_pads[index].ident, "linuxraw");
 #endif
          }
@@ -220,7 +224,6 @@ static bool linuxraw_joypad_init(void)
       linuxraw_joypad_init_pad(path, pad);
       if (pad->fd >= 0)
          poll_pad(pad);
-
    }
 
    g_notify = inotify_init();

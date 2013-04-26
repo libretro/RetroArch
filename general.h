@@ -220,6 +220,7 @@ struct settings
 
       // Set by autoconfiguration in joypad_autoconfig_dir. Does not override main binds.
       struct retro_keybind autoconf_binds[MAX_PLAYERS][RARCH_BIND_LIST_END];
+      bool autoconfigured[MAX_PLAYERS];
 
       float axis_threshold;
       int joypad_map[MAX_PLAYERS];
