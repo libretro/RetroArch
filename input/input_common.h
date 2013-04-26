@@ -17,6 +17,7 @@
 #define INPUT_COMMON_H__
 
 #include "../driver.h"
+#include "../conf/config_file.h"
 #include <stdint.h>
 
 static inline void input_conv_analog_id_to_bind_id(unsigned index, unsigned id,
@@ -65,6 +66,7 @@ typedef struct rarch_joypad_driver
    bool (*button)(unsigned, uint16_t);
    int16_t (*axis)(unsigned, uint32_t);
    void (*poll)(void);
+   const char *(*name)(unsigned);
 
    const char *ident;
 } rarch_joypad_driver_t;
@@ -73,7 +75,7 @@ const rarch_joypad_driver_t *input_joypad_find_driver(const char *ident);
 const rarch_joypad_driver_t *input_joypad_init_first(void);
 
 bool input_joypad_pressed(const rarch_joypad_driver_t *driver,
-      unsigned port, const struct retro_keybind *key);
+      unsigned port, const struct retro_keybind *binds, unsigned key);
 
 int16_t input_joypad_analog(const rarch_joypad_driver_t *driver,
       unsigned port, unsigned index, unsigned id, const struct retro_keybind *binds);
@@ -86,6 +88,7 @@ bool input_joypad_hat_raw(const rarch_joypad_driver_t *driver,
       unsigned joypad, unsigned hat_dir, unsigned hat);
 
 void input_joypad_poll(const rarch_joypad_driver_t *driver);
+const char *input_joypad_name(const rarch_joypad_driver_t *driver, unsigned joypad);
 
 extern const rarch_joypad_driver_t dinput_joypad;
 extern const rarch_joypad_driver_t linuxraw_joypad;
@@ -105,6 +108,35 @@ extern const struct rarch_key_map rarch_key_map_dinput[];
 void input_init_keyboard_lut(const struct rarch_key_map *map);
 enum retro_key input_translate_keysym_to_rk(unsigned sym);
 unsigned input_translate_rk_to_keysym(enum retro_key key);
+
+// Input config.
+struct input_bind_map
+{
+   bool valid;
+   bool meta; // Meta binds get input as prefix, not input_playerN"
+   const char *base;
+   const char *desc;
+   unsigned retro_key;
+};
+extern const struct input_bind_map input_config_bind_map[];
+
+struct input_key_map
+{
+   const char *str;
+   enum retro_key key;
+};
+extern const struct input_key_map input_config_key_map[];
+
+const char *input_config_get_prefix(unsigned player, bool meta);
+
+void input_config_parse_key(config_file_t *conf, const char *prefix, const char *btn,
+      struct retro_keybind *bind);
+void input_config_parse_joy_button(config_file_t *conf, const char *prefix,
+      const char *btn, struct retro_keybind *bind);
+void input_config_parse_joy_axis(config_file_t *conf, const char *prefix,
+      const char *axis, struct retro_keybind *bind);
+
+void input_config_autoconfigure_joypad(unsigned index, const char *name, const char *driver);
 
 #endif
 

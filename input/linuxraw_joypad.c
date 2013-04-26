@@ -42,7 +42,7 @@ static struct linuxraw_joypad g_pads[MAX_PLAYERS];
 static int g_notify;
 static int g_epoll;
 
-#ifndef NO_MSG_QUEUE
+#ifndef IS_JOYCONFIG
 static bool g_hotplug;
 #endif
 
@@ -68,15 +68,15 @@ static void poll_pad(struct linuxraw_joypad *pad)
    }
 }
 
-static void linuxraw_joypad_init_pad(const char *path, struct linuxraw_joypad *pad)
+static bool linuxraw_joypad_init_pad(const char *path, struct linuxraw_joypad *pad)
 {
    if (pad->fd >= 0)
-      return;
+      return false;
 
    // Device can have just been created, but not made accessible (yet).
    // IN_ATTRIB will signal when permissions change.
    if (access(path, R_OK) < 0)
-      return;
+      return false;
 
    pad->fd = open(path, O_RDONLY | O_NONBLOCK);
 
@@ -87,7 +87,7 @@ static void linuxraw_joypad_init_pad(const char *path, struct linuxraw_joypad *p
       {
          RARCH_LOG("[Joypad]: Found pad: %s on %s.\n", pad->ident, path);
 
-#ifndef NO_MSG_QUEUE
+#ifndef IS_JOYCONFIG
          if (g_hotplug)
          {
             char msg[512];
@@ -104,9 +104,13 @@ static void linuxraw_joypad_init_pad(const char *path, struct linuxraw_joypad *p
       event.events = EPOLLIN;
       event.data.ptr = pad;
       epoll_ctl(g_epoll, EPOLL_CTL_ADD, pad->fd, &event);
+      return true;
    }
    else
+   {
       RARCH_ERR("[Joypad]: Failed to open pad %s (error: %s).\n", path, strerror(errno));
+      return false;
+   }
 }
 
 static void handle_plugged_pad(void)
@@ -136,7 +140,7 @@ static void handle_plugged_pad(void)
          {
             if (g_pads[index].fd >= 0)
             {
-#ifndef NO_MSG_QUEUE
+#ifndef IS_JOYCONFIG
                if (g_hotplug)
                {
                   char msg[512];
@@ -151,6 +155,10 @@ static void handle_plugged_pad(void)
                memset(g_pads[index].axes, 0, sizeof(g_pads[index].axes));
                g_pads[index].fd = -1;
                *g_pads[index].ident = '\0';
+
+#ifndef IS_JOYCONFIG
+               input_config_autoconfigure_joypad(index, NULL, NULL);
+#endif
             }
          }
          // Sometimes, device will be created before acess to it is established.
@@ -158,7 +166,12 @@ static void handle_plugged_pad(void)
          {
             char path[PATH_MAX];
             snprintf(path, sizeof(path), "/dev/input/%s", event->name);
-            linuxraw_joypad_init_pad(path, &g_pads[index]);
+            bool ret = linuxraw_joypad_init_pad(path, &g_pads[index]);
+
+#ifndef IS_JOYCONFIG
+            if (*g_pads[index].ident && ret)
+               input_config_autoconfigure_joypad(index, g_pads[index].ident, "linuxraw");
+#endif
          }
       }
    }
@@ -206,10 +219,17 @@ static bool linuxraw_joypad_init(void)
       char path[PATH_MAX];
       snprintf(path, sizeof(path), "/dev/input/js%u", i);
 
-      linuxraw_joypad_init_pad(path, pad);
-      if (pad->fd >= 0)
+      if (linuxraw_joypad_init_pad(path, pad))
+      {
+#ifndef IS_JOYCONFIG
+         input_config_autoconfigure_joypad(i, pad->ident, "linuxraw");
+#endif
          poll_pad(pad);
-
+      }
+#ifndef IS_JOYCONFIG
+      else
+         input_config_autoconfigure_joypad(i, NULL, NULL);
+#endif
    }
 
    g_notify = inotify_init();
@@ -223,7 +243,7 @@ static bool linuxraw_joypad_init(void)
       epoll_ctl(g_epoll, EPOLL_CTL_ADD, g_notify, &event);
    }
 
-#ifndef NO_MSG_QUEUE
+#ifndef IS_JOYCONFIG
    g_hotplug = true;
 #endif
 
@@ -250,7 +270,7 @@ static void linuxraw_joypad_destroy(void)
       close(g_epoll);
    g_epoll = -1;
 
-#ifndef NO_MSG_QUEUE
+#ifndef IS_JOYCONFIG
    g_hotplug = false;
 #endif
 }
@@ -292,6 +312,14 @@ static bool linuxraw_joypad_query_pad(unsigned pad)
    return pad < MAX_PLAYERS && g_pads[pad].fd >= 0;
 }
 
+static const char *linuxraw_joypad_name(unsigned pad)
+{
+   if (pad >= MAX_PLAYERS)
+      return NULL;
+
+   return *g_pads[pad].ident ? g_pads[pad].ident : NULL;
+}
+
 const rarch_joypad_driver_t linuxraw_joypad = {
    linuxraw_joypad_init,
    linuxraw_joypad_query_pad,
@@ -299,6 +327,7 @@ const rarch_joypad_driver_t linuxraw_joypad = {
    linuxraw_joypad_button,
    linuxraw_joypad_axis,
    linuxraw_joypad_poll,
+   linuxraw_joypad_name,
    "linuxraw",
 };
 

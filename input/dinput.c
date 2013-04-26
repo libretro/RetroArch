@@ -189,7 +189,7 @@ static bool dinput_is_pressed(struct dinput_input *di, const struct retro_keybin
       return false;
 
    const struct retro_keybind *bind = &binds[id];
-   return dinput_keyboard_pressed(di, bind->key) || input_joypad_pressed(di->joypad, port, bind);
+   return dinput_keyboard_pressed(di, bind->key) || input_joypad_pressed(di->joypad, port, binds, id);
 }
 
 static bool dinput_key_pressed(void *data, int key)
@@ -555,6 +555,13 @@ static bool dinput_joypad_query_pad(unsigned pad)
    return pad < MAX_PLAYERS && g_pads[pad].joypad;
 }
 
+static const char *dinput_joypad_name(unsigned pad)
+{
+   (void)pad;
+   // FIXME
+   return NULL;
+}
+
 const rarch_joypad_driver_t dinput_joypad = {
    dinput_joypad_init,
    dinput_joypad_query_pad,
@@ -562,6 +569,7 @@ const rarch_joypad_driver_t dinput_joypad = {
    dinput_joypad_button,
    dinput_joypad_axis,
    dinput_joypad_poll,
+   dinput_joypad_name,
    "dinput",
 };
 
