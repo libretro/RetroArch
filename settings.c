@@ -698,87 +698,86 @@ bool config_load_file(const char *path)
 struct bind_map
 {
    bool valid;
-   const char *key;
-   const char *btn;
-   const char *axis;
-   int retro_key;
+   bool meta; // Meta binds get input as prefix, not input_playerN"
+   const char *base;
+   unsigned retro_key;
 };
 
-#define DECLARE_BIND(x, bind) { true, "input_" #x, "input_" #x "_btn", "input_" #x "_axis", bind }
-#define DECL_PLAYER(P) \
-      DECLARE_BIND(player##P##_b,         RETRO_DEVICE_ID_JOYPAD_B), \
-      DECLARE_BIND(player##P##_y,         RETRO_DEVICE_ID_JOYPAD_Y), \
-      DECLARE_BIND(player##P##_select,    RETRO_DEVICE_ID_JOYPAD_SELECT), \
-      DECLARE_BIND(player##P##_start,     RETRO_DEVICE_ID_JOYPAD_START), \
-      DECLARE_BIND(player##P##_up,        RETRO_DEVICE_ID_JOYPAD_UP), \
-      DECLARE_BIND(player##P##_down,      RETRO_DEVICE_ID_JOYPAD_DOWN), \
-      DECLARE_BIND(player##P##_left,      RETRO_DEVICE_ID_JOYPAD_LEFT), \
-      DECLARE_BIND(player##P##_right,     RETRO_DEVICE_ID_JOYPAD_RIGHT), \
-      DECLARE_BIND(player##P##_a,         RETRO_DEVICE_ID_JOYPAD_A), \
-      DECLARE_BIND(player##P##_x,         RETRO_DEVICE_ID_JOYPAD_X), \
-      DECLARE_BIND(player##P##_l,         RETRO_DEVICE_ID_JOYPAD_L), \
-      DECLARE_BIND(player##P##_r,         RETRO_DEVICE_ID_JOYPAD_R), \
-      DECLARE_BIND(player##P##_l2,        RETRO_DEVICE_ID_JOYPAD_L2), \
-      DECLARE_BIND(player##P##_r2,        RETRO_DEVICE_ID_JOYPAD_R2), \
-      DECLARE_BIND(player##P##_l3,        RETRO_DEVICE_ID_JOYPAD_L3), \
-      DECLARE_BIND(player##P##_r3,        RETRO_DEVICE_ID_JOYPAD_R3), \
-      DECLARE_BIND(player##P##_turbo,     RARCH_TURBO_ENABLE), \
-      DECLARE_BIND(player##P##_l_x_plus,  RARCH_ANALOG_LEFT_X_PLUS), \
-      DECLARE_BIND(player##P##_l_x_minus, RARCH_ANALOG_LEFT_X_MINUS), \
-      DECLARE_BIND(player##P##_l_y_plus,  RARCH_ANALOG_LEFT_Y_PLUS), \
-      DECLARE_BIND(player##P##_l_y_minus, RARCH_ANALOG_LEFT_Y_MINUS), \
-      DECLARE_BIND(player##P##_r_x_plus,  RARCH_ANALOG_RIGHT_X_PLUS), \
-      DECLARE_BIND(player##P##_r_x_minus, RARCH_ANALOG_RIGHT_X_MINUS), \
-      DECLARE_BIND(player##P##_r_y_plus,  RARCH_ANALOG_RIGHT_Y_PLUS), \
-      DECLARE_BIND(player##P##_r_y_minus, RARCH_ANALOG_RIGHT_Y_MINUS)
+static const char *bind_player_prefix[MAX_PLAYERS] = {
+   "input_player1",
+   "input_player2",
+   "input_player3",
+   "input_player4",
+   "input_player5",
+   "input_player6",
+   "input_player7",
+   "input_player8",
+};
 
-// Big and nasty bind map... :)
-static const struct bind_map bind_maps[MAX_PLAYERS][RARCH_BIND_LIST_END_NULL] = {
-   {
-      DECL_PLAYER(1),
+#define DECLARE_BIND(x, bind) { true, false, #x, bind }
 
-      DECLARE_BIND(toggle_fast_forward,   RARCH_FAST_FORWARD_KEY),
-      DECLARE_BIND(hold_fast_forward,     RARCH_FAST_FORWARD_HOLD_KEY),
-      DECLARE_BIND(load_state,            RARCH_LOAD_STATE_KEY),
-      DECLARE_BIND(save_state,            RARCH_SAVE_STATE_KEY),
-      DECLARE_BIND(toggle_fullscreen,     RARCH_FULLSCREEN_TOGGLE_KEY),
-      DECLARE_BIND(exit_emulator,         RARCH_QUIT_KEY),
-      DECLARE_BIND(state_slot_increase,   RARCH_STATE_SLOT_PLUS),
-      DECLARE_BIND(state_slot_decrease,   RARCH_STATE_SLOT_MINUS),
-      DECLARE_BIND(rewind,                RARCH_REWIND),
-      DECLARE_BIND(movie_record_toggle,   RARCH_MOVIE_RECORD_TOGGLE),
-      DECLARE_BIND(pause_toggle,          RARCH_PAUSE_TOGGLE),
-      DECLARE_BIND(frame_advance,         RARCH_FRAMEADVANCE),
-      DECLARE_BIND(reset,                 RARCH_RESET),
-      DECLARE_BIND(shader_next,           RARCH_SHADER_NEXT),
-      DECLARE_BIND(shader_prev,           RARCH_SHADER_PREV),
-      DECLARE_BIND(cheat_index_plus,      RARCH_CHEAT_INDEX_PLUS),
-      DECLARE_BIND(cheat_index_minus,     RARCH_CHEAT_INDEX_MINUS),
-      DECLARE_BIND(cheat_toggle,          RARCH_CHEAT_TOGGLE),
-      DECLARE_BIND(screenshot,            RARCH_SCREENSHOT),
-      DECLARE_BIND(dsp_config,            RARCH_DSP_CONFIG),
-      DECLARE_BIND(audio_mute,            RARCH_MUTE),
-      DECLARE_BIND(netplay_flip_players,  RARCH_NETPLAY_FLIP),
-      DECLARE_BIND(slowmotion,            RARCH_SLOWMOTION),
-      DECLARE_BIND(enable_hotkey,         RARCH_ENABLE_HOTKEY),
-      DECLARE_BIND(volume_up,             RARCH_VOLUME_UP),
-      DECLARE_BIND(volume_down,           RARCH_VOLUME_DOWN),
-      DECLARE_BIND(overlay_next,          RARCH_OVERLAY_NEXT),
-      DECLARE_BIND(disk_eject_toggle,     RARCH_DISK_EJECT_TOGGLE),
-      DECLARE_BIND(disk_next,             RARCH_DISK_NEXT),
-      DECLARE_BIND(grab_mouse_toggle,     RARCH_GRAB_MOUSE_TOGGLE),
+#define DECLARE_META_BIND(x, bind) { true, true, #x, bind }
+
+static const struct bind_map bind_maps[RARCH_BIND_LIST_END_NULL] = {
+      DECLARE_BIND(b,         RETRO_DEVICE_ID_JOYPAD_B),
+      DECLARE_BIND(y,         RETRO_DEVICE_ID_JOYPAD_Y),
+      DECLARE_BIND(select,    RETRO_DEVICE_ID_JOYPAD_SELECT),
+      DECLARE_BIND(start,     RETRO_DEVICE_ID_JOYPAD_START),
+      DECLARE_BIND(up,        RETRO_DEVICE_ID_JOYPAD_UP),
+      DECLARE_BIND(down,      RETRO_DEVICE_ID_JOYPAD_DOWN),
+      DECLARE_BIND(left,      RETRO_DEVICE_ID_JOYPAD_LEFT),
+      DECLARE_BIND(right,     RETRO_DEVICE_ID_JOYPAD_RIGHT),
+      DECLARE_BIND(a,         RETRO_DEVICE_ID_JOYPAD_A),
+      DECLARE_BIND(x,         RETRO_DEVICE_ID_JOYPAD_X),
+      DECLARE_BIND(l,         RETRO_DEVICE_ID_JOYPAD_L),
+      DECLARE_BIND(r,         RETRO_DEVICE_ID_JOYPAD_R),
+      DECLARE_BIND(l2,        RETRO_DEVICE_ID_JOYPAD_L2),
+      DECLARE_BIND(r2,        RETRO_DEVICE_ID_JOYPAD_R2),
+      DECLARE_BIND(l3,        RETRO_DEVICE_ID_JOYPAD_L3),
+      DECLARE_BIND(r3,        RETRO_DEVICE_ID_JOYPAD_R3),
+      DECLARE_BIND(turbo,     RARCH_TURBO_ENABLE),
+      DECLARE_BIND(l_x_plus,  RARCH_ANALOG_LEFT_X_PLUS),
+      DECLARE_BIND(l_x_minus, RARCH_ANALOG_LEFT_X_MINUS),
+      DECLARE_BIND(l_y_plus,  RARCH_ANALOG_LEFT_Y_PLUS),
+      DECLARE_BIND(l_y_minus, RARCH_ANALOG_LEFT_Y_MINUS),
+      DECLARE_BIND(r_x_plus,  RARCH_ANALOG_RIGHT_X_PLUS),
+      DECLARE_BIND(r_x_minus, RARCH_ANALOG_RIGHT_X_MINUS),
+      DECLARE_BIND(r_y_plus,  RARCH_ANALOG_RIGHT_Y_PLUS),
+      DECLARE_BIND(r_y_minus, RARCH_ANALOG_RIGHT_Y_MINUS),
+
+      DECLARE_META_BIND(toggle_fast_forward,   RARCH_FAST_FORWARD_KEY),
+      DECLARE_META_BIND(hold_fast_forward,     RARCH_FAST_FORWARD_HOLD_KEY),
+      DECLARE_META_BIND(load_state,            RARCH_LOAD_STATE_KEY),
+      DECLARE_META_BIND(save_state,            RARCH_SAVE_STATE_KEY),
+      DECLARE_META_BIND(toggle_fullscreen,     RARCH_FULLSCREEN_TOGGLE_KEY),
+      DECLARE_META_BIND(exit_emulator,         RARCH_QUIT_KEY),
+      DECLARE_META_BIND(state_slot_increase,   RARCH_STATE_SLOT_PLUS),
+      DECLARE_META_BIND(state_slot_decrease,   RARCH_STATE_SLOT_MINUS),
+      DECLARE_META_BIND(rewind,                RARCH_REWIND),
+      DECLARE_META_BIND(movie_record_toggle,   RARCH_MOVIE_RECORD_TOGGLE),
+      DECLARE_META_BIND(pause_toggle,          RARCH_PAUSE_TOGGLE),
+      DECLARE_META_BIND(frame_advance,         RARCH_FRAMEADVANCE),
+      DECLARE_META_BIND(reset,                 RARCH_RESET),
+      DECLARE_META_BIND(shader_next,           RARCH_SHADER_NEXT),
+      DECLARE_META_BIND(shader_prev,           RARCH_SHADER_PREV),
+      DECLARE_META_BIND(cheat_index_plus,      RARCH_CHEAT_INDEX_PLUS),
+      DECLARE_META_BIND(cheat_index_minus,     RARCH_CHEAT_INDEX_MINUS),
+      DECLARE_META_BIND(cheat_toggle,          RARCH_CHEAT_TOGGLE),
+      DECLARE_META_BIND(screenshot,            RARCH_SCREENSHOT),
+      DECLARE_META_BIND(dsp_config,            RARCH_DSP_CONFIG),
+      DECLARE_META_BIND(audio_mute,            RARCH_MUTE),
+      DECLARE_META_BIND(netplay_flip_players,  RARCH_NETPLAY_FLIP),
+      DECLARE_META_BIND(slowmotion,            RARCH_SLOWMOTION),
+      DECLARE_META_BIND(enable_hotkey,         RARCH_ENABLE_HOTKEY),
+      DECLARE_META_BIND(volume_up,             RARCH_VOLUME_UP),
+      DECLARE_META_BIND(volume_down,           RARCH_VOLUME_DOWN),
+      DECLARE_META_BIND(overlay_next,          RARCH_OVERLAY_NEXT),
+      DECLARE_META_BIND(disk_eject_toggle,     RARCH_DISK_EJECT_TOGGLE),
+      DECLARE_META_BIND(disk_next,             RARCH_DISK_NEXT),
+      DECLARE_META_BIND(grab_mouse_toggle,     RARCH_GRAB_MOUSE_TOGGLE),
 #ifdef HAVE_RGUI
-      DECLARE_BIND(menu_toggle,           RARCH_MENU_TOGGLE),
+      DECLARE_META_BIND(menu_toggle,           RARCH_MENU_TOGGLE),
 #endif
-   },
-
-   { DECL_PLAYER(2) },
-   { DECL_PLAYER(3) },
-   { DECL_PLAYER(4) },
-   { DECL_PLAYER(5) },
-   { DECL_PLAYER(6) },
-   { DECL_PLAYER(7) },
-   { DECL_PLAYER(8) },
 };
 
 struct key_map
@@ -882,17 +881,39 @@ static int find_sk_key(const char *str)
       return find_sk_bind(str);
 }
 
-static void read_keybinds_keyboard(config_file_t *conf, unsigned player, unsigned index, struct retro_keybind *bind)
+static void input_config_parse_key(config_file_t *conf, const char *prefix, const char *btn,
+      struct retro_keybind *bind)
 {
    char tmp[64];
+   char key[64];
+   snprintf(key, sizeof(key), "%s_%s", prefix, btn);
 
-   if (bind_maps[player][index].key &&
-         config_get_array(conf, bind_maps[player][index].key, tmp, sizeof(tmp)))
+   if (config_get_array(conf, key, tmp, sizeof(tmp)))
    {
       int key = find_sk_key(tmp);
-
       if (key >= 0)
          bind->key = (enum retro_key)key;
+   }
+}
+
+static const char *input_config_get_prefix(unsigned player, bool meta)
+{
+   if (player == 0)
+      return meta ? "input" : bind_player_prefix[player];
+   else if (player != 0 && !meta)
+      return bind_player_prefix[player];
+   else
+      return NULL; // Don't bother with meta bind for anyone else than first player.
+}
+
+static void read_keybinds_keyboard(config_file_t *conf, unsigned player, unsigned index,
+      struct retro_keybind *bind)
+{
+   if (bind_maps[index].valid && bind_maps[index].base)
+   {
+      const char *prefix = input_config_get_prefix(player, bind_maps[index].meta);
+      if (prefix)
+         input_config_parse_key(conf, prefix, bind_maps[index].base, bind);
    }
 }
 
@@ -924,11 +945,14 @@ static void parse_hat(struct retro_keybind *bind, const char *str)
       bind->joykey = HAT_MAP(hat, hat_dir);
 }
 
-static void read_keybinds_button(config_file_t *conf, unsigned player, unsigned index, struct retro_keybind *bind)
+static void input_config_parse_joy_button(config_file_t *conf, const char *prefix,
+      const char *btn, struct retro_keybind *bind)
 {
    char tmp[64];
-   if (bind_maps[player][index].btn &&
-         config_get_array(conf, bind_maps[player][index].btn, tmp, sizeof(tmp)))
+   char key[64];
+   snprintf(key, sizeof(key), "%s_%s_btn", prefix, btn);
+
+   if (config_get_array(conf, key, tmp, sizeof(tmp)))
    {
       const char *btn = tmp;
       if (strcmp(btn, "nul") == 0)
@@ -943,11 +967,14 @@ static void read_keybinds_button(config_file_t *conf, unsigned player, unsigned 
    }
 }
 
-static void read_keybinds_axis(config_file_t *conf, unsigned player, unsigned index, struct retro_keybind *bind)
+static void input_config_parse_joy_axis(config_file_t *conf, const char *prefix,
+      const char *axis, struct retro_keybind *bind)
 {
    char tmp[64];
-   if (bind_maps[player][index].axis &&
-         config_get_array(conf, bind_maps[player][index].axis, tmp, sizeof(tmp)))
+   char key[64];
+   snprintf(key, sizeof(key), "%s_%s_axis", prefix, axis);
+
+   if (config_get_array(conf, key, tmp, sizeof(tmp)))
    {
       if (strcmp(tmp, "nul") == 0)
          bind->joyaxis = AXIS_NONE;
@@ -963,12 +990,35 @@ static void read_keybinds_axis(config_file_t *conf, unsigned player, unsigned in
    }
 }
 
+static void read_keybinds_button(config_file_t *conf, unsigned player, unsigned index,
+      struct retro_keybind *bind)
+{
+   if (bind_maps[index].valid && bind_maps[index].base)
+   {
+      const char *prefix = input_config_get_prefix(player, bind_maps[index].meta);
+      if (prefix)
+         input_config_parse_joy_button(conf, prefix, bind_maps[index].base, bind);
+   }
+}
+
+static void read_keybinds_axis(config_file_t *conf, unsigned player, unsigned index,
+      struct retro_keybind *bind)
+{
+   if (bind_maps[index].valid && bind_maps[index].base)
+   {
+      const char *prefix = input_config_get_prefix(player, bind_maps[index].meta);
+      if (prefix)
+         input_config_parse_joy_axis(conf, prefix, bind_maps[index].base, bind);
+   }
+}
+
 static void read_keybinds_player(config_file_t *conf, unsigned player)
 {
-   for (unsigned i = 0; bind_maps[player][i].valid; i++)
+   for (unsigned i = 0; bind_maps[i].valid; i++)
    {
-      struct retro_keybind *bind = find_retro_bind(player, bind_maps[player][i].retro_key);
-      rarch_assert(bind);
+      struct retro_keybind *bind = find_retro_bind(player, bind_maps[i].retro_key);
+      if (!bind)
+         continue;
 
       read_keybinds_keyboard(conf, player, i, bind);
       read_keybinds_button(conf, player, i, bind);
@@ -992,9 +1042,12 @@ bool config_read_keybinds(const char *path)
    return true;
 }
 
-static void save_keybind_key(config_file_t *conf,
-      const struct bind_map *map, const struct retro_keybind *bind)
+static void save_keybind_key(config_file_t *conf, const char *prefix, const char *base,
+      const struct retro_keybind *bind)
 {
+   char key[64];
+   snprintf(key, sizeof(key), "%s_%s", prefix, base);
+
    char ascii[2] = {0};
    const char *btn = ascii;
 
@@ -1012,12 +1065,11 @@ static void save_keybind_key(config_file_t *conf,
       }
    }
 
-   config_set_string(conf, map->key, btn);
+   config_set_string(conf, key, btn);
 }
 
 #ifndef RARCH_CONSOLE
-static void save_keybind_hat(config_file_t *conf,
-      const struct bind_map *map, const struct retro_keybind *bind)
+static void save_keybind_hat(config_file_t *conf, const char *key, const struct retro_keybind *bind)
 {
    unsigned hat = GET_HAT(bind->joykey);
    const char *dir = NULL;
@@ -1046,31 +1098,37 @@ static void save_keybind_hat(config_file_t *conf,
 
    char config[16];
    snprintf(config, sizeof(config), "h%u%s", hat, dir);
-   config_set_string(conf, map->btn, config);
+   config_set_string(conf, key, config);
 }
 #endif
 
-static void save_keybind_joykey(config_file_t *conf,
-      const struct bind_map *map, const struct retro_keybind *bind)
+static void save_keybind_joykey(config_file_t *conf, const char *prefix, const char *base,
+      const struct retro_keybind *bind)
 {
+   char key[64];
+   snprintf(key, sizeof(key), "%s_%s_btn", prefix, base);
+
    if (bind->joykey == NO_BTN)
-      config_set_string(conf, map->btn, "nul");
+      config_set_string(conf, key, "nul");
 #ifndef RARCH_CONSOLE // Consoles don't understand hats.
    else if (GET_HAT_DIR(bind->joykey))
-      save_keybind_hat(conf, map, bind);
+      save_keybind_hat(conf, key, bind);
 #endif
    else
-      config_set_uint64(conf, map->btn, bind->joykey);
+      config_set_uint64(conf, key, bind->joykey);
 }
 
-static void save_keybind_axis(config_file_t *conf,
-      const struct bind_map *map, const struct retro_keybind *bind)
+static void save_keybind_axis(config_file_t *conf, const char *prefix, const char *base,
+      const struct retro_keybind *bind)
 {
+   char key[64];
+   snprintf(key, sizeof(key), "%s_%s_axis", prefix, base);
+
    unsigned axis = 0;
    char dir = '\0';
 
    if (bind->joyaxis == AXIS_NONE)
-      config_set_string(conf, map->axis, "nul");
+      config_set_string(conf, key, "nul");
    else if (AXIS_NEG_GET(bind->joyaxis) != AXIS_DIR_NONE)
    {
       dir = '-';
@@ -1082,28 +1140,33 @@ static void save_keybind_axis(config_file_t *conf,
       axis = AXIS_POS_GET(bind->joyaxis);
    }
 
-   char config[16];
-   snprintf(config, sizeof(config), "%c%u", dir, axis);
-   config_set_string(conf, map->axis, config);
+   if (dir)
+   {
+      char config[16];
+      snprintf(config, sizeof(config), "%c%u", dir, axis);
+      config_set_string(conf, key, config);
+   }
 }
 
-static void save_keybind(config_file_t *conf,
-      const struct bind_map *map, const struct retro_keybind *bind)
+static void save_keybind(config_file_t *conf, const char *prefix, const char *base,
+      const struct retro_keybind *bind)
 {
-   if (!map->valid)
+   if (!bind->valid)
       return;
 
-   save_keybind_key(conf, map, bind);
-   save_keybind_joykey(conf, map, bind);
-   save_keybind_axis(conf, map, bind);
-#ifdef RARCH_CONSOLE
-#endif
+   save_keybind_key(conf, prefix, base, bind);
+   save_keybind_joykey(conf, prefix, base, bind);
+   save_keybind_axis(conf, prefix, base, bind);
 }
 
-static void save_keybinds_player(config_file_t *conf, unsigned i)
+static void save_keybinds_player(config_file_t *conf, unsigned player)
 {
-   for (unsigned j = 0; j < RARCH_BIND_LIST_END; j++)
-      save_keybind(conf, &bind_maps[i][j], &g_settings.input.binds[i][j]);
+   for (unsigned i = 0; bind_maps[i].valid; i++)
+   {
+      const char *prefix = input_config_get_prefix(player, bind_maps[i].meta);
+      if (prefix)
+         save_keybind(conf, prefix, bind_maps[i].base, &g_settings.input.binds[player][i]);
+   }
 }
 
 #ifdef RARCH_CONSOLE
