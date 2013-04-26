@@ -42,7 +42,7 @@ static struct linuxraw_joypad g_pads[MAX_PLAYERS];
 static int g_notify;
 static int g_epoll;
 
-#ifndef NO_MSG_QUEUE
+#ifndef IS_JOYCONFIG
 static bool g_hotplug;
 #endif
 
@@ -87,7 +87,7 @@ static void linuxraw_joypad_init_pad(const char *path, struct linuxraw_joypad *p
       {
          RARCH_LOG("[Joypad]: Found pad: %s on %s.\n", pad->ident, path);
 
-#ifndef NO_MSG_QUEUE
+#ifndef IS_JOYCONFIG
          if (g_hotplug)
          {
             char msg[512];
@@ -136,7 +136,7 @@ static void handle_plugged_pad(void)
          {
             if (g_pads[index].fd >= 0)
             {
-#ifndef NO_MSG_QUEUE
+#ifndef IS_JOYCONFIG
                if (g_hotplug)
                {
                   char msg[512];
@@ -223,7 +223,7 @@ static bool linuxraw_joypad_init(void)
       epoll_ctl(g_epoll, EPOLL_CTL_ADD, g_notify, &event);
    }
 
-#ifndef NO_MSG_QUEUE
+#ifndef IS_JOYCONFIG
    g_hotplug = true;
 #endif
 
@@ -250,7 +250,7 @@ static void linuxraw_joypad_destroy(void)
       close(g_epoll);
    g_epoll = -1;
 
-#ifndef NO_MSG_QUEUE
+#ifndef IS_JOYCONFIG
    g_hotplug = false;
 #endif
 }

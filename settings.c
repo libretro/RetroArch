@@ -20,6 +20,7 @@
 #include "config.def.h"
 #include "file.h"
 #include "compat/posix_string.h"
+#include "input/input_common.h"
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -695,329 +696,45 @@ bool config_load_file(const char *path)
    return true;
 }
 
-struct bind_map
-{
-   bool valid;
-   bool meta; // Meta binds get input as prefix, not input_playerN"
-   const char *base;
-   unsigned retro_key;
-};
-
-static const char *bind_player_prefix[MAX_PLAYERS] = {
-   "input_player1",
-   "input_player2",
-   "input_player3",
-   "input_player4",
-   "input_player5",
-   "input_player6",
-   "input_player7",
-   "input_player8",
-};
-
-#define DECLARE_BIND(x, bind) { true, false, #x, bind }
-
-#define DECLARE_META_BIND(x, bind) { true, true, #x, bind }
-
-static const struct bind_map bind_maps[RARCH_BIND_LIST_END_NULL] = {
-      DECLARE_BIND(b,         RETRO_DEVICE_ID_JOYPAD_B),
-      DECLARE_BIND(y,         RETRO_DEVICE_ID_JOYPAD_Y),
-      DECLARE_BIND(select,    RETRO_DEVICE_ID_JOYPAD_SELECT),
-      DECLARE_BIND(start,     RETRO_DEVICE_ID_JOYPAD_START),
-      DECLARE_BIND(up,        RETRO_DEVICE_ID_JOYPAD_UP),
-      DECLARE_BIND(down,      RETRO_DEVICE_ID_JOYPAD_DOWN),
-      DECLARE_BIND(left,      RETRO_DEVICE_ID_JOYPAD_LEFT),
-      DECLARE_BIND(right,     RETRO_DEVICE_ID_JOYPAD_RIGHT),
-      DECLARE_BIND(a,         RETRO_DEVICE_ID_JOYPAD_A),
-      DECLARE_BIND(x,         RETRO_DEVICE_ID_JOYPAD_X),
-      DECLARE_BIND(l,         RETRO_DEVICE_ID_JOYPAD_L),
-      DECLARE_BIND(r,         RETRO_DEVICE_ID_JOYPAD_R),
-      DECLARE_BIND(l2,        RETRO_DEVICE_ID_JOYPAD_L2),
-      DECLARE_BIND(r2,        RETRO_DEVICE_ID_JOYPAD_R2),
-      DECLARE_BIND(l3,        RETRO_DEVICE_ID_JOYPAD_L3),
-      DECLARE_BIND(r3,        RETRO_DEVICE_ID_JOYPAD_R3),
-      DECLARE_BIND(turbo,     RARCH_TURBO_ENABLE),
-      DECLARE_BIND(l_x_plus,  RARCH_ANALOG_LEFT_X_PLUS),
-      DECLARE_BIND(l_x_minus, RARCH_ANALOG_LEFT_X_MINUS),
-      DECLARE_BIND(l_y_plus,  RARCH_ANALOG_LEFT_Y_PLUS),
-      DECLARE_BIND(l_y_minus, RARCH_ANALOG_LEFT_Y_MINUS),
-      DECLARE_BIND(r_x_plus,  RARCH_ANALOG_RIGHT_X_PLUS),
-      DECLARE_BIND(r_x_minus, RARCH_ANALOG_RIGHT_X_MINUS),
-      DECLARE_BIND(r_y_plus,  RARCH_ANALOG_RIGHT_Y_PLUS),
-      DECLARE_BIND(r_y_minus, RARCH_ANALOG_RIGHT_Y_MINUS),
-
-      DECLARE_META_BIND(toggle_fast_forward,   RARCH_FAST_FORWARD_KEY),
-      DECLARE_META_BIND(hold_fast_forward,     RARCH_FAST_FORWARD_HOLD_KEY),
-      DECLARE_META_BIND(load_state,            RARCH_LOAD_STATE_KEY),
-      DECLARE_META_BIND(save_state,            RARCH_SAVE_STATE_KEY),
-      DECLARE_META_BIND(toggle_fullscreen,     RARCH_FULLSCREEN_TOGGLE_KEY),
-      DECLARE_META_BIND(exit_emulator,         RARCH_QUIT_KEY),
-      DECLARE_META_BIND(state_slot_increase,   RARCH_STATE_SLOT_PLUS),
-      DECLARE_META_BIND(state_slot_decrease,   RARCH_STATE_SLOT_MINUS),
-      DECLARE_META_BIND(rewind,                RARCH_REWIND),
-      DECLARE_META_BIND(movie_record_toggle,   RARCH_MOVIE_RECORD_TOGGLE),
-      DECLARE_META_BIND(pause_toggle,          RARCH_PAUSE_TOGGLE),
-      DECLARE_META_BIND(frame_advance,         RARCH_FRAMEADVANCE),
-      DECLARE_META_BIND(reset,                 RARCH_RESET),
-      DECLARE_META_BIND(shader_next,           RARCH_SHADER_NEXT),
-      DECLARE_META_BIND(shader_prev,           RARCH_SHADER_PREV),
-      DECLARE_META_BIND(cheat_index_plus,      RARCH_CHEAT_INDEX_PLUS),
-      DECLARE_META_BIND(cheat_index_minus,     RARCH_CHEAT_INDEX_MINUS),
-      DECLARE_META_BIND(cheat_toggle,          RARCH_CHEAT_TOGGLE),
-      DECLARE_META_BIND(screenshot,            RARCH_SCREENSHOT),
-      DECLARE_META_BIND(dsp_config,            RARCH_DSP_CONFIG),
-      DECLARE_META_BIND(audio_mute,            RARCH_MUTE),
-      DECLARE_META_BIND(netplay_flip_players,  RARCH_NETPLAY_FLIP),
-      DECLARE_META_BIND(slowmotion,            RARCH_SLOWMOTION),
-      DECLARE_META_BIND(enable_hotkey,         RARCH_ENABLE_HOTKEY),
-      DECLARE_META_BIND(volume_up,             RARCH_VOLUME_UP),
-      DECLARE_META_BIND(volume_down,           RARCH_VOLUME_DOWN),
-      DECLARE_META_BIND(overlay_next,          RARCH_OVERLAY_NEXT),
-      DECLARE_META_BIND(disk_eject_toggle,     RARCH_DISK_EJECT_TOGGLE),
-      DECLARE_META_BIND(disk_next,             RARCH_DISK_NEXT),
-      DECLARE_META_BIND(grab_mouse_toggle,     RARCH_GRAB_MOUSE_TOGGLE),
-#ifdef HAVE_RGUI
-      DECLARE_META_BIND(menu_toggle,           RARCH_MENU_TOGGLE),
-#endif
-};
-
-struct key_map
-{
-   const char *str;
-   int key;
-};
-
-static const struct key_map sk_map[] = {
-   { "left", RETROK_LEFT },
-   { "right", RETROK_RIGHT },
-   { "up", RETROK_UP },
-   { "down", RETROK_DOWN },
-   { "enter", RETROK_RETURN },
-   { "kp_enter", RETROK_KP_ENTER },
-   { "tab", RETROK_TAB },
-   { "insert", RETROK_INSERT },
-   { "del", RETROK_DELETE },
-   { "end", RETROK_END },
-   { "home", RETROK_HOME },
-   { "rshift", RETROK_RSHIFT },
-   { "shift", RETROK_LSHIFT },
-   { "ctrl", RETROK_LCTRL },
-   { "alt", RETROK_LALT },
-   { "space", RETROK_SPACE },
-   { "escape", RETROK_ESCAPE },
-   { "add", RETROK_KP_PLUS },
-   { "subtract", RETROK_KP_MINUS },
-   { "kp_plus", RETROK_KP_PLUS },
-   { "kp_minus", RETROK_KP_MINUS },
-   { "f1", RETROK_F1 },
-   { "f2", RETROK_F2 },
-   { "f3", RETROK_F3 },
-   { "f4", RETROK_F4 },
-   { "f5", RETROK_F5 },
-   { "f6", RETROK_F6 },
-   { "f7", RETROK_F7 },
-   { "f8", RETROK_F8 },
-   { "f9", RETROK_F9 },
-   { "f10", RETROK_F10 },
-   { "f11", RETROK_F11 },
-   { "f12", RETROK_F12 },
-   { "num0", RETROK_0 },
-   { "num1", RETROK_1 },
-   { "num2", RETROK_2 },
-   { "num3", RETROK_3 },
-   { "num4", RETROK_4 },
-   { "num5", RETROK_5 },
-   { "num6", RETROK_6 },
-   { "num7", RETROK_7 },
-   { "num8", RETROK_8 },
-   { "num9", RETROK_9 },
-   { "pageup", RETROK_PAGEUP },
-   { "pagedown", RETROK_PAGEDOWN },
-   { "keypad0", RETROK_KP0 },
-   { "keypad1", RETROK_KP1 },
-   { "keypad2", RETROK_KP2 },
-   { "keypad3", RETROK_KP3 },
-   { "keypad4", RETROK_KP4 },
-   { "keypad5", RETROK_KP5 },
-   { "keypad6", RETROK_KP6 },
-   { "keypad7", RETROK_KP7 },
-   { "keypad8", RETROK_KP8 },
-   { "keypad9", RETROK_KP9 },
-   { "period", RETROK_PERIOD },
-   { "capslock", RETROK_CAPSLOCK },
-   { "numlock", RETROK_NUMLOCK },
-   { "backspace", RETROK_BACKSPACE },
-   { "multiply", RETROK_KP_MULTIPLY },
-   { "divide", RETROK_KP_DIVIDE },
-   { "print_screen", RETROK_PRINT },
-   { "scroll_lock", RETROK_SCROLLOCK },
-   { "tilde", RETROK_BACKQUOTE },
-   { "backquote", RETROK_BACKQUOTE },
-   { "pause", RETROK_PAUSE },
-   { "nul", RETROK_UNKNOWN },
-};
-
-static struct retro_keybind *find_retro_bind(unsigned port, int id)
-{
-   struct retro_keybind *binds = g_settings.input.binds[port];
-   return binds[id].valid ? &binds[id] : NULL;
-}
-
-static int find_sk_bind(const char *str)
-{
-   for (size_t i = 0; i < ARRAY_SIZE(sk_map); i++)
-   {
-      if (strcasecmp(sk_map[i].str, str) == 0)
-         return sk_map[i].key;
-   }
-
-   return -1;
-}
-
-static int find_sk_key(const char *str)
-{
-   if (strlen(str) == 1 && isalpha(*str))
-      return (int)RETROK_a + (tolower(*str) - (int)'a');
-   else
-      return find_sk_bind(str);
-}
-
-static void input_config_parse_key(config_file_t *conf, const char *prefix, const char *btn,
-      struct retro_keybind *bind)
-{
-   char tmp[64];
-   char key[64];
-   snprintf(key, sizeof(key), "%s_%s", prefix, btn);
-
-   if (config_get_array(conf, key, tmp, sizeof(tmp)))
-   {
-      int key = find_sk_key(tmp);
-      if (key >= 0)
-         bind->key = (enum retro_key)key;
-   }
-}
-
-static const char *input_config_get_prefix(unsigned player, bool meta)
-{
-   if (player == 0)
-      return meta ? "input" : bind_player_prefix[player];
-   else if (player != 0 && !meta)
-      return bind_player_prefix[player];
-   else
-      return NULL; // Don't bother with meta bind for anyone else than first player.
-}
-
 static void read_keybinds_keyboard(config_file_t *conf, unsigned player, unsigned index,
       struct retro_keybind *bind)
 {
-   if (bind_maps[index].valid && bind_maps[index].base)
+   if (input_config_bind_map[index].valid && input_config_bind_map[index].base)
    {
-      const char *prefix = input_config_get_prefix(player, bind_maps[index].meta);
+      const char *prefix = input_config_get_prefix(player, input_config_bind_map[index].meta);
       if (prefix)
-         input_config_parse_key(conf, prefix, bind_maps[index].base, bind);
-   }
-}
-
-static void parse_hat(struct retro_keybind *bind, const char *str)
-{
-   if (!isdigit(*str))
-      return;
-
-   char *dir = NULL;
-   uint16_t hat = strtoul(str, &dir, 0);
-   uint16_t hat_dir = 0;
-
-   if (!dir)
-   {
-      RARCH_WARN("Found invalid hat in config!\n");
-      return;
-   }
-
-   if (strcasecmp(dir, "up") == 0)
-      hat_dir = HAT_UP_MASK;
-   else if (strcasecmp(dir, "down") == 0)
-      hat_dir = HAT_DOWN_MASK;
-   else if (strcasecmp(dir, "left") == 0)
-      hat_dir = HAT_LEFT_MASK;
-   else if (strcasecmp(dir, "right") == 0)
-      hat_dir = HAT_RIGHT_MASK;
-
-   if (hat_dir)
-      bind->joykey = HAT_MAP(hat, hat_dir);
-}
-
-static void input_config_parse_joy_button(config_file_t *conf, const char *prefix,
-      const char *btn, struct retro_keybind *bind)
-{
-   char tmp[64];
-   char key[64];
-   snprintf(key, sizeof(key), "%s_%s_btn", prefix, btn);
-
-   if (config_get_array(conf, key, tmp, sizeof(tmp)))
-   {
-      const char *btn = tmp;
-      if (strcmp(btn, "nul") == 0)
-         bind->joykey = NO_BTN;
-      else
-      {
-         if (*btn == 'h')
-            parse_hat(bind, btn + 1);
-         else
-            bind->joykey = strtoull(tmp, NULL, 0);
-      }
-   }
-}
-
-static void input_config_parse_joy_axis(config_file_t *conf, const char *prefix,
-      const char *axis, struct retro_keybind *bind)
-{
-   char tmp[64];
-   char key[64];
-   snprintf(key, sizeof(key), "%s_%s_axis", prefix, axis);
-
-   if (config_get_array(conf, key, tmp, sizeof(tmp)))
-   {
-      if (strcmp(tmp, "nul") == 0)
-         bind->joyaxis = AXIS_NONE;
-      else if (strlen(tmp) >= 2 && (*tmp == '+' || *tmp == '-'))
-      {
-         int axis = strtol(tmp + 1, NULL, 0);
-         if (*tmp == '+')
-            bind->joyaxis = AXIS_POS(axis);
-         else
-            bind->joyaxis = AXIS_NEG(axis);
-
-      }
+         input_config_parse_key(conf, prefix, input_config_bind_map[index].base, bind);
    }
 }
 
 static void read_keybinds_button(config_file_t *conf, unsigned player, unsigned index,
       struct retro_keybind *bind)
 {
-   if (bind_maps[index].valid && bind_maps[index].base)
+   if (input_config_bind_map[index].valid && input_config_bind_map[index].base)
    {
-      const char *prefix = input_config_get_prefix(player, bind_maps[index].meta);
+      const char *prefix = input_config_get_prefix(player, input_config_bind_map[index].meta);
       if (prefix)
-         input_config_parse_joy_button(conf, prefix, bind_maps[index].base, bind);
+         input_config_parse_joy_button(conf, prefix, input_config_bind_map[index].base, bind);
    }
 }
 
 static void read_keybinds_axis(config_file_t *conf, unsigned player, unsigned index,
       struct retro_keybind *bind)
 {
-   if (bind_maps[index].valid && bind_maps[index].base)
+   if (input_config_bind_map[index].valid && input_config_bind_map[index].base)
    {
-      const char *prefix = input_config_get_prefix(player, bind_maps[index].meta);
+      const char *prefix = input_config_get_prefix(player, input_config_bind_map[index].meta);
       if (prefix)
-         input_config_parse_joy_axis(conf, prefix, bind_maps[index].base, bind);
+         input_config_parse_joy_axis(conf, prefix, input_config_bind_map[index].base, bind);
    }
 }
 
 static void read_keybinds_player(config_file_t *conf, unsigned player)
 {
-   for (unsigned i = 0; bind_maps[i].valid; i++)
+   for (unsigned i = 0; input_config_bind_map[i].valid; i++)
    {
-      struct retro_keybind *bind = find_retro_bind(player, bind_maps[i].retro_key);
-      if (!bind)
+      struct retro_keybind *bind = &g_settings.input.binds[player][i];
+      if (!bind->valid)
          continue;
 
       read_keybinds_keyboard(conf, player, i, bind);
@@ -1055,11 +772,11 @@ static void save_keybind_key(config_file_t *conf, const char *prefix, const char
       ascii[0] = 'a' + (bind->key - RETROK_a);
    else
    {
-      for (unsigned i = 0; i < ARRAY_SIZE(sk_map); i++)
+      for (unsigned i = 0; input_config_key_map[i].str; i++)
       {
-         if (sk_map[i].key == bind->key)
+         if (input_config_key_map[i].key == bind->key)
          {
-            btn = sk_map[i].str;
+            btn = input_config_key_map[i].str;
             break;
          }
       }
@@ -1161,11 +878,11 @@ static void save_keybind(config_file_t *conf, const char *prefix, const char *ba
 
 static void save_keybinds_player(config_file_t *conf, unsigned player)
 {
-   for (unsigned i = 0; bind_maps[i].valid; i++)
+   for (unsigned i = 0; input_config_bind_map[i].valid; i++)
    {
-      const char *prefix = input_config_get_prefix(player, bind_maps[i].meta);
+      const char *prefix = input_config_get_prefix(player, input_config_bind_map[i].meta);
       if (prefix)
-         save_keybind(conf, prefix, bind_maps[i].base, &g_settings.input.binds[player][i]);
+         save_keybind(conf, prefix, input_config_bind_map[i].base, &g_settings.input.binds[player][i]);
    }
 }
 

@@ -17,6 +17,7 @@
 #define INPUT_COMMON_H__
 
 #include "../driver.h"
+#include "../conf/config_file.h"
 #include <stdint.h>
 
 static inline void input_conv_analog_id_to_bind_id(unsigned index, unsigned id,
@@ -105,6 +106,32 @@ extern const struct rarch_key_map rarch_key_map_dinput[];
 void input_init_keyboard_lut(const struct rarch_key_map *map);
 enum retro_key input_translate_keysym_to_rk(unsigned sym);
 unsigned input_translate_rk_to_keysym(enum retro_key key);
+
+// Input config.
+struct input_bind_map
+{
+   bool valid;
+   bool meta; // Meta binds get input as prefix, not input_playerN"
+   const char *base;
+   unsigned retro_key;
+};
+extern const struct input_bind_map input_config_bind_map[];
+
+struct input_key_map
+{
+   const char *str;
+   enum retro_key key;
+};
+extern const struct input_key_map input_config_key_map[];
+
+const char *input_config_get_prefix(unsigned player, bool meta);
+
+void input_config_parse_key(config_file_t *conf, const char *prefix, const char *btn,
+      struct retro_keybind *bind);
+void input_config_parse_joy_button(config_file_t *conf, const char *prefix,
+      const char *btn, struct retro_keybind *bind);
+void input_config_parse_joy_axis(config_file_t *conf, const char *prefix,
+      const char *axis, struct retro_keybind *bind);
 
 #endif
 
