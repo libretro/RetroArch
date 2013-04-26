@@ -113,6 +113,7 @@ static void get_binds(config_file_t *conf, config_file_t *auto_conf, int player,
    if (joypad_name && auto_conf)
       config_set_string(auto_conf, "input_device", joypad_name);
 
+
    int16_t initial_axes[MAX_AXES] = {0};
    struct poll_data old_poll = {{0}};
    struct poll_data new_poll = {{0}};
@@ -120,6 +121,9 @@ static void get_binds(config_file_t *conf, config_file_t *auto_conf, int player,
    int last_axis   = -1;
    bool block_axis = false;
 
+   poll_joypad(driver, joypad, &old_poll);
+   fprintf(stderr, "\nJoypads tend to have stale state after opened.\nPress some buttons and move some axes around to make sure joypad state is reset properly.\nWhen done, press Enter ... ");
+   getchar();
    poll_joypad(driver, joypad, &old_poll);
 
    for (int i = 0; i < MAX_AXES; i++)
