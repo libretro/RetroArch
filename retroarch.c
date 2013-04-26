@@ -802,8 +802,11 @@ static void parse_input(int argc, char *argv[])
       return;
    }
 
+   for (int i = 0; i < argc; i++)
+      fprintf(stderr, "\targv[%d] = %s\n", i, argv[i]);
+
    // Make sure we can call parse_input several times ...
-   optind = 1;
+   optind = 0;
 
    int val = 0;
 
