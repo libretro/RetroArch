@@ -124,7 +124,7 @@ static void get_binds(config_file_t *conf, config_file_t *auto_conf, int player,
    bool block_axis = false;
 
    poll_joypad(driver, joypad, &old_poll);
-   fprintf(stderr, "\nJoypads tend to have stale state after opened.\nPress some buttons and move some axes around to make sure joypad state is reset properly.\nWhen done, press Enter ... ");
+   fprintf(stderr, "\nJoypads tend to have stale state after opened.\nPress some buttons and move some axes around to make sure joypad state is completely neutral before proceeding.\nWhen done, press Enter ... ");
    getchar();
    poll_joypad(driver, joypad, &old_poll);
 
@@ -142,6 +142,12 @@ static void get_binds(config_file_t *conf, config_file_t *auto_conf, int player,
          fprintf(stderr, "Axis %d is defaulted to %s axis value of %d.\n", i, initial > 0 ? "positive" : "negative", initial);
 
       initial_axes[i] = initial;
+   }
+
+   for (int i = 0; i < MAX_BUTTONS; i++)
+   {
+      if (old_poll.buttons[i])
+         fprintf(stderr, "Button %d was initially pressed. This indicates broken initial state.\n", i);
    }
 
    fprintf(stderr, "Configuring binds for player #%d on joypad #%d.\n\n",
