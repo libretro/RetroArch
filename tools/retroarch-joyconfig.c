@@ -111,8 +111,10 @@ static void get_binds(config_file_t *conf, config_file_t *auto_conf, int player,
    fprintf(stderr, "Using joypad: %s\n", joypad_name ? joypad_name : "Unknown");
 
    if (joypad_name && auto_conf)
+   {
       config_set_string(auto_conf, "input_device", joypad_name);
-
+      config_set_string(auto_conf, "input_driver", driver->ident);
+   }
 
    int16_t initial_axes[MAX_AXES] = {0};
    struct poll_data old_poll = {{0}};
@@ -137,7 +139,7 @@ static void get_binds(config_file_t *conf, config_file_t *auto_conf, int player,
       // If default negative, we can't trigger on the negative axis, and similar with defaulted positive axes.
 
       if (initial)
-         fprintf(stderr, "Axis %d is defaulted to %s axis value of %d\n", i, initial > 0 ? "positive" : "negative", initial);
+         fprintf(stderr, "Axis %d is defaulted to %s axis value of %d.\n", i, initial > 0 ? "positive" : "negative", initial);
 
       initial_axes[i] = initial;
    }
