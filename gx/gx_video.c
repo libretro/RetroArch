@@ -1038,6 +1038,8 @@ static void gx_set_texture_enable(void *data, bool enable, bool full_screen)
    (void)full_screen;
    gx_video_t *gx = (gx_video_t*)data;
    gx->rgui_texture_enable = enable;
+   // need to make sure the game texture is the right pixel format for menu overlay
+   gx->should_resize = true;
 }
 
 static void gx_apply_state_changes(void *data)
