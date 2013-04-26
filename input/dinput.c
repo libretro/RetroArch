@@ -557,7 +557,7 @@ static bool dinput_joypad_query_pad(unsigned pad)
 
 static const char *dinput_joypad_name(unsigned pad)
 {
-   (unsigned)pad;
+   (void)pad;
    // FIXME
    return NULL;
 }

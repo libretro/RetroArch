@@ -42,7 +42,7 @@ JOBJ := conf/config_file.o \
 	tools/retroarch-joyconfig.o \
 	compat/compat.o \
 	file_path.o \
-	input/input_common.o \
+	tools/input_common_joyconfig.o \
 	input/dinput.o
 
 CC = gcc
@@ -253,6 +253,10 @@ $(TARGET): $(OBJ)
 %.o: %.c
 	@$(if $(Q), $(shell echo echo CC $<),)
 	$(Q)$(CC) $(CFLAGS) $(DEFINES) -c -o $@ $<
+
+tools/input_common_joyconfig.o: input/input_common.c
+	@$(if $(Q), $(shell echo echo CC $<),)
+	$(Q)$(CC) $(CFLAGS) $(DEFINES) -DIS_JOYCONFIG -c -o $@ $<
 
 %.o: %.cpp
 	@$(if $(Q), $(shell echo echo CXX $<),)
