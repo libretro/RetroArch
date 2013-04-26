@@ -75,12 +75,13 @@ bool gx_init_mem2()
    // BIG NOTE: MEM2 on the Wii is 64MB, but a portion of that is reserved for
    // IOS. libogc by default defines the "safe" area for MEM2 to go from
    // 0x90002000 to 0x933E0000. However, from my testing, I've found I need to
-   // reserve about 128KB for stuff like network and USB to work correctly.
+   // reserve about 256KB for stuff like network and USB to work correctly.
    // However, other sources says these functions need at least 0xE0000 bytes,
    // 7/8 of a megabyte, of reserved memory to do this. My initial testing
-   // shows that we can work with only 128KB, but if some stuff mysteriously
-   // stops working, try fiddling with this size.
-   u32 size = SYS_GetArena2Size() - 1024 * 128;
+   // shows that we can work with only 128KB, but we use 256KB becuse testing
+   // has shown some stuff being iffy with only 128KB, mainly wiimote stuff.
+   // If some stuff mysteriously stops working, try fiddling with this size.
+   u32 size = SYS_GetArena2Size() - 1024 * 256;
 
    void *heap_ptr = (void *) ROUNDUP32(((u32) SYS_GetArena2Hi() - size));
 
