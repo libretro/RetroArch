@@ -572,7 +572,16 @@ static void render_text(rgui_handle_t *rgui)
             case RGUI_SETTINGS_BIND_DEVICE:
             {
                int map = g_settings.input.joypad_map[port];
-               strlcpy(type_str, g_settings.input.device_names[map], sizeof(type_str));
+               if (map >= 0 && map < MAX_PLAYERS)
+               {
+                  const char *device_name = g_settings.input.device_names[map];
+                  if (*device_name)
+                     strlcpy(type_str, device_name, sizeof(type_str));
+                  else
+                     snprintf(type_str, sizeof(type_str), "N/A (port #%u)", map);
+               }
+               else
+                  strlcpy(type_str, "Disabled", sizeof(type_str));
                break;
             }
             case RGUI_SETTINGS_BIND_DPAD_EMULATION:
@@ -968,20 +977,22 @@ static int rgui_settings_toggle_setting(rgui_handle_t *rgui, unsigned setting, r
          break;
       // controllers
       case RGUI_SETTINGS_BIND_DEVICE:
-         g_settings.input.device[port] += DEVICE_LAST;
-         if (action == RGUI_ACTION_START)
-            g_settings.input.device[port] = 0;
-         else if (action == RGUI_ACTION_LEFT)
-            g_settings.input.device[port]--;
-         else if (action == RGUI_ACTION_RIGHT)
-            g_settings.input.device[port]++;
-
-         // DEVICE_LAST can be 0, avoid modulo.
-         if (g_settings.input.device[port] >= DEVICE_LAST)
-            g_settings.input.device[port] -= DEVICE_LAST;
-
+         // If set_keybinds is supported, we do it more fancy, and scroll through
+         // a list of supported devices directly.
          if (driver.input->set_keybinds)
          {
+            g_settings.input.device[port] += DEVICE_LAST;
+            if (action == RGUI_ACTION_START)
+               g_settings.input.device[port] = 0;
+            else if (action == RGUI_ACTION_LEFT)
+               g_settings.input.device[port]--;
+            else if (action == RGUI_ACTION_RIGHT)
+               g_settings.input.device[port]++;
+
+            // DEVICE_LAST can be 0, avoid modulo.
+            if (g_settings.input.device[port] >= DEVICE_LAST)
+               g_settings.input.device[port] -= DEVICE_LAST;
+
             unsigned keybind_action = (1ULL << KEYBINDS_ACTION_SET_DEFAULT_BINDS);
 
             switch (g_settings.input.dpad_emulation[port])
@@ -1001,6 +1012,23 @@ static int rgui_settings_toggle_setting(rgui_handle_t *rgui, unsigned setting, r
 
             driver.input->set_keybinds(driver.input_data, g_settings.input.device[port], port, 0,
                   keybind_action);
+         }
+         else
+         {
+            // When only straight g_settings.input.joypad_map[] style
+            // mapping is supported.
+            int *p = &g_settings.input.joypad_map[port];
+            if (action == RGUI_ACTION_START)
+               *p = port;
+            else if (action == RGUI_ACTION_LEFT)
+               (*p)--;
+            else if (action == RGUI_ACTION_RIGHT)
+               (*p)++;
+
+            if (*p < -1)
+               *p = -1;
+            else if (*p >= MAX_PLAYERS)
+               *p = MAX_PLAYERS - 1;
          }
          break;
       case RGUI_SETTINGS_BIND_DPAD_EMULATION:
@@ -1398,25 +1426,28 @@ static int shader_manager_toggle_setting(rgui_handle_t *rgui, unsigned setting, 
 static void rgui_settings_controller_populate_entries(rgui_handle_t *rgui)
 {
    rgui_list_clear(rgui->selection_buf);
-
    rgui_list_push(rgui->selection_buf, "Device", RGUI_SETTINGS_BIND_DEVICE, 0);
-   rgui_list_push(rgui->selection_buf, "DPad Emulation", RGUI_SETTINGS_BIND_DPAD_EMULATION, 0);
-   rgui_list_push(rgui->selection_buf, "Up", RGUI_SETTINGS_BIND_UP, 0);
-   rgui_list_push(rgui->selection_buf, "Down", RGUI_SETTINGS_BIND_DOWN, 0);
-   rgui_list_push(rgui->selection_buf, "Left", RGUI_SETTINGS_BIND_LEFT, 0);
-   rgui_list_push(rgui->selection_buf, "Right", RGUI_SETTINGS_BIND_RIGHT, 0);
-   rgui_list_push(rgui->selection_buf, "A", RGUI_SETTINGS_BIND_A, 0);
-   rgui_list_push(rgui->selection_buf, "B", RGUI_SETTINGS_BIND_B, 0);
-   rgui_list_push(rgui->selection_buf, "X", RGUI_SETTINGS_BIND_X, 0);
-   rgui_list_push(rgui->selection_buf, "Y", RGUI_SETTINGS_BIND_Y, 0);
-   rgui_list_push(rgui->selection_buf, "Start", RGUI_SETTINGS_BIND_START, 0);
-   rgui_list_push(rgui->selection_buf, "Select", RGUI_SETTINGS_BIND_SELECT, 0);
-   rgui_list_push(rgui->selection_buf, "L", RGUI_SETTINGS_BIND_L, 0);
-   rgui_list_push(rgui->selection_buf, "R", RGUI_SETTINGS_BIND_R, 0);
-   rgui_list_push(rgui->selection_buf, "L2", RGUI_SETTINGS_BIND_L2, 0);
-   rgui_list_push(rgui->selection_buf, "R2", RGUI_SETTINGS_BIND_R2, 0);
-   rgui_list_push(rgui->selection_buf, "L3", RGUI_SETTINGS_BIND_L3, 0);
-   rgui_list_push(rgui->selection_buf, "R3", RGUI_SETTINGS_BIND_R3, 0);
+
+   if (driver.input && driver.input->set_keybinds)
+   {
+      rgui_list_push(rgui->selection_buf, "DPad Emulation", RGUI_SETTINGS_BIND_DPAD_EMULATION, 0);
+      rgui_list_push(rgui->selection_buf, "Up", RGUI_SETTINGS_BIND_UP, 0);
+      rgui_list_push(rgui->selection_buf, "Down", RGUI_SETTINGS_BIND_DOWN, 0);
+      rgui_list_push(rgui->selection_buf, "Left", RGUI_SETTINGS_BIND_LEFT, 0);
+      rgui_list_push(rgui->selection_buf, "Right", RGUI_SETTINGS_BIND_RIGHT, 0);
+      rgui_list_push(rgui->selection_buf, "A", RGUI_SETTINGS_BIND_A, 0);
+      rgui_list_push(rgui->selection_buf, "B", RGUI_SETTINGS_BIND_B, 0);
+      rgui_list_push(rgui->selection_buf, "X", RGUI_SETTINGS_BIND_X, 0);
+      rgui_list_push(rgui->selection_buf, "Y", RGUI_SETTINGS_BIND_Y, 0);
+      rgui_list_push(rgui->selection_buf, "Start", RGUI_SETTINGS_BIND_START, 0);
+      rgui_list_push(rgui->selection_buf, "Select", RGUI_SETTINGS_BIND_SELECT, 0);
+      rgui_list_push(rgui->selection_buf, "L", RGUI_SETTINGS_BIND_L, 0);
+      rgui_list_push(rgui->selection_buf, "R", RGUI_SETTINGS_BIND_R, 0);
+      rgui_list_push(rgui->selection_buf, "L2", RGUI_SETTINGS_BIND_L2, 0);
+      rgui_list_push(rgui->selection_buf, "R2", RGUI_SETTINGS_BIND_R2, 0);
+      rgui_list_push(rgui->selection_buf, "L3", RGUI_SETTINGS_BIND_L3, 0);
+      rgui_list_push(rgui->selection_buf, "R3", RGUI_SETTINGS_BIND_R3, 0);
+   }
 }
 
 static int rgui_viewport_iterate(rgui_handle_t *rgui, rgui_action_t action)
