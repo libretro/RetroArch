@@ -35,6 +35,10 @@ Use config file found in PATH as a base. Old configuration values can be overwri
 Writes the final config to a file, rather than \fBstdout\fR. If -i and -o point to the same file, the file found in PATH will simply be updated with the new configs.
 
 .TP
+\fB-a PATH, --autoconfig PATH\fR
+Also writes an autoconfigure file for the joypad which was configured. It can be used by RetroArch to automatically configure a joypad when it's plugged in.
+
+.TP
 \fB--misc, -m\fR
 Also configure some binds that aren't directly related to RetroPad, such as save states, fullscreen toggling, etc.
 

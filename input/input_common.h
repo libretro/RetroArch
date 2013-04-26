@@ -66,6 +66,7 @@ typedef struct rarch_joypad_driver
    bool (*button)(unsigned, uint16_t);
    int16_t (*axis)(unsigned, uint32_t);
    void (*poll)(void);
+   const char *(*name)(unsigned);
 
    const char *ident;
 } rarch_joypad_driver_t;
@@ -87,6 +88,7 @@ bool input_joypad_hat_raw(const rarch_joypad_driver_t *driver,
       unsigned joypad, unsigned hat_dir, unsigned hat);
 
 void input_joypad_poll(const rarch_joypad_driver_t *driver);
+const char *input_joypad_name(const rarch_joypad_driver_t *driver, unsigned joypad);
 
 extern const rarch_joypad_driver_t dinput_joypad;
 extern const rarch_joypad_driver_t linuxraw_joypad;
@@ -113,6 +115,7 @@ struct input_bind_map
    bool valid;
    bool meta; // Meta binds get input as prefix, not input_playerN"
    const char *base;
+   const char *desc;
    unsigned retro_key;
 };
 extern const struct input_bind_map input_config_bind_map[];

@@ -37,6 +37,7 @@ static int g_player = 1;
 static int g_joypad = 0;
 static char *g_in_path = NULL;
 static char *g_out_path = NULL;
+static char *g_auto_path = NULL;
 static bool g_use_misc = false;
 
 static void print_help(void)
@@ -44,90 +45,17 @@ static void print_help(void)
    puts("==================");
    puts("retroarch-joyconfig");
    puts("==================");
-   puts("Usage: retroarch-joyconfig [ -p/--player <1-5> | -j/--joypad <num> | -i/--input <file> | -o/--output <file> | -h/--help ]");
+   puts("Usage: retroarch-joyconfig [ -p/--player <1-8> | -j/--joypad <num> | -i/--input <file> | -o/--output <file> | -h/--help ]");
    puts("");
-   puts("-p/--player: Which player to configure for (1 up to and including 5).");
+   puts("-p/--player: Which player to configure for (1 up to and including 8).");
    puts("-j/--joypad: Which joypad to use when configuring (first joypad is 0).");
    puts("-i/--input: Input file to configure with. Binds will be added on or overwritten.");
    puts("\tIf not selected, an empty config will be used as a base.");
    puts("-o/--output: Output file to write to. If not selected, config file will be dumped to stdout.");
+   puts("-a/--autoconfig: Outputs an autoconfig file for joypad which was configured.");
    puts("-m/--misc: Also configure various keybinds that are not directly libretro related. These configurations are for player 1 only.");
    puts("-h/--help: This help.");
 }
-
-struct bind
-{
-   const char *keystr;
-   const char *confbtn[MAX_PLAYERS];
-   const char *confaxis[MAX_PLAYERS];
-   bool is_misc;
-};
-
-#define BIND(x, k) { x, { "input_player1_" #k "_btn", "input_player2_" #k "_btn", "input_player3_" #k "_btn", "input_player4_" #k "_btn", "input_player5_" #k "_btn" }, {"input_player1_" #k "_axis", "input_player2_" #k "_axis", "input_player3_" #k "_axis", "input_player4_" #k "_axis", "input_player5_" #k "_axis"}, false}
-
-#define MISC_BIND(x, k) { x, { "input_" #k "_btn" }, { "input_" #k "_axis" }, true}
-
-static struct bind binds[] = {
-   BIND("A button (right)", a),
-   BIND("B button (down)", b),
-   BIND("X button (top)", x),
-   BIND("Y button (left)", y),
-   BIND("L button (left shoulder)", l),
-   BIND("R button (right shoulder)", r),
-   BIND("L2 button (left shoulder #2)", l2),
-   BIND("R2 button (right shoulder #2)", r2),
-   BIND("L3 button (left analog button)", l3),
-   BIND("R3 button (right analog button)", r3),
-   BIND("Start button", start),
-   BIND("Select button", select),
-   BIND("Left D-pad", left),
-   BIND("Up D-pad", up),
-   BIND("Right D-pad", right),
-   BIND("Down D-pad", down),
-
-   BIND("Left analog X+ (right)", l_x_plus),
-   BIND("Left analog Y+ (down)", l_y_plus),
-   BIND("Left analog X- (left)", l_x_minus),
-   BIND("Left analog Y- (up)", l_y_minus),
-   BIND("Right analog X+ (right)", r_x_plus),
-   BIND("Right analog Y+ (down)", r_y_plus),
-   BIND("Right analog X- (left)", r_x_minus),
-   BIND("Right analog Y- (up)", r_y_minus),
-
-   MISC_BIND("Save state", save_state),
-   MISC_BIND("Load state", load_state),
-   MISC_BIND("Exit emulator", exit_emulator),
-   MISC_BIND("Toggle fullscreen", toggle_fullscreen),
-   MISC_BIND("Save state slot increase", state_slot_increase),
-   MISC_BIND("Save state slot decrease", state_slot_decrease),
-   MISC_BIND("Toggle fast forward", toggle_fast_forward),
-   MISC_BIND("Hold fast forward", hold_fast_forward),
-   MISC_BIND("Audio input rate step up", rate_step_up),
-   MISC_BIND("Audio input rate step down", rate_step_down),
-   MISC_BIND("Rewind", rewind),
-   MISC_BIND("Movie recording toggle", movie_record_toggle),
-   MISC_BIND("Pause", pause_toggle),
-   MISC_BIND("Frame advance", frame_advance),
-   MISC_BIND("Reset", reset),
-   MISC_BIND("Next shader", shader_next),
-   MISC_BIND("Previous shader", shader_prev),
-   MISC_BIND("Toggle cheat on/off", cheat_toggle),
-   MISC_BIND("Cheat index plus", cheat_index_plus),
-   MISC_BIND("Cheat index minus", cheat_index_minus),
-   MISC_BIND("Screenshot", screenshot),
-   MISC_BIND("DSP config", dsp_config),
-   MISC_BIND("Audio mute/unmute", audio_mute),
-   MISC_BIND("Netplay player flip", netplay_flip_players),
-   MISC_BIND("Slow motion", slowmotion),
-   MISC_BIND("Hotkey enable", enable_hotkey),
-   MISC_BIND("Volume up", volume_up),
-   MISC_BIND("Volume down", volume_down),
-   MISC_BIND("Next overlay", overlay_next),
-   MISC_BIND("Disk eject toggle", disk_eject_toggle),
-   MISC_BIND("Disk next cycle", disk_next),
-   MISC_BIND("Grab mouse toggle", grab_mouse_toggle),
-   MISC_BIND("Menu toggle", menu_toggle),
-};
 
 #define MAX_BUTTONS 32
 #define MAX_AXES 32
@@ -163,7 +91,7 @@ static void poll_joypad(const rarch_joypad_driver_t *driver,
    }
 }
 
-static void get_binds(config_file_t *conf, int player, int joypad)
+static void get_binds(config_file_t *conf, config_file_t *auto_conf, int player, int joypad)
 {
    const rarch_joypad_driver_t *driver = input_joypad_init_first();
    if (!driver)
@@ -179,6 +107,11 @@ static void get_binds(config_file_t *conf, int player, int joypad)
    }
 
    fprintf(stderr, "Found joypad driver: %s\n", driver->ident);
+   const char *joypad_name = input_joypad_name(driver, joypad);
+   fprintf(stderr, "Using joypad: %s\n", joypad_name ? joypad_name : "Unknown");
+
+   if (joypad_name && auto_conf)
+      config_set_string(auto_conf, "input_device", joypad_name);
 
    int16_t initial_axes[MAX_AXES] = {0};
    struct poll_data old_poll = {{0}};
@@ -208,11 +141,15 @@ static void get_binds(config_file_t *conf, int player, int joypad)
    fprintf(stderr, "Configuring binds for player #%d on joypad #%d.\n\n",
          player + 1, joypad);
 
-   for (unsigned i = 0; i < sizeof(binds) / sizeof(binds[0]) && (g_use_misc || !binds[i].is_misc) ; i++)
+   for (unsigned i = 0; input_config_bind_map[i].valid &&
+         (g_use_misc || !input_config_bind_map[i].meta); i++)
    {
-      fprintf(stderr, "%s\n", binds[i].keystr);
+      if (i == RARCH_TURBO_ENABLE)
+         continue;
 
-      unsigned player_index = binds[i].is_misc ? 0 : player;
+      fprintf(stderr, "%s\n", input_config_bind_map[i].desc);
+
+      unsigned player_index = input_config_bind_map[i].meta ? 0 : player;
 
       for (;;)
       {
@@ -229,51 +166,74 @@ static void get_binds(config_file_t *conf, int player, int joypad)
             if (new_poll.buttons[j] && !old_poll.buttons[j])
             {
                fprintf(stderr, "\tJoybutton pressed: %u\n", j);
-               config_set_int(conf, binds[i].confbtn[player_index], j);
+               char key[64];
+               snprintf(key, sizeof(key), "%s_%s_btn",
+                     input_config_get_prefix(player_index, input_config_bind_map[i].meta), input_config_bind_map[i].base);
+               config_set_int(conf, key, j);
+
+               if (auto_conf)
+               {
+                  snprintf(key, sizeof(key), "input_%s_btn",
+                        input_config_bind_map[i].base);
+                  config_set_int(auto_conf, key, j);
+               }
+
                goto out;
             }
          }
 
          for (int j = 0; j < MAX_AXES; j++)
          {
-            if (new_poll.axes[j] != old_poll.axes[j])
+            if (new_poll.axes[j] == old_poll.axes[j])
+               continue;
+
+            int16_t value         = new_poll.axes[j];
+            bool same_axis        = last_axis == j;
+            bool require_negative = initial_axes[j] > 0;
+            bool require_positive = initial_axes[j] < 0;
+
+            // Block the axis config until we're sure axes have returned to their neutral state.
+            if (same_axis)
             {
-               int16_t value         = new_poll.axes[j];
-               bool same_axis        = last_axis == j;
-               bool require_negative = initial_axes[j] > 0;
-               bool require_positive = initial_axes[j] < 0;
+               if (abs(value) < 10000 ||
+                     (require_positive && value < 0) ||
+                     (require_negative && value > 0))
+                  block_axis = false;
+            }
 
-               // Block the axis config until we're sure axes have returned to their neutral state.
-               if (same_axis)
+            // If axes are in their neutral state, we can't allow it.
+            if (require_negative && value >= 0)
+               continue;
+            if (require_positive && value <= 0)
+               continue;
+
+            if (block_axis)
+               continue;
+
+            if (abs(value) > 20000)
+            {
+               last_axis = j;
+               fprintf(stderr, "\tJoyaxis moved: Axis %d, Value %d\n", j, value);
+
+               char buf[8];
+               snprintf(buf, sizeof(buf),
+                     value > 0 ? "+%d" : "-%d", j);
+
+               char key[64];
+               snprintf(key, sizeof(key), "%s_%s_axis",
+                     input_config_get_prefix(player_index, input_config_bind_map[i].meta), input_config_bind_map[i].base);
+
+               config_set_string(conf, key, buf);
+
+               if (auto_conf)
                {
-                  if (abs(value) < 10000 ||
-                        (require_positive && value < 0) ||
-                        (require_negative && value > 0))
-                     block_axis = false;
+                  snprintf(key, sizeof(key), "input_%s_axis",
+                        input_config_bind_map[i].base);
+                  config_set_string(auto_conf, key, buf);
                }
 
-               // If axes are in their neutral state, we can't allow it.
-               if (require_negative && value >= 0)
-                  continue;
-               if (require_positive && value <= 0)
-                  continue;
-
-               if (block_axis)
-                  continue;
-
-               if (abs(value) > 20000)
-               {
-                  last_axis = j;
-                  fprintf(stderr, "\tJoyaxis moved: Axis %d, Value %d\n", j, value);
-
-                  char buf[8];
-                  snprintf(buf, sizeof(buf),
-                        value > 0 ? "+%d" : "-%d", j);
-
-                  config_set_string(conf, binds[i].confaxis[player_index], buf);
-                  block_axis = true;
-                  goto out;
-               }
+               block_axis = true;
+               goto out;
             }
          }
 
@@ -297,7 +257,20 @@ static void get_binds(config_file_t *conf, int player, int joypad)
                fprintf(stderr, "\tJoyhat moved: Hat %d, direction %s\n", j, quark);
                char buf[16];
                snprintf(buf, sizeof(buf), "h%d%s", j, quark);
-               config_set_string(conf, binds[i].confbtn[player_index], buf);
+
+               char key[64];
+               snprintf(key, sizeof(key), "%s_%s_btn",
+                     input_config_get_prefix(player_index, input_config_bind_map[i].meta), input_config_bind_map[i].base);
+
+               config_set_string(conf, key, buf);
+
+               if (auto_conf)
+               {
+                  snprintf(key, sizeof(key), "input_%s_btn",
+                        input_config_bind_map[i].base);
+                  config_set_string(auto_conf, key, buf);
+               }
+
                goto out;
             }
          }
@@ -309,10 +282,11 @@ out:
 
 static void parse_input(int argc, char *argv[])
 {
-   char optstring[] = "i:o:p:j:hm";
+   char optstring[] = "i:o:a:p:j:hm";
    struct option opts[] = {
       { "input", 1, NULL, 'i' },
       { "output", 1, NULL, 'o' },
+      { "autoconfig", 1, NULL, 'a' },
       { "player", 1, NULL, 'p' },
       { "joypad", 1, NULL, 'j' },
       { "help", 0, NULL, 'h' },
@@ -339,6 +313,10 @@ static void parse_input(int argc, char *argv[])
 
          case 'o':
             g_out_path = strdup(optarg);
+            break;
+
+         case 'a':
+            g_auto_path = strdup(optarg);
             break;
 
          case 'm':
@@ -410,12 +388,22 @@ int main(int argc, char *argv[])
 
    config_set_int(conf, index_list[g_player - 1], g_joypad);
 
-   get_binds(conf, g_player - 1, g_joypad);
+   config_file_t *auto_conf = NULL;
+   if (g_auto_path)
+      auto_conf = config_file_new(NULL);
+
+   get_binds(conf, auto_conf, g_player - 1, g_joypad);
    config_file_write(conf, g_out_path);
    config_file_free(conf);
-   if (g_in_path)
-      free(g_in_path);
-   if (g_out_path)
-      free(g_out_path);
+   if (auto_conf)
+   {
+      fprintf(stderr, "Writing autoconfig profile to: %s.\n", g_auto_path);
+      config_file_write(auto_conf, g_auto_path);
+      config_file_free(auto_conf);
+   }
+
+   free(g_in_path);
+   free(g_out_path);
+   free(g_auto_path);
    return 0;
 }

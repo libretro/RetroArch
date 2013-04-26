@@ -86,6 +86,14 @@ void input_joypad_poll(const rarch_joypad_driver_t *driver)
       driver->poll();
 }
 
+const char *input_joypad_name(const rarch_joypad_driver_t *driver, unsigned joypad)
+{
+   if (!driver)
+      return NULL;
+
+   return driver->name(joypad);
+}
+
 bool input_joypad_pressed(const rarch_joypad_driver_t *driver,
       unsigned port, const struct retro_keybind *key)
 {
@@ -507,68 +515,68 @@ static const char *bind_player_prefix[MAX_PLAYERS] = {
    "input_player8",
 };
 
-#define DECLARE_BIND(x, bind) { true, false, #x, bind }
-#define DECLARE_META_BIND(x, bind) { true, true, #x, bind }
+#define DECLARE_BIND(x, bind, desc) { true, false, #x, desc, bind }
+#define DECLARE_META_BIND(x, bind, desc) { true, true, #x, desc, bind }
 
 const struct input_bind_map input_config_bind_map[RARCH_BIND_LIST_END_NULL] = {
-      DECLARE_BIND(b,         RETRO_DEVICE_ID_JOYPAD_B),
-      DECLARE_BIND(y,         RETRO_DEVICE_ID_JOYPAD_Y),
-      DECLARE_BIND(select,    RETRO_DEVICE_ID_JOYPAD_SELECT),
-      DECLARE_BIND(start,     RETRO_DEVICE_ID_JOYPAD_START),
-      DECLARE_BIND(up,        RETRO_DEVICE_ID_JOYPAD_UP),
-      DECLARE_BIND(down,      RETRO_DEVICE_ID_JOYPAD_DOWN),
-      DECLARE_BIND(left,      RETRO_DEVICE_ID_JOYPAD_LEFT),
-      DECLARE_BIND(right,     RETRO_DEVICE_ID_JOYPAD_RIGHT),
-      DECLARE_BIND(a,         RETRO_DEVICE_ID_JOYPAD_A),
-      DECLARE_BIND(x,         RETRO_DEVICE_ID_JOYPAD_X),
-      DECLARE_BIND(l,         RETRO_DEVICE_ID_JOYPAD_L),
-      DECLARE_BIND(r,         RETRO_DEVICE_ID_JOYPAD_R),
-      DECLARE_BIND(l2,        RETRO_DEVICE_ID_JOYPAD_L2),
-      DECLARE_BIND(r2,        RETRO_DEVICE_ID_JOYPAD_R2),
-      DECLARE_BIND(l3,        RETRO_DEVICE_ID_JOYPAD_L3),
-      DECLARE_BIND(r3,        RETRO_DEVICE_ID_JOYPAD_R3),
-      DECLARE_BIND(turbo,     RARCH_TURBO_ENABLE),
-      DECLARE_BIND(l_x_plus,  RARCH_ANALOG_LEFT_X_PLUS),
-      DECLARE_BIND(l_x_minus, RARCH_ANALOG_LEFT_X_MINUS),
-      DECLARE_BIND(l_y_plus,  RARCH_ANALOG_LEFT_Y_PLUS),
-      DECLARE_BIND(l_y_minus, RARCH_ANALOG_LEFT_Y_MINUS),
-      DECLARE_BIND(r_x_plus,  RARCH_ANALOG_RIGHT_X_PLUS),
-      DECLARE_BIND(r_x_minus, RARCH_ANALOG_RIGHT_X_MINUS),
-      DECLARE_BIND(r_y_plus,  RARCH_ANALOG_RIGHT_Y_PLUS),
-      DECLARE_BIND(r_y_minus, RARCH_ANALOG_RIGHT_Y_MINUS),
+      DECLARE_BIND(b,         RETRO_DEVICE_ID_JOYPAD_B, "B button (down)"),
+      DECLARE_BIND(y,         RETRO_DEVICE_ID_JOYPAD_Y, "Y button (left)"),
+      DECLARE_BIND(select,    RETRO_DEVICE_ID_JOYPAD_SELECT, "Select button"),
+      DECLARE_BIND(start,     RETRO_DEVICE_ID_JOYPAD_START, "Start button"),
+      DECLARE_BIND(up,        RETRO_DEVICE_ID_JOYPAD_UP, "Up D-pad"),
+      DECLARE_BIND(down,      RETRO_DEVICE_ID_JOYPAD_DOWN, "Down D-pad"),
+      DECLARE_BIND(left,      RETRO_DEVICE_ID_JOYPAD_LEFT, "Left D-pad"),
+      DECLARE_BIND(right,     RETRO_DEVICE_ID_JOYPAD_RIGHT, "Right D-pad"),
+      DECLARE_BIND(a,         RETRO_DEVICE_ID_JOYPAD_A, "A button (right)"),
+      DECLARE_BIND(x,         RETRO_DEVICE_ID_JOYPAD_X, "X button (top)"),
+      DECLARE_BIND(l,         RETRO_DEVICE_ID_JOYPAD_L, "L button (left shoulder)"),
+      DECLARE_BIND(r,         RETRO_DEVICE_ID_JOYPAD_R, "R button (right shoulder)"),
+      DECLARE_BIND(l2,        RETRO_DEVICE_ID_JOYPAD_L2, "L2 button (left shoulder #2)"),
+      DECLARE_BIND(r2,        RETRO_DEVICE_ID_JOYPAD_R2, "R2 button (right shoulder #2)"),
+      DECLARE_BIND(l3,        RETRO_DEVICE_ID_JOYPAD_L3, "L3 button (left analog button)"),
+      DECLARE_BIND(r3,        RETRO_DEVICE_ID_JOYPAD_R3, "R3 button (right analog button)"),
+      DECLARE_BIND(turbo,     RARCH_TURBO_ENABLE, "Turbo enable"),
+      DECLARE_BIND(l_x_plus,  RARCH_ANALOG_LEFT_X_PLUS, "Left analog X+ (right)"),
+      DECLARE_BIND(l_x_minus, RARCH_ANALOG_LEFT_X_MINUS, "Left analog X- (left)"),
+      DECLARE_BIND(l_y_plus,  RARCH_ANALOG_LEFT_Y_PLUS, "Left analog Y+ (down)"),
+      DECLARE_BIND(l_y_minus, RARCH_ANALOG_LEFT_Y_MINUS, "Left analog Y- (up)"),
+      DECLARE_BIND(r_x_plus,  RARCH_ANALOG_RIGHT_X_PLUS, "Right analog X+ (right)"),
+      DECLARE_BIND(r_x_minus, RARCH_ANALOG_RIGHT_X_MINUS, "Right analog X- (left)"),
+      DECLARE_BIND(r_y_plus,  RARCH_ANALOG_RIGHT_Y_PLUS, "Right analog Y+ (down)"),
+      DECLARE_BIND(r_y_minus, RARCH_ANALOG_RIGHT_Y_MINUS, "Right analog Y- (up)"),
 
-      DECLARE_META_BIND(toggle_fast_forward,   RARCH_FAST_FORWARD_KEY),
-      DECLARE_META_BIND(hold_fast_forward,     RARCH_FAST_FORWARD_HOLD_KEY),
-      DECLARE_META_BIND(load_state,            RARCH_LOAD_STATE_KEY),
-      DECLARE_META_BIND(save_state,            RARCH_SAVE_STATE_KEY),
-      DECLARE_META_BIND(toggle_fullscreen,     RARCH_FULLSCREEN_TOGGLE_KEY),
-      DECLARE_META_BIND(exit_emulator,         RARCH_QUIT_KEY),
-      DECLARE_META_BIND(state_slot_increase,   RARCH_STATE_SLOT_PLUS),
-      DECLARE_META_BIND(state_slot_decrease,   RARCH_STATE_SLOT_MINUS),
-      DECLARE_META_BIND(rewind,                RARCH_REWIND),
-      DECLARE_META_BIND(movie_record_toggle,   RARCH_MOVIE_RECORD_TOGGLE),
-      DECLARE_META_BIND(pause_toggle,          RARCH_PAUSE_TOGGLE),
-      DECLARE_META_BIND(frame_advance,         RARCH_FRAMEADVANCE),
-      DECLARE_META_BIND(reset,                 RARCH_RESET),
-      DECLARE_META_BIND(shader_next,           RARCH_SHADER_NEXT),
-      DECLARE_META_BIND(shader_prev,           RARCH_SHADER_PREV),
-      DECLARE_META_BIND(cheat_index_plus,      RARCH_CHEAT_INDEX_PLUS),
-      DECLARE_META_BIND(cheat_index_minus,     RARCH_CHEAT_INDEX_MINUS),
-      DECLARE_META_BIND(cheat_toggle,          RARCH_CHEAT_TOGGLE),
-      DECLARE_META_BIND(screenshot,            RARCH_SCREENSHOT),
-      DECLARE_META_BIND(dsp_config,            RARCH_DSP_CONFIG),
-      DECLARE_META_BIND(audio_mute,            RARCH_MUTE),
-      DECLARE_META_BIND(netplay_flip_players,  RARCH_NETPLAY_FLIP),
-      DECLARE_META_BIND(slowmotion,            RARCH_SLOWMOTION),
-      DECLARE_META_BIND(enable_hotkey,         RARCH_ENABLE_HOTKEY),
-      DECLARE_META_BIND(volume_up,             RARCH_VOLUME_UP),
-      DECLARE_META_BIND(volume_down,           RARCH_VOLUME_DOWN),
-      DECLARE_META_BIND(overlay_next,          RARCH_OVERLAY_NEXT),
-      DECLARE_META_BIND(disk_eject_toggle,     RARCH_DISK_EJECT_TOGGLE),
-      DECLARE_META_BIND(disk_next,             RARCH_DISK_NEXT),
-      DECLARE_META_BIND(grab_mouse_toggle,     RARCH_GRAB_MOUSE_TOGGLE),
+      DECLARE_META_BIND(toggle_fast_forward,   RARCH_FAST_FORWARD_KEY, "Fast forward toggle"),
+      DECLARE_META_BIND(hold_fast_forward,     RARCH_FAST_FORWARD_HOLD_KEY, "Fast forward hold"),
+      DECLARE_META_BIND(load_state,            RARCH_LOAD_STATE_KEY, "Load state"),
+      DECLARE_META_BIND(save_state,            RARCH_SAVE_STATE_KEY, "Save state"),
+      DECLARE_META_BIND(toggle_fullscreen,     RARCH_FULLSCREEN_TOGGLE_KEY, "Fullscreen toggle"),
+      DECLARE_META_BIND(exit_emulator,         RARCH_QUIT_KEY, "Quit RetroArch"),
+      DECLARE_META_BIND(state_slot_increase,   RARCH_STATE_SLOT_PLUS, "Savestate slot +"),
+      DECLARE_META_BIND(state_slot_decrease,   RARCH_STATE_SLOT_MINUS, "Savestate slot -"),
+      DECLARE_META_BIND(rewind,                RARCH_REWIND, "Rewind"),
+      DECLARE_META_BIND(movie_record_toggle,   RARCH_MOVIE_RECORD_TOGGLE, "Movie record toggle"),
+      DECLARE_META_BIND(pause_toggle,          RARCH_PAUSE_TOGGLE, "Pause toggle"),
+      DECLARE_META_BIND(frame_advance,         RARCH_FRAMEADVANCE, "Frameadvance"),
+      DECLARE_META_BIND(reset,                 RARCH_RESET, "Reset game"),
+      DECLARE_META_BIND(shader_next,           RARCH_SHADER_NEXT, "Next shader"),
+      DECLARE_META_BIND(shader_prev,           RARCH_SHADER_PREV, "Previous shader"),
+      DECLARE_META_BIND(cheat_index_plus,      RARCH_CHEAT_INDEX_PLUS, "Cheat index +"),
+      DECLARE_META_BIND(cheat_index_minus,     RARCH_CHEAT_INDEX_MINUS, "Cheat index -"),
+      DECLARE_META_BIND(cheat_toggle,          RARCH_CHEAT_TOGGLE, "Cheat toggle"),
+      DECLARE_META_BIND(screenshot,            RARCH_SCREENSHOT, "Take screenshot"),
+      DECLARE_META_BIND(dsp_config,            RARCH_DSP_CONFIG, "DSP config"),
+      DECLARE_META_BIND(audio_mute,            RARCH_MUTE, "Audio mute toggle"),
+      DECLARE_META_BIND(netplay_flip_players,  RARCH_NETPLAY_FLIP, "Netplay flip players"),
+      DECLARE_META_BIND(slowmotion,            RARCH_SLOWMOTION, "Slow motion"),
+      DECLARE_META_BIND(enable_hotkey,         RARCH_ENABLE_HOTKEY, "Enable hotkeys"),
+      DECLARE_META_BIND(volume_up,             RARCH_VOLUME_UP, "Volume +"),
+      DECLARE_META_BIND(volume_down,           RARCH_VOLUME_DOWN, "Volume -"),
+      DECLARE_META_BIND(overlay_next,          RARCH_OVERLAY_NEXT, "Overlay next"),
+      DECLARE_META_BIND(disk_eject_toggle,     RARCH_DISK_EJECT_TOGGLE, "Disk eject toggle"),
+      DECLARE_META_BIND(disk_next,             RARCH_DISK_NEXT, "Disk next"),
+      DECLARE_META_BIND(grab_mouse_toggle,     RARCH_GRAB_MOUSE_TOGGLE, "Grab mouse toggle"),
 #ifdef HAVE_RGUI
-      DECLARE_META_BIND(menu_toggle,           RARCH_MENU_TOGGLE),
+      DECLARE_META_BIND(menu_toggle,           RARCH_MENU_TOGGLE, "RGUI menu toggle"),
 #endif
 };
 

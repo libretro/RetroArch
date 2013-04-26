@@ -292,6 +292,14 @@ static bool linuxraw_joypad_query_pad(unsigned pad)
    return pad < MAX_PLAYERS && g_pads[pad].fd >= 0;
 }
 
+static const char *linuxraw_joypad_name(unsigned pad)
+{
+   if (pad >= MAX_PLAYERS)
+      return NULL;
+
+   return *g_pads[pad].ident ? g_pads[pad].ident : NULL;
+}
+
 const rarch_joypad_driver_t linuxraw_joypad = {
    linuxraw_joypad_init,
    linuxraw_joypad_query_pad,
@@ -299,6 +307,7 @@ const rarch_joypad_driver_t linuxraw_joypad = {
    linuxraw_joypad_button,
    linuxraw_joypad_axis,
    linuxraw_joypad_poll,
+   linuxraw_joypad_name,
    "linuxraw",
 };
 
