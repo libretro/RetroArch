@@ -68,6 +68,12 @@ static void ios_joypad_poll(void)
 {
 }
 
+static const char *ios_joypad_name(unsigned joypad)
+{
+   (void)joypad;
+   return NULL;
+}
+
 const rarch_joypad_driver_t ios_joypad = {
    ios_joypad_init,
    ios_joypad_query_pad,
@@ -75,6 +81,7 @@ const rarch_joypad_driver_t ios_joypad = {
    ios_joypad_button,
    ios_joypad_axis,
    ios_joypad_poll,
+   ios_joypad_name,
    "ios",
 };
 
