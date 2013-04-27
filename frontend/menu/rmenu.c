@@ -85,7 +85,6 @@ static const struct retro_keybind _rmenu_nav_binds[] = {
    { 0, 0, NULL, (enum retro_key)0, (1ULL << RETRO_DEVICE_ID_JOYPAD_R), 0 },
    { 0, 0, NULL, (enum retro_key)0, (1ULL << RETRO_DEVICE_ID_JOYPAD_L2), 0 },
    { 0, 0, NULL, (enum retro_key)0, (1ULL << RETRO_DEVICE_ID_JOYPAD_R2), 0 },
-   { 0, 0, NULL, (enum retro_key)0, ((1ULL << RETRO_DEVICE_ID_JOYPAD_L3) + (1ULL << RETRO_DEVICE_ID_JOYPAD_R3)), 0 },
 };
 
 static const struct retro_keybind *rmenu_nav_binds[] = {
@@ -3238,7 +3237,7 @@ uint64_t rgui_input(void)
 {
    uint64_t input_state = 0;
 
-   for (unsigned i = 0; i < DEVICE_NAV_LAST; i++)
+   for (unsigned i = 0; i < (DEVICE_NAV_LAST - 1); i++)
       input_state |= driver.input->input_state(driver.input_data, rmenu_nav_binds, 0,
             RETRO_DEVICE_JOYPAD, 0, i) ? (1ULL << i) : 0;
 
