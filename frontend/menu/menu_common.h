@@ -34,6 +34,8 @@ extern "C" {
 #include "../../gfx/shader_parse.h"
 #endif
 
+#include "history.h"
+
 #define RGUI_MAX_SHADERS 8
 
 #if defined(HAVE_RMENU) || defined(HAVE_RMENU_XUI)
@@ -118,6 +120,7 @@ typedef enum
 
    // settings options are done here too
    RGUI_SETTINGS_OPEN_FILEBROWSER,
+   RGUI_SETTINGS_OPEN_HISTORY,
    RGUI_SETTINGS_CORE,
    RGUI_SETTINGS_CORE_OPTIONS,
    RGUI_SETTINGS_REWIND_ENABLE,
@@ -227,6 +230,8 @@ typedef struct
 #ifdef HAVE_SHADER_MANAGER
    struct gfx_shader shader;
 #endif
+
+   rom_history_t *history;
 } rgui_handle_t;
 
 extern rgui_handle_t *rgui;

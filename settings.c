@@ -309,7 +309,8 @@ static config_file_t *open_default_config_file(void)
 #if defined(_WIN32) && !defined(_XBOX)
    // Just do something for now.
    char conf_path[PATH_MAX];
-   conf = config_file_new("retroarch.cfg");
+   strlcpy(conf_path, "retroarch.cfg", sizeof(conf_path));
+   conf = config_file_new(conf_path);
    if (!conf)
    {
       const char *appdata = getenv("APPDATA");
@@ -347,11 +348,18 @@ static config_file_t *open_default_config_file(void)
    // Try this as a last chance ...
    if (!conf)
    {
-      conf = config_file_new("/etc/retroarch.cfg");
+      strlcpy(conf_path, "/etc/retroarch.cfg", sizeof(conf_path));
+      conf = config_file_new(conf_path);
       RARCH_LOG("Looking for config in: \"/etc/retroarch.cfg\".\n");
    }
 #endif
 
+   if (conf)
+   {
+      strlcpy(g_extern.config_path, conf_path,
+            sizeof(g_extern.config_path));
+   }
+   
    return conf;
 }
 
