@@ -347,14 +347,6 @@ static void display_menubar(uint8_t menu_type)
    switch(menu_type)
    {
       case GENERAL_VIDEO_MENU:
-         if (driver.input->set_keybinds)
-            driver.input->set_keybinds(&key_label_r, 0, 0, 0, (1ULL << KEYBINDS_ACTION_GET_BIND_LABEL));
-
-         snprintf(msg, sizeof(msg), "NEXT -> [%s]", key_label_r.desc);
-
-         if (driver.video_poke->set_osd_msg)
-            driver.video_poke->set_osd_msg(driver.video_data, msg, &font_parms);
-         break;
       case GENERAL_AUDIO_MENU:
       case EMU_GENERAL_MENU:
       case EMU_VIDEO_MENU:
@@ -1019,7 +1011,6 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
             g_settings.video.font_size = 1.0f;
          break;
       case INGAME_MENU_ASPECT_RATIO:
-      case SETTING_KEEP_ASPECT_RATIO:
          if (input & (1ULL << DEVICE_NAV_LEFT))
          {
             settings_set(1ULL << S_ASPECT_RATIO_DECREMENT);
@@ -1959,11 +1950,6 @@ static int select_setting(void *data, uint64_t input)
             snprintf(setting_text, sizeof(setting_text), "%f", g_settings.video.font_size);
             strlcpy(comment, "INFO - Increase or decrease the [Font Size].", sizeof(comment));
             break;
-         case SETTING_KEEP_ASPECT_RATIO:
-            strlcpy(text, "Aspect Ratio", sizeof(text));
-            strlcpy(setting_text, aspectratio_lut[g_settings.video.aspect_ratio_idx].name, sizeof(setting_text));
-            strlcpy(comment, "INFO - Select an [Aspect Ratio].", sizeof(comment));
-            break;
 #ifndef HAVE_SHADER_MANAGER
          case SETTING_HW_TEXTURE_FILTER:
             strlcpy(text, "Hardware filtering", sizeof(text));
@@ -2771,21 +2757,16 @@ static int ingame_menu_resize(void *data, uint64_t input)
       if (driver.video_poke->set_osd_msg)
          driver.video_poke->set_osd_msg(driver.video_data, viewport_h, &font_parms);
 
-      font_parms.y = POSITION_Y_BEGIN + (POSITION_Y_INCREMENT * 4);
-
-      if (driver.video_poke->set_osd_msg)
-         driver.video_poke->set_osd_msg(driver.video_data, "CONTROLS:", &font_parms);
-
       snprintf(msg, sizeof(msg), "[%s]", key_label_dpad_left.desc);
 
-      font_parms.y = POSITION_Y_BEGIN + (POSITION_Y_INCREMENT * 5);
+      font_parms.y = POSITION_Y_BEGIN + (POSITION_Y_INCREMENT * 4);
       font_parms.color = WHITE;
 
       if (driver.video_poke->set_osd_msg)
          driver.video_poke->set_osd_msg(driver.video_data, msg, &font_parms);
 
       font_parms.x = POSITION_X_CENTER;
-      font_parms.y = POSITION_Y_BEGIN + (POSITION_Y_INCREMENT * 5);
+      font_parms.y = POSITION_Y_BEGIN + (POSITION_Y_INCREMENT * 4);
 
       if (driver.video_poke->set_osd_msg)
          driver.video_poke->set_osd_msg(driver.video_data, "- Viewport X--", &font_parms);
@@ -2793,7 +2774,7 @@ static int ingame_menu_resize(void *data, uint64_t input)
       snprintf(msg, sizeof(msg), "[%s]", key_label_dpad_right.desc);
 
       font_parms.x = POSITION_X; 
-      font_parms.y = POSITION_Y_BEGIN + (POSITION_Y_INCREMENT * 6);
+      font_parms.y = POSITION_Y_BEGIN + (POSITION_Y_INCREMENT * 5);
 
       if (driver.video_poke->set_osd_msg)
          driver.video_poke->set_osd_msg(driver.video_data, msg, &font_parms);
@@ -2805,7 +2786,7 @@ static int ingame_menu_resize(void *data, uint64_t input)
 
       snprintf(msg, sizeof(msg), "[%s]", key_label_dpad_up.desc);
       font_parms.x = POSITION_X; 
-      font_parms.y = POSITION_Y_BEGIN + (POSITION_Y_INCREMENT * 7);
+      font_parms.y = POSITION_Y_BEGIN + (POSITION_Y_INCREMENT * 6);
 
       if (driver.video_poke->set_osd_msg)
          driver.video_poke->set_osd_msg(driver.video_data, msg, &font_parms);
@@ -2818,7 +2799,7 @@ static int ingame_menu_resize(void *data, uint64_t input)
       snprintf(msg, sizeof(msg), "[%s]", key_label_dpad_down.desc);
 
       font_parms.x = POSITION_X; 
-      font_parms.y = POSITION_Y_BEGIN + (POSITION_Y_INCREMENT * 8);
+      font_parms.y = POSITION_Y_BEGIN + (POSITION_Y_INCREMENT * 7);
 
       if (driver.video_poke->set_osd_msg)
          driver.video_poke->set_osd_msg(driver.video_data, msg, &font_parms);
@@ -2831,7 +2812,7 @@ static int ingame_menu_resize(void *data, uint64_t input)
       snprintf(msg, sizeof(msg), "[%s]", key_label_l1.desc);
 
       font_parms.x = POSITION_X; 
-      font_parms.y = POSITION_Y_BEGIN + (POSITION_Y_INCREMENT * 9);
+      font_parms.y = POSITION_Y_BEGIN + (POSITION_Y_INCREMENT * 8);
 
       if (driver.video_poke->set_osd_msg)
          driver.video_poke->set_osd_msg(driver.video_data, msg, &font_parms);
@@ -2844,7 +2825,7 @@ static int ingame_menu_resize(void *data, uint64_t input)
       snprintf(msg, sizeof(msg), "[%s]", key_label_r1.desc);
 
       font_parms.x = POSITION_X; 
-      font_parms.y = POSITION_Y_BEGIN + (POSITION_Y_INCREMENT * 10);
+      font_parms.y = POSITION_Y_BEGIN + (POSITION_Y_INCREMENT * 9);
 
       if (driver.video_poke->set_osd_msg)
          driver.video_poke->set_osd_msg(driver.video_data, msg, &font_parms);
@@ -2857,7 +2838,7 @@ static int ingame_menu_resize(void *data, uint64_t input)
       snprintf(msg, sizeof(msg), "[%s]", key_label_l2.desc);
 
       font_parms.x = POSITION_X; 
-      font_parms.y = POSITION_Y_BEGIN + (POSITION_Y_INCREMENT * 11);
+      font_parms.y = POSITION_Y_BEGIN + (POSITION_Y_INCREMENT * 10);
 
       if (driver.video_poke->set_osd_msg)
          driver.video_poke->set_osd_msg(driver.video_data, msg, &font_parms);
@@ -2870,7 +2851,7 @@ static int ingame_menu_resize(void *data, uint64_t input)
       snprintf(msg, sizeof(msg), "[%s]", key_label_r2.desc);
 
       font_parms.x = POSITION_X; 
-      font_parms.y = POSITION_Y_BEGIN + (POSITION_Y_INCREMENT * 12);
+      font_parms.y = POSITION_Y_BEGIN + (POSITION_Y_INCREMENT * 11);
 
       if (driver.video_poke->set_osd_msg)
          driver.video_poke->set_osd_msg(driver.video_data, msg, &font_parms);
@@ -2883,7 +2864,7 @@ static int ingame_menu_resize(void *data, uint64_t input)
       snprintf(msg, sizeof(msg), "[%s]", key_label_x.desc);
 
       font_parms.x = POSITION_X; 
-      font_parms.y = POSITION_Y_BEGIN + (POSITION_Y_INCREMENT * 13);
+      font_parms.y = POSITION_Y_BEGIN + (POSITION_Y_INCREMENT * 12);
 
       if (driver.video_poke->set_osd_msg)
          driver.video_poke->set_osd_msg(driver.video_data, msg, &font_parms);
@@ -2896,7 +2877,7 @@ static int ingame_menu_resize(void *data, uint64_t input)
       snprintf(msg, sizeof(msg), "[%s]", key_label_y.desc);
 
       font_parms.x = POSITION_X; 
-      font_parms.y = POSITION_Y_BEGIN + (POSITION_Y_INCREMENT * 14);
+      font_parms.y = POSITION_Y_BEGIN + (POSITION_Y_INCREMENT * 13);
 
       if (driver.video_poke->set_osd_msg)
          driver.video_poke->set_osd_msg(driver.video_data, msg, &font_parms);
@@ -2908,7 +2889,7 @@ static int ingame_menu_resize(void *data, uint64_t input)
 
       snprintf(msg, sizeof(msg), "[%s]", key_label_a.desc);
       font_parms.x = POSITION_X; 
-      font_parms.y = POSITION_Y_BEGIN + (POSITION_Y_INCREMENT * 15);
+      font_parms.y = POSITION_Y_BEGIN + (POSITION_Y_INCREMENT * 14);
 
       if (driver.video_poke->set_osd_msg)
          driver.video_poke->set_osd_msg(device_ptr, msg, &font_parms);
