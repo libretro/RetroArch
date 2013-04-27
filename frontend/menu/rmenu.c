@@ -3239,8 +3239,10 @@ uint64_t rgui_input(void)
    uint64_t input_state = 0;
 
    for (unsigned i = 0; i < DEVICE_NAV_LAST; i++)
-      input_state |= driver.input->input_state(NULL, rmenu_nav_binds, 0,
+      input_state |= driver.input->input_state(driver.input_data, rmenu_nav_binds, 0,
             RETRO_DEVICE_JOYPAD, 0, i) ? (1ULL << i) : 0;
+
+   input_state |= driver.input->key_pressed(driver.input_data, RARCH_MENU_TOGGLE) ? (1ULL << DEVICE_NAV_MENU) : 0;
 
    //set first button input frame as trigger
    rgui->trigger_state = input_state & ~rgui->old_input_state;
