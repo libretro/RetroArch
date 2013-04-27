@@ -169,6 +169,7 @@ static bool menu_type_is_settings(unsigned type)
       (type >= RGUI_SETTINGS_CONTROLLER_1 && type <= RGUI_SETTINGS_CONTROLLER_4);
 }
 
+#ifdef HAVE_SHADER_MANAGER
 static bool menu_type_is_shader_browser(unsigned type)
 {
    return (type >= RGUI_SETTINGS_SHADER_0 &&
@@ -176,6 +177,7 @@ static bool menu_type_is_shader_browser(unsigned type)
          ((type - RGUI_SETTINGS_SHADER_0) % 3) == 0) ||
       type == RGUI_SETTINGS_SHADER_PRESET;
 }
+#endif
 
 static void rgui_settings_populate_entries(rgui_handle_t *rgui);
 
@@ -389,8 +391,10 @@ static void render_text(rgui_handle_t *rgui)
       strlcpy(title, "VIDEO OPTIONS", sizeof(title));
    else if (menu_type == RGUI_SETTINGS_CORE_OPTIONS)
       strlcpy(title, "CORE OPTIONS", sizeof(title));
+#ifdef HAVE_SHADER_MANAGER
    else if (menu_type_is_shader_browser(menu_type))
       snprintf(title, sizeof(title), "SHADER %s", dir);
+#endif
    else if ((menu_type >= RGUI_SETTINGS_CONTROLLER_1 && menu_type <= RGUI_SETTINGS_CONTROLLER_4) ||
          (menu_type == RGUI_SETTINGS_CUSTOM_VIEWPORT || menu_type == RGUI_SETTINGS_CUSTOM_VIEWPORT_2) ||
          menu_type == RGUI_SETTINGS)
@@ -450,9 +454,10 @@ static void render_text(rgui_handle_t *rgui)
       int w = (menu_type >= RGUI_SETTINGS_CONTROLLER_1 && menu_type <= RGUI_SETTINGS_CONTROLLER_4) ? 26 : 19;
       unsigned port = menu_type - RGUI_SETTINGS_CONTROLLER_1;
       
-      if (type >= RGUI_SETTINGS_SHADER_FILTER &&
+      if (type >= RGUI_SETTINGS_VIDEO_OPTIONS_FIRST &&
             type <= RGUI_SETTINGS_SHADER_LAST)
       {
+#ifdef HAVE_SHADER_MANAGER
          // HACK. Work around that we're using the menu_type as dir type to propagate state correctly.
          if (menu_type_is_shader_browser(menu_type) && menu_type_is_shader_browser(type))
          {
@@ -465,6 +470,11 @@ static void render_text(rgui_handle_t *rgui)
                   g_settings.video.smooth ? "Linear" : "Nearest");
          else if (type == RGUI_SETTINGS_SHADER_PRESET)
             strlcpy(type_str, "...", sizeof(type_str));
+         else
+#endif
+         if (type == RGUI_SETTINGS_VIDEO_ROTATION)
+            strlcpy(type_str, rotation_lut[g_extern.console.screen.orientation],
+                  sizeof(type_str));
 #ifdef HAVE_SHADER_MANAGER
          else
             shader_manager_get_str(&rgui->shader, type_str, sizeof(type_str), type);
@@ -534,10 +544,6 @@ static void render_text(rgui_handle_t *rgui)
             case RGUI_SETTINGS_VIDEO_ASPECT_RATIO:
                strlcpy(type_str, aspectratio_lut[g_settings.video.aspect_ratio_idx].name, sizeof(type_str));
                break;
-            case RGUI_SETTINGS_VIDEO_ROTATION:
-               strlcpy(type_str, rotation_lut[g_extern.console.screen.orientation],
-                     sizeof(type_str));
-               break;
             case RGUI_SETTINGS_AUDIO_MUTE:
                if (g_extern.audio_data.mute)
                   strlcpy(type_str, "ON", sizeof(type_str));
@@ -570,7 +576,9 @@ static void render_text(rgui_handle_t *rgui)
             case RGUI_SETTINGS_OPEN_FILEBROWSER:
             case RGUI_SETTINGS_CORE_OPTIONS:
             case RGUI_SETTINGS_VIDEO_OPTIONS:
+#ifdef HAVE_SHADER_MANAGER
             case RGUI_SETTINGS_SHADER_PRESET:
+#endif
             case RGUI_SETTINGS_CUSTOM_VIEWPORT:
             case RGUI_SETTINGS_TOGGLE_FULLSCREEN:
             case RGUI_SETTINGS_CORE:
@@ -738,7 +746,7 @@ static int rgui_settings_toggle_setting(rgui_handle_t *rgui, unsigned setting, r
 
    (void)rgui;
 
-   if (setting >= RGUI_SETTINGS_SHADER_FILTER && setting <= RGUI_SETTINGS_SHADER_LAST)
+   if (setting >= RGUI_SETTINGS_VIDEO_OPTIONS_FIRST && setting <= RGUI_SETTINGS_SHADER_LAST)
       return shader_manager_toggle_setting(rgui, setting, action);
    if (setting >= RGUI_SETTINGS_CORE_OPTION_START)
       return rgui_core_setting_toggle(setting, action);
@@ -927,23 +935,6 @@ static int rgui_settings_toggle_setting(rgui_handle_t *rgui, unsigned setting, r
             rarch_set_fullscreen(!g_settings.video.fullscreen);
          break;
 #endif
-      case RGUI_SETTINGS_VIDEO_ROTATION:
-         if (action == RGUI_ACTION_START)
-         {
-            settings_set(1ULL << S_DEF_AUDIO_CONTROL_RATE);
-            video_set_rotation_func(g_extern.console.screen.orientation);
-         }
-         else if (action == RGUI_ACTION_LEFT)
-         {
-            settings_set(1ULL << S_ROTATION_DECREMENT);
-            video_set_rotation_func(g_extern.console.screen.orientation);
-         }
-         else if (action == RGUI_ACTION_RIGHT)
-         {
-            settings_set(1ULL << S_ROTATION_INCREMENT);
-            video_set_rotation_func(g_extern.console.screen.orientation);
-         }
-         break;
       case RGUI_SETTINGS_AUDIO_MUTE:
          if (action == RGUI_ACTION_START)
             settings_set(1ULL << S_DEF_AUDIO_MUTE);
@@ -1251,7 +1242,6 @@ static void rgui_settings_populate_entries(rgui_handle_t *rgui)
 #ifndef RARCH_PERFORMANCE_MODE
    rgui_list_push(rgui->selection_buf, "Toggle Fullscreen", RGUI_SETTINGS_TOGGLE_FULLSCREEN, 0);
 #endif
-   rgui_list_push(rgui->selection_buf, "Rotation", RGUI_SETTINGS_VIDEO_ROTATION, 0);
    rgui_list_push(rgui->selection_buf, "Mute Audio", RGUI_SETTINGS_AUDIO_MUTE, 0);
    rgui_list_push(rgui->selection_buf, "Audio Control Rate", RGUI_SETTINGS_AUDIO_CONTROL_RATE, 0);
 #ifdef GEKKO
@@ -1287,6 +1277,7 @@ static void rgui_settings_core_options_populate_entries(rgui_handle_t *rgui)
 static void rgui_settings_shader_manager_populate_entries(rgui_handle_t *rgui)
 {
    rgui_list_clear(rgui->selection_buf);
+   rgui_list_push(rgui->selection_buf, "Rotation", RGUI_SETTINGS_VIDEO_ROTATION, 0);
 #ifdef HAVE_SHADER_MANAGER
    rgui_list_push(rgui->selection_buf, "Apply changes",
          RGUI_SETTINGS_SHADER_APPLY, 0);
@@ -1371,8 +1362,28 @@ static int shader_manager_toggle_setting(rgui_handle_t *rgui, unsigned setting, 
    unsigned dist_shader = setting - RGUI_SETTINGS_SHADER_0;
    unsigned dist_filter = setting - RGUI_SETTINGS_SHADER_0_FILTER;
    unsigned dist_scale  = setting - RGUI_SETTINGS_SHADER_0_SCALE;
+#endif
 
-   if (setting == RGUI_SETTINGS_SHADER_FILTER)
+   if (setting == RGUI_SETTINGS_VIDEO_ROTATION)
+   {
+      if (action == RGUI_ACTION_START)
+      {
+         settings_set(1ULL << S_DEF_AUDIO_CONTROL_RATE);
+         video_set_rotation_func(g_extern.console.screen.orientation);
+      }
+      else if (action == RGUI_ACTION_LEFT)
+      {
+         settings_set(1ULL << S_ROTATION_DECREMENT);
+         video_set_rotation_func(g_extern.console.screen.orientation);
+      }
+      else if (action == RGUI_ACTION_RIGHT)
+      {
+         settings_set(1ULL << S_ROTATION_INCREMENT);
+         video_set_rotation_func(g_extern.console.screen.orientation);
+      }
+   }
+#ifdef HAVE_SHADER_MANAGER
+   else if (setting == RGUI_SETTINGS_SHADER_FILTER)
    {
       switch (action)
       {
@@ -1842,7 +1853,10 @@ static int rgui_settings_iterate(rgui_handle_t *rgui, rgui_action_t action)
 
    rgui_list_get_last(rgui->menu_stack, &dir, &menu_type);
 
-   if (rgui->need_refresh && !(menu_type == RGUI_FILE_DIRECTORY || menu_type_is_shader_browser(menu_type) ||
+   if (rgui->need_refresh && !(menu_type == RGUI_FILE_DIRECTORY ||
+#ifdef HAVE_SHADER_MANAGER
+            menu_type_is_shader_browser(menu_type) ||
+#endif
             menu_type == RGUI_SETTINGS_CORE || menu_type == RGUI_SETTINGS_DISK_APPEND))
    {
       rgui->need_refresh = false;
@@ -1911,10 +1925,12 @@ static bool directory_parse(rgui_handle_t *rgui, const char *directory, unsigned
    const char *exts;
    if (menu_type == RGUI_SETTINGS_CORE)
       exts = EXT_EXECUTABLES;
+#ifdef HAVE_SHADER_MANAGER
    else if (menu_type == RGUI_SETTINGS_SHADER_PRESET)
       exts = "cgp|glslp";
    else if (menu_type_is_shader_browser(menu_type))
       exts = "cg|glsl";
+#endif
    else if (rgui->info.valid_extensions)
       exts = rgui->info.valid_extensions;
    else
@@ -2035,7 +2051,10 @@ int rgui_iterate(rgui_handle_t *rgui)
          unsigned type = 0;
          rgui_list_get_at_offset(rgui->selection_buf, rgui->selection_ptr, &path, &type);
 
-         if (menu_type_is_shader_browser(type) ||
+         if (
+#ifdef HAVE_SHADER_MANAGER
+               menu_type_is_shader_browser(type) ||
+#endif
                type == RGUI_SETTINGS_CORE ||
                type == RGUI_SETTINGS_DISK_APPEND ||
                type == RGUI_FILE_DIRECTORY)
@@ -2175,7 +2194,10 @@ int rgui_iterate(rgui_handle_t *rgui)
    // refresh values in case the stack changed
    rgui_list_get_last(rgui->menu_stack, &dir, &menu_type);
 
-   if (rgui->need_refresh && (menu_type == RGUI_FILE_DIRECTORY || menu_type_is_shader_browser(menu_type) ||
+   if (rgui->need_refresh && (menu_type == RGUI_FILE_DIRECTORY ||
+#ifdef HAVE_SHADER_MANAGER
+            menu_type_is_shader_browser(menu_type) ||
+#endif
             menu_type == RGUI_SETTINGS_CORE || menu_type == RGUI_SETTINGS_DISK_APPEND))
    {
       rgui->need_refresh = false;
