@@ -385,6 +385,8 @@ static void render_text(rgui_handle_t *rgui)
 
    if (menu_type == RGUI_SETTINGS_CORE)
       snprintf(title, sizeof(title), "CORE SELECTION %s", dir);
+   else if (menu_type == RGUI_SETTINGS_DISK_APPEND)
+      snprintf(title, sizeof(title), "DISK APPEND %s", dir);
    else if (menu_type == RGUI_SETTINGS_SHADER_MANAGER)
       strlcpy(title, "SHADER MANAGER", sizeof(title));
    else if (menu_type == RGUI_SETTINGS_CORE_OPTIONS)
@@ -471,7 +473,7 @@ static void render_text(rgui_handle_t *rgui)
       }
       else
 #endif
-      if (menu_type == RGUI_SETTINGS_CORE)
+      if (menu_type == RGUI_SETTINGS_CORE || menu_type == RGUI_SETTINGS_DISK_APPEND)
       {
          if (type == RGUI_FILE_PLAIN)
          {
@@ -574,6 +576,7 @@ static void render_text(rgui_handle_t *rgui)
             case RGUI_SETTINGS_CUSTOM_VIEWPORT:
             case RGUI_SETTINGS_TOGGLE_FULLSCREEN:
             case RGUI_SETTINGS_CORE:
+            case RGUI_SETTINGS_DISK_APPEND:
             case RGUI_SETTINGS_CONTROLLER_1:
             case RGUI_SETTINGS_CONTROLLER_2:
             case RGUI_SETTINGS_CONTROLLER_3:
@@ -1232,7 +1235,10 @@ static void rgui_settings_populate_entries(rgui_handle_t *rgui)
       rgui_list_push(rgui->selection_buf, "Restart Game", RGUI_SETTINGS_RESTART_GAME, 0);
 
       if (g_extern.system.disk_control.get_num_images)
+      {
          rgui_list_push(rgui->selection_buf, "Disk Index", RGUI_SETTINGS_DISK_INDEX, 0);
+         rgui_list_push(rgui->selection_buf, "Disk Image Append", RGUI_SETTINGS_DISK_APPEND, 0);
+      }
    }
 
    rgui_list_push(rgui->selection_buf, "Rewind", RGUI_SETTINGS_REWIND_ENABLE, 0);
@@ -1740,13 +1746,18 @@ static int rgui_settings_iterate(rgui_handle_t *rgui, rgui_action_t action)
    if (action != RGUI_ACTION_REFRESH)
       rgui_list_get_at_offset(rgui->selection_buf, rgui->selection_ptr, &label, &type);
 
-#if defined(HAVE_DYNAMIC)
    if (type == RGUI_SETTINGS_CORE)
+   {
+#if defined(HAVE_DYNAMIC)
       label = rgui->libretro_dir;
 #elif defined(HAVE_LIBRETRO_MANAGEMENT)
-   if (type == RGUI_SETTINGS_CORE)
       label = default_paths.core_dir;
+#else
+      label = ""; // Shouldn't happen ...
 #endif
+   }
+   else if (type == RGUI_SETTINGS_DISK_APPEND)
+      label = rgui->base_path;
 
    const char *dir = NULL;
    unsigned menu_type = 0;
@@ -1789,7 +1800,7 @@ static int rgui_settings_iterate(rgui_handle_t *rgui, rgui_action_t action)
             rgui->selection_ptr = 0;
             rgui->need_refresh = true;
          }
-         else if ((menu_type_is_settings(type) || type == RGUI_SETTINGS_CORE) && action == RGUI_ACTION_OK)
+         else if ((menu_type_is_settings(type) || type == RGUI_SETTINGS_CORE || type == RGUI_SETTINGS_DISK_APPEND) && action == RGUI_ACTION_OK)
          {
             rgui_list_push(rgui->menu_stack, label, type, rgui->selection_ptr);
             rgui->selection_ptr = 0;
@@ -1834,7 +1845,7 @@ static int rgui_settings_iterate(rgui_handle_t *rgui, rgui_action_t action)
    rgui_list_get_last(rgui->menu_stack, &dir, &menu_type);
 
    if (rgui->need_refresh && !(menu_type == RGUI_FILE_DIRECTORY || menu_type_is_shader_browser(menu_type) ||
-            menu_type == RGUI_SETTINGS_CORE))
+            menu_type == RGUI_SETTINGS_CORE || menu_type == RGUI_SETTINGS_DISK_APPEND))
    {
       rgui->need_refresh = false;
       if ((menu_type >= RGUI_SETTINGS_CONTROLLER_1 && menu_type <= RGUI_SETTINGS_CONTROLLER_4))
@@ -2032,6 +2043,7 @@ int rgui_iterate(rgui_handle_t *rgui)
 
          if (menu_type_is_shader_browser(type) ||
                type == RGUI_SETTINGS_CORE ||
+               type == RGUI_SETTINGS_DISK_APPEND ||
                type == RGUI_FILE_DIRECTORY)
          {
             char cat_path[PATH_MAX];
@@ -2103,6 +2115,15 @@ int rgui_iterate(rgui_handle_t *rgui)
                   rgui_list_get_last(rgui->menu_stack, NULL, &type);
                }
             }
+            else if (menu_type == RGUI_SETTINGS_DISK_APPEND)
+            {
+               char image[PATH_MAX];
+               fill_pathname_join(image, dir, path, sizeof(image));
+               rarch_disk_control_append_image(image);
+
+               g_extern.lifecycle_mode_state |= 1ULL << MODE_GAME;
+               ret = -1;
+            }
             else
             {
                fill_pathname_join(g_extern.fullpath, dir, path, sizeof(g_extern.fullpath));
@@ -2151,7 +2172,7 @@ int rgui_iterate(rgui_handle_t *rgui)
    rgui_list_get_last(rgui->menu_stack, &dir, &menu_type);
 
    if (rgui->need_refresh && (menu_type == RGUI_FILE_DIRECTORY || menu_type_is_shader_browser(menu_type) ||
-            menu_type == RGUI_SETTINGS_CORE))
+            menu_type == RGUI_SETTINGS_CORE || menu_type == RGUI_SETTINGS_DISK_APPEND))
    {
       rgui->need_refresh = false;
       rgui_list_clear(rgui->selection_buf);

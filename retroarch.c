@@ -1724,10 +1724,11 @@ static void init_autosave(void)
 
 static void deinit_autosave(void)
 {
-   for (unsigned i = 0; i < sizeof(g_extern.autosave) / sizeof(g_extern.autosave[0]); i++)
+   for (unsigned i = 0; i < ARRAY_SIZE(g_extern.autosave); i++)
    {
       if (g_extern.autosave[i])
          autosave_free(g_extern.autosave[i]);
+      g_extern.autosave[i] = NULL;
    }
 }
 #endif
@@ -2418,6 +2419,48 @@ static void check_cheats(void)
    old_pressed_prev = pressed_prev;
    old_pressed_next = pressed_next;
    old_pressed_toggle = pressed_toggle;
+}
+
+void rarch_disk_control_append_image(const char *path)
+{
+   const struct retro_disk_control_callback *control = &g_extern.system.disk_control;
+   rarch_disk_control_set_eject(true, false);
+
+   control->add_image_index();
+   unsigned new_index = control->get_num_images();
+   if (!new_index)
+      return;
+   new_index--;
+
+   struct retro_game_info info = {0};
+   info.path = path;
+   control->replace_image_index(new_index, &info);
+
+   rarch_disk_control_set_index(new_index);
+
+   char msg[512];
+   snprintf(msg, sizeof(msg), "Appended disk: %s", path);
+   RARCH_LOG("%s\n", msg);
+   msg_queue_clear(g_extern.msg_queue);
+   msg_queue_push(g_extern.msg_queue, msg, 0, 180);
+
+#if defined(HAVE_THREADS) && !defined(RARCH_CONSOLE)
+   deinit_autosave();
+#endif
+
+   // Update paths for our new image.
+   // If we actually use append_image,
+   // we assume that we started out in a single disk case,
+   // and that this way of doing it makes the most sense.
+   set_paths(path);
+   fill_pathnames();
+
+#if defined(HAVE_THREADS) && !defined(RARCH_CONSOLE)
+   init_autosave();
+#endif
+
+   rarch_disk_control_set_eject(false, false);
+
 }
 
 void rarch_disk_control_set_eject(bool new_state, bool log)

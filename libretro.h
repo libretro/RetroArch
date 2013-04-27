@@ -496,7 +496,7 @@ typedef void (*retro_keyboard_event_t)(bool down, unsigned keycode, uint32_t cha
 
 struct retro_keyboard_callback
 {
-    retro_keyboard_event_t callback;
+   retro_keyboard_event_t callback;
 };
 
 // Callbacks for RETRO_ENVIRONMENT_SET_DISK_CONTROL_INTERFACE.
