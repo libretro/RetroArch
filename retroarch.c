@@ -2415,6 +2415,78 @@ static void check_cheats(void)
    old_pressed_toggle = pressed_toggle;
 }
 
+void rarch_disk_control_set_eject(bool new_state, bool log)
+{
+   const struct retro_disk_control_callback *control = &g_extern.system.disk_control;
+   if (!control->get_num_images)
+      return;
+
+   bool error = false;
+   char msg[256];
+   *msg = '\0';
+
+   if (control->set_eject_state(new_state))
+      snprintf(msg, sizeof(msg), "%s virtual disk tray.", new_state ? "Ejected" : "Closed");
+   else
+   {
+      error = true;
+      snprintf(msg, sizeof(msg), "Failed to %s virtual disk tray.", new_state ? "eject" : "close");
+   }
+
+   if (*msg)
+   {
+      if (error)
+         RARCH_ERR("%s\n", msg);
+      else
+         RARCH_LOG("%s\n", msg);
+
+      // Only noise in RGUI.
+      if (log)
+      {
+         msg_queue_clear(g_extern.msg_queue);
+         msg_queue_push(g_extern.msg_queue, msg, 1, 180);
+      }
+   }
+}
+
+void rarch_disk_control_set_index(unsigned next_index)
+{
+   const struct retro_disk_control_callback *control = &g_extern.system.disk_control;
+   if (!control->get_num_images)
+      return;
+
+   bool error = false;
+   char msg[256];
+   *msg = '\0';
+
+   unsigned num_disks = control->get_num_images();
+   if (control->set_image_index(next_index))
+   {
+      if (next_index < num_disks)
+         snprintf(msg, sizeof(msg), "Setting disk %u of %u in tray.", next_index + 1, num_disks);
+      else
+         snprintf(msg, sizeof(msg), "Removed disk from tray.");
+   }
+   else
+   {
+      if (next_index < num_disks)
+         snprintf(msg, sizeof(msg), "Failed to set disk %u of %u.", next_index + 1, num_disks);
+      else
+         snprintf(msg, sizeof(msg), "Failed to remove disk from tray.");
+      error = true;
+   }
+
+   if (*msg)
+   {
+      if (error)
+         RARCH_ERR("%s\n", msg);
+      else
+         RARCH_LOG("%s\n", msg);
+      msg_queue_clear(g_extern.msg_queue);
+      msg_queue_push(g_extern.msg_queue, msg, 1, 180);
+   }
+}
+
 static void check_disk(void)
 {
    const struct retro_disk_control_callback *control = &g_extern.system.disk_control;
@@ -2426,20 +2498,11 @@ static void check_disk(void)
 
    bool pressed_eject = input_key_pressed_func(RARCH_DISK_EJECT_TOGGLE);
    bool pressed_next  = input_key_pressed_func(RARCH_DISK_NEXT);
-   bool error = false;
-   char msg[256];
-   *msg = '\0';
 
    if (pressed_eject && !old_pressed_eject)
    {
       bool new_state = !control->get_eject_state();
-      if (control->set_eject_state(new_state))
-         snprintf(msg, sizeof(msg), "%s virtual disk tray.", new_state ? "Ejected" : "Closed");
-      else
-      {
-         error = true;
-         snprintf(msg, sizeof(msg), "Failed to %s virtual disk tray.", new_state ? "eject" : "close");
-      }
+      rarch_disk_control_set_eject(new_state, true);
    }
    else if (pressed_next && !old_pressed_next)
    {
@@ -2449,37 +2512,10 @@ static void check_disk(void)
       {
          // Use "no disk" state when index == num_disks.
          unsigned next_index = current >= num_disks ? 0 : ((current + 1) % (num_disks + 1));
-         if (control->set_image_index(next_index))
-         {
-            if (next_index < num_disks)
-               snprintf(msg, sizeof(msg), "Setting disk %u of %u in tray.", next_index + 1, num_disks);
-            else
-               snprintf(msg, sizeof(msg), "Removed disk from tray.");
-         }
-         else
-         {
-            if (next_index < num_disks)
-               snprintf(msg, sizeof(msg), "Failed to set disk %u of %u.", next_index + 1, num_disks);
-            else
-               snprintf(msg, sizeof(msg), "Failed to remove disk from tray.");
-            error = true;
-         }
+         rarch_disk_control_set_index(next_index);
       }
       else
-      {
-         snprintf(msg, sizeof(msg), "Got invalid disk index from libretro.");
-         error = true;
-      }
-   }
-
-   if (*msg)
-   {
-      if (error)
-         RARCH_ERR("%s\n", msg);
-      else
-         RARCH_LOG("%s\n", msg);
-      msg_queue_clear(g_extern.msg_queue);
-      msg_queue_push(g_extern.msg_queue, msg, 1, 180);
+         RARCH_ERR("Got invalid disk index from libretro.\n");
    }
 
    old_pressed_eject = pressed_eject;
