@@ -59,22 +59,19 @@ static bool sdl_key_pressed(int key)
    return keymap[sym];
 }
 
-static bool sdl_is_pressed(sdl_input_t *sdl, unsigned port_num, const struct retro_keybind *key)
+static bool sdl_is_pressed(sdl_input_t *sdl, unsigned port_num, const struct retro_keybind *binds, unsigned key)
 {
-   if (sdl_key_pressed(key->key))
+   if (sdl_key_pressed(binds[key].key))
       return true;
 
-   return input_joypad_pressed(sdl->joypad, port_num, key);
+   return input_joypad_pressed(sdl->joypad, port_num, binds, key);
 }
 
 static bool sdl_bind_button_pressed(void *data, int key)
 {
    const struct retro_keybind *binds = g_settings.input.binds[0];
    if (key >= 0 && key < RARCH_BIND_LIST_END)
-   {
-      const struct retro_keybind *bind = &binds[key];
-      return sdl_is_pressed((sdl_input_t*)data, 0, bind);
-   }
+      return sdl_is_pressed((sdl_input_t*)data, 0, binds, key);
    else
       return false;
 }
@@ -84,10 +81,7 @@ static int16_t sdl_joypad_device_state(sdl_input_t *sdl, const struct retro_keyb
 {
    const struct retro_keybind *binds = binds_[port_num];
    if (id < RARCH_BIND_LIST_END)
-   {
-      const struct retro_keybind *bind = &binds[id];
-      return bind->valid && sdl_is_pressed(sdl, port_num, bind);
-   }
+      return binds[id].valid && sdl_is_pressed(sdl, port_num, binds, id);
    else
       return 0;
 }
