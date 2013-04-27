@@ -105,9 +105,7 @@ unsigned RGUI_WIDTH = 320;
 unsigned RGUI_HEIGHT = 240;
 uint16_t menu_framebuf[400 * 240];
 
-#ifdef HAVE_SHADER_MANAGER
 static int shader_manager_toggle_setting(rgui_handle_t *rgui, unsigned setting, rgui_action_t action);
-#endif
 
 static const unsigned rgui_controller_lut[] = {
    RETRO_DEVICE_ID_JOYPAD_UP,
@@ -167,7 +165,7 @@ static bool menu_type_is_settings(unsigned type)
 {
    return type == RGUI_SETTINGS ||
       type == RGUI_SETTINGS_CORE_OPTIONS ||
-      type == RGUI_SETTINGS_SHADER_MANAGER ||
+      type == RGUI_SETTINGS_VIDEO_OPTIONS ||
       (type >= RGUI_SETTINGS_CONTROLLER_1 && type <= RGUI_SETTINGS_CONTROLLER_4);
 }
 
@@ -387,8 +385,8 @@ static void render_text(rgui_handle_t *rgui)
       snprintf(title, sizeof(title), "CORE SELECTION %s", dir);
    else if (menu_type == RGUI_SETTINGS_DISK_APPEND)
       snprintf(title, sizeof(title), "DISK APPEND %s", dir);
-   else if (menu_type == RGUI_SETTINGS_SHADER_MANAGER)
-      strlcpy(title, "SHADER MANAGER", sizeof(title));
+   else if (menu_type == RGUI_SETTINGS_VIDEO_OPTIONS)
+      strlcpy(title, "VIDEO OPTIONS", sizeof(title));
    else if (menu_type == RGUI_SETTINGS_CORE_OPTIONS)
       strlcpy(title, "CORE OPTIONS", sizeof(title));
    else if (menu_type_is_shader_browser(menu_type))
@@ -452,7 +450,6 @@ static void render_text(rgui_handle_t *rgui)
       int w = (menu_type >= RGUI_SETTINGS_CONTROLLER_1 && menu_type <= RGUI_SETTINGS_CONTROLLER_4) ? 26 : 19;
       unsigned port = menu_type - RGUI_SETTINGS_CONTROLLER_1;
       
-#ifdef HAVE_SHADER_MANAGER
       if (type >= RGUI_SETTINGS_SHADER_FILTER &&
             type <= RGUI_SETTINGS_SHADER_LAST)
       {
@@ -468,11 +465,12 @@ static void render_text(rgui_handle_t *rgui)
                   g_settings.video.smooth ? "Linear" : "Nearest");
          else if (type == RGUI_SETTINGS_SHADER_PRESET)
             strlcpy(type_str, "...", sizeof(type_str));
+#ifdef HAVE_SHADER_MANAGER
          else
             shader_manager_get_str(&rgui->shader, type_str, sizeof(type_str), type);
+#endif
       }
       else
-#endif
       if (menu_type == RGUI_SETTINGS_CORE || menu_type == RGUI_SETTINGS_DISK_APPEND)
       {
          if (type == RGUI_FILE_PLAIN)
@@ -571,7 +569,7 @@ static void render_text(rgui_handle_t *rgui)
             }
             case RGUI_SETTINGS_OPEN_FILEBROWSER:
             case RGUI_SETTINGS_CORE_OPTIONS:
-            case RGUI_SETTINGS_SHADER_MANAGER:
+            case RGUI_SETTINGS_VIDEO_OPTIONS:
             case RGUI_SETTINGS_SHADER_PRESET:
             case RGUI_SETTINGS_CUSTOM_VIEWPORT:
             case RGUI_SETTINGS_TOGGLE_FULLSCREEN:
@@ -740,10 +738,8 @@ static int rgui_settings_toggle_setting(rgui_handle_t *rgui, unsigned setting, r
 
    (void)rgui;
 
-#ifdef HAVE_SHADER_MANAGER
    if (setting >= RGUI_SETTINGS_SHADER_FILTER && setting <= RGUI_SETTINGS_SHADER_LAST)
       return shader_manager_toggle_setting(rgui, setting, action);
-#endif
    if (setting >= RGUI_SETTINGS_CORE_OPTION_START)
       return rgui_core_setting_toggle(setting, action);
 
@@ -1220,9 +1216,7 @@ static void rgui_settings_populate_entries(rgui_handle_t *rgui)
 #endif
    rgui_list_push(rgui->selection_buf, "Core Options", RGUI_SETTINGS_CORE_OPTIONS, 0);
    rgui_list_push(rgui->selection_buf, "Load Game", RGUI_SETTINGS_OPEN_FILEBROWSER, 0);
-#ifdef HAVE_SHADER_MANAGER
-   rgui_list_push(rgui->selection_buf, "Shader Manager", RGUI_SETTINGS_SHADER_MANAGER, 0);
-#endif
+   rgui_list_push(rgui->selection_buf, "Video Options", RGUI_SETTINGS_VIDEO_OPTIONS, 0);
 
    if (g_extern.main_is_init && !g_extern.libretro_dummy)
    {
@@ -1290,10 +1284,10 @@ static void rgui_settings_core_options_populate_entries(rgui_handle_t *rgui)
       rgui_list_push(rgui->selection_buf, "No options available.", RGUI_SETTINGS_CORE_OPTION_NONE, 0);
 }
 
-#ifdef HAVE_SHADER_MANAGER
 static void rgui_settings_shader_manager_populate_entries(rgui_handle_t *rgui)
 {
    rgui_list_clear(rgui->selection_buf);
+#ifdef HAVE_SHADER_MANAGER
    rgui_list_push(rgui->selection_buf, "Apply changes",
          RGUI_SETTINGS_SHADER_APPLY, 0);
    rgui_list_push(rgui->selection_buf, "Default filter",
@@ -1319,8 +1313,10 @@ static void rgui_settings_shader_manager_populate_entries(rgui_handle_t *rgui)
       rgui_list_push(rgui->selection_buf, buf,
             RGUI_SETTINGS_SHADER_0_SCALE + 3 * i, 0);
    }
+#endif
 }
 
+#ifdef HAVE_SHADER_MANAGER
 static enum rarch_shader_type shader_manager_get_type(const struct gfx_shader *shader)
 {
    // All shader types must be the same, or we cannot use it.
@@ -1367,9 +1363,11 @@ static void shader_manager_set_preset(enum rarch_shader_type type, const char *p
       g_settings.video.shader_enable = false;
    }
 }
+#endif
 
 static int shader_manager_toggle_setting(rgui_handle_t *rgui, unsigned setting, rgui_action_t action)
 {
+#ifdef HAVE_SHADER_MANAGER
    unsigned dist_shader = setting - RGUI_SETTINGS_SHADER_0;
    unsigned dist_filter = setting - RGUI_SETTINGS_SHADER_0_FILTER;
    unsigned dist_scale  = setting - RGUI_SETTINGS_SHADER_0_SCALE;
@@ -1531,11 +1529,11 @@ static int shader_manager_toggle_setting(rgui_handle_t *rgui, unsigned setting, 
          break;
       }
    }
+#endif
 
    return 0;
 }
 
-#endif
 
 static void rgui_settings_controller_populate_entries(rgui_handle_t *rgui)
 {
@@ -1852,10 +1850,8 @@ static int rgui_settings_iterate(rgui_handle_t *rgui, rgui_action_t action)
          rgui_settings_controller_populate_entries(rgui);
       else if (menu_type == RGUI_SETTINGS_CORE_OPTIONS)
          rgui_settings_core_options_populate_entries(rgui);
-#ifdef HAVE_SHADER_MANAGER
-      else if (menu_type == RGUI_SETTINGS_SHADER_MANAGER)
+      else if (menu_type == RGUI_SETTINGS_VIDEO_OPTIONS)
          rgui_settings_shader_manager_populate_entries(rgui);
-#endif
       else
          rgui_settings_populate_entries(rgui);
    }
@@ -1915,12 +1911,10 @@ static bool directory_parse(rgui_handle_t *rgui, const char *directory, unsigned
    const char *exts;
    if (menu_type == RGUI_SETTINGS_CORE)
       exts = EXT_EXECUTABLES;
-#ifdef HAVE_SHADER_MANAGER
    else if (menu_type == RGUI_SETTINGS_SHADER_PRESET)
       exts = "cgp|glslp";
    else if (menu_type_is_shader_browser(menu_type))
       exts = "cg|glsl";
-#endif
    else if (rgui->info.valid_extensions)
       exts = rgui->info.valid_extensions;
    else
@@ -2079,7 +2073,7 @@ int rgui_iterate(rgui_handle_t *rgui)
                const char *dir = NULL;
                rgui_list_pop(rgui->menu_stack, &rgui->selection_ptr);
                rgui_list_get_last(rgui->menu_stack, &dir, &type);
-               while (type != RGUI_SETTINGS_SHADER_MANAGER)
+               while (type != RGUI_SETTINGS_VIDEO_OPTIONS)
                {
                   rgui_list_pop(rgui->menu_stack, &rgui->selection_ptr);
                   rgui_list_get_last(rgui->menu_stack, &dir, &type);
