@@ -1750,17 +1750,16 @@ bool menu_iterate(void)
       process_input_ret = -1;
    }
 
-   if (!(g_extern.frame_count < g_extern.delay_timer[0]))
-   {
-      bool rmenu_enable = ((state.Gamepad.wButtons & XINPUT_GAMEPAD_LEFT_THUMB) 
-            && (state.Gamepad.wButtons & XINPUT_GAMEPAD_RIGHT_THUMB) && (g_extern.main_is_init));
+   bool rmenu_enable = ((state.Gamepad.wButtons & XINPUT_GAMEPAD_LEFT_THUMB) 
+         && (state.Gamepad.wButtons & XINPUT_GAMEPAD_RIGHT_THUMB) && (g_extern.main_is_init));
 
-      if (g_extern.lifecycle_mode_state & (1ULL << MODE_MENU))
-         if (rmenu_enable)
-         {
-            g_extern.lifecycle_mode_state |= (1ULL << MODE_GAME);
-            process_input_ret = -1;
-         }
+   if (g_extern.lifecycle_mode_state & (1ULL << MODE_MENU))
+   {
+      if (rmenu_enable)
+      {
+         g_extern.lifecycle_mode_state |= (1ULL << MODE_GAME);
+         process_input_ret = -1;
+      }
    }
 
    switch(input_loop)

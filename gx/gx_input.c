@@ -730,15 +730,12 @@ static void gx_input_poll(void *data)
       g_menu = false;
    }
 
-   if (!(g_extern.frame_count < g_extern.delay_timer[0]))
-   {
-      if (*state_p1 & (GX_WIIMOTE_HOME
+   if (*state_p1 & (GX_WIIMOTE_HOME
 #ifdef HW_RVL
-               | GX_CLASSIC_HOME
+            | GX_CLASSIC_HOME
 #endif
-               ))
-         *lifecycle_state |= (1ULL << RARCH_MENU_TOGGLE);
-   }
+            ))
+      *lifecycle_state |= (1ULL << RARCH_MENU_TOGGLE);
 }
 
 static bool gx_input_key_pressed(void *data, int key)
