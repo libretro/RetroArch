@@ -2288,6 +2288,17 @@ int rgui_input_postprocess(void *data, uint64_t old_state)
       g_extern.lifecycle_mode_state &= ~((1ULL << MODE_MENU_INGAME) 
             | (1ULL << MODE_MENU_INGAME_EXIT));
 
+   if (ret < 0)
+   {
+      unsigned type = 0;
+      rgui_list_get_last(rgui->menu_stack, NULL, &type);
+      while (type != RGUI_SETTINGS)
+      {
+         rgui_list_pop(rgui->menu_stack, &rgui->selection_ptr);
+         rgui_list_get_last(rgui->menu_stack, NULL, &type);
+      }
+   }
+
    return ret;
 }
 
