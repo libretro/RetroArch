@@ -1179,10 +1179,8 @@ static void rgui_settings_shader_manager_populate_entries(rgui_handle_t *rgui)
 #ifdef GEKKO
    rgui_list_push(rgui->selection_buf, "Screen Resolution", RGUI_SETTINGS_VIDEO_RESOLUTION, 0);
 #endif
-#ifdef HAVE_SHADER_MANAGER
-   rgui_list_push(rgui->selection_buf, "Default filter", RGUI_SETTINGS_SHADER_FILTER, 0);
-#else
-   rgui_list_push(rgui->selection_buf, "Default filter", RGUI_SETTINGS_VIDEO_FILTER, 0);
+#ifndef HAVE_SHADER_MANAGER
+   rgui_list_push(rgui->selection_buf, "Default Filter", RGUI_SETTINGS_VIDEO_FILTER, 0);
 #endif
 #ifdef HW_RVL
    rgui_list_push(rgui->selection_buf, "VI Trap filtering", RGUI_SETTINGS_VIDEO_SOFT_FILTER, 0);
@@ -1196,9 +1194,10 @@ static void rgui_settings_shader_manager_populate_entries(rgui_handle_t *rgui)
 #endif
    rgui_list_push(rgui->selection_buf, "Rotation", RGUI_SETTINGS_VIDEO_ROTATION, 0);
 #ifdef HAVE_SHADER_MANAGER
-   rgui_list_push(rgui->selection_buf, "Apply shader changes",
+   rgui_list_push(rgui->selection_buf, "Apply Shader Changes",
          RGUI_SETTINGS_SHADER_APPLY, 0);
-   rgui_list_push(rgui->selection_buf, "Load shader preset",
+   rgui_list_push(rgui->selection_buf, "Default Filter", RGUI_SETTINGS_SHADER_FILTER, 0);
+   rgui_list_push(rgui->selection_buf, "Load Shader Preset",
          RGUI_SETTINGS_SHADER_PRESET, 0);
    rgui_list_push(rgui->selection_buf, "Shader passes",
          RGUI_SETTINGS_SHADER_PASSES, 0);
@@ -1211,11 +1210,11 @@ static void rgui_settings_shader_manager_populate_entries(rgui_handle_t *rgui)
       rgui_list_push(rgui->selection_buf, buf,
             RGUI_SETTINGS_SHADER_0 + 3 * i, 0);
 
-      snprintf(buf, sizeof(buf), "Shader #%u filter", i);
+      snprintf(buf, sizeof(buf), "Shader #%u Filter", i);
       rgui_list_push(rgui->selection_buf, buf,
             RGUI_SETTINGS_SHADER_0_FILTER + 3 * i, 0);
 
-      snprintf(buf, sizeof(buf), "Shader #%u scale", i);
+      snprintf(buf, sizeof(buf), "Shader #%u Scale", i);
       rgui_list_push(rgui->selection_buf, buf,
             RGUI_SETTINGS_SHADER_0_SCALE + 3 * i, 0);
    }
