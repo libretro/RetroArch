@@ -217,6 +217,11 @@ struct settings
    {
       char driver[32];
       struct retro_keybind binds[MAX_PLAYERS][RARCH_BIND_LIST_END];
+
+      // Set by autoconfiguration in joypad_autoconfig_dir. Does not override main binds.
+      struct retro_keybind autoconf_binds[MAX_PLAYERS][RARCH_BIND_LIST_END];
+      bool autoconfigured[MAX_PLAYERS];
+
       float axis_threshold;
       int joypad_map[MAX_PLAYERS];
       unsigned device[MAX_PLAYERS];
@@ -236,6 +241,8 @@ struct settings
 
       char overlay[PATH_MAX];
       float overlay_opacity;
+
+      char autoconfig_dir[PATH_MAX];
    } input;
 
    char core_options_path[PATH_MAX];

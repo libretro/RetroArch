@@ -253,7 +253,7 @@ static bool linuxraw_bind_button_pressed(void *data, int key)
 {
    linuxraw_input_t *linuxraw = (linuxraw_input_t*)data;
    return linuxraw_is_pressed(linuxraw, g_settings.input.binds[0], key) ||
-      input_joypad_pressed(linuxraw->joypad, 0, &g_settings.input.binds[0][key]);
+      input_joypad_pressed(linuxraw->joypad, 0, g_settings.input.binds[0], key);
 }
 
 static int16_t linuxraw_input_state(void *data, const struct retro_keybind **binds, unsigned port, unsigned device, unsigned index, unsigned id)
@@ -264,7 +264,7 @@ static int16_t linuxraw_input_state(void *data, const struct retro_keybind **bin
    {
       case RETRO_DEVICE_JOYPAD:
          return linuxraw_is_pressed(linuxraw, binds[port], id) ||
-            input_joypad_pressed(linuxraw->joypad, port, &binds[port][id]);
+            input_joypad_pressed(linuxraw->joypad, port, binds[port], id);
 
       case RETRO_DEVICE_ANALOG:
          return input_joypad_analog(linuxraw->joypad, port, index, id, binds[port]);

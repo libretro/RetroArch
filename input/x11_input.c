@@ -89,7 +89,7 @@ static bool x_bind_button_pressed(void *data, int key)
 {
    x11_input_t *x11 = (x11_input_t*)data;
    return x_is_pressed(x11, g_settings.input.binds[0], key) ||
-      input_joypad_pressed(x11->joypad, 0, &g_settings.input.binds[0][key]);
+      input_joypad_pressed(x11->joypad, 0, g_settings.input.binds[0], key);
 }
 
 static int16_t x_mouse_state(x11_input_t *x11, unsigned id)
@@ -176,7 +176,7 @@ static int16_t x_input_state(void *data, const struct retro_keybind **binds, uns
    {
       case RETRO_DEVICE_JOYPAD:
          return x_is_pressed(x11, binds[port], id) ||
-            input_joypad_pressed(x11->joypad, port, &binds[port][id]);
+            input_joypad_pressed(x11->joypad, port, binds[port], id);
 
       case RETRO_DEVICE_KEYBOARD:
          return x_key_pressed(x11, id);

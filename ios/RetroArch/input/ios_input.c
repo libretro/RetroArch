@@ -65,9 +65,9 @@ static bool ios_key_pressed(enum retro_key key)
    return false;
 }
 
-static bool ios_is_pressed(unsigned port_num, const struct retro_keybind *key)
+static bool ios_is_pressed(unsigned port_num, const struct retro_keybind *binds, unsigned key)
 {
-   return ios_key_pressed(key->key) || input_joypad_pressed(g_joydriver, port_num, key);
+   return ios_key_pressed(binds[key].key) || input_joypad_pressed(g_joydriver, port_num, binds, key);
 }
 
 // Exported input driver
@@ -107,7 +107,7 @@ static int16_t ios_input_state(void *data, const struct retro_keybind **binds, u
    switch (device)
    {
       case RETRO_DEVICE_JOYPAD:
-         return (id < RARCH_BIND_LIST_END) ? ios_is_pressed(port, &binds[port][id]) : false;
+         return (id < RARCH_BIND_LIST_END) ? ios_is_pressed(port, binds[port], id) : false;
          
       case RETRO_DEVICE_ANALOG:
          return input_joypad_analog(g_joydriver, port, index, id, binds[port]);
@@ -143,7 +143,7 @@ static int16_t ios_input_state(void *data, const struct retro_keybind **binds, u
 static bool ios_bind_button_pressed(void *data, int key)
 {
    const struct retro_keybind *binds = g_settings.input.binds[0];
-   return (key >= 0 && key < RARCH_BIND_LIST_END) ? ios_is_pressed(0, &binds[key]) : false;
+   return (key >= 0 && key < RARCH_BIND_LIST_END) ? ios_is_pressed(0, binds, key) : false;
 }
 
 static void ios_input_free_input(void *data)
