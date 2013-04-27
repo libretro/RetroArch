@@ -475,6 +475,28 @@ static void render_text(rgui_handle_t *rgui)
          if (type == RGUI_SETTINGS_VIDEO_ROTATION)
             strlcpy(type_str, rotation_lut[g_extern.console.screen.orientation],
                   sizeof(type_str));
+         else if (type == RGUI_SETTINGS_VIDEO_SOFT_FILTER)
+            snprintf(type_str, sizeof(type_str), (g_extern.lifecycle_mode_state & (1ULL << MODE_VIDEO_SOFT_FILTER_ENABLE)) ? "ON" : "OFF");
+         else if (type == RGUI_SETTINGS_VIDEO_FILTER)
+         {
+            if (g_settings.video.smooth)
+               strlcpy(type_str, "Bilinear filtering", sizeof(type_str));
+            else
+               strlcpy(type_str, "Point filtering", sizeof(type_str));
+         }
+         else if (type == RGUI_SETTINGS_VIDEO_GAMMA)
+            snprintf(type_str, sizeof(type_str), "%d", g_extern.console.screen.gamma_correction);
+         else if (type == RGUI_SETTINGS_VIDEO_INTEGER_SCALE)
+            strlcpy(type_str, g_settings.video.scale_integer ? "ON" : "OFF", sizeof(type_str));
+         else if (type == RGUI_SETTINGS_VIDEO_ASPECT_RATIO)
+            strlcpy(type_str, aspectratio_lut[g_settings.video.aspect_ratio_idx].name, sizeof(type_str));
+         else if ((type == RGUI_SETTINGS_CUSTOM_VIEWPORT) ||
+            (type == RGUI_SETTINGS_TOGGLE_FULLSCREEN))
+               strlcpy(type_str, "...", sizeof(type_str));
+   #ifdef GEKKO
+         else if (type == RGUI_SETTINGS_VIDEO_RESOLUTION)
+            strlcpy(type_str, gx_get_video_mode(), sizeof(type_str));
+   #endif
 #ifdef HAVE_SHADER_MANAGER
          else
             shader_manager_get_str(&rgui->shader, type_str, sizeof(type_str), type);
@@ -521,29 +543,6 @@ static void render_text(rgui_handle_t *rgui)
             case RGUI_SETTINGS_SAVESTATE_LOAD:
                snprintf(type_str, sizeof(type_str), "%d", g_extern.state_slot);
                break;
-            case RGUI_SETTINGS_VIDEO_FILTER:
-               if (g_settings.video.smooth)
-                  strlcpy(type_str, "Bilinear filtering", sizeof(type_str));
-               else
-                  strlcpy(type_str, "Point filtering", sizeof(type_str));
-               break;
-            case RGUI_SETTINGS_VIDEO_SOFT_FILTER:
-               snprintf(type_str, sizeof(type_str), (g_extern.lifecycle_mode_state & (1ULL << MODE_VIDEO_SOFT_FILTER_ENABLE)) ? "ON" : "OFF");
-               break;
-   #ifdef GEKKO
-            case RGUI_SETTINGS_VIDEO_RESOLUTION:
-               strlcpy(type_str, gx_get_video_mode(), sizeof(type_str));
-               break;
-   #endif
-            case RGUI_SETTINGS_VIDEO_GAMMA:
-               snprintf(type_str, sizeof(type_str), "%d", g_extern.console.screen.gamma_correction);
-               break;
-            case RGUI_SETTINGS_VIDEO_INTEGER_SCALE:
-               strlcpy(type_str, g_settings.video.scale_integer ? "ON" : "OFF", sizeof(type_str));
-               break;
-            case RGUI_SETTINGS_VIDEO_ASPECT_RATIO:
-               strlcpy(type_str, aspectratio_lut[g_settings.video.aspect_ratio_idx].name, sizeof(type_str));
-               break;
             case RGUI_SETTINGS_AUDIO_MUTE:
                if (g_extern.audio_data.mute)
                   strlcpy(type_str, "ON", sizeof(type_str));
@@ -579,8 +578,6 @@ static void render_text(rgui_handle_t *rgui)
 #ifdef HAVE_SHADER_MANAGER
             case RGUI_SETTINGS_SHADER_PRESET:
 #endif
-            case RGUI_SETTINGS_CUSTOM_VIEWPORT:
-            case RGUI_SETTINGS_TOGGLE_FULLSCREEN:
             case RGUI_SETTINGS_CORE:
             case RGUI_SETTINGS_DISK_APPEND:
             case RGUI_SETTINGS_CONTROLLER_1:
@@ -833,108 +830,6 @@ static int rgui_settings_toggle_setting(rgui_handle_t *rgui, unsigned setting, r
             return -1;
          }
          break;
-      case RGUI_SETTINGS_VIDEO_FILTER:
-         if (action == RGUI_ACTION_START)
-            settings_set(1ULL << S_DEF_HW_TEXTURE_FILTER);
-         else
-            settings_set(1ULL << S_HW_TEXTURE_FILTER);
-
-         if (driver.video_poke->set_filtering)
-            driver.video_poke->set_filtering(driver.video_data, 1, g_settings.video.smooth);
-         break;
-#ifdef HW_RVL
-      case RGUI_SETTINGS_VIDEO_SOFT_FILTER:
-         {
-            if (g_extern.lifecycle_mode_state & (1ULL << MODE_VIDEO_SOFT_FILTER_ENABLE))
-               g_extern.lifecycle_mode_state &= ~(1ULL << MODE_VIDEO_SOFT_FILTER_ENABLE);
-            else
-               g_extern.lifecycle_mode_state |= (1ULL << MODE_VIDEO_SOFT_FILTER_ENABLE);
-
-            if (driver.video_poke->apply_state_changes)
-               driver.video_poke->apply_state_changes(driver.video_data);
-         }
-         break;
-#endif
-#ifdef GEKKO
-      case RGUI_SETTINGS_VIDEO_RESOLUTION:
-         if (action == RGUI_ACTION_LEFT)
-         {
-            if(rgui_current_gx_resolution > 0)
-            {
-               rgui_current_gx_resolution--;
-               gx_set_video_mode(rgui_gx_resolutions[rgui_current_gx_resolution][0], rgui_gx_resolutions[rgui_current_gx_resolution][1]);
-            }
-         }
-         else if (action == RGUI_ACTION_RIGHT)
-         {
-            if(rgui_current_gx_resolution < GX_RESOLUTIONS_LAST - 1)
-            {
-#ifdef HW_RVL
-               if ((rgui_current_gx_resolution + 1) > GX_RESOLUTIONS_640_480)
-                  if (CONF_GetVideo() != CONF_VIDEO_PAL)
-                     return 0;
-#endif
-
-               rgui_current_gx_resolution++;
-               gx_set_video_mode(rgui_gx_resolutions[rgui_current_gx_resolution][0], rgui_gx_resolutions[rgui_current_gx_resolution][1]);
-            }
-         }
-         break;
-#endif
-      case RGUI_SETTINGS_VIDEO_GAMMA:
-         if (action == RGUI_ACTION_START)
-         {
-            g_extern.console.screen.gamma_correction = 0;
-            if (driver.video_poke->apply_state_changes)
-               driver.video_poke->apply_state_changes(driver.video_data);
-         }
-         else if (action == RGUI_ACTION_LEFT)
-         {
-            if(g_extern.console.screen.gamma_correction > 0)
-            {
-               g_extern.console.screen.gamma_correction--;
-               if (driver.video_poke->apply_state_changes)
-                  driver.video_poke->apply_state_changes(driver.video_data);
-            }
-         }
-         else if (action == RGUI_ACTION_RIGHT)
-         {
-            if(g_extern.console.screen.gamma_correction < MAX_GAMMA_SETTING)
-            {
-               g_extern.console.screen.gamma_correction++;
-               if (driver.video_poke->apply_state_changes)
-                  driver.video_poke->apply_state_changes(driver.video_data);
-            }
-         }
-         break;
-      case RGUI_SETTINGS_VIDEO_INTEGER_SCALE:
-         if (action == RGUI_ACTION_START)
-            settings_set(1ULL << S_DEF_SCALE_INTEGER);
-         else if (action == RGUI_ACTION_LEFT ||
-               action == RGUI_ACTION_RIGHT ||
-               action == RGUI_ACTION_OK)
-            settings_set(1ULL << S_SCALE_INTEGER_TOGGLE);
-
-         if (driver.video_poke->apply_state_changes)
-            driver.video_poke->apply_state_changes(driver.video_data);
-         break;
-      case RGUI_SETTINGS_VIDEO_ASPECT_RATIO:
-         if (action == RGUI_ACTION_START)
-            settings_set(1ULL << S_DEF_ASPECT_RATIO);
-         else if (action == RGUI_ACTION_LEFT)
-            settings_set(1ULL << S_ASPECT_RATIO_DECREMENT);
-         else if (action == RGUI_ACTION_RIGHT)
-            settings_set(1ULL << S_ASPECT_RATIO_INCREMENT);
-
-         if (driver.video_poke->set_aspect_ratio)
-            driver.video_poke->set_aspect_ratio(driver.video_data, g_settings.video.aspect_ratio_idx);
-         break;
-#ifndef RARCH_PERFORMANCE_MODE
-      case RGUI_SETTINGS_TOGGLE_FULLSCREEN:
-         if (action == RGUI_ACTION_OK)
-            rarch_set_fullscreen(!g_settings.video.fullscreen);
-         break;
-#endif
       case RGUI_SETTINGS_AUDIO_MUTE:
          if (action == RGUI_ACTION_START)
             settings_set(1ULL << S_DEF_AUDIO_MUTE);
@@ -1228,20 +1123,6 @@ static void rgui_settings_populate_entries(rgui_handle_t *rgui)
 
    rgui_list_push(rgui->selection_buf, "Rewind", RGUI_SETTINGS_REWIND_ENABLE, 0);
    rgui_list_push(rgui->selection_buf, "Rewind Granularity", RGUI_SETTINGS_REWIND_GRANULARITY, 0);
-#ifdef HW_RVL
-   rgui_list_push(rgui->selection_buf, "VI Trap filtering", RGUI_SETTINGS_VIDEO_SOFT_FILTER, 0);
-#endif
-#ifdef GEKKO
-   rgui_list_push(rgui->selection_buf, "Hardware filtering", RGUI_SETTINGS_VIDEO_FILTER, 0);
-   rgui_list_push(rgui->selection_buf, "Screen Resolution", RGUI_SETTINGS_VIDEO_RESOLUTION, 0);
-   rgui_list_push(rgui->selection_buf, "Gamma", RGUI_SETTINGS_VIDEO_GAMMA, 0);
-#endif
-   rgui_list_push(rgui->selection_buf, "Integer Scale", RGUI_SETTINGS_VIDEO_INTEGER_SCALE, 0);
-   rgui_list_push(rgui->selection_buf, "Aspect Ratio", RGUI_SETTINGS_VIDEO_ASPECT_RATIO, 0);
-   rgui_list_push(rgui->selection_buf, "Custom Ratio", RGUI_SETTINGS_CUSTOM_VIEWPORT, 0);
-#ifndef RARCH_PERFORMANCE_MODE
-   rgui_list_push(rgui->selection_buf, "Toggle Fullscreen", RGUI_SETTINGS_TOGGLE_FULLSCREEN, 0);
-#endif
    rgui_list_push(rgui->selection_buf, "Mute Audio", RGUI_SETTINGS_AUDIO_MUTE, 0);
    rgui_list_push(rgui->selection_buf, "Audio Control Rate", RGUI_SETTINGS_AUDIO_CONTROL_RATE, 0);
 #ifdef GEKKO
@@ -1277,12 +1158,28 @@ static void rgui_settings_core_options_populate_entries(rgui_handle_t *rgui)
 static void rgui_settings_shader_manager_populate_entries(rgui_handle_t *rgui)
 {
    rgui_list_clear(rgui->selection_buf);
+#ifdef GEKKO
+   rgui_list_push(rgui->selection_buf, "Screen Resolution", RGUI_SETTINGS_VIDEO_RESOLUTION, 0);
+#endif
+#ifdef HAVE_SHADER_MANAGER
+   rgui_list_push(rgui->selection_buf, "Default filter", RGUI_SETTINGS_SHADER_FILTER, 0);
+#else
+   rgui_list_push(rgui->selection_buf, "Default filter", RGUI_SETTINGS_VIDEO_FILTER, 0);
+#endif
+#ifdef HW_RVL
+   rgui_list_push(rgui->selection_buf, "VI Trap filtering", RGUI_SETTINGS_VIDEO_SOFT_FILTER, 0);
+   rgui_list_push(rgui->selection_buf, "Gamma", RGUI_SETTINGS_VIDEO_GAMMA, 0);
+#endif
+   rgui_list_push(rgui->selection_buf, "Integer Scale", RGUI_SETTINGS_VIDEO_INTEGER_SCALE, 0);
+   rgui_list_push(rgui->selection_buf, "Aspect Ratio", RGUI_SETTINGS_VIDEO_ASPECT_RATIO, 0);
+   rgui_list_push(rgui->selection_buf, "Custom Ratio", RGUI_SETTINGS_CUSTOM_VIEWPORT, 0);
+#ifndef RARCH_PERFORMANCE_MODE
+   rgui_list_push(rgui->selection_buf, "Toggle Fullscreen", RGUI_SETTINGS_TOGGLE_FULLSCREEN, 0);
+#endif
    rgui_list_push(rgui->selection_buf, "Rotation", RGUI_SETTINGS_VIDEO_ROTATION, 0);
 #ifdef HAVE_SHADER_MANAGER
-   rgui_list_push(rgui->selection_buf, "Apply changes",
+   rgui_list_push(rgui->selection_buf, "Apply shader changes",
          RGUI_SETTINGS_SHADER_APPLY, 0);
-   rgui_list_push(rgui->selection_buf, "Default filter",
-         RGUI_SETTINGS_SHADER_FILTER, 0);
    rgui_list_push(rgui->selection_buf, "Load shader preset",
          RGUI_SETTINGS_SHADER_PRESET, 0);
    rgui_list_push(rgui->selection_buf, "Shader passes",
@@ -1382,6 +1279,111 @@ static int shader_manager_toggle_setting(rgui_handle_t *rgui, unsigned setting, 
          video_set_rotation_func(g_extern.console.screen.orientation);
       }
    }
+   else if (setting == RGUI_SETTINGS_VIDEO_FILTER)
+   {
+      if (action == RGUI_ACTION_START)
+         settings_set(1ULL << S_DEF_HW_TEXTURE_FILTER);
+      else
+         settings_set(1ULL << S_HW_TEXTURE_FILTER);
+
+      if (driver.video_poke->set_filtering)
+         driver.video_poke->set_filtering(driver.video_data, 1, g_settings.video.smooth);
+   }
+   else if (setting == RGUI_SETTINGS_VIDEO_GAMMA)
+   {
+      if (action == RGUI_ACTION_START)
+      {
+         g_extern.console.screen.gamma_correction = 0;
+         if (driver.video_poke->apply_state_changes)
+            driver.video_poke->apply_state_changes(driver.video_data);
+      }
+      else if (action == RGUI_ACTION_LEFT)
+      {
+         if(g_extern.console.screen.gamma_correction > 0)
+         {
+            g_extern.console.screen.gamma_correction--;
+            if (driver.video_poke->apply_state_changes)
+               driver.video_poke->apply_state_changes(driver.video_data);
+         }
+      }
+      else if (action == RGUI_ACTION_RIGHT)
+      {
+         if(g_extern.console.screen.gamma_correction < MAX_GAMMA_SETTING)
+         {
+            g_extern.console.screen.gamma_correction++;
+            if (driver.video_poke->apply_state_changes)
+               driver.video_poke->apply_state_changes(driver.video_data);
+         }
+      }
+   }
+   else if (setting == RGUI_SETTINGS_VIDEO_INTEGER_SCALE)
+   {
+      if (action == RGUI_ACTION_START)
+         settings_set(1ULL << S_DEF_SCALE_INTEGER);
+      else if (action == RGUI_ACTION_LEFT ||
+            action == RGUI_ACTION_RIGHT ||
+            action == RGUI_ACTION_OK)
+         settings_set(1ULL << S_SCALE_INTEGER_TOGGLE);
+
+      if (driver.video_poke->apply_state_changes)
+         driver.video_poke->apply_state_changes(driver.video_data);
+   }
+   else if (setting == RGUI_SETTINGS_VIDEO_ASPECT_RATIO)
+   {
+      if (action == RGUI_ACTION_START)
+         settings_set(1ULL << S_DEF_ASPECT_RATIO);
+      else if (action == RGUI_ACTION_LEFT)
+         settings_set(1ULL << S_ASPECT_RATIO_DECREMENT);
+      else if (action == RGUI_ACTION_RIGHT)
+         settings_set(1ULL << S_ASPECT_RATIO_INCREMENT);
+
+      if (driver.video_poke->set_aspect_ratio)
+         driver.video_poke->set_aspect_ratio(driver.video_data, g_settings.video.aspect_ratio_idx);
+   }
+#ifndef RARCH_PERFORMANCE_MODE
+   else if (setting == RGUI_SETTINGS_TOGGLE_FULLSCREEN)
+   {
+      if (action == RGUI_ACTION_OK)
+         rarch_set_fullscreen(!g_settings.video.fullscreen);
+   }
+#endif
+#ifdef HW_RVL
+   else if (setting == RGUI_SETTINGS_VIDEO_RESOLUTION)
+   {
+      if (action == RGUI_ACTION_LEFT)
+      {
+         if(rgui_current_gx_resolution > 0)
+         {
+            rgui_current_gx_resolution--;
+            gx_set_video_mode(rgui_gx_resolutions[rgui_current_gx_resolution][0], rgui_gx_resolutions[rgui_current_gx_resolution][1]);
+         }
+      }
+      else if (action == RGUI_ACTION_RIGHT)
+      {
+         if(rgui_current_gx_resolution < GX_RESOLUTIONS_LAST - 1)
+         {
+#ifdef HW_RVL
+            if ((rgui_current_gx_resolution + 1) > GX_RESOLUTIONS_640_480)
+               if (CONF_GetVideo() != CONF_VIDEO_PAL)
+                  return 0;
+#endif
+
+            rgui_current_gx_resolution++;
+            gx_set_video_mode(rgui_gx_resolutions[rgui_current_gx_resolution][0], rgui_gx_resolutions[rgui_current_gx_resolution][1]);
+         }
+      }
+   }
+   else if (setting == RGUI_SETTINGS_VIDEO_SOFT_FILTER)
+   {
+      if (g_extern.lifecycle_mode_state & (1ULL << MODE_VIDEO_SOFT_FILTER_ENABLE))
+         g_extern.lifecycle_mode_state &= ~(1ULL << MODE_VIDEO_SOFT_FILTER_ENABLE);
+      else
+         g_extern.lifecycle_mode_state |= (1ULL << MODE_VIDEO_SOFT_FILTER_ENABLE);
+
+      if (driver.video_poke->apply_state_changes)
+         driver.video_poke->apply_state_changes(driver.video_data);
+   }
+#endif
 #ifdef HAVE_SHADER_MANAGER
    else if (setting == RGUI_SETTINGS_SHADER_FILTER)
    {
