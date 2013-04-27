@@ -73,7 +73,7 @@ void rom_history_push(rom_history_t *hist,
          // Seen it before, bump to top.
          struct rom_history_entry tmp = hist->entries[i];
          memmove(hist->entries + 1, hist->entries,
-               (i - 1) * sizeof(struct rom_history_entry));
+               i * sizeof(struct rom_history_entry));
          hist->entries[0] = tmp;
          return;
       }

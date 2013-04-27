@@ -527,6 +527,11 @@ static void render_text(rgui_handle_t *rgui)
             w = 5;
          }
       }
+      else if (menu_type == RGUI_SETTINGS_OPEN_HISTORY)
+      {
+         *type_str = '\0';
+         w = 0;
+      }
       else if (type >= RGUI_SETTINGS_CORE_OPTION_START)
          strlcpy(type_str, core_option_get_val(g_extern.system.core_options, type - RGUI_SETTINGS_CORE_OPTION_START), sizeof(type_str));
       else
