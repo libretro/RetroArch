@@ -310,13 +310,7 @@ struct global
    bool video_active;
    bool force_fullscreen;
 
-   bool disconnect_device[MAX_PLAYERS];
-   bool has_mouse[MAX_PLAYERS];
-   bool has_dualanalog[MAX_PLAYERS];
-   bool has_scope;
-   bool has_justifier;
-   bool has_justifiers;
-   bool has_multitap;
+   unsigned libretro_device[MAX_PLAYERS];
 
    bool rom_file_temporary;
    char last_rom[PATH_MAX];

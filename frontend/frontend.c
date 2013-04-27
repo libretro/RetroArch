@@ -36,6 +36,7 @@ int main(int argc, char *argv[])
    return rarch_main(argc, argv);
 #else
 
+   rarch_main_clear_state();
    rarch_init_msg_queue();
 
    int init_ret;

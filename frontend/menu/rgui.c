@@ -584,6 +584,25 @@ static void render_text(rgui_handle_t *rgui)
                   strlcpy(type_str, "Disabled", sizeof(type_str));
                break;
             }
+            case RGUI_SETTINGS_BIND_DEVICE_TYPE:
+            {
+               const char *name;
+               switch (g_extern.libretro_device[port])
+               {
+                  case RETRO_DEVICE_NONE: name = "None"; break;
+                  case RETRO_DEVICE_JOYPAD: name = "Joypad"; break;
+                  case RETRO_DEVICE_ANALOG: name = "Joypad w/ Analog"; break;
+                  case RETRO_DEVICE_JOYPAD_MULTITAP: name = "Multitap"; break;
+                  case RETRO_DEVICE_MOUSE: name = "Mouse"; break;
+                  case RETRO_DEVICE_LIGHTGUN_JUSTIFIER: name = "Justifier"; break;
+                  case RETRO_DEVICE_LIGHTGUN_JUSTIFIERS: name = "Justifiers"; break;
+                  case RETRO_DEVICE_LIGHTGUN_SUPER_SCOPE: name = "SuperScope"; break;
+                  default: name = "Unknown"; break;
+               }
+
+               strlcpy(type_str, name, sizeof(type_str));
+               break;
+            }
             case RGUI_SETTINGS_BIND_DPAD_EMULATION:
                switch (g_settings.input.dpad_emulation[port])
                {
@@ -1427,6 +1446,7 @@ static void rgui_settings_controller_populate_entries(rgui_handle_t *rgui)
 {
    rgui_list_clear(rgui->selection_buf);
    rgui_list_push(rgui->selection_buf, "Device", RGUI_SETTINGS_BIND_DEVICE, 0);
+   rgui_list_push(rgui->selection_buf, "Device Type", RGUI_SETTINGS_BIND_DEVICE_TYPE, 0);
 
    if (driver.input && driver.input->set_keybinds)
    {

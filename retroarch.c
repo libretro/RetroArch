@@ -905,15 +905,15 @@ static void parse_input(int argc, char *argv[])
             exit(0);
 
          case '4':
-            g_extern.has_multitap = true;
+            g_extern.libretro_device[1] = RETRO_DEVICE_JOYPAD_MULTITAP;
             break;
 
          case 'j':
-            g_extern.has_justifier = true;
+            g_extern.libretro_device[1] = RETRO_DEVICE_LIGHTGUN_JUSTIFIER;
             break;
 
          case 'J':
-            g_extern.has_justifiers = true;
+            g_extern.libretro_device[1] = RETRO_DEVICE_LIGHTGUN_JUSTIFIERS;
             break;
 
          case 'A':
@@ -924,7 +924,7 @@ static void parse_input(int argc, char *argv[])
                print_help();
                rarch_fail(1, "parse_input()");
             }
-            g_extern.has_dualanalog[port - 1] = true;
+            g_extern.libretro_device[port - 1] = RETRO_DEVICE_ANALOG;
             break;
 
          case 's':
@@ -978,7 +978,7 @@ static void parse_input(int argc, char *argv[])
                print_help();
                rarch_fail(1, "parse_input()");
             }
-            g_extern.has_mouse[port - 1] = true;
+            g_extern.libretro_device[port - 1] = RETRO_DEVICE_MOUSE;
             break;
 
          case 'N':
@@ -989,11 +989,11 @@ static void parse_input(int argc, char *argv[])
                print_help();
                rarch_fail(1, "parse_input()");
             }
-            g_extern.disconnect_device[port - 1] = true;
+            g_extern.libretro_device[port - 1] = RETRO_DEVICE_NONE;
             break;
 
          case 'p':
-            g_extern.has_scope = true;
+            g_extern.libretro_device[1] = RETRO_DEVICE_LIGHTGUN_SUPER_SCOPE;
             break;
 
          case 'c':
@@ -1190,42 +1190,47 @@ static void init_controllers(void)
 {
    for (unsigned i = 0; i < MAX_PLAYERS; i++)
    {
-      if (g_extern.disconnect_device[i])
-      {
-         RARCH_LOG("Disconnecting device from port %u.\n", i + 1);
-         pretro_set_controller_port_device(i, RETRO_DEVICE_NONE);
-      }
-      else if (g_extern.has_dualanalog[i])
-      {
-         RARCH_LOG("Connecting dualanalog to port %u.\n", i + 1);
-         pretro_set_controller_port_device(i, RETRO_DEVICE_ANALOG);
-      }
-      else if (g_extern.has_mouse[i])
-      {
-         RARCH_LOG("Connecting mouse to port %u.\n", i + 1);
-         pretro_set_controller_port_device(i, RETRO_DEVICE_MOUSE);
-      }
-   }
+      unsigned device = g_extern.libretro_device[i];
 
-   if (g_extern.has_justifier)
-   {
-      RARCH_LOG("Connecting Justifier to port 2.\n");
-      pretro_set_controller_port_device(1, RETRO_DEVICE_LIGHTGUN_JUSTIFIER);
-   }
-   else if (g_extern.has_justifiers)
-   {
-      RARCH_LOG("Connecting Justifiers to port 2.\n");
-      pretro_set_controller_port_device(1, RETRO_DEVICE_LIGHTGUN_JUSTIFIERS);
-   }
-   else if (g_extern.has_multitap)
-   {
-      RARCH_LOG("Connecting Multitap to port 2.\n");
-      pretro_set_controller_port_device(1, RETRO_DEVICE_JOYPAD_MULTITAP);
-   }
-   else if (g_extern.has_scope)
-   {
-      RARCH_LOG("Connecting scope to port 2.\n");
-      pretro_set_controller_port_device(1, RETRO_DEVICE_LIGHTGUN_SUPER_SCOPE);
+      // This is default, don't bother.
+      if (device == RETRO_DEVICE_JOYPAD)
+         continue;
+
+      pretro_set_controller_port_device(i, device);
+
+      switch (device)
+      {
+         case RETRO_DEVICE_NONE:
+            RARCH_LOG("Disconnecting device from port %u.\n", i + 1);
+            break;
+
+         case RETRO_DEVICE_ANALOG:
+            RARCH_LOG("Connecting dualanalog to port %u.\n", i + 1);
+            break;
+
+         case RETRO_DEVICE_MOUSE:
+            RARCH_LOG("Connecting mouse to port %u.\n", i + 1);
+            break;
+
+         case RETRO_DEVICE_LIGHTGUN_JUSTIFIER:
+            RARCH_LOG("Connecting Justifier to port %u.\n", i + 1);
+            break;
+
+         case RETRO_DEVICE_LIGHTGUN_JUSTIFIERS:
+            RARCH_LOG("Connecting Justifiers to port %u.\n", i + 1);
+            break;
+
+         case RETRO_DEVICE_JOYPAD_MULTITAP:
+            RARCH_LOG("Connecting Multitap to port %u.\n", i + 1);
+            break;
+
+         case RETRO_DEVICE_LIGHTGUN_SUPER_SCOPE:
+            RARCH_LOG("Connecting scope to port %u.\n", i + 1);
+            break;
+
+         default:
+            break;
+      }
    }
 }
 
@@ -2744,6 +2749,9 @@ static void init_state(void)
    g_extern.video_active = true;
    g_extern.audio_active = true;
    g_extern.game_type = RARCH_CART_NORMAL;
+
+   for (unsigned i = 0; i < MAX_PLAYERS; i++)
+      g_extern.libretro_device[i] = RETRO_DEVICE_JOYPAD;
 }
 
 void rarch_main_clear_state(void)
