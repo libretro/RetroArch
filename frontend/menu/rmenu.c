@@ -1624,6 +1624,12 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
             return 0;
          }
          break;
+      case INGAME_MENU_SETTINGS:
+         if (input & (1ULL << DEVICE_NAV_B))
+         {
+            menu_stack_push(GENERAL_VIDEO_MENU, false);
+         }
+         break;
       case INGAME_MENU_RESET:
          if (input & (1ULL << DEVICE_NAV_B))
          {
@@ -2316,6 +2322,11 @@ static int select_setting(void *data, uint64_t input)
             strlcpy(setting_text, "", sizeof(setting_text));
             strlcpy(comment, "Choose another libretro core.", sizeof(comment));
             break;
+         case INGAME_MENU_SETTINGS:
+            strlcpy(text, "Settings...", sizeof(text));
+            strlcpy(setting_text, "", sizeof(setting_text));
+            strlcpy(comment, "Change RetroArch settings.", sizeof(comment));
+            break;
 #ifdef HAVE_MULTIMAN
          case INGAME_MENU_RETURN_TO_MULTIMAN:
             strlcpy(text, "Return to multiMAN", sizeof(text));
@@ -2537,9 +2548,7 @@ static int select_rom(void *data, uint64_t input)
 
    filebrowser_update(rgui->browser, input, rgui->info.valid_extensions);
 
-   if (input & (1ULL << DEVICE_NAV_SELECT))
-      menu_stack_push(GENERAL_VIDEO_MENU, false);
-   else if (input & (1ULL << DEVICE_NAV_B))
+   if (input & (1ULL << DEVICE_NAV_B))
    {
       if (filebrowser_iterate(rgui->browser, FILEBROWSER_ACTION_PATH_ISDIR))
       {
@@ -2688,7 +2697,6 @@ static int ingame_menu_resize(void *data, uint64_t input)
       struct platform_bind key_label_l2 = {0};
       struct platform_bind key_label_r1 = {0};
       struct platform_bind key_label_r2 = {0};
-      struct platform_bind key_label_select = {0};
       struct platform_bind key_label_dpad_left = {0};
       struct platform_bind key_label_dpad_right = {0};
       struct platform_bind key_label_dpad_up = {0};
@@ -2710,8 +2718,6 @@ static int ingame_menu_resize(void *data, uint64_t input)
       key_label_l2.joykey = 1ULL << RETRO_DEVICE_ID_JOYPAD_L2;
       strlcpy(key_label_r2.desc, "Unknown", sizeof(key_label_r2.desc));
       key_label_r2.joykey = 1ULL << RETRO_DEVICE_ID_JOYPAD_R2;
-      strlcpy(key_label_select.desc, "Unknown", sizeof(key_label_select.desc));
-      key_label_select.joykey = 1ULL << RETRO_DEVICE_ID_JOYPAD_SELECT;
       strlcpy(key_label_dpad_left.desc, "Unknown", sizeof(key_label_dpad_left.desc));
       key_label_dpad_left.joykey = 1ULL << RETRO_DEVICE_ID_JOYPAD_LEFT;
       strlcpy(key_label_dpad_right.desc, "Unknown", sizeof(key_label_dpad_left.desc));
@@ -2727,7 +2733,6 @@ static int ingame_menu_resize(void *data, uint64_t input)
          driver.input->set_keybinds(&key_label_r1, 0, 0, 0, (1ULL << KEYBINDS_ACTION_GET_BIND_LABEL));
          driver.input->set_keybinds(&key_label_l2, 0, 0, 0, (1ULL << KEYBINDS_ACTION_GET_BIND_LABEL));
          driver.input->set_keybinds(&key_label_r2, 0, 0, 0, (1ULL << KEYBINDS_ACTION_GET_BIND_LABEL));
-         driver.input->set_keybinds(&key_label_select, 0, 0, 0, (1ULL << KEYBINDS_ACTION_GET_BIND_LABEL));
          driver.input->set_keybinds(&key_label_b, 0, 0, 0, (1ULL << KEYBINDS_ACTION_GET_BIND_LABEL));
          driver.input->set_keybinds(&key_label_a, 0, 0, 0, (1ULL << KEYBINDS_ACTION_GET_BIND_LABEL));
          driver.input->set_keybinds(&key_label_y, 0, 0, 0, (1ULL << KEYBINDS_ACTION_GET_BIND_LABEL));
