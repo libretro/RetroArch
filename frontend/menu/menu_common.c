@@ -444,7 +444,7 @@ bool menu_iterate(void)
          rgui->need_refresh = true;
 
       g_extern.lifecycle_mode_state &= ~(1ULL << MODE_MENU_PREINIT);
-#ifdef HAVE_RGUI
+#ifndef HAVE_RGUI
       rgui->old_input_state |= 1ULL << DEVICE_NAV_MENU;
 #endif
    }

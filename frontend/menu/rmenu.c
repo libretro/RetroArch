@@ -85,8 +85,7 @@ static const struct retro_keybind _rmenu_nav_binds[] = {
    { 0, 0, NULL, (enum retro_key)0, (1ULL << RETRO_DEVICE_ID_JOYPAD_R), 0 },
    { 0, 0, NULL, (enum retro_key)0, (1ULL << RETRO_DEVICE_ID_JOYPAD_L2), 0 },
    { 0, 0, NULL, (enum retro_key)0, (1ULL << RETRO_DEVICE_ID_JOYPAD_R2), 0 },
-   { 0, 0, NULL, (enum retro_key)0, (1ULL << RETRO_DEVICE_ID_JOYPAD_L3), 0 },
-   { 0, 0, NULL, (enum retro_key)0, (1ULL << RETRO_DEVICE_ID_JOYPAD_R3), 0 },
+   { 0, 0, NULL, (enum retro_key)0, (1ULL << RARCH_MENU_TOGGLE), 0 },
 };
 
 static const struct retro_keybind *rmenu_nav_binds[] = {
@@ -3073,32 +3072,27 @@ int rgui_input_postprocess(void *data, uint64_t old_state)
       ret = -1;
    }
 
-   if (!(g_extern.frame_count < g_extern.delay_timer[0]))
+   if ((rgui->trigger_state & (1ULL << DEVICE_NAV_MENU)) &&
+      g_extern.main_is_init && 
+         !g_extern.libretro_dummy)
    {
-      bool return_to_game_enable = (((old_state & (1ULL << DEVICE_NAV_L3)) && (old_state & (1ULL << DEVICE_NAV_R3)) && g_extern.main_is_init));
+      if (g_extern.lifecycle_mode_state & (1ULL << MODE_MENU_INGAME))
+         g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU_INGAME_EXIT);
 
-      if (return_to_game_enable)
-      {
-         /* TODO : need to make a 'parent' menu_type of some sort so that we have
-          * a cleaner way of telling RMenu that the menu stack should be popped
-          * for a submenu when doing the menu quit hotkey */
-         if (rgui->menu_type == INGAME_MENU_CORE_OPTIONS || rgui->menu_type == INGAME_MENU_RESIZE
-               || rgui->menu_type == LIBRETRO_CHOICE || rgui->menu_type == INGAME_MENU_SCREENSHOT
+      g_extern.lifecycle_mode_state |= (1ULL << MODE_GAME);
+
+      /* TODO : need to make a 'parent' menu_type of some sort so that we have
+       * a cleaner way of telling RMenu that the menu stack should be popped
+       * for a submenu when doing the menu quit hotkey */
+      if (rgui->menu_type == INGAME_MENU_CORE_OPTIONS || rgui->menu_type == INGAME_MENU_RESIZE
+            || rgui->menu_type == LIBRETRO_CHOICE || rgui->menu_type == INGAME_MENU_SCREENSHOT
 #ifdef HAVE_SHADER_MANAGER
-               || rgui->menu_type == INGAME_MENU_SHADER_MANAGER
+            || rgui->menu_type == INGAME_MENU_SHADER_MANAGER
 #endif
-               )
-            menu_stack_pop(rgui->menu_type);
+         )
+         menu_stack_pop(rgui->menu_type);
 
-         ret = -1;
-         if (g_extern.lifecycle_mode_state & (1ULL << MODE_MENU_INGAME))
-         {
-            g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU_INGAME_EXIT);
-            ret = 0;
-         }
-
-         g_extern.lifecycle_mode_state |= (1ULL << MODE_GAME);
-      }
+      ret = -1;
    }
 
    frame_count = 0;
@@ -3262,11 +3256,23 @@ uint64_t rgui_input(void)
             RETRO_DEVICE_JOYPAD, 0, i) ? (1ULL << i) : 0;
 
    //set first button input frame as trigger
-   rgui->trigger_state = input_state & ~(rgui->old_input_state);
+   rgui->trigger_state = input_state & ~rgui->old_input_state;
 
-   bool analog_sticks_pressed = (input_state & (1ULL << DEVICE_NAV_LEFT_ANALOG_L)) || (input_state & (1ULL << DEVICE_NAV_RIGHT_ANALOG_L)) || (input_state & (1ULL << DEVICE_NAV_UP_ANALOG_L)) || (input_state & (1ULL << DEVICE_NAV_DOWN_ANALOG_L)) || (input_state & (1ULL << DEVICE_NAV_LEFT_ANALOG_R)) || (input_state & (1ULL << DEVICE_NAV_RIGHT_ANALOG_R)) || (input_state & (1ULL << DEVICE_NAV_UP_ANALOG_R)) || (input_state & (1ULL << DEVICE_NAV_DOWN_ANALOG_R));
-   bool shoulder_buttons_pressed = ((input_state & (1ULL << DEVICE_NAV_L2)) || (input_state & (1ULL << DEVICE_NAV_R2)));
-   rgui->do_held = analog_sticks_pressed || shoulder_buttons_pressed;
+   bool analog_sticks_pressed = (input_state & (
+            (1ULL << DEVICE_NAV_LEFT_ANALOG_L) |
+            (1ULL << DEVICE_NAV_RIGHT_ANALOG_L) |
+            (1ULL << DEVICE_NAV_UP_ANALOG_L) |
+            (1ULL << DEVICE_NAV_DOWN_ANALOG_L) |
+            (1ULL << DEVICE_NAV_LEFT_ANALOG_R) |
+            (1ULL << DEVICE_NAV_RIGHT_ANALOG_R) |
+            (1ULL << DEVICE_NAV_UP_ANALOG_R) |
+            (1ULL << DEVICE_NAV_DOWN_ANALOG_R)));
+   bool shoulder_buttons_pressed = (input_state & (
+            (1ULL << DEVICE_NAV_L2) |
+            (1ULL << DEVICE_NAV_R2)
+            ));
+   rgui->do_held = (analog_sticks_pressed || shoulder_buttons_pressed) &&
+   !(input_state & DEVICE_NAV_MENU);
 
    return input_state;
 }
