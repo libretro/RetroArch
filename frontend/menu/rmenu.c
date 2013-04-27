@@ -2536,6 +2536,7 @@ static int select_rom(void *data, uint64_t input)
    rgui_handle_t *rgui = (rgui_handle_t*)data;
    font_params_t font_parms = {0};
    char msg[128];
+   bool pop_menu_stack = false;
 
    struct platform_bind key_label_b = {0};
 
@@ -2575,6 +2576,11 @@ static int select_rom(void *data, uint64_t input)
       if (drive_map != NULL)
          filebrowser_set_root_and_ext(rgui->browser, rgui->info.valid_extensions, drive_map);
    }
+   else if (input & (1ULL << DEVICE_NAV_X))
+      pop_menu_stack = true;
+
+   if (pop_menu_stack)
+      menu_stack_pop(rgui->menu_type);
 
    if (filebrowser_iterate(rgui->browser, FILEBROWSER_ACTION_PATH_ISDIR))
       snprintf(msg, sizeof(msg), "INFO - Press [%s] to enter the directory.", key_label_b.desc);
@@ -3073,8 +3079,7 @@ int rgui_input_postprocess(void *data, uint64_t old_state)
    }
 
    if ((rgui->trigger_state & (1ULL << DEVICE_NAV_MENU)) &&
-      g_extern.main_is_init && 
-         !g_extern.libretro_dummy)
+      g_extern.main_is_init)
    {
       if (g_extern.lifecycle_mode_state & (1ULL << MODE_MENU_INGAME))
          g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU_INGAME_EXIT);

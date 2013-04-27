@@ -229,9 +229,7 @@ FONTS
 /*============================================================
 INPUT
 ============================================================ */
-#ifndef RARCH_CONSOLE
 #include "../input/input_common.c"
-#endif
 
 #ifdef HAVE_OVERLAY
 #include "../input/overlay.c"
