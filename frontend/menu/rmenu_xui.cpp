@@ -1728,6 +1728,8 @@ bool menu_iterate(void)
    {
       input_loop = INPUT_LOOP_MENU;
       g_extern.lifecycle_mode_state &= ~(1ULL << MODE_MENU_PREINIT);
+      /* FIXME - hack for now */
+      rgui->delay_count = 0;
    }
 
    XINPUT_STATE state;
@@ -1750,16 +1752,18 @@ bool menu_iterate(void)
       process_input_ret = -1;
    }
 
-   bool rmenu_enable = ((state.Gamepad.wButtons & XINPUT_GAMEPAD_LEFT_THUMB) 
-         && (state.Gamepad.wButtons & XINPUT_GAMEPAD_RIGHT_THUMB) && (g_extern.main_is_init));
-
-   if (g_extern.lifecycle_mode_state & (1ULL << MODE_MENU))
+   /* FIXME - hack for now */
+   if (rgui->delay_count > 30)
    {
-      if (rmenu_enable)
-      {
-         g_extern.lifecycle_mode_state |= (1ULL << MODE_GAME);
-         process_input_ret = -1;
-      }
+   bool rmenu_enable = ((state.Gamepad.wButtons & XINPUT_GAMEPAD_LEFT_THUMB) &&
+      (state.Gamepad.wButtons & XINPUT_GAMEPAD_RIGHT_THUMB)
+      ) && g_extern.main_is_init;
+
+   if (rmenu_enable)
+   {
+      g_extern.lifecycle_mode_state |= (1ULL << MODE_GAME);
+      process_input_ret = -1;
+   }
    }
 
    switch(input_loop)
@@ -1786,6 +1790,9 @@ bool menu_iterate(void)
 
    if (driver.video_poke && driver.video_poke->set_texture_enable)
       driver.video_poke->set_texture_enable(driver.video_data, false, true);
+
+   /* FIXME - hack for now */
+   rgui->delay_count++;
 
    if(process_input_ret != 0)
       goto deinit;
