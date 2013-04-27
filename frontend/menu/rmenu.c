@@ -681,7 +681,7 @@ static int select_file(void *data, uint64_t input)
       if (!ret)
          msg_queue_push(g_extern.msg_queue, "INFO - You need to restart RetroArch.", 1, 180);
    }
-   else if (input & (1ULL << DEVICE_NAV_X))
+   else if ((input & (1ULL << DEVICE_NAV_X)) || (input & (1ULL << DEVICE_NAV_MENU)))
       pop_menu_stack = true;
 
    if (pop_menu_stack)
@@ -774,6 +774,8 @@ static int select_directory(void *data, uint64_t input)
       if (is_dir)
          ret = filebrowser_iterate(rgui->browser, FILEBROWSER_ACTION_OK);
    }
+   else if ((input & (1ULL << DEVICE_NAV_MENU)))
+      pop_menu_stack = true;
 
    if (pop_menu_stack)
       menu_stack_pop(rgui->menu_type);
@@ -1616,18 +1618,11 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
          break;
       case INGAME_MENU_CHANGE_GAME:
          if (input & (1ULL << DEVICE_NAV_B))
-         {
-            g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU);
-            g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU_INGAME_EXIT);
-            selected = FIRST_VIDEO_SETTING;
-            return 0;
-         }
+            menu_stack_push(FILE_BROWSER_MENU, false);
          break;
       case INGAME_MENU_SETTINGS:
          if (input & (1ULL << DEVICE_NAV_B))
-         {
             menu_stack_push(GENERAL_VIDEO_MENU, false);
-         }
          break;
       case INGAME_MENU_RESET:
          if (input & (1ULL << DEVICE_NAV_B))
@@ -2507,7 +2502,8 @@ static int select_setting(void *data, uint64_t input)
    }
 
    /* back to ROM menu if CIRCLE is pressed */
-   if ((input & (1ULL << DEVICE_NAV_L1)) || (input & (1ULL << DEVICE_NAV_A)))
+   if ((input & (1ULL << DEVICE_NAV_L1)) || (input & (1ULL << DEVICE_NAV_A))
+         || (input & (1ULL << DEVICE_NAV_MENU)))
       menu_stack_pop(rgui->menu_type);
    else if (input & (1ULL << DEVICE_NAV_R1))
    {
@@ -2536,7 +2532,6 @@ static int select_rom(void *data, uint64_t input)
    rgui_handle_t *rgui = (rgui_handle_t*)data;
    font_params_t font_parms = {0};
    char msg[128];
-   bool pop_menu_stack = false;
 
    struct platform_bind key_label_b = {0};
 
@@ -2576,10 +2571,8 @@ static int select_rom(void *data, uint64_t input)
       if (drive_map != NULL)
          filebrowser_set_root_and_ext(rgui->browser, rgui->info.valid_extensions, drive_map);
    }
-   else if (input & (1ULL << DEVICE_NAV_X))
-      pop_menu_stack = true;
-
-   if (pop_menu_stack)
+   else if ((input & (1ULL << DEVICE_NAV_X) ||
+            (input & (1ULL << DEVICE_NAV_MENU))))
       menu_stack_pop(rgui->menu_type);
 
    if (filebrowser_iterate(rgui->browser, FILEBROWSER_ACTION_PATH_ISDIR))
@@ -2681,7 +2674,8 @@ static int ingame_menu_resize(void *data, uint64_t input)
       g_extern.console.screen.viewports.custom_vp.height = device_ptr->win_height;
    }
 
-   if (input & (1ULL << DEVICE_NAV_A))
+   if ((input & (1ULL << DEVICE_NAV_A) ||
+            (input & (1ULL << DEVICE_NAV_MENU))))
       menu_stack_pop(rgui->menu_type);
 
    if ((input & (1ULL << DEVICE_NAV_Y)))
@@ -2942,7 +2936,7 @@ static int ingame_menu_core_options(void *data, uint64_t input)
    static unsigned core_opt_selected = 0;
    float y_increment = POSITION_Y_START;
 
-   if (input & (1ULL << DEVICE_NAV_A))
+   if ((input & (1ULL << DEVICE_NAV_A)) || (input & (1ULL << DEVICE_NAV_MENU)))
       menu_stack_pop(rgui->menu_type);
 
    y_increment += POSITION_Y_INCREMENT;
@@ -3026,7 +3020,7 @@ static int ingame_menu_screenshot(void *data, uint64_t input)
 
    if (g_extern.lifecycle_mode_state & (1ULL << MODE_MENU_INGAME))
    {
-      if (input & (1ULL << DEVICE_NAV_A))
+      if ((input & (1ULL << DEVICE_NAV_A)) || (input & (1ULL << DEVICE_NAV_MENU)))
          menu_stack_pop(rgui->menu_type);
 
 #ifdef HAVE_SCREENSHOTS
@@ -3085,17 +3079,6 @@ int rgui_input_postprocess(void *data, uint64_t old_state)
          g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU_INGAME_EXIT);
 
       g_extern.lifecycle_mode_state |= (1ULL << MODE_GAME);
-
-      /* TODO : need to make a 'parent' menu_type of some sort so that we have
-       * a cleaner way of telling RMenu that the menu stack should be popped
-       * for a submenu when doing the menu quit hotkey */
-      if (rgui->menu_type == INGAME_MENU_CORE_OPTIONS || rgui->menu_type == INGAME_MENU_RESIZE
-            || rgui->menu_type == LIBRETRO_CHOICE || rgui->menu_type == INGAME_MENU_SCREENSHOT
-#ifdef HAVE_SHADER_MANAGER
-            || rgui->menu_type == INGAME_MENU_SHADER_MANAGER
-#endif
-         )
-         menu_stack_pop(rgui->menu_type);
 
       ret = -1;
    }
@@ -3192,7 +3175,6 @@ rgui_handle_t *rgui_init(void)
 {
    rgui_handle_t *rgui = (rgui_handle_t*)calloc(1, sizeof(*rgui));
 
-   menu_stack_push(FILE_BROWSER_MENU, false);
 
    menu_texture = (struct texture_image*)calloc(1, sizeof(*menu_texture));
 #ifdef HAVE_MENU_PANEL
