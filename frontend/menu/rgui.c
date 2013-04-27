@@ -1050,6 +1050,59 @@ static int rgui_settings_toggle_setting(rgui_handle_t *rgui, unsigned setting, r
                *p = MAX_PLAYERS - 1;
          }
          break;
+      case RGUI_SETTINGS_BIND_DEVICE_TYPE:
+      {
+         static const unsigned device_types[] = {
+            RETRO_DEVICE_NONE,
+            RETRO_DEVICE_JOYPAD,
+            RETRO_DEVICE_ANALOG,
+            RETRO_DEVICE_MOUSE,
+            RETRO_DEVICE_JOYPAD_MULTITAP,
+            RETRO_DEVICE_LIGHTGUN_SUPER_SCOPE,
+            RETRO_DEVICE_LIGHTGUN_JUSTIFIER,
+            RETRO_DEVICE_LIGHTGUN_JUSTIFIERS,
+         };
+
+         unsigned current_device = g_extern.libretro_device[port];
+         unsigned current_index = 0;
+         for (unsigned i = 0; i < ARRAY_SIZE(device_types); i++)
+         {
+            if (current_device == device_types[i])
+            {
+               current_index = i;
+               break;
+            }
+         }
+
+         bool updated = true;
+         switch (action)
+         {
+            case RGUI_ACTION_START:
+               current_device = RETRO_DEVICE_JOYPAD;
+               break;
+
+            case RGUI_ACTION_LEFT:
+               current_device = device_types[(current_index + ARRAY_SIZE(device_types) - 1) % ARRAY_SIZE(device_types)];
+               break;
+
+            case RGUI_ACTION_RIGHT:
+            case RGUI_ACTION_OK:
+               current_device =
+                  device_types[(current_index + 1) % ARRAY_SIZE(device_types)];
+               break;
+
+            default:
+               updated = false;
+         }
+
+         if (updated)
+         {
+            g_extern.libretro_device[port] = current_device;
+            pretro_set_controller_port_device(port, current_device);
+         }
+
+         break;
+      }
       case RGUI_SETTINGS_BIND_DPAD_EMULATION:
          g_settings.input.dpad_emulation[port] += ANALOG_DPAD_LAST;
          if (action == RGUI_ACTION_START)
