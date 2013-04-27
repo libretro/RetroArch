@@ -1562,19 +1562,19 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
          if (input & (1ULL << DEVICE_NAV_LEFT))
          {
             settings_set(1ULL << S_ROTATION_DECREMENT);
-            driver.video->set_rotation(NULL, g_extern.console.screen.orientation);
+            video_set_rotation_func(g_extern.console.screen.orientation);
          }
 
          if ((input & (1ULL << DEVICE_NAV_RIGHT)) || (input & (1ULL << DEVICE_NAV_B)))
          {
             settings_set(1ULL << S_ROTATION_INCREMENT);
-            driver.video->set_rotation(NULL, g_extern.console.screen.orientation);
+            video_set_rotation_func(g_extern.console.screen.orientation);
          }
 
          if (input & (1ULL << DEVICE_NAV_START))
          {
             settings_set(1ULL << S_DEF_ROTATION);
-            driver.video->set_rotation(NULL, g_extern.console.screen.orientation);
+            video_set_rotation_func(g_extern.console.screen.orientation);
          }
          break;
       case INGAME_MENU_FRAME_ADVANCE:
@@ -2892,12 +2892,12 @@ static int ingame_menu_resize(void *data, uint64_t input)
       font_parms.y = POSITION_Y_BEGIN + (POSITION_Y_INCREMENT * 14);
 
       if (driver.video_poke->set_osd_msg)
-         driver.video_poke->set_osd_msg(device_ptr, msg, &font_parms);
+         driver.video_poke->set_osd_msg(driver.video_data, msg, &font_parms);
 
       font_parms.x = POSITION_X_CENTER;
 
       if (driver.video_poke->set_osd_msg)
-         driver.video_poke->set_osd_msg(device_ptr, "- Go back", &font_parms);
+         driver.video_poke->set_osd_msg(driver.video_data, "- Go back", &font_parms);
 
       snprintf(msg, sizeof(msg), "Press [%s] to reset to defaults.", key_label_x.desc);
       font_parms.x = POSITION_X; 
