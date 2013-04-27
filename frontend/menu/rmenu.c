@@ -85,7 +85,7 @@ static const struct retro_keybind _rmenu_nav_binds[] = {
    { 0, 0, NULL, (enum retro_key)0, (1ULL << RETRO_DEVICE_ID_JOYPAD_R), 0 },
    { 0, 0, NULL, (enum retro_key)0, (1ULL << RETRO_DEVICE_ID_JOYPAD_L2), 0 },
    { 0, 0, NULL, (enum retro_key)0, (1ULL << RETRO_DEVICE_ID_JOYPAD_R2), 0 },
-   { 0, 0, NULL, (enum retro_key)0, (1ULL << RARCH_MENU_TOGGLE), 0 },
+   { 0, 0, NULL, (enum retro_key)0, ((1ULL << RETRO_DEVICE_ID_JOYPAD_L3) + (1ULL << RETRO_DEVICE_ID_JOYPAD_R3)), 0 },
 };
 
 static const struct retro_keybind *rmenu_nav_binds[] = {
