@@ -225,9 +225,12 @@ rgui_handle_t *rgui_init(void)
          (float)custom->width / custom->height;
    }
 
+   // TODO: Should make history path configurable.
+   // Possibly size as well.
    char history_path[PATH_MAX];
    fill_pathname_resolve_relative(history_path, g_extern.config_path,
          ".retroarch-history.txt", sizeof(history_path));
+   RARCH_LOG("[RGUI]: Opening history: %s.\n", history_path);
    rgui->history = rom_history_init(history_path, 20);
 
    return rgui;
@@ -405,6 +408,8 @@ static void render_text(rgui_handle_t *rgui)
          (menu_type == RGUI_SETTINGS_CUSTOM_VIEWPORT || menu_type == RGUI_SETTINGS_CUSTOM_VIEWPORT_2) ||
          menu_type == RGUI_SETTINGS)
       snprintf(title, sizeof(title), "SETTINGS %s", dir);
+   else if (menu_type == RGUI_SETTINGS_OPEN_HISTORY)
+      strlcpy(title, "LOAD HISTORY", sizeof(title));
    else
    {
       const char *core_name = rgui->info.library_name;
@@ -579,6 +584,7 @@ static void render_text(rgui_handle_t *rgui)
                break;
             }
             case RGUI_SETTINGS_OPEN_FILEBROWSER:
+            case RGUI_SETTINGS_OPEN_HISTORY:
             case RGUI_SETTINGS_CORE_OPTIONS:
             case RGUI_SETTINGS_VIDEO_OPTIONS:
 #ifdef HAVE_SHADER_MANAGER
@@ -1107,6 +1113,7 @@ static void rgui_settings_populate_entries(rgui_handle_t *rgui)
    rgui_list_push(rgui->selection_buf, "Core", RGUI_SETTINGS_CORE, 0);
 #endif
    rgui_list_push(rgui->selection_buf, "Core Options", RGUI_SETTINGS_CORE_OPTIONS, 0);
+   rgui_list_push(rgui->selection_buf, "Load Game (History)", RGUI_SETTINGS_OPEN_HISTORY, 0);
    rgui_list_push(rgui->selection_buf, "Load Game", RGUI_SETTINGS_OPEN_FILEBROWSER, 0);
    rgui_list_push(rgui->selection_buf, "Video Options", RGUI_SETTINGS_VIDEO_OPTIONS, 0);
 
@@ -1817,6 +1824,12 @@ static int rgui_settings_iterate(rgui_handle_t *rgui, rgui_action_t action)
             rgui->selection_ptr = 0;
             rgui->need_refresh = true;
          }
+         else if (type == RGUI_SETTINGS_OPEN_HISTORY && action == RGUI_ACTION_OK)
+         {
+            rgui_list_push(rgui->menu_stack, "", RGUI_SETTINGS_OPEN_HISTORY, rgui->selection_ptr);
+            rgui->selection_ptr = 0;
+            rgui->need_refresh = true;
+         }
          else if ((menu_type_is_settings(type) || type == RGUI_SETTINGS_CORE || type == RGUI_SETTINGS_DISK_APPEND) && action == RGUI_ACTION_OK)
          {
             rgui_list_push(rgui->menu_stack, label, type, rgui->selection_ptr);
@@ -1865,7 +1878,8 @@ static int rgui_settings_iterate(rgui_handle_t *rgui, rgui_action_t action)
 #ifdef HAVE_SHADER_MANAGER
             menu_type_is_shader_browser(menu_type) ||
 #endif
-            menu_type == RGUI_SETTINGS_CORE || menu_type == RGUI_SETTINGS_DISK_APPEND))
+            menu_type == RGUI_SETTINGS_CORE || menu_type == RGUI_SETTINGS_DISK_APPEND ||
+            menu_type == RGUI_SETTINGS_OPEN_HISTORY))
    {
       rgui->need_refresh = false;
       if ((menu_type >= RGUI_SETTINGS_CONTROLLER_1 && menu_type <= RGUI_SETTINGS_CONTROLLER_4))
@@ -1881,6 +1895,29 @@ static int rgui_settings_iterate(rgui_handle_t *rgui, rgui_action_t action)
    render_text(rgui);
 
    return 0;
+}
+
+static void history_parse(rgui_handle_t *rgui)
+{
+   size_t history_size = rom_history_size(rgui->history);
+   for (size_t i = 0; i < history_size; i++)
+   {
+      const char *path = NULL;
+      const char *core_path = NULL;
+      const char *core_name = NULL;
+
+      rom_history_get_index(rgui->history, i,
+            &path, &core_path, &core_name);
+
+      char path_short[PATH_MAX];
+      fill_pathname(path_short, path_basename(path), "", sizeof(path_short));
+
+      char fill_buf[PATH_MAX];
+      snprintf(fill_buf, sizeof(fill_buf), "%s (%s)",
+            path_short, core_name);
+
+      rgui_list_push(rgui->selection_buf, fill_buf, RGUI_FILE_PLAIN, 0);
+   }
 }
 
 static bool directory_parse(rgui_handle_t *rgui, const char *directory, unsigned menu_type, void *ctx)
@@ -2155,6 +2192,34 @@ int rgui_iterate(rgui_handle_t *rgui)
 
                ret = -1;
             }
+            else if (menu_type == RGUI_SETTINGS_OPEN_HISTORY)
+            {
+               const char *path = NULL;
+               const char *core_path = NULL;
+               const char *core_name = NULL;
+
+               rom_history_get_index(rgui->history,
+                     rgui->selection_ptr, &path, &core_path, &core_name);
+
+               strlcpy(g_settings.libretro, core_path, sizeof(g_settings.libretro));
+
+#ifdef HAVE_DYNAMIC
+               libretro_free_system_info(&rgui->info);
+               libretro_get_system_info(g_settings.libretro, &rgui->info);
+#endif
+               // Dunno what to do for Wii here ...
+
+               strlcpy(g_extern.fullpath, path, sizeof(g_extern.fullpath));
+
+               g_extern.lifecycle_mode_state |= (1ULL << MODE_LOAD_GAME);
+               rom_history_push(rgui->history,
+                     g_extern.fullpath,
+                     g_settings.libretro,
+                     rgui->info.library_name);
+
+               rgui->need_refresh = true;
+               ret = -1;
+            }
             else
             {
                fill_pathname_join(g_extern.fullpath, dir, path, sizeof(g_extern.fullpath));
@@ -2167,8 +2232,16 @@ int rgui_iterate(rgui_handle_t *rgui)
                   char str[PATH_MAX];
 
                   fill_pathname_base(tmp, g_extern.fullpath, sizeof(tmp));
-                  snprintf(str, sizeof(str), "INFO - Loading %s...", tmp);
+                  snprintf(str, sizeof(str), "INFO - Loading %s ...", tmp);
                   msg_queue_push(g_extern.msg_queue, str, 1, 1);
+               }
+
+               if (rgui->history)
+               {
+                  rom_history_push(rgui->history,
+                        g_extern.fullpath,
+                        g_settings.libretro,
+                        rgui->info.library_name);
                }
 
                rgui->need_refresh = true; // in case of zip extract
@@ -2206,11 +2279,17 @@ int rgui_iterate(rgui_handle_t *rgui)
 #ifdef HAVE_SHADER_MANAGER
             menu_type_is_shader_browser(menu_type) ||
 #endif
-            menu_type == RGUI_SETTINGS_CORE || menu_type == RGUI_SETTINGS_DISK_APPEND))
+            menu_type == RGUI_SETTINGS_CORE ||
+            menu_type == RGUI_SETTINGS_OPEN_HISTORY ||
+            menu_type == RGUI_SETTINGS_DISK_APPEND))
    {
       rgui->need_refresh = false;
       rgui_list_clear(rgui->selection_buf);
-      directory_parse(rgui, dir, menu_type, rgui->selection_buf);
+
+      if (menu_type == RGUI_SETTINGS_OPEN_HISTORY)
+         history_parse(rgui);
+      else
+         directory_parse(rgui, dir, menu_type, rgui->selection_buf);
 
       // Before a refresh, we could have deleted a file on disk, causing
       // selection_ptr to suddendly be out of range. Ensure it doesn't overflow.

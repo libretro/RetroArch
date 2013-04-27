@@ -307,8 +307,8 @@ static config_file_t *open_default_config_file(void)
    config_file_t *conf = NULL;
 
 #if defined(_WIN32) && !defined(_XBOX)
-   // Just do something for now.
    char conf_path[PATH_MAX];
+   // Just do something for now.
    strlcpy(conf_path, "retroarch.cfg", sizeof(conf_path));
    conf = config_file_new(conf_path);
    if (!conf)
@@ -320,6 +320,9 @@ static config_file_t *open_default_config_file(void)
          conf = config_file_new(conf_path);
       }
    }
+
+   if (conf)
+      strlcpy(g_extern.config_path, conf_path, sizeof(g_extern.config_path));
 #elif !defined(__CELLOS_LV2__) && !defined(_XBOX)
    char conf_path[PATH_MAX];
    const char *xdg  = getenv("XDG_CONFIG_HOME");
@@ -352,13 +355,10 @@ static config_file_t *open_default_config_file(void)
       conf = config_file_new(conf_path);
       RARCH_LOG("Looking for config in: \"/etc/retroarch.cfg\".\n");
    }
-#endif
 
    if (conf)
-   {
-      strlcpy(g_extern.config_path, conf_path,
-            sizeof(g_extern.config_path));
-   }
+      strlcpy(g_extern.config_path, conf_path, sizeof(g_extern.config_path));
+#endif
    
    return conf;
 }

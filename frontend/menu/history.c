@@ -80,7 +80,10 @@ void rom_history_push(rom_history_t *hist,
    }
 
    if (hist->size == hist->cap)
+   {
       rom_history_free_entry(&hist->entries[hist->cap - 1]);
+      hist->size--;
+   }
 
    memmove(hist->entries + 1, hist->entries,
          (hist->cap - 1) * sizeof(struct rom_history_entry));
@@ -88,31 +91,24 @@ void rom_history_push(rom_history_t *hist,
    hist->entries[0].path      = strdup(path);
    hist->entries[0].core_path = strdup(core_path);
    hist->entries[0].core_name = strdup(core_name);
+   hist->size++;
 }
 
 static void rom_history_write_file(rom_history_t *hist)
 {
-   char *buf = (char*)malloc(PATH_MAX * 3);
-   if (!buf)
-      return;
-
    FILE *file = fopen(hist->conf_path, "w");
    if (!file)
-   {
-      free(buf);
       return;
-   }
 
    for (size_t i = 0; i < hist->size; i++)
    {
-      snprintf(buf, PATH_MAX * 3, "%s;%s;%s\n",
+      fprintf(file, "%s;%s;%s\n",
             hist->entries[i].path,
             hist->entries[i].core_path,
             hist->entries[i].core_name);
    }
 
    fclose(file);
-   free(buf);
 }
 
 void rom_history_free(rom_history_t *hist)
@@ -120,13 +116,13 @@ void rom_history_free(rom_history_t *hist)
    if (!hist)
       return;
 
-   for (size_t i = 0; i < hist->cap; i++)
-      rom_history_free_entry(&hist->entries[i]);
-   free(hist->entries);
-
    if (hist->conf_path)
       rom_history_write_file(hist);
    free(hist->conf_path);
+
+   for (size_t i = 0; i < hist->cap; i++)
+      rom_history_free_entry(&hist->entries[i]);
+   free(hist->entries);
 
    free(hist);
 }
@@ -140,19 +136,18 @@ static bool rom_history_read_file(rom_history_t *hist, const char *path)
 {
    FILE *file = fopen(path, "r");
    if (!file)
-      return false;
+      return true;
    
-   char *buf = (char*)malloc(PATH_MAX * 3);
-   if (!buf)
-   {
-      fclose(file);
-      return false;
-   }
+   char buf[PATH_MAX * 3];
 
    for (hist->size = 0;
-         hist->size < hist->cap && fgets(buf, PATH_MAX * 3, file);
+         hist->size < hist->cap && fgets(buf, sizeof(buf), file);
          hist->size++)
    {
+      char *last = buf + strlen(buf) - 1;
+      if (*last == '\n')
+         *last = '\0';
+
       struct string_list *list = string_split(buf, ";");
       if (!list)
          break;
@@ -171,7 +166,6 @@ static bool rom_history_read_file(rom_history_t *hist, const char *path)
    }
 
    fclose(file);
-   free(buf);
    return true;
 }
 
