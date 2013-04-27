@@ -2122,6 +2122,16 @@ int rgui_iterate(rgui_handle_t *rgui)
                rarch_disk_control_append_image(image);
 
                g_extern.lifecycle_mode_state |= 1ULL << MODE_GAME;
+
+               rgui->need_refresh = true;
+               unsigned type = 0;
+               rgui_list_get_last(rgui->menu_stack, NULL, &type);
+               while (type != RGUI_SETTINGS)
+               {
+                  rgui_list_pop(rgui->menu_stack, &rgui->selection_ptr);
+                  rgui_list_get_last(rgui->menu_stack, NULL, &type);
+               }
+
                ret = -1;
             }
             else
