@@ -556,6 +556,17 @@ static void render_text(rgui_handle_t *rgui)
             case RGUI_SETTINGS_DEBUG_TEXT:
                snprintf(type_str, sizeof(type_str), (g_extern.lifecycle_mode_state & (1ULL << MODE_FPS_DRAW)) ? "ON" : "OFF");
                break;
+            case RGUI_SETTINGS_DISK_INDEX:
+            {
+               const struct retro_disk_control_callback *control = &g_extern.system.disk_control;
+               unsigned images = control->get_num_images();
+               unsigned current = control->get_image_index();
+               if (current >= images)
+                  strlcpy(type_str, "No Disk", sizeof(type_str));
+               else
+                  snprintf(type_str, sizeof(type_str), "%u", current + 1);
+               break;
+            }
             case RGUI_SETTINGS_OPEN_FILEBROWSER:
             case RGUI_SETTINGS_CORE_OPTIONS:
             case RGUI_SETTINGS_SHADER_MANAGER:
@@ -966,6 +977,29 @@ static int rgui_settings_toggle_setting(rgui_handle_t *rgui, unsigned setting, r
          else if (action == RGUI_ACTION_RIGHT)
             g_extern.lifecycle_mode_state |= (1ULL << MODE_FPS_DRAW);
          break;
+      case RGUI_SETTINGS_DISK_INDEX:
+      {
+         const struct retro_disk_control_callback *control = &g_extern.system.disk_control;
+
+         unsigned num_disks = control->get_num_images();
+         unsigned current   = control->get_image_index();
+
+         int step = 0;
+         if (action == RGUI_ACTION_RIGHT || action == RGUI_ACTION_OK)
+            step = 1;
+         else if (action == RGUI_ACTION_LEFT)
+            step = -1;
+
+         if (step)
+         {
+            unsigned next_index = (current + num_disks + 1 + step) % (num_disks + 1);
+            rarch_disk_control_set_eject(true, false);
+            rarch_disk_control_set_index(next_index);
+            rarch_disk_control_set_eject(false, false);
+         }
+
+         break;
+      }
       case RGUI_SETTINGS_RESTART_EMULATOR:
          if (action == RGUI_ACTION_OK)
          {
@@ -1087,8 +1121,7 @@ static int rgui_settings_toggle_setting(rgui_handle_t *rgui, unsigned setting, r
 
             case RGUI_ACTION_RIGHT:
             case RGUI_ACTION_OK:
-               current_device =
-                  device_types[(current_index + 1) % ARRAY_SIZE(device_types)];
+               current_device = device_types[(current_index + 1) % ARRAY_SIZE(device_types)];
                break;
 
             default:
@@ -1197,6 +1230,9 @@ static void rgui_settings_populate_entries(rgui_handle_t *rgui)
 #endif
       rgui_list_push(rgui->selection_buf, "Resume Game", RGUI_SETTINGS_RESUME_GAME, 0);
       rgui_list_push(rgui->selection_buf, "Restart Game", RGUI_SETTINGS_RESTART_GAME, 0);
+
+      if (g_extern.system.disk_control.get_num_images)
+         rgui_list_push(rgui->selection_buf, "Disk Index", RGUI_SETTINGS_DISK_INDEX, 0);
    }
 
    rgui_list_push(rgui->selection_buf, "Rewind", RGUI_SETTINGS_REWIND_ENABLE, 0);
