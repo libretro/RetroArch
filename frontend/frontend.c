@@ -76,7 +76,7 @@ int main(int argc, char *argv[])
          else
          {
             RARCH_ERR("rarch_main_init() failed.\n");
-            g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU);
+            return 1;
          }
 
          g_extern.lifecycle_mode_state &= ~(1ULL << MODE_INIT);
