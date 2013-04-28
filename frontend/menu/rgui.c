@@ -1924,8 +1924,10 @@ static bool directory_parse(rgui_handle_t *rgui, const char *directory, unsigned
       rgui_list_push(ctx, "sd:/", menu_type, 0);
       rgui_list_push(ctx, "usb:/", menu_type, 0);
 #endif
+#if !(defined(HAVE_MINIOGC) && defined(HW_RVL))
       rgui_list_push(ctx, "carda:/", menu_type, 0);
       rgui_list_push(ctx, "cardb:/", menu_type, 0);
+#endif
 #elif defined(_XBOX1)
       rgui_list_push(ctx, "C:\\", menu_type, 0);
       rgui_list_push(ctx, "D:\\", menu_type, 0);
