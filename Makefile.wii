@@ -22,8 +22,6 @@ else ifneq ($(findstring MINGW,$(shell uname -a)),)
    system_platform = win
 endif
 
-LDFLAGS_WIIUSE := -lwiiuse
-
 CC = $(DEVKITPPC)/bin/powerpc-eabi-gcc$(EXE_EXT)
 CXX = $(DEVKITPPC)/bin/powerpc-eabi-g++$(EXE_EXT)
 LD = $(DEVKITPPC)/bin/powerpc-eabi-ld$(EXE_EXT)
@@ -51,7 +49,7 @@ LDFLAGS := $(MACHDEP) -Wl,-Map,$(notdir $(ELF_TARGET)).map,-wrap,malloc,-wrap,fr
 ifeq ($(BIG_STACK), 1)
    LDFLAGS += -T gx/ld/rvl.ld
 endif
-LIBS := -lfat $(WHOLE_START) -lretro_wii $(WHOLE_END) $(LIBOGC_LIB) $(LDFLAGS_WIIUSE) -lbte 
+LIBS := -lfat $(WHOLE_START) -lretro_wii $(WHOLE_END) -logc -lwiiuse -lbte 
 APP_BOOTER_DIR = wii/app_booter
 
 OBJ = griffin/griffin.o $(APP_BOOTER_DIR)/app_booter.binobj
