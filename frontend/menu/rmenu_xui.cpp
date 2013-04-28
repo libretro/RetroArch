@@ -714,9 +714,10 @@ HRESULT CRetroArchFileBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHandle
       wcstombs(str_buffer, (const wchar_t *)XuiListGetText(m_list, index), sizeof(str_buffer));
       if (path_file_exists(rgui->browser->list->elems[index].data))
       {
-         snprintf(path, sizeof(path), "%s\\%s", rgui->browser->current_dir.directory_path, str_buffer);
-         strlcpy(g_extern.fullpath, path, sizeof(g_extern.fullpath));
+         snprintf(g_extern.fullpath, sizeof(g_extern.fullpath), "%s\\%s",
+               rgui->browser->current_dir.directory_path, str_buffer);
          g_extern.lifecycle_mode_state |= (1ULL << MODE_LOAD_GAME);
+         process_input_ret = -1;
       }
       else if(rgui->browser->list->elems[index].attr.b)
       {
@@ -1734,23 +1735,6 @@ bool menu_iterate(void)
 
    XINPUT_STATE state;
    XInputGetState(0, &state);
-
-   if (g_extern.lifecycle_mode_state & (1ULL << MODE_LOAD_GAME))
-   {
-      if (g_extern.lifecycle_mode_state & (1ULL << MODE_INFO_DRAW))
-      {
-         char tmp[PATH_MAX];
-         char str[PATH_MAX];
-
-         fill_pathname_base(tmp, g_extern.fullpath, sizeof(tmp));
-         snprintf(str, sizeof(str), "INFO - Loading %s...", tmp);
-         msg_queue_push(g_extern.msg_queue, str, 1, 1);
-      }
-
-      g_extern.lifecycle_mode_state |= (1ULL << MODE_INIT);
-      g_extern.lifecycle_mode_state &= ~(1ULL << MODE_LOAD_GAME);
-      process_input_ret = -1;
-   }
 
    /* FIXME - hack for now */
    if (rgui->delay_count > 30)

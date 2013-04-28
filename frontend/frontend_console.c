@@ -142,6 +142,41 @@ int rarch_main(int argc, char *argv[])
    {
       if (g_extern.system.shutdown)
          break;
+      else if (g_extern.lifecycle_mode_state & (1ULL << MODE_LOAD_GAME))
+      {
+         if (g_extern.lifecycle_mode_state & (1ULL << MODE_INFO_DRAW))
+         {
+            char tmp[PATH_MAX];
+            char str[PATH_MAX];
+
+            fill_pathname_base(tmp, g_extern.fullpath, sizeof(tmp));
+            snprintf(str, sizeof(str), "INFO - Loading %s...", tmp);
+            msg_queue_push(g_extern.msg_queue, str, 1, 1);
+         }
+
+#if defined(HAVE_RGUI) || defined(HAVE_RMENU) || defined(HAVE_RMENU_XUI)
+         if (rgui->history)
+         {
+            rom_history_push(rgui->history,
+                  g_extern.fullpath,
+                  g_settings.libretro,
+                  rgui->info.library_name);
+         }
+
+         // draw frame for loading message
+         if (driver.video_poke && driver.video_poke->set_texture_enable)
+            driver.video_poke->set_texture_enable(driver.video_data, rgui->frame_buf_show, MENU_TEXTURE_FULLSCREEN);
+
+         rarch_render_cached_frame();
+
+         if (driver.video_poke && driver.video_poke->set_texture_enable)
+            driver.video_poke->set_texture_enable(driver.video_data, false,
+                  MENU_TEXTURE_FULLSCREEN);
+#endif
+
+         g_extern.lifecycle_mode_state &= ~(1ULL << MODE_LOAD_GAME);
+         g_extern.lifecycle_mode_state |= (1ULL << MODE_INIT);
+      }
       else if (g_extern.lifecycle_mode_state & (1ULL << MODE_GAME))
       {
          driver.input->poll(NULL);

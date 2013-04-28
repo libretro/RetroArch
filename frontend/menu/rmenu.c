@@ -243,11 +243,11 @@ static void menu_stack_pop(unsigned menu_type)
       case INGAME_MENU_SCREENSHOT:
          rgui->frame_buf_show = true;
          break;
-#ifdef HAVE_SHADER_MANAGER
-      case INGAME_MENU_SHADER_MANAGER:
+      case INGAME_MENU_VIDEO_OPTIONS:
          selected = FIRST_INGAME_MENU_SETTING;
          rgui->frame_buf_show = true;
          break;
+#ifdef HAVE_SHADER_MANAGER
       case CGP_CHOICE:
          selected = FIRST_SHADERMAN_SETTING;
          break;
@@ -279,11 +279,9 @@ static void menu_stack_push(unsigned menu_type, bool prev_dir)
       case INGAME_MENU:
          selected = FIRST_INGAME_MENU_SETTING;
          break;
-#ifdef HAVE_SHADER_MANAGER
-      case INGAME_MENU_SHADER_MANAGER:
+      case INGAME_MENU_VIDEO_OPTIONS:
          selected = FIRST_SHADERMAN_SETTING;
          break;
-#endif
       case GENERAL_VIDEO_MENU:
          selected = FIRST_VIDEO_SETTING;
          break;
@@ -364,9 +362,7 @@ static void display_menubar(uint8_t menu_type)
          break;
       case CONTROLS_MENU:
       case INGAME_MENU_CORE_OPTIONS:
-#ifdef HAVE_SHADER_MANAGER
-      case INGAME_MENU_SHADER_MANAGER:
-#endif
+      case INGAME_MENU_VIDEO_OPTIONS:
       case INGAME_MENU_RESIZE:
          if (driver.input->set_keybinds)
             driver.input->set_keybinds(&key_label_l, 0, 0, 0, (1ULL << KEYBINDS_ACTION_GET_BIND_LABEL));
@@ -414,11 +410,9 @@ static void display_menubar(uint8_t menu_type)
       case INGAME_MENU_CORE_OPTIONS:
          strlcpy(title, "Core Options", sizeof(title));
          break;
-#ifdef HAVE_SHADER_MANAGER
-      case INGAME_MENU_SHADER_MANAGER:
-         strlcpy(title, "ShaderMan", sizeof(title));
+      case INGAME_MENU_VIDEO_OPTIONS:
+         strlcpy(title, "Video Options", sizeof(title));
          break;
-#endif
       case INGAME_MENU_RESIZE:
          strlcpy(title, "Resize Menu", sizeof(title));
          break;
@@ -1010,7 +1004,7 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
          if (input & (1ULL << DEVICE_NAV_START))
             g_settings.video.font_size = 1.0f;
          break;
-      case INGAME_MENU_ASPECT_RATIO:
+      case SETTING_ASPECT_RATIO:
          if (input & (1ULL << DEVICE_NAV_LEFT))
          {
             settings_set(1ULL << S_ASPECT_RATIO_DECREMENT);
@@ -1230,17 +1224,6 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
             g_settings.rewind_granularity++;
          if (input & (1ULL << DEVICE_NAV_START))
             g_settings.rewind_granularity = 1;
-         break;
-      case SETTING_RARCH_DEFAULT_EMU:
-         if ((input & (1ULL << DEVICE_NAV_LEFT)) || (input & (1ULL << DEVICE_NAV_RIGHT)) || (input & (1ULL << DEVICE_NAV_B)))
-         {
-            menu_stack_push(LIBRETRO_CHOICE, true);
-            filebrowser_set_root_and_ext(rgui->browser, EXT_EXECUTABLES, default_paths.core_dir);
-            set_libretro_core_as_launch = true;
-         }
-         if (input & (1ULL << DEVICE_NAV_START))
-         {
-         }
          break;
       case SETTING_QUIT_RARCH:
          if ((input & (1ULL << DEVICE_NAV_LEFT)) || (input & (1ULL << DEVICE_NAV_RIGHT)) || (input & (1ULL << DEVICE_NAV_B)) || (input & (1ULL << DEVICE_NAV_B)))
@@ -1558,7 +1541,7 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
             rarch_state_slot_increase();
 
          break;
-      case INGAME_MENU_ROTATION:
+      case SETTING_ROTATION:
          if (input & (1ULL << DEVICE_NAV_LEFT))
          {
             settings_set(1ULL << S_ROTATION_DECREMENT);
@@ -1654,10 +1637,10 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
          }
          break;
 #ifdef HAVE_SHADER_MANAGER
-      case INGAME_MENU_SHADER_MANAGER_MODE:
+      case INGAME_MENU_VIDEO_OPTIONS_MODE:
          if (input & (1ULL << DEVICE_NAV_B))
          {
-            menu_stack_push(INGAME_MENU_SHADER_MANAGER, false);
+            menu_stack_push(INGAME_MENU_VIDEO_OPTIONS, false);
          }
          break;
       case SHADERMAN_LOAD_CGP:
@@ -1862,14 +1845,14 @@ static int select_setting(void *data, uint64_t input)
          first_setting = FIRST_INGAME_MENU_SETTING;
          max_settings = MAX_NO_OF_INGAME_MENU_SETTINGS;
          break;
-#ifdef HAVE_SHADER_MANAGER
-      case INGAME_MENU_SHADER_MANAGER:
+      case INGAME_MENU_VIDEO_OPTIONS:
          first_setting = FIRST_SHADERMAN_SETTING;
+         max_settings = MAX_NO_OF_SHADERMAN_SETTINGS;
 
+#ifdef HAVE_SHADER_MANAGER
          switch (rgui->shader.passes)
          {
             case 0:
-               max_settings = MAX_NO_OF_SHADERMAN_SETTINGS;
                break;
             case 1:
                max_settings = SHADERMAN_SHADER_0_SCALE+1;
@@ -1896,8 +1879,8 @@ static int select_setting(void *data, uint64_t input)
                max_settings = SHADERMAN_SHADER_7_SCALE+1;
                break;
          }
-         break;
 #endif
+         break;
    }
 
    float y_increment = POSITION_Y_START;
@@ -1952,17 +1935,17 @@ static int select_setting(void *data, uint64_t input)
             break;
 #ifndef HAVE_SHADER_MANAGER
          case SETTING_HW_TEXTURE_FILTER:
-            strlcpy(text, "Hardware filtering", sizeof(text));
+            strlcpy(text, "Default Filter", sizeof(text));
             if (g_settings.video.smooth)
             {
-               strlcpy(setting_text, "Bilinear", sizeof(setting_text));
-               strlcpy(comment, "INFO - Hardware filtering is set to Bilinear.",
+               strlcpy(setting_text, "Linear", sizeof(setting_text));
+               strlcpy(comment, "INFO - Default Filter is set to Linear.",
                      sizeof(comment));
             }
             else
             {
-               strlcpy(setting_text, "Point", sizeof(setting_text));
-               strlcpy(comment, "INFO - Hardware filtering is set to Point.",
+               strlcpy(setting_text, "Nearest", sizeof(setting_text));
+               strlcpy(comment, "INFO - Default Filter is set to Nearest.",
                      sizeof(comment));
             }
             break;
@@ -2070,12 +2053,6 @@ static int select_setting(void *data, uint64_t input)
             strlcpy(text, "Rewind granularity", sizeof(text));
             snprintf(setting_text, sizeof(setting_text), "%d", g_settings.rewind_granularity);
             strlcpy(comment, "INFO - Set the amount of frames to 'rewind'.", sizeof(comment));
-            break;
-         case SETTING_RARCH_DEFAULT_EMU:
-            strlcpy(text, "Default libretro core", sizeof(text));
-            fill_pathname_base(fname, g_settings.libretro, sizeof(fname));
-            strlcpy(setting_text, fname, sizeof(setting_text));
-            strlcpy(comment, "INFO - Select a default libretro core.", sizeof(comment));
             break;
          case SETTING_QUIT_RARCH:
             strlcpy(text, "Quit RetroArch and save settings ", sizeof(text));
@@ -2244,12 +2221,12 @@ static int select_setting(void *data, uint64_t input)
             snprintf(setting_text, sizeof(setting_text), "%d", g_extern.state_slot);
             strlcpy(comment, "Save to current state slot.", sizeof(comment));
             break;
-         case INGAME_MENU_ASPECT_RATIO:
+         case SETTING_ASPECT_RATIO:
             strlcpy(text, "Aspect Ratio", sizeof(text));
             strlcpy(setting_text, aspectratio_lut[g_settings.video.aspect_ratio_idx].name, sizeof(setting_text));
             strlcpy(comment, "Change the aspect ratio of the screen.", sizeof(comment));
             break;
-         case INGAME_MENU_ROTATION:
+         case SETTING_ROTATION:
             strlcpy(text, "Rotation", sizeof(text));
             strlcpy(setting_text, rotation_lut[g_extern.console.screen.orientation], sizeof(setting_text));
             strlcpy(comment, "Change orientation of the screen.", sizeof(comment));
@@ -2264,13 +2241,11 @@ static int select_setting(void *data, uint64_t input)
             strlcpy(setting_text, "", sizeof(setting_text));
             strlcpy(comment, "Set core-specific options.", sizeof(comment));
             break;
-#ifdef HAVE_SHADER_MANAGER
-         case INGAME_MENU_SHADER_MANAGER_MODE:
-            strlcpy(text, "Shader Manager...", sizeof(text));
+         case INGAME_MENU_VIDEO_OPTIONS_MODE:
+            strlcpy(text, "Video Options...", sizeof(text));
             strlcpy(setting_text, "", sizeof(setting_text));
-            strlcpy(comment, "Set and manage shader options.", sizeof(comment));
+            strlcpy(comment, "Set and manage video options.", sizeof(comment));
             break;
-#endif
          case INGAME_MENU_FRAME_ADVANCE:
             strlcpy(text, "Frame Advance", sizeof(text));
             strlcpy(setting_text, "", sizeof(setting_text));
@@ -2494,9 +2469,7 @@ static int select_setting(void *data, uint64_t input)
    {
 
       if (rgui->menu_type != CONTROLS_MENU
-#ifdef HAVE_SHADER_MANAGER
-            || rgui->menu_type != INGAME_MENU_SHADER_MANAGER
-#endif
+            || rgui->menu_type != INGAME_MENU_VIDEO_OPTIONS
             || rgui->menu_type != INGAME_MENU
             )
          menu_stack_push(rgui->menu_type + 1, false);
@@ -2542,6 +2515,7 @@ static int select_rom(void *data, uint64_t input)
          strlcpy(g_extern.fullpath,
                rgui->browser->current_dir.path, sizeof(g_extern.fullpath));
          g_extern.lifecycle_mode_state |= (1ULL << MODE_LOAD_GAME);
+         return -1;
       }
    }
    else if (input & (1ULL << DEVICE_NAV_L1))
@@ -3035,23 +3009,6 @@ int rgui_input_postprocess(void *data, uint64_t old_state)
 
    DEVICE_CAST device_ptr = (DEVICE_CAST)driver.video_data;
 
-   if (g_extern.lifecycle_mode_state & (1ULL << MODE_LOAD_GAME))
-   {
-      if (g_extern.lifecycle_mode_state & (1ULL << MODE_INFO_DRAW))
-      {
-         char tmp[PATH_MAX];
-         char str[PATH_MAX];
-
-         fill_pathname_base(tmp, g_extern.fullpath, sizeof(tmp));
-         snprintf(str, sizeof(str), "INFO - Loading %s...", tmp);
-         msg_queue_push(g_extern.msg_queue, str, 1, 1);
-      }
-
-      g_extern.lifecycle_mode_state |= (1ULL << MODE_INIT);
-      g_extern.lifecycle_mode_state &= ~(1ULL << MODE_LOAD_GAME);
-      ret = -1;
-   }
-
    if ((rgui->trigger_state & (1ULL << DEVICE_NAV_MENU)) &&
       g_extern.main_is_init)
    {
@@ -3140,9 +3097,7 @@ int rgui_iterate(rgui_handle_t *rgui)
       case PATH_MENU:
       case CONTROLS_MENU:
       case INGAME_MENU:
-#ifdef HAVE_SHADER_MANAGER
-      case INGAME_MENU_SHADER_MANAGER:
-#endif
+      case INGAME_MENU_VIDEO_OPTIONS:
          return select_setting(rgui, rgui->trigger_state);
    }
 

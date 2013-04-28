@@ -17,6 +17,12 @@
 #ifndef MENU_COMMON_H__
 #define MENU_COMMON_H__
 
+#ifdef HAVE_RGUI
+#define MENU_TEXTURE_FULLSCREEN false
+#else
+#define MENU_TEXTURE_FULLSCREEN true
+#endif
+
 #ifndef __cplusplus
 #include <stdbool.h>
 #else

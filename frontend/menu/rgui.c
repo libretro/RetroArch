@@ -2205,12 +2205,7 @@ int rgui_iterate(rgui_handle_t *rgui)
                // Dunno what to do for Wii here ...
 
                strlcpy(g_extern.fullpath, path, sizeof(g_extern.fullpath));
-
                g_extern.lifecycle_mode_state |= (1ULL << MODE_LOAD_GAME);
-               rom_history_push(rgui->history,
-                     g_extern.fullpath,
-                     g_settings.libretro,
-                     rgui->info.library_name);
 
                rgui->need_refresh = true;
                ret = -1;
@@ -2218,26 +2213,7 @@ int rgui_iterate(rgui_handle_t *rgui)
             else
             {
                fill_pathname_join(g_extern.fullpath, dir, path, sizeof(g_extern.fullpath));
-
                g_extern.lifecycle_mode_state |= (1ULL << MODE_LOAD_GAME);
-
-               if (g_extern.lifecycle_mode_state & (1ULL << MODE_INFO_DRAW))
-               {
-                  char tmp[PATH_MAX];
-                  char str[PATH_MAX];
-
-                  fill_pathname_base(tmp, g_extern.fullpath, sizeof(tmp));
-                  snprintf(str, sizeof(str), "INFO - Loading %s ...", tmp);
-                  msg_queue_push(g_extern.msg_queue, str, 1, 1);
-               }
-
-               if (rgui->history)
-               {
-                  rom_history_push(rgui->history,
-                        g_extern.fullpath,
-                        g_settings.libretro,
-                        rgui->info.library_name);
-               }
 
                rgui->need_refresh = true; // in case of zip extract
                rgui->msg_force = true;
@@ -2342,15 +2318,6 @@ int rgui_input_postprocess(void *data, uint64_t old_state)
    (void)data;
 
    int ret = 0;
-
-   if (g_extern.lifecycle_mode_state & (1ULL << MODE_LOAD_GAME))
-   {
-      if (g_extern.fullpath)
-         g_extern.lifecycle_mode_state |= (1ULL << MODE_INIT);
-
-      g_extern.lifecycle_mode_state &= ~(1ULL << MODE_LOAD_GAME);
-      ret = -1;
-   }
 
    if ((rgui->trigger_state & (1ULL << DEVICE_NAV_MENU)) &&
          g_extern.main_is_init &&
