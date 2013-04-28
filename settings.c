@@ -308,15 +308,18 @@ static config_file_t *open_default_config_file(void)
 
 #if defined(_WIN32) && !defined(_XBOX)
    char conf_path[PATH_MAX];
-   // Just do something for now.
-   strlcpy(conf_path, "retroarch.cfg", sizeof(conf_path));
+
+   char app_path[PATH_MAX];
+   fill_pathname_application_path(app_path, sizeof(app_path));
+   fill_pathname_resolve_relative(conf_path, app_path, "retroarch.cfg", sizeof(conf_path));
+
    conf = config_file_new(conf_path);
    if (!conf)
    {
       const char *appdata = getenv("APPDATA");
       if (appdata)
       {
-         snprintf(conf_path, sizeof(conf_path), "%s/retroarch.cfg", appdata);
+         snprintf(conf_path, sizeof(conf_path), "%s\\retroarch.cfg", appdata);
          conf = config_file_new(conf_path);
       }
    }
