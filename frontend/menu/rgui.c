@@ -225,14 +225,6 @@ rgui_handle_t *rgui_init(void)
          (float)custom->width / custom->height;
    }
 
-   // TODO: Should make history path configurable.
-   // Possibly size as well.
-   char history_path[PATH_MAX];
-   fill_pathname_resolve_relative(history_path, g_extern.config_path,
-         ".retroarch-history.txt", sizeof(history_path));
-   RARCH_LOG("[RGUI]: Opening history: %s.\n", history_path);
-   rgui->history = rom_history_init(history_path, 20);
-
    return rgui;
 }
 
@@ -245,7 +237,6 @@ void rgui_free(rgui_handle_t *rgui)
    libretro_free_system_info(&rgui->info);
 #endif
 
-   rom_history_free(rgui->history);
    rgui_list_free(rgui->menu_stack);
    rgui_list_free(rgui->selection_buf);
 }
