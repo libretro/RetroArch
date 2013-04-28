@@ -41,8 +41,6 @@
 #endif
 #endif
 
-static bool lib_dummy;
-
 #ifdef HAVE_DYNAMIC
 #define SYM(x) do { \
    function_t func = dylib_proc(lib_handle, #x); \
@@ -199,103 +197,105 @@ static bool find_first_libretro(char *path, size_t size,
 }
 #endif
 
-static void load_symbols(void)
+static void load_symbols(bool is_dummy)
 {
-#ifdef HAVE_DYNAMIC
-   const char *libretro_path = g_settings.libretro;
-   char libretro_core_buffer[PATH_MAX];
-
-   if (path_is_directory(g_settings.libretro))
+   if (is_dummy)
    {
-      if (!find_first_libretro(libretro_core_buffer, sizeof(libretro_core_buffer),
-               g_settings.libretro, g_extern.fullpath))
+      SYM_DUMMY(retro_init);
+      SYM_DUMMY(retro_deinit);
+
+      SYM_DUMMY(retro_api_version);
+      SYM_DUMMY(retro_get_system_info);
+      SYM_DUMMY(retro_get_system_av_info);
+
+      SYM_DUMMY(retro_set_environment);
+      SYM_DUMMY(retro_set_video_refresh);
+      SYM_DUMMY(retro_set_audio_sample);
+      SYM_DUMMY(retro_set_audio_sample_batch);
+      SYM_DUMMY(retro_set_input_poll);
+      SYM_DUMMY(retro_set_input_state);
+
+      SYM_DUMMY(retro_set_controller_port_device);
+
+      SYM_DUMMY(retro_reset);
+      SYM_DUMMY(retro_run);
+
+      SYM_DUMMY(retro_serialize_size);
+      SYM_DUMMY(retro_serialize);
+      SYM_DUMMY(retro_unserialize);
+
+      SYM_DUMMY(retro_cheat_reset);
+      SYM_DUMMY(retro_cheat_set);
+
+      SYM_DUMMY(retro_load_game);
+      SYM_DUMMY(retro_load_game_special);
+
+      SYM_DUMMY(retro_unload_game);
+      SYM_DUMMY(retro_get_region);
+      SYM_DUMMY(retro_get_memory_data);
+      SYM_DUMMY(retro_get_memory_size);
+   }
+   else
+   {
+#ifdef HAVE_DYNAMIC
+      const char *libretro_path = g_settings.libretro;
+      char libretro_core_buffer[PATH_MAX];
+
+      if (path_is_directory(g_settings.libretro))
       {
-         RARCH_ERR("libretro_path is a directory, but no valid libretro implementation was found.\n");
-         rarch_fail(1, "load_dynamic()");
+         if (!find_first_libretro(libretro_core_buffer, sizeof(libretro_core_buffer),
+                  g_settings.libretro, g_extern.fullpath))
+         {
+            RARCH_ERR("libretro_path is a directory, but no valid libretro implementation was found.\n");
+            rarch_fail(1, "load_dynamic()");
+         }
+
+         libretro_path = libretro_core_buffer;
       }
 
-      libretro_path = libretro_core_buffer;
-   }
-
-   RARCH_LOG("Loading dynamic libretro from: \"%s\"\n", libretro_path);
-   lib_handle = dylib_load(libretro_path);
-   if (!lib_handle)
-   {
-      RARCH_ERR("Failed to open dynamic library: \"%s\"\n", libretro_path);
-      rarch_fail(1, "load_dynamic()");
-   }
+      RARCH_LOG("Loading dynamic libretro from: \"%s\"\n", libretro_path);
+      lib_handle = dylib_load(libretro_path);
+      if (!lib_handle)
+      {
+         RARCH_ERR("Failed to open dynamic library: \"%s\"\n", libretro_path);
+         rarch_fail(1, "load_dynamic()");
+      }
 #endif
 
-   SYM(retro_init);
-   SYM(retro_deinit);
+      SYM(retro_init);
+      SYM(retro_deinit);
 
-   SYM(retro_api_version);
-   SYM(retro_get_system_info);
-   SYM(retro_get_system_av_info);
+      SYM(retro_api_version);
+      SYM(retro_get_system_info);
+      SYM(retro_get_system_av_info);
 
-   SYM(retro_set_environment);
-   SYM(retro_set_video_refresh);
-   SYM(retro_set_audio_sample);
-   SYM(retro_set_audio_sample_batch);
-   SYM(retro_set_input_poll);
-   SYM(retro_set_input_state);
+      SYM(retro_set_environment);
+      SYM(retro_set_video_refresh);
+      SYM(retro_set_audio_sample);
+      SYM(retro_set_audio_sample_batch);
+      SYM(retro_set_input_poll);
+      SYM(retro_set_input_state);
 
-   SYM(retro_set_controller_port_device);
+      SYM(retro_set_controller_port_device);
 
-   SYM(retro_reset);
-   SYM(retro_run);
+      SYM(retro_reset);
+      SYM(retro_run);
 
-   SYM(retro_serialize_size);
-   SYM(retro_serialize);
-   SYM(retro_unserialize);
+      SYM(retro_serialize_size);
+      SYM(retro_serialize);
+      SYM(retro_unserialize);
 
-   SYM(retro_cheat_reset);
-   SYM(retro_cheat_set);
+      SYM(retro_cheat_reset);
+      SYM(retro_cheat_set);
 
-   SYM(retro_load_game);
-   SYM(retro_load_game_special);
+      SYM(retro_load_game);
+      SYM(retro_load_game_special);
 
-   SYM(retro_unload_game);
-   SYM(retro_get_region);
-   SYM(retro_get_memory_data);
-   SYM(retro_get_memory_size);
-}
-
-static void load_symbols_dummy(void)
-{
-   SYM_DUMMY(retro_init);
-   SYM_DUMMY(retro_deinit);
-
-   SYM_DUMMY(retro_api_version);
-   SYM_DUMMY(retro_get_system_info);
-   SYM_DUMMY(retro_get_system_av_info);
-
-   SYM_DUMMY(retro_set_environment);
-   SYM_DUMMY(retro_set_video_refresh);
-   SYM_DUMMY(retro_set_audio_sample);
-   SYM_DUMMY(retro_set_audio_sample_batch);
-   SYM_DUMMY(retro_set_input_poll);
-   SYM_DUMMY(retro_set_input_state);
-
-   SYM_DUMMY(retro_set_controller_port_device);
-
-   SYM_DUMMY(retro_reset);
-   SYM_DUMMY(retro_run);
-
-   SYM_DUMMY(retro_serialize_size);
-   SYM_DUMMY(retro_serialize);
-   SYM_DUMMY(retro_unserialize);
-
-   SYM_DUMMY(retro_cheat_reset);
-   SYM_DUMMY(retro_cheat_set);
-
-   SYM_DUMMY(retro_load_game);
-   SYM_DUMMY(retro_load_game_special);
-
-   SYM_DUMMY(retro_unload_game);
-   SYM_DUMMY(retro_get_region);
-   SYM_DUMMY(retro_get_memory_data);
-   SYM_DUMMY(retro_get_memory_size);
+      SYM(retro_unload_game);
+      SYM(retro_get_region);
+      SYM(retro_get_memory_data);
+      SYM(retro_get_memory_size);
+   }
 }
 
 void libretro_get_current_core_pathname(char *name, size_t size)
@@ -327,14 +327,11 @@ void libretro_get_current_core_pathname(char *name, size_t size)
 
 void init_libretro_sym(bool dummy)
 {
-   lib_dummy = dummy;
    // Guarantee that we can do "dirty" casting.
    // Every OS that this program supports should pass this ...
    rarch_assert(sizeof(void*) == sizeof(void (*)(void)));
 
-   if (lib_dummy)
-      load_symbols_dummy();
-   else
+   if (!dummy)
    {
 #ifdef HAVE_DYNAMIC
       // Try to verify that -lretro was not linked in from other modules
@@ -354,9 +351,9 @@ void init_libretro_sym(bool dummy)
          rarch_fail(1, "init_libretro_sym()");
       }
 #endif
-
-      load_symbols();
    }
+
+   load_symbols(dummy);
 
    pretro_set_environment(environment_cb);
 }
@@ -368,7 +365,6 @@ void uninit_libretro_sym(void)
       dylib_close(lib_handle);
    lib_handle = NULL;
 #endif
-   lib_dummy = false;
 
    // No longer valid.
    memset(&g_extern.system.info, 0, sizeof(g_extern.system.info));
