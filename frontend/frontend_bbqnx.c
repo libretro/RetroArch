@@ -42,7 +42,7 @@ int rarch_main(int argc, char *argv[])
    g_extern.verbose = true;
 
    menu_init();
-   g_extern.lifecycle_mode_state |= 1ULL << MODE_INIT;
+   g_extern.lifecycle_mode_state |= (1ULL << MODE_LOAD_GAME);
 
    for (;;)
    {
@@ -50,71 +50,26 @@ int rarch_main(int argc, char *argv[])
          break;
       else if (g_extern.lifecycle_mode_state & (1ULL << MODE_LOAD_GAME))
       {
-         if (g_extern.lifecycle_mode_state & (1ULL << MODE_INFO_DRAW))
+         load_menu_game_prepare();
+
+         // If ROM load fails, we exit RetroArch. On console it might make more sense to go back to menu though ...
+         if (load_menu_game())
+            g_extern.lifecycle_mode_state |= (1ULL << MODE_GAME);
+         else
          {
-            char tmp[PATH_MAX];
-            char str[PATH_MAX];
-
-            fill_pathname_base(tmp, g_extern.fullpath, sizeof(tmp));
-            snprintf(str, sizeof(str), "INFO - Loading %s...", tmp);
-            msg_queue_push(g_extern.msg_queue, str, 1, 1);
-         }
-
-#if defined(HAVE_RGUI) || defined(HAVE_RMENU) || defined(HAVE_RMENU_XUI)
-         if (rgui->history)
-         {
-            rom_history_push(rgui->history,
-                  g_extern.fullpath,
-                  g_settings.libretro,
-                  rgui->info.library_name);
-         }
-
-         // draw frame for loading message
-         if (driver.video_poke && driver.video_poke->set_texture_enable)
-            driver.video_poke->set_texture_enable(driver.video_data, rgui->frame_buf_show, MENU_TEXTURE_FULLSCREEN);
-
-         rarch_render_cached_frame();
-
-         if (driver.video_poke && driver.video_poke->set_texture_enable)
-            driver.video_poke->set_texture_enable(driver.video_data, false,
-                  MENU_TEXTURE_FULLSCREEN);
+#ifdef RARCH_CONSOLE
+            g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU);
+#else
+            return 1;
 #endif
+         }
 
          g_extern.lifecycle_mode_state &= ~(1ULL << MODE_LOAD_GAME);
-         g_extern.lifecycle_mode_state |= (1ULL << MODE_INIT);
       }
       else if (g_extern.lifecycle_mode_state & (1ULL << MODE_GAME))
       {
 	     while ((g_extern.is_paused && !g_extern.is_oneshot) ? rarch_main_idle_iterate() : rarch_main_iterate());
 	        g_extern.lifecycle_mode_state &= ~(1ULL << MODE_GAME);
-      }
-      else if (g_extern.lifecycle_mode_state & (1ULL << MODE_INIT))
-      {
-	     if (g_extern.main_is_init)
-	        rarch_main_deinit();
-
-	     struct rarch_main_wrap args = {0};
-
-        args.verbose = g_extern.verbose;
-         args.config_path   = *g_extern.config_path ? g_extern.config_path : NULL;
-        args.sram_path = (g_extern.lifecycle_mode_state & (1ULL << MODE_LOAD_GAME_SRAM_DIR_ENABLE)) ? g_extern.console.main_wrap.default_sram_dir : NULL;
-        args.state_path = (g_extern.lifecycle_mode_state & (1ULL << MODE_LOAD_GAME_STATE_DIR_ENABLE)) ? g_extern.console.main_wrap.default_savestate_dir : NULL;
-        args.rom_path = g_extern.fullpath;
-        args.libretro_path = g_settings.libretro;
-
-	     int init_ret = rarch_main_init_wrap(&args);
-	     if (init_ret == 0)
-	     {
-	        RARCH_LOG("rarch_main_init() succeeded.\n");
-	        g_extern.lifecycle_mode_state |= (1ULL << MODE_GAME);
-	     }
-	     else
-	     {
-	        RARCH_ERR("rarch_main_init() failed.\n");
-	        g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU);
-	     }
-
-	     g_extern.lifecycle_mode_state &= ~(1ULL << MODE_INIT);
       }
       else if (g_extern.lifecycle_mode_state & (1ULL << MODE_MENU))
       {

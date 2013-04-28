@@ -208,10 +208,7 @@ static void get_environment_settings(int argc, char *argv[])
    else
 #endif
 #ifndef IS_SALAMANDER
-   {
-      g_extern.lifecycle_mode_state |= (1ULL << MODE_EXTLAUNCH_SALAMANDER);
       RARCH_WARN("Started from Salamander, auto-game start disabled.\n");
-   }
 #endif
 
    memset(&size, 0x00, sizeof(CellGameContentSize));
@@ -350,7 +347,6 @@ static int system_process_args(int argc, char *argv[])
    {
       RARCH_LOG("Started from multiMAN, will auto-start game.\n");
       strlcpy(g_extern.fullpath, argv[1], sizeof(g_extern.fullpath));
-      g_extern.lifecycle_mode_state |= (1ULL << MODE_LOAD_GAME);
       ret = 1;
    }
 #endif

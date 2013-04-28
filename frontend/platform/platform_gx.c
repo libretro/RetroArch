@@ -341,15 +341,10 @@ static int system_process_args(int argc, char *argv[])
 
    if (argc > 2 && argv[1] != NULL && argv[2] != NULL)
    {
-      g_extern.lifecycle_mode_state |= (1ULL << MODE_EXTLAUNCH_CHANNEL);
       snprintf(g_extern.fullpath, sizeof(g_extern.fullpath),
             "%s%s", argv[1], argv[2]);
-
-      g_extern.lifecycle_mode_state |= (1ULL << MODE_LOAD_GAME);
       ret = 1;
    }
-   else
-      g_extern.lifecycle_mode_state |= (1ULL << MODE_EXTLAUNCH_SALAMANDER);
 
    return ret;
 }

@@ -268,6 +268,9 @@ void shader_manager_get_str(struct gfx_shader *shader,
       char *type_str, size_t type_str_size, unsigned type);
 #endif
 
+void load_menu_game_prepare(void);
+bool load_menu_game(void);
+
 #ifdef __cplusplus
 }
 #endif

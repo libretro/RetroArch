@@ -32,6 +32,10 @@
 
 rgui_handle_t *rgui;
 
+#if defined(RARCH_CONSOLE) || defined(__BLACKBERRY_QNX__)
+#define GLOBAL_INIT
+#endif
+
 #ifdef HAVE_SHADER_MANAGER
 void shader_manager_init(rgui_handle_t *rgui)
 {
@@ -362,6 +366,77 @@ void rgui_list_get_last(const rgui_list_t *list,
 }
 
 #endif
+
+#ifdef GLOBAL_INIT
+static bool global_init_done = false;
+#endif
+
+void load_menu_game_prepare(void)
+{
+#ifdef GLOBAL_INIT
+   if (!global_init_done)
+      return;
+#endif
+
+   if (g_extern.lifecycle_mode_state & (1ULL << MODE_INFO_DRAW))
+   {
+      char tmp[PATH_MAX];
+      char str[PATH_MAX];
+
+      fill_pathname_base(tmp, g_extern.fullpath, sizeof(tmp));
+      snprintf(str, sizeof(str), "INFO - Loading %s ...", tmp);
+      msg_queue_push(g_extern.msg_queue, str, 1, 1);
+   }
+
+   if (rgui->history)
+   {
+      rom_history_push(rgui->history,
+            g_extern.fullpath,
+            g_settings.libretro,
+            rgui->info.library_name);
+   }
+
+   // Draw frame for loading message
+   if (driver.video_poke && driver.video_poke->set_texture_enable)
+      driver.video_poke->set_texture_enable(driver.video_data, rgui->frame_buf_show, MENU_TEXTURE_FULLSCREEN);
+
+   rarch_render_cached_frame();
+
+   if (driver.video_poke && driver.video_poke->set_texture_enable)
+      driver.video_poke->set_texture_enable(driver.video_data, false,
+            MENU_TEXTURE_FULLSCREEN);
+}
+
+bool load_menu_game(void)
+{
+   if (g_extern.main_is_init)
+      rarch_main_deinit();
+
+   struct rarch_main_wrap args = {0};
+
+   args.verbose       = g_extern.verbose;
+   args.config_path   = *g_extern.config_path ? g_extern.config_path : NULL;
+   args.sram_path     = *g_extern.savefile_dir ? g_extern.savefile_dir : NULL;
+   args.state_path    = *g_extern.savestate_dir ? g_extern.savestate_dir : NULL;
+   args.rom_path      = g_extern.fullpath;
+   args.libretro_path = g_settings.libretro;
+
+#ifdef GLOBAL_INIT
+   if (!global_init_done)
+      global_init_done = true;
+#endif
+
+   if (rarch_main_init_wrap(&args) == 0)
+   {
+      RARCH_LOG("rarch_main_init_wrap() succeeded.\n");
+      return true;
+   }
+   else
+   {
+      RARCH_ERR("rarch_main_init_wrap() failed.\n");
+      return false;
+   }
+}
 
 void menu_init(void)
 {
