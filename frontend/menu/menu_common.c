@@ -32,10 +32,6 @@
 
 rgui_handle_t *rgui;
 
-#if defined(RARCH_CONSOLE) || defined(__BLACKBERRY_QNX__)
-#define GLOBAL_INIT
-#endif
-
 #ifdef HAVE_SHADER_MANAGER
 void shader_manager_init(rgui_handle_t *rgui)
 {
@@ -367,17 +363,8 @@ void rgui_list_get_last(const rgui_list_t *list,
 
 #endif
 
-#ifdef GLOBAL_INIT
-static bool global_init_done = false;
-#endif
-
 void load_menu_game_prepare(void)
 {
-#ifdef GLOBAL_INIT
-   if (!global_init_done)
-      return;
-#endif
-
    if (g_extern.lifecycle_mode_state & (1ULL << MODE_INFO_DRAW))
    {
       char tmp[PATH_MAX];
@@ -400,7 +387,8 @@ void load_menu_game_prepare(void)
    if (driver.video_poke && driver.video_poke->set_texture_enable)
       driver.video_poke->set_texture_enable(driver.video_data, rgui->frame_buf_show, MENU_TEXTURE_FULLSCREEN);
 
-   rarch_render_cached_frame();
+   if (driver.video)
+      rarch_render_cached_frame();
 
    if (driver.video_poke && driver.video_poke->set_texture_enable)
       driver.video_poke->set_texture_enable(driver.video_data, false,
@@ -418,13 +406,8 @@ bool load_menu_game(void)
    args.config_path   = *g_extern.config_path ? g_extern.config_path : NULL;
    args.sram_path     = *g_extern.savefile_dir ? g_extern.savefile_dir : NULL;
    args.state_path    = *g_extern.savestate_dir ? g_extern.savestate_dir : NULL;
-   args.rom_path      = g_extern.fullpath;
+   args.rom_path      = *g_extern.fullpath ? g_extern.fullpath : NULL;
    args.libretro_path = g_settings.libretro;
-
-#ifdef GLOBAL_INIT
-   if (!global_init_done)
-      global_init_done = true;
-#endif
 
    if (rarch_main_init_wrap(&args) == 0)
    {
