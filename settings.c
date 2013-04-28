@@ -319,7 +319,7 @@ static config_file_t *open_default_config_file(void)
       const char *appdata = getenv("APPDATA");
       if (appdata)
       {
-         snprintf(conf_path, sizeof(conf_path), "%s\\retroarch.cfg", appdata);
+         fill_pathname_join(conf_path, appdata, "retroarch.cfg", sizeof(conf_path));
          conf = config_file_new(conf_path);
       }
    }
