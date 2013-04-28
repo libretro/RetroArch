@@ -380,6 +380,8 @@ static void parse_config_file(void)
    {
       RARCH_LOG("Loading default config.\n");
       ret = config_load_file(NULL);
+      if (*g_extern.config_path)
+         RARCH_LOG("Found default config: %s.\n", g_extern.config_path);
    }
 
    if (!ret)
