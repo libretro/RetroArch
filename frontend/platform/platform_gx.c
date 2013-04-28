@@ -335,8 +335,10 @@ static void system_exitspawn(void)
 static void system_deinit(void) {}
 
 #ifndef IS_SALAMANDER
-static void system_process_args(int argc, char *argv[])
+static int system_process_args(int argc, char *argv[])
 {
+   int ret = 0;
+
    if (argc > 2 && argv[1] != NULL && argv[2] != NULL)
    {
       char rom[PATH_MAX];
@@ -347,9 +349,12 @@ static void system_process_args(int argc, char *argv[])
       g_extern.lifecycle_mode_state |= (1ULL << MODE_LOAD_GAME);
       g_extern.lifecycle_mode_state &= ~(1ULL << MODE_MENU);
       g_extern.lifecycle_mode_state |= (1ULL << MODE_INIT);
+      ret = 1;
    }
    else
       g_extern.lifecycle_mode_state |= (1ULL << MODE_EXTLAUNCH_SALAMANDER);
+
+   return ret;
 }
 
 #endif

@@ -262,10 +262,11 @@ static void system_init(void)
 #endif
 }
 
-static void system_process_args(int argc, char *argv[])
+static int system_process_args(int argc, char *argv[])
 {
    (void)argc;
    (void)argv;
+   return 0;
 }
 
 static void system_deinit(void) {}

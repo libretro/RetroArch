@@ -132,10 +132,11 @@ int rarch_main(int argc, char *argv[])
 
    menu_init();
 
-   system_process_args(argc, argv);
-
-   g_extern.lifecycle_mode_state &= ~(1ULL << MODE_MENU);
-   g_extern.lifecycle_mode_state |= (1ULL << MODE_INIT);
+   if (system_process_args(argc, argv) == 0)
+   {
+      g_extern.lifecycle_mode_state &= ~(1ULL << MODE_MENU);
+      g_extern.lifecycle_mode_state |= (1ULL << MODE_INIT);
+   }
 
    for (;;)
    {

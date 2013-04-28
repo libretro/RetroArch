@@ -342,8 +342,9 @@ static void system_init(void)
 #endif
 }
 
-static void system_process_args(int argc, char *argv[])
+static int system_process_args(int argc, char *argv[])
 {
+   int ret = 0;
 #ifdef HAVE_MULTIMAN
    if (g_extern.lifecycle_mode_state & (1ULL << MODE_EXTLAUNCH_MULTIMAN))
    {
@@ -351,8 +352,11 @@ static void system_process_args(int argc, char *argv[])
       strlcpy(g_extern.fullpath, argv[1], sizeof(g_extern.fullpath));
       g_extern.lifecycle_mode_state &= ~(1ULL << MODE_MENU);
       g_extern.lifecycle_mode_state |= (1ULL << MODE_INIT);
+      ret = 1;
    }
 #endif
+
+   return ret;
 }
 
 static void system_deinit(void)
