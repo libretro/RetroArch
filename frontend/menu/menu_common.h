@@ -17,6 +17,10 @@
 #ifndef MENU_COMMON_H__
 #define MENU_COMMON_H__
 
+#ifdef HAVE_CONFIG_H
+#include "../../config.h"
+#endif
+
 #ifdef HAVE_RGUI
 #define MENU_TEXTURE_FULLSCREEN false
 #else
