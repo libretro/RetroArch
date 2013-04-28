@@ -36,11 +36,10 @@ INCLUDE := -I. -I$(DEVKITPRO)/libogc/include -I$(DEVKITPRO)/libogc/include/ogc
 LIBDIRS := -L$(DEVKITPRO)/libogc/lib/wii -L.
 
 ifeq ($(CUSTOM_LIBOGC), 1)
-LIBOGC_LIB := -lminiogc
 CFLAGS += -DHAVE_MINIOGC
-else
-LIBOGC_LIB := -logc
 endif
+
+LIBOGC_LIB := -logc
 
 MACHDEP := -DGEKKO -DHW_RVL -mrvl -mcpu=750 -meabi -mhard-float
 CFLAGS += -Wall -std=gnu99 $(MACHDEP) $(INCLUDE)
