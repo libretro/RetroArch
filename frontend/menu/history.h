@@ -18,6 +18,10 @@
 
 #include <stddef.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef struct rom_history rom_history_t;
 
 rom_history_t *rom_history_init(const char *path, size_t size);
@@ -33,6 +37,10 @@ void rom_history_get_index(rom_history_t *hist,
 void rom_history_push(rom_history_t *hist,
       const char *path, const char *core_path,
       const char *core_name);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
 
