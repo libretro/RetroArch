@@ -43,44 +43,37 @@ char input_path[1024];
 
 default_paths_t default_paths;
 
-/* If a CORE executable of name CORE.extension exists, rename filename
- * to a more sane name. */
-static bool libretro_install_core(const char *path_prefix, const char *extension)
+// Rename core filename executable to a more sane name.
+
+static bool libretro_install_core(const char *path_prefix,
+      const char *core_exe_path)
 {
-   char core_exe_path[256];
-   char tmp_path[PATH_MAX], tmp_pathnewfile[PATH_MAX];
+   char old_path[PATH_MAX], new_path[PATH_MAX];
 
-   snprintf(core_exe_path, sizeof(core_exe_path), "%sCORE%s", path_prefix, extension);
+   libretro_get_current_core_pathname(old_path, sizeof(old_path));
 
-   if (!path_file_exists(core_exe_path))
-      return false;
-
-   libretro_get_current_core_pathname(tmp_path, sizeof(tmp_path));
-
-   strlcat(tmp_path, extension, sizeof(tmp_path));
-   snprintf(tmp_pathnewfile, sizeof(tmp_pathnewfile), "%s%s", path_prefix, tmp_path);
+   strlcat(old_path, DEFAULT_EXE_EXT, sizeof(old_path));
+   snprintf(new_path, sizeof(new_path), "%s%s", path_prefix, old_path);
 
    /* If core already exists, we are upgrading the core - 
     * delete existing file first. */
-   if (path_file_exists(tmp_pathnewfile))
+   if (path_file_exists(new_path))
    {
-      if (remove(tmp_pathnewfile) == 0)
-         RARCH_LOG("Upgrading, succeeded in removing pre-existing libretro core: [%s].\n", tmp_pathnewfile);
-      else
-         RARCH_ERR("Upgrading, failed to remove pre-existing libretro core: [%s].\n", tmp_pathnewfile);
+      RARCH_LOG("Removing temporary ROM file: %s.\n", new_path);
+      if (remove(new_path) < 0)
+         RARCH_ERR("Failed to remove file: %s.\n", new_path);
    }
 
    /* Now attempt the renaming of the core. */
-   if (rename(core_exe_path, tmp_pathnewfile) == 0)
+   RARCH_LOG("Renaming core to: %s.\n", new_path);
+   if (rename(core_exe_path, new_path) < 0)
    {
-      RARCH_LOG("Libretro core [%s] successfully renamed to: [%s].\n", core_exe_path, tmp_pathnewfile);
-      strlcpy(g_settings.libretro, tmp_pathnewfile, sizeof(g_settings.libretro));
-   }
-   else
-   {
-      RARCH_ERR("Failed to rename CORE executable. Will attempt to load libretro core path from config file.\n");
+      RARCH_ERR("Failed to rename core.\n");
       return false;
    }
+
+   strlcpy(g_settings.libretro, new_path,
+         sizeof(g_settings.libretro));
 
    return true;
 }
@@ -119,13 +112,14 @@ int rarch_main(int argc, char *argv[])
 
    snprintf(path_prefix, sizeof(path_prefix), "%s%c", default_paths.core_dir, slash);
 
-   // Save new libretro core path to config file
-   if (libretro_install_core(path_prefix, DEFAULT_EXE_EXT))
-      config_save_file(g_extern.config_path);
-#endif
+   char core_exe_path[256];
+   snprintf(core_exe_path, sizeof(core_exe_path), "%sCORE%s", path_prefix, DEFAULT_EXE_EXT);
 
-   /* FIXME - when dummy loading becomes possible perhaps change this param  */
-   init_libretro_sym(false);
+   // Save new libretro core path to config file
+   if (path_file_exists(core_exe_path))
+      if (libretro_install_core(path_prefix, core_exe_path))
+         config_save_file(g_extern.config_path);
+#endif
 
 #ifdef GEKKO
    /* Per-core input config loading */
