@@ -350,8 +350,7 @@ static int system_process_args(int argc, char *argv[])
    {
       RARCH_LOG("Started from multiMAN, will auto-start game.\n");
       strlcpy(g_extern.fullpath, argv[1], sizeof(g_extern.fullpath));
-      g_extern.lifecycle_mode_state &= ~(1ULL << MODE_MENU);
-      g_extern.lifecycle_mode_state |= (1ULL << MODE_INIT);
+      g_extern.lifecycle_mode_state |= (1ULL << MODE_LOAD_GAME);
       ret = 1;
    }
 #endif

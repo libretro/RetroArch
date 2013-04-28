@@ -341,14 +341,11 @@ static int system_process_args(int argc, char *argv[])
 
    if (argc > 2 && argv[1] != NULL && argv[2] != NULL)
    {
-      char rom[PATH_MAX];
       g_extern.lifecycle_mode_state |= (1ULL << MODE_EXTLAUNCH_CHANNEL);
-      snprintf(rom, sizeof(rom), "%s%s", argv[1], argv[2]);
+      snprintf(g_extern.fullpath, sizeof(g_extern.fullpath),
+            "%s%s", argv[1], argv[2]);
 
-      strlcpy(g_extern.fullpath, rom, sizeof(g_extern.fullpath));
       g_extern.lifecycle_mode_state |= (1ULL << MODE_LOAD_GAME);
-      g_extern.lifecycle_mode_state &= ~(1ULL << MODE_MENU);
-      g_extern.lifecycle_mode_state |= (1ULL << MODE_INIT);
       ret = 1;
    }
    else
