@@ -365,22 +365,21 @@ void rgui_list_get_last(const rgui_list_t *list,
 
 void load_menu_game_prepare(void)
 {
-   if (g_extern.lifecycle_mode_state & (1ULL << MODE_INFO_DRAW))
+   if (*g_extern.fullpath)
    {
-      char tmp[PATH_MAX];
-      char str[PATH_MAX];
+      if (g_extern.lifecycle_mode_state & (1ULL << MODE_INFO_DRAW))
+      {
+         char tmp[PATH_MAX];
+         char str[PATH_MAX];
 
-      fill_pathname_base(tmp, g_extern.fullpath, sizeof(tmp));
-      snprintf(str, sizeof(str), "INFO - Loading %s ...", tmp);
-      msg_queue_push(g_extern.msg_queue, str, 1, 1);
-   }
+         fill_pathname_base(tmp, g_extern.fullpath, sizeof(tmp));
+         snprintf(str, sizeof(str), "INFO - Loading %s ...", tmp);
+         msg_queue_push(g_extern.msg_queue, str, 1, 1);
+      }
 
-   if (rgui->history)
-   {
-      rom_history_push(rgui->history,
-            g_extern.fullpath,
-            g_settings.libretro,
-            rgui->info.library_name);
+      if (rgui->history)
+         rom_history_push(rgui->history, g_extern.fullpath,
+               g_settings.libretro, rgui->info.library_name);
    }
 
    // Draw frame for loading message
