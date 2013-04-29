@@ -335,7 +335,15 @@ static void system_exitspawn(void)
 #endif
 }
 
-static void system_deinit(void) {}
+static void system_deinit(void)
+{
+   GX_DrawDone();
+   GX_AbortFrame();
+   GX_Flush();
+   VIDEO_SetBlack(true);
+   VIDEO_Flush();
+   VIDEO_WaitVSync();
+}
 
 #ifndef IS_SALAMANDER
 static int system_process_args(int argc, char *argv[])
