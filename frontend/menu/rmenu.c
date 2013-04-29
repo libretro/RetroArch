@@ -702,10 +702,10 @@ static int select_directory(void *data, uint64_t input)
          switch(rgui->menu_type)
          {
             case PATH_SAVESTATES_DIR_CHOICE:
-               strlcpy(g_extern.console.main_wrap.default_savestate_dir, path, sizeof(g_extern.console.main_wrap.default_savestate_dir));
+               strlcpy(g_extern.savestate_dir, path, sizeof(g_extern.savestate_dir));
                break;
             case PATH_SRAM_DIR_CHOICE:
-               strlcpy(g_extern.console.main_wrap.default_sram_dir, path, sizeof(g_extern.console.main_wrap.default_sram_dir));
+               strlcpy(g_extern.savefile_dir, path, sizeof(g_extern.savefile_dir));
                break;
             case PATH_DEFAULT_ROM_DIR_CHOICE:
                strlcpy(g_settings.rgui_browser_directory, path, sizeof(g_settings.rgui_browser_directory));
@@ -728,10 +728,10 @@ static int select_directory(void *data, uint64_t input)
       switch(rgui->menu_type)
       {
          case PATH_SAVESTATES_DIR_CHOICE:
-            strlcpy(g_extern.console.main_wrap.default_savestate_dir, path, sizeof(g_extern.console.main_wrap.default_savestate_dir));
+            strlcpy(g_extern.savestate_dir, path, sizeof(g_extern.savestate_dir));
             break;
          case PATH_SRAM_DIR_CHOICE:
-            strlcpy(g_extern.console.main_wrap.default_sram_dir, path, sizeof(g_extern.console.main_wrap.default_sram_dir));
+            strlcpy(g_extern.savefile_dir, path, sizeof(g_extern.savefile_dir));
             break;
          case PATH_DEFAULT_ROM_DIR_CHOICE:
             strlcpy(g_settings.rgui_browser_directory, path, sizeof(g_settings.rgui_browser_directory));
@@ -1279,7 +1279,7 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
          }
 
          if (input & (1ULL << DEVICE_NAV_START))
-            strlcpy(g_extern.console.main_wrap.default_savestate_dir, default_paths.savestate_dir, sizeof(g_extern.console.main_wrap.default_savestate_dir));
+            strlcpy(g_extern.savestate_dir, default_paths.savestate_dir, sizeof(g_extern.savestate_dir));
 
          break;
       case SETTING_PATH_SRAM_DIRECTORY:
@@ -1290,7 +1290,7 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
          }
 
          if (input & (1ULL << DEVICE_NAV_START))
-            strlcpy(g_extern.console.main_wrap.default_sram_dir, default_paths.sram_dir, sizeof(g_extern.console.main_wrap.default_sram_dir));
+            strlcpy(g_extern.savefile_dir, default_paths.sram_dir, sizeof(g_extern.savefile_dir));
          break;
 #ifdef HAVE_XML
       case SETTING_PATH_CHEATS:
@@ -1342,11 +1342,11 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
          {
             strlcpy(g_settings.rgui_browser_directory, default_paths.filebrowser_startup_dir,
                   sizeof(g_settings.rgui_browser_directory));
-            strlcpy(g_extern.console.main_wrap.default_savestate_dir, default_paths.port_dir, sizeof(g_extern.console.main_wrap.default_savestate_dir));
+            strlcpy(g_extern.savestate_dir, default_paths.port_dir, sizeof(g_extern.savestate_dir));
 #ifdef HAVE_XML
             strlcpy(g_settings.cheat_database, default_paths.port_dir, sizeof(g_settings.cheat_database));
 #endif
-            strlcpy(g_extern.console.main_wrap.default_sram_dir, "", sizeof(g_extern.console.main_wrap.default_sram_dir));
+            strlcpy(g_extern.savefile_dir, "", sizeof(g_extern.savefile_dir));
          }
          break;
       case SETTING_CONTROLS_SCHEME:
@@ -2064,12 +2064,12 @@ static int select_setting(void *data, uint64_t input)
             break;
          case SETTING_PATH_SAVESTATES_DIRECTORY:
             strlcpy(text, "Savestate Directory", sizeof(text));
-            strlcpy(setting_text, g_extern.console.main_wrap.default_savestate_dir, sizeof(setting_text));
+            strlcpy(setting_text, g_extern.savestate_dir, sizeof(setting_text));
             strlcpy(comment, "INFO - Directory where savestates will be saved to.", sizeof(comment));
             break;
          case SETTING_PATH_SRAM_DIRECTORY:
             strlcpy(text, "SRAM Directory", sizeof(text));
-            strlcpy(setting_text, g_extern.console.main_wrap.default_sram_dir, sizeof(setting_text));
+            strlcpy(setting_text, g_extern.savefile_dir, sizeof(setting_text));
             strlcpy(comment, "INFO - Set the default SaveRAM directory path.", sizeof(comment));
             break;
 #ifdef HAVE_XML

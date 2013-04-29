@@ -572,12 +572,6 @@ struct global
 #endif
       } sound;
 
-      struct
-      {
-         char default_savestate_dir[PATH_MAX];
-         char default_sram_dir[PATH_MAX];
-      } main_wrap;
-
 #ifdef HAVE_OSKUTIL
       struct
       {

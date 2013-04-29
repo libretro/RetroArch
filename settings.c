@@ -254,7 +254,7 @@ void config_set_defaults(void)
    g_settings.video.aspect_ratio = -1.0f;
 
    // g_extern
-   strlcpy(g_extern.console.main_wrap.default_sram_dir, default_paths.sram_dir, sizeof(g_extern.console.main_wrap.default_sram_dir));
+   strlcpy(g_extern.savefile_dir, default_paths.sram_dir, sizeof(g_extern.savefile_dir));
    g_extern.console.screen.gamma_correction = DEFAULT_GAMMA;
    g_extern.lifecycle_mode_state |= (1ULL << MODE_AUDIO_CUSTOM_BGM_ENABLE);
    g_extern.lifecycle_mode_state |= (1ULL << MODE_VIDEO_THROTTLE_ENABLE);
@@ -264,7 +264,7 @@ void config_set_defaults(void)
 
    g_extern.console.screen.orientation = ORIENTATION_NORMAL;
    g_extern.console.screen.resolutions.current.id = 0;
-   strlcpy(g_extern.console.main_wrap.default_savestate_dir, default_paths.savestate_dir, sizeof(g_extern.console.main_wrap.default_savestate_dir));
+   strlcpy(g_extern.savestate_dir, default_paths.savestate_dir, sizeof(g_extern.savestate_dir));
 #ifdef HAVE_RMENU
    strlcpy(g_extern.menu_texture_path, default_paths.menu_border_file, sizeof(g_extern.menu_texture_path));
 #endif
