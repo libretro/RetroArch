@@ -31,16 +31,19 @@ static void rarch_console_exec(const char *path, bool should_load_game)
 
    RARCH_LOG("Attempt to load executable: [%s].\n", path);
    char spawn_data[256];
+   char game_path[256];
    for(unsigned int i = 0; i < sizeof(spawn_data); ++i)
       spawn_data[i] = i & 0xff;
 
-   char spawn_data_size[16];
-   snprintf(spawn_data_size, sizeof(spawn_data_size), "%d", 256);
+#ifndef IS_SALAMANDER
+   if (should_load_game)
+      strlcpy(game_path, g_extern.fullpath, sizeof(game_path));
+#endif
 
    const char * const spawn_argv[] = {
-      spawn_data_size,
-      "test argv for",
-      "sceNpDrmProcessExitSpawn2()",
+#ifndef IS_SALAMANDER
+      game_path,
+#endif
       NULL
    };
 
@@ -50,7 +53,7 @@ static void rarch_console_exec(const char *path, bool should_load_game)
    if(ret <  0)
    {
       RARCH_WARN("SELF file is not of NPDRM type, trying another approach to boot it...\n");
-      sys_game_process_exitspawn(path, NULL, NULL, NULL, 0, 1000, SYS_PROCESS_PRIMARY_STACK_SIZE_1M);
+      sys_game_process_exitspawn(path, (const char** const)spawn_argv, NULL, NULL, 0, 1000, SYS_PROCESS_PRIMARY_STACK_SIZE_1M);
    }
 
    sceNpTerm();

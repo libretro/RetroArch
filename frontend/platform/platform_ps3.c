@@ -200,7 +200,8 @@ static void get_environment_settings(int argc, char *argv[])
 
 #ifdef HAVE_MULTIMAN
    /* not launched from external launcher, set default path */
-   if(path_file_exists(MULTIMAN_SELF_FILE) && argc > 1 &&  path_file_exists(argv[1]))
+   // second param is multiMAN SELF file
+   if(path_file_exists(argv[2]) && argc > 1 && (strcmp(argv[2], EMULATOR_CONTENT_DIR) == 0))
    {
       g_extern.lifecycle_mode_state |= (1ULL << MODE_EXTLAUNCH_MULTIMAN);
       RARCH_LOG("Started from multiMAN, auto-game start enabled.\n");
@@ -341,17 +342,14 @@ static void system_init(void)
 
 static int system_process_args(int argc, char *argv[])
 {
-   int ret = 0;
-#ifdef HAVE_MULTIMAN
-   if (g_extern.lifecycle_mode_state & (1ULL << MODE_EXTLAUNCH_MULTIMAN))
+   if (argc > 1)
    {
-      RARCH_LOG("Started from multiMAN, will auto-start game.\n");
+      RARCH_LOG("Auto-start game %s.\n", argv[1]);
       strlcpy(g_extern.fullpath, argv[1], sizeof(g_extern.fullpath));
-      ret = 1;
+      return 1;
    }
-#endif
 
-   return ret;
+   return 0;
 }
 
 static void system_deinit(void)
