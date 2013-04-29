@@ -266,6 +266,23 @@ static int system_process_args(int argc, char *argv[])
 {
    (void)argc;
    (void)argv;
+
+#ifdef _XBOX1
+   LAUNCH_DATA ptr;
+   DWORD launch_type;
+
+   if (XGetLaunchInfo(&launch_type, &ptr) == ERROR_SUCCESS)
+   {
+      if (launch_type == LDT_FROM_DEBUGGER_CMDLINE)
+         RARCH_LOG("Launched from commandline debugger.\n");
+      else
+      {
+         snprintf(g_extern.fullpath, sizeof(g_extern.fullpath), (char*)ptr.Data);
+         RARCH_LOG("Auto-start game %s.\n", g_extern.fullpath);
+         return 1;
+      }
+   }
+#endif
    return 0;
 }
 

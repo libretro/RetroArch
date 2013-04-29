@@ -23,7 +23,23 @@
 static void rarch_console_exec(const char *path, bool should_load_game)
 {
    (void)should_load_game;
-   RARCH_LOG("Attempt to load executable: [%s].\n", path);
 
+   RARCH_LOG("Attempt to load executable: [%s].\n", path);
+#ifdef IS_SALAMANDER
    XLaunchNewImage(path, NULL);
+#else
+#ifdef _XBOX1
+   LAUNCH_DATA ptr;
+   memset(&ptr, 0, sizeof(ptr));
+   if (should_load_game)
+   {
+      snprintf((char*)ptr.Data, sizeof(ptr.Data), "%s", g_extern.fullpath);
+      XLaunchNewImage(path, &ptr);
+   }
+   XLaunchNewImage(path, NULL);
+#else
+   XLaunchNewImage(path, NULL);
+#endif
+#endif
+
 }
