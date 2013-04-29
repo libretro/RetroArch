@@ -394,14 +394,14 @@ void load_menu_game_prepare(void)
             MENU_TEXTURE_FULLSCREEN);
 }
 
-void load_menu_game_history(void)
+void load_menu_game_history(unsigned game_index)
 {
    const char *path = NULL;
    const char *core_path = NULL;
    const char *core_name = NULL;
 
    rom_history_get_index(rgui->history,
-         rgui->selection_ptr, &path, &core_path, &core_name);
+         game_index, &path, &core_path, &core_name);
 
    strlcpy(g_settings.libretro, core_path, sizeof(g_settings.libretro));
    strlcpy(g_extern.fullpath, path, sizeof(g_extern.fullpath));

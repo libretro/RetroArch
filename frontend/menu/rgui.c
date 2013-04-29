@@ -2191,7 +2191,7 @@ int rgui_iterate(rgui_handle_t *rgui)
             }
             else if (menu_type == RGUI_SETTINGS_OPEN_HISTORY)
             {
-               load_menu_game_history();
+               load_menu_game_history(rgui->selection_ptr);
                rgui->need_refresh = true;
                ret = -1;
             }
