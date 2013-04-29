@@ -2193,18 +2193,18 @@ static int select_setting(void *data, uint64_t input)
             strlcpy(comment, "Change orientation of the screen.", sizeof(comment));
             break;
          case INGAME_MENU_RESIZE_MODE:
-            strlcpy(text, "Custom Ratio...", sizeof(text));
-            strlcpy(setting_text, "", sizeof(setting_text));
+            strlcpy(text, "Custom Ratio", sizeof(text));
+            strlcpy(setting_text, "...", sizeof(setting_text));
             strlcpy(comment, "Allows you to resize the screen.", sizeof(comment));
             break;
          case INGAME_MENU_CORE_OPTIONS_MODE:
-            strlcpy(text, "Core Options...", sizeof(text));
-            strlcpy(setting_text, "", sizeof(setting_text));
+            strlcpy(text, "Core Options", sizeof(text));
+            strlcpy(setting_text, "...", sizeof(setting_text));
             strlcpy(comment, "Set core-specific options.", sizeof(comment));
             break;
          case INGAME_MENU_VIDEO_OPTIONS_MODE:
-            strlcpy(text, "Video Options...", sizeof(text));
-            strlcpy(setting_text, "", sizeof(setting_text));
+            strlcpy(text, "Video Options", sizeof(text));
+            strlcpy(setting_text, "...", sizeof(setting_text));
             strlcpy(comment, "Set and manage video options.", sizeof(comment));
             break;
          case INGAME_MENU_FRAME_ADVANCE:
@@ -2228,18 +2228,18 @@ static int select_setting(void *data, uint64_t input)
             strlcpy(comment, "Resume the currently loaded game.", sizeof(comment));
             break;
          case INGAME_MENU_CHANGE_GAME:
-            strlcpy(text, "Load Game...", sizeof(text));
-            strlcpy(setting_text, "", sizeof(setting_text));
+            strlcpy(text, "Load Game", sizeof(text));
+            strlcpy(setting_text, "...", sizeof(setting_text));
             strlcpy(comment, "Select a game to be loaded.", sizeof(comment));
             break;
          case INGAME_MENU_CHANGE_LIBRETRO_CORE:
-            strlcpy(text, "Core...", sizeof(text));
-            strlcpy(setting_text, "", sizeof(setting_text));
+            strlcpy(text, "Core", sizeof(text));
+            strlcpy(setting_text, "...", sizeof(setting_text));
             strlcpy(comment, "Choose another libretro core.", sizeof(comment));
             break;
          case INGAME_MENU_SETTINGS:
-            strlcpy(text, "Settings...", sizeof(text));
-            strlcpy(setting_text, "", sizeof(setting_text));
+            strlcpy(text, "Settings", sizeof(text));
+            strlcpy(setting_text, "...", sizeof(setting_text));
             strlcpy(comment, "Change RetroArch settings.", sizeof(comment));
             break;
 #ifdef HAVE_MULTIMAN
@@ -2603,10 +2603,7 @@ static int ingame_menu_resize(void *data, uint64_t input)
 
    if (rgui->frame_buf_show)
    {
-      char viewport_x[32];
-      char viewport_y[32];
-      char viewport_w[32];
-      char viewport_h[32];
+      char viewport[32];
       char msg[128];
       struct platform_bind key_label_b = {0};
       struct platform_bind key_label_a = {0};
@@ -2664,10 +2661,8 @@ static int ingame_menu_resize(void *data, uint64_t input)
 
       display_menubar(rgui->menu_type);
 
-      snprintf(viewport_x, sizeof(viewport_x), "Viewport X: #%d", g_extern.console.screen.viewports.custom_vp.x);
-      snprintf(viewport_y, sizeof(viewport_y), "Viewport Y: #%d", g_extern.console.screen.viewports.custom_vp.y);
-      snprintf(viewport_w, sizeof(viewport_w), "Viewport W: #%d", g_extern.console.screen.viewports.custom_vp.width);
-      snprintf(viewport_h, sizeof(viewport_h), "Viewport H: #%d", g_extern.console.screen.viewports.custom_vp.height);
+      snprintf(viewport, sizeof(viewport), "Viewport X: #%d Y: %d (%dx%d)", g_extern.console.screen.viewports.custom_vp.x, g_extern.console.screen.viewports.custom_vp.y, g_extern.console.screen.viewports.custom_vp.width,
+            g_extern.console.screen.viewports.custom_vp.height);
 
       font_parms.x = POSITION_X; 
       font_parms.y = POSITION_Y_BEGIN;
@@ -2675,22 +2670,7 @@ static int ingame_menu_resize(void *data, uint64_t input)
       font_parms.color = GREEN;
 
       if (driver.video_poke->set_osd_msg)
-         driver.video_poke->set_osd_msg(driver.video_data, viewport_x, &font_parms);
-
-      font_parms.y = POSITION_Y_BEGIN + (POSITION_Y_INCREMENT * 1);
-
-      if (driver.video_poke->set_osd_msg)
-         driver.video_poke->set_osd_msg(driver.video_data, viewport_y, &font_parms);
-
-      font_parms.y = POSITION_Y_BEGIN + (POSITION_Y_INCREMENT * 2);
-
-      if (driver.video_poke->set_osd_msg)
-         driver.video_poke->set_osd_msg(driver.video_data, viewport_w, &font_parms);
-
-      font_parms.y = POSITION_Y_BEGIN + (POSITION_Y_INCREMENT * 3);
-
-      if (driver.video_poke->set_osd_msg)
-         driver.video_poke->set_osd_msg(driver.video_data, viewport_h, &font_parms);
+         driver.video_poke->set_osd_msg(driver.video_data, viewport, &font_parms);
 
       snprintf(msg, sizeof(msg), "[%s]", key_label_dpad_left.desc);
 
@@ -3143,7 +3123,7 @@ uint64_t rgui_input(void)
    //set first button input frame as trigger
    rgui->trigger_state = input_state & ~rgui->old_input_state;
 
-   bool analog_sticks_pressed = (input_state & (
+   bool keys_pressed = (input_state & (
             (1ULL << DEVICE_NAV_LEFT_ANALOG_L) |
             (1ULL << DEVICE_NAV_RIGHT_ANALOG_L) |
             (1ULL << DEVICE_NAV_UP_ANALOG_L) |
@@ -3156,7 +3136,7 @@ uint64_t rgui_input(void)
             (1ULL << DEVICE_NAV_L2) |
             (1ULL << DEVICE_NAV_R2)
             ));
-   rgui->do_held = (analog_sticks_pressed || shoulder_buttons_pressed) &&
+   rgui->do_held = (keys_pressed || shoulder_buttons_pressed) &&
    !(input_state & DEVICE_NAV_MENU);
 
    return input_state;
