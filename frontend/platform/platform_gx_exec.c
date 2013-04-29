@@ -49,7 +49,7 @@ static void dol_copy_argv_path(const char *fullpath)
    cmdline[len++] = 0;
    // file must be split into two parts, the path and the actual filename
    // done to be compatible with loaders
-   if (fullpath && strchr(fullpath, '/') != -1)
+   if (fullpath && strchr(fullpath, '/') != (char *)-1)
    {
       char tmp[PATH_MAX];
 
@@ -62,7 +62,7 @@ static void dol_copy_argv_path(const char *fullpath)
 
       // filename
       char *name = strrchr(fullpath, '/') + 1;
-      size_t t_len = strlen(name);
+      t_len = strlen(name);
       memcpy(cmdline + len, name, t_len);
       len += t_len;
       cmdline[len++] = 0;
