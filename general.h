@@ -690,6 +690,8 @@ void rarch_set_fullscreen(bool fullscreen);
 void rarch_disk_control_set_eject(bool state, bool log);
 void rarch_disk_control_set_index(unsigned index);
 void rarch_disk_control_append_image(const char *path);
+void rarch_init_autosave(void);
+void rarch_deinit_autosave(void);
 
 void rarch_load_state(void);
 void rarch_save_state(void);

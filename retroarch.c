@@ -1669,7 +1669,7 @@ static void init_libretro_cbs(void)
 }
 
 #if defined(HAVE_THREADS) && !defined(RARCH_CONSOLE)
-static void init_autosave(void)
+void rarch_init_autosave(void)
 {
    int ram_types[2] = {-1, -1};
    const char *ram_paths[2] = {NULL, NULL};
@@ -1722,7 +1722,7 @@ static void init_autosave(void)
    }
 }
 
-static void deinit_autosave(void)
+void rarch_deinit_autosave(void)
 {
    for (unsigned i = 0; i < ARRAY_SIZE(g_extern.autosave); i++)
    {
@@ -2445,7 +2445,7 @@ void rarch_disk_control_append_image(const char *path)
    msg_queue_push(g_extern.msg_queue, msg, 0, 180);
 
 #if defined(HAVE_THREADS) && !defined(RARCH_CONSOLE)
-   deinit_autosave();
+   rarch_deinit_autosave();
 #endif
 
    // Update paths for our new image.
@@ -2456,7 +2456,7 @@ void rarch_disk_control_append_image(const char *path)
    fill_pathnames();
 
 #if defined(HAVE_THREADS) && !defined(RARCH_CONSOLE)
-   init_autosave();
+   rarch_init_autosave();
 #endif
 
    rarch_disk_control_set_eject(false, false);
@@ -2966,7 +2966,7 @@ int rarch_main_init(int argc, char *argv[])
 
 #if defined(HAVE_THREADS) && !defined(RARCH_CONSOLE)
    if (g_extern.use_sram)
-      init_autosave();
+      rarch_init_autosave();
 #endif
       
 #ifdef HAVE_NETPLAY
@@ -3102,7 +3102,7 @@ void rarch_main_deinit(void)
 
 #if defined(HAVE_THREADS) && !defined(RARCH_CONSOLE)
    if (g_extern.use_sram)
-      deinit_autosave();
+      rarch_deinit_autosave();
 #endif
 
 #ifdef HAVE_FFMPEG

@@ -544,7 +544,10 @@ static void render_text(rgui_handle_t *rgui)
                   strlcpy(type_str, "OFF", sizeof(type_str));
                break;
             case RGUI_SETTINGS_REWIND_GRANULARITY:
-               snprintf(type_str, sizeof(type_str), "%d", g_settings.rewind_granularity);
+               snprintf(type_str, sizeof(type_str), "%u", g_settings.rewind_granularity);
+               break;
+            case RGUI_SETTINGS_SRAM_AUTOSAVE:
+               strlcpy(type_str, g_settings.autosave_interval ? "ON" : "OFF", sizeof(type_str));
                break;
             case RGUI_SETTINGS_SAVESTATE_SAVE:
             case RGUI_SETTINGS_SAVESTATE_LOAD:
@@ -786,6 +789,22 @@ static int rgui_settings_toggle_setting(rgui_handle_t *rgui, unsigned setting, r
          else if (action == RGUI_ACTION_START)
             g_settings.rewind_granularity = 1;
          break;
+#if defined(HAVE_THREADS) && !defined(RARCH_CONSOLE)
+      case RGUI_SETTINGS_SRAM_AUTOSAVE:
+         if (action == RGUI_ACTION_OK || action == RGUI_ACTION_RIGHT || action == RGUI_ACTION_LEFT)
+         {
+            rarch_deinit_autosave();
+            g_settings.autosave_interval = (!g_settings.autosave_interval) * 10;
+            if (g_settings.autosave_interval)
+               rarch_init_autosave();
+         }
+         else if (action == RGUI_ACTION_START)
+         {
+            rarch_deinit_autosave();
+            g_settings.autosave_interval = 0;
+         }
+         break;
+#endif
       case RGUI_SETTINGS_SAVESTATE_SAVE:
       case RGUI_SETTINGS_SAVESTATE_LOAD:
          if (action == RGUI_ACTION_OK)
@@ -1133,6 +1152,9 @@ static void rgui_settings_populate_entries(rgui_handle_t *rgui)
 
    rgui_list_push(rgui->selection_buf, "Rewind", RGUI_SETTINGS_REWIND_ENABLE, 0);
    rgui_list_push(rgui->selection_buf, "Rewind Granularity", RGUI_SETTINGS_REWIND_GRANULARITY, 0);
+#if defined(HAVE_THREADS) && !defined(RARCH_CONSOLE)
+   rgui_list_push(rgui->selection_buf, "SRAM Autosave", RGUI_SETTINGS_SRAM_AUTOSAVE, 0);
+#endif
    rgui_list_push(rgui->selection_buf, "Mute Audio", RGUI_SETTINGS_AUDIO_MUTE, 0);
    rgui_list_push(rgui->selection_buf, "Audio Control Rate", RGUI_SETTINGS_AUDIO_CONTROL_RATE, 0);
 #ifdef GEKKO
