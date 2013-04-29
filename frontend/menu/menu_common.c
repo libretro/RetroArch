@@ -382,6 +382,14 @@ void load_menu_game_prepare(void)
                g_settings.libretro, rgui->info.library_name);
    }
 
+#ifdef HAVE_RGUI
+   // redraw RGUI frame
+   rgui->old_input_state = rgui->trigger_state = 0;
+   rgui->do_held = false;
+   rgui->msg_force = true;
+   rgui_iterate(rgui);
+#endif
+
    // Draw frame for loading message
    if (driver.video_poke && driver.video_poke->set_texture_enable)
       driver.video_poke->set_texture_enable(driver.video_data, rgui->frame_buf_show, MENU_TEXTURE_FULLSCREEN);
