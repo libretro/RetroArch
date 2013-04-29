@@ -1616,13 +1616,11 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
             return -1;
          }
          break;
-#ifdef HAVE_SHADER_MANAGER
       case INGAME_MENU_VIDEO_OPTIONS_MODE:
          if (input & (1ULL << DEVICE_NAV_B))
-         {
             menu_stack_push(INGAME_MENU_VIDEO_OPTIONS, false);
-         }
          break;
+#ifdef HAVE_SHADER_MANAGER
       case SHADERMAN_LOAD_CGP:
          if ((input & (1ULL << DEVICE_NAV_LEFT)) || (input & (1ULL << DEVICE_NAV_RIGHT)) || (input & (1ULL << DEVICE_NAV_B)))
          {
@@ -1827,12 +1825,13 @@ static int select_setting(void *data, uint64_t input)
          break;
       case INGAME_MENU_VIDEO_OPTIONS:
          first_setting = FIRST_SHADERMAN_SETTING;
-         max_settings = MAX_NO_OF_SHADERMAN_SETTINGS;
+         max_settings = SHADERMAN_SHADER_LAST;
 
 #ifdef HAVE_SHADER_MANAGER
          switch (rgui->shader.passes)
          {
             case 0:
+               max_settings = MAX_NO_OF_SHADERMAN_SETTINGS;
                break;
             case 1:
                max_settings = SHADERMAN_SHADER_0_SCALE+1;
