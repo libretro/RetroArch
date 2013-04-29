@@ -407,7 +407,7 @@ static void system_exitspawn(void)
    if (g_extern.lifecycle_mode_state & (1ULL << MODE_EXITSPAWN_START_GAME))
       should_load_game = true;
 
-   rarch_console_exec(g_extern.fullpath, should_load_game);
+   rarch_console_exec(g_settings.libretro, should_load_game);
 #endif
 
 #endif

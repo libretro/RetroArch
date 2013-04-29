@@ -638,12 +638,14 @@ static int select_file(void *data, uint64_t input)
                   driver.video_poke->set_texture_frame(driver.video_data, menu_texture->pixels,
                         true, menu_texture->width, menu_texture->height, 1.0f);
                break;
-            case LIBRETRO_CHOICE:
-               strlcpy(g_settings.libretro, path, sizeof(g_settings.libretro));
-               g_extern.lifecycle_mode_state |= (1ULL << MODE_EXIT);
-               g_extern.lifecycle_mode_state |= (1ULL << MODE_EXITSPAWN);
-               return -1;
-               break;
+         }
+
+         if (rgui->menu_type == LIBRETRO_CHOICE)
+         {
+            strlcpy(g_settings.libretro, path, sizeof(g_settings.libretro));
+            g_extern.lifecycle_mode_state |= (1ULL << MODE_EXIT);
+            g_extern.lifecycle_mode_state |= (1ULL << MODE_EXITSPAWN);
+            return -1;
          }
 
          pop_menu_stack = true;
@@ -1160,14 +1162,6 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
 #endif
       case SETTING_DEFAULT_AUDIO_ALL:
          break;
-      case SETTING_EMU_CURRENT_SAVE_STATE_SLOT:
-         if (input & (1ULL << DEVICE_NAV_LEFT))
-            settings_set(1ULL << S_SAVESTATE_DECREMENT);
-         if ((input & (1ULL << DEVICE_NAV_RIGHT)) || (input & (1ULL << DEVICE_NAV_B)))
-            settings_set(1ULL << S_SAVESTATE_INCREMENT);
-         if (input & (1ULL << DEVICE_NAV_START))
-            settings_set(1ULL << S_DEF_SAVE_STATE);
-         break;
       case SETTING_EMU_SHOW_DEBUG_INFO_MSG:
          if ((input & (1ULL << DEVICE_NAV_LEFT)) || (input & (1ULL << DEVICE_NAV_RIGHT)) || (input & (1ULL << DEVICE_NAV_B)))
             settings_set(1ULL << S_INFO_DEBUG_MSG_TOGGLE);
@@ -1210,14 +1204,6 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
             g_settings.rewind_granularity++;
          if (input & (1ULL << DEVICE_NAV_START))
             g_settings.rewind_granularity = 1;
-         break;
-      case SETTING_QUIT_RARCH:
-         if ((input & (1ULL << DEVICE_NAV_LEFT)) || (input & (1ULL << DEVICE_NAV_RIGHT)) || (input & (1ULL << DEVICE_NAV_B)) || (input & (1ULL << DEVICE_NAV_B)))
-         {
-            g_extern.lifecycle_mode_state &= ~((1ULL << MODE_GAME));
-            g_extern.lifecycle_mode_state |= (1ULL << MODE_EXIT);
-            return -1;
-         }
          break;
       case SETTING_EMU_AUDIO_MUTE:
          if ((input & (1ULL << DEVICE_NAV_LEFT)) || (input & (1ULL << DEVICE_NAV_RIGHT)) || (input & (1ULL << DEVICE_NAV_B)))
@@ -2003,11 +1989,6 @@ static int select_setting(void *data, uint64_t input)
             strlcpy(setting_text, "", sizeof(setting_text));
             strlcpy(comment, "INFO - Reset all these settings.", sizeof(comment));
             break;
-         case SETTING_EMU_CURRENT_SAVE_STATE_SLOT:
-            strlcpy(text, "Current save state slot", sizeof(text));
-            snprintf(setting_text, sizeof(setting_text), "%d", g_extern.state_slot);
-            strlcpy(comment, "INFO - Set the currently selected savestate slot.", sizeof(comment));
-            break;
             /* emu-specific */
          case SETTING_EMU_SHOW_DEBUG_INFO_MSG:
             strlcpy(text, "Debug info messages", sizeof(text));
@@ -2038,11 +2019,6 @@ static int select_setting(void *data, uint64_t input)
             strlcpy(text, "Rewind granularity", sizeof(text));
             snprintf(setting_text, sizeof(setting_text), "%d", g_settings.rewind_granularity);
             strlcpy(comment, "INFO - Set the amount of frames to 'rewind'.", sizeof(comment));
-            break;
-         case SETTING_QUIT_RARCH:
-            strlcpy(text, "Quit RetroArch and save settings ", sizeof(text));
-            strlcpy(setting_text, "", sizeof(setting_text));
-            strlcpy(comment, "INFO - Quits RetroArch and saves the settings.", sizeof(comment));
             break;
          case SETTING_EMU_AUDIO_MUTE:
             strlcpy(text, "Mute Audio", sizeof(text));
