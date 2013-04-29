@@ -51,7 +51,7 @@ static void dol_copy_argv_path(const char *fullpath)
 #ifndef IS_SALAMANDER
    // file must be split into two parts, the path and the actual filename
    // done to be compatible with loaders
-   if (fullpath && strchr(fullpath, '/') != (char *)-1)
+   if (fullpath && strchr(fullpath, '/') != NULL)
    {
       char tmp[PATH_MAX];
 
