@@ -35,6 +35,7 @@ driver_t driver;
 
 static int g_player = 1;
 static int g_joypad = 0;
+static int g_timeout = 0;
 static char *g_in_path = NULL;
 static char *g_out_path = NULL;
 static char *g_auto_path = NULL;
@@ -54,6 +55,7 @@ static void print_help(void)
    puts("-o/--output: Output file to write to. If not selected, config file will be dumped to stdout.");
    puts("-a/--autoconfig: Outputs an autoconfig file for joypad which was configured.");
    puts("-m/--misc: Also configure various keybinds that are not directly libretro related. These configurations are for player 1 only.");
+   puts("-t/--timeout: Adds a timeout of N seconds to each bind. If timed out, the bind will not be used.");
    puts("-h/--help: This help.");
 }
 
@@ -123,6 +125,8 @@ static void get_binds(config_file_t *conf, config_file_t *auto_conf, int player,
    int last_axis   = -1;
    bool block_axis = false;
 
+   unsigned timeout_ticks = g_timeout * 100;
+
    poll_joypad(driver, joypad, &old_poll);
    fprintf(stderr, "\nJoypads tend to have stale state after opened.\nPress some buttons and move some axes around to make sure joypad state is completely neutral before proceeding.\nWhen done, press Enter ... ");
    getchar();
@@ -153,8 +157,8 @@ static void get_binds(config_file_t *conf, config_file_t *auto_conf, int player,
    fprintf(stderr, "Configuring binds for player #%d on joypad #%d.\n\n",
          player + 1, joypad);
 
-   for (unsigned i = 0; input_config_bind_map[i].valid &&
-         (g_use_misc || !input_config_bind_map[i].meta); i++)
+   for (unsigned i = 0, timeout_cnt = 0; input_config_bind_map[i].valid &&
+         (g_use_misc || !input_config_bind_map[i].meta); i++, timeout_cnt = 0)
    {
       if (i == RARCH_TURBO_ENABLE)
          continue;
@@ -171,6 +175,16 @@ static void get_binds(config_file_t *conf, config_file_t *auto_conf, int player,
          // Ideally use an event-based joypad scheme,
          // but it adds far more complexity, so, meh.
          rarch_sleep(10);
+
+         if (timeout_ticks)
+         {
+            timeout_cnt++;
+            if (timeout_cnt >= timeout_ticks)
+            {
+               fprintf(stderr, "\tTimed out ...\n");
+               break;
+            }
+         }
 
          poll_joypad(driver, joypad, &new_poll);
          for (int j = 0; j < MAX_BUTTONS; j++)
@@ -294,7 +308,7 @@ out:
 
 static void parse_input(int argc, char *argv[])
 {
-   char optstring[] = "i:o:a:p:j:hm";
+   char optstring[] = "i:o:a:p:j:t:hm";
    struct option opts[] = {
       { "input", 1, NULL, 'i' },
       { "output", 1, NULL, 'o' },
@@ -303,6 +317,7 @@ static void parse_input(int argc, char *argv[])
       { "joypad", 1, NULL, 'j' },
       { "help", 0, NULL, 'h' },
       { "misc", 0, NULL, 'm' },
+      { "timeout", 1, NULL, 't' },
       { NULL, 0, NULL, 0 }
    };
 
@@ -321,6 +336,10 @@ static void parse_input(int argc, char *argv[])
 
          case 'i':
             g_in_path = strdup(optarg);
+            break;
+
+         case 't':
+            g_timeout = strtol(optarg, NULL, 0);
             break;
 
          case 'o':
