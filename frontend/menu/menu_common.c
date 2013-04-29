@@ -499,11 +499,14 @@ void menu_init(void)
 
    // TODO: Should make history path configurable.
    // Possibly size as well.
-   char history_path[PATH_MAX];
-   fill_pathname_resolve_relative(history_path, g_extern.config_path,
-         ".retroarch-history.txt", sizeof(history_path));
-   RARCH_LOG("[RGUI]: Opening history: %s.\n", history_path);
-   rgui->history = rom_history_init(history_path, 20);
+   if (*g_extern.config_path)
+   {
+      char history_path[PATH_MAX];
+      fill_pathname_resolve_relative(history_path, g_extern.config_path,
+            ".retroarch-history.txt", sizeof(history_path));
+      RARCH_LOG("[RGUI]: Opening history: %s.\n", history_path);
+      rgui->history = rom_history_init(history_path, 20);
+   }
 }
 
 void menu_free(void)
