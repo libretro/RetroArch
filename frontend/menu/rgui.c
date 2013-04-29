@@ -1213,7 +1213,7 @@ static void rgui_settings_shader_manager_populate_entries(rgui_handle_t *rgui)
    rgui_list_push(rgui->selection_buf, "Default Filter", RGUI_SETTINGS_SHADER_FILTER, 0);
    rgui_list_push(rgui->selection_buf, "Load Shader Preset",
          RGUI_SETTINGS_SHADER_PRESET, 0);
-   rgui_list_push(rgui->selection_buf, "Shader passes",
+   rgui_list_push(rgui->selection_buf, "Shader Passes",
          RGUI_SETTINGS_SHADER_PASSES, 0);
 
    for (unsigned i = 0; i < rgui->shader.passes; i++)
