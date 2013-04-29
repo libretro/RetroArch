@@ -236,6 +236,7 @@ static void menu_stack_pop(unsigned menu_type)
          break;
       case LIBRETRO_CHOICE:
       case INGAME_MENU_CORE_OPTIONS:
+      case INGAME_MENU_LOAD_GAME_HISTORY:
       case INGAME_MENU_RESIZE:
       case INGAME_MENU_SCREENSHOT:
          rgui->frame_buf_show = true;
@@ -359,6 +360,7 @@ static void display_menubar(uint8_t menu_type)
          break;
       case CONTROLS_MENU:
       case INGAME_MENU_CORE_OPTIONS:
+      case INGAME_MENU_LOAD_GAME_HISTORY:
       case INGAME_MENU_VIDEO_OPTIONS:
       case INGAME_MENU_RESIZE:
          if (driver.input->set_keybinds)
@@ -406,6 +408,9 @@ static void display_menubar(uint8_t menu_type)
          break;
       case INGAME_MENU_CORE_OPTIONS:
          strlcpy(title, "Core Options", sizeof(title));
+         break;
+      case INGAME_MENU_LOAD_GAME_HISTORY:
+         strlcpy(title, "History", sizeof(title));
          break;
       case INGAME_MENU_VIDEO_OPTIONS:
          strlcpy(title, "Video Options", sizeof(title));
@@ -1549,6 +1554,10 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
          if (input & (1ULL << DEVICE_NAV_B))
             menu_stack_push(INGAME_MENU_CORE_OPTIONS, false);
          break;
+      case INGAME_MENU_LOAD_GAME_HISTORY_MODE:
+         if (input & (1ULL << DEVICE_NAV_B))
+            menu_stack_push(INGAME_MENU_LOAD_GAME_HISTORY, false);
+         break;
       case INGAME_MENU_SCREENSHOT_MODE:
          if (input & (1ULL << DEVICE_NAV_B))
             menu_stack_push(INGAME_MENU_SCREENSHOT, false);
@@ -2202,6 +2211,11 @@ static int select_setting(void *data, uint64_t input)
             strlcpy(setting_text, "...", sizeof(setting_text));
             strlcpy(comment, "Set core-specific options.", sizeof(comment));
             break;
+         case INGAME_MENU_LOAD_GAME_HISTORY_MODE:
+            strlcpy(text, "Load Game (History)", sizeof(text));
+            strlcpy(setting_text, "...", sizeof(setting_text));
+            strlcpy(comment, "Select a game from the history list.", sizeof(comment));
+            break;
          case INGAME_MENU_VIDEO_OPTIONS_MODE:
             strlcpy(text, "Video Options", sizeof(text));
             strlcpy(setting_text, "...", sizeof(setting_text));
@@ -2825,6 +2839,93 @@ static int ingame_menu_resize(void *data, uint64_t input)
    return 0;
 }
 
+static int ingame_menu_history_options(void *data, uint64_t input)
+{
+   rgui_handle_t *rgui = (rgui_handle_t*)data;
+   size_t history_size = rom_history_size(rgui->history);
+   static unsigned hist_opt_selected = 0;
+   float y_increment = POSITION_Y_START;
+
+   if ((input & (1ULL << DEVICE_NAV_A)) || (input & (1ULL << DEVICE_NAV_MENU)))
+      menu_stack_pop(rgui->menu_type);
+
+   y_increment += POSITION_Y_INCREMENT;
+
+   font_params_t font_parms = {0};
+   font_parms.x = POSITION_X; 
+   font_parms.y = y_increment;
+   font_parms.scale = CURRENT_PATH_FONT_SIZE;
+   font_parms.color = WHITE;
+
+   if (history_size)
+   {
+      size_t opts = history_size;
+      for (size_t i = 0; i < opts; i++, font_parms.y += POSITION_Y_INCREMENT)
+      {
+         const char *path = NULL;
+         const char *core_path = NULL;
+         const char *core_name = NULL;
+
+         rom_history_get_index(rgui->history, i,
+               &path, &core_path, &core_name);
+
+         char path_short[PATH_MAX];
+         fill_pathname(path_short, path_basename(path), "", sizeof(path_short));
+
+         char fill_buf[PATH_MAX];
+         snprintf(fill_buf, sizeof(fill_buf), "%s (%s)",
+               path_short, core_name);
+
+         /* not on same page? */
+         if ((i / NUM_ENTRY_PER_PAGE) != (hist_opt_selected / NUM_ENTRY_PER_PAGE))
+            continue;
+
+#ifdef HAVE_MENU_PANEL
+         //check if this is the currently selected option
+         if (i == hist_opt_selected)
+            menu_panel->y = font_parms.y;
+#endif
+
+         font_parms.x = POSITION_X; 
+         font_parms.color = (hist_opt_selected == i) ? YELLOW : WHITE;
+
+         if (driver.video_poke->set_osd_msg)
+            driver.video_poke->set_osd_msg(driver.video_data,
+                  fill_buf, &font_parms);
+      }
+
+      if ((input & (1ULL << DEVICE_NAV_START)) ||
+            (input & (1ULL << DEVICE_NAV_B))
+            )
+      {
+         load_menu_game_history(hist_opt_selected);
+         return -1;
+      }
+
+      if (input & (1ULL << DEVICE_NAV_UP))
+      {
+         if (hist_opt_selected == 0)
+            hist_opt_selected = history_size - 1;
+         else
+            hist_opt_selected--;
+      }
+      
+      if (input & (1ULL << DEVICE_NAV_DOWN))
+      {
+         hist_opt_selected++;
+
+         if (hist_opt_selected >= history_size)
+            hist_opt_selected = 0; 
+      }
+   }
+   else if (driver.video_poke->set_osd_msg)
+      driver.video_poke->set_osd_msg(driver.video_data, "No history available.", &font_parms);
+
+   display_menubar(rgui->menu_type);
+
+   return 0;
+}
+
 static int ingame_menu_core_options(void *data, uint64_t input)
 {
    rgui_handle_t *rgui = (rgui_handle_t*)data;
@@ -3010,6 +3111,8 @@ int rgui_iterate(rgui_handle_t *rgui)
          return ingame_menu_resize(rgui, rgui->trigger_state);
       case INGAME_MENU_CORE_OPTIONS:
          return ingame_menu_core_options(rgui, rgui->trigger_state);
+      case INGAME_MENU_LOAD_GAME_HISTORY:
+         return ingame_menu_history_options(rgui, rgui->trigger_state);
       case INGAME_MENU_SCREENSHOT:
          return ingame_menu_screenshot(rgui, rgui->trigger_state);
       case FILE_BROWSER_MENU:
