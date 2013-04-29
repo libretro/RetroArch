@@ -37,9 +37,7 @@ extern uint8_t _binary_wii_app_booter_app_booter_bin_end[];
 
 #include "../../retroarch_logger.h"
 
-// NOTE: this does not update the path to point to the new loading .dol file.
-// we only need it for keeping the current directory anyway.
-void dol_copy_argv_path(void)
+static void dol_copy_argv_path(const char *fullpath)
 {
    struct __argv *argv = (struct __argv *) ARGS_ADDR;
    memset(ARGS_ADDR, 0, sizeof(struct __argv));
@@ -47,8 +45,28 @@ void dol_copy_argv_path(void)
    argv->argvMagic = ARGV_MAGIC;
    argv->commandLine = cmdline;
    size_t len = strlen(__system_argv->argv[0]);
-   memcpy(cmdline, __system_argv->argv[0], ++len);
+   memcpy(cmdline, __system_argv->argv[0], len);
    cmdline[len++] = 0;
+   // file must be split into two parts, the path and the actual filename
+   // done to be compatible with loaders
+   if (fullpath && strchr(fullpath, '/') != -1)
+   {
+      char tmp[PATH_MAX];
+
+      // basedir
+      fill_pathname_parent_dir(tmp, fullpath, sizeof(tmp));
+      size_t t_len = strlen(tmp);
+      memcpy(cmdline + len, tmp, t_len);
+      len += t_len;
+      cmdline[len++] = 0;
+
+      // filename
+      char *name = strrchr(fullpath, '/') + 1;
+      size_t t_len = strlen(name);
+      memcpy(cmdline + len, name, t_len);
+      len += t_len;
+      cmdline[len++] = 0;
+   }
    cmdline[len++] = 0;
    argv->length = len;
    DCFlushRange(ARGS_ADDR, sizeof(struct __argv) + argv->length);
@@ -94,7 +112,7 @@ static void rarch_console_exec(const char *path)
    memmove(EXECUTE_ADDR, dol, size);
    DCFlushRange(EXECUTE_ADDR, size);
 
-   dol_copy_argv_path();
+   dol_copy_argv_path(NULL);
 
    size_t booter_size = booter_end - booter_start;
    memcpy(BOOTER_ADDR, booter_start, booter_size);
