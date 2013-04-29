@@ -39,14 +39,14 @@ static int g_timeout = 0;
 static char *g_in_path = NULL;
 static char *g_out_path = NULL;
 static char *g_auto_path = NULL;
-static bool g_use_misc = false;
+static int g_meta_level = 0;
 
 static void print_help(void)
 {
-   puts("==================");
-   puts("retroarch-joyconfig");
-   puts("==================");
-   puts("Usage: retroarch-joyconfig [ -p/--player <1-8> | -j/--joypad <num> | -i/--input <file> | -o/--output <file> | -h/--help ]");
+   puts("=====================");
+   puts(" retroarch-joyconfig");
+   puts("=====================");
+   puts("Usage: retroarch-joyconfig [ options ... ]");
    puts("");
    puts("-p/--player: Which player to configure for (1 up to and including 8).");
    puts("-j/--joypad: Which joypad to use when configuring (first joypad is 0).");
@@ -54,7 +54,9 @@ static void print_help(void)
    puts("\tIf not selected, an empty config will be used as a base.");
    puts("-o/--output: Output file to write to. If not selected, config file will be dumped to stdout.");
    puts("-a/--autoconfig: Outputs an autoconfig file for joypad which was configured.");
-   puts("-m/--misc: Also configure various keybinds that are not directly libretro related. These configurations are for player 1 only.");
+   puts("-M/--allmisc: Also configure various keybinds that are not directly libretro related.");
+   puts("\tThese configurations are for player 1 only.");
+   puts("-m/--misc: Same as --allmisc, but exposes a smaller subset of misc binds which are deemed most useful for regular use.");
    puts("-t/--timeout: Adds a timeout of N seconds to each bind. If timed out, the bind will not be used.");
    puts("-h/--help: This help.");
 }
@@ -157,10 +159,13 @@ static void get_binds(config_file_t *conf, config_file_t *auto_conf, int player,
    fprintf(stderr, "Configuring binds for player #%d on joypad #%d.\n\n",
          player + 1, joypad);
 
-   for (unsigned i = 0, timeout_cnt = 0; input_config_bind_map[i].valid &&
-         (g_use_misc || !input_config_bind_map[i].meta); i++, timeout_cnt = 0)
+   for (unsigned i = 0, timeout_cnt = 0; input_config_bind_map[i].valid; i++, timeout_cnt = 0)
    {
       if (i == RARCH_TURBO_ENABLE)
+         continue;
+
+      unsigned meta_level = input_config_bind_map[i].meta;
+      if (meta_level > g_meta_level)
          continue;
 
       fprintf(stderr, "%s\n", input_config_bind_map[i].desc);
@@ -308,7 +313,7 @@ out:
 
 static void parse_input(int argc, char *argv[])
 {
-   char optstring[] = "i:o:a:p:j:t:hm";
+   char optstring[] = "i:o:a:p:j:t:hmM";
    struct option opts[] = {
       { "input", 1, NULL, 'i' },
       { "output", 1, NULL, 'o' },
@@ -317,6 +322,7 @@ static void parse_input(int argc, char *argv[])
       { "joypad", 1, NULL, 'j' },
       { "help", 0, NULL, 'h' },
       { "misc", 0, NULL, 'm' },
+      { "allmisc", 0, NULL, 'M' },
       { "timeout", 1, NULL, 't' },
       { NULL, 0, NULL, 0 }
    };
@@ -351,7 +357,11 @@ static void parse_input(int argc, char *argv[])
             break;
 
          case 'm':
-            g_use_misc = true;
+            g_meta_level = 1;
+            break;
+
+         case 'M':
+            g_meta_level = 2;
             break;
 
          case 'j':

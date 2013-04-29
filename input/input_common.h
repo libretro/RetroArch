@@ -113,7 +113,13 @@ unsigned input_translate_rk_to_keysym(enum retro_key key);
 struct input_bind_map
 {
    bool valid;
-   bool meta; // Meta binds get input as prefix, not input_playerN"
+
+   // Meta binds get input as prefix, not input_playerN".
+   // 0 = libretro related.
+   // 1 = Common hotkey.
+   // 2 = Uncommon/obscure hotkey.
+   unsigned meta;
+
    const char *base;
    const char *desc;
    unsigned retro_key;
