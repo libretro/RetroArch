@@ -36,7 +36,8 @@ static void rarch_console_exec(const char *path, bool should_load_game)
       snprintf((char*)ptr.Data, sizeof(ptr.Data), "%s", g_extern.fullpath);
       XLaunchNewImage(path, &ptr);
    }
-   XLaunchNewImage(path, NULL);
+   else
+      XLaunchNewImage(path, NULL);
 #else
    XLaunchNewImage(path, NULL);
 #endif

@@ -115,10 +115,10 @@ int rarch_main(int argc, char *argv[])
    char core_exe_path[256];
    snprintf(core_exe_path, sizeof(core_exe_path), "%sCORE%s", path_prefix, DEFAULT_EXE_EXT);
 
-   // Save new libretro core path to config file
+   // Save new libretro core path to config file and exit
    if (path_file_exists(core_exe_path))
       if (libretro_install_core(path_prefix, core_exe_path))
-         config_save_file(g_extern.config_path);
+	 g_extern.system.shutdown = true;
 #endif
 
 #ifdef GEKKO
