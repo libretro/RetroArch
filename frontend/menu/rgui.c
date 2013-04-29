@@ -2191,24 +2191,7 @@ int rgui_iterate(rgui_handle_t *rgui)
             }
             else if (menu_type == RGUI_SETTINGS_OPEN_HISTORY)
             {
-               const char *path = NULL;
-               const char *core_path = NULL;
-               const char *core_name = NULL;
-
-               rom_history_get_index(rgui->history,
-                     rgui->selection_ptr, &path, &core_path, &core_name);
-
-               strlcpy(g_settings.libretro, core_path, sizeof(g_settings.libretro));
-
-#ifdef HAVE_DYNAMIC
-               libretro_free_system_info(&rgui->info);
-               libretro_get_system_info(g_settings.libretro, &rgui->info);
-#endif
-               // Dunno what to do for Wii here ...
-
-               strlcpy(g_extern.fullpath, path, sizeof(g_extern.fullpath));
-               g_extern.lifecycle_mode_state |= (1ULL << MODE_LOAD_GAME);
-
+               load_menu_game_history();
                rgui->need_refresh = true;
                ret = -1;
             }

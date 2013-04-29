@@ -47,6 +47,8 @@ static void dol_copy_argv_path(const char *fullpath)
    size_t len = strlen(__system_argv->argv[0]);
    memcpy(cmdline, __system_argv->argv[0], len);
    cmdline[len++] = 0;
+
+#ifndef IS_SALAMANDER
    // file must be split into two parts, the path and the actual filename
    // done to be compatible with loaders
    if (fullpath && strchr(fullpath, '/') != (char *)-1)
@@ -67,6 +69,7 @@ static void dol_copy_argv_path(const char *fullpath)
       len += t_len;
       cmdline[len++] = 0;
    }
+#endif
    cmdline[len++] = 0;
    argv->length = len;
    DCFlushRange(ARGS_ADDR, sizeof(struct __argv) + argv->length);
@@ -74,7 +77,7 @@ static void dol_copy_argv_path(const char *fullpath)
 
 // WARNING: after we move any data into EXECUTE_ADDR, we can no longer use any
 // heap memory and are restricted to the stack only
-static void rarch_console_exec(const char *path)
+static void rarch_console_exec(const char *path, bool should_load_game)
 {
    RARCH_LOG("Attempt to load executable: [%s].\n", path);
 
@@ -112,7 +115,7 @@ static void rarch_console_exec(const char *path)
    memmove(EXECUTE_ADDR, dol, size);
    DCFlushRange(EXECUTE_ADDR, size);
 
-   dol_copy_argv_path(NULL);
+   dol_copy_argv_path(should_load_game ? g_extern.fullpath : NULL);
 
    size_t booter_size = booter_end - booter_start;
    memcpy(BOOTER_ADDR, booter_start, booter_size);

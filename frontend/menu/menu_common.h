@@ -270,6 +270,7 @@ void shader_manager_get_str(struct gfx_shader *shader,
 
 void load_menu_game_prepare(void);
 bool load_menu_game(void);
+void load_menu_game_history(void);
 
 #ifdef __cplusplus
 }

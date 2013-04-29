@@ -394,6 +394,31 @@ void load_menu_game_prepare(void)
             MENU_TEXTURE_FULLSCREEN);
 }
 
+void load_menu_game_history(void)
+{
+   const char *path = NULL;
+   const char *core_path = NULL;
+   const char *core_name = NULL;
+
+   rom_history_get_index(rgui->history,
+         rgui->selection_ptr, &path, &core_path, &core_name);
+
+   strlcpy(g_settings.libretro, core_path, sizeof(g_settings.libretro));
+   strlcpy(g_extern.fullpath, path, sizeof(g_extern.fullpath));
+
+#if !defined( HAVE_DYNAMIC) && defined(RARCH_CONSOLE)
+   g_extern.lifecycle_mode_state &= ~(1ULL << MODE_GAME);
+   g_extern.lifecycle_mode_state |= (1ULL << MODE_EXIT);
+   g_extern.lifecycle_mode_state |= (1ULL << MODE_EXITSPAWN);
+   g_extern.lifecycle_mode_state |= (1ULL << MODE_EXITSPAWN_START_GAME);
+#elif defined(HAVE_DYNAMIC)
+   libretro_free_system_info(&rgui->info);
+   libretro_get_system_info(g_settings.libretro, &rgui->info);
+   g_extern.lifecycle_mode_state |= (1ULL << MODE_LOAD_GAME);
+#endif
+
+}
+
 bool load_menu_game(void)
 {
    if (g_extern.main_is_init)
@@ -444,8 +469,6 @@ void menu_init(void)
       libretro_get_system_info(g_settings.libretro, &rgui->info);
    }
 #else
-   // Don't use pretro_*, it can be dummy core. If we're statically linked,
-   // retro_* will always go to the "real" core.
    retro_get_system_info(&rgui->info);
 #endif
 

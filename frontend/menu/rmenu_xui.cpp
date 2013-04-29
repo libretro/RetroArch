@@ -1488,7 +1488,8 @@ HRESULT CRetroArchCoreBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHandle
       wcstombs(str_buffer, (const wchar_t *)XuiListGetText(m_list, index), sizeof(str_buffer));
       if(path_file_exists(rgui->browser->list->elems[index].data))
       {
-         snprintf(g_extern.fullpath, sizeof(g_extern.fullpath), "%s\\%s", rgui->browser->current_dir.directory_path, str_buffer);
+         snprintf(g_settings.libretro, sizeof(g_settings.libretro), "%s\\%s",
+               rgui->browser->current_dir.directory_path, str_buffer);
          g_extern.lifecycle_mode_state |= (1ULL << MODE_EXIT);
          g_extern.lifecycle_mode_state |= (1ULL << MODE_EXITSPAWN);
          process_input_ret = -1;

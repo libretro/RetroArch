@@ -274,8 +274,12 @@ static void system_deinit(void) {}
 static void system_exitspawn(void)
 {
 #ifdef IS_SALAMANDER
-   rarch_console_exec(default_paths.libretro_path);
+   rarch_console_exec(default_paths.libretro_path, false);
 #else
-   rarch_console_exec(g_extern.fullpath);
+   bool should_load_game = false;
+   if (g_extern.lifecycle_mode_state & (1ULL << MODE_EXITSPAWN_START_GAME))
+      should_load_game = true;
+
+   rarch_console_exec(g_settings.libretro, should_load_game);
 #endif
 }

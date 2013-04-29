@@ -324,11 +324,14 @@ static void system_init(void)
 static void system_exitspawn(void)
 {
 #if defined(IS_SALAMANDER)
-   rarch_console_exec(default_paths.libretro_path);
+   rarch_console_exec(default_paths.libretro_path, false);
 #elif defined(HW_RVL)
-   // try to launch the core directly first, then fallback to salamander
-   rarch_console_exec(g_settings.libretro);
-   rarch_console_exec(g_extern.fullpath);
+   bool should_load_game = false;
+   if (g_extern.lifecycle_mode_state & (1ULL << MODE_EXITSPAWN_START_GAME))
+      should_load_game = true;
+
+   rarch_console_exec(g_settings.libretro, should_load_game);
+   rarch_console_exec(g_extern.fullpath, false);
 #endif
 }
 

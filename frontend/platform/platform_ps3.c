@@ -397,13 +397,17 @@ static void system_exitspawn(void)
 #endif
 
 #ifdef IS_SALAMANDER
-   rarch_console_exec(default_paths.libretro_path);
+   rarch_console_exec(default_paths.libretro_path, false);
 
    cellSysmoduleUnloadModule(CELL_SYSMODULE_SYSUTIL_GAME);
    cellSysmoduleLoadModule(CELL_SYSMODULE_FS);
    cellSysmoduleLoadModule(CELL_SYSMODULE_IO);
 #else
-   rarch_console_exec(g_extern.fullpath);
+   bool should_load_game = false;
+   if (g_extern.lifecycle_mode_state & (1ULL << MODE_EXITSPAWN_START_GAME))
+      should_load_game = true;
+
+   rarch_console_exec(g_extern.fullpath, should_load_game);
 #endif
 
 #endif

@@ -52,9 +52,6 @@
 #define EXT_IMAGES "png|PNG"JPEG_FORMATS
 #define EXT_INPUT_PRESETS "cfg|CFG"
 
-
-static bool set_libretro_core_as_launch;
-
 struct texture_image *menu_texture;
 #ifdef HAVE_MENU_PANEL
 struct texture_image *menu_panel;
@@ -643,20 +640,9 @@ static int select_file(void *data, uint64_t input)
                break;
             case LIBRETRO_CHOICE:
                strlcpy(g_settings.libretro, path, sizeof(g_settings.libretro));
-
-               if (set_libretro_core_as_launch)
-               {
-                  strlcpy(g_extern.fullpath, path, sizeof(g_extern.fullpath));
-                  set_libretro_core_as_launch = false;
-                  g_extern.lifecycle_mode_state |= (1ULL << MODE_EXIT);
-                  g_extern.lifecycle_mode_state |= (1ULL << MODE_EXITSPAWN);
-                  return -1;
-               }
-               else
-               {
-                  if (g_extern.lifecycle_mode_state & (1ULL << MODE_INFO_DRAW))
-                     msg_queue_push(g_extern.msg_queue, "INFO - You need to restart RetroArch.", 1, 180);
-               }
+               g_extern.lifecycle_mode_state |= (1ULL << MODE_EXIT);
+               g_extern.lifecycle_mode_state |= (1ULL << MODE_EXITSPAWN);
+               return -1;
                break;
          }
 
@@ -1611,7 +1597,6 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
          {
             menu_stack_push(LIBRETRO_CHOICE, true);
             filebrowser_set_root_and_ext(rgui->browser, EXT_EXECUTABLES, default_paths.core_dir);
-            set_libretro_core_as_launch = true;
          }
          break;
 #ifdef HAVE_MULTIMAN

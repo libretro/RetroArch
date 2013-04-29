@@ -37,8 +37,6 @@ ifeq ($(CUSTOM_LIBOGC), 1)
 CFLAGS += -DHAVE_MINIOGC
 endif
 
-LIBOGC_LIB := -logc
-
 MACHDEP := -DGEKKO -DHW_RVL -mrvl -mcpu=750 -meabi -mhard-float
 CFLAGS += -Wall -std=gnu99 $(MACHDEP) $(INCLUDE)
 ifeq ($(WHOLE_ARCHIVE_LINK), 1)

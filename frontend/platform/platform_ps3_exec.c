@@ -25,8 +25,10 @@
 
 #include "../../retroarch_logger.h"
 
-static void rarch_console_exec(const char *path)
+static void rarch_console_exec(const char *path, bool should_load_game)
 {
+   (void)should_load_game;
+
    RARCH_LOG("Attempt to load executable: [%s].\n", path);
    char spawn_data[256];
    for(unsigned int i = 0; i < sizeof(spawn_data); ++i)
