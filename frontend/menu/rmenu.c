@@ -2473,7 +2473,18 @@ static int select_rom(void *data, uint64_t input)
    if (driver.input->set_keybinds)
       driver.input->set_keybinds(&key_label_b, 0, 0, 0, (1ULL << KEYBINDS_ACTION_GET_BIND_LABEL));
 
-   filebrowser_update(rgui->browser, input, rgui->info.valid_extensions);
+   char ext_buf[1024];
+   char *ext = NULL;
+   if (rgui->info.valid_extensions)
+   {
+      ext = ext_buf;
+      if (*rgui->info.valid_extensions)
+         snprintf(ext_buf, sizeof(ext_buf), "%s|zip|ZIP", rgui->info.valid_extensions);
+      else
+         *ext_buf = '\0';
+   }
+
+   filebrowser_update(rgui->browser, input, ext);
 
    if (input & (1ULL << DEVICE_NAV_B))
    {
@@ -2496,13 +2507,13 @@ static int select_rom(void *data, uint64_t input)
    {
       const char * drive_map = menu_drive_mapping_previous();
       if (drive_map != NULL)
-         filebrowser_set_root_and_ext(rgui->browser, rgui->info.valid_extensions, drive_map);
+         filebrowser_set_root_and_ext(rgui->browser, ext, drive_map);
    }
    else if (input & (1ULL << DEVICE_NAV_R1))
    {
       const char * drive_map = menu_drive_mapping_next();
       if (drive_map != NULL)
-         filebrowser_set_root_and_ext(rgui->browser, rgui->info.valid_extensions, drive_map);
+         filebrowser_set_root_and_ext(rgui->browser, ext, drive_map);
    }
    else if ((input & (1ULL << DEVICE_NAV_X) ||
             (input & (1ULL << DEVICE_NAV_MENU))))
