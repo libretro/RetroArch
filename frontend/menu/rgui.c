@@ -1988,6 +1988,7 @@ static bool directory_parse(rgui_handle_t *rgui, const char *directory, unsigned
 #endif
 
    const char *exts;
+   char ext_buf[1024];
    if (menu_type == RGUI_SETTINGS_CORE)
       exts = EXT_EXECUTABLES;
 #ifdef HAVE_SHADER_MANAGER
@@ -1997,7 +1998,13 @@ static bool directory_parse(rgui_handle_t *rgui, const char *directory, unsigned
       exts = "cg|glsl";
 #endif
    else if (rgui->info.valid_extensions)
-      exts = rgui->info.valid_extensions;
+   {
+      exts = ext_buf;
+      if (*rgui->info.valid_extensions)
+         snprintf(ext_buf, sizeof(ext_buf), "%s|zip|ZIP", rgui->info.valid_extensions);
+      else
+         *ext_buf = '\0';
+   }
    else
       exts = g_extern.system.valid_extensions;
 
