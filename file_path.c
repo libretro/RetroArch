@@ -146,7 +146,7 @@ bool string_list_find_elem(const struct string_list *list, const char *elem)
 
    for (size_t i = 0; i < list->size; i++)
    {
-      if (strcmp(list->elems[i].data, elem) == 0)
+      if (strcasecmp(list->elems[i].data, elem) == 0)
          return true;
    }
 
@@ -163,8 +163,8 @@ bool string_list_find_elem_prefix(const struct string_list *list, const char *pr
 
    for (size_t i = 0; i < list->size; i++)
    {
-      if (strcmp(list->elems[i].data, elem) == 0 ||
-            strcmp(list->elems[i].data, prefixed) == 0)
+      if (strcasecmp(list->elems[i].data, elem) == 0 ||
+            strcasecmp(list->elems[i].data, prefixed) == 0)
          return true;
    }
 

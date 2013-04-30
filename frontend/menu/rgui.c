@@ -2001,7 +2001,7 @@ static bool directory_parse(rgui_handle_t *rgui, const char *directory, unsigned
    {
       exts = ext_buf;
       if (*rgui->info.valid_extensions)
-         snprintf(ext_buf, sizeof(ext_buf), "%s|zip|ZIP", rgui->info.valid_extensions);
+         snprintf(ext_buf, sizeof(ext_buf), "%s|zip", rgui->info.valid_extensions);
       else
          *ext_buf = '\0';
    }
