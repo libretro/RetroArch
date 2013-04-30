@@ -94,7 +94,7 @@ void* rarch_main_ios(void* args)
    char* system_directory = ios_get_rarch_system_directory();
    strlcpy(g_extern.savestate_dir, system_directory,
          sizeof(g_extern.savestate_dir));
-   strlcpy(g_extern.savesfile_dir, system_directory,
+   strlcpy(g_extern.savefile_dir, system_directory,
          sizeof(g_extern.savefile_dir));
 
    menu_init();
@@ -116,6 +116,9 @@ void* rarch_main_ios(void* args)
 #ifdef RARCH_CONSOLE
             g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU);
 #else
+            // This needs to be here to tell the GUI thread that the emulator loop has stopped,
+            // the (void*)1 makes it display the 'Failed to load game' message.
+            dispatch_async_f(dispatch_get_main_queue(), (void*)1, ios_rarch_exited);
             return 1;
 #endif
          }
