@@ -337,12 +337,15 @@ static void system_exitspawn(void)
 
 static void system_deinit(void)
 {
+#ifndef IS_SALAMANDER
+   // we never init GX/VIDEO subsystems in salamander
    GX_DrawDone();
    GX_AbortFrame();
    GX_Flush();
    VIDEO_SetBlack(true);
    VIDEO_Flush();
    VIDEO_WaitVSync();
+#endif
 }
 
 #ifndef IS_SALAMANDER
