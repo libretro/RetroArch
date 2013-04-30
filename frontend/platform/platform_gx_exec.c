@@ -36,34 +36,56 @@ extern uint8_t _binary_wii_app_booter_app_booter_bin_end[];
 #define booter_end _binary_wii_app_booter_app_booter_bin_end
 
 #include "../../retroarch_logger.h"
+#include "../../file.h"
 
-static void dol_copy_argv_path(const char *fullpath)
+static void dol_copy_argv_path(const char *dolpath, const char *argpath)
 {
+   char tmp[PATH_MAX];
+   size_t len, t_len;
    struct __argv *argv = (struct __argv *) ARGS_ADDR;
    memset(ARGS_ADDR, 0, sizeof(struct __argv));
    char *cmdline = (char *) ARGS_ADDR + sizeof(struct __argv);
    argv->argvMagic = ARGV_MAGIC;
    argv->commandLine = cmdline;
-   size_t len = strlen(__system_argv->argv[0]);
-   memcpy(cmdline, __system_argv->argv[0], len);
+   len = 0;
+
+   // a device-less fullpath
+   if (dolpath[0] == '/')
+   {
+      char *dev = strchr(__system_argv->argv[0], ':');
+      t_len = dev - __system_argv->argv[0] + 1;
+      memcpy(cmdline, __system_argv->argv[0], t_len);
+      len += t_len;
+   }
+   // a relative path
+   else if (strstr(dolpath, "sd:/") != dolpath && strstr(dolpath, "usb:/") != dolpath &&
+       strstr(dolpath, "carda:/") != dolpath && strstr(dolpath, "cardb:/") != dolpath)
+   {
+      fill_pathname_parent_dir(tmp, __system_argv->argv[0], sizeof(tmp));
+      t_len = strlen(tmp);
+      memcpy(cmdline, tmp, t_len);
+      len += t_len;
+   }
+
+   t_len = strlen(dolpath);
+   memcpy(cmdline + len, dolpath, t_len);
+   len += t_len;
    cmdline[len++] = 0;
 
 #ifndef IS_SALAMANDER
    // file must be split into two parts, the path and the actual filename
    // done to be compatible with loaders
-   if (fullpath && strchr(fullpath, '/') != NULL)
+   if (argpath && strchr(argpath, '/') != NULL)
    {
-      char tmp[PATH_MAX];
-
       // basedir
-      fill_pathname_parent_dir(tmp, fullpath, sizeof(tmp));
-      size_t t_len = strlen(tmp);
+      fill_pathname_parent_dir(tmp, argpath, sizeof(tmp));
+      t_len = strlen(tmp);
       memcpy(cmdline + len, tmp, t_len);
       len += t_len;
       cmdline[len++] = 0;
 
       // filename
-      char *name = strrchr(fullpath, '/') + 1;
+      char *name = strrchr(argpath, '/') + 1;
       t_len = strlen(name);
       memcpy(cmdline + len, name, t_len);
       len += t_len;
@@ -115,7 +137,7 @@ static void rarch_console_exec(const char *path, bool should_load_game)
    memmove(EXECUTE_ADDR, dol, size);
    DCFlushRange(EXECUTE_ADDR, size);
 
-   dol_copy_argv_path(should_load_game ? g_extern.fullpath : NULL);
+   dol_copy_argv_path(path, should_load_game ? g_extern.fullpath : NULL);
 
    size_t booter_size = booter_end - booter_start;
    memcpy(BOOTER_ADDR, booter_start, booter_size);
