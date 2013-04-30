@@ -209,83 +209,21 @@ static void patch_rom(uint8_t **buf, ssize_t *size)
       *size = target_size;
    }
 
-   if (patch_data)
-      free(patch_data);
-
+   free(patch_data);
    return;
 
 error:
    *buf = ret_buf;
    *size = ret_size;
-   if (patch_data)
-      free(patch_data);
+   free(patch_data);
 }
 
-static ssize_t read_rom_file(FILE *file, void **buf)
+static ssize_t read_rom_file(const char *path, void **buf)
 {
-   ssize_t ret = 0;
    uint8_t *ret_buf = NULL;
-
-   if (file == NULL) // stdin
-   {
-#if defined(_WIN32) && !defined(_XBOX)
-      _setmode(0, O_BINARY);
-#endif
-
-      RARCH_LOG("Reading ROM from stdin ...\n");
-      size_t buf_size = 0xfffff; // Some initial guesstimate.
-      size_t buf_ptr = 0;
-      uint8_t *rom_buf = (uint8_t*)malloc(buf_size);
-      if (rom_buf == NULL)
-      {
-         RARCH_ERR("Couldn't allocate memory.\n");
-         return -1;
-      }
-
-      for (;;)
-      {
-         size_t ret = fread(rom_buf + buf_ptr, 1, buf_size - buf_ptr, stdin);
-         buf_ptr += ret;
-
-         // We've reached the end
-         if (buf_ptr < buf_size)
-            break;
-
-         rom_buf = (uint8_t*)realloc(rom_buf, buf_size * 2);
-         if (rom_buf == NULL)
-         {
-            RARCH_ERR("Couldn't allocate memory.\n");
-            return -1;
-         }
-
-         buf_size *= 2;
-      }
-
-      ret_buf = rom_buf;
-      ret = buf_ptr;
-   }
-   else
-   {
-      fseek(file, 0, SEEK_END);
-      ret = ftell(file);
-      rewind(file);
-
-      void *rom_buf = malloc(ret);
-      if (rom_buf == NULL)
-      {
-         RARCH_ERR("Couldn't allocate memory.\n");
-         return -1;
-      }
-
-      if (fread(rom_buf, 1, ret, file) < (size_t)ret)
-      {
-         RARCH_ERR("Didn't read whole file.\n");
-         free(rom_buf);
-         return -1;
-      }
-
-      ret_buf = (uint8_t*)rom_buf;
-   }
+   ssize_t ret = read_file(path, (void**)&ret_buf);
+   if (ret <= 0)
+      return ret;
 
    if (!g_extern.block_patch)
    {
@@ -539,22 +477,10 @@ static bool load_roms(unsigned rom_type, const char **rom_paths, size_t roms)
    struct retro_game_info info[MAX_ROMS] = {{NULL}};
    char *xml_buf = load_xml_map(g_extern.xml_name);
 
-   FILE *rom_file = NULL;
-   if (rom_paths[0])
-   {
-      RARCH_LOG("Loading ROM file: %s.\n", rom_paths[0]);
-      rom_file = fopen(rom_paths[0], "rb");
-      if (!rom_file)
-      {
-         RARCH_ERR("Failed to load ROM file: %s.\n", rom_paths[0]);
-         ret = false;
-         goto end;
-      }
-   }
-
    if (!g_extern.system.info.need_fullpath)
    {
-      if ((rom_len[0] = read_rom_file(rom_file, &rom_buf[0])) == -1)
+      RARCH_LOG("Loading ROM file: %s.\n", rom_paths[0]);
+      if ((rom_len[0] = read_rom_file(rom_paths[0], &rom_buf[0])) == -1)
       {
          RARCH_ERR("Could not read ROM file.\n");
          ret = false;
@@ -564,16 +490,7 @@ static bool load_roms(unsigned rom_type, const char **rom_paths, size_t roms)
       RARCH_LOG("ROM size: %u bytes.\n", (unsigned)rom_len[0]);
    }
    else
-   {
-      if (!rom_file)
-      {
-         RARCH_ERR("Implementation requires a full path to be set, cannot load ROM from stdin. Aborting ...\n");
-         ret = false;
-         goto end;
-      }
-
       RARCH_LOG("ROM loading skipped. Implementation will load it on its own.\n");
-   }
 
    info[0].path = rom_paths[0];
    info[0].data = rom_buf[0];
@@ -608,16 +525,24 @@ end:
    for (unsigned i = 0; i < MAX_ROMS; i++)
       free(rom_buf[i]);
    free(xml_buf);
-   if (rom_file)
-      fclose(rom_file);
 
    return ret;
 }
 
 static bool load_normal_rom(void)
 {
-   const char *path = *g_extern.fullpath ? g_extern.fullpath : NULL;
-   return load_roms(0, &path, 1);
+   if (g_extern.libretro_no_rom && g_extern.system.no_game)
+      return pretro_load_game(NULL);
+   else if (g_extern.libretro_no_rom && !g_extern.system.no_game)
+   {
+      RARCH_ERR("No ROM is used, but libretro core does not support this.\n");
+      return false;
+   }
+   else
+   {
+      const char *path = g_extern.fullpath;
+      return load_roms(0, &path, 1);
+   }
 }
 
 static bool load_sgb_rom(void)

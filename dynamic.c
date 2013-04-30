@@ -130,9 +130,10 @@ bool libretro_get_system_info(const char *path, struct retro_system_info *info)
       return false;
 
    memcpy(info, &dummy_info, sizeof(*info));
-   info->library_name     = strdup(dummy_info.library_name);
-   info->library_version  = strdup(dummy_info.library_version);
-   info->valid_extensions = strdup(dummy_info.valid_extensions);
+   info->library_name    = strdup(dummy_info.library_name);
+   info->library_version = strdup(dummy_info.library_version);
+   if (dummy_info.valid_extensions)
+      info->valid_extensions = strdup(dummy_info.valid_extensions);
    dylib_close(lib);
    return true;
 }
@@ -371,6 +372,8 @@ void uninit_libretro_sym(void)
    memset(&g_extern.system.av_info, 0, sizeof(g_extern.system.av_info));
    memset(&g_extern.frame_cache, 0, sizeof(g_extern.frame_cache));
    g_extern.system.pix_fmt = RETRO_PIXEL_FORMAT_0RGB1555;
+   g_extern.system.no_game = false;
+   g_extern.system.shutdown = false;
 }
 
 #ifdef NEED_DYNAMIC
@@ -634,6 +637,14 @@ static bool environment_cb(unsigned cmd, void *data)
          cb->get_current_framebuffer = driver_get_current_framebuffer;
          cb->get_proc_address = driver_get_proc_address;
          memcpy(&g_extern.system.hw_render_callback, cb, sizeof(*cb));
+         break;
+      }
+
+      case RETRO_ENVIRONMENT_SET_SUPPORT_NO_GAME:
+      {
+         bool state = *(const bool*)data;
+         RARCH_LOG("Environ SET_SUPPORT_NO_GAME: %s.\n", state ? "yes" : "no");
+         g_extern.system.no_game = state;
          break;
       }
 

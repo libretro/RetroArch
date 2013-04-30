@@ -73,6 +73,9 @@ void retro_set_environment(retro_environment_t cb)
    };
 
    cb(RETRO_ENVIRONMENT_SET_VARIABLES, (void*)vars);
+
+   bool no_rom = true;
+   cb(RETRO_ENVIRONMENT_SET_SUPPORT_NO_GAME, &no_rom);
 }
 
 void retro_set_audio_sample(retro_audio_sample_t cb)

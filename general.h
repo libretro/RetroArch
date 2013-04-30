@@ -369,6 +369,7 @@ struct global
 
       bool block_extract;
       bool force_nonblock;
+      bool no_game;
 
       const char *input_desc_btn[MAX_PLAYERS][RARCH_FIRST_CUSTOM_BIND];
       char valid_extensions[PATH_MAX];
@@ -379,6 +380,7 @@ struct global
       struct retro_hw_render_callback hw_render_callback;
 
       core_option_manager_t *core_options;
+
    } system;
 
    struct
@@ -597,6 +599,7 @@ struct global
    jmp_buf error_sjlj_context;
    unsigned menu_toggle_behavior;
 
+   bool libretro_no_rom;
    bool libretro_dummy;
 };
 

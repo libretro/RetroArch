@@ -646,7 +646,7 @@ static void print_help(void)
    puts("\t--menu: Do not require ROM or libretro core to be loaded, starts directly in menu.");
    puts("\t\tIf no arguments are passed to RetroArch, it is equivalent to using --menu as only argument.");
    puts("\t--features: Prints available features compiled into RetroArch.");
-   puts("\t-s/--save: Path for save file (*.srm). Required when rom is input from stdin.");
+   puts("\t-s/--save: Path for save file (*.srm).");
    puts("\t-f/--fullscreen: Start RetroArch in fullscreen regardless of config settings.");
    puts("\t-S/--savestate: Path to use for save states. If not selected, *.state will be assumed.");
    puts("\t-c/--config: Path for config file." RARCH_DEFAULT_CONF_PATH_STR);
@@ -753,45 +753,9 @@ static void set_paths(const char *path)
    }
 }
 
-static void verify_stdin_paths(void)
-{
-   if (!*g_extern.savefile_name_srm)
-   {
-      RARCH_ERR("Need savefile path argument (--save) when reading rom from stdin.\n");
-      print_help();
-      rarch_fail(1, "verify_stdin_paths()");
-   }
-   else if (!*g_extern.savestate_name)
-   {
-      RARCH_ERR("Need savestate path argument (--savestate) when reading rom from stdin.\n");
-      print_help();
-      rarch_fail(1, "verify_stdin_paths()");
-   }
-
-   if (path_is_directory(g_extern.savefile_name_srm))
-   {
-      RARCH_ERR("Cannot specify directory for path argument (--save) when reading from stdin.\n");
-      print_help();
-      rarch_fail(1, "verify_stdin_paths()");
-   }
-   else if (path_is_directory(g_extern.savestate_name))
-   {
-      RARCH_ERR("Cannot specify directory for path argument (--savestate) when reading from stdin.\n");
-      print_help();
-      rarch_fail(1, "verify_stdin_paths()");
-   }
-   else if (path_is_directory(g_extern.config_path))
-   {
-      RARCH_ERR("Cannot specify directory for config file (--config) when reading from stdin.\n");
-      print_help();
-      rarch_fail(1, "verify_stdin_paths()");
-   }
-
-   driver.stdin_claimed = true;
-}
-
 static void parse_input(int argc, char *argv[])
 {
+   g_extern.libretro_no_rom = false;
    g_extern.libretro_dummy = false;
    g_extern.has_set_save_path = false;
    g_extern.has_set_state_path = false;
@@ -1177,7 +1141,7 @@ static void parse_input(int argc, char *argv[])
    else if (optind < argc)
       set_paths(argv[optind]);
    else
-      verify_stdin_paths();
+      g_extern.libretro_no_rom = true;
 
    // Copy SRM/state dirs used, so they can be reused on reentrancy.
    if (g_extern.has_set_save_path && path_is_directory(g_extern.savefile_name_srm))
@@ -2907,10 +2871,15 @@ int rarch_main_init(int argc, char *argv[])
    verify_api_version();
    pretro_init();
 
-   g_extern.use_sram = !g_extern.libretro_dummy;
+   g_extern.use_sram = !g_extern.libretro_dummy && !g_extern.libretro_no_rom;
    bool allow_cheats = true;
 
-   if (!g_extern.libretro_dummy)
+   if (g_extern.libretro_no_rom && !g_extern.libretro_dummy)
+   {
+      if (!init_rom_file(g_extern.game_type))
+         goto error;
+   }
+   else if (!g_extern.libretro_dummy)
    {
       fill_pathnames();
 
@@ -3123,7 +3092,7 @@ void rarch_main_deinit(void)
    deinit_movie();
 #endif
 
-   if (!g_extern.libretro_dummy)
+   if (!g_extern.libretro_dummy && !g_extern.libretro_no_rom)
       save_auto_state();
 
    pretro_unload_game();

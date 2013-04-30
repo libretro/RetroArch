@@ -452,6 +452,12 @@ enum retro_mod
                                            // Result is set to true if some variables are updated by
                                            // frontend since last call to RETRO_ENVIRONMENT_GET_VARIABLE.
                                            // Variables should be queried with GET_VARIABLE.
+                                           //
+#define RETRO_ENVIRONMENT_SET_SUPPORT_NO_GAME 18
+                                           // const bool * --
+                                           // If true, the libretro implementation supports calls to retro_load_game() with NULL as argument.
+                                           // Used by cores which can run without particular game data.
+                                          
 
 // Pass this to retro_video_refresh_t if rendering to hardware.
 // Passing NULL to retro_video_refresh_t is still a frame dupe as normal.

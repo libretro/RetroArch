@@ -20,7 +20,7 @@ libretro provides emulation of a game system, and can be implemented by any fron
 
 .TP
 \fB[rom file]\fR
-If no rom file path is defined on the command line, \fBretroarch\fR will try to load a rom from \fBstdin\fR.
+If no rom file path is defined on the command line, \fBretroarch\fR will try to load a core with no rom. This will only work with some libretro cores.
 \fBretroarch\fR use uncompressed ROMs, but can uncompress roms in the .zip/deflate format if support for it is compiled in.
 ROM types supported depend on the libretro implementation used.
 
@@ -53,17 +53,13 @@ If two or more different implementations claim to support a certain ROM extensio
 \fB--save PATH, -s PATH\fR
 Overrides the path used for save ram (*.srm).
 Without this flag, the save ram path will be inferred from the rom path name, and put in the same directory as the rom file with the extention replaced with '.srm'.
-When rom is loaded from \fBstdin\fR, this flag is mandatory to define as no path can be inferred.
 If PATH is a directory, RetroArch will treat this as the save file directory, where the save file name will be inferred from the rom name.
-When loading a rom from stdin, the path must be a full path, however.
 
 .TP
 \fB--savestate PATH, -S PATH\fR
 Overrides the path used for save states.
 Without this flag, the save state path will be inferred from the rom path name, and put in the same directory as the rom file with the extention replace with '.state'.
-When rom is loaded from \fBstdin\fR, this flag is mandatory to define as no path can be inferred.
 If PATH is a directory, RetroArch will treat this as the save state directory, where the state file name will be inferred from the rom name.
-When loading a rom from stdin, the path must be a full path, however.
 Do note that save states are bound to the libretro implementation being used. Using a different libretro could invalidate the save state file.
 
 .TP
@@ -76,7 +72,6 @@ Sets the configuration file path. \fBretroarch\fR will use this path to load the
 Should this not be defined, \fBretroarch\fR will look in platform specific paths to attempt finding the config file.
 /etc/retroarch.cfg (when installed), or retroarch.cfg in the source tarball serves as a skeleton configuration file.
 If PATH is a directory, RetroArch will treat this as the config file directory, where the state file name will be inferred from the rom name (*.cfg).
-When loading a rom from stdin, the path must be a full path, however.
 If a config cannot be found when using directory path, the default config path will be used instead.
 
 .IP

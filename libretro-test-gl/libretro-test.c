@@ -190,6 +190,9 @@ static retro_input_state_t input_state_cb;
 void retro_set_environment(retro_environment_t cb)
 {
    environ_cb = cb;
+
+   bool no_rom = true;
+   cb(RETRO_ENVIRONMENT_SET_SUPPORT_NO_GAME, &no_rom);
 }
 
 void retro_set_audio_sample(retro_audio_sample_t cb)
