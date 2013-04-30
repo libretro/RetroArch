@@ -495,6 +495,14 @@ void menu_init(void)
 
    strlcpy(rgui->browser->current_dir.extensions, rgui->info.valid_extensions,
          sizeof(rgui->browser->current_dir.extensions));
+
+   // Look for zips to extract as well.
+   if (*rgui->info.valid_extensions)
+   {
+      strlcat(rgui->browser->current_dir.extensions, "|zip",
+         sizeof(rgui->browser->current_dir.extensions));
+   }
+
    strlcpy(rgui->browser->current_dir.root_dir, g_settings.rgui_browser_directory,
          sizeof(rgui->browser->current_dir.root_dir));
 
