@@ -25,7 +25,7 @@
     <buildId>1</buildId>
                  
     <!-- A string value (such as "v1", "2.5", or "Alpha 1") that represents the version of the application, as it should be shown to users. Optional. -->
-    <versionLabel>"v0.9.9-wip1"</versionLabel>
+    <versionLabel>"v0.9.9-wip2"</versionLabel>
 
     <!-- Description, displayed in the BlackBerry Tablet OS application installer.
          May have multiple values for each language. See samples or xsd schema file. Optional. -->

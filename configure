@@ -1,7 +1,7 @@
 #!/bin/sh
 
 PACKAGE_NAME=retroarch
-PACKAGE_VERSION=0.9.9-wip1
+PACKAGE_VERSION=0.9.9-wip2
 
 cat /dev/null > config.log
 

@@ -686,7 +686,7 @@ bool config_load_file(const char *path)
          fill_pathname_dir(g_extern.savefile_name_srm, g_extern.basename, ".srm", sizeof(g_extern.savefile_name_srm));
       }
       else
-         RARCH_WARN("savefile_directory is not a directory, ignoring ....\n");
+         RARCH_WARN("savefile_directory is not a directory, ignoring ...\n");
    }
 
    if (!g_extern.has_set_state_path && config_get_path(conf, "savestate_directory", tmp_str, sizeof(tmp_str)))
