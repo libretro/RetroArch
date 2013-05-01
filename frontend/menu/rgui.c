@@ -845,7 +845,7 @@ static int rgui_settings_toggle_setting(rgui_handle_t *rgui, unsigned setting, r
                   width, height, -pitch, false);
 
             msg_queue_push(g_extern.msg_queue,
-                  r ? "Screenshot saved" : "Screenshot failed to save", 1, 90);
+                  r ? "Screenshot saved." : "Screenshot failed to save.", 1, 90);
          }
          break;
 #endif
