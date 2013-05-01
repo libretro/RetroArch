@@ -448,6 +448,12 @@ bool load_menu_game(void)
    }
    else
    {
+      char name[PATH_MAX];
+      char msg[PATH_MAX];
+      fill_pathname_base(name, g_extern.fullpath, sizeof(name));
+      snprintf(msg, sizeof(msg), "Failed to load %s.\n", name);
+      msg_queue_push(g_extern.msg_queue, msg, 1, 90);
+      rgui->msg_force = true;
       RARCH_ERR("rarch_main_init_wrap() failed.\n");
       return false;
    }
