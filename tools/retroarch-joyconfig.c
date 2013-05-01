@@ -39,7 +39,7 @@ static int g_timeout = 0;
 static char *g_in_path = NULL;
 static char *g_out_path = NULL;
 static char *g_auto_path = NULL;
-static int g_meta_level = 0;
+static unsigned g_meta_level = 0;
 
 static void print_help(void)
 {
