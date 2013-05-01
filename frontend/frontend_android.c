@@ -106,11 +106,10 @@ static void jni_get (void *data_in, void *data_out)
    }
 }
 
-static bool android_app_start_main(struct android_app *android_app, int *init_ret)
+static bool android_app_start_main(struct android_app *android_app)
 {
    struct jni_params in_params;
    struct jni_out_params_char out_args;
-   struct rarch_main_wrap args = {0};
    bool ret = false;
 
    in_params.java_vm = android_app->activity->vm;
@@ -153,37 +152,15 @@ static bool android_app_start_main(struct android_app *android_app, int *init_re
    RARCH_LOG("Config file: [%s].\n", g_extern.config_path);
    RARCH_LOG("Current IME: [%s].\n", android_app->current_ime);
 
-   g_extern.lifecycle_mode_state |= (1ULL << MODE_INIT);
-
-   args.verbose = true;
-   args.config_path = g_extern.config_path;
-   args.sram_path = NULL;
-   args.state_path = NULL;
-   args.rom_path = g_extern.fullpath;
-   args.libretro_path = g_settings.libretro;
-
-   ret = rarch_main_init_wrap(&args);
-
-   if (ret == 0)
-   {
-      RARCH_LOG("rarch_main_init succeeded.\n");
+   ret = load_menu_game();
+   if (ret)
       g_extern.lifecycle_mode_state |= (1ULL << MODE_GAME);
-   }
-   else
-      RARCH_ERR("rarch_main_init failed.\n");
-
-   g_extern.lifecycle_mode_state &= ~(1ULL << MODE_INIT);
-
-   if (ret == 0)
-      return true;
-   else
-      return false;
+   return ret;
 }
 
 static void *android_app_entry(void *data)
 {
    struct android_app* android_app = (struct android_app*)data;
-   int init_ret = 0;
 
    android_app->config = AConfiguration_new();
    AConfiguration_fromAssetManager(android_app->config, android_app->activity->assetManager);
@@ -212,11 +189,16 @@ static void *android_app_entry(void *data)
    }
 
    rarch_init_msg_queue();
-
-   if (!android_app_start_main(android_app, &init_ret))
-      goto exit;
-
    menu_init();
+
+   if (!android_app_start_main(android_app))
+   {
+      init_drivers();
+      driver.video_poke->set_aspect_ratio(driver.video_data, ASPECT_RATIO_SQUARE);
+      rarch_render_cached_frame();
+      sleep(2);
+      goto exit;
+   }
 
    for (;;)
    {
@@ -234,7 +216,7 @@ static void *android_app_entry(void *data)
 #ifdef RARCH_CONSOLE
             g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU);
 #else
-            return 1;
+            return NULL;
 #endif
          }
 
@@ -292,7 +274,7 @@ exit:
    // exit() here is nasty.
    // pthread_exit(NULL) or return NULL; causes hanging ...
    // Should probably called ANativeActivity_finsih(), but it's bugged, it will hang our app.
-   exit(init_ret);
+   exit(0);
 }
 
 static inline void android_app_write_cmd (void *data, int8_t cmd)
