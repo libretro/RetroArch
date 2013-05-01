@@ -24,9 +24,14 @@
 
 #if defined(__CELLOS_LV2__) && !defined(__PSL1GHT__) || defined(__BLACKBERRY_QNX__)
 #include <unistd.h> //stat() is defined here
-#ifndef __BLACKBERRY_QNX__
-#define S_ISDIR(x) (x & CELL_FS_S_IFDIR)
 #endif
+
+#if defined(__CELLOS_LV2__)
+
+#ifndef S_ISDIR
+#define S_ISDIR(x) (x & 0040000)
+#endif
+
 #endif
 
 #if defined(_WIN32)
