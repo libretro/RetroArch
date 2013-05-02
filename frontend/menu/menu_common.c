@@ -469,6 +469,8 @@ bool load_menu_game(void)
       RARCH_ERR("rarch_main_init_wrap() failed.\n");
       return false;
    }
+
+   rgui->load_no_rom = false;
 }
 
 void menu_init(void)
