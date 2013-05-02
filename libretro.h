@@ -457,6 +457,7 @@ enum retro_mod
                                            // const bool * --
                                            // If true, the libretro implementation supports calls to retro_load_game() with NULL as argument.
                                            // Used by cores which can run without particular game data.
+                                           // This should be called within retro_set_environment() only.
                                           
 
 // Pass this to retro_video_refresh_t if rendering to hardware.
