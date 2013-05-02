@@ -48,7 +48,7 @@ function_t dylib_proc(dylib_t lib, const char *proc);
 #ifdef HAVE_DYNAMIC
 // Gets system info from an arbitrary lib.
 // The struct returned must be freed as strings are allocated dynamically.
-bool libretro_get_system_info(const char *path, struct retro_system_info *info);
+bool libretro_get_system_info(const char *path, struct retro_system_info *info, bool *load_no_rom);
 void libretro_free_system_info(struct retro_system_info *info);
 #endif
 

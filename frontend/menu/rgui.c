@@ -1927,12 +1927,18 @@ static void history_parse(rgui_handle_t *rgui)
       rom_history_get_index(rgui->history, i,
             &path, &core_path, &core_name);
 
-      char path_short[PATH_MAX];
-      fill_pathname(path_short, path_basename(path), "", sizeof(path_short));
-
       char fill_buf[PATH_MAX];
-      snprintf(fill_buf, sizeof(fill_buf), "%s (%s)",
-            path_short, core_name);
+
+      if (path)
+      {
+         char path_short[PATH_MAX];
+         fill_pathname(path_short, path_basename(path), "", sizeof(path_short));
+
+         snprintf(fill_buf, sizeof(fill_buf), "%s (%s)",
+               path_short, core_name);
+      }
+      else
+         strlcpy(fill_buf, core_name, sizeof(fill_buf));
 
       rgui_list_push(rgui->selection_buf, fill_buf, RGUI_FILE_PLAIN, 0);
    }
@@ -2178,7 +2184,18 @@ int rgui_iterate(rgui_handle_t *rgui)
 #if defined(HAVE_DYNAMIC)
                fill_pathname_join(g_settings.libretro, dir, path, sizeof(g_settings.libretro));
                libretro_free_system_info(&rgui->info);
-               libretro_get_system_info(g_settings.libretro, &rgui->info);
+               libretro_get_system_info(g_settings.libretro, &rgui->info,
+                     &rgui->load_no_rom);
+
+               // No ROM needed for this core, load game immediately.
+               if (rgui->load_no_rom)
+               {
+                  g_extern.lifecycle_mode_state |= (1ULL << MODE_LOAD_GAME);
+                  *g_extern.fullpath = '\0';
+                  rgui->msg_force = true;
+                  ret = -1;
+               }
+
                // Core selection on non-console just updates directory listing.
                // Will take affect on new ROM load.
 #elif defined(GEKKO)

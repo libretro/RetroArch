@@ -365,9 +365,10 @@ void rgui_list_get_last(const rgui_list_t *list,
 
 void load_menu_game_prepare(void)
 {
-   if (*g_extern.fullpath)
+   if (*g_extern.fullpath || rgui->load_no_rom)
    {
-      if (g_extern.lifecycle_mode_state & (1ULL << MODE_INFO_DRAW))
+      if (*g_extern.fullpath &&
+            g_extern.lifecycle_mode_state & (1ULL << MODE_INFO_DRAW))
       {
          char tmp[PATH_MAX];
          char str[PATH_MAX];
@@ -378,7 +379,8 @@ void load_menu_game_prepare(void)
       }
 
       if (rgui->history)
-         rom_history_push(rgui->history, g_extern.fullpath,
+         rom_history_push(rgui->history,
+               *g_extern.fullpath ? g_extern.fullpath : NULL,
                g_settings.libretro, rgui->info.library_name);
    }
 
@@ -412,7 +414,17 @@ void load_menu_game_history(unsigned game_index)
          game_index, &path, &core_path, &core_name);
 
    strlcpy(g_settings.libretro, core_path, sizeof(g_settings.libretro));
-   strlcpy(g_extern.fullpath, path, sizeof(g_extern.fullpath));
+
+   if (path)
+   {
+      rgui->load_no_rom = false;
+      strlcpy(g_extern.fullpath, path, sizeof(g_extern.fullpath));
+   }
+   else
+   {
+      rgui->load_no_rom = true;
+      *g_extern.fullpath = '\0';
+   }
 
 #if !defined( HAVE_DYNAMIC) && defined(RARCH_CONSOLE)
    g_extern.lifecycle_mode_state &= ~(1ULL << MODE_GAME);
@@ -421,10 +433,9 @@ void load_menu_game_history(unsigned game_index)
    g_extern.lifecycle_mode_state |= (1ULL << MODE_EXITSPAWN_START_GAME);
 #elif defined(HAVE_DYNAMIC)
    libretro_free_system_info(&rgui->info);
-   libretro_get_system_info(g_settings.libretro, &rgui->info);
+   libretro_get_system_info(g_settings.libretro, &rgui->info, NULL);
    g_extern.lifecycle_mode_state |= (1ULL << MODE_LOAD_GAME);
 #endif
-
 }
 
 bool load_menu_game(void)
@@ -440,6 +451,7 @@ bool load_menu_game(void)
    args.state_path    = *g_extern.savestate_dir ? g_extern.savestate_dir : NULL;
    args.rom_path      = *g_extern.fullpath ? g_extern.fullpath : NULL;
    args.libretro_path = g_settings.libretro;
+   args.no_rom        = rgui->load_no_rom;
 
    if (rarch_main_init_wrap(&args) == 0)
    {
@@ -480,7 +492,7 @@ void menu_init(void)
    else if (*g_settings.libretro)
    {
       fill_pathname_basedir(rgui->libretro_dir, g_settings.libretro, sizeof(rgui->libretro_dir));
-      libretro_get_system_info(g_settings.libretro, &rgui->info);
+      libretro_get_system_info(g_settings.libretro, &rgui->info, NULL);
    }
 #else
    retro_get_system_info(&rgui->info);

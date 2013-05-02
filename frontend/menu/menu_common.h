@@ -232,6 +232,7 @@ typedef struct
    char libretro_dir[PATH_MAX];
 #endif
    struct retro_system_info info;
+   bool load_no_rom;
 
 #ifdef HAVE_OSKUTIL
    unsigned osk_param;

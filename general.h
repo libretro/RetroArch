@@ -611,6 +611,7 @@ struct rarch_main_wrap
    const char *config_path;
    const char *libretro_path;
    bool verbose;
+   bool no_rom;
 };
 
 enum

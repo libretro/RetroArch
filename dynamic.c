@@ -103,7 +103,23 @@ static bool environment_cb(unsigned cmd, void *data);
 #define DYNAMIC_EXT "so"
 #endif
 
-static dylib_t libretro_get_system_info_lib(const char *path, struct retro_system_info *info)
+static bool *load_no_rom_hook;
+static bool environ_cb_get_system_info(unsigned cmd, void *data)
+{
+   switch (cmd)
+   {
+      case RETRO_ENVIRONMENT_SET_SUPPORT_NO_GAME:
+         *load_no_rom_hook = *(const bool*)data;
+         break;
+
+      default:
+         return false;
+   }
+
+   return true;
+}
+
+static dylib_t libretro_get_system_info_lib(const char *path, struct retro_system_info *info, bool *load_no_rom)
 {
    dylib_t lib = dylib_load(path);
    if (!lib)
@@ -119,13 +135,30 @@ static dylib_t libretro_get_system_info_lib(const char *path, struct retro_syste
    }
 
    proc(info);
+
+   if (load_no_rom)
+   {
+      *load_no_rom = false;
+      void (*set_environ)(retro_environment_t) =
+         (void (*)(retro_environment_t))dylib_proc(lib, "retro_set_environment");
+
+      if (!set_environ)
+         return lib;
+
+      load_no_rom_hook = load_no_rom;
+
+      // load_no_rom gets set in this callback.
+      set_environ(environ_cb_get_system_info);
+   }
+
    return lib;
 }
 
-bool libretro_get_system_info(const char *path, struct retro_system_info *info)
+bool libretro_get_system_info(const char *path, struct retro_system_info *info,
+   bool *load_no_rom)
 {
    struct retro_system_info dummy_info = {0};
-   dylib_t lib = libretro_get_system_info_lib(path, &dummy_info);
+   dylib_t lib = libretro_get_system_info_lib(path, &dummy_info, load_no_rom);
    if (!lib)
       return false;
 
@@ -171,7 +204,7 @@ static bool find_first_libretro(char *path, size_t size,
       RARCH_LOG("Checking library: \"%s\".\n", list->elems[i].data);
 
       struct retro_system_info info = {0};
-      dylib_t lib = libretro_get_system_info_lib(list->elems[i].data, &info);
+      dylib_t lib = libretro_get_system_info_lib(list->elems[i].data, &info, NULL);
       if (!lib)
          continue;
 
@@ -374,6 +407,7 @@ void uninit_libretro_sym(void)
    g_extern.system.pix_fmt = RETRO_PIXEL_FORMAT_0RGB1555;
    g_extern.system.no_game = false;
    g_extern.system.shutdown = false;
+   g_extern.system.key_event = NULL;
 }
 
 #ifdef NEED_DYNAMIC
