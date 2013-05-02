@@ -45,6 +45,15 @@ void dylib_close(dylib_t lib);
 function_t dylib_proc(dylib_t lib, const char *proc);
 #endif
 
+// Sets environment callback in order to get statically known information from it.
+// Fetched via environment callbacks instead of retro_get_system_info(), as this info
+// is part of extensions.
+// Should only be called once right after core load to avoid overwriting
+// the "real" environ callback.
+//
+// For statically linked cores, pass retro_set_environment as argument.
+void libretro_get_environment_info(void (*)(retro_environment_t), bool *load_no_rom);
+
 #ifdef HAVE_DYNAMIC
 // Gets system info from an arbitrary lib.
 // The struct returned must be freed as strings are allocated dynamically.

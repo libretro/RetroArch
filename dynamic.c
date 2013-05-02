@@ -119,6 +119,14 @@ static bool environ_cb_get_system_info(unsigned cmd, void *data)
    return true;
 }
 
+void libretro_get_environment_info(void (*func)(retro_environment_t), bool *load_no_rom)
+{
+   load_no_rom_hook = load_no_rom;
+
+   // load_no_rom gets set in this callback.
+   func(environ_cb_get_system_info);
+}
+
 static dylib_t libretro_get_system_info_lib(const char *path, struct retro_system_info *info, bool *load_no_rom)
 {
    dylib_t lib = dylib_load(path);
@@ -145,10 +153,7 @@ static dylib_t libretro_get_system_info_lib(const char *path, struct retro_syste
       if (!set_environ)
          return lib;
 
-      load_no_rom_hook = load_no_rom;
-
-      // load_no_rom gets set in this callback.
-      set_environ(environ_cb_get_system_info);
+      libretro_get_environment_info(set_environ, load_no_rom);
    }
 
    return lib;
