@@ -1473,7 +1473,7 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
       RARCH_PERFORMANCE_START(gl_fence);
       glClear(GL_COLOR_BUFFER_BIT);
       GLsync sync = pglFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
-      pglClientWaitSync(sync, 0, 1000000000);
+      pglClientWaitSync(sync, GL_SYNC_FLUSH_COMMANDS_BIT, 1000000000);
       pglDeleteSync(sync);
       RARCH_PERFORMANCE_STOP(gl_fence);
    }
