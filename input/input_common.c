@@ -44,11 +44,11 @@ static const rarch_joypad_driver_t *joypad_drivers[] = {
 #ifdef HAVE_DINPUT
    &dinput_joypad,
 #endif
-#if defined(__linux) && !defined(ANDROID)
-   &linuxraw_joypad,
-#endif
 #ifdef HAVE_SDL
    &sdl_joypad,
+#endif
+#if defined(__linux) && !defined(ANDROID)
+   &linuxraw_joypad,
 #endif
 #endif
    NULL,
