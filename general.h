@@ -158,6 +158,7 @@ struct settings
       unsigned fullscreen_x;
       unsigned fullscreen_y;
       bool vsync;
+      bool hard_sync;
       bool smooth;
       bool force_aspect;
       bool crop_overscan;
