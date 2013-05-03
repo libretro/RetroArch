@@ -218,6 +218,7 @@ ifeq ($(HAVE_OPENGL), 1)
          LIBS += -framework OpenGL
       else
          LIBS += -lGL
+         DEFINES += -DHAVE_GL_SYNC
       endif
    endif
 

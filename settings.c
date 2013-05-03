@@ -164,6 +164,7 @@ void config_set_defaults(void)
    g_settings.video.fullscreen_y = fullscreen_y;
    g_settings.video.disable_composition = disable_composition;
    g_settings.video.vsync = vsync;
+   g_settings.video.hard_sync = hard_sync;
    g_settings.video.threaded = video_threaded;
    g_settings.video.smooth = video_smooth;
    g_settings.video.force_aspect = force_aspect;
@@ -443,6 +444,7 @@ bool config_load_file(const char *path)
    CONFIG_GET_INT(video.monitor_index, "video_monitor_index");
    CONFIG_GET_BOOL(video.disable_composition, "video_disable_composition");
    CONFIG_GET_BOOL(video.vsync, "video_vsync");
+   CONFIG_GET_BOOL(video.hard_sync, "video_hard_sync");
    CONFIG_GET_BOOL(video.threaded, "video_threaded");
    CONFIG_GET_BOOL(video.smooth, "video_smooth");
    CONFIG_GET_BOOL(video.force_aspect, "video_force_aspect");

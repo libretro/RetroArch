@@ -239,6 +239,9 @@ static const bool disable_composition = false;
 // Video VSYNC (recommended)
 static const bool vsync = true;
 
+// Attempts to hard-synchronize CPU and GPU. Can reduce latency at cost of performance.
+static const bool hard_sync = false;
+
 // Threaded video. Will possibly increase performance significantly at cost of worse synchronization and latency.
 static const bool video_threaded = false;
 
