@@ -412,6 +412,7 @@ uninstall:
 clean:
 	rm -f *.o 
 	rm -f frontend/menu/*.o
+	rm -f frontend/*.o
 	rm -f audio/*.o
 	rm -f conf/*.o
 	rm -f gfx/*.o

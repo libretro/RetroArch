@@ -279,7 +279,6 @@ clean:
 	rm -f deps/miniz/*.o
 	rm -f frontend/*.o
 	rm -f frontend/menu/*.o
-	rm -f frontend/menu/utils/*.o
 	rm -f audio/*.o
 	rm -f audio/xaudio-c/*.o
 	rm -f compat/*.o
