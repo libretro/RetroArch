@@ -160,11 +160,12 @@ int getopt_long(int argc, char *argv[],
       const char *optstring, const struct option *longopts, int *longindex)
 {
    (void)longindex;
-   if (argc == 1)
-      return -1;
 
    if (optind == 0)
       optind = 1;
+
+   if (argc == 1)
+      return -1;
 
    int short_index = find_short_index(&argv[optind]);
    int long_index  = find_long_index(&argv[optind]);
