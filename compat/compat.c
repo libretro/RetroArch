@@ -247,7 +247,7 @@ size_t strlcat(char *dest, const char *source, size_t size)
 
 #include <string.h>
 
-int strcasecmp_rarch__(const char *a, const char *b)
+int rarch_strcasecmp__(const char *a, const char *b)
 {
    while (*a && *b)
    {
@@ -263,7 +263,7 @@ int strcasecmp_rarch__(const char *a, const char *b)
    return tolower(*a) - tolower(*b);
 }
 
-char *strdup_rarch__(const char *orig)
+char *rarch_strdup__(const char *orig)
 {
    size_t len = strlen(orig) + 1;
    char *ret = (char*)malloc(len);
@@ -274,12 +274,12 @@ char *strdup_rarch__(const char *orig)
    return ret;
 }
 
-int isblank_rarch__(int c)
+int rarch_isblank__(int c)
 {
    return (c == ' ') || (c == '\t');
 }
 
-char *strtok_r_rarch__(char *str, const char *delim, char **saveptr)
+char *rarch_strtok_r__(char *str, const char *delim, char **saveptr)
 {
    if (!saveptr || !delim)
       return NULL;

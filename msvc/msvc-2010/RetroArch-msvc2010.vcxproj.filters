@@ -234,6 +234,12 @@
     <ClCompile Include="..\..\frontend\menu\menu_common.c">
       <Filter>Source Files\rgui</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\dynamic_dummy.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\frontend\menu\history.c">
+      <Filter>Source Files\rgui</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="resource.h">

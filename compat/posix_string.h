@@ -18,6 +18,8 @@
 
 #ifdef _WIN32
 
+#include "../msvc/msvc_compat.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -26,10 +28,10 @@ extern "C" {
 #undef strdup
 #undef isblank
 #undef strtok_r
-#define strcasecmp(a, b) strcasecmp_rarch__(a, b)
-#define strdup(orig) strdup_rarch__(orig)
-#define isblank(c) isblank_rarch__(c)
-#define strtok_r(str, delim, saveptr) strtok_r_rarch__(str, delim, saveptr)
+#define strcasecmp(a, b) rarch_strcasecmp__(a, b)
+#define strdup(orig) rarch_strdup__(orig)
+#define isblank(c) rarch_isblank__(c)
+#define strtok_r(str, delim, saveptr) rarch_strtok_r__(str, delim, saveptr)
 int strcasecmp(const char *a, const char *b);
 char *strdup(const char *orig);
 int isblank(int c);
