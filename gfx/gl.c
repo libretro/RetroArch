@@ -124,6 +124,24 @@ static bool load_eglimage_proc(gl_t *gl)
 }
 #endif
 
+#ifdef HAVE_GL_SYNC
+static PFNGLFENCESYNCPROC pglFenceSync;
+static PFNGLDELETESYNCPROC pglDeleteSync;
+static PFNGLCLIENTWAITSYNCPROC pglClientWaitSync;
+
+static bool load_sync_proc(gl_t *gl)
+{
+   if (!gl_query_extension("ARB_sync"))
+      return false;
+
+   LOAD_GL_SYM(FenceSync);
+   LOAD_GL_SYM(DeleteSync);
+   LOAD_GL_SYM(ClientWaitSync);
+
+   return pglFenceSync && pglDeleteSync && pglClientWaitSync;
+}
+#endif
+
 #ifdef HAVE_FBO
 #if defined(_WIN32) && !defined(RARCH_CONSOLE)
 static PFNGLGENFRAMEBUFFERSPROC pglGenFramebuffers;
@@ -1448,6 +1466,19 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
    context_swap_buffers_func();
    g_extern.frame_count++;
 
+#ifdef HAVE_GL_SYNC
+   if (gl->use_sync)
+   {
+      RARCH_PERFORMANCE_INIT(gl_fence);
+      RARCH_PERFORMANCE_START(gl_fence);
+      glClear(GL_COLOR_BUFFER_BIT);
+      GLsync sync = pglFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
+      pglClientWaitSync(sync, 0, 1000000000);
+      pglDeleteSync(sync);
+      RARCH_PERFORMANCE_STOP(gl_fence);
+   }
+#endif
+
 #if !defined(HAVE_OPENGLES) && defined(HAVE_FFMPEG)
    if (gl->pbo_readback_enable)
       gl_pbo_async_readback(gl);
@@ -1536,6 +1567,12 @@ static bool resolve_extensions(gl_t *gl)
    // Need to load dynamically :(
    if (!load_gl_proc_win32(gl))
       return false;
+#endif
+
+#ifdef HAVE_GL_SYNC
+   gl->use_sync = g_settings.video.hard_sync && load_sync_proc(gl);
+   if (gl->use_sync)
+      RARCH_LOG("[GL]: Using ARB_sync to reduce latency.\n");
 #endif
 
 #ifdef NO_GL_CLAMP_TO_BORDER

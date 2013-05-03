@@ -282,6 +282,9 @@ typedef struct gl
    GLfloat rgui_texture_alpha;
 #endif
 
+#ifdef HAVE_GL_SYNC
+   bool use_sync;
+#endif
 } gl_t;
 
 // Windows ... <_<
