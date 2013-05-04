@@ -489,6 +489,7 @@ void menu_init(void)
    rgui->old_input_state = 0;
    rgui->do_held = false;
    rgui->frame_buf_show = true;
+   rgui->current_pad = 0;
 
 #ifdef HAVE_DYNAMIC
    if (path_is_directory(g_settings.libretro))

@@ -242,6 +242,7 @@ typedef struct
 #ifdef HAVE_SHADER_MANAGER
    struct gfx_shader shader;
 #endif
+   unsigned current_pad;
 
    rom_history_t *history;
 } rgui_handle_t;

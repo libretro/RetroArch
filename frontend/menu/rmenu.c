@@ -57,8 +57,6 @@ struct texture_image *menu_texture;
 struct texture_image *menu_panel;
 #endif
 
-unsigned currently_selected_controller_menu = 0;
-
 static const struct retro_keybind _rmenu_nav_binds[] = {
    { 0, 0, NULL, (enum retro_key)0, (1ULL << RETRO_DEVICE_ID_JOYPAD_UP) | (1ULL << RARCH_ANALOG_LEFT_Y_DPAD_UP), 0 },
    { 0, 0, NULL, (enum retro_key)0, (1ULL << RETRO_DEVICE_ID_JOYPAD_DOWN) | (1ULL << RARCH_ANALOG_LEFT_Y_DPAD_DOWN), 0 },
@@ -803,7 +801,7 @@ static void set_keybind_digital(unsigned default_retro_joypad_id, uint64_t input
 
 
    if (keybind_action)
-      driver.input->set_keybinds(driver.input_data, NULL, currently_selected_controller_menu,
+      driver.input->set_keybinds(driver.input_data, NULL, rgui->current_pad,
             default_retro_joypad_id, keybind_action);
 }
 
@@ -1359,18 +1357,18 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
       case SETTING_CONTROLS_NUMBER:
          if (input & (1ULL << DEVICE_NAV_LEFT))
          {
-            if (currently_selected_controller_menu != 0)
-               currently_selected_controller_menu--;
+            if (rgui->current_pad != 0)
+               rgui->current_pad--;
          }
 
          if ((input & (1ULL << DEVICE_NAV_RIGHT)) || (input & (1ULL << DEVICE_NAV_B)))
          {
-            if (currently_selected_controller_menu < 6)
-               currently_selected_controller_menu++;
+            if (rgui->current_pad < 6)
+               rgui->current_pad++;
          }
 
          if (input & (1ULL << DEVICE_NAV_START))
-            currently_selected_controller_menu = 0;
+            rgui->current_pad = 0;
          break; 
       case SETTING_DPAD_EMULATION:
          if (input & (1ULL << DEVICE_NAV_LEFT))
@@ -1379,7 +1377,7 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
             {
                unsigned keybind_action = 0;
 
-               switch(g_settings.input.dpad_emulation[currently_selected_controller_menu])
+               switch(g_settings.input.dpad_emulation[rgui->current_pad])
                {
                   case ANALOG_DPAD_NONE:
                      break;
@@ -1394,7 +1392,7 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
                }
 
                if (keybind_action)
-                  driver.input->set_keybinds(driver.input_data, g_settings.input.device[currently_selected_controller_menu], currently_selected_controller_menu, 0, keybind_action);
+                  driver.input->set_keybinds(driver.input_data, g_settings.input.device[rgui->current_pad], rgui->current_pad, 0, keybind_action);
             }
          }
 
@@ -1404,7 +1402,7 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
             {
                unsigned keybind_action = 0;
 
-               switch(g_settings.input.dpad_emulation[currently_selected_controller_menu])
+               switch(g_settings.input.dpad_emulation[rgui->current_pad])
                {
                   case ANALOG_DPAD_NONE:
                      keybind_action = (1ULL << KEYBINDS_ACTION_SET_ANALOG_DPAD_LSTICK);
@@ -1417,13 +1415,13 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
                }
 
                if (keybind_action)
-                  driver.input->set_keybinds(driver.input_data, g_settings.input.device[currently_selected_controller_menu], currently_selected_controller_menu, 0, keybind_action);
+                  driver.input->set_keybinds(driver.input_data, g_settings.input.device[rgui->current_pad], rgui->current_pad, 0, keybind_action);
             }
          }
 
          if (input & (1ULL << DEVICE_NAV_START))
             if (driver.input->set_keybinds)
-                  driver.input->set_keybinds(driver.input_data, g_settings.input.device[currently_selected_controller_menu], currently_selected_controller_menu, 0, (1ULL << KEYBINDS_ACTION_SET_ANALOG_DPAD_LSTICK));
+                  driver.input->set_keybinds(driver.input_data, g_settings.input.device[rgui->current_pad], rgui->current_pad, 0, (1ULL << KEYBINDS_ACTION_SET_ANALOG_DPAD_LSTICK));
          break;
       case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_UP:
          set_keybind_digital(RETRO_DEVICE_ID_JOYPAD_UP, input);
@@ -1486,7 +1484,7 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
       case SETTING_CONTROLS_DEFAULT_ALL:
          if ((input & (1ULL << DEVICE_NAV_LEFT)) || (input & (1ULL << DEVICE_NAV_RIGHT)) || (input & (1ULL << DEVICE_NAV_B)) || (input & (1ULL << DEVICE_NAV_START)))
             if (driver.input->set_keybinds)
-               driver.input->set_keybinds(driver.input_data, g_settings.input.device[currently_selected_controller_menu], currently_selected_controller_menu, 0,
+               driver.input->set_keybinds(driver.input_data, g_settings.input.device[rgui->current_pad], rgui->current_pad, 0,
                      (1ULL << KEYBINDS_ACTION_SET_DEFAULT_BINDS));
          break;
       case INGAME_MENU_LOAD_STATE:
@@ -2100,23 +2098,23 @@ static int select_setting(void *data, uint64_t input)
             break;
          case SETTING_CONTROLS_NUMBER:
             strlcpy(text, "Controller No", sizeof(text));
-            snprintf(comment, sizeof(comment), "Controller %d is currently selected.", currently_selected_controller_menu+1);
-            snprintf(setting_text, sizeof(setting_text), "%d", currently_selected_controller_menu+1);
+            snprintf(comment, sizeof(comment), "Controller %d is currently selected.", rgui->current_pad+1);
+            snprintf(setting_text, sizeof(setting_text), "%d", rgui->current_pad+1);
             break;
          case SETTING_DPAD_EMULATION:
             strlcpy(text, "D-Pad Emulation", sizeof(text));
-            switch(g_settings.input.dpad_emulation[currently_selected_controller_menu])
+            switch(g_settings.input.dpad_emulation[rgui->current_pad])
             {
                case ANALOG_DPAD_NONE:
-                  snprintf(comment, sizeof(comment), "[%s] from Controller %d is mapped to D-pad.", "None", currently_selected_controller_menu+1);
+                  snprintf(comment, sizeof(comment), "[%s] from Controller %d is mapped to D-pad.", "None", rgui->current_pad+1);
                   strlcpy(setting_text, "None", sizeof(setting_text));
                   break;
                case ANALOG_DPAD_LSTICK:
-                  snprintf(comment, sizeof(comment), "[%s] from Controller %d is mapped to D-pad.", "Left Stick", currently_selected_controller_menu+1);
+                  snprintf(comment, sizeof(comment), "[%s] from Controller %d is mapped to D-pad.", "Left Stick", rgui->current_pad+1);
                   strlcpy(setting_text, "Left Stick", sizeof(setting_text));
                   break;
                case ANALOG_DPAD_RSTICK:
-                  snprintf(comment, sizeof(comment), "[%s] from Controller %d is mapped to D-pad.", "Right Stick", currently_selected_controller_menu+1);
+                  snprintf(comment, sizeof(comment), "[%s] from Controller %d is mapped to D-pad.", "Right Stick", rgui->current_pad+1);
                   strlcpy(setting_text, "Right Stick", sizeof(setting_text));
                   break;
             }
@@ -2141,11 +2139,11 @@ static int select_setting(void *data, uint64_t input)
                unsigned id = i - FIRST_CONTROL_BIND;
                struct platform_bind key_label;
                strlcpy(key_label.desc, "Unknown", sizeof(key_label.desc));
-               key_label.joykey = g_settings.input.binds[currently_selected_controller_menu][id].joykey;
+               key_label.joykey = g_settings.input.binds[rgui->current_pad][id].joykey;
 
                if (driver.input->set_keybinds)
                   driver.input->set_keybinds(&key_label, 0, 0, 0, (1ULL << KEYBINDS_ACTION_GET_BIND_LABEL));
-               strlcpy(text, g_settings.input.binds[currently_selected_controller_menu][id].desc, sizeof(text));
+               strlcpy(text, g_settings.input.binds[rgui->current_pad][id].desc, sizeof(text));
                snprintf(comment, sizeof(comment), "INFO - [%s] is mapped to action:\n[%s].", text, key_label.desc);
                strlcpy(setting_text, key_label.desc, sizeof(setting_text));
             }
@@ -2286,12 +2284,12 @@ static int select_setting(void *data, uint64_t input)
             strlcpy(comment, "INFO - Save current shader settings to a CGP file.", sizeof(comment));
             break;
          case SHADERMAN_SHADER_PASSES:
-            strlcpy(text, "Shader passes", sizeof(text));
+            strlcpy(text, "Shader Passes", sizeof(text));
             snprintf(setting_text, sizeof(setting_text), "%u", rgui->shader.passes);
             strlcpy(comment, "INFO - Set the amount of shader passes.", sizeof(comment));
             break;
          case SHADERMAN_APPLY_CHANGES:
-            strlcpy(text, "Apply changes", sizeof(text));
+            strlcpy(text, "Apply Shader Changes", sizeof(text));
             strlcpy(setting_text, "", sizeof(setting_text));
             strlcpy(comment, "INFO - Apply the changes made below.", sizeof(comment));
             break;
