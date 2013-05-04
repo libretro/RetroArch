@@ -1708,7 +1708,7 @@ static void rgui_settings_path_populate_entries(rgui_handle_t *rgui)
    rgui_list_push(rgui->selection_buf, "Savestate directory", RGUI_SAVESTATE_DIR_PATH, 0);
    rgui_list_push(rgui->selection_buf, "Savefile directory", RGUI_SAVEFILE_DIR_PATH, 0);
    rgui_list_push(rgui->selection_buf, "System directory", RGUI_SYSTEM_DIR_PATH, 0);
-   rgui_list_push(rgui->selection_buf, "Config file", RGUI_SYSTEM_DIR_PATH, 0);
+   rgui_list_push(rgui->selection_buf, "Config file", RGUI_CONFIG_PATH, 0);
 }
 
 static void rgui_settings_controller_populate_entries(rgui_handle_t *rgui)
