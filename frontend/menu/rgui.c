@@ -166,7 +166,7 @@ static bool menu_type_is_settings(unsigned type)
    return type == RGUI_SETTINGS ||
       type == RGUI_SETTINGS_CORE_OPTIONS ||
       type == RGUI_SETTINGS_VIDEO_OPTIONS ||
-      (type >= RGUI_SETTINGS_CONTROLLER_1 && type <= RGUI_SETTINGS_CONTROLLER_4);
+      (type == RGUI_SETTINGS_CONTROLLER);
 }
 
 #ifdef HAVE_SHADER_MANAGER
@@ -395,7 +395,7 @@ static void render_text(rgui_handle_t *rgui)
    else if (menu_type_is_shader_browser(menu_type))
       snprintf(title, sizeof(title), "SHADER %s", dir);
 #endif
-   else if ((menu_type >= RGUI_SETTINGS_CONTROLLER_1 && menu_type <= RGUI_SETTINGS_CONTROLLER_4) ||
+   else if ((menu_type == RGUI_SETTINGS_CONTROLLER) ||
          (menu_type == RGUI_SETTINGS_CUSTOM_VIEWPORT || menu_type == RGUI_SETTINGS_CUSTOM_VIEWPORT_2) ||
          menu_type == RGUI_SETTINGS)
       snprintf(title, sizeof(title), "SETTINGS %s", dir);
@@ -453,8 +453,8 @@ static void render_text(rgui_handle_t *rgui)
       rgui_list_get_at_offset(rgui->selection_buf, i, &path, &type);
       char message[256];
       char type_str[256];
-      int w = (menu_type >= RGUI_SETTINGS_CONTROLLER_1 && menu_type <= RGUI_SETTINGS_CONTROLLER_4) ? 26 : 19;
-      unsigned port = menu_type - RGUI_SETTINGS_CONTROLLER_1;
+      int w = (menu_type == RGUI_SETTINGS_CONTROLLER) ? 26 : 19;
+      unsigned port = rgui->current_pad;
       
       if (type >= RGUI_SETTINGS_VIDEO_OPTIONS_FIRST &&
             type <= RGUI_SETTINGS_SHADER_LAST)
@@ -591,11 +591,15 @@ static void render_text(rgui_handle_t *rgui)
 #endif
             case RGUI_SETTINGS_CORE:
             case RGUI_SETTINGS_DISK_APPEND:
-            case RGUI_SETTINGS_CONTROLLER_1:
-            case RGUI_SETTINGS_CONTROLLER_2:
-            case RGUI_SETTINGS_CONTROLLER_3:
-            case RGUI_SETTINGS_CONTROLLER_4:
+            case RGUI_SETTINGS_CONTROLLER:
                strlcpy(type_str, "...", sizeof(type_str));
+               break;
+            case RGUI_SETTINGS_BIND_DEVICE_NO:
+               {
+                  char number[10];
+                  snprintf(number, sizeof(number), "%d", port);
+                  strlcpy(type_str, number, sizeof(type_str));
+               }
                break;
             case RGUI_SETTINGS_BIND_DEVICE:
             {
@@ -750,9 +754,7 @@ static int rgui_core_setting_toggle(unsigned setting, rgui_action_t action)
 
 static int rgui_settings_toggle_setting(rgui_handle_t *rgui, unsigned setting, rgui_action_t action, unsigned menu_type)
 {
-   unsigned port = menu_type - RGUI_SETTINGS_CONTROLLER_1;
-
-   (void)rgui;
+   unsigned port = rgui->current_pad;
 
    if (setting >= RGUI_SETTINGS_VIDEO_OPTIONS_FIRST && setting <= RGUI_SETTINGS_SHADER_LAST)
       return shader_manager_toggle_setting(rgui, setting, action);
@@ -941,6 +943,22 @@ static int rgui_settings_toggle_setting(rgui_handle_t *rgui, unsigned setting, r
          }
          break;
       // controllers
+      case RGUI_SETTINGS_BIND_DEVICE_NO:
+         if (action == RGUI_ACTION_START)
+            rgui->current_pad = 0;
+         else if (action == RGUI_ACTION_LEFT)
+         {
+            if (rgui->current_pad != 0)
+               rgui->current_pad--;
+         }
+         else if (action == RGUI_ACTION_RIGHT)
+         {
+            if (rgui->current_pad < MAX_PLAYERS)
+               rgui->current_pad++;
+         }
+
+         port = rgui->current_pad;
+         break;
       case RGUI_SETTINGS_BIND_DEVICE:
          // If set_keybinds is supported, we do it more fancy, and scroll through
          // a list of supported devices directly.
@@ -1127,11 +1145,12 @@ static void rgui_settings_populate_entries(rgui_handle_t *rgui)
 #if defined(HAVE_DYNAMIC) || defined(HAVE_LIBRETRO_MANAGEMENT)
    rgui_list_push(rgui->selection_buf, "Core", RGUI_SETTINGS_CORE, 0);
 #endif
-   rgui_list_push(rgui->selection_buf, "Core Options", RGUI_SETTINGS_CORE_OPTIONS, 0);
    if (rgui->history)
       rgui_list_push(rgui->selection_buf, "Load Game (History)", RGUI_SETTINGS_OPEN_HISTORY, 0);
    rgui_list_push(rgui->selection_buf, "Load Game", RGUI_SETTINGS_OPEN_FILEBROWSER, 0);
+   rgui_list_push(rgui->selection_buf, "Core Options", RGUI_SETTINGS_CORE_OPTIONS, 0);
    rgui_list_push(rgui->selection_buf, "Video Options", RGUI_SETTINGS_VIDEO_OPTIONS, 0);
+   rgui_list_push(rgui->selection_buf, "Input Options", RGUI_SETTINGS_CONTROLLER, 0);
 
    if (g_extern.main_is_init && !g_extern.libretro_dummy)
    {
@@ -1161,10 +1180,6 @@ static void rgui_settings_populate_entries(rgui_handle_t *rgui)
    rgui_list_push(rgui->selection_buf, "SRAM Saves in \"sram\" Dir", RGUI_SETTINGS_SRAM_DIR, 0);
    rgui_list_push(rgui->selection_buf, "State Saves in \"state\" Dir", RGUI_SETTINGS_STATE_DIR, 0);
 #endif
-   rgui_list_push(rgui->selection_buf, "Controller #1 Config", RGUI_SETTINGS_CONTROLLER_1, 0);
-   rgui_list_push(rgui->selection_buf, "Controller #2 Config", RGUI_SETTINGS_CONTROLLER_2, 0);
-   rgui_list_push(rgui->selection_buf, "Controller #3 Config", RGUI_SETTINGS_CONTROLLER_3, 0);
-   rgui_list_push(rgui->selection_buf, "Controller #4 Config", RGUI_SETTINGS_CONTROLLER_4, 0);
    rgui_list_push(rgui->selection_buf, "Debug Text", RGUI_SETTINGS_DEBUG_TEXT, 0);
 #ifndef HAVE_DYNAMIC
    rgui_list_push(rgui->selection_buf, "Restart RetroArch", RGUI_SETTINGS_RESTART_EMULATOR, 0);
@@ -1582,6 +1597,7 @@ static int shader_manager_toggle_setting(rgui_handle_t *rgui, unsigned setting, 
 static void rgui_settings_controller_populate_entries(rgui_handle_t *rgui)
 {
    rgui_list_clear(rgui->selection_buf);
+   rgui_list_push(rgui->selection_buf, "Device No", RGUI_SETTINGS_BIND_DEVICE_NO, 0);
    rgui_list_push(rgui->selection_buf, "Device", RGUI_SETTINGS_BIND_DEVICE, 0);
    rgui_list_push(rgui->selection_buf, "Device Type", RGUI_SETTINGS_BIND_DEVICE_TYPE, 0);
 
@@ -1900,7 +1916,7 @@ static int rgui_settings_iterate(rgui_handle_t *rgui, rgui_action_t action)
             menu_type == RGUI_SETTINGS_OPEN_HISTORY))
    {
       rgui->need_refresh = false;
-      if ((menu_type >= RGUI_SETTINGS_CONTROLLER_1 && menu_type <= RGUI_SETTINGS_CONTROLLER_4))
+      if ((menu_type == RGUI_SETTINGS_CONTROLLER))
          rgui_settings_controller_populate_entries(rgui);
       else if (menu_type == RGUI_SETTINGS_CORE_OPTIONS)
          rgui_settings_core_options_populate_entries(rgui);
