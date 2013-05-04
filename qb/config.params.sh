@@ -31,3 +31,4 @@ HAVE_XVIDEO=auto        # Enable XVideo support
 HAVE_SDL_IMAGE=auto     # Enable SDL_image support
 HAVE_PYTHON=auto        # Enable Python 3 support for shaders
 HAVE_BSV_MOVIE=yes      # Disable BSV movie support
+HAVE_NEON=no            # Enable ARM NEON optimizations (hardfloat)

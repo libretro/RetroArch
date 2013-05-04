@@ -33,6 +33,12 @@ if [ "$HAVE_VIDEOCORE" = 'yes' ]; then
    EXTRA_GL_LIBS="-lGLESv2 -lbcm_host -lvcos -lvchiq_arm"
 fi
 
+if [ "$HAVE_NEON" = "yes" ]; then
+   CFLAGS="$CFLAGS -mfpu=neon -mfloat-abi=hard"
+   CXXFLAGS="$CXXFLAGS -mfpu=neon -mfloat-abi=hard"
+   ASFLAGS="$ASFLAGS -mfpu=neon -mfloat-abi=hard"
+fi
+
 if [ "$HAVE_EGL" != "no" ]; then
    check_pkgconf EGL egl
    # some systems have EGL libs, but no pkgconfig
