@@ -583,9 +583,6 @@ static void render_text(rgui_handle_t *rgui)
                else
                   strlcpy(type_str, "OFF", sizeof(type_str));
                break;
-            case RGUI_SETTINGS_AUDIO_CONTROL_RATE:
-               snprintf(type_str, sizeof(type_str), g_settings.audio.rate_control ? "ON" : "OFF");
-               break;
             case RGUI_SETTINGS_AUDIO_CONTROL_RATE_DELTA:
                snprintf(type_str, sizeof(type_str), "%.3f", g_settings.audio.rate_control_delta);
                break;
@@ -913,14 +910,6 @@ static int rgui_settings_toggle_setting(rgui_handle_t *rgui, unsigned setting, r
          else
             settings_set(1ULL << S_AUDIO_MUTE);
          break;
-      case RGUI_SETTINGS_AUDIO_CONTROL_RATE:
-         if (action == RGUI_ACTION_START)
-            g_settings.audio.rate_control = true;
-         else if (action == RGUI_ACTION_LEFT ||
-               action == RGUI_ACTION_RIGHT ||
-               action == RGUI_ACTION_OK)
-            g_settings.audio.rate_control = !g_settings.audio.rate_control;
-         break;
       case RGUI_SETTINGS_AUDIO_CONTROL_RATE_DELTA:
          if (action == RGUI_ACTION_START)
             settings_set(1ULL << S_DEF_AUDIO_CONTROL_RATE);
@@ -1198,7 +1187,6 @@ static void rgui_settings_audio_options_populate_entries(rgui_handle_t *rgui)
 {
    rgui_list_clear(rgui->selection_buf);
    rgui_list_push(rgui->selection_buf, "Mute Audio", RGUI_SETTINGS_AUDIO_MUTE, 0);
-   rgui_list_push(rgui->selection_buf, "Rate Control", RGUI_SETTINGS_AUDIO_CONTROL_RATE, 0);
    rgui_list_push(rgui->selection_buf, "Rate Control Delta", RGUI_SETTINGS_AUDIO_CONTROL_RATE_DELTA, 0);
 }
 
