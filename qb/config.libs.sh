@@ -39,6 +39,11 @@ if [ "$HAVE_NEON" = "yes" ]; then
    ASFLAGS="$ASFLAGS -mfpu=neon -mfloat-abi=hard"
 fi
 
+if [ "$HAVE_SSE" = "yes" ]; then
+   CFLAGS="$CFLAGS -msse -msse2"
+   CXXFLAGS="$CXXFLAGS -msse -msse2"
+fi
+
 if [ "$HAVE_EGL" != "no" ]; then
    check_pkgconf EGL egl
    # some systems have EGL libs, but no pkgconfig
