@@ -283,7 +283,7 @@ typedef struct gl
 #endif
 
 #ifdef HAVE_GL_SYNC
-   bool use_sync;
+   bool have_sync;
 #endif
 } gl_t;
 

@@ -1289,8 +1289,8 @@ static void rgui_settings_shader_manager_populate_entries(rgui_handle_t *rgui)
    rgui_list_push(rgui->selection_buf, "Toggle Fullscreen", RGUI_SETTINGS_TOGGLE_FULLSCREEN, 0);
 #endif
    rgui_list_push(rgui->selection_buf, "Rotation", RGUI_SETTINGS_VIDEO_ROTATION, 0);
-   rgui_list_push(rgui->selection_buf, "Vertical sync", RGUI_SETTINGS_VIDEO_VSYNC, 0);
-   rgui_list_push(rgui->selection_buf, "Hard sync", RGUI_SETTINGS_VIDEO_HARD_SYNC, 0);
+   rgui_list_push(rgui->selection_buf, "VSync", RGUI_SETTINGS_VIDEO_VSYNC, 0);
+   rgui_list_push(rgui->selection_buf, "Hard VSync", RGUI_SETTINGS_VIDEO_HARD_SYNC, 0);
 #ifdef HAVE_SHADER_MANAGER
    rgui_list_push(rgui->selection_buf, "Apply Shader Changes",
          RGUI_SETTINGS_SHADER_APPLY, 0);
@@ -1522,7 +1522,7 @@ static int shader_manager_toggle_setting(rgui_handle_t *rgui, unsigned setting, 
       switch (action)
       {
          case RGUI_ACTION_START:
-            g_settings.video.hard_sync = true;
+            g_settings.video.hard_sync = false;
             break;
 
          case RGUI_ACTION_LEFT:

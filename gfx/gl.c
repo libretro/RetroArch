@@ -1467,7 +1467,7 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
    g_extern.frame_count++;
 
 #ifdef HAVE_GL_SYNC
-   if (gl->use_sync)
+   if (g_settings.video.hard_sync && gl->have_sync)
    {
       RARCH_PERFORMANCE_INIT(gl_fence);
       RARCH_PERFORMANCE_START(gl_fence);
@@ -1570,8 +1570,8 @@ static bool resolve_extensions(gl_t *gl)
 #endif
 
 #ifdef HAVE_GL_SYNC
-   gl->use_sync = g_settings.video.hard_sync && load_sync_proc(gl);
-   if (gl->use_sync)
+   gl->have_sync = load_sync_proc(gl);
+   if (gl->have_sync && g_settings.video.hard_sync)
       RARCH_LOG("[GL]: Using ARB_sync to reduce latency.\n");
 #endif
 
