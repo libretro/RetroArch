@@ -178,7 +178,8 @@ static bool menu_type_is_settings(unsigned type)
    return type == RGUI_SETTINGS ||
       type == RGUI_SETTINGS_CORE_OPTIONS ||
       type == RGUI_SETTINGS_VIDEO_OPTIONS ||
-      (type == RGUI_SETTINGS_CONTROLLER);
+      type == RGUI_SETTINGS_AUDIO_OPTIONS ||
+      (type == RGUI_SETTINGS_INPUT_OPTIONS);
 }
 
 #ifdef HAVE_SHADER_MANAGER
@@ -401,13 +402,15 @@ static void render_text(rgui_handle_t *rgui)
       snprintf(title, sizeof(title), "DISK APPEND %s", dir);
    else if (menu_type == RGUI_SETTINGS_VIDEO_OPTIONS)
       strlcpy(title, "VIDEO OPTIONS", sizeof(title));
+   else if (menu_type == RGUI_SETTINGS_AUDIO_OPTIONS)
+      strlcpy(title, "AUDIO OPTIONS", sizeof(title));
    else if (menu_type == RGUI_SETTINGS_CORE_OPTIONS)
       strlcpy(title, "CORE OPTIONS", sizeof(title));
 #ifdef HAVE_SHADER_MANAGER
    else if (menu_type_is_shader_browser(menu_type))
       snprintf(title, sizeof(title), "SHADER %s", dir);
 #endif
-   else if ((menu_type == RGUI_SETTINGS_CONTROLLER) ||
+   else if ((menu_type == RGUI_SETTINGS_INPUT_OPTIONS) ||
          (menu_type == RGUI_SETTINGS_CUSTOM_VIEWPORT || menu_type == RGUI_SETTINGS_CUSTOM_VIEWPORT_2) ||
          menu_type == RGUI_SETTINGS)
       snprintf(title, sizeof(title), "SETTINGS %s", dir);
@@ -465,7 +468,7 @@ static void render_text(rgui_handle_t *rgui)
       rgui_list_get_at_offset(rgui->selection_buf, i, &path, &type);
       char message[256];
       char type_str[256];
-      int w = (menu_type == RGUI_SETTINGS_CONTROLLER) ? 26 : 19;
+      int w = (menu_type == RGUI_SETTINGS_INPUT_OPTIONS) ? 26 : 19;
       unsigned port = rgui->current_pad;
       
       if (type >= RGUI_SETTINGS_VIDEO_OPTIONS_FIRST &&
@@ -598,12 +601,13 @@ static void render_text(rgui_handle_t *rgui)
             case RGUI_SETTINGS_OPEN_HISTORY:
             case RGUI_SETTINGS_CORE_OPTIONS:
             case RGUI_SETTINGS_VIDEO_OPTIONS:
+            case RGUI_SETTINGS_AUDIO_OPTIONS:
 #ifdef HAVE_SHADER_MANAGER
             case RGUI_SETTINGS_SHADER_PRESET:
 #endif
             case RGUI_SETTINGS_CORE:
             case RGUI_SETTINGS_DISK_APPEND:
-            case RGUI_SETTINGS_CONTROLLER:
+            case RGUI_SETTINGS_INPUT_OPTIONS:
                strlcpy(type_str, "...", sizeof(type_str));
                break;
             case RGUI_SETTINGS_BIND_PLAYER:
@@ -1150,6 +1154,13 @@ static int rgui_settings_toggle_setting(rgui_handle_t *rgui, unsigned setting, r
    return 0;
 }
 
+static void rgui_settings_audio_options_populate_entries(rgui_handle_t *rgui)
+{
+   rgui_list_clear(rgui->selection_buf);
+   rgui_list_push(rgui->selection_buf, "Mute Audio", RGUI_SETTINGS_AUDIO_MUTE, 0);
+   rgui_list_push(rgui->selection_buf, "Audio Control Rate", RGUI_SETTINGS_AUDIO_CONTROL_RATE, 0);
+}
+
 static void rgui_settings_populate_entries(rgui_handle_t *rgui)
 {
    rgui_list_clear(rgui->selection_buf);
@@ -1162,7 +1173,8 @@ static void rgui_settings_populate_entries(rgui_handle_t *rgui)
    rgui_list_push(rgui->selection_buf, "Load Game", RGUI_SETTINGS_OPEN_FILEBROWSER, 0);
    rgui_list_push(rgui->selection_buf, "Core Options", RGUI_SETTINGS_CORE_OPTIONS, 0);
    rgui_list_push(rgui->selection_buf, "Video Options", RGUI_SETTINGS_VIDEO_OPTIONS, 0);
-   rgui_list_push(rgui->selection_buf, "Input Options", RGUI_SETTINGS_CONTROLLER, 0);
+   rgui_list_push(rgui->selection_buf, "Audio Options", RGUI_SETTINGS_AUDIO_OPTIONS, 0);
+   rgui_list_push(rgui->selection_buf, "Input Options", RGUI_SETTINGS_INPUT_OPTIONS, 0);
 
    if (g_extern.main_is_init && !g_extern.libretro_dummy)
    {
@@ -1180,14 +1192,11 @@ static void rgui_settings_populate_entries(rgui_handle_t *rgui)
          rgui_list_push(rgui->selection_buf, "Disk Image Append", RGUI_SETTINGS_DISK_APPEND, 0);
       }
    }
-
    rgui_list_push(rgui->selection_buf, "Rewind", RGUI_SETTINGS_REWIND_ENABLE, 0);
    rgui_list_push(rgui->selection_buf, "Rewind Granularity", RGUI_SETTINGS_REWIND_GRANULARITY, 0);
 #if defined(HAVE_THREADS) && !defined(RARCH_CONSOLE)
    rgui_list_push(rgui->selection_buf, "SRAM Autosave", RGUI_SETTINGS_SRAM_AUTOSAVE, 0);
 #endif
-   rgui_list_push(rgui->selection_buf, "Mute Audio", RGUI_SETTINGS_AUDIO_MUTE, 0);
-   rgui_list_push(rgui->selection_buf, "Audio Control Rate", RGUI_SETTINGS_AUDIO_CONTROL_RATE, 0);
 #ifdef GEKKO
    rgui_list_push(rgui->selection_buf, "SRAM Saves in \"sram\" Dir", RGUI_SETTINGS_SRAM_DIR, 0);
    rgui_list_push(rgui->selection_buf, "State Saves in \"state\" Dir", RGUI_SETTINGS_STATE_DIR, 0);
@@ -1928,10 +1937,12 @@ static int rgui_settings_iterate(rgui_handle_t *rgui, rgui_action_t action)
             menu_type == RGUI_SETTINGS_OPEN_HISTORY))
    {
       rgui->need_refresh = false;
-      if ((menu_type == RGUI_SETTINGS_CONTROLLER))
+      if ((menu_type == RGUI_SETTINGS_INPUT_OPTIONS))
          rgui_settings_controller_populate_entries(rgui);
       else if (menu_type == RGUI_SETTINGS_CORE_OPTIONS)
          rgui_settings_core_options_populate_entries(rgui);
+      else if (menu_type == RGUI_SETTINGS_AUDIO_OPTIONS)
+         rgui_settings_audio_options_populate_entries(rgui);
       else if (menu_type == RGUI_SETTINGS_VIDEO_OPTIONS)
          rgui_settings_shader_manager_populate_entries(rgui);
       else
