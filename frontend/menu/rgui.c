@@ -479,10 +479,10 @@ static void render_text(rgui_handle_t *rgui)
       int w = (menu_type == RGUI_SETTINGS_INPUT_OPTIONS) ? 26 : 19;
       unsigned port = rgui->current_pad;
       
-      if (type >= RGUI_SETTINGS_VIDEO_OPTIONS_FIRST &&
+#ifdef HAVE_SHADER_MANAGER
+      if (type >= RGUI_SETTINGS_SHADER_FILTER &&
             type <= RGUI_SETTINGS_SHADER_LAST)
       {
-#ifdef HAVE_SHADER_MANAGER
          // HACK. Work around that we're using the menu_type as dir type to propagate state correctly.
          if (menu_type_is_shader_browser(menu_type) && menu_type_is_shader_browser(type))
          {
@@ -490,50 +490,16 @@ static void render_text(rgui_handle_t *rgui)
             strlcpy(type_str, "(DIR)", sizeof(type_str));
             w = 5;
          }
-         else if (type == RGUI_SETTINGS_SHADER_OPTIONS)
+         else if (type == RGUI_SETTINGS_SHADER_OPTIONS || type == RGUI_SETTINGS_SHADER_PRESET)
             strlcpy(type_str, "...", sizeof(type_str));
          else if (type == RGUI_SETTINGS_SHADER_FILTER)
             snprintf(type_str, sizeof(type_str), "%s",
                   g_settings.video.smooth ? "Linear" : "Nearest");
-         else if (type == RGUI_SETTINGS_SHADER_PRESET)
-            strlcpy(type_str, "...", sizeof(type_str));
-         else
-#endif
-         if (type == RGUI_SETTINGS_VIDEO_ROTATION)
-            strlcpy(type_str, rotation_lut[g_extern.console.screen.orientation],
-                  sizeof(type_str));
-         else if (type == RGUI_SETTINGS_VIDEO_SOFT_FILTER)
-            snprintf(type_str, sizeof(type_str), (g_extern.lifecycle_mode_state & (1ULL << MODE_VIDEO_SOFT_FILTER_ENABLE)) ? "ON" : "OFF");
-         else if (type == RGUI_SETTINGS_VIDEO_FILTER)
-         {
-            if (g_settings.video.smooth)
-               strlcpy(type_str, "Bilinear filtering", sizeof(type_str));
-            else
-               strlcpy(type_str, "Point filtering", sizeof(type_str));
-         }
-         else if (type == RGUI_SETTINGS_VIDEO_GAMMA)
-            snprintf(type_str, sizeof(type_str), "%d", g_extern.console.screen.gamma_correction);
-         else if (type == RGUI_SETTINGS_VIDEO_VSYNC)
-            snprintf(type_str, sizeof(type_str), g_settings.video.vsync ? "ON" : "OFF");
-         else if (type == RGUI_SETTINGS_VIDEO_HARD_SYNC)
-            snprintf(type_str, sizeof(type_str), g_settings.video.hard_sync ? "ON" : "OFF");
-         else if (type == RGUI_SETTINGS_VIDEO_INTEGER_SCALE)
-            strlcpy(type_str, g_settings.video.scale_integer ? "ON" : "OFF", sizeof(type_str));
-         else if (type == RGUI_SETTINGS_VIDEO_ASPECT_RATIO)
-            strlcpy(type_str, aspectratio_lut[g_settings.video.aspect_ratio_idx].name, sizeof(type_str));
-         else if ((type == RGUI_SETTINGS_CUSTOM_VIEWPORT) ||
-            (type == RGUI_SETTINGS_TOGGLE_FULLSCREEN))
-               strlcpy(type_str, "...", sizeof(type_str));
-   #ifdef GEKKO
-         else if (type == RGUI_SETTINGS_VIDEO_RESOLUTION)
-            strlcpy(type_str, gx_get_video_mode(), sizeof(type_str));
-   #endif
-#ifdef HAVE_SHADER_MANAGER
          else
             shader_manager_get_str(&rgui->shader, type_str, sizeof(type_str), type);
-#endif
       }
       else
+#endif
       if (menu_type == RGUI_SETTINGS_CORE || menu_type == RGUI_SETTINGS_DISK_APPEND)
       {
          if (type == RGUI_FILE_PLAIN)
@@ -558,6 +524,41 @@ static void render_text(rgui_handle_t *rgui)
       {
          switch (type)
          {
+            case RGUI_SETTINGS_VIDEO_ROTATION:
+               strlcpy(type_str, rotation_lut[g_extern.console.screen.orientation],
+                     sizeof(type_str));
+               break;
+            case RGUI_SETTINGS_VIDEO_SOFT_FILTER:
+               snprintf(type_str, sizeof(type_str),
+                     (g_extern.lifecycle_mode_state & (1ULL << MODE_VIDEO_SOFT_FILTER_ENABLE)) ? "ON" : "OFF");
+               break;
+            case RGUI_SETTINGS_VIDEO_FILTER:
+               if (g_settings.video.smooth)
+                  strlcpy(type_str, "Bilinear filtering", sizeof(type_str));
+               else
+                  strlcpy(type_str, "Point filtering", sizeof(type_str));
+               break;
+            case RGUI_SETTINGS_VIDEO_GAMMA:
+               snprintf(type_str, sizeof(type_str), "%d", g_extern.console.screen.gamma_correction);
+               break;
+            case RGUI_SETTINGS_VIDEO_VSYNC:
+               snprintf(type_str, sizeof(type_str), g_settings.video.vsync ? "ON" : "OFF");
+               break;
+            case RGUI_SETTINGS_VIDEO_HARD_SYNC:
+               snprintf(type_str, sizeof(type_str), g_settings.video.hard_sync ? "ON" : "OFF");
+               break;
+            case RGUI_SETTINGS_VIDEO_INTEGER_SCALE:
+               strlcpy(type_str, g_settings.video.scale_integer ? "ON" : "OFF", sizeof(type_str));
+               break;
+            case RGUI_SETTINGS_VIDEO_ASPECT_RATIO:
+               strlcpy(type_str, aspectratio_lut[g_settings.video.aspect_ratio_idx].name, sizeof(type_str));
+               break;
+#ifdef GEKKO
+            case RGUI_SETTINGS_VIDEO_RESOLUTION:
+               strlcpy(type_str, gx_get_video_mode(), sizeof(type_str));
+               break;
+#endif
+
             case RGUI_FILE_PLAIN:
                strlcpy(type_str, "(FILE)", sizeof(type_str));
                w = 6;
@@ -632,6 +633,8 @@ static void render_text(rgui_handle_t *rgui)
             case RGUI_SETTINGS_OPEN_FILEBROWSER:
             case RGUI_SETTINGS_OPEN_HISTORY:
             case RGUI_SETTINGS_CORE_OPTIONS:
+            case RGUI_SETTINGS_CUSTOM_VIEWPORT:
+            case RGUI_SETTINGS_TOGGLE_FULLSCREEN:
             case RGUI_SETTINGS_VIDEO_OPTIONS:
             case RGUI_SETTINGS_SHADER_OPTIONS:
             case RGUI_SETTINGS_AUDIO_OPTIONS:
