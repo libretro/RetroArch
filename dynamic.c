@@ -407,6 +407,7 @@ void uninit_libretro_sym(void)
    memset(&g_extern.system.info, 0, sizeof(g_extern.system.info));
    memset(&g_extern.system.av_info, 0, sizeof(g_extern.system.av_info));
    memset(&g_extern.frame_cache, 0, sizeof(g_extern.frame_cache));
+   memset(&g_extern.system.disk_control, 0, sizeof(g_extern.system.disk_control));
    g_extern.system.pix_fmt = RETRO_PIXEL_FORMAT_0RGB1555;
    g_extern.system.no_game = false;
    g_extern.system.shutdown = false;
