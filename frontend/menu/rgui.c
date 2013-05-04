@@ -178,6 +178,7 @@ static bool menu_type_is_settings(unsigned type)
    return type == RGUI_SETTINGS ||
       type == RGUI_SETTINGS_CORE_OPTIONS ||
       type == RGUI_SETTINGS_VIDEO_OPTIONS ||
+      type == RGUI_SETTINGS_SHADER_OPTIONS ||
       type == RGUI_SETTINGS_AUDIO_OPTIONS ||
       type == RGUI_SETTINGS_DISK_OPTIONS ||
       type == RGUI_SETTINGS_PATH_OPTIONS ||
@@ -404,6 +405,8 @@ static void render_text(rgui_handle_t *rgui)
       snprintf(title, sizeof(title), "DISK APPEND %s", dir);
    else if (menu_type == RGUI_SETTINGS_VIDEO_OPTIONS)
       strlcpy(title, "VIDEO OPTIONS", sizeof(title));
+   else if (menu_type == RGUI_SETTINGS_SHADER_OPTIONS)
+      strlcpy(title, "SHADER OPTIONS", sizeof(title));
    else if (menu_type == RGUI_SETTINGS_AUDIO_OPTIONS)
       strlcpy(title, "AUDIO OPTIONS", sizeof(title));
    else if (menu_type == RGUI_SETTINGS_DISK_OPTIONS)
@@ -487,6 +490,8 @@ static void render_text(rgui_handle_t *rgui)
             strlcpy(type_str, "(DIR)", sizeof(type_str));
             w = 5;
          }
+         else if (type == RGUI_SETTINGS_SHADER_OPTIONS)
+            strlcpy(type_str, "...", sizeof(type_str));
          else if (type == RGUI_SETTINGS_SHADER_FILTER)
             snprintf(type_str, sizeof(type_str), "%s",
                   g_settings.video.smooth ? "Linear" : "Nearest");
@@ -628,6 +633,7 @@ static void render_text(rgui_handle_t *rgui)
             case RGUI_SETTINGS_OPEN_HISTORY:
             case RGUI_SETTINGS_CORE_OPTIONS:
             case RGUI_SETTINGS_VIDEO_OPTIONS:
+            case RGUI_SETTINGS_SHADER_OPTIONS:
             case RGUI_SETTINGS_AUDIO_OPTIONS:
             case RGUI_SETTINGS_DISK_OPTIONS:
 #ifdef HAVE_SHADER_MANAGER
@@ -1257,9 +1263,12 @@ static void rgui_settings_core_options_populate_entries(rgui_handle_t *rgui)
       rgui_list_push(rgui->selection_buf, "No options available.", RGUI_SETTINGS_CORE_OPTION_NONE, 0);
 }
 
-static void rgui_settings_shader_manager_populate_entries(rgui_handle_t *rgui)
+static void rgui_settings_video_options_populate_entries(rgui_handle_t *rgui)
 {
    rgui_list_clear(rgui->selection_buf);
+#ifdef HAVE_SHADER_MANAGER
+   rgui_list_push(rgui->selection_buf, "Shader Options", RGUI_SETTINGS_SHADER_OPTIONS, 0);
+#endif
 #ifdef GEKKO
    rgui_list_push(rgui->selection_buf, "Screen Resolution", RGUI_SETTINGS_VIDEO_RESOLUTION, 0);
 #endif
@@ -1279,7 +1288,12 @@ static void rgui_settings_shader_manager_populate_entries(rgui_handle_t *rgui)
    rgui_list_push(rgui->selection_buf, "Rotation", RGUI_SETTINGS_VIDEO_ROTATION, 0);
    rgui_list_push(rgui->selection_buf, "VSync", RGUI_SETTINGS_VIDEO_VSYNC, 0);
    rgui_list_push(rgui->selection_buf, "Hard VSync", RGUI_SETTINGS_VIDEO_HARD_SYNC, 0);
+}
+
 #ifdef HAVE_SHADER_MANAGER
+static void rgui_settings_shader_manager_populate_entries(rgui_handle_t *rgui)
+{
+   rgui_list_clear(rgui->selection_buf);
    rgui_list_push(rgui->selection_buf, "Apply Shader Changes",
          RGUI_SETTINGS_SHADER_APPLY, 0);
    rgui_list_push(rgui->selection_buf, "Default Filter", RGUI_SETTINGS_SHADER_FILTER, 0);
@@ -1304,10 +1318,8 @@ static void rgui_settings_shader_manager_populate_entries(rgui_handle_t *rgui)
       rgui_list_push(rgui->selection_buf, buf,
             RGUI_SETTINGS_SHADER_0_SCALE + 3 * i, 0);
    }
-#endif
 }
 
-#ifdef HAVE_SHADER_MANAGER
 static enum rarch_shader_type shader_manager_get_type(const struct gfx_shader *shader)
 {
    // All shader types must be the same, or we cannot use it.
@@ -2032,7 +2044,11 @@ static int rgui_settings_iterate(rgui_handle_t *rgui, rgui_action_t action)
       else if (menu_type == RGUI_SETTINGS_DISK_OPTIONS)
          rgui_settings_disc_options_populate_entries(rgui);
       else if (menu_type == RGUI_SETTINGS_VIDEO_OPTIONS)
+         rgui_settings_video_options_populate_entries(rgui);
+#ifdef HAVE_SHADER_MANAGER
+      else if (menu_type == RGUI_SETTINGS_SHADER_OPTIONS)
          rgui_settings_shader_manager_populate_entries(rgui);
+#endif
       else
          rgui_settings_populate_entries(rgui);
    }
@@ -2297,7 +2313,7 @@ int rgui_iterate(rgui_handle_t *rgui)
                const char *dir = NULL;
                rgui_list_pop(rgui->menu_stack, &rgui->selection_ptr);
                rgui_list_get_last(rgui->menu_stack, &dir, &type);
-               while (type != RGUI_SETTINGS_VIDEO_OPTIONS)
+               while (type != RGUI_SETTINGS_SHADER_OPTIONS)
                {
                   rgui_list_pop(rgui->menu_stack, &rgui->selection_ptr);
                   rgui_list_get_last(rgui->menu_stack, &dir, &type);
