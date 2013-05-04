@@ -606,10 +606,10 @@ static void render_text(rgui_handle_t *rgui)
             case RGUI_SETTINGS_CONTROLLER:
                strlcpy(type_str, "...", sizeof(type_str));
                break;
-            case RGUI_SETTINGS_BIND_DEVICE_NO:
+            case RGUI_SETTINGS_BIND_PLAYER:
                {
                   char number[10];
-                  snprintf(number, sizeof(number), "%d", port);
+                  snprintf(number, sizeof(number), "#%d", port + 1);
                   strlcpy(type_str, number, sizeof(type_str));
                }
                break;
@@ -955,7 +955,7 @@ static int rgui_settings_toggle_setting(rgui_handle_t *rgui, unsigned setting, r
          }
          break;
       // controllers
-      case RGUI_SETTINGS_BIND_DEVICE_NO:
+      case RGUI_SETTINGS_BIND_PLAYER:
          if (action == RGUI_ACTION_START)
             rgui->current_pad = 0;
          else if (action == RGUI_ACTION_LEFT)
@@ -965,7 +965,7 @@ static int rgui_settings_toggle_setting(rgui_handle_t *rgui, unsigned setting, r
          }
          else if (action == RGUI_ACTION_RIGHT)
          {
-            if (rgui->current_pad < MAX_PLAYERS)
+            if (rgui->current_pad < MAX_PLAYERS - 1)
                rgui->current_pad++;
          }
 
@@ -1609,7 +1609,7 @@ static int shader_manager_toggle_setting(rgui_handle_t *rgui, unsigned setting, 
 static void rgui_settings_controller_populate_entries(rgui_handle_t *rgui)
 {
    rgui_list_clear(rgui->selection_buf);
-   rgui_list_push(rgui->selection_buf, "Device No", RGUI_SETTINGS_BIND_DEVICE_NO, 0);
+   rgui_list_push(rgui->selection_buf, "Player", RGUI_SETTINGS_BIND_PLAYER, 0);
    rgui_list_push(rgui->selection_buf, "Device", RGUI_SETTINGS_BIND_DEVICE, 0);
    rgui_list_push(rgui->selection_buf, "Device Type", RGUI_SETTINGS_BIND_DEVICE_TYPE, 0);
 
