@@ -161,6 +161,18 @@ static void init_font(rgui_handle_t *rgui, const uint8_t *font_bmp_buf)
    rgui->font = font;
 }
 
+static void rgui_flush_menu_stack(rgui_handle_t *rgui)
+{
+   rgui->need_refresh = true;
+   unsigned type = 0;
+   rgui_list_get_last(rgui->menu_stack, NULL, &type);
+   while (type != RGUI_SETTINGS)
+   {
+      rgui_list_pop(rgui->menu_stack, &rgui->selection_ptr);
+      rgui_list_get_last(rgui->menu_stack, NULL, &type);
+   }
+}
+
 static bool menu_type_is_settings(unsigned type)
 {
    return type == RGUI_SETTINGS ||
@@ -2224,14 +2236,7 @@ int rgui_iterate(rgui_handle_t *rgui)
                ret = -1;
 #endif
 
-               rgui->need_refresh = true;
-               unsigned type = 0;
-               rgui_list_get_last(rgui->menu_stack, NULL, &type);
-               while (type != RGUI_SETTINGS)
-               {
-                  rgui_list_pop(rgui->menu_stack, &rgui->selection_ptr);
-                  rgui_list_get_last(rgui->menu_stack, NULL, &type);
-               }
+               rgui_flush_menu_stack(rgui);
             }
             else if (menu_type == RGUI_SETTINGS_DISK_APPEND)
             {
@@ -2241,21 +2246,13 @@ int rgui_iterate(rgui_handle_t *rgui)
 
                g_extern.lifecycle_mode_state |= 1ULL << MODE_GAME;
 
-               rgui->need_refresh = true;
-               unsigned type = 0;
-               rgui_list_get_last(rgui->menu_stack, NULL, &type);
-               while (type != RGUI_SETTINGS)
-               {
-                  rgui_list_pop(rgui->menu_stack, &rgui->selection_ptr);
-                  rgui_list_get_last(rgui->menu_stack, NULL, &type);
-               }
-
+               rgui_flush_menu_stack(rgui);
                ret = -1;
             }
             else if (menu_type == RGUI_SETTINGS_OPEN_HISTORY)
             {
                load_menu_game_history(rgui->selection_ptr);
-               rgui->need_refresh = true;
+               rgui_flush_menu_stack(rgui);
                ret = -1;
             }
             else
@@ -2263,7 +2260,7 @@ int rgui_iterate(rgui_handle_t *rgui)
                fill_pathname_join(g_extern.fullpath, dir, path, sizeof(g_extern.fullpath));
                g_extern.lifecycle_mode_state |= (1ULL << MODE_LOAD_GAME);
 
-               rgui->need_refresh = true; // in case of zip extract
+               rgui_flush_menu_stack(rgui);
                rgui->msg_force = true;
                ret = -1;
             }
