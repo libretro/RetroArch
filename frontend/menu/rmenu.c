@@ -2226,7 +2226,7 @@ static int select_setting(void *data, uint64_t input)
             break;
 #ifdef HAVE_SHADER_MANAGER
          case SHADERMAN_LOAD_CGP:
-            strlcpy(text, "Load CGP", sizeof(text));
+            strlcpy(text, "Load Shader Preset", sizeof(text));
             strlcpy(setting_text, "", sizeof(setting_text));
             strlcpy(comment, "INFO - Select a CGP file.", sizeof(comment));
             break;
@@ -2236,7 +2236,7 @@ static int select_setting(void *data, uint64_t input)
             strlcpy(comment, "INFO - Auto-load at startup the current shader settings.", sizeof(comment));
             break;
          case SHADERMAN_SAVE_CGP:
-            strlcpy(text, "Save CGP", sizeof(text));
+            strlcpy(text, "Save Shader Preset", sizeof(text));
             strlcpy(setting_text, "", sizeof(setting_text));
             strlcpy(comment, "INFO - Save current shader settings to a CGP file.", sizeof(comment));
             break;
