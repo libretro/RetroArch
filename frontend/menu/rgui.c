@@ -179,6 +179,7 @@ static bool menu_type_is_settings(unsigned type)
       type == RGUI_SETTINGS_CORE_OPTIONS ||
       type == RGUI_SETTINGS_VIDEO_OPTIONS ||
       type == RGUI_SETTINGS_AUDIO_OPTIONS ||
+      type == RGUI_SETTINGS_DISK_OPTIONS ||
       (type == RGUI_SETTINGS_INPUT_OPTIONS);
 }
 
@@ -404,6 +405,8 @@ static void render_text(rgui_handle_t *rgui)
       strlcpy(title, "VIDEO OPTIONS", sizeof(title));
    else if (menu_type == RGUI_SETTINGS_AUDIO_OPTIONS)
       strlcpy(title, "AUDIO OPTIONS", sizeof(title));
+   else if (menu_type == RGUI_SETTINGS_DISK_OPTIONS)
+      strlcpy(title, "DISK OPTIONS", sizeof(title));
    else if (menu_type == RGUI_SETTINGS_CORE_OPTIONS)
       strlcpy(title, "CORE OPTIONS", sizeof(title));
 #ifdef HAVE_SHADER_MANAGER
@@ -413,7 +416,7 @@ static void render_text(rgui_handle_t *rgui)
    else if ((menu_type == RGUI_SETTINGS_INPUT_OPTIONS) ||
          (menu_type == RGUI_SETTINGS_CUSTOM_VIEWPORT || menu_type == RGUI_SETTINGS_CUSTOM_VIEWPORT_2) ||
          menu_type == RGUI_SETTINGS)
-      snprintf(title, sizeof(title), "SETTINGS %s", dir);
+      snprintf(title, sizeof(title), "MENU %s", dir);
    else if (menu_type == RGUI_SETTINGS_OPEN_HISTORY)
       strlcpy(title, "LOAD HISTORY", sizeof(title));
    else
@@ -602,6 +605,7 @@ static void render_text(rgui_handle_t *rgui)
             case RGUI_SETTINGS_CORE_OPTIONS:
             case RGUI_SETTINGS_VIDEO_OPTIONS:
             case RGUI_SETTINGS_AUDIO_OPTIONS:
+            case RGUI_SETTINGS_DISK_OPTIONS:
 #ifdef HAVE_SHADER_MANAGER
             case RGUI_SETTINGS_SHADER_PRESET:
 #endif
@@ -1161,6 +1165,13 @@ static void rgui_settings_audio_options_populate_entries(rgui_handle_t *rgui)
    rgui_list_push(rgui->selection_buf, "Audio Control Rate", RGUI_SETTINGS_AUDIO_CONTROL_RATE, 0);
 }
 
+static void rgui_settings_disc_options_populate_entries(rgui_handle_t *rgui)
+{
+   rgui_list_clear(rgui->selection_buf);
+   rgui_list_push(rgui->selection_buf, "Disk Index", RGUI_SETTINGS_DISK_INDEX, 0);
+   rgui_list_push(rgui->selection_buf, "Disk Image Append", RGUI_SETTINGS_DISK_APPEND, 0);
+}
+
 static void rgui_settings_populate_entries(rgui_handle_t *rgui)
 {
    rgui_list_clear(rgui->selection_buf);
@@ -1178,6 +1189,8 @@ static void rgui_settings_populate_entries(rgui_handle_t *rgui)
 
    if (g_extern.main_is_init && !g_extern.libretro_dummy)
    {
+      if (g_extern.system.disk_control.get_num_images)
+         rgui_list_push(rgui->selection_buf, "Disk Options", RGUI_SETTINGS_DISK_OPTIONS, 0);
       rgui_list_push(rgui->selection_buf, "Save State", RGUI_SETTINGS_SAVESTATE_SAVE, 0);
       rgui_list_push(rgui->selection_buf, "Load State", RGUI_SETTINGS_SAVESTATE_LOAD, 0);
 #ifdef HAVE_SCREENSHOTS
@@ -1186,11 +1199,6 @@ static void rgui_settings_populate_entries(rgui_handle_t *rgui)
       rgui_list_push(rgui->selection_buf, "Resume Game", RGUI_SETTINGS_RESUME_GAME, 0);
       rgui_list_push(rgui->selection_buf, "Restart Game", RGUI_SETTINGS_RESTART_GAME, 0);
 
-      if (g_extern.system.disk_control.get_num_images)
-      {
-         rgui_list_push(rgui->selection_buf, "Disk Index", RGUI_SETTINGS_DISK_INDEX, 0);
-         rgui_list_push(rgui->selection_buf, "Disk Image Append", RGUI_SETTINGS_DISK_APPEND, 0);
-      }
    }
    rgui_list_push(rgui->selection_buf, "Rewind", RGUI_SETTINGS_REWIND_ENABLE, 0);
    rgui_list_push(rgui->selection_buf, "Rewind Granularity", RGUI_SETTINGS_REWIND_GRANULARITY, 0);
@@ -1943,6 +1951,8 @@ static int rgui_settings_iterate(rgui_handle_t *rgui, rgui_action_t action)
          rgui_settings_core_options_populate_entries(rgui);
       else if (menu_type == RGUI_SETTINGS_AUDIO_OPTIONS)
          rgui_settings_audio_options_populate_entries(rgui);
+      else if (menu_type == RGUI_SETTINGS_DISK_OPTIONS)
+         rgui_settings_disc_options_populate_entries(rgui);
       else if (menu_type == RGUI_SETTINGS_VIDEO_OPTIONS)
          rgui_settings_shader_manager_populate_entries(rgui);
       else
