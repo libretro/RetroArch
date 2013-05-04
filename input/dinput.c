@@ -126,7 +126,7 @@ static void *dinput_init(void)
    IDirectInputDevice8_Acquire(di->mouse);
 
    input_init_keyboard_lut(rarch_key_map_dinput);
-   di->joypad = input_joypad_init_first();
+   di->joypad = input_joypad_init_driver(g_settings.input.joypad_driver);
 
    return di;
 

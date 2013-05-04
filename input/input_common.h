@@ -71,7 +71,8 @@ typedef struct rarch_joypad_driver
    const char *ident;
 } rarch_joypad_driver_t;
 
-const rarch_joypad_driver_t *input_joypad_find_driver(const char *ident);
+// If ident points to NULL or a zero-length string, equivalent to calling input_joypad_init_first().
+const rarch_joypad_driver_t *input_joypad_init_driver(const char *ident);
 const rarch_joypad_driver_t *input_joypad_init_first(void);
 
 bool input_joypad_pressed(const rarch_joypad_driver_t *driver,

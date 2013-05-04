@@ -54,11 +54,14 @@ static const rarch_joypad_driver_t *joypad_drivers[] = {
    NULL,
 };
 
-const rarch_joypad_driver_t *input_joypad_find_driver(const char *ident)
+const rarch_joypad_driver_t *input_joypad_init_driver(const char *ident)
 {
+   if (!ident || !*ident)
+      return input_joypad_init_first();
+
    for (unsigned i = 0; joypad_drivers[i]; i++)
    {
-      if (strcmp(ident, joypad_drivers[i]->ident) == 0)
+      if (strcmp(ident, joypad_drivers[i]->ident) == 0 && joypad_drivers[i]->init())
       {
          RARCH_LOG("Found joypad driver: \"%s\".\n", joypad_drivers[i]->ident);
          return joypad_drivers[i];

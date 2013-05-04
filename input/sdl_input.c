@@ -40,7 +40,7 @@ static void *sdl_input_init(void)
    if (!sdl)
       return NULL;
 
-   sdl->joypad = input_joypad_init_first();
+   sdl->joypad = input_joypad_init_driver(g_settings.input.joypad_driver);
    return sdl;
 }
 

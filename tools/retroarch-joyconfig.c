@@ -39,6 +39,7 @@ static int g_timeout = 0;
 static char *g_in_path = NULL;
 static char *g_out_path = NULL;
 static char *g_auto_path = NULL;
+static char *g_driver = NULL;
 static unsigned g_meta_level = 0;
 
 static void print_help(void)
@@ -58,6 +59,7 @@ static void print_help(void)
    puts("\tThese configurations are for player 1 only.");
    puts("-m/--misc: Same as --allmisc, but exposes a smaller subset of misc binds which are deemed most useful for regular use.");
    puts("-t/--timeout: Adds a timeout of N seconds to each bind. If timed out, the bind will not be used.");
+   puts("-d/--driver: Uses a specific joypad driver.");
    puts("-h/--help: This help.");
 }
 
@@ -97,7 +99,7 @@ static void poll_joypad(const rarch_joypad_driver_t *driver,
 
 static void get_binds(config_file_t *conf, config_file_t *auto_conf, int player, int joypad)
 {
-   const rarch_joypad_driver_t *driver = input_joypad_init_first();
+   const rarch_joypad_driver_t *driver = input_joypad_init_driver(g_driver);
    if (!driver)
    {
       fprintf(stderr, "Cannot find any valid input driver.\n");
@@ -313,7 +315,7 @@ out:
 
 static void parse_input(int argc, char *argv[])
 {
-   char optstring[] = "i:o:a:p:j:t:hmM";
+   char optstring[] = "i:o:a:p:j:t:hmMd:";
    struct option opts[] = {
       { "input", 1, NULL, 'i' },
       { "output", 1, NULL, 'o' },
@@ -324,6 +326,7 @@ static void parse_input(int argc, char *argv[])
       { "misc", 0, NULL, 'm' },
       { "allmisc", 0, NULL, 'M' },
       { "timeout", 1, NULL, 't' },
+      { "driver", 1, NULL, 'd' },
       { NULL, 0, NULL, 0 }
    };
 
@@ -346,6 +349,10 @@ static void parse_input(int argc, char *argv[])
 
          case 't':
             g_timeout = strtol(optarg, NULL, 0);
+            break;
+
+         case 'd':
+            g_driver = strdup(optarg);
             break;
 
          case 'o':

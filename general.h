@@ -216,6 +216,7 @@ struct settings
    struct
    {
       char driver[32];
+      char joypad_driver[32];
       struct retro_keybind binds[MAX_PLAYERS][RARCH_BIND_LIST_END];
 
       // Set by autoconfiguration in joypad_autoconfig_dir. Does not override main binds.
