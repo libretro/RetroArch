@@ -402,7 +402,7 @@ static void display_menubar(uint8_t menu_type)
          strlcpy(title, "Path", sizeof(title));
          break;
       case INGAME_MENU:
-         strlcpy(title, "Ingame Menu", sizeof(title));
+         strlcpy(title, "Menu", sizeof(title));
          break;
       case INGAME_MENU_CORE_OPTIONS:
          strlcpy(title, "Core Options", sizeof(title));
@@ -417,7 +417,7 @@ static void display_menubar(uint8_t menu_type)
          strlcpy(title, "Resize Menu", sizeof(title));
          break;
       case INGAME_MENU_SCREENSHOT:
-         strlcpy(title, "Ingame Menu", sizeof(title));
+         strlcpy(title, "Menu", sizeof(title));
          break;
       case FILE_BROWSER_MENU:
          strlcpy(title, "Filebrowser", sizeof(title));

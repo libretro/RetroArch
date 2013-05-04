@@ -508,6 +508,10 @@ static void render_text(rgui_handle_t *rgui)
          }
          else if (type == RGUI_SETTINGS_VIDEO_GAMMA)
             snprintf(type_str, sizeof(type_str), "%d", g_extern.console.screen.gamma_correction);
+         else if (type == RGUI_SETTINGS_VIDEO_VSYNC)
+            snprintf(type_str, sizeof(type_str), g_settings.video.vsync ? "ON" : "OFF");
+         else if (type == RGUI_SETTINGS_VIDEO_HARD_SYNC)
+            snprintf(type_str, sizeof(type_str), g_settings.video.hard_sync ? "ON" : "OFF");
          else if (type == RGUI_SETTINGS_VIDEO_INTEGER_SCALE)
             strlcpy(type_str, g_settings.video.scale_integer ? "ON" : "OFF", sizeof(type_str));
          else if (type == RGUI_SETTINGS_VIDEO_ASPECT_RATIO)
@@ -600,8 +604,14 @@ static void render_text(rgui_handle_t *rgui)
             case RGUI_SAVESTATE_DIR_PATH:
                strlcpy(type_str, g_extern.savestate_dir, sizeof(type_str));
                break;
+            case RGUI_SHADER_DIR_PATH:
+               strlcpy(type_str, g_settings.video.shader_dir, sizeof(type_str));
+               break;
             case RGUI_SYSTEM_DIR_PATH:
                strlcpy(type_str, g_settings.system_directory, sizeof(type_str));
+               break;
+            case RGUI_CONFIG_PATH:
+               strlcpy(type_str, g_extern.config_path, sizeof(type_str));
                break;
             case RGUI_SETTINGS_DISK_INDEX:
             {
@@ -1267,6 +1277,8 @@ static void rgui_settings_shader_manager_populate_entries(rgui_handle_t *rgui)
    rgui_list_push(rgui->selection_buf, "Toggle Fullscreen", RGUI_SETTINGS_TOGGLE_FULLSCREEN, 0);
 #endif
    rgui_list_push(rgui->selection_buf, "Rotation", RGUI_SETTINGS_VIDEO_ROTATION, 0);
+   rgui_list_push(rgui->selection_buf, "Vertical sync", RGUI_SETTINGS_VIDEO_VSYNC, 0);
+   rgui_list_push(rgui->selection_buf, "Hard sync", RGUI_SETTINGS_VIDEO_HARD_SYNC, 0);
 #ifdef HAVE_SHADER_MANAGER
    rgui_list_push(rgui->selection_buf, "Apply Shader Changes",
          RGUI_SETTINGS_SHADER_APPLY, 0);
@@ -1475,6 +1487,42 @@ static int shader_manager_toggle_setting(rgui_handle_t *rgui, unsigned setting, 
          driver.video_poke->apply_state_changes(driver.video_data);
    }
 #endif
+   else if (setting == RGUI_SETTINGS_VIDEO_VSYNC)
+   {
+      switch (action)
+      {
+         case RGUI_ACTION_START:
+            g_settings.video.vsync = true;
+            break;
+
+         case RGUI_ACTION_LEFT:
+         case RGUI_ACTION_RIGHT:
+         case RGUI_ACTION_OK:
+            g_settings.video.vsync = !g_settings.video.vsync;
+            break;
+
+         default:
+            break;
+      }
+   }
+   else if (setting == RGUI_SETTINGS_VIDEO_HARD_SYNC)
+   {
+      switch (action)
+      {
+         case RGUI_ACTION_START:
+            g_settings.video.hard_sync = true;
+            break;
+
+         case RGUI_ACTION_LEFT:
+         case RGUI_ACTION_RIGHT:
+         case RGUI_ACTION_OK:
+            g_settings.video.hard_sync = !g_settings.video.hard_sync;
+            break;
+
+         default:
+            break;
+      }
+   }
 #ifdef HAVE_SHADER_MANAGER
    else if (setting == RGUI_SETTINGS_SHADER_FILTER)
    {
@@ -1642,9 +1690,13 @@ static void rgui_settings_path_populate_entries(rgui_handle_t *rgui)
 {
    rgui_list_clear(rgui->selection_buf);
    rgui_list_push(rgui->selection_buf, "Browser directory", RGUI_BROWSER_DIR_PATH, 0);
+#ifdef HAVE_SHADER_MANAGER
+   rgui_list_push(rgui->selection_buf, "Shader directory", RGUI_SHADER_DIR_PATH, 0);
+#endif
    rgui_list_push(rgui->selection_buf, "Savestate directory", RGUI_SAVESTATE_DIR_PATH, 0);
    rgui_list_push(rgui->selection_buf, "Savefile directory", RGUI_SAVEFILE_DIR_PATH, 0);
    rgui_list_push(rgui->selection_buf, "System directory", RGUI_SYSTEM_DIR_PATH, 0);
+   rgui_list_push(rgui->selection_buf, "Config file", RGUI_SYSTEM_DIR_PATH, 0);
 }
 
 static void rgui_settings_controller_populate_entries(rgui_handle_t *rgui)
