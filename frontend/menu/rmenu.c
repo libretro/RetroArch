@@ -2055,9 +2055,9 @@ static int select_setting(void *data, uint64_t input)
             snprintf(comment, sizeof(comment), "INFO - [Custom BGM] is set to '%s'.", (g_extern.lifecycle_mode_state & (1ULL << MODE_AUDIO_CUSTOM_BGM_ENABLE)) ? "ON" : "OFF");
             break;
          case SETTING_PATH_DEFAULT_ROM_DIRECTORY:
-            strlcpy(text, "Startup ROM Directory", sizeof(text));
+            strlcpy(text, "Startup browser directory", sizeof(text));
             strlcpy(setting_text, g_settings.rgui_browser_directory, sizeof(setting_text));
-            strlcpy(comment, "INFO - Set the default Startup ROM directory path.", sizeof(comment));
+            strlcpy(comment, "INFO - Set the default startup browser directory path.", sizeof(comment));
             break;
          case SETTING_PATH_SAVESTATES_DIRECTORY:
             strlcpy(text, "Savestate Directory", sizeof(text));

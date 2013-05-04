@@ -180,6 +180,7 @@ static bool menu_type_is_settings(unsigned type)
       type == RGUI_SETTINGS_VIDEO_OPTIONS ||
       type == RGUI_SETTINGS_AUDIO_OPTIONS ||
       type == RGUI_SETTINGS_DISK_OPTIONS ||
+      type == RGUI_SETTINGS_PATH_OPTIONS ||
       (type == RGUI_SETTINGS_INPUT_OPTIONS);
 }
 
@@ -414,6 +415,7 @@ static void render_text(rgui_handle_t *rgui)
       snprintf(title, sizeof(title), "SHADER %s", dir);
 #endif
    else if ((menu_type == RGUI_SETTINGS_INPUT_OPTIONS) ||
+         (menu_type == RGUI_SETTINGS_PATH_OPTIONS) ||
          (menu_type == RGUI_SETTINGS_CUSTOM_VIEWPORT || menu_type == RGUI_SETTINGS_CUSTOM_VIEWPORT_2) ||
          menu_type == RGUI_SETTINGS)
       snprintf(title, sizeof(title), "MENU %s", dir);
@@ -589,6 +591,18 @@ static void render_text(rgui_handle_t *rgui)
             case RGUI_SETTINGS_DEBUG_TEXT:
                snprintf(type_str, sizeof(type_str), (g_extern.lifecycle_mode_state & (1ULL << MODE_FPS_DRAW)) ? "ON" : "OFF");
                break;
+            case RGUI_BROWSER_DIR_PATH:
+               strlcpy(type_str, g_settings.rgui_browser_directory, sizeof(type_str));
+               break;
+            case RGUI_SAVEFILE_DIR_PATH:
+               strlcpy(type_str, g_extern.savefile_dir, sizeof(type_str));
+               break;
+            case RGUI_SAVESTATE_DIR_PATH:
+               strlcpy(type_str, g_extern.savestate_dir, sizeof(type_str));
+               break;
+            case RGUI_SYSTEM_DIR_PATH:
+               strlcpy(type_str, g_settings.system_directory, sizeof(type_str));
+               break;
             case RGUI_SETTINGS_DISK_INDEX:
             {
                const struct retro_disk_control_callback *control = &g_extern.system.disk_control;
@@ -612,6 +626,7 @@ static void render_text(rgui_handle_t *rgui)
             case RGUI_SETTINGS_CORE:
             case RGUI_SETTINGS_DISK_APPEND:
             case RGUI_SETTINGS_INPUT_OPTIONS:
+            case RGUI_SETTINGS_PATH_OPTIONS:
                strlcpy(type_str, "...", sizeof(type_str));
                break;
             case RGUI_SETTINGS_BIND_PLAYER:
@@ -1186,6 +1201,7 @@ static void rgui_settings_populate_entries(rgui_handle_t *rgui)
    rgui_list_push(rgui->selection_buf, "Video Options", RGUI_SETTINGS_VIDEO_OPTIONS, 0);
    rgui_list_push(rgui->selection_buf, "Audio Options", RGUI_SETTINGS_AUDIO_OPTIONS, 0);
    rgui_list_push(rgui->selection_buf, "Input Options", RGUI_SETTINGS_INPUT_OPTIONS, 0);
+   rgui_list_push(rgui->selection_buf, "Path Options", RGUI_SETTINGS_PATH_OPTIONS, 0);
 
    if (g_extern.main_is_init && !g_extern.libretro_dummy)
    {
@@ -1622,6 +1638,14 @@ static int shader_manager_toggle_setting(rgui_handle_t *rgui, unsigned setting, 
    return 0;
 }
 
+static void rgui_settings_path_populate_entries(rgui_handle_t *rgui)
+{
+   rgui_list_clear(rgui->selection_buf);
+   rgui_list_push(rgui->selection_buf, "Browser directory", RGUI_BROWSER_DIR_PATH, 0);
+   rgui_list_push(rgui->selection_buf, "Savestate directory", RGUI_SAVESTATE_DIR_PATH, 0);
+   rgui_list_push(rgui->selection_buf, "Savefile directory", RGUI_SAVEFILE_DIR_PATH, 0);
+   rgui_list_push(rgui->selection_buf, "System directory", RGUI_SYSTEM_DIR_PATH, 0);
+}
 
 static void rgui_settings_controller_populate_entries(rgui_handle_t *rgui)
 {
@@ -1947,6 +1971,8 @@ static int rgui_settings_iterate(rgui_handle_t *rgui, rgui_action_t action)
       rgui->need_refresh = false;
       if ((menu_type == RGUI_SETTINGS_INPUT_OPTIONS))
          rgui_settings_controller_populate_entries(rgui);
+      else if ((menu_type == RGUI_SETTINGS_PATH_OPTIONS))
+         rgui_settings_path_populate_entries(rgui);
       else if (menu_type == RGUI_SETTINGS_CORE_OPTIONS)
          rgui_settings_core_options_populate_entries(rgui);
       else if (menu_type == RGUI_SETTINGS_AUDIO_OPTIONS)
