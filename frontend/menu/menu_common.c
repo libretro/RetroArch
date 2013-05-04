@@ -379,9 +379,12 @@ void load_menu_game_prepare(void)
       }
 
       if (rgui->history)
+      {
          rom_history_push(rgui->history,
                *g_extern.fullpath ? g_extern.fullpath : NULL,
-               g_settings.libretro, rgui->info.library_name);
+               g_settings.libretro,
+               rgui->info.library_name);
+      }
    }
 
 #ifdef HAVE_RGUI

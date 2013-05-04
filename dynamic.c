@@ -277,11 +277,9 @@ static void load_symbols(bool is_dummy)
    else
    {
 #ifdef HAVE_DYNAMIC
-      const char *libretro_path = g_settings.libretro;
-      char libretro_core_buffer[PATH_MAX];
-
       if (path_is_directory(g_settings.libretro))
       {
+         char libretro_core_buffer[PATH_MAX];
          if (!find_first_libretro(libretro_core_buffer, sizeof(libretro_core_buffer),
                   g_settings.libretro, g_extern.fullpath))
          {
@@ -289,14 +287,14 @@ static void load_symbols(bool is_dummy)
             rarch_fail(1, "load_dynamic()");
          }
 
-         libretro_path = libretro_core_buffer;
+         strlcpy(g_settings.libretro, libretro_core_buffer, sizeof(g_settings.libretro));
       }
 
-      RARCH_LOG("Loading dynamic libretro from: \"%s\"\n", libretro_path);
-      lib_handle = dylib_load(libretro_path);
+      RARCH_LOG("Loading dynamic libretro from: \"%s\"\n", g_settings.libretro);
+      lib_handle = dylib_load(g_settings.libretro);
       if (!lib_handle)
       {
-         RARCH_ERR("Failed to open dynamic library: \"%s\"\n", libretro_path);
+         RARCH_ERR("Failed to open dynamic library: \"%s\"\n", g_settings.libretro);
          rarch_fail(1, "load_dynamic()");
       }
 #endif
