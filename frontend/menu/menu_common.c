@@ -455,6 +455,7 @@ bool load_menu_game(void)
    args.rom_path      = *g_extern.fullpath ? g_extern.fullpath : NULL;
    args.libretro_path = g_settings.libretro;
    args.no_rom        = rgui->load_no_rom;
+   rgui->load_no_rom  = false;
 
    if (rarch_main_init_wrap(&args) == 0)
    {
@@ -472,8 +473,6 @@ bool load_menu_game(void)
       RARCH_ERR("rarch_main_init_wrap() failed.\n");
       return false;
    }
-
-   rgui->load_no_rom = false;
 }
 
 void menu_init(void)
