@@ -330,49 +330,6 @@ static void display_menubar(uint8_t menu_type)
    font_parms.scale = CURRENT_PATH_FONT_SIZE;
    font_parms.color = WHITE;
 
-   struct platform_bind key_label_r = {0};
-   struct platform_bind key_label_l = {0};
-   strlcpy(key_label_r.desc, "Unknown", sizeof(key_label_r.desc));
-   key_label_r.joykey = 1ULL << RETRO_DEVICE_ID_JOYPAD_R;
-
-   strlcpy(key_label_l.desc, "Unknown", sizeof(key_label_l.desc));
-   key_label_l.joykey = 1ULL << RETRO_DEVICE_ID_JOYPAD_L;
-
-   switch(menu_type)
-   {
-      case GENERAL_VIDEO_MENU:
-      case GENERAL_AUDIO_MENU:
-      case EMU_GENERAL_MENU:
-      case EMU_VIDEO_MENU:
-      case EMU_AUDIO_MENU:
-      case PATH_MENU:
-         if (driver.input->set_keybinds)
-         {
-            driver.input->set_keybinds(&key_label_r, 0, 0, 0, (1ULL << KEYBINDS_ACTION_GET_BIND_LABEL));
-            driver.input->set_keybinds(&key_label_l, 0, 0, 0, (1ULL << KEYBINDS_ACTION_GET_BIND_LABEL));
-         }
-         snprintf(msg, sizeof(msg), "[%s] <- PREV | NEXT -> [%s]", key_label_l.desc, key_label_r.desc);
-
-         if (driver.video_poke->set_osd_msg)
-            driver.video_poke->set_osd_msg(driver.video_data, msg, &font_parms);
-         break;
-      case CONTROLS_MENU:
-      case INGAME_MENU_CORE_OPTIONS:
-      case INGAME_MENU_LOAD_GAME_HISTORY:
-      case INGAME_MENU_VIDEO_OPTIONS:
-      case INGAME_MENU_RESIZE:
-         if (driver.input->set_keybinds)
-            driver.input->set_keybinds(&key_label_l, 0, 0, 0, (1ULL << KEYBINDS_ACTION_GET_BIND_LABEL));
-
-         snprintf(msg, sizeof(msg), "[%s] <- PREV", key_label_l.desc);
-
-         if (driver.video_poke->set_osd_msg)
-            driver.video_poke->set_osd_msg(driver.video_data, msg, &font_parms);
-         break;
-      default:
-         break;
-   }
-
    switch(menu_type)
    {
 #ifdef HAVE_SHADER_MANAGER
@@ -2007,7 +1964,7 @@ static int select_setting(void *data, uint64_t input)
             strlcpy(comment, "INFO - Show onscreen info messages in the menu.", sizeof(comment));
             break;
          case SETTING_EMU_REWIND_ENABLED:
-            strlcpy(text, "Rewind option", sizeof(text));
+            strlcpy(text, "Rewind", sizeof(text));
             if (g_settings.rewind_enable)
             {
                strlcpy(setting_text, "ON", sizeof(setting_text));
@@ -2022,7 +1979,7 @@ static int select_setting(void *data, uint64_t input)
             }
             break;
          case SETTING_EMU_REWIND_GRANULARITY:
-            strlcpy(text, "Rewind granularity", sizeof(text));
+            strlcpy(text, "Rewind Granularity", sizeof(text));
             snprintf(setting_text, sizeof(setting_text), "%d", g_settings.rewind_granularity);
             strlcpy(comment, "INFO - Set the amount of frames to 'rewind'.", sizeof(comment));
             break;
@@ -2055,7 +2012,7 @@ static int select_setting(void *data, uint64_t input)
             snprintf(comment, sizeof(comment), "INFO - [Custom BGM] is set to '%s'.", (g_extern.lifecycle_mode_state & (1ULL << MODE_AUDIO_CUSTOM_BGM_ENABLE)) ? "ON" : "OFF");
             break;
          case SETTING_PATH_DEFAULT_ROM_DIRECTORY:
-            strlcpy(text, "Startup browser directory", sizeof(text));
+            strlcpy(text, "Browser directory", sizeof(text));
             strlcpy(setting_text, g_settings.rgui_browser_directory, sizeof(setting_text));
             strlcpy(comment, "INFO - Set the default startup browser directory path.", sizeof(comment));
             break;
@@ -2065,7 +2022,7 @@ static int select_setting(void *data, uint64_t input)
             strlcpy(comment, "INFO - Directory where savestates will be saved to.", sizeof(comment));
             break;
          case SETTING_PATH_SRAM_DIRECTORY:
-            strlcpy(text, "SRAM Directory", sizeof(text));
+            strlcpy(text, "Savefile Directory", sizeof(text));
             strlcpy(setting_text, g_extern.savefile_dir, sizeof(setting_text));
             strlcpy(comment, "INFO - Set the default SaveRAM directory path.", sizeof(comment));
             break;
@@ -2097,8 +2054,8 @@ static int select_setting(void *data, uint64_t input)
             strlcpy(setting_text, g_extern.file_state.input_cfg_path, sizeof(setting_text));
             break;
          case SETTING_CONTROLS_NUMBER:
-            strlcpy(text, "Controller No", sizeof(text));
-            snprintf(comment, sizeof(comment), "Controller %d is currently selected.", rgui->current_pad+1);
+            strlcpy(text, "Player", sizeof(text));
+            snprintf(comment, sizeof(comment), "Player %d is currently selected.", rgui->current_pad+1);
             snprintf(setting_text, sizeof(setting_text), "%d", rgui->current_pad+1);
             break;
          case SETTING_DPAD_EMULATION:
