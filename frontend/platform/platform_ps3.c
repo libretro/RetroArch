@@ -86,7 +86,7 @@ static void salamander_init_settings(void)
       char tmp_str[PATH_MAX];
       bool config_file_exists = false;
 
-      if(path_file_exists(default_paths.config_path))
+      if (path_file_exists(default_paths.config_path))
          config_file_exists = true;
 
       //try to find CORE executable
@@ -101,7 +101,7 @@ static void salamander_init_settings(void)
       }
       else
       {
-         if(config_file_exists)
+         if (config_file_exists)
          {
             config_file_t * conf = config_file_new(default_paths.config_path);
             config_get_array(conf, "libretro_path", tmp_str, sizeof(tmp_str));
@@ -109,7 +109,7 @@ static void salamander_init_settings(void)
             snprintf(default_paths.libretro_path, sizeof(default_paths.libretro_path), tmp_str);
          }
 
-         if(!config_file_exists || !strcmp(default_paths.libretro_path, ""))
+         if (!config_file_exists || !strcmp(default_paths.libretro_path, ""))
          {
             find_and_set_first_file();
          }

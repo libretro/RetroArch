@@ -60,17 +60,6 @@
    }\
 }
 
-#define MAKE_DIR(x) {\
-   if (!path_is_directory((x)))\
-   {\
-      RARCH_WARN("Directory \"%s\" does not exists, creating\n", (x));\
-      if (mkdir((x), 0777) != 0)\
-      {\
-         RARCH_ERR("Could not create directory \"%s\"\n", (x));\
-      }\
-   }\
-}
-
 #ifdef IS_SALAMANDER
 
 static void find_and_set_first_file(void)
@@ -93,16 +82,7 @@ static void salamander_init_settings(void)
    char tmp_str[512] = {0};
    bool config_file_exists;
 
-   if(!path_file_exists(default_paths.config_path))
-   {
-      FILE * f;
-      config_file_exists = false;
-      RARCH_ERR("Config file \"%s\" doesn't exist. Creating...\n", default_paths.config_path);
-      MAKE_DIR(default_paths.port_dir);
-      f = fopen(default_paths.config_path, "w");
-      fclose(f);
-   }
-   else
+   if (path_file_exists(default_paths.config_path))
       config_file_exists = true;
 
    //try to find CORE executable
@@ -268,16 +248,6 @@ static void get_environment_settings(int argc, char *argv[])
    snprintf(default_paths.filebrowser_startup_dir, sizeof(default_paths.filebrowser_startup_dir), default_paths.filesystem_root_dir);
    snprintf(default_paths.sram_dir, sizeof(default_paths.sram_dir), "%s/sram", default_paths.port_dir);
    snprintf(default_paths.input_presets_dir, sizeof(default_paths.input_presets_dir), "%s/input", default_paths.port_dir);
-
-#ifndef IS_SALAMANDER
-   MAKE_DIR(default_paths.port_dir);
-   MAKE_DIR(default_paths.system_dir);
-   MAKE_DIR(default_paths.savestate_dir);
-   MAKE_DIR(default_paths.sram_dir);
-   MAKE_DIR(default_paths.input_presets_dir);
-
-   MAKE_FILE(g_extern.config_path);
-#endif
 }
 
 extern void __exception_setreload(int t);

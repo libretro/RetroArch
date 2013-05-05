@@ -76,6 +76,17 @@ static bool libretro_install_core(const char *path_prefix,
    return true;
 }
 
+#define MAKE_DIR(x) {\
+   if (!path_is_directory((x)))\
+   {\
+      RARCH_WARN("Directory \"%s\" does not exists, creating\n", (x));\
+      if (mkdir((x), 0777) != 0)\
+      {\
+         RARCH_ERR("Could not create directory \"%s\"\n", (x));\
+      }\
+   }\
+}
+
 int rarch_main(int argc, char *argv[])
 {
    system_init();
@@ -92,6 +103,13 @@ int rarch_main(int argc, char *argv[])
    g_extern.verbose = true;
 
    get_environment_settings(argc, argv);
+
+   MAKE_DIR(default_paths.port_dir);
+   MAKE_DIR(default_paths.system_dir);
+   MAKE_DIR(default_paths.savestate_dir);
+   MAKE_DIR(default_paths.sram_dir);
+   MAKE_DIR(default_paths.input_presets_dir);
+
    config_load();
 
    /* FIXME - when dummy loading becomes possible perhaps change this param  */
