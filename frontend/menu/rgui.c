@@ -742,7 +742,6 @@ static void render_text(rgui_handle_t *rgui)
       char entry_title_buf[256];
       char type_str_buf[64];
 
-      size_t type_len = strlen(type_str);
       strlcpy(entry_title_buf, path, sizeof(entry_title_buf));
       strlcpy(type_str_buf, type_str, sizeof(type_str_buf));
 
@@ -756,30 +755,8 @@ static void render_text(rgui_handle_t *rgui)
                   "%.*s...%s", TERM_WIDTH - (w + 1 + 2) - 8, path, &path[path_len - 5]);
          }
       }
-      else if (type_len > w)
-      {
-         // Wrap long strings in options with some kind of ticker line.
-         unsigned index = g_extern.frame_count / 15;
-         unsigned ticker_period = 2 * (type_len - w) + 4;
-         unsigned phase = index % ticker_period;
-
-         unsigned phase_left_stop = 2;
-         unsigned phase_left_moving = phase_left_stop + (type_len - w);
-         unsigned phase_right_stop = phase_left_moving + 2;
-
-         unsigned left_offset = phase - phase_left_stop;
-         unsigned right_offset = (type_len - w) - (phase - phase_right_stop);
-
-         // Ticker period: [Wait at left (2 ticks), Progress to right (type_len - w), Wait at right (2 ticks), Progress to left].
-         if (phase < phase_left_stop)
-            strlcpy(type_str_buf, type_str, w + 1);
-         else if (phase < phase_left_moving)
-            strlcpy(type_str_buf, type_str + left_offset, w + 1);
-         else if (phase < phase_right_stop)
-            strlcpy(type_str_buf, type_str + type_len - w, w + 1);
-         else
-            strlcpy(type_str_buf, type_str + right_offset, w + 1);
-      }
+      else
+         menu_ticker_line(type_str_buf, w, g_extern.frame_count / 15, type_str);
 
       snprintf(message, sizeof(message), "%c %-*.*s %-*s",
             i == rgui->selection_ptr ? '>' : ' ',
