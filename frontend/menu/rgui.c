@@ -435,16 +435,9 @@ static void render_text(rgui_handle_t *rgui)
       snprintf(title, sizeof(title), "GAME (%s) %s", core_name, dir);
    }
 
-   // Ensure that directory doesn't overflow terminal.
-   size_t title_len = strlen(title);
-   if (title_len > TERM_WIDTH - 3)
-   {
-      size_t start = title_len - (TERM_WIDTH - 7);
-      memmove(title + 4, title + start, title_len - start + 1);
-      memcpy(title, "... ", 4);
-   }
-
-   blit_line(rgui, TERM_START_X + 15, 15, title, true);
+   char title_buf[256];
+   menu_ticker_line(title_buf, TERM_WIDTH - 3, g_extern.frame_count / 15, title);
+   blit_line(rgui, TERM_START_X + 15, 15, title_buf, true);
 
    char title_msg[64];
    const char *core_name = rgui->info.library_name;
@@ -746,15 +739,7 @@ static void render_text(rgui_handle_t *rgui)
       strlcpy(type_str_buf, type_str, sizeof(type_str_buf));
 
       if ((type == RGUI_FILE_PLAIN || type == RGUI_FILE_DIRECTORY))
-      {
-         size_t path_len = strlen(path);
-         // Trim long filenames. Don't ticker line these.
-         if (path_len > TERM_WIDTH - (w + 1 + 2))
-         {
-            snprintf(entry_title_buf, sizeof(entry_title_buf),
-                  "%.*s...%s", TERM_WIDTH - (w + 1 + 2) - 8, path, &path[path_len - 5]);
-         }
-      }
+         menu_ticker_line(entry_title_buf, TERM_WIDTH - (w + 1 + 2), g_extern.frame_count / 15, path);
       else
          menu_ticker_line(type_str_buf, w, g_extern.frame_count / 15, type_str);
 
