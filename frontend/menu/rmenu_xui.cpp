@@ -1004,10 +1004,10 @@ HRESULT CRetroArchSettings::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
    GetChildById(L"XuiBackButton", &m_back);
 
    XuiListSetText(m_settingslist, SETTING_EMU_REWIND_ENABLED, g_settings.rewind_enable ? L"Rewind: ON" : L"Rewind: OFF");
-   XuiListSetText(m_settingslist, SETTING_EMU_SHOW_INFO_MSG, (g_extern.lifecycle_mode_state & (1ULL << MODE_INFO_DRAW)) ? L"Info messages: ON" : L"Info messages: OFF");
-   XuiListSetText(m_settingslist, SETTING_EMU_SHOW_DEBUG_INFO_MSG, (g_extern.lifecycle_mode_state & (1ULL << MODE_FPS_DRAW)) ? L"Debug Info messages: ON" : L"Debug Info messages: OFF");
-   XuiListSetText(m_settingslist, SETTING_GAMMA_CORRECTION_ENABLED, g_extern.console.screen.gamma_correction ? L"Gamma correction: ON" : L"Gamma correction: OFF");
-   XuiListSetText(m_settingslist, SETTING_HW_TEXTURE_FILTER, g_settings.video.smooth ? L"Hardware filtering shader #1: Linear interpolation" : L"Hardware filtering shader #1: Point filtering");
+   XuiListSetText(m_settingslist, SETTING_EMU_SHOW_INFO_MSG, (g_extern.lifecycle_mode_state & (1ULL << MODE_INFO_DRAW)) ? L"Info Messages: ON" : L"Info Messages: OFF");
+   XuiListSetText(m_settingslist, SETTING_EMU_SHOW_DEBUG_INFO_MSG, (g_extern.lifecycle_mode_state & (1ULL << MODE_FPS_DRAW)) ? L"Debug Info Messages: ON" : L"Debug Info messages: OFF");
+   XuiListSetText(m_settingslist, SETTING_GAMMA_CORRECTION_ENABLED, g_extern.console.screen.gamma_correction ? L"Gamma Correction: ON" : L"Gamma correction: OFF");
+   XuiListSetText(m_settingslist, SETTING_HW_TEXTURE_FILTER, g_settings.video.smooth ? L"Default Filter: Linear interpolation" : L"Hardware filtering shader #1: Point filtering");
    menu_settings_create_menu_item_label_w(strw_buffer, S_LBL_REWIND_GRANULARITY, sizeof(strw_buffer));
    XuiListSetText(m_settingslist, SETTING_EMU_REWIND_GRANULARITY, strw_buffer);
 
@@ -1050,9 +1050,12 @@ HRESULT CRetroArchSettings::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled 
             XuiListSetText(m_settingslist, SETTING_EMU_SHOW_DEBUG_INFO_MSG, (g_extern.lifecycle_mode_state & (1ULL << MODE_FPS_DRAW)) ? L"Debug Info messages: ON" : L"Debug Info messages: OFF");
             break;
          case SETTING_GAMMA_CORRECTION_ENABLED:
-            g_extern.console.screen.gamma_correction = g_extern.console.screen.gamma_correction ? 0 : 1;
-            driver.video->restart();
-            XuiListSetText(m_settingslist, SETTING_GAMMA_CORRECTION_ENABLED, g_extern.console.screen.gamma_correction ? L"Gamma correction: ON" : L"Gamma correction: OFF");
+            if (g_extern.main_is_init)
+            {
+               g_extern.console.screen.gamma_correction = g_extern.console.screen.gamma_correction ? 0 : 1;
+               driver.video->restart();
+               XuiListSetText(m_settingslist, SETTING_GAMMA_CORRECTION_ENABLED, g_extern.console.screen.gamma_correction ? L"Gamma correction: ON" : L"Gamma correction: OFF");
+            }
             break;
          case SETTING_HW_TEXTURE_FILTER:
             g_settings.video.smooth = !g_settings.video.smooth;
@@ -1103,9 +1106,12 @@ HRESULT CRetroArchSettings::OnControlNavigate(XUIMessageControlNavigate *pContro
                XuiListSetText(m_settingslist, SETTING_EMU_SHOW_DEBUG_INFO_MSG, (g_extern.lifecycle_mode_state & (1ULL << MODE_FPS_DRAW)) ? L"Debug Info messages: ON" : L"Debug Info messages: OFF");
                break;
             case SETTING_GAMMA_CORRECTION_ENABLED:
+               if (g_extern.main_is_init)
+               {
                g_extern.console.screen.gamma_correction = g_extern.console.screen.gamma_correction ? 0 : 1;
                driver.video->restart();
                XuiListSetText(m_settingslist, SETTING_GAMMA_CORRECTION_ENABLED, g_extern.console.screen.gamma_correction ? L"Gamma correction: ON" : L"Gamma correction: OFF");
+               }
                break;
             case SETTING_HW_TEXTURE_FILTER:
                g_settings.video.smooth = !g_settings.video.smooth;
@@ -1133,9 +1139,12 @@ HRESULT CRetroArchSettings::OnControlNavigate(XUIMessageControlNavigate *pContro
                XuiListSetText(m_settingslist, SETTING_EMU_SHOW_DEBUG_INFO_MSG, (g_extern.lifecycle_mode_state & (1ULL << MODE_FPS_DRAW)) ? L"Debug Info messages: ON" : L"Debug Info messages: OFF");
                break;
             case SETTING_GAMMA_CORRECTION_ENABLED:
+               if (g_extern.main_is_init)
+               {
                g_extern.console.screen.gamma_correction = g_extern.console.screen.gamma_correction ? 0 : 1;
                driver.video->restart();
                XuiListSetText(m_settingslist, SETTING_GAMMA_CORRECTION_ENABLED, g_extern.console.screen.gamma_correction ? L"Gamma correction: ON" : L"Gamma correction: OFF");
+               }
                break;
             case SETTING_EMU_REWIND_ENABLED:
                settings_set(1ULL << S_REWIND);
