@@ -1785,8 +1785,6 @@ bool menu_iterate(void)
    return true;
 
 deinit:
-   g_extern.lifecycle_mode_state &= ~(1ULL << MODE_MENU_INGAME);
-
    process_input_ret = 0;
 
    return false;

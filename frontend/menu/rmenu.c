@@ -2921,27 +2921,24 @@ static int ingame_menu_screenshot(void *data, uint64_t input)
    rgui_handle_t *rgui = (rgui_handle_t*)data;
    rgui->frame_buf_show = false;
 
-   if (g_extern.lifecycle_mode_state & (1ULL << MODE_MENU_INGAME))
-   {
-      if ((input & (1ULL << DEVICE_NAV_A)) || (input & (1ULL << DEVICE_NAV_MENU)))
-         menu_stack_pop(rgui->menu_type);
+   if ((input & (1ULL << DEVICE_NAV_A)) || (input & (1ULL << DEVICE_NAV_MENU)))
+      menu_stack_pop(rgui->menu_type);
 
 #ifdef HAVE_SCREENSHOTS
-      if (input & (1ULL << DEVICE_NAV_B))
-      {
-         const uint16_t *data = (const uint16_t*)g_extern.frame_cache.data;
-         unsigned width       = g_extern.frame_cache.width;
-         unsigned height      = g_extern.frame_cache.height;
-         int pitch            = g_extern.frame_cache.pitch;
+   if (input & (1ULL << DEVICE_NAV_B))
+   {
+      const uint16_t *data = (const uint16_t*)g_extern.frame_cache.data;
+      unsigned width       = g_extern.frame_cache.width;
+      unsigned height      = g_extern.frame_cache.height;
+      int pitch            = g_extern.frame_cache.pitch;
 
-         // Negative pitch is needed as screenshot takes bottom-up,
-         // but we use top-down.
-         screenshot_dump(g_settings.screenshot_directory,
-               data + (height - 1) * (pitch >> 1), 
-               width, height, -pitch, false);
-      }
-#endif
+      // Negative pitch is needed as screenshot takes bottom-up,
+      // but we use top-down.
+      screenshot_dump(g_settings.screenshot_directory,
+            data + (height - 1) * (pitch >> 1), 
+            width, height, -pitch, false);
    }
+#endif
 
    return 0;
 }
@@ -2961,9 +2958,7 @@ int rgui_input_postprocess(void *data, uint64_t old_state)
    if ((rgui->trigger_state & (1ULL << DEVICE_NAV_MENU)) &&
       g_extern.main_is_init)
    {
-      if (g_extern.lifecycle_mode_state & (1ULL << MODE_MENU_INGAME))
-         g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU_INGAME_EXIT);
-
+      g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU_INGAME_EXIT);
       g_extern.lifecycle_mode_state |= (1ULL << MODE_GAME);
 
       ret = -1;
@@ -2978,11 +2973,10 @@ int rgui_input_postprocess(void *data, uint64_t old_state)
       ret = -1;
    }
 
-   if (g_extern.lifecycle_mode_state & (1ULL << MODE_MENU_INGAME_EXIT) &&
-         g_extern.lifecycle_mode_state & (1ULL << MODE_MENU_INGAME))
+   if (g_extern.lifecycle_mode_state & (1ULL << MODE_MENU_INGAME_EXIT))
    {
       menu_stack_pop(rgui->menu_type);
-      g_extern.lifecycle_mode_state &= ~((1ULL << MODE_MENU_INGAME) | (1ULL << MODE_MENU_INGAME_EXIT));
+      g_extern.lifecycle_mode_state &= ~(1ULL << MODE_MENU_INGAME_EXIT);
    }
 
    return ret;

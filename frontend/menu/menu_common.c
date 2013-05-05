@@ -604,9 +604,7 @@ bool menu_iterate(void)
 
    if (g_extern.lifecycle_mode_state & (1ULL << MODE_MENU_PREINIT))
    {
-      if (g_extern.lifecycle_mode_state & (1ULL << MODE_MENU_INGAME))
-         rgui->need_refresh = true;
-
+      rgui->need_refresh = true;
       g_extern.lifecycle_mode_state &= ~(1ULL << MODE_MENU_PREINIT);
       rgui->old_input_state |= 1ULL << DEVICE_NAV_MENU;
    }
@@ -666,11 +664,6 @@ bool menu_iterate(void)
    return true;
 
 deinit:
-#ifdef HAVE_RGUI
-   /* TODO - see if we can remove this */
-   g_extern.lifecycle_mode_state &= ~(1ULL << MODE_MENU_INGAME);
-#endif
-
    return false;
 }
 #endif

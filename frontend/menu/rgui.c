@@ -218,7 +218,7 @@ rgui_handle_t *rgui_init(void)
       RARCH_ERR("no font bmp or bin, abort");
       /* TODO - should be refactored - perhaps don't do rarch_fail but instead
        * exit program */
-      g_extern.lifecycle_mode_state &= ~((1ULL << MODE_MENU) | (1ULL << MODE_MENU_INGAME) | (1ULL << MODE_GAME));
+      g_extern.lifecycle_mode_state &= ~((1ULL << MODE_MENU) | (1ULL << MODE_GAME));
       g_extern.lifecycle_mode_state |= (1ULL << MODE_EXIT);
       return NULL;
    }
@@ -2388,7 +2388,6 @@ int rgui_iterate(rgui_handle_t *rgui)
          rgui->need_refresh = true;
          while (rgui->menu_stack->size > 1)
             rgui_list_pop(rgui->menu_stack, &rgui->selection_ptr);
-         g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU_INGAME);
          return rgui_settings_iterate(rgui, RGUI_ACTION_REFRESH);
 
       case RGUI_ACTION_MESSAGE:
@@ -2479,17 +2478,13 @@ int rgui_input_postprocess(void *data, uint64_t old_state)
          g_extern.main_is_init &&
          !g_extern.libretro_dummy)
    {
-      if (g_extern.lifecycle_mode_state & (1ULL << MODE_MENU_INGAME))
-         g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU_INGAME_EXIT);
-
+      g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU_INGAME_EXIT);
       g_extern.lifecycle_mode_state |= (1ULL << MODE_GAME);
       ret = -1;
    }
 
-   if (g_extern.lifecycle_mode_state & (1ULL << MODE_MENU_INGAME_EXIT) &&
-         g_extern.lifecycle_mode_state & (1ULL << MODE_MENU_INGAME))
-      g_extern.lifecycle_mode_state &= ~((1ULL << MODE_MENU_INGAME) 
-            | (1ULL << MODE_MENU_INGAME_EXIT));
+   if (g_extern.lifecycle_mode_state & (1ULL << MODE_MENU_INGAME_EXIT))
+      g_extern.lifecycle_mode_state &= ~(1ULL << MODE_MENU_INGAME_EXIT);
 
    if (ret < 0)
    {
