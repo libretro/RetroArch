@@ -42,13 +42,16 @@
 
 static ios_input_data_t g_input_data;
 
+static bool use_icade;
+static uint32_t icade_buttons;
+
 // Input helpers
 void ios_copy_input(ios_input_data_t* data)
 {
    // Call only from main thread
 
    memcpy(data, &g_input_data, sizeof(g_input_data));
-   data->pad_buttons = btpad_get_buttons();
+   data->pad_buttons = btpad_get_buttons() | (use_icade ? icade_buttons : 0);
    
    for (int i = 0; i < 4; i ++)
       data->pad_axis[i] = btpad_get_axis(i);
@@ -64,6 +67,112 @@ static uint32_t translate_mods(uint32_t flags)
    return result;
 }
 
+static void handle_touch_event(NSArray* touches)
+{
+   const int numTouches = [touches count];
+   const float scale = [[UIScreen mainScreen] scale];
+
+   g_input_data.touch_count = 0;
+   
+   for(int i = 0; i != numTouches && g_input_data.touch_count < MAX_TOUCHES; i ++)
+   {
+      UITouch* touch = [touches objectAtIndex:i];
+      const CGPoint coord = [touch locationInView:touch.view];
+
+      if (touch.phase != UITouchPhaseEnded && touch.phase != UITouchPhaseCancelled)
+      {
+         g_input_data.touches[g_input_data.touch_count   ].screen_x = coord.x * scale;
+         g_input_data.touches[g_input_data.touch_count ++].screen_y = coord.y * scale;
+      }
+   }
+}
+
+static void handle_key_event(unsigned keycode, bool down, uint8_t* eventMem)
+{
+   if (keycode < MAX_KEYS)
+      g_input_data.keys[keycode] = down;
+
+   // Key events
+   // ios_add_key_event(eventType == GSEVENT_TYPE_KEYDOWN, data[0], data[1], translate_mods(*(uint32_t*)&eventMem[0x30]));
+   // printf("%d %d %d %08X\n", data[0], data[1], data[2], *(uint32_t*)&eventMem[0x30]);
+}
+
+static void handle_modifier_key_event(uint8_t* eventMem)
+{
+#if 0
+   static const struct
+   {
+      unsigned key;
+      unsigned retrokey;
+      uint32_t hidid;
+   }  modmap[] =
+   {
+      { 0x37, RETROK_LMETA, KEY_LeftGUI },
+      { 0x36, RETROK_RMETA, KEY_RightGUI },
+      { 0x38, RETROK_LSHIFT, KEY_LeftShift },
+      { 0x3C, RETROK_RSHIFT, KEY_RightShift },
+      { 0x3A, RETROK_LALT, KEY_LeftAlt },
+      { 0x3D, RETROK_RALT, KEY_RightAlt },
+      { 0x3B, RETROK_LCTRL, KEY_LeftControl },
+      { 0x3E, RETROK_RCTRL, KEY_RightControl },
+      { 0x39, RETROK_CAPSLOCK, KEY_CapsLock },
+      { 0, RETROK_UNKNOWN, 0}
+   };
+         
+   static bool keystate[9];
+         
+   // TODO: Not sure how to add this.
+   //       The key value indicates the key that was pressed or released.
+   //       The flags indicates the current modifier state.
+   //       There is no way to determine if this is a keydown or a keyup event,
+   //       except to look at the flags, but the bits in flags are shared between
+   //       the left and right versions of a given key pair.
+   //       The current method assumes that all key up and down events are processed,
+   //       otherwise it may become confused.
+   const uint32_t key = *(uint32_t*)&eventMem[0x3C];
+         
+   for (int i = 0; i < 9; i ++)
+   {
+      if (key == modmap[i].key)
+      {
+         keystate[i] = !keystate[i];
+         g_input_data.keys[modmap[i].hidid] = keystate[i];
+         // ios_add_key_event(keystate[i], modmap[i].retrokey, 0, translate_mods(*(uint32_t*)&eventMem[0x30]));
+      }
+   }
+
+#endif
+}
+
+static void handle_icade_event(unsigned keycode)
+{
+   static const struct
+   {
+      bool up;
+      int button;
+   }  icade_map[0x20] =
+   {
+      { false, -1 }, { false, -1 }, { false, -1 }, { false, -1 }, // 0
+      { false,  2 }, { false, -1 }, { true ,  3 }, { false,  3 }, // 4
+      { true ,  0 }, { true,   5 }, { true ,  7 }, { false,  8 }, // 8
+      { false,  6 }, { false,  9 }, { false, 10 }, { false, 11 }, // C
+      { true ,  6 }, { true ,  9 }, { false,  7 }, { true,  10 }, // 0
+      { true ,  2 }, { true ,  8 }, { false, -1 }, { true ,  4 }, // 4
+      { false,  5 }, { true , 11 }, { false,  0 }, { false,  1 }, // 8
+      { false,  4 }, { true ,  1 }, { false, -1 }, { false, -1 }  // C
+   };
+      
+   if ((keycode < 0x20) && (icade_map[keycode].button >= 0))
+   {
+      const int button = icade_map[keycode].button;
+      
+      if (icade_map[keycode].up)
+         icade_buttons &= ~(1 << button);
+      else
+         icade_buttons |=  (1 << button);
+   }
+}
+
 @interface RApplication : UIApplication
 @end
 
@@ -74,88 +183,26 @@ static uint32_t translate_mods(uint32_t flags)
    [super sendEvent:event];
    
    if ([[event allTouches] count])
-   {
-      NSArray* touches = [[event allTouches] allObjects];
-      const int numTouches = [touches count];
-      const float scale = [[UIScreen mainScreen] scale];
+      handle_touch_event(event.allTouches.allObjects);
 
-      g_input_data.touch_count = 0;
-   
-      for(int i = 0; i != numTouches && g_input_data.touch_count < MAX_TOUCHES; i ++)
-      {
-         UITouch* touch = [touches objectAtIndex:i];
-         const CGPoint coord = [touch locationInView:touch.view];
-
-         if (touch.phase != UITouchPhaseEnded && touch.phase != UITouchPhaseCancelled)
-         {
-            g_input_data.touches[g_input_data.touch_count   ].screen_x = coord.x * scale;
-            g_input_data.touches[g_input_data.touch_count ++].screen_y = coord.y * scale;
-         }
-      }
-   }
    // Stolen from: http://nacho4d-nacho4d.blogspot.com/2012/01/catching-keyboard-events-in-ios.html
    // TODO: Key events need to be synced, I just disabled them because the data isn't available on device (only in simulator)
    else if ([event respondsToSelector:@selector(_gsEvent)])
    {
       uint8_t* eventMem = (uint8_t*)(void*)CFBridgingRetain([event performSelector:@selector(_gsEvent)]);
       int eventType = eventMem ? *(int*)&eventMem[8] : 0;
-      
+
       if (eventType == GSEVENT_TYPE_KEYDOWN || eventType == GSEVENT_TYPE_KEYUP)
       {
-         uint16_t* data = (uint16_t*)&eventMem[0x3C];
+         uint16_t key = *(uint16_t*)&eventMem[0x3C];
 
-         if (data[0] < MAX_KEYS)
-            g_input_data.keys[data[0]] = (eventType == GSEVENT_TYPE_KEYDOWN) ? 1 : 0;
-
-         // Key events
-         // ios_add_key_event(eventType == GSEVENT_TYPE_KEYDOWN, data[0], data[1], translate_mods(*(uint32_t*)&eventMem[0x30]));
-         // printf("%d %d %d %08X\n", data[0], data[1], data[2], *(uint32_t*)&eventMem[0x30]);
+         if (!use_icade)
+            handle_key_event(key, eventType == GSEVENT_TYPE_KEYDOWN, eventMem);
+         else if (eventType == GSEVENT_TYPE_KEYDOWN)
+            handle_icade_event(key);
       }
-#if 0
       else if(eventType == GSEVENT_TYPE_MODS)
-      {
-         static const struct
-         {
-            unsigned key;
-            unsigned retrokey;
-            uint32_t hidid;
-         }  modmap[] =
-         {
-            { 0x37, RETROK_LMETA, KEY_LeftGUI },
-            { 0x36, RETROK_RMETA, KEY_RightGUI },
-            { 0x38, RETROK_LSHIFT, KEY_LeftShift },
-            { 0x3C, RETROK_RSHIFT, KEY_RightShift },
-            { 0x3A, RETROK_LALT, KEY_LeftAlt },
-            { 0x3D, RETROK_RALT, KEY_RightAlt },
-            { 0x3B, RETROK_LCTRL, KEY_LeftControl },
-            { 0x3E, RETROK_RCTRL, KEY_RightControl },
-            { 0x39, RETROK_CAPSLOCK, KEY_CapsLock },
-            { 0, RETROK_UNKNOWN, 0}
-         };
-         
-         static bool keystate[9];
-         
-         // TODO: Not sure how to add this.
-         //       The key value indicates the key that was pressed or released.
-         //       The flags indicates the current modifier state.
-         //       There is no way to determine if this is a keydown or a keyup event,
-         //       except to look at the flags, but the bits in flags are shared between
-         //       the left and right versions of a given key pair.
-         //       The current method assumes that all key up and down events are processed,
-         //       otherwise it may become confused.
-         const uint32_t key = *(uint32_t*)&eventMem[0x3C];
-         
-         for (int i = 0; i < 9; i ++)
-         {
-            if (key == modmap[i].key)
-            {
-               keystate[i] = !keystate[i];
-               g_input_data.keys[modmap[i].hidid] = keystate[i];
-               // ios_add_key_event(keystate[i], modmap[i].retrokey, 0, translate_mods(*(uint32_t*)&eventMem[0x30]));
-            }
-         }
-      }
-#endif
+         handle_modifier_key_event(eventMem);
 
       CFBridgingRelease(eventMem);
    }
@@ -322,6 +369,8 @@ static void event_reload_config(void* userdata)
    bool autoStartBluetooth = false;
    if (conf && config_get_bool(conf, "ios_auto_bluetooth", &autoStartBluetooth) && autoStartBluetooth)
       [self startBluetooth];
+   if (conf)
+      config_get_bool(conf, "ios_use_icade", &use_icade);
    config_file_free(conf);
 }
 

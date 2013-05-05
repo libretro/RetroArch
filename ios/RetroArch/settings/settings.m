@@ -150,6 +150,7 @@ static RASettingData* custom_action(NSString* action)
          custom_action(@"Module Info"),
          custom_action(@"Diagnostic Log"),
          boolean_setting(config, @"ios_auto_bluetooth", @"Auto Enable Bluetooth", @"false"),
+         boolean_setting(config, @"ios_use_icade", @"Native BT is iCade", @"false"),
          nil],
 
       [NSArray arrayWithObjects:@"Video",
