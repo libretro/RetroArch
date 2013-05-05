@@ -2244,6 +2244,9 @@ static int select_setting(void *data, uint64_t input)
 #endif
       }
 
+      char setting_text_buf[256];
+      menu_ticker_line(setting_text_buf, 25, g_extern.frame_count / 15, setting_text);
+
       if (!(j < NUM_ENTRY_PER_PAGE))
       {
          j = 0;
@@ -2270,7 +2273,7 @@ static int select_setting(void *data, uint64_t input)
       font_parms.color = WHITE;
 
       if (driver.video_poke->set_osd_msg)
-         driver.video_poke->set_osd_msg(driver.video_data, setting_text, &font_parms);
+         driver.video_poke->set_osd_msg(driver.video_data, setting_text_buf, &font_parms);
 
       if (i != selected)
          continue;
