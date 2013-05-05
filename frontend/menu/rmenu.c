@@ -220,7 +220,7 @@ static void menu_stack_pop(unsigned menu_type)
       case LIBRETRO_CHOICE:
       case INGAME_MENU_CORE_OPTIONS:
       case INGAME_MENU_LOAD_GAME_HISTORY:
-      case INGAME_MENU_RESIZE:
+      case INGAME_MENU_CUSTOM_RATIO:
       case INGAME_MENU_SCREENSHOT:
          rgui->frame_buf_show = true;
          break;
@@ -234,7 +234,7 @@ static void menu_stack_pop(unsigned menu_type)
          break;
 #ifdef HAVE_SHADER_MANAGER
       case CGP_CHOICE:
-         selected = FIRST_SHADERMAN_SETTING;
+         selected = FIRST_VIDEO_SETTING;
          break;
 #endif
       default:
@@ -265,7 +265,7 @@ static void menu_stack_push(unsigned menu_type, bool prev_dir)
          selected = FIRST_INGAME_MENU_SETTING;
          break;
       case INGAME_MENU_VIDEO_OPTIONS:
-         selected = FIRST_SHADERMAN_SETTING;
+         selected = FIRST_VIDEO_SETTING;
          break;
       case INGAME_MENU_AUDIO_OPTIONS:
          selected = FIRST_AUDIO_SETTING;
@@ -277,7 +277,7 @@ static void menu_stack_push(unsigned menu_type, bool prev_dir)
          selected = FIRST_PATH_SETTING;
          break;
       case INGAME_MENU_SETTINGS:
-         selected = FIRST_VIDEO_SETTING;
+         selected = FIRST_SETTING;
          break;
       default:
          break;
@@ -355,7 +355,7 @@ static void display_menubar(uint8_t menu_type)
       case INGAME_MENU_INPUT_OPTIONS_MODE:
          strlcpy(title, "Input Options", sizeof(title));
          break;
-      case INGAME_MENU_RESIZE:
+      case INGAME_MENU_CUSTOM_RATIO:
          strlcpy(title, "Resize Menu", sizeof(title));
          break;
       case INGAME_MENU_SCREENSHOT:
@@ -1450,7 +1450,7 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
          break;
       case SETTING_CUSTOM_VIEWPORT:
          if (input & (1ULL << DEVICE_NAV_B))
-            menu_stack_push(INGAME_MENU_RESIZE, false);
+            menu_stack_push(INGAME_MENU_CUSTOM_RATIO, false);
          break;
       case INGAME_MENU_CORE_OPTIONS_MODE:
          if (input & (1ULL << DEVICE_NAV_B))
@@ -1695,7 +1695,7 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
 static int select_setting(void *data, uint64_t input)
 {
    rgui_handle_t *rgui = (rgui_handle_t*)data;
-   static uint8_t first_setting = FIRST_VIDEO_SETTING;
+   static uint8_t first_setting = FIRST_SETTING;
    uint8_t items_pages[SETTING_LAST_LAST] = {0};
    uint8_t max_settings = 0;
 
@@ -1710,8 +1710,8 @@ static int select_setting(void *data, uint64_t input)
          max_settings = MAX_NO_OF_INGAME_MENU_SETTINGS;
          break;
       case INGAME_MENU_SETTINGS:
-         first_setting = FIRST_VIDEO_SETTING;
-         max_settings = MAX_NO_OF_VIDEO_SETTINGS;
+         first_setting = FIRST_SETTING;
+         max_settings = MAX_NO_OF_SETTINGS;
          break;
       case INGAME_MENU_INPUT_OPTIONS:
          first_setting = FIRST_CONTROLS_SETTING_PAGE_1;
@@ -1726,14 +1726,14 @@ static int select_setting(void *data, uint64_t input)
          max_settings = MAX_NO_OF_AUDIO_SETTINGS;
          break;
       case INGAME_MENU_VIDEO_OPTIONS:
-         first_setting = FIRST_SHADERMAN_SETTING;
+         first_setting = FIRST_VIDEO_SETTING;
          max_settings = SHADERMAN_SHADER_LAST;
 
 #ifdef HAVE_SHADER_MANAGER
          switch (rgui->shader.passes)
          {
             case 0:
-               max_settings = MAX_NO_OF_SHADERMAN_SETTINGS;
+               max_settings = MAX_NO_OF_VIDEO_SETTINGS;
                break;
             case 1:
                max_settings = SHADERMAN_SHADER_0_SCALE+1;
@@ -2984,7 +2984,7 @@ int rgui_iterate(rgui_handle_t *rgui)
 
    switch(rgui->menu_type)
    {
-      case INGAME_MENU_RESIZE:
+      case INGAME_MENU_CUSTOM_RATIO:
          return ingame_menu_resize(rgui, rgui->trigger_state);
       case INGAME_MENU_CORE_OPTIONS:
          return ingame_menu_core_options(rgui, rgui->trigger_state);
