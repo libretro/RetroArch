@@ -1510,10 +1510,6 @@ HRESULT CRetroArchMain::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled )
       if (hr < 0)
          RARCH_ERR("Failed to load scene.\n");
 
-      if (g_extern.lifecycle_mode_state & (1ULL << MODE_INFO_DRAW))
-         msg_queue_push(g_extern.msg_queue,
-               "INFO - Press LEFT/RIGHT to change the controls, and press\n[RetroPad Start] to reset a button to default values.", 1, 180);
-
       XuiSceneNavigateForward(hCur, false, app.hControlsMenu, XUSER_INDEX_FOCUS);
       hCur = app.hControlsMenu;
    }
