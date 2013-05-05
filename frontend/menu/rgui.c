@@ -476,7 +476,7 @@ static void render_text(rgui_handle_t *rgui)
       rgui_list_get_at_offset(rgui->selection_buf, i, &path, &type);
       char message[256];
       char type_str[256];
-      int w = (menu_type == RGUI_SETTINGS_INPUT_OPTIONS) ? 26 : 19;
+      unsigned w = (menu_type == RGUI_SETTINGS_INPUT_OPTIONS || menu_type == RGUI_SETTINGS_PATH_OPTIONS) ? 24 : 19;
       unsigned port = rgui->current_pad;
       
 #ifdef HAVE_SHADER_MANAGER
@@ -510,6 +510,7 @@ static void render_text(rgui_handle_t *rgui)
          else
          {
             strlcpy(type_str, "(DIR)", sizeof(type_str));
+            type = RGUI_FILE_DIRECTORY;
             w = 5;
          }
       }
@@ -738,24 +739,54 @@ static void render_text(rgui_handle_t *rgui)
          }
       }
 
-      const char *entry_title;
-      char tmp[256];
-      size_t path_len = strlen(path);
-      // trim long filenames
-      if ((type == RGUI_FILE_PLAIN || type == RGUI_FILE_DIRECTORY) && path_len > TERM_WIDTH - (w + 1 + 2))
-      {
-         snprintf(tmp, sizeof(tmp), "%.*s...%s", TERM_WIDTH - (w + 1 + 2) - 8, path, &path[path_len - 5]);
-         entry_title = tmp;
-      }
-      else
-         entry_title = path;
+      char entry_title_buf[256];
+      char type_str_buf[64];
 
-      snprintf(message, sizeof(message), "%c %-*.*s %-*s\n",
+      size_t type_len = strlen(type_str);
+      strlcpy(entry_title_buf, path, sizeof(entry_title_buf));
+      strlcpy(type_str_buf, type_str, sizeof(type_str_buf));
+
+      if ((type == RGUI_FILE_PLAIN || type == RGUI_FILE_DIRECTORY))
+      {
+         size_t path_len = strlen(path);
+         // Trim long filenames. Don't ticker line these.
+         if (path_len > TERM_WIDTH - (w + 1 + 2))
+         {
+            snprintf(entry_title_buf, sizeof(entry_title_buf),
+                  "%.*s...%s", TERM_WIDTH - (w + 1 + 2) - 8, path, &path[path_len - 5]);
+         }
+      }
+      else if (type_len > w)
+      {
+         // Wrap long strings in options with some kind of ticker line.
+         unsigned index = g_extern.frame_count / 15;
+         unsigned ticker_period = 2 * (type_len - w) + 4;
+         unsigned phase = index % ticker_period;
+
+         unsigned phase_left_stop = 2;
+         unsigned phase_left_moving = phase_left_stop + (type_len - w);
+         unsigned phase_right_stop = phase_left_moving + 2;
+
+         unsigned left_offset = phase - phase_left_stop;
+         unsigned right_offset = (type_len - w) - (phase - phase_right_stop);
+
+         // Ticker period: [Wait at left (2 ticks), Progress to right (type_len - w), Wait at right (2 ticks), Progress to left].
+         if (phase < phase_left_stop)
+            strlcpy(type_str_buf, type_str, w + 1);
+         else if (phase < phase_left_moving)
+            strlcpy(type_str_buf, type_str + left_offset, w + 1);
+         else if (phase < phase_right_stop)
+            strlcpy(type_str_buf, type_str + type_len - w, w + 1);
+         else
+            strlcpy(type_str_buf, type_str + right_offset, w + 1);
+      }
+
+      snprintf(message, sizeof(message), "%c %-*.*s %-*s",
             i == rgui->selection_ptr ? '>' : ' ',
             TERM_WIDTH - (w + 1 + 2), TERM_WIDTH - (w + 1 + 2),
-            entry_title,
+            entry_title_buf,
             w,
-            type_str);
+            type_str_buf);
 
       blit_line(rgui, x, y, message, i == rgui->selection_ptr);
    }
@@ -1704,14 +1735,14 @@ static int shader_manager_toggle_setting(rgui_handle_t *rgui, unsigned setting, 
 static void rgui_settings_path_populate_entries(rgui_handle_t *rgui)
 {
    rgui_list_clear(rgui->selection_buf);
-   rgui_list_push(rgui->selection_buf, "Browser directory", RGUI_BROWSER_DIR_PATH, 0);
+   rgui_list_push(rgui->selection_buf, "Browser Directory", RGUI_BROWSER_DIR_PATH, 0);
 #ifdef HAVE_SHADER_MANAGER
-   rgui_list_push(rgui->selection_buf, "Shader directory", RGUI_SHADER_DIR_PATH, 0);
+   rgui_list_push(rgui->selection_buf, "Shader Directory", RGUI_SHADER_DIR_PATH, 0);
 #endif
-   rgui_list_push(rgui->selection_buf, "Savestate directory", RGUI_SAVESTATE_DIR_PATH, 0);
-   rgui_list_push(rgui->selection_buf, "Savefile directory", RGUI_SAVEFILE_DIR_PATH, 0);
-   rgui_list_push(rgui->selection_buf, "System directory", RGUI_SYSTEM_DIR_PATH, 0);
-   rgui_list_push(rgui->selection_buf, "Config file", RGUI_CONFIG_PATH, 0);
+   rgui_list_push(rgui->selection_buf, "Savestate Directory", RGUI_SAVESTATE_DIR_PATH, 0);
+   rgui_list_push(rgui->selection_buf, "Savefile Directory", RGUI_SAVEFILE_DIR_PATH, 0);
+   rgui_list_push(rgui->selection_buf, "System Directory", RGUI_SYSTEM_DIR_PATH, 0);
+   rgui_list_push(rgui->selection_buf, "Config File", RGUI_CONFIG_PATH, 0);
 }
 
 static void rgui_settings_controller_populate_entries(rgui_handle_t *rgui)
