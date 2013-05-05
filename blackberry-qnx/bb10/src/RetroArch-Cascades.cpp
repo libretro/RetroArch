@@ -235,7 +235,8 @@ void RetroArch::startEmulator()
 {
    state = RETROARCH_START_REQUESTED;
 
-   if (OrientationSupport::instance()->orientation() == UIOrientation::Portrait)
+   if (OrientationSupport::instance()->orientation() == UIOrientation::Portrait &&
+       OrientationSupport::instance()->supportedDisplayOrientation() != SupportedDisplayOrientation::DeviceNorth)
    {
       OrientationSupport::instance()->setSupportedDisplayOrientation(SupportedDisplayOrientation::DisplayLandscape);
    }
