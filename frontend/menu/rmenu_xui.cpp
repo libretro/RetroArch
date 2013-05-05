@@ -1028,9 +1028,6 @@ HRESULT CRetroArchSettings::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled 
          case SETTING_EMU_REWIND_ENABLED:
             settings_set(1ULL << S_REWIND);
             XuiListSetText(m_settingslist, SETTING_EMU_REWIND_ENABLED, g_settings.rewind_enable ? L"Rewind: ON" : L"Rewind: OFF");
-
-            if (g_extern.lifecycle_mode_state & (1ULL << MODE_INFO_DRAW))
-               msg_queue_push(g_extern.msg_queue, "INFO - You need to restart RetroArch.", 1, 180);
             break;
 	 case SETTING_EMU_REWIND_GRANULARITY:
 	    g_settings.rewind_granularity++;
@@ -1083,9 +1080,6 @@ HRESULT CRetroArchSettings::OnControlNavigate(XUIMessageControlNavigate *pContro
             case SETTING_EMU_REWIND_ENABLED:
                settings_set(1ULL << S_REWIND);
                XuiListSetText(m_settingslist, SETTING_EMU_REWIND_ENABLED, g_settings.rewind_enable ? L"Rewind: ON" : L"Rewind: OFF");
-
-               if (g_extern.lifecycle_mode_state & (1ULL << MODE_INFO_DRAW))
-                  msg_queue_push(g_extern.msg_queue, "INFO - You need to restart RetroArch.", 1, 180);
                break;
 	    case SETTING_EMU_REWIND_GRANULARITY:
 	       if (g_settings.rewind_granularity > 1)
@@ -1146,9 +1140,6 @@ HRESULT CRetroArchSettings::OnControlNavigate(XUIMessageControlNavigate *pContro
             case SETTING_EMU_REWIND_ENABLED:
                settings_set(1ULL << S_REWIND);
                XuiListSetText(m_settingslist, SETTING_EMU_REWIND_ENABLED, g_settings.rewind_enable ? L"Rewind: ON" : L"Rewind: OFF");
-
-               if (g_extern.lifecycle_mode_state & (1ULL << MODE_INFO_DRAW))
-                  msg_queue_push(g_extern.msg_queue, "INFO - You need to restart RetroArch.", 1, 180);
                break;
 	    case SETTING_EMU_REWIND_GRANULARITY:
 	       g_settings.rewind_granularity++;
@@ -1532,10 +1523,6 @@ HRESULT CRetroArchMain::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled )
 
       if (hr < 0)
          RARCH_ERR("Failed to load scene.\n");
-
-      if (g_extern.lifecycle_mode_state & (1ULL << MODE_INFO_DRAW))
-         msg_queue_push(g_extern.msg_queue,
-               "INFO - Select a Libretro core from the menu.", 1, 180);
 
       XuiSceneNavigateForward(hCur, false, app.hCoreBrowser, XUSER_INDEX_FOCUS);
       hCur = app.hCoreBrowser;
