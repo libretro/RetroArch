@@ -1290,7 +1290,7 @@ static void rgui_settings_video_options_populate_entries(rgui_handle_t *rgui)
 #endif
    rgui_list_push(rgui->selection_buf, "Rotation", RGUI_SETTINGS_VIDEO_ROTATION, 0);
    rgui_list_push(rgui->selection_buf, "VSync", RGUI_SETTINGS_VIDEO_VSYNC, 0);
-   rgui_list_push(rgui->selection_buf, "Hard VSync", RGUI_SETTINGS_VIDEO_HARD_SYNC, 0);
+   rgui_list_push(rgui->selection_buf, "Hard GPU Sync", RGUI_SETTINGS_VIDEO_HARD_SYNC, 0);
 }
 
 #ifdef HAVE_SHADER_MANAGER
