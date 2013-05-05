@@ -1899,12 +1899,12 @@ static int select_setting(void *data, uint64_t input)
             break;
             /* emu-specific */
          case SETTING_EMU_SHOW_DEBUG_INFO_MSG:
-            strlcpy(text, "Debug info messages", sizeof(text));
+            strlcpy(text, "Debug Info Messages", sizeof(text));
             snprintf(setting_text, sizeof(setting_text), (g_extern.lifecycle_mode_state & (1ULL << MODE_FPS_DRAW)) ? "ON" : "OFF");
             strlcpy(comment, "INFO - Show onscreen debug messages.", sizeof(comment));
             break;
          case SETTING_EMU_SHOW_INFO_MSG:
-            strlcpy(text, "Info messages", sizeof(text));
+            strlcpy(text, "Info Messages", sizeof(text));
             snprintf(setting_text, sizeof(setting_text), (g_extern.lifecycle_mode_state & (1ULL << MODE_INFO_DRAW)) ? "ON" : "OFF");
             strlcpy(comment, "INFO - Show onscreen info messages in the menu.", sizeof(comment));
             break;
@@ -1957,7 +1957,7 @@ static int select_setting(void *data, uint64_t input)
             snprintf(comment, sizeof(comment), "INFO - [Custom BGM] is set to '%s'.", (g_extern.lifecycle_mode_state & (1ULL << MODE_AUDIO_CUSTOM_BGM_ENABLE)) ? "ON" : "OFF");
             break;
          case SETTING_PATH_DEFAULT_ROM_DIRECTORY:
-            strlcpy(text, "Browser directory", sizeof(text));
+            strlcpy(text, "Browser Directory", sizeof(text));
             strlcpy(setting_text, g_settings.rgui_browser_directory, sizeof(setting_text));
             strlcpy(comment, "INFO - Set the default startup browser directory path.", sizeof(comment));
             break;
