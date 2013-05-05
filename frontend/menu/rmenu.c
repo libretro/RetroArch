@@ -2148,7 +2148,7 @@ static int select_setting(void *data, uint64_t input)
             strlcpy(comment, "Press a button to step one frame.", sizeof(comment));
             break;
          case INGAME_MENU_SCREENSHOT_MODE:
-            strlcpy(text, "Screenshot Mode", sizeof(text));
+            strlcpy(text, "Take Screenshot", sizeof(text));
             strlcpy(setting_text, "", sizeof(setting_text));
             strlcpy(comment, "Take a screenshot.", sizeof(comment));
             break;
