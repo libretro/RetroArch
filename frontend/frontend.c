@@ -76,6 +76,12 @@ int main(int argc, char *argv[])
       }
       else if (g_extern.lifecycle_mode_state & (1ULL << MODE_GAME))
       {
+         // wait until all user input is released
+         while (0x0 != rgui_input()) {
+             usleep(1000);
+             rarch_input_poll();
+         }
+
          while ((g_extern.is_paused && !g_extern.is_oneshot) ? rarch_main_idle_iterate() : rarch_main_iterate());
          g_extern.lifecycle_mode_state &= ~(1ULL << MODE_GAME);
       }
