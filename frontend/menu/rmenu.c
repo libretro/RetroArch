@@ -270,9 +270,11 @@ static void menu_stack_push(unsigned menu_type, bool prev_dir)
       case INGAME_MENU_VIDEO_OPTIONS:
          selected = FIRST_VIDEO_SETTING;
          break;
+#ifdef HAVE_SHADER_MANAGER
       case INGAME_MENU_SHADER_OPTIONS:
          selected = FIRST_SHADERMAN_SETTING;
          break;
+#endif
       case INGAME_MENU_AUDIO_OPTIONS:
          selected = FIRST_AUDIO_SETTING;
          break;
@@ -357,10 +359,12 @@ static void display_menubar(uint8_t menu_type)
       case INGAME_MENU_VIDEO_OPTIONS_MODE:
          strlcpy(title, "Video Options", sizeof(title));
          break;
+#ifdef HAVE_SHADER_MANAGER
       case INGAME_MENU_SHADER_OPTIONS:
       case INGAME_MENU_SHADER_OPTIONS_MODE:
          strlcpy(title, "Shader Options", sizeof(title));
          break;
+#endif
       case INGAME_MENU_INPUT_OPTIONS:
       case INGAME_MENU_INPUT_OPTIONS_MODE:
          strlcpy(title, "Input Options", sizeof(title));
@@ -1532,10 +1536,12 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
          if (input & (1ULL << DEVICE_NAV_B))
             menu_stack_push(INGAME_MENU_VIDEO_OPTIONS, false);
          break;
+#ifdef HAVE_SHADER_MANAGER
       case INGAME_MENU_SHADER_OPTIONS_MODE:
          if (input & (1ULL << DEVICE_NAV_B))
             menu_stack_push(INGAME_MENU_SHADER_OPTIONS, false);
          break;
+#endif
       case INGAME_MENU_AUDIO_OPTIONS_MODE:
          if (input & (1ULL << DEVICE_NAV_B))
             menu_stack_push(INGAME_MENU_AUDIO_OPTIONS, false);
@@ -1743,9 +1749,9 @@ static int select_setting(void *data, uint64_t input)
          first_setting = FIRST_VIDEO_SETTING;
          max_settings = MAX_NO_OF_VIDEO_SETTINGS;
          break;
+#ifdef HAVE_SHADER_MANAGER
       case INGAME_MENU_SHADER_OPTIONS:
          first_setting = FIRST_SHADERMAN_SETTING;
-#ifdef HAVE_SHADER_MANAGER
          switch (rgui->shader.passes)
          {
             case 0:
@@ -1776,8 +1782,8 @@ static int select_setting(void *data, uint64_t input)
                max_settings = SHADERMAN_SHADER_7_SCALE+1;
                break;
          }
-#endif
          break;
+#endif
    }
 
    float y_increment = POSITION_Y_START;
@@ -2101,11 +2107,13 @@ static int select_setting(void *data, uint64_t input)
             strlcpy(setting_text, "...", sizeof(setting_text));
             strlcpy(comment, "Set core-specific options.", sizeof(comment));
             break;
+#ifdef HAVE_SHADER_MANAGER
          case INGAME_MENU_SHADER_OPTIONS_MODE:
             strlcpy(text, "Shader Options", sizeof(text));
             strlcpy(setting_text, "...", sizeof(setting_text));
             strlcpy(comment, "Set and manage shader options.", sizeof(comment));
             break;
+#endif
          case INGAME_MENU_LOAD_GAME_HISTORY_MODE:
             strlcpy(text, "Load Game (History)", sizeof(text));
             strlcpy(setting_text, "...", sizeof(setting_text));
