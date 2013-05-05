@@ -226,9 +226,6 @@ static void menu_stack_pop(unsigned menu_type)
       case EMU_AUDIO_MENU:
          selected = FIRST_EMU_VIDEO_SETTING;
          break;
-      case PATH_MENU:
-         selected = FIRST_EMU_AUDIO_SETTING;
-         break;
       case LIBRETRO_CHOICE:
       case INGAME_MENU_CORE_OPTIONS:
       case INGAME_MENU_LOAD_GAME_HISTORY:
@@ -238,6 +235,7 @@ static void menu_stack_pop(unsigned menu_type)
          break;
       case INGAME_MENU_VIDEO_OPTIONS:
       case INGAME_MENU_INPUT_OPTIONS:
+      case INGAME_MENU_PATH_OPTIONS:
          selected = FIRST_INGAME_MENU_SETTING;
          rgui->frame_buf_show = true;
          break;
@@ -279,6 +277,9 @@ static void menu_stack_push(unsigned menu_type, bool prev_dir)
       case INGAME_MENU_INPUT_OPTIONS:
          selected = FIRST_CONTROLS_SETTING_PAGE_1;
          break;
+      case INGAME_MENU_PATH_OPTIONS:
+         selected = FIRST_PATH_SETTING;
+         break;
       case GENERAL_VIDEO_MENU:
          selected = FIRST_VIDEO_SETTING;
          break;
@@ -293,9 +294,6 @@ static void menu_stack_push(unsigned menu_type, bool prev_dir)
          break;
       case EMU_AUDIO_MENU:
          selected = FIRST_EMU_AUDIO_SETTING;
-         break;
-      case PATH_MENU:
-         selected = FIRST_PATH_SETTING;
          break;
       default:
          break;
@@ -397,8 +395,9 @@ static void display_menubar(uint8_t menu_type)
       case EMU_AUDIO_MENU:
          strlcpy(title, "Retro Audio", sizeof(title));
          break;
-      case PATH_MENU:
-         strlcpy(title, "Path", sizeof(title));
+      case INGAME_MENU_PATH_OPTIONS:
+      case INGAME_MENU_PATH_OPTIONS_MODE:
+         strlcpy(title, "Path Options", sizeof(title));
          break;
    }
 
@@ -1132,7 +1131,7 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
          if (input & (1ULL << DEVICE_NAV_START))
             settings_set(1ULL << S_DEF_INFO_MSG);
          break;
-      case SETTING_EMU_REWIND_ENABLED:
+      case INGAME_MENU_REWIND_ENABLED:
          if ((input & (1ULL << DEVICE_NAV_LEFT)) || (input & (1ULL << DEVICE_NAV_RIGHT)) || (input & (1ULL << DEVICE_NAV_B)))
          {
             settings_set(1ULL << S_REWIND);
@@ -1152,7 +1151,7 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
             }
          }
          break;
-      case SETTING_EMU_REWIND_GRANULARITY:
+      case INGAME_MENU_REWIND_GRANULARITY:
          if (input & (1ULL << DEVICE_NAV_LEFT))
          {
             if (g_settings.rewind_granularity > 1)
@@ -1577,6 +1576,10 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
          if (input & (1ULL << DEVICE_NAV_B))
             menu_stack_push(INGAME_MENU_INPUT_OPTIONS, false);
          break;
+      case INGAME_MENU_PATH_OPTIONS_MODE:
+         if (input & (1ULL << DEVICE_NAV_B))
+            menu_stack_push(INGAME_MENU_PATH_OPTIONS, false);
+         break;
 #ifdef HAVE_SHADER_MANAGER
       case SHADERMAN_LOAD_CGP:
          if ((input & (1ULL << DEVICE_NAV_LEFT)) || (input & (1ULL << DEVICE_NAV_RIGHT)) || (input & (1ULL << DEVICE_NAV_B)))
@@ -1768,10 +1771,6 @@ static int select_setting(void *data, uint64_t input)
          first_setting = FIRST_EMU_AUDIO_SETTING;
          max_settings = MAX_NO_OF_EMU_AUDIO_SETTINGS;
          break;
-      case PATH_MENU:
-         first_setting = FIRST_PATH_SETTING;
-         max_settings = MAX_NO_OF_PATH_SETTINGS;
-         break;
       case INGAME_MENU:
          first_setting = FIRST_INGAME_MENU_SETTING;
          max_settings = MAX_NO_OF_INGAME_MENU_SETTINGS;
@@ -1779,6 +1778,10 @@ static int select_setting(void *data, uint64_t input)
       case INGAME_MENU_INPUT_OPTIONS:
          first_setting = FIRST_CONTROLS_SETTING_PAGE_1;
          max_settings = MAX_NO_OF_CONTROLS_SETTINGS;
+         break;
+      case INGAME_MENU_PATH_OPTIONS:
+         first_setting = FIRST_PATH_SETTING;
+         max_settings = MAX_NO_OF_PATH_SETTINGS;
          break;
       case INGAME_MENU_VIDEO_OPTIONS:
          first_setting = FIRST_SHADERMAN_SETTING;
@@ -1963,7 +1966,7 @@ static int select_setting(void *data, uint64_t input)
             snprintf(setting_text, sizeof(setting_text), (g_extern.lifecycle_mode_state & (1ULL << MODE_INFO_DRAW)) ? "ON" : "OFF");
             strlcpy(comment, "INFO - Show onscreen info messages in the menu.", sizeof(comment));
             break;
-         case SETTING_EMU_REWIND_ENABLED:
+         case INGAME_MENU_REWIND_ENABLED:
             strlcpy(text, "Rewind", sizeof(text));
             if (g_settings.rewind_enable)
             {
@@ -1978,7 +1981,7 @@ static int select_setting(void *data, uint64_t input)
                      sizeof(comment));
             }
             break;
-         case SETTING_EMU_REWIND_GRANULARITY:
+         case INGAME_MENU_REWIND_GRANULARITY:
             strlcpy(text, "Rewind Granularity", sizeof(text));
             snprintf(setting_text, sizeof(setting_text), "%d", g_settings.rewind_granularity);
             strlcpy(comment, "INFO - Set the amount of frames to 'rewind'.", sizeof(comment));
@@ -2179,6 +2182,11 @@ static int select_setting(void *data, uint64_t input)
             strlcpy(text, "Input Options", sizeof(text));
             strlcpy(setting_text, "...", sizeof(setting_text));
             strlcpy(comment, "Set and manage input options.", sizeof(comment));
+            break;
+         case INGAME_MENU_PATH_OPTIONS_MODE:
+            strlcpy(text, "Path Options", sizeof(text));
+            strlcpy(setting_text, "...", sizeof(setting_text));
+            strlcpy(comment, "Set and manage path options.", sizeof(comment));
             break;
          case INGAME_MENU_FRAME_ADVANCE:
             strlcpy(text, "Frame Advance", sizeof(text));
@@ -2404,6 +2412,7 @@ static int select_setting(void *data, uint64_t input)
 
       if (rgui->menu_type != INGAME_MENU_INPUT_OPTIONS
             || rgui->menu_type != INGAME_MENU_VIDEO_OPTIONS
+            || rgui->menu_type != INGAME_MENU_PATH_OPTIONS
             || rgui->menu_type != INGAME_MENU
             )
          menu_stack_push(rgui->menu_type + 1, false);
@@ -3097,10 +3106,10 @@ int rgui_iterate(rgui_handle_t *rgui)
       case EMU_GENERAL_MENU:
       case EMU_VIDEO_MENU:
       case EMU_AUDIO_MENU:
-      case PATH_MENU:
       case INGAME_MENU:
       case INGAME_MENU_VIDEO_OPTIONS:
       case INGAME_MENU_INPUT_OPTIONS:
+      case INGAME_MENU_PATH_OPTIONS:
          return select_setting(rgui, rgui->trigger_state);
    }
 
