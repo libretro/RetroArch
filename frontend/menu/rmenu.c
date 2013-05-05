@@ -538,7 +538,7 @@ static int select_file(void *data, uint64_t input)
                break;
 #endif
             case INPUT_PRESET_CHOICE:
-               strlcpy(g_extern.file_state.input_cfg_path, path, sizeof(g_extern.file_state.input_cfg_path));
+               strlcpy(g_extern.input_config_path, path, sizeof(g_extern.input_config_path));
                config_read_keybinds(path);
                break;
             case BORDER_CHOICE:
@@ -1979,8 +1979,8 @@ static int select_setting(void *data, uint64_t input)
             break;
          case SETTING_CONTROLS_SCHEME:
             strlcpy(text, "Control Scheme Preset", sizeof(text));
-            snprintf(comment, sizeof(comment), "INFO - Input scheme preset [%s] is selected.", g_extern.file_state.input_cfg_path);
-            strlcpy(setting_text, g_extern.file_state.input_cfg_path, sizeof(setting_text));
+            snprintf(comment, sizeof(comment), "INFO - Input scheme preset [%s] is selected.", g_extern.input_config_path);
+            strlcpy(setting_text, g_extern.input_config_path, sizeof(setting_text));
             break;
          case SETTING_CONTROLS_NUMBER:
             strlcpy(text, "Player", sizeof(text));

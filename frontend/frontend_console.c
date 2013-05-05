@@ -22,8 +22,6 @@
 #include "../config.def.h"
 #include "menu/rmenu.h"
 
-char input_path[1024];
-
 #if defined(__CELLOS_LV2__)
 #include "platform/platform_ps3_exec.c"
 #include "platform/platform_ps3.c"
@@ -126,8 +124,8 @@ int rarch_main(int argc, char *argv[])
    char core_name[64];
 
    libretro_get_current_core_pathname(core_name, sizeof(core_name));
-   snprintf(input_path, sizeof(input_path), "%s/%s.cfg", default_paths.input_presets_dir, core_name);
-   config_read_keybinds(input_path);
+   snprintf(g_extern.input_config_path, sizeof(g_extern.input_config_path), "%s/%s.cfg", default_paths.input_presets_dir, core_name);
+   config_read_keybinds(g_extern.input_config_path);
 #endif
 
    menu_init();
@@ -192,7 +190,7 @@ int rarch_main(int argc, char *argv[])
 
 #ifdef GEKKO
    /* Per-core input config saving */
-   config_save_keybinds(input_path);
+   config_save_keybinds(g_extern.input_config_path);
 #endif
 
    if (g_extern.main_is_init)

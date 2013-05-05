@@ -325,6 +325,7 @@ struct global
 #endif
    char config_path[PATH_MAX];
    char append_config_path[PATH_MAX];
+   char input_config_path[PATH_MAX];
 
 #ifdef HAVE_FILE_LOGGER
    char default_log_file[PATH_MAX];
@@ -576,10 +577,6 @@ struct global
    uint64_t lifecycle_state;
    uint64_t lifecycle_mode_state;
 
-   struct
-   {
-      char input_cfg_path[PATH_MAX];
-   } file_state;
 
    // If this is non-NULL. RARCH_LOG and friends will write to this file.
    FILE *log_file;
