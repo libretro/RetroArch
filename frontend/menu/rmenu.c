@@ -232,9 +232,12 @@ static void menu_stack_pop(unsigned menu_type)
          selected = FIRST_INGAME_MENU_SETTING;
          rgui->frame_buf_show = true;
          break;
+      case INGAME_MENU_SHADER_OPTIONS:
+         selected = FIRST_VIDEO_SETTING;
+         break;
 #ifdef HAVE_SHADER_MANAGER
       case CGP_CHOICE:
-         selected = FIRST_VIDEO_SETTING;
+         selected = FIRST_SHADERMAN_SETTING;
          break;
 #endif
       default:
@@ -266,6 +269,9 @@ static void menu_stack_push(unsigned menu_type, bool prev_dir)
          break;
       case INGAME_MENU_VIDEO_OPTIONS:
          selected = FIRST_VIDEO_SETTING;
+         break;
+      case INGAME_MENU_SHADER_OPTIONS:
+         selected = FIRST_SHADERMAN_SETTING;
          break;
       case INGAME_MENU_AUDIO_OPTIONS:
          selected = FIRST_AUDIO_SETTING;
@@ -350,6 +356,10 @@ static void display_menubar(uint8_t menu_type)
       case INGAME_MENU_VIDEO_OPTIONS:
       case INGAME_MENU_VIDEO_OPTIONS_MODE:
          strlcpy(title, "Video Options", sizeof(title));
+         break;
+      case INGAME_MENU_SHADER_OPTIONS:
+      case INGAME_MENU_SHADER_OPTIONS_MODE:
+         strlcpy(title, "Shader Options", sizeof(title));
          break;
       case INGAME_MENU_INPUT_OPTIONS:
       case INGAME_MENU_INPUT_OPTIONS_MODE:
@@ -1522,6 +1532,10 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
          if (input & (1ULL << DEVICE_NAV_B))
             menu_stack_push(INGAME_MENU_VIDEO_OPTIONS, false);
          break;
+      case INGAME_MENU_SHADER_OPTIONS_MODE:
+         if (input & (1ULL << DEVICE_NAV_B))
+            menu_stack_push(INGAME_MENU_SHADER_OPTIONS, false);
+         break;
       case INGAME_MENU_AUDIO_OPTIONS_MODE:
          if (input & (1ULL << DEVICE_NAV_B))
             menu_stack_push(INGAME_MENU_AUDIO_OPTIONS, false);
@@ -1727,13 +1741,15 @@ static int select_setting(void *data, uint64_t input)
          break;
       case INGAME_MENU_VIDEO_OPTIONS:
          first_setting = FIRST_VIDEO_SETTING;
-         max_settings = SHADERMAN_SHADER_LAST;
-
+         max_settings = MAX_NO_OF_VIDEO_SETTINGS;
+         break;
+      case INGAME_MENU_SHADER_OPTIONS:
+         first_setting = FIRST_SHADERMAN_SETTING;
 #ifdef HAVE_SHADER_MANAGER
          switch (rgui->shader.passes)
          {
             case 0:
-               max_settings = MAX_NO_OF_VIDEO_SETTINGS;
+               max_settings = MAX_NO_OF_SHADERMAN_SETTINGS;
                break;
             case 1:
                max_settings = SHADERMAN_SHADER_0_SCALE+1;
@@ -2084,6 +2100,11 @@ static int select_setting(void *data, uint64_t input)
             strlcpy(text, "Core Options", sizeof(text));
             strlcpy(setting_text, "...", sizeof(setting_text));
             strlcpy(comment, "Set core-specific options.", sizeof(comment));
+            break;
+         case INGAME_MENU_SHADER_OPTIONS_MODE:
+            strlcpy(text, "Shader Options", sizeof(text));
+            strlcpy(setting_text, "...", sizeof(setting_text));
+            strlcpy(comment, "Set and manage shader options.", sizeof(comment));
             break;
          case INGAME_MENU_LOAD_GAME_HISTORY_MODE:
             strlcpy(text, "Load Game (History)", sizeof(text));
@@ -3013,6 +3034,7 @@ int rgui_iterate(rgui_handle_t *rgui)
       case INGAME_MENU:
       case INGAME_MENU_SETTINGS:
       case INGAME_MENU_VIDEO_OPTIONS:
+      case INGAME_MENU_SHADER_OPTIONS:
       case INGAME_MENU_AUDIO_OPTIONS:
       case INGAME_MENU_INPUT_OPTIONS:
       case INGAME_MENU_PATH_OPTIONS:
