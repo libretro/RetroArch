@@ -741,7 +741,7 @@ static bool osk_callback_enter_rsound(void *data)
    {
       RARCH_LOG("OSK - Applying input data.\n");
       char tmp_str[256];
-      int num = wcstombs(tmp_str, g_extern.console.misc.oskutil_handle.text_buf, sizeof(tmp_str));
+      int num = wcstombs(tmp_str, rgui->oskutil_handle.text_buf, sizeof(tmp_str));
       tmp_str[num] = 0;
       strlcpy(g_settings.audio.device, tmp_str, sizeof(g_settings.audio.device));
       goto do_exit;
@@ -759,9 +759,9 @@ do_exit:
 
 static bool osk_callback_enter_rsound_init(void *data)
 {
-   oskutil_write_initial_message(&g_extern.console.misc.oskutil_handle, L"192.168.1.1");
-   oskutil_write_message(&g_extern.console.misc.oskutil_handle, L"Enter IP address for the RSound Server.");
-   oskutil_start(&g_extern.console.misc.oskutil_handle);
+   oskutil_write_initial_message(&rgui->oskutil_handle, L"192.168.1.1");
+   oskutil_write_message(&rgui->oskutil_handle, L"Enter IP address for the RSound Server.");
+   oskutil_start(&rgui->oskutil_handle);
 
    return true;
 }
@@ -773,7 +773,7 @@ static bool osk_callback_enter_filename(void *data)
       RARCH_LOG("OSK - Applying input data.\n");
       char tmp_str[256];
       char filepath[PATH_MAX];
-      int num = wcstombs(tmp_str, g_extern.console.misc.oskutil_handle.text_buf, sizeof(tmp_str));
+      int num = wcstombs(tmp_str, rgui->oskutil_handle.text_buf, sizeof(tmp_str));
       tmp_str[num] = 0;
 
       switch(rgui->osk_param)
@@ -806,9 +806,9 @@ do_exit:
 
 static bool osk_callback_enter_filename_init(void *data)
 {
-   oskutil_write_initial_message(&g_extern.console.misc.oskutil_handle, L"example");
-   oskutil_write_message(&g_extern.console.misc.oskutil_handle, L"Enter filename for preset");
-   oskutil_start(&g_extern.console.misc.oskutil_handle);
+   oskutil_write_initial_message(&rgui->oskutil_handle, L"example");
+   oskutil_write_message(&rgui->oskutil_handle, L"Enter filename for preset");
+   oskutil_start(&rgui->oskutil_handle);
 
    return true;
 }
@@ -3029,7 +3029,7 @@ rgui_handle_t *rgui_init(void)
 
 
 #ifdef HAVE_OSKUTIL
-   oskutil_params *osk = &g_extern.console.misc.oskutil_handle;
+   oskutil_params *osk = &rgui->oskutil_handle;
    oskutil_init(osk, 0);
 #endif
 

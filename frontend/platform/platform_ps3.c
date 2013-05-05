@@ -143,7 +143,7 @@ static void callback_sysutil_exit(uint64_t status, uint64_t param, void *userdat
 
 #ifndef IS_SALAMANDER
 #ifdef HAVE_OSKUTIL
-   oskutil_params *osk = &g_extern.console.misc.oskutil_handle;
+   oskutil_params *osk = &rgui->oskutil_handle;
 #endif
    gl_t *gl = driver.video_data;
 
@@ -181,7 +181,7 @@ static void callback_sysutil_exit(uint64_t status, uint64_t param, void *userdat
          break;
       case CELL_SYSUTIL_OSKDIALOG_UNLOADED:
          RARCH_LOG("CELL_SYSUTIL_OSKDIALOG_UNLOADED.\n");
-         sys_memory_container_destroy(g_extern.console.misc.oskutil_handle.containerid);
+         sys_memory_container_destroy(osk->containerid);
          break;
 #endif
    }

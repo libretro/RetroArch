@@ -100,7 +100,6 @@ enum menu_enums
 {
    MODE_GAME = 0,
    MODE_LOAD_GAME,
-   MODE_LOAD_FIRST_SHADER,
    MODE_INIT,
    MODE_MENU,
    MODE_MENU_WIDESCREEN,
@@ -572,13 +571,6 @@ struct global
          unsigned volume_level;
 #endif
       } sound;
-
-#ifdef HAVE_OSKUTIL
-      struct
-      {
-         oskutil_params oskutil_handle;
-      } misc;
-#endif
    } console;
 
    uint64_t lifecycle_state;

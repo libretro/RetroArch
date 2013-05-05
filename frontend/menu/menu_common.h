@@ -244,6 +244,7 @@ typedef struct
 
 #ifdef HAVE_OSKUTIL
    unsigned osk_param;
+   oskutil_params oskutil_handle;
    bool (*osk_init)(void *data);
    bool (*osk_callback)(void *data);
 #endif
