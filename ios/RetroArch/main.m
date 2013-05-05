@@ -57,16 +57,6 @@ void ios_copy_input(ios_input_data_t* data)
       data->pad_axis[i] = btpad_get_axis(i);
 }
 
-static uint32_t translate_mods(uint32_t flags)
-{
-   uint32_t result = 0;
-   if (flags & GSEVENT_MOD_ALT)   result |= RETROKMOD_ALT;
-   if (flags & GSEVENT_MOD_CMD)   result |= RETROKMOD_META;
-   if (flags & GSEVENT_MOD_SHIFT) result |= RETROKMOD_SHIFT;
-   if (flags & GSEVENT_MOD_CTRL)  result |= RETROKMOD_CTRL;
-   return result;
-}
-
 static void handle_touch_event(NSArray* touches)
 {
    const int numTouches = [touches count];
@@ -85,63 +75,6 @@ static void handle_touch_event(NSArray* touches)
          g_input_data.touches[g_input_data.touch_count ++].screen_y = coord.y * scale;
       }
    }
-}
-
-static void handle_key_event(unsigned keycode, bool down, uint8_t* eventMem)
-{
-   if (keycode < MAX_KEYS)
-      g_input_data.keys[keycode] = down;
-
-   // Key events
-   // ios_add_key_event(eventType == GSEVENT_TYPE_KEYDOWN, data[0], data[1], translate_mods(*(uint32_t*)&eventMem[0x30]));
-   // printf("%d %d %d %08X\n", data[0], data[1], data[2], *(uint32_t*)&eventMem[0x30]);
-}
-
-static void handle_modifier_key_event(uint8_t* eventMem)
-{
-#if 0
-   static const struct
-   {
-      unsigned key;
-      unsigned retrokey;
-      uint32_t hidid;
-   }  modmap[] =
-   {
-      { 0x37, RETROK_LMETA, KEY_LeftGUI },
-      { 0x36, RETROK_RMETA, KEY_RightGUI },
-      { 0x38, RETROK_LSHIFT, KEY_LeftShift },
-      { 0x3C, RETROK_RSHIFT, KEY_RightShift },
-      { 0x3A, RETROK_LALT, KEY_LeftAlt },
-      { 0x3D, RETROK_RALT, KEY_RightAlt },
-      { 0x3B, RETROK_LCTRL, KEY_LeftControl },
-      { 0x3E, RETROK_RCTRL, KEY_RightControl },
-      { 0x39, RETROK_CAPSLOCK, KEY_CapsLock },
-      { 0, RETROK_UNKNOWN, 0}
-   };
-         
-   static bool keystate[9];
-         
-   // TODO: Not sure how to add this.
-   //       The key value indicates the key that was pressed or released.
-   //       The flags indicates the current modifier state.
-   //       There is no way to determine if this is a keydown or a keyup event,
-   //       except to look at the flags, but the bits in flags are shared between
-   //       the left and right versions of a given key pair.
-   //       The current method assumes that all key up and down events are processed,
-   //       otherwise it may become confused.
-   const uint32_t key = *(uint32_t*)&eventMem[0x3C];
-         
-   for (int i = 0; i < 9; i ++)
-   {
-      if (key == modmap[i].key)
-      {
-         keystate[i] = !keystate[i];
-         g_input_data.keys[modmap[i].hidid] = keystate[i];
-         // ios_add_key_event(keystate[i], modmap[i].retrokey, 0, translate_mods(*(uint32_t*)&eventMem[0x30]));
-      }
-   }
-
-#endif
 }
 
 static void handle_icade_event(unsigned keycode)
@@ -184,11 +117,9 @@ static void handle_icade_event(unsigned keycode)
    
    if ([[event allTouches] count])
       handle_touch_event(event.allTouches.allObjects);
-
-   // Stolen from: http://nacho4d-nacho4d.blogspot.com/2012/01/catching-keyboard-events-in-ios.html
-   // TODO: Key events need to be synced, I just disabled them because the data isn't available on device (only in simulator)
    else if ([event respondsToSelector:@selector(_gsEvent)])
    {
+      // Stolen from: http://nacho4d-nacho4d.blogspot.com/2012/01/catching-keyboard-events-in-ios.html
       uint8_t* eventMem = (uint8_t*)(void*)CFBridgingRetain([event performSelector:@selector(_gsEvent)]);
       int eventType = eventMem ? *(int*)&eventMem[8] : 0;
 
@@ -196,13 +127,11 @@ static void handle_icade_event(unsigned keycode)
       {
          uint16_t key = *(uint16_t*)&eventMem[0x3C];
 
-         if (!use_icade)
-            handle_key_event(key, eventType == GSEVENT_TYPE_KEYDOWN, eventMem);
+         if (!use_icade && key < MAX_KEYS)
+            g_input_data.keys[key] = (eventType == GSEVENT_TYPE_KEYDOWN);
          else if (eventType == GSEVENT_TYPE_KEYDOWN)
             handle_icade_event(key);
       }
-      else if(eventType == GSEVENT_TYPE_MODS)
-         handle_modifier_key_event(eventMem);
 
       CFBridgingRelease(eventMem);
    }

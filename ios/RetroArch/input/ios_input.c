@@ -26,36 +26,6 @@ static const struct rarch_key_map rarch_key_map_hidusage[];
 
 ios_input_data_t g_ios_input_data;
 
-// Key event data, called in main.m
-#define MAX_KEY_EVENTS 32
-
-static struct
-{
-   bool down;
-   unsigned keycode;
-   uint32_t character;
-   uint16_t modifiers;
-}  g_key_events[MAX_KEY_EVENTS];
-static int g_pending_key_events;
-
-void ios_add_key_event(bool down, unsigned keycode, uint32_t character, uint16_t keyModifiers)
-{
-   if (!g_extern.system.key_event)
-      return;
-
-   if (g_pending_key_events == MAX_KEY_EVENTS)
-   {
-      RARCH_LOG("Key event buffer overlow");
-      return;
-   }
-   
-   g_key_events[g_pending_key_events].down = down;
-   g_key_events[g_pending_key_events].keycode = keycode;
-   g_key_events[g_pending_key_events].character = character;
-   g_key_events[g_pending_key_events].modifiers = keyModifiers;
-   g_pending_key_events ++;
-}
-
 // Non-exported helpers
 static bool ios_key_pressed(enum retro_key key)
 {
@@ -74,24 +44,11 @@ static bool ios_is_pressed(unsigned port_num, const struct retro_keybind *binds,
 static void *ios_input_init(void)
 {
    input_init_keyboard_lut(rarch_key_map_hidusage);
-   g_pending_key_events = 0;
    return (void*)-1;
 }
 
 static void ios_input_poll(void *data)
 {
-   if (g_extern.system.key_event)
-   {
-      for (int i = 0; i < g_pending_key_events; i ++)
-      {
-         const enum retro_key keycode = input_translate_keysym_to_rk(g_key_events[i].keycode);
-         g_extern.system.key_event(g_key_events[i].down, keycode, g_key_events[i].character, g_key_events[i].modifiers);
-      }
-   }
-   
-   g_pending_key_events = 0;
-
-
    for (int i = 0; i != g_ios_input_data.touch_count; i ++)
    {
       input_translate_coord_viewport(g_ios_input_data.touches[i].screen_x, g_ios_input_data.touches[i].screen_y,
