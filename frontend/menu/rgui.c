@@ -182,6 +182,7 @@ static bool menu_type_is_settings(unsigned type)
       type == RGUI_SETTINGS_AUDIO_OPTIONS ||
       type == RGUI_SETTINGS_DISK_OPTIONS ||
       type == RGUI_SETTINGS_PATH_OPTIONS ||
+      type == RGUI_SETTINGS_OPTIONS ||
       (type == RGUI_SETTINGS_INPUT_OPTIONS);
 }
 
@@ -419,6 +420,7 @@ static void render_text(rgui_handle_t *rgui)
 #endif
    else if ((menu_type == RGUI_SETTINGS_INPUT_OPTIONS) ||
          (menu_type == RGUI_SETTINGS_PATH_OPTIONS) ||
+         (menu_type == RGUI_SETTINGS_OPTIONS) ||
          (menu_type == RGUI_SETTINGS_CUSTOM_VIEWPORT || menu_type == RGUI_SETTINGS_CUSTOM_VIEWPORT_2) ||
          menu_type == RGUI_SETTINGS)
       snprintf(title, sizeof(title), "MENU %s", dir);
@@ -634,6 +636,7 @@ static void render_text(rgui_handle_t *rgui)
             case RGUI_SETTINGS_DISK_APPEND:
             case RGUI_SETTINGS_INPUT_OPTIONS:
             case RGUI_SETTINGS_PATH_OPTIONS:
+            case RGUI_SETTINGS_OPTIONS:
                strlcpy(type_str, "...", sizeof(type_str));
                break;
             case RGUI_SETTINGS_BIND_PLAYER:
@@ -1182,6 +1185,12 @@ static void rgui_settings_disc_options_populate_entries(rgui_handle_t *rgui)
    rgui_list_push(rgui->selection_buf, "Disk Image Append", RGUI_SETTINGS_DISK_APPEND, 0);
 }
 
+static void rgui_settings_options_populate_entries(rgui_handle_t *rgui)
+{
+   rgui_list_clear(rgui->selection_buf);
+   rgui_list_push(rgui->selection_buf, "Debug Info Messages", RGUI_SETTINGS_DEBUG_TEXT, 0);
+}
+
 static void rgui_settings_populate_entries(rgui_handle_t *rgui)
 {
    rgui_list_clear(rgui->selection_buf);
@@ -1197,6 +1206,7 @@ static void rgui_settings_populate_entries(rgui_handle_t *rgui)
    rgui_list_push(rgui->selection_buf, "Audio Options", RGUI_SETTINGS_AUDIO_OPTIONS, 0);
    rgui_list_push(rgui->selection_buf, "Input Options", RGUI_SETTINGS_INPUT_OPTIONS, 0);
    rgui_list_push(rgui->selection_buf, "Path Options", RGUI_SETTINGS_PATH_OPTIONS, 0);
+   rgui_list_push(rgui->selection_buf, "Settings", RGUI_SETTINGS_OPTIONS, 0);
 
    if (g_extern.main_is_init && !g_extern.libretro_dummy)
    {
@@ -1216,11 +1226,6 @@ static void rgui_settings_populate_entries(rgui_handle_t *rgui)
 #if defined(HAVE_THREADS) && !defined(RARCH_CONSOLE)
    rgui_list_push(rgui->selection_buf, "SRAM Autosave", RGUI_SETTINGS_SRAM_AUTOSAVE, 0);
 #endif
-#ifdef GEKKO
-   rgui_list_push(rgui->selection_buf, "SRAM Saves in \"sram\" Dir", RGUI_SETTINGS_SRAM_DIR, 0);
-   rgui_list_push(rgui->selection_buf, "State Saves in \"state\" Dir", RGUI_SETTINGS_STATE_DIR, 0);
-#endif
-   rgui_list_push(rgui->selection_buf, "Debug Text", RGUI_SETTINGS_DEBUG_TEXT, 0);
 #ifndef HAVE_DYNAMIC
    rgui_list_push(rgui->selection_buf, "Restart RetroArch", RGUI_SETTINGS_RESTART_EMULATOR, 0);
 #endif
@@ -2016,6 +2021,8 @@ static int rgui_settings_iterate(rgui_handle_t *rgui, rgui_action_t action)
          rgui_settings_controller_populate_entries(rgui);
       else if ((menu_type == RGUI_SETTINGS_PATH_OPTIONS))
          rgui_settings_path_populate_entries(rgui);
+      else if ((menu_type == RGUI_SETTINGS_OPTIONS))
+         rgui_settings_options_populate_entries(rgui);
       else if (menu_type == RGUI_SETTINGS_CORE_OPTIONS)
          rgui_settings_core_options_populate_entries(rgui);
       else if (menu_type == RGUI_SETTINGS_AUDIO_OPTIONS)
