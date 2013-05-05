@@ -571,7 +571,10 @@ void menu_ticker_line(char *buf, size_t len, unsigned index, const char *str, bo
    }
 
    if (!selected)
-      snprintf(buf, len, "%.*s...", len - 3, str);
+   {
+      strlcpy(buf, str, len + 1 - 3);
+      strlcat(buf, "...", len + 1);
+   }
    else
    {
       // Wrap long strings in options with some kind of ticker line.
