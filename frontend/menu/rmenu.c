@@ -1233,29 +1233,6 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
          if (input & (1ULL << DEVICE_NAV_START))
             strlcpy(g_settings.system_directory, default_paths.system_dir, sizeof(g_settings.system_directory));
          break;
-      case SETTING_ENABLE_SRAM_PATH:
-         if ((input & (1ULL << DEVICE_NAV_LEFT)) || (input & (1ULL << DEVICE_NAV_RIGHT)))
-         {
-            if (g_extern.lifecycle_mode_state & (1ULL << MODE_LOAD_GAME_SRAM_DIR_ENABLE))
-               g_extern.lifecycle_mode_state &= ~(1ULL << MODE_LOAD_GAME_SRAM_DIR_ENABLE);
-            else
-               g_extern.lifecycle_mode_state |= (1ULL << MODE_LOAD_GAME_SRAM_DIR_ENABLE);
-         }
-
-         if (input & (1ULL << DEVICE_NAV_START))
-            g_extern.lifecycle_mode_state |= (1ULL << MODE_LOAD_GAME_SRAM_DIR_ENABLE);
-         break;
-      case SETTING_ENABLE_STATE_PATH:
-         if ((input & (1ULL << DEVICE_NAV_LEFT)) || (input & (1ULL << DEVICE_NAV_RIGHT)))
-         {
-            if (g_extern.lifecycle_mode_state & (1ULL << MODE_LOAD_GAME_STATE_DIR_ENABLE))
-               g_extern.lifecycle_mode_state &= ~(1ULL << MODE_LOAD_GAME_STATE_DIR_ENABLE);
-            else
-               g_extern.lifecycle_mode_state |= (1ULL << MODE_LOAD_GAME_STATE_DIR_ENABLE);
-         }
-         if (input & (1ULL << DEVICE_NAV_START))
-            g_extern.lifecycle_mode_state |= (1ULL << MODE_LOAD_GAME_STATE_DIR_ENABLE);
-         break;
       case SETTING_PATH_DEFAULT_ALL:
          if ((input & (1ULL << DEVICE_NAV_LEFT)) || (input & (1ULL << DEVICE_NAV_RIGHT)) || (input & (1ULL << DEVICE_NAV_B)) || (input & (1ULL << DEVICE_NAV_START)))
          {
@@ -1999,16 +1976,6 @@ static int select_setting(void *data, uint64_t input)
             strlcpy(text, "System Directory", sizeof(text));
             strlcpy(setting_text, g_settings.system_directory, sizeof(setting_text));
             strlcpy(comment, "INFO - Set the default [System directory] path.", sizeof(comment));
-            break;
-         case SETTING_ENABLE_SRAM_PATH:
-            snprintf(text, sizeof(text), "Custom SRAM Dir Enable");
-            snprintf(setting_text, sizeof(setting_text), (g_extern.lifecycle_mode_state & (1ULL << MODE_LOAD_GAME_SRAM_DIR_ENABLE)) ? "ON" : "OFF");
-            snprintf(comment, sizeof(comment), "INFO - [Custom SRAM Dir Path] is set to '%s'.", (g_extern.lifecycle_mode_state & (1ULL << MODE_LOAD_GAME_SRAM_DIR_ENABLE)) ? "ON" : "OFF");
-            break;
-         case SETTING_ENABLE_STATE_PATH:
-            snprintf(text, sizeof(text), "Custom Savestate Dir Enable");
-            snprintf(setting_text, sizeof(setting_text), (g_extern.lifecycle_mode_state & (1ULL << MODE_LOAD_GAME_STATE_DIR_ENABLE)) ? "ON" : "OFF");
-            snprintf(comment, sizeof(comment), "INFO - [Custom Savestate Dir Path] is set to '%s'.", (g_extern.lifecycle_mode_state & (1ULL << MODE_LOAD_GAME_STATE_DIR_ENABLE)) ? "ON" : "OFF");
             break;
          case SETTING_CONTROLS_SCHEME:
             strlcpy(text, "Control Scheme Preset", sizeof(text));

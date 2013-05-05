@@ -586,12 +586,6 @@ static void render_text(rgui_handle_t *rgui)
             case RGUI_SETTINGS_AUDIO_CONTROL_RATE_DELTA:
                snprintf(type_str, sizeof(type_str), "%.3f", g_settings.audio.rate_control_delta);
                break;
-            case RGUI_SETTINGS_SRAM_DIR:
-               snprintf(type_str, sizeof(type_str), (g_extern.lifecycle_mode_state & (1ULL << MODE_LOAD_GAME_SRAM_DIR_ENABLE)) ? "ON" : "OFF");
-               break;
-            case RGUI_SETTINGS_STATE_DIR:
-               snprintf(type_str, sizeof(type_str), (g_extern.lifecycle_mode_state & (1ULL << MODE_LOAD_GAME_STATE_DIR_ENABLE)) ? "ON" : "OFF");
-               break;
             case RGUI_SETTINGS_DEBUG_TEXT:
                snprintf(type_str, sizeof(type_str), (g_extern.lifecycle_mode_state & (1ULL << MODE_FPS_DRAW)) ? "ON" : "OFF");
                break;
@@ -919,18 +913,6 @@ static int rgui_settings_toggle_setting(rgui_handle_t *rgui, unsigned setting, r
             settings_set(1ULL << S_AUDIO_CONTROL_RATE_DECREMENT);
          else if (action == RGUI_ACTION_RIGHT)
             settings_set(1ULL << S_AUDIO_CONTROL_RATE_INCREMENT);
-         break;
-      case RGUI_SETTINGS_SRAM_DIR:
-         if (action == RGUI_ACTION_START || action == RGUI_ACTION_LEFT)
-            g_extern.lifecycle_mode_state &= ~(1ULL << MODE_LOAD_GAME_SRAM_DIR_ENABLE);
-         else if (action == RGUI_ACTION_RIGHT)
-            g_extern.lifecycle_mode_state |= (1ULL << MODE_LOAD_GAME_SRAM_DIR_ENABLE);
-         break;
-      case RGUI_SETTINGS_STATE_DIR:
-         if (action == RGUI_ACTION_START || action == RGUI_ACTION_LEFT)
-            g_extern.lifecycle_mode_state &= ~(1ULL << MODE_LOAD_GAME_STATE_DIR_ENABLE);
-         else if (action == RGUI_ACTION_RIGHT)
-            g_extern.lifecycle_mode_state |= (1ULL << MODE_LOAD_GAME_STATE_DIR_ENABLE);
          break;
       case RGUI_SETTINGS_DEBUG_TEXT:
          if (action == RGUI_ACTION_START || action == RGUI_ACTION_LEFT)
