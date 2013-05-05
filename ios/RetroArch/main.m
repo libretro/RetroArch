@@ -42,6 +42,7 @@
 
 static ios_input_data_t g_input_data;
 
+static bool enable_btstack;
 static bool use_icade;
 static uint32_t icade_buttons;
 
@@ -223,7 +224,7 @@ static void event_reload_config(void* userdata)
    self.system_directory = [NSString stringWithFormat:@"%@/.RetroArch", kDOCSFOLDER];
    self.systemConfigPath = [NSString stringWithFormat:@"%@/.RetroArch/frontend.cfg", kDOCSFOLDER];
    mkdir([self.system_directory UTF8String], 0755);
-         
+
    // Setup window
    self.delegate = self;
    [self pushViewController:[RADirectoryList directoryListOrGridWithPath:kDOCSFOLDER] animated:YES];
@@ -231,6 +232,8 @@ static void event_reload_config(void* userdata)
    _window = [[UIWindow alloc] initWithFrame:[[UIScreen mainScreen] bounds]];
    _window.rootViewController = self;
    [_window makeKeyAndVisible];
+
+   [self refreshSystemConfig];
 }
 
 - (void)applicationWillEnterForeground:(UIApplication *)application
@@ -250,7 +253,7 @@ static void event_reload_config(void* userdata)
    [[UIApplication sharedApplication] setStatusBarHidden:_isGameTop withAnimation:UIStatusBarAnimationNone];
    self.navigationBarHidden = _isGameTop;
 
-   self.topViewController.navigationItem.rightBarButtonItem = [self createBluetoothButton];
+   self.topViewController.navigationItem.rightBarButtonItem = [self createSettingsButton];
 }
 
 // UINavigationController: Never animate when pushing onto, or popping, an RAGameView
@@ -308,9 +311,6 @@ static void event_reload_config(void* userdata)
    if (_isRunning)
    {
       _isRunning = false;
-     
-      // Stop bluetooth (might be annoying but forgetting could eat battery of device AND wiimote)
-      [self stopBluetooth];
       
       //
       [self popToViewController:[RAGameView get] animated:NO];
@@ -335,20 +335,32 @@ static void event_reload_config(void* userdata)
 - (void)refreshSystemConfig
 {
    // Read load time settings
-   // TODO: Do this better
    config_file_t* conf = config_file_new([self.systemConfigPath UTF8String]);
 
-   bool autoStartBluetooth = false;
-   if (conf && config_get_bool(conf, "ios_auto_bluetooth", &autoStartBluetooth) && autoStartBluetooth)
-      [self startBluetooth];
-
    if (conf)
+   {
       config_get_bool(conf, "ios_use_icade", &use_icade);
+      config_get_bool(conf, "ios_use_btstack", &enable_btstack);
+      
+      if (enable_btstack)
+         [self startBluetooth];
+      else
+         [self stopBluetooth];
+   }
 
    config_file_free(conf);
 }
 
 #pragma mark PAUSE MENU
+- (UIBarButtonItem*)createSettingsButton
+{
+   return [[UIBarButtonItem alloc]
+         initWithTitle:@"Settings"
+                 style:UIBarButtonItemStyleBordered
+                target:[RetroArch_iOS get]
+                action:@selector(showSystemSettings)];
+}
+
 - (IBAction)showPauseMenu:(id)sender
 {
    if (_isRunning && !_isPaused && _isGameTop)
@@ -412,37 +424,16 @@ static void event_reload_config(void* userdata)
 }
 
 #pragma mark Bluetooth Helpers
-- (UIBarButtonItem*)createBluetoothButton
-{
-   if (btstack_is_loaded())
-   {
-      const bool isBTOn = btstack_is_running();
-      return [[UIBarButtonItem alloc]
-               initWithTitle:isBTOn ? @"Stop Bluetooth" : @"Start Bluetooth"
-               style:UIBarButtonItemStyleBordered
-               target:[RetroArch_iOS get]
-               action:isBTOn ? @selector(stopBluetooth) : @selector(startBluetooth)];
-   }
-   else
-      return nil;
-}
-
 - (IBAction)startBluetooth
 {
    if (btstack_is_loaded() && !btstack_is_running())
-   {
       btstack_start();
-     [self.topViewController.navigationItem setRightBarButtonItem:[self createBluetoothButton] animated:YES];
-   }
 }
 
 - (IBAction)stopBluetooth
 {
    if (btstack_is_loaded())
-   {
       btstack_stop();
-      [self.topViewController.navigationItem setRightBarButtonItem:[self createBluetoothButton] animated:YES];
-   }
 }
 
 @end

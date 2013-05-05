@@ -85,7 +85,7 @@
 
 - (void)tableView:(UITableView *)tableView accessoryButtonTappedForRowWithIndexPath:(NSIndexPath *)indexPath
 {
-   [RetroArch_iOS.get pushViewController:[[RASettingsList alloc] initWithModule:[self moduleInfoForIndexPath:indexPath]] animated:YES];
+   [RetroArch_iOS.get pushViewController:[[RAModuleInfoList alloc] initWithModuleInfo:[self moduleInfoForIndexPath:indexPath]] animated:YES];
 }
 
 - (UITableViewCell*)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath

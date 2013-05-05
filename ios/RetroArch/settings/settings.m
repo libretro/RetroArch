@@ -292,8 +292,10 @@ static RASettingData* custom_action(NSString* action, id data)
          custom_action(@"Diagnostic Log", nil),
          nil],
       [NSArray arrayWithObjects:@"Bluetooth",
+         // TODO: Note that with this turned off the native bluetooth is expected to be a real keyboard
          boolean_setting(config, @"ios_use_icade", @"Native BT is iCade", @"false"),
-         boolean_setting(config, @"ios_auto_bluetooth", @"Auto Enable BTstack", @"false"),
+         // TODO: Make this option only if BTstack is available
+         boolean_setting(config, @"ios_use_btstack", @"Enable BTstack", @"false"),
          nil],
       modules,
       nil
@@ -324,7 +326,10 @@ static RASettingData* custom_action(NSString* action, id data)
    if ([@"Diagnostic Log" isEqualToString:action])
       [[RetroArch_iOS get] pushViewController:[RALogView new] animated:YES];
    else if (data)
-      [[RetroArch_iOS get] pushViewController:[[RASettingsList alloc] initWithModule:(RAModuleInfo*)data] animated:YES];
+   {
+      [RetroArch_iOS.get refreshSystemConfig];
+      [RetroArch_iOS.get pushViewController:[[RASettingsList alloc] initWithModule:(RAModuleInfo*)data] animated:YES];
+   }
 }
 
 @end
