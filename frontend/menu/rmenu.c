@@ -101,6 +101,12 @@ const char drive_mappings[][32] = {
 #endif
 };
 
+#if defined(_XBOX1)
+#define TICKER_LABEL_CHARS_MAX_PER_LINE 16
+#else
+#define TICKER_LABEL_CHARS_MAX_PER_LINE 25
+#endif
+
 #if defined__CELLOS_LV2__
 size_t drive_mapping_idx = 1;
 #elif defined(_XBOX1)
@@ -2245,7 +2251,7 @@ static int select_setting(void *data, uint64_t input)
       }
 
       char setting_text_buf[256];
-      menu_ticker_line(setting_text_buf, 25, g_extern.frame_count / 15, setting_text);
+      menu_ticker_line(setting_text_buf, TICKER_LABEL_CHARS_MAX_PER_LINE, g_extern.frame_count / 15, setting_text);
 
       if (!(j < NUM_ENTRY_PER_PAGE))
       {

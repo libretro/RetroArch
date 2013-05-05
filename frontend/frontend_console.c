@@ -116,7 +116,11 @@ int rarch_main(int argc, char *argv[])
    // Save new libretro core path to config file and exit
    if (path_file_exists(core_exe_path))
       if (libretro_install_core(path_prefix, core_exe_path))
+#ifdef _XBOX1
+    g_extern.system.shutdown = g_extern.system.shutdown;
+#else
 	 g_extern.system.shutdown = true;
+#endif
 #endif
 
 #ifdef GEKKO
