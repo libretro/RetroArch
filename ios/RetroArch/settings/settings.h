@@ -48,10 +48,14 @@ enum SettingTypes
 
 @interface RASettingsSubList : UITableViewController
 - (id)initWithSettings:(NSArray*)values title:(NSString*)title;
-- (void)handleCustomAction:(NSString*)action;
+- (void)handleCustomAction:(NSString*)action withUserData:(id)data;
 - (void)writeSettings:(NSArray*)settingList toConfig:(config_file_t*)config;
 @end
 
 @interface RASettingsList : RASettingsSubList
-+ (void)refreshConfigFile;
++ (void)refreshModuleConfig:(RAModuleInfo*)module;
+- (id)initWithModule:(RAModuleInfo*)module;
+@end
+
+@interface RASystemSettingsList : RASettingsSubList
 @end

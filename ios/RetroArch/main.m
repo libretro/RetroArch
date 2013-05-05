@@ -269,6 +269,8 @@ static void event_reload_config(void* userdata)
    bool _isGameTop;
    bool _isPaused;
    bool _isRunning;
+   
+   RAModuleInfo* _module;
 }
 
 + (void)displayErrorMessage:(NSString*)message
@@ -290,6 +292,7 @@ static void event_reload_config(void* userdata)
 - (void)applicationDidFinishLaunching:(UIApplication *)application
 {
    self.system_directory = [NSString stringWithFormat:@"%@/.RetroArch", kDOCSFOLDER];
+   self.systemConfigPath = [NSString stringWithFormat:@"%@/.RetroArch/frontend.cfg", kDOCSFOLDER];
    mkdir([self.system_directory UTF8String], 0755);
          
    // Setup window
@@ -333,21 +336,21 @@ static void event_reload_config(void* userdata)
 }
 
 #pragma mark EMULATION
-- (void)runGame:(NSString*)path
+- (void)runGame:(NSString*)path withModule:(RAModuleInfo*)module
 {
    if (_isRunning)
       return;
 
-   assert(self.moduleInfo);
+   _module = module;
    
-   [RASettingsList refreshConfigFile];
+   [RASettingsList refreshModuleConfig:module];
    
    [self pushViewController:RAGameView.get animated:NO];
    _isRunning = true;
 
    const char* const sd = [[RetroArch_iOS get].system_directory UTF8String];
-   const char* const cf = (ra_ios_is_file(self.moduleInfo.configPath)) ? [self.moduleInfo.configPath UTF8String] : 0;
-   const char* const libretro = [self.moduleInfo.path UTF8String];
+   const char* const cf = (ra_ios_is_file(_module.configPath)) ? [_module.configPath UTF8String] : 0;
+   const char* const libretro = [_module.path UTF8String];
 
    struct rarch_main_wrap* load_data = malloc(sizeof(struct rarch_main_wrap));
    load_data->libretro_path = strdup(libretro);
@@ -362,16 +365,8 @@ static void event_reload_config(void* userdata)
       return;
    }
    pthread_detach(_retroThread);
-   
-   // Read load time settings
-   // TODO: Do this better
-   config_file_t* conf = config_file_new([self.moduleInfo.configPath UTF8String]);
-   bool autoStartBluetooth = false;
-   if (conf && config_get_bool(conf, "ios_auto_bluetooth", &autoStartBluetooth) && autoStartBluetooth)
-      [self startBluetooth];
-   if (conf)
-      config_get_bool(conf, "ios_use_icade", &use_icade);
-   config_file_free(conf);
+
+   [self refreshSystemConfig];
 }
 
 - (void)rarchExited:(BOOL)successful
@@ -392,6 +387,8 @@ static void event_reload_config(void* userdata)
       [self popToViewController:[RAGameView get] animated:NO];
       [self popViewControllerAnimated:NO];
    }
+   
+   _module = nil;
 }
 
 - (void)refreshConfig
@@ -404,6 +401,22 @@ static void event_reload_config(void* userdata)
       memset(g_settings.input.overlay, 0, sizeof(g_settings.input.overlay));
       memset(g_settings.video.shader_path, 0, sizeof(g_settings.video.shader_path));
    }
+}
+
+- (void)refreshSystemConfig
+{
+   // Read load time settings
+   // TODO: Do this better
+   config_file_t* conf = config_file_new([self.systemConfigPath UTF8String]);
+
+   bool autoStartBluetooth = false;
+   if (conf && config_get_bool(conf, "ios_auto_bluetooth", &autoStartBluetooth) && autoStartBluetooth)
+      [self startBluetooth];
+
+   if (conf)
+      config_get_bool(conf, "ios_use_icade", &use_icade);
+
+   config_file_free(conf);
 }
 
 #pragma mark PAUSE MENU
@@ -460,7 +473,13 @@ static void event_reload_config(void* userdata)
 
 - (IBAction)showSettings
 {
-   [self pushViewController:[RASettingsList new] animated:YES];
+   if (_module)
+      [self pushViewController:[[RASettingsList alloc] initWithModule:_module] animated:YES];
+}
+
+- (IBAction)showSystemSettings
+{
+   [self pushViewController:[RASystemSettingsList new] animated:YES];
 }
 
 #pragma mark Bluetooth Helpers

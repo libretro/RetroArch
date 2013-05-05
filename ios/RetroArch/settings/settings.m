@@ -127,30 +127,38 @@ static RASettingData* aspect_setting(config_file_t* config, NSString* label)
    return result;
 }
 
-static RASettingData* custom_action(NSString* action)
+static RASettingData* custom_action(NSString* action, id data)
 {
-   return [[RASettingData alloc] initWithType:CustomAction label:action name:nil];
+   RASettingData* result = [[RASettingData alloc] initWithType:CustomAction label:action name:nil];
+   
+   if (data != nil)
+      objc_setAssociatedObject(result, "USERDATA", data, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+   
+   return result;
 }
 
 @implementation RASettingsList
-+ (void)refreshConfigFile
 {
-   (void)[[RASettingsList alloc] init];
+   RAModuleInfo* _module;
 }
 
-- (id)init
++ (void)refreshModuleConfig:(RAModuleInfo*)module;
 {
-   config_file_t* config = config_file_new([[RetroArch_iOS get].moduleInfo.configPath UTF8String]);
+   (void)[[RASettingsList alloc] initWithModule:module];
+}
+
+- (id)initWithModule:(RAModuleInfo*)module
+{
+   _module = module;
+
+   config_file_t* config = config_file_new([_module.configPath UTF8String]);
 
    NSString* overlay_path = [[[NSBundle mainBundle] bundlePath] stringByAppendingString:@"/overlays/"];
    NSString* shader_path = [[[NSBundle mainBundle] bundlePath] stringByAppendingString:@"/shaders/"];
 
    NSArray* settings = [NSArray arrayWithObjects:
-      [NSArray arrayWithObjects:@"Frontend",
-         custom_action(@"Module Info"),
-         custom_action(@"Diagnostic Log"),
-         boolean_setting(config, @"ios_auto_bluetooth", @"Auto Enable Bluetooth", @"false"),
-         boolean_setting(config, @"ios_use_icade", @"Native BT is iCade", @"false"),
+      [NSArray arrayWithObjects:@"Core",
+         custom_action(@"Core Info", nil),
          nil],
 
       [NSArray arrayWithObjects:@"Video",
@@ -236,32 +244,87 @@ static RASettingData* custom_action(NSString* action)
       nil
    ];
 
-   self = [super initWithSettings:settings title:@"RetroArch Settings"];
+   self = [super initWithSettings:settings title:_module.displayName];
    return self;
 }
 
 - (void)dealloc
 {
-   config_file_t* config = config_file_new([[RetroArch_iOS get].moduleInfo.configPath UTF8String]);
+   config_file_t* config = config_file_new([_module.configPath UTF8String]);
     
     if (!config)
         config = config_file_new(0);
    
    config_set_string(config, "system_directory", [[RetroArch_iOS get].system_directory UTF8String]);
    [self writeSettings:nil toConfig:config];
-    if (config)
-        config_file_write(config, [[RetroArch_iOS get].moduleInfo.configPath UTF8String]);
+   if (config)
+      config_file_write(config, [_module.configPath UTF8String]);
    config_file_free(config);
-   
+
    [[RetroArch_iOS get] refreshConfig];
 }
 
-- (void)handleCustomAction:(NSString*)action
+- (void)handleCustomAction:(NSString*)action withUserData:(id)data
 {
-   if ([@"Module Info" isEqualToString:action])
-      [[RetroArch_iOS get] pushViewController:[[RAModuleInfoList alloc] initWithModuleInfo:[RetroArch_iOS get].moduleInfo] animated:YES];
-   else if ([@"Diagnostic Log" isEqualToString:action])
+   if ([@"Core Info" isEqualToString:action])
+      [[RetroArch_iOS get] pushViewController:[[RAModuleInfoList alloc] initWithModuleInfo:_module] animated:YES];
+}
+
+@end
+
+@implementation RASystemSettingsList
+- (id)init
+{
+   config_file_t* config = config_file_new([[RetroArch_iOS get].systemConfigPath UTF8String]);
+
+   NSMutableArray* modules = [NSMutableArray array];
+   [modules addObject:@"Cores"];
+
+   NSArray* module_data = [RAModuleInfo getModules];
+   for (int i = 0; i != module_data.count; i ++)
+   {
+      RAModuleInfo* info = (RAModuleInfo*)module_data[i];
+      [modules addObject:custom_action(info.displayName, info)];
+   }
+
+   NSArray* settings = [NSArray arrayWithObjects:
+      [NSArray arrayWithObjects:@"Frontend",
+         custom_action(@"Diagnostic Log", nil),
+         nil],
+      [NSArray arrayWithObjects:@"Bluetooth",
+         boolean_setting(config, @"ios_use_icade", @"Native BT is iCade", @"false"),
+         boolean_setting(config, @"ios_auto_bluetooth", @"Auto Enable BTstack", @"false"),
+         nil],
+      modules,
+      nil
+   ];
+
+   self = [super initWithSettings:settings title:@"RetroArch Settings"];
+   return self;
+}
+
+- (void)dealloc
+{
+   config_file_t* config = config_file_new([[RetroArch_iOS get].systemConfigPath UTF8String]);
+   
+    if (!config)
+        config = config_file_new(0);
+   
+   [self writeSettings:nil toConfig:config];
+   
+   if (config)
+      config_file_write(config, [[RetroArch_iOS get].systemConfigPath UTF8String]);
+   config_file_free(config);
+   
+   [[RetroArch_iOS get] refreshSystemConfig];
+}
+
+- (void)handleCustomAction:(NSString*)action withUserData:(id)data
+{
+   if ([@"Diagnostic Log" isEqualToString:action])
       [[RetroArch_iOS get] pushViewController:[RALogView new] animated:YES];
+   else if (data)
+      [[RetroArch_iOS get] pushViewController:[[RASettingsList alloc] initWithModule:(RAModuleInfo*)data] animated:YES];
 }
 
 @end
@@ -280,7 +343,7 @@ static RASettingData* custom_action(NSString* action)
    return self;
 }
 
-- (void)handleCustomAction:(NSString*)action
+- (void)handleCustomAction:(NSString*)action withUserData:(id)data
 {
 
 }
@@ -364,7 +427,7 @@ static RASettingData* custom_action(NSString* action)
          break;
          
       case CustomAction:
-         [self handleCustomAction:setting.label];
+         [self handleCustomAction:setting.label withUserData:objc_getAssociatedObject(setting, "USERDATA")];
          break;
          
       default:

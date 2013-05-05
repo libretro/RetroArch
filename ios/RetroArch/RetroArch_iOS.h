@@ -20,12 +20,12 @@
 + (void)displayErrorMessage:(NSString*)message;
 
 + (RetroArch_iOS*)get;
-- (void)runGame:(NSString*)path;
+
+- (void)runGame:(NSString*)path withModule:(RAModuleInfo*)module;
 - (void)refreshConfig;
+- (void)refreshSystemConfig;
 
-- (IBAction)showSettings;
-
-@property (strong, nonatomic) RAModuleInfo* moduleInfo;
+@property (strong, nonatomic) NSString* systemConfigPath;
 
 @property (strong, nonatomic) NSString* system_directory;
 

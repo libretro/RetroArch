@@ -15,6 +15,7 @@
 
 #import "RAMOduleInfo.h"
 #import "browser.h"
+#import "settings.h"
 
 @implementation RAModuleList
 {
@@ -79,14 +80,12 @@
 
 - (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath
 {
-   [RetroArch_iOS get].moduleInfo = [self moduleInfoForIndexPath:indexPath];
-   [[RetroArch_iOS get] runGame:_game];
+   [RetroArch_iOS.get runGame:_game withModule:[self moduleInfoForIndexPath:indexPath]];
 }
 
 - (void)tableView:(UITableView *)tableView accessoryButtonTappedForRowWithIndexPath:(NSIndexPath *)indexPath
 {
-   [RetroArch_iOS get].moduleInfo = [self moduleInfoForIndexPath:indexPath];
-   [[RetroArch_iOS get] showSettings];
+   [RetroArch_iOS.get pushViewController:[[RASettingsList alloc] initWithModule:[self moduleInfoForIndexPath:indexPath]] animated:YES];
 }
 
 - (UITableViewCell*)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath
