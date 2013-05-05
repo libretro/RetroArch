@@ -225,7 +225,7 @@ static void get_environment_settings(int argc, char *argv[])
    strlcpy(g_extern.config_path, "D:\\retroarch.cfg", sizeof(g_extern.config_path));
 #endif
    strlcpy(default_paths.savestate_dir, "D:\\savestates", sizeof(default_paths.savestate_dir));
-   strlcpy(default_paths.sram_dir, "D:\\sram", sizeof(default_paths.sram_dir));
+   strlcpy(default_paths.sram_dir, "D:\\savefiles", sizeof(default_paths.sram_dir));
    strlcpy(default_paths.system_dir, "D:\\system", sizeof(default_paths.system_dir));
    strlcpy(default_paths.filesystem_root_dir, "D:", sizeof(default_paths.filesystem_root_dir));
    strlcpy(default_paths.filebrowser_startup_dir, "D:", sizeof(default_paths.filebrowser_startup_dir));
@@ -243,7 +243,7 @@ static void get_environment_settings(int argc, char *argv[])
    strlcpy(g_extern.config_path, "game:\\retroarch.cfg", sizeof(g_extern.config_path));
 #endif
    strlcpy(default_paths.savestate_dir, "game:\\savestates", sizeof(default_paths.savestate_dir));
-   strlcpy(default_paths.sram_dir, "game:\\sram", sizeof(default_paths.sram_dir));
+   strlcpy(default_paths.sram_dir, "game:\\savefiles", sizeof(default_paths.sram_dir));
    strlcpy(default_paths.system_dir, "game:\\system", sizeof(default_paths.system_dir));
    strlcpy(default_paths.filebrowser_startup_dir, "game:", sizeof(default_paths.filebrowser_startup_dir));
 #endif

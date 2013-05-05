@@ -76,15 +76,17 @@ static bool libretro_install_core(const char *path_prefix,
    return true;
 }
 
-#define MAKE_DIR(x) {\
-   if (!path_is_directory((x)))\
-   {\
-      RARCH_WARN("Directory \"%s\" does not exists, creating\n", (x));\
-      if (mkdir((x), 0777) != 0)\
-      {\
-         RARCH_ERR("Could not create directory \"%s\"\n", (x));\
-      }\
-   }\
+#define MAKE_DIR(x, name) { \
+   RARCH_LOG("Checking directory name %s [%s]\n", name, x); \
+   if (strlen(x) > 0) \
+   if (!path_is_directory((x)) )\
+   { \
+      RARCH_WARN("Directory \"%s\" does not exists, creating\n", (x)); \
+      if (mkdir((x), 0777) != 0) \
+      { \
+         RARCH_ERR("Could not create directory \"%s\"\n", (x)); \
+      } \
+   } \
 }
 
 int rarch_main(int argc, char *argv[])
@@ -104,11 +106,11 @@ int rarch_main(int argc, char *argv[])
 
    get_environment_settings(argc, argv);
 
-   MAKE_DIR(default_paths.port_dir);
-   MAKE_DIR(default_paths.system_dir);
-   MAKE_DIR(default_paths.savestate_dir);
-   MAKE_DIR(default_paths.sram_dir);
-   MAKE_DIR(default_paths.input_presets_dir);
+   MAKE_DIR(default_paths.port_dir, "port_dir");
+   MAKE_DIR(default_paths.system_dir, "system_dir");
+   MAKE_DIR(default_paths.savestate_dir, "savestate_dir");
+   MAKE_DIR(default_paths.sram_dir, "sram_dir");
+   MAKE_DIR(default_paths.input_presets_dir, "input_presets_dir");
 
    config_load();
 
@@ -134,7 +136,7 @@ int rarch_main(int argc, char *argv[])
    // Save new libretro core path to config file and exit
    if (path_file_exists(core_exe_path))
       if (libretro_install_core(path_prefix, core_exe_path))
-#ifdef _XBOX1
+#ifdef _XBOX
     g_extern.system.shutdown = g_extern.system.shutdown;
 #else
 	 g_extern.system.shutdown = true;

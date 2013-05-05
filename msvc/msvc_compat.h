@@ -19,6 +19,7 @@
 #ifdef _MSC_VER
 
 #undef UNICODE // Do not bother with UNICODE at this time.
+#include <direct.h>
 #include <stddef.h>
 #include <math.h>
 
@@ -31,6 +32,7 @@ typedef int ssize_t;
 #endif
 #endif
 
+#define mkdir(dirname, unused) _mkdir(dirname)
 #define snprintf _snprintf
 #define strtoull _strtoui64
 #undef strcasecmp
