@@ -975,7 +975,6 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
                driver.video_poke->set_aspect_ratio(driver.video_data, g_settings.video.aspect_ratio_idx);
          }
          break;
-#ifndef HAVE_SHADER_MANAGER
       case SETTING_HW_TEXTURE_FILTER:
          if ((input & (1ULL << DEVICE_NAV_LEFT)) || (input & (1ULL << DEVICE_NAV_RIGHT)) || (input & (1ULL << DEVICE_NAV_B)))
          {
@@ -992,7 +991,6 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
                driver.video_poke->set_filtering(driver.video_data, 1, g_settings.video.smooth);
          }
          break;
-#endif
 #ifdef _XBOX1
       case SETTING_FLICKER_FILTER:
          if (input & (1ULL << DEVICE_NAV_LEFT))
@@ -1871,7 +1869,6 @@ static int select_setting(void *data, uint64_t input)
             snprintf(setting_text, sizeof(setting_text), "%f", g_settings.video.font_size);
             strlcpy(comment, "INFO - Increase or decrease the [Font Size].", sizeof(comment));
             break;
-#ifndef HAVE_SHADER_MANAGER
          case SETTING_HW_TEXTURE_FILTER:
             strlcpy(text, "Default Filter", sizeof(text));
             if (g_settings.video.smooth)
@@ -1887,7 +1884,6 @@ static int select_setting(void *data, uint64_t input)
                      sizeof(comment));
             }
             break;
-#endif
 #ifdef _XBOX1
          case SETTING_FLICKER_FILTER:
             strlcpy(text, "Flicker Filter", sizeof(text));
@@ -2178,6 +2174,11 @@ static int select_setting(void *data, uint64_t input)
             strlcpy(text, "Video Options", sizeof(text));
             strlcpy(setting_text, "...", sizeof(setting_text));
             strlcpy(comment, "Set and manage video options.", sizeof(comment));
+            break;
+         case INGAME_MENU_INPUT_OPTIONS_MODE:
+            strlcpy(text, "Input Options", sizeof(text));
+            strlcpy(setting_text, "...", sizeof(setting_text));
+            strlcpy(comment, "Set and manage input options.", sizeof(comment));
             break;
          case INGAME_MENU_FRAME_ADVANCE:
             strlcpy(text, "Frame Advance", sizeof(text));
