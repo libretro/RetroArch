@@ -2280,7 +2280,7 @@ static int select_setting(void *data, uint64_t input)
       }
 
       char setting_text_buf[256];
-      menu_ticker_line(setting_text_buf, TICKER_LABEL_CHARS_MAX_PER_LINE, g_extern.frame_count / 15, setting_text);
+      menu_ticker_line(setting_text_buf, TICKER_LABEL_CHARS_MAX_PER_LINE, g_extern.frame_count / 15, setting_text, i == selected);
 
       if (!(j < NUM_ENTRY_PER_PAGE))
       {

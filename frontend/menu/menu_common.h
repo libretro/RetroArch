@@ -280,7 +280,7 @@ void shader_manager_get_str(struct gfx_shader *shader,
       char *type_str, size_t type_str_size, unsigned type);
 #endif
 
-void menu_ticker_line(char *buf, size_t len, unsigned tick, const char *str);
+void menu_ticker_line(char *buf, size_t len, unsigned tick, const char *str, bool selected);
 
 void load_menu_game_prepare(void);
 bool load_menu_game(void);

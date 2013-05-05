@@ -436,7 +436,7 @@ static void render_text(rgui_handle_t *rgui)
    }
 
    char title_buf[256];
-   menu_ticker_line(title_buf, TERM_WIDTH - 3, g_extern.frame_count / 15, title);
+   menu_ticker_line(title_buf, TERM_WIDTH - 3, g_extern.frame_count / 15, title, true);
    blit_line(rgui, TERM_START_X + 15, 15, title_buf, true);
 
    char title_msg[64];
@@ -728,23 +728,24 @@ static void render_text(rgui_handle_t *rgui)
 
       char entry_title_buf[256];
       char type_str_buf[64];
+      bool selected = i == rgui->selection_ptr;
 
       strlcpy(entry_title_buf, path, sizeof(entry_title_buf));
       strlcpy(type_str_buf, type_str, sizeof(type_str_buf));
 
       if ((type == RGUI_FILE_PLAIN || type == RGUI_FILE_DIRECTORY))
-         menu_ticker_line(entry_title_buf, TERM_WIDTH - (w + 1 + 2), g_extern.frame_count / 15, path);
+         menu_ticker_line(entry_title_buf, TERM_WIDTH - (w + 1 + 2), g_extern.frame_count / 15, path, selected);
       else
-         menu_ticker_line(type_str_buf, w, g_extern.frame_count / 15, type_str);
+         menu_ticker_line(type_str_buf, w, g_extern.frame_count / 15, type_str, selected);
 
       snprintf(message, sizeof(message), "%c %-*.*s %-*s",
-            i == rgui->selection_ptr ? '>' : ' ',
+            selected ? '>' : ' ',
             TERM_WIDTH - (w + 1 + 2), TERM_WIDTH - (w + 1 + 2),
             entry_title_buf,
             w,
             type_str_buf);
 
-      blit_line(rgui, x, y, message, i == rgui->selection_ptr);
+      blit_line(rgui, x, y, message, selected);
    }
 
 #ifdef GEKKO
