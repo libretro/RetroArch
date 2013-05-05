@@ -178,7 +178,9 @@ static bool menu_type_is_settings(unsigned type)
    return type == RGUI_SETTINGS ||
       type == RGUI_SETTINGS_CORE_OPTIONS ||
       type == RGUI_SETTINGS_VIDEO_OPTIONS ||
+#ifdef HAVE_SHADER_MANAGER
       type == RGUI_SETTINGS_SHADER_OPTIONS ||
+#endif
       type == RGUI_SETTINGS_AUDIO_OPTIONS ||
       type == RGUI_SETTINGS_DISK_OPTIONS ||
       type == RGUI_SETTINGS_PATH_OPTIONS ||
@@ -406,8 +408,10 @@ static void render_text(rgui_handle_t *rgui)
       snprintf(title, sizeof(title), "DISK APPEND %s", dir);
    else if (menu_type == RGUI_SETTINGS_VIDEO_OPTIONS)
       strlcpy(title, "VIDEO OPTIONS", sizeof(title));
+#ifdef HAVE_SHADER_MANAGER
    else if (menu_type == RGUI_SETTINGS_SHADER_OPTIONS)
       strlcpy(title, "SHADER OPTIONS", sizeof(title));
+#endif
    else if (menu_type == RGUI_SETTINGS_AUDIO_OPTIONS)
       strlcpy(title, "AUDIO OPTIONS", sizeof(title));
    else if (menu_type == RGUI_SETTINGS_DISK_OPTIONS)
@@ -626,10 +630,10 @@ static void render_text(rgui_handle_t *rgui)
             case RGUI_SETTINGS_CUSTOM_VIEWPORT:
             case RGUI_SETTINGS_TOGGLE_FULLSCREEN:
             case RGUI_SETTINGS_VIDEO_OPTIONS:
-            case RGUI_SETTINGS_SHADER_OPTIONS:
             case RGUI_SETTINGS_AUDIO_OPTIONS:
             case RGUI_SETTINGS_DISK_OPTIONS:
 #ifdef HAVE_SHADER_MANAGER
+            case RGUI_SETTINGS_SHADER_OPTIONS:
             case RGUI_SETTINGS_SHADER_PRESET:
 #endif
             case RGUI_SETTINGS_CORE:
