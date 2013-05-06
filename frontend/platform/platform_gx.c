@@ -100,9 +100,14 @@ static void salamander_init_settings(void)
       if(config_file_exists)
       {
          config_file_t * conf = config_file_new(default_paths.config_path);
-         config_get_array(conf, "libretro_path", tmp_str, sizeof(tmp_str));
-         config_file_free(conf);
-         snprintf(default_paths.libretro_path, sizeof(default_paths.libretro_path), tmp_str);
+         if (!conf) // stupid libfat bug or something; somtimes it says the file is there when it doesn't
+            config_file_exists = false;
+         else
+         {
+            config_get_array(conf, "libretro_path", tmp_str, sizeof(tmp_str));
+            config_file_free(conf);
+            snprintf(default_paths.libretro_path, sizeof(default_paths.libretro_path), tmp_str);
+         }
       }
 
       if(!config_file_exists || !strcmp(default_paths.libretro_path, ""))
