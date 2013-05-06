@@ -3104,13 +3104,6 @@ void rarch_main_deinit(void)
       g_extern.rom_file_temporary = false;
    }
 
-   if (g_extern.system.core_options)
-   {
-      core_option_flush(g_extern.system.core_options);
-      core_option_free(g_extern.system.core_options);
-   }
-   g_extern.system.core_options = NULL;
-
    g_extern.main_is_init = false;
 }
 

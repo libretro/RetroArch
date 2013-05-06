@@ -379,7 +379,6 @@ struct global
       struct retro_hw_render_callback hw_render_callback;
 
       core_option_manager_t *core_options;
-
    } system;
 
    struct
