@@ -57,6 +57,7 @@ enum
 };
 
 HXUIOBJ m_settingslist;
+HXUIOBJ m_back;
 
 class CRetroArch : public CXuiModule
 {
@@ -156,7 +157,7 @@ class CRetroArchMain: public CXuiSceneImpl
 class CRetroArchFileBrowser: public CXuiSceneImpl
 {
    protected:
-      HXUIOBJ m_back;
+
       HXUIOBJ m_dir_game;
    public:
       HRESULT OnInit( XUIMessageInit* pInitData, int & bHandled );
@@ -227,8 +228,6 @@ class CRetroArchFileBrowser: public CXuiSceneImpl
 
 class CRetroArchCoreBrowser: public CXuiSceneImpl
 {
-   protected:
-      HXUIOBJ m_back;
    public:
       HRESULT OnInit( XUIMessageInit* pInitData, int & bHandled );
       HRESULT OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled );
@@ -298,8 +297,6 @@ class CRetroArchCoreBrowser: public CXuiSceneImpl
 
 class CRetroArchShaderBrowser: public CXuiSceneImpl
 {
-   protected:
-      HXUIOBJ m_back;
    public:
       HRESULT OnInit( XUIMessageInit* pInitData, int & bHandled );
       HRESULT OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled );
@@ -369,8 +366,6 @@ class CRetroArchShaderBrowser: public CXuiSceneImpl
 
 class CRetroArchQuickMenu: public CXuiSceneImpl
 {
-   protected:
-      HXUIOBJ m_back;
    public:
       HRESULT OnInit( XUIMessageInit* pInitData, int & bHandled );
       HRESULT OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled );
@@ -446,8 +441,6 @@ class CRetroArchQuickMenu: public CXuiSceneImpl
 
 class CRetroArchSettings: public CXuiSceneImpl
 {
-   protected:
-      HXUIOBJ m_back;
    public:
       HRESULT OnInit( XUIMessageInit* pInitData, int & bHandled );
       HRESULT OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled );
@@ -524,7 +517,6 @@ class CRetroArchSettings: public CXuiSceneImpl
 class CRetroArchControls: public CXuiSceneImpl
 {
    protected:
-      HXUIOBJ m_back;
       HXUIOBJ m_controlnoslider;
    public:
       HRESULT OnInit( XUIMessageInit* pInitData, int & bHandled );
