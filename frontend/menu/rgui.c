@@ -1336,7 +1336,7 @@ static enum rarch_shader_type shader_manager_get_type(const struct gfx_shader *s
    return type;
 }
 
-static void shader_manager_set_preset(enum rarch_shader_type type, const char *path)
+static void shader_manager_set_preset(struct gfx_shader *shader, enum rarch_shader_type type, const char *path)
 {
    RARCH_LOG("Setting RGUI shader: %s.\n", path ? path : "N/A (stock)");
    bool ret = video_set_shader_func(type, path);
@@ -1347,6 +1347,22 @@ static void shader_manager_set_preset(enum rarch_shader_type type, const char *p
       strlcpy(g_settings.video.shader_path, path ? path : "",
             sizeof(g_settings.video.shader_path));
       g_settings.video.shader_enable = true;
+
+      if (path && shader)
+      {
+         // Load stored CGP into RGUI menu on success.
+         // Used when a preset is directly loaded.
+         // No point in updating when the CGP was created from RGUI itself.
+         config_file_t *conf = config_file_new(path);
+         if (conf)
+         {
+            gfx_shader_read_conf_cgp(conf, shader);
+            gfx_shader_resolve_relative(shader, path);
+            config_file_free(conf);
+         }
+
+         rgui->need_refresh = true;
+      }
    }
    else
    {
@@ -1566,7 +1582,7 @@ static int shader_manager_toggle_setting(rgui_handle_t *rgui, unsigned setting, 
          config_file_write(conf, cgp_path);
          config_file_free(conf);
 
-         shader_manager_set_preset(type, cgp_path); 
+         shader_manager_set_preset(NULL, type, cgp_path); 
       }
       else
       {
@@ -1579,7 +1595,7 @@ static int shader_manager_toggle_setting(rgui_handle_t *rgui, unsigned setting, 
             type = RARCH_SHADER_CG;
 #endif
          }
-         shader_manager_set_preset(type, NULL);
+         shader_manager_set_preset(NULL, type, NULL);
       }
    }
    else if (setting == RGUI_SETTINGS_SHADER_PASSES)
@@ -2286,7 +2302,7 @@ int rgui_iterate(rgui_handle_t *rgui)
                {
                   char shader_path[PATH_MAX];
                   fill_pathname_join(shader_path, dir, path, sizeof(shader_path));
-                  shader_manager_set_preset(gfx_shader_parse_type(shader_path, RARCH_SHADER_NONE),
+                  shader_manager_set_preset(&rgui->shader, gfx_shader_parse_type(shader_path, RARCH_SHADER_NONE),
                         shader_path);
                }
                else
