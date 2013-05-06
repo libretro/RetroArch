@@ -223,7 +223,14 @@ void config_set_defaults(void)
    for (unsigned i = 1; i < MAX_PLAYERS; i++)
       memcpy(g_settings.input.binds[i], retro_keybinds_rest, sizeof(retro_keybinds_rest));
 
-   memcpy(g_settings.input.autoconf_binds, g_settings.input.binds, sizeof(g_settings.input.binds));
+   for (unsigned i = 0; i < MAX_PLAYERS; i++)
+   {
+      for (unsigned j = 0; j < RARCH_BIND_LIST_END; j++)
+      {
+         g_settings.input.autoconf_binds[i][j].joykey = NO_BTN;
+         g_settings.input.autoconf_binds[i][j].joyaxis = AXIS_NONE;
+      }
+   }
 
    // Verify that binds are in proper order.
    for (int i = 0; i < MAX_PLAYERS; i++)
