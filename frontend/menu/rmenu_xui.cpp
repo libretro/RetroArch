@@ -56,6 +56,8 @@ enum
    S_LBL_REWIND_GRANULARITY,
 };
 
+HXUIOBJ m_settingslist;
+
 class CRetroArch : public CXuiModule
 {
    public:
@@ -368,7 +370,6 @@ class CRetroArchShaderBrowser: public CXuiSceneImpl
 class CRetroArchQuickMenu: public CXuiSceneImpl
 {
    protected:
-      HXUIOBJ m_settingslist;
       HXUIOBJ m_back;
    public:
       HRESULT OnInit( XUIMessageInit* pInitData, int & bHandled );
@@ -446,7 +447,6 @@ class CRetroArchQuickMenu: public CXuiSceneImpl
 class CRetroArchSettings: public CXuiSceneImpl
 {
    protected:
-      HXUIOBJ m_settingslist;
       HXUIOBJ m_back;
    public:
       HRESULT OnInit( XUIMessageInit* pInitData, int & bHandled );
