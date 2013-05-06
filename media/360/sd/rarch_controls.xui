@@ -31,26 +31,19 @@
 <Height>209.679993</Height>
 <Position>44.880005,88.000000,0.000000</Position>
 <NavUp>XuiControlNoSlider</NavUp>
-<ItemsText>RetroPad Button B:
-RetroPad Button Y:
-RetroPad Button Select:
-RetroPad Button Start:
-RetroPad D-Pad Up:
-RetroPad D-Pad Down:
-RetroPad D-Pad Left:
-RetroPad D-Pad Right:
-RetroPad Button A:
-RetroPad Button X:
-RetroPad Button L1:
-RetroPad Button R1:
-RetroPad Button L2:
-RetroPad Button R2:
-RetroPad Button L3:
-RetroPad Button R3:
-D-Pad Emulation:
-Reset all buttons to defaults
-</ItemsText>
 </Properties>
+<XuiListItem>
+<Properties>
+<Id>control_ListItem</Id>
+<Width>226.000000</Width>
+<Height>45.000000</Height>
+<Position>7.000000,22.000000,0.000000</Position>
+<Anchor>5</Anchor>
+<Show>false</Show>
+<Visual>XuiButton</Visual>
+<InterItemSpacing>0.000000,10.000000,0.000000</InterItemSpacing>
+</Properties>
+</XuiListItem>
 <XuiListItem>
 <Properties>
 <Id>control_ListItem</Id>
