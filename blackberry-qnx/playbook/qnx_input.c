@@ -218,6 +218,8 @@ static void qnx_input_autodetect_gamepad(input_device_t* controller)
       device = DEVICE_WIIMOTE;
    else if (strstr(controller->id, "0A5C-8502"))
       device = DEVICE_KEYBOARD;
+   else if (strstr(controller->id, "qwerty:bb35"))
+      device = DEVICE_KEYPAD;
    else if (controller->id)
       device = DEVICE_UNKNOWN;
    else
@@ -502,7 +504,7 @@ static int16_t qnx_input_state(void *data, const struct retro_keybind **retro_ke
    switch (device)
    {
       case RETRO_DEVICE_JOYPAD:
-         if (g_settings.input.device[port] == DEVICE_KEYBOARD)
+         if (g_settings.input.device[port] == DEVICE_KEYBOARD || g_settings.input.device[port] == DEVICE_KEYPAD)
             return ((devices[port].buttons & (1 << id)) && (port < pads_connected));
          else
             return ((devices[port].buttons & retro_keybinds[port][id].joykey) && (port < pads_connected));
@@ -632,6 +634,28 @@ static void qnx_input_set_keybinds(void *data, unsigned device, unsigned port,
             g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_R2].def_joykey     = SCREEN_R2_GAME_BUTTON;
             g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_L3].def_joykey     = SCREEN_L3_GAME_BUTTON;
             g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_R3].def_joykey     = SCREEN_R3_GAME_BUTTON;
+            g_settings.input.dpad_emulation[port] = ANALOG_DPAD_NONE;
+            break;
+         case DEVICE_KEYPAD:
+            strlcpy(g_settings.input.device_names[port], "BlackBerry Q10 Keypad",
+               sizeof(g_settings.input.device_names[port]));
+            g_settings.input.device[port] = device;
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_B].def_joykey      = KEYCODE_M & 0xFF;
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_Y].def_joykey      = KEYCODE_J & 0xFF;
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_SELECT].def_joykey = KEYCODE_RIGHT_SHIFT & 0xFF;
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_START].def_joykey  = KEYCODE_RETURN & 0xFF;
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_UP].def_joykey     = KEYCODE_W & 0xFF;
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_DOWN].def_joykey   = KEYCODE_S & 0xFF;
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_LEFT].def_joykey   = KEYCODE_A & 0xFF;
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_RIGHT].def_joykey  = KEYCODE_D & 0xFF;
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_A].def_joykey      = KEYCODE_N & 0xFF;
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_X].def_joykey      = KEYCODE_K & 0xFF;
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_L].def_joykey      = KEYCODE_U & 0xFF;
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_R].def_joykey      = KEYCODE_I & 0xFF;
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_L2].def_joykey     = 0;
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_R2].def_joykey     = 0;
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_L3].def_joykey     = 0;
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_R3].def_joykey     = 0;
             g_settings.input.dpad_emulation[port] = ANALOG_DPAD_NONE;
             break;
 #endif

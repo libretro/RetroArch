@@ -28,6 +28,7 @@
 #include <bb/cascades/Window>
 #include <bb/cascades/pickers/FilePicker>
 #include <bb/data/JsonDataAccess>
+#include <bb/device/HardwareInfo>
 
 #include <screen/screen.h>
 #include <bps/screen.h>
@@ -40,6 +41,7 @@
 
 using namespace bb::cascades;
 using namespace bb::data;
+using namespace bb::device;
 
 //Use after calling findCores
 #define GET_CORE_INFO(x, y) coreInfo[coreList[x]].toMap()[y].toString()
@@ -306,6 +308,10 @@ void RetroArch::initRASettings()
 {
    strlcpy(g_settings.libretro,(char *)core.toAscii().constData(), sizeof(g_settings.libretro));
    strlcpy(g_extern.fullpath, (char *)rom.toAscii().constData(), sizeof(g_extern.fullpath));
-   strlcpy(g_settings.input.overlay, GET_CORE_INFO(coreSelectedIndex, "default_overlay").toAscii().constData(), sizeof(g_settings.input.overlay));
+
+   HardwareInfo *hwInfo = new HardwareInfo();
+
+   if(!hwInfo->isPhysicalKeyboardDevice())
+      strlcpy(g_settings.input.overlay, GET_CORE_INFO(coreSelectedIndex, "default_overlay").toAscii().constData(), sizeof(g_settings.input.overlay));
 }
 
