@@ -1,4 +1,4 @@
-RARCH_VERSION		= "0.9.9-wip2"
+RARCH_VERSION		= "0.9.9-wip3"
 
 #which compiler to build  with - GCC or SNC
 #set to GCC for debug builds for use with debugger
