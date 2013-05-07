@@ -30,9 +30,6 @@ static PFNGLGETATTRIBLOCATIONPROC pglGetAttribLocation;
 static PFNGLVERTEXATTRIBPOINTERPROC pglVertexAttribPointer;
 static PFNGLENABLEVERTEXATTRIBARRAYPROC pglEnableVertexAttribArray;
 static PFNGLDISABLEVERTEXATTRIBARRAYPROC pglDisableVertexAttribArray;
-static PFNGLGENVERTEXARRAYSPROC pglGenVertexArrays;
-static PFNGLBINDVERTEXARRAYPROC pglBindVertexArray;
-static PFNGLDELETEVERTEXARRAYSPROC pglDeleteVertexArray;
 static PFNGLGENBUFFERSPROC pglGenBuffers;
 static PFNGLBUFFERDATAPROC pglBufferData;
 static PFNGLBINDBUFFERPROC pglBindBuffer;
@@ -59,9 +56,6 @@ static const struct gl_proc_map proc_map[] = {
    PROC_BIND(VertexAttribPointer),
    PROC_BIND(EnableVertexAttribArray),
    PROC_BIND(DisableVertexAttribArray),
-   PROC_BIND(GenVertexArrays),
-   PROC_BIND(BindVertexArray),
-   PROC_BIND(DeleteVertexArray),
    PROC_BIND(GenBuffers),
    PROC_BIND(BufferData),
    PROC_BIND(BindBuffer),
