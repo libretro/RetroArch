@@ -105,7 +105,9 @@ unsigned RGUI_WIDTH = 320;
 unsigned RGUI_HEIGHT = 240;
 uint16_t menu_framebuf[400 * 240];
 
+#ifdef HAVE_SHADER_MANAGER
 static int shader_manager_toggle_setting(rgui_handle_t *rgui, unsigned setting, rgui_action_t action);
+#endif
 static int video_option_toggle_setting(rgui_handle_t *rgui, unsigned setting, rgui_action_t action);
 
 static const unsigned rgui_controller_lut[] = {
