@@ -124,11 +124,6 @@ class CRetroArchMain: public CXuiSceneImpl
         return S_OK;
     }
    
-    static HRESULT Unregister()
-    {
-        return XuiUnregisterClass(L"RetroArchMain");
-    }
-
     static HRESULT APIENTRY CreateInstance(HXUIOBJ hObj, void **ppvObj)
     {
         *ppvObj = NULL;
@@ -196,11 +191,6 @@ class CRetroArchFileBrowser: public CXuiSceneImpl
         return S_OK;
     }
    
-    static HRESULT Unregister()
-    {
-        return XuiUnregisterClass(L"RetroArchFileBrowser");
-    }
-
     static HRESULT APIENTRY CreateInstance(HXUIOBJ hObj, void **ppvObj)
     {
         *ppvObj = NULL;
@@ -265,11 +255,6 @@ class CRetroArchCoreBrowser: public CXuiSceneImpl
         return S_OK;
     }
    
-    static HRESULT Unregister()
-    {
-        return XuiUnregisterClass(L"RetroArchCoreBrowser");
-    }
-
     static HRESULT APIENTRY CreateInstance(HXUIOBJ hObj, void **ppvObj)
     {
         *ppvObj = NULL;
@@ -334,11 +319,6 @@ class CRetroArchShaderBrowser: public CXuiSceneImpl
         return S_OK;
     }
    
-    static HRESULT Unregister()
-    {
-        return XuiUnregisterClass(L"RetroArchShaderBrowser");
-    }
-
     static HRESULT APIENTRY CreateInstance(HXUIOBJ hObj, void **ppvObj)
     {
         *ppvObj = NULL;
@@ -409,11 +389,6 @@ class CRetroArchQuickMenu: public CXuiSceneImpl
         return S_OK;
     }
    
-    static HRESULT Unregister()
-    {
-        return XuiUnregisterClass(L"RetroArchQuickMenu");
-    }
-
     static HRESULT APIENTRY CreateInstance(HXUIOBJ hObj, void **ppvObj)
     {
         *ppvObj = NULL;
@@ -484,11 +459,6 @@ class CRetroArchSettings: public CXuiSceneImpl
         return S_OK;
     }
    
-    static HRESULT Unregister()
-    {
-        return XuiUnregisterClass(L"RetroArchSettings");
-    }
-
     static HRESULT APIENTRY CreateInstance(HXUIOBJ hObj, void **ppvObj)
     {
         *ppvObj = NULL;
@@ -541,7 +511,7 @@ class CRetroArchControls: public CXuiSceneImpl
 		    if (pNotify->dwNotify == XN_PRESS)
 			    return OnNotifyPress(pNotify->hObjSource, pMessage->bHandled);
 	    }
-	return __super::DispatchMessageMap(pMessage);
+       return __super::DispatchMessageMap(pMessage);
     }
 
     static HRESULT Register()
@@ -559,11 +529,6 @@ class CRetroArchControls: public CXuiSceneImpl
         if (FAILED(hr))
             return hr;
         return S_OK;
-    }
-   
-    static HRESULT Unregister()
-    {
-        return XuiUnregisterClass(L"RetroArchControls");
     }
 
     static HRESULT APIENTRY CreateInstance(HXUIOBJ hObj, void **ppvObj)
@@ -619,13 +584,13 @@ HRESULT CRetroArch::RegisterXuiClasses (void)
 /* Unregister custom classes */
 HRESULT CRetroArch::UnregisterXuiClasses (void)
 {
-   CRetroArchMain::Unregister();
-   CRetroArchCoreBrowser::Unregister();
-   CRetroArchShaderBrowser::Unregister();
-   CRetroArchFileBrowser::Unregister();
-   CRetroArchQuickMenu::Register();
-   CRetroArchControls::Register();
-   CRetroArchSettings::Unregister();
+   XuiUnregisterClass(L"RetroArchMain");
+   XuiUnregisterClass(L"RetroArchCoreBrowser");
+   XuiUnregisterClass(L"RetroArchShaderBrowser");
+   XuiUnregisterClass(L"RetroArchFileBrowser");
+   XuiUnregisterClass(L"RetroArchQuickMenu");
+   XuiUnregisterClass(L"RetroArchControls");
+   XuiUnregisterClass(L"RetroArchSettings");
 
    return 0;
 }
