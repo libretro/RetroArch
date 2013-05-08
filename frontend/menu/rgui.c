@@ -106,6 +106,7 @@ unsigned RGUI_HEIGHT = 240;
 uint16_t menu_framebuf[400 * 240];
 
 static int shader_manager_toggle_setting(rgui_handle_t *rgui, unsigned setting, rgui_action_t action);
+static int video_option_toggle_setting(rgui_handle_t *rgui, unsigned setting, rgui_action_t action);
 
 static const unsigned rgui_controller_lut[] = {
    RETRO_DEVICE_ID_JOYPAD_UP,
@@ -805,8 +806,12 @@ static int rgui_settings_toggle_setting(rgui_handle_t *rgui, unsigned setting, r
 {
    unsigned port = rgui->current_pad;
 
-   if (setting >= RGUI_SETTINGS_VIDEO_OPTIONS_FIRST && setting <= RGUI_SETTINGS_SHADER_LAST)
+   if (setting >= RGUI_SETTINGS_VIDEO_OPTIONS_FIRST && setting <= RGUI_SETTINGS_VIDEO_OPTIONS_LAST)
+      return video_option_toggle_setting(rgui, setting, action);
+#ifdef HAVE_SHADER_MANAGER
+   else if (setting >= RGUI_SETTINGS_SHADER_FILTER && setting <= RGUI_SETTINGS_SHADER_LAST)
       return shader_manager_toggle_setting(rgui, setting, action);
+#endif
    if (setting >= RGUI_SETTINGS_CORE_OPTION_START)
       return rgui_core_setting_toggle(setting, action);
 
@@ -1370,177 +1375,14 @@ static void shader_manager_set_preset(struct gfx_shader *shader, enum rarch_shad
       g_settings.video.shader_enable = false;
    }
 }
-#endif
 
 static int shader_manager_toggle_setting(rgui_handle_t *rgui, unsigned setting, rgui_action_t action)
 {
-#ifdef HAVE_SHADER_MANAGER
    unsigned dist_shader = setting - RGUI_SETTINGS_SHADER_0;
    unsigned dist_filter = setting - RGUI_SETTINGS_SHADER_0_FILTER;
    unsigned dist_scale  = setting - RGUI_SETTINGS_SHADER_0_SCALE;
-#endif
 
-   if (setting == RGUI_SETTINGS_VIDEO_ROTATION)
-   {
-      if (action == RGUI_ACTION_START)
-      {
-         settings_set(1ULL << S_DEF_AUDIO_CONTROL_RATE);
-         video_set_rotation_func(g_extern.console.screen.orientation);
-      }
-      else if (action == RGUI_ACTION_LEFT)
-      {
-         settings_set(1ULL << S_ROTATION_DECREMENT);
-         video_set_rotation_func(g_extern.console.screen.orientation);
-      }
-      else if (action == RGUI_ACTION_RIGHT)
-      {
-         settings_set(1ULL << S_ROTATION_INCREMENT);
-         video_set_rotation_func(g_extern.console.screen.orientation);
-      }
-   }
-   else if (setting == RGUI_SETTINGS_VIDEO_FILTER)
-   {
-      if (action == RGUI_ACTION_START)
-         settings_set(1ULL << S_DEF_HW_TEXTURE_FILTER);
-      else
-         settings_set(1ULL << S_HW_TEXTURE_FILTER);
-
-      if (driver.video_poke->set_filtering)
-         driver.video_poke->set_filtering(driver.video_data, 1, g_settings.video.smooth);
-   }
-   else if (setting == RGUI_SETTINGS_VIDEO_GAMMA)
-   {
-      if (action == RGUI_ACTION_START)
-      {
-         g_extern.console.screen.gamma_correction = 0;
-         if (driver.video_poke->apply_state_changes)
-            driver.video_poke->apply_state_changes(driver.video_data);
-      }
-      else if (action == RGUI_ACTION_LEFT)
-      {
-         if(g_extern.console.screen.gamma_correction > 0)
-         {
-            g_extern.console.screen.gamma_correction--;
-            if (driver.video_poke->apply_state_changes)
-               driver.video_poke->apply_state_changes(driver.video_data);
-         }
-      }
-      else if (action == RGUI_ACTION_RIGHT)
-      {
-         if(g_extern.console.screen.gamma_correction < MAX_GAMMA_SETTING)
-         {
-            g_extern.console.screen.gamma_correction++;
-            if (driver.video_poke->apply_state_changes)
-               driver.video_poke->apply_state_changes(driver.video_data);
-         }
-      }
-   }
-   else if (setting == RGUI_SETTINGS_VIDEO_INTEGER_SCALE)
-   {
-      if (action == RGUI_ACTION_START)
-         settings_set(1ULL << S_DEF_SCALE_INTEGER);
-      else if (action == RGUI_ACTION_LEFT ||
-            action == RGUI_ACTION_RIGHT ||
-            action == RGUI_ACTION_OK)
-         settings_set(1ULL << S_SCALE_INTEGER_TOGGLE);
-
-      if (driver.video_poke->apply_state_changes)
-         driver.video_poke->apply_state_changes(driver.video_data);
-   }
-   else if (setting == RGUI_SETTINGS_VIDEO_ASPECT_RATIO)
-   {
-      if (action == RGUI_ACTION_START)
-         settings_set(1ULL << S_DEF_ASPECT_RATIO);
-      else if (action == RGUI_ACTION_LEFT)
-         settings_set(1ULL << S_ASPECT_RATIO_DECREMENT);
-      else if (action == RGUI_ACTION_RIGHT)
-         settings_set(1ULL << S_ASPECT_RATIO_INCREMENT);
-
-      if (driver.video_poke->set_aspect_ratio)
-         driver.video_poke->set_aspect_ratio(driver.video_data, g_settings.video.aspect_ratio_idx);
-   }
-#ifndef RARCH_PERFORMANCE_MODE
-   else if (setting == RGUI_SETTINGS_TOGGLE_FULLSCREEN)
-   {
-      if (action == RGUI_ACTION_OK)
-         rarch_set_fullscreen(!g_settings.video.fullscreen);
-   }
-#endif
-#ifdef HW_RVL
-   else if (setting == RGUI_SETTINGS_VIDEO_RESOLUTION)
-   {
-      if (action == RGUI_ACTION_LEFT)
-      {
-         if(rgui_current_gx_resolution > 0)
-         {
-            rgui_current_gx_resolution--;
-            gx_set_video_mode(rgui_gx_resolutions[rgui_current_gx_resolution][0], rgui_gx_resolutions[rgui_current_gx_resolution][1]);
-         }
-      }
-      else if (action == RGUI_ACTION_RIGHT)
-      {
-         if(rgui_current_gx_resolution < GX_RESOLUTIONS_LAST - 1)
-         {
-#ifdef HW_RVL
-            if ((rgui_current_gx_resolution + 1) > GX_RESOLUTIONS_640_480)
-               if (CONF_GetVideo() != CONF_VIDEO_PAL)
-                  return 0;
-#endif
-
-            rgui_current_gx_resolution++;
-            gx_set_video_mode(rgui_gx_resolutions[rgui_current_gx_resolution][0], rgui_gx_resolutions[rgui_current_gx_resolution][1]);
-         }
-      }
-   }
-   else if (setting == RGUI_SETTINGS_VIDEO_SOFT_FILTER)
-   {
-      if (g_extern.lifecycle_mode_state & (1ULL << MODE_VIDEO_SOFT_FILTER_ENABLE))
-         g_extern.lifecycle_mode_state &= ~(1ULL << MODE_VIDEO_SOFT_FILTER_ENABLE);
-      else
-         g_extern.lifecycle_mode_state |= (1ULL << MODE_VIDEO_SOFT_FILTER_ENABLE);
-
-      if (driver.video_poke->apply_state_changes)
-         driver.video_poke->apply_state_changes(driver.video_data);
-   }
-#endif
-   else if (setting == RGUI_SETTINGS_VIDEO_VSYNC)
-   {
-      switch (action)
-      {
-         case RGUI_ACTION_START:
-            g_settings.video.vsync = true;
-            break;
-
-         case RGUI_ACTION_LEFT:
-         case RGUI_ACTION_RIGHT:
-         case RGUI_ACTION_OK:
-            g_settings.video.vsync = !g_settings.video.vsync;
-            break;
-
-         default:
-            break;
-      }
-   }
-   else if (setting == RGUI_SETTINGS_VIDEO_HARD_SYNC)
-   {
-      switch (action)
-      {
-         case RGUI_ACTION_START:
-            g_settings.video.hard_sync = false;
-            break;
-
-         case RGUI_ACTION_LEFT:
-         case RGUI_ACTION_RIGHT:
-         case RGUI_ACTION_OK:
-            g_settings.video.hard_sync = !g_settings.video.hard_sync;
-            break;
-
-         default:
-            break;
-      }
-   }
-#ifdef HAVE_SHADER_MANAGER
-   else if (setting == RGUI_SETTINGS_SHADER_FILTER)
+   if (setting == RGUI_SETTINGS_SHADER_FILTER)
    {
       switch (action)
       {
@@ -1630,8 +1472,6 @@ static int shader_manager_toggle_setting(rgui_handle_t *rgui, unsigned setting, 
          &rgui->shader.pass[dist_shader] : NULL;
       switch (action)
       {
-         case RGUI_ACTION_LEFT:
-         case RGUI_ACTION_RIGHT:
          case RGUI_ACTION_OK:
             rgui_list_push(rgui->menu_stack, g_settings.video.shader_dir, setting, rgui->selection_ptr);
             rgui->selection_ptr = 0;
@@ -1697,7 +1537,178 @@ static int shader_manager_toggle_setting(rgui_handle_t *rgui, unsigned setting, 
          break;
       }
    }
+
+   return 0;
+}
+
+
 #endif
+
+static int video_option_toggle_setting(rgui_handle_t *rgui, unsigned setting, rgui_action_t action)
+{
+   switch (setting)
+   {
+      case RGUI_SETTINGS_VIDEO_ROTATION:
+         if (action == RGUI_ACTION_START)
+         {
+            settings_set(1ULL << S_DEF_AUDIO_CONTROL_RATE);
+            video_set_rotation_func(g_extern.console.screen.orientation);
+         }
+         else if (action == RGUI_ACTION_LEFT)
+         {
+            settings_set(1ULL << S_ROTATION_DECREMENT);
+            video_set_rotation_func(g_extern.console.screen.orientation);
+         }
+         else if (action == RGUI_ACTION_RIGHT)
+         {
+            settings_set(1ULL << S_ROTATION_INCREMENT);
+            video_set_rotation_func(g_extern.console.screen.orientation);
+         }
+         break;
+
+      case RGUI_SETTINGS_VIDEO_FILTER:
+         if (action == RGUI_ACTION_START)
+            settings_set(1ULL << S_DEF_HW_TEXTURE_FILTER);
+         else
+            settings_set(1ULL << S_HW_TEXTURE_FILTER);
+
+         if (driver.video_poke->set_filtering)
+            driver.video_poke->set_filtering(driver.video_data, 1, g_settings.video.smooth);
+         break;
+
+      case RGUI_SETTINGS_VIDEO_GAMMA:
+         if (action == RGUI_ACTION_START)
+         {
+            g_extern.console.screen.gamma_correction = 0;
+            if (driver.video_poke->apply_state_changes)
+               driver.video_poke->apply_state_changes(driver.video_data);
+         }
+         else if (action == RGUI_ACTION_LEFT)
+         {
+            if(g_extern.console.screen.gamma_correction > 0)
+            {
+               g_extern.console.screen.gamma_correction--;
+               if (driver.video_poke->apply_state_changes)
+                  driver.video_poke->apply_state_changes(driver.video_data);
+            }
+         }
+         else if (action == RGUI_ACTION_RIGHT)
+         {
+            if(g_extern.console.screen.gamma_correction < MAX_GAMMA_SETTING)
+            {
+               g_extern.console.screen.gamma_correction++;
+               if (driver.video_poke->apply_state_changes)
+                  driver.video_poke->apply_state_changes(driver.video_data);
+            }
+         }
+         break;
+
+      case RGUI_SETTINGS_VIDEO_INTEGER_SCALE:
+         if (action == RGUI_ACTION_START)
+            settings_set(1ULL << S_DEF_SCALE_INTEGER);
+         else if (action == RGUI_ACTION_LEFT ||
+               action == RGUI_ACTION_RIGHT ||
+               action == RGUI_ACTION_OK)
+            settings_set(1ULL << S_SCALE_INTEGER_TOGGLE);
+
+         if (driver.video_poke->apply_state_changes)
+            driver.video_poke->apply_state_changes(driver.video_data);
+         break;
+
+      case RGUI_SETTINGS_VIDEO_ASPECT_RATIO:
+         if (action == RGUI_ACTION_START)
+            settings_set(1ULL << S_DEF_ASPECT_RATIO);
+         else if (action == RGUI_ACTION_LEFT)
+            settings_set(1ULL << S_ASPECT_RATIO_DECREMENT);
+         else if (action == RGUI_ACTION_RIGHT)
+            settings_set(1ULL << S_ASPECT_RATIO_INCREMENT);
+
+         if (driver.video_poke->set_aspect_ratio)
+            driver.video_poke->set_aspect_ratio(driver.video_data, g_settings.video.aspect_ratio_idx);
+         break;
+
+#ifndef RARCH_PERFORMANCE_MODE
+      case RGUI_SETTINGS_TOGGLE_FULLSCREEN:
+         if (action == RGUI_ACTION_OK)
+            rarch_set_fullscreen(!g_settings.video.fullscreen);
+         break;
+#endif
+
+#ifdef HW_RVL
+      case RGUI_SETTINGS_VIDEO_RESOLUTION:
+         if (action == RGUI_ACTION_LEFT)
+         {
+            if(rgui_current_gx_resolution > 0)
+            {
+               rgui_current_gx_resolution--;
+               gx_set_video_mode(rgui_gx_resolutions[rgui_current_gx_resolution][0], rgui_gx_resolutions[rgui_current_gx_resolution][1]);
+            }
+         }
+         else if (action == RGUI_ACTION_RIGHT)
+         {
+            if (rgui_current_gx_resolution < GX_RESOLUTIONS_LAST - 1)
+            {
+               if ((rgui_current_gx_resolution + 1) > GX_RESOLUTIONS_640_480)
+                  if (CONF_GetVideo() != CONF_VIDEO_PAL)
+                     return 0;
+
+               rgui_current_gx_resolution++;
+               gx_set_video_mode(rgui_gx_resolutions[rgui_current_gx_resolution][0],
+                     rgui_gx_resolutions[rgui_current_gx_resolution][1]);
+            }
+         }
+         break;
+
+      case RGUI_SETTINGS_VIDEO_SOFT_FILTER:
+         if (g_extern.lifecycle_mode_state & (1ULL << MODE_VIDEO_SOFT_FILTER_ENABLE))
+            g_extern.lifecycle_mode_state &= ~(1ULL << MODE_VIDEO_SOFT_FILTER_ENABLE);
+         else
+            g_extern.lifecycle_mode_state |= (1ULL << MODE_VIDEO_SOFT_FILTER_ENABLE);
+
+         if (driver.video_poke->apply_state_changes)
+            driver.video_poke->apply_state_changes(driver.video_data);
+         break;
+#endif
+
+      case RGUI_SETTINGS_VIDEO_VSYNC:
+         switch (action)
+         {
+            case RGUI_ACTION_START:
+               g_settings.video.vsync = true;
+               break;
+
+            case RGUI_ACTION_LEFT:
+            case RGUI_ACTION_RIGHT:
+            case RGUI_ACTION_OK:
+               g_settings.video.vsync = !g_settings.video.vsync;
+               break;
+
+            default:
+               break;
+         }
+         break;
+
+      case RGUI_SETTINGS_VIDEO_HARD_SYNC:
+         switch (action)
+         {
+            case RGUI_ACTION_START:
+               g_settings.video.hard_sync = false;
+               break;
+
+            case RGUI_ACTION_LEFT:
+            case RGUI_ACTION_RIGHT:
+            case RGUI_ACTION_OK:
+               g_settings.video.hard_sync = !g_settings.video.hard_sync;
+               break;
+
+            default:
+               break;
+         }
+         break;
+
+      default:
+         break;
+   }
 
    return 0;
 }
