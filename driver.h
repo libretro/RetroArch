@@ -276,6 +276,7 @@ enum input_devices
    DEVICE_NONE,
    DEVICE_WIIMOTE,
    DEVICE_KEYBOARD,
+   DEVICE_KEYPAD,
    DEVICE_UNKNOWN,
 #endif
    DEVICE_LAST

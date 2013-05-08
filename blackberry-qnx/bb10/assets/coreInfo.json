@@ -1,5 +1,5 @@
 {
-   "snes9x_next_libretro.so":{
+   "snes9x_next_libretro_qnx.so":{
       "display_name":"SNES / Super Famicom",
       "supported_extensions":"*.smc|*.fig|*.sfc|*.gd3|*.gd7|*.dx2|*.bsx|*.swc",
       "corename":"SNES9x Next",
@@ -7,7 +7,7 @@
       "systemname":"Super Nintendo Entertainment System",
       "default_overlay":"app/native/overlays/snes-landscape.cfg"
    },
-   "genesis_plus_gx_libretro.so":{
+   "genesis_plus_gx_libretro_qnx.so":{
       "display_name":"Sega (MS/GG/MD/CD)",
       "supported_extensions":"*.md|*.smd|*.gen|*.sms|*.gg|*.sg|*.bin|*.cue|*.ios",
       "corename":"Genesis Plus GX",
@@ -15,7 +15,7 @@
       "systemname":"Sega (Various)",
       "default_overlay":"app/native/overlays/genesis6-landscape.cfg"
    },
-   "vba_next_libretro.so":{
+   "vba_next_libretro_qnx.so":{
       "display_name":"Game Boy Advance",
       "supported_extensions":"*.gba",
       "corename":"VBA Next",
@@ -23,7 +23,7 @@
       "systemname":"Game Boy Advance",
       "default_overlay":"app/native/overlays/box-gba.cfg"
    },
-   "pcsx_rearmed_libretro.so":{
+   "pcsx_rearmed_libretro_qnx.so":{
       "display_name":"PlayStation1",
       "supported_extensions":"*.bin|*.cue|*.img|*.mdf|*.pbp|*.cbn|*.toc",
       "corename":"PCSX ReARMed",
@@ -31,12 +31,20 @@
       "systemname":"PlayStation",
       "default_overlay":"app/native/overlays/psx-landscape.cfg"
    },
-   "fb_alpha_libretro.so":{
+   "fb_alpha_libretro_qnx.so":{
       "display_name":"Arcade",
       "supported_extensions":"*.zip|*.ZIP",
       "corename":"Final Burn Alpha",
       "manufacturer":"Various",
       "systemname":"Arcade (various)",
       "default_overlay":"app/native/overlays/snes-landscape.cfg"
+   },
+   "gambatte_libretro_qnx.so":{
+      "display_name":"Game Boy / Game Boy Color",
+      "supported_extensions":"*.gb|*.gbc|*.dmg",
+      "corename":"gambatte",
+      "manufacturer":"Nintendo",
+      "systemname":"Game Boy Color",
+      "default_overlay":"app/native/overlays/gameboy-landscape.cfg"
    }
 }
