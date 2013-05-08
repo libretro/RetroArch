@@ -3,7 +3,7 @@ APP_NAME = RetroArch-Cascades
 CONFIG += qt warn_on cascades10
 
 LIBS += -lscreen -lbps -lOpenAL -lpng -lEGL -lGLESv2
-LIBS += -lbbcascadespickers -lbbdata
+LIBS += -lbbcascadespickers -lbbdata -lbbdevice
 
 DEFINES += HAVE_RGUI HAVE_NEON \
            SINC_LOWER_QUALITY HAVE_RARCH_MAIN_IMPLEMENTATION \
