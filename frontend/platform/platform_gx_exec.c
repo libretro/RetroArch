@@ -38,6 +38,10 @@ extern uint8_t _binary_wii_app_booter_app_booter_bin_end[];
 #include "../../retroarch_logger.h"
 #include "../../file.h"
 
+#ifdef IS_SALAMANDER
+char gx_rom_path[PATH_MAX];
+#endif
+
 static void dol_copy_argv_path(const char *dolpath, const char *argpath)
 {
    char tmp[PATH_MAX];
@@ -72,7 +76,6 @@ static void dol_copy_argv_path(const char *dolpath, const char *argpath)
    len += t_len;
    cmdline[len++] = 0;
 
-#ifndef IS_SALAMANDER
    // file must be split into two parts, the path and the actual filename
    // done to be compatible with loaders
    if (argpath && strchr(argpath, '/') != NULL)
@@ -91,7 +94,7 @@ static void dol_copy_argv_path(const char *dolpath, const char *argpath)
       len += t_len;
       cmdline[len++] = 0;
    }
-#endif
+
    cmdline[len++] = 0;
    argv->length = len;
    DCFlushRange(ARGS_ADDR, sizeof(struct __argv) + argv->length);
@@ -137,7 +140,11 @@ static void rarch_console_exec(const char *path, bool should_load_game)
    memmove(EXECUTE_ADDR, dol, size);
    DCFlushRange(EXECUTE_ADDR, size);
 
+#ifdef IS_SALAMANDER
+   dol_copy_argv_path(path, should_load_game ? gx_rom_path : NULL);
+#else
    dol_copy_argv_path(path, should_load_game ? g_extern.fullpath : NULL);
+#endif
 
    size_t booter_size = booter_end - booter_start;
    memcpy(BOOTER_ADDR, booter_start, booter_size);

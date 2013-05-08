@@ -225,6 +225,10 @@ int gx_logger_file(struct _reent *r, int fd, const char *ptr, size_t len)
 
 #endif
 
+#ifdef IS_SALAMANDER
+extern char gx_rom_path[PATH_MAX];
+#endif
+
 static void get_environment_settings(int argc, char *argv[])
 {
    (void)argc;
@@ -253,6 +257,14 @@ static void get_environment_settings(int argc, char *argv[])
    strlcpy(default_paths.filesystem_root_dir, "/", sizeof(default_paths.filesystem_root_dir));
    snprintf(default_paths.filebrowser_startup_dir, sizeof(default_paths.filebrowser_startup_dir), default_paths.filesystem_root_dir);
    snprintf(default_paths.input_presets_dir, sizeof(default_paths.input_presets_dir), "%s/input", default_paths.port_dir);
+
+#ifdef IS_SALAMANDER
+   if (argc > 2 && argv[1] != NULL && argv[2] != NULL)
+      snprintf(gx_rom_path, sizeof(gx_rom_path),
+            "%s%s", argv[1], argv[2]);
+   else
+      gx_rom_path[0] = '\0';
+#endif
 }
 
 extern void __exception_setreload(int t);
@@ -299,14 +311,17 @@ static void system_init(void)
 static void system_exitspawn(void)
 {
 #if defined(IS_SALAMANDER)
-   rarch_console_exec(default_paths.libretro_path, false);
+   rarch_console_exec(default_paths.libretro_path, gx_rom_path[0] != '\0' ? true : false);
 #elif defined(HW_RVL)
    bool should_load_game = false;
    if (g_extern.lifecycle_mode_state & (1ULL << MODE_EXITSPAWN_START_GAME))
       should_load_game = true;
 
    rarch_console_exec(g_settings.libretro, should_load_game);
-   rarch_console_exec(g_extern.fullpath, false);
+   // direct loading failed (out of memory), try to jump to salamander then load the correct core
+   char boot_dol[PATH_MAX];
+   snprintf(boot_dol, sizeof(boot_dol), "%s/boot.dol", default_paths.core_dir);
+   rarch_console_exec(boot_dol, should_load_game);
 #endif
 }
 
