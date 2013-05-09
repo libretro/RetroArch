@@ -8,7 +8,7 @@
 <Id>XuiScene1</Id>
 <Width>584.528076</Width>
 <Height>363.320007</Height>
-<Position>347.429474,184.843964,0.000000</Position>
+<Position>347.429474,185.843964,0.000000</Position>
 <ClassOverride>RetroArchMain</ClassOverride>
 </Properties>
 <XuiButton>
@@ -56,7 +56,7 @@
 <Pivot>245.162109,-84.153275,0.000000</Pivot>
 <NavUp>XuiBtnLibretroCore</NavUp>
 <NavDown>XuiBtnRomBrowser</NavDown>
-<Text>Quit</Text>
+<Text>Quit RetroArch</Text>
 </Properties>
 </XuiButton>
 <XuiLabel>
@@ -98,7 +98,7 @@
 <Position>38.130001,151.655991,0.000000</Position>
 <NavUp>XuiBtnQuickMenu</NavUp>
 <NavDown>XuiBtnSettings</NavDown>
-<Text>Controls</Text>
+<Text>Input Options</Text>
 </Properties>
 </XuiButton>
 <XuiButton>
@@ -109,7 +109,7 @@
 <Position>38.127960,241.615982,0.000000</Position>
 <NavUp>XuiBtnSettings</NavUp>
 <NavDown>XuiBtnQuit</NavDown>
-<Text>Change libretro core</Text>
+<Text>Core ...</Text>
 </Properties>
 </XuiButton>
 </XuiScene>
