@@ -36,8 +36,16 @@
 
 enum {
    MENU_XUI_ITEM_ASPECT_RATIO = 0,
-   MENU_XUI_ITEM_ORIENTATION,
    MENU_XUI_ITEM_RESIZE_MODE,
+   MENU_XUI_ITEM_ORIENTATION,
+};
+
+enum
+{
+   SETTING_EMU_SHOW_INFO_MSG = 0,
+   SETTING_EMU_SHOW_DEBUG_INFO_MSG,
+   SETTING_GAMMA_CORRECTION_ENABLED,
+   SETTING_HW_TEXTURE_FILTER,
 };
 
 enum
@@ -754,7 +762,7 @@ static void init_menulist(unsigned menu_id)
          XuiListSetText(m_menulist, INGAME_MENU_CHANGE_LIBRETRO_CORE, L"Core ...");
 
          XuiListInsertItems(m_menulist, INGAME_MENU_LOAD_GAME_HISTORY_MODE, 1);
-         XuiListSetText(m_menulist, INGAME_MENU_LOAD_GAME_HISTORY_MODE, L"Load Game History ...");
+         XuiListSetText(m_menulist, INGAME_MENU_LOAD_GAME_HISTORY_MODE, L"Load Game (History) ...");
 
          XuiListInsertItems(m_menulist, INGAME_MENU_CHANGE_GAME, 1);
          XuiListSetText(m_menulist, INGAME_MENU_CHANGE_GAME, L"Load Game ...");
@@ -1114,13 +1122,13 @@ HRESULT CRetroArchQuickMenu::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
    XuiListInsertItems(m_menulist, MENU_XUI_ITEM_ASPECT_RATIO, 1);
    XuiListSetText(m_menulist, MENU_XUI_ITEM_ASPECT_RATIO, strw_buffer);
 
+   XuiListInsertItems(m_menulist, MENU_XUI_ITEM_RESIZE_MODE, 1);
+   XuiListSetText(m_menulist, MENU_XUI_ITEM_RESIZE_MODE, L"Custom Ratio ...");
+
    driver.video->set_rotation(driver.video_data, g_extern.console.screen.orientation);
    menu_settings_create_menu_item_label_w(strw_buffer, S_LBL_ROTATION, sizeof(strw_buffer));
    XuiListInsertItems(m_menulist, MENU_XUI_ITEM_ORIENTATION, 1);
    XuiListSetText(m_menulist, MENU_XUI_ITEM_ORIENTATION, strw_buffer);
-
-   XuiListInsertItems(m_menulist, MENU_XUI_ITEM_RESIZE_MODE, 1);
-   XuiListSetText(m_menulist, MENU_XUI_ITEM_RESIZE_MODE, L"Custom Ratio ...");
 
    return 0;
 }
@@ -1391,24 +1399,17 @@ HRESULT CRetroArchMain::OnControlNavigate(XUIMessageControlNavigate *pControlNav
       case INGAME_MENU_LOAD_STATE:
       case INGAME_MENU_SAVE_STATE:
          if (input == XUI_CONTROL_NAVIGATE_LEFT)
-         {
             rarch_state_slot_decrease();
-            menu_settings_create_menu_item_label_w(strw_buffer, S_LBL_LOAD_STATE_SLOT, sizeof(strw_buffer));
-            XuiListSetText(m_menulist, INGAME_MENU_LOAD_STATE, strw_buffer);
-            menu_settings_create_menu_item_label_w(strw_buffer, S_LBL_SAVE_STATE_SLOT, sizeof(strw_buffer));
-            XuiListSetText(m_menulist, INGAME_MENU_SAVE_STATE, strw_buffer);
-         }
          else if (input == XUI_CONTROL_NAVIGATE_RIGHT)
-         {
             rarch_state_slot_increase();
-            menu_settings_create_menu_item_label_w(strw_buffer, S_LBL_LOAD_STATE_SLOT, sizeof(strw_buffer));
-            XuiListSetText(m_menulist, INGAME_MENU_LOAD_STATE, strw_buffer);
-            menu_settings_create_menu_item_label_w(strw_buffer, S_LBL_SAVE_STATE_SLOT, sizeof(strw_buffer));
-            XuiListSetText(m_menulist, INGAME_MENU_SAVE_STATE, strw_buffer);
-         }
          else if (input == XUI_CONTROL_NAVIGATE_OK)
          {
          }
+
+         menu_settings_create_menu_item_label_w(strw_buffer, S_LBL_LOAD_STATE_SLOT, sizeof(strw_buffer));
+         XuiListSetText(m_menulist, INGAME_MENU_LOAD_STATE, strw_buffer);
+         menu_settings_create_menu_item_label_w(strw_buffer, S_LBL_SAVE_STATE_SLOT, sizeof(strw_buffer));
+         XuiListSetText(m_menulist, INGAME_MENU_SAVE_STATE, strw_buffer);
          break;
       case INGAME_MENU_SCREENSHOT_MODE:
          break;
@@ -1429,40 +1430,28 @@ HRESULT CRetroArchMain::OnControlNavigate(XUIMessageControlNavigate *pControlNav
          break;
       case INGAME_MENU_REWIND_ENABLED:
          if (input == XUI_CONTROL_NAVIGATE_LEFT)
-         {
             settings_set(1ULL << S_REWIND);
-            XuiListSetText(m_menulist, INGAME_MENU_REWIND_ENABLED, g_settings.rewind_enable ? L"Rewind: ON" : L"Rewind: OFF");
-         }
          else if (input == XUI_CONTROL_NAVIGATE_RIGHT ||
                input == XUI_CONTROL_NAVIGATE_OK)
-         {
             settings_set(1ULL << S_REWIND);
 
-            if (g_settings.rewind_enable)
-               rarch_init_rewind();
-            else
-               rarch_deinit_rewind();
-
-            XuiListSetText(m_menulist, INGAME_MENU_REWIND_ENABLED, g_settings.rewind_enable ? L"Rewind: ON" : L"Rewind: OFF");
-         }
+         if (g_settings.rewind_enable)
+            rarch_init_rewind();
+         else
+            rarch_deinit_rewind();
+         XuiListSetText(m_menulist, INGAME_MENU_REWIND_ENABLED, g_settings.rewind_enable ? L"Rewind: ON" : L"Rewind: OFF");
          break;
       case INGAME_MENU_REWIND_GRANULARITY:
          if (input == XUI_CONTROL_NAVIGATE_LEFT)
          {
             if (g_settings.rewind_granularity > 1)
                g_settings.rewind_granularity--;
-
-            menu_settings_create_menu_item_label_w(strw_buffer, S_LBL_REWIND_GRANULARITY, sizeof(strw_buffer));
-            XuiListSetText(m_menulist, INGAME_MENU_REWIND_GRANULARITY, strw_buffer);
          }
          else if (input == XUI_CONTROL_NAVIGATE_RIGHT ||
                input == XUI_CONTROL_NAVIGATE_OK)
-         {
             g_settings.rewind_granularity++;
-
-            menu_settings_create_menu_item_label_w(strw_buffer, S_LBL_REWIND_GRANULARITY, sizeof(strw_buffer));
-            XuiListSetText(m_menulist, INGAME_MENU_REWIND_GRANULARITY, strw_buffer);
-         }
+         menu_settings_create_menu_item_label_w(strw_buffer, S_LBL_REWIND_GRANULARITY, sizeof(strw_buffer));
+         XuiListSetText(m_menulist, INGAME_MENU_REWIND_GRANULARITY, strw_buffer);
          break;
       case INGAME_MENU_FRAME_ADVANCE:
          if (g_extern.main_is_init)
