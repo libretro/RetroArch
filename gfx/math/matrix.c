@@ -114,7 +114,7 @@ void matrix_translate(math_matrix *out, float x,
 void matrix_projection(math_matrix *out, float znear,
       float zfar)
 {
-   matrix_identity(out);
+   memset(out, 0, sizeof(*out));
    MAT_ELEM(*out, 0, 0) = znear;
    MAT_ELEM(*out, 1, 1) = zfar;
    MAT_ELEM(*out, 2, 2) = (zfar + znear) / (zfar - znear);
