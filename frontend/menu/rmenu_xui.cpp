@@ -1192,7 +1192,7 @@ HRESULT CRetroArchQuickMenu::OnControlNavigate(XUIMessageControlNavigate *pContr
 
    current_index = XuiListGetCurSel(m_menulist, NULL);
 
-   unsigned current_input = pControlNavigateData->nControlNavigate;
+   unsigned input = pControlNavigateData->nControlNavigate;
 
    switch (current_index)
    {
