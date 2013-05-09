@@ -58,6 +58,7 @@ enum
 
 HXUIOBJ m_settingslist;
 HXUIOBJ m_back;
+HXUIOBJ m_title;
 
 class CRetroArch : public CXuiModule
 {
@@ -83,7 +84,6 @@ class CRetroArchMain: public CXuiSceneImpl
       HXUIOBJ m_settings;
       HXUIOBJ m_change_libretro_core;
       HXUIOBJ m_quit;
-      HXUIOBJ m_title;
       HXUIOBJ m_core;
       HXUIOBJ m_logoimage;
    public:
@@ -965,8 +965,11 @@ HRESULT CRetroArchSettings::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
 {
    GetChildById(L"XuiSettingsList", &m_settingslist);
    GetChildById(L"XuiBackButton", &m_back);
+   GetChildById(L"XuiTxtTitle", &m_title);
 
    XuiListDeleteItems(m_settingslist, 0, XuiListGetItemCount(m_settingslist));
+
+   XuiTextElementSetText(m_title, L"Settings");
 
    XuiListInsertItems(m_settingslist, 0, 1);
    XuiListSetText(m_settingslist, SETTING_EMU_REWIND_ENABLED, g_settings.rewind_enable ? L"Rewind: ON" : L"Rewind: OFF");
@@ -1163,8 +1166,11 @@ HRESULT CRetroArchQuickMenu::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
 {
    GetChildById(L"XuiQuickMenuList", &m_settingslist);
    GetChildById(L"XuiBackButton", &m_back);
+   GetChildById(L"XuiTxtTitle", &m_title);
 
    XuiListDeleteItems(m_settingslist, 0, XuiListGetItemCount(m_settingslist));
+
+   XuiTextElementSetText(m_title, L"Menu");
 
    menu_settings_create_menu_item_label_w(strw_buffer, S_LBL_LOAD_STATE_SLOT, sizeof(strw_buffer));
    XuiListInsertItems(m_settingslist, 0, 1);
