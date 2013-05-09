@@ -562,9 +562,20 @@ def convert(source, dest):
       f.write('#endif\n')
    return 0
 
+def convert_cgp(source, dest):
+   string = ''
+   with open(source, 'r') as f:
+      string = f.read().replace('.cg', '.glsl')
+
+   open(dest, 'w').write(string)
+
+def path_ext(path):
+   _, ext = os.path.splitext(path)
+   return ext
+
 def main():
    if len(sys.argv) != 3:
-      print('Usage: {} prog.cg prog.glsl'.format(sys.argv[0]))
+      print('Usage: {} prog.cg(p) prog.glsl(p)'.format(sys.argv[0]))
       print('Batch mode usage: {} cg-dir out-xml-shader-dir'.format(sys.argv[0]))
       return 1
 
@@ -581,8 +592,7 @@ def main():
       success_cnt = 0
       failed_files = []
       for dirname, _, filenames in os.walk(sys.argv[1]):
-         for source in filter(lambda path: 'cg' == path.split('.')[-1], [os.path.join(dirname, filename) for filename in filenames]):
-
+         for source in filter(lambda path: path_ext(path) == '.cg', [os.path.join(dirname, filename) for filename in filenames]):
             dest = os.path.join(sys.argv[2], source.replace(sys.argv[1], '')[1:]).replace('.cg', '.glsl')
             dirpath = os.path.split(dest)[0]
             print('Dirpath:', dirpath)
@@ -607,6 +617,25 @@ def main():
                failed_files.append(source)
                failed_cnt += 1
 
+         for source in filter(lambda path: path_ext(path) == '.cgp', [os.path.join(dirname, filename) for filename in filenames]):
+            dest = os.path.join(sys.argv[2], source.replace(sys.argv[1], '')[1:]).replace('.cgp', '.glslp')
+            dirpath = os.path.split(dest)[0]
+            print('Dirpath:', dirpath)
+            if not os.path.isdir(dirpath):
+               try:
+                  os.makedirs(dirpath)
+               except OSError as e:
+                  if e.errno != errno.EEXIST:
+                     raise
+
+            try:
+               convert_cgp(source, dest)
+               success_cnt += 1
+            except Exception as e:
+               print(e)
+               failed_files.append(source)
+               failed_cnt += 1
+
       print(success_cnt, 'shaders converted successfully.')
       print(failed_cnt, 'shaders failed.')
       if failed_cnt > 0:
@@ -617,7 +646,11 @@ def main():
    else:
       source = sys.argv[1]
       dest   = sys.argv[2]
-      sys.exit(convert(source, dest))
+
+      if path_ext(source) == '.cgp':
+         sys.exit(convert_cgp(source, dest))
+      else:
+         sys.exit(convert(source, dest))
 
 if __name__ == '__main__':
    sys.exit(main())
