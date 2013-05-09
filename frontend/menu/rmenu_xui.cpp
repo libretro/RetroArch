@@ -58,6 +58,7 @@ enum
 
 HXUIOBJ m_menulist;
 HXUIOBJ m_menutitle;
+HXUIOBJ m_menutitlebottom;
 HXUIOBJ m_back;
 
 class CRetroArch : public CXuiModule
@@ -77,18 +78,10 @@ class CRetroArch : public CXuiModule
 
 class CRetroArchMain: public CXuiSceneImpl
 {
-   protected:
-      HXUIOBJ m_filebrowser;
-      HXUIOBJ m_quick_menu;
-      HXUIOBJ m_controls;
-      HXUIOBJ m_settings;
-      HXUIOBJ m_change_libretro_core;
-      HXUIOBJ m_quit;
-      HXUIOBJ m_core;
-      HXUIOBJ m_logoimage;
    public:
       HRESULT OnInit( XUIMessageInit* pInitData, int & bHandled );
       HRESULT OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled );
+      HRESULT OnControlNavigate(XUIMessageControlNavigate *pControlNavigateData, BOOL& bHandled);
 
     HRESULT DispatchMessageMap(XUIMessage *pMessage)
     {
@@ -97,13 +90,17 @@ class CRetroArchMain: public CXuiSceneImpl
 		    XUIMessageInit *pData = (XUIMessageInit *) pMessage->pvData;
 		    return OnInit(pData, pMessage->bHandled);
 	    }
+	    if (pMessage->dwMessage == XM_CONTROL_NAVIGATE)
+	    {
+		    XUIMessageControlNavigate *pData = (XUIMessageControlNavigate *) pMessage->pvData;
+		    return OnControlNavigate(pData, pMessage->bHandled);
+	    }
 	    if (pMessage->dwMessage == XM_NOTIFY)
 	    {
 		    XUINotify *pNotify = (XUINotify *) pMessage->pvData;
 		    if (pNotify->dwNotify == XN_PRESS)
 			    return OnNotifyPress(pNotify->hObjSource, pMessage->bHandled);
 	    }
-
         return __super::DispatchMessageMap(pMessage);
     }
 
@@ -563,7 +560,6 @@ wchar_t strw_buffer[PATH_MAX];
 char str_buffer[PATH_MAX];
 
 static int process_input_ret = 0;
-static unsigned input_loop = 0;
 
 /* Register custom classes */
 HRESULT CRetroArch::RegisterXuiClasses (void)
@@ -710,19 +706,16 @@ static void set_dpad_emulation_label(unsigned port, char *str, size_t sizeof_str
    }
 }
 
-HRESULT CRetroArchControls::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
+static void init_menulist(unsigned menu_id)
 {
-   unsigned i;
-   char buttons[RARCH_FIRST_META_KEY][128];
-
-   GetChildById(L"XuiMenuList", &m_menulist);
-   GetChildById(L"XuiBackButton", &m_back);
-   GetChildById(L"XuiTxtTitle", &m_menutitle);
-
    XuiListDeleteItems(m_menulist, 0, XuiListGetItemCount(m_menulist));
 
-   XuiTextElementSetText(m_menutitle, L"Input options");
-
+   switch (menu_id)
+   {
+      case INGAME_MENU_INPUT_OPTIONS_MODE:
+         {
+            unsigned i;
+            char buttons[RARCH_FIRST_META_KEY][128];
    unsigned keybind_end = RETRO_DEVICE_ID_JOYPAD_R3 + 1;
 
    for(i = 0; i < keybind_end; i++)
@@ -749,6 +742,92 @@ HRESULT CRetroArchControls::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
 
    XuiListInsertItems(m_menulist, keybind_end + 1, 1);
    XuiListSetText(m_menulist, SETTING_CONTROLS_DEFAULT_ALL, L"Reset all buttons to default");
+         }
+         break;
+      case INGAME_MENU_SETTINGS_MODE:
+XuiListInsertItems(m_menulist, 0, 1);
+   XuiListSetText(m_menulist, SETTING_EMU_REWIND_ENABLED, g_settings.rewind_enable ? L"Rewind: ON" : L"Rewind: OFF");
+
+   menu_settings_create_menu_item_label_w(strw_buffer, S_LBL_REWIND_GRANULARITY, sizeof(strw_buffer));
+   XuiListInsertItems(m_menulist, 1, 1);
+   XuiListSetText(m_menulist, SETTING_EMU_REWIND_GRANULARITY, strw_buffer);
+
+   XuiListInsertItems(m_menulist, 2, 1);
+   XuiListSetText(m_menulist, SETTING_EMU_SHOW_INFO_MSG, (g_extern.lifecycle_mode_state & (1ULL << MODE_INFO_DRAW)) ? L"Info Messages: ON" : L"Info Messages: OFF");
+   XuiListInsertItems(m_menulist, 3, 1);
+   XuiListSetText(m_menulist, SETTING_EMU_SHOW_DEBUG_INFO_MSG, (g_extern.lifecycle_mode_state & (1ULL << MODE_FPS_DRAW)) ? L"Debug Info Messages: ON" : L"Debug Info messages: OFF");
+   XuiListInsertItems(m_menulist, 4, 1);
+   XuiListSetText(m_menulist, SETTING_GAMMA_CORRECTION_ENABLED, g_extern.console.screen.gamma_correction ? L"Gamma Correction: ON" : L"Gamma correction: OFF");
+   XuiListInsertItems(m_menulist, 5, 1);
+   XuiListSetText(m_menulist, SETTING_HW_TEXTURE_FILTER, g_settings.video.smooth ? L"Default Filter: Linear" : L"Default Filter: Nearest");
+   break;
+      case INGAME_MENU_MAIN_MODE:
+   XuiListInsertItems(m_menulist, INGAME_MENU_CHANGE_LIBRETRO_CORE, 1);
+   XuiListSetText(m_menulist, INGAME_MENU_CHANGE_LIBRETRO_CORE, L"Core ...");
+
+   XuiListInsertItems(m_menulist, INGAME_MENU_LOAD_GAME_HISTORY_MODE, 1);
+   XuiListSetText(m_menulist, INGAME_MENU_LOAD_GAME_HISTORY_MODE, L"Load Game History ...");
+
+   XuiListInsertItems(m_menulist, INGAME_MENU_CHANGE_GAME, 1);
+   XuiListSetText(m_menulist, INGAME_MENU_CHANGE_GAME, L"Load Game ...");
+
+   XuiListInsertItems(m_menulist, INGAME_MENU_CORE_OPTIONS_MODE, 1);
+   XuiListSetText(m_menulist, INGAME_MENU_CORE_OPTIONS_MODE, L"Core Options ...");
+
+   XuiListInsertItems(m_menulist, INGAME_MENU_VIDEO_OPTIONS_MODE, 1);
+   XuiListSetText(m_menulist, INGAME_MENU_VIDEO_OPTIONS_MODE, L"Video Options ...");
+
+   XuiListInsertItems(m_menulist, INGAME_MENU_AUDIO_OPTIONS_MODE, 1);
+   XuiListSetText(m_menulist, INGAME_MENU_AUDIO_OPTIONS_MODE, L"Audio Options ...");
+
+   XuiListInsertItems(m_menulist, INGAME_MENU_INPUT_OPTIONS_MODE, 1);
+   XuiListSetText(m_menulist, INGAME_MENU_INPUT_OPTIONS_MODE, L"Input Options ...");
+
+   XuiListInsertItems(m_menulist, INGAME_MENU_PATH_OPTIONS_MODE, 1);
+   XuiListSetText(m_menulist, INGAME_MENU_PATH_OPTIONS_MODE, L"Path Options ...");
+
+   XuiListInsertItems(m_menulist, INGAME_MENU_SETTINGS_MODE, 1);
+   XuiListSetText(m_menulist, INGAME_MENU_SETTINGS_MODE, L"Settings ...");
+
+   XuiListInsertItems(m_menulist, INGAME_MENU_LOAD_STATE, 1);
+   XuiListSetText(m_menulist, INGAME_MENU_LOAD_STATE, L"Load State #");
+
+   XuiListInsertItems(m_menulist, INGAME_MENU_SAVE_STATE, 1);
+   XuiListSetText(m_menulist, INGAME_MENU_SAVE_STATE, L"Save State #");
+
+   XuiListInsertItems(m_menulist, INGAME_MENU_SCREENSHOT_MODE, 1);
+   XuiListSetText(m_menulist, INGAME_MENU_SCREENSHOT_MODE, L"Take Screenshot");
+
+   XuiListInsertItems(m_menulist, INGAME_MENU_RETURN_TO_GAME, 1);
+   XuiListSetText(m_menulist, INGAME_MENU_RETURN_TO_GAME, L"Resume Game");
+
+   XuiListInsertItems(m_menulist, INGAME_MENU_RESET, 1);
+   XuiListSetText(m_menulist, INGAME_MENU_RESET, L"Restart Game");
+
+   XuiListInsertItems(m_menulist, INGAME_MENU_REWIND_ENABLED, 1);
+   XuiListSetText(m_menulist, INGAME_MENU_REWIND_ENABLED, L"Rewind: ");
+
+   XuiListInsertItems(m_menulist, INGAME_MENU_REWIND_GRANULARITY, 1);
+   XuiListSetText(m_menulist, INGAME_MENU_REWIND_GRANULARITY, L"Rewind Granularity: ");
+
+   XuiListInsertItems(m_menulist, INGAME_MENU_FRAME_ADVANCE, 1);
+   XuiListSetText(m_menulist, INGAME_MENU_FRAME_ADVANCE, L"Frame Advance");
+
+   XuiListInsertItems(m_menulist, INGAME_MENU_QUIT_RETROARCH, 1);
+   XuiListSetText(m_menulist, INGAME_MENU_QUIT_RETROARCH, L"Quit RetroArch");
+break;
+   }
+}
+
+HRESULT CRetroArchControls::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
+{
+   GetChildById(L"XuiMenuList", &m_menulist);
+   GetChildById(L"XuiBackButton", &m_back);
+   GetChildById(L"XuiTxtTitle", &m_menutitle);
+
+   XuiTextElementSetText(m_menutitle, L"Input options");
+
+   init_menulist(INGAME_MENU_INPUT_OPTIONS_MODE);
 
    return 0;
 }
@@ -893,67 +972,12 @@ rgui->current_pad, 0, keybind_action);
 
 HRESULT CRetroArchControls::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled )
 {
-   int current_index, i;
-   char buttons[RARCH_FIRST_META_KEY][128];
-   process_input_ret = 0;
-
    if ( hObjPressed == m_menulist)
    {
-      current_index = XuiListGetCurSel(m_menulist, NULL);
-
-      switch(current_index)
-      {
-         case SETTING_CONTROLS_DPAD_EMULATION:
-            break;
-         case SETTING_CONTROLS_DEFAULT_ALL:
-            if (driver.input->set_keybinds)
-               driver.input->set_keybinds(driver.input_data,
-                     g_settings.input.device[rgui->current_pad], rgui->current_pad, 0,
-                     (1ULL << KEYBINDS_ACTION_SET_DEFAULT_BINDS));
-
-            for(i = 0; i < RARCH_FIRST_META_KEY; i++)
-            {
-               struct platform_bind key_label;
-               strlcpy(key_label.desc, "Unknown", sizeof(key_label.desc));
-               key_label.joykey = g_settings.input.binds[rgui->current_pad][i].joykey;
-
-               if (driver.input->set_keybinds)
-                  driver.input->set_keybinds(&key_label, 0, 0, 0, (1ULL << KEYBINDS_ACTION_GET_BIND_LABEL));
-
-               snprintf(buttons[i], sizeof(buttons[i]), "%s #%d: %s", 
-                     g_settings.input.binds[rgui->current_pad][i].desc, rgui->current_pad,  key_label.desc);
-               mbstowcs(strw_buffer, buttons[i], sizeof(strw_buffer) / sizeof(wchar_t));
-               XuiListSetText(m_menulist, i, strw_buffer);
-            }
-            break;
-         default:
-            {
-               if (driver.input->set_keybinds)
-                  driver.input->set_keybinds(driver.input_data, g_settings.input.device[rgui->current_pad],
-                        rgui->current_pad, current_index, (1ULL << KEYBINDS_ACTION_SET_DEFAULT_BIND));
-               
-               struct platform_bind key_label;
-               strlcpy(key_label.desc, "Unknown", sizeof(key_label.desc));
-               key_label.joykey = g_settings.input.binds[rgui->current_pad][current_index].joykey;
-
-               if (driver.input->set_keybinds)
-                  driver.input->set_keybinds(&key_label, 0, 0, 0, (1ULL << KEYBINDS_ACTION_GET_BIND_LABEL));
-
-               snprintf(buttons[current_index], sizeof(buttons[current_index]), "%s #%d: %s",
-                     g_settings.input.binds[rgui->current_pad][current_index].desc, rgui->current_pad, 
-                     key_label.desc);
-               mbstowcs(strw_buffer, buttons[current_index], sizeof(strw_buffer) / sizeof(wchar_t));
-               XuiListSetText(m_menulist, current_index, strw_buffer);
-            }
-            break;
-      }
+      XUIMessageControlNavigate controls;
+      controls.nControlNavigate = (XUI_CONTROL_NAVIGATE)XUI_CONTROL_NAVIGATE_OK;
+      OnControlNavigate(&controls, bHandled);
    }
-
-   set_dpad_emulation_label(rgui->current_pad, buttons[current_index], sizeof(buttons[current_index]));
-
-   mbstowcs(strw_buffer, buttons[current_index], sizeof(strw_buffer) / sizeof(wchar_t));
-   XuiListSetText(m_menulist, SETTING_CONTROLS_DPAD_EMULATION, strw_buffer);
-   XuiListSetText(m_menulist, SETTING_CONTROLS_DEFAULT_ALL, L"Reset all buttons to default");
 
    bHandled = TRUE;
    return 0;
@@ -965,80 +989,10 @@ HRESULT CRetroArchSettings::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
    GetChildById(L"XuiBackButton", &m_back);
    GetChildById(L"XuiTxtTitle", &m_menutitle);
 
-   XuiListDeleteItems(m_menulist, 0, XuiListGetItemCount(m_menulist));
-
    XuiTextElementSetText(m_menutitle, L"Settings");
 
-   XuiListInsertItems(m_menulist, 0, 1);
-   XuiListSetText(m_menulist, SETTING_EMU_REWIND_ENABLED, g_settings.rewind_enable ? L"Rewind: ON" : L"Rewind: OFF");
+   init_menulist(INGAME_MENU_SETTINGS_MODE);
 
-   menu_settings_create_menu_item_label_w(strw_buffer, S_LBL_REWIND_GRANULARITY, sizeof(strw_buffer));
-   XuiListInsertItems(m_menulist, 1, 1);
-   XuiListSetText(m_menulist, SETTING_EMU_REWIND_GRANULARITY, strw_buffer);
-
-   XuiListInsertItems(m_menulist, 2, 1);
-   XuiListSetText(m_menulist, SETTING_EMU_SHOW_INFO_MSG, (g_extern.lifecycle_mode_state & (1ULL << MODE_INFO_DRAW)) ? L"Info Messages: ON" : L"Info Messages: OFF");
-   XuiListInsertItems(m_menulist, 3, 1);
-   XuiListSetText(m_menulist, SETTING_EMU_SHOW_DEBUG_INFO_MSG, (g_extern.lifecycle_mode_state & (1ULL << MODE_FPS_DRAW)) ? L"Debug Info Messages: ON" : L"Debug Info messages: OFF");
-   XuiListInsertItems(m_menulist, 4, 1);
-   XuiListSetText(m_menulist, SETTING_GAMMA_CORRECTION_ENABLED, g_extern.console.screen.gamma_correction ? L"Gamma Correction: ON" : L"Gamma correction: OFF");
-   XuiListInsertItems(m_menulist, 5, 1);
-   XuiListSetText(m_menulist, SETTING_HW_TEXTURE_FILTER, g_settings.video.smooth ? L"Default Filter: Linear" : L"Default Filter: Nearest");
-
-   return 0;
-}
-
-HRESULT CRetroArchSettings::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled )
-{
-   int current_index;
-   process_input_ret = 0;
-
-   if ( hObjPressed == m_menulist)
-   {
-      current_index = XuiListGetCurSel(m_menulist, NULL);
-
-      switch(current_index)
-      {
-         case SETTING_EMU_REWIND_ENABLED:
-            settings_set(1ULL << S_REWIND);
-            XuiListSetText(m_menulist, SETTING_EMU_REWIND_ENABLED, g_settings.rewind_enable ? L"Rewind: ON" : L"Rewind: OFF");
-            break;
-	 case SETTING_EMU_REWIND_GRANULARITY:
-	    g_settings.rewind_granularity++;
-
-	    menu_settings_create_menu_item_label_w(strw_buffer, S_LBL_REWIND_GRANULARITY, sizeof(strw_buffer));
-	    XuiListSetText(m_menulist, SETTING_EMU_REWIND_GRANULARITY, strw_buffer);
-	    break;
-         case SETTING_EMU_SHOW_INFO_MSG:
-            if (g_extern.lifecycle_mode_state & (1ULL << MODE_INFO_DRAW))
-               g_extern.lifecycle_mode_state &= ~(1ULL << MODE_INFO_DRAW);
-            else
-               g_extern.lifecycle_mode_state |= (1ULL << MODE_INFO_DRAW);
-            XuiListSetText(m_menulist, SETTING_EMU_SHOW_INFO_MSG, (g_extern.lifecycle_mode_state & (1ULL << MODE_INFO_DRAW)) ? L"Info messages: ON" : L"Info messages: OFF");
-            break;
-         case SETTING_EMU_SHOW_DEBUG_INFO_MSG:
-            if (g_extern.lifecycle_mode_state & (1ULL << MODE_FPS_DRAW))
-               g_extern.lifecycle_mode_state &= ~(1ULL << MODE_FPS_DRAW);
-            else
-               g_extern.lifecycle_mode_state |= (1ULL << MODE_FPS_DRAW);
-            XuiListSetText(m_menulist, SETTING_EMU_SHOW_DEBUG_INFO_MSG, (g_extern.lifecycle_mode_state & (1ULL << MODE_FPS_DRAW)) ? L"Debug Info messages: ON" : L"Debug Info messages: OFF");
-            break;
-         case SETTING_GAMMA_CORRECTION_ENABLED:
-            if (g_extern.main_is_init)
-            {
-               g_extern.console.screen.gamma_correction = g_extern.console.screen.gamma_correction ? 0 : 1;
-               driver.video->restart();
-               XuiListSetText(m_menulist, SETTING_GAMMA_CORRECTION_ENABLED, g_extern.console.screen.gamma_correction ? L"Gamma correction: ON" : L"Gamma correction: OFF");
-            }
-            break;
-         case SETTING_HW_TEXTURE_FILTER:
-            g_settings.video.smooth = !g_settings.video.smooth;
-            XuiListSetText(m_menulist, SETTING_HW_TEXTURE_FILTER, g_settings.video.smooth ? L"Default Filter: Linear" : L"Default Filter: Nearest");
-            break;
-      }
-   }
-
-   bHandled = TRUE;
    return 0;
 }
 
@@ -1095,6 +1049,7 @@ HRESULT CRetroArchSettings::OnControlNavigate(XUIMessageControlNavigate *pContro
                break;
          }
          break;
+      case XUI_CONTROL_NAVIGATE_OK:
       case XUI_CONTROL_NAVIGATE_RIGHT:
          switch(current_index)
          {
@@ -1156,6 +1111,22 @@ HRESULT CRetroArchSettings::OnControlNavigate(XUIMessageControlNavigate *pContro
       default:
          break;
    }
+
+   return 0;
+}
+
+HRESULT CRetroArchSettings::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled )
+{
+   process_input_ret = 0;
+
+   if ( hObjPressed == m_menulist)
+   {
+      XUIMessageControlNavigate controls;
+      controls.nControlNavigate = (XUI_CONTROL_NAVIGATE)XUI_CONTROL_NAVIGATE_OK;
+      OnControlNavigate(&controls, bHandled);
+   }
+
+   bHandled = TRUE;
 
    return 0;
 }
@@ -1299,83 +1270,13 @@ HRESULT CRetroArchQuickMenu::OnControlNavigate(XUIMessageControlNavigate *pContr
 
 HRESULT CRetroArchQuickMenu::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled )
 {
-   xdk_d3d_video_t *device_ptr = (xdk_d3d_video_t*)driver.video_data;
-   int current_index = 0;
    process_input_ret = 0;
 
    if ( hObjPressed == m_menulist)
    {
-      current_index = XuiListGetCurSel(m_menulist, NULL);
-
-      switch(current_index)
-      {
-         case MENU_XUI_ITEM_LOAD_STATE:
-            if (g_extern.main_is_init)
-            {
-               rarch_load_state();
-               g_extern.lifecycle_mode_state |= (1ULL << MODE_GAME);
-               process_input_ret = -1;
-            }
-            break;
-         case MENU_XUI_ITEM_SAVE_STATE:
-            if (g_extern.main_is_init)
-            {
-               rarch_save_state();
-               g_extern.lifecycle_mode_state |= (1ULL << MODE_GAME);
-               process_input_ret = -1;
-            }
-            break;
-         case MENU_XUI_ITEM_ASPECT_RATIO:
-            settings_set(1ULL << S_DEF_ASPECT_RATIO);
-            if (driver.video_poke->set_aspect_ratio)
-               driver.video_poke->set_aspect_ratio(driver.video_data, g_settings.video.aspect_ratio_idx);
-            menu_settings_create_menu_item_label_w(strw_buffer, S_LBL_ASPECT_RATIO, sizeof(strw_buffer));
-            XuiListSetText(m_menulist, MENU_XUI_ITEM_ASPECT_RATIO, strw_buffer);
-            break;
-         case MENU_XUI_ITEM_ORIENTATION:
-            settings_set(1ULL << S_DEF_ROTATION);
-            menu_settings_create_menu_item_label_w(strw_buffer, S_LBL_ROTATION, sizeof(strw_buffer));
-            XuiListSetText(m_menulist, MENU_XUI_ITEM_ORIENTATION, strw_buffer);
-            driver.video->set_rotation(driver.video_data, g_extern.console.screen.orientation);
-            break;
-         case MENU_XUI_ITEM_RESIZE_MODE:
-            input_loop = INPUT_LOOP_RESIZE_MODE;
-            g_settings.video.aspect_ratio_idx = ASPECT_RATIO_CUSTOM;
-            menu_settings_create_menu_item_label_w(strw_buffer, S_LBL_ASPECT_RATIO, sizeof(strw_buffer));
-            XuiListSetText(m_menulist, MENU_XUI_ITEM_ASPECT_RATIO, strw_buffer);
-
-            if (g_extern.lifecycle_mode_state & (1ULL << MODE_INFO_DRAW))
-               msg_queue_push(g_extern.msg_queue, "INFO - Resize the screen by moving around the two analog sticks.\n", 1, 270);
-            break;
-         case MENU_XUI_ITEM_FRAME_ADVANCE:
-            if (g_extern.main_is_init)
-            {
-               g_extern.lifecycle_state |= (1ULL << RARCH_FRAMEADVANCE);
-               settings_set(1ULL << S_FRAME_ADVANCE);
-               process_input_ret = -1;
-            }
-            break;
-         case MENU_XUI_ITEM_RESET:
-            if (g_extern.main_is_init)
-            {
-               rarch_game_reset();
-               g_extern.lifecycle_mode_state |= (1ULL << MODE_GAME);
-               process_input_ret = -1;
-            }
-            break;
-         case MENU_XUI_ITEM_RETURN_TO_GAME:
-            if (g_extern.main_is_init)
-            {
-               g_extern.lifecycle_mode_state |= (1ULL << MODE_GAME);
-               process_input_ret = -1;
-            }
-            break;
-         case MENU_XUI_ITEM_QUIT_RARCH:
-            g_extern.lifecycle_mode_state &= ~(1ULL << MODE_GAME);
-            g_extern.lifecycle_mode_state |= (1ULL << MODE_EXIT);
-            process_input_ret = -1;
-            break;
-      }
+      XUIMessageControlNavigate controls;
+      controls.nControlNavigate = (XUI_CONTROL_NAVIGATE)XUI_CONTROL_NAVIGATE_OK;
+      OnControlNavigate(&controls, bHandled);
    }
 
    bHandled = TRUE;
@@ -1467,88 +1368,141 @@ HRESULT CRetroArchCoreBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHandle
 
 HRESULT CRetroArchMain::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
 {
-   GetChildById(L"XuiLogo", &m_logoimage);
-   GetChildById(L"XuiBtnRomBrowser", &m_filebrowser);
-   GetChildById(L"XuiBtnSettings", &m_settings);
-   GetChildById(L"XuiBtnQuickMenu", &m_quick_menu);
-   GetChildById(L"XuiBtnControls", &m_controls);
-   GetChildById(L"XuiBtnQuit", &m_quit);
+   GetChildById(L"XuiMenuList", &m_menulist);
    GetChildById(L"XuiTxtTitle", &m_menutitle);
-   GetChildById(L"XuiTxtCoreText", &m_core);
-   GetChildById(L"XuiBtnLibretroCore", &m_change_libretro_core);
+   GetChildById(L"XuiTxtBottom", &m_menutitlebottom);
+
+   init_menulist(INGAME_MENU_MAIN_MODE);
 
    mbstowcs(strw_buffer, g_extern.title_buf, sizeof(strw_buffer) / sizeof(wchar_t));
-   XuiTextElementSetText(m_core, strw_buffer);
-   menu_settings_create_menu_item_label_w(strw_buffer, S_LBL_RARCH_VERSION, sizeof(strw_buffer));
    XuiTextElementSetText(m_menutitle, strw_buffer);
+   menu_settings_create_menu_item_label_w(strw_buffer, S_LBL_RARCH_VERSION, sizeof(strw_buffer));
+   XuiTextElementSetText(m_menutitlebottom, strw_buffer);
+
+   return 0;
+}
+
+HRESULT CRetroArchMain::OnControlNavigate(XUIMessageControlNavigate *pControlNavigateData, BOOL& bHandled)
+{
+   xdk_d3d_video_t *vid = (xdk_d3d_video_t*)driver.video_data;
+   HRESULT hr;
+   int current_index;
+   bool hdmenus_allowed = (g_extern.lifecycle_mode_state & (1ULL << MODE_MENU_HD));
+
+   switch(pControlNavigateData->nControlNavigate)
+   {
+      case XUI_CONTROL_NAVIGATE_LEFT:
+      case XUI_CONTROL_NAVIGATE_RIGHT:
+      case XUI_CONTROL_NAVIGATE_UP:
+      case XUI_CONTROL_NAVIGATE_DOWN:
+         break;
+      case XUI_CONTROL_NAVIGATE_OK:
+      current_index= XuiListGetCurSel(m_menulist, NULL);
+
+      switch (current_index)
+      {
+         case INGAME_MENU_CHANGE_LIBRETRO_CORE:
+           hr = XuiSceneCreate(hdmenus_allowed ? L"file://game:/media/hd/" : L"file://game:/media/sd/", L"rarch_libretrocore_browser.xur", NULL, &app.hCoreBrowser);
+
+           if (hr < 0)
+              RARCH_ERR("Failed to load scene.\n");
+
+            XuiSceneNavigateForward(hCur, false, app.hCoreBrowser, XUSER_INDEX_FOCUS);
+            hCur = app.hCoreBrowser;
+            break;
+         case INGAME_MENU_LOAD_GAME_HISTORY_MODE:
+            break;
+         case INGAME_MENU_CHANGE_GAME:
+            hr = XuiSceneCreate(hdmenus_allowed ? L"file://game:/media/hd/" : L"file://game:/media/sd/", L"rarch_filebrowser.xur", NULL, &app.hFileBrowser);
+
+            if (hr < 0)
+               RARCH_ERR("Failed to load scene.\n");
+
+            XuiSceneNavigateForward(hCur, false, app.hFileBrowser, XUSER_INDEX_FOCUS);
+            hCur = app.hFileBrowser;
+            break;
+         case INGAME_MENU_CORE_OPTIONS_MODE:
+            break;
+         case INGAME_MENU_VIDEO_OPTIONS_MODE:
+            hr = XuiSceneCreate(hdmenus_allowed ? L"file://game:/media/hd/" : L"file://game:/media/sd/", L"rarch_quickmenu.xur", NULL, &app.hQuickMenu);
+
+            if (hr < 0)
+               RARCH_ERR("Failed to load scene.\n");
+
+            XuiSceneNavigateForward(hCur, false, app.hQuickMenu, XUSER_INDEX_FOCUS);
+            hCur = app.hQuickMenu;
+            break;
+          case INGAME_MENU_AUDIO_OPTIONS_MODE:
+            break;
+          case INGAME_MENU_INPUT_OPTIONS_MODE:
+            hr = XuiSceneCreate(hdmenus_allowed ? L"file://game:/media/hd/" : L"file://game:/media/sd/", L"rarch_controls.xur", NULL, &app.hControlsMenu);
+
+            if (hr < 0)
+               RARCH_ERR("Failed to load scene.\n");
+
+            XuiSceneNavigateForward(hCur, false, app.hControlsMenu, XUSER_INDEX_FOCUS);
+            hCur = app.hControlsMenu;
+            break;
+          case INGAME_MENU_PATH_OPTIONS_MODE:
+            break;
+          case INGAME_MENU_SETTINGS_MODE:
+            hr = XuiSceneCreate(hdmenus_allowed ? L"file://game:/media/hd/" : L"file://game:/media/sd/", L"rarch_settings.xur", NULL, &app.hRetroArchSettings);
+
+            if (hr < 0)
+               RARCH_ERR("Failed to load scene.\n");
+
+            XuiSceneNavigateForward(hCur, false, app.hRetroArchSettings, XUSER_INDEX_FOCUS);
+            hCur = app.hRetroArchSettings;
+            break;
+          case INGAME_MENU_LOAD_STATE:
+            break;
+          case INGAME_MENU_SAVE_STATE:
+            break;
+          case INGAME_MENU_SCREENSHOT_MODE:
+            break;
+          case INGAME_MENU_RETURN_TO_GAME:
+            break;
+          case INGAME_MENU_RESET:
+            break;
+          case INGAME_MENU_REWIND_ENABLED:
+            break;
+          case INGAME_MENU_REWIND_GRANULARITY:
+            break;
+          case INGAME_MENU_FRAME_ADVANCE:
+            break;
+          case INGAME_MENU_QUIT_RETROARCH:
+            g_extern.lifecycle_mode_state &= ~(1ULL << MODE_GAME);
+            g_extern.lifecycle_mode_state |= (1ULL << MODE_EXIT);
+            process_input_ret = -1;
+            break;
+      }
+         break;
+   }
+
+   bHandled = TRUE;
+
+   switch(pControlNavigateData->nControlNavigate)
+   {
+      case XUI_CONTROL_NAVIGATE_LEFT:
+      case XUI_CONTROL_NAVIGATE_RIGHT:
+      case XUI_CONTROL_NAVIGATE_UP:
+      case XUI_CONTROL_NAVIGATE_DOWN:
+         pControlNavigateData->hObjDest = pControlNavigateData->hObjSource;
+         break;
+      default:
+         break;
+   }
 
    return 0;
 }
 
 HRESULT CRetroArchMain::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled )
 {
-   xdk_d3d_video_t *vid = (xdk_d3d_video_t*)driver.video_data;
-
-   bool hdmenus_allowed = (g_extern.lifecycle_mode_state & (1ULL << MODE_MENU_HD));
-
-   HRESULT hr;
-
-   if ( hObjPressed == m_filebrowser )
+   if ( hObjPressed == m_menulist)
    {
-      input_loop = INPUT_LOOP_FILEBROWSER;
-      hr = XuiSceneCreate(hdmenus_allowed ? L"file://game:/media/hd/" : L"file://game:/media/sd/", L"rarch_filebrowser.xur", NULL, &app.hFileBrowser);
-
-      if (hr < 0)
-         RARCH_ERR("Failed to load scene.\n");
-
-      XuiSceneNavigateForward(hCur, false, app.hFileBrowser, XUSER_INDEX_FOCUS);
-      hCur = app.hFileBrowser;
-   }
-   else if ( hObjPressed == m_quick_menu)
-   {
-      hr = XuiSceneCreate(hdmenus_allowed ? L"file://game:/media/hd/" : L"file://game:/media/sd/", L"rarch_quickmenu.xur", NULL, &app.hQuickMenu);
-
-      if (hr < 0)
-         RARCH_ERR("Failed to load scene.\n");
-
-      XuiSceneNavigateForward(hCur, false, app.hQuickMenu, XUSER_INDEX_FOCUS);
-      hCur = app.hQuickMenu;
-   }
-   else if ( hObjPressed == m_controls)
-   {
-      hr = XuiSceneCreate(hdmenus_allowed ? L"file://game:/media/hd/" : L"file://game:/media/sd/", L"rarch_controls.xur", NULL, &app.hControlsMenu);
-
-      if (hr < 0)
-         RARCH_ERR("Failed to load scene.\n");
-
-      XuiSceneNavigateForward(hCur, false, app.hControlsMenu, XUSER_INDEX_FOCUS);
-      hCur = app.hControlsMenu;
-   }
-   else if ( hObjPressed == m_change_libretro_core )
-   {
-      hr = XuiSceneCreate(hdmenus_allowed ? L"file://game:/media/hd/" : L"file://game:/media/sd/", L"rarch_libretrocore_browser.xur", NULL, &app.hCoreBrowser);
-
-      if (hr < 0)
-         RARCH_ERR("Failed to load scene.\n");
-
-      XuiSceneNavigateForward(hCur, false, app.hCoreBrowser, XUSER_INDEX_FOCUS);
-      hCur = app.hCoreBrowser;
-   }
-   else if (hObjPressed == m_settings)
-   {
-      hr = XuiSceneCreate(hdmenus_allowed ? L"file://game:/media/hd/" : L"file://game:/media/sd/", L"rarch_settings.xur", NULL, &app.hRetroArchSettings);
-
-      if (hr < 0)
-         RARCH_ERR("Failed to load scene.\n");
-
-      XuiSceneNavigateForward(hCur, false, app.hRetroArchSettings, XUSER_INDEX_FOCUS);
-      hCur = app.hRetroArchSettings;
-   }
-   else if (hObjPressed == m_quit)
-   {
-      g_extern.lifecycle_mode_state &= ~(1ULL << MODE_GAME);
-      g_extern.lifecycle_mode_state |= (1ULL << MODE_EXIT);
-      process_input_ret = -1;
+      XUIMessageControlNavigate controls;
+      controls.nControlNavigate = (XUI_CONTROL_NAVIGATE)XUI_CONTROL_NAVIGATE_OK;
+      OnControlNavigate(&controls, bHandled);
    }
 
    bHandled = TRUE;
@@ -1668,8 +1622,6 @@ static void ingame_menu_resize (void)
       g_extern.console.screen.viewports.custom_vp.width = 1280; //FIXME: hardcoded
       g_extern.console.screen.viewports.custom_vp.height = 720; //FIXME: hardcoded
    }
-   if(state.Gamepad.wButtons & XINPUT_GAMEPAD_B)
-      input_loop = INPUT_LOOP_MENU;
 }
 
 bool menu_iterate(void)
@@ -1678,14 +1630,20 @@ bool menu_iterate(void)
 
    if (g_extern.lifecycle_mode_state & (1ULL << MODE_MENU_PREINIT))
    {
-      input_loop = INPUT_LOOP_MENU;
       g_extern.lifecycle_mode_state &= ~(1ULL << MODE_MENU_PREINIT);
       /* FIXME - hack for now */
       rgui->delay_count = 0;
    }
 
+   rgui->trigger_state = 0;
+
    XINPUT_STATE state;
    XInputGetState(0, &state);
+
+   if((state.Gamepad.wButtons & XINPUT_GAMEPAD_B) && hCur != app.hMainScene)
+      rgui->trigger_state = RGUI_ACTION_CANCEL;
+   else if ((state.Gamepad.wButtons & XINPUT_GAMEPAD_A))
+      rgui->trigger_state = RGUI_ACTION_OK;
 
    /* FIXME - hack for now */
    if (rgui->delay_count > 30)
@@ -1701,22 +1659,18 @@ bool menu_iterate(void)
    }
    }
 
-   switch(input_loop)
+   if (rgui->trigger_state == RGUI_ACTION_CANCEL)
    {
-      case INPUT_LOOP_FILEBROWSER:
-      case INPUT_LOOP_MENU:
-         if((state.Gamepad.wButtons & XINPUT_GAMEPAD_B) && hCur != app.hMainScene)
-         {
-            XuiSceneNavigateBack(hCur, app.hMainScene, XUSER_INDEX_ANY);
-            hCur = app.hMainScene;
-         }
-         break;
-      case INPUT_LOOP_RESIZE_MODE:
-         ingame_menu_resize();
-         break;
-      default:
-         break;
+      XuiSceneNavigateBack(hCur, app.hMainScene, XUSER_INDEX_ANY);
+      hCur = app.hMainScene;
+      XuiElementGetChildById(app.hMainScene, L"XuiMenuList", &m_menulist);
+      init_menulist(INGAME_MENU_MAIN_MODE);
    }
+
+#if 0
+   if (input_loop == INPUT_LOOP_RESIZE_MODE)
+         ingame_menu_resize();
+#endif
 
    if (driver.video_poke && driver.video_poke->set_texture_enable)
       driver.video_poke->set_texture_enable(driver.video_data, true, true);
