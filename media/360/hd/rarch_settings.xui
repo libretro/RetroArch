@@ -17,7 +17,6 @@
 <Width>121.056023</Width>
 <Height>40.000000</Height>
 <Position>43.581604,21.159988,0.000000</Position>
-<Text>Quick Menu</Text>
 <TextColor>0xff0f0f0f</TextColor>
 <DropShadowColor>0x800f0f0f</DropShadowColor>
 <Font>Arial Unicode MS</Font>
@@ -187,6 +186,18 @@
 <InterItemSpacing>0.000000,10.000000,0.000000</InterItemSpacing>
 </Properties>
 </XuiListItem>
+<XuiListItem>
+<Properties>
+<Id>control_ListItem</Id>
+<Width>226.000000</Width>
+<Height>45.000000</Height>
+<Position>7.000000,22.000000,0.000000</Position>
+<Anchor>5</Anchor>
+<Show>false</Show>
+<Visual>XuiButton</Visual>
+<InterItemSpacing>0.000000,10.000000,0.000000</InterItemSpacing>
+</Properties>
+</XuiListItem>
 </XuiCommonList>
 <XuiBackButton>
 <Properties>
@@ -198,5 +209,13 @@
 <PressKey>22593</PressKey>
 </Properties>
 </XuiBackButton>
+<XuiLabel>
+<Properties>
+<Id>XuiTxtBottom</Id>
+<Width>124.000000</Width>
+<Height>28.000000</Height>
+<Position>51.543991,434.792023,0.000000</Position>
+</Properties>
+</XuiLabel>
 </XuiScene>
 </XuiCanvas>
