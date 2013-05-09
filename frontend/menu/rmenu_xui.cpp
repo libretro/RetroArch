@@ -150,9 +150,6 @@ class CRetroArchMain: public CXuiSceneImpl
 
 class CRetroArchFileBrowser: public CXuiSceneImpl
 {
-   protected:
-
-      HXUIOBJ m_dir_game;
    public:
       HRESULT OnInit( XUIMessageInit* pInitData, int & bHandled );
       HRESULT OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled );
@@ -554,8 +551,6 @@ class CRetroArchControls: public CXuiSceneImpl
 };
 
 CRetroArch app;
-HXUIOBJ m_list;
-HXUIOBJ m_list_path;
 HXUIOBJ hCur;
 
 wchar_t strw_buffer[PATH_MAX];
@@ -625,26 +620,25 @@ void filebrowser_fetch_directory_entries(uint64_t action)
    filebrowser_update(rgui->browser, action, rgui->browser->current_dir.extensions); 
 
    mbstowcs(strw_buffer, rgui->browser->current_dir.directory_path, sizeof(strw_buffer) / sizeof(wchar_t));
-   XuiTextElementSetText(m_list_path, strw_buffer);
+   XuiTextElementSetText(m_menutitle, strw_buffer);
 
-   XuiListDeleteItems(m_list, 0, XuiListGetItemCount(m_list));
-   XuiListInsertItems(m_list, 0, rgui->browser->list->size);
+   XuiListDeleteItems(m_menulist, 0, XuiListGetItemCount(m_menulist));
+   XuiListInsertItems(m_menulist, 0, rgui->browser->list->size);
 
    for(unsigned i = 0; i < rgui->browser->list->size; i++)
    {
       char fname_tmp[256];
       fill_pathname_base(fname_tmp, rgui->browser->list->elems[i].data, sizeof(fname_tmp));
       mbstowcs(strw_buffer, fname_tmp, sizeof(strw_buffer) / sizeof(wchar_t));
-      XuiListSetText(m_list, i, strw_buffer);
+      XuiListSetText(m_menulist, i, strw_buffer);
    }
 }
 
 HRESULT CRetroArchFileBrowser::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
 {
-   GetChildById(L"XuiRomList", &m_list);
-   GetChildById(L"XuiBackButton1", &m_back);
-   GetChildById(L"XuiTxtRomPath", &m_list_path);
-   GetChildById(L"XuiBtnGameDir", &m_dir_game);
+   GetChildById(L"XuiMenuList", &m_menulist);
+   GetChildById(L"XuiTxtTitle", &m_menutitle);
+   GetChildById(L"XuiTxtBottom", &m_menutitlebottom);
 
    filebrowser_set_root_and_ext(rgui->browser, rgui->info.valid_extensions,
          default_paths.filebrowser_startup_dir);
@@ -660,10 +654,10 @@ HRESULT CRetroArchFileBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHandle
    char path[PATH_MAX];
    process_input_ret = 0;
 
-   if(hObjPressed == m_list)
+   if(hObjPressed == m_menulist)
    {
-      int index = XuiListGetCurSel(m_list, NULL);
-      wcstombs(str_buffer, (const wchar_t *)XuiListGetText(m_list, index), sizeof(str_buffer));
+      int index = XuiListGetCurSel(m_menulist, NULL);
+      wcstombs(str_buffer, (const wchar_t *)XuiListGetText(m_menulist, index), sizeof(str_buffer));
       if (path_file_exists(rgui->browser->list->elems[index].data))
       {
          snprintf(g_extern.fullpath, sizeof(g_extern.fullpath), "%s\\%s",
@@ -678,13 +672,6 @@ HRESULT CRetroArchFileBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHandle
          filebrowser_set_root_and_ext(rgui->browser, rgui->info.valid_extensions, path);
          filebrowser_fetch_directory_entries(action);
       }
-   }
-   else if (hObjPressed == m_dir_game)
-   {
-      filebrowser_set_root_and_ext(rgui->browser, rgui->info.valid_extensions,
-            g_settings.rgui_browser_directory);
-      uint64_t action = (1ULL << DEVICE_NAV_B);
-      filebrowser_fetch_directory_entries(action);
    }
 
    bHandled = TRUE;
@@ -1219,9 +1206,9 @@ HRESULT CRetroArchQuickMenu::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled
 
 HRESULT CRetroArchShaderBrowser::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
 {
-   GetChildById(L"XuiRomList", &m_list);
-   GetChildById(L"XuiBackButton1", &m_back);
-   GetChildById(L"XuiTxtRomPath", &m_list_path);
+   GetChildById(L"XuiMenuList", &m_menulist);
+   GetChildById(L"XuiTxtTitle", &m_menutitle);
+   GetChildById(L"XuiTxtBottom", &m_menutitlebottom);
 
    filebrowser_set_root_and_ext(rgui->browser, "cg", "game:\\media\\shaders");
    uint64_t action = (1ULL << DEVICE_NAV_B);
@@ -1235,14 +1222,14 @@ HRESULT CRetroArchShaderBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHand
    char path[PATH_MAX];
    process_input_ret = 0;
 
-   if(hObjPressed == m_list)
+   if(hObjPressed == m_menulist)
    {
-      int index = XuiListGetCurSel(m_list, NULL);
+      int index = XuiListGetCurSel(m_menulist, NULL);
       if (path_file_exists(rgui->browser->list->elems[index].data))
-         wcstombs(str_buffer, (const wchar_t *)XuiListGetText(m_list, index), sizeof(str_buffer));
+         wcstombs(str_buffer, (const wchar_t *)XuiListGetText(m_menulist, index), sizeof(str_buffer));
       else if (rgui->browser->list->elems[index].attr.b)
       {
-         wcstombs(str_buffer, (const wchar_t *)XuiListGetText(m_list, index), sizeof(str_buffer));
+         wcstombs(str_buffer, (const wchar_t *)XuiListGetText(m_menulist, index), sizeof(str_buffer));
          snprintf(path, sizeof(path), "%s\\%s", rgui->browser->current_dir.directory_path, str_buffer);
          filebrowser_set_root_and_ext(rgui->browser, "cg", path);
          uint64_t action = (1ULL << DEVICE_NAV_B);
@@ -1257,9 +1244,9 @@ HRESULT CRetroArchShaderBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHand
 
 HRESULT CRetroArchCoreBrowser::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
 {
-   GetChildById(L"XuiRomList", &m_list);
-   GetChildById(L"XuiBackButton1", &m_back);
-   GetChildById(L"XuiTxtRomPath", &m_list_path);
+   GetChildById(L"XuiMenuList", &m_menulist);
+   GetChildById(L"XuiTxtTitle", &m_menutitle);
+   GetChildById(L"XuiTxtBottom", &m_menutitlebottom);
 
    filebrowser_set_root_and_ext(rgui->browser, "xex|XEX", "game:");
    uint64_t action = (1ULL << DEVICE_NAV_B);
@@ -1274,10 +1261,10 @@ HRESULT CRetroArchCoreBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHandle
 
    process_input_ret = 0;
 
-   if(hObjPressed == m_list)
+   if(hObjPressed == m_menulist)
    {
-      int index = XuiListGetCurSel(m_list, NULL);
-      wcstombs(str_buffer, (const wchar_t *)XuiListGetText(m_list, index), sizeof(str_buffer));
+      int index = XuiListGetCurSel(m_menulist, NULL);
+      wcstombs(str_buffer, (const wchar_t *)XuiListGetText(m_menulist, index), sizeof(str_buffer));
       if(path_file_exists(rgui->browser->list->elems[index].data))
       {
          snprintf(g_settings.libretro, sizeof(g_settings.libretro), "%s\\%s",

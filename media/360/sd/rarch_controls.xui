@@ -186,6 +186,18 @@
 <InterItemSpacing>0.000000,10.000000,0.000000</InterItemSpacing>
 </Properties>
 </XuiListItem>
+<XuiListItem>
+<Properties>
+<Id>control_ListItem</Id>
+<Width>226.000000</Width>
+<Height>45.000000</Height>
+<Position>7.000000,22.000000,0.000000</Position>
+<Anchor>5</Anchor>
+<Show>false</Show>
+<Visual>XuiButton</Visual>
+<InterItemSpacing>0.000000,10.000000,0.000000</InterItemSpacing>
+</Properties>
+</XuiListItem>
 </XuiCommonList>
 <XuiBackButton>
 <Properties>
@@ -193,7 +205,7 @@
 <Width>208.632019</Width>
 <Height>36.000000</Height>
 <Position>356.670013,309.000000,0.000000</Position>
-<Text>Go back to menu</Text>
+<Text>Go back</Text>
 <PressKey>22593</PressKey>
 </Properties>
 </XuiBackButton>
