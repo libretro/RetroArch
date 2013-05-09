@@ -39,5 +39,9 @@ void matrix_ortho(math_matrix *mat,
 
 void matrix_multiply(math_matrix *out, const math_matrix *a, const math_matrix *b);
 
+void matrix_scale(math_matrix *out, float x, float y, float z);
+void matrix_translate(math_matrix *out, float x, float y, float z);
+void matrix_projection(math_matrix *out, float znear, float zfar);
+
 #endif
 
