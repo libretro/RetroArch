@@ -1295,9 +1295,9 @@ HRESULT CRetroArchMain::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
    init_menulist(INGAME_MENU_MAIN_MODE);
 
    mbstowcs(strw_buffer, g_extern.title_buf, sizeof(strw_buffer) / sizeof(wchar_t));
-   XuiTextElementSetText(m_menutitle, strw_buffer);
-   menu_settings_create_menu_item_label_w(strw_buffer, S_LBL_RARCH_VERSION, sizeof(strw_buffer));
    XuiTextElementSetText(m_menutitlebottom, strw_buffer);
+   menu_settings_create_menu_item_label_w(strw_buffer, S_LBL_RARCH_VERSION, sizeof(strw_buffer));
+   XuiTextElementSetText(m_menutitle, strw_buffer);
 
    return 0;
 }
