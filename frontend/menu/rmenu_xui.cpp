@@ -78,477 +78,84 @@ class CRetroArch : public CXuiModule
       virtual HRESULT UnregisterXuiClasses();
 };
 
-class CRetroArchMain: public CXuiSceneImpl
-{
-   public:
-      HRESULT OnInit( XUIMessageInit* pInitData, int & bHandled );
-      HRESULT OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled );
-      HRESULT OnControlNavigate(XUIMessageControlNavigate *pControlNavigateData, BOOL& bHandled);
+#define CREATE_CLASS(class_type, class_name) \
+class class_type: public CXuiSceneImpl \
+{ \
+   public: \
+      HRESULT OnInit( XUIMessageInit* pInitData, int & bHandled ); \
+      HRESULT OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled ); \
+      HRESULT OnControlNavigate (XUIMessageControlNavigate *pControlNavigateData, BOOL& bHandled); \
+ \
+      HRESULT DispatchMessageMap(XUIMessage *pMessage) \
+      { \
+         if (pMessage->dwMessage == XM_INIT) \
+         { \
+            XUIMessageInit *pData = (XUIMessageInit *) pMessage->pvData; \
+            return OnInit(pData, pMessage->bHandled); \
+         } \
+         if (pMessage->dwMessage == XM_CONTROL_NAVIGATE) \
+         { \
+           XUIMessageControlNavigate *pData = (XUIMessageControlNavigate *)pMessage->pvData; \
+           return OnControlNavigate(pData, pMessage->bHandled); \
+         } \
+         if (pMessage->dwMessage == XM_NOTIFY) \
+         { \
+            XUINotify *pNotify = (XUINotify *) pMessage->pvData; \
+            if (pNotify->dwNotify == XN_PRESS) \
+               return OnNotifyPress(pNotify->hObjSource, pMessage->bHandled); \
+         } \
+         return __super::DispatchMessageMap(pMessage); \
+      } \
+ \
+      static HRESULT Register() \
+      { \
+         HXUICLASS hClass; \
+         XUIClass cls; \
+         memset(&cls, 0x00, sizeof(cls)); \
+         cls.szClassName = class_name; \
+         cls.szBaseClassName = XUI_CLASS_SCENE; \
+         cls.Methods.CreateInstance = (PFN_CREATEINST) (CreateInstance); \
+         cls.Methods.DestroyInstance = (PFN_DESTROYINST) DestroyInstance; \
+         cls.Methods.ObjectProc = (PFN_OBJECT_PROC) _ObjectProc; \
+         cls.pPropDefs = _GetPropDef(&cls.dwPropDefCount); \
+         HRESULT hr = XuiRegisterClass(&cls, &hClass); \
+         if (FAILED(hr)) \
+            return hr; \
+         return S_OK; \
+      } \
+ \
+      static HRESULT APIENTRY CreateInstance(HXUIOBJ hObj, void **ppvObj) \
+      { \
+         *ppvObj = NULL; \
+         class_type *pThis = new class_type(); \
+         if (!pThis) \
+            return E_OUTOFMEMORY; \
+         pThis->m_hObj = hObj; \
+         HRESULT hr = pThis->OnCreate(); \
+         if (FAILED(hr)) \
+         { \
+            DestroyInstance(pThis); \
+            return hr; \
+         } \
+         *ppvObj = pThis; \
+         return S_OK; \
+      } \
+ \
+      static HRESULT APIENTRY DestroyInstance(void *pvObj) \
+      { \
+         class_type *pThis = (class_type *) pvObj; \
+         delete pThis; \
+         return S_OK; \
+      } \
+}
 
-      HRESULT DispatchMessageMap(XUIMessage *pMessage)
-      {
-         if (pMessage->dwMessage == XM_INIT)
-         {
-            XUIMessageInit *pData = (XUIMessageInit *) pMessage->pvData;
-            return OnInit(pData, pMessage->bHandled);
-         }
-         if (pMessage->dwMessage == XM_CONTROL_NAVIGATE)
-         {
-            XUIMessageControlNavigate *pData = (XUIMessageControlNavigate *) pMessage->pvData;
-            return OnControlNavigate(pData, pMessage->bHandled);
-         }
-         if (pMessage->dwMessage == XM_NOTIFY)
-         {
-            XUINotify *pNotify = (XUINotify *) pMessage->pvData;
-            if (pNotify->dwNotify == XN_PRESS)
-               return OnNotifyPress(pNotify->hObjSource, pMessage->bHandled);
-         }
-         return __super::DispatchMessageMap(pMessage);
-      }
-
-      static HRESULT Register()
-      {
-         HXUICLASS hClass;
-         XUIClass cls;
-         memset(&cls, 0x00, sizeof(cls));
-         cls.szClassName = L"RetroArchMain";
-         cls.szBaseClassName = XUI_CLASS_SCENE;
-         cls.Methods.CreateInstance = (PFN_CREATEINST) (CreateInstance);
-         cls.Methods.DestroyInstance = (PFN_DESTROYINST) DestroyInstance;
-         cls.Methods.ObjectProc = (PFN_OBJECT_PROC) _ObjectProc;
-         cls.pPropDefs = _GetPropDef(&cls.dwPropDefCount);
-         HRESULT hr = XuiRegisterClass(&cls, &hClass);
-         if (FAILED(hr))
-            return hr;
-         return S_OK;
-      }
-
-      static HRESULT APIENTRY CreateInstance(HXUIOBJ hObj, void **ppvObj)
-      {
-         *ppvObj = NULL;
-         CRetroArchMain *pThis = new CRetroArchMain();
-         if (!pThis)
-            return E_OUTOFMEMORY;
-         pThis->m_hObj = hObj;
-         HRESULT hr = pThis->OnCreate();
-         if (FAILED(hr))
-         {
-            DestroyInstance(pThis);
-            return hr;
-         }
-         *ppvObj = pThis;
-         return S_OK;
-      }
-
-      static HRESULT APIENTRY DestroyInstance(void *pvObj)
-      {
-         CRetroArchMain *pThis = (CRetroArchMain *) pvObj;
-         delete pThis;
-         return S_OK;
-      }
-};
-
-class CRetroArchFileBrowser: public CXuiSceneImpl
-{
-   public:
-      HRESULT OnInit( XUIMessageInit* pInitData, int & bHandled );
-      HRESULT OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled );
-
-      HRESULT DispatchMessageMap(XUIMessage *pMessage)
-      {
-         if (pMessage->dwMessage == XM_INIT)
-         {
-            XUIMessageInit *pData = (XUIMessageInit *) pMessage->pvData;
-            return OnInit(pData, pMessage->bHandled);
-         }
-         if (pMessage->dwMessage == XM_NOTIFY)
-         {
-            XUINotify *pNotify = (XUINotify *) pMessage->pvData;
-            if (pNotify->dwNotify == XN_PRESS)
-               return OnNotifyPress(pNotify->hObjSource, pMessage->bHandled);
-         }
-         return __super::DispatchMessageMap(pMessage);
-      }
-
-      static HRESULT Register()
-      {
-         HXUICLASS hClass;
-         XUIClass cls;
-         memset(&cls, 0x00, sizeof(cls));
-         cls.szClassName = L"RetroArchFileBrowser";
-         cls.szBaseClassName = XUI_CLASS_SCENE;
-         cls.Methods.CreateInstance = (PFN_CREATEINST) (CreateInstance);
-         cls.Methods.DestroyInstance = (PFN_DESTROYINST) DestroyInstance;
-         cls.Methods.ObjectProc = (PFN_OBJECT_PROC) _ObjectProc;
-         cls.pPropDefs = _GetPropDef(&cls.dwPropDefCount);
-         HRESULT hr = XuiRegisterClass(&cls, &hClass);
-         if (FAILED(hr))
-            return hr;
-         return S_OK;
-      }
-
-      static HRESULT APIENTRY CreateInstance(HXUIOBJ hObj, void **ppvObj)
-      {
-         *ppvObj = NULL;
-         CRetroArchFileBrowser *pThis = new CRetroArchFileBrowser();
-         if (!pThis)
-            return E_OUTOFMEMORY;
-         pThis->m_hObj = hObj;
-         HRESULT hr = pThis->OnCreate();
-         if (FAILED(hr))
-         {
-            DestroyInstance(pThis);
-            return hr;
-         }
-         *ppvObj = pThis;
-         return S_OK;
-      }
-
-      static HRESULT APIENTRY DestroyInstance(void *pvObj)
-      {
-         CRetroArchFileBrowser *pThis = (CRetroArchFileBrowser *) pvObj;
-         delete pThis;
-         return S_OK;
-      }
-};
-
-class CRetroArchCoreBrowser: public CXuiSceneImpl
-{
-   public:
-      HRESULT OnInit( XUIMessageInit* pInitData, int & bHandled );
-      HRESULT OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled );
-
-      HRESULT DispatchMessageMap(XUIMessage *pMessage)
-      {
-         if (pMessage->dwMessage == XM_INIT)
-         {
-            XUIMessageInit *pData = (XUIMessageInit *) pMessage->pvData;
-            return OnInit(pData, pMessage->bHandled);
-         }
-         if (pMessage->dwMessage == XM_NOTIFY)
-         {
-            XUINotify *pNotify = (XUINotify *) pMessage->pvData;
-            if (pNotify->dwNotify == XN_PRESS)
-               return OnNotifyPress(pNotify->hObjSource, pMessage->bHandled);
-         }
-         return __super::DispatchMessageMap(pMessage);
-      }
-
-      static HRESULT Register()
-      {
-         HXUICLASS hClass;
-         XUIClass cls;
-         memset(&cls, 0x00, sizeof(cls));
-         cls.szClassName = L"RetroArchCoreBrowser";
-         cls.szBaseClassName = XUI_CLASS_SCENE;
-         cls.Methods.CreateInstance = (PFN_CREATEINST) (CreateInstance);
-         cls.Methods.DestroyInstance = (PFN_DESTROYINST) DestroyInstance;
-         cls.Methods.ObjectProc = (PFN_OBJECT_PROC) _ObjectProc;
-         cls.pPropDefs = _GetPropDef(&cls.dwPropDefCount);
-         HRESULT hr = XuiRegisterClass(&cls, &hClass);
-         if (FAILED(hr))
-            return hr;
-         return S_OK;
-      }
-
-      static HRESULT APIENTRY CreateInstance(HXUIOBJ hObj, void **ppvObj)
-      {
-         *ppvObj = NULL;
-         CRetroArchCoreBrowser *pThis = new CRetroArchCoreBrowser();
-         if (!pThis)
-            return E_OUTOFMEMORY;
-         pThis->m_hObj = hObj;
-         HRESULT hr = pThis->OnCreate();
-         if (FAILED(hr))
-         {
-            DestroyInstance(pThis);
-            return hr;
-         }
-         *ppvObj = pThis;
-         return S_OK;
-      }
-
-      static HRESULT APIENTRY DestroyInstance(void *pvObj)
-      {
-         CRetroArchCoreBrowser *pThis = (CRetroArchCoreBrowser *) pvObj;
-         delete pThis;
-         return S_OK;
-      }
-};
-
-class CRetroArchShaderBrowser: public CXuiSceneImpl
-{
-   public:
-      HRESULT OnInit( XUIMessageInit* pInitData, int & bHandled );
-      HRESULT OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled );
-
-      HRESULT DispatchMessageMap(XUIMessage *pMessage)
-      {
-         if (pMessage->dwMessage == XM_INIT)
-         {
-            XUIMessageInit *pData = (XUIMessageInit *) pMessage->pvData;
-            return OnInit(pData, pMessage->bHandled);
-         }
-         if (pMessage->dwMessage == XM_NOTIFY)
-         {
-            XUINotify *pNotify = (XUINotify *) pMessage->pvData;
-            if (pNotify->dwNotify == XN_PRESS)
-               return OnNotifyPress(pNotify->hObjSource, pMessage->bHandled);
-         }
-         return __super::DispatchMessageMap(pMessage);
-      }
-
-      static HRESULT Register()
-      {
-         HXUICLASS hClass;
-         XUIClass cls;
-         memset(&cls, 0x00, sizeof(cls));
-         cls.szClassName = L"RetroArchShaderBrowser";
-         cls.szBaseClassName = XUI_CLASS_SCENE;
-         cls.Methods.CreateInstance = (PFN_CREATEINST) (CreateInstance);
-         cls.Methods.DestroyInstance = (PFN_DESTROYINST) DestroyInstance;
-         cls.Methods.ObjectProc = (PFN_OBJECT_PROC) _ObjectProc;
-         cls.pPropDefs = _GetPropDef(&cls.dwPropDefCount);
-         HRESULT hr = XuiRegisterClass(&cls, &hClass);
-         if (FAILED(hr))
-            return hr;
-         return S_OK;
-      }
-
-      static HRESULT APIENTRY CreateInstance(HXUIOBJ hObj, void **ppvObj)
-      {
-         *ppvObj = NULL;
-         CRetroArchShaderBrowser *pThis = new CRetroArchShaderBrowser();
-         if (!pThis)
-            return E_OUTOFMEMORY;
-         pThis->m_hObj = hObj;
-         HRESULT hr = pThis->OnCreate();
-         if (FAILED(hr))
-         {
-            DestroyInstance(pThis);
-            return hr;
-         }
-         *ppvObj = pThis;
-         return S_OK;
-      }
-
-      static HRESULT APIENTRY DestroyInstance(void *pvObj)
-      {
-         CRetroArchShaderBrowser *pThis = (CRetroArchShaderBrowser *) pvObj;
-         delete pThis;
-         return S_OK;
-      }
-};
-
-class CRetroArchQuickMenu: public CXuiSceneImpl
-{
-   public:
-      HRESULT OnInit( XUIMessageInit* pInitData, int & bHandled );
-      HRESULT OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled );
-      HRESULT OnControlNavigate(XUIMessageControlNavigate *pControlNavigateData, BOOL& bHandled);
-
-      HRESULT DispatchMessageMap(XUIMessage *pMessage)
-      {
-         if (pMessage->dwMessage == XM_INIT)
-         {
-            XUIMessageInit *pData = (XUIMessageInit *) pMessage->pvData;
-            return OnInit(pData, pMessage->bHandled);
-         }
-         if (pMessage->dwMessage == XM_CONTROL_NAVIGATE)
-         {
-            XUIMessageControlNavigate *pData = (XUIMessageControlNavigate *) pMessage->pvData;
-            return OnControlNavigate(pData, pMessage->bHandled);
-         }
-         if (pMessage->dwMessage == XM_NOTIFY)
-         {
-            XUINotify *pNotify = (XUINotify *) pMessage->pvData;
-            if (pNotify->dwNotify == XN_PRESS)
-               return OnNotifyPress(pNotify->hObjSource, pMessage->bHandled);
-         }
-         return __super::DispatchMessageMap(pMessage);
-      }
-
-      static HRESULT Register()
-      {
-         HXUICLASS hClass;
-         XUIClass cls;
-         memset(&cls, 0x00, sizeof(cls));
-         cls.szClassName = L"RetroArchQuickMenu";
-         cls.szBaseClassName = XUI_CLASS_SCENE;
-         cls.Methods.CreateInstance = (PFN_CREATEINST) (CreateInstance);
-         cls.Methods.DestroyInstance = (PFN_DESTROYINST) DestroyInstance;
-         cls.Methods.ObjectProc = (PFN_OBJECT_PROC) _ObjectProc;
-         cls.pPropDefs = _GetPropDef(&cls.dwPropDefCount);
-         HRESULT hr = XuiRegisterClass(&cls, &hClass);
-         if (FAILED(hr))
-            return hr;
-         return S_OK;
-      }
-
-      static HRESULT APIENTRY CreateInstance(HXUIOBJ hObj, void **ppvObj)
-      {
-         *ppvObj = NULL;
-         CRetroArchQuickMenu *pThis = new CRetroArchQuickMenu();
-         if (!pThis)
-            return E_OUTOFMEMORY;
-         pThis->m_hObj = hObj;
-         HRESULT hr = pThis->OnCreate();
-         if (FAILED(hr))
-         {
-            DestroyInstance(pThis);
-            return hr;
-         }
-         *ppvObj = pThis;
-         return S_OK;
-      }
-
-      static HRESULT APIENTRY DestroyInstance(void *pvObj)
-      {
-         CRetroArchQuickMenu *pThis = (CRetroArchQuickMenu *) pvObj;
-         delete pThis;
-         return S_OK;
-      }
-};
-
-class CRetroArchSettings: public CXuiSceneImpl
-{
-   public:
-      HRESULT OnInit( XUIMessageInit* pInitData, int & bHandled );
-      HRESULT OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled );
-      HRESULT OnControlNavigate(XUIMessageControlNavigate *pControlNavigateData, BOOL& bHandled);
-
-      HRESULT DispatchMessageMap(XUIMessage *pMessage)
-      {
-         if (pMessage->dwMessage == XM_INIT)
-         {
-            XUIMessageInit *pData = (XUIMessageInit *) pMessage->pvData;
-            return OnInit(pData, pMessage->bHandled);
-         }
-         if (pMessage->dwMessage == XM_CONTROL_NAVIGATE)
-         {
-            XUIMessageControlNavigate *pData = (XUIMessageControlNavigate *) pMessage->pvData;
-            return OnControlNavigate(pData, pMessage->bHandled);
-         }
-         if (pMessage->dwMessage == XM_NOTIFY)
-         {
-            XUINotify *pNotify = (XUINotify *) pMessage->pvData;
-            if (pNotify->dwNotify == XN_PRESS)
-               return OnNotifyPress(pNotify->hObjSource, pMessage->bHandled);
-         }
-         return __super::DispatchMessageMap(pMessage);
-      }
-
-      static HRESULT Register()
-      {
-         HXUICLASS hClass;
-         XUIClass cls;
-         memset(&cls, 0x00, sizeof(cls));
-         cls.szClassName = L"RetroArchSettings";
-         cls.szBaseClassName = XUI_CLASS_SCENE;
-         cls.Methods.CreateInstance = (PFN_CREATEINST) (CreateInstance);
-         cls.Methods.DestroyInstance = (PFN_DESTROYINST) DestroyInstance;
-         cls.Methods.ObjectProc = (PFN_OBJECT_PROC) _ObjectProc;
-         cls.pPropDefs = _GetPropDef(&cls.dwPropDefCount);
-         HRESULT hr = XuiRegisterClass(&cls, &hClass);
-         if (FAILED(hr))
-            return hr;
-         return S_OK;
-      }
-
-      static HRESULT APIENTRY CreateInstance(HXUIOBJ hObj, void **ppvObj)
-      {
-         *ppvObj = NULL;
-         CRetroArchSettings *pThis = new CRetroArchSettings();
-         if (!pThis)
-            return E_OUTOFMEMORY;
-         pThis->m_hObj = hObj;
-         HRESULT hr = pThis->OnCreate();
-         if (FAILED(hr))
-         {
-            DestroyInstance(pThis);
-            return hr;
-         }
-         *ppvObj = pThis;
-         return S_OK;
-      }
-
-      static HRESULT APIENTRY DestroyInstance(void *pvObj)
-      {
-         CRetroArchSettings *pThis = (CRetroArchSettings *) pvObj;
-         delete pThis;
-         return S_OK;
-      }
-};
-
-class CRetroArchControls: public CXuiSceneImpl
-{
-   public:
-      HRESULT OnInit( XUIMessageInit* pInitData, int & bHandled );
-      HRESULT OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled );
-      HRESULT OnControlNavigate(XUIMessageControlNavigate *pControlNavigateData, BOOL& bHandled);
-
-      HRESULT DispatchMessageMap(XUIMessage *pMessage)
-      {
-         if (pMessage->dwMessage == XM_INIT)
-         {
-            XUIMessageInit *pData = (XUIMessageInit *) pMessage->pvData;
-            return OnInit(pData, pMessage->bHandled);
-         }
-         if (pMessage->dwMessage == XM_CONTROL_NAVIGATE)
-         {
-            XUIMessageControlNavigate *pData = (XUIMessageControlNavigate *) pMessage->pvData;
-            return OnControlNavigate(pData, pMessage->bHandled);
-         }
-         if (pMessage->dwMessage == XM_NOTIFY)
-         {
-            XUINotify *pNotify = (XUINotify *) pMessage->pvData;
-            if (pNotify->dwNotify == XN_PRESS)
-               return OnNotifyPress(pNotify->hObjSource, pMessage->bHandled);
-         }
-         return __super::DispatchMessageMap(pMessage);
-      }
-
-      static HRESULT Register()
-      {
-         HXUICLASS hClass;
-         XUIClass cls;
-         memset(&cls, 0x00, sizeof(cls));
-         cls.szClassName = L"RetroArchControls";
-         cls.szBaseClassName = XUI_CLASS_SCENE;
-         cls.Methods.CreateInstance = (PFN_CREATEINST) (CreateInstance);
-         cls.Methods.DestroyInstance = (PFN_DESTROYINST) DestroyInstance;
-         cls.Methods.ObjectProc = (PFN_OBJECT_PROC) _ObjectProc;
-         cls.pPropDefs = _GetPropDef(&cls.dwPropDefCount);
-         HRESULT hr = XuiRegisterClass(&cls, &hClass);
-         if (FAILED(hr))
-            return hr;
-         return S_OK;
-      }
-
-      static HRESULT APIENTRY CreateInstance(HXUIOBJ hObj, void **ppvObj)
-      {
-         *ppvObj = NULL;
-         CRetroArchControls *pThis = new CRetroArchControls();
-         if (!pThis)
-            return E_OUTOFMEMORY;
-         pThis->m_hObj = hObj;
-         HRESULT hr = pThis->OnCreate();
-         if (FAILED(hr))
-         {
-            DestroyInstance(pThis);
-            return hr;
-         }
-         *ppvObj = pThis;
-         return S_OK;
-      }
-
-      static HRESULT APIENTRY DestroyInstance(void *pvObj)
-      {
-         CRetroArchControls *pThis = (CRetroArchControls *) pvObj;
-         delete pThis;
-         return S_OK;
-      }
-};
+CREATE_CLASS(CRetroArchMain, L"RetroArchMain");
+CREATE_CLASS(CRetroArchFileBrowser, L"RetroArchFileBrowser");
+CREATE_CLASS(CRetroArchCoreBrowser, L"RetroArchCoreBrowser");
+CREATE_CLASS(CRetroArchShaderBrowser, L"RetroArchShaderBrowser");
+CREATE_CLASS(CRetroArchQuickMenu, L"RetroArchQuickMenu");
+CREATE_CLASS(CRetroArchSettings, L"RetroArchSettings");
+CREATE_CLASS(CRetroArchControls, L"RetroArchControls");
 
 CRetroArch app;
 HXUIOBJ hCur;
@@ -810,6 +417,66 @@ HRESULT CRetroArchControls::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
    XuiTextElementSetText(m_menutitle, L"Input options");
 
    init_menulist(INGAME_MENU_INPUT_OPTIONS_MODE);
+
+   return 0;
+}
+
+HRESULT CRetroArchFileBrowser::OnControlNavigate(
+      XUIMessageControlNavigate *pControlNavigateData, BOOL& bHandled)
+{
+   bHandled = TRUE;
+
+   switch(pControlNavigateData->nControlNavigate)
+   {
+      case XUI_CONTROL_NAVIGATE_LEFT:
+      case XUI_CONTROL_NAVIGATE_RIGHT:
+      case XUI_CONTROL_NAVIGATE_UP:
+      case XUI_CONTROL_NAVIGATE_DOWN:
+         pControlNavigateData->hObjDest = pControlNavigateData->hObjSource;
+         break;
+      default:
+         break;
+   }
+
+   return 0;
+}
+
+HRESULT CRetroArchShaderBrowser::OnControlNavigate(
+      XUIMessageControlNavigate *pControlNavigateData, BOOL& bHandled)
+{
+   bHandled = TRUE;
+
+   switch(pControlNavigateData->nControlNavigate)
+   {
+      case XUI_CONTROL_NAVIGATE_LEFT:
+      case XUI_CONTROL_NAVIGATE_RIGHT:
+      case XUI_CONTROL_NAVIGATE_UP:
+      case XUI_CONTROL_NAVIGATE_DOWN:
+         pControlNavigateData->hObjDest = pControlNavigateData->hObjSource;
+         break;
+      default:
+         break;
+   }
+
+   return 0;
+}
+
+HRESULT CRetroArchCoreBrowser::OnControlNavigate(
+      XUIMessageControlNavigate *pControlNavigateData, BOOL& bHandled)
+{
+   bHandled = TRUE;
+
+   switch(pControlNavigateData->nControlNavigate)
+   {
+      case XUI_CONTROL_NAVIGATE_LEFT:
+      case XUI_CONTROL_NAVIGATE_RIGHT:
+      case XUI_CONTROL_NAVIGATE_UP:
+      case XUI_CONTROL_NAVIGATE_DOWN:
+         pControlNavigateData->hObjDest = pControlNavigateData->hObjSource;
+         break;
+      default:
+         break;
+   }
 
    return 0;
 }
