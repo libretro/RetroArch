@@ -506,20 +506,20 @@
     </CustomBuild>
   </ItemGroup>
   <ItemGroup>
-    <CustomBuild Include="..\..\media\360\sd\rarch_quickmenu.xui">
+    <CustomBuild Include="..\..\media\360\sd\rarch_video_options.xui">
       <FileType>Document</FileType>
-      <Command Condition="'$(Configuration)|$(Platform)'=='CodeAnalysis|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)rarch_quickmenu.xui" "$(OutDir)media\sd\rarch_quickmenu.xur"</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)rarch_quickmenu.xui" "$(OutDir)media\sd\rarch_quickmenu.xur"</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Profile|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)rarch_quickmenu.xui" "$(OutDir)media\sd\rarch_quickmenu.xur"</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Profile_FastCap|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)rarch_quickmenu.xui" "$(OutDir)media\sd\rarch_quickmenu.xur"</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)rarch_quickmenu.xui" "$(OutDir)media\sd\rarch_quickmenu.xur"</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release_LTCG|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)rarch_quickmenu.xui" "$(OutDir)media\sd\rarch_quickmenu.xur"</Command>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='CodeAnalysis|Xbox 360'">$(OutDir)media\sd\rarch_quickmenu.xur;</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Xbox 360'">$(OutDir)media\sd\rarch_quickmenu.xur;</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Profile|Xbox 360'">$(OutDir)media\sd\rarch_quickmenu.xur;</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Profile_FastCap|Xbox 360'">$(OutDir)media\sd\rarch_quickmenu.xur;</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Xbox 360'">$(OutDir)media\sd\rarch_quickmenu.xur;</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release_LTCG|Xbox 360'">$(OutDir)media\sd\rarch_quickmenu.xur;</Outputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='CodeAnalysis|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)rarch_video_options.xui" "$(OutDir)media\sd\rarch_video_options.xur"</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)rarch_video_options.xui" "$(OutDir)media\sd\rarch_video_options.xur"</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Profile|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)rarch_video_options.xui" "$(OutDir)media\sd\rarch_video_options.xur"</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Profile_FastCap|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)rarch_video_options.xui" "$(OutDir)media\sd\rarch_video_options.xur"</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)rarch_video_options.xui" "$(OutDir)media\sd\rarch_video_options.xur"</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release_LTCG|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)rarch_video_options.xui" "$(OutDir)media\sd\rarch_video_options.xur"</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='CodeAnalysis|Xbox 360'">$(OutDir)media\sd\rarch_video_options.xur;</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Xbox 360'">$(OutDir)media\sd\rarch_video_options.xur;</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Profile|Xbox 360'">$(OutDir)media\sd\rarch_video_options.xur;</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Profile_FastCap|Xbox 360'">$(OutDir)media\sd\rarch_video_options.xur;</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Xbox 360'">$(OutDir)media\sd\rarch_video_options.xur;</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release_LTCG|Xbox 360'">$(OutDir)media\sd\rarch_video_options.xur;</Outputs>
     </CustomBuild>
   </ItemGroup>
   <ItemGroup>
@@ -585,20 +585,20 @@
       <Command Condition="'$(Configuration)|$(Platform)'=='Release|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)rarch_main.xui" "$(OutDir)media\hd\rarch_main.xur"</Command>
       <Command Condition="'$(Configuration)|$(Platform)'=='Release_LTCG|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)rarch_main.xui" "$(OutDir)media\hd\rarch_main.xur"</Command>
     </CustomBuild>
-    <CustomBuild Include="..\..\media\360\hd\rarch_quickmenu.xui">
+    <CustomBuild Include="..\..\media\360\hd\rarch_video_options.xui">
       <FileType>Document</FileType>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='CodeAnalysis|Xbox 360'">$(OutDir)media\hd\rarch_quickmenu.xur;</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Xbox 360'">$(OutDir)media\hd\rarch_quickmenu.xur;</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Profile|Xbox 360'">$(OutDir)media\hd\rarch_quickmenu.xur;</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Profile_FastCap|Xbox 360'">$(OutDir)media\hd\rarch_quickmenu.xur;</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Xbox 360'">$(OutDir)media\hd\rarch_quickmenu.xur;</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release_LTCG|Xbox 360'">$(OutDir)media\hd\rarch_quickmenu.xur;</Outputs>
-      <Command Condition="'$(Configuration)|$(Platform)'=='CodeAnalysis|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)rarch_quickmenu.xui" "$(OutDir)media\hd\rarch_quickmenu.xur"</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)rarch_quickmenu.xui" "$(OutDir)media\hd\rarch_quickmenu.xur"</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Profile|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)rarch_quickmenu.xui" "$(OutDir)media\hd\rarch_quickmenu.xur"</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Profile_FastCap|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)rarch_quickmenu.xui" "$(OutDir)media\hd\rarch_quickmenu.xur"</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)rarch_quickmenu.xui" "$(OutDir)media\hd\rarch_quickmenu.xur"</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release_LTCG|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)rarch_quickmenu.xui" "$(OutDir)media\hd\rarch_quickmenu.xur"</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='CodeAnalysis|Xbox 360'">$(OutDir)media\hd\rarch_video_options.xur;</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Xbox 360'">$(OutDir)media\hd\rarch_video_options.xur;</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Profile|Xbox 360'">$(OutDir)media\hd\rarch_video_options.xur;</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Profile_FastCap|Xbox 360'">$(OutDir)media\hd\rarch_video_options.xur;</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Xbox 360'">$(OutDir)media\hd\rarch_video_options.xur;</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release_LTCG|Xbox 360'">$(OutDir)media\hd\rarch_video_options.xur;</Outputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='CodeAnalysis|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)rarch_video_options.xui" "$(OutDir)media\hd\rarch_video_options.xur"</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)rarch_video_options.xui" "$(OutDir)media\hd\rarch_video_options.xur"</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Profile|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)rarch_video_options.xui" "$(OutDir)media\hd\rarch_video_options.xur"</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Profile_FastCap|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)rarch_video_options.xui" "$(OutDir)media\hd\rarch_video_options.xur"</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)rarch_video_options.xui" "$(OutDir)media\hd\rarch_video_options.xur"</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release_LTCG|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)rarch_video_options.xui" "$(OutDir)media\hd\rarch_video_options.xur"</Command>
     </CustomBuild>
     <CustomBuild Include="..\..\media\360\hd\rarch_settings.xui">
       <FileType>Document</FileType>

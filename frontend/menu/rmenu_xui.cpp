@@ -145,7 +145,7 @@ CREATE_CLASS(CRetroArchMain, L"RetroArchMain");
 CREATE_CLASS(CRetroArchFileBrowser, L"RetroArchFileBrowser");
 CREATE_CLASS(CRetroArchCoreBrowser, L"RetroArchCoreBrowser");
 CREATE_CLASS(CRetroArchShaderBrowser, L"RetroArchShaderBrowser");
-CREATE_CLASS(CRetroArchQuickMenu, L"RetroArchQuickMenu");
+CREATE_CLASS(CRetroArchVideoOptions, L"RetroArchVideoOptions");
 CREATE_CLASS(CRetroArchSettings, L"RetroArchSettings");
 CREATE_CLASS(CRetroArchControls, L"RetroArchControls");
 
@@ -163,7 +163,7 @@ HRESULT CRetroArch::RegisterXuiClasses (void)
    CRetroArchFileBrowser::Register();
    CRetroArchCoreBrowser::Register();
    CRetroArchShaderBrowser::Register();
-   CRetroArchQuickMenu::Register();
+   CRetroArchVideoOptions::Register();
    CRetroArchControls::Register();
    CRetroArchSettings::Register();
 
@@ -177,7 +177,7 @@ HRESULT CRetroArch::UnregisterXuiClasses (void)
    XuiUnregisterClass(L"RetroArchCoreBrowser");
    XuiUnregisterClass(L"RetroArchShaderBrowser");
    XuiUnregisterClass(L"RetroArchFileBrowser");
-   XuiUnregisterClass(L"RetroArchQuickMenu");
+   XuiUnregisterClass(L"RetroArchVideoOptions");
    XuiUnregisterClass(L"RetroArchControls");
    XuiUnregisterClass(L"RetroArchSettings");
 
@@ -712,7 +712,7 @@ HRESULT CRetroArchSettings::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled 
    return 0;
 }
 
-HRESULT CRetroArchQuickMenu::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
+HRESULT CRetroArchVideoOptions::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
 {
    GetChildById(L"XuiMenuList", &m_menulist);
    GetChildById(L"XuiBackButton", &m_back);
@@ -746,7 +746,7 @@ HRESULT CRetroArchQuickMenu::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
    return 0;
 }
 
-HRESULT CRetroArchQuickMenu::OnControlNavigate(XUIMessageControlNavigate *pControlNavigateData, BOOL& bHandled)
+HRESULT CRetroArchVideoOptions::OnControlNavigate(XUIMessageControlNavigate *pControlNavigateData, BOOL& bHandled)
 {
    bool aspectratio_changed = false;
    int current_index;
@@ -837,7 +837,7 @@ HRESULT CRetroArchQuickMenu::OnControlNavigate(XUIMessageControlNavigate *pContr
    return 0;
 }
 
-HRESULT CRetroArchQuickMenu::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled )
+HRESULT CRetroArchVideoOptions::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled )
 {
    process_input_ret = 0;
 

@@ -1,7 +1,7 @@
 @echo off
 cd sd
 
-@echo "Creating sd/rarch_quickmenu.xui ..."
+@echo "Creating sd/rarch_video_options.xui ..."
 call :subroutine_a
 @echo "Creating sd/rarch_settings.xui ..."
 call :subroutine_b
@@ -17,7 +17,7 @@ call :subroutine_f
 cd ../
 cd hd
 
-@echo "Creating hd/rarch_quickmenu.xui ..."
+@echo "Creating hd/rarch_video_options.xui ..."
 call :subroutine_a
 @echo "Creating hd/rarch_settings.xui ..."
 call :subroutine_b
@@ -32,8 +32,8 @@ call :subroutine_f
 goto :eof
 
 :subroutine_a
-del rarch_quickmenu.xui 2>NUL
-call rarch_quickmenu.bat
+del rarch_video_options.xui 2>NUL
+call rarch_video_options.bat
 goto :eof
 
 :subroutine_b
