@@ -30,11 +30,11 @@ int rarch_main(int argc, char *argv[])
    bps_initialize();
    rarch_main_clear_state();
    strlcpy(g_settings.libretro, "app/native/lib", sizeof(g_settings.libretro));
-#endif
    strlcpy(g_extern.config_path, "app/native/retroarch.cfg", sizeof(g_extern.config_path));
    strlcpy(g_settings.video.shader_dir, "app/native/shaders_glsl", sizeof(g_settings.video.shader_dir));
 
    config_load();
+#endif
 
    g_extern.verbose = true;
 
