@@ -35,7 +35,9 @@
 #include "../../general.h"
 
 enum {
-   MENU_XUI_ITEM_ASPECT_RATIO = 0,
+   MENU_XUI_ITEM_HW_TEXTURE_FILTER = 0,
+   MENU_XUI_ITEM_GAMMA_CORRECTION_ENABLED,
+   MENU_XUI_ITEM_ASPECT_RATIO,
    MENU_XUI_ITEM_RESIZE_MODE,
    MENU_XUI_ITEM_ORIENTATION,
 };
@@ -44,8 +46,6 @@ enum
 {
    SETTING_EMU_SHOW_INFO_MSG = 0,
    SETTING_EMU_SHOW_DEBUG_INFO_MSG,
-   SETTING_GAMMA_CORRECTION_ENABLED,
-   SETTING_HW_TEXTURE_FILTER,
 };
 
 enum
@@ -739,10 +739,6 @@ static void init_menulist(unsigned menu_id)
          XuiListSetText(m_menulist, SETTING_EMU_SHOW_INFO_MSG, (g_extern.lifecycle_mode_state & (1ULL << MODE_INFO_DRAW)) ? L"Info Messages: ON" : L"Info Messages: OFF");
          XuiListInsertItems(m_menulist, SETTING_EMU_SHOW_DEBUG_INFO_MSG, 1);
          XuiListSetText(m_menulist, SETTING_EMU_SHOW_DEBUG_INFO_MSG, (g_extern.lifecycle_mode_state & (1ULL << MODE_FPS_DRAW)) ? L"Debug Info Messages: ON" : L"Debug Info messages: OFF");
-         XuiListInsertItems(m_menulist, SETTING_GAMMA_CORRECTION_ENABLED, 1);
-         XuiListSetText(m_menulist, SETTING_GAMMA_CORRECTION_ENABLED, g_extern.console.screen.gamma_correction ? L"Gamma Correction: ON" : L"Gamma correction: OFF");
-         XuiListInsertItems(m_menulist, SETTING_HW_TEXTURE_FILTER, 1);
-         XuiListSetText(m_menulist, SETTING_HW_TEXTURE_FILTER, g_settings.video.smooth ? L"Default Filter: Linear" : L"Default Filter: Nearest");
          break;
       case INGAME_MENU_MAIN_MODE:
          XuiListInsertItems(m_menulist, INGAME_MENU_CHANGE_LIBRETRO_CORE, 1);
@@ -1021,29 +1017,6 @@ HRESULT CRetroArchSettings::OnControlNavigate(XUIMessageControlNavigate *pContro
             XuiListSetText(m_menulist, SETTING_EMU_SHOW_DEBUG_INFO_MSG, (g_extern.lifecycle_mode_state & (1ULL << MODE_FPS_DRAW)) ? L"Debug Info messages: ON" : L"Debug Info messages: OFF");
          }
          break;
-      case SETTING_GAMMA_CORRECTION_ENABLED:
-         if (input == XUI_CONTROL_NAVIGATE_LEFT ||
-               input == XUI_CONTROL_NAVIGATE_RIGHT ||
-               input == XUI_CONTROL_NAVIGATE_OK)
-         {
-            g_extern.console.screen.gamma_correction = g_extern.console.screen.gamma_correction ? 0 : 1;
-            XuiListSetText(m_menulist, SETTING_GAMMA_CORRECTION_ENABLED, g_extern.console.screen.gamma_correction ? L"Gamma correction: ON" : L"Gamma correction: OFF");
-            msg_queue_push(g_extern.msg_queue, "You need to restart for this change to take effect.\n", 1, 90);
-         }
-         break;
-      case SETTING_HW_TEXTURE_FILTER:
-         if (input == XUI_CONTROL_NAVIGATE_LEFT)
-         {
-            g_settings.video.smooth = !g_settings.video.smooth;
-            XuiListSetText(m_menulist, SETTING_HW_TEXTURE_FILTER, g_settings.video.smooth ? L"Default Filter: Linear" : L"Default Filter: Nearest");
-         }
-         else if (input == XUI_CONTROL_NAVIGATE_RIGHT ||
-               input == XUI_CONTROL_NAVIGATE_OK)
-         {
-            g_settings.video.smooth = !g_settings.video.smooth;
-            XuiListSetText(m_menulist, SETTING_HW_TEXTURE_FILTER, g_settings.video.smooth ? L"Default Filter: Linear" : L"Default Filter: Nearest");
-         }
-         break;
       default:
          break;
    }
@@ -1091,6 +1064,12 @@ HRESULT CRetroArchQuickMenu::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
 
    XuiTextElementSetText(m_menutitle, L"Video Options");
 
+   XuiListInsertItems(m_menulist, MENU_XUI_ITEM_HW_TEXTURE_FILTER, 1);
+   XuiListSetText(m_menulist, MENU_XUI_ITEM_HW_TEXTURE_FILTER, g_settings.video.smooth ? L"Default Filter: Linear" : L"Default Filter: Nearest");
+
+   XuiListInsertItems(m_menulist, MENU_XUI_ITEM_GAMMA_CORRECTION_ENABLED, 1);
+   XuiListSetText(m_menulist, MENU_XUI_ITEM_GAMMA_CORRECTION_ENABLED, g_extern.console.screen.gamma_correction ? L"Gamma Correction: ON" : L"Gamma correction: OFF");
+
    if (driver.video_poke->set_aspect_ratio)
       driver.video_poke->set_aspect_ratio(driver.video_data, g_settings.video.aspect_ratio_idx);
 
@@ -1120,6 +1099,29 @@ HRESULT CRetroArchQuickMenu::OnControlNavigate(XUIMessageControlNavigate *pContr
 
    switch (current_index)
    {
+      case MENU_XUI_ITEM_HW_TEXTURE_FILTER:
+         if (input == XUI_CONTROL_NAVIGATE_LEFT)
+         {
+            g_settings.video.smooth = !g_settings.video.smooth;
+            XuiListSetText(m_menulist, MENU_XUI_ITEM_HW_TEXTURE_FILTER, g_settings.video.smooth ? L"Default Filter: Linear" : L"Default Filter: Nearest");
+         }
+         else if (input == XUI_CONTROL_NAVIGATE_RIGHT ||
+               input == XUI_CONTROL_NAVIGATE_OK)
+         {
+            g_settings.video.smooth = !g_settings.video.smooth;
+            XuiListSetText(m_menulist, MENU_XUI_ITEM_HW_TEXTURE_FILTER, g_settings.video.smooth ? L"Default Filter: Linear" : L"Default Filter: Nearest");
+         }
+         break;
+      case MENU_XUI_ITEM_GAMMA_CORRECTION_ENABLED:
+         if (input == XUI_CONTROL_NAVIGATE_LEFT ||
+               input == XUI_CONTROL_NAVIGATE_RIGHT ||
+               input == XUI_CONTROL_NAVIGATE_OK)
+         {
+            g_extern.console.screen.gamma_correction = g_extern.console.screen.gamma_correction ? 0 : 1;
+            XuiListSetText(m_menulist, MENU_XUI_ITEM_GAMMA_CORRECTION_ENABLED, g_extern.console.screen.gamma_correction ? L"Gamma correction: ON" : L"Gamma correction: OFF");
+            msg_queue_push(g_extern.msg_queue, "You need to restart for this change to take effect.\n", 1, 90);
+         }
+         break;
       case MENU_XUI_ITEM_ASPECT_RATIO:
          if (input == XUI_CONTROL_NAVIGATE_LEFT)
          {
