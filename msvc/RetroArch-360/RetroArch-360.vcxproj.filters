@@ -171,6 +171,12 @@
     <CustomBuild Include="..\..\media\360\sd\rarch_settings.xui">
       <Filter>Source Files\media\sd</Filter>
     </CustomBuild>
+    <CustomBuild Include="..\..\media\360\hd\rarch_load_game_history.xui">
+      <Filter>Source Files\media\hd</Filter>
+    </CustomBuild>
+    <CustomBuild Include="..\..\media\360\sd\rarch_load_game_history.xui">
+      <Filter>Source Files\media\sd</Filter>
+    </CustomBuild>
     <CustomBuild Include="..\..\media\360\rarch.ttf">
       <Filter>Source Files\media</Filter>
     </CustomBuild>

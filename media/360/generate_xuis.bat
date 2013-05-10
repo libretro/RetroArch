@@ -17,6 +17,8 @@ call :subroutine_f
 call :subroutine_g
 @echo "Creating sd/rarch_core_options.xui ..."
 call :subroutine_h
+@echo "Creating sd/rarch_load_game_history.xui ..."
+call :subroutine_i
 
 cd ../
 cd hd
@@ -37,6 +39,8 @@ call :subroutine_f
 call :subroutine_g
 @echo "Creating hd/rarch_core_options.xui ..."
 call :subroutine_h
+@echo "Creating hd/rarch_load_game_history.xui ..."
+call :subroutine_i
 goto :eof
 
 :subroutine_a
@@ -77,4 +81,9 @@ goto :eof
 :subroutine_h
 del rarch_core_options.xui 2>NUL
 call rarch_core_options.bat
+goto :eof
+
+:subroutine_i
+del rarch_load_game_history.xui 2>NUL
+call rarch_load_game_history.bat
 goto :eof

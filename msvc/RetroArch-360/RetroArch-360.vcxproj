@@ -555,6 +555,21 @@
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Xbox 360'">$(OutDir)media\sd\rarch_core_options.xur;</Outputs>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Release_LTCG|Xbox 360'">$(OutDir)media\sd\rarch_core_options.xur;</Outputs>
     </CustomBuild>
+    <CustomBuild Include="..\..\media\360\sd\rarch_load_game_history.xui">
+      <FileType>Document</FileType>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='CodeAnalysis|Xbox 360'">$(OutDir)media\sd\rarch_load_game_history.xur;</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Xbox 360'">$(OutDir)media\sd\rarch_load_game_history.xur;</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Profile|Xbox 360'">$(OutDir)media\sd\rarch_load_game_history.xur;</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Profile_FastCap|Xbox 360'">$(OutDir)media\sd\rarch_load_game_history.xur;</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Xbox 360'">$(OutDir)media\sd\rarch_load_game_history.xur;</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release_LTCG|Xbox 360'">$(OutDir)media\sd\rarch_load_game_history.xur;</Outputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='CodeAnalysis|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)rarch_load_game_history.xui" "$(OutDir)media\sd\rarch_load_game_history.xur"</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)rarch_load_game_history.xui" "$(OutDir)media\sd\rarch_load_game_history.xur"</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Profile|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)rarch_load_game_history.xui" "$(OutDir)media\sd\rarch_load_game_history.xur"</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Profile_FastCap|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)rarch_load_game_history.xui" "$(OutDir)media\sd\rarch_load_game_history.xur"</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)rarch_load_game_history.xui" "$(OutDir)media\sd\rarch_load_game_history.xur"</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release_LTCG|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)rarch_load_game_history.xui" "$(OutDir)media\sd\rarch_load_game_history.xur"</Command>
+    </CustomBuild>
 </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="..\..\media\360\sd\rarch_libretrocore_browser.xui">
@@ -663,6 +678,21 @@
       <Command Condition="'$(Configuration)|$(Platform)'=='Profile_FastCap|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)rarch_core_options.xui" "$(OutDir)media\hd\rarch_core_options.xur"</Command>
       <Command Condition="'$(Configuration)|$(Platform)'=='Release|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)rarch_core_options.xui" "$(OutDir)media\hd\rarch_core_options.xur"</Command>
       <Command Condition="'$(Configuration)|$(Platform)'=='Release_LTCG|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)rarch_core_options.xui" "$(OutDir)media\hd\rarch_core_options.xur"</Command>
+    </CustomBuild>
+    <CustomBuild Include="..\..\media\360\hd\rarch_load_game_history.xui">
+      <FileType>Document</FileType>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='CodeAnalysis|Xbox 360'">$(OutDir)media\hd\rarch_load_game_history.xur;</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Xbox 360'">$(OutDir)media\hd\rarch_load_game_history.xur;</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Profile|Xbox 360'">$(OutDir)media\hd\rarch_load_game_history.xur;</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Profile_FastCap|Xbox 360'">$(OutDir)media\hd\rarch_load_game_history.xur;</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Xbox 360'">$(OutDir)media\hd\rarch_load_game_history.xur;</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release_LTCG|Xbox 360'">$(OutDir)media\hd\rarch_load_game_history.xur;</Outputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='CodeAnalysis|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)rarch_load_game_history.xui" "$(OutDir)media\hd\rarch_load_game_history.xur"</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)rarch_load_game_history.xui" "$(OutDir)media\hd\rarch_load_game_history.xur"</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Profile|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)rarch_load_game_history.xui" "$(OutDir)media\hd\rarch_load_game_history.xur"</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Profile_FastCap|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)rarch_load_game_history.xui" "$(OutDir)media\hd\rarch_load_game_history.xur"</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)rarch_load_game_history.xui" "$(OutDir)media\hd\rarch_load_game_history.xur"</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release_LTCG|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)rarch_load_game_history.xui" "$(OutDir)media\hd\rarch_load_game_history.xur"</Command>
     </CustomBuild>
     <CustomBuild Include="..\..\media\360\hd\rarch_settings.xui">
       <FileType>Document</FileType>

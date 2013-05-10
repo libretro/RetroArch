@@ -153,6 +153,7 @@ CREATE_CLASS(CRetroArchAudioOptions, L"RetroArchAudioOptions");
 CREATE_CLASS(CRetroArchCoreOptions, L"RetroArchCoreOptions");
 CREATE_CLASS(CRetroArchSettings, L"RetroArchSettings");
 CREATE_CLASS(CRetroArchControls, L"RetroArchControls");
+CREATE_CLASS(CRetroArchLoadGameHistory, L"RetroArchLoadGameHistory");
 
 CRetroArch app;
 
@@ -173,6 +174,7 @@ HRESULT CRetroArch::RegisterXuiClasses (void)
    CRetroArchCoreOptions::Register();
    CRetroArchControls::Register();
    CRetroArchSettings::Register();
+   CRetroArchLoadGameHistory::Register();
 
    return 0;
 }
@@ -189,6 +191,7 @@ HRESULT CRetroArch::UnregisterXuiClasses (void)
    XuiUnregisterClass(L"RetroArchCoreOptions");
    XuiUnregisterClass(L"RetroArchControls");
    XuiUnregisterClass(L"RetroArchSettings");
+   XuiUnregisterClass(L"RetroArchLoadGameHistory");
 
    return 0;
 }
@@ -331,6 +334,41 @@ static void init_menulist(unsigned menu_id)
       XuiListSetText(m_menulist, 0, L"No options available.");
    }
          break;
+      case INGAME_MENU_LOAD_GAME_HISTORY_MODE:
+         {
+            size_t history_size = rom_history_size(rgui->history);
+
+            if (history_size)
+            {
+               size_t opts = history_size;
+               for (size_t i = 0; i < opts; i++)
+               {
+                  const char *path = NULL;
+                  const char *core_path = NULL;
+                  const char *core_name = NULL;
+
+                  rom_history_get_index(rgui->history, i,
+                        &path, &core_path, &core_name);
+
+                  char path_short[PATH_MAX];
+                  fill_pathname(path_short, path_basename(path), "", sizeof(path_short));
+
+                  char fill_buf[PATH_MAX];
+                  snprintf(fill_buf, sizeof(fill_buf), "%s (%s)",
+                        path_short, core_name);
+
+                  mbstowcs(strw_buffer, fill_buf, sizeof(strw_buffer) / sizeof(wchar_t));
+                  XuiListInsertItems(m_menulist, i, 1);
+                  XuiListSetText(m_menulist, i, strw_buffer);
+               }
+            }
+            else
+            {
+               XuiListInsertItems(m_menulist, 0, 1);
+               XuiListSetText(m_menulist, 0, L"No history available.");
+            }
+         }
+         break;
       case INGAME_MENU_INPUT_OPTIONS_MODE:
          {
             unsigned i;
@@ -430,6 +468,27 @@ static void init_menulist(unsigned menu_id)
          break;
    }
 }
+
+HRESULT CRetroArchLoadGameHistory::OnControlNavigate(
+      XUIMessageControlNavigate *pControlNavigateData, BOOL& bHandled)
+{
+   bHandled = TRUE;
+
+   switch(pControlNavigateData->nControlNavigate)
+   {
+      case XUI_CONTROL_NAVIGATE_LEFT:
+      case XUI_CONTROL_NAVIGATE_RIGHT:
+      case XUI_CONTROL_NAVIGATE_UP:
+      case XUI_CONTROL_NAVIGATE_DOWN:
+         pControlNavigateData->hObjDest = pControlNavigateData->hObjSource;
+         break;
+      default:
+         break;
+   }
+
+   return 0;
+}
+
 
 HRESULT CRetroArchControls::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
 {
@@ -632,6 +691,19 @@ HRESULT CRetroArchControls::OnControlNavigate(
    return 0;
 }
 
+HRESULT CRetroArchLoadGameHistory::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled )
+{
+   if ( hObjPressed == m_menulist)
+   {
+      XUIMessageControlNavigate controls;
+      controls.nControlNavigate = (XUI_CONTROL_NAVIGATE)XUI_CONTROL_NAVIGATE_OK;
+      OnControlNavigate(&controls, bHandled);
+   }
+
+   bHandled = TRUE;
+   return 0;
+}
+
 HRESULT CRetroArchControls::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled )
 {
    if ( hObjPressed == m_menulist)
@@ -642,6 +714,19 @@ HRESULT CRetroArchControls::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled 
    }
 
    bHandled = TRUE;
+   return 0;
+}
+
+HRESULT CRetroArchLoadGameHistory::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
+{
+   GetChildById(L"XuiMenuList", &m_menulist);
+   GetChildById(L"XuiBackButton", &m_back);
+   GetChildById(L"XuiTxtTitle", &m_menutitle);
+
+   XuiTextElementSetText(m_menutitle, L"Load History");
+
+   init_menulist(INGAME_MENU_LOAD_GAME_HISTORY_MODE);
+
    return 0;
 }
 
@@ -1163,6 +1248,15 @@ HRESULT CRetroArchMain::OnControlNavigate(XUIMessageControlNavigate *pControlNav
          }
          break;
       case INGAME_MENU_LOAD_GAME_HISTORY_MODE:
+         if (input == XUI_CONTROL_NAVIGATE_OK)
+         {
+            hr = XuiSceneCreate(hdmenus_allowed ? L"file://game:/media/hd/" : L"file://game:/media/sd/", L"rarch_load_game_history.xur", NULL, &current_menu);
+
+            if (hr < 0)
+               RARCH_ERR("Failed to load scene.\n");
+
+            XuiSceneNavigateForward(current_obj, false, current_menu, XUSER_INDEX_FOCUS);
+         }
          break;
       case INGAME_MENU_CHANGE_GAME:
          if (input == XUI_CONTROL_NAVIGATE_OK)
