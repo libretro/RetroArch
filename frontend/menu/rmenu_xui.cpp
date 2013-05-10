@@ -15,8 +15,6 @@
  */
 
 #include <stdint.h>
-#include <crtdefs.h>
-#include <tchar.h>
 #include <xtl.h>
 #include <xui.h>
 #include <xuiapp.h>
@@ -62,17 +60,11 @@ HXUIOBJ m_menulist;
 HXUIOBJ m_menutitle;
 HXUIOBJ m_menutitlebottom;
 HXUIOBJ m_back;
+HXUIOBJ root_menu;
+HXUIOBJ current_menu;
 
 class CRetroArch : public CXuiModule
 {
-   public:
-      HXUIOBJ hMainScene;
-      HXUIOBJ hControlsMenu;
-      HXUIOBJ hFileBrowser;
-      HXUIOBJ hCoreBrowser;
-      HXUIOBJ hShaderBrowser;
-      HXUIOBJ hQuickMenu;
-      HXUIOBJ hRetroArchSettings;
    protected:
       virtual HRESULT RegisterXuiClasses();
       virtual HRESULT UnregisterXuiClasses();
@@ -158,7 +150,6 @@ CREATE_CLASS(CRetroArchSettings, L"RetroArchSettings");
 CREATE_CLASS(CRetroArchControls, L"RetroArchControls");
 
 CRetroArch app;
-HXUIOBJ hCur;
 
 wchar_t strw_buffer[PATH_MAX];
 char str_buffer[PATH_MAX];
@@ -971,18 +962,19 @@ HRESULT CRetroArchMain::OnControlNavigate(XUIMessageControlNavigate *pControlNav
 
    unsigned input = pControlNavigateData->nControlNavigate;
 
+   HXUIOBJ current_obj = current_menu;
+
    switch (current_index)
    {
       case INGAME_MENU_CHANGE_LIBRETRO_CORE:
          if (input == XUI_CONTROL_NAVIGATE_OK)
          {
-            hr = XuiSceneCreate(hdmenus_allowed ? L"file://game:/media/hd/" : L"file://game:/media/sd/", L"rarch_libretrocore_browser.xur", NULL, &app.hCoreBrowser);
+            hr = XuiSceneCreate(hdmenus_allowed ? L"file://game:/media/hd/" : L"file://game:/media/sd/", L"rarch_libretrocore_browser.xur", NULL, &current_menu);
 
             if (hr < 0)
                RARCH_ERR("Failed to load scene.\n");
 
-            XuiSceneNavigateForward(hCur, false, app.hCoreBrowser, XUSER_INDEX_FOCUS);
-            hCur = app.hCoreBrowser;
+            XuiSceneNavigateForward(current_obj, false, current_menu, XUSER_INDEX_FOCUS);
          }
          break;
       case INGAME_MENU_LOAD_GAME_HISTORY_MODE:
@@ -990,13 +982,12 @@ HRESULT CRetroArchMain::OnControlNavigate(XUIMessageControlNavigate *pControlNav
       case INGAME_MENU_CHANGE_GAME:
          if (input == XUI_CONTROL_NAVIGATE_OK)
          {
-            hr = XuiSceneCreate(hdmenus_allowed ? L"file://game:/media/hd/" : L"file://game:/media/sd/", L"rarch_filebrowser.xur", NULL, &app.hFileBrowser);
+            hr = XuiSceneCreate(hdmenus_allowed ? L"file://game:/media/hd/" : L"file://game:/media/sd/", L"rarch_filebrowser.xur", NULL, &current_menu);
 
             if (hr < 0)
                RARCH_ERR("Failed to load scene.\n");
 
-            XuiSceneNavigateForward(hCur, false, app.hFileBrowser, XUSER_INDEX_FOCUS);
-            hCur = app.hFileBrowser;
+            XuiSceneNavigateForward(current_obj, false, current_menu, XUSER_INDEX_FOCUS);
          }
          break;
       case INGAME_MENU_CORE_OPTIONS_MODE:
@@ -1004,13 +995,12 @@ HRESULT CRetroArchMain::OnControlNavigate(XUIMessageControlNavigate *pControlNav
       case INGAME_MENU_VIDEO_OPTIONS_MODE:
          if (input == XUI_CONTROL_NAVIGATE_OK)
          {
-            hr = XuiSceneCreate(hdmenus_allowed ? L"file://game:/media/hd/" : L"file://game:/media/sd/", L"rarch_quickmenu.xur", NULL, &app.hQuickMenu);
+            hr = XuiSceneCreate(hdmenus_allowed ? L"file://game:/media/hd/" : L"file://game:/media/sd/", L"rarch_quickmenu.xur", NULL, &current_menu);
 
             if (hr < 0)
                RARCH_ERR("Failed to load scene.\n");
 
-            XuiSceneNavigateForward(hCur, false, app.hQuickMenu, XUSER_INDEX_FOCUS);
-            hCur = app.hQuickMenu;
+            XuiSceneNavigateForward(current_obj, false, current_menu, XUSER_INDEX_FOCUS);
          }
          break;
       case INGAME_MENU_AUDIO_OPTIONS_MODE:
@@ -1018,13 +1008,12 @@ HRESULT CRetroArchMain::OnControlNavigate(XUIMessageControlNavigate *pControlNav
       case INGAME_MENU_INPUT_OPTIONS_MODE:
          if (input == XUI_CONTROL_NAVIGATE_OK)
          {
-            hr = XuiSceneCreate(hdmenus_allowed ? L"file://game:/media/hd/" : L"file://game:/media/sd/", L"rarch_controls.xur", NULL, &app.hControlsMenu);
+            hr = XuiSceneCreate(hdmenus_allowed ? L"file://game:/media/hd/" : L"file://game:/media/sd/", L"rarch_controls.xur", NULL, &current_menu);
 
             if (hr < 0)
                RARCH_ERR("Failed to load scene.\n");
 
-            XuiSceneNavigateForward(hCur, false, app.hControlsMenu, XUSER_INDEX_FOCUS);
-            hCur = app.hControlsMenu;
+            XuiSceneNavigateForward(current_obj, false, current_menu, XUSER_INDEX_FOCUS);
          }
          break;
       case INGAME_MENU_PATH_OPTIONS_MODE:
@@ -1032,13 +1021,12 @@ HRESULT CRetroArchMain::OnControlNavigate(XUIMessageControlNavigate *pControlNav
       case INGAME_MENU_SETTINGS_MODE:
          if (input == XUI_CONTROL_NAVIGATE_OK)
          {
-            hr = XuiSceneCreate(hdmenus_allowed ? L"file://game:/media/hd/" : L"file://game:/media/sd/", L"rarch_settings.xur", NULL, &app.hRetroArchSettings);
+            hr = XuiSceneCreate(hdmenus_allowed ? L"file://game:/media/hd/" : L"file://game:/media/sd/", L"rarch_settings.xur", NULL, &current_menu);
 
             if (hr < 0)
                RARCH_ERR("Failed to load scene.\n");
 
-            XuiSceneNavigateForward(hCur, false, app.hRetroArchSettings, XUSER_INDEX_FOCUS);
-            hCur = app.hRetroArchSettings;
+            XuiSceneNavigateForward(current_obj, false, current_menu, XUSER_INDEX_FOCUS);
          }
          break;
       case INGAME_MENU_LOAD_STATE:
@@ -1196,15 +1184,15 @@ rgui_handle_t *rgui_init (void)
       return NULL;
    }
 
-   hr = XuiSceneCreate(hdmenus_allowed ? L"file://game:/media/hd/" : L"file://game:/media/sd/", L"rarch_main.xur", NULL, &app.hMainScene);
+   hr = XuiSceneCreate(hdmenus_allowed ? L"file://game:/media/hd/" : L"file://game:/media/sd/", L"rarch_main.xur", NULL, &root_menu);
    if (hr != S_OK)
    {
       RARCH_ERR("Failed to create scene 'rarch_main.xur'.\n");
       return NULL;
    }
 
-   hCur = app.hMainScene;
-   hr = XuiSceneNavigateFirst(app.GetRootObj(), app.hMainScene, XUSER_INDEX_FOCUS);
+   current_menu = root_menu;
+   hr = XuiSceneNavigateFirst(app.GetRootObj(), current_menu, XUSER_INDEX_FOCUS);
    if (hr != S_OK)
    {
       RARCH_ERR("XuiSceneNavigateFirst failed.\n");
@@ -1274,7 +1262,7 @@ bool menu_iterate(void)
    XINPUT_STATE state;
    XInputGetState(0, &state);
 
-   if((state.Gamepad.wButtons & XINPUT_GAMEPAD_B) && hCur != app.hMainScene)
+   if((state.Gamepad.wButtons & XINPUT_GAMEPAD_B) && current_menu != root_menu)
       rgui->trigger_state = RGUI_ACTION_CANCEL;
    else if ((state.Gamepad.wButtons & XINPUT_GAMEPAD_A))
       rgui->trigger_state = RGUI_ACTION_OK;
@@ -1295,9 +1283,9 @@ bool menu_iterate(void)
 
    if (rgui->trigger_state == RGUI_ACTION_CANCEL)
    {
-      XuiSceneNavigateBack(hCur, app.hMainScene, XUSER_INDEX_ANY);
-      hCur = app.hMainScene;
-      XuiElementGetChildById(app.hMainScene, L"XuiMenuList", &m_menulist);
+      XuiSceneNavigateBack(current_menu, root_menu, XUSER_INDEX_ANY);
+      current_menu = root_menu;
+      XuiElementGetChildById(current_menu, L"XuiMenuList", &m_menulist);
       init_menulist(INGAME_MENU_MAIN_MODE);
    }
 
