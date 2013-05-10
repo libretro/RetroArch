@@ -1344,6 +1344,12 @@ HRESULT CRetroArchMain::OnControlNavigate(XUIMessageControlNavigate *pControlNav
             rarch_state_slot_increase();
          else if (input == XUI_CONTROL_NAVIGATE_OK)
          {
+            if (current_index == INGAME_MENU_LOAD_STATE)
+               rarch_load_state();
+            else if (current_index == INGAME_MENU_SAVE_STATE)
+               rarch_save_state();
+            g_extern.lifecycle_mode_state |= (1ULL << MODE_GAME);
+            process_input_ret = -1;
          }
 
          menu_settings_create_menu_item_label_w(strw_buffer, S_LBL_LOAD_STATE_SLOT, sizeof(strw_buffer));
