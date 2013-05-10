@@ -15,6 +15,8 @@ call :subroutine_e
 call :subroutine_f
 @echo "Creating sd/rarch_audio_options.xui ..."
 call :subroutine_g
+@echo "Creating sd/rarch_core_options.xui ..."
+call :subroutine_h
 
 cd ../
 cd hd
@@ -31,8 +33,10 @@ call :subroutine_d
 call :subroutine_e
 @echo "Creating hd/rarch_libretrocore_browser.xui ..."
 call :subroutine_f
-@echo "Creating sd/rarch_audio_options.xui ..."
+@echo "Creating hd/rarch_audio_options.xui ..."
 call :subroutine_g
+@echo "Creating hd/rarch_core_options.xui ..."
+call :subroutine_h
 goto :eof
 
 :subroutine_a
@@ -65,7 +69,12 @@ del rarch_libretrocore_browser.xui 2>NUL
 call rarch_libretrocore_browser.bat
 goto :eof
 
-:subroutine_a
+:subroutine_g
 del rarch_audio_options.xui 2>NUL
 call rarch_audio_options.bat
+goto :eof
+
+:subroutine_h
+del rarch_core_options.xui 2>NUL
+call rarch_core_options.bat
 goto :eof

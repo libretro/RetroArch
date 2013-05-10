@@ -29,7 +29,6 @@
 #include "../../gfx/gfx_context.h"
 
 #include "../../message.h"
-
 #include "../../general.h"
 
 enum {
@@ -151,6 +150,7 @@ CREATE_CLASS(CRetroArchCoreBrowser, L"RetroArchCoreBrowser");
 CREATE_CLASS(CRetroArchShaderBrowser, L"RetroArchShaderBrowser");
 CREATE_CLASS(CRetroArchVideoOptions, L"RetroArchVideoOptions");
 CREATE_CLASS(CRetroArchAudioOptions, L"RetroArchAudioOptions");
+CREATE_CLASS(CRetroArchCoreOptions, L"RetroArchCoreOptions");
 CREATE_CLASS(CRetroArchSettings, L"RetroArchSettings");
 CREATE_CLASS(CRetroArchControls, L"RetroArchControls");
 
@@ -170,6 +170,7 @@ HRESULT CRetroArch::RegisterXuiClasses (void)
    CRetroArchShaderBrowser::Register();
    CRetroArchVideoOptions::Register();
    CRetroArchAudioOptions::Register();
+   CRetroArchCoreOptions::Register();
    CRetroArchControls::Register();
    CRetroArchSettings::Register();
 
@@ -185,6 +186,7 @@ HRESULT CRetroArch::UnregisterXuiClasses (void)
    XuiUnregisterClass(L"RetroArchFileBrowser");
    XuiUnregisterClass(L"RetroArchVideoOptions");
    XuiUnregisterClass(L"RetroArchAudioOptions");
+   XuiUnregisterClass(L"RetroArchCoreOptions");
    XuiUnregisterClass(L"RetroArchControls");
    XuiUnregisterClass(L"RetroArchSettings");
 
@@ -306,6 +308,29 @@ static void init_menulist(unsigned menu_id)
 
    switch (menu_id)
    {
+      case INGAME_MENU_CORE_OPTIONS_MODE:
+   if (g_extern.system.core_options)
+   {
+      size_t opts = core_option_size(g_extern.system.core_options);
+      for (size_t i = 0; i < opts; i++)
+      {
+         char label[256];
+         strlcpy(label, core_option_get_desc(g_extern.system.core_options, i),
+            sizeof(label));
+         snprintf(label, sizeof(label), "%s : %s", label,
+            core_option_get_val(g_extern.system.core_options, i));
+         mbstowcs(strw_buffer, label,
+            sizeof(strw_buffer) / sizeof(wchar_t));
+         XuiListInsertItems(m_menulist, i, 1);
+         XuiListSetText(m_menulist, i, strw_buffer);
+      }
+   }
+   else
+   {
+      XuiListInsertItems(m_menulist, 0, 1);
+      XuiListSetText(m_menulist, 0, L"No options available.");
+   }
+         break;
       case INGAME_MENU_INPUT_OPTIONS_MODE:
          {
             unsigned i;
@@ -719,6 +744,92 @@ HRESULT CRetroArchSettings::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled 
    return 0;
 }
 
+HRESULT CRetroArchCoreOptions::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
+{
+   GetChildById(L"XuiMenuList", &m_menulist);
+   GetChildById(L"XuiBackButton", &m_back);
+   GetChildById(L"XuiTxtTitle", &m_menutitle);
+
+   XuiListDeleteItems(m_menulist, 0, XuiListGetItemCount(m_menulist));
+
+   XuiTextElementSetText(m_menutitle, L"Core Options");
+
+   init_menulist(INGAME_MENU_CORE_OPTIONS_MODE);
+
+   return 0;
+}
+
+HRESULT CRetroArchCoreOptions::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled )
+{
+   process_input_ret = 0;
+
+   if ( hObjPressed == m_menulist)
+   {
+      XUIMessageControlNavigate controls;
+      controls.nControlNavigate = (XUI_CONTROL_NAVIGATE)XUI_CONTROL_NAVIGATE_OK;
+      OnControlNavigate(&controls, bHandled);
+   }
+
+   bHandled = TRUE;
+
+   return 0;
+}
+
+HRESULT CRetroArchCoreOptions::OnControlNavigate(XUIMessageControlNavigate *pControlNavigateData, BOOL& bHandled)
+{
+   unsigned current_index = XuiListGetCurSel(m_menulist, NULL);
+   unsigned input = pControlNavigateData->nControlNavigate;
+
+   size_t opts = core_option_size(g_extern.system.core_options);
+
+   if ((current_index < opts) && opts > 0)
+   {
+      bool update_item = false;
+
+      switch(pControlNavigateData->nControlNavigate)
+      {
+         case XUI_CONTROL_NAVIGATE_LEFT:
+            core_option_prev(g_extern.system.core_options,  current_index);
+            update_item = true;
+            break;
+         case XUI_CONTROL_NAVIGATE_RIGHT:
+            core_option_next(g_extern.system.core_options,  current_index);
+            update_item = true;
+            break;
+         default:
+            break;
+      }
+
+      if (update_item)
+      {
+         char label[256];
+         strlcpy(label, core_option_get_desc(g_extern.system.core_options, current_index),
+            sizeof(label));
+         snprintf(label, sizeof(label), "%s : %s", label,
+            core_option_get_val(g_extern.system.core_options, current_index));
+         mbstowcs(strw_buffer, label,
+            sizeof(strw_buffer) / sizeof(wchar_t));
+         XuiListSetText(m_menulist, current_index, strw_buffer);
+      }
+   }
+
+   bHandled = TRUE;
+
+   switch(pControlNavigateData->nControlNavigate)
+   {
+      case XUI_CONTROL_NAVIGATE_LEFT:
+      case XUI_CONTROL_NAVIGATE_RIGHT:
+      case XUI_CONTROL_NAVIGATE_UP:
+      case XUI_CONTROL_NAVIGATE_DOWN:
+         pControlNavigateData->hObjDest = pControlNavigateData->hObjSource;
+         break;
+      default:
+         break;
+   }
+
+   return 0;
+}
+
 HRESULT CRetroArchAudioOptions::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
 {
    GetChildById(L"XuiMenuList", &m_menulist);
@@ -737,11 +848,7 @@ HRESULT CRetroArchAudioOptions::OnInit(XUIMessageInit * pInitData, BOOL& bHandle
 
 HRESULT CRetroArchAudioOptions::OnControlNavigate(XUIMessageControlNavigate *pControlNavigateData, BOOL& bHandled)
 {
-   bool aspectratio_changed = false;
-   int current_index;
-
-   current_index = XuiListGetCurSel(m_menulist, NULL);
-
+   int current_index = XuiListGetCurSel(m_menulist, NULL);
    unsigned input = pControlNavigateData->nControlNavigate;
 
    switch (current_index)
@@ -1069,6 +1176,15 @@ HRESULT CRetroArchMain::OnControlNavigate(XUIMessageControlNavigate *pControlNav
          }
          break;
       case INGAME_MENU_CORE_OPTIONS_MODE:
+         if (input == XUI_CONTROL_NAVIGATE_OK)
+         {
+            hr = XuiSceneCreate(hdmenus_allowed ? L"file://game:/media/hd/" : L"file://game:/media/sd/", L"rarch_core_options.xur", NULL, &current_menu);
+
+            if (hr < 0)
+               RARCH_ERR("Failed to load scene.\n");
+
+            XuiSceneNavigateForward(current_obj, false, current_menu, XUSER_INDEX_FOCUS);
+         }
          break;
       case INGAME_MENU_VIDEO_OPTIONS_MODE:
          if (input == XUI_CONTROL_NAVIGATE_OK)
