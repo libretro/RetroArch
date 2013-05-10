@@ -472,6 +472,16 @@ static void init_menulist(unsigned menu_id)
 HRESULT CRetroArchLoadGameHistory::OnControlNavigate(
       XUIMessageControlNavigate *pControlNavigateData, BOOL& bHandled)
 {
+
+   unsigned current_index = XuiListGetCurSel(m_menulist, NULL);
+   unsigned input = pControlNavigateData->nControlNavigate;
+
+   if (input == XUI_CONTROL_NAVIGATE_OK)
+   {
+      load_menu_game_history(current_index);
+      process_input_ret = -1;
+   }
+
    bHandled = TRUE;
 
    switch(pControlNavigateData->nControlNavigate)

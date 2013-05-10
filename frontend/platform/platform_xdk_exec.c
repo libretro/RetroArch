@@ -28,7 +28,7 @@ static void rarch_console_exec(const char *path, bool should_load_game)
 #ifdef IS_SALAMANDER
    XLaunchNewImage(path, NULL);
 #else
-#ifdef _XBOX1
+#if defined(_XBOX1)
    LAUNCH_DATA ptr;
    memset(&ptr, 0, sizeof(ptr));
    if (should_load_game)
@@ -38,7 +38,13 @@ static void rarch_console_exec(const char *path, bool should_load_game)
    }
    else
       XLaunchNewImage(path, NULL);
-#else
+#elif defined(_XBOX360)
+   char game_path[1024];
+   if (should_load_game)
+   {
+      strlcpy(game_path, g_extern.fullpath, sizeof(game_path));
+      XSetLaunchData(game_path, MAX_LAUNCH_DATA_SIZE);
+   }
    XLaunchNewImage(path, NULL);
 #endif
 #endif

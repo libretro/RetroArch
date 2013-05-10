@@ -267,7 +267,7 @@ static int system_process_args(int argc, char *argv[])
    (void)argc;
    (void)argv;
 
-#ifdef _XBOX1
+#if defined(_XBOX1)
    LAUNCH_DATA ptr;
    DWORD launch_type;
 
@@ -281,6 +281,19 @@ static int system_process_args(int argc, char *argv[])
          RARCH_LOG("Auto-start game %s.\n", g_extern.fullpath);
          return 1;
       }
+   }
+#elif defined(_XBOX360)
+   DWORD dwLaunchDataSize;
+   if (XGetLaunchDataSize(&dwLaunchDataSize) == ERROR_SUCCESS)
+   {
+      BYTE* pLaunchData = new BYTE[dwLaunchDataSize];
+      XGetLaunchData(pLaunchData, dwLaunchDataSize);
+
+      snprintf(g_extern.fullpath, sizeof(g_extern.fullpath), "%s", (char*)pLaunchData);
+      RARCH_LOG("Auto-start game %s.\n", g_extern.fullpath);
+
+      delete []pLaunchData;
+      return 1;
    }
 #endif
    return 0;
