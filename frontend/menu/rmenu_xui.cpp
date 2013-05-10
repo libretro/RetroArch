@@ -40,6 +40,10 @@ enum {
    MENU_XUI_ITEM_ORIENTATION,
 };
 
+enum {
+   MENU_XUI_ITEM_AUDIO_MUTE_AUDIO = 0,
+};
+
 enum
 {
    SETTING_EMU_SHOW_INFO_MSG = 0,
@@ -146,6 +150,7 @@ CREATE_CLASS(CRetroArchFileBrowser, L"RetroArchFileBrowser");
 CREATE_CLASS(CRetroArchCoreBrowser, L"RetroArchCoreBrowser");
 CREATE_CLASS(CRetroArchShaderBrowser, L"RetroArchShaderBrowser");
 CREATE_CLASS(CRetroArchVideoOptions, L"RetroArchVideoOptions");
+CREATE_CLASS(CRetroArchAudioOptions, L"RetroArchAudioOptions");
 CREATE_CLASS(CRetroArchSettings, L"RetroArchSettings");
 CREATE_CLASS(CRetroArchControls, L"RetroArchControls");
 
@@ -164,6 +169,7 @@ HRESULT CRetroArch::RegisterXuiClasses (void)
    CRetroArchCoreBrowser::Register();
    CRetroArchShaderBrowser::Register();
    CRetroArchVideoOptions::Register();
+   CRetroArchAudioOptions::Register();
    CRetroArchControls::Register();
    CRetroArchSettings::Register();
 
@@ -178,6 +184,7 @@ HRESULT CRetroArch::UnregisterXuiClasses (void)
    XuiUnregisterClass(L"RetroArchShaderBrowser");
    XuiUnregisterClass(L"RetroArchFileBrowser");
    XuiUnregisterClass(L"RetroArchVideoOptions");
+   XuiUnregisterClass(L"RetroArchAudioOptions");
    XuiUnregisterClass(L"RetroArchControls");
    XuiUnregisterClass(L"RetroArchSettings");
 
@@ -712,6 +719,77 @@ HRESULT CRetroArchSettings::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled 
    return 0;
 }
 
+HRESULT CRetroArchAudioOptions::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
+{
+   GetChildById(L"XuiMenuList", &m_menulist);
+   GetChildById(L"XuiBackButton", &m_back);
+   GetChildById(L"XuiTxtTitle", &m_menutitle);
+
+   XuiListDeleteItems(m_menulist, 0, XuiListGetItemCount(m_menulist));
+
+   XuiTextElementSetText(m_menutitle, L"Audio Options");
+
+   XuiListInsertItems(m_menulist, MENU_XUI_ITEM_AUDIO_MUTE_AUDIO, 1);
+   XuiListSetText(m_menulist, MENU_XUI_ITEM_AUDIO_MUTE_AUDIO, g_extern.audio_data.mute ? L"Mute Audio : ON" : L"Mute Audio : OFF");
+
+   return 0;
+}
+
+HRESULT CRetroArchAudioOptions::OnControlNavigate(XUIMessageControlNavigate *pControlNavigateData, BOOL& bHandled)
+{
+   bool aspectratio_changed = false;
+   int current_index;
+
+   current_index = XuiListGetCurSel(m_menulist, NULL);
+
+   unsigned input = pControlNavigateData->nControlNavigate;
+
+   switch (current_index)
+   {
+      case MENU_XUI_ITEM_AUDIO_MUTE_AUDIO:
+         if (input == XUI_CONTROL_NAVIGATE_LEFT ||
+               input == XUI_CONTROL_NAVIGATE_RIGHT ||
+               input == XUI_CONTROL_NAVIGATE_OK)
+         {
+            settings_set(1ULL << S_AUDIO_MUTE);
+            XuiListSetText(m_menulist, MENU_XUI_ITEM_AUDIO_MUTE_AUDIO, g_extern.audio_data.mute ? L"Mute Audio : ON" : L"Mute Audio : OFF");
+         }
+         break;
+   }
+
+   bHandled = TRUE;
+
+   switch(pControlNavigateData->nControlNavigate)
+   {
+      case XUI_CONTROL_NAVIGATE_LEFT:
+      case XUI_CONTROL_NAVIGATE_RIGHT:
+      case XUI_CONTROL_NAVIGATE_UP:
+      case XUI_CONTROL_NAVIGATE_DOWN:
+         pControlNavigateData->hObjDest = pControlNavigateData->hObjSource;
+         break;
+      default:
+         break;
+   }
+
+   return 0;
+}
+
+HRESULT CRetroArchAudioOptions::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled )
+{
+   process_input_ret = 0;
+
+   if ( hObjPressed == m_menulist)
+   {
+      XUIMessageControlNavigate controls;
+      controls.nControlNavigate = (XUI_CONTROL_NAVIGATE)XUI_CONTROL_NAVIGATE_OK;
+      OnControlNavigate(&controls, bHandled);
+   }
+
+   bHandled = TRUE;
+
+   return 0;
+}
+
 HRESULT CRetroArchVideoOptions::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
 {
    GetChildById(L"XuiMenuList", &m_menulist);
@@ -1004,6 +1082,15 @@ HRESULT CRetroArchMain::OnControlNavigate(XUIMessageControlNavigate *pControlNav
          }
          break;
       case INGAME_MENU_AUDIO_OPTIONS_MODE:
+         if (input == XUI_CONTROL_NAVIGATE_OK)
+         {
+            hr = XuiSceneCreate(hdmenus_allowed ? L"file://game:/media/hd/" : L"file://game:/media/sd/", L"rarch_audio_options.xur", NULL, &current_menu);
+
+            if (hr < 0)
+               RARCH_ERR("Failed to load scene.\n");
+
+            XuiSceneNavigateForward(current_obj, false, current_menu, XUSER_INDEX_FOCUS);
+         }
          break;
       case INGAME_MENU_INPUT_OPTIONS_MODE:
          if (input == XUI_CONTROL_NAVIGATE_OK)

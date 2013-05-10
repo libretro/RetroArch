@@ -153,6 +153,12 @@
     <CustomBuild Include="..\..\media\360\sd\rarch_video_options.xui">
       <Filter>Source Files\media\sd</Filter>
     </CustomBuild>
+    <CustomBuild Include="..\..\media\360\hd\rarch_audio_options.xui">
+      <Filter>Source Files\media\hd</Filter>
+    </CustomBuild>
+    <CustomBuild Include="..\..\media\360\sd\rarch_audio_options.xui">
+      <Filter>Source Files\media\sd</Filter>
+    </CustomBuild>
     <CustomBuild Include="..\..\media\360\hd\rarch_settings.xui">
       <Filter>Source Files\media\hd</Filter>
     </CustomBuild>
