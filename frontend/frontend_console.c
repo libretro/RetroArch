@@ -20,6 +20,7 @@
 #include <string.h>
 
 #include "../config.def.h"
+#include "frontend_console.h"
 #include "menu/rmenu.h"
 
 #if defined(__CELLOS_LV2__)

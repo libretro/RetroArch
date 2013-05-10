@@ -236,10 +236,10 @@ static void get_environment_settings(int argc, char *argv[])
 #elif defined(_XBOX360)
    strlcpy(default_paths.core_dir, "game:", sizeof(default_paths.core_dir));
    strlcpy(default_paths.filesystem_root_dir, "game:\\", sizeof(default_paths.filesystem_root_dir));
-   strlcpy(g_settings.screenshot_directory, "game:", sizeof(g_settings.screenshot_directory));
 #ifdef IS_SALAMANDER
    strlcpy(default_paths.config_path, "game:\\retroarch.cfg", sizeof(default_paths.config_path));
 #else
+   strlcpy(g_settings.screenshot_directory, "game:", sizeof(g_settings.screenshot_directory));
    strlcpy(g_extern.config_path, "game:\\retroarch.cfg", sizeof(g_extern.config_path));
 #endif
    strlcpy(default_paths.savestate_dir, "game:\\savestates", sizeof(default_paths.savestate_dir));
