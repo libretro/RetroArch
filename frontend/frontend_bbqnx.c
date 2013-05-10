@@ -28,13 +28,8 @@ int rarch_main(int argc, char *argv[])
    //Initialize bps
 #ifndef HAVE_BB10
    bps_initialize();
-
    rarch_main_clear_state();
-
-   strlcpy(g_settings.libretro, "app/native/lib", sizeof(g_settings.libretro));
-   strlcpy(g_extern.fullpath, "--menu", sizeof(g_extern.fullpath));
 #endif
-
    strlcpy(g_extern.config_path, "app/native/retroarch.cfg", sizeof(g_extern.config_path));
 
    config_load();
@@ -42,6 +37,7 @@ int rarch_main(int argc, char *argv[])
    g_extern.verbose = true;
 
    menu_init();
+
    g_extern.lifecycle_mode_state |= (1ULL << MODE_LOAD_GAME);
 
    for (;;)
@@ -57,7 +53,7 @@ int rarch_main(int argc, char *argv[])
             g_extern.lifecycle_mode_state |= (1ULL << MODE_GAME);
          else
          {
-#ifdef RARCH_CONSOLE
+#if defined(RARCH_CONSOLE) || defined(__BLACKBERRY_QNX__)
             g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU);
 #else
             return 1;
