@@ -13,8 +13,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../../general.h"
-#include "../../driver.h"
+#include "../general.h"
+#include "../driver.h"
 #include <screen/screen.h>
 #include <bps/event.h>
 #include <bps/navigator.h>
