@@ -1022,24 +1022,13 @@ HRESULT CRetroArchSettings::OnControlNavigate(XUIMessageControlNavigate *pContro
          }
          break;
       case SETTING_GAMMA_CORRECTION_ENABLED:
-         if (input == XUI_CONTROL_NAVIGATE_LEFT)
-         {
-            if (g_extern.main_is_init)
-            {
-               g_extern.console.screen.gamma_correction = g_extern.console.screen.gamma_correction ? 0 : 1;
-               driver.video->restart();
-               XuiListSetText(m_menulist, SETTING_GAMMA_CORRECTION_ENABLED, g_extern.console.screen.gamma_correction ? L"Gamma correction: ON" : L"Gamma correction: OFF");
-            }
-         }
-         else if (input == XUI_CONTROL_NAVIGATE_RIGHT ||
+         if (input == XUI_CONTROL_NAVIGATE_LEFT ||
+               input == XUI_CONTROL_NAVIGATE_RIGHT ||
                input == XUI_CONTROL_NAVIGATE_OK)
          {
-            if (g_extern.main_is_init)
-            {
-               g_extern.console.screen.gamma_correction = g_extern.console.screen.gamma_correction ? 0 : 1;
-               driver.video->restart();
-               XuiListSetText(m_menulist, SETTING_GAMMA_CORRECTION_ENABLED, g_extern.console.screen.gamma_correction ? L"Gamma correction: ON" : L"Gamma correction: OFF");
-            }
+            g_extern.console.screen.gamma_correction = g_extern.console.screen.gamma_correction ? 0 : 1;
+            XuiListSetText(m_menulist, SETTING_GAMMA_CORRECTION_ENABLED, g_extern.console.screen.gamma_correction ? L"Gamma correction: ON" : L"Gamma correction: OFF");
+            msg_queue_push(g_extern.msg_queue, "You need to restart for this change to take effect.\n", 1, 90);
          }
          break;
       case SETTING_HW_TEXTURE_FILTER:
@@ -1441,12 +1430,9 @@ HRESULT CRetroArchMain::OnControlNavigate(XUIMessageControlNavigate *pControlNav
          XuiListSetText(m_menulist, INGAME_MENU_REWIND_GRANULARITY, strw_buffer);
          break;
       case INGAME_MENU_FRAME_ADVANCE:
-         if (g_extern.main_is_init)
-         {
-            g_extern.lifecycle_state |= (1ULL << RARCH_FRAMEADVANCE);
-            settings_set(1ULL << S_FRAME_ADVANCE);
-            process_input_ret = -1;
-         }
+         g_extern.lifecycle_state |= (1ULL << RARCH_FRAMEADVANCE);
+         settings_set(1ULL << S_FRAME_ADVANCE);
+         process_input_ret = -1;
          break;
       case INGAME_MENU_QUIT_RETROARCH:
          if (input == XUI_CONTROL_NAVIGATE_OK)
@@ -1681,15 +1667,6 @@ bool menu_iterate_xui(void)
    app.RunFrame(); /* Update XUI */
 
    XuiRenderBegin( app.GetDC(), D3DCOLOR_ARGB( 255, 0, 0, 0 ) );
-
-   D3DVIEWPORT vp = {0};
-   vp.Width  = d3d->win_width;
-   vp.Height = d3d->win_height;
-   vp.X      = 0;
-   vp.Y      = 0;
-   vp.MinZ   = 0.0f;
-   vp.MaxZ   = 1.0f;
-   RD3DDevice_SetViewport(d3dr, &vp); 
 
    D3DXMATRIX matOrigView;
    XuiRenderGetViewTransform( app.GetDC(), &matOrigView );
