@@ -995,7 +995,7 @@ HRESULT CRetroArchMain::OnControlNavigate(XUIMessageControlNavigate *pControlNav
       case INGAME_MENU_VIDEO_OPTIONS_MODE:
          if (input == XUI_CONTROL_NAVIGATE_OK)
          {
-            hr = XuiSceneCreate(hdmenus_allowed ? L"file://game:/media/hd/" : L"file://game:/media/sd/", L"rarch_quickmenu.xur", NULL, &current_menu);
+            hr = XuiSceneCreate(hdmenus_allowed ? L"file://game:/media/hd/" : L"file://game:/media/sd/", L"rarch_video_options.xur", NULL, &current_menu);
 
             if (hr < 0)
                RARCH_ERR("Failed to load scene.\n");
