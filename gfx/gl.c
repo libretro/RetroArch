@@ -1253,6 +1253,7 @@ static void gl_pbo_async_readback(void *data)
    // Read asynchronously into PBO buffer.
    RARCH_PERFORMANCE_INIT(async_readback);
    RARCH_PERFORMANCE_START(async_readback);
+   glReadBuffer(GL_BACK);
    glReadPixels(gl->vp.x, gl->vp.y,
          gl->vp.width, gl->vp.height,
          GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
@@ -1463,6 +1464,11 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
    }
 #endif
 
+#if !defined(HAVE_OPENGLES) && defined(HAVE_FFMPEG)
+   if (gl->pbo_readback_enable)
+      gl_pbo_async_readback(gl);
+#endif
+
    context_swap_buffers_func();
    g_extern.frame_count++;
 
@@ -1477,11 +1483,6 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
       pglDeleteSync(sync);
       RARCH_PERFORMANCE_STOP(gl_fence);
    }
-#endif
-
-#if !defined(HAVE_OPENGLES) && defined(HAVE_FFMPEG)
-   if (gl->pbo_readback_enable)
-      gl_pbo_async_readback(gl);
 #endif
 
    return true;
@@ -1666,10 +1667,10 @@ static inline void gl_reinit_textures(void *data, const video_info_t *video)
       RARCH_ERR("GL error reported while reinitializing textures. This should not happen ...\n");
 }
 
+#if !defined(HAVE_OPENGLES) && defined(HAVE_FFMPEG)
 static void gl_init_pbo_readback(void *data)
 {
    gl_t *gl = (gl_t*)data;
-#if !defined(HAVE_OPENGLES) && defined(HAVE_FFMPEG)
    // Only bother with this if we're doing FFmpeg GPU recording.
    gl->pbo_readback_enable = g_settings.video.gpu_record && g_extern.recording;
    if (!gl->pbo_readback_enable)
@@ -1682,7 +1683,7 @@ static void gl_init_pbo_readback(void *data)
    {
       pglBindBuffer(GL_PIXEL_PACK_BUFFER, gl->pbo_readback[i]);
       pglBufferData(GL_PIXEL_PACK_BUFFER, gl->vp.width * gl->vp.height * sizeof(uint32_t),
-            NULL, GL_STREAM_READ);
+            NULL, GL_STREAM_COPY);
    }
    pglBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
 
@@ -1703,11 +1704,8 @@ static void gl_init_pbo_readback(void *data)
       RARCH_ERR("Failed to init pixel conversion for PBO.\n");
       pglDeleteBuffers(4, gl->pbo_readback);
    }
-
-#else
-   (void)gl;
-#endif
 }
+#endif
 
 static const gfx_ctx_driver_t *gl_get_context(void)
 {
@@ -1910,7 +1908,9 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
       gl->font_ctx = gl_font_init_first(gl, g_settings.video.font_path, g_settings.video.font_size);
 #endif
 
+#if !defined(HAVE_OPENGLES) && defined(HAVE_FFMPEG)
    gl_init_pbo_readback(gl);
+#endif
 
    if (!gl_check_error())
    {
@@ -2056,6 +2056,7 @@ static bool gl_read_viewport(void *data, uint8_t *buffer)
 
 #ifdef HAVE_OPENGLES
    glPixelStorei(GL_PACK_ALIGNMENT, get_alignment(gl->vp.width * 3));
+   glReadBuffer(GL_FRONT);
    glReadPixels(gl->vp.x, gl->vp.y,
          gl->vp.width, gl->vp.height,
          GL_RGB, GL_UNSIGNED_BYTE, buffer);
@@ -2094,6 +2095,7 @@ static bool gl_read_viewport(void *data, uint8_t *buffer)
       glPixelStorei(GL_PACK_ROW_LENGTH, gl->vp.width);
       glPixelStorei(GL_PACK_ALIGNMENT, get_alignment(gl->vp.width * 3));
 
+      glReadBuffer(GL_FRONT);
       glReadPixels(gl->vp.x, gl->vp.y,
             gl->vp.width, gl->vp.height,
             GL_BGR, GL_UNSIGNED_BYTE, buffer);
