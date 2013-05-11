@@ -2565,14 +2565,13 @@ uint64_t rgui_input(void)
    input_state |= input_key_pressed_func(RARCH_MENU_TOGGLE) ? (1ULL << DEVICE_NAV_MENU) : 0;
 #endif
 
+
    rgui->trigger_state = input_state & ~rgui->old_input_state;
 
    rgui->do_held = (input_state & (
          (1ULL << DEVICE_NAV_UP) |
-         (1ULL << DEVICE_NAV_DOWN) |
-         (1ULL << DEVICE_NAV_LEFT) |
-         (1ULL << DEVICE_NAV_RIGHT))) &&
-      !(input_state & DEVICE_NAV_MENU);
+         (1ULL << DEVICE_NAV_DOWN))) &&
+      !(input_state & (1ULL << DEVICE_NAV_MENU));
 
    return input_state;
 }
