@@ -925,11 +925,11 @@ bool config_save_file(const char *path)
 #endif
 
 #ifdef ANDROID
-   config_set_int(conf, "input_back_behavior", input.back_behavior);
-   config_set_int(conf, "input_autodetect_icade_profile_pad1", input.icade_profile[0]);
-   config_set_int(conf, "input_autodetect_icade_profile_pad2", input.icade_profile[1]);
-   config_set_int(conf, "input_autodetect_icade_profile_pad3", input.icade_profile[2]);
-   config_set_int(conf, "input_autodetect_icade_profile_pad4", input.icade_profile[3]);
+   config_set_int(conf, "input_back_behavior", g_settings.input.back_behavior);
+   config_set_int(conf, "input_autodetect_icade_profile_pad1", g_settings.input.icade_profile[0]);
+   config_set_int(conf, "input_autodetect_icade_profile_pad2", g_settings.input.icade_profile[1]);
+   config_set_int(conf, "input_autodetect_icade_profile_pad3", g_settings.input.icade_profile[2]);
+   config_set_int(conf, "input_autodetect_icade_profile_pad4", g_settings.input.icade_profile[3]);
 #endif
 
    config_set_bool(conf, "gamma_correction", g_extern.console.screen.gamma_correction);
