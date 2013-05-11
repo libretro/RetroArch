@@ -314,7 +314,7 @@ bool rpng_load_image_argb(const char *path, uint32_t **data, unsigned *width, un
    bool ret = true;
    FILE *file = fopen(path, "rb");
    if (!file)
-      return NULL;
+      return false;
 
    fseek(file, 0, SEEK_END);
    long file_len = ftell(file);
