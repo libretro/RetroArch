@@ -29,6 +29,7 @@ int rarch_main(int argc, char *argv[])
 #ifndef HAVE_BB10
    bps_initialize();
    rarch_main_clear_state();
+   strlcpy(g_settings.libretro, "app/native/lib", sizeof(g_settings.libretro));
 #endif
    strlcpy(g_extern.config_path, "app/native/retroarch.cfg", sizeof(g_extern.config_path));
 
