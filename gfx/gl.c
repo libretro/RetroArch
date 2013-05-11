@@ -650,6 +650,10 @@ void gl_init_fbo(void *data, unsigned width, unsigned height)
 #ifndef HAVE_RGL
 bool gl_init_hw_render(gl_t *gl, unsigned width, unsigned height)
 {
+#if defined(__QNX__) || defined(ANDROID)
+   width = 512;
+   height = 512;
+#endif
    RARCH_LOG("[GL]: Initializing HW render (%u x %u).\n", width, height);
 
    if (!load_fbo_proc(gl))

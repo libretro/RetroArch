@@ -278,7 +278,7 @@ const gfx_ctx_driver_t gfx_ctx_android = {
    gfx_ctx_has_focus,
    gfx_ctx_swap_buffers,
    gfx_ctx_input_driver,
-   NULL,
+   gfx_ctx_get_proc_address,
 #ifdef HAVE_EGL
    gfx_ctx_init_egl_image_buffer,
    gfx_ctx_write_egl_image,

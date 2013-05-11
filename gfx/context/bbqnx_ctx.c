@@ -392,7 +392,7 @@ const gfx_ctx_driver_t gfx_ctx_bbqnx = {
    gfx_ctx_has_focus,
    gfx_ctx_swap_buffers,
    gfx_ctx_input_driver,
-   NULL,
+   gfx_ctx_get_proc_address,
    NULL,
    "blackberry_qnx",
 };
