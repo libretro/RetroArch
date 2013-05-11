@@ -2056,7 +2056,7 @@ static bool gl_read_viewport(void *data, uint8_t *buffer)
 
 #ifdef HAVE_OPENGLES
    glPixelStorei(GL_PACK_ALIGNMENT, get_alignment(gl->vp.width * 3));
-   glReadBuffer(GL_FRONT);
+   // GLES doesn't support glReadBuffer ... Take a chance that it'll work out right.
    glReadPixels(gl->vp.x, gl->vp.y,
          gl->vp.width, gl->vp.height,
          GL_RGB, GL_UNSIGNED_BYTE, buffer);
