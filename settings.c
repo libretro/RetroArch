@@ -895,7 +895,6 @@ static void save_keybinds_player(config_file_t *conf, unsigned player)
    }
 }
 
-#ifdef RARCH_CONSOLE
 bool config_save_file(const char *path)
 {
    config_file_t *conf = config_file_new(path);
@@ -999,7 +998,6 @@ bool config_save_file(const char *path)
 
    return true;
 }
-#endif
 
 bool config_save_keybinds(const char *path)
 {

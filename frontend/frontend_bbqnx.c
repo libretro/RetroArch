@@ -87,6 +87,9 @@ int rarch_main(int argc, char *argv[])
    g_extern.system.shutdown = false;
 
    menu_free();
+
+   config_save_file(g_extern.config_path);
+
    if (g_extern.main_is_init)
       rarch_main_deinit();
 

@@ -648,9 +648,7 @@ void settings_set(uint64_t settings);
 
 #include "conf/config_file.h"
 bool config_load_file(const char *path);
-#ifdef RARCH_CONSOLE
 bool config_save_file(const char *path);
-#endif
 bool config_read_keybinds(const char *path);
 bool config_save_keybinds(const char *path);
 
