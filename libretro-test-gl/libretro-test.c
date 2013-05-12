@@ -9,13 +9,33 @@
 static struct retro_hw_render_callback hw_render;
 
 #define GL_GLEXT_PROTOTYPES
-#if defined(GLES) && 0
+#if defined(GLES)
 #include <GLES2/gl2.h>
 #else
 #include <GL/gl.h>
 #include <GL/glext.h>
 #endif
 
+#ifdef GLES
+#define pglCreateProgram glCreateProgram
+#define pglCreateShader glCreateShader
+#define pglCompileShader glCompileShader
+#define pglUseProgram glUseProgram
+#define pglShaderSource glShaderSource
+#define pglAttachShader glAttachShader
+#define pglLinkProgram glLinkProgram
+#define pglBindFramebuffer glBindFramebuffer
+#define pglGetUniformLocation glGetUniformLocation
+#define pglUniformMatrix4fv glUniformMatrix4fv
+#define pglGetAttribLocation glGetAttribLocation
+#define pglVertexAttribPointer glVertexAttribPointer
+#define pglEnableVertexAttribArray glEnableVertexAttribArray
+#define pglDisableVertexAttribArray glDisableVertexAttribArray
+#define pglGenBuffers glGenBuffers
+#define pglBufferData glBufferData
+#define pglBindBuffer glBindBuffer
+#define init_gl_proc()
+#else
 static PFNGLCREATEPROGRAMPROC pglCreateProgram;
 static PFNGLCREATESHADERPROC pglCreateShader;
 static PFNGLCREATESHADERPROC pglCompileShader;
@@ -71,6 +91,7 @@ static void init_gl_proc(void)
       memcpy(proc_map[i].proc, &proc, sizeof(proc));
    }
 }
+#endif
 
 static GLuint prog;
 static GLuint vbo;
