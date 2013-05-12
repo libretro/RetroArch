@@ -23,7 +23,7 @@ static struct retro_hw_render_callback hw_render;
 #include <GL/glext.h>
 #endif
 
-#ifdef GLES
+#if defined(GLES) || defined(__APPLE__)
 #define pglCreateProgram glCreateProgram
 #define pglCreateShader glCreateShader
 #define pglCompileShader glCompileShader
