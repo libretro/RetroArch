@@ -85,6 +85,17 @@ static void gfx_ctx_input_driver(const input_driver_t **input, void **input_data
    *input_data = NULL;
 }
 
+static gfx_ctx_proc_t gfx_ctx_get_proc_address(const char *symbol)
+{
+   rarch_assert(sizeof(void*) == sizeof(void (*)(void)));
+   gfx_ctx_proc_t ret;
+
+   void *sym__ = eglGetProcAddress(symbol);
+   memcpy(&ret, &sym__, sizeof(void*));
+
+   return ret;
+}
+
 // The ios_* functions are implemented in ios/RetroArch/RAGameView.m
 
 const gfx_ctx_driver_t gfx_ctx_ios = {
@@ -101,7 +112,7 @@ const gfx_ctx_driver_t gfx_ctx_ios = {
    gfx_ctx_has_focus,
    ios_flip_game_view,
    gfx_ctx_input_driver,
-   NULL,
+   gfx_ctx_get_proc_address,
    NULL,
    "ios",
 };
