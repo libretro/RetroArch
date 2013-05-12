@@ -510,7 +510,15 @@ static bool environment_cb(unsigned cmd, void *data)
          }
 
          const struct retro_variable *vars = (const struct retro_variable*)data;
-         g_extern.system.core_options = core_option_new(g_settings.core_options_path, vars);
+
+         const char *options_path = g_settings.core_options_path;
+         char buf[PATH_MAX];
+         if (!*options_path && *g_extern.config_path)
+         {
+            fill_pathname_resolve_relative(buf, g_extern.config_path, ".retroarch-core-options.cfg", sizeof(buf));
+            options_path = buf;
+         }
+         g_extern.system.core_options = core_option_new(options_path, vars);
 
          break;
       }
