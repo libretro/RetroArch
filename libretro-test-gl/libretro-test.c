@@ -10,7 +10,14 @@ static struct retro_hw_render_callback hw_render;
 
 #define GL_GLEXT_PROTOTYPES
 #if defined(GLES)
+#ifdef IOS
+#include <OpenGLES/ES2/gl.h>
+#else
 #include <GLES2/gl2.h>
+#endif
+#elif defined(__APPLE__)
+#include <OpenGL/gl.h>
+#include <OpenGL/glext.h>
 #else
 #include <GL/gl.h>
 #include <GL/glext.h>

@@ -12,19 +12,29 @@ else ifneq ($(findstring win,$(shell uname -a)),)
 endif
 endif
 
+TARGET_NAME = testgl
+
 ifeq ($(platform), unix)
-   TARGET := libretro.so
+   TARGET := $(TARGET_NAME)_libretro.so
    fpic := -fPIC
    SHARED := -shared -Wl,--version-script=link.T -Wl,--no-undefined
    GL_LIB := -lGL
 else ifeq ($(platform), osx)
-   TARGET := libretro.dylib
+   TARGET := $(TARGET_NAME)_libretro.dylib
    fpic := -fPIC
    SHARED := -dynamiclib
    GL_LIB := -framework OpenGL
+else ifeq ($(platform), ios)
+   TARGET := $(TARGET_NAME)_libretro_ios.dylib
+   fpic := -fPIC
+   SHARED := -dynamiclib
+   GL_LIB := -framework OpenGLES
+	DEFINES := -DIOS
+	CFLAGS += -DGLES $(DEFINES)
+	CC = clang -arch armv7 -isysroot $(IOSSDK)
 else
    CC = gcc
-   TARGET := retro.dll
+   TARGET := $(TARGET_NAME)_retro.dll
    SHARED := -shared -static-libgcc -static-libstdc++ -s -Wl,--version-script=link.T -Wl,--no-undefined
    GL_LIB := -lopengl32
    CFLAGS += -I..
