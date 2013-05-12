@@ -2568,9 +2568,14 @@ uint64_t rgui_input(void)
 
    rgui->trigger_state = input_state & ~rgui->old_input_state;
 
+   // FIXME: Allowing a held-down scroll is desired for left/right in filebrowser,
+   // but seems weird to allow in setting options.
+   // Logic here should take this into account.
    rgui->do_held = (input_state & (
          (1ULL << DEVICE_NAV_UP) |
-         (1ULL << DEVICE_NAV_DOWN))) &&
+         (1ULL << DEVICE_NAV_DOWN) |
+         (1ULL << DEVICE_NAV_LEFT) | 
+         (1ULL << DEVICE_NAV_RIGHT))) &&
       !(input_state & (1ULL << DEVICE_NAV_MENU));
 
    return input_state;
