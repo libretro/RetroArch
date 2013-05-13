@@ -383,6 +383,14 @@ void gl_shader_set_coords(void *data, const struct gl_coords *coords, const math
 #define gl_shader_num(gl) ((gl->shader) ? gl->shader->num_shaders() : 0)
 #define gl_shader_filter_type(gl, index, smooth) ((gl->shader) ? gl->shader->filter_type(index, smooth) : false)
 
+#ifdef IOS
+// There is no default frame buffer on IOS.
+void ios_bind_game_view_fbo(void);
+#define gl_bind_backbuffer() ios_bind_game_view_fbo()
+#else
+#define gl_bind_backbuffer() pglBindFramebuffer(GL_FRAMEBUFFER, 0)
+#endif
+
 #ifdef HAVE_FBO
 static void gl_shader_scale(void *data, unsigned index, struct gfx_fbo_scale *scale)
 {
@@ -688,7 +696,7 @@ bool gl_init_hw_render(gl_t *gl, unsigned width, unsigned height)
       }
    }
 
-   pglBindFramebuffer(GL_FRAMEBUFFER, 0);
+   gl_bind_backbuffer();
    pglBindRenderbuffer(GL_RENDERBUFFER, 0);
    gl->hw_render_fbo_init = true;
    return true;
@@ -930,13 +938,7 @@ static void gl_frame_fbo(void *data, const struct gl_tex_info *tex_info)
    set_texture_coords(fbo_tex_coords, xamt, yamt);
 
    // Render our FBO texture to back buffer.
-#ifdef IOS
-   // There is no default frame buffer on IOS.
-   extern void ios_bind_game_view_fbo();
-   ios_bind_game_view_fbo();
-#else
-   pglBindFramebuffer(GL_FRAMEBUFFER, 0);
-#endif
+   gl_bind_backbuffer();
    if (gl->shader)
       gl->shader->use(gl->fbo_pass + 1);
 
@@ -1353,7 +1355,7 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
 
          if (!gl->fbo_inited)
          {
-            pglBindFramebuffer(GL_FRAMEBUFFER, 0);
+            gl_bind_backbuffer();
             gl_set_viewport(gl, gl->win_width, gl->win_height, false, true);
          }
       }
