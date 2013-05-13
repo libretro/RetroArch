@@ -532,6 +532,30 @@ bool path_is_absolute(const char *path)
 #endif
 }
 
+void path_resolve_realpath(char *buf, size_t size)
+{
+#ifndef RARCH_CONSOLE
+   char tmp[PATH_MAX];
+   strlcpy(tmp, buf, sizeof(tmp));
+
+#ifdef _WIN32
+   if (!_fullpath(buf, tmp, size))
+      strlcpy(buf, tmp, size);
+#else
+   rarch_assert(size >= PATH_MAX);
+   // NOTE: realpath() expects at least PATH_MAX bytes in buf.
+   // Technically, PATH_MAX needn't be defined, but we rely on it anyways.
+   // POSIX 2008 can automatically allocate for you, but don't rely on that.
+   if (!realpath(tmp, buf))
+      strlcpy(buf, tmp, size);
+#endif
+
+#else
+   (void)buf;
+   (void)size;
+#endif
+}
+
 void fill_pathname_resolve_relative(char *out_path, const char *in_refpath, const char *in_path, size_t size)
 {
    if (path_is_absolute(in_path))

@@ -290,6 +290,10 @@ static void load_symbols(bool is_dummy)
          strlcpy(g_settings.libretro, libretro_core_buffer, sizeof(g_settings.libretro));
       }
 
+      // Need to use absolute path for this setting. It can be saved to ROM history,
+      // and a relative path would break in that scenario.
+      path_resolve_realpath(g_settings.libretro, sizeof(g_settings.libretro));
+
       RARCH_LOG("Loading dynamic libretro from: \"%s\"\n", g_settings.libretro);
       lib_handle = dylib_load(g_settings.libretro);
       if (!lib_handle)

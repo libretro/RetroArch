@@ -84,6 +84,10 @@ void path_basedir(char *path);
 // Assumes that path is a directory. Keeps trailing '/'.
 void path_parent_dir(char *path);
 
+// Turns relative paths into absolute path.
+// If relative, rebases on current working dir.
+void path_resolve_realpath(char *buf, size_t size);
+
 bool path_is_absolute(const char *path);
 
 // Path-name operations.
