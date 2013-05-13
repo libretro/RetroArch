@@ -153,6 +153,8 @@ void input_autodetect_setup (void *data, char *msg, size_t sizeof_msg, unsigned 
          device = DEVICE_MOGA;
       else if (strstr(name_buf, "Sony Navigation Controller"))
          device = DEVICE_PSMOVE_NAVI;
+      else if (strstr(name_buf, "OUYA Game Controller"))
+         device = DEVICE_OUYA;
       else if (strstr(name_buf, "adc joystick"))
          device = DEVICE_JXD_S7300B;
       else if (strstr(name_buf, "idroid:con"))
