@@ -40,6 +40,8 @@
 #define GSEVENT_MOD_ALT (1 << 19)
 #define GSEVENT_MOD_CTRL (1 << 20)
 
+//#define HAVE_DEBUG_FILELOG
+
 static ios_input_data_t g_input_data;
 
 static bool enable_btstack;
@@ -142,6 +144,16 @@ static void handle_icade_event(unsigned keycode)
 
 int main(int argc, char *argv[])
 {
+#ifdef HAVE_DEBUG_FILELOG
+#if TARGET_IPHONE_SIMULATOR == 0
+	NSArray *paths = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES);
+	NSString *documentsDirectory = [paths objectAtIndex:0];
+	NSString *logPath = [documentsDirectory stringByAppendingPathComponent:@"console_stdout.log"];
+	freopen([logPath cStringUsingEncoding:NSASCIIStringEncoding], "a+", stdout);
+	NSString *logPath2 = [documentsDirectory stringByAppendingPathComponent:@"console_stderr.log"];
+	freopen([logPath2 cStringUsingEncoding:NSASCIIStringEncoding], "a+", stderr);
+#endif
+#endif
     @autoreleasepool {
         return UIApplicationMain(argc, argv, NSStringFromClass([RApplication class]), NSStringFromClass([RetroArch_iOS class]));
     }
