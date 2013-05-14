@@ -191,9 +191,6 @@ random libretro core and write this to the config file.
 What can you expect in the future?
 ------------------------------------------------------------------------------
 - Make the libxenon port release-worthy.
-- Add console-friendly features (nicely formatted names for FBA, some better
-way to do core switching, etc)
-- Fix NxEngine issues on consoles
 - Finish up MAME 0.72 port
 - Finish up ScummVM port
 - Port of VICE to libretro
