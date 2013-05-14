@@ -44,6 +44,7 @@ static bool ios_is_pressed(unsigned port_num, const struct retro_keybind *binds,
 static void *ios_input_init(void)
 {
    input_init_keyboard_lut(rarch_key_map_hidusage);
+   memset(&g_ios_input_data, 0, sizeof(g_ios_input_data));
    return (void*)-1;
 }
 
