@@ -12,14 +12,20 @@ else ifneq ($(findstring win,$(shell uname -a)),)
 endif
 endif
 
+TARGET_NAME := test
+
 ifeq ($(platform), unix)
-   TARGET := libretro.so
+   TARGET := $(TARGET_NAME)_libretro.so
    fpic := -fPIC
    SHARED := -shared -Wl,--version-script=link.T -Wl,--no-undefined
 else ifeq ($(platform), osx)
-   TARGET := libretro.dylib
+   TARGET := $(TARGET_NAME)_libretro.dylib
    fpic := -fPIC
    SHARED := -dynamiclib
+else ifeq ($(platform), qnx)
+	TARGET := $(TARGET_NAME)_libretro_qnx.so
+   fpic := -fPIC
+   SHARED := -shared -Wl,--version-script=link.T -Wl,--no-undefined
 else
    CC = gcc
    TARGET := retro.dll
@@ -33,7 +39,13 @@ else
 endif
 
 OBJECTS := libretro-test.o
-CFLAGS += -std=gnu99 -Wall -pedantic $(fpic)
+CFLAGS += -Wall -pedantic $(fpic)
+
+ifeq ($(platform), qnx)
+CFLAGS += -Wc,-std=gnu99
+else
+CFLAGS += -std=gnu99
+endif
 
 all: $(TARGET)
 
