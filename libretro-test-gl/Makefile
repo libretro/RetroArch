@@ -32,6 +32,16 @@ else ifeq ($(platform), ios)
 	DEFINES := -DIOS
 	CFLAGS += -DGLES $(DEFINES)
 	CC = clang -arch armv7 -isysroot $(IOSSDK)
+else ifeq ($(platform), qnx)
+   TARGET := $(TARGET_NAME)_libretro_qnx.so
+   fpic := -fPIC
+   SHARED := -shared -Wl,--version-script=link.T
+   GL_LIB := -lGL
+
+   CC = qcc -Vgcc_ntoarmv7le
+   AR = qcc -Vgcc_ntoarmv7le
+   CFLAGS += -D__BLACKBERRY_QNX__ -DGLES
+	GL_LIB := -lGLESv2
 else
    CC = gcc
    TARGET := $(TARGET_NAME)_retro.dll
@@ -47,7 +57,7 @@ else
 endif
 
 OBJECTS := libretro-test.o
-CFLAGS += -std=gnu99 -Wall -pedantic $(fpic)
+CFLAGS += -Wc,-std=gnu99 -Wall -pedantic $(fpic)
 
 ifeq ($(GLES), 1)
    CFLAGS += -DGLES
