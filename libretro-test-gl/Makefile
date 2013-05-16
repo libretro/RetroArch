@@ -56,8 +56,14 @@ else
    CFLAGS += -O3
 endif
 
+ifeq ($(platform), qnx)
+CFLAGS += -Wc,-std=gnu99
+else
+CFLAGS += -std=gnu99
+endif
+
 OBJECTS := libretro-test.o
-CFLAGS += -Wc,-std=gnu99 -Wall -pedantic $(fpic)
+CFLAGS += -Wall -pedantic $(fpic)
 
 ifeq ($(GLES), 1)
    CFLAGS += -DGLES
