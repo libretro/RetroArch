@@ -22,13 +22,19 @@ else ifeq ($(platform), osx)
    TARGET := $(TARGET_NAME)_libretro.dylib
    fpic := -fPIC
    SHARED := -dynamiclib
+else ifeq ($(platform), ios)
+   TARGET := $(TARGET_NAME)_libretro_ios.dylib
+	fpic := -fPIC
+	SHARED := -dynamiclib
+	DEFINES := -DIOS
+	CC = clang -arch armv7 -isysroot $(IOSSDK)
 else ifeq ($(platform), qnx)
 	TARGET := $(TARGET_NAME)_libretro_qnx.so
    fpic := -fPIC
    SHARED := -shared -Wl,--version-script=link.T -Wl,--no-undefined
 else
    CC = gcc
-   TARGET := retro.dll
+   TARGET := $(TARGET_NAME)_retro.dll
    SHARED := -shared -static-libgcc -static-libstdc++ -s -Wl,--version-script=link.T -Wl,--no-undefined
 endif
 
