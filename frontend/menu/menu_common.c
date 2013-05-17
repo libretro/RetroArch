@@ -363,6 +363,14 @@ void rgui_list_get_last(const rgui_list_t *list,
 
 #endif
 
+void menu_rom_history_push(const char *path,
+      const char *core_path,
+      const char *core_name)
+{
+   if (rgui->history)
+      rom_history_push(rgui->history, path, core_path, core_name);
+}
+
 void load_menu_game_prepare(void)
 {
    if (*g_extern.fullpath || rgui->load_no_rom)
@@ -378,13 +386,9 @@ void load_menu_game_prepare(void)
          msg_queue_push(g_extern.msg_queue, str, 1, 1);
       }
 
-      if (rgui->history)
-      {
-         rom_history_push(rgui->history,
-               *g_extern.fullpath ? g_extern.fullpath : NULL,
-               g_settings.libretro,
-               rgui->info.library_name);
-      }
+      menu_rom_history_push(*g_extern.fullpath ? g_extern.fullpath : NULL,
+            g_settings.libretro,
+            rgui->info.library_name);
    }
 
 #ifdef HAVE_RGUI

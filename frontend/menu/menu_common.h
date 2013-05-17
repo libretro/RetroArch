@@ -282,6 +282,8 @@ void menu_ticker_line(char *buf, size_t len, unsigned tick, const char *str, boo
 void load_menu_game_prepare(void);
 bool load_menu_game(void);
 void load_menu_game_history(unsigned game_index);
+void menu_rom_history_push(const char *path, const char *core_path,
+      const char *core_name);
 
 #ifdef __cplusplus
 }
