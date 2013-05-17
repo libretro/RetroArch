@@ -657,6 +657,13 @@ static void render_text(rgui_handle_t *rgui)
                   strlcpy(type_str, number, sizeof(type_str));
                }
                break;
+            case RGUI_SETTINGS_OVERLAY_SCALE:
+               {
+                  char number[10];
+                  snprintf(number, sizeof(number), "%.3f", g_settings.input.overlay_scale);
+                  strlcpy(type_str, number, sizeof(type_str));
+               }
+               break;
 #endif
             case RGUI_SETTINGS_BIND_PLAYER:
                {
@@ -1050,6 +1057,40 @@ static int rgui_settings_toggle_setting(rgui_handle_t *rgui, unsigned setting, r
             if (changed && driver.overlay)
                input_overlay_set_alpha_mod(driver.overlay,
                      g_settings.input.overlay_opacity);
+         }
+         break;
+      case RGUI_SETTINGS_OVERLAY_SCALE:
+         {
+            bool changed = false;
+            switch (action)
+            {
+               case RGUI_ACTION_LEFT:
+                  if (g_settings.input.overlay_scale > 0.0f)
+                  {
+                     g_settings.input.overlay_scale -= 0.01f;
+                     changed = true;
+                  }
+                  break;
+               case RGUI_ACTION_RIGHT:
+               case RGUI_ACTION_OK:
+                  if (g_settings.input.overlay_scale < 2.0f)
+                  {
+                     g_settings.input.overlay_scale += 0.01f;
+                     changed = true;
+                  }
+                  break;
+               case RGUI_ACTION_START:
+                  g_settings.input.overlay_scale = 1.0f;
+                  changed = true;
+                  break;
+
+               default:
+                  break;
+            }
+
+            if (changed && driver.overlay)
+               input_overlay_set_scale_factor(driver.overlay,
+                     g_settings.input.overlay_scale);
          }
          break;
 #endif
@@ -1801,6 +1842,7 @@ static void rgui_settings_controller_populate_entries(rgui_handle_t *rgui)
 #ifdef HAVE_OVERLAY
    rgui_list_push(rgui->selection_buf, "Overlay Preset", RGUI_SETTINGS_OVERLAY_PRESET, 0);
    rgui_list_push(rgui->selection_buf, "Overlay Opacity", RGUI_SETTINGS_OVERLAY_OPACITY, 0);
+   rgui_list_push(rgui->selection_buf, "Overlay Scale", RGUI_SETTINGS_OVERLAY_SCALE, 0);
 #endif
    rgui_list_push(rgui->selection_buf, "Player", RGUI_SETTINGS_BIND_PLAYER, 0);
    rgui_list_push(rgui->selection_buf, "Device", RGUI_SETTINGS_BIND_DEVICE, 0);

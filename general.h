@@ -238,6 +238,7 @@ struct settings
 
       char overlay[PATH_MAX];
       float overlay_opacity;
+      float overlay_scale;
 
       char autoconfig_dir[PATH_MAX];
    } input;

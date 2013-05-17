@@ -243,6 +243,7 @@ void config_set_defaults(void)
    g_settings.input.turbo_period = turbo_period;
    g_settings.input.turbo_duty_cycle = turbo_duty_cycle;
    g_settings.input.overlay_opacity = 1.0f;
+   g_settings.input.overlay_scale = 1.0f;
    g_settings.input.debug_enable = input_debug_enable;
    g_settings.input.autodetect_enable = input_autodetect_enable;
 #ifdef ANDROID
@@ -656,6 +657,7 @@ bool config_load_file(const char *path)
 
    CONFIG_GET_PATH(input.overlay, "input_overlay");
    CONFIG_GET_FLOAT(input.overlay_opacity, "input_overlay_opacity");
+   CONFIG_GET_FLOAT(input.overlay_scale, "input_overlay_scale");
    CONFIG_GET_BOOL(input.debug_enable, "input_debug_enable");
 
    CONFIG_GET_BOOL(input.autodetect_enable, "input_autodetect_enable");
