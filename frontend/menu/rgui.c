@@ -438,6 +438,10 @@ static void render_text(rgui_handle_t *rgui)
       snprintf(title, sizeof(title), "MENU %s", dir);
    else if (menu_type == RGUI_SETTINGS_OPEN_HISTORY)
       strlcpy(title, "LOAD HISTORY", sizeof(title));
+#ifdef HAVE_OVERLAY
+   else if (menu_type == RGUI_SETTINGS_OVERLAY_PRESET)
+      snprintf(title, sizeof(title), "OVERLAY %s", dir);
+#endif
    else
    {
       const char *core_name = rgui->info.library_name;
