@@ -626,9 +626,6 @@ static void render_text(rgui_handle_t *rgui)
             case RGUI_SYSTEM_DIR_PATH:
                strlcpy(type_str, g_settings.system_directory, sizeof(type_str));
                break;
-            case RGUI_CONFIG_PATH:
-               strlcpy(type_str, g_extern.config_path, sizeof(type_str));
-               break;
             case RGUI_SETTINGS_DISK_INDEX:
             {
                const struct retro_disk_control_callback *control = &g_extern.system.disk_control;
@@ -1845,7 +1842,6 @@ static void rgui_settings_path_populate_entries(rgui_handle_t *rgui)
    rgui_list_push(rgui->selection_buf, "Savestate Directory", RGUI_SAVESTATE_DIR_PATH, 0);
    rgui_list_push(rgui->selection_buf, "Savefile Directory", RGUI_SAVEFILE_DIR_PATH, 0);
    rgui_list_push(rgui->selection_buf, "System Directory", RGUI_SYSTEM_DIR_PATH, 0);
-   rgui_list_push(rgui->selection_buf, "Config File", RGUI_CONFIG_PATH, 0);
 }
 
 static void rgui_settings_controller_populate_entries(rgui_handle_t *rgui)
