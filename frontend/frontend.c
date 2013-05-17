@@ -55,15 +55,7 @@ int main(int argc, char *argv[])
    // If we started a ROM directly from command line,
    // push it to ROM history.
    if (!g_extern.libretro_dummy)
-   {
-      // g_extern.fullpath can be relative here.
-      if (*g_extern.fullpath)
-         path_resolve_realpath(g_extern.fullpath, sizeof(g_extern.fullpath));
-
-      menu_rom_history_push(*g_extern.fullpath ? g_extern.fullpath : NULL,
-            g_settings.libretro,
-            g_extern.system.info.library_name);
-   }
+      menu_rom_history_push_current();
 
    for (;;)
    {

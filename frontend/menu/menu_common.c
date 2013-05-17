@@ -371,6 +371,21 @@ void menu_rom_history_push(const char *path,
       rom_history_push(rgui->history, path, core_path, core_name);
 }
 
+void menu_rom_history_push_current(void)
+{
+   // g_extern.fullpath can be relative here.
+   // Ensure we're pushing absolute path.
+
+   char tmp[PATH_MAX];
+   strlcpy(tmp, g_extern.fullpath, sizeof(tmp));
+   if (*tmp)
+      path_resolve_realpath(tmp, sizeof(tmp));
+
+   menu_rom_history_push(*tmp ? tmp : NULL,
+         g_settings.libretro,
+         g_extern.system.info.library_name);
+}
+
 void load_menu_game_prepare(void)
 {
    if (*g_extern.fullpath || rgui->load_no_rom)
