@@ -200,6 +200,9 @@ static void *android_app_entry(void *data)
       goto exit;
    }
 
+   if (!g_extern.libretro_dummy)
+      menu_rom_history_push_current();
+
    for (;;)
    {
       if (g_extern.system.shutdown)
