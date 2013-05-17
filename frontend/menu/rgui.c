@@ -164,16 +164,21 @@ static void init_font(rgui_handle_t *rgui, const uint8_t *font_bmp_buf)
    rgui->font = font;
 }
 
-static void rgui_flush_menu_stack(rgui_handle_t *rgui)
+static void rgui_flush_menu_stack_type(rgui_handle_t *rgui, unsigned final_type)
 {
    rgui->need_refresh = true;
    unsigned type = 0;
    rgui_list_get_last(rgui->menu_stack, NULL, &type);
-   while (type != RGUI_SETTINGS)
+   while (type != final_type)
    {
       rgui_list_pop(rgui->menu_stack, &rgui->selection_ptr);
       rgui_list_get_last(rgui->menu_stack, NULL, &type);
    }
+}
+
+static void rgui_flush_menu_stack(rgui_handle_t *rgui)
+{
+   rgui_flush_menu_stack_type(rgui, RGUI_SETTINGS);
 }
 
 static bool menu_type_is_settings(unsigned type)
@@ -502,7 +507,11 @@ static void render_text(rgui_handle_t *rgui)
       }
       else
 #endif
-      if (menu_type == RGUI_SETTINGS_CORE || menu_type == RGUI_SETTINGS_DISK_APPEND)
+      if (menu_type == RGUI_SETTINGS_CORE ||
+#ifdef HAVE_OVERLAY
+            menu_type == RGUI_SETTINGS_OVERLAY_PRESET ||
+#endif
+            menu_type == RGUI_SETTINGS_DISK_APPEND)
       {
          if (type == RGUI_FILE_PLAIN)
          {
@@ -639,9 +648,6 @@ static void render_text(rgui_handle_t *rgui)
             case RGUI_SETTINGS_SHADER_OPTIONS:
             case RGUI_SETTINGS_SHADER_PRESET:
 #endif
-#ifdef HAVE_OVERLAY
-            case RGUI_SETTINGS_OVERLAY_PRESET:
-#endif
             case RGUI_SETTINGS_CORE:
             case RGUI_SETTINGS_DISK_APPEND:
             case RGUI_SETTINGS_INPUT_OPTIONS:
@@ -650,28 +656,27 @@ static void render_text(rgui_handle_t *rgui)
                strlcpy(type_str, "...", sizeof(type_str));
                break;
 #ifdef HAVE_OVERLAY
+            case RGUI_SETTINGS_OVERLAY_PRESET:
+               strlcpy(type_str, path_basename(g_settings.input.overlay), sizeof(type_str));
+               break;
+
             case RGUI_SETTINGS_OVERLAY_OPACITY:
-               {
-                  char number[10];
-                  snprintf(number, sizeof(number), "%.3f", g_settings.input.overlay_opacity);
-                  strlcpy(type_str, number, sizeof(type_str));
-               }
+            {
+               snprintf(type_str, sizeof(type_str), "%.2f", g_settings.input.overlay_opacity);
                break;
+            }
+
             case RGUI_SETTINGS_OVERLAY_SCALE:
-               {
-                  char number[10];
-                  snprintf(number, sizeof(number), "%.3f", g_settings.input.overlay_scale);
-                  strlcpy(type_str, number, sizeof(type_str));
-               }
+            {
+               snprintf(type_str, sizeof(type_str), "%.2f", g_settings.input.overlay_scale);
                break;
+            }
 #endif
             case RGUI_SETTINGS_BIND_PLAYER:
-               {
-                  char number[10];
-                  snprintf(number, sizeof(number), "#%d", port + 1);
-                  strlcpy(type_str, number, sizeof(type_str));
-               }
+            {
+               snprintf(type_str, sizeof(type_str), "#%d", port + 1);
                break;
+            }
             case RGUI_SETTINGS_BIND_DEVICE:
             {
                int map = g_settings.input.joypad_map[port];
@@ -1015,84 +1020,88 @@ static int rgui_settings_toggle_setting(rgui_handle_t *rgui, unsigned setting, r
                rgui->need_refresh = true;
                break;
 
+#ifndef __QNX__ // FIXME: Why ifndef QNX?
             case RGUI_ACTION_START:
-#ifndef __QNX__
-               driver.overlay = input_overlay_new(NULL);
-#endif
+               if (driver.overlay)
+                  input_overlay_free(driver.overlay);
+               driver.overlay = NULL;
+               *g_settings.input.overlay = '\0';
                break;
+#endif
 
             default:
                break;
          }
          break;
+
       case RGUI_SETTINGS_OVERLAY_OPACITY:
+      {
+         bool changed = true;
+         switch (action)
          {
-            bool changed = false;
-            switch (action)
-            {
-               case RGUI_ACTION_LEFT:
-                  if (g_settings.input.overlay_opacity > 0.0f)
-                  {
-                     g_settings.input.overlay_opacity -= 0.01f;
-                     changed = true;
-                  }
-                  break;
-               case RGUI_ACTION_RIGHT:
-               case RGUI_ACTION_OK:
-                  if (g_settings.input.overlay_opacity < 1.0f)
-                  {
-                     g_settings.input.overlay_opacity += 0.01f;
-                     changed = true;
-                  }
-                  break;
-               case RGUI_ACTION_START:
-                  g_settings.input.overlay_opacity = 1.0f;
-                  changed = true;
-                  break;
+            case RGUI_ACTION_LEFT:
+               g_settings.input.overlay_opacity -= 0.01f;
+               break;
 
-               default:
-                  break;
-            }
+            case RGUI_ACTION_RIGHT:
+            case RGUI_ACTION_OK:
+               g_settings.input.overlay_opacity += 0.01f;
+               break;
 
-            if (changed && driver.overlay)
-               input_overlay_set_alpha_mod(driver.overlay,
-                     g_settings.input.overlay_opacity);
+            case RGUI_ACTION_START:
+               g_settings.input.overlay_opacity = 1.0f;
+               break;
+
+            default:
+               changed = false;
+               break;
          }
+
+         if (g_settings.input.overlay_opacity < 0.0f)
+            g_settings.input.overlay_opacity = 0.0f;
+         else if (g_settings.input.overlay_opacity > 1.0f)
+            g_settings.input.overlay_opacity = 1.0f;
+
+         if (changed && driver.overlay)
+            input_overlay_set_alpha_mod(driver.overlay,
+                  g_settings.input.overlay_opacity);
          break;
+      }
+
       case RGUI_SETTINGS_OVERLAY_SCALE:
+      {
+         bool changed = false;
+         switch (action)
          {
-            bool changed = false;
-            switch (action)
-            {
-               case RGUI_ACTION_LEFT:
-                  if (g_settings.input.overlay_scale > 0.0f)
-                  {
-                     g_settings.input.overlay_scale -= 0.01f;
-                     changed = true;
-                  }
-                  break;
-               case RGUI_ACTION_RIGHT:
-               case RGUI_ACTION_OK:
-                  if (g_settings.input.overlay_scale < 2.0f)
-                  {
-                     g_settings.input.overlay_scale += 0.01f;
-                     changed = true;
-                  }
-                  break;
-               case RGUI_ACTION_START:
-                  g_settings.input.overlay_scale = 1.0f;
+            case RGUI_ACTION_LEFT:
+               if (g_settings.input.overlay_scale > 0.0f)
+               {
+                  g_settings.input.overlay_scale -= 0.01f;
                   changed = true;
-                  break;
+               }
+               break;
+            case RGUI_ACTION_RIGHT:
+            case RGUI_ACTION_OK:
+               if (g_settings.input.overlay_scale < 2.0f)
+               {
+                  g_settings.input.overlay_scale += 0.01f;
+                  changed = true;
+               }
+               break;
+            case RGUI_ACTION_START:
+               g_settings.input.overlay_scale = 1.0f;
+               changed = true;
+               break;
 
-               default:
-                  break;
-            }
-
-            if (changed && driver.overlay)
-               input_overlay_set_scale_factor(driver.overlay,
-                     g_settings.input.overlay_scale);
+            default:
+               break;
          }
+
+         if (changed && driver.overlay)
+            input_overlay_set_scale_factor(driver.overlay,
+                  g_settings.input.overlay_scale);
          break;
+      }
 #endif
       // controllers
       case RGUI_SETTINGS_BIND_PLAYER:
@@ -2449,18 +2458,7 @@ int rgui_iterate(rgui_handle_t *rgui)
                }
 
                // Pop stack until we hit shader manager again.
-               // We don't have to do this in CORE selection because it only
-               // uses one directory.
-               unsigned type = 0;
-               const char *dir = NULL;
-               rgui_list_pop(rgui->menu_stack, &rgui->selection_ptr);
-               rgui_list_get_last(rgui->menu_stack, &dir, &type);
-               while (type != RGUI_SETTINGS_SHADER_OPTIONS)
-               {
-                  rgui_list_pop(rgui->menu_stack, &rgui->selection_ptr);
-                  rgui_list_get_last(rgui->menu_stack, &dir, &type);
-               }
-               rgui->need_refresh = true;
+               rgui_flush_menu_stack_type(rgui, RGUI_SETTINGS_SHADER_OPTIONS);
             }
             else
 #endif
@@ -2500,9 +2498,13 @@ int rgui_iterate(rgui_handle_t *rgui)
             {
                fill_pathname_join(g_settings.input.overlay, dir, path, sizeof(g_settings.input.overlay));
 
+               if (driver.overlay)
+                  input_overlay_free(driver.overlay);
                driver.overlay = input_overlay_new(g_settings.input.overlay);
                if (!driver.overlay)
                   RARCH_ERR("Failed to load overlay.\n");
+
+               rgui_flush_menu_stack_type(rgui, RGUI_SETTINGS_INPUT_OPTIONS);
             }
 #endif
             else if (menu_type == RGUI_SETTINGS_DISK_APPEND)
