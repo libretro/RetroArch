@@ -2507,7 +2507,8 @@ int rgui_iterate(rgui_handle_t *rgui)
                if (!driver.overlay)
                   RARCH_ERR("Failed to load overlay.\n");
 
-               rgui_flush_menu_stack_type(rgui, RGUI_SETTINGS_INPUT_OPTIONS);
+               // Lets user browser try out different ones easily ...
+               //rgui_flush_menu_stack_type(rgui, RGUI_SETTINGS_INPUT_OPTIONS);
             }
 #endif
             else if (menu_type == RGUI_SETTINGS_DISK_APPEND)
