@@ -1070,32 +1070,31 @@ static int rgui_settings_toggle_setting(rgui_handle_t *rgui, unsigned setting, r
 
       case RGUI_SETTINGS_OVERLAY_SCALE:
       {
-         bool changed = false;
+         bool changed = true;
          switch (action)
          {
             case RGUI_ACTION_LEFT:
-               if (g_settings.input.overlay_scale > 0.0f)
-               {
-                  g_settings.input.overlay_scale -= 0.01f;
-                  changed = true;
-               }
+               g_settings.input.overlay_scale -= 0.01f;
                break;
+
             case RGUI_ACTION_RIGHT:
             case RGUI_ACTION_OK:
-               if (g_settings.input.overlay_scale < 2.0f)
-               {
-                  g_settings.input.overlay_scale += 0.01f;
-                  changed = true;
-               }
+               g_settings.input.overlay_scale += 0.01f;
                break;
+
             case RGUI_ACTION_START:
                g_settings.input.overlay_scale = 1.0f;
-               changed = true;
                break;
 
             default:
+               changed = false;
                break;
          }
+
+         if (g_settings.input.overlay_scale < 0.01f) // Avoid potential divide by zero.
+            g_settings.input.overlay_scale = 0.01f;
+         else if (g_settings.input.overlay_scale > 2.0f)
+            g_settings.input.overlay_scale = 2.0f;
 
          if (changed && driver.overlay)
             input_overlay_set_scale_factor(driver.overlay,
