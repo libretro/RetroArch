@@ -542,10 +542,10 @@ uint64_t input_overlay_poll(input_overlay_t *ol, int16_t norm_x, int16_t norm_y)
    float x = (float)(norm_x + 0x7fff) / 0xffff;
    float y = (float)(norm_y + 0x7fff) / 0xffff;
 
-   x -= ol->active->x;
-   y -= ol->active->y;
-   x /= ol->active->w;
-   y /= ol->active->h;
+   x -= ol->active->mod_x;
+   y -= ol->active->mod_y;
+   x /= ol->active->mod_w;
+   y /= ol->active->mod_h;
 
    uint64_t state = 0;
    for (size_t i = 0; i < ol->active->size; i++)
