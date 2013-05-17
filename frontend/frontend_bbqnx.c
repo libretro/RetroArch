@@ -47,6 +47,11 @@ int rarch_main(int argc, char *argv[])
 
    g_extern.lifecycle_mode_state |= (1ULL << MODE_LOAD_GAME);
 
+#ifdef HAVE_BB10
+   if (!g_extern.libretro_dummy)
+      menu_rom_history_push_current();
+#endif
+
    for (;;)
    {
       if (g_extern.system.shutdown)
