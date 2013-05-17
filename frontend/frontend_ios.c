@@ -100,6 +100,11 @@ void* rarch_main_ios(void* args)
    menu_init();
    g_extern.lifecycle_mode_state |= 1ULL << MODE_GAME;
 
+   // If we started a ROM directly from command line,
+   // push it to ROM history.
+   if (!g_extern.libretro_dummy)
+      menu_rom_history_push_current();
+
    for (;;)
    {
       if (g_extern.system.shutdown)
