@@ -639,6 +639,9 @@ static void render_text(rgui_handle_t *rgui)
             case RGUI_SETTINGS_SHADER_OPTIONS:
             case RGUI_SETTINGS_SHADER_PRESET:
 #endif
+#ifdef HAVE_OVERLAY
+            case RGUI_SETTINGS_OVERLAY_PRESET:
+#endif
             case RGUI_SETTINGS_CORE:
             case RGUI_SETTINGS_DISK_APPEND:
             case RGUI_SETTINGS_INPUT_OPTIONS:
@@ -986,6 +989,27 @@ static int rgui_settings_toggle_setting(rgui_handle_t *rgui, unsigned setting, r
             return -1;
          }
          break;
+#ifdef HAVE_OVERLAY
+      case RGUI_SETTINGS_OVERLAY_PRESET:
+         switch (action)
+         {
+            case RGUI_ACTION_OK:
+               rgui_list_push(rgui->menu_stack, "", setting, rgui->selection_ptr);
+               rgui->selection_ptr = 0;
+               rgui->need_refresh = true;
+               break;
+
+            case RGUI_ACTION_START:
+#ifndef __QNX__
+               driver.overlay = input_overlay_new(NULL);
+#endif
+               break;
+
+            default:
+               break;
+         }
+         break;
+#endif
       // controllers
       case RGUI_SETTINGS_BIND_PLAYER:
          if (action == RGUI_ACTION_START)
@@ -1731,6 +1755,9 @@ static void rgui_settings_path_populate_entries(rgui_handle_t *rgui)
 static void rgui_settings_controller_populate_entries(rgui_handle_t *rgui)
 {
    rgui_list_clear(rgui->selection_buf);
+#ifdef HAVE_OVERLAY
+   rgui_list_push(rgui->selection_buf, "Overlay Preset", RGUI_SETTINGS_OVERLAY_PRESET, 0);
+#endif
    rgui_list_push(rgui->selection_buf, "Player", RGUI_SETTINGS_BIND_PLAYER, 0);
    rgui_list_push(rgui->selection_buf, "Device", RGUI_SETTINGS_BIND_DEVICE, 0);
    rgui_list_push(rgui->selection_buf, "Device Type", RGUI_SETTINGS_BIND_DEVICE_TYPE, 0);
@@ -2046,6 +2073,9 @@ static int rgui_settings_iterate(rgui_handle_t *rgui, rgui_action_t action)
 #ifdef HAVE_SHADER_MANAGER
             menu_type_is_shader_browser(menu_type) ||
 #endif
+#ifdef HAVE_OVERLAY
+            menu_type == RGUI_SETTINGS_OVERLAY_PRESET ||
+#endif
             menu_type == RGUI_SETTINGS_CORE || menu_type == RGUI_SETTINGS_DISK_APPEND ||
             menu_type == RGUI_SETTINGS_OPEN_HISTORY))
    {
@@ -2164,6 +2194,10 @@ static bool directory_parse(rgui_handle_t *rgui, const char *directory, unsigned
       exts = "cgp|glslp";
    else if (menu_type_is_shader_browser(menu_type))
       exts = "cg|glsl";
+#endif
+#ifdef HAVE_OVERLAY
+   else if (menu_type == RGUI_SETTINGS_OVERLAY_PRESET)
+      exts = "cfg";
 #endif
    else if (rgui->info.valid_extensions)
    {
@@ -2295,6 +2329,9 @@ int rgui_iterate(rgui_handle_t *rgui)
 #ifdef HAVE_SHADER_MANAGER
                menu_type_is_shader_browser(type) ||
 #endif
+#ifdef HAVE_OVERLAY
+               type == RGUI_SETTINGS_OVERLAY_PRESET ||
+#endif
                type == RGUI_SETTINGS_CORE ||
                type == RGUI_SETTINGS_DISK_APPEND ||
                type == RGUI_FILE_DIRECTORY)
@@ -2372,6 +2409,16 @@ int rgui_iterate(rgui_handle_t *rgui)
 
                rgui_flush_menu_stack(rgui);
             }
+#ifdef HAVE_OVERLAY
+            else if (menu_type == RGUI_SETTINGS_OVERLAY_PRESET)
+            {
+               fill_pathname_join(g_settings.input.overlay, dir, path, sizeof(g_settings.input.overlay));
+
+               driver.overlay = input_overlay_new(g_settings.input.overlay);
+               if (!driver.overlay)
+                  RARCH_ERR("Failed to load overlay.\n");
+            }
+#endif
             else if (menu_type == RGUI_SETTINGS_DISK_APPEND)
             {
                char image[PATH_MAX];
@@ -2427,6 +2474,9 @@ int rgui_iterate(rgui_handle_t *rgui)
    if (rgui->need_refresh && (menu_type == RGUI_FILE_DIRECTORY ||
 #ifdef HAVE_SHADER_MANAGER
             menu_type_is_shader_browser(menu_type) ||
+#endif
+#ifdef HAVE_OVERLAY
+            menu_type == RGUI_SETTINGS_OVERLAY_PRESET ||
 #endif
             menu_type == RGUI_SETTINGS_CORE ||
             menu_type == RGUI_SETTINGS_OPEN_HISTORY ||
