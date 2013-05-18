@@ -193,6 +193,9 @@ static void *android_app_entry(void *data)
 
    if (!android_app_start_main(android_app))
    {
+      g_settings.input.overlay[0] = 0;
+      // threaded video doesn't work right for just displaying one frame
+      g_settings.video.threaded = false;
       init_drivers();
       driver.video_poke->set_aspect_ratio(driver.video_data, ASPECT_RATIO_SQUARE);
       rarch_render_cached_frame();
