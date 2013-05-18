@@ -174,11 +174,7 @@ typedef struct gl_shader_backend gl_shader_backend_t;
 #define MAX_SHADERS 16
 
 #if (defined(HAVE_GLSL) || defined(HAVE_CG))
-#ifdef HAVE_VIDEOCORE
-#define TEXTURES 2 // Very little video RAM ...
-#else
 #define TEXTURES 8
-#endif
 #else
 #define TEXTURES 1
 #endif
