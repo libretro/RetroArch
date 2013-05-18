@@ -539,10 +539,9 @@ static void gl_create_fbo_textures(void *data)
       else
       {
          glTexImage2D(GL_TEXTURE_2D,
-               0, driver.gfx_use_rgba ? GL_RGBA : RARCH_GL_INTERNAL_FORMAT32,
-               gl->fbo_rect[i].width, gl->fbo_rect[i].height,
-               0, driver.gfx_use_rgba ? GL_RGBA : RARCH_GL_TEXTURE_TYPE32,
-               RARCH_GL_FORMAT32, NULL);
+               0, GL_RGBA,
+               gl->fbo_rect[i].width, gl->fbo_rect[i].height, 0,
+               GL_RGBA, GL_UNSIGNED_BYTE, NULL);
       }
    }
 
@@ -656,12 +655,29 @@ void gl_init_fbo(void *data, unsigned width, unsigned height)
 }
 
 #ifndef HAVE_RGL
+
+// GLES and GL inconsistency.
+#ifndef GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT
+#define GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT_EXT
+#endif
+#ifndef GL_FRAMEBUFFER_INCOMPLETE_DIMENSIONS
+#define GL_FRAMEBUFFER_INCOMPLETE_DIMENSIONS GL_FRAMEBUFFER_INCOMPLETE_DIMENSIONS_EXT
+#endif
+#ifndef GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT
+#define GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT_EXT
+#endif
+#ifndef GL_FRAMEBUFFER_UNSUPPORTED
+#define GL_FRAMEBUFFER_UNSUPPORTED GL_FRAMEBUFFER_UNSUPPORTED_EXT
+#endif
+
 bool gl_init_hw_render(gl_t *gl, unsigned width, unsigned height)
 {
    RARCH_LOG("[GL]: Initializing HW render (%u x %u).\n", width, height);
-   GLint max_size = 0;
-   glGetIntegerv(GL_MAX_TEXTURE_SIZE, &max_size);
-   RARCH_LOG("[GL]: Max texture size: %u px.\n", max_size);
+   GLint max_fbo_size = 0;
+   GLint max_renderbuffer_size = 0;
+   glGetIntegerv(GL_MAX_TEXTURE_SIZE, &max_fbo_size);
+   glGetIntegerv(GL_MAX_RENDERBUFFER_SIZE, &max_renderbuffer_size);
+   RARCH_LOG("[GL]: Max texture size: %d px, renderbuffer size: %u px.\n", max_fbo_size, max_renderbuffer_size);
 
    if (!load_fbo_proc(gl))
       return false;
@@ -687,6 +703,7 @@ bool gl_init_hw_render(gl_t *gl, unsigned width, unsigned height)
          pglBindRenderbuffer(GL_RENDERBUFFER, gl->hw_render_depth[i]);
          pglRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT16,
                width, height);
+         pglBindRenderbuffer(GL_RENDERBUFFER, 0);
          pglFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,
                GL_RENDERBUFFER, gl->hw_render_depth[i]);
       }
@@ -698,18 +715,7 @@ bool gl_init_hw_render(gl_t *gl, unsigned width, unsigned height)
          const char *err = NULL;
          switch (status)
          {
-#ifndef GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT
-#define GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT_EXT
-#endif
-#ifndef GL_FRAMEBUFFER_INCOMPLETE_DIMENSIONS
-#define GL_FRAMEBUFFER_INCOMPLETE_DIMENSIONS GL_FRAMEBUFFER_INCOMPLETE_DIMENSIONS_EXT
-#endif
-#ifndef GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT
-#define GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT_EXT
-#endif
-#ifndef GL_FRAMEBUFFER_UNSUPPORTED
-#define GL_FRAMEBUFFER_UNSUPPORTED GL_FRAMEBUFFER_UNSUPPORTED_EXT
-#endif
+
             case GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT: err = "Incomplete Attachment"; break;
             case GL_FRAMEBUFFER_INCOMPLETE_DIMENSIONS: err = "Incomplete Dimensions"; break;
             case GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT: err = "Missing Attachment"; break;
@@ -722,7 +728,6 @@ bool gl_init_hw_render(gl_t *gl, unsigned width, unsigned height)
    }
 
    gl_bind_backbuffer();
-   pglBindRenderbuffer(GL_RENDERBUFFER, 0);
    gl->hw_render_fbo_init = true;
    return true;
 }
@@ -1116,8 +1121,7 @@ static void gl_init_textures(void *data, const video_info_t *video)
    gl_t *gl = (gl_t*)data;
 #if defined(HAVE_EGL) && defined(HAVE_OPENGLES2)
    // Use regular textures if we use HW render.
-   bool allow_egl_images = g_extern.system.hw_render_callback.context_type != RETRO_HW_CONTEXT_OPENGLES2;
-   gl->egl_images = allow_egl_images && load_eglimage_proc(gl) && context_init_egl_image_buffer_func(video);
+   gl->egl_images = !gl->hw_render_use && load_eglimage_proc(gl) && context_init_egl_image_buffer_func(video);
 #else
    (void)video;
 #endif
@@ -1129,6 +1133,32 @@ static void gl_init_textures(void *data, const video_info_t *video)
    glBindBuffer(GL_TEXTURE_REFERENCE_BUFFER_SCE, gl->pbo);
    glBufferData(GL_TEXTURE_REFERENCE_BUFFER_SCE,
          gl->tex_w * gl->tex_h * gl->base_size * TEXTURES, NULL, GL_STREAM_DRAW);
+#endif
+
+   GLenum internal_fmt = gl->internal_fmt;
+   GLenum texture_type = gl->texture_type;
+   GLenum texture_fmt  = gl->texture_fmt;
+
+   // GLES is picky about which format we use here.
+   // Without extensions, we can *only* render to 16-bit FBOs.
+#ifdef HAVE_OPENGLES2
+   if (gl->hw_render_use && gl->base_size == sizeof(uint32_t))
+   {
+      bool support_argb = gl_query_extension("OES_rgb8_rgba8") || gl_query_extension("ARM_argb8");
+      if (support_argb)
+      {
+         internal_fmt = GL_RGBA;
+         texture_type = GL_RGBA;
+         texture_fmt  = GL_UNSIGNED_BYTE;
+      }
+      else
+      {
+         RARCH_WARN("[GL]: 32-bit FBO not supported. Falling back to 16-bit.\n");
+         internal_fmt = GL_RGB;
+         texture_type = GL_RGB;
+         texture_fmt  = GL_UNSIGNED_SHORT_5_6_5;
+      }
+   }
 #endif
 
    glGenTextures(TEXTURES, gl->texture);
@@ -1145,15 +1175,15 @@ static void gl_init_textures(void *data, const video_info_t *video)
 #ifdef HAVE_PSGL
       glTextureReferenceSCE(GL_TEXTURE_2D, 1,
             gl->tex_w, gl->tex_h, 0, 
-            gl->internal_fmt,
+            internal_fmt,
             gl->tex_w * gl->base_size,
             gl->tex_w * gl->tex_h * i * gl->base_size);
 #else
       if (!gl->egl_images)
       {
          glTexImage2D(GL_TEXTURE_2D,
-               0, gl->internal_fmt, gl->tex_w, gl->tex_h, 0, gl->texture_type,
-               gl->texture_fmt, gl->empty_buf ? gl->empty_buf : NULL);
+               0, internal_fmt, gl->tex_w, gl->tex_h, 0, texture_type,
+               texture_fmt, gl->empty_buf ? gl->empty_buf : NULL);
       }
 #endif
    }
@@ -1874,6 +1904,14 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    else
       gl->tex_filter = video->smooth ? GL_LINEAR : GL_NEAREST;
 
+#ifdef HAVE_FBO
+#ifdef HAVE_OPENGLES2
+   gl->hw_render_use = g_extern.system.hw_render_callback.context_type == RETRO_HW_CONTEXT_OPENGLES2;
+#else
+   gl->hw_render_use = g_extern.system.hw_render_callback.context_type == RETRO_HW_CONTEXT_OPENGL;
+#endif
+#endif
+
    gl_set_texture_fmts(gl, video->rgb32);
 
 #ifndef HAVE_OPENGLES
@@ -1912,14 +1950,7 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    gl_init_fbo(gl, gl->tex_w, gl->tex_h);
 
 #ifndef HAVE_RGL
-#ifdef HAVE_OPENGLES2
-   enum retro_hw_context_type desired = RETRO_HW_CONTEXT_OPENGLES2;
-#else
-   enum retro_hw_context_type desired = RETRO_HW_CONTEXT_OPENGL;
-#endif
-
-   if (g_extern.system.hw_render_callback.context_type == desired
-         && !gl_init_hw_render(gl, gl->tex_w, gl->tex_h))
+   if (gl->hw_render_use && !gl_init_hw_render(gl, gl->tex_w, gl->tex_h))
    {
       context_destroy_func();
       free(gl);

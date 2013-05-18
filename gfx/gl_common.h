@@ -216,6 +216,7 @@ typedef struct gl
    bool hw_render_fbo_init;
    bool hw_render_depth_init;
 #endif
+   bool hw_render_use;
 
    bool should_resize;
    bool quitting;
