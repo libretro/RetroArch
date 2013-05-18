@@ -659,6 +659,9 @@ void gl_init_fbo(void *data, unsigned width, unsigned height)
 bool gl_init_hw_render(gl_t *gl, unsigned width, unsigned height)
 {
    RARCH_LOG("[GL]: Initializing HW render (%u x %u).\n", width, height);
+   GLint max_size = 0;
+   glGetIntegerv(GL_MAX_TEXTURE_SIZE, &max_size);
+   RARCH_LOG("[GL]: Max texture size: %u px.\n", max_size);
 
    if (!load_fbo_proc(gl))
       return false;
@@ -694,6 +697,8 @@ bool gl_init_hw_render(gl_t *gl, unsigned width, unsigned height)
          RARCH_ERR("[GL]: Failed to create HW render FBO.\n");
          return false;
       }
+      else
+         RARCH_LOG("[GL]: HW render FBO #%u initialized.\n", i);
    }
 
    gl_bind_backbuffer();
@@ -1090,7 +1095,9 @@ static void gl_init_textures(void *data, const video_info_t *video)
 {
    gl_t *gl = (gl_t*)data;
 #if defined(HAVE_EGL) && defined(HAVE_OPENGLES2)
-   gl->egl_images = load_eglimage_proc(gl) && context_init_egl_image_buffer_func(video);
+   // Use regular textures if we use HW render.
+   bool allow_egl_images = g_extern.system.hw_render_callback.context_type != RETRO_HW_CONTEXT_OPENGLES2;
+   gl->egl_images = allow_egl_images && load_eglimage_proc(gl) && context_init_egl_image_buffer_func(video);
 #else
    (void)video;
 #endif
