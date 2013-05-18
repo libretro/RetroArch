@@ -118,7 +118,7 @@ static PFNGLVERTEXATTRIBPOINTERPROC pglVertexAttribPointer;
 #define BORDER_FUNC GL_CLAMP_TO_BORDER
 #endif
 
-#define PREV_TEXTURES 7
+#define PREV_TEXTURES (TEXTURES - 1)
 
 static struct gfx_shader *glsl_shader;
 

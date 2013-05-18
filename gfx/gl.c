@@ -694,11 +694,19 @@ bool gl_init_hw_render(gl_t *gl, unsigned width, unsigned height)
       GLenum status = pglCheckFramebufferStatus(GL_FRAMEBUFFER);
       if (status != GL_FRAMEBUFFER_COMPLETE)
       {
-         RARCH_ERR("[GL]: Failed to create HW render FBO.\n");
+         RARCH_ERR("[GL]: Failed to create HW render FBO #%u.\n", i);
+         const char *err = NULL;
+         switch (status)
+         {
+            case GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT: err = "Incomplete Attachment"; break;
+            case GL_FRAMEBUFFER_INCOMPLETE_DIMENSIONS: err = "Incomplete Dimensions"; break;
+            case GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT: err = "Missing Attachment"; break;
+            case GL_FRAMEBUFFER_UNSUPPORTED: err = "Unsupported"; break;
+            default: err = "Unknown"; break;
+         }
+         RARCH_ERR("[GL]: Error: %s.\n", err);
          return false;
       }
-      else
-         RARCH_LOG("[GL]: HW render FBO #%u initialized.\n", i);
    }
 
    gl_bind_backbuffer();

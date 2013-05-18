@@ -254,7 +254,7 @@ static void video_frame(const void *data, unsigned width, unsigned height, size_
    g_extern.frame_cache.height = height;
    g_extern.frame_cache.pitch  = pitch;
 
-   if (g_extern.system.pix_fmt == RETRO_PIXEL_FORMAT_0RGB1555 && data)
+   if (g_extern.system.pix_fmt == RETRO_PIXEL_FORMAT_0RGB1555 && data && data != RETRO_HW_FRAME_BUFFER_VALID)
    {
       RARCH_PERFORMANCE_INIT(video_frame_conv);
       RARCH_PERFORMANCE_START(video_frame_conv);
