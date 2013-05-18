@@ -113,12 +113,6 @@ else
    check_lib AL -lopenal alcOpenDevice
 fi
 
-if [ "$OS" = 'Darwin' ]; then
-   check_lib FBO "-framework OpenGL" glFramebufferTexture2D
-else
-   check_lib FBO -lGL glFramebufferTexture2D
-fi
-
 check_pkgconf RSOUND rsound 1.1
 check_pkgconf ROAR libroar
 check_pkgconf JACK jack 0.120.1
@@ -193,6 +187,16 @@ if [ "$HAVE_EGL" = "yes" ]; then
 else
    HAVE_VG=no
    HAVE_GLES=no
+fi
+
+if [ "$OS" = 'Darwin' ]; then
+   check_lib FBO "-framework OpenGL" glFramebufferTexture2D
+else
+   if [ "$HAVE_GLES" = "yes" ]; then
+      [ $HAVE_FBO != "no" ] && HAVE_FBO=yes
+   else
+      check_lib FBO -lGL glFramebufferTexture2D
+   fi
 fi
 
 check_pkgconf FREETYPE freetype2
