@@ -403,7 +403,7 @@ void load_menu_game_prepare(void)
 
       menu_rom_history_push(*g_extern.fullpath ? g_extern.fullpath : NULL,
             g_settings.libretro,
-            rgui->info.library_name);
+            rgui->info.library_name ? rgui->info.library_name : "");
    }
 
 #ifdef HAVE_RGUI
