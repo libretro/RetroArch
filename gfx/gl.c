@@ -538,10 +538,18 @@ static void gl_create_fbo_textures(void *data)
       }
       else
       {
+#ifdef HAVE_OPENGLES2
          glTexImage2D(GL_TEXTURE_2D,
                0, GL_RGBA,
                gl->fbo_rect[i].width, gl->fbo_rect[i].height, 0,
                GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+#else
+         // Avoid potential performance reductions on particular platforms.
+         glTexImage2D(GL_TEXTURE_2D,
+               0, RARCH_GL_INTERNAL_FORMAT32,
+               gl->fbo_rect[i].width, gl->fbo_rect[i].height, 0,
+               RARCH_GL_TEXTURE_TYPE32, RARCH_GL_FORMAT32, NULL);
+#endif
       }
    }
 
