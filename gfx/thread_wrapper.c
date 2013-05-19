@@ -387,9 +387,6 @@ static bool thread_focus(void *data)
 static bool thread_frame(void *data, const void *frame_,
       unsigned width, unsigned height, unsigned pitch, const char *msg)
 {
-   if (!frame_)
-      return true;
-
    RARCH_PERFORMANCE_INIT(thread_frame);
    RARCH_PERFORMANCE_START(thread_frame);
 
@@ -403,9 +400,12 @@ static bool thread_frame(void *data, const void *frame_,
    // Drop frame if updated flag is still set, as thread is still working on last frame.
    if (!thr->frame.updated)
    {
-      slock_lock(thr->frame.lock);
-      for (unsigned h = 0; h < height; h++, src += pitch, dst += copy_stride)
-         memcpy(dst, src, copy_stride);
+      if (src)
+      {
+         for (unsigned h = 0; h < height; h++, src += pitch, dst += copy_stride)
+            memcpy(dst, src, copy_stride);
+      }
+
       thr->frame.updated = true;
       thr->frame.width  = width;
       thr->frame.height = height;
@@ -417,7 +417,6 @@ static bool thread_frame(void *data, const void *frame_,
          *thr->frame.msg = '\0';
 
       scond_signal(thr->cond_thread);
-      slock_unlock(thr->frame.lock);
 
       // If we are going to render menu,
       // we'll want to block to avoid stepping menu
