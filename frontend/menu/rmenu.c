@@ -801,9 +801,16 @@ static bool osk_callback_enter_filename(void *data)
          case CONFIG_FILE:
             break;
          case SHADER_PRESET_FILE:
-            snprintf(filepath, sizeof(filepath), "%s/%s.cgp", g_settings.video.shader_dir, tmp_str);
-            RARCH_LOG("[osk_callback_enter_filename]: filepath is: %s.\n", filepath);
-            /* TODO - stub */
+            {
+               snprintf(filepath, sizeof(filepath), "%s/%s.cgp", g_settings.video.shader_dir, tmp_str);
+               RARCH_LOG("[osk_callback_enter_filename]: filepath is: %s.\n", filepath);
+               config_file_t *conf = config_file_new(NULL);
+               if (!conf)
+                  return false;
+               gfx_shader_write_conf_cgp(conf, &rgui->shader);
+               config_file_write(conf, filepath);
+               config_file_free(conf);
+            }
             break;
          case INPUT_PRESET_FILE:
             snprintf(filepath, sizeof(filepath), "%s/%s.cfg", default_paths.input_presets_dir, tmp_str);
