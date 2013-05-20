@@ -272,7 +272,7 @@ extern void __exception_setreload(int t);
 static void system_init(void)
 {
 #ifdef HW_RVL
-   IOS_ReloadIOS(IOS_GetVersion());
+   //IOS_ReloadIOS(IOS_GetVersion());
    L2Enhance();
 #ifndef IS_SALAMANDER
    gx_init_mem2();
