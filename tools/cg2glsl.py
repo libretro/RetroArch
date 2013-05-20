@@ -573,6 +573,10 @@ def path_ext(path):
    _, ext = os.path.splitext(path)
    return ext
 
+def convert_path(source, source_dir, dest_dir, conv):
+   index = 0 if source_dir[-1] == '/' else 1
+   return os.path.join(dest_dir, source.replace(source_dir, '')[index:]).replace(conv[0], conv[1])
+
 def main():
    if len(sys.argv) != 3:
       print('Usage: {} prog.cg(p) prog.glsl(p)'.format(sys.argv[0]))
@@ -593,7 +597,7 @@ def main():
       failed_files = []
       for dirname, _, filenames in os.walk(sys.argv[1]):
          for source in filter(lambda path: path_ext(path) == '.cg', [os.path.join(dirname, filename) for filename in filenames]):
-            dest = os.path.join(sys.argv[2], source.replace(sys.argv[1], '')[1:]).replace('.cg', '.glsl')
+            dest = convert_path(source, sys.argv[1], sys.argv[2], ('.cg', '.glsl'))
             dirpath = os.path.split(dest)[0]
             print('Dirpath:', dirpath)
             if not os.path.isdir(dirpath):
@@ -618,7 +622,7 @@ def main():
                failed_cnt += 1
 
          for source in filter(lambda path: path_ext(path) == '.cgp', [os.path.join(dirname, filename) for filename in filenames]):
-            dest = os.path.join(sys.argv[2], source.replace(sys.argv[1], '')[1:]).replace('.cgp', '.glslp')
+            dest = convert_path(source, sys.argv[1], sys.argv[2], ('.cgp', '.glslp'))
             dirpath = os.path.split(dest)[0]
             print('Dirpath:', dirpath)
             if not os.path.isdir(dirpath):
