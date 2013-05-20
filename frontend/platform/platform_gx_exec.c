@@ -78,7 +78,7 @@ static void dol_copy_argv_path(const char *dolpath, const char *argpath)
 
    // file must be split into two parts, the path and the actual filename
    // done to be compatible with loaders
-   if (argpath && strchr(argpath, '/') != NULL)
+   if (argpath && strrchr(argpath, '/') != NULL)
    {
       // basedir
       fill_pathname_parent_dir(tmp, argpath, sizeof(tmp));
@@ -104,7 +104,19 @@ static void dol_copy_argv_path(const char *dolpath, const char *argpath)
 // heap memory and are restricted to the stack only
 static void rarch_console_exec(const char *path, bool should_load_game)
 {
-   RARCH_LOG("Attempt to load executable: [%s].\n", path);
+   char game_path[PATH_MAX];
+
+   RARCH_LOG("Attempt to load executable: [%s] %d.\n", path, sizeof(game_path));
+
+   // copy heap info into stack so it survives us moving the .dol into MEM2
+   if (should_load_game)
+   {
+#ifdef IS_SALAMANDER
+      strlcpy(game_path, gx_rom_path, sizeof(game_path));
+#else
+      strlcpy(game_path, g_extern.fullpath, sizeof(game_path));
+#endif
+   }
 
    FILE * fp = fopen(path, "rb");
    if (fp == NULL)
@@ -116,6 +128,7 @@ static void rarch_console_exec(const char *path, bool should_load_game)
    fseek(fp, 0, SEEK_END);
    size_t size = ftell(fp);
    fseek(fp, 0, SEEK_SET);
+
    // try to allocate a buffer for it. if we can't, fail
    void *dol = malloc(size);
    if (!dol)
@@ -140,11 +153,7 @@ static void rarch_console_exec(const char *path, bool should_load_game)
    memmove(EXECUTE_ADDR, dol, size);
    DCFlushRange(EXECUTE_ADDR, size);
 
-#ifdef IS_SALAMANDER
-   dol_copy_argv_path(path, should_load_game ? gx_rom_path : NULL);
-#else
-   dol_copy_argv_path(path, should_load_game ? g_extern.fullpath : NULL);
-#endif
+   dol_copy_argv_path(path, should_load_game ? game_path : NULL);
 
    size_t booter_size = booter_end - booter_start;
    memcpy(BOOTER_ADDR, booter_start, booter_size);
