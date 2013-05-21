@@ -1028,7 +1028,7 @@ static int rgui_settings_toggle_setting(rgui_handle_t *rgui, unsigned setting, r
       case RGUI_SETTINGS_RESTART_EMULATOR:
          if (action == RGUI_ACTION_OK)
          {
-#ifdef GEKKO
+#if defined(GEKKO) && defined(HW_RVL)
             fill_pathname_join(g_extern.fullpath, default_paths.core_dir, SALAMANDER_FILE,
                   sizeof(g_extern.fullpath));
 #endif
@@ -2555,7 +2555,7 @@ int rgui_iterate(rgui_handle_t *rgui)
 
                // Core selection on non-console just updates directory listing.
                // Will take affect on new ROM load.
-#elif defined(GEKKO)
+#elif defined(GEKKO) && defined(HW_RVL)
                strlcpy(g_settings.libretro, path, sizeof(g_settings.libretro)); // Is this supposed to be here?
                fill_pathname_join(g_extern.fullpath, default_paths.core_dir,
                      SALAMANDER_FILE, sizeof(g_extern.fullpath));

@@ -44,6 +44,7 @@ default_paths_t default_paths;
 
 // Rename core filename executable to a more sane name.
 
+#ifdef HAVE_LIBRETRO_MANAGEMENT
 static bool libretro_install_core(const char *path_prefix,
       const char *core_exe_path)
 {
@@ -76,6 +77,7 @@ static bool libretro_install_core(const char *path_prefix,
 
    return true;
 }
+#endif
 
 #define MAKE_DIR(x, name) { \
    RARCH_LOG("Checking directory name %s [%s]\n", name, x); \

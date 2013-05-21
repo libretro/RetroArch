@@ -1,7 +1,6 @@
 #ifndef _FRONTEND_CONSOLE_H
 #define _FRONTEND_CONSOLE_H
 
-#if defined(HAVE_LIBRETRO_MANAGEMENT) || defined(IS_SALAMANDER)
 #ifdef GEKKO
 #define SALAMANDER_FILE "boot.dol"
 #define DEFAULT_EXE_EXT ".dol"
@@ -14,7 +13,6 @@
 #elif defined(_XBOX360)
 #define SALAMANDER_FILE "default.xex"
 #define DEFAULT_EXE_EXT ".xex"
-#endif
 #endif
 
 #endif

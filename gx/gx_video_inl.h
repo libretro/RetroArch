@@ -133,6 +133,7 @@ static GXTexRegion* __GXDefTexRegionCallback(GXTexObj *obj,u8 mapid)
 	__gx->mtxIdxLo = (__gx->mtxIdxLo&~0x3f)|(mtx&0x3f); \
 	__gx->dirtyState |= 0x04000000
 
+#if defined(HW_RVL)
 #define GX_CopyDisp(dest,clear) \
 	u8 clflag; \
 	u32 val; \
@@ -164,5 +165,6 @@ static GXTexRegion* __GXDefTexRegionCallback(GXTexObj *obj,u8 mapid)
 		GX_LOAD_BP_REG(__gx->peCMode0); \
 	} \
 	if(clflag) GX_LOAD_BP_REG(__gx->peCntrl)
+#endif
 
 #define GX_LoadTexObj(obj,mapid) GX_LoadTexObjPreloaded(obj,(__GXDefTexRegionCallback(obj,mapid)),mapid)

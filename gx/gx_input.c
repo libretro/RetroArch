@@ -130,7 +130,10 @@ const struct platform_bind platform_keys[] = {
 };
 
 static bool g_menu;
+
+#ifdef HW_RVL
 static bool g_quit;
+#endif
 
 static int16_t gx_input_state(void *data, const struct retro_keybind **binds,
       unsigned port, unsigned device,
