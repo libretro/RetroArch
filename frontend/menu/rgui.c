@@ -206,6 +206,17 @@ static bool menu_type_is_shader_browser(unsigned type)
 }
 #endif
 
+static bool menu_type_is_directory_browser(unsigned type)
+{
+   return type == RGUI_BROWSER_DIR_PATH ||
+#ifdef HAVE_SHADER_MANAGER
+      type == RGUI_SHADER_DIR_PATH ||
+#endif
+      type == RGUI_SAVESTATE_DIR_PATH ||
+      type == RGUI_SAVEFILE_DIR_PATH ||
+      type == RGUI_SYSTEM_DIR_PATH;
+}
+
 static void rgui_settings_populate_entries(rgui_handle_t *rgui);
 
 rgui_handle_t *rgui_init(void)
@@ -442,6 +453,16 @@ static void render_text(rgui_handle_t *rgui)
    else if (menu_type == RGUI_SETTINGS_OVERLAY_PRESET)
       snprintf(title, sizeof(title), "OVERLAY %s", dir);
 #endif
+   else if (menu_type == RGUI_BROWSER_DIR_PATH)
+      snprintf(title, sizeof(title), "BROWSER DIR %s", dir);
+   else if (menu_type == RGUI_SHADER_DIR_PATH)
+      snprintf(title, sizeof(title), "SHADER DIR %s", dir);
+   else if (menu_type == RGUI_SAVESTATE_DIR_PATH)
+      snprintf(title, sizeof(title), "SAVESTATE DIR %s", dir);
+   else if (menu_type == RGUI_SAVEFILE_DIR_PATH)
+      snprintf(title, sizeof(title), "SAVEFILE DIR %s", dir);
+   else if (menu_type == RGUI_SYSTEM_DIR_PATH)
+      snprintf(title, sizeof(title), "SYSTEM DIR %s", dir);
    else
    {
       const char *core_name = rgui->info.library_name;
@@ -515,12 +536,18 @@ static void render_text(rgui_handle_t *rgui)
 #ifdef HAVE_OVERLAY
             menu_type == RGUI_SETTINGS_OVERLAY_PRESET ||
 #endif
-            menu_type == RGUI_SETTINGS_DISK_APPEND)
+            menu_type == RGUI_SETTINGS_DISK_APPEND ||
+            menu_type_is_directory_browser(menu_type))
       {
          if (type == RGUI_FILE_PLAIN)
          {
             strlcpy(type_str, "(FILE)", sizeof(type_str));
             w = 6;
+         }
+         else if (type == RGUI_FILE_USE_DIRECTORY)
+         {
+            *type_str = '\0';
+            w = 0;
          }
          else
          {
@@ -612,19 +639,34 @@ static void render_text(rgui_handle_t *rgui)
                snprintf(type_str, sizeof(type_str), (g_extern.lifecycle_mode_state & (1ULL << MODE_FPS_DRAW)) ? "ON" : "OFF");
                break;
             case RGUI_BROWSER_DIR_PATH:
-               strlcpy(type_str, g_settings.rgui_browser_directory, sizeof(type_str));
+               if (g_settings.rgui_browser_directory[0])
+                  strlcpy(type_str, g_settings.rgui_browser_directory, sizeof(type_str));
+               else
+                  strlcpy(type_str, "<default>", sizeof(type_str));
                break;
             case RGUI_SAVEFILE_DIR_PATH:
-               strlcpy(type_str, g_extern.savefile_dir, sizeof(type_str));
+               if (g_extern.savefile_dir[0])
+                  strlcpy(type_str, g_extern.savefile_dir, sizeof(type_str));
+               else
+                  strlcpy(type_str, "<ROM dir>", sizeof(type_str));
                break;
             case RGUI_SAVESTATE_DIR_PATH:
-               strlcpy(type_str, g_extern.savestate_dir, sizeof(type_str));
+               if (g_extern.savestate_dir[0])
+                  strlcpy(type_str, g_extern.savestate_dir, sizeof(type_str));
+               else
+                  strlcpy(type_str, "<ROM dir>", sizeof(type_str));
                break;
             case RGUI_SHADER_DIR_PATH:
-               strlcpy(type_str, g_settings.video.shader_dir, sizeof(type_str));
+               if (g_settings.video.shader_dir[0])
+                  strlcpy(type_str, g_settings.video.shader_dir, sizeof(type_str));
+               else
+                  strlcpy(type_str, "<default>", sizeof(type_str));
                break;
             case RGUI_SYSTEM_DIR_PATH:
-               strlcpy(type_str, g_settings.system_directory, sizeof(type_str));
+               if (g_settings.system_directory[0])
+                  strlcpy(type_str, g_settings.system_directory, sizeof(type_str));
+               else
+                  strlcpy(type_str, "<ROM dir>", sizeof(type_str));
                break;
             case RGUI_SETTINGS_DISK_INDEX:
             {
@@ -1292,6 +1334,29 @@ static int rgui_settings_toggle_setting(rgui_handle_t *rgui, unsigned setting, r
                driver.input->set_keybinds(driver.input_data, g_settings.input.device[setting - RGUI_SETTINGS_BIND_UP], port,
                      rgui_controller_lut[setting - RGUI_SETTINGS_BIND_UP], keybind_action); 
          }
+      case RGUI_BROWSER_DIR_PATH:
+         if (action == RGUI_ACTION_START)
+         {
+            g_settings.rgui_browser_directory[0] = '\0';
+            rgui->base_path[0] = '\0';
+         }
+         break;
+      case RGUI_SAVEFILE_DIR_PATH:
+         if (action == RGUI_ACTION_START)
+            g_extern.savefile_dir[0] = '\0';
+         break;
+      case RGUI_SAVESTATE_DIR_PATH:
+         if (action == RGUI_ACTION_START)
+            g_extern.savestate_dir[0] = '\0';
+         break;
+      case RGUI_SHADER_DIR_PATH:
+         if (action == RGUI_ACTION_START)
+            g_settings.video.shader_dir[0] = '\0';
+         break;
+      case RGUI_SYSTEM_DIR_PATH:
+         if (action == RGUI_ACTION_START)
+            g_settings.system_directory[0] = '\0';
+         break;
       default:
          break;
    }
@@ -2113,9 +2178,9 @@ static int rgui_settings_iterate(rgui_handle_t *rgui, rgui_action_t action)
             rgui->selection_ptr = 0;
             rgui->need_refresh = true;
          }
-         else if (type == RGUI_SETTINGS_OPEN_HISTORY && action == RGUI_ACTION_OK)
+         else if ((type == RGUI_SETTINGS_OPEN_HISTORY || menu_type_is_directory_browser(type)) && action == RGUI_ACTION_OK)
          {
-            rgui_list_push(rgui->menu_stack, "", RGUI_SETTINGS_OPEN_HISTORY, rgui->selection_ptr);
+            rgui_list_push(rgui->menu_stack, "", type, rgui->selection_ptr);
             rgui->selection_ptr = 0;
             rgui->need_refresh = true;
          }
@@ -2167,6 +2232,7 @@ static int rgui_settings_iterate(rgui_handle_t *rgui, rgui_action_t action)
 #ifdef HAVE_SHADER_MANAGER
             menu_type_is_shader_browser(menu_type) ||
 #endif
+            menu_type_is_directory_browser(menu_type) ||
 #ifdef HAVE_OVERLAY
             menu_type == RGUI_SETTINGS_OVERLAY_PRESET ||
 #endif
@@ -2293,6 +2359,8 @@ static bool directory_parse(rgui_handle_t *rgui, const char *directory, unsigned
    else if (menu_type == RGUI_SETTINGS_OVERLAY_PRESET)
       exts = "cfg";
 #endif
+   else if (menu_type_is_directory_browser(menu_type))
+      exts = ""; // we ignore files anyway
    else if (rgui->info.valid_extensions)
    {
       exts = ext_buf;
@@ -2310,9 +2378,15 @@ static bool directory_parse(rgui_handle_t *rgui, const char *directory, unsigned
 
    dir_list_sort(list, true);
 
+   if (menu_type_is_directory_browser(menu_type))
+      rgui_list_push(ctx, "<Use this directory>", RGUI_FILE_USE_DIRECTORY, 0);
+
    for (size_t i = 0; i < list->size; i++)
    {
       bool is_dir = list->elems[i].attr.b;
+
+      if (menu_type_is_directory_browser(menu_type) && !is_dir)
+         continue;
 
 #ifdef HAVE_LIBRETRO_MANAGEMENT
       if (menu_type == RGUI_SETTINGS_CORE && (is_dir || strcasecmp(list->elems[i].data, SALAMANDER_FILE) == 0))
@@ -2423,6 +2497,7 @@ int rgui_iterate(rgui_handle_t *rgui)
 #ifdef HAVE_SHADER_MANAGER
                menu_type_is_shader_browser(type) ||
 #endif
+               menu_type_is_directory_browser(type) ||
 #ifdef HAVE_OVERLAY
                type == RGUI_SETTINGS_OVERLAY_PRESET ||
 #endif
@@ -2524,6 +2599,32 @@ int rgui_iterate(rgui_handle_t *rgui)
                rgui_flush_menu_stack(rgui);
                ret = -1;
             }
+            else if (menu_type == RGUI_BROWSER_DIR_PATH)
+            {
+               strlcpy(g_settings.rgui_browser_directory, dir, sizeof(g_settings.rgui_browser_directory));
+               strlcpy(rgui->base_path, dir, sizeof(rgui->base_path));
+               rgui_flush_menu_stack_type(rgui, RGUI_SETTINGS_PATH_OPTIONS);
+            }
+            else if (menu_type == RGUI_SAVEFILE_DIR_PATH)
+            {
+               strlcpy(g_extern.savefile_dir, dir, sizeof(g_extern.savefile_dir));
+               rgui_flush_menu_stack_type(rgui, RGUI_SETTINGS_PATH_OPTIONS);
+            }
+            else if (menu_type == RGUI_SAVESTATE_DIR_PATH)
+            {
+               strlcpy(g_extern.savestate_dir, dir, sizeof(g_extern.savestate_dir));
+               rgui_flush_menu_stack_type(rgui, RGUI_SETTINGS_PATH_OPTIONS);
+            }
+            else if (menu_type == RGUI_SHADER_DIR_PATH)
+            {
+               strlcpy(g_settings.video.shader_dir, dir, sizeof(g_settings.video.shader_dir));
+               rgui_flush_menu_stack_type(rgui, RGUI_SETTINGS_PATH_OPTIONS);
+            }
+            else if (menu_type == RGUI_SYSTEM_DIR_PATH)
+            {
+               strlcpy(g_settings.system_directory, dir, sizeof(g_settings.system_directory));
+               rgui_flush_menu_stack_type(rgui, RGUI_SETTINGS_PATH_OPTIONS);
+            }
             else
             {
                fill_pathname_join(g_extern.fullpath, dir, path, sizeof(g_extern.fullpath));
@@ -2563,6 +2664,7 @@ int rgui_iterate(rgui_handle_t *rgui)
 #ifdef HAVE_SHADER_MANAGER
             menu_type_is_shader_browser(menu_type) ||
 #endif
+            menu_type_is_directory_browser(menu_type) || 
 #ifdef HAVE_OVERLAY
             menu_type == RGUI_SETTINGS_OVERLAY_PRESET ||
 #endif
