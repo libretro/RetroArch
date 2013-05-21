@@ -345,7 +345,7 @@ static int system_process_args(int argc, char *argv[])
 
    // a big hack: sometimes salamander doesn't save the new core it loads on first boot,
    // so we make sure g_settings.libretro is set here
-   if (!g_settings.libretro[0] && strrchr(argv[0], '/'))
+   if (!g_settings.libretro[0] && argc >= 1 && strrchr(argv[0], '/'))
       strlcpy(g_settings.libretro, strrchr(argv[0], '/') + 1, sizeof(g_settings.libretro));
 
    if (argc > 2 && argv[1] != NULL && argv[2] != NULL)
