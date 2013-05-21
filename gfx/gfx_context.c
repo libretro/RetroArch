@@ -39,9 +39,6 @@ static const gfx_ctx_driver_t *gfx_ctx_drivers[] = {
 #if defined(HAVE_X11) && defined(HAVE_OPENGL) && defined(HAVE_EGL)
    &gfx_ctx_x_egl,
 #endif
-#if defined(HAVE_SDL) && defined(HAVE_OPENGL)
-   &gfx_ctx_sdl_gl,
-#endif
 #if defined(HAVE_KMS)
    &gfx_ctx_drm_egl,
 #endif
@@ -53,6 +50,9 @@ static const gfx_ctx_driver_t *gfx_ctx_drivers[] = {
 #endif
 #if defined(IOS)
    &gfx_ctx_ios,
+#endif
+#if defined(HAVE_SDL) && defined(HAVE_OPENGL)
+   &gfx_ctx_sdl_gl,
 #endif
 };
 
