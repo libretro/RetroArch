@@ -138,21 +138,21 @@ static int get_sha1(const char *path, char *result)
 }
 
 struct RunInfo {
-	char core[50];
+	char broken_cores[PATH_MAX];
 	int multitap;
 	int dualanalog;
+	char system[10];
 };
 
-static int get_run_info(struct RunInfo *info, char *game_name)
+static int read_launch_conf(struct RunInfo *info, const char *game_name)
 {
 	int fd = open("./launch.conf", O_RDONLY);
 	int rv;
+	int bci = 0;
 	char token[MAX_TOKEN_LEN];
 	if (fd < 0) {
 		return -errno;
 	}
-
-	memset(info, 0, sizeof(struct RunInfo));
 
 	while (1) {
 		if ((rv = get_token(fd, token, MAX_TOKEN_LEN)) < 0) {
@@ -167,17 +167,8 @@ static int get_run_info(struct RunInfo *info, char *game_name)
 		}
 
 		LOG_DEBUG("Matched rule '%s'", token);
-
-		if ((rv = get_token(fd, token, MAX_TOKEN_LEN)) < 0) {
-			goto clean;
-		}
-
 		break;
 	}
-
-	strncpy(info->core, token, 50);
-	info->multitap = 0;
-	info->dualanalog = 0;
 
 	if ((rv = get_token(fd, token, MAX_TOKEN_LEN)) < 0) {
 		goto clean;
@@ -188,6 +179,9 @@ static int get_run_info(struct RunInfo *info, char *game_name)
 			info->multitap = 1;
 		} else if (strcmp(token, "dualanalog") == 0) {
 			info->dualanalog = 1;
+		} else if (token[0] == '!') {
+			strncpy(&info->broken_cores[bci], &token[1], PATH_MAX - bci);
+			bci += strnlen(&token[1], PATH_MAX) + 1;
 		}
 
 		if ((rv = get_token(fd, token, MAX_TOKEN_LEN)) < 0) {
@@ -200,6 +194,25 @@ static int get_run_info(struct RunInfo *info, char *game_name)
 	close(fd);
 	return rv;
 }
+
+static int get_run_info(struct RunInfo *info, const char *game_name) {
+	memset(info, 0, sizeof(struct RunInfo));
+	int i;
+
+	for (i = 0; i < 9; i++) {
+		if (game_name[i] == '.') {
+			break;
+		}
+		info->system[i] = game_name[i];
+	}
+	info->system[i] = '\0';
+	info->multitap = 0;
+	info->dualanalog = 0;
+
+	read_launch_conf(info, game_name);
+	return 0;
+}
+
 
 const char *SUFFIX_MATCH[] = {
 	".a26", "a26",
@@ -268,15 +281,91 @@ static int detect_game(const char *path, char *game_name, size_t max_len)
 	}
 }
 
+static int select_core(char *core_path, size_t max_len,
+		const struct RunInfo *info) {
+	int fd = open("./cores.conf", O_RDONLY);
+	int rv;
+	int bci = 0;
+	char token[MAX_TOKEN_LEN];
+	int broken = 0;
+	if (fd < 0) {
+		return -errno;
+	}
+
+	LOG_INFO("Selecting core for system '%s'", info->system);
+	while (1) {
+		if ((rv = get_token(fd, token, MAX_TOKEN_LEN)) < 0) {
+			goto clean;
+		}
+
+		if (rl_fnmatch(token, info->system, 0) != 0) {
+			if ((rv = find_token(fd, ";")) < 0) {
+				goto clean;
+			}
+			continue;
+		}
+
+		LOG_INFO("Matched system '%s'", token);
+
+		break;
+	}
+
+	if ((rv = get_token(fd, token, MAX_TOKEN_LEN)) < 0) {
+		goto clean;
+	}
+
+	while (strcmp(token, ";") != 0) {
+		broken = 0;
+		for (bci = 0; info->broken_cores[bci] != '\0';
+				bci += strlen(&info->broken_cores[bci]) + 1) {
+
+			LOG_DEBUG("%s, %s", &info->broken_cores[bci], token);
+			if (strcmp(&info->broken_cores[bci], token) == 0) {
+				broken = 1;
+				LOG_DEBUG("Not using core %s because it is "
+						"marked broken for this game",
+						&info->broken_cores[bci]);
+				break;
+			}
+		}
+
+		if (!broken) {
+			goto success;
+		}
+
+		if ((rv = get_token(fd, token, MAX_TOKEN_LEN)) < 0) {
+			goto clean;
+		}
+
+	}
+	rv = -EINVAL;
+	goto clean;
+
+success:
+	snprintf(core_path, max_len, "./cores/libretro-%s.so", token);
+	rv = 0;
+clean:
+	close(fd);
+	return rv;
+}
+
 #ifndef RARCH_CONSOLE
 static int run_retroarch(const char *path, const struct RunInfo *info)
 {
 	char core_path[PATH_MAX];
-	sprintf(core_path, "./cores/libretro-%s.so", info->core);
+	int i;
+	int rv;
 	const char *retro_argv[30] = { "retroarch",
 		"-L", core_path
 	};
 	int argi = 3;
+
+	if ((rv = select_core(core_path, PATH_MAX, info)) < 0) {
+		LOG_WARN("Could not find suitable core");
+		return rv;
+	}
+
+	LOG_INFO("Using core at '%s'", core_path);
 	if (info->multitap) {
 		retro_argv[argi] = "-4";
 		argi++;
@@ -284,14 +373,12 @@ static int run_retroarch(const char *path, const struct RunInfo *info)
 	}
 
 	if (info->dualanalog) {
-		retro_argv[argi] = "-A";
-		argi++;
-		retro_argv[argi] = "1";
-		argi++;
-		retro_argv[argi] = "-A";
-		argi++;
-		retro_argv[argi] = "2";
-		argi++;
+		for (i = 0; i < 8; i++) {
+			retro_argv[argi] = "-A";
+			argi++;
+			retro_argv[argi] = "1";
+			argi++;
+		}
 		LOG_INFO("Game supports the dualshock controller");
 	}
 
@@ -305,6 +392,7 @@ static int run_retroarch(const char *path, const struct RunInfo *info)
 int main(int argc, char *argv[])
 {
 	if (argc < 2) {
+		printf("usage: retrolaunch <ROM>\n");
 		return -1;
 	}
 
@@ -321,11 +409,10 @@ int main(int argc, char *argv[])
 
 	LOG_INFO("Game is `%s`", game_name);
 	if ((rv = get_run_info(&info, game_name)) < 0) {
-		LOG_WARN("Could not find sutable core: %s", strerror(-rv));
+		LOG_WARN("Could not detect run info: %s", strerror(-rv));
 		return -1;
 	}
 
-	LOG_DEBUG("Usinge libretro core '%s'", info.core);
 	LOG_INFO("Launching '%s'", path);
 
 	rv = run_retroarch(path, &info);
