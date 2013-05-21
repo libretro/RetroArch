@@ -84,6 +84,10 @@
 #define pglEnableVertexAttribArray glEnableVertexAttribArray
 #define pglDisableVertexAttribArray glDisableVertexAttribArray
 #define pglVertexAttribPointer glVertexAttribPointer
+#define pglGenBuffers glGenBuffers
+#define pglBufferData glBufferData
+#define pglDeleteBuffers glDeleteBuffers
+#define pglBindBuffer glBindBuffer
 #else
 static PFNGLCREATEPROGRAMPROC pglCreateProgram;
 static PFNGLUSEPROGRAMPROC pglUseProgram;
@@ -110,6 +114,10 @@ static PFNGLGETATTRIBLOCATIONPROC pglGetAttribLocation;
 static PFNGLENABLEVERTEXATTRIBARRAYPROC pglEnableVertexAttribArray;
 static PFNGLDISABLEVERTEXATTRIBARRAYPROC pglDisableVertexAttribArray;
 static PFNGLVERTEXATTRIBPOINTERPROC pglVertexAttribPointer;
+static PFNGLGENBUFFERSPROC pglGenBuffers;
+static PFNGLBUFFERDATAPROC pglBufferData;
+static PFNGLDELETEBUFFERSPROC pglDeleteBuffers;
+static PFNGLBINDBUFFERPROC pglBindBuffer;
 #endif
 
 #ifdef HAVE_OPENGLES2
@@ -132,6 +140,26 @@ static state_tracker_t *gl_state_tracker;
 
 static GLint gl_attribs[PREV_TEXTURES + 1 + 4 + GFX_MAX_SHADERS];
 static unsigned gl_attrib_index;
+
+// Cache the VBO.
+struct cache_vbo
+{
+   GLuint vbo_primary;
+   GLfloat buffer_primary[128];
+   size_t size_primary;
+
+   GLuint vbo_secondary;
+   GLfloat buffer_secondary[128];
+   size_t size_secondary;
+};
+static struct cache_vbo glsl_vbo[GFX_MAX_SHADERS];
+
+struct glsl_attrib
+{
+   GLint loc;
+   GLsizei size;
+   GLsizei offset;
+};
 
 static gfx_ctx_proc_t (*glsl_get_proc_address)(const char*);
 
@@ -489,6 +517,37 @@ static void gl_glsl_reset_attrib(void)
    gl_attrib_index = 0;
 }
 
+static void gl_glsl_set_vbo(GLfloat *buffer, size_t *buffer_elems, const GLfloat *data, size_t elems)
+{
+   if (elems != *buffer_elems || memcmp(data, buffer, elems * sizeof(GLfloat)))
+   {
+      //RARCH_LOG("[GL]: VBO updated with %u elems.\n", (unsigned)elems);
+      memcpy(buffer, data, elems * sizeof(GLfloat));
+      pglBufferData(GL_ARRAY_BUFFER, elems * sizeof(GLfloat), data, GL_STATIC_DRAW);
+      *buffer_elems = elems;
+   }
+}
+
+static void gl_glsl_set_attribs(GLuint vbo, GLfloat *buffer, size_t *buffer_elems,
+      const GLfloat *data, size_t elems, const struct glsl_attrib *attrs, size_t num_attrs)
+{
+   pglBindBuffer(GL_ARRAY_BUFFER, vbo);
+
+   gl_glsl_set_vbo(buffer, buffer_elems, data, elems);
+
+   for (size_t i = 0; i < num_attrs; i++)
+   {
+      GLint loc = attrs[i].loc;
+      pglEnableVertexAttribArray(loc);
+      gl_attribs[gl_attrib_index++] = loc;
+
+      pglVertexAttribPointer(loc, attrs[i].size, GL_FLOAT, GL_FALSE, 0,
+            (const GLvoid*)(uintptr_t)attrs[i].offset);
+   }
+
+   pglBindBuffer(GL_ARRAY_BUFFER, 0);
+}
+
 static void find_uniforms_frame(GLuint prog, struct shader_uniforms_frame *frame, const char *base)
 {
    char texture[64];
@@ -614,6 +673,10 @@ static bool gl_glsl_init(const char *path)
    LOAD_GL_SYM(EnableVertexAttribArray);
    LOAD_GL_SYM(DisableVertexAttribArray);
    LOAD_GL_SYM(VertexAttribPointer);
+   LOAD_GL_SYM(GenBuffers);
+   LOAD_GL_SYM(BufferData);
+   LOAD_GL_SYM(DeleteBuffers);
+   LOAD_GL_SYM(BindBuffer);
 
    RARCH_LOG("Checking GLSL shader support ...\n");
    bool shader_support = pglCreateProgram && pglUseProgram && pglCreateShader
@@ -623,7 +686,8 @@ static bool gl_glsl_init(const char *path)
       && pglGetShaderiv && pglGetShaderInfoLog && pglGetProgramiv && pglGetProgramInfoLog 
       && pglDeleteProgram && pglGetAttachedShaders
       && pglGetAttribLocation && pglEnableVertexAttribArray && pglDisableVertexAttribArray
-      && pglVertexAttribPointer;
+      && pglVertexAttribPointer
+      && pglGenBuffers && pglBufferData && pglDeleteBuffers && pglBindBuffer;
 
    if (!shader_support)
    {
@@ -756,6 +820,12 @@ static bool gl_glsl_init(const char *path)
 
    gl_glsl_reset_attrib();
 
+   for (unsigned i = 0; i < GFX_MAX_SHADERS; i++)
+   {
+      pglGenBuffers(1, &glsl_vbo[i].vbo_primary);
+      pglGenBuffers(1, &glsl_vbo[i].vbo_secondary);
+   }
+
    return true;
 }
 
@@ -787,6 +857,13 @@ static void gl_glsl_deinit(void)
    gl_state_tracker = NULL;
 
    gl_glsl_reset_attrib();
+
+   for (unsigned i = 0; i < GFX_MAX_SHADERS; i++)
+   {
+      pglDeleteBuffers(1, &glsl_vbo[i].vbo_primary);
+      pglDeleteBuffers(1, &glsl_vbo[i].vbo_secondary);
+   }
+   memset(&glsl_vbo, 0, sizeof(glsl_vbo));
 }
 
 static void gl_glsl_set_params(unsigned width, unsigned height, 
@@ -806,6 +883,12 @@ static void gl_glsl_set_params(unsigned width, unsigned height,
 
    if (!glsl_enable || (gl_program[active_index] == 0))
       return;
+
+   GLfloat buffer[128];
+   size_t size = 0;
+   struct glsl_attrib attribs[32];
+   size_t attribs_size = 0;
+   struct glsl_attrib *attr = attribs;
 
    const struct shader_uniforms *uni = &gl_uniforms[active_index];
 
@@ -868,10 +951,14 @@ static void gl_glsl_set_params(unsigned width, unsigned height,
       // Pass texture coordinates.
       if (uni->orig.tex_coord >= 0)
       {
-         int loc = uni->orig.tex_coord;
-         pglEnableVertexAttribArray(loc);
-         pglVertexAttribPointer(loc, 2, GL_FLOAT, GL_FALSE, 0, info->coord);
-         gl_attribs[gl_attrib_index++] = loc;
+         attr->loc = uni->orig.tex_coord;
+         attr->size = 2;
+         attr->offset = size * sizeof(GLfloat);
+         attribs_size++;
+         attr++;
+
+         memcpy(buffer + size, info->coord, 8 * sizeof(GLfloat));
+         size += 8;
       }
 
       // Bind new texture in the chain.
@@ -897,10 +984,14 @@ static void gl_glsl_set_params(unsigned width, unsigned height,
 
          if (uni->pass[i].tex_coord >= 0)
          {
-            int loc = uni->pass[i].tex_coord;
-            pglEnableVertexAttribArray(loc);
-            pglVertexAttribPointer(loc, 2, GL_FLOAT, GL_FALSE, 0, fbo_info[i].coord);
-            gl_attribs[gl_attrib_index++] = loc;
+            attr->loc = uni->pass[i].tex_coord;
+            attr->size = 2;
+            attr->offset = size * sizeof(GLfloat);
+            attribs_size++;
+            attr++;
+
+            memcpy(buffer + size, fbo_info[i].coord, 8 * sizeof(GLfloat));
+            size += 8;
          }
       }
    }
@@ -943,11 +1034,23 @@ static void gl_glsl_set_params(unsigned width, unsigned height,
       // Pass texture coordinates.
       if (uni->prev[i].tex_coord >= 0)
       {
-         int loc = uni->prev[i].tex_coord;
-         pglEnableVertexAttribArray(loc);
-         pglVertexAttribPointer(loc, 2, GL_FLOAT, GL_FALSE, 0, prev_info[i].coord);
-         gl_attribs[gl_attrib_index++] = loc; 
+         attr->loc = uni->prev[i].tex_coord;
+         attr->size = 2;
+         attr->offset = size * sizeof(GLfloat);
+         attribs_size++;
+         attr++;
+
+         memcpy(buffer + size, prev_info[i].coord, 8 * sizeof(GLfloat));
+         size += 8;
       }
+   }
+
+   if (size)
+   {
+      gl_glsl_set_attribs(glsl_vbo[active_index].vbo_secondary,
+            glsl_vbo[active_index].buffer_secondary,
+            &glsl_vbo[active_index].size_secondary,
+            buffer, size, attribs, attribs_size);
    }
 
    pglActiveTexture(GL_TEXTURE0);
@@ -985,37 +1088,69 @@ static bool gl_glsl_set_coords(const struct gl_coords *coords)
    if (!glsl_enable || !glsl_shader->modern)
       return false;
 
+   GLfloat buffer[128];
+   size_t size = 0;
+
+   struct glsl_attrib attribs[4];
+   size_t attribs_size = 0;
+   struct glsl_attrib *attr = attribs;
+
    const struct shader_uniforms *uni = &gl_uniforms[active_index];
    if (uni->tex_coord >= 0)
    {
-      int loc = uni->tex_coord;
-      pglEnableVertexAttribArray(loc);
-      pglVertexAttribPointer(loc, 2, GL_FLOAT, GL_FALSE, 0, coords->tex_coord);
-      gl_attribs[gl_attrib_index++] = loc;
+      attr->loc    = uni->tex_coord;
+      attr->size   = 2;
+      attr->offset = size * sizeof(GLfloat);
+      attribs_size++;
+      attr++;
+
+      memcpy(buffer + size, coords->tex_coord, 8 * sizeof(GLfloat));
+      size += 8;
    }
 
    if (uni->vertex_coord >= 0)
    {
-      int loc = uni->vertex_coord;
-      pglEnableVertexAttribArray(loc);
-      pglVertexAttribPointer(loc, 2, GL_FLOAT, GL_FALSE, 0, coords->vertex);
-      gl_attribs[gl_attrib_index++] = loc;
+      attr->loc    = uni->vertex_coord;
+      attr->size   = 2;
+      attr->offset = size * sizeof(GLfloat);
+      attribs_size++;
+      attr++;
+
+      memcpy(buffer + size, coords->vertex, 8 * sizeof(GLfloat));
+      size += 8;
    }
 
    if (uni->color >= 0)
    {
-      int loc = uni->color;
-      pglEnableVertexAttribArray(loc);
-      pglVertexAttribPointer(loc, 4, GL_FLOAT, GL_FALSE, 0, coords->color);
-      gl_attribs[gl_attrib_index++] = loc;
+      attr->loc    = uni->color;
+      attr->size   = 4;
+      attr->offset = size * sizeof(GLfloat);
+      attribs_size++;
+      attr++;
+
+      memcpy(buffer + size, coords->color, 16 * sizeof(GLfloat));
+      size += 16;
    }
 
    if (uni->lut_tex_coord >= 0)
    {
-      int loc = uni->lut_tex_coord;
-      pglEnableVertexAttribArray(loc);
-      pglVertexAttribPointer(loc, 2, GL_FLOAT, GL_FALSE, 0, coords->lut_tex_coord);
-      gl_attribs[gl_attrib_index++] = loc;
+      attr->loc    = uni->lut_tex_coord;
+      attr->size   = 2;
+      attr->offset = size * sizeof(GLfloat);
+      attribs_size++;
+      attr++;
+
+      memcpy(buffer + size, coords->lut_tex_coord, 8 * sizeof(GLfloat));
+      size += 8;
+   }
+
+   if (size)
+   {
+      gl_glsl_set_attribs(glsl_vbo[active_index].vbo_primary,
+            glsl_vbo[active_index].buffer_primary,
+            &glsl_vbo[active_index].size_primary,
+            buffer, size,
+            attribs, attribs_size);
    }
 
    return true;

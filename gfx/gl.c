@@ -758,8 +758,6 @@ void gl_set_projection(void *data, struct gl_ortho *ortho, bool allow_rotate)
    }
    else
       gl->mvp = gl->mvp_no_rot;
-
-   gl_shader_set_coords(gl, &gl->coords, &gl->mvp);
 }
 
 void gl_set_viewport(void *data, unsigned width, unsigned height, bool force_full, bool allow_rotate)
