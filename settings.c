@@ -625,7 +625,7 @@ bool config_load_file(const char *path)
 #ifdef HAVE_RGUI
    CONFIG_GET_PATH(rgui_browser_directory, "rgui_browser_directory");
    if (!strcmp(g_settings.rgui_browser_directory, "default"))
-      g_settings.rgui_browser_directory[0] = '\0';
+      *g_settings.rgui_browser_directory = '\0';
 #endif
 
    CONFIG_GET_BOOL(rewind_enable, "rewind_enable");
@@ -676,9 +676,7 @@ bool config_load_file(const char *path)
    if (!g_extern.has_set_save_path && config_get_path(conf, "savefile_directory", tmp_str, sizeof(tmp_str)))
    {
       if (!strcmp(tmp_str, "default"))
-      {
-         g_extern.savefile_dir[0] = '\0';
-      }
+         *g_extern.savefile_dir = '\0';
       else if (path_is_directory(tmp_str))
       {
          strlcpy(g_extern.savefile_dir, tmp_str, sizeof(g_extern.savefile_dir));
@@ -692,9 +690,7 @@ bool config_load_file(const char *path)
    if (!g_extern.has_set_state_path && config_get_path(conf, "savestate_directory", tmp_str, sizeof(tmp_str)))
    {
       if (!strcmp(tmp_str, "default"))
-      {
-         g_extern.savestate_dir[0] = '\0';
-      }
+         *g_extern.savestate_dir = '\0';
       else if (path_is_directory(tmp_str))
       {
          strlcpy(g_extern.savestate_dir, tmp_str, sizeof(g_extern.savestate_dir));
@@ -712,9 +708,7 @@ bool config_load_file(const char *path)
    }
 
    if (!strcmp(g_settings.system_directory, "default"))
-   {
-      g_settings.system_directory[0] = '\0';
-   }
+      *g_settings.system_directory = '\0';
 
    config_read_keybinds_conf(conf);
 
@@ -936,26 +930,26 @@ bool config_save_file(const char *path)
    config_set_bool(conf, "audio_rate_control", g_settings.audio.rate_control);
    config_set_float(conf, "audio_rate_control_delta", g_settings.audio.rate_control_delta);
 
-   if (g_settings.system_directory[0] == '\0')
-      config_set_string(conf, "system_directory", "default");
-   else
+   if (*g_settings.system_directory)
       config_set_string(conf, "system_directory", g_settings.system_directory);
-
-   if (g_extern.savefile_dir[0] == '\0')
-      config_set_string(conf, "savefile_directory", "default");
    else
+      config_set_string(conf, "system_directory", "default");
+
+   if (*g_extern.savefile_dir)
       config_set_string(conf, "savefile_directory", g_extern.savefile_dir);
-
-   if (g_extern.savestate_dir[0] == '\0')
-      config_set_string(conf, "savestate_directory", "default");
    else
+      config_set_string(conf, "savefile_directory", "default");
+
+   if (*g_extern.savestate_dir)
       config_set_string(conf, "savestate_directory", g_extern.savestate_dir);
+   else
+      config_set_string(conf, "savestate_directory", "default");
 
 #if defined(HAVE_RGUI) || defined(HAVE_RMENU)
-   if (g_settings.rgui_browser_directory[0] == '\0')
-      config_set_string(conf, "rgui_browser_directory", "default");
-   else
+   if (*g_settings.rgui_browser_directory)
       config_set_string(conf, "rgui_browser_directory", g_settings.rgui_browser_directory);
+   else
+      config_set_string(conf, "rgui_browser_directory", "default");
 #endif
 
 #ifdef ANDROID

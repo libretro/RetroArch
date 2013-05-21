@@ -639,31 +639,31 @@ static void render_text(rgui_handle_t *rgui)
                snprintf(type_str, sizeof(type_str), (g_extern.lifecycle_mode_state & (1ULL << MODE_FPS_DRAW)) ? "ON" : "OFF");
                break;
             case RGUI_BROWSER_DIR_PATH:
-               if (g_settings.rgui_browser_directory[0])
+               if (*g_settings.rgui_browser_directory)
                   strlcpy(type_str, g_settings.rgui_browser_directory, sizeof(type_str));
                else
                   strlcpy(type_str, "<default>", sizeof(type_str));
                break;
             case RGUI_SAVEFILE_DIR_PATH:
-               if (g_extern.savefile_dir[0])
+               if (*g_extern.savefile_dir)
                   strlcpy(type_str, g_extern.savefile_dir, sizeof(type_str));
                else
                   strlcpy(type_str, "<ROM dir>", sizeof(type_str));
                break;
             case RGUI_SAVESTATE_DIR_PATH:
-               if (g_extern.savestate_dir[0])
+               if (*g_extern.savestate_dir)
                   strlcpy(type_str, g_extern.savestate_dir, sizeof(type_str));
                else
                   strlcpy(type_str, "<ROM dir>", sizeof(type_str));
                break;
             case RGUI_SHADER_DIR_PATH:
-               if (g_settings.video.shader_dir[0])
+               if (*g_settings.video.shader_dir)
                   strlcpy(type_str, g_settings.video.shader_dir, sizeof(type_str));
                else
                   strlcpy(type_str, "<default>", sizeof(type_str));
                break;
             case RGUI_SYSTEM_DIR_PATH:
-               if (g_settings.system_directory[0])
+               if (*g_settings.system_directory)
                   strlcpy(type_str, g_settings.system_directory, sizeof(type_str));
                else
                   strlcpy(type_str, "<ROM dir>", sizeof(type_str));
@@ -1337,25 +1337,25 @@ static int rgui_settings_toggle_setting(rgui_handle_t *rgui, unsigned setting, r
       case RGUI_BROWSER_DIR_PATH:
          if (action == RGUI_ACTION_START)
          {
-            g_settings.rgui_browser_directory[0] = '\0';
-            rgui->base_path[0] = '\0';
+            *g_settings.rgui_browser_directory = '\0';
+            *rgui->base_path = '\0';
          }
          break;
       case RGUI_SAVEFILE_DIR_PATH:
          if (action == RGUI_ACTION_START)
-            g_extern.savefile_dir[0] = '\0';
+            *g_extern.savefile_dir = '\0';
          break;
       case RGUI_SAVESTATE_DIR_PATH:
          if (action == RGUI_ACTION_START)
-            g_extern.savestate_dir[0] = '\0';
+            *g_extern.savestate_dir = '\0';
          break;
       case RGUI_SHADER_DIR_PATH:
          if (action == RGUI_ACTION_START)
-            g_settings.video.shader_dir[0] = '\0';
+            *g_settings.video.shader_dir = '\0';
          break;
       case RGUI_SYSTEM_DIR_PATH:
          if (action == RGUI_ACTION_START)
-            g_settings.system_directory[0] = '\0';
+            *g_settings.system_directory = '\0';
          break;
       default:
          break;
