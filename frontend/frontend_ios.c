@@ -152,7 +152,7 @@ void* rarch_main_ios(void* args)
 
    menu_free();
 
-   if (g_extern.config_save_on_exit)
+   if (g_extern.config_save_on_exit && *g_extern.config_path)
       config_save_file(g_extern.config_path);
 
    if (g_extern.main_is_init)
