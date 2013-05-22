@@ -1446,6 +1446,7 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
       glDisable(GL_STENCIL_TEST);
       glDisable(GL_CULL_FACE);
       glDisable(GL_DITHER);
+      glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
       glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
    }
 #endif
