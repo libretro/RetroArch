@@ -214,6 +214,9 @@ static bool menu_type_is_directory_browser(unsigned type)
 #endif
       type == RGUI_SAVESTATE_DIR_PATH ||
       type == RGUI_SAVEFILE_DIR_PATH ||
+#ifdef HAVE_OVERLAY
+      type == RGUI_OVERLAY_DIR_PATH ||
+#endif
       type == RGUI_SYSTEM_DIR_PATH;
 }
 
@@ -461,6 +464,10 @@ static void render_text(rgui_handle_t *rgui)
       snprintf(title, sizeof(title), "SAVESTATE DIR %s", dir);
    else if (menu_type == RGUI_SAVEFILE_DIR_PATH)
       snprintf(title, sizeof(title), "SAVEFILE DIR %s", dir);
+#ifdef HAVE_OVERLAY
+   else if (menu_type == RGUI_OVERLAY_DIR_PATH)
+      snprintf(title, sizeof(title), "OVERLAY DIR %s", dir);
+#endif
    else if (menu_type == RGUI_SYSTEM_DIR_PATH)
       snprintf(title, sizeof(title), "SYSTEM DIR %s", dir);
    else
@@ -653,6 +660,14 @@ static void render_text(rgui_handle_t *rgui)
                else
                   strlcpy(type_str, "<ROM dir>", sizeof(type_str));
                break;
+#ifdef HAVE_OVERLAY
+            case RGUI_OVERLAY_DIR_PATH:
+               if (*g_extern.overlay_dir)
+                  strlcpy(type_str, g_extern.overlay_dir, sizeof(type_str));
+               else
+                  strlcpy(type_str, "<ROM dir>", sizeof(type_str));
+               break;
+#endif
             case RGUI_SAVESTATE_DIR_PATH:
                if (*g_extern.savestate_dir)
                   strlcpy(type_str, g_extern.savestate_dir, sizeof(type_str));
@@ -1070,7 +1085,7 @@ static int rgui_settings_toggle_setting(rgui_handle_t *rgui, unsigned setting, r
          switch (action)
          {
             case RGUI_ACTION_OK:
-               rgui_list_push(rgui->menu_stack, "", setting, rgui->selection_ptr);
+               rgui_list_push(rgui->menu_stack, g_extern.overlay_dir, setting, rgui->selection_ptr);
                rgui->selection_ptr = 0;
                rgui->need_refresh = true;
                break;
@@ -1357,6 +1372,12 @@ static int rgui_settings_toggle_setting(rgui_handle_t *rgui, unsigned setting, r
          if (action == RGUI_ACTION_START)
             *g_extern.savefile_dir = '\0';
          break;
+#ifdef HAVE_OVERLAY
+      case RGUI_OVERLAY_DIR_PATH:
+         if (action == RGUI_ACTION_START)
+            *g_extern.overlay_dir = '\0';
+         break;
+#endif
       case RGUI_SAVESTATE_DIR_PATH:
          if (action == RGUI_ACTION_START)
             *g_extern.savestate_dir = '\0';
@@ -1919,6 +1940,9 @@ static void rgui_settings_path_populate_entries(rgui_handle_t *rgui)
 #endif
    rgui_list_push(rgui->selection_buf, "Savestate Directory", RGUI_SAVESTATE_DIR_PATH, 0);
    rgui_list_push(rgui->selection_buf, "Savefile Directory", RGUI_SAVEFILE_DIR_PATH, 0);
+#ifdef HAVE_OVERLAY
+   rgui_list_push(rgui->selection_buf, "Overlay Directory", RGUI_OVERLAY_DIR_PATH, 0);
+#endif
    rgui_list_push(rgui->selection_buf, "System Directory", RGUI_SYSTEM_DIR_PATH, 0);
 }
 
@@ -2591,8 +2615,7 @@ int rgui_iterate(rgui_handle_t *rgui)
                if (!driver.overlay)
                   RARCH_ERR("Failed to load overlay.\n");
 
-               // Lets user browser try out different ones easily ...
-               //rgui_flush_menu_stack_type(rgui, RGUI_SETTINGS_INPUT_OPTIONS);
+               rgui_flush_menu_stack_type(rgui, RGUI_SETTINGS_INPUT_OPTIONS);
             }
 #endif
             else if (menu_type == RGUI_SETTINGS_DISK_APPEND)
@@ -2623,6 +2646,13 @@ int rgui_iterate(rgui_handle_t *rgui)
                strlcpy(g_extern.savefile_dir, dir, sizeof(g_extern.savefile_dir));
                rgui_flush_menu_stack_type(rgui, RGUI_SETTINGS_PATH_OPTIONS);
             }
+#ifdef HAVE_OVERLAY
+            else if (menu_type == RGUI_OVERLAY_DIR_PATH)
+            {
+               strlcpy(g_extern.overlay_dir, dir, sizeof(g_extern.overlay_dir));
+               rgui_flush_menu_stack_type(rgui, RGUI_SETTINGS_PATH_OPTIONS);
+            }
+#endif
             else if (menu_type == RGUI_SAVESTATE_DIR_PATH)
             {
                strlcpy(g_extern.savestate_dir, dir, sizeof(g_extern.savestate_dir));

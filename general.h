@@ -346,6 +346,10 @@ struct global
    char savefile_dir[PATH_MAX];
    char savestate_dir[PATH_MAX];
 
+#ifdef HAVE_OVERLAY
+   char overlay_dir[PATH_MAX];
+#endif
+
    bool block_patch;
    bool ups_pref;
    bool bps_pref;

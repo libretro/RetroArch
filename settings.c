@@ -630,6 +630,12 @@ bool config_load_file(const char *path)
       *g_settings.rgui_browser_directory = '\0';
 #endif
 
+#ifdef HAVE_OVERLAY
+   CONFIG_GET_PATH_EXTERN(overlay_dir, "overlay_directory");
+   if (!strcmp(g_extern.overlay_dir, "default"))
+      *g_extern.overlay_dir = '\0';
+#endif
+
    CONFIG_GET_BOOL(rewind_enable, "rewind_enable");
 
    int buffer_size = 0;
@@ -954,6 +960,13 @@ bool config_save_file(const char *path)
       config_set_string(conf, "rgui_browser_directory", g_settings.rgui_browser_directory);
    else
       config_set_string(conf, "rgui_browser_directory", "default");
+#endif
+
+#ifdef HAVE_OVERLAY
+   if (*g_extern.overlay_dir)
+      config_set_string(conf, "overlay_directory", g_extern.overlay_dir);
+   else
+      config_set_string(conf, "overlay_directory", "default");
 #endif
 
 #ifdef ANDROID
