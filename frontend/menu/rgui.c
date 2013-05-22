@@ -665,7 +665,7 @@ static void render_text(rgui_handle_t *rgui)
                if (*g_extern.overlay_dir)
                   strlcpy(type_str, g_extern.overlay_dir, sizeof(type_str));
                else
-                  strlcpy(type_str, "<ROM dir>", sizeof(type_str));
+                  strlcpy(type_str, "<default>", sizeof(type_str));
                break;
 #endif
             case RGUI_SAVESTATE_DIR_PATH:
