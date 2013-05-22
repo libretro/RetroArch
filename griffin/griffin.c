@@ -137,7 +137,7 @@ VIDEO IMAGE
 #include "../ps3/image.c"
 #elif defined(_XBOX1)
 #include "../xdk/image.c"
-#elif defined(ANDROID) || defined(__BLACKBERRY_QNX__) || defined(IOS)
+#elif defined(RARCH_MOBILE)
 #include "../gfx/image.c"
 #include "../gfx/rpng/rpng.c"
 #endif
@@ -399,7 +399,7 @@ MAIN
 #include "../frontend/frontend_ios.c"
 #endif
 
-#if !defined(ANDROID) && !defined(IOS) && !(defined(__BLACKBERRY_QNX__) && defined(HAVE_BB10))
+#ifndef RARCH_MOBILE
 #include "../frontend/frontend.c"
 #endif
 
