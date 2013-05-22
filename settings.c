@@ -292,6 +292,8 @@ void config_set_defaults(void)
 #endif
 #endif
 
+   g_extern.config_save_on_exit = config_save_on_exit;
+
 #if defined(HAVE_RMENU) || defined(HAVE_RGUI)
    /* Avoid reloading config on every ROM load */
    g_extern.block_config_read = true;
@@ -673,6 +675,8 @@ bool config_load_file(const char *path)
    CONFIG_GET_INT(input.icade_profile[3], "input_autodetect_icade_profile_pad4");
 #endif
 
+   CONFIG_GET_BOOL_EXTERN(config_save_on_exit, "config_save_on_exit");
+
    if (!g_extern.has_set_save_path && config_get_path(conf, "savefile_directory", tmp_str, sizeof(tmp_str)))
    {
       if (!strcmp(tmp_str, "default"))
@@ -1002,6 +1006,7 @@ bool config_save_file(const char *path)
    config_set_float(conf, "video_font_size", g_settings.video.font_size);
 
    // g_extern
+   config_set_bool(conf, "config_save_on_exit", g_extern.config_save_on_exit);
    config_set_int(conf, "sound_mode", g_extern.console.sound.mode);
    config_set_int(conf, "state_slot", g_extern.state_slot);
    config_set_int(conf, "audio_mute", g_extern.audio_data.mute);

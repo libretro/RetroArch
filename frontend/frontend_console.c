@@ -213,7 +213,8 @@ int rarch_main(int argc, char *argv[])
 
    menu_free();
 
-   config_save_file(g_extern.config_path);
+   if (g_extern.config_save_on_exit)
+      config_save_file(g_extern.config_path);
 
 #ifdef GEKKO
    /* Per-core input config saving */

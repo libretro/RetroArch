@@ -619,6 +619,9 @@ static void render_text(rgui_handle_t *rgui)
             case RGUI_SETTINGS_REWIND_GRANULARITY:
                snprintf(type_str, sizeof(type_str), "%u", g_settings.rewind_granularity);
                break;
+            case RGUI_SETTINGS_CONFIG_SAVE_ON_EXIT:
+               strlcpy(type_str, g_extern.config_save_on_exit ? "ON" : "OFF", sizeof(type_str));
+               break;
             case RGUI_SETTINGS_SRAM_AUTOSAVE:
                strlcpy(type_str, g_settings.autosave_interval ? "ON" : "OFF", sizeof(type_str));
                break;
@@ -913,6 +916,15 @@ static int rgui_settings_toggle_setting(rgui_handle_t *rgui, unsigned setting, r
          }
          else if (action == RGUI_ACTION_START)
             g_settings.rewind_granularity = 1;
+         break;
+      case RGUI_SETTINGS_CONFIG_SAVE_ON_EXIT:
+         if (action == RGUI_ACTION_OK || action == RGUI_ACTION_RIGHT 
+               || action == RGUI_ACTION_LEFT)
+         {
+            g_extern.config_save_on_exit = !g_extern.config_save_on_exit;
+         }
+         else if (action == RGUI_ACTION_START)
+            g_extern.config_save_on_exit = true;
          break;
 #if defined(HAVE_THREADS) && !defined(RARCH_CONSOLE)
       case RGUI_SETTINGS_SRAM_AUTOSAVE:
@@ -1383,6 +1395,7 @@ static void rgui_settings_options_populate_entries(rgui_handle_t *rgui)
    rgui_list_clear(rgui->selection_buf);
    rgui_list_push(rgui->selection_buf, "Rewind", RGUI_SETTINGS_REWIND_ENABLE, 0);
    rgui_list_push(rgui->selection_buf, "Rewind Granularity", RGUI_SETTINGS_REWIND_GRANULARITY, 0);
+   rgui_list_push(rgui->selection_buf, "Config Save On Exit", RGUI_SETTINGS_CONFIG_SAVE_ON_EXIT, 0);
 #if defined(HAVE_THREADS) && !defined(RARCH_CONSOLE)
    rgui_list_push(rgui->selection_buf, "SRAM Autosave", RGUI_SETTINGS_SRAM_AUTOSAVE, 0);
 #endif

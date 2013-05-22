@@ -98,6 +98,16 @@ int main(int argc, char *argv[])
    }
 
    menu_free();
+
+   // TODO: Commented for now since this conflicts with Phoenix config saving.
+   // Either Phoenix frontend needs to have the same amount of options as RGUI
+   // or we should slim down Phoenix even more (in terms of taking away the options)
+   // and do that with RGUI so that we can uncomment that without Phoenix modifying
+   // the config file on its own based on user preferences.
+
+   //if (g_extern.config_save_on_exit)
+      //config_save_file(g_extern.config_path);
+
    if (g_extern.main_is_init)
       rarch_main_deinit();
 #else

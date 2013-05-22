@@ -259,6 +259,9 @@ static unsigned aspect_ratio_idx = ASPECT_RATIO_4_3;
 static unsigned aspect_ratio_idx = ASPECT_RATIO_CONFIG; // Use g_settings.video.aspect_ratio.
 #endif
 
+// Save configuration file on exit
+static bool config_save_on_exit = true;
+
 // Crop overscanned frames.
 static const bool crop_overscan = true;
 
