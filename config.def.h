@@ -260,7 +260,11 @@ static unsigned aspect_ratio_idx = ASPECT_RATIO_CONFIG; // Use g_settings.video.
 #endif
 
 // Save configuration file on exit
+#if defined(RARCH_CONSOLE) || defined(ANDROID) || defined(__QNX__) || defined(IOS)
 static bool config_save_on_exit = true;
+#else
+static bool config_save_on_exit = false;
+#endif
 
 // Crop overscanned frames.
 static const bool crop_overscan = true;
