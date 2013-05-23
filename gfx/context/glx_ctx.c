@@ -491,6 +491,7 @@ static bool gfx_ctx_bind_api(enum gfx_ctx_api api)
    return api == GFX_CTX_OPENGL_API;
 }
 
+#ifdef HAVE_EGL
 static bool gfx_ctx_init_egl_image_buffer(const video_info_t *video)
 {
    return false;
@@ -500,6 +501,7 @@ static bool gfx_ctx_write_egl_image(const void *frame, unsigned width, unsigned 
 {
    return false;
 }
+#endif
 
 static void gfx_ctx_show_mouse(bool state)
 {
@@ -521,8 +523,10 @@ const gfx_ctx_driver_t gfx_ctx_glx = {
    gfx_ctx_swap_buffers,
    gfx_ctx_input_driver,
    gfx_ctx_get_proc_address,
+#ifdef HAVE_EGL
    gfx_ctx_init_egl_image_buffer,
    gfx_ctx_write_egl_image,
+#endif
    gfx_ctx_show_mouse,
    "glx",
 };
