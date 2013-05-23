@@ -1852,7 +1852,7 @@ static int video_option_toggle_setting(rgui_handle_t *rgui, unsigned setting, rg
          break;
 #endif
 
-#ifdef HW_RVL
+#ifdef GEKKO
       case RGUI_SETTINGS_VIDEO_RESOLUTION:
          if (action == RGUI_ACTION_LEFT)
          {
@@ -1876,7 +1876,8 @@ static int video_option_toggle_setting(rgui_handle_t *rgui, unsigned setting, rg
             }
          }
          break;
-
+#endif
+#ifdef HW_RVL
       case RGUI_SETTINGS_VIDEO_SOFT_FILTER:
          if (g_extern.lifecycle_mode_state & (1ULL << MODE_VIDEO_SOFT_FILTER_ENABLE))
             g_extern.lifecycle_mode_state &= ~(1ULL << MODE_VIDEO_SOFT_FILTER_ENABLE);
