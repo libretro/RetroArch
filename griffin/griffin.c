@@ -399,7 +399,7 @@ MAIN
 #include "../frontend/frontend_ios.c"
 #endif
 
-#ifndef RARCH_MOBILE
+#if defined(__QNX__) || !defined(RARCH_MOBILE) 
 #include "../frontend/frontend.c"
 #endif
 
