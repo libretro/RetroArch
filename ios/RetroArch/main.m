@@ -231,6 +231,10 @@ static void event_reload_config(void* userdata)
 // UIApplicationDelegate
 - (void)applicationDidFinishLaunching:(UIApplication *)application
 {
+#ifdef HAVE_DEBUG_DIAGLOG
+   ios_log_init();
+#endif
+
    self.system_directory = [NSString stringWithFormat:@"%@/.RetroArch", kDOCSFOLDER];
    self.systemConfigPath = [NSString stringWithFormat:@"%@/.RetroArch/frontend.cfg", kDOCSFOLDER];
    mkdir([self.system_directory UTF8String], 0755);
