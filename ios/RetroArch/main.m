@@ -208,6 +208,7 @@ static void event_reload_config(void* userdata)
    bool _isGameTop;
    bool _isPaused;
    bool _isRunning;
+   uint32_t _settingMenusInBackStack;
    
    RAModuleInfo* _module;
 }
@@ -268,11 +269,17 @@ static void event_reload_config(void* userdata)
 // UINavigationController: Never animate when pushing onto, or popping, an RAGameView
 - (void)pushViewController:(UIViewController*)theView animated:(BOOL)animated
 {
+   if ([theView respondsToSelector:@selector(isSettingsView)] && [(id)theView isSettingsView])
+      _settingMenusInBackStack ++;
+
    [super pushViewController:theView animated:animated && !_isGameTop];
 }
 
 - (UIViewController*)popViewControllerAnimated:(BOOL)animated
 {
+   if ([self.topViewController respondsToSelector:@selector(isSettingsView)] && [(id)self.topViewController isSettingsView])
+      _settingMenusInBackStack --;
+
    return [super popViewControllerAnimated:animated && !_isGameTop];
 }
 
@@ -363,11 +370,15 @@ static void event_reload_config(void* userdata)
 #pragma mark PAUSE MENU
 - (UIBarButtonItem*)createSettingsButton
 {
-   return [[UIBarButtonItem alloc]
-         initWithTitle:@"Settings"
-                 style:UIBarButtonItemStyleBordered
-                target:[RetroArch_iOS get]
-                action:@selector(showSystemSettings)];
+   if (_settingMenusInBackStack == 0)
+      return [[UIBarButtonItem alloc]
+            initWithTitle:@"Settings"
+                    style:UIBarButtonItemStyleBordered
+                   target:[RetroArch_iOS get]
+                   action:@selector(showSystemSettings)];
+   
+   else
+      return nil;
 }
 
 - (IBAction)showPauseMenu:(id)sender

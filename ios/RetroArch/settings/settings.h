@@ -50,6 +50,8 @@ enum SettingTypes
 - (id)initWithSettings:(NSArray*)values title:(NSString*)title;
 - (void)handleCustomAction:(NSString*)action withUserData:(id)data;
 - (void)writeSettings:(NSArray*)settingList toConfig:(config_file_t*)config;
+
+- (bool)isSettingsView;
 @end
 
 @interface RASettingsList : RASettingsSubList

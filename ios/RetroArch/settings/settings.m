@@ -348,6 +348,11 @@ static RASettingData* custom_action(NSString* action, id data)
    return self;
 }
 
+- (bool)isSettingsView
+{
+   return true;
+}
+
 - (void)handleCustomAction:(NSString*)action withUserData:(id)data
 {
 
