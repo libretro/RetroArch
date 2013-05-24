@@ -82,8 +82,8 @@ static void btpad_connect_pad()
       btpad_disconnect_pad();
    memset(&btpad_connection, 0, sizeof(btpad_connection_t));
 
-   ios_add_log_message("BTpad: Registering HID INTERRUPT service");
-   bt_send_cmd_ptr(l2cap_register_service_ptr, PSM_HID_INTERRUPT, 672);
+   ios_add_log_message("BTpad: Requesting local address");
+   bt_send_cmd_ptr(hci_read_bd_addr_ptr);
 }
 
 void btpad_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size)
@@ -101,10 +101,28 @@ void btpad_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet
                btpad_disconnect_pad();
             break;
 
+         case HCI_EVENT_COMMAND_COMPLETE:
+            if (COMMAND_COMPLETE_EVENT(packet, (*hci_read_bd_addr_ptr)))
+            {
+               if (packet[5])
+                  ios_add_log_message("BTpad: Failed to get local address (E: %02X)", packet[5]);
+               else
+               {
+                  bt_flip_addr_ptr(event_addr, &packet[6]);
+                  ios_add_log_message("BTpad: Local address is %s", bd_addr_to_str_ptr(event_addr));
+               }
+
+               ios_add_log_message("BTpad: Registering HID INTERRUPT service");
+               bt_send_cmd_ptr(l2cap_register_service_ptr, PSM_HID_INTERRUPT, 672);
+            }
+            break;
+
          case L2CAP_EVENT_SERVICE_REGISTERED:
          {
             uint32_t psm = READ_BT_16(packet, 3);
-            if (psm == PSM_HID_INTERRUPT)
+            if (packet[2])
+               ios_add_log_message("BTpad: Failed to register HID service (PSM: %02X, E: %02X)", psm, packet[2]);
+            else if (psm == PSM_HID_INTERRUPT)
             {
                ios_add_log_message("BTpad: HID INTERRUPT service registered");
                ios_add_log_message("BTpad: Registering HID CONTROL service");
@@ -195,7 +213,7 @@ void btpad_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet
                   ios_add_log_message("BTpad: Got unknown L2CAP channel, ignoring");
             }
             else
-               ios_add_log_message("BTpad: Failed to open WiiMote L2CAP channel for PSM: %02X", psm);
+               ios_add_log_message("BTpad: Failed to open WiiMote L2CAP channel (PSM: %02X, E: %02X)", psm, status);
          }
          break;
 

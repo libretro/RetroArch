@@ -31,6 +31,7 @@ static struct
 {
    GRAB(bt_open),
    GRAB(bt_flip_addr),
+   GRAB(bd_addr_to_str),
    GRAB(bt_register_packet_handler),
    GRAB(bt_send_cmd),
    GRAB(bt_send_l2cap),
@@ -41,6 +42,7 @@ static struct
    GRAB(btstack_set_system_bluetooth_enabled),
    GRAB(hci_delete_stored_link_key),
    GRAB(hci_disconnect),
+   GRAB(hci_read_bd_addr),
    GRAB(hci_inquiry),
    GRAB(hci_inquiry_cancel),
    GRAB(hci_pin_code_request_reply),

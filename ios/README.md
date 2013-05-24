@@ -72,3 +72,21 @@ iTunes File Sharing is enabled on RetroArch. You can simply drag your rom files 
 
 Alternatively, you can use something like [iExplorer](http://www.macroplant.com/iexplorer) to manually copy files over. Doing this will give you the benefit of being able to use diretories, since iTunes File Sharing does not support directories.
 
+## BTstack (Jailbreak only)
+
+With the BTstack cydia package installed both WiiMote and PS3 Pads are usable. To enable BTstack usage tap the Settings button in the upper left corner and turn on the 'Enable BTstack' option.
+
+### Connecting a WiiMote
+
+Press both the 1 and 2 buttons on the WiiMote at the same time. The WiiMote is successfully completed when the 4 lights stop flashing.
+
+### Connecting PS3
+
+Before a PS3 pad can be used it must be manually paired with your device using a PC, USB cable, and a special piece of software.
+
+The pairing software will likely ask for the bluetooth address of your device, this can be found under the 'Diagnostic Log' option in the settings menu.
+
+The line will appear as:
+```
+BTpad: Local address is XX:XX:XX:XX:XX:XX
+```
