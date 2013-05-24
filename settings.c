@@ -634,6 +634,9 @@ bool config_load_file(const char *path)
    CONFIG_GET_PATH_EXTERN(overlay_dir, "overlay_directory");
    if (!strcmp(g_extern.overlay_dir, "default"))
       *g_extern.overlay_dir = '\0';
+
+   CONFIG_GET_FLOAT(input.overlay_opacity, "overlay_opacity");
+   CONFIG_GET_FLOAT(input.overlay_scale, "overlay_scale");
 #endif
 
    CONFIG_GET_BOOL(rewind_enable, "rewind_enable");
@@ -968,6 +971,9 @@ bool config_save_file(const char *path)
       config_set_string(conf, "overlay_directory", g_extern.overlay_dir);
    else
       config_set_string(conf, "overlay_directory", "default");
+   
+   config_set_float(conf, "overlay_opacity", g_settings.input.overlay_opacity);
+   config_set_float(conf, "overlay_scale", g_settings.input.overlay_scale);
 #endif
 
 #ifdef ANDROID
