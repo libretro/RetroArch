@@ -264,9 +264,9 @@ static RASettingData* custom_action(NSString* action, id data)
    [[RetroArch_iOS get] refreshConfig];
 }
 
-- (void)handleCustomAction:(NSString*)action withUserData:(id)data
+- (void)handleCustomAction:(RASettingData*)setting
 {
-   if ([@"Core Info" isEqualToString:action])
+   if ([@"Core Info" isEqualToString:setting.label])
       [[RetroArch_iOS get] pushViewController:[[RAModuleInfoList alloc] initWithModuleInfo:_module] animated:YES];
 }
 
@@ -321,14 +321,22 @@ static RASettingData* custom_action(NSString* action, id data)
    [[RetroArch_iOS get] refreshSystemConfig];
 }
 
-- (void)handleCustomAction:(NSString*)action withUserData:(id)data
+- (void)handleCustomAction:(RASettingData*)setting
 {
-   if ([@"Diagnostic Log" isEqualToString:action])
+   if ([@"Diagnostic Log" isEqualToString:setting.label])
       [[RetroArch_iOS get] pushViewController:[RALogView new] animated:YES];
-   else if (data)
+   else if ([@"Enable BTstack" isEqualToString:setting.label])
    {
-      [RetroArch_iOS.get refreshSystemConfig];
-      [RetroArch_iOS.get pushViewController:[[RASettingsList alloc] initWithModule:(RAModuleInfo*)data] animated:YES];
+      if ([@"true" isEqualToString:setting.value])
+         [RetroArch_iOS.get startBluetooth];
+      else
+         [RetroArch_iOS.get stopBluetooth];
+   }
+   else
+   {
+      id data = objc_getAssociatedObject(setting, "USERDATA");
+      if (data)
+         [RetroArch_iOS.get pushViewController:[[RASettingsList alloc] initWithModule:(RAModuleInfo*)data] animated:YES];
    }
 }
 
@@ -353,7 +361,7 @@ static RASettingData* custom_action(NSString* action, id data)
    return true;
 }
 
-- (void)handleCustomAction:(NSString*)action withUserData:(id)data
+- (void)handleCustomAction:(RASettingData*)setting
 {
 
 }
@@ -436,25 +444,27 @@ static RASettingData* custom_action(NSString* action, id data)
          [[RetroArch_iOS get] pushViewController:[[RASettingsSubList alloc] initWithSettings:setting.subValues title:setting.label] animated:YES];
          break;
          
-      case CustomAction:
-         [self handleCustomAction:setting.label withUserData:objc_getAssociatedObject(setting, "USERDATA")];
-         break;
-         
       default:
          break;
    }
+   
+   [self handleCustomAction:setting];
 }
 
 - (void)handleBooleanSwitch:(UISwitch*)swt
 {
    RASettingData* setting = objc_getAssociatedObject(swt, "SETTING");
    setting.value = (swt.on ? @"true" : @"false");
+   
+   [self handleCustomAction:setting];
 }
 
 - (void)handleSlider:(UISlider*)sld
 {
    RASettingData* setting = objc_getAssociatedObject(sld, "SETTING");
    setting.value = [NSString stringWithFormat:@"%f", sld.value];
+
+   [self handleCustomAction:setting];
 }
 
 - (UITableViewCell*)tableView:(UITableView*)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath

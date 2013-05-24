@@ -25,6 +25,10 @@
 - (void)refreshConfig;
 - (void)refreshSystemConfig;
 
+- (IBAction)startBluetooth;
+- (IBAction)stopBluetooth;
+
+
 @property (strong, nonatomic) NSString* systemConfigPath;
 
 @property (strong, nonatomic) NSString* system_directory;
