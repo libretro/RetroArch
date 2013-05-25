@@ -461,6 +461,7 @@ bool config_load_file(const char *path)
    CONFIG_GET_BOOL(video.scale_integer, "video_scale_integer");
    CONFIG_GET_BOOL(video.crop_overscan, "video_crop_overscan");
    CONFIG_GET_FLOAT(video.aspect_ratio, "video_aspect_ratio");
+   CONFIG_GET_INT(video.aspect_ratio_idx, "aspect_ratio_index");
    CONFIG_GET_BOOL(video.aspect_ratio_auto, "video_aspect_ratio_auto");
    CONFIG_GET_FLOAT(video.refresh_rate, "video_refresh_rate");
 
@@ -479,7 +480,6 @@ bool config_load_file(const char *path)
 #ifdef RARCH_CONSOLE
    /* TODO - will be refactored later to make it more clean - it's more 
     * important that it works for consoles right now */
-   CONFIG_GET_INT(video.aspect_ratio_idx, "aspect_ratio_index");
 
    for (unsigned i = 0; i < MAX_PLAYERS; i++)
    {
