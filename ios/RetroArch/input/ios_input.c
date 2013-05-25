@@ -109,13 +109,50 @@ static void ios_input_free_input(void *data)
    (void)data;
 }
 
+static void ios_input_set_keybinds(void *data, unsigned device, unsigned port,
+      unsigned id, unsigned keybind_action)
+{
+   (void)device;
+
+   if (keybind_action & (1ULL << KEYBINDS_ACTION_SET_DEFAULT_BINDS))
+   {
+      switch (device)
+      {
+         case DEVICE_NONE:
+            break;
+         case DEVICE_WIIMOTE:
+            strlcpy(g_settings.input.device_names[port], "Wiimote + Classic",
+               sizeof(g_settings.input.device_names[port]));
+            g_settings.input.device[port] = device;
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_B].def_joykey      = 22;
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_Y].def_joykey      = 21; 
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_SELECT].def_joykey = 28;
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_START].def_joykey  = 26;
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_UP].def_joykey     = 16;
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_DOWN].def_joykey   = 30;
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_LEFT].def_joykey   = 17;
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_RIGHT].def_joykey  = 31;
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_A].def_joykey      = 20;
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_X].def_joykey      = 19;
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_L].def_joykey      = 29;
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_R].def_joykey      = 25;
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_L2].def_joykey     = 23;
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_R2].def_joykey     = 18;
+            g_settings.input.dpad_emulation[port] = ANALOG_DPAD_NONE;
+            break;
+         case DEVICE_SIXAXIS:
+            break;
+      }
+   }
+}
+
 const input_driver_t input_ios = {
    ios_input_init,
    ios_input_poll,
    ios_input_state,
    ios_bind_button_pressed,
    ios_input_free_input,
-   NULL,
+   ios_input_set_keybinds,
    "ios_input",
 };
 

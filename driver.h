@@ -279,6 +279,10 @@ enum input_devices
    DEVICE_KEYBOARD,
    DEVICE_KEYPAD,
    DEVICE_UNKNOWN,
+#elif defined(IOS)
+   DEVICE_NONE,
+   DEVICE_WIIMOTE,
+   DEVICE_SIXAXIS,
 #endif
    DEVICE_LAST
 };
