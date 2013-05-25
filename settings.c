@@ -939,6 +939,7 @@ bool config_save_file(const char *path)
    config_set_bool(conf, "video_scale_integer", g_settings.video.scale_integer);
    config_set_bool(conf, "video_smooth", g_settings.video.smooth);
    config_set_bool(conf, "video_vsync", g_settings.video.vsync);
+   config_set_bool(conf, "video_hard_sync", g_settings.video.hard_sync);
    config_set_int(conf, "aspect_ratio_index", g_settings.video.aspect_ratio_idx);
    config_set_string(conf, "audio_device", g_settings.audio.device);
    config_set_bool(conf, "audio_rate_control", g_settings.audio.rate_control);
