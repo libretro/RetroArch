@@ -24,6 +24,7 @@
 enum {
    ICADE_PROFILE_RED_SAMURAI = 0,
    ICADE_PROFILE_IPEGA_PG9017,
+   ICADE_PROFILE_GAMESTOP_WIRELESS,
 } icade_profile_enums;
 
 enum {
