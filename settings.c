@@ -291,6 +291,16 @@ void config_set_defaults(void)
    g_extern.console.sound.volume_level = 0;
 #endif
 #endif
+   
+#ifdef HAVE_OVERLAY
+#if defined(__QNX__)
+   strlcpy(g_extern.overlay_dir, "app/native/overlays/", sizeof(g_extern.overlay_dir));
+   RARCH_LOG("Setting default overlay %s ...\n", "app/native/overlays/snes-landscape.cfg");
+   strlcpy(g_settings.input.overlay, "app/native/overlays/snes-landscape.cfg", sizeof(g_settings.input.overlay));
+#elif defined(IOS)
+   strlcpy(g_extern.overlay_dir, "/Applications/RetroArch.app/overlays/", sizeof(g_extern.overlay_dir));
+#endif
+#endif
 
    g_extern.config_save_on_exit = config_save_on_exit;
 

@@ -35,12 +35,6 @@ int rarch_main(int argc, char *argv[])
 
    config_load();
 
-   if (g_settings.input.overlay[0] == '\0')
-   {
-      RARCH_LOG("Setting default overlay %s ...\n", "app/native/overlays/snes-landscape.cfg");
-      strlcpy(g_settings.input.overlay, "app/native/overlays/snes-landscape.cfg", sizeof(g_settings.input.overlay));
-   }
-
    g_extern.verbose = true;
 
    menu_init();
