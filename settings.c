@@ -299,6 +299,10 @@ void config_set_defaults(void)
    strlcpy(g_settings.input.overlay, "app/native/overlays/snes-landscape.cfg", sizeof(g_settings.input.overlay));
 #elif defined(IOS)
    strlcpy(g_extern.overlay_dir, "/Applications/RetroArch.app/overlays/", sizeof(g_extern.overlay_dir));
+#elif defined(ANDROID)
+   //FIXME
+   // what to do on Android with /data/data/org.retroarch/cache/Overlays? Can't seem to access or do anything wih this path on a Galaxy S3
+   strlcpy(g_extern.overlay_dir, "/data/data/org.retroarch/cache/Overlays/", sizeof(g_extern.overlay_dir));
 #endif
 #endif
 
