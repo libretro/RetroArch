@@ -142,6 +142,27 @@ static void ios_input_set_keybinds(void *data, unsigned device, unsigned port,
             g_settings.input.dpad_emulation[port] = ANALOG_DPAD_NONE;
             break;
          case DEVICE_SIXAXIS:
+            strlcpy(g_settings.input.device_names[port], "SixAxis/DualShock3",
+               sizeof(g_settings.input.device_names[port]));
+            g_settings.input.device[port] = device;
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_B].joykey      = 14;
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_Y].joykey      = 15; 
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_SELECT].joykey = 0;
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_START].joykey  = 3;
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_UP].joykey     = 4;
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_DOWN].joykey   = 6;
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_LEFT].joykey   = 7;
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_RIGHT].joykey  = 5;
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_A].joykey      = 13;
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_X].joykey      = 12;
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_L].joykey      = 10;
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_R].joykey      = 11;
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_L2].joykey     = 8;
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_R2].joykey     = 9;
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_L3].joykey     = 1;
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_R3].joykey     = 2;
+				g_settings.input.binds[port][RARCH_MENU_TOGGLE].joykey				 = 16;
+            g_settings.input.dpad_emulation[port] = ANALOG_DPAD_NONE;
             break;
       }
    }
