@@ -3138,6 +3138,10 @@ uint64_t rgui_input(void)
    rgui->trigger_state = input_state & ~rgui->old_input_state;
 
    bool keys_pressed = (input_state & (
+            (1ULL << DEVICE_NAV_LEFT) |
+            (1ULL << DEVICE_NAV_RIGHT) |
+            (1ULL << DEVICE_NAV_UP) |
+            (1ULL << DEVICE_NAV_DOWN) |
             (1ULL << DEVICE_NAV_LEFT_ANALOG_L) |
             (1ULL << DEVICE_NAV_RIGHT_ANALOG_L) |
             (1ULL << DEVICE_NAV_UP_ANALOG_L) |
@@ -3151,7 +3155,7 @@ uint64_t rgui_input(void)
             (1ULL << DEVICE_NAV_R2)
             ));
    rgui->do_held = (keys_pressed || shoulder_buttons_pressed) &&
-   !(input_state & DEVICE_NAV_MENU);
+   !(input_state & (1ULL << DEVICE_NAV_MENU));
 
    return input_state;
 }
