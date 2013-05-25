@@ -1129,7 +1129,7 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
          if (input & (1ULL << DEVICE_NAV_START))
             settings_set(1ULL << S_DEF_INFO_MSG);
          break;
-      case INGAME_MENU_REWIND_ENABLED:
+      case SETTING_REWIND_ENABLED:
          if ((input & (1ULL << DEVICE_NAV_LEFT)) || (input & (1ULL << DEVICE_NAV_RIGHT)) || (input & (1ULL << DEVICE_NAV_B)))
          {
             settings_set(1ULL << S_REWIND);
@@ -1149,7 +1149,7 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
             }
          }
          break;
-      case INGAME_MENU_REWIND_GRANULARITY:
+      case SETTING_REWIND_GRANULARITY:
          if (input & (1ULL << DEVICE_NAV_LEFT))
          {
             if (g_settings.rewind_granularity > 1)
@@ -1937,7 +1937,7 @@ static int select_setting(void *data, uint64_t input)
             snprintf(setting_text, sizeof(setting_text), (g_extern.lifecycle_mode_state & (1ULL << MODE_INFO_DRAW)) ? "ON" : "OFF");
             strlcpy(comment, "INFO - Show onscreen info messages in the menu.", sizeof(comment));
             break;
-         case INGAME_MENU_REWIND_ENABLED:
+         case SETTING_REWIND_ENABLED:
             strlcpy(text, "Rewind", sizeof(text));
             if (g_settings.rewind_enable)
             {
@@ -1952,7 +1952,7 @@ static int select_setting(void *data, uint64_t input)
                      sizeof(comment));
             }
             break;
-         case INGAME_MENU_REWIND_GRANULARITY:
+         case SETTING_REWIND_GRANULARITY:
             strlcpy(text, "Rewind Granularity", sizeof(text));
             snprintf(setting_text, sizeof(setting_text), "%d", g_settings.rewind_granularity);
             strlcpy(comment, "INFO - Set the amount of frames to 'rewind'.", sizeof(comment));

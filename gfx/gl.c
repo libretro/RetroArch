@@ -1142,8 +1142,10 @@ static void gl_init_textures(void *data, const video_info_t *video)
 #endif
 
    GLenum internal_fmt = gl->internal_fmt;
+#ifndef HAVE_PSGL
    GLenum texture_type = gl->texture_type;
    GLenum texture_fmt  = gl->texture_fmt;
+#endif
 
    // GLES is picky about which format we use here.
    // Without extensions, we can *only* render to 16-bit FBOs.
