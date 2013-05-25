@@ -45,7 +45,9 @@ enum {
 
 enum
 {
-   SETTING_EMU_SHOW_INFO_MSG = 0,
+   INGAME_MENU_REWIND_ENABLED = 0,
+   INGAME_MENU_REWIND_GRANULARITY,
+   SETTING_EMU_SHOW_INFO_MSG,
    SETTING_EMU_SHOW_DEBUG_INFO_MSG,
 };
 
@@ -402,6 +404,11 @@ static void init_menulist(unsigned menu_id)
          }
          break;
       case INGAME_MENU_SETTINGS_MODE:
+         XuiListInsertItems(m_menulist, INGAME_MENU_REWIND_ENABLED, 1);
+         XuiListSetText(m_menulist, INGAME_MENU_REWIND_ENABLED, g_settings.rewind_enable ? L"Rewind: ON" : L"Rewind: OFF");
+         menu_settings_create_menu_item_label_w(strw_buffer, S_LBL_REWIND_GRANULARITY, sizeof(strw_buffer));
+         XuiListInsertItems(m_menulist, INGAME_MENU_REWIND_GRANULARITY, 1);
+         XuiListSetText(m_menulist, INGAME_MENU_REWIND_GRANULARITY, strw_buffer);
 
          XuiListInsertItems(m_menulist, SETTING_EMU_SHOW_INFO_MSG, 1);
          XuiListSetText(m_menulist, SETTING_EMU_SHOW_INFO_MSG, (g_extern.lifecycle_mode_state & (1ULL << MODE_INFO_DRAW)) ? L"Info Messages: ON" : L"Info Messages: OFF");
@@ -453,12 +460,6 @@ static void init_menulist(unsigned menu_id)
          XuiListInsertItems(m_menulist, INGAME_MENU_RESET, 1);
          XuiListSetText(m_menulist, INGAME_MENU_RESET, L"Restart Game");
 
-         XuiListInsertItems(m_menulist, INGAME_MENU_REWIND_ENABLED, 1);
-         XuiListSetText(m_menulist, INGAME_MENU_REWIND_ENABLED, g_settings.rewind_enable ? L"Rewind: ON" : L"Rewind: OFF");
-
-         menu_settings_create_menu_item_label_w(strw_buffer, S_LBL_REWIND_GRANULARITY, sizeof(strw_buffer));
-         XuiListInsertItems(m_menulist, INGAME_MENU_REWIND_GRANULARITY, 1);
-         XuiListSetText(m_menulist, INGAME_MENU_REWIND_GRANULARITY, strw_buffer);
 
          XuiListInsertItems(m_menulist, INGAME_MENU_FRAME_ADVANCE, 1);
          XuiListSetText(m_menulist, INGAME_MENU_FRAME_ADVANCE, L"Frame Advance");
