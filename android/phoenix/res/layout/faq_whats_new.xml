@@ -10,6 +10,60 @@
         android:layout_height="wrap_content"
         android:layout_margin="40px"
         android:text="
+        r13 (May 26, 2013)\n\n
+        * (iOS) Add iOS port of RetroArch.\n
+        * (Blackberry) Add Blackberry port of RetroArch.\n
+        * Threaded video option. Mainly for Android users but works for OpenGL driver in general.\n
+        * (Android) Add iControlPad support.
+        * (Android) Add the following gamepads / etc to autodetection list:\n
+        - Tommo NeoGeoX Arcade Stick\n
+        - Xperia Play (fixes ANR issues after 30 seconds)\n
+        - TTT THT pad\n
+        - JXD S7300B\n
+        - Sega Virtua Stick\n
+        - Ouya pad (untested)\n
+        - Gamestop Wireless\n
+        - Tomee NES USB\n
+        - Thrustmaster T Mini Wireless\n
+        * (Android) Add back key behavior - can either 'toggle' RGUI' on/off or exit the app.\n
+        * (RGUI) RGUI now works on PC, Android, iOS and Blackberry - and is no longer Wii-exclusive.\n
+        * (RGUI) RGUI is an ingame menu that can be toggled from within the game. It looks and functions a bit like MAME's
+        OSD system. It is possible now to configure most of RetroArch's settings from this builtin menu instead of having to
+        exit the game and go to an 'external' settings menu.\n
+        * (RGUI) Added a 'Game History' list.\n
+        * (RGUI) Added sophisticated shader stacking - for Cg shaders.\n
+        * (RGUI/Libretro) Add disk image swapping - supported by Mednafen PSX and PCSX ReARMed
+        * (Libretro) Add libretro GL capability to libretro API. Supported currently by PC, Android,
+        iOS, Blackberry, Raspberry Pi, and Pandora. Targets either GL 2.0 or GL ES 2.0. Targeting
+        GL ES 2.0 is encouraged for maximum portability to mobile platforms.\n
+        * (Libretro/RGUI) Add Core Options. This makes it possible to 'expose' options for a libretro
+        core to the frontend.\n
+        * (Libretro) Add SET_SUPPORT_NO_GAME to API.\n
+        * (RGUI) Change menu layout options.\n
+        * (PS3) Optimize PS3 video driver extensively.\n
+        * (PS3) Totally remove the 'old' fixed 2-pass shader system and replace it with a new, forward-compatible
+        with PC 8-pass shader stacking system. RGUI/RMenu makes CGP files dynamically as you set new shader stacks.\n
+        * (Wii) Optimize Wii video driver by using inlined macros for certain fixed-function state code.\n
+        * (360/Xbox 1) Optimize 360/Xbox 1 video drivers by using inlined command buffer macros\n
+        * (360) Removed shader system for this release - will be re-added in a future 0.9.9 point release. The main problem is that on
+        Xbox 360, all our render targets need to fit inside 10MB of EDRAM - which is just pathetic if you want to have
+        any FBO scaling options similar to what can be done on PS3. I'll be looking at either tiled rendering or just
+        implementing the same 'hack' I did before (where I forcibly set the maximum source framebuffer resolution at 
+        512x512 for two-pass shaders and hoped nobody would notice so I could stay within the confines of the 10MB of 
+        EDRAM for render targets). For now, the PS3 port is way superior than the 360 port in the graphics stakes due to
+        this 10MB EDRAM limitation for render targets.\n
+        * (Menus) Standardize RGUI, RMenu and RMenu XUI to look and work the same.\n
+        * (Overlays/RGUI) Overlays can now be scaled and their opacity changed from RGUI).\n
+        * (RMenu/RGUI) Add text scrolling when a text string is too large to fit onscreen.\n
+        * (RMenu XUI) Have all menu screens now use the same basic XUI template. Cuts down on a lot of code 
+        maintenance at the expense of language customization by end-users. A solution will be looked at later.\n
+        * (Xbox 1) Slim down on menu texture - leaves us with more free RAM to play with - only tested on
+        480p - somebody with 720p/1080i resolution support should contact me - even though I'm afraid
+        making the menu texture any bigger is going to be a waste of RAM anyways. Upsides of this are
+        obvious - far faster switching between menu and game and consumes way less RAM which means games
+        like Street Fighter Alpha 3 and Vampire Savior now fit into RAM without pesky and slow file I/O-based VM.\n
+        * (Wii) Add additional VI resolutions.\n
+        * (ZIP support) Switch from builtin zlib to miniz - less codebloat.\n
         r12 (Feb 16, 2013)\n\n
 * [NEStopia] Famicom Disk System support. For Android users - put disksys.rom
 into the same folder as the FDS ROM you're trying to load. For everyone else -

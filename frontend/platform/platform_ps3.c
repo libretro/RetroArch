@@ -386,13 +386,6 @@ static void system_deinit(void)
 static void system_exitspawn(void)
 {
 #ifdef HAVE_RARCH_EXEC
-#ifdef HAVE_MULTIMAN 
-   if (g_extern.lifecycle_mode_state & (1ULL << MODE_EXITSPAWN_MULTIMAN))
-   {
-      RARCH_LOG("Boot Multiman: %s.\n", MULTIMAN_SELF_FILE);
-      strlcpy(g_extern.fullpath, MULTIMAN_SELF_FILE, sizeof(g_extern.fullpath));
-   }
-#endif
 
 #ifdef IS_SALAMANDER
    rarch_console_exec(default_paths.libretro_path, false);
@@ -401,11 +394,20 @@ static void system_exitspawn(void)
    cellSysmoduleLoadModule(CELL_SYSMODULE_FS);
    cellSysmoduleLoadModule(CELL_SYSMODULE_IO);
 #else
+   char core_launch[256];
+   strlcpy(core_launch, g_settings.libretro, sizeof(core_launch));
+#ifdef HAVE_MULTIMAN 
+   if (g_extern.lifecycle_mode_state & (1ULL << MODE_EXITSPAWN_MULTIMAN))
+   {
+      RARCH_LOG("Boot Multiman: %s.\n", MULTIMAN_SELF_FILE);
+      strlcpy(core_launch, MULTIMAN_SELF_FILE, sizeof(core_launch));
+   }
+#endif
    bool should_load_game = false;
    if (g_extern.lifecycle_mode_state & (1ULL << MODE_EXITSPAWN_START_GAME))
       should_load_game = true;
 
-   rarch_console_exec(g_settings.libretro, should_load_game);
+   rarch_console_exec(core_launch, should_load_game);
 #endif
 
 #endif

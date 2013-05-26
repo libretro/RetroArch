@@ -24,5 +24,6 @@
         * Mednafen WonderSwan [WonderSwan] : Has been tested to run at fullspeed on an ARM Cortex A8 single-core CPU.\n
         * Mednafen Virtual Boy [Virtual Boy] : Dual-core ARM Cortex A9 CPU or higher.\n
         * Mednafen PC Engine [PC Engine] : Has been tested to run at fullspeed on an ARM Cortex A8 single-core CPU.\n
+        * TyrQuake [Quake 1] : Has been tested to run around give or take 55-60fps at 320x240 resolution on an ARM Cortex A8 single-core CPU.\n
         " />
 </LinearLayout>
