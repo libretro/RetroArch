@@ -8,7 +8,7 @@ Wii / Gamecube
 * [SNES9x Next] Seiken Densetsu 3/Romancing Saga 3 no longer downsample to
 low-resolution for high-resolution modes on Xbox 1/Gamecube/Wii
 * [SNES9x Next] Add Core Option - 'SuperFX Overclock'.
-* [SNES9x Next] Use sthbrx/stwbrx for READ_WORD/WRITE_WORD macros - speedup.
+* [SNES9x Next] [Gamecube/Wii] Use sthbrx/stwbrx for READ_WORD/WRITE_WORD macros - speedup.
 * [Gambatte] Fixed serious input reporting bug on libretro side that could
 drastically slow down gameplay speed - found an edge case in a Japanese
 Pokemon Blue version that triggered this.

@@ -1,6 +1,0 @@
-display_name = "Sega (MS/GG/MD/CD)"
-supported_extensions = "md|smd|gen|sms|gg|sg|bin|cue|ios"
-corename = "Genesis Plus GX"
-manufacturer = "Sega"
-systemname = "Sega (Various)"
-
