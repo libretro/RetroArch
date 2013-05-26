@@ -64,6 +64,42 @@
         like Street Fighter Alpha 3 and Vampire Savior now fit into RAM without pesky and slow file I/O-based VM.\n
         * (Wii) Add additional VI resolutions.\n
         * (ZIP support) Switch from builtin zlib to miniz - less codebloat.\n
+* [SNES9x Next] No longer disable high resolution for SA-1 games for Xbox 1 /
+Wii / Gamecube\n
+* [SNES9x Next] Seiken Densetsu 3/Romancing Saga 3 no longer downsample to
+low-resolution for high-resolution modes on Xbox 1/Gamecube/Wii\n
+* [SNES9x Next] Add Core Option - 'SuperFX Overclock'.\n
+* [SNES9x Next] Use sthbrx/stwbrx for READ_WORD/WRITE_WORD macros - speedup.\n
+* [Gambatte] Fixed serious input reporting bug on libretro side that could
+drastically slow down gameplay speed - found an edge case in a Japanese
+Pokemon Blue version that triggered this.\n
+* [Gambatte] Make colorization optional and not enforced through use of a 
+Core Option.\n
+* [FCEUmm] Should load UNIF ROM format now.\n
+* [NEStopia] Fixes Famicom Disk System support.\n
+* [NEStopia] L/R now inserts coins on Vs. System games.\n
+* [NEStopia] Add Core Option 'Sprite Limit'.\n
+* [Mednafen] Add several Core Options for Mednafen PSX, Mednafen PCE Fast,
+Mednafen Neo Geo Pocket Color, etc.\n
+* [Mednafen PSX] Add disk swap mechanisms - exposed through RGUI\n
+* [PCSX ReARMed] Latest update to r19 from notaz (main author)\n
+* [PCSX ReARMed] Totally rewritten ARM code by notaz in order to support outdated version of Apple's GAS (for iOS support).\n
+* [PCSX ReARMed] Add disk swap mechanisms - exposed through RGUI\n
+* [PCSX ReARMed] Add m3u Mednafen-style cuesheet support\n
+* [PCSX ReARMed] Add core option 'Frameskip' - users with bad performance on Android should try out if setting this higher than 0 fixes their problems.\n
+* [PCSX ReARMed] Add core options 'NEON enhanced resolution' and 'NEON enhanced resolution speedhack' - this is for systems with ARM NEON CPUs. Note that this will easily triple or even quadruple CPU requirements. If you have an underpowered CPU, you might want to try this out in combination with the 'Frameskip' option (setting it higher than 0) to make things somewhat playable.\n
+* [Genesis Plus GX] Latest compatibility updates from ekeeke (main author)\n
+* [Genesis Plus GX] Add Core Options for blargg NTSC, Overscan and Game Gear Extend Screen\n
+* [Final Burn Alpha] Add several Core Options for going tO Service Mode, Resetting game, etc.\n
+* (LIBRETRO) Added Tyrquake\n
+* (LIBRETRO) Added ModelViewer and SceneWalker (for platforms which support
+libretro GL).\n
+* (LIBRETRO) NXEngine / Cave Story is now completely playable on consoles\n
+(Wii/PlayStation3/Xbox 1/Xbox 360) thanks to many code alterations. Performance
+is also much improved on the platforms which could already play them, such as
+Android and PC.\n
+* (Shaders) New shaders- mdapt, new xBR versions, new Harlequin Gameboy/LCD shaders, etc.\n
+\n
         r12 (Feb 16, 2013)\n\n
 * [NEStopia] Famicom Disk System support. For Android users - put disksys.rom
 into the same folder as the FDS ROM you're trying to load. For everyone else -
