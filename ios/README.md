@@ -70,7 +70,7 @@ Once completed, you can find the IPA inside the `ios/build/Release-iphoneos` dir
 
 iTunes File Sharing is enabled on RetroArch. You can simply drag your rom files into the RetroArch app. They will be available the next time you launch the app.
 
-Alternatively, you can use something like [iExplorer](http://www.macroplant.com/iexplorer) to manually copy files over. Doing this will give you the benefit of being able to use diretories, since iTunes File Sharing does not support directories.
+Alternatively, you can use something like [iExplorer](http://www.macroplant.com/iexplorer) to manually copy files over. Doing this will give you the benefit of being able to use directories, since iTunes File Sharing does not support directories.
 
 ## BTstack (Jailbreak only)
 
