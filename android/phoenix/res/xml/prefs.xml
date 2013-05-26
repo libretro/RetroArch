@@ -38,6 +38,19 @@
                     android:targetPackage="org.retroarch" />
             </Preference>
         </PreferenceCategory>
+        <PreferenceCategory android:title="System">
+            <CheckBoxPreference android:title="Enable custom directory"
+                android:summary="Enables use of custom system folder. Cores will look for system specific files, like BIOSes, in this folder. If not enabled, it will look in the ROM folder."
+                android:key="system_directory_enable"
+                android:defaultValue="false"/>
+            <Preference android:title="System directory"
+                android:summary="Sets directory where system files are loaded from."
+                android:dependency="system_directory_enable">
+                <intent
+                    android:targetClass="org.retroarch.browser.SystemDirActivity"
+                    android:targetPackage="org.retroarch" />
+            </Preference>
+        </PreferenceCategory>
     </PreferenceScreen>
     <PreferenceScreen android:title="System Settings" >
         <PreferenceCategory android:title="General" >
