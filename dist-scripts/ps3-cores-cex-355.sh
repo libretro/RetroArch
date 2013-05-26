@@ -1,5 +1,5 @@
 #!/bin/sh
-RARCH_VERSION=0.9.9-wip3
+RARCH_VERSION=0.9.9
 
 make -C ../ -f Makefile.ps3.salamander clean || exit 1
 make -C ../ -f Makefile.ps3.rgl clean || exit 1
