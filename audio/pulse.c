@@ -103,6 +103,13 @@ static void stream_latency_update_cb(pa_stream *s, void *data)
    pa_threaded_mainloop_signal(pa->mainloop, 0);
 }
 
+static void underrun_update_cb(pa_stream *s, void *data)
+{
+   (void)s;
+   (void)data;
+   RARCH_LOG("[PulseAudio]: Underrun!\n");
+}
+
 static void *pulse_init(const char *device, unsigned rate, unsigned latency)
 {
    pa_sample_spec spec;
@@ -146,14 +153,13 @@ static void *pulse_init(const char *device, unsigned rate, unsigned latency)
    pa_stream_set_state_callback(pa->stream, stream_state_cb, pa);
    pa_stream_set_write_callback(pa->stream, stream_request_cb, pa);
    pa_stream_set_latency_update_callback(pa->stream, stream_latency_update_cb, pa);
+   pa_stream_set_underflow_callback(pa->stream, underrun_update_cb, pa);
 
    buffer_attr.maxlength = -1;
    buffer_attr.tlength = pa_usec_to_bytes(latency * PA_USEC_PER_MSEC, &spec);
    buffer_attr.prebuf = -1;
    buffer_attr.minreq = -1;
    buffer_attr.fragsize = -1;
-
-   pa->buffer_size = buffer_attr.tlength;
 
    if (pa_stream_connect_playback(pa->stream, NULL, &buffer_attr, PA_STREAM_ADJUST_LATENCY, NULL, NULL) < 0)
       goto error;
@@ -162,6 +168,17 @@ static void *pulse_init(const char *device, unsigned rate, unsigned latency)
 
    if (pa_stream_get_state(pa->stream) != PA_STREAM_READY)
       goto unlock_error;
+
+   const pa_buffer_attr *server_attr = pa_stream_get_buffer_attr(pa->stream);
+   if (server_attr)
+   {
+      pa->buffer_size = server_attr->tlength;
+      RARCH_LOG("[PulseAudio]: Requested %u bytes buffer, got %u.\n",
+            (unsigned)buffer_attr.tlength,
+            (unsigned)pa->buffer_size);
+   }
+   else
+      pa->buffer_size = buffer_attr.tlength;
 
    pa_threaded_mainloop_unlock(pa->mainloop);
 
