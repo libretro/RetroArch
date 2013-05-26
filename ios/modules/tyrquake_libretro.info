@@ -1,0 +1,3 @@
+display_name = "TyrQuake"
+supported_extensions = "pak"
+corename = "prboom"
