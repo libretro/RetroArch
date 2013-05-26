@@ -284,7 +284,10 @@ typedef struct gl
 #endif
 
 #ifdef HAVE_GL_SYNC
+#define MAX_FENCES 4
    bool have_sync;
+   GLsync fences[MAX_FENCES];
+   unsigned fence_count;
 #endif
 } gl_t;
 

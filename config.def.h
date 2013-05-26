@@ -225,6 +225,11 @@ static const bool vsync = true;
 
 // Attempts to hard-synchronize CPU and GPU. Can reduce latency at cost of performance.
 static const bool hard_sync = false;
+// Configures how many frames the GPU can run ahead of CPU.
+// 0: Syncs to GPU immediately.
+// 1: Syncs to previous frame.
+// 2: Etc ...
+static const unsigned hard_sync_frames = 0;
 
 // Threaded video. Will possibly increase performance significantly at cost of worse synchronization and latency.
 static const bool video_threaded = false;

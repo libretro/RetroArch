@@ -1546,9 +1546,17 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
       RARCH_PERFORMANCE_INIT(gl_fence);
       RARCH_PERFORMANCE_START(gl_fence);
       glClear(GL_COLOR_BUFFER_BIT);
-      GLsync sync = pglFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
-      pglClientWaitSync(sync, GL_SYNC_FLUSH_COMMANDS_BIT, 1000000000);
-      pglDeleteSync(sync);
+      gl->fences[gl->fence_count++] = pglFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
+
+      while (gl->fence_count > g_settings.video.hard_sync_frames)
+      {
+         pglClientWaitSync(gl->fences[0], GL_SYNC_FLUSH_COMMANDS_BIT, 1000000000);
+         pglDeleteSync(gl->fences[0]);
+
+         gl->fence_count--;
+         memmove(gl->fences, gl->fences + 1, gl->fence_count * sizeof(GLsync));
+      }
+
       RARCH_PERFORMANCE_STOP(gl_fence);
    }
 #endif
@@ -1564,6 +1572,18 @@ static void gl_free(void *data)
 #endif
 
    gl_t *gl = (gl_t*)data;
+
+#ifdef HAVE_GL_SYNC
+   if (gl->have_sync)
+   {
+      for (unsigned i = 0; i < gl->fence_count; i++)
+      {
+         pglClientWaitSync(gl->fences[i], GL_SYNC_FLUSH_COMMANDS_BIT, 1000000000);
+         pglDeleteSync(gl->fences[i]);
+      }
+      gl->fence_count = 0;
+   }
+#endif
 
    if (gl->font_ctx)
       gl->font_ctx->deinit(gl);

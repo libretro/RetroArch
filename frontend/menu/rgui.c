@@ -592,10 +592,13 @@ static void render_text(rgui_handle_t *rgui)
                snprintf(type_str, sizeof(type_str), "%d", g_extern.console.screen.gamma_correction);
                break;
             case RGUI_SETTINGS_VIDEO_VSYNC:
-               snprintf(type_str, sizeof(type_str), g_settings.video.vsync ? "ON" : "OFF");
+               strlcpy(type_str, g_settings.video.vsync ? "ON" : "OFF", sizeof(type_str));
                break;
             case RGUI_SETTINGS_VIDEO_HARD_SYNC:
-               snprintf(type_str, sizeof(type_str), g_settings.video.hard_sync ? "ON" : "OFF");
+               strlcpy(type_str, g_settings.video.hard_sync ? "ON" : "OFF", sizeof(type_str));
+               break;
+            case RGUI_SETTINGS_VIDEO_HARD_SYNC_FRAMES:
+               snprintf(type_str, sizeof(type_str), "%u", g_settings.video.hard_sync_frames);
                break;
             case RGUI_SETTINGS_VIDEO_INTEGER_SCALE:
                strlcpy(type_str, g_settings.video.scale_integer ? "ON" : "OFF", sizeof(type_str));
@@ -1499,6 +1502,7 @@ static void rgui_settings_video_options_populate_entries(rgui_handle_t *rgui)
    rgui_list_push(rgui->selection_buf, "Rotation", RGUI_SETTINGS_VIDEO_ROTATION, 0);
    rgui_list_push(rgui->selection_buf, "VSync", RGUI_SETTINGS_VIDEO_VSYNC, 0);
    rgui_list_push(rgui->selection_buf, "Hard GPU Sync", RGUI_SETTINGS_VIDEO_HARD_SYNC, 0);
+   rgui_list_push(rgui->selection_buf, "Hard GPU Sync Frames", RGUI_SETTINGS_VIDEO_HARD_SYNC_FRAMES, 0);
 }
 
 #ifdef HAVE_SHADER_MANAGER
@@ -1920,6 +1924,29 @@ static int video_option_toggle_setting(rgui_handle_t *rgui, unsigned setting, rg
             case RGUI_ACTION_RIGHT:
             case RGUI_ACTION_OK:
                g_settings.video.hard_sync = !g_settings.video.hard_sync;
+               break;
+
+            default:
+               break;
+         }
+         break;
+
+      case RGUI_SETTINGS_VIDEO_HARD_SYNC_FRAMES:
+         switch (action)
+         {
+            case RGUI_ACTION_START:
+               g_settings.video.hard_sync_frames = 0;
+               break;
+
+            case RGUI_ACTION_LEFT:
+               if (g_settings.video.hard_sync_frames > 0)
+                  g_settings.video.hard_sync_frames--;
+               break;
+
+            case RGUI_ACTION_RIGHT:
+            case RGUI_ACTION_OK:
+               if (g_settings.video.hard_sync_frames < 3)
+                  g_settings.video.hard_sync_frames++;
                break;
 
             default:

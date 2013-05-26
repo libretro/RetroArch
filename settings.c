@@ -165,6 +165,7 @@ void config_set_defaults(void)
    g_settings.video.disable_composition = disable_composition;
    g_settings.video.vsync = vsync;
    g_settings.video.hard_sync = hard_sync;
+   g_settings.video.hard_sync_frames = hard_sync_frames;
    g_settings.video.threaded = video_threaded;
    g_settings.video.smooth = video_smooth;
    g_settings.video.force_aspect = force_aspect;
@@ -469,6 +470,11 @@ bool config_load_file(const char *path)
    CONFIG_GET_BOOL(video.disable_composition, "video_disable_composition");
    CONFIG_GET_BOOL(video.vsync, "video_vsync");
    CONFIG_GET_BOOL(video.hard_sync, "video_hard_sync");
+
+   CONFIG_GET_INT(video.hard_sync_frames, "video_hard_sync_frames");
+   if (g_settings.video.hard_sync_frames > 3)
+      g_settings.video.hard_sync_frames = 3;
+
    CONFIG_GET_BOOL(video.threaded, "video_threaded");
    CONFIG_GET_BOOL(video.smooth, "video_smooth");
    CONFIG_GET_BOOL(video.force_aspect, "video_force_aspect");
@@ -954,6 +960,7 @@ bool config_save_file(const char *path)
    config_set_bool(conf, "video_smooth", g_settings.video.smooth);
    config_set_bool(conf, "video_vsync", g_settings.video.vsync);
    config_set_bool(conf, "video_hard_sync", g_settings.video.hard_sync);
+   config_set_int(conf, "video_hard_sync_frames", g_settings.video.hard_sync_frames);
    config_set_int(conf, "aspect_ratio_index", g_settings.video.aspect_ratio_idx);
    config_set_string(conf, "audio_device", g_settings.audio.device);
    config_set_bool(conf, "audio_rate_control", g_settings.audio.rate_control);
