@@ -276,7 +276,6 @@ void rgui_free(rgui_handle_t *rgui);
 
 #ifndef HAVE_RMENU_XUI
 #if defined(HAVE_RGUI) || defined(HAVE_RMENU)
-uint64_t rgui_input(void);
 int rgui_input_postprocess(void *data, uint64_t old_state);
 #endif
 #endif

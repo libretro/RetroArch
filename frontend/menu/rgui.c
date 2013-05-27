@@ -2766,44 +2766,6 @@ int rgui_iterate(rgui_handle_t *rgui)
    return ret;
 }
 
-static const struct retro_keybind _menu_nav_binds[] = {
-#if defined(HW_RVL)
-   { 0, 0, NULL, 0, GX_GC_UP | GX_GC_LSTICK_UP | GX_GC_RSTICK_UP | GX_CLASSIC_UP | GX_CLASSIC_LSTICK_UP | GX_CLASSIC_RSTICK_UP | GX_WIIMOTE_UP | GX_NUNCHUK_UP, 0 },
-   { 0, 0, NULL, 0, GX_GC_DOWN | GX_GC_LSTICK_DOWN | GX_GC_RSTICK_DOWN | GX_CLASSIC_DOWN | GX_CLASSIC_LSTICK_DOWN | GX_CLASSIC_RSTICK_DOWN | GX_WIIMOTE_DOWN | GX_NUNCHUK_DOWN, 0 },
-   { 0, 0, NULL, 0, GX_GC_LEFT | GX_GC_LSTICK_LEFT | GX_GC_RSTICK_LEFT | GX_CLASSIC_LEFT | GX_CLASSIC_LSTICK_LEFT | GX_CLASSIC_RSTICK_LEFT | GX_WIIMOTE_LEFT | GX_NUNCHUK_LEFT, 0 },
-   { 0, 0, NULL, 0, GX_GC_RIGHT | GX_GC_LSTICK_RIGHT | GX_GC_RSTICK_RIGHT | GX_CLASSIC_RIGHT | GX_CLASSIC_LSTICK_RIGHT | GX_CLASSIC_RSTICK_RIGHT | GX_WIIMOTE_RIGHT | GX_NUNCHUK_RIGHT, 0 },
-   { 0, 0, NULL, 0, GX_GC_A | GX_CLASSIC_A | GX_WIIMOTE_A | GX_WIIMOTE_2, 0 },
-   { 0, 0, NULL, 0, GX_GC_B | GX_CLASSIC_B | GX_WIIMOTE_B | GX_WIIMOTE_1, 0 },
-   { 0, 0, NULL, 0, GX_GC_START | GX_CLASSIC_PLUS | GX_WIIMOTE_PLUS, 0 },
-   { 0, 0, NULL, 0, GX_GC_Z_TRIGGER | GX_CLASSIC_MINUS | GX_WIIMOTE_MINUS, 0 },
-   { 0, 0, NULL, 0, GX_WIIMOTE_HOME | GX_CLASSIC_HOME, 0 },
-#elif defined(HW_DOL)
-   { 0, 0, NULL, 0, GX_GC_UP | GX_GC_LSTICK_UP | GX_GC_RSTICK_UP, 0 },
-   { 0, 0, NULL, 0, GX_GC_DOWN | GX_GC_LSTICK_DOWN | GX_GC_RSTICK_DOWN, 0 },
-   { 0, 0, NULL, 0, GX_GC_LEFT | GX_GC_LSTICK_LEFT | GX_GC_RSTICK_LEFT, 0 },
-   { 0, 0, NULL, 0, GX_GC_RIGHT | GX_GC_LSTICK_RIGHT | GX_GC_RSTICK_RIGHT, 0 },
-   { 0, 0, NULL, 0, GX_GC_A, 0 },
-   { 0, 0, NULL, 0, GX_GC_B, 0 },
-   { 0, 0, NULL, 0, GX_GC_START, 0 },
-   { 0, 0, NULL, 0, GX_GC_Z_TRIGGER, 0 },
-   { 0, 0, NULL, 0, GX_WIIMOTE_HOME, 0 },
-#else
-   { 0, 0, NULL, (enum retro_key)0, (1ULL << RETRO_DEVICE_ID_JOYPAD_UP), 0 },
-   { 0, 0, NULL, (enum retro_key)0, (1ULL << RETRO_DEVICE_ID_JOYPAD_DOWN), 0 },
-   { 0, 0, NULL, (enum retro_key)0, (1ULL << RETRO_DEVICE_ID_JOYPAD_LEFT), 0 },
-   { 0, 0, NULL, (enum retro_key)0, (1ULL << RETRO_DEVICE_ID_JOYPAD_RIGHT), 0 },
-   { 0, 0, NULL, (enum retro_key)0, (1ULL << RETRO_DEVICE_ID_JOYPAD_A), 0 },
-   { 0, 0, NULL, (enum retro_key)0, (1ULL << RETRO_DEVICE_ID_JOYPAD_B), 0 },
-   { 0, 0, NULL, (enum retro_key)0, (1ULL << RETRO_DEVICE_ID_JOYPAD_START), 0 },
-   { 0, 0, NULL, (enum retro_key)0, (1ULL << RETRO_DEVICE_ID_JOYPAD_SELECT), 0 },
-   { 0, 0, NULL, (enum retro_key)0, (1ULL << RARCH_MENU_TOGGLE), 0 },
-#endif
-};
-
-static const struct retro_keybind *menu_nav_binds[] = {
-   _menu_nav_binds
-};
-
 int rgui_input_postprocess(void *data, uint64_t old_state)
 {
    (void)data;
@@ -2834,62 +2796,4 @@ int rgui_input_postprocess(void *data, uint64_t old_state)
    }
 
    return ret;
-}
-
-uint64_t rgui_input(void)
-{
-   uint64_t input_state = 0;
-
-   // FIXME: Very ugly. Should do something more uniform.
-#if defined(RARCH_CONSOLE) || defined(ANDROID)
-   for (unsigned i = 0; i < DEVICE_NAV_LAST; i++)
-      input_state |= driver.input->input_state(driver.input_data, menu_nav_binds, 0,
-            RETRO_DEVICE_JOYPAD, 0, i) ? (1ULL << i) : 0;
-
-   input_state |= driver.input->key_pressed(driver.input_data, RARCH_MENU_TOGGLE) ? (1ULL << DEVICE_NAV_MENU) : 0;
-
-#ifdef HAVE_OVERLAY
-   for (unsigned i = 0; i < DEVICE_NAV_LAST; i++)
-      input_state |= driver.overlay_state & menu_nav_binds[0][i].joykey ? (1ULL << i) : 0;
-#endif
-#else
-   static const int maps[] = {
-      RETRO_DEVICE_ID_JOYPAD_UP,     DEVICE_NAV_UP,
-      RETRO_DEVICE_ID_JOYPAD_DOWN,   DEVICE_NAV_DOWN,
-      RETRO_DEVICE_ID_JOYPAD_LEFT,   DEVICE_NAV_LEFT,
-      RETRO_DEVICE_ID_JOYPAD_RIGHT,  DEVICE_NAV_RIGHT,
-      RETRO_DEVICE_ID_JOYPAD_A,      DEVICE_NAV_A,
-      RETRO_DEVICE_ID_JOYPAD_B,      DEVICE_NAV_B,
-      RETRO_DEVICE_ID_JOYPAD_START,  DEVICE_NAV_START,
-      RETRO_DEVICE_ID_JOYPAD_SELECT, DEVICE_NAV_SELECT,
-   };
-
-   static const struct retro_keybind *binds[] = { g_settings.input.binds[0] };
-
-   for (unsigned i = 0; i < ARRAY_SIZE(maps); i += 2)
-   {
-      input_state |= input_input_state_func(binds,
-            0, RETRO_DEVICE_JOYPAD, 0, maps[i + 0]) ? (1ULL << maps[i + 1]) : 0;
-#ifdef HAVE_OVERLAY
-      input_state |= (driver.overlay_state & (UINT64_C(1) << maps[i + 0])) ? (1ULL << maps[i + 1]) : 0;
-#endif
-   }
-
-   input_state |= input_key_pressed_func(RARCH_MENU_TOGGLE) ? (1ULL << DEVICE_NAV_MENU) : 0;
-#endif
-
-
-   rgui->trigger_state = input_state & ~rgui->old_input_state;
-
-   // FIXME: Allowing a held-down scroll is desired for left/right in filebrowser,
-   // but seems weird to allow in setting options.
-   // Logic here should take this into account.
-   rgui->do_held = (input_state & (
-         (1ULL << DEVICE_NAV_UP) |
-         (1ULL << DEVICE_NAV_DOWN) |
-         (1ULL << DEVICE_NAV_LEFT) | 
-         (1ULL << DEVICE_NAV_RIGHT))) &&
-      !(input_state & (1ULL << DEVICE_NAV_MENU));
-
-   return input_state;
 }
