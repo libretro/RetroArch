@@ -3,6 +3,7 @@ RETROARCH PS3 - 0.9.9
 ------------------------------------------------------------------------------
 RetroConsole Level: 2
 Author: Themaister, Squarepusher/Twin Aphex
+Supports libretro GL: No
 ------------------------------------------------------------------------------
 
 ------------------------------------------------------------------------------
@@ -12,14 +13,14 @@ HOW TO INSTALL THIS
 ------------------------------------------------------------------------------
 ON DEBUG (DEX) PS3
 ------------------------------------------------------------------------------
-Put the PKG file 'retroarch-ps3-v0.9.8.3-dex.pkg' on your 
+Put the PKG file 'retroarch-ps3-v0.9.9-dex.pkg' on your 
 USB stick, put it in your PS3. Go to the PS3 XMB - go to the 
 Game tab - Select 'Install Packages', and install the PKG file.
 
 ------------------------------------------------------------------------------
 ON CFW P3
 ------------------------------------------------------------------------------
-Put the PKG file 'retroarch-ps3-v0.9.8.3-cfw.pkg' on your 
+Put the PKG file 'retroarch-ps3-v0.9.9-cfw.pkg' on your 
 USB stick. Put it in your CFW PS3. Go to the PS3 XMB - go to the 
 Game tab - select 'Install Packages', and install the PKG file.
 
@@ -34,18 +35,11 @@ On first startup, RetroArch will select one of the dozen or
 so emulator/game cores. The name of the core currently loaded will 
 be shown at the top side of the screen.
 
-You can now select a ROM that this core supports and load it in 
-the Filebrowser.
+You can now select a data file (ie. a game executable and/or a ROM) that
+this core supports and load it in the Filebrowser.
 
-To select a different core in the menu - press Select to go to the 
-Settings screen. From here, go to the 'Retro tab', and select 
-'Default emulator core'. Press X to go to a filebrowser where you 
-can select a different core. Press X to confirm, then exit 
-RetroArch. Start up again to boot up to the new emulator core.
-
-To change to a different core ingame - press R3 to bring up 
-the 'Quick Menu'. Select 'Change libretro core'. Press X to 
-go to a filebrowser where you can select a different core.
+To select a different core - go to 'Core' in the Main Menu. 
+Select a core and then press X to switch to the emulator/game core.
 
 ------------------------------------------------------------------------------
 INGAME CONTROLS
@@ -62,7 +56,7 @@ RStick Left + R2               - Decrease save state slot
 Rtick Right + R2               - Increase save state slot
 RStick Up + R2                 - Load selected save state slot
 RStick Down + R2               - Save selected save state slot
-L3 + R3                        - Go back to 'Menu'/'Quick Menu'
+L3 + R3                        - Go back to 'Menu'
 
 ------------------------------------------------------------------------------
 WHAT IS RETROARCH?
@@ -160,20 +154,20 @@ will run better on PS3 (some games would not reach fullspeed without these optim
 ------------------------------------------------------------------------------
 WHAT EXTENSIONS ARE SUPPORTED BY EACH CORE
 ------------------------------------------------------------------------------
-- Prboom               WAD|wad
-- SNES9x Next          smc|fig|sfc|gd3|gd7|dx2|bsx|swc|zip|SMC|FIG|SFC|BSX|GD3|
-                       GD7|DX2|SWC
-- Genesis Plus GX      md|smd|bin|gen|zip|MD|SMD|bin|GEN|ZIP|sms|SMS|gg|GG|sg|SG|
-                       cue|CUE
-- VBA Next             GBA|gba
-- FCEUmm               nes|NES|unif|UNIF
-- NEStopia             nes|NES|fds|FDS
-- Gambatte             gb|gbc|dmg|zip|GB|GBC|DMG|ZIP
-- Final Burn Alpha     zip|ZIP
-- Mednafen PCE         pce|PCE|cue|CUE
-- Mednafen Wonderswan  ws|WS|wsc|WSC
-- Mednafen NGP         ngp|NGP
-- Mednafen VB          vb|VB
+- Prboom               wad
+- Tyrquake             pak
+- SNES9x Next          smc|fig|sfc|gd3|gd7|dx2|bsx|swc
+- Genesis Plus GX      md|smd|bin|gen|bin|sms|gg|sg|cue
+- NXEngine/Cave Story  exe
+- VBA Next             gba
+- FCEUmm               nes|unif
+- NEStopia             nes|fds
+- Gambatte             gb|gbc|dmg
+- Final Burn Alpha     zip
+- Mednafen PCE         pce|cue
+- Mednafen Wonderswan  ws|wsc
+- Mednafen NGP         ngp
+- Mednafen VB          vb
 
 ------------------------------------------------------------------------------
 ZIP SUPPORT

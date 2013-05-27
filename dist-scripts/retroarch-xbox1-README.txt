@@ -16,25 +16,15 @@ directory.
 ------------------------------------------------------------------------------
 HOW TO USE THIS
 ------------------------------------------------------------------------------
-On first startup, RetroArch will select one of the dozen or so 
-emulator/game cores. The name of the core currently loaded will be 
-shown at the bottom side of the screen.
+On first startup, RetroArch will select one of the dozen or 
+so emulator/game cores. The name of the core currently loaded will 
+be shown at the top side of the screen.
 
-You can now select a ROM that this core supports and load it in the Filebrowser.
+You can now select a data file (ie. a game executable and/or a ROM) that
+this core supports and load it in the Filebrowser.
 
-There are two ways of selecting a different core:
-
-1) 'Change Libretro core' in the Main Menu
-
-Go to the Settings menu by pressing [Select], go forwards two pages by pressing
-he [R Trigger] until you come across 'Default libretro core'. Press A to go to 
-a filebrowser where you can select a different core. Press [A button] to switch 
-to the  emulator/game core.
-
-2) From the Ingame Menu
-
-While playing a game, press the [Right Thumb] button. Select 'Change libretro core'
-with the [A button] and select a different core.
+To select a different core - go to 'Core' in the Main Menu. 
+Select a core and then press A to switch to the emulator/game core.
 
 ------------------------------------------------------------------------------
 INGAME CONTROLS
@@ -51,7 +41,7 @@ RStick Left + RT                 - Decrease save state slot
 Rtick Right + RT                 - Increase save state slot
 RStick Up + RT                   - Load selected save state slot
 RStick Down + RT                 - Save selected save state slot
-Right Thumb + Left Thumb         - Go back to 'Menu'/'Quick Menu'
+Right Thumb + Left Thumb         - Go back to 'Menu'
 
 ------------------------------------------------------------------------------
 FILE BROWSER EXTRA CONTROLS
@@ -149,21 +139,20 @@ size, such as Real Bout Fatal Fury 1 and King of Fighters '96.
 ------------------------------------------------------------------------------
 WHAT EXTENSIONS ARE SUPPORTED BY EACH CORE
 ------------------------------------------------------------------------------
-- Prboom               WAD|wad
-- SNES9x Next          smc|fig|sfc|gd3|gd7|dx2|bsx|swc|zip|SMC|FIG|SFC|BSX|GD3|
-                       GD7|DX2|SWC
-- Genesis Plus GX      md|smd|bin|gen|zip|MD|SMD|bin|GEN|ZIP|sms|SMS|gg|GG|sg|SG|
-                       cue|CUE
-- VBA Next             GBA|gba
-- FCEUmm               nes|NES|unif|UNIF
-- NEStopia             nes|NES|fds|FDS
-- Gambatte             gb|gbc|dmg|zip|GB|GBC|DMG|ZIP
-- Final Burn Alpha     zip|ZIP
-- Mednafen PCE         pce|PCE|cue|CUE
-- Mednafen Wonderswan  ws|WS|wsc|WSC
-- Mednafen PCE         pce|PCE|cue|CUE
-- Mednafen Wonderswan  ws|WS|wsc|WSC
-- Mednafen NGP         ngp|NGP
+- Prboom               wad
+- Tyrquake             pak
+- SNES9x Next          smc|fig|sfc|gd3|gd7|dx2|bsx|swc
+- Genesis Plus GX      md|smd|bin|gen|bin|sms|gg|sg|cue
+- NXEngine/Cave Story  exe
+- VBA Next             gba
+- FCEUmm               nes|unif
+- NEStopia             nes|fds
+- Gambatte             gb|gbc|dmg
+- Final Burn Alpha     zip
+- Mednafen PCE         pce|cue
+- Mednafen Wonderswan  ws|wsc
+- Mednafen NGP         ngp
+- Mednafen VB          vb
 
 ------------------------------------------------------------------------------
 ZIP SUPPORT

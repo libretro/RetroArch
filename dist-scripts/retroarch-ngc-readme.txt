@@ -51,9 +51,7 @@ INGAME CONTROLS
 During ingame operation you can do some extra actions:
 
 
-Gamecube pad Z                                 - Go to Settings
 Gamecube pad L + R + LStick Up + Rstick Up     - Go back to 'Menu'
-Gamecube pad L + R + LStick Down + Rstick Down - Quit RetroArch
 
 Right Thumb Stick - Down       - Fast-forwards the game
 Right Thumb Stick - Up         - Rewinds the game in real-time 
@@ -150,20 +148,19 @@ RetroConsole Level 2 emulator port).
 ------------------------------------------------------------------------------
 WHAT EXTENSIONS ARE SUPPORTED BY EACH CORE
 ------------------------------------------------------------------------------
-- Prboom               WAD|wad
-- SNES9x Next          smc|fig|sfc|gd3|gd7|dx2|bsx|swc|zip|SMC|FIG|SFC|BSX|GD3|
-                       GD7|DX2|SWC
-- Genesis Plus GX      md|smd|bin|gen|zip|MD|SMD|bin|GEN|ZIP|sms|SMS|gg|GG|sg|SG|
-                       cue|CUE
-- VBA Next             GBA|gba
-- FCEUmm               nes|NES|unif|UNIF
-- NEStopia             nes|NES|fds|FDS
-- Gambatte             gb|gbc|dmg|zip|GB|GBC|DMG|ZIP
-- Final Burn Alpha     zip|ZIP
-- Mednafen PCE         pce|PCE|cue|CUE
-- Mednafen Wonderswan  ws|WS|wsc|WSC
-- Mednafen NGP         ngp|NGP
-- Mednafen VB          vb|VB
+- Prboom               wad
+- Tyrquake             pak
+- SNES9x Next          smc|fig|sfc|gd3|gd7|dx2|bsx|swc
+- Genesis Plus GX      md|smd|bin|gen|bin|sms|gg|sg|cue
+- VBA Next             gba
+- FCEUmm               nes|unif
+- NEStopia             nes|fds
+- Gambatte             gb|gbc|dmg
+- Final Burn Alpha     zip
+- Mednafen PCE         pce|cue
+- Mednafen Wonderswan  ws|wsc
+- Mednafen NGP         ngp
+- Mednafen VB          vb
 
 ------------------------------------------------------------------------------
 ZIP SUPPORT (IN GENERAL)
