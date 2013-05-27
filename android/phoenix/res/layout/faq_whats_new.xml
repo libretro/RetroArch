@@ -11,8 +11,6 @@
         android:layout_margin="40px"
         android:text="
         r13 (May 26, 2013)\n\n
-        * (iOS) Add iOS port of RetroArch.\n
-        * (Blackberry) Add Blackberry port of RetroArch.\n
         * Threaded video option. Mainly for Android users but works for OpenGL driver in general.\n
         * (Android) Add iControlPad support.
         * (Android) Add the following gamepads / etc to autodetection list:\n
@@ -27,12 +25,10 @@
         - Thrustmaster T Mini Wireless\n
         * (Android) Add back key behavior - can either 'toggle' RGUI' on/off or exit the app.\n
         * (RGUI) RGUI now works on PC, Android, iOS and Blackberry - and is no longer Wii-exclusive.\n
-        * (RGUI) RGUI is an ingame menu that can be toggled from within the game. It looks and functions a bit like MAME's
-        OSD system. It is possible now to configure most of RetroArch's settings from this builtin menu instead of having to
-        exit the game and go to an 'external' settings menu.\n
+        * (RGUI) RGUI is an ingame menu that can be toggled from within the game. It looks and functions a bit like MAME's OSD system. It is possible now to configure most of RetroArch's settings from this builtin menu instead of having to exit the game and go to an 'external' settings menu.\n
         * (RGUI) Added a 'Game History' list.\n
         * (RGUI) Added sophisticated shader stacking - for Cg shaders.\n
-        * (RGUI/Libretro) Add disk image swapping - supported by Mednafen PSX and PCSX ReARMed
+        * (RGUI/Libretro) Add disk image swapping - supported by Mednafen PSX and PCSX ReARMed\n
         * (Libretro) Add libretro GL capability to libretro API. Supported currently by PC, Android,
         iOS, Blackberry, Raspberry Pi, and Pandora. Targets either GL 2.0 or GL ES 2.0. Targeting
         GL ES 2.0 is encouraged for maximum portability to mobile platforms.\n
@@ -40,65 +36,36 @@
         core to the frontend.\n
         * (Libretro) Add SET_SUPPORT_NO_GAME to API.\n
         * (RGUI) Change menu layout options.\n
-        * (PS3) Optimize PS3 video driver extensively.\n
-        * (PS3) Totally remove the 'old' fixed 2-pass shader system and replace it with a new, forward-compatible
-        with PC 8-pass shader stacking system. RGUI/RMenu makes CGP files dynamically as you set new shader stacks.\n
-        * (Wii) Optimize Wii video driver by using inlined macros for certain fixed-function state code.\n
-        * (360/Xbox 1) Optimize 360/Xbox 1 video drivers by using inlined command buffer macros\n
-        * (360) Removed shader system for this release - will be re-added in a future 0.9.9 point release. The main problem is that on
-        Xbox 360, all our render targets need to fit inside 10MB of EDRAM - which is just pathetic if you want to have
-        any FBO scaling options similar to what can be done on PS3. I'll be looking at either tiled rendering or just
-        implementing the same 'hack' I did before (where I forcibly set the maximum source framebuffer resolution at 
-        512x512 for two-pass shaders and hoped nobody would notice so I could stay within the confines of the 10MB of 
-        EDRAM for render targets). For now, the PS3 port is way superior than the 360 port in the graphics stakes due to
-        this 10MB EDRAM limitation for render targets.\n
         * (Menus) Standardize RGUI, RMenu and RMenu XUI to look and work the same.\n
         * (Overlays/RGUI) Overlays can now be scaled and their opacity changed from RGUI).\n
         * (RMenu/RGUI) Add text scrolling when a text string is too large to fit onscreen.\n
-        * (RMenu XUI) Have all menu screens now use the same basic XUI template. Cuts down on a lot of code 
-        maintenance at the expense of language customization by end-users. A solution will be looked at later.\n
-        * (Xbox 1) Slim down on menu texture - leaves us with more free RAM to play with - only tested on
-        480p - somebody with 720p/1080i resolution support should contact me - even though I'm afraid
-        making the menu texture any bigger is going to be a waste of RAM anyways. Upsides of this are
-        obvious - far faster switching between menu and game and consumes way less RAM which means games
-        like Street Fighter Alpha 3 and Vampire Savior now fit into RAM without pesky and slow file I/O-based VM.\n
-        * (Wii) Add additional VI resolutions.\n
         * (ZIP support) Switch from builtin zlib to miniz - less codebloat.\n
-* [SNES9x Next] No longer disable high resolution for SA-1 games for Xbox 1 /
-Wii / Gamecube\n
-* [SNES9x Next] Seiken Densetsu 3/Romancing Saga 3 no longer downsample to
-low-resolution for high-resolution modes on Xbox 1/Gamecube/Wii\n
-* [SNES9x Next] Add Core Option - 'SuperFX Overclock'.\n
-* [SNES9x Next] [Gamecube/Wii] Use sthbrx/stwbrx for READ_WORD/WRITE_WORD macros - speedup.\n
-* [Gambatte] Fixed serious input reporting bug on libretro side that could
-drastically slow down gameplay speed - found an edge case in a Japanese
-Pokemon Blue version that triggered this.\n
-* [Gambatte] Make colorization optional and not enforced through use of a 
-Core Option.\n
-* [FCEUmm] Should load UNIF ROM format now.\n
-* [NEStopia] Fixes Famicom Disk System support.\n
-* [NEStopia] L/R now inserts coins on Vs. System games.\n
-* [NEStopia] Add Core Option 'Sprite Limit'.\n
-* [Mednafen] Add several Core Options for Mednafen PSX, Mednafen PCE Fast,
-Mednafen Neo Geo Pocket Color, etc.\n
-* [Mednafen PSX] Add disk swap mechanisms - exposed through RGUI\n
-* [PCSX ReARMed] Latest update to r19 from notaz (main author)\n
-* [PCSX ReARMed] Totally rewritten ARM code by notaz in order to support outdated version of Apple's GAS (for iOS support).\n
-* [PCSX ReARMed] Add disk swap mechanisms - exposed through RGUI\n
-* [PCSX ReARMed] Add m3u Mednafen-style cuesheet support\n
-* [PCSX ReARMed] Add core option 'Frameskip' - users with bad performance on Android should try out if setting this higher than 0 fixes their problems.\n
-* [PCSX ReARMed] Add core options 'NEON enhanced resolution' and 'NEON enhanced resolution speedhack' - this is for systems with ARM NEON CPUs. Note that this will easily triple or even quadruple CPU requirements. If you have an underpowered CPU, you might want to try this out in combination with the 'Frameskip' option (setting it higher than 0) to make things somewhat playable.\n
-* [Genesis Plus GX] Latest compatibility updates from ekeeke (main author)\n
-* [Genesis Plus GX] Add Core Options for blargg NTSC, Overscan and Game Gear Extend Screen\n
-* [Final Burn Alpha] Add several Core Options for going tO Service Mode, Resetting game, etc.\n
-* (LIBRETRO) Added Tyrquake\n
-* (LIBRETRO) Added ModelViewer and SceneWalker (for platforms which support
-libretro GL).\n
-* (LIBRETRO) NXEngine / Cave Story is now completely playable on consoles\n
-(Wii/PlayStation3/Xbox 1/Xbox 360) thanks to many code alterations. Performance
-is also much improved on the platforms which could already play them, such as
-Android and PC.\n
-* (Shaders) New shaders- mdapt, new xBR versions, new Harlequin Gameboy/LCD shaders, etc.\n
+        * [SNES9x Next] No longer disable high resolution for SA-1 games for Xbox 1 / Wii / Gamecube\n
+        * [SNES9x Next] Seiken Densetsu 3/Romancing Saga 3 no longer downsample to low-resolution for high-resolution modes on Xbox 1/Gamecube/Wii\n
+        * [SNES9x Next] Add Core Option - 'SuperFX Overclock'.\n
+        * [SNES9x Next] [Gamecube/Wii] Use sthbrx/stwbrx for READ_WORD/WRITE_WORD macros - speedup.\n
+        * [Gambatte] Fixed serious input reporting bug on libretro side that could drastically slow down gameplay speed - found an edge case in a Japanese Pokemon Blue version that triggered this.\n
+        * [Gambatte] Make colorization optional and not enforced through use of a Core Option.\n
+        * [FCEUmm] Should load UNIF ROM format now.\n
+        * [NEStopia] Fixes Famicom Disk System support.\n
+        * [NEStopia] L/R now inserts coins on Vs. System games.\n
+        * [NEStopia] Add Core Option 'Sprite Limit'.\n
+        * [Mednafen] Add several Core Options for Mednafen PSX, Mednafen PCE Fast, Mednafen Neo Geo Pocket Color, etc.\n
+        * [Mednafen PSX] Add disk swap mechanisms - exposed through RGUI\n
+        * [PCSX ReARMed] Latest update to r19 from notaz (main author)\n
+        * [PCSX ReARMed] Totally rewritten ARM code by notaz in order to support outdated version of Apple's GAS (for iOS support).\n
+        * [PCSX ReARMed] Add disk swap mechanisms - exposed through RGUI\n
+        * [PCSX ReARMed] Add m3u Mednafen-style cuesheet support\n
+        * [PCSX ReARMed] Add core option 'Frameskip' - users with bad performance on Android should try out if setting this higher than 0 fixes their problems.\n
+        * [PCSX ReARMed] Add core options 'NEON enhanced resolution' and 'NEON enhanced resolution speedhack' - this is for systems with ARM NEON CPUs. Note that this will easily triple or even quadruple CPU requirements. If you have an underpowered CPU, you might want to try this out in combination with the 'Frameskip' option (setting it higher than 0) to make things somewhat playable.\n
+        * [Genesis Plus GX] Latest compatibility updates from ekeeke (main author)\n
+        * [Genesis Plus GX] Add Core Options for blargg NTSC, Overscan and Game Gear Extend Screen\n
+        * [Final Burn Alpha] Add several Core Options for going tO Service Mode, Resetting game, etc.\n
+        * (LIBRETRO) Added Tyrquake.\n
+        * (LIBRETRO) Added ModelViewer and SceneWalker (for platforms which support libretro GL).\n
+        * (LIBRETRO) NXEngine / Cave Story is now completely playable on consoles\n
+        (Wii/PlayStation3/Xbox 1/Xbox 360) thanks to many code alterations. Performance is also much improved on the platforms which could already play them, such as Android and PC.\n
+        * (Shaders) New shaders- mdapt, new xBR versions, new Harlequin Gameboy/LCD shaders, etc.\n
 \n
         r12 (Feb 16, 2013)\n\n
 * [NEStopia] Famicom Disk System support. For Android users - put disksys.rom
