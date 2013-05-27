@@ -182,6 +182,20 @@ static void event_set_state_slot(void* userdata)
    g_extern.state_slot = (uint32_t)userdata;
 }
 
+static void event_show_rgui(void* userdata)
+{
+   if (g_extern.lifecycle_mode_state & (1ULL << MODE_MENU))
+   {
+      g_extern.lifecycle_mode_state &= ~(1ULL << MODE_MENU);
+      g_extern.lifecycle_mode_state |= (1ULL << MODE_GAME);
+   }
+   else
+   {
+      g_extern.lifecycle_mode_state &= ~(1ULL << MODE_GAME);
+      g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU);
+   }
+}
+
 static void event_quit(void* userdata)
 {
    g_extern.system.shutdown = true;
@@ -422,6 +436,14 @@ static void event_reload_config(void* userdata)
 {
    if (_isRunning)
       ios_frontend_post_event(event_set_state_slot, (void*)((UISegmentedControl*)sender).selectedSegmentIndex);
+}
+
+- (IBAction)showRGUI:(id)sender
+{
+   if (_isRunning)
+      ios_frontend_post_event(event_show_rgui, 0);
+   
+   [self closePauseMenu:sender];
 }
 
 - (IBAction)closePauseMenu:(id)sender
