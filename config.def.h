@@ -311,7 +311,7 @@ static const bool font_enable = true;
 // If your monitor does not run at 60Hz, or something close to it, disable VSync,
 // and leave this at its default.
 #if defined(__QNX__)
-static const float refresh rate = 59.86;
+static const float refresh_rate = 59.86;
 #elif defined(RARCH_CONSOLE)
 static const float refresh_rate = 59.94; 
 #else
