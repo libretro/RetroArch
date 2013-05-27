@@ -28,9 +28,6 @@ static const uint32_t sectionSizes[2] = {1, 2};
    if (!moduleList)
    {
       char pattern[PATH_MAX];
-      /* FIXME - dylib files are now prefixed with _ios.dylib - so you should 
-       * remove _ios from the pattern string and then check for matching .info
-       * files */
       snprintf(pattern, PATH_MAX, "%s/modules/*.dylib", [[NSBundle mainBundle].bundlePath UTF8String]);
 
       glob_t files = {0};
@@ -42,10 +39,11 @@ static const uint32_t sectionSizes[2] = {1, 2};
       {
          RAModuleInfo* newInfo = [RAModuleInfo new];
          newInfo.path = [NSString stringWithUTF8String:files.gl_pathv[i]];
+         
+         NSString* infoPath = [newInfo.path stringByReplacingOccurrencesOfString:@"_ios.dylib" withString:@".dylib"];
+         infoPath = [infoPath stringByReplacingOccurrencesOfString:@".dylib" withString:@".info"];
 
-         strcpy(pattern, files.gl_pathv[i]);
-         strcpy(strrchr(pattern, '.'), ".info");
-         newInfo.data = config_file_new(pattern);
+         newInfo.data = config_file_new([infoPath UTF8String]);
 
          char* dispname = 0;
          char* extensions = 0;
