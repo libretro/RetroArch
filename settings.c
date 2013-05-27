@@ -380,9 +380,9 @@ static config_file_t *open_default_config_file(void)
    // Try this as a last chance ...
    if (!conf)
    {
-      strlcpy(conf_path, "/etc/retroarch.cfg", sizeof(conf_path));
+      snprintf(conf_path, sizeof(conf_path), "%s/retroarch.cfg", CONFIG_DIR);
+      RARCH_LOG("Looking for config in: \"%s\".\n", conf_path);
       conf = config_file_new(conf_path);
-      RARCH_LOG("Looking for config in: \"/etc/retroarch.cfg\".\n");
    }
 
    if (conf)

@@ -6,6 +6,7 @@ cat /dev/null > "$MAKEFILE_DEFINES" > "$CONFIG_DEFINES"
 #cat /dev/null > "${MAKEFILE_DEFINES:=.MAKEFILE_DEFINES}" > "${CONFIG_DEFINES=.CONFIG_DEFINES}"
 
 [ "$PREFIX" ] || PREFIX="/usr/local"
+[ "$CONFIG_DIR" ] || CONFIG_DIR="/etc"
 
 add_define_header()
 { echo "$1=$2" >> "$CONFIG_DEFINES";}
@@ -235,6 +236,7 @@ create_config_make()
 		echo "PACKAGE_NAME = $PACKAGE_NAME"
 		echo "PACKAGE_VERSION = $PACKAGE_VERSION"
 		echo "PREFIX = $PREFIX"
+		echo "CONFIG_DIR = $CONFIG_DIR"
 
 		while [ "$1" ]; do
 			case $(eval echo \$HAVE_$1) in

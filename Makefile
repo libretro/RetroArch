@@ -58,7 +58,7 @@ ifeq ($(findstring Haiku,$(OS)),)
 	LIBS = -lm
 endif
 
-DEFINES = -DHAVE_CONFIG_H -DHAVE_SCREENSHOTS
+DEFINES = -DHAVE_CONFIG_H -DHAVE_SCREENSHOTS -DCONFIG_DIR='"$(CONFIG_DIR)"'
 
 ifeq ($(REENTRANT_TEST), 1)
    DEFINES += -Dmain=retroarch_main
@@ -389,11 +389,11 @@ tools/input_common_joyconfig.o: input/input_common.c
 
 install: $(TARGET)
 	mkdir -p $(DESTDIR)$(PREFIX)/bin 2>/dev/null || /bin/true
-	mkdir -p $(DESTDIR)/etc 2>/dev/null || /bin/true
+	mkdir -p $(DESTDIR)$(CONFIG_DIR)/etc 2>/dev/null || /bin/true
 	mkdir -p $(DESTDIR)$(PREFIX)/share/man/man1 2>/dev/null || /bin/true
 	mkdir -p $(DESTDIR)$(PREFIX)/share/pixmaps 2>/dev/null || /bin/true
 	install -m755 $(TARGET) $(DESTDIR)$(PREFIX)/bin 
-	install -m644 retroarch.cfg $(DESTDIR)/etc/retroarch.cfg
+	install -m644 retroarch.cfg $(DESTDIR)$(CONFIG_DIR)/etc/retroarch.cfg
 	install -m644 docs/retroarch.1 $(DESTDIR)$(MAN_DIR)
 	install -m644 docs/retroarch-joyconfig.1 $(DESTDIR)$(MAN_DIR)
 	install -m755 retroarch-zip $(DESTDIR)$(PREFIX)/bin
@@ -404,7 +404,7 @@ uninstall:
 	rm -f $(DESTDIR)$(PREFIX)/bin/retroarch-joyconfig
 	rm -f $(DESTDIR)$(PREFIX)/bin/retrolaunch
 	rm -f $(DESTDIR)$(PREFIX)/bin/retroarch-zip
-	rm -f $(DESTDIR)/etc/retroarch.cfg
+	rm -f $(DESTDIR)$(CONFIG_DIR)/etc/retroarch.cfg
 	rm -f $(DESTDIR)$(PREFIX)/share/man/man1/retroarch.1
 	rm -f $(DESTDIR)$(PREFIX)/share/man/man1/retroarch-joyconfig.1
 	rm -f $(DESTDIR)$(PREFIX)/share/pixmaps/retroarch.png
