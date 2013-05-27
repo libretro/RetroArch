@@ -12,7 +12,7 @@
         android:text="
         r13 (May 26, 2013)\n\n
         * Threaded video option. Mainly for Android users but works for OpenGL driver in general.\n
-        * (Android) Add iControlPad support.
+        * (Android) Add iControlPad support.\n
         * (Android) Add the following gamepads / etc to autodetection list:\n
         - Tommo NeoGeoX Arcade Stick\n
         - Xperia Play (fixes ANR issues after 30 seconds)\n
