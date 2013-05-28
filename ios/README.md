@@ -12,7 +12,7 @@ Once you have all of this stuff, getting RetroArch on a non-jailbroken device is
 
 RetroArch needs to know a couple things when building the app. You can configure these under `ios/script/build.config` inside the RetroArch repo. Once you initially clone down the repo, go into this file and make the changes.
 
-### CODE_SIGN_IDENTITY
+### CODE\_SIGN\_IDENTITY
 
 This is the identity that will be used when signing the app after it is built. Under normal circumstance, you shouldn't have to change this. But if you have multiple Apple dev accounts on your computer, you will have to be more specific.
 
@@ -46,13 +46,21 @@ your-repos-dir/libretro-super
 your-repos-dir/RetroArch
 ```
 
+Run the libretro-super fetch script to first get the emulator core repos.
+
+```sh
+./libretro-fetch.sh
+```
+
 Run the libretro-super iOS build script to build the emulator cores.
 
 ```sh
 ./libretro-build-ios.sh
 ```
 
-This will clone down their repos, build them, and copy them into the appropriate directory for RetroArch iOS.
+This will clone down their repos, build them into the `libretro-super/dist/ios` directory. Once this is complete, you need to copy them into the appropriate directory for RetroArch iOS. The path is:
+
+`RetroArch/ios/modules`
 
 ### Build RetroArch iOS app
 
