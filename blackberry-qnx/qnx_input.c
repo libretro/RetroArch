@@ -128,21 +128,15 @@ void discoverControllers()
 
    pads_connected = 0;
 
-   printf("Searching for Controllers...\n");fflush(stdout);
-
    for (i = 0; i < deviceCount; i++)
    {
       int type;
       screen_get_device_property_iv(devices_found[i], SCREEN_PROPERTY_TYPE, &type);
 
-      printf("Device Found...\n");fflush(stdout);
-
       if (type == SCREEN_EVENT_GAMEPAD || type == SCREEN_EVENT_JOYSTICK || type == SCREEN_EVENT_KEYBOARD)
       {
          devices[pads_connected].handle = devices_found[i];
          loadController(&devices[pads_connected]);
-
-         printf("Gamepad...\n");fflush(stdout);
 
          pads_connected++;
          if (pads_connected == MAX_PADS)
@@ -151,8 +145,6 @@ void discoverControllers()
    }
 
    free(devices_found);
-
-   printf("Pads: %d\n", pads_connected);fflush(stdout);
 }
 #else
 void init_playbook_keyboard()

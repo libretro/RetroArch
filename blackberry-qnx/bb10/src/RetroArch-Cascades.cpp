@@ -158,8 +158,6 @@ void RetroArch::run()
          {
          case RETROARCH_START_REQUESTED:
          {
-            printf("RetroArch Started Received\n");fflush(stdout);
-
             MsgReply(rcvid,0,NULL,0);
 
             if (screen_create_window_type(&screen_win, screen_ctx, SCREEN_CHILD_WINDOW) != BPS_SUCCESS)
