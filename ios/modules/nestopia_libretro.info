@@ -1,4 +1,4 @@
-display_name = "NES / Famicom"
+display_name = "NES / Famicom (NEStopia)"
 supported_extensions = "nes|fds"
 corename = "Nestopia"
 manufacturer = "Nintendo"

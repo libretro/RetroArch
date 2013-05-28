@@ -1,0 +1,6 @@
+display_name = "NES / Famicom (QuickNES)"
+supported_extensions = "nes"
+corename = "QuickNES"
+manufacturer = "Nintendo"
+systemname = "Nintendo Entertainment System"
+
