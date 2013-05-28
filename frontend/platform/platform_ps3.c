@@ -395,14 +395,15 @@ static void system_exitspawn(void)
    cellSysmoduleLoadModule(CELL_SYSMODULE_IO);
 #else
    char core_launch[256];
-   strlcpy(core_launch, g_settings.libretro, sizeof(core_launch));
 #ifdef HAVE_MULTIMAN 
    if (g_extern.lifecycle_mode_state & (1ULL << MODE_EXITSPAWN_MULTIMAN))
    {
       RARCH_LOG("Boot Multiman: %s.\n", MULTIMAN_SELF_FILE);
       strlcpy(core_launch, MULTIMAN_SELF_FILE, sizeof(core_launch));
    }
+   else
 #endif
+   strlcpy(core_launch, g_settings.libretro, sizeof(core_launch));
    bool should_load_game = false;
    if (g_extern.lifecycle_mode_state & (1ULL << MODE_EXITSPAWN_START_GAME))
       should_load_game = true;

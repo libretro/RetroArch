@@ -80,6 +80,11 @@
 			<locationURI>PARENT-2-PROJECT_LOC/media/overlays</locationURI>
 		</link>
 		<link>
+			<name>shaders_glsl</name>
+			<type>2</type>
+			<locationURI>PARENT-2-PROJECT_LOC/media/shaders_glsl</locationURI>
+		</link>
+		<link>
 			<name>src/griffin.c</name>
 			<type>1</type>
 			<locationURI>PARENT-2-PROJECT_LOC/griffin/griffin.c</locationURI>
