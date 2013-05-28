@@ -6,6 +6,7 @@ cat /dev/null > "$MAKEFILE_DEFINES" > "$CONFIG_DEFINES"
 #cat /dev/null > "${MAKEFILE_DEFINES:=.MAKEFILE_DEFINES}" > "${CONFIG_DEFINES=.CONFIG_DEFINES}"
 
 [ "$PREFIX" ] || PREFIX="/usr/local"
+[ "$CONFIG_DIR" ] || CONFIG_DIR="/etc"
 
 add_define_header()
 { echo "$1=$2" >> "$CONFIG_DEFINES";}
