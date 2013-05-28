@@ -67,9 +67,9 @@
 - (NSString*)tableView:(UITableView*)tableView titleForHeaderInSection:(NSInteger)section
 {
    if (_supported.count)
-      return (section == 0) ? @"Suggested Emulators" : @"Other Emulators";
+      return (section == 0) ? @"Suggested Cores" : @"Other Cores";
 
-   return @"All Emulators";
+   return @"All Cores";
 }
 
 - (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section
