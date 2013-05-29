@@ -114,7 +114,7 @@ The Gamecube port of RetroArch has the following features:
 new libretro cores
 
 ------------------------------------------------------------------------------
-EMULATOR/GAME CORES BUNDLED WITH WII PORT
+EMULATOR/GAME CORES BUNDLED WITH GAMECUBE PORT
 ------------------------------------------------------------------------------
 The following emulators/games have been ported to RetroArch and are included in 
 the Gamecube release of RetroArch.
@@ -188,9 +188,6 @@ automatically pick a random libretro core and write this to the config file.
 What can you expect in the future?
 ------------------------------------------------------------------------------
 - Make the libxenon port release-worthy.
-- Add console-friendly features (nicely formatted names for FBA, some better
-way to do core switching, etc)
-- Fix NxEngine issues on consoles
 - Finish up MAME 0.72 port
 - Finish up ScummVM port
 - Port of VICE to libretro
