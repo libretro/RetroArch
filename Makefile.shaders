@@ -19,7 +19,7 @@ ifeq ($(shell uname), Linux)
 PYTHON2		= python2
 PYTHON3		= python
 GIT			= git
-else ifeq ($(shell uname), osx)
+else ifneq ($(findstring Darwin,$(shell uname -a)),)
 PYTHON2		= python2
 PYTHON3		= python
 GIT			= git
