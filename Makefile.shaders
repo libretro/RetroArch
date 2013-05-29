@@ -19,6 +19,10 @@ ifeq ($(shell uname), Linux)
 PYTHON2		= python2
 PYTHON3		= python
 GIT			= git
+else ifeq ($(shell uname), osx)
+PYTHON2		= python2
+PYTHON3		= python
+GIT			= git
 else
 PYTHON2		= python2.exe
 PYTHON3		= python.exe
