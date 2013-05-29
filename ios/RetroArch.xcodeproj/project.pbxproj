@@ -33,6 +33,7 @@
 		96AFAE3216C1D4EA009DE44C /* OpenGLES.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 96AFAE3116C1D4EA009DE44C /* OpenGLES.framework */; };
 		96AFAE3816C1D4EA009DE44C /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 96AFAE3616C1D4EA009DE44C /* InfoPlist.strings */; };
 		96F9C28316FFA55F002455B3 /* RALogView.m in Sources */ = {isa = PBXBuildFile; fileRef = 96F9C28216FFA55F002455B3 /* RALogView.m */; };
+		D40B8BD0175619BB005C3F25 /* shaders_glsl in Resources */ = {isa = PBXBuildFile; fileRef = D40B8BCF175619BB005C3F25 /* shaders_glsl */; };
 		D48581DE16F823F9004BEB17 /* griffin.c in Sources */ = {isa = PBXBuildFile; fileRef = D48581DD16F823F9004BEB17 /* griffin.c */; };
 		D486CA88170D4EAF004DC638 /* settings.m in Sources */ = {isa = PBXBuildFile; fileRef = D486CA87170D4EAF004DC638 /* settings.m */; };
 /* End PBXBuildFile section */
@@ -78,6 +79,7 @@
 		96AFAF4616C1E00A009DE44C /* bitmap.bmp */ = {isa = PBXFileReference; lastKnownFileType = image.bmp; path = bitmap.bmp; sourceTree = "<group>"; };
 		96C19C2616D455BE00FE8D5A /* rarch_wrapper.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = rarch_wrapper.h; sourceTree = "<group>"; };
 		96F9C28216FFA55F002455B3 /* RALogView.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = RALogView.m; sourceTree = "<group>"; };
+		D40B8BCF175619BB005C3F25 /* shaders_glsl */ = {isa = PBXFileReference; lastKnownFileType = folder; name = shaders_glsl; path = ../../media/shaders_glsl; sourceTree = "<group>"; };
 		D48581DD16F823F9004BEB17 /* griffin.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = griffin.c; path = ../griffin/griffin.c; sourceTree = "<group>"; };
 		D486CA87170D4EAF004DC638 /* settings.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = settings.m; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -122,6 +124,7 @@
 		966B9CB716E41E7A005B61E1 /* Assets */ = {
 			isa = PBXGroup;
 			children = (
+				D40B8BCF175619BB005C3F25 /* shaders_glsl */,
 				967D647416E6EA04006BA1F2 /* modules */,
 				96297A2616C82FF100E6DCE0 /* overlays */,
 				966B9CB816E41E7A005B61E1 /* Default-568h@2x.png */,
@@ -311,6 +314,7 @@
 				966B9CCB16E41EC1005B61E1 /* PauseIndicatorView.xib in Resources */,
 				967D646F16E45428006BA1F2 /* ic_pause.png in Resources */,
 				967D647516E6EA04006BA1F2 /* modules in Resources */,
+				D40B8BD0175619BB005C3F25 /* shaders_glsl in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -387,7 +391,7 @@
 					"-DHAVE_THREAD",
 					"-D__LIBRETRO__",
 					"-DRARCH_PERFORMANCE_MODE",
-               "-DRARCH_MOBILE",
+					"-DRARCH_MOBILE",
 					"-DPACKAGE_VERSION=\\\"0.9.9\\\"",
 					"-std=gnu99",
 					"-DHAVE_COREAUDIO",
@@ -437,7 +441,7 @@
 					"-DHAVE_THREAD",
 					"-D__LIBRETRO__",
 					"-DRARCH_PERFORMANCE_MODE",
-               "-DRARCH_MOBILE",
+					"-DRARCH_MOBILE",
 					"-DPACKAGE_VERSION=\\\"0.9.9\\\"",
 					"-std=gnu99",
 					"-DHAVE_COREAUDIO",
@@ -484,7 +488,7 @@
 					"-DLSB_FIRST",
 					"-D__LIBRETRO__",
 					"-DRARCH_PERFORMANCE_MODE",
-               "-DRARCH_MOBILE",
+					"-DRARCH_MOBILE",
 					"-DPACKAGE_VERSION=\\\"0.9.9\\\"",
 					"-DHAVE_COREAUDIO",
 					"-DHAVE_DYNAMIC",
@@ -533,7 +537,7 @@
 					"-DLSB_FIRST",
 					"-D__LIBRETRO__",
 					"-DRARCH_PERFORMANCE_MODE",
-               "-DRARCH_MOBILE",
+					"-DRARCH_MOBILE",
 					"-DPACKAGE_VERSION=\\\"0.9.9\\\"",
 					"-DHAVE_COREAUDIO",
 					"-DHAVE_DYNAMIC",
