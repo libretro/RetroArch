@@ -301,9 +301,17 @@ void config_set_defaults(void)
 #elif defined(IOS)
    strlcpy(g_extern.overlay_dir, "/Applications/RetroArch.app/overlays/", sizeof(g_extern.overlay_dir));
 #elif defined(ANDROID)
-   //FIXME
-   // what to do on Android with /data/data/org.retroarch/cache/Overlays? Can't seem to access or do anything wih this path on a Galaxy S3
    strlcpy(g_extern.overlay_dir, "/data/data/org.retroarch/cache/Overlays/", sizeof(g_extern.overlay_dir));
+#endif
+#endif
+
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_HLSL)
+#if defined(__QNX__)
+   strlcpy(g_settings.video.shader_dir, "/app/native/shaders_glsl/", sizeof(g_settings.video.shader_dir));
+#elif defined(IOS)
+   strlcpy(g_settings.video.shader_dir, "/Applications/RetroArch.app/shaders_glsl/", sizeof(g_settings.video.shader_dir));
+#elif defined(ANDROID)
+   strlcpy(g_settings.video.shader_dir, "/data/data/org.retroarch/cache/Shaders/", sizeof(g_settings.video.shader_dir));
 #endif
 #endif
 
