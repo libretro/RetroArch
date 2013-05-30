@@ -377,7 +377,14 @@ void menu_rom_history_push_current(void)
    // Ensure we're pushing absolute path.
 
    char tmp[PATH_MAX];
-   strlcpy(tmp, g_extern.fullpath, sizeof(tmp));
+
+   // We loaded a zip, and fullpath points to the extracted file.
+   // Look at basename instead.
+   if (g_extern.rom_file_temporary)
+      snprintf(tmp, sizeof(tmp), "%s.zip", g_extern.basename);
+   else
+      strlcpy(tmp, g_extern.fullpath, sizeof(tmp));
+
    if (*tmp)
       path_resolve_realpath(tmp, sizeof(tmp));
 
