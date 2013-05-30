@@ -15,22 +15,15 @@
 
 extern BOOL ra_ios_is_directory(NSString* path);
 extern BOOL ra_ios_is_file(NSString* path);
-extern NSArray* ra_ios_list_directory(NSString* path);
 extern NSString* ra_ios_check_path(NSString* path);
 
 @interface RADirectoryItem : NSObject
 @property (strong) NSString* path;
-@property (strong) NSString* coverPath;
-@property bool hasCover;
 @property bool isDirectory;
 @end
 
-@interface RADirectoryGrid : UICollectionViewController<UIImagePickerControllerDelegate,UINavigationControllerDelegate>
-- (id)initWithPath:(NSString*)path;
-@end
-
 @interface RADirectoryList : UITableViewController
-+ (id)directoryListOrGridWithPath:(NSString*)path;
++ (id)directoryListForPath:(NSString*)path;
 - (id)initWithPath:(NSString*)path;
 @end
 

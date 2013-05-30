@@ -255,7 +255,7 @@ static void event_reload_config(void* userdata)
 
    // Setup window
    self.delegate = self;
-   [self pushViewController:[RADirectoryList directoryListOrGridWithPath:kDOCSFOLDER] animated:YES];
+   [self pushViewController:[RADirectoryList directoryListForPath:kDOCSFOLDER] animated:YES];
 
    _window = [[UIWindow alloc] initWithFrame:[[UIScreen mainScreen] bounds]];
    _window.rootViewController = self;
