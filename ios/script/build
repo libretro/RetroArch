@@ -7,17 +7,26 @@ set -e
 xcodebuild clean
 rm -rf build
 
-xcodebuild -verbose -sdk iphoneos -configuration Release
 
 if [ -z "$NOCODESIGN" ] ; then
+
+  # Fetch the UUID of the provisioning profile and install the profile
+  # https://github.com/sharpland/mobileprovisionParser
+  # http://idevblog.info/mobileprovision-files-structure-and-reading/
+  PROVISION_UUID=`script/mobileprovisionParser -f "$PROVISIONING_PROFILE" -o UUID`
+  cp "$PWD/$PROVISIONING_PROFILE" ~/Library/MobileDevice/Provisioning\ Profiles/"$PROVISION_UUID".mobileprovision
+
+  xcodebuild -verbose -sdk iphoneos -configuration Release CODE_SIGN_IDENTITY="${CODE_SIGN_IDENTITY}" PROVISIONING_PROFILE="$PROVISION_UUID"
+
   echo "CODESIGNING DYNAMIC LIBRARIES AND BUILDING IPA"
-  
+
   for file in $(find "$BUILD_PATH/RetroArch.app/modules/" -name "*.dylib") ; do
     codesign -fs "$CODE_SIGN_IDENTITY" "$file"
   done
-  
-  xcrun -sdk iphoneos PackageApplication "$BUILD_PATH/RetroArch.app" -o "$BUILD_PATH/RetroArch.ipa" --sign "$CODE_SIGN_IDENTITY" --embed "$PROVISIONING"
+
+  xcrun -sdk iphoneos PackageApplication "$BUILD_PATH/RetroArch.app" -o "$BUILD_PATH/RetroArch.ipa" --sign "$CODE_SIGN_IDENTITY" --embed "$BUILD_PATH/RetroArch.app/embedded.mobileprovision"
 else
+  xcodebuild -verbose -sdk iphoneos -configuration Release
   echo "Building for Jailbroken system"
 fi
 
