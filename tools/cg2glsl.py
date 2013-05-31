@@ -327,8 +327,8 @@ def hack_source_vertex(source):
          mat4 transpose_(mat4 matrix)
          {
             mat4 ret;
-            for (int i = 0; i < 4; i++)
-               for (int j = 0; j < 4; j++)
+            for (int i = 0; i != 4; i++)
+               for (int j = 0; j != 4; j++)
                   ret[i][j] = matrix[j][i];
 
             return ret;
