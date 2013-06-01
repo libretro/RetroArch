@@ -616,6 +616,8 @@ bool config_load_file(const char *path)
 #endif
 
    CONFIG_GET_PATH(video.shader_dir, "video_shader_dir");
+   if (!strcmp(g_settings.video.shader_dir, "default"))
+      *g_settings.video.shader_dir = '\0';
 
    CONFIG_GET_FLOAT(input.axis_threshold, "input_axis_threshold");
    CONFIG_GET_BOOL(input.netplay_client_swap_input, "netplay_client_swap_input");
@@ -991,6 +993,11 @@ bool config_save_file(const char *path)
       config_set_string(conf, "savestate_directory", g_extern.savestate_dir);
    else
       config_set_string(conf, "savestate_directory", "default");
+
+   if (*g_settings.video.shader_dir)
+      config_set_string(conf, "video_shader_dir", g_settings.video.shader_dir);
+   else
+      config_set_string(conf, "video_shader_dir", "default");
 
 #if defined(HAVE_RGUI) || defined(HAVE_RMENU)
    if (*g_settings.rgui_browser_directory)
