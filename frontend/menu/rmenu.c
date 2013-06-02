@@ -1986,7 +1986,7 @@ static int select_setting(void *data, uint64_t input)
             }
             break;
          case SETTING_CONTROLS_SAVE_CUSTOM_CONTROLS:
-            strlcpy(text, "SAVE CUSTOM CONTROLS", sizeof(text));
+            strlcpy(text, "Save Controls Preset", sizeof(text));
             strlcpy(setting_text, "", sizeof(setting_text));
             strlcpy(comment, "INFO - Save the [Custom Controls] settings to file.",  sizeof(comment));
             break;
