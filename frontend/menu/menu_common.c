@@ -748,14 +748,14 @@ static uint64_t rgui_input(void)
             (1ULL << DEVICE_NAV_RIGHT) |
             (1ULL << DEVICE_NAV_UP) |
             (1ULL << DEVICE_NAV_DOWN) |
-            (1ULL << DEVICE_NAV_LEFT_ANALOG_L) |
-            (1ULL << DEVICE_NAV_RIGHT_ANALOG_L) |
-            (1ULL << DEVICE_NAV_UP_ANALOG_L) |
-            (1ULL << DEVICE_NAV_DOWN_ANALOG_L) |
-            (1ULL << DEVICE_NAV_LEFT_ANALOG_R) |
-            (1ULL << DEVICE_NAV_RIGHT_ANALOG_R) |
-            (1ULL << DEVICE_NAV_UP_ANALOG_R) |
-            (1ULL << DEVICE_NAV_DOWN_ANALOG_R) |
+            (1ULL << RARCH_ANALOG_LEFT_Y_DPAD_UP) |
+            (1ULL << RARCH_ANALOG_LEFT_Y_DPAD_DOWN) |
+            (1ULL << RARCH_ANALOG_LEFT_X_DPAD_LEFT) |
+            (1ULL << RARCH_ANALOG_LEFT_X_DPAD_RIGHT) |
+            (1ULL << RARCH_ANALOG_RIGHT_Y_DPAD_UP) |
+            (1ULL << RARCH_ANALOG_RIGHT_Y_DPAD_DOWN) |
+            (1ULL << RARCH_ANALOG_RIGHT_X_DPAD_LEFT) |
+            (1ULL << RARCH_ANALOG_RIGHT_X_DPAD_RIGHT) |
             (1ULL << DEVICE_NAV_L2) |
             (1ULL << DEVICE_NAV_R2)
             )) && !(input_state & (1ULL << DEVICE_NAV_MENU));

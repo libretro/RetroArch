@@ -1020,11 +1020,6 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
             }
          }
          break;
-      case SETTING_DEFAULT_VIDEO_ALL:
-         if (input & (1ULL << DEVICE_NAV_START))
-         {
-         }
-         break;
       case SETTING_SOUND_MODE:
          if (input & (1ULL << DEVICE_NAV_LEFT))
          {
@@ -1066,8 +1061,6 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
             strlcpy(g_settings.audio.device, "0.0.0.0", sizeof(g_settings.audio.device));
          break;
 #endif
-      case SETTING_DEFAULT_AUDIO_ALL:
-         break;
       case SETTING_EMU_SHOW_DEBUG_INFO_MSG:
          if ((input & (1ULL << DEVICE_NAV_LEFT)) || (input & (1ULL << DEVICE_NAV_RIGHT)) || (input & (1ULL << DEVICE_NAV_B)))
             settings_set(1ULL << S_INFO_DEBUG_MSG_TOGGLE);
@@ -1210,18 +1203,6 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
 
          if (input & (1ULL << DEVICE_NAV_START))
             strlcpy(g_settings.system_directory, default_paths.system_dir, sizeof(g_settings.system_directory));
-         break;
-      case SETTING_PATH_DEFAULT_ALL:
-         if ((input & (1ULL << DEVICE_NAV_LEFT)) || (input & (1ULL << DEVICE_NAV_RIGHT)) || (input & (1ULL << DEVICE_NAV_B)) || (input & (1ULL << DEVICE_NAV_START)))
-         {
-            strlcpy(g_settings.rgui_browser_directory, default_paths.filebrowser_startup_dir,
-                  sizeof(g_settings.rgui_browser_directory));
-            strlcpy(g_extern.savestate_dir, default_paths.port_dir, sizeof(g_extern.savestate_dir));
-#ifdef HAVE_XML
-            strlcpy(g_settings.cheat_database, default_paths.port_dir, sizeof(g_settings.cheat_database));
-#endif
-            strlcpy(g_extern.savefile_dir, "", sizeof(g_extern.savefile_dir));
-         }
          break;
       case SETTING_CONTROLS_SCHEME:
          if ((input & (1ULL << DEVICE_NAV_LEFT)) || (input & (1ULL << DEVICE_NAV_RIGHT)) || (input & (1ULL << DEVICE_NAV_B)) || (input & (1ULL << DEVICE_NAV_START)))
@@ -1831,11 +1812,6 @@ static int select_setting(void *data, uint64_t input)
             snprintf(setting_text, sizeof(setting_text), (g_extern.lifecycle_mode_state & (1ULL << MODE_VIDEO_TRIPLE_BUFFERING_ENABLE)) ? "ON" : "OFF");
             snprintf(comment, sizeof(comment), (g_extern.lifecycle_mode_state & (1ULL << MODE_VIDEO_TRIPLE_BUFFERING_ENABLE)) ? "INFO - [Triple Buffering] is set to 'ON'." : "INFO - [Triple Buffering] is set to 'OFF'.");
             break;
-         case SETTING_DEFAULT_VIDEO_ALL:
-            strlcpy(text, "DEFAULTS", sizeof(text));
-            strlcpy(setting_text, "", sizeof(setting_text));
-            strlcpy(comment, "INFO - Reset all these settings.", sizeof(comment));
-            break;
          case SETTING_SOUND_MODE:
             strlcpy(text, "Sound Output", sizeof(text));
             switch(g_extern.console.sound.mode)
@@ -1867,12 +1843,6 @@ static int select_setting(void *data, uint64_t input)
             strlcpy(comment, "INFO - Enter the IP Address of the [RSound Audio Server]. IP address\nmust be an IPv4 32-bits address, eg: '192.168.1.7'.", sizeof(comment));
             break;
 #endif
-         case SETTING_DEFAULT_AUDIO_ALL:
-            strlcpy(text, "DEFAULTS", sizeof(text));
-            strlcpy(setting_text, "", sizeof(setting_text));
-            strlcpy(comment, "INFO - Reset all these settings.", sizeof(comment));
-            break;
-            /* emu-specific */
          case SETTING_EMU_SHOW_DEBUG_INFO_MSG:
             strlcpy(text, "Debug Info Messages", sizeof(text));
             snprintf(setting_text, sizeof(setting_text), (g_extern.lifecycle_mode_state & (1ULL << MODE_FPS_DRAW)) ? "ON" : "OFF");
@@ -1959,8 +1929,8 @@ static int select_setting(void *data, uint64_t input)
             strlcpy(comment, "INFO - Set the default [System directory] path.", sizeof(comment));
             break;
          case SETTING_CONTROLS_SCHEME:
-            strlcpy(text, "Control Scheme Preset", sizeof(text));
-            snprintf(comment, sizeof(comment), "INFO - Input scheme preset [%s] is selected.", g_extern.input_config_path);
+            strlcpy(text, "Load Controls Preset", sizeof(text));
+            snprintf(comment, sizeof(comment), "INFO - Controls preset [%s] is selected.", g_extern.input_config_path);
             strlcpy(setting_text, g_extern.input_config_path, sizeof(setting_text));
             break;
          case SETTING_CONTROLS_NUMBER:
@@ -2024,11 +1994,6 @@ static int select_setting(void *data, uint64_t input)
             strlcpy(text, "DEFAULTS", sizeof(text));
             strlcpy(setting_text, "", sizeof(setting_text));
             strlcpy(comment, "INFO - Set all Controls settings to defaults.", sizeof(comment));
-            break;
-         case SETTING_PATH_DEFAULT_ALL:
-            strlcpy(text, "DEFAULTS", sizeof(text));
-            strlcpy(setting_text, "", sizeof(setting_text));
-            strlcpy(comment, "INFO - Set all Path settings to defaults.", sizeof(comment));
             break;
          case INGAME_MENU_LOAD_STATE:
             strlcpy(text, "Load State", sizeof(text));
