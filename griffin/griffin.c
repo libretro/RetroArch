@@ -22,6 +22,10 @@
 #define HAVE_MENU
 #endif
 
+#ifdef __CELLOS_LV2__
+#include "../ps3/altivec_mem.c"
+#endif
+
 /*============================================================
 CONSOLE EXTENSIONS
 ============================================================ */

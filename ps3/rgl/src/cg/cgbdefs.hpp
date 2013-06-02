@@ -12,11 +12,6 @@ typedef unsigned int	Elf32_Word;
 typedef unsigned short	Elf64_Half;
 typedef short		Elf64_Shalf;
 
-#ifdef __CELLOS_LV2__
-typedef size_t ptrdiff_t;
-typedef size_t ptrdiff_t;
-#endif
-
 ///////////////////////
 // ELF Header Constants
 

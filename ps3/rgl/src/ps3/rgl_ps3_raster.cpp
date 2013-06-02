@@ -16,6 +16,11 @@
  */
 
 #include "../rgl.h"
+#include "../rglp.h"
+
+#include <sdk_version.h>
+
+#include "../../altivec_mem.h"
 
 #include "include/GmmAlloc.h"
 #include "include/rgl-constants.h"
