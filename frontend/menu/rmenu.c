@@ -2508,16 +2508,18 @@ static int ingame_menu_resize(void *data, uint64_t input)
 
       display_menubar(rgui->menu_type);
 
+      char viewport_buf[256];
       snprintf(viewport, sizeof(viewport), "Viewport X: #%d Y: %d (%dx%d)", g_extern.console.screen.viewports.custom_vp.x, g_extern.console.screen.viewports.custom_vp.y, g_extern.console.screen.viewports.custom_vp.width,
             g_extern.console.screen.viewports.custom_vp.height);
+      menu_ticker_line(viewport_buf, TICKER_LABEL_CHARS_MAX_PER_LINE, g_extern.frame_count / 15, viewport, true);
 
       font_parms.x = POSITION_X; 
       font_parms.y = POSITION_Y_BEGIN;
       font_parms.scale = HARDCODE_FONT_SIZE;
-      font_parms.color = GREEN;
+      font_parms.color = WHITE;
 
       if (driver.video_poke->set_osd_msg)
-         driver.video_poke->set_osd_msg(driver.video_data, viewport, &font_parms);
+         driver.video_poke->set_osd_msg(driver.video_data, viewport_buf, &font_parms);
 
       snprintf(msg, sizeof(msg), "[%s]", key_label_dpad_left.desc);
 
