@@ -111,8 +111,6 @@ static unsigned last_page_flip;
 static uint64_t first_usec;
 static uint64_t last_usec;
 
-static uint64_t flip_request_usec;
-
 static unsigned missed_vblanks;
 static unsigned hit_vblanks;
 
@@ -137,9 +135,6 @@ static void page_flip_handler(int fd, unsigned frame, unsigned sec, unsigned use
          RARCH_LOG("[KMS/EGL]: Missed %u VBlank(s) (Frame: %u, DRM frame: %u).\n",
                missed, frame - first_page_flip, frame);
          missed_vblanks += missed;
-
-         unsigned flip_time = current_usec - flip_request_usec;
-         RARCH_LOG("\tDelta request => flip: %.5f ms.\n", flip_time / 1000.0);
       }
    }
 
@@ -198,10 +193,6 @@ static void queue_flip(void)
       RARCH_ERR("[KMS/EGL]: Failed to queue page flip.\n");
       return;
    }
-
-   struct timeval tv;
-   gettimeofday(&tv, NULL);
-   flip_request_usec = (uint64_t)tv.tv_sec * 1000000 + tv.tv_usec;
 
    waiting_for_flip = true;
 }
