@@ -523,7 +523,6 @@ bool config_load_file(const char *path)
    CONFIG_GET_BOOL_EXTERN(console.screen.gamma_correction, "gamma_correction");
 
    bool msg_enable = false;
-   bool throttle_enable = false;
    bool triple_buffering_enable = false;
    bool custom_bgm_enable = false;
    bool flicker_filter_enable = false;

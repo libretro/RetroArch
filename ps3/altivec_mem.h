@@ -63,7 +63,11 @@ extern "C" {
 
 #define ptrdiff_t(a, b)     ((word_t)(a)-(word_t)(b))
 #define CMP_LT_OR_GT(a, b) ((a) - (b))
+
+#ifndef MIN
 #define MIN(a,b)    ((a) <= (b) ? (a) : (b))
+#endif
+
 #define DIFF(a, b) ((a)-(b))
 
 #ifdef LSB_FIRST

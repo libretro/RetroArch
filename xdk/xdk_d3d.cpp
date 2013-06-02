@@ -877,8 +877,8 @@ static bool xdk_d3d_frame(void *data, const void *frame,
    if (d3d->should_resize)
    {
 #ifdef _XBOX1
-      D3DDevice_SetFlickerFilter(g_extern.console.screen.flicker_filter_index);
-      D3DDevice_SetSoftDisplayFilter(g_extern.lifecycle_mode_state & (1ULL << MODE_VIDEO_SOFT_FILTER_ENABLE));
+      d3dr->SetFlickerFilter(g_extern.console.screen.flicker_filter_index);
+      d3dr->SetSoftDisplayFilter(g_extern.lifecycle_mode_state & (1ULL << MODE_VIDEO_SOFT_FILTER_ENABLE));
 #endif
       xdk_d3d_set_viewport(false);
       d3d->should_resize = false;
