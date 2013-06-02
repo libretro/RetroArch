@@ -2753,7 +2753,7 @@ static int ingame_menu_history_options(void *data, uint64_t input)
    if (history_size)
    {
       size_t opts = history_size;
-      for (size_t i = 0; i < opts; i++, font_parms.y += POSITION_Y_INCREMENT)
+      for (size_t i = 0; i < opts; i++)
       {
          const char *path = NULL;
          const char *core_path = NULL;
@@ -2772,7 +2772,7 @@ static int ingame_menu_history_options(void *data, uint64_t input)
          /* not on same page? */
          if ((i / NUM_ENTRY_PER_PAGE) != (hist_opt_selected / NUM_ENTRY_PER_PAGE))
             continue;
-
+         
 #ifdef HAVE_MENU_PANEL
          //check if this is the currently selected option
          if (i == hist_opt_selected)
@@ -2785,6 +2785,8 @@ static int ingame_menu_history_options(void *data, uint64_t input)
          if (driver.video_poke->set_osd_msg)
             driver.video_poke->set_osd_msg(driver.video_data,
                   fill_buf, &font_parms);
+
+         font_parms.y += POSITION_Y_INCREMENT;
       }
 
       if ((input & (1ULL << DEVICE_NAV_START)) ||
