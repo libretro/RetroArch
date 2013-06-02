@@ -27,8 +27,9 @@ typedef struct
    pa_threaded_mainloop *mainloop;
    pa_context *context;
    pa_stream *stream;
-   bool nonblock;
    size_t buffer_size;
+   bool nonblock;
+   bool success;
 } pa_t;
 
 static void pulse_free(void *data)
@@ -56,6 +57,14 @@ static void pulse_free(void *data)
 
       free(pa);
    }
+}
+
+static void stream_success_cb(pa_stream *s, int success, void *data)
+{
+   (void)s;
+   pa_t *pa = (pa_t*)data;
+   pa->success = success;
+   pa_threaded_mainloop_signal(pa->mainloop, 0);
 }
 
 static void context_state_cb(pa_context *c, void *data)
@@ -191,40 +200,61 @@ error:
    return NULL;
 }
 
-static ssize_t pulse_write(void *data, const void *buf, size_t size)
+static ssize_t pulse_write(void *data, const void *buf_, size_t size)
 {
    pa_t *pa = (pa_t*)data;
+   const uint8_t *buf = (const uint8_t*)buf_;
+
+   size_t written = 0;
 
    pa_threaded_mainloop_lock(pa->mainloop);
-   size_t length = pa_stream_writable_size(pa->stream);
-   pa_threaded_mainloop_unlock(pa->mainloop);
-
-   while (length < size && !pa->nonblock)
+   while (size)
    {
-      pa_threaded_mainloop_lock(pa->mainloop);
-      pa_threaded_mainloop_wait(pa->mainloop);
-      length = pa_stream_writable_size(pa->stream);
-      pa_threaded_mainloop_unlock(pa->mainloop);
+      size_t writable = pa_stream_writable_size(pa->stream);
+      writable = min(size, writable);
+
+      if (writable)
+      {
+         pa_stream_write(pa->stream, buf, writable, NULL, 0, PA_SEEK_RELATIVE);
+         buf += writable;
+         size -= writable;
+         written += writable;
+      }
+      else if (!pa->nonblock)
+         pa_threaded_mainloop_wait(pa->mainloop);
+      else
+         break;
    }
 
-   size_t write_size = min(length, size);
-
-   pa_threaded_mainloop_lock(pa->mainloop);
-   pa_stream_write(pa->stream, buf, write_size, NULL, 0LL, PA_SEEK_RELATIVE);
    pa_threaded_mainloop_unlock(pa->mainloop);
-   return write_size;
+
+   return written;
 }
 
 static bool pulse_stop(void *data)
 {
-   (void)data;
-   return true;
+   RARCH_LOG("[PulseAudio]: Pausing.\n");
+   pa_t *pa = (pa_t*)data;
+   pa->success = true; // In case of spurious wakeup. Not critical.
+   pa_threaded_mainloop_lock(pa->mainloop);
+   pa_stream_cork(pa->stream, true, stream_success_cb, pa);
+   pa_threaded_mainloop_wait(pa->mainloop);
+   bool ret = pa->success;
+   pa_threaded_mainloop_unlock(pa->mainloop);
+   return ret;
 }
 
 static bool pulse_start(void *data)
 {
-   (void)data;
-   return true;
+   RARCH_LOG("[PulseAudio]: Unpausing.\n");
+   pa_t *pa = (pa_t*)data;
+   pa->success = true; // In case of spurious wakeup. Not critical.
+   pa_threaded_mainloop_lock(pa->mainloop);
+   pa_stream_cork(pa->stream, false, stream_success_cb, pa);
+   pa_threaded_mainloop_wait(pa->mainloop);
+   bool ret = pa->success;
+   pa_threaded_mainloop_unlock(pa->mainloop);
+   return ret;
 }
 
 static void pulse_set_nonblock_state(void *data, bool state)
