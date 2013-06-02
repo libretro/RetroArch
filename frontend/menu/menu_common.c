@@ -137,7 +137,7 @@ static bool directory_parse(void *data, const char *path)
 
    struct string_list *list = dir_list_new(path,
          filebrowser->current_dir.extensions, true);
-   if(!list)
+   if(!list || list->size < 1)
       return false;
    
    dir_list_sort(list, true);
@@ -146,7 +146,7 @@ static bool directory_parse(void *data, const char *path)
    strlcpy(filebrowser->current_dir.directory_path,
          path, sizeof(filebrowser->current_dir.directory_path));
 
-   if(filebrowser->list)
+   if (filebrowser->list)
       dir_list_free(filebrowser->list);
 
    filebrowser->list = list;
@@ -242,7 +242,8 @@ bool filebrowser_iterate(void *data, unsigned action)
          break;
    }
 
-   strlcpy(filebrowser->current_dir.path, GET_CURRENT_PATH(filebrowser),
+   if (ret)
+      strlcpy(filebrowser->current_dir.path, GET_CURRENT_PATH(filebrowser),
          sizeof(filebrowser->current_dir.path));
 
    return ret;

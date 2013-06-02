@@ -2373,7 +2373,10 @@ static int select_rom(void *data, uint64_t input)
          bool ret = filebrowser_iterate(rgui->browser, FILEBROWSER_ACTION_OK);
 
          if (!ret)
+         {
+            RARCH_ERR("Failed to open directory.\n");
             msg_queue_push(g_extern.msg_queue, "ERROR - Failed to open directory.", 1, 180);
+         }
       }
       else
       {
