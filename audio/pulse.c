@@ -128,7 +128,7 @@ static void buffer_attr_cb(pa_stream *s, void *data)
    if (server_attr)
       pa->buffer_size = server_attr->tlength;
 
-   RARCH_LOG("[PulseAudio: Got new buffer size %u.\n", (unsigned)pa->buffer_size);
+   RARCH_LOG("[PulseAudio]: Got new buffer size %u.\n", (unsigned)pa->buffer_size);
 }
 
 static void *pulse_init(const char *device, unsigned rate, unsigned latency)
