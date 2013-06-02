@@ -115,8 +115,9 @@ static void stream_latency_update_cb(pa_stream *s, void *data)
 static void underrun_update_cb(pa_stream *s, void *data)
 {
    (void)s;
-   (void)data;
-   RARCH_LOG("[PulseAudio]: Underrun!\n");
+   pa_t *pa = (pa_t*)data;
+   RARCH_LOG("[PulseAudio]: Underrun (Buffer is %.2f %% full).\n",
+         100.0f * (float)(pa->buffer_size - pa_stream_writable_size(pa->stream)) / pa->buffer_size);
 }
 
 static void *pulse_init(const char *device, unsigned rate, unsigned latency)

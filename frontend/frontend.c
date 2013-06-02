@@ -89,8 +89,20 @@ int main(int argc, char *argv[])
          g_extern.lifecycle_mode_state |= 1ULL << MODE_MENU_PREINIT;
          // Menu should always run with vsync on.
          video_set_nonblock_state_func(false);
+
+         if (driver.audio_data)
+            audio_stop_func();
+
          while (menu_iterate());
+
          driver_set_nonblock_state(driver.nonblock_state);
+
+         if (driver.audio_data && !audio_start_func())
+         {
+            RARCH_ERR("Failed to resume audio driver. Will continue without audio.\n");
+            g_extern.audio_active = false;
+         }
+
          g_extern.lifecycle_mode_state &= ~(1ULL << MODE_MENU);
       }
       else
