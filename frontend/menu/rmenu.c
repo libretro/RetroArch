@@ -828,8 +828,6 @@ static void rgui_init_textures(void)
 
 static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t input)
 {
-   DEVICE_CAST device_ptr = (DEVICE_CAST)driver.video_data;
-
    switch (switchvalue)
    {
 #ifdef __CELLOS_LV2__
@@ -1001,24 +999,6 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
          {
             settings_set(1ULL << S_DEF_REFRESH_RATE);
             driver_set_monitor_refresh_rate(g_settings.video.refresh_rate);
-         }
-         break;
-      case SETTING_THROTTLE_MODE:
-         if ((input & (1ULL << DEVICE_NAV_LEFT)) || (input & (1ULL << DEVICE_NAV_RIGHT)) || (input & (1ULL << DEVICE_NAV_B)))
-         {
-            if (!(g_extern.lifecycle_mode_state & (1ULL << MODE_VIDEO_PAL_VSYNC_BLOCK)))
-            {
-               settings_set(1ULL << S_THROTTLE);
-               device_ptr->ctx_driver->swap_interval((g_extern.lifecycle_mode_state & (1ULL << MODE_VIDEO_THROTTLE_ENABLE)) ? true : false);
-            }
-         }
-         if (input & (1ULL << DEVICE_NAV_START))
-         {
-            if (!(g_extern.lifecycle_mode_state & (1ULL << MODE_VIDEO_PAL_VSYNC_BLOCK)))
-            {
-               settings_set(1ULL << S_DEF_THROTTLE);
-               device_ptr->ctx_driver->swap_interval((g_extern.lifecycle_mode_state & (1ULL << MODE_VIDEO_THROTTLE_ENABLE)) ? true : false);
-            }
          }
          break;
       case SETTING_TRIPLE_BUFFERING:
@@ -1845,11 +1825,6 @@ static int select_setting(void *data, uint64_t input)
             strlcpy(text, "Refresh rate", sizeof(text));
             snprintf(setting_text, sizeof(setting_text), "%fHz", g_settings.video.refresh_rate);
             strlcpy(comment, "INFO - Adjust or decrease [Refresh Rate].", sizeof(comment));
-            break;
-         case SETTING_THROTTLE_MODE:
-            strlcpy(text, "Throttle Mode", sizeof(text));
-            snprintf(setting_text, sizeof(setting_text), (g_extern.lifecycle_mode_state & (1ULL << MODE_VIDEO_THROTTLE_ENABLE)) ? "ON" : "OFF");
-            snprintf(comment, sizeof(comment), (g_extern.lifecycle_mode_state & (1ULL << MODE_VIDEO_THROTTLE_ENABLE)) ? "INFO - [Throttle Mode] is 'ON' - Vsync is enabled." : "INFO - [Throttle Mode] is 'OFF' - Vsync is disabled.");
             break;
          case SETTING_TRIPLE_BUFFERING:
             strlcpy(text, "Triple Buffering", sizeof(text));

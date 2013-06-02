@@ -267,7 +267,6 @@ void config_set_defaults(void)
    strlcpy(g_extern.savefile_dir, default_paths.sram_dir, sizeof(g_extern.savefile_dir));
    g_extern.console.screen.gamma_correction = DEFAULT_GAMMA;
    g_extern.lifecycle_mode_state |= (1ULL << MODE_AUDIO_CUSTOM_BGM_ENABLE);
-   g_extern.lifecycle_mode_state |= (1ULL << MODE_VIDEO_THROTTLE_ENABLE);
    g_extern.lifecycle_mode_state |= (1ULL << MODE_VIDEO_TRIPLE_BUFFERING_ENABLE);
    g_extern.lifecycle_mode_state |= (1ULL << MODE_VIDEO_SOFT_FILTER_ENABLE);
    g_extern.lifecycle_mode_state |= (1ULL << MODE_VIDEO_FLICKER_FILTER_ENABLE);
@@ -541,14 +540,6 @@ bool config_load_file(const char *path)
          g_extern.lifecycle_mode_state |= (1ULL << MODE_INFO_DRAW);
       else 
          g_extern.lifecycle_mode_state &= ~(1ULL << MODE_INFO_DRAW);
-   }
-
-   if (config_get_bool(conf, "throttle_enable", &throttle_enable))
-   {
-      if (throttle_enable)
-         g_extern.lifecycle_mode_state |= (1ULL << MODE_VIDEO_THROTTLE_ENABLE);
-      else
-         g_extern.lifecycle_mode_state &= ~(1ULL << MODE_VIDEO_THROTTLE_ENABLE);
    }
 
    if (config_get_bool(conf, "triple_buffering_enable", &triple_buffering_enable))
@@ -1028,11 +1019,6 @@ bool config_save_file(const char *path)
 #ifdef _XBOX1
    config_set_int(conf, "sound_volume_level", g_extern.console.sound.volume_level);
 #endif
-   if (g_extern.lifecycle_mode_state & (1ULL << MODE_VIDEO_THROTTLE_ENABLE))
-      config_set_bool(conf, "throttle_enable", true);
-   else
-      config_set_bool(conf, "throttle_enable", false);
-
    if (g_extern.lifecycle_mode_state & (1ULL << MODE_VIDEO_TRIPLE_BUFFERING_ENABLE))
       config_set_bool(conf, "triple_buffering_enable", true);
    else
@@ -1203,17 +1189,6 @@ void settings_set(uint64_t settings)
    if (settings & (1ULL << S_SAVESTATE_INCREMENT))
       g_extern.state_slot++;
 
-   if (settings & (1ULL << S_THROTTLE))
-   {
-      if(!g_extern.system.force_nonblock)
-      {
-         if (g_extern.lifecycle_mode_state & (1ULL << MODE_VIDEO_THROTTLE_ENABLE))
-            g_extern.lifecycle_mode_state &= ~(1ULL << MODE_VIDEO_THROTTLE_ENABLE);
-         else
-            g_extern.lifecycle_mode_state |= (1ULL << MODE_VIDEO_THROTTLE_ENABLE);
-      }
-   }
-
    if (settings & (1ULL << S_TRIPLE_BUFFERING))
    {
       if (g_extern.lifecycle_mode_state & (1ULL << MODE_VIDEO_TRIPLE_BUFFERING_ENABLE))
@@ -1264,12 +1239,6 @@ void settings_set(uint64_t settings)
 
    if (settings & (1ULL << S_DEF_ROTATION))
       g_extern.console.screen.orientation = ORIENTATION_NORMAL;
-
-   if (settings & (1ULL << S_DEF_THROTTLE))
-   {
-      if(!g_extern.system.force_nonblock)
-         g_extern.lifecycle_mode_state |= (1ULL << MODE_VIDEO_THROTTLE_ENABLE);
-   }
 
    if (settings & (1ULL << S_DEF_TRIPLE_BUFFERING))
       g_extern.lifecycle_mode_state |= (1ULL << MODE_VIDEO_TRIPLE_BUFFERING_ENABLE);
