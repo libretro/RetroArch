@@ -321,33 +321,33 @@ static void display_menubar(uint8_t menu_type)
          strlcpy(title, "Menu", sizeof(title));
          break;
       case INGAME_MENU_CORE_OPTIONS:
-         strlcpy(title, "Core Options", sizeof(title));
+         strlcpy(title, "Core", sizeof(title));
          break;
       case INGAME_MENU_LOAD_GAME_HISTORY:
          strlcpy(title, "History", sizeof(title));
          break;
       case INGAME_MENU_VIDEO_OPTIONS:
       case INGAME_MENU_VIDEO_OPTIONS_MODE:
-         strlcpy(title, "Video Options", sizeof(title));
+         strlcpy(title, "Video", sizeof(title));
          break;
 #ifdef HAVE_SHADER_MANAGER
       case INGAME_MENU_SHADER_OPTIONS:
       case INGAME_MENU_SHADER_OPTIONS_MODE:
-         strlcpy(title, "Shader Options", sizeof(title));
+         strlcpy(title, "Shader", sizeof(title));
          break;
 #endif
       case INGAME_MENU_INPUT_OPTIONS:
       case INGAME_MENU_INPUT_OPTIONS_MODE:
-         strlcpy(title, "Input Options", sizeof(title));
+         strlcpy(title, "Input", sizeof(title));
          break;
       case INGAME_MENU_CUSTOM_RATIO:
-         strlcpy(title, "Resize Menu", sizeof(title));
+         strlcpy(title, "Resize", sizeof(title));
          break;
       case INGAME_MENU_SCREENSHOT:
          strlcpy(title, "Menu", sizeof(title));
          break;
       case FILE_BROWSER_MENU:
-         strlcpy(title, "Filebrowser", sizeof(title));
+         strlcpy(title, "Game", sizeof(title));
          break;
       case INGAME_MENU_SETTINGS:
       case INGAME_MENU_SETTINGS_MODE:
@@ -355,11 +355,11 @@ static void display_menubar(uint8_t menu_type)
          break;
       case INGAME_MENU_AUDIO_OPTIONS:
       case INGAME_MENU_AUDIO_OPTIONS_MODE:
-         strlcpy(title, "Audio Options", sizeof(title));
+         strlcpy(title, "Audio", sizeof(title));
          break;
       case INGAME_MENU_PATH_OPTIONS:
       case INGAME_MENU_PATH_OPTIONS_MODE:
-         strlcpy(title, "Path Options", sizeof(title));
+         strlcpy(title, "Path", sizeof(title));
          break;
    }
 
