@@ -116,8 +116,19 @@ static void underrun_update_cb(pa_stream *s, void *data)
 {
    (void)s;
    pa_t *pa = (pa_t*)data;
-   RARCH_LOG("[PulseAudio]: Underrun (Buffer is %.2f %% full).\n",
-         100.0f * (float)(pa->buffer_size - pa_stream_writable_size(pa->stream)) / pa->buffer_size);
+   RARCH_LOG("[PulseAudio]: Underrun (Buffer: %u, Writable size: %u).\n",
+         (unsigned)pa->buffer_size,
+         (unsigned)pa_stream_writable_size(pa->stream));
+}
+
+static void buffer_attr_cb(pa_stream *s, void *data)
+{
+   pa_t *pa = (pa_t*)data;
+   const pa_buffer_attr *server_attr = pa_stream_get_buffer_attr(s);
+   if (server_attr)
+      pa->buffer_size = server_attr->tlength;
+
+   RARCH_LOG("[PulseAudio: Got new buffer size %u.\n", (unsigned)pa->buffer_size);
 }
 
 static void *pulse_init(const char *device, unsigned rate, unsigned latency)
@@ -164,6 +175,7 @@ static void *pulse_init(const char *device, unsigned rate, unsigned latency)
    pa_stream_set_write_callback(pa->stream, stream_request_cb, pa);
    pa_stream_set_latency_update_callback(pa->stream, stream_latency_update_cb, pa);
    pa_stream_set_underflow_callback(pa->stream, underrun_update_cb, pa);
+   pa_stream_set_buffer_attr_callback(pa->stream, buffer_attr_cb, pa);
 
    buffer_attr.maxlength = -1;
    buffer_attr.tlength = pa_usec_to_bytes(latency * PA_USEC_PER_MSEC, &spec);
@@ -275,6 +287,7 @@ static size_t pulse_write_avail(void *data)
    pa_t *pa = (pa_t*)data;
    pa_threaded_mainloop_lock(pa->mainloop);
    size_t length = pa_stream_writable_size(pa->stream);
+   g_extern.audio_data.driver_buffer_size = pa->buffer_size; // Can change spuriously.
    pa_threaded_mainloop_unlock(pa->mainloop);
    return length;
 }
