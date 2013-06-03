@@ -5,6 +5,14 @@ RetroConsole Level: 2
 Author: Themaister, Squarepusher/Twin Aphex
 Supports libretro GL: No
 ------------------------------------------------------------------------------
+------------------------------------------------------------------------------
+IMPORTANT NOTES ABOUT THIS RELEASE
+------------------------------------------------------------------------------
+* (360) Removed shader system for this release - will be re-added in a future 0.9.9 point release. The main problem is that on Xbox 360, all our render targets need to fit inside 10MB of EDRAM - which is just pathetic if you want to have any FBO scaling options similar to what can be done on PS3. I'll be looking at either tiled rendering or just implementing the same 'hack' I did before (where I forcibly set the maximum source framebuffer resolution at 512x512 for two-pass shaders and hoped nobody would notice so I could stay within the confines of the 10MB of EDRAM for render targets). For now, the PS3 port is way superior than the 360 port in the graphics stakes due to this 10MB EDRAM limitation for render targets.
+
+Hopefully an alternative will be implemented by the time 0.9.9.1 rolls out.
+
+* Custom Ratio mode is currently broken. 'Path Options' is currently unimplemented.
 
 ------------------------------------------------------------------------------
 HOW TO INSTALL THIS
