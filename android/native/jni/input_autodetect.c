@@ -139,7 +139,7 @@ void input_autodetect_setup (void *data, char *msg, size_t sizeof_msg, unsigned 
          }
       }
       else if (strstr(name_buf, "PLAYSTATION(R)3") || strstr(name_buf, "Dualshock3")
-            || strstr(name_buf,"Sixaxis") ||
+            || strstr(name_buf,"Sixaxis") || strstr(name_buf, "Gasia,Co") ||
             (strstr(name_buf, "Gamepad 0") || strstr(name_buf, "Gamepad 1") || 
                strstr(name_buf, "Gamepad 2") || strstr(name_buf, "Gamepad 3")))
       {
