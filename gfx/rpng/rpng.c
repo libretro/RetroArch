@@ -716,6 +716,7 @@ end:
    free(rgba_line);
    free(prev_encoded);
    free(up_filtered);
+   free(sub_filtered);
    free(avg_filtered);
    free(paeth_filtered);
    return ret;
