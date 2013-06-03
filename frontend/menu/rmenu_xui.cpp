@@ -765,6 +765,31 @@ HRESULT CRetroArchSettings::OnControlNavigate(XUIMessageControlNavigate *pContro
 
    switch(current_index)
    {
+      case INGAME_MENU_REWIND_ENABLED:
+         if (input == XUI_CONTROL_NAVIGATE_LEFT)
+            settings_set(1ULL << S_REWIND);
+         else if (input == XUI_CONTROL_NAVIGATE_RIGHT ||
+               input == XUI_CONTROL_NAVIGATE_OK)
+            settings_set(1ULL << S_REWIND);
+
+         if (g_settings.rewind_enable)
+            rarch_init_rewind();
+         else
+            rarch_deinit_rewind();
+         XuiListSetText(m_menulist, INGAME_MENU_REWIND_ENABLED, g_settings.rewind_enable ? L"Rewind: ON" : L"Rewind: OFF");
+         break;
+      case INGAME_MENU_REWIND_GRANULARITY:
+         if (input == XUI_CONTROL_NAVIGATE_LEFT)
+         {
+            if (g_settings.rewind_granularity > 1)
+               g_settings.rewind_granularity--;
+         }
+         else if (input == XUI_CONTROL_NAVIGATE_RIGHT ||
+               input == XUI_CONTROL_NAVIGATE_OK)
+            g_settings.rewind_granularity++;
+         menu_settings_create_menu_item_label_w(strw_buffer, S_LBL_REWIND_GRANULARITY, sizeof(strw_buffer));
+         XuiListSetText(m_menulist, INGAME_MENU_REWIND_GRANULARITY, strw_buffer);
+         break;
       case SETTING_EMU_SHOW_INFO_MSG:
          if (input == XUI_CONTROL_NAVIGATE_LEFT)
          {
@@ -1374,31 +1399,6 @@ HRESULT CRetroArchMain::OnControlNavigate(XUIMessageControlNavigate *pControlNav
             g_extern.lifecycle_mode_state |= (1ULL << MODE_GAME);
             process_input_ret = -1;
          }
-         break;
-      case INGAME_MENU_REWIND_ENABLED:
-         if (input == XUI_CONTROL_NAVIGATE_LEFT)
-            settings_set(1ULL << S_REWIND);
-         else if (input == XUI_CONTROL_NAVIGATE_RIGHT ||
-               input == XUI_CONTROL_NAVIGATE_OK)
-            settings_set(1ULL << S_REWIND);
-
-         if (g_settings.rewind_enable)
-            rarch_init_rewind();
-         else
-            rarch_deinit_rewind();
-         XuiListSetText(m_menulist, INGAME_MENU_REWIND_ENABLED, g_settings.rewind_enable ? L"Rewind: ON" : L"Rewind: OFF");
-         break;
-      case INGAME_MENU_REWIND_GRANULARITY:
-         if (input == XUI_CONTROL_NAVIGATE_LEFT)
-         {
-            if (g_settings.rewind_granularity > 1)
-               g_settings.rewind_granularity--;
-         }
-         else if (input == XUI_CONTROL_NAVIGATE_RIGHT ||
-               input == XUI_CONTROL_NAVIGATE_OK)
-            g_settings.rewind_granularity++;
-         menu_settings_create_menu_item_label_w(strw_buffer, S_LBL_REWIND_GRANULARITY, sizeof(strw_buffer));
-         XuiListSetText(m_menulist, INGAME_MENU_REWIND_GRANULARITY, strw_buffer);
          break;
       case INGAME_MENU_FRAME_ADVANCE:
          g_extern.lifecycle_state |= (1ULL << RARCH_FRAMEADVANCE);

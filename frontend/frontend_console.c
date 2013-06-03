@@ -82,6 +82,7 @@ static bool libretro_install_core(const char *path_prefix,
 #define MAKE_DIR(x, name) { \
    RARCH_LOG("Checking directory name %s [%s]\n", name, x); \
    if (strlen(x) > 0) \
+   { \
    if (!path_is_directory((x)) )\
    { \
       RARCH_WARN("Directory \"%s\" does not exists, creating\n", (x)); \
@@ -89,6 +90,7 @@ static bool libretro_install_core(const char *path_prefix,
       { \
          RARCH_ERR("Could not create directory \"%s\"\n", (x)); \
       } \
+   } \
    } \
 }
 
