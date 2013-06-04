@@ -49,6 +49,7 @@ int main(int argc, char *argv[])
 
    fprintf(stderr, "Got image: %u x %u.\n", width, height);
 
+#if 1
    fprintf(stderr, "\nRPNG:\n");
    for (unsigned h = 0; h < height; h++)
    {
@@ -56,9 +57,7 @@ int main(int argc, char *argv[])
          fprintf(stderr, "[%08x] ", data[h * width + w]);
       fprintf(stderr, "\n");
    }
-
-   if (width != 4 || height != 4)
-      return 3;
+#endif
 
    // Validate with imlib2 as well.
    Imlib_Image img = imlib_load_image(in_path);
@@ -70,6 +69,7 @@ int main(int argc, char *argv[])
    height = imlib_image_get_width();
    const uint32_t *imlib_data = imlib_image_get_data_for_reading_only();
 
+#if 1
    fprintf(stderr, "\nImlib:\n");
    for (unsigned h = 0; h < height; h++)
    {
@@ -77,11 +77,15 @@ int main(int argc, char *argv[])
          fprintf(stderr, "[%08x] ", imlib_data[h * width + w]);
       fprintf(stderr, "\n");
    }
-   imlib_free_image();
+#endif
 
-   if (memcmp(test_data, data, sizeof(test_data)) != 0)
+   if (memcmp(imlib_data, data, width * height * sizeof(uint32_t)) != 0)
+   {
+      fprintf(stderr, "Imlib and RPNG differs!\n");
       return 5;
+   }
 
+   imlib_free_image();
    free(data);
 }
 

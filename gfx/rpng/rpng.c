@@ -38,6 +38,10 @@
    goto end; \
 } while(0)
 
+#ifndef ARRAY_SIZE
+#define ARRAY_SIZE(a) (sizeof(a) / sizeof((a)[0]))
+#endif
+
 static const uint8_t png_magic[8] = {
    0x89, 'P', 'N', 'G', 0x0d, 0x0a, 0x1a, 0x0a,
 };
@@ -66,6 +70,7 @@ enum png_chunk_type
    PNG_CHUNK_ERROR,
    PNG_CHUNK_IHDR,
    PNG_CHUNK_IDAT,
+   PNG_CHUNK_PLTE,
    PNG_CHUNK_IEND
 };
 
@@ -96,6 +101,7 @@ struct
    { "IHDR", PNG_CHUNK_IHDR },
    { "IDAT", PNG_CHUNK_IDAT },
    { "IEND", PNG_CHUNK_IEND },
+   { "PLTE", PNG_CHUNK_PLTE },
 };
 
 struct idat_buffer
@@ -106,7 +112,7 @@ struct idat_buffer
 
 static enum png_chunk_type png_chunk_type(const struct png_chunk *chunk)
 {
-   for (unsigned i = 0; i < sizeof(chunk_map) / sizeof(chunk_map[0]); i++)
+   for (unsigned i = 0; i < ARRAY_SIZE(chunk_map); i++)
    {
       if (memcmp(chunk->type, chunk_map[i].id, 4) == 0)
          return chunk_map[i].type;
@@ -129,7 +135,6 @@ static bool png_read_chunk(FILE *file, struct png_chunk *chunk)
    }
 
    // Ignore CRC.
-
    return true;
 }
 
@@ -159,17 +164,60 @@ static bool png_parse_ihdr(FILE *file, struct png_chunk *chunk, struct png_ihdr 
    if (ihdr->width == 0 || ihdr->height == 0)
       GOTO_END_ERROR();
 
-   if (ihdr->depth != 8) // Only 8bpc supported.
+   if (ihdr->color_type == 2 || ihdr->color_type == 4 || ihdr->color_type == 6)
+   {
+      if (ihdr->depth != 8 && ihdr->depth != 16)
+         GOTO_END_ERROR();
+   }
+   else if (ihdr->color_type == 0)
+   {
+      static const unsigned valid_bpp[] = { 1, 2, 4, 8, 16 };
+      bool correct_bpp = false;
+      for (unsigned i = 0; i < ARRAY_SIZE(valid_bpp); i++)
+      {
+         if (valid_bpp[i] == ihdr->depth)
+         {
+            correct_bpp = true;
+            break;
+         }
+      }
+
+      if (!correct_bpp)
+         GOTO_END_ERROR();
+   }
+   else if (ihdr->color_type == 3)
+   {
+      static const unsigned valid_bpp[] = { 1, 2, 4, 8 };
+      bool correct_bpp = false;
+      for (unsigned i = 0; i < ARRAY_SIZE(valid_bpp); i++)
+      {
+         if (valid_bpp[i] == ihdr->depth)
+         {
+            correct_bpp = true;
+            break;
+         }
+      }
+
+      if (!correct_bpp)
+         GOTO_END_ERROR();
+   }
+   else
       GOTO_END_ERROR();
 
-   if (ihdr->color_type != 2 && ihdr->color_type != 6) // Only RGB/RGBA supported.
-      GOTO_END_ERROR();
+#ifdef RPNG_TEST
+   fprintf(stderr, "IHDR: (%u x %u), bpc = %u, palette = %s, color = %s, alpha = %s, adam7 = %s.\n",
+         ihdr->width, ihdr->height,
+         ihdr->depth, ihdr->color_type == 3 ? "yes" : "no",
+         ihdr->color_type & 2 ? "yes" : "no",
+         ihdr->color_type & 4 ? "yes" : "no",
+         ihdr->interlace == 1 ? "yes" : "no");
+#endif
 
    if (ihdr->compression != 0)
       GOTO_END_ERROR();
 
-   if (ihdr->interlace != 0) // No Adam7 supported.
-      GOTO_END_ERROR();
+   //if (ihdr->interlace != 0) // No Adam7 supported.
+   //   GOTO_END_ERROR();
 
 end:
    png_free_chunk(chunk);
@@ -192,38 +240,124 @@ static inline int paeth(int a, int b, int c)
       return c;
 }
 
-static inline void copy_line_rgb(uint32_t *data, const uint8_t *decoded, unsigned width)
+static inline void copy_line_rgb(uint32_t *data, const uint8_t *decoded, unsigned width, unsigned bpp)
 {
+   bpp /= 8;
    for (unsigned i = 0; i < width; i++)
    {
-      uint32_t r = *decoded++;
-      uint32_t g = *decoded++;
-      uint32_t b = *decoded++;
+      uint32_t r = *decoded;
+      decoded += bpp;
+      uint32_t g = *decoded;
+      decoded += bpp;
+      uint32_t b = *decoded;
+      decoded += bpp;
       data[i] = (0xffu << 24) | (r << 16) | (g << 8) | (b << 0);
    }
 }
 
-static inline void copy_line_rgba(uint32_t *data, const uint8_t *decoded, unsigned width)
+static inline void copy_line_rgba(uint32_t *data, const uint8_t *decoded, unsigned width, unsigned bpp)
 {
+   bpp /= 8;
    for (unsigned i = 0; i < width; i++)
    {
-      uint32_t r = *decoded++;
-      uint32_t g = *decoded++;
-      uint32_t b = *decoded++;
-      uint32_t a = *decoded++;
+      uint32_t r = *decoded;
+      decoded += bpp;
+      uint32_t g = *decoded;
+      decoded += bpp;
+      uint32_t b = *decoded;
+      decoded += bpp;
+      uint32_t a = *decoded;
+      decoded += bpp;
       data[i] = (a << 24) | (r << 16) | (g << 8) | (b << 0);
    }
 }
 
+static inline void copy_line_bw(uint32_t *data, const uint8_t *decoded, unsigned width, unsigned depth)
+{
+   static const unsigned mul_table[] = { 0, 0xff, 0x55, 0, 0x11, 0, 0, 0, 0x01 };
+   unsigned mul = mul_table[depth];
+   unsigned mask = (1 << depth) - 1;
+   for (unsigned i = 0, bit = 0; i < width; i++, bit += depth)
+   {
+      unsigned byte = bit >> 3;
+      unsigned val = decoded[byte] >> (8 - depth - (bit & 7));
+
+      val &= mask;
+      val *= mul;
+      data[i] = (val * 0x010101) | (0xffu << 24);
+   }
+}
+
+static inline void copy_line_gray_alpha(uint32_t *data, const uint8_t *decoded, unsigned width,
+      unsigned bpp)
+{
+   bpp /= 8;
+   for (unsigned i = 0; i < width; i++)
+   {
+      uint32_t gray = *decoded;
+      decoded += bpp;
+      uint32_t alpha = *decoded;
+      decoded += bpp;
+
+      data[i] = (gray << 16) | (gray << 8) | (gray << 0) | (alpha << 24);
+   }
+}
+
+static inline void copy_line_plt(uint32_t *data, const uint8_t *decoded, unsigned width, unsigned depth, const uint32_t *palette)
+{
+   unsigned mask = (1 << depth) - 1;
+   for (unsigned i = 0, bit = 0; i < width; i++, bit += depth)
+   {
+      unsigned byte = bit >> 3;
+      unsigned val = decoded[byte] >> (8 - depth - (bit & 7));
+      val &= mask;
+      data[i] = palette[val];
+   }
+}
+
 static bool png_reverse_filter(uint32_t *data, const struct png_ihdr *ihdr,
-      const uint8_t *inflate_buf, size_t inflate_buf_size)
+      const uint8_t *inflate_buf, size_t inflate_buf_size, const uint32_t *palette)
 {
    bool ret = true;
-   unsigned bpp = ihdr->color_type == 2 ? 3 : 4;
-   if (inflate_buf_size < (ihdr->width * bpp + 1) * ihdr->height)
+
+   unsigned bpp;
+   unsigned pitch;
+   switch (ihdr->color_type)
+   {
+      case 0:
+         bpp = (ihdr->depth + 7) / 8;
+         pitch = (ihdr->width * ihdr->depth + 7) / 8;
+         break;
+
+      case 2:
+         bpp = (ihdr->depth * 3 + 7) / 8;
+         pitch = (ihdr->width * ihdr->depth * 3 + 7) / 8;
+         break;
+
+      case 3:
+         bpp = (ihdr->depth + 7) / 8;
+         pitch = (ihdr->width * ihdr->depth + 7) / 8;
+         break;
+
+      case 4:
+         bpp = (ihdr->depth * 2 + 7) / 8;
+         pitch = (ihdr->width * ihdr->depth * 2 + 7) / 8;
+         break;
+
+      case 6:
+         bpp = (ihdr->depth * 4 + 7) / 8;
+         pitch = (ihdr->width * ihdr->depth * 4 + 7) / 8;
+         break;
+
+      default:
+         bpp = 0;
+         pitch = 0;
+         break;
+   }
+
+   if (inflate_buf_size < (pitch + 1) * ihdr->height)
       return false;
 
-   unsigned pitch = ihdr->width * bpp;
    uint8_t *prev_scanline    = (uint8_t*)calloc(1, pitch);
    uint8_t *decoded_scanline = (uint8_t*)calloc(1, pitch);
 
@@ -276,10 +410,16 @@ static bool png_reverse_filter(uint32_t *data, const struct png_ihdr *ihdr,
             GOTO_END_ERROR();
       }
 
-      if (bpp == 3)
-         copy_line_rgb(data, decoded_scanline, ihdr->width);
-      else
-         copy_line_rgba(data, decoded_scanline, ihdr->width);
+      if (ihdr->color_type == 0)
+         copy_line_bw(data, decoded_scanline, ihdr->width, ihdr->depth);
+      else if (ihdr->color_type == 2)
+         copy_line_rgb(data, decoded_scanline, ihdr->width, ihdr->depth);
+      else if (ihdr->color_type == 3)
+         copy_line_plt(data, decoded_scanline, ihdr->width, ihdr->depth, palette);
+      else if (ihdr->color_type == 4)
+         copy_line_gray_alpha(data, decoded_scanline, ihdr->width, ihdr->depth);
+      else if (ihdr->color_type == 6)
+         copy_line_rgba(data, decoded_scanline, ihdr->width, ihdr->depth);
 
       memcpy(prev_scanline, decoded_scanline, pitch);
    }
@@ -305,6 +445,26 @@ static bool png_append_idat(FILE *file, const struct png_chunk *chunk, struct id
    return true;
 }
 
+static bool png_read_plte(FILE *file, uint32_t *buffer, unsigned entries)
+{
+   uint8_t buf[256 * 3];
+   if (fread(buf, 3, entries, file) != entries)
+      return false;
+
+   for (unsigned i = 0; i < entries; i++)
+   {
+      uint32_t r = buf[3 * i + 0];
+      uint32_t g = buf[3 * i + 1];
+      uint32_t b = buf[3 * i + 2];
+      buffer[i] = (r << 16) | (g << 8) | (b << 0) | (0xffu << 24);
+   }
+
+   if (fseek(file, sizeof(uint32_t), SEEK_CUR) < 0)
+      return false;
+
+   return true;
+}
+
 bool rpng_load_image_argb(const char *path, uint32_t **data, unsigned *width, unsigned *height)
 {
    *data   = NULL;
@@ -323,12 +483,14 @@ bool rpng_load_image_argb(const char *path, uint32_t **data, unsigned *width, un
    bool has_ihdr = false;
    bool has_idat = false;
    bool has_iend = false;
+   bool has_plte = false;
    uint8_t *inflate_buf = NULL;
    size_t inflate_buf_size = 0;
    z_stream stream = {0};
 
    struct idat_buffer idat_buf = {0};
    struct png_ihdr ihdr = {0};
+   uint32_t palette[256] = {0};
 
    char header[8];
    if (fread(header, 1, sizeof(header), file) != sizeof(header))
@@ -365,8 +527,21 @@ bool rpng_load_image_argb(const char *path, uint32_t **data, unsigned *width, un
             has_ihdr = true;
             break;
 
+         case PNG_CHUNK_PLTE:
+            if (!has_ihdr || has_plte || has_iend || has_idat)
+               GOTO_END_ERROR();
+
+            if (chunk.size % 3)
+               GOTO_END_ERROR();
+
+            if (!png_read_plte(file, palette, chunk.size / 3))
+               GOTO_END_ERROR();
+
+            has_plte = true;
+            break;
+
          case PNG_CHUNK_IDAT:
-            if (!has_ihdr || has_iend)
+            if (!has_ihdr || has_iend || (ihdr.color_type == 3 && !has_plte))
                GOTO_END_ERROR();
 
             if (!png_append_idat(file, &chunk, &idat_buf))
@@ -393,7 +568,7 @@ bool rpng_load_image_argb(const char *path, uint32_t **data, unsigned *width, un
    if (inflateInit(&stream) != Z_OK)
       GOTO_END_ERROR();
 
-   inflate_buf_size = (ihdr.width + 1) * ihdr.height * sizeof(uint32_t);
+   inflate_buf_size = ((ihdr.width * ihdr.depth * 4 + 7) / 8 + 1) * ihdr.height;
    inflate_buf = (uint8_t*)malloc(inflate_buf_size);
    if (!inflate_buf)
       GOTO_END_ERROR();
@@ -416,7 +591,7 @@ bool rpng_load_image_argb(const char *path, uint32_t **data, unsigned *width, un
    if (!*data)
       GOTO_END_ERROR();
 
-   if (!png_reverse_filter(*data, &ihdr, inflate_buf, stream.total_out))
+   if (!png_reverse_filter(*data, &ihdr, inflate_buf, stream.total_out, palette))
       GOTO_END_ERROR();
 
 end:
