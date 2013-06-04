@@ -274,17 +274,28 @@ static inline void copy_line_rgba(uint32_t *data, const uint8_t *decoded, unsign
 
 static inline void copy_line_bw(uint32_t *data, const uint8_t *decoded, unsigned width, unsigned depth)
 {
-   static const unsigned mul_table[] = { 0, 0xff, 0x55, 0, 0x11, 0, 0, 0, 0x01 };
-   unsigned mul = mul_table[depth];
-   unsigned mask = (1 << depth) - 1;
-   for (unsigned i = 0, bit = 0; i < width; i++, bit += depth)
+   if (depth == 16)
    {
-      unsigned byte = bit >> 3;
-      unsigned val = decoded[byte] >> (8 - depth - (bit & 7));
+      for (unsigned i = 0; i < width; i++)
+      {
+         uint32_t val = decoded[i << 1];
+         data[i] = (val * 0x010101) | (0xffu << 24);
+      }
+   }
+   else
+   {
+      static const unsigned mul_table[] = { 0, 0xff, 0x55, 0, 0x11, 0, 0, 0, 0x01 };
+      unsigned mul = mul_table[depth];
+      unsigned mask = (1 << depth) - 1;
+      for (unsigned i = 0, bit = 0; i < width; i++, bit += depth)
+      {
+         unsigned byte = bit >> 3;
+         unsigned val = decoded[byte] >> (8 - depth - (bit & 7));
 
-      val &= mask;
-      val *= mul;
-      data[i] = (val * 0x010101) | (0xffu << 24);
+         val &= mask;
+         val *= mul;
+         data[i] = (val * 0x010101) | (0xffu << 24);
+      }
    }
 }
 
@@ -299,7 +310,7 @@ static inline void copy_line_gray_alpha(uint32_t *data, const uint8_t *decoded, 
       uint32_t alpha = *decoded;
       decoded += bpp;
 
-      data[i] = (gray << 16) | (gray << 8) | (gray << 0) | (alpha << 24);
+      data[i] = (gray * 0x010101) | (alpha << 24);
    }
 }
 
@@ -315,11 +326,10 @@ static inline void copy_line_plt(uint32_t *data, const uint8_t *decoded, unsigne
    }
 }
 
-static bool png_reverse_filter(uint32_t *data, const struct png_ihdr *ihdr,
-      const uint8_t *inflate_buf, size_t inflate_buf_size, const uint32_t *palette)
+static void png_pass_geom(const struct png_ihdr *ihdr,
+      unsigned width, unsigned height,
+      unsigned *bpp_out, unsigned *pitch_out, size_t *pass_size)
 {
-   bool ret = true;
-
    unsigned bpp;
    unsigned pitch;
    switch (ihdr->color_type)
@@ -355,7 +365,26 @@ static bool png_reverse_filter(uint32_t *data, const struct png_ihdr *ihdr,
          break;
    }
 
-   if (inflate_buf_size < (pitch + 1) * ihdr->height)
+   if (pass_size)
+      *pass_size = (pitch + 1) * ihdr->height;
+   if (bpp_out)
+      *bpp_out = bpp;
+   if (pitch_out)
+      *pitch_out = pitch;
+}
+
+
+static bool png_reverse_filter(uint32_t *data, const struct png_ihdr *ihdr,
+      const uint8_t *inflate_buf, size_t inflate_buf_size, const uint32_t *palette)
+{
+   bool ret = true;
+
+   unsigned bpp;
+   unsigned pitch;
+   size_t pass_size;
+   png_pass_geom(ihdr, ihdr->width, ihdr->height, &bpp, &pitch, &pass_size);
+
+   if (inflate_buf_size < pass_size)
       return false;
 
    uint8_t *prev_scanline    = (uint8_t*)calloc(1, pitch);
@@ -428,6 +457,80 @@ end:
    free(decoded_scanline);
    free(prev_scanline);
    return ret;
+}
+
+struct adam7_pass
+{
+   unsigned x;
+   unsigned y;
+   unsigned stride_x;
+   unsigned stride_y;
+};
+
+static void deinterlace_pass(uint32_t *data, const struct png_ihdr *ihdr,
+      const uint32_t *input, unsigned pass_width, unsigned pass_height, const struct adam7_pass *pass)
+{
+   data += pass->y * ihdr->width + pass->x;
+   for (unsigned y = 0; y < pass_height; y++, data += ihdr->width * pass->stride_y, input += pass_width)
+   {
+      uint32_t *out = data;
+      for (unsigned x = 0; x < pass_width; x++, out += pass->stride_x)
+         *out = input[x];
+   }
+}
+
+static bool png_reverse_filter_adam7(uint32_t *data, const struct png_ihdr *ihdr,
+      const uint8_t *inflate_buf, size_t inflate_buf_size, const uint32_t *palette)
+{
+   static const struct adam7_pass passes[] = {
+      { 0, 0, 8, 8 },
+      { 4, 0, 8, 8 },
+      { 0, 4, 4, 8 },
+      { 2, 0, 4, 4 },
+      { 0, 2, 2, 4 },
+      { 1, 0, 2, 2 },
+      { 0, 1, 1, 2 },
+   };
+
+   for (unsigned pass = 0; pass < ARRAY_SIZE(passes); pass++)
+   {
+      if (ihdr->width <= passes[pass].x || ihdr->height <= passes[pass].y) // Empty pass
+         continue;
+
+      unsigned pass_width  = (ihdr->width - passes[pass].x + passes[pass].stride_x - 1) / passes[pass].stride_x;
+      unsigned pass_height = (ihdr->height - passes[pass].y + passes[pass].stride_y - 1) / passes[pass].stride_y;
+
+      uint32_t *tmp_data = (uint32_t*)malloc(pass_width * pass_height * sizeof(uint32_t));
+      if (!tmp_data)
+         return false;
+
+      struct png_ihdr tmp_ihdr = *ihdr;
+      tmp_ihdr.width = pass_width;
+      tmp_ihdr.height = pass_height;
+
+      size_t pass_size;
+      png_pass_geom(&tmp_ihdr, pass_width, pass_height, NULL, NULL, &pass_size);
+
+      if (pass_size > inflate_buf_size)
+      {
+         free(tmp_data);
+         return false;
+      }
+
+      if (!png_reverse_filter(tmp_data, &tmp_ihdr, inflate_buf, pass_size, palette))
+      {
+         free(tmp_data);
+         return false;
+      }
+
+      inflate_buf += pass_size;
+      inflate_buf_size -= pass_size;
+
+      deinterlace_pass(data, ihdr, tmp_data, pass_width, pass_height, &passes[pass]);
+      free(tmp_data);
+   }
+
+   return true;
 }
 
 static bool png_append_idat(FILE *file, const struct png_chunk *chunk, struct idat_buffer *buf)
@@ -568,7 +671,10 @@ bool rpng_load_image_argb(const char *path, uint32_t **data, unsigned *width, un
    if (inflateInit(&stream) != Z_OK)
       GOTO_END_ERROR();
 
-   inflate_buf_size = ((ihdr.width * ihdr.depth * 4 + 7) / 8 + 1) * ihdr.height;
+   png_pass_geom(&ihdr, ihdr.width, ihdr.height, NULL, NULL, &inflate_buf_size);
+   if (ihdr.interlace == 1) // To be sure.
+      inflate_buf_size *= 2;
+
    inflate_buf = (uint8_t*)malloc(inflate_buf_size);
    if (!inflate_buf)
       GOTO_END_ERROR();
@@ -591,7 +697,12 @@ bool rpng_load_image_argb(const char *path, uint32_t **data, unsigned *width, un
    if (!*data)
       GOTO_END_ERROR();
 
-   if (!png_reverse_filter(*data, &ihdr, inflate_buf, stream.total_out, palette))
+   if (ihdr.interlace == 1)
+   {
+      if (!png_reverse_filter_adam7(*data, &ihdr, inflate_buf, stream.total_out, palette))
+         GOTO_END_ERROR();
+   }
+   else if (!png_reverse_filter(*data, &ihdr, inflate_buf, stream.total_out, palette))
       GOTO_END_ERROR();
 
 end:
