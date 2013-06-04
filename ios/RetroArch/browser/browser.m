@@ -97,8 +97,9 @@ NSString* ra_ios_check_path(NSString* path)
    if (path && ra_ios_is_directory(path))
       return path;
 
+   // The error message can be ugly if it is a long message, but it should never be displayed during normal operation.
    if (path)
-      [RetroArch_iOS displayErrorMessage:@"Browsed path is not a directory."];
+      [RetroArch_iOS displayErrorMessage:[NSString stringWithFormat:@"Browsed path is not a directory: %@", path]];
 
    return [NSHomeDirectory() stringByAppendingPathComponent:@"Documents"];
 }
