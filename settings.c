@@ -254,6 +254,11 @@ void config_set_defaults(void)
    for (int i = 0; i < MAX_PLAYERS; i++)
       g_settings.input.joypad_map[i] = i;
 
+   g_extern.console.screen.viewports.custom_vp.width = 0;
+   g_extern.console.screen.viewports.custom_vp.height = 0;
+   g_extern.console.screen.viewports.custom_vp.x = 0;
+   g_extern.console.screen.viewports.custom_vp.y = 0;
+
 #ifdef RARCH_CONSOLE
    g_extern.lifecycle_mode_state |= ((1ULL << MODE_INFO_DRAW) | (1ULL << MODE_MENU));
 
@@ -283,10 +288,6 @@ void config_set_defaults(void)
    g_extern.verbose = true;
 
    g_extern.console.sound.mode = SOUND_MODE_NORMAL;
-   g_extern.console.screen.viewports.custom_vp.width = 0;
-   g_extern.console.screen.viewports.custom_vp.height = 0;
-   g_extern.console.screen.viewports.custom_vp.x = 0;
-   g_extern.console.screen.viewports.custom_vp.y = 0;
 #ifdef _XBOX1
    g_extern.console.sound.volume_level = 0;
 #endif
@@ -583,11 +584,12 @@ bool config_load_file(const char *path)
    CONFIG_GET_INT_EXTERN(audio_data.mute, "audio_mute");
    CONFIG_GET_INT_EXTERN(console.screen.orientation, "screen_orientation");
    CONFIG_GET_INT_EXTERN(console.sound.mode, "sound_mode");
+#endif
+
    CONFIG_GET_INT_EXTERN(console.screen.viewports.custom_vp.x, "custom_viewport_x");
    CONFIG_GET_INT_EXTERN(console.screen.viewports.custom_vp.y, "custom_viewport_y");
    CONFIG_GET_INT_EXTERN(console.screen.viewports.custom_vp.width, "custom_viewport_width");
    CONFIG_GET_INT_EXTERN(console.screen.viewports.custom_vp.height, "custom_viewport_height");
-#endif
 
    unsigned msg_color = 0;
    if (config_get_hex(conf, "video_message_color", &msg_color))
