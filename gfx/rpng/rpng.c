@@ -550,6 +550,9 @@ static bool png_append_idat(FILE *file, const struct png_chunk *chunk, struct id
 
 static bool png_read_plte(FILE *file, uint32_t *buffer, unsigned entries)
 {
+   if (entries > 256)
+      return false;
+
    uint8_t buf[256 * 3];
    if (fread(buf, 3, entries, file) != entries)
       return false;
