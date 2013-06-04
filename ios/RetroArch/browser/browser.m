@@ -48,7 +48,7 @@ BOOL ra_ios_is_directory(NSString* path)
 static NSArray* ra_ios_list_directory(NSString* path)
 {
    NSMutableArray* result = [NSMutableArray arrayWithCapacity:27];
-   for (int i = 0; i < 27; i ++)
+   for (int i = 0; i < 28; i ++)
    {
       [result addObject:[NSMutableArray array]];
    }
@@ -70,7 +70,10 @@ static NSArray* ra_ios_list_directory(NSString* path)
       cpath[cpath_end] = 0;
       strcat(cpath, item->d_name);
 
-      uint32_t section = isalpha(item->d_name[0]) ? (toupper(item->d_name[0]) - 'A') + 1 : 0;
+      RADirectoryItem* value = [RADirectoryItem directoryItemFromPath:cpath];
+
+      uint32_t section = isalpha(item->d_name[0]) ? (toupper(item->d_name[0]) - 'A') + 2 : 1;
+      section = value.isDirectory ? 0 : section;
       [result[section] addObject:[RADirectoryItem directoryItemFromPath:cpath]];
    }
    
@@ -158,7 +161,7 @@ NSString* ra_ios_check_path(NSString* path)
 
 - (NSArray*)sectionIndexTitlesForTableView:(UITableView*)tableView
 {
-   return [NSArray arrayWithObjects:@"#", @"A", @"B", @"C", @"D", @"E", @"F", @"G", @"H", @"I", @"J", @"K", @"L", @"M",
+   return [NSArray arrayWithObjects:@"/", @"#", @"A", @"B", @"C", @"D", @"E", @"F", @"G", @"H", @"I", @"J", @"K", @"L", @"M",
                                           @"N", @"O", @"P", @"Q", @"R", @"S", @"T", @"U", @"V", @"W", @"X", @"Y", @"Z", nil];
 }
 
