@@ -195,6 +195,8 @@ void input_autodetect_setup (void *data, char *msg, size_t sizeof_msg, unsigned 
          device = DEVICE_THRUSTMASTER_T_MINI;
       else if (strstr(name_buf, "2Axes 11Keys Game  Pad"))
          device = DEVICE_TOMEE_NES_USB;
+      else if (strstr(name_buf, "rk29-keypad") || strstr(name_buf, "GAMEMID"))
+         device = DEVICE_GAMEMID;
 
       if (strstr(current_ime, "net.obsidianx.android.mogaime"))
       {

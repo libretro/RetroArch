@@ -264,6 +264,7 @@ enum input_devices
    DEVICE_OUYA,
    DEVICE_TOMEE_NES_USB,
    DEVICE_THRUSTMASTER_T_MINI,
+   DEVICE_GAMEMID,
 #elif defined(GEKKO)
    DEVICE_GAMECUBE = 0,
 #ifdef HW_RVL
