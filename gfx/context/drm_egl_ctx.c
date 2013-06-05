@@ -108,39 +108,25 @@ static void gfx_ctx_check_window(bool *quit,
 
 static unsigned first_page_flip;
 static unsigned last_page_flip;
-static uint64_t first_usec;
-static uint64_t last_usec;
-
-static unsigned missed_vblanks;
-static unsigned hit_vblanks;
 
 static void page_flip_handler(int fd, unsigned frame, unsigned sec, unsigned usec, void *data)
 {
    (void)fd;
+   (void)sec;
+   (void)usec;
 
-   uint64_t current_usec = (uint64_t)sec * 1000000 + usec;
    if (!first_page_flip)
-   {
       first_page_flip = frame;
-      first_usec      = current_usec;
-   }
 
    if (last_page_flip)
    {
       unsigned missed = frame - last_page_flip - 1;
-      if (!missed)
-         hit_vblanks++;
-      else
-      {
+      if (missed)
          RARCH_LOG("[KMS/EGL]: Missed %u VBlank(s) (Frame: %u, DRM frame: %u).\n",
                missed, frame - first_page_flip, frame);
-         missed_vblanks += missed;
-      }
    }
 
    last_page_flip = frame;
-   last_usec      = current_usec;
-
    *(bool*)data = false;
 }
 
@@ -226,7 +212,10 @@ static void gfx_ctx_set_resize(unsigned width, unsigned height)
 }
 
 static void gfx_ctx_update_window_title(void)
-{}
+{
+   char buf[128];
+   gfx_get_fps(buf, sizeof(buf), false);
+}
 
 static void gfx_ctx_get_video_size(unsigned *width, unsigned *height)
 {
@@ -544,17 +533,6 @@ void gfx_ctx_destroy(void)
    if (g_drm_fd >= 0)
       close(g_drm_fd);
    g_drm_fd = -1;
-
-   unsigned frames = last_page_flip - first_page_flip;
-   if (frames)
-   {
-      uint64_t usec = last_usec - first_usec;
-      RARCH_WARN("[KMS/EGL]: Estimated monitor FPS: %.5f Hz\n", 1000000.0 * frames / usec); 
-   }
-
-   RARCH_WARN("[KMS/EGL]: Performance stats: Missed VBlanks: %u, Perfect VBlanks: %u\n", 
-         missed_vblanks, hit_vblanks);
-
    g_inited = false;
 }
 
