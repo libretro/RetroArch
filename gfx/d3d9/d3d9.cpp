@@ -1396,7 +1396,7 @@ static void d3d9_set_aspect_ratio(void *data, unsigned aspect_ratio_idx)
    switch (aspect_ratio_idx)
    {
       case ASPECT_RATIO_SQUARE:
-         gfx_set_square_pixel_viewport(g_system.system.av_info.geometry.base_width, g_extern.system.av_info.geometry.base_height);
+         gfx_set_square_pixel_viewport(g_extern.system.av_info.geometry.base_width, g_extern.system.av_info.geometry.base_height);
          break;
 
       case ASPECT_RATIO_CORE:
