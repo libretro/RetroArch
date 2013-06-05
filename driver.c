@@ -877,7 +877,8 @@ void init_video_input(void)
    {
       if (g_settings.video.force_aspect)
       {
-         width = roundf(geom->base_height * g_settings.video.xscale * g_extern.system.aspect_ratio);
+         unsigned base_width = roundf(geom->base_height * g_extern.system.aspect_ratio); // Do rounding here to simplify integer scale correctness.
+         width = roundf(base_width * g_settings.video.xscale);
          height = roundf(geom->base_height * g_settings.video.yscale);
       }
       else
