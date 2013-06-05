@@ -388,9 +388,6 @@ static void gl_cg_deinit_context_state(void)
 // Full deinit.
 static void gl_cg_deinit(void)
 {
-   if (!cg_active)
-      return;
-
    gl_cg_deinit_state();
    gl_cg_deinit_context_state();
 }
@@ -786,7 +783,7 @@ static bool gl_cg_init(const char *path)
    if (cgFProf == CG_PROFILE_UNKNOWN || cgVProf == CG_PROFILE_UNKNOWN)
    {
       RARCH_ERR("Invalid profile type\n");
-      return false;
+      goto error;
    }
 #ifndef HAVE_RGL
    RARCH_LOG("[Cg]: Vertex profile: %s\n", cgGetProfileString(cgVProf));
@@ -800,12 +797,12 @@ static bool gl_cg_init(const char *path)
    if (path && strcmp(path_get_extension(path), "cgp") == 0)
    {
       if (!load_preset(path))
-         return false;
+         goto error;
    }
    else
    {
       if (!load_plain(path))
-         return false;
+         goto error;
    }
 
    prg[0].mvp = cgGetNamedParameter(prg[0].vprg, "modelViewProj");
@@ -826,6 +823,10 @@ static bool gl_cg_init(const char *path)
 
    cg_active = true;
    return true;
+
+error:
+   gl_cg_deinit();
+   return false;
 }
 
 static void gl_cg_use(unsigned index)

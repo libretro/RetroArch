@@ -644,6 +644,42 @@ static void gl_glsl_free_shader(void)
    glsl_shader = NULL;
 }
 
+static void gl_glsl_deinit(void)
+{
+   pglUseProgram(0);
+   for (unsigned i = 0; i < GFX_MAX_SHADERS; i++)
+   {
+      if (gl_program[i] == 0 || (i && gl_program[i] == gl_program[0]))
+         continue;
+
+      gl_glsl_delete_shader(gl_program[i]);
+   }
+
+   if (glsl_shader && glsl_shader->luts)
+      glDeleteTextures(glsl_shader->luts, gl_teximage);
+
+   memset(gl_program, 0, sizeof(gl_program));
+   glsl_enable  = false;
+   active_index = 0;
+
+   gl_glsl_free_shader();
+
+   if (gl_state_tracker)
+      state_tracker_free(gl_state_tracker);
+   gl_state_tracker = NULL;
+
+   gl_glsl_reset_attrib();
+
+   for (unsigned i = 0; i < GFX_MAX_SHADERS; i++)
+   {
+      if (glsl_vbo[i].vbo_primary)
+         pglDeleteBuffers(1, &glsl_vbo[i].vbo_primary);
+      if (glsl_vbo[i].vbo_secondary)
+         pglDeleteBuffers(1, &glsl_vbo[i].vbo_secondary);
+   }
+   memset(&glsl_vbo, 0, sizeof(glsl_vbo));
+}
+
 static bool gl_glsl_init(const char *path)
 {
 #if !defined(HAVE_OPENGLES2) && !defined(HAVE_OPENGL_MODERN) && !defined(__APPLE__)
@@ -742,37 +778,32 @@ static bool gl_glsl_init(const char *path)
 
    gfx_shader_resolve_relative(glsl_shader, path);
 
-#ifdef HAVE_OPENGLES2
-   if (!glsl_shader->modern)
-   {
-      RARCH_ERR("[GL]: GLES context is used, but shader is not modern. Cannot use it.\n");
-      return false;
-   }
-#endif
-
    const char *stock_vertex = glsl_shader->modern ?
       stock_vertex_modern : stock_vertex_legacy;
    const char *stock_fragment = glsl_shader->modern ?
       stock_fragment_modern : stock_fragment_legacy;
 
+#ifdef HAVE_OPENGLES2
+   if (!glsl_shader->modern)
+   {
+      RARCH_ERR("[GL]: GLES context is used, but shader is not modern. Cannot use it.\n");
+      goto error;
+   }
+#endif
+
    if (!(gl_program[0] = compile_program(stock_vertex, stock_fragment, 0)))
    {
       RARCH_ERR("GLSL stock programs failed to compile.\n");
-      gl_glsl_free_shader();
-      return false;
+      goto error;
    }
 
    if (!compile_programs(&gl_program[1]))
-   {
-      gl_glsl_free_shader();
-      return false;
-   }
+      goto error;
 
    if (!load_luts())
    {
       RARCH_ERR("[GL]: Failed to load LUTs.\n");
-      gl_glsl_free_shader();
-      return false;
+      goto error;
    }
 
    for (unsigned i = 0; i <= glsl_shader->passes; i++)
@@ -827,43 +858,10 @@ static bool gl_glsl_init(const char *path)
    }
 
    return true;
-}
 
-static void gl_glsl_deinit(void)
-{
-   if (glsl_enable)
-   {
-      pglUseProgram(0);
-      for (unsigned i = 0; i < GFX_MAX_SHADERS; i++)
-      {
-         if (gl_program[i] == 0 || (i && gl_program[i] == gl_program[0]))
-            continue;
-
-         gl_glsl_delete_shader(gl_program[i]);
-      }
-
-      if (glsl_shader)
-         glDeleteTextures(glsl_shader->luts, gl_teximage);
-   }
-
-   memset(gl_program, 0, sizeof(gl_program));
-   glsl_enable  = false;
-   active_index = 0;
-
-   gl_glsl_free_shader();
-
-   if (gl_state_tracker)
-      state_tracker_free(gl_state_tracker);
-   gl_state_tracker = NULL;
-
-   gl_glsl_reset_attrib();
-
-   for (unsigned i = 0; i < GFX_MAX_SHADERS; i++)
-   {
-      pglDeleteBuffers(1, &glsl_vbo[i].vbo_primary);
-      pglDeleteBuffers(1, &glsl_vbo[i].vbo_secondary);
-   }
-   memset(&glsl_vbo, 0, sizeof(glsl_vbo));
+error:
+   gl_glsl_deinit();
+   return false;
 }
 
 static void gl_glsl_set_params(unsigned width, unsigned height, 

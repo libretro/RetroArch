@@ -301,7 +301,14 @@ static bool gl_shader_init(void *data)
    }
 
    gl->shader = backend;
-   return gl->shader->init(shader_path);
+   bool ret = gl->shader->init(shader_path);
+   if (!ret)
+   {
+      RARCH_ERR("[GL]: Failed to init shader, falling back to stock.\n");
+      ret = gl->shader->init(NULL);
+   }
+
+   return ret;
 }
 
 static inline void gl_shader_deinit(void *data)
@@ -1910,7 +1917,7 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
 
    if (!gl_shader_init(gl))
    {
-      RARCH_ERR("Shader init failed.\n");
+      RARCH_ERR("[GL]: Shader init failed.\n");
       context_destroy_func();
       free(gl);
       return NULL;
