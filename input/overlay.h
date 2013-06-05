@@ -19,6 +19,10 @@
 #include "../boolean.h"
 #include <stdint.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 // Overlay driver acts as a medium between input drivers and video driver.
 // Coordinates are fetched from input driver, and an overlay with pressable actions are
 // displayed on-screen.
@@ -48,6 +52,10 @@ void input_overlay_set_alpha_mod(input_overlay_t *ol, float mod);
 void input_overlay_set_scale_factor(input_overlay_t *ol, float scale);
 
 void input_overlay_next(input_overlay_t *ol);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
 

@@ -133,10 +133,10 @@ static void buffer_attr_cb(pa_stream *s, void *data)
 
 static void *pulse_init(const char *device, unsigned rate, unsigned latency)
 {
+   const pa_buffer_attr *server_attr = NULL;
    pa_sample_spec spec;
    memset(&spec, 0, sizeof(spec));
    pa_buffer_attr buffer_attr = {0};
-
    pa_t *pa = (pa_t*)calloc(1, sizeof(*pa));
    if (!pa)
       goto error;
@@ -191,7 +191,7 @@ static void *pulse_init(const char *device, unsigned rate, unsigned latency)
    if (pa_stream_get_state(pa->stream) != PA_STREAM_READY)
       goto unlock_error;
 
-   const pa_buffer_attr *server_attr = pa_stream_get_buffer_attr(pa->stream);
+   server_attr = pa_stream_get_buffer_attr(pa->stream);
    if (server_attr)
    {
       pa->buffer_size = server_attr->tlength;
