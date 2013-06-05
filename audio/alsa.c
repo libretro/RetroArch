@@ -30,6 +30,7 @@ typedef struct alsa
    bool nonblock;
    bool has_float;
    bool can_pause;
+   bool is_paused;
 } alsa_t;
 
 static bool alsa_use_float(void *data)
@@ -194,8 +195,16 @@ static ssize_t alsa_write(void *data, const void *buf_, size_t size_)
 static bool alsa_stop(void *data)
 {
    alsa_t *alsa = (alsa_t*)data;
-   if (alsa->can_pause)
-      return snd_pcm_pause(alsa->pcm, 1) == 0;
+   if (alsa->can_pause && !alsa->is_paused)
+   {
+      if (snd_pcm_pause(alsa->pcm, 1) == 0)
+      {
+         alsa->is_paused = true;
+         return true;
+      }
+      else
+         return false;
+   }
    else
       return true;
 }
@@ -209,8 +218,20 @@ static void alsa_set_nonblock_state(void *data, bool state)
 static bool alsa_start(void *data)
 {
    alsa_t *alsa = (alsa_t*)data;
-   if (alsa->can_pause)
-      return snd_pcm_pause(alsa->pcm, 0) == 0;
+   if (alsa->can_pause && alsa->is_paused)
+   {
+      int ret = snd_pcm_pause(alsa->pcm, 0);
+      if (ret < 0)
+      {
+         RARCH_ERR("[ALSA]: Failed to unpause: %s.\n", snd_strerror(ret));
+         return false;
+      }
+      else
+      {
+         alsa->is_paused = false;
+         return true;
+      }
+   }
    else
       return true;
 }
