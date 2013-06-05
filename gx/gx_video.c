@@ -286,7 +286,7 @@ static void gx_set_aspect_ratio(void *data, unsigned aspect_ratio_idx)
    gx_video_t *gx = (gx_video_t*)driver.video_data;
 
    if (aspect_ratio_idx == ASPECT_RATIO_SQUARE)
-      gfx_set_square_pixel_viewport(g_extern.frame_cache.width, g_extern.frame_cache.height);
+      gfx_set_square_pixel_viewport(g_extern.system.av_info.geometry.base_width, g_extern.system.av_info.geometry.base_height);
    else if (aspect_ratio_idx == ASPECT_RATIO_CORE)
       gfx_set_core_viewport();
    else if (aspect_ratio_idx == ASPECT_RATIO_CONFIG)

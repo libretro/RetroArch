@@ -2400,7 +2400,7 @@ static void gl_set_aspect_ratio(void *data, unsigned aspect_ratio_idx)
    switch (aspect_ratio_idx)
    {
       case ASPECT_RATIO_SQUARE:
-         gfx_set_square_pixel_viewport(g_extern.frame_cache.width, g_extern.frame_cache.height);
+         gfx_set_square_pixel_viewport(g_extern.system.av_info.geometry.base_width, g_extern.system.av_info.geometry.base_height);
          break;
 
       case ASPECT_RATIO_CORE:
