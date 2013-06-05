@@ -26,10 +26,10 @@
 typedef struct alsa
 {
    snd_pcm_t *pcm;
+   size_t buffer_size;
    bool nonblock;
    bool has_float;
-
-   size_t buffer_size;
+   bool can_pause;
 } alsa_t;
 
 static bool alsa_use_float(void *data)
@@ -90,6 +90,8 @@ static void *alsa_init(const char *device, unsigned rate, unsigned latency)
    snd_pcm_hw_params_get_buffer_size(params, &buffer_size);
    RARCH_LOG("ALSA: Buffer size: %d frames\n", (int)buffer_size);
    alsa->buffer_size = snd_pcm_frames_to_bytes(alsa->pcm, buffer_size);
+   alsa->can_pause = snd_pcm_hw_params_can_pause(params);
+   RARCH_LOG("ALSA: Can pause: %s.\n", alsa->can_pause ? "yes" : "no");
 
    TRY_ALSA(snd_pcm_sw_params_malloc(&sw_params));
    TRY_ALSA(snd_pcm_sw_params_current(alsa->pcm, sw_params));
@@ -191,7 +193,11 @@ static ssize_t alsa_write(void *data, const void *buf_, size_t size_)
 
 static bool alsa_stop(void *data)
 {
-   return true;
+   alsa_t *alsa = (alsa_t*)data;
+   if (alsa->can_pause)
+      return snd_pcm_pause(alsa->pcm, 1) == 0;
+   else
+      return true;
 }
 
 static void alsa_set_nonblock_state(void *data, bool state)
@@ -202,7 +208,11 @@ static void alsa_set_nonblock_state(void *data, bool state)
 
 static bool alsa_start(void *data)
 {
-   return true;
+   alsa_t *alsa = (alsa_t*)data;
+   if (alsa->can_pause)
+      return snd_pcm_pause(alsa->pcm, 0) == 0;
+   else
+      return true;
 }
 
 static void alsa_free(void *data)
@@ -224,10 +234,10 @@ static size_t alsa_write_avail(void *data)
 {
    alsa_t *alsa = (alsa_t*)data;
 
-   snd_pcm_sframes_t avail = snd_pcm_avail_update(alsa->pcm);
+   snd_pcm_sframes_t avail = snd_pcm_avail(alsa->pcm);
    if (avail < 0)
    {
-      //RARCH_WARN("[ALSA]: avail_update() failed: %s\n", snd_strerror(avail));
+      //RARCH_WARN("[ALSA]: snd_pcm_avail() failed: %s\n", snd_strerror(avail));
       return alsa->buffer_size;
    }
 
