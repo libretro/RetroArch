@@ -297,6 +297,12 @@ static RASettingData* custom_action(NSString* action, id data)
          // TODO: Make this option only if BTstack is available
          boolean_setting(config, @"ios_use_btstack", @"Enable BTstack", @"false"),
          nil],
+      [NSArray arrayWithObjects:@"Orientations",
+         boolean_setting(config, @"ios_allow_portrait", @"Portrait", @"true"),
+         boolean_setting(config, @"ios_allow_portrait_upside_down", @"Portrait Upside Down", @"true"),
+         boolean_setting(config, @"ios_allow_landscape_left", @"Landscape Left", @"true"),
+         boolean_setting(config, @"ios_allow_landscape_right", @"Landscape Right", @"true"),
+         nil],
       modules,
       nil
    ];

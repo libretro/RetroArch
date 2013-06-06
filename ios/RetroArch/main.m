@@ -216,6 +216,7 @@ static void event_reload_config(void* userdata)
    bool _isPaused;
    bool _isRunning;
    uint32_t _settingMenusInBackStack;
+   uint32_t _enabledOrientations;
    
    RAModuleInfo* _module;
 }
@@ -298,6 +299,33 @@ static void event_reload_config(void* userdata)
    return [super popViewControllerAnimated:animated && !_isGameTop];
 }
 
+// NOTE: This version only runs on iOS6
+- (NSUInteger)supportedInterfaceOrientations
+{
+   return _isGameTop ? _enabledOrientations
+                     : UIInterfaceOrientationMaskAll;
+}
+
+// NOTE: This version runs on iOS2-iOS5, but not iOS6
+- (BOOL)shouldAutorotateToInterfaceOrientation:(UIInterfaceOrientation)interfaceOrientation
+{
+   if (_isGameTop)
+      switch (interfaceOrientation)
+      {
+         case UIInterfaceOrientationPortrait:
+            return (_enabledOrientations & UIInterfaceOrientationMaskPortrait);
+         case UIInterfaceOrientationPortraitUpsideDown:
+            return (_enabledOrientations & UIInterfaceOrientationMaskPortraitUpsideDown);
+         case UIInterfaceOrientationLandscapeLeft:
+            return (_enabledOrientations & UIInterfaceOrientationMaskLandscapeLeft);
+         case UIInterfaceOrientationLandscapeRight:
+            return (_enabledOrientations & UIInterfaceOrientationMaskLandscapeRight);
+      }
+   
+   return YES;
+}
+
+
 #pragma mark EMULATION
 - (void)runGame:(NSString*)path withModule:(RAModuleInfo*)module
 {
@@ -370,6 +398,27 @@ static void event_reload_config(void* userdata)
 
    if (conf)
    {
+      // Get enabled orientations
+      static const struct { const char* setting; uint32_t orientation; } orientationSettings[4] =
+      {
+         { "ios_allow_portrait", UIInterfaceOrientationMaskPortrait },
+         { "ios_allow_portrait_upside_down", UIInterfaceOrientationMaskPortraitUpsideDown },
+         { "ios_allow_landscape_left", UIInterfaceOrientationMaskLandscapeLeft },
+         { "ios_allow_landscape_right", UIInterfaceOrientationMaskLandscapeRight }
+      };
+   
+      _enabledOrientations = 0;
+   
+      for (int i = 0; i < 4; i ++)
+      {
+         bool enabled = false;
+         bool found = config_get_bool(conf, orientationSettings[i].setting, &enabled);
+         
+         if (!found || enabled)
+            _enabledOrientations |= orientationSettings[i].orientation;
+      }
+      
+      //
       config_get_bool(conf, "ios_use_icade", &use_icade);
       config_get_bool(conf, "ios_use_btstack", &enable_btstack);
       
