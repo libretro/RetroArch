@@ -197,6 +197,8 @@ void input_autodetect_setup (void *data, char *msg, size_t sizeof_msg, unsigned 
          device = DEVICE_TOMEE_NES_USB;
       else if (strstr(name_buf, "rk29-keypad") || strstr(name_buf, "GAMEMID"))
          device = DEVICE_GAMEMID;
+      else if (strstr(name_buf, "USB Gamepad"))
+         device = DEVICE_DEFENDER_GAME_RACER_CLASSIC;
 
       if (strstr(current_ime, "net.obsidianx.android.mogaime"))
       {
