@@ -3,3 +3,14 @@ supported_extensions = "bin|cue|img|mdf|pbp|cbn|toc"
 corename = "PCSX ReARMed"
 manufacturer = "Sony"
 systemname = "PlayStation"
+
+firmware_count = 3
+
+firmware1_desc = "scph1001 (US BIOS)"
+firmware1_path = "%sysdir%/scph1001.bin"
+
+firmware2_desc = "scph5501 (US BIOS Alternative)"
+firmware2_path = "%sysdir%/scph5501.bin"
+
+firmware3_desc = "scph7001 (US BIOS Alternative)"
+firmware3_path = "%sysdir%/scph7001.bin"

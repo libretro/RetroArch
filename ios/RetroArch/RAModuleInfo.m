@@ -15,12 +15,9 @@
 
 #include <glob.h>
 #import "RAModuleInfo.h"
+#import "browser/browser.h"
 
 static NSMutableArray* moduleList;
-static NSString* const labels[3] = {@"Core Name", @"Developer", @"Name"};
-static const char* const keys[3] = {"corename", "manufacturer", "systemname"};
-static NSString* const sectionNames[2] = {@"Emulator", @"Hardware"};
-static const uint32_t sectionSizes[2] = {1, 2};
 
 @implementation RAModuleInfo
 + (NSArray*)getModules
@@ -87,9 +84,25 @@ static const uint32_t sectionSizes[2] = {1, 2};
 
 @end
 
+
+static NSString* get_data_string(config_file_t* config, const char* name, NSString* defaultValue)
+{
+   char* result = 0;
+   if (config_get_string(config, name, &result))
+   {
+      NSString* output = [NSString stringWithUTF8String:result];
+      free(result);
+      return output;
+   }
+   
+   return defaultValue;
+}
+
 @implementation RAModuleInfoList
 {
    RAModuleInfo* _data;
+   NSMutableArray* _sections;
+   uint32_t _firmwareSectionIndex;
 }
 
 - (id)initWithModuleInfo:(RAModuleInfo*)info
@@ -97,22 +110,59 @@ static const uint32_t sectionSizes[2] = {1, 2};
    self = [super initWithStyle:UITableViewStyleGrouped];
 
    _data = info;
+
+   _sections = [NSMutableArray array];
+
+   [_sections addObject: [NSArray arrayWithObjects:@"Emulator",
+      @"Core Name", get_data_string(_data.data, "corename", @"Unspecified"),
+      nil]];
+   
+   [_sections addObject: [NSArray arrayWithObjects:@"Hardware/Software",
+      @"Developer", get_data_string(_data.data, "manufacturer", @"Unspecified"),
+      @"Name", get_data_string(_data.data, "systemname", @"Unspecified"),
+      nil]];
+
+   // Firmware
+   _firmwareSectionIndex = 1000;
+   uint32_t firmwareCount = 0;
+   if (config_get_uint(_data.data, "firmware_count", &firmwareCount) && firmwareCount)
+   {
+      NSMutableArray* firmwareSection = [NSMutableArray arrayWithObject:@"Firmware"];
+
+      for (int i = 0; i < firmwareCount; i ++)
+      {
+         char namebuf[512];
+         
+         snprintf(namebuf, 512, "firmware%d_desc", i + 1);
+         [firmwareSection addObject:get_data_string(_data.data, namebuf, @"Unspecified")];
+
+         snprintf(namebuf, 512, "firmware%d_path", i + 1);
+         NSString* path = get_data_string(_data.data, namebuf, @"Unspecified");
+         path = [path stringByReplacingOccurrencesOfString:@"%sysdir%" withString:RetroArch_iOS.get.system_directory];
+
+         [firmwareSection addObject:path];
+      }
+
+      _firmwareSectionIndex = _sections.count;
+      [_sections addObject:firmwareSection];
+   }
+
    return self;
 }
 
 - (NSInteger)numberOfSectionsInTableView:(UITableView*)tableView
 {
-   return sizeof(sectionSizes) / sizeof(sectionSizes[0]);
+   return _sections.count;
 }
 
 - (NSString*)tableView:(UITableView*)tableView titleForHeaderInSection:(NSInteger)section
 {
-   return sectionNames[section];
+   return _sections[section][0];
 }
 
 - (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section
 {
-   return sectionSizes[section];
+   return ([_sections[section] count] - 1) / 2;
 }
 
 - (UITableViewCell*)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath
@@ -120,20 +170,14 @@ static const uint32_t sectionSizes[2] = {1, 2};
    UITableViewCell* cell = [self.tableView dequeueReusableCellWithIdentifier:@"datacell"];
    cell = (cell != nil) ? cell : [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleValue1 reuseIdentifier:@"datacell"];
    
-   uint32_t sectionBase = 0;
-   for (int i = 0; i != indexPath.section; i ++)
-   {
-      sectionBase += sectionSizes[i];
-   }
+   cell.textLabel.text = _sections[indexPath.section][indexPath.row * 2 + 1];
+   cell.detailTextLabel.text = _sections[indexPath.section][indexPath.row * 2 + 2];
+   cell.detailTextLabel.adjustsFontSizeToFitWidth = YES;
 
-   cell.textLabel.text = labels[sectionBase + indexPath.row];
-   
-   char* val = 0;
-   if (_data.data)
-      config_get_string(_data.data, keys[sectionBase + indexPath.row], &val);
-   
-   cell.detailTextLabel.text = val ? [NSString stringWithUTF8String:val] : @"Unspecified";
-   free(val);
+   if (indexPath.section == _firmwareSectionIndex)
+      cell.backgroundColor = ra_ios_is_file(_sections[indexPath.section][indexPath.row * 2 + 2]) ? [UIColor blueColor] : [UIColor redColor];
+   else
+      cell.backgroundColor = [UIColor whiteColor];
 
    return cell;
 }
