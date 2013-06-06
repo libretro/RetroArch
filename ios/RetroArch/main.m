@@ -278,9 +278,11 @@ static void event_reload_config(void* userdata)
 - (void)navigationController:(UINavigationController *)navigationController willShowViewController:(UIViewController *)viewController animated:(BOOL)animated
 {
    _isGameTop = [viewController isKindOfClass:[RAGameView class]];
-   [[UIApplication sharedApplication] setStatusBarHidden:_isGameTop withAnimation:UIStatusBarAnimationNone];
-   self.navigationBarHidden = _isGameTop;
 
+   [[UIApplication sharedApplication] setStatusBarHidden:_isGameTop withAnimation:UIStatusBarAnimationNone];
+   [[UIApplication sharedApplication] setIdleTimerDisabled:_isGameTop];
+
+   self.navigationBarHidden = _isGameTop;
    self.topViewController.navigationItem.rightBarButtonItem = [self createSettingsButton];
 }
 
