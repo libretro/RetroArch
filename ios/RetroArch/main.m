@@ -34,11 +34,6 @@
 
 #define GSEVENT_TYPE_KEYDOWN 10
 #define GSEVENT_TYPE_KEYUP 11
-#define GSEVENT_TYPE_MODS 12
-#define GSEVENT_MOD_CMD (1 << 16)
-#define GSEVENT_MOD_SHIFT (1 << 17)
-#define GSEVENT_MOD_ALT (1 << 19)
-#define GSEVENT_MOD_CTRL (1 << 20)
 
 //#define HAVE_DEBUG_FILELOG
 
@@ -156,8 +151,6 @@ int main(int argc, char *argv[])
    }
 }
 
-#define kDOCSFOLDER [NSHomeDirectory() stringByAppendingPathComponent:@"Documents"]
-
 // From frontend/frontend_ios.c
 extern void* rarch_main_ios(void* args);
 extern void ios_frontend_post_event(void (*fn)(void*), void* userdata);
@@ -249,13 +242,15 @@ static void event_reload_config(void* userdata)
    ios_log_init();
 #endif
 
-   self.system_directory = [NSString stringWithFormat:@"%@/.RetroArch", kDOCSFOLDER];
-   self.systemConfigPath = [NSString stringWithFormat:@"%@/.RetroArch/frontend.cfg", kDOCSFOLDER];
+   NSString* documentsPath = [NSHomeDirectory() stringByAppendingPathComponent:@"Documents"];
+
+   self.system_directory = [NSString stringWithFormat:@"%@/.RetroArch", documentsPath];
+   self.systemConfigPath = [NSString stringWithFormat:@"%@/.RetroArch/frontend.cfg", documentsPath];
    mkdir([self.system_directory UTF8String], 0755);
 
    // Setup window
    self.delegate = self;
-   [self pushViewController:[RADirectoryList directoryListForPath:kDOCSFOLDER] animated:YES];
+   [self pushViewController:[RADirectoryList directoryListAtBrowseRoot] animated:YES];
 
    _window = [[UIWindow alloc] initWithFrame:[[UIScreen mainScreen] bounds]];
    _window.rootViewController = self;

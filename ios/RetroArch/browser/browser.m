@@ -92,27 +92,22 @@ static NSArray* ra_ios_list_directory(NSString* path)
    return result;
 }
 
-NSString* ra_ios_check_path(NSString* path)
-{
-   if (path && ra_ios_is_directory(path))
-      return path;
-
-   // The error message can be ugly if it is a long message, but it should never be displayed during normal operation.
-   if (path)
-      [RetroArch_iOS displayErrorMessage:[NSString stringWithFormat:@"Browsed path is not a directory: %@", path]];
-
-   return [NSHomeDirectory() stringByAppendingPathComponent:@"Documents"];
-}
-
 @implementation RADirectoryList
 {
-   NSString* _path;
    NSArray* _list;
+}
+
++ (id)directoryListAtBrowseRoot
+{
+   NSString* rootPath = [NSHomeDirectory() stringByAppendingPathComponent:@"Documents"];
+   NSString* ragPath = [NSHomeDirectory() stringByAppendingPathComponent:@"Documents/RetroArchGames"];
+   
+   return [RADirectoryList directoryListForPath:ra_ios_is_directory(ragPath) ? ragPath : rootPath];
 }
 
 + (id)directoryListForPath:(NSString*)path
 {
-   path = ra_ios_check_path(path);
+   // NOTE: Don't remove or ignore this abstraction, this function will be expanded when cover art comes back.
    return [[RADirectoryList alloc] initWithPath:path];
 }
 
@@ -120,10 +115,16 @@ NSString* ra_ios_check_path(NSString* path)
 {
    self = [super initWithStyle:UITableViewStylePlain];
 
-   _path = path;
-   _list = ra_ios_list_directory(_path);
-
-   [self setTitle: [_path lastPathComponent]];
+   if (!ra_ios_is_directory(path))
+   {
+      [RetroArch_iOS displayErrorMessage:[NSString stringWithFormat:@"Browsed path is not a directory: %@", path]];
+      _list = [NSArray array];
+   }
+   else
+   {
+      [self setTitle: [path lastPathComponent]];
+      _list = ra_ios_list_directory(path);
+   }
    
    return self;
 }
