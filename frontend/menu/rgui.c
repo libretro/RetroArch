@@ -1973,6 +1973,20 @@ static int video_option_toggle_setting(rgui_handle_t *rgui, unsigned setting, rg
                g_extern.measure_data.frame_time_samples_count = 0;
                break;
 
+            case RGUI_ACTION_OK:
+            {
+               double refresh_rate = 0.0;
+               double deviation = 0.0;
+               unsigned sample_points = 0;
+               if (driver_monitor_fps_statistics(&refresh_rate, &deviation, &sample_points))
+               {
+                  driver_set_monitor_refresh_rate(refresh_rate);
+                  // Incase refresh rate update forced non-block video.
+                  video_set_nonblock_state_func(false);
+               }
+               break;
+            }
+
             default:
                break;
          }

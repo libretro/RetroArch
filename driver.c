@@ -266,7 +266,11 @@ static void adjust_system_rates(void)
 
 void driver_set_monitor_refresh_rate(float hz)
 {
-   RARCH_LOG("Setting refresh rate to: %.2fHz.\n", hz);
+   char msg[256];
+   snprintf(msg, sizeof(msg), "Setting refresh rate to: %.3f Hz.", hz);
+   msg_queue_push(g_extern.msg_queue, msg, 1, 180);
+   RARCH_LOG("%s\n", msg);
+
    g_settings.video.refresh_rate = hz;
    adjust_system_rates();
 
