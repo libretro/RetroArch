@@ -473,6 +473,7 @@ void init_audio(void);
 void uninit_audio(void);
 
 void driver_set_monitor_refresh_rate(float hz);
+bool driver_monitor_fps_statistics(double *refresh_rate, double *deviation, unsigned *sample_points);
 void driver_set_nonblock_state(bool nonblock);
 
 // Used by RETRO_ENVIRONMENT_SET_HW_RENDER.

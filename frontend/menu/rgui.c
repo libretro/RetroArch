@@ -600,6 +600,17 @@ static void render_text(rgui_handle_t *rgui)
             case RGUI_SETTINGS_VIDEO_HARD_SYNC_FRAMES:
                snprintf(type_str, sizeof(type_str), "%u", g_settings.video.hard_sync_frames);
                break;
+            case RGUI_SETTINGS_VIDEO_REFRESH_RATE_AUTO:
+            {
+               double refresh_rate = 0.0;
+               double deviation = 0.0;
+               unsigned sample_points = 0;
+               if (driver_monitor_fps_statistics(&refresh_rate, &deviation, &sample_points))
+                  snprintf(type_str, sizeof(type_str), "%.3f Hz (%.1f%% dev, %u samples)", refresh_rate, 100.0 * deviation, sample_points);
+               else
+                  strlcpy(type_str, "N/A", sizeof(type_str));
+               break;
+            }
             case RGUI_SETTINGS_VIDEO_INTEGER_SCALE:
                strlcpy(type_str, g_settings.video.scale_integer ? "ON" : "OFF", sizeof(type_str));
                break;
@@ -1503,6 +1514,7 @@ static void rgui_settings_video_options_populate_entries(rgui_handle_t *rgui)
    rgui_list_push(rgui->selection_buf, "VSync", RGUI_SETTINGS_VIDEO_VSYNC, 0);
    rgui_list_push(rgui->selection_buf, "Hard GPU Sync", RGUI_SETTINGS_VIDEO_HARD_SYNC, 0);
    rgui_list_push(rgui->selection_buf, "Hard GPU Sync Frames", RGUI_SETTINGS_VIDEO_HARD_SYNC_FRAMES, 0);
+   rgui_list_push(rgui->selection_buf, "Estimated Monitor FPS", RGUI_SETTINGS_VIDEO_REFRESH_RATE_AUTO, 0);
 }
 
 #ifdef HAVE_SHADER_MANAGER
@@ -1952,6 +1964,10 @@ static int video_option_toggle_setting(rgui_handle_t *rgui, unsigned setting, rg
             default:
                break;
          }
+         break;
+
+      case RGUI_SETTINGS_VIDEO_REFRESH_RATE_AUTO:
+         // TODO: Add support for updating refresh rate from RGUI.
          break;
 
       default:

@@ -589,22 +589,17 @@ static void compute_audio_buffer_statistics(void)
          (100.0 * high_water_count) / (samples - 1));
 }
 
-static void compute_monitor_fps_statistics(void)
+bool driver_monitor_fps_statistics(double *refresh_rate, double *deviation, unsigned *sample_points)
 {
    if (g_settings.video.threaded)
    {
       RARCH_LOG("Monitor FPS estimation is disabled for threaded video.\n");
-      return;
+      return false;
    }
 
-   if (g_extern.measure_data.frame_time_samples_count < 2 * MEASURE_FRAME_TIME_SAMPLES_COUNT)
-   {
-      RARCH_LOG("Does not have enough samples for monitor refresh rate estimation. Requires to run for at least %u frames.\n",
-            2 * MEASURE_FRAME_TIME_SAMPLES_COUNT);
-      return;
-   }
-
-   unsigned samples = MEASURE_FRAME_TIME_SAMPLES_COUNT;
+   unsigned samples = min(MEASURE_FRAME_TIME_SAMPLES_COUNT, g_extern.measure_data.frame_time_samples_count);
+   if (samples < 2)
+      return false;
 
    // Measure statistics on frame time (microsecs), *not* FPS.
    rarch_time_t accum = 0;
@@ -627,11 +622,30 @@ static void compute_monitor_fps_statistics(void)
       accum_var += diff * diff;
    }
 
-   double stddev = sqrt((double)accum_var / (samples - 1));
-   double avg_fps = 1000000.0 / avg;
+   *deviation = sqrt((double)accum_var / (samples - 1)) / avg;
+   *refresh_rate = 1000000.0 / avg;
+   *sample_points = samples;
 
-   RARCH_LOG("Average monitor Hz: %.6f Hz. (%.3f %% frame time deviation, based on %u last samples).\n",
-         avg_fps, 100.0 * stddev / avg, samples);
+   return true;
+}
+
+static void compute_monitor_fps_statistics(void)
+{
+   if (g_extern.measure_data.frame_time_samples_count < 2 * MEASURE_FRAME_TIME_SAMPLES_COUNT)
+   {
+      RARCH_LOG("Does not have enough samples for monitor refresh rate estimation. Requires to run for at least %u frames.\n",
+            2 * MEASURE_FRAME_TIME_SAMPLES_COUNT);
+      return;
+   }
+
+   double avg_fps = 0.0;
+   double stddev = 0.0;
+   unsigned samples = 0;
+   if (driver_monitor_fps_statistics(&avg_fps, &stddev, &samples))
+   {
+      RARCH_LOG("Average monitor Hz: %.6f Hz. (%.3f %% frame time deviation, based on %u last samples).\n",
+            avg_fps, 100.0 * stddev, samples);
+   }
 }
 
 void uninit_audio(void)

@@ -963,6 +963,10 @@ bool config_save_file(const char *path)
    config_set_float(conf, "video_aspect_ratio", g_settings.video.aspect_ratio);
    config_set_bool(conf, "video_scale_integer", g_settings.video.scale_integer);
    config_set_bool(conf, "video_smooth", g_settings.video.smooth);
+
+   // TODO: Enable when rest of code is set up for this.
+   //config_set_float(conf, "video_refresh_rate", g_settings.video.refresh_rate);
+
    config_set_bool(conf, "video_vsync", g_settings.video.vsync);
    config_set_bool(conf, "video_hard_sync", g_settings.video.hard_sync);
    config_set_int(conf, "video_hard_sync_frames", g_settings.video.hard_sync_frames);
