@@ -87,9 +87,10 @@
 - (void)infoButtonTapped:(id)sender
 {
    RAModuleInfo* info = objc_getAssociatedObject(sender, "MODULE");
-   
-   if (info)
+   if (info && info.data)
       [RetroArch_iOS.get pushViewController:[[RAModuleInfoList alloc] initWithModuleInfo:info] animated:YES];
+   else
+      [RetroArch_iOS displayErrorMessage:@"No information available."];
 }
 
 - (UITableViewCell*)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath

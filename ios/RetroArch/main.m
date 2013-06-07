@@ -223,7 +223,12 @@ static void event_reload_config(void* userdata)
 
 + (void)displayErrorMessage:(NSString*)message
 {
-   UIAlertView* alert = [[UIAlertView alloc] initWithTitle:@"RetroArch"
+   [RetroArch_iOS displayErrorMessage:message withTitle:@"RetroArch"];
+}
+
++ (void)displayErrorMessage:(NSString*)message withTitle:(NSString*)title
+{
+   UIAlertView* alert = [[UIAlertView alloc] initWithTitle:title
                                              message:message
                                              delegate:nil
                                              cancelButtonTitle:@"OK"

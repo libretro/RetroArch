@@ -165,14 +165,25 @@ static NSString* get_data_string(config_file_t* config, const char* name, NSStri
    return ([_sections[section] count] - 1) / 2;
 }
 
+- (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath
+{
+   if (indexPath.section == _firmwareSectionIndex)
+      [RetroArch_iOS displayErrorMessage:_sections[indexPath.section][indexPath.row * 2 + 2] withTitle:_sections[indexPath.section][indexPath.row * 2 + 1]];
+}
+
 - (UITableViewCell*)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath
 {
    UITableViewCell* cell = [self.tableView dequeueReusableCellWithIdentifier:@"datacell"];
-   cell = (cell != nil) ? cell : [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleValue1 reuseIdentifier:@"datacell"];
+   
+   if (!cell)
+   {
+      cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleValue1 reuseIdentifier:@"datacell"];
+      cell.selectionStyle = UITableViewCellSelectionStyleNone;
+      cell.detailTextLabel.adjustsFontSizeToFitWidth = YES;
+   }
    
    cell.textLabel.text = _sections[indexPath.section][indexPath.row * 2 + 1];
    cell.detailTextLabel.text = _sections[indexPath.section][indexPath.row * 2 + 2];
-   cell.detailTextLabel.adjustsFontSizeToFitWidth = YES;
 
    if (indexPath.section == _firmwareSectionIndex)
       cell.backgroundColor = ra_ios_is_file(_sections[indexPath.section][indexPath.row * 2 + 2]) ? [UIColor blueColor] : [UIColor redColor];

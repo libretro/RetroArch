@@ -18,6 +18,7 @@
 @interface RetroArch_iOS : UINavigationController<UIApplicationDelegate, UINavigationControllerDelegate>
 
 + (void)displayErrorMessage:(NSString*)message;
++ (void)displayErrorMessage:(NSString*)message withTitle:(NSString*)title;
 
 + (RetroArch_iOS*)get;
 
