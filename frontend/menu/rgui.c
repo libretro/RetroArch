@@ -1967,7 +1967,15 @@ static int video_option_toggle_setting(rgui_handle_t *rgui, unsigned setting, rg
          break;
 
       case RGUI_SETTINGS_VIDEO_REFRESH_RATE_AUTO:
-         // TODO: Add support for updating refresh rate from RGUI.
+         switch (action)
+         {
+            case RGUI_ACTION_START:
+               g_extern.measure_data.frame_time_samples_count = 0;
+               break;
+
+            default:
+               break;
+         }
          break;
 
       default:
