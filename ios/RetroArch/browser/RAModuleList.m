@@ -13,7 +13,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#import "RAMOduleInfo.h"
+#import <objc/runtime.h>
+#import "RAModuleInfo.h"
 #import "browser.h"
 #import "settings.h"
 
@@ -83,20 +84,30 @@
    [RetroArch_iOS.get runGame:_game withModule:[self moduleInfoForIndexPath:indexPath]];
 }
 
-- (void)tableView:(UITableView *)tableView accessoryButtonTappedForRowWithIndexPath:(NSIndexPath *)indexPath
+- (void)infoButtonTapped:(id)sender
 {
-   [RetroArch_iOS.get pushViewController:[[RAModuleInfoList alloc] initWithModuleInfo:[self moduleInfoForIndexPath:indexPath]] animated:YES];
+   RAModuleInfo* info = objc_getAssociatedObject(sender, "MODULE");
+   
+   if (info)
+      [RetroArch_iOS.get pushViewController:[[RAModuleInfoList alloc] initWithModuleInfo:info] animated:YES];
 }
 
 - (UITableViewCell*)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath
 {
    UITableViewCell* cell = [self.tableView dequeueReusableCellWithIdentifier:@"module"];
-   cell = (cell) ? cell : [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:@"module"];
-
+   
+   if (!cell)
+   {
+      cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:@"module"];
+      
+      UIButton* infoButton = [UIButton buttonWithType:UIButtonTypeInfoDark];
+      [infoButton addTarget:self action:@selector(infoButtonTapped:) forControlEvents:UIControlEventTouchUpInside];
+      cell.accessoryView = infoButton;
+   }
+   
    RAModuleInfo* info = [self moduleInfoForIndexPath:indexPath];
-
    cell.textLabel.text = info.displayName;
-   cell.accessoryType = UITableViewCellAccessoryDetailDisclosureButton;
+   objc_setAssociatedObject(cell.accessoryView, "MODULE", info, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
 
    return cell;
 }
