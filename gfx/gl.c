@@ -1520,9 +1520,7 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
       gl_render_overlay(gl);
 #endif
 
-#if !defined(RARCH_CONSOLE)
    context_update_window_title_func();
-#endif
 
    RARCH_PERFORMANCE_STOP(frame_run);
 

@@ -1038,6 +1038,8 @@ NULL, NULL, NULL, 0);
       d3d->font_ctx->render_msg(d3d, msg, &font_parms);
    }
 
+   context_update_window_title_func();
+
    gfx_ctx_xdk_swap_buffers();
 
    g_extern.frame_count++;

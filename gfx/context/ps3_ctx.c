@@ -184,7 +184,11 @@ static void gfx_ctx_swap_buffers(void)
 
 static void gfx_ctx_set_resize(unsigned width, unsigned height) { }
 
-static void gfx_ctx_update_window_title(void) { }
+static void gfx_ctx_update_window_title(void)
+{
+   char buf[128];
+   gfx_get_fps(buf, sizeof(buf), false);
+}
 
 static void gfx_ctx_get_video_size(unsigned *width, unsigned *height)
 {

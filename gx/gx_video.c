@@ -910,6 +910,7 @@ static bool gx_frame(void *data, const void *frame,
    g_draw_done = false;
    g_current_framebuf ^= 1;
 
+
    if (frame)
    {
       if (gx->rgb32)
@@ -969,6 +970,9 @@ static bool gx_frame(void *data, const void *frame,
       gx_blit_line(x, y, msg);
       clear_efb = GX_TRUE;
    }
+
+   char buf[128];
+   gfx_get_fps(buf, sizeof(buf), false);
 
    GX_CopyDisp(g_framebuf[g_current_framebuf], clear_efb);
    GX_Flush();
