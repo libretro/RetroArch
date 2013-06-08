@@ -68,6 +68,7 @@ RetroArch::RetroArch()
          this, SLOT(onRotationCompleted()));
 
    rarch_main_clear_state();
+   strlcpy(g_extern.config_path, "app/native/retroarch.cfg", sizeof(g_extern.config_path));
    config_load();
 
    strlcpy(g_settings.libretro, "app/native/lib", sizeof(g_settings.libretro));
@@ -180,6 +181,7 @@ void RetroArch::run()
             initRASettings();
 
             rarch_main(0, NULL);
+            Application::instance()->exit();
             break;
          }
          //The class should probably be it's own QThread, simplify things
@@ -194,7 +196,7 @@ void RetroArch::run()
          }
       }
    }
-   exit:
+exit:
    return;
 }
 
@@ -259,7 +261,9 @@ void RetroArch::onCoreSelected(QVariant value)
 
 void RetroArch::onDeviceSelected(QVariant value)
 {
-
+   //Change the binds for current player to device[value]
+   //TODO: Don't hardcode player 0
+   buttonMap->mapDevice(value.toInt(), 0);
 }
 
 /*
