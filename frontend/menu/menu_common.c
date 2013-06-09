@@ -563,15 +563,19 @@ void menu_init(void)
    shader_manager_init(rgui);
 #endif
 
-   // TODO: Should make history path configurable.
-   // Possibly size as well.
    if (*g_extern.config_path)
    {
       char history_path[PATH_MAX];
-      fill_pathname_resolve_relative(history_path, g_extern.config_path,
-            ".retroarch-history.txt", sizeof(history_path));
+      if (*g_settings.game_history_path)
+         strlcpy(history_path, g_settings.game_history_path, sizeof(history_path));
+      else
+      {
+         fill_pathname_resolve_relative(history_path, g_extern.config_path,
+               ".retroarch-game-history.txt", sizeof(history_path));
+      }
+
       RARCH_LOG("[RGUI]: Opening history: %s.\n", history_path);
-      rgui->history = rom_history_init(history_path, 100);
+      rgui->history = rom_history_init(history_path, g_settings.game_history_size);
    }
 }
 

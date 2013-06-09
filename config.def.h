@@ -402,6 +402,9 @@ static const bool network_cmd_enable = false;
 static const uint16_t network_cmd_port = 55355;
 static const bool stdin_cmd_enable = false;
 
+// Number of entries that will be kept in ROM history file.
+static const unsigned game_history_size = 100;
+
 
 ////////////////////
 // Keybinds, Joypad

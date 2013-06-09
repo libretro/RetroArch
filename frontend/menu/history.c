@@ -106,19 +106,10 @@ static void rom_history_write_file(rom_history_t *hist)
 
    for (size_t i = 0; i < hist->size; i++)
    {
-      if (hist->entries[i].path)
-      {
-         fprintf(file, "%s;%s;%s\n",
-               hist->entries[i].path,
-               hist->entries[i].core_path,
-               hist->entries[i].core_name);
-      }
-      else
-      {
-         fprintf(file, "%s;%s\n",
-               hist->entries[i].core_path,
-               hist->entries[i].core_name);
-      }
+      fprintf(file, "%s\n%s\n%s\n",
+            hist->entries[i].path ? hist->entries[i].path : "",
+            hist->entries[i].core_path,
+            hist->entries[i].core_name);
    }
 
    fclose(file);
@@ -151,43 +142,36 @@ static bool rom_history_read_file(rom_history_t *hist, const char *path)
    if (!file)
       return true;
    
-   char buf[PATH_MAX * 3];
+   char buf[3][PATH_MAX];
+   struct rom_history_entry *entry = NULL;
+   char *last = NULL;
 
-   for (hist->size = 0;
-         hist->size < hist->cap && fgets(buf, sizeof(buf), file);
-         hist->size++)
+   for (hist->size = 0; hist->size < hist->cap; hist->size++)
    {
-      char *last = buf + strlen(buf) - 1;
-      if (*last == '\n')
-         *last = '\0';
-
-      struct string_list *list = string_split(buf, ";");
-      if (!list)
-         break;
-
-      if (list->size < 2 || list->size > 3)
+      for (unsigned i = 0; i < 3; i++)
       {
-         string_list_free(list);
-         break;
+         *buf[i] = '\0';
+         if (!fgets(buf[i], sizeof(buf[i]), file))
+            goto end;
+
+         last = strrchr(buf[i], '\n');
+         if (last)
+            *last = '\0';
       }
 
-      struct rom_history_entry *entry = &hist->entries[hist->size];
+      entry = &hist->entries[hist->size];
 
-      if (list->size == 3)
-      {
-         entry->path = strdup(list->elems[0].data);
-         entry->core_path = strdup(list->elems[1].data);
-         entry->core_name = strdup(list->elems[2].data);
-      }
-      else if (list->size == 2)
-      {
-         entry->core_path = strdup(list->elems[0].data);
-         entry->core_name = strdup(list->elems[1].data);
-      }
+      if (!*buf[1] || !*buf[2])
+         goto end;
 
-      string_list_free(list);
+
+      if (*buf[0])
+         entry->path = strdup(buf[0]);
+      entry->core_path = strdup(buf[1]);
+      entry->core_name = strdup(buf[2]);
    }
 
+end:
    fclose(file);
    return true;
 }
