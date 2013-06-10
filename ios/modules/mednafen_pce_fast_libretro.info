@@ -4,3 +4,7 @@ corename = "Mednafen PCE Fast"
 manufacturer = "NEC"
 systemname = "PC Engine/TurboGrafx-16"
 
+firmware_count = 1
+
+firmware1_desc = "syscard3.pce"
+firmware1_path = "%sysdir%/syscard3.pce"
