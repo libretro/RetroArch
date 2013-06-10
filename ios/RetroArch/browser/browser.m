@@ -16,85 +16,19 @@
 #include <dirent.h>
 #include <sys/stat.h>
 #import "browser.h"
-#import "conf/config_file.h"
+#include "conf/config_file.h"
 
-@implementation RADirectoryItem
-+ (RADirectoryItem*)directoryItemFromPath:(const char*)thePath
-{
-   RADirectoryItem* result = [RADirectoryItem new];
-   result.path = [NSString stringWithUTF8String:thePath];
-
-   struct stat statbuf;
-   if (stat(thePath, &statbuf) == 0)
-      result.isDirectory = S_ISDIR(statbuf.st_mode);
-   
-   return result;
-}
+@interface RADirectoryItem : NSObject
+@property (strong) NSString* path;
+@property bool isDirectory;
 @end
 
-
-BOOL ra_ios_is_file(NSString* path)
-{
-   return [[NSFileManager defaultManager] fileExistsAtPath:path isDirectory:nil];
-}
-
-BOOL ra_ios_is_directory(NSString* path)
-{
-   BOOL result = NO;
-   [[NSFileManager defaultManager] fileExistsAtPath:path isDirectory:&result];
-   return result;
-}
-
-static NSArray* ra_ios_list_directory(NSString* path)
-{
-   NSMutableArray* result = [NSMutableArray arrayWithCapacity:27];
-   for (int i = 0; i < 28; i ++)
-   {
-      [result addObject:[NSMutableArray array]];
-   }
-
-   // Build list
-   char* cpath = malloc([path length] + sizeof(struct dirent));
-   sprintf(cpath, "%s/", [path UTF8String]);
-   size_t cpath_end = strlen(cpath);
-
-   DIR* dir = opendir(cpath);
-   if (!dir)
-      return result;
-   
-   for(struct dirent* item = readdir(dir); item; item = readdir(dir))
-   {
-      if (strncmp(item->d_name, ".", 1) == 0)
-         continue;
-      
-      cpath[cpath_end] = 0;
-      strcat(cpath, item->d_name);
-
-      RADirectoryItem* value = [RADirectoryItem directoryItemFromPath:cpath];
-
-      uint32_t section = isalpha(item->d_name[0]) ? (toupper(item->d_name[0]) - 'A') + 2 : 1;
-      section = value.isDirectory ? 0 : section;
-      [result[section] addObject:[RADirectoryItem directoryItemFromPath:cpath]];
-   }
-   
-   closedir(dir);
-   free(cpath);
-   
-   // Sort
-   for (int i = 0; i < result.count; i ++)
-      [result[i] sortUsingComparator:^(RADirectoryItem* left, RADirectoryItem* right)
-      {
-         return (left.isDirectory != right.isDirectory) ?
-                (left.isDirectory ? -1 : 1) :
-                ([left.path caseInsensitiveCompare:right.path]);
-      }];
-     
-   return result;
-}
+@implementation RADirectoryItem
+@end
 
 @implementation RADirectoryList
 {
-   NSArray* _list;
+   NSMutableArray* _list;
 }
 
 + (id)directoryListAtBrowseRoot
@@ -102,7 +36,7 @@ static NSArray* ra_ios_list_directory(NSString* path)
    NSString* rootPath = [NSHomeDirectory() stringByAppendingPathComponent:@"Documents"];
    NSString* ragPath = [NSHomeDirectory() stringByAppendingPathComponent:@"Documents/RetroArchGames"];
    
-   return [RADirectoryList directoryListForPath:ra_ios_is_directory(ragPath) ? ragPath : rootPath];
+   return [RADirectoryList directoryListForPath:path_is_directory(ragPath.UTF8String) ? ragPath : rootPath];
 }
 
 + (id)directoryListForPath:(NSString*)path
@@ -114,17 +48,40 @@ static NSArray* ra_ios_list_directory(NSString* path)
 - (id)initWithPath:(NSString*)path
 {
    self = [super initWithStyle:UITableViewStylePlain];
+   [self setTitle: [path lastPathComponent]];
 
-   if (!ra_ios_is_directory(path))
+   // Need one array per section
+   _list = [NSMutableArray arrayWithCapacity:28];
+   for (int i = 0; i < 28; i ++)
+      [_list addObject:[NSMutableArray array]];
+   
+   // List contents
+   struct string_list* contents = dir_list_new(path.UTF8String, 0, true);
+   
+   if (contents)
    {
-      [RetroArch_iOS displayErrorMessage:[NSString stringWithFormat:@"Browsed path is not a directory: %@", path]];
-      _list = [NSArray array];
+      dir_list_sort(contents, true);
+   
+      for (int i = 0; i < contents->size; i ++)
+      {
+         const char* basename = path_basename(contents->elems[i].data);
+      
+         if (basename[0] == '.')
+            continue;
+      
+         uint32_t section = isalpha(basename[0]) ? (toupper(basename[0]) - 'A') + 2 : 1;
+         section = contents->elems[i].attr.b ? 0 : section;
+         
+         RADirectoryItem* item = RADirectoryItem.new;
+         item.path = [NSString stringWithUTF8String:contents->elems[i].data];
+         item.isDirectory = contents->elems[i].attr.b;
+         [_list[section] addObject:item];
+      }
+   
+      dir_list_free(contents);
    }
    else
-   {
-      [self setTitle: [path lastPathComponent]];
-      _list = ra_ios_list_directory(path);
-   }
+      [RetroArch_iOS displayErrorMessage:[NSString stringWithFormat:@"Browsed path is not a directory: %@", path]];
    
    return self;
 }

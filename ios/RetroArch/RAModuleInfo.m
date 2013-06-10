@@ -186,7 +186,7 @@ static NSString* get_data_string(config_file_t* config, const char* name, NSStri
    cell.detailTextLabel.text = _sections[indexPath.section][indexPath.row * 2 + 2];
 
    if (indexPath.section == _firmwareSectionIndex)
-      cell.backgroundColor = ra_ios_is_file(_sections[indexPath.section][indexPath.row * 2 + 2]) ? [UIColor blueColor] : [UIColor redColor];
+      cell.backgroundColor = path_file_exists(((NSString*)_sections[indexPath.section][indexPath.row * 2 + 2]).UTF8String) ? [UIColor blueColor] : [UIColor redColor];
    else
       cell.backgroundColor = [UIColor whiteColor];
 

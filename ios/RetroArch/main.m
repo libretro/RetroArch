@@ -24,6 +24,7 @@
 
 #include "rarch_wrapper.h"
 #include "general.h"
+#include "file.h"
 #include "frontend/menu/rmenu.h"
 
 #import "browser/browser.h"
@@ -252,7 +253,14 @@ static void event_reload_config(void* userdata)
 
    self.system_directory = [NSString stringWithFormat:@"%@/.RetroArch", documentsPath];
    self.systemConfigPath = [NSString stringWithFormat:@"%@/.RetroArch/frontend.cfg", documentsPath];
-   mkdir([self.system_directory UTF8String], 0755);
+
+   // Build system paths and test permissions
+   if (!path_is_directory(documentsPath.UTF8String) && mkdir(documentsPath.UTF8String, 0755))
+      [RetroArch_iOS displayErrorMessage:[NSString stringWithFormat:@"Failed to create base directory: %@", documentsPath]];
+   else if (!path_is_directory(self.system_directory.UTF8String) && mkdir(self.system_directory.UTF8String, 0755))
+      [RetroArch_iOS displayErrorMessage:[NSString stringWithFormat:@"Failed to create system directory: %@", self.system_directory]];
+   else if (access(self.system_directory.UTF8String, R_OK | W_OK | X_OK))
+      [RetroArch_iOS displayErrorMessage:[NSString stringWithFormat:@"System directory has incorrect permissions: %@", self.system_directory]];
 
    // Setup window
    self.delegate = self;
@@ -344,8 +352,8 @@ static void event_reload_config(void* userdata)
    [self pushViewController:RAGameView.get animated:NO];
    _isRunning = true;
 
-   const char* const sd = [[RetroArch_iOS get].system_directory UTF8String];
-   const char* const cf = (ra_ios_is_file(_module.configPath)) ? [_module.configPath UTF8String] : 0;
+   const char* const sd = RetroArch_iOS.get.system_directory.UTF8String;
+   const char* const cf = (path_file_exists(_module.configPath.UTF8String)) ? [_module.configPath UTF8String] : 0;
    const char* const libretro = [_module.path UTF8String];
 
    struct rarch_main_wrap* load_data = malloc(sizeof(struct rarch_main_wrap));

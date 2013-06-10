@@ -13,13 +13,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-extern BOOL ra_ios_is_directory(NSString* path);
-extern BOOL ra_ios_is_file(NSString* path);
-
-@interface RADirectoryItem : NSObject
-@property (strong) NSString* path;
-@property bool isDirectory;
-@end
+#include "file.h"
 
 @interface RADirectoryList : UITableViewController
 + (id)directoryListAtBrowseRoot;
