@@ -361,7 +361,7 @@ static void event_reload_config(void* userdata)
    _isRunning = true;
 
    struct rarch_main_wrap* load_data = malloc(sizeof(struct rarch_main_wrap));
-   memset(load_data, 0, sizeof(load_data));
+   memset(load_data, 0, sizeof(struct rarch_main_wrap));
    load_data->libretro_path = strdup(_module.path.UTF8String);
    load_data->rom_path = strdup(path.UTF8String);
    load_data->sram_path = strdup(self.systemDirectory.UTF8String);
