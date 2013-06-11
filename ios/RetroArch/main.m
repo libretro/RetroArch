@@ -21,6 +21,7 @@
 
 #include <sys/stat.h>
 #include <pthread.h>
+#include <string.h>
 
 #include "rarch_wrapper.h"
 #include "general.h"
@@ -43,6 +44,14 @@ static ios_input_data_t g_input_data;
 static bool enable_btstack;
 static bool use_icade;
 static uint32_t icade_buttons;
+
+bool path_make_and_check_directory(const char* path, mode_t mode, int amode)
+{
+   if (!path_is_directory(path) && mkdir(path, mode) != 0)
+      return false;
+   
+   return access(path, amode) == 0;
+}
 
 // Input helpers
 void ios_copy_input(ios_input_data_t* data)
@@ -249,28 +258,27 @@ static void event_reload_config(void* userdata)
    ios_log_init();
 #endif
 
-   NSString* documentsPath = [NSHomeDirectory() stringByAppendingPathComponent:@"Documents"];
-
-   self.system_directory = [NSString stringWithFormat:@"%@/.RetroArch", documentsPath];
-   self.systemConfigPath = [NSString stringWithFormat:@"%@/.RetroArch/frontend.cfg", documentsPath];
-
-   // Build system paths and test permissions
-   if (!path_is_directory(documentsPath.UTF8String) && mkdir(documentsPath.UTF8String, 0755))
-      [RetroArch_iOS displayErrorMessage:[NSString stringWithFormat:@"Failed to create base directory: %@", documentsPath]];
-   else if (!path_is_directory(self.system_directory.UTF8String) && mkdir(self.system_directory.UTF8String, 0755))
-      [RetroArch_iOS displayErrorMessage:[NSString stringWithFormat:@"Failed to create system directory: %@", self.system_directory]];
-   else if (access(self.system_directory.UTF8String, R_OK | W_OK | X_OK))
-      [RetroArch_iOS displayErrorMessage:[NSString stringWithFormat:@"System directory has incorrect permissions: %@", self.system_directory]];
+   self.delegate = self;
 
    // Setup window
-   self.delegate = self;
-   [self pushViewController:[RADirectoryList directoryListAtBrowseRoot] animated:YES];
-
    _window = [[UIWindow alloc] initWithFrame:[[UIScreen mainScreen] bounds]];
    _window.rootViewController = self;
    [_window makeKeyAndVisible];
 
-   [self refreshSystemConfig];
+   // Build system paths and test permissions
+   self.documentsDirectory = [NSHomeDirectory() stringByAppendingPathComponent:@"Documents"];
+   self.systemDirectory = [self.documentsDirectory stringByAppendingPathComponent:@".RetroArch"];
+   self.systemConfigPath = [self.systemDirectory stringByAppendingPathComponent:@"frontend.cfg"];
+
+   if (!path_make_and_check_directory(self.documentsDirectory.UTF8String, 0755, R_OK | W_OK | X_OK))
+      [RetroArch_iOS displayErrorMessage:[NSString stringWithFormat:@"Failed to create or access base directory: %@", self.documentsDirectory]];
+   else if (!path_make_and_check_directory(self.systemDirectory.UTF8String, 0755, R_OK | W_OK | X_OK))
+      [RetroArch_iOS displayErrorMessage:[NSString stringWithFormat:@"Failed to create or access system directory: %@", self.systemDirectory]];
+   else
+   {
+      [self pushViewController:[RADirectoryList directoryListAtBrowseRoot] animated:YES];
+      [self refreshSystemConfig];
+   }
 }
 
 - (void)applicationWillEnterForeground:(UIApplication *)application
@@ -352,17 +360,15 @@ static void event_reload_config(void* userdata)
    [self pushViewController:RAGameView.get animated:NO];
    _isRunning = true;
 
-   const char* const sd = RetroArch_iOS.get.system_directory.UTF8String;
-   const char* const cf = (path_file_exists(_module.configPath.UTF8String)) ? [_module.configPath UTF8String] : 0;
-   const char* const libretro = [_module.path UTF8String];
-
    struct rarch_main_wrap* load_data = malloc(sizeof(struct rarch_main_wrap));
-   load_data->libretro_path = strdup(libretro);
-   load_data->rom_path = strdup([path UTF8String]);
-   load_data->sram_path = strdup(sd);
-   load_data->state_path = strdup(sd);
+   memset(load_data, 0, sizeof(load_data));
+   load_data->libretro_path = strdup(_module.path.UTF8String);
+   load_data->rom_path = strdup(path.UTF8String);
+   load_data->sram_path = strdup(self.systemDirectory.UTF8String);
+   load_data->state_path = strdup(self.systemDirectory.UTF8String);
+   load_data->config_path = strdup(_module.configPath.UTF8String);
    load_data->verbose = false;
-   load_data->config_path = strdup(cf);
+
    if (pthread_create(&_retroThread, 0, rarch_main_ios, load_data))
    {
       [self rarchExited:NO];
@@ -376,9 +382,7 @@ static void event_reload_config(void* userdata)
 - (void)rarchExited:(BOOL)successful
 {
    if (!successful)
-   {
       [RetroArch_iOS displayErrorMessage:@"Failed to load game."];
-   }
 
    if (_isRunning)
    {
@@ -550,5 +554,5 @@ void ios_rarch_exited(void* result)
 
 char* ios_get_rarch_system_directory()
 {
-   return strdup([RetroArch_iOS.get.system_directory UTF8String]);
+   return strdup([RetroArch_iOS.get.systemDirectory UTF8String]);
 }

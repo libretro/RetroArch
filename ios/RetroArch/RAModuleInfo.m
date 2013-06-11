@@ -51,7 +51,7 @@ static NSMutableArray* moduleList;
             config_get_string(newInfo.data, "supported_extensions", &extensions);
          }
 
-         newInfo.configPath = [NSString stringWithFormat:@"%@/%@.cfg", [RetroArch_iOS get].system_directory, [[newInfo.path lastPathComponent] stringByDeletingPathExtension]];
+         newInfo.configPath = [NSString stringWithFormat:@"%@/%@.cfg", [RetroArch_iOS get].systemDirectory, [[newInfo.path lastPathComponent] stringByDeletingPathExtension]];
          newInfo.displayName = dispname ? [NSString stringWithUTF8String:dispname] : [[newInfo.path lastPathComponent] stringByDeletingPathExtension];
          newInfo.supportedExtensions = extensions ? [[NSString stringWithUTF8String:extensions] componentsSeparatedByString:@"|"] : [NSArray array];
 
@@ -138,7 +138,7 @@ static NSString* get_data_string(config_file_t* config, const char* name, NSStri
 
          snprintf(namebuf, 512, "firmware%d_path", i + 1);
          NSString* path = get_data_string(_data.data, namebuf, @"Unspecified");
-         path = [path stringByReplacingOccurrencesOfString:@"%sysdir%" withString:RetroArch_iOS.get.system_directory];
+         path = [path stringByReplacingOccurrencesOfString:@"%sysdir%" withString:RetroArch_iOS.get.systemDirectory];
 
          [firmwareSection addObject:path];
       }

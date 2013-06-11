@@ -29,9 +29,8 @@
 - (IBAction)startBluetooth;
 - (IBAction)stopBluetooth;
 
-
-@property (strong, nonatomic) NSString* systemConfigPath;
-
-@property (strong, nonatomic) NSString* system_directory;
+@property (strong, nonatomic) NSString* documentsDirectory; // e.g. /var/mobile/Documents
+@property (strong, nonatomic) NSString* systemDirectory;    // e.g. /var/mobile/Documents/.RetroArch
+@property (strong, nonatomic) NSString* systemConfigPath;   // e.g. /var/mobile/Documents/.RetroArch/frontend.cfg
 
 @end

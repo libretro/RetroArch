@@ -33,8 +33,8 @@
 
 + (id)directoryListAtBrowseRoot
 {
-   NSString* rootPath = [NSHomeDirectory() stringByAppendingPathComponent:@"Documents"];
-   NSString* ragPath = [NSHomeDirectory() stringByAppendingPathComponent:@"Documents/RetroArchGames"];
+   NSString* rootPath = RetroArch_iOS.get.documentsDirectory;
+   NSString* ragPath = [rootPath stringByAppendingPathComponent:@"RetroArchGames"];
    
    return [RADirectoryList directoryListForPath:path_is_directory(ragPath.UTF8String) ? ragPath : rootPath];
 }

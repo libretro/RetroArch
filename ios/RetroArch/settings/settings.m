@@ -255,7 +255,7 @@ static RASettingData* custom_action(NSString* action, id data)
     if (!config)
         config = config_file_new(0);
    
-   config_set_string(config, "system_directory", [[RetroArch_iOS get].system_directory UTF8String]);
+   config_set_string(config, "system_directory", [[RetroArch_iOS get].systemDirectory UTF8String]);
    [self writeSettings:nil toConfig:config];
    if (config)
       config_file_write(config, [_module.configPath UTF8String]);
