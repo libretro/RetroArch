@@ -525,6 +525,7 @@ static int16_t qnx_input_state(void *data, const struct retro_keybind **retro_ke
          break;
 #endif
       case RARCH_DEVICE_POINTER_SCREEN:
+      case RETRO_DEVICE_POINTER:
          {
             switch (id)
             {
