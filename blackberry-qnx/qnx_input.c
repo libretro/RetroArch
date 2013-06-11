@@ -194,6 +194,11 @@ static void qnx_input_autodetect_gamepad(input_device_t* controller)
       controller->device = DEVICE_KEYPAD;
       strlcpy(controller->device_name, "BlackBerry Q10 Keypad", sizeof(controller->device_name));
    }
+   else if (strstr(controller->id, "BB-VKB"))
+   {
+      controller->device = DEVICE_KEYBOARD;
+      strlcpy(controller->device_name, "BlackBerry Virtual Keyboard", sizeof(controller->device_name));
+   }
    else if (controller->id[0])
    {
       controller->device = DEVICE_UNKNOWN;
@@ -444,7 +449,7 @@ static void *qnx_input_init(void)
    for (i = 0; i < MAX_PADS; ++i)
    {
       initController(&devices[i]);
-      port_device[i] = (input_device_t*)-1;
+      port_device[i] = 0;
    }
 #ifdef HAVE_BB10
    //Find currently connected gamepads
@@ -494,9 +499,9 @@ static int16_t qnx_input_state(void *data, const struct retro_keybind **retro_ke
    switch (device)
    {
       case RETRO_DEVICE_JOYPAD:
-         if(port_device[port] != (input_device_t*)-1)
+         if(port_device[port])
          {
-            if (g_settings.input.device[port] == DEVICE_KEYBOARD || g_settings.input.device[port] == DEVICE_KEYPAD)
+            if (port_device[port]->device == DEVICE_KEYBOARD || port_device[port]->device == DEVICE_KEYPAD)
                return ((port_device[port]->buttons & (1 << id)) && (port < pads_connected) );
             else
                return ((port_device[port]->buttons & retro_keybinds[port][id].joykey) && (port < pads_connected));
@@ -733,7 +738,7 @@ static void qnx_input_set_keybinds(void *data, unsigned device, unsigned port,
             g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_L3].def_joykey     = 0;
             g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_R3].def_joykey     = 0;
             controller->port = -1;
-            port_device[port] = -1;
+            port_device[port] = 0;
             break;
 #endif
       }
