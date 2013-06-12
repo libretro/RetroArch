@@ -8,30 +8,6 @@
 #include "input/input_common.h"
 #include "../../frontend_qnx.h"
 
-/*
-ButtonMap_t buttons[] = {
-   { SCREEN_A_GAME_BUTTON, "A button" },
-   { SCREEN_B_GAME_BUTTON, "B button" },
-   { SCREEN_C_GAME_BUTTON, "C button" },
-   { SCREEN_X_GAME_BUTTON, "X button" },
-   { SCREEN_Y_GAME_BUTTON, "Y button" },
-   { SCREEN_Z_GAME_BUTTON, "Z button" },
-   { SCREEN_MENU1_GAME_BUTTON, "Menu1 button" },
-   { SCREEN_MENU2_GAME_BUTTON, "Menu2 button" },
-   { SCREEN_MENU3_GAME_BUTTON, "Menu3 button" },
-   { SCREEN_MENU4_GAME_BUTTON, "Menu4 button" },
-   { SCREEN_L1_GAME_BUTTON, "L1 Button" },
-   { SCREEN_L2_GAME_BUTTON, "L2 Button" },
-   { SCREEN_L3_GAME_BUTTON, "L3 Button" },
-   { SCREEN_R1_GAME_BUTTON, "R1 Button" },
-   { SCREEN_R2_GAME_BUTTON, "R2 Button" },
-   { SCREEN_R3_GAME_BUTTON, "R3 Button" },
-   { SCREEN_DPAD_UP_GAME_BUTTON, "D-Pad Up" },
-   { SCREEN_DPAD_DOWN_GAME_BUTTON, "D-Pad Down" },
-   { SCREEN_DPAD_LEFT_GAME_BUTTON, "D-Pad Left" },
-   { SCREEN_DPAD_RIGHT_GAME_BUTTON, "D-Pad Right" },
-};*/
-
 ButtonMap::ButtonMap(screen_context_t screen_ctx, QString groupId, int coid)
 {
    this->screen_cxt = screen_ctx;
@@ -224,8 +200,13 @@ void ButtonMap::mapDevice(int index, int player)
        map.insert("label",QVariant(desc));
        map.insert("button", buttonToString(g_settings.input.binds[0][i].joykey));
        map.insert("type", QVariant("item"));
-       qDebug() << map;
-       qDebug() << "Joykey: " << g_settings.input.binds[0][i].joykey;
+       map.insert("index", QVariant(i));
        buttonDataModel->append(map);
     }
+
+    map.insert("label",QVariant("RetroArch Menu"));
+    map.insert("button", buttonToString(g_settings.input.binds[0][RARCH_MENU_TOGGLE].joykey));
+    map.insert("type", QVariant("item"));
+    map.insert("index", QVariant(RARCH_MENU_TOGGLE));
+    buttonDataModel->append(map);
  }

@@ -114,8 +114,8 @@ Page
                 onTriggered:
                 {
                     var sym, data;
-                    sym = RetroArch.mapButton(0, players.selectedValue, indexPath);
                     data = dataModel.data(indexPath);
+                    sym = RetroArch.mapButton(0, players.selectedValue, data["index"]);
                     data["button"] = RetroArch.buttonToString(0, sym);
                     dataModel.replace(indexPath, data);
                 }

@@ -374,9 +374,12 @@ void RetroArch::initRASettings()
 
    HardwareInfo *hwInfo = new HardwareInfo();
 
-   //TODO: Check of we have a controller active.
-   if(!hwInfo->isPhysicalKeyboardDevice())
+   //If Physical keyboard or a device mapped to player 1, hide overlay
+   //TODO: Should there be a minimized/quick settings only overlay?
+   if(!hwInfo->isPhysicalKeyboardDevice() && !port_device[0])
       strlcpy(g_settings.input.overlay, GET_CORE_INFO(coreSelectedIndex, "default_overlay").toAscii().constData(), sizeof(g_settings.input.overlay));
+   else
+      *g_settings.input.overlay = '\0';
 }
 
 int RetroArch::mapButton(void* deviceVp, int player, int button)

@@ -70,6 +70,11 @@ static void process_gamepad_event(screen_event_t screen_event, int type)
 
    if (controller->analogCount == 2)
       screen_get_event_property_iv(screen_event, SCREEN_PROPERTY_ANALOG1, controller->analog1);
+
+   //Only player 1
+   //TODO: Am I missing something? Is there a better way?
+   if((controller->port == 0) && (controller->buttons & g_settings.input.binds[0][RARCH_MENU_TOGGLE].joykey))
+      g_extern.lifecycle_state ^= (1ULL << RARCH_MENU_TOGGLE);
 }
 
 static void loadController(input_device_t* controller)
@@ -267,6 +272,10 @@ static void process_keyboard_event(screen_event_t event, int type)
       }
 
    }
+
+   //TODO: Am I missing something? Is there a better way?
+   if((controller->port == 0) && ((unsigned int)g_settings.input.binds[0][RARCH_MENU_TOGGLE].joykey == (unsigned int)(sym&0xFF)))
+      g_extern.lifecycle_state ^= (1ULL << RARCH_MENU_TOGGLE);
 }
 
 static void process_touch_event(screen_event_t event, int type)
@@ -503,15 +512,16 @@ static int16_t qnx_input_state(void *data, const struct retro_keybind **retro_ke
          {
             if (port_device[port]->device == DEVICE_KEYBOARD || port_device[port]->device == DEVICE_KEYPAD)
                return ((port_device[port]->buttons & (1 << id)) && (port < pads_connected) );
-            else
+            else{
                return ((port_device[port]->buttons & retro_keybinds[port][id].joykey) && (port < pads_connected));
+            }
          }
 #ifdef HAVE_BB10
       case RETRO_DEVICE_ANALOG:
          //Need to return [-0x8000, 0x7fff]
          //Gamepad API gives us [-128, 127] with (0,0) center
          //Untested
-         if(port_device[port] != (input_device_t*)-1)
+         if(port_device[port])
          {
             switch ((index << 1) | id)
             {
@@ -550,7 +560,7 @@ static int16_t qnx_input_state(void *data, const struct retro_keybind **retro_ke
 
 static bool qnx_input_key_pressed(void *data, int key)
 {
-   return ((g_extern.lifecycle_state | driver.overlay_state) & (1ULL << key));
+   return ((g_extern.lifecycle_state | driver.overlay_state ) & (1ULL << key));
 }
 
 static void qnx_input_free_input(void *data)
@@ -638,6 +648,7 @@ static void qnx_input_set_keybinds(void *data, unsigned device, unsigned port,
             g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_R2].def_joykey     = SCREEN_R2_GAME_BUTTON;
             g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_L3].def_joykey     = SCREEN_L3_GAME_BUTTON;
             g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_R3].def_joykey     = SCREEN_R3_GAME_BUTTON;
+            g_settings.input.binds[port][RARCH_MENU_TOGGLE].def_joykey             = SCREEN_MENU3_GAME_BUTTON;
             g_settings.input.dpad_emulation[port] = ANALOG_DPAD_NONE;
             controller->port = port;
             port_device[port] = controller;
@@ -662,6 +673,7 @@ static void qnx_input_set_keybinds(void *data, unsigned device, unsigned port,
             g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_R2].def_joykey     = 0;
             g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_L3].def_joykey     = 0;
             g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_R3].def_joykey     = 0;
+            g_settings.input.binds[port][RARCH_MENU_TOGGLE].def_joykey             = KEYCODE_P & 0xFF;
             g_settings.input.dpad_emulation[port] = ANALOG_DPAD_NONE;
             controller->port = port;
             port_device[port] = controller;
@@ -687,6 +699,7 @@ static void qnx_input_set_keybinds(void *data, unsigned device, unsigned port,
             g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_R2].def_joykey     = 0;
             g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_L3].def_joykey     = 0;
             g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_R3].def_joykey     = 0;
+            g_settings.input.binds[port][RARCH_MENU_TOGGLE].def_joykey             = KEYCODE_TILDE;
             g_settings.input.dpad_emulation[port] = ANALOG_DPAD_NONE;
             controller->port = port;
             port_device[port] = controller;
@@ -712,6 +725,7 @@ static void qnx_input_set_keybinds(void *data, unsigned device, unsigned port,
             g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_R2].def_joykey     = SCREEN_R2_GAME_BUTTON;
             g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_L3].def_joykey     = SCREEN_L3_GAME_BUTTON;
             g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_R3].def_joykey     = SCREEN_R3_GAME_BUTTON;
+            g_settings.input.binds[port][RARCH_MENU_TOGGLE].def_joykey             = 0; //TODO: Find a good mappnig
             g_settings.input.dpad_emulation[port] = ANALOG_DPAD_NONE;
             controller->port = port;
             port_device[port] = controller;
@@ -737,6 +751,7 @@ static void qnx_input_set_keybinds(void *data, unsigned device, unsigned port,
             g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_R2].def_joykey     = 0;
             g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_L3].def_joykey     = 0;
             g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_R3].def_joykey     = 0;
+            g_settings.input.binds[port][RARCH_MENU_TOGGLE].def_joykey     = 0;
             controller->port = -1;
             port_device[port] = 0;
             break;
@@ -748,6 +763,9 @@ static void qnx_input_set_keybinds(void *data, unsigned device, unsigned port,
          g_settings.input.binds[port][i].id = i;
          g_settings.input.binds[port][i].joykey = g_settings.input.binds[port][i].def_joykey;
       }
+
+      g_settings.input.binds[port][RARCH_MENU_TOGGLE].id = RARCH_MENU_TOGGLE;
+      g_settings.input.binds[port][RARCH_MENU_TOGGLE].joykey = g_settings.input.binds[port][RARCH_MENU_TOGGLE].def_joykey;
    }
 
 #ifdef HAVE_BB10
