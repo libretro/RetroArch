@@ -279,6 +279,10 @@ static void event_reload_config(void* userdata)
       [self pushViewController:[RADirectoryList directoryListAtBrowseRoot] animated:YES];
       [self refreshSystemConfig];
    }
+   
+   // Warn if there are no cores present
+   if ([RAModuleInfo getModules].count == 0)
+      [RetroArch_iOS displayErrorMessage:@"No libretro cores were found. You will not be able to play any games."];
 }
 
 - (void)applicationWillEnterForeground:(UIApplication *)application

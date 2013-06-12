@@ -29,6 +29,7 @@
 @implementation RADirectoryList
 {
    NSMutableArray* _list;
+   NSString* _path;
 }
 
 + (id)directoryListAtBrowseRoot
@@ -47,6 +48,8 @@
 
 - (id)initWithPath:(NSString*)path
 {
+   _path = path;
+
    self = [super initWithStyle:UITableViewStylePlain];
    [self setTitle: [path lastPathComponent]];
 
@@ -93,7 +96,13 @@
    if(path.isDirectory)
       [[RetroArch_iOS get] pushViewController:[RADirectoryList directoryListForPath:path.path] animated:YES];
    else
+   {
+      if (access(_path.UTF8String, R_OK | W_OK | X_OK))
+         [RetroArch_iOS displayErrorMessage:@"The directory containing the selected file has limited permissions. This may "
+                                             "prevent zipped games from loading, and will cause some cores to not function."];
+
       [[RetroArch_iOS get] pushViewController:[[RAModuleList alloc] initWithGame:path.path] animated:YES];
+   }
 }
 
 - (NSInteger)numberOfSectionsInTableView:(UITableView *)tableView
