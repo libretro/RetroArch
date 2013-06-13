@@ -8,6 +8,7 @@
 
 #include <screen/screen.h>
 #include <sys/neutrino.h>
+#include "ButtonMap.h"
 
 using namespace bb::cascades;
 
@@ -33,6 +34,10 @@ public:
 
     Q_INVOKABLE void startEmulator();
     Q_INVOKABLE void findCores();
+    Q_INVOKABLE void findDevices();
+    Q_INVOKABLE int mapButton(void* device, int player, int button);
+    Q_INVOKABLE QString buttonToString(void* deviceVp, int button);
+    Q_INVOKABLE void discoverController();
 
 signals:
 	void romChanged(QString);
@@ -43,6 +48,7 @@ public slots:
 	void aboutToQuit();
 	void onRotationCompleted();
 	void onCoreSelected(QVariant);
+	void onDeviceSelected(QVariant);
 
 private:
     /**
@@ -67,21 +73,25 @@ private:
 	int chid, coid;
 	int state;
 	DropDown *coreSelection;
+	DropDown *deviceSelection;
 	QVariantMap coreInfo;
 	char **coreList;
 	int coreSelectedIndex;
+
+	ButtonMap *buttonMap;
 };
 
 enum {
 	RETROARCH_RUNNING,
 	RETROARCH_START_REQUESTED,
+	RETROARCH_BUTTON_MAP,
 	RETROARCH_EXIT
 };
 
 
 typedef union {
 	_pulse pulse;
-	int code;
+   int code;
 } recv_msg;
 
 #endif
