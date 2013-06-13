@@ -360,7 +360,7 @@ void RetroArch::findDevices()
       deviceSelection->add(tmp);
 
       //QML shows player 1 by default, so set dropdown to their controller.
-      if(devices[i].port == 0)
+      if(devices[i].port == 0 || devices[i].device == DEVICE_KEYPAD)
       {
          deviceSelection->setSelectedIndex(i);
       }

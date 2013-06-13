@@ -201,8 +201,8 @@ static void qnx_input_autodetect_gamepad(input_device_t* controller)
    }
    else if (strstr(controller->id, "BB-VKB"))
    {
-      controller->device = DEVICE_KEYBOARD;
-      strlcpy(controller->device_name, "BlackBerry Virtual Keyboard", sizeof(controller->device_name));
+      controller->device = DEVICE_NONE;
+      strlcpy(controller->device_name, "None", sizeof(controller->device_name));
    }
    else if (controller->id[0])
    {
@@ -275,7 +275,8 @@ static void process_keyboard_event(screen_event_t event, int type)
 
    //TODO: Am I missing something? Is there a better way?
    if((controller->port == 0) && ((unsigned int)g_settings.input.binds[0][RARCH_MENU_TOGGLE].joykey == (unsigned int)(sym&0xFF)))
-      g_extern.lifecycle_state ^= (1ULL << RARCH_MENU_TOGGLE);
+      if (flags & KEY_DOWN)
+         g_extern.lifecycle_state ^= (1ULL << RARCH_MENU_TOGGLE);
 }
 
 static void process_touch_event(screen_event_t event, int type)

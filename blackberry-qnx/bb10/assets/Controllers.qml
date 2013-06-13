@@ -34,7 +34,7 @@ Page
         ActionItem {
             title: "Rescan"
             ActionBar.placement: ActionBarPlacement.OnBar
-            imageSource: "asset:///images/open.png"
+            imageSource: "asset:///images/search.png"
             onTriggered: {
                 RetroArch.discoverController();
             }
@@ -45,7 +45,7 @@ Page
     {     
         Container
         {
-            preferredWidth: 600
+            preferredWidth: 650
             horizontalAlignment: HorizontalAlignment.Center
 
             DropDown 
