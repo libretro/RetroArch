@@ -572,11 +572,11 @@ static void qnx_input_free_input(void *data)
 static void qnx_input_set_keybinds(void *data, unsigned device, unsigned port,
       unsigned id, unsigned keybind_action)
 {
+   input_device_t *controller = (input_device_t*)data;
 #ifdef HAVE_BB10
    uint64_t *key = &g_settings.input.binds[port][id].joykey;
    uint64_t joykey = *key;
    size_t arr_size = sizeof(platform_keys) / sizeof(platform_keys[0]);
-   input_device_t *controller = (input_device_t*)data;
 
    (void)device;
 
