@@ -403,7 +403,7 @@ MAIN
 #include "../frontend/frontend_ios.c"
 #endif
 
-#if defined(__QNX__) || !defined(RARCH_MOBILE) 
+#if (defined(__QNX__) && !defined(HAVE_BB10)) || !defined(RARCH_MOBILE)
 #include "../frontend/frontend.c"
 #endif
 
