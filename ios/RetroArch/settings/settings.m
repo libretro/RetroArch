@@ -290,6 +290,7 @@ static RASettingData* custom_action(NSString* action, id data)
    NSArray* settings = [NSArray arrayWithObjects:
       [NSArray arrayWithObjects:@"Frontend",
          custom_action(@"Diagnostic Log", nil),
+         boolean_setting(config, @"global_config_enable", @"Use Global Configuration", @"false"),
          nil],
       [NSArray arrayWithObjects:@"Bluetooth",
          // TODO: Note that with this turned off the native bluetooth is expected to be a real keyboard
