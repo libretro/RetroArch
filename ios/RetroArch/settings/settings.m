@@ -162,7 +162,7 @@ static RASettingData* custom_action(NSString* action, id data)
          nil],
 
       [NSArray arrayWithObjects:@"Video",
-         boolean_setting(config, @"video_smooth", @"Smooth Video", @"true"),
+         boolean_setting(config, @"video_smooth", @"Bilinear filtering", @"true"),
          boolean_setting(config, @"video_crop_overscan", @"Crop Overscan", @"true"),
          boolean_setting(config, @"video_scale_integer", @"Integer Scaling", @"false"),
          aspect_setting(config, @"Aspect Ratio"),
