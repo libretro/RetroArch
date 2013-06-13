@@ -113,7 +113,7 @@ static NSString* get_data_string(config_file_t* config, const char* name, NSStri
 
    _sections = [NSMutableArray array];
 
-   [_sections addObject: [NSArray arrayWithObjects:@"Emulator",
+   [_sections addObject: [NSArray arrayWithObjects:@"Core",
       @"Core Name", get_data_string(_data.data, "corename", @"Unspecified"),
       nil]];
    

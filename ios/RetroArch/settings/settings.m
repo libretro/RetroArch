@@ -175,8 +175,8 @@ static RASettingData* custom_action(NSString* action, id data)
 
       [NSArray arrayWithObjects:@"Audio",
          boolean_setting(config, @"audio_enable", @"Enable Output", @"true"),
-         boolean_setting(config, @"audio_sync", @"Sync on Audio Stream", @"true"),
-         boolean_setting(config, @"audio_rate_control", @"Adjust for Better Sync", @"true"),
+         boolean_setting(config, @"audio_sync", @"Sync on Audio", @"true"),
+         boolean_setting(config, @"audio_rate_control", @"Rate Control", @"true"),
          nil],
 
       [NSArray arrayWithObjects:@"Input",
@@ -217,7 +217,7 @@ static RASettingData* custom_action(NSString* action, id data)
          group_setting(@"System Keys", [NSArray arrayWithObjects:
             // TODO: Many of these strings will be cut off on an iPhone
             [NSArray arrayWithObjects:@"System Keys",
-               button_setting(config, @"input_menu_toggle", @"Show Menu", @"F1"),
+               button_setting(config, @"input_menu_toggle", @"Show RGUI", @"F1"),
                button_setting(config, @"input_disk_eject_toggle", @"Insert/Eject Disk", @""),
                button_setting(config, @"input_disk_next", @"Cycle Disks", @""),
                button_setting(config, @"input_save_state", @"Save State", @"f2"),
