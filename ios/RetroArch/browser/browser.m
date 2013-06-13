@@ -37,7 +37,13 @@
    NSString* rootPath = RetroArch_iOS.get.documentsDirectory;
    NSString* ragPath = [rootPath stringByAppendingPathComponent:@"RetroArchGames"];
    
-   return [RADirectoryList directoryListForPath:path_is_directory(ragPath.UTF8String) ? ragPath : rootPath];
+   RADirectoryList* list = [RADirectoryList directoryListForPath:path_is_directory(ragPath.UTF8String) ? ragPath : rootPath];
+   list.navigationItem.leftBarButtonItem = [[UIBarButtonItem alloc] initWithTitle:@"Refresh"
+                                                                            style:UIBarButtonItemStyleBordered
+                                                                           target:list
+                                                                           action:@selector(refresh)];
+                                            
+   return list;
 }
 
 + (id)directoryListForPath:(NSString*)path
@@ -52,14 +58,20 @@
 
    self = [super initWithStyle:UITableViewStylePlain];
    [self setTitle: [path lastPathComponent]];
+   [self refresh];
 
+   return self;
+}
+
+- (void)refresh
+{
    // Need one array per section
    _list = [NSMutableArray arrayWithCapacity:28];
    for (int i = 0; i < 28; i ++)
       [_list addObject:[NSMutableArray array]];
    
    // List contents
-   struct string_list* contents = dir_list_new(path.UTF8String, 0, true);
+   struct string_list* contents = dir_list_new(_path.UTF8String, 0, true);
    
    if (contents)
    {
@@ -84,9 +96,9 @@
       dir_list_free(contents);
    }
    else
-      [RetroArch_iOS displayErrorMessage:[NSString stringWithFormat:@"Browsed path is not a directory: %@", path]];
+      [RetroArch_iOS displayErrorMessage:[NSString stringWithFormat:@"Browsed path is not a directory: %@", _path]];
    
-   return self;
+   [self.tableView reloadData];
 }
 
 - (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath
