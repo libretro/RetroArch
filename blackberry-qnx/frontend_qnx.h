@@ -49,10 +49,10 @@ const struct platform_bind platform_keys[] = {
    { SCREEN_R1_GAME_BUTTON, "R1 Button" },
    { SCREEN_R2_GAME_BUTTON, "R2 Button" },
    { SCREEN_R3_GAME_BUTTON, "R3 Button" },
-   { SCREEN_DPAD_UP_GAME_BUTTON, "D-Pad Up" },
-   { SCREEN_DPAD_DOWN_GAME_BUTTON, "D-Pad Down" },
-   { SCREEN_DPAD_LEFT_GAME_BUTTON, "D-Pad Left" },
-   { SCREEN_DPAD_RIGHT_GAME_BUTTON, "D-Pad Right" },
+   { SCREEN_DPAD_UP_GAME_BUTTON, "Up D-pad" },
+   { SCREEN_DPAD_DOWN_GAME_BUTTON, "Down D-pad" },
+   { SCREEN_DPAD_LEFT_GAME_BUTTON, "Left D-pad" },
+   { SCREEN_DPAD_RIGHT_GAME_BUTTON, "Right D-pad" },
 };
 #endif
 
