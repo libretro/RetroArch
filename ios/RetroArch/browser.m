@@ -74,6 +74,8 @@
                                           'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z' };
    static const uint32_t sectionCount = sizeof(sectionNames) / sizeof(sectionNames[0]);
 
+   self.sections = [NSMutableArray array];
+
    // Need one array per section
    NSMutableArray* sectionLists[sectionCount];
    for (int i = 0; i != sectionCount; i ++)
