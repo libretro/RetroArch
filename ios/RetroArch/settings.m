@@ -176,7 +176,7 @@ static RASettingData* custom_action(NSString* action, id data)
 
 - (id)initWithModule:(RAModuleInfo*)module
 {
-   _module = module.hasCustomConfig ? module : nil;
+   _module = module;
    _configPath = _module ? _module.configPath : RAModuleInfo.globalConfigPath;
 
    config_file_t* config = config_file_new([_configPath UTF8String]);
@@ -184,12 +184,10 @@ static RASettingData* custom_action(NSString* action, id data)
    NSString* overlay_path = [[[NSBundle mainBundle] bundlePath] stringByAppendingString:@"/overlays/"];
    NSString* shader_path = [[[NSBundle mainBundle] bundlePath] stringByAppendingString:@"/shaders_glsl/"];
 
-   RASettingData* deleteCustomAction = _module ? custom_action(@"Delete Custom Config", nil) : nil;
-
    NSArray* settings = [NSArray arrayWithObjects:
       [NSArray arrayWithObjects:@"Core",
          custom_action(@"Core Info", nil),
-         deleteCustomAction,
+         _module.hasCustomConfig ? custom_action(@"Delete Custom Config", nil) : nil,
          nil],
 
       [NSArray arrayWithObjects:@"Video",
@@ -330,8 +328,6 @@ static RASettingData* custom_action(NSString* action, id data)
       [modules addObject:custom_action(info.displayName, info)];
    }
 
-   RASettingData* btstackOption = btstack_is_loaded() ? boolean_setting(config, @"ios_use_btstack", @"Enable BTstack", @"false") : nil;
-
    NSArray* settings = [NSArray arrayWithObjects:
       [NSArray arrayWithObjects:@"Frontend",
          custom_action(@"Diagnostic Log", nil),
@@ -339,7 +335,7 @@ static RASettingData* custom_action(NSString* action, id data)
       [NSArray arrayWithObjects:@"Bluetooth",
          // TODO: Note that with this turned off the native bluetooth is expected to be a real keyboard
          boolean_setting(config, @"ios_use_icade", @"Native BT is iCade", @"false"),
-         btstackOption,
+         btstack_is_loaded() ? boolean_setting(config, @"ios_use_btstack", @"Enable BTstack", @"false") : nil,
          nil],
       [NSArray arrayWithObjects:@"Orientations",
          boolean_setting(config, @"ios_allow_portrait", @"Portrait", @"true"),
