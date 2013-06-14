@@ -42,7 +42,6 @@
 static ios_input_data_t g_input_data;
 
 static bool enable_btstack;
-static bool enable_global_config;
 static bool use_icade;
 static uint32_t icade_buttons;
 
@@ -371,13 +370,7 @@ static void event_reload_config(void* userdata)
    load_data->rom_path = strdup(path.UTF8String);
    load_data->sram_path = strdup(self.systemDirectory.UTF8String);
    load_data->state_path = strdup(self.systemDirectory.UTF8String);
-	if (enable_global_config)
-	{
-		NSString *str = [NSString stringWithFormat:@"%@/retroarch.cfg", [RetroArch_iOS get].systemDirectory];
-		load_data->config_path = [str UTF8String];
-	}
-	else
-		load_data->config_path = strdup(_module.configPath.UTF8String);
+   load_data->config_path = strdup(_module.configPath.UTF8String);
    load_data->verbose = false;
 
    if (pthread_create(&_retroThread, 0, rarch_main_ios, load_data))
@@ -449,7 +442,6 @@ static void event_reload_config(void* userdata)
       //
       config_get_bool(conf, "ios_use_icade", &use_icade);
       config_get_bool(conf, "ios_use_btstack", &enable_btstack);
-		config_get_bool(conf, "global_config_enable", &enable_btstack);
       
       if (enable_btstack)
          [self startBluetooth];
