@@ -397,8 +397,7 @@ static RASettingData* custom_action(NSString* action, id data)
    if (!config)
       return;
 
-#if 0
-   NSArray* list = settingList ? settingList : settings;
+   NSArray* list = settingList ? settingList : self.sections;
 
    for (int i = 0; i < [list count]; i++)
    {
@@ -449,7 +448,6 @@ static RASettingData* custom_action(NSString* action, id data)
          }
       }
    }
-#endif
 }
 
 - (void)tableView:(UITableView*)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath
