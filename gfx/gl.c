@@ -50,10 +50,6 @@
 
 #include "shader_common.h"
 
-#ifdef __CELLOS_LV2__
-#define FPS_COUNTER
-#endif
-
 #ifdef ANDROID
 #include "../frontend/frontend_android.h"
 #endif
@@ -1491,25 +1487,6 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
 #if defined(HAVE_RGUI) || defined(HAVE_RMENU)
    if (gl->rgui_texture_enable)
       gl_draw_texture(gl);
-#endif
-
-#ifdef FPS_COUNTER
-   if (lifecycle_mode_state & (1ULL << MODE_FPS_DRAW))
-   {
-      char fps_txt[128];
-      font_params_t params = {0};
-
-      gfx_get_fps(fps_txt, sizeof(fps_txt), true);
-
-      if (gl->font_ctx)
-      {
-         params.x = g_settings.video.msg_pos_x;
-         params.y = 0.56f;
-         params.scale = 1.04f;
-         params.color = WHITE;
-         gl->font_ctx->render_msg(gl, fps_txt, &params);
-      }
-   }
 #endif
 
    if (msg && gl->font_ctx)

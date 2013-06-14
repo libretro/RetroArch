@@ -24,6 +24,8 @@
 #endif
 #endif
 
+#include "../gfx_common.h"
+
 #ifndef __PSL1GHT__
 #include <sys/spu_initialize.h>
 #endif
@@ -186,8 +188,23 @@ static void gfx_ctx_set_resize(unsigned width, unsigned height) { }
 
 static void gfx_ctx_update_window_title(void)
 {
+   gl_t *gl = (gl_t*)driver.video_data;
    char buf[128];
+
    gfx_get_fps(buf, sizeof(buf), false);
+
+   if (g_extern.lifecycle_mode_state & (1ULL << MODE_FPS_DRAW) &&
+         gl->font_ctx)
+   {
+#ifdef HAVE_LIBDBGFONT
+      font_params_t params = {0};
+      params.x = g_settings.video.msg_pos_x;
+      params.y = 0.56f;
+      params.scale = 1.04f;
+      params.color = WHITE;
+      gl->font_ctx->render_msg(gl, buf, &params);
+#endif
+   }
 }
 
 static void gfx_ctx_get_video_size(unsigned *width, unsigned *height)
