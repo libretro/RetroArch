@@ -84,20 +84,6 @@ static NSMutableArray* moduleList;
 
 @end
 
-
-static NSString* get_data_string(config_file_t* config, const char* name, NSString* defaultValue)
-{
-   char* result = 0;
-   if (config_get_string(config, name, &result))
-   {
-      NSString* output = [NSString stringWithUTF8String:result];
-      free(result);
-      return output;
-   }
-   
-   return defaultValue;
-}
-
 @implementation RAModuleInfoList
 {
    RAModuleInfo* _data;
@@ -114,12 +100,12 @@ static NSString* get_data_string(config_file_t* config, const char* name, NSStri
    _sections = [NSMutableArray array];
 
    [_sections addObject: [NSArray arrayWithObjects:@"Core",
-      @"Core Name", get_data_string(_data.data, "corename", @"Unspecified"),
+      @"Core Name", ios_get_value_from_config(_data.data, @"corename", @"Unspecified"),
       nil]];
    
    [_sections addObject: [NSArray arrayWithObjects:@"Hardware/Software",
-      @"Developer", get_data_string(_data.data, "manufacturer", @"Unspecified"),
-      @"Name", get_data_string(_data.data, "systemname", @"Unspecified"),
+      @"Developer", ios_get_value_from_config(_data.data, @"manufacturer", @"Unspecified"),
+      @"Name", ios_get_value_from_config(_data.data, @"systemname", @"Unspecified"),
       nil]];
 
    // Firmware
@@ -131,15 +117,10 @@ static NSString* get_data_string(config_file_t* config, const char* name, NSStri
 
       for (int i = 0; i < firmwareCount; i ++)
       {
-         char namebuf[512];
-         
-         snprintf(namebuf, 512, "firmware%d_desc", i + 1);
-         [firmwareSection addObject:get_data_string(_data.data, namebuf, @"Unspecified")];
+         [firmwareSection addObject:ios_get_value_from_config(_data.data, [NSString stringWithFormat:@"firmware%d_desc", i + 1], @"Unspecified")];
 
-         snprintf(namebuf, 512, "firmware%d_path", i + 1);
-         NSString* path = get_data_string(_data.data, namebuf, @"Unspecified");
+         NSString* path = ios_get_value_from_config(_data.data, [NSString stringWithFormat:@"firmware%d_path", i + 1], @"Unspecified");
          path = [path stringByReplacingOccurrencesOfString:@"%sysdir%" withString:RetroArch_iOS.get.systemDirectory];
-
          [firmwareSection addObject:path];
       }
 

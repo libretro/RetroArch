@@ -560,3 +560,16 @@ char* ios_get_rarch_system_directory()
 {
    return strdup([RetroArch_iOS.get.systemDirectory UTF8String]);
 }
+
+
+NSString* ios_get_value_from_config(config_file_t* config, NSString* name, NSString* defaultValue)
+{
+   char* data = 0;
+   if (config)
+      config_get_string(config, [name UTF8String], &data);
+   
+   NSString* result = data ? [NSString stringWithUTF8String:data] : defaultValue;
+   free(data);
+   return result;
+}
+

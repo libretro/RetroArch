@@ -34,3 +34,5 @@
 @property (strong, nonatomic) NSString* systemConfigPath;   // e.g. /var/mobile/Documents/.RetroArch/frontend.cfg
 
 @end
+
+extern NSString* ios_get_value_from_config(config_file_t* config, NSString* name, NSString* defaultValue);
