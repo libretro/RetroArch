@@ -111,7 +111,7 @@ static NSMutableArray* moduleList;
    // Firmware
    _firmwareSectionIndex = 1000;
    uint32_t firmwareCount = 0;
-   if (config_get_uint(_data.data, "firmware_count", &firmwareCount) && firmwareCount)
+   if (_data.data && config_get_uint(_data.data, "firmware_count", &firmwareCount) && firmwareCount)
    {
       NSMutableArray* firmwareSection = [NSMutableArray arrayWithObject:@"Firmware"];
 
