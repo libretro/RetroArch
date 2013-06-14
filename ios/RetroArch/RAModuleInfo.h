@@ -18,18 +18,18 @@
 @interface RAModuleInfo : NSObject
 @property (strong) NSString* path;
 @property config_file_t* data;
-@property (strong) NSString* configPath;
 @property (strong) NSString* displayName;
 @property (strong) NSArray* supportedExtensions;
-@property bool hasCustomConfig;
 
 + (NSArray*)getModules;
 - (bool)supportsFileAtPath:(NSString*)path;
 
 - (void)createCustomConfig;
 - (void)deleteCustomConfig;
+- (bool)hasCustomConfig;
 
 + (NSString*)globalConfigPath;
-- (NSString*)customConfigPath;
+@property (strong) NSString* customConfigPath;
+- (NSString*)configPath;
 @end
 
