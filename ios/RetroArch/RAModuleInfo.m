@@ -46,21 +46,22 @@ static NSMutableArray* moduleList;
 
          newInfo.data = config_file_new([infoPath UTF8String]);
 
-         char* dispname = 0;
-         char* extensions = 0;
-   
-         if (newInfo.data)
+         newInfo.displayName = ios_get_value_from_config(newInfo.data, @"display_name", newInfo.path.lastPathComponent.stringByDeletingPathExtension);
+         newInfo.supportedExtensions = [ios_get_value_from_config(newInfo.data, @"supported_extensions", @"") componentsSeparatedByString:@"|"];
+
+         // Get config file
+         NSString* customConfigPath = [newInfo customConfigPath];
+         if (path_file_exists(customConfigPath.UTF8String))
          {
-            config_get_string(newInfo.data, "display_name", &dispname);
-            config_get_string(newInfo.data, "supported_extensions", &extensions);
+            newInfo.hasCustomConfig = true;
+            newInfo.configPath = customConfigPath;
+         }
+         else
+         {
+            newInfo.hasCustomConfig = false;
+            newInfo.configPath = [NSString stringWithFormat:@"%@/retroarch.cfg", RetroArch_iOS.get.systemDirectory];
          }
 
-         newInfo.configPath = [NSString stringWithFormat:@"%@/%@.cfg", [RetroArch_iOS get].systemDirectory, [[newInfo.path lastPathComponent] stringByDeletingPathExtension]];
-         newInfo.displayName = dispname ? [NSString stringWithUTF8String:dispname] : [[newInfo.path lastPathComponent] stringByDeletingPathExtension];
-         newInfo.supportedExtensions = extensions ? [[NSString stringWithUTF8String:extensions] componentsSeparatedByString:@"|"] : [NSArray array];
-
-         free(dispname);
-         free(extensions);
 
          [moduleList addObject:newInfo];
       }
@@ -84,6 +85,31 @@ static NSMutableArray* moduleList;
 - (bool)supportsFileAtPath:(NSString*)path
 {
    return [self.supportedExtensions containsObject:[[path pathExtension] lowercaseString]];
+}
+
+- (void)createCustomConfig
+{
+   if (!self.hasCustomConfig)
+   {
+      NSString* target = self.customConfigPath;
+
+      [NSFileManager.defaultManager copyItemAtPath:self.configPath toPath:target error:nil];
+      self.hasCustomConfig = true;
+   }
+}
+
+- (void)deleteCustomConfig
+{
+   if (self.hasCustomConfig)
+   {
+      [NSFileManager.defaultManager removeItemAtPath:self.customConfigPath error:nil];
+      self.hasCustomConfig = false;
+   }
+}
+
+- (NSString*)customConfigPath
+{
+   return [NSString stringWithFormat:@"%@/%@.cfg", RetroArch_iOS.get.systemDirectory, self.path.lastPathComponent.stringByDeletingPathExtension];
 }
 
 @end

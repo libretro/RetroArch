@@ -21,8 +21,14 @@
 @property (strong) NSString* configPath;
 @property (strong) NSString* displayName;
 @property (strong) NSArray* supportedExtensions;
+@property bool hasCustomConfig;
 
 + (NSArray*)getModules;
 - (bool)supportsFileAtPath:(NSString*)path;
+
+- (void)createCustomConfig;
+- (void)deleteCustomConfig;
+
+- (NSString*)customConfigPath;
 @end
 
