@@ -1005,32 +1005,6 @@ NULL, NULL, NULL, 0);
    float msg_height = mem_height + 50;
 #endif
 
-   font_params_t font_parms = {0};
-
-   if (lifecycle_mode_state & (1ULL << MODE_FPS_DRAW))
-   {
-      MEMORYSTATUS stat;
-      char buf[128];
-
-      GlobalMemoryStatus(&stat);
-
-      font_parms.x = mem_width;
-      font_parms.y = mem_height;
-      font_parms.scale = 0;
-      font_parms.color = 0;
-
-      snprintf(buf, sizeof(buf), "%.2f MB free / %.2f MB total", stat.dwAvailPhys/(1024.0f*1024.0f), stat.dwTotalPhys/(1024.0f*1024.0f));
-      if (d3d->font_ctx)
-         d3d->font_ctx->render_msg(d3d, buf, &font_parms);
-
-      gfx_get_fps(buf, sizeof(buf), true);
-      if (d3d->font_ctx)
-      {
-         font_parms.y = mem_height + 30;
-         d3d->font_ctx->render_msg(d3d, buf, &font_parms);
-      }
-   }
-
    if (msg)
    {
       font_parms.x = msg_width;

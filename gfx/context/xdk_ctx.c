@@ -80,12 +80,44 @@ static bool gfx_ctx_xdk_window_has_focus(void)
 static void gfx_ctx_xdk_update_window_title(void)
 {
    char buf[128];
+   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
+
    gfx_get_fps(buf, sizeof(buf), false);
+
+   if (g_extern.lifecycle_mode_state & (1ULL << MODE_FPS_DRAW))
+   {
+#if defined(_XBOX1)
+      float mem_width  = font_x + 30;
+      float mem_height = font_y + 50;
+#elif defined(_XBOX360)
+      float mem_width  = (g_extern.lifecycle_mode_state & (1ULL << MODE_MENU_HD)) ? 160 : 100;
+      float mem_height = 70;
+#endif
+      MEMORYSTATUS stat;
+      font_params_t font_parms = {0};
+
+      GlobalMemoryStatus(&stat);
+
+      font_parms.x = mem_width;
+      font_parms.y = mem_height;
+      font_parms.scale = 0;
+      font_parms.color = 0;
+
+      if (d3d->font_ctx)
+      {
+         font_parms.y = mem_height + 30;
+         d3d->font_ctx->render_msg(d3d, buf, &font_parms);
+      }
+
+      snprintf(buf, sizeof(buf), "%.2f MB free / %.2f MB total", stat.dwAvailPhys/(1024.0f*1024.0f), stat.dwTotalPhys/(1024.0f*1024.0f));
+
+      if (d3d->font_ctx)
+         d3d->font_ctx->render_msg(d3d, buf, &font_parms);
+   }
 }
 
 static void gfx_ctx_xdk_get_video_size(unsigned *width, unsigned *height)
 {
-   xdk_d3d_video_t *device_ptr = (xdk_d3d_video_t*)driver.video_data;
 #if defined(_XBOX360)
    XVIDEO_MODE video_mode;
    XGetVideoMode(&video_mode);

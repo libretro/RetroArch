@@ -196,14 +196,12 @@ static void gfx_ctx_update_window_title(void)
    if (g_extern.lifecycle_mode_state & (1ULL << MODE_FPS_DRAW) &&
          gl->font_ctx)
    {
-#ifdef HAVE_LIBDBGFONT
       font_params_t params = {0};
       params.x = g_settings.video.msg_pos_x;
       params.y = 0.56f;
       params.scale = 1.04f;
       params.color = WHITE;
       gl->font_ctx->render_msg(gl, buf, &params);
-#endif
    }
 }
 
