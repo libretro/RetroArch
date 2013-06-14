@@ -1,5 +1,5 @@
-display_name = "Arcade (FBA)"
+display_name = "Arcade (MAME 2003)"
 supported_extensions = "zip"
-corename = "Final Burn Alpha"
+corename = "MAME 2003 (0.78)"
 manufacturer = "Various"
 systemname = "Arcade (various)"
