@@ -994,15 +994,11 @@ NULL, NULL, NULL, 0);
 #endif
 
 #if defined(_XBOX1)
-   float mem_width  = font_x + 30;
-   float mem_height = font_y + 50;
    float msg_width  = 60;
    float msg_height = 365;
 #elif defined(_XBOX360)
-   float mem_width  = (lifecycle_mode_state & (1ULL << MODE_MENU_HD)) ? 160 : 100;
-   float mem_height = 70;
-   float msg_width  = mem_width;
-   float msg_height = mem_height + 50;
+   float msg_width  = (lifecycle_mode_state & (1ULL << MODE_MENU_HD)) ? 160 : 100;
+   float msg_height = 120;
 #endif
 
    if (msg)
