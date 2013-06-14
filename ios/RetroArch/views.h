@@ -70,5 +70,5 @@
 @end
 
 // settings.m
-@interface RASystemSettingsList : RASettingsSubList
+@interface RASystemSettingsList : RASettingsSubList<UIAlertViewDelegate>
 @end

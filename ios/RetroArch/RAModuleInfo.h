@@ -29,6 +29,7 @@
 - (void)createCustomConfig;
 - (void)deleteCustomConfig;
 
++ (NSString*)globalConfigPath;
 - (NSString*)customConfigPath;
 @end
 

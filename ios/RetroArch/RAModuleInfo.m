@@ -59,7 +59,7 @@ static NSMutableArray* moduleList;
          else
          {
             newInfo.hasCustomConfig = false;
-            newInfo.configPath = [NSString stringWithFormat:@"%@/retroarch.cfg", RetroArch_iOS.get.systemDirectory];
+            newInfo.configPath = self.globalConfigPath;
          }
 
 
@@ -105,6 +105,11 @@ static NSMutableArray* moduleList;
       [NSFileManager.defaultManager removeItemAtPath:self.customConfigPath error:nil];
       self.hasCustomConfig = false;
    }
+}
+
++ (NSString*)globalConfigPath
+{
+   return [NSString stringWithFormat:@"%@/retroarch.cfg", RetroArch_iOS.get.systemDirectory];
 }
 
 - (NSString*)customConfigPath

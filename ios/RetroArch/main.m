@@ -349,33 +349,33 @@ static void event_reload_config(void* userdata)
 #pragma mark EMULATION
 - (void)runGame:(NSString*)path withModule:(RAModuleInfo*)module
 {
-   if (_isRunning)
-      return;
-
-   _module = module;
-   
-   [RASettingsList refreshModuleConfig:module];
-   
-   [self pushViewController:RAGameView.get animated:NO];
-   _isRunning = true;
-
-   struct rarch_main_wrap* load_data = malloc(sizeof(struct rarch_main_wrap));
-   memset(load_data, 0, sizeof(struct rarch_main_wrap));
-   load_data->libretro_path = strdup(_module.path.UTF8String);
-   load_data->rom_path = strdup(path.UTF8String);
-   load_data->sram_path = strdup(self.systemDirectory.UTF8String);
-   load_data->state_path = strdup(self.systemDirectory.UTF8String);
-   load_data->config_path = strdup(_module.configPath.UTF8String);
-   load_data->verbose = false;
-
-   if (pthread_create(&_retroThread, 0, rarch_main_ios, load_data))
+   if (!_isRunning)
    {
-      [self rarchExited:NO];
-      return;
-   }
-   pthread_detach(_retroThread);
+      _module = module;
 
-   [self refreshSystemConfig];
+      [RASettingsList refreshModuleConfig:_module];
+
+      [self pushViewController:RAGameView.get animated:NO];
+      _isRunning = true;
+
+      struct rarch_main_wrap* load_data = malloc(sizeof(struct rarch_main_wrap));
+      memset(load_data, 0, sizeof(struct rarch_main_wrap));
+      load_data->libretro_path = strdup(_module.path.UTF8String);
+      load_data->rom_path = strdup(path.UTF8String);
+      load_data->sram_path = strdup(self.systemDirectory.UTF8String);
+      load_data->state_path = strdup(self.systemDirectory.UTF8String);
+      load_data->config_path = strdup(_module.configPath.UTF8String);
+      load_data->verbose = false;
+
+      if (pthread_create(&_retroThread, 0, rarch_main_ios, load_data))
+      {
+         [self rarchExited:NO];
+         return;
+      }
+      pthread_detach(_retroThread);
+
+      [self refreshSystemConfig];
+   }
 }
 
 - (void)rarchExited:(BOOL)successful
@@ -442,9 +442,9 @@ static void event_reload_config(void* userdata)
          [self startBluetooth];
       else
          [self stopBluetooth];
+      
+      config_file_free(conf);
    }
-
-   config_file_free(conf);
 }
 
 #pragma mark PAUSE MENU

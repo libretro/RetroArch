@@ -165,6 +165,8 @@ static RASettingData* custom_action(NSString* action, id data)
 @implementation RASettingsList
 {
    RAModuleInfo* _module;
+   NSString* _configPath;
+   bool _cancelSave; // Set to prevent dealloc from writing to disk
 }
 
 + (void)refreshModuleConfig:(RAModuleInfo*)module;
@@ -174,14 +176,15 @@ static RASettingData* custom_action(NSString* action, id data)
 
 - (id)initWithModule:(RAModuleInfo*)module
 {
-   _module = module;
+   _module = module.hasCustomConfig ? module : nil;
+   _configPath = _module ? _module.configPath : RAModuleInfo.globalConfigPath;
 
-   config_file_t* config = config_file_new([_module.configPath UTF8String]);
+   config_file_t* config = config_file_new([_configPath UTF8String]);
 
    NSString* overlay_path = [[[NSBundle mainBundle] bundlePath] stringByAppendingString:@"/overlays/"];
    NSString* shader_path = [[[NSBundle mainBundle] bundlePath] stringByAppendingString:@"/shaders_glsl/"];
 
-   RASettingData* deleteCustomAction = _module.hasCustomConfig ? custom_action(@"Delete Custom Config", nil) : nil;
+   RASettingData* deleteCustomAction = _module ? custom_action(@"Delete Custom Config", nil) : nil;
 
    NSArray* settings = [NSArray arrayWithObjects:
       [NSArray arrayWithObjects:@"Core",
@@ -272,24 +275,29 @@ static RASettingData* custom_action(NSString* action, id data)
       nil
    ];
 
-   self = [super initWithSettings:settings title:_module.displayName];
+   self = [super initWithSettings:settings title:_module ? _module.displayName : @"Global Core Config"];
    return self;
 }
 
 - (void)dealloc
 {
-   config_file_t* config = config_file_new([_module.configPath UTF8String]);
+   if (!_cancelSave)
+   {
+      config_file_t* config = config_file_new([_configPath UTF8String]);
     
-    if (!config)
-        config = config_file_new(0);
-   
-   config_set_string(config, "system_directory", [[RetroArch_iOS get].systemDirectory UTF8String]);
-   [self writeSettings:nil toConfig:config];
-   if (config)
-      config_file_write(config, [_module.configPath UTF8String]);
-   config_file_free(config);
+      if (!config)
+         config = config_file_new(0);
 
-   [[RetroArch_iOS get] refreshConfig];
+      if (config)
+      {
+         config_set_string(config, "system_directory", [[RetroArch_iOS get].systemDirectory UTF8String]);
+         [self writeSettings:nil toConfig:config];
+         config_file_write(config, [_configPath UTF8String]);
+         config_file_free(config);
+      }
+
+      [[RetroArch_iOS get] refreshConfig];
+   }
 }
 
 - (void)handleCustomAction:(RASettingData*)setting
@@ -299,6 +307,7 @@ static RASettingData* custom_action(NSString* action, id data)
    else if([@"Delete Custom Config" isEqualToString:setting.label])
    {
       [_module deleteCustomConfig];
+      _cancelSave = true;
       [self.navigationController popViewControllerAnimated:YES];
    }
 }
@@ -312,6 +321,7 @@ static RASettingData* custom_action(NSString* action, id data)
 
    NSMutableArray* modules = [NSMutableArray array];
    [modules addObject:@"Cores"];
+   [modules addObject:custom_action(@"Global Core Config", nil)];
 
    NSArray* module_data = [RAModuleInfo getModules];
    for (int i = 0; i != module_data.count; i ++)
@@ -352,11 +362,12 @@ static RASettingData* custom_action(NSString* action, id data)
     if (!config)
         config = config_file_new(0);
    
-   [self writeSettings:nil toConfig:config];
-   
    if (config)
+   {
+      [self writeSettings:nil toConfig:config];
       config_file_write(config, [[RetroArch_iOS get].systemConfigPath UTF8String]);
-   config_file_free(config);
+      config_file_free(config);
+   }
    
    [[RetroArch_iOS get] refreshSystemConfig];
 }
@@ -372,11 +383,42 @@ static RASettingData* custom_action(NSString* action, id data)
       else
          [RetroArch_iOS.get stopBluetooth];
    }
+   else if([@"Global Core Config" isEqualToString:setting.label])
+   {
+      [RetroArch_iOS.get pushViewController:[[RASettingsList alloc] initWithModule:nil] animated:YES];
+   }
    else
    {
-      id data = objc_getAssociatedObject(setting, "USERDATA");
+      RAModuleInfo* data = (RAModuleInfo*)objc_getAssociatedObject(setting, "USERDATA");
       if (data)
-         [RetroArch_iOS.get pushViewController:[[RASettingsList alloc] initWithModule:(RAModuleInfo*)data] animated:YES];
+      {
+         if (!data.hasCustomConfig)
+         {
+            UIAlertView* alert = [[UIAlertView alloc] initWithTitle:@"RetroArch"
+                                                            message:@"No custom configuration for this core exists, "
+                                                                     "would you like to create one?"
+                                                           delegate:self
+                                                  cancelButtonTitle:@"No"
+                                                  otherButtonTitles:@"Yes", nil];
+            objc_setAssociatedObject(alert, "MODULE", data, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+            [alert show];
+         }
+         else
+            [RetroArch_iOS.get pushViewController:[[RASettingsList alloc] initWithModule:data] animated:YES];
+      }
+   }
+}
+
+- (void)alertView:(UIAlertView*)alertView willDismissWithButtonIndex:(NSInteger)buttonIndex
+{
+   RAModuleInfo* data = (RAModuleInfo*)objc_getAssociatedObject(alertView, "MODULE");
+
+   if (data)
+   {
+      if (buttonIndex == alertView.firstOtherButtonIndex)
+         [data createCustomConfig];
+
+      [RetroArch_iOS.get pushViewController:[[RASettingsList alloc] initWithModule:data] animated:YES];
    }
 }
 
