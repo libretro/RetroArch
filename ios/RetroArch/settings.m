@@ -180,9 +180,12 @@ static RASettingData* custom_action(NSString* action, id data)
    NSString* overlay_path = [[[NSBundle mainBundle] bundlePath] stringByAppendingString:@"/overlays/"];
    NSString* shader_path = [[[NSBundle mainBundle] bundlePath] stringByAppendingString:@"/shaders_glsl/"];
 
+   RASettingData* deleteCustomAction = _module.hasCustomConfig ? custom_action(@"Delete Custom Config", nil) : nil;
+
    NSArray* settings = [NSArray arrayWithObjects:
       [NSArray arrayWithObjects:@"Core",
          custom_action(@"Core Info", nil),
+         deleteCustomAction,
          nil],
 
       [NSArray arrayWithObjects:@"Video",
@@ -292,6 +295,11 @@ static RASettingData* custom_action(NSString* action, id data)
 {
    if ([@"Core Info" isEqualToString:setting.label])
       [[RetroArch_iOS get] pushViewController:[[RAModuleInfoList alloc] initWithModuleInfo:_module] animated:YES];
+   else if([@"Delete Custom Config" isEqualToString:setting.label])
+   {
+      [_module deleteCustomConfig];
+      [self.navigationController popViewControllerAnimated:YES];
+   }
 }
 
 @end
