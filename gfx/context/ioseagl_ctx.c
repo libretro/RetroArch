@@ -44,6 +44,8 @@ static bool gfx_ctx_set_video_mode(
 
 static void gfx_ctx_update_window_title(void)
 {
+   char buf[128];
+   gfx_get_fps(bu, sizeof(buf), false);
 }
 
 static void gfx_ctx_check_window(bool *quit,

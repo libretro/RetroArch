@@ -323,12 +323,7 @@ static void gfx_ctx_set_resize(unsigned width, unsigned height)
 static void gfx_ctx_update_window_title(void)
 {
    char buf[128];
-#if 0
-   if (gfx_get_fps(buf, sizeof(buf), false))
-      RARCH_LOG("%s.\n", buf);
-#else
    gfx_get_fps(buf, sizeof(buf), false);
-#endif
 }
 
 static bool gfx_ctx_set_video_mode(
