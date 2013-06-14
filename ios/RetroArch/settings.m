@@ -18,6 +18,7 @@
 
 #include "input/ios_input.h"
 #include "input/keycode.h"
+#include "input/BTStack/btdynamic.h"
 #include "input/BTStack/btpad.h"
 
 enum SettingTypes
@@ -319,6 +320,8 @@ static RASettingData* custom_action(NSString* action, id data)
       [modules addObject:custom_action(info.displayName, info)];
    }
 
+   RASettingData* btstackOption = btstack_is_loaded() ? boolean_setting(config, @"ios_use_btstack", @"Enable BTstack", @"false") : nil;
+
    NSArray* settings = [NSArray arrayWithObjects:
       [NSArray arrayWithObjects:@"Frontend",
          custom_action(@"Diagnostic Log", nil),
@@ -326,8 +329,7 @@ static RASettingData* custom_action(NSString* action, id data)
       [NSArray arrayWithObjects:@"Bluetooth",
          // TODO: Note that with this turned off the native bluetooth is expected to be a real keyboard
          boolean_setting(config, @"ios_use_icade", @"Native BT is iCade", @"false"),
-         // TODO: Make this option only if BTstack is available
-         boolean_setting(config, @"ios_use_btstack", @"Enable BTstack", @"false"),
+         btstackOption,
          nil],
       [NSArray arrayWithObjects:@"Orientations",
          boolean_setting(config, @"ios_allow_portrait", @"Portrait", @"true"),
