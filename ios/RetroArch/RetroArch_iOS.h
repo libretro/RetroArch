@@ -13,7 +13,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#import <UIKit/UIKit.h>
+#import "RAModuleInfo.h"
 
 @interface RetroArch_iOS : UINavigationController<UIApplicationDelegate, UINavigationControllerDelegate>
 
@@ -35,4 +35,5 @@
 
 @end
 
+// utility.m
 extern NSString* ios_get_value_from_config(config_file_t* config, NSString* name, NSString* defaultValue);

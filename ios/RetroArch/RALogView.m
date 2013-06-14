@@ -17,6 +17,8 @@
 #include <stdio.h>
 #include <pthread.h>
 
+#import "views.h"
+
 static NSMutableArray* g_messages;
 static pthread_mutex_t g_lock = PTHREAD_MUTEX_INITIALIZER;
 

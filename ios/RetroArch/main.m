@@ -13,29 +13,21 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#import <UIKit/UIKit.h>
-#include "input/ios_input.h"
-#include "input/keycode.h"
-#include "input/BTStack/btpad.h"
-#include "libretro.h"
-
 #include <sys/stat.h>
 #include <pthread.h>
 #include <string.h>
 
+#import "RetroArch_iOS.h"
+#import "views.h"
 #include "rarch_wrapper.h"
-#include "general.h"
-#include "file.h"
-#include "frontend/menu/rmenu.h"
 
-#import "browser/browser.h"
-#import "settings/settings.h"
-
+#include "input/ios_input.h"
+#include "input/keycode.h"
+#include "input/BTStack/btpad.h"
 #include "input/BTStack/btdynamic.h"
 #include "input/BTStack/btpad.h"
 
-#define GSEVENT_TYPE_KEYDOWN 10
-#define GSEVENT_TYPE_KEYUP 11
+#include "file.h"
 
 //#define HAVE_DEBUG_FILELOG
 
@@ -118,6 +110,9 @@ static void handle_icade_event(unsigned keycode)
 @end
 
 @implementation RApplication
+
+#define GSEVENT_TYPE_KEYDOWN 10
+#define GSEVENT_TYPE_KEYUP 11
 
 - (void)sendEvent:(UIEvent *)event
 {
@@ -560,16 +555,3 @@ char* ios_get_rarch_system_directory()
 {
    return strdup([RetroArch_iOS.get.systemDirectory UTF8String]);
 }
-
-
-NSString* ios_get_value_from_config(config_file_t* config, NSString* name, NSString* defaultValue)
-{
-   char* data = 0;
-   if (config)
-      config_get_string(config, [name UTF8String], &data);
-   
-   NSString* result = data ? [NSString stringWithUTF8String:data] : defaultValue;
-   free(data);
-   return result;
-}
-

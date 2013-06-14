@@ -13,11 +13,9 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#import <UIKit/UIKit.h>
-#import <GLKit/GLKit.h>
-
 #import "RAModuleInfo.h"
 
+// RAGameView.m
 @interface RAGameView : UIViewController
 + (RAGameView*)get;
 - (void)openPauseMenu;
@@ -27,5 +25,50 @@
 - (void)resume;
 @end
 
+// RALogView.m
 @interface RALogView : UITableViewController
+@end
+
+// utility.m
+@interface RATableViewController : UITableViewController
+@property NSMutableArray* sections;
+@property BOOL hidesHeaders;
+
+- (id)initWithStyle:(UITableViewStyle)style;
+- (id)itemForIndexPath:(NSIndexPath*)indexPath;
+@end
+
+// browser.m
+@interface RADirectoryList : RATableViewController
++ (id)directoryListAtBrowseRoot;
++ (id)directoryListForPath:(NSString*)path;
+- (id)initWithPath:(NSString*)path;
+@end
+
+// browser.m
+@interface RAModuleList : RATableViewController
+- (id)initWithGame:(NSString*)path;
+@end
+
+// RAModuleInfo.m
+@interface RAModuleInfoList : RATableViewController
+- (id)initWithModuleInfo:(RAModuleInfo*)info;
+@end
+
+// settings.m
+@interface RASettingsSubList : RATableViewController
+- (id)initWithSettings:(NSArray*)values title:(NSString*)title;
+- (void)writeSettings:(NSArray*)settingList toConfig:(config_file_t*)config;
+
+- (bool)isSettingsView;
+@end
+
+// settings.m
+@interface RASettingsList : RASettingsSubList
++ (void)refreshModuleConfig:(RAModuleInfo*)module;
+- (id)initWithModule:(RAModuleInfo*)module;
+@end
+
+// settings.m
+@interface RASystemSettingsList : RASettingsSubList
 @end

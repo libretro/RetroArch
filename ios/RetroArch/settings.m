@@ -13,12 +13,37 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#import <objc/runtime.h>
-#import "settings.h"
+#import "RetroArch_iOS.h"
+#import "views.h"
 
-#include "../input/ios_input.h"
-#include "../input/keycode.h"
-#include "../input/BTStack/btpad.h"
+#include "input/ios_input.h"
+#include "input/keycode.h"
+#include "input/BTStack/btpad.h"
+
+enum SettingTypes
+{
+   BooleanSetting, ButtonSetting, EnumerationSetting, FileListSetting,
+   GroupSetting, AspectSetting, RangeSetting, CustomAction
+};
+
+@interface RASettingData : NSObject
+@property enum SettingTypes type;
+
+@property (strong) NSString* label;
+@property (strong) NSString* name;
+@property (strong) NSString* value;
+
+@property (strong) NSString* path;
+@property (strong) NSArray* subValues;
+@property (strong) NSMutableArray* msubValues;
+
+@property double rangeMin;
+@property double rangeMax;
+
+@property bool haveNoneOption;
+
+- (id)initWithType:(enum SettingTypes)aType label:(NSString*)aLabel name:(NSString*)aName;
+@end
 
 @implementation RASettingData
 - (id)initWithType:(enum SettingTypes)aType label:(NSString*)aLabel name:(NSString*)aName
@@ -29,6 +54,16 @@
    return self;
 }
 @end
+
+// Helper view definitions
+@interface RAButtonGetter : NSObject<UIAlertViewDelegate>
+- (id)initWithSetting:(RASettingData*)setting fromTable:(UITableView*)table;
+@end
+
+@interface RASettingEnumerationList : UITableViewController
+- (id)initWithSetting:(RASettingData*)setting fromTable:(UITableView*)table;
+@end
+
 
 static RASettingData* boolean_setting(config_file_t* config, NSString* name, NSString* label, NSString* defaultValue)
 {
@@ -338,16 +373,12 @@ static RASettingData* custom_action(NSString* action, id data)
 @end
 
 @implementation RASettingsSubList
-{
-   NSArray* settings;
-};
-
-- (id)initWithSettings:(NSArray*)values title:(NSString*)title
+- (id)initWithSettings:(NSMutableArray*)values title:(NSString*)title
 {
    self = [super initWithStyle:UITableViewStyleGrouped];
-   settings = values;
-  
    [self setTitle:title];
+   
+   self.sections = values;
    return self;
 }
 
@@ -366,6 +397,7 @@ static RASettingData* custom_action(NSString* action, id data)
    if (!config)
       return;
 
+#if 0
    NSArray* list = settingList ? settingList : settings;
 
    for (int i = 0; i < [list count]; i++)
@@ -417,11 +449,12 @@ static RASettingData* custom_action(NSString* action, id data)
          }
       }
    }
+#endif
 }
 
 - (void)tableView:(UITableView*)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath
 {
-   RASettingData* setting = [[settings objectAtIndex:indexPath.section] objectAtIndex:indexPath.row + 1];
+   RASettingData* setting = (RASettingData*)[self itemForIndexPath:indexPath];
    
    switch (setting.type)
    {
@@ -464,7 +497,7 @@ static RASettingData* custom_action(NSString* action, id data)
 
 - (UITableViewCell*)tableView:(UITableView*)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath
 {
-   RASettingData* setting = [[settings objectAtIndex:indexPath.section] objectAtIndex:indexPath.row + 1];
+   RASettingData* setting = (RASettingData*)[self itemForIndexPath:indexPath];
   
    UITableViewCell* cell = nil;
 
@@ -551,22 +584,6 @@ static RASettingData* custom_action(NSString* action, id data)
             [setting.msubValues[2] length] ? setting.msubValues[2] : @"N/A"];
 
    return cell;
-}
-
-// UITableView item counts
-- (NSInteger)numberOfSectionsInTableView:(UITableView*)tableView
-{
-   return [settings count];
-}
-
-- (NSInteger)tableView:(UITableView*)tableView numberOfRowsInSection:(NSInteger)section
-{
-   return [[settings objectAtIndex:section] count] -1;
-}
-
-- (NSString*)tableView:(UITableView*)tableView titleForHeaderInSection:(NSInteger)section
-{
-   return [[settings objectAtIndex:section] objectAtIndex:0];
 }
 
 @end

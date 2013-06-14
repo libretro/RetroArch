@@ -13,9 +13,12 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "general.h"
+#import "RetroArch_iOS.h"
+#import "views.h"
 #include "rarch_wrapper.h"
 #include "input/ios_input.h"
+
+#include "general.h"
 
 static const float ALMOST_INVISIBLE = .021f;
 static float g_screen_scale;

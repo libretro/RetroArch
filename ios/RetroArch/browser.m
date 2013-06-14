@@ -15,8 +15,12 @@
 
 #include <dirent.h>
 #include <sys/stat.h>
-#import "browser.h"
+
+#import "RetroArch_iOS.h"
+#import "views.h"
+
 #include "conf/config_file.h"
+#include "file.h"
 
 @interface RADirectoryItem : NSObject
 @property (strong) NSString* path;
@@ -28,8 +32,8 @@
 
 @implementation RADirectoryList
 {
-   NSMutableArray* _list;
    NSString* _path;
+   NSMutableArray* _sectionNames;
 }
 
 + (id)directoryListAtBrowseRoot
@@ -57,7 +61,8 @@
    _path = path;
 
    self = [super initWithStyle:UITableViewStylePlain];
-   [self setTitle: [path lastPathComponent]];
+   self.title = path.lastPathComponent;
+   self.hidesHeaders = YES;
    [self refresh];
 
    return self;
@@ -65,10 +70,14 @@
 
 - (void)refresh
 {
+   static const char sectionNames[28] = { '/', '#', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L',
+                                          'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z' };
+   static const uint32_t sectionCount = sizeof(sectionNames) / sizeof(sectionNames[0]);
+
    // Need one array per section
-   _list = [NSMutableArray arrayWithCapacity:28];
-   for (int i = 0; i < 28; i ++)
-      [_list addObject:[NSMutableArray array]];
+   NSMutableArray* sectionLists[sectionCount];
+   for (int i = 0; i != sectionCount; i ++)
+      sectionLists[i] = [NSMutableArray arrayWithObject:[NSString stringWithFormat:@"%c", sectionNames[i]]];
    
    // List contents
    struct string_list* contents = dir_list_new(_path.UTF8String, 0, true);
@@ -86,14 +95,22 @@
       
          uint32_t section = isalpha(basename[0]) ? (toupper(basename[0]) - 'A') + 2 : 1;
          section = contents->elems[i].attr.b ? 0 : section;
-         
+
          RADirectoryItem* item = RADirectoryItem.new;
          item.path = [NSString stringWithUTF8String:contents->elems[i].data];
          item.isDirectory = contents->elems[i].attr.b;
-         [_list[section] addObject:item];
+         [sectionLists[section] addObject:item];
       }
    
       dir_list_free(contents);
+      
+      // Add the sections
+      _sectionNames = [NSMutableArray array];
+      for (int i = 0; i != sectionCount; i ++)
+      {
+         [self.sections addObject:sectionLists[i]];
+         [_sectionNames addObject:sectionLists[i][0]];
+      }
    }
    else
       [RetroArch_iOS displayErrorMessage:[NSString stringWithFormat:@"Browsed path is not a directory: %@", _path]];
@@ -103,7 +120,7 @@
 
 - (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath
 {
-   RADirectoryItem* path = _list[indexPath.section][indexPath.row];
+   RADirectoryItem* path = (RADirectoryItem*)[self itemForIndexPath:indexPath];
 
    if(path.isDirectory)
       [[RetroArch_iOS get] pushViewController:[RADirectoryList directoryListForPath:path.path] animated:YES];
@@ -117,19 +134,9 @@
    }
 }
 
-- (NSInteger)numberOfSectionsInTableView:(UITableView *)tableView
-{
-   return _list.count;
-}
-
-- (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section
-{
-   return [_list[section] count];
-}
-
 - (UITableViewCell*)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath
 {
-   RADirectoryItem* path = _list[indexPath.section][indexPath.row];
+   RADirectoryItem* path = (RADirectoryItem*)[self itemForIndexPath:indexPath];
 
    UITableViewCell* cell = [self.tableView dequeueReusableCellWithIdentifier:@"path"];
    cell = (cell != nil) ? cell : [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:@"path"];
@@ -141,8 +148,76 @@
 
 - (NSArray*)sectionIndexTitlesForTableView:(UITableView*)tableView
 {
-   return [NSArray arrayWithObjects:@"/", @"#", @"A", @"B", @"C", @"D", @"E", @"F", @"G", @"H", @"I", @"J", @"K", @"L", @"M",
-                                          @"N", @"O", @"P", @"Q", @"R", @"S", @"T", @"U", @"V", @"W", @"X", @"Y", @"Z", nil];
+   return _sectionNames;
+}
+
+@end
+
+@implementation RAModuleList
+{
+   NSString* _game;
+}
+
+- (id)initWithGame:(NSString*)path
+{
+   self = [super initWithStyle:UITableViewStyleGrouped];
+   [self setTitle:[path lastPathComponent]];
+   
+   _game = path;
+
+   // Load the modules with their data
+   NSArray* moduleList = [RAModuleInfo getModules];
+
+   NSMutableArray* supported = [NSMutableArray arrayWithObject:@"Suggested Cores"];
+   NSMutableArray* other = [NSMutableArray arrayWithObject:@"Other Cores"];
+   
+   for (RAModuleInfo* i in moduleList)
+   {
+      if ([i supportsFileAtPath:_game]) [supported addObject:i];
+      else                              [other     addObject:i];
+   }
+
+   if (supported.count > 1)
+      [self.sections addObject:supported];
+
+   if (other.count > 1)
+      [self.sections addObject:other];
+
+   return self;
+}
+
+- (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath
+{
+   [RetroArch_iOS.get runGame:_game withModule:(RAModuleInfo*)[self itemForIndexPath:indexPath]];
+}
+
+- (void)infoButtonTapped:(id)sender
+{
+   RAModuleInfo* info = objc_getAssociatedObject(sender, "MODULE");
+   if (info && info.data)
+      [RetroArch_iOS.get pushViewController:[[RAModuleInfoList alloc] initWithModuleInfo:info] animated:YES];
+   else
+      [RetroArch_iOS displayErrorMessage:@"No information available."];
+}
+
+- (UITableViewCell*)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath
+{
+   UITableViewCell* cell = [self.tableView dequeueReusableCellWithIdentifier:@"module"];
+   
+   if (!cell)
+   {
+      cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:@"module"];
+      
+      UIButton* infoButton = [UIButton buttonWithType:UIButtonTypeInfoDark];
+      [infoButton addTarget:self action:@selector(infoButtonTapped:) forControlEvents:UIControlEventTouchUpInside];
+      cell.accessoryView = infoButton;
+   }
+   
+   RAModuleInfo* info = (RAModuleInfo*)[self itemForIndexPath:indexPath];
+   cell.textLabel.text = info.displayName;
+   objc_setAssociatedObject(cell.accessoryView, "MODULE", info, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+
+   return cell;
 }
 
 @end

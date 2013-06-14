@@ -26,6 +26,3 @@
 - (bool)supportsFileAtPath:(NSString*)path;
 @end
 
-@interface RAModuleInfoList : UITableViewController
-- (id)initWithModuleInfo:(RAModuleInfo*)info;
-@end
