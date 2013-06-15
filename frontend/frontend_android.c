@@ -189,6 +189,8 @@ static void *android_app_entry(void *data)
          goto exit;
    }
 
+   config_load();
+
    rarch_init_msg_queue();
 
    if (!android_app_start_main(android_app))
