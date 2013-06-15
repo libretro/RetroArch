@@ -152,6 +152,8 @@ static bool android_app_start_main(struct android_app *android_app)
    RARCH_LOG("Config file: [%s].\n", g_extern.config_path);
    RARCH_LOG("Current IME: [%s].\n", android_app->current_ime);
 
+   config_load();
+
    menu_init();
    ret = load_menu_game();
    if (ret)
@@ -188,8 +190,6 @@ static void *android_app_entry(void *data)
       if (!android_run_events(android_app))
          goto exit;
    }
-
-   config_load();
 
    rarch_init_msg_queue();
 
