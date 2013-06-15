@@ -152,9 +152,10 @@ static RASettingData* aspect_setting(config_file_t* config, NSString* label)
    return result;
 }
 
-static RASettingData* custom_action(NSString* action, id data)
+static RASettingData* custom_action(NSString* action, NSString* value, id data)
 {
    RASettingData* result = [[RASettingData alloc] initWithType:CustomAction label:action name:nil];
+   result.value = value;
    
    if (data != nil)
       objc_setAssociatedObject(result, "USERDATA", data, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
@@ -186,8 +187,8 @@ static RASettingData* custom_action(NSString* action, id data)
 
    NSArray* settings = [NSArray arrayWithObjects:
       [NSArray arrayWithObjects:@"Core",
-         custom_action(@"Core Info", nil),
-         _module.hasCustomConfig ? custom_action(@"Delete Custom Config", nil) : nil,
+         custom_action(@"Core Info", nil, nil),
+         _module.hasCustomConfig ? custom_action(@"Delete Custom Config", nil, nil) : nil,
          nil],
 
       [NSArray arrayWithObjects:@"Video",
@@ -319,18 +320,17 @@ static RASettingData* custom_action(NSString* action, id data)
 
    NSMutableArray* modules = [NSMutableArray array];
    [modules addObject:@"Cores"];
-   [modules addObject:custom_action(@"Global Core Config", nil)];
+   [modules addObject:custom_action(@"Global Core Config", nil, nil)];
 
-   NSArray* module_data = [RAModuleInfo getModules];
-   for (int i = 0; i != module_data.count; i ++)
+   NSArray* moduleList = [RAModuleInfo getModules];
+   for (RAModuleInfo* i in moduleList)
    {
-      RAModuleInfo* info = (RAModuleInfo*)module_data[i];
-      [modules addObject:custom_action(info.displayName, info)];
+      [modules addObject:custom_action(i.displayName, i.hasCustomConfig ? @"[Custom]" : @"[Global]", i)];
    }
 
    NSArray* settings = [NSArray arrayWithObjects:
       [NSArray arrayWithObjects:@"Frontend",
-         custom_action(@"Diagnostic Log", nil),
+         custom_action(@"Diagnostic Log", nil, nil),
          nil],
       [NSArray arrayWithObjects:@"Bluetooth",
          // TODO: Note that with this turned off the native bluetooth is expected to be a real keyboard
@@ -564,11 +564,14 @@ static RASettingData* custom_action(NSString* action, id data)
             [cell setSelectionStyle:UITableViewCellSelectionStyleNone];
          }
       
+         cell.textLabel.text = setting.label;
+      
          UISwitch* swt = (UISwitch*)cell.accessoryView;
          swt.on = [setting.value isEqualToString:@"true"];
          objc_setAssociatedObject(swt, "SETTING", setting, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+         
+         return cell;
       }
-      break;
 
       case RangeSetting:
       {
@@ -586,50 +589,41 @@ static RASettingData* custom_action(NSString* action, id data)
             [cell setSelectionStyle:UITableViewCellSelectionStyleNone];
          }
          
+         cell.textLabel.text = setting.label;
+         
          UISlider* sld = (UISlider*)cell.accessoryView;
          sld.minimumValue = setting.rangeMin;
          sld.maximumValue = setting.rangeMax;
          sld.value = [setting.value doubleValue];
          objc_setAssociatedObject(sld, "SETTING", setting, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+         
+         return cell;
       }
       break;
          
-      case EnumerationSetting:
-      case FileListSetting:
-      case ButtonSetting:
-      case CustomAction:
-      case AspectSetting:
+      default:
       {
-         cell = [self.tableView dequeueReusableCellWithIdentifier:@"enumeration"];
-         cell = cell ? cell : [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleValue1 reuseIdentifier:@"enumeration"];
-         cell.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
-      }
-      break;
-
-      case GroupSetting:
-      {
-         cell = [self.tableView dequeueReusableCellWithIdentifier:@"group"];
-   
-         if (cell == nil)
+         cell = [self.tableView dequeueReusableCellWithIdentifier:@"default"];
+         
+         if (!cell)
          {
-            cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleValue1 reuseIdentifier:@"group"];
+            cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleValue1 reuseIdentifier:@"default"];
             cell.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
          }
-      }
-      break;
-   }
-
-   cell.textLabel.text = setting.label;
+         
+         cell.textLabel.text = setting.label;
    
-   if (setting.type != ButtonSetting)
-      cell.detailTextLabel.text = setting.value;
-   else
-      cell.detailTextLabel.text = [NSString stringWithFormat:@"[KB:%@] [JS:%@] [AX:%@]",
-            [setting.msubValues[0] length] ? setting.msubValues[0] : @"N/A",
-            [setting.msubValues[1] length] ? setting.msubValues[1] : @"N/A",
-            [setting.msubValues[2] length] ? setting.msubValues[2] : @"N/A"];
+         if (setting.type != ButtonSetting)
+            cell.detailTextLabel.text = setting.value;
+         else
+            cell.detailTextLabel.text = [NSString stringWithFormat:@"[KB:%@] [JS:%@] [AX:%@]",
+               [setting.msubValues[0] length] ? setting.msubValues[0] : @"N/A",
+               [setting.msubValues[1] length] ? setting.msubValues[1] : @"N/A",
+               [setting.msubValues[2] length] ? setting.msubValues[2] : @"N/A"];
 
-   return cell;
+         return cell;
+      }
+   }
 }
 
 @end
