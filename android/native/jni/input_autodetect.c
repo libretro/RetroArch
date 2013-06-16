@@ -119,6 +119,8 @@ void input_autodetect_setup (void *data, char *msg, size_t sizeof_msg, unsigned 
          device = DEVICE_TTT_THT_ARCADE;
       else if (strstr(name_buf, "TOMMO NEOGEOX Arcade Stick"))
          device = DEVICE_TOMMO_NEOGEOX_ARCADE;
+      else if (strstr(name_buf, "Onlive Wireless Controller"))
+         device = DEVICE_ONLIVE_WIRELESS_CONTROLLER;
       else if (strstr(name_buf, "MadCatz") && strstr(name_buf, "PC USB Wired Stick"))
          device = DEVICE_MADCATZ_PC_USB_STICK;
       else if (strstr(name_buf, "Logicool") && strstr(name_buf, "RumblePad 2"))

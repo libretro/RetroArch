@@ -952,6 +952,28 @@ static void android_input_set_keybinds(void *data, unsigned device,
             keycode_lut[AKEYCODE_BUTTON_THUMBL] |=  ((RETRO_DEVICE_ID_JOYPAD_L3+1)      << shift);
             keycode_lut[AKEYCODE_BUTTON_THUMBR] |=  ((RETRO_DEVICE_ID_JOYPAD_R3+1)      << shift);
             break;
+         case DEVICE_ONLIVE_WIRELESS_CONTROLLER:
+            g_settings.input.device[port] = device;
+            strlcpy(g_settings.input.device_names[port], "Onlive Wireless",
+                  sizeof(g_settings.input.device_names[port]));
+
+            /* TODO - Does D-pad work as D-pad? */
+
+            keycode_lut[AKEYCODE_BUTTON_L1] |=  ((RETRO_DEVICE_ID_JOYPAD_START+1)      << shift);
+            keycode_lut[AKEYCODE_BACK] |=  ((RETRO_DEVICE_ID_JOYPAD_SELECT+1)      << shift);
+
+            keycode_lut[AKEYCODE_BUTTON_Y] |=  ((RETRO_DEVICE_ID_JOYPAD_X+1)      << shift);
+            keycode_lut[AKEYCODE_BUTTON_X] |=  ((RETRO_DEVICE_ID_JOYPAD_Y+1)      << shift);
+            keycode_lut[AKEYCODE_BUTTON_A] |=  ((RETRO_DEVICE_ID_JOYPAD_B+1)      << shift);
+            keycode_lut[AKEYCODE_BUTTON_B] |=  ((RETRO_DEVICE_ID_JOYPAD_A+1)      << shift);
+            keycode_lut[AKEYCODE_BUTTON_L1] |=  ((RETRO_DEVICE_ID_JOYPAD_L+1)      << shift);
+            keycode_lut[AKEYCODE_BUTTON_R1] |=  ((RETRO_DEVICE_ID_JOYPAD_R+1)      << shift);
+
+            /* TODO - 
+             * LT - find out value
+             * RT - find out value
+             */
+            break;
          case DEVICE_GENIUS_MAXFIRE_G08XU:
             g_settings.input.device[port] = device;
             strlcpy(g_settings.input.device_names[port], "Genius Maxfire G08XU",
