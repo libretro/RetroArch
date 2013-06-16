@@ -119,7 +119,7 @@ static bool take_screenshot_raw(void)
          width, height, -pitch, false);
 }
 
-static void take_screenshot(void)
+void rarch_take_screenshot(void)
 {
    if (!(*g_settings.screenshot_directory))
       return;
@@ -2540,7 +2540,7 @@ static void check_screenshot(void)
    static bool old_pressed;
    bool pressed = input_key_pressed_func(RARCH_SCREENSHOT);
    if (pressed && !old_pressed)
-      take_screenshot();
+      rarch_take_screenshot();
 
    old_pressed = pressed;
 }

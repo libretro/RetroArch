@@ -993,25 +993,15 @@ static int rgui_settings_toggle_setting(rgui_handle_t *rgui, unsigned setting, r
       case RGUI_SETTINGS_SCREENSHOT:
          if (action == RGUI_ACTION_OK)
          {
-            const void *data = g_extern.frame_cache.data;
-            unsigned width   = g_extern.frame_cache.width;
-            unsigned height  = g_extern.frame_cache.height;
-            int pitch        = g_extern.frame_cache.pitch;
-
-#ifdef RARCH_CONSOLE
-            const char *screenshot_dir = default_paths.port_dir;
-#else
-            const char *screenshot_dir = g_settings.screenshot_directory;
-#endif
-
-            // Negative pitch is needed as screenshot takes bottom-up,
-            // but we use top-down.
-            bool r = screenshot_dump(screenshot_dir,
-                  (const uint8_t*)data + (height - 1) * pitch, 
-                  width, height, -pitch, false);
-
-            msg_queue_push(g_extern.msg_queue,
-                  r ? "Screenshot saved." : "Screenshot failed to save.", 1, 90);
+            // Render a clean frame to avoid taking screnshot of RGUI.
+            if (g_settings.video.gpu_screenshot)
+            {
+               if (driver.video_poke && driver.video_poke->set_texture_enable)
+                  driver.video_poke->set_texture_enable(driver.video_data, false, false);
+               if (driver.video)
+                  rarch_render_cached_frame();
+            }
+            rarch_take_screenshot();
          }
          break;
 #endif
