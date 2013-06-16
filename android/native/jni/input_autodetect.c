@@ -109,6 +109,8 @@ void input_autodetect_setup (void *data, char *msg, size_t sizeof_msg, unsigned 
          device = DEVICE_LOGITECH_RUMBLEPAD2;
       else if (strstr(name_buf, "Logitech") && strstr(name_buf, "Dual Action"))
          device = DEVICE_LOGITECH_DUAL_ACTION;
+      else if (strstr(name_buf, "Logitech") && strstr(name_buf, "Precision"))
+         device = DEVICE_LOGITECH_PRECISION_GAMEPAD;
       else if (strstr(name_buf, "shooter-keypad"))
          device = DEVICE_ICONTROLPAD_BLUEZ_IME;
       else if (strstr(name_buf, "SEGA VIRTUA STICK High Grade"))

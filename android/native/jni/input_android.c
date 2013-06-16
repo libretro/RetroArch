@@ -365,6 +365,24 @@ static void android_input_set_keybinds(void *data, unsigned device,
             keycode_lut[AKEYCODE_BACK]  |=  ((RETRO_DEVICE_ID_JOYPAD_SELECT+1)           << shift);
             keycode_lut[AKEYCODE_BUTTON_START] |= ((RETRO_DEVICE_ID_JOYPAD_START+1) << shift);
             break;
+         case DEVICE_LOGITECH_PRECISION_GAMEPAD:
+            g_settings.input.device[port] = device;
+            strlcpy(g_settings.input.device_names[port], "Logitech Precision",
+                  sizeof(g_settings.input.device_names[port]));
+
+            keycode_lut[AKEYCODE_BUTTON_1]  |=  ((RETRO_DEVICE_ID_JOYPAD_Y+1)       << shift);
+            keycode_lut[AKEYCODE_BUTTON_3]  |=  ((RETRO_DEVICE_ID_JOYPAD_A+1)       << shift);
+            keycode_lut[AKEYCODE_BUTTON_2]  |=  ((RETRO_DEVICE_ID_JOYPAD_B+1)       << shift);
+            keycode_lut[AKEYCODE_BUTTON_4]  |=  ((RETRO_DEVICE_ID_JOYPAD_X+1)       << shift);
+
+            keycode_lut[AKEYCODE_BUTTON_5]  |=  ((RETRO_DEVICE_ID_JOYPAD_L+1)       << shift);
+            keycode_lut[AKEYCODE_BUTTON_6]  |=  ((RETRO_DEVICE_ID_JOYPAD_L+1)       << shift);
+            keycode_lut[AKEYCODE_BUTTON_7]  |=  ((RETRO_DEVICE_ID_JOYPAD_L2+1)       << shift);
+            keycode_lut[AKEYCODE_BUTTON_8]  |=  ((RETRO_DEVICE_ID_JOYPAD_R2+1)       << shift);
+
+            keycode_lut[AKEYCODE_BUTTON_9]  |=  ((RETRO_DEVICE_ID_JOYPAD_SELECT+1)           << shift);
+            keycode_lut[AKEYCODE_BUTTON_10] |= ((RETRO_DEVICE_ID_JOYPAD_START+1) << shift);
+            break;
          case DEVICE_GAMEMID:
             g_settings.input.device[port] = device;
             g_settings.input.dpad_emulation[port] = ANALOG_DPAD_NONE;
