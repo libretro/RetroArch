@@ -1,4 +1,46 @@
 ------------------------------------------------------------------------------
+v0.9.9.2
+------------------------------------------------------------------------------
+* (LIBRETRO) Added MAME 2003 [0.78] (PC/Android/iOS)
+* (MAME 2003 0.78) Add speedhack core option so that MAME can run at fullspeed on average Cortex A9 CPUs for games like Mortal Kombat 2/3/Ultimate/NBA Jam (DCS sound harware games)
+* Can take screenshots now with libretro GL cores
+* [RGUI] Saves video shader directory to config file.
+* [RGUI] Add FPS / refresh rate monitoring in RGUI.
+* [Android] Input autodetection expanded -
+  - Gasia PS3 pad
+  - Defender Game Racer Classic
+  - Tomee NES USB (swap around buttons A/B)
+  - Logitech Precision Gamepad
+  - Onlive Wireless Conroller
+  - Moga Universal driver (Swap around Start/Select for new driver)
+  - Xperia Play hack [UNTESTED - TESTERS NEEDED]
+* [iOS] Reports now when permissions of a file/directory are not correct
+* [iOS] [Cocoa] Fix file sorting to include directories at the top
+* [iOS] Prevent auto-loc while game is running
+* [iOS] If a directory named "RetroArchGames' is located in the Documents folder
+it will be used as the browser rot. It can be made into a symlink to change the
+browser root to any directory.
+* [iOS] Add system settings to enable or disable certain orientations while
+a game is running.
+* [iOS] Add refresh button to file browser
+* [iOS] Add support for listing expected firmwares in Module info.
+* [iOS] Global Configuration option.
+* [iOS] Don't show the Enable BTStack option if BTStack is not available.
+* [iOS] Add ability to delete existing custom configurations.
+* [iOS] Entering a core's settings menu from the frontend settings menu will give an option to create a new custom config.
+* [Blackberry 10] Add Cascades button mapping interface, player 1 only so far
+* [Blackberry 10] Add core info on BB10 for more cores.
+* [Blackberry 10] Clean up input a bit, fix multiple devices issue.
+* [Blackberry 10] Hide overlay on Q10 and when controllers are mapped. Add RGUI
+toggle to controllers.
+* [Blackberry] Fix the overlay not cycling past minimized
+* [PCSX ReARMed] Add a test for the dynarec to catch broken platforms early - will be written to pcsxr.log
+* [PCSX ReARMed] handle map failures so that it can be retried
+* [Desmume] Add constant frameskip core option
+* [Desmume] Add firmware language core option
+* [SNES9x Next] Loading and saving a state should be fixed now on Blackberry. GCC optimization breakage.
+
+------------------------------------------------------------------------------
 v0.9.9
 ------------------------------------------------------------------------------
 * (iOS) Initial release of RetroArch iOS.

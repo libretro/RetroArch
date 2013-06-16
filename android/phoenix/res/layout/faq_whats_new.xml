@@ -10,6 +10,25 @@
         android:layout_height="wrap_content"
         android:layout_margin="40px"
         android:text="
+        r16 (June 17, 2013)\n\n
+        * (LIBRETRO) Added MAME 2003 [0.78] (PC/Android/iOS)\n
+        * (MAME 2003 0.78) Add speedhack core option so that MAME can run at fullspeed on average Cortex A9 CPUs for games like Mortal Kombat 2/3/Ultimate/NBA Jam (DCS sound harware games)\n
+        * Can take screenshots now with libretro GL cores\n
+        * [RGUI] Saves video shader directory to config file.\n
+        * [RGUI] Add FPS / refresh rate monitoring in RGUI.\n
+        * [Android] Input autodetection expanded -\n
+          - Gasia PS3 pad\n
+          - Defender Game Racer Classic\n
+          - Tomee NES USB (swap around buttons A/B)\n
+          - Logitech Precision Gamepad\n
+          - Onlive Wireless Conroller\n
+          - Moga Universal driver (Swap around Start/Select for new driver)\n
+          - Xperia Play hack [UNTESTED - TESTERS NEEDED]\n
+        * [PCSX ReARMed] Add a test for the dynarec to catch broken platforms early - will be written to pcsxr.log\n 
+        * [PCSX ReARMed] handle map failures so that it can be retried\n
+        * [Desmume] Add constant frameskip core option\n
+        * [Desmume] Add firmware language core option\n
+        * [SNES9x Next] Loading and saving a state should be fixed now on Blackberry. GCC optimization breakage.\n\n
         r13 (May 26, 2013)\n\n
         * Threaded video option. Mainly for Android users but works for OpenGL driver in general.\n
         * (Android) Add iControlPad support.\n
