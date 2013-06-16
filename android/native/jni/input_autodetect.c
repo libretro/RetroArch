@@ -85,6 +85,22 @@ void input_autodetect_setup (void *data, char *msg, size_t sizeof_msg, unsigned 
    input_autodetect_get_device_name(android_app, name_buf, sizeof(name_buf), id);
    RARCH_LOG("device name: %s\n", name_buf);
 
+   /* Shitty hack put back in again */
+   if (strstr(name_buf, "keypad-game-zeus") || strstr(name_buf, "keypad-zeus"))
+   {
+      if (zeus_id < 0)
+      {
+         RARCH_LOG("zeus_pad 1 detected: %d\n", id);
+         zeus_id = id;
+         zeus_port = port;
+      }
+      else
+      {
+         RARCH_LOG("zeus_pad 2 detected: %d\n", id);
+         zeus_second_id = id;
+      }
+   }
+
    if (g_settings.input.autodetect_enable)
    {
       device = 0;

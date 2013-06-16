@@ -191,9 +191,8 @@ static void gfx_ctx_update_window_title(void)
    gl_t *gl = (gl_t*)driver.video_data;
    char buf[128];
 
-   gfx_get_fps(buf, sizeof(buf), false);
-
-   if (g_extern.lifecycle_mode_state & (1ULL << MODE_FPS_DRAW) &&
+   if (gfx_get_fps(buf, sizeof(buf), false) &&
+   (g_extern.lifecycle_mode_state & (1ULL << MODE_FPS_DRAW)) &&
          gl->font_ctx)
    {
       font_params_t params = {0};

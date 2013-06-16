@@ -82,9 +82,8 @@ static void gfx_ctx_xdk_update_window_title(void)
    char buf[128];
    xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
 
-   gfx_get_fps(buf, sizeof(buf), false);
-
-   if (g_extern.lifecycle_mode_state & (1ULL << MODE_FPS_DRAW))
+   if (gfx_get_fps(buf, sizeof(buf), false) &&
+   g_extern.lifecycle_mode_state & (1ULL << MODE_FPS_DRAW))
    {
 #if defined(_XBOX1)
       float mem_width  = font_x + 30;

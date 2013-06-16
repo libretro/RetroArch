@@ -83,4 +83,9 @@ enum {
 
 void input_autodetect_setup (void *data, char *msg, size_t sizeof_msg, unsigned port, unsigned id, int source);
 
+/* Xperia Play externs */
+extern unsigned zeus_port;
+extern int zeus_id;
+extern int zeus_second_id;
+
 #endif

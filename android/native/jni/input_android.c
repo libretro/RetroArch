@@ -310,7 +310,7 @@ static void *android_input_init(void)
 
 int zeus_id = -1;
 int zeus_second_id = -1;
-static unsigned zeus_port;
+unsigned zeus_port;
 
 static void android_input_set_keybinds(void *data, unsigned device,
       unsigned port, unsigned id, unsigned keybind_action)
@@ -1141,16 +1141,8 @@ static void android_input_set_keybinds(void *data, unsigned device,
             strlcpy(g_settings.input.device_names[port], "Xperia Play",
                   sizeof(g_settings.input.device_names[port]));
 
-            if (zeus_id < 0)
+            if ((zeus_second_id != -1 && (zeus_second_id == id)))
             {
-               RARCH_LOG("zeus_pad 1 detected: %d\n", id);
-               zeus_id = id;
-               zeus_port = port;
-            }
-            else
-            {
-               RARCH_LOG("zeus_pad 2 detected: %d\n", id);
-               zeus_second_id = id;
                port = zeus_port;
                shift = 8 + (port * 8);
             }
