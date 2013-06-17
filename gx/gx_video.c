@@ -943,14 +943,15 @@ static bool gx_frame(void *data, const void *frame,
       GX_DrawDone();
    }
 
+   char fps_txt[128];
+   gfx_get_fps(fps_txt, sizeof(fps_txt), lifecycle_mode_state & (1ULL << MODE_FPS_DRAW) ? true : false);
+
    if (lifecycle_mode_state & (1ULL << MODE_FPS_DRAW))
    {
-      char fps_txt[128];
       char mem1_txt[128];
       unsigned x = 15;
       unsigned y = 35;
 
-      gfx_get_fps(fps_txt, sizeof(fps_txt), true);
       gx_blit_line(x, y, fps_txt);
       y += FONT_HEIGHT * (gx->double_strike ? 1 : 2);
       snprintf(mem1_txt, sizeof(mem1_txt), "MEM1: %8d / %8d", SYSMEM1_SIZE - SYS_GetArena1Size(), SYSMEM1_SIZE);
@@ -970,9 +971,6 @@ static bool gx_frame(void *data, const void *frame,
       gx_blit_line(x, y, msg);
       clear_efb = GX_TRUE;
    }
-
-   char buf[128];
-   gfx_get_fps(buf, sizeof(buf), false);
 
    GX_CopyDisp(g_framebuf[g_current_framebuf], clear_efb);
    GX_Flush();
