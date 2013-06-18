@@ -78,8 +78,8 @@ static RASettingData* button_setting(config_file_t* config, NSString* name, NSSt
    RASettingData* result = [[RASettingData alloc] initWithType:ButtonSetting label:label name:name];
    result.msubValues = [NSMutableArray arrayWithObjects:
                         ios_get_value_from_config(config, name, defaultValue),
-                        ios_get_value_from_config(config, [name stringByAppendingString:@"_btn"], @""),
-                        ios_get_value_from_config(config, [name stringByAppendingString:@"_axis"], @""),
+                        ios_get_value_from_config(config, [name stringByAppendingString:@"_btn"], @"nul"),
+                        ios_get_value_from_config(config, [name stringByAppendingString:@"_axis"], @"nul"),
                         nil];
    return result;
 }
@@ -229,27 +229,27 @@ static RASettingData* custom_action(NSString* action, NSString* value, id data)
 
                button_setting(config, @"input_player1_l", @"L", @"q"),
                button_setting(config, @"input_player1_r", @"R", @"w"),
-               button_setting(config, @"input_player1_l2", @"L2", @""),
-               button_setting(config, @"input_player1_r2", @"R2", @""),
-               button_setting(config, @"input_player1_l3", @"L3", @""),
-               button_setting(config, @"input_player1_r3", @"R3", @""),
+               button_setting(config, @"input_player1_l2", @"L2", @"nul"),
+               button_setting(config, @"input_player1_r2", @"R2", @"nul"),
+               button_setting(config, @"input_player1_l3", @"L3", @"nul"),
+               button_setting(config, @"input_player1_r3", @"R3", @"nul"),
 
-               button_setting(config, @"input_player1_l_y_minus", @"Left Stick Up", @""),
-               button_setting(config, @"input_player1_l_y_plus", @"Left Stick Down", @""),
-               button_setting(config, @"input_player1_l_x_minus", @"Left Stick Left", @""),
-               button_setting(config, @"input_player1_l_x_plus", @"Left Stick Right", @""),
-               button_setting(config, @"input_player1_r_y_minus", @"Right Stick Up", @""),
-               button_setting(config, @"input_player1_r_y_plus", @"Right Stick Down", @""),
-               button_setting(config, @"input_player1_r_x_minus", @"Right Stick Left", @""),
-               button_setting(config, @"input_player1_r_x_plus", @"Right Stick Right", @""),
+               button_setting(config, @"input_player1_l_y_minus", @"Left Stick Up", @"nul"),
+               button_setting(config, @"input_player1_l_y_plus", @"Left Stick Down", @"nul"),
+               button_setting(config, @"input_player1_l_x_minus", @"Left Stick Left", @"nul"),
+               button_setting(config, @"input_player1_l_x_plus", @"Left Stick Right", @"nul"),
+               button_setting(config, @"input_player1_r_y_minus", @"Right Stick Up", @"nul"),
+               button_setting(config, @"input_player1_r_y_plus", @"Right Stick Down", @"nul"),
+               button_setting(config, @"input_player1_r_x_minus", @"Right Stick Left", @"nul"),
+               button_setting(config, @"input_player1_r_x_plus", @"Right Stick Right", @"nul"),
                nil],
             nil]),
          group_setting(@"System Keys", [NSArray arrayWithObjects:
             // TODO: Many of these strings will be cut off on an iPhone
             [NSArray arrayWithObjects:@"System Keys",
-               button_setting(config, @"input_menu_toggle", @"Show RGUI", @"F1"),
-               button_setting(config, @"input_disk_eject_toggle", @"Insert/Eject Disk", @""),
-               button_setting(config, @"input_disk_next", @"Cycle Disks", @""),
+               button_setting(config, @"input_menu_toggle", @"Show RGUI", @"f1"),
+               button_setting(config, @"input_disk_eject_toggle", @"Insert/Eject Disk", @"nul"),
+               button_setting(config, @"input_disk_next", @"Cycle Disks", @"nul"),
                button_setting(config, @"input_save_state", @"Save State", @"f2"),
                button_setting(config, @"input_load_state", @"Load State", @"f4"),
                button_setting(config, @"input_state_slot_increase", @"Next State Slot", @"f7"),
@@ -260,7 +260,7 @@ static RASettingData* custom_action(NSString* action, NSString* value, id data)
                button_setting(config, @"input_slowmotion", @"Slow Motion", @"e"),
                button_setting(config, @"input_reset", @"Reset", @"h"),
                button_setting(config, @"input_exit_emulator", @"Close Game", @"escape"),
-               button_setting(config, @"input_enable_hotkey", @"Hotkey Enable (Always on if not set)", @""),             
+               button_setting(config, @"input_enable_hotkey", @"Hotkey Enable (Always on if not set)", @"nul"),
                nil],
             nil]),
          nil],
@@ -273,6 +273,9 @@ static RASettingData* custom_action(NSString* action, NSString* value, id data)
          nil],
       nil
    ];
+
+   if (config)
+      config_file_free(config);
 
    self = [super initWithSettings:settings title:_module ? _module.displayName : @"Global Core Config"];
    return self;
@@ -346,6 +349,9 @@ static RASettingData* custom_action(NSString* action, NSString* value, id data)
       modules,
       nil
    ];
+
+   if (config)
+      config_file_free(config);
 
    self = [super initWithSettings:settings title:@"RetroArch Settings"];
    return self;
@@ -617,9 +623,9 @@ static RASettingData* custom_action(NSString* action, NSString* value, id data)
             cell.detailTextLabel.text = setting.value;
          else
             cell.detailTextLabel.text = [NSString stringWithFormat:@"[KB:%@] [JS:%@] [AX:%@]",
-               [setting.msubValues[0] length] ? setting.msubValues[0] : @"N/A",
-               [setting.msubValues[1] length] ? setting.msubValues[1] : @"N/A",
-               [setting.msubValues[2] length] ? setting.msubValues[2] : @"N/A"];
+               [setting.msubValues[0] length] ? setting.msubValues[0] : @"nul",
+               [setting.msubValues[1] length] ? setting.msubValues[1] : @"nul",
+               [setting.msubValues[2] length] ? setting.msubValues[2] : @"nul"];
 
          return cell;
       }
@@ -724,11 +730,11 @@ static RASettingData* custom_action(NSString* action, NSString* value, id data)
 - (void)alertView:(UIAlertView*)alertView willDismissWithButtonIndex:(NSInteger)buttonIndex
 {
    if (buttonIndex == _alert.firstOtherButtonIndex)
-      _value.msubValues[0] = @"";
+      _value.msubValues[0] = @"nul";
    else if(buttonIndex == _alert.firstOtherButtonIndex + 1)
-      _value.msubValues[1] = @"";
+      _value.msubValues[1] = @"nul";
    else if(buttonIndex == _alert.firstOtherButtonIndex + 2)
-      _value.msubValues[2] = @"";
+      _value.msubValues[2] = @"nul";
 
    [self finish];
 }
