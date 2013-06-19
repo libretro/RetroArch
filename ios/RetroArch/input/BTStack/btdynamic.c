@@ -37,9 +37,8 @@ static struct
    GRAB(bt_send_l2cap),
    GRAB(run_loop_init),
    GRAB(run_loop_execute),
-   GRAB(btstack_get_system_bluetooth_enabled),
+
    GRAB(btstack_set_power_mode),
-   GRAB(btstack_set_system_bluetooth_enabled),
    GRAB(hci_delete_stored_link_key),
    GRAB(hci_disconnect),
    GRAB(hci_read_bd_addr),
