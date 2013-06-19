@@ -49,12 +49,15 @@ bool path_make_and_check_directory(const char* path, mode_t mode, int amode)
 void ios_copy_input(ios_input_data_t* data)
 {
    // Call only from main thread
-
    memcpy(data, &g_input_data, sizeof(g_input_data));
-   data->pad_buttons = btpad_get_buttons() | (use_icade ? icade_buttons : 0);
+
+   for (int i = 0; i < MAX_PADS; i ++)
+   {
+      data->pad_buttons[i] = btpad_get_buttons(i) | (((i == 0) && use_icade) ? icade_buttons : 0);
    
-   for (int i = 0; i < 4; i ++)
-      data->pad_axis[i] = btpad_get_axis(i);
+      for (int j = 0; j < 4; j ++)
+         data->pad_axis[i][j] = btpad_get_axis(i, j);
+   }
 }
 
 static void handle_touch_event(NSArray* touches)

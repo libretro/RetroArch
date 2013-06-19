@@ -19,6 +19,7 @@
 // Input responder
 #define MAX_TOUCHES 16
 #define MAX_KEYS 256
+#define MAX_PADS 4
 
 typedef struct
 {
@@ -34,8 +35,8 @@ typedef struct
 
    uint32_t keys[MAX_KEYS];
 
-   uint32_t pad_buttons;
-   int16_t pad_axis[4];
+   uint32_t pad_buttons[MAX_PADS];
+   int16_t pad_axis[MAX_PADS][4];
 } ios_input_data_t;
 
 extern ios_input_data_t g_ios_input_data;

@@ -26,14 +26,13 @@
 #include "btpad_queue.h"
 #include "wiimote.h"
 
-#define MAX_SLOTS 4
-static btpad_connection_t btpad_connection[MAX_SLOTS];
-static struct btpad_interface* btpad_iface[MAX_SLOTS];
-static void* btpad_device[MAX_SLOTS];
+static btpad_connection_t btpad_connection[MAX_PADS];
+static struct btpad_interface* btpad_iface[MAX_PADS];
+static void* btpad_device[MAX_PADS];
 
 static int32_t btpad_find_slot_for(uint16_t handle, bd_addr_t address)
 {
-   for (int i = 0; i < MAX_SLOTS; i ++)
+   for (int i = 0; i < MAX_PADS; i ++)
    {
       if (!btpad_connection[i].handle && !btpad_connection[i].has_address)
          continue;
@@ -52,7 +51,7 @@ static int32_t btpad_find_slot_for(uint16_t handle, bd_addr_t address)
 
 static int32_t btpad_find_slot_with_state(enum btpad_state state)
 {
-   for (int i = 0; i < MAX_SLOTS; i ++)
+   for (int i = 0; i < MAX_PADS; i ++)
       if (btpad_connection[i].state == state)
          return i;
 
@@ -60,21 +59,17 @@ static int32_t btpad_find_slot_with_state(enum btpad_state state)
 }
 
 // MAIN THREAD ONLY
-uint32_t btpad_get_buttons(/*uint32_t slot*/)
+uint32_t btpad_get_buttons(uint32_t slot)
 {
-   uint32_t slot = 0;
-
-   if (slot < MAX_SLOTS && btpad_device[slot] && btpad_iface[slot])
+   if (slot < MAX_PADS && btpad_device[slot] && btpad_iface[slot])
       return btpad_iface[slot]->get_buttons(btpad_device[slot]);
 
    return 0;
 }
 
-int16_t btpad_get_axis(/*uint32_t slot,*/ unsigned axis)
+int16_t btpad_get_axis(uint32_t slot, unsigned axis)
 {
-   uint32_t slot = 0;
-
-   if (slot < MAX_SLOTS && btpad_device[slot] && btpad_iface[slot])
+   if (slot < MAX_PADS && btpad_device[slot] && btpad_iface[slot])
       return btpad_iface[slot]->get_axis(btpad_device[slot], axis);
 
    return 0;
@@ -82,7 +77,7 @@ int16_t btpad_get_axis(/*uint32_t slot,*/ unsigned axis)
 
 static void btpad_disconnect_pad(uint32_t slot)
 {
-   if (slot > MAX_SLOTS)
+   if (slot > MAX_PADS)
       return;
 
    if (btpad_iface[slot] && btpad_device[slot])
@@ -102,7 +97,7 @@ static void btpad_disconnect_pad(uint32_t slot)
 
 static void btpad_disconnect_all_pads()
 {
-   for (int i = 0; i < MAX_SLOTS; i ++)
+   for (int i = 0; i < MAX_PADS; i ++)
       btpad_disconnect_pad(i);
 }
 
@@ -184,10 +179,6 @@ void btpad_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet
                   btpad_connection[slot].has_address = true;
                   btpad_connection[slot].state = BTPAD_CONNECTING;
 
-                  btpad_connection[slot].page_scan_repetition_mode = packet [3 + packet[2] * (6)];
-                  btpad_connection[slot].class = READ_BT_24(packet, 3 + packet[2] * (6+1+1+1));
-                  btpad_connection[slot].clock_offset = READ_BT_16(packet, 3 + packet[2] * (6+1+1+1+3)) & 0x7fff;
-
                   btpad_queue_l2cap_create_channel(btpad_connection[slot].address, PSM_HID_CONTROL);
                   btpad_queue_l2cap_create_channel(btpad_connection[slot].address, PSM_HID_INTERRUPT);
                }
@@ -231,8 +222,7 @@ void btpad_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet
                if (btpad_connection[slot].channels[0] && btpad_connection[slot].channels[1])
                {
                   ios_add_log_message("BTpad: Got both L2CAP channels, requesting name (Slot: %d)", slot);
-                  btpad_queue_hci_remote_name_request(btpad_connection[slot].address, btpad_connection[slot].page_scan_repetition_mode,
-                                                      0, btpad_connection[slot].clock_offset | 0x8000);
+                  btpad_queue_hci_remote_name_request(btpad_connection[slot].address, 0, 0, 0);
                }
             }
             else
@@ -246,8 +236,6 @@ void btpad_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet
             const uint16_t handle = READ_BT_16(packet, 8);
             const uint32_t psm = READ_BT_16(packet, 10);
             const uint32_t channel_id = READ_BT_16(packet, 12);
-
-            const unsigned interrupt = (psm == PSM_HID_INTERRUPT) ? 1 : 0;
       
             int32_t slot = btpad_find_slot_for(handle, event_addr);
             if (slot < 0)
@@ -308,7 +296,7 @@ void btpad_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet
       }
    }
 
-   for (int i = 0; i < MAX_SLOTS; i ++)
+   for (int i = 0; i < MAX_PADS; i ++)
       if (btpad_device[i] && btpad_iface[i] && (btpad_connection[i].channels[0] == channel || btpad_connection[i].channels[1] == channel))
          btpad_iface[i]->packet_handler(btpad_device[i], packet_type, channel, packet, size);
 }

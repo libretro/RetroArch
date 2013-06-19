@@ -18,8 +18,8 @@
 
 #include "btstack/btstack.h"
 
-uint32_t btpad_get_buttons();
-int16_t btpad_get_axis(unsigned axis);
+uint32_t btpad_get_buttons(uint32_t slot);
+int16_t btpad_get_axis(uint32_t slot, unsigned axis);
 
 // Private interface
 enum btpad_state { BTPAD_EMPTY, BTPAD_CONNECTING, BTPAD_CONNECTED };
@@ -32,11 +32,6 @@ typedef struct
 
    bool has_address;
    bd_addr_t address;
-
-   uint32_t laps;
-   uint32_t page_scan_repetition_mode;
-   uint32_t class;
-   uint32_t clock_offset;
 
    uint16_t channels[2]; //0: Control, 1: Interrupt
 

@@ -41,6 +41,8 @@ enum SettingTypes
 @property double rangeMin;
 @property double rangeMax;
 
+@property uint32_t player;
+
 @property bool haveNoneOption;
 
 - (id)initWithType:(enum SettingTypes)aType label:(NSString*)aLabel name:(NSString*)aName;
@@ -73,14 +75,17 @@ static RASettingData* boolean_setting(config_file_t* config, NSString* name, NSS
    return result;
 }
 
-static RASettingData* button_setting(config_file_t* config, NSString* name, NSString* label, NSString* defaultValue)
+static RASettingData* button_setting(config_file_t* config, uint32_t player, NSString* name, NSString* label, NSString* defaultValue)
 {
-   RASettingData* result = [[RASettingData alloc] initWithType:ButtonSetting label:label name:name];
+   NSString* realname = player ? [NSString stringWithFormat:@"input_player%d_%@", player, name] : name;
+   
+   RASettingData* result = [[RASettingData alloc] initWithType:ButtonSetting label:label name:realname];
    result.msubValues = [NSMutableArray arrayWithObjects:
-                        ios_get_value_from_config(config, name, defaultValue),
-                        ios_get_value_from_config(config, [name stringByAppendingString:@"_btn"], @"nul"),
-                        ios_get_value_from_config(config, [name stringByAppendingString:@"_axis"], @"nul"),
+                        ios_get_value_from_config(config, realname, defaultValue),
+                        ios_get_value_from_config(config, [realname stringByAppendingString:@"_btn"], @"nul"),
+                        ios_get_value_from_config(config, [realname stringByAppendingString:@"_axis"], @"nul"),
                         nil];
+   result.player = player ? player - 1 : 0;
    return result;
 }
 
@@ -163,6 +168,42 @@ static RASettingData* custom_action(NSString* action, NSString* value, id data)
    return result;
 }
 
+static NSArray* build_input_port_group(config_file_t* config, uint32_t player)
+{
+   return [NSArray arrayWithObjects:
+            [NSArray arrayWithObjects:[NSString stringWithFormat:@"Player %d", player],
+               button_setting(config, player, @"up", @"Up", @"up"),
+               button_setting(config, player, @"down", @"Down", @"down"),
+               button_setting(config, player, @"left", @"Left", @"left"),
+               button_setting(config, player, @"right", @"Right", @"right"),
+
+               button_setting(config, player, @"start", @"Start", @"enter"),
+               button_setting(config, player, @"select", @"Select", @"rshift"),
+
+               button_setting(config, player, @"b", @"B", @"z"),
+               button_setting(config, player, @"a", @"A", @"x"),
+               button_setting(config, player, @"x", @"X", @"s"),
+               button_setting(config, player, @"y", @"Y", @"a"),
+
+               button_setting(config, player, @"l", @"L", @"q"),
+               button_setting(config, player, @"r", @"R", @"w"),
+               button_setting(config, player, @"l2", @"L2", @"nul"),
+               button_setting(config, player, @"r2", @"R2", @"nul"),
+               button_setting(config, player, @"l3", @"L3", @"nul"),
+               button_setting(config, player, @"r3", @"R3", @"nul"),
+
+               button_setting(config, player, @"l_y_minus", @"Left Stick Up", @"nul"),
+               button_setting(config, player, @"l_y_plus", @"Left Stick Down", @"nul"),
+               button_setting(config, player, @"l_x_minus", @"Left Stick Left", @"nul"),
+               button_setting(config, player, @"l_x_plus", @"Left Stick Right", @"nul"),
+               button_setting(config, player, @"r_y_minus", @"Right Stick Up", @"nul"),
+               button_setting(config, player, @"r_y_plus", @"Right Stick Down", @"nul"),
+               button_setting(config, player, @"r_x_minus", @"Right Stick Left", @"nul"),
+               button_setting(config, player, @"r_x_plus", @"Right Stick Right", @"nul"),
+               nil],
+            nil];
+}
+
 @implementation RASettingsList
 {
    RAModuleInfo* _module;
@@ -212,57 +253,29 @@ static RASettingData* custom_action(NSString* action, NSString* value, id data)
       [NSArray arrayWithObjects:@"Input",
          subpath_setting(config, @"input_overlay", @"Input Overlay", @"", overlay_path, @"cfg"),
          range_setting(config, @"input_overlay_opacity", @"Overlay Opacity", @"1.0", 0.0, 1.0),
-         group_setting(@"Player 1 Keys", [NSArray arrayWithObjects:
-            [NSArray arrayWithObjects:@"Player 1",
-               button_setting(config, @"input_player1_up", @"Up", @"up"),
-               button_setting(config, @"input_player1_down", @"Down", @"down"),
-               button_setting(config, @"input_player1_left", @"Left", @"left"),
-               button_setting(config, @"input_player1_right", @"Right", @"right"),
-
-               button_setting(config, @"input_player1_start", @"Start", @"enter"),
-               button_setting(config, @"input_player1_select", @"Select", @"rshift"),
-
-               button_setting(config, @"input_player1_b", @"B", @"z"),
-               button_setting(config, @"input_player1_a", @"A", @"x"),
-               button_setting(config, @"input_player1_x", @"X", @"s"),
-               button_setting(config, @"input_player1_y", @"Y", @"a"),
-
-               button_setting(config, @"input_player1_l", @"L", @"q"),
-               button_setting(config, @"input_player1_r", @"R", @"w"),
-               button_setting(config, @"input_player1_l2", @"L2", @"nul"),
-               button_setting(config, @"input_player1_r2", @"R2", @"nul"),
-               button_setting(config, @"input_player1_l3", @"L3", @"nul"),
-               button_setting(config, @"input_player1_r3", @"R3", @"nul"),
-
-               button_setting(config, @"input_player1_l_y_minus", @"Left Stick Up", @"nul"),
-               button_setting(config, @"input_player1_l_y_plus", @"Left Stick Down", @"nul"),
-               button_setting(config, @"input_player1_l_x_minus", @"Left Stick Left", @"nul"),
-               button_setting(config, @"input_player1_l_x_plus", @"Left Stick Right", @"nul"),
-               button_setting(config, @"input_player1_r_y_minus", @"Right Stick Up", @"nul"),
-               button_setting(config, @"input_player1_r_y_plus", @"Right Stick Down", @"nul"),
-               button_setting(config, @"input_player1_r_x_minus", @"Right Stick Left", @"nul"),
-               button_setting(config, @"input_player1_r_x_plus", @"Right Stick Right", @"nul"),
-               nil],
-            nil]),
          group_setting(@"System Keys", [NSArray arrayWithObjects:
             // TODO: Many of these strings will be cut off on an iPhone
             [NSArray arrayWithObjects:@"System Keys",
-               button_setting(config, @"input_menu_toggle", @"Show RGUI", @"f1"),
-               button_setting(config, @"input_disk_eject_toggle", @"Insert/Eject Disk", @"nul"),
-               button_setting(config, @"input_disk_next", @"Cycle Disks", @"nul"),
-               button_setting(config, @"input_save_state", @"Save State", @"f2"),
-               button_setting(config, @"input_load_state", @"Load State", @"f4"),
-               button_setting(config, @"input_state_slot_increase", @"Next State Slot", @"f7"),
-               button_setting(config, @"input_state_slot_decrease", @"Previous State Slot", @"f6"),
-               button_setting(config, @"input_toggle_fast_forward", @"Toggle Fast Forward", @"space"),
-               button_setting(config, @"input_hold_fast_forward", @"Hold Fast Forward", @"l"),
-               button_setting(config, @"input_rewind", @"Rewind", @"r"),
-               button_setting(config, @"input_slowmotion", @"Slow Motion", @"e"),
-               button_setting(config, @"input_reset", @"Reset", @"h"),
-               button_setting(config, @"input_exit_emulator", @"Close Game", @"escape"),
-               button_setting(config, @"input_enable_hotkey", @"Hotkey Enable (Always on if not set)", @"nul"),
+               button_setting(config, 0, @"input_menu_toggle", @"Show RGUI", @"f1"),
+               button_setting(config, 0, @"input_disk_eject_toggle", @"Insert/Eject Disk", @"nul"),
+               button_setting(config, 0, @"input_disk_next", @"Cycle Disks", @"nul"),
+               button_setting(config, 0, @"input_save_state", @"Save State", @"f2"),
+               button_setting(config, 0, @"input_load_state", @"Load State", @"f4"),
+               button_setting(config, 0, @"input_state_slot_increase", @"Next State Slot", @"f7"),
+               button_setting(config, 0, @"input_state_slot_decrease", @"Previous State Slot", @"f6"),
+               button_setting(config, 0, @"input_toggle_fast_forward", @"Toggle Fast Forward", @"space"),
+               button_setting(config, 0, @"input_hold_fast_forward", @"Hold Fast Forward", @"l"),
+               button_setting(config, 0, @"input_rewind", @"Rewind", @"r"),
+               button_setting(config, 0, @"input_slowmotion", @"Slow Motion", @"e"),
+               button_setting(config, 0, @"input_reset", @"Reset", @"h"),
+               button_setting(config, 0, @"input_exit_emulator", @"Close Game", @"escape"),
+               button_setting(config, 0, @"input_enable_hotkey", @"Hotkey Enable (Always on if not set)", @"nul"),
                nil],
             nil]),
+         group_setting(@"Player 1 Keys", build_input_port_group(config, 1)),
+         group_setting(@"Player 2 Keys", build_input_port_group(config, 2)),
+         group_setting(@"Player 3 Keys", build_input_port_group(config, 3)),
+         group_setting(@"Player 4 Keys", build_input_port_group(config, 4)),
          nil],
       
       [NSArray arrayWithObjects:@"Save States",
@@ -811,9 +824,9 @@ static RASettingData* custom_action(NSString* action, NSString* value, id data)
    }
 
    // Pad Buttons
-   for (int i = 0; data.pad_buttons && i < sizeof(data.pad_buttons) * 8; i++)
+   for (int i = 0; data.pad_buttons[_value.player] && i < sizeof(data.pad_buttons[_value.player]) * 8; i++)
    {
-      if (data.pad_buttons & (1 << i))
+      if (data.pad_buttons[_value.player] & (1 << i))
       {
          _value.msubValues[1] = [NSString stringWithFormat:@"%d", i];
          [self finish];
@@ -824,7 +837,7 @@ static RASettingData* custom_action(NSString* action, NSString* value, id data)
    // Pad Axis
    for (int i = 0; i < 4; i++)
    {
-      int16_t value = data.pad_axis[i];
+      int16_t value = data.pad_axis[_value.player][i];
       
       if (abs(value) > 0x1000)
       {
