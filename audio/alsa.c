@@ -16,7 +16,13 @@
 
 #include "../driver.h"
 #include <stdlib.h>
+#ifdef __QNX__
+#define ALSA_PCM_NEW_HW_PARAMS_API
+#define ALSA_PCM_NEW_SW_PARAMS_API
+#include <sys/asoundlib.h>
+#else
 #include <asoundlib.h>
+#endif
 #include "../general.h"
 
 #define TRY_ALSA(x) if (x < 0) { \
@@ -39,13 +45,16 @@ static bool alsa_use_float(void *data)
    return alsa->has_float;
 }
 
-static bool find_float_format(snd_pcm_t *pcm, snd_pcm_hw_params_t *params)
+static bool find_float_format(snd_pcm_t *pcm, void *data)
 {
+#ifndef __QNX__
+   snd_pcm_hw_params_t *params = (snd_pcm_hw_params_t*)data;
    if (snd_pcm_hw_params_test_format(pcm, params, SND_PCM_FORMAT_FLOAT) == 0)
    {
       RARCH_LOG("ALSA: Using floating point format.\n");
       return true;
    }
+#endif
    RARCH_LOG("ALSA: Using signed 16-bit format.\n");
    return false;
 }
@@ -56,21 +65,30 @@ static void *alsa_init(const char *device, unsigned rate, unsigned latency)
    if (!alsa)
       return NULL;
 
+#ifndef __QNX__
    snd_pcm_hw_params_t *params = NULL;
    snd_pcm_sw_params_t *sw_params = NULL;
+#endif
 
-   const char *alsa_dev = "default";
-   if (device)
-      alsa_dev = device;
 
    unsigned latency_usec = latency * 1000;
    unsigned channels = 2;
    unsigned periods = 4;
-   snd_pcm_uframes_t buffer_size;
    snd_pcm_format_t format;
 
-   TRY_ALSA(snd_pcm_open(&alsa->pcm, alsa_dev, SND_PCM_STREAM_PLAYBACK, SND_PCM_NONBLOCK));
+#ifdef __QNX__
+   int card, dev;
+   TRY_ALSA(snd_pcm_open_preferred(&alsa->pcm, &card, &dev, SND_PCM_OPEN_PLAYBACK));
+   alsa->has_float = false;
+   format = SND_PCM_FORMAT_S16;
+#else
+   const char *alsa_dev = "default";
+   if (device)
+      alsa_dev = device;
 
+   snd_pcm_uframes_t buffer_size;
+
+   TRY_ALSA(snd_pcm_open(&alsa->pcm, alsa_dev, SND_PCM_STREAM_PLAYBACK, SND_PCM_NONBLOCK));
    TRY_ALSA(snd_pcm_hw_params_malloc(&params));
    alsa->has_float = find_float_format(alsa->pcm, params);
    format = alsa->has_float ? SND_PCM_FORMAT_FLOAT : SND_PCM_FORMAT_S16;
@@ -101,6 +119,7 @@ static void *alsa_init(const char *device, unsigned rate, unsigned latency)
 
    snd_pcm_hw_params_free(params);
    snd_pcm_sw_params_free(sw_params);
+#endif
 
    return alsa;
 

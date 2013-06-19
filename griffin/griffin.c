@@ -327,6 +327,11 @@ AUDIO
 #include "../audio/opensl.c"
 #endif
 
+#ifdef HAVE_ALSA
+#include "../audio/alsa.c"
+#include "../audio/alsathread.c"
+#endif
+
 #ifdef HAVE_AL
 #include "../audio/openal.c"
 #endif
