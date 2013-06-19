@@ -22,7 +22,7 @@ uint32_t btpad_get_buttons();
 int16_t btpad_get_axis(unsigned axis);
 
 // Private interface
-enum btpad_state { BTPAD_EMPTY, BTPAD_WANT_INQ_COMPLETE, BTPAD_CONNECTED };
+enum btpad_state { BTPAD_EMPTY, BTPAD_CONNECTING, BTPAD_CONNECTED };
 
 typedef struct
 {
