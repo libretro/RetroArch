@@ -178,6 +178,7 @@ void btpad_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet
 
                   btpad_connection[slot].has_address = true;
                   btpad_connection[slot].state = BTPAD_CONNECTING;
+                  btpad_connection[slot].slot = slot;
 
                   btpad_queue_l2cap_create_channel(btpad_connection[slot].address, PSM_HID_CONTROL);
                   btpad_queue_l2cap_create_channel(btpad_connection[slot].address, PSM_HID_INTERRUPT);
@@ -188,7 +189,7 @@ void btpad_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet
 
          case HCI_EVENT_INQUIRY_COMPLETE:
          {
-            // TODO: Check performance and batter effect of this
+            // TODO: Check performance and battery effect of this
             btpad_queue_hci_inquiry(HCI_INQUIRY_LAP, 3, 1);
          }
          break;
@@ -211,6 +212,7 @@ void btpad_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet
                }
 
                ios_add_log_message("BTpad: L2CAP channel opened: (Slot: %d, PSM: %02X)", slot, psm);
+               btpad_connection[slot].handle = handle;
             
                if (psm == PSM_HID_CONTROL)
                   btpad_connection[slot].channels[0] = channel_id;
@@ -251,6 +253,7 @@ void btpad_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet
                   btpad_connection[slot].has_address = true;
                   btpad_connection[slot].handle = handle;
                   btpad_connection[slot].state = BTPAD_CONNECTING;
+                  btpad_connection[slot].slot = slot;
                }
                else break;
             }
@@ -291,6 +294,26 @@ void btpad_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet
 
             bt_flip_addr_ptr(event_addr, &packet[2]);
             btpad_queue_hci_pin_code_request_reply(event_addr, &packet[2]);
+         }
+         break;
+
+         case HCI_EVENT_DISCONNECTION_COMPLETE:
+         {
+            const uint32_t handle = READ_BT_16(packet, 3);
+
+            if (!packet[2])
+            {
+               const int32_t slot = btpad_find_slot_for(handle, 0);
+               if (slot >= 0)
+               {
+                  btpad_connection[slot].handle = 0;
+                  btpad_disconnect_pad(slot);
+
+                  ios_add_log_message("BTpad: Device disconnected (Slot: %d)", slot);
+               }
+            }
+            else
+               ios_add_log_message("BTpad: Got failed 'Disconnection Complete' event (Status: %02X)", packet[2]);
          }
          break;
       }

@@ -31,6 +31,7 @@ static void* btpad_wii_connect(const btpad_connection_t* connection)
 
    memcpy(device->addr, connection->address, BD_ADDR_LEN);
 
+   device->unid = connection->slot;
    device->wiiMoteConHandle = connection->handle;
    device->c_source_cid = connection->channels[0];
    device->i_source_cid = connection->channels[1];
@@ -44,11 +45,6 @@ static void* btpad_wii_connect(const btpad_connection_t* connection)
 
 static void btpad_wii_disconnect(struct wiimote_t* device)
 {
-}
-
-static void btpad_wii_setleds(struct wiimote_t* device, unsigned leds)
-{
-   // TODO
 }
 
 static uint32_t btpad_wii_get_buttons(struct wiimote_t* device)
@@ -117,7 +113,6 @@ struct btpad_interface btpad_wii =
 {
    (void*)&btpad_wii_connect,
    (void*)&btpad_wii_disconnect,
-   (void*)&btpad_wii_setleds,
    (void*)&btpad_wii_get_buttons,
    (void*)&btpad_wii_get_axis,
    (void*)&btpad_wii_packet_handler

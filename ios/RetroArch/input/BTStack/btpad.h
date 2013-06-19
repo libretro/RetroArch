@@ -28,6 +28,7 @@ typedef struct
 {
    enum btpad_state state;
 
+   uint32_t slot;
    uint16_t handle;
 
    bool has_address;
@@ -42,7 +43,6 @@ struct btpad_interface
 {
    void* (*connect)(const btpad_connection_t* connection);
    void (*disconnect)(void* device);
-   void (*set_leds)(void* device, unsigned leds);
 
    uint32_t (*get_buttons)(void* device);
    int16_t (*get_axis)(void* device, unsigned axis);
