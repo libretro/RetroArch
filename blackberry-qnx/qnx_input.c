@@ -37,6 +37,8 @@ static unsigned touch_count;
 input_device_t devices[MAX_PADS];
 input_device_t *port_device[MAX_PADS];
 
+static unsigned screen_width, screen_height;
+
 unsigned pads_connected;
 
 static void qnx_input_autodetect_gamepad(input_device_t* controller);
@@ -313,6 +315,18 @@ static void process_touch_event(screen_event_t event, int type)
          {
             if(touch[i].contact_id == contact_id)
             {
+               //During a move, we can go ~30 pixel into the bezel which gives negative
+               //numbers or numbers larger than the screen res. Normalize.
+               if(pos[0] < 0)
+                  pos[0] = 0;
+               if(pos[0] > screen_width)
+                  pos[0] = screen_width;
+
+               if(pos[1] < 0)
+                  pos[1] = 0;
+               if(pos[1] > screen_height)
+                  pos[1] = screen_height;
+
                input_translate_coord_viewport(pos[0], pos[1],
                      &touch[i].x, &touch[i].y,
                      &touch[i].full_x, &touch[i].full_y);
@@ -468,6 +482,10 @@ static void *qnx_input_init(void)
    init_playbook_keyboard();
 #endif
 
+   //Get screen dimensions
+   if(gfx_ctx_bbqnx.get_video_size)
+      gfx_ctx_bbqnx.get_video_size(&screen_width, &screen_height);
+
    initialized = 1;
 
    return (void*)-1;
@@ -543,10 +561,12 @@ static int16_t qnx_input_state(void *data, const struct retro_keybind **retro_ke
       case RARCH_DEVICE_POINTER_SCREEN:
       case RETRO_DEVICE_POINTER:
          {
+            const bool want_full = device == RARCH_DEVICE_POINTER_SCREEN;
+
             switch (id)
             {
-               case RETRO_DEVICE_ID_POINTER_X: return touch[index].full_x;
-               case RETRO_DEVICE_ID_POINTER_Y: return touch[index].full_y;
+               case RETRO_DEVICE_ID_POINTER_X: return want_full ? touch[index].full_x : touch[index].x;
+               case RETRO_DEVICE_ID_POINTER_Y: return want_full ? touch[index].full_y : touch[index].y;
                case RETRO_DEVICE_ID_POINTER_PRESSED: return (touch[index].contact_id != -1);
             }
 
