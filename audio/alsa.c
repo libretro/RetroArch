@@ -16,13 +16,7 @@
 
 #include "../driver.h"
 #include <stdlib.h>
-#ifdef __QNX__
-#define ALSA_PCM_NEW_HW_PARAMS_API
-#define ALSA_PCM_NEW_SW_PARAMS_API
-#include <sys/asoundlib.h>
-#else
 #include <asoundlib.h>
-#endif
 #include "../general.h"
 
 #define TRY_ALSA(x) if (x < 0) { \
@@ -47,14 +41,12 @@ static bool alsa_use_float(void *data)
 
 static bool find_float_format(snd_pcm_t *pcm, void *data)
 {
-#ifndef __QNX__
    snd_pcm_hw_params_t *params = (snd_pcm_hw_params_t*)data;
    if (snd_pcm_hw_params_test_format(pcm, params, SND_PCM_FORMAT_FLOAT) == 0)
    {
       RARCH_LOG("ALSA: Using floating point format.\n");
       return true;
    }
-#endif
    RARCH_LOG("ALSA: Using signed 16-bit format.\n");
    return false;
 }
@@ -65,23 +57,14 @@ static void *alsa_init(const char *device, unsigned rate, unsigned latency)
    if (!alsa)
       return NULL;
 
-#ifndef __QNX__
    snd_pcm_hw_params_t *params = NULL;
    snd_pcm_sw_params_t *sw_params = NULL;
-#endif
-
 
    unsigned latency_usec = latency * 1000;
    unsigned channels = 2;
    unsigned periods = 4;
    snd_pcm_format_t format;
 
-#ifdef __QNX__
-   int card, dev;
-   TRY_ALSA(snd_pcm_open_preferred(&alsa->pcm, &card, &dev, SND_PCM_OPEN_PLAYBACK));
-   alsa->has_float = false;
-   format = SND_PCM_FORMAT_S16;
-#else
    const char *alsa_dev = "default";
    if (device)
       alsa_dev = device;
@@ -119,7 +102,6 @@ static void *alsa_init(const char *device, unsigned rate, unsigned latency)
 
    snd_pcm_hw_params_free(params);
    snd_pcm_sw_params_free(sw_params);
-#endif
 
    return alsa;
 
@@ -302,4 +284,3 @@ const audio_driver_t audio_alsa = {
    alsa_write_avail,
    alsa_buffer_size,
 };
-
