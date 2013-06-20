@@ -535,6 +535,7 @@ static int16_t qnx_input_state(void *data, const struct retro_keybind **retro_ke
                return ((port_device[port]->buttons & retro_keybinds[port][id].joykey) && (port < pads_connected));
             }
          }
+         break;
 #ifdef HAVE_BB10
       case RETRO_DEVICE_ANALOG:
          //Need to return [-0x8000, 0x7fff]
