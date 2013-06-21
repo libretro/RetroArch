@@ -38,9 +38,8 @@ static void *alsa_qsa_init(const char *device, unsigned rate, unsigned latency)
    (void)latency;
 
    int err, card, dev;
-   snd_pcm_channel_params_t params;
-   snd_pcm_channel_setup_t setup;
-
+   snd_pcm_channel_params_t params = {0};
+   snd_pcm_channel_setup_t setup = {0};
    alsa_t *alsa = (alsa_t*)calloc(1, sizeof(alsa_t));
    if (!alsa)
       return NULL;
@@ -64,12 +63,14 @@ static void *alsa_qsa_init(const char *device, unsigned rate, unsigned latency)
       goto error;
    }
 
+   memset(&params, 0, sizeof(params));
+
    params.channel = SND_PCM_CHANNEL_PLAYBACK;
    params.mode = SND_PCM_MODE_BLOCK;
 
    params.format.interleave = 1;
    params.format.format = SND_PCM_SFMT_S16_LE;
-   params.format.rate = rate; 
+   params.format.rate = 44100; 
    params.format.voices = 2;
 
    params.start_mode = SND_PCM_START_DATA;
