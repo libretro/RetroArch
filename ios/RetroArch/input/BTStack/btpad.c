@@ -116,8 +116,8 @@ void btpad_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet
                btpad_queue_reset();
 
                btpad_queue_hci_read_bd_addr();
-               btpad_queue_l2cap_register_service(PSM_HID_CONTROL, 672); // TODO: Where did I get 672 for mtu?
-               btpad_queue_l2cap_register_service(PSM_HID_INTERRUPT, 672);
+               bt_send_cmd_ptr(l2cap_register_service_ptr, PSM_HID_CONTROL, 672);  // TODO: Where did I get 672 for mtu?
+               bt_send_cmd_ptr(l2cap_register_service_ptr, PSM_HID_INTERRUPT, 672);
                btpad_queue_hci_inquiry(HCI_INQUIRY_LAP, 3, 1);
                
                btpad_queue_run(1);
@@ -180,8 +180,8 @@ void btpad_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet
                   btpad_connection[slot].state = BTPAD_CONNECTING;
                   btpad_connection[slot].slot = slot;
 
-                  btpad_queue_l2cap_create_channel(btpad_connection[slot].address, PSM_HID_CONTROL);
-                  btpad_queue_l2cap_create_channel(btpad_connection[slot].address, PSM_HID_INTERRUPT);
+                  bt_send_cmd_ptr(l2cap_create_channel_ptr, btpad_connection[slot].address, PSM_HID_CONTROL);
+                  bt_send_cmd_ptr(l2cap_create_channel_ptr, btpad_connection[slot].address, PSM_HID_INTERRUPT);
                }
             }
          }
@@ -259,7 +259,7 @@ void btpad_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet
             }
 
             ios_add_log_message("BTpad: Incoming L2CAP connection (Slot: %d, PSM: %02X)", slot, psm);
-            btpad_queue_l2cap_accept_connection(channel_id);
+            bt_send_cmd_ptr(l2cap_accept_connection_ptr, channel_id);
          }
          break;
 

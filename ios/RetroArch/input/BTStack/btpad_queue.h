@@ -26,9 +26,5 @@ void btpad_queue_hci_disconnect(uint16_t handle, uint8_t reason);
 void btpad_queue_hci_inquiry(uint32_t lap, uint8_t length, uint8_t num_responses);
 void btpad_queue_hci_remote_name_request(bd_addr_t bd_addr, uint8_t page_scan_repetition_mode, uint8_t reserved, uint16_t clock_offset);
 void btpad_queue_hci_pin_code_request_reply(bd_addr_t bd_addr, bd_addr_t pin);
-void btpad_queue_l2cap_register_service(uint16_t psm, uint16_t mtu);
-void btpad_queue_l2cap_create_channel(bd_addr_t bd_addr, uint16_t psm);
-void btpad_queue_l2cap_accept_connection(uint16_t cid);
-void btpad_queue_l2cap_decline_connection(uint16_t cid, uint8_t reason);
 
 #endif

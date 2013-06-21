@@ -17,9 +17,6 @@
 #include "btpad.h"
 #include "btpad_queue.h"
 
-// NOTE: It seems that it is not needed to wait for the l2cap commands; TODO: Confirm
-// #define WAIT_FOR_L2CAP
-
 struct btpad_queue_command
 {
    const hci_cmd_t* command;
@@ -57,31 +54,6 @@ struct btpad_queue_command
          bd_addr_t bd_addr;
          bd_addr_t pin;
       }  hci_pin_code_request_reply;
-
-#ifdef WAIT_FOR_L2CAP
-      struct
-      {
-         uint16_t psm;
-         uint16_t mtu;
-      }  l2cap_register_service;
-
-      struct
-      {
-         bd_addr_t bd_addr;
-         uint16_t psm;
-      }  l2cap_create_channel;
-
-      struct
-      {
-         uint16_t cid;
-      }  l2cap_accept_connection;
-
-      struct
-      {
-         uint16_t cid;
-         uint8_t reason;
-      }  l2cap_decline_connection;
-#endif
    };
 };
 
@@ -125,16 +97,6 @@ void btpad_queue_process()
                          cmd->hci_remote_name_request.reserved, cmd->hci_remote_name_request.clock_offset);
       else if (cmd->command == hci_pin_code_request_reply_ptr)
          bt_send_cmd_ptr(cmd->command, cmd->hci_pin_code_request_reply.bd_addr, 6, cmd->hci_pin_code_request_reply.pin);
-#ifdef WAIT_FOR_L2CAP
-      else if (cmd->command == l2cap_register_service_ptr)
-         bt_send_cmd_ptr(cmd->command, cmd->l2cap_register_service.psm, cmd->l2cap_register_service.mtu);
-      else if (cmd->command == l2cap_create_channel_ptr)
-         bt_send_cmd_ptr(cmd->command, cmd->l2cap_create_channel.bd_addr, cmd->l2cap_create_channel.psm);
-      else if (cmd->command == l2cap_accept_connection_ptr)
-         bt_send_cmd_ptr(cmd->command, cmd->l2cap_accept_connection.cid);
-      else if (cmd->command == l2cap_decline_connection_ptr)
-         bt_send_cmd_ptr(cmd->command, cmd->l2cap_decline_connection.cid, cmd->l2cap_decline_connection.reason);
-#endif
 
       INCPOS(read);
    }
@@ -212,72 +174,3 @@ void btpad_queue_hci_pin_code_request_reply(bd_addr_t bd_addr, bd_addr_t pin)
    btpad_queue_process();
 }
 
-// NOTE: It seems the l2cap commands don't need to wait
-#ifdef WAIT_FOR_L2CAP
-void btpad_queue_l2cap_register_service(uint16_t psm, uint16_t mtu)
-{
-   struct btpad_queue_command* cmd = &commands[insert_position];
-
-   cmd->command = l2cap_register_service_ptr;
-   cmd->l2cap_register_service.psm = psm;
-   cmd->l2cap_register_service.mtu = mtu;
-
-   INCPOS(insert);
-   btpad_queue_process();
-}
-
-void btpad_queue_l2cap_create_channel(bd_addr_t bd_addr, uint16_t psm)
-{
-   struct btpad_queue_command* cmd = &commands[insert_position];
-
-   cmd->command = l2cap_create_channel_ptr;
-   memcpy(cmd->l2cap_create_channel.bd_addr, bd_addr, sizeof(bd_addr_t));
-   cmd->l2cap_create_channel.psm = psm;
-
-   INCPOS(insert);
-   btpad_queue_process();
-}
-
-void btpad_queue_l2cap_accept_connection(uint16_t cid)
-{
-   struct btpad_queue_command* cmd = &commands[insert_position];
-
-   cmd->command = l2cap_accept_connection_ptr;
-   cmd->l2cap_accept_connection.cid = cid;
-
-   INCPOS(insert);
-   btpad_queue_process();
-}
-
-void btpad_queue_l2cap_decline_connection(uint16_t cid, uint8_t reason)
-{
-   struct btpad_queue_command* cmd = &commands[insert_position];
-
-   cmd->command = l2cap_decline_connection_ptr;
-   cmd->l2cap_decline_connection.cid = cid;
-   cmd->l2cap_decline_connection.reason = reason;
-
-   INCPOS(insert);
-   btpad_queue_process();
-}
-#else
-void btpad_queue_l2cap_register_service(uint16_t psm, uint16_t mtu)
-{
-   bt_send_cmd_ptr(l2cap_register_service_ptr, psm, mtu);
-}
-
-void btpad_queue_l2cap_create_channel(bd_addr_t bd_addr, uint16_t psm)
-{
-   bt_send_cmd_ptr(l2cap_create_channel_ptr, bd_addr, psm);
-}
-
-void btpad_queue_l2cap_accept_connection(uint16_t cid)
-{
-   bt_send_cmd_ptr(l2cap_accept_connection_ptr, cid);
-}
-
-void btpad_queue_l2cap_decline_connection(uint16_t cid, uint8_t reason)
-{
-   bt_send_cmd_ptr(l2cap_decline_connection_ptr, cid, reason);
-}
-#endif
