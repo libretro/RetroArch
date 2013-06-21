@@ -22,17 +22,25 @@
 
 #include "frontend_qnx.h"
 
+#ifdef HAVE_BB10
 #define MAX_TOUCH 16
+#else
+#define MAX_TOUCH 4
+#endif
 
 struct touches
 {
    int16_t x, y;
    int16_t full_x, full_y;
    int contact_id;
+   int map;
 };
 
 static struct touches touch[MAX_TOUCH];
 static unsigned touch_count;
+//The first touch_count indices of touch_map will be a valid, active index in touch array.
+//Saves us from searching through touch array when polling state.
+static int touch_map[MAX_TOUCH];
 
 input_device_t devices[MAX_PADS];
 input_device_t *port_device[MAX_PADS];
@@ -293,21 +301,48 @@ static void process_touch_event(screen_event_t event, int type)
    switch(type)
    {
       case SCREEN_EVENT_MTOUCH_TOUCH:
-         touch[touch_count].contact_id = contact_id;
-         input_translate_coord_viewport(pos[0], pos[1],
-               &touch[touch_count].x, &touch[touch_count].y,
-               &touch[touch_count].full_x, &touch[touch_count].full_y);
-         touch_count++;
+         //Find a free touch struct
+         for(i=0;i<MAX_TOUCH;++i)
+         {
+            if(touch[i].contact_id == -1)
+            {
+               touch[i].contact_id = contact_id;
+               input_translate_coord_viewport(pos[0], pos[1],
+                  &touch[i].x, &touch[i].y,
+                  &touch[i].full_x, &touch[i].full_y);
+               //Add this touch to the map to signal it's valid
+               touch[i].map = touch_count;
+               touch_map[touch_count] = i;
+               touch_count++;
+               break;
+            }
+         }
          //printf("New Touch: x:%d, y:%d, id:%d\n", pos[0], pos[1], contact_id);fflush(stdout);
+         //printf("Map: %d %d %d %d %d %d\n", touch_map[0], touch_map[1], touch_map[2], touch_map[3], touch_map[4], touch_map[5]);fflush(stdout);
          break;
       case SCREEN_EVENT_MTOUCH_RELEASE:
-         //Invalidate the finger
-         touch_count--;
-         touch[touch_count].contact_id = -1;
-         input_translate_coord_viewport(pos[0], pos[1],
-               &touch[touch_count].x, &touch[touch_count].y,
-               &touch[touch_count].full_x, &touch[touch_count].full_y);
+         for(i=0; i<MAX_TOUCH; ++i)
+         {
+            if(touch[i].contact_id == contact_id)
+            {
+               //Invalidate the finger
+               touch[i].contact_id = -1;
+
+               //Remove touch from map and shift remaining valid ones to the front
+               touch_map[touch[i].map] = -1;
+               int j;
+               for(j=touch[i].map;j<touch_count;++j)
+               {
+                 touch_map[j] = touch_map[j+1];
+                 touch[touch_map[j+1]].map = j;
+                 touch_map[j+1] = -1;
+               }
+               touch_count--;
+               break;
+            }
+         }
          //printf("Release: x:%d, y:%d, id:%d\n", pos[0], pos[1], contact_id);fflush(stdout);
+         //printf("Map: %d %d %d %d %d %d\n", touch_map[0], touch_map[1], touch_map[2], touch_map[3], touch_map[4], touch_map[5]);fflush(stdout);
          break;
       case SCREEN_EVENT_MTOUCH_MOVE:
          //Find the finger we're tracking and update
@@ -331,6 +366,7 @@ static void process_touch_event(screen_event_t event, int type)
                      &touch[i].x, &touch[i].y,
                      &touch[i].full_x, &touch[i].full_y);
                //printf("Move: x:%d, y:%d, id:%d\n", pos[0], pos[1], contact_id);fflush(stdout);
+               break;
             }
          }
          break;
@@ -464,11 +500,18 @@ static void *qnx_input_init(void)
    int i;
    static int initialized = 0;
 
+   //Get screen dimensions
+   if(gfx_ctx_bbqnx.get_video_size)
+      gfx_ctx_bbqnx.get_video_size(&screen_width, &screen_height);
+
    if(initialized)
       return (void*)-1;
 
    for (i = 0; i < MAX_TOUCH; ++i)
+   {
       touch[i].contact_id = -1;
+      touch_map[i] = -1;
+   }
 
    for (i = 0; i < MAX_PADS; ++i)
    {
@@ -481,10 +524,6 @@ static void *qnx_input_init(void)
 #else
    init_playbook_keyboard();
 #endif
-
-   //Get screen dimensions
-   if(gfx_ctx_bbqnx.get_video_size)
-      gfx_ctx_bbqnx.get_video_size(&screen_width, &screen_height);
 
    initialized = 1;
 
@@ -566,15 +605,15 @@ static int16_t qnx_input_state(void *data, const struct retro_keybind **retro_ke
 
             switch (id)
             {
-               case RETRO_DEVICE_ID_POINTER_X: return want_full ? touch[index].full_x : touch[index].x;
-               case RETRO_DEVICE_ID_POINTER_Y: return want_full ? touch[index].full_y : touch[index].y;
-               case RETRO_DEVICE_ID_POINTER_PRESSED: return (touch[index].contact_id != -1);
+               case RETRO_DEVICE_ID_POINTER_X: return want_full ? touch[touch_map[index]].full_x : touch[touch_map[index]].x;
+               case RETRO_DEVICE_ID_POINTER_Y: return want_full ? touch[touch_map[index]].full_y : touch[touch_map[index]].y;
+               case RETRO_DEVICE_ID_POINTER_PRESSED: return (touch_map[index] != -1);
             }
 
-            return 0;
+            break;
          }
       default:
-         return 0;
+         break;
    }
 
    return 0;
