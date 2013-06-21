@@ -24,7 +24,6 @@ typedef struct alsa
 {
    snd_pcm_t *pcm;
    size_t buffer_size;
-   snd_pcm_channel_status_t status;
    bool nonblock;
    bool has_float;
    bool can_pause;
@@ -47,19 +46,19 @@ static void *alsa_qsa_init(const char *device, unsigned rate, unsigned latency)
    if ((err = snd_pcm_open_preferred(&alsa->pcm, &card, &dev,
                SND_PCM_OPEN_PLAYBACK)) < 0)
    {
-      RARCH_ERR("Audio open error: %s\n", snd_strerror(err));
+      RARCH_ERR("[ALSA QSA]: Audio open error: %s\n", snd_strerror(err));
       goto error;
    }
 
    if((err = snd_pcm_nonblock_mode(alsa->pcm, 1)) < 0)
    {
-      RARCH_ERR("Can't set blocking mode: %s\n", snd_strerror(err));
+      RARCH_ERR("[ALSA QSA]: Can't set blocking mode: %s\n", snd_strerror(err));
       goto error;
    }
 
    if ((err = snd_pcm_plugin_set_disable (alsa->pcm, PLUGIN_DISABLE_MMAP)) < 0)
    {
-      RARCH_ERR("Can't disable MMAP plugin: %s\n", snd_strerror(err));
+      RARCH_ERR("[ALSA QSA]: Can't disable MMAP plugin: %s\n", snd_strerror(err));
       goto error;
    }
 
@@ -82,7 +81,7 @@ static void *alsa_qsa_init(const char *device, unsigned rate, unsigned latency)
 
    if ((err = snd_pcm_plugin_params(alsa->pcm, &params)) < 0)
    {
-      RARCH_ERR("Channel Parameter Error: %s\n", snd_strerror(err));
+      RARCH_ERR("[ALSA QSA]: Channel Parameter Error: %s\n", snd_strerror(err));
       goto error;
    }
 
@@ -90,7 +89,7 @@ static void *alsa_qsa_init(const char *device, unsigned rate, unsigned latency)
 
    if ((err = snd_pcm_plugin_setup(alsa->pcm, &setup)) < 0)
    {
-      RARCH_ERR("Channel Parameter Read Back Error: %s\n", snd_strerror(err));
+      RARCH_ERR("[ALSA QSA]: Channel Parameter Read Back Error: %s\n", snd_strerror(err));
       goto error;
    }
 
@@ -99,7 +98,7 @@ static void *alsa_qsa_init(const char *device, unsigned rate, unsigned latency)
 
    if ((err = snd_pcm_plugin_prepare(alsa->pcm, SND_PCM_CHANNEL_PLAYBACK)) < 0)
    {
-      RARCH_ERR("Channel Prepare Error: %s\n", snd_strerror(err));
+      RARCH_ERR("[ALSA QSA]: Channel Prepare Error: %s\n", snd_strerror(err));
       goto error;
    }
 
@@ -124,9 +123,15 @@ static void alsa_qsa_free(void *data)
 
 static ssize_t alsa_qsa_write(void *data, const void *buf, size_t size)
 {
+   int err;
    alsa_t *alsa = (alsa_t*)data;
+   snd_pcm_channel_status_t status = {0};
 
-   int err = snd_pcm_plugin_write(alsa->pcm, buf, size);
+   if ((err = snd_pcm_plugin_status(alsa->pcm, &status)) < 0)
+      RARCH_ERR("[ALSA QSA]: Error reading status: %s\n", snd_strerror(err));
+
+   if ((err = snd_pcm_plugin_write(alsa->pcm, buf, size)) < 0)
+      RARCH_ERR("[ALSA QSA]: Error writing PCM: %s\n", snd_strerror(err));
 
    return size;
 }
