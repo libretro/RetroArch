@@ -39,7 +39,8 @@ static void btpad_ps3_send_control(struct btpad_ps3_data* device)
 {
    // TODO: Can this be modified to turn of motion tracking?
    static uint8_t report_buffer[] = {
-      0x52, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00,
+      0x52, 0x01,
+      0x00, 0x00, 0x00, 0x00, 0x00,
       0x00, 0x00, 0x00, 0x00, 0x00,
       0xff, 0x27, 0x10, 0x00, 0x32,
       0xff, 0x27, 0x10, 0x00, 0x32,
@@ -81,7 +82,24 @@ static void btpad_ps3_disconnect(struct btpad_ps3_data* device)
 
 static uint32_t btpad_ps3_get_buttons(struct btpad_ps3_data* device)
 {
-   return device->data[3] | (device->data[4] << 8) | ((device->data[5] & 1) << 16);
+   #define KEY(X) RETRO_DEVICE_ID_JOYPAD_##X
+   static const uint32_t button_mapping[17] =
+   {
+      KEY(SELECT), KEY(L3),    KEY(R3),   KEY(START),
+      KEY(UP),     KEY(RIGHT), KEY(DOWN), KEY(LEFT),
+      KEY(L2),     KEY(R2),    KEY(L),    KEY(R),
+      KEY(X),      KEY(A),     KEY(B),    KEY(Y),
+      16 //< PS Button
+   };
+   #undef KEY
+
+   const uint32_t pressed_keys = device->data[3] | (device->data[4] << 8) | ((device->data[5] & 1) << 16);
+   uint32_t result = 0;
+
+   for (int i = 0; i < 17; i ++)
+      result |= (pressed_keys & (1 << i)) ? (1 << button_mapping[i]) : 0;
+
+   return result;
 }
 
 static int16_t btpad_ps3_get_axis(struct btpad_ps3_data* device, unsigned axis)
