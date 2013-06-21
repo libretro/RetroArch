@@ -1,0 +1,182 @@
+/*  RetroArch - A frontend for libretro.
+ *  Copyright (C) 2010-2013 - Hans-Kristian Arntzen
+ * 
+ *  RetroArch is free software: you can redistribute it and/or modify it under the terms
+ *  of the GNU General Public License as published by the Free Software Found-
+ *  ation, either version 3 of the License, or (at your option) any later version.
+ *
+ *  RetroArch is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+ *  without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+ *  PURPOSE.  See the GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License along with RetroArch.
+ *  If not, see <http://www.gnu.org/licenses/>.
+ */
+
+#include "../general.h"
+#include "../driver.h"
+
+#define ALSA_PCM_NEW_HW_PARAMS_API
+#define ALSA_PCM_NEW_SW_PARAMS_API
+#include <sys/asoundlib.h>
+
+typedef struct alsa
+{
+   snd_pcm_t *pcm;
+   size_t buffer_size;
+   snd_pcm_channel_status_t status;
+   bool nonblock;
+   bool has_float;
+   bool can_pause;
+   bool is_paused;
+} alsa_t;
+
+static void *alsa_qsa_init(const char *device, unsigned rate, unsigned latency)
+{
+   (void)device;
+   (void)rate;
+   (void)latency;
+
+   int err, card, dev;
+   snd_pcm_channel_params_t params;
+   snd_pcm_channel_setup_t setup;
+
+   alsa_t *alsa = (alsa_t*)calloc(1, sizeof(alsa_t));
+   if (!alsa)
+      return NULL;
+
+   if ((err = snd_pcm_open_preferred(&alsa->pcm, &card, &dev,
+               SND_PCM_OPEN_PLAYBACK)) < 0)
+   {
+      RARCH_ERR("Audio open error: %s\n", snd_strerror(err));
+      goto error;
+   }
+
+   if((err = snd_pcm_nonblock_mode(alsa->pcm, 1)) < 0)
+   {
+      RARCH_ERR("Can't set blocking mode: %s\n", snd_strerror(err));
+      goto error;
+   }
+
+   if ((err = snd_pcm_plugin_set_disable (alsa->pcm, PLUGIN_DISABLE_MMAP)) < 0)
+   {
+      RARCH_ERR("Can't disable MMAP plugin: %s\n", snd_strerror(err));
+      goto error;
+   }
+
+   params.channel = SND_PCM_CHANNEL_PLAYBACK;
+   params.mode = SND_PCM_MODE_BLOCK;
+
+   params.format.interleave = 1;
+   params.format.format = SND_PCM_SFMT_S16_LE;
+   params.format.rate = rate; 
+   params.format.voices = 2;
+
+   params.start_mode = SND_PCM_START_DATA;
+   params.stop_mode = SND_PCM_STOP_STOP;
+
+   params.buf.block.frag_size = 4096;
+   params.buf.block.frags_min = 1;
+   params.buf.block.frags_max = 19;
+
+   if ((err = snd_pcm_plugin_params(alsa->pcm, &params)) < 0)
+   {
+      RARCH_ERR("Channel Parameter Error: %s\n", snd_strerror(err));
+      goto error;
+   }
+
+   setup.channel = SND_PCM_CHANNEL_PLAYBACK;
+
+   if ((err = snd_pcm_plugin_setup(alsa->pcm, &setup)) < 0)
+   {
+      RARCH_ERR("Channel Parameter Read Back Error: %s\n", snd_strerror(err));
+      goto error;
+   }
+
+   alsa->buffer_size = setup.buf.block.frag_size * 19;
+   RARCH_LOG("ALSA buffer size: %d\n", alsa->buffer_size);
+
+   if ((err = snd_pcm_plugin_prepare(alsa->pcm, SND_PCM_CHANNEL_PLAYBACK)) < 0)
+   {
+      RARCH_ERR("Channel Prepare Error: %s\n", snd_strerror(err));
+      goto error;
+   }
+
+   alsa->has_float = false;
+
+   return alsa;
+
+error:
+   return (void*)-1;
+}
+
+static void alsa_qsa_free(void *data)
+{
+   alsa_t *alsa = (alsa_t*)data;
+
+   if (alsa->pcm != NULL)
+   {
+      snd_pcm_close(alsa->pcm);
+      alsa->pcm = NULL;
+   }
+}
+
+static ssize_t alsa_qsa_write(void *data, const void *buf, size_t size)
+{
+   alsa_t *alsa = (alsa_t*)data;
+
+   int err = snd_pcm_plugin_write(alsa->pcm, buf, size);
+
+   return size;
+}
+
+static bool alsa_qsa_stop(void *data)
+{
+   alsa_t *alsa = (alsa_t*)data;
+
+   if (alsa->can_pause && !alsa->is_paused)
+   {
+      /* TODO */
+      return false;
+   }
+   else return true;
+}
+
+static bool alsa_qsa_start(void *data)
+{
+   (void)data;
+   return true;
+}
+
+static void alsa_qsa_set_nonblock_state(void *data, bool state)
+{
+   alsa_t *alsa = (alsa_t*)data;
+
+   int err;
+
+   if((err = snd_pcm_nonblock_mode(alsa->pcm, state)) < 0)
+   {
+      RARCH_ERR("Can't set blocking mode to %d: %s\n", state,
+            snd_strerror(err));
+      return;
+   }
+
+   alsa->nonblock = state;
+}
+
+static bool alsa_qsa_use_float(void *data)
+{
+   alsa_t *alsa = (alsa_t*)data;
+   return alsa->has_float;
+}
+
+const audio_driver_t audio_alsa = {
+   alsa_qsa_init,
+   alsa_qsa_write,
+   alsa_qsa_stop,
+   alsa_qsa_start,
+   alsa_qsa_set_nonblock_state,
+   alsa_qsa_free,
+   alsa_qsa_use_float,
+   "alsa",
+};
