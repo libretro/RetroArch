@@ -70,7 +70,7 @@ static void *alsa_qsa_init(const char *device, unsigned rate, unsigned latency)
 
    params.format.interleave = 1;
    params.format.format = SND_PCM_SFMT_S16_LE;
-   params.format.rate = 44100; 
+   params.format.rate = rate; 
    params.format.voices = 2;
 
    params.start_mode = SND_PCM_START_DATA;
