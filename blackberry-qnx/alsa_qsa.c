@@ -223,7 +223,7 @@ static size_t alsa_qsa_write_avail(void *data)
 
    snd_pcm_plugin_status(alsa->pcm, &status);
 
-   return status.count;
+   return status.free;
 }
 
 static size_t alsa_qsa_buffer_size(void *data)
