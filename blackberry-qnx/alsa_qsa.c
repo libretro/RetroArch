@@ -73,7 +73,7 @@ static void *alsa_qsa_init(const char *device, unsigned rate, unsigned latency)
    params.format.voices = 2;
 
    params.start_mode = SND_PCM_START_DATA;
-   params.stop_mode = SND_PCM_STOP_STOP;
+   params.stop_mode = SND_PCM_STOP_ROLLOVER;
 
    params.buf.block.frag_size = 4096;
    params.buf.block.frags_min = 1;
