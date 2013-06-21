@@ -44,7 +44,7 @@
 									<listOptionValue builtIn="false" value="HAVE_ZLIB"/>
 									<listOptionValue builtIn="false" value="__BLACKBERRY_QNX__"/>
 									<listOptionValue builtIn="false" value="HAVE_OPENGLES"/>
-									<listOptionValue builtIn="false" value="PACKAGE_VERSION=\&quot;0.9.9.9-wip3\&quot;"/>
+									<listOptionValue builtIn="false" value="PACKAGE_VERSION=\&quot;0.9.9.9.3\&quot;"/>
 									<listOptionValue builtIn="false" value="HAVE_OPENGLES2"/>
 									<listOptionValue builtIn="false" value="HAVE_NULLINPUT"/>
 									<listOptionValue builtIn="false" value="HAVE_ALSA"/>
@@ -167,7 +167,7 @@
 									<listOptionValue builtIn="false" value="HAVE_ZLIB"/>
 									<listOptionValue builtIn="false" value="__BLACKBERRY_QNX__"/>
 									<listOptionValue builtIn="false" value="HAVE_OPENGLES"/>
-									<listOptionValue builtIn="false" value="PACKAGE_VERSION=\&quot;0.9.9.9-wip3\&quot;"/>
+									<listOptionValue builtIn="false" value="PACKAGE_VERSION=\&quot;0.9.9.9.3\&quot;"/>
 									<listOptionValue builtIn="false" value="HAVE_OPENGLES2"/>
 									<listOptionValue builtIn="false" value="HAVE_NULLINPUT"/>
 									<listOptionValue builtIn="false" value="HAVE_ALSA"/>
@@ -285,7 +285,7 @@
 									<listOptionValue builtIn="false" value="HAVE_ZLIB"/>
 									<listOptionValue builtIn="false" value="__BLACKBERRY_QNX__"/>
 									<listOptionValue builtIn="false" value="HAVE_OPENGLES"/>
-									<listOptionValue builtIn="false" value="PACKAGE_VERSION=\&quot;0.9.9.9-wip3\&quot;"/>
+									<listOptionValue builtIn="false" value="PACKAGE_VERSION=\&quot;0.9.9.9.3\&quot;"/>
 									<listOptionValue builtIn="false" value="HAVE_OPENGLES2"/>
 									<listOptionValue builtIn="false" value="HAVE_NULLINPUT"/>
 									<listOptionValue builtIn="false" value="HAVE_ALSA"/>
@@ -404,7 +404,7 @@
 									<listOptionValue builtIn="false" value="HAVE_ZLIB"/>
 									<listOptionValue builtIn="false" value="__BLACKBERRY_QNX__"/>
 									<listOptionValue builtIn="false" value="HAVE_OPENGLES"/>
-									<listOptionValue builtIn="false" value="PACKAGE_VERSION=\&quot;0.9.9.9-wip3\&quot;"/>
+									<listOptionValue builtIn="false" value="PACKAGE_VERSION=\&quot;0.9.9.9.3\&quot;"/>
 									<listOptionValue builtIn="false" value="HAVE_OPENGLES2"/>
 									<listOptionValue builtIn="false" value="HAVE_NULLINPUT"/>
 									<listOptionValue builtIn="false" value="HAVE_ALSA"/>

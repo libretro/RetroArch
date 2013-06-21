@@ -93,8 +93,8 @@ static void *alsa_qsa_init(const char *device, unsigned rate, unsigned latency)
       goto error;
    }
 
-   alsa->buffer_size = setup.buf.block.frag_size * 19;
-   RARCH_LOG("ALSA buffer size: %d\n", alsa->buffer_size);
+   alsa->buffer_size = setup.buf.block.frag_size * 19; /* is this in bytes? */
+   RARCH_LOG("[ALSA QSA]: buffer size: %d bytes (?)\n", alsa->buffer_size);
 
    if ((err = snd_pcm_plugin_prepare(alsa->pcm, SND_PCM_CHANNEL_PLAYBACK)) < 0)
    {
@@ -103,6 +103,10 @@ static void *alsa_qsa_init(const char *device, unsigned rate, unsigned latency)
    }
 
    alsa->has_float = false;
+#ifdef HAVE_BB10
+   alsa->can_pause = true;
+#endif
+   RARCH_LOG("[ALSA QSA]: Can pause: %s.\n", alsa->can_pause ? "yes" : "no");
 
    return alsa;
 
@@ -110,16 +114,6 @@ error:
    return (void*)-1;
 }
 
-static void alsa_qsa_free(void *data)
-{
-   alsa_t *alsa = (alsa_t*)data;
-
-   if (alsa->pcm != NULL)
-   {
-      snd_pcm_close(alsa->pcm);
-      alsa->pcm = NULL;
-   }
-}
 
 static ssize_t alsa_qsa_write(void *data, const void *buf, size_t size)
 {
@@ -142,16 +136,20 @@ static bool alsa_qsa_stop(void *data)
 
    if (alsa->can_pause && !alsa->is_paused)
    {
-      /* TODO */
-      return false;
+#ifdef HAVE_BB10
+      if (snd_pcm_playback_pause(alsa->pcm) == 0)
+#else
+      if (snd_pcm_plugin_flush(alsa->pcm, SND_PCM_CHANNEL_PLAYBACK) == 0)
+#endif
+      {
+         alsa->is_paused = true;
+         return true;
+      }
+      else
+         return false;
    }
-   else return true;
-}
-
-static bool alsa_qsa_start(void *data)
-{
-   (void)data;
-   return true;
+   else
+      return true;
 }
 
 static void alsa_qsa_set_nonblock_state(void *data, bool state)
@@ -170,10 +168,68 @@ static void alsa_qsa_set_nonblock_state(void *data, bool state)
    alsa->nonblock = state;
 }
 
+static bool alsa_qsa_start(void *data)
+{
+   alsa_t *alsa = (alsa_t*)data;
+
+   if (alsa->can_pause && alsa->is_paused)
+   {
+#ifdef HAVE_BB10
+      int ret = snd_pcm_playback_resume(alsa->pcm);
+#else
+      int ret = 0;
+#endif
+      if (ret < 0)
+      {
+         RARCH_ERR("[ALSA QSA]: Failed to unpause: %s.\n", snd_strerror(ret));
+         return false;
+      }
+      else
+      {
+         alsa->is_paused = false;
+         return true;
+      }
+   }
+   else
+      return true;
+
+}
+
 static bool alsa_qsa_use_float(void *data)
 {
    alsa_t *alsa = (alsa_t*)data;
    return alsa->has_float;
+}
+
+static void alsa_qsa_free(void *data)
+{
+   alsa_t *alsa = (alsa_t*)data;
+
+   if (alsa)
+   {
+      if (alsa->pcm)
+      {
+         snd_pcm_close(alsa->pcm);
+         alsa->pcm = NULL;
+      }
+      free(alsa);
+   }
+}
+
+static size_t alsa_qsa_write_avail(void *data)
+{
+   alsa_t *alsa = (alsa_t*)data;
+   snd_pcm_channel_status_t status = {0};
+
+   snd_pcm_plugin_status(alsa->pcm, &status);
+
+   return status.count;
+}
+
+static size_t alsa_qsa_buffer_size(void *data)
+{
+   alsa_t *alsa = (alsa_t*)data;
+   return alsa->buffer_size;
 }
 
 const audio_driver_t audio_alsa = {
@@ -185,4 +241,6 @@ const audio_driver_t audio_alsa = {
    alsa_qsa_free,
    alsa_qsa_use_float,
    "alsa",
+   alsa_qsa_write_avail,
+   alsa_qsa_buffer_size,
 };
