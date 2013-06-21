@@ -994,7 +994,8 @@ static int rgui_settings_toggle_setting(rgui_handle_t *rgui, unsigned setting, r
          if (action == RGUI_ACTION_OK)
          {
             // Render a clean frame to avoid taking screnshot of RGUI.
-            if (g_settings.video.gpu_screenshot || g_extern.frame_cache.data == RETRO_HW_FRAME_BUFFER_VALID)
+            if (g_settings.video.gpu_screenshot ||
+                  g_extern.system.hw_render_callback.context_type != RETRO_HW_CONTEXT_NONE)
             {
                if (driver.video_poke && driver.video_poke->set_texture_enable)
                   driver.video_poke->set_texture_enable(driver.video_data, false, false);

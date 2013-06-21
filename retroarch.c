@@ -126,18 +126,15 @@ void rarch_take_screenshot(void)
 
    bool ret = false;
 
-   if (g_extern.frame_cache.data)
-   {
-      if ((g_settings.video.gpu_screenshot ||
-               (g_extern.frame_cache.data == RETRO_HW_FRAME_BUFFER_VALID)) &&
-            driver.video->read_viewport &&
-            driver.video->viewport_info)
-         ret = take_screenshot_viewport();
-      else if (g_extern.frame_cache.data && (g_extern.frame_cache.data != RETRO_HW_FRAME_BUFFER_VALID))
-         ret = take_screenshot_raw();
-      else
-         RARCH_ERR("Cannot take screenshot. GPU rendering is used and read_viewport is not supported.\n");
-   }
+   if ((g_settings.video.gpu_screenshot ||
+            g_extern.system.hw_render_callback.context_type != RETRO_HW_CONTEXT_NONE) &&
+         driver.video->read_viewport &&
+         driver.video->viewport_info)
+      ret = take_screenshot_viewport();
+   else if (g_extern.frame_cache.data && (g_extern.frame_cache.data != RETRO_HW_FRAME_BUFFER_VALID))
+      ret = take_screenshot_raw();
+   else
+      RARCH_ERR("Cannot take screenshot. GPU rendering is used and read_viewport is not supported.\n");
 
    const char *msg = NULL;
    if (ret)
