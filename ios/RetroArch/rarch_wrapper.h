@@ -30,13 +30,6 @@ void ios_set_game_view_sync(unsigned interval);
 void ios_get_game_view_size(unsigned *width, unsigned *height);
 void ios_bind_game_view_fbo();
 
-#ifndef HAVE_DEBUG_DIAGLOG
 void ios_add_log_message(const char* format, ...);
-#else
-void ios_log_init();
-void ios_log_quit();
-// Thread safe
-#define ios_add_log_message(...) do { printf(__VA_ARGS__); printf("\n"); } while(0)
-#endif
 
 #endif
