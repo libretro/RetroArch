@@ -27,8 +27,10 @@
 
 #include "../../ios/RetroArch/rarch_wrapper.h"
 
-static bool gfx_ctx_bind_api(enum gfx_ctx_api api)
+static bool gfx_ctx_bind_api(enum gfx_ctx_api api, unsigned major, unsigned minor)
 {
+   (void)major;
+   (void)minor;
    return api == GFX_CTX_OPENGL_ES_API;
 }
 

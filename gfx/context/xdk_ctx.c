@@ -256,8 +256,10 @@ static void gfx_ctx_xdk_destroy(void)
 
 static void gfx_ctx_xdk_input_driver(const input_driver_t **input, void **input_data) { }
 
-static bool gfx_ctx_xdk_bind_api(enum gfx_ctx_api api)
+static bool gfx_ctx_xdk_bind_api(enum gfx_ctx_api api, unsigned major, unsigned minor)
 {
+   (void)major;
+   (void)minor;
 #if defined(_XBOX1)
    return api == GFX_CTX_DIRECT3D8_API;
 #elif defined(_XBOX360)

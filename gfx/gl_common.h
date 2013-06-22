@@ -289,6 +289,11 @@ typedef struct gl
    GLsync fences[MAX_FENCES];
    unsigned fence_count;
 #endif
+
+#ifndef HAVE_OPENGLES
+   bool core_context;
+   GLuint vao;
+#endif
 } gl_t;
 
 // Windows ... <_<

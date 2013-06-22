@@ -138,6 +138,29 @@ static bool load_sync_proc(gl_t *gl)
 }
 #endif
 
+#ifndef HAVE_OPENGLES
+static PFNGLGENVERTEXARRAYSPROC pglGenVertexArrays;
+static PFNGLBINDVERTEXARRAYPROC pglBindVertexArray;
+static PFNGLDELETEVERTEXARRAYSPROC pglDeleteVertexArrays;
+
+static bool load_vao_proc(gl_t *gl)
+{
+   if (!gl_query_extension("ARB_vertex_array_object"))
+      return false;
+
+   LOAD_GL_SYM(GenVertexArrays);
+   LOAD_GL_SYM(BindVertexArray);
+   LOAD_GL_SYM(DeleteVertexArrays);
+
+   bool present = pglGenVertexArrays && pglBindVertexArray && pglDeleteVertexArrays;
+   if (!present)
+      return false;
+
+   pglGenVertexArrays(1, &gl->vao);
+   return true;
+}
+#endif
+
 #ifdef HAVE_FBO
 #if defined(_WIN32) && !defined(RARCH_CONSOLE)
 static PFNGLGENFRAMEBUFFERSPROC pglGenFramebuffers;
@@ -667,20 +690,6 @@ void gl_init_fbo(void *data, unsigned width, unsigned height)
 
 #ifndef HAVE_RGL
 
-// GLES and GL inconsistency.
-#ifndef GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT
-#define GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT_EXT
-#endif
-#ifndef GL_FRAMEBUFFER_INCOMPLETE_DIMENSIONS
-#define GL_FRAMEBUFFER_INCOMPLETE_DIMENSIONS GL_FRAMEBUFFER_INCOMPLETE_DIMENSIONS_EXT
-#endif
-#ifndef GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT
-#define GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT_EXT
-#endif
-#ifndef GL_FRAMEBUFFER_UNSUPPORTED
-#define GL_FRAMEBUFFER_UNSUPPORTED GL_FRAMEBUFFER_UNSUPPORTED_EXT
-#endif
-
 bool gl_init_hw_render(gl_t *gl, unsigned width, unsigned height)
 {
    RARCH_LOG("[GL]: Initializing HW render (%u x %u).\n", width, height);
@@ -697,6 +706,12 @@ bool gl_init_hw_render(gl_t *gl, unsigned width, unsigned height)
    pglGenFramebuffers(TEXTURES, gl->hw_render_fbo);
 
    bool depth = g_extern.system.hw_render_callback.depth;
+   bool stencil = g_extern.system.hw_render_callback.stencil;
+
+#ifdef HAVE_OPENGLES2
+   if (stencil && !gl_query_extension("OES_packed_depth_stencil"))
+      return false;
+#endif
 
    if (depth)
    {
@@ -711,29 +726,47 @@ bool gl_init_hw_render(gl_t *gl, unsigned width, unsigned height)
 
       if (depth)
       {
-         pglBindRenderbuffer(GL_RENDERBUFFER, gl->hw_render_depth[i]);
-         pglRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT16,
-               width, height);
-         pglBindRenderbuffer(GL_RENDERBUFFER, 0);
-         pglFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,
-               GL_RENDERBUFFER, gl->hw_render_depth[i]);
+         GLenum component = GL_DEPTH_COMPONENT16;
+         GLenum attachment = GL_DEPTH_ATTACHMENT;
+         if (stencil)
+         {
+#ifdef HAVE_OPENGLES2
+            // GLES2 is a bit weird, as always. :P
+            pglBindRenderbuffer(GL_RENDERBUFFER, gl->hw_render_depth[i]);
+            pglRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8_OES,
+                  width, height);
+            pglBindRenderbuffer(GL_RENDERBUFFER, 0);
+
+            // There's no GL_DEPTH_STENCIL_ATTACHMENT like in desktop GL.
+            pglFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,
+                  GL_RENDERBUFFER, gl->hw_render_depth[i]);
+            pglFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT,
+                  GL_RENDERBUFFER, gl->hw_render_depth[i]);
+#else
+            // We use ARB FBO extensions, no need to check.
+            pglBindRenderbuffer(GL_RENDERBUFFER, gl->hw_render_depth[i]);
+            pglRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8,
+                  width, height);
+            pglBindRenderbuffer(GL_RENDERBUFFER, 0);
+            pglFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT,
+                  GL_RENDERBUFFER, gl->hw_render_depth[i]);
+#endif
+         }
+         else
+         {
+            pglBindRenderbuffer(GL_RENDERBUFFER, gl->hw_render_depth[i]);
+            pglRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT16,
+                  width, height);
+            pglBindRenderbuffer(GL_RENDERBUFFER, 0);
+            pglFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,
+                  GL_RENDERBUFFER, gl->hw_render_depth[i]);
+         }
       }
 
       GLenum status = pglCheckFramebufferStatus(GL_FRAMEBUFFER);
       if (status != GL_FRAMEBUFFER_COMPLETE)
       {
-         RARCH_ERR("[GL]: Failed to create HW render FBO #%u.\n", i);
-         const char *err = NULL;
-         switch (status)
-         {
-
-            case GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT: err = "Incomplete Attachment"; break;
-            case GL_FRAMEBUFFER_INCOMPLETE_DIMENSIONS: err = "Incomplete Dimensions"; break;
-            case GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT: err = "Missing Attachment"; break;
-            case GL_FRAMEBUFFER_UNSUPPORTED: err = "Unsupported"; break;
-            default: err = "Unknown"; break;
-         }
-         RARCH_ERR("[GL]: Error: %s.\n", err);
+         RARCH_ERR("[GL]: Failed to create HW render FBO #%u, error: 0x%u.\n", i, (unsigned)status);
          return false;
       }
    }
@@ -1380,8 +1413,11 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
    RARCH_PERFORMANCE_START(frame_run);
 
    gl_t *gl = (gl_t*)data;
-   uint64_t lifecycle_mode_state = g_extern.lifecycle_mode_state;
-   (void)lifecycle_mode_state;
+
+#ifndef HAVE_OPENGLES
+   if (gl->core_context)
+      pglBindVertexArray(gl->vao);
+#endif
 
    if (gl->shader)
       gl->shader->use(1);
@@ -1543,6 +1579,11 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
    }
 #endif
 
+#ifndef HAVE_OPENGLES
+   if (gl->core_context)
+      pglBindVertexArray(0);
+#endif
+
    return true;
 }
 
@@ -1614,11 +1655,18 @@ static void gl_free(void *data)
 #endif
 #endif
 
+#ifndef HAVE_OPENGLES
+   if (gl->core_context)
+   {
+      pglBindVertexArray(0);
+      pglDeleteVertexArrays(1, &gl->vao);
+   }
+#endif
+
    context_destroy_func();
 
    free(gl->empty_buf);
    free(gl->conv_buffer);
-
    free(gl);
 }
 
@@ -1638,6 +1686,17 @@ static bool resolve_extensions(gl_t *gl)
    // Need to load dynamically :(
    if (!load_gl_proc_win32(gl))
       return false;
+#endif
+
+#ifndef HAVE_OPENGLES
+   gl->core_context = g_extern.system.hw_render_callback.context_type == RETRO_HW_CONTEXT_OPENGL_CORE;
+   RARCH_LOG("[GL]: Using Core GL context.\n");
+   if (gl->core_context &&
+         !load_vao_proc(gl))
+   {
+      RARCH_ERR("[GL]: Failed to init VAOs.\n");
+      return false;
+   }
 #endif
 
 #ifdef HAVE_GL_SYNC
@@ -1779,6 +1838,8 @@ static void gl_init_pbo_readback(void *data)
 
 static const gfx_ctx_driver_t *gl_get_context(void)
 {
+   unsigned major = g_extern.system.hw_render_callback.version_major;
+   unsigned minor = g_extern.system.hw_render_callback.version_minor;
 #ifdef HAVE_OPENGLES
    enum gfx_ctx_api api = GFX_CTX_OPENGL_ES_API;
    const char *api_name = "OpenGL ES";
@@ -1792,7 +1853,7 @@ static const gfx_ctx_driver_t *gl_get_context(void)
       const gfx_ctx_driver_t *ctx = gfx_ctx_find_driver(g_settings.video.gl_context);
       if (ctx)
       {
-         if (!ctx->bind_api(api))
+         if (!ctx->bind_api(api, major, minor))
          {
             RARCH_ERR("Failed to bind API %s to context %s.\n", api_name, g_settings.video.gl_context);
             return NULL;
@@ -1813,7 +1874,7 @@ static const gfx_ctx_driver_t *gl_get_context(void)
       return ctx;
    }
    else
-      return gfx_ctx_init_first(api);
+      return gfx_ctx_init_first(api, major, minor);
 }
 
 static void *gl_init(const video_info_t *video, const input_driver_t **input, void **input_data)
@@ -1919,7 +1980,8 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
 #ifdef HAVE_OPENGLES2
    gl->hw_render_use = g_extern.system.hw_render_callback.context_type == RETRO_HW_CONTEXT_OPENGLES2;
 #else
-   gl->hw_render_use = g_extern.system.hw_render_callback.context_type == RETRO_HW_CONTEXT_OPENGL;
+   gl->hw_render_use = g_extern.system.hw_render_callback.context_type == RETRO_HW_CONTEXT_OPENGL ||
+      g_extern.system.hw_render_callback.context_type == RETRO_HW_CONTEXT_OPENGL_CORE;
 #endif
 #endif
 
