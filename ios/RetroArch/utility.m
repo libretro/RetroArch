@@ -13,6 +13,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "file.h"
 #import "views.h"
 
 // Fetch a value from a config file, returning defaultValue if the value is not present
@@ -25,6 +26,15 @@ NSString* ios_get_value_from_config(config_file_t* config, NSString* name, NSStr
    NSString* result = data ? [NSString stringWithUTF8String:data] : defaultValue;
    free(data);
    return result;
+}
+
+// Ensures a directory exists and has correct permissions
+bool path_make_and_check_directory(const char* path, mode_t mode, int amode)
+{
+   if (!path_is_directory(path) && mkdir(path, mode) != 0)
+      return false;
+   
+   return access(path, amode) == 0;
 }
 
 // Simple class to reduce code duplication for fixed table views

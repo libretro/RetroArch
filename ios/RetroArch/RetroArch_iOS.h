@@ -26,9 +26,6 @@
 - (void)refreshConfig;
 - (void)refreshSystemConfig;
 
-- (IBAction)startBluetooth;
-- (IBAction)stopBluetooth;
-
 @property (strong, nonatomic) NSString* documentsDirectory; // e.g. /var/mobile/Documents
 @property (strong, nonatomic) NSString* systemDirectory;    // e.g. /var/mobile/Documents/.RetroArch
 @property (strong, nonatomic) NSString* systemConfigPath;   // e.g. /var/mobile/Documents/.RetroArch/frontend.cfg
@@ -37,3 +34,4 @@
 
 // utility.m
 extern NSString* ios_get_value_from_config(config_file_t* config, NSString* name, NSString* defaultValue);
+extern bool path_make_and_check_directory(const char* path, mode_t mode, int amode);

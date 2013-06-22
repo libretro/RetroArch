@@ -13,7 +13,6 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <sys/stat.h>
 #include <pthread.h>
 #include <string.h>
 
@@ -36,14 +35,6 @@ static ios_input_data_t g_input_data;
 static bool enable_btstack;
 static bool use_icade;
 static uint32_t icade_buttons;
-
-bool path_make_and_check_directory(const char* path, mode_t mode, int amode)
-{
-   if (!path_is_directory(path) && mkdir(path, mode) != 0)
-      return false;
-   
-   return access(path, amode) == 0;
-}
 
 // Input helpers
 void ios_copy_input(ios_input_data_t* data)
@@ -445,10 +436,7 @@ static void event_reload_config(void* userdata)
       config_get_bool(conf, "ios_use_icade", &use_icade);
       config_get_bool(conf, "ios_use_btstack", &enable_btstack);
       
-      if (enable_btstack)
-         [self startBluetooth];
-      else
-         [self stopBluetooth];
+      btstack_set_poweron(enable_btstack);
       
       config_file_free(conf);
    }
@@ -540,19 +528,6 @@ static void event_reload_config(void* userdata)
 - (IBAction)showSystemSettings
 {
    [self pushViewController:[RASystemSettingsList new] animated:YES];
-}
-
-#pragma mark Bluetooth Helpers
-- (IBAction)startBluetooth
-{
-   if (btstack_is_loaded() && !btstack_is_running())
-      btstack_start();
-}
-
-- (IBAction)stopBluetooth
-{
-   if (btstack_is_loaded())
-      btstack_stop();
 }
 
 @end

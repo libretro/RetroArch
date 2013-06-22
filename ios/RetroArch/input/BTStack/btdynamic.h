@@ -20,10 +20,8 @@
 #include "btstack/utils.h"
 #include "btstack/btstack.h"
 
-bool btstack_load();
-void btstack_start();
-void btstack_stop();
-bool btstack_is_loaded();
+bool btstack_try_load();
+void btstack_set_poweron(bool on);
 bool btstack_is_running();
 
 #ifndef BUILDING_BTDYNAMIC

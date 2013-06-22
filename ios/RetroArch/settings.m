@@ -351,7 +351,7 @@ static NSArray* build_input_port_group(config_file_t* config, uint32_t player)
       [NSArray arrayWithObjects:@"Bluetooth",
          // TODO: Note that with this turned off the native bluetooth is expected to be a real keyboard
          boolean_setting(config, @"ios_use_icade", @"Native BT is iCade", @"false"),
-         btstack_is_loaded() ? boolean_setting(config, @"ios_use_btstack", @"Enable BTstack", @"false") : nil,
+         btstack_try_load() ? boolean_setting(config, @"ios_use_btstack", @"Enable BTstack", @"false") : nil,
          nil],
       [NSArray arrayWithObjects:@"Orientations",
          boolean_setting(config, @"ios_allow_portrait", @"Portrait", @"true"),
@@ -392,16 +392,9 @@ static NSArray* build_input_port_group(config_file_t* config, uint32_t player)
    if ([@"Diagnostic Log" isEqualToString:setting.label])
       [[RetroArch_iOS get] pushViewController:[RALogView new] animated:YES];
    else if ([@"Enable BTstack" isEqualToString:setting.label])
-   {
-      if ([@"true" isEqualToString:setting.value])
-         [RetroArch_iOS.get startBluetooth];
-      else
-         [RetroArch_iOS.get stopBluetooth];
-   }
+      btstack_set_poweron([setting.value isEqualToString:@"true"]);
    else if([@"Global Core Config" isEqualToString:setting.label])
-   {
       [RetroArch_iOS.get pushViewController:[[RASettingsList alloc] initWithModule:nil] animated:YES];
-   }
    else
    {
       RAModuleInfo* data = (RAModuleInfo*)objc_getAssociatedObject(setting, "USERDATA");

@@ -64,7 +64,7 @@ static bool btstack_loaded;
 static bool btstack_open;
 static bool btstack_poweron;
 
-bool btstack_load()
+bool btstack_try_load()
 {
    assert(sizeof(void**) == sizeof(void(*)()));
 
@@ -108,47 +108,28 @@ bool btstack_load()
    return true;
 }
 
-void btstack_start()
+void btstack_set_poweron(bool on)
 {
-   if (!btstack_load())
+   if (!btstack_try_load())
       return;
-   
-   if (!btstack_open)
+
+   if (!btstack_open && bt_open_ptr())
    {
-      if (bt_open_ptr())
-      {
-         ios_add_log_message("BTstack: bt_open failed");
-         btstack_loaded = false;
-         return;
-      }
+      ios_add_log_message("BTstack: bt_open failed");
+      btstack_loaded = false;
+      return;
    }
   
    btstack_open = true;
-   if (!btstack_poweron)
+   if (on != btstack_poweron)
    {
-      ios_add_log_message("BTstack: Turning on");
-      bt_send_cmd_ptr(btstack_set_power_mode_ptr, HCI_POWER_ON);
-      btstack_poweron = true;
-   }
-}
-
-void btstack_stop()
-{
-   if (btstack_load() && btstack_open && btstack_poweron)
-   {
-      ios_add_log_message("BTstack: Turning off");
-      bt_send_cmd_ptr(btstack_set_power_mode_ptr, HCI_POWER_OFF);
-      btstack_poweron = false;
-   }
-}
-
-bool btstack_is_loaded()
-{
-   return btstack_load();
+      btstack_poweron = on;
+      ios_add_log_message("BTstack: Turning %s", on ? "on" : "off");
+      bt_send_cmd_ptr(btstack_set_power_mode_ptr, on ? HCI_POWER_ON : HCI_POWER_OFF);
+   }  
 }
 
 bool btstack_is_running()
 {
    return btstack_poweron;
 }
-
