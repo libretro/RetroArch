@@ -488,9 +488,7 @@ extern driver_t driver;
 extern const audio_driver_t audio_rsound;
 extern const audio_driver_t audio_oss;
 extern const audio_driver_t audio_alsa;
-#ifndef __QNX__
 extern const audio_driver_t audio_alsathread;
-#endif
 extern const audio_driver_t audio_roar;
 extern const audio_driver_t audio_openal;
 extern const audio_driver_t audio_opensl;
