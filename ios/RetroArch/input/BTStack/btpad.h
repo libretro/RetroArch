@@ -18,6 +18,8 @@
 
 #include "btstack/btstack.h"
 
+void btpad_set_inquiry_state(bool on);
+
 uint32_t btpad_get_buttons(uint32_t slot);
 int16_t btpad_get_axis(uint32_t slot, unsigned axis);
 

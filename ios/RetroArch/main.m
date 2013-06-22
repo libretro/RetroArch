@@ -361,6 +361,8 @@ static void event_reload_config(void* userdata)
       [self pushViewController:RAGameView.get animated:NO];
       _isRunning = true;
 
+      btpad_set_inquiry_state(false);
+
       struct rarch_main_wrap* load_data = malloc(sizeof(struct rarch_main_wrap));
       memset(load_data, 0, sizeof(struct rarch_main_wrap));
       load_data->libretro_path = strdup(_module.path.UTF8String);
@@ -393,6 +395,8 @@ static void event_reload_config(void* userdata)
       //
       [self popToViewController:[RAGameView get] animated:NO];
       [self popViewControllerAnimated:NO];
+      
+      btpad_set_inquiry_state(true);
    }
    
    _module = nil;
@@ -470,6 +474,8 @@ static void event_reload_config(void* userdata)
    {
       _isPaused = true;
       [[RAGameView get] openPauseMenu];
+      
+      btpad_set_inquiry_state(true);
    }
 }
 
@@ -515,6 +521,8 @@ static void event_reload_config(void* userdata)
 {
    [[RAGameView get] closePauseMenu];
    _isPaused = false;
+   
+   btpad_set_inquiry_state(false);
 }
 
 - (IBAction)closeGamePressed:(id)sender

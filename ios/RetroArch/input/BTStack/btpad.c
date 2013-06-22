@@ -29,7 +29,36 @@
 static btpad_connection_t btpad_connection[MAX_PADS];
 static struct btpad_interface* btpad_iface[MAX_PADS];
 static void* btpad_device[MAX_PADS];
+static bool inquiry_off;
+static bool inquiry_running;
 
+// External interface (MAIN THREAD ONLY)
+void btpad_set_inquiry_state(bool on)
+{
+   inquiry_off = !on;
+
+   if (!inquiry_off && !inquiry_running)
+      btpad_queue_hci_inquiry(HCI_INQUIRY_LAP, 3, 1);      
+}
+
+// MAIN THREAD ONLY
+uint32_t btpad_get_buttons(uint32_t slot)
+{
+   if (slot < MAX_PADS && btpad_device[slot] && btpad_iface[slot])
+      return btpad_iface[slot]->get_buttons(btpad_device[slot]);
+
+   return 0;
+}
+
+int16_t btpad_get_axis(uint32_t slot, unsigned axis)
+{
+   if (slot < MAX_PADS && btpad_device[slot] && btpad_iface[slot])
+      return btpad_iface[slot]->get_axis(btpad_device[slot], axis);
+
+   return 0;
+}
+
+// Internal interface:
 static int32_t btpad_find_slot_for(uint16_t handle, bd_addr_t address)
 {
    for (int i = 0; i < MAX_PADS; i ++)
@@ -56,23 +85,6 @@ static int32_t btpad_find_slot_with_state(enum btpad_state state)
          return i;
 
    return -1;
-}
-
-// MAIN THREAD ONLY
-uint32_t btpad_get_buttons(uint32_t slot)
-{
-   if (slot < MAX_PADS && btpad_device[slot] && btpad_iface[slot])
-      return btpad_iface[slot]->get_buttons(btpad_device[slot]);
-
-   return 0;
-}
-
-int16_t btpad_get_axis(uint32_t slot, unsigned axis)
-{
-   if (slot < MAX_PADS && btpad_device[slot] && btpad_iface[slot])
-      return btpad_iface[slot]->get_axis(btpad_device[slot], axis);
-
-   return 0;
 }
 
 static void btpad_disconnect_pad(uint32_t slot)
@@ -148,21 +160,6 @@ void btpad_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet
          }
          break;
 
-         case L2CAP_EVENT_SERVICE_REGISTERED:
-         {
-            uint32_t psm = READ_BT_16(packet, 3);
-
-            if (!packet[2] && psm == PSM_HID_INTERRUPT)
-               ios_add_log_message("BTpad: HID INTERRUPT service registered");
-            else if (!packet[2] && psm == PSM_HID_CONTROL)
-               ios_add_log_message("BTpad: HID CONTROL service registered");
-            else if (!packet[2])
-               ios_add_log_message("BTpad: Unknown service registered (PSM: %02X)", psm);
-            else
-               ios_add_log_message("BTpad: Got failed 'Service Registered' event (PSM: %02X, Status: %02X)", psm, packet[2]);
-         }
-         break;
-
          case HCI_EVENT_INQUIRY_RESULT:
          {
             if (packet[2])
@@ -190,7 +187,11 @@ void btpad_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet
          case HCI_EVENT_INQUIRY_COMPLETE:
          {
             // TODO: Check performance and battery effect of this
-            btpad_queue_hci_inquiry(HCI_INQUIRY_LAP, 3, 1);
+
+            inquiry_running = !inquiry_off;
+
+            if (inquiry_running)
+               btpad_queue_hci_inquiry(HCI_INQUIRY_LAP, 3, 1);
          }
          break;
 
@@ -314,6 +315,13 @@ void btpad_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet
             }
             else
                ios_add_log_message("BTpad: Got failed 'Disconnection Complete' event (Status: %02X)", packet[2]);
+         }
+         break;
+
+         case L2CAP_EVENT_SERVICE_REGISTERED:
+         {
+            if (!packet[2])
+               ios_add_log_message("BTpad: Got failed 'Service Registered' event (PSM: %02X, Status: %02X)", READ_BT_16(packet, 3), packet[2]);
          }
          break;
       }
