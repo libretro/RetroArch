@@ -19,6 +19,16 @@
 #include "file.h"
 #import "views.h"
 
+void ios_display_alert(NSString* message, NSString* title)
+{
+   UIAlertView* alert = [[UIAlertView alloc] initWithTitle:title ? title : @"RetroArch"
+                                             message:message
+                                             delegate:nil
+                                             cancelButtonTitle:@"OK"
+                                             otherButtonTitles:nil];
+   [alert show];
+}
+
 // Little nudge to prevent stale values when reloading the confg file
 void ios_clear_config_hack()
 {

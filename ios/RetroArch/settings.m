@@ -747,9 +747,6 @@ static NSArray* build_input_port_group(config_file_t* config, uint32_t player)
 
 - (void)checkInput
 {
-   ios_input_data_t data;
-   ios_copy_input(&data);
-
    // Keyboard
    static const struct
    {
@@ -808,7 +805,7 @@ static NSArray* build_input_port_group(config_file_t* config, uint32_t player)
    
    for (int i = 0; ios_key_name_map[i].hid_id; i++)
    {
-      if (data.keys[ios_key_name_map[i].hid_id])
+      if (g_current_input_data.keys[ios_key_name_map[i].hid_id])
       {
          _value.msubValues[0] = [NSString stringWithUTF8String:ios_key_name_map[i].keyname];
          [self finish];
@@ -817,9 +814,9 @@ static NSArray* build_input_port_group(config_file_t* config, uint32_t player)
    }
 
    // Pad Buttons
-   for (int i = 0; data.pad_buttons[_value.player] && i < sizeof(data.pad_buttons[_value.player]) * 8; i++)
+   for (int i = 0; g_current_input_data.pad_buttons[_value.player] && i < sizeof(g_current_input_data.pad_buttons[_value.player]) * 8; i++)
    {
-      if (data.pad_buttons[_value.player] & (1 << i))
+      if (g_current_input_data.pad_buttons[_value.player] & (1 << i))
       {
          _value.msubValues[1] = [NSString stringWithFormat:@"%d", i];
          [self finish];
@@ -830,7 +827,7 @@ static NSArray* build_input_port_group(config_file_t* config, uint32_t player)
    // Pad Axis
    for (int i = 0; i < 4; i++)
    {
-      int16_t value = data.pad_axis[_value.player][i];
+      int16_t value = g_current_input_data.pad_axis[_value.player][i];
       
       if (abs(value) > 0x1000)
       {

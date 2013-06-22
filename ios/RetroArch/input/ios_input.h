@@ -39,9 +39,11 @@ typedef struct
    int16_t pad_axis[MAX_PADS][4];
 } ios_input_data_t;
 
-extern ios_input_data_t g_ios_input_data;
+extern ios_input_data_t g_current_input_data; //< Main thread data
+extern ios_input_data_t g_polled_input_data;  //< Game thread data
 
-// Defined in main.m, must be called on the emu thread in a dispatch_sync block
-void ios_copy_input(ios_input_data_t* data);
+// Main thread only
+void ios_input_enable_icade(bool on);
+void ios_input_handle_key_event(unsigned keycode, bool down);
 
 #endif

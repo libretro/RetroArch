@@ -82,30 +82,34 @@ static void btpad_wii_packet_handler(struct wiimote_t* device, uint8_t packet_ty
          case WM_RPT_BTN:
          {
             wiimote_pressed_buttons(device, msg);
-            return;
+            break;
          }
 
          case WM_RPT_READ:
          {
             wiimote_pressed_buttons(device, msg);
             wiimote_handshake(device, WM_RPT_READ, msg + 5, ((msg[2] & 0xF0) >> 4) + 1);
-            return;
+            break;
          }
 
          case WM_RPT_CTRL_STATUS:
          {
             wiimote_pressed_buttons(device, msg);
             wiimote_handshake(device,WM_RPT_CTRL_STATUS,msg,-1);
-            return;
+            break;
          }
 
          case WM_RPT_BTN_EXP:
          {
             wiimote_pressed_buttons(device, msg);
             wiimote_handle_expansion(device, msg+2);
-            return;
+            break;
          }
       }
+
+      g_current_input_data.pad_buttons[device->unid] = btpad_wii_get_buttons(device);
+      for (int i = 0; i < 4; i ++)
+         g_current_input_data.pad_axis[device->unid][i] = btpad_wii_get_axis(device, i);
    }
 }
 

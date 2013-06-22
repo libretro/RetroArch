@@ -170,9 +170,6 @@ void ios_flip_game_view()
    {
       dispatch_sync(dispatch_get_main_queue(), ^{
          [g_view display];
-
-         // HACK: While here, copy input structures
-         ios_copy_input(&g_ios_input_data);
       });
       g_fast_forward_skips = g_is_syncing ? 0 : 3;
    }

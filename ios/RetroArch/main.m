@@ -30,73 +30,24 @@
 
 //#define HAVE_DEBUG_FILELOG
 
-static ios_input_data_t g_input_data;
-
-static bool enable_btstack;
-static bool use_icade;
-static uint32_t icade_buttons;
-
-// Input helpers
-void ios_copy_input(ios_input_data_t* data)
-{
-   // Call only from main thread
-   memcpy(data, &g_input_data, sizeof(g_input_data));
-
-   for (int i = 0; i < MAX_PADS; i ++)
-   {
-      data->pad_buttons[i] = btpad_get_buttons(i) | (((i == 0) && use_icade) ? icade_buttons : 0);
-   
-      for (int j = 0; j < 4; j ++)
-         data->pad_axis[i][j] = btpad_get_axis(i, j);
-   }
-}
-
+// Input helpers: This is kept here because it needs objective-c
 static void handle_touch_event(NSArray* touches)
 {
    const int numTouches = [touches count];
    const float scale = [[UIScreen mainScreen] scale];
 
-   g_input_data.touch_count = 0;
+   g_current_input_data.touch_count = 0;
    
-   for(int i = 0; i != numTouches && g_input_data.touch_count < MAX_TOUCHES; i ++)
+   for(int i = 0; i != numTouches && g_current_input_data.touch_count < MAX_TOUCHES; i ++)
    {
       UITouch* touch = [touches objectAtIndex:i];
       const CGPoint coord = [touch locationInView:touch.view];
 
       if (touch.phase != UITouchPhaseEnded && touch.phase != UITouchPhaseCancelled)
       {
-         g_input_data.touches[g_input_data.touch_count   ].screen_x = coord.x * scale;
-         g_input_data.touches[g_input_data.touch_count ++].screen_y = coord.y * scale;
+         g_current_input_data.touches[g_current_input_data.touch_count   ].screen_x = coord.x * scale;
+         g_current_input_data.touches[g_current_input_data.touch_count ++].screen_y = coord.y * scale;
       }
-   }
-}
-
-static void handle_icade_event(unsigned keycode)
-{
-   static const struct
-   {
-      bool up;
-      int button;
-   }  icade_map[0x20] =
-   {
-      { false, -1 }, { false, -1 }, { false, -1 }, { false, -1 }, // 0
-      { false,  2 }, { false, -1 }, { true ,  3 }, { false,  3 }, // 4
-      { true ,  0 }, { true,   5 }, { true ,  7 }, { false,  8 }, // 8
-      { false,  6 }, { false,  9 }, { false, 10 }, { false, 11 }, // C
-      { true ,  6 }, { true ,  9 }, { false,  7 }, { true,  10 }, // 0
-      { true ,  2 }, { true ,  8 }, { false, -1 }, { true ,  4 }, // 4
-      { false,  5 }, { true , 11 }, { false,  0 }, { false,  1 }, // 8
-      { false,  4 }, { true ,  1 }, { false, -1 }, { false, -1 }  // C
-   };
-      
-   if ((keycode < 0x20) && (icade_map[keycode].button >= 0))
-   {
-      const int button = icade_map[keycode].button;
-      
-      if (icade_map[keycode].up)
-         icade_buttons &= ~(1 << button);
-      else
-         icade_buttons |=  (1 << button);
    }
 }
 
@@ -121,14 +72,7 @@ static void handle_icade_event(unsigned keycode)
       int eventType = eventMem ? *(int*)&eventMem[8] : 0;
 
       if (eventType == GSEVENT_TYPE_KEYDOWN || eventType == GSEVENT_TYPE_KEYUP)
-      {
-         uint16_t key = *(uint16_t*)&eventMem[0x3C];
-
-         if (!use_icade && key < MAX_KEYS)
-            g_input_data.keys[key] = (eventType == GSEVENT_TYPE_KEYDOWN);
-         else if (eventType == GSEVENT_TYPE_KEYDOWN)
-            handle_icade_event(key);
-      }
+         ios_input_handle_key_event(*(uint16_t*)&eventMem[0x3C], eventType == GSEVENT_TYPE_KEYDOWN);
 
       CFBridgingRelease(eventMem);
    }
@@ -204,21 +148,6 @@ static void event_reload_config(void* userdata)
    RAModuleInfo* _module;
 }
 
-+ (void)displayErrorMessage:(NSString*)message
-{
-   [RetroArch_iOS displayErrorMessage:message withTitle:@"RetroArch"];
-}
-
-+ (void)displayErrorMessage:(NSString*)message withTitle:(NSString*)title
-{
-   UIAlertView* alert = [[UIAlertView alloc] initWithTitle:title
-                                             message:message
-                                             delegate:nil
-                                             cancelButtonTitle:@"OK"
-                                             otherButtonTitles:nil];
-   [alert show];
-}
-
 + (RetroArch_iOS*)get
 {
    return (RetroArch_iOS*)[[UIApplication sharedApplication] delegate];
@@ -240,9 +169,9 @@ static void event_reload_config(void* userdata)
    self.systemConfigPath = [self.systemDirectory stringByAppendingPathComponent:@"frontend.cfg"];
 
    if (!path_make_and_check_directory(self.documentsDirectory.UTF8String, 0755, R_OK | W_OK | X_OK))
-      [RetroArch_iOS displayErrorMessage:[NSString stringWithFormat:@"Failed to create or access base directory: %@", self.documentsDirectory]];
+      ios_display_alert([NSString stringWithFormat:@"Failed to create or access base directory: %@", self.documentsDirectory], 0);
    else if (!path_make_and_check_directory(self.systemDirectory.UTF8String, 0755, R_OK | W_OK | X_OK))
-      [RetroArch_iOS displayErrorMessage:[NSString stringWithFormat:@"Failed to create or access system directory: %@", self.systemDirectory]];
+      ios_display_alert([NSString stringWithFormat:@"Failed to create or access system directory: %@", self.systemDirectory], 0);
    else
    {
       [self pushViewController:[RADirectoryList directoryListAtBrowseRoot] animated:YES];
@@ -251,7 +180,7 @@ static void event_reload_config(void* userdata)
    
    // Warn if there are no cores present
    if ([RAModuleInfo getModules].count == 0)
-      [RetroArch_iOS displayErrorMessage:@"No libretro cores were found. You will not be able to play any games."];
+      ios_display_alert(@"No libretro cores were found. You will not be able to play any games.", 0);
 }
 
 - (void)applicationWillEnterForeground:(UIApplication *)application
@@ -357,7 +286,7 @@ static void event_reload_config(void* userdata)
 - (void)rarchExited:(BOOL)successful
 {
    if (!successful)
-      [RetroArch_iOS displayErrorMessage:@"Failed to load game."];
+      ios_display_alert(@"Failed to load game.", 0);
 
    if (_isRunning)
    {
@@ -409,10 +338,9 @@ static void event_reload_config(void* userdata)
       }
       
       //
-      config_get_bool(conf, "ios_use_icade", &use_icade);
-      config_get_bool(conf, "ios_use_btstack", &enable_btstack);
-      
-      btstack_set_poweron(enable_btstack);
+      bool val;
+      ios_input_enable_icade(config_get_bool(conf, "ios_use_icade", &val) && val);
+      btstack_set_poweron(config_get_bool(conf, "ios_use_btstack", &val) && val);
       
       config_file_free(conf);
    }

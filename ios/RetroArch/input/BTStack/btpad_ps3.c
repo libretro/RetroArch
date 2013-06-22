@@ -125,6 +125,9 @@ static void btpad_ps3_packet_handler(struct btpad_ps3_data* device, uint8_t pack
       }
    
       memcpy(device->data, packet, size);
+      g_current_input_data.pad_buttons[device->slot] = btpad_ps3_get_buttons(device);
+      for (int i = 0; i < 4; i ++)
+         g_current_input_data.pad_axis[device->slot][i] = btpad_ps3_get_axis(device, i);
    }
 }
 
