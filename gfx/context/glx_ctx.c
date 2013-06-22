@@ -39,6 +39,13 @@ static unsigned g_screen;
 
 static GLXContext g_ctx;
 static GLXFBConfig g_fbc;
+static unsigned g_major;
+static unsigned g_minor;
+static bool g_core;
+
+typedef GLXContext (*glXCreateContextAttribsARBProc)(Display*,
+      GLXFBConfig, GLXContext, Bool, const int*);
+static glXCreateContextAttribsARBProc glx_create_context_attribs;
 
 static XF86VidModeModeInfo g_desktop_mode;
 static bool g_should_reset_mode;
@@ -207,11 +214,26 @@ static bool gfx_ctx_init(void)
    if (!g_dpy)
       goto error;
 
-   // GLX 1.3+ required.
    int major, minor;
    glXQueryVersion(g_dpy, &major, &minor);
-   if (major < 1 || (major == 1 && minor < 3))
-      goto error;
+   if (g_major * 1000 + g_minor >= 3001) // Core context
+   {
+      g_core = true;
+      // GLX 1.4+ required.
+      if ((major * 1000 + minor) < 1004)
+         goto error;
+
+      glx_create_context_attribs = (glXCreateContextAttribsARBProc)glXGetProcAddress((const GLubyte*)"glXCreateContextAttribsARB");
+      if (!glx_create_context_attribs)
+         goto error;
+   }
+   else
+   {
+      g_core = false;
+      // GLX 1.3+ required.
+      if ((major * 1000 + minor) < 1003)
+         goto error;
+   }
 
    int nelements;
    fbcs = glXChooseFBConfig(g_dpy, DefaultScreen(g_dpy),
@@ -339,7 +361,20 @@ static bool gfx_ctx_set_video_mode(
    XEvent event;
    XIfEvent(g_dpy, &event, glx_wait_notify, NULL);
 
-   g_ctx = glXCreateNewContext(g_dpy, g_fbc, GLX_RGBA_TYPE, 0, True);
+   if (g_core)
+   {
+      const int attribs[] = {
+         GLX_CONTEXT_MAJOR_VERSION_ARB, g_major,
+         GLX_CONTEXT_MINOR_VERSION_ARB, g_minor,
+         GLX_CONTEXT_PROFILE_MASK_ARB, GLX_CONTEXT_CORE_PROFILE_BIT_ARB,
+         None,
+      };
+
+      g_ctx = glx_create_context_attribs(g_dpy, g_fbc, NULL, True, attribs);
+   }
+   else
+      g_ctx = glXCreateNewContext(g_dpy, g_fbc, GLX_RGBA_TYPE, 0, True);
+
    if (!g_ctx)
    {
       RARCH_ERR("[GLX]: Failed to create new context.\n");
@@ -460,6 +495,8 @@ static void gfx_ctx_destroy(void)
 
    g_inited = false;
    g_pglSwapInterval = NULL;
+   g_major = g_minor = 0;
+   g_core = false;
 }
 
 static void gfx_ctx_input_driver(const input_driver_t **input, void **input_data)
@@ -486,8 +523,10 @@ static gfx_ctx_proc_t gfx_ctx_get_proc_address(const char *symbol)
    return glXGetProcAddress((const GLubyte*)symbol);
 }
 
-static bool gfx_ctx_bind_api(enum gfx_ctx_api api)
+static bool gfx_ctx_bind_api(enum gfx_ctx_api api, unsigned major, unsigned minor)
 {
+   g_major = major;
+   g_minor = minor;
    return api == GFX_CTX_OPENGL_API;
 }
 
