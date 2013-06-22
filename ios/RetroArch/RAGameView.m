@@ -81,21 +81,21 @@ static UIView* g_pause_indicator_view;
 - (void)openPauseMenu
 {
    // Setup save state selector
-   UISegmentedControl* stateSelect = (UISegmentedControl*)[g_pause_view viewWithTag:1];
+   UISegmentedControl* stateSelect = (UISegmentedControl*)[g_pause_view viewWithTag:10];
    stateSelect.selectedSegmentIndex = (g_extern.state_slot < 10) ? g_extern.state_slot : -1;
 
    g_extern.is_paused = true;
 
    //
    [UIView animateWithDuration:0.2
-      animations:^ { g_pause_view.alpha = 1.0f; }
-      completion:^(BOOL finished){}];
+      animations:^{ g_pause_view.alpha = 1.0f; }
+      completion:^(BOOL finished) { }];
 }
 
 - (void)closePauseMenu
 {
    [UIView animateWithDuration:0.2
-      animations:^ { g_pause_view.alpha = 0.0f; }
+      animations:^{ g_pause_view.alpha = 0.0f; }
       completion:^(BOOL finished) { }
    ];
    
@@ -105,9 +105,9 @@ static UIView* g_pause_indicator_view;
 - (void)hidePauseButton
 {
    [UIView animateWithDuration:0.2
-      animations:^ { g_pause_indicator_view.alpha = ALMOST_INVISIBLE; }
-         completion:^(BOOL finished) { }
-      ];
+      animations:^{ g_pause_indicator_view.alpha = ALMOST_INVISIBLE; }
+      completion:^(BOOL finished) { }
+   ];
 }
 
 - (void)suspend

@@ -33,5 +33,6 @@
 @end
 
 // utility.m
-extern NSString* ios_get_value_from_config(config_file_t* config, NSString* name, NSString* defaultValue);
+extern void ios_clear_config_hack();
 extern bool path_make_and_check_directory(const char* path, mode_t mode, int amode);
+extern NSString* ios_get_value_from_config(config_file_t* config, NSString* name, NSString* defaultValue);

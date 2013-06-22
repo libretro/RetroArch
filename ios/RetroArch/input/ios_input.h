@@ -44,7 +44,4 @@ extern ios_input_data_t g_ios_input_data;
 // Defined in main.m, must be called on the emu thread in a dispatch_sync block
 void ios_copy_input(ios_input_data_t* data);
 
-// Called from main.m, defined in ios_input.c
-void ios_add_key_event(bool down, unsigned keycode, uint32_t character, uint16_t keyModifiers);
-
 #endif

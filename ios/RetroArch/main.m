@@ -154,19 +154,18 @@ int main(int argc, char *argv[])
 extern void* rarch_main_ios(void* args);
 extern void ios_frontend_post_event(void (*fn)(void*), void* userdata);
 
-static void event_game_reset(void* userdata)
-{
-   rarch_game_reset();
-}
 
-static void event_load_state(void* userdata)
+// These are based on the tag property of the button used to trigger the event
+enum basic_event_t { RESET = 1, LOAD_STATE = 2, SAVE_STATE = 3, QUIT = 4 };
+static void event_basic_command(void* userdata)
 {
-   rarch_load_state();
-}
-
-static void event_save_state(void* userdata)
-{
-   rarch_save_state();
+   switch ((enum basic_event_t)userdata)
+   {
+      case RESET:      rarch_game_reset(); return;
+      case LOAD_STATE: rarch_load_state(); return;
+      case SAVE_STATE: rarch_save_state(); return;
+      case QUIT:       g_extern.system.shutdown = true; return;
+   }
 }
 
 static void event_set_state_slot(void* userdata)
@@ -176,31 +175,16 @@ static void event_set_state_slot(void* userdata)
 
 static void event_show_rgui(void* userdata)
 {
-   if (g_extern.lifecycle_mode_state & (1ULL << MODE_MENU))
-   {
-      g_extern.lifecycle_mode_state &= ~(1ULL << MODE_MENU);
-      g_extern.lifecycle_mode_state |= (1ULL << MODE_GAME);
-   }
-   else
-   {
-      g_extern.lifecycle_mode_state &= ~(1ULL << MODE_GAME);
-      g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU);
-   }
-}
-
-static void event_quit(void* userdata)
-{
-   g_extern.system.shutdown = true;
+   const bool in_menu = g_extern.lifecycle_mode_state & (1 << MODE_MENU);
+   g_extern.lifecycle_mode_state &= ~(1ULL << (in_menu ? MODE_MENU : MODE_GAME));
+   g_extern.lifecycle_mode_state |=  (1ULL << (in_menu ? MODE_GAME : MODE_MENU));
 }
 
 static void event_reload_config(void* userdata)
 {
-   // Need to clear these otherwise stale versions may be used!
-   memset(g_settings.input.overlay, 0, sizeof(g_settings.input.overlay));
-   memset(g_settings.video.shader_path, 0, sizeof(g_settings.video.shader_path));
+   ios_clear_config_hack();
 
    uninit_drivers();
-   g_extern.block_config_read = false;
    config_load();
    init_drivers();
 }
@@ -398,11 +382,7 @@ static void event_reload_config(void* userdata)
    if (_isRunning)
       ios_frontend_post_event(&event_reload_config, 0);
    else
-   {
-      // Need to clear these otherwise stale versions may be used!
-      memset(g_settings.input.overlay, 0, sizeof(g_settings.input.overlay));
-      memset(g_settings.video.shader_path, 0, sizeof(g_settings.video.shader_path));
-   }
+      ios_clear_config_hack();
 }
 
 - (void)refreshSystemConfig
@@ -467,27 +447,11 @@ static void event_reload_config(void* userdata)
    }
 }
 
-- (IBAction)resetGame:(id)sender
+- (IBAction)basicEvent:(id)sender
 {
    if (_isRunning)
-      ios_frontend_post_event(&event_game_reset, 0);
+      ios_frontend_post_event(&event_basic_command, ((UIView*)sender).tag);
    
-   [self closePauseMenu:sender];
-}
-
-- (IBAction)loadState:(id)sender
-{
-   if (_isRunning)
-      ios_frontend_post_event(&event_load_state, 0);
-
-   [self closePauseMenu:sender];
-}
-
-- (IBAction)saveState:(id)sender
-{
-   if (_isRunning)
-      ios_frontend_post_event(&event_save_state, 0);
-
    [self closePauseMenu:sender];
 }
 
@@ -511,12 +475,6 @@ static void event_reload_config(void* userdata)
    _isPaused = false;
    
    btpad_set_inquiry_state(false);
-}
-
-- (IBAction)closeGamePressed:(id)sender
-{
-   [self closePauseMenu:sender];
-   ios_frontend_post_event(event_quit, 0);
 }
 
 - (IBAction)showSettings

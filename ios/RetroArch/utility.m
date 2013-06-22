@@ -13,8 +13,19 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <sys/stat.h>
+
+#include "general.h"
 #include "file.h"
 #import "views.h"
+
+// Little nudge to prevent stale values when reloading the confg file
+void ios_clear_config_hack()
+{
+   g_extern.block_config_read = false;
+   memset(g_settings.input.overlay, 0, sizeof(g_settings.input.overlay));
+   memset(g_settings.video.shader_path, 0, sizeof(g_settings.video.shader_path));
+}
 
 // Fetch a value from a config file, returning defaultValue if the value is not present
 NSString* ios_get_value_from_config(config_file_t* config, NSString* name, NSString* defaultValue)
