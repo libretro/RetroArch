@@ -347,6 +347,7 @@ static NSArray* build_input_port_group(config_file_t* config, uint32_t player)
    NSArray* settings = [NSArray arrayWithObjects:
       [NSArray arrayWithObjects:@"Frontend",
          custom_action(@"Diagnostic Log", nil, nil),
+         boolean_setting(config, @"ios_tv_mode", @"TV Mode", @"false"),
          nil],
       [NSArray arrayWithObjects:@"Bluetooth",
          // TODO: Note that with this turned off the native bluetooth is expected to be a real keyboard

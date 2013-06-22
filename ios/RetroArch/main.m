@@ -29,6 +29,7 @@
 #include "file.h"
 
 //#define HAVE_DEBUG_FILELOG
+static bool use_tv_mode;
 
 // Input helpers: This is kept here because it needs objective-c
 static void handle_touch_event(NSArray* touches)
@@ -176,6 +177,9 @@ static void event_reload_config(void* userdata)
    {
       [self pushViewController:[RADirectoryList directoryListAtBrowseRoot] animated:YES];
       [self refreshSystemConfig];
+      
+      if (use_tv_mode)
+         [self runGame:nil withModule:nil];
    }
    
    // Warn if there are no cores present
@@ -254,31 +258,36 @@ static void event_reload_config(void* userdata)
 {
    if (!_isRunning)
    {
-      _module = module;
-
-      [RASettingsList refreshModuleConfig:_module];
-
       [self pushViewController:RAGameView.get animated:NO];
       _isRunning = true;
 
-      btpad_set_inquiry_state(false);
+      _module = module;
+      [RASettingsList refreshModuleConfig:_module];
 
+      btpad_set_inquiry_state(false);
+      
       struct rarch_main_wrap* load_data = malloc(sizeof(struct rarch_main_wrap));
       memset(load_data, 0, sizeof(struct rarch_main_wrap));
-      load_data->libretro_path = strdup(_module.path.UTF8String);
-      load_data->rom_path = strdup(path.UTF8String);
+
       load_data->sram_path = strdup(self.systemDirectory.UTF8String);
       load_data->state_path = strdup(self.systemDirectory.UTF8String);
-      load_data->config_path = strdup(_module.configPath.UTF8String);
-      load_data->verbose = false;
 
+      if (path && module)
+      {
+         load_data->libretro_path = strdup(_module.path.UTF8String);
+         load_data->rom_path = strdup(path.UTF8String);
+         load_data->config_path = strdup(_module.configPath.UTF8String);
+      }
+      else
+         load_data->config_path = strdup(RAModuleInfo.globalConfigPath.UTF8String);
+      
       if (pthread_create(&_retroThread, 0, rarch_main_ios, load_data))
       {
          [self rarchExited:NO];
          return;
       }
+      
       pthread_detach(_retroThread);
-
       [self refreshSystemConfig];
    }
 }
@@ -298,6 +307,9 @@ static void event_reload_config(void* userdata)
       
       btpad_set_inquiry_state(true);
    }
+
+   if (use_tv_mode)
+      [self runGame:nil withModule:nil];
    
    _module = nil;
 }
@@ -341,6 +353,7 @@ static void event_reload_config(void* userdata)
       bool val;
       ios_input_enable_icade(config_get_bool(conf, "ios_use_icade", &val) && val);
       btstack_set_poweron(config_get_bool(conf, "ios_use_btstack", &val) && val);
+      use_tv_mode = config_get_bool(conf, "ios_tv_mode", & val) && val;
       
       config_file_free(conf);
    }
@@ -403,8 +416,7 @@ static void event_reload_config(void* userdata)
 
 - (IBAction)showSettings
 {
-   if (_module)
-      [self pushViewController:[[RASettingsList alloc] initWithModule:_module] animated:YES];
+   [self pushViewController:[[RASettingsList alloc] initWithModule:_module] animated:YES];
 }
 
 - (IBAction)showSystemSettings
