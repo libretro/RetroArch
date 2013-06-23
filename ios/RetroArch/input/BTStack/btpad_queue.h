@@ -13,23 +13,18 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __IOS_RARCH_WRAPPER_H__
-#define __IOS_RARCH_WRAPPER_H__
+#ifndef __IOS_RARCH_BTPAD_QUEUE_H__
+#define __IOS_RARCH_BTPAD_QUEUE_H__
 
-// The result needs to be free()'d
-char* ios_get_rarch_system_directory();
+void btpad_queue_reset();
+void btpad_queue_run(uint32_t count);
+void btpad_queue_process();
 
-// These functions should only be called as arguments to dispatch_sync
-void ios_rarch_exited(void* result);
-
-// These functions must only be called in gfx/context/ioseagl_ctx.c
-bool ios_init_game_view();
-void ios_destroy_game_view();
-void ios_flip_game_view();
-void ios_set_game_view_sync(unsigned interval);
-void ios_get_game_view_size(unsigned *width, unsigned *height);
-void ios_bind_game_view_fbo();
-
-void ios_add_log_message(const char* format, ...);
+void btpad_queue_btstack_set_power_mode(uint8_t on);
+void btpad_queue_hci_read_bd_addr();
+void btpad_queue_hci_disconnect(uint16_t handle, uint8_t reason);
+void btpad_queue_hci_inquiry(uint32_t lap, uint8_t length, uint8_t num_responses);
+void btpad_queue_hci_remote_name_request(bd_addr_t bd_addr, uint8_t page_scan_repetition_mode, uint8_t reserved, uint16_t clock_offset);
+void btpad_queue_hci_pin_code_request_reply(bd_addr_t bd_addr, bd_addr_t pin);
 
 #endif

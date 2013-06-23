@@ -22,7 +22,6 @@
 static NSMutableArray* g_messages;
 static pthread_mutex_t g_lock = PTHREAD_MUTEX_INITIALIZER;
 
-#ifndef HAVE_DEBUG_DIAGLOG
 void ios_add_log_message(const char* format, ...)
 {
    pthread_mutex_lock(&g_lock);
@@ -39,54 +38,6 @@ void ios_add_log_message(const char* format, ...)
    
    pthread_mutex_unlock(&g_lock);
 }
-#else
-static FILE* old_stdout;
-static FILE* old_stderr;
-static FILE* log_stream;
-
-static int stdout_write(void* mem_buffer, const char* data, int len)
-{
-   pthread_mutex_lock(&g_lock);
-   
-   g_messages = g_messages ? g_messages : [NSMutableArray array];
-
-   char buffer[len + 10];
-   strncpy(buffer, data, len);
-   buffer[len] = 0;
-   
-   [g_messages addObject:[NSString stringWithFormat:@"%s", buffer]];
-   
-   pthread_mutex_unlock(&g_lock);
-   
-   return len;
-}
-
-void ios_log_init()
-{
-   if (!log_stream)
-   {
-      old_stdout = stdout;
-      old_stderr = stderr;
-
-      log_stream = fwopen(0, stdout_write);
-      setvbuf(log_stream, 0, _IOLBF, 0);
-      
-      stdout = log_stream;
-      stderr = log_stream;
-   }
-}
-
-void ios_log_quit()
-{
-   if (log_stream)
-   {
-      stdout = old_stdout;
-      stderr = old_stderr;
-      fclose(log_stream);
-      log_stream = 0;
-   }
-}
-#endif
 
 @implementation RALogView
 

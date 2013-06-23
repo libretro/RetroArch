@@ -115,7 +115,7 @@
       }
    }
    else
-      [RetroArch_iOS displayErrorMessage:[NSString stringWithFormat:@"Browsed path is not a directory: %@", _path]];
+      ios_display_alert([NSString stringWithFormat:@"Browsed path is not a directory: %@", _path], 0);
    
    [self.tableView reloadData];
 }
@@ -129,8 +129,8 @@
    else
    {
       if (access(_path.UTF8String, R_OK | W_OK | X_OK))
-         [RetroArch_iOS displayErrorMessage:@"The directory containing the selected file has limited permissions. This may "
-                                             "prevent zipped games from loading, and will cause some cores to not function."];
+         ios_display_alert(@"The directory containing the selected file has limited permissions. This may "
+                            "prevent zipped games from loading, and will cause some cores to not function.", 0);
 
       [[RetroArch_iOS get] pushViewController:[[RAModuleList alloc] initWithGame:path.path] animated:YES];
    }
@@ -199,7 +199,7 @@
    if (info && info.data)
       [RetroArch_iOS.get pushViewController:[[RAModuleInfoList alloc] initWithModuleInfo:info] animated:YES];
    else
-      [RetroArch_iOS displayErrorMessage:@"No information available."];
+      ios_display_alert(@"No information available.", 0);
 }
 
 - (UITableViewCell*)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath
