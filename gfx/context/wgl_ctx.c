@@ -74,7 +74,14 @@ static void create_gl_context(HWND hwnd)
    g_hdc = GetDC(hwnd);
    setup_pixel_format(g_hdc);
 
-   g_hrc = wglCreateContext(g_hdc);
+   if (!g_hrc)
+      g_hrc = wglCreateContext(g_hdc);
+   else
+   {
+      RARCH_LOG("[WGL]: Using cached GL context.\n");
+      driver.video_cache_context_ack = true;
+   }
+
    if (g_hrc)
    {
       if (wglMakeCurrent(g_hdc, g_hrc))
@@ -373,8 +380,12 @@ static void gfx_ctx_destroy(void)
    if (g_hrc)
    {
       wglMakeCurrent(NULL, NULL);
-      wglDeleteContext(g_hrc);
-      g_hrc = NULL;
+
+      if (!driver.video_cache_context)
+      {
+         wglDeleteContext(g_hrc);
+         g_hrc = NULL;
+      }
    }
 
    if (g_hwnd && g_hdc)
@@ -402,6 +413,7 @@ static void gfx_ctx_destroy(void)
    }
 
    g_inited = false;
+   p_swap_interval = NULL;
 }
 
 static void gfx_ctx_input_driver(const input_driver_t **input, void **input_data)
