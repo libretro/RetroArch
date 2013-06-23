@@ -373,7 +373,7 @@ void init_drivers(void)
    g_extern.frame_count = 0;
    init_video_input();
 
-   if (g_extern.system.hw_render_callback.context_reset)
+   if (!driver.video_cache_context_ack && g_extern.system.hw_render_callback.context_reset)
       g_extern.system.hw_render_callback.context_reset();
 
    init_audio();
