@@ -78,6 +78,43 @@ static const GLfloat tex_coords[] = {
    1, 1
 };
 
+// Workaround broken Apple headers.
+typedef const GLubyte* (*gl_get_stringi_proc)(GLenum name, GLuint index);
+static inline bool gl_query_extension(gl_t *gl, const char *ext)
+{
+   bool ret = false;
+
+   if (gl->core_context)
+   {
+#ifdef GL_NUM_EXTENSIONS
+      gl_get_stringi_proc proc = (gl_get_stringi_proc)gl->ctx_driver->get_proc_address("glGetStringi");
+      if (!proc)
+         return false;
+
+      GLint exts = 0;
+      glGetIntegerv(GL_NUM_EXTENSIONS, &exts);
+      for (GLint i = 0; i < exts; i++)
+      {
+         const char *str = (const char*)proc(GL_EXTENSIONS, i);
+         if (str && strstr(str, ext))
+         {
+            ret = true;
+            break;
+         }
+      }
+#endif
+   }
+   else
+   {
+      const char *str = (const char*)glGetString(GL_EXTENSIONS);
+      ret = str && strstr(str, ext);
+   }
+
+   RARCH_LOG("Querying GL extension: %s => %s\n",
+         ext, ret ? "exists" : "doesn't exist");
+   return ret;
+}
+
 #ifdef HAVE_OVERLAY
 static void gl_render_overlay(void *data);
 static void gl_overlay_vertex_geom(void *data,
@@ -127,7 +164,7 @@ static PFNGLCLIENTWAITSYNCPROC pglClientWaitSync;
 
 static bool load_sync_proc(gl_t *gl)
 {
-   if (!gl_query_extension("ARB_sync"))
+   if (!gl_query_extension(gl, "ARB_sync"))
       return false;
 
    LOAD_GL_SYM(FenceSync);
@@ -145,7 +182,7 @@ static PFNGLDELETEVERTEXARRAYSPROC pglDeleteVertexArrays;
 
 static bool load_vao_proc(gl_t *gl)
 {
-   if (!gl_query_extension("ARB_vertex_array_object"))
+   if (!gl_query_extension(gl, "ARB_vertex_array_object"))
       return false;
 
    LOAD_GL_SYM(GenVertexArrays);
@@ -285,7 +322,9 @@ static bool gl_shader_init(void *data)
 
    const char *shader_path = (g_settings.video.shader_enable && *g_settings.video.shader_path) ?
       g_settings.video.shader_path : NULL;
-   enum rarch_shader_type type = gfx_shader_parse_type(shader_path, DEFAULT_SHADER_TYPE);
+
+   enum rarch_shader_type type = gfx_shader_parse_type(shader_path,
+         gl->core_context ? RARCH_SHADER_GLSL : DEFAULT_SHADER_TYPE);
 
    if (type == RARCH_SHADER_NONE)
    {
@@ -357,8 +396,11 @@ static void gl_set_coords(const struct gl_coords *coords)
    glEnableClientState(GL_TEXTURE_COORD_ARRAY);
 }
 
-static void gl_disable_client_arrays(void)
+static void gl_disable_client_arrays(gl_t *gl)
 {
+   if (gl->core_context)
+      return;
+
    pglClientActiveTexture(GL_TEXTURE1);
    glDisableClientState(GL_TEXTURE_COORD_ARRAY);
    pglClientActiveTexture(GL_TEXTURE0);
@@ -543,7 +585,7 @@ static void gl_create_fbo_textures(void *data)
       {
          // GLES and GL are inconsistent in which arguments to pass.
 #ifdef HAVE_OPENGLES2
-         bool has_fp_fbo = gl_query_extension("OES_texture_float_linear");
+         bool has_fp_fbo = gl_query_extension(gl, "OES_texture_float_linear");
          if (!has_fp_fbo)
             RARCH_ERR("OES_texture_float_linear extension not found.\n");
 
@@ -552,7 +594,7 @@ static void gl_create_fbo_textures(void *data)
                gl->fbo_rect[i].width, gl->fbo_rect[i].height,
                0, GL_RGBA, GL_FLOAT, NULL);
 #else
-         bool has_fp_fbo = gl_query_extension("ARB_texture_float");
+         bool has_fp_fbo = gl_query_extension(gl, "ARB_texture_float");
          if (!has_fp_fbo)
             RARCH_ERR("ARB_texture_float extension was not found.\n");
 
@@ -709,7 +751,7 @@ bool gl_init_hw_render(gl_t *gl, unsigned width, unsigned height)
    bool stencil = g_extern.system.hw_render_callback.stencil;
 
 #ifdef HAVE_OPENGLES2
-   if (stencil && !gl_query_extension("OES_packed_depth_stencil"))
+   if (stencil && !gl_query_extension(gl, "OES_packed_depth_stencil"))
       return false;
 #endif
 
@@ -1188,7 +1230,7 @@ static void gl_init_textures(void *data, const video_info_t *video)
 #ifdef HAVE_OPENGLES2
    if (gl->hw_render_use && gl->base_size == sizeof(uint32_t))
    {
-      bool support_argb = gl_query_extension("OES_rgb8_rgba8") || gl_query_extension("ARM_argb8");
+      bool support_argb = gl_query_extension(gl, "OES_rgb8_rgba8") || gl_query_extension(gl, "ARM_argb8");
       if (support_argb)
       {
          internal_fmt = GL_RGBA;
@@ -1481,7 +1523,8 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
    if (gl->hw_render_fbo_init)
    {
 #ifndef HAVE_OPENGLES
-      glEnable(GL_TEXTURE_2D);
+      if (!gl->core_context)
+         glEnable(GL_TEXTURE_2D);
 #endif
       glDisable(GL_DEPTH_TEST);
       glDisable(GL_STENCIL_TEST);
@@ -1545,7 +1588,7 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
          gl->shader->use(0);
       glBindTexture(GL_TEXTURE_2D, 0);
 #ifndef NO_GL_FF_VERTEX
-      gl_disable_client_arrays();
+      gl_disable_client_arrays(gl);
 #endif
    }
 #endif
@@ -1613,7 +1656,7 @@ static void gl_free(void *data)
    gl_shader_deinit(gl);
 
 #ifndef NO_GL_FF_VERTEX
-   gl_disable_client_arrays();
+   gl_disable_client_arrays(gl);
 #endif
 
    glDeleteTextures(TEXTURES, gl->texture);
@@ -1714,7 +1757,7 @@ static bool resolve_extensions(gl_t *gl)
 
    driver.gfx_use_rgba = false;
 #ifdef HAVE_OPENGLES2
-   if (gl_query_extension("BGRA8888"))
+   if (gl_query_extension(gl, "BGRA8888"))
       RARCH_LOG("[GL]: BGRA8888 extension found for GLES.\n");
    else
    {
@@ -1992,7 +2035,8 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    gl_set_texture_fmts(gl, video->rgb32);
 
 #ifndef HAVE_OPENGLES
-   glEnable(GL_TEXTURE_2D);
+   if (!gl->core_context)
+      glEnable(GL_TEXTURE_2D);
 #endif
 
    glDisable(GL_DEPTH_TEST);
@@ -2004,7 +2048,6 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    gl->coords.tex_coord      = gl->tex_coords;
    gl->coords.color          = white_color;
    gl->coords.lut_tex_coord  = tex_coords;
-   gl_shader_set_coords(gl, &gl->coords, &gl->mvp);
 
    // Empty buffer that we use to clear out the texture with on res change.
    gl->empty_buf = calloc(sizeof(uint32_t), gl->tex_w * gl->tex_h);

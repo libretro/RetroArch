@@ -81,16 +81,6 @@
    gl->ctx_driver->write_egl_image(frame, width, height, pitch, base_size, tex_index,img)
 #endif
 
-static inline bool gl_query_extension(const char *ext)
-{
-   const char *str = (const char*)glGetString(GL_EXTENSIONS);
-   bool ret = str && strstr(str, ext);
-   RARCH_LOG("Querying GL extension: %s => %s\n",
-         ext, ret ? "exists" : "doesn't exist");
-
-   return ret;
-}
-
 static inline bool gl_check_error(void)
 {
    int error = glGetError();
@@ -244,7 +234,7 @@ typedef struct gl
    const font_renderer_driver_t *font_driver;
    GLuint font_tex;
    int font_tex_w, font_tex_h;
-   uint16_t *font_tex_buf;
+   uint32_t *font_tex_buf;
    char font_last_msg[256];
    int font_last_width, font_last_height;
    GLfloat font_color[16];
@@ -285,10 +275,8 @@ typedef struct gl
    unsigned fence_count;
 #endif
 
-#ifndef HAVE_OPENGLES
    bool core_context;
    GLuint vao;
-#endif
 } gl_t;
 
 // Windows ... <_<
