@@ -165,7 +165,7 @@ static NSString* build_string_pair(NSString* stringA, NSString* stringB)
    if (indexPath.section == _firmwareSectionIndex)
    {
       NSString* item = (NSString*)[self itemForIndexPath:indexPath];
-      [RetroArch_iOS displayErrorMessage:objc_getAssociatedObject(item, "OTHER") withTitle:item];
+      ios_display_alert(objc_getAssociatedObject(item, "OTHER"), item);
    }
 }
 

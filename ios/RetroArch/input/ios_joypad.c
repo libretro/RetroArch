@@ -41,7 +41,7 @@ static bool ios_joypad_button(unsigned port, uint16_t joykey)
    if (GET_HAT_DIR(joykey))
       return false;
    else // Check the button
-      return (port == 0 && joykey < 32) ? (g_ios_input_data.pad_buttons & (1 << joykey)) != 0 : false;
+      return (port < MAX_PADS && joykey < 32) ? (g_polled_input_data.pad_buttons[port] & (1 << joykey)) != 0 : false;
 }
 
 static int16_t ios_joypad_axis(unsigned port, uint32_t joyaxis)
@@ -52,12 +52,12 @@ static int16_t ios_joypad_axis(unsigned port, uint32_t joyaxis)
    int16_t val = 0;
    if (AXIS_NEG_GET(joyaxis) < 4)
    {
-      val = g_ios_input_data.pad_axis[AXIS_NEG_GET(joyaxis)];
+      val = g_polled_input_data.pad_axis[AXIS_NEG_GET(joyaxis)];
       val = (val < 0) ? val : 0;
    }
    else if(AXIS_POS_GET(joyaxis) < 4)
    {
-      val = g_ios_input_data.pad_axis[AXIS_POS_GET(joyaxis)];
+      val = g_polled_input_data.pad_axis[AXIS_POS_GET(joyaxis)];
       val = (val > 0) ? val : 0;
    }
 
