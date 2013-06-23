@@ -182,9 +182,6 @@ static PFNGLDELETEVERTEXARRAYSPROC pglDeleteVertexArrays;
 
 static bool load_vao_proc(gl_t *gl)
 {
-   if (!gl_query_extension(gl, "ARB_vertex_array_object"))
-      return false;
-
    LOAD_GL_SYM(GenVertexArrays);
    LOAD_GL_SYM(BindVertexArray);
    LOAD_GL_SYM(DeleteVertexArrays);
