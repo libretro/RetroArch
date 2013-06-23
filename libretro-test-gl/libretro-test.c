@@ -271,7 +271,7 @@ void retro_run(void)
    pglBindFramebuffer(GL_FRAMEBUFFER, hw_render.get_current_framebuffer());
    glClearColor(0.3, 0.4, 0.5, 1.0);
    glViewport(0, 0, 512, 512);
-   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
    pglUseProgram(prog);
 

@@ -37,6 +37,8 @@ static HDC g_hdc;
 static HMONITOR g_last_hm;
 static HMONITOR g_all_hms[MAX_MONITORS];
 static unsigned g_num_mons;
+static unsigned g_major;
+static unsigned g_minor;
 
 static bool g_quit;
 static bool g_inited;
@@ -53,6 +55,9 @@ static void gfx_ctx_get_video_size(unsigned *width, unsigned *height);
 static void gfx_ctx_destroy(void);
 
 static BOOL (APIENTRY *p_swap_interval)(int);
+
+typedef HGLRC (APIENTRY *wglCreateContextAttribsProc)(HDC, HGLRC, const int*);
+static wglCreateContextAttribsProc pcreate_context;
 
 static void setup_pixel_format(HDC hdc)
 {
@@ -83,7 +88,53 @@ static void create_gl_context(HWND hwnd)
          g_quit = true;
    }
    else
+   {
       g_quit = true;
+      return;
+   }
+
+   if (g_major * 1000 + g_minor >= 3001) // Create core context
+   {
+#ifndef WGL_CONTEXT_MAJOR_VERSION_ARB
+#define WGL_CONTEXT_MAJOR_VERSION_ARB 0x2091
+#endif
+#ifndef WGL_CONTEXT_MINOR_VERSION_ARB
+#define WGL_CONTEXT_MINOR_VERSION_ARB 0x2092
+#endif
+#ifndef WGL_CONTEXT_PROFILE_MASK_ARB
+#define WGL_CONTEXT_PROFILE_MASK_ARB 0x9126
+#endif
+#ifndef WGL_CONTEXT_CORE_PROFILE_BIT_ARB
+#define WGL_CONTEXT_CORE_PROFILE_BIT_ARB 0x0001
+#endif
+      const int attribs[] = {
+         WGL_CONTEXT_MAJOR_VERSION_ARB, g_major,
+         WGL_CONTEXT_MINOR_VERSION_ARB, g_minor,
+         WGL_CONTEXT_PROFILE_MASK_ARB, WGL_CONTEXT_CORE_PROFILE_BIT_ARB,
+         0,
+      };
+
+      if (!pcreate_context)
+         pcreate_context = (wglCreateContextAttribsProc)wglGetProcAddress("wglCreateContextAttribsARB");
+
+      if (pcreate_context)
+      {
+         HGLRC context = pcreate_context(g_hdc, NULL, attribs);
+
+         if (context)
+         {
+            wglMakeCurrent(NULL, NULL);
+            wglDeleteContext(g_hrc);
+            g_hrc = context;
+            if (!wglMakeCurrent(g_hdc, g_hrc))
+               g_quit = true;
+         }
+         else
+            RARCH_ERR("[WGL]: Failed to create core context. Falling back to legacy context.\n");
+      }
+      else
+         RARCH_ERR("[WGL]: wglCreateContextAttribsARB not supported.\n");
+   }
 }
 
 static LRESULT CALLBACK WndProc(HWND hwnd, UINT message,
@@ -402,6 +453,7 @@ static void gfx_ctx_destroy(void)
    }
 
    g_inited = false;
+   g_major = g_minor = 0;
 }
 
 static void gfx_ctx_input_driver(const input_driver_t **input, void **input_data)
@@ -426,8 +478,8 @@ static gfx_ctx_proc_t gfx_ctx_get_proc_address(const char *symbol)
 
 static bool gfx_ctx_bind_api(enum gfx_ctx_api api, unsigned major, unsigned minor)
 {
-   (void)major;
-   (void)minor;
+   g_major = major;
+   g_minor = minor;
    return api == GFX_CTX_OPENGL_API;
 }
 
