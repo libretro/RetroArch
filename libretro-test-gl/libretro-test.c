@@ -60,6 +60,10 @@ static PFNGLDISABLEVERTEXATTRIBARRAYPROC pglDisableVertexAttribArray;
 static PFNGLGENBUFFERSPROC pglGenBuffers;
 static PFNGLBUFFERDATAPROC pglBufferData;
 static PFNGLBINDBUFFERPROC pglBindBuffer;
+#ifdef CORE
+static PFNGLGENVERTEXARRAYSPROC pglGenVertexArrays;
+static PFNGLBINDVERTEXARRAYPROC pglBindVertexArray;
+#endif
 
 struct gl_proc_map
 {
@@ -86,6 +90,10 @@ static const struct gl_proc_map proc_map[] = {
    PROC_BIND(GenBuffers),
    PROC_BIND(BufferData),
    PROC_BIND(BindBuffer),
+#ifdef CORE
+   PROC_BIND(GenVertexArrays),
+   PROC_BIND(BindVertexArray),
+#endif
 };
 
 static void init_gl_proc(void)
@@ -102,6 +110,10 @@ static void init_gl_proc(void)
 
 static GLuint prog;
 static GLuint vbo;
+
+#ifdef CORE
+static GLuint vao;
+#endif
 
 static const GLfloat vertex_data[] = {
    -0.5, -0.5,
@@ -153,6 +165,9 @@ static void compile_program(void)
 
 static void setup_vao(void)
 {
+#ifdef CORE
+   pglGenVertexArrays(1, &vao);
+#endif
    pglUseProgram(prog);
 
    pglGenBuffers(1, &vbo);
@@ -249,6 +264,10 @@ void retro_run(void)
 {
    input_poll_cb();
 
+#ifdef CORE
+   pglBindVertexArray(vao);
+#endif
+
    pglBindFramebuffer(GL_FRAMEBUFFER, hw_render.get_current_framebuffer());
    glClearColor(0.3, 0.4, 0.5, 1.0);
    glViewport(0, 0, 512, 512);
@@ -300,6 +319,9 @@ void retro_run(void)
 
    pglUseProgram(0);
 
+#ifdef CORE
+   pglBindVertexArray(0);
+#endif
    video_cb(RETRO_HW_FRAME_BUFFER_VALID, 512, 512, 0);
 }
 
@@ -323,10 +345,17 @@ bool retro_load_game(const struct retro_game_info *info)
 #ifdef GLES
    hw_render.context_type = RETRO_HW_CONTEXT_OPENGLES2;
 #else
+#ifdef CORE
+   hw_render.context_type = RETRO_HW_CONTEXT_OPENGL_CORE;
+   hw_render.version_major = 3;
+   hw_render.version_minor = 1;
+#else
    hw_render.context_type = RETRO_HW_CONTEXT_OPENGL;
+#endif
 #endif
    hw_render.context_reset = context_reset;
    hw_render.depth = true;
+   hw_render.stencil = true;
    if (!environ_cb(RETRO_ENVIRONMENT_SET_HW_RENDER, &hw_render))
       return false;
 
