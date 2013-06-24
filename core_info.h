@@ -35,7 +35,7 @@ typedef struct {
    int count;
 } core_info_list_t;
 
-core_info_list_t *get_core_info_list(void);
+core_info_list_t *get_core_info_list(const char *modules_path);
 void free_core_info_list(core_info_list_t * core_info_list);
 
 #ifdef __cplusplus

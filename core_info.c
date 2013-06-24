@@ -22,7 +22,7 @@
 #include <dirent.h>
 #endif
 
-core_info_list_t *get_core_info_list(void)
+core_info_list_t *get_core_info_list(const char *modules_path)
 {
    DIR *dirp;
    struct dirent* direntp;
@@ -74,7 +74,7 @@ core_info_list_t *get_core_info_list(void)
    for (i = 0; i < count; i++)
    {
       char info_path[255];
-      snprintf(info_path, sizeof(info_path), "app/native/modules/");
+      snprintf(info_path, sizeof(info_path), modules_path);
       strncat(info_path, core_info[i].path, sizeof(info_path)-strlen(info_path)-1);
       char *substr = strrchr(info_path, '_');
 
