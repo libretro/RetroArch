@@ -86,6 +86,10 @@ CONFIG FILE
 #include "../conf/config_file.c"
 #include "../core_options.c"
 
+#if defined(__QNX__)
+#include "../core_info.c"
+#endif
+
 /*============================================================
 CHEATS
 ============================================================ */

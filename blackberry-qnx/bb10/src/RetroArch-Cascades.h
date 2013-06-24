@@ -9,7 +9,7 @@
 #include <screen/screen.h>
 #include <sys/neutrino.h>
 #include "ButtonMap.h"
-#include "core_info.h"
+#include "../../../core_info.h"
 
 using namespace bb::cascades;
 
