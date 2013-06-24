@@ -16,7 +16,11 @@
 #include "core_info.h"
 #include "general.h"
 #include <math.h>
+#ifdef _WIN32
+#include "compat/dirent_win32.h"
+#else
 #include <dirent.h>
+#endif
 
 core_info_list_t *get_core_info_list(void)
 {
