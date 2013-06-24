@@ -73,6 +73,9 @@ PERFORMANCE
 COMPATIBILITY
 ============================================================ */
 #include "../compat/compat.c"
+#ifdef _WIN32
+#include "../compat/dirent_win32.c"
+#endif
 
 /*============================================================
 CONFIG FILE
@@ -86,7 +89,7 @@ CONFIG FILE
 #include "../conf/config_file.c"
 #include "../core_options.c"
 
-#if defined(__QNX__)
+#if defined(__QNX__) || defined(IOS)
 #include "../core_info.c"
 #endif
 
