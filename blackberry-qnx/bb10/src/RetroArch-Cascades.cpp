@@ -16,6 +16,7 @@
 #include "general.h"
 #include "conf/config_file.h"
 #include "file.h"
+#include "core_info.h"
 
 #ifdef HAVE_RGUI
 #include "frontend/menu/rgui.h"
@@ -49,10 +50,6 @@ using namespace bb::device;
 
 extern screen_window_t screen_win;
 extern screen_context_t screen_ctx;
-
-//Use after calling findCores
-//If we allow user added libs, this needs to be error checked
-#define GET_CORE_INFO(x, y) coreInfo[coreList[x]].toMap()[y].toString()
 
 RetroArch::RetroArch()
 {
@@ -90,7 +87,8 @@ RetroArch::RetroArch()
          //Get core DropDown reference to populate it in C++
          coreSelection = mAppPane->findChild<DropDown*>("dropdown_core");
          connect(coreSelection, SIGNAL(selectedValueChanged(QVariant)), this, SLOT(onCoreSelected(QVariant)));
-         findCores();
+         core_info_list = get_core_info_list();
+         populateCores(core_info_list);
 
          Application::instance()->setScene(mAppPane);
 
@@ -113,7 +111,7 @@ RetroArch::RetroArch()
 
 RetroArch::~RetroArch()
 {
-   free(coreList);
+   free_core_info_list(core_info_list);
 }
 
 void RetroArch::aboutToQuit()
@@ -249,10 +247,11 @@ void RetroArch::onCoreSelected(QVariant value)
 
    core.clear();
    core.append("app/native/lib/");
-   core.append(coreList[coreSelectedIndex]);
+   core.append(core_info_list->list[coreSelectedIndex].path);
    emit coreChanged(core);
 
-   romExtensions = GET_CORE_INFO(coreSelectedIndex, "supported_extensions");
+   romExtensions = QString("*.%1").arg(core_info_list->list[coreSelectedIndex].supportedExtensions);
+   romExtensions.replace("|", "|*.");
    emit romExtensionsChanged(romExtensions);
 
    qDebug() << "Core Selected: " << core;
@@ -289,59 +288,21 @@ void RetroArch::startEmulator()
    }
 }
 
-void RetroArch::findCores()
+void RetroArch::populateCores(core_info_list_t * info)
 {
-   DIR *dirp;
-   struct dirent* direntp;
-   int count=0, i=0;
+   int i;
+   Option *tmp;
 
-   dirp = opendir(g_settings.libretro);
-   if( dirp != NULL )
+   //Populate DropDown
+   for (i = 0; i < info->count; ++i)
    {
-      for(;;)
-      {
-         direntp = readdir( dirp );
-         if( direntp == NULL ) break;
-         count++;
-      }
-      fflush(stdout);
-      rewinddir(dirp);
+      qDebug() << info->list[i].displayName;
 
-      if(count==2)
-      {
-         printf("No Cores Found");fflush(stdout);
-      }
+      tmp = Option::create().text(QString(info->list[i].displayName))
+                            .value(i);
 
-      coreList = (char**)malloc(count*sizeof(char*));
-      count = 0;
-
-      for(;;)
-      {
-         direntp = readdir( dirp );
-         if( direntp == NULL ) break;
-         coreList[count++] = strdup((char*)direntp->d_name);
-      }
-
-      //Load info for Cores
-      JsonDataAccess jda;
-
-      coreInfo = jda.load("app/native/assets/coreInfo.json").toMap();
-
-      Option *tmp;
-
-      //Populate DropDown
-      for (i = 2; i < count; ++i)
-      {
-         qDebug() << GET_CORE_INFO(i, "display_name");
-
-         tmp = Option::create().text(GET_CORE_INFO(i, "display_name"))
-                               .value(i);
-
-         coreSelection->add(tmp);
-      }
+      coreSelection->add(tmp);
    }
-
-   closedir(dirp);
 }
 
 void RetroArch::findDevices()
@@ -376,9 +337,7 @@ void RetroArch::initRASettings()
 
    //If Physical keyboard or a device mapped to player 1, hide overlay
    //TODO: Should there be a minimized/quick settings only overlay?
-   if(!hwInfo->isPhysicalKeyboardDevice() && !port_device[0])
-      strlcpy(g_settings.input.overlay, GET_CORE_INFO(coreSelectedIndex, "default_overlay").toAscii().constData(), sizeof(g_settings.input.overlay));
-   else
+   if(hwInfo->isPhysicalKeyboardDevice() || port_device[0])
       *g_settings.input.overlay = '\0';
 }
 
