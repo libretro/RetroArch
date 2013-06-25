@@ -231,7 +231,7 @@ void input_autodetect_setup (void *data, char *msg, size_t sizeof_msg, unsigned 
          snprintf(name_buf, sizeof(name_buf), "ccpcreations WiiUse");
       }
 
-      if (source == AINPUT_SOURCE_KEYBOARD)
+      if (source == AINPUT_SOURCE_KEYBOARD && device != DEVICE_XPERIA_PLAY)
          device = DEVICE_KEYBOARD_RETROPAD;
 
       if (driver.input->set_keybinds)
