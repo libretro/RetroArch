@@ -13,15 +13,15 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <glob.h>
-
 #import "RetroArch_iOS.h"
 #import "RAModuleInfo.h"
 #import "views.h"
 
 #include "file.h"
+#include "core_info.h"
 
 static NSMutableArray* moduleList;
+static core_info_list_t* coreList;
 
 @implementation RAModuleInfo
 + (NSArray*)getModules
@@ -29,34 +29,26 @@ static NSMutableArray* moduleList;
    if (!moduleList)
    {
       char pattern[PATH_MAX];
-      snprintf(pattern, PATH_MAX, "%s/modules/*.dylib", [[NSBundle mainBundle].bundlePath UTF8String]);
+      snprintf(pattern, PATH_MAX, "%s/modules", [[NSBundle mainBundle].bundlePath UTF8String]);
 
-      glob_t files = {0};
-      glob(pattern, 0, 0, &files);
-      
-      moduleList = [NSMutableArray arrayWithCapacity:files.gl_pathc];
-   
-      for (int i = 0; i != files.gl_pathc; i ++)
+      coreList = get_core_info_list(pattern);
+      moduleList = [NSMutableArray arrayWithCapacity:coreList->count];
+
+      for (int i = 0; coreList && i < coreList->count; i ++)
       {
+         core_info_t* core = &coreList->list[i];
+      
          RAModuleInfo* newInfo = [RAModuleInfo new];
-         newInfo.path = [NSString stringWithUTF8String:files.gl_pathv[i]];
-         
+         newInfo.path = [NSString stringWithUTF8String:core->path];
+         newInfo.info = core;
+         newInfo.data = core->data;
+         newInfo.displayName = [NSString stringWithUTF8String:core->display_name];
+
          NSString* baseName = newInfo.path.lastPathComponent.stringByDeletingPathExtension;
-         
-         NSString* infoPath = [newInfo.path stringByReplacingOccurrencesOfString:@"_ios.dylib" withString:@".dylib"];
-         infoPath = [infoPath stringByReplacingOccurrencesOfString:@".dylib" withString:@".info"];
-
-         newInfo.data = config_file_new([infoPath UTF8String]);
-
-         newInfo.displayName = ios_get_value_from_config(newInfo.data, @"display_name", newInfo.path.lastPathComponent.stringByDeletingPathExtension);
-         newInfo.supportedExtensions = [ios_get_value_from_config(newInfo.data, @"supported_extensions", @"") componentsSeparatedByString:@"|"];
-
          newInfo.customConfigPath = [NSString stringWithFormat:@"%@/%@.cfg", RetroArch_iOS.get.systemDirectory, baseName];
 
          [moduleList addObject:newInfo];
       }
-      
-      globfree(&files);
       
       [moduleList sortUsingComparator:^(RAModuleInfo* left, RAModuleInfo* right)
       {
@@ -69,12 +61,11 @@ static NSMutableArray* moduleList;
 
 - (void)dealloc
 {
-   config_file_free(self.data);
 }
 
 - (bool)supportsFileAtPath:(NSString*)path
 {
-   return [self.supportedExtensions containsObject:[[path pathExtension] lowercaseString]];
+   return does_core_support_file(self.info, path.UTF8String);
 }
 
 - (void)createCustomConfig

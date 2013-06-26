@@ -25,9 +25,8 @@ extern "C" {
 typedef struct {
    char * path;
    config_file_t* data;
-   char * configPath;
-   char * displayName;
-   char * supportedExtensions;
+   char * display_name;
+   struct string_list * supported_extensions;
 } core_info_t;
 
 typedef struct {
@@ -37,6 +36,8 @@ typedef struct {
 
 core_info_list_t *get_core_info_list(const char *modules_path);
 void free_core_info_list(core_info_list_t * core_info_list);
+
+bool does_core_support_file(core_info_t* core, const char *path);
 
 #ifdef __cplusplus
 }

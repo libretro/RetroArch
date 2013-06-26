@@ -14,12 +14,13 @@
  */
 
 #include "conf/config_file.h"
+#include "core_info.h"
 
 @interface RAModuleInfo : NSObject
 @property (strong) NSString* path;
+@property core_info_t* info;
 @property config_file_t* data;
 @property (strong) NSString* displayName;
-@property (strong) NSArray* supportedExtensions;
 
 + (NSArray*)getModules;
 - (bool)supportsFileAtPath:(NSString*)path;

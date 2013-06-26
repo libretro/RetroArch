@@ -15,86 +15,66 @@
 
 #include "core_info.h"
 #include "general.h"
-#include <math.h>
-#ifdef _WIN32
-#include "compat/dirent_win32.h"
-#else
-#include <dirent.h>
-#endif
+#include "file.h"
+#include "config.def.h"
 
 core_info_list_t *get_core_info_list(const char *modules_path)
 {
-   DIR *dirp;
-   struct dirent* direntp;
-   int count=0, i=0;
+   struct string_list *contents = dir_list_new(modules_path, EXT_EXECUTABLES, false);
+
    core_info_t *core_info;
    core_info_list_t *core_info_list;
+   int i;
 
-   if (!*g_settings.libretro)
+   if (!contents)
       return NULL;
 
-   dirp = opendir(g_settings.libretro);
-   if (dirp == NULL)
-      return NULL;
+   core_info = (core_info_t*)malloc(contents->size * sizeof(core_info_t));
+   memset(core_info, 0, contents->size * sizeof(core_info_t));
 
-   //Count number of cores
-   for (;;)
-   {
-      direntp = readdir(dirp);
-      if (direntp == NULL)
-         break;
-      count++;
-   }
-   rewinddir(dirp);
-
-   if (count == 2)
-   {
-      //Only . and ..
-      closedir(dirp);
-      return NULL;
-   }
-
-   core_info = (core_info_t*)malloc(count*sizeof(core_info_t));
    core_info_list = malloc(sizeof(core_info_list_t));
+   memset(core_info_list, 0, sizeof(core_info_list_t));
    core_info_list->list = core_info;
-   count = 0;
+   core_info_list->count = contents->size;
 
-   for (;;)
+   for (i = 0; i < contents->size; i ++)
    {
-      direntp = readdir(dirp);
-      if (direntp == NULL)
-         break;
-      if (strcmp((char*)direntp->d_name, ".") == 0 || strcmp((char*)direntp->d_name, "..") == 0)
-         continue;
-      core_info[count++].path = strdup((char*)direntp->d_name);
-   }
+      char buffer[PATH_MAX];
+      char info_path[PATH_MAX];
+      char *substr;
+   
+      core_info[i].path = strdup(contents->elems[i].data);
 
-   core_info_list->count = count;
-
-   for (i = 0; i < count; i++)
-   {
-      char info_path[255];
-      snprintf(info_path, sizeof(info_path), modules_path);
-      strncat(info_path, core_info[i].path, sizeof(info_path)-strlen(info_path)-1);
-      char *substr = strrchr(info_path, '_');
-
+      // NOTE: This assumes all modules are named module_name_{tag}.ext
+      //       {tag} must not contain an underscore. (This isn't true for PC versions)
+      snprintf(buffer, PATH_MAX, "%s", contents->elems[i].data);
+      substr = strrchr(buffer, '_');
       if (substr)
-      {
-         info_path[strlen(info_path) - strlen(substr)] = '\0';
-         strncat(info_path, ".info", sizeof(info_path)-strlen(info_path)-1);
-         core_info[i].data = config_file_new(info_path);
+         *substr = 0;
 
-         if (core_info[i].data)
-         {
-            config_get_string(core_info[i].data, "display_name", &core_info[i].displayName);
-            config_get_string(core_info[i].data, "supported_extensions", &core_info[i].supportedExtensions);
-         }
-         else
-            core_info[i].displayName = "Not Supported";
+      // NOTE: Can't just use fill_pathname on iOS as it will cut at RetroArch.app;
+      //       perhaps fill_pathname shouldn't cut before the last path element.
+      if (substr)
+         snprintf(info_path, PATH_MAX, "%s.info", buffer);
+      else
+         fill_pathname(info_path, buffer, ".info", PATH_MAX);         
+
+      core_info[i].data = config_file_new(info_path);
+
+      if (core_info[i].data)
+      {
+         config_get_string(core_info[i].data, "display_name", &core_info[i].display_name);
+
+         char* extensions;
+         if (config_get_string(core_info[i].data, "supported_extensions", &extensions) && extensions)
+            core_info[i].supported_extensions = string_split(extensions, "|");
       }
+
+      if (!core_info[i].display_name)
+         core_info[i].display_name = strdup(path_basename(core_info[i].path));
    }
 
-   closedir(dirp);
+   dir_list_free(contents);
 
    return core_info_list;
 }
@@ -103,14 +83,26 @@ void free_core_info_list(core_info_list_t *core_info_list)
 {
    int i;
 
+   if (!core_info_list)
+      return;
+
    for (i = 0; i < core_info_list->count; i++)
    {
       free(core_info_list->list[i].path);
-      free(core_info_list->list[i].displayName);
-      free(core_info_list->list[i].supportedExtensions);
+      free(core_info_list->list[i].display_name);
+      string_list_free(core_info_list->list[i].supported_extensions);
       config_file_free(core_info_list->list[i].data);
    }
 
    free(core_info_list->list);
    free(core_info_list);
 }
+
+bool does_core_support_file(core_info_t* core, const char *path)
+{
+   if (!path || !core || !core->supported_extensions)
+      return false;
+
+   return string_list_find_elem_prefix(core->supported_extensions, ".", path_get_extension(path));
+}
+
