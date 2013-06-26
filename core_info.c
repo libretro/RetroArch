@@ -65,9 +65,9 @@ core_info_list_t *get_core_info_list(const char *modules_path)
       {
          config_get_string(core_info[i].data, "display_name", &core_info[i].display_name);
 
-         char* extensions;
-         if (config_get_string(core_info[i].data, "supported_extensions", &extensions) && extensions)
-            core_info[i].supported_extensions = string_split(extensions, "|");
+         if (config_get_string(core_info[i].data, "supported_extensions", &core_info[i].supported_extensions) &&
+               core_info[i].supported_extensions)
+            core_info[i].supported_extensions_list = string_split(core_info[i].supported_extensions, "|");
       }
 
       if (!core_info[i].display_name)
@@ -90,7 +90,8 @@ void free_core_info_list(core_info_list_t *core_info_list)
    {
       free(core_info_list->list[i].path);
       free(core_info_list->list[i].display_name);
-      string_list_free(core_info_list->list[i].supported_extensions);
+      free(core_info_list->list[i].supported_extensions);
+      string_list_free(core_info_list->list[i].supported_extensions_list);
       config_file_free(core_info_list->list[i].data);
    }
 
@@ -100,9 +101,9 @@ void free_core_info_list(core_info_list_t *core_info_list)
 
 bool does_core_support_file(core_info_t* core, const char *path)
 {
-   if (!path || !core || !core->supported_extensions)
+   if (!path || !core || !core->supported_extensions_list)
       return false;
 
-   return string_list_find_elem_prefix(core->supported_extensions, ".", path_get_extension(path));
+   return string_list_find_elem_prefix(core->supported_extensions_list, ".", path_get_extension(path));
 }
 

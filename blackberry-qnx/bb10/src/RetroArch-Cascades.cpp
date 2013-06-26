@@ -250,7 +250,7 @@ void RetroArch::onCoreSelected(QVariant value)
    core.append(core_info_list->list[coreSelectedIndex].path);
    emit coreChanged(core);
 
-   romExtensions = QString("*.%1").arg(core_info_list->list[coreSelectedIndex].supportedExtensions);
+   romExtensions = QString("*.%1").arg(core_info_list->list[coreSelectedIndex].supported_extensions);
    romExtensions.replace("|", "|*.");
    emit romExtensionsChanged(romExtensions);
 
@@ -296,9 +296,9 @@ void RetroArch::populateCores(core_info_list_t * info)
    //Populate DropDown
    for (i = 0; i < info->count; ++i)
    {
-      qDebug() << info->list[i].displayName;
+      qDebug() << info->list[i].display_name;
 
-      tmp = Option::create().text(QString(info->list[i].displayName))
+      tmp = Option::create().text(QString(info->list[i].display_name))
                             .value(i);
 
       coreSelection->add(tmp);

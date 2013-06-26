@@ -26,7 +26,8 @@ typedef struct {
    char * path;
    config_file_t* data;
    char * display_name;
-   struct string_list * supported_extensions;
+   char * supported_extensions;
+   struct string_list * supported_extensions_list;
 } core_info_t;
 
 typedef struct {
