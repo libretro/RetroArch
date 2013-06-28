@@ -40,6 +40,8 @@ mouse/keyboard controls should work now
 now - such as Tekken 2
 * [MAME 2003] Correct resolutions for Namco System 11 games
 * [MAME 2003] Some minor optimizations (very slight though)
+* (NXEngine/Cave Story) Big-endian background garbage bug fixed - should make game play
+correctly in those parts on PS3/Gamecube/Wii/Xbox 360. (http://forum.themaister.net/viewtopic.php?id=415&p=2)
 
 v0.9.9.2
 ------------------------------------------------------------------------------
