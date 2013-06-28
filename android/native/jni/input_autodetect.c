@@ -219,6 +219,8 @@ void input_autodetect_setup (void *data, char *msg, size_t sizeof_msg, unsigned 
          device = DEVICE_GAMEMID;
       else if (strstr(name_buf, "USB Gamepad"))
          device = DEVICE_DEFENDER_GAME_RACER_CLASSIC;
+      else if (strstr(name_buf, "HOLTEK JC - U912F vibration game"))
+         device = DEVICE_HOLTEK_JC_U912F;
 
       if (strstr(current_ime, "net.obsidianx.android.mogaime"))
       {
