@@ -1,4 +1,46 @@
 ------------------------------------------------------------------------------
+v0.9.9.3
+------------------------------------------------------------------------------
+* [Android] Input autodetection expanded -
+  - Xperia Play controls fixed once and for all (thanks to littleguy77)
+  - JC U912F gamepad
+* [GX] Fixed FPS reporting
+* [iOS] Fixed input issues -
+  - Rewrite of BTStack code
+  - Multiple gamepad support
+  - More reliable syncing/pairing
+  - Cleanup of L2CAP commands
+  - Stop Wiimote inquiry loops while game is running, fixes horrible lag
+* [iOS] Add a 'TV Mode' option which forgoes the Cocoa file browser for
+RGUI. NOTE: You might have trouble launching PS1 games from this mode
+if they are the first ROM/ISO you load.
+* [iOS] Shaders should work now. Note - for best results - set Scale
+to 1x per shader pass. Quite a few shaders are fullspeed from iPad 2
+and up - your mileage may vary depending on the device.
+* [Blackberry] Fixed input issues -
+  - Fixed a bug that caused random button presses on unmapped players
+  - Better multitouch
+* [Blackberry] Add ALSA QNX sound driver
+* [GENERAL] Should fix GPU screenshots if last frame was duped
+* [PCSX ReARMed] Add core option to switch between Dual Shock and regular
+gamepad modes
+* [TyrQuake] Add core option so that you can change the internal screen
+resolution (note that TyrQuake uses the software renderer - it is slow -
+an OpenGL ES option will be added in the future for mobile devices and
+others)
+* [TyrQuake] For RetroArch ports that support RETRO_KEYBOARD and RETRO_MOUSE -
+mouse/keyboard controls should work now
+* [Genesis Plus GX] Updated to the latest version - 1.7.4 -
+  - fixed SRAM incompatibilities between BIG ENDIAN & LITTLE ENDIAN platforms 
+  for libretro (note: this breaks old .srm files with LITTLE ENDIAN platform ports -
+  which includes iOS, Android, PC) 
+  - A lot of compatibility/maintenance fixes by ekeeke (main author) - see
+  this for more - https://github.com/libretro/Genesis-Plus-GX/commit/11d275e2f881d5eefac9d9473db3fc3d52f19c75
+* [MAME 2003] 'game might not run correctly. Press any key to continue' games can be run
+now - such as Tekken 2
+* [MAME 2003] Correct resolutions for Namco System 11 games
+* [MAME 2003] Some minor optimizations (very slight though)
+
 v0.9.9.2
 ------------------------------------------------------------------------------
 * (LIBRETRO) Added MAME 2003 [0.78] (PC/Android/iOS)
@@ -284,3 +326,11 @@ first ROM/game file.
 v0.9.6
 ------------------------------------------------------------------------------
 - (PS3/360) Initial release of RetroArch PS3/360.
+
+------------------------------------------------------------------------------
+LEGEND
+------------------------------------------------------------------------------
+GX   - Stands for Gamecube/Wii
+PS3  - Stands for PlayStation3
+360  - Stands for Xbox 360
+RGUI - RetroArch's built-in menu system 

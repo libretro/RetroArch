@@ -1,5 +1,5 @@
 ------------------------------------------------------------------------------
-RETROARCH 360 - 0.9.9
+RETROARCH 360 - 0.9.9.3
 ------------------------------------------------------------------------------
 RetroConsole Level: 2
 Author: Themaister, Squarepusher/Twin Aphex
@@ -200,7 +200,7 @@ Websites
 ------------------------------------------------------------------------------
 Twitter:                   http://twitter.com/libretro
 Source:                    http://github.com/libretro
-Homepage:                  http://www.libretro.org
+Homepage:                  http://www.libretro.com
 IRC:                       #retroarch (freenode)
 
 ------------------------------------------------------------------------------
