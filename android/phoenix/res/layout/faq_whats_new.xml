@@ -10,6 +10,17 @@
         android:layout_height="wrap_content"
         android:layout_margin="40px"
         android:text="
+        r17 (June 28, 2013)\n\n
+        * [Android] Input autodetection expanded -\n
+        - Xperia Play controls fixed once and for all (thanks to littleguy77)\n
+        - JC U912F gamepad\n
+        * [GENERAL] Should fix GPU screenshots if last frame was duped\n
+        * [PCSX ReARMed] Add core option to switch between Dual Shock and regular gamepad modes\n
+        * [TyrQuake] Add core option so that you can change the internal screen resolution (note that TyrQuake uses the software renderer - it is slow - an OpenGL ES option will be added in the future for mobile devices and others)\n
+        * [TyrQuake] For RetroArch ports that support RETRO_KEYBOARD and RETRO_MOUSE -mouse/keyboard controls should work now\n
+        * [Genesis Plus GX] Updated to the latest version - 1.7.4 -\n
+          - fixed SRAM incompatibilities between BIG ENDIAN and LITTLE ENDIAN platforms for libretro (note: this breaks old .srm files with LITTLE ENDIAN platform ports - which includes iOS, Android, PC)\n
+          - A lot of compatibility/maintenance fixes by ekeeke (main author)\n
         r16 (June 17, 2013)\n\n
         * (LIBRETRO) Added MAME 2003 [0.78] (PC/Android/iOS)\n
         * (MAME 2003 0.78) Add speedhack core option so that MAME can run at fullspeed on average Cortex A9 CPUs for games like Mortal Kombat 2/3/Ultimate/NBA Jam (DCS sound harware games)\n
