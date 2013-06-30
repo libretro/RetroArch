@@ -490,6 +490,7 @@ static void gfx_ctx_destroy(void)
 {
    if (g_hrc)
    {
+      glFinish();
       wglMakeCurrent(NULL, NULL);
 
       if (!driver.video_cache_context)

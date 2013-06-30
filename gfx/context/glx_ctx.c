@@ -408,6 +408,7 @@ static bool gfx_ctx_set_video_mode(
    if (g_is_double)
    {
       const char *swap_func = NULL;
+
       g_pglSwapInterval = (int (*)(int))glXGetProcAddress((const GLubyte*)"glXSwapIntervalMESA");
       if (g_pglSwapInterval)
          swap_func = "glXSwapIntervalMESA";
@@ -458,6 +459,7 @@ static void gfx_ctx_destroy(void)
 {
    if (g_dpy && g_ctx)
    {
+      glFinish();
       glXMakeContextCurrent(g_dpy, None, None, NULL);
       if (!driver.video_cache_context)
       {
