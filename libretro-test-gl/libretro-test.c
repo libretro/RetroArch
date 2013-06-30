@@ -344,7 +344,7 @@ void retro_run(void)
 
    static unsigned frame_count;
    frame_count++;
-   float angle = frame_count / 100.0;
+   float angle = frame_count / 10.0;
    float cos_angle = cos(angle);
    float sin_angle = sin(angle);
 
@@ -413,6 +413,7 @@ bool retro_load_game(const struct retro_game_info *info)
    hw_render.context_reset = context_reset;
    hw_render.depth = true;
    hw_render.stencil = true;
+   hw_render.bottom_left_origin = true;
    if (!environ_cb(RETRO_ENVIRONMENT_SET_HW_RENDER, &hw_render))
       return false;
 

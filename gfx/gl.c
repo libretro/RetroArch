@@ -55,7 +55,7 @@
 #endif
 
 // Used for the last pass when rendering to the back buffer.
-const GLfloat vertexes_flipped[] = {
+static const GLfloat vertexes_flipped[] = {
    0, 1,
    1, 1,
    0, 0,
@@ -76,6 +76,13 @@ static const GLfloat tex_coords[] = {
    1, 0,
    0, 1,
    1, 1
+};
+
+static const GLfloat white_color[] = {
+   1, 1, 1, 1,
+   1, 1, 1, 1,
+   1, 1, 1, 1,
+   1, 1, 1, 1,
 };
 
 // Workaround broken Apple headers.
@@ -130,16 +137,6 @@ static inline void set_texture_coords(GLfloat *coords, GLfloat xamt, GLfloat yam
    coords[5] = yamt;
    coords[7] = yamt;
 }
-
-const GLfloat white_color[] = {
-   1, 1, 1, 1,
-   1, 1, 1, 1,
-   1, 1, 1, 1,
-   1, 1, 1, 1,
-};
-
-const GLfloat *vertex_ptr = vertexes_flipped;
-const GLfloat *default_vertex_ptr = vertexes_flipped;
 
 #undef LOAD_GL_SYM
 #define LOAD_GL_SYM(SYM) if (!pgl##SYM) { \
@@ -1064,7 +1061,7 @@ static void gl_frame_fbo(void *data, const struct gl_tex_info *tex_info)
          gl->vp.width, gl->vp.height, g_extern.frame_count, 
          tex_info, gl->prev_info, fbo_tex_info, fbo_tex_info_cnt);
 
-   gl->coords.vertex = vertex_ptr;
+   gl->coords.vertex = gl->vertex_ptr;
 
    gl_shader_set_coords(gl, &gl->coords, &gl->mvp);
    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
@@ -1442,7 +1439,7 @@ static inline void gl_draw_texture(void *data)
    glDisable(GL_BLEND);
 
    gl->coords.tex_coord = gl->tex_coords;
-   gl->coords.color = white_color;
+   gl->coords.color = gl->white_color_ptr;
 }
 #endif
 
@@ -2021,13 +2018,16 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
       gl->tex_filter = video->smooth ? GL_LINEAR : GL_NEAREST;
 
 #ifdef HAVE_FBO
+   struct retro_hw_render_callback *hw_render = &g_extern.system.hw_render_callback;
+   gl->vertex_ptr = hw_render->bottom_left_origin ? vertexes : vertexes_flipped;
 #ifdef HAVE_OPENGLES2
-   gl->hw_render_use = g_extern.system.hw_render_callback.context_type == RETRO_HW_CONTEXT_OPENGLES2;
+   gl->hw_render_use = hw_render->context_type == RETRO_HW_CONTEXT_OPENGLES2;
 #else
-   gl->hw_render_use = g_extern.system.hw_render_callback.context_type == RETRO_HW_CONTEXT_OPENGL ||
+   gl->hw_render_use = hw_render->context_type == RETRO_HW_CONTEXT_OPENGL ||
       g_extern.system.hw_render_callback.context_type == RETRO_HW_CONTEXT_OPENGL_CORE;
 #endif
 #endif
+   gl->white_color_ptr = white_color;
 
    gl_set_texture_fmts(gl, video->rgb32);
 
@@ -2041,9 +2041,9 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    glDisable(GL_DITHER);
 
    memcpy(gl->tex_coords, tex_coords, sizeof(tex_coords));
-   gl->coords.vertex         = vertex_ptr;
+   gl->coords.vertex         = gl->vertex_ptr;
    gl->coords.tex_coord      = gl->tex_coords;
-   gl->coords.color          = white_color;
+   gl->coords.color          = gl->white_color_ptr;
    gl->coords.lut_tex_coord  = tex_coords;
 
    // Empty buffer that we use to clear out the texture with on res change.
@@ -2439,9 +2439,9 @@ static void gl_render_overlay(void *data)
 
    glDisable(GL_BLEND);
 
-   gl->coords.vertex    = vertex_ptr;
+   gl->coords.vertex    = gl->vertex_ptr;
    gl->coords.tex_coord = gl->tex_coords;
-   gl->coords.color     = white_color;
+   gl->coords.color     = gl->white_color_ptr;
 }
 
 static const video_overlay_interface_t gl_overlay_interface = {

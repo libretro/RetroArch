@@ -219,6 +219,8 @@ typedef struct gl
    math_matrix mvp, mvp_no_rot;
 
    struct gl_coords coords;
+   const GLfloat *vertex_ptr;
+   const GLfloat *white_color_ptr;
 
    GLuint pbo;
 
@@ -340,9 +342,6 @@ extern PFNGLACTIVETEXTUREPROC pglActiveTexture;
 #if defined(HAVE_OPENGLES2) // It's an extension. Don't bother checking for it atm.
 #undef GL_UNPACK_ROW_LENGTH
 #endif
-
-extern const GLfloat vertexes_flipped[];
-extern const GLfloat white_color[];
 
 void gl_set_projection(void *data, struct gl_ortho *ortho, bool allow_rotate);
 void gl_set_viewport(void *data, unsigned width, unsigned height, bool force_full, bool allow_rotate);
