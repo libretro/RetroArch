@@ -352,6 +352,13 @@ static bool gl_shader_init(void *data)
       return true;
    }
 
+   if (gl->core_context && RARCH_SHADER_CG)
+   {
+      RARCH_ERR("[GL]: Cg cannot be used with core GL context. Falling back to GLSL.\n");
+      backend = &gl_glsl_backend;
+      shader_path = NULL;
+   }
+
    gl->shader = backend;
    bool ret = gl->shader->init(shader_path);
    if (!ret)
@@ -1988,8 +1995,22 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
       gl->full_y = gl->win_height;
    }
 
+   struct retro_hw_render_callback *hw_render = &g_extern.system.hw_render_callback;
+   gl->vertex_ptr = hw_render->bottom_left_origin ? vertexes : vertexes_flipped;
+
+#ifdef HAVE_FBO
+#ifdef HAVE_OPENGLES2
+   gl->hw_render_use = hw_render->context_type == RETRO_HW_CONTEXT_OPENGLES2;
+#else
+   gl->hw_render_use = hw_render->context_type == RETRO_HW_CONTEXT_OPENGL ||
+      g_extern.system.hw_render_callback.context_type == RETRO_HW_CONTEXT_OPENGL_CORE;
+#endif
+#endif
+   gl->white_color_ptr = white_color;
+
 #ifdef HAVE_GLSL
    gl_glsl_set_get_proc_address(gl->ctx_driver->get_proc_address);
+   gl_glsl_set_context_type(gl->core_context, hw_render->version_major, hw_render->version_minor);
 #endif
 
    if (!gl_shader_init(gl))
@@ -2016,18 +2037,6 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
       gl->tex_filter = force_smooth ? GL_LINEAR : GL_NEAREST;
    else
       gl->tex_filter = video->smooth ? GL_LINEAR : GL_NEAREST;
-
-#ifdef HAVE_FBO
-   struct retro_hw_render_callback *hw_render = &g_extern.system.hw_render_callback;
-   gl->vertex_ptr = hw_render->bottom_left_origin ? vertexes : vertexes_flipped;
-#ifdef HAVE_OPENGLES2
-   gl->hw_render_use = hw_render->context_type == RETRO_HW_CONTEXT_OPENGLES2;
-#else
-   gl->hw_render_use = hw_render->context_type == RETRO_HW_CONTEXT_OPENGL ||
-      g_extern.system.hw_render_callback.context_type == RETRO_HW_CONTEXT_OPENGL_CORE;
-#endif
-#endif
-   gl->white_color_ptr = white_color;
 
    gl_set_texture_fmts(gl, video->rgb32);
 
