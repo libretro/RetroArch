@@ -1,0 +1,5 @@
+display_name = "Sega (MS/GG/MD/CD/32X)"
+supported_extensions = "md|smd|gen|sms|gg|sg|bin|cue|ios|32x"
+corename = "Picodrive"
+manufacturer = "Sega"
+systemname = "Sega (Various)"
