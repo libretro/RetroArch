@@ -372,6 +372,7 @@ void init_drivers(void)
 
    if (!driver.video_cache_context_ack && g_extern.system.hw_render_callback.context_reset)
       g_extern.system.hw_render_callback.context_reset();
+   driver.video_cache_context_ack = false;
 
    init_audio();
 
