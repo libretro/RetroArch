@@ -126,6 +126,28 @@ static const GLfloat vertex_data[] = {
    1.0, 0.0, 1.0, 1.0,
 };
 
+#ifdef CORE
+static const char *vertex_shader[] = {
+   "#version 420\n"
+   "uniform mat4 uMVP;",
+   "in vec2 aVertex;",
+   "in vec4 aColor;",
+   "out vec4 color;",
+   "void main() {",
+   "  gl_Position = uMVP * vec4(aVertex, 0.0, 1.0);",
+   "  color = aColor;",
+   "}",
+};
+
+static const char *fragment_shader[] = {
+   "#version 420\n"
+   "in vec4 color;",
+   "out vec4 FragColor;\n"
+   "void main() {",
+   "  FragColor = color;",
+   "}",
+};
+#else
 static const char *vertex_shader[] = {
    "uniform mat4 uMVP;",
    "attribute vec2 aVertex;",
@@ -146,6 +168,7 @@ static const char *fragment_shader[] = {
    "  gl_FragColor = color;",
    "}",
 };
+#endif
 
 static void compile_program(void)
 {
@@ -290,7 +313,7 @@ void retro_run(void)
 
    static unsigned frame_count;
    frame_count++;
-   float angle = frame_count / 10.0;
+   float angle = frame_count / 100.0;
    float cos_angle = cos(angle);
    float sin_angle = sin(angle);
 
@@ -347,8 +370,8 @@ bool retro_load_game(const struct retro_game_info *info)
 #else
 #ifdef CORE
    hw_render.context_type = RETRO_HW_CONTEXT_OPENGL_CORE;
-   hw_render.version_major = 3;
-   hw_render.version_minor = 1;
+   hw_render.version_major = 4;
+   hw_render.version_minor = 2;
 #else
    hw_render.context_type = RETRO_HW_CONTEXT_OPENGL;
 #endif

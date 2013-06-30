@@ -129,6 +129,9 @@ static PFNGLBINDBUFFERPROC pglBindBuffer;
 #define PREV_TEXTURES (TEXTURES - 1)
 
 static struct gfx_shader *glsl_shader;
+static bool glsl_core;
+static unsigned glsl_major;
+static unsigned glsl_minor;
 
 static bool glsl_enable;
 static GLuint gl_program[GFX_MAX_SHADERS];
@@ -224,6 +227,25 @@ static const char *stock_fragment_modern =
    "   gl_FragColor = vec4(texture2D(Texture, tex_coord).rgb, 1.0);\n"
    "}";
 
+static const char *stock_vertex_core =
+   "in vec2 TexCoord;\n"
+   "in vec2 VertexCoord;\n"
+   "in vec4 Color;\n"
+   "uniform mat4 MVPMatrix;\n"
+   "out vec2 tex_coord;\n"
+   "void main() {\n"
+   "   gl_Position = MVPMatrix * vec4(VertexCoord, 0.0, 1.0);\n"
+   "   tex_coord = TexCoord;\n"
+   "}";
+
+static const char *stock_fragment_core =
+   "uniform sampler2D Texture;\n"
+   "in vec2 tex_coord;\n"
+   "out vec4 FragColor;\n"
+   "void main() {\n"
+   "   FragColor = vec4(texture(Texture, tex_coord).rgb, 1.0);\n"
+   "}";
+
 static const char *stock_vertex_legacy =
    "varying vec4 color;\n"
    "void main() {\n"
@@ -263,6 +285,27 @@ static const char *stock_fragment_modern_blend =
    "   gl_FragColor = color * texture2D(Texture, tex_coord);\n"
    "}";
 
+static const char *stock_vertex_core_blend =
+   "in vec2 TexCoord;\n"
+   "in vec2 VertexCoord;\n"
+   "in vec4 Color;\n"
+   "uniform mat4 MVPMatrix;\n"
+   "out vec2 tex_coord;\n"
+   "out vec4 color;\n"
+   "void main() {\n"
+   "   gl_Position = MVPMatrix * vec4(VertexCoord, 0.0, 1.0);\n"
+   "   tex_coord = TexCoord;\n"
+   "   color = Color;\n"
+   "}";
+
+static const char *stock_fragment_core_blend =
+   "uniform sampler2D Texture;\n"
+   "in vec2 tex_coord;\n"
+   "in vec4 color;\n"
+   "out vec4 FragColor;\n"
+   "void main() {\n"
+   "   FragColor = color * texture2D(Texture, tex_coord);\n"
+   "}";
 
 static GLint get_uniform(GLuint prog, const char *base)
 {
@@ -392,7 +435,24 @@ static void print_linker_log(GLuint obj)
 
 static bool compile_shader(GLuint shader, const char *define, const char *program)
 {
-   const char *source[] = { define, program };
+   char version[32] = {0};
+   if (glsl_core)
+   {
+      unsigned version_no = 0;
+      unsigned gl_ver = glsl_major * 100 + glsl_minor * 10;
+      switch (gl_ver)
+      {
+         case 300: version_no = 130; break;
+         case 310: version_no = 140; break;
+         case 320: version_no = 150; break;
+         default: version_no = gl_ver; break;
+      }
+
+      snprintf(version, sizeof(version), "#version %u\n", version_no);
+      RARCH_LOG("[GL]: Using GLSL version %u.\n", version_no);
+   }
+
+   const char *source[] = { version, define, program };
    pglShaderSource(shader, ARRAY_SIZE(source), source, NULL);
    pglCompileShader(shader);
 
@@ -771,8 +831,8 @@ static bool gl_glsl_init(const char *path)
    {
       RARCH_WARN("[GL]: Stock GLSL shaders will be used.\n");
       glsl_shader->passes = 1;
-      glsl_shader->pass[0].source.xml.vertex   = strdup(stock_vertex_modern);
-      glsl_shader->pass[0].source.xml.fragment = strdup(stock_fragment_modern);
+      glsl_shader->pass[0].source.xml.vertex   = strdup(glsl_core ? stock_vertex_core : stock_vertex_modern);
+      glsl_shader->pass[0].source.xml.fragment = strdup(glsl_core ? stock_fragment_core : stock_fragment_modern);
       glsl_shader->modern = true;
    }
 
@@ -787,6 +847,12 @@ static bool gl_glsl_init(const char *path)
    if (!glsl_shader->modern)
    {
       RARCH_ERR("[GL]: GLES context is used, but shader is not modern. Cannot use it.\n");
+      goto error;
+   }
+#else
+   if (glsl_core && !glsl_shader->modern)
+   {
+      RARCH_ERR("[GL]: GL core context is used, but shader is not core compatible. Cannot use it.\n");
       goto error;
    }
 #endif
@@ -838,8 +904,8 @@ static bool gl_glsl_init(const char *path)
 
    if (glsl_shader->modern)
    {
-      gl_program[GL_SHADER_STOCK_BLEND] = compile_program(stock_vertex_modern_blend,
-            stock_fragment_modern_blend, GL_SHADER_STOCK_BLEND);
+      gl_program[GL_SHADER_STOCK_BLEND] = compile_program(glsl_core ? stock_vertex_core_blend : stock_vertex_modern_blend,
+            glsl_core ? stock_fragment_modern_blend : stock_fragment_modern_blend, GL_SHADER_STOCK_BLEND);
 
       find_uniforms(gl_program[GL_SHADER_STOCK_BLEND], &gl_uniforms[GL_SHADER_STOCK_BLEND]);
    }
@@ -1194,6 +1260,13 @@ static void gl_glsl_shader_scale(unsigned index, struct gfx_fbo_scale *scale)
 void gl_glsl_set_get_proc_address(gfx_ctx_proc_t (*proc)(const char*))
 {
    glsl_get_proc_address = proc;
+}
+
+void gl_glsl_set_context_type(bool core_profile, unsigned major, unsigned minor)
+{
+   glsl_core = core_profile;
+   glsl_major = major;
+   glsl_minor = minor;
 }
 
 const gl_shader_backend_t gl_glsl_backend = {
