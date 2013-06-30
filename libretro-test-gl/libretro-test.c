@@ -128,7 +128,7 @@ static const GLfloat vertex_data[] = {
 
 #ifdef CORE
 static const char *vertex_shader[] = {
-   "#version 420\n"
+   "#version 140\n"
    "uniform mat4 uMVP;",
    "in vec2 aVertex;",
    "in vec4 aColor;",
@@ -140,7 +140,7 @@ static const char *vertex_shader[] = {
 };
 
 static const char *fragment_shader[] = {
-   "#version 420\n"
+   "#version 140\n"
    "in vec4 color;",
    "out vec4 FragColor;\n"
    "void main() {",
@@ -370,8 +370,8 @@ bool retro_load_game(const struct retro_game_info *info)
 #else
 #ifdef CORE
    hw_render.context_type = RETRO_HW_CONTEXT_OPENGL_CORE;
-   hw_render.version_major = 4;
-   hw_render.version_minor = 2;
+   hw_render.version_major = 3;
+   hw_render.version_minor = 1;
 #else
    hw_render.context_type = RETRO_HW_CONTEXT_OPENGL;
 #endif

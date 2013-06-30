@@ -304,7 +304,7 @@ static const char *stock_fragment_core_blend =
    "in vec4 color;\n"
    "out vec4 FragColor;\n"
    "void main() {\n"
-   "   FragColor = color * texture2D(Texture, tex_coord);\n"
+   "   FragColor = color * texture(Texture, tex_coord);\n"
    "}";
 
 static GLint get_uniform(GLuint prog, const char *base)
