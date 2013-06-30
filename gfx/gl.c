@@ -1424,6 +1424,7 @@ static inline void gl_draw_texture(void *data)
       1.0f, 1.0f, 1.0f, gl->rgui_texture_alpha,
    };
 
+   gl->coords.vertex = vertexes_flipped;
    gl->coords.tex_coord = tex_coords;
    gl->coords.color = color;
    glBindTexture(GL_TEXTURE_2D, gl->rgui_texture);
@@ -1445,6 +1446,7 @@ static inline void gl_draw_texture(void *data)
 
    glDisable(GL_BLEND);
 
+   gl->coords.vertex = gl->vertex_ptr;
    gl->coords.tex_coord = gl->tex_coords;
    gl->coords.color = gl->white_color_ptr;
 }
