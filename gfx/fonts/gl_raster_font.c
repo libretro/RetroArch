@@ -240,9 +240,6 @@ static void calculate_font_coords(gl_t *gl,
    font_tex_coords[7] = hy;
 }
 
-extern const GLfloat vertexes_flipped[];
-extern const GLfloat white_color[];
-
 static void setup_font(void *data, const char *msg, GLfloat scale, GLfloat pos_x, GLfloat pos_y)
 {
    gl_t *gl = (gl_t*)data;
@@ -297,9 +294,9 @@ static void setup_font(void *data, const char *msg, GLfloat scale, GLfloat pos_x
    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
    // Post - Go back to old rendering path.
-   gl->coords.vertex    = vertexes_flipped;
+   gl->coords.vertex    = gl->vertex_ptr;
    gl->coords.tex_coord = gl->tex_coords;
-   gl->coords.color     = white_color;
+   gl->coords.color     = gl->white_color_ptr;
    glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
 
    glDisable(GL_BLEND);

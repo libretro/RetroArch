@@ -517,6 +517,7 @@ struct retro_hw_render_callback
    bool depth; // Set if render buffers should have depth component attached.
    bool stencil; // Set if stencil buffers should be attached.
    // If depth and stencil are true, a packed 24/8 buffer will be added. Only attaching stencil is invalid and will be ignored.
+   bool bottom_left_origin; // Use conventional bottom-left origin convention. Is false, standard libretro top-left origin semantics are used.
    unsigned version_major; // Major version number for core GL context.
    unsigned version_minor; // Minor version number for core GL context.
 };
