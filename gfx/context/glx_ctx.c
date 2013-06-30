@@ -367,23 +367,22 @@ static bool gfx_ctx_set_video_mode(
    XEvent event;
    XIfEvent(g_dpy, &event, glx_wait_notify, NULL);
 
-   if (g_core)
-   {
-      const int attribs[] = {
-         GLX_CONTEXT_MAJOR_VERSION_ARB, g_major,
-         GLX_CONTEXT_MINOR_VERSION_ARB, g_minor,
-         GLX_CONTEXT_PROFILE_MASK_ARB, GLX_CONTEXT_CORE_PROFILE_BIT_ARB,
-         None,
-      };
-
-      g_ctx = glx_create_context_attribs(g_dpy, g_fbc, NULL, True, attribs);
-   }
-   else
-      g_ctx = glXCreateNewContext(g_dpy, g_fbc, GLX_RGBA_TYPE, 0, True);
-
    if (!g_ctx)
    {
-      g_ctx = glXCreateNewContext(g_dpy, g_fbc, GLX_RGBA_TYPE, 0, True);
+      if (g_core)
+      {
+         const int attribs[] = {
+            GLX_CONTEXT_MAJOR_VERSION_ARB, g_major,
+            GLX_CONTEXT_MINOR_VERSION_ARB, g_minor,
+            GLX_CONTEXT_PROFILE_MASK_ARB, GLX_CONTEXT_CORE_PROFILE_BIT_ARB,
+            None,
+         };
+
+         g_ctx = glx_create_context_attribs(g_dpy, g_fbc, NULL, True, attribs);
+      }
+      else
+         g_ctx = glXCreateNewContext(g_dpy, g_fbc, GLX_RGBA_TYPE, 0, True);
+
       if (!g_ctx)
       {
          RARCH_ERR("[GLX]: Failed to create new context.\n");
@@ -409,6 +408,7 @@ static bool gfx_ctx_set_video_mode(
    if (g_is_double)
    {
       const char *swap_func = NULL;
+
       g_pglSwapInterval = (int (*)(int))glXGetProcAddress((const GLubyte*)"glXSwapIntervalMESA");
       if (g_pglSwapInterval)
          swap_func = "glXSwapIntervalMESA";
@@ -459,6 +459,7 @@ static void gfx_ctx_destroy(void)
 {
    if (g_dpy && g_ctx)
    {
+      glFinish();
       glXMakeContextCurrent(g_dpy, None, None, NULL);
       if (!driver.video_cache_context)
       {
