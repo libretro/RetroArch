@@ -56,6 +56,7 @@ static unsigned g_interval;
 static bool g_is_double;
 
 static int (*g_pglSwapInterval)(int);
+static void (*g_pglSwapIntervalEXT)(Display*, GLXDrawable, int);
 
 static void sighandler(int sig)
 {
@@ -83,7 +84,13 @@ static void gfx_ctx_destroy(void);
 static void gfx_ctx_swap_interval(unsigned interval)
 {
    g_interval = interval;
-   if (g_pglSwapInterval)
+
+   if (g_pglSwapIntervalEXT)
+   {
+      RARCH_LOG("[GLX]: glXSwapIntervalEXT(%u)\n", g_interval);
+      g_pglSwapIntervalEXT(g_dpy, g_glx_win, g_interval);
+   }
+   else if (g_pglSwapInterval)
    {
       RARCH_LOG("[GLX]: glXSwapInterval(%u)\n", g_interval);
       if (g_pglSwapInterval(g_interval) != 0)
@@ -409,18 +416,15 @@ static bool gfx_ctx_set_video_mode(
    {
       const char *swap_func = NULL;
 
+      g_pglSwapIntervalEXT = (void (*)(Display*, GLXDrawable, int))glXGetProcAddress((const GLubyte*)"glXSwapIntervalEXT");
       g_pglSwapInterval = (int (*)(int))glXGetProcAddress((const GLubyte*)"glXSwapIntervalMESA");
-      if (g_pglSwapInterval)
+
+      if (g_pglSwapIntervalEXT)
+         swap_func = "glXSwapIntervalEXT";
+      else if (g_pglSwapInterval)
          swap_func = "glXSwapIntervalMESA";
 
-      if (!g_pglSwapInterval)
-      {
-         g_pglSwapInterval = (int (*)(int))glXGetProcAddress((const GLubyte*)"glXSwapIntervalSGI");
-         if (g_pglSwapInterval)
-            swap_func = "glXSwapIntervalSGI";
-      }
-
-      if (!g_pglSwapInterval)
+      if (!g_pglSwapInterval && !g_pglSwapIntervalEXT)
          RARCH_WARN("[GLX]: Cannot find swap interval call.\n");
       else
          RARCH_LOG("[GLX]: Found swap function: %s.\n", swap_func);
@@ -514,6 +518,7 @@ static void gfx_ctx_destroy(void)
 
    g_inited = false;
    g_pglSwapInterval = NULL;
+   g_pglSwapIntervalEXT = NULL;
    g_major = g_minor = 0;
    g_core = false;
 }
