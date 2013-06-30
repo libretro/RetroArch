@@ -20,10 +20,8 @@
 #include "btstack/utils.h"
 #include "btstack/btstack.h"
 
-bool btstack_load();
-void btstack_start();
-void btstack_stop();
-bool btstack_is_loaded();
+bool btstack_try_load();
+void btstack_set_poweron(bool on);
 bool btstack_is_running();
 
 #ifndef BUILDING_BTDYNAMIC
@@ -41,9 +39,7 @@ BTDIMPORT void (*bt_send_l2cap_ptr)(uint16_t local_cid, uint8_t *data, uint16_t 
 BTDIMPORT void (*run_loop_init_ptr)(RUN_LOOP_TYPE type);
 BTDIMPORT void (*run_loop_execute_ptr)();
 
-BTDIMPORT const hci_cmd_t* btstack_get_system_bluetooth_enabled_ptr;
 BTDIMPORT const hci_cmd_t* btstack_set_power_mode_ptr;
-BTDIMPORT const hci_cmd_t* btstack_set_system_bluetooth_enabled_ptr;
 BTDIMPORT const hci_cmd_t* hci_delete_stored_link_key_ptr;
 BTDIMPORT const hci_cmd_t* hci_disconnect_ptr;
 BTDIMPORT const hci_cmd_t* hci_read_bd_addr_ptr;

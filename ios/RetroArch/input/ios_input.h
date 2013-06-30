@@ -19,6 +19,7 @@
 // Input responder
 #define MAX_TOUCHES 16
 #define MAX_KEYS 256
+#define MAX_PADS 4
 
 typedef struct
 {
@@ -34,16 +35,15 @@ typedef struct
 
    uint32_t keys[MAX_KEYS];
 
-   uint32_t pad_buttons;
-   int16_t pad_axis[4];
+   uint32_t pad_buttons[MAX_PADS];
+   int16_t pad_axis[MAX_PADS][4];
 } ios_input_data_t;
 
-extern ios_input_data_t g_ios_input_data;
+extern ios_input_data_t g_current_input_data; //< Main thread data
+extern ios_input_data_t g_polled_input_data;  //< Game thread data
 
-// Defined in main.m, must be called on the emu thread in a dispatch_sync block
-void ios_copy_input(ios_input_data_t* data);
-
-// Called from main.m, defined in ios_input.c
-void ios_add_key_event(bool down, unsigned keycode, uint32_t character, uint16_t keyModifiers);
+// Main thread only
+void ios_input_enable_icade(bool on);
+void ios_input_handle_key_event(unsigned keycode, bool down);
 
 #endif

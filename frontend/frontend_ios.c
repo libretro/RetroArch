@@ -92,10 +92,9 @@ void* rarch_main_ios(void* args)
 
 #ifdef HAVE_RGUI
    char* system_directory = ios_get_rarch_system_directory();
-   strlcpy(g_extern.savestate_dir, system_directory,
-         sizeof(g_extern.savestate_dir));
-   strlcpy(g_extern.savefile_dir, system_directory,
-         sizeof(g_extern.savefile_dir));
+   strlcpy(g_extern.savestate_dir, system_directory, sizeof(g_extern.savestate_dir));
+   strlcpy(g_extern.savefile_dir, system_directory, sizeof(g_extern.savefile_dir));
+   free(system_directory);
 
    menu_init();
    g_extern.lifecycle_mode_state |= 1ULL << MODE_GAME;
@@ -168,8 +167,6 @@ void* rarch_main_ios(void* args)
 
    if (g_extern.main_is_init)
       rarch_main_deinit();
-
-   free(system_directory);
 #else
    while ((g_extern.is_paused && !g_extern.is_oneshot) ? rarch_main_idle_iterate() : rarch_main_iterate());
    rarch_main_deinit();

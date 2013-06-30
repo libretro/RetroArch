@@ -13,7 +13,29 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <sys/stat.h>
+
+#include "general.h"
+#include "file.h"
 #import "views.h"
+
+void ios_display_alert(NSString* message, NSString* title)
+{
+   UIAlertView* alert = [[UIAlertView alloc] initWithTitle:title ? title : @"RetroArch"
+                                             message:message
+                                             delegate:nil
+                                             cancelButtonTitle:@"OK"
+                                             otherButtonTitles:nil];
+   [alert show];
+}
+
+// Little nudge to prevent stale values when reloading the confg file
+void ios_clear_config_hack()
+{
+   g_extern.block_config_read = false;
+   memset(g_settings.input.overlay, 0, sizeof(g_settings.input.overlay));
+   memset(g_settings.video.shader_path, 0, sizeof(g_settings.video.shader_path));
+}
 
 // Fetch a value from a config file, returning defaultValue if the value is not present
 NSString* ios_get_value_from_config(config_file_t* config, NSString* name, NSString* defaultValue)
@@ -25,6 +47,15 @@ NSString* ios_get_value_from_config(config_file_t* config, NSString* name, NSStr
    NSString* result = data ? [NSString stringWithUTF8String:data] : defaultValue;
    free(data);
    return result;
+}
+
+// Ensures a directory exists and has correct permissions
+bool path_make_and_check_directory(const char* path, mode_t mode, int amode)
+{
+   if (!path_is_directory(path) && mkdir(path, mode) != 0)
+      return false;
+   
+   return access(path, amode) == 0;
 }
 
 // Simple class to reduce code duplication for fixed table views

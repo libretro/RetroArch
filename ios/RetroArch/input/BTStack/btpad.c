@@ -23,67 +23,94 @@
 #include "../../rarch_wrapper.h"
 #include "btdynamic.h"
 #include "btpad.h"
+#include "btpad_queue.h"
 #include "wiimote.h"
 
-static btpad_connection_t btpad_connection;
+static btpad_connection_t btpad_connection[MAX_PADS];
+static struct btpad_interface* btpad_iface[MAX_PADS];
+static void* btpad_device[MAX_PADS];
+static bool inquiry_off;
+static bool inquiry_running;
 
-static bool btpad_connection_test(uint16_t handle, bd_addr_t address)
+// External interface (MAIN THREAD ONLY)
+void btpad_set_inquiry_state(bool on)
 {
-   if (handle && btpad_connection.handle && handle != btpad_connection.handle)
-      return false;
-   btpad_connection.handle = handle ? handle : btpad_connection.handle;
+   inquiry_off = !on;
 
-   if (address && btpad_connection.has_address && (BD_ADDR_CMP(address, btpad_connection.address)))
-      return false;
-
-   if (address)
-   {
-      btpad_connection.has_address = true;
-      memcpy(btpad_connection.address, address, sizeof(bd_addr_t));
-   }
-
-   return true;
+   if (!inquiry_off && !inquiry_running)
+      btpad_queue_hci_inquiry(HCI_INQUIRY_LAP, 3, 1);      
 }
-
-static struct btpad_interface* btpad_iface;
-static void* btpad_device;
 
 // MAIN THREAD ONLY
-uint32_t btpad_get_buttons()
+uint32_t btpad_get_buttons(uint32_t slot)
 {
-   return (btpad_device && btpad_iface) ? btpad_iface->get_buttons(btpad_device) : 0;
+   if (slot < MAX_PADS && btpad_device[slot] && btpad_iface[slot])
+      return btpad_iface[slot]->get_buttons(btpad_device[slot]);
+
+   return 0;
 }
 
-int16_t btpad_get_axis(unsigned axis)
+int16_t btpad_get_axis(uint32_t slot, unsigned axis)
 {
-   return (btpad_device && btpad_iface) ? btpad_iface->get_axis(btpad_device, axis) : 0;
+   if (slot < MAX_PADS && btpad_device[slot] && btpad_iface[slot])
+      return btpad_iface[slot]->get_axis(btpad_device[slot], axis);
+
+   return 0;
 }
 
-static void btpad_disconnect_pad()
+// Internal interface:
+static int32_t btpad_find_slot_for(uint16_t handle, bd_addr_t address)
 {
-   if (btpad_iface && btpad_device)
+   for (int i = 0; i < MAX_PADS; i ++)
    {
-      ios_add_log_message("BTpad: Disconnecting");
-   
-      btpad_iface->disconnect(btpad_device);
-      btpad_device = 0;
-      btpad_iface = 0;
+      if (!btpad_connection[i].handle && !btpad_connection[i].has_address)
+         continue;
+
+      if (handle && btpad_connection[i].handle && handle != btpad_connection[i].handle)
+         continue;
+
+      if (address && btpad_connection[i].has_address && (BD_ADDR_CMP(address, btpad_connection[i].address)))
+         continue;
+
+      return i;
    }
 
-   if (btpad_connection.handle)
-      bt_send_cmd_ptr(hci_disconnect_ptr, btpad_connection.handle, 0x15);
-
-   memset(&btpad_connection, 0, sizeof(btpad_connection_t));
+   return -1;
 }
 
-static void btpad_connect_pad()
+static int32_t btpad_find_slot_with_state(enum btpad_state state)
 {
-   if (btpad_connection.state == BTPAD_CONNECTED)
-      btpad_disconnect_pad();
-   memset(&btpad_connection, 0, sizeof(btpad_connection_t));
+   for (int i = 0; i < MAX_PADS; i ++)
+      if (btpad_connection[i].state == state)
+         return i;
 
-   ios_add_log_message("BTpad: Requesting local address");
-   bt_send_cmd_ptr(hci_read_bd_addr_ptr);
+   return -1;
+}
+
+static void btpad_disconnect_pad(uint32_t slot)
+{
+   if (slot > MAX_PADS)
+      return;
+
+   if (btpad_iface[slot] && btpad_device[slot])
+   {
+      ios_add_log_message("BTpad: Disconnecting slot %d", slot);
+   
+      btpad_iface[slot]->disconnect(btpad_device[slot]);
+      btpad_device[slot] = 0;
+      btpad_iface[slot] = 0;
+   }
+
+   if (btpad_connection[slot].handle)
+      btpad_queue_hci_disconnect(btpad_connection[slot].handle, 0x15);
+
+   memset(&btpad_connection[slot], 0, sizeof(btpad_connection_t));
+}
+
+static void btpad_disconnect_all_pads()
+{
+   for (int i = 0; i < MAX_PADS; i ++)
+      btpad_disconnect_pad(i);
 }
 
 void btpad_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size)
@@ -94,45 +121,41 @@ void btpad_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet
    {
       switch (packet[0])
       {
-        case BTSTACK_EVENT_STATE:
+         case BTSTACK_EVENT_STATE:
+         {
             if (packet[2] == HCI_STATE_WORKING)
-               btpad_connect_pad();
+            {
+               btpad_queue_reset();
+
+               btpad_queue_hci_read_bd_addr();
+               bt_send_cmd_ptr(l2cap_register_service_ptr, PSM_HID_CONTROL, 672);  // TODO: Where did I get 672 for mtu?
+               bt_send_cmd_ptr(l2cap_register_service_ptr, PSM_HID_INTERRUPT, 672);
+               btpad_queue_hci_inquiry(HCI_INQUIRY_LAP, 3, 1);
+               
+               btpad_queue_run(1);
+            }
             else if(packet[2] > HCI_STATE_WORKING && btpad_iface && btpad_device)
-               btpad_disconnect_pad();
-            break;
+            {
+               btpad_disconnect_all_pads();
+            }
+         }
+         break;
+
+         case HCI_EVENT_COMMAND_STATUS:
+         {
+            btpad_queue_run(packet[3]);
+         }
+         break;
 
          case HCI_EVENT_COMMAND_COMPLETE:
+         {
+            btpad_queue_run(packet[2]);
+
             if (COMMAND_COMPLETE_EVENT(packet, (*hci_read_bd_addr_ptr)))
             {
-               if (packet[5])
-                  ios_add_log_message("BTpad: Failed to get local address (E: %02X)", packet[5]);
-               else
-               {
-                  bt_flip_addr_ptr(event_addr, &packet[6]);
-                  ios_add_log_message("BTpad: Local address is %s", bd_addr_to_str_ptr(event_addr));
-               }
-
-               ios_add_log_message("BTpad: Registering HID INTERRUPT service");
-               bt_send_cmd_ptr(l2cap_register_service_ptr, PSM_HID_INTERRUPT, 672);
-            }
-            break;
-
-         case L2CAP_EVENT_SERVICE_REGISTERED:
-         {
-            uint32_t psm = READ_BT_16(packet, 3);
-            if (packet[2])
-               ios_add_log_message("BTpad: Failed to register HID service (PSM: %02X, E: %02X)", psm, packet[2]);
-            else if (psm == PSM_HID_INTERRUPT)
-            {
-               ios_add_log_message("BTpad: HID INTERRUPT service registered");
-               ios_add_log_message("BTpad: Registering HID CONTROL service");
-               bt_send_cmd_ptr(l2cap_register_service_ptr, PSM_HID_CONTROL, 672);
-            }
-            else if(psm == PSM_HID_CONTROL)
-            {
-               ios_add_log_message("BTpad: HID CONTROL service registered");
-               ios_add_log_message("BTpad: Starting inquiry");
-               bt_send_cmd_ptr(hci_inquiry_ptr, HCI_INQUIRY_LAP, 3, 1);
+               bt_flip_addr_ptr(event_addr, &packet[6]);
+               if (!packet[5]) ios_add_log_message("BTpad: Local address is %s", bd_addr_to_str_ptr(event_addr));
+               else            ios_add_log_message("BTpad: Failed to get local address (Status: %02X)", packet[5]);               
             }
          }
          break;
@@ -142,15 +165,20 @@ void btpad_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet
             if (packet[2])
             {
                bt_flip_addr_ptr(event_addr, &packet[3]);
-               if (btpad_connection_test(0, event_addr))
+
+               const int32_t slot = btpad_find_slot_with_state(BTPAD_EMPTY);
+               if (slot >= 0)
                {
-                  btpad_connection.state = BTPAD_WANT_INQ_COMPLETE;
+                  ios_add_log_message("BTpad: Inquiry found device (Slot %d)", slot);
 
-                  btpad_connection.page_scan_repetition_mode = packet [3 + packet[2] * (6)];
-                  btpad_connection.class = READ_BT_24(packet, 3 + packet[2] * (6+1+1+1));
-                  btpad_connection.clock_offset = READ_BT_16(packet, 3 + packet[2] * (6+1+1+1+3)) & 0x7fff;
+                  memcpy(btpad_connection[slot].address, event_addr, sizeof(bd_addr_t));
 
-                  ios_add_log_message("BTpad: Inquiry found device");
+                  btpad_connection[slot].has_address = true;
+                  btpad_connection[slot].state = BTPAD_CONNECTING;
+                  btpad_connection[slot].slot = slot;
+
+                  bt_send_cmd_ptr(l2cap_create_channel_ptr, btpad_connection[slot].address, PSM_HID_CONTROL);
+                  bt_send_cmd_ptr(l2cap_create_channel_ptr, btpad_connection[slot].address, PSM_HID_INTERRUPT);
                }
             }
          }
@@ -158,62 +186,50 @@ void btpad_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet
 
          case HCI_EVENT_INQUIRY_COMPLETE:
          {
-            if (btpad_connection.state == BTPAD_WANT_INQ_COMPLETE)
-            {
-               ios_add_log_message("BTpad: Got inquiry complete; connecting\n");
-               bt_send_cmd_ptr(l2cap_create_channel_ptr, btpad_connection.address, PSM_HID_CONTROL);
-            }
-            else if(btpad_connection.state == BTPAD_EMPTY)
-            {
-               if (btpad_connection.laps < 40)
-               {
-                  btpad_connection.laps ++;
-                  bt_send_cmd_ptr(hci_inquiry_ptr, HCI_INQUIRY_LAP, 3, 1);
-               }
-               else
-                  ios_add_log_message("BTpad: Did not find wiimote, will stop searching");
-            }
+            // TODO: Check performance and battery effect of this
+
+            inquiry_running = !inquiry_off;
+
+            if (inquiry_running)
+               btpad_queue_hci_inquiry(HCI_INQUIRY_LAP, 3, 1);
          }
          break;
 
          case L2CAP_EVENT_CHANNEL_OPENED:
          {
-            const uint8_t status = packet[2];
             bt_flip_addr_ptr(event_addr, &packet[3]);
             const uint16_t handle = READ_BT_16(packet, 9);
             const uint16_t psm = READ_BT_16(packet, 11);
             const uint16_t channel_id = READ_BT_16(packet, 13);
 
-            if (!btpad_connection_test(handle, event_addr))
-            {
-               ios_add_log_message("BTpad: Incoming L2CAP connection not recognized; ignoring");
-               break;
-            }
+            const int32_t slot = btpad_find_slot_for(handle, event_addr);
 
-            if (status == 0)
+            if (!packet[2])
             {
-               ios_add_log_message("BTpad: L2CAP channel opened for psm: %02X", psm);
+               if (slot < 0)
+               {
+                  ios_add_log_message("BTpad: Got L2CAP 'Channel Opened' event for unrecognized device");
+                  break;
+               }
+
+               ios_add_log_message("BTpad: L2CAP channel opened: (Slot: %d, PSM: %02X)", slot, psm);
+               btpad_connection[slot].handle = handle;
             
                if (psm == PSM_HID_CONTROL)
-               {
-                  btpad_connection.channels[0] = channel_id;
-
-                  ios_add_log_message("BTpad: Got HID CONTROL channel; Opening INTERRUPT");
-                  bt_send_cmd_ptr(l2cap_create_channel_ptr, btpad_connection.address, PSM_HID_INTERRUPT);
-               }
+                  btpad_connection[slot].channels[0] = channel_id;
                else if (psm == PSM_HID_INTERRUPT)
-               {
-                  btpad_connection.channels[1] = channel_id;
-
-                  ios_add_log_message("BTpad: Got HID INTERRUPT channel; Requesting name");
-                  bt_send_cmd_ptr(hci_remote_name_request_ptr, btpad_connection.address, btpad_connection.page_scan_repetition_mode,
-                                  0, btpad_connection.clock_offset | 0x8000);
-               }
+                  btpad_connection[slot].channels[1] = channel_id;
                else
-                  ios_add_log_message("BTpad: Got unknown L2CAP channel, ignoring");
+                  ios_add_log_message("BTpad: Got unknown L2CAP PSM, ignoring (Slot: %d, PSM: %02X)", slot, psm);
+
+               if (btpad_connection[slot].channels[0] && btpad_connection[slot].channels[1])
+               {
+                  ios_add_log_message("BTpad: Got both L2CAP channels, requesting name (Slot: %d)", slot);
+                  btpad_queue_hci_remote_name_request(btpad_connection[slot].address, 0, 0, 0);
+               }
             }
             else
-               ios_add_log_message("BTpad: Failed to open WiiMote L2CAP channel (PSM: %02X, E: %02X)", psm, status);
+               ios_add_log_message("BTpad: Got failed L2CAP 'Channel Opened' event (Slot %d, PSM: %02X, Status: %02X)", -1, psm, packet[2]);
          }
          break;
 
@@ -223,31 +239,28 @@ void btpad_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet
             const uint16_t handle = READ_BT_16(packet, 8);
             const uint32_t psm = READ_BT_16(packet, 10);
             const uint32_t channel_id = READ_BT_16(packet, 12);
-
-            const unsigned interrupt = (psm == PSM_HID_INTERRUPT) ? 1 : 0;
       
-            ios_add_log_message("BTpad: Incoming L2CAP connection for PSM: %02X", psm);
-
-            if (!btpad_connection_test(handle, event_addr))
+            int32_t slot = btpad_find_slot_for(handle, event_addr);
+            if (slot < 0)
             {
-               ios_add_log_message("BTpad: Connection is for unregnized handle or address, denying");
+               slot = btpad_find_slot_with_state(BTPAD_EMPTY);
 
-               // TODO: Check error code
-               bt_send_cmd_ptr(l2cap_decline_connection_ptr, 0x15);
+               if (slot >= 0)
+               {
+                  ios_add_log_message("BTpad: Got new incoming connection (Slot: %d)", slot);
 
-               break;
+                  memcpy(btpad_connection[slot].address, event_addr, sizeof(bd_addr_t));
+
+                  btpad_connection[slot].has_address = true;
+                  btpad_connection[slot].handle = handle;
+                  btpad_connection[slot].state = BTPAD_CONNECTING;
+                  btpad_connection[slot].slot = slot;
+               }
+               else break;
             }
 
-            btpad_connection.channels[interrupt] = channel_id;
-            
-            bt_send_cmd_ptr(l2cap_accept_connection_ptr, btpad_connection.channels[interrupt]);
-            ios_add_log_message("BTpad: L2CAP Connection accepted");
-            
-            if (btpad_connection.channels[0] && btpad_connection.channels[1])
-            {
-               ios_add_log_message("BTpad: Got both L2CAP channels, requesting name");
-               bt_send_cmd_ptr(hci_remote_name_request_ptr, btpad_connection.address, 0, 0, 0);
-            }
+            ios_add_log_message("BTpad: Incoming L2CAP connection (Slot: %d, PSM: %02X)", slot, psm);
+            bt_send_cmd_ptr(l2cap_accept_connection_ptr, channel_id);
          }
          break;
 
@@ -255,38 +268,66 @@ void btpad_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet
          {
             bt_flip_addr_ptr(event_addr, &packet[3]);
 
-            if (!btpad_connection_test(0, event_addr))
+            const int32_t slot = btpad_find_slot_for(0, event_addr);
+            if (slot < 0)
             {
                ios_add_log_message("BTpad: Got unexpected remote name, ignoring");
                break;
             }
 
-            ios_add_log_message("BTpad: Got %200s", (char*)&packet[9]);
+            ios_add_log_message("BTpad: Got %.200s (Slot: %d)", (char*)&packet[9], slot);
             if (strncmp((char*)&packet[9], "PLAYSTATION(R)3 Controller", 26) == 0)
-               btpad_iface = &btpad_ps3;
+               btpad_iface[slot] = &btpad_ps3;
             else if (strncmp((char*)&packet[9], "Nintendo RVL-CNT-01", 19) == 0)
-               btpad_iface = &btpad_wii;
+               btpad_iface[slot] = &btpad_wii;
 
-            if (btpad_iface)
+            if (btpad_iface[slot])
             {
-               btpad_device = btpad_iface->connect(&btpad_connection);
-               btpad_connection.state = BTPAD_CONNECTED;
+               btpad_device[slot] = btpad_iface[slot]->connect(&btpad_connection[slot]);
+               btpad_connection[slot].state = BTPAD_CONNECTED;
             }
-
          }
          break;
 
          case HCI_EVENT_PIN_CODE_REQUEST:
          {
-            ios_add_log_message("BTpad: Sending PIN");
+            ios_add_log_message("BTpad: Sending WiiMote PIN");
 
             bt_flip_addr_ptr(event_addr, &packet[2]);
-            bt_send_cmd_ptr(hci_pin_code_request_reply_ptr, event_addr, 6, &packet[2]);
+            btpad_queue_hci_pin_code_request_reply(event_addr, &packet[2]);
+         }
+         break;
+
+         case HCI_EVENT_DISCONNECTION_COMPLETE:
+         {
+            const uint32_t handle = READ_BT_16(packet, 3);
+
+            if (!packet[2])
+            {
+               const int32_t slot = btpad_find_slot_for(handle, 0);
+               if (slot >= 0)
+               {
+                  btpad_connection[slot].handle = 0;
+                  btpad_disconnect_pad(slot);
+
+                  ios_add_log_message("BTpad: Device disconnected (Slot: %d)", slot);
+               }
+            }
+            else
+               ios_add_log_message("BTpad: Got failed 'Disconnection Complete' event (Status: %02X)", packet[2]);
+         }
+         break;
+
+         case L2CAP_EVENT_SERVICE_REGISTERED:
+         {
+            if (!packet[2])
+               ios_add_log_message("BTpad: Got failed 'Service Registered' event (PSM: %02X, Status: %02X)", READ_BT_16(packet, 3), packet[2]);
          }
          break;
       }
    }
 
-   if (btpad_device && btpad_iface)
-      btpad_iface->packet_handler(btpad_device, packet_type, channel, packet, size);
+   for (int i = 0; i < MAX_PADS; i ++)
+      if (btpad_device[i] && btpad_iface[i] && (btpad_connection[i].channels[0] == channel || btpad_connection[i].channels[1] == channel))
+         btpad_iface[i]->packet_handler(btpad_device[i], packet_type, channel, packet, size);
 }

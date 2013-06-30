@@ -13,7 +13,6 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <sys/stat.h>
 #include <pthread.h>
 #include <string.h>
 
@@ -30,79 +29,26 @@
 #include "file.h"
 
 //#define HAVE_DEBUG_FILELOG
+static bool use_tv_mode;
 
-static ios_input_data_t g_input_data;
-
-static bool enable_btstack;
-static bool use_icade;
-static uint32_t icade_buttons;
-
-bool path_make_and_check_directory(const char* path, mode_t mode, int amode)
-{
-   if (!path_is_directory(path) && mkdir(path, mode) != 0)
-      return false;
-   
-   return access(path, amode) == 0;
-}
-
-// Input helpers
-void ios_copy_input(ios_input_data_t* data)
-{
-   // Call only from main thread
-
-   memcpy(data, &g_input_data, sizeof(g_input_data));
-   data->pad_buttons = btpad_get_buttons() | (use_icade ? icade_buttons : 0);
-   
-   for (int i = 0; i < 4; i ++)
-      data->pad_axis[i] = btpad_get_axis(i);
-}
-
+// Input helpers: This is kept here because it needs objective-c
 static void handle_touch_event(NSArray* touches)
 {
    const int numTouches = [touches count];
    const float scale = [[UIScreen mainScreen] scale];
 
-   g_input_data.touch_count = 0;
+   g_current_input_data.touch_count = 0;
    
-   for(int i = 0; i != numTouches && g_input_data.touch_count < MAX_TOUCHES; i ++)
+   for(int i = 0; i != numTouches && g_current_input_data.touch_count < MAX_TOUCHES; i ++)
    {
       UITouch* touch = [touches objectAtIndex:i];
       const CGPoint coord = [touch locationInView:touch.view];
 
       if (touch.phase != UITouchPhaseEnded && touch.phase != UITouchPhaseCancelled)
       {
-         g_input_data.touches[g_input_data.touch_count   ].screen_x = coord.x * scale;
-         g_input_data.touches[g_input_data.touch_count ++].screen_y = coord.y * scale;
+         g_current_input_data.touches[g_current_input_data.touch_count   ].screen_x = coord.x * scale;
+         g_current_input_data.touches[g_current_input_data.touch_count ++].screen_y = coord.y * scale;
       }
-   }
-}
-
-static void handle_icade_event(unsigned keycode)
-{
-   static const struct
-   {
-      bool up;
-      int button;
-   }  icade_map[0x20] =
-   {
-      { false, -1 }, { false, -1 }, { false, -1 }, { false, -1 }, // 0
-      { false,  2 }, { false, -1 }, { true ,  3 }, { false,  3 }, // 4
-      { true ,  0 }, { true,   5 }, { true ,  7 }, { false,  8 }, // 8
-      { false,  6 }, { false,  9 }, { false, 10 }, { false, 11 }, // C
-      { true ,  6 }, { true ,  9 }, { false,  7 }, { true,  10 }, // 0
-      { true ,  2 }, { true ,  8 }, { false, -1 }, { true ,  4 }, // 4
-      { false,  5 }, { true , 11 }, { false,  0 }, { false,  1 }, // 8
-      { false,  4 }, { true ,  1 }, { false, -1 }, { false, -1 }  // C
-   };
-      
-   if ((keycode < 0x20) && (icade_map[keycode].button >= 0))
-   {
-      const int button = icade_map[keycode].button;
-      
-      if (icade_map[keycode].up)
-         icade_buttons &= ~(1 << button);
-      else
-         icade_buttons |=  (1 << button);
    }
 }
 
@@ -127,14 +73,7 @@ static void handle_icade_event(unsigned keycode)
       int eventType = eventMem ? *(int*)&eventMem[8] : 0;
 
       if (eventType == GSEVENT_TYPE_KEYDOWN || eventType == GSEVENT_TYPE_KEYUP)
-      {
-         uint16_t key = *(uint16_t*)&eventMem[0x3C];
-
-         if (!use_icade && key < MAX_KEYS)
-            g_input_data.keys[key] = (eventType == GSEVENT_TYPE_KEYDOWN);
-         else if (eventType == GSEVENT_TYPE_KEYDOWN)
-            handle_icade_event(key);
-      }
+         ios_input_handle_key_event(*(uint16_t*)&eventMem[0x3C], eventType == GSEVENT_TYPE_KEYDOWN);
 
       CFBridgingRelease(eventMem);
    }
@@ -160,19 +99,18 @@ int main(int argc, char *argv[])
 extern void* rarch_main_ios(void* args);
 extern void ios_frontend_post_event(void (*fn)(void*), void* userdata);
 
-static void event_game_reset(void* userdata)
-{
-   rarch_game_reset();
-}
 
-static void event_load_state(void* userdata)
+// These are based on the tag property of the button used to trigger the event
+enum basic_event_t { RESET = 1, LOAD_STATE = 2, SAVE_STATE = 3, QUIT = 4 };
+static void event_basic_command(void* userdata)
 {
-   rarch_load_state();
-}
-
-static void event_save_state(void* userdata)
-{
-   rarch_save_state();
+   switch ((enum basic_event_t)userdata)
+   {
+      case RESET:      rarch_game_reset(); return;
+      case LOAD_STATE: rarch_load_state(); return;
+      case SAVE_STATE: rarch_save_state(); return;
+      case QUIT:       g_extern.system.shutdown = true; return;
+   }
 }
 
 static void event_set_state_slot(void* userdata)
@@ -182,31 +120,16 @@ static void event_set_state_slot(void* userdata)
 
 static void event_show_rgui(void* userdata)
 {
-   if (g_extern.lifecycle_mode_state & (1ULL << MODE_MENU))
-   {
-      g_extern.lifecycle_mode_state &= ~(1ULL << MODE_MENU);
-      g_extern.lifecycle_mode_state |= (1ULL << MODE_GAME);
-   }
-   else
-   {
-      g_extern.lifecycle_mode_state &= ~(1ULL << MODE_GAME);
-      g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU);
-   }
-}
-
-static void event_quit(void* userdata)
-{
-   g_extern.system.shutdown = true;
+   const bool in_menu = g_extern.lifecycle_mode_state & (1 << MODE_MENU);
+   g_extern.lifecycle_mode_state &= ~(1ULL << (in_menu ? MODE_MENU : MODE_GAME));
+   g_extern.lifecycle_mode_state |=  (1ULL << (in_menu ? MODE_GAME : MODE_MENU));
 }
 
 static void event_reload_config(void* userdata)
 {
-   // Need to clear these otherwise stale versions may be used!
-   memset(g_settings.input.overlay, 0, sizeof(g_settings.input.overlay));
-   memset(g_settings.video.shader_path, 0, sizeof(g_settings.video.shader_path));
+   ios_clear_config_hack();
 
    uninit_drivers();
-   g_extern.block_config_read = false;
    config_load();
    init_drivers();
 }
@@ -226,21 +149,6 @@ static void event_reload_config(void* userdata)
    RAModuleInfo* _module;
 }
 
-+ (void)displayErrorMessage:(NSString*)message
-{
-   [RetroArch_iOS displayErrorMessage:message withTitle:@"RetroArch"];
-}
-
-+ (void)displayErrorMessage:(NSString*)message withTitle:(NSString*)title
-{
-   UIAlertView* alert = [[UIAlertView alloc] initWithTitle:title
-                                             message:message
-                                             delegate:nil
-                                             cancelButtonTitle:@"OK"
-                                             otherButtonTitles:nil];
-   [alert show];
-}
-
 + (RetroArch_iOS*)get
 {
    return (RetroArch_iOS*)[[UIApplication sharedApplication] delegate];
@@ -249,10 +157,6 @@ static void event_reload_config(void* userdata)
 // UIApplicationDelegate
 - (void)applicationDidFinishLaunching:(UIApplication *)application
 {
-#ifdef HAVE_DEBUG_DIAGLOG
-   ios_log_init();
-#endif
-
    self.delegate = self;
 
    // Setup window
@@ -266,18 +170,21 @@ static void event_reload_config(void* userdata)
    self.systemConfigPath = [self.systemDirectory stringByAppendingPathComponent:@"frontend.cfg"];
 
    if (!path_make_and_check_directory(self.documentsDirectory.UTF8String, 0755, R_OK | W_OK | X_OK))
-      [RetroArch_iOS displayErrorMessage:[NSString stringWithFormat:@"Failed to create or access base directory: %@", self.documentsDirectory]];
+      ios_display_alert([NSString stringWithFormat:@"Failed to create or access base directory: %@", self.documentsDirectory], 0);
    else if (!path_make_and_check_directory(self.systemDirectory.UTF8String, 0755, R_OK | W_OK | X_OK))
-      [RetroArch_iOS displayErrorMessage:[NSString stringWithFormat:@"Failed to create or access system directory: %@", self.systemDirectory]];
+      ios_display_alert([NSString stringWithFormat:@"Failed to create or access system directory: %@", self.systemDirectory], 0);
    else
    {
       [self pushViewController:[RADirectoryList directoryListAtBrowseRoot] animated:YES];
       [self refreshSystemConfig];
+      
+      if (use_tv_mode)
+         [self runGame:nil withModule:nil];
    }
    
    // Warn if there are no cores present
    if ([RAModuleInfo getModules].count == 0)
-      [RetroArch_iOS displayErrorMessage:@"No libretro cores were found. You will not be able to play any games."];
+      ios_display_alert(@"No libretro cores were found. You will not be able to play any games.", 0);
 }
 
 - (void)applicationWillEnterForeground:(UIApplication *)application
@@ -351,29 +258,36 @@ static void event_reload_config(void* userdata)
 {
    if (!_isRunning)
    {
-      _module = module;
-
-      [RASettingsList refreshModuleConfig:_module];
-
       [self pushViewController:RAGameView.get animated:NO];
       _isRunning = true;
 
+      _module = module;
+      [RASettingsList refreshModuleConfig:_module];
+
+      btpad_set_inquiry_state(false);
+      
       struct rarch_main_wrap* load_data = malloc(sizeof(struct rarch_main_wrap));
       memset(load_data, 0, sizeof(struct rarch_main_wrap));
-      load_data->libretro_path = strdup(_module.path.UTF8String);
-      load_data->rom_path = strdup(path.UTF8String);
+
       load_data->sram_path = strdup(self.systemDirectory.UTF8String);
       load_data->state_path = strdup(self.systemDirectory.UTF8String);
-      load_data->config_path = strdup(_module.configPath.UTF8String);
-      load_data->verbose = false;
 
+      if (path && module)
+      {
+         load_data->libretro_path = strdup(_module.path.UTF8String);
+         load_data->rom_path = strdup(path.UTF8String);
+         load_data->config_path = strdup(_module.configPath.UTF8String);
+      }
+      else
+         load_data->config_path = strdup(RAModuleInfo.globalConfigPath.UTF8String);
+      
       if (pthread_create(&_retroThread, 0, rarch_main_ios, load_data))
       {
          [self rarchExited:NO];
          return;
       }
+      
       pthread_detach(_retroThread);
-
       [self refreshSystemConfig];
    }
 }
@@ -381,7 +295,7 @@ static void event_reload_config(void* userdata)
 - (void)rarchExited:(BOOL)successful
 {
    if (!successful)
-      [RetroArch_iOS displayErrorMessage:@"Failed to load game."];
+      ios_display_alert(@"Failed to load game.", 0);
 
    if (_isRunning)
    {
@@ -390,7 +304,12 @@ static void event_reload_config(void* userdata)
       //
       [self popToViewController:[RAGameView get] animated:NO];
       [self popViewControllerAnimated:NO];
+      
+      btpad_set_inquiry_state(true);
    }
+
+   if (use_tv_mode)
+      [self runGame:nil withModule:nil];
    
    _module = nil;
 }
@@ -400,11 +319,7 @@ static void event_reload_config(void* userdata)
    if (_isRunning)
       ios_frontend_post_event(&event_reload_config, 0);
    else
-   {
-      // Need to clear these otherwise stale versions may be used!
-      memset(g_settings.input.overlay, 0, sizeof(g_settings.input.overlay));
-      memset(g_settings.video.shader_path, 0, sizeof(g_settings.video.shader_path));
-   }
+      ios_clear_config_hack();
 }
 
 - (void)refreshSystemConfig
@@ -435,13 +350,10 @@ static void event_reload_config(void* userdata)
       }
       
       //
-      config_get_bool(conf, "ios_use_icade", &use_icade);
-      config_get_bool(conf, "ios_use_btstack", &enable_btstack);
-      
-      if (enable_btstack)
-         [self startBluetooth];
-      else
-         [self stopBluetooth];
+      bool val;
+      ios_input_enable_icade(config_get_bool(conf, "ios_use_icade", &val) && val);
+      btstack_set_poweron(config_get_bool(conf, "ios_use_btstack", &val) && val);
+      use_tv_mode = config_get_bool(conf, "ios_tv_mode", & val) && val;
       
       config_file_free(conf);
    }
@@ -467,30 +379,16 @@ static void event_reload_config(void* userdata)
    {
       _isPaused = true;
       [[RAGameView get] openPauseMenu];
+      
+      btpad_set_inquiry_state(true);
    }
 }
 
-- (IBAction)resetGame:(id)sender
+- (IBAction)basicEvent:(id)sender
 {
    if (_isRunning)
-      ios_frontend_post_event(&event_game_reset, 0);
+      ios_frontend_post_event(&event_basic_command, ((UIView*)sender).tag);
    
-   [self closePauseMenu:sender];
-}
-
-- (IBAction)loadState:(id)sender
-{
-   if (_isRunning)
-      ios_frontend_post_event(&event_load_state, 0);
-
-   [self closePauseMenu:sender];
-}
-
-- (IBAction)saveState:(id)sender
-{
-   if (_isRunning)
-      ios_frontend_post_event(&event_save_state, 0);
-
    [self closePauseMenu:sender];
 }
 
@@ -512,36 +410,18 @@ static void event_reload_config(void* userdata)
 {
    [[RAGameView get] closePauseMenu];
    _isPaused = false;
-}
-
-- (IBAction)closeGamePressed:(id)sender
-{
-   [self closePauseMenu:sender];
-   ios_frontend_post_event(event_quit, 0);
+   
+   btpad_set_inquiry_state(false);
 }
 
 - (IBAction)showSettings
 {
-   if (_module)
-      [self pushViewController:[[RASettingsList alloc] initWithModule:_module] animated:YES];
+   [self pushViewController:[[RASettingsList alloc] initWithModule:_module] animated:YES];
 }
 
 - (IBAction)showSystemSettings
 {
    [self pushViewController:[RASystemSettingsList new] animated:YES];
-}
-
-#pragma mark Bluetooth Helpers
-- (IBAction)startBluetooth
-{
-   if (btstack_is_loaded() && !btstack_is_running())
-      btstack_start();
-}
-
-- (IBAction)stopBluetooth
-{
-   if (btstack_is_loaded())
-      btstack_stop();
 }
 
 @end

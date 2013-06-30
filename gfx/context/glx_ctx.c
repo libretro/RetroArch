@@ -113,20 +113,24 @@ static void gfx_ctx_check_window(bool *quit,
       switch (event.type)
       {
          case ClientMessage:
-            if ((Atom)event.xclient.data.l[0] == g_quit_atom)
+            if (event.xclient.window == g_win &&
+                  (Atom)event.xclient.data.l[0] == g_quit_atom)
                g_quit = true;
             break;
 
          case DestroyNotify:
-            g_quit = true;
+            if (event.xdestroywindow.window == g_win)
+               g_quit = true;
             break;
 
          case MapNotify:
-            g_has_focus = true;
+            if (event.xmap.window == g_win)
+               g_has_focus = true;
             break;
 
          case UnmapNotify:
-            g_has_focus = false;
+            if (event.xunmap.window == g_win)
+               g_has_focus = false;
             break;
 
          case KeyPress:
@@ -210,7 +214,9 @@ static bool gfx_ctx_init(void)
    GLXFBConfig *fbcs = NULL;
    g_quit = 0;
 
-   g_dpy = XOpenDisplay(NULL);
+   if (!g_dpy)
+      g_dpy = XOpenDisplay(NULL);
+
    if (!g_dpy)
       goto error;
 
@@ -377,8 +383,17 @@ static bool gfx_ctx_set_video_mode(
 
    if (!g_ctx)
    {
-      RARCH_ERR("[GLX]: Failed to create new context.\n");
-      goto error;
+      g_ctx = glXCreateNewContext(g_dpy, g_fbc, GLX_RGBA_TYPE, 0, True);
+      if (!g_ctx)
+      {
+         RARCH_ERR("[GLX]: Failed to create new context.\n");
+         goto error;
+      }
+   }
+   else
+   {
+      driver.video_cache_context_ack = true;
+      RARCH_LOG("[GLX]: Using cached GL context.\n");
    }
 
    glXMakeContextCurrent(g_dpy, g_glx_win, g_glx_win, g_ctx);
@@ -445,8 +460,11 @@ static void gfx_ctx_destroy(void)
    if (g_dpy && g_ctx)
    {
       glXMakeContextCurrent(g_dpy, None, None, NULL);
-      glXDestroyContext(g_dpy, g_ctx);
-      g_ctx = NULL;
+      if (!driver.video_cache_context)
+      {
+         glXDestroyContext(g_dpy, g_ctx);
+         g_ctx = NULL;
+      }
    }
 
    if (g_win)
@@ -487,7 +505,7 @@ static void gfx_ctx_destroy(void)
       g_should_reset_mode = false;
    }
 
-   if (g_dpy)
+   if (!driver.video_cache_context && g_dpy)
    {
       XCloseDisplay(g_dpy);
       g_dpy = NULL;
