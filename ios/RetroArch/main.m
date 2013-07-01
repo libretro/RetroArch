@@ -259,10 +259,11 @@ static void event_reload_config(void* userdata)
    if (!_isRunning)
    {
       [self pushViewController:RAGameView.get animated:NO];
-      _isRunning = true;
 
       _module = module;
       [RASettingsList refreshModuleConfig:_module];
+
+      _isRunning = true;
 
       btpad_set_inquiry_state(false);
       
