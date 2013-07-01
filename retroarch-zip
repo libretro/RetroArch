@@ -17,7 +17,7 @@ if [ -z "$1" ]; then
 fi
 
 COMP_FILE="$1"
-TMPDIR="`mktemp -d`"
+TMPDIR="`mktemp -d /tmp/retroarch-XXXXXX`"
 shift
 
 extract_zip()
