@@ -1,5 +1,5 @@
 ------------------------------------------------------------------------------
-RETROARCH XBOX 1 - 0.9.9
+RETROARCH XBOX 1 - 0.9.9.3
 ------------------------------------------------------------------------------
 RetroConsole Level: 1
 Author: Themaister, Squarepusher/Twin Aphex, Freakdave
@@ -204,7 +204,7 @@ Websites
 ------------------------------------------------------------------------------
 Twitter:                   http://twitter.com/libretro
 Source:                    http://github.com/libretro
-Homepage:                  http://www.libretro.org
+Homepage:                  http://www.libretro.com
 IRC:                       #retroarch (freenode)
 
 ------------------------------------------------------------------------------

@@ -219,6 +219,8 @@ void input_autodetect_setup (void *data, char *msg, size_t sizeof_msg, unsigned 
          device = DEVICE_GAMEMID;
       else if (strstr(name_buf, "USB Gamepad"))
          device = DEVICE_DEFENDER_GAME_RACER_CLASSIC;
+      else if (strstr(name_buf, "HOLTEK JC - U912F vibration game"))
+         device = DEVICE_HOLTEK_JC_U912F;
 
       if (strstr(current_ime, "net.obsidianx.android.mogaime"))
       {
@@ -231,7 +233,7 @@ void input_autodetect_setup (void *data, char *msg, size_t sizeof_msg, unsigned 
          snprintf(name_buf, sizeof(name_buf), "ccpcreations WiiUse");
       }
 
-      if (source == AINPUT_SOURCE_KEYBOARD)
+      if (source == AINPUT_SOURCE_KEYBOARD && device != DEVICE_XPERIA_PLAY)
          device = DEVICE_KEYBOARD_RETROPAD;
 
       if (driver.input->set_keybinds)

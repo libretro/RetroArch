@@ -23,6 +23,19 @@ static struct retro_hw_render_callback hw_render;
 #include <GL/glext.h>
 #endif
 
+#define BASE_WIDTH 320
+#define BASE_HEIGHT 240
+#ifdef GLES
+#define MAX_WIDTH 1024
+#define MAX_HEIGHT 1024
+#else
+#define MAX_WIDTH 1920
+#define MAX_HEIGHT 1600
+#endif
+
+static unsigned width = BASE_WIDTH;
+static unsigned height = BASE_HEIGHT;
+
 #if defined(GLES) || defined(__APPLE__)
 #define pglCreateProgram glCreateProgram
 #define pglCreateShader glCreateShader
@@ -235,10 +248,10 @@ void retro_get_system_av_info(struct retro_system_av_info *info)
    };
 
    info->geometry = (struct retro_game_geometry) {
-      .base_width   = 512,
-      .base_height  = 512,
-      .max_width    = 512,
-      .max_height   = 512,
+      .base_width   = BASE_WIDTH,
+      .base_height  = BASE_HEIGHT,
+      .max_width    = MAX_WIDTH,
+      .max_height   = MAX_HEIGHT,
       .aspect_ratio = 4.0 / 3.0,
    };
 }
@@ -254,8 +267,21 @@ void retro_set_environment(retro_environment_t cb)
 {
    environ_cb = cb;
 
+   struct retro_variable variables[] = {
+      {
+         "testgl_resolution",
+#ifdef GLES
+         "Internal resolution; 320x240|360x480|480x272|512x384|512x512|640x240|640x448|640x480|720x576|800x600|960x720|1024x768",
+#else
+         "Internal resolution; 320x240|360x480|480x272|512x384|512x512|640x240|640x448|640x480|720x576|800x600|960x720|1024x768|1024x1024|1280x720|1280x960|1600x1200|1920x1080|1920x1440|1920x1600",
+#endif
+      },
+      { NULL, NULL },
+   };
+
    bool no_rom = true;
    cb(RETRO_ENVIRONMENT_SET_SUPPORT_NO_GAME, &no_rom);
+   cb(RETRO_ENVIRONMENT_SET_VARIABLES, variables);
 }
 
 void retro_set_audio_sample(retro_audio_sample_t cb)
@@ -283,8 +309,36 @@ void retro_set_video_refresh(retro_video_refresh_t cb)
    video_cb = cb;
 }
 
+static void update_variables(void)
+{
+   struct retro_variable var;
+
+   var.key = "testgl_resolution";
+   var.value = NULL;
+
+   if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
+   {
+      char *pch;
+      char str[100];
+      snprintf(str, sizeof(str), var.value);
+      
+      pch = strtok(str, "x");
+      if (pch)
+         width = strtoul(pch, NULL, 0);
+      pch = strtok(NULL, "x");
+      if (pch)
+         height = strtoul(pch, NULL, 0);
+
+      fprintf(stderr, "[libretro-test]: Got size: %u x %u.\n", width, height);
+   }
+}
+
 void retro_run(void)
 {
+   bool updated = false;
+   if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE_UPDATE, &updated) && updated)
+      update_variables();
+
    input_poll_cb();
 
 #ifdef CORE
@@ -293,7 +347,7 @@ void retro_run(void)
 
    pglBindFramebuffer(GL_FRAMEBUFFER, hw_render.get_current_framebuffer());
    glClearColor(0.3, 0.4, 0.5, 1.0);
-   glViewport(0, 0, 512, 512);
+   glViewport(0, 0, width, height);
    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
    pglUseProgram(prog);
@@ -345,7 +399,7 @@ void retro_run(void)
 #ifdef CORE
    pglBindVertexArray(0);
 #endif
-   video_cb(RETRO_HW_FRAME_BUFFER_VALID, 512, 512, 0);
+   video_cb(RETRO_HW_FRAME_BUFFER_VALID, width, height, 0);
 }
 
 static void context_reset(void)
@@ -356,8 +410,11 @@ static void context_reset(void)
    setup_vao();
 }
 
+
 bool retro_load_game(const struct retro_game_info *info)
 {
+   update_variables();
+
    enum retro_pixel_format fmt = RETRO_PIXEL_FORMAT_XRGB8888;
    if (!environ_cb(RETRO_ENVIRONMENT_SET_PIXEL_FORMAT, &fmt))
    {

@@ -69,6 +69,7 @@
     <asset path="../../media/overlays">overlays</asset>
     <asset path="assets">assets</asset>
     <asset path="assets/images/icon.png">icon.png</asset>
+    <asset path="../../ios/modules">lib</asset>
 
     
     <!-- Bright theme is used for this application. --> 

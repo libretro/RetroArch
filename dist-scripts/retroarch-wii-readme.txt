@@ -1,5 +1,5 @@
 ------------------------------------------------------------------------------
-RETROARCH GX - WII - 0.9.9
+RETROARCH GX - WII - 0.9.9.3
 ------------------------------------------------------------------------------
 RetroConsole Level: 1
 Author: Themaister, Toad King, Squarepusher/Twin Aphex
@@ -215,7 +215,7 @@ Websites
 ------------------------------------------------------------------------------
 Twitter:                   http://twitter.com/libretro
 Source:                    http://github.com/libretro
-Homepage:                  http://www.libretro.org
+Homepage:                  http://www.libretro.com
 IRC:                       #retroarch (freenode)
 
 ------------------------------------------------------------------------------

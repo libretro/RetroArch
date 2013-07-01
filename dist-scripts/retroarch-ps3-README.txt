@@ -1,5 +1,5 @@
 ------------------------------------------------------------------------------
-RETROARCH PS3 - 0.9.9
+RETROARCH PS3 - 0.9.9.3
 ------------------------------------------------------------------------------
 RetroConsole Level: 2
 Author: Themaister, Squarepusher/Twin Aphex
@@ -219,7 +219,7 @@ Websites
 ------------------------------------------------------------------------------
 Twitter:                   http://twitter.com/libretro
 Source:                    http://github.com/libretro
-Homepage:                  http://www.libretro.org
+Homepage:                  http://www.libretro.com
 Opium2K DLC for RetroArch: https://code.google.com/p/retro-arch/
 IRC:                       #retroarch (freenode)
 
