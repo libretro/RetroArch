@@ -278,141 +278,19 @@ static void update_variables(void)
 
    if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var))
    {
-      if (strcmp(var.value, "320x200") == 0)
-      {
-         width = 320;
-         height = 200;
-      }
-      else if (strcmp(var.value, "320x240") == 0)
-      {
-         width = 320;
-         height = 240;
-      }
-      else if (strcmp(var.value, "320x480") == 0)
-      {
-         width = 320;
-         height = 480;
-      }
-      else if (strcmp(var.value, "360x200") == 0)
-      {
-         width = 360;
-         height = 200;
-      }
-      else if (strcmp(var.value, "360x240") == 0)
-      {
-         width = 360;
-         height = 240;
-      }
-      else if (strcmp(var.value, "360x400") == 0)
-      {
-         width = 360;
-         height = 400;
-      }
-      else if (strcmp(var.value, "360x480") == 0)
-      {
-         width = 360;
-         height = 480;
-      }
-      else if (strcmp(var.value, "400x224") == 0)
-      {
-         width = 400;
-         height = 224;
-      }
-      else if (strcmp(var.value, "480x272") == 0)
-      {
-         width = 480;
-         height = 272;
-      }
-      else if (strcmp(var.value, "512x224") == 0)
-      {
-         width = 512;
-         height = 224;
-      }
-      else if (strcmp(var.value, "512x384") == 0)
-      {
-         width = 512;
-         height = 384;
-      }
-      else if (strcmp(var.value, "512x512") == 0)
-      {
-         width = 512;
-         height = 512;
-      }
-      else if (strcmp(var.value, "640x240") == 0)
-      {
-         width = 640;
-         height = 240;
-      }
-      else if (strcmp(var.value, "640x448") == 0)
-      {
-         width = 640;
-         height = 448;
-      }
-      else if (strcmp(var.value, "640x480") == 0)
-      {
-         width = 640;
-         height = 480;
-      }
-      else if (strcmp(var.value, "720x576") == 0)
-      {
-         width = 720;
-         height = 576;
-      }
-      else if (strcmp(var.value, "800x480") == 0)
-      {
-         width = 800;
-         height = 480;
-      }
-      else if (strcmp(var.value, "800x600") == 0)
-      {
-         width = 800;
-         height = 600;
-      }
-      else if (strcmp(var.value, "960x720") == 0)
-      {
-         width = 960;
-         height = 720;
-      }
-      else if (strcmp(var.value, "1024x768") == 0)
-      {
-         width = 1024;
-         height = 768;
-      }
-      else if (strcmp(var.value, "1024x1024") == 0)
-      {
-         width = 1024;
-         height = 1024;
-      }
-      else if (strcmp(var.value, "1280x720") == 0)
-      {
-         width = 1280;
-         height = 720;
-      }
-      else if (strcmp(var.value, "1280x1024") == 0)
-      {
-         width = 1280;
-         height = 1024; 
-      }
-      else if (strcmp(var.value, "1600x1080") == 0)
-      {
-         width = 1600;
-         height = 1080; 
-      }
-      else if (strcmp(var.value, "1920x1080") == 0)
-      {
-         width = 1920;
-         height = 1080;
-      }
-      else if (strcmp(var.value, "1920x1440") == 0)
-      {
-         width = 1920;
-         height = 1440;
-      }
-      else if (strcmp(var.value, "1920x1600") == 0)
-      {
-         width = 1920;
-         height = 1600;
-      }
+      char *pch;
+      char str[100];
+      snprintf(str, sizeof(str), var.value);
+      
+      pch = strtok(str, "x");
+
+      if (pch != NULL)
+         width = atoi(pch);
+
+      pch = strtok(str, "x");
+
+      if (pch != NULL)
+         height = atoi(pch);
    }
 }
 
