@@ -333,6 +333,11 @@ static void update_variables(void)
          width = 512;
          height = 384;
       }
+      else if (strcmp(var.value, "512x512") == 0)
+      {
+         width = 512;
+         height = 512;
+      }
       else if (strcmp(var.value, "640x240") == 0)
       {
          width = 640;
