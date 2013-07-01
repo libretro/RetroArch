@@ -230,13 +230,15 @@ void retro_set_environment(retro_environment_t cb)
    environ_cb = cb;
 
    struct retro_variable variables[] = {
-      { "resolution",
+      {
+         "testgl_resolution",
 #ifdef GLES
-         "Internal resolution; 320x240|360x480|480x272|512x384|512x512|640x240|640x448|640x480|720x576|800x600|960x720|1024x768" },
+         "Internal resolution; 320x240|360x480|480x272|512x384|512x512|640x240|640x448|640x480|720x576|800x600|960x720|1024x768",
 #else
-      "Internal resolution; 320x240|360x480|480x272|512x384|512x512|640x240|640x448|640x480|720x576|800x600|960x720|1024x768|1024x1024|1280x720|1280x960|1600x1200|1920x1080|1920x1440|1920x1600" },
+         "Internal resolution; 320x240|360x480|480x272|512x384|512x512|640x240|640x448|640x480|720x576|800x600|960x720|1024x768|1024x1024|1280x720|1280x960|1600x1200|1920x1080|1920x1440|1920x1600",
 #endif
-                         { NULL, NULL },
+      },
+      { NULL, NULL },
    };
 
    bool no_rom = true;
@@ -273,24 +275,23 @@ static void update_variables(void)
 {
    struct retro_variable var;
 
-   var.key = "resolution";
+   var.key = "testgl_resolution";
    var.value = NULL;
 
-   if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var))
+   if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
    {
       char *pch;
       char str[100];
       snprintf(str, sizeof(str), var.value);
       
       pch = strtok(str, "x");
+      if (pch)
+         width = strtoul(pch, NULL, 0);
+      pch = strtok(NULL, "x");
+      if (pch)
+         height = strtoul(pch, NULL, 0);
 
-      if (pch != NULL)
-         width = atoi(pch);
-
-      pch = strtok(str, "x");
-
-      if (pch != NULL)
-         height = atoi(pch);
+      fprintf(stderr, "[libretro-test]: Got size: %u x %u.\n", width, height);
    }
 }
 
