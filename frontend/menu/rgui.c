@@ -2336,11 +2336,11 @@ static int rgui_settings_iterate(rgui_handle_t *rgui, rgui_action_t action)
             menu_type == RGUI_SETTINGS_OPEN_HISTORY))
    {
       rgui->need_refresh = false;
-      if ((menu_type == RGUI_SETTINGS_INPUT_OPTIONS))
+      if (menu_type == RGUI_SETTINGS_INPUT_OPTIONS)
          rgui_settings_controller_populate_entries(rgui);
-      else if ((menu_type == RGUI_SETTINGS_PATH_OPTIONS))
+      else if (menu_type == RGUI_SETTINGS_PATH_OPTIONS)
          rgui_settings_path_populate_entries(rgui);
-      else if ((menu_type == RGUI_SETTINGS_OPTIONS))
+      else if (menu_type == RGUI_SETTINGS_OPTIONS)
          rgui_settings_options_populate_entries(rgui);
       else if (menu_type == RGUI_SETTINGS_CORE_OPTIONS)
          rgui_settings_core_options_populate_entries(rgui);
