@@ -401,14 +401,12 @@ install: $(TARGET)
 	install -m644 retroarch.cfg $(DESTDIR)$(GLOBAL_CONFIG_DIR)/retroarch.cfg
 	install -m644 docs/retroarch.1 $(DESTDIR)$(MAN_DIR)
 	install -m644 docs/retroarch-joyconfig.1 $(DESTDIR)$(MAN_DIR)
-	install -m755 retroarch-zip $(DESTDIR)$(PREFIX)/bin
 	install -m644 media/retroarch.png $(DESTDIR)$(PREFIX)/share/pixmaps
 
 uninstall:
 	rm -f $(DESTDIR)$(PREFIX)/bin/retroarch
 	rm -f $(DESTDIR)$(PREFIX)/bin/retroarch-joyconfig
 	rm -f $(DESTDIR)$(PREFIX)/bin/retrolaunch
-	rm -f $(DESTDIR)$(PREFIX)/bin/retroarch-zip
 	rm -f $(DESTDIR)$(GLOBAL_CONFIG_DIR)/retroarch.cfg
 	rm -f $(DESTDIR)$(PREFIX)/share/man/man1/retroarch.1
 	rm -f $(DESTDIR)$(PREFIX)/share/man/man1/retroarch-joyconfig.1
