@@ -691,9 +691,11 @@ static const struct retro_keybind _menu_nav_binds[] = {
 #endif
 };
 
+#if defined(RARCH_CONSOLE) || defined(ANDROID)
 static const struct retro_keybind *menu_nav_binds[] = {
    _menu_nav_binds
 };
+#endif
 
 static uint64_t rgui_input(void)
 {
