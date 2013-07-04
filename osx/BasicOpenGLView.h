@@ -70,15 +70,6 @@ typedef struct {
    GLdouble x,y,z;
 } recVec;
 
-typedef struct {
-	recVec viewPos; // View position
-	recVec viewDir; // View direction vector
-	recVec viewUp; // View up direction
-	recVec rotPoint; // Point to rotate about
-	GLdouble aperture; // pContextInfo->camera aperture
-	GLint viewWidth, viewHeight; // current window/screen height and width
-} recCamera;
-
 @interface BasicOpenGLView : NSOpenGLView
 {
 	// string attributes
@@ -101,9 +92,6 @@ typedef struct {
 	bool fDrawHelp;
 	
 	CFAbsoluteTime time;
-	
-	// camera handling
-	recCamera camera;
 	GLfloat shapeSize;
 	
 }

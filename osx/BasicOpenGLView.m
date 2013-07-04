@@ -145,39 +145,24 @@ GLenum glReportError (void)
 
 // handles resizing of GL need context update and if the window dimensions change, a
 // a window dimension update, reseting of viewport and an update of the projection matrix
+
+unsigned viewWidth = 0;
+unsigned viewHeight = 0;
+
 - (void) resizeGL
 {
 	NSRect rectView = [self bounds];
 	
 	// ensure camera knows size changed
-	if ((camera.viewHeight != rectView.size.height) ||
-	    (camera.viewWidth != rectView.size.width)) {
-		camera.viewHeight = rectView.size.height;
-		camera.viewWidth = rectView.size.width;
+	if ((viewHeight != rectView.size.height) ||
+	    (viewWidth != rectView.size.width)) {
+		viewHeight = rectView.size.height;
+		viewWidth = rectView.size.width;
 		
-		glViewport (0, 0, camera.viewWidth, camera.viewHeight);
+		glViewport (0, 0, viewWidth, viewHeight);
         [[self openGLContext] makeCurrentContext];
 		[self updateInfoString];
 	}
-}
-
-// ---------------------------------
-
-// sets the camera data to initial conditions
-- (void) resetCamera
-{
-   camera.aperture = 40;
-
-   camera.viewPos.x = 0.0;
-   camera.viewPos.y = 0.0;
-   camera.viewPos.z = -10.0;
-   camera.viewDir.x = -camera.viewPos.x; 
-   camera.viewDir.y = -camera.viewPos.y; 
-   camera.viewDir.z = -camera.viewPos.z;
-
-   camera.viewUp.x = 0;  
-   camera.viewUp.y = 1; 
-   camera.viewUp.z = 0;
 }
 
 // ---------------------------------
@@ -247,8 +232,8 @@ GLenum glReportError (void)
 	GLboolean depthTest = glIsEnabled (GL_DEPTH_TEST);
 	GLfloat height, width, messageTop = 10.0f;
 	
-	height = camera.viewHeight;
-	width = camera.viewWidth;
+	height = viewHeight;
+	width = viewWidth;
 		
 	// set orthograhic 1:1  pixel transform in local view coords
 	glGetIntegerv (GL_MATRIX_MODE, &matrixMode);
@@ -426,7 +411,6 @@ GLenum glReportError (void)
 
     [[self openGLContext] setValues:&swapInt forParameter:NSOpenGLCPSwapInterval]; // set to vbl sync
 
-	[self resetCamera];
 	shapeSize = 7.0f; // max radius of of objects
 
 	// init fonts for use with strings
