@@ -189,25 +189,25 @@
             <ListPreference
                 android:entries="@array/icade_profiles"
                 android:entryValues="@array/icade_profiles_values"
-                android:key="input_autodetect_icade_profile_pad0"
+                android:key="input_autodetect_icade_profile_pad1"
                 android:summary="Select the iCade profile to use for controller 1."
                 android:title="iCade profile Pad 1" />
             <ListPreference
                 android:entries="@array/icade_profiles"
                 android:entryValues="@array/icade_profiles_values"
-                android:key="input_autodetect_icade_profile_pad1"
+                android:key="input_autodetect_icade_profile_pad2"
                 android:summary="Select the iCade profile to use for controller 2."
                 android:title="iCade profile Pad 2" />
             <ListPreference
                 android:entries="@array/icade_profiles"
                 android:entryValues="@array/icade_profiles_values"
-                android:key="input_autodetect_icade_profile_pad2"
+                android:key="input_autodetect_icade_profile_pad3"
                 android:summary="Select the iCade profile to use for controller 3."
                 android:title="iCade profile Pad 3" />
             <ListPreference
                 android:entries="@array/icade_profiles"
                 android:entryValues="@array/icade_profiles_values"
-                android:key="input_autodetect_icade_profile_pad3"
+                android:key="input_autodetect_icade_profile_pad4"
                 android:summary="Select the iCade profile to use for controller 4."
                 android:title="iCade profile Pad 4" />
         </PreferenceCategory>
