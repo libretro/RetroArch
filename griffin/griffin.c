@@ -109,6 +109,8 @@ VIDEO CONTEXT
 #include "../gfx/context/bbqnx_ctx.c"
 #elif defined(IOS)
 #include "../gfx/context/ioseagl_ctx.c"
+#elif defined(GEKKO)
+// none
 #else
 #include "../gfx/context/null_ctx.c"
 #endif
