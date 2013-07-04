@@ -462,13 +462,6 @@ GLenum glReportError (void)
 
     [[self openGLContext] setValues:&swapInt forParameter:NSOpenGLCPSwapInterval]; // set to vbl sync
 
-	// init GL stuff here
-	glShadeModel(GL_SMOOTH);    
-	glEnable(GL_CULL_FACE);
-	glFrontFace(GL_CCW);
-	glPolygonOffset (1.0f, 1.0f);
-	
-	glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
 	[self resetCamera];
 	shapeSize = 7.0f; // max radius of of objects
 
