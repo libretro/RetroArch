@@ -54,6 +54,9 @@ static const gfx_ctx_driver_t *gfx_ctx_drivers[] = {
 #if defined(HAVE_SDL) && defined(HAVE_OPENGL)
    &gfx_ctx_sdl_gl,
 #endif
+#if defined(IS_XCODE) && defined(__APPLE__)
+    &gfx_ctx_null,
+#endif
 };
 
 const gfx_ctx_driver_t *gfx_ctx_find_driver(const char *ident)
