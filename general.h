@@ -38,6 +38,10 @@
 #include "config.h"
 #endif
 
+#ifndef PACKAGE_VERSION
+#define PACKAGE_VERSION "0.9.9.4"
+#endif
+
 // Platform-specific headers
 // PS3
 #if defined(__CELLOS_LV2__) && !defined(__PSL1GHT__)

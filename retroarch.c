@@ -632,7 +632,7 @@ static void print_compiler(FILE *file)
 static void print_help(void)
 {
    puts("===================================================================");
-#if !defined(__BLACKBERRY_QNX__) && !defined(IOS)
+#if !defined(__BLACKBERRY_QNX__) && !defined(IOS) && !defined(IS_XCODE)
    /* To get around error 'too many decimal points in number - expected ')' before numeric constant */
    puts("RetroArch: Frontend for libretro -- v" PACKAGE_VERSION " --");
 #endif

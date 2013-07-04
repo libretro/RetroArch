@@ -85,10 +85,7 @@ CONFIG FILE
 
 #include "../conf/config_file.c"
 #include "../core_options.c"
-
-#if defined(__QNX__) || defined(IOS)
 #include "../core_info.c"
-#endif
 
 /*============================================================
 CHEATS
@@ -100,7 +97,6 @@ CHEATS
 VIDEO CONTEXT
 ============================================================ */
 
-#ifdef HAVE_VID_CONTEXT
 #include "../gfx/gfx_context.c"
 
 #if defined(__CELLOS_LV2__)
@@ -113,8 +109,8 @@ VIDEO CONTEXT
 #include "../gfx/context/bbqnx_ctx.c"
 #elif defined(IOS)
 #include "../gfx/context/ioseagl_ctx.c"
-#endif
-
+#else
+#include "../gfx/context/null_ctx.c"
 #endif
 
 /*============================================================
@@ -417,8 +413,12 @@ MAIN
 #include "../frontend/frontend_ios.c"
 #endif
 
-#if (defined(__QNX__) && !defined(HAVE_BB10)) || !defined(RARCH_MOBILE)
+#ifndef IS_XCODE
+#ifndef RARCH_MOBILE
+#ifndef HAVE_BB10
 #include "../frontend/frontend.c"
+#endif
+#endif
 #endif
 
 /*============================================================

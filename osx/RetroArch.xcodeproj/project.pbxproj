@@ -8,6 +8,9 @@
 
 /* Begin PBXBuildFile section */
 		5014454A17858BE60072A543 /* RetroArch.icns in Resources */ = {isa = PBXBuildFile; fileRef = 5014454917858BE60072A543 /* RetroArch.icns */; };
+		5022D5C917859F16008CD69B /* AudioUnit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 5022D5C817859F16008CD69B /* AudioUnit.framework */; };
+		5022D5CB1785A300008CD69B /* image.c in Sources */ = {isa = PBXBuildFile; fileRef = 5022D5CA1785A300008CD69B /* image.c */; };
+		50AE1AF417858CA000D99603 /* griffin.c in Sources */ = {isa = PBXBuildFile; fileRef = 50AE1AF317858CA000D99603 /* griffin.c */; };
 		7409592A0CC826D800261DBF /* Credits.rtf in Resources */ = {isa = PBXBuildFile; fileRef = 740959290CC826D800261DBF /* Credits.rtf */; };
 		745217950CA98A790067AF41 /* OpenGL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 745217940CA98A790067AF41 /* OpenGL.framework */; };
 		745217CD0CA98B160067AF41 /* GLString.m in Sources */ = {isa = PBXBuildFile; fileRef = 74F0EC690CA98A30009E924F /* GLString.m */; };
@@ -22,6 +25,11 @@
 		1058C7A1FEA54F0111CA2CBB /* Cocoa.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Cocoa.framework; path = /System/Library/Frameworks/Cocoa.framework; sourceTree = "<absolute>"; };
 		29B97319FDCFA39411CA2CEA /* English */ = {isa = PBXFileReference; lastKnownFileType = wrapper.nib; name = English; path = English.lproj/MainMenu.nib; sourceTree = "<group>"; };
 		5014454917858BE60072A543 /* RetroArch.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; path = RetroArch.icns; sourceTree = "<group>"; };
+		5022D5C817859F16008CD69B /* AudioUnit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AudioUnit.framework; path = ../../../../System/Library/Frameworks/AudioUnit.framework; sourceTree = "<group>"; };
+		5022D5CA1785A300008CD69B /* image.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = image.c; path = ../gfx/image.c; sourceTree = "<group>"; };
+		50AE1AF317858CA000D99603 /* griffin.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = griffin.c; path = ../griffin/griffin.c; sourceTree = "<group>"; };
+		50AE1AF517859DEB00D99603 /* CoreAudio.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreAudio.framework; path = ../../../../System/Library/Frameworks/CoreAudio.framework; sourceTree = "<group>"; };
+		50AE1AF717859DF700D99603 /* CoreAudioKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreAudioKit.framework; path = ../../../../System/Library/Frameworks/CoreAudioKit.framework; sourceTree = "<group>"; };
 		740959290CC826D800261DBF /* Credits.rtf */ = {isa = PBXFileReference; lastKnownFileType = text.rtf; path = Credits.rtf; sourceTree = "<group>"; };
 		7439218A0CC944C3009BCC59 /* ReadMe.rtfd */ = {isa = PBXFileReference; lastKnownFileType = wrapper.rtfd; path = ReadMe.rtfd; sourceTree = "<group>"; };
 		745217940CA98A790067AF41 /* OpenGL.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = OpenGL.framework; path = /System/Library/Frameworks/OpenGL.framework; sourceTree = "<absolute>"; };
@@ -38,6 +46,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				5022D5C917859F16008CD69B /* AudioUnit.framework in Frameworks */,
 				8D11072F0486CEB800E47090 /* Cocoa.framework in Frameworks */,
 				745217950CA98A790067AF41 /* OpenGL.framework in Frameworks */,
 			);
@@ -49,6 +58,8 @@
 		080E96DDFE201D6D7F000001 /* Classes */ = {
 			isa = PBXGroup;
 			children = (
+				5022D5CA1785A300008CD69B /* image.c */,
+				50AE1AF317858CA000D99603 /* griffin.c */,
 				74F0EC6A0CA98A30009E924F /* GLString.h */,
 				74F0EC690CA98A30009E924F /* GLString.m */,
 				74F0EC5B0CA989F9009E924F /* BasicOpenGLView.m */,
@@ -84,6 +95,9 @@
 		29B97314FDCFA39411CA2CEA /* RetroArch CocoaGL */ = {
 			isa = PBXGroup;
 			children = (
+				5022D5C817859F16008CD69B /* AudioUnit.framework */,
+				50AE1AF717859DF700D99603 /* CoreAudioKit.framework */,
+				50AE1AF517859DEB00D99603 /* CoreAudio.framework */,
 				7439218A0CC944C3009BCC59 /* ReadMe.rtfd */,
 				080E96DDFE201D6D7F000001 /* Classes */,
 				29B97317FDCFA39411CA2CEA /* Resources */,
@@ -180,6 +194,8 @@
 			files = (
 				745217CD0CA98B160067AF41 /* GLString.m in Sources */,
 				74F0EC5D0CA989F9009E924F /* BasicOpenGLView.m in Sources */,
+				50AE1AF417858CA000D99603 /* griffin.c in Sources */,
+				5022D5CB1785A300008CD69B /* image.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -214,8 +230,23 @@
 				GCC_DYNAMIC_NO_PIC = NO;
 				GCC_MODEL_TUNING = G5;
 				GCC_OPTIMIZATION_LEVEL = 0;
+				HEADER_SEARCH_PATHS = ../;
 				INFOPLIST_FILE = Info.plist;
 				INSTALL_PATH = "$(HOME)/Applications";
+				OTHER_CFLAGS = (
+					"-DWANT_MINIZ",
+					"-DHAVE_RGUI",
+					"-DHAVE_GRIFFIN",
+					"-DIS_XCODE",
+					"-DHAVE_COREAUDIO",
+					"-DHAVE_DYNAMIC",
+					"-DHAVE_FBO",
+					"-DHAVE_OPENGL",
+					"-DHAVE_GLSL",
+					"-DHAVE_NETPLAY",
+					"-DHAVE_THREADS",
+					"-DHAVE_STRL",
+				);
 				PRODUCT_NAME = RetroArch;
 				SDKROOT = "";
 				WRAPPER_EXTENSION = app;
@@ -230,8 +261,23 @@
 				COMBINE_HIDPI_IMAGES = YES;
 				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
 				GCC_MODEL_TUNING = G5;
+				HEADER_SEARCH_PATHS = ../;
 				INFOPLIST_FILE = Info.plist;
 				INSTALL_PATH = "$(HOME)/Applications";
+				OTHER_CFLAGS = (
+					"-DWANT_MINIZ",
+					"-DHAVE_RGUI",
+					"-DHAVE_GRIFFIN",
+					"-DIS_XCODE",
+					"-DHAVE_COREAUDIO",
+					"-DHAVE_DYNAMIC",
+					"-DHAVE_FBO",
+					"-DHAVE_OPENGL",
+					"-DHAVE_GLSL",
+					"-DHAVE_NETPLAY",
+					"-DHAVE_THREADS",
+					"-DHAVE_STRL",
+				);
 				PRODUCT_NAME = RetroArch;
 				SDKROOT = "";
 				WRAPPER_EXTENSION = app;
