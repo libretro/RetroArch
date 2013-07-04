@@ -326,6 +326,8 @@ static void android_input_set_keybinds(void *data, unsigned device,
       // NOTE - we have to add '1' to the bit mask because
       // RETRO_DEVICE_ID_JOYPAD_B is 0
 
+      RARCH_LOG("Detecting keybinds. Device %u port %u id %u keybind_action %u\n", device, port, id, keybind_action);
+
       switch (device)
       {
          case DEVICE_LOGITECH_RUMBLEPAD2:
@@ -1224,14 +1226,14 @@ static void android_input_set_keybinds(void *data, unsigned device,
             keycode_lut[AKEYCODE_BUTTON_START] |= ((RETRO_DEVICE_ID_JOYPAD_START+1) << shift);
             break;
          case DEVICE_BROADCOM_BLUETOOTH_HID:
+            RARCH_LOG("Bluetooth HID\n");
             if ((g_settings.input.icade_count +1) < 4)
             {
                g_settings.input.device[port] = device;
-               strlcpy(g_settings.input.device_names[port], "Broadcom Bluetooth HID",
-                     sizeof(g_settings.input.device_names[port]));
                g_settings.input.icade_count++;
+               RARCH_LOG("Using icade profile %u\n", g_settings.input.icade_count - 1);
 
-               switch(g_settings.input.icade_profile[g_settings.input.icade_count])
+               switch(g_settings.input.icade_profile[g_settings.input.icade_count - 1])  /* was just incremented... */
                {
                   case ICADE_PROFILE_RED_SAMURAI:
                      /* TODO: unsure about Select button here */
@@ -1242,6 +1244,8 @@ static void android_input_set_keybinds(void *data, unsigned device,
                       * RStick Right: 40 */
 
                      /* Red Samurai */
+                     strlcpy(g_settings.input.device_names[port], "Red Samurai",
+                        sizeof(g_settings.input.device_names[port]));
                      keycode_lut[AKEYCODE_W]   |= ((RETRO_DEVICE_ID_JOYPAD_UP+1)    << shift);
                      keycode_lut[AKEYCODE_S] |= ((RETRO_DEVICE_ID_JOYPAD_DOWN+1)    << shift);
                      keycode_lut[AKEYCODE_A] |= ((RETRO_DEVICE_ID_JOYPAD_LEFT+1)    << shift);
@@ -1266,17 +1270,28 @@ static void android_input_set_keybinds(void *data, unsigned device,
                      keycode_lut[AKEYCODE_4] |=  ((RETRO_DEVICE_ID_JOYPAD_X+1)      << shift);
                      break;
                   case ICADE_PROFILE_IPEGA_PG9017:
+                     strlcpy(g_settings.input.device_names[port], "iPega PG-9017",
+                        sizeof(g_settings.input.device_names[port]));
                      /* Todo: diagonals - patchy? */
-                     keycode_lut[AKEYCODE_BUTTON_1] |=  ((RETRO_DEVICE_ID_JOYPAD_Y+1)      << shift);
-                     keycode_lut[AKEYCODE_BUTTON_2] |=  ((RETRO_DEVICE_ID_JOYPAD_X+1)      << shift);
-                     keycode_lut[AKEYCODE_BUTTON_3] |=  ((RETRO_DEVICE_ID_JOYPAD_B+1)      << shift);
-                     keycode_lut[AKEYCODE_BUTTON_4] |=  ((RETRO_DEVICE_ID_JOYPAD_A+1)      << shift);
-                     keycode_lut[AKEYCODE_BUTTON_5] |=  ((RETRO_DEVICE_ID_JOYPAD_L+1)      << shift);
-                     keycode_lut[AKEYCODE_BUTTON_6] |=  ((RETRO_DEVICE_ID_JOYPAD_R+1)      << shift);
-                     keycode_lut[AKEYCODE_BUTTON_9] |=  ((RETRO_DEVICE_ID_JOYPAD_SELECT+1)      << shift);
-                     keycode_lut[AKEYCODE_BUTTON_10] |=  ((RETRO_DEVICE_ID_JOYPAD_START+1)      << shift);
+                     /* This maps to SNES layout, not button labels on gamepad -- SNES layout has A to the right of B */
+                     keycode_lut[AKEYCODE_BUTTON_1]  |= ((RETRO_DEVICE_ID_JOYPAD_Y+1)      << shift); /* Button labeled X on gamepad */
+                     keycode_lut[AKEYCODE_BUTTON_2]  |= ((RETRO_DEVICE_ID_JOYPAD_B+1)      << shift); /* Button labeled A on gamepad */
+                     keycode_lut[AKEYCODE_BUTTON_3]  |= ((RETRO_DEVICE_ID_JOYPAD_A+1)      << shift); /* Button labeled B on gamepad */
+                     keycode_lut[AKEYCODE_BUTTON_4]  |= ((RETRO_DEVICE_ID_JOYPAD_X+1)      << shift); /* Button labeled Y on gamepad */
+                     keycode_lut[AKEYCODE_BUTTON_5]  |= ((RETRO_DEVICE_ID_JOYPAD_L+1)      << shift);
+                     keycode_lut[AKEYCODE_BUTTON_6]  |= ((RETRO_DEVICE_ID_JOYPAD_R+1)      << shift);
+                     keycode_lut[AKEYCODE_BUTTON_9]  |= ((RETRO_DEVICE_ID_JOYPAD_SELECT+1) << shift);
+                     keycode_lut[AKEYCODE_BUTTON_10] |= ((RETRO_DEVICE_ID_JOYPAD_START+1)  << shift);
+                     /* These don't work, the dpad seems to send motion events instead of button events, so they get processed by
+                        engine_handle_dpad_getaxisvalue() but it gets values of 0 for all axes... */
+                     keycode_lut[AKEYCODE_DPAD_UP]   |= ((RETRO_DEVICE_ID_JOYPAD_UP+1)     << shift);
+                     keycode_lut[AKEYCODE_DPAD_DOWN] |= ((RETRO_DEVICE_ID_JOYPAD_DOWN+1)   << shift);
+                     keycode_lut[AKEYCODE_DPAD_LEFT] |= ((RETRO_DEVICE_ID_JOYPAD_LEFT+1)   << shift);
+                     keycode_lut[AKEYCODE_DPAD_RIGHT]|= ((RETRO_DEVICE_ID_JOYPAD_RIGHT+1)  << shift);
                      break;
                   case ICADE_PROFILE_GAMESTOP_WIRELESS:
+                     strlcpy(g_settings.input.device_names[port], "Gamestop Wireless",
+                        sizeof(g_settings.input.device_names[port]));
                      keycode_lut[AKEYCODE_W] |=  ((RETRO_DEVICE_ID_JOYPAD_UP+1)      << shift);
                      keycode_lut[AKEYCODE_S] |=  ((RETRO_DEVICE_ID_JOYPAD_DOWN+1)      << shift);
                      keycode_lut[AKEYCODE_A] |=  ((RETRO_DEVICE_ID_JOYPAD_LEFT+1)      << shift);
