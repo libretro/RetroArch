@@ -143,42 +143,6 @@ GLenum glReportError (void)
 
 // ---------------------------------
 
-// update the projection matrix based on camera and view info
-- (void) updateProjection
-{
-	GLdouble ratio, radians, wd2;
-	GLdouble left, right, top, bottom, near, far;
-
-    [[self openGLContext] makeCurrentContext];
-
-	// set projection
-	glMatrixMode (GL_PROJECTION);
-	glLoadIdentity ();
-	near = -camera.viewPos.z - shapeSize * 0.5;
-	if (near < 0.00001)
-		near = 0.00001;
-	far = -camera.viewPos.z + shapeSize * 0.5;
-	if (far < 1.0)
-		far = 1.0;
-	radians = 0.0174532925 * camera.aperture / 2; // half aperture degrees to radians 
-	wd2 = near * tan(radians);
-	ratio = camera.viewWidth / (float) camera.viewHeight;
-	if (ratio >= 1.0) {
-		left  = -ratio * wd2;
-		right = ratio * wd2;
-		top = wd2;
-		bottom = -wd2;	
-	} else {
-		left  = -wd2;
-		right = wd2;
-		top = wd2 / ratio;
-		bottom = -wd2 / ratio;	
-	}
-	glFrustum (left, right, bottom, top, near, far);
-}
-
-// ---------------------------------
-
 // handles resizing of GL need context update and if the window dimensions change, a
 // a window dimension update, reseting of viewport and an update of the projection matrix
 - (void) resizeGL
@@ -192,7 +156,7 @@ GLenum glReportError (void)
 		camera.viewWidth = rectView.size.width;
 		
 		glViewport (0, 0, camera.viewWidth, camera.viewHeight);
-		[self updateProjection];  // update projection matrix
+        [[self openGLContext] makeCurrentContext];
 		[self updateInfoString];
 	}
 }
