@@ -1,5 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2013 - Jason Fetters
+ *  Copyright (C) 2011-2013 - Daniel De Matteis
  * 
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -12,6 +13,9 @@
  *  You should have received a copy of the GNU General Public License along with RetroArch.
  *  If not, see <http://www.gnu.org/licenses/>.
  */
+
+#ifndef __RARCH_APPLE_H
+#define __RARCH_APPLE_H
 
 #import "RAModuleInfo.h"
 
@@ -34,3 +38,5 @@ extern void ios_display_alert(NSString* message, NSString* title);
 extern void ios_clear_config_hack();
 extern bool path_make_and_check_directory(const char* path, mode_t mode, int amode);
 extern NSString* ios_get_value_from_config(config_file_t* config, NSString* name, NSString* defaultValue);
+
+#endif

@@ -1,5 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2013 - Jason Fetters
+ *  Copyright (C) 2011-2013 - Daniel De Matteis
  * 
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -13,10 +14,9 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-//
 // Prefix header for all source files of the 'RetroArch' target in the 'RetroArch' project
-//
 
+#ifdef IOS
 #import <Availability.h>
 
 #ifndef __IPHONE_5_0
@@ -29,4 +29,5 @@
     #import <Foundation/Foundation.h>
 
     #import <objc/runtime.h>
+#endif
 #endif

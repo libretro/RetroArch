@@ -13,6 +13,9 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#ifndef _RARCH_APPLE_VIEWS_H
+#define _RARCH_APPLE_VIEWS_H
+
 #import "RAModuleInfo.h"
 
 // RAGameView.m
@@ -72,3 +75,5 @@
 // settings.m
 @interface RASystemSettingsList : RASettingsSubList<UIAlertViewDelegate>
 @end
+
+#endif

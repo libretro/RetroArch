@@ -13,6 +13,11 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#ifndef _RA_MODULE_INFO_H
+#define _RA_MODULE_INFO_H
+
+#include "compat/apple_compat.h"
+
 #include "conf/config_file.h"
 #include "core_info.h"
 
@@ -33,4 +38,6 @@
 @property (strong) NSString* customConfigPath;
 - (NSString*)configPath;
 @end
+
+#endif
 
