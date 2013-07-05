@@ -71,7 +71,7 @@ enum SettingTypes
 static RASettingData* boolean_setting(config_file_t* config, NSString* name, NSString* label, NSString* defaultValue)
 {
    RASettingData* result = [[RASettingData alloc] initWithType:BooleanSetting label:label name:name];
-   result.value = ios_get_value_from_config(config, name, defaultValue);
+   result.value = objc_get_value_from_config(config, name, defaultValue);
    return result;
 }
 
@@ -81,9 +81,9 @@ static RASettingData* button_setting(config_file_t* config, uint32_t player, NSS
    
    RASettingData* result = [[RASettingData alloc] initWithType:ButtonSetting label:label name:realname];
    result.msubValues = [NSMutableArray arrayWithObjects:
-                        ios_get_value_from_config(config, realname, defaultValue),
-                        ios_get_value_from_config(config, [realname stringByAppendingString:@"_btn"], @"nul"),
-                        ios_get_value_from_config(config, [realname stringByAppendingString:@"_axis"], @"nul"),
+                        objc_get_value_from_config(config, realname, defaultValue),
+                        objc_get_value_from_config(config, [realname stringByAppendingString:@"_btn"], @"nul"),
+                        objc_get_value_from_config(config, [realname stringByAppendingString:@"_axis"], @"nul"),
                         nil];
    result.player = player ? player - 1 : 0;
    return result;
@@ -99,14 +99,14 @@ static RASettingData* group_setting(NSString* label, NSArray* settings)
 static RASettingData* enumeration_setting(config_file_t* config, NSString* name, NSString* label, NSString* defaultValue, NSArray* values)
 {
    RASettingData* result = [[RASettingData alloc] initWithType:EnumerationSetting label:label name:name];
-   result.value = ios_get_value_from_config(config, name, defaultValue);
+   result.value = objc_get_value_from_config(config, name, defaultValue);
    result.subValues = values;
    return result;
 }
 
 static RASettingData* subpath_setting(config_file_t* config, NSString* name, NSString* label, NSString* defaultValue, NSString* path, NSString* extension)
 {
-   NSString* value = ios_get_value_from_config(config, name, defaultValue);
+   NSString* value = objc_get_value_from_config(config, name, defaultValue);
    value = [value stringByReplacingOccurrencesOfString:path withString:@""];
 
    NSArray* values = [[NSFileManager defaultManager] subpathsOfDirectoryAtPath:path error:nil];
@@ -123,7 +123,7 @@ static RASettingData* subpath_setting(config_file_t* config, NSString* name, NSS
 static RASettingData* range_setting(config_file_t* config, NSString* name, NSString* label, NSString* defaultValue, double minValue, double maxValue)
 {
    RASettingData* result = [[RASettingData alloc] initWithType:RangeSetting label:label name:name];
-   result.value = ios_get_value_from_config(config, name, defaultValue);
+   result.value = objc_get_value_from_config(config, name, defaultValue);
    result.rangeMin = minValue;
    result.rangeMax = maxValue;
    return result;

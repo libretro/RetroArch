@@ -122,12 +122,12 @@ static NSString* build_string_pair(NSString* stringA, NSString* stringB)
    _data = info;
 
    [self.sections addObject: [NSArray arrayWithObjects:@"Core",
-      build_string_pair(@"Core Name", ios_get_value_from_config(_data.data, @"corename", @"Unspecified")),
+      build_string_pair(@"Core Name", objc_get_value_from_config(_data.data, @"corename", @"Unspecified")),
       nil]];
    
    [self.sections addObject: [NSArray arrayWithObjects:@"Hardware/Software",
-      build_string_pair(@"Developer", ios_get_value_from_config(_data.data, @"manufacturer", @"Unspecified")),
-      build_string_pair(@"Name", ios_get_value_from_config(_data.data, @"systemname", @"Unspecified")),
+      build_string_pair(@"Developer", objc_get_value_from_config(_data.data, @"manufacturer", @"Unspecified")),
+      build_string_pair(@"Name", objc_get_value_from_config(_data.data, @"systemname", @"Unspecified")),
       nil]];
 
    // Firmware
@@ -139,9 +139,9 @@ static NSString* build_string_pair(NSString* stringA, NSString* stringB)
 
       for (int i = 0; i < firmwareCount; i ++)
       {
-         NSString* path = ios_get_value_from_config(_data.data, [NSString stringWithFormat:@"firmware%d_path", i + 1], @"Unspecified");
+         NSString* path = objc_get_value_from_config(_data.data, [NSString stringWithFormat:@"firmware%d_path", i + 1], @"Unspecified");
          path = [path stringByReplacingOccurrencesOfString:@"%sysdir%" withString:RetroArch_iOS.get.systemDirectory];      
-         [firmwareSection addObject:build_string_pair(ios_get_value_from_config(_data.data, [NSString stringWithFormat:@"firmware%d_desc", i + 1], @"Unspecified"), path)];
+         [firmwareSection addObject:build_string_pair(objc_get_value_from_config(_data.data, [NSString stringWithFormat:@"firmware%d_desc", i + 1], @"Unspecified"), path)];
       }
 
       _firmwareSectionIndex = self.sections.count;

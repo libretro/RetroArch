@@ -19,6 +19,7 @@
 #include "file.h"
 #import "views.h"
 
+#ifdef IOS
 void ios_display_alert(NSString* message, NSString* title)
 {
    UIAlertView* alert = [[UIAlertView alloc] initWithTitle:title ? title : @"RetroArch"
@@ -28,9 +29,10 @@ void ios_display_alert(NSString* message, NSString* title)
                                              otherButtonTitles:nil];
    [alert show];
 }
+#endif
 
 // Little nudge to prevent stale values when reloading the confg file
-void ios_clear_config_hack()
+void objc_clear_config_hack()
 {
    g_extern.block_config_read = false;
    memset(g_settings.input.overlay, 0, sizeof(g_settings.input.overlay));
@@ -38,7 +40,7 @@ void ios_clear_config_hack()
 }
 
 // Fetch a value from a config file, returning defaultValue if the value is not present
-NSString* ios_get_value_from_config(config_file_t* config, NSString* name, NSString* defaultValue)
+NSString* objc_get_value_from_config(config_file_t* config, NSString* name, NSString* defaultValue)
 {
    char* data = 0;
    if (config)
@@ -58,6 +60,7 @@ bool path_make_and_check_directory(const char* path, mode_t mode, int amode)
    return access(path, amode) == 0;
 }
 
+#ifdef IOS
 // Simple class to reduce code duplication for fixed table views
 @implementation RATableViewController
 
@@ -89,3 +92,4 @@ bool path_make_and_check_directory(const char* path, mode_t mode, int amode)
 }
 
 @end
+#endif

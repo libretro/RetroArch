@@ -127,7 +127,7 @@ static void event_show_rgui(void* userdata)
 
 static void event_reload_config(void* userdata)
 {
-   ios_clear_config_hack();
+   objc_clear_config_hack();
 
    uninit_drivers();
    config_load();
@@ -320,7 +320,7 @@ static void event_reload_config(void* userdata)
    if (_isRunning)
       ios_frontend_post_event(&event_reload_config, 0);
    else
-      ios_clear_config_hack();
+      objc_clear_config_hack();
 }
 
 - (void)refreshSystemConfig
