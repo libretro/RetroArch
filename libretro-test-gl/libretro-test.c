@@ -99,6 +99,8 @@ static void compile_program(void)
    glAttachShader(prog, vert);
    glAttachShader(prog, frag);
    glLinkProgram(prog);
+   glDeleteShader(vert);
+   glDeleteShader(frag);
 }
 
 static void setup_vao(void)
@@ -312,6 +314,20 @@ static void context_reset(void)
    setup_vao();
 }
 
+static void context_destroy(void)
+{
+   fprintf(stderr, "Context destroy!\n");
+
+#ifdef CORE
+   glDeleteVertexArrays(1, &vao);
+   vao = 0;
+#endif
+   glDeleteBuffers(1, &vbo);
+   vbo = 0;
+
+   glDeleteProgram(prog);
+   prog = 0;
+}
 
 bool retro_load_game(const struct retro_game_info *info)
 {
@@ -336,6 +352,7 @@ bool retro_load_game(const struct retro_game_info *info)
 #endif
 #endif
    hw_render.context_reset = context_reset;
+   hw_render.context_destroy = context_destroy;
    hw_render.depth = true;
    hw_render.stencil = true;
    hw_render.bottom_left_origin = true;
