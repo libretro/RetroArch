@@ -653,6 +653,7 @@ static bool environment_cb(unsigned cmd, void *data)
          break;
 
       case RETRO_ENVIRONMENT_SET_HW_RENDER:
+      case RETRO_ENVIRONMENT_SET_HW_RENDER | RETRO_ENVIRONMENT_EXPERIMENTAL: // ABI compat
       {
          RARCH_LOG("Environ SET_HW_RENDER.\n");
          struct retro_hw_render_callback *cb = (struct retro_hw_render_callback*)data;
@@ -669,6 +670,7 @@ static bool environment_cb(unsigned cmd, void *data)
                break;
 
             case RETRO_HW_CONTEXT_OPENGL:
+            case RETRO_HW_CONTEXT_OPENGL_CORE:
                RARCH_ERR("Requesting OpenGL context, but RetroArch is compiled against OpenGLES2. Cannot use HW context.\n");
                return false;
 #elif defined(HAVE_OPENGL)
@@ -680,6 +682,11 @@ static bool environment_cb(unsigned cmd, void *data)
                RARCH_LOG("Requesting OpenGL context.\n");
                driver.video = &video_gl;
                break;
+
+            case RETRO_HW_CONTEXT_OPENGL_CORE:
+               RARCH_LOG("Requesting core OpenGL context (%u.%u).\n", cb->version_major, cb->version_minor);
+               driver.video = &video_gl;
+               break;
 #endif
 
             default:
@@ -688,7 +695,11 @@ static bool environment_cb(unsigned cmd, void *data)
          }
          cb->get_current_framebuffer = driver_get_current_framebuffer;
          cb->get_proc_address = driver_get_proc_address;
-         memcpy(&g_extern.system.hw_render_callback, cb, sizeof(*cb));
+
+         if (cmd & RETRO_ENVIRONMENT_EXPERIMENTAL) // Old ABI. Don't copy garbage.
+            memcpy(&g_extern.system.hw_render_callback, cb, offsetof(struct retro_hw_render_callback, stencil));
+         else
+            memcpy(&g_extern.system.hw_render_callback, cb, sizeof(*cb));
          break;
       }
 

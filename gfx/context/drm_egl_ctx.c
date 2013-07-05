@@ -553,8 +553,10 @@ static gfx_ctx_proc_t gfx_ctx_get_proc_address(const char *symbol)
    return eglGetProcAddress(symbol);
 }
 
-static bool gfx_ctx_bind_api(enum gfx_ctx_api api)
+static bool gfx_ctx_bind_api(enum gfx_ctx_api api, unsigned major, unsigned minor)
 {
+   (void)major;
+   (void)minor;
    g_api = api;
    switch (api)
    {

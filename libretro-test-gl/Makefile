@@ -79,6 +79,10 @@ else
    LIBS += $(GL_LIB)
 endif
 
+ifeq ($(CORE), 1)
+   CFLAGS += -DCORE
+endif
+
 all: $(TARGET)
 
 $(TARGET): $(OBJECTS)

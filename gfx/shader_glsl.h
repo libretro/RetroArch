@@ -21,6 +21,7 @@
 #include "shader_common.h"
 
 void gl_glsl_set_get_proc_address(gfx_ctx_proc_t (*proc)(const char*));
+void gl_glsl_set_context_type(bool core_profile, unsigned major, unsigned minor);
 extern const gl_shader_backend_t gl_glsl_backend;
 
 #endif

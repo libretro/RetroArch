@@ -55,7 +55,7 @@
 #endif
 
 // Used for the last pass when rendering to the back buffer.
-const GLfloat vertexes_flipped[] = {
+static const GLfloat vertexes_flipped[] = {
    0, 1,
    1, 1,
    0, 0,
@@ -78,6 +78,50 @@ static const GLfloat tex_coords[] = {
    1, 1
 };
 
+static const GLfloat white_color[] = {
+   1, 1, 1, 1,
+   1, 1, 1, 1,
+   1, 1, 1, 1,
+   1, 1, 1, 1,
+};
+
+// Workaround broken Apple headers.
+typedef const GLubyte* (*gl_get_stringi_proc)(GLenum name, GLuint index);
+static inline bool gl_query_extension(gl_t *gl, const char *ext)
+{
+   bool ret = false;
+
+   if (gl->core_context)
+   {
+#ifdef GL_NUM_EXTENSIONS
+      gl_get_stringi_proc proc = (gl_get_stringi_proc)gl->ctx_driver->get_proc_address("glGetStringi");
+      if (!proc)
+         return false;
+
+      GLint exts = 0;
+      glGetIntegerv(GL_NUM_EXTENSIONS, &exts);
+      for (GLint i = 0; i < exts; i++)
+      {
+         const char *str = (const char*)proc(GL_EXTENSIONS, i);
+         if (str && strstr(str, ext))
+         {
+            ret = true;
+            break;
+         }
+      }
+#endif
+   }
+   else
+   {
+      const char *str = (const char*)glGetString(GL_EXTENSIONS);
+      ret = str && strstr(str, ext);
+   }
+
+   RARCH_LOG("Querying GL extension: %s => %s\n",
+         ext, ret ? "exists" : "doesn't exist");
+   return ret;
+}
+
 #ifdef HAVE_OVERLAY
 static void gl_render_overlay(void *data);
 static void gl_overlay_vertex_geom(void *data,
@@ -93,16 +137,6 @@ static inline void set_texture_coords(GLfloat *coords, GLfloat xamt, GLfloat yam
    coords[5] = yamt;
    coords[7] = yamt;
 }
-
-const GLfloat white_color[] = {
-   1, 1, 1, 1,
-   1, 1, 1, 1,
-   1, 1, 1, 1,
-   1, 1, 1, 1,
-};
-
-const GLfloat *vertex_ptr = vertexes_flipped;
-const GLfloat *default_vertex_ptr = vertexes_flipped;
 
 #undef LOAD_GL_SYM
 #define LOAD_GL_SYM(SYM) if (!pgl##SYM) { \
@@ -127,7 +161,7 @@ static PFNGLCLIENTWAITSYNCPROC pglClientWaitSync;
 
 static bool load_sync_proc(gl_t *gl)
 {
-   if (!gl_query_extension("ARB_sync"))
+   if (!gl_query_extension(gl, "ARB_sync"))
       return false;
 
    LOAD_GL_SYM(FenceSync);
@@ -135,6 +169,26 @@ static bool load_sync_proc(gl_t *gl)
    LOAD_GL_SYM(ClientWaitSync);
 
    return pglFenceSync && pglDeleteSync && pglClientWaitSync;
+}
+#endif
+
+#ifndef HAVE_OPENGLES
+static PFNGLGENVERTEXARRAYSPROC pglGenVertexArrays;
+static PFNGLBINDVERTEXARRAYPROC pglBindVertexArray;
+static PFNGLDELETEVERTEXARRAYSPROC pglDeleteVertexArrays;
+
+static bool load_vao_proc(gl_t *gl)
+{
+   LOAD_GL_SYM(GenVertexArrays);
+   LOAD_GL_SYM(BindVertexArray);
+   LOAD_GL_SYM(DeleteVertexArrays);
+
+   bool present = pglGenVertexArrays && pglBindVertexArray && pglDeleteVertexArrays;
+   if (!present)
+      return false;
+
+   pglGenVertexArrays(1, &gl->vao);
+   return true;
 }
 #endif
 
@@ -262,7 +316,9 @@ static bool gl_shader_init(void *data)
 
    const char *shader_path = (g_settings.video.shader_enable && *g_settings.video.shader_path) ?
       g_settings.video.shader_path : NULL;
-   enum rarch_shader_type type = gfx_shader_parse_type(shader_path, DEFAULT_SHADER_TYPE);
+
+   enum rarch_shader_type type = gfx_shader_parse_type(shader_path,
+         gl->core_context ? RARCH_SHADER_GLSL : DEFAULT_SHADER_TYPE);
 
    if (type == RARCH_SHADER_NONE)
    {
@@ -294,6 +350,13 @@ static bool gl_shader_init(void *data)
    {
       RARCH_ERR("[GL]: Didn't find valid shader backend. Continuing without shaders.\n");
       return true;
+   }
+
+   if (gl->core_context && RARCH_SHADER_CG)
+   {
+      RARCH_ERR("[GL]: Cg cannot be used with core GL context. Falling back to GLSL.\n");
+      backend = &gl_glsl_backend;
+      shader_path = NULL;
    }
 
    gl->shader = backend;
@@ -334,8 +397,11 @@ static void gl_set_coords(const struct gl_coords *coords)
    glEnableClientState(GL_TEXTURE_COORD_ARRAY);
 }
 
-static void gl_disable_client_arrays(void)
+static void gl_disable_client_arrays(gl_t *gl)
 {
+   if (gl->core_context)
+      return;
+
    pglClientActiveTexture(GL_TEXTURE1);
    glDisableClientState(GL_TEXTURE_COORD_ARRAY);
    pglClientActiveTexture(GL_TEXTURE0);
@@ -520,7 +586,7 @@ static void gl_create_fbo_textures(void *data)
       {
          // GLES and GL are inconsistent in which arguments to pass.
 #ifdef HAVE_OPENGLES2
-         bool has_fp_fbo = gl_query_extension("OES_texture_float_linear");
+         bool has_fp_fbo = gl_query_extension(gl, "OES_texture_float_linear");
          if (!has_fp_fbo)
             RARCH_ERR("OES_texture_float_linear extension not found.\n");
 
@@ -529,7 +595,7 @@ static void gl_create_fbo_textures(void *data)
                gl->fbo_rect[i].width, gl->fbo_rect[i].height,
                0, GL_RGBA, GL_FLOAT, NULL);
 #else
-         bool has_fp_fbo = gl_query_extension("ARB_texture_float");
+         bool has_fp_fbo = gl_query_extension(gl, "ARB_texture_float");
          if (!has_fp_fbo)
             RARCH_ERR("ARB_texture_float extension was not found.\n");
 
@@ -667,20 +733,6 @@ void gl_init_fbo(void *data, unsigned width, unsigned height)
 
 #ifndef HAVE_RGL
 
-// GLES and GL inconsistency.
-#ifndef GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT
-#define GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT_EXT
-#endif
-#ifndef GL_FRAMEBUFFER_INCOMPLETE_DIMENSIONS
-#define GL_FRAMEBUFFER_INCOMPLETE_DIMENSIONS GL_FRAMEBUFFER_INCOMPLETE_DIMENSIONS_EXT
-#endif
-#ifndef GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT
-#define GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT_EXT
-#endif
-#ifndef GL_FRAMEBUFFER_UNSUPPORTED
-#define GL_FRAMEBUFFER_UNSUPPORTED GL_FRAMEBUFFER_UNSUPPORTED_EXT
-#endif
-
 bool gl_init_hw_render(gl_t *gl, unsigned width, unsigned height)
 {
    RARCH_LOG("[GL]: Initializing HW render (%u x %u).\n", width, height);
@@ -697,6 +749,12 @@ bool gl_init_hw_render(gl_t *gl, unsigned width, unsigned height)
    pglGenFramebuffers(TEXTURES, gl->hw_render_fbo);
 
    bool depth = g_extern.system.hw_render_callback.depth;
+   bool stencil = g_extern.system.hw_render_callback.stencil;
+
+#ifdef HAVE_OPENGLES2
+   if (stencil && !gl_query_extension(gl, "OES_packed_depth_stencil"))
+      return false;
+#endif
 
    if (depth)
    {
@@ -711,29 +769,47 @@ bool gl_init_hw_render(gl_t *gl, unsigned width, unsigned height)
 
       if (depth)
       {
-         pglBindRenderbuffer(GL_RENDERBUFFER, gl->hw_render_depth[i]);
-         pglRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT16,
-               width, height);
-         pglBindRenderbuffer(GL_RENDERBUFFER, 0);
-         pglFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,
-               GL_RENDERBUFFER, gl->hw_render_depth[i]);
+         GLenum component = GL_DEPTH_COMPONENT16;
+         GLenum attachment = GL_DEPTH_ATTACHMENT;
+         if (stencil)
+         {
+#ifdef HAVE_OPENGLES2
+            // GLES2 is a bit weird, as always. :P
+            pglBindRenderbuffer(GL_RENDERBUFFER, gl->hw_render_depth[i]);
+            pglRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8_OES,
+                  width, height);
+            pglBindRenderbuffer(GL_RENDERBUFFER, 0);
+
+            // There's no GL_DEPTH_STENCIL_ATTACHMENT like in desktop GL.
+            pglFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,
+                  GL_RENDERBUFFER, gl->hw_render_depth[i]);
+            pglFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT,
+                  GL_RENDERBUFFER, gl->hw_render_depth[i]);
+#else
+            // We use ARB FBO extensions, no need to check.
+            pglBindRenderbuffer(GL_RENDERBUFFER, gl->hw_render_depth[i]);
+            pglRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8,
+                  width, height);
+            pglBindRenderbuffer(GL_RENDERBUFFER, 0);
+            pglFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT,
+                  GL_RENDERBUFFER, gl->hw_render_depth[i]);
+#endif
+         }
+         else
+         {
+            pglBindRenderbuffer(GL_RENDERBUFFER, gl->hw_render_depth[i]);
+            pglRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT16,
+                  width, height);
+            pglBindRenderbuffer(GL_RENDERBUFFER, 0);
+            pglFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,
+                  GL_RENDERBUFFER, gl->hw_render_depth[i]);
+         }
       }
 
       GLenum status = pglCheckFramebufferStatus(GL_FRAMEBUFFER);
       if (status != GL_FRAMEBUFFER_COMPLETE)
       {
-         RARCH_ERR("[GL]: Failed to create HW render FBO #%u.\n", i);
-         const char *err = NULL;
-         switch (status)
-         {
-
-            case GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT: err = "Incomplete Attachment"; break;
-            case GL_FRAMEBUFFER_INCOMPLETE_DIMENSIONS: err = "Incomplete Dimensions"; break;
-            case GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT: err = "Missing Attachment"; break;
-            case GL_FRAMEBUFFER_UNSUPPORTED: err = "Unsupported"; break;
-            default: err = "Unknown"; break;
-         }
-         RARCH_ERR("[GL]: Error: %s.\n", err);
+         RARCH_ERR("[GL]: Failed to create HW render FBO #%u, error: 0x%u.\n", i, (unsigned)status);
          return false;
       }
    }
@@ -992,7 +1068,7 @@ static void gl_frame_fbo(void *data, const struct gl_tex_info *tex_info)
          gl->vp.width, gl->vp.height, g_extern.frame_count, 
          tex_info, gl->prev_info, fbo_tex_info, fbo_tex_info_cnt);
 
-   gl->coords.vertex = vertex_ptr;
+   gl->coords.vertex = gl->vertex_ptr;
 
    gl_shader_set_coords(gl, &gl->coords, &gl->mvp);
    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
@@ -1155,7 +1231,7 @@ static void gl_init_textures(void *data, const video_info_t *video)
 #ifdef HAVE_OPENGLES2
    if (gl->hw_render_use && gl->base_size == sizeof(uint32_t))
    {
-      bool support_argb = gl_query_extension("OES_rgb8_rgba8") || gl_query_extension("ARM_argb8");
+      bool support_argb = gl_query_extension(gl, "OES_rgb8_rgba8") || gl_query_extension(gl, "ARM_argb8");
       if (support_argb)
       {
          internal_fmt = GL_RGBA;
@@ -1348,6 +1424,7 @@ static inline void gl_draw_texture(void *data)
       1.0f, 1.0f, 1.0f, gl->rgui_texture_alpha,
    };
 
+   gl->coords.vertex = vertexes_flipped;
    gl->coords.tex_coord = tex_coords;
    gl->coords.color = color;
    glBindTexture(GL_TEXTURE_2D, gl->rgui_texture);
@@ -1369,8 +1446,9 @@ static inline void gl_draw_texture(void *data)
 
    glDisable(GL_BLEND);
 
+   gl->coords.vertex = gl->vertex_ptr;
    gl->coords.tex_coord = gl->tex_coords;
-   gl->coords.color = white_color;
+   gl->coords.color = gl->white_color_ptr;
 }
 #endif
 
@@ -1380,8 +1458,11 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
    RARCH_PERFORMANCE_START(frame_run);
 
    gl_t *gl = (gl_t*)data;
-   uint64_t lifecycle_mode_state = g_extern.lifecycle_mode_state;
-   (void)lifecycle_mode_state;
+
+#ifndef HAVE_OPENGLES
+   if (gl->core_context)
+      pglBindVertexArray(gl->vao);
+#endif
 
    if (gl->shader)
       gl->shader->use(1);
@@ -1445,7 +1526,8 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
    if (gl->hw_render_fbo_init)
    {
 #ifndef HAVE_OPENGLES
-      glEnable(GL_TEXTURE_2D);
+      if (!gl->core_context)
+         glEnable(GL_TEXTURE_2D);
 #endif
       glDisable(GL_DEPTH_TEST);
       glDisable(GL_STENCIL_TEST);
@@ -1509,7 +1591,7 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
          gl->shader->use(0);
       glBindTexture(GL_TEXTURE_2D, 0);
 #ifndef NO_GL_FF_VERTEX
-      gl_disable_client_arrays();
+      gl_disable_client_arrays(gl);
 #endif
    }
 #endif
@@ -1543,6 +1625,11 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
    }
 #endif
 
+#ifndef HAVE_OPENGLES
+   if (gl->core_context)
+      pglBindVertexArray(0);
+#endif
+
    return true;
 }
 
@@ -1572,7 +1659,7 @@ static void gl_free(void *data)
    gl_shader_deinit(gl);
 
 #ifndef NO_GL_FF_VERTEX
-   gl_disable_client_arrays();
+   gl_disable_client_arrays(gl);
 #endif
 
    glDeleteTextures(TEXTURES, gl->texture);
@@ -1614,11 +1701,18 @@ static void gl_free(void *data)
 #endif
 #endif
 
+#ifndef HAVE_OPENGLES
+   if (gl->core_context)
+   {
+      pglBindVertexArray(0);
+      pglDeleteVertexArrays(1, &gl->vao);
+   }
+#endif
+
    context_destroy_func();
 
    free(gl->empty_buf);
    free(gl->conv_buffer);
-
    free(gl);
 }
 
@@ -1640,6 +1734,17 @@ static bool resolve_extensions(gl_t *gl)
       return false;
 #endif
 
+#ifndef HAVE_OPENGLES
+   gl->core_context = g_extern.system.hw_render_callback.context_type == RETRO_HW_CONTEXT_OPENGL_CORE;
+   RARCH_LOG("[GL]: Using Core GL context.\n");
+   if (gl->core_context &&
+         !load_vao_proc(gl))
+   {
+      RARCH_ERR("[GL]: Failed to init VAOs.\n");
+      return false;
+   }
+#endif
+
 #ifdef HAVE_GL_SYNC
    gl->have_sync = load_sync_proc(gl);
    if (gl->have_sync && g_settings.video.hard_sync)
@@ -1655,7 +1760,7 @@ static bool resolve_extensions(gl_t *gl)
 
    driver.gfx_use_rgba = false;
 #ifdef HAVE_OPENGLES2
-   if (gl_query_extension("BGRA8888"))
+   if (gl_query_extension(gl, "BGRA8888"))
       RARCH_LOG("[GL]: BGRA8888 extension found for GLES.\n");
    else
    {
@@ -1779,6 +1884,8 @@ static void gl_init_pbo_readback(void *data)
 
 static const gfx_ctx_driver_t *gl_get_context(void)
 {
+   unsigned major = g_extern.system.hw_render_callback.version_major;
+   unsigned minor = g_extern.system.hw_render_callback.version_minor;
 #ifdef HAVE_OPENGLES
    enum gfx_ctx_api api = GFX_CTX_OPENGL_ES_API;
    const char *api_name = "OpenGL ES";
@@ -1792,7 +1899,7 @@ static const gfx_ctx_driver_t *gl_get_context(void)
       const gfx_ctx_driver_t *ctx = gfx_ctx_find_driver(g_settings.video.gl_context);
       if (ctx)
       {
-         if (!ctx->bind_api(api))
+         if (!ctx->bind_api(api, major, minor))
          {
             RARCH_ERR("Failed to bind API %s to context %s.\n", api_name, g_settings.video.gl_context);
             return NULL;
@@ -1813,7 +1920,7 @@ static const gfx_ctx_driver_t *gl_get_context(void)
       return ctx;
    }
    else
-      return gfx_ctx_init_first(api);
+      return gfx_ctx_init_first(api, major, minor);
 }
 
 static void *gl_init(const video_info_t *video, const input_driver_t **input, void **input_data)
@@ -1886,8 +1993,22 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
       gl->full_y = gl->win_height;
    }
 
+   struct retro_hw_render_callback *hw_render = &g_extern.system.hw_render_callback;
+   gl->vertex_ptr = hw_render->bottom_left_origin ? vertexes : vertexes_flipped;
+
+#ifdef HAVE_FBO
+#ifdef HAVE_OPENGLES2
+   gl->hw_render_use = hw_render->context_type == RETRO_HW_CONTEXT_OPENGLES2;
+#else
+   gl->hw_render_use = hw_render->context_type == RETRO_HW_CONTEXT_OPENGL ||
+      g_extern.system.hw_render_callback.context_type == RETRO_HW_CONTEXT_OPENGL_CORE;
+#endif
+#endif
+   gl->white_color_ptr = white_color;
+
 #ifdef HAVE_GLSL
    gl_glsl_set_get_proc_address(gl->ctx_driver->get_proc_address);
+   gl_glsl_set_context_type(gl->core_context, hw_render->version_major, hw_render->version_minor);
 #endif
 
    if (!gl_shader_init(gl))
@@ -1915,18 +2036,11 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    else
       gl->tex_filter = video->smooth ? GL_LINEAR : GL_NEAREST;
 
-#ifdef HAVE_FBO
-#ifdef HAVE_OPENGLES2
-   gl->hw_render_use = g_extern.system.hw_render_callback.context_type == RETRO_HW_CONTEXT_OPENGLES2;
-#else
-   gl->hw_render_use = g_extern.system.hw_render_callback.context_type == RETRO_HW_CONTEXT_OPENGL;
-#endif
-#endif
-
    gl_set_texture_fmts(gl, video->rgb32);
 
 #ifndef HAVE_OPENGLES
-   glEnable(GL_TEXTURE_2D);
+   if (!gl->core_context)
+      glEnable(GL_TEXTURE_2D);
 #endif
 
    glDisable(GL_DEPTH_TEST);
@@ -1934,11 +2048,10 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    glDisable(GL_DITHER);
 
    memcpy(gl->tex_coords, tex_coords, sizeof(tex_coords));
-   gl->coords.vertex         = vertex_ptr;
+   gl->coords.vertex         = gl->vertex_ptr;
    gl->coords.tex_coord      = gl->tex_coords;
-   gl->coords.color          = white_color;
+   gl->coords.color          = gl->white_color_ptr;
    gl->coords.lut_tex_coord  = tex_coords;
-   gl_shader_set_coords(gl, &gl->coords, &gl->mvp);
 
    // Empty buffer that we use to clear out the texture with on res change.
    gl->empty_buf = calloc(sizeof(uint32_t), gl->tex_w * gl->tex_h);
@@ -2333,9 +2446,9 @@ static void gl_render_overlay(void *data)
 
    glDisable(GL_BLEND);
 
-   gl->coords.vertex    = vertex_ptr;
+   gl->coords.vertex    = gl->vertex_ptr;
    gl->coords.tex_coord = gl->tex_coords;
-   gl->coords.color     = white_color;
+   gl->coords.color     = gl->white_color_ptr;
 }
 
 static const video_overlay_interface_t gl_overlay_interface = {

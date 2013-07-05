@@ -434,7 +434,7 @@ enum retro_mod
                                            // Sets an interface which frontend can use to eject and insert disk images.
                                            // This is used for games which consist of multiple images and must be manually
                                            // swapped out by the user (e.g. PSX).
-#define RETRO_ENVIRONMENT_SET_HW_RENDER    (14 | RETRO_ENVIRONMENT_EXPERIMENTAL)
+#define RETRO_ENVIRONMENT_SET_HW_RENDER 14
                                            // struct retro_hw_render_callback * --
                                            // NOTE: This call is currently very experimental, and should not be considered part of the public API.
                                            // The interface could be changed or removed at any time.
@@ -503,6 +503,7 @@ enum retro_hw_context_type
    RETRO_HW_CONTEXT_NONE = 0,
    RETRO_HW_CONTEXT_OPENGL, // OpenGL 2.x. Latest version available before 3.x+.
    RETRO_HW_CONTEXT_OPENGLES2, // GLES 2.0
+   RETRO_HW_CONTEXT_OPENGL_CORE, // Modern desktop core GL context. Use major/minor fields to set GL version.
 
    RETRO_HW_CONTEXT_DUMMY = INT_MAX
 };
@@ -514,6 +515,11 @@ struct retro_hw_render_callback
    retro_hw_get_current_framebuffer_t get_current_framebuffer; // Set by frontend.
    retro_hw_get_proc_address_t get_proc_address; // Set by frontend.
    bool depth; // Set if render buffers should have depth component attached.
+   bool stencil; // Set if stencil buffers should be attached.
+   // If depth and stencil are true, a packed 24/8 buffer will be added. Only attaching stencil is invalid and will be ignored.
+   bool bottom_left_origin; // Use conventional bottom-left origin convention. Is false, standard libretro top-left origin semantics are used.
+   unsigned version_major; // Major version number for core GL context.
+   unsigned version_minor; // Minor version number for core GL context.
 };
 
 // Callback type passed in RETRO_ENVIRONMENT_SET_KEYBOARD_CALLBACK. Called by the frontend in response to keyboard events.

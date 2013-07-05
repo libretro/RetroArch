@@ -415,6 +415,11 @@ typedef struct driver
 
    bool threaded_video;
 
+   // If set during context deinit, the driver should keep
+   // graphics context alive to avoid having to reset all context state.
+   bool video_cache_context;
+   bool video_cache_context_ack; // Set to true by driver if context caching succeeded.
+
    // Set if the respective handles are owned by RetroArch driver core.
    // Consoles upper logic will generally intialize the drivers before
    // the driver core initializes. It will then be up to upper logic

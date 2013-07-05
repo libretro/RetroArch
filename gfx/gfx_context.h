@@ -41,7 +41,7 @@ typedef struct gfx_ctx_driver
    bool (*init)(void);
    void (*destroy)(void);
 
-   bool (*bind_api)(enum gfx_ctx_api); // Which API to bind to.
+   bool (*bind_api)(enum gfx_ctx_api, unsigned major, unsigned minor); // Which API to bind to.
 
    // Sets the swap interval.
    void (*swap_interval)(unsigned);
@@ -111,7 +111,7 @@ extern const gfx_ctx_driver_t gfx_ctx_ios;
 extern const gfx_ctx_driver_t gfx_ctx_null;
 
 const gfx_ctx_driver_t *gfx_ctx_find_driver(const char *ident); // Finds driver with ident. Does not initialize.
-const gfx_ctx_driver_t *gfx_ctx_init_first(enum gfx_ctx_api api); // Finds first suitable driver and initializes.
+const gfx_ctx_driver_t *gfx_ctx_init_first(enum gfx_ctx_api api, unsigned major, unsigned minor); // Finds first suitable driver and initializes.
 
 #endif
 

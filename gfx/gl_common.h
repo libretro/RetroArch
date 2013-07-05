@@ -86,16 +86,6 @@
 #endif
 #endif
 
-static inline bool gl_query_extension(const char *ext)
-{
-   const char *str = (const char*)glGetString(GL_EXTENSIONS);
-   bool ret = str && strstr(str, ext);
-   RARCH_LOG("Querying GL extension: %s => %s\n",
-         ext, ret ? "exists" : "doesn't exist");
-
-   return ret;
-}
-
 static inline bool gl_check_error(void)
 {
    int error = glGetError();
@@ -234,6 +224,8 @@ typedef struct gl
    math_matrix mvp, mvp_no_rot;
 
    struct gl_coords coords;
+   const GLfloat *vertex_ptr;
+   const GLfloat *white_color_ptr;
 
    GLuint pbo;
 
@@ -249,7 +241,7 @@ typedef struct gl
    const font_renderer_driver_t *font_driver;
    GLuint font_tex;
    int font_tex_w, font_tex_h;
-   uint16_t *font_tex_buf;
+   uint32_t *font_tex_buf;
    char font_last_msg[256];
    int font_last_width, font_last_height;
    GLfloat font_color[16];
@@ -289,6 +281,9 @@ typedef struct gl
    GLsync fences[MAX_FENCES];
    unsigned fence_count;
 #endif
+
+   bool core_context;
+   GLuint vao;
 } gl_t;
 
 // Windows ... <_<
@@ -352,9 +347,6 @@ extern PFNGLACTIVETEXTUREPROC pglActiveTexture;
 #if defined(HAVE_OPENGLES2) // It's an extension. Don't bother checking for it atm.
 #undef GL_UNPACK_ROW_LENGTH
 #endif
-
-extern const GLfloat vertexes_flipped[];
-extern const GLfloat white_color[];
 
 void gl_set_projection(void *data, struct gl_ortho *ortho, bool allow_rotate);
 void gl_set_viewport(void *data, unsigned width, unsigned height, bool force_full, bool allow_rotate);

@@ -39,6 +39,13 @@ static unsigned g_screen;
 
 static GLXContext g_ctx;
 static GLXFBConfig g_fbc;
+static unsigned g_major;
+static unsigned g_minor;
+static bool g_core;
+
+typedef GLXContext (*glXCreateContextAttribsARBProc)(Display*,
+      GLXFBConfig, GLXContext, Bool, const int*);
+static glXCreateContextAttribsARBProc glx_create_context_attribs;
 
 static XF86VidModeModeInfo g_desktop_mode;
 static bool g_should_reset_mode;
@@ -49,6 +56,7 @@ static unsigned g_interval;
 static bool g_is_double;
 
 static int (*g_pglSwapInterval)(int);
+static void (*g_pglSwapIntervalEXT)(Display*, GLXDrawable, int);
 
 static void sighandler(int sig)
 {
@@ -76,7 +84,13 @@ static void gfx_ctx_destroy(void);
 static void gfx_ctx_swap_interval(unsigned interval)
 {
    g_interval = interval;
-   if (g_pglSwapInterval)
+
+   if (g_pglSwapIntervalEXT)
+   {
+      RARCH_LOG("[GLX]: glXSwapIntervalEXT(%u)\n", g_interval);
+      g_pglSwapIntervalEXT(g_dpy, g_glx_win, g_interval);
+   }
+   else if (g_pglSwapInterval)
    {
       RARCH_LOG("[GLX]: glXSwapInterval(%u)\n", g_interval);
       if (g_pglSwapInterval(g_interval) != 0)
@@ -106,20 +120,24 @@ static void gfx_ctx_check_window(bool *quit,
       switch (event.type)
       {
          case ClientMessage:
-            if ((Atom)event.xclient.data.l[0] == g_quit_atom)
+            if (event.xclient.window == g_win &&
+                  (Atom)event.xclient.data.l[0] == g_quit_atom)
                g_quit = true;
             break;
 
          case DestroyNotify:
-            g_quit = true;
+            if (event.xdestroywindow.window == g_win)
+               g_quit = true;
             break;
 
          case MapNotify:
-            g_has_focus = true;
+            if (event.xmap.window == g_win)
+               g_has_focus = true;
             break;
 
          case UnmapNotify:
-            g_has_focus = false;
+            if (event.xunmap.window == g_win)
+               g_has_focus = false;
             break;
 
          case KeyPress:
@@ -203,15 +221,32 @@ static bool gfx_ctx_init(void)
    GLXFBConfig *fbcs = NULL;
    g_quit = 0;
 
-   g_dpy = XOpenDisplay(NULL);
+   if (!g_dpy)
+      g_dpy = XOpenDisplay(NULL);
+
    if (!g_dpy)
       goto error;
 
-   // GLX 1.3+ required.
    int major, minor;
    glXQueryVersion(g_dpy, &major, &minor);
-   if (major < 1 || (major == 1 && minor < 3))
-      goto error;
+   if (g_major * 1000 + g_minor >= 3001) // Core context
+   {
+      g_core = true;
+      // GLX 1.4+ required.
+      if ((major * 1000 + minor) < 1004)
+         goto error;
+
+      glx_create_context_attribs = (glXCreateContextAttribsARBProc)glXGetProcAddress((const GLubyte*)"glXCreateContextAttribsARB");
+      if (!glx_create_context_attribs)
+         goto error;
+   }
+   else
+   {
+      g_core = false;
+      // GLX 1.3+ required.
+      if ((major * 1000 + minor) < 1003)
+         goto error;
+   }
 
    int nelements;
    fbcs = glXChooseFBConfig(g_dpy, DefaultScreen(g_dpy),
@@ -339,11 +374,32 @@ static bool gfx_ctx_set_video_mode(
    XEvent event;
    XIfEvent(g_dpy, &event, glx_wait_notify, NULL);
 
-   g_ctx = glXCreateNewContext(g_dpy, g_fbc, GLX_RGBA_TYPE, 0, True);
    if (!g_ctx)
    {
-      RARCH_ERR("[GLX]: Failed to create new context.\n");
-      goto error;
+      if (g_core)
+      {
+         const int attribs[] = {
+            GLX_CONTEXT_MAJOR_VERSION_ARB, g_major,
+            GLX_CONTEXT_MINOR_VERSION_ARB, g_minor,
+            GLX_CONTEXT_PROFILE_MASK_ARB, GLX_CONTEXT_CORE_PROFILE_BIT_ARB,
+            None,
+         };
+
+         g_ctx = glx_create_context_attribs(g_dpy, g_fbc, NULL, True, attribs);
+      }
+      else
+         g_ctx = glXCreateNewContext(g_dpy, g_fbc, GLX_RGBA_TYPE, 0, True);
+
+      if (!g_ctx)
+      {
+         RARCH_ERR("[GLX]: Failed to create new context.\n");
+         goto error;
+      }
+   }
+   else
+   {
+      driver.video_cache_context_ack = true;
+      RARCH_LOG("[GLX]: Using cached GL context.\n");
    }
 
    glXMakeContextCurrent(g_dpy, g_glx_win, g_glx_win, g_ctx);
@@ -359,18 +415,16 @@ static bool gfx_ctx_set_video_mode(
    if (g_is_double)
    {
       const char *swap_func = NULL;
+
+      g_pglSwapIntervalEXT = (void (*)(Display*, GLXDrawable, int))glXGetProcAddress((const GLubyte*)"glXSwapIntervalEXT");
       g_pglSwapInterval = (int (*)(int))glXGetProcAddress((const GLubyte*)"glXSwapIntervalMESA");
-      if (g_pglSwapInterval)
+
+      if (g_pglSwapIntervalEXT)
+         swap_func = "glXSwapIntervalEXT";
+      else if (g_pglSwapInterval)
          swap_func = "glXSwapIntervalMESA";
 
-      if (!g_pglSwapInterval)
-      {
-         g_pglSwapInterval = (int (*)(int))glXGetProcAddress((const GLubyte*)"glXSwapIntervalSGI");
-         if (g_pglSwapInterval)
-            swap_func = "glXSwapIntervalSGI";
-      }
-
-      if (!g_pglSwapInterval)
+      if (!g_pglSwapInterval && !g_pglSwapIntervalEXT)
          RARCH_WARN("[GLX]: Cannot find swap interval call.\n");
       else
          RARCH_LOG("[GLX]: Found swap function: %s.\n", swap_func);
@@ -409,9 +463,13 @@ static void gfx_ctx_destroy(void)
 {
    if (g_dpy && g_ctx)
    {
+      glFinish();
       glXMakeContextCurrent(g_dpy, None, None, NULL);
-      glXDestroyContext(g_dpy, g_ctx);
-      g_ctx = NULL;
+      if (!driver.video_cache_context)
+      {
+         glXDestroyContext(g_dpy, g_ctx);
+         g_ctx = NULL;
+      }
    }
 
    if (g_win)
@@ -452,7 +510,7 @@ static void gfx_ctx_destroy(void)
       g_should_reset_mode = false;
    }
 
-   if (g_dpy)
+   if (!driver.video_cache_context && g_dpy)
    {
       XCloseDisplay(g_dpy);
       g_dpy = NULL;
@@ -460,6 +518,9 @@ static void gfx_ctx_destroy(void)
 
    g_inited = false;
    g_pglSwapInterval = NULL;
+   g_pglSwapIntervalEXT = NULL;
+   g_major = g_minor = 0;
+   g_core = false;
 }
 
 static void gfx_ctx_input_driver(const input_driver_t **input, void **input_data)
@@ -486,8 +547,10 @@ static gfx_ctx_proc_t gfx_ctx_get_proc_address(const char *symbol)
    return glXGetProcAddress((const GLubyte*)symbol);
 }
 
-static bool gfx_ctx_bind_api(enum gfx_ctx_api api)
+static bool gfx_ctx_bind_api(enum gfx_ctx_api api, unsigned major, unsigned minor)
 {
+   g_major = major;
+   g_minor = minor;
    return api == GFX_CTX_OPENGL_API;
 }
 
