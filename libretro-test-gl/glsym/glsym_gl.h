@@ -1,5 +1,11 @@
 #ifndef RGLGEN_DECL_H__
 #define RGLGEN_DECL_H__
+#ifdef GL_APIENTRY
+typedef void (GL_APIENTRY *RGLGENGLDEBUGPROC)(GLenum, GLenum, GLuint, GLenum, GLsizei, const GLchar*, GLvoid*);
+#else
+typedef void (APIENTRY *RGLGENGLDEBUGPROCARB)(GLenum, GLenum, GLuint, GLenum, GLsizei, const GLchar*, GLvoid*);
+typedef void (APIENTRY *RGLGENGLDEBUGPROC)(GLenum, GLenum, GLuint, GLenum, GLsizei, const GLchar*, GLvoid*);
+#endif
 typedef void (APIENTRYP RGLSYMGLBLENDCOLORPROC) (GLfloat red, GLfloat green, GLfloat blue, GLfloat alpha);
 typedef void (APIENTRYP RGLSYMGLBLENDEQUATIONPROC) (GLenum mode);
 typedef void (APIENTRYP RGLSYMGLDRAWRANGEELEMENTSPROC) (GLenum mode, GLuint start, GLuint end, GLsizei count, GLenum type, const GLvoid *indices);
@@ -780,7 +786,7 @@ typedef void (APIENTRYP RGLSYMGLGETDOUBLEI_VPROC) (GLenum target, GLuint index, 
 typedef GLsync (APIENTRYP RGLSYMGLCREATESYNCFROMCLEVENTARBPROC) (struct _cl_context * context, struct _cl_event * event, GLbitfield flags);
 typedef void (APIENTRYP RGLSYMGLDEBUGMESSAGECONTROLARBPROC) (GLenum source, GLenum type, GLenum severity, GLsizei count, const GLuint *ids, GLboolean enabled);
 typedef void (APIENTRYP RGLSYMGLDEBUGMESSAGEINSERTARBPROC) (GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar *buf);
-typedef void (APIENTRYP RGLSYMGLDEBUGMESSAGECALLBACKARBPROC) (GLDEBUGPROCARB callback, const GLvoid *userParam);
+typedef void (APIENTRYP RGLSYMGLDEBUGMESSAGECALLBACKARBPROC) (RGLGENGLDEBUGPROCARB callback, const GLvoid *userParam);
 typedef GLuint (APIENTRYP RGLSYMGLGETDEBUGMESSAGELOGARBPROC) (GLuint count, GLsizei bufsize, GLenum *sources, GLenum *types, GLuint *ids, GLenum *severities, GLsizei *lengths, GLchar *messageLog);
 typedef GLenum (APIENTRYP RGLSYMGLGETGRAPHICSRESETSTATUSARBPROC) (void);
 typedef void (APIENTRYP RGLSYMGLGETNMAPDVARBPROC) (GLenum target, GLenum query, GLsizei bufSize, GLdouble *v);
@@ -816,7 +822,7 @@ typedef void (APIENTRYP RGLSYMGLTEXSTORAGE2DPROC) (GLenum target, GLsizei levels
 typedef void (APIENTRYP RGLSYMGLTEXSTORAGE3DPROC) (GLenum target, GLsizei levels, GLenum internalformat, GLsizei width, GLsizei height, GLsizei depth);
 typedef void (APIENTRYP RGLSYMGLDEBUGMESSAGECONTROLPROC) (GLenum source, GLenum type, GLenum severity, GLsizei count, const GLuint *ids, GLboolean enabled);
 typedef void (APIENTRYP RGLSYMGLDEBUGMESSAGEINSERTPROC) (GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar *buf);
-typedef void (APIENTRYP RGLSYMGLDEBUGMESSAGECALLBACKPROC) (GLDEBUGPROC callback, const void *userParam);
+typedef void (APIENTRYP RGLSYMGLDEBUGMESSAGECALLBACKPROC) (RGLGENGLDEBUGPROC callback, const void *userParam);
 typedef GLuint (APIENTRYP RGLSYMGLGETDEBUGMESSAGELOGPROC) (GLuint count, GLsizei bufsize, GLenum *sources, GLenum *types, GLuint *ids, GLenum *severities, GLsizei *lengths, GLchar *messageLog);
 typedef void (APIENTRYP RGLSYMGLPUSHDEBUGGROUPPROC) (GLenum source, GLuint id, GLsizei length, const GLchar *message);
 typedef void (APIENTRYP RGLSYMGLPOPDEBUGGROUPPROC) (void);

@@ -19,7 +19,7 @@ def find_gl_symbols(lines):
       m = re.search(r'^typedef.+PFN(\S+)PROC.+$', line)
       g = re.search(r'^.+(gl\S+)\W*\(.+\).*$', line)
       if m and noext(m.group(1)):
-         typedefs.append(m.group(0).replace('PFN', 'RGLSYM'))
+         typedefs.append(m.group(0).replace('PFN', 'RGLSYM').replace('GLDEBUGPROC', 'RGLGENGLDEBUGPROC'))
       if g and noext(g.group(1)):
          syms.append(g.group(1))
    return (typedefs, syms)
@@ -54,6 +54,12 @@ if __name__ == '__main__':
    with open(sys.argv[2], 'w') as f:
       f.write('#ifndef RGLGEN_DECL_H__\n')
       f.write('#define RGLGEN_DECL_H__\n')
+      f.write('#ifdef GL_APIENTRY\n')
+      f.write('typedef void (GL_APIENTRY *RGLGENGLDEBUGPROC)(GLenum, GLenum, GLuint, GLenum, GLsizei, const GLchar*, GLvoid*);\n')
+      f.write('#else\n')
+      f.write('typedef void (APIENTRY *RGLGENGLDEBUGPROCARB)(GLenum, GLenum, GLuint, GLenum, GLsizei, const GLchar*, GLvoid*);\n')
+      f.write('typedef void (APIENTRY *RGLGENGLDEBUGPROC)(GLenum, GLenum, GLuint, GLenum, GLsizei, const GLchar*, GLvoid*);\n')
+      f.write('#endif\n')
       dump(f, typedefs)
       dump(f, overrides)
       dump(f, externs)

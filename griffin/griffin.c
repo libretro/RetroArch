@@ -204,6 +204,12 @@ VIDEO DRIVER
 
 #ifdef HAVE_OPENGL
 #include "../gfx/gl.c"
+#include "../gfx/glsym/rglgen.c"
+#ifdef HAVE_OPENGLES2
+#include "../gfx/glsym/glsym_es2.c"
+#else
+#include "../gfx/glsym/glsym_gl.c"
+#endif
 #endif
 
 #ifdef HAVE_XVIDEO

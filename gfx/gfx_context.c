@@ -14,7 +14,7 @@
  */
 
 #include "gfx_context.h"
-#include "general.h"
+#include "../general.h"
 #include <string.h>
 
 #ifdef HAVE_CONFIG_H

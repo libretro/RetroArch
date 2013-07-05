@@ -17,8 +17,8 @@ ifeq ($(TARGET_ARCH),mips)
 LOCAL_CFLAGS += -DANDROID_MIPS
 endif
 
-LOCAL_SRC_FILES += $(wildcard ../*.c)
-LOCAL_CFLAGS += -O2 -Wall -std=gnu99 -ffast-math -DGLES
+LOCAL_SRC_FILES += $(wildcard ../*.c) ../glsym/rglgen.c ../glsym/glsym_es2.c
+LOCAL_CFLAGS += -O2 -Wall -std=gnu99 -ffast-math -DGLES -DHAVE_OPENGLES2
 LOCAL_LDLIBS += -lGLESv2
 
 include $(BUILD_SHARED_LIBRARY)
