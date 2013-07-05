@@ -787,7 +787,6 @@ const struct rglgen_sym_map rglgen_symbol_map_rarch[] = {
     SYM(CreateSyncFromCLeventARB),
     SYM(DebugMessageControlARB),
     SYM(DebugMessageInsertARB),
-    SYM(DebugMessageCallbackARB),
     SYM(GetDebugMessageLogARB),
     SYM(GetGraphicsResetStatusARB),
     SYM(GetnMapdvARB),
@@ -823,7 +822,6 @@ const struct rglgen_sym_map rglgen_symbol_map_rarch[] = {
     SYM(TexStorage3D),
     SYM(DebugMessageControl),
     SYM(DebugMessageInsert),
-    SYM(DebugMessageCallback),
     SYM(GetDebugMessageLog),
     SYM(PushDebugGroup),
     SYM(PopDebugGroup),
@@ -1653,7 +1651,6 @@ RGLSYMGLGETDOUBLEI_VPROC __rglgen_glGetDoublei_v;
 RGLSYMGLCREATESYNCFROMCLEVENTARBPROC __rglgen_glCreateSyncFromCLeventARB;
 RGLSYMGLDEBUGMESSAGECONTROLARBPROC __rglgen_glDebugMessageControlARB;
 RGLSYMGLDEBUGMESSAGEINSERTARBPROC __rglgen_glDebugMessageInsertARB;
-RGLSYMGLDEBUGMESSAGECALLBACKARBPROC __rglgen_glDebugMessageCallbackARB;
 RGLSYMGLGETDEBUGMESSAGELOGARBPROC __rglgen_glGetDebugMessageLogARB;
 RGLSYMGLGETGRAPHICSRESETSTATUSARBPROC __rglgen_glGetGraphicsResetStatusARB;
 RGLSYMGLGETNMAPDVARBPROC __rglgen_glGetnMapdvARB;
@@ -1689,7 +1686,6 @@ RGLSYMGLTEXSTORAGE2DPROC __rglgen_glTexStorage2D;
 RGLSYMGLTEXSTORAGE3DPROC __rglgen_glTexStorage3D;
 RGLSYMGLDEBUGMESSAGECONTROLPROC __rglgen_glDebugMessageControl;
 RGLSYMGLDEBUGMESSAGEINSERTPROC __rglgen_glDebugMessageInsert;
-RGLSYMGLDEBUGMESSAGECALLBACKPROC __rglgen_glDebugMessageCallback;
 RGLSYMGLGETDEBUGMESSAGELOGPROC __rglgen_glGetDebugMessageLog;
 RGLSYMGLPUSHDEBUGGROUPPROC __rglgen_glPushDebugGroup;
 RGLSYMGLPOPDEBUGGROUPPROC __rglgen_glPopDebugGroup;
