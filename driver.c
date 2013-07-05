@@ -384,6 +384,10 @@ void init_drivers(void)
 void uninit_drivers(void)
 {
    uninit_audio();
+
+   if (g_extern.system.hw_render_callback.context_destroy && !driver.video_cache_context)
+      g_extern.system.hw_render_callback.context_destroy();
+
    uninit_video_input();
 
    if (driver.video_data_own)
