@@ -8,20 +8,7 @@
 #define ARRAY_SIZE(a) (sizeof(a) / sizeof((a)[0]))
 static struct retro_hw_render_callback hw_render;
 
-#define GL_GLEXT_PROTOTYPES
-#if defined(GLES)
-#ifdef IOS
-#include <OpenGLES/ES2/gl.h>
-#else
-#include <GLES2/gl2.h>
-#endif
-#elif defined(__APPLE__)
-#include <OpenGL/gl.h>
-#include <OpenGL/glext.h>
-#else
-#include <GL/gl.h>
-#include <GL/glext.h>
-#endif
+#include "glsym.h"
 
 #define BASE_WIDTH 320
 #define BASE_HEIGHT 240
@@ -35,91 +22,6 @@ static struct retro_hw_render_callback hw_render;
 
 static unsigned width = BASE_WIDTH;
 static unsigned height = BASE_HEIGHT;
-
-#if defined(GLES) || defined(__APPLE__)
-#define pglCreateProgram glCreateProgram
-#define pglCreateShader glCreateShader
-#define pglCompileShader glCompileShader
-#define pglUseProgram glUseProgram
-#define pglShaderSource glShaderSource
-#define pglAttachShader glAttachShader
-#define pglLinkProgram glLinkProgram
-#define pglBindFramebuffer glBindFramebuffer
-#define pglGetUniformLocation glGetUniformLocation
-#define pglUniformMatrix4fv glUniformMatrix4fv
-#define pglGetAttribLocation glGetAttribLocation
-#define pglVertexAttribPointer glVertexAttribPointer
-#define pglEnableVertexAttribArray glEnableVertexAttribArray
-#define pglDisableVertexAttribArray glDisableVertexAttribArray
-#define pglGenBuffers glGenBuffers
-#define pglBufferData glBufferData
-#define pglBindBuffer glBindBuffer
-#define init_gl_proc()
-#else
-static PFNGLCREATEPROGRAMPROC pglCreateProgram;
-static PFNGLCREATESHADERPROC pglCreateShader;
-static PFNGLCREATESHADERPROC pglCompileShader;
-static PFNGLCREATESHADERPROC pglUseProgram;
-static PFNGLSHADERSOURCEPROC pglShaderSource;
-static PFNGLATTACHSHADERPROC pglAttachShader;
-static PFNGLLINKPROGRAMPROC pglLinkProgram;
-static PFNGLBINDFRAMEBUFFERPROC pglBindFramebuffer;
-static PFNGLGETUNIFORMLOCATIONPROC pglGetUniformLocation;
-static PFNGLUNIFORMMATRIX4FVPROC pglUniformMatrix4fv;
-static PFNGLGETATTRIBLOCATIONPROC pglGetAttribLocation;
-static PFNGLVERTEXATTRIBPOINTERPROC pglVertexAttribPointer;
-static PFNGLENABLEVERTEXATTRIBARRAYPROC pglEnableVertexAttribArray;
-static PFNGLDISABLEVERTEXATTRIBARRAYPROC pglDisableVertexAttribArray;
-static PFNGLGENBUFFERSPROC pglGenBuffers;
-static PFNGLBUFFERDATAPROC pglBufferData;
-static PFNGLBINDBUFFERPROC pglBindBuffer;
-#ifdef CORE
-static PFNGLGENVERTEXARRAYSPROC pglGenVertexArrays;
-static PFNGLBINDVERTEXARRAYPROC pglBindVertexArray;
-#endif
-
-struct gl_proc_map
-{
-   void *proc;
-   const char *sym;
-};
-
-#define PROC_BIND(name) { &(pgl##name), "gl" #name }
-static const struct gl_proc_map proc_map[] = {
-   PROC_BIND(CreateProgram),
-   PROC_BIND(CreateShader),
-   PROC_BIND(CompileShader),
-   PROC_BIND(UseProgram),
-   PROC_BIND(ShaderSource),
-   PROC_BIND(AttachShader),
-   PROC_BIND(LinkProgram),
-   PROC_BIND(BindFramebuffer),
-   PROC_BIND(GetUniformLocation),
-   PROC_BIND(GetAttribLocation),
-   PROC_BIND(UniformMatrix4fv),
-   PROC_BIND(VertexAttribPointer),
-   PROC_BIND(EnableVertexAttribArray),
-   PROC_BIND(DisableVertexAttribArray),
-   PROC_BIND(GenBuffers),
-   PROC_BIND(BufferData),
-   PROC_BIND(BindBuffer),
-#ifdef CORE
-   PROC_BIND(GenVertexArrays),
-   PROC_BIND(BindVertexArray),
-#endif
-};
-
-static void init_gl_proc(void)
-{
-   for (unsigned i = 0; i < ARRAY_SIZE(proc_map); i++)
-   {
-      retro_proc_address_t proc = hw_render.get_proc_address(proc_map[i].sym);
-      if (!proc)
-         fprintf(stderr, "Symbol %s not found!\n", proc_map[i].sym);
-      memcpy(proc_map[i].proc, &proc, sizeof(proc));
-   }
-}
-#endif
 
 static GLuint prog;
 static GLuint vbo;
@@ -185,33 +87,33 @@ static const char *fragment_shader[] = {
 
 static void compile_program(void)
 {
-   prog = pglCreateProgram();
-   GLuint vert = pglCreateShader(GL_VERTEX_SHADER);
-   GLuint frag = pglCreateShader(GL_FRAGMENT_SHADER);
+   prog = glCreateProgram();
+   GLuint vert = glCreateShader(GL_VERTEX_SHADER);
+   GLuint frag = glCreateShader(GL_FRAGMENT_SHADER);
 
-   pglShaderSource(vert, ARRAY_SIZE(vertex_shader), vertex_shader, 0);
-   pglShaderSource(frag, ARRAY_SIZE(fragment_shader), fragment_shader, 0);
-   pglCompileShader(vert);
-   pglCompileShader(frag);
+   glShaderSource(vert, ARRAY_SIZE(vertex_shader), vertex_shader, 0);
+   glShaderSource(frag, ARRAY_SIZE(fragment_shader), fragment_shader, 0);
+   glCompileShader(vert);
+   glCompileShader(frag);
 
-   pglAttachShader(prog, vert);
-   pglAttachShader(prog, frag);
-   pglLinkProgram(prog);
+   glAttachShader(prog, vert);
+   glAttachShader(prog, frag);
+   glLinkProgram(prog);
 }
 
 static void setup_vao(void)
 {
 #ifdef CORE
-   pglGenVertexArrays(1, &vao);
+   glGenVertexArrays(1, &vao);
 #endif
-   pglUseProgram(prog);
+   glUseProgram(prog);
 
-   pglGenBuffers(1, &vbo);
-   pglBindBuffer(GL_ARRAY_BUFFER, vbo);
-   pglBufferData(GL_ARRAY_BUFFER, sizeof(vertex_data), vertex_data, GL_STATIC_DRAW);
+   glGenBuffers(1, &vbo);
+   glBindBuffer(GL_ARRAY_BUFFER, vbo);
+   glBufferData(GL_ARRAY_BUFFER, sizeof(vertex_data), vertex_data, GL_STATIC_DRAW);
 
-   pglBindBuffer(GL_ARRAY_BUFFER, 0);
-   pglUseProgram(0);
+   glBindBuffer(GL_ARRAY_BUFFER, 0);
+   glUseProgram(0);
 }
 
 void retro_init(void)
@@ -342,28 +244,28 @@ void retro_run(void)
    input_poll_cb();
 
 #ifdef CORE
-   pglBindVertexArray(vao);
+   glBindVertexArray(vao);
 #endif
 
-   pglBindFramebuffer(GL_FRAMEBUFFER, hw_render.get_current_framebuffer());
+   glBindFramebuffer(GL_FRAMEBUFFER, hw_render.get_current_framebuffer());
    glClearColor(0.3, 0.4, 0.5, 1.0);
    glViewport(0, 0, width, height);
    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
-   pglUseProgram(prog);
+   glUseProgram(prog);
 
    glEnable(GL_DEPTH_TEST);
 
-   pglBindBuffer(GL_ARRAY_BUFFER, vbo);
-   int vloc = pglGetAttribLocation(prog, "aVertex");
-   pglVertexAttribPointer(vloc, 2, GL_FLOAT, GL_FALSE, 0, (void*)0);
-   pglEnableVertexAttribArray(vloc);
-   int cloc = pglGetAttribLocation(prog, "aColor");
-   pglVertexAttribPointer(cloc, 4, GL_FLOAT, GL_FALSE, 0, (void*)(8 * sizeof(GLfloat)));
-   pglEnableVertexAttribArray(cloc);
-   pglBindBuffer(GL_ARRAY_BUFFER, 0);
+   glBindBuffer(GL_ARRAY_BUFFER, vbo);
+   int vloc = glGetAttribLocation(prog, "aVertex");
+   glVertexAttribPointer(vloc, 2, GL_FLOAT, GL_FALSE, 0, (void*)0);
+   glEnableVertexAttribArray(vloc);
+   int cloc = glGetAttribLocation(prog, "aColor");
+   glVertexAttribPointer(cloc, 4, GL_FLOAT, GL_FALSE, 0, (void*)(8 * sizeof(GLfloat)));
+   glEnableVertexAttribArray(cloc);
+   glBindBuffer(GL_ARRAY_BUFFER, 0);
 
-   int loc = pglGetUniformLocation(prog, "uMVP");
+   int loc = glGetUniformLocation(prog, "uMVP");
 
    static unsigned frame_count;
    frame_count++;
@@ -377,7 +279,7 @@ void retro_run(void)
       0, 0, 1, 0,
       0, 0, 0, 1,
    };
-   pglUniformMatrix4fv(loc, 1, GL_FALSE, mvp);
+   glUniformMatrix4fv(loc, 1, GL_FALSE, mvp);
    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
    cos_angle *= 0.5;
@@ -389,23 +291,23 @@ void retro_run(void)
       0.4, 0.4, 0.2, 1,
    };
 
-   pglUniformMatrix4fv(loc, 1, GL_FALSE, mvp2);
+   glUniformMatrix4fv(loc, 1, GL_FALSE, mvp2);
    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-   pglDisableVertexAttribArray(vloc);
-   pglDisableVertexAttribArray(cloc);
+   glDisableVertexAttribArray(vloc);
+   glDisableVertexAttribArray(cloc);
 
-   pglUseProgram(0);
+   glUseProgram(0);
 
    video_cb(RETRO_HW_FRAME_BUFFER_VALID, width, height, 0);
 #ifdef CORE
-   pglBindVertexArray(0);
+   glBindVertexArray(0);
 #endif
 }
 
 static void context_reset(void)
 {
    fprintf(stderr, "Context reset!\n");
-   init_gl_proc();
+   rglgen_resolve_symbols(hw_render.get_proc_address);
    compile_program();
    setup_vao();
 }
