@@ -142,8 +142,11 @@ static bool check_eglimage_proc(void)
 #endif
 
 #ifdef HAVE_GL_SYNC
-static bool check_sync_proc(void)
+static bool check_sync_proc(gl_t *gl)
 {
+   if (!gl_query_extension(gl, "ARB_sync"))
+      return false;
+
    return glFenceSync && glDeleteSync && glClientWaitSync;
 }
 #endif
@@ -151,6 +154,9 @@ static bool check_sync_proc(void)
 #ifndef HAVE_OPENGLES
 static bool init_vao(gl_t *gl)
 {
+   if (!gl_query_extension(gl, "ARB_vertex_array_object"))
+      return false;
+
    bool present = glGenVertexArrays && glBindVertexArray && glDeleteVertexArrays;
    if (!present)
       return false;
@@ -175,10 +181,13 @@ static bool init_vao(gl_t *gl)
 #define GL_FRAMEBUFFER GL_FRAMEBUFFER_OES
 #define GL_COLOR_ATTACHMENT0 GL_COLOR_ATTACHMENT0_EXT
 #define GL_FRAMEBUFFER_COMPLETE GL_FRAMEBUFFER_COMPLETE_OES
-#define check_fbo_proc() (true)
+#define check_fbo_proc(gl) (true)
 #elif !defined(HAVE_OPENGLES2)
-static bool check_fbo_proc(void)
+static bool check_fbo_proc(gl_t *gl)
 {
+   if (!gl_query_extension(gl, "ARB_framebuffer_object"))
+      return false;
+
    return glGenFramebuffers && glBindFramebuffer && glFramebufferTexture2D && 
       glCheckFramebufferStatus && glDeleteFramebuffers &&
       glGenRenderbuffers && glBindRenderbuffer &&
@@ -186,7 +195,7 @@ static bool check_fbo_proc(void)
       glDeleteRenderbuffers;
 }
 #else
-#define check_fbo_proc() (true)
+#define check_fbo_proc(gl) (true)
 #endif
 #if defined(__APPLE__) || defined(HAVE_PSGL)
 #define GL_RGBA32F GL_RGBA32F_ARB
@@ -565,7 +574,7 @@ void gl_init_fbo(void *data, unsigned width, unsigned height)
    if (gl_shader_num(gl) == 1 && !scale.valid)
       return;
 
-   if (!check_fbo_proc())
+   if (!check_fbo_proc(gl))
    {
       RARCH_ERR("Failed to locate FBO functions. Won't be able to use render-to-texture.\n");
       return;
@@ -628,7 +637,7 @@ bool gl_init_hw_render(gl_t *gl, unsigned width, unsigned height)
    glGetIntegerv(GL_MAX_RENDERBUFFER_SIZE, &max_renderbuffer_size);
    RARCH_LOG("[GL]: Max texture size: %d px, renderbuffer size: %u px.\n", max_fbo_size, max_renderbuffer_size);
 
-   if (!check_fbo_proc())
+   if (!check_fbo_proc(gl))
       return false;
 
    glBindTexture(GL_TEXTURE_2D, 0);
@@ -1623,7 +1632,7 @@ static bool resolve_extensions(gl_t *gl)
 #endif
 
 #ifdef HAVE_GL_SYNC
-   gl->have_sync = check_sync_proc();
+   gl->have_sync = check_sync_proc(gl);
    if (gl->have_sync && g_settings.video.hard_sync)
       RARCH_LOG("[GL]: Using ARB_sync to reduce latency.\n");
 #endif
