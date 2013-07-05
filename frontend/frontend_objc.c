@@ -88,7 +88,7 @@ void* rarch_main_apple(void* args)
    if (init_ret)
    {
       rarch_main_clear_state();
-      dispatch_async_f(dispatch_get_main_queue(), (void*)1, ios_rarch_exited);
+      dispatch_async_f(dispatch_get_main_queue(), (void*)1, apple_rarch_exited);
       return 0;
    }
 
@@ -124,7 +124,7 @@ void* rarch_main_apple(void* args)
 #else
             // This needs to be here to tell the GUI thread that the emulator loop has stopped,
             // the (void*)1 makes it display the 'Failed to load game' message.
-            dispatch_async_f(dispatch_get_main_queue(), (void*)1, ios_rarch_exited);
+            dispatch_async_f(dispatch_get_main_queue(), (void*)1, apple_rarch_exited);
             return 1;
 #endif
          }
@@ -182,6 +182,6 @@ void* rarch_main_apple(void* args)
 
    rarch_main_clear_state();
 
-   dispatch_async_f(dispatch_get_main_queue(), 0, ios_rarch_exited);
+   dispatch_async_f(dispatch_get_main_queue(), 0, apple_rarch_exited);
    return 0;
 }

@@ -388,8 +388,8 @@ void gl_shader_set_coords(void *data, const struct gl_coords *coords, const math
 
 #ifdef IOS
 // There is no default frame buffer on IOS.
-void ios_bind_game_view_fbo(void);
-#define gl_bind_backbuffer() ios_bind_game_view_fbo()
+void apple_bind_game_view_fbo(void);
+#define gl_bind_backbuffer() apple_bind_game_view_fbo()
 #else
 #define gl_bind_backbuffer() pglBindFramebuffer(GL_FRAMEBUFFER, 0)
 #endif

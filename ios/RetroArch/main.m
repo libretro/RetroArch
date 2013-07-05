@@ -427,7 +427,7 @@ static void event_reload_config(void* userdata)
 
 @end
 
-void ios_rarch_exited(void* result)
+void apple_rarch_exited(void* result)
 {
    [[RetroArch_iOS get] rarchExited:result ? NO : YES];
 }

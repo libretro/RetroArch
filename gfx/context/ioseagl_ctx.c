@@ -78,7 +78,7 @@ static bool gfx_ctx_has_focus(void)
 
 static void gfx_ctx_swap_buffers(void)
 {
-   ios_flip_game_view();
+   apple_flip_game_view();
 }
 
 static void gfx_ctx_input_driver(const input_driver_t **input, void **input_data)
@@ -101,7 +101,7 @@ const gfx_ctx_driver_t gfx_ctx_ios = {
    gfx_ctx_check_window,
    gfx_ctx_set_resize,
    gfx_ctx_has_focus,
-   ios_flip_game_view,
+   apple_flip_game_view,
    gfx_ctx_input_driver,
    NULL,
    NULL,

@@ -168,7 +168,7 @@ void ios_destroy_game_view()
    [EAGLContext setCurrentContext:nil];
 }
 
-void ios_flip_game_view()
+void apple_flip_game_view()
 {
    if (--g_fast_forward_skips < 0)
    {
@@ -194,7 +194,7 @@ void ios_get_game_view_size(unsigned *width, unsigned *height)
    *height = *height ? *height : 480;
 }
 
-void ios_bind_game_view_fbo()
+void apple_bind_game_view_fbo(void)
 {
    dispatch_sync(dispatch_get_main_queue(), ^{
       if (g_context)
