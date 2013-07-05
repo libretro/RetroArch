@@ -41,6 +41,11 @@ def dump(f, lines):
    f.write('\n\n')
 
 if __name__ == '__main__':
+
+   if len(sys.argv) > 4:
+      for banned in sys.argv[4:]:
+         banned_ext.append(banned)
+
    with open(sys.argv[1], 'r') as f:
       lines = f.readlines()
       typedefs, syms = find_gl_symbols(lines)
