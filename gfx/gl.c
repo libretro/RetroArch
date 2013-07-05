@@ -1617,13 +1617,6 @@ static void gl_set_nonblock_state(void *data, bool state)
 
 static bool resolve_extensions(gl_t *gl)
 {
-#ifdef _WIN32
-   // Win32 GL lib doesn't have some elementary functions needed.
-   // Need to load dynamically :(
-   if (!load_gl_proc_win32(gl))
-      return false;
-#endif
-
 #ifndef HAVE_OPENGLES
    gl->core_context = g_extern.system.hw_render_callback.context_type == RETRO_HW_CONTEXT_OPENGL_CORE;
    RARCH_LOG("[GL]: Using Core GL context.\n");
@@ -1840,8 +1833,6 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
       return NULL;
    }
 
-   rglgen_resolve_symbols(gl->ctx_driver->get_proc_address);
-
    RARCH_LOG("Found GL context: %s\n", gl->ctx_driver->ident);
 
    context_get_video_size_func(&gl->full_x, &gl->full_y);
@@ -1867,6 +1858,7 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    const char *renderer = (const char*)glGetString(GL_RENDERER);
    RARCH_LOG("[GL]: Vendor: %s, Renderer: %s.\n", vendor, renderer);
 
+   rglgen_resolve_symbols(gl->ctx_driver->get_proc_address);
    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
    if (!resolve_extensions(gl))
