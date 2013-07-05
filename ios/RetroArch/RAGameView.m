@@ -45,6 +45,7 @@ static UIView* g_pause_indicator_view;
 
    g_screen_scale = [[UIScreen mainScreen] scale];
 
+#ifdef IOS
    UINib* xib = [UINib nibWithNibName:@"PauseView" bundle:nil];
    g_pause_view = [[xib instantiateWithOwner:[RetroArch_iOS get] options:nil] lastObject];
    
@@ -56,11 +57,13 @@ static UIView* g_pause_indicator_view;
    g_view.enableSetNeedsDisplay = NO;
    [g_view addSubview:g_pause_view];
    [g_view addSubview:g_pause_indicator_view];
+#endif
 
    self.view = g_view;
    return self;
 }
 
+#ifdef IOS
 // Pause Menus
 - (void)viewWillLayoutSubviews
 {
@@ -109,6 +112,7 @@ static UIView* g_pause_indicator_view;
       completion:^(BOOL finished) { }
    ];
 }
+#endif
 
 - (void)suspend
 {
