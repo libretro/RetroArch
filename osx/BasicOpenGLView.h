@@ -66,34 +66,25 @@
 
 #import "GLString.h"
 
-typedef struct {
-   GLdouble x,y,z;
-} recVec;
-
 @interface BasicOpenGLView : NSOpenGLView
 {
-	// string attributes
-	NSMutableDictionary * stanStringAttrib;
-	
-	// string textures
-	GLString * helpStringTex;
-	GLString * infoStringTex;
-	GLString * camStringTex;
-	GLString * capStringTex;
-	GLString * msgStringTex;
-	CFAbsoluteTime msgTime; // message posting time for expiration
-	
-	NSTimer* timer;
+   // string attributes
+   NSMutableDictionary * stanStringAttrib;
+   // string textures
+   GLString * helpStringTex;
+   GLString * infoStringTex;
+   GLString * msgStringTex;
+   CFAbsoluteTime msgTime; // message posting time for expiration
+
+   NSTimer* timer;
  
-    bool fAnimate;
-	IBOutlet NSMenuItem * animateMenuItem;
-    bool fInfo;
-	IBOutlet NSMenuItem * infoMenuItem;
-	bool fDrawHelp;
+   bool fAnimate;
+   IBOutlet NSMenuItem * animateMenuItem;
+   bool fInfo;
+   IBOutlet NSMenuItem * infoMenuItem;
+   bool fDrawHelp;
 	
-	CFAbsoluteTime time;
-	GLfloat shapeSize;
-	
+   CFAbsoluteTime time;
 }
 
 + (NSOpenGLPixelFormat*) basicPixelFormat;

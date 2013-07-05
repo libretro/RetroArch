@@ -63,7 +63,7 @@
 
 int main(int argc, char *argv[])
 {
-   return NSApplicationMain(argc,  (const char **) argv);
+   return NSApplicationMain(argc, (const char **) argv);
 }
 
 // ==================================
@@ -107,9 +107,8 @@ void reportError (char * strError)
 	NSLog (@"%@\n", errString);
 	if (gErrStringTex)
 		[gErrStringTex setString:errString withAttributes:attribs];
-	else {
+	else
 		gErrStringTex = [[GLString alloc] initWithString:errString withAttributes:attribs withTextColor:[NSColor colorWithDeviceRed:1.0f green:1.0f blue:1.0f alpha:1.0f] withBoxColor:[NSColor colorWithDeviceRed:1.0f green:0.0f blue:0.0f alpha:0.3f] withBorderColor:[NSColor colorWithDeviceRed:1.0f green:0.0f blue:0.0f alpha:0.8f]];
-	}
 }
 
 // ---------------------------------
@@ -154,15 +153,16 @@ unsigned viewHeight = 0;
 	NSRect rectView = [self bounds];
 	
 	// ensure camera knows size changed
-	if ((viewHeight != rectView.size.height) ||
-	    (viewWidth != rectView.size.width)) {
-		viewHeight = rectView.size.height;
-		viewWidth = rectView.size.width;
-		
-		glViewport (0, 0, viewWidth, viewHeight);
-        [[self openGLContext] makeCurrentContext];
-		[self updateInfoString];
-	}
+   if ((viewHeight != rectView.size.height) ||
+      (viewWidth != rectView.size.width))
+   {
+      viewHeight = rectView.size.height;
+      viewWidth = rectView.size.width;
+       
+      glViewport (0, 0, viewWidth, viewHeight);
+      [[self openGLContext] makeCurrentContext];
+      [self updateInfoString];
+   }
 }
 
 // ---------------------------------
@@ -198,13 +198,14 @@ unsigned viewHeight = 0;
 // these functions create or update GLStrings one should expect to have to regenerate the image, bitmap and texture when the string changes thus these functions are not particularly light weight
 
 - (void) updateInfoString
-{ // update info string texture
-	NSString * string = [NSString stringWithFormat:@"(%0.0f x %0.0f) \n%s \n%s", [self bounds].size.width, [self bounds].size.height, glGetString (GL_RENDERER), glGetString (GL_VERSION)];
-	if (infoStringTex)
-		[infoStringTex setString:string withAttributes:stanStringAttrib];
-	else {
-		infoStringTex = [[GLString alloc] initWithString:string withAttributes:stanStringAttrib withTextColor:[NSColor colorWithDeviceRed:1.0f green:1.0f blue:1.0f alpha:1.0f] withBoxColor:[NSColor colorWithDeviceRed:0.5f green:0.5f blue:0.5f alpha:0.5f] withBorderColor:[NSColor colorWithDeviceRed:0.8f green:0.8f blue:0.8f alpha:0.8f]];
-	}
+{
+   // update info string texture
+   NSString * string = [NSString stringWithFormat:@"(%0.0f x %0.0f) \n%s \n%s", [self bounds].size.width, [self bounds].size.height, glGetString (GL_RENDERER), glGetString (GL_VERSION)];
+
+   if (infoStringTex)
+      [infoStringTex setString:string withAttributes:stanStringAttrib];
+   else
+      infoStringTex = [[GLString alloc] initWithString:string withAttributes:stanStringAttrib withTextColor:[NSColor colorWithDeviceRed:1.0f green:1.0f blue:1.0f alpha:1.0f] withBoxColor:[NSColor colorWithDeviceRed:0.5f green:0.5f blue:0.5f alpha:0.5f] withBorderColor:[NSColor colorWithDeviceRed:0.8f green:0.8f blue:0.8f alpha:0.8f]];
 }
 
 // ---------------------------------
@@ -228,56 +229,58 @@ unsigned viewHeight = 0;
 // draw text info using our GLString class for much more optimized text drawing
 - (void) drawInfo
 {	
-	GLint matrixMode;
-	GLboolean depthTest = glIsEnabled (GL_DEPTH_TEST);
-	GLfloat height, width, messageTop = 10.0f;
+   GLint matrixMode;
+   GLboolean depthTest = glIsEnabled (GL_DEPTH_TEST);
+   GLfloat height, width, messageTop = 10.0f;
 	
-	height = viewHeight;
-	width = viewWidth;
+   height = viewHeight;
+   width = viewWidth;
 		
-	// set orthograhic 1:1  pixel transform in local view coords
-	glGetIntegerv (GL_MATRIX_MODE, &matrixMode);
-	glMatrixMode (GL_PROJECTION);
-	glPushMatrix();
-		glLoadIdentity ();
-		glMatrixMode (GL_MODELVIEW);
-		glPushMatrix();
-			glLoadIdentity ();
-			glScalef (2.0f / width, -2.0f /  height, 1.0f);
-			glTranslatef (-width / 2.0f, -height / 2.0f, 0.0f);
+   // set orthograhic 1:1  pixel transform in local view coords
+   glGetIntegerv (GL_MATRIX_MODE, &matrixMode);
+   glMatrixMode (GL_PROJECTION);
+   glPushMatrix();
+   glLoadIdentity ();
+   glMatrixMode (GL_MODELVIEW);
+   glPushMatrix();
+   glLoadIdentity ();
+   glScalef (2.0f / width, -2.0f /  height, 1.0f);
+   glTranslatef (-width / 2.0f, -height / 2.0f, 0.0f);
 			
-			glColor4f (1.0f, 1.0f, 1.0f, 1.0f);
-			[infoStringTex drawAtPoint:NSMakePoint (10.0f, height - [infoStringTex frameSize].height - 10.0f)];
-			[camStringTex drawAtPoint:NSMakePoint (10.0f, messageTop)];
-			messageTop += [camStringTex frameSize].height + 3.0f;
+   glColor4f (1.0f, 1.0f, 1.0f, 1.0f);
+   [infoStringTex drawAtPoint:NSMakePoint (10.0f, height - [infoStringTex frameSize].height - 10.0f)];
 
-			if (fDrawHelp)
-				[helpStringTex drawAtPoint:NSMakePoint (floor ((width - [helpStringTex frameSize].width) / 2.0f), floor ((height - [helpStringTex frameSize].height) / 3.0f))];
+   if (fDrawHelp)
+      [helpStringTex drawAtPoint:NSMakePoint (floor ((width - [helpStringTex frameSize].width) / 2.0f), floor ((height - [helpStringTex frameSize].height) / 3.0f))];
 
-			// message string
-			float currTime = getElapsedTime ();
-			if ((currTime - msgTime) < gMsgPresistance) {
-				GLfloat comp = (gMsgPresistance - getElapsedTime () + msgTime) * 0.1; // premultiplied fade
-				glColor4f (comp, comp, comp, comp);
-				[msgStringTex drawAtPoint:NSMakePoint (10.0f, messageTop)];
-				messageTop += [msgStringTex frameSize].height + 3.0f;
-			}
-			// global error message
-			if ((currTime - gErrorTime) < gMsgPresistance) {
-				GLfloat comp = (gMsgPresistance - getElapsedTime () + gErrorTime) * 0.1; // premultiplied fade
-				glColor4f (comp, comp, comp, comp);
-				[gErrStringTex drawAtPoint:NSMakePoint (10.0f, messageTop)];
-			}
+   // message string
+   float currTime = getElapsedTime();
+    
+   if ((currTime - msgTime) < gMsgPresistance)
+   {
+      GLfloat comp = (gMsgPresistance - getElapsedTime () + msgTime) * 0.1; // premultiplied fade
+      glColor4f (comp, comp, comp, comp);
+      [msgStringTex drawAtPoint:NSMakePoint (10.0f, messageTop)];
+      messageTop += [msgStringTex frameSize].height + 3.0f;
+   }
 
-		// reset orginal martices
-		glPopMatrix(); // GL_MODELVIEW
-		glMatrixMode (GL_PROJECTION);
-	glPopMatrix();
-	glMatrixMode (matrixMode);
+   // global error message
+   if ((currTime - gErrorTime) < gMsgPresistance)
+   {
+      GLfloat comp = (gMsgPresistance - getElapsedTime () + gErrorTime) * 0.1; // premultiplied fade
+      glColor4f (comp, comp, comp, comp);
+      [gErrStringTex drawAtPoint:NSMakePoint (10.0f, messageTop)];
+   }
 
-	glDisable (GL_TEXTURE_RECTANGLE_EXT);
-	glDisable (GL_BLEND);
-	glReportError ();
+   // reset orginal martices
+   glPopMatrix(); // GL_MODELVIEW
+   glMatrixMode (GL_PROJECTION);
+   glPopMatrix();
+   glMatrixMode (matrixMode);
+
+   glDisable (GL_TEXTURE_RECTANGLE_EXT);
+   glDisable (GL_BLEND);
+   glReportError ();
 }
 
 #pragma mark ---- IB Actions ----
@@ -310,7 +313,8 @@ unsigned viewHeight = 0;
     NSString *characters = [theEvent characters];
     if ([characters length]) {
         unichar character = [characters characterAtIndex:0];
-		switch (character) {
+		switch (character)
+        {
 			case 'h':
 				// toggle help
 				fDrawHelp = 1 - fDrawHelp;
@@ -411,8 +415,6 @@ unsigned viewHeight = 0;
 
     [[self openGLContext] setValues:&swapInt forParameter:NSOpenGLCPSwapInterval]; // set to vbl sync
 
-	shapeSize = 7.0f; // max radius of of objects
-
 	// init fonts for use with strings
 	NSFont * font =[NSFont fontWithName:@"Helvetica" size:12.0];
 	stanStringAttrib = [[NSMutableDictionary dictionary] retain];
@@ -429,14 +431,16 @@ unsigned viewHeight = 0;
 
 // this can be a troublesome call to do anything heavyweight, as it is called on window moves, resizes, and display config changes.  So be
 // careful of doing too much here.
-- (void) update // window resizes, moves and display changes (resize, depth and display config change)
+
+// window resizes, moves and display changes (resize, depth and display config change)
+- (void) update 
 {
-msgTime	= getElapsedTime ();
-[msgStringTex setString:[NSString stringWithFormat:@"update at %0.1f secs", msgTime]  withAttributes:stanStringAttrib];
-	[super update];
-	if (![self inLiveResize])  {// if not doing live resize
-		[self updateInfoString]; // to get change in renderers will rebuld string every time (could test for early out)
-	}
+   msgTime	= getElapsedTime ();
+   [msgStringTex setString:[NSString stringWithFormat:@"update at %0.1f secs", msgTime]  withAttributes:stanStringAttrib];
+   [super update];
+
+   if (![self inLiveResize])
+      [self updateInfoString];
 }
 
 // ---------------------------------
@@ -474,12 +478,12 @@ msgTime	= getElapsedTime ();
 
 - (void) awakeFromNib
 {
-   setStartTime (); // get app start time
+   setStartTime(); // get app start time
 	
    // set start values...
    fInfo = 1;
    fAnimate = 1;
-   time = CFAbsoluteTimeGetCurrent ();  // set animation time start time
+   time = CFAbsoluteTimeGetCurrent();  // set animation time start time
    fDrawHelp = 1;
 
    // start animation timer
