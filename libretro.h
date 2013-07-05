@@ -493,6 +493,8 @@ enum retro_mod
 #define RETRO_HW_FRAME_BUFFER_VALID ((void*)-1)
 
 // Invalidates the current HW context.
+// Any GL state is lost, and must not be deinitialized explicitly. If explicit deinitialization is desired by the libretro core,
+// it should implement context_destroy callback.
 // If called, all GPU resources must be reinitialized.
 // Usually called when frontend reinits video driver.
 // Also called first time video driver is initialized, allowing libretro core to init resources.
@@ -517,7 +519,7 @@ enum retro_hw_context_type
 struct retro_hw_render_callback
 {
    enum retro_hw_context_type context_type; // Which API to use. Set by libretro core.
-   retro_hw_context_reset_t context_reset; // Set by libretro core.
+   retro_hw_context_reset_t context_reset; // Called when a context has been created or when it has been reset.
    retro_hw_get_current_framebuffer_t get_current_framebuffer; // Set by frontend.
    retro_hw_get_proc_address_t get_proc_address; // Set by frontend.
    bool depth; // Set if render buffers should have depth component attached.
@@ -526,6 +528,11 @@ struct retro_hw_render_callback
    bool bottom_left_origin; // Use conventional bottom-left origin convention. Is false, standard libretro top-left origin semantics are used.
    unsigned version_major; // Major version number for core GL context.
    unsigned version_minor; // Minor version number for core GL context.
+
+   bool cache_context; // If this is true, the frontend will go very far to avoid resetting context in scenarios like toggling fullscreen, etc.
+   // The reset callback might still be called in extreme situations such as if the context is lost beyond recovery. 
+   // For optimal stability, set this to false, and allow context to be reset at any time.
+   retro_hw_context_reset_t context_destroy; // A callback to be called before the context is destroyed. Resources can be deinitialized at this step. This can be set to NULL, in which resources will just be destroyed without any notification.
 };
 
 // Callback type passed in RETRO_ENVIRONMENT_SET_KEYBOARD_CALLBACK. Called by the frontend in response to keyboard events.

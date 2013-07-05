@@ -1934,7 +1934,7 @@ void rarch_set_fullscreen(bool fullscreen)
 {
    g_settings.video.fullscreen = fullscreen;
 
-   driver.video_cache_context = true;
+   driver.video_cache_context = g_extern.system.hw_render_callback.cache_context;
    driver.video_cache_context_ack = false;
    uninit_drivers();
    init_drivers();
