@@ -196,7 +196,8 @@ ifeq ($(HAVE_OPENGL), 1)
 			 gfx/fonts/gl_font.o \
 			 gfx/fonts/gl_raster_font.o \
 			 gfx/math/matrix.o \
-			 gfx/state_tracker.o
+			 gfx/state_tracker.o \
+			 gfx/glsym/rglgen.o
 
    ifeq ($(HAVE_KMS), 1)
       OBJ += gfx/context/drm_egl_ctx.o
@@ -223,12 +224,14 @@ ifeq ($(HAVE_OPENGL), 1)
    ifeq ($(HAVE_GLES), 1)
       LIBS += -lGLESv2
       DEFINES += -DHAVE_OPENGLES -DHAVE_OPENGLES2
+      OBJ += gfx/glsym/glsym_es2.o
    else
+      DEFINES += -DHAVE_GL_SYNC
+      OBJ += gfx/glsym/glsym_gl.o
       ifeq ($(OSX), 1)
          LIBS += -framework OpenGL
       else
          LIBS += -lGL
-         DEFINES += -DHAVE_GL_SYNC
       endif
    endif
 
@@ -424,6 +427,7 @@ clean:
 	rm -f audio/*.o
 	rm -f conf/*.o
 	rm -f gfx/*.o
+	rm -f gfx/glsym/*.o
 	rm -f gfx/rpng/*.o
 	rm -f gfx/fonts/*.o
 	rm -f gfx/math/*.o

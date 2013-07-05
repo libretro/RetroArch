@@ -35,31 +35,11 @@
 #include <EGL/eglext.h>
 #endif
 
-#if defined(IOS)
-#include <OpenGLES/ES2/gl.h>
-#include <OpenGLES/ES2/glext.h>
-#elif defined(__APPLE__)
-#include <OpenGL/gl.h>
-#include <OpenGL/glext.h>
-#elif defined(HAVE_PSGL)
-#include <PSGL/psgl.h>
-#include <PSGL/psglu.h>
-#include <GLES/glext.h>
-#elif defined(HAVE_OPENGL_MODERN)
-#include <GL3/gl3.h>
-#include <GL3/gl3ext.h>
-#elif defined(HAVE_OPENGLES2)
-#include <GLES2/gl2.h>
-#include <GLES2/gl2ext.h>
-#elif defined(HAVE_OPENGLES1)
-#include <GLES/gl.h>
-#include <GLES/glext.h>
-#else
-#define GL_GLEXT_PROTOTYPES
-#include <GL/gl.h>
-#include <GL/glext.h>
-#endif
+#include "glsym/glsym.h"
 
+#if defined(ANDROID) && defined(HAVE_GRIFFIN)
+#include "../griffin/hook_context.h"
+#else
 #define context_get_video_size_func(win, height)     gl->ctx_driver->get_video_size(win, height)
 #define context_update_window_title_func()           gl->ctx_driver->update_window_title()
 #define context_destroy_func()                       gl->ctx_driver->destroy()
@@ -280,15 +260,6 @@ typedef struct gl
    bool core_context;
    GLuint vao;
 } gl_t;
-
-// Windows ... <_<
-#ifdef _WIN32
-extern PFNGLCLIENTACTIVETEXTUREPROC pglClientActiveTexture;
-extern PFNGLACTIVETEXTUREPROC pglActiveTexture;
-#else
-#define pglClientActiveTexture glClientActiveTexture
-#define pglActiveTexture glActiveTexture
-#endif
 
 #if defined(HAVE_PSGL)
 #define RARCH_GL_INTERNAL_FORMAT32 GL_ARGB_SCE
