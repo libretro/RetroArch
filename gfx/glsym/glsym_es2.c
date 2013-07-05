@@ -1,7 +1,7 @@
 #include "glsym.h"
 #include <stddef.h>
 #define SYM(x) { "gl" #x, &(gl##x) }
-const struct rglgen_sym_map rglgen_symbol_map_rarch[] = {
+const struct rglgen_sym_map rglgen_symbol_map[] = {
     SYM(EGLImageTargetTexture2DOES),
     SYM(EGLImageTargetRenderbufferStorageOES),
     SYM(GetProgramBinaryOES),

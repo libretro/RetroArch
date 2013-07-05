@@ -42,6 +42,7 @@
 #endif
 
 #ifdef HAVE_DYNAMIC
+#undef SYM
 #define SYM(x) do { \
    function_t func = dylib_proc(lib_handle, #x); \
    memcpy(&p##x, &func, sizeof(func)); \

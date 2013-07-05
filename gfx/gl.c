@@ -655,8 +655,6 @@ bool gl_init_hw_render(gl_t *gl, unsigned width, unsigned height)
 
       if (depth)
       {
-         GLenum component = GL_DEPTH_COMPONENT16;
-         GLenum attachment = GL_DEPTH_ATTACHMENT;
          if (stencil)
          {
 #ifdef HAVE_OPENGLES2

@@ -1,12 +1,7 @@
 #include "glsym.h"
 #include <stddef.h>
-
-#ifdef HAVE_OPENGLES2
-#error "Wrong symbol file included."
-#endif
-
 #define SYM(x) { "gl" #x, &(gl##x) }
-const struct rglgen_sym_map rglgen_symbol_map_rarch[] = {
+const struct rglgen_sym_map rglgen_symbol_map[] = {
     SYM(BlendColor),
     SYM(BlendEquation),
     SYM(DrawRangeElements),
@@ -787,6 +782,7 @@ const struct rglgen_sym_map rglgen_symbol_map_rarch[] = {
     SYM(CreateSyncFromCLeventARB),
     SYM(DebugMessageControlARB),
     SYM(DebugMessageInsertARB),
+    SYM(DebugMessageCallbackARB),
     SYM(GetDebugMessageLogARB),
     SYM(GetGraphicsResetStatusARB),
     SYM(GetnMapdvARB),
@@ -822,6 +818,7 @@ const struct rglgen_sym_map rglgen_symbol_map_rarch[] = {
     SYM(TexStorage3D),
     SYM(DebugMessageControl),
     SYM(DebugMessageInsert),
+    SYM(DebugMessageCallback),
     SYM(GetDebugMessageLog),
     SYM(PushDebugGroup),
     SYM(PopDebugGroup),
@@ -868,6 +865,139 @@ const struct rglgen_sym_map rglgen_symbol_map_rarch[] = {
     SYM(ImageTransformParameterfvHP),
     SYM(GetImageTransformParameterivHP),
     SYM(GetImageTransformParameterfvHP),
+    SYM(MultiTexCoord1bOES),
+    SYM(MultiTexCoord1bvOES),
+    SYM(MultiTexCoord2bOES),
+    SYM(MultiTexCoord2bvOES),
+    SYM(MultiTexCoord3bOES),
+    SYM(MultiTexCoord3bvOES),
+    SYM(MultiTexCoord4bOES),
+    SYM(MultiTexCoord4bvOES),
+    SYM(TexCoord1bOES),
+    SYM(TexCoord1bvOES),
+    SYM(TexCoord2bOES),
+    SYM(TexCoord2bvOES),
+    SYM(TexCoord3bOES),
+    SYM(TexCoord3bvOES),
+    SYM(TexCoord4bOES),
+    SYM(TexCoord4bvOES),
+    SYM(Vertex2bOES),
+    SYM(Vertex2bvOES),
+    SYM(Vertex3bOES),
+    SYM(Vertex3bvOES),
+    SYM(Vertex4bOES),
+    SYM(Vertex4bvOES),
+    SYM(AccumxOES),
+    SYM(AlphaFuncxOES),
+    SYM(BitmapxOES),
+    SYM(BlendColorxOES),
+    SYM(ClearAccumxOES),
+    SYM(ClearColorxOES),
+    SYM(ClearDepthxOES),
+    SYM(ClipPlanexOES),
+    SYM(Color3xOES),
+    SYM(Color4xOES),
+    SYM(Color3xvOES),
+    SYM(Color4xvOES),
+    SYM(ConvolutionParameterxOES),
+    SYM(ConvolutionParameterxvOES),
+    SYM(DepthRangexOES),
+    SYM(EvalCoord1xOES),
+    SYM(EvalCoord2xOES),
+    SYM(EvalCoord1xvOES),
+    SYM(EvalCoord2xvOES),
+    SYM(FeedbackBufferxOES),
+    SYM(FogxOES),
+    SYM(FogxvOES),
+    SYM(FrustumxOES),
+    SYM(GetClipPlanexOES),
+    SYM(GetConvolutionParameterxvOES),
+    SYM(GetFixedvOES),
+    SYM(GetHistogramParameterxvOES),
+    SYM(GetLightxOES),
+    SYM(GetMapxvOES),
+    SYM(GetMaterialxOES),
+    SYM(GetPixelMapxv),
+    SYM(GetTexEnvxvOES),
+    SYM(GetTexGenxvOES),
+    SYM(GetTexLevelParameterxvOES),
+    SYM(GetTexParameterxvOES),
+    SYM(IndexxOES),
+    SYM(IndexxvOES),
+    SYM(LightModelxOES),
+    SYM(LightModelxvOES),
+    SYM(LightxOES),
+    SYM(LightxvOES),
+    SYM(LineWidthxOES),
+    SYM(LoadMatrixxOES),
+    SYM(LoadTransposeMatrixxOES),
+    SYM(Map1xOES),
+    SYM(Map2xOES),
+    SYM(MapGrid1xOES),
+    SYM(MapGrid2xOES),
+    SYM(MaterialxOES),
+    SYM(MaterialxvOES),
+    SYM(MultMatrixxOES),
+    SYM(MultTransposeMatrixxOES),
+    SYM(MultiTexCoord1xOES),
+    SYM(MultiTexCoord2xOES),
+    SYM(MultiTexCoord3xOES),
+    SYM(MultiTexCoord4xOES),
+    SYM(MultiTexCoord1xvOES),
+    SYM(MultiTexCoord2xvOES),
+    SYM(MultiTexCoord3xvOES),
+    SYM(MultiTexCoord4xvOES),
+    SYM(Normal3xOES),
+    SYM(Normal3xvOES),
+    SYM(OrthoxOES),
+    SYM(PassThroughxOES),
+    SYM(PixelMapx),
+    SYM(PixelStorex),
+    SYM(PixelTransferxOES),
+    SYM(PixelZoomxOES),
+    SYM(PointParameterxvOES),
+    SYM(PointSizexOES),
+    SYM(PolygonOffsetxOES),
+    SYM(PrioritizeTexturesxOES),
+    SYM(RasterPos2xOES),
+    SYM(RasterPos3xOES),
+    SYM(RasterPos4xOES),
+    SYM(RasterPos2xvOES),
+    SYM(RasterPos3xvOES),
+    SYM(RasterPos4xvOES),
+    SYM(RectxOES),
+    SYM(RectxvOES),
+    SYM(RotatexOES),
+    SYM(SampleCoverageOES),
+    SYM(ScalexOES),
+    SYM(TexCoord1xOES),
+    SYM(TexCoord2xOES),
+    SYM(TexCoord3xOES),
+    SYM(TexCoord4xOES),
+    SYM(TexCoord1xvOES),
+    SYM(TexCoord2xvOES),
+    SYM(TexCoord3xvOES),
+    SYM(TexCoord4xvOES),
+    SYM(TexEnvxOES),
+    SYM(TexEnvxvOES),
+    SYM(TexGenxOES),
+    SYM(TexGenxvOES),
+    SYM(TexParameterxOES),
+    SYM(TexParameterxvOES),
+    SYM(TranslatexOES),
+    SYM(Vertex2xOES),
+    SYM(Vertex3xOES),
+    SYM(Vertex4xOES),
+    SYM(Vertex2xvOES),
+    SYM(Vertex3xvOES),
+    SYM(Vertex4xvOES),
+    SYM(DepthRangefOES),
+    SYM(FrustumfOES),
+    SYM(OrthofOES),
+    SYM(ClipPlanefOES),
+    SYM(ClearDepthfOES),
+    SYM(GetClipPlanefOES),
+    SYM(QueryMatrixxOES),
 
     { NULL, NULL },
 };
@@ -1651,6 +1781,7 @@ RGLSYMGLGETDOUBLEI_VPROC __rglgen_glGetDoublei_v;
 RGLSYMGLCREATESYNCFROMCLEVENTARBPROC __rglgen_glCreateSyncFromCLeventARB;
 RGLSYMGLDEBUGMESSAGECONTROLARBPROC __rglgen_glDebugMessageControlARB;
 RGLSYMGLDEBUGMESSAGEINSERTARBPROC __rglgen_glDebugMessageInsertARB;
+RGLSYMGLDEBUGMESSAGECALLBACKARBPROC __rglgen_glDebugMessageCallbackARB;
 RGLSYMGLGETDEBUGMESSAGELOGARBPROC __rglgen_glGetDebugMessageLogARB;
 RGLSYMGLGETGRAPHICSRESETSTATUSARBPROC __rglgen_glGetGraphicsResetStatusARB;
 RGLSYMGLGETNMAPDVARBPROC __rglgen_glGetnMapdvARB;
@@ -1686,6 +1817,7 @@ RGLSYMGLTEXSTORAGE2DPROC __rglgen_glTexStorage2D;
 RGLSYMGLTEXSTORAGE3DPROC __rglgen_glTexStorage3D;
 RGLSYMGLDEBUGMESSAGECONTROLPROC __rglgen_glDebugMessageControl;
 RGLSYMGLDEBUGMESSAGEINSERTPROC __rglgen_glDebugMessageInsert;
+RGLSYMGLDEBUGMESSAGECALLBACKPROC __rglgen_glDebugMessageCallback;
 RGLSYMGLGETDEBUGMESSAGELOGPROC __rglgen_glGetDebugMessageLog;
 RGLSYMGLPUSHDEBUGGROUPPROC __rglgen_glPushDebugGroup;
 RGLSYMGLPOPDEBUGGROUPPROC __rglgen_glPopDebugGroup;
@@ -1732,4 +1864,137 @@ RGLSYMGLIMAGETRANSFORMPARAMETERIVHPPROC __rglgen_glImageTransformParameterivHP;
 RGLSYMGLIMAGETRANSFORMPARAMETERFVHPPROC __rglgen_glImageTransformParameterfvHP;
 RGLSYMGLGETIMAGETRANSFORMPARAMETERIVHPPROC __rglgen_glGetImageTransformParameterivHP;
 RGLSYMGLGETIMAGETRANSFORMPARAMETERFVHPPROC __rglgen_glGetImageTransformParameterfvHP;
+RGLSYMGLMULTITEXCOORD1BOESPROC __rglgen_glMultiTexCoord1bOES;
+RGLSYMGLMULTITEXCOORD1BVOESPROC __rglgen_glMultiTexCoord1bvOES;
+RGLSYMGLMULTITEXCOORD2BOESPROC __rglgen_glMultiTexCoord2bOES;
+RGLSYMGLMULTITEXCOORD2BVOESPROC __rglgen_glMultiTexCoord2bvOES;
+RGLSYMGLMULTITEXCOORD3BOESPROC __rglgen_glMultiTexCoord3bOES;
+RGLSYMGLMULTITEXCOORD3BVOESPROC __rglgen_glMultiTexCoord3bvOES;
+RGLSYMGLMULTITEXCOORD4BOESPROC __rglgen_glMultiTexCoord4bOES;
+RGLSYMGLMULTITEXCOORD4BVOESPROC __rglgen_glMultiTexCoord4bvOES;
+RGLSYMGLTEXCOORD1BOESPROC __rglgen_glTexCoord1bOES;
+RGLSYMGLTEXCOORD1BVOESPROC __rglgen_glTexCoord1bvOES;
+RGLSYMGLTEXCOORD2BOESPROC __rglgen_glTexCoord2bOES;
+RGLSYMGLTEXCOORD2BVOESPROC __rglgen_glTexCoord2bvOES;
+RGLSYMGLTEXCOORD3BOESPROC __rglgen_glTexCoord3bOES;
+RGLSYMGLTEXCOORD3BVOESPROC __rglgen_glTexCoord3bvOES;
+RGLSYMGLTEXCOORD4BOESPROC __rglgen_glTexCoord4bOES;
+RGLSYMGLTEXCOORD4BVOESPROC __rglgen_glTexCoord4bvOES;
+RGLSYMGLVERTEX2BOESPROC __rglgen_glVertex2bOES;
+RGLSYMGLVERTEX2BVOESPROC __rglgen_glVertex2bvOES;
+RGLSYMGLVERTEX3BOESPROC __rglgen_glVertex3bOES;
+RGLSYMGLVERTEX3BVOESPROC __rglgen_glVertex3bvOES;
+RGLSYMGLVERTEX4BOESPROC __rglgen_glVertex4bOES;
+RGLSYMGLVERTEX4BVOESPROC __rglgen_glVertex4bvOES;
+RGLSYMGLACCUMXOESPROC __rglgen_glAccumxOES;
+RGLSYMGLALPHAFUNCXOESPROC __rglgen_glAlphaFuncxOES;
+RGLSYMGLBITMAPXOESPROC __rglgen_glBitmapxOES;
+RGLSYMGLBLENDCOLORXOESPROC __rglgen_glBlendColorxOES;
+RGLSYMGLCLEARACCUMXOESPROC __rglgen_glClearAccumxOES;
+RGLSYMGLCLEARCOLORXOESPROC __rglgen_glClearColorxOES;
+RGLSYMGLCLEARDEPTHXOESPROC __rglgen_glClearDepthxOES;
+RGLSYMGLCLIPPLANEXOESPROC __rglgen_glClipPlanexOES;
+RGLSYMGLCOLOR3XOESPROC __rglgen_glColor3xOES;
+RGLSYMGLCOLOR4XOESPROC __rglgen_glColor4xOES;
+RGLSYMGLCOLOR3XVOESPROC __rglgen_glColor3xvOES;
+RGLSYMGLCOLOR4XVOESPROC __rglgen_glColor4xvOES;
+RGLSYMGLCONVOLUTIONPARAMETERXOESPROC __rglgen_glConvolutionParameterxOES;
+RGLSYMGLCONVOLUTIONPARAMETERXVOESPROC __rglgen_glConvolutionParameterxvOES;
+RGLSYMGLDEPTHRANGEXOESPROC __rglgen_glDepthRangexOES;
+RGLSYMGLEVALCOORD1XOESPROC __rglgen_glEvalCoord1xOES;
+RGLSYMGLEVALCOORD2XOESPROC __rglgen_glEvalCoord2xOES;
+RGLSYMGLEVALCOORD1XVOESPROC __rglgen_glEvalCoord1xvOES;
+RGLSYMGLEVALCOORD2XVOESPROC __rglgen_glEvalCoord2xvOES;
+RGLSYMGLFEEDBACKBUFFERXOESPROC __rglgen_glFeedbackBufferxOES;
+RGLSYMGLFOGXOESPROC __rglgen_glFogxOES;
+RGLSYMGLFOGXVOESPROC __rglgen_glFogxvOES;
+RGLSYMGLFRUSTUMXOESPROC __rglgen_glFrustumxOES;
+RGLSYMGLGETCLIPPLANEXOESPROC __rglgen_glGetClipPlanexOES;
+RGLSYMGLGETCONVOLUTIONPARAMETERXVOESPROC __rglgen_glGetConvolutionParameterxvOES;
+RGLSYMGLGETFIXEDVOESPROC __rglgen_glGetFixedvOES;
+RGLSYMGLGETHISTOGRAMPARAMETERXVOESPROC __rglgen_glGetHistogramParameterxvOES;
+RGLSYMGLGETLIGHTXOESPROC __rglgen_glGetLightxOES;
+RGLSYMGLGETMAPXVOESPROC __rglgen_glGetMapxvOES;
+RGLSYMGLGETMATERIALXOESPROC __rglgen_glGetMaterialxOES;
+RGLSYMGLGETPIXELMAPXVPROC __rglgen_glGetPixelMapxv;
+RGLSYMGLGETTEXENVXVOESPROC __rglgen_glGetTexEnvxvOES;
+RGLSYMGLGETTEXGENXVOESPROC __rglgen_glGetTexGenxvOES;
+RGLSYMGLGETTEXLEVELPARAMETERXVOESPROC __rglgen_glGetTexLevelParameterxvOES;
+RGLSYMGLGETTEXPARAMETERXVOESPROC __rglgen_glGetTexParameterxvOES;
+RGLSYMGLINDEXXOESPROC __rglgen_glIndexxOES;
+RGLSYMGLINDEXXVOESPROC __rglgen_glIndexxvOES;
+RGLSYMGLLIGHTMODELXOESPROC __rglgen_glLightModelxOES;
+RGLSYMGLLIGHTMODELXVOESPROC __rglgen_glLightModelxvOES;
+RGLSYMGLLIGHTXOESPROC __rglgen_glLightxOES;
+RGLSYMGLLIGHTXVOESPROC __rglgen_glLightxvOES;
+RGLSYMGLLINEWIDTHXOESPROC __rglgen_glLineWidthxOES;
+RGLSYMGLLOADMATRIXXOESPROC __rglgen_glLoadMatrixxOES;
+RGLSYMGLLOADTRANSPOSEMATRIXXOESPROC __rglgen_glLoadTransposeMatrixxOES;
+RGLSYMGLMAP1XOESPROC __rglgen_glMap1xOES;
+RGLSYMGLMAP2XOESPROC __rglgen_glMap2xOES;
+RGLSYMGLMAPGRID1XOESPROC __rglgen_glMapGrid1xOES;
+RGLSYMGLMAPGRID2XOESPROC __rglgen_glMapGrid2xOES;
+RGLSYMGLMATERIALXOESPROC __rglgen_glMaterialxOES;
+RGLSYMGLMATERIALXVOESPROC __rglgen_glMaterialxvOES;
+RGLSYMGLMULTMATRIXXOESPROC __rglgen_glMultMatrixxOES;
+RGLSYMGLMULTTRANSPOSEMATRIXXOESPROC __rglgen_glMultTransposeMatrixxOES;
+RGLSYMGLMULTITEXCOORD1XOESPROC __rglgen_glMultiTexCoord1xOES;
+RGLSYMGLMULTITEXCOORD2XOESPROC __rglgen_glMultiTexCoord2xOES;
+RGLSYMGLMULTITEXCOORD3XOESPROC __rglgen_glMultiTexCoord3xOES;
+RGLSYMGLMULTITEXCOORD4XOESPROC __rglgen_glMultiTexCoord4xOES;
+RGLSYMGLMULTITEXCOORD1XVOESPROC __rglgen_glMultiTexCoord1xvOES;
+RGLSYMGLMULTITEXCOORD2XVOESPROC __rglgen_glMultiTexCoord2xvOES;
+RGLSYMGLMULTITEXCOORD3XVOESPROC __rglgen_glMultiTexCoord3xvOES;
+RGLSYMGLMULTITEXCOORD4XVOESPROC __rglgen_glMultiTexCoord4xvOES;
+RGLSYMGLNORMAL3XOESPROC __rglgen_glNormal3xOES;
+RGLSYMGLNORMAL3XVOESPROC __rglgen_glNormal3xvOES;
+RGLSYMGLORTHOXOESPROC __rglgen_glOrthoxOES;
+RGLSYMGLPASSTHROUGHXOESPROC __rglgen_glPassThroughxOES;
+RGLSYMGLPIXELMAPXPROC __rglgen_glPixelMapx;
+RGLSYMGLPIXELSTOREXPROC __rglgen_glPixelStorex;
+RGLSYMGLPIXELTRANSFERXOESPROC __rglgen_glPixelTransferxOES;
+RGLSYMGLPIXELZOOMXOESPROC __rglgen_glPixelZoomxOES;
+RGLSYMGLPOINTPARAMETERXVOESPROC __rglgen_glPointParameterxvOES;
+RGLSYMGLPOINTSIZEXOESPROC __rglgen_glPointSizexOES;
+RGLSYMGLPOLYGONOFFSETXOESPROC __rglgen_glPolygonOffsetxOES;
+RGLSYMGLPRIORITIZETEXTURESXOESPROC __rglgen_glPrioritizeTexturesxOES;
+RGLSYMGLRASTERPOS2XOESPROC __rglgen_glRasterPos2xOES;
+RGLSYMGLRASTERPOS3XOESPROC __rglgen_glRasterPos3xOES;
+RGLSYMGLRASTERPOS4XOESPROC __rglgen_glRasterPos4xOES;
+RGLSYMGLRASTERPOS2XVOESPROC __rglgen_glRasterPos2xvOES;
+RGLSYMGLRASTERPOS3XVOESPROC __rglgen_glRasterPos3xvOES;
+RGLSYMGLRASTERPOS4XVOESPROC __rglgen_glRasterPos4xvOES;
+RGLSYMGLRECTXOESPROC __rglgen_glRectxOES;
+RGLSYMGLRECTXVOESPROC __rglgen_glRectxvOES;
+RGLSYMGLROTATEXOESPROC __rglgen_glRotatexOES;
+RGLSYMGLSAMPLECOVERAGEOESPROC __rglgen_glSampleCoverageOES;
+RGLSYMGLSCALEXOESPROC __rglgen_glScalexOES;
+RGLSYMGLTEXCOORD1XOESPROC __rglgen_glTexCoord1xOES;
+RGLSYMGLTEXCOORD2XOESPROC __rglgen_glTexCoord2xOES;
+RGLSYMGLTEXCOORD3XOESPROC __rglgen_glTexCoord3xOES;
+RGLSYMGLTEXCOORD4XOESPROC __rglgen_glTexCoord4xOES;
+RGLSYMGLTEXCOORD1XVOESPROC __rglgen_glTexCoord1xvOES;
+RGLSYMGLTEXCOORD2XVOESPROC __rglgen_glTexCoord2xvOES;
+RGLSYMGLTEXCOORD3XVOESPROC __rglgen_glTexCoord3xvOES;
+RGLSYMGLTEXCOORD4XVOESPROC __rglgen_glTexCoord4xvOES;
+RGLSYMGLTEXENVXOESPROC __rglgen_glTexEnvxOES;
+RGLSYMGLTEXENVXVOESPROC __rglgen_glTexEnvxvOES;
+RGLSYMGLTEXGENXOESPROC __rglgen_glTexGenxOES;
+RGLSYMGLTEXGENXVOESPROC __rglgen_glTexGenxvOES;
+RGLSYMGLTEXPARAMETERXOESPROC __rglgen_glTexParameterxOES;
+RGLSYMGLTEXPARAMETERXVOESPROC __rglgen_glTexParameterxvOES;
+RGLSYMGLTRANSLATEXOESPROC __rglgen_glTranslatexOES;
+RGLSYMGLVERTEX2XOESPROC __rglgen_glVertex2xOES;
+RGLSYMGLVERTEX3XOESPROC __rglgen_glVertex3xOES;
+RGLSYMGLVERTEX4XOESPROC __rglgen_glVertex4xOES;
+RGLSYMGLVERTEX2XVOESPROC __rglgen_glVertex2xvOES;
+RGLSYMGLVERTEX3XVOESPROC __rglgen_glVertex3xvOES;
+RGLSYMGLVERTEX4XVOESPROC __rglgen_glVertex4xvOES;
+RGLSYMGLDEPTHRANGEFOESPROC __rglgen_glDepthRangefOES;
+RGLSYMGLFRUSTUMFOESPROC __rglgen_glFrustumfOES;
+RGLSYMGLORTHOFOESPROC __rglgen_glOrthofOES;
+RGLSYMGLCLIPPLANEFOESPROC __rglgen_glClipPlanefOES;
+RGLSYMGLCLEARDEPTHFOESPROC __rglgen_glClearDepthfOES;
+RGLSYMGLGETCLIPPLANEFOESPROC __rglgen_glGetClipPlanefOES;
+RGLSYMGLQUERYMATRIXXOESPROC __rglgen_glQueryMatrixxOES;
 

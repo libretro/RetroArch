@@ -14,6 +14,6 @@ void rglgen_resolve_symbols_custom(rglgen_proc_address_t proc,
 
 void rglgen_resolve_symbols(rglgen_proc_address_t proc)
 {
-   rglgen_resolve_symbols_custom(proc, rglgen_symbol_map_rarch);
+   rglgen_resolve_symbols_custom(proc, rglgen_symbol_map);
 }
 
