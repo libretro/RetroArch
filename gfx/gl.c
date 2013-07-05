@@ -94,15 +94,11 @@ static inline bool gl_query_extension(gl_t *gl, const char *ext)
    if (gl->core_context)
    {
 #ifdef GL_NUM_EXTENSIONS
-      gl_get_stringi_proc proc = (gl_get_stringi_proc)gl->ctx_driver->get_proc_address("glGetStringi");
-      if (!proc)
-         return false;
-
       GLint exts = 0;
       glGetIntegerv(GL_NUM_EXTENSIONS, &exts);
       for (GLint i = 0; i < exts; i++)
       {
-         const char *str = (const char*)proc(GL_EXTENSIONS, i);
+         const char *str = (const char*)glGetStringi(GL_EXTENSIONS, i);
          if (str && strstr(str, ext))
          {
             ret = true;
