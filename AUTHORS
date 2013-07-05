@@ -1,5 +1,5 @@
 Hans-Kristian Arntzen - <maister@archlinux.us>
-   - Main code, maintainer
+   - Main code
    - Initial Gamecube/Wii libogc port
 
 Devin J. Pohly - <djpohly@djpohly.com>
@@ -9,6 +9,7 @@ Chris Moeller - <kode54@gmail.com>
    - CoreAudio audio driver
 
 Daniel De Matteis - <autechre1024@hotmail.com>
+   - Maintainer
    - PlayStation 3 port
    - XBox 360 XDK port
    - Libxenon port
