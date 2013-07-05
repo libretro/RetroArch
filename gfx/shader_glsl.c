@@ -376,7 +376,7 @@ static void print_linker_log(GLuint obj)
 static bool compile_shader(GLuint shader, const char *define, const char *program)
 {
    char version[32] = {0};
-   if (glsl_core)
+   if (glsl_core && !strstr(program, "#version"))
    {
       unsigned version_no = 0;
       unsigned gl_ver = glsl_major * 100 + glsl_minor * 10;
