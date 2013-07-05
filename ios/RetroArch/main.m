@@ -96,8 +96,8 @@ int main(int argc, char *argv[])
 }
 
 // From frontend/frontend_ios.c
-extern void* rarch_main_ios(void* args);
-extern void ios_frontend_post_event(void (*fn)(void*), void* userdata);
+extern void* rarch_main_apple(void* args);
+extern void apple_frontend_post_event(void (*fn)(void*), void* userdata);
 
 
 // These are based on the tag property of the button used to trigger the event
@@ -282,7 +282,7 @@ static void event_reload_config(void* userdata)
       else
          load_data->config_path = strdup(RAModuleInfo.globalConfigPath.UTF8String);
       
-      if (pthread_create(&_retroThread, 0, rarch_main_ios, load_data))
+      if (pthread_create(&_retroThread, 0, rarch_main_apple, load_data))
       {
          [self rarchExited:NO];
          return;
@@ -318,7 +318,7 @@ static void event_reload_config(void* userdata)
 - (void)refreshConfig
 {
    if (_isRunning)
-      ios_frontend_post_event(&event_reload_config, 0);
+      apple_frontend_post_event(&event_reload_config, 0);
    else
       objc_clear_config_hack();
 }
@@ -388,7 +388,7 @@ static void event_reload_config(void* userdata)
 - (IBAction)basicEvent:(id)sender
 {
    if (_isRunning)
-      ios_frontend_post_event(&event_basic_command, ((UIView*)sender).tag);
+      apple_frontend_post_event(&event_basic_command, ((UIView*)sender).tag);
    
    [self closePauseMenu:sender];
 }
@@ -396,13 +396,13 @@ static void event_reload_config(void* userdata)
 - (IBAction)chooseState:(id)sender
 {
    if (_isRunning)
-      ios_frontend_post_event(event_set_state_slot, (void*)((UISegmentedControl*)sender).selectedSegmentIndex);
+      apple_frontend_post_event(event_set_state_slot, (void*)((UISegmentedControl*)sender).selectedSegmentIndex);
 }
 
 - (IBAction)showRGUI:(id)sender
 {
    if (_isRunning)
-      ios_frontend_post_event(event_show_rgui, 0);
+      apple_frontend_post_event(event_show_rgui, 0);
    
    [self closePauseMenu:sender];
 }

@@ -21,49 +21,51 @@
 #include "../conf/config_file.h"
 #include "../file.h"
 
+#ifdef IOS
 #include "../ios/RetroArch/rarch_wrapper.h"
+#endif
 
 #ifdef HAVE_RGUI
 #include "../frontend/menu/rgui.h"
 #endif
 
-static pthread_mutex_t ios_event_queue_lock = PTHREAD_MUTEX_INITIALIZER;
+static pthread_mutex_t apple_event_queue_lock = PTHREAD_MUTEX_INITIALIZER;
 
 static struct
 {
    void (*function)(void*);
    void* userdata;
-} ios_event_queue[16];
-static uint32_t ios_event_queue_size;
+} apple_event_queue[16];
 
-void ios_frontend_post_event(void (*fn)(void*), void* userdata)
+static uint32_t apple_event_queue_size;
+
+void apple_frontend_post_event(void (*fn)(void*), void* userdata)
 {
-   pthread_mutex_lock(&ios_event_queue_lock);
+   pthread_mutex_lock(&apple_event_queue_lock);
 
-   if (ios_event_queue_size < 16)
+   if (apple_event_queue_size < 16)
    {
-      ios_event_queue[ios_event_queue_size].function = fn;
-      ios_event_queue[ios_event_queue_size].userdata = userdata;
-      ios_event_queue_size ++;
+      apple_event_queue[apple_event_queue_size].function = fn;
+      apple_event_queue[apple_event_queue_size].userdata = userdata;
+      apple_event_queue_size ++;
    }
 
-   pthread_mutex_unlock(&ios_event_queue_lock);
+   pthread_mutex_unlock(&apple_event_queue_lock);
 }
 
 static void process_events()
 {
-   pthread_mutex_lock(&ios_event_queue_lock);
+   pthread_mutex_lock(&apple_event_queue_lock);
 
-   for (int i = 0; i < ios_event_queue_size; i ++)
-      ios_event_queue[i].function(ios_event_queue[i].userdata);
+   for (int i = 0; i < apple_event_queue_size; i ++)
+      apple_event_queue[i].function(apple_event_queue[i].userdata);
 
-   ios_event_queue_size = 0;
+   apple_event_queue_size = 0;
 
-   pthread_mutex_unlock(&ios_event_queue_lock);
+   pthread_mutex_unlock(&apple_event_queue_lock);
 }
 
-
-static void ios_free_main_wrap(struct rarch_main_wrap* wrap)
+static void apple_free_main_wrap(struct rarch_main_wrap* wrap)
 {
    if (wrap)
    {
@@ -77,11 +79,11 @@ static void ios_free_main_wrap(struct rarch_main_wrap* wrap)
    free(wrap);
 }
 
-void* rarch_main_ios(void* args)
+void* rarch_main_apple(void* args)
 {
    struct rarch_main_wrap* argdata = (struct rarch_main_wrap*)args;
    int init_ret = rarch_main_init_wrap(argdata);
-   ios_free_main_wrap(argdata);
+   apple_free_main_wrap(argdata);
 
    if (init_ret)
    {

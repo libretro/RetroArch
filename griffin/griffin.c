@@ -411,8 +411,8 @@ MAIN
 #include "../frontend/frontend_bbqnx.c"
 #elif defined(ANDROID)
 #include "../frontend/frontend_android.c"
-#elif defined(IOS)
-#include "../frontend/frontend_ios.c"
+#elif defined(__APPLE__)
+#include "../frontend/frontend_objc.c"
 #endif
 
 #ifndef IS_XCODE
