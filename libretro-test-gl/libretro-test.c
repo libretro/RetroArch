@@ -27,7 +27,9 @@ static GLuint prog;
 static GLuint vbo;
 
 #ifdef CORE
+static bool context_alive;
 static bool multisample_fbo;
+static unsigned multisample;
 static GLuint vao;
 
 static GLuint fbo;
@@ -107,24 +109,37 @@ static void compile_program(void)
    glDeleteShader(frag);
 }
 
-static void setup_vao(void)
-{
 #ifdef CORE
-   glGenVertexArrays(1, &vao);
+static void init_multisample(unsigned samples)
+{
+   multisample = samples;
+   if (!context_alive)
+      return;
 
-   glGenRenderbuffers(1, &rbo_color);
-   glGenRenderbuffers(1, &rbo_depth_stencil);
-   glGenFramebuffers(1, &fbo);
+   if (rbo_color)
+      glDeleteRenderbuffers(1, &rbo_color);
+   if (rbo_depth_stencil)
+      glDeleteRenderbuffers(1, &rbo_depth_stencil);
+   if (fbo)
+      glDeleteFramebuffers(1, &fbo);
 
+   rbo_color = rbo_depth_stencil = fbo = 0;
    multisample_fbo = false;
+   if (samples <= 1)
+      return;
+
    if (glRenderbufferStorageMultisample)
    {
+      glGenRenderbuffers(1, &rbo_color);
+      glGenRenderbuffers(1, &rbo_depth_stencil);
+      glGenFramebuffers(1, &fbo);
+
       glBindRenderbuffer(GL_RENDERBUFFER, rbo_color);
       glRenderbufferStorageMultisample(GL_RENDERBUFFER,
-            4, GL_RGBA, MAX_WIDTH, MAX_HEIGHT);
+            samples, GL_RGBA, MAX_WIDTH, MAX_HEIGHT);
       glBindRenderbuffer(GL_RENDERBUFFER, rbo_depth_stencil);
       glRenderbufferStorageMultisample(GL_RENDERBUFFER,
-            4, GL_DEPTH24_STENCIL8, MAX_WIDTH, MAX_HEIGHT);
+            samples, GL_DEPTH24_STENCIL8, MAX_WIDTH, MAX_HEIGHT);
       glBindRenderbuffer(GL_RENDERBUFFER, 0);
 
       glGenFramebuffers(1, &fbo);
@@ -146,6 +161,15 @@ static void setup_vao(void)
 
       glBindFramebuffer(GL_FRAMEBUFFER, 0);
    }
+   else
+      fprintf(stderr, "Multisampled FBOs not supported.\n");
+}
+#endif
+
+static void setup_vao(void)
+{
+#ifdef CORE
+   glGenVertexArrays(1, &vao);
 #endif
 
    glUseProgram(prog);
@@ -220,6 +244,9 @@ void retro_set_environment(retro_environment_t cb)
          "Internal resolution; 320x240|360x480|480x272|512x384|512x512|640x240|640x448|640x480|720x576|800x600|960x720|1024x768|1024x1024|1280x720|1280x960|1600x1200|1920x1080|1920x1440|1920x1600",
 #endif
       },
+#ifdef CORE
+      { "testgl_multisample", "Multisampling; 1x|2x|4x" },
+#endif
       { NULL, NULL },
    };
 
@@ -255,10 +282,9 @@ void retro_set_video_refresh(retro_video_refresh_t cb)
 
 static void update_variables(void)
 {
-   struct retro_variable var;
-
-   var.key = "testgl_resolution";
-   var.value = NULL;
+   struct retro_variable var = {
+      .key = "testgl_resolution",
+   };
 
    if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
    {
@@ -275,6 +301,29 @@ static void update_variables(void)
 
       fprintf(stderr, "[libretro-test]: Got size: %u x %u.\n", width, height);
    }
+
+#ifdef CORE
+   var.key = "testgl_multisample";
+   var.value = NULL;
+
+   if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
+   {
+      switch (*var.value)
+      {
+         case '1':
+            init_multisample(1);
+            break;
+
+         case '2':
+            init_multisample(2);
+            break;
+
+         case '4':
+            init_multisample(4);
+            break;
+      }
+   }
+#endif
 }
 
 void retro_run(void)
@@ -365,6 +414,10 @@ static void context_reset(void)
    rglgen_resolve_symbols(hw_render.get_proc_address);
    compile_program();
    setup_vao();
+#ifdef CORE
+   context_alive = true;
+   init_multisample(multisample);
+#endif
 }
 
 static void context_destroy(void)
@@ -374,14 +427,11 @@ static void context_destroy(void)
 #ifdef CORE
    glDeleteVertexArrays(1, &vao);
    vao = 0;
-   glDeleteRenderbuffers(1, &rbo_color);
-   glDeleteRenderbuffers(1, &rbo_depth_stencil);
-   glDeleteFramebuffers(1, &fbo);
-   rbo_color = rbo_depth_stencil = fbo = 0;
+   init_multisample(0);
+   context_alive = false;
 #endif
    glDeleteBuffers(1, &vbo);
    vbo = 0;
-
    glDeleteProgram(prog);
    prog = 0;
 }
