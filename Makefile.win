@@ -113,7 +113,7 @@ ifeq ($(HAVE_THREADS), 1)
 endif
 
 ifeq ($(HAVE_OPENGL), 1)
-   OBJ += gfx/gl.o gfx/math/matrix.o gfx/fonts/gl_font.o gfx/fonts/gl_raster_font.o gfx/gfx_context.o gfx/context/wgl_ctx.o gfx/shader_glsl.o 
+   OBJ += gfx/gl.o gfx/math/matrix.o gfx/fonts/gl_font.o gfx/fonts/gl_raster_font.o gfx/gfx_context.o gfx/context/wgl_ctx.o gfx/shader_glsl.o gfx/glsym/rglgen.o gfx/glsym/glsym.o
    DEFINES += -DHAVE_OPENGL -DHAVE_OVERLAY -DHAVE_GLSL -DHAVE_GL_SYNC
    LIBS += -lopengl32 -lgdi32
 endif
@@ -286,6 +286,7 @@ clean:
 	rm -f conf/*.o
 	rm -f gfx/scaler/*.o
 	rm -f gfx/*.o
+	rm -f gfx/glsym/*.o
 	rm -f gfx/d3d9/*.o
 	rm -f gfx/context/*.o
 	rm -f gfx/math/*.o
