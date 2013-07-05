@@ -27,7 +27,11 @@ static GLuint prog;
 static GLuint vbo;
 
 #ifdef CORE
+static bool multisample_fbo;
 static GLuint vao;
+
+static GLuint fbo;
+static GLuint rbo_color, rbo_depth_stencil;
 #endif
 
 static const GLfloat vertex_data[] = {
@@ -107,7 +111,43 @@ static void setup_vao(void)
 {
 #ifdef CORE
    glGenVertexArrays(1, &vao);
+
+   glGenRenderbuffers(1, &rbo_color);
+   glGenRenderbuffers(1, &rbo_depth_stencil);
+   glGenFramebuffers(1, &fbo);
+
+   multisample_fbo = false;
+   if (glRenderbufferStorageMultisample)
+   {
+      glBindRenderbuffer(GL_RENDERBUFFER, rbo_color);
+      glRenderbufferStorageMultisample(GL_RENDERBUFFER,
+            4, GL_RGBA, MAX_WIDTH, MAX_HEIGHT);
+      glBindRenderbuffer(GL_RENDERBUFFER, rbo_depth_stencil);
+      glRenderbufferStorageMultisample(GL_RENDERBUFFER,
+            4, GL_DEPTH24_STENCIL8, MAX_WIDTH, MAX_HEIGHT);
+      glBindRenderbuffer(GL_RENDERBUFFER, 0);
+
+      glGenFramebuffers(1, &fbo);
+      glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+
+      glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+            GL_RENDERBUFFER, rbo_color);
+      glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT,
+            GL_RENDERBUFFER, rbo_depth_stencil);
+
+      GLenum ret = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+      if (ret == GL_FRAMEBUFFER_COMPLETE)
+      {
+         fprintf(stderr, "Using multisampled FBO.\n");
+         multisample_fbo = true;
+      }
+      else
+         fprintf(stderr, "Multisampled FBO failed.\n");
+
+      glBindFramebuffer(GL_FRAMEBUFFER, 0);
+   }
 #endif
+
    glUseProgram(prog);
 
    glGenBuffers(1, &vbo);
@@ -247,9 +287,12 @@ void retro_run(void)
 
 #ifdef CORE
    glBindVertexArray(vao);
+   if (multisample_fbo)
+      glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+   else
 #endif
+      glBindFramebuffer(GL_FRAMEBUFFER, hw_render.get_current_framebuffer());
 
-   glBindFramebuffer(GL_FRAMEBUFFER, hw_render.get_current_framebuffer());
    glClearColor(0.3, 0.4, 0.5, 1.0);
    glViewport(0, 0, width, height);
    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
@@ -300,10 +343,20 @@ void retro_run(void)
 
    glUseProgram(0);
 
-   video_cb(RETRO_HW_FRAME_BUFFER_VALID, width, height, 0);
 #ifdef CORE
    glBindVertexArray(0);
+   if (multisample_fbo) // Resolve the multisample.
+   {
+      glBindFramebuffer(GL_READ_FRAMEBUFFER, fbo);
+      glBindFramebuffer(GL_DRAW_FRAMEBUFFER, hw_render.get_current_framebuffer());
+      glBlitFramebuffer(0, 0, width, height,
+            0, 0, width, height,
+            GL_COLOR_BUFFER_BIT, GL_NEAREST);
+      glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
+      glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+   }
 #endif
+   video_cb(RETRO_HW_FRAME_BUFFER_VALID, width, height, 0);
 }
 
 static void context_reset(void)
@@ -321,6 +374,10 @@ static void context_destroy(void)
 #ifdef CORE
    glDeleteVertexArrays(1, &vao);
    vao = 0;
+   glDeleteRenderbuffers(1, &rbo_color);
+   glDeleteRenderbuffers(1, &rbo_depth_stencil);
+   glDeleteFramebuffers(1, &fbo);
+   rbo_color = rbo_depth_stencil = fbo = 0;
 #endif
    glDeleteBuffers(1, &vbo);
    vbo = 0;
