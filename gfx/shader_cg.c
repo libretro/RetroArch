@@ -102,9 +102,9 @@ struct cg_fbo_params
    CGparameter coord;
 };
 
-#define MAX_TEXTURES 8
+#define MAX_LUT_TEXTURES 8
 #define MAX_VARIABLES 64
-#define PREV_TEXTURES (TEXTURES - 1)
+#define PREV_TEXTURES (MAX_TEXTURES - 1)
 
 struct cg_program
 {
@@ -142,7 +142,7 @@ static unsigned active_index;
 static struct gfx_shader *cg_shader;
 
 static state_tracker_t *state_tracker;
-static GLuint lut_textures[MAX_TEXTURES];
+static GLuint lut_textures[MAX_LUT_TEXTURES];
 
 static CGparameter cg_attribs[PREV_TEXTURES + 1 + 4 + GFX_MAX_SHADERS];
 static unsigned cg_attrib_index;
@@ -911,6 +911,20 @@ static void gl_cg_shader_scale(unsigned index, struct gfx_fbo_scale *scale)
       scale->valid = false;
 }
 
+static unsigned gl_cg_get_prev_textures(void)
+{
+   if (!cg_active)
+      return 0;
+
+   unsigned max_prev = 0;
+   for (unsigned i = 1; i <= cg_shader->passes; i++)
+      for (unsigned j = 0; j < PREV_TEXTURES; j++)
+         if (prg[i].prev[j].tex)
+            max_prev = max(j + 1, max_prev);
+
+   return max_prev;
+}
+
 void gl_cg_set_compiler_args(const char **argv)
 {
    cg_arguments = argv;
@@ -931,6 +945,7 @@ const gl_shader_backend_t gl_cg_backend = {
    gl_cg_shader_scale,
    gl_cg_set_coords,
    gl_cg_set_mvp,
+   gl_cg_get_prev_textures,
 
    RARCH_SHADER_CG,
 };
