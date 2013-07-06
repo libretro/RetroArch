@@ -115,7 +115,7 @@ endif
 ifeq ($(HAVE_OPENGL), 1)
    OBJ += gfx/gl.o gfx/math/matrix.o gfx/fonts/gl_font.o gfx/fonts/gl_raster_font.o gfx/gfx_context.o gfx/context/wgl_ctx.o gfx/shader_glsl.o 
    DEFINES += -DHAVE_OPENGL -DHAVE_OVERLAY -DHAVE_GLSL -DHAVE_GL_SYNC
-   LIBS += -lopengl32 -lgdi32
+   LIBS += -lopengl32 -lgdi32 -lcomdlg32
 endif
 
 ifeq ($(HAVE_SDL_IMAGE), 1)
