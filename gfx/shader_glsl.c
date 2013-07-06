@@ -548,6 +548,14 @@ static void gl_glsl_set_attribs(GLuint vbo, GLfloat *buffer, size_t *buffer_elem
    glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
 
+static void clear_uniforms_frame(struct shader_uniforms_frame *frame)
+{
+   frame->texture      = -1;
+   frame->texture_size = -1;
+   frame->input_size   = -1;
+   frame->tex_coord    = -1;
+}
+
 static void find_uniforms_frame(GLuint prog, struct shader_uniforms_frame *frame, const char *base)
 {
    char texture[64];
@@ -560,13 +568,17 @@ static void find_uniforms_frame(GLuint prog, struct shader_uniforms_frame *frame
    snprintf(input_size, sizeof(input_size), "%s%s", base, "InputSize");
    snprintf(tex_coord, sizeof(tex_coord), "%s%s", base, "TexCoord");
 
-   frame->texture      = get_uniform(prog, texture);
-   frame->texture_size = get_uniform(prog, texture_size);
-   frame->input_size   = get_uniform(prog, input_size);
-   frame->tex_coord    = get_attrib(prog, tex_coord);
+   if (frame->texture < 0)
+      frame->texture = get_uniform(prog, texture);
+   if (frame->texture_size < 0)
+      frame->texture_size = get_uniform(prog, texture_size);
+   if (frame->input_size < 0)
+      frame->input_size = get_uniform(prog, input_size);
+   if (frame->tex_coord < 0)
+      frame->tex_coord = get_attrib(prog, tex_coord);
 }
 
-static void find_uniforms(GLuint prog, struct shader_uniforms *uni)
+static void find_uniforms(unsigned pass, GLuint prog, struct shader_uniforms *uni)
 {
    glUseProgram(prog);
 
@@ -586,19 +598,31 @@ static void find_uniforms(GLuint prog, struct shader_uniforms *uni)
    for (unsigned i = 0; i < glsl_shader->luts; i++)
       uni->lut_texture[i] = glGetUniformLocation(prog, glsl_shader->lut[i].id);
 
-   find_uniforms_frame(prog, &uni->orig, "Orig");
-
    char frame_base[64];
+   clear_uniforms_frame(&uni->orig);
+   find_uniforms_frame(prog, &uni->orig, "Orig");
+   if (pass > 1)
+   {
+      snprintf(frame_base, sizeof(frame_base), "PassPrev%u", pass);
+      find_uniforms_frame(prog, &uni->orig, frame_base);
+   }
+
    for (unsigned i = 0; i < GFX_MAX_SHADERS; i++)
    {
       snprintf(frame_base, sizeof(frame_base), "Pass%u", i + 1);
       find_uniforms_frame(prog, &uni->pass[i], frame_base);
+      if (i && pass > i + 1)
+      {
+         snprintf(frame_base, sizeof(frame_base), "PassPrev%u", pass - i);
+         find_uniforms_frame(prog, &uni->pass[i], frame_base);
+      }
    }
 
    find_uniforms_frame(prog, &uni->prev[0], "Prev");
    for (unsigned i = 1; i < PREV_TEXTURES; i++)
    {
       snprintf(frame_base, sizeof(frame_base), "Prev%u", i);
+      clear_uniforms_frame(&uni->prev[i]);
       find_uniforms_frame(prog, &uni->prev[i], frame_base);
    }
 
@@ -774,7 +798,7 @@ static bool gl_glsl_init(const char *path)
    }
 
    for (unsigned i = 0; i <= glsl_shader->passes; i++)
-      find_uniforms(gl_program[i], &gl_uniforms[i]);
+      find_uniforms(i, gl_program[i], &gl_uniforms[i]);
 
 #ifdef GLSL_DEBUG
    if (!gl_check_error())
@@ -813,7 +837,7 @@ static bool gl_glsl_init(const char *path)
             glsl_core ? stock_fragment_modern_blend : stock_fragment_modern_blend, GL_SHADER_STOCK_BLEND);
 #endif
 
-      find_uniforms(gl_program[GL_SHADER_STOCK_BLEND], &gl_uniforms[GL_SHADER_STOCK_BLEND]);
+      find_uniforms(0, gl_program[GL_SHADER_STOCK_BLEND], &gl_uniforms[GL_SHADER_STOCK_BLEND]);
    }
    else
    {
