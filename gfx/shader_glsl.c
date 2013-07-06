@@ -23,6 +23,8 @@
 #include "../dynamic.h"
 #include "../file.h"
 
+#define GLSL_DEBUG
+
 #ifdef HAVE_CONFIG_H
 #include "../config.h"
 #endif
@@ -677,6 +679,7 @@ static void gl_glsl_deinit(void)
       glDeleteTextures(glsl_shader->luts, gl_teximage);
 
    memset(gl_program, 0, sizeof(gl_program));
+   memset(gl_uniforms, 0, sizeof(gl_uniforms));
    glsl_enable  = false;
    active_index = 0;
 
@@ -769,6 +772,14 @@ static bool gl_glsl_init(const char *path)
       stock_vertex_modern : stock_vertex_legacy;
    const char *stock_fragment = glsl_shader->modern ?
       stock_fragment_modern : stock_fragment_legacy;
+
+#ifndef HAVE_OPENGLES2
+   if (glsl_core)
+   {
+      stock_vertex = stock_vertex_core;
+      stock_fragment = stock_fragment_core;
+   }
+#endif
 
 #ifdef HAVE_OPENGLES2
    if (!glsl_shader->modern)
