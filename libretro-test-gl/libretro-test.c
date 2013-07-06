@@ -8,7 +8,7 @@
 #define ARRAY_SIZE(a) (sizeof(a) / sizeof((a)[0]))
 static struct retro_hw_render_callback hw_render;
 
-#include "glsym/glsym.h"
+#include "../gfx/glsym/glsym.h"
 
 #define BASE_WIDTH 320
 #define BASE_HEIGHT 240
