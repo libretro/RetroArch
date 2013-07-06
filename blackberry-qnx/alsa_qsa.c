@@ -75,9 +75,9 @@ static void *alsa_qsa_init(const char *device, unsigned rate, unsigned latency)
    params.start_mode = SND_PCM_START_DATA;
    params.stop_mode = SND_PCM_STOP_STOP;
 
-   params.buf.block.frag_size = 2048;
-   params.buf.block.frags_min = 4;
-   params.buf.block.frags_max = 8;
+   params.buf.block.frag_size = 4096;
+   params.buf.block.frags_min = 8;
+   params.buf.block.frags_max = 16;
 
 
    if ((err = snd_pcm_plugin_params(alsa->pcm, &params)) < 0)
@@ -94,8 +94,8 @@ static void *alsa_qsa_init(const char *device, unsigned rate, unsigned latency)
       goto error;
    }
 
-   alsa->buffer_size = setup.buf.block.frag_size * setup.buf.block.frags;
-   RARCH_LOG("[ALSA QSA]: buffer size: %d bytes (?)\n", alsa->buffer_size);
+   alsa->buffer_size = setup.buf.block.frag_size * (setup.buf.block.frags_max+1);
+   RARCH_LOG("[ALSA QSA]: buffer size: %d bytes\n", alsa->buffer_size);
 
    if ((err = snd_pcm_plugin_prepare(alsa->pcm, SND_PCM_CHANNEL_PLAYBACK)) < 0)
    {
@@ -117,25 +117,38 @@ error:
 
 static ssize_t alsa_qsa_write(void *data, const void *buf, size_t size)
 {
-   int written, err;
+   int written, status;
    alsa_t *alsa = (alsa_t*)data;
-   snd_pcm_channel_status_t status = {0};
+   snd_pcm_channel_status_t cstatus = {0};
 
    written = snd_pcm_plugin_write(alsa->pcm, buf, size);
 
-   if (written < size)
+   if (written != size)
    {
-      status.channel = SND_PCM_CHANNEL_PLAYBACK;
+      /* Check if samples playback got stuck somewhere in hardware or in */
+      /* the audio device driver */
+      if ((errno == EAGAIN) && (written == 0))
+    	  return 0;
 
-      if ((err = snd_pcm_plugin_status(alsa->pcm, &status)) < 0)
-         RARCH_ERR("[ALSA QSA]: Error reading status: %s\n", snd_strerror(err));
+      if ((errno == EINVAL) || (errno == EIO))
+      {
+          cstatus.channel = SND_PCM_CHANNEL_PLAYBACK;
+    	  status = snd_pcm_plugin_status(alsa->pcm, &cstatus);
 
-      if (status.status == SND_PCM_STATUS_UNDERRUN)
-         if (snd_pcm_plugin_prepare(alsa->pcm, SND_PCM_CHANNEL_PLAYBACK) < 0)
-            RARCH_ERR("[ALSA QSA]: Underrun - playback channel prepare error.\n");
+    	  if (status > 0)
+    		  return 0;
+
+          if ((cstatus.status == SND_PCM_STATUS_UNDERRUN) ||
+        		  (cstatus.status == SND_PCM_STATUS_READY))
+        		  {
+        			  status = snd_pcm_plugin_prepare(alsa->pcm, SND_PCM_CHANNEL_PLAYBACK);
+        			  if (status < 0)
+        				  return 0;
+        		  }
+      }
    }
 
-    return size;
+    return written;
  }
 
 static bool alsa_qsa_stop(void *data)
