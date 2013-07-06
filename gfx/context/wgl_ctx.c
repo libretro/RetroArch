@@ -114,10 +114,17 @@ static void create_gl_context(HWND hwnd)
 #ifndef WGL_CONTEXT_CORE_PROFILE_BIT_ARB
 #define WGL_CONTEXT_CORE_PROFILE_BIT_ARB 0x0001
 #endif
+#ifndef WGL_CONTEXT_FLAGS_ARB
+#define WGL_CONTEXT_FLAGS_ARB 0x2094
+#endif
+#ifndef WGL_CONTEXT_DEBUG_BIT_ARB
+#define WGL_CONTEXT_DEBUG_BIT_ARB 0x0001
+#endif
       const int attribs[] = {
          WGL_CONTEXT_MAJOR_VERSION_ARB, g_major,
          WGL_CONTEXT_MINOR_VERSION_ARB, g_minor,
          WGL_CONTEXT_PROFILE_MASK_ARB, WGL_CONTEXT_CORE_PROFILE_BIT_ARB,
+         WGL_CONTEXT_FLAGS_ARB, g_extern.system.hw_render_callback.debug_context ? WGL_CONTEXT_DEBUG_BIT_ARB : 0,
          0,
       };
 
