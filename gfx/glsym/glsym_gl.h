@@ -15,6 +15,9 @@ typedef void (APIENTRY *RGLGENGLDEBUGPROC)(GLenum, GLenum, GLuint, GLenum, GLsiz
 #ifndef GL_OES_EGL_image
 typedef void *GLeglImageOES;
 #endif
+#if !defined(GL_OES_fixed_point) && !defined(HAVE_OPENGLES2)
+typedef GLint GLfixed;
+#endif
 typedef void (APIENTRYP RGLSYMGLBLENDCOLORPROC) (GLfloat red, GLfloat green, GLfloat blue, GLfloat alpha);
 typedef void (APIENTRYP RGLSYMGLBLENDEQUATIONPROC) (GLenum mode);
 typedef void (APIENTRYP RGLSYMGLDRAWRANGEELEMENTSPROC) (GLenum mode, GLuint start, GLuint end, GLsizei count, GLenum type, const GLvoid *indices);
