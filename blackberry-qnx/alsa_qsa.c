@@ -72,12 +72,12 @@ static void *alsa_qsa_init(const char *device, unsigned rate, unsigned latency)
    params.format.rate = rate;
    params.format.voices = 2;
 
-   params.start_mode = SND_PCM_START_FULL;
+   params.start_mode = SND_PCM_START_DATA;
    params.stop_mode = SND_PCM_STOP_STOP;
 
-   params.buf.block.frags_max = (latency * rate * 4) / (1000 * (1 << 10)) - 1;
-   params.buf.block.frag_size = 1024;
-   params.buf.block.frags_min = 1;
+   params.buf.block.frag_size = 2048;
+   params.buf.block.frags_min = 4;
+   params.buf.block.frags_max = 8;
 
 
    if ((err = snd_pcm_plugin_params(alsa->pcm, &params)) < 0)
@@ -94,7 +94,7 @@ static void *alsa_qsa_init(const char *device, unsigned rate, unsigned latency)
       goto error;
    }
 
-   alsa->buffer_size = setup.buf.block.frag_size * (setup.buf.block.frags_max+1); /* is this in bytes? */
+   alsa->buffer_size = setup.buf.block.frag_size * setup.buf.block.frags;
    RARCH_LOG("[ALSA QSA]: buffer size: %d bytes (?)\n", alsa->buffer_size);
 
    if ((err = snd_pcm_plugin_prepare(alsa->pcm, SND_PCM_CHANNEL_PLAYBACK)) < 0)
