@@ -23,8 +23,6 @@
 #include "../dynamic.h"
 #include "../file.h"
 
-#define GLSL_DEBUG
-
 #ifdef HAVE_CONFIG_H
 #include "../config.h"
 #endif
@@ -225,7 +223,6 @@ static const char *stock_fragment_modern_blend =
    "   gl_FragColor = color * texture2D(Texture, tex_coord);\n"
    "}";
 
-#ifndef HAVE_OPENGLES2
 static const char *stock_vertex_core_blend =
    "in vec2 TexCoord;\n"
    "in vec2 VertexCoord;\n"
@@ -247,7 +244,6 @@ static const char *stock_fragment_core_blend =
    "void main() {\n"
    "   FragColor = color * texture(Texture, tex_coord);\n"
    "}";
-#endif
 
 static GLint get_uniform(GLuint prog, const char *base)
 {
@@ -773,13 +769,11 @@ static bool gl_glsl_init(const char *path)
    const char *stock_fragment = glsl_shader->modern ?
       stock_fragment_modern : stock_fragment_legacy;
 
-#ifndef HAVE_OPENGLES2
    if (glsl_core)
    {
       stock_vertex = stock_vertex_core;
       stock_fragment = stock_fragment_core;
    }
-#endif
 
 #ifdef HAVE_OPENGLES2
    if (!glsl_shader->modern)
@@ -842,14 +836,8 @@ static bool gl_glsl_init(const char *path)
 
    if (glsl_shader->modern)
    {
-#ifdef HAVE_OPENGLES2 // Avoid compiler warnings.
-      gl_program[GL_SHADER_STOCK_BLEND] = compile_program(stock_vertex_modern_blend,
-            stock_fragment_modern_blend, GL_SHADER_STOCK_BLEND);
-#else
       gl_program[GL_SHADER_STOCK_BLEND] = compile_program(glsl_core ? stock_vertex_core_blend : stock_vertex_modern_blend,
-            glsl_core ? stock_fragment_modern_blend : stock_fragment_modern_blend, GL_SHADER_STOCK_BLEND);
-#endif
-
+            glsl_core ? stock_fragment_core_blend : stock_fragment_modern_blend, GL_SHADER_STOCK_BLEND);
       find_uniforms(0, gl_program[GL_SHADER_STOCK_BLEND], &gl_uniforms[GL_SHADER_STOCK_BLEND]);
    }
    else
