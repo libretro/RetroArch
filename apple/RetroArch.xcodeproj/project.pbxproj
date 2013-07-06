@@ -13,8 +13,9 @@
 		96297A0F16C5AEA100E6DCE0 /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 96297A0E16C5AEA100E6DCE0 /* main.m */; };
 		96297A2716C82FF100E6DCE0 /* overlays in Resources */ = {isa = PBXBuildFile; fileRef = 96297A2616C82FF100E6DCE0 /* overlays */; };
 		96337E82176AC6E5004685F3 /* utility.m in Sources */ = {isa = PBXBuildFile; fileRef = 96337E81176AC6E5004685F3 /* utility.m */; };
-		96337E84176AD5D9004685F3 /* browser.m in Sources */ = {isa = PBXBuildFile; fileRef = 96337E83176AD5D9004685F3 /* browser.m */; };
-		96337E86176AD6B6004685F3 /* settings.m in Sources */ = {isa = PBXBuildFile; fileRef = 96337E85176AD6B6004685F3 /* settings.m */; };
+		96355CCE1788C90B0010DBFA /* browser.m in Sources */ = {isa = PBXBuildFile; fileRef = 96355CCA1788C90B0010DBFA /* browser.m */; };
+		96355CCF1788C90B0010DBFA /* RALogView.m in Sources */ = {isa = PBXBuildFile; fileRef = 96355CCB1788C90B0010DBFA /* RALogView.m */; };
+		96355CD01788C90B0010DBFA /* settings.m in Sources */ = {isa = PBXBuildFile; fileRef = 96355CCC1788C90B0010DBFA /* settings.m */; };
 		96366C5516C9AC3300D64A22 /* CoreAudio.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 96366C5416C9AC3300D64A22 /* CoreAudio.framework */; };
 		96366C5916C9ACF500D64A22 /* AudioToolbox.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 96366C5816C9ACF500D64A22 /* AudioToolbox.framework */; };
 		963F5AC816CC523B009BBD19 /* RAGameView.m in Sources */ = {isa = PBXBuildFile; fileRef = 963F5AC516CC523B009BBD19 /* RAGameView.m */; };
@@ -33,7 +34,6 @@
 		96AFAE3016C1D4EA009DE44C /* GLKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 96AFAE2F16C1D4EA009DE44C /* GLKit.framework */; };
 		96AFAE3216C1D4EA009DE44C /* OpenGLES.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 96AFAE3116C1D4EA009DE44C /* OpenGLES.framework */; };
 		96AFAE3816C1D4EA009DE44C /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 96AFAE3616C1D4EA009DE44C /* InfoPlist.strings */; };
-		96F9C28316FFA55F002455B3 /* RALogView.m in Sources */ = {isa = PBXBuildFile; fileRef = 96F9C28216FFA55F002455B3 /* RALogView.m */; };
 		D48581DE16F823F9004BEB17 /* griffin.c in Sources */ = {isa = PBXBuildFile; fileRef = D48581DD16F823F9004BEB17 /* griffin.c */; };
 /* End PBXBuildFile section */
 
@@ -43,13 +43,15 @@
 		9614C71F16DDC018000B36EF /* RetroArch copy-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = "RetroArch copy-Info.plist"; path = "/Users/jason/Documents/Projects/ios/RetroArch/ios/RetroArch copy-Info.plist"; sourceTree = "<absolute>"; };
 		962979F416C43B9500E6DCE0 /* ic_dir.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = ic_dir.png; path = "../../android/phoenix/res/drawable-xhdpi/ic_dir.png"; sourceTree = "<group>"; };
 		962979F516C43B9500E6DCE0 /* ic_file.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = ic_file.png; path = "../../android/phoenix/res/drawable-xhdpi/ic_file.png"; sourceTree = "<group>"; };
-		96297A0A16C5AD8D00E6DCE0 /* RetroArch_iOS.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = RetroArch_iOS.h; sourceTree = "<group>"; };
-		96297A0D16C5ADDA00E6DCE0 /* views.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = views.h; sourceTree = "<group>"; };
 		96297A0E16C5AEA100E6DCE0 /* main.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
 		96297A2616C82FF100E6DCE0 /* overlays */ = {isa = PBXFileReference; lastKnownFileType = folder; name = overlays; path = ../../media/overlays; sourceTree = "<group>"; };
 		96337E81176AC6E5004685F3 /* utility.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = utility.m; sourceTree = "<group>"; };
-		96337E83176AD5D9004685F3 /* browser.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = browser.m; sourceTree = "<group>"; };
-		96337E85176AD6B6004685F3 /* settings.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = settings.m; sourceTree = "<group>"; };
+		96355CC81788C8FC0010DBFA /* RAGameView.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = RAGameView.h; sourceTree = "<group>"; };
+		96355CCA1788C90B0010DBFA /* browser.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = browser.m; sourceTree = "<group>"; };
+		96355CCB1788C90B0010DBFA /* RALogView.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = RALogView.m; sourceTree = "<group>"; };
+		96355CCC1788C90B0010DBFA /* settings.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = settings.m; sourceTree = "<group>"; };
+		96355CCD1788C90B0010DBFA /* views.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = views.h; sourceTree = "<group>"; };
+		96355CD11788CF190010DBFA /* RetroArch_Apple.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = RetroArch_Apple.h; sourceTree = "<group>"; };
 		96366C5416C9AC3300D64A22 /* CoreAudio.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreAudio.framework; path = System/Library/Frameworks/CoreAudio.framework; sourceTree = SDKROOT; };
 		96366C5816C9ACF500D64A22 /* AudioToolbox.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AudioToolbox.framework; path = System/Library/Frameworks/AudioToolbox.framework; sourceTree = SDKROOT; };
 		963F5AC516CC523B009BBD19 /* RAGameView.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = RAGameView.m; sourceTree = "<group>"; };
@@ -76,7 +78,6 @@
 		96AFAF4516C1E00A009DE44C /* bitmap.bin */ = {isa = PBXFileReference; lastKnownFileType = archive.macbinary; path = bitmap.bin; sourceTree = "<group>"; };
 		96AFAF4616C1E00A009DE44C /* bitmap.bmp */ = {isa = PBXFileReference; lastKnownFileType = image.bmp; path = bitmap.bmp; sourceTree = "<group>"; };
 		96C19C2616D455BE00FE8D5A /* rarch_wrapper.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = rarch_wrapper.h; sourceTree = "<group>"; };
-		96F9C28216FFA55F002455B3 /* RALogView.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = RALogView.m; sourceTree = "<group>"; };
 		D48581DD16F823F9004BEB17 /* griffin.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = griffin.c; path = ../griffin/griffin.c; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -98,6 +99,17 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		96355CC91788C90B0010DBFA /* iOS */ = {
+			isa = PBXGroup;
+			children = (
+				96355CCA1788C90B0010DBFA /* browser.m */,
+				96355CCB1788C90B0010DBFA /* RALogView.m */,
+				96355CCC1788C90B0010DBFA /* settings.m */,
+				96355CCD1788C90B0010DBFA /* views.h */,
+			);
+			path = iOS;
+			sourceTree = "<group>";
+		};
 		966B9CB716E41E7A005B61E1 /* Assets */ = {
 			isa = PBXGroup;
 			children = (
@@ -154,17 +166,15 @@
 		96AFAE3316C1D4EA009DE44C /* RetroArch */ = {
 			isa = PBXGroup;
 			children = (
-				96337E83176AD5D9004685F3 /* browser.m */,
+				96355CC91788C90B0010DBFA /* iOS */,
 				96297A0E16C5AEA100E6DCE0 /* main.m */,
 				963F5AC516CC523B009BBD19 /* RAGameView.m */,
-				96F9C28216FFA55F002455B3 /* RALogView.m */,
+				96355CC81788C8FC0010DBFA /* RAGameView.h */,
 				9605EA9A170288EA001D47B0 /* RAModuleInfo.m */,
 				9605EA99170288EA001D47B0 /* RAModuleInfo.h */,
 				96C19C2616D455BE00FE8D5A /* rarch_wrapper.h */,
-				96297A0A16C5AD8D00E6DCE0 /* RetroArch_iOS.h */,
-				96337E85176AD6B6004685F3 /* settings.m */,
+				96355CD11788CF190010DBFA /* RetroArch_Apple.h */,
 				96337E81176AC6E5004685F3 /* utility.m */,
-				96297A0D16C5ADDA00E6DCE0 /* views.h */,
 			);
 			path = RetroArch;
 			sourceTree = "<group>";
@@ -304,11 +314,11 @@
 				96297A0F16C5AEA100E6DCE0 /* main.m in Sources */,
 				963F5AC816CC523B009BBD19 /* RAGameView.m in Sources */,
 				D48581DE16F823F9004BEB17 /* griffin.c in Sources */,
-				96F9C28316FFA55F002455B3 /* RALogView.m in Sources */,
 				9605EA9B170288EA001D47B0 /* RAModuleInfo.m in Sources */,
 				96337E82176AC6E5004685F3 /* utility.m in Sources */,
-				96337E84176AD5D9004685F3 /* browser.m in Sources */,
-				96337E86176AD6B6004685F3 /* settings.m in Sources */,
+				96355CCE1788C90B0010DBFA /* browser.m in Sources */,
+				96355CCF1788C90B0010DBFA /* RALogView.m in Sources */,
+				96355CD01788C90B0010DBFA /* settings.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -19,11 +19,22 @@
 
 #import "RAModuleInfo.h"
 
-@interface RetroArch_iOS : UINavigationController<UIApplicationDelegate, UINavigationControllerDelegate>
+void apple_run_core(RAModuleInfo* core, const char* file);
+
+@protocol RetroArch_Platform
+- (void)loadingCore:(RAModuleInfo*)core withFile:(const char*)file;
+- (void)unloadingCore:(RAModuleInfo*)core;
+@end
+
+#ifdef IOS
+
+@interface RetroArch_iOS : UINavigationController<UIApplicationDelegate, UINavigationControllerDelegate, RetroArch_Platform>
 
 + (RetroArch_iOS*)get;
 
-- (void)runGame:(NSString*)path withModule:(RAModuleInfo*)module;
+- (void)loadingCore:(RAModuleInfo*)core withFile:(const char*)file;
+- (void)unloadingCore:(RAModuleInfo*)core;
+
 - (void)refreshConfig;
 - (void)refreshSystemConfig;
 
@@ -33,8 +44,10 @@
 
 @end
 
+#endif
+
 // utility.m
-extern void ios_display_alert(NSString* message, NSString* title);
+extern void apple_display_alert(NSString* message, NSString* title);
 extern void objc_clear_config_hack();
 extern bool path_make_and_check_directory(const char* path, mode_t mode, int amode);
 extern NSString* objc_get_value_from_config(config_file_t* config, NSString* name, NSString* defaultValue);

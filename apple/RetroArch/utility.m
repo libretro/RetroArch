@@ -15,21 +15,23 @@
 
 #include <sys/stat.h>
 
+#include "RetroArch_Apple.h"
+
 #include "general.h"
 #include "file.h"
 #import "views.h"
 
-#ifdef IOS
-void ios_display_alert(NSString* message, NSString* title)
+void apple_display_alert(NSString* message, NSString* title)
 {
+#ifdef IOS
    UIAlertView* alert = [[UIAlertView alloc] initWithTitle:title ? title : @"RetroArch"
                                              message:message
                                              delegate:nil
                                              cancelButtonTitle:@"OK"
                                              otherButtonTitles:nil];
    [alert show];
-}
 #endif
+}
 
 // Little nudge to prevent stale values when reloading the confg file
 void objc_clear_config_hack()
@@ -61,6 +63,12 @@ bool path_make_and_check_directory(const char* path, mode_t mode, int amode)
 }
 
 #ifdef IOS
+
+char* ios_get_rarch_system_directory()
+{
+   return strdup([RetroArch_iOS.get.systemDirectory UTF8String]);
+}
+
 // Simple class to reduce code duplication for fixed table views
 @implementation RATableViewController
 
@@ -92,4 +100,5 @@ bool path_make_and_check_directory(const char* path, mode_t mode, int amode)
 }
 
 @end
+
 #endif

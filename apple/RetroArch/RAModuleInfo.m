@@ -13,7 +13,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#import "RetroArch_iOS.h"
+#import "RetroArch_Apple.h"
 #import "RAModuleInfo.h"
 #import "views.h"
 
@@ -156,7 +156,7 @@ static NSString* build_string_pair(NSString* stringA, NSString* stringB)
    if (indexPath.section == _firmwareSectionIndex)
    {
       NSString* item = (NSString*)[self itemForIndexPath:indexPath];
-      ios_display_alert(objc_getAssociatedObject(item, "OTHER"), item);
+      apple_display_alert(objc_getAssociatedObject(item, "OTHER"), item);
    }
 }
 

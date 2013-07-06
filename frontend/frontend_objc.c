@@ -21,8 +21,8 @@
 #include "../conf/config_file.h"
 #include "../file.h"
 
-#ifdef IOS
-#include "../ios/RetroArch/rarch_wrapper.h"
+#ifdef __APPLE__
+#include "../apple/RetroArch/rarch_wrapper.h"
 #endif
 
 #ifdef HAVE_RGUI
@@ -93,10 +93,13 @@ void* rarch_main_apple(void* args)
    }
 
 #ifdef HAVE_RGUI
+
+#ifdef IOS
    char* system_directory = ios_get_rarch_system_directory();
    strlcpy(g_extern.savestate_dir, system_directory, sizeof(g_extern.savestate_dir));
    strlcpy(g_extern.savefile_dir, system_directory, sizeof(g_extern.savefile_dir));
    free(system_directory);
+#endif
 
    menu_init();
    g_extern.lifecycle_mode_state |= 1ULL << MODE_GAME;

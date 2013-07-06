@@ -255,14 +255,14 @@ INPUT
 #include "../android/native/jni/input_autodetect.c"
 #include "../android/native/jni/input_android.c"
 #elif defined(IOS)
-#include "../ios/RetroArch/input/ios_input.c"
-#include "../ios/RetroArch/input/ios_joypad.c"
-#include "../ios/RetroArch/input/BTStack/btdynamic.c"
-#include "../ios/RetroArch/input/BTStack/wiimote.c"
-#include "../ios/RetroArch/input/BTStack/btpad.c"
-#include "../ios/RetroArch/input/BTStack/btpad_ps3.c"
-#include "../ios/RetroArch/input/BTStack/btpad_wii.c"
-#include "../ios/RetroArch/input/BTStack/btpad_queue.c"
+#include "../apple/RetroArch/input/ios_input.c"
+#include "../apple/RetroArch/input/ios_joypad.c"
+#include "../apple/RetroArch/input/BTStack/btdynamic.c"
+#include "../apple/RetroArch/input/BTStack/wiimote.c"
+#include "../apple/RetroArch/input/BTStack/btpad.c"
+#include "../apple/RetroArch/input/BTStack/btpad_ps3.c"
+#include "../apple/RetroArch/input/BTStack/btpad_wii.c"
+#include "../apple/RetroArch/input/BTStack/btpad_queue.c"
 #elif defined(__BLACKBERRY_QNX__)
 #include "../blackberry-qnx/qnx_input.c"
 #endif

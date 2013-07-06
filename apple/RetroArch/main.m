@@ -16,7 +16,7 @@
 #include <pthread.h>
 #include <string.h>
 
-#import "RetroArch_iOS.h"
+#import "RetroArch_Apple.h"
 #import "views.h"
 #include "rarch_wrapper.h"
 
@@ -30,7 +30,124 @@
 
 //#define HAVE_DEBUG_FILELOG
 static bool use_tv_mode;
+static RetroArch_iOS* apple_platform;
 
+
+// From frontend/frontend_ios.c
+extern void* rarch_main_apple(void* args);
+extern void apple_frontend_post_event(void (*fn)(void*), void* userdata);
+
+
+// These are based on the tag property of the button used to trigger the event
+enum basic_event_t { RESET = 1, LOAD_STATE = 2, SAVE_STATE = 3, QUIT = 4 };
+static void event_basic_command(void* userdata)
+{
+   switch ((enum basic_event_t)userdata)
+   {
+      case RESET:      rarch_game_reset(); return;
+      case LOAD_STATE: rarch_load_state(); return;
+      case SAVE_STATE: rarch_save_state(); return;
+      case QUIT:       g_extern.system.shutdown = true; return;
+   }
+}
+
+static void event_set_state_slot(void* userdata)
+{
+   g_extern.state_slot = (uint32_t)userdata;
+}
+
+static void event_show_rgui(void* userdata)
+{
+   const bool in_menu = g_extern.lifecycle_mode_state & (1 << MODE_MENU);
+   g_extern.lifecycle_mode_state &= ~(1ULL << (in_menu ? MODE_MENU : MODE_GAME));
+   g_extern.lifecycle_mode_state |=  (1ULL << (in_menu ? MODE_GAME : MODE_MENU));
+}
+
+static void event_reload_config(void* userdata)
+{
+   objc_clear_config_hack();
+
+   uninit_drivers();
+   config_load();
+   init_drivers();
+}
+
+#pragma mark EMULATION
+static pthread_t apple_retro_thread;
+static bool apple_is_paused;
+static bool apple_is_running;
+static RAModuleInfo* apple_core;
+
+void apple_run_core(RAModuleInfo* core, const char* file)
+{
+   if (!apple_is_running)
+   {
+      [apple_platform loadingCore:core withFile:file];
+
+      apple_core = core;
+      apple_is_running = true;
+      
+      struct rarch_main_wrap* load_data = malloc(sizeof(struct rarch_main_wrap));
+      memset(load_data, 0, sizeof(struct rarch_main_wrap));
+
+#ifdef IOS
+//      load_data->sram_path = strdup(self.systemDirectory.UTF8String);
+//      load_data->state_path = strdup(self.systemDirectory.UTF8String);
+#endif
+
+      if (file && core)
+      {
+         load_data->libretro_path = strdup(apple_core.path.UTF8String);
+         load_data->rom_path = strdup(file);
+#ifdef IOS
+         load_data->config_path = strdup(apple_core.configPath.UTF8String);
+#endif
+      }
+#ifdef IOS
+      else
+         load_data->config_path = strdup(RAModuleInfo.globalConfigPath.UTF8String);
+#endif
+      
+      if (pthread_create(&apple_retro_thread, 0, rarch_main_apple, load_data))
+      {
+         apple_rarch_exited((void*)1);
+         return;
+      }
+      
+      pthread_detach(apple_retro_thread);
+//    [self refreshSystemConfig];
+   }
+}
+
+void apple_rarch_exited(void* result)
+{
+   if (result)
+      apple_display_alert(@"Failed to load game.", 0);
+
+   if (apple_is_running)
+   {
+      [apple_platform unloadingCore:apple_core];
+
+      apple_is_running = false;
+      
+//
+//      [self popToViewController:[RAGameView get] animated:NO];
+//      [self popViewControllerAnimated:NO];
+      
+//      btpad_set_inquiry_state(true);
+   }
+
+   apple_core = nil;
+
+   if (use_tv_mode)
+      apple_run_core(nil, 0);
+}
+
+//
+// IOS
+//
+#pragma mark IOS
+#ifdef IOS
 // Input helpers: This is kept here because it needs objective-c
 static void handle_touch_event(NSArray* touches)
 {
@@ -79,8 +196,6 @@ static void handle_touch_event(NSArray* touches)
    }
 }
 
-@end
-
 int main(int argc, char *argv[])
 {
    @autoreleasepool {
@@ -95,54 +210,13 @@ int main(int argc, char *argv[])
    }
 }
 
-// From frontend/frontend_ios.c
-extern void* rarch_main_apple(void* args);
-extern void apple_frontend_post_event(void (*fn)(void*), void* userdata);
-
-
-// These are based on the tag property of the button used to trigger the event
-enum basic_event_t { RESET = 1, LOAD_STATE = 2, SAVE_STATE = 3, QUIT = 4 };
-static void event_basic_command(void* userdata)
-{
-   switch ((enum basic_event_t)userdata)
-   {
-      case RESET:      rarch_game_reset(); return;
-      case LOAD_STATE: rarch_load_state(); return;
-      case SAVE_STATE: rarch_save_state(); return;
-      case QUIT:       g_extern.system.shutdown = true; return;
-   }
-}
-
-static void event_set_state_slot(void* userdata)
-{
-   g_extern.state_slot = (uint32_t)userdata;
-}
-
-static void event_show_rgui(void* userdata)
-{
-   const bool in_menu = g_extern.lifecycle_mode_state & (1 << MODE_MENU);
-   g_extern.lifecycle_mode_state &= ~(1ULL << (in_menu ? MODE_MENU : MODE_GAME));
-   g_extern.lifecycle_mode_state |=  (1ULL << (in_menu ? MODE_GAME : MODE_MENU));
-}
-
-static void event_reload_config(void* userdata)
-{
-   objc_clear_config_hack();
-
-   uninit_drivers();
-   config_load();
-   init_drivers();
-}
+@end
 
 @implementation RetroArch_iOS
 {
    UIWindow* _window;
 
-   pthread_t _retroThread;
-
    bool _isGameTop;
-   bool _isPaused;
-   bool _isRunning;
    uint32_t _settingMenusInBackStack;
    uint32_t _enabledOrientations;
    
@@ -157,6 +231,7 @@ static void event_reload_config(void* userdata)
 // UIApplicationDelegate
 - (void)applicationDidFinishLaunching:(UIApplication *)application
 {
+   apple_platform = self;
    self.delegate = self;
 
    // Setup window
@@ -170,21 +245,21 @@ static void event_reload_config(void* userdata)
    self.systemConfigPath = [self.systemDirectory stringByAppendingPathComponent:@"frontend.cfg"];
 
    if (!path_make_and_check_directory(self.documentsDirectory.UTF8String, 0755, R_OK | W_OK | X_OK))
-      ios_display_alert([NSString stringWithFormat:@"Failed to create or access base directory: %@", self.documentsDirectory], 0);
+      apple_display_alert([NSString stringWithFormat:@"Failed to create or access base directory: %@", self.documentsDirectory], 0);
    else if (!path_make_and_check_directory(self.systemDirectory.UTF8String, 0755, R_OK | W_OK | X_OK))
-      ios_display_alert([NSString stringWithFormat:@"Failed to create or access system directory: %@", self.systemDirectory], 0);
+      apple_display_alert([NSString stringWithFormat:@"Failed to create or access system directory: %@", self.systemDirectory], 0);
    else
    {
       [self pushViewController:[RADirectoryList directoryListAtBrowseRoot] animated:YES];
       [self refreshSystemConfig];
       
       if (use_tv_mode)
-         [self runGame:nil withModule:nil];
+         apple_run_core(nil, 0);
    }
    
    // Warn if there are no cores present
    if ([RAModuleInfo getModules].count == 0)
-      ios_display_alert(@"No libretro cores were found. You will not be able to play any games.", 0);
+      apple_display_alert(@"No libretro cores were found. You will not be able to play any games.", 0);
 }
 
 - (void)applicationWillEnterForeground:(UIApplication *)application
@@ -253,71 +328,28 @@ static void event_reload_config(void* userdata)
 }
 
 
-#pragma mark EMULATION
-- (void)runGame:(NSString*)path withModule:(RAModuleInfo*)module
+#pragma mark RetroArch_Platform
+- (void)loadingCore:(RAModuleInfo*)core withFile:(const char*)file
 {
-   if (!_isRunning)
-   {
-      [self pushViewController:RAGameView.get animated:NO];
+   [self pushViewController:RAGameView.get animated:NO];
+   [RASettingsList refreshModuleConfig:core];
 
-      _module = module;
-      [RASettingsList refreshModuleConfig:_module];
+   btpad_set_inquiry_state(false);
 
-      _isRunning = true;
-
-      btpad_set_inquiry_state(false);
-      
-      struct rarch_main_wrap* load_data = malloc(sizeof(struct rarch_main_wrap));
-      memset(load_data, 0, sizeof(struct rarch_main_wrap));
-
-      load_data->sram_path = strdup(self.systemDirectory.UTF8String);
-      load_data->state_path = strdup(self.systemDirectory.UTF8String);
-
-      if (path && module)
-      {
-         load_data->libretro_path = strdup(_module.path.UTF8String);
-         load_data->rom_path = strdup(path.UTF8String);
-         load_data->config_path = strdup(_module.configPath.UTF8String);
-      }
-      else
-         load_data->config_path = strdup(RAModuleInfo.globalConfigPath.UTF8String);
-      
-      if (pthread_create(&_retroThread, 0, rarch_main_apple, load_data))
-      {
-         [self rarchExited:NO];
-         return;
-      }
-      
-      pthread_detach(_retroThread);
-      [self refreshSystemConfig];
-   }
+   [self refreshSystemConfig];
 }
 
-- (void)rarchExited:(BOOL)successful
+- (void)unloadingCore:(RAModuleInfo*)core
 {
-   if (!successful)
-      ios_display_alert(@"Failed to load game.", 0);
-
-   if (_isRunning)
-   {
-      _isRunning = false;
+   [self popToViewController:[RAGameView get] animated:NO];
+   [self popViewControllerAnimated:NO];
       
-      //
-      [self popToViewController:[RAGameView get] animated:NO];
-      [self popViewControllerAnimated:NO];
-      
-      btpad_set_inquiry_state(true);
-   }
-
-   if (use_tv_mode)
-      [self runGame:nil withModule:nil];
-   
-   _module = nil;
+   btpad_set_inquiry_state(true);
 }
 
 - (void)refreshConfig
 {
-   if (_isRunning)
+   if (apple_is_running)
       apple_frontend_post_event(&event_reload_config, 0);
    else
       objc_clear_config_hack();
@@ -376,9 +408,9 @@ static void event_reload_config(void* userdata)
 
 - (IBAction)showPauseMenu:(id)sender
 {
-   if (_isRunning && !_isPaused && _isGameTop)
+   if (apple_is_running && !apple_is_paused && _isGameTop)
    {
-      _isPaused = true;
+      apple_is_paused = true;
       [[RAGameView get] openPauseMenu];
       
       btpad_set_inquiry_state(true);
@@ -387,7 +419,7 @@ static void event_reload_config(void* userdata)
 
 - (IBAction)basicEvent:(id)sender
 {
-   if (_isRunning)
+   if (apple_is_running)
       apple_frontend_post_event(&event_basic_command, ((UIView*)sender).tag);
    
    [self closePauseMenu:sender];
@@ -395,13 +427,13 @@ static void event_reload_config(void* userdata)
 
 - (IBAction)chooseState:(id)sender
 {
-   if (_isRunning)
+   if (apple_is_running)
       apple_frontend_post_event(event_set_state_slot, (void*)((UISegmentedControl*)sender).selectedSegmentIndex);
 }
 
 - (IBAction)showRGUI:(id)sender
 {
-   if (_isRunning)
+   if (apple_is_running)
       apple_frontend_post_event(event_show_rgui, 0);
    
    [self closePauseMenu:sender];
@@ -410,7 +442,7 @@ static void event_reload_config(void* userdata)
 - (IBAction)closePauseMenu:(id)sender
 {
    [[RAGameView get] closePauseMenu];
-   _isPaused = false;
+   apple_is_paused = false;
    
    btpad_set_inquiry_state(false);
 }
@@ -427,12 +459,27 @@ static void event_reload_config(void* userdata)
 
 @end
 
-void apple_rarch_exited(void* result)
+
+#endif
+
+//
+// OSX
+//
+#pragma mark OSX
+#ifdef OSX
+
+@implementation AppDelegate
+
+- (BOOL)applicationShouldTerminateAfterLastWindowClosed:(NSApplication *)theApplication
 {
-   [[RetroArch_iOS get] rarchExited:result ? NO : YES];
+   return YES;
 }
 
-char* ios_get_rarch_system_directory()
+@end
+
+int main(int argc, char *argv[])
 {
-   return strdup([RetroArch_iOS.get.systemDirectory UTF8String]);
+   return NSApplicationMain(argc, (const char **) argv);
 }
+
+#endif

@@ -13,7 +13,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#import "RetroArch_iOS.h"
+#import "RetroArch_Apple.h"
 #import "views.h"
 #include "rarch_wrapper.h"
 #include "input/ios_input.h"
