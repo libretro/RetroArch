@@ -6,6 +6,9 @@ typedef void (GL_APIENTRY *RGLGENGLDEBUGPROC)(GLenum, GLenum, GLuint, GLenum, GL
 typedef void (APIENTRY *RGLGENGLDEBUGPROCARB)(GLenum, GLenum, GLuint, GLenum, GLsizei, const GLchar*, GLvoid*);
 typedef void (APIENTRY *RGLGENGLDEBUGPROC)(GLenum, GLenum, GLuint, GLenum, GLsizei, const GLchar*, GLvoid*);
 #endif
+#ifndef GL_OES_EGL_image
+typedef void *GLeglImageOES;
+#endif
 typedef void (APIENTRYP RGLSYMGLBLENDCOLORPROC) (GLfloat red, GLfloat green, GLfloat blue, GLfloat alpha);
 typedef void (APIENTRYP RGLSYMGLBLENDEQUATIONPROC) (GLenum mode);
 typedef void (APIENTRYP RGLSYMGLDRAWRANGEELEMENTSPROC) (GLenum mode, GLuint start, GLuint end, GLsizei count, GLenum type, const GLvoid *indices);
@@ -869,6 +872,139 @@ typedef void (APIENTRYP RGLSYMGLIMAGETRANSFORMPARAMETERIVHPPROC) (GLenum target,
 typedef void (APIENTRYP RGLSYMGLIMAGETRANSFORMPARAMETERFVHPPROC) (GLenum target, GLenum pname, const GLfloat *params);
 typedef void (APIENTRYP RGLSYMGLGETIMAGETRANSFORMPARAMETERIVHPPROC) (GLenum target, GLenum pname, GLint *params);
 typedef void (APIENTRYP RGLSYMGLGETIMAGETRANSFORMPARAMETERFVHPPROC) (GLenum target, GLenum pname, GLfloat *params);
+typedef void (APIENTRYP RGLSYMGLMULTITEXCOORD1BOESPROC) (GLenum texture, GLbyte s);
+typedef void (APIENTRYP RGLSYMGLMULTITEXCOORD1BVOESPROC) (GLenum texture, const GLbyte *coords);
+typedef void (APIENTRYP RGLSYMGLMULTITEXCOORD2BOESPROC) (GLenum texture, GLbyte s, GLbyte t);
+typedef void (APIENTRYP RGLSYMGLMULTITEXCOORD2BVOESPROC) (GLenum texture, const GLbyte *coords);
+typedef void (APIENTRYP RGLSYMGLMULTITEXCOORD3BOESPROC) (GLenum texture, GLbyte s, GLbyte t, GLbyte r);
+typedef void (APIENTRYP RGLSYMGLMULTITEXCOORD3BVOESPROC) (GLenum texture, const GLbyte *coords);
+typedef void (APIENTRYP RGLSYMGLMULTITEXCOORD4BOESPROC) (GLenum texture, GLbyte s, GLbyte t, GLbyte r, GLbyte q);
+typedef void (APIENTRYP RGLSYMGLMULTITEXCOORD4BVOESPROC) (GLenum texture, const GLbyte *coords);
+typedef void (APIENTRYP RGLSYMGLTEXCOORD1BOESPROC) (GLbyte s);
+typedef void (APIENTRYP RGLSYMGLTEXCOORD1BVOESPROC) (const GLbyte *coords);
+typedef void (APIENTRYP RGLSYMGLTEXCOORD2BOESPROC) (GLbyte s, GLbyte t);
+typedef void (APIENTRYP RGLSYMGLTEXCOORD2BVOESPROC) (const GLbyte *coords);
+typedef void (APIENTRYP RGLSYMGLTEXCOORD3BOESPROC) (GLbyte s, GLbyte t, GLbyte r);
+typedef void (APIENTRYP RGLSYMGLTEXCOORD3BVOESPROC) (const GLbyte *coords);
+typedef void (APIENTRYP RGLSYMGLTEXCOORD4BOESPROC) (GLbyte s, GLbyte t, GLbyte r, GLbyte q);
+typedef void (APIENTRYP RGLSYMGLTEXCOORD4BVOESPROC) (const GLbyte *coords);
+typedef void (APIENTRYP RGLSYMGLVERTEX2BOESPROC) (GLbyte x);
+typedef void (APIENTRYP RGLSYMGLVERTEX2BVOESPROC) (const GLbyte *coords);
+typedef void (APIENTRYP RGLSYMGLVERTEX3BOESPROC) (GLbyte x, GLbyte y);
+typedef void (APIENTRYP RGLSYMGLVERTEX3BVOESPROC) (const GLbyte *coords);
+typedef void (APIENTRYP RGLSYMGLVERTEX4BOESPROC) (GLbyte x, GLbyte y, GLbyte z);
+typedef void (APIENTRYP RGLSYMGLVERTEX4BVOESPROC) (const GLbyte *coords);
+typedef void (APIENTRYP RGLSYMGLACCUMXOESPROC) (GLenum op, GLfixed value);
+typedef void (APIENTRYP RGLSYMGLALPHAFUNCXOESPROC) (GLenum func, GLfixed ref);
+typedef void (APIENTRYP RGLSYMGLBITMAPXOESPROC) (GLsizei width, GLsizei height, GLfixed xorig, GLfixed yorig, GLfixed xmove, GLfixed ymove, const GLubyte *bitmap);
+typedef void (APIENTRYP RGLSYMGLBLENDCOLORXOESPROC) (GLfixed red, GLfixed green, GLfixed blue, GLfixed alpha);
+typedef void (APIENTRYP RGLSYMGLCLEARACCUMXOESPROC) (GLfixed red, GLfixed green, GLfixed blue, GLfixed alpha);
+typedef void (APIENTRYP RGLSYMGLCLEARCOLORXOESPROC) (GLfixed red, GLfixed green, GLfixed blue, GLfixed alpha);
+typedef void (APIENTRYP RGLSYMGLCLEARDEPTHXOESPROC) (GLfixed depth);
+typedef void (APIENTRYP RGLSYMGLCLIPPLANEXOESPROC) (GLenum plane, const GLfixed *equation);
+typedef void (APIENTRYP RGLSYMGLCOLOR3XOESPROC) (GLfixed red, GLfixed green, GLfixed blue);
+typedef void (APIENTRYP RGLSYMGLCOLOR4XOESPROC) (GLfixed red, GLfixed green, GLfixed blue, GLfixed alpha);
+typedef void (APIENTRYP RGLSYMGLCOLOR3XVOESPROC) (const GLfixed *components);
+typedef void (APIENTRYP RGLSYMGLCOLOR4XVOESPROC) (const GLfixed *components);
+typedef void (APIENTRYP RGLSYMGLCONVOLUTIONPARAMETERXOESPROC) (GLenum target, GLenum pname, GLfixed param);
+typedef void (APIENTRYP RGLSYMGLCONVOLUTIONPARAMETERXVOESPROC) (GLenum target, GLenum pname, const GLfixed *params);
+typedef void (APIENTRYP RGLSYMGLDEPTHRANGEXOESPROC) (GLfixed n, GLfixed f);
+typedef void (APIENTRYP RGLSYMGLEVALCOORD1XOESPROC) (GLfixed u);
+typedef void (APIENTRYP RGLSYMGLEVALCOORD2XOESPROC) (GLfixed u, GLfixed v);
+typedef void (APIENTRYP RGLSYMGLEVALCOORD1XVOESPROC) (const GLfixed *coords);
+typedef void (APIENTRYP RGLSYMGLEVALCOORD2XVOESPROC) (const GLfixed *coords);
+typedef void (APIENTRYP RGLSYMGLFEEDBACKBUFFERXOESPROC) (GLsizei n, GLenum type, const GLfixed *buffer);
+typedef void (APIENTRYP RGLSYMGLFOGXOESPROC) (GLenum pname, GLfixed param);
+typedef void (APIENTRYP RGLSYMGLFOGXVOESPROC) (GLenum pname, const GLfixed *param);
+typedef void (APIENTRYP RGLSYMGLFRUSTUMXOESPROC) (GLfixed l, GLfixed r, GLfixed b, GLfixed t, GLfixed n, GLfixed f);
+typedef void (APIENTRYP RGLSYMGLGETCLIPPLANEXOESPROC) (GLenum plane, GLfixed *equation);
+typedef void (APIENTRYP RGLSYMGLGETCONVOLUTIONPARAMETERXVOESPROC) (GLenum target, GLenum pname, GLfixed *params);
+typedef void (APIENTRYP RGLSYMGLGETFIXEDVOESPROC) (GLenum pname, GLfixed *params);
+typedef void (APIENTRYP RGLSYMGLGETHISTOGRAMPARAMETERXVOESPROC) (GLenum target, GLenum pname, GLfixed *params);
+typedef void (APIENTRYP RGLSYMGLGETLIGHTXOESPROC) (GLenum light, GLenum pname, GLfixed *params);
+typedef void (APIENTRYP RGLSYMGLGETMAPXVOESPROC) (GLenum target, GLenum query, GLfixed *v);
+typedef void (APIENTRYP RGLSYMGLGETMATERIALXOESPROC) (GLenum face, GLenum pname, GLfixed param);
+typedef void (APIENTRYP RGLSYMGLGETPIXELMAPXVPROC) (GLenum map, GLint size, GLfixed *values);
+typedef void (APIENTRYP RGLSYMGLGETTEXENVXVOESPROC) (GLenum target, GLenum pname, GLfixed *params);
+typedef void (APIENTRYP RGLSYMGLGETTEXGENXVOESPROC) (GLenum coord, GLenum pname, GLfixed *params);
+typedef void (APIENTRYP RGLSYMGLGETTEXLEVELPARAMETERXVOESPROC) (GLenum target, GLint level, GLenum pname, GLfixed *params);
+typedef void (APIENTRYP RGLSYMGLGETTEXPARAMETERXVOESPROC) (GLenum target, GLenum pname, GLfixed *params);
+typedef void (APIENTRYP RGLSYMGLINDEXXOESPROC) (GLfixed component);
+typedef void (APIENTRYP RGLSYMGLINDEXXVOESPROC) (const GLfixed *component);
+typedef void (APIENTRYP RGLSYMGLLIGHTMODELXOESPROC) (GLenum pname, GLfixed param);
+typedef void (APIENTRYP RGLSYMGLLIGHTMODELXVOESPROC) (GLenum pname, const GLfixed *param);
+typedef void (APIENTRYP RGLSYMGLLIGHTXOESPROC) (GLenum light, GLenum pname, GLfixed param);
+typedef void (APIENTRYP RGLSYMGLLIGHTXVOESPROC) (GLenum light, GLenum pname, const GLfixed *params);
+typedef void (APIENTRYP RGLSYMGLLINEWIDTHXOESPROC) (GLfixed width);
+typedef void (APIENTRYP RGLSYMGLLOADMATRIXXOESPROC) (const GLfixed *m);
+typedef void (APIENTRYP RGLSYMGLLOADTRANSPOSEMATRIXXOESPROC) (const GLfixed *m);
+typedef void (APIENTRYP RGLSYMGLMAP1XOESPROC) (GLenum target, GLfixed u1, GLfixed u2, GLint stride, GLint order, GLfixed points);
+typedef void (APIENTRYP RGLSYMGLMAP2XOESPROC) (GLenum target, GLfixed u1, GLfixed u2, GLint ustride, GLint uorder, GLfixed v1, GLfixed v2, GLint vstride, GLint vorder, GLfixed points);
+typedef void (APIENTRYP RGLSYMGLMAPGRID1XOESPROC) (GLint n, GLfixed u1, GLfixed u2);
+typedef void (APIENTRYP RGLSYMGLMAPGRID2XOESPROC) (GLint n, GLfixed u1, GLfixed u2, GLfixed v1, GLfixed v2);
+typedef void (APIENTRYP RGLSYMGLMATERIALXOESPROC) (GLenum face, GLenum pname, GLfixed param);
+typedef void (APIENTRYP RGLSYMGLMATERIALXVOESPROC) (GLenum face, GLenum pname, const GLfixed *param);
+typedef void (APIENTRYP RGLSYMGLMULTMATRIXXOESPROC) (const GLfixed *m);
+typedef void (APIENTRYP RGLSYMGLMULTTRANSPOSEMATRIXXOESPROC) (const GLfixed *m);
+typedef void (APIENTRYP RGLSYMGLMULTITEXCOORD1XOESPROC) (GLenum texture, GLfixed s);
+typedef void (APIENTRYP RGLSYMGLMULTITEXCOORD2XOESPROC) (GLenum texture, GLfixed s, GLfixed t);
+typedef void (APIENTRYP RGLSYMGLMULTITEXCOORD3XOESPROC) (GLenum texture, GLfixed s, GLfixed t, GLfixed r);
+typedef void (APIENTRYP RGLSYMGLMULTITEXCOORD4XOESPROC) (GLenum texture, GLfixed s, GLfixed t, GLfixed r, GLfixed q);
+typedef void (APIENTRYP RGLSYMGLMULTITEXCOORD1XVOESPROC) (GLenum texture, const GLfixed *coords);
+typedef void (APIENTRYP RGLSYMGLMULTITEXCOORD2XVOESPROC) (GLenum texture, const GLfixed *coords);
+typedef void (APIENTRYP RGLSYMGLMULTITEXCOORD3XVOESPROC) (GLenum texture, const GLfixed *coords);
+typedef void (APIENTRYP RGLSYMGLMULTITEXCOORD4XVOESPROC) (GLenum texture, const GLfixed *coords);
+typedef void (APIENTRYP RGLSYMGLNORMAL3XOESPROC) (GLfixed nx, GLfixed ny, GLfixed nz);
+typedef void (APIENTRYP RGLSYMGLNORMAL3XVOESPROC) (const GLfixed *coords);
+typedef void (APIENTRYP RGLSYMGLORTHOXOESPROC) (GLfixed l, GLfixed r, GLfixed b, GLfixed t, GLfixed n, GLfixed f);
+typedef void (APIENTRYP RGLSYMGLPASSTHROUGHXOESPROC) (GLfixed token);
+typedef void (APIENTRYP RGLSYMGLPIXELMAPXPROC) (GLenum map, GLint size, const GLfixed *values);
+typedef void (APIENTRYP RGLSYMGLPIXELSTOREXPROC) (GLenum pname, GLfixed param);
+typedef void (APIENTRYP RGLSYMGLPIXELTRANSFERXOESPROC) (GLenum pname, GLfixed param);
+typedef void (APIENTRYP RGLSYMGLPIXELZOOMXOESPROC) (GLfixed xfactor, GLfixed yfactor);
+typedef void (APIENTRYP RGLSYMGLPOINTPARAMETERXVOESPROC) (GLenum pname, const GLfixed *params);
+typedef void (APIENTRYP RGLSYMGLPOINTSIZEXOESPROC) (GLfixed size);
+typedef void (APIENTRYP RGLSYMGLPOLYGONOFFSETXOESPROC) (GLfixed factor, GLfixed units);
+typedef void (APIENTRYP RGLSYMGLPRIORITIZETEXTURESXOESPROC) (GLsizei n, const GLuint *textures, const GLfixed *priorities);
+typedef void (APIENTRYP RGLSYMGLRASTERPOS2XOESPROC) (GLfixed x, GLfixed y);
+typedef void (APIENTRYP RGLSYMGLRASTERPOS3XOESPROC) (GLfixed x, GLfixed y, GLfixed z);
+typedef void (APIENTRYP RGLSYMGLRASTERPOS4XOESPROC) (GLfixed x, GLfixed y, GLfixed z, GLfixed w);
+typedef void (APIENTRYP RGLSYMGLRASTERPOS2XVOESPROC) (const GLfixed *coords);
+typedef void (APIENTRYP RGLSYMGLRASTERPOS3XVOESPROC) (const GLfixed *coords);
+typedef void (APIENTRYP RGLSYMGLRASTERPOS4XVOESPROC) (const GLfixed *coords);
+typedef void (APIENTRYP RGLSYMGLRECTXOESPROC) (GLfixed x1, GLfixed y1, GLfixed x2, GLfixed y2);
+typedef void (APIENTRYP RGLSYMGLRECTXVOESPROC) (const GLfixed *v1, const GLfixed *v2);
+typedef void (APIENTRYP RGLSYMGLROTATEXOESPROC) (GLfixed angle, GLfixed x, GLfixed y, GLfixed z);
+typedef void (APIENTRYP RGLSYMGLSAMPLECOVERAGEOESPROC) (GLfixed value, GLboolean invert);
+typedef void (APIENTRYP RGLSYMGLSCALEXOESPROC) (GLfixed x, GLfixed y, GLfixed z);
+typedef void (APIENTRYP RGLSYMGLTEXCOORD1XOESPROC) (GLfixed s);
+typedef void (APIENTRYP RGLSYMGLTEXCOORD2XOESPROC) (GLfixed s, GLfixed t);
+typedef void (APIENTRYP RGLSYMGLTEXCOORD3XOESPROC) (GLfixed s, GLfixed t, GLfixed r);
+typedef void (APIENTRYP RGLSYMGLTEXCOORD4XOESPROC) (GLfixed s, GLfixed t, GLfixed r, GLfixed q);
+typedef void (APIENTRYP RGLSYMGLTEXCOORD1XVOESPROC) (const GLfixed *coords);
+typedef void (APIENTRYP RGLSYMGLTEXCOORD2XVOESPROC) (const GLfixed *coords);
+typedef void (APIENTRYP RGLSYMGLTEXCOORD3XVOESPROC) (const GLfixed *coords);
+typedef void (APIENTRYP RGLSYMGLTEXCOORD4XVOESPROC) (const GLfixed *coords);
+typedef void (APIENTRYP RGLSYMGLTEXENVXOESPROC) (GLenum target, GLenum pname, GLfixed param);
+typedef void (APIENTRYP RGLSYMGLTEXENVXVOESPROC) (GLenum target, GLenum pname, const GLfixed *params);
+typedef void (APIENTRYP RGLSYMGLTEXGENXOESPROC) (GLenum coord, GLenum pname, GLfixed param);
+typedef void (APIENTRYP RGLSYMGLTEXGENXVOESPROC) (GLenum coord, GLenum pname, const GLfixed *params);
+typedef void (APIENTRYP RGLSYMGLTEXPARAMETERXOESPROC) (GLenum target, GLenum pname, GLfixed param);
+typedef void (APIENTRYP RGLSYMGLTEXPARAMETERXVOESPROC) (GLenum target, GLenum pname, const GLfixed *params);
+typedef void (APIENTRYP RGLSYMGLTRANSLATEXOESPROC) (GLfixed x, GLfixed y, GLfixed z);
+typedef void (APIENTRYP RGLSYMGLVERTEX2XOESPROC) (GLfixed x);
+typedef void (APIENTRYP RGLSYMGLVERTEX3XOESPROC) (GLfixed x, GLfixed y);
+typedef void (APIENTRYP RGLSYMGLVERTEX4XOESPROC) (GLfixed x, GLfixed y, GLfixed z);
+typedef void (APIENTRYP RGLSYMGLVERTEX2XVOESPROC) (const GLfixed *coords);
+typedef void (APIENTRYP RGLSYMGLVERTEX3XVOESPROC) (const GLfixed *coords);
+typedef void (APIENTRYP RGLSYMGLVERTEX4XVOESPROC) (const GLfixed *coords);
+typedef void (APIENTRYP RGLSYMGLDEPTHRANGEFOESPROC) (GLclampf n, GLclampf f);
+typedef void (APIENTRYP RGLSYMGLFRUSTUMFOESPROC) (GLfloat l, GLfloat r, GLfloat b, GLfloat t, GLfloat n, GLfloat f);
+typedef void (APIENTRYP RGLSYMGLORTHOFOESPROC) (GLfloat l, GLfloat r, GLfloat b, GLfloat t, GLfloat n, GLfloat f);
+typedef void (APIENTRYP RGLSYMGLCLIPPLANEFOESPROC) (GLenum plane, const GLfloat *equation);
+typedef void (APIENTRYP RGLSYMGLCLEARDEPTHFOESPROC) (GLclampf depth);
+typedef void (APIENTRYP RGLSYMGLGETCLIPPLANEFOESPROC) (GLenum plane, GLfloat *equation);
+typedef GLbitfield (APIENTRYP RGLSYMGLQUERYMATRIXXOESPROC) (GLfixed *mantissa, GLint *exponent);
 
 #define glBlendColor __rglgen_glBlendColor
 #define glBlendEquation __rglgen_glBlendEquation
@@ -1733,6 +1869,139 @@ typedef void (APIENTRYP RGLSYMGLGETIMAGETRANSFORMPARAMETERFVHPPROC) (GLenum targ
 #define glImageTransformParameterfvHP __rglgen_glImageTransformParameterfvHP
 #define glGetImageTransformParameterivHP __rglgen_glGetImageTransformParameterivHP
 #define glGetImageTransformParameterfvHP __rglgen_glGetImageTransformParameterfvHP
+#define glMultiTexCoord1bOES __rglgen_glMultiTexCoord1bOES
+#define glMultiTexCoord1bvOES __rglgen_glMultiTexCoord1bvOES
+#define glMultiTexCoord2bOES __rglgen_glMultiTexCoord2bOES
+#define glMultiTexCoord2bvOES __rglgen_glMultiTexCoord2bvOES
+#define glMultiTexCoord3bOES __rglgen_glMultiTexCoord3bOES
+#define glMultiTexCoord3bvOES __rglgen_glMultiTexCoord3bvOES
+#define glMultiTexCoord4bOES __rglgen_glMultiTexCoord4bOES
+#define glMultiTexCoord4bvOES __rglgen_glMultiTexCoord4bvOES
+#define glTexCoord1bOES __rglgen_glTexCoord1bOES
+#define glTexCoord1bvOES __rglgen_glTexCoord1bvOES
+#define glTexCoord2bOES __rglgen_glTexCoord2bOES
+#define glTexCoord2bvOES __rglgen_glTexCoord2bvOES
+#define glTexCoord3bOES __rglgen_glTexCoord3bOES
+#define glTexCoord3bvOES __rglgen_glTexCoord3bvOES
+#define glTexCoord4bOES __rglgen_glTexCoord4bOES
+#define glTexCoord4bvOES __rglgen_glTexCoord4bvOES
+#define glVertex2bOES __rglgen_glVertex2bOES
+#define glVertex2bvOES __rglgen_glVertex2bvOES
+#define glVertex3bOES __rglgen_glVertex3bOES
+#define glVertex3bvOES __rglgen_glVertex3bvOES
+#define glVertex4bOES __rglgen_glVertex4bOES
+#define glVertex4bvOES __rglgen_glVertex4bvOES
+#define glAccumxOES __rglgen_glAccumxOES
+#define glAlphaFuncxOES __rglgen_glAlphaFuncxOES
+#define glBitmapxOES __rglgen_glBitmapxOES
+#define glBlendColorxOES __rglgen_glBlendColorxOES
+#define glClearAccumxOES __rglgen_glClearAccumxOES
+#define glClearColorxOES __rglgen_glClearColorxOES
+#define glClearDepthxOES __rglgen_glClearDepthxOES
+#define glClipPlanexOES __rglgen_glClipPlanexOES
+#define glColor3xOES __rglgen_glColor3xOES
+#define glColor4xOES __rglgen_glColor4xOES
+#define glColor3xvOES __rglgen_glColor3xvOES
+#define glColor4xvOES __rglgen_glColor4xvOES
+#define glConvolutionParameterxOES __rglgen_glConvolutionParameterxOES
+#define glConvolutionParameterxvOES __rglgen_glConvolutionParameterxvOES
+#define glDepthRangexOES __rglgen_glDepthRangexOES
+#define glEvalCoord1xOES __rglgen_glEvalCoord1xOES
+#define glEvalCoord2xOES __rglgen_glEvalCoord2xOES
+#define glEvalCoord1xvOES __rglgen_glEvalCoord1xvOES
+#define glEvalCoord2xvOES __rglgen_glEvalCoord2xvOES
+#define glFeedbackBufferxOES __rglgen_glFeedbackBufferxOES
+#define glFogxOES __rglgen_glFogxOES
+#define glFogxvOES __rglgen_glFogxvOES
+#define glFrustumxOES __rglgen_glFrustumxOES
+#define glGetClipPlanexOES __rglgen_glGetClipPlanexOES
+#define glGetConvolutionParameterxvOES __rglgen_glGetConvolutionParameterxvOES
+#define glGetFixedvOES __rglgen_glGetFixedvOES
+#define glGetHistogramParameterxvOES __rglgen_glGetHistogramParameterxvOES
+#define glGetLightxOES __rglgen_glGetLightxOES
+#define glGetMapxvOES __rglgen_glGetMapxvOES
+#define glGetMaterialxOES __rglgen_glGetMaterialxOES
+#define glGetPixelMapxv __rglgen_glGetPixelMapxv
+#define glGetTexEnvxvOES __rglgen_glGetTexEnvxvOES
+#define glGetTexGenxvOES __rglgen_glGetTexGenxvOES
+#define glGetTexLevelParameterxvOES __rglgen_glGetTexLevelParameterxvOES
+#define glGetTexParameterxvOES __rglgen_glGetTexParameterxvOES
+#define glIndexxOES __rglgen_glIndexxOES
+#define glIndexxvOES __rglgen_glIndexxvOES
+#define glLightModelxOES __rglgen_glLightModelxOES
+#define glLightModelxvOES __rglgen_glLightModelxvOES
+#define glLightxOES __rglgen_glLightxOES
+#define glLightxvOES __rglgen_glLightxvOES
+#define glLineWidthxOES __rglgen_glLineWidthxOES
+#define glLoadMatrixxOES __rglgen_glLoadMatrixxOES
+#define glLoadTransposeMatrixxOES __rglgen_glLoadTransposeMatrixxOES
+#define glMap1xOES __rglgen_glMap1xOES
+#define glMap2xOES __rglgen_glMap2xOES
+#define glMapGrid1xOES __rglgen_glMapGrid1xOES
+#define glMapGrid2xOES __rglgen_glMapGrid2xOES
+#define glMaterialxOES __rglgen_glMaterialxOES
+#define glMaterialxvOES __rglgen_glMaterialxvOES
+#define glMultMatrixxOES __rglgen_glMultMatrixxOES
+#define glMultTransposeMatrixxOES __rglgen_glMultTransposeMatrixxOES
+#define glMultiTexCoord1xOES __rglgen_glMultiTexCoord1xOES
+#define glMultiTexCoord2xOES __rglgen_glMultiTexCoord2xOES
+#define glMultiTexCoord3xOES __rglgen_glMultiTexCoord3xOES
+#define glMultiTexCoord4xOES __rglgen_glMultiTexCoord4xOES
+#define glMultiTexCoord1xvOES __rglgen_glMultiTexCoord1xvOES
+#define glMultiTexCoord2xvOES __rglgen_glMultiTexCoord2xvOES
+#define glMultiTexCoord3xvOES __rglgen_glMultiTexCoord3xvOES
+#define glMultiTexCoord4xvOES __rglgen_glMultiTexCoord4xvOES
+#define glNormal3xOES __rglgen_glNormal3xOES
+#define glNormal3xvOES __rglgen_glNormal3xvOES
+#define glOrthoxOES __rglgen_glOrthoxOES
+#define glPassThroughxOES __rglgen_glPassThroughxOES
+#define glPixelMapx __rglgen_glPixelMapx
+#define glPixelStorex __rglgen_glPixelStorex
+#define glPixelTransferxOES __rglgen_glPixelTransferxOES
+#define glPixelZoomxOES __rglgen_glPixelZoomxOES
+#define glPointParameterxvOES __rglgen_glPointParameterxvOES
+#define glPointSizexOES __rglgen_glPointSizexOES
+#define glPolygonOffsetxOES __rglgen_glPolygonOffsetxOES
+#define glPrioritizeTexturesxOES __rglgen_glPrioritizeTexturesxOES
+#define glRasterPos2xOES __rglgen_glRasterPos2xOES
+#define glRasterPos3xOES __rglgen_glRasterPos3xOES
+#define glRasterPos4xOES __rglgen_glRasterPos4xOES
+#define glRasterPos2xvOES __rglgen_glRasterPos2xvOES
+#define glRasterPos3xvOES __rglgen_glRasterPos3xvOES
+#define glRasterPos4xvOES __rglgen_glRasterPos4xvOES
+#define glRectxOES __rglgen_glRectxOES
+#define glRectxvOES __rglgen_glRectxvOES
+#define glRotatexOES __rglgen_glRotatexOES
+#define glSampleCoverageOES __rglgen_glSampleCoverageOES
+#define glScalexOES __rglgen_glScalexOES
+#define glTexCoord1xOES __rglgen_glTexCoord1xOES
+#define glTexCoord2xOES __rglgen_glTexCoord2xOES
+#define glTexCoord3xOES __rglgen_glTexCoord3xOES
+#define glTexCoord4xOES __rglgen_glTexCoord4xOES
+#define glTexCoord1xvOES __rglgen_glTexCoord1xvOES
+#define glTexCoord2xvOES __rglgen_glTexCoord2xvOES
+#define glTexCoord3xvOES __rglgen_glTexCoord3xvOES
+#define glTexCoord4xvOES __rglgen_glTexCoord4xvOES
+#define glTexEnvxOES __rglgen_glTexEnvxOES
+#define glTexEnvxvOES __rglgen_glTexEnvxvOES
+#define glTexGenxOES __rglgen_glTexGenxOES
+#define glTexGenxvOES __rglgen_glTexGenxvOES
+#define glTexParameterxOES __rglgen_glTexParameterxOES
+#define glTexParameterxvOES __rglgen_glTexParameterxvOES
+#define glTranslatexOES __rglgen_glTranslatexOES
+#define glVertex2xOES __rglgen_glVertex2xOES
+#define glVertex3xOES __rglgen_glVertex3xOES
+#define glVertex4xOES __rglgen_glVertex4xOES
+#define glVertex2xvOES __rglgen_glVertex2xvOES
+#define glVertex3xvOES __rglgen_glVertex3xvOES
+#define glVertex4xvOES __rglgen_glVertex4xvOES
+#define glDepthRangefOES __rglgen_glDepthRangefOES
+#define glFrustumfOES __rglgen_glFrustumfOES
+#define glOrthofOES __rglgen_glOrthofOES
+#define glClipPlanefOES __rglgen_glClipPlanefOES
+#define glClearDepthfOES __rglgen_glClearDepthfOES
+#define glGetClipPlanefOES __rglgen_glGetClipPlanefOES
+#define glQueryMatrixxOES __rglgen_glQueryMatrixxOES
 
 extern RGLSYMGLBLENDCOLORPROC __rglgen_glBlendColor;
 extern RGLSYMGLBLENDEQUATIONPROC __rglgen_glBlendEquation;
@@ -2597,6 +2866,139 @@ extern RGLSYMGLIMAGETRANSFORMPARAMETERIVHPPROC __rglgen_glImageTransformParamete
 extern RGLSYMGLIMAGETRANSFORMPARAMETERFVHPPROC __rglgen_glImageTransformParameterfvHP;
 extern RGLSYMGLGETIMAGETRANSFORMPARAMETERIVHPPROC __rglgen_glGetImageTransformParameterivHP;
 extern RGLSYMGLGETIMAGETRANSFORMPARAMETERFVHPPROC __rglgen_glGetImageTransformParameterfvHP;
+extern RGLSYMGLMULTITEXCOORD1BOESPROC __rglgen_glMultiTexCoord1bOES;
+extern RGLSYMGLMULTITEXCOORD1BVOESPROC __rglgen_glMultiTexCoord1bvOES;
+extern RGLSYMGLMULTITEXCOORD2BOESPROC __rglgen_glMultiTexCoord2bOES;
+extern RGLSYMGLMULTITEXCOORD2BVOESPROC __rglgen_glMultiTexCoord2bvOES;
+extern RGLSYMGLMULTITEXCOORD3BOESPROC __rglgen_glMultiTexCoord3bOES;
+extern RGLSYMGLMULTITEXCOORD3BVOESPROC __rglgen_glMultiTexCoord3bvOES;
+extern RGLSYMGLMULTITEXCOORD4BOESPROC __rglgen_glMultiTexCoord4bOES;
+extern RGLSYMGLMULTITEXCOORD4BVOESPROC __rglgen_glMultiTexCoord4bvOES;
+extern RGLSYMGLTEXCOORD1BOESPROC __rglgen_glTexCoord1bOES;
+extern RGLSYMGLTEXCOORD1BVOESPROC __rglgen_glTexCoord1bvOES;
+extern RGLSYMGLTEXCOORD2BOESPROC __rglgen_glTexCoord2bOES;
+extern RGLSYMGLTEXCOORD2BVOESPROC __rglgen_glTexCoord2bvOES;
+extern RGLSYMGLTEXCOORD3BOESPROC __rglgen_glTexCoord3bOES;
+extern RGLSYMGLTEXCOORD3BVOESPROC __rglgen_glTexCoord3bvOES;
+extern RGLSYMGLTEXCOORD4BOESPROC __rglgen_glTexCoord4bOES;
+extern RGLSYMGLTEXCOORD4BVOESPROC __rglgen_glTexCoord4bvOES;
+extern RGLSYMGLVERTEX2BOESPROC __rglgen_glVertex2bOES;
+extern RGLSYMGLVERTEX2BVOESPROC __rglgen_glVertex2bvOES;
+extern RGLSYMGLVERTEX3BOESPROC __rglgen_glVertex3bOES;
+extern RGLSYMGLVERTEX3BVOESPROC __rglgen_glVertex3bvOES;
+extern RGLSYMGLVERTEX4BOESPROC __rglgen_glVertex4bOES;
+extern RGLSYMGLVERTEX4BVOESPROC __rglgen_glVertex4bvOES;
+extern RGLSYMGLACCUMXOESPROC __rglgen_glAccumxOES;
+extern RGLSYMGLALPHAFUNCXOESPROC __rglgen_glAlphaFuncxOES;
+extern RGLSYMGLBITMAPXOESPROC __rglgen_glBitmapxOES;
+extern RGLSYMGLBLENDCOLORXOESPROC __rglgen_glBlendColorxOES;
+extern RGLSYMGLCLEARACCUMXOESPROC __rglgen_glClearAccumxOES;
+extern RGLSYMGLCLEARCOLORXOESPROC __rglgen_glClearColorxOES;
+extern RGLSYMGLCLEARDEPTHXOESPROC __rglgen_glClearDepthxOES;
+extern RGLSYMGLCLIPPLANEXOESPROC __rglgen_glClipPlanexOES;
+extern RGLSYMGLCOLOR3XOESPROC __rglgen_glColor3xOES;
+extern RGLSYMGLCOLOR4XOESPROC __rglgen_glColor4xOES;
+extern RGLSYMGLCOLOR3XVOESPROC __rglgen_glColor3xvOES;
+extern RGLSYMGLCOLOR4XVOESPROC __rglgen_glColor4xvOES;
+extern RGLSYMGLCONVOLUTIONPARAMETERXOESPROC __rglgen_glConvolutionParameterxOES;
+extern RGLSYMGLCONVOLUTIONPARAMETERXVOESPROC __rglgen_glConvolutionParameterxvOES;
+extern RGLSYMGLDEPTHRANGEXOESPROC __rglgen_glDepthRangexOES;
+extern RGLSYMGLEVALCOORD1XOESPROC __rglgen_glEvalCoord1xOES;
+extern RGLSYMGLEVALCOORD2XOESPROC __rglgen_glEvalCoord2xOES;
+extern RGLSYMGLEVALCOORD1XVOESPROC __rglgen_glEvalCoord1xvOES;
+extern RGLSYMGLEVALCOORD2XVOESPROC __rglgen_glEvalCoord2xvOES;
+extern RGLSYMGLFEEDBACKBUFFERXOESPROC __rglgen_glFeedbackBufferxOES;
+extern RGLSYMGLFOGXOESPROC __rglgen_glFogxOES;
+extern RGLSYMGLFOGXVOESPROC __rglgen_glFogxvOES;
+extern RGLSYMGLFRUSTUMXOESPROC __rglgen_glFrustumxOES;
+extern RGLSYMGLGETCLIPPLANEXOESPROC __rglgen_glGetClipPlanexOES;
+extern RGLSYMGLGETCONVOLUTIONPARAMETERXVOESPROC __rglgen_glGetConvolutionParameterxvOES;
+extern RGLSYMGLGETFIXEDVOESPROC __rglgen_glGetFixedvOES;
+extern RGLSYMGLGETHISTOGRAMPARAMETERXVOESPROC __rglgen_glGetHistogramParameterxvOES;
+extern RGLSYMGLGETLIGHTXOESPROC __rglgen_glGetLightxOES;
+extern RGLSYMGLGETMAPXVOESPROC __rglgen_glGetMapxvOES;
+extern RGLSYMGLGETMATERIALXOESPROC __rglgen_glGetMaterialxOES;
+extern RGLSYMGLGETPIXELMAPXVPROC __rglgen_glGetPixelMapxv;
+extern RGLSYMGLGETTEXENVXVOESPROC __rglgen_glGetTexEnvxvOES;
+extern RGLSYMGLGETTEXGENXVOESPROC __rglgen_glGetTexGenxvOES;
+extern RGLSYMGLGETTEXLEVELPARAMETERXVOESPROC __rglgen_glGetTexLevelParameterxvOES;
+extern RGLSYMGLGETTEXPARAMETERXVOESPROC __rglgen_glGetTexParameterxvOES;
+extern RGLSYMGLINDEXXOESPROC __rglgen_glIndexxOES;
+extern RGLSYMGLINDEXXVOESPROC __rglgen_glIndexxvOES;
+extern RGLSYMGLLIGHTMODELXOESPROC __rglgen_glLightModelxOES;
+extern RGLSYMGLLIGHTMODELXVOESPROC __rglgen_glLightModelxvOES;
+extern RGLSYMGLLIGHTXOESPROC __rglgen_glLightxOES;
+extern RGLSYMGLLIGHTXVOESPROC __rglgen_glLightxvOES;
+extern RGLSYMGLLINEWIDTHXOESPROC __rglgen_glLineWidthxOES;
+extern RGLSYMGLLOADMATRIXXOESPROC __rglgen_glLoadMatrixxOES;
+extern RGLSYMGLLOADTRANSPOSEMATRIXXOESPROC __rglgen_glLoadTransposeMatrixxOES;
+extern RGLSYMGLMAP1XOESPROC __rglgen_glMap1xOES;
+extern RGLSYMGLMAP2XOESPROC __rglgen_glMap2xOES;
+extern RGLSYMGLMAPGRID1XOESPROC __rglgen_glMapGrid1xOES;
+extern RGLSYMGLMAPGRID2XOESPROC __rglgen_glMapGrid2xOES;
+extern RGLSYMGLMATERIALXOESPROC __rglgen_glMaterialxOES;
+extern RGLSYMGLMATERIALXVOESPROC __rglgen_glMaterialxvOES;
+extern RGLSYMGLMULTMATRIXXOESPROC __rglgen_glMultMatrixxOES;
+extern RGLSYMGLMULTTRANSPOSEMATRIXXOESPROC __rglgen_glMultTransposeMatrixxOES;
+extern RGLSYMGLMULTITEXCOORD1XOESPROC __rglgen_glMultiTexCoord1xOES;
+extern RGLSYMGLMULTITEXCOORD2XOESPROC __rglgen_glMultiTexCoord2xOES;
+extern RGLSYMGLMULTITEXCOORD3XOESPROC __rglgen_glMultiTexCoord3xOES;
+extern RGLSYMGLMULTITEXCOORD4XOESPROC __rglgen_glMultiTexCoord4xOES;
+extern RGLSYMGLMULTITEXCOORD1XVOESPROC __rglgen_glMultiTexCoord1xvOES;
+extern RGLSYMGLMULTITEXCOORD2XVOESPROC __rglgen_glMultiTexCoord2xvOES;
+extern RGLSYMGLMULTITEXCOORD3XVOESPROC __rglgen_glMultiTexCoord3xvOES;
+extern RGLSYMGLMULTITEXCOORD4XVOESPROC __rglgen_glMultiTexCoord4xvOES;
+extern RGLSYMGLNORMAL3XOESPROC __rglgen_glNormal3xOES;
+extern RGLSYMGLNORMAL3XVOESPROC __rglgen_glNormal3xvOES;
+extern RGLSYMGLORTHOXOESPROC __rglgen_glOrthoxOES;
+extern RGLSYMGLPASSTHROUGHXOESPROC __rglgen_glPassThroughxOES;
+extern RGLSYMGLPIXELMAPXPROC __rglgen_glPixelMapx;
+extern RGLSYMGLPIXELSTOREXPROC __rglgen_glPixelStorex;
+extern RGLSYMGLPIXELTRANSFERXOESPROC __rglgen_glPixelTransferxOES;
+extern RGLSYMGLPIXELZOOMXOESPROC __rglgen_glPixelZoomxOES;
+extern RGLSYMGLPOINTPARAMETERXVOESPROC __rglgen_glPointParameterxvOES;
+extern RGLSYMGLPOINTSIZEXOESPROC __rglgen_glPointSizexOES;
+extern RGLSYMGLPOLYGONOFFSETXOESPROC __rglgen_glPolygonOffsetxOES;
+extern RGLSYMGLPRIORITIZETEXTURESXOESPROC __rglgen_glPrioritizeTexturesxOES;
+extern RGLSYMGLRASTERPOS2XOESPROC __rglgen_glRasterPos2xOES;
+extern RGLSYMGLRASTERPOS3XOESPROC __rglgen_glRasterPos3xOES;
+extern RGLSYMGLRASTERPOS4XOESPROC __rglgen_glRasterPos4xOES;
+extern RGLSYMGLRASTERPOS2XVOESPROC __rglgen_glRasterPos2xvOES;
+extern RGLSYMGLRASTERPOS3XVOESPROC __rglgen_glRasterPos3xvOES;
+extern RGLSYMGLRASTERPOS4XVOESPROC __rglgen_glRasterPos4xvOES;
+extern RGLSYMGLRECTXOESPROC __rglgen_glRectxOES;
+extern RGLSYMGLRECTXVOESPROC __rglgen_glRectxvOES;
+extern RGLSYMGLROTATEXOESPROC __rglgen_glRotatexOES;
+extern RGLSYMGLSAMPLECOVERAGEOESPROC __rglgen_glSampleCoverageOES;
+extern RGLSYMGLSCALEXOESPROC __rglgen_glScalexOES;
+extern RGLSYMGLTEXCOORD1XOESPROC __rglgen_glTexCoord1xOES;
+extern RGLSYMGLTEXCOORD2XOESPROC __rglgen_glTexCoord2xOES;
+extern RGLSYMGLTEXCOORD3XOESPROC __rglgen_glTexCoord3xOES;
+extern RGLSYMGLTEXCOORD4XOESPROC __rglgen_glTexCoord4xOES;
+extern RGLSYMGLTEXCOORD1XVOESPROC __rglgen_glTexCoord1xvOES;
+extern RGLSYMGLTEXCOORD2XVOESPROC __rglgen_glTexCoord2xvOES;
+extern RGLSYMGLTEXCOORD3XVOESPROC __rglgen_glTexCoord3xvOES;
+extern RGLSYMGLTEXCOORD4XVOESPROC __rglgen_glTexCoord4xvOES;
+extern RGLSYMGLTEXENVXOESPROC __rglgen_glTexEnvxOES;
+extern RGLSYMGLTEXENVXVOESPROC __rglgen_glTexEnvxvOES;
+extern RGLSYMGLTEXGENXOESPROC __rglgen_glTexGenxOES;
+extern RGLSYMGLTEXGENXVOESPROC __rglgen_glTexGenxvOES;
+extern RGLSYMGLTEXPARAMETERXOESPROC __rglgen_glTexParameterxOES;
+extern RGLSYMGLTEXPARAMETERXVOESPROC __rglgen_glTexParameterxvOES;
+extern RGLSYMGLTRANSLATEXOESPROC __rglgen_glTranslatexOES;
+extern RGLSYMGLVERTEX2XOESPROC __rglgen_glVertex2xOES;
+extern RGLSYMGLVERTEX3XOESPROC __rglgen_glVertex3xOES;
+extern RGLSYMGLVERTEX4XOESPROC __rglgen_glVertex4xOES;
+extern RGLSYMGLVERTEX2XVOESPROC __rglgen_glVertex2xvOES;
+extern RGLSYMGLVERTEX3XVOESPROC __rglgen_glVertex3xvOES;
+extern RGLSYMGLVERTEX4XVOESPROC __rglgen_glVertex4xvOES;
+extern RGLSYMGLDEPTHRANGEFOESPROC __rglgen_glDepthRangefOES;
+extern RGLSYMGLFRUSTUMFOESPROC __rglgen_glFrustumfOES;
+extern RGLSYMGLORTHOFOESPROC __rglgen_glOrthofOES;
+extern RGLSYMGLCLIPPLANEFOESPROC __rglgen_glClipPlanefOES;
+extern RGLSYMGLCLEARDEPTHFOESPROC __rglgen_glClearDepthfOES;
+extern RGLSYMGLGETCLIPPLANEFOESPROC __rglgen_glGetClipPlanefOES;
+extern RGLSYMGLQUERYMATRIXXOESPROC __rglgen_glQueryMatrixxOES;
 
 struct rglgen_sym_map { const char *sym; void *ptr; };
 extern const struct rglgen_sym_map rglgen_symbol_map[];

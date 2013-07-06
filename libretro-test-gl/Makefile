@@ -69,15 +69,15 @@ else
    CFLAGS += -std=gnu99
 endif
 
-OBJECTS := libretro-test.o glsym/rglgen.o
+OBJECTS := libretro-test.o ../gfx/glsym/rglgen.o
 CFLAGS += -Wall -pedantic $(fpic)
 
 ifeq ($(GLES), 1)
    CFLAGS += -DGLES -DHAVE_OPENGLES2
    LIBS += -lGLESv2
-   OBJECTS += glsym/glsym_es2.o
+   OBJECTS += ../gfx/glsym/glsym_es2.o
 else
-   OBJECTS += glsym/glsym_gl.o
+   OBJECTS += ../gfx/glsym/glsym_gl.o
    LIBS += $(GL_LIB)
 endif
 
