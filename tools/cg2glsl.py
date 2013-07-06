@@ -37,11 +37,11 @@ def replace_global_in(source):
       ('IN.texture_size', 'TextureSize'),
       ('IN.output_size', 'OutputSize'),
       ('IN.frame_count', 'FrameCount'),
-      ('IN.frame_direction', 'FrameDirection')
+      ('IN.frame_direction', 'FrameDirection'),
    ]
 
    for line in split_source:
-      if '//var' in line:
+      if ('//var' in line) or ('#var' in line):
          for index, replace in enumerate(replace_table):
             orig = line.split(' ')[2]
             if replace[0] == orig:
@@ -64,14 +64,19 @@ def replace_global_vertex(source):
          ('TEXCOORD1', 'LUTTexCoord'),
          ('TEXCOORD0', 'TexCoord'),
          ('TEXCOORD', 'TexCoord'),
-         ('uniform vec4 _modelViewProj1[4]', 'uniform mat4 MVPMatrix'),
+         ('uniform vec4 _modelViewProj1[4];', ''),
          ('_modelViewProj1', 'MVPMatrix'),
+         ('_IN1._mvp_matrix[0]', 'MVPMatrix[0]'),
+         ('_IN1._mvp_matrix[1]', 'MVPMatrix[1]'),
+         ('_IN1._mvp_matrix[2]', 'MVPMatrix[2]'),
+         ('_IN1._mvp_matrix[3]', 'MVPMatrix[3]'),
          ('MVPMatrix[0]', 'MVPMatrix_[0]'),
          ('MVPMatrix[1]', 'MVPMatrix_[1]'),
          ('MVPMatrix[2]', 'MVPMatrix_[2]'),
          ('MVPMatrix[3]', 'MVPMatrix_[3]'),
 
          ('FrameCount', 'float(FrameCount)'),
+         ('FrameDirection', 'float(FrameDirection)'),
          ('input', 'input_dummy'), # 'input' is reserved in GLSL.
          ('output', 'output_dummy'), # 'output' is reserved in GLSL.
    ]
@@ -81,11 +86,11 @@ def replace_global_vertex(source):
 
    return source
 
-def translate_varyings(varyings, source):
+def translate_varyings(varyings, source, direction):
    dictionary = {}
    for varying in varyings:
       for line in source:
-         if (varying in line) and ('//var' in line):
+         if (varying in line) and (('//var' in line) or ('#var' in line)) and (direction in line):
             log('Found line for', varying + ':', line)
             dictionary[varying] = 'VAR' + line.split(':')[0].split('.')[-1].strip()
             break
@@ -100,6 +105,8 @@ def no_uniform(elem):
          '_output_dummy_size',
          '_frame_count',
          '_frame_direction',
+         '_mvp_matrix',
+         '_vertex_coord',
          'sampler2D'
    ]
 
@@ -108,7 +115,7 @@ def no_uniform(elem):
          return False
    return True
 
-def destructify_varyings(source):
+def destructify_varyings(source, direction):
    # We have to change varying structs that Cg support to single varyings for GL.
    # Varying structs aren't supported until later versions
    # of GLSL.
@@ -117,7 +124,7 @@ def destructify_varyings(source):
    # Don't try to remove this as it breaks compile.
    vout_lines = []
    for line in source:
-      if ('//var' in line) and (('$vout.' in line) or ('$vin.' in line)):
+      if (('//var' in line) or ('#var' in line)) and (('$vout.' in line) or ('$vin.' in line)):
          vout_lines.append(line)
 
    struct_types = []
@@ -179,7 +186,7 @@ def destructify_varyings(source):
                   variables.append(variable)
                   break
 
-   varyings_dict = translate_varyings(varyings_name, source)
+   varyings_dict = translate_varyings(varyings_name, source, direction)
    log('Varyings dict:', varyings_dict)
 
    # Append all varyings. Keep the structs as they might be used as regular values.
@@ -212,8 +219,12 @@ def destructify_varyings(source):
    return source
 
 def translate_varying(cg):
+   # Ye, it's ugly as shit. :(
    #log('Translate:', cg)
    translations = {
+      'IN.tex_coord'    : 'TexCoord',
+      'IN.vertex_coord' : 'VertexCoord',
+      'IN.lut_tex_coord' : 'LUTTexCoord',
       'ORIG.tex_coord'  : 'OrigTexCoord',
       'PREV.tex_coord'  : 'PrevTexCoord',
       'PREV1.tex_coord' : 'Prev1TexCoord',
@@ -230,6 +241,13 @@ def translate_varying(cg):
       'PASS6.tex_coord' : 'Pass6TexCoord',
       'PASS7.tex_coord' : 'Pass7TexCoord',
       'PASS8.tex_coord' : 'Pass8TexCoord',
+      'PASSPREV2.tex_coord' : 'PassPrev2TexCoord',
+      'PASSPREV3.tex_coord' : 'PassPrev3TexCoord',
+      'PASSPREV4.tex_coord' : 'PassPrev4TexCoord',
+      'PASSPREV5.tex_coord' : 'PassPrev5TexCoord',
+      'PASSPREV6.tex_coord' : 'PassPrev6TexCoord',
+      'PASSPREV7.tex_coord' : 'PassPrev7TexCoord',
+      'PASSPREV8.tex_coord' : 'PassPrev8TexCoord',
    }
 
    if cg in translations:
@@ -238,7 +256,8 @@ def translate_varying(cg):
       return cg
 
 def translate_texture_size(cg):
-   log('Translate:', cg)
+   # Ye, it's ugly as shit. :(
+   #log('Translate:', cg)
    translations = {
       'ORIG.texture_size'  : 'OrigTextureSize',
       'PREV.texture_size'  : 'PrevTextureSize',
@@ -256,6 +275,36 @@ def translate_texture_size(cg):
       'PASS6.texture_size' : 'Pass6TextureSize',
       'PASS7.texture_size' : 'Pass7TextureSize',
       'PASS8.texture_size' : 'Pass8TextureSize',
+      'PASSPREV2.texture_size' : 'PassPrev2TextureSize',
+      'PASSPREV3.texture_size' : 'PassPrev3TextureSize',
+      'PASSPREV4.texture_size' : 'PassPrev4TextureSize',
+      'PASSPREV5.texture_size' : 'PassPrev5TextureSize',
+      'PASSPREV6.texture_size' : 'PassPrev6TextureSize',
+      'PASSPREV7.texture_size' : 'PassPrev7TextureSize',
+      'PASSPREV8.texture_size' : 'PassPrev8TextureSize',
+      'ORIG.video_size'  : 'OrigInputSize',
+      'PREV.video_size'  : 'PrevInputSize',
+      'PREV1.video_size' : 'Prev1InputSize',
+      'PREV2.video_size' : 'Prev2InputSize',
+      'PREV3.video_size' : 'Prev3InputSize',
+      'PREV4.video_size' : 'Prev4InputSize',
+      'PREV5.video_size' : 'Prev5InputSize',
+      'PREV6.video_size' : 'Prev6InputSize',
+      'PASS1.video_size' : 'Pass1InputSize',
+      'PASS2.video_size' : 'Pass2InputSize',
+      'PASS3.video_size' : 'Pass3InputSize',
+      'PASS4.video_size' : 'Pass4InputSize',
+      'PASS5.video_size' : 'Pass5InputSize',
+      'PASS6.video_size' : 'Pass6InputSize',
+      'PASS7.video_size' : 'Pass7InputSize',
+      'PASS8.video_size' : 'Pass8InputSize',
+      'PASSPREV2.video_size' : 'PassPrev2InputSize',
+      'PASSPREV3.video_size' : 'PassPrev3InputSize',
+      'PASSPREV4.video_size' : 'PassPrev4InputSize',
+      'PASSPREV5.video_size' : 'PassPrev5InputSize',
+      'PASSPREV6.video_size' : 'PassPrev6InputSize',
+      'PASSPREV7.video_size' : 'PassPrev7InputSize',
+      'PASSPREV8.video_size' : 'PassPrev8InputSize',
    }
 
    if cg in translations:
@@ -271,14 +320,14 @@ def replace_varyings(source):
    attribs = []
    uniforms = []
    for index, line in enumerate(source):
-      if ('//var' in line) and ('$vin.' in line):
+      if (('//var' in line) or ('#var' in line)) and ('$vin.' in line):
          orig = line.split(' ')[2]
          translated = translate_varying(orig)
          if translated != orig and translated not in attribs:
             cg_attrib = line.split(':')[2].split(' ')[1]
             translations.append((cg_attrib, translated))
             attribs.append(translated)
-      elif '//var' in line:
+      elif ('//var' in line) or ('#var' in line):
          orig = line.split(' ')[2]
          translated = translate_texture_size(orig)
          if translated != orig and translated not in uniforms:
@@ -289,7 +338,10 @@ def replace_varyings(source):
    for index, line in enumerate(source):
       if 'void main()' in line:
          for attrib in attribs:
-            source.insert(index, 'attribute vec2 ' + attrib + ';')
+            if attrib == 'VertexCoord':
+               source.insert(index, 'attribute vec4 ' + attrib + ';')
+            else:
+               source.insert(index, 'attribute vec2 ' + attrib + ';')
          for uniform in uniforms:
             source.insert(index, '#endif')
             source.insert(index, 'uniform vec2 ' + uniform + ';')
@@ -322,17 +374,18 @@ def hack_source_vertex(source):
          source.insert(index, '#ifdef GL_ES')
          source.insert(index, 'uniform int FrameCount;')
          source.insert(index, 'uniform int FrameDirection;')
+         source.insert(index, 'uniform mat4 MVPMatrix;')
 
          source.insert(index, """
-         mat4 transpose_(mat4 matrix)
-         {
-            mat4 ret;
-            for (int i = 0; i != 4; i++)
-               for (int j = 0; j != 4; j++)
-                  ret[i][j] = matrix[j][i];
+mat4 transpose_(mat4 matrix)
+{
+   mat4 ret;
+   for (int i = 0; i != 4; i++)
+      for (int j = 0; j != 4; j++)
+         ret[i][j] = matrix[j][i];
 
-            return ret;
-         }
+   return ret;
+}
          """)
          ref_index = index
          break
@@ -349,7 +402,7 @@ def hack_source_vertex(source):
             translations.append(main_sampler)
             log('Vertex: Sampler:', main_sampler[0], '->', main_sampler[1])
             struct_texunit0 = '.' in main_sampler[0]
-      elif '//var sampler2D' in line:
+      elif ('//var sampler2D' in line) or ('#var sampler2D' in line):
          cg_texture = line.split(' ')[2]
          translated = translate_texture(cg_texture)
          orig_name = translated
@@ -369,7 +422,7 @@ def hack_source_vertex(source):
       for translation in translations:
          source[index] = source[index].replace(translation[0], translation[1])
 
-   source = destructify_varyings(source)
+   source = destructify_varyings(source, '$vout.')
    source = replace_varyings(source)
    return source
 
@@ -377,6 +430,7 @@ def replace_global_fragment(source):
    source = replace_global_in(source)
    replace_table = [
          ('FrameCount', 'float(FrameCount)'),
+         ('FrameDirection', 'float(FrameDirection)'),
          ('input', 'input_dummy'),
          ('output', 'output_dummy'), # 'output' is reserved in GLSL.
    ]
@@ -406,6 +460,13 @@ def translate_texture(cg):
       'PASS6.texture' : 'Pass6Texture',
       'PASS7.texture' : 'Pass7Texture',
       'PASS8.texture' : 'Pass8Texture',
+      'PASSPREV2.texture' : 'PassPrev2Texture',
+      'PASSPREV3.texture' : 'PassPrev3Texture',
+      'PASSPREV4.texture' : 'PassPrev4Texture',
+      'PASSPREV5.texture' : 'PassPrev5Texture',
+      'PASSPREV6.texture' : 'PassPrev6Texture',
+      'PASSPREV7.texture' : 'PassPrev7Texture',
+      'PASSPREV8.texture' : 'PassPrev8Texture',
    }
 
    if cg in translations:
@@ -443,7 +504,7 @@ def hack_source_fragment(source):
             translations.append(main_sampler)
             log('Fragment: Sampler:', main_sampler[0], '->', main_sampler[1])
             struct_texunit0 = '.' in main_sampler[0]
-      elif '//var sampler2D' in line:
+      elif ('//var sampler2D' in line) or ('#var sampler2D' in line):
          cg_texture = line.split(' ')[2]
          translated = translate_texture(cg_texture)
          orig_name = translated
@@ -454,7 +515,7 @@ def hack_source_fragment(source):
                translated_samplers.append(translated)
                added_samplers.append('uniform sampler2D ' + translated + ';')
             translations.append((new_name, orig_name))
-      elif '//var' in line:
+      elif ('//var' in line) or ('#var' in line):
          orig = line.split(' ')[2]
          translated = translate_texture_size(orig)
          if translated != orig and translated not in uniforms:
@@ -480,7 +541,7 @@ def hack_source_fragment(source):
          line = line.replace(translation[0], translation[1])
       ret.append(line)
 
-   ret = destructify_varyings(ret)
+   ret = destructify_varyings(ret, '$vin.')
    return ret
 
 def validate_shader(source, target):
