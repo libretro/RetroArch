@@ -627,8 +627,16 @@ void gl_init_fbo(void *data, unsigned width, unsigned height)
 }
 
 #ifndef HAVE_RGL
+static void gl_deinit_hw_render(gl_t *gl)
+{
+   if (gl->hw_render_fbo_init)
+      glDeleteFramebuffers(gl->textures, gl->hw_render_fbo);
+   if (gl->hw_render_depth_init)
+      glDeleteRenderbuffers(gl->textures, gl->hw_render_depth);
+   gl->hw_render_fbo_init = false;
+}
 
-bool gl_init_hw_render(gl_t *gl, unsigned width, unsigned height)
+static bool gl_init_hw_render(gl_t *gl, unsigned width, unsigned height)
 {
    RARCH_LOG("[GL]: Initializing HW render (%u x %u).\n", width, height);
    GLint max_fbo_size = 0;
@@ -641,7 +649,7 @@ bool gl_init_hw_render(gl_t *gl, unsigned width, unsigned height)
       return false;
 
    glBindTexture(GL_TEXTURE_2D, 0);
-   glGenFramebuffers(TEXTURES, gl->hw_render_fbo);
+   glGenFramebuffers(gl->textures, gl->hw_render_fbo);
 
    bool depth = g_extern.system.hw_render_callback.depth;
    bool stencil = g_extern.system.hw_render_callback.stencil;
@@ -653,11 +661,11 @@ bool gl_init_hw_render(gl_t *gl, unsigned width, unsigned height)
 
    if (depth)
    {
-      glGenRenderbuffers(TEXTURES, gl->hw_render_depth);
+      glGenRenderbuffers(gl->textures, gl->hw_render_depth);
       gl->hw_render_depth_init = true;
    }
 
-   for (unsigned i = 0; i < TEXTURES; i++)
+   for (unsigned i = 0; i < gl->textures; i++)
    {
       glBindFramebuffer(GL_FRAMEBUFFER, gl->hw_render_fbo[i]);
       glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, gl->texture[i], 0);
@@ -1019,8 +1027,8 @@ static void gl_update_input_size(void *data, unsigned width, unsigned height, un
       set_texture_coords(gl->tex_coords, xamt, yamt);
    }
    // We might have used different texture coordinates last frame. Edge case if resolution changes very rapidly.
-   else if (width != gl->last_width[(gl->tex_index - 1) & TEXTURES_MASK] ||
-         height != gl->last_height[(gl->tex_index - 1) & TEXTURES_MASK])
+   else if (width != gl->last_width[(gl->tex_index + gl->textures - 1) % gl->textures] ||
+         height != gl->last_height[(gl->tex_index + gl->textures - 1) % gl->textures])
    {
       GLfloat xamt = (GLfloat)width / gl->tex_w;
       GLfloat yamt = (GLfloat)height / gl->tex_h;
@@ -1077,13 +1085,13 @@ static inline void gl_convert_frame_argb8888_abgr8888(void *data, void *output, 
 static void gl_init_textures_data(void *data)
 {
    gl_t *gl = (gl_t*)data;
-   for (unsigned i = 0; i < TEXTURES; i++)
+   for (unsigned i = 0; i < gl->textures; i++)
    {
       gl->last_width[i]  = gl->tex_w;
       gl->last_height[i] = gl->tex_h;
    }
 
-   for (unsigned i = 0; i < TEXTURES; i++)
+   for (unsigned i = 0; i < gl->textures; i++)
    {
       gl->prev_info[i].tex           = gl->texture[0];
       gl->prev_info[i].input_size[0] = gl->tex_w;
@@ -1110,7 +1118,7 @@ static void gl_init_textures(void *data, const video_info_t *video)
 
    glBindBuffer(GL_TEXTURE_REFERENCE_BUFFER_SCE, gl->pbo);
    glBufferData(GL_TEXTURE_REFERENCE_BUFFER_SCE,
-         gl->tex_w * gl->tex_h * gl->base_size * TEXTURES, NULL, GL_STREAM_DRAW);
+         gl->tex_w * gl->tex_h * gl->base_size * gl->textures, NULL, GL_STREAM_DRAW);
 #endif
 
    GLenum internal_fmt = gl->internal_fmt;
@@ -1141,9 +1149,9 @@ static void gl_init_textures(void *data, const video_info_t *video)
    }
 #endif
 
-   glGenTextures(TEXTURES, gl->texture);
+   glGenTextures(gl->textures, gl->texture);
 
-   for (unsigned i = 0; i < TEXTURES; i++)
+   for (unsigned i = 0; i < gl->textures; i++)
    {
       glBindTexture(GL_TEXTURE_2D, gl->texture[i]);
 
@@ -1264,7 +1272,7 @@ static inline void gl_copy_frame(void *data, const void *frame, unsigned width, 
 static inline void gl_set_prev_texture(void *data, const struct gl_tex_info *tex_info)
 {
    gl_t *gl = (gl_t*)data;
-   memmove(gl->prev_info + 1, gl->prev_info, sizeof(*tex_info) * (TEXTURES - 1));
+   memmove(gl->prev_info + 1, gl->prev_info, sizeof(*tex_info) * (gl->textures - 1));
    memcpy(&gl->prev_info[0], tex_info, sizeof(*tex_info));
 }
 
@@ -1386,7 +1394,7 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
 
    if (frame) // Can be NULL for frame dupe / NULL render.
    {
-      gl->tex_index = (gl->tex_index + 1) & TEXTURES_MASK;
+      gl->tex_index = (gl->tex_index + 1) % gl->textures;
       glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
 
 #ifdef HAVE_FBO
@@ -1555,7 +1563,7 @@ static void gl_free(void *data)
    gl_disable_client_arrays(gl);
 #endif
 
-   glDeleteTextures(TEXTURES, gl->texture);
+   glDeleteTextures(gl->textures, gl->texture);
 
 #if defined(HAVE_RGUI) || defined(HAVE_RMENU)
    if (gl->rgui_texture)
@@ -1584,13 +1592,8 @@ static void gl_free(void *data)
 
 #ifdef HAVE_FBO
    gl_deinit_fbo(gl);
-
 #ifndef HAVE_RGL
-   if (gl->hw_render_fbo_init)
-      glDeleteFramebuffers(TEXTURES, gl->hw_render_fbo);
-   if (gl->hw_render_depth_init)
-      glDeleteRenderbuffers(TEXTURES, gl->hw_render_depth);
-   gl->hw_render_fbo_init = false;
+   gl_deinit_hw_render(gl);
 #endif
 #endif
 
@@ -1707,7 +1710,7 @@ static inline void gl_reinit_textures(void *data, const video_info_t *video)
 #endif
 
       glBindTexture(GL_TEXTURE_2D, 0);
-      glDeleteTextures(TEXTURES, gl->texture);
+      glDeleteTextures(gl->textures, gl->texture);
 
       gl_init_textures(gl, video);
       gl_init_textures_data(gl);
@@ -1836,6 +1839,8 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
       return NULL;
    }
 
+   gl->video_info = *video;
+
    RARCH_LOG("Found GL context: %s\n", gl->ctx_driver->ident);
 
    context_get_video_size_func(&gl->full_x, &gl->full_y);
@@ -1883,6 +1888,9 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    struct retro_hw_render_callback *hw_render = &g_extern.system.hw_render_callback;
    gl->vertex_ptr = hw_render->bottom_left_origin ? vertexes : vertexes_flipped;
 
+   // Better pipelining with GPU due to synchronous glSubTexImage. Multiple async PBOs would be an alternative,
+   // but still need multiple textures with PREV.
+   gl->textures = 4;
 #ifdef HAVE_FBO
 #ifdef HAVE_OPENGLES2
    gl->hw_render_use = hw_render->context_type == RETRO_HW_CONTEXT_OPENGLES2;
@@ -1890,6 +1898,8 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    gl->hw_render_use = hw_render->context_type == RETRO_HW_CONTEXT_OPENGL ||
       g_extern.system.hw_render_callback.context_type == RETRO_HW_CONTEXT_OPENGL_CORE;
 #endif
+   if (gl->hw_render_use)
+      gl->textures = 1; // All on GPU, no need to excessively create textures.
 #endif
    gl->white_color_ptr = white_color;
 
@@ -1906,6 +1916,13 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
       return NULL;
    }
 
+   if (gl->shader)
+   {
+      unsigned minimum = gl->shader->get_prev_textures();
+      gl->textures = max(minimum + 1, gl->textures);
+   }
+
+   RARCH_LOG("GL: Using %u textures.\n", gl->textures);
    RARCH_LOG("GL: Loaded %u program(s).\n", gl_shader_num(gl));
 
    gl->tex_w = RARCH_SCALE_BASE * video->input_scale;
@@ -2023,12 +2040,13 @@ static void gl_update_tex_filter_frame(gl_t *gl)
    if (!gl_shader_filter_type(gl, 1, &smooth))
       smooth = g_settings.video.smooth;
 
+   gl->video_info.smooth = smooth;
    GLuint new_filt = smooth ? GL_LINEAR : GL_NEAREST;
    if (new_filt == gl->tex_filter)
       return;
 
    gl->tex_filter = new_filt;
-   for (unsigned i = 0; i < TEXTURES; i++)
+   for (unsigned i = 0; i < gl->textures; i++)
    {
       if (gl->texture[i])
       {
@@ -2091,6 +2109,33 @@ static bool gl_set_shader(void *data, enum rarch_shader_type type, const char *p
    }
 
    gl_update_tex_filter_frame(gl);
+
+   if (gl->shader)
+   {
+      unsigned textures = gl->shader->get_prev_textures() + 1;
+      if (textures > gl->textures) // Have to reinit a bit.
+      {
+#if defined(HAVE_FBO) && !defined(HAVE_RGL)
+         gl_deinit_hw_render(gl);
+#endif
+
+         glDeleteTextures(gl->textures, gl->texture);
+#if defined(HAVE_PSGL)
+         glBindBuffer(GL_TEXTURE_REFERENCE_BUFFER_SCE, 0);
+         glDeleteBuffers(1, &gl->pbo);
+#endif
+         gl->textures = textures;
+         RARCH_LOG("GL: Using %u textures.\n", gl->textures);
+         gl->tex_index = 0;
+         gl_init_textures(gl, &gl->video_info);
+         gl_init_textures_data(gl);
+
+#if defined(HAVE_FBO) && !defined(HAVE_RGL)
+         if (gl->hw_render_use)
+            gl_init_hw_render(gl, gl->tex_w, gl->tex_h);
+#endif
+      }
+   }
 
 #ifdef HAVE_FBO
    // Set up render to texture again.
@@ -2358,7 +2403,7 @@ static void gl_get_overlay_interface(void *data, const video_overlay_interface_t
 static uintptr_t gl_get_current_framebuffer(void *data)
 {
    gl_t *gl = (gl_t*)data;
-   return gl->hw_render_fbo[(gl->tex_index + 1) & TEXTURES_MASK];
+   return gl->hw_render_fbo[(gl->tex_index + 1) % gl->textures];
 }
 
 static retro_proc_address_t gl_get_proc_address(void *data, const char *sym)

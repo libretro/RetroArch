@@ -138,13 +138,7 @@ struct gl_coords
 typedef struct gl_shader_backend gl_shader_backend_t;
 
 #define MAX_SHADERS 16
-
-#if (defined(HAVE_GLSL) || defined(HAVE_CG))
-#define TEXTURES 8
-#else
-#define TEXTURES 1
-#endif
-#define TEXTURES_MASK (TEXTURES - 1)
+#define MAX_TEXTURES 8
 
 typedef struct gl
 {
@@ -152,9 +146,10 @@ typedef struct gl
    const gl_shader_backend_t *shader;
 
    bool vsync;
-   GLuint texture[TEXTURES];
+   GLuint texture[MAX_TEXTURES];
    unsigned tex_index; // For use with PREV.
-   struct gl_tex_info prev_info[TEXTURES];
+   unsigned textures;
+   struct gl_tex_info prev_info[MAX_TEXTURES];
    GLuint tex_filter;
 
    void *empty_buf;
@@ -173,8 +168,8 @@ typedef struct gl
    int fbo_pass;
    bool fbo_inited;
 
-   GLuint hw_render_fbo[TEXTURES];
-   GLuint hw_render_depth[TEXTURES];
+   GLuint hw_render_fbo[MAX_TEXTURES];
+   GLuint hw_render_depth[MAX_TEXTURES];
    bool hw_render_fbo_init;
    bool hw_render_depth_init;
 #endif
@@ -193,8 +188,8 @@ typedef struct gl
    struct rarch_viewport vp;
    unsigned vp_out_width;
    unsigned vp_out_height;
-   unsigned last_width[TEXTURES];
-   unsigned last_height[TEXTURES];
+   unsigned last_width[MAX_TEXTURES];
+   unsigned last_height[MAX_TEXTURES];
    unsigned tex_w, tex_h;
    GLfloat tex_coords[8];
    math_matrix mvp, mvp_no_rot;
@@ -224,6 +219,7 @@ typedef struct gl
    GLfloat font_color_dark[16];
 
    bool egl_images;
+   video_info_t video_info;
 
 #ifdef HAVE_OVERLAY
    // Overlay rendering

@@ -64,7 +64,7 @@
 #define BORDER_FUNC GL_CLAMP_TO_BORDER
 #endif
 
-#define PREV_TEXTURES (TEXTURES - 1)
+#define PREV_TEXTURES (MAX_TEXTURES - 1)
 
 static struct gfx_shader *glsl_shader;
 static bool glsl_core;
@@ -1188,6 +1188,20 @@ static void gl_glsl_shader_scale(unsigned index, struct gfx_fbo_scale *scale)
       scale->valid = false;
 }
 
+static unsigned gl_glsl_get_prev_textures(void)
+{
+   if (!glsl_enable)
+      return 0;
+
+   unsigned max_prev = 0;
+   for (unsigned i = 1; i <= glsl_shader->passes; i++)
+      for (unsigned j = 0; j < PREV_TEXTURES; j++)
+         if (gl_uniforms[i].prev[j].texture >= 0)
+            max_prev = max(j + 1, max_prev);
+
+   return max_prev;
+}
+
 void gl_glsl_set_get_proc_address(gfx_ctx_proc_t (*proc)(const char*))
 {
    glsl_get_proc_address = proc;
@@ -1210,6 +1224,7 @@ const gl_shader_backend_t gl_glsl_backend = {
    gl_glsl_shader_scale,
    gl_glsl_set_coords,
    gl_glsl_set_mvp,
+   gl_glsl_get_prev_textures,
 
    RARCH_SHADER_GLSL,
 };
