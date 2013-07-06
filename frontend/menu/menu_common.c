@@ -577,6 +577,8 @@ void menu_init(void)
       RARCH_LOG("[RGUI]: Opening history: %s.\n", history_path);
       rgui->history = rom_history_init(history_path, g_settings.game_history_size);
    }
+
+   rgui->last_time = rarch_get_time_usec();
 }
 
 void menu_free(void)
@@ -828,6 +830,15 @@ bool menu_iterate(void)
       driver.video_poke->set_texture_enable(driver.video_data, rgui->frame_buf_show, MENU_TEXTURE_FULLSCREEN);
 
    rarch_render_cached_frame();
+
+   // Throttle in case VSync is broken (avoid 1000+ FPS RGUI).
+   rarch_time_t time = rarch_get_time_usec();
+   rarch_time_t delta = (time - rgui->last_time) / 1000;
+   rarch_time_t target_msec = 1000 / g_settings.video.refresh_rate;
+   rarch_time_t sleep_msec = target_msec - delta;
+   if (sleep_msec > 0)
+      rarch_sleep(sleep_msec);
+   rgui->last_time = rarch_get_time_usec();
 
    if (driver.video_poke && driver.video_poke->set_texture_enable)
       driver.video_poke->set_texture_enable(driver.video_data, false,
