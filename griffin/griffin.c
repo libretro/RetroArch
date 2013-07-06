@@ -415,13 +415,7 @@ MAIN
 #include "../frontend/frontend_objc.c"
 #endif
 
-#ifndef IS_XCODE
-#ifndef RARCH_MOBILE
-#ifndef HAVE_BB10
 #include "../frontend/frontend.c"
-#endif
-#endif
-#endif
 
 /*============================================================
 RETROARCH
