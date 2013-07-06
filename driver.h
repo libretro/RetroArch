@@ -284,6 +284,7 @@ enum input_devices
    DEVICE_NONE,
    DEVICE_WIIMOTE,
    DEVICE_KEYBOARD,
+   DEVICE_IPEGA,
    DEVICE_KEYPAD,
    DEVICE_UNKNOWN,
 #elif defined(IOS)

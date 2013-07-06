@@ -765,6 +765,31 @@ static void qnx_input_set_keybinds(void *data, unsigned device, unsigned port,
             controller->port = port;
             port_device[port] = controller;
             break;
+         case DEVICE_IPEGA:
+            strlcpy(g_settings.input.device_names[port], "iPega PG-9017",
+               sizeof(g_settings.input.device_names[port]));
+            g_settings.input.device[port] = device;
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_B].def_joykey      = KEYCODE_J & 0xFF;
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_Y].def_joykey      = KEYCODE_M & 0xFF;
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_SELECT].def_joykey = KEYCODE_R & 0xFF;
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_START].def_joykey  = KEYCODE_Y & 0xFF;
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_UP].def_joykey     = KEYCODE_UP & 0xFF;
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_DOWN].def_joykey   = KEYCODE_DOWN & 0xFF;
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_LEFT].def_joykey   = KEYCODE_LEFT & 0xFF;
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_RIGHT].def_joykey  = KEYCODE_RIGHT & 0xFF;
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_A].def_joykey      = KEYCODE_K & 0xFF;
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_X].def_joykey      = KEYCODE_I & 0xFF;
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_L].def_joykey      = KEYCODE_Q & 0xFF;
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_R].def_joykey      = KEYCODE_P & 0xFF;
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_L2].def_joykey     = 0;
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_R2].def_joykey     = 0;
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_L3].def_joykey     = 0;
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_R3].def_joykey     = 0;
+            g_settings.input.binds[port][RARCH_MENU_TOGGLE].def_joykey             = 0;
+            g_settings.input.dpad_emulation[port] = ANALOG_DPAD_NONE;
+            controller->port = port;
+            port_device[port] = controller;
+            break;
 #ifdef HAVE_BB10
          case DEVICE_UNKNOWN:
             strlcpy(g_settings.input.device_names[port], "Unknown",
