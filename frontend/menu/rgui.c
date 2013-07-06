@@ -30,6 +30,7 @@
 #include "../../dynamic.h"
 #include "../../compat/posix_string.h"
 #include "../../gfx/shader_parse.h"
+#include "../../performance.h"
 
 #ifdef HAVE_OPENGL
 #include "../../gfx/gl_common.h"

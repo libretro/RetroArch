@@ -262,6 +262,7 @@ typedef struct
    unsigned current_pad;
 
    rom_history_t *history;
+   rarch_time_t last_time; // Used to throttle RGUI in case VSync is broken.
 } rgui_handle_t;
 
 extern rgui_handle_t *rgui;
