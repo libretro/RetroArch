@@ -415,7 +415,9 @@ MAIN
 #include "../frontend/frontend_objc.c"
 #endif
 
+#if defined(RARCH_CONSOLE) || defined(__QNX__) && !defined(HAVE_BB10)
 #include "../frontend/frontend.c"
+#endif
 
 /*============================================================
 RETROARCH

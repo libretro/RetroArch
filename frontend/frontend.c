@@ -14,8 +14,6 @@
  * If not, see <http://www.gnu.org/licenses/>.
  */
 
-#if defined(RARCH_CONSOLE) || defined(__QNX__) && !defined(HAVE_BB10)
-
 #include "../general.h"
 #include "../conf/config_file.h"
 #include "../file.h"
@@ -133,5 +131,3 @@ int main(int argc, char *argv[])
    return 0;
 #endif
 }
-
-#endif
