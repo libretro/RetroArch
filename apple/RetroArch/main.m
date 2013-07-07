@@ -474,10 +474,6 @@ int main(int argc, char *argv[])
 #ifdef OSX
 
 @implementation RetroArch_OSX
-{
-   NSWindow IBOutlet *window;
-}
-
 + (RetroArch_OSX*)get
 {
    return (RetroArch_OSX*)[[NSApplication sharedApplication] delegate];
@@ -486,6 +482,9 @@ int main(int argc, char *argv[])
 - (void)applicationDidFinishLaunching:(NSNotification *)aNotification
 {
    apple_platform = self;
+
+   if (!apple_is_running)
+      [self openDocument:nil];
 
    [window setCollectionBehavior:NSWindowCollectionBehaviorFullScreenPrimary];
 

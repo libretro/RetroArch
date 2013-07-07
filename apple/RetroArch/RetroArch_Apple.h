@@ -67,6 +67,10 @@ void apple_run_core(RAModuleInfo* core, const char* file);
 @end
 
 @interface RetroArch_OSX : NSObject<RetroArch_Platform, NSApplicationDelegate>
+{
+@public
+   NSWindow IBOutlet *window;
+}
 
 + (RetroArch_OSX*)get;
 
