@@ -80,6 +80,11 @@ if __name__ == '__main__':
    with open(sys.argv[2], 'w') as f:
       f.write('#ifndef RGLGEN_DECL_H__\n')
       f.write('#define RGLGEN_DECL_H__\n')
+
+      f.write('#ifdef __cplusplus\n')
+      f.write('extern "C" {\n')
+      f.write('#endif\n')
+
       f.write('#ifdef GL_APIENTRY\n')
       f.write('typedef void (GL_APIENTRY *RGLGENGLDEBUGPROC)(GLenum, GLenum, GLuint, GLenum, GLsizei, const GLchar*, GLvoid*);\n')
       f.write('#else\n')
@@ -92,17 +97,26 @@ if __name__ == '__main__':
       f.write('typedef void (APIENTRY *RGLGENGLDEBUGPROCARB)(GLenum, GLenum, GLuint, GLenum, GLsizei, const GLchar*, GLvoid*);\n')
       f.write('typedef void (APIENTRY *RGLGENGLDEBUGPROC)(GLenum, GLenum, GLuint, GLenum, GLsizei, const GLchar*, GLvoid*);\n')
       f.write('#endif\n')
+
       f.write('#ifndef GL_OES_EGL_image\n')
       f.write('typedef void *GLeglImageOES;\n')
       f.write('#endif\n')
+
       f.write('#if !defined(GL_OES_fixed_point) && !defined(HAVE_OPENGLES2)\n')
       f.write('typedef GLint GLfixed;\n')
       f.write('#endif\n')
+
       dump(f, typedefs)
       dump(f, overrides)
       dump(f, externs)
+
       f.write('struct rglgen_sym_map { const char *sym; void *ptr; };\n')
       f.write('extern const struct rglgen_sym_map rglgen_symbol_map[];\n')
+
+      f.write('#ifdef __cplusplus\n')
+      f.write('}\n')
+      f.write('#endif\n')
+
       f.write('#endif\n')
 
    with open(sys.argv[3], 'w') as f:
