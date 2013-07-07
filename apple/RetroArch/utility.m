@@ -29,6 +29,15 @@ void apple_display_alert(NSString* message, NSString* title)
                                              cancelButtonTitle:@"OK"
                                              otherButtonTitles:nil];
    [alert show];
+#else
+   NSAlert* alert = [NSAlert new];
+   alert.messageText = title ? title : @"RetroArch";
+   alert.informativeText = message;
+   alert.alertStyle = NSInformationalAlertStyle;
+   [alert beginSheetModalForWindow:NSApplication.sharedApplication.mainWindow
+          modalDelegate:nil
+          didEndSelector:nil
+          contextInfo:nil];
 #endif
 }
 

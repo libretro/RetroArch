@@ -128,7 +128,6 @@ void apple_run_core(RAModuleInfo* core, const char* file)
       }
       
       pthread_detach(apple_retro_thread);
-//    [self refreshSystemConfig];
    }
 }
 
@@ -487,7 +486,9 @@ int main(int argc, char *argv[])
 - (void)applicationDidFinishLaunching:(NSNotification *)aNotification
 {
    apple_platform = self;
-   
+
+   [window setCollectionBehavior:NSWindowCollectionBehaviorFullScreenPrimary];
+
    window.backgroundColor = [NSColor blackColor];
    [window.contentView setAutoresizesSubviews:YES];
    
@@ -502,33 +503,45 @@ int main(int argc, char *argv[])
 
 - (BOOL)application:(NSApplication *)theApplication openFile:(NSString *)filename
 {
-   apple_run_core(nil, filename.UTF8String);
+   if (filename)
+      apple_run_core(nil, filename.UTF8String);
    return YES;
 }
 
--(void)application:(NSApplication *)sender openFiles:(NSArray *)filenames
+- (void)application:(NSApplication *)sender openFiles:(NSArray *)filenames
 {
-   if (filenames.count == 1)
+   if (filenames.count == 1 && filenames[0])
       apple_run_core(nil, [filenames[0] UTF8String]);
    else
       apple_display_alert(@"Cannot open multiple files", @"RetroArch");
 }
 
--(void)openDocument:(id)sender
+- (void)openDocument:(id)sender
 {
    NSOpenPanel* panel = [NSOpenPanel openPanel];
-
-   if ([panel runModal] == NSOKButton && panel.URL)
-      apple_run_core(nil, panel.URL.path.UTF8String);
+   [panel beginSheetModalForWindow:window completionHandler:^(NSInteger result)
+   {
+      if (result == NSOKButton && panel.URL)
+         apple_run_core(nil, panel.URL.path.UTF8String);
+   }];
 }
 
 #pragma mark RetroArch_Platform
 - (void)loadingCore:(RAModuleInfo*)core withFile:(const char*)file
 {
+   if (file)
+      [NSDocumentController.sharedDocumentController noteNewRecentDocumentURL:[NSURL fileURLWithPath:[NSString stringWithUTF8String:file]]];
 }
 
 - (void)unloadingCore:(RAModuleInfo*)core
 {
+}
+
+#pragma mark Menus
+- (IBAction)basicEvent:(id)sender
+{
+   if (apple_is_running)
+      apple_frontend_post_event(&event_basic_command, (void*)((NSMenuItem*)sender).tag);
 }
 
 @end

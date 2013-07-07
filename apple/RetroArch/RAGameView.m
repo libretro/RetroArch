@@ -76,6 +76,11 @@ static float g_screen_scale = 1.0f;
    [self.openGLContext flushBuffer];
 }
 
+- (void)bindDrawable
+{
+   glBindFramebuffer(GL_FRAMEBUFFER, 0);
+}
+
 #elif defined(IOS) // < iOS Pause menu and lifecycle
 - (id)init
 {
@@ -191,21 +196,24 @@ bool apple_init_game_view()
 
 void apple_destroy_game_view()
 {
-#ifdef IOS
    dispatch_sync(dispatch_get_main_queue(), ^{
       // Clear the view, otherwise the last frame form this game will be displayed
       // briefly on the next game.
       [g_view bindDrawable];
+      glClearColor(0, 0, 0, 1);
       glClear(GL_COLOR_BUFFER_BIT);
       [g_view display];
    
       glFinish();
-
+      
+#ifdef IOS
       g_view.context = nil;
       [EAGLContext setCurrentContext:nil];
       g_context = nil;
+#endif
    });
    
+#ifdef IOS
    [EAGLContext setCurrentContext:nil];
 #else
    [NSOpenGLContext clearCurrentContext];
