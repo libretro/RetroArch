@@ -712,6 +712,17 @@ static bool environment_cb(unsigned cmd, void *data)
          break;
       }
 
+      case RETRO_ENVIRONMENT_GET_LIBRETRO_PATH:
+      {
+         const char **path = (const char**)data;
+#ifdef HAVE_DYNAMIC
+         *path = g_settings.libretro;
+#else
+         *path = NULL; 
+#endif
+         break;
+      }
+
       default:
          RARCH_LOG("Environ UNSUPPORTED (#%u).\n", cmd);
          return false;

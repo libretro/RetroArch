@@ -480,6 +480,12 @@ enum retro_mod
                                            // If true, the libretro implementation supports calls to retro_load_game() with NULL as argument.
                                            // Used by cores which can run without particular game data.
                                            // This should be called within retro_set_environment() only.
+                                           //
+#define RETRO_ENVIRONMENT_GET_LIBRETRO_PATH 19
+                                           // const char ** --
+                                           // Retrieves the absolute path from where this libretro implementation was loaded.
+                                           // NULL is returned if the libretro was loaded statically (i.e. linked statically to frontend), or if the path cannot be determined.
+                                           // Mostly useful in cooperation with SET_SUPPORT_NO_GAME as assets can be loaded without ugly hacks.
                                           
 
 // Pass this to retro_video_refresh_t if rendering to hardware.
