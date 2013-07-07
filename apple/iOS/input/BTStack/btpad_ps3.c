@@ -18,7 +18,7 @@
 #include <stdlib.h>
 
 #include "boolean.h"
-#include "../../rarch_wrapper.h"
+#include "../../../RetroArch/rarch_wrapper.h"
 
 #include "btdynamic.h"
 #include "btpad.h"

@@ -19,7 +19,6 @@
 
 #include "general.h"
 #include "file.h"
-#import "views.h"
 
 void apple_display_alert(NSString* message, NSString* title)
 {

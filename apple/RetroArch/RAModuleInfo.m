@@ -15,7 +15,6 @@
 
 #import "RetroArch_Apple.h"
 #import "RAModuleInfo.h"
-#import "views.h"
 
 #include "file.h"
 #include "core_info.h"
@@ -26,6 +25,7 @@ static core_info_list_t* coreList;
 @implementation RAModuleInfo
 + (NSArray*)getModules
 {
+#ifdef IOS
    if (!moduleList)
    {
       char pattern[PATH_MAX];
@@ -55,6 +55,7 @@ static core_info_list_t* coreList;
          return [left.displayName caseInsensitiveCompare:right.displayName];
       }];
    }
+#endif
    
    return moduleList;
 }
@@ -68,6 +69,7 @@ static core_info_list_t* coreList;
    return does_core_support_file(self.info, path.UTF8String);
 }
 
+#ifdef IOS
 - (void)createCustomConfig
 {
    if (!self.hasCustomConfig)
@@ -98,8 +100,12 @@ static core_info_list_t* coreList;
 {
    return self.hasCustomConfig ? self.customConfigPath : RAModuleInfo.globalConfigPath;
 }
+#endif
 
 @end
+
+#ifdef IOS
+#import "../iOS/views.h"
 
 // Build a string with a second associated string
 static NSString* build_string_pair(NSString* stringA, NSString* stringB)
@@ -186,3 +192,5 @@ static NSString* build_string_pair(NSString* stringA, NSString* stringB)
 }
 
 @end
+
+#endif

@@ -17,6 +17,7 @@
 #ifndef __RARCH_APPLE_H
 #define __RARCH_APPLE_H
 
+#include <Foundation/Foundation.h>
 #import "RAModuleInfo.h"
 
 void apple_run_core(RAModuleInfo* core, const char* file);
@@ -41,6 +42,15 @@ void apple_run_core(RAModuleInfo* core, const char* file);
 @property (strong, nonatomic) NSString* documentsDirectory; // e.g. /var/mobile/Documents
 @property (strong, nonatomic) NSString* systemDirectory;    // e.g. /var/mobile/Documents/.RetroArch
 @property (strong, nonatomic) NSString* systemConfigPath;   // e.g. /var/mobile/Documents/.RetroArch/frontend.cfg
+
+@end
+
+#elif defined(OSX)
+
+@interface RetroArch_OSX : NSObject<RetroArch_Platform>
+
+- (void)loadingCore:(RAModuleInfo*)core withFile:(const char*)file;
+- (void)unloadingCore:(RAModuleInfo*)core;
 
 @end
 

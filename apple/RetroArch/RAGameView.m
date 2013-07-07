@@ -13,10 +13,15 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#ifdef IOS
+
 #import "RetroArch_Apple.h"
 #import "views.h"
 #include "rarch_wrapper.h"
-#include "input/ios_input.h"
+
+#ifdef IOS
+#include "../iOS/input/ios_input.h"
+#endif
 
 #include "general.h"
 
@@ -202,3 +207,5 @@ void apple_bind_game_view_fbo(void)
    });
 }
 
+
+#endif

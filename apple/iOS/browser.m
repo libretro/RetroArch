@@ -16,7 +16,7 @@
 #include <dirent.h>
 #include <sys/stat.h>
 
-#import "../RetroArch_Apple.h"
+#import "../RetroArch/RetroArch_Apple.h"
 #import "views.h"
 
 #include "conf/config_file.h"

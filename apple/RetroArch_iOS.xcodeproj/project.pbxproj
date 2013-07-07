@@ -13,9 +13,6 @@
 		96297A0F16C5AEA100E6DCE0 /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 96297A0E16C5AEA100E6DCE0 /* main.m */; };
 		96297A2716C82FF100E6DCE0 /* overlays in Resources */ = {isa = PBXBuildFile; fileRef = 96297A2616C82FF100E6DCE0 /* overlays */; };
 		96337E82176AC6E5004685F3 /* utility.m in Sources */ = {isa = PBXBuildFile; fileRef = 96337E81176AC6E5004685F3 /* utility.m */; };
-		96355CCE1788C90B0010DBFA /* browser.m in Sources */ = {isa = PBXBuildFile; fileRef = 96355CCA1788C90B0010DBFA /* browser.m */; };
-		96355CCF1788C90B0010DBFA /* RALogView.m in Sources */ = {isa = PBXBuildFile; fileRef = 96355CCB1788C90B0010DBFA /* RALogView.m */; };
-		96355CD01788C90B0010DBFA /* settings.m in Sources */ = {isa = PBXBuildFile; fileRef = 96355CCC1788C90B0010DBFA /* settings.m */; };
 		96366C5516C9AC3300D64A22 /* CoreAudio.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 96366C5416C9AC3300D64A22 /* CoreAudio.framework */; };
 		96366C5916C9ACF500D64A22 /* AudioToolbox.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 96366C5816C9ACF500D64A22 /* AudioToolbox.framework */; };
 		963F5AC816CC523B009BBD19 /* RAGameView.m in Sources */ = {isa = PBXBuildFile; fileRef = 963F5AC516CC523B009BBD19 /* RAGameView.m */; };
@@ -26,6 +23,10 @@
 		966B9CC516E41E7A005B61E1 /* Icon.png in Resources */ = {isa = PBXBuildFile; fileRef = 966B9CBC16E41E7A005B61E1 /* Icon.png */; };
 		966B9CC916E41EC1005B61E1 /* PauseView.xib in Resources */ = {isa = PBXBuildFile; fileRef = 966B9CC716E41EC1005B61E1 /* PauseView.xib */; };
 		966B9CCB16E41EC1005B61E1 /* PauseIndicatorView.xib in Resources */ = {isa = PBXBuildFile; fileRef = 966B9CC816E41EC1005B61E1 /* PauseIndicatorView.xib */; };
+		9678945B1788EAAE00D6CA69 /* browser.m in Sources */ = {isa = PBXBuildFile; fileRef = 967894571788EAAE00D6CA69 /* browser.m */; };
+		9678945C1788EAAE00D6CA69 /* RALogView.m in Sources */ = {isa = PBXBuildFile; fileRef = 967894581788EAAE00D6CA69 /* RALogView.m */; };
+		9678945D1788EAAE00D6CA69 /* settings.m in Sources */ = {isa = PBXBuildFile; fileRef = 967894591788EAAE00D6CA69 /* settings.m */; };
+		967894631788EBD800D6CA69 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 967894611788EBD800D6CA69 /* InfoPlist.strings */; };
 		967D646F16E45428006BA1F2 /* ic_pause.png in Resources */ = {isa = PBXBuildFile; fileRef = 967D646E16E45428006BA1F2 /* ic_pause.png */; };
 		967D647516E6EA04006BA1F2 /* modules in Resources */ = {isa = PBXBuildFile; fileRef = 967D647416E6EA04006BA1F2 /* modules */; };
 		96AFAE2A16C1D4EA009DE44C /* UIKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 96AFAE2916C1D4EA009DE44C /* UIKit.framework */; };
@@ -33,24 +34,17 @@
 		96AFAE2E16C1D4EA009DE44C /* CoreGraphics.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 96AFAE2D16C1D4EA009DE44C /* CoreGraphics.framework */; };
 		96AFAE3016C1D4EA009DE44C /* GLKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 96AFAE2F16C1D4EA009DE44C /* GLKit.framework */; };
 		96AFAE3216C1D4EA009DE44C /* OpenGLES.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 96AFAE3116C1D4EA009DE44C /* OpenGLES.framework */; };
-		96AFAE3816C1D4EA009DE44C /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 96AFAE3616C1D4EA009DE44C /* InfoPlist.strings */; };
 		D48581DE16F823F9004BEB17 /* griffin.c in Sources */ = {isa = PBXBuildFile; fileRef = D48581DD16F823F9004BEB17 /* griffin.c */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		9605EA99170288EA001D47B0 /* RAModuleInfo.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = RAModuleInfo.h; sourceTree = "<group>"; };
 		9605EA9A170288EA001D47B0 /* RAModuleInfo.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = RAModuleInfo.m; sourceTree = "<group>"; };
-		9614C71F16DDC018000B36EF /* RetroArch copy-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = "RetroArch copy-Info.plist"; path = "/Users/jason/Documents/Projects/ios/RetroArch/ios/RetroArch copy-Info.plist"; sourceTree = "<absolute>"; };
 		962979F416C43B9500E6DCE0 /* ic_dir.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = ic_dir.png; path = "../../android/phoenix/res/drawable-xhdpi/ic_dir.png"; sourceTree = "<group>"; };
 		962979F516C43B9500E6DCE0 /* ic_file.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = ic_file.png; path = "../../android/phoenix/res/drawable-xhdpi/ic_file.png"; sourceTree = "<group>"; };
 		96297A0E16C5AEA100E6DCE0 /* main.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
 		96297A2616C82FF100E6DCE0 /* overlays */ = {isa = PBXFileReference; lastKnownFileType = folder; name = overlays; path = ../../media/overlays; sourceTree = "<group>"; };
 		96337E81176AC6E5004685F3 /* utility.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = utility.m; sourceTree = "<group>"; };
-		96355CC81788C8FC0010DBFA /* RAGameView.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = RAGameView.h; sourceTree = "<group>"; };
-		96355CCA1788C90B0010DBFA /* browser.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = browser.m; sourceTree = "<group>"; };
-		96355CCB1788C90B0010DBFA /* RALogView.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = RALogView.m; sourceTree = "<group>"; };
-		96355CCC1788C90B0010DBFA /* settings.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = settings.m; sourceTree = "<group>"; };
-		96355CCD1788C90B0010DBFA /* views.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = views.h; sourceTree = "<group>"; };
 		96355CD11788CF190010DBFA /* RetroArch_Apple.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = RetroArch_Apple.h; sourceTree = "<group>"; };
 		96366C5416C9AC3300D64A22 /* CoreAudio.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreAudio.framework; path = System/Library/Frameworks/CoreAudio.framework; sourceTree = SDKROOT; };
 		96366C5816C9ACF500D64A22 /* AudioToolbox.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AudioToolbox.framework; path = System/Library/Frameworks/AudioToolbox.framework; sourceTree = SDKROOT; };
@@ -62,6 +56,12 @@
 		966B9CBC16E41E7A005B61E1 /* Icon.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = Icon.png; sourceTree = "<group>"; };
 		966B9CC716E41EC1005B61E1 /* PauseView.xib */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.xib; path = PauseView.xib; sourceTree = "<group>"; };
 		966B9CC816E41EC1005B61E1 /* PauseIndicatorView.xib */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.xib; path = PauseIndicatorView.xib; sourceTree = "<group>"; };
+		967894571788EAAE00D6CA69 /* browser.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = browser.m; path = iOS/browser.m; sourceTree = SOURCE_ROOT; };
+		967894581788EAAE00D6CA69 /* RALogView.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = RALogView.m; path = iOS/RALogView.m; sourceTree = SOURCE_ROOT; };
+		967894591788EAAE00D6CA69 /* settings.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = settings.m; path = iOS/settings.m; sourceTree = SOURCE_ROOT; };
+		9678945A1788EAAE00D6CA69 /* views.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = views.h; path = iOS/views.h; sourceTree = SOURCE_ROOT; };
+		9678945F1788EBD000D6CA69 /* RetroArch-Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = "RetroArch-Info.plist"; path = "iOS/RetroArch-Info.plist"; sourceTree = SOURCE_ROOT; };
+		967894621788EBD800D6CA69 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = iOS/en.lproj/InfoPlist.strings; sourceTree = SOURCE_ROOT; };
 		967D646E16E45428006BA1F2 /* ic_pause.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = ic_pause.png; sourceTree = "<group>"; };
 		967D647416E6EA04006BA1F2 /* modules */ = {isa = PBXFileReference; lastKnownFileType = folder; path = modules; sourceTree = SOURCE_ROOT; };
 		96AFAE2516C1D4EA009DE44C /* RetroArch.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RetroArch.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -70,9 +70,6 @@
 		96AFAE2D16C1D4EA009DE44C /* CoreGraphics.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreGraphics.framework; path = System/Library/Frameworks/CoreGraphics.framework; sourceTree = SDKROOT; };
 		96AFAE2F16C1D4EA009DE44C /* GLKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = GLKit.framework; path = System/Library/Frameworks/GLKit.framework; sourceTree = SDKROOT; };
 		96AFAE3116C1D4EA009DE44C /* OpenGLES.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = OpenGLES.framework; path = System/Library/Frameworks/OpenGLES.framework; sourceTree = SDKROOT; };
-		96AFAE3516C1D4EA009DE44C /* RetroArch-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "RetroArch-Info.plist"; sourceTree = "<group>"; };
-		96AFAE3716C1D4EA009DE44C /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/InfoPlist.strings; sourceTree = "<group>"; };
-		96AFAE3B16C1D4EA009DE44C /* RetroArch-Prefix.pch */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "RetroArch-Prefix.pch"; sourceTree = "<group>"; };
 		96AFAEF816C1DC73009DE44C /* sinc_neon.S */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.asm; path = sinc_neon.S; sourceTree = "<group>"; };
 		96AFAEFF16C1DC73009DE44C /* utils_neon.S */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.asm; path = utils_neon.S; sourceTree = "<group>"; };
 		96AFAF4516C1E00A009DE44C /* bitmap.bin */ = {isa = PBXFileReference; lastKnownFileType = archive.macbinary; path = bitmap.bin; sourceTree = "<group>"; };
@@ -99,17 +96,6 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
-		96355CC91788C90B0010DBFA /* iOS */ = {
-			isa = PBXGroup;
-			children = (
-				96355CCA1788C90B0010DBFA /* browser.m */,
-				96355CCB1788C90B0010DBFA /* RALogView.m */,
-				96355CCC1788C90B0010DBFA /* settings.m */,
-				96355CCD1788C90B0010DBFA /* views.h */,
-			);
-			path = iOS;
-			sourceTree = "<group>";
-		};
 		966B9CB716E41E7A005B61E1 /* Assets */ = {
 			isa = PBXGroup;
 			children = (
@@ -166,10 +152,12 @@
 		96AFAE3316C1D4EA009DE44C /* RetroArch */ = {
 			isa = PBXGroup;
 			children = (
-				96355CC91788C90B0010DBFA /* iOS */,
+				967894571788EAAE00D6CA69 /* browser.m */,
+				967894581788EAAE00D6CA69 /* RALogView.m */,
+				967894591788EAAE00D6CA69 /* settings.m */,
+				9678945A1788EAAE00D6CA69 /* views.h */,
 				96297A0E16C5AEA100E6DCE0 /* main.m */,
 				963F5AC516CC523B009BBD19 /* RAGameView.m */,
-				96355CC81788C8FC0010DBFA /* RAGameView.h */,
 				9605EA9A170288EA001D47B0 /* RAModuleInfo.m */,
 				9605EA99170288EA001D47B0 /* RAModuleInfo.h */,
 				96C19C2616D455BE00FE8D5A /* rarch_wrapper.h */,
@@ -182,10 +170,8 @@
 		96AFAE3416C1D4EA009DE44C /* Supporting Files */ = {
 			isa = PBXGroup;
 			children = (
-				9614C71F16DDC018000B36EF /* RetroArch copy-Info.plist */,
-				96AFAE3616C1D4EA009DE44C /* InfoPlist.strings */,
-				96AFAE3516C1D4EA009DE44C /* RetroArch-Info.plist */,
-				96AFAE3B16C1D4EA009DE44C /* RetroArch-Prefix.pch */,
+				967894611788EBD800D6CA69 /* InfoPlist.strings */,
+				9678945F1788EBD000D6CA69 /* RetroArch-Info.plist */,
 			);
 			name = "Supporting Files";
 			path = RetroArch;
@@ -266,7 +252,7 @@
 				LastUpgradeCheck = 0450;
 				ORGANIZATIONNAME = RetroArch;
 			};
-			buildConfigurationList = 96AFAE1F16C1D4EA009DE44C /* Build configuration list for PBXProject "RetroArch" */;
+			buildConfigurationList = 96AFAE1F16C1D4EA009DE44C /* Build configuration list for PBXProject "RetroArch_iOS" */;
 			compatibilityVersion = "Xcode 3.2";
 			developmentRegion = English;
 			hasScannedForEncodings = 0;
@@ -289,7 +275,6 @@
 			buildActionMask = 2147483647;
 			files = (
 				96297A2716C82FF100E6DCE0 /* overlays in Resources */,
-				96AFAE3816C1D4EA009DE44C /* InfoPlist.strings in Resources */,
 				962979F616C43B9500E6DCE0 /* ic_dir.png in Resources */,
 				962979F716C43B9500E6DCE0 /* ic_file.png in Resources */,
 				966B9CBD16E41E7A005B61E1 /* Default-568h@2x.png in Resources */,
@@ -301,6 +286,7 @@
 				966B9CCB16E41EC1005B61E1 /* PauseIndicatorView.xib in Resources */,
 				967D646F16E45428006BA1F2 /* ic_pause.png in Resources */,
 				967D647516E6EA04006BA1F2 /* modules in Resources */,
+				967894631788EBD800D6CA69 /* InfoPlist.strings in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -316,19 +302,19 @@
 				D48581DE16F823F9004BEB17 /* griffin.c in Sources */,
 				9605EA9B170288EA001D47B0 /* RAModuleInfo.m in Sources */,
 				96337E82176AC6E5004685F3 /* utility.m in Sources */,
-				96355CCE1788C90B0010DBFA /* browser.m in Sources */,
-				96355CCF1788C90B0010DBFA /* RALogView.m in Sources */,
-				96355CD01788C90B0010DBFA /* settings.m in Sources */,
+				9678945B1788EAAE00D6CA69 /* browser.m in Sources */,
+				9678945C1788EAAE00D6CA69 /* RALogView.m in Sources */,
+				9678945D1788EAAE00D6CA69 /* settings.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXVariantGroup section */
-		96AFAE3616C1D4EA009DE44C /* InfoPlist.strings */ = {
+		967894611788EBD800D6CA69 /* InfoPlist.strings */ = {
 			isa = PBXVariantGroup;
 			children = (
-				96AFAE3716C1D4EA009DE44C /* en */,
+				967894621788EBD800D6CA69 /* en */,
 			);
 			name = InfoPlist.strings;
 			sourceTree = "<group>";
@@ -452,15 +438,10 @@
 				CODE_SIGN_RESOURCE_RULES_PATH = "$(SDKROOT)/ResourceRules.plist";
 				GCC_PRECOMPILE_PREFIX_HEADER = NO;
 				GCC_PREFIX_HEADER = "";
-				INFOPLIST_FILE = "RetroArch/RetroArch-Info.plist";
+				INFOPLIST_FILE = "$(SRCROOT)/iOS/RetroArch-Info.plist";
 				IPHONEOS_DEPLOYMENT_TARGET = 5.0;
 				LD_NO_PIE = YES;
-				LIBRARY_SEARCH_PATHS = (
-					"$(inherited)",
-					"\"$(SRCROOT)\"",
-					"\"$(SRCROOT)/RetroArch/input/BTStack\"",
-					"\"$(SRCROOT)/Assets\"",
-				);
+				LIBRARY_SEARCH_PATHS = "";
 				OTHER_CFLAGS = (
 					"-DHAVE_RARCH_MAIN_WRAP",
 					"-DHAVE_GRIFFIN",
@@ -499,15 +480,10 @@
 				CODE_SIGN_RESOURCE_RULES_PATH = "$(SDKROOT)/ResourceRules.plist";
 				GCC_PRECOMPILE_PREFIX_HEADER = NO;
 				GCC_PREFIX_HEADER = "";
-				INFOPLIST_FILE = "RetroArch/RetroArch-Info.plist";
+				INFOPLIST_FILE = "$(SRCROOT)/iOS/RetroArch-Info.plist";
 				IPHONEOS_DEPLOYMENT_TARGET = 5.0;
 				LD_NO_PIE = YES;
-				LIBRARY_SEARCH_PATHS = (
-					"$(inherited)",
-					"\"$(SRCROOT)\"",
-					"\"$(SRCROOT)/RetroArch/input/BTStack\"",
-					"\"$(SRCROOT)/Assets\"",
-				);
+				LIBRARY_SEARCH_PATHS = "";
 				OTHER_CFLAGS = (
 					"-DNS_BLOCK_ASSERTIONS=1",
 					"-DNDEBUG",
@@ -544,7 +520,7 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		96AFAE1F16C1D4EA009DE44C /* Build configuration list for PBXProject "RetroArch" */ = {
+		96AFAE1F16C1D4EA009DE44C /* Build configuration list for PBXProject "RetroArch_iOS" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				96AFAE5216C1D4EA009DE44C /* Debug */,

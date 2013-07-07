@@ -16,6 +16,7 @@
 #ifndef _RA_MODULE_INFO_H
 #define _RA_MODULE_INFO_H
 
+#import <Foundation/Foundation.h>
 #include "compat/apple_compat.h"
 
 #include "conf/config_file.h"

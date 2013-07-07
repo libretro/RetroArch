@@ -20,7 +20,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "../../rarch_wrapper.h"
+#include "../../../RetroArch/rarch_wrapper.h"
 #include "btdynamic.h"
 #include "btpad.h"
 #include "btpad_queue.h"

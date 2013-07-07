@@ -17,7 +17,7 @@
 #include <dlfcn.h>
 #include <CoreFoundation/CFRunLoop.h>
 
-#include "../../rarch_wrapper.h"
+#include "../../../RetroArch/rarch_wrapper.h"
 
 #define BUILDING_BTDYNAMIC
 #include "btdynamic.h"

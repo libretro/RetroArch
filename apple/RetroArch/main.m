@@ -17,20 +17,27 @@
 #include <string.h>
 
 #import "RetroArch_Apple.h"
-#import "views.h"
 #include "rarch_wrapper.h"
 
-#include "input/ios_input.h"
-#include "input/keycode.h"
-#include "input/BTStack/btpad.h"
-#include "input/BTStack/btdynamic.h"
-#include "input/BTStack/btpad.h"
+#ifdef IOS
+#import "views.h"
+#include "../iOS/input/ios_input.h"
+#include "../iOS/input/keycode.h"
+#include "../iOS/input/BTStack/btpad.h"
+#include "../iOS/input/BTStack/btdynamic.h"
+#include "../iOS/input/BTStack/btpad.h"
+#endif
 
 #include "file.h"
 
 //#define HAVE_DEBUG_FILELOG
 static bool use_tv_mode;
+
+#ifdef IOS
 static RetroArch_iOS* apple_platform;
+#else
+static RetroArch_OSX* apple_platform;
+#endif
 
 
 // From frontend/frontend_ios.c
@@ -468,11 +475,25 @@ int main(int argc, char *argv[])
 #pragma mark OSX
 #ifdef OSX
 
-@implementation AppDelegate
+@implementation RetroArch_OSX
 
-- (BOOL)applicationShouldTerminateAfterLastWindowClosed:(NSApplication *)theApplication
++ (RetroArch_OSX*)get
 {
-   return YES;
+   return nil;
+}
+
+- (void)applicationDidFinishLaunching:(NSNotification *)aNotification
+{
+   apple_platform = self;
+}
+
+#pragma mark RetroArch_Platform
+- (void)loadingCore:(RAModuleInfo*)core withFile:(const char*)file
+{
+}
+
+- (void)unloadingCore:(RAModuleInfo*)core
+{
 }
 
 @end
