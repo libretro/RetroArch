@@ -85,6 +85,7 @@ static bool apple_is_paused;
 static bool apple_is_running;
 static RAModuleInfo* apple_core;
 
+// HACK: This needs to be cleaned
 void apple_run_core(RAModuleInfo* core, const char* file)
 {
    if (!apple_is_running)
@@ -102,9 +103,14 @@ void apple_run_core(RAModuleInfo* core, const char* file)
       load_data->state_path = strdup(RetroArch_iOS.get.systemDirectory.UTF8String);
 #endif
 
+#ifdef IOS
       if (file && core)
       {
+         load_data->libretro_path = strdup(apple_core.path.UTF8String);
+#else
+      {
          load_data->libretro_path = strdup("/Users/jason/Desktop/libretro.dylib");
+#endif
          load_data->rom_path = strdup(file);
 #ifdef IOS
          load_data->config_path = strdup(apple_core.configPath.UTF8String);
@@ -487,6 +493,33 @@ int main(int argc, char *argv[])
    
    RAGameView.get.frame = [window.contentView bounds];
    [window.contentView addSubview:RAGameView.get];   
+}
+
+- (BOOL)applicationShouldTerminateAfterLastWindowClosed:(NSApplication *)theApplication
+{
+   return YES;
+}
+
+- (BOOL)application:(NSApplication *)theApplication openFile:(NSString *)filename
+{
+   apple_run_core(nil, filename.UTF8String);
+   return YES;
+}
+
+-(void)application:(NSApplication *)sender openFiles:(NSArray *)filenames
+{
+   if (filenames.count == 1)
+      apple_run_core(nil, [filenames[0] UTF8String]);
+   else
+      apple_display_alert(@"Cannot open multiple files", @"RetroArch");
+}
+
+-(void)openDocument:(id)sender
+{
+   NSOpenPanel* panel = [NSOpenPanel openPanel];
+
+   if ([panel runModal] == NSOKButton && panel.URL)
+      apple_run_core(nil, panel.URL.path.UTF8String);
 }
 
 #pragma mark RetroArch_Platform
