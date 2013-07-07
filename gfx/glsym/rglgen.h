@@ -34,6 +34,10 @@
 #include <GL/glext.h>
 #endif
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 struct rglgen_sym_map;
 
 typedef void (*rglgen_func_t)(void);
@@ -42,6 +46,9 @@ void rglgen_resolve_symbols(rglgen_proc_address_t proc);
 void rglgen_resolve_symbols_custom(rglgen_proc_address_t proc,
       const struct rglgen_sym_map *map);
 
+#ifdef __cplusplus
+}
+#endif
 
 #endif
 
