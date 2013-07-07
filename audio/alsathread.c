@@ -17,11 +17,7 @@
 
 #include "../driver.h"
 #include <stdlib.h>
-#ifdef PANDORA
 #include <alsa/asoundlib.h>
-#else
-#include <asoundlib.h>
-#endif
 #include "../general.h"
 #include "../thread.h"
 #include "../fifo_buffer.h"
