@@ -109,16 +109,26 @@ VIDEO CONTEXT
 #include "../gfx/context/bbqnx_ctx.c"
 #elif defined(IOS)
 #include "../gfx/context/ioseagl_ctx.c"
-#elif defined(GEKKO)
-// none
-#else
-#include "../gfx/context/null_ctx.c"
 #endif
+
+#if defined(HAVE_OPENGL)
+
+#if defined(HAVE_VIDEOCORE)
+#include "../gfx/context/vc_egl_ctx.c"
+#endif
+#if defined(HAVE_X11) && defined(HAVE_OPENGLES)
+#include "../gfx/context/glx_ctx.c"
+#endif
+#if defined(HAVE_EGL)
+#include "../gfx/context/xegl_ctx.c"
+#endif
+
+#endif
+
 
 /*============================================================
 VIDEO SHADERS
 ============================================================ */
-
 #if defined(HAVE_CG) || defined(HAVE_HLSL) || defined(HAVE_GLSL)
 #include "../gfx/shader_parse.c"
 #endif
@@ -164,6 +174,11 @@ VIDEO DRIVER
 #endif
 #endif
 
+#ifdef HAVE_VG
+#include "../gfx/vg.c"
+#include "../gfx/math/matrix_3x3.c"
+#endif
+
 #ifdef HAVE_DYLIB
 #include "../gfx/ext_gfx.c"
 #endif
@@ -176,6 +191,10 @@ VIDEO DRIVER
 
 #ifdef HAVE_OPENGL
 #include "../gfx/gl.c"
+#endif
+
+#ifdef HAVE_XVIDEO
+#include "../gfx/xvideo.c"
 #endif
 
 #ifdef _XBOX
