@@ -28,6 +28,11 @@ Page
                 value: 3
             }
         ]
+        
+        onSelectedValueChanged: 
+        {
+            ButtonMap.refreshButtonMap(selectedValue)
+        }
     }
     
     actions: [
@@ -36,7 +41,7 @@ Page
             ActionBar.placement: ActionBarPlacement.OnBar
             imageSource: "asset:///images/search.png"
             onTriggered: {
-                RetroArch.discoverController();
+                RetroArch.discoverController(players.selectedValue);
             }
         }
     ]
@@ -52,13 +57,18 @@ Page
             {
                 objectName: "dropdown_devices"
                 title: "Device"
+                
+                onSelectedValueChanged:
+                {
+                    ButtonMap.mapDevice(selectedValue, players.selectedValue);
+                }
             }
 
             ListView
             {
                 id: buttonMapList
                 objectName: "buttonMapList"
-    
+
                 listItemComponents: [
                     ListItemComponent
                     {
@@ -109,14 +119,13 @@ Page
                         }
                     }
                 ]
-    
-                //TODO: Map specific devices instead of 0.
+
                 onTriggered:
                 {
                     var sym, data;
                     data = dataModel.data(indexPath);
-                    sym = RetroArch.mapButton(0, players.selectedValue, data["index"]);
-                    data["button"] = RetroArch.buttonToString(0, sym);
+                    sym = ButtonMap.mapButton(0, players.selectedValue, data["index"]);
+                    data["button"] = ButtonMap.buttonToString(players.selectedValue, sym);
                     dataModel.replace(indexPath, data);
                 }
     

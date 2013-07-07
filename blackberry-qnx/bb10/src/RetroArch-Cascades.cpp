@@ -95,9 +95,10 @@ RetroArch::RetroArch()
          screen_create_context(&screen_ctx, 0);
          input_qnx.init();
          buttonMap = new ButtonMap(screen_ctx, (const char*)Application::instance()->mainWindow()->groupId().toAscii().constData(), coid);
+         qml->setContextProperty("ButtonMap", buttonMap);
 
          deviceSelection = mAppPane->findChild<DropDown*>("dropdown_devices");
-         connect(deviceSelection, SIGNAL(selectedValueChanged(QVariant)), this, SLOT(onDeviceSelected(QVariant)));
+         //connect(deviceSelection, SIGNAL(selectedValueChanged(QVariant)), this, SLOT(onDeviceSelected(QVariant)));
          findDevices();
 
          //Setup the datamodel for button mapping.
@@ -257,13 +258,6 @@ void RetroArch::onCoreSelected(QVariant value)
    qDebug() << "Supported Extensions: " << romExtensions;
 }
 
-void RetroArch::onDeviceSelected(QVariant value)
-{
-   //Change the binds for current player to device[value]
-   //TODO: Don't hardcode player 0
-   buttonMap->mapDevice(value.toInt(), 0);
-}
-
 /*
  * Functions
  */
@@ -327,6 +321,16 @@ void RetroArch::findDevices()
    }
 }
 
+extern "C" void discoverControllers();
+void RetroArch::discoverController(int player)
+{
+   //TODO: Check device, gamepad/keyboard and return accordingly.
+   discoverControllers();
+   findDevices();
+   buttonMap->refreshButtonMap(player);
+   return;
+}
+
 void RetroArch::initRASettings()
 {
    strlcpy(g_settings.libretro,(char *)core.toAscii().constData(), sizeof(g_settings.libretro));
@@ -338,29 +342,4 @@ void RetroArch::initRASettings()
    //TODO: Should there be a minimized/quick settings only overlay?
    if(hwInfo->isPhysicalKeyboardDevice() || port_device[0])
       *g_settings.input.overlay = '\0';
-}
-
-int RetroArch::mapButton(void* deviceVp, int player, int button)
-{
-   screen_device_t device = (screen_device_t)deviceVp;
-   return buttonMap->requestButtonMapping(device, player, button);
-}
-
-QString RetroArch::buttonToString(void* deviceVp, int button)
-{
-   //TODO: Check deviceVp, gamepad/keyboard and return accordingly.
-   if(g_settings.input.device[0] == DEVICE_KEYPAD || g_settings.input.device[0] == DEVICE_KEYBOARD)
-      return QString(button);
-   else
-      return buttonMap->buttonToString(button);
-}
-
-extern "C" void discoverControllers();
-void RetroArch::discoverController()
-{
-   //TODO: Check device, gamepad/keyboard and return accordingly.
-   discoverControllers();
-   findDevices();
-   buttonMap->refreshButtonMap();
-   return;
 }

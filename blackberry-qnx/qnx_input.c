@@ -131,6 +131,8 @@ void discoverControllers()
 {
    // Get an array of all available devices.
    int deviceCount;
+   screen_event_t *event;
+
    screen_get_context_property_iv(screen_ctx, SCREEN_PROPERTY_DEVICE_COUNT, &deviceCount);
    screen_device_t* devices_found = (screen_device_t*)calloc(deviceCount, sizeof(screen_device_t));
    screen_get_context_property_pv(screen_ctx, SCREEN_PROPERTY_DEVICES, (void**)devices_found);
@@ -730,10 +732,10 @@ static void qnx_input_set_keybinds(void *data, unsigned device, unsigned port,
             g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_X].def_joykey      = KEYCODE_K & 0xFF;
             g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_L].def_joykey      = KEYCODE_U & 0xFF;
             g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_R].def_joykey      = KEYCODE_I & 0xFF;
-            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_L2].def_joykey     = 0;
-            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_R2].def_joykey     = 0;
-            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_L3].def_joykey     = 0;
-            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_R3].def_joykey     = 0;
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_L2].def_joykey     = NO_BTN;
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_R2].def_joykey     = NO_BTN;
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_L3].def_joykey     = NO_BTN;
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_R3].def_joykey     = NO_BTN;
             g_settings.input.binds[port][RARCH_MENU_TOGGLE].def_joykey             = KEYCODE_P & 0xFF;
             g_settings.input.dpad_emulation[port] = ANALOG_DPAD_NONE;
             controller->port = port;
@@ -756,10 +758,10 @@ static void qnx_input_set_keybinds(void *data, unsigned device, unsigned port,
             g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_X].def_joykey      = KEYCODE_S & 0xFF;
             g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_L].def_joykey      = KEYCODE_Q & 0xFF;
             g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_R].def_joykey      = KEYCODE_W & 0xFF;
-            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_L2].def_joykey     = 0;
-            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_R2].def_joykey     = 0;
-            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_L3].def_joykey     = 0;
-            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_R3].def_joykey     = 0;
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_L2].def_joykey     = NO_BTN;
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_R2].def_joykey     = NO_BTN;
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_L3].def_joykey     = NO_BTN;
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_R3].def_joykey     = NO_BTN;
             g_settings.input.binds[port][RARCH_MENU_TOGGLE].def_joykey             = KEYCODE_TILDE;
             g_settings.input.dpad_emulation[port] = ANALOG_DPAD_NONE;
             controller->port = port;
@@ -811,7 +813,7 @@ static void qnx_input_set_keybinds(void *data, unsigned device, unsigned port,
             g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_R2].def_joykey     = SCREEN_R2_GAME_BUTTON;
             g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_L3].def_joykey     = SCREEN_L3_GAME_BUTTON;
             g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_R3].def_joykey     = SCREEN_R3_GAME_BUTTON;
-            g_settings.input.binds[port][RARCH_MENU_TOGGLE].def_joykey             = 0; //TODO: Find a good mappnig
+            g_settings.input.binds[port][RARCH_MENU_TOGGLE].def_joykey             = NO_BTN; //TODO: Find a good mappnig
             g_settings.input.dpad_emulation[port] = ANALOG_DPAD_NONE;
             controller->port = port;
             port_device[port] = controller;
@@ -821,23 +823,23 @@ static void qnx_input_set_keybinds(void *data, unsigned device, unsigned port,
             strlcpy(g_settings.input.device_names[port], "None",
                sizeof(g_settings.input.device_names[port]));
             g_settings.input.device[port] = device;
-            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_B].def_joykey      = 0;
-            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_Y].def_joykey      = 0;
-            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_SELECT].def_joykey = 0;
-            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_START].def_joykey  = 0;
-            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_UP].def_joykey     = 0;
-            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_DOWN].def_joykey   = 0;
-            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_LEFT].def_joykey   = 0;
-            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_RIGHT].def_joykey  = 0;
-            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_A].def_joykey      = 0;
-            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_X].def_joykey      = 0;
-            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_L].def_joykey      = 0;
-            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_R].def_joykey      = 0;
-            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_L2].def_joykey     = 0;
-            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_R2].def_joykey     = 0;
-            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_L3].def_joykey     = 0;
-            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_R3].def_joykey     = 0;
-            g_settings.input.binds[port][RARCH_MENU_TOGGLE].def_joykey     = 0;
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_B].def_joykey      = NO_BTN;
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_Y].def_joykey      = NO_BTN;
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_SELECT].def_joykey = NO_BTN;
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_START].def_joykey  = NO_BTN;
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_UP].def_joykey     = NO_BTN;
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_DOWN].def_joykey   = NO_BTN;
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_LEFT].def_joykey   = NO_BTN;
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_RIGHT].def_joykey  = NO_BTN;
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_A].def_joykey      = NO_BTN;
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_X].def_joykey      = NO_BTN;
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_L].def_joykey      = NO_BTN;
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_R].def_joykey      = NO_BTN;
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_L2].def_joykey     = NO_BTN;
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_R2].def_joykey     = NO_BTN;
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_L3].def_joykey     = NO_BTN;
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_R3].def_joykey     = NO_BTN;
+            g_settings.input.binds[port][RARCH_MENU_TOGGLE].def_joykey     = NO_BTN;
             controller->port = -1;
             port_device[port] = 0;
             break;
