@@ -113,6 +113,9 @@ VIDEO CONTEXT
 
 #if defined(HAVE_OPENGL)
 
+#if defined(HAVE_KMS)
+#include "../gfx/context/drm_egl_ctx.c"
+#endif
 #if defined(HAVE_VIDEOCORE)
 #include "../gfx/context/vc_egl_ctx.c"
 #endif
@@ -123,6 +126,10 @@ VIDEO CONTEXT
 #include "../gfx/context/xegl_ctx.c"
 #endif
 
+#endif
+
+#ifdef HAVE_X11
+#include "../gfx/context/x11_common.c"
 #endif
 
 
@@ -294,6 +301,10 @@ INPUT
 #include "../input/linuxraw_joypad.c"
 #endif
 
+#ifdef HAVE_X11
+#include "../input/x11_input.c"
+#endif
+
 #if defined(HAVE_NULLINPUT)
 #include "../input/null.c"
 #endif
@@ -307,6 +318,10 @@ STATE TRACKER
 
 #ifndef DONT_HAVE_STATE_TRACKER
 #include "../gfx/state_tracker.c"
+#endif
+
+#ifdef HAVE_PYTHON
+#include "../gfx/py_state/py_state.c"
 #endif
 
 /*============================================================
