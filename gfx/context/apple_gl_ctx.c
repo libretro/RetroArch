@@ -93,7 +93,7 @@ static void gfx_ctx_input_driver(const input_driver_t **input, void **input_data
 
 // The apple_* functions are implemented in apple/RetroArch/RAGameView.m
 
-const gfx_ctx_driver_t gfx_ctx_ios = {
+const gfx_ctx_driver_t gfx_ctx_apple = {
    apple_init_game_view,
    apple_destroy_game_view,
    gfx_ctx_bind_api,
