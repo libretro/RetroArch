@@ -107,18 +107,35 @@ VIDEO CONTEXT
 #include "../gfx/context/androidegl_ctx.c"
 #elif defined(__BLACKBERRY_QNX__)
 #include "../gfx/context/bbqnx_ctx.c"
-#elif defined(IOS) || defined(OSX) //< Don't use __APPLE__ as it breaks basic SDL builds
-#include "../gfx/context/apple_gl_ctx.c"
-#elif defined(GEKKO)
-// none
-#else
-#include "../gfx/context/null_ctx.c"
+#elif defined(IOS)
+#include "../gfx/context/ioseagl_ctx.c"
 #endif
+
+#if defined(HAVE_OPENGL)
+
+#if defined(HAVE_KMS)
+#include "../gfx/context/drm_egl_ctx.c"
+#endif
+#if defined(HAVE_VIDEOCORE)
+#include "../gfx/context/vc_egl_ctx.c"
+#endif
+#if defined(HAVE_X11) && defined(HAVE_OPENGLES)
+#include "../gfx/context/glx_ctx.c"
+#endif
+#if defined(HAVE_EGL)
+#include "../gfx/context/xegl_ctx.c"
+#endif
+
+#endif
+
+#ifdef HAVE_X11
+#include "../gfx/context/x11_common.c"
+#endif
+
 
 /*============================================================
 VIDEO SHADERS
 ============================================================ */
-
 #if defined(HAVE_CG) || defined(HAVE_HLSL) || defined(HAVE_GLSL)
 #include "../gfx/shader_parse.c"
 #endif
@@ -143,8 +160,11 @@ VIDEO IMAGE
 #include "../ps3/image.c"
 #elif defined(_XBOX1)
 #include "../xdk/image.c"
-#elif defined(RARCH_MOBILE)
+#else
 #include "../gfx/image.c"
+#endif
+
+#if defined(WANT_RPNG) || defined(RARCH_MOBILE)
 #include "../gfx/rpng/rpng.c"
 #endif
 
@@ -161,6 +181,11 @@ VIDEO DRIVER
 #endif
 #endif
 
+#ifdef HAVE_VG
+#include "../gfx/vg.c"
+#include "../gfx/math/matrix_3x3.c"
+#endif
+
 #ifdef HAVE_DYLIB
 #include "../gfx/ext_gfx.c"
 #endif
@@ -173,6 +198,10 @@ VIDEO DRIVER
 
 #ifdef HAVE_OPENGL
 #include "../gfx/gl.c"
+#endif
+
+#ifdef HAVE_XVIDEO
+#include "../gfx/xvideo.c"
 #endif
 
 #ifdef _XBOX
@@ -269,6 +298,15 @@ INPUT
 #include "../blackberry-qnx/qnx_input.c"
 #endif
 
+#if defined(PANDORA) 
+#include "../input/linuxraw_input.c"
+#include "../input/linuxraw_joypad.c"
+#endif
+
+#ifdef HAVE_X11
+#include "../input/x11_input.c"
+#endif
+
 #if defined(HAVE_NULLINPUT)
 #include "../input/null.c"
 #endif
@@ -282,6 +320,10 @@ STATE TRACKER
 
 #ifndef DONT_HAVE_STATE_TRACKER
 #include "../gfx/state_tracker.c"
+#endif
+
+#ifdef HAVE_PYTHON
+#include "../gfx/py_state/py_state.c"
 #endif
 
 /*============================================================
@@ -417,7 +459,7 @@ MAIN
 #include "../frontend/frontend_objc.c"
 #endif
 
-#if defined(RARCH_CONSOLE) || defined(__QNX__) && !defined(HAVE_BB10)
+#if defined(RARCH_CONSOLE) || defined(__QNX__) && !defined(HAVE_BB10) || defined(PANDORA)
 #include "../frontend/frontend.c"
 #endif
 

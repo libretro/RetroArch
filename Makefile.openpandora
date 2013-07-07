@@ -1,0 +1,46 @@
+RARCH_VERSION		= "0.9.9.3"
+
+DEBUG = 0
+
+CC = $(PNDSDK)/bin/arm-none-linux-gnueabi-gcc
+LD = $(PNDSDK)/bin/arm-none-linux-gnueabi-gcc -o
+
+TARGET := retroarch-pandora
+
+LDDIRS = -L. -L$(PNDSDK)/usr/lib
+INCDIRS = -I. -I$(PNDSDK)/usr/include
+
+OBJ = griffin/griffin.o audio/sinc_neon.o audio/utils_neon.o
+LDFLAGS = -L$(PNDSDK)/usr/lib -Wl,-rpath,$(PNDSDK)/usr/lib
+
+LIBS = -lGLESv2 -lEGL -ldl -lm -lpthread -lrt -lasound
+DEFINES = -std=gnu99 -DHAVE_THREADS -DHAVE_GETOPT_LONG=1 -DHAVE_GRIFFIN
+DEFINES += -D__ARM_ARCH_6__ -DHAVE_NEON -DSINC_LOWER_QUALITY -DHAVE_OPENGL -DHAVE_OPENGLES -DHAVE_OPENGLES2 -DHAVE_GLSL -DHAVE_DYNAMIC -DWANT_RPNG -DWANT_MINIZ -DHAVE_OVERLAY -DHAVE_ALSA -DHAVE_ZLIB -D__linux__
+DEFINES += $(INCDIRS)
+DEFINES += -D__OPENPANDORA__ -DPANDORA
+DEFINES += -marm -march=armv7-a -mcpu=cortex-a8 -mtune=cortex-a8 -mfpu=neon -mfloat-abi=softfp -ftree-vectorize
+
+ifeq ($(DEBUG), 1)
+   OPTIMIZE_LV	:= -O0 -g
+else
+   OPTIMIZE_LV	:= -O3
+endif
+
+all: $(TARGET)
+
+CFLAGS := $(OPTIMIZE_LV) $(DEFINES)
+
+$(TARGET): $(OBJ)
+	$(CC) -o $@ $(OBJ) $(LDFLAGS) $(LDDIRS) $(LIBS)
+
+%.o: %.S
+	$(CC) $(CFLAGS) -c -o $@ $<
+
+%.o: %.c config.h
+	$(CC) $(CFLAGS) -c -o $@ $<
+
+clean:
+	rm -f $(TARGET)
+	rm -f $(OBJ)
+
+.PHONY: clean
