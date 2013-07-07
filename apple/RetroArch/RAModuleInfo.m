@@ -26,8 +26,12 @@ static core_info_list_t* coreList;
 + (NSArray*)getModules
 {
    if (!moduleList)
-   {
+   {   
       coreList = get_core_info_list(apple_platform.corePath.UTF8String);
+      
+      if (!coreList)
+         return nil;
+      
       moduleList = [NSMutableArray arrayWithCapacity:coreList->count];
 
       for (int i = 0; coreList && i < coreList->count; i ++)
@@ -38,14 +42,14 @@ static core_info_list_t* coreList;
          newInfo.path = [NSString stringWithUTF8String:core->path];
          newInfo.info = core;
          newInfo.data = core->data;
-         newInfo.displayName = [NSString stringWithUTF8String:core->display_name];
+         newInfo.description = [NSString stringWithUTF8String:core->display_name];
 
          [moduleList addObject:newInfo];
       }
       
       [moduleList sortUsingComparator:^(RAModuleInfo* left, RAModuleInfo* right)
       {
-         return [left.displayName caseInsensitiveCompare:right.displayName];
+         return [left.description caseInsensitiveCompare:right.description];
       }];
    }
    
@@ -55,6 +59,12 @@ static core_info_list_t* coreList;
 - (void)dealloc
 {
 }
+
+- (id)copyWithZone:(NSZone *)zone
+{
+   return self;
+}
+
 
 - (bool)supportsFileAtPath:(NSString*)path
 {

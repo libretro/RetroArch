@@ -216,7 +216,7 @@
    }
    
    RAModuleInfo* info = (RAModuleInfo*)[self itemForIndexPath:indexPath];
-   cell.textLabel.text = info.displayName;
+   cell.textLabel.text = info.description;
    objc_setAssociatedObject(cell.accessoryView, "MODULE", info, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
 
    return cell;

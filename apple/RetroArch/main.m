@@ -103,14 +103,9 @@ void apple_run_core(RAModuleInfo* core, const char* file)
       load_data->state_path = strdup(RetroArch_iOS.get.systemDirectory.UTF8String);
 #endif
 
-#ifdef IOS
       if (file && core)
       {
          load_data->libretro_path = strdup(apple_core.path.UTF8String);
-#else
-      {
-         load_data->libretro_path = strdup("/Users/jason/Desktop/libretro.dylib");
-#endif
          load_data->rom_path = strdup(file);
       }
       
@@ -489,6 +484,11 @@ int main(int argc, char *argv[])
 @end
 
 @implementation RetroArch_OSX
+{
+   NSWindow IBOutlet* _coreSelectSheet;
+   NSString* _file;
+}
+
 + (RetroArch_OSX*)get
 {
    return (RetroArch_OSX*)[[NSApplication sharedApplication] delegate];
@@ -510,6 +510,13 @@ int main(int argc, char *argv[])
    [window.contentView addSubview:RAGameView.get];
    
    [window makeFirstResponder:RAGameView.get];
+   
+   NSComboBox* cb = (NSComboBox*)[_coreSelectSheet.contentView viewWithTag:1];
+   
+   for (RAModuleInfo* i in RAModuleInfo.getModules)
+   {
+      [cb addItemWithObjectValue:i];
+   }
 }
 
 - (BOOL)applicationShouldTerminateAfterLastWindowClosed:(NSApplication *)theApplication
@@ -520,14 +527,20 @@ int main(int argc, char *argv[])
 - (BOOL)application:(NSApplication *)theApplication openFile:(NSString *)filename
 {
    if (filename)
-      apple_run_core(nil, filename.UTF8String);
+   {
+      _file = filename;
+      [self chooseCore];
+   }
    return YES;
 }
 
 - (void)application:(NSApplication *)sender openFiles:(NSArray *)filenames
 {
    if (filenames.count == 1 && filenames[0])
-      apple_run_core(nil, [filenames[0] UTF8String]);
+   {
+      _file = filenames[0];
+      [self chooseCore];
+   }
    else
       apple_display_alert(@"Cannot open multiple files", @"RetroArch");
 }
@@ -538,8 +551,26 @@ int main(int argc, char *argv[])
    [panel beginSheetModalForWindow:window completionHandler:^(NSInteger result)
    {
       if (result == NSOKButton && panel.URL)
-         apple_run_core(nil, panel.URL.path.UTF8String);
+      {
+         _file = panel.URL.path;
+         [self chooseCore];
+      }
    }];
+}
+
+- (void)chooseCore
+{
+   [NSApplication.sharedApplication beginSheet:_coreSelectSheet modalForWindow:window modalDelegate:nil didEndSelector:nil contextInfo:nil];
+}
+
+- (IBAction)coreWasChosen:(id)sender
+{
+   NSComboBox* cb = (NSComboBox*)[_coreSelectSheet.contentView viewWithTag:1];
+   RAModuleInfo* module = (RAModuleInfo*)cb.objectValueOfSelectedItem;
+   apple_run_core(module, _file.UTF8String);
+
+   [NSApplication.sharedApplication endSheet:_coreSelectSheet returnCode:0];
+   [_coreSelectSheet orderOut:self];
 }
 
 #pragma mark RetroArch_Platform
@@ -561,7 +592,7 @@ int main(int argc, char *argv[])
 
 - (NSString*)corePath
 {
-   return [NSBundle.mainBundle.bundlePath stringByAppendingPathComponent:@"modules"];
+   return [NSBundle.mainBundle.bundlePath stringByAppendingPathComponent:@"Contents/Resources/modules"];
 }
 
 #pragma mark Menus

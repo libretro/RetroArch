@@ -19,6 +19,7 @@
 		967894A51788F0C200D6CA69 /* CoreAudioKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 967894A31788F0C200D6CA69 /* CoreAudioKit.framework */; };
 		967894A71788F0D900D6CA69 /* OpenGL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 967894A61788F0D900D6CA69 /* OpenGL.framework */; };
 		967894A91788F0E500D6CA69 /* AudioUnit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 967894A81788F0E500D6CA69 /* AudioUnit.framework */; };
+		967894E9178A2EB400D6CA69 /* modules in Resources */ = {isa = PBXBuildFile; fileRef = 967894E8178A2EB400D6CA69 /* modules */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -42,6 +43,7 @@
 		967894A31788F0C200D6CA69 /* CoreAudioKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreAudioKit.framework; path = Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.8.sdk/System/Library/Frameworks/CoreAudioKit.framework; sourceTree = DEVELOPER_DIR; };
 		967894A61788F0D900D6CA69 /* OpenGL.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = OpenGL.framework; path = Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.8.sdk/System/Library/Frameworks/OpenGL.framework; sourceTree = DEVELOPER_DIR; };
 		967894A81788F0E500D6CA69 /* AudioUnit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AudioUnit.framework; path = Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.8.sdk/System/Library/Frameworks/AudioUnit.framework; sourceTree = DEVELOPER_DIR; };
+		967894E8178A2EB400D6CA69 /* modules */ = {isa = PBXFileReference; lastKnownFileType = folder; path = modules; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -64,6 +66,7 @@
 			isa = PBXGroup;
 			children = (
 				96355CE81788E72A0010DBFA /* RetroArch */,
+				967894E7178A2E9B00D6CA69 /* Assets */,
 				96355CE11788E72A0010DBFA /* Frameworks */,
 				96355CE01788E72A0010DBFA /* Products */,
 				96355CE91788E72A0010DBFA /* Supporting Files */,
@@ -112,11 +115,19 @@
 			isa = PBXGroup;
 			children = (
 				9678948F1788ECDB00D6CA69 /* InfoPlist.strings */,
-				967894911788ECDB00D6CA69 /* MainMenu.xib */,
 				9678948D1788ECCA00D6CA69 /* RetroArch-Info.plist */,
 			);
 			name = "Supporting Files";
 			path = RetroArch;
+			sourceTree = "<group>";
+		};
+		967894E7178A2E9B00D6CA69 /* Assets */ = {
+			isa = PBXGroup;
+			children = (
+				967894E8178A2EB400D6CA69 /* modules */,
+				967894911788ECDB00D6CA69 /* MainMenu.xib */,
+			);
+			name = Assets;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -171,6 +182,7 @@
 			files = (
 				967894931788ECDB00D6CA69 /* InfoPlist.strings in Resources */,
 				967894941788ECDB00D6CA69 /* MainMenu.xib in Resources */,
+				967894E9178A2EB400D6CA69 /* modules in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -206,6 +218,7 @@
 				967894921788ECDB00D6CA69 /* en */,
 			);
 			name = MainMenu.xib;
+			path = RetroArch;
 			sourceTree = "<group>";
 		};
 /* End PBXVariantGroup section */

@@ -289,7 +289,7 @@ static NSArray* build_input_port_group(config_file_t* config, uint32_t player)
    if (config)
       config_file_free(config);
 
-   self = [super initWithSettings:settings title:_module ? _module.displayName : @"Global Core Config"];
+   self = [super initWithSettings:settings title:_module ? _module.description : @"Global Core Config"];
    return self;
 }
 

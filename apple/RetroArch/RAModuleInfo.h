@@ -26,7 +26,7 @@
 @property (strong) NSString* path;
 @property core_info_t* info;
 @property config_file_t* data;
-@property (strong) NSString* displayName;
+@property (strong) NSString* description;
 
 + (NSArray*)getModules;
 - (bool)supportsFileAtPath:(NSString*)path;
