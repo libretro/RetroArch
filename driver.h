@@ -525,7 +525,7 @@ extern const input_driver_t input_xenon360;
 extern const input_driver_t input_gx;
 extern const input_driver_t input_xinput;
 extern const input_driver_t input_linuxraw;
-extern const input_driver_t input_ios;
+extern const input_driver_t input_apple;
 extern const input_driver_t input_qnx;
 extern const input_driver_t input_null;
 

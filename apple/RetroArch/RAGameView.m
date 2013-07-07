@@ -81,6 +81,16 @@ static float g_screen_scale = 1.0f;
    glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
+// Stop the annoying sound when pressing a key
+- (BOOL)acceptsFirstResponder
+{
+   return YES;
+}
+
+- (void)keyDown:(NSEvent*)theEvent
+{
+}
+
 #elif defined(IOS) // < iOS Pause menu and lifecycle
 - (id)init
 {

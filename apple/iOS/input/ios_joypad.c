@@ -14,7 +14,7 @@
  */
 
 #include "input/input_common.h"
-#include "ios_input.h"
+#include "../../RetroArch/apple_input.h"
 #include "BTStack/btpad.h"
 #include "general.h"
 

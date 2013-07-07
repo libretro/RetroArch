@@ -16,8 +16,8 @@
 #import "../RetroArch/RetroArch_Apple.h"
 #import "views.h"
 
-#include "input/ios_input.h"
-#include "input/keycode.h"
+#include "../RetroArch/apple_input.h"
+#include "../RetroArch/keycode.h"
 #include "input/BTStack/btdynamic.h"
 #include "input/BTStack/btpad.h"
 

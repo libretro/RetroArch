@@ -19,16 +19,19 @@
 #import "RetroArch_Apple.h"
 #include "rarch_wrapper.h"
 
+#include "apple_input.h"
+
 #ifdef IOS
 #import "views.h"
-#include "../iOS/input/ios_input.h"
-#include "../iOS/input/keycode.h"
 #include "../iOS/input/BTStack/btpad.h"
 #include "../iOS/input/BTStack/btdynamic.h"
 #include "../iOS/input/BTStack/btpad.h"
 #endif
 
 #include "file.h"
+
+#define GSEVENT_TYPE_KEYDOWN 10
+#define GSEVENT_TYPE_KEYUP 11
 
 //#define HAVE_DEBUG_FILELOG
 static bool use_tv_mode;
@@ -179,9 +182,6 @@ static void handle_touch_event(NSArray* touches)
 
 @implementation RApplication
 
-#define GSEVENT_TYPE_KEYDOWN 10
-#define GSEVENT_TYPE_KEYUP 11
-
 - (void)sendEvent:(UIEvent *)event
 {
    [super sendEvent:event];
@@ -195,7 +195,7 @@ static void handle_touch_event(NSArray* touches)
       int eventType = eventMem ? *(int*)&eventMem[8] : 0;
 
       if (eventType == GSEVENT_TYPE_KEYDOWN || eventType == GSEVENT_TYPE_KEYUP)
-         ios_input_handle_key_event(*(uint16_t*)&eventMem[0x3C], eventType == GSEVENT_TYPE_KEYDOWN);
+         apple_input_handle_key_event(*(uint16_t*)&eventMem[0x3C], eventType == GSEVENT_TYPE_KEYDOWN);
 
       CFBridgingRelease(eventMem);
    }
@@ -389,7 +389,7 @@ int main(int argc, char *argv[])
       
       //
       bool val;
-      ios_input_enable_icade(config_get_bool(conf, "ios_use_icade", &val) && val);
+      apple_input_enable_icade(config_get_bool(conf, "ios_use_icade", &val) && val);
       btstack_set_poweron(config_get_bool(conf, "ios_use_btstack", &val) && val);
       use_tv_mode = config_get_bool(conf, "ios_tv_mode", & val) && val;
       
@@ -473,6 +473,21 @@ int main(int argc, char *argv[])
 #pragma mark OSX
 #ifdef OSX
 
+@interface RApplication : NSApplication
+@end
+
+@implementation RApplication
+
+- (void)sendEvent:(NSEvent *)event
+{
+   [super sendEvent:event];
+
+   if (event.type == GSEVENT_TYPE_KEYDOWN || event.type == GSEVENT_TYPE_KEYUP)
+      apple_input_handle_key_event(event.keyCode, event.type == GSEVENT_TYPE_KEYDOWN);
+}
+
+@end
+
 @implementation RetroArch_OSX
 + (RetroArch_OSX*)get
 {
@@ -492,7 +507,9 @@ int main(int argc, char *argv[])
    [window.contentView setAutoresizesSubviews:YES];
    
    RAGameView.get.frame = [window.contentView bounds];
-   [window.contentView addSubview:RAGameView.get];   
+   [window.contentView addSubview:RAGameView.get];
+   
+   [window makeFirstResponder:RAGameView.get];
 }
 
 - (BOOL)applicationShouldTerminateAfterLastWindowClosed:(NSApplication *)theApplication

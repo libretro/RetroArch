@@ -73,7 +73,7 @@ enum
    INPUT_WII,
    INPUT_XINPUT,
    INPUT_LINUXRAW,
-   INPUT_IOS,
+   INPUT_APPLE,
    INPUT_QNX,
    INPUT_NULL
 };
@@ -160,8 +160,8 @@ enum
 #define INPUT_DEFAULT_DRIVER INPUT_WII
 #elif defined(HAVE_XVIDEO)
 #define INPUT_DEFAULT_DRIVER INPUT_X
-#elif defined(IOS)
-#define INPUT_DEFAULT_DRIVER INPUT_IOS
+#elif defined(IOS) || defined(OSX)
+#define INPUT_DEFAULT_DRIVER INPUT_APPLE
 #elif defined(__BLACKBERRY_QNX__)
 #define INPUT_DEFAULT_DRIVER INPUT_QNX
 #else

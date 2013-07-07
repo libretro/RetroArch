@@ -13,8 +13,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __IOS_RARCH_INPUT_H__
-#define __IOS_RARCH_INPUT_H__
+#ifndef __APPLE_RARCH_INPUT_H__
+#define __APPLE_RARCH_INPUT_H__
 
 // Input responder
 #define MAX_TOUCHES 16
@@ -26,24 +26,24 @@ typedef struct
    int16_t screen_x, screen_y;
    int16_t fixed_x, fixed_y;
    int16_t full_x, full_y;
-} ios_touch_data_t;
+} apple_touch_data_t;
 
 typedef struct
 {
-   ios_touch_data_t touches[MAX_TOUCHES];
+   apple_touch_data_t touches[MAX_TOUCHES];
    uint32_t touch_count;
 
    uint32_t keys[MAX_KEYS];
 
    uint32_t pad_buttons[MAX_PADS];
    int16_t pad_axis[MAX_PADS][4];
-} ios_input_data_t;
+} apple_input_data_t;
 
-extern ios_input_data_t g_current_input_data; //< Main thread data
-extern ios_input_data_t g_polled_input_data;  //< Game thread data
+extern apple_input_data_t g_current_input_data; //< Main thread data
+extern apple_input_data_t g_polled_input_data;  //< Game thread data
 
 // Main thread only
-void ios_input_enable_icade(bool on);
-void ios_input_handle_key_event(unsigned keycode, bool down);
+void apple_input_enable_icade(bool on);
+void apple_input_handle_key_event(unsigned keycode, bool down);
 
 #endif
