@@ -25,7 +25,11 @@ void apple_run_core(RAModuleInfo* core, const char* file);
 @protocol RetroArch_Platform
 - (void)loadingCore:(RAModuleInfo*)core withFile:(const char*)file;
 - (void)unloadingCore:(RAModuleInfo*)core;
+- (NSString*)retroarchConfigPath;
+- (NSString*)corePath;
 @end
+
+extern id<RetroArch_Platform> apple_platform;
 
 #ifdef IOS
 
@@ -45,6 +49,7 @@ void apple_run_core(RAModuleInfo* core, const char* file);
 
 - (void)loadingCore:(RAModuleInfo*)core withFile:(const char*)file;
 - (void)unloadingCore:(RAModuleInfo*)core;
+- (NSString*)retroarchConfigPath;
 
 - (void)refreshConfig;
 - (void)refreshSystemConfig;

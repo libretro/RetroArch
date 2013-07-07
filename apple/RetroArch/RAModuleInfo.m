@@ -25,13 +25,9 @@ static core_info_list_t* coreList;
 @implementation RAModuleInfo
 + (NSArray*)getModules
 {
-#ifdef IOS
    if (!moduleList)
    {
-      char pattern[PATH_MAX];
-      snprintf(pattern, PATH_MAX, "%s/modules", [[NSBundle mainBundle].bundlePath UTF8String]);
-
-      coreList = get_core_info_list(pattern);
+      coreList = get_core_info_list(apple_platform.corePath.UTF8String);
       moduleList = [NSMutableArray arrayWithCapacity:coreList->count];
 
       for (int i = 0; coreList && i < coreList->count; i ++)
@@ -44,9 +40,6 @@ static core_info_list_t* coreList;
          newInfo.data = core->data;
          newInfo.displayName = [NSString stringWithUTF8String:core->display_name];
 
-         NSString* baseName = newInfo.path.lastPathComponent.stringByDeletingPathExtension;
-         newInfo.customConfigPath = [NSString stringWithFormat:@"%@/%@.cfg", RetroArch_iOS.get.systemDirectory, baseName];
-
          [moduleList addObject:newInfo];
       }
       
@@ -55,7 +48,6 @@ static core_info_list_t* coreList;
          return [left.displayName caseInsensitiveCompare:right.displayName];
       }];
    }
-#endif
    
    return moduleList;
 }
@@ -68,39 +60,6 @@ static core_info_list_t* coreList;
 {
    return does_core_support_file(self.info, path.UTF8String);
 }
-
-#ifdef IOS
-- (void)createCustomConfig
-{
-   if (!self.hasCustomConfig)
-      [NSFileManager.defaultManager copyItemAtPath:RAModuleInfo.globalConfigPath toPath:self.customConfigPath error:nil];
-}
-
-- (void)deleteCustomConfig
-{
-   if (self.hasCustomConfig)
-      [NSFileManager.defaultManager removeItemAtPath:self.customConfigPath error:nil];
-}
-
-+ (NSString*)globalConfigPath
-{
-   static NSString* path;
-   if (!path)
-      path = [NSString stringWithFormat:@"%@/retroarch.cfg", RetroArch_iOS.get.systemDirectory];
-
-   return path;
-}
-
-- (bool)hasCustomConfig
-{
-   return path_file_exists(self.customConfigPath.UTF8String);
-}
-
-- (NSString*)configPath
-{
-   return self.hasCustomConfig ? self.customConfigPath : RAModuleInfo.globalConfigPath;
-}
-#endif
 
 @end
 

@@ -36,12 +36,7 @@
 //#define HAVE_DEBUG_FILELOG
 static bool use_tv_mode;
 
-#ifdef IOS
-static RetroArch_iOS* apple_platform;
-#else
-static RetroArch_OSX* apple_platform;
-#endif
-
+id<RetroArch_Platform> apple_platform;
 
 // From frontend/frontend_ios.c
 extern void* rarch_main_apple(void* args);
@@ -101,6 +96,8 @@ void apple_run_core(RAModuleInfo* core, const char* file)
       struct rarch_main_wrap* load_data = malloc(sizeof(struct rarch_main_wrap));
       memset(load_data, 0, sizeof(struct rarch_main_wrap));
 
+      load_data->config_path = strdup(apple_platform.retroarchConfigPath.UTF8String);
+
 #ifdef IOS
       load_data->sram_path = strdup(RetroArch_iOS.get.systemDirectory.UTF8String);
       load_data->state_path = strdup(RetroArch_iOS.get.systemDirectory.UTF8String);
@@ -115,14 +112,7 @@ void apple_run_core(RAModuleInfo* core, const char* file)
          load_data->libretro_path = strdup("/Users/jason/Desktop/libretro.dylib");
 #endif
          load_data->rom_path = strdup(file);
-#ifdef IOS
-         load_data->config_path = strdup(apple_core.configPath.UTF8String);
-#endif
       }
-#ifdef IOS
-      else
-         load_data->config_path = strdup(RAModuleInfo.globalConfigPath.UTF8String);
-#endif
       
       if (pthread_create(&apple_retro_thread, 0, rarch_main_apple, load_data))
       {
@@ -352,6 +342,16 @@ int main(int argc, char *argv[])
    btpad_set_inquiry_state(true);
 }
 
+- (NSString*)retroarchConfigPath
+{
+   return [NSString stringWithFormat:@"%@/retroarch.cfg", self.systemDirectory];
+}
+
+- (NSString*)corePath
+{
+   return [NSBundle.mainBundle.bundlePath stringByAppendingPathComponent:@"modules"];
+}
+
 - (void)refreshConfig
 {
    if (apple_is_running)
@@ -551,6 +551,17 @@ int main(int argc, char *argv[])
 
 - (void)unloadingCore:(RAModuleInfo*)core
 {
+}
+
+- (NSString*)retroarchConfigPath
+{
+   NSArray* paths = NSSearchPathForDirectoriesInDomains(NSApplicationSupportDirectory, NSUserDomainMask, YES);
+   return [paths[0] stringByAppendingPathComponent:@"RetroArch/retroarch.cfg"];
+}
+
+- (NSString*)corePath
+{
+   return [NSBundle.mainBundle.bundlePath stringByAppendingPathComponent:@"modules"];
 }
 
 #pragma mark Menus

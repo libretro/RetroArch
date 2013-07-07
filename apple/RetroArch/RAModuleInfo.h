@@ -31,13 +31,6 @@
 + (NSArray*)getModules;
 - (bool)supportsFileAtPath:(NSString*)path;
 
-- (void)createCustomConfig;
-- (void)deleteCustomConfig;
-- (bool)hasCustomConfig;
-
-+ (NSString*)globalConfigPath;
-@property (strong) NSString* customConfigPath;
-- (NSString*)configPath;
 @end
 
 #endif
