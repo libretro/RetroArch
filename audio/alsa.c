@@ -16,7 +16,11 @@
 
 #include "../driver.h"
 #include <stdlib.h>
+#ifdef PANDORA
+#include <alsa/asoundlib.h>
+#else
 #include <asoundlib.h>
+#endif
 #include "../general.h"
 
 #define TRY_ALSA(x) if (x < 0) { \

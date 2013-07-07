@@ -143,8 +143,11 @@ VIDEO IMAGE
 #include "../ps3/image.c"
 #elif defined(_XBOX1)
 #include "../xdk/image.c"
-#elif defined(RARCH_MOBILE)
+#else
 #include "../gfx/image.c"
+#endif
+
+#if defined(WANT_RPNG) || defined(RARCH_MOBILE)
 #include "../gfx/rpng/rpng.c"
 #endif
 
@@ -265,6 +268,11 @@ INPUT
 #include "../ios/RetroArch/input/BTStack/btpad_queue.c"
 #elif defined(__BLACKBERRY_QNX__)
 #include "../blackberry-qnx/qnx_input.c"
+#endif
+
+#if defined(PANDORA) 
+#include "../input/linuxraw_input.c"
+#include "../input/linuxraw_joypad.c"
 #endif
 
 #if defined(HAVE_NULLINPUT)
@@ -415,7 +423,7 @@ MAIN
 #include "../frontend/frontend_objc.c"
 #endif
 
-#if defined(RARCH_CONSOLE) || defined(__QNX__) && !defined(HAVE_BB10)
+#if defined(RARCH_CONSOLE) || defined(__QNX__) && !defined(HAVE_BB10) || defined(PANDORA)
 #include "../frontend/frontend.c"
 #endif
 

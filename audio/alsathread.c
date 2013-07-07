@@ -17,7 +17,11 @@
 
 #include "../driver.h"
 #include <stdlib.h>
+#ifdef PANDORA
+#include <alsa/asoundlib.h>
+#else
 #include <asoundlib.h>
+#endif
 #include "../general.h"
 #include "../thread.h"
 #include "../fifo_buffer.h"
@@ -26,7 +30,7 @@
                   goto error; \
                }
 
-typedef struct alsa
+typedef struct alsa_thread
 {
    snd_pcm_t *pcm;
    bool nonblock;
@@ -42,11 +46,11 @@ typedef struct alsa
    slock_t *fifo_lock;
    scond_t *cond;
    slock_t *cond_lock;
-} alsa_t;
+} alsa_thread_t;
 
 static void alsa_worker_thread(void *data)
 {
-   alsa_t *alsa = (alsa_t*)data;
+   alsa_thread_t *alsa = (alsa_thread_t*)data;
 
    uint8_t *buf = (uint8_t *)calloc(1, alsa->period_size);
    if (!buf)
@@ -95,13 +99,13 @@ end:
    free(buf);
 }
 
-static bool alsa_use_float(void *data)
+static bool alsa_thread_use_float(void *data)
 {
-   alsa_t *alsa = (alsa_t*)data;
+   alsa_thread_t *alsa = (alsa_thread_t*)data;
    return alsa->has_float;
 }
 
-static bool find_float_format(snd_pcm_t *pcm, snd_pcm_hw_params_t *params)
+static bool alsathread_find_float_format(snd_pcm_t *pcm, snd_pcm_hw_params_t *params)
 {
    if (snd_pcm_hw_params_test_format(pcm, params, SND_PCM_FORMAT_FLOAT) == 0)
    {
@@ -112,9 +116,9 @@ static bool find_float_format(snd_pcm_t *pcm, snd_pcm_hw_params_t *params)
    return false;
 }
 
-static void alsa_free(void *data)
+static void alsa_thread_free(void *data)
 {
-   alsa_t *alsa = (alsa_t*)data;
+   alsa_thread_t *alsa = (alsa_thread_t*)data;
 
    if (alsa)
    {
@@ -140,9 +144,9 @@ static void alsa_free(void *data)
    }
 }
 
-static void *alsa_init(const char *device, unsigned rate, unsigned latency)
+static void *alsa_thread_init(const char *device, unsigned rate, unsigned latency)
 {
-   alsa_t *alsa = (alsa_t*)calloc(1, sizeof(alsa_t));
+   alsa_thread_t *alsa = (alsa_thread_t*)calloc(1, sizeof(alsa_thread_t));
    if (!alsa)
       return NULL;
 
@@ -163,7 +167,7 @@ static void *alsa_init(const char *device, unsigned rate, unsigned latency)
    TRY_ALSA(snd_pcm_open(&alsa->pcm, alsa_dev, SND_PCM_STREAM_PLAYBACK, 0));
 
    TRY_ALSA(snd_pcm_hw_params_malloc(&params));
-   alsa->has_float = find_float_format(alsa->pcm, params);
+   alsa->has_float = alsathread_find_float_format(alsa->pcm, params);
    format = alsa->has_float ? SND_PCM_FORMAT_FLOAT : SND_PCM_FORMAT_S16;
 
    TRY_ALSA(snd_pcm_hw_params_any(alsa->pcm, params));
@@ -216,14 +220,14 @@ error:
    if (sw_params)
       snd_pcm_sw_params_free(sw_params);
 
-   alsa_free(alsa);
+   alsa_thread_free(alsa);
 
    return NULL;
 }
 
-static ssize_t alsa_write(void *data, const void *buf, size_t size)
+static ssize_t alsa_thread_write(void *data, const void *buf, size_t size)
 {
-   alsa_t *alsa = (alsa_t*)data;
+   alsa_thread_t *alsa = (alsa_thread_t*)data;
 
    if (alsa->thread_dead)
       return -1;
@@ -265,27 +269,27 @@ static ssize_t alsa_write(void *data, const void *buf, size_t size)
    }
 }
 
-static bool alsa_stop(void *data)
+static bool alsa_thread_stop(void *data)
 {
    (void)data;
    return true;
 }
 
-static void alsa_set_nonblock_state(void *data, bool state)
+static void alsa_thread_set_nonblock_state(void *data, bool state)
 {
-   alsa_t *alsa = (alsa_t*)data;
+   alsa_thread_t *alsa = (alsa_thread_t*)data;
    alsa->nonblock = state;
 }
 
-static bool alsa_start(void *data)
+static bool alsa_thread_start(void *data)
 {
    (void)data;
    return true;
 }
 
-static size_t alsa_write_avail(void *data)
+static size_t alsa_thread_write_avail(void *data)
 {
-   alsa_t *alsa = (alsa_t*)data;
+   alsa_thread_t *alsa = (alsa_thread_t*)data;
 
    if (alsa->thread_dead)
       return 0;
@@ -295,21 +299,21 @@ static size_t alsa_write_avail(void *data)
    return val;
 }
 
-static size_t alsa_buffer_size(void *data)
+static size_t alsa_thread_buffer_size(void *data)
 {
-   alsa_t *alsa = (alsa_t*)data;
+   alsa_thread_t *alsa = (alsa_thread_t*)data;
    return alsa->buffer_size;
 }
 
 const audio_driver_t audio_alsathread = {
-   alsa_init,
-   alsa_write,
-   alsa_stop,
-   alsa_start,
-   alsa_set_nonblock_state,
-   alsa_free,
-   alsa_use_float,
+   alsa_thread_init,
+   alsa_thread_write,
+   alsa_thread_stop,
+   alsa_thread_start,
+   alsa_thread_set_nonblock_state,
+   alsa_thread_free,
+   alsa_thread_use_float,
    "alsathread",
-   alsa_write_avail,
-   alsa_buffer_size,
+   alsa_thread_write_avail,
+   alsa_thread_buffer_size,
 };
