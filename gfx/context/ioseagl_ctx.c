@@ -56,7 +56,7 @@ static void gfx_ctx_check_window(bool *quit,
    *quit = false;
 
    unsigned new_width, new_height;
-   ios_get_game_view_size(&new_width, &new_height);
+   apple_get_game_view_size(&new_width, &new_height);
    if (new_width != *width || new_height != *height)
    {
       *width  = new_width;
@@ -87,15 +87,15 @@ static void gfx_ctx_input_driver(const input_driver_t **input, void **input_data
    *input_data = NULL;
 }
 
-// The ios_* functions are implemented in ios/RetroArch/RAGameView.m
+// The apple_* functions are implemented in apple/RetroArch/RAGameView.m
 
 const gfx_ctx_driver_t gfx_ctx_ios = {
-   ios_init_game_view,
-   ios_destroy_game_view,
+   apple_init_game_view,
+   apple_destroy_game_view,
    gfx_ctx_bind_api,
-   ios_set_game_view_sync,
+   apple_set_game_view_sync,
    gfx_ctx_set_video_mode,
-   ios_get_game_view_size,
+   apple_get_game_view_size,
    NULL,
    gfx_ctx_update_window_title,
    gfx_ctx_check_window,

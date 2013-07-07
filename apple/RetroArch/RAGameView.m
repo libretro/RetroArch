@@ -13,27 +13,34 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifdef IOS
-
 #import "RetroArch_Apple.h"
-#import "views.h"
 #include "rarch_wrapper.h"
-
-#ifdef IOS
-#include "../iOS/input/ios_input.h"
-#endif
 
 #include "general.h"
 
+#ifdef IOS
+
+#import "views.h"
+
 static const float ALMOST_INVISIBLE = .021f;
-static float g_screen_scale;
-static int g_fast_forward_skips;
-static bool g_is_syncing = true;
 static RAGameView* g_instance;
 static GLKView* g_view;
 static EAGLContext* g_context;
-static UIView* g_pause_view;;
+static UIView* g_pause_view;
 static UIView* g_pause_indicator_view;
+
+#elif defined(OSX)
+
+static RAGameView* g_instance;
+static NSOpenGLContext* g_context;
+
+#define g_view g_instance // < RAGameView is a container on iOS; on OSX these are both the same object
+
+#endif
+
+static int g_fast_forward_skips;
+static bool g_is_syncing = true;
+static float g_screen_scale = 1.0f;
 
 @implementation RAGameView
 + (RAGameView*)get
@@ -44,13 +51,38 @@ static UIView* g_pause_indicator_view;
    return g_instance;
 }
 
+#ifdef OSX
+
+- (id)init
+{
+   static const NSOpenGLPixelFormatAttribute attributes [] = {
+      NSOpenGLPFAWindow,
+      NSOpenGLPFADoubleBuffer,	// double buffered
+      NSOpenGLPFADepthSize, (NSOpenGLPixelFormatAttribute)16, // 16 bit depth buffer
+      (NSOpenGLPixelFormatAttribute)nil
+   };
+
+   self = [super initWithFrame:CGRectMake(0, 0, 100, 100) pixelFormat:[[NSOpenGLPixelFormat alloc] initWithAttributes:attributes]];
+   self.autoresizingMask = NSViewWidthSizable | NSViewHeightSizable;   
+   
+   g_context = self.openGLContext;
+   [g_context makeCurrentContext];
+   
+   return self;
+}
+
+- (void)display
+{
+   [self.openGLContext flushBuffer];
+}
+
+#elif defined(IOS) // < iOS Pause menu and lifecycle
 - (id)init
 {
    self = [super init];
 
    g_screen_scale = [[UIScreen mainScreen] scale];
 
-#ifdef IOS
    UINib* xib = [UINib nibWithNibName:@"PauseView" bundle:nil];
    g_pause_view = [[xib instantiateWithOwner:[RetroArch_iOS get] options:nil] lastObject];
    
@@ -62,13 +94,12 @@ static UIView* g_pause_indicator_view;
    g_view.enableSetNeedsDisplay = NO;
    [g_view addSubview:g_pause_view];
    [g_view addSubview:g_pause_indicator_view];
-#endif
 
    self.view = g_view;
    return self;
 }
 
-#ifdef IOS
+
 // Pause Menus
 - (void)viewWillLayoutSubviews
 {
@@ -117,7 +148,6 @@ static UIView* g_pause_indicator_view;
       completion:^(BOOL finished) { }
    ];
 }
-#endif
 
 - (void)suspend
 {
@@ -130,11 +160,14 @@ static UIView* g_pause_indicator_view;
    g_view.context = g_context;
    [EAGLContext setCurrentContext:g_context];
 }
+#endif
 
 @end
 
-bool ios_init_game_view()
+// Realistically these functions don't create or destory the view; just the OpenGL context.
+bool apple_init_game_view()
 {
+#ifdef IOS
    dispatch_sync(dispatch_get_main_queue(), ^{
       // Make sure the view was created
       [RAGameView get];
@@ -150,12 +183,13 @@ bool ios_init_game_view()
    });
 
    [EAGLContext setCurrentContext:g_context];
-
+#endif
    return true;
 }
 
-void ios_destroy_game_view()
+void apple_destroy_game_view()
 {
+#ifdef IOS
    dispatch_sync(dispatch_get_main_queue(), ^{
       // Clear the view, otherwise the last frame form this game will be displayed
       // briefly on the next game.
@@ -171,6 +205,7 @@ void ios_destroy_game_view()
    });
    
    [EAGLContext setCurrentContext:nil];
+#endif
 }
 
 void apple_flip_game_view()
@@ -184,13 +219,18 @@ void apple_flip_game_view()
    }
 }
 
-void ios_set_game_view_sync(unsigned interval)
+void apple_set_game_view_sync(unsigned interval)
 {
+#ifdef IOS // < No way to disable Vsync on iOS?
    g_is_syncing = interval ? true : false;
    g_fast_forward_skips = interval ? 0 : 3;
+#elif defined(OSX)
+   GLint value = interval ? 0 : 1;
+   [g_view.openGLContext setValues:&value forParameter:NSOpenGLCPSwapInterval];
+#endif
 }
 
-void ios_get_game_view_size(unsigned *width, unsigned *height)
+void apple_get_game_view_size(unsigned *width, unsigned *height)
 {
    *width  = g_view.bounds.size.width * g_screen_scale;
    *width = *width ? *width : 640;
@@ -201,11 +241,12 @@ void ios_get_game_view_size(unsigned *width, unsigned *height)
 
 void apple_bind_game_view_fbo(void)
 {
+#ifdef IOS
    dispatch_sync(dispatch_get_main_queue(), ^{
       if (g_context)
          [g_view bindDrawable];
    });
-}
-
-
+#else
+   glBindFramebuffer(GL_FRAMEBUFFER, 0);
 #endif
+}

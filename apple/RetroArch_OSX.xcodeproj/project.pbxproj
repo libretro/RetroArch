@@ -63,10 +63,6 @@
 		96355CD41788E6E00010DBFA = {
 			isa = PBXGroup;
 			children = (
-				967894A81788F0E500D6CA69 /* AudioUnit.framework */,
-				967894A61788F0D900D6CA69 /* OpenGL.framework */,
-				967894A21788F0C200D6CA69 /* CoreAudio.framework */,
-				967894A31788F0C200D6CA69 /* CoreAudioKit.framework */,
 				96355CE81788E72A0010DBFA /* RetroArch */,
 				96355CE11788E72A0010DBFA /* Frameworks */,
 				96355CE01788E72A0010DBFA /* Products */,
@@ -85,6 +81,10 @@
 		96355CE11788E72A0010DBFA /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				967894A81788F0E500D6CA69 /* AudioUnit.framework */,
+				967894A61788F0D900D6CA69 /* OpenGL.framework */,
+				967894A21788F0C200D6CA69 /* CoreAudio.framework */,
+				967894A31788F0C200D6CA69 /* CoreAudioKit.framework */,
 				96355CE51788E72A0010DBFA /* AppKit.framework */,
 				96355CE61788E72A0010DBFA /* CoreData.framework */,
 				96355CE71788E72A0010DBFA /* Foundation.framework */,

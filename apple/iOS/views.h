@@ -18,16 +18,6 @@
 
 #import "RAModuleInfo.h"
 
-// RAGameView.m
-@interface RAGameView : UIViewController
-+ (RAGameView*)get;
-- (void)openPauseMenu;
-- (void)closePauseMenu;
-
-- (void)suspend;
-- (void)resume;
-@end
-
 // RALogView.m
 @interface RALogView : UITableViewController
 @end

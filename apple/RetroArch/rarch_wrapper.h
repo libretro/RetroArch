@@ -24,11 +24,11 @@ char* ios_get_rarch_system_directory();
 void apple_rarch_exited (void* result);
 
 // These functions must only be called in gfx/context/ioseagl_ctx.c
-bool ios_init_game_view(void);
-void ios_destroy_game_view(void);
+bool apple_init_game_view(void);
+void apple_destroy_game_view(void);
 void apple_flip_game_view(void);
-void ios_set_game_view_sync(unsigned interval);
-void ios_get_game_view_size(unsigned *width, unsigned *height);
+void apple_set_game_view_sync(unsigned interval);
+void apple_get_game_view_size(unsigned *width, unsigned *height);
 void apple_bind_game_view_fbo(void);
 
 void ios_add_log_message(const char* format, ...);

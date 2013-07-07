@@ -476,15 +476,24 @@ int main(int argc, char *argv[])
 #ifdef OSX
 
 @implementation RetroArch_OSX
+{
+   NSWindow IBOutlet *window;
+}
 
 + (RetroArch_OSX*)get
 {
-   return nil;
+   return (RetroArch_OSX*)[[NSApplication sharedApplication] delegate];
 }
 
 - (void)applicationDidFinishLaunching:(NSNotification *)aNotification
 {
    apple_platform = self;
+   
+   window.backgroundColor = [NSColor blackColor];
+   [window.contentView setAutoresizesSubviews:YES];
+   
+   RAGameView.get.frame = [window.contentView bounds];
+   [window.contentView addSubview:RAGameView.get];
 }
 
 #pragma mark RetroArch_Platform

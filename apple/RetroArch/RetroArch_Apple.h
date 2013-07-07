@@ -29,6 +29,16 @@ void apple_run_core(RAModuleInfo* core, const char* file);
 
 #ifdef IOS
 
+// RAGameView.m
+@interface RAGameView : UIViewController
++ (RAGameView*)get;
+- (void)openPauseMenu;
+- (void)closePauseMenu;
+
+- (void)suspend;
+- (void)resume;
+@end
+
 @interface RetroArch_iOS : UINavigationController<UIApplicationDelegate, UINavigationControllerDelegate, RetroArch_Platform>
 
 + (RetroArch_iOS*)get;
@@ -47,7 +57,18 @@ void apple_run_core(RAModuleInfo* core, const char* file);
 
 #elif defined(OSX)
 
-@interface RetroArch_OSX : NSObject<RetroArch_Platform>
+#import <AppKit/AppKit.h>
+
+@interface RAGameView : NSOpenGLView
+
++ (RAGameView*)get;
+- (void)display;
+
+@end
+
+@interface RetroArch_OSX : NSObject<RetroArch_Platform, NSApplicationDelegate>
+
++ (RetroArch_OSX*)get;
 
 - (void)loadingCore:(RAModuleInfo*)core withFile:(const char*)file;
 - (void)unloadingCore:(RAModuleInfo*)core;

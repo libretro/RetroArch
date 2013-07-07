@@ -1308,7 +1308,7 @@
 				<bool key="NSWindowIsRestorable">YES</bool>
 			</object>
 			<object class="NSCustomObject" id="976324537">
-				<string key="NSClassName">RAAppDelegate</string>
+				<string key="NSClassName">RetroArch_OSX</string>
 			</object>
 			<object class="NSCustomObject" id="755631768">
 				<string key="NSClassName">NSFontManager</string>
@@ -4630,7 +4630,7 @@
 					</object>
 				</object>
 				<object class="IBPartialClassDescription">
-					<string key="className">RAAppDelegate</string>
+					<string key="className">RetroArch_OSX</string>
 					<string key="superclassName">NSObject</string>
 					<dictionary class="NSMutableDictionary" key="actions">
 						<string key="applicationShouldTerminate:">id</string>
