@@ -269,8 +269,7 @@
 					"-DLSB_FIRST",
 					"-D__LIBRETRO__",
 					"-DRARCH_PERFORMANCE_MODE",
-					"-DRARCH_MOBILE",
-					"-DPACKAGE_VERSION=\\\"0.9.9.3\\\"",
+					"-DWANT_RPNG",
 					"-DHAVE_COREAUDIO",
 					"-DHAVE_DYNAMIC",
 					"-DHAVE_OVERLAY",
@@ -279,7 +278,7 @@
 					"-DSINC_LOWER_QUALITY",
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				SDKROOT = macosx;
+				SDKROOT = "";
 				WRAPPER_EXTENSION = app;
 			};
 			name = Debug;
@@ -334,7 +333,7 @@
 					"-DSINC_LOWER_QUALITY",
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				SDKROOT = macosx;
+				SDKROOT = "";
 				WRAPPER_EXTENSION = app;
 			};
 			name = Release;

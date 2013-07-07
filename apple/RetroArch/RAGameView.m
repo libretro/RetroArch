@@ -179,7 +179,7 @@ static float g_screen_scale = 1.0f;
 
 @end
 
-// Realistically these functions don't create or destory the view; just the OpenGL context.
+// Realistically these functions don't create or destroy the view; just the OpenGL context.
 bool apple_init_game_view()
 {
 #ifdef IOS
@@ -207,7 +207,7 @@ bool apple_init_game_view()
 void apple_destroy_game_view()
 {
    dispatch_sync(dispatch_get_main_queue(), ^{
-      // Clear the view, otherwise the last frame form this game will be displayed
+      // Clear the view, otherwise the last frame from this game will be displayed
       // briefly on the next game.
       [g_view bindDrawable];
       glClearColor(0, 0, 0, 1);
