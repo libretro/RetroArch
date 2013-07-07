@@ -68,6 +68,8 @@ char* ios_get_rarch_system_directory()
    return strdup([RetroArch_iOS.get.systemDirectory UTF8String]);
 }
 
+#include "../iOS/views.h"
+
 // Simple class to reduce code duplication for fixed table views
 @implementation RATableViewController
 

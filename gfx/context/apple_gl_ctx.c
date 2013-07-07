@@ -29,7 +29,11 @@
 
 static bool gfx_ctx_bind_api(enum gfx_ctx_api api)
 {
+#ifdef IOS
    return api == GFX_CTX_OPENGL_ES_API;
+#else
+   return api == GFX_CTX_OPENGL_API;
+#endif
 }
 
 static bool gfx_ctx_set_video_mode(

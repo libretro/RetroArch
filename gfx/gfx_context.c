@@ -48,14 +48,11 @@ static const gfx_ctx_driver_t *gfx_ctx_drivers[] = {
 #if defined(__BLACKBERRY_QNX__)
    &gfx_ctx_bbqnx,
 #endif
-#if defined(IOS)
+#if defined(IOS) || defined(OSX) //< Don't use __APPLE__ as it breaks basic SDL builds
    &gfx_ctx_ios,
 #endif
 #if defined(HAVE_SDL) && defined(HAVE_OPENGL)
    &gfx_ctx_sdl_gl,
-#endif
-#if defined(IS_XCODE) && defined(__APPLE__)
-    &gfx_ctx_null,
 #endif
 };
 

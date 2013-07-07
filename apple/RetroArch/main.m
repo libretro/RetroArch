@@ -98,13 +98,13 @@ void apple_run_core(RAModuleInfo* core, const char* file)
       memset(load_data, 0, sizeof(struct rarch_main_wrap));
 
 #ifdef IOS
-//      load_data->sram_path = strdup(self.systemDirectory.UTF8String);
-//      load_data->state_path = strdup(self.systemDirectory.UTF8String);
+      load_data->sram_path = strdup(RetroArch_iOS.get.systemDirectory.UTF8String);
+      load_data->state_path = strdup(RetroArch_iOS.get.systemDirectory.UTF8String);
 #endif
 
       if (file && core)
       {
-         load_data->libretro_path = strdup(apple_core.path.UTF8String);
+         load_data->libretro_path = strdup("/Users/jason/Desktop/libretro.dylib");
          load_data->rom_path = strdup(file);
 #ifdef IOS
          load_data->config_path = strdup(apple_core.configPath.UTF8String);
@@ -134,14 +134,7 @@ void apple_rarch_exited(void* result)
    if (apple_is_running)
    {
       [apple_platform unloadingCore:apple_core];
-
       apple_is_running = false;
-      
-//
-//      [self popToViewController:[RAGameView get] animated:NO];
-//      [self popViewControllerAnimated:NO];
-      
-//      btpad_set_inquiry_state(true);
    }
 
    apple_core = nil;
@@ -493,7 +486,7 @@ int main(int argc, char *argv[])
    [window.contentView setAutoresizesSubviews:YES];
    
    RAGameView.get.frame = [window.contentView bounds];
-   [window.contentView addSubview:RAGameView.get];
+   [window.contentView addSubview:RAGameView.get];   
 }
 
 #pragma mark RetroArch_Platform

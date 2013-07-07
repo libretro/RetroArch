@@ -277,6 +277,7 @@
 					"-DHAVE_ZLIB",
 					"-DWANT_MINIZ",
 					"-DSINC_LOWER_QUALITY",
+					"-DHAVE_NULLINPUT",
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = macosx;
@@ -332,6 +333,7 @@
 					"-DHAVE_ZLIB",
 					"-DWANT_MINIZ",
 					"-DSINC_LOWER_QUALITY",
+					"-DHAVE_NULLINPUT",
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = macosx;

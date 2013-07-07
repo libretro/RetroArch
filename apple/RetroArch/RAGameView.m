@@ -183,6 +183,8 @@ bool apple_init_game_view()
    });
 
    [EAGLContext setCurrentContext:g_context];
+#else
+   [g_context makeCurrentContext];
 #endif
    return true;
 }
@@ -205,6 +207,8 @@ void apple_destroy_game_view()
    });
    
    [EAGLContext setCurrentContext:nil];
+#else
+   [NSOpenGLContext clearCurrentContext];
 #endif
 }
 
@@ -239,14 +243,12 @@ void apple_get_game_view_size(unsigned *width, unsigned *height)
    *height = *height ? *height : 480;
 }
 
+#ifdef IOS
 void apple_bind_game_view_fbo(void)
 {
-#ifdef IOS
    dispatch_sync(dispatch_get_main_queue(), ^{
       if (g_context)
          [g_view bindDrawable];
    });
-#else
-   glBindFramebuffer(GL_FRAMEBUFFER, 0);
-#endif
 }
+#endif

@@ -107,8 +107,8 @@ VIDEO CONTEXT
 #include "../gfx/context/androidegl_ctx.c"
 #elif defined(__BLACKBERRY_QNX__)
 #include "../gfx/context/bbqnx_ctx.c"
-#elif defined(IOS)
-#include "../gfx/context/ioseagl_ctx.c"
+#elif defined(IOS) || defined(OSX) //< Don't use __APPLE__ as it breaks basic SDL builds
+#include "../gfx/context/apple_gl_ctx.c"
 #elif defined(GEKKO)
 // none
 #else
