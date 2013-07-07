@@ -455,7 +455,7 @@ MAIN
 #include "../frontend/frontend_bbqnx.c"
 #elif defined(ANDROID)
 #include "../frontend/frontend_android.c"
-#elif defined(__APPLE__)
+#elif defined(IOS) || defined(OSX)
 #include "../frontend/frontend_objc.c"
 #endif
 
