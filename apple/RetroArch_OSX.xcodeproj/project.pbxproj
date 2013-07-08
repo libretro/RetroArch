@@ -289,6 +289,7 @@
 					"-DHAVE_ZLIB",
 					"-DWANT_MINIZ",
 					"-DSINC_LOWER_QUALITY",
+					"-DHAVE_NETPLAY",
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = "";
