@@ -65,7 +65,6 @@ static core_info_list_t* coreList;
    return self;
 }
 
-
 - (bool)supportsFileAtPath:(NSString*)path
 {
    return does_core_support_file(self.info, path.UTF8String);

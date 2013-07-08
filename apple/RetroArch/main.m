@@ -83,7 +83,6 @@ static bool apple_is_paused;
 static bool apple_is_running;
 static RAModuleInfo* apple_core;
 
-// HACK: This needs to be cleaned
 void apple_run_core(RAModuleInfo* core, const char* file)
 {
    if (!apple_is_running)
@@ -488,6 +487,8 @@ int main(int argc, char *argv[])
 {
    NSWindow IBOutlet* _coreSelectSheet;
 
+   bool _isTerminating;
+   bool _loaded;
    bool _wantReload;
    NSString* _file;
    RAModuleInfo* _core;
@@ -501,15 +502,13 @@ int main(int argc, char *argv[])
 - (void)applicationDidFinishLaunching:(NSNotification *)aNotification
 {
    apple_platform = self;
+   _loaded = true;
 
    [window setCollectionBehavior:NSWindowCollectionBehaviorFullScreenPrimary];
-
-   window.backgroundColor = [NSColor blackColor];
-   [window.contentView setAutoresizesSubviews:YES];
    
    RAGameView.get.frame = [window.contentView bounds];
-   [window.contentView addSubview:RAGameView.get];
-   
+   [window.contentView setAutoresizesSubviews:YES];
+   [window.contentView addSubview:RAGameView.get];   
    [window makeFirstResponder:RAGameView.get];
    
    // Create core select list
@@ -517,10 +516,14 @@ int main(int argc, char *argv[])
    
    for (RAModuleInfo* i in RAModuleInfo.getModules)
       [cb addItemWithObjectValue:i];
-   
+
    // Run RGUI if needed
-   if (!apple_is_running)
+   if (!_wantReload)
       apple_run_core(nil, 0);
+   else
+      [self chooseCore];
+
+   _wantReload = false;
 }
 
 - (BOOL)applicationShouldTerminateAfterLastWindowClosed:(NSApplication *)theApplication
@@ -528,15 +531,16 @@ int main(int argc, char *argv[])
    return YES;
 }
 
-- (BOOL)application:(NSApplication *)theApplication openFile:(NSString *)filename
+- (NSApplicationTerminateReply)applicationShouldTerminate:(NSApplication *)sender
 {
-   if (filename)
-   {
-      _file = filename;
-      [self chooseCore];
-   }
-   return YES;
+   _isTerminating = true;
+
+   if (apple_is_running)
+      apple_frontend_post_event(event_basic_command, (void*)QUIT);
+
+   return apple_is_running ? NSTerminateCancel : NSTerminateNow;
 }
+
 
 - (void)application:(NSApplication *)sender openFiles:(NSArray *)filenames
 {
@@ -544,9 +548,14 @@ int main(int argc, char *argv[])
    {
       _file = filenames[0];
       [self chooseCore];
+      
+      [sender replyToOpenOrPrint:NSApplicationDelegateReplySuccess];
    }
    else
+   {
       apple_display_alert(@"Cannot open multiple files", @"RetroArch");
+      [sender replyToOpenOrPrint:NSApplicationDelegateReplyFailure];
+   }
 }
 
 - (void)openDocument:(id)sender
@@ -577,16 +586,18 @@ int main(int argc, char *argv[])
    [NSApplication.sharedApplication endSheet:_coreSelectSheet returnCode:0];
    [_coreSelectSheet orderOut:self];
 
+   if (_isTerminating)
+      return;
+
    NSComboBox* cb = (NSComboBox*)[_coreSelectSheet.contentView viewWithTag:1];
    _core = (RAModuleInfo*)cb.objectValueOfSelectedItem;
+
+   _wantReload = apple_is_running;
 
    if (!apple_is_running)
       apple_run_core(_core, _file.UTF8String);
    else
-   {
-      _wantReload = true;
       apple_frontend_post_event(event_basic_command, (void*)QUIT);
-   }
 }
 
 #pragma mark RetroArch_Platform
@@ -598,6 +609,9 @@ int main(int argc, char *argv[])
 
 - (void)unloadingCore:(RAModuleInfo*)core
 {
+   if (_isTerminating)
+      [NSApplication.sharedApplication terminate:nil];
+
    if (_wantReload)
       apple_run_core(_core, _file.UTF8String);
    
