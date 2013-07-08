@@ -124,13 +124,14 @@ void apple_rarch_exited(void* result)
    if (result)
       apple_display_alert(@"Failed to load game.", 0);
 
+   RAModuleInfo* used_core = apple_core;
+   apple_core = nil;
+
    if (apple_is_running)
    {
-      [apple_platform unloadingCore:apple_core];
       apple_is_running = false;
+      [apple_platform unloadingCore:used_core];
    }
-
-   apple_core = nil;
 
    if (use_tv_mode)
       apple_run_core(nil, 0);
@@ -486,7 +487,10 @@ int main(int argc, char *argv[])
 @implementation RetroArch_OSX
 {
    NSWindow IBOutlet* _coreSelectSheet;
+
+   bool _wantReload;
    NSString* _file;
+   RAModuleInfo* _core;
 }
 
 + (RetroArch_OSX*)get
@@ -498,9 +502,6 @@ int main(int argc, char *argv[])
 {
    apple_platform = self;
 
-   if (!apple_is_running)
-      [self openDocument:nil];
-
    [window setCollectionBehavior:NSWindowCollectionBehaviorFullScreenPrimary];
 
    window.backgroundColor = [NSColor blackColor];
@@ -511,12 +512,15 @@ int main(int argc, char *argv[])
    
    [window makeFirstResponder:RAGameView.get];
    
+   // Create core select list
    NSComboBox* cb = (NSComboBox*)[_coreSelectSheet.contentView viewWithTag:1];
    
    for (RAModuleInfo* i in RAModuleInfo.getModules)
-   {
       [cb addItemWithObjectValue:i];
-   }
+   
+   // Run RGUI if needed
+   if (!apple_is_running)
+      apple_run_core(nil, 0);
 }
 
 - (BOOL)applicationShouldTerminateAfterLastWindowClosed:(NSApplication *)theApplication
@@ -574,8 +578,15 @@ int main(int argc, char *argv[])
    [_coreSelectSheet orderOut:self];
 
    NSComboBox* cb = (NSComboBox*)[_coreSelectSheet.contentView viewWithTag:1];
-   RAModuleInfo* module = (RAModuleInfo*)cb.objectValueOfSelectedItem;
-   apple_run_core(module, _file.UTF8String);
+   _core = (RAModuleInfo*)cb.objectValueOfSelectedItem;
+
+   if (!apple_is_running)
+      apple_run_core(_core, _file.UTF8String);
+   else
+   {
+      _wantReload = true;
+      apple_frontend_post_event(event_basic_command, (void*)QUIT);
+   }
 }
 
 #pragma mark RetroArch_Platform
@@ -587,6 +598,10 @@ int main(int argc, char *argv[])
 
 - (void)unloadingCore:(RAModuleInfo*)core
 {
+   if (_wantReload)
+      apple_run_core(_core, _file.UTF8String);
+   
+   _wantReload = false;
 }
 
 - (NSString*)retroarchConfigPath
