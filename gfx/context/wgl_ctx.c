@@ -158,19 +158,18 @@ static void create_gl_context(HWND hwnd)
 static bool BrowseForFile(char *filename)
 {
    OPENFILENAME ofn;
-	memset((void *)&ofn, 0, sizeof(OPENFILENAME));
+   memset(&ofn, 0, sizeof(OPENFILENAME));
 
-	ofn.lStructSize = sizeof(OPENFILENAME);
-	ofn.hwndOwner = g_hwnd;
-	ofn.lpstrFilter = "All Files\0*.*\0\0";
-	ofn.lpstrFile = filename;
-	ofn.lpstrTitle = "Select ROM";
-	ofn.lpstrDefExt = "";
-	ofn.nMaxFile = PATH_MAX;
-	ofn.Flags = OFN_FILEMUSTEXIST | OFN_HIDEREADONLY;
-	if(GetOpenFileName(&ofn)) {
-		return true;
-	}
+   ofn.lStructSize = sizeof(OPENFILENAME);
+   ofn.hwndOwner = g_hwnd;
+   ofn.lpstrFilter = "All Files\0*.*\0\0";
+   ofn.lpstrFile = filename;
+   ofn.lpstrTitle = "Select ROM";
+   ofn.lpstrDefExt = "";
+   ofn.nMaxFile = PATH_MAX;
+   ofn.Flags = OFN_FILEMUSTEXIST | OFN_HIDEREADONLY;
+   if (GetOpenFileName(&ofn))
+      return true;
    return false;
 }
 
@@ -224,20 +223,21 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT message,
             g_resized = true;
          }
          return 0;
+
       case WM_COMMAND:
-         switch(wparam & 0xffff)
+         switch (wparam & 0xffff)
          {
             case ID_M_OPENROM:
             {
                char rom_file[PATH_MAX] = {0};
-               if(BrowseForFile(rom_file))
+               if (BrowseForFile(rom_file))
                {
                   strlcpy(g_extern.fullpath, rom_file, sizeof(g_extern.fullpath));
                   g_extern.lifecycle_mode_state |= (1ULL << MODE_LOAD_GAME);
                   PostMessage(g_hwnd, WM_CLOSE, 0, 0);
                }
+               break;
             }
-            break;
             case ID_M_RESET:
                rarch_game_reset();
                break;
@@ -448,9 +448,9 @@ static bool gfx_ctx_set_video_mode(
    if (!g_hwnd)
       goto error;
 
-   if(!fullscreen)
+   if (!fullscreen)
    {
-      SetMenu(g_hwnd,LoadMenu(GetModuleHandle(NULL),MAKEINTRESOURCE(IDR_MENU)));
+      SetMenu(g_hwnd, LoadMenu(GetModuleHandle(NULL), MAKEINTRESOURCE(IDR_MENU)));
       RECT rcTemp = {0, 0, g_resize_height, 0x7FFF}; // 0x7FFF="Infinite" height
       SendMessage(g_hwnd, WM_NCCALCSIZE, FALSE, (LPARAM)&rcTemp); // recalculate margin, taking possible menu wrap into account
       g_resize_height += rcTemp.top + rect.top; // extend by new top margin and substract previous margin
