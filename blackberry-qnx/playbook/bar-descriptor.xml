@@ -72,18 +72,6 @@
        <platformArchitecture>armle-v7</platformArchitecture>
        <asset path="Device-Coverage/RetroArch" entry="true" type="Qnx/Elf">RetroArch</asset>
     </configuration>
-    <configuration id="com.qnx.qcc.configuration.exe.debug.1423528231" name="Simulator-Debug">
-       <platformArchitecture>x86</platformArchitecture>
-       <asset path="Simulator-Debug/RetroArch" entry="true" type="Qnx/Elf">RetroArch</asset>
-    </configuration>
-    <configuration id="com.qnx.qcc.configuration.exe.profile.1740368212" name="Simulator-Profile">
-       <platformArchitecture>x86</platformArchitecture>
-       <asset path="Simulator-Profile/RetroArch" entry="true" type="Qnx/Elf">RetroArch</asset>
-    </configuration>
-    <configuration id="com.qnx.qcc.configuration.exe.profile.coverage.1511241566" name="Simulator-Coverage">
-       <platformArchitecture>x86</platformArchitecture>
-       <asset path="Simulator-Coverage/RetroArch" entry="true" type="Qnx/Elf">RetroArch</asset>
-    </configuration>
     
     <!--  The icon for the application, which should be 86x86. -->
     <icon>

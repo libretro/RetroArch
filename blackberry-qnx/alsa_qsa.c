@@ -69,15 +69,16 @@ static void *alsa_qsa_init(const char *device, unsigned rate, unsigned latency)
 
    params.format.interleave = 1;
    params.format.format = SND_PCM_SFMT_S16_LE;
-   params.format.rate = rate; 
+   params.format.rate = rate;
    params.format.voices = 2;
 
    params.start_mode = SND_PCM_START_DATA;
-   params.stop_mode = SND_PCM_STOP_ROLLOVER;
+   params.stop_mode = SND_PCM_STOP_STOP;
 
    params.buf.block.frag_size = 4096;
-   params.buf.block.frags_min = 1;
-   params.buf.block.frags_max = 19;
+   params.buf.block.frags_min = 8;
+   params.buf.block.frags_max = 16;
+
 
    if ((err = snd_pcm_plugin_params(alsa->pcm, &params)) < 0)
    {
@@ -93,8 +94,8 @@ static void *alsa_qsa_init(const char *device, unsigned rate, unsigned latency)
       goto error;
    }
 
-   alsa->buffer_size = setup.buf.block.frag_size * 19; /* is this in bytes? */
-   RARCH_LOG("[ALSA QSA]: buffer size: %d bytes (?)\n", alsa->buffer_size);
+   alsa->buffer_size = setup.buf.block.frag_size * (setup.buf.block.frags_max+1);
+   RARCH_LOG("[ALSA QSA]: buffer size: %d bytes\n", alsa->buffer_size);
 
    if ((err = snd_pcm_plugin_prepare(alsa->pcm, SND_PCM_CHANNEL_PLAYBACK)) < 0)
    {
@@ -114,21 +115,41 @@ error:
    return (void*)-1;
 }
 
-
 static ssize_t alsa_qsa_write(void *data, const void *buf, size_t size)
 {
-   int err;
+   int written, status;
    alsa_t *alsa = (alsa_t*)data;
-   snd_pcm_channel_status_t status = {0};
+   snd_pcm_channel_status_t cstatus = {0};
 
-   if ((err = snd_pcm_plugin_status(alsa->pcm, &status)) < 0)
-      RARCH_ERR("[ALSA QSA]: Error reading status: %s\n", snd_strerror(err));
+   written = snd_pcm_plugin_write(alsa->pcm, buf, size);
 
-   if ((err = snd_pcm_plugin_write(alsa->pcm, buf, size)) < 0)
-      RARCH_ERR("[ALSA QSA]: Error writing PCM: %s\n", snd_strerror(err));
+   if (written != size)
+   {
+      /* Check if samples playback got stuck somewhere in hardware or in */
+      /* the audio device driver */
+      if ((errno == EAGAIN) && (written == 0))
+    	  return 0;
 
-   return size;
-}
+      if ((errno == EINVAL) || (errno == EIO))
+      {
+          cstatus.channel = SND_PCM_CHANNEL_PLAYBACK;
+    	  status = snd_pcm_plugin_status(alsa->pcm, &cstatus);
+
+    	  if (status > 0)
+    		  return 0;
+
+          if ((cstatus.status == SND_PCM_STATUS_UNDERRUN) ||
+        		  (cstatus.status == SND_PCM_STATUS_READY))
+        		  {
+        			  status = snd_pcm_plugin_prepare(alsa->pcm, SND_PCM_CHANNEL_PLAYBACK);
+        			  if (status < 0)
+        				  return 0;
+        		  }
+      }
+   }
+
+    return written;
+ }
 
 static bool alsa_qsa_stop(void *data)
 {
@@ -221,6 +242,7 @@ static size_t alsa_qsa_write_avail(void *data)
    alsa_t *alsa = (alsa_t*)data;
    snd_pcm_channel_status_t status = {0};
 
+   status.channel = SND_PCM_CHANNEL_PLAYBACK;
    snd_pcm_plugin_status(alsa->pcm, &status);
 
    return status.free;
@@ -244,3 +266,4 @@ const audio_driver_t audio_alsa = {
    alsa_qsa_write_avail,
    alsa_qsa_buffer_size,
 };
+

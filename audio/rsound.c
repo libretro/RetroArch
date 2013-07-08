@@ -16,7 +16,7 @@
 
 #include "../driver.h"
 #include <stdlib.h>
-#ifdef RARCH_CONSOLE
+#if defined(RARCH_CONSOLE) || defined(HAVE_GRIFFIN)
 #include "../deps/librsound/rsound.h"
 #else
 #include <rsound.h>

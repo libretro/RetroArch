@@ -19,7 +19,7 @@
 						<toolChain id="com.qnx.qcc.toolChain.exe.debug.2065020807" name="QNX QCC" superClass="com.qnx.qcc.toolChain">
 							<option id="com.qnx.qcc.option.cpu.2049874529" name="Target CPU:" superClass="com.qnx.qcc.option.cpu" value="com.qnx.qcc.option.gen.cpu.armle-v7" valueType="enumerated"/>
 							<targetPlatform archList="all" binaryParser="com.qnx.tools.ide.qde.core.QDEBynaryParser" id="com.qnx.qcc.targetPlatform.1371677239" osList="all" superClass="com.qnx.qcc.targetPlatform"/>
-							<builder buildPath="${workspace_loc:/CubeRotate/Device-Debug}" id="com.qnx.nto.51011824" keepEnvironmentInBuildfile="false" name="CDT Internal Builder" superClass="com.qnx.nto"/>
+							<builder buildPath="${workspace_loc:/RetroArch/Device-Debug}" id="com.qnx.nto.51011824" keepEnvironmentInBuildfile="false" name="CDT Internal Builder" superClass="com.qnx.nto"/>
 							<tool commandLinePattern="${COMMAND} ${OUTPUT_FLAG} ${OUTPUT_PREFIX}${OUTPUT} ${INPUTS} ${FLAGS}" id="com.qnx.qcc.tool.compiler.312527984" name="QCC Compiler" superClass="com.qnx.qcc.tool.compiler">
 								<option id="com.qnx.qcc.option.compiler.optlevel.1343943391" name="Optimization Level" superClass="com.qnx.qcc.option.compiler.optlevel" value="com.qnx.qcc.option.compiler.optlevel.0" valueType="enumerated"/>
 								<option id="com.qnx.qcc.option.compile.debug.1008704037" name="Debug (-g)" superClass="com.qnx.qcc.option.compile.debug" value="true" valueType="boolean"/>
@@ -44,7 +44,6 @@
 									<listOptionValue builtIn="false" value="HAVE_ZLIB"/>
 									<listOptionValue builtIn="false" value="__BLACKBERRY_QNX__"/>
 									<listOptionValue builtIn="false" value="HAVE_OPENGLES"/>
-									<listOptionValue builtIn="false" value="PACKAGE_VERSION=\&quot;0.9.9.3\&quot;"/>
 									<listOptionValue builtIn="false" value="HAVE_OPENGLES2"/>
 									<listOptionValue builtIn="false" value="HAVE_NULLINPUT"/>
 									<listOptionValue builtIn="false" value="HAVE_ALSA"/>
@@ -144,7 +143,7 @@
 						<toolChain id="com.qnx.qcc.toolChain.exe.release.1766368467" name="QNX QCC" superClass="com.qnx.qcc.toolChain">
 							<option id="com.qnx.qcc.option.cpu.1345690239" name="Target CPU:" superClass="com.qnx.qcc.option.cpu" value="com.qnx.qcc.option.gen.cpu.armle-v7" valueType="enumerated"/>
 							<targetPlatform archList="all" binaryParser="com.qnx.tools.ide.qde.core.QDEBynaryParser" id="com.qnx.qcc.targetPlatform.1497663639" osList="all" superClass="com.qnx.qcc.targetPlatform"/>
-							<builder buildPath="${workspace_loc:/CubeRotate/Device-Release}" id="com.qnx.nto.379146748" keepEnvironmentInBuildfile="false" name="CDT Internal Builder" superClass="com.qnx.nto"/>
+							<builder buildPath="${workspace_loc:/RetroArch/Device-Release}" id="com.qnx.nto.379146748" keepEnvironmentInBuildfile="false" name="CDT Internal Builder" superClass="com.qnx.nto"/>
 							<tool command="qcc" commandLinePattern="${COMMAND} ${OUTPUT_FLAG} ${OUTPUT_PREFIX}${OUTPUT} ${INPUTS} ${FLAGS}" id="com.qnx.qcc.tool.compiler.521537247" name="QCC Compiler" superClass="com.qnx.qcc.tool.compiler">
 								<option id="com.qnx.qcc.option.compiler.optlevel.1293497463" name="Optimization Level" superClass="com.qnx.qcc.option.compiler.optlevel" value="com.qnx.qcc.option.compiler.optlevel.3" valueType="enumerated"/>
 								<option id="com.qnx.qcc.option.compiler.includePath.1333983864" name="Include Directories (-I)" superClass="com.qnx.qcc.option.compiler.includePath" valueType="includePath">
@@ -167,7 +166,6 @@
 									<listOptionValue builtIn="false" value="HAVE_ZLIB"/>
 									<listOptionValue builtIn="false" value="__BLACKBERRY_QNX__"/>
 									<listOptionValue builtIn="false" value="HAVE_OPENGLES"/>
-									<listOptionValue builtIn="false" value="PACKAGE_VERSION=\&quot;0.9.9.3\&quot;"/>
 									<listOptionValue builtIn="false" value="HAVE_OPENGLES2"/>
 									<listOptionValue builtIn="false" value="HAVE_NULLINPUT"/>
 									<listOptionValue builtIn="false" value="HAVE_ALSA"/>
@@ -260,7 +258,7 @@
 						<toolChain id="com.qnx.qcc.toolChain.exe.profile.1940927190" name="QNX QCC" superClass="com.qnx.qcc.toolChain">
 							<option id="com.qnx.qcc.option.cpu.810106304" name="Target CPU:" superClass="com.qnx.qcc.option.cpu" value="com.qnx.qcc.option.gen.cpu.armle-v7" valueType="enumerated"/>
 							<targetPlatform archList="all" binaryParser="com.qnx.tools.ide.qde.core.QDEBynaryParser" id="com.qnx.qcc.targetPlatform.1744556277" osList="all" superClass="com.qnx.qcc.targetPlatform"/>
-							<builder buildPath="${workspace_loc:/CubeRotate/Device-Profile}" id="com.qnx.nto.220354791" keepEnvironmentInBuildfile="false" name="CDT Internal Builder" superClass="com.qnx.nto"/>
+							<builder buildPath="${workspace_loc:/RetroArch/Device-Profile}" id="com.qnx.nto.220354791" keepEnvironmentInBuildfile="false" name="CDT Internal Builder" superClass="com.qnx.nto"/>
 							<tool commandLinePattern="${COMMAND} ${OUTPUT_FLAG} ${OUTPUT_PREFIX}${OUTPUT} ${INPUTS} ${FLAGS}" id="com.qnx.qcc.tool.compiler.578454843" name="QCC Compiler" superClass="com.qnx.qcc.tool.compiler">
 								<option id="com.qnx.qcc.option.compiler.optlevel.1421628131" name="Optimization Level" superClass="com.qnx.qcc.option.compiler.optlevel" value="com.qnx.qcc.option.compiler.optlevel.0" valueType="enumerated"/>
 								<option id="com.qnx.qcc.option.compile.debug.995395785" name="Debug (-g)" superClass="com.qnx.qcc.option.compile.debug" value="true" valueType="boolean"/>
@@ -285,7 +283,6 @@
 									<listOptionValue builtIn="false" value="HAVE_ZLIB"/>
 									<listOptionValue builtIn="false" value="__BLACKBERRY_QNX__"/>
 									<listOptionValue builtIn="false" value="HAVE_OPENGLES"/>
-									<listOptionValue builtIn="false" value="PACKAGE_VERSION=\&quot;0.9.9.3\&quot;"/>
 									<listOptionValue builtIn="false" value="HAVE_OPENGLES2"/>
 									<listOptionValue builtIn="false" value="HAVE_NULLINPUT"/>
 									<listOptionValue builtIn="false" value="HAVE_ALSA"/>
@@ -379,7 +376,7 @@
 						<toolChain id="com.qnx.qcc.toolChain.exe.coverage.290877093" name="QNX QCC" superClass="com.qnx.qcc.toolChain">
 							<option id="com.qnx.qcc.option.cpu.775910002" name="Target CPU:" superClass="com.qnx.qcc.option.cpu" value="com.qnx.qcc.option.gen.cpu.armle-v7" valueType="enumerated"/>
 							<targetPlatform archList="all" binaryParser="com.qnx.tools.ide.qde.core.QDEBynaryParser" id="com.qnx.qcc.targetPlatform.264464274" osList="all" superClass="com.qnx.qcc.targetPlatform"/>
-							<builder buildPath="${workspace_loc:/CubeRotate/Device-Coverage}" id="com.qnx.nto.1360968012" keepEnvironmentInBuildfile="false" name="CDT Internal Builder" superClass="com.qnx.nto"/>
+							<builder buildPath="${workspace_loc:/RetroArch/Device-Coverage}" id="com.qnx.nto.1360968012" keepEnvironmentInBuildfile="false" name="CDT Internal Builder" superClass="com.qnx.nto"/>
 							<tool commandLinePattern="${COMMAND} ${OUTPUT_FLAG} ${OUTPUT_PREFIX}${OUTPUT} ${INPUTS} ${FLAGS}" id="com.qnx.qcc.tool.compiler.1699204352" name="QCC Compiler" superClass="com.qnx.qcc.tool.compiler">
 								<option id="com.qnx.qcc.option.compiler.optlevel.692343476" name="Optimization Level" superClass="com.qnx.qcc.option.compiler.optlevel" value="com.qnx.qcc.option.compiler.optlevel.0" valueType="enumerated"/>
 								<option id="com.qnx.qcc.option.compile.debug.1061058825" name="Debug (-g)" superClass="com.qnx.qcc.option.compile.debug" value="true" valueType="boolean"/>
@@ -404,7 +401,6 @@
 									<listOptionValue builtIn="false" value="HAVE_ZLIB"/>
 									<listOptionValue builtIn="false" value="__BLACKBERRY_QNX__"/>
 									<listOptionValue builtIn="false" value="HAVE_OPENGLES"/>
-									<listOptionValue builtIn="false" value="PACKAGE_VERSION=\&quot;0.9.9.3\&quot;"/>
 									<listOptionValue builtIn="false" value="HAVE_OPENGLES2"/>
 									<listOptionValue builtIn="false" value="HAVE_NULLINPUT"/>
 									<listOptionValue builtIn="false" value="HAVE_ALSA"/>
@@ -484,7 +480,7 @@
 		</cconfiguration>
 	</storageModule>
 	<storageModule moduleId="cdtBuildSystem" version="4.0.0">
-		<project id="CubeRotate.null.476443474" name="CubeRotate"/>
+		<project id="RetroArch.null.476443474" name="RetroArch"/>
 	</storageModule>
 	<storageModule moduleId="org.eclipse.cdt.make.core.buildtargets"/>
 	<storageModule moduleId="refreshScope" versionNumber="1">

@@ -284,6 +284,7 @@ enum input_devices
    DEVICE_NONE,
    DEVICE_WIIMOTE,
    DEVICE_KEYBOARD,
+   DEVICE_IPEGA,
    DEVICE_KEYPAD,
    DEVICE_UNKNOWN,
 #elif defined(IOS)
@@ -529,7 +530,7 @@ extern const input_driver_t input_xenon360;
 extern const input_driver_t input_gx;
 extern const input_driver_t input_xinput;
 extern const input_driver_t input_linuxraw;
-extern const input_driver_t input_ios;
+extern const input_driver_t input_apple;
 extern const input_driver_t input_qnx;
 extern const input_driver_t input_null;
 

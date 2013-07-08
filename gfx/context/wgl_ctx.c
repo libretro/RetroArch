@@ -25,7 +25,9 @@
 #include "../gfx_context.h"
 #include "../gl_common.h"
 #include "../gfx_common.h"
+#include "../../media/resource.h"
 #include <windows.h>
+#include <commdlg.h>
 #include <string.h>
 
 #define IDI_ICON 1
@@ -46,6 +48,8 @@ static unsigned g_interval;
 
 static unsigned g_resize_width;
 static unsigned g_resize_height;
+static unsigned g_pos_x = CW_USEDEFAULT;
+static unsigned g_pos_y = CW_USEDEFAULT;
 static bool g_resized;
 
 static bool g_restore_desktop;
@@ -151,6 +155,25 @@ static void create_gl_context(HWND hwnd)
    }
 }
 
+static bool BrowseForFile(char *filename)
+{
+   OPENFILENAME ofn;
+	memset((void *)&ofn, 0, sizeof(OPENFILENAME));
+
+	ofn.lStructSize = sizeof(OPENFILENAME);
+	ofn.hwndOwner = g_hwnd;
+	ofn.lpstrFilter = "All Files\0*.*\0\0";
+	ofn.lpstrFile = filename;
+	ofn.lpstrTitle = "Select ROM";
+	ofn.lpstrDefExt = "";
+	ofn.nMaxFile = PATH_MAX;
+	ofn.Flags = OFN_FILEMUSTEXIST | OFN_HIDEREADONLY;
+	if(GetOpenFileName(&ofn)) {
+		return true;
+	}
+   return false;
+}
+
 static LRESULT CALLBACK WndProc(HWND hwnd, UINT message,
       WPARAM wparam, LPARAM lparam)
 {
@@ -183,8 +206,14 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT message,
       case WM_CLOSE:
       case WM_DESTROY:
       case WM_QUIT:
+      {
+         WINDOWPLACEMENT placement;
+         GetWindowPlacement(g_hwnd, &placement);
+         g_pos_x = placement.rcNormalPosition.left;
+         g_pos_y = placement.rcNormalPosition.top;
          g_quit = true;
          return 0;
+      }
 
       case WM_SIZE:
          // Do not send resize message if we minimize.
@@ -195,6 +224,28 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT message,
             g_resized = true;
          }
          return 0;
+      case WM_COMMAND:
+         switch(wparam & 0xffff)
+         {
+            case ID_M_OPENROM:
+            {
+               char rom_file[PATH_MAX] = {0};
+               if(BrowseForFile(rom_file))
+               {
+                  strlcpy(g_extern.fullpath, rom_file, sizeof(g_extern.fullpath));
+                  g_extern.lifecycle_mode_state |= (1ULL << MODE_LOAD_GAME);
+                  PostMessage(g_hwnd, WM_CLOSE, 0, 0);
+               }
+            }
+            break;
+            case ID_M_RESET:
+               rarch_game_reset();
+               break;
+            case ID_M_QUIT:
+               PostMessage(g_hwnd, WM_CLOSE, 0, 0);
+               break;
+         }
+         break;
    }
 
    return DefWindowProc(hwnd, message, wparam, lparam);
@@ -345,6 +396,7 @@ static bool gfx_ctx_set_video_mode(
       bool fullscreen)
 {
    DWORD style;
+   RECT rect   = {0};
 
    HMONITOR hm_to_use = NULL;
    MONITORINFOEX current_mon;
@@ -380,7 +432,6 @@ static bool gfx_ctx_set_video_mode(
    else
    {
       style = WS_OVERLAPPEDWINDOW | WS_CLIPSIBLINGS | WS_CLIPCHILDREN;
-      RECT rect   = {0};
       rect.right  = width;
       rect.bottom = height;
       AdjustWindowRect(&rect, style, FALSE);
@@ -389,13 +440,22 @@ static bool gfx_ctx_set_video_mode(
    }
 
    g_hwnd = CreateWindowEx(0, "RetroArch", "RetroArch", style,
-         fullscreen ? mon_rect.left : CW_USEDEFAULT,
-         fullscreen ? mon_rect.top  : CW_USEDEFAULT,
+         fullscreen ? mon_rect.left : g_pos_x,
+         fullscreen ? mon_rect.top  : g_pos_y,
          width, height,
          NULL, NULL, NULL, NULL);
 
    if (!g_hwnd)
       goto error;
+
+   if(!fullscreen)
+   {
+      SetMenu(g_hwnd,LoadMenu(GetModuleHandle(NULL),MAKEINTRESOURCE(IDR_MENU)));
+      RECT rcTemp = {0, 0, g_resize_height, 0x7FFF}; // 0x7FFF="Infinite" height
+      SendMessage(g_hwnd, WM_NCCALCSIZE, FALSE, (LPARAM)&rcTemp); // recalculate margin, taking possible menu wrap into account
+      g_resize_height += rcTemp.top + rect.top; // extend by new top margin and substract previous margin
+      SetWindowPos(g_hwnd, NULL, 0, 0, g_resize_width, g_resize_height, SWP_NOMOVE);
+   }
 
    if (!fullscreen || windowed_full)
    {

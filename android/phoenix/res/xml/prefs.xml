@@ -117,7 +117,7 @@
                     android:targetPackage="org.retroarch" />
             </Preference>
             <Preference
-                android:summary="Sets refresh rate equal to OS-reported value. This might not be accurate for your phone."
+                android:summary="Sets refresh rate equal to OS-reported value. This might not be accurate for your device."
                 android:title="Set OS-reported refresh rate" >
                 <intent
                     android:targetClass="org.retroarch.browser.RefreshRateSetOS"

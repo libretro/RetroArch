@@ -39,7 +39,12 @@
 #endif
 
 #ifndef PACKAGE_VERSION
+#ifdef __QNX__
+/* FIXME - avoid too many decimal points in number error */
+#define PACKAGE_VERSION "0994"
+#else
 #define PACKAGE_VERSION "0.9.9.4"
+#endif
 #endif
 
 // Platform-specific headers

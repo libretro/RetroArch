@@ -1,1 +1,13 @@
-1 ICON DISCARDABLE "retroarch-icon.ico"
+#include "resource.h"
+1                       ICON                    "retroarch-icon.ico"
+
+IDR_MENU MENU
+BEGIN
+    POPUP "File"
+    BEGIN
+        MENUITEM "Open ROM",                                    ID_M_OPENROM
+        MENUITEM SEPARATOR
+        MENUITEM "Reset",                                       ID_M_RESET
+        MENUITEM "Quit",                                        ID_M_QUIT
+    END
+END
