@@ -10,7 +10,7 @@ Once you have all of this stuff, getting RetroArch on a non-jailbroken device is
 
 ## Config
 
-RetroArch needs to know a couple things when building the app. You can configure these under `ios/script/build.config` inside the RetroArch repo. Once you initially clone down the repo, go into this file and make the changes.
+RetroArch needs to know a couple things when building the app. You can configure these under `apple/script/build.config` inside the RetroArch repo. Once you initially clone down the repo, go into this file and make the changes.
 
 ### CODE\_SIGN\_IDENTITY
 
@@ -24,14 +24,14 @@ Adding the name of the account will make sure it uses the exact codesigning iden
 
 ### PROVISIONING
 
-Before you build the app, you'll need to download the provisioning profile you want to use for the app into the `ios` directory. Just drop it in there, and add the file name to the config.
+Before you build the app, you'll need to download the provisioning profile you want to use for the app into the `apple` directory. Just drop it in there, and add the file name to the config.
 
 When RetroArch is built into an IPA, it will embed this provisioning profile into the IPA so you can just install the IPA right onto your phone.
 
 
 ## Building
 
-After you've configured the right things, you're ready for building. You'll want to run these from the `ios` directory of the RetroArch project.
+After you've configured the right things, you're ready for building. You'll want to run these from the `apple` directory of the RetroArch project.
 
 ### Emulator Cores
 
@@ -60,7 +60,7 @@ Run the libretro-super iOS build script to build the emulator cores.
 
 This will clone down their repos, build them into the `libretro-super/dist/ios` directory. Once this is complete, you need to copy them into the appropriate directory for RetroArch iOS. The path is:
 
-`RetroArch/ios/modules`
+`RetroArch/apple/modules`
 
 ### Build RetroArch iOS app
 
@@ -72,7 +72,7 @@ script/build
 
 This will build the iOS app, codesign everything that needs to, and package it into a distributable IPA.
 
-Once completed, you can find the IPA inside the `ios/build/Release-iphoneos` directory.
+Once completed, you can find the IPA inside the `apple/build/Release-iphoneos` directory. Excecute the IPA file and then open iTunes, with you device connected, click in your device, then Applications, find de RetroArch in the list, click install and syncronize with you device.
 
 ## Roms
 
