@@ -14,25 +14,33 @@
  */
 
 #include "input/input_common.h"
-#include "../../RetroArch/apple_input.h"
-#include "BTStack/btpad.h"
 #include "general.h"
 
-static bool ios_joypad_init(void)
+#ifdef IOS
+#include "../iOS/input/BTStack/btdynamic.c"
+#include "../iOS/input/BTStack/wiimote.c"
+#include "../iOS/input/BTStack/btpad.c"
+#include "../iOS/input/BTStack/btpad_ps3.c"
+#include "../iOS/input/BTStack/btpad_wii.c"
+#include "../iOS/input/BTStack/btpad_queue.c"
+#endif
+
+
+static bool apple_joypad_init(void)
 {
    return true;
 }
 
-static bool ios_joypad_query_pad(unsigned pad)
+static bool apple_joypad_query_pad(unsigned pad)
 {
    return pad < MAX_PLAYERS;
 }
 
-static void ios_joypad_destroy(void)
+static void apple_joypad_destroy(void)
 {
 }
 
-static bool ios_joypad_button(unsigned port, uint16_t joykey)
+static bool apple_joypad_button(unsigned port, uint16_t joykey)
 {
    if (joykey == NO_BTN)
       return false;
@@ -44,7 +52,7 @@ static bool ios_joypad_button(unsigned port, uint16_t joykey)
       return (port < MAX_PADS && joykey < 32) ? (g_polled_input_data.pad_buttons[port] & (1 << joykey)) != 0 : false;
 }
 
-static int16_t ios_joypad_axis(unsigned port, uint32_t joyaxis)
+static int16_t apple_joypad_axis(unsigned port, uint32_t joyaxis)
 {
    if (joyaxis == AXIS_NONE || port != 0)
       return 0;
@@ -64,24 +72,24 @@ static int16_t ios_joypad_axis(unsigned port, uint32_t joyaxis)
    return val;
 }
 
-static void ios_joypad_poll(void)
+static void apple_joypad_poll(void)
 {
 }
 
-static const char *ios_joypad_name(unsigned joypad)
+static const char *apple_joypad_name(unsigned joypad)
 {
    (void)joypad;
    return NULL;
 }
 
-const rarch_joypad_driver_t ios_joypad = {
-   ios_joypad_init,
-   ios_joypad_query_pad,
-   ios_joypad_destroy,
-   ios_joypad_button,
-   ios_joypad_axis,
-   ios_joypad_poll,
-   ios_joypad_name,
-   "ios",
+const rarch_joypad_driver_t apple_joypad = {
+   apple_joypad_init,
+   apple_joypad_query_pad,
+   apple_joypad_destroy,
+   apple_joypad_button,
+   apple_joypad_axis,
+   apple_joypad_poll,
+   apple_joypad_name,
+   "apple"
 };
 
