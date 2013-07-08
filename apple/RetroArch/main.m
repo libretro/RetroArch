@@ -550,27 +550,32 @@ int main(int argc, char *argv[])
    NSOpenPanel* panel = [NSOpenPanel openPanel];
    [panel beginSheetModalForWindow:window completionHandler:^(NSInteger result)
    {
+      [NSApplication.sharedApplication stopModal];
+   
       if (result == NSOKButton && panel.URL)
       {
          _file = panel.URL.path;
-         [self chooseCore];
+         [self performSelector:@selector(chooseCore) withObject:nil afterDelay:.5f];
       }
    }];
+   [NSApplication.sharedApplication runModalForWindow:panel];
 }
 
 - (void)chooseCore
 {
    [NSApplication.sharedApplication beginSheet:_coreSelectSheet modalForWindow:window modalDelegate:nil didEndSelector:nil contextInfo:nil];
+   [NSApplication.sharedApplication runModalForWindow:_coreSelectSheet];
 }
 
 - (IBAction)coreWasChosen:(id)sender
 {
+   [NSApplication.sharedApplication stopModal];
+   [NSApplication.sharedApplication endSheet:_coreSelectSheet returnCode:0];
+   [_coreSelectSheet orderOut:self];
+
    NSComboBox* cb = (NSComboBox*)[_coreSelectSheet.contentView viewWithTag:1];
    RAModuleInfo* module = (RAModuleInfo*)cb.objectValueOfSelectedItem;
    apple_run_core(module, _file.UTF8String);
-
-   [NSApplication.sharedApplication endSheet:_coreSelectSheet returnCode:0];
-   [_coreSelectSheet orderOut:self];
 }
 
 #pragma mark RetroArch_Platform
