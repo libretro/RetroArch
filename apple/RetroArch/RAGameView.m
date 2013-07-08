@@ -247,7 +247,7 @@ void apple_set_game_view_sync(unsigned interval)
    g_is_syncing = interval ? true : false;
    g_fast_forward_skips = interval ? 0 : 3;
 #elif defined(OSX)
-   GLint value = interval ? 0 : 1;
+   GLint value = interval ? 1 : 0;
    [g_view.openGLContext setValues:&value forParameter:NSOpenGLCPSwapInterval];
 #endif
 }
