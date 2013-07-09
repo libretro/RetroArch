@@ -32,7 +32,7 @@ static void hid_input_callback(void* inContext, IOReturn inResult, void* inSende
 
    if (type == 2 && page == 9)
    {
-      int state = (int)IOHIDValueGetIntegerValue(inIOHIDValueRef);
+      CFIndex state = IOHIDValueGetIntegerValue(inIOHIDValueRef);
 
       if (state)  g_current_input_data.pad_buttons[slot] |= (1 << (use - 1));
       else        g_current_input_data.pad_buttons[slot] &= ~(1 << (use - 1));
@@ -45,15 +45,8 @@ static void hid_input_callback(void* inContext, IOReturn inResult, void* inSende
          if (use == axis_use_ids[i])
          {
             CFIndex min = IOHIDElementGetPhysicalMin(element);
-            CFIndex max = IOHIDElementGetPhysicalMax(element);
-            CFIndex state = IOHIDValueGetIntegerValue(inIOHIDValueRef);            
-            
-            if (min != 0)
-            {
-               max -= min;
-               state -= min;
-               min = 0;
-            }
+            CFIndex max = IOHIDElementGetPhysicalMax(element) - min;
+            CFIndex state = IOHIDValueGetIntegerValue(inIOHIDValueRef) - min;
             
             float val = (float)state / (float)max;
             g_current_input_data.pad_axis[slot][i] = ((val * 2.0f) - 1.0f) * 32767.0f;

@@ -131,6 +131,7 @@ static void apple_input_poll(void *data)
       }
 
       input_joypad_poll(g_joydriver);
+      g_polled_input_data.pad_buttons[0] |= icade_buttons;
    });
 }
 
