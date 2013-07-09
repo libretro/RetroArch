@@ -42,10 +42,9 @@
    NSString* ragPath = [rootPath stringByAppendingPathComponent:@"RetroArchGames"];
    
    RADirectoryList* list = [RADirectoryList directoryListForPath:path_is_directory(ragPath.UTF8String) ? ragPath : rootPath];
-   list.navigationItem.leftBarButtonItem = [[UIBarButtonItem alloc] initWithTitle:@"Refresh"
-                                                                            style:UIBarButtonItemStyleBordered
-                                                                           target:list
-                                                                           action:@selector(refresh)];
+    
+    list.navigationItem.leftBarButtonItem = [[UIBarButtonItem alloc] initWithTitle:@"New Folder" style:UIBarButtonItemStyleBordered target:list action:@selector(createNewFolder)];
+    
                                             
    return list;
 }
@@ -170,6 +169,27 @@
          } else {
             apple_display_alert(@"Not possible to delete file.", 0);
          }
+    }
+}
+
+- (void)createNewFolder {
+    UIAlertView *alertView = [[UIAlertView alloc] initWithTitle:@"Enter new folder name" message:@"" delegate:self cancelButtonTitle:@"Cancel" otherButtonTitles:@"OK", nil];
+    alertView.alertViewStyle = UIAlertViewStylePlainTextInput;
+    [alertView show];
+}
+
+- (void)alertView:(UIAlertView *)alertView clickedButtonAtIndex:(NSInteger)buttonIndex {
+    NSString *text = [[alertView textFieldAtIndex:0] text];
+    
+    if (buttonIndex == 1 && ![text isEqualToString:@""]) {
+        NSString *directoryPath = [_path stringByAppendingPathComponent:text];
+        BOOL didCreateFolder = [[NSFileManager defaultManager] createDirectoryAtPath:directoryPath withIntermediateDirectories:YES attributes:nil error:nil];
+        
+        if (didCreateFolder) {
+            [self refresh];
+        } else {
+            apple_display_alert(@"Not possible to create folder.", 0);
+        }
     }
 }
 
