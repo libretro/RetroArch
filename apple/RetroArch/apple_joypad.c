@@ -23,6 +23,8 @@
 #include "../iOS/input/BTStack/btpad_ps3.c"
 #include "../iOS/input/BTStack/btpad_wii.c"
 #include "../iOS/input/BTStack/btpad_queue.c"
+#elif defined(OSX)
+#include "../OSX/hid_pad.c"
 #endif
 
 

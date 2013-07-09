@@ -524,6 +524,9 @@ int main(int argc, char *argv[])
       [self chooseCore];
 
    _wantReload = false;
+   
+   extern void osx_pad_init();
+   osx_pad_init();
 }
 
 - (BOOL)applicationShouldTerminateAfterLastWindowClosed:(NSApplication *)theApplication
