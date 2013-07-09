@@ -36,7 +36,7 @@
    NSString* rootPath = RetroArch_iOS.get.documentsDirectory;
    NSString* ragPath = [rootPath stringByAppendingPathComponent:@"RetroArchGames"];
    RADirectoryList* list = [RADirectoryList directoryListForPath:path_is_directory(ragPath.UTF8String) ? ragPath : rootPath];
-                                            
+
    return list;
 }
 
@@ -216,7 +216,11 @@
         if (didCreateFolder) {
             [self refresh];
         } else {
+<<<<<<< HEAD
             apple_display_alert(@"It was not possible to create folder.", 0);
+=======
+            apple_display_alert(@"Not possible to create folder.", 0);
+>>>>>>> Adds new Folder option in ROM list.
         }
     }
 }
