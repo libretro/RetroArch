@@ -617,6 +617,10 @@ int main(int argc, char *argv[])
 
    if (_wantReload)
       apple_run_core(_core, _file.UTF8String);
+   else if(use_tv_mode)
+      apple_run_core(nil, 0);
+   else
+      [NSApplication.sharedApplication terminate:nil];
    
    _wantReload = false;
 }
