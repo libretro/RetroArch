@@ -139,12 +139,17 @@
 - (UITableViewCell*)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath
 {
    RADirectoryItem* path = (RADirectoryItem*)[self itemForIndexPath:indexPath];
+   static NSString *CellIdentifier = @"path";
 
-   UITableViewCell* cell = [self.tableView dequeueReusableCellWithIdentifier:@"path"];
-   cell = (cell != nil) ? cell : [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:@"path"];
+   UITableViewCell* cell = [self.tableView dequeueReusableCellWithIdentifier:CellIdentifier];
+   cell = (cell != nil) ? cell : [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:CellIdentifier];
    cell.textLabel.text = [path.path lastPathComponent];
    cell.accessoryType = (path.isDirectory) ? UITableViewCellAccessoryDisclosureIndicator : UITableViewCellAccessoryNone;
-   cell.imageView.image = [UIImage imageNamed:(path.isDirectory) ? @"ic_dir" : @"ic_file"];
+    
+   if (path.isDirectory) {
+      cell.imageView.image = [UIImage imageNamed:@"ic_dir"];
+   }
+    
    return cell;
 }
 
