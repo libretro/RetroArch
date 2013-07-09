@@ -62,12 +62,12 @@ static int16_t apple_joypad_axis(unsigned port, uint32_t joyaxis)
    int16_t val = 0;
    if (AXIS_NEG_GET(joyaxis) < 4)
    {
-      val = g_polled_input_data.pad_axis[AXIS_NEG_GET(joyaxis)];
+      val = g_polled_input_data.pad_axis[port][AXIS_NEG_GET(joyaxis)];
       val = (val < 0) ? val : 0;
    }
    else if(AXIS_POS_GET(joyaxis) < 4)
    {
-      val = g_polled_input_data.pad_axis[AXIS_POS_GET(joyaxis)];
+      val = g_polled_input_data.pad_axis[port][AXIS_POS_GET(joyaxis)];
       val = (val > 0) ? val : 0;
    }
 
