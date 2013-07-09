@@ -158,6 +158,21 @@
    return _sectionNames;
 }
 
+- (void)tableView:(UITableView*)tableView commitEditingStyle:(UITableViewCellEditingStyle)editingStyle forRowAtIndexPath:(NSIndexPath*)indexPath {
+      if (editingStyle == UITableViewCellEditingStyleDelete) {
+         NSFileManager *fileManager = [NSFileManager defaultManager];
+         RADirectoryItem *path = (RADirectoryItem*)[self itemForIndexPath:indexPath];
+         
+         BOOL didRemoveItem = [fileManager removeItemAtPath:path.path error:nil];
+          
+         if (didRemoveItem) {
+            [self refresh];
+         } else {
+            apple_display_alert(@"Not possible to delete file.", 0);
+         }
+    }
+}
+
 @end
 
 @implementation RAModuleList
