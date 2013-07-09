@@ -35,9 +35,10 @@ void apple_display_alert(NSString* message, NSString* title)
    alert.informativeText = message;
    alert.alertStyle = NSInformationalAlertStyle;
    [alert beginSheetModalForWindow:RetroArch_OSX.get->window
-          modalDelegate:nil
-          didEndSelector:nil
+          modalDelegate:apple_platform
+          didEndSelector:@selector(alertDidEnd:returnCode:contextInfo:)
           contextInfo:nil];
+   [NSApplication.sharedApplication runModalForWindow:alert.window];
 #endif
 }
 

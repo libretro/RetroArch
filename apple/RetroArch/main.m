@@ -517,6 +517,11 @@ int main(int argc, char *argv[])
    for (RAModuleInfo* i in RAModuleInfo.getModules)
       [cb addItemWithObjectValue:i];
 
+   if (cb.numberOfItems)
+      [cb selectItemAtIndex:0];
+   else
+      apple_display_alert(@"No libretro cores were found.", @"RetroArch");
+
    // Run RGUI if needed
    if (!_wantReload)
       apple_run_core(nil, 0);
@@ -550,7 +555,11 @@ int main(int argc, char *argv[])
    if (filenames.count == 1 && filenames[0])
    {
       _file = filenames[0];
-      [self chooseCore];
+      
+      if (!_loaded)
+         _wantReload = true;
+      else
+         [self chooseCore];
       
       [sender replyToOpenOrPrint:NSApplicationDelegateReplySuccess];
    }
@@ -641,6 +650,11 @@ int main(int argc, char *argv[])
 {
    if (apple_is_running)
       apple_frontend_post_event(&event_basic_command, (void*)((NSMenuItem*)sender).tag);
+}
+
+- (void)alertDidEnd:(NSAlert *)alert returnCode:(NSInteger)returnCode contextInfo:(void *)contextInfo
+{
+   [NSApplication.sharedApplication stopModal];
 }
 
 @end
