@@ -21,11 +21,17 @@
 
 #include "apple_input.h"
 
+// If USE_XATTR is defined any loaded file will get a com.RetroArch.Core extended attribute
+// specifying which core was used to load.
+//#define USE_XATTR
+
 #ifdef IOS
 #import "views.h"
 #include "../iOS/input/BTStack/btpad.h"
 #include "../iOS/input/BTStack/btdynamic.h"
 #include "../iOS/input/BTStack/btpad.h"
+#elif defined(USE_XATTR)
+#include "sys/xattr.h"
 #endif
 
 #include "file.h"
@@ -586,8 +592,37 @@ int main(int argc, char *argv[])
    [NSApplication.sharedApplication runModalForWindow:panel];
 }
 
+// This utility function will queue the _core and _file instance values for running.
+// If the emulator thread is already running it will tell it to quit.
+- (void)runCore
+{
+   _wantReload = apple_is_running;
+
+   if (!apple_is_running)
+      apple_run_core(_core, _file.UTF8String);
+   else
+      apple_frontend_post_event(event_basic_command, (void*)QUIT);
+}
+
 - (void)chooseCore
 {
+#ifdef USE_XATTR
+   char stored_name[PATH_MAX];
+   if (getxattr(_file.UTF8String, "com.RetroArch.Core", stored_name, PATH_MAX, 0, 0) > 0)
+   {
+      for (RAModuleInfo* i in RAModuleInfo.getModules)
+      {
+         const char* core_name = i.path.lastPathComponent.UTF8String;
+         if (strcmp(core_name, stored_name) == 0)
+         {
+            _core = i;
+            [self runCore];
+            return;
+         }
+      }
+   }
+#endif
+
    [NSApplication.sharedApplication beginSheet:_coreSelectSheet modalForWindow:window modalDelegate:nil didEndSelector:nil contextInfo:nil];
    [NSApplication.sharedApplication runModalForWindow:_coreSelectSheet];
 }
@@ -604,19 +639,21 @@ int main(int argc, char *argv[])
    NSComboBox* cb = (NSComboBox*)[_coreSelectSheet.contentView viewWithTag:1];
    _core = (RAModuleInfo*)cb.objectValueOfSelectedItem;
 
-   _wantReload = apple_is_running;
-
-   if (!apple_is_running)
-      apple_run_core(_core, _file.UTF8String);
-   else
-      apple_frontend_post_event(event_basic_command, (void*)QUIT);
+   [self runCore];
 }
 
 #pragma mark RetroArch_Platform
 - (void)loadingCore:(RAModuleInfo*)core withFile:(const char*)file
 {
    if (file)
+   {
       [NSDocumentController.sharedDocumentController noteNewRecentDocumentURL:[NSURL fileURLWithPath:[NSString stringWithUTF8String:file]]];
+      
+#ifdef USE_XATTR
+      const char* core_name = core.path.lastPathComponent.UTF8String;
+      setxattr(file, "com.RetroArch.Core", core_name, strlen(core_name) + 1, 0, 0);
+#endif
+   }
 }
 
 - (void)unloadingCore:(RAModuleInfo*)core
