@@ -21,6 +21,7 @@
 		967894A71788F0D900D6CA69 /* OpenGL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 967894A61788F0D900D6CA69 /* OpenGL.framework */; };
 		967894A91788F0E500D6CA69 /* AudioUnit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 967894A81788F0E500D6CA69 /* AudioUnit.framework */; };
 		967894E9178A2EB400D6CA69 /* modules in Resources */ = {isa = PBXBuildFile; fileRef = 967894E8178A2EB400D6CA69 /* modules */; };
+		C15874EF178F2094001171D4 /* RetroArch.icns in Resources */ = {isa = PBXBuildFile; fileRef = C15874EE178F2094001171D4 /* RetroArch.icns */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -46,6 +47,7 @@
 		967894A61788F0D900D6CA69 /* OpenGL.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = OpenGL.framework; path = Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.8.sdk/System/Library/Frameworks/OpenGL.framework; sourceTree = DEVELOPER_DIR; };
 		967894A81788F0E500D6CA69 /* AudioUnit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AudioUnit.framework; path = Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.8.sdk/System/Library/Frameworks/AudioUnit.framework; sourceTree = DEVELOPER_DIR; };
 		967894E8178A2EB400D6CA69 /* modules */ = {isa = PBXFileReference; lastKnownFileType = folder; path = modules; sourceTree = "<group>"; };
+		C15874EE178F2094001171D4 /* RetroArch.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; name = RetroArch.icns; path = OSX/RetroArch.icns; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -130,6 +132,7 @@
 			children = (
 				967894E8178A2EB400D6CA69 /* modules */,
 				967894911788ECDB00D6CA69 /* MainMenu.xib */,
+				C15874EE178F2094001171D4 /* RetroArch.icns */,
 			);
 			name = Assets;
 			sourceTree = "<group>";
@@ -187,6 +190,7 @@
 				967894931788ECDB00D6CA69 /* InfoPlist.strings in Resources */,
 				967894941788ECDB00D6CA69 /* MainMenu.xib in Resources */,
 				967894E9178A2EB400D6CA69 /* modules in Resources */,
+				C15874EF178F2094001171D4 /* RetroArch.icns in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
