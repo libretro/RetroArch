@@ -21,11 +21,17 @@
 
 #include "apple_input.h"
 
+// If USE_XATTR is defined any loaded file will get a com.RetroArch.Core extended attribute
+// specifying which core was used to load.
+//#define USE_XATTR
+
 #ifdef IOS
 #import "views.h"
 #include "../iOS/input/BTStack/btpad.h"
 #include "../iOS/input/BTStack/btdynamic.h"
 #include "../iOS/input/BTStack/btpad.h"
+#elif defined(USE_XATTR)
+#include "sys/xattr.h"
 #endif
 
 #include "file.h"
@@ -517,6 +523,11 @@ int main(int argc, char *argv[])
    for (RAModuleInfo* i in RAModuleInfo.getModules)
       [cb addItemWithObjectValue:i];
 
+   if (cb.numberOfItems)
+      [cb selectItemAtIndex:0];
+   else
+      apple_display_alert(@"No libretro cores were found.", @"RetroArch");
+
    // Run RGUI if needed
    if (!_wantReload)
       apple_run_core(nil, 0);
@@ -524,6 +535,9 @@ int main(int argc, char *argv[])
       [self chooseCore];
 
    _wantReload = false;
+   
+   extern void osx_pad_init();
+   osx_pad_init();
 }
 
 - (BOOL)applicationShouldTerminateAfterLastWindowClosed:(NSApplication *)theApplication
@@ -547,7 +561,11 @@ int main(int argc, char *argv[])
    if (filenames.count == 1 && filenames[0])
    {
       _file = filenames[0];
-      [self chooseCore];
+      
+      if (!_loaded)
+         _wantReload = true;
+      else
+         [self chooseCore];
       
       [sender replyToOpenOrPrint:NSApplicationDelegateReplySuccess];
    }
@@ -574,8 +592,37 @@ int main(int argc, char *argv[])
    [NSApplication.sharedApplication runModalForWindow:panel];
 }
 
+// This utility function will queue the _core and _file instance values for running.
+// If the emulator thread is already running it will tell it to quit.
+- (void)runCore
+{
+   _wantReload = apple_is_running;
+
+   if (!apple_is_running)
+      apple_run_core(_core, _file.UTF8String);
+   else
+      apple_frontend_post_event(event_basic_command, (void*)QUIT);
+}
+
 - (void)chooseCore
 {
+#ifdef USE_XATTR
+   char stored_name[PATH_MAX];
+   if (getxattr(_file.UTF8String, "com.RetroArch.Core", stored_name, PATH_MAX, 0, 0) > 0)
+   {
+      for (RAModuleInfo* i in RAModuleInfo.getModules)
+      {
+         const char* core_name = i.path.lastPathComponent.UTF8String;
+         if (strcmp(core_name, stored_name) == 0)
+         {
+            _core = i;
+            [self runCore];
+            return;
+         }
+      }
+   }
+#endif
+
    [NSApplication.sharedApplication beginSheet:_coreSelectSheet modalForWindow:window modalDelegate:nil didEndSelector:nil contextInfo:nil];
    [NSApplication.sharedApplication runModalForWindow:_coreSelectSheet];
 }
@@ -592,19 +639,21 @@ int main(int argc, char *argv[])
    NSComboBox* cb = (NSComboBox*)[_coreSelectSheet.contentView viewWithTag:1];
    _core = (RAModuleInfo*)cb.objectValueOfSelectedItem;
 
-   _wantReload = apple_is_running;
-
-   if (!apple_is_running)
-      apple_run_core(_core, _file.UTF8String);
-   else
-      apple_frontend_post_event(event_basic_command, (void*)QUIT);
+   [self runCore];
 }
 
 #pragma mark RetroArch_Platform
 - (void)loadingCore:(RAModuleInfo*)core withFile:(const char*)file
 {
    if (file)
+   {
       [NSDocumentController.sharedDocumentController noteNewRecentDocumentURL:[NSURL fileURLWithPath:[NSString stringWithUTF8String:file]]];
+      
+#ifdef USE_XATTR
+      const char* core_name = core.path.lastPathComponent.UTF8String;
+      setxattr(file, "com.RetroArch.Core", core_name, strlen(core_name) + 1, 0, 0);
+#endif
+   }
 }
 
 - (void)unloadingCore:(RAModuleInfo*)core
@@ -614,6 +663,10 @@ int main(int argc, char *argv[])
 
    if (_wantReload)
       apple_run_core(_core, _file.UTF8String);
+   else if(use_tv_mode)
+      apple_run_core(nil, 0);
+   else
+      [NSApplication.sharedApplication terminate:nil];
    
    _wantReload = false;
 }
@@ -634,6 +687,11 @@ int main(int argc, char *argv[])
 {
    if (apple_is_running)
       apple_frontend_post_event(&event_basic_command, (void*)((NSMenuItem*)sender).tag);
+}
+
+- (void)alertDidEnd:(NSAlert *)alert returnCode:(NSInteger)returnCode contextInfo:(void *)contextInfo
+{
+   [NSApplication.sharedApplication stopModal];
 }
 
 @end

@@ -22,12 +22,8 @@
 #include "general.h"
 #include "driver.h"
 
-#ifdef IOS
-extern const rarch_joypad_driver_t ios_joypad;
-static const rarch_joypad_driver_t* const g_joydriver = &ios_joypad;
-#else
-static const rarch_joypad_driver_t* const g_joydriver = 0;
-#endif
+extern const rarch_joypad_driver_t apple_joypad;
+static const rarch_joypad_driver_t* const g_joydriver = &apple_joypad;
 
 apple_input_data_t g_current_input_data;
 apple_input_data_t g_polled_input_data;
@@ -135,6 +131,7 @@ static void apple_input_poll(void *data)
       }
 
       input_joypad_poll(g_joydriver);
+      g_polled_input_data.pad_buttons[0] |= icade_buttons;
    });
 }
 

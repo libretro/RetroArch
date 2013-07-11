@@ -291,15 +291,7 @@ INPUT
 #include "../android/native/jni/input_android.c"
 #elif defined(IOS) || defined(OSX)
 #include "../apple/RetroArch/apple_input.c"
-#ifdef IOS
-#include "../apple/iOS/input/ios_joypad.c"
-#include "../apple/iOS/input/BTStack/btdynamic.c"
-#include "../apple/iOS/input/BTStack/wiimote.c"
-#include "../apple/iOS/input/BTStack/btpad.c"
-#include "../apple/iOS/input/BTStack/btpad_ps3.c"
-#include "../apple/iOS/input/BTStack/btpad_wii.c"
-#include "../apple/iOS/input/BTStack/btpad_queue.c"
-#endif
+#include "../apple/RetroArch/apple_joypad.c"
 #elif defined(__BLACKBERRY_QNX__)
 #include "../blackberry-qnx/qnx_input.c"
 #endif
