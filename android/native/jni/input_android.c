@@ -59,7 +59,9 @@ enum
    AXIS_X = 0,
    AXIS_Y = 1,
    AXIS_Z = 11,
-   AXIS_RZ = 14
+   AXIS_RZ = 14,
+   AXIS_HAT_X = 15,
+   AXIS_HAT_Y = 16
 };
 
 void (*engine_handle_dpad)(AInputEvent*, size_t, int, char*, size_t, int, bool);
@@ -213,14 +215,28 @@ static void engine_handle_dpad_getaxisvalue(AInputEvent *event,
    float y = AMotionEvent_getAxisValue(event, AXIS_Y, motion_pointer);
    float z = AMotionEvent_getAxisValue(event, AXIS_Z, motion_pointer);
    float rz = AMotionEvent_getAxisValue(event, AXIS_RZ, motion_pointer);
+   float hatx = AMotionEvent_getAxisValue(event, AXIS_HAT_X, motion_pointer);
+   float haty = AMotionEvent_getAxisValue(event, AXIS_HAT_Y, motion_pointer);
 
    *state_cur &= ~((1ULL << RETRO_DEVICE_ID_JOYPAD_LEFT) | 
          (1ULL << RETRO_DEVICE_ID_JOYPAD_RIGHT) | (1ULL << RETRO_DEVICE_ID_JOYPAD_UP) |
          (1ULL << RETRO_DEVICE_ID_JOYPAD_DOWN));
-   *state_cur |= PRESSED_LEFT(x, y)  ? (1ULL << RETRO_DEVICE_ID_JOYPAD_LEFT)  : 0;
-   *state_cur |= PRESSED_RIGHT(x, y) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_RIGHT) : 0;
-   *state_cur |= PRESSED_UP(x, y)    ? (1ULL << RETRO_DEVICE_ID_JOYPAD_UP)    : 0;
-   *state_cur |= PRESSED_DOWN(x, y)  ? (1ULL << RETRO_DEVICE_ID_JOYPAD_DOWN)  : 0;
+
+   /* On some devices the dpad sends AXIS_HAT_X / AXIS_HAT_Y events, use those first if the returned values are nonzero */
+   if (fabs(hatx) > 0.0001 || fabs(haty) > 0.0001)
+   {
+      *state_cur |= PRESSED_LEFT(hatx, haty)  ? (1ULL << RETRO_DEVICE_ID_JOYPAD_LEFT)  : 0;
+      *state_cur |= PRESSED_RIGHT(hatx, haty) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_RIGHT) : 0;
+      *state_cur |= PRESSED_UP(hatx, haty)    ? (1ULL << RETRO_DEVICE_ID_JOYPAD_UP)    : 0;
+      *state_cur |= PRESSED_DOWN(hatx, haty)  ? (1ULL << RETRO_DEVICE_ID_JOYPAD_DOWN)  : 0;
+   }
+   else
+   {
+      *state_cur |= PRESSED_LEFT(x, y)  ? (1ULL << RETRO_DEVICE_ID_JOYPAD_LEFT)  : 0;
+      *state_cur |= PRESSED_RIGHT(x, y) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_RIGHT) : 0;
+      *state_cur |= PRESSED_UP(x, y)    ? (1ULL << RETRO_DEVICE_ID_JOYPAD_UP)    : 0;
+      *state_cur |= PRESSED_DOWN(x, y)  ? (1ULL << RETRO_DEVICE_ID_JOYPAD_DOWN)  : 0;
+   }
 
    if (debug_enable)
       snprintf(msg, msg_sizeof, "Pad %d : x %.2f, y %.2f, z %.2f, rz %.2f, src %d.\n", 
@@ -1272,7 +1288,6 @@ static void android_input_set_keybinds(void *data, unsigned device,
                   case ICADE_PROFILE_IPEGA_PG9017:
                      strlcpy(g_settings.input.device_names[port], "iPega PG-9017",
                         sizeof(g_settings.input.device_names[port]));
-                     /* Todo: diagonals - patchy? */
                      /* This maps to SNES layout, not button labels on gamepad -- SNES layout has A to the right of B */
                      keycode_lut[AKEYCODE_BUTTON_1]  |= ((RETRO_DEVICE_ID_JOYPAD_Y+1)      << shift); /* Button labeled X on gamepad */
                      keycode_lut[AKEYCODE_BUTTON_2]  |= ((RETRO_DEVICE_ID_JOYPAD_B+1)      << shift); /* Button labeled A on gamepad */
@@ -1282,8 +1297,8 @@ static void android_input_set_keybinds(void *data, unsigned device,
                      keycode_lut[AKEYCODE_BUTTON_6]  |= ((RETRO_DEVICE_ID_JOYPAD_R+1)      << shift);
                      keycode_lut[AKEYCODE_BUTTON_9]  |= ((RETRO_DEVICE_ID_JOYPAD_SELECT+1) << shift);
                      keycode_lut[AKEYCODE_BUTTON_10] |= ((RETRO_DEVICE_ID_JOYPAD_START+1)  << shift);
-                     /* These don't work, the dpad seems to send motion events instead of button events, so they get processed by
-                        engine_handle_dpad_getaxisvalue() but it gets values of 0 for all axes... */
+                     /* These don't work, in gamepad mode the dpad sends AXIS_HAT_X and AXIS_HAT_Y motion events
+                        instead of button events, so they get processed by engine_handle_dpad_getaxisvalue()  */
                      keycode_lut[AKEYCODE_DPAD_UP]   |= ((RETRO_DEVICE_ID_JOYPAD_UP+1)     << shift);
                      keycode_lut[AKEYCODE_DPAD_DOWN] |= ((RETRO_DEVICE_ID_JOYPAD_DOWN+1)   << shift);
                      keycode_lut[AKEYCODE_DPAD_LEFT] |= ((RETRO_DEVICE_ID_JOYPAD_LEFT+1)   << shift);
