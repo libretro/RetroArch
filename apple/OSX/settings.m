@@ -17,111 +17,64 @@
 #import "../RetroArch/RetroArch_Apple.h"
 #include "../RetroArch/setting_data.h"
 
-@interface RASettingsDelegate : NSObject<NSTableViewDataSource>
+@interface RASettingsDelegate : NSObject<NSTableViewDataSource,   NSTableViewDelegate,
+                                         NSOutlineViewDataSource, NSOutlineViewDelegate>
 @end
 
 @implementation RASettingsDelegate
 {
    NSWindow IBOutlet* _window;
-   NSScrollView IBOutlet* _scroller;
    NSTableView IBOutlet* _table;
+   NSOutlineView IBOutlet* _outline;
    
-   NSMutableArray* _groups;
+   NSMutableArray* _settings;
+   NSMutableArray* _currentGroup;
 }
 
 - (void)awakeFromNib
 {
-   _groups = [NSMutableArray array];
-
-   NSMatrix* mtx = nil;
-   NSMutableArray* subGroups = nil;
-
+   NSMutableArray* thisGroup = nil;
+   NSMutableArray* thisSubGroup = nil;
+   _settings = [NSMutableArray array];
+   
    for (int i = 0; setting_data[i].type; i ++)
    {
-      const rarch_setting_t* s = &setting_data[i];
-
-      if (s->type == ST_GROUP)
+      switch (setting_data[i].type)
       {
-         subGroups = [NSMutableArray array];
-         objc_setAssociatedObject(subGroups, "NAME", [NSString stringWithFormat:@"%s", s->name], OBJC_ASSOCIATION_RETAIN_NONATOMIC);
-      }
-      else if(s->type == ST_END_GROUP)
-      {
-         NSView* view = [NSView new];
-         uint32_t height = 0;
-         
-         for (NSMatrix* mtx in subGroups)
-            height += mtx.frame.size.height + 20;
-         
-         view.frameSize = CGSizeMake(_scroller.frame.size.width, height);
-         
-         for (NSMatrix* mtx in subGroups)
+         case ST_GROUP:
          {
-            mtx.frameOrigin = CGPointMake(0, height - mtx.frame.size.height);
-            height -= mtx.frame.size.height + 20;
-            
-            NSBox* box = [[NSBox alloc] initWithFrame:mtx.frame];
-            box.title = objc_getAssociatedObject(mtx, "NAME");
-            box.contentView = mtx;
-            [view addSubview:box];
-         }
-
-         [_groups addObject:view];
-         objc_setAssociatedObject(view, "NAME", objc_getAssociatedObject(subGroups, "NAME"), OBJC_ASSOCIATION_RETAIN_NONATOMIC);
-         subGroups = nil;
-      }
-      else if (s->type == ST_SUB_GROUP)
-      {
-         mtx = [[NSMatrix alloc] initWithFrame:CGRectMake(0, 0, 480, 480)
-                                 mode:NSHighlightModeMatrix
-                                 prototype:nil
-                                 numberOfRows:0
-                                 numberOfColumns:2];
-         mtx.cellSize = NSMakeSize(240, 20);
-         objc_setAssociatedObject(mtx, "NAME", [NSString stringWithFormat:@"%s", s->name], OBJC_ASSOCIATION_RETAIN_NONATOMIC);
-      }
-      else if (s->type == ST_END_SUB_GROUP)
-      {
-         [mtx sizeToCells];
-         [subGroups addObject:mtx];
-         mtx = nil;
-      }
-      else
-      {
-         NSTextFieldCell* label = [[NSTextFieldCell alloc] initTextCell:[NSString stringWithFormat:@"%s", s->short_description]];
-         id accessory = nil;
-      
-         switch (s->type)
-         {
-            case ST_BOOL:
-            {
-               accessory = [NSButtonCell new];
-            
-               [accessory setButtonType:NSSwitchButton];
-               [accessory setState:*(bool*)s->value];
-               [accessory setTitle:@""];
-               break;
-            }
-         
-            case ST_STRING:
-            case ST_PATH:
-            case ST_INT:
-            case ST_FLOAT:
-            {
-               accessory = [NSTextFieldCell new];
-            
-               if (s->type == ST_INT)        [accessory setIntValue:*(int32_t*)s->value];
-               else if (s->type == ST_FLOAT) [accessory setFloatValue:*(float*)s->value];
-               else                          [accessory setTitle:[NSString stringWithFormat:@"%s", (const char*)s->value]];
-               break;
-            }
-         
-            default: abort();
+            thisGroup = [NSMutableArray array];
+            objc_setAssociatedObject(thisGroup, "NAME", [NSString stringWithFormat:@"%s", setting_data[i].name], OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+            break;
          }
          
-         [mtx addRowWithCells:[NSArray arrayWithObjects:label, accessory, nil]];
+         case ST_END_GROUP:
+         {
+            [_settings addObject:thisGroup];
+            thisGroup = nil;
+            break;
+         }
+         
+         case ST_SUB_GROUP:
+         {
+            thisSubGroup = [NSMutableArray array];
+            objc_setAssociatedObject(thisSubGroup, "NAME", [NSString stringWithFormat:@"%s", setting_data[i].name], OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+            break;
+         }
+         
+         case ST_END_SUB_GROUP:
+         {
+            [thisGroup addObject:thisSubGroup];
+            thisSubGroup = nil;
+            break;
+         }
+
+         default:
+         {
+            [thisSubGroup addObject:[NSNumber numberWithInt:i]];
+            break;
+         }
       }
-      
    }
    
    [NSApplication.sharedApplication beginSheet:_window modalForWindow:RetroArch_OSX.get->window modalDelegate:nil didEndSelector:nil contextInfo:nil];
@@ -135,29 +88,108 @@
    [_window orderOut:nil];
 }
 
+
+#pragma mark View Builders
+- (NSView*)labelAccessoryFor:(NSString*)text onTable:(NSTableView*)table
+{
+   NSTextField* result = [table makeViewWithIdentifier:@"label" owner:self];
+   if (result == nil)
+   {
+      result = [NSTextField new];
+      result.bordered = NO;
+      result.drawsBackground = NO;
+      result.identifier = @"label";
+   }
+ 
+   result.stringValue = text;
+   return result;
+}
+
+- (NSView*)booleanAccessoryFor:(const rarch_setting_t*)setting onTable:(NSTableView*)table
+{
+   NSButton* result = [table makeViewWithIdentifier:@"boolean" owner:self];
+   
+   if (!result)
+   {
+      result = [NSButton new];
+      result.buttonType = NSSwitchButton;
+      result.title = @"";
+   }
+   
+   result.state = *(bool*)setting->value;
+   return result;
+}
+
+#pragma mark Section Table
 - (NSInteger)numberOfRowsInTableView:(NSTableView*)view
 {
-   return _groups.count;
+   return _settings.count;
 }
 
 - (NSView *)tableView:(NSTableView *)tableView viewForTableColumn:(NSTableColumn *)tableColumn row:(NSInteger)row
 {
-   NSTextField* result = [tableView makeViewWithIdentifier:@"category" owner:self];
-   if (result == nil)
-   {
-      result = [[NSTextField alloc] initWithFrame:CGRectMake(0, 0, 100, 10)];
-      result.bordered = NO;
-      result.drawsBackground = NO;
-      result.identifier = @"category";
-   }
- 
-   result.stringValue = objc_getAssociatedObject(_groups[row], "NAME");
-   return result;
+   return [self labelAccessoryFor:objc_getAssociatedObject(_settings[row], "NAME") onTable:tableView];
 }
 
 - (void)tableViewSelectionDidChange:(NSNotification *)aNotification
 {
-   _scroller.documentView = _groups[_table.selectedRow];
+   _currentGroup = _settings[_table.selectedRow];
+   [_outline reloadData];
+}
+
+#pragma mark Setting Outline
+- (NSInteger)outlineView:(NSOutlineView *)outlineView numberOfChildrenOfItem:(id)item
+{
+   return (item == nil) ? _currentGroup.count : [item count];
+}
+
+- (id)outlineView:(NSOutlineView *)outlineView child:(NSInteger)index ofItem:(id)item
+{
+   return (item == nil) ? _currentGroup[index] : [item objectAtIndex:index];
+}
+
+- (BOOL)outlineView:(NSOutlineView *)outlineView isItemExpandable:(id)item
+{
+   return [item isKindOfClass:[NSArray class]];
+}
+
+- (NSView *)outlineView:(NSOutlineView *)outlineView viewForTableColumn:(NSTableColumn *)tableColumn item:(id)item
+{
+   if ([item isKindOfClass:[NSArray class]])
+   {
+      if ([tableColumn.identifier isEqualToString:@"title"])
+         return [self labelAccessoryFor:objc_getAssociatedObject(item, "NAME") onTable:outlineView];
+      else
+         return [self labelAccessoryFor:[NSString stringWithFormat:@"%d items", (int)[item count]] onTable:outlineView];
+   }
+   else
+   {
+      const rarch_setting_t* setting = &setting_data[[item intValue]];
+
+      if ([tableColumn.identifier isEqualToString:@"title"])
+         return [self labelAccessoryFor:[NSString stringWithFormat:@"%s", setting->short_description] onTable:outlineView]; // < The outlineView will fill the value
+      else if([tableColumn.identifier isEqualToString:@"accessory"])
+      {
+         switch (setting->type)
+         {
+            case ST_BOOL: return [self booleanAccessoryFor:setting onTable:outlineView];
+         
+            case ST_PATH:
+            case ST_STRING:
+               return [self labelAccessoryFor:[NSString stringWithFormat:@"%s", (const char*)setting->value] onTable:outlineView];
+            
+            case ST_INT:
+               return [self labelAccessoryFor:[NSString stringWithFormat:@"%d", *(int*)setting->value] onTable:outlineView];
+
+            case ST_FLOAT:
+               return [self labelAccessoryFor:[NSString stringWithFormat:@"%f", *(float*)setting->value] onTable:outlineView];
+
+            default: abort();
+         }
+      }
+   }
+   
+   return nil;
 }
 
 @end
