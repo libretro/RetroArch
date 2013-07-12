@@ -1626,7 +1626,8 @@ static bool resolve_extensions(gl_t *gl)
 {
 #ifndef HAVE_OPENGLES
    gl->core_context = g_extern.system.hw_render_callback.context_type == RETRO_HW_CONTEXT_OPENGL_CORE;
-   RARCH_LOG("[GL]: Using Core GL context.\n");
+   if (gl->core_context)
+      RARCH_LOG("[GL]: Using Core GL context.\n");
    if (gl->core_context &&
          !init_vao(gl))
    {
@@ -1864,6 +1865,11 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    }
 
    rglgen_resolve_symbols(gl->ctx_driver->get_proc_address);
+
+   const char *vendor = (const char*)glGetString(GL_VENDOR);
+   const char *renderer = (const char*)glGetString(GL_RENDERER);
+   RARCH_LOG("[GL]: Vendor: %s, Renderer: %s.\n", vendor, renderer);
+
    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
    if (!resolve_extensions(gl))
