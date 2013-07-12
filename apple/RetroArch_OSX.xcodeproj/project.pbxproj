@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		9620F663178FD4D3001B3B81 /* settings.m in Sources */ = {isa = PBXBuildFile; fileRef = 9620F662178FD4D3001B3B81 /* settings.m */; };
+		9620F6651790004F001B3B81 /* Settings.xib in Resources */ = {isa = PBXBuildFile; fileRef = 9620F6641790004F001B3B81 /* Settings.xib */; };
 		962EE0E2178B3DF6004224FF /* IOKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 962EE0E1178B3DF6004224FF /* IOKit.framework */; };
 		96355CE31788E72A0010DBFA /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 96355CE21788E72A0010DBFA /* Cocoa.framework */; };
 		967894931788ECDB00D6CA69 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 9678948F1788ECDB00D6CA69 /* InfoPlist.strings */; };
@@ -21,9 +23,12 @@
 		967894A71788F0D900D6CA69 /* OpenGL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 967894A61788F0D900D6CA69 /* OpenGL.framework */; };
 		967894A91788F0E500D6CA69 /* AudioUnit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 967894A81788F0E500D6CA69 /* AudioUnit.framework */; };
 		967894E9178A2EB400D6CA69 /* modules in Resources */ = {isa = PBXBuildFile; fileRef = 967894E8178A2EB400D6CA69 /* modules */; };
+		C15874EF178F2094001171D4 /* RetroArch.icns in Resources */ = {isa = PBXBuildFile; fileRef = C15874EE178F2094001171D4 /* RetroArch.icns */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		9620F662178FD4D3001B3B81 /* settings.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = settings.m; path = OSX/settings.m; sourceTree = SOURCE_ROOT; };
+		9620F6641790004F001B3B81 /* Settings.xib */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.xib; name = Settings.xib; path = OSX/Settings.xib; sourceTree = "<group>"; };
 		962EE0E1178B3DF6004224FF /* IOKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = IOKit.framework; path = ../../../../../../../System/Library/Frameworks/IOKit.framework; sourceTree = "<group>"; };
 		96355CDF1788E72A0010DBFA /* RetroArch.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RetroArch.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		96355CE21788E72A0010DBFA /* Cocoa.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Cocoa.framework; path = System/Library/Frameworks/Cocoa.framework; sourceTree = SDKROOT; };
@@ -46,6 +51,7 @@
 		967894A61788F0D900D6CA69 /* OpenGL.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = OpenGL.framework; path = Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.8.sdk/System/Library/Frameworks/OpenGL.framework; sourceTree = DEVELOPER_DIR; };
 		967894A81788F0E500D6CA69 /* AudioUnit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AudioUnit.framework; path = Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.8.sdk/System/Library/Frameworks/AudioUnit.framework; sourceTree = DEVELOPER_DIR; };
 		967894E8178A2EB400D6CA69 /* modules */ = {isa = PBXFileReference; lastKnownFileType = folder; path = modules; sourceTree = "<group>"; };
+		C15874EE178F2094001171D4 /* RetroArch.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; name = RetroArch.icns; path = OSX/RetroArch.icns; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -103,6 +109,7 @@
 		96355CE81788E72A0010DBFA /* RetroArch */ = {
 			isa = PBXGroup;
 			children = (
+				9620F662178FD4D3001B3B81 /* settings.m */,
 				967894A01788F07D00D6CA69 /* griffin.c */,
 				967894971788F02600D6CA69 /* RAGameView.m */,
 				967894981788F02600D6CA69 /* RAModuleInfo.h */,
@@ -130,6 +137,8 @@
 			children = (
 				967894E8178A2EB400D6CA69 /* modules */,
 				967894911788ECDB00D6CA69 /* MainMenu.xib */,
+				C15874EE178F2094001171D4 /* RetroArch.icns */,
+				9620F6641790004F001B3B81 /* Settings.xib */,
 			);
 			name = Assets;
 			sourceTree = "<group>";
@@ -187,6 +196,8 @@
 				967894931788ECDB00D6CA69 /* InfoPlist.strings in Resources */,
 				967894941788ECDB00D6CA69 /* MainMenu.xib in Resources */,
 				967894E9178A2EB400D6CA69 /* modules in Resources */,
+				C15874EF178F2094001171D4 /* RetroArch.icns in Resources */,
+				9620F6651790004F001B3B81 /* Settings.xib in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -202,6 +213,7 @@
 				9678949E1788F02600D6CA69 /* RAModuleInfo.m in Sources */,
 				9678949F1788F02600D6CA69 /* utility.m in Sources */,
 				967894A11788F07D00D6CA69 /* griffin.c in Sources */,
+				9620F663178FD4D3001B3B81 /* settings.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

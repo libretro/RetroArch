@@ -683,6 +683,11 @@ int main(int argc, char *argv[])
 }
 
 #pragma mark Menus
+- (IBAction)showPreferences:(id)sender
+{
+   [[[NSWindowController alloc] initWithWindowNibName:@"Settings"] window];
+}
+
 - (IBAction)basicEvent:(id)sender
 {
    if (apple_is_running)
