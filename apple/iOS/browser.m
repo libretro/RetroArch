@@ -22,11 +22,6 @@
 #include "conf/config_file.h"
 #include "file.h"
 
-@interface RADirectoryItem : NSObject
-@property (strong) NSString* path;
-@property bool isDirectory;
-@end
-
 @implementation RADirectoryItem
 @end
 
@@ -147,9 +142,30 @@
     
    if (path.isDirectory) {
       cell.imageView.image = [UIImage imageNamed:@"ic_dir"];
+      cell.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
+   } else {
+      cell.imageView.image = nil;
+      cell.accessoryType = UITableViewCellAccessoryDetailDisclosureButton;
    }
     
    return cell;
+}
+
+- (void)tableView:(UITableView*)tableView accessoryButtonTappedForRowWithIndexPath:(NSIndexPath*)indexPath {
+    self.selectedItem = [self itemForIndexPath:indexPath];
+    UITableViewCell *cell = [tableView cellForRowAtIndexPath:indexPath];
+    UIActionSheet *menu = [[UIActionSheet alloc] initWithTitle:cell.textLabel.text delegate:self cancelButtonTitle:@"Cancel" destructiveButtonTitle:nil otherButtonTitles:@"Move", nil];
+
+    [menu showInView:[self view]];
+}
+
+- (void)actionSheet:(UIActionSheet *)actionSheet clickedButtonAtIndex:(NSInteger)buttonIndex {
+    if (buttonIndex == 0) {
+        RAFoldersList *foldersListViewController = [[RAFoldersList alloc] initWithFilePath:self.selectedItem.path];
+        UINavigationController *navigationController = [[UINavigationController alloc] initWithRootViewController:foldersListViewController];
+
+        [self presentViewController:navigationController animated:YES completion:nil];
+    }
 }
 
 - (NSArray*)sectionIndexTitlesForTableView:(UITableView*)tableView
@@ -167,7 +183,7 @@
          if (didRemoveItem) {
             [self refresh];
          } else {
-            apple_display_alert(@"Not possible to delete file.", 0);
+            apple_display_alert(@"It was not possible to delete file.", 0);
          }
     }
 }
@@ -188,7 +204,7 @@
         if (didCreateFolder) {
             [self refresh];
         } else {
-            apple_display_alert(@"Not possible to create folder.", 0);
+            apple_display_alert(@"It was not possible to create folder.", 0);
         }
     }
 }
@@ -261,5 +277,99 @@
 
    return cell;
 }
+
+@end
+
+@implementation RAFoldersList {
+    NSMutableArray *directories;
+    NSString *currentDirectoryPath, *selectedFilePath, *fileName;
+}
+
+- (id)initWithFilePath:(NSString *)path
+{
+    self = [super initWithStyle:UITableViewStyleGrouped];
+
+    selectedFilePath = path;
+    NSFileManager *fileManager = [NSFileManager defaultManager];
+    fileName = [fileManager displayNameAtPath:path];
+    currentDirectoryPath = [path stringByDeletingLastPathComponent];
+    NSArray *files = [fileManager contentsOfDirectoryAtPath:currentDirectoryPath error:nil];
+    directories = [[NSMutableArray alloc] init];
+
+    for (int i = 0; i < files.count; i++) {
+        NSString *filePath = [currentDirectoryPath stringByAppendingPathComponent:files[i]];
+
+        BOOL isDir;
+        if ([fileManager fileExistsAtPath:filePath isDirectory:&isDir] && isDir) {
+            [directories addObject:files[i]];
+        }
+    }
+
+    [self setTitle:[@"Move " stringByAppendingString:fileName]];
+
+    return self;
+}
+
+- (void)viewDidLoad
+{
+    [super viewDidLoad];
+
+    self.navigationItem.leftBarButtonItem = [[UIBarButtonItem alloc] initWithTitle:@"Cancel" style:UIBarButtonItemStyleBordered target:self action:@selector(dismissViewController)];
+}
+
+- (void) dismissViewController
+{
+    [self dismissViewControllerAnimated:YES completion:nil];
+}
+
+- (NSInteger)numberOfSectionsInTableView:(UITableView *)tableView
+{
+    return 1;
+}
+
+- (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section
+{
+    return directories.count;
+}
+
+- (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath
+{
+    static NSString *CellIdentifier = @"Directory";
+    UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:CellIdentifier];
+
+    if (cell == nil) {
+        cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:CellIdentifier];
+    }
+
+    cell.textLabel.text = directories[indexPath.row];
+
+    return cell;
+}
+
+- (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath
+{
+    UITableViewCell *cell = [tableView cellForRowAtIndexPath:indexPath];
+    NSString *directoryPath = [currentDirectoryPath stringByAppendingPathComponent:cell.textLabel.text];
+    NSString *newPath = [directoryPath stringByAppendingPathComponent:fileName];
+
+    BOOL didMove = [[NSFileManager defaultManager] moveItemAtPath:selectedFilePath toPath:newPath error:nil];
+
+    if (didMove) {
+        NSArray *viewsControllers = [[self presentingViewController] childViewControllers];
+
+        // Searches for RADirectoryList instance and call the refresh method
+        for (int i = 0; i < viewsControllers.count; i++) {
+            if ([viewsControllers[i] isKindOfClass:[RADirectoryList class]]) {
+                [viewsControllers[i] refresh];
+                break;
+            }
+        }
+    } else {
+        apple_display_alert(@"It was not possible to move the file", 0);
+    }
+
+    [self dismissViewController];
+}
+
 
 @end
