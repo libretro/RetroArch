@@ -225,7 +225,7 @@ void rarch_get_cpu_features(struct rarch_cpu_features *cpu)
       cpu->simd |= RARCH_SIMD_NEON;
 
    RARCH_LOG("[CPUID]: NEON: %u\n", !!(cpu->simd & RARCH_SIMD_NEON));
-#elif defined(__BLACKBERRY_QNX__)
+#elif defined(HAVE_NEON)
    cpu->simd |= RARCH_SIMD_NEON;
    RARCH_LOG("[CPUID]: NEON: %u\n", !!(cpu->simd & RARCH_SIMD_NEON));
 #elif defined(__CELLOS_LV2__)

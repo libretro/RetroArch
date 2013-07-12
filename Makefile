@@ -312,7 +312,7 @@ ifeq ($(HAVE_NEON),1)
 	OBJ += audio/sinc_neon.o
 	# When compiled without this, tries to attempt to compile sinc lerp,
 	# which will error out
-	DEFINES += -DSINC_LOWER_QUALITY
+	DEFINES += -DSINC_LOWER_QUALITY -DHAVE_NEON
 endif
 
 OBJ += audio/utils.o
