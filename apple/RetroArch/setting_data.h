@@ -59,32 +59,36 @@ const rarch_setting_t setting_data[] =
    /* DRIVERS */
    /***********/
    START_GROUP("Drivers")
-      CONFIG_STRING(g_settings.video.driver, "video_driver", "Video Driver")
-      CONFIG_STRING(g_settings.video.gl_context, "video_gl_context", "OpenGL Driver")
-      CONFIG_STRING(g_settings.audio.driver, "audio_driver", "Audio Driver")
-      CONFIG_STRING(g_settings.input.driver, "input_driver", "Input Driver")
-      CONFIG_STRING(g_settings.input.joypad_driver, "input_joypad_driver", "Joypad Driver")
+      START_SUB_GROUP("Drivers")
+         CONFIG_STRING(g_settings.video.driver, "video_driver", "Video Driver")
+         CONFIG_STRING(g_settings.video.gl_context, "video_gl_context", "OpenGL Driver")
+         CONFIG_STRING(g_settings.audio.driver, "audio_driver", "Audio Driver")
+         CONFIG_STRING(g_settings.input.driver, "input_driver", "Input Driver")
+         CONFIG_STRING(g_settings.input.joypad_driver, "input_joypad_driver", "Joypad Driver")
+      END_SUB_GROUP()
    END_GROUP()
 
    /*********/
    /* PATHS */
    /*********/
    START_GROUP("Paths")
-      CONFIG_PATH(g_settings.libretro, "libretro_path", "libretro Path")
-      CONFIG_PATH(g_settings.core_options_path, "core_options_path", "Core Options Path")
-      CONFIG_PATH(g_settings.screenshot_directory, "screenshot_directory", "Screenshot Directory")
-      CONFIG_PATH(g_settings.cheat_database, "cheat_database_path", "Cheat Database")
-      CONFIG_PATH(g_settings.cheat_settings_path, "cheat_settings_path", "Cheat Settings")
-      CONFIG_PATH(g_settings.game_history_path, "game_history_path", "Game History Path")
-      CONFIG_INT(g_settings.game_history_size, "game_history_size", "Game History Size")
+      START_SUB_GROUP("Paths")
+         CONFIG_PATH(g_settings.libretro, "libretro_path", "libretro Path")
+         CONFIG_PATH(g_settings.core_options_path, "core_options_path", "Core Options Path")
+         CONFIG_PATH(g_settings.screenshot_directory, "screenshot_directory", "Screenshot Directory")
+         CONFIG_PATH(g_settings.cheat_database, "cheat_database_path", "Cheat Database")
+         CONFIG_PATH(g_settings.cheat_settings_path, "cheat_settings_path", "Cheat Settings")
+         CONFIG_PATH(g_settings.game_history_path, "game_history_path", "Game History Path")
+         CONFIG_INT(g_settings.game_history_size, "game_history_size", "Game History Size")
 
-      #ifdef HAVE_RGUI
-         CONFIG_PATH(g_settings.rgui_browser_directory, "rgui_browser_directory", "Browser Directory")
-      #endif
+         #ifdef HAVE_RGUI
+            CONFIG_PATH(g_settings.rgui_browser_directory, "rgui_browser_directory", "Browser Directory")
+         #endif
 
-      #ifdef HAVE_OVERLAY
-         CONFIG_PATH(g_extern.overlay_dir, "overlay_directory", "Overlay Directory")
-      #endif
+         #ifdef HAVE_OVERLAY
+            CONFIG_PATH(g_extern.overlay_dir, "overlay_directory", "Overlay Directory")
+         #endif
+      END_SUB_GROUP()
    END_GROUP()
 
 
@@ -93,78 +97,84 @@ const rarch_setting_t setting_data[] =
    /* EMULATION */
    /*************/
    START_GROUP("Emulation")
-      CONFIG_BOOL(g_settings.pause_nonactive, "pause_nonactive", "Pause when inactive")
-      CONFIG_BOOL(g_settings.rewind_enable, "rewind_enable", "Enable Rewind")
-      CONFIG_INT(g_settings.rewind_buffer_size, "rewind_buffer_size", "Rewind Buffer Size") /* *= 1000000 */
-      CONFIG_INT(g_settings.rewind_granularity, "rewind_granularity", "Rewind Granularity")
-      CONFIG_FLOAT(g_settings.slowmotion_ratio, "slowmotion_ratio", "Slow motion ratio") /* >= 1.0f */
+      START_SUB_GROUP("Emulation")
+         CONFIG_BOOL(g_settings.pause_nonactive, "pause_nonactive", "Pause when inactive")
+         CONFIG_BOOL(g_settings.rewind_enable, "rewind_enable", "Enable Rewind")
+         CONFIG_INT(g_settings.rewind_buffer_size, "rewind_buffer_size", "Rewind Buffer Size") /* *= 1000000 */
+         CONFIG_INT(g_settings.rewind_granularity, "rewind_granularity", "Rewind Granularity")
+         CONFIG_FLOAT(g_settings.slowmotion_ratio, "slowmotion_ratio", "Slow motion ratio") /* >= 1.0f */
 
-      /* Saves */
-      CONFIG_INT(g_settings.autosave_interval, "autosave_interval", "Autosave Interval")
-      CONFIG_BOOL(g_settings.block_sram_overwrite, "block_sram_overwrite", "Block SRAM overwrite")
-      CONFIG_BOOL(g_settings.savestate_auto_index, "savestate_auto_index", "Save State Auto Index")
-      CONFIG_BOOL(g_settings.savestate_auto_save, "savestate_auto_save", "Auto Save State")
-      CONFIG_BOOL(g_settings.savestate_auto_load, "savestate_auto_load", "Auto Load State")
+         /* Saves */
+         CONFIG_INT(g_settings.autosave_interval, "autosave_interval", "Autosave Interval")
+         CONFIG_BOOL(g_settings.block_sram_overwrite, "block_sram_overwrite", "Block SRAM overwrite")
+         CONFIG_BOOL(g_settings.savestate_auto_index, "savestate_auto_index", "Save State Auto Index")
+         CONFIG_BOOL(g_settings.savestate_auto_save, "savestate_auto_save", "Auto Save State")
+         CONFIG_BOOL(g_settings.savestate_auto_load, "savestate_auto_load", "Auto Load State")
+      END_SUB_GROUP()
    END_GROUP()
 
    /*********/
    /* AUDIO */
    /*********/
    START_GROUP("Audio")
-      CONFIG_BOOL(g_settings.audio.enable, "audio_enable", "Enable")
-      CONFIG_FLOAT(g_settings.audio.volume, "audio_volume", "Volume")
+      START_SUB_GROUP("Audio")
+         CONFIG_BOOL(g_settings.audio.enable, "audio_enable", "Enable")
+         CONFIG_FLOAT(g_settings.audio.volume, "audio_volume", "Volume")
 
-      /* Audio: Sync */
-      CONFIG_BOOL(g_settings.audio.sync, "audio_sync", "Enable Sync")
-      CONFIG_INT(g_settings.audio.latency, "audio_latency", "Latency")
-      CONFIG_BOOL(g_settings.audio.rate_control, "audio_rate_control", "Enable Rate Control")
-      CONFIG_FLOAT(g_settings.audio.rate_control_delta, "audio_rate_control_delta", "Rate Control Delta")
+         /* Audio: Sync */
+         CONFIG_BOOL(g_settings.audio.sync, "audio_sync", "Enable Sync")
+         CONFIG_INT(g_settings.audio.latency, "audio_latency", "Latency")
+         CONFIG_BOOL(g_settings.audio.rate_control, "audio_rate_control", "Enable Rate Control")
+         CONFIG_FLOAT(g_settings.audio.rate_control_delta, "audio_rate_control_delta", "Rate Control Delta")
 
-      /* Audio: Other */
-      CONFIG_STRING(g_settings.audio.device, "audio_device", "Device")
-      CONFIG_INT(g_settings.audio.out_rate, "audio_out_rate", "Ouput Rate")
-      CONFIG_PATH(g_settings.audio.dsp_plugin, "audio_dsp_plugin", "DSP Plugin")
+         /* Audio: Other */
+         CONFIG_STRING(g_settings.audio.device, "audio_device", "Device")
+         CONFIG_INT(g_settings.audio.out_rate, "audio_out_rate", "Ouput Rate")
+         CONFIG_PATH(g_settings.audio.dsp_plugin, "audio_dsp_plugin", "DSP Plugin")
+      END_SUB_GROUP()
    END_GROUP()
 
    /*********/
    /* INPUT */
    /*********/
    START_GROUP("Input")
-      /* Input: Autoconfig */
-      CONFIG_BOOL(g_settings.input.autodetect_enable, "input_autodetect_enable", "Use joypad autodetection")
-      CONFIG_PATH(g_settings.input.autoconfig_dir, "joypad_autoconfig_dir", "Joypad Autoconfig Directory")
+      START_SUB_GROUP("Input")
+         /* Input: Autoconfig */
+         CONFIG_BOOL(g_settings.input.autodetect_enable, "input_autodetect_enable", "Use joypad autodetection")
+         CONFIG_PATH(g_settings.input.autoconfig_dir, "joypad_autoconfig_dir", "Joypad Autoconfig Directory")
 
-      /* Input: Joypad mapping */
-      CONFIG_INT(g_settings.input.joypad_map[0], "input_player1_joypad_index", "Player 1 Pad Index")
-      CONFIG_INT(g_settings.input.joypad_map[1], "input_player2_joypad_index", "Player 2 Pad Index")
-      CONFIG_INT(g_settings.input.joypad_map[2], "input_player3_joypad_index", "Player 3 Pad Index")
-      CONFIG_INT(g_settings.input.joypad_map[3], "input_player4_joypad_index", "Player 4 Pad Index")
-      CONFIG_INT(g_settings.input.joypad_map[4], "input_player5_joypad_index", "Player 5 Pad Index")
+         /* Input: Joypad mapping */
+         CONFIG_INT(g_settings.input.joypad_map[0], "input_player1_joypad_index", "Player 1 Pad Index")
+         CONFIG_INT(g_settings.input.joypad_map[1], "input_player2_joypad_index", "Player 2 Pad Index")
+         CONFIG_INT(g_settings.input.joypad_map[2], "input_player3_joypad_index", "Player 3 Pad Index")
+         CONFIG_INT(g_settings.input.joypad_map[3], "input_player4_joypad_index", "Player 4 Pad Index")
+         CONFIG_INT(g_settings.input.joypad_map[4], "input_player5_joypad_index", "Player 5 Pad Index")
 
-      /* Input: Turbo/Axis options */
-      CONFIG_FLOAT(g_settings.input.axis_threshold, "input_axis_threshold", "Axis Deadzone")
-      CONFIG_INT(g_settings.input.turbo_period, "input_turbo_period", "Turbo Period")
-      CONFIG_INT(g_settings.input.turbo_duty_cycle, "input_duty_cycle", "Duty Cycle")
+         /* Input: Turbo/Axis options */
+         CONFIG_FLOAT(g_settings.input.axis_threshold, "input_axis_threshold", "Axis Deadzone")
+         CONFIG_INT(g_settings.input.turbo_period, "input_turbo_period", "Turbo Period")
+         CONFIG_INT(g_settings.input.turbo_duty_cycle, "input_duty_cycle", "Duty Cycle")
 
-      /* Input: Misc */
-      CONFIG_BOOL(g_settings.input.netplay_client_swap_input, "netplay_client_swap_input", "Swap Netplay Input")
-      CONFIG_BOOL(g_settings.input.debug_enable, "input_debug_enable", "Enable Input Debugging")
+         /* Input: Misc */
+         CONFIG_BOOL(g_settings.input.netplay_client_swap_input, "netplay_client_swap_input", "Swap Netplay Input")
+         CONFIG_BOOL(g_settings.input.debug_enable, "input_debug_enable", "Enable Input Debugging")
 
-      /* Input: Overlay */
-      #ifdef HAVE_OVERLAY
-         CONFIG_PATH(g_settings.input.overlay, "input_overlay", "Input Overlay")
-         CONFIG_FLOAT(g_settings.input.overlay_opacity, "overlay_opacity", "Overlay Opacity")
-         CONFIG_FLOAT(g_settings.input.overlay_scale, "overlay_scale", "Overlay Scale")
-      #endif
+         /* Input: Overlay */
+         #ifdef HAVE_OVERLAY
+            CONFIG_PATH(g_settings.input.overlay, "input_overlay", "Input Overlay")
+            CONFIG_FLOAT(g_settings.input.overlay_opacity, "overlay_opacity", "Overlay Opacity")
+            CONFIG_FLOAT(g_settings.input.overlay_scale, "overlay_scale", "Overlay Scale")
+         #endif
 
-      /* Input: Android */
-      #ifdef ANDROID
-         CONFIG_INT(g_settings.input.back_behavior, "input_back_behavior", "Back Behavior")
-         CONFIG_INT(g_settings.input.icade_profile[0], "input_autodetect_icade_profile_pad1", "iCade 1")
-         CONFIG_INT(g_settings.input.icade_profile[1], "input_autodetect_icade_profile_pad2", "iCade 2")
-         CONFIG_INT(g_settings.input.icade_profile[2], "input_autodetect_icade_profile_pad3", "iCade 3")
-         CONFIG_INT(g_settings.input.icade_profile[3], "input_autodetect_icade_profile_pad4", "iCade 4")
-      #endif
+         /* Input: Android */
+         #ifdef ANDROID
+            CONFIG_INT(g_settings.input.back_behavior, "input_back_behavior", "Back Behavior")
+            CONFIG_INT(g_settings.input.icade_profile[0], "input_autodetect_icade_profile_pad1", "iCade 1")
+            CONFIG_INT(g_settings.input.icade_profile[1], "input_autodetect_icade_profile_pad2", "iCade 2")
+            CONFIG_INT(g_settings.input.icade_profile[2], "input_autodetect_icade_profile_pad3", "iCade 3")
+            CONFIG_INT(g_settings.input.icade_profile[3], "input_autodetect_icade_profile_pad4", "iCade 4")
+         #endif
+      END_SUB_GROUP()
    END_GROUP()
 
    /*********/
@@ -245,10 +255,12 @@ const rarch_setting_t setting_data[] =
    /* Misc */
    /********/
    START_GROUP("Misc")
-      CONFIG_BOOL(g_extern.config_save_on_exit, "config_save_on_exit", "Save Config On Exit")
-      CONFIG_BOOL(g_settings.network_cmd_enable, "network_cmd_enable", "Network Commands")
-      CONFIG_INT(g_settings.network_cmd_port, "network_cmd_port", "Network Command Port")
-      CONFIG_BOOL(g_settings.stdin_cmd_enable, "stdin_cmd_enable", "stdin command")
+      START_SUB_GROUP("Misc")
+         CONFIG_BOOL(g_extern.config_save_on_exit, "config_save_on_exit", "Save Config On Exit")
+         CONFIG_BOOL(g_settings.network_cmd_enable, "network_cmd_enable", "Network Commands")
+         CONFIG_INT(g_settings.network_cmd_port, "network_cmd_port", "Network Command Port")
+         CONFIG_BOOL(g_settings.stdin_cmd_enable, "stdin_cmd_enable", "stdin command")
+      END_SUB_GROUP()
    END_GROUP()
 
    { 0 }
