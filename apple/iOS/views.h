@@ -32,7 +32,15 @@
 @end
 
 // browser.m
-@interface RADirectoryList : RATableViewController
+@interface RADirectoryItem : NSObject
+@property (strong) NSString* path;
+@property bool isDirectory;
+@end
+
+// browser.m
+@interface RADirectoryList : RATableViewController <UIActionSheetDelegate>
+@property (nonatomic, weak) RADirectoryItem *selectedItem;
+
 + (id)directoryListAtBrowseRoot;
 + (id)directoryListForPath:(NSString*)path;
 - (id)initWithPath:(NSString*)path;
@@ -41,6 +49,11 @@
 // browser.m
 @interface RAModuleList : RATableViewController
 - (id)initWithGame:(NSString*)path;
+@end
+
+// browser.m
+@interface RAFoldersList : UITableViewController
+- (id) initWithFilePath:(NSString *)path;
 @end
 
 // RAModuleInfo.m
