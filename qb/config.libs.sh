@@ -35,14 +35,14 @@ fi
 
 if [ "$HAVE_FLOATHARD" = "yes" ]; then
    CFLAGS="$CFLAGS -mfloat-abi=hard"
-   CXXFLAGS="$CFLAGS -mfloat-abi=hard"
-   ASFLAGS="$CFLAGS -mfloat-abi=hard"
+   CXXFLAGS="$CXXFLAGS -mfloat-abi=hard"
+   ASFLAGS="$ASFLAGS -mfloat-abi=hard"
 fi
 
 if [ "$HAVE_FLOATSOFTFP" = "yes" ]; then
    CFLAGS="$CFLAGS -mfloat-abi=softfp"
-   CXXFLAGS="$CFLAGS -mfloat-abi=softfp"
-   ASFLAGS="$CFLAGS -mfloat-abi=softfp"
+   CXXFLAGS="$CXXFLAGS -mfloat-abi=softfp"
+   ASFLAGS="$ASFLAGS -mfloat-abi=softfp"
 fi
 
 if [ "$HAVE_NEON" = "yes" ]; then
