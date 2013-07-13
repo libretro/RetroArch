@@ -140,6 +140,10 @@ ifeq ($(HAVE_ROAR), 1)
    DEFINES += $(ROAR_CFLAGS)
 endif
 
+ifeq ($(HAVE_HARD_FLOAT), 1)
+   DEFINES += -mfloat-abi=hard
+endif
+
 ifeq ($(HAVE_AL), 1)
    OBJ += audio/openal.o
    ifeq ($(OSX),1)

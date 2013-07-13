@@ -33,3 +33,5 @@ HAVE_PYTHON=auto        # Enable Python 3 support for shaders
 HAVE_BSV_MOVIE=yes      # Disable BSV movie support
 HAVE_NEON=no            # Forcefully enable ARM NEON optimizations (hardfloat)
 HAVE_SSE=no             # Forcefully enable x86 SSE optimizations (SSE, SSE2)
+HAVE_FLOATHARD=no	# Setup hard float ABI (for ARM)
+HAVE_FLOATSOFTFP=no	# Setup softfloat ABI (for ARM)
