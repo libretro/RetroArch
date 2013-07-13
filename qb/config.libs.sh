@@ -33,6 +33,12 @@ if [ "$HAVE_VIDEOCORE" = 'yes' ]; then
    EXTRA_GL_LIBS="-lGLESv2 -lbcm_host -lvcos -lvchiq_arm"
 fi
 
+if [ "$HAVE_NEON" = "yes" ]; then
+   CFLAGS="$CFLAGS -mfpu=neon"
+   CXXFLAGS="$CXXFLAGS -mfpu=neon"
+   ASFLAGS="$ASFLAGS -mfpu=neon"
+fi
+
 if [ "$HAVE_FLOATHARD" = "yes" ]; then
    CFLAGS="$CFLAGS -mfloat-abi=hard"
    CXXFLAGS="$CXXFLAGS -mfloat-abi=hard"
@@ -43,12 +49,6 @@ if [ "$HAVE_FLOATSOFTFP" = "yes" ]; then
    CFLAGS="$CFLAGS -mfloat-abi=softfp"
    CXXFLAGS="$CXXFLAGS -mfloat-abi=softfp"
    ASFLAGS="$ASFLAGS -mfloat-abi=softfp"
-fi
-
-if [ "$HAVE_NEON" = "yes" ]; then
-   CFLAGS="$CFLAGS -mfpu=neon"
-   CXXFLAGS="$CXXFLAGS -mfpu=neon"
-   ASFLAGS="$ASFLAGS -mfpu=neon"
 fi
 
 if [ "$HAVE_SSE" = "yes" ]; then
