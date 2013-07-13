@@ -34,8 +34,8 @@ if [ "$HAVE_VIDEOCORE" = 'yes' ]; then
 fi
 
 if [ "$HAVE_NEON" = "yes" ]; then
-   CFLAGS="$CFLAGS -mfpu=neon"
-   CXXFLAGS="$CXXFLAGS -mfpu=neon"
+   CFLAGS="$CFLAGS -mfpu=neon -marm"
+   CXXFLAGS="$CXXFLAGS -mfpu=neon -marm"
    ASFLAGS="$ASFLAGS -mfpu=neon"
 fi
 
