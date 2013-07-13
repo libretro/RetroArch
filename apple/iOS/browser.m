@@ -35,11 +35,7 @@
 {
    NSString* rootPath = RetroArch_iOS.get.documentsDirectory;
    NSString* ragPath = [rootPath stringByAppendingPathComponent:@"RetroArchGames"];
-   
    RADirectoryList* list = [RADirectoryList directoryListForPath:path_is_directory(ragPath.UTF8String) ? ragPath : rootPath];
-    
-    list.navigationItem.leftBarButtonItem = [[UIBarButtonItem alloc] initWithTitle:@"New Folder" style:UIBarButtonItemStyleBordered target:list action:@selector(createNewFolder)];
-    
                                             
    return list;
 }
@@ -57,6 +53,22 @@
    self = [super initWithStyle:UITableViewStylePlain];
    self.title = path.lastPathComponent;
    self.hidesHeaders = YES;
+    
+    NSMutableArray *toolbarButtons = [[NSMutableArray alloc] initWithCapacity:3];
+    
+    UIBarButtonItem *refreshButton = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemRefresh target:self action:@selector(refresh)];
+    refreshButton.style = UIBarButtonItemStyleBordered;
+    [toolbarButtons addObject:refreshButton];
+    
+    UIBarButtonItem *flexibleSpace = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemFlexibleSpace target:self action:nil];
+    [toolbarButtons addObject:flexibleSpace];
+    
+    UIBarButtonItem *newFolderButton = [[UIBarButtonItem alloc] initWithTitle:@"New Folder" style:UIBarButtonItemStyleBordered target:self action:@selector(createNewFolder)];
+    [toolbarButtons addObject:newFolderButton];
+    
+    [[[RetroArch_iOS get] toolbar] setItems:toolbarButtons];
+    [self setToolbarItems:toolbarButtons];
+    
    [self refresh];
 
    return self;
