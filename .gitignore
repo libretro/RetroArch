@@ -46,6 +46,6 @@ profile
 DerivedData
 .idea/
 *.hmap
-ios/tmp
-ios/modules/*.dylib
-ios/*.mobileprovision
+apple/tmp
+apple/modules/*.dylib
+apple/*.mobileprovision
