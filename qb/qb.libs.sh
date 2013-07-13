@@ -229,6 +229,7 @@ create_config_make()
 			echo "CXX = $CXX"
 			echo "CXXFLAGS = $CXXFLAGS"
 		fi
+		echo "ASFLAGS = $ASFLAGS"
 		echo "LDFLAGS = $LDFLAGS"
 		echo "INCLUDE_DIRS = $INCLUDE_DIRS"
 		echo "LIBRARY_DIRS = $LIBRARY_DIRS"
