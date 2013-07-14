@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android" >
+    <PreferenceCategory android:title="Fast Forward">
+        <org.andretro.settings.ButtonSetting android:title="Fast Forward Key" android:key="fast_forward_key" android:persistent="true" android:defaultValue="69"/>
+        <EditTextPreference android:title="Fast Forward Speed" android:key="fast_forward_speed" android:summary="Multiplier for fast forward mode." android:defaultValue="4" android:persistent="true"/>
+        <CheckBoxPreference android:title="Use Fast Forward Mode By Default" android:key="fast_forward_default" android:summary="The toggle button will run the game at normal speed." android:persistent="true" android:defaultValue="false"/>
+    </PreferenceCategory>
+    <PreferenceCategory android:title="Rewind">
+        <org.andretro.settings.ButtonSetting android:title="Rewind Key" android:key="rewind_key" android:persistent="true" android:defaultValue="68"/>
+        <CheckBoxPreference android:title="Enable Population of the Rewind Buffer" android:key="rewind_enabled" android:summary="Will use memory and processor resources." android:persistent="true" android:defaultValue="false"/>
+        <EditTextPreference android:title="Size of the Rewind Buffer" android:key="rewind_buffer_size" android:summary="Size is in megabytes." android:defaultValue="16" android:persistent="true"/>
+    </PreferenceCategory>
+    <PreferenceCategory android:title="Scaling">
+        <CheckBoxPreference android:title="Linear Filtering" android:persistent="true" android:key="scaling_smooth" android:summary="Use a smoothing effect when scaling the image." android:defaultValue="true"/>
+        <ListPreference android:defaultValue="Default" android:entryValues="@array/aspect_mode_values" android:summary="Force an aspect ratio on the game's image." android:persistent="true" android:title="Aspect Ratio" android:key="scaling_aspect_mode" android:entries="@array/aspect_mode_values"/>
+        <ListPreference android:key="scaling_orientation" android:title="Orientation" android:summary="Force a screen orientation" android:persistent="true" android:defaultValue="Sensor" android:entryValues="@array/orientation_modes" android:entries="@array/orientation_modes"/>
+    </PreferenceCategory>
+    
+
+</PreferenceScreen>

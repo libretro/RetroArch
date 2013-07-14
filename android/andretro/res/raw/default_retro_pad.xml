@@ -1,0 +1,7 @@
+<group>
+    <ButtonDiamond horzanchor="left"   vertanchor="bottom" horzmargin="20" vertmargin="20" width="200" height="200" upbits="16" downbits="32" leftbits="64" rightbits="128"/>
+    <ButtonDiamond horzanchor="right"  vertanchor="bottom" horzmargin="20" vertmargin="20" width="200" height="200" upbits="512" downbits="1" leftbits="2" rightbits="256" />
+    <ButtonDuo     horzanchor="center" vertanchor="bottom" horzmargin="20" vertmargin="20" width="200" height="50"  leftbits="4" rightbits="8"/>
+    <Button        horzanchor="right"  vertanchor="top"    horzmargin="20" vertmargin="20" width="50"  height="50"  bits="2048" />
+    <Button        horzanchor="left"   vertanchor="top"	   horzmargin="20" vertmargin="20" width="50"  height="50"  bits="1024" />
+</group>

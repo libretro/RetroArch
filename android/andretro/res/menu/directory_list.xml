@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android" >
+    <item android:id="@+id/goto_root" android:title="@string/root_directory" android:showAsAction="always"></item>
+    <item android:id="@+id/input_method_select" android:title="@string/input_method" android:showAsAction="ifRoom"></item>
+    <item android:id="@+id/system_settings" android:title="@string/system_settings"></item>
+    
+
+</menu>

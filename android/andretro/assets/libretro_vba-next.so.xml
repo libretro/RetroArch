@@ -1,0 +1,22 @@
+<retro>
+    <system fullname="Nintendo Gameboy Advance" shortname="GBA"/>
+    <module libraryname="VBA Next" extensions="gba"/>
+
+    <input>
+        <port shortname="p1" fullname="Player 1" defaultdevice="pad">
+            <device shortname="pad" fullname="Gamepad">
+                <button shortname="up" fullname="Up" mappedkey="UP"/>
+                <button shortname="down" fullname="Down" mappedkey="DOWN"/>
+                <button shortname="left" fullname="Left" mappedkey="LEFT"/>
+                <button shortname="right" fullname="Right" mappedkey="RIGHT"/>
+                <button shortname="select" fullname="Select" mappedkey="SELECT"/>
+                <button shortname="start" fullname="Start" mappedkey="START"/>
+                <button shortname="b" fullname="B" mappedkey="B"/>
+                <button shortname="a" fullname="A" mappedkey="A"/>
+                <button shortname="l" fullname="L" mappedkey="L1"/>
+                <button shortname="r" fullname="R" mappedkey="R1"/>
+            </device>
+        </port>
+    </input>
+    
+</retro>

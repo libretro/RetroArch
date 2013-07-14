@@ -1,0 +1,29 @@
+<retro>
+    <system fullname="DOOM" shortname="doom"/>
+    <module libraryname="prboom" extensions="wad|iwad"/>
+    
+    <input>
+        <port shortname="p1" fullname="Player 1" defaultdevice="pad">
+            <device shortname="pad" fullname="Gamepad">
+                <button shortname="up" fullname="Up" mappedkey="UP"/>
+                <button shortname="down" fullname="Down" mappedkey="DOWN"/>
+                <button shortname="left" fullname="Left" mappedkey="LEFT"/>
+                <button shortname="right" fullname="Right" mappedkey="RIGHT"/>
+                <button shortname="strafeleft" fullname="Strafe Left" mappedkey="L1"/>
+                <button shortname="straferight" fullname="Strafe Right" mappedkey="R1"/>
+
+                <button shortname="fire" fullname="Fire" mappedkey="X"/>
+                <button shortname="use" fullname="Use" mappedkey="A"/>
+                <button shortname="run" fullname="Run" mappedkey="Y"/>                
+                <button shortname="strafe" fullname="Strafe" mappedkey="B"/>                
+
+                <button shortname="menu" fullname="Menu" mappedkey="START"/>
+                <button shortname="map" fullname="Map" mappedkey="SELECT"/>
+
+                <button shortname="prevweapon" fullname="Previous Weapon" mappedkey="L2"/>
+                <button shortname="nextweapon" fullname="Next Weapon" mappedkey="R2"/>
+            </device>
+        </port>
+    </input>
+    
+</retro>

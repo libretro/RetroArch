@@ -1,0 +1,23 @@
+<retro>
+    <system fullname="Sega Genesis/Megadrive" shortname="MD"/>
+    <module libraryname="Genesis Plus GX" extensions="md|smd|bin|cue|gen|bin|sms|gg|sg"/>
+
+    <input>
+        <port shortname="p1" fullname="Player 1" defaultdevice="pad">
+            <device shortname="pad" fullname="Gamepad">
+                <button shortname="up" fullname="Up" mappedkey="UP"/>
+                <button shortname="down" fullname="Down" mappedkey="DOWN"/>
+                <button shortname="left" fullname="Left" mappedkey="LEFT"/>
+                <button shortname="right" fullname="Right" mappedkey="RIGHT"/>
+                <button shortname="start" fullname="Start" mappedkey="START"/>
+                <button shortname="a" fullname="A" mappedkey="Y"/>
+                <button shortname="b" fullname="B" mappedkey="B"/>
+                <button shortname="c" fullname="C" mappedkey="A"/>
+                <button shortname="x" fullname="X" mappedkey="L1"/>
+                <button shortname="y" fullname="Y" mappedkey="X"/>
+                <button shortname="z" fullname="Z" mappedkey="R1"/>
+                <button shortname="mode" fullname="Mode" mappedkey="SELECT"/>
+            </device>
+        </port>
+    </input>    
+</retro>
