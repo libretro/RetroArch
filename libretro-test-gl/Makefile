@@ -49,6 +49,33 @@ else ifeq ($(platform), qnx)
    AR = qcc -Vgcc_ntoarmv7le
    CFLAGS += -D__BLACKBERRY_QNX__ -DGLES
    GL_LIB := -lGLESv2
+else ifneq (,$(findstring armv,$(platform)))
+   CC = gcc
+   TARGET := $(TARGET_NAME)_libretro.so
+   fpic := -fPIC
+   SHARED := -shared -Wl,--version-script=link.T -Wl,--no-undefined
+   CFLAGS += -I.
+ifneq (,$(findstring gles,$(platform)))
+   GLES := 1
+else
+   GL_LIB := -lGL
+endif
+ifneq (,$(findstring cortexa8,$(platform)))
+   CFLAGS += -marm -mcpu=cortex-a8
+else ifneq (,$(findstring cortexa9,$(platform)))
+   CFLAGS += -marm -mcpu=cortex-a9
+endif
+   CFLAGS += -marm
+ifneq (,$(findstring neon,$(platform)))
+   CFLAGS += -mfpu=neon
+   HAVE_NEON = 1
+endif
+ifneq (,$(findstring softfloat,$(platform)))
+   CFLAGS += -mfloat-abi=softfp
+else ifneq (,$(findstring hardfloat,$(platform)))
+   CFLAGS += -mfloat-abi=hard
+endif
+   CFLAGS += -DARM
 else
    CC = gcc
    TARGET := $(TARGET_NAME)_retro.dll
