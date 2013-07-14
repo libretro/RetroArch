@@ -81,6 +81,7 @@ static void audio_thread_free(void *data)
 {
    audio_thread_t *thr = (audio_thread_t*)data;
    slock_lock(thr->lock);
+   thr->stopped = false;
    thr->alive = false;
    scond_signal(thr->cond);
    slock_unlock(thr->lock);

@@ -392,11 +392,11 @@ struct global
       retro_keyboard_event_t key_event;
       retro_audio_callback_t audio_callback;
 
-      retro_usec_t frame_time_last;
-      retro_frame_time_callback_t frame_time_callback;
-
       struct retro_disk_control_callback disk_control; 
       struct retro_hw_render_callback hw_render_callback;
+
+      struct retro_frame_time_callback frame_time;
+      retro_usec_t frame_time_last;
 
       core_option_manager_t *core_options;
    } system;

@@ -2975,6 +2975,7 @@ static inline bool check_enter_rgui(void)
    {
       g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU);
       old_rmenu_toggle = true;
+      g_extern.system.frame_time_last = 0;
       return true;
    }
    else
@@ -2986,22 +2987,21 @@ static inline bool check_enter_rgui(void)
 
 static inline void update_frame_time(void)
 {
-   if (!g_extern.system.frame_time_callback)
+   if (!g_extern.system.frame_time.callback)
       return;
 
    rarch_time_t time = rarch_get_time_usec();
    rarch_time_t delta = 0;
+
+   bool is_locked_fps = g_extern.is_paused || driver.nonblock_state || g_extern.recording;
    
-   if (!g_extern.system.frame_time_last || g_extern.is_paused || driver.nonblock_state || g_extern.recording)
-   {
-      rarch_time_t reference_delta = (rarch_time_t)roundf(1000000LL / g_extern.system.av_info.timing.fps);
-      delta = reference_delta;
-   }
+   if (!g_extern.system.frame_time_last || is_locked_fps)
+      delta = g_extern.system.frame_time.reference;
    else
       delta = time - g_extern.system.frame_time_last;
 
-   g_extern.system.frame_time_last = time;
-   g_extern.system.frame_time_callback(delta);
+   g_extern.system.frame_time_last = is_locked_fps ? 0 : time;
+   g_extern.system.frame_time.callback(delta);
 }
 
 bool rarch_main_iterate(void)

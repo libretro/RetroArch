@@ -737,12 +737,14 @@ static bool environment_cb(unsigned cmd, void *data)
 #endif
 
       case RETRO_ENVIRONMENT_SET_FRAME_TIME_CALLBACK:
+      {
          RARCH_LOG("Environ SET_FRAME_TIME_CALLBACK.\n");
          if (g_extern.netplay_enable) // retro_run() will be called in very strange and mysterious ways, have to disable it.
             return false;
          const struct retro_frame_time_callback *info = (const struct retro_frame_time_callback*)data;
-         g_extern.system.frame_time_callback = info->callback;
+         g_extern.system.frame_time = *info;
          break;
+      }
 
       default:
          RARCH_LOG("Environ UNSUPPORTED (#%u).\n", cmd);
