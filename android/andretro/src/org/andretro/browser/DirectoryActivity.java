@@ -127,7 +127,7 @@ public class DirectoryActivity extends Activity implements AdapterView.OnItemCli
     	{
     		startActivity(new Intent(this, DirectoryActivity.class)
     				.putExtra("inRoot", true)
-    				.putExtra("path", Environment.getExternalStorageDirectory().getPath())
+    				.putExtra("path", "/mnt/")
     				.putExtra("moduleName", moduleName));
     		return true;
     	}
