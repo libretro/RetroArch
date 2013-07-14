@@ -478,6 +478,7 @@ THREAD
 #elif defined(HAVE_THREADS)
 #include "../thread.c"
 #include "../gfx/thread_wrapper.c"
+#include "../audio/thread_wrapper.c"
 #ifndef RARCH_CONSOLE
 #include "../autosave.c"
 #endif

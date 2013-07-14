@@ -723,6 +723,27 @@ static bool environment_cb(unsigned cmd, void *data)
          break;
       }
 
+#ifdef HAVE_THREADS
+      case RETRO_ENVIRONMENT_SET_AUDIO_CALLBACK:
+      {
+         RARCH_LOG("Environ SET_AUDIO_CALLBACK.\n");
+         const struct retro_audio_callback *info = (const struct retro_audio_callback*)data;
+
+         if (g_extern.recording || g_extern.netplay_enable) // A/V sync is a must.
+            return false;
+         g_extern.system.audio_callback = info->callback;
+         break;
+      }
+#endif
+
+      case RETRO_ENVIRONMENT_SET_FRAME_TIME_CALLBACK:
+         RARCH_LOG("Environ SET_FRAME_TIME_CALLBACK.\n");
+         if (g_extern.netplay_enable) // retro_run() will be called in very strange and mysterious ways, have to disable it.
+            return false;
+         const struct retro_frame_time_callback *info = (const struct retro_frame_time_callback*)data;
+         g_extern.system.frame_time_callback = info->callback;
+         break;
+
       default:
          RARCH_LOG("Environ UNSUPPORTED (#%u).\n", cmd);
          return false;

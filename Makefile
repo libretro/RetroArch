@@ -92,7 +92,7 @@ ifeq ($(HAVE_RGUI), 1)
 endif
 
 ifeq ($(HAVE_THREADS), 1)
-   OBJ += autosave.o thread.o gfx/thread_wrapper.o
+   OBJ += autosave.o thread.o gfx/thread_wrapper.o audio/thread_wrapper.o
    ifeq ($(findstring Haiku,$(OS)),)
       LIBS += -lpthread
    endif
