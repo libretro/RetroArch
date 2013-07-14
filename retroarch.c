@@ -3000,6 +3000,9 @@ static inline void update_frame_time(void)
    else
       delta = time - g_extern.system.frame_time_last;
 
+   if (!is_locked_fps && g_extern.is_slowmotion)
+      delta /= g_settings.slowmotion_ratio;
+
    g_extern.system.frame_time_last = is_locked_fps ? 0 : time;
    g_extern.system.frame_time.callback(delta);
 }
