@@ -4,7 +4,7 @@
 #include <dlfcn.h>
 #include <exception>
 #include <android/log.h>
-#include "libretro.h"
+#include "../../../libretro.h"
 
 #define LOG(...) __android_log_print(ANDROID_LOG_ERROR, "Andretro", __VA_ARGS__) 
 

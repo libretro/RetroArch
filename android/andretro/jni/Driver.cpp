@@ -4,7 +4,7 @@
 #include <memory>
 
 #include "Common.h"
-#include "libretro.h"
+#include "../../../libretro.h"
 #include "Library.h"
 
 #include "Rewinder.h"
