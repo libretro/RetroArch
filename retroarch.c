@@ -1424,6 +1424,12 @@ void rarch_init_rewind(void)
    if (!g_settings.rewind_enable || g_extern.state_manager)
       return;
 
+   if (g_extern.system.audio_callback)
+   {
+      RARCH_ERR("Implementation uses threaded audio. Cannot use rewind.\n");
+      return;
+   }
+
    g_extern.state_size = pretro_serialize_size();
    if (!g_extern.state_size)
    {
@@ -2903,6 +2909,7 @@ int rarch_main_init(int argc, char *argv[])
 #endif
    }
 
+   init_libretro_cbs();
    init_system_av_info();
    init_drivers();
 
@@ -2915,7 +2922,6 @@ int rarch_main_init(int argc, char *argv[])
 #endif
       rarch_init_rewind();
       
-   init_libretro_cbs();
    init_controllers();
    
 #ifdef HAVE_FFMPEG
@@ -2978,6 +2984,26 @@ static inline bool check_enter_rgui(void)
    }
 }
 
+static inline void update_frame_time(void)
+{
+   if (!g_extern.system.frame_time_callback)
+      return;
+
+   rarch_time_t time = rarch_get_time_usec();
+   rarch_time_t delta = 0;
+   
+   if (!g_extern.system.frame_time_last || g_extern.is_paused || driver.nonblock_state || g_extern.recording)
+   {
+      rarch_time_t reference_delta = (rarch_time_t)roundf(1000000LL / g_extern.system.av_info.timing.fps);
+      delta = reference_delta;
+   }
+   else
+      delta = time - g_extern.system.frame_time_last;
+
+   g_extern.system.frame_time_last = time;
+   g_extern.system.frame_time_callback(delta);
+}
+
 bool rarch_main_iterate(void)
 {
 #ifdef HAVE_DYLIB
@@ -3020,6 +3046,7 @@ bool rarch_main_iterate(void)
       bsv_movie_set_frame_start(g_extern.bsv.movie);
 #endif
 
+   update_frame_time();
    pretro_run();
 
 #ifdef HAVE_BSV_MOVIE

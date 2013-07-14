@@ -486,7 +486,48 @@ enum retro_mod
                                            // Retrieves the absolute path from where this libretro implementation was loaded.
                                            // NULL is returned if the libretro was loaded statically (i.e. linked statically to frontend), or if the path cannot be determined.
                                            // Mostly useful in cooperation with SET_SUPPORT_NO_GAME as assets can be loaded without ugly hacks.
+                                           //
+#define RETRO_ENVIRONMENT_SET_AUDIO_CALLBACK 20
+                                           // const struct retro_audio_callback * --
+                                           // Sets an interface which is used to notify a libretro core about audio being available for writing.
+                                           // The callback can be called from any thread, so a core using this must have a thread safe audio implementation.
+                                           // It is intended for games where audio and video are completely asynchronous and audio can be generated on the fly.
+                                           // This interface is not recommended for use with emulators which have highly synchronous audio.
+                                           //
+                                           // The callback only notifies about writability; the libretro core still has to call the normal audio callbacks
+                                           // to write audio. The audio callbacks must be called from within the notification callback.
+                                           // The amount of audio data to write is up to the implementation.
+                                           // Generally, the audio callback will be called continously in a loop.
+                                           //
+                                           // Due to thread safety guarantees and lack of sync between audio and video, a frontend
+                                           // can selectively disallow this interface based on internal configuration. A core using
+                                           // this interface must also implement the "normal" audio interface.
+                                           //
+                                           // A libretro core using SET_AUDIO_CALLBACK should also make use of SET_FRAME_TIME_CALLBACK.
+#define RETRO_ENVIRONMENT_SET_FRAME_TIME_CALLBACK 21
+                                           // const struct retro_frame_time_callback * --
+                                           // Lets the core know how much time has passed since last invocation of retro_run().
+                                           // The frontend can tamper with the timing to fake fast-forward, slow-motion, frame stepping, etc.
+                                           // In this case the delta time will use the FPS value reported in get_av_info().
                                           
+
+// Notifies libretro that audio data should be written.
+typedef void (*retro_audio_callback_t)(void);
+struct retro_audio_callback
+{
+   retro_audio_callback_t callback;
+};
+
+// Notifies a libretro core of time spent since last invocation of retro_run() in microseconds.
+// It will be called right before retro_run() every frame.
+// The frontend can tamper with timing to support cases like fast-forward, slow-motion and framestepping.
+// In those scenarios the FPS value in av_info will be used to fake the frame time.
+typedef int64_t retro_usec_t;
+typedef void (*retro_frame_time_callback_t)(retro_usec_t usec);
+struct retro_frame_time_callback
+{
+   retro_frame_time_callback_t callback;
+};
 
 // Pass this to retro_video_refresh_t if rendering to hardware.
 // Passing NULL to retro_video_refresh_t is still a frame dupe as normal.
