@@ -508,7 +508,7 @@ enum retro_mod
                                            // const struct retro_frame_time_callback * --
                                            // Lets the core know how much time has passed since last invocation of retro_run().
                                            // The frontend can tamper with the timing to fake fast-forward, slow-motion, frame stepping, etc.
-                                           // In this case the delta time will use the FPS value reported in get_av_info().
+                                           // In this case the delta time will use the reference value in frame_time_callback..
                                           
 
 // Notifies libretro that audio data should be written.
@@ -521,12 +521,13 @@ struct retro_audio_callback
 // Notifies a libretro core of time spent since last invocation of retro_run() in microseconds.
 // It will be called right before retro_run() every frame.
 // The frontend can tamper with timing to support cases like fast-forward, slow-motion and framestepping.
-// In those scenarios the FPS value in av_info will be used to fake the frame time.
+// In those scenarios the reference frame time value will be used.
 typedef int64_t retro_usec_t;
 typedef void (*retro_frame_time_callback_t)(retro_usec_t usec);
 struct retro_frame_time_callback
 {
    retro_frame_time_callback_t callback;
+   retro_usec_t reference; // Represents the time of one frame. It is computed as 1000000 / fps, but the implementation will resolve the rounding to ensure that framestepping, etc is exact.
 };
 
 // Pass this to retro_video_refresh_t if rendering to hardware.
