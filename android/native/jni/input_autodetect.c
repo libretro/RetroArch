@@ -111,8 +111,8 @@ void input_autodetect_setup (void *data, char *msg, size_t sizeof_msg, unsigned 
          device = DEVICE_LOGITECH_DUAL_ACTION;
       else if (strstr(name_buf, "Logitech") && strstr(name_buf, "Precision"))
          device = DEVICE_LOGITECH_PRECISION_GAMEPAD;
-      else if (strstr(name_buf, "shooter-keypad"))
-         device = DEVICE_ICONTROLPAD_BLUEZ_IME;
+      else if (strstr(name_buf, "iControlPad-")) // followed by a 4 (hex) char HW id
+         device = DEVICE_ICONTROLPAD_HID_JOYSTICK;
       else if (strstr(name_buf, "SEGA VIRTUA STICK High Grade"))
          device = DEVICE_SEGA_VIRTUA_STICK_HIGH_GRADE;
       else if (strstr(name_buf, "TTT THT Arcade console 2P USB Play"))
@@ -231,6 +231,11 @@ void input_autodetect_setup (void *data, char *msg, size_t sizeof_msg, unsigned 
       {
          device = DEVICE_CCPCREATIONS_WIIUSE_IME;
          snprintf(name_buf, sizeof(name_buf), "ccpcreations WiiUse");
+      }
+      else if (strstr(current_ime, "com.hexad.bluezime"))
+      {
+         device = DEVICE_ICONTROLPAD_BLUEZ_IME;
+         snprintf(name_buf, sizeof(name_buf), "iControlpad SPP mode (using Bluez IME)");
       }
 
       if (source == AINPUT_SOURCE_KEYBOARD && device != DEVICE_XPERIA_PLAY)

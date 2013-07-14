@@ -428,10 +428,29 @@ static void android_input_set_keybinds(void *data, unsigned device,
             /* right analog stick - TODO */
             /* menu button? */
             break;
+         case DEVICE_ICONTROLPAD_HID_JOYSTICK:
+            g_settings.input.device[port] = device;
+            g_settings.input.dpad_emulation[port] = ANALOG_DPAD_NONE;
+            strlcpy(g_settings.input.device_names[port], "iControlPad HID Joystick profile",
+                  sizeof(g_settings.input.device_names[port]));
+
+            keycode_lut[AKEYCODE_BUTTON_1] |=  ((RETRO_DEVICE_ID_JOYPAD_UP+1)       << shift);
+            keycode_lut[AKEYCODE_BUTTON_4] |=  ((RETRO_DEVICE_ID_JOYPAD_DOWN+1)     << shift);
+            keycode_lut[AKEYCODE_BUTTON_3] |=  ((RETRO_DEVICE_ID_JOYPAD_LEFT+1)     << shift);
+            keycode_lut[AKEYCODE_BUTTON_2] |=  ((RETRO_DEVICE_ID_JOYPAD_RIGHT+1)    << shift);
+            keycode_lut[AKEYCODE_BUTTON_14] |=  ((RETRO_DEVICE_ID_JOYPAD_A+1)       << shift);
+            keycode_lut[AKEYCODE_BUTTON_13] |=  ((RETRO_DEVICE_ID_JOYPAD_B+1)       << shift);
+            keycode_lut[AKEYCODE_BUTTON_11] |=  ((RETRO_DEVICE_ID_JOYPAD_X+1)       << shift);
+            keycode_lut[AKEYCODE_BUTTON_12] |=  ((RETRO_DEVICE_ID_JOYPAD_Y+1)       << shift);
+            keycode_lut[AKEYCODE_BUTTON_10] |=  ((RETRO_DEVICE_ID_JOYPAD_START+1)   << shift);
+            keycode_lut[AKEYCODE_BUTTON_9] |=  ((RETRO_DEVICE_ID_JOYPAD_SELECT+1)   << shift);
+            keycode_lut[AKEYCODE_BUTTON_5] |=  ((RETRO_DEVICE_ID_JOYPAD_L+1)        << shift);
+            keycode_lut[AKEYCODE_BUTTON_15] |=  ((RETRO_DEVICE_ID_JOYPAD_R+1)       << shift);
+            break;
          case DEVICE_ICONTROLPAD_BLUEZ_IME:
             g_settings.input.device[port] = device;
             g_settings.input.dpad_emulation[port] = ANALOG_DPAD_NONE;
-            strlcpy(g_settings.input.device_names[port], "iControlpad Bluez IME",
+            strlcpy(g_settings.input.device_names[port], "iControlPad SPP profile (using Bluez IME)",
                   sizeof(g_settings.input.device_names[port]));
 
             keycode_lut[AKEYCODE_DPAD_UP] |=  ((RETRO_DEVICE_ID_JOYPAD_UP+1)        << shift);
