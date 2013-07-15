@@ -19,11 +19,11 @@
 
 #ifdef HAVE_DYNAMIC
 #ifdef _WIN32
-#define EXT_EXECUTABLES "dll|DLL"
+#define EXT_EXECUTABLES "dll"
 #elif defined(__APPLE__)
 #define EXT_EXECUTABLES "dylib"
 #else
-#define EXT_EXECUTABLES "so|SO"
+#define EXT_EXECUTABLES "so"
 #endif
 #else
 #if defined(__CELLOS_LV2__)
