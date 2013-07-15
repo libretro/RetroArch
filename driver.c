@@ -686,6 +686,9 @@ static void compute_monitor_fps_statistics(void)
 
 void uninit_audio(void)
 {
+   if (driver.audio_data && driver.audio)
+      driver.audio->free(driver.audio_data);
+
    free(g_extern.audio_data.conv_outsamples);
    g_extern.audio_data.conv_outsamples = NULL;
    g_extern.audio_data.data_ptr        = 0;
@@ -698,9 +701,6 @@ void uninit_audio(void)
       g_extern.audio_active = false;
       return;
    }
-
-   if (driver.audio_data && driver.audio)
-      driver.audio->free(driver.audio_data);
 
    rarch_resampler_freep(&g_extern.audio_data.resampler, &g_extern.audio_data.resampler_data);
 

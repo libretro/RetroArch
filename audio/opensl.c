@@ -64,9 +64,8 @@ static void opensl_callback(SLAndroidSimpleBufferQueueItf bq, void *ctx)
 
    slock_lock(sl->lock);
    sl->buffered_blocks--;
-   slock_unlock(sl->lock);
-
    scond_signal(sl->cond);
+   slock_unlock(sl->lock);
 }
 
 #define GOTO_IF_FAIL(x) do { \
@@ -263,6 +262,12 @@ static size_t sl_buffer_size(void *data)
    return BUFFER_SIZE * BUFFER_COUNT;
 }
 
+static bool sl_use_float(void *data)
+{
+   (void)data;
+   return false;
+}
+
 const audio_driver_t audio_opensl = {
    sl_init,
    sl_write,
@@ -270,7 +275,7 @@ const audio_driver_t audio_opensl = {
    sl_start,
    sl_set_nonblock_state,
    sl_free,
-   NULL,
+   sl_use_float,
    "opensl",
    sl_write_avail,
    sl_buffer_size,

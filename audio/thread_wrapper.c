@@ -117,7 +117,7 @@ static void audio_thread_set_nonblock_state(void *data, bool state)
 static bool audio_thread_use_float(void *data)
 {
    audio_thread_t *thr = (audio_thread_t*)data;
-   return thr->driver->use_float(thr->driver_data);
+   return thr->driver->use_float && thr->driver->use_float(thr->driver_data);
 }
 
 static ssize_t audio_thread_write(void *data, const void *buf, size_t size)
