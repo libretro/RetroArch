@@ -451,15 +451,11 @@ MAIN
 ============================================================ */
 #if defined(XENON)
 #include "../frontend/frontend_xenon.c"
-#elif defined(RARCH_CONSOLE) || defined(PSP)
-#include "../frontend/frontend_console.c"
 #elif defined(ANDROID)
 #include "../frontend/frontend_android.c"
 #elif defined(IOS) || defined(OSX)
 #include "../frontend/frontend_objc.c"
-#endif
-
-#if defined(RARCH_CONSOLE) || defined(__QNX__) || defined(PANDORA)
+#else
 #include "../frontend/frontend.c"
 #endif
 
