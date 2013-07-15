@@ -16,6 +16,7 @@
 #include "core_info.h"
 #include "general.h"
 #include "file.h"
+#include "file_ext.h"
 #include "config.def.h"
 
 core_info_list_t *get_core_info_list(const char *modules_path)

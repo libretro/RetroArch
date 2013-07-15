@@ -19,7 +19,7 @@
 #include <stddef.h>
 #include <string.h>
 
-#include "frontend_console.h"
+#include "../file_ext.h"
 #include "frontend_salamander.h"
 
 #if defined(__CELLOS_LV2__)
