@@ -2993,7 +2993,10 @@ static inline void update_frame_time(void)
    rarch_time_t time = rarch_get_time_usec();
    rarch_time_t delta = 0;
 
-   bool is_locked_fps = g_extern.is_paused || driver.nonblock_state || g_extern.recording;
+   bool is_locked_fps = g_extern.is_paused || driver.nonblock_state;
+#ifdef HAVE_FFMPEG
+   is_locked_fps |= g_extern.recording;
+#endif
    
    if (!g_extern.system.frame_time_last || is_locked_fps)
       delta = g_extern.system.frame_time.reference;
