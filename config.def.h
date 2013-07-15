@@ -1,5 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2013 - Hans-Kristian Arntzen
+ *  Copyright (C) 2011-2013 - Daniel De Matteis
  * 
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -176,26 +177,6 @@ enum
 #define DEFAULT_ASPECT_RATIO 1.3333f
 #else
 #define DEFAULT_ASPECT_RATIO -1.0f
-#endif
-
-#ifdef HAVE_DYNAMIC
-#ifdef _WIN32
-#define EXT_EXECUTABLES "dll|DLL"
-#elif defined(__APPLE__)
-#define EXT_EXECUTABLES "dylib"
-#else
-#define EXT_EXECUTABLES "so|SO"
-#endif
-#else
-#if defined(__CELLOS_LV2__)
-#define EXT_EXECUTABLES "self|SELF|bin|BIN"
-#elif defined(_XBOX1)
-#define EXT_EXECUTABLES "xbe|XBE"
-#elif defined(_XBOX360)
-#define EXT_EXECUTABLES "xex|XEX"
-#elif defined(GEKKO)
-#define EXT_EXECUTABLES "dol|DOL"
-#endif
 #endif
 
 ////////////////

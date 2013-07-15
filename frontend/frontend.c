@@ -52,10 +52,10 @@
 #undef HAVE_MENU
 #endif
 
+#include "../file_ext.h"
 
 #ifdef RARCH_CONSOLE
 #include "../config.def.h"
-#include "frontend_console.h"
 
 default_paths_t default_paths;
 

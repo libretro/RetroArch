@@ -24,6 +24,7 @@
 #include "rgui.h"
 #include "utils/file_list.h"
 #include "../../general.h"
+#include "../../file_ext.h"
 #include "../../gfx/gfx_common.h"
 #include "../../config.def.h"
 #include "../../file.h"
