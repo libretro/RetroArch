@@ -110,7 +110,7 @@ static bool audio_thread_start(void *data)
 
 static void audio_thread_set_nonblock_state(void *data, bool state)
 {
-   audio_thread_t *thr = (audio_thread_t*)data;
+   (void)data;
    (void)state;
 }
 
