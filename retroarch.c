@@ -2956,9 +2956,9 @@ int rarch_main_init(int argc, char *argv[])
    return 0;
 
 error:
+   uninit_drivers();
    pretro_unload_game();
    pretro_deinit();
-   uninit_drivers();
    uninit_libretro_sym();
 
    g_extern.main_is_init = false;
@@ -3116,9 +3116,9 @@ void rarch_main_deinit(void)
    if (!g_extern.libretro_dummy && !g_extern.libretro_no_rom)
       save_auto_state();
 
+   uninit_drivers();
    pretro_unload_game();
    pretro_deinit();
-   uninit_drivers();
    uninit_libretro_sym();
 
    if (g_extern.rom_file_temporary)
