@@ -39,7 +39,7 @@
 
 static int rarch_preinit(void)
 {
-#if !defined(HAVE_BB10)
+#if defined(__QNX__) && !defined(HAVE_BB10)
    //Initialize BPS libraries
    bps_initialize();
    rarch_main_clear_state();
