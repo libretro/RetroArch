@@ -37,7 +37,7 @@
 #undef HAVE_MENU
 #endif
 
-static int rarch_preinit(void)
+static void rarch_preinit(void)
 {
 #if defined(__QNX__) && !defined(HAVE_BB10)
    //Initialize BPS libraries
@@ -145,7 +145,6 @@ int rarch_main(int argc, char *argv[])
 
    rarch_main_clear_state();
 
-error:
 #ifdef __QNX__
    bps_shutdown();
 #endif
