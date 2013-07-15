@@ -22,11 +22,13 @@
 #include "../frontend/menu/rgui.h"
 #endif
 
-#ifdef __APPLE__
+#if defined(__APPLE__) && !defined(OSX)
 #include "SDL.h" 
 // OSX seems to really need -lSDLmain, 
 // so we include SDL.h here so it can hack our main.
 // We want to use -mconsole in Win32, so we need main().
+#elif defined(__QNX__)
+#include <bps/bps.h>
 #endif
 
 #if defined(HAVE_RGUI) || defined(HAVE_RMENU) || defined(HAVE_RMENU_XUI)
@@ -35,12 +37,25 @@
 #undef HAVE_MENU
 #endif
 
-int main(int argc, char *argv[])
+static int rarch_preinit(void)
 {
-#ifdef HAVE_RARCH_MAIN_IMPLEMENTATION
-   // Consoles use the higher level API.
-   return rarch_main(argc, argv);
-#else
+#if !defined(HAVE_BB10)
+   //Initialize BPS libraries
+   bps_initialize();
+   rarch_main_clear_state();
+   strlcpy(g_settings.libretro, "app/native/lib", sizeof(g_settings.libretro));
+   strlcpy(g_extern.config_path, "app/native/retroarch.cfg", sizeof(g_extern.config_path));
+   strlcpy(g_settings.video.shader_dir, "app/native/shaders_glsl", sizeof(g_settings.video.shader_dir));
+
+   config_load();
+
+   g_extern.verbose = true;
+#endif
+}
+
+int rarch_main(int argc, char *argv[])
+{
+   rarch_preinit();
 
    rarch_main_clear_state();
    rarch_init_msg_queue();
@@ -70,7 +85,7 @@ int main(int argc, char *argv[])
             g_extern.lifecycle_mode_state |= (1ULL << MODE_GAME);
          else
          {
-#ifdef RARCH_CONSOLE
+#if defined(RARCH_CONSOLE) || defined(__QNX__)
             g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU);
 #else
             return 1;
@@ -109,6 +124,7 @@ int main(int argc, char *argv[])
          break;
    }
 
+   g_extern.system.shutdown = false;
    menu_free();
 
    if (g_extern.config_save_on_exit && *g_extern.config_path)
@@ -120,7 +136,7 @@ int main(int argc, char *argv[])
    while ((g_extern.is_paused && !g_extern.is_oneshot) ? rarch_main_idle_iterate() : rarch_main_iterate());
    rarch_main_deinit();
 #endif
-   
+
    rarch_deinit_msg_queue();
 
 #ifdef PERF_TEST
@@ -128,6 +144,16 @@ int main(int argc, char *argv[])
 #endif
 
    rarch_main_clear_state();
-   return 0;
+
+error:
+#ifdef __QNX__
+   bps_shutdown();
 #endif
+
+   return 0;
+}
+
+int main(int argc, char *argv[])
+{
+   return rarch_main(argc, argv);
 }
