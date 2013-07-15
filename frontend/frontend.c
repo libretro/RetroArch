@@ -196,22 +196,27 @@ int rarch_main(int argc, char *argv[])
    rarch_main_clear_state();
 
    rarch_get_environment(argc, argv);
+
+#ifdef HAVE_MENU
+#ifdef RARCH_CONSOLE
+   menu_init();
+   system_process_args(argc, argv);
+   g_extern.lifecycle_mode_state |= 1ULL << MODE_LOAD_GAME;
+#else
    rarch_init_msg_queue();
 
    int init_ret;
    if ((init_ret = rarch_main_init(argc, argv))) return init_ret;
 
-#ifdef HAVE_MENU
    menu_init();
-#ifdef RARCH_CONSOLE
-   system_process_args(argc, argv);
-#endif
+
    g_extern.lifecycle_mode_state |= 1ULL << MODE_GAME;
 
    // If we started a ROM directly from command line,
    // push it to ROM history.
    if (!g_extern.libretro_dummy)
       menu_rom_history_push_current();
+#endif
 
    for (;;)
    {
@@ -290,6 +295,11 @@ int rarch_main(int argc, char *argv[])
    global_uninit_drivers();
 #endif
 #else
+   rarch_init_msg_queue();
+
+   int init_ret;
+   if ((init_ret = rarch_main_init(argc, argv))) return init_ret;
+
    while ((g_extern.is_paused && !g_extern.is_oneshot) ? rarch_main_idle_iterate() : rarch_main_iterate());
    rarch_main_deinit();
 #endif
