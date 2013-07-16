@@ -774,7 +774,6 @@ static uint64_t rgui_input(void)
 
 bool menu_iterate(void)
 {
-   rarch_time_t time, delta, target_msec, sleep_msec;
    static bool initial_held = true;
    static bool first_held = false;
    uint64_t input_state = 0;
