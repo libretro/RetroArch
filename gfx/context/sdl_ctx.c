@@ -21,13 +21,7 @@
 #include "x11_common.h"
 #endif
 
-#ifdef __APPLE__
-#include <OpenGL/OpenGL.h>
-#include <OpenGL/gl.h>
-#else
 #include "SDL/SDL_syswm.h"
-#endif
-
 #include "SDL.h"
 
 #include "../math/matrix.h"
@@ -61,9 +55,6 @@ static void gfx_ctx_swap_interval(unsigned interval)
          GL_SYM_WRAP(wgl_swap_interval, "wglSwapIntervalEXT");
       if (wgl_swap_interval)
          success = wgl_swap_interval(g_interval);
-#elif defined(__APPLE__) && defined(HAVE_OPENGL)
-      GLint val = g_interval;
-      success = CGLSetParameter(CGLGetCurrentContext(), kCGLCPSwapInterval, &val) == 0;
 #else
       static int (*glx_swap_interval)(int) = NULL;
       if (!glx_swap_interval)
@@ -150,11 +141,7 @@ static bool gfx_ctx_set_video_mode(
       unsigned width, unsigned height,
       bool fullscreen)
 {
-#ifndef __APPLE__ // Resizing on OSX is broken in 1.2 it seems :)
    static const int resizable = SDL_RESIZABLE;
-#else
-   static const int resizable = 0;
-#endif
 
    SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
    SDL_GL_SetAttribute(SDL_GL_SWAP_CONTROL, g_interval);
@@ -195,13 +182,7 @@ static bool gfx_ctx_set_video_mode(
 // SDL 1.2 has an awkward model where you need to "confirm" window resizing.
 static void gfx_ctx_set_resize(unsigned width, unsigned height)
 {
-#ifndef __APPLE__ // Resizing on OSX is broken in 1.2 it seems :)
    SDL_SetVideoMode(width, height, 0, SDL_OPENGL | (g_fullscreen ? SDL_FULLSCREEN : SDL_RESIZABLE));
-#else
-   // Resize on OSX is broken.
-   (void)width;
-   (void)height;
-#endif
 }
 
 static void gfx_ctx_swap_buffers(void)
