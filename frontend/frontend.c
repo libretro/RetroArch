@@ -24,7 +24,7 @@
 #include "menu/rmenu.h"
 #endif
 
-#if defined(__APPLE__) && !defined(OSX) && !defined(IOS)
+#if defined(__APPLE__) && (!defined(OSX) || !defined(IOS))
 #include "SDL.h" 
 // OSX seems to really need -lSDLmain, 
 // so we include SDL.h here so it can hack our main.
