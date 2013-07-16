@@ -25,6 +25,12 @@
 #endif
 
 #if defined(__APPLE__) && (!defined(OSX) || !defined(IOS))
+#define APPLE_SDL
+#else
+#define APPLE_NO_SDL
+#endif
+
+#if defined(APPLE_SDL)
 #include "SDL.h" 
 // OSX seems to really need -lSDLmain, 
 // so we include SDL.h here so it can hack our main.
@@ -197,12 +203,12 @@ static void system_shutdown(void)
 {
 #if defined(__QNX__)
    bps_shutdown();
-#elif defined(__APPLE__)
+#elif defined(APPLE_NO_SDL)
    dispatch_async_f(dispatch_get_main_queue(), 0, apple_rarch_exited);
 #endif
 }
 
-#ifdef __APPLE__
+#if defined(APPLE_NO_SDL)
 static pthread_mutex_t apple_event_queue_lock = PTHREAD_MUTEX_INITIALIZER;
 
 static struct
@@ -260,14 +266,14 @@ int rarch_main(int argc, char *argv[])
 {
    rarch_preinit();
 
-#ifndef __APPLE__
+#if !defined(APPLE_NO_SDL)
    rarch_main_clear_state();
 #endif
 
    rarch_get_environment(argc, argv);
 
 #if !defined(RARCH_CONSOLE)
-#ifdef __APPLE__
+#if defined(APPLE_NO_SDL)
    struct rarch_main_wrap* argdata = (struct rarch_main_wrap*)args;
    int init_ret = rarch_main_init_wrap(argdata);
    apple_free_main_wrap(argdata);
@@ -325,7 +331,7 @@ int rarch_main(int argc, char *argv[])
 #if defined(RARCH_CONSOLE) || defined(__QNX__)
             g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU);
 #else
-#ifdef __APPLE__
+#if defined(APPLE_NO_SDL)
             // This needs to be here to tell the GUI thread that the emulator loop has stopped,
             // the (void*)1 makes it display the 'Failed to load game' message.
             dispatch_async_f(dispatch_get_main_queue(), (void*)1, apple_rarch_exited);
@@ -347,7 +353,7 @@ int rarch_main(int argc, char *argv[])
 
          while ((g_extern.is_paused && !g_extern.is_oneshot) ? rarch_main_idle_iterate() : rarch_main_iterate())
          {
-#ifdef __APPLE__
+#if defined(APPLE_NO_SDL)
             process_events();
 #endif
 
@@ -367,7 +373,7 @@ int rarch_main(int argc, char *argv[])
 
          while (!g_extern.system.shutdown && menu_iterate())
          {
-#ifdef __APPLE__
+#if defined(APPLE_NO_SDL)
             process_events();
 #endif
 
