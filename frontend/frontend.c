@@ -253,7 +253,7 @@ static void process_events(void)
    pthread_mutex_unlock(&apple_event_queue_lock);
 }
 
-void* rarch_main_apple(void* args)
+void* rarch_main(void* args)
 #else
 int rarch_main(int argc, char *argv[])
 #endif
