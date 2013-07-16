@@ -34,8 +34,8 @@
 #define SLPlayItf_SetPlayState(a, ...) ((*(a))->SetPlayState(a, __VA_ARGS__))
 
 // TODO: Are these sane?
-#define BUFFER_SIZE 8192
-#define BUFFER_COUNT 4
+#define BUFFER_SIZE (2 * 1024)
+#define BUFFER_COUNT 16
 
 typedef struct sl
 {
@@ -122,18 +122,21 @@ static void *sl_init(const char *device, unsigned rate, unsigned latency)
    GOTO_IF_FAIL(slCreateEngine(&sl->engine_object, 0, NULL, 0, NULL, NULL));
    GOTO_IF_FAIL(SLObjectItf_Realize(sl->engine_object, SL_BOOLEAN_FALSE));
    GOTO_IF_FAIL(SLObjectItf_GetInterface(sl->engine_object, SL_IID_ENGINE, &sl->engine));
+
    GOTO_IF_FAIL(SLEngineItf_CreateOutputMix(sl->engine, &sl->output_mix, 0, NULL, NULL));
    GOTO_IF_FAIL(SLObjectItf_Realize(sl->output_mix, SL_BOOLEAN_FALSE));
 
-   sl->buf_count = BUFFER_COUNT;
+   sl->buf_count = (latency * 4 * out_rate + 500) / 1000;
+   sl->buf_count = (sl->buf_count + BUFFER_SIZE / 2) / BUFFER_SIZE;
+   sl->buf_count = min(sl->buf_count, BUFFER_COUNT);
 
-   RARCH_LOG("[SLES] : Setting audio latency (buffer size: [%d])..\n", sl->buf_count * BUFFER_SIZE);
+   RARCH_LOG("[SLES] : Setting audio latency (buffer size: [%d]) ...\n", sl->buf_count * BUFFER_SIZE);
 
    fmt_pcm.formatType    = SL_DATAFORMAT_PCM;
    fmt_pcm.numChannels   = 2;
    fmt_pcm.samplesPerSec = rate * 1000; // Samplerate is in milli-Hz.
-   fmt_pcm.bitsPerSample = sizeof(int16_t) * 8;
-   fmt_pcm.containerSize = sizeof(int16_t) * 8;
+   fmt_pcm.bitsPerSample = 16;
+   fmt_pcm.containerSize = 16;
    fmt_pcm.channelMask   = SL_SPEAKER_FRONT_LEFT | SL_SPEAKER_FRONT_RIGHT;
    fmt_pcm.endianness    = SL_BYTEORDER_LITTLEENDIAN; // Android only.
 
@@ -153,7 +156,7 @@ static void *sl_init(const char *device, unsigned rate, unsigned latency)
             1, &id, &req));
    GOTO_IF_FAIL(SLObjectItf_Realize(sl->buffer_queue_object, SL_BOOLEAN_FALSE));
 
-   GOTO_IF_FAIL(SLObjectItf_GetInterface(sl->buffer_queue_object, SL_IID_BUFFERQUEUE,
+   GOTO_IF_FAIL(SLObjectItf_GetInterface(sl->buffer_queue_object, SL_IID_ANDROIDSIMPLEBUFFERQUEUE,
             &sl->buffer_queue));
 
    sl->cond = scond_new();
@@ -162,9 +165,9 @@ static void *sl_init(const char *device, unsigned rate, unsigned latency)
    (*sl->buffer_queue)->RegisterCallback(sl->buffer_queue, opensl_callback, sl);
 
    // Enqueue a bit to get stuff rolling.
-   sl->buffered_blocks = BUFFER_COUNT;
+   sl->buffered_blocks = sl->buf_count;
    sl->buffer_index = 0;
-   for (unsigned i = 0; i < BUFFER_COUNT; i++)
+   for (unsigned i = 0; i < sl->buf_count; i++)
       (*sl->buffer_queue)->Enqueue(sl->buffer_queue, sl->buffer[i], BUFFER_SIZE);
 
    GOTO_IF_FAIL(SLObjectItf_GetInterface(sl->buffer_queue_object, SL_IID_PLAY, &sl->player));
@@ -209,7 +212,7 @@ static ssize_t sl_write(void *data, const void *buf_, size_t size)
       slock_lock(sl->lock);
       if (sl->nonblock)
       {
-         if (sl->buffered_blocks == BUFFER_COUNT)
+         if (sl->buffered_blocks == sl->buf_count)
          {
             slock_unlock(sl->lock);
             break;
@@ -217,7 +220,7 @@ static ssize_t sl_write(void *data, const void *buf_, size_t size)
       }
       else
       {
-         while (sl->buffered_blocks == BUFFER_COUNT)
+         while (sl->buffered_blocks == sl->buf_count)
             scond_wait(sl->cond, sl->lock);
       }
       slock_unlock(sl->lock);
@@ -235,11 +238,17 @@ static ssize_t sl_write(void *data, const void *buf_, size_t size)
       if (sl->buffer_ptr >= BUFFER_SIZE)
       {
          slock_lock(sl->lock);
-         (*sl->buffer_queue)->Enqueue(sl->buffer_queue, sl->buffer[sl->buffer_index], BUFFER_SIZE);
-         sl->buffer_index = (sl->buffer_index + 1) & (BUFFER_COUNT - 1);
+         SLresult res = (*sl->buffer_queue)->Enqueue(sl->buffer_queue, sl->buffer[sl->buffer_index], BUFFER_SIZE);
+         sl->buffer_index = (sl->buffer_index + 1) % sl->buf_count;
          sl->buffered_blocks++;
          slock_unlock(sl->lock);
          sl->buffer_ptr = 0;
+
+         if (res != SL_RESULT_SUCCESS)
+         {
+            RARCH_ERR("[OpenSL]: Failed to write! (Error: 0x%x)\n", (unsigned)res);
+            return -1;
+         }
       }
    }
 
@@ -252,15 +261,15 @@ static size_t sl_write_avail(void *data)
 {
    sl_t *sl = (sl_t*)data;
    slock_lock(sl->lock);
-   size_t avail = (BUFFER_COUNT - (int)sl->buffered_blocks - 1) * BUFFER_SIZE + (BUFFER_SIZE - (int)sl->buffer_ptr);
+   size_t avail = (sl->buf_count - (int)sl->buffered_blocks - 1) * BUFFER_SIZE + (BUFFER_SIZE - (int)sl->buffer_ptr);
    slock_unlock(sl->lock);
    return avail;
 }
 
 static size_t sl_buffer_size(void *data)
 {
-   (void)data;
-   return BUFFER_SIZE * BUFFER_COUNT;
+   sl_t *sl = (sl_t*)data;
+   return BUFFER_SIZE * sl->buf_count;
 }
 
 const audio_driver_t audio_opensl = {
