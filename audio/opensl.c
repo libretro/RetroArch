@@ -61,11 +61,7 @@ typedef struct sl
 static void opensl_callback(SLAndroidSimpleBufferQueueItf bq, void *ctx)
 {
    sl_t *sl = (sl_t*)ctx;
-
-   slock_lock(sl->lock);
-   sl->buffered_blocks--;
-   slock_unlock(sl->lock);
-
+   __sync_fetch_and_sub(&sl->buffered_blocks, 1);
    scond_signal(sl->cond);
 }
 
@@ -209,21 +205,18 @@ static ssize_t sl_write(void *data, const void *buf_, size_t size)
 
    while (size)
    {
-      slock_lock(sl->lock);
       if (sl->nonblock)
       {
          if (sl->buffered_blocks == sl->buf_count)
-         {
-            slock_unlock(sl->lock);
             break;
-         }
       }
       else
       {
+         slock_lock(sl->lock);
          while (sl->buffered_blocks == sl->buf_count)
             scond_wait(sl->cond, sl->lock);
+         slock_unlock(sl->lock);
       }
-      slock_unlock(sl->lock);
 
       size_t avail_write = min(BUFFER_SIZE - sl->buffer_ptr, size);
       if (avail_write)
@@ -237,11 +230,9 @@ static ssize_t sl_write(void *data, const void *buf_, size_t size)
 
       if (sl->buffer_ptr >= BUFFER_SIZE)
       {
-         slock_lock(sl->lock);
          SLresult res = (*sl->buffer_queue)->Enqueue(sl->buffer_queue, sl->buffer[sl->buffer_index], BUFFER_SIZE);
          sl->buffer_index = (sl->buffer_index + 1) % sl->buf_count;
-         sl->buffered_blocks++;
-         slock_unlock(sl->lock);
+         __sync_fetch_and_add(&sl->buffered_blocks, 1);
          sl->buffer_ptr = 0;
 
          if (res != SL_RESULT_SUCCESS)
@@ -260,9 +251,7 @@ static ssize_t sl_write(void *data, const void *buf_, size_t size)
 static size_t sl_write_avail(void *data)
 {
    sl_t *sl = (sl_t*)data;
-   slock_lock(sl->lock);
    size_t avail = (sl->buf_count - (int)sl->buffered_blocks - 1) * BUFFER_SIZE + (BUFFER_SIZE - (int)sl->buffer_ptr);
-   slock_unlock(sl->lock);
    return avail;
 }
 
