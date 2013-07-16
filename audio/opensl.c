@@ -63,7 +63,6 @@ static void opensl_callback(SLAndroidSimpleBufferQueueItf bq, void *ctx)
    sl_t *sl = (sl_t*)ctx;
    __sync_fetch_and_sub(&sl->buffered_blocks, 1);
    scond_signal(sl->cond);
-   slock_unlock(sl->lock);
 }
 
 #define GOTO_IF_FAIL(x) do { \
