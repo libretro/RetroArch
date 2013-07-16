@@ -77,6 +77,10 @@ static bool gfx_ctx_xdk_window_has_focus(void)
    return true;
 }
 
+#ifdef _XBOX1
+extern unsigned font_x, font_y;
+#endif
+
 static void gfx_ctx_xdk_update_window_title(void)
 {
    char buf[128];
@@ -85,6 +89,8 @@ static void gfx_ctx_xdk_update_window_title(void)
    if (gfx_get_fps(buf, sizeof(buf), false) &&
    g_extern.lifecycle_mode_state & (1ULL << MODE_FPS_DRAW))
    {
+      MEMORYSTATUS stat;
+      font_params_t font_parms = {0};
 #if defined(_XBOX1)
       float mem_width  = font_x + 30;
       float mem_height = font_y + 50;
@@ -92,8 +98,6 @@ static void gfx_ctx_xdk_update_window_title(void)
       float mem_width  = (g_extern.lifecycle_mode_state & (1ULL << MODE_MENU_HD)) ? 160 : 100;
       float mem_height = 70;
 #endif
-      MEMORYSTATUS stat;
-      font_params_t font_parms = {0};
 
       GlobalMemoryStatus(&stat);
 

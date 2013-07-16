@@ -24,7 +24,15 @@
 #include "menu/rmenu.h"
 #endif
 
-#if defined(__APPLE__) && !defined(OSX)
+#ifdef __APPLE__
+#if !defined(OSX) || !defined(IOS)
+#define APPLE_SDL
+#else
+#define APPLE_NO_SDL
+#endif
+#endif
+
+#if defined(APPLE_SDL)
 #include "SDL.h" 
 // OSX seems to really need -lSDLmain, 
 // so we include SDL.h here so it can hack our main.
@@ -44,6 +52,10 @@
 #include "platform/platform_xdk.c"
 #elif defined(PSP)
 #include "platform/platform_psp.c"
+#elif defined(__APPLE__)
+#include <dispatch/dispatch.h>
+#include <pthread.h>
+#include "../apple/RetroArch/rarch_wrapper.h"
 #endif
 
 #if defined(HAVE_RGUI) || defined(HAVE_RMENU) || defined(HAVE_RMENU_XUI)
@@ -189,29 +201,116 @@ static void rarch_get_environment(int argc, char *argv[])
 #endif
 }
 
+static void system_shutdown(void)
+{
+#if defined(__QNX__)
+   bps_shutdown();
+#elif defined(APPLE_NO_SDL)
+   dispatch_async_f(dispatch_get_main_queue(), 0, apple_rarch_exited);
+#endif
+}
+
+#if defined(APPLE_NO_SDL)
+static pthread_mutex_t apple_event_queue_lock = PTHREAD_MUTEX_INITIALIZER;
+
+static struct
+{
+   void (*function)(void*);
+   void* userdata;
+} apple_event_queue[16];
+
+static uint32_t apple_event_queue_size;
+
+void apple_frontend_post_event(void (*fn)(void*), void* userdata)
+{
+   pthread_mutex_lock(&apple_event_queue_lock);
+
+   if (apple_event_queue_size < 16)
+   {
+      apple_event_queue[apple_event_queue_size].function = fn;
+      apple_event_queue[apple_event_queue_size].userdata = userdata;
+      apple_event_queue_size ++;
+   }
+
+   pthread_mutex_unlock(&apple_event_queue_lock);
+}
+
+static void apple_free_main_wrap(struct rarch_main_wrap* wrap)
+{
+   if (wrap)
+   {
+      free((char*)wrap->libretro_path);
+      free((char*)wrap->rom_path);
+      free((char*)wrap->sram_path);
+      free((char*)wrap->state_path);
+      free((char*)wrap->config_path);
+   }
+
+   free(wrap);
+}
+
+static void process_events(void)
+{
+   pthread_mutex_lock(&apple_event_queue_lock);
+
+   for (int i = 0; i < apple_event_queue_size; i ++)
+      apple_event_queue[i].function(apple_event_queue[i].userdata);
+
+   apple_event_queue_size = 0;
+
+   pthread_mutex_unlock(&apple_event_queue_lock);
+}
+
+void* rarch_main(void* args)
+#else
 int rarch_main(int argc, char *argv[])
+#endif
 {
    rarch_preinit();
 
+#if !defined(APPLE_NO_SDL)
    rarch_main_clear_state();
+#endif
 
    rarch_get_environment(argc, argv);
 
+#if !defined(RARCH_CONSOLE)
+#if defined(APPLE_NO_SDL)
+   struct rarch_main_wrap* argdata = (struct rarch_main_wrap*)args;
+   int init_ret = rarch_main_init_wrap(argdata);
+   apple_free_main_wrap(argdata);
+
+   if (init_ret)
+   {
+      rarch_main_clear_state();
+      dispatch_async_f(dispatch_get_main_queue(), (void*)1, apple_rarch_exited);
+      return 0;
+   }
+#else
+   rarch_init_msg_queue();
+   int init_ret;
+   if ((init_ret = rarch_main_init(argc, argv))) return init_ret;
+#endif
+#endif
+
 #ifdef HAVE_MENU
-#ifdef RARCH_CONSOLE
+#ifdef IOS
+   char* system_directory = ios_get_rarch_system_directory();
+   strlcpy(g_extern.savestate_dir, system_directory, sizeof(g_extern.savestate_dir));
+   strlcpy(g_extern.savefile_dir, system_directory, sizeof(g_extern.savefile_dir));
+   free(system_directory);
+#endif
+
    menu_init();
+
+#ifdef RARCH_CONSOLE
    system_process_args(argc, argv);
    g_extern.lifecycle_mode_state |= 1ULL << MODE_LOAD_GAME;
 #else
-   rarch_init_msg_queue();
-
-   int init_ret;
-   if ((init_ret = rarch_main_init(argc, argv))) return init_ret;
-
-   menu_init();
-
    g_extern.lifecycle_mode_state |= 1ULL << MODE_GAME;
+#endif
 
+#ifndef RARCH_CONSOLE
    // If we started a ROM directly from command line,
    // push it to ROM history.
    if (!g_extern.libretro_dummy)
@@ -234,6 +333,11 @@ int rarch_main(int argc, char *argv[])
 #if defined(RARCH_CONSOLE) || defined(__QNX__)
             g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU);
 #else
+#if defined(APPLE_NO_SDL)
+            // This needs to be here to tell the GUI thread that the emulator loop has stopped,
+            // the (void*)1 makes it display the 'Failed to load game' message.
+            dispatch_async_f(dispatch_get_main_queue(), (void*)1, apple_rarch_exited);
+#endif
             return 1;
 #endif
          }
@@ -249,7 +353,15 @@ int rarch_main(int argc, char *argv[])
             driver.video_poke->set_aspect_ratio(driver.video_data, g_settings.video.aspect_ratio_idx);
 #endif
 
-         while ((g_extern.is_paused && !g_extern.is_oneshot) ? rarch_main_idle_iterate() : rarch_main_iterate());
+         while ((g_extern.is_paused && !g_extern.is_oneshot) ? rarch_main_idle_iterate() : rarch_main_iterate())
+         {
+#if defined(APPLE_NO_SDL)
+            process_events();
+#endif
+
+            if (!(g_extern.lifecycle_mode_state & (1ULL << MODE_GAME)))
+               break;
+         }
          g_extern.lifecycle_mode_state &= ~(1ULL << MODE_GAME);
       }
       else if (g_extern.lifecycle_mode_state & (1ULL << MODE_MENU))
@@ -261,7 +373,15 @@ int rarch_main(int argc, char *argv[])
          if (driver.audio_data)
             audio_stop_func();
 
-         while (!g_extern.system.shutdown && menu_iterate());
+         while (!g_extern.system.shutdown && menu_iterate())
+         {
+#if defined(APPLE_NO_SDL)
+            process_events();
+#endif
+
+            if (!(g_extern.lifecycle_mode_state & (1ULL << MODE_MENU)))
+               break;
+         }
 
          driver_set_nonblock_state(driver.nonblock_state);
 
@@ -329,6 +449,7 @@ int rarch_main(int argc, char *argv[])
 #ifdef __QNX__
    bps_shutdown();
 #endif
+   system_shutdown();
 
 // FIXME - should this be 1 for RARCH_CONSOLE?
    return 0;

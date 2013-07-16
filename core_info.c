@@ -25,7 +25,7 @@ core_info_list_t *get_core_info_list(const char *modules_path)
 
    core_info_t *core_info;
    core_info_list_t *core_info_list;
-   int i;
+   unsigned i;
 
    if (!contents)
       return NULL;
@@ -33,7 +33,7 @@ core_info_list_t *get_core_info_list(const char *modules_path)
    core_info = (core_info_t*)malloc(contents->size * sizeof(core_info_t));
    memset(core_info, 0, contents->size * sizeof(core_info_t));
 
-   core_info_list = malloc(sizeof(core_info_list_t));
+   core_info_list = (core_info_list_t*)malloc(sizeof(core_info_list_t));
    memset(core_info_list, 0, sizeof(core_info_list_t));
    core_info_list->list = core_info;
    core_info_list->count = contents->size;

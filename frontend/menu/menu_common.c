@@ -774,6 +774,7 @@ static uint64_t rgui_input(void)
 
 bool menu_iterate(void)
 {
+   rarch_time_t time, delta, target_msec, sleep_msec;
    static bool initial_held = true;
    static bool first_held = false;
    uint64_t input_state = 0;
@@ -831,16 +832,14 @@ bool menu_iterate(void)
 
    rarch_render_cached_frame();
 
-   {
-      // Throttle in case VSync is broken (avoid 1000+ FPS RGUI).
-      rarch_time_t time = rarch_get_time_usec();
-      rarch_time_t delta = (time - rgui->last_time) / 1000;
-      rarch_time_t target_msec = 1000 / g_settings.video.refresh_rate;
-      rarch_time_t sleep_msec = target_msec - delta;
-      if (sleep_msec > 0)
-         rarch_sleep(sleep_msec);
-      rgui->last_time = rarch_get_time_usec();
-   }
+   // Throttle in case VSync is broken (avoid 1000+ FPS RGUI).
+   time = rarch_get_time_usec();
+   delta = (time - rgui->last_time) / 1000;
+   target_msec = 1000 / g_settings.video.refresh_rate;
+   sleep_msec = target_msec - delta;
+   if (sleep_msec > 0)
+      rarch_sleep(sleep_msec);
+   rgui->last_time = rarch_get_time_usec();
 
    if (driver.video_poke && driver.video_poke->set_texture_enable)
       driver.video_poke->set_texture_enable(driver.video_data, false,
