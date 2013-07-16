@@ -447,8 +447,6 @@ MAIN
 #include "../frontend/frontend_xenon.c"
 #elif defined(ANDROID)
 #include "../frontend/frontend_android.c"
-#elif defined(IOS) || defined(OSX)
-#include "../frontend/frontend_objc.c"
 #else
 #include "../frontend/frontend.c"
 #endif
