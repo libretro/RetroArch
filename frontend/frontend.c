@@ -24,18 +24,7 @@
 #include "menu/rmenu.h"
 #endif
 
-#if defined(__APPLE__) && (!defined(OSX) || !defined(IOS))
-#define APPLE_SDL
-#else
-#define APPLE_NO_SDL
-#endif
-
-#if defined(APPLE_SDL)
-#include "SDL.h" 
-// OSX seems to really need -lSDLmain, 
-// so we include SDL.h here so it can hack our main.
-// We want to use -mconsole in Win32, so we need main().
-#elif defined(__QNX__)
+#if defined(__QNX__)
 #include <bps/bps.h>
 #elif defined(__CELLOS_LV2__)
 #include "platform/platform_ps3_exec.c"
@@ -203,12 +192,12 @@ static void system_shutdown(void)
 {
 #if defined(__QNX__)
    bps_shutdown();
-#elif defined(APPLE_NO_SDL)
+#elif defined(__APPLE__)
    dispatch_async_f(dispatch_get_main_queue(), 0, apple_rarch_exited);
 #endif
 }
 
-#if defined(APPLE_NO_SDL)
+#if defined(__APPLE__)
 static pthread_mutex_t apple_event_queue_lock = PTHREAD_MUTEX_INITIALIZER;
 
 static struct
@@ -266,14 +255,14 @@ int rarch_main(int argc, char *argv[])
 {
    rarch_preinit();
 
-#if !defined(APPLE_NO_SDL)
+#if !defined(__APPLE__)
    rarch_main_clear_state();
 #endif
 
    rarch_get_environment(argc, argv);
 
 #if !defined(RARCH_CONSOLE)
-#if defined(APPLE_NO_SDL)
+#if defined(__APPLE__)
    struct rarch_main_wrap* argdata = (struct rarch_main_wrap*)args;
    int init_ret = rarch_main_init_wrap(argdata);
    apple_free_main_wrap(argdata);
@@ -331,7 +320,7 @@ int rarch_main(int argc, char *argv[])
 #if defined(RARCH_CONSOLE) || defined(__QNX__)
             g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU);
 #else
-#if defined(APPLE_NO_SDL)
+#if defined(__APPLE__)
             // This needs to be here to tell the GUI thread that the emulator loop has stopped,
             // the (void*)1 makes it display the 'Failed to load game' message.
             dispatch_async_f(dispatch_get_main_queue(), (void*)1, apple_rarch_exited);
@@ -353,7 +342,7 @@ int rarch_main(int argc, char *argv[])
 
          while ((g_extern.is_paused && !g_extern.is_oneshot) ? rarch_main_idle_iterate() : rarch_main_iterate())
          {
-#if defined(APPLE_NO_SDL)
+#if defined(__APPLE__)
             process_events();
 #endif
 
@@ -373,7 +362,7 @@ int rarch_main(int argc, char *argv[])
 
          while (!g_extern.system.shutdown && menu_iterate())
          {
-#if defined(APPLE_NO_SDL)
+#if defined(__APPLE__)
             process_events();
 #endif
 
