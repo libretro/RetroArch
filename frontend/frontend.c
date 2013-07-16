@@ -257,9 +257,9 @@ int rarch_main(int argc, char *argv[])
 
 #if !defined(__APPLE__)
    rarch_main_clear_state();
+   rarch_get_environment(argc, argv);
 #endif
 
-   rarch_get_environment(argc, argv);
 
 #if !defined(RARCH_CONSOLE)
 #if defined(__APPLE__)
@@ -434,7 +434,9 @@ int rarch_main(int argc, char *argv[])
    return 0;
 }
 
+#ifndef __APPLE__
 int main(int argc, char *argv[])
 {
    return rarch_main(argc, argv);
 }
+#endif
