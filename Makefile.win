@@ -100,7 +100,7 @@ ifeq ($(HAVE_RGUI), 1)
 endif
 
 ifeq ($(HAVE_SDL), 1)
-   OBJ += gfx/sdl_gfx.o gfx/context/sdl_ctx.o input/sdl_input.o input/sdl_joypad.o audio/sdl_audio.o
+   OBJ += gfx/sdl_gfx.o input/sdl_input.o input/sdl_joypad.o audio/sdl_audio.o
    JOBJ += input/sdl_joypad.o
    LIBS += -lSDL
    JLIBS += -lSDL
