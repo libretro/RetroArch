@@ -31,9 +31,7 @@
 #include "config.h"
 #endif
 
-#ifndef __APPLE__ // Broken on OSX.
 #include "SDL/SDL_syswm.h"
-#endif
 
 typedef struct sdl_video
 {
