@@ -121,6 +121,7 @@ check_lib OSS_LIB -lossaudio
 
 if [ "$OS" = 'Darwin' ]; then
    check_lib AL "-framework OpenAL" alcOpenDevice
+   HAVE_SDL=no
 else
    check_lib AL -lopenal alcOpenDevice
 fi

@@ -183,10 +183,6 @@ ifeq ($(HAVE_SDL), 1)
    JOYCONFIG_OBJ += input/sdl_joypad.o
    DEFINES += $(SDL_CFLAGS) $(BSD_LOCAL_INC)
    LIBS += $(SDL_LIBS)
-
-   ifeq ($(HAVE_OPENGL), 1)
-      OBJ += gfx/context/sdl_ctx.o
-   endif
 endif
 
 ifeq ($(HAVE_OPENGL), 1)
