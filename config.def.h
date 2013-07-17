@@ -313,7 +313,7 @@ static const bool allow_rotate = true;
 static const bool audio_enable = true;
 
 // Output samplerate
-static const unsigned out_rate = 48000; 
+static const unsigned out_rate = 48000;
 
 // Audio device (e.g. hw:0,0 or /dev/audio). If NULL, will use defaults.
 static const char *audio_device = NULL;

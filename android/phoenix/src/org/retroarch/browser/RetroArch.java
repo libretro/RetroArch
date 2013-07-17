@@ -354,6 +354,7 @@ public class RetroArch extends Activity implements
 	private void updateConfigFile() {
 		SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getBaseContext());
 		config.setBoolean("audio_rate_control", prefs.getBoolean("audio_rate_control", true));
+		config.setInt("audio_out_rate", 44100); // Much better than 48000 on Nexus 10, need to investigate. Could fix most audio issues on Android.
 		config.setBoolean("audio_enable", prefs.getBoolean("audio_enable", true));
 		config.setBoolean("video_smooth", prefs.getBoolean("video_smooth", true));
 		config.setBoolean("video_allow_rotate", prefs.getBoolean("video_allow_rotate", true));
