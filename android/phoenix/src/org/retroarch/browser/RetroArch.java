@@ -445,7 +445,7 @@ public class RetroArch extends Activity implements
 				Toast.makeText(this,
 						"Loading: [" + data.getStringExtra("PATH") + "]...",
 						Toast.LENGTH_SHORT).show();
-				myIntent = new Intent(this, NativeActivity.class);
+				myIntent = new Intent(this, RetroActivity.class);
 				myIntent.putExtra("ROM", data.getStringExtra("PATH"));
 				myIntent.putExtra("LIBRETRO", libretro_path);
 				myIntent.putExtra("CONFIGFILE", getDefaultConfigPath());
