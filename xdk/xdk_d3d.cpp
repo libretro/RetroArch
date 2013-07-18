@@ -1001,14 +1001,16 @@ NULL, NULL, NULL, 0);
    float msg_height = 120;
 #endif
 
+#if 0
    if (msg)
    {
       font_parms.x = msg_width;
       font_parms.y = msg_height;
       d3d->font_ctx->render_msg(d3d, msg, &font_parms);
    }
+#endif
 
-   context_update_window_title_func();
+   d3d->ctx_driver->update_window_title();
 
    gfx_ctx_xdk_swap_buffers();
 

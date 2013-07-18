@@ -45,7 +45,7 @@ static bool use_tv_mode;
 id<RetroArch_Platform> apple_platform;
 
 // From frontend/frontend_ios.c
-extern void* rarch_main_apple(void* args);
+extern void* rarch_main(void* args);
 extern void apple_frontend_post_event(void (*fn)(void*), void* userdata);
 
 
@@ -114,7 +114,7 @@ void apple_run_core(RAModuleInfo* core, const char* file)
          load_data->rom_path = strdup(file);
       }
       
-      if (pthread_create(&apple_retro_thread, 0, rarch_main_apple, load_data))
+      if (pthread_create(&apple_retro_thread, 0, rarch_main, load_data))
       {
          apple_rarch_exited((void*)1);
          return;
@@ -212,7 +212,7 @@ int main(int argc, char *argv[])
 {
    UIWindow* _window;
 
-   bool _isGameTop;
+   bool _isGameTop, _isRomList;
    uint32_t _settingMenusInBackStack;
    uint32_t _enabledOrientations;
    
@@ -272,11 +272,13 @@ int main(int argc, char *argv[])
 - (void)navigationController:(UINavigationController *)navigationController willShowViewController:(UIViewController *)viewController animated:(BOOL)animated
 {
    _isGameTop = [viewController isKindOfClass:[RAGameView class]];
+   _isRomList = [viewController isKindOfClass:[RADirectoryList class]];
 
    [[UIApplication sharedApplication] setStatusBarHidden:_isGameTop withAnimation:UIStatusBarAnimationNone];
    [[UIApplication sharedApplication] setIdleTimerDisabled:_isGameTop];
 
    self.navigationBarHidden = _isGameTop;
+   [self setToolbarHidden:!_isRomList animated:YES];
    self.topViewController.navigationItem.rightBarButtonItem = [self createSettingsButton];
 }
 

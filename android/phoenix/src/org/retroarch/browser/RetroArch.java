@@ -10,6 +10,7 @@ import android.content.res.AssetManager;
 import android.annotation.TargetApi;
 import android.app.*;
 import android.media.AudioManager;
+import android.media.AudioTrack;
 import android.net.Uri;
 import android.os.*;
 import android.preference.PreferenceManager;
@@ -351,9 +352,27 @@ public class RetroArch extends Activity implements
 			return "/mnt/sd/retroarch.cfg";
 	}
 	
+	@TargetApi(android.os.Build.VERSION_CODES.JELLY_BEAN_MR1)
+	private int getLowLatencyOptimalSamplingRate() {
+		AudioManager manager = (AudioManager)getApplicationContext().getSystemService(Context.AUDIO_SERVICE);
+		return Integer.parseInt(manager.getProperty(AudioManager.PROPERTY_OUTPUT_SAMPLE_RATE));
+	}
+	
+	private int getOptimalSamplingRate() {
+		int ret;
+		if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.JELLY_BEAN_MR1)
+			ret = getLowLatencyOptimalSamplingRate();
+		else
+			ret = AudioTrack.getNativeOutputSampleRate(AudioManager.STREAM_MUSIC);
+		
+		Log.i(TAG, "Using sampling rate: " + ret + " Hz");
+		return ret;
+	}
+	
 	private void updateConfigFile() {
 		SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getBaseContext());
 		config.setBoolean("audio_rate_control", prefs.getBoolean("audio_rate_control", true));
+		config.setInt("audio_out_rate", getOptimalSamplingRate());
 		config.setBoolean("audio_enable", prefs.getBoolean("audio_enable", true));
 		config.setBoolean("video_smooth", prefs.getBoolean("video_smooth", true));
 		config.setBoolean("video_allow_rotate", prefs.getBoolean("video_allow_rotate", true));
@@ -445,7 +464,7 @@ public class RetroArch extends Activity implements
 				Toast.makeText(this,
 						"Loading: [" + data.getStringExtra("PATH") + "]...",
 						Toast.LENGTH_SHORT).show();
-				myIntent = new Intent(this, NativeActivity.class);
+				myIntent = new Intent(this, RetroActivity.class);
 				myIntent.putExtra("ROM", data.getStringExtra("PATH"));
 				myIntent.putExtra("LIBRETRO", libretro_path);
 				myIntent.putExtra("CONFIGFILE", getDefaultConfigPath());
