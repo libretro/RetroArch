@@ -13,6 +13,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "../general.h"
 #include "gfx_context.h"
 #include <string.h>
 
@@ -51,14 +52,17 @@ static const gfx_ctx_driver_t *gfx_ctx_drivers[] = {
 #if defined(IOS) || defined(OSX) //< Don't use __APPLE__ as it breaks basic SDL builds
    &gfx_ctx_apple,
 #endif
-#if defined(HAVE_SDL) && defined(HAVE_OPENGL)
+#if defined(HAVE_SDL) && defined(HAVE_OPENGL) && !defined(EMSCRIPTEN)
    &gfx_ctx_sdl_gl,
+#endif
+#ifdef EMSCRIPTEN
+   &gfx_ctx_emscripten,
 #endif
 };
 
 const gfx_ctx_driver_t *gfx_ctx_find_driver(const char *ident)
 {
-   for (unsigned i = 0; i < sizeof(gfx_ctx_drivers) / sizeof(gfx_ctx_drivers[0]); i++)
+   for (unsigned i = 0; i < ARRAY_SIZE(gfx_ctx_drivers); i++)
    {
       if (strcmp(gfx_ctx_drivers[i]->ident, ident) == 0)
          return gfx_ctx_drivers[i];
@@ -69,7 +73,7 @@ const gfx_ctx_driver_t *gfx_ctx_find_driver(const char *ident)
 
 const gfx_ctx_driver_t *gfx_ctx_init_first(enum gfx_ctx_api api)
 {
-   for (unsigned i = 0; i < sizeof(gfx_ctx_drivers) / sizeof(gfx_ctx_drivers[0]); i++)
+   for (unsigned i = 0; i < ARRAY_SIZE(gfx_ctx_drivers); i++)
    {
       if (gfx_ctx_drivers[i]->bind_api(api))
       {

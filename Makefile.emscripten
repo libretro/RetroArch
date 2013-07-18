@@ -1,0 +1,152 @@
+TARGET = retroarch.html
+
+OBJ = frontend/frontend_emscripten.o \
+		retroarch.o \
+		file.o \
+		file_path.o \
+		driver.o \
+		conf/config_file.o \
+		settings.o \
+		hash.o \
+		dynamic.o \
+		dynamic_dummy.o \
+		message.o \
+		rewind.o \
+		movie.o \
+		gfx/gfx_common.o \
+		input/input_common.o \
+		core_options.o \
+		patch.o \
+		compat/compat.o \
+		screenshot.o \
+		cheats.o \
+		audio/utils.o \
+		input/overlay.o \
+		fifo_buffer.o \
+		gfx/scaler/scaler.o \
+		gfx/scaler/pixconv.o \
+		gfx/scaler/scaler_int.o \
+		gfx/scaler/filter.o \
+		gfx/state_tracker.o \
+		gfx/shader_parse.o \
+		gfx/fonts/fonts.o \
+		gfx/fonts/bitmapfont.o \
+		gfx/image.o \
+		audio/resampler.o \
+		audio/sinc.o \
+		audio/null.o \
+		performance.o
+
+HAVE_OPENGL = 1
+HAVE_RGUI = 1
+HAVE_SDL = 1
+HAVE_SDL_IMAGE = 1
+HAVE_FREETYPE = 1
+HAVE_ZLIB = 1
+HAVE_FBO = 1
+
+libretro ?= -lretro
+
+LIBS = -lm
+DEFINES = -I. -DHAVE_SCREENSHOTS -DHAVE_NULLAUDIO -DHAVE_BSV_MOVIE -DPACKAGE_VERSION=\"0.9.9.3\"
+LDFLAGS = -L. -static-libgcc -s TOTAL_MEMORY=268435456 -s FULL_ES2=1
+
+ifeq ($(SCALER_NO_SIMD), 1)
+   DEFINES += -DSCALER_NO_SIMD
+endif
+
+ifeq ($(PERF_TEST), 1)
+   DEFINES += -DPERF_TEST
+endif
+
+ifeq ($(HAVE_RGUI), 1)
+   DEFINES += -DHAVE_RGUI
+   OBJ += frontend/menu/menu_common.o frontend/menu/rgui.o frontend/menu/history.o
+endif
+
+ifeq ($(HAVE_SDL), 1)
+   OBJ += input/sdl_input.o
+   LIBS += -lSDL
+   DEFINES += -ISDL -DHAVE_SDL
+endif
+
+ifeq ($(HAVE_THREADS), 1)
+   OBJ += autosave.o thread.o gfx/thread_wrapper.o
+   DEFINES += -DHAVE_THREADS
+endif
+
+ifeq ($(HAVE_OPENGL), 1)
+   OBJ += gfx/gl.o gfx/math/matrix.o gfx/fonts/gl_font.o gfx/fonts/gl_raster_font.o gfx/gfx_context.o gfx/context/emscriptenegl_ctx.o gfx/shader_glsl.o 
+   DEFINES += -DHAVE_OPENGL -DHAVE_OPENGLES -DHAVE_OPENGLES2 -DHAVE_EGL -DHAVE_OVERLAY -DHAVE_GLSL
+endif
+
+ifeq ($(HAVE_ZLIB), 1)
+   OBJ += gfx/rpng/rpng.o file_extract.o
+   DEFINES += -DHAVE_ZLIB
+   ifeq ($(WANT_MINIZ), 1)
+      OBJ += deps/miniz/miniz.o
+      DEFINES += -DWANT_MINIZ
+   else
+      LIBS += -lz
+      DEFINES += -DHAVE_ZLIB_DEFLATE
+   endif
+endif
+
+LIBS += $(libretro)
+
+ifeq ($(HAVE_FBO), 1)
+   DEFINES += -DHAVE_FBO
+endif
+
+ifneq ($(V), 1)
+   Q := @
+endif
+
+ifeq ($(DEBUG), 1)
+   LDFLAGS += -O0 -g -s LABEL_DEBUG=1
+else
+   LDFLAGS += -O2 -ffast-math
+endif
+
+CFLAGS += -Wall -Wno-unused-result -Wno-unused-variable -I. -std=gnu99
+
+all: $(TARGET)
+
+$(TARGET): $(OBJ)
+	@$(if $(Q), $(shell echo echo LD $@),)
+	$(Q)$(LD) -o $@ $(OBJ) $(LIBS) $(LDFLAGS)
+
+%.o: %.c
+	@$(if $(Q), $(shell echo echo CC $<),)
+	$(Q)$(CC) $(CFLAGS) $(DEFINES) -c -o $@ $<
+
+%.o: %.cpp
+	@$(if $(Q), $(shell echo echo CXX $<),)
+	$(Q)$(CXX) $(CXXFLAGS) $(DEFINES) -c -o $@ $<
+
+clean:
+	rm -f *.o
+	rm -f deps/miniz/*.o
+	rm -f frontend/*.o
+	rm -f frontend/menu/*.o
+	rm -f audio/*.o
+	rm -f audio/xaudio-c/*.o
+	rm -f compat/*.o
+	rm -f compat/rxml/*.o
+	rm -f conf/*.o
+	rm -f gfx/scaler/*.o
+	rm -f gfx/*.o
+	rm -f gfx/d3d9/*.o
+	rm -f gfx/context/*.o
+	rm -f gfx/math/*.o
+	rm -f gfx/fonts/*.o
+	rm -f gfx/py_state/*.o
+	rm -f gfx/rpng/*.o
+	rm -f record/*.o
+	rm -f input/*.o
+	rm -f $(TARGET)
+	rm -f retroarch-joyconfig.exe
+	rm -f tools/*.o
+
+.PHONY: all clean
+

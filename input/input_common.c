@@ -16,6 +16,7 @@
 #include "input_common.h"
 #include <string.h>
 #include <stdlib.h>
+#include <ctype.h>
 
 #include "../general.h"
 #include "../driver.h"
@@ -47,7 +48,7 @@ static const rarch_joypad_driver_t *joypad_drivers[] = {
 #if defined(__linux) && !defined(ANDROID)
    &linuxraw_joypad,
 #endif
-#ifdef HAVE_SDL
+#if defined(HAVE_SDL) && !defined(EMSCRIPTEN)
    &sdl_joypad,
 #endif
 #endif

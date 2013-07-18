@@ -128,6 +128,8 @@ enum
 #define AUDIO_DEFAULT_DRIVER AUDIO_SL
 #elif defined(HAVE_DSOUND)
 #define AUDIO_DEFAULT_DRIVER AUDIO_DSOUND
+#elif defined(EMSCRIPTEN)
+#define AUDIO_DEFAULT_DRIVER AUDIO_NULL
 #elif defined(HAVE_SDL)
 #define AUDIO_DEFAULT_DRIVER AUDIO_SDL
 #elif defined(HAVE_XAUDIO)
@@ -195,6 +197,8 @@ enum
 #define EXT_EXECUTABLES "xex|XEX"
 #elif defined(GEKKO)
 #define EXT_EXECUTABLES "dol|DOL"
+#else
+#define EXT_EXECUTABLES "???"
 #endif
 #endif
 
