@@ -28,8 +28,6 @@
 #define audio_write_avail_func()                driver.audio->write_avail(driver.audio_data)
 #define audio_buffer_size_func()                driver.audio->buffer_size(driver.audio_data)
 
-#if !defined(RARCH_CONSOLE) /* Normal */
-
 #define video_init_func(video_info, input, input_data) \
    driver.video->init(video_info, input, input_data)
 #define video_frame_func(data, width, height, pitch, msg) \
@@ -68,94 +66,5 @@ static inline bool input_key_pressed_func(int key)
 
    return ret;
 }
-
-#else
-
-/*============================================================
-  VIDEO
-  ============================================================ */
-
-#define CONCAT2(A, B) A##B
-
-#if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES) /* GL */
-#define MAKENAME_VIDEO(A) CONCAT2(gl, A) 
-
-#define video_set_aspect_ratio_func(aspectratio_idx) gfx_ctx_set_aspect_ratio(driver.video_data, aspectratio_idx)
-
-#define gfx_ctx_window_has_focus() (true)
-
-#elif defined(_XBOX) && (defined(HAVE_D3D8) || defined(HAVE_D3D9)) /* D3D */
-#define MAKENAME_VIDEO(A) CONCAT2(xdk_d3d, A) 
-
-#elif defined(XENON) /* XENON */
-#define MAKENAME_VIDEO(A) CONCAT2(xenon360_gfx, A)
-
-#define video_set_aspect_ratio_func(aspectratio_idx) gfx_ctx_set_aspect_ratio(driver.video_data, aspectratio_idx)
-
-#define gfx_ctx_window_has_focus() (true)
-
-#elif defined(GEKKO) /* Gamecube, Wii */
-#define MAKENAME_VIDEO(A) CONCAT2(gx, A) 
-
-#define video_set_aspect_ratio_func(aspectratio_idx) gx_set_aspect_ratio(driver.video_data, aspectratio_idx)
-#define video_viewport_size_func(width, height) ((void)0)
-#define video_read_viewport_func(buffer) (false)
-
-//#elif defined(PSP) /* PSP1 */
-//#define MAKENAME_VIDEO(A) CONCAT2(psp, A) 
-//#define video_set_aspect_ratio_func(aspectratio_idx) (true)
-
-#else /* NULL */
-#define MAKENAME_VIDEO(A) CONCAT2(nullvideo, A) 
-
-#define video_set_aspect_ratio_func(aspectratio_idx) (true)
-
-#endif
-
-#define video_viewport_info_func(info) driver.video->viewport_info(driver.video_data, info)
-
-#define video_init_func(video_info, input, input_data) MAKENAME_VIDEO(_init)(video_info, input, input_data)
-#define video_frame_func(data, width, height, pitch, msg) \
-   MAKENAME_VIDEO(_frame)(driver.video_data, data, width, height, pitch, msg)
-#define video_alive_func() MAKENAME_VIDEO(_alive)(driver.video_data)
-#define video_focus_func() MAKENAME_VIDEO(_focus)(driver.video_data)
-#define video_free_func() MAKENAME_VIDEO(_free)(driver.video_data)
-#define video_set_nonblock_state_func(state) MAKENAME_VIDEO(_set_nonblock_state)(driver.video_data, state)
-#define video_set_rotation_func(rotation)	MAKENAME_VIDEO(_set_rotation)(driver.video_data, rotation)
-#define video_start_func() MAKENAME_VIDEO(_start)()
-#define video_set_shader_func(type, path) MAKENAME_VIDEO(_set_shader)(driver.video_data, type, path)
-#define video_xml_shader_func(path) driver.video->xml_shader(driver.video_data, path)
-
-/*============================================================
-  INPUT
-  ============================================================ */
-
-#if defined(_XBOX) && (defined(HAVE_D3D8) || defined(HAVE_D3D9)) /* D3D */
-#define MAKENAME_INPUT(A) CONCAT2(xdk, A)
-#elif defined(GEKKO) /* Gamecube, Wii */
-#define MAKENAME_INPUT(A) CONCAT2(gx, A) 
-#define gfx_ctx_window_has_focus() (true)
-#elif defined(__CELLOS_LV2__) /* PS3 */
-#define MAKENAME_INPUT(A) CONCAT2(ps3, A) 
-#elif defined(ANDROID) /* ANDROID */
-#define MAKENAME_INPUT(A) CONCAT2(android, A) 
-#elif defined(XENON) /* XENON */
-#define MAKENAME_INPUT(A) CONCAT2(xenon360, A)
-#else
-#define MAKENAME_INPUT(A) CONCAT2(nullinput, A) 
-#endif
-
-#define gfx_ctx_window_has_focus() (true)
-
-#define input_init_func() MAKENAME_INPUT(_input_init)()
-#define input_poll_func() MAKENAME_INPUT(_input_poll)(driver.input_data)
-#define input_input_state_func(retro_keybinds, port, device, index, id) \
-   MAKENAME_INPUT(_input_state)(driver.input_data, retro_keybinds, port, device, index, id)
-#define input_key_pressed_func(key) MAKENAME_INPUT(_input_key_pressed)(driver.input_data, key)
-#define input_free_func() MAKENAME_INPUT(_input_free_input)(driver.input_data)
-
-#define video_overlay_interface_func(iface) driver.video->overlay_interface(driver.video_data, iface)
-
-#endif
 
 #endif /* _RARCH_DRIVER_FUNCS_H */
