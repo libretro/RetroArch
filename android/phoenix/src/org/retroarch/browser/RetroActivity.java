@@ -2,7 +2,6 @@ package org.retroarch.browser;
 
 import android.app.NativeActivity;
 import android.os.Bundle;
-import android.widget.Toast;
 
 public class RetroActivity extends NativeActivity
 {
@@ -21,4 +20,8 @@ public class RetroActivity extends NativeActivity
 	public void onLowMemory()
 	{
 	}
+	
+    @Override
+    public void onTrimMemory(int level) {
+    }
 }

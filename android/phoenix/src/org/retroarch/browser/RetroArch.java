@@ -22,6 +22,8 @@ import android.view.ContextMenu.ContextMenuInfo;
 import android.view.inputmethod.*;
 import android.graphics.drawable.*;
 
+// JELLY_BEAN_MR1 = 17
+
 class ModuleWrapper implements IconAdapterItem {
 	public final File file;
 	private ConfigFile config;
@@ -352,7 +354,7 @@ public class RetroArch extends Activity implements
 			return "/mnt/sd/retroarch.cfg";
 	}
 	
-	@TargetApi(android.os.Build.VERSION_CODES.JELLY_BEAN_MR1)
+	@TargetApi(17)
 	private int getLowLatencyOptimalSamplingRate() {
 		AudioManager manager = (AudioManager)getApplicationContext().getSystemService(Context.AUDIO_SERVICE);
 		return Integer.parseInt(manager.getProperty(AudioManager.PROPERTY_OUTPUT_SAMPLE_RATE));
@@ -360,7 +362,7 @@ public class RetroArch extends Activity implements
 	
 	private int getOptimalSamplingRate() {
 		int ret;
-		if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.JELLY_BEAN_MR1)
+		if (android.os.Build.VERSION.SDK_INT >= 17)
 			ret = getLowLatencyOptimalSamplingRate();
 		else
 			ret = AudioTrack.getNativeOutputSampleRate(AudioManager.STREAM_MUSIC);
