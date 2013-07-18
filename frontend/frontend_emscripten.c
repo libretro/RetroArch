@@ -36,7 +36,7 @@ void mainloop(void)
    if (g_extern.system.shutdown)
    {
       RARCH_ERR("Exit...\n");
-      emscripten_cancel_main_loop();
+      exit(0);
    }
    else if (menuloop)
    {
