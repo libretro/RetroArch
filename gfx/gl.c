@@ -1844,6 +1844,7 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    }
 
    RARCH_LOG("Found GL context: %s\n", gl->ctx_driver->ident);
+   while (glGetError() != GL_NO_ERROR);
 
    context_get_video_size_func(&gl->full_x, &gl->full_y);
    RARCH_LOG("Detecting screen resolution %ux%u.\n", gl->full_x, gl->full_y);

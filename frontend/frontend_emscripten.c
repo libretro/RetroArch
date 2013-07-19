@@ -106,10 +106,8 @@ int main(int argc, char *argv[])
    rarch_main_clear_state();
    rarch_init_msg_queue();
 
-   char *_argv[] = { "retroarch", "--menu", "-v" };
-
    int init_ret;
-   if ((init_ret = rarch_main_init(3, _argv))) return init_ret;
+   if ((init_ret = rarch_main_init(argc, argv))) return init_ret;
 
 #ifdef HAVE_MENU
    menu_init();

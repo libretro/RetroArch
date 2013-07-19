@@ -75,7 +75,8 @@ static void gfx_ctx_set_resize(unsigned width, unsigned height)
 static void gfx_ctx_update_window_title(void)
 {
    char buf[128];
-   gfx_get_fps(buf, sizeof(buf), false);
+   if (gfx_get_fps(buf, sizeof(buf), false))
+      RARCH_LOG("%s\n", buf);
 }
 
 static void gfx_ctx_get_video_size(unsigned *width, unsigned *height)
@@ -91,10 +92,10 @@ static bool gfx_ctx_init(void)
    EGLint width;
    EGLint height;
 
-   RARCH_LOG("[VC/EMSCRIPTEN]: Initializing...\n");
+   RARCH_LOG("[EMSCRIPTEN/EGL]: Initializing...\n");
    if (g_inited)
    {
-      RARCH_ERR("[VC/EMSCRIPTEN]: Attempted to re-initialize driver.\n");
+      RARCH_LOG("[EMSCRIPTEN/EGL]: Attempted to re-initialize driver.\n");
       return true;
    }
 
@@ -147,7 +148,7 @@ static bool gfx_ctx_init(void)
    eglQuerySurface(g_egl_dpy, g_egl_surf, EGL_HEIGHT, &height);
    g_fb_width = width;
    g_fb_height = height;
-   RARCH_LOG("[VC/EMSCRIPTEN]: Dimensions: %ux%u\n", width, height);
+   RARCH_LOG("[EMSCRIPTEN/EGL]: Dimensions: %ux%u\n", width, height);
 
    return true;
 
@@ -182,9 +183,10 @@ static void gfx_ctx_destroy(void)
 {
    if (g_egl_dpy)
    {
+      eglMakeCurrent(g_egl_dpy, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
+
       if (g_egl_ctx)
       {
-         eglMakeCurrent(g_egl_dpy, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
          eglDestroyContext(g_egl_dpy, g_egl_ctx);
       }
 
@@ -193,8 +195,6 @@ static void gfx_ctx_destroy(void)
          eglDestroySurface(g_egl_dpy, g_egl_surf);
       }
 
-      eglMakeCurrent(g_egl_dpy, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
-      eglMakeCurrent(g_egl_dpy, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
       eglTerminate(g_egl_dpy);
    }
 

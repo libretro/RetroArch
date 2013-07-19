@@ -1,4 +1,4 @@
-TARGET = retroarch.html
+TARGET = retroarch.js
 
 OBJ = frontend/frontend_emscripten.o \
 		retroarch.o \
@@ -18,6 +18,7 @@ OBJ = frontend/frontend_emscripten.o \
 		core_options.o \
 		patch.o \
 		compat/compat.o \
+		compat/rxml/rxml.o \
 		screenshot.o \
 		cheats.o \
 		audio/utils.o \
@@ -44,6 +45,7 @@ HAVE_SDL_IMAGE = 1
 HAVE_FREETYPE = 1
 HAVE_ZLIB = 1
 HAVE_FBO = 1
+WANT_MINIZ = 1
 
 libretro ?= -lretro
 
