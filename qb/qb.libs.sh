@@ -200,7 +200,6 @@ create_config_header()
 		echo "#define $name"
 		echo ""
 		echo "#define PACKAGE_NAME \"$PACKAGE_NAME\""
-		echo "#define PACKAGE_VERSION \"$PACKAGE_VERSION\""
 
 		while [ "$1" ]; do
 			case $(eval echo \$HAVE_$1) in
@@ -234,7 +233,6 @@ create_config_make()
 		echo "INCLUDE_DIRS = $INCLUDE_DIRS"
 		echo "LIBRARY_DIRS = $LIBRARY_DIRS"
 		echo "PACKAGE_NAME = $PACKAGE_NAME"
-		echo "PACKAGE_VERSION = $PACKAGE_VERSION"
 		echo "PREFIX = $PREFIX"
 
 		while [ "$1" ]; do
