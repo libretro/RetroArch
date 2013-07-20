@@ -119,7 +119,7 @@ int main(int argc, char *argv[])
       menu_rom_history_push_current();
 #endif
 
-   emscripten_set_main_loop(mainloop, 0, 0);
+   emscripten_set_main_loop(mainloop, g_settings.video.vsync ? 0 : INT_MAX, 1);
 
    return 0;
 }
