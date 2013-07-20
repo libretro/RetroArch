@@ -5,7 +5,6 @@ print_help()
  Quickbuild script
 ====================
 Package: $PACKAGE_NAME
-Version: $PACKAGE_VERSION
 
 General environment variables:
 CC:         C compiler

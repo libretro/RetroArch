@@ -13,7 +13,8 @@
     <application
         android:allowBackup="true"
         android:icon="@drawable/ic_launcher"
-        android:label="@string/app_name" >
+        android:label="@string/app_name"
+        android:hasCode="true">
         <activity android:name="org.retroarch.browser.RetroArch">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -35,7 +36,7 @@
         <activity android:name="org.retroarch.browser.StateDirActivity"></activity>
         <activity android:name="org.retroarch.browser.SystemDirActivity"></activity>
         
-        <activity android:name="android.app.NativeActivity" android:configChanges="mcc|mnc|locale|touchscreen|keyboard|keyboardHidden|navigation|orientation|screenLayout|uiMode|screenSize|smallestScreenSize|fontScale">
+        <activity android:name="org.retroarch.browser.RetroActivity" android:configChanges="mcc|mnc|locale|touchscreen|keyboard|keyboardHidden|navigation|orientation|screenLayout|uiMode|screenSize|smallestScreenSize|fontScale" android:theme="@android:style/Theme.NoTitleBar.Fullscreen" >
         	<meta-data android:name="android.app.lib_name" android:value="retroarch-activity" />
          	<meta-data android:name="android.app.func_name" android:value="ANativeActivity_onCreate" />
         </activity>

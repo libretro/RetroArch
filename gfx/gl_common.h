@@ -37,9 +37,6 @@
 
 #include "glsym/glsym.h"
 
-#if defined(ANDROID) && defined(HAVE_GRIFFIN)
-#include "../griffin/hook_context.h"
-#else
 #define context_get_video_size_func(win, height)     gl->ctx_driver->get_video_size(win, height)
 #define context_update_window_title_func()           gl->ctx_driver->update_window_title()
 #define context_destroy_func()                       gl->ctx_driver->destroy()
@@ -59,7 +56,6 @@
 #define context_init_egl_image_buffer_func(video)    gl->ctx_driver->init_egl_image_buffer(video)
 #define context_write_egl_image_func(frame, width, height, pitch, base_size, tex_index, img) \
    gl->ctx_driver->write_egl_image(frame, width, height, pitch, base_size, tex_index,img)
-#endif
 #endif
 
 static inline bool gl_check_error(void)
