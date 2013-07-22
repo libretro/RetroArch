@@ -1854,7 +1854,7 @@ static void load_auto_state(void)
    }
 }
 
-static void save_auto_state(void)
+void save_auto_state(void)
 {
    if (!g_settings.savestate_auto_save)
       return;

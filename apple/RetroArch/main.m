@@ -268,6 +268,12 @@ int main(int argc, char *argv[])
    [RAGameView.get suspend];
 }
 
+// Prevent game to crash when receiving a call
+- (void)applicationWillResignActive:(UIApplication *)application
+{
+    save_auto_state();
+}
+
 // UINavigationControllerDelegate
 - (void)navigationController:(UINavigationController *)navigationController willShowViewController:(UIViewController *)viewController animated:(BOOL)animated
 {
