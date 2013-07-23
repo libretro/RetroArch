@@ -697,6 +697,7 @@ void rarch_take_screenshot(void);
 
 void rarch_load_state(void);
 void rarch_save_state(void);
+void rarch_save_auto_state(void);
 void rarch_state_slot_increase(void);
 void rarch_state_slot_decrease(void);
 /////////
