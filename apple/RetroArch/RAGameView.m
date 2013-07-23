@@ -91,6 +91,18 @@ static float g_screen_scale = 1.0f;
 {
 }
 
+- (void)mouseDown:(NSEvent*)theEvent
+{
+}
+
+- (void)mouseUp:(NSEvent*)theEvent
+{
+}
+
+- (void)mouseMoved:(NSEvent *)theEvent
+{
+}
+
 #elif defined(IOS) // < iOS Pause menu and lifecycle
 - (id)init
 {
