@@ -148,7 +148,6 @@ static void rarch_get_environment(int argc, char *argv[])
 
    config_load();
 
-   /* FIXME - when dummy loading becomes possible perhaps change this param  */
    init_libretro_sym(false);
    rarch_init_system_info();
 
