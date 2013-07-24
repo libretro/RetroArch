@@ -429,7 +429,6 @@ int rarch_main(int argc, char *argv[])
 
    system_shutdown();
 
-// FIXME - should this be 1 for RARCH_CONSOLE?
    return 0;
 }
 
