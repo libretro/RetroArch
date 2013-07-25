@@ -54,6 +54,7 @@ HAVE_DINPUT = 1
 HAVE_XAUDIO = 1
 HAVE_DSOUND = 1
 HAVE_OPENGL = 1
+HAVE_FBO = 1
 HAVE_DYLIB = 1
 HAVE_D3D9 = 1
 HAVE_NETPLAY = 1
@@ -69,7 +70,6 @@ ifeq ($(SLIM),)
    HAVE_FREETYPE = 1
    HAVE_ZLIB = 1
    HAVE_RSOUND = 1
-   HAVE_FBO = 1
    HAVE_CG = 1
    HAVE_PYTHON = 1
    HAVE_FFMPEG = 1
@@ -109,7 +109,7 @@ ifeq ($(HAVE_SDL), 1)
 endif
 
 ifeq ($(HAVE_THREADS), 1)
-   OBJ += autosave.o thread.o gfx/thread_wrapper.o
+   OBJ += autosave.o thread.o gfx/thread_wrapper.o audio/thread_wrapper.o
    DEFINES += -DHAVE_THREADS
 endif
 
