@@ -313,3 +313,12 @@ static void system_exitspawn(void)
    rarch_console_exec(g_settings.libretro, should_load_game);
 #endif
 }
+
+const frontend_ctx_driver_t frontend_ctx_xdk = {
+   get_environment_settings,
+   system_init,
+   system_deinit,
+   system_exitspawn,
+   system_process_args,
+   "xdk",
+};
