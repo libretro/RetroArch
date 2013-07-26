@@ -19,7 +19,7 @@ endif
 STRIP			= $(CELL_SDK)/host-win32/ppu/bin/ppu-lv2-strip.exe
 
 PPU_CFLAGS		+= -I. -D__CELLOS_LV2__ -DIS_SALAMANDER -DRARCH_CONSOLE -DHAVE_SYSUTILS -DHAVE_SYSMODULES -DHAVE_RARCH_EXEC
-PPU_SRCS		= frontend/frontend_salamander.c file_path.c compat/compat.c conf/config_file.c
+PPU_SRCS		= frontend/frontend_salamander.c frontend/frontend_context.c file_path.c compat/compat.c conf/config_file.c
 
 ifeq ($(HAVE_LOGGER), 1)
 PPU_CFLAGS		+= -DHAVE_LOGGER -Iconsole/logger

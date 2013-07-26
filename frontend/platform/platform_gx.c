@@ -338,11 +338,11 @@ static void system_deinit(void)
 #endif
 }
 
-#ifndef IS_SALAMANDER
 static int system_process_args(int argc, char *argv[])
 {
    int ret = 0;
 
+#ifndef IS_SALAMANDER
    // a big hack: sometimes salamander doesn't save the new core it loads on first boot,
    // so we make sure g_settings.libretro is set here
    if (!g_settings.libretro[0] && argc >= 1 && strrchr(argv[0], '/'))
@@ -354,8 +354,16 @@ static int system_process_args(int argc, char *argv[])
             "%s%s", argv[1], argv[2]);
       ret = 1;
    }
+#endif
 
    return ret;
 }
 
-#endif
+const frontend_ctx_driver_t frontend_ctx_gx = {
+   get_environment_settings,
+   system_init,
+   system_deinit,
+   system_exitspawn,
+   system_process_args,
+   "gx",
+};

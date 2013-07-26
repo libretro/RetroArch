@@ -24,6 +24,11 @@
 #include "menu/rmenu.h"
 #endif
 
+#if defined(RARCH_CONSOLE)
+#include "frontend_context.h"
+frontend_ctx_driver_t *frontend_ctx;
+#endif
+
 #if defined(__QNX__)
 #include <bps/bps.h>
 #elif defined(__CELLOS_LV2__)
@@ -108,13 +113,13 @@ static bool libretro_install_core(const char *path_prefix,
 }
 #endif
 
-static void rarch_preinit(void)
+static void system_preinit(void)
 {
 #if defined(__QNX__) && !defined(HAVE_BB10)
    //Initialize BPS libraries
    bps_initialize();
 #elif defined(RARCH_CONSOLE)
-   system_init();
+   frontend_ctx->init();
 #endif
 }
 
@@ -196,6 +201,16 @@ static void system_shutdown(void)
 #endif
 }
 
+static int system_ctx_init(void)
+{
+#ifdef RARCH_CONSOLE
+   if ((frontend_ctx = (frontend_ctx_driver_t*)frontend_ctx_init_first()) == NULL)
+      return -1;
+#endif
+
+   return 0;
+}
+
 #if defined(__APPLE__)
 static pthread_mutex_t apple_event_queue_lock = PTHREAD_MUTEX_INITIALIZER;
 
@@ -252,7 +267,10 @@ void* rarch_main(void* args)
 int rarch_main(int argc, char *argv[])
 #endif
 {
-   rarch_preinit();
+   if (system_ctx_init() != 0)
+      return 0;
+
+   system_preinit();
 
 #if !defined(__APPLE__)
    rarch_main_clear_state();
@@ -290,7 +308,7 @@ int rarch_main(int argc, char *argv[])
    menu_init();
 
 #ifdef RARCH_CONSOLE
-   system_process_args(argc, argv);
+   frontend_ctx->process_args(argc, argv);
    g_extern.lifecycle_mode_state |= 1ULL << MODE_LOAD_GAME;
 #else
    g_extern.lifecycle_mode_state |= 1ULL << MODE_GAME;
@@ -419,10 +437,10 @@ int rarch_main(int argc, char *argv[])
       fclose(g_extern.log_file);
    g_extern.log_file = NULL;
 #endif
-   system_deinit();
+   frontend_ctx->deinit();
 
    if (g_extern.lifecycle_mode_state & (1ULL << MODE_EXITSPAWN))
-      system_exitspawn();
+      frontend_ctx->exitspawn();
 #endif
 
    rarch_main_clear_state();

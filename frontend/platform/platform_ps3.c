@@ -342,12 +342,14 @@ static void system_init(void)
 
 static int system_process_args(int argc, char *argv[])
 {
+#ifndef IS_SALAMANDER
    if (argc > 1)
    {
       RARCH_LOG("Auto-start game %s.\n", argv[1]);
       strlcpy(g_extern.fullpath, argv[1], sizeof(g_extern.fullpath));
       return 1;
    }
+#endif
 
    return 0;
 }
@@ -414,3 +416,12 @@ static void system_exitspawn(void)
 #endif
 
 }
+
+const frontend_ctx_driver_t frontend_ctx_ps3 = {
+   get_environment_settings,
+   system_init,
+   system_deinit,
+   system_exitspawn,
+   system_process_args,
+   "ps3",
+};
