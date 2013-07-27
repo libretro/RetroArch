@@ -33,6 +33,7 @@ frontend_ctx_driver_t *frontend_ctx;
 
 #if defined(HAVE_RGUI) || defined(HAVE_RMENU) || defined(HAVE_RMENU_XUI)
 #define HAVE_MENU
+#include "frontend/menu/menu_common.h"
 #else
 #undef HAVE_MENU
 #endif
