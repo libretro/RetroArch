@@ -27,41 +27,41 @@ static inline GLuint rglPlatformGetBitsPerPixel (GLenum internalFormat)
 #define SUBPIXEL_ADJUST (0.5/(1<<SUBPIXEL_BITS))
 
 #define rglGcmSetVertexData4f(thisContext, index, v) \
- thisContext->current[0] = (((4) << (18)) | ((0x00001c00) + (index) * 16)); \
+ thisContext->current[0] = (((4) << (18)) | (CELL_GCM_NV4097_SET_VERTEX_DATA4F_M + (index) * 16)); \
  __builtin_memcpy(&thisContext->current[1], v, sizeof(float)*4); \
  thisContext->current += 5;
 
 #define rglGcmSetVertexDataArray(thisContext, index, frequency, stride, size, type, location, offset) \
- (thisContext->current)[0] = (((1) << (18)) | ((0x00001740) + ((index)) * 4)); \
+ (thisContext->current)[0] = (((1) << (18)) | (CELL_GCM_NV4097_SET_VERTEX_DATA_ARRAY_FORMAT + ((index)) * 4)); \
  (thisContext->current)[1] = ((((frequency)) << 16) | (((stride)) << 8) | (((size)) << 4) | ((type))); \
  (thisContext->current) += 2; \
- (thisContext->current)[0] = (((1) << (18)) | ((0x00001680) + ((index)) * 4)); \
+ (thisContext->current)[0] = (((1) << (18)) | (CELL_GCM_NV4097_SET_VERTEX_DATA_ARRAY_OFFSET + ((index)) * 4)); \
  (thisContext->current)[1] = ((((location)) << 31) | (offset)); \
  (thisContext->current) += 2;
 
 #define rglGcmSetInlineTransferPointer(thisContext, offset, count, pointer) \
- (thisContext->current)[0] = (((1) << (18)) | ((0x0000630C))); \
+ (thisContext->current)[0] = (((1) << (18)) | CELL_GCM_NV3062_SET_OFFSET_DESTIN); \
  (thisContext->current)[1] = (offset & ~63); \
  (thisContext->current) += 2; \
- (thisContext->current)[0] = (((2) << (18)) | ((0x00006300))); \
+ (thisContext->current)[0] = (((2) << (18)) | CELL_GCM_NV3062_SET_COLOR_FORMAT); \
  (thisContext->current)[1] = (CELL_GCM_TRANSFER_SURFACE_FORMAT_Y32); \
  (thisContext->current)[2] = ((0x1000) | ((0x1000) << 16)); \
  (thisContext->current) += 3; \
- (thisContext->current)[0] = (((3) << (18)) | ((0x0000A304))); \
+ (thisContext->current)[0] = (((3) << (18)) | CELL_GCM_NV308A_POINT); \
  (thisContext->current)[1] = (((0) << 16) | ((offset & 63) >> 2)); \
  (thisContext->current)[2] = (((1) << 16) | (count)); \
  (thisContext->current)[3] = (((1) << 16) | (count)); \
  (thisContext->current) += 4; \
- thisContext->current[0] = ((((count + 1) & ~1) << (18)) | ((0x0000A400))); \
+ thisContext->current[0] = ((((count + 1) & ~1) << (18)) | CELL_GCM_NV308A_COLOR); \
  thisContext->current += 1; \
  pointer = thisContext->current; \
  thisContext->current += ((count + 1) & ~1);
 
 #define rglGcmSetWriteBackEndLabel(thisContext, index, value) \
- (thisContext->current)[0] = (((1) << (18)) | ((0x00001d6c))); \
+ (thisContext->current)[0] = (((1) << (18)) | CELL_GCM_NV4097_SET_SEMAPHORE_OFFSET); \
  (thisContext->current)[1] = 0x10 * index; /* offset */ \
  (thisContext->current) += 2; \
- (thisContext->current)[0] = (((1) << (18)) | ((0x00001d70))); \
+ (thisContext->current)[0] = (((1) << (18)) | CELL_GCM_NV4097_BACK_END_WRITE_SEMAPHORE_RELEASE); \
  (thisContext->current)[1] = ( value & 0xff00ff00) | ((value >> 16) & 0xff) | (((value >> 0 ) & 0xff) << 16); \
  (thisContext->current) += 2;
 
@@ -74,21 +74,21 @@ static inline GLuint rglPlatformGetBitsPerPixel (GLenum internalFormat)
  (thisContext->current) += 2;
 
 #define rglGcmSetInvalidateVertexCache(thisContext) \
- (thisContext->current)[0] = (((1) << (18)) | ((0x00001710))); \
+ (thisContext->current)[0] = (((1) << (18)) | CELL_GCM_NV4097_INVALIDATE_VERTEX_CACHE_FILE); \
  (thisContext->current)[1] = 0; \
  (thisContext->current) += 2; \
- (thisContext->current)[0] = (((1) << (18)) | ((0x00001714))); \
+ (thisContext->current)[0] = (((1) << (18)) | CELL_GCM_NV4097_INVALIDATE_VERTEX_FILE); \
  (thisContext->current)[1] = 0; \
  (thisContext->current) += 2; \
- (thisContext->current)[0] = (((1) << (18)) | ((0x00001714))); \
+ (thisContext->current)[0] = (((1) << (18)) | CELL_GCM_NV4097_INVALIDATE_VERTEX_FILE); \
  (thisContext->current)[1] = 0; \
  (thisContext->current) += 2; \
- (thisContext->current)[0] = (((1) << (18)) | ((0x00001714))); \
+ (thisContext->current)[0] = (((1) << (18)) | CELL_GCM_NV4097_INVALIDATE_VERTEX_FILE); \
  (thisContext->current)[1] = 0; \
  (thisContext->current) += 2;
 
 #define rglGcmSetClearSurface(thisContext, mask) \
- (thisContext->current)[0] = (((1) << (18)) | ((0x00001d94))); \
+ (thisContext->current)[0] = (((1) << (18)) | CELL_GCM_NV4097_CLEAR_SURFACE); \
  (thisContext->current)[1] = (mask); \
  (thisContext->current) += 2; \
  (thisContext->current)[0] = (((1) << (18)) | ((0x00000100))); \
@@ -111,13 +111,13 @@ static inline GLuint rglPlatformGetBitsPerPixel (GLenum internalFormat)
  (thisContext->current) += 2;
 
 #define rglGcmInlineTransfer(thisContext, dstOffset, srcAdr, sizeInWords, location) \
- (thisContext->current)[0] = (((1) << (18)) | ((0x00006188))); \
+ (thisContext->current)[0] = (((1) << (18)) | CELL_GCM_NV3062_SET_CONTEXT_DMA_IMAGE_DESTIN); \
  (thisContext->current)[1] = ((0xFEED0000) + location); \
  (thisContext->current) += 2; \
   cellGcmSetInlineTransferUnsafeInline(thisContext, dstOffset, srcAdr, sizeInWords);
 
 #define rglGcmSetClearColor(thisContext, color) \
- (thisContext->current)[0] = (((1) << (18)) | ((0x00001d90))); \
+ (thisContext->current)[0] = (((1) << (18)) | CELL_GCM_NV4097_SET_COLOR_CLEAR_VALUE); \
  (thisContext->current)[1] = (color); \
  (thisContext->current) += 2;
 
@@ -205,7 +205,7 @@ static inline GLuint rglPlatformGetBitsPerPixel (GLenum internalFormat)
  (thisContext->current) += 2; 
 
 #define rglGcmSetZMinMaxControl(thisContext, cullNearFarEnable, zclampEnable, cullIgnoreW) \
- (thisContext->current)[0] = (((1) << (18)) | ((0x00001d78))); \
+ (thisContext->current)[0] = (((1) << (18)) | CELL_GCM_NV4097_SET_ZMIN_MAX_CONTROL); \
  (thisContext->current)[1] = ((cullNearFarEnable) | ((zclampEnable) << 4) | ((cullIgnoreW)<<8)); \
  (thisContext->current) += 2;
 
@@ -295,7 +295,7 @@ static inline void rglGcmSetFragmentProgramLoad(struct CellGcmContextData *thisC
    uint32_t texMaskCentroid;
    uint32_t i;
 
-   (thisContext->current)[0] = (((1) << (18)) | ((0x000008e4)));
+   (thisContext->current)[0] = (((1) << (18)) | CELL_GCM_NV4097_SET_SHADER_PROGRAM);
    (thisContext->current)[1] = ((location+1) | (rawData));
    (thisContext->current) += 2;
 
@@ -312,7 +312,7 @@ static inline void rglGcmSetFragmentProgramLoad(struct CellGcmContextData *thisC
 
    for(i=0; texMask; i++)
    {
-      if (texMask&1)
+      if (texMask & 1)
       {
          uint32_t hwTexCtrl = (texMask2D & 1) | ((texMaskCentroid & 1) << 4);
          (thisContext->current)[0] = (((1) << (18)) | ((0x00000b40) + (i) * 4));
@@ -785,7 +785,7 @@ static inline void rglGcmTransferData
    GLuint dstOffset = gmmIdToOffset(dstId) + dstIdOffset;
    GLuint srcOffset = gmmIdToOffset(srcId) + srcIdOffset;
 
-   (thisContext->current)[0] = (((2) << (18)) | ((0x00002184)));
+   (thisContext->current)[0] = (((2) << (18)) | CELL_GCM_NV0039_SET_CONTEXT_DMA_BUFFER_IN);
    (thisContext->current)[1] = 0xFEED0000; /* CELL_GCM_TRANSFER_LOCAL_TO_LOCAL */
    (thisContext->current)[2] = 0xFEED0000; /* CELL_GCM_TRANSFER_LOCAL_TO_LOCAL */
    (thisContext->current) += 3;
@@ -811,7 +811,7 @@ static inline void rglGcmTransferData
          {
             cols = (colCount > CL0039_MAX_LINES) ? CL0039_MAX_LINES : colCount;
 
-            (thisContext->current)[0] = (((8) << (18)) | ((0x0000230C)));
+            (thisContext->current)[0] = (((8) << (18)) | CELL_GCM_NV0039_OFFSET_IN);
             (thisContext->current)[1] = (srcOffset + (bytesPerRow - colCount));
             (thisContext->current)[2] = (dstOffset + (bytesPerRow - colCount));
             (thisContext->current)[3] = (0);
@@ -837,7 +837,7 @@ static inline void rglGcmTransferData
          {
             cols = (colCount > CL0039_MAX_LINES) ? CL0039_MAX_LINES : colCount;
 
-            (thisContext->current)[0] = (((8) << (18)) | ((0x0000230C)));
+            (thisContext->current)[0] = (((8) << (18)) | CELL_GCM_NV0039_OFFSET_IN);
             (thisContext->current)[1] = (srcOffset + (bytesPerRow - colCount));
             (thisContext->current)[2] = (dstOffset + (bytesPerRow - colCount));
             (thisContext->current)[3] = (srcPitch);
@@ -854,7 +854,7 @@ static inline void rglGcmTransferData
       }
    }
 
-   (thisContext->current)[0] = (((1) << (18)) | ((0x00002310)));
+   (thisContext->current)[0] = (((1) << (18)) | CELL_GCM_NV0039_OFFSET_OUT);
    (thisContext->current)[1] = (0);
    (thisContext->current) += 2;
 }

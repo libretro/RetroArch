@@ -188,7 +188,7 @@ template<int SIZE> static void setVectorTypeSharedvpIndex (void *data, const voi
    memcpy(driver->sharedVPConstants + resource * 4 * sizeof( float ),
          dst, 4 * sizeof(float));
 
-   thisContext->current[0] = (((5) << (18)) | ((0x00001efc)));
+   thisContext->current[0] = (((5) << (18)) | CELL_GCM_NV4097_SET_TRANSFORM_CONSTANT_LOAD);
    thisContext->current[1] = resource;
    thisContext->current += 2;
 
@@ -214,7 +214,7 @@ template<int SIZE> static void setVectorTypeSharedvpIndexArray (void *data, cons
    memcpy(driver->sharedVPConstants + resource * 4 * sizeof( float ),
          dst, 4 * sizeof(float));
 
-   thisContext->current[0] = (((5) << (18)) | ((0x00001efc)));
+   thisContext->current[0] = (((5) << (18)) | CELL_GCM_NV4097_SET_TRANSFORM_CONSTANT_LOAD);
    thisContext->current[1] = resource;
    thisContext->current += 2;
 
