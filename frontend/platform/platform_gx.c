@@ -316,20 +316,22 @@ static void system_init(void)
 #endif
 }
 
+static void system_exec(const char *path, bool should_load_game);
+
 static void system_exitspawn(void)
 {
 #if defined(IS_SALAMANDER)
-   rarch_console_exec(default_paths.libretro_path, gx_rom_path[0] != '\0' ? true : false);
+   system_exec(default_paths.libretro_path, gx_rom_path[0] != '\0' ? true : false);
 #elif defined(HW_RVL)
    bool should_load_game = false;
    if (g_extern.lifecycle_mode_state & (1ULL << MODE_EXITSPAWN_START_GAME))
       should_load_game = true;
 
-   rarch_console_exec(g_settings.libretro, should_load_game);
+   system_exec(g_settings.libretro, should_load_game);
    // direct loading failed (out of memory), try to jump to salamander then load the correct core
    char boot_dol[PATH_MAX];
    snprintf(boot_dol, sizeof(boot_dol), "%s/boot.dol", default_paths.core_dir);
-   rarch_console_exec(boot_dol, should_load_game);
+   system_exec(boot_dol, should_load_game);
 #endif
 }
 
