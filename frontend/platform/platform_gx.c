@@ -526,6 +526,7 @@ const frontend_ctx_driver_t frontend_ctx_gx = {
    system_deinit,                   /* deinit */
    system_exitspawn,                /* exitspawn */
    system_process_args,             /* process_args */
+   NULL,                            /* process_events */
    system_exec,                     /* exec */
    NULL,                            /* shutdown */
    "gx",

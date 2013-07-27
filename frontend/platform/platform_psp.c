@@ -116,6 +116,7 @@ const frontend_ctx_driver_t frontend_ctx_psp = {
    system_deinit,                /* deinit */
    NULL,                         /* exitspawn */
    NULL,                         /* process_args */
+   NULL,                         /* process_events */
    NULL,                         /* exec */
    NULL,                         /* shutdown */
    "psp",
