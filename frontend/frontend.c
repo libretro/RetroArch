@@ -150,11 +150,8 @@ int rarch_main(int argc, char *argv[])
    if (frontend_ctx && frontend_ctx->init)
       frontend_ctx->init();
 
-#if !defined(__APPLE__)
    rarch_main_clear_state();
    rarch_get_environment(argc, argv);
-#endif
-
 
 #if !defined(RARCH_CONSOLE)
 #if defined(__APPLE__)
@@ -176,13 +173,6 @@ int rarch_main(int argc, char *argv[])
 #endif
 
 #ifdef HAVE_MENU
-#ifdef IOS
-   char* system_directory = ios_get_rarch_system_directory();
-   strlcpy(g_extern.savestate_dir, system_directory, sizeof(g_extern.savestate_dir));
-   strlcpy(g_extern.savefile_dir, system_directory, sizeof(g_extern.savefile_dir));
-   free(system_directory);
-#endif
-
    menu_init();
 
    if (frontend_ctx && frontend_ctx->process_args)

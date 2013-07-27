@@ -9,8 +9,7 @@
  * RetroArch is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
  * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
  * PURPOSE. See the GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along with RetroArch.
+ * * You should have received a copy of the GNU General Public License along with RetroArch.
  * If not, see <http://www.gnu.org/licenses/>.
  */
 
@@ -82,8 +81,21 @@ static void system_shutdown(bool force)
       dispatch_async_f(dispatch_get_main_queue(), 0, apple_rarch_exited);
 }
 
+static void environment_get(int argc, char *argv[])
+{
+   (void)argc;
+   (void)argv;
+
+#ifdef IOS
+   char* system_directory = ios_get_rarch_system_directory();
+   strlcpy(g_extern.savestate_dir, system_directory, sizeof(g_extern.savestate_dir));
+   strlcpy(g_extern.savefile_dir, system_directory, sizeof(g_extern.savefile_dir));
+   free(system_directory);
+#endif
+}
+
 const frontend_ctx_driver_t frontend_ctx_apple = {
-   NULL,                         /* get_environment_settings */
+   environment_get,              /* environment_get */
    NULL,                         /* init */
    NULL,                         /* deinit */
    NULL,                         /* exitspawn */
