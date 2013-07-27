@@ -458,6 +458,8 @@ FRONTEND
 #include "../frontend/platform/platform_psp.c"
 #elif defined(__QNX__)
 #include "../frontend/platform/platform_qnx.c"
+#elif defined(OSX) || defined(IOS)
+#include "../frontend/platform/platform_apple.c"
 #endif
 
 /*============================================================

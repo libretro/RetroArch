@@ -21,12 +21,6 @@
 #include "frontend_context.h"
 frontend_ctx_driver_t *frontend_ctx;
 
-#if defined(__APPLE__)
-#include <dispatch/dispatch.h>
-#include <pthread.h>
-#include "../apple/RetroArch/rarch_wrapper.h"
-#endif
-
 #if defined(HAVE_RGUI) || defined(HAVE_RMENU) || defined(HAVE_RMENU_XUI)
 #define HAVE_MENU
 #else
@@ -146,56 +140,6 @@ static void rarch_get_environment(int argc, char *argv[])
 }
 
 #if defined(__APPLE__)
-static pthread_mutex_t apple_event_queue_lock = PTHREAD_MUTEX_INITIALIZER;
-
-static struct
-{
-   void (*function)(void*);
-   void* userdata;
-} apple_event_queue[16];
-
-static uint32_t apple_event_queue_size;
-
-void apple_frontend_post_event(void (*fn)(void*), void* userdata)
-{
-   pthread_mutex_lock(&apple_event_queue_lock);
-
-   if (apple_event_queue_size < 16)
-   {
-      apple_event_queue[apple_event_queue_size].function = fn;
-      apple_event_queue[apple_event_queue_size].userdata = userdata;
-      apple_event_queue_size ++;
-   }
-
-   pthread_mutex_unlock(&apple_event_queue_lock);
-}
-
-static void apple_free_main_wrap(struct rarch_main_wrap* wrap)
-{
-   if (wrap)
-   {
-      free((char*)wrap->libretro_path);
-      free((char*)wrap->rom_path);
-      free((char*)wrap->sram_path);
-      free((char*)wrap->state_path);
-      free((char*)wrap->config_path);
-   }
-
-   free(wrap);
-}
-
-static void process_events(void)
-{
-   pthread_mutex_lock(&apple_event_queue_lock);
-
-   for (int i = 0; i < apple_event_queue_size; i ++)
-      apple_event_queue[i].function(apple_event_queue[i].userdata);
-
-   apple_event_queue_size = 0;
-
-   pthread_mutex_unlock(&apple_event_queue_lock);
-}
-
 void* rarch_main(void* args)
 #else
 int rarch_main(int argc, char *argv[])
@@ -273,11 +217,9 @@ int rarch_main(int argc, char *argv[])
 #if defined(RARCH_CONSOLE) || defined(__QNX__)
             g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU);
 #else
-#if defined(__APPLE__)
-            // This needs to be here to tell the GUI thread that the emulator loop has stopped,
-            // the (void*)1 makes it display the 'Failed to load game' message.
-            dispatch_async_f(dispatch_get_main_queue(), (void*)1, apple_rarch_exited);
-#endif
+            if (frontend_ctx && frontend_ctx->shutdown)
+               frontend_ctx->shutdown(true);
+
             return 1;
 #endif
          }
@@ -294,9 +236,8 @@ int rarch_main(int argc, char *argv[])
 
          while ((g_extern.is_paused && !g_extern.is_oneshot) ? rarch_main_idle_iterate() : rarch_main_iterate())
          {
-#if defined(__APPLE__)
-            process_events();
-#endif
+            if (frontend_ctx && frontend_ctx->process_events)
+               frontend_ctx->process_events();
 
             if (!(g_extern.lifecycle_mode_state & (1ULL << MODE_GAME)))
                break;
@@ -314,9 +255,8 @@ int rarch_main(int argc, char *argv[])
 
          while (!g_extern.system.shutdown && menu_iterate())
          {
-#if defined(__APPLE__)
-            process_events();
-#endif
+            if (frontend_ctx && frontend_ctx->process_events)
+               frontend_ctx->process_events();
 
             if (!(g_extern.lifecycle_mode_state & (1ULL << MODE_MENU)))
                break;
@@ -382,11 +322,7 @@ int rarch_main(int argc, char *argv[])
    rarch_main_clear_state();
 
    if (frontend_ctx && frontend_ctx->shutdown)
-      frontend_ctx->shutdown(true);
-
-#if defined(__APPLE__)
-   dispatch_async_f(dispatch_get_main_queue(), 0, apple_rarch_exited);
-#endif
+      frontend_ctx->shutdown(false);
 
    return 0;
 }
