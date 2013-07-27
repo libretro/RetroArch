@@ -743,7 +743,7 @@ static bool osk_callback_enter_rsound(void *data)
    return false;
 
 do_exit:
-   g_extern.lifecycle_mode_state &= ~((1ULL << MODE_OSK_DRAW) | (1ULL << MODE_OSK_ENTRY_SUCCESS) |
+   g_extern.lifecycle_mode_state &= ~((1ULL << MODE_OSK_ENTRY_SUCCESS) |
          (1ULL << MODE_OSK_ENTRY_FAIL));
    return true;
 }
@@ -797,7 +797,7 @@ static bool osk_callback_enter_filename(void *data)
 
    return false;
 do_exit:
-   g_extern.lifecycle_mode_state &= ~((1ULL << MODE_OSK_DRAW) | (1ULL << MODE_OSK_ENTRY_SUCCESS) |
+   g_extern.lifecycle_mode_state &= ~((1ULL << MODE_OSK_ENTRY_SUCCESS) |
          (1ULL << MODE_OSK_ENTRY_FAIL));
    return true;
 }
