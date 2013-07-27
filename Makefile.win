@@ -300,10 +300,10 @@ clean:
 	rm -f tools/*.o
 
 dist_x86: all
-	zip -r retroarch-win32-0.9.9.3.zip $(TARGET) $(JTARGET) retroarch.cfg
+	zip -r retroarch-win32-0.9.9.4.zip $(TARGET) $(JTARGET) retroarch.cfg
 
 dist_x86_64: all
-	zip -r retroarch-win64-0.9.9.3.zip $(TARGET) $(JTARGET) retroarch.cfg
+	zip -r retroarch-win64-0.9.9.4.zip $(TARGET) $(JTARGET) retroarch.cfg
 
 libs_x86:
 	wget https://github.com/downloads/Themaister/RetroArch/RetroArch-win32-libs.zip --no-check-certificate
