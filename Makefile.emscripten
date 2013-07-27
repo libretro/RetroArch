@@ -39,6 +39,7 @@ OBJ = frontend/frontend_emscripten.o \
 		performance.o
 
 HAVE_OPENGL = 1
+HAVE_AL = 1
 HAVE_RGUI = 1
 HAVE_SDL = 1
 HAVE_SDL_IMAGE = 1
@@ -47,10 +48,14 @@ HAVE_ZLIB = 1
 HAVE_FBO = 1
 WANT_MINIZ = 1
 
-libretro ?= -lretro
+ifneq ($(NATIVE_ZLIB),)
+   WANT_MINIZ = 0
+endif
+
+libretro ?= -lretro_emscripten
 
 LIBS = -lm
-DEFINES = -I. -DHAVE_SCREENSHOTS -DHAVE_NULLAUDIO -DHAVE_BSV_MOVIE -DPACKAGE_VERSION=\"0.9.9.3\"
+DEFINES = -DHAVE_SCREENSHOTS -DHAVE_NULLAUDIO -DHAVE_BSV_MOVIE -DPACKAGE_VERSION=\"0.9.9.3\"
 LDFLAGS = -L. -static-libgcc -s TOTAL_MEMORY=268435456 -s FULL_ES2=1
 
 ifeq ($(SCALER_NO_SIMD), 1)
@@ -82,6 +87,12 @@ ifeq ($(HAVE_OPENGL), 1)
    DEFINES += -DHAVE_OPENGL -DHAVE_OPENGLES -DHAVE_OPENGLES2 -DHAVE_EGL -DHAVE_OVERLAY -DHAVE_GLSL
 endif
 
+ifeq ($(HAVE_AL), 1)
+   OBJ += audio/openal.o
+   DEFINES += -DHAVE_AL
+   LIBS += -lopenal
+endif
+
 ifeq ($(HAVE_ZLIB), 1)
    OBJ += gfx/rpng/rpng.o file_extract.o
    DEFINES += -DHAVE_ZLIB
@@ -105,7 +116,7 @@ ifneq ($(V), 1)
 endif
 
 ifeq ($(DEBUG), 1)
-   LDFLAGS += -O0 -g -s LABEL_DEBUG=1
+   LDFLAGS += -O0 -g
 else
    LDFLAGS += -O2 -ffast-math
 endif
