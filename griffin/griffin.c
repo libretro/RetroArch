@@ -440,8 +440,22 @@ REWIND
 ============================================================ */
 #include "../rewind.c"
 
+/*============================================================
+FRONTEND
+============================================================ */
+
 #if defined(RARCH_CONSOLE)
 #include "../frontend/frontend_context.c"
+#endif
+
+#if defined(__CELLOS_LV2__)
+#include "../frontend/platform/platform_ps3.c"
+#elif defined(GEKKO)
+#include "../frontend/platform/platform_gx.c"
+#elif defined(_XBOX)
+#include "../frontend/platform/platform_xdk.c"
+#elif defined(PSP)
+#include "../frontend/platform/platform_psp.c"
 #endif
 
 /*============================================================

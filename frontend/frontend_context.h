@@ -24,6 +24,12 @@
 #include "../config.h"
 #endif
 
+#if defined(HAVE_RGUI)
+#include "menu/rgui.h"
+#elif defined(HAVE_RMENU)
+#include "menu/rmenu.h"
+#endif
+
 typedef struct frontend_ctx_driver
 {
    void (*get_environment_settings)(int argc, char *argv[]);

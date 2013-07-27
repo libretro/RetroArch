@@ -348,7 +348,6 @@ static void system_exec(const char *path, bool should_load_game)
    XLaunchNewImage(path, NULL);
 #endif
 #endif
-
 }
 
 const frontend_ctx_driver_t frontend_ctx_xdk = {

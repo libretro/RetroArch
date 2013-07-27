@@ -18,12 +18,6 @@
 #include "../conf/config_file.h"
 #include "../file.h"
 
-#if defined(HAVE_RGUI)
-#include "menu/rgui.h"
-#elif defined(HAVE_RMENU)
-#include "menu/rmenu.h"
-#endif
-
 #if defined(RARCH_CONSOLE)
 #include "frontend_context.h"
 frontend_ctx_driver_t *frontend_ctx;
@@ -31,14 +25,6 @@ frontend_ctx_driver_t *frontend_ctx;
 
 #if defined(__QNX__)
 #include <bps/bps.h>
-#elif defined(__CELLOS_LV2__)
-#include "platform/platform_ps3.c"
-#elif defined(GEKKO)
-#include "platform/platform_gx.c"
-#elif defined(_XBOX)
-#include "platform/platform_xdk.c"
-#elif defined(PSP)
-#include "platform/platform_psp.c"
 #elif defined(__APPLE__)
 #include <dispatch/dispatch.h>
 #include <pthread.h>
@@ -114,7 +100,8 @@ static void system_preinit(void)
    //Initialize BPS libraries
    bps_initialize();
 #elif defined(RARCH_CONSOLE)
-   frontend_ctx->init();
+   if (frontend_ctx->init)
+      frontend_ctx->init();
 #endif
 }
 
@@ -303,7 +290,8 @@ int rarch_main(int argc, char *argv[])
    menu_init();
 
 #ifdef RARCH_CONSOLE
-   frontend_ctx->process_args(argc, argv);
+   if (frontend_ctx->process_args)
+      frontend_ctx->process_args(argc, argv);
    g_extern.lifecycle_mode_state |= 1ULL << MODE_LOAD_GAME;
 #else
    g_extern.lifecycle_mode_state |= 1ULL << MODE_GAME;
@@ -432,9 +420,10 @@ int rarch_main(int argc, char *argv[])
       fclose(g_extern.log_file);
    g_extern.log_file = NULL;
 #endif
-   frontend_ctx->deinit();
+   if (frontend_ctx->deinit)
+      frontend_ctx->deinit();
 
-   if (g_extern.lifecycle_mode_state & (1ULL << MODE_EXITSPAWN))
+   if (g_extern.lifecycle_mode_state & (1ULL << MODE_EXITSPAWN) && frontend_ctx->exitspawn)
       frontend_ctx->exitspawn();
 #endif
 
