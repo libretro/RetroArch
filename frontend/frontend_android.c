@@ -59,8 +59,6 @@ static void print_cur_config (void *data)
          AConfiguration_getUiModeNight(android_app->config));
 }
 
-#define MAX_ARGS 32
-
 static bool android_run_events (void *data)
 {
    int id = ALooper_pollOnce(-1, NULL, NULL, NULL);

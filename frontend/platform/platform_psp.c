@@ -112,3 +112,13 @@ static void system_deinit(void)
 static void system_exitspawn(void)
 {
 }
+
+const frontend_ctx_driver_t frontend_ctx_xdk = {
+   get_environment_settings,
+   system_init,
+   system_deinit,
+   system_exitspawn,
+   system_process_args,
+   NULL,
+   "psp",
+};
