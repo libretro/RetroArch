@@ -74,9 +74,6 @@ static bool libretro_install_core(const char *path_prefix,
    return true;
 }
 
-#endif
-
-#ifdef RARCH_CONSOLE
 void rarch_make_dir(const char *x, const char *name)
 {
    RARCH_LOG("Checking directory name %s [%s]\n", name, x);
@@ -90,6 +87,7 @@ void rarch_make_dir(const char *x, const char *name)
       }
    }
 }
+
 #endif
 
 static void rarch_get_environment(int argc, char *argv[])
