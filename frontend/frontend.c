@@ -145,16 +145,6 @@ static void rarch_get_environment(int argc, char *argv[])
 #endif
 }
 
-static void system_shutdown(void)
-{
-   if (frontend_ctx && frontend_ctx->shutdown)
-      frontend_ctx->shutdown(true);
-
-#if defined(__APPLE__)
-   dispatch_async_f(dispatch_get_main_queue(), 0, apple_rarch_exited);
-#endif
-}
-
 #if defined(__APPLE__)
 static pthread_mutex_t apple_event_queue_lock = PTHREAD_MUTEX_INITIALIZER;
 
@@ -211,8 +201,7 @@ void* rarch_main(void* args)
 int rarch_main(int argc, char *argv[])
 #endif
 {
-   if ((frontend_ctx = (frontend_ctx_driver_t*)frontend_ctx_init_first()) == NULL)
-      RARCH_WARN("Could not find valid frontend context.\n");
+   frontend_ctx = (frontend_ctx_driver_t*)frontend_ctx_init_first();
 
    if (frontend_ctx && frontend_ctx->init)
       frontend_ctx->init();
@@ -392,7 +381,12 @@ int rarch_main(int argc, char *argv[])
 
    rarch_main_clear_state();
 
-   system_shutdown();
+   if (frontend_ctx && frontend_ctx->shutdown)
+      frontend_ctx->shutdown(true);
+
+#if defined(__APPLE__)
+   dispatch_async_f(dispatch_get_main_queue(), 0, apple_rarch_exited);
+#endif
 
    return 0;
 }
