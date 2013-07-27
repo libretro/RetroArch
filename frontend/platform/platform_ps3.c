@@ -385,12 +385,14 @@ static void system_deinit(void)
 #endif
 }
 
+static void system_exec(const char *path, bool should_load_game);
+
 static void system_exitspawn(void)
 {
 #ifdef HAVE_RARCH_EXEC
 
 #ifdef IS_SALAMANDER
-   rarch_console_exec(default_paths.libretro_path, false);
+   system_exec(default_paths.libretro_path, false);
 
    cellSysmoduleUnloadModule(CELL_SYSMODULE_SYSUTIL_GAME);
    cellSysmoduleLoadModule(CELL_SYSMODULE_FS);
@@ -410,11 +412,60 @@ static void system_exitspawn(void)
    if (g_extern.lifecycle_mode_state & (1ULL << MODE_EXITSPAWN_START_GAME))
       should_load_game = true;
 
-   rarch_console_exec(core_launch, should_load_game);
+   system_exec(core_launch, should_load_game);
 #endif
 
 #endif
 
+}
+
+#include <stdio.h>
+
+#include <cell/sysmodule.h>
+#include <sys/process.h>
+#include <sysutil/sysutil_common.h>
+#include <netex/net.h>
+#include <np.h>
+#include <np/drm.h>
+
+#include "../../retroarch_logger.h"
+
+static void system_exec(const char *path, bool should_load_game)
+{
+   (void)should_load_game;
+
+   RARCH_LOG("Attempt to load executable: [%s].\n", path);
+   char spawn_data[256];
+   char game_path[256];
+   (void)game_path;
+   for(unsigned int i = 0; i < sizeof(spawn_data); ++i)
+      spawn_data[i] = i & 0xff;
+
+#ifndef IS_SALAMANDER
+   if (should_load_game)
+      strlcpy(game_path, g_extern.fullpath, sizeof(game_path));
+#endif
+
+   const char * const spawn_argv[] = {
+#ifndef IS_SALAMANDER
+      game_path,
+#endif
+      NULL
+   };
+
+   SceNpDrmKey * k_licensee = NULL;
+   int ret = sceNpDrmProcessExitSpawn2(k_licensee, path, (const char** const)spawn_argv, NULL, (sys_addr_t)spawn_data, 256, 1000, SYS_PROCESS_PRIMARY_STACK_SIZE_1M);
+
+   if(ret <  0)
+   {
+      RARCH_WARN("SELF file is not of NPDRM type, trying another approach to boot it...\n");
+      sys_game_process_exitspawn(path, (const char** const)spawn_argv, NULL, NULL, 0, 1000, SYS_PROCESS_PRIMARY_STACK_SIZE_1M);
+   }
+
+   sceNpTerm();
+   sys_net_finalize_network();
+   cellSysmoduleUnloadModule(CELL_SYSMODULE_SYSUTIL_NP);
+   cellSysmoduleUnloadModule(CELL_SYSMODULE_NET);
 }
 
 const frontend_ctx_driver_t frontend_ctx_ps3 = {
@@ -423,5 +474,6 @@ const frontend_ctx_driver_t frontend_ctx_ps3 = {
    system_deinit,
    system_exitspawn,
    system_process_args,
+   system_exec,
    "ps3",
 };

@@ -314,11 +314,49 @@ static void system_exitspawn(void)
 #endif
 }
 
+#include <stdio.h>
+
+#include <xtl.h>
+
+#include "../../retroarch_logger.h"
+
+static void system_exec(const char *path, bool should_load_game)
+{
+   (void)should_load_game;
+
+   RARCH_LOG("Attempt to load executable: [%s].\n", path);
+#ifdef IS_SALAMANDER
+   XLaunchNewImage(path, NULL);
+#else
+#if defined(_XBOX1)
+   LAUNCH_DATA ptr;
+   memset(&ptr, 0, sizeof(ptr));
+   if (should_load_game)
+   {
+      snprintf((char*)ptr.Data, sizeof(ptr.Data), "%s", g_extern.fullpath);
+      XLaunchNewImage(path, &ptr);
+   }
+   else
+      XLaunchNewImage(path, NULL);
+#elif defined(_XBOX360)
+   char game_path[1024];
+   if (should_load_game)
+   {
+      strlcpy(game_path, g_extern.fullpath, sizeof(game_path));
+      XSetLaunchData(game_path, MAX_LAUNCH_DATA_SIZE);
+   }
+   XLaunchNewImage(path, NULL);
+#endif
+#endif
+
+}
+
 const frontend_ctx_driver_t frontend_ctx_xdk = {
    get_environment_settings,
    system_init,
    system_deinit,
    system_exitspawn,
    system_process_args,
+   system_exec,
    "xdk",
 };
