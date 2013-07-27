@@ -21,9 +21,7 @@
 #include "frontend_context.h"
 frontend_ctx_driver_t *frontend_ctx;
 
-#if defined(__QNX__)
-#include <bps/bps.h>
-#elif defined(__APPLE__)
+#if defined(__APPLE__)
 #include <dispatch/dispatch.h>
 #include <pthread.h>
 #include "../apple/RetroArch/rarch_wrapper.h"
@@ -76,53 +74,40 @@ static bool libretro_install_core(const char *path_prefix,
    return true;
 }
 
-#define MAKE_DIR(x, name) { \
-   RARCH_LOG("Checking directory name %s [%s]\n", name, x); \
-   if (strlen(x) > 0) \
-   { \
-   if (!path_is_directory((x)) )\
-   { \
-      RARCH_WARN("Directory \"%s\" does not exists, creating\n", (x)); \
-      if (mkdir((x), 0777) != 0) \
-      { \
-         RARCH_ERR("Could not create directory \"%s\"\n", (x)); \
-      } \
-   } \
-   } \
+#endif
+
+#ifdef RARCH_CONSOLE
+void rarch_make_dir(const char *x, const char *name)
+{
+   RARCH_LOG("Checking directory name %s [%s]\n", name, x);
+   if (strlen(x) > 0)
+   {
+      if (!path_is_directory(x))
+      {
+         RARCH_WARN("Directory \"%s\" does not exists, creating\n", x);
+         if (mkdir((x), 0777) != 0)
+            RARCH_ERR("Could not create directory \"%s\"\n", x);
+      }
+   }
 }
 #endif
 
 static void rarch_get_environment(int argc, char *argv[])
 {
-#if defined(__QNX__) && !defined(HAVE_BB10)
-   strlcpy(g_settings.libretro, "app/native/lib", sizeof(g_settings.libretro));
-   strlcpy(g_extern.config_path, "app/native/retroarch.cfg", sizeof(g_extern.config_path));
-   strlcpy(g_settings.video.shader_dir, "app/native/shaders_glsl", sizeof(g_settings.video.shader_dir));
-
-   config_load();
-
    g_extern.verbose = true;
-#elif defined(RARCH_CONSOLE)
+
 #if defined(HAVE_LOGGER)
-   g_extern.verbose = true;
    logger_init();
 #elif defined(HAVE_FILE_LOGGER)
-   g_extern.verbose = true;
    g_extern.log_file = fopen("/retroarch-log.txt", "w");
 #endif
-   g_extern.verbose = true;
 
-   if (frontend_ctx && frontend_ctx->get_environment_settings)
-      frontend_ctx->get_environment_settings(argc, argv);
-
-   MAKE_DIR(default_paths.port_dir, "port_dir");
-   MAKE_DIR(default_paths.system_dir, "system_dir");
-   MAKE_DIR(default_paths.savestate_dir, "savestate_dir");
-   MAKE_DIR(default_paths.sram_dir, "sram_dir");
-   MAKE_DIR(default_paths.input_presets_dir, "input_presets_dir");
+   if (frontend_ctx && frontend_ctx->environment_get)
+      frontend_ctx->environment_get(argc, argv);
 
    config_load();
 
+#if defined(RARCH_CONSOLE)
    init_libretro_sym(false);
    rarch_init_system_info();
 
@@ -164,9 +149,10 @@ static void rarch_get_environment(int argc, char *argv[])
 
 static void system_shutdown(void)
 {
-#if defined(__QNX__)
-   bps_shutdown();
-#elif defined(__APPLE__)
+   if (frontend_ctx && frontend_ctx->shutdown)
+      frontend_ctx->shutdown(true);
+
+#if defined(__APPLE__)
    dispatch_async_f(dispatch_get_main_queue(), 0, apple_rarch_exited);
 #endif
 }
@@ -229,11 +215,6 @@ int rarch_main(int argc, char *argv[])
 {
    if ((frontend_ctx = (frontend_ctx_driver_t*)frontend_ctx_init_first()) == NULL)
       RARCH_WARN("Could not find valid frontend context.\n");
-
-#if defined(__QNX__) && !defined(HAVE_BB10)
-   //Initialize BPS libraries
-   bps_initialize();
-#endif
 
    if (frontend_ctx && frontend_ctx->init)
       frontend_ctx->init();

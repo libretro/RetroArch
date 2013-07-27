@@ -456,6 +456,8 @@ FRONTEND
 #include "../frontend/platform/platform_xdk.c"
 #elif defined(PSP)
 #include "../frontend/platform/platform_psp.c"
+#elif defined(__QNX__)
+#include "../frontend/platform/platform_qnx.c"
 #endif
 
 /*============================================================

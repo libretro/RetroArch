@@ -32,7 +32,7 @@
 
 typedef struct frontend_ctx_driver
 {
-   void (*get_environment_settings)(int argc, char *argv[]);
+   void (*environment_get)(int argc, char *argv[]);
 
    void (*init)(void);
    void (*deinit)(void);
@@ -49,8 +49,13 @@ typedef struct frontend_ctx_driver
 extern const frontend_ctx_driver_t frontend_ctx_gx;
 extern const frontend_ctx_driver_t frontend_ctx_ps3;
 extern const frontend_ctx_driver_t frontend_ctx_xdk;
+extern const frontend_ctx_driver_t frontend_ctx_qnx;
 
 const frontend_ctx_driver_t *frontend_ctx_find_driver(const char *ident); // Finds driver with ident. Does not initialize.
 const frontend_ctx_driver_t *frontend_ctx_init_first(void); // Finds first suitable driver and initializes.
+
+#ifdef RARCH_CONSOLE
+extern void rarch_make_dir(const char *x, const char *name);
+#endif
 
 #endif
