@@ -2985,17 +2985,11 @@ bool rarch_main_iterate(void)
 
    // SHUTDOWN on consoles should exit RetroArch completely.
    if (g_extern.system.shutdown)
-   {
-      g_extern.lifecycle_mode_state |= (1ULL << MODE_EXIT);
       return false;
-   }
 
    // Time to drop?
    if (input_key_pressed_func(RARCH_QUIT_KEY) || !video_alive_func())
-   {
-      g_extern.lifecycle_mode_state |= (1ULL << MODE_EXIT);
       return false;
-   }
 
    if (check_enter_rgui())
       return false; // Enter menu, don't exit.

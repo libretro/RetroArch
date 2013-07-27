@@ -564,7 +564,6 @@ static int select_file(void *data, uint64_t input)
          if (rgui->menu_type == LIBRETRO_CHOICE)
          {
             strlcpy(g_settings.libretro, path, sizeof(g_settings.libretro));
-            g_extern.lifecycle_mode_state |= (1ULL << MODE_EXIT);
             g_extern.lifecycle_mode_state |= (1ULL << MODE_EXITSPAWN);
             return -1;
          }
@@ -1451,7 +1450,6 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
          {
             g_extern.lifecycle_mode_state &= ~(1ULL << MODE_GAME);
             g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU_INGAME_EXIT);
-            g_extern.lifecycle_mode_state |= (1ULL << MODE_EXIT);
             g_extern.lifecycle_mode_state |= (1ULL << MODE_EXITSPAWN);
             g_extern.lifecycle_mode_state |= (1ULL << MODE_EXITSPAWN_MULTIMAN);
             return -1;
@@ -1462,7 +1460,6 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
          if (input & (1ULL << DEVICE_NAV_B))
          {
             g_extern.lifecycle_mode_state &= ~(1ULL << MODE_GAME);
-            g_extern.lifecycle_mode_state |= (1ULL << MODE_EXIT);
             g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU_INGAME_EXIT);
             return -1;
          }
@@ -2894,10 +2891,7 @@ int rgui_input_postprocess(void *data, uint64_t old_state)
    device_ptr->ctx_driver->check_window(&quit, &resize, &width, &height, frame_count);
 
    if (quit)
-   {
-      g_extern.lifecycle_mode_state |= (1ULL << MODE_EXIT);
       ret = -1;
-   }
 
    if (g_extern.lifecycle_mode_state & (1ULL << MODE_MENU_INGAME_EXIT))
    {

@@ -458,7 +458,6 @@ void load_menu_game_history(unsigned game_index)
 
 #if !defined( HAVE_DYNAMIC) && defined(RARCH_CONSOLE)
    g_extern.lifecycle_mode_state &= ~(1ULL << MODE_GAME);
-   g_extern.lifecycle_mode_state |= (1ULL << MODE_EXIT);
    g_extern.lifecycle_mode_state |= (1ULL << MODE_EXITSPAWN);
    g_extern.lifecycle_mode_state |= (1ULL << MODE_EXITSPAWN_START_GAME);
 #elif defined(HAVE_DYNAMIC)
