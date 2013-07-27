@@ -47,7 +47,7 @@ static void system_shutdown(void)
    bps_shutdown();
 }
 
-const frontend_ctx_driver_t frontend_ctx_xdk = {
+const frontend_ctx_driver_t frontend_ctx_qnx = {
    get_environment_settings,     /* get_environment_settings */
    system_init,                  /* init */
    NULL,                         /* deinit */

@@ -110,7 +110,7 @@ static void system_deinit(void)
    sceKernelExitGame();
 }
 
-const frontend_ctx_driver_t frontend_ctx_xdk = {
+const frontend_ctx_driver_t frontend_ctx_psp = {
    get_environment_settings,     /* get_environment_settings */
    system_init,                  /* init */
    system_deinit,                /* deinit */
