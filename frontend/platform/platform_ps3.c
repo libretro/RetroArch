@@ -110,13 +110,9 @@ static void salamander_init_settings(void)
          }
 
          if (!config_file_exists || !strcmp(default_paths.libretro_path, ""))
-         {
             find_and_set_first_file();
-         }
          else
-         {
             RARCH_LOG("Start [%s] found in retroarch.cfg.\n", default_paths.libretro_path);
-         }
 
          if (!config_file_exists)
          {
@@ -469,11 +465,12 @@ static void system_exec(const char *path, bool should_load_game)
 }
 
 const frontend_ctx_driver_t frontend_ctx_ps3 = {
-   get_environment_settings,
-   system_init,
-   system_deinit,
-   system_exitspawn,
-   system_process_args,
-   system_exec,
+   get_environment_settings,     /* get_environment_settings */
+   system_init,                  /* init */
+   system_deinit,                /* deinit */
+   system_exitspawn,             /* exitspawn */
+   system_process_args,          /* process_args */
+   system_exec,                  /* exec */
+   NULL,                         /* shutdown */
    "ps3",
 };

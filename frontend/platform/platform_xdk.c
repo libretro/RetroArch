@@ -299,8 +299,6 @@ static int system_process_args(int argc, char *argv[])
    return 0;
 }
 
-static void system_deinit(void) {}
-
 static void system_exitspawn(void)
 {
 #ifdef IS_SALAMANDER
@@ -351,11 +349,12 @@ static void system_exec(const char *path, bool should_load_game)
 }
 
 const frontend_ctx_driver_t frontend_ctx_xdk = {
-   get_environment_settings,
-   system_init,
-   system_deinit,
-   system_exitspawn,
-   system_process_args,
-   system_exec,
+   get_environment_settings,     /* get_environment_settings */
+   system_init,                  /* init */
+   NULL,                         /* deinit */
+   system_exitspawn,             /* exitspawn */
+   system_process_args,          /* process_args */
+   system_exec,                  /* exec */
+   NULL,                         /* shutdown */
    "xdk",
 };

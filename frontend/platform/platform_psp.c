@@ -109,16 +109,13 @@ static void system_deinit(void)
    sceKernelExitGame();
 }
 
-static void system_exitspawn(void)
-{
-}
-
 const frontend_ctx_driver_t frontend_ctx_xdk = {
-   get_environment_settings,
-   system_init,
-   system_deinit,
-   system_exitspawn,
-   system_process_args,
-   NULL,
+   get_environment_settings,     /* get_environment_settings */
+   system_init,                  /* init */
+   system_deinit,                /* deinit */
+   NULL,                         /* exitspawn */
+   system_process_args,          /* process_args */
+   NULL,                         /* exec */
+   NULL,                         /* shutdown */
    "psp",
 };

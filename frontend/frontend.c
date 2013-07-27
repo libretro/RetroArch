@@ -18,10 +18,8 @@
 #include "../conf/config_file.h"
 #include "../file.h"
 
-#if defined(RARCH_CONSOLE)
 #include "frontend_context.h"
 frontend_ctx_driver_t *frontend_ctx;
-#endif
 
 #if defined(__QNX__)
 #include <bps/bps.h>
@@ -94,17 +92,6 @@ static bool libretro_install_core(const char *path_prefix,
 }
 #endif
 
-static void system_preinit(void)
-{
-#if defined(__QNX__) && !defined(HAVE_BB10)
-   //Initialize BPS libraries
-   bps_initialize();
-#elif defined(RARCH_CONSOLE)
-   if (frontend_ctx->init)
-      frontend_ctx->init();
-#endif
-}
-
 static void rarch_get_environment(int argc, char *argv[])
 {
 #if defined(__QNX__) && !defined(HAVE_BB10)
@@ -125,7 +112,7 @@ static void rarch_get_environment(int argc, char *argv[])
 #endif
    g_extern.verbose = true;
 
-   if (frontend_ctx->get_environment_settings)
+   if (frontend_ctx && frontend_ctx->get_environment_settings)
       frontend_ctx->get_environment_settings(argc, argv);
 
    MAKE_DIR(default_paths.port_dir, "port_dir");
@@ -184,16 +171,6 @@ static void system_shutdown(void)
 #endif
 }
 
-static int system_ctx_init(void)
-{
-#ifdef RARCH_CONSOLE
-   if ((frontend_ctx = (frontend_ctx_driver_t*)frontend_ctx_init_first()) == NULL)
-      return -1;
-#endif
-
-   return 0;
-}
-
 #if defined(__APPLE__)
 static pthread_mutex_t apple_event_queue_lock = PTHREAD_MUTEX_INITIALIZER;
 
@@ -250,10 +227,16 @@ void* rarch_main(void* args)
 int rarch_main(int argc, char *argv[])
 #endif
 {
-   if (system_ctx_init() != 0)
-      return 0;
+   if ((frontend_ctx = (frontend_ctx_driver_t*)frontend_ctx_init_first()) == NULL)
+      RARCH_WARN("Could not find valid frontend context.\n");
 
-   system_preinit();
+#if defined(__QNX__) && !defined(HAVE_BB10)
+   //Initialize BPS libraries
+   bps_initialize();
+#endif
+
+   if (frontend_ctx && frontend_ctx->init)
+      frontend_ctx->init();
 
 #if !defined(__APPLE__)
    rarch_main_clear_state();
@@ -290,9 +273,10 @@ int rarch_main(int argc, char *argv[])
 
    menu_init();
 
-#ifdef RARCH_CONSOLE
-   if (frontend_ctx->process_args)
+   if (frontend_ctx && frontend_ctx->process_args)
       frontend_ctx->process_args(argc, argv);
+
+#ifdef RARCH_CONSOLE
    g_extern.lifecycle_mode_state |= 1ULL << MODE_LOAD_GAME;
 #else
    g_extern.lifecycle_mode_state |= 1ULL << MODE_GAME;
@@ -336,10 +320,9 @@ int rarch_main(int argc, char *argv[])
       {
 #ifdef RARCH_CONSOLE
          driver.input->poll(NULL);
-
+#endif
          if (driver.video_poke->set_aspect_ratio)
             driver.video_poke->set_aspect_ratio(driver.video_data, g_settings.video.aspect_ratio_idx);
-#endif
 
          while ((g_extern.is_paused && !g_extern.is_oneshot) ? rarch_main_idle_iterate() : rarch_main_iterate())
          {
@@ -413,7 +396,6 @@ int rarch_main(int argc, char *argv[])
    rarch_perf_log();
 #endif
 
-#ifdef RARCH_CONSOLE
 #if defined(HAVE_LOGGER)
    logger_shutdown();
 #elif defined(HAVE_FILE_LOGGER)
@@ -421,12 +403,13 @@ int rarch_main(int argc, char *argv[])
       fclose(g_extern.log_file);
    g_extern.log_file = NULL;
 #endif
-   if (frontend_ctx->deinit)
+
+   if (frontend_ctx && frontend_ctx->deinit)
       frontend_ctx->deinit();
 
-   if (g_extern.lifecycle_mode_state & (1ULL << MODE_EXITSPAWN) && frontend_ctx->exitspawn)
+   if (g_extern.lifecycle_mode_state & (1ULL << MODE_EXITSPAWN) && frontend_ctx
+         && frontend_ctx->exitspawn)
       frontend_ctx->exitspawn();
-#endif
 
    rarch_main_clear_state();
 

@@ -3,6 +3,7 @@ include config.mk
 TARGET = retroarch tools/retroarch-joyconfig tools/retrolaunch/retrolaunch
 
 OBJ = frontend/frontend.o \
+		frontend/frontend_context.o \
 		retroarch.o \
 		file.o \
 		file_path.o \

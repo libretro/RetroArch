@@ -40,6 +40,7 @@ typedef struct frontend_ctx_driver
 
    int (*process_args)(int argc, char *argv[]);
    void (*exec)(const char *, bool);
+   void (*shutdown)(bool);
 
    // Human readable string.
    const char *ident;
