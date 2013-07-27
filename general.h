@@ -109,7 +109,6 @@ enum menu_enums
 {
    MODE_GAME = 0,
    MODE_LOAD_GAME,
-   MODE_INIT,
    MODE_MENU,
    MODE_MENU_WIDESCREEN,
    MODE_MENU_HD,
