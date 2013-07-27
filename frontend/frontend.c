@@ -125,7 +125,8 @@ static void rarch_get_environment(int argc, char *argv[])
 #endif
    g_extern.verbose = true;
 
-   get_environment_settings(argc, argv);
+   if (frontend_ctx->get_environment_settings)
+      frontend_ctx->get_environment_settings(argc, argv);
 
    MAKE_DIR(default_paths.port_dir, "port_dir");
    MAKE_DIR(default_paths.system_dir, "system_dir");
