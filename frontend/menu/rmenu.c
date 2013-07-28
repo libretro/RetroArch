@@ -559,20 +559,14 @@ static int select_file(void *data, uint64_t input)
                   driver.video_poke->set_texture_frame(driver.video_data, menu_texture->pixels,
                         true, menu_texture->width, menu_texture->height, 1.0f);
                break;
-         }
-
-         if (rgui->menu_type == LIBRETRO_CHOICE)
-         {
-            strlcpy(g_settings.libretro, path, sizeof(g_settings.libretro));
-            g_extern.lifecycle_mode_state |= (1ULL << MODE_EXITSPAWN);
-            return -1;
+            case LIBRETRO_CHOICE:
+               strlcpy(g_settings.libretro, path, sizeof(g_settings.libretro));
+               g_extern.lifecycle_mode_state |= (1ULL << MODE_EXITSPAWN);
+               return -1;
          }
 
          pop_menu_stack = true;
       }
-
-      if (!ret)
-         msg_queue_push(g_extern.msg_queue, "INFO - You need to restart RetroArch.", 1, 180);
    }
    else if ((input & (1ULL << DEVICE_NAV_X)) || (input & (1ULL << DEVICE_NAV_MENU)))
       pop_menu_stack = true;
