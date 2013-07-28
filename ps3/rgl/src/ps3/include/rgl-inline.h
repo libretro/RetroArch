@@ -336,7 +336,7 @@ static inline void rglGcmSetFragmentProgramLoad(struct CellGcmContextData *thisC
    (thisContext->current) += 2;
 }
 
-static inline void rglGcmSetDrawArrays(struct CellGcmContextData *thisContext, uint8_t mode,
+static void rglGcmSetDrawArraysSlow(struct CellGcmContextData *thisContext, uint8_t mode,
       uint32_t first, uint32_t count)
 {
    uint32_t lcount;
@@ -394,6 +394,34 @@ static inline void rglGcmSetDrawArrays(struct CellGcmContextData *thisContext, u
    (thisContext->current)[0] = (((1) << (18)) | CELL_GCM_NV4097_SET_BEGIN_END);
    (thisContext->current)[1] = (0);
    (thisContext->current) += 2;
+}
+
+static inline void rglGcmSetDrawArrays(struct CellGcmContextData *thisContext, uint8_t mode,
+      uint32_t first, uint32_t count)
+{
+   if (mode == GL_TRIANGLE_STRIP && first == 0 && count == 4)
+   {
+      (thisContext->current)[0] = (((3) << (18)) | CELL_GCM_NV4097_INVALIDATE_VERTEX_FILE | (0x40000000));
+      (thisContext->current)[1] = 0;
+      (thisContext->current)[2] = 0;
+      (thisContext->current)[3] = 0;
+      (thisContext->current) += 4;
+
+      (thisContext->current)[0] = (((1) << (18)) | CELL_GCM_NV4097_SET_BEGIN_END);
+      (thisContext->current)[1] = ((mode));
+      (thisContext->current) += 2;
+
+      (thisContext->current)[0] = (((1) << (18)) | CELL_GCM_NV4097_DRAW_ARRAYS);
+      (thisContext->current)[1] = ((first) | (3 <<24));
+      (thisContext->current) += 2;
+      first += 4;
+
+      (thisContext->current)[0] = (((1) << (18)) | CELL_GCM_NV4097_SET_BEGIN_END);
+      (thisContext->current)[1] = (0);
+      (thisContext->current) += 2;
+   }
+   else
+      rglGcmSetDrawArraysSlow(thisContext, mode, first, count);
 }
 
 static inline void rglGcmSetVertexProgramLoad(struct CellGcmContextData *thisContext, const CellCgbVertexProgramConfiguration *conf, const void *ucode)
