@@ -186,6 +186,10 @@ ifeq ($(HAVE_SDL), 1)
    LIBS += $(SDL_LIBS)
 endif
 
+ifeq ($(HAVE_OMAP), 1)
+	OBJ += gfx/omap_gfx.o gfx/fbdev.o
+endif
+
 ifeq ($(HAVE_OPENGL), 1)
    OBJ += gfx/gl.o \
 			 gfx/gfx_context.o \

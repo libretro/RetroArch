@@ -44,6 +44,7 @@ enum
    VIDEO_D3D9,
    VIDEO_VG,
    VIDEO_NULL,
+   VIDEO_OMAP,
 
    AUDIO_RSOUND,
    AUDIO_OSS,
