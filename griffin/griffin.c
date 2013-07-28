@@ -111,10 +111,6 @@ VIDEO CONTEXT
 #include "../gfx/context/apple_gl_ctx.c"
 #endif
 
-#ifdef HAVE_OMAP
-#include "../gfx/omap_gfx.c"
-#include "../gfx/fbdev.c"
-#endif
 
 #if defined(HAVE_OPENGL)
 
@@ -189,6 +185,11 @@ VIDEO DRIVER
 #ifdef HAVE_VG
 #include "../gfx/vg.c"
 #include "../gfx/math/matrix_3x3.c"
+#endif
+
+#ifdef HAVE_OMAP
+#include "../gfx/omap_gfx.c"
+#include "../gfx/fbdev.c"
 #endif
 
 #ifdef HAVE_DYLIB
