@@ -1623,7 +1623,9 @@ static void android_input_poll(void *data)
                   state_id = pads_connected;
                   state_device_ids[pads_connected++] = id;
 
-                  input_autodetect_setup(android_app, msg, sizeof(msg), state_id, id, source);
+                  if (g_settings.input.autodetect_enable)
+                     input_autodetect_setup(android_app, msg, sizeof(msg), state_id, id, source);
+
                   long_msg_enable = true;
                }
 
