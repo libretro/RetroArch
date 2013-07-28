@@ -294,7 +294,7 @@ INPUT
 #include "../blackberry-qnx/qnx_input.c"
 #endif
 
-#if defined(PANDORA) 
+#if defined(__linux__) && !defined(ANDROID) 
 #include "../input/linuxraw_input.c"
 #include "../input/linuxraw_joypad.c"
 #endif
