@@ -91,28 +91,28 @@ static inline GLuint rglPlatformGetBitsPerPixel (GLenum internalFormat)
  (thisContext->current)[0] = (((1) << (18)) | CELL_GCM_NV4097_CLEAR_SURFACE); \
  (thisContext->current)[1] = (mask); \
  (thisContext->current) += 2; \
- (thisContext->current)[0] = (((1) << (18)) | ((0x00000100))); \
+ (thisContext->current)[0] = (((1) << (18)) | CELL_GCM_NV4097_NO_OPERATION); \
  (thisContext->current)[1] = 0; \
  (thisContext->current) += 2;
 
 #define rglGcmSetTextureControl(thisContext, index, enable, minlod, maxlod, maxaniso) \
- (thisContext->current)[0] = (((1) << (18)) | ((0x00001a0c) + 0x20 * ((index)))); \
+ (thisContext->current)[0] = (((1) << (18)) | (CELL_GCM_NV4097_SET_TEXTURE_CONTROL0 + 0x20 * ((index)))); \
  (thisContext->current)[1] = ((((0) << 2) | ((maxaniso)) << 4) | (((maxlod)) << 7) | (((minlod)) << 19) | ((enable) << 31)); \
  (thisContext->current) += 2;
 
 #define rglGcmSetTextureRemap(thisContext, index, remap) \
- (thisContext->current)[0] = (((1) << (18)) | ((0x00001a10) + ((index)) * 32)); \
+ (thisContext->current)[0] = (((1) << (18)) | (CELL_GCM_NV4097_SET_TEXTURE_CONTROL1 + ((index)) * 32)); \
  (thisContext->current)[1] = (remap); \
  (thisContext->current) += 2;
 
 #define rglGcmSetTransferLocation(thisContext, location) \
- (thisContext->current)[0] = (((1) << (18)) | ((0x00006188))); \
- (thisContext->current)[1] = ((0xFEED0000) + location); \
+ (thisContext->current)[0] = (((1) << (18)) | CELL_GCM_NV3062_SET_CONTEXT_DMA_IMAGE_DESTIN); \
+ (thisContext->current)[1] = (CELL_GCM_CONTEXT_DMA_MEMORY_FRAME_BUFFER + location); \
  (thisContext->current) += 2;
 
 #define rglGcmInlineTransfer(thisContext, dstOffset, srcAdr, sizeInWords, location) \
  (thisContext->current)[0] = (((1) << (18)) | CELL_GCM_NV3062_SET_CONTEXT_DMA_IMAGE_DESTIN); \
- (thisContext->current)[1] = ((0xFEED0000) + location); \
+ (thisContext->current)[1] = (CELL_GCM_CONTEXT_DMA_MEMORY_FRAME_BUFFER + location); \
  (thisContext->current) += 2; \
   cellGcmSetInlineTransferUnsafeInline(thisContext, dstOffset, srcAdr, sizeInWords);
 
@@ -128,27 +128,27 @@ static inline GLuint rglPlatformGetBitsPerPixel (GLenum internalFormat)
  imagerect = texture->height | (texture->width << 16); \
  control1 = texture->remap; \
  control3 = texture->pitch | (texture->depth << 20); \
- (thisContext->current)[0] = (((2) << (18)) | ((0x00001a00) + ((index)) * 32)); \
+ (thisContext->current)[0] = (((2) << (18)) | (CELL_GCM_NV4097_SET_TEXTURE_OFFSET + ((index)) * 32)); \
  (thisContext->current)[1] = (offset); \
  (thisContext->current)[2] = (format); \
  (thisContext->current) += 3; \
- (thisContext->current)[0] = (((1) << (18)) | ((0x00001a18) + ((index)) * 32)); \
+ (thisContext->current)[0] = (((1) << (18)) | (CELL_GCM_NV4097_SET_TEXTURE_IMAGE_RECT + ((index)) * 32)); \
  (thisContext->current)[1] = (imagerect); \
  (thisContext->current) += 2; \
- (thisContext->current)[0] = (((1) << (18)) | ((0x00001840) + ((index)) * 4)); \
+ (thisContext->current)[0] = (((1) << (18)) | (CELL_GCM_NV4097_SET_TEXTURE_CONTROL3 + ((index)) * 4)); \
  (thisContext->current)[1] = (control3); \
  (thisContext->current) += 2; \
- (thisContext->current)[0] = (((1) << (18)) | ((0x00001a10) + ((index)) * 32)); \
+ (thisContext->current)[0] = (((1) << (18)) | (CELL_GCM_NV4097_SET_TEXTURE_CONTROL1 + ((index)) * 32)); \
  (thisContext->current)[1] = (control1); \
  (thisContext->current) += 2;
 
 #define rglGcmSetUserClipPlaneControl(thisContext, plane0, plane1, plane2, plane3, plane4, plane5) \
- (thisContext->current)[0] = (((1) << (18)) | ((0x00001478))); \
+ (thisContext->current)[0] = (((1) << (18)) | CELL_GCM_NV4097_SET_USER_CLIP_PLANE_CONTROL); \
  (thisContext->current)[1] = ((plane0) | ((plane1) << 4) | ((plane2) << 8) | ((plane3) << 12) | ((plane4) << 16) | ((plane5) << 20)); \
  (thisContext->current) += 2;
 
 #define rglGcmSetInvalidateTextureCache(thisContext, value) \
- (thisContext->current)[0] = (((1) << (18)) | ((0x00001fd8))); \
+ (thisContext->current)[0] = (((1) << (18)) | CELL_GCM_NV4097_INVALIDATE_L2); \
  (thisContext->current)[1] = (value); \
  (thisContext->current) += 2;
 
@@ -165,15 +165,15 @@ static inline GLuint rglPlatformGetBitsPerPixel (GLenum internalFormat)
  s[1].f = scale[1]; \
  s[2].f = scale[2]; \
  s[3].f = scale[3]; \
- (thisContext->current)[0] = (((2) << (18)) | ((0x00000a00))); \
+ (thisContext->current)[0] = (((2) << (18)) | CELL_GCM_NV4097_SET_VIEWPORT_HORIZONTAL); \
  (thisContext->current)[1] = (((x)) | (((w)) << 16)); \
  (thisContext->current)[2] = (((y)) | (((h)) << 16)); \
  (thisContext->current) += 3; \
- (thisContext->current)[0] = (((2) << (18)) | ((0x00000394))); \
+ (thisContext->current)[0] = (((2) << (18)) | CELL_GCM_NV4097_SET_CLIP_MIN); \
  (thisContext->current)[1] = (d0.u); \
  (thisContext->current)[2] = (d1.u); \
  (thisContext->current) += 3; \
- (thisContext->current)[0] = (((8) << (18)) | ((0x00000a20))); \
+ (thisContext->current)[0] = (((8) << (18)) | CELL_GCM_NV4097_SET_VIEWPORT_OFFSET); \
  (thisContext->current)[1] = (o[0].u); \
  (thisContext->current)[2] = (o[1].u); \
  (thisContext->current)[3] = (o[2].u); \
@@ -183,7 +183,7 @@ static inline GLuint rglPlatformGetBitsPerPixel (GLenum internalFormat)
  (thisContext->current)[7] = (s[2].u); \
  (thisContext->current)[8] = (s[3].u); \
  (thisContext->current) += 9; \
- (thisContext->current)[0] = (((8) << (18)) | ((0x00000a20))); \
+ (thisContext->current)[0] = (((8) << (18)) | CELL_GCM_NV4097_SET_VIEWPORT_OFFSET); \
  (thisContext->current)[1] = (o[0].u); \
  (thisContext->current)[2] = (o[1].u); \
  (thisContext->current)[3] = (o[2].u); \
@@ -195,12 +195,12 @@ static inline GLuint rglPlatformGetBitsPerPixel (GLenum internalFormat)
  (thisContext->current) += 9;
 
 #define rglGcmSetDitherEnable(thisContext, enable) \
- (thisContext->current)[0] = (((1) << (18)) | ((0x00000300))); \
+ (thisContext->current)[0] = (((1) << (18)) | CELL_GCM_NV4097_SET_DITHER_ENABLE); \
  (thisContext->current)[1] = (enable); \
  (thisContext->current) += 2;
 
 #define rglGcmSetReferenceCommand(thisContext, ref) \
- (thisContext->current)[0] = (((1) << (18)) | ((0x00000050))); \
+ (thisContext->current)[0] = (((1) << (18)) | CELL_GCM_NV406E_SET_REFERENCE); \
  (thisContext->current)[1] = (ref); \
  (thisContext->current) += 2; 
 
@@ -210,7 +210,7 @@ static inline GLuint rglPlatformGetBitsPerPixel (GLenum internalFormat)
  (thisContext->current) += 2;
 
 #define rglGcmSetVertexAttribOutputMask(thisContext, mask) \
- (thisContext->current)[0] = (((1) << (18)) | ((0x00001ff4))); \
+ (thisContext->current)[0] = (((1) << (18)) | CELL_GCM_NV4097_SET_VERTEX_ATTRIB_OUTPUT_MASK); \
  (thisContext->current)[1] = (mask); \
  (thisContext->current) += 2;
 
@@ -220,7 +220,7 @@ static inline GLuint rglPlatformGetBitsPerPixel (GLenum internalFormat)
  thisContext->current += count;
 
 #define rglGcmSetAntiAliasingControl(thisContext, enable, alphaToCoverage, alphaToOne, sampleMask) \
- (thisContext->current)[0] = (((1) << (18)) | ((0x00001d7c))); \
+ (thisContext->current)[0] = (((1) << (18)) | CELL_GCM_NV4097_SET_ANTI_ALIASING_CONTROL); \
  (thisContext->current)[1] = ((enable) | ((alphaToCoverage) << 4) | ((alphaToOne) << 8) | ((sampleMask) << 16)); \
  (thisContext->current) += 2; 
 
@@ -240,20 +240,20 @@ static inline GLuint rglPlatformGetBitsPerPixel (GLenum internalFormat)
  fifo->lastSWReferenceFlushed = fifo->lastSWReferenceWritten;
 
 #define rglGcmSetSurface(thisContext, surface, origin, pixelCenter, log2Width, log2Height) \
- (thisContext->current)[0] = (((1) << (18)) | ((0x00000194))); \
- (thisContext->current)[1] = ((0xFEED0000)+surface->colorLocation[0]); \
+ (thisContext->current)[0] = (((1) << (18)) | CELL_GCM_NV4097_SET_CONTEXT_DMA_COLOR_A); \
+ (thisContext->current)[1] = (CELL_GCM_CONTEXT_DMA_MEMORY_FRAME_BUFFER + surface->colorLocation[0]); \
  (thisContext->current) += 2; \
- (thisContext->current)[0] = (((1) << (18)) | ((0x0000018c))); \
- (thisContext->current)[1] = ((0xFEED0000)+surface->colorLocation[1]); \
+ (thisContext->current)[0] = (((1) << (18)) | CELL_GCM_NV4097_SET_CONTEXT_DMA_COLOR_B); \
+ (thisContext->current)[1] = (CELL_GCM_CONTEXT_DMA_MEMORY_FRAME_BUFFER + surface->colorLocation[1]); \
  (thisContext->current) += 2; \
- (thisContext->current)[0] = (((2) << (18)) | ((0x000001b4))); \
- (thisContext->current)[1] = ((0xFEED0000)+surface->colorLocation[2]); \
- (thisContext->current)[2] = ((0xFEED0000)+surface->colorLocation[3]); \
+ (thisContext->current)[0] = (((2) << (18)) | CELL_GCM_NV4097_SET_CONTEXT_DMA_COLOR_C); \
+ (thisContext->current)[1] = (CELL_GCM_CONTEXT_DMA_MEMORY_FRAME_BUFFER + surface->colorLocation[2]); \
+ (thisContext->current)[2] = (CELL_GCM_CONTEXT_DMA_MEMORY_FRAME_BUFFER + surface->colorLocation[3]); \
  (thisContext->current) += 3; \
- (thisContext->current)[0] = (((1) << (18)) | ((0x00000198))); \
- (thisContext->current)[1] = ((0xFEED0000)+surface->depthLocation); \
+ (thisContext->current)[0] = (((1) << (18)) | CELL_GCM_NV4097_SET_CONTEXT_DMA_ZETA); \
+ (thisContext->current)[1] = (CELL_GCM_CONTEXT_DMA_MEMORY_FRAME_BUFFER + surface->depthLocation); \
  (thisContext->current) += 2; \
- (thisContext->current)[0] = (((6) << (18)) | ((0x00000208))); \
+ (thisContext->current)[0] = (((6) << (18)) | CELL_GCM_NV4097_SET_SURFACE_FORMAT); \
  (thisContext->current)[1] = ((surface->colorFormat) | ((surface->depthFormat) << 5) | ((surface->type) << 8) | ((surface->antialias) << 12) | ((log2Width) << 16) | ((log2Height) << 24)); \
  (thisContext->current)[2] = (surface->colorPitch[0]); \
  (thisContext->current)[3] = (surface->colorOffset[0]); \
@@ -261,26 +261,26 @@ static inline GLuint rglPlatformGetBitsPerPixel (GLenum internalFormat)
  (thisContext->current)[5] = (surface->colorOffset[1]); \
  (thisContext->current)[6] = (surface->colorPitch[1]); \
  (thisContext->current) += 7; \
- (thisContext->current)[0] = (((1) << (18)) | ((0x0000022c))); \
+ (thisContext->current)[0] = (((1) << (18)) | CELL_GCM_NV4097_SET_SURFACE_PITCH_Z); \
  (thisContext->current)[1] = (surface->depthPitch); \
  (thisContext->current) += 2; \
- (thisContext->current)[0] = (((4) << (18)) | ((0x00000280))); \
+ (thisContext->current)[0] = (((4) << (18)) | CELL_GCM_NV4097_SET_SURFACE_PITCH_C); \
  (thisContext->current)[1] = (surface->colorPitch[2]); \
  (thisContext->current)[2] = (surface->colorPitch[3]); \
  (thisContext->current)[3] = (surface->colorOffset[2]); \
  (thisContext->current)[4] = (surface->colorOffset[3]); \
  (thisContext->current) += 5; \
- (thisContext->current)[0] = (((1) << (18)) | ((0x00000220))); \
+ (thisContext->current)[0] = (((1) << (18)) | CELL_GCM_NV4097_SET_SURFACE_COLOR_TARGET); \
  (thisContext->current)[1] = ((surface->colorTarget)); \
  (thisContext->current) += 2; \
- (thisContext->current)[0] = (((1) << (18)) | ((0x000002b8))); \
+ (thisContext->current)[0] = (((1) << (18)) | CELL_GCM_NV4097_SET_WINDOW_OFFSET); \
  (thisContext->current)[1] = ((surface->x) | ((surface->y) << 16)); \
  (thisContext->current) += 2; \
- (thisContext->current)[0] = (((2) << (18)) | ((0x00000200))); \
+ (thisContext->current)[0] = (((2) << (18)) | CELL_GCM_NV4097_SET_SURFACE_CLIP_HORIZONTAL); \
  (thisContext->current)[1] = ((surface->x) | ((surface->width) << 16)); \
  (thisContext->current)[2] = ((surface->y) | ((surface->height) << 16));  \
  (thisContext->current) += 3; \
- (thisContext->current)[0] = (((1) << (18)) | ((0x00001d88))); \
+ (thisContext->current)[0] = (((1) << (18)) | CELL_GCM_NV4097_SET_SHADER_WINDOW); \
  (thisContext->current)[1] = ((surface->height - (((surface->height) & 0x1000) >> 12)) | ((origin) << 12) | ((pixelCenter) << 16)); \
  (thisContext->current) += 2;
 
@@ -301,7 +301,7 @@ static inline void rglGcmSetFragmentProgramLoad(struct CellGcmContextData *thisC
 
    inMask = conf->attributeInputMask;
 
-   (thisContext->current)[0] = (((1) << (18)) | ((0x00001ff4)));
+   (thisContext->current)[0] = (((1) << (18)) | CELL_GCM_NV4097_SET_VERTEX_ATTRIB_OUTPUT_MASK);
    (thisContext->current)[1] = (inMask);
    (thisContext->current) += 2;
 
@@ -315,7 +315,7 @@ static inline void rglGcmSetFragmentProgramLoad(struct CellGcmContextData *thisC
       if (texMask & 1)
       {
          uint32_t hwTexCtrl = (texMask2D & 1) | ((texMaskCentroid & 1) << 4);
-         (thisContext->current)[0] = (((1) << (18)) | ((0x00000b40) + (i) * 4));
+         (thisContext->current)[0] = (((1) << (18)) | (CELL_GCM_NV4097_SET_TEX_COORD_CONTROL + (i) * 4));
          (thisContext->current)[1] = (hwTexCtrl);
          (thisContext->current) += 2;
       }
@@ -331,7 +331,7 @@ static inline void rglGcmSetFragmentProgramLoad(struct CellGcmContextData *thisC
       registerCount = 2;
 
    shCtrl0 = conf->fragmentControl | (registerCount << 24);
-   (thisContext->current)[0] = (((1) << (18)) | ((0x00001d60)));
+   (thisContext->current)[0] = (((1) << (18)) | CELL_GCM_NV4097_SET_SHADER_CONTROL);
    (thisContext->current)[1] = (shCtrl0);
    (thisContext->current) += 2;
 }
@@ -349,16 +349,16 @@ static inline void rglGcmSetDrawArrays(struct CellGcmContextData *thisContext, u
    loop = count / (2047);
    rest = count % (2047);
 
-   (thisContext->current)[0] = (((3) << (18)) | ((0x00001714)) | (0x40000000));
+   (thisContext->current)[0] = (((3) << (18)) | CELL_GCM_NV4097_INVALIDATE_VERTEX_FILE | (0x40000000));
    (thisContext->current)[1] = 0;
    (thisContext->current)[2] = 0;
    (thisContext->current)[3] = 0; ; (thisContext->current) += 4;
 
-   (thisContext->current)[0] = (((1) << (18)) | ((0x00001808)));
+   (thisContext->current)[0] = (((1) << (18)) | CELL_GCM_NV4097_SET_BEGIN_END);
    (thisContext->current)[1] = ((mode));
    (thisContext->current) += 2;
    
-   (thisContext->current)[0] = (((1) << (18)) | ((0x00001814)));
+   (thisContext->current)[0] = (((1) << (18)) | CELL_GCM_NV4097_DRAW_ARRAYS);
    (thisContext->current)[1] = ((first) | ((lcount)<<24));
    (thisContext->current) += 2;
    first += lcount + 1;
@@ -367,7 +367,7 @@ static inline void rglGcmSetDrawArrays(struct CellGcmContextData *thisContext, u
 
    for(i=0;i<loop;i++)
    {
-      thisContext->current[0] = ((((2047)) << (18)) | ((0x00001814)) | (0x40000000));
+      thisContext->current[0] = ((((2047)) << (18)) | CELL_GCM_NV4097_DRAW_ARRAYS | (0x40000000));
       thisContext->current++;
 
       for(j=0;j<(2047);j++)
@@ -380,7 +380,7 @@ static inline void rglGcmSetDrawArrays(struct CellGcmContextData *thisContext, u
 
    if(rest)
    {
-      thisContext->current[0] = (((rest) << (18)) | ((0x00001814)) | (0x40000000));
+      thisContext->current[0] = (((rest) << (18)) | CELL_GCM_NV4097_DRAW_ARRAYS | (0x40000000));
       thisContext->current++;
 
       for(j=0;j<rest;j++)
@@ -391,7 +391,7 @@ static inline void rglGcmSetDrawArrays(struct CellGcmContextData *thisContext, u
       }
    }
 
-   (thisContext->current)[0] = (((1) << (18)) | ((0x00001808)));
+   (thisContext->current)[0] = (((1) << (18)) | CELL_GCM_NV4097_SET_BEGIN_END);
    (thisContext->current)[1] = (0);
    (thisContext->current) += 2;
 }
@@ -410,7 +410,7 @@ static inline void rglGcmSetVertexProgramLoad(struct CellGcmContextData *thisCon
    loop = instCount / 8;
    rest = (instCount % 8) * 4;
 
-   (thisContext->current)[0] = (((2) << (18)) | ((0x00001e9c)));
+   (thisContext->current)[0] = (((2) << (18)) | CELL_GCM_NV4097_SET_TRANSFORM_PROGRAM_LOAD);
    (thisContext->current)[1] = (instIndex);
    (thisContext->current)[2] = (instIndex);
    (thisContext->current) += 3;
@@ -419,7 +419,7 @@ static inline void rglGcmSetVertexProgramLoad(struct CellGcmContextData *thisCon
 
    for (i = 0; i < loop; i++)
    {
-      thisContext->current[0] = (((32) << (18)) | ((0x00000b80)));
+      thisContext->current[0] = (((32) << (18)) | CELL_GCM_NV4097_SET_TRANSFORM_PROGRAM);
 
       __builtin_memcpy(&thisContext->current[1], &rawData[0], sizeof(uint32_t)*16);
       __builtin_memcpy(&thisContext->current[17], &rawData[16], sizeof(uint32_t)*16);
@@ -430,18 +430,18 @@ static inline void rglGcmSetVertexProgramLoad(struct CellGcmContextData *thisCon
 
    if (rest > 0)
    {
-      thisContext->current[0] = (((rest) << (18)) | ((0x00000b80)));
+      thisContext->current[0] = (((rest) << (18)) | CELL_GCM_NV4097_SET_TRANSFORM_PROGRAM);
       for (j = 0; j < rest; j++)
          thisContext->current[j+1] = rawData[j];
       thisContext->current += (1 + rest);
    }
 
 
-   (thisContext->current)[0] = (((1) << (18)) | ((0x00001ff0)));
+   (thisContext->current)[0] = (((1) << (18)) | CELL_GCM_NV4097_SET_VERTEX_ATTRIB_INPUT_MASK);
    (thisContext->current)[1] = ((conf->attributeInputMask));
    (thisContext->current) += 2;
 
-   (thisContext->current)[0] = (((1) << (18)) | ((0x00001ef8)));
+   (thisContext->current)[0] = (((1) << (18)) | CELL_GCM_NV4097_SET_TRANSFORM_TIMEOUT);
 
    if (conf->registerCount <= 32)
       (thisContext->current)[1] = ((0xFFFF) | ((32) << 16));
@@ -523,16 +523,16 @@ static inline void rglGcmFifoGlViewport(void *data, GLclampf zNear, GLclampf zFa
 
 static inline void rglGcmSetTransferImage(struct CellGcmContextData *thisContext, uint8_t mode, uint32_t dstOffset, uint32_t dstPitch, uint32_t dstX, uint32_t dstY, uint32_t srcOffset, uint32_t srcPitch, uint32_t srcX, uint32_t srcY, uint32_t width, uint32_t height, uint32_t bytesPerPixel)
 {
-   (thisContext->current)[0] = (((1) << (18)) | ((0x00006188)));
-   (thisContext->current)[1] = 0xFEED0000; /* CELL_GCM_TRANSFER_LOCAL_TO_LOCAL */
+   (thisContext->current)[0] = (((1) << (18)) | CELL_GCM_NV3062_SET_CONTEXT_DMA_IMAGE_DESTIN);
+   (thisContext->current)[1] = CELL_GCM_CONTEXT_DMA_MEMORY_FRAME_BUFFER; /* CELL_GCM_TRANSFER_LOCAL_TO_LOCAL */
    (thisContext->current) += 2;
 
-   (thisContext->current)[0] = (((1) << (18)) | ((0x0000C184)));
-   (thisContext->current)[1] = 0xFEED0000; /* CELL_GCM_TRANSFER_LOCAL_TO_LOCAL */
+   (thisContext->current)[0] = (((1) << (18)) | CELL_GCM_NV3089_SET_CONTEXT_DMA_IMAGE);
+   (thisContext->current)[1] = CELL_GCM_CONTEXT_DMA_MEMORY_FRAME_BUFFER; /* CELL_GCM_TRANSFER_LOCAL_TO_LOCAL */
 
    (thisContext->current) += 2;
 
-   (thisContext->current)[0] = (((1) << (18)) | ((0x0000C198)));
+   (thisContext->current)[0] = (((1) << (18)) | CELL_GCM_NV3089_SET_CONTEXT_SURFACE);
    (thisContext->current)[1] = ((0x313371C3));
    (thisContext->current) += 2;
 
@@ -574,16 +574,16 @@ static inline void rglGcmSetTransferImage(struct CellGcmContextData *thisContext
          uint32_t srcBlockOffset = bytesPerPixel * (srcX + x-dstX) + srcPitch * (srcY + y-dstY);
          uint32_t safeDstBltWidth = (dstBltWidth < 16) ? 16 : (dstBltWidth + 1) & ~1;
 
-         (thisContext->current)[0] = (((1) << (18)) | ((0x0000630C)));
+         (thisContext->current)[0] = (((1) << (18)) | CELL_GCM_NV3062_SET_OFFSET_DESTIN);
          (thisContext->current)[1] = dstOffset + dstBlockOffset;
          (thisContext->current) += 2;
 
-         (thisContext->current)[0] = (((2) << (18)) | ((0x00006300)));
+         (thisContext->current)[0] = (((2) << (18)) | CELL_GCM_NV3062_SET_COLOR_FORMAT);
          (thisContext->current)[1] = (dstFormat);
          (thisContext->current)[2] = ((dstPitch) | ((dstPitch) << 16));
          (thisContext->current) += 3;
 
-         (thisContext->current)[0] = (((9) << (18)) | ((0x0000C2FC)));
+         (thisContext->current)[0] = (((9) << (18)) | CELL_GCM_NV3089_SET_COLOR_CONVERSION);
          (thisContext->current)[1] = (CELL_GCM_TRANSFER_CONVERSION_TRUNCATE);
          (thisContext->current)[2] = (srcFormat);
          (thisContext->current)[3] = (CELL_GCM_TRANSFER_OPERATION_SRCCOPY);
@@ -595,7 +595,7 @@ static inline void rglGcmSetTransferImage(struct CellGcmContextData *thisContext
          (thisContext->current)[9] = 1048576;
          (thisContext->current) += 10;
 
-         (thisContext->current)[0] = (((4) << (18)) | ((0x0000C400)));
+         (thisContext->current)[0] = (((4) << (18)) | CELL_GCM_NV3089_IMAGE_IN_SIZE);
          (thisContext->current)[1] = (((dstBltHeight) << 16) | (safeDstBltWidth));
          (thisContext->current)[2] = ((srcPitch) | ((CELL_GCM_TRANSFER_ORIGIN_CORNER) << 16) | ((CELL_GCM_TRANSFER_INTERPOLATOR_ZOH) << 24));
          (thisContext->current)[3] = (srcOffset + srcBlockOffset);
@@ -786,8 +786,8 @@ static inline void rglGcmTransferData
    GLuint srcOffset = gmmIdToOffset(srcId) + srcIdOffset;
 
    (thisContext->current)[0] = (((2) << (18)) | CELL_GCM_NV0039_SET_CONTEXT_DMA_BUFFER_IN);
-   (thisContext->current)[1] = 0xFEED0000; /* CELL_GCM_TRANSFER_LOCAL_TO_LOCAL */
-   (thisContext->current)[2] = 0xFEED0000; /* CELL_GCM_TRANSFER_LOCAL_TO_LOCAL */
+   (thisContext->current)[1] = CELL_GCM_CONTEXT_DMA_MEMORY_FRAME_BUFFER; /* CELL_GCM_TRANSFER_LOCAL_TO_LOCAL */
+   (thisContext->current)[2] = CELL_GCM_CONTEXT_DMA_MEMORY_FRAME_BUFFER; /* CELL_GCM_TRANSFER_LOCAL_TO_LOCAL */
    (thisContext->current) += 3;
 
    uint32_t colCount;

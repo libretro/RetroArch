@@ -1814,9 +1814,18 @@ GLAPI void APIENTRY glDrawArrays (GLenum mode, GLint first, GLsizei count)
                   // set 3 consts
                   {
                      GLfloat v2[12];
-                     v2[0] = value[0];v2[1] = value[3];v2[2] = value[6];v2[3] = 0;
-                     v2[4] = value[1];v2[5] = value[4];v2[6] = value[7];v2[7] = 0;
-                     v2[8] = value[2];v2[9] = value[5];v2[10] = value[8];v2[11] = 0;
+                     v2[0] = value[0];
+                     v2[1] = value[3];
+                     v2[2] = value[6];
+                     v2[3] = 0;
+                     v2[4] = value[1];
+                     v2[5] = value[4];
+                     v2[6] = value[7];
+                     v2[7] = 0;
+                     v2[8] = value[2];
+                     v2[9] = value[5];
+                     v2[10] = value[8];
+                     v2[11] = 0;
                      GCM_FUNC( cellGcmSetVertexProgramParameterBlock, parameterResource->resource, 3, v2 );
                   }
                   break;
