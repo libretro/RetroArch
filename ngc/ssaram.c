@@ -4,7 +4,6 @@
 /****************************************************************************
 * SSARAM
 ***************************************************************************/
-#ifndef HW_RVL
 #include <gccore.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -103,4 +102,3 @@ void ARAMFetch(char *dst, char *src, int len)
     AR_StartDMA(ARAM_READ, (u32) dst, (u32) src, len);
     while (AR_GetDMAStatus());
 }
-#endif
