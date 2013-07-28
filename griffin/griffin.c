@@ -448,9 +448,7 @@ REWIND
 FRONTEND
 ============================================================ */
 
-#if defined(RARCH_CONSOLE)
 #include "../frontend/frontend_context.c"
-#endif
 
 #if defined(__CELLOS_LV2__)
 #include "../frontend/platform/platform_ps3.c"

@@ -150,7 +150,9 @@ int main(int argc, char *argv[])
       frontend_ctx->init();
 
    rarch_main_clear_state();
+#ifndef __APPLE__
    rarch_get_environment(argc, argv);
+#endif
 
 #if !defined(RARCH_CONSOLE)
 #if defined(__APPLE__)
@@ -174,8 +176,10 @@ int main(int argc, char *argv[])
 #ifdef HAVE_MENU
    menu_init();
 
+#ifndef __APPLE__
    if (frontend_ctx && frontend_ctx->process_args)
       frontend_ctx->process_args(argc, argv);
+#endif
 
 #ifdef RARCH_CONSOLE
    g_extern.lifecycle_mode_state |= 1ULL << MODE_LOAD_GAME;

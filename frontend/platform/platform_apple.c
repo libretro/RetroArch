@@ -15,7 +15,9 @@
 
 #include <dispatch/dispatch.h>
 #include <pthread.h>
-#include "../apple/RetroArch/rarch_wrapper.h"
+#include "../../apple/RetroArch/rarch_wrapper.h"
+
+#include "../frontend_context.h"
 
 #include <stdint.h>
 #include "../../boolean.h"
