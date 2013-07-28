@@ -265,6 +265,14 @@ static void get_environment_settings(int argc, char *argv[])
    else
       gx_rom_path[0] = '\0';
 #endif
+
+#ifndef IS_SALAMANDER
+   rarch_make_dir(default_paths.port_dir, "port_dir");
+   rarch_make_dir(default_paths.system_dir, "system_dir");
+   rarch_make_dir(default_paths.savestate_dir, "savestate_dir");
+   rarch_make_dir(default_paths.sram_dir, "sram_dir");
+   rarch_make_dir(default_paths.input_presets_dir, "input_presets_dir");
+#endif
 }
 
 extern void __exception_setreload(int t);
@@ -308,20 +316,22 @@ static void system_init(void)
 #endif
 }
 
+static void system_exec(const char *path, bool should_load_game);
+
 static void system_exitspawn(void)
 {
 #if defined(IS_SALAMANDER)
-   rarch_console_exec(default_paths.libretro_path, gx_rom_path[0] != '\0' ? true : false);
+   system_exec(default_paths.libretro_path, gx_rom_path[0] != '\0' ? true : false);
 #elif defined(HW_RVL)
    bool should_load_game = false;
    if (g_extern.lifecycle_mode_state & (1ULL << MODE_EXITSPAWN_START_GAME))
       should_load_game = true;
 
-   rarch_console_exec(g_settings.libretro, should_load_game);
+   system_exec(g_settings.libretro, should_load_game);
    // direct loading failed (out of memory), try to jump to salamander then load the correct core
    char boot_dol[PATH_MAX];
    snprintf(boot_dol, sizeof(boot_dol), "%s/boot.dol", default_paths.core_dir);
-   rarch_console_exec(boot_dol, should_load_game);
+   system_exec(boot_dol, should_load_game);
 #endif
 }
 
@@ -444,11 +454,13 @@ static void dol_copy_argv_path(const char *dolpath, const char *argpath)
    argv->length = len;
    DCFlushRange(ARGS_ADDR, sizeof(struct __argv) + argv->length);
 }
+#endif
 
 // WARNING: after we move any data into EXECUTE_ADDR, we can no longer use any
 // heap memory and are restricted to the stack only
 static void system_exec(const char *path, bool should_load_game)
 {
+#ifdef HW_RVL
    char game_path[PATH_MAX];
 
    RARCH_LOG("Attempt to load executable: [%s] %d.\n", path, sizeof(game_path));
@@ -507,19 +519,17 @@ static void system_exec(const char *path, bool should_load_game)
    RARCH_LOG("jumping to %08x\n", (unsigned) BOOTER_ADDR);
    SYS_ResetSystem(SYS_SHUTDOWN,0,0);
    __lwp_thread_stopmultitasking((void (*)(void)) BOOTER_ADDR);
-}
 #endif
+}
 
 const frontend_ctx_driver_t frontend_ctx_gx = {
-   get_environment_settings,
-   system_init,
-   system_deinit,
-   system_exitspawn,
-   system_process_args,
-#ifdef HW_RVL
-   system_exec,
-#else
-   NULL,
-#endif
+   get_environment_settings,        /* get_environment_settings */
+   system_init,                     /* init */
+   system_deinit,                   /* deinit */
+   system_exitspawn,                /* exitspawn */
+   system_process_args,             /* process_args */
+   NULL,                            /* process_events */
+   system_exec,                     /* exec */
+   NULL,                            /* shutdown */
    "gx",
 };

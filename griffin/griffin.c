@@ -216,10 +216,8 @@ VIDEO DRIVER
 
 #if defined(GEKKO)
 #include "../gx/gx_video.c"
-#elif defined(SN_TARGET_PSP2)
-#include "../vita/vita_video.c"
-//#elif defined(PSP)
-//#include "../psp1/psp1_video.c"
+#elif defined(PSP)
+#include "../psp1/psp1_video.c"
 #elif defined(XENON)
 #include "../xenon/xenon360_video.c"
 #endif
@@ -462,6 +460,10 @@ FRONTEND
 #include "../frontend/platform/platform_xdk.c"
 #elif defined(PSP)
 #include "../frontend/platform/platform_psp.c"
+#elif defined(__QNX__)
+#include "../frontend/platform/platform_qnx.c"
+#elif defined(OSX) || defined(IOS)
+#include "../frontend/platform/platform_apple.c"
 #endif
 
 /*============================================================

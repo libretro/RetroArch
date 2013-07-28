@@ -559,21 +559,14 @@ static int select_file(void *data, uint64_t input)
                   driver.video_poke->set_texture_frame(driver.video_data, menu_texture->pixels,
                         true, menu_texture->width, menu_texture->height, 1.0f);
                break;
-         }
-
-         if (rgui->menu_type == LIBRETRO_CHOICE)
-         {
-            strlcpy(g_settings.libretro, path, sizeof(g_settings.libretro));
-            g_extern.lifecycle_mode_state |= (1ULL << MODE_EXIT);
-            g_extern.lifecycle_mode_state |= (1ULL << MODE_EXITSPAWN);
-            return -1;
+            case LIBRETRO_CHOICE:
+               strlcpy(g_settings.libretro, path, sizeof(g_settings.libretro));
+               g_extern.lifecycle_mode_state |= (1ULL << MODE_EXITSPAWN);
+               return -1;
          }
 
          pop_menu_stack = true;
       }
-
-      if (!ret)
-         msg_queue_push(g_extern.msg_queue, "INFO - You need to restart RetroArch.", 1, 180);
    }
    else if ((input & (1ULL << DEVICE_NAV_X)) || (input & (1ULL << DEVICE_NAV_MENU)))
       pop_menu_stack = true;
@@ -743,7 +736,7 @@ static bool osk_callback_enter_rsound(void *data)
    return false;
 
 do_exit:
-   g_extern.lifecycle_mode_state &= ~((1ULL << MODE_OSK_DRAW) | (1ULL << MODE_OSK_ENTRY_SUCCESS) |
+   g_extern.lifecycle_mode_state &= ~((1ULL << MODE_OSK_ENTRY_SUCCESS) |
          (1ULL << MODE_OSK_ENTRY_FAIL));
    return true;
 }
@@ -797,7 +790,7 @@ static bool osk_callback_enter_filename(void *data)
 
    return false;
 do_exit:
-   g_extern.lifecycle_mode_state &= ~((1ULL << MODE_OSK_DRAW) | (1ULL << MODE_OSK_ENTRY_SUCCESS) |
+   g_extern.lifecycle_mode_state &= ~((1ULL << MODE_OSK_ENTRY_SUCCESS) |
          (1ULL << MODE_OSK_ENTRY_FAIL));
    return true;
 }
@@ -847,7 +840,6 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
             {
                g_extern.lifecycle_mode_state &= ~(1ULL << MODE_VIDEO_PAL_ENABLE);
                g_extern.lifecycle_mode_state &= ~(1ULL << MODE_VIDEO_PAL_TEMPORAL_ENABLE);
-               g_extern.lifecycle_mode_state &= ~(1ULL << MODE_VIDEO_PAL_VSYNC_BLOCK);
             }
 
 
@@ -863,12 +855,10 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
                if (g_extern.lifecycle_mode_state & (1ULL << MODE_VIDEO_PAL_TEMPORAL_ENABLE))
                {
                   g_extern.lifecycle_mode_state &= ~(1ULL << MODE_VIDEO_PAL_TEMPORAL_ENABLE);
-                  g_extern.lifecycle_mode_state &= ~(1ULL << MODE_VIDEO_PAL_VSYNC_BLOCK);
                }
                else
                {
                   g_extern.lifecycle_mode_state |= (1ULL << MODE_VIDEO_PAL_TEMPORAL_ENABLE);
-                  g_extern.lifecycle_mode_state |= (1ULL << MODE_VIDEO_PAL_VSYNC_BLOCK);
                }
 
                driver.video->restart();
@@ -881,7 +871,6 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
             if (g_extern.lifecycle_mode_state & (1ULL << MODE_VIDEO_PAL_ENABLE))
             {
                g_extern.lifecycle_mode_state &= ~(1ULL << MODE_VIDEO_PAL_TEMPORAL_ENABLE);
-               g_extern.lifecycle_mode_state &= ~(1ULL << MODE_VIDEO_PAL_VSYNC_BLOCK);
 
                driver.video->restart();
                rgui_init_textures();
@@ -1455,7 +1444,6 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
          {
             g_extern.lifecycle_mode_state &= ~(1ULL << MODE_GAME);
             g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU_INGAME_EXIT);
-            g_extern.lifecycle_mode_state |= (1ULL << MODE_EXIT);
             g_extern.lifecycle_mode_state |= (1ULL << MODE_EXITSPAWN);
             g_extern.lifecycle_mode_state |= (1ULL << MODE_EXITSPAWN_MULTIMAN);
             return -1;
@@ -1466,7 +1454,6 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
          if (input & (1ULL << DEVICE_NAV_B))
          {
             g_extern.lifecycle_mode_state &= ~(1ULL << MODE_GAME);
-            g_extern.lifecycle_mode_state |= (1ULL << MODE_EXIT);
             g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU_INGAME_EXIT);
             return -1;
          }
@@ -2898,10 +2885,7 @@ int rgui_input_postprocess(void *data, uint64_t old_state)
    device_ptr->ctx_driver->check_window(&quit, &resize, &width, &height, frame_count);
 
    if (quit)
-   {
-      g_extern.lifecycle_mode_state |= (1ULL << MODE_EXIT);
       ret = -1;
-   }
 
    if (g_extern.lifecycle_mode_state & (1ULL << MODE_MENU_INGAME_EXIT))
    {

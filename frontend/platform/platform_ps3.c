@@ -110,13 +110,9 @@ static void salamander_init_settings(void)
          }
 
          if (!config_file_exists || !strcmp(default_paths.libretro_path, ""))
-         {
             find_and_set_first_file();
-         }
          else
-         {
             RARCH_LOG("Start [%s] found in retroarch.cfg.\n", default_paths.libretro_path);
-         }
 
          if (!config_file_exists)
          {
@@ -152,7 +148,6 @@ static void callback_sysutil_exit(uint64_t status, uint64_t param, void *userdat
       case CELL_SYSUTIL_REQUEST_EXITGAME:
          gl->quitting = true;
          g_extern.lifecycle_mode_state &= ~((1ULL << MODE_MENU) | (1ULL << MODE_GAME));
-         g_extern.lifecycle_mode_state |= (1ULL << MODE_EXIT);
          break;
 #ifdef HAVE_OSKUTIL
       case CELL_SYSUTIL_OSKDIALOG_LOADED:
@@ -281,6 +276,14 @@ static void get_environment_settings(int argc, char *argv[])
       snprintf(g_extern.config_path, sizeof(g_extern.config_path), "%s/retroarch.cfg", default_paths.port_dir);
 #endif
    }
+
+#ifndef IS_SALAMANDER
+   rarch_make_dir(default_paths.port_dir, "port_dir");
+   rarch_make_dir(default_paths.system_dir, "system_dir");
+   rarch_make_dir(default_paths.savestate_dir, "savestate_dir");
+   rarch_make_dir(default_paths.sram_dir, "sram_dir");
+   rarch_make_dir(default_paths.input_presets_dir, "input_presets_dir");
+#endif
 }
 
 static void system_init(void)
@@ -437,7 +440,8 @@ static void system_exec(const char *path, bool should_load_game)
    RARCH_LOG("Attempt to load executable: [%s].\n", path);
    char spawn_data[256];
    char game_path[256];
-   (void)game_path;
+   game_path[0] = '\0';
+
    for(unsigned int i = 0; i < sizeof(spawn_data); ++i)
       spawn_data[i] = i & 0xff;
 
@@ -469,11 +473,13 @@ static void system_exec(const char *path, bool should_load_game)
 }
 
 const frontend_ctx_driver_t frontend_ctx_ps3 = {
-   get_environment_settings,
-   system_init,
-   system_deinit,
-   system_exitspawn,
-   system_process_args,
-   system_exec,
+   get_environment_settings,     /* get_environment_settings */
+   system_init,                  /* init */
+   system_deinit,                /* deinit */
+   system_exitspawn,             /* exitspawn */
+   system_process_args,          /* process_args */
+   NULL,                         /* process_events */
+   system_exec,                  /* exec */
+   NULL,                         /* shutdown */
    "ps3",
 };

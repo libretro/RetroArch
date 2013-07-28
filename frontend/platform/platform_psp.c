@@ -67,6 +67,14 @@ static void get_environment_settings(int argc, char *argv[])
    snprintf(default_paths.input_presets_dir, sizeof(default_paths.input_presets_dir), "%s/presets", default_paths.core_dir);
    snprintf(default_paths.border_dir, sizeof(default_paths.border_dir), "%s/borders", default_paths.core_dir);
    snprintf(g_extern.config_path, sizeof(g_extern.config_path), "%s/retroarch.cfg", default_paths.port_dir);
+
+#ifndef IS_SALAMANDER
+   rarch_make_dir(default_paths.port_dir, "port_dir");
+   rarch_make_dir(default_paths.system_dir, "system_dir");
+   rarch_make_dir(default_paths.savestate_dir, "savestate_dir");
+   rarch_make_dir(default_paths.sram_dir, "sram_dir");
+   rarch_make_dir(default_paths.input_presets_dir, "input_presets_dir");
+#endif
 }
 
 int callback_thread(SceSize args, void *argp)
@@ -97,28 +105,19 @@ static void system_init(void)
    setup_callback();
 }
 
-static int system_process_args(int argc, char *argv[])
-{
-   (void)argc;
-   (void)argv;
-   return 0;
-}
-
 static void system_deinit(void)
 {
    sceKernelExitGame();
 }
 
-static void system_exitspawn(void)
-{
-}
-
-const frontend_ctx_driver_t frontend_ctx_xdk = {
-   get_environment_settings,
-   system_init,
-   system_deinit,
-   system_exitspawn,
-   system_process_args,
-   NULL,
+const frontend_ctx_driver_t frontend_ctx_psp = {
+   get_environment_settings,     /* get_environment_settings */
+   system_init,                  /* init */
+   system_deinit,                /* deinit */
+   NULL,                         /* exitspawn */
+   NULL,                         /* process_args */
+   NULL,                         /* process_events */
+   NULL,                         /* exec */
+   NULL,                         /* shutdown */
    "psp",
 };
