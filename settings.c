@@ -102,6 +102,8 @@ const char *config_get_default_video(void)
          return "vg";
       case VIDEO_NULL:
          return "null";
+      case VIDEO_OMAP:
+         return "omap";
       default:
          return NULL;
    }

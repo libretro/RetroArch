@@ -1585,20 +1585,21 @@ static void android_input_poll(void *data)
          // Read all pending events.
          while (AInputQueue_hasEvents(android_app->inputQueue))
          {
-            if (AInputQueue_getEvent(android_app->inputQueue, &event) >= 0)
+            int processed = 0;
+            while (AInputQueue_getEvent(android_app->inputQueue, &event) >= 0)
             {
                bool long_msg_enable = false;
                int32_t handled = 1;
                int action = 0;
                char msg[128];
                int source, id, keycode, type_event, state_id;
-               //int predispatched;
+               int predispatched;
 
                msg[0] = 0;
-               //predispatched =AInputQueue_preDispatchEvent(android_app->inputQueue,event);
+               predispatched =AInputQueue_preDispatchEvent(android_app->inputQueue,event);
 
-               //if (predispatched)
-               //continue;
+               if (predispatched)
+                  continue;
 
                source = AInputEvent_getSource(event);
                id = AInputEvent_getDeviceId(event);
@@ -1623,7 +1624,9 @@ static void android_input_poll(void *data)
                   state_id = pads_connected;
                   state_device_ids[pads_connected++] = id;
 
-                  input_autodetect_setup(android_app, msg, sizeof(msg), state_id, id, source);
+                  if (g_settings.input.autodetect_enable)
+                     input_autodetect_setup(android_app, msg, sizeof(msg), state_id, id, source);
+
                   long_msg_enable = true;
                }
 
@@ -1745,7 +1748,10 @@ static void android_input_poll(void *data)
                   msg_queue_push(g_extern.msg_queue, msg, 0, long_msg_enable ? 180 : 30);
 
                AInputQueue_finishEvent(android_app->inputQueue, event, handled);
+               processed = 1;
             }
+            if (processed == 0)
+               RARCH_WARN("Failure reading next input event: %s\n", strerror(errno));
          }
       }
       else if (ident == LOOPER_ID_MAIN)

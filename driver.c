@@ -123,6 +123,9 @@ static const video_driver_t *video_drivers[] = {
 #ifdef HAVE_NULLVIDEO
    &video_null,
 #endif
+#ifdef HAVE_OMAP
+   &video_omap,
+#endif
 };
 
 static const input_driver_t *input_drivers[] = {

@@ -439,8 +439,10 @@ static void system_exec(const char *path, bool should_load_game)
 
    RARCH_LOG("Attempt to load executable: [%s].\n", path);
    char spawn_data[256];
+#ifndef IS_SALAMANDER
    char game_path[256];
    game_path[0] = '\0';
+#endif
 
    for(unsigned int i = 0; i < sizeof(spawn_data); ++i)
       spawn_data[i] = i & 0xff;

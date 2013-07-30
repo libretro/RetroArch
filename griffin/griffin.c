@@ -111,6 +111,7 @@ VIDEO CONTEXT
 #include "../gfx/context/apple_gl_ctx.c"
 #endif
 
+
 #if defined(HAVE_OPENGL)
 
 #if defined(HAVE_KMS)
@@ -184,6 +185,11 @@ VIDEO DRIVER
 #ifdef HAVE_VG
 #include "../gfx/vg.c"
 #include "../gfx/math/matrix_3x3.c"
+#endif
+
+#ifdef HAVE_OMAP
+#include "../gfx/omap_gfx.c"
+#include "../gfx/fbdev.c"
 #endif
 
 #ifdef HAVE_DYLIB
@@ -294,7 +300,7 @@ INPUT
 #include "../blackberry-qnx/qnx_input.c"
 #endif
 
-#if defined(PANDORA) 
+#if defined(__linux__) && !defined(ANDROID) 
 #include "../input/linuxraw_input.c"
 #include "../input/linuxraw_joypad.c"
 #endif
@@ -448,9 +454,7 @@ REWIND
 FRONTEND
 ============================================================ */
 
-#if defined(RARCH_CONSOLE)
 #include "../frontend/frontend_context.c"
-#endif
 
 #if defined(__CELLOS_LV2__)
 #include "../frontend/platform/platform_ps3.c"

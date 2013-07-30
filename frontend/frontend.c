@@ -82,7 +82,6 @@ void rarch_make_dir(const char *x, const char *name)
       }
    }
 }
-
 #endif
 
 static void rarch_get_environment(int argc, char *argv[])
@@ -140,10 +139,10 @@ static void rarch_get_environment(int argc, char *argv[])
 #endif
 }
 
-#if defined(__APPLE__)
+#if defined(IOS) || defined(OSX)
 void* rarch_main(void* args)
 #else
-int rarch_main(int argc, char *argv[])
+int main(int argc, char *argv[])
 #endif
 {
    frontend_ctx = (frontend_ctx_driver_t*)frontend_ctx_init_first();
@@ -152,7 +151,9 @@ int rarch_main(int argc, char *argv[])
       frontend_ctx->init();
 
    rarch_main_clear_state();
+#ifndef __APPLE__
    rarch_get_environment(argc, argv);
+#endif
 
 #if !defined(RARCH_CONSOLE)
 #if defined(__APPLE__)
@@ -176,8 +177,10 @@ int rarch_main(int argc, char *argv[])
 #ifdef HAVE_MENU
    menu_init();
 
+#ifndef __APPLE__
    if (frontend_ctx && frontend_ctx->process_args)
       frontend_ctx->process_args(argc, argv);
+#endif
 
 #ifdef RARCH_CONSOLE
    g_extern.lifecycle_mode_state |= 1ULL << MODE_LOAD_GAME;
@@ -278,9 +281,6 @@ int rarch_main(int argc, char *argv[])
    config_save_keybinds(g_extern.input_config_path);
 #endif
 
-   if (g_extern.main_is_init)
-      rarch_main_deinit();
-
 #ifdef RARCH_CONSOLE
    global_uninit_drivers();
 #endif
@@ -291,9 +291,9 @@ int rarch_main(int argc, char *argv[])
    if ((init_ret = rarch_main_init(argc, argv))) return init_ret;
 
    while ((g_extern.is_paused && !g_extern.is_oneshot) ? rarch_main_idle_iterate() : rarch_main_iterate());
-   rarch_main_deinit();
 #endif
 
+   rarch_main_deinit();
    rarch_deinit_msg_queue();
 
 #ifdef PERF_TEST
@@ -322,10 +322,3 @@ int rarch_main(int argc, char *argv[])
 
    return 0;
 }
-
-#ifndef __APPLE__
-int main(int argc, char *argv[])
-{
-   return rarch_main(argc, argv);
-}
-#endif
