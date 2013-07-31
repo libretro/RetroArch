@@ -67,7 +67,7 @@ end:
    (*vm)->DetachCurrentThread(vm);
 }
 
-void input_autodetect_setup (void *data, char *msg, size_t sizeof_msg, unsigned port, unsigned id, int source)
+void input_autodetect_setup(void *data, char *msg, size_t sizeof_msg, unsigned port, unsigned id, int source, bool *primary)
 {
    struct android_app *android_app = (struct android_app*)data;
  
@@ -219,6 +219,12 @@ void input_autodetect_setup (void *data, char *msg, size_t sizeof_msg, unsigned 
       device = DEVICE_DEFENDER_GAME_RACER_CLASSIC;
    else if (strstr(name_buf, "HOLTEK JC - U912F vibration game"))
       device = DEVICE_HOLTEK_JC_U912F;
+   else if (strstr(name_buf, "NVIDIA Controller"))
+   {
+      device = DEVICE_NVIDIA_SHIELD;
+      port = 0; // Shield is always player 1.
+      *primary = true;
+   }
 
    if (strstr(current_ime, "net.obsidianx.android.mogaime"))
    {
