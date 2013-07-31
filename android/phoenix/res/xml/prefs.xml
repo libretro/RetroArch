@@ -124,21 +124,21 @@
                     android:targetPackage="org.retroarch" />
             </Preference>
         </PreferenceCategory>
-        <PreferenceCategory android:title="Shaders (1st pass)" >
+        <PreferenceCategory android:title="Shaders" >
             <CheckBoxPreference
                 android:defaultValue="true"
                 android:key="video_smooth"
                 android:summary="Applies Bilinear filtering, smooths out edges (settings still apply even if no shader is selected)."
                 android:title="Bilinear filter" />
             <CheckBoxPreference
-                android:summary="Enable first pass shader (WARNING: recommended system requirements for these shaders is a Tegra 4/Exynos5 class GPU and/or higher)."
+                android:summary="Enable first pass shader (WARNING: recommended system requirements for these shaders is a Tegra 4 / Exynos 5 class GPU and/or higher)."
                 android:defaultValue="false"
                 android:key="video_shader_enable"
                 android:title="Enable" />
 
             <Preference
-                android:summary="Sets GLES2 style XML shader."
-                android:title="XML shader"
+                android:summary="Sets GLES2 style shader."
+                android:title="GLSL shader"
                 android:dependency="video_shader_enable" >
                 <intent
                     android:targetClass="org.retroarch.browser.ShaderActivity"
