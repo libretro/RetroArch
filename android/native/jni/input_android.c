@@ -1827,9 +1827,9 @@ static int16_t android_input_state(void *data, const struct retro_keybind **bind
       case RETRO_DEVICE_JOYPAD:
          return ((state[port] & binds[port][id].joykey) && (port < pads_connected));
       case RETRO_DEVICE_ANALOG:
-         if (port < pads_connected)
+         if (port >= pads_connected)
             return 0;
-         switch ((index << 1) || id)
+         switch ((index << 1) | id)
          {
             case (RETRO_DEVICE_INDEX_ANALOG_LEFT << 1) | RETRO_DEVICE_ID_ANALOG_X:
                return analog_state[port].lx;
