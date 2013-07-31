@@ -834,7 +834,7 @@ bool menu_iterate(void)
    // Throttle in case VSync is broken (avoid 1000+ FPS RGUI).
    time = rarch_get_time_usec();
    delta = (time - rgui->last_time) / 1000;
-   target_msec = 1000 / g_settings.video.refresh_rate;
+   target_msec = 750 / g_settings.video.refresh_rate; // Try to sleep less, so we can hopefully rely on FPS logger.
    sleep_msec = target_msec - delta;
    if (sleep_msec > 0)
       rarch_sleep(sleep_msec);
