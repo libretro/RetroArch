@@ -131,24 +131,24 @@ public class RetroArch extends Activity implements
 		return buf;
 	}
 	
-	private void extractAssets(AssetManager manager, String cacheDir, String relativePath, int level) throws IOException {
+	private void extractAssets(AssetManager manager, String dataDir, String relativePath, int level) throws IOException {
 		final String[] paths = manager.list(relativePath);
 		if (paths != null && paths.length > 0) { // Directory
 			//Log.d(TAG, "Extracting assets directory: " + relativePath);
 			for (final String path : paths)
-				extractAssets(manager, cacheDir, relativePath + (level > 0 ? File.separator : "") + path, level + 1);	
+				extractAssets(manager, dataDir, relativePath + (level > 0 ? File.separator : "") + path, level + 1);	
 		} else { // File, extract.
 			//Log.d(TAG, "Extracting assets file: " + relativePath);
 			
 			String parentPath = new File(relativePath).getParent();
 			if (parentPath != null) {
-				File parentFile = new File(cacheDir, parentPath);
+				File parentFile = new File(dataDir, parentPath);
 				parentFile.mkdirs(); // Doesn't throw.
 			}
 			
 			byte[] asset = loadAsset(relativePath);
 			BufferedOutputStream writer = new BufferedOutputStream(
-					new FileOutputStream(new File(cacheDir, relativePath)));
+					new FileOutputStream(new File(dataDir, relativePath)));
 
 			writer.write(asset, 0, asset.length);
 			writer.flush();
@@ -166,8 +166,8 @@ public class RetroArch extends Activity implements
 		
 		try {
 			AssetManager assets = getAssets();
-			String cacheDir = getCacheDir().getAbsolutePath();
-			File cacheVersion = new File(cacheDir, ".cacheversion");
+			String dataDir = getDataDir();
+			File cacheVersion = new File(dataDir, ".cacheversion");
 			if (cacheVersion != null && cacheVersion.isFile() && cacheVersion.canRead() && cacheVersion.canWrite())
 			{
 				DataInputStream cacheStream = new DataInputStream(new FileInputStream(cacheVersion));
@@ -188,14 +188,14 @@ public class RetroArch extends Activity implements
 			//extractAssets(assets, cacheDir, "", 0);
 			Log.i("ASSETS", "Extracting shader assets now ...");
 			try {
-				extractAssets(assets, cacheDir, "Shaders", 1);
+				extractAssets(assets, dataDir, "Shaders", 1);
 			} catch (IOException e) {
 				Log.i("ASSETS", "Failed to extract shaders ...");
 			}
 			
 			Log.i("ASSETS", "Extracting overlay assets now ...");
 			try {
-				extractAssets(assets, cacheDir, "Overlays", 1);
+				extractAssets(assets, dataDir, "Overlays", 1);
 			} catch (IOException e) {
 				Log.i("ASSETS", "Failed to extract overlays ...");
 			}
@@ -326,6 +326,10 @@ public class RetroArch extends Activity implements
 		startActivityForResult(myIntent, ACTIVITY_LOAD_ROM);
 	}
 	
+	private String getDataDir() {
+		return getApplicationInfo().dataDir;
+	}
+	
 	private String getDefaultConfigPath() {
 		String internal = System.getenv("INTERNAL_STORAGE");
 		String external = System.getenv("EXTERNAL_STORAGE");
@@ -348,8 +352,8 @@ public class RetroArch extends Activity implements
 			return internal + File.separator + "retroarch.cfg";
 		else if (external != null && new File(internal + File.separator + "retroarch.cfg").canWrite())
 			return external + File.separator + "retroarch.cfg";
-		else if (getCacheDir() != null && getCacheDir().getAbsolutePath() != null)
-			return getCacheDir().getAbsolutePath() + File.separator + "retroarch.cfg";
+		else if (getDataDir() != null)
+			return getDataDir() + File.separator + "retroarch.cfg";
 		else // emergency fallback, all else failed
 			return "/mnt/sd/retroarch.cfg";
 	}
@@ -420,7 +424,7 @@ public class RetroArch extends Activity implements
 
 		boolean useOverlay = prefs.getBoolean("input_overlay_enable", true);
 		if (useOverlay) {
-			String overlayPath = prefs.getString("input_overlay", getCacheDir() + "/Overlays/snes-landscape.cfg");
+			String overlayPath = prefs.getString("input_overlay", getDataDir() + "/Overlays/snes-landscape.cfg");
 			config.setString("input_overlay", overlayPath);
 			config.setDouble("input_overlay_opacity", prefs.getFloat("input_overlay_opacity", 1.0f));
 		} else {
