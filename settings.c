@@ -304,7 +304,7 @@ void config_set_defaults(void)
 #elif defined(IOS)
    strlcpy(g_extern.overlay_dir, "/Applications/RetroArch.app/overlays/", sizeof(g_extern.overlay_dir));
 #elif defined(ANDROID)
-   strlcpy(g_extern.overlay_dir, "/data/data/org.retroarch/cache/Overlays/", sizeof(g_extern.overlay_dir));
+   strlcpy(g_extern.overlay_dir, "/data/data/org.retroarch/Overlays/", sizeof(g_extern.overlay_dir));
 #endif
 #endif
 
@@ -314,7 +314,7 @@ void config_set_defaults(void)
 #elif defined(IOS)
    strlcpy(g_settings.video.shader_dir, "/Applications/RetroArch.app/shaders_glsl/", sizeof(g_settings.video.shader_dir));
 #elif defined(ANDROID)
-   strlcpy(g_settings.video.shader_dir, "/data/data/org.retroarch/cache/Shaders/", sizeof(g_settings.video.shader_dir));
+   strlcpy(g_settings.video.shader_dir, "/data/data/org.retroarch/Shaders/", sizeof(g_settings.video.shader_dir));
 #endif
 #endif
 
