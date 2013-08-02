@@ -292,6 +292,38 @@ public class RetroArch extends Activity implements
 		}
 	}
 	
+	boolean detectDevice(boolean show_dialog)
+	{
+		Log.i("Device MODEL", android.os.Build.MODEL);
+		if (android.os.Build.MODEL.equals("SHIELD"))
+		{
+			AlertDialog.Builder alert = new AlertDialog.Builder(this)
+			.setTitle("NVidia Shield detected")
+			.setMessage("Would you like to set up the ideal configuration options for your device?")
+			.setPositiveButton("Yes", new DialogInterface.OnClickListener() {
+				@Override
+				public void onClick(DialogInterface dialog, int which) {
+					SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getBaseContext());
+					prefs.edit().putBoolean("video_threaded", true).commit();
+					prefs.edit().putBoolean("input_autodetect_enable", true).commit();
+					prefs.edit().putBoolean("input_overlay_enable", false).commit();
+					prefs.edit().putFloat("refresh_rate", Float.parseFloat("59.6")).commit();
+				}
+			})
+			.setNegativeButton("No", null);
+			alert.show();
+			return true;
+		}
+		
+		if (show_dialog) {
+		Toast.makeText(this,
+				"Device either not detected in list or doesn't have any optimal settings in our database.",
+				Toast.LENGTH_SHORT).show();
+		}
+		
+		return false;
+	}
+	
 	@Override
 	protected void onStart() {
 		super.onStart();
@@ -300,6 +332,9 @@ public class RetroArch extends Activity implements
 		
 		if (!prefs.getBoolean("first_time_refreshrate_calculate", false)) {
 			prefs.edit().putBoolean("first_time_refreshrate_calculate", true).commit();
+			
+			if (!detectDevice(false))
+			{
 			AlertDialog.Builder alert = new AlertDialog.Builder(this)
 				.setTitle("Calculate Refresh Rate")
 				.setMessage("It is highly recommended you run the refresh rate calibration test before you use RetroArch. Do you want to run it now?\n\nIf you choose No, you can run it at any time in the video preferences.\n\nIf you get performance problems even after calibration, please try threaded video driver in video preferences.")
@@ -312,6 +347,7 @@ public class RetroArch extends Activity implements
 				})
 				.setNegativeButton("No", null);
 			alert.show();
+			}
 		}
 	}
 
@@ -569,6 +605,9 @@ public class RetroArch extends Activity implements
 		case R.id.overlay_guide:
 			Intent mguide = new Intent(Intent.ACTION_VIEW, Uri.parse("http://www.libretro.org/documents/overlay.pdf"));
 			startActivity(mguide);
+			return true;
+		case R.id.optimal_settings_device:
+			detectDevice(true);
 			return true;
 		default:
 			return false;

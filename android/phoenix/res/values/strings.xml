@@ -18,5 +18,6 @@
     <string name="report_ime">Report IME</string>
     <string name="report_refreshrate">Report Refresh Rate</string>
     <string name="key_bind_detect">Detect</string>
+    <string name="optimal_settings_device">Optimal device settings</string>
 
 </resources>
