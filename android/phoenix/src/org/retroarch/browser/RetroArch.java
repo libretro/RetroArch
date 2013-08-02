@@ -303,11 +303,17 @@ public class RetroArch extends Activity implements
 			.setPositiveButton("Yes", new DialogInterface.OnClickListener() {
 				@Override
 				public void onClick(DialogInterface dialog, int which) {
-					SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getBaseContext());
-					prefs.edit().putBoolean("video_threaded", true).commit();
-					prefs.edit().putBoolean("input_autodetect_enable", true).commit();
-					prefs.edit().putBoolean("input_overlay_enable", false).commit();
-					prefs.edit().putFloat("refresh_rate", Float.parseFloat("59.6")).commit();
+					config.setBoolean("video_threaded", true);
+					config.setBoolean("input_autodetect_enable", true);
+					config.setBoolean("input_overlay_enable", false);
+				    config.setDouble("video_refresh_rate", 59.6);
+					
+					String confPath = getDefaultConfigPath();
+					try {
+						config.write(new File(confPath));
+					} catch (IOException e) {
+						Log.e(TAG, "Failed to save config file to: " + confPath);
+					}
 				}
 			})
 			.setNegativeButton("No", null);
