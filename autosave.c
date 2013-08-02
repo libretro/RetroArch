@@ -77,7 +77,7 @@ static void autosave_thread(void *data)
 
       slock_lock(save->cond_lock);
       if (!save->quit)
-         scond_wait_timeout(save->cond, save->cond_lock, save->interval * 1000);
+         scond_wait_timeout(save->cond, save->cond_lock, save->interval * 1000000LL);
       slock_unlock(save->cond_lock);
    }
 }

@@ -17,6 +17,7 @@
 #define THREAD_H__
 
 #include "boolean.h"
+#include <stdint.h>
 
 // Implements the bare minimum needed for RetroArch. :)
 
@@ -43,7 +44,7 @@ void scond_free(scond_t *cond);
 
 void scond_wait(scond_t *cond, slock_t *lock);
 #ifndef RARCH_CONSOLE
-bool scond_wait_timeout(scond_t *cond, slock_t *lock, unsigned timeout_ms);
+bool scond_wait_timeout(scond_t *cond, slock_t *lock, int64_t timeout_us);
 #endif
 void scond_signal(scond_t *cond);
 

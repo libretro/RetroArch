@@ -30,7 +30,6 @@ enum thread_cmd
    CMD_ALIVE, // Blocking alive check. Used when paused.
    CMD_SET_ROTATION,
    CMD_READ_VIEWPORT,
-   CMD_SET_NONBLOCK,
 
 #ifdef HAVE_OVERLAY
    CMD_OVERLAY_ENABLE,
@@ -88,6 +87,12 @@ typedef struct thread_video
 
    bool alive;
    bool focus;
+   bool nonblock;
+
+   rarch_time_t last_time;
+   rarch_time_t target_frame_time;
+   unsigned hit_count;
+   unsigned miss_count;
 
    enum thread_cmd send_cmd;
    enum thread_cmd reply_cmd;
@@ -190,11 +195,6 @@ static void thread_loop(void *data)
             thr->driver_data = NULL;
             thread_reply(thr, CMD_FREE);
             return;
-
-         case CMD_SET_NONBLOCK:
-            thr->driver->set_nonblock_state(thr->driver_data, thr->cmd_data.b);
-            thread_reply(thr, CMD_SET_NONBLOCK);
-            break;
 
          case CMD_SET_ROTATION:
             thr->driver->set_rotation(thr->driver_data, thr->cmd_data.i);
@@ -397,6 +397,24 @@ static bool thread_frame(void *data, const void *frame_,
    uint8_t *dst = thr->frame.buffer;
 
    slock_lock(thr->lock);
+
+   if (!thr->nonblock)
+   {
+      rarch_time_t target = thr->last_time + thr->target_frame_time;
+      // Ideally, use absolute time, but that is only a good idea on POSIX.
+      while (thr->frame.updated)
+      {
+         rarch_time_t current = rarch_get_time_usec();
+         rarch_time_t delta = target - current;
+
+         if (delta <= 0)
+            break;
+
+         if (!scond_wait_timeout(thr->cond_cmd, thr->lock, delta))
+            break;
+      }
+   }
+
    // Drop frame if updated flag is still set, as thread is still working on last frame.
    if (!thr->frame.updated)
    {
@@ -418,9 +436,6 @@ static bool thread_frame(void *data, const void *frame_,
 
       scond_signal(thr->cond_thread);
 
-      // If we are going to render menu,
-      // we'll want to block to avoid stepping menu
-      // at crazy speeds.
 #if defined(HAVE_RGUI) || defined(HAVE_RMENU)
       if (thr->texture.enable)
       {
@@ -428,20 +443,23 @@ static bool thread_frame(void *data, const void *frame_,
             scond_wait(thr->cond_cmd, thr->lock);
       }
 #endif
+      thr->hit_count++;
    }
+   else
+      thr->miss_count++;
+
    slock_unlock(thr->lock);
 
    RARCH_PERFORMANCE_STOP(thread_frame);
 
+   thr->last_time = rarch_get_time_usec();
    return true;
 }
 
 static void thread_set_nonblock_state(void *data, bool state)
 {
    thread_video_t *thr = (thread_video_t*)data;
-   thr->cmd_data.b = state;
-   thread_send_cmd(thr, CMD_SET_NONBLOCK);
-   thread_wait_reply(thr, CMD_SET_NONBLOCK);
+   thr->nonblock = state;
 }
 
 static bool thread_init(thread_video_t *thr, const video_info_t *info, const input_driver_t **input,
@@ -465,6 +483,9 @@ static bool thread_init(thread_video_t *thr, const video_info_t *info, const inp
       return false;
 
    memset(thr->frame.buffer, 0x80, max_size);
+
+   thr->target_frame_time = (rarch_time_t)roundf(1000000LL / g_settings.video.refresh_rate);
+   thr->last_time = rarch_get_time_usec();
 
    thr->thread = sthread_create(thread_loop, thr);
    if (!thr->thread)
@@ -533,6 +554,9 @@ static void thread_free(void *data)
    slock_free(thr->lock);
    scond_free(thr->cond_cmd);
    scond_free(thr->cond_thread);
+
+   RARCH_LOG("Threaded video stats: Frames pushed: %u, Frames dropped: %u.\n",
+         thr->hit_count, thr->miss_count);
 
    free(thr);
 }
