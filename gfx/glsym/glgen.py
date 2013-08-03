@@ -25,7 +25,7 @@ import sys
 import os
 import re
 
-banned_ext = [ 'AMD', 'APPLE', 'EXT', 'NV', 'NVX', 'ATI', '3DLABS', 'SUN', 'SGI', 'SGIX', 'SGIS', 'INTEL', '3DFX', 'IBM', 'MESA', 'GREMEDY', 'OML', 'PGI', 'I3D', 'INGL', 'MTX', 'QCOM', 'IMG', 'ANGLE', 'SUNX', 'INGR' ]
+banned_ext = [ 'AMD', 'EXT', 'NV', 'NVX', 'ATI', '3DLABS', 'SUN', 'SGI', 'SGIX', 'SGIS', 'INTEL', '3DFX', 'IBM', 'MESA', 'GREMEDY', 'OML', 'PGI', 'I3D', 'INGL', 'MTX', 'QCOM', 'IMG', 'ANGLE', 'SUNX', 'INGR' ]
 
 def noext(sym):
    for ext in banned_ext:

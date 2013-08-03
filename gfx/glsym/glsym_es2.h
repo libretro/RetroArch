@@ -49,6 +49,16 @@ typedef void (GL_APIENTRYP RGLSYMGLGETOBJECTLABELPROC) (GLenum identifier, GLuin
 typedef void (GL_APIENTRYP RGLSYMGLOBJECTPTRLABELPROC) (const void *ptr, GLsizei length, const GLchar *label);
 typedef void (GL_APIENTRYP RGLSYMGLGETOBJECTPTRLABELPROC) (const void *ptr, GLsizei bufSize, GLsizei *length, GLchar *label);
 typedef void (GL_APIENTRYP RGLSYMGLGETPOINTERVPROC) (GLenum pname, void **params);
+typedef void (GL_APIENTRYP RGLSYMGLCOPYTEXTURELEVELSAPPLEPROC) (GLuint destinationTexture, GLuint sourceTexture, GLint sourceBaseLevel, GLsizei sourceLevelCount);
+typedef void (GL_APIENTRYP RGLSYMGLRENDERBUFFERSTORAGEMULTISAMPLEAPPLEPROC) (GLenum target, GLsizei samples, GLenum internalformat, GLsizei width, GLsizei height);
+typedef void (GL_APIENTRYP RGLSYMGLRESOLVEMULTISAMPLEFRAMEBUFFERAPPLEPROC) (void);
+typedef GLsync (GL_APIENTRYP RGLSYMGLFENCESYNCAPPLEPROC) (GLenum condition, GLbitfield flags);
+typedef GLboolean (GL_APIENTRYP RGLSYMGLISSYNCAPPLEPROC) (GLsync sync);
+typedef void (GL_APIENTRYP RGLSYMGLDELETESYNCAPPLEPROC) (GLsync sync);
+typedef GLenum (GL_APIENTRYP RGLSYMGLCLIENTWAITSYNCAPPLEPROC) (GLsync sync, GLbitfield flags, GLuint64 timeout);
+typedef void (GL_APIENTRYP RGLSYMGLWAITSYNCAPPLEPROC) (GLsync sync, GLbitfield flags, GLuint64 timeout);
+typedef void (GL_APIENTRYP RGLSYMGLGETINTEGER64VAPPLEPROC) (GLenum pname, GLint64 *params);
+typedef void (GL_APIENTRYP RGLSYMGLGETSYNCIVAPPLEPROC) (GLsync sync, GLenum pname, GLsizei bufSize, GLsizei *length, GLint *values);
 
 #define glEGLImageTargetTexture2DOES __rglgen_glEGLImageTargetTexture2DOES
 #define glEGLImageTargetRenderbufferStorageOES __rglgen_glEGLImageTargetRenderbufferStorageOES
@@ -78,6 +88,16 @@ typedef void (GL_APIENTRYP RGLSYMGLGETPOINTERVPROC) (GLenum pname, void **params
 #define glObjectPtrLabel __rglgen_glObjectPtrLabel
 #define glGetObjectPtrLabel __rglgen_glGetObjectPtrLabel
 #define glGetPointerv __rglgen_glGetPointerv
+#define glCopyTextureLevelsAPPLE __rglgen_glCopyTextureLevelsAPPLE
+#define glRenderbufferStorageMultisampleAPPLE __rglgen_glRenderbufferStorageMultisampleAPPLE
+#define glResolveMultisampleFramebufferAPPLE __rglgen_glResolveMultisampleFramebufferAPPLE
+#define glFenceSyncAPPLE __rglgen_glFenceSyncAPPLE
+#define glIsSyncAPPLE __rglgen_glIsSyncAPPLE
+#define glDeleteSyncAPPLE __rglgen_glDeleteSyncAPPLE
+#define glClientWaitSyncAPPLE __rglgen_glClientWaitSyncAPPLE
+#define glWaitSyncAPPLE __rglgen_glWaitSyncAPPLE
+#define glGetInteger64vAPPLE __rglgen_glGetInteger64vAPPLE
+#define glGetSyncivAPPLE __rglgen_glGetSyncivAPPLE
 
 extern RGLSYMGLEGLIMAGETARGETTEXTURE2DOESPROC __rglgen_glEGLImageTargetTexture2DOES;
 extern RGLSYMGLEGLIMAGETARGETRENDERBUFFERSTORAGEOESPROC __rglgen_glEGLImageTargetRenderbufferStorageOES;
@@ -107,6 +127,16 @@ extern RGLSYMGLGETOBJECTLABELPROC __rglgen_glGetObjectLabel;
 extern RGLSYMGLOBJECTPTRLABELPROC __rglgen_glObjectPtrLabel;
 extern RGLSYMGLGETOBJECTPTRLABELPROC __rglgen_glGetObjectPtrLabel;
 extern RGLSYMGLGETPOINTERVPROC __rglgen_glGetPointerv;
+extern RGLSYMGLCOPYTEXTURELEVELSAPPLEPROC __rglgen_glCopyTextureLevelsAPPLE;
+extern RGLSYMGLRENDERBUFFERSTORAGEMULTISAMPLEAPPLEPROC __rglgen_glRenderbufferStorageMultisampleAPPLE;
+extern RGLSYMGLRESOLVEMULTISAMPLEFRAMEBUFFERAPPLEPROC __rglgen_glResolveMultisampleFramebufferAPPLE;
+extern RGLSYMGLFENCESYNCAPPLEPROC __rglgen_glFenceSyncAPPLE;
+extern RGLSYMGLISSYNCAPPLEPROC __rglgen_glIsSyncAPPLE;
+extern RGLSYMGLDELETESYNCAPPLEPROC __rglgen_glDeleteSyncAPPLE;
+extern RGLSYMGLCLIENTWAITSYNCAPPLEPROC __rglgen_glClientWaitSyncAPPLE;
+extern RGLSYMGLWAITSYNCAPPLEPROC __rglgen_glWaitSyncAPPLE;
+extern RGLSYMGLGETINTEGER64VAPPLEPROC __rglgen_glGetInteger64vAPPLE;
+extern RGLSYMGLGETSYNCIVAPPLEPROC __rglgen_glGetSyncivAPPLE;
 
 struct rglgen_sym_map { const char *sym; void *ptr; };
 extern const struct rglgen_sym_map rglgen_symbol_map[];
