@@ -53,14 +53,31 @@ Page
             preferredWidth: 650
             horizontalAlignment: HorizontalAlignment.Center
 
-            DropDown 
+            Container 
             {
-                objectName: "dropdown_devices"
-                title: "Device"
-                
-                onSelectedValueChanged:
+                horizontalAlignment: HorizontalAlignment.Center
+                layout: StackLayout 
                 {
-                    ButtonMap.mapDevice(selectedValue, players.selectedValue);
+                    orientation: LayoutOrientation.LeftToRight
+                }
+
+                DropDown
+                {
+                    horizontalAlignment: HorizontalAlignment.Left
+                    id: dropdown_device
+                    objectName: "dropdown_devices"
+                    title: "Device"
+                }
+
+                Button
+                {
+                    horizontalAlignment: HorizontalAlignment.Right
+                    text: "Set"
+
+                    onClicked:
+                    {
+                        ButtonMap.mapDevice(dropdown_device.selectedValue, players.selectedValue);
+                    }
                 }
             }
 

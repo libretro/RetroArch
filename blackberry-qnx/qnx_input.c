@@ -153,9 +153,9 @@ void discoverControllers()
       if (type == SCREEN_EVENT_GAMEPAD || type == SCREEN_EVENT_JOYSTICK || type == SCREEN_EVENT_KEYBOARD)
       {
          devices[pads_connected].handle = devices_found[i];
+         devices[pads_connected].index = pads_connected;
          loadController(&devices[pads_connected]);
 
-         pads_connected++;
          if (pads_connected == MAX_PADS)
             break;
       }
@@ -186,6 +186,7 @@ static void initController(input_device_t* controller)
     controller->analog1[0] = controller->analog1[1] = controller->analog1[2] = 0;
     controller->port = -1;
     controller->device = -1;
+    controller->index = -1;
     memset(controller->id, 0, sizeof(controller->id));
 }
 
@@ -227,9 +228,12 @@ static void qnx_input_autodetect_gamepad(input_device_t* controller)
       strlcpy(controller->device_name, "None", sizeof(controller->device_name));
    }
 
-   if (input_qnx.set_keybinds)
+   if (input_qnx.set_keybinds && (controller->device != DEVICE_NONE))
+   {
       input_qnx.set_keybinds((void*)controller, controller->device, pads_connected, 0,
             (1ULL << KEYBINDS_ACTION_SET_DEFAULT_BINDS));
+      pads_connected++;
+   }
 }
 
 static void process_keyboard_event(screen_event_t event, int type)

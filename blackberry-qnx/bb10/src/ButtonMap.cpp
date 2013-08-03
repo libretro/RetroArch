@@ -184,6 +184,15 @@ void ButtonMap::refreshButtonMap(int player)
     map.insert("type", QVariant("item"));
     map.insert("index", QVariant(RARCH_MENU_TOGGLE));
     buttonDataModel->append(map);
+
+    //Update device dropdown
+    if (deviceSelection)
+    {
+       if(port_device[player])
+          deviceSelection->setSelectedIndex(port_device[player]->index);
+       else
+          deviceSelection->resetSelectedIndex();
+    }
 }
 
 //Button map

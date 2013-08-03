@@ -3,6 +3,7 @@
 
 #include <bb/cascades/Application>
 #include <bb/cascades/ArrayDataModel>
+#include <bb/cascades/DropDown>
 
 #include <screen/screen.h>
 #include <sys/neutrino.h>
@@ -42,6 +43,7 @@ public:
    Q_INVOKABLE void mapDevice(int index, int player);
 
     ArrayDataModel *buttonDataModel;
+    DropDown *deviceSelection;
 
 private:
     screen_context_t screen_cxt;

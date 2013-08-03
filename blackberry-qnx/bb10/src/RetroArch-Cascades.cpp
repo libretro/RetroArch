@@ -98,7 +98,7 @@ RetroArch::RetroArch()
          qml->setContextProperty("ButtonMap", buttonMap);
 
          deviceSelection = mAppPane->findChild<DropDown*>("dropdown_devices");
-         //connect(deviceSelection, SIGNAL(selectedValueChanged(QVariant)), this, SLOT(onDeviceSelected(QVariant)));
+         buttonMap->deviceSelection = deviceSelection;
          findDevices();
 
          //Setup the datamodel for button mapping.
