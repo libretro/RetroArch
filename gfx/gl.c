@@ -142,20 +142,9 @@ static bool check_eglimage_proc(void)
 #endif
 
 #ifdef HAVE_GL_SYNC
-#ifdef HAVE_OPENGLES2
-#define glFenceSync glFenceSyncAPPLE
-#define glDeleteSync glDeleteSyncAPPLE
-#define glClientWaitSync glClientWaitSyncAPPLE
-#define GL_SYNC_GPU_COMMANDS_COMPLETE GL_SYNC_GPU_COMMANDS_COMPLETE_APPLE
-#define GL_SYNC_FLUSH_COMMANDS_BIT GL_SYNC_FLUSH_COMMANDS_BIT_APPLE
-#endif
 static bool check_sync_proc(gl_t *gl)
 {
-#ifdef HAVE_OPENGLES
-   if (!gl_query_extension(gl, "APPLE_sync"))
-#else
    if (!gl_query_extension(gl, "ARB_sync"))
-#endif
       return false;
 
    return glFenceSync && glDeleteSync && glClientWaitSync;
