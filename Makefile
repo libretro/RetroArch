@@ -221,12 +221,12 @@ ifeq ($(HAVE_OPENGL), 1)
       endif
    endif
 	
-   DEFINES += -DHAVE_GL_SYNC
    ifeq ($(HAVE_GLES), 1)
       LIBS += -lGLESv2
       DEFINES += -DHAVE_OPENGLES -DHAVE_OPENGLES2
       OBJ += gfx/glsym/glsym_es2.o
    else
+      DEFINES += -DHAVE_GL_SYNC
       OBJ += gfx/glsym/glsym_gl.o
       ifeq ($(OSX), 1)
          LIBS += -framework OpenGL
