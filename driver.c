@@ -601,10 +601,7 @@ static void compute_audio_buffer_statistics(void)
 bool driver_monitor_fps_statistics(double *refresh_rate, double *deviation, unsigned *sample_points)
 {
    if (g_settings.video.threaded)
-   {
-      RARCH_LOG("Monitor FPS estimation is disabled for threaded video.\n");
       return false;
-   }
 
    unsigned samples = min(MEASURE_FRAME_TIME_SAMPLES_COUNT, g_extern.measure_data.frame_time_samples_count);
    if (samples < 2)
@@ -640,6 +637,12 @@ bool driver_monitor_fps_statistics(double *refresh_rate, double *deviation, unsi
 
 static void compute_monitor_fps_statistics(void)
 {
+   if (g_settings.video.threaded)
+   {
+      RARCH_LOG("Monitor FPS estimation is disabled for threaded video.\n");
+      return;
+   }
+
    if (g_extern.measure_data.frame_time_samples_count < 2 * MEASURE_FRAME_TIME_SAMPLES_COUNT)
    {
       RARCH_LOG("Does not have enough samples for monitor refresh rate estimation. Requires to run for at least %u frames.\n",
