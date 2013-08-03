@@ -30,6 +30,16 @@ const struct rglgen_sym_map rglgen_symbol_map[] = {
     SYM(ObjectPtrLabel),
     SYM(GetObjectPtrLabel),
     SYM(GetPointerv),
+    SYM(CopyTextureLevelsAPPLE),
+    SYM(RenderbufferStorageMultisampleAPPLE),
+    SYM(ResolveMultisampleFramebufferAPPLE),
+    SYM(FenceSyncAPPLE),
+    SYM(IsSyncAPPLE),
+    SYM(DeleteSyncAPPLE),
+    SYM(ClientWaitSyncAPPLE),
+    SYM(WaitSyncAPPLE),
+    SYM(GetInteger64vAPPLE),
+    SYM(GetSyncivAPPLE),
 
     { NULL, NULL },
 };
@@ -61,4 +71,14 @@ RGLSYMGLGETOBJECTLABELPROC __rglgen_glGetObjectLabel;
 RGLSYMGLOBJECTPTRLABELPROC __rglgen_glObjectPtrLabel;
 RGLSYMGLGETOBJECTPTRLABELPROC __rglgen_glGetObjectPtrLabel;
 RGLSYMGLGETPOINTERVPROC __rglgen_glGetPointerv;
+RGLSYMGLCOPYTEXTURELEVELSAPPLEPROC __rglgen_glCopyTextureLevelsAPPLE;
+RGLSYMGLRENDERBUFFERSTORAGEMULTISAMPLEAPPLEPROC __rglgen_glRenderbufferStorageMultisampleAPPLE;
+RGLSYMGLRESOLVEMULTISAMPLEFRAMEBUFFERAPPLEPROC __rglgen_glResolveMultisampleFramebufferAPPLE;
+RGLSYMGLFENCESYNCAPPLEPROC __rglgen_glFenceSyncAPPLE;
+RGLSYMGLISSYNCAPPLEPROC __rglgen_glIsSyncAPPLE;
+RGLSYMGLDELETESYNCAPPLEPROC __rglgen_glDeleteSyncAPPLE;
+RGLSYMGLCLIENTWAITSYNCAPPLEPROC __rglgen_glClientWaitSyncAPPLE;
+RGLSYMGLWAITSYNCAPPLEPROC __rglgen_glWaitSyncAPPLE;
+RGLSYMGLGETINTEGER64VAPPLEPROC __rglgen_glGetInteger64vAPPLE;
+RGLSYMGLGETSYNCIVAPPLEPROC __rglgen_glGetSyncivAPPLE;
 
