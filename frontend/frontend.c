@@ -253,7 +253,7 @@ int main(int argc, char *argv[])
 
          driver_set_nonblock_state(driver.nonblock_state);
 
-         if (driver.audio_data && !audio_start_func())
+         if (driver.audio_data && !g_extern.audio_data.mute && !audio_start_func())
          {
             RARCH_ERR("Failed to resume audio driver. Will continue without audio.\n");
             g_extern.audio_active = false;

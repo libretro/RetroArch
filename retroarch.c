@@ -2223,7 +2223,7 @@ static void check_pause(void)
          RARCH_LOG("Unpaused.\n");
          if (driver.audio_data)
          {
-            if (!audio_start_func())
+            if (!g_extern.audio_data.mute && !audio_start_func())
             {
                RARCH_ERR("Failed to resume audio driver. Will continue without audio.\n");
                g_extern.audio_active = false;
@@ -2235,7 +2235,7 @@ static void check_pause(void)
    {
       RARCH_LOG("Unpaused.\n");
       g_extern.is_paused = false;
-      if (driver.audio_data && !audio_start_func())
+      if (driver.audio_data && !g_extern.audio_data.mute && !audio_start_func())
       {
          RARCH_ERR("Failed to resume audio driver. Will continue without audio.\n");
          g_extern.audio_active = false;
@@ -2580,6 +2580,17 @@ static void check_mute(void)
       const char *msg = g_extern.audio_data.mute ? "Audio muted." : "Audio unmuted.";
       msg_queue_clear(g_extern.msg_queue);
       msg_queue_push(g_extern.msg_queue, msg, 1, 180);
+
+      if (driver.audio_data)
+      {
+         if (g_extern.audio_data.mute)
+            audio_stop_func();
+         else if (!audio_start_func())
+         {
+            RARCH_ERR("Failed to unmute audio.\n");
+            g_extern.audio_active = false;
+         }
+      }
 
       RARCH_LOG("%s\n", msg);
    }
