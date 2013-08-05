@@ -136,7 +136,7 @@ public class RetroArch extends Activity implements
 		if (paths != null && paths.length > 0) { // Directory
 			//Log.d(TAG, "Extracting assets directory: " + relativePath);
 			for (final String path : paths)
-				extractAssets(manager, dataDir, relativePath + (level > 0 ? File.separator : "") + path, level + 1);	
+				extractAssets(manager, dataDir, relativePath + (level > 0 ? File.separator : "") + path, level + 1);
 		} else { // File, extract.
 			//Log.d(TAG, "Extracting assets file: " + relativePath);
 			
@@ -303,6 +303,12 @@ public class RetroArch extends Activity implements
 			.setPositiveButton("Yes", new DialogInterface.OnClickListener() {
 				@Override
 				public void onClick(DialogInterface dialog, int which) {
+					SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getBaseContext());
+					SharedPreferences.Editor edit = prefs.edit();
+					edit.putString("video_refresh_rate", Double.valueOf(60.00d).toString());
+					edit.putBoolean("input_overlay_enable", false);
+					edit.putBoolean("input_autodetect_enable", true);
+					edit.commit();
 				}
 			})
 			.setNegativeButton("No", null);
