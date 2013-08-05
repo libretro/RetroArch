@@ -299,21 +299,10 @@ public class RetroArch extends Activity implements
 		{
 			AlertDialog.Builder alert = new AlertDialog.Builder(this)
 			.setTitle("NVidia Shield detected")
-			.setMessage("Would you like to set up the ideal configuration options for your device?")
+			.setMessage("Would you like to set up the ideal configuration options for your device?\nNOTE: For optimal performance, turn off Google Account sync, GPS and Wifi in your Android settings menu.")
 			.setPositiveButton("Yes", new DialogInterface.OnClickListener() {
 				@Override
 				public void onClick(DialogInterface dialog, int which) {
-					config.setBoolean("video_threaded", true);
-					config.setBoolean("input_autodetect_enable", true);
-					config.setBoolean("input_overlay_enable", false);
-				    config.setDouble("video_refresh_rate", 59.6);
-					
-					String confPath = getDefaultConfigPath();
-					try {
-						config.write(new File(confPath));
-					} catch (IOException e) {
-						Log.e(TAG, "Failed to save config file to: " + confPath);
-					}
 				}
 			})
 			.setNegativeButton("No", null);
