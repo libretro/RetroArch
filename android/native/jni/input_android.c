@@ -737,6 +737,8 @@ static void android_input_set_keybinds(void *data, unsigned device,
                   sizeof(g_settings.input.device_names[port]));
 
             /* TODO: left and right triggers for Xbox 1*/
+            g_settings.input.dpad_emulation[port] = ANALOG_DPAD_DUALANALOG;
+            keycode_lut[AKEYCODE_BACK] |=  ((RETRO_DEVICE_ID_JOYPAD_SELECT+1)      << shift);
             keycode_lut[AKEYCODE_BUTTON_SELECT] |= ((RETRO_DEVICE_ID_JOYPAD_SELECT+1) << shift);
             keycode_lut[AKEYCODE_BUTTON_START] |= ((RETRO_DEVICE_ID_JOYPAD_START+1) << shift);
             keycode_lut[AKEYCODE_BUTTON_THUMBL]  |= ((RETRO_DEVICE_ID_JOYPAD_L3+1) << shift);
