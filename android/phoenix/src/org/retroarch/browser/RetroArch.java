@@ -315,6 +315,24 @@ public class RetroArch extends Activity implements
 			alert.show();
 			return true;
 		}
+		else if (android.os.Build.ID.equals("JSS15J"))
+		{
+			AlertDialog.Builder alert = new AlertDialog.Builder(this)
+			.setTitle("Nexus 7 2013 detected")
+			.setMessage("Would you like to set up the ideal configuration options for your device?\nNOTE: For optimal performance, turn off Google Account sync, GPS and Wifi in your Android settings menu.")
+			.setPositiveButton("Yes", new DialogInterface.OnClickListener() {
+				@Override
+				public void onClick(DialogInterface dialog, int which) {
+					SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getBaseContext());
+					SharedPreferences.Editor edit = prefs.edit();
+					edit.putString("video_refresh_rate", Double.valueOf(59.65).toString());
+					edit.commit();
+				}
+			})
+			.setNegativeButton("No", null);
+			alert.show();
+			return true;
+		}
 		
 		if (show_dialog) {
 		Toast.makeText(this,
