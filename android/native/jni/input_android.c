@@ -737,7 +737,6 @@ static void android_input_set_keybinds(void *data, unsigned device,
             strlcpy(g_settings.input.device_names[port], "Xbox",
                   sizeof(g_settings.input.device_names[port]));
 
-            /* TODO: left and right triggers for Xbox 1*/
             g_settings.input.dpad_emulation[port] = ANALOG_DPAD_DUALANALOG;
             keycode_lut[AKEYCODE_BACK] |=  ((RETRO_DEVICE_ID_JOYPAD_SELECT+1)      << shift);
             keycode_lut[AKEYCODE_BUTTON_SELECT] |= ((RETRO_DEVICE_ID_JOYPAD_SELECT+1) << shift);
@@ -756,6 +755,7 @@ static void android_input_set_keybinds(void *data, unsigned device,
             strlcpy(g_settings.input.device_names[port], "WiseGroup PlayStation2",
                   sizeof(g_settings.input.device_names[port]));
 
+            g_settings.input.dpad_emulation[port] = ANALOG_DPAD_DUALANALOG;
             keycode_lut[AKEYCODE_BUTTON_13] |=  ((RETRO_DEVICE_ID_JOYPAD_UP+1)      << shift);
             keycode_lut[AKEYCODE_BUTTON_15] |=  ((RETRO_DEVICE_ID_JOYPAD_DOWN+1)      << shift);
             keycode_lut[AKEYCODE_BUTTON_16] |=  ((RETRO_DEVICE_ID_JOYPAD_LEFT+1)      << shift);
