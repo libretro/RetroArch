@@ -629,17 +629,17 @@ public class RetroArch extends Activity implements
 			return true;
 
 		case R.id.retroarch_guide:
-			Intent rguide = new Intent(Intent.ACTION_VIEW, Uri.parse("http://www.libretro.org/documents/retroarch-manual.pdf"));
+			Intent rguide = new Intent(Intent.ACTION_VIEW, Uri.parse("http://www.libretro.com/documents/retroarch-manual.pdf"));
 			startActivity(rguide);
 			return true;
 
 		case R.id.cores_guide:
-			Intent cguide = new Intent(Intent.ACTION_VIEW, Uri.parse("http://www.libretro.org/documents/retroarch-cores-manual.pdf"));
+			Intent cguide = new Intent(Intent.ACTION_VIEW, Uri.parse("http://www.libretro.com/documents/retroarch-cores-manual.pdf"));
 			startActivity(cguide);
 			return true;
 			
 		case R.id.overlay_guide:
-			Intent mguide = new Intent(Intent.ACTION_VIEW, Uri.parse("http://www.libretro.org/documents/overlay.pdf"));
+			Intent mguide = new Intent(Intent.ACTION_VIEW, Uri.parse("http://www.libretro.com/documents/overlay.pdf"));
 			startActivity(mguide);
 			return true;
 		case R.id.optimal_settings_device:
