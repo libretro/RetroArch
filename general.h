@@ -264,6 +264,7 @@ struct settings
    unsigned rewind_granularity;
 
    float slowmotion_ratio;
+   float fastforward_ratio;
 
    bool pause_nonactive;
    unsigned autosave_interval;
@@ -366,6 +367,12 @@ struct global
    char ips_name[PATH_MAX];
 
    unsigned state_slot;
+
+   struct
+   {
+      rarch_time_t minimum_frame_time;
+      rarch_time_t last_frame_time;
+   } frame_limit;
 
    struct
    {
