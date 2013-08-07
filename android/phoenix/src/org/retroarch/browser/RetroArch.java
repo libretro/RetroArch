@@ -360,7 +360,7 @@ public class RetroArch extends Activity implements
 			if (!detectDevice(false))
 			{
 			AlertDialog.Builder alert = new AlertDialog.Builder(this)
-				.setTitle("Two modes of play")
+				.setTitle("Two modes of play - pick one")
 				.setMessage("RetroArch has two modes of play: synchronize to refreshrate, and threaded video.\n\nSynchronize to refreshrate gives the most accurate results and can produce the smoothest results. However, it is hard to configure right and might result in unpleasant audio crackles when it has been configured wrong.\n\nThreaded video should work fine on most devices, but applies some adaptive video jittering to achieve this.\n\nChoose which of the two you want to use. (If you don't know, go for Threaded video). ")
 				.setPositiveButton("Threaded video", new DialogInterface.OnClickListener() {
 					@Override
