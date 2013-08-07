@@ -49,3 +49,14 @@ DerivedData
 apple/tmp
 apple/modules/*.dylib
 apple/*.mobileprovision
+/Cg/
+/GL/
+/SDL/
+/ffmpeg/
+/freetype2/
+/ft2build.h
+/iconv.h
+/libxml2/
+/phoenix/
+/python/
+/rsound.h
