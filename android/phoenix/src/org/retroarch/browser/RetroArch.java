@@ -294,12 +294,17 @@ public class RetroArch extends Activity implements
 	
 	boolean detectDevice(boolean show_dialog)
 	{
+		SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getBaseContext());
+		SharedPreferences.Editor edit = prefs.edit();
+		edit.putBoolean("video_threaded", true);
+		edit.commit();
+		
 		Log.i("Device MODEL", android.os.Build.MODEL);
 		if (android.os.Build.MODEL.equals("SHIELD"))
 		{
 			AlertDialog.Builder alert = new AlertDialog.Builder(this)
 			.setTitle("NVidia Shield detected")
-			.setMessage("Would you like to set up the ideal configuration options for your device?\nNOTE: For optimal performance, turn off Google Account sync, GPS and Wifi in your Android settings menu.")
+			.setMessage("Would you like to set up the ideal configuration options for your device?\nNOTE: For optimal performance, turn off Google Account sync, GPS and Wifi in your Android settings menu.\n\nNOTE: If you know what you are doing, it is advised to turn 'Threaded Video' off afterwards and try running games without it. In theory it will be smoother, but your mileage varies depending on your device and configuration.")
 			.setPositiveButton("Yes", new DialogInterface.OnClickListener() {
 				@Override
 				public void onClick(DialogInterface dialog, int which) {
@@ -319,7 +324,7 @@ public class RetroArch extends Activity implements
 		{
 			AlertDialog.Builder alert = new AlertDialog.Builder(this)
 			.setTitle("Nexus 7 2013 detected")
-			.setMessage("Would you like to set up the ideal configuration options for your device?\nNOTE: For optimal performance, turn off Google Account sync, GPS and Wifi in your Android settings menu.")
+			.setMessage("Would you like to set up the ideal configuration options for your device?\nNOTE: For optimal performance, turn off Google Account sync, GPS and Wifi in your Android settings menu. \n\nNOTE: If you know what you are doing, it is advised to turn 'Threaded Video' off afterwards and try running games without it. In theory it will be smoother, but your mileage varies depending on your device and configuration.")
 			.setPositiveButton("Yes", new DialogInterface.OnClickListener() {
 				@Override
 				public void onClick(DialogInterface dialog, int which) {
@@ -355,16 +360,28 @@ public class RetroArch extends Activity implements
 			if (!detectDevice(false))
 			{
 			AlertDialog.Builder alert = new AlertDialog.Builder(this)
-				.setTitle("Calculate Refresh Rate")
-				.setMessage("It is highly recommended you run the refresh rate calibration test before you use RetroArch. Do you want to run it now?\n\nIf you choose No, you can run it at any time in the video preferences.\n\nIf you get performance problems even after calibration, please try threaded video driver in video preferences.")
-				.setPositiveButton("Yes", new DialogInterface.OnClickListener() {
+				.setTitle("Two modes of play")
+				.setMessage("RetroArch has two modes of play: synchronize to refreshrate, and threaded video.\n\nSynchronize to refreshrate gives the most accurate results and can produce the smoothest results. However, it is hard to configure right and might result in unpleasant audio crackles when it has been configured wrong.\n\nThreaded video should work fine on most devices, but applies some adaptive video jittering to achieve this.\n\nChoose which of the two you want to use. (If you don't know, go for Threaded video). ")
+				.setPositiveButton("Threaded video", new DialogInterface.OnClickListener() {
 					@Override
 					public void onClick(DialogInterface dialog, int which) {
+						SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getBaseContext());
+						SharedPreferences.Editor edit = prefs.edit();
+						edit.putBoolean("video_threaded", true);
+						edit.commit();
+					}
+				})
+				.setNegativeButton("Synchronize to refreshrate", new DialogInterface.OnClickListener() {
+					@Override
+					public void onClick(DialogInterface dialog, int which) {
+						SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getBaseContext());
+						SharedPreferences.Editor edit = prefs.edit();
+						edit.putBoolean("video_threaded", false);
+						edit.commit();
 						Intent i = new Intent(getBaseContext(), DisplayRefreshRateTest.class);
 						startActivity(i);
 					}
-				})
-				.setNegativeButton("No", null);
+				});
 			alert.show();
 			}
 		}
