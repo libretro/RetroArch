@@ -56,7 +56,7 @@ libretro ?= -lretro_emscripten
 
 LIBS = -lm
 DEFINES = -DHAVE_SCREENSHOTS -DHAVE_NULLAUDIO -DHAVE_BSV_MOVIE -DPACKAGE_VERSION=\"0.9.9.3\"
-LDFLAGS = -L. -static-libgcc -s TOTAL_MEMORY=268435456 -s FULL_ES2=1
+LDFLAGS = -L. -static-libgcc -s TOTAL_MEMORY=268435456
 
 ifeq ($(SCALER_NO_SIMD), 1)
    DEFINES += -DSCALER_NO_SIMD
@@ -157,9 +157,8 @@ clean:
 	rm -f gfx/rpng/*.o
 	rm -f record/*.o
 	rm -f input/*.o
-	rm -f $(TARGET)
-	rm -f retroarch-joyconfig.exe
 	rm -f tools/*.o
+	rm -f $(TARGET)
 
 .PHONY: all clean
 
