@@ -70,10 +70,6 @@ def replace_global_vertex(source):
          ('_IN1._mvp_matrix[1]', 'MVPMatrix[1]'),
          ('_IN1._mvp_matrix[2]', 'MVPMatrix[2]'),
          ('_IN1._mvp_matrix[3]', 'MVPMatrix[3]'),
-         ('MVPMatrix[0]', 'MVPMatrix_[0]'),
-         ('MVPMatrix[1]', 'MVPMatrix_[1]'),
-         ('MVPMatrix[2]', 'MVPMatrix_[2]'),
-         ('MVPMatrix[3]', 'MVPMatrix_[3]'),
 
          ('FrameCount', 'float(FrameCount)'),
          ('FrameDirection', 'float(FrameDirection)'),
@@ -358,11 +354,9 @@ def replace_varyings(source):
    return ret
 
 def hack_source_vertex(source):
-   transpose_index = 2
    ref_index = 0
    for index, line in enumerate(source):
       if 'void main()' in line:
-         source.insert(index + 2, '    mat4 MVPMatrix_ = transpose_(MVPMatrix);') # transpose() is GLSL 1.20+, doesn't exist in GLSL ES 1.0
          source.insert(index, '#endif')
          source.insert(index, 'uniform vec2 InputSize;')
          source.insert(index, 'uniform vec2 TextureSize;')
@@ -376,17 +370,6 @@ def hack_source_vertex(source):
          source.insert(index, 'uniform int FrameDirection;')
          source.insert(index, 'uniform mat4 MVPMatrix;')
 
-         source.insert(index, """
-mat4 transpose_(mat4 matrix)
-{
-   mat4 ret;
-   for (int i = 0; i != 4; i++)
-      for (int j = 0; j != 4; j++)
-         ret[i][j] = matrix[j][i];
-
-   return ret;
-}
-         """)
          ref_index = index
          break
 
@@ -558,9 +541,11 @@ def validate_shader(source, target):
    return p.returncode == 0
 
 def convert(source, dest):
-   vert_cmd = ['cgc', '-profile', 'glesv', '-entry', 'main_vertex', source]
-   p = subprocess.Popen(vert_cmd, stderr = subprocess.PIPE, stdout = subprocess.PIPE)
-   vertex_source, stderr_ret = p.communicate()
+   vert_cmd = ['cgc', '-profile', 'glesv', '-entry', 'main_vertex']
+   with open(source, 'r') as f:
+      source_data = f.read()
+   p = subprocess.Popen(vert_cmd, stdin = subprocess.PIPE, stderr = subprocess.PIPE, stdout = subprocess.PIPE)
+   vertex_source, stderr_ret = p.communicate(input = ('#pragma pack_matrix(column_major)\n' + source_data).encode())
    log(stderr_ret.decode())
    vertex_source = vertex_source.decode()
 
