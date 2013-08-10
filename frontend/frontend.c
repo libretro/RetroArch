@@ -82,25 +82,9 @@ void rarch_make_dir(const char *x, const char *name)
       }
    }
 }
-#endif
 
-#ifdef RARCH_CONSOLE
-static void rarch_get_environment(int argc, char *argv[])
+void rarch_get_environment_console(void)
 {
-   g_extern.verbose = true;
-
-#if defined(HAVE_LOGGER)
-   logger_init();
-#elif defined(HAVE_FILE_LOGGER)
-   g_extern.log_file = fopen("/retroarch-log.txt", "w");
-#endif
-
-   if (frontend_ctx && frontend_ctx->environment_get)
-      frontend_ctx->environment_get(argc, argv);
-
-   config_load();
-
-#if defined(RARCH_CONSOLE)
    init_libretro_sym(false);
    rarch_init_system_info();
 
@@ -137,18 +121,23 @@ static void rarch_get_environment(int argc, char *argv[])
    snprintf(g_extern.input_config_path, sizeof(g_extern.input_config_path), "%s/%s.cfg", default_paths.input_presets_dir, core_name);
    config_read_keybinds(g_extern.input_config_path);
 #endif
-#endif
 }
 #endif
 
 #if defined(IOS) || defined(OSX)
 void* rarch_main(void* args)
+{
+   int argc = 0;
+   char *argv = NULL;
 #elif defined(HAVE_BB10)
 int rarch_main(int argc, char *argv[])
+{
+   void* args = NULL;
 #else
 int main(int argc, char *argv[])
-#endif
 {
+   void* args = NULL;
+#endif
    frontend_ctx = (frontend_ctx_driver_t*)frontend_ctx_init_first();
 
    if (frontend_ctx && frontend_ctx->init)
@@ -158,9 +147,8 @@ int main(int argc, char *argv[])
    rarch_main_clear_state();
 #endif
 
-#ifdef RARCH_CONSOLE
-   rarch_get_environment(argc, argv);
-#endif
+   if (frontend_ctx && frontend_ctx->environment_get)
+      frontend_ctx->environment_get(argc, argv, args);
 
 #if !defined(RARCH_CONSOLE) && !defined(HAVE_BB10)
 #if defined(__APPLE__)
@@ -186,7 +174,7 @@ int main(int argc, char *argv[])
 
 #ifndef __APPLE__
    if (frontend_ctx && frontend_ctx->process_args)
-      frontend_ctx->process_args(argc, argv);
+      frontend_ctx->process_args(argc, argv, args);
 #endif
 
 #if defined(RARCH_CONSOLE) || defined(HAVE_BB10)

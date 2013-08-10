@@ -21,7 +21,7 @@
 #include <stddef.h>
 #include <string.h>
 
-static void get_environment_settings(int argc, char *argv[])
+static void get_environment_settings(int argc, char *argv[], void *args)
 {
    (void)argc;
    (void)argv;
@@ -32,6 +32,8 @@ static void get_environment_settings(int argc, char *argv[])
    strlcpy(g_extern.config_path, "app/native/retroarch.cfg", sizeof(g_extern.config_path));
    strlcpy(g_settings.video.shader_dir, "app/native/shaders_glsl", sizeof(g_settings.video.shader_dir));
 #endif
+
+   config_load();
 }
 
 static void system_init(void)

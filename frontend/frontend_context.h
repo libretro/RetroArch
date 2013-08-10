@@ -32,13 +32,13 @@
 
 typedef struct frontend_ctx_driver
 {
-   void (*environment_get)(int argc, char *argv[]);
+   void (*environment_get)(int argc, char *argv[], void *args);
 
    void (*init)(void);
    void (*deinit)(void);
    void (*exitspawn)(void);
 
-   int (*process_args)(int argc, char *argv[]);
+   int (*process_args)(int argc, char *argv[], void *args);
    int (*process_events)(void);
    void (*exec)(const char *, bool);
    void (*shutdown)(bool);
@@ -58,6 +58,7 @@ const frontend_ctx_driver_t *frontend_ctx_init_first(void); // Finds first suita
 
 #ifdef RARCH_CONSOLE
 extern void rarch_make_dir(const char *x, const char *name);
+extern void rarch_get_environment_console(void);
 #endif
 
 #endif
