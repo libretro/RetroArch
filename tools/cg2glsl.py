@@ -326,15 +326,17 @@ def replace_varyings(source):
          translated = translate_varying(orig)
          if translated != orig and translated not in attribs:
             cg_attrib = line.split(':')[2].split(' ')[1]
-            translations.append((cg_attrib, translated))
-            attribs.append(translated)
+            if len(cg_attrib.strip()) > 0:
+               translations.append((cg_attrib, translated))
+               attribs.append(translated)
       elif ('//var' in line) or ('#var' in line):
          orig = line.split(' ')[2]
          translated = translate_texture_size(orig)
          if translated != orig and translated not in uniforms:
             cg_uniform = line.split(':')[2].split(' ')[1]
-            translations.append((cg_uniform, translated))
-            uniforms.append(translated)
+            if len(cg_uniform.strip()) > 0:
+               translations.append((cg_uniform, translated))
+               uniforms.append(translated)
 
    for index, line in enumerate(source):
       if 'void main()' in line:
@@ -494,9 +496,9 @@ def hack_source_fragment(source):
          translated = translate_texture_size(orig)
          if translated != orig and translated not in uniforms:
             cg_uniform = line.split(':')[2].split(' ')[1]
-            translations.append((cg_uniform, translated))
-            uniforms.append(translated)
-
+            if len(cg_uniform.strip()) > 0:
+               translations.append((cg_uniform, translated))
+               uniforms.append(translated)
 
    for sampler in added_samplers:
       source.insert(ref_index, sampler)
@@ -508,6 +510,7 @@ def hack_source_fragment(source):
    ret = []
    for line in source:
       for translation in translations:
+         log('Translation:', translation[0], '->', translation[1])
          line = line.replace(translation[0], translation[1])
       ret.append(line)
 
