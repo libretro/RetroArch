@@ -19,6 +19,7 @@ typedef struct {
     char device_name[64];
     int device;
     int port;
+    int index;
 
     // Current state.
     int buttons;
