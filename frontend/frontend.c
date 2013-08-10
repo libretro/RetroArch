@@ -86,8 +86,6 @@ void rarch_make_dir(const char *x, const char *name)
 
 static void rarch_get_environment(int argc, char *argv[])
 {
-   g_extern.verbose = true;
-
 #if defined(HAVE_LOGGER)
    logger_init();
 #elif defined(HAVE_FILE_LOGGER)
@@ -100,6 +98,7 @@ static void rarch_get_environment(int argc, char *argv[])
    config_load();
 
 #if defined(RARCH_CONSOLE)
+   g_extern.verbose = true;
    init_libretro_sym(false);
    rarch_init_system_info();
 
