@@ -188,14 +188,14 @@ public class RetroArch extends Activity implements
 			//extractAssets(assets, cacheDir, "", 0);
 			Log.i("ASSETS", "Extracting shader assets now ...");
 			try {
-				extractAssets(assets, dataDir, "Shaders", 1);
+				extractAssets(assets, dataDir, "shaders_glsl", 1);
 			} catch (IOException e) {
 				Log.i("ASSETS", "Failed to extract shaders ...");
 			}
 			
 			Log.i("ASSETS", "Extracting overlay assets now ...");
 			try {
-				extractAssets(assets, dataDir, "Overlays", 1);
+				extractAssets(assets, dataDir, "overlays", 1);
 			} catch (IOException e) {
 				Log.i("ASSETS", "Failed to extract overlays ...");
 			}
@@ -496,7 +496,7 @@ public class RetroArch extends Activity implements
 
 		boolean useOverlay = prefs.getBoolean("input_overlay_enable", true);
 		if (useOverlay) {
-			String overlayPath = prefs.getString("input_overlay", getDataDir() + "/Overlays/snes-landscape.cfg");
+			String overlayPath = prefs.getString("input_overlay", getDataDir() + "/overlays/snes-landscape.cfg");
 			config.setString("input_overlay", overlayPath);
 			config.setDouble("input_overlay_opacity", prefs.getFloat("input_overlay_opacity", 1.0f));
 		} else {

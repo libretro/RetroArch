@@ -30,4 +30,11 @@
 		<nature>com.android.ide.eclipse.adt.AndroidNature</nature>
 		<nature>org.eclipse.jdt.core.javanature</nature>
 	</natures>
+	<linkedResources>
+		<link>
+			<name>assets/overlays</name>
+			<type>2</type>
+			<locationURI>PARENT-2-PROJECT_LOC/media/overlays</locationURI>
+		</link>
+	</linkedResources>
 </projectDescription>
