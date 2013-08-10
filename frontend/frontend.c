@@ -140,6 +140,8 @@ static void rarch_get_environment(int argc, char *argv[])
 
 #if defined(IOS) || defined(OSX)
 void* rarch_main(void* args)
+#elif defined(HAVE_BB10)
+int rarch_main(int argc, char *argv[])
 #else
 int main(int argc, char *argv[])
 #endif
@@ -149,12 +151,15 @@ int main(int argc, char *argv[])
    if (frontend_ctx && frontend_ctx->init)
       frontend_ctx->init();
 
+#ifndef HAVE_BB10
    rarch_main_clear_state();
+#endif
+
 #ifndef __APPLE__
    rarch_get_environment(argc, argv);
 #endif
 
-#if !defined(RARCH_CONSOLE)
+#if !defined(RARCH_CONSOLE) && !defined(HAVE_BB10)
 #if defined(__APPLE__)
    struct rarch_main_wrap* argdata = (struct rarch_main_wrap*)args;
    int init_ret = rarch_main_init_wrap(argdata);
@@ -173,7 +178,7 @@ int main(int argc, char *argv[])
 #endif
 #endif
 
-#ifdef HAVE_MENU
+#if defined(HAVE_MENU) || defined(HAVE_BB10)
    menu_init();
 
 #ifndef __APPLE__
@@ -181,13 +186,13 @@ int main(int argc, char *argv[])
       frontend_ctx->process_args(argc, argv);
 #endif
 
-#ifdef RARCH_CONSOLE
+#if defined(RARCH_CONSOLE) || defined(HAVE_BB10)
    g_extern.lifecycle_mode_state |= 1ULL << MODE_LOAD_GAME;
 #else
    g_extern.lifecycle_mode_state |= 1ULL << MODE_GAME;
 #endif
 
-#ifndef RARCH_CONSOLE
+#if !defined(RARCH_CONSOLE) && !defined(HAVE_BB10)
    // If we started a ROM directly from command line,
    // push it to ROM history.
    if (!g_extern.libretro_dummy)

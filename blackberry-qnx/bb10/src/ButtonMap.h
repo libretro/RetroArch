@@ -3,6 +3,7 @@
 
 #include <bb/cascades/Application>
 #include <bb/cascades/ArrayDataModel>
+#include <bb/cascades/DropDown>
 
 #include <screen/screen.h>
 #include <sys/neutrino.h>
@@ -19,8 +20,9 @@ typedef struct {
 
 using namespace bb::cascades;
 
-class ButtonMap
+class ButtonMap: public QObject
 {
+   Q_OBJECT
 
 public:
     ButtonMap(screen_context_t screen_cxt, QString groupId, int coid);
@@ -33,12 +35,15 @@ public:
     int getButtonMapping(int player, int button);
     //Call from frontend
     int requestButtonMapping(screen_device_t device, int player, int button);
-    void refreshButtonMap();
-    void mapDevice(int index, int player);
 
-    QString buttonToString(int button);
+
+   Q_INVOKABLE int mapButton(int player, int button);
+   Q_INVOKABLE QString buttonToString(int player, int button);
+   Q_INVOKABLE void refreshButtonMap(int player);
+   Q_INVOKABLE void mapDevice(int index, int player);
 
     ArrayDataModel *buttonDataModel;
+    DropDown *deviceSelection;
 
 private:
     screen_context_t screen_cxt;
