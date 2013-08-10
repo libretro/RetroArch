@@ -60,8 +60,9 @@ def replace_global_vertex(source):
 
    source = replace_global_in(source)
    replace_table = [
-         ('attribute', 'COMPAT_attribute'),
-         ('varying', 'COMPAT_varying'),
+         ('attribute', 'COMPAT_ATTRIBUTE'),
+         ('varying', 'COMPAT_VARYING'),
+         ('texture2D', 'COMPAT_TEXTURE'),
          ('POSITION', 'VertexCoord'),
          ('TEXCOORD1', 'LUTTexCoord'),
          ('TEXCOORD0', 'TexCoord'),
@@ -145,7 +146,7 @@ def destructify_varyings(source, direction):
             while (j < len(source)) and ('};' not in source[j]):
                j += 1
 
-            lines = ['COMPAT_varying ' + string for string in source[i + 1 : j]]
+            lines = ['COMPAT_VARYING ' + string for string in source[i + 1 : j]]
             varyings.extend(lines)
             names = [string.strip().split(' ')[1].split(';')[0].strip() for string in source[i + 1 : j]]
             varyings_name.extend(names)
@@ -342,9 +343,9 @@ def replace_varyings(source):
       if 'void main()' in line:
          for attrib in attribs:
             if attrib == 'VertexCoord':
-               source.insert(index, 'COMPAT_attribute vec4 ' + attrib + ';')
+               source.insert(index, 'COMPAT_ATTRIBUTE vec4 ' + attrib + ';')
             else:
-               source.insert(index, 'COMPAT_attribute vec2 ' + attrib + ';')
+               source.insert(index, 'COMPAT_ATTRIBUTE vec2 ' + attrib + ';')
          for uniform in uniforms:
             source.insert(index, 'uniform COMPAT_PRECISION vec2 ' + uniform + ';')
          break
@@ -409,7 +410,8 @@ def hack_source_vertex(source):
 def replace_global_fragment(source):
    source = replace_global_in(source)
    replace_table = [
-         ('varying', 'COMPAT_varying'),
+         ('varying', 'COMPAT_VARYING'),
+         ('texture2D', 'COMPAT_TEXTURE'),
          ('FrameCount', 'float(FrameCount)'),
          ('FrameDirection', 'float(FrameDirection)'),
          ('input', 'input_dummy'),
@@ -593,11 +595,13 @@ def convert(source, dest):
    vert_hacks = []
    vert_hacks.append('''
 #if __VERSION__ >= 130
-#define COMPAT_varying out
-#define COMPAT_attribute in
+#define COMPAT_VARYING out
+#define COMPAT_ATTRIBUTE in
+#define COMPAT_TEXTURE texture
 #else
-#define COMPAT_varying varying 
-#define COMPAT_attribute attribute 
+#define COMPAT_VARYING varying 
+#define COMPAT_ATTRIBUTE attribute 
+#define COMPAT_TEXTURE texture2D
 #endif
 
 #ifdef GL_ES
@@ -611,11 +615,13 @@ def convert(source, dest):
    frag_hacks = []
    frag_hacks.append('''
 #if __VERSION__ >= 130
-#define COMPAT_varying in
+#define COMPAT_VARYING in
+#define COMPAT_TEXTURE texture
 out vec4 FragColor;
 #else
-#define COMPAT_varying varying
+#define COMPAT_VARYING varying
 #define FragColor gl_FragColor
+#define COMPAT_TEXTURE texture2D
 #endif
 
 #ifdef GL_ES
