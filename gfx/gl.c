@@ -1870,10 +1870,6 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
 
    rglgen_resolve_symbols(gl->ctx_driver->get_proc_address);
 
-   const char *vendor = (const char*)glGetString(GL_VENDOR);
-   const char *renderer = (const char*)glGetString(GL_RENDERER);
-   RARCH_LOG("[GL]: Vendor: %s, Renderer: %s.\n", vendor, renderer);
-
    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
    if (!resolve_extensions(gl))

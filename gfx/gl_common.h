@@ -60,6 +60,7 @@
 #define context_write_egl_image_func(frame, width, height, pitch, base_size, tex_index, img) \
    gl->ctx_driver->write_egl_image(frame, width, height, pitch, base_size, tex_index,img)
 #endif
+#endif
 
 static inline bool gl_check_error(void)
 {
