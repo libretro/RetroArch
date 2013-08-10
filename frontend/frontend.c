@@ -81,9 +81,7 @@ void rarch_make_dir(const char *x, const char *name)
       }
    }
 }
-#endif
 
-#if defined(RARCH_CONSOLE)
 void rarch_get_environment_console(void)
 {
    init_libretro_sym(false);
