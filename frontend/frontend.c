@@ -125,12 +125,18 @@ void rarch_get_environment_console(void)
 
 #if defined(IOS) || defined(OSX)
 void* rarch_main(void* args)
+{
+   int argc = 0;
+   char *argv = NULL;
 #elif defined(HAVE_BB10)
 int rarch_main(int argc, char *argv[])
+{
+   void* args = NULL;
 #else
 int main(int argc, char *argv[])
-#endif
 {
+   void* args = NULL;
+#endif
    frontend_ctx = (frontend_ctx_driver_t*)frontend_ctx_init_first();
 
    if (frontend_ctx && frontend_ctx->init)
@@ -141,7 +147,7 @@ int main(int argc, char *argv[])
 #endif
 
    if (frontend_ctx && frontend_ctx->environment_get)
-      frontend_ctx->environment_get(argc, argv);
+      frontend_ctx->environment_get(argc, argv, args);
 
 #if !defined(RARCH_CONSOLE) && !defined(HAVE_BB10)
 #if defined(__APPLE__)
@@ -167,7 +173,7 @@ int main(int argc, char *argv[])
 
 #ifndef __APPLE__
    if (frontend_ctx && frontend_ctx->process_args)
-      frontend_ctx->process_args(argc, argv);
+      frontend_ctx->process_args(argc, argv, args);
 #endif
 
 #if defined(RARCH_CONSOLE) || defined(HAVE_BB10)

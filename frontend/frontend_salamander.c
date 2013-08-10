@@ -98,11 +98,12 @@ static int system_ctx_init(void)
 
 int main(int argc, char *argv[])
 {
+   void *args = NULL;
    if (system_ctx_init() != 0)
       return 0;
 
    frontend_ctx->init();
-   get_environment_settings(argc, argv);
+   get_environment_settings(argc, argv, args);
    salamander_init_settings();
    frontend_ctx->deinit();
    frontend_ctx->exitspawn();

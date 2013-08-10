@@ -83,10 +83,11 @@ static void system_shutdown(bool force)
       dispatch_async_f(dispatch_get_main_queue(), 0, apple_rarch_exited);
 }
 
-static void environment_get(int argc, char *argv[])
+static void environment_get(int argc, char *argv[], void *args)
 {
    (void)argc;
    (void)argv;
+   (void)args;
 
 #ifdef IOS
    char* system_directory = ios_get_rarch_system_directory();

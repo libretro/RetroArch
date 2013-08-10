@@ -21,7 +21,7 @@
 #include <stddef.h>
 #include <string.h>
 
-static void get_environment_settings(int argc, char *argv[])
+static void get_environment_settings(int argc, char *argv[], void *args)
 {
    (void)argc;
    (void)argv;

@@ -229,7 +229,7 @@ int gx_logger_file(struct _reent *r, int fd, const char *ptr, size_t len)
 extern char gx_rom_path[PATH_MAX];
 #endif
 
-static void get_environment_settings(int argc, char *argv[])
+static void get_environment_settings(int argc, char *argv[], void *args)
 {
 #ifndef IS_SALAMANDER
    g_extern.verbose = true;
@@ -359,7 +359,7 @@ static void system_deinit(void)
 #endif
 }
 
-static int system_process_args(int argc, char *argv[])
+static int system_process_args(int argc, char *argv[], void *args)
 {
    int ret = 0;
 
