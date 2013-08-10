@@ -85,8 +85,6 @@ static const GLfloat white_color[] = {
    1, 1, 1, 1,
 };
 
-// Workaround broken Apple headers.
-typedef const GLubyte* (*gl_get_stringi_proc)(GLenum name, GLuint index);
 static inline bool gl_query_extension(gl_t *gl, const char *ext)
 {
    bool ret = false;
