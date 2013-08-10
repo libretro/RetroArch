@@ -3,5 +3,4 @@
     <item android:id="@+id/input_method_select" android:title="@string/input_method" android:showAsAction="ifRoom" />
     <item android:id="@+id/report_ime" android:title="@string/report_ime"></item>
     <item android:id="@+id/report_refreshrate" android:title="@string/report_refreshrate"></item>
-    <item android:id="@+id/optimal_settings_device" android:title="@string/optimal_settings_device"></item>
 </menu>
