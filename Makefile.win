@@ -306,15 +306,15 @@ dist_x86_64: all
 	zip -r retroarch-win64-0.9.9.zip $(TARGET) $(JTARGET) retroarch.cfg
 
 libs_x86:
-	wget https://github.com/downloads/Themaister/RetroArch/RetroArch-win32-libs.zip --no-check-certificate
+	wget http://themaister.net/retroarch-dl/RetroArch-win32-libs.zip
 	unzip RetroArch-win32-libs.zip
-	wget https://github.com/downloads/Themaister/RetroArch/RetroArch-win32-headers.zip --no-check-certificate
+	wget http://themaister.net/retroarch-dl/RetroArch-win32-headers.zip
 	unzip RetroArch-win32-headers.zip
 
 libs_x86_64:
-	wget https://github.com/downloads/Themaister/RetroArch/RetroArch-win64-libs.zip --no-check-certificate
+	wget http://themaister.net/retroarch-dl/RetroArch-win64-libs.zip
 	unzip RetroArch-win64-libs.zip
-	wget https://github.com/downloads/Themaister/RetroArch/RetroArch-win64-headers.zip --no-check-certificate
+	wget http://themaister.net/retroarch-dl/RetroArch-win64-headers.zip
 	unzip RetroArch-win64-headers.zip
 
 .PHONY: all install uninstall clean dist_x86 dist_x86_64 libs_x86 libs_x86_64
