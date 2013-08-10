@@ -11,7 +11,6 @@ import android.annotation.TargetApi;
 import android.app.*;
 import android.media.AudioManager;
 import android.media.AudioTrack;
-import android.net.Uri;
 import android.os.*;
 import android.preference.PreferenceManager;
 import android.provider.Settings;
@@ -609,16 +608,6 @@ public class RetroArch extends Activity implements
 			InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
 			imm.showInputMethodPicker();
 			return true;
-			
-		case R.id.rarch_settings:		
-			Intent rset = new Intent(this, SettingsActivity.class);
-			startActivity(rset);
-			return true;
-		case R.id.help:		
-			Intent help = new Intent(this, HelpActivity.class);
-			startActivity(help);
-			return true;
-			
 		case R.id.report_ime:
 			String current_ime = Settings.Secure.getString(getContentResolver(), Settings.Secure.DEFAULT_INPUT_METHOD);
 			new AlertDialog.Builder(this).setMessage(current_ime).setNeutralButton("Close", null).show();
@@ -626,21 +615,6 @@ public class RetroArch extends Activity implements
 		case R.id.report_refreshrate:
 			String current_rate = "Screen Refresh Rate: " + Double.valueOf(report_refreshrate).toString();
 			new AlertDialog.Builder(this).setMessage(current_rate).setNeutralButton("Close", null).show();
-			return true;
-
-		case R.id.retroarch_guide:
-			Intent rguide = new Intent(Intent.ACTION_VIEW, Uri.parse("http://www.libretro.com/documents/retroarch-manual.pdf"));
-			startActivity(rguide);
-			return true;
-
-		case R.id.cores_guide:
-			Intent cguide = new Intent(Intent.ACTION_VIEW, Uri.parse("http://www.libretro.com/documents/retroarch-cores-manual.pdf"));
-			startActivity(cguide);
-			return true;
-			
-		case R.id.overlay_guide:
-			Intent mguide = new Intent(Intent.ACTION_VIEW, Uri.parse("http://www.libretro.com/documents/overlay.pdf"));
-			startActivity(mguide);
 			return true;
 		case R.id.optimal_settings_device:
 			detectDevice(true);
