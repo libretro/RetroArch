@@ -23,6 +23,7 @@ frontend_ctx_driver_t *frontend_ctx;
 
 #if defined(HAVE_RGUI) || defined(HAVE_RMENU) || defined(HAVE_RMENU_XUI)
 #define HAVE_MENU
+#include "frontend/menu/menu_common.h"
 #else
 #undef HAVE_MENU
 #endif
@@ -252,7 +253,7 @@ int main(int argc, char *argv[])
 
          driver_set_nonblock_state(driver.nonblock_state);
 
-         if (driver.audio_data && !audio_start_func())
+         if (driver.audio_data && !g_extern.audio_data.mute && !audio_start_func())
          {
             RARCH_ERR("Failed to resume audio driver. Will continue without audio.\n");
             g_extern.audio_active = false;
@@ -279,6 +280,11 @@ int main(int argc, char *argv[])
    global_uninit_drivers();
 #endif
 #else
+   rarch_init_msg_queue();
+
+   int init_ret;
+   if ((init_ret = rarch_main_init(argc, argv))) return init_ret;
+
    while ((g_extern.is_paused && !g_extern.is_oneshot) ? rarch_main_idle_iterate() : rarch_main_iterate());
 #endif
 

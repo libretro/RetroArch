@@ -19,41 +19,24 @@
 #include "../gfx_common.h"
 #include "../gl_common.h"
 
-#include "../image.h"
-
-#include "../fonts/gl_font.h"
-#include <stdint.h>
-
-#ifdef HAVE_GLSL
-#include "../shader_glsl.h"
-#endif
-
-GLfloat _angle;
-
-static enum gfx_ctx_api g_api;
-
 static void gfx_ctx_set_swap_interval(unsigned interval)
 {
-   RARCH_LOG("gfx_ctx_set_swap_interval(%d).\n", interval);
+   (void)interval;
 }
 
 static void gfx_ctx_destroy(void)
-{
-}
+{}
 
 static void gfx_ctx_get_video_size(unsigned *width, unsigned *height)
-{
-}
+{}
 
 static bool gfx_ctx_init(void)
 {
-
    return true;
 }
 
 static void gfx_ctx_swap_buffers(void)
-{
-}
+{}
 
 static void gfx_ctx_check_window(bool *quit,
       bool *resize, unsigned *width, unsigned *height, unsigned frame_count)
@@ -70,10 +53,6 @@ static void gfx_ctx_check_window(bool *quit,
       *height = new_height;
       *resize = true;
    }
-
-   // Check if we are exiting.
-   if (g_extern.lifecycle_state & (1ULL << RARCH_QUIT_KEY))
-      *quit = true;
 }
 
 static void gfx_ctx_set_resize(unsigned width, unsigned height)
@@ -105,17 +84,10 @@ static void gfx_ctx_input_driver(const input_driver_t **input, void **input_data
    *input_data = NULL;
 }
 
-static unsigned gfx_ctx_get_resolution_width(unsigned resolution_id)
-{
-   int gl_width;
-
-   return gl_width;
-}
-
 static bool gfx_ctx_bind_api(enum gfx_ctx_api api)
 {
-   g_api = api;
-   return api == GFX_CTX_OPENGL_ES_API;
+   (void)api;
+   return true;
 }
 
 static bool gfx_ctx_has_focus(void)

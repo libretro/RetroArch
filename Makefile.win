@@ -54,6 +54,7 @@ HAVE_DINPUT = 1
 HAVE_XAUDIO = 1
 HAVE_DSOUND = 1
 HAVE_OPENGL = 1
+HAVE_FBO = 1
 HAVE_DYLIB = 1
 HAVE_D3D9 = 1
 HAVE_NETPLAY = 1
@@ -69,7 +70,6 @@ ifeq ($(SLIM),)
    HAVE_FREETYPE = 1
    HAVE_ZLIB = 1
    HAVE_RSOUND = 1
-   HAVE_FBO = 1
    HAVE_CG = 1
    HAVE_PYTHON = 1
    HAVE_FFMPEG = 1
@@ -109,12 +109,12 @@ ifeq ($(HAVE_SDL), 1)
 endif
 
 ifeq ($(HAVE_THREADS), 1)
-   OBJ += autosave.o thread.o gfx/thread_wrapper.o
+   OBJ += autosave.o thread.o gfx/thread_wrapper.o audio/thread_wrapper.o
    DEFINES += -DHAVE_THREADS
 endif
 
 ifeq ($(HAVE_OPENGL), 1)
-   OBJ += gfx/gl.o gfx/math/matrix.o gfx/fonts/gl_font.o gfx/fonts/gl_raster_font.o gfx/gfx_context.o gfx/context/wgl_ctx.o gfx/shader_glsl.o 
+   OBJ += gfx/gl.o gfx/math/matrix.o gfx/fonts/gl_font.o gfx/fonts/gl_raster_font.o gfx/gfx_context.o gfx/context/wgl_ctx.o gfx/shader_glsl.o gfx/glsym/rglgen.o gfx/glsym/glsym_gl.o
    DEFINES += -DHAVE_OPENGL -DHAVE_OVERLAY -DHAVE_GLSL -DHAVE_GL_SYNC
    LIBS += -lopengl32 -lgdi32 -lcomdlg32
 endif
@@ -287,6 +287,7 @@ clean:
 	rm -f conf/*.o
 	rm -f gfx/scaler/*.o
 	rm -f gfx/*.o
+	rm -f gfx/glsym/*.o
 	rm -f gfx/d3d9/*.o
 	rm -f gfx/context/*.o
 	rm -f gfx/math/*.o
@@ -300,10 +301,10 @@ clean:
 	rm -f tools/*.o
 
 dist_x86: all
-	zip -r retroarch-win32-0.9.9.zip $(TARGET) $(JTARGET) retroarch.cfg
+	zip -r retroarch-win32-0.9.9.4.zip $(TARGET) $(JTARGET) retroarch.cfg
 
 dist_x86_64: all
-	zip -r retroarch-win64-0.9.9.zip $(TARGET) $(JTARGET) retroarch.cfg
+	zip -r retroarch-win64-0.9.9.4.zip $(TARGET) $(JTARGET) retroarch.cfg
 
 libs_x86:
 	wget http://themaister.net/retroarch-dl/RetroArch-win32-libs.zip

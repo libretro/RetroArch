@@ -204,6 +204,12 @@ VIDEO DRIVER
 
 #ifdef HAVE_OPENGL
 #include "../gfx/gl.c"
+#include "../gfx/glsym/rglgen.c"
+#ifdef HAVE_OPENGLES2
+#include "../gfx/glsym/glsym_es2.c"
+#else
+#include "../gfx/glsym/glsym_gl.c"
+#endif
 #endif
 
 #ifdef HAVE_XVIDEO
@@ -471,6 +477,8 @@ MAIN
 #include "../frontend/frontend_xenon.c"
 #elif defined(ANDROID)
 #include "../frontend/frontend_android.c"
+#elif defined(IOS) || defined(OSX)
+#include "../frontend/frontend_objc.c"
 #else
 #include "../frontend/frontend.c"
 #endif
@@ -488,6 +496,7 @@ THREAD
 #elif defined(HAVE_THREADS)
 #include "../thread.c"
 #include "../gfx/thread_wrapper.c"
+#include "../audio/thread_wrapper.c"
 #ifndef RARCH_CONSOLE
 #include "../autosave.c"
 #endif

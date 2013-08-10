@@ -135,7 +135,7 @@ check_lib COREAUDIO "-framework AudioUnit" AudioUnitInitialize
 
 check_pkgconf SDL sdl 1.2.10
 
-if [ "$HAVE_OPENGL" != 'no' ]; then
+if [ "$HAVE_OPENGL" != 'no' ] && [ "$HAVE_GLES" != 'yes' ]; then
    if [ "$OS" = 'Darwin' ]; then
       check_lib CG "-framework Cg" cgCreateContext
    else
@@ -143,7 +143,7 @@ if [ "$HAVE_OPENGL" != 'no' ]; then
       check_lib_cxx CG -lCg cgCreateContext
    fi
 else
-   echo "Ignoring Cg. OpenGL is not enabled."
+   echo "Ignoring Cg. Desktop OpenGL is not enabled."
    HAVE_CG='no'
 fi
 
