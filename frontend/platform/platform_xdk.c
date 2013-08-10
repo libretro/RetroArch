@@ -184,9 +184,17 @@ static HRESULT xbox_io_unmount(char *szDrive)
 static void get_environment_settings(int argc, char *argv[])
 {
    HRESULT ret;
-   (void)argc;
-   (void)argv;
    (void)ret;
+
+#ifndef IS_SALAMANDER
+   g_extern.verbose = true;
+
+#if defined(HAVE_LOGGER)
+   logger_init();
+#elif defined(HAVE_FILE_LOGGER)
+   g_extern.log_file = fopen("/retroarch-log.txt", "w");
+#endif
+#endif
 
 #ifdef _XBOX360
    // detect install environment
@@ -254,6 +262,10 @@ static void get_environment_settings(int argc, char *argv[])
    rarch_make_dir(default_paths.savestate_dir, "savestate_dir");
    rarch_make_dir(default_paths.sram_dir, "sram_dir");
    rarch_make_dir(default_paths.input_presets_dir, "input_presets_dir");
+
+   config_load();
+
+   rarch_get_environment_console();
 #endif
 }
 

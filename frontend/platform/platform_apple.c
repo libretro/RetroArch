@@ -93,6 +93,8 @@ static void environment_get(int argc, char *argv[])
    strlcpy(g_extern.savestate_dir, system_directory, sizeof(g_extern.savestate_dir));
    strlcpy(g_extern.savefile_dir, system_directory, sizeof(g_extern.savefile_dir));
    free(system_directory);
+
+   config_load();
 #endif
 }
 

@@ -58,6 +58,7 @@ const frontend_ctx_driver_t *frontend_ctx_init_first(void); // Finds first suita
 
 #ifdef RARCH_CONSOLE
 extern void rarch_make_dir(const char *x, const char *name);
+extern void rarch_get_environment_console(void);
 #endif
 
 #endif
