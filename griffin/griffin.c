@@ -205,7 +205,7 @@ VIDEO DRIVER
 #ifdef HAVE_OPENGL
 #include "../gfx/gl.c"
 
-#ifndef RARCH_CONSOLE
+#ifndef HAVE_PSGL
 #include "../gfx/glsym/rglgen.c"
 #ifdef HAVE_OPENGLES2
 #include "../gfx/glsym/glsym_es2.c"
