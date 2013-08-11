@@ -398,6 +398,8 @@ static bool thread_frame(void *data, const void *frame_,
 
    slock_lock(thr->lock);
 
+   // scond_wait_timeout cannot be implemented on consoles.
+#ifndef RARCH_CONSOLE
    if (!thr->nonblock)
    {
       rarch_time_t target = thr->last_time + thr->target_frame_time;
@@ -414,6 +416,7 @@ static bool thread_frame(void *data, const void *frame_,
             break;
       }
    }
+#endif
 
    // Drop frame if updated flag is still set, as thread is still working on last frame.
    if (!thr->frame.updated)
