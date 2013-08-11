@@ -245,12 +245,14 @@ static bool gl_shader_init(void *data)
       return true;
    }
 
+#ifdef HAVE_GLSL
    if (gl->core_context && RARCH_SHADER_CG)
    {
       RARCH_ERR("[GL]: Cg cannot be used with core GL context. Falling back to GLSL.\n");
       backend = &gl_glsl_backend;
       shader_path = NULL;
    }
+#endif
 
    gl->shader = backend;
    bool ret = gl->shader->init(shader_path);
