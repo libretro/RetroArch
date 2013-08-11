@@ -51,26 +51,15 @@ public class MainMenuActivity extends PreferenceActivity {
 			if (!detectDevice(false))
 			{
 			AlertDialog.Builder alert = new AlertDialog.Builder(this)
-				.setTitle("Two modes of play - pick one")
-				.setMessage("RetroArch has two modes of play: synchronize to refreshrate, and threaded video.\n\nSynchronize to refreshrate gives the most accurate results and can produce the smoothest results. However, it is hard to configure right and might result in unpleasant audio crackles when it has been configured wrong.\n\nThreaded video should work fine on most devices, but applies some adaptive video jittering to achieve this.\n\nChoose which of the two you want to use. (If you don't know, go for Threaded video). ")
-				.setPositiveButton("Threaded video", new DialogInterface.OnClickListener() {
+				.setTitle("Welcome to RetroArch")
+				.setMessage("This is your first time starting up RetroArch. RetroArch will now be preconfigured for the best possible gameplay experience. Please be aware that it might take some time until all shader and overlay assets are extracted.\n\nNOTE: Advanced users who want to finetune for the best possible audio/video experience should use static synchronization and turn off threaded video. Be aware that this is hard to configure right and might result in unpleasant audio crackles when it has been configured wrong.\n\nThreaded video should work fine on most devices, but applies some adaptive video jittering to achieve this. ")
+				.setPositiveButton("OK", new DialogInterface.OnClickListener() {
 					@Override
 					public void onClick(DialogInterface dialog, int which) {
 						SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getBaseContext());
 						SharedPreferences.Editor edit = prefs.edit();
 						edit.putBoolean("video_threaded", true);
 						edit.commit();
-					}
-				})
-				.setNegativeButton("Synchronize to refreshrate", new DialogInterface.OnClickListener() {
-					@Override
-					public void onClick(DialogInterface dialog, int which) {
-						SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getBaseContext());
-						SharedPreferences.Editor edit = prefs.edit();
-						edit.putBoolean("video_threaded", false);
-						edit.commit();
-						Intent i = new Intent(getBaseContext(), DisplayRefreshRateTest.class);
-						startActivity(i);
 					}
 				});
 			alert.show();
