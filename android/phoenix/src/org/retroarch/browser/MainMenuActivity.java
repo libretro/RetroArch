@@ -165,7 +165,7 @@ public class MainMenuActivity extends PreferenceActivity {
 		{
 			AlertDialog.Builder alert = new AlertDialog.Builder(this)
 			.setTitle("NVidia Shield detected")
-			.setMessage("Would you like to set up the ideal configuration options for your device?\nNOTE: For optimal performance, turn off Google Account sync, GPS and Wifi in your Android settings menu.\n\nNOTE: If you know what you are doing, it is advised to turn 'Threaded Video' off afterwards and try running games without it. In theory it will be smoother, but your mileage varies depending on your device and configuration.")
+			.setMessage("Would you like to set up the ideal configuration options for your device?\nNOTE: For optimal performance, turn off Google Account sync, Google Play Store auto-updates, GPS and Wifi in your Android settings menu.")
 			.setPositiveButton("Yes", new DialogInterface.OnClickListener() {
 				@Override
 				public void onClick(DialogInterface dialog, int which) {
@@ -185,7 +185,7 @@ public class MainMenuActivity extends PreferenceActivity {
 		{
 			AlertDialog.Builder alert = new AlertDialog.Builder(this)
 			.setTitle("Nexus 7 2013 detected")
-			.setMessage("Would you like to set up the ideal configuration options for your device?\nNOTE: For optimal performance, turn off Google Account sync, GPS and Wifi in your Android settings menu. \n\nNOTE: If you know what you are doing, it is advised to turn 'Threaded Video' off afterwards and try running games without it. In theory it will be smoother, but your mileage varies depending on your device and configuration.")
+			.setMessage("Would you like to set up the ideal configuration options for your device?\nNOTE: For optimal performance, turn off Google Account sync, Google Play Store auto-updates, GPS and Wifi in your Android settings menu.")
 			.setPositiveButton("Yes", new DialogInterface.OnClickListener() {
 				@Override
 				public void onClick(DialogInterface dialog, int which) {
