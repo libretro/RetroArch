@@ -10,6 +10,30 @@
         android:layout_height="wrap_content"
         android:layout_margin="40px"
         android:text="
+        r18 (August 7, 2013)\n\n
+        * [Android] ANR issues fixed - Google bug (as ever).\n
+        * [Android] Input autodetection expanded -\n
+        - NVidia Shield\n
+        - iControlPad changes\n 
+        - Logitech Rumblepad 2 (added RETRO_DEVICE_ID_ANALOG support)\n
+        - Xbox 360 (D-pad should be fixed, added RETRO_DEVICE_ID_ANALOG support, triggers should work)\n
+        * [RGUI] Throttle with timers - no more irrational super-fast menu with threaded video.\n
+        * [Android] Appeal to low-latency audio Android devices for OpenSL (Android 4.1 and up)\n
+        * [Android] Look for the optimal sampling rate instead of assuming 48KHz as default - should fix Nexus 10\n
+        * [Android] Added 'Optimal Device Settings' and added support for both Nexus 7 2013 and Nvidia Shield\n
+        * [Android] Added adaptive jittering for threaded video option. Should now be much more tolerable.\n
+        * [Android] Enable threaded video by default - leave static syncing for expert users.\n
+        * (LIBRETRO) Added Picodrive (PC/Android/iOS/Blackberry)\n
+        * (LIBRETRO) Added SNES9x mainline.\n
+        * (LIBRETRO) Added Stella.\n
+        * (LIBRETRO) Added Desmume.\n
+        * [TyrQuake] Added dual analog core option.\n
+        * [NEStopia] Add Core Options for blargg NTSC.\n
+        * [FBA core] Prevent diagnostics at startup from being enabled to avoid crash.\n
+        * [Stella] 2 players should work now.\n
+        * [Genesis Plus GX] Updated to latest version.\n
+        * [VBA Next] Start sanitizing some code back to VBA-M proper.\n
+        * [NX Engine/Cave Story] Fixed big-endian bug on scrolling backgrounds.\n
         r17 (June 28, 2013)\n\n
         * [Android] Input autodetection expanded -\n
         - Xperia Play controls fixed once and for all (thanks to littleguy77)\n

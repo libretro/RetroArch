@@ -354,7 +354,6 @@
 					"-D__LIBRETRO__",
 					"-DRARCH_PERFORMANCE_MODE",
 					"-DRARCH_MOBILE",
-					"-DPACKAGE_VERSION=\\\"0.9.9.3\\\"",
 					"-DHAVE_COREAUDIO",
 					"-DHAVE_DYNAMIC",
 					"-DHAVE_OVERLAY",

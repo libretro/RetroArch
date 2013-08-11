@@ -109,7 +109,6 @@ enum menu_enums
 {
    MODE_GAME = 0,
    MODE_LOAD_GAME,
-   MODE_INIT,
    MODE_MENU,
    MODE_MENU_WIDESCREEN,
    MODE_MENU_HD,
@@ -118,7 +117,6 @@ enum menu_enums
    MODE_INFO_DRAW,
    MODE_FPS_DRAW,
    MODE_EXTLAUNCH_MULTIMAN,
-   MODE_EXIT,
    MODE_EXITSPAWN,
    MODE_EXITSPAWN_START_GAME,
    MODE_EXITSPAWN_MULTIMAN,
@@ -128,9 +126,7 @@ enum menu_enums
    MODE_VIDEO_SOFT_FILTER_ENABLE,
    MODE_VIDEO_PAL_ENABLE,
    MODE_VIDEO_PAL_TEMPORAL_ENABLE,
-   MODE_VIDEO_PAL_VSYNC_BLOCK,
    MODE_AUDIO_CUSTOM_BGM_ENABLE,
-   MODE_OSK_DRAW,
    MODE_OSK_ENTRY_SUCCESS,
    MODE_OSK_ENTRY_FAIL,
 };
@@ -268,6 +264,7 @@ struct settings
    unsigned rewind_granularity;
 
    float slowmotion_ratio;
+   float fastforward_ratio;
 
    bool pause_nonactive;
    unsigned autosave_interval;
@@ -373,6 +370,12 @@ struct global
 
    struct
    {
+      rarch_time_t minimum_frame_time;
+      rarch_time_t last_frame_time;
+   } frame_limit;
+
+   struct
+   {
       struct retro_system_info info;
       struct retro_system_av_info av_info;
       float aspect_ratio;
@@ -390,9 +393,13 @@ struct global
       char valid_extensions[PATH_MAX];
       
       retro_keyboard_event_t key_event;
+      retro_audio_callback_t audio_callback;
 
       struct retro_disk_control_callback disk_control; 
       struct retro_hw_render_callback hw_render_callback;
+
+      struct retro_frame_time_callback frame_time;
+      retro_usec_t frame_time_last;
 
       core_option_manager_t *core_options;
    } system;
@@ -431,7 +438,6 @@ struct global
 
       float volume_db;
       float volume_gain;
-
    } audio_data;
 
    struct
@@ -670,7 +676,11 @@ bool config_save_keybinds(const char *path);
 void rarch_game_reset(void);
 void rarch_main_clear_state(void);
 void rarch_init_system_info(void);
+#ifdef __APPLE__
+void * rarch_main(void *args);
+#else
 int rarch_main(int argc, char *argv[]);
+#endif
 int rarch_main_init_wrap(const struct rarch_main_wrap *args);
 int rarch_main_init(int argc, char *argv[]);
 bool rarch_main_idle_iterate(void);

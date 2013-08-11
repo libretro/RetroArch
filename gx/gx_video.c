@@ -1012,17 +1012,6 @@ static void gx_set_rotation(void *data, unsigned orientation)
    gx->should_resize = true;
 }
 
-static bool gx_set_shader(void *data, enum rarch_shader_type type, const char *path)
-{
-   (void)data;
-   (void)type;
-   (void)path;
-   (void)index;
-
-   RARCH_WARN("Shader support is not implemented for GX.\n");
-   return false;
-}
-
 static void gx_set_texture_frame(void *data, const void *frame,
       bool rgb32, unsigned width, unsigned height, float alpha)
 {

@@ -2,6 +2,7 @@ TARGET = retroarch.exe
 JTARGET = tools/retroarch-joyconfig.exe
 
 OBJ = frontend/frontend.o \
+		frontend/frontend_context.o \
 		retroarch.o \
 		file.o \
 		file_path.o \
@@ -53,6 +54,7 @@ HAVE_DINPUT = 1
 HAVE_XAUDIO = 1
 HAVE_DSOUND = 1
 HAVE_OPENGL = 1
+HAVE_FBO = 1
 HAVE_DYLIB = 1
 HAVE_D3D9 = 1
 HAVE_NETPLAY = 1
@@ -68,7 +70,6 @@ ifeq ($(SLIM),)
    HAVE_FREETYPE = 1
    HAVE_ZLIB = 1
    HAVE_RSOUND = 1
-   HAVE_FBO = 1
    HAVE_CG = 1
    HAVE_PYTHON = 1
    HAVE_FFMPEG = 1
@@ -77,7 +78,7 @@ endif
 libretro ?= -lretro
 
 LIBS = -lm
-DEFINES = -I. -DHAVE_SCREENSHOTS -DHAVE_BSV_MOVIE -DPACKAGE_VERSION=\"0.9.9.3\"
+DEFINES = -I. -DHAVE_SCREENSHOTS -DHAVE_BSV_MOVIE
 LDFLAGS = -L. -static-libgcc
 
 ifeq ($(TDM_GCC),)
@@ -100,7 +101,7 @@ ifeq ($(HAVE_RGUI), 1)
 endif
 
 ifeq ($(HAVE_SDL), 1)
-   OBJ += gfx/sdl_gfx.o gfx/context/sdl_ctx.o input/sdl_input.o input/sdl_joypad.o audio/sdl_audio.o
+   OBJ += gfx/sdl_gfx.o input/sdl_input.o input/sdl_joypad.o audio/sdl_audio.o
    JOBJ += input/sdl_joypad.o
    LIBS += -lSDL
    JLIBS += -lSDL
@@ -108,12 +109,12 @@ ifeq ($(HAVE_SDL), 1)
 endif
 
 ifeq ($(HAVE_THREADS), 1)
-   OBJ += autosave.o thread.o gfx/thread_wrapper.o
+   OBJ += autosave.o thread.o gfx/thread_wrapper.o audio/thread_wrapper.o
    DEFINES += -DHAVE_THREADS
 endif
 
 ifeq ($(HAVE_OPENGL), 1)
-   OBJ += gfx/gl.o gfx/math/matrix.o gfx/fonts/gl_font.o gfx/fonts/gl_raster_font.o gfx/gfx_context.o gfx/context/wgl_ctx.o gfx/shader_glsl.o 
+   OBJ += gfx/gl.o gfx/math/matrix.o gfx/fonts/gl_font.o gfx/fonts/gl_raster_font.o gfx/gfx_context.o gfx/context/wgl_ctx.o gfx/shader_glsl.o gfx/glsym/rglgen.o gfx/glsym/glsym_gl.o
    DEFINES += -DHAVE_OPENGL -DHAVE_OVERLAY -DHAVE_GLSL -DHAVE_GL_SYNC
    LIBS += -lopengl32 -lgdi32 -lcomdlg32
 endif
@@ -286,6 +287,7 @@ clean:
 	rm -f conf/*.o
 	rm -f gfx/scaler/*.o
 	rm -f gfx/*.o
+	rm -f gfx/glsym/*.o
 	rm -f gfx/d3d9/*.o
 	rm -f gfx/context/*.o
 	rm -f gfx/math/*.o
@@ -299,21 +301,21 @@ clean:
 	rm -f tools/*.o
 
 dist_x86: all
-	zip -r retroarch-win32-0.9.9.zip $(TARGET) $(JTARGET) retroarch.cfg
+	zip -r retroarch-win32-0.9.9.4.zip $(TARGET) $(JTARGET) retroarch.cfg
 
 dist_x86_64: all
-	zip -r retroarch-win64-0.9.9.zip $(TARGET) $(JTARGET) retroarch.cfg
+	zip -r retroarch-win64-0.9.9.4.zip $(TARGET) $(JTARGET) retroarch.cfg
 
 libs_x86:
-	wget https://github.com/downloads/Themaister/RetroArch/RetroArch-win32-libs.zip --no-check-certificate
+	wget http://themaister.net/retroarch-dl/RetroArch-win32-libs.zip
 	unzip RetroArch-win32-libs.zip
-	wget https://github.com/downloads/Themaister/RetroArch/RetroArch-win32-headers.zip --no-check-certificate
+	wget http://themaister.net/retroarch-dl/RetroArch-win32-headers.zip
 	unzip RetroArch-win32-headers.zip
 
 libs_x86_64:
-	wget https://github.com/downloads/Themaister/RetroArch/RetroArch-win64-libs.zip --no-check-certificate
+	wget http://themaister.net/retroarch-dl/RetroArch-win64-libs.zip
 	unzip RetroArch-win64-libs.zip
-	wget https://github.com/downloads/Themaister/RetroArch/RetroArch-win64-headers.zip --no-check-certificate
+	wget http://themaister.net/retroarch-dl/RetroArch-win64-headers.zip
 	unzip RetroArch-win64-headers.zip
 
 .PHONY: all install uninstall clean dist_x86 dist_x86_64 libs_x86 libs_x86_64

@@ -270,6 +270,7 @@ enum input_devices
    DEVICE_GAMEMID,
    DEVICE_DEFENDER_GAME_RACER_CLASSIC,
    DEVICE_HOLTEK_JC_U912F,
+   DEVICE_NVIDIA_SHIELD,
 #elif defined(GEKKO)
    DEVICE_GAMECUBE = 0,
 #ifdef HW_RVL
@@ -301,6 +302,7 @@ enum analog_dpad_bind_enums
    ANALOG_DPAD_NONE = 0,
    ANALOG_DPAD_LSTICK,
    ANALOG_DPAD_RSTICK,
+   ANALOG_DPAD_DUALANALOG,
    ANALOG_DPAD_LAST
 };
 
@@ -417,6 +419,11 @@ typedef struct driver
 
    bool threaded_video;
 
+   // If set during context deinit, the driver should keep
+   // graphics context alive to avoid having to reset all context state.
+   bool video_cache_context;
+   bool video_cache_context_ack; // Set to true by driver if context caching succeeded.
+
    // Set if the respective handles are owned by RetroArch driver core.
    // Consoles upper logic will generally intialize the drivers before
    // the driver core initializes. It will then be up to upper logic
@@ -516,6 +523,7 @@ extern const video_driver_t video_xdk_d3d;
 extern const video_driver_t video_sdl;
 extern const video_driver_t video_vg;
 extern const video_driver_t video_null;
+extern const video_driver_t video_omap;
 extern const input_driver_t input_android;
 extern const input_driver_t input_sdl;
 extern const input_driver_t input_dinput;

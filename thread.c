@@ -152,12 +152,12 @@ void scond_wait(scond_t *cond, slock_t *lock)
    slock_lock(lock);
 }
 
-bool scond_wait_timeout(scond_t *cond, slock_t *lock, unsigned timeout_ms)
+bool scond_wait_timeout(scond_t *cond, slock_t *lock, int64_t timeout_us)
 {
    WaitForSingleObject(cond->event, 0);
    slock_unlock(lock);
 
-   DWORD res = WaitForSingleObject(cond->event, timeout_ms);
+   DWORD res = WaitForSingleObject(cond->event, timeout_us / 1000);
 
    slock_lock(lock);
    return res == WAIT_OBJECT_0;
@@ -289,7 +289,7 @@ void scond_wait(scond_t *cond, slock_t *lock)
 }
 
 #ifndef RARCH_CONSOLE
-bool scond_wait_timeout(scond_t *cond, slock_t *lock, unsigned timeout_ms)
+bool scond_wait_timeout(scond_t *cond, slock_t *lock, int64_t timeout_us)
 {
    struct timespec now;
 
@@ -305,11 +305,11 @@ bool scond_wait_timeout(scond_t *cond, slock_t *lock, unsigned timeout_ms)
    clock_gettime(CLOCK_REALTIME, &now);
 #endif
 
-   now.tv_sec += timeout_ms / 1000;
-   now.tv_nsec += timeout_ms * 1000000L;
+   now.tv_sec += timeout_us / 1000000LL;
+   now.tv_nsec += timeout_us * 1000LL;
 
-   now.tv_sec += now.tv_nsec / 1000000000L;
-   now.tv_nsec = now.tv_nsec % 1000000000L;
+   now.tv_sec += now.tv_nsec / 1000000000LL;
+   now.tv_nsec = now.tv_nsec % 1000000000LL;
 
    int ret = pthread_cond_timedwait(&cond->cond, &lock->lock, &now);
    return ret == 0;

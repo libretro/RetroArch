@@ -1,79 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
-    android:title="RetroArch Settings" >
+    android:title="RetroArch 0.9.9.5 - Main Menu" >
 
-    <PreferenceScreen android:title="Path Settings">
-        <PreferenceCategory android:title="ROM paths">
-            <Preference android:title="ROM directory"
-                android:summary="Sets directory where ROM browser will first browse for ROM files.">
-                <intent
-                    android:targetClass="org.retroarch.browser.ROMDirActivity"
-                    android:targetPackage="org.retroarch" />
-            </Preference>
-        </PreferenceCategory>
-        
-        <PreferenceCategory android:title="Save files">
-            <CheckBoxPreference android:title="Enable custom directory"
-                android:summary="Enables use of custom save file folder. (.srm) save files will be saved and loaded to configured directory. If not enabled, save files will reside in ROM folder."
-                android:key="savefile_directory_enable"
-                android:defaultValue="false"/>
-            <Preference android:title="Savefile directory"
-                android:summary="Sets directory where to save and load game save files."
-                android:dependency="savefile_directory_enable">
-                <intent
-                    android:targetClass="org.retroarch.browser.SRMDirActivity"
-                    android:targetPackage="org.retroarch" />
-            </Preference>            
-        </PreferenceCategory>
-        <PreferenceCategory android:title="Save states">
-            <CheckBoxPreference android:title="Enable custom directory"
-                android:summary="Enables use of custom save state folder. (.state) save states will be saved and loaded to configured directory. If not enabled, save states will reside in ROM folder."
-                android:key="savestate_directory_enable"
-                android:defaultValue="false"/>
-            <Preference android:title="Save state directory"
-                android:summary="Sets directory where to save and load game save states."
-                android:dependency="savestate_directory_enable">
-                <intent
-                    android:targetClass="org.retroarch.browser.StateDirActivity"
-                    android:targetPackage="org.retroarch" />
-            </Preference>
-        </PreferenceCategory>
-        <PreferenceCategory android:title="System">
-            <CheckBoxPreference android:title="Enable custom directory"
-                android:summary="Enables use of custom system folder. Cores will look for system specific files, like BIOSes, in this folder. If not enabled, it will look in the ROM folder."
-                android:key="system_directory_enable"
-                android:defaultValue="false"/>
-            <Preference android:title="System directory"
-                android:summary="Sets directory where system files are loaded from."
-                android:dependency="system_directory_enable">
-                <intent
-                    android:targetClass="org.retroarch.browser.SystemDirActivity"
-                    android:targetPackage="org.retroarch" />
-            </Preference>
-        </PreferenceCategory>
+    <PreferenceScreen android:title="Select Game">
+       <intent
+          android:targetClass="org.retroarch.browser.RetroArch"
+          android:targetPackage="org.retroarch" />
     </PreferenceScreen>
-    <PreferenceScreen android:title="System Settings" >
-        <PreferenceCategory android:title="General" >
-            <CheckBoxPreference
-                android:defaultValue="true"
-                android:key="savestate_auto_load"
-                android:summary="Loads an automatically created savestate (*.state.auto) at startup."
-                android:title="Auto load state" />
-            <CheckBoxPreference
-                android:defaultValue="false"
-                android:key="savestate_auto_save"
-                android:summary="Automatically saves state (*.state.auto) when exiting game."
-                android:title="Auto save state" />
-        </PreferenceCategory>
-        <PreferenceCategory android:title="Rewinding" >
-            <CheckBoxPreference
-                android:defaultValue="false"
-                android:key="rewind_enable"
-                android:summary="Enable real-time rewinding of gameplay. (WARNING: Very CPU intensive - will decrease ingame performance by a lot - only use this option on a powerful device)."
-                android:title="Enable" />
-        </PreferenceCategory>
-    </PreferenceScreen>
-    <PreferenceScreen android:title="Video Settings" >
+    <PreferenceScreen android:title="Video Options" >
         <PreferenceCategory android:title="General" >
             <CheckBoxPreference
                 android:defaultValue="true"
@@ -124,21 +58,21 @@
                     android:targetPackage="org.retroarch" />
             </Preference>
         </PreferenceCategory>
-        <PreferenceCategory android:title="Shaders (1st pass)" >
+        <PreferenceCategory android:title="Shaders" >
             <CheckBoxPreference
                 android:defaultValue="true"
                 android:key="video_smooth"
                 android:summary="Applies Bilinear filtering, smooths out edges (settings still apply even if no shader is selected)."
                 android:title="Bilinear filter" />
             <CheckBoxPreference
-                android:summary="Enable first pass shader (WARNING: recommended system requirements for these shaders is a Tegra 4/Exynos5 class GPU and/or higher)."
+                android:summary="Enable first pass shader (WARNING: recommended system requirements for these shaders is a Tegra 4 / Exynos 5 class GPU and/or higher)."
                 android:defaultValue="false"
                 android:key="video_shader_enable"
                 android:title="Enable" />
 
             <Preference
-                android:summary="Sets GLES2 style XML shader."
-                android:title="XML shader"
+                android:summary="Sets GLES2 style shader."
+                android:title="GLSL shader"
                 android:dependency="video_shader_enable" >
                 <intent
                     android:targetClass="org.retroarch.browser.ShaderActivity"
@@ -152,7 +86,7 @@
                 android:defaultValue="true"/>
         </PreferenceCategory>
     </PreferenceScreen>
-    <PreferenceScreen android:title="Audio Settings" >
+    <PreferenceScreen android:title="Audio Options" >
         <PreferenceCategory android:title="Audio" >
             <CheckBoxPreference
                 android:defaultValue="true"
@@ -166,7 +100,7 @@
                 android:dependency="audio_enable" />
         </PreferenceCategory>
     </PreferenceScreen>
-    <PreferenceScreen android:title="Input Settings" >
+    <PreferenceScreen android:title="Input Options" >
        <PreferenceCategory android:title="General" >
             <ListPreference
                 android:entries="@array/back_options"
@@ -448,6 +382,114 @@
 	                android:key="input_player4_r3_btn"
 	                android:title="R3 Button" />
 	        </PreferenceScreen>
+        </PreferenceCategory>
+    </PreferenceScreen>
+    <PreferenceScreen android:title="Path Options">
+        <PreferenceCategory android:title="ROM paths">
+            <Preference android:title="ROM directory"
+                android:summary="Sets directory where ROM browser will first browse for ROM files.">
+                <intent
+                    android:targetClass="org.retroarch.browser.ROMDirActivity"
+                    android:targetPackage="org.retroarch" />
+            </Preference>
+        </PreferenceCategory>
+        
+        <PreferenceCategory android:title="Save files">
+            <CheckBoxPreference android:title="Enable custom directory"
+                android:summary="Enables use of custom save file folder. (.srm) save files will be saved and loaded to configured directory. If not enabled, save files will reside in ROM folder."
+                android:key="savefile_directory_enable"
+                android:defaultValue="false"/>
+            <Preference android:title="Savefile directory"
+                android:summary="Sets directory where to save and load game save files."
+                android:dependency="savefile_directory_enable">
+                <intent
+                    android:targetClass="org.retroarch.browser.SRMDirActivity"
+                    android:targetPackage="org.retroarch" />
+            </Preference>            
+        </PreferenceCategory>
+        <PreferenceCategory android:title="Save states">
+            <CheckBoxPreference android:title="Enable custom directory"
+                android:summary="Enables use of custom save state folder. (.state) save states will be saved and loaded to configured directory. If not enabled, save states will reside in ROM folder."
+                android:key="savestate_directory_enable"
+                android:defaultValue="false"/>
+            <Preference android:title="Save state directory"
+                android:summary="Sets directory where to save and load game save states."
+                android:dependency="savestate_directory_enable">
+                <intent
+                    android:targetClass="org.retroarch.browser.StateDirActivity"
+                    android:targetPackage="org.retroarch" />
+            </Preference>
+        </PreferenceCategory>
+        <PreferenceCategory android:title="System">
+            <CheckBoxPreference android:title="Enable custom directory"
+                android:summary="Enables use of custom system folder. Cores will look for system specific files, like BIOSes, in this folder. If not enabled, it will look in the ROM folder."
+                android:key="system_directory_enable"
+                android:defaultValue="false"/>
+            <Preference android:title="System directory"
+                android:summary="Sets directory where system files are loaded from."
+                android:dependency="system_directory_enable">
+                <intent
+                    android:targetClass="org.retroarch.browser.SystemDirActivity"
+                    android:targetPackage="org.retroarch" />
+            </Preference>
+        </PreferenceCategory>
+    </PreferenceScreen>
+    <PreferenceScreen android:title="Settings" >
+        <PreferenceCategory android:title="General" >
+            <CheckBoxPreference
+                android:defaultValue="true"
+                android:key="savestate_auto_load"
+                android:summary="Loads an automatically created savestate (*.state.auto) at startup."
+                android:title="Auto load state" />
+            <CheckBoxPreference
+                android:defaultValue="false"
+                android:key="savestate_auto_save"
+                android:summary="Automatically saves state (*.state.auto) when exiting game."
+                android:title="Auto save state" />
+        </PreferenceCategory>
+        <PreferenceCategory android:title="Rewinding" >
+            <CheckBoxPreference
+                android:defaultValue="false"
+                android:key="rewind_enable"
+                android:summary="Enable real-time rewinding of gameplay. (WARNING: Very CPU intensive - will decrease ingame performance by a lot - only use this option on a powerful device)."
+                android:title="Enable" />
+        </PreferenceCategory>
+    </PreferenceScreen>
+    <PreferenceScreen android:title="Help">
+       <intent
+          android:targetClass="org.retroarch.browser.HelpActivity"
+          android:targetPackage="org.retroarch" />
+    </PreferenceScreen>
+    <PreferenceScreen android:title="About">
+        <PreferenceCategory android:title="Websites">
+           <Preference android:title="RetroArch/libretro homepage"
+              android:summary="The official homepage of the RetroArch/libretro project.">
+                <intent
+                    android:action="android.intent.action.VIEW"
+                    android:data="http://www.libretro.com" />
+            </Preference>
+        </PreferenceCategory>
+        <PreferenceCategory android:title="Manuals">
+           <Preference android:title="RetroArch Guide (PDF)"
+              android:summary="The manual to RetroArch Android in PDF format.">
+                <intent
+                    android:action="android.intent.action.VIEW"
+                    android:data="http://www.libretro.com/documents/retroarch-manual.pdf" />
+            </Preference>
+           <Preference android:title="Cores Guide (PDF)"
+              android:summary="The manual to most libretro cores in PDF format.">
+                <intent
+                    android:action="android.intent.action.VIEW"
+                    android:data="http://www.libretro.com/documents/retroarch-cores-manual.pdf" />
+            </Preference>
+        </PreferenceCategory>
+        <PreferenceCategory android:title="Development">
+           <Preference android:title="Overlay Guide (PDF)"
+              android:summary="Explains howto make your own overlays.">
+                <intent
+                    android:action="android.intent.action.VIEW"
+                    android:data="http://www.libretro.com/documents/overlay.pdf" />
+            </Preference>
         </PreferenceCategory>
     </PreferenceScreen>
 </PreferenceScreen>

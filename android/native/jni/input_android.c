@@ -33,6 +33,12 @@ typedef struct
    float dzone_max;
 } dpad_values_t;
 
+typedef struct
+{
+   int16_t lx, ly;
+   int16_t rx, ry;
+} analog_t;
+
 #define PRESSED_UP(x, y)    ((y <= dzone_min))
 #define PRESSED_DOWN(x, y)  ((y >= dzone_max))
 #define PRESSED_LEFT(x, y)  ((x <= dzone_min))
@@ -43,7 +49,7 @@ static int state_device_ids[MAX_PADS];
 static uint64_t state[MAX_PADS];
 static uint64_t keycode_lut[LAST_KEYCODE];
 dpad_values_t dpad_state[MAX_PADS]; 
-
+analog_t analog_state[MAX_PADS];
 
 struct input_pointer
 {
@@ -61,10 +67,12 @@ enum
    AXIS_Z = 11,
    AXIS_RZ = 14,
    AXIS_HAT_X = 15,
-   AXIS_HAT_Y = 16
+   AXIS_HAT_Y = 16,
+   AXIS_LTRIGGER = 17,
+   AXIS_RTRIGGER = 18,
 };
 
-void (*engine_handle_dpad)(AInputEvent*, size_t, int, char*, size_t, int, bool);
+void (*engine_handle_dpad)(AInputEvent*, size_t, int, char*, size_t, int, bool, unsigned);
 
 extern float AMotionEvent_getAxisValue(const AInputEvent* motion_event,
       int32_t axis, size_t pointer_index);
@@ -183,7 +191,7 @@ void engine_handle_cmd(void)
 
 static void engine_handle_dpad_default(AInputEvent *event,
       size_t motion_pointer, int state_id, char *msg, size_t msg_sizeof,
-      int source, bool debug_enable)
+      int source, bool debug_enable, unsigned emulation)
 {
    uint64_t *state_cur = &state[state_id];
    float dzone_min = dpad_state[state_id].dzone_min;
@@ -194,10 +202,14 @@ static void engine_handle_dpad_default(AInputEvent *event,
    *state_cur &= ~((1ULL << RETRO_DEVICE_ID_JOYPAD_LEFT) | 
          (1ULL << RETRO_DEVICE_ID_JOYPAD_RIGHT) | (1ULL << RETRO_DEVICE_ID_JOYPAD_UP) |
          (1ULL << RETRO_DEVICE_ID_JOYPAD_DOWN));
-   *state_cur |= PRESSED_LEFT(x, y)  ? (1ULL << RETRO_DEVICE_ID_JOYPAD_LEFT)  : 0;
-   *state_cur |= PRESSED_RIGHT(x, y) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_RIGHT) : 0;
-   *state_cur |= PRESSED_UP(x, y)    ? (1ULL << RETRO_DEVICE_ID_JOYPAD_UP)    : 0;
-   *state_cur |= PRESSED_DOWN(x, y)  ? (1ULL << RETRO_DEVICE_ID_JOYPAD_DOWN)  : 0;
+
+   if (emulation == ANALOG_DPAD_LSTICK)
+   {
+      *state_cur |= PRESSED_LEFT(x, y)  ? (1ULL << RETRO_DEVICE_ID_JOYPAD_LEFT)  : 0;
+      *state_cur |= PRESSED_RIGHT(x, y) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_RIGHT) : 0;
+      *state_cur |= PRESSED_UP(x, y)    ? (1ULL << RETRO_DEVICE_ID_JOYPAD_UP)    : 0;
+      *state_cur |= PRESSED_DOWN(x, y)  ? (1ULL << RETRO_DEVICE_ID_JOYPAD_DOWN)  : 0;
+   }
 
    if (debug_enable)
       snprintf(msg, msg_sizeof, "Pad %d : x = %.2f, y = %.2f, src %d.\n",
@@ -206,7 +218,7 @@ static void engine_handle_dpad_default(AInputEvent *event,
 
 static void engine_handle_dpad_getaxisvalue(AInputEvent *event,
       size_t motion_pointer, int state_id, char *msg, size_t msg_sizeof, int source,
-      bool debug_enable)
+      bool debug_enable, unsigned emulation)
 {
    uint64_t *state_cur = &state[state_id];
    float dzone_min = dpad_state[state_id].dzone_min;
@@ -217,25 +229,41 @@ static void engine_handle_dpad_getaxisvalue(AInputEvent *event,
    float rz = AMotionEvent_getAxisValue(event, AXIS_RZ, motion_pointer);
    float hatx = AMotionEvent_getAxisValue(event, AXIS_HAT_X, motion_pointer);
    float haty = AMotionEvent_getAxisValue(event, AXIS_HAT_Y, motion_pointer);
+   float ltrig = AMotionEvent_getAxisValue(event, AXIS_LTRIGGER, motion_pointer);
+   float rtrig = AMotionEvent_getAxisValue(event, AXIS_RTRIGGER, motion_pointer);
 
    *state_cur &= ~((1ULL << RETRO_DEVICE_ID_JOYPAD_LEFT) | 
+         (1ULL << RETRO_DEVICE_ID_JOYPAD_L2) | (1ULL << RETRO_DEVICE_ID_JOYPAD_R2) |
          (1ULL << RETRO_DEVICE_ID_JOYPAD_RIGHT) | (1ULL << RETRO_DEVICE_ID_JOYPAD_UP) |
          (1ULL << RETRO_DEVICE_ID_JOYPAD_DOWN));
 
    /* On some devices the dpad sends AXIS_HAT_X / AXIS_HAT_Y events, use those first if the returned values are nonzero */
-   if (fabs(hatx) > 0.0001 || fabs(haty) > 0.0001)
+   if (fabsf(hatx) > 0.0001f || fabsf(haty) > 0.0001f)
    {
       *state_cur |= PRESSED_LEFT(hatx, haty)  ? (1ULL << RETRO_DEVICE_ID_JOYPAD_LEFT)  : 0;
       *state_cur |= PRESSED_RIGHT(hatx, haty) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_RIGHT) : 0;
       *state_cur |= PRESSED_UP(hatx, haty)    ? (1ULL << RETRO_DEVICE_ID_JOYPAD_UP)    : 0;
       *state_cur |= PRESSED_DOWN(hatx, haty)  ? (1ULL << RETRO_DEVICE_ID_JOYPAD_DOWN)  : 0;
    }
-   else
+   else if (emulation == ANALOG_DPAD_LSTICK)
    {
       *state_cur |= PRESSED_LEFT(x, y)  ? (1ULL << RETRO_DEVICE_ID_JOYPAD_LEFT)  : 0;
       *state_cur |= PRESSED_RIGHT(x, y) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_RIGHT) : 0;
       *state_cur |= PRESSED_UP(x, y)    ? (1ULL << RETRO_DEVICE_ID_JOYPAD_UP)    : 0;
       *state_cur |= PRESSED_DOWN(x, y)  ? (1ULL << RETRO_DEVICE_ID_JOYPAD_DOWN)  : 0;
+   }
+
+   if (ltrig > 0.5f)
+      *state_cur |= 1ULL << RETRO_DEVICE_ID_JOYPAD_L2;
+   if (rtrig > 0.5f)
+      *state_cur |= 1ULL << RETRO_DEVICE_ID_JOYPAD_R2;
+
+   if (emulation == ANALOG_DPAD_DUALANALOG)
+   {
+      analog_state[state_id].lx = x * 0x7fff;
+      analog_state[state_id].ly = y * 0x7fff;
+      analog_state[state_id].rx = z * 0x7fff;
+      analog_state[state_id].ry = rz * 0x7fff;
    }
 
    if (debug_enable)
@@ -248,7 +276,7 @@ static void *android_input_init(void)
    unsigned i, j, k;
    pads_connected = 0;
 
-   for(j = 0; j < LAST_KEYCODE; j++)
+   for (j = 0; j < LAST_KEYCODE; j++)
       keycode_lut[j] = 0;
 
    if (!g_settings.input.autodetect_enable)
@@ -267,9 +295,9 @@ static void *android_input_init(void)
       }
    }
 
-   for(i = 0; i < MAX_PADS; i++)
+   for (i = 0; i < MAX_PADS; i++)
    {
-      for(j = 0; j < RARCH_FIRST_META_KEY; j++)
+      for (j = 0; j < RARCH_FIRST_META_KEY; j++)
       {
          g_settings.input.binds[i][j].id = i;
          g_settings.input.binds[i][j].joykey = 0;
@@ -351,6 +379,7 @@ static void android_input_set_keybinds(void *data, unsigned device,
             strlcpy(g_settings.input.device_names[port], "Logitech Rumblepad 2",
                   sizeof(g_settings.input.device_names[port]));
 
+            g_settings.input.dpad_emulation[port] = ANALOG_DPAD_DUALANALOG;
             keycode_lut[AKEYCODE_BUTTON_2]  |=  ((RETRO_DEVICE_ID_JOYPAD_B+1)       << shift);
             keycode_lut[AKEYCODE_BUTTON_1]  |=  ((RETRO_DEVICE_ID_JOYPAD_Y+1)       << shift);
             keycode_lut[AKEYCODE_BUTTON_9]  |=  ((RETRO_DEVICE_ID_JOYPAD_SELECT+1)  << shift);
@@ -708,7 +737,8 @@ static void android_input_set_keybinds(void *data, unsigned device,
             strlcpy(g_settings.input.device_names[port], "Xbox",
                   sizeof(g_settings.input.device_names[port]));
 
-            /* TODO: left and right triggers for Xbox 1*/
+            g_settings.input.dpad_emulation[port] = ANALOG_DPAD_DUALANALOG;
+            keycode_lut[AKEYCODE_BACK] |=  ((RETRO_DEVICE_ID_JOYPAD_SELECT+1)      << shift);
             keycode_lut[AKEYCODE_BUTTON_SELECT] |= ((RETRO_DEVICE_ID_JOYPAD_SELECT+1) << shift);
             keycode_lut[AKEYCODE_BUTTON_START] |= ((RETRO_DEVICE_ID_JOYPAD_START+1) << shift);
             keycode_lut[AKEYCODE_BUTTON_THUMBL]  |= ((RETRO_DEVICE_ID_JOYPAD_L3+1) << shift);
@@ -725,6 +755,7 @@ static void android_input_set_keybinds(void *data, unsigned device,
             strlcpy(g_settings.input.device_names[port], "WiseGroup PlayStation2",
                   sizeof(g_settings.input.device_names[port]));
 
+            g_settings.input.dpad_emulation[port] = ANALOG_DPAD_DUALANALOG;
             keycode_lut[AKEYCODE_BUTTON_13] |=  ((RETRO_DEVICE_ID_JOYPAD_UP+1)      << shift);
             keycode_lut[AKEYCODE_BUTTON_15] |=  ((RETRO_DEVICE_ID_JOYPAD_DOWN+1)      << shift);
             keycode_lut[AKEYCODE_BUTTON_16] |=  ((RETRO_DEVICE_ID_JOYPAD_LEFT+1)      << shift);
@@ -857,12 +888,12 @@ static void android_input_set_keybinds(void *data, unsigned device,
             keycode_lut[AKEYCODE_DPAD_LEFT] |=  ((RETRO_DEVICE_ID_JOYPAD_LEFT+1)      << shift);
             keycode_lut[AKEYCODE_DPAD_RIGHT] |=  ((RETRO_DEVICE_ID_JOYPAD_RIGHT+1)      << shift);
             keycode_lut[AKEYCODE_BUTTON_1] |= ((RARCH_MENU_TOGGLE+1)     << shift);
-            keycode_lut[AKEYCODE_BUTTON_A] |=  ((RETRO_DEVICE_ID_JOYPAD_B+1)      << shift);
-            keycode_lut[AKEYCODE_BUTTON_X] |=  ((RETRO_DEVICE_ID_JOYPAD_Y+1)      << shift);
+            keycode_lut[AKEYCODE_BUTTON_A] |=  ((RETRO_DEVICE_ID_JOYPAD_A+1)      << shift);
+            keycode_lut[AKEYCODE_BUTTON_X] |=  ((RETRO_DEVICE_ID_JOYPAD_X+1)      << shift);
             keycode_lut[AKEYCODE_BUTTON_SELECT] |=  ((RETRO_DEVICE_ID_JOYPAD_SELECT+1) << shift);
             keycode_lut[AKEYCODE_BUTTON_START] |= ((RETRO_DEVICE_ID_JOYPAD_START+1)  << shift);
-            keycode_lut[AKEYCODE_BUTTON_Y] |=  ((RETRO_DEVICE_ID_JOYPAD_X+1)      << shift);
-            keycode_lut[AKEYCODE_BUTTON_B] |=  ((RETRO_DEVICE_ID_JOYPAD_A+1)      << shift);
+            keycode_lut[AKEYCODE_BUTTON_Y] |=  ((RETRO_DEVICE_ID_JOYPAD_Y+1)      << shift);
+            keycode_lut[AKEYCODE_BUTTON_B] |=  ((RETRO_DEVICE_ID_JOYPAD_B+1)      << shift);
             keycode_lut[AKEYCODE_BUTTON_L1] |=  ((RETRO_DEVICE_ID_JOYPAD_L+1)      << shift);
             keycode_lut[AKEYCODE_BUTTON_R1] |=  ((RETRO_DEVICE_ID_JOYPAD_R+1)      << shift);
             keycode_lut[AKEYCODE_BUTTON_L2] |=  ((RETRO_DEVICE_ID_JOYPAD_L2+1)     << shift);
@@ -1323,6 +1354,22 @@ static void android_input_set_keybinds(void *data, unsigned device,
                      keycode_lut[AKEYCODE_DPAD_LEFT] |= ((RETRO_DEVICE_ID_JOYPAD_LEFT+1)   << shift);
                      keycode_lut[AKEYCODE_DPAD_RIGHT]|= ((RETRO_DEVICE_ID_JOYPAD_RIGHT+1)  << shift);
                      break;
+                  case ICADE_PROFILE_IPEGA_PG9017_MODE2:
+                     strlcpy(g_settings.input.device_names[port], "iPega PG-9017 (Mode2)",
+                        sizeof(g_settings.input.device_names[port]));
+                     keycode_lut[AKEYCODE_M]  |= ((RETRO_DEVICE_ID_JOYPAD_Y+1)      << shift);
+                     keycode_lut[AKEYCODE_J]  |= ((RETRO_DEVICE_ID_JOYPAD_B+1)      << shift);
+                     keycode_lut[AKEYCODE_K]  |= ((RETRO_DEVICE_ID_JOYPAD_A+1)      << shift);
+                     keycode_lut[AKEYCODE_I]  |= ((RETRO_DEVICE_ID_JOYPAD_X+1)      << shift);
+                     keycode_lut[AKEYCODE_Q]  |= ((RETRO_DEVICE_ID_JOYPAD_L+1)      << shift);
+                     keycode_lut[AKEYCODE_P]  |= ((RETRO_DEVICE_ID_JOYPAD_R+1)      << shift);
+                     keycode_lut[AKEYCODE_R]  |= ((RETRO_DEVICE_ID_JOYPAD_SELECT+1) << shift);
+                     keycode_lut[AKEYCODE_Y] |= ((RETRO_DEVICE_ID_JOYPAD_START+1)  << shift);
+                     keycode_lut[AKEYCODE_DPAD_UP]   |= ((RETRO_DEVICE_ID_JOYPAD_UP+1)     << shift);
+                     keycode_lut[AKEYCODE_DPAD_DOWN] |= ((RETRO_DEVICE_ID_JOYPAD_DOWN+1)   << shift);
+                     keycode_lut[AKEYCODE_DPAD_LEFT] |= ((RETRO_DEVICE_ID_JOYPAD_LEFT+1)   << shift);
+                     keycode_lut[AKEYCODE_DPAD_RIGHT]|= ((RETRO_DEVICE_ID_JOYPAD_RIGHT+1)  << shift);
+                     break;
                   case ICADE_PROFILE_GAMESTOP_WIRELESS:
                      strlcpy(g_settings.input.device_names[port], "Gamestop Wireless",
                         sizeof(g_settings.input.device_names[port]));
@@ -1446,6 +1493,21 @@ static void android_input_set_keybinds(void *data, unsigned device,
             keycode_lut[AKEYCODE_BUTTON_Y]|= ((RETRO_DEVICE_ID_JOYPAD_X+1)    << shift);
             keycode_lut[AKEYCODE_BUTTON_L1]|= ((RETRO_DEVICE_ID_JOYPAD_L+1)    << shift);
             keycode_lut[AKEYCODE_BUTTON_R1]|= ((RETRO_DEVICE_ID_JOYPAD_R+1)    << shift);
+            break;
+         case DEVICE_NVIDIA_SHIELD:
+            g_settings.input.device[port] = device;
+            strlcpy(g_settings.input.device_names[port], "NVIDIA Shield",
+                  sizeof(g_settings.input.device_names[port]));
+            g_settings.input.dpad_emulation[port] = ANALOG_DPAD_DUALANALOG;
+            keycode_lut[AKEYCODE_BUTTON_B] |= ((RETRO_DEVICE_ID_JOYPAD_A+1) << shift);
+            keycode_lut[AKEYCODE_BUTTON_A] |= ((RETRO_DEVICE_ID_JOYPAD_B+1) << shift);
+            keycode_lut[AKEYCODE_BUTTON_Y] |= ((RETRO_DEVICE_ID_JOYPAD_X+1) << shift);
+            keycode_lut[AKEYCODE_BUTTON_X] |= ((RETRO_DEVICE_ID_JOYPAD_Y+1) << shift);
+            keycode_lut[AKEYCODE_BUTTON_L1] |= ((RETRO_DEVICE_ID_JOYPAD_L+1) << shift);
+            keycode_lut[AKEYCODE_BUTTON_R1] |= ((RETRO_DEVICE_ID_JOYPAD_R+1) << shift);
+            keycode_lut[AKEYCODE_BUTTON_START] |= ((RARCH_MENU_TOGGLE+1) << shift);
+            keycode_lut[AKEYCODE_BUTTON_THUMBL] |= ((RETRO_DEVICE_ID_JOYPAD_SELECT+1) << shift);
+            keycode_lut[AKEYCODE_BUTTON_THUMBR] |= ((RETRO_DEVICE_ID_JOYPAD_START+1) << shift);
             break;
          case DEVICE_CCPCREATIONS_WIIUSE_IME:
             g_settings.input.device[port] = device;
@@ -1585,20 +1647,21 @@ static void android_input_poll(void *data)
          // Read all pending events.
          while (AInputQueue_hasEvents(android_app->inputQueue))
          {
-            if (AInputQueue_getEvent(android_app->inputQueue, &event) >= 0)
+            int processed = 0;
+            while (AInputQueue_getEvent(android_app->inputQueue, &event) >= 0)
             {
                bool long_msg_enable = false;
                int32_t handled = 1;
                int action = 0;
                char msg[128];
                int source, id, keycode, type_event, state_id;
-               //int predispatched;
+               int predispatched;
 
                msg[0] = 0;
-               //predispatched =AInputQueue_preDispatchEvent(android_app->inputQueue,event);
+               predispatched = AInputQueue_preDispatchEvent(android_app->inputQueue,event);
 
-               //if (predispatched)
-               //continue;
+               if (predispatched)
+                  continue;
 
                source = AInputEvent_getSource(event);
                id = AInputEvent_getDeviceId(event);
@@ -1621,9 +1684,25 @@ static void android_input_poll(void *data)
                if (state_id < 0)
                {
                   state_id = pads_connected;
-                  state_device_ids[pads_connected++] = id;
+                  if (g_settings.input.autodetect_enable)
+                  {
+                     bool primary = false;
+                     input_autodetect_setup(android_app, msg, sizeof(msg), state_id, id, source, &primary);
 
-                  input_autodetect_setup(android_app, msg, sizeof(msg), state_id, id, source);
+                     if (primary)
+                     {
+                        RARCH_LOG("Found primary input device.\n");
+                        memmove(state_device_ids + 1, state_device_ids, pads_connected * sizeof(state_device_ids[0]));
+                        state_id = 0;
+                        state_device_ids[0] = id;
+                        pads_connected++;
+                     }
+                     else
+                        state_device_ids[pads_connected++] = id;
+                  }
+                  else
+                     state_device_ids[pads_connected++] = id;
+
                   long_msg_enable = true;
                }
 
@@ -1674,7 +1753,8 @@ static void android_input_poll(void *data)
                   if (source & ~(AINPUT_SOURCE_TOUCHSCREEN | AINPUT_SOURCE_MOUSE))
                   {
                      if (g_settings.input.dpad_emulation[state_id] != ANALOG_DPAD_NONE)
-                        engine_handle_dpad(event, motion_pointer, state_id, msg, sizeof(msg), source, debug_enable);
+                        engine_handle_dpad(event, motion_pointer, state_id, msg, sizeof(msg), source, debug_enable,
+                              g_settings.input.dpad_emulation[state_id]);
                   }
                   else
                   {
@@ -1742,10 +1822,17 @@ static void android_input_poll(void *data)
                }
 
                if (msg[0] != 0)
+               {
+                  msg_queue_clear(g_extern.msg_queue);
                   msg_queue_push(g_extern.msg_queue, msg, 0, long_msg_enable ? 180 : 30);
+                  RARCH_LOG("Input debug: %s\n", msg);
+               }
 
                AInputQueue_finishEvent(android_app->inputQueue, event, handled);
+               processed = 1;
             }
+            if (processed == 0)
+               RARCH_WARN("Failure reading next input event: %s\n", strerror(errno));
          }
       }
       else if (ident == LOOPER_ID_MAIN)
@@ -1759,8 +1846,22 @@ static int16_t android_input_state(void *data, const struct retro_keybind **bind
    {
       case RETRO_DEVICE_JOYPAD:
          return ((state[port] & binds[port][id].joykey) && (port < pads_connected));
+      case RETRO_DEVICE_ANALOG:
+         if (port >= pads_connected)
+            return 0;
+         switch ((index << 1) | id)
+         {
+            case (RETRO_DEVICE_INDEX_ANALOG_LEFT << 1) | RETRO_DEVICE_ID_ANALOG_X:
+               return analog_state[port].lx;
+            case (RETRO_DEVICE_INDEX_ANALOG_LEFT << 1) | RETRO_DEVICE_ID_ANALOG_Y:
+               return analog_state[port].ly;
+            case (RETRO_DEVICE_INDEX_ANALOG_RIGHT << 1) | RETRO_DEVICE_ID_ANALOG_X:
+               return analog_state[port].rx;
+            case (RETRO_DEVICE_INDEX_ANALOG_RIGHT << 1) | RETRO_DEVICE_ID_ANALOG_Y:
+               return analog_state[port].ry;
+         }
       case RETRO_DEVICE_POINTER:
-         switch(id)
+         switch (id)
          {
             case RETRO_DEVICE_ID_POINTER_X:
                return pointer[index].x;
@@ -1772,7 +1873,7 @@ static int16_t android_input_state(void *data, const struct retro_keybind **bind
                return 0;
          }
       case RARCH_DEVICE_POINTER_SCREEN:
-         switch(id)
+         switch (id)
          {
             case RETRO_DEVICE_ID_POINTER_X:
                return pointer[index].full_x;

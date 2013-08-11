@@ -51,6 +51,24 @@ if [ "$HAVE_FLOATSOFTFP" = "yes" ]; then
    ASFLAGS="$ASFLAGS -mfloat-abi=softfp"
 fi
 
+if [ "$HAVE_NEON" = "yes" ]; then
+   CFLAGS="$CFLAGS -mfpu=neon -marm"
+   CXXFLAGS="$CXXFLAGS -mfpu=neon -marm"
+   ASFLAGS="$ASFLAGS -mfpu=neon"
+fi
+
+if [ "$HAVE_FLOATHARD" = "yes" ]; then
+   CFLAGS="$CFLAGS -mfloat-abi=hard"
+   CXXFLAGS="$CXXFLAGS -mfloat-abi=hard"
+   ASFLAGS="$ASFLAGS -mfloat-abi=hard"
+fi
+
+if [ "$HAVE_FLOATSOFTFP" = "yes" ]; then
+   CFLAGS="$CFLAGS -mfloat-abi=softfp"
+   CXXFLAGS="$CXXFLAGS -mfloat-abi=softfp"
+   ASFLAGS="$ASFLAGS -mfloat-abi=softfp"
+fi
+
 if [ "$HAVE_SSE" = "yes" ]; then
    CFLAGS="$CFLAGS -msse -msse2"
    CXXFLAGS="$CXXFLAGS -msse -msse2"
@@ -121,6 +139,7 @@ check_lib OSS_LIB -lossaudio
 
 if [ "$OS" = 'Darwin' ]; then
    check_lib AL "-framework OpenAL" alcOpenDevice
+   HAVE_SDL=no
 else
    check_lib AL -lopenal alcOpenDevice
 fi
@@ -134,7 +153,7 @@ check_lib COREAUDIO "-framework AudioUnit" AudioUnitInitialize
 
 check_pkgconf SDL sdl 1.2.10
 
-if [ "$HAVE_OPENGL" != 'no' ]; then
+if [ "$HAVE_OPENGL" != 'no' ] && [ "$HAVE_GLES" != 'yes' ]; then
    if [ "$OS" = 'Darwin' ]; then
       check_lib CG "-framework Cg" cgCreateContext
    else
@@ -142,7 +161,7 @@ if [ "$HAVE_OPENGL" != 'no' ]; then
       check_lib_cxx CG -lCg cgCreateContext
    fi
 else
-   echo "Ignoring Cg. OpenGL is not enabled."
+   echo "Ignoring Cg. Desktop OpenGL is not enabled."
    HAVE_CG='no'
 fi
 

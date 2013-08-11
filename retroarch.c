@@ -1424,6 +1424,12 @@ void rarch_init_rewind(void)
    if (!g_settings.rewind_enable || g_extern.state_manager)
       return;
 
+   if (g_extern.system.audio_callback)
+   {
+      RARCH_ERR("Implementation uses threaded audio. Cannot use rewind.\n");
+      return;
+   }
+
    g_extern.state_size = pretro_serialize_size();
    if (!g_extern.state_size)
    {
@@ -1934,8 +1940,11 @@ void rarch_set_fullscreen(bool fullscreen)
 {
    g_settings.video.fullscreen = fullscreen;
 
+   driver.video_cache_context = g_extern.system.hw_render_callback.cache_context;
+   driver.video_cache_context_ack = false;
    uninit_drivers();
    init_drivers();
+   driver.video_cache_context = false;
 
    // Poll input to avoid possibly stale data to corrupt things.
    if (driver.input)
@@ -2214,7 +2223,7 @@ static void check_pause(void)
          RARCH_LOG("Unpaused.\n");
          if (driver.audio_data)
          {
-            if (!audio_start_func())
+            if (!g_extern.audio_data.mute && !audio_start_func())
             {
                RARCH_ERR("Failed to resume audio driver. Will continue without audio.\n");
                g_extern.audio_active = false;
@@ -2226,7 +2235,7 @@ static void check_pause(void)
    {
       RARCH_LOG("Unpaused.\n");
       g_extern.is_paused = false;
-      if (driver.audio_data && !audio_start_func())
+      if (driver.audio_data && !g_extern.audio_data.mute && !audio_start_func())
       {
          RARCH_ERR("Failed to resume audio driver. Will continue without audio.\n");
          g_extern.audio_active = false;
@@ -2572,6 +2581,17 @@ static void check_mute(void)
       msg_queue_clear(g_extern.msg_queue);
       msg_queue_push(g_extern.msg_queue, msg, 1, 180);
 
+      if (driver.audio_data)
+      {
+         if (g_extern.audio_data.mute)
+            audio_stop_func();
+         else if (!audio_start_func())
+         {
+            RARCH_ERR("Failed to unmute audio.\n");
+            g_extern.audio_active = false;
+         }
+      }
+
       RARCH_LOG("%s\n", msg);
    }
 
@@ -2799,6 +2819,8 @@ void rarch_init_system_info(void)
 static void init_system_av_info(void)
 {
    pretro_get_system_av_info(&g_extern.system.av_info);
+   g_extern.frame_limit.last_frame_time = rarch_get_time_usec();
+   g_extern.frame_limit.minimum_frame_time = (rarch_time_t)roundf(1000000.0f / (g_extern.system.av_info.timing.fps * g_settings.fastforward_ratio));
 }
 
 static void verify_api_version(void)
@@ -2900,6 +2922,7 @@ int rarch_main_init(int argc, char *argv[])
 #endif
    }
 
+   init_libretro_cbs();
    init_system_av_info();
    init_drivers();
 
@@ -2912,7 +2935,6 @@ int rarch_main_init(int argc, char *argv[])
 #endif
       rarch_init_rewind();
       
-   init_libretro_cbs();
    init_controllers();
    
 #ifdef HAVE_FFMPEG
@@ -2947,9 +2969,9 @@ int rarch_main_init(int argc, char *argv[])
    return 0;
 
 error:
+   uninit_drivers();
    pretro_unload_game();
    pretro_deinit();
-   uninit_drivers();
    uninit_libretro_sym();
 
    g_extern.main_is_init = false;
@@ -2966,6 +2988,7 @@ static inline bool check_enter_rgui(void)
    {
       g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU);
       old_rmenu_toggle = true;
+      g_extern.system.frame_time_last = 0;
       return true;
    }
    else
@@ -2973,6 +2996,48 @@ static inline bool check_enter_rgui(void)
       old_rmenu_toggle = rmenu_toggle;
       return false;
    }
+}
+
+static inline void update_frame_time(void)
+{
+   if (!g_extern.system.frame_time.callback)
+      return;
+
+   rarch_time_t time = rarch_get_time_usec();
+   rarch_time_t delta = 0;
+
+   bool is_locked_fps = g_extern.is_paused || driver.nonblock_state;
+#ifdef HAVE_FFMPEG
+   is_locked_fps |= g_extern.recording;
+#endif
+   
+   if (!g_extern.system.frame_time_last || is_locked_fps)
+      delta = g_extern.system.frame_time.reference;
+   else
+      delta = time - g_extern.system.frame_time_last;
+
+   if (!is_locked_fps && g_extern.is_slowmotion)
+      delta /= g_settings.slowmotion_ratio;
+
+   g_extern.system.frame_time_last = is_locked_fps ? 0 : time;
+   g_extern.system.frame_time.callback(delta);
+}
+
+static inline void limit_frame_time(void)
+{
+   if (g_settings.fastforward_ratio < 0.0f)
+      return;
+
+   rarch_time_t current = rarch_get_time_usec();
+   rarch_time_t target = g_extern.frame_limit.last_frame_time + g_extern.frame_limit.minimum_frame_time;
+   rarch_time_t to_sleep_ms = (target - current) / 1000;
+   if (to_sleep_ms > 0)
+   {
+      rarch_sleep(to_sleep_ms);
+      g_extern.frame_limit.last_frame_time += g_extern.frame_limit.minimum_frame_time; // Combat jitter a bit.
+   }
+   else
+      g_extern.frame_limit.last_frame_time = rarch_get_time_usec();
 }
 
 bool rarch_main_iterate(void)
@@ -2985,17 +3050,11 @@ bool rarch_main_iterate(void)
 
    // SHUTDOWN on consoles should exit RetroArch completely.
    if (g_extern.system.shutdown)
-   {
-      g_extern.lifecycle_mode_state |= (1ULL << MODE_EXIT);
       return false;
-   }
 
    // Time to drop?
    if (input_key_pressed_func(RARCH_QUIT_KEY) || !video_alive_func())
-   {
-      g_extern.lifecycle_mode_state |= (1ULL << MODE_EXIT);
       return false;
-   }
 
    if (check_enter_rgui())
       return false; // Enter menu, don't exit.
@@ -3023,7 +3082,9 @@ bool rarch_main_iterate(void)
       bsv_movie_set_frame_start(g_extern.bsv.movie);
 #endif
 
+   update_frame_time();
    pretro_run();
+   limit_frame_time();
 
 #ifdef HAVE_BSV_MOVIE
    if (g_extern.bsv.movie)
@@ -3086,9 +3147,9 @@ void rarch_main_deinit(void)
    if (!g_extern.libretro_dummy && !g_extern.libretro_no_rom)
       save_auto_state();
 
+   uninit_drivers();
    pretro_unload_game();
    pretro_deinit();
-   uninit_drivers();
    uninit_libretro_sym();
 
    if (g_extern.rom_file_temporary)

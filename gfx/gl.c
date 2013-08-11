@@ -55,7 +55,7 @@
 #endif
 
 // Used for the last pass when rendering to the back buffer.
-const GLfloat vertexes_flipped[] = {
+static const GLfloat vertexes_flipped[] = {
    0, 1,
    1, 1,
    0, 0,
@@ -78,6 +78,44 @@ static const GLfloat tex_coords[] = {
    1, 1
 };
 
+static const GLfloat white_color[] = {
+   1, 1, 1, 1,
+   1, 1, 1, 1,
+   1, 1, 1, 1,
+   1, 1, 1, 1,
+};
+
+static inline bool gl_query_extension(gl_t *gl, const char *ext)
+{
+   bool ret = false;
+
+   if (gl->core_context)
+   {
+#ifdef GL_NUM_EXTENSIONS
+      GLint exts = 0;
+      glGetIntegerv(GL_NUM_EXTENSIONS, &exts);
+      for (GLint i = 0; i < exts; i++)
+      {
+         const char *str = (const char*)glGetStringi(GL_EXTENSIONS, i);
+         if (str && strstr(str, ext))
+         {
+            ret = true;
+            break;
+         }
+      }
+#endif
+   }
+   else
+   {
+      const char *str = (const char*)glGetString(GL_EXTENSIONS);
+      ret = str && strstr(str, ext);
+   }
+
+   RARCH_LOG("Querying GL extension: %s => %s\n",
+         ext, ret ? "exists" : "doesn't exist");
+   return ret;
+}
+
 #ifdef HAVE_OVERLAY
 static void gl_render_overlay(void *data);
 static void gl_overlay_vertex_geom(void *data,
@@ -94,163 +132,72 @@ static inline void set_texture_coords(GLfloat *coords, GLfloat xamt, GLfloat yam
    coords[7] = yamt;
 }
 
-const GLfloat white_color[] = {
-   1, 1, 1, 1,
-   1, 1, 1, 1,
-   1, 1, 1, 1,
-   1, 1, 1, 1,
-};
-
-const GLfloat *vertex_ptr = vertexes_flipped;
-const GLfloat *default_vertex_ptr = vertexes_flipped;
-
-#undef LOAD_GL_SYM
-#define LOAD_GL_SYM(SYM) if (!pgl##SYM) { \
-   gfx_ctx_proc_t sym = gl->ctx_driver->get_proc_address("gl" #SYM); \
-   memcpy(&(pgl##SYM), &sym, sizeof(sym)); \
-}
-
 #if defined(HAVE_EGL) && defined(HAVE_OPENGLES2)
-static PFNGLEGLIMAGETARGETTEXTURE2DOESPROC pglEGLImageTargetTexture2DOES;
-
-static bool load_eglimage_proc(gl_t *gl)
+static bool check_eglimage_proc(void)
 {
-   LOAD_GL_SYM(EGLImageTargetTexture2DOES);
-   return pglEGLImageTargetTexture2DOES;
+   return glEGLImageTargetTexture2DOES != NULL;
 }
 #endif
 
 #ifdef HAVE_GL_SYNC
-static PFNGLFENCESYNCPROC pglFenceSync;
-static PFNGLDELETESYNCPROC pglDeleteSync;
-static PFNGLCLIENTWAITSYNCPROC pglClientWaitSync;
-
-static bool load_sync_proc(gl_t *gl)
+static bool check_sync_proc(gl_t *gl)
 {
-   if (!gl_query_extension("ARB_sync"))
+   if (!gl_query_extension(gl, "ARB_sync"))
       return false;
 
-   LOAD_GL_SYM(FenceSync);
-   LOAD_GL_SYM(DeleteSync);
-   LOAD_GL_SYM(ClientWaitSync);
+   return glFenceSync && glDeleteSync && glClientWaitSync;
+}
+#endif
 
-   return pglFenceSync && pglDeleteSync && pglClientWaitSync;
+#ifndef HAVE_OPENGLES
+static bool init_vao(gl_t *gl)
+{
+   if (!gl_query_extension(gl, "ARB_vertex_array_object"))
+      return false;
+
+   bool present = glGenVertexArrays && glBindVertexArray && glDeleteVertexArrays;
+   if (!present)
+      return false;
+
+   glGenVertexArrays(1, &gl->vao);
+   return true;
 }
 #endif
 
 #ifdef HAVE_FBO
-#if defined(_WIN32) && !defined(RARCH_CONSOLE)
-static PFNGLGENFRAMEBUFFERSPROC pglGenFramebuffers;
-static PFNGLBINDFRAMEBUFFERPROC pglBindFramebuffer;
-static PFNGLFRAMEBUFFERTEXTURE2DPROC pglFramebufferTexture2D;
-static PFNGLCHECKFRAMEBUFFERSTATUSPROC pglCheckFramebufferStatus;
-static PFNGLDELETEFRAMEBUFFERSPROC pglDeleteFramebuffers;
-static PFNGLGENRENDERBUFFERSPROC pglGenRenderbuffers;
-static PFNGLBINDRENDERBUFFERPROC pglBindRenderbuffer;
-static PFNGLFRAMEBUFFERRENDERBUFFERPROC pglFramebufferRenderbuffer;
-static PFNGLRENDERBUFFERSTORAGEPROC pglRenderbufferStorage;
-static PFNGLDELETERENDERBUFFERSPROC pglDeleteRenderbuffers;
-
-static bool load_fbo_proc(gl_t *gl)
-{
-   LOAD_GL_SYM(GenFramebuffers);
-   LOAD_GL_SYM(BindFramebuffer);
-   LOAD_GL_SYM(FramebufferTexture2D);
-   LOAD_GL_SYM(CheckFramebufferStatus);
-   LOAD_GL_SYM(DeleteFramebuffers);
-   LOAD_GL_SYM(GenRenderbuffers);
-   LOAD_GL_SYM(BindRenderbuffer);
-   LOAD_GL_SYM(FramebufferRenderbuffer);
-   LOAD_GL_SYM(RenderbufferStorage);
-   LOAD_GL_SYM(DeleteRenderbuffers);
-
-   return pglGenFramebuffers && pglBindFramebuffer && pglFramebufferTexture2D && 
-      pglCheckFramebufferStatus && pglDeleteFramebuffers &&
-      pglGenRenderbuffers && pglBindRenderbuffer &&
-      pglFramebufferRenderbuffer && pglRenderbufferStorage &&
-      pglDeleteRenderbuffers;
-}
-#elif defined(HAVE_OPENGLES2)
-#define pglGenFramebuffers glGenFramebuffers
-#define pglBindFramebuffer glBindFramebuffer
-#define pglFramebufferTexture2D glFramebufferTexture2D
-#define pglCheckFramebufferStatus glCheckFramebufferStatus
-#define pglDeleteFramebuffers glDeleteFramebuffers
-#define pglGenRenderbuffers glGenRenderbuffers
-#define pglBindRenderbuffer glBindRenderbuffer
-#define pglFramebufferRenderbuffer glFramebufferRenderbuffer
-#define pglRenderbufferStorage glRenderbufferStorage
-#define pglDeleteRenderbuffers glDeleteRenderbuffers
-#define load_fbo_proc(gl) (true)
-#elif defined(HAVE_OPENGLES)
-#define pglGenFramebuffers glGenFramebuffersOES
-#define pglBindFramebuffer glBindFramebufferOES
-#define pglFramebufferTexture2D glFramebufferTexture2DOES
-#define pglCheckFramebufferStatus glCheckFramebufferStatusOES
-#define pglDeleteFramebuffers glDeleteFramebuffersOES
-#define pglGenRenderbuffers glGenRenderbuffersOES
-#define pglBindRenderbuffer glBindRenderbufferOES
-#define pglFramebufferRenderbuffer glFramebufferRenderbufferOES
-#define pglRenderbufferStorage glRenderbufferStorageOES
-#define pglDeleteRenderbuffers glDeleteRenderbuffersOES
+#if defined(HAVE_PSGL)
+#define glGenFramebuffers glGenFramebuffersOES
+#define glBindFramebuffer glBindFramebufferOES
+#define glFramebufferTexture2D glFramebufferTexture2DOES
+#define glCheckFramebufferStatus glCheckFramebufferStatusOES
+#define glDeleteFramebuffers glDeleteFramebuffersOES
+#define glGenRenderbuffers glGenRenderbuffersOES
+#define glBindRenderbuffer glBindRenderbufferOES
+#define glFramebufferRenderbuffer glFramebufferRenderbufferOES
+#define glRenderbufferStorage glRenderbufferStorageOES
+#define glDeleteRenderbuffers glDeleteRenderbuffersOES
 #define GL_FRAMEBUFFER GL_FRAMEBUFFER_OES
 #define GL_COLOR_ATTACHMENT0 GL_COLOR_ATTACHMENT0_EXT
 #define GL_FRAMEBUFFER_COMPLETE GL_FRAMEBUFFER_COMPLETE_OES
-#define load_fbo_proc(gl) (true)
-#else
-#define pglGenFramebuffers glGenFramebuffers
-#define pglBindFramebuffer glBindFramebuffer
-#define pglFramebufferTexture2D glFramebufferTexture2D
-#define pglCheckFramebufferStatus glCheckFramebufferStatus
-#define pglDeleteFramebuffers glDeleteFramebuffers
-#define pglGenRenderbuffers glGenRenderbuffers
-#define pglBindRenderbuffer glBindRenderbuffer
-#define pglFramebufferRenderbuffer glFramebufferRenderbuffer
-#define pglRenderbufferStorage glRenderbufferStorage
-#define pglDeleteRenderbuffers glDeleteRenderbuffers
-#define load_fbo_proc(gl) (true)
-#endif
-#endif
-
-#ifdef _WIN32
-PFNGLCLIENTACTIVETEXTUREPROC pglClientActiveTexture;
-PFNGLACTIVETEXTUREPROC pglActiveTexture;
-static PFNGLGENBUFFERSPROC pglGenBuffers;
-static PFNGLGENBUFFERSPROC pglDeleteBuffers;
-static PFNGLBINDBUFFERPROC pglBindBuffer;
-static PFNGLBUFFERSUBDATAPROC pglBufferSubData;
-static PFNGLBUFFERDATAPROC pglBufferData;
-static PFNGLMAPBUFFERPROC pglMapBuffer;
-static PFNGLUNMAPBUFFERPROC pglUnmapBuffer;
-static inline bool load_gl_proc_win32(gl_t *gl)
+#define check_fbo_proc(gl) (true)
+#elif !defined(HAVE_OPENGLES2)
+static bool check_fbo_proc(gl_t *gl)
 {
-   LOAD_GL_SYM(ClientActiveTexture);
-   LOAD_GL_SYM(ActiveTexture);
-   LOAD_GL_SYM(GenBuffers);
-   LOAD_GL_SYM(DeleteBuffers);
-   LOAD_GL_SYM(BindBuffer);
-   LOAD_GL_SYM(BufferSubData);
-   LOAD_GL_SYM(BufferData);
-   LOAD_GL_SYM(MapBuffer);
-   LOAD_GL_SYM(UnmapBuffer);
+   if (!gl_query_extension(gl, "ARB_framebuffer_object"))
+      return false;
 
-   return pglClientActiveTexture && pglActiveTexture &&
-      pglGenBuffers && pglDeleteBuffers &&
-      pglBindBuffer && pglBufferSubData && pglBufferData &&
-      pglMapBuffer && pglUnmapBuffer;
+   return glGenFramebuffers && glBindFramebuffer && glFramebufferTexture2D && 
+      glCheckFramebufferStatus && glDeleteFramebuffers &&
+      glGenRenderbuffers && glBindRenderbuffer &&
+      glFramebufferRenderbuffer && glRenderbufferStorage &&
+      glDeleteRenderbuffers;
 }
 #else
-#define pglGenBuffers glGenBuffers
-#define pglDeleteBuffers glDeleteBuffers
-#define pglBindBuffer glBindBuffer
-#define pglBufferSubData glBufferSubData
-#define pglBufferData glBufferData
-#define pglMapBuffer glMapBuffer
-#define pglUnmapBuffer glUnmapBuffer
+#define check_fbo_proc(gl) (true)
 #endif
-
 #if defined(__APPLE__) || defined(HAVE_PSGL)
 #define GL_RGBA32F GL_RGBA32F_ARB
+#endif
 #endif
 
 ////////////////// Shaders
@@ -262,7 +209,9 @@ static bool gl_shader_init(void *data)
 
    const char *shader_path = (g_settings.video.shader_enable && *g_settings.video.shader_path) ?
       g_settings.video.shader_path : NULL;
-   enum rarch_shader_type type = gfx_shader_parse_type(shader_path, DEFAULT_SHADER_TYPE);
+
+   enum rarch_shader_type type = gfx_shader_parse_type(shader_path,
+         gl->core_context ? RARCH_SHADER_GLSL : DEFAULT_SHADER_TYPE);
 
    if (type == RARCH_SHADER_NONE)
    {
@@ -296,6 +245,15 @@ static bool gl_shader_init(void *data)
       return true;
    }
 
+#ifdef HAVE_GLSL
+   if (gl->core_context && RARCH_SHADER_CG)
+   {
+      RARCH_ERR("[GL]: Cg cannot be used with core GL context. Falling back to GLSL.\n");
+      backend = &gl_glsl_backend;
+      shader_path = NULL;
+   }
+#endif
+
    gl->shader = backend;
    bool ret = gl->shader->init(shader_path);
    if (!ret)
@@ -319,11 +277,11 @@ static inline void gl_shader_deinit(void *data)
 #ifndef NO_GL_FF_VERTEX
 static void gl_set_coords(const struct gl_coords *coords)
 {
-   pglClientActiveTexture(GL_TEXTURE1);
+   glClientActiveTexture(GL_TEXTURE1);
    glTexCoordPointer(2, GL_FLOAT, 0, coords->lut_tex_coord);
    glEnableClientState(GL_TEXTURE_COORD_ARRAY);
 
-   pglClientActiveTexture(GL_TEXTURE0);
+   glClientActiveTexture(GL_TEXTURE0);
    glVertexPointer(2, GL_FLOAT, 0, coords->vertex);
    glEnableClientState(GL_VERTEX_ARRAY);
 
@@ -334,11 +292,14 @@ static void gl_set_coords(const struct gl_coords *coords)
    glEnableClientState(GL_TEXTURE_COORD_ARRAY);
 }
 
-static void gl_disable_client_arrays(void)
+static void gl_disable_client_arrays(gl_t *gl)
 {
-   pglClientActiveTexture(GL_TEXTURE1);
+   if (gl->core_context)
+      return;
+
+   glClientActiveTexture(GL_TEXTURE1);
    glDisableClientState(GL_TEXTURE_COORD_ARRAY);
-   pglClientActiveTexture(GL_TEXTURE0);
+   glClientActiveTexture(GL_TEXTURE0);
    glDisableClientState(GL_VERTEX_ARRAY);
    glDisableClientState(GL_COLOR_ARRAY);
    glDisableClientState(GL_TEXTURE_COORD_ARRAY);
@@ -391,7 +352,7 @@ void gl_shader_set_coords(void *data, const struct gl_coords *coords, const math
 void apple_bind_game_view_fbo(void);
 #define gl_bind_backbuffer() apple_bind_game_view_fbo()
 #else
-#define gl_bind_backbuffer() pglBindFramebuffer(GL_FRAMEBUFFER, 0)
+#define gl_bind_backbuffer() glBindFramebuffer(GL_FRAMEBUFFER, 0)
 #endif
 
 #ifdef HAVE_FBO
@@ -520,7 +481,7 @@ static void gl_create_fbo_textures(void *data)
       {
          // GLES and GL are inconsistent in which arguments to pass.
 #ifdef HAVE_OPENGLES2
-         bool has_fp_fbo = gl_query_extension("OES_texture_float_linear");
+         bool has_fp_fbo = gl_query_extension(gl, "OES_texture_float_linear");
          if (!has_fp_fbo)
             RARCH_ERR("OES_texture_float_linear extension not found.\n");
 
@@ -529,7 +490,7 @@ static void gl_create_fbo_textures(void *data)
                gl->fbo_rect[i].width, gl->fbo_rect[i].height,
                0, GL_RGBA, GL_FLOAT, NULL);
 #else
-         bool has_fp_fbo = gl_query_extension("ARB_texture_float");
+         bool has_fp_fbo = gl_query_extension(gl, "ARB_texture_float");
          if (!has_fp_fbo)
             RARCH_ERR("ARB_texture_float extension was not found.\n");
 
@@ -564,13 +525,13 @@ static bool gl_create_fbo_targets(void *data)
    gl_t *gl = (gl_t*)data;
 
    glBindTexture(GL_TEXTURE_2D, 0);
-   pglGenFramebuffers(gl->fbo_pass, gl->fbo);
+   glGenFramebuffers(gl->fbo_pass, gl->fbo);
    for (int i = 0; i < gl->fbo_pass; i++)
    {
-      pglBindFramebuffer(GL_FRAMEBUFFER, gl->fbo[i]);
-      pglFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, gl->fbo_texture[i], 0);
+      glBindFramebuffer(GL_FRAMEBUFFER, gl->fbo[i]);
+      glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, gl->fbo_texture[i], 0);
 
-      GLenum status = pglCheckFramebufferStatus(GL_FRAMEBUFFER);
+      GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
       if (status != GL_FRAMEBUFFER_COMPLETE)
          goto error;
    }
@@ -578,7 +539,7 @@ static bool gl_create_fbo_targets(void *data)
    return true;
 
 error:
-   pglDeleteFramebuffers(gl->fbo_pass, gl->fbo);
+   glDeleteFramebuffers(gl->fbo_pass, gl->fbo);
    RARCH_ERR("Failed to set up frame buffer objects. Multi-pass shading will not work.\n");
    return false;
 }
@@ -590,7 +551,7 @@ void gl_deinit_fbo(void *data)
    if (gl->fbo_inited)
    {
       glDeleteTextures(gl->fbo_pass, gl->fbo_texture);
-      pglDeleteFramebuffers(gl->fbo_pass, gl->fbo);
+      glDeleteFramebuffers(gl->fbo_pass, gl->fbo);
       memset(gl->fbo_texture, 0, sizeof(gl->fbo_texture));
       memset(gl->fbo, 0, sizeof(gl->fbo));
       gl->fbo_inited = false;
@@ -613,7 +574,7 @@ void gl_init_fbo(void *data, unsigned width, unsigned height)
    if (gl_shader_num(gl) == 1 && !scale.valid)
       return;
 
-   if (!load_fbo_proc(gl))
+   if (!check_fbo_proc(gl))
    {
       RARCH_ERR("Failed to locate FBO functions. Won't be able to use render-to-texture.\n");
       return;
@@ -666,22 +627,16 @@ void gl_init_fbo(void *data, unsigned width, unsigned height)
 }
 
 #ifndef HAVE_RGL
+static void gl_deinit_hw_render(gl_t *gl)
+{
+   if (gl->hw_render_fbo_init)
+      glDeleteFramebuffers(gl->textures, gl->hw_render_fbo);
+   if (gl->hw_render_depth_init)
+      glDeleteRenderbuffers(gl->textures, gl->hw_render_depth);
+   gl->hw_render_fbo_init = false;
+}
 
-// GLES and GL inconsistency.
-#ifndef GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT
-#define GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT_EXT
-#endif
-#ifndef GL_FRAMEBUFFER_INCOMPLETE_DIMENSIONS
-#define GL_FRAMEBUFFER_INCOMPLETE_DIMENSIONS GL_FRAMEBUFFER_INCOMPLETE_DIMENSIONS_EXT
-#endif
-#ifndef GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT
-#define GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT_EXT
-#endif
-#ifndef GL_FRAMEBUFFER_UNSUPPORTED
-#define GL_FRAMEBUFFER_UNSUPPORTED GL_FRAMEBUFFER_UNSUPPORTED_EXT
-#endif
-
-bool gl_init_hw_render(gl_t *gl, unsigned width, unsigned height)
+static bool gl_init_hw_render(gl_t *gl, unsigned width, unsigned height)
 {
    RARCH_LOG("[GL]: Initializing HW render (%u x %u).\n", width, height);
    GLint max_fbo_size = 0;
@@ -690,50 +645,72 @@ bool gl_init_hw_render(gl_t *gl, unsigned width, unsigned height)
    glGetIntegerv(GL_MAX_RENDERBUFFER_SIZE, &max_renderbuffer_size);
    RARCH_LOG("[GL]: Max texture size: %d px, renderbuffer size: %u px.\n", max_fbo_size, max_renderbuffer_size);
 
-   if (!load_fbo_proc(gl))
+   if (!check_fbo_proc(gl))
       return false;
 
    glBindTexture(GL_TEXTURE_2D, 0);
-   pglGenFramebuffers(TEXTURES, gl->hw_render_fbo);
+   glGenFramebuffers(gl->textures, gl->hw_render_fbo);
 
    bool depth = g_extern.system.hw_render_callback.depth;
+   bool stencil = g_extern.system.hw_render_callback.stencil;
+
+#ifdef HAVE_OPENGLES2
+   if (stencil && !gl_query_extension(gl, "OES_packed_depth_stencil"))
+      return false;
+#endif
 
    if (depth)
    {
-      pglGenRenderbuffers(TEXTURES, gl->hw_render_depth);
+      glGenRenderbuffers(gl->textures, gl->hw_render_depth);
       gl->hw_render_depth_init = true;
    }
 
-   for (unsigned i = 0; i < TEXTURES; i++)
+   for (unsigned i = 0; i < gl->textures; i++)
    {
-      pglBindFramebuffer(GL_FRAMEBUFFER, gl->hw_render_fbo[i]);
-      pglFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, gl->texture[i], 0);
+      glBindFramebuffer(GL_FRAMEBUFFER, gl->hw_render_fbo[i]);
+      glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, gl->texture[i], 0);
 
       if (depth)
       {
-         pglBindRenderbuffer(GL_RENDERBUFFER, gl->hw_render_depth[i]);
-         pglRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT16,
-               width, height);
-         pglBindRenderbuffer(GL_RENDERBUFFER, 0);
-         pglFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,
-               GL_RENDERBUFFER, gl->hw_render_depth[i]);
+         if (stencil)
+         {
+#ifdef HAVE_OPENGLES2
+            // GLES2 is a bit weird, as always. :P
+            glBindRenderbuffer(GL_RENDERBUFFER, gl->hw_render_depth[i]);
+            glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8_OES,
+                  width, height);
+            glBindRenderbuffer(GL_RENDERBUFFER, 0);
+
+            // There's no GL_DEPTH_STENCIL_ATTACHMENT like in desktop GL.
+            glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,
+                  GL_RENDERBUFFER, gl->hw_render_depth[i]);
+            glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT,
+                  GL_RENDERBUFFER, gl->hw_render_depth[i]);
+#else
+            // We use ARB FBO extensions, no need to check.
+            glBindRenderbuffer(GL_RENDERBUFFER, gl->hw_render_depth[i]);
+            glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8,
+                  width, height);
+            glBindRenderbuffer(GL_RENDERBUFFER, 0);
+            glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT,
+                  GL_RENDERBUFFER, gl->hw_render_depth[i]);
+#endif
+         }
+         else
+         {
+            glBindRenderbuffer(GL_RENDERBUFFER, gl->hw_render_depth[i]);
+            glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT16,
+                  width, height);
+            glBindRenderbuffer(GL_RENDERBUFFER, 0);
+            glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,
+                  GL_RENDERBUFFER, gl->hw_render_depth[i]);
+         }
       }
 
-      GLenum status = pglCheckFramebufferStatus(GL_FRAMEBUFFER);
+      GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
       if (status != GL_FRAMEBUFFER_COMPLETE)
       {
-         RARCH_ERR("[GL]: Failed to create HW render FBO #%u.\n", i);
-         const char *err = NULL;
-         switch (status)
-         {
-
-            case GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT: err = "Incomplete Attachment"; break;
-            case GL_FRAMEBUFFER_INCOMPLETE_DIMENSIONS: err = "Incomplete Dimensions"; break;
-            case GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT: err = "Missing Attachment"; break;
-            case GL_FRAMEBUFFER_UNSUPPORTED: err = "Unsupported"; break;
-            default: err = "Unknown"; break;
-         }
-         RARCH_ERR("[GL]: Error: %s.\n", err);
+         RARCH_ERR("[GL]: Failed to create HW render FBO #%u, error: 0x%u.\n", i, (unsigned)status);
          return false;
       }
    }
@@ -867,7 +844,7 @@ static inline void gl_start_frame_fbo(void *data)
    gl_t *gl = (gl_t*)data;
 
    glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
-   pglBindFramebuffer(GL_FRAMEBUFFER, gl->fbo[0]);
+   glBindFramebuffer(GL_FRAMEBUFFER, gl->fbo[0]);
    gl_set_viewport(gl, gl->fbo_rect[0].img_width, gl->fbo_rect[0].img_height, true, false);
 
    // Need to preserve the "flipped" state when in FBO as well to have 
@@ -893,7 +870,7 @@ static void gl_check_fbo_dimensions(void *data)
          unsigned pow2_size = next_pow2(max);
          gl->fbo_rect[i].width = gl->fbo_rect[i].height = pow2_size;
 
-         pglBindFramebuffer(GL_FRAMEBUFFER, gl->fbo[i]);
+         glBindFramebuffer(GL_FRAMEBUFFER, gl->fbo[i]);
          glBindTexture(GL_TEXTURE_2D, gl->fbo_texture[i]);
 
          glTexImage2D(GL_TEXTURE_2D,
@@ -901,9 +878,9 @@ static void gl_check_fbo_dimensions(void *data)
                0, RARCH_GL_TEXTURE_TYPE32,
                RARCH_GL_FORMAT32, NULL);
 
-         pglFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, gl->fbo_texture[i], 0);
+         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, gl->fbo_texture[i], 0);
 
-         GLenum status = pglCheckFramebufferStatus(GL_FRAMEBUFFER);
+         GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
          if (status != GL_FRAMEBUFFER_COMPLETE)
             RARCH_WARN("Failed to reinit FBO texture.\n");
 
@@ -947,7 +924,7 @@ static void gl_frame_fbo(void *data, const struct gl_tex_info *tex_info)
       fbo_info->tex_size[1] = prev_rect->height;
       memcpy(fbo_info->coord, fbo_tex_coords, sizeof(fbo_tex_coords));
 
-      pglBindFramebuffer(GL_FRAMEBUFFER, gl->fbo[i]);
+      glBindFramebuffer(GL_FRAMEBUFFER, gl->fbo[i]);
 
       if (gl->shader)
          gl->shader->use(i + 1);
@@ -992,7 +969,7 @@ static void gl_frame_fbo(void *data, const struct gl_tex_info *tex_info)
          gl->vp.width, gl->vp.height, g_extern.frame_count, 
          tex_info, gl->prev_info, fbo_tex_info, fbo_tex_info_cnt);
 
-   gl->coords.vertex = vertex_ptr;
+   gl->coords.vertex = gl->vertex_ptr;
 
    gl_shader_set_coords(gl, &gl->coords, &gl->mvp);
    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
@@ -1050,8 +1027,8 @@ static void gl_update_input_size(void *data, unsigned width, unsigned height, un
       set_texture_coords(gl->tex_coords, xamt, yamt);
    }
    // We might have used different texture coordinates last frame. Edge case if resolution changes very rapidly.
-   else if (width != gl->last_width[(gl->tex_index - 1) & TEXTURES_MASK] ||
-         height != gl->last_height[(gl->tex_index - 1) & TEXTURES_MASK])
+   else if (width != gl->last_width[(gl->tex_index + gl->textures - 1) % gl->textures] ||
+         height != gl->last_height[(gl->tex_index + gl->textures - 1) % gl->textures])
    {
       GLfloat xamt = (GLfloat)width / gl->tex_w;
       GLfloat yamt = (GLfloat)height / gl->tex_h;
@@ -1108,13 +1085,13 @@ static inline void gl_convert_frame_argb8888_abgr8888(void *data, void *output, 
 static void gl_init_textures_data(void *data)
 {
    gl_t *gl = (gl_t*)data;
-   for (unsigned i = 0; i < TEXTURES; i++)
+   for (unsigned i = 0; i < gl->textures; i++)
    {
       gl->last_width[i]  = gl->tex_w;
       gl->last_height[i] = gl->tex_h;
    }
 
-   for (unsigned i = 0; i < TEXTURES; i++)
+   for (unsigned i = 0; i < gl->textures; i++)
    {
       gl->prev_info[i].tex           = gl->texture[0];
       gl->prev_info[i].input_size[0] = gl->tex_w;
@@ -1130,7 +1107,7 @@ static void gl_init_textures(void *data, const video_info_t *video)
    gl_t *gl = (gl_t*)data;
 #if defined(HAVE_EGL) && defined(HAVE_OPENGLES2)
    // Use regular textures if we use HW render.
-   gl->egl_images = !gl->hw_render_use && load_eglimage_proc(gl) && context_init_egl_image_buffer_func(video);
+   gl->egl_images = !gl->hw_render_use && check_eglimage_proc() && context_init_egl_image_buffer_func(video);
 #else
    (void)video;
 #endif
@@ -1141,7 +1118,7 @@ static void gl_init_textures(void *data, const video_info_t *video)
 
    glBindBuffer(GL_TEXTURE_REFERENCE_BUFFER_SCE, gl->pbo);
    glBufferData(GL_TEXTURE_REFERENCE_BUFFER_SCE,
-         gl->tex_w * gl->tex_h * gl->base_size * TEXTURES, NULL, GL_STREAM_DRAW);
+         gl->tex_w * gl->tex_h * gl->base_size * gl->textures, NULL, GL_STREAM_DRAW);
 #endif
 
    GLenum internal_fmt = gl->internal_fmt;
@@ -1155,7 +1132,7 @@ static void gl_init_textures(void *data, const video_info_t *video)
 #ifdef HAVE_OPENGLES2
    if (gl->hw_render_use && gl->base_size == sizeof(uint32_t))
    {
-      bool support_argb = gl_query_extension("OES_rgb8_rgba8") || gl_query_extension("ARM_argb8");
+      bool support_argb = gl_query_extension(gl, "OES_rgb8_rgba8") || gl_query_extension(gl, "ARM_argb8");
       if (support_argb)
       {
          internal_fmt = GL_RGBA;
@@ -1172,9 +1149,9 @@ static void gl_init_textures(void *data, const video_info_t *video)
    }
 #endif
 
-   glGenTextures(TEXTURES, gl->texture);
+   glGenTextures(gl->textures, gl->texture);
 
-   for (unsigned i = 0; i < TEXTURES; i++)
+   for (unsigned i = 0; i < gl->textures; i++)
    {
       glBindTexture(GL_TEXTURE_2D, gl->texture[i]);
 
@@ -1218,7 +1195,7 @@ static inline void gl_copy_frame(void *data, const void *frame, unsigned width, 
       }
 
       if (new_egl)
-         pglEGLImageTargetTexture2DOES(GL_TEXTURE_2D, (GLeglImageOES)img);
+         glEGLImageTargetTexture2DOES(GL_TEXTURE_2D, (GLeglImageOES)img);
    }
    else
 #endif
@@ -1295,7 +1272,7 @@ static inline void gl_copy_frame(void *data, const void *frame, unsigned width, 
 static inline void gl_set_prev_texture(void *data, const struct gl_tex_info *tex_info)
 {
    gl_t *gl = (gl_t*)data;
-   memmove(gl->prev_info + 1, gl->prev_info, sizeof(*tex_info) * (TEXTURES - 1));
+   memmove(gl->prev_info + 1, gl->prev_info, sizeof(*tex_info) * (gl->textures - 1));
    memcpy(&gl->prev_info[0], tex_info, sizeof(*tex_info));
 }
 
@@ -1311,7 +1288,7 @@ static inline void gl_set_shader_viewport(void *data, unsigned shader)
 static void gl_pbo_async_readback(void *data)
 {
    gl_t *gl = (gl_t*)data;
-   pglBindBuffer(GL_PIXEL_PACK_BUFFER, gl->pbo_readback[gl->pbo_readback_index++]);
+   glBindBuffer(GL_PIXEL_PACK_BUFFER, gl->pbo_readback[gl->pbo_readback_index++]);
    gl->pbo_readback_index &= 3;
 
    // If set, we 3 rendered frames already buffered up.
@@ -1329,7 +1306,7 @@ static void gl_pbo_async_readback(void *data)
          GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
    RARCH_PERFORMANCE_STOP(async_readback);
 
-   pglBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
+   glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
 }
 #endif
 
@@ -1348,6 +1325,7 @@ static inline void gl_draw_texture(void *data)
       1.0f, 1.0f, 1.0f, gl->rgui_texture_alpha,
    };
 
+   gl->coords.vertex = vertexes_flipped;
    gl->coords.tex_coord = tex_coords;
    gl->coords.color = color;
    glBindTexture(GL_TEXTURE_2D, gl->rgui_texture);
@@ -1369,8 +1347,9 @@ static inline void gl_draw_texture(void *data)
 
    glDisable(GL_BLEND);
 
+   gl->coords.vertex = gl->vertex_ptr;
    gl->coords.tex_coord = gl->tex_coords;
-   gl->coords.color = white_color;
+   gl->coords.color = gl->white_color_ptr;
 }
 #endif
 
@@ -1380,8 +1359,11 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
    RARCH_PERFORMANCE_START(frame_run);
 
    gl_t *gl = (gl_t*)data;
-   uint64_t lifecycle_mode_state = g_extern.lifecycle_mode_state;
-   (void)lifecycle_mode_state;
+
+#ifndef HAVE_OPENGLES
+   if (gl->core_context)
+      glBindVertexArray(gl->vao);
+#endif
 
    if (gl->shader)
       gl->shader->use(1);
@@ -1412,7 +1394,7 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
 
    if (frame) // Can be NULL for frame dupe / NULL render.
    {
-      gl->tex_index = (gl->tex_index + 1) & TEXTURES_MASK;
+      gl->tex_index = (gl->tex_index + 1) % gl->textures;
       glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
 
 #ifdef HAVE_FBO
@@ -1445,12 +1427,14 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
    if (gl->hw_render_fbo_init)
    {
 #ifndef HAVE_OPENGLES
-      glEnable(GL_TEXTURE_2D);
+      if (!gl->core_context)
+         glEnable(GL_TEXTURE_2D);
 #endif
       glDisable(GL_DEPTH_TEST);
       glDisable(GL_STENCIL_TEST);
       glDisable(GL_CULL_FACE);
       glDisable(GL_DITHER);
+      glDisable(GL_BLEND);
       glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
       glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
    }
@@ -1509,7 +1493,7 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
          gl->shader->use(0);
       glBindTexture(GL_TEXTURE_2D, 0);
 #ifndef NO_GL_FF_VERTEX
-      gl_disable_client_arrays();
+      gl_disable_client_arrays(gl);
 #endif
    }
 #endif
@@ -1528,12 +1512,12 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
       RARCH_PERFORMANCE_INIT(gl_fence);
       RARCH_PERFORMANCE_START(gl_fence);
       glClear(GL_COLOR_BUFFER_BIT);
-      gl->fences[gl->fence_count++] = pglFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
+      gl->fences[gl->fence_count++] = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
 
       while (gl->fence_count > g_settings.video.hard_sync_frames)
       {
-         pglClientWaitSync(gl->fences[0], GL_SYNC_FLUSH_COMMANDS_BIT, 1000000000);
-         pglDeleteSync(gl->fences[0]);
+         glClientWaitSync(gl->fences[0], GL_SYNC_FLUSH_COMMANDS_BIT, 1000000000);
+         glDeleteSync(gl->fences[0]);
 
          gl->fence_count--;
          memmove(gl->fences, gl->fences + 1, gl->fence_count * sizeof(GLsync));
@@ -1541,6 +1525,11 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
 
       RARCH_PERFORMANCE_STOP(gl_fence);
    }
+#endif
+
+#ifndef HAVE_OPENGLES
+   if (gl->core_context)
+      glBindVertexArray(0);
 #endif
 
    return true;
@@ -1560,8 +1549,8 @@ static void gl_free(void *data)
    {
       for (unsigned i = 0; i < gl->fence_count; i++)
       {
-         pglClientWaitSync(gl->fences[i], GL_SYNC_FLUSH_COMMANDS_BIT, 1000000000);
-         pglDeleteSync(gl->fences[i]);
+         glClientWaitSync(gl->fences[i], GL_SYNC_FLUSH_COMMANDS_BIT, 1000000000);
+         glDeleteSync(gl->fences[i]);
       }
       gl->fence_count = 0;
    }
@@ -1572,10 +1561,10 @@ static void gl_free(void *data)
    gl_shader_deinit(gl);
 
 #ifndef NO_GL_FF_VERTEX
-   gl_disable_client_arrays();
+   gl_disable_client_arrays(gl);
 #endif
 
-   glDeleteTextures(TEXTURES, gl->texture);
+   glDeleteTextures(gl->textures, gl->texture);
 
 #if defined(HAVE_RGUI) || defined(HAVE_RMENU)
    if (gl->rgui_texture)
@@ -1597,28 +1586,30 @@ static void gl_free(void *data)
 #if !defined(HAVE_OPENGLES) && defined(HAVE_FFMPEG)
    if (gl->pbo_readback_enable)
    {
-      pglDeleteBuffers(4, gl->pbo_readback);
+      glDeleteBuffers(4, gl->pbo_readback);
       scaler_ctx_gen_reset(&gl->pbo_readback_scaler);
    }
 #endif
 
 #ifdef HAVE_FBO
    gl_deinit_fbo(gl);
-
 #ifndef HAVE_RGL
-   if (gl->hw_render_fbo_init)
-      pglDeleteFramebuffers(TEXTURES, gl->hw_render_fbo);
-   if (gl->hw_render_depth_init)
-      pglDeleteRenderbuffers(TEXTURES, gl->hw_render_depth);
-   gl->hw_render_fbo_init = false;
+   gl_deinit_hw_render(gl);
 #endif
+#endif
+
+#ifndef HAVE_OPENGLES
+   if (gl->core_context)
+   {
+      glBindVertexArray(0);
+      glDeleteVertexArrays(1, &gl->vao);
+   }
 #endif
 
    context_destroy_func();
 
    free(gl->empty_buf);
    free(gl->conv_buffer);
-
    free(gl);
 }
 
@@ -1633,15 +1624,20 @@ static void gl_set_nonblock_state(void *data, bool state)
 
 static bool resolve_extensions(gl_t *gl)
 {
-#ifdef _WIN32
-   // Win32 GL lib doesn't have some elementary functions needed.
-   // Need to load dynamically :(
-   if (!load_gl_proc_win32(gl))
+#ifndef HAVE_OPENGLES
+   gl->core_context = g_extern.system.hw_render_callback.context_type == RETRO_HW_CONTEXT_OPENGL_CORE;
+   if (gl->core_context)
+      RARCH_LOG("[GL]: Using Core GL context.\n");
+   if (gl->core_context &&
+         !init_vao(gl))
+   {
+      RARCH_ERR("[GL]: Failed to init VAOs.\n");
       return false;
+   }
 #endif
 
 #ifdef HAVE_GL_SYNC
-   gl->have_sync = load_sync_proc(gl);
+   gl->have_sync = check_sync_proc(gl);
    if (gl->have_sync && g_settings.video.hard_sync)
       RARCH_LOG("[GL]: Using ARB_sync to reduce latency.\n");
 #endif
@@ -1655,7 +1651,7 @@ static bool resolve_extensions(gl_t *gl)
 
    driver.gfx_use_rgba = false;
 #ifdef HAVE_OPENGLES2
-   if (gl_query_extension("BGRA8888"))
+   if (gl_query_extension(gl, "BGRA8888"))
       RARCH_LOG("[GL]: BGRA8888 extension found for GLES.\n");
    else
    {
@@ -1716,7 +1712,7 @@ static inline void gl_reinit_textures(void *data, const video_info_t *video)
 #endif
 
       glBindTexture(GL_TEXTURE_2D, 0);
-      glDeleteTextures(TEXTURES, gl->texture);
+      glDeleteTextures(gl->textures, gl->texture);
 
       gl_init_textures(gl, video);
       gl_init_textures_data(gl);
@@ -1748,14 +1744,14 @@ static void gl_init_pbo_readback(void *data)
 
    RARCH_LOG("Async PBO readback enabled.\n");
 
-   pglGenBuffers(4, gl->pbo_readback);
+   glGenBuffers(4, gl->pbo_readback);
    for (unsigned i = 0; i < 4; i++)
    {
-      pglBindBuffer(GL_PIXEL_PACK_BUFFER, gl->pbo_readback[i]);
-      pglBufferData(GL_PIXEL_PACK_BUFFER, gl->vp.width * gl->vp.height * sizeof(uint32_t),
+      glBindBuffer(GL_PIXEL_PACK_BUFFER, gl->pbo_readback[i]);
+      glBufferData(GL_PIXEL_PACK_BUFFER, gl->vp.width * gl->vp.height * sizeof(uint32_t),
             NULL, GL_STREAM_COPY);
    }
-   pglBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
+   glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
 
    struct scaler_ctx *scaler = &gl->pbo_readback_scaler;
    scaler->in_width    = gl->vp.width;
@@ -1772,13 +1768,15 @@ static void gl_init_pbo_readback(void *data)
    {
       gl->pbo_readback_enable = false;
       RARCH_ERR("Failed to init pixel conversion for PBO.\n");
-      pglDeleteBuffers(4, gl->pbo_readback);
+      glDeleteBuffers(4, gl->pbo_readback);
    }
 }
 #endif
 
 static const gfx_ctx_driver_t *gl_get_context(void)
 {
+   unsigned major = g_extern.system.hw_render_callback.version_major;
+   unsigned minor = g_extern.system.hw_render_callback.version_minor;
 #ifdef HAVE_OPENGLES
    enum gfx_ctx_api api = GFX_CTX_OPENGL_ES_API;
    const char *api_name = "OpenGL ES";
@@ -1792,7 +1790,7 @@ static const gfx_ctx_driver_t *gl_get_context(void)
       const gfx_ctx_driver_t *ctx = gfx_ctx_find_driver(g_settings.video.gl_context);
       if (ctx)
       {
-         if (!ctx->bind_api(api))
+         if (!ctx->bind_api(api, major, minor))
          {
             RARCH_ERR("Failed to bind API %s to context %s.\n", api_name, g_settings.video.gl_context);
             return NULL;
@@ -1813,7 +1811,7 @@ static const gfx_ctx_driver_t *gl_get_context(void)
       return ctx;
    }
    else
-      return gfx_ctx_init_first(api);
+      return gfx_ctx_init_first(api, major, minor);
 }
 
 static void *gl_init(const video_info_t *video, const input_driver_t **input, void **input_data)
@@ -1843,6 +1841,8 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
       return NULL;
    }
 
+   gl->video_info = *video;
+
    RARCH_LOG("Found GL context: %s\n", gl->ctx_driver->ident);
 
    context_get_video_size_func(&gl->full_x, &gl->full_y);
@@ -1868,6 +1868,10 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    const char *renderer = (const char*)glGetString(GL_RENDERER);
    RARCH_LOG("[GL]: Vendor: %s, Renderer: %s.\n", vendor, renderer);
 
+#ifndef RARCH_CONSOLE
+   rglgen_resolve_symbols(gl->ctx_driver->get_proc_address);
+#endif
+
    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
    if (!resolve_extensions(gl))
@@ -1890,8 +1894,27 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
       gl->full_y = gl->win_height;
    }
 
+   struct retro_hw_render_callback *hw_render = &g_extern.system.hw_render_callback;
+   gl->vertex_ptr = hw_render->bottom_left_origin ? vertexes : vertexes_flipped;
+
+   // Better pipelining with GPU due to synchronous glSubTexImage. Multiple async PBOs would be an alternative,
+   // but still need multiple textures with PREV.
+   gl->textures = 4;
+#ifdef HAVE_FBO
+#ifdef HAVE_OPENGLES2
+   gl->hw_render_use = hw_render->context_type == RETRO_HW_CONTEXT_OPENGLES2;
+#else
+   gl->hw_render_use = hw_render->context_type == RETRO_HW_CONTEXT_OPENGL ||
+      g_extern.system.hw_render_callback.context_type == RETRO_HW_CONTEXT_OPENGL_CORE;
+#endif
+   if (gl->hw_render_use)
+      gl->textures = 1; // All on GPU, no need to excessively create textures.
+#endif
+   gl->white_color_ptr = white_color;
+
 #ifdef HAVE_GLSL
    gl_glsl_set_get_proc_address(gl->ctx_driver->get_proc_address);
+   gl_glsl_set_context_type(gl->core_context, hw_render->version_major, hw_render->version_minor);
 #endif
 
    if (!gl_shader_init(gl))
@@ -1902,6 +1925,13 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
       return NULL;
    }
 
+   if (gl->shader)
+   {
+      unsigned minimum = gl->shader->get_prev_textures();
+      gl->textures = max(minimum + 1, gl->textures);
+   }
+
+   RARCH_LOG("GL: Using %u textures.\n", gl->textures);
    RARCH_LOG("GL: Loaded %u program(s).\n", gl_shader_num(gl));
 
    gl->tex_w = RARCH_SCALE_BASE * video->input_scale;
@@ -1919,18 +1949,11 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    else
       gl->tex_filter = video->smooth ? GL_LINEAR : GL_NEAREST;
 
-#ifdef HAVE_FBO
-#ifdef HAVE_OPENGLES2
-   gl->hw_render_use = g_extern.system.hw_render_callback.context_type == RETRO_HW_CONTEXT_OPENGLES2;
-#else
-   gl->hw_render_use = g_extern.system.hw_render_callback.context_type == RETRO_HW_CONTEXT_OPENGL;
-#endif
-#endif
-
    gl_set_texture_fmts(gl, video->rgb32);
 
 #ifndef HAVE_OPENGLES
-   glEnable(GL_TEXTURE_2D);
+   if (!gl->core_context)
+      glEnable(GL_TEXTURE_2D);
 #endif
 
    glDisable(GL_DEPTH_TEST);
@@ -1938,11 +1961,10 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    glDisable(GL_DITHER);
 
    memcpy(gl->tex_coords, tex_coords, sizeof(tex_coords));
-   gl->coords.vertex         = vertex_ptr;
+   gl->coords.vertex         = gl->vertex_ptr;
    gl->coords.tex_coord      = gl->tex_coords;
-   gl->coords.color          = white_color;
+   gl->coords.color          = gl->white_color_ptr;
    gl->coords.lut_tex_coord  = tex_coords;
-   gl_shader_set_coords(gl, &gl->coords, &gl->mvp);
 
    // Empty buffer that we use to clear out the texture with on res change.
    gl->empty_buf = calloc(sizeof(uint32_t), gl->tex_w * gl->tex_h);
@@ -2027,12 +2049,13 @@ static void gl_update_tex_filter_frame(gl_t *gl)
    if (!gl_shader_filter_type(gl, 1, &smooth))
       smooth = g_settings.video.smooth;
 
+   gl->video_info.smooth = smooth;
    GLuint new_filt = smooth ? GL_LINEAR : GL_NEAREST;
    if (new_filt == gl->tex_filter)
       return;
 
    gl->tex_filter = new_filt;
-   for (unsigned i = 0; i < TEXTURES; i++)
+   for (unsigned i = 0; i < gl->textures; i++)
    {
       if (gl->texture[i])
       {
@@ -2096,6 +2119,33 @@ static bool gl_set_shader(void *data, enum rarch_shader_type type, const char *p
 
    gl_update_tex_filter_frame(gl);
 
+   if (gl->shader)
+   {
+      unsigned textures = gl->shader->get_prev_textures() + 1;
+      if (textures > gl->textures) // Have to reinit a bit.
+      {
+#if defined(HAVE_FBO) && !defined(HAVE_RGL)
+         gl_deinit_hw_render(gl);
+#endif
+
+         glDeleteTextures(gl->textures, gl->texture);
+#if defined(HAVE_PSGL)
+         glBindBuffer(GL_TEXTURE_REFERENCE_BUFFER_SCE, 0);
+         glDeleteBuffers(1, &gl->pbo);
+#endif
+         gl->textures = textures;
+         RARCH_LOG("GL: Using %u textures.\n", gl->textures);
+         gl->tex_index = 0;
+         gl_init_textures(gl, &gl->video_info);
+         gl_init_textures_data(gl);
+
+#if defined(HAVE_FBO) && !defined(HAVE_RGL)
+         if (gl->hw_render_use)
+            gl_init_hw_render(gl, gl->tex_w, gl->tex_h);
+#endif
+      }
+   }
+
 #ifdef HAVE_FBO
    // Set up render to texture again.
    gl_init_fbo(gl, gl->tex_w, gl->tex_h);
@@ -2152,8 +2202,8 @@ static bool gl_read_viewport(void *data, uint8_t *buffer)
       if (!gl->pbo_readback_valid) // We haven't buffered up enough frames yet, come back later.
          return false;
 
-      pglBindBuffer(GL_PIXEL_PACK_BUFFER, gl->pbo_readback[gl->pbo_readback_index]);
-      const void *ptr = pglMapBuffer(GL_PIXEL_PACK_BUFFER, GL_READ_ONLY);
+      glBindBuffer(GL_PIXEL_PACK_BUFFER, gl->pbo_readback[gl->pbo_readback_index]);
+      const void *ptr = glMapBuffer(GL_PIXEL_PACK_BUFFER, GL_READ_ONLY);
       if (!ptr)
       {
          RARCH_ERR("Failed to map pixel unpack buffer.\n");
@@ -2161,8 +2211,8 @@ static bool gl_read_viewport(void *data, uint8_t *buffer)
       }
 
       scaler_ctx_scale(&gl->pbo_readback_scaler, buffer, ptr);
-      pglUnmapBuffer(GL_PIXEL_PACK_BUFFER);
-      pglBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
+      glUnmapBuffer(GL_PIXEL_PACK_BUFFER);
+      glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
    }
    else // Use slow synchronous readbacks. Use this with plain screenshots as we don't really care about performance in this case.
 #endif
@@ -2337,9 +2387,9 @@ static void gl_render_overlay(void *data)
 
    glDisable(GL_BLEND);
 
-   gl->coords.vertex    = vertex_ptr;
+   gl->coords.vertex    = gl->vertex_ptr;
    gl->coords.tex_coord = gl->tex_coords;
-   gl->coords.color     = white_color;
+   gl->coords.color     = gl->white_color_ptr;
 }
 
 static const video_overlay_interface_t gl_overlay_interface = {
@@ -2362,7 +2412,7 @@ static void gl_get_overlay_interface(void *data, const video_overlay_interface_t
 static uintptr_t gl_get_current_framebuffer(void *data)
 {
    gl_t *gl = (gl_t*)data;
-   return gl->hw_render_fbo[(gl->tex_index + 1) & TEXTURES_MASK];
+   return gl->hw_render_fbo[(gl->tex_index + 1) % gl->textures];
 }
 
 static retro_proc_address_t gl_get_proc_address(void *data, const char *sym)

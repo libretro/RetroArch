@@ -21,6 +21,7 @@
 #include <limits.h>
 #include "menu_common.h"
 
+#include "../../performance.h"
 #include "../../file.h"
 #ifdef HAVE_FILEBROWSER
 #include "utils/file_browser.h"
@@ -458,7 +459,6 @@ void load_menu_game_history(unsigned game_index)
 
 #if !defined( HAVE_DYNAMIC) && defined(RARCH_CONSOLE)
    g_extern.lifecycle_mode_state &= ~(1ULL << MODE_GAME);
-   g_extern.lifecycle_mode_state |= (1ULL << MODE_EXIT);
    g_extern.lifecycle_mode_state |= (1ULL << MODE_EXITSPAWN);
    g_extern.lifecycle_mode_state |= (1ULL << MODE_EXITSPAWN_START_GAME);
 #elif defined(HAVE_DYNAMIC)
@@ -835,7 +835,7 @@ bool menu_iterate(void)
    // Throttle in case VSync is broken (avoid 1000+ FPS RGUI).
    time = rarch_get_time_usec();
    delta = (time - rgui->last_time) / 1000;
-   target_msec = 1000 / g_settings.video.refresh_rate;
+   target_msec = 750 / g_settings.video.refresh_rate; // Try to sleep less, so we can hopefully rely on FPS logger.
    sleep_msec = target_msec - delta;
    if (sleep_msec > 0)
       rarch_sleep(sleep_msec);

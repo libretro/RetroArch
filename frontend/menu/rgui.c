@@ -246,7 +246,6 @@ rgui_handle_t *rgui_init(void)
       /* TODO - should be refactored - perhaps don't do rarch_fail but instead
        * exit program */
       g_extern.lifecycle_mode_state &= ~((1ULL << MODE_MENU) | (1ULL << MODE_GAME));
-      g_extern.lifecycle_mode_state |= (1ULL << MODE_EXIT);
       return NULL;
    }
 
@@ -793,6 +792,9 @@ static void render_text(rgui_handle_t *rgui)
                   case ANALOG_DPAD_LSTICK:
                      strlcpy(type_str, "Left Stick", sizeof(type_str));
                      break;
+                  case ANALOG_DPAD_DUALANALOG:
+                     strlcpy(type_str, "Dual Analog", sizeof(type_str));
+                     break;
                   case ANALOG_DPAD_RSTICK:
                      strlcpy(type_str, "Right Stick", sizeof(type_str));
                      break;
@@ -1063,7 +1065,6 @@ static int rgui_settings_toggle_setting(rgui_handle_t *rgui, unsigned setting, r
                   sizeof(g_extern.fullpath));
 #endif
             g_extern.lifecycle_mode_state &= ~(1ULL << MODE_GAME);
-            g_extern.lifecycle_mode_state |= (1ULL << MODE_EXIT);
             g_extern.lifecycle_mode_state |= (1ULL << MODE_EXITSPAWN);
             return -1;
          }
@@ -1079,7 +1080,6 @@ static int rgui_settings_toggle_setting(rgui_handle_t *rgui, unsigned setting, r
          if (action == RGUI_ACTION_OK)
          {
             g_extern.lifecycle_mode_state &= ~(1ULL << MODE_GAME);
-            g_extern.lifecycle_mode_state |= (1ULL << MODE_EXIT);
             return -1;
          }
          break;
@@ -2654,7 +2654,6 @@ int rgui_iterate(rgui_handle_t *rgui)
                fill_pathname_join(g_extern.fullpath, default_paths.core_dir,
                      SALAMANDER_FILE, sizeof(g_extern.fullpath));
                g_extern.lifecycle_mode_state &= ~(1ULL << MODE_GAME);
-               g_extern.lifecycle_mode_state |= (1ULL << MODE_EXIT);
                g_extern.lifecycle_mode_state |= (1ULL << MODE_EXITSPAWN);
                ret = -1;
 #endif

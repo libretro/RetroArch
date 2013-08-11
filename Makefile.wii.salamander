@@ -39,7 +39,7 @@ LIBS := -lfat -lwiiuse -logc -lbte
 
 APP_BOOTER_DIR = wii/app_booter
 
-OBJ = frontend/frontend_salamander.o file_path.o compat/compat.o conf/config_file.o $(APP_BOOTER_DIR)/app_booter.binobj
+OBJ = frontend/frontend_salamander.o frontend/frontend_context.o file_path.o compat/compat.o conf/config_file.o $(APP_BOOTER_DIR)/app_booter.binobj
 
 ifeq ($(HAVE_LOGGER), 1)
 CFLAGS		+= -DHAVE_LOGGER
@@ -53,7 +53,7 @@ CFLAGS		+= -DHAVE_FILE_LOGGER
 CFLAGS          += -Iconsole/logger
 endif
 
-CFLAGS += -std=gnu99 -DIS_SALAMANDER -DRARCH_CONSOLE -DHAVE_RARCH_EXEC -DGEKKO -DPACKAGE_VERSION=\"0.9.8\" -Wno-char-subscripts 
+CFLAGS += -std=gnu99 -DIS_SALAMANDER -DRARCH_CONSOLE -DHAVE_RARCH_EXEC -DGEKKO -Wno-char-subscripts 
 
 ifeq ($(DEBUG), 1)
    CFLAGS += -O0 -g

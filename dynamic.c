@@ -42,6 +42,7 @@
 #endif
 
 #ifdef HAVE_DYNAMIC
+#undef SYM
 #define SYM(x) do { \
    function_t func = dylib_proc(lib_handle, #x); \
    memcpy(&p##x, &func, sizeof(func)); \
@@ -653,6 +654,7 @@ static bool environment_cb(unsigned cmd, void *data)
          break;
 
       case RETRO_ENVIRONMENT_SET_HW_RENDER:
+      case RETRO_ENVIRONMENT_SET_HW_RENDER | RETRO_ENVIRONMENT_EXPERIMENTAL: // ABI compat
       {
          RARCH_LOG("Environ SET_HW_RENDER.\n");
          struct retro_hw_render_callback *cb = (struct retro_hw_render_callback*)data;
@@ -669,6 +671,7 @@ static bool environment_cb(unsigned cmd, void *data)
                break;
 
             case RETRO_HW_CONTEXT_OPENGL:
+            case RETRO_HW_CONTEXT_OPENGL_CORE:
                RARCH_ERR("Requesting OpenGL context, but RetroArch is compiled against OpenGLES2. Cannot use HW context.\n");
                return false;
 #elif defined(HAVE_OPENGL)
@@ -680,6 +683,11 @@ static bool environment_cb(unsigned cmd, void *data)
                RARCH_LOG("Requesting OpenGL context.\n");
                driver.video = &video_gl;
                break;
+
+            case RETRO_HW_CONTEXT_OPENGL_CORE:
+               RARCH_LOG("Requesting core OpenGL context (%u.%u).\n", cb->version_major, cb->version_minor);
+               driver.video = &video_gl;
+               break;
 #endif
 
             default:
@@ -688,7 +696,11 @@ static bool environment_cb(unsigned cmd, void *data)
          }
          cb->get_current_framebuffer = driver_get_current_framebuffer;
          cb->get_proc_address = driver_get_proc_address;
-         memcpy(&g_extern.system.hw_render_callback, cb, sizeof(*cb));
+
+         if (cmd & RETRO_ENVIRONMENT_EXPERIMENTAL) // Old ABI. Don't copy garbage.
+            memcpy(&g_extern.system.hw_render_callback, cb, offsetof(struct retro_hw_render_callback, stencil));
+         else
+            memcpy(&g_extern.system.hw_render_callback, cb, sizeof(*cb));
          break;
       }
 
@@ -708,6 +720,41 @@ static bool environment_cb(unsigned cmd, void *data)
 #else
          *path = NULL; 
 #endif
+         break;
+      }
+
+#ifdef HAVE_THREADS
+      case RETRO_ENVIRONMENT_SET_AUDIO_CALLBACK:
+      {
+         RARCH_LOG("Environ SET_AUDIO_CALLBACK.\n");
+         const struct retro_audio_callback *info = (const struct retro_audio_callback*)data;
+
+#ifdef HAVE_FFMPEG
+         if (g_extern.recording) // A/V sync is a must.
+            return false;
+#endif
+
+#ifdef HAVE_NETPLAY
+         if (g_extern.netplay_enable)
+            return false;
+#endif
+
+         g_extern.system.audio_callback = info->callback;
+         break;
+      }
+#endif
+
+      case RETRO_ENVIRONMENT_SET_FRAME_TIME_CALLBACK:
+      {
+         RARCH_LOG("Environ SET_FRAME_TIME_CALLBACK.\n");
+
+#ifdef HAVE_NETPLAY
+         if (g_extern.netplay_enable) // retro_run() will be called in very strange and mysterious ways, have to disable it.
+            return false;
+#endif
+
+         const struct retro_frame_time_callback *info = (const struct retro_frame_time_callback*)data;
+         g_extern.system.frame_time = *info;
          break;
       }
 

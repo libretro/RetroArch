@@ -110,13 +110,9 @@ static void salamander_init_settings(void)
          }
 
          if (!config_file_exists || !strcmp(default_paths.libretro_path, ""))
-         {
             find_and_set_first_file();
-         }
          else
-         {
             RARCH_LOG("Start [%s] found in retroarch.cfg.\n", default_paths.libretro_path);
-         }
 
          if (!config_file_exists)
          {
@@ -152,7 +148,6 @@ static void callback_sysutil_exit(uint64_t status, uint64_t param, void *userdat
       case CELL_SYSUTIL_REQUEST_EXITGAME:
          gl->quitting = true;
          g_extern.lifecycle_mode_state &= ~((1ULL << MODE_MENU) | (1ULL << MODE_GAME));
-         g_extern.lifecycle_mode_state |= (1ULL << MODE_EXIT);
          break;
 #ifdef HAVE_OSKUTIL
       case CELL_SYSUTIL_OSKDIALOG_LOADED:
@@ -189,8 +184,19 @@ static void callback_sysutil_exit(uint64_t status, uint64_t param, void *userdat
 }
 #endif
 
-static void get_environment_settings(int argc, char *argv[])
+static void get_environment_settings(int argc, char *argv[], void *args)
 {
+   (void)args;
+#ifndef IS_SALAMANDER
+   g_extern.verbose = true;
+
+#if defined(HAVE_LOGGER)
+   logger_init();
+#elif defined(HAVE_FILE_LOGGER)
+   g_extern.log_file = fopen("/retroarch-log.txt", "w");
+#endif
+#endif
+
    int ret;
    unsigned int get_type;
    unsigned int get_attributes;
@@ -281,6 +287,18 @@ static void get_environment_settings(int argc, char *argv[])
       snprintf(g_extern.config_path, sizeof(g_extern.config_path), "%s/retroarch.cfg", default_paths.port_dir);
 #endif
    }
+
+#ifndef IS_SALAMANDER
+   rarch_make_dir(default_paths.port_dir, "port_dir");
+   rarch_make_dir(default_paths.system_dir, "system_dir");
+   rarch_make_dir(default_paths.savestate_dir, "savestate_dir");
+   rarch_make_dir(default_paths.sram_dir, "sram_dir");
+   rarch_make_dir(default_paths.input_presets_dir, "input_presets_dir");
+
+   config_load();
+
+   rarch_get_environment_console();
+#endif
 }
 
 static void system_init(void)
@@ -340,14 +358,16 @@ static void system_init(void)
 #endif
 }
 
-static int system_process_args(int argc, char *argv[])
+static int system_process_args(int argc, char *argv[], void *args)
 {
+#ifndef IS_SALAMANDER
    if (argc > 1)
    {
       RARCH_LOG("Auto-start game %s.\n", argv[1]);
       strlcpy(g_extern.fullpath, argv[1], sizeof(g_extern.fullpath));
       return 1;
    }
+#endif
 
    return 0;
 }
@@ -383,12 +403,14 @@ static void system_deinit(void)
 #endif
 }
 
+static void system_exec(const char *path, bool should_load_game);
+
 static void system_exitspawn(void)
 {
 #ifdef HAVE_RARCH_EXEC
 
 #ifdef IS_SALAMANDER
-   rarch_console_exec(default_paths.libretro_path, false);
+   system_exec(default_paths.libretro_path, false);
 
    cellSysmoduleUnloadModule(CELL_SYSMODULE_SYSUTIL_GAME);
    cellSysmoduleLoadModule(CELL_SYSMODULE_FS);
@@ -408,9 +430,73 @@ static void system_exitspawn(void)
    if (g_extern.lifecycle_mode_state & (1ULL << MODE_EXITSPAWN_START_GAME))
       should_load_game = true;
 
-   rarch_console_exec(core_launch, should_load_game);
+   system_exec(core_launch, should_load_game);
 #endif
 
 #endif
 
 }
+
+#include <stdio.h>
+
+#include <cell/sysmodule.h>
+#include <sys/process.h>
+#include <sysutil/sysutil_common.h>
+#include <netex/net.h>
+#include <np.h>
+#include <np/drm.h>
+
+#include "../../retroarch_logger.h"
+
+static void system_exec(const char *path, bool should_load_game)
+{
+   (void)should_load_game;
+
+   RARCH_LOG("Attempt to load executable: [%s].\n", path);
+   char spawn_data[256];
+#ifndef IS_SALAMANDER
+   char game_path[256];
+   game_path[0] = '\0';
+#endif
+
+   for(unsigned int i = 0; i < sizeof(spawn_data); ++i)
+      spawn_data[i] = i & 0xff;
+
+#ifndef IS_SALAMANDER
+   if (should_load_game)
+      strlcpy(game_path, g_extern.fullpath, sizeof(game_path));
+#endif
+
+   const char * const spawn_argv[] = {
+#ifndef IS_SALAMANDER
+      game_path,
+#endif
+      NULL
+   };
+
+   SceNpDrmKey * k_licensee = NULL;
+   int ret = sceNpDrmProcessExitSpawn2(k_licensee, path, (const char** const)spawn_argv, NULL, (sys_addr_t)spawn_data, 256, 1000, SYS_PROCESS_PRIMARY_STACK_SIZE_1M);
+
+   if(ret <  0)
+   {
+      RARCH_WARN("SELF file is not of NPDRM type, trying another approach to boot it...\n");
+      sys_game_process_exitspawn(path, (const char** const)spawn_argv, NULL, NULL, 0, 1000, SYS_PROCESS_PRIMARY_STACK_SIZE_1M);
+   }
+
+   sceNpTerm();
+   sys_net_finalize_network();
+   cellSysmoduleUnloadModule(CELL_SYSMODULE_SYSUTIL_NP);
+   cellSysmoduleUnloadModule(CELL_SYSMODULE_NET);
+}
+
+const frontend_ctx_driver_t frontend_ctx_ps3 = {
+   get_environment_settings,     /* get_environment_settings */
+   system_init,                  /* init */
+   system_deinit,                /* deinit */
+   system_exitspawn,             /* exitspawn */
+   system_process_args,          /* process_args */
+   NULL,                         /* process_events */
+   system_exec,                  /* exec */
+   NULL,                         /* shutdown */
+   "ps3",
+};

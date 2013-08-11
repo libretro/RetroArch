@@ -229,10 +229,17 @@ int gx_logger_file(struct _reent *r, int fd, const char *ptr, size_t len)
 extern char gx_rom_path[PATH_MAX];
 #endif
 
-static void get_environment_settings(int argc, char *argv[])
+static void get_environment_settings(int argc, char *argv[], void *args)
 {
-   (void)argc;
-   (void)argv;
+#ifndef IS_SALAMANDER
+   g_extern.verbose = true;
+
+#if defined(HAVE_LOGGER)
+   logger_init();
+#elif defined(HAVE_FILE_LOGGER)
+   g_extern.log_file = fopen("/retroarch-log.txt", "w");
+#endif
+#endif
 
 #ifdef HW_DOL
    chdir("carda:/retroarch");
@@ -264,6 +271,18 @@ static void get_environment_settings(int argc, char *argv[])
             "%s%s", argv[1], argv[2]);
    else
       gx_rom_path[0] = '\0';
+#endif
+
+#ifndef IS_SALAMANDER
+   rarch_make_dir(default_paths.port_dir, "port_dir");
+   rarch_make_dir(default_paths.system_dir, "system_dir");
+   rarch_make_dir(default_paths.savestate_dir, "savestate_dir");
+   rarch_make_dir(default_paths.sram_dir, "sram_dir");
+   rarch_make_dir(default_paths.input_presets_dir, "input_presets_dir");
+
+   config_load();
+
+   rarch_get_environment_console();
 #endif
 }
 
@@ -308,20 +327,22 @@ static void system_init(void)
 #endif
 }
 
+static void system_exec(const char *path, bool should_load_game);
+
 static void system_exitspawn(void)
 {
 #if defined(IS_SALAMANDER)
-   rarch_console_exec(default_paths.libretro_path, gx_rom_path[0] != '\0' ? true : false);
+   system_exec(default_paths.libretro_path, gx_rom_path[0] != '\0' ? true : false);
 #elif defined(HW_RVL)
    bool should_load_game = false;
    if (g_extern.lifecycle_mode_state & (1ULL << MODE_EXITSPAWN_START_GAME))
       should_load_game = true;
 
-   rarch_console_exec(g_settings.libretro, should_load_game);
+   system_exec(g_settings.libretro, should_load_game);
    // direct loading failed (out of memory), try to jump to salamander then load the correct core
    char boot_dol[PATH_MAX];
    snprintf(boot_dol, sizeof(boot_dol), "%s/boot.dol", default_paths.core_dir);
-   rarch_console_exec(boot_dol, should_load_game);
+   system_exec(boot_dol, should_load_game);
 #endif
 }
 
@@ -338,11 +359,11 @@ static void system_deinit(void)
 #endif
 }
 
-#ifndef IS_SALAMANDER
-static int system_process_args(int argc, char *argv[])
+static int system_process_args(int argc, char *argv[], void *args)
 {
    int ret = 0;
 
+#ifndef IS_SALAMANDER
    // a big hack: sometimes salamander doesn't save the new core it loads on first boot,
    // so we make sure g_settings.libretro is set here
    if (!g_settings.libretro[0] && argc >= 1 && strrchr(argv[0], '/'))
@@ -354,8 +375,172 @@ static int system_process_args(int argc, char *argv[])
             "%s%s", argv[1], argv[2]);
       ret = 1;
    }
+#endif
 
    return ret;
 }
 
+#include <stdio.h>
+
+#include <string.h>
+#include <fat.h>
+#include <gctypes.h>
+#include <ogc/cache.h>
+#include <ogc/lwp_threads.h>
+#include <ogc/system.h>
+#include <ogc/usbstorage.h>
+#include <sdcard/wiisd_io.h>
+
+#define EXECUTE_ADDR ((uint8_t *) 0x91800000)
+#define BOOTER_ADDR ((uint8_t *) 0x93000000)
+#define ARGS_ADDR ((uint8_t *) 0x93200000)
+
+extern uint8_t _binary_wii_app_booter_app_booter_bin_start[];
+extern uint8_t _binary_wii_app_booter_app_booter_bin_end[];
+#define booter_start _binary_wii_app_booter_app_booter_bin_start
+#define booter_end _binary_wii_app_booter_app_booter_bin_end
+
+#include "../../retroarch_logger.h"
+#include "../../file.h"
+
+#ifdef IS_SALAMANDER
+char gx_rom_path[PATH_MAX];
 #endif
+
+#ifdef HW_RVL
+static void dol_copy_argv_path(const char *dolpath, const char *argpath)
+{
+   char tmp[PATH_MAX];
+   size_t len, t_len;
+   struct __argv *argv = (struct __argv *) ARGS_ADDR;
+   memset(ARGS_ADDR, 0, sizeof(struct __argv));
+   char *cmdline = (char *) ARGS_ADDR + sizeof(struct __argv);
+   argv->argvMagic = ARGV_MAGIC;
+   argv->commandLine = cmdline;
+   len = 0;
+
+   // a device-less fullpath
+   if (dolpath[0] == '/')
+   {
+      char *dev = strchr(__system_argv->argv[0], ':');
+      t_len = dev - __system_argv->argv[0] + 1;
+      memcpy(cmdline, __system_argv->argv[0], t_len);
+      len += t_len;
+   }
+   // a relative path
+   else if (strstr(dolpath, "sd:/") != dolpath && strstr(dolpath, "usb:/") != dolpath &&
+       strstr(dolpath, "carda:/") != dolpath && strstr(dolpath, "cardb:/") != dolpath)
+   {
+      fill_pathname_parent_dir(tmp, __system_argv->argv[0], sizeof(tmp));
+      t_len = strlen(tmp);
+      memcpy(cmdline, tmp, t_len);
+      len += t_len;
+   }
+
+   t_len = strlen(dolpath);
+   memcpy(cmdline + len, dolpath, t_len);
+   len += t_len;
+   cmdline[len++] = 0;
+
+   // file must be split into two parts, the path and the actual filename
+   // done to be compatible with loaders
+   if (argpath && strrchr(argpath, '/') != NULL)
+   {
+      // basedir
+      fill_pathname_parent_dir(tmp, argpath, sizeof(tmp));
+      t_len = strlen(tmp);
+      memcpy(cmdline + len, tmp, t_len);
+      len += t_len;
+      cmdline[len++] = 0;
+
+      // filename
+      char *name = strrchr(argpath, '/') + 1;
+      t_len = strlen(name);
+      memcpy(cmdline + len, name, t_len);
+      len += t_len;
+      cmdline[len++] = 0;
+   }
+
+   cmdline[len++] = 0;
+   argv->length = len;
+   DCFlushRange(ARGS_ADDR, sizeof(struct __argv) + argv->length);
+}
+#endif
+
+// WARNING: after we move any data into EXECUTE_ADDR, we can no longer use any
+// heap memory and are restricted to the stack only
+static void system_exec(const char *path, bool should_load_game)
+{
+#ifdef HW_RVL
+   char game_path[PATH_MAX];
+
+   RARCH_LOG("Attempt to load executable: [%s] %d.\n", path, sizeof(game_path));
+
+   // copy heap info into stack so it survives us moving the .dol into MEM2
+   if (should_load_game)
+   {
+#ifdef IS_SALAMANDER
+      strlcpy(game_path, gx_rom_path, sizeof(game_path));
+#else
+      strlcpy(game_path, g_extern.fullpath, sizeof(game_path));
+#endif
+   }
+
+   FILE * fp = fopen(path, "rb");
+   if (fp == NULL)
+   {
+      RARCH_ERR("Could not open DOL file %s.\n", path);
+      return;
+   }
+
+   fseek(fp, 0, SEEK_END);
+   size_t size = ftell(fp);
+   fseek(fp, 0, SEEK_SET);
+
+   // try to allocate a buffer for it. if we can't, fail
+   void *dol = malloc(size);
+   if (!dol)
+   {
+      RARCH_ERR("Could not execute DOL file %s.\n", path);
+      fclose(fp);
+      return;
+   }
+
+   fread(dol, 1, size, fp);
+   fclose(fp);
+
+   fatUnmount("carda:");
+   fatUnmount("cardb:");
+   fatUnmount("sd:");
+   fatUnmount("usb:");
+   __io_wiisd.shutdown();
+   __io_usbstorage.shutdown();
+
+   // luckily for us, newlib's memmove doesn't allocate a seperate buffer for
+   // copying in situations of overlap, so it's safe to do this
+   memmove(EXECUTE_ADDR, dol, size);
+   DCFlushRange(EXECUTE_ADDR, size);
+
+   dol_copy_argv_path(path, should_load_game ? game_path : NULL);
+
+   size_t booter_size = booter_end - booter_start;
+   memcpy(BOOTER_ADDR, booter_start, booter_size);
+   DCFlushRange(BOOTER_ADDR, booter_size);
+
+   RARCH_LOG("jumping to %08x\n", (unsigned) BOOTER_ADDR);
+   SYS_ResetSystem(SYS_SHUTDOWN,0,0);
+   __lwp_thread_stopmultitasking((void (*)(void)) BOOTER_ADDR);
+#endif
+}
+
+const frontend_ctx_driver_t frontend_ctx_gx = {
+   get_environment_settings,        /* get_environment_settings */
+   system_init,                     /* init */
+   system_deinit,                   /* deinit */
+   system_exitspawn,                /* exitspawn */
+   system_process_args,             /* process_args */
+   NULL,                            /* process_events */
+   system_exec,                     /* exec */
+   NULL,                            /* shutdown */
+   "gx",
+};

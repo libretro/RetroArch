@@ -22,16 +22,16 @@
 #include "../file_ext.h"
 #include "frontend_salamander.h"
 
+#if defined(RARCH_CONSOLE)
+#include "frontend_context.h"
+frontend_ctx_driver_t *frontend_ctx;
+#endif
+
 #if defined(__CELLOS_LV2__)
-#include "platform/platform_ps3_exec.c"
 #include "platform/platform_ps3.c"
 #elif defined(GEKKO)
-#ifdef HW_RVL
-#include "platform/platform_gx_exec.c"
-#endif
 #include "platform/platform_gx.c"
 #elif defined(_XBOX)
-#include "platform/platform_xdk_exec.c"
 #include "platform/platform_xdk.c"
 #elif defined(PSP)
 #include "platform/platform_psp.c"
@@ -86,13 +86,27 @@ static void find_first_libretro_core(char *first_file,
    dir_list_free(list);
 }
 
+static int system_ctx_init(void)
+{
+#ifdef RARCH_CONSOLE
+   if ((frontend_ctx = (frontend_ctx_driver_t*)frontend_ctx_init_first()) == NULL)
+      return -1;
+#endif
+
+   return 0;
+}
+
 int main(int argc, char *argv[])
 {
-   system_init();
-   get_environment_settings(argc, argv);
+   void *args = NULL;
+   if (system_ctx_init() != 0)
+      return 0;
+
+   frontend_ctx->init();
+   get_environment_settings(argc, argv, args);
    salamander_init_settings();
-   system_deinit();
-   system_exitspawn();
+   frontend_ctx->deinit();
+   frontend_ctx->exitspawn();
 
    return 1;
 }
