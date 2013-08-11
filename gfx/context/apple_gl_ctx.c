@@ -93,6 +93,11 @@ static void gfx_ctx_input_driver(const input_driver_t **input, void **input_data
    *input_data = NULL;
 }
 
+static gfx_ctx_proc_t gfx_ctx_get_proc_address(const char *symbol_name)
+{
+   return (gfx_ctx_proc_t)apple_get_proc_address(symbol_name);
+}
+
 // The apple_* functions are implemented in apple/RetroArch/RAGameView.m
 
 const gfx_ctx_driver_t gfx_ctx_apple = {
@@ -109,7 +114,7 @@ const gfx_ctx_driver_t gfx_ctx_apple = {
    gfx_ctx_has_focus,
    apple_flip_game_view,
    gfx_ctx_input_driver,
-   NULL,
+   gfx_ctx_get_proc_address,
    NULL,
    "ios",
 };
