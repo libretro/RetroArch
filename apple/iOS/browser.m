@@ -36,7 +36,6 @@
    NSString* rootPath = RetroArch_iOS.get.documentsDirectory;
    NSString* ragPath = [rootPath stringByAppendingPathComponent:@"RetroArchGames"];
    RADirectoryList* list = [RADirectoryList directoryListForPath:path_is_directory(ragPath.UTF8String) ? ragPath : rootPath];
-                                            
    return list;
 }
 

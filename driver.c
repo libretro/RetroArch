@@ -24,6 +24,7 @@
 #include "audio/utils.h"
 #include "audio/resampler.h"
 #include "gfx/thread_wrapper.h"
+#include "audio/thread_wrapper.h"
 #include "gfx/gfx_common.h"
 
 #ifdef HAVE_X11
@@ -357,7 +358,7 @@ void global_uninit_drivers(void)
 
    if (driver.input_data)
    {
-      driver.input->free(NULL);
+      driver.input->free(driver.input_data);
       driver.input_data = NULL;
    }
 }
@@ -373,19 +374,26 @@ void init_drivers(void)
    g_extern.frame_count = 0;
    init_video_input();
 
-   if (g_extern.system.hw_render_callback.context_reset)
+   if (!driver.video_cache_context_ack && g_extern.system.hw_render_callback.context_reset)
       g_extern.system.hw_render_callback.context_reset();
+   driver.video_cache_context_ack = false;
 
    init_audio();
 
    // Keep non-throttled state as good as possible.
    if (driver.nonblock_state)
       driver_set_nonblock_state(driver.nonblock_state);
+
+   g_extern.system.frame_time_last = 0;
 }
 
 void uninit_drivers(void)
 {
    uninit_audio();
+
+   if (g_extern.system.hw_render_callback.context_destroy && !driver.video_cache_context)
+      g_extern.system.hw_render_callback.context_destroy();
+
    uninit_video_input();
 
    if (driver.video_data_own)
@@ -496,8 +504,26 @@ void init_audio(void)
       return;
    }
 
-   driver.audio_data = audio_init_func(*g_settings.audio.device ? g_settings.audio.device : NULL,
-         g_settings.audio.out_rate, g_settings.audio.latency);
+#ifdef HAVE_THREADS
+   find_audio_driver();
+   if (g_extern.system.audio_callback)
+   {
+      RARCH_LOG("Starting threaded audio driver ...\n");
+      if (!rarch_threaded_audio_init(&driver.audio, &driver.audio_data,
+               *g_settings.audio.device ? g_settings.audio.device : NULL,
+               g_settings.audio.out_rate, g_settings.audio.latency,
+               driver.audio))
+      {
+         RARCH_ERR("Cannot open threaded audio driver ... Exiting ...\n");
+         rarch_fail(1, "init_audio()");
+      }
+   }
+   else
+#endif
+   {
+      driver.audio_data = audio_init_func(*g_settings.audio.device ? g_settings.audio.device : NULL,
+            g_settings.audio.out_rate, g_settings.audio.latency);
+   }
 
    if (!driver.audio_data)
    {
@@ -533,7 +559,8 @@ void init_audio(void)
    rarch_assert(g_settings.audio.out_rate < g_settings.audio.in_rate * AUDIO_MAX_RATIO);
    rarch_assert(g_extern.audio_data.outsamples = (float*)malloc(outsamples_max * sizeof(float)));
 
-   if (g_extern.audio_active && g_settings.audio.rate_control)
+   g_extern.audio_data.rate_control = false;
+   if (!g_extern.system.audio_callback && g_extern.audio_active && g_settings.audio.rate_control)
    {
       if (driver.audio->buffer_size && driver.audio->write_avail)
       {
@@ -552,6 +579,9 @@ void init_audio(void)
 #endif
 
    g_extern.measure_data.buffer_free_samples_count = 0;
+
+   if (g_extern.audio_active && !g_extern.audio_data.mute && g_extern.system.audio_callback) // Threaded driver is initially stopped.
+      audio_start_func();
 }
 
 static void compute_audio_buffer_statistics(void)
@@ -662,6 +692,9 @@ static void compute_monitor_fps_statistics(void)
 
 void uninit_audio(void)
 {
+   if (driver.audio_data && driver.audio)
+      driver.audio->free(driver.audio_data);
+
    free(g_extern.audio_data.conv_outsamples);
    g_extern.audio_data.conv_outsamples = NULL;
    g_extern.audio_data.data_ptr        = 0;
@@ -674,9 +707,6 @@ void uninit_audio(void)
       g_extern.audio_active = false;
       return;
    }
-
-   if (driver.audio_data && driver.audio)
-      driver.audio->free(driver.audio_data);
 
    rarch_resampler_freep(&g_extern.audio_data.resampler, &g_extern.audio_data.resampler_data);
 

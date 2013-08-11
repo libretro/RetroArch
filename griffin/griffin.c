@@ -204,6 +204,16 @@ VIDEO DRIVER
 
 #ifdef HAVE_OPENGL
 #include "../gfx/gl.c"
+
+#ifndef HAVE_PSGL
+#include "../gfx/glsym/rglgen.c"
+#ifdef HAVE_OPENGLES2
+#include "../gfx/glsym/glsym_es2.c"
+#else
+#include "../gfx/glsym/glsym_gl.c"
+#endif
+#endif
+
 #endif
 
 #ifdef HAVE_XVIDEO
@@ -488,6 +498,7 @@ THREAD
 #elif defined(HAVE_THREADS)
 #include "../thread.c"
 #include "../gfx/thread_wrapper.c"
+#include "../audio/thread_wrapper.c"
 #ifndef RARCH_CONSOLE
 #include "../autosave.c"
 #endif

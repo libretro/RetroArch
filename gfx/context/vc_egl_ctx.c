@@ -243,8 +243,10 @@ static bool gfx_ctx_set_video_mode(
    return true;
 }
 
-static bool gfx_ctx_bind_api(enum gfx_ctx_api api)
+static bool gfx_ctx_bind_api(enum gfx_ctx_api api, unsigned major, unsigned minor)
 {
+   (void)major;
+   (void)minor;
    g_api = api;
    switch (api)
    {

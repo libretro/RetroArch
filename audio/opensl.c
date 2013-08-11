@@ -261,6 +261,12 @@ static size_t sl_buffer_size(void *data)
    return BUFFER_SIZE * sl->buf_count;
 }
 
+static bool sl_use_float(void *data)
+{
+   (void)data;
+   return false;
+}
+
 const audio_driver_t audio_opensl = {
    sl_init,
    sl_write,
@@ -268,7 +274,7 @@ const audio_driver_t audio_opensl = {
    sl_start,
    sl_set_nonblock_state,
    sl_free,
-   NULL,
+   sl_use_float,
    "opensl",
    sl_write_avail,
    sl_buffer_size,

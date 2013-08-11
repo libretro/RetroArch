@@ -37,27 +37,33 @@
 
 // Used when we call deactivate() since just unbinding the program didn't seem to work... :(
 static const char *stock_cg_program =
+      "struct input"
+      "{"
+      "  float2 tex_coord;"
+      "  float4 color;"
+      "  float4 vertex_coord;"
+      "  uniform float4x4 mvp_matrix;"
+      "  uniform sampler2D texture;"
+      "};"
+      "struct vertex_data"
+      "{"
+      "  float2 tex;"
+      "  float4 color;"
+      "};"
       "void main_vertex"
       "("
-      "	float4 position : POSITION,"
-      "	float2 texCoord : TEXCOORD0,"
-      "  float4 color : COLOR,"
-      ""
-      "  uniform float4x4 modelViewProj,"
-      ""
       "	out float4 oPosition : POSITION,"
-      "	out float2 otexCoord : TEXCOORD0,"
-      "  out float4 oColor : COLOR"
+      "  input IN,"
+      "  out vertex_data vert"
       ")"
       "{"
-      "	oPosition = mul(modelViewProj, position);"
-      "	otexCoord = texCoord;"
-      "  oColor = color;"
+      "	oPosition = mul(IN.mvp_matrix, IN.vertex_coord);"
+      "  vert = vertex_data(IN.tex_coord, IN.color);"
       "}"
       ""
-      "float4 main_fragment(in float4 color : COLOR, float2 tex : TEXCOORD0, uniform sampler2D s0 : TEXUNIT0) : COLOR"
+      "float4 main_fragment(input IN, vertex_data vert, uniform sampler2D s0 : TEXUNIT0) : COLOR"
       "{"
-      "   return color * tex2D(s0, tex);"
+      "  return vert.color * tex2D(s0, vert.tex);"
       "}";
 
 #ifdef RARCH_CG_DEBUG
@@ -96,9 +102,9 @@ struct cg_fbo_params
    CGparameter coord;
 };
 
-#define MAX_TEXTURES 8
+#define MAX_LUT_TEXTURES 8
 #define MAX_VARIABLES 64
-#define PREV_TEXTURES (TEXTURES - 1)
+#define PREV_TEXTURES (MAX_TEXTURES - 1)
 
 struct cg_program
 {
@@ -136,7 +142,7 @@ static unsigned active_index;
 static struct gfx_shader *cg_shader;
 
 static state_tracker_t *state_tracker;
-static GLuint lut_textures[MAX_TEXTURES];
+static GLuint lut_textures[MAX_LUT_TEXTURES];
 
 static CGparameter cg_attribs[PREV_TEXTURES + 1 + 4 + GFX_MAX_SHADERS];
 static unsigned cg_attrib_index;
@@ -678,6 +684,41 @@ static void set_program_base_attrib(unsigned i)
       else if (strcmp(semantic, "TEXCOORD1") == 0)
          prg[i].lut_tex = param;
    }
+
+   if (!prg[i].tex)
+      prg[i].tex = cgGetNamedParameter(prg[i].vprg, "IN.tex_coord");
+   if (!prg[i].color)
+      prg[i].color = cgGetNamedParameter(prg[i].vprg, "IN.color");
+   if (!prg[i].vertex)
+      prg[i].vertex = cgGetNamedParameter(prg[i].vprg, "IN.vertex_coord");
+   if (!prg[i].lut_tex)
+      prg[i].lut_tex = cgGetNamedParameter(prg[i].vprg, "IN.lut_tex_coord");
+}
+
+static void set_pass_attrib(struct cg_program *prg, struct cg_fbo_params *fbo,
+      const char *attr)
+{
+   char attr_buf[64];
+
+   snprintf(attr_buf, sizeof(attr_buf), "%s.texture", attr);
+   if (!fbo->tex)
+      fbo->tex = cgGetNamedParameter(prg->fprg, attr_buf);
+
+   snprintf(attr_buf, sizeof(attr_buf), "%s.video_size", attr);
+   if (!fbo->vid_size_v)
+      fbo->vid_size_v = cgGetNamedParameter(prg->vprg, attr_buf);
+   if (!fbo->vid_size_f)
+      fbo->vid_size_f = cgGetNamedParameter(prg->fprg, attr_buf);
+
+   snprintf(attr_buf, sizeof(attr_buf), "%s.texture_size", attr);
+   if (!fbo->tex_size_v)
+      fbo->tex_size_v = cgGetNamedParameter(prg->vprg, attr_buf);
+   if (!fbo->tex_size_f)
+      fbo->tex_size_f = cgGetNamedParameter(prg->fprg, attr_buf);
+
+   snprintf(attr_buf, sizeof(attr_buf), "%s.tex_coord", attr);
+   if (!fbo->coord)
+      fbo->coord = cgGetNamedParameter(prg->vprg, attr_buf);
 }
 
 static void set_program_attributes(unsigned i)
@@ -697,7 +738,10 @@ static void set_program_attributes(unsigned i)
    prg[i].out_size_v = cgGetNamedParameter(prg[i].vprg, "IN.output_size");
    prg[i].frame_cnt_v = cgGetNamedParameter(prg[i].vprg, "IN.frame_count");
    prg[i].frame_dir_v = cgGetNamedParameter(prg[i].vprg, "IN.frame_direction");
+
    prg[i].mvp = cgGetNamedParameter(prg[i].vprg, "modelViewProj");
+   if (!prg[i].mvp)
+      prg[i].mvp = cgGetNamedParameter(prg[i].vprg, "IN.mvp_matrix");
 
    prg[i].orig.tex = cgGetNamedParameter(prg[i].fprg, "ORIG.texture");
    prg[i].orig.vid_size_v = cgGetNamedParameter(prg[i].vprg, "ORIG.video_size");
@@ -705,6 +749,13 @@ static void set_program_attributes(unsigned i)
    prg[i].orig.tex_size_v = cgGetNamedParameter(prg[i].vprg, "ORIG.texture_size");
    prg[i].orig.tex_size_f = cgGetNamedParameter(prg[i].fprg, "ORIG.texture_size");
    prg[i].orig.coord = cgGetNamedParameter(prg[i].vprg, "ORIG.tex_coord");
+
+   if (i > 1)
+   {
+      char pass_str[64];
+      snprintf(pass_str, sizeof(pass_str), "PASSPREV%u", i);
+      set_pass_attrib(&prg[i], &prg[i].orig, pass_str);
+   }
 
    for (unsigned j = 0; j < PREV_TEXTURES; j++)
    {
@@ -740,21 +791,11 @@ static void set_program_attributes(unsigned i)
 
    for (unsigned j = 0; j < i - 1; j++)
    {
-      char attr_buf[64];
-
-      snprintf(attr_buf, sizeof(attr_buf), "PASS%u.texture", j + 1);
-      prg[i].fbo[j].tex = cgGetNamedParameter(prg[i].fprg, attr_buf);
-
-      snprintf(attr_buf, sizeof(attr_buf), "PASS%u.video_size", j + 1);
-      prg[i].fbo[j].vid_size_v = cgGetNamedParameter(prg[i].vprg, attr_buf);
-      prg[i].fbo[j].vid_size_f = cgGetNamedParameter(prg[i].fprg, attr_buf);
-
-      snprintf(attr_buf, sizeof(attr_buf), "PASS%u.texture_size", j + 1);
-      prg[i].fbo[j].tex_size_v = cgGetNamedParameter(prg[i].vprg, attr_buf);
-      prg[i].fbo[j].tex_size_f = cgGetNamedParameter(prg[i].fprg, attr_buf);
-
-      snprintf(attr_buf, sizeof(attr_buf), "PASS%u.tex_coord", j + 1);
-      prg[i].fbo[j].coord = cgGetNamedParameter(prg[i].vprg, attr_buf);
+      char pass_str[64];
+      snprintf(pass_str, sizeof(pass_str), "PASS%u", j + 1);
+      set_pass_attrib(&prg[i], &prg[i].fbo[j], pass_str);
+      snprintf(pass_str, sizeof(pass_str), "PASSPREV%u", i - j); 
+      set_pass_attrib(&prg[i], &prg[i].fbo[j], pass_str);
    }
 }
 
@@ -805,7 +846,7 @@ static bool gl_cg_init(const char *path)
          goto error;
    }
 
-   prg[0].mvp = cgGetNamedParameter(prg[0].vprg, "modelViewProj");
+   prg[0].mvp = cgGetNamedParameter(prg[0].vprg, "IN.mvp_matrix");
    for (unsigned i = 1; i <= cg_shader->passes; i++)
       set_program_attributes(i);
 
@@ -870,6 +911,20 @@ static void gl_cg_shader_scale(unsigned index, struct gfx_fbo_scale *scale)
       scale->valid = false;
 }
 
+static unsigned gl_cg_get_prev_textures(void)
+{
+   if (!cg_active)
+      return 0;
+
+   unsigned max_prev = 0;
+   for (unsigned i = 1; i <= cg_shader->passes; i++)
+      for (unsigned j = 0; j < PREV_TEXTURES; j++)
+         if (prg[i].prev[j].tex)
+            max_prev = max(j + 1, max_prev);
+
+   return max_prev;
+}
+
 void gl_cg_set_compiler_args(const char **argv)
 {
    cg_arguments = argv;
@@ -890,6 +945,7 @@ const gl_shader_backend_t gl_cg_backend = {
    gl_cg_shader_scale,
    gl_cg_set_coords,
    gl_cg_set_mvp,
+   gl_cg_get_prev_textures,
 
    RARCH_SHADER_CG,
 };
