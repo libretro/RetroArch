@@ -13,7 +13,6 @@ import org.retroarch.R;
 
 import android.app.AlertDialog;
 import android.content.DialogInterface;
-import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager.NameNotFoundException;
 import android.content.res.AssetManager;
@@ -155,18 +154,15 @@ public class MainMenuActivity extends PreferenceActivity {
 	
 	boolean detectDevice(boolean show_dialog)
 	{
-		SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getBaseContext());
-		SharedPreferences.Editor edit = prefs.edit();
-		edit.putBoolean("video_threaded", true);
-		edit.commit();
+		boolean retval = false;
 		
 		Log.i("Device MODEL", android.os.Build.MODEL);
 		if (android.os.Build.MODEL.equals("SHIELD"))
 		{
 			AlertDialog.Builder alert = new AlertDialog.Builder(this)
 			.setTitle("NVidia Shield detected")
-			.setMessage("Would you like to set up the ideal configuration options for your device?\nNOTE: For optimal performance, turn off Google Account sync, Google Play Store auto-updates, GPS and Wifi in your Android settings menu.")
-			.setPositiveButton("Yes", new DialogInterface.OnClickListener() {
+			.setMessage("The ideal configuration options for your device will now be preconfigured.\nNOTE: For optimal performance, turn off Google Account sync, Google Play Store auto-updates, GPS and Wifi in your Android settings menu.")
+			.setPositiveButton("OK", new DialogInterface.OnClickListener() {
 				@Override
 				public void onClick(DialogInterface dialog, int which) {
 					SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getBaseContext());
@@ -176,17 +172,16 @@ public class MainMenuActivity extends PreferenceActivity {
 					edit.putBoolean("input_autodetect_enable", true);
 					edit.commit();
 				}
-			})
-			.setNegativeButton("No", null);
+			});
 			alert.show();
-			return true;
+			retval = true;
 		}
 		else if (android.os.Build.ID.equals("JSS15J"))
 		{
 			AlertDialog.Builder alert = new AlertDialog.Builder(this)
 			.setTitle("Nexus 7 2013 detected")
-			.setMessage("Would you like to set up the ideal configuration options for your device?\nNOTE: For optimal performance, turn off Google Account sync, Google Play Store auto-updates, GPS and Wifi in your Android settings menu.")
-			.setPositiveButton("Yes", new DialogInterface.OnClickListener() {
+			.setMessage("The ideal configuration options for your device will now be preconfigured.\nNOTE: For optimal performance, turn off Google Account sync, Google Play Store auto-updates, GPS and Wifi in your Android settings menu.")
+			.setPositiveButton("OK", new DialogInterface.OnClickListener() {
 				@Override
 				public void onClick(DialogInterface dialog, int which) {
 					SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getBaseContext());
@@ -194,10 +189,9 @@ public class MainMenuActivity extends PreferenceActivity {
 					edit.putString("video_refresh_rate", Double.valueOf(59.65).toString());
 					edit.commit();
 				}
-			})
-			.setNegativeButton("No", null);
+			});
 			alert.show();
-			return true;
+			retval = true;
 		}
 		
 		if (show_dialog) {
@@ -206,7 +200,7 @@ public class MainMenuActivity extends PreferenceActivity {
 				Toast.LENGTH_SHORT).show();
 		}
 		
-		return false;
+		return retval;
 	}
 	
 	@Override

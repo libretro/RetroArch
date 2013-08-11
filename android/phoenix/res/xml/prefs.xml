@@ -34,7 +34,7 @@
         </PreferenceCategory>
         <PreferenceCategory android:title="Synchronization" >
             <CheckBoxPreference
-                android:defaultValue="false"
+                android:defaultValue="true"
                 android:key="video_threaded"
                 android:summary="Uses a multi-threaded video driver. Is likely to improve performance at the expense of slightly more latency and jitter. Use this if you have troubles getting good video and audio."
                 android:title="Threaded video driver" />

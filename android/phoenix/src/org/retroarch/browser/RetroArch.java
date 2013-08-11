@@ -60,7 +60,6 @@ public class RetroArch extends Activity implements
 	private IconAdapter<ModuleWrapper> adapter;
 	static private final int ACTIVITY_LOAD_ROM = 0;
 	static private String libretro_path;
-	static private Double report_refreshrate;
 	static private final String TAG = "CoreSelection";
 	private ConfigFile config;
 	private ConfigFile core_config;
@@ -140,7 +139,6 @@ public class RetroArch extends Activity implements
 		
 		String cpuInfo = readCPUInfo();
 		boolean cpuIsNeon = cpuInfoIsNeon(cpuInfo);
-		report_refreshrate = getDisplayRefreshRate();
 		
 		setContentView(R.layout.line_list);
 
@@ -272,7 +270,7 @@ public class RetroArch extends Activity implements
 		config.setInt("input_autodetect_icade_profile_pad4", Integer.valueOf(prefs.getString("input_autodetect_icade_profile_pad4", "0")));
 		
 		config.setDouble("video_refresh_rate", getRefreshRate());
-		config.setBoolean("video_threaded", prefs.getBoolean("video_threaded", false));
+		config.setBoolean("video_threaded", prefs.getBoolean("video_threaded", true));
 		
 		String aspect = prefs.getString("video_aspect_ratio", "auto");
 		if (aspect.equals("full")) {
@@ -417,10 +415,6 @@ public class RetroArch extends Activity implements
 		case R.id.report_ime:
 			String current_ime = Settings.Secure.getString(getContentResolver(), Settings.Secure.DEFAULT_INPUT_METHOD);
 			new AlertDialog.Builder(this).setMessage(current_ime).setNeutralButton("Close", null).show();
-			return true;
-		case R.id.report_refreshrate:
-			String current_rate = "Screen Refresh Rate: " + Double.valueOf(report_refreshrate).toString();
-			new AlertDialog.Builder(this).setMessage(current_rate).setNeutralButton("Close", null).show();
 			return true;
 		default:
 			return false;
