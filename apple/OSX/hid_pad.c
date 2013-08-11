@@ -16,40 +16,66 @@
 #include <IOKit/hid/IOHIDManager.h>
 #include "../RetroArch/apple_input.h"
 
+// NOTE: I pieced this together through trial and error, any corrections are welcome
+
 static IOHIDManagerRef g_hid_manager;
 
 static void hid_input_callback(void* inContext, IOReturn inResult, void* inSender, IOHIDValueRef inIOHIDValueRef)
 {
    IOHIDElementRef element = IOHIDValueGetElement(inIOHIDValueRef);
-
-   uint32_t slot = (uint32_t)inContext;
-   if (slot >= 4)
-      return;
+   IOHIDDeviceRef device = IOHIDElementGetDevice(element);
 
    uint32_t type = IOHIDElementGetType(element);
    uint32_t page = IOHIDElementGetUsagePage(element);
    uint32_t use = IOHIDElementGetUsage(element);
 
-   if (type == 2 && page == 9)
+   // Mouse handler
+   if (IOHIDDeviceConformsTo(device, kHIDPage_GenericDesktop, kHIDUsage_GD_Mouse))
    {
-      CFIndex state = IOHIDValueGetIntegerValue(inIOHIDValueRef);
-
-      if (state)  g_current_input_data.pad_buttons[slot] |= (1 << (use - 1));
-      else        g_current_input_data.pad_buttons[slot] &= ~(1 << (use - 1));
-   }
-   else if (page == 1)
-   {
-      static const uint32_t axis_use_ids[4] = { 48, 49, 50, 53 };
-      for (int i = 0; i < 4; i ++)
+      if (type == kIOHIDElementTypeInput_Button && page == kHIDPage_Button)
       {
-         if (use == axis_use_ids[i])
+         CFIndex state = IOHIDValueGetIntegerValue(inIOHIDValueRef);
+      
+         if (state)  g_current_input_data.mouse_buttons |= (1 << (use - 1));
+         else        g_current_input_data.mouse_buttons &= ~(1 << (use - 1));
+      }
+      else if (type == kIOHIDElementTypeInput_Misc && page == kHIDPage_GenericDesktop)
+      {
+         static const uint32_t axis_use_ids[2] = { 48, 49 };
+
+         for (int i = 0; i < 2; i ++)
+            if (use == axis_use_ids[i])
+               g_current_input_data.mouse_delta[i] += IOHIDValueGetIntegerValue(inIOHIDValueRef);
+      }
+   }
+   // Joystick handler
+   else if (IOHIDDeviceConformsTo(device, kHIDPage_GenericDesktop, kHIDUsage_GD_Joystick))
+   {
+      uint32_t slot = (uint32_t)inContext;
+      if (slot >= 4)
+         return;
+
+      if (type == kIOHIDElementTypeInput_Button && page == kHIDPage_Button)
+      {
+         CFIndex state = IOHIDValueGetIntegerValue(inIOHIDValueRef);
+
+         if (state)  g_current_input_data.pad_buttons[slot] |= (1 << (use - 1));
+         else        g_current_input_data.pad_buttons[slot] &= ~(1 << (use - 1));
+      }
+      else if (type == kIOHIDElementTypeInput_Axis && page == kHIDPage_GenericDesktop)
+      {
+         static const uint32_t axis_use_ids[4] = { 48, 49, 50, 53 };
+         for (int i = 0; i < 4; i ++)
          {
-            CFIndex min = IOHIDElementGetPhysicalMin(element);
-            CFIndex max = IOHIDElementGetPhysicalMax(element) - min;
-            CFIndex state = IOHIDValueGetIntegerValue(inIOHIDValueRef) - min;
+            if (use == axis_use_ids[i])
+            {
+               CFIndex min = IOHIDElementGetPhysicalMin(element);
+               CFIndex max = IOHIDElementGetPhysicalMax(element) - min;
+               CFIndex state = IOHIDValueGetIntegerValue(inIOHIDValueRef) - min;
             
-            float val = (float)state / (float)max;
-            g_current_input_data.pad_axis[slot][i] = ((val * 2.0f) - 1.0f) * 32767.0f;
+               float val = (float)state / (float)max;
+               g_current_input_data.pad_axis[slot][i] = ((val * 2.0f) - 1.0f) * 32767.0f;
+            }
          }
       }
    }
@@ -67,25 +93,38 @@ static void hid_device_removed(void* inContext, IOReturn inResult, void* inSende
    IOHIDDeviceClose(inDevice, kIOHIDOptionsTypeNone);
 }
 
+static CFMutableDictionaryRef build_matching_dictionary(uint32_t page, uint32_t use)
+{
+   CFMutableDictionaryRef matcher = CFDictionaryCreateMutable(kCFAllocatorDefault, 0, &kCFTypeDictionaryKeyCallBacks, &kCFTypeDictionaryValueCallBacks);
+
+   CFNumberRef pagen = CFNumberCreate(kCFAllocatorDefault, kCFNumberIntType, &page);
+   CFDictionarySetValue(matcher, CFSTR(kIOHIDDeviceUsagePageKey), pagen);
+   CFRelease(pagen);
+
+   CFNumberRef usen = CFNumberCreate(kCFAllocatorDefault, kCFNumberIntType, &use);
+   CFDictionarySetValue(matcher, CFSTR(kIOHIDDeviceUsageKey), usen);
+   CFRelease(usen);
+
+   return matcher;
+}
+
 void osx_pad_init()
 {
    if (!g_hid_manager)
    {
       g_hid_manager = IOHIDManagerCreate(kCFAllocatorDefault, kIOHIDOptionsTypeNone);
 
-      CFMutableDictionaryRef matcher = CFDictionaryCreateMutable(kCFAllocatorDefault, 0, &kCFTypeDictionaryKeyCallBacks, &kCFTypeDictionaryValueCallBacks);
-      uint32_t page = kHIDPage_GenericDesktop;
-      uint32_t use = kHIDUsage_GD_Joystick;
+      CFMutableArrayRef matcher = CFArrayCreateMutable(kCFAllocatorDefault, 0, &kCFTypeArrayCallBacks);
 
-      CFNumberRef pagen = CFNumberCreate(kCFAllocatorDefault, kCFNumberIntType, &page);
-      CFDictionarySetValue(matcher, CFSTR(kIOHIDDeviceUsagePageKey), pagen);
-      CFRelease(pagen);
+      CFMutableDictionaryRef mouse = build_matching_dictionary(kHIDPage_GenericDesktop, kHIDUsage_GD_Mouse);
+      CFArrayAppendValue(matcher, mouse);
+      CFRelease(mouse);
 
-      CFNumberRef usen = CFNumberCreate(kCFAllocatorDefault, kCFNumberIntType, &use);
-      CFDictionarySetValue(matcher, CFSTR(kIOHIDDeviceUsageKey), usen);
-      CFRelease(usen);
+      CFMutableDictionaryRef joystick = build_matching_dictionary(kHIDPage_GenericDesktop, kHIDUsage_GD_Joystick);
+      CFArrayAppendValue(matcher, joystick);
+      CFRelease(joystick);
 
-      IOHIDManagerSetDeviceMatching(g_hid_manager, matcher);
+      IOHIDManagerSetDeviceMatchingMultiple(g_hid_manager, matcher);
       CFRelease(matcher);
 
       IOHIDManagerRegisterDeviceMatchingCallback(g_hid_manager, hid_device_attached, 0);

@@ -132,6 +132,9 @@ static void apple_input_poll(void *data)
 
       input_joypad_poll(g_joydriver);
       g_polled_input_data.pad_buttons[0] |= icade_buttons;
+
+      g_current_input_data.mouse_delta[0] = 0;
+      g_current_input_data.mouse_delta[1] = 0;
    });
 }
 
@@ -147,6 +150,17 @@ static int16_t apple_input_state(void *data, const struct retro_keybind **binds,
       
       case RETRO_DEVICE_KEYBOARD:
          return apple_key_pressed(id);
+
+      case RETRO_DEVICE_MOUSE:
+      {
+         switch (id)
+         {
+            case RETRO_DEVICE_ID_MOUSE_X: return g_polled_input_data.mouse_delta[0];
+            case RETRO_DEVICE_ID_MOUSE_Y: return g_polled_input_data.mouse_delta[1];
+            case RETRO_DEVICE_ID_MOUSE_LEFT: return g_polled_input_data.mouse_buttons & 1;
+            case RETRO_DEVICE_ID_MOUSE_RIGHT: return g_polled_input_data.mouse_buttons & 2;
+         }
+      }
       
       case RETRO_DEVICE_POINTER:
       case RARCH_DEVICE_POINTER_SCREEN:

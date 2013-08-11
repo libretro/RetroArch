@@ -31,6 +31,8 @@ static UIView* g_pause_indicator_view;
 
 #elif defined(OSX)
 
+#include "apple_input.h"
+
 static RAGameView* g_instance;
 static NSOpenGLContext* g_context;
 
@@ -87,20 +89,31 @@ static float g_screen_scale = 1.0f;
    return YES;
 }
 
+- (BOOL)isFlipped
+{
+   return YES;
+}
+
 - (void)keyDown:(NSEvent*)theEvent
 {
 }
 
 - (void)mouseDown:(NSEvent*)theEvent
 {
+   g_current_input_data.touch_count = 1;
+   [self mouseDragged:theEvent];
 }
 
 - (void)mouseUp:(NSEvent*)theEvent
 {
+   g_current_input_data.touch_count = 0;
 }
 
-- (void)mouseMoved:(NSEvent *)theEvent
+- (void)mouseDragged:(NSEvent*)theEvent
 {
+   NSPoint pos = [self convertPoint:[theEvent locationInWindow] fromView:nil];
+   g_current_input_data.touches[0].screen_x = pos.x;
+   g_current_input_data.touches[0].screen_y = pos.y;
 }
 
 #elif defined(IOS) // < iOS Pause menu and lifecycle
