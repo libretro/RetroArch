@@ -39,6 +39,8 @@ static HDC g_hdc;
 static HMONITOR g_last_hm;
 static HMONITOR g_all_hms[MAX_MONITORS];
 static unsigned g_num_mons;
+static unsigned g_major;
+static unsigned g_minor;
 
 static bool g_quit;
 static bool g_inited;
@@ -57,6 +59,9 @@ static void gfx_ctx_get_video_size(unsigned *width, unsigned *height);
 static void gfx_ctx_destroy(void);
 
 static BOOL (APIENTRY *p_swap_interval)(int);
+
+typedef HGLRC (APIENTRY *wglCreateContextAttribsProc)(HDC, HGLRC, const int*);
+static wglCreateContextAttribsProc pcreate_context;
 
 static void setup_pixel_format(HDC hdc)
 {
@@ -78,7 +83,14 @@ static void create_gl_context(HWND hwnd)
    g_hdc = GetDC(hwnd);
    setup_pixel_format(g_hdc);
 
-   g_hrc = wglCreateContext(g_hdc);
+   if (!g_hrc)
+      g_hrc = wglCreateContext(g_hdc);
+   else
+   {
+      RARCH_LOG("[WGL]: Using cached GL context.\n");
+      driver.video_cache_context_ack = true;
+   }
+
    if (g_hrc)
    {
       if (wglMakeCurrent(g_hdc, g_hrc))
@@ -87,25 +99,77 @@ static void create_gl_context(HWND hwnd)
          g_quit = true;
    }
    else
+   {
       g_quit = true;
+      return;
+   }
+
+   if (g_major * 1000 + g_minor >= 3001) // Create core context
+   {
+#ifndef WGL_CONTEXT_MAJOR_VERSION_ARB
+#define WGL_CONTEXT_MAJOR_VERSION_ARB 0x2091
+#endif
+#ifndef WGL_CONTEXT_MINOR_VERSION_ARB
+#define WGL_CONTEXT_MINOR_VERSION_ARB 0x2092
+#endif
+#ifndef WGL_CONTEXT_PROFILE_MASK_ARB
+#define WGL_CONTEXT_PROFILE_MASK_ARB 0x9126
+#endif
+#ifndef WGL_CONTEXT_CORE_PROFILE_BIT_ARB
+#define WGL_CONTEXT_CORE_PROFILE_BIT_ARB 0x0001
+#endif
+#ifndef WGL_CONTEXT_FLAGS_ARB
+#define WGL_CONTEXT_FLAGS_ARB 0x2094
+#endif
+#ifndef WGL_CONTEXT_DEBUG_BIT_ARB
+#define WGL_CONTEXT_DEBUG_BIT_ARB 0x0001
+#endif
+      const int attribs[] = {
+         WGL_CONTEXT_MAJOR_VERSION_ARB, (int)g_major,
+         WGL_CONTEXT_MINOR_VERSION_ARB, (int)g_minor,
+         WGL_CONTEXT_PROFILE_MASK_ARB, WGL_CONTEXT_CORE_PROFILE_BIT_ARB,
+         WGL_CONTEXT_FLAGS_ARB, g_extern.system.hw_render_callback.debug_context ? WGL_CONTEXT_DEBUG_BIT_ARB : 0,
+         0,
+      };
+
+      if (!pcreate_context)
+         pcreate_context = (wglCreateContextAttribsProc)wglGetProcAddress("wglCreateContextAttribsARB");
+
+      if (pcreate_context)
+      {
+         HGLRC context = pcreate_context(g_hdc, NULL, attribs);
+
+         if (context)
+         {
+            wglMakeCurrent(NULL, NULL);
+            wglDeleteContext(g_hrc);
+            g_hrc = context;
+            if (!wglMakeCurrent(g_hdc, g_hrc))
+               g_quit = true;
+         }
+         else
+            RARCH_ERR("[WGL]: Failed to create core context. Falling back to legacy context.\n");
+      }
+      else
+         RARCH_ERR("[WGL]: wglCreateContextAttribsARB not supported.\n");
+   }
 }
 
 static bool BrowseForFile(char *filename)
 {
    OPENFILENAME ofn;
-	memset((void *)&ofn, 0, sizeof(OPENFILENAME));
+   memset(&ofn, 0, sizeof(OPENFILENAME));
 
-	ofn.lStructSize = sizeof(OPENFILENAME);
-	ofn.hwndOwner = g_hwnd;
-	ofn.lpstrFilter = "All Files\0*.*\0\0";
-	ofn.lpstrFile = filename;
-	ofn.lpstrTitle = "Select ROM";
-	ofn.lpstrDefExt = "";
-	ofn.nMaxFile = PATH_MAX;
-	ofn.Flags = OFN_FILEMUSTEXIST | OFN_HIDEREADONLY;
-	if(GetOpenFileName(&ofn)) {
-		return true;
-	}
+   ofn.lStructSize = sizeof(OPENFILENAME);
+   ofn.hwndOwner = g_hwnd;
+   ofn.lpstrFilter = "All Files\0*.*\0\0";
+   ofn.lpstrFile = filename;
+   ofn.lpstrTitle = "Select ROM";
+   ofn.lpstrDefExt = "";
+   ofn.nMaxFile = PATH_MAX;
+   ofn.Flags = OFN_FILEMUSTEXIST | OFN_HIDEREADONLY;
+   if (GetOpenFileName(&ofn))
+      return true;
    return false;
 }
 
@@ -159,20 +223,21 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT message,
             g_resized = true;
          }
          return 0;
+
       case WM_COMMAND:
-         switch(wparam & 0xffff)
+         switch (wparam & 0xffff)
          {
             case ID_M_OPENROM:
             {
                char rom_file[PATH_MAX] = {0};
-               if(BrowseForFile(rom_file))
+               if (BrowseForFile(rom_file))
                {
                   strlcpy(g_extern.fullpath, rom_file, sizeof(g_extern.fullpath));
                   g_extern.lifecycle_mode_state |= (1ULL << MODE_LOAD_GAME);
                   PostMessage(g_hwnd, WM_CLOSE, 0, 0);
                }
+               break;
             }
-            break;
             case ID_M_RESET:
                rarch_game_reset();
                break;
@@ -383,9 +448,9 @@ static bool gfx_ctx_set_video_mode(
    if (!g_hwnd)
       goto error;
 
-   if(!fullscreen)
+   if (!fullscreen)
    {
-      SetMenu(g_hwnd,LoadMenu(GetModuleHandle(NULL),MAKEINTRESOURCE(IDR_MENU)));
+      SetMenu(g_hwnd, LoadMenu(GetModuleHandle(NULL), MAKEINTRESOURCE(IDR_MENU)));
       RECT rcTemp = {0, 0, g_resize_height, 0x7FFF}; // 0x7FFF="Infinite" height
       SendMessage(g_hwnd, WM_NCCALCSIZE, FALSE, (LPARAM)&rcTemp); // recalculate margin, taking possible menu wrap into account
       g_resize_height += rcTemp.top + rect.top; // extend by new top margin and substract previous margin
@@ -432,9 +497,14 @@ static void gfx_ctx_destroy(void)
 {
    if (g_hrc)
    {
+      glFinish();
       wglMakeCurrent(NULL, NULL);
-      wglDeleteContext(g_hrc);
-      g_hrc = NULL;
+
+      if (!driver.video_cache_context)
+      {
+         wglDeleteContext(g_hrc);
+         g_hrc = NULL;
+      }
    }
 
    if (g_hwnd && g_hdc)
@@ -462,6 +532,8 @@ static void gfx_ctx_destroy(void)
    }
 
    g_inited = false;
+   g_major = g_minor = 0;
+   p_swap_interval = NULL;
 }
 
 static void gfx_ctx_input_driver(const input_driver_t **input, void **input_data)
@@ -484,8 +556,10 @@ static gfx_ctx_proc_t gfx_ctx_get_proc_address(const char *symbol)
    return (gfx_ctx_proc_t)wglGetProcAddress(symbol);
 }
 
-static bool gfx_ctx_bind_api(enum gfx_ctx_api api)
+static bool gfx_ctx_bind_api(enum gfx_ctx_api api, unsigned major, unsigned minor)
 {
+   g_major = major;
+   g_minor = minor;
    return api == GFX_CTX_OPENGL_API;
 }
 

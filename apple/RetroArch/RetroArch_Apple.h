@@ -18,6 +18,7 @@
 #define __RARCH_APPLE_H
 
 #include <Foundation/Foundation.h>
+#import <CoreFoundation/CoreFoundation.h>
 #import "RAModuleInfo.h"
 
 void apple_run_core(RAModuleInfo* core, const char* file);

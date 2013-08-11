@@ -21,6 +21,7 @@
 #include <limits.h>
 #include "menu_common.h"
 
+#include "../../performance.h"
 #include "../../file.h"
 #ifdef HAVE_FILEBROWSER
 #include "utils/file_browser.h"

@@ -286,6 +286,20 @@ void apple_get_game_view_size(unsigned *width, unsigned *height)
    *height = *height ? *height : 480;
 }
 
+void *apple_get_proc_address(const char *symbol_name)
+{
+#ifdef IOS
+   (void)symbol_name; // We don't need symbols above GLES2 on iOS.
+   return NULL;
+#else
+   CFStringRef symbol = CFStringCreateWithCString(kCFAllocatorDefault, symbol_name, kCFStringEncodingASCII);
+   void *proc = CFBundleGetFunctionPointerForName(CFBundleGetBundleWithIdentifier(CFSTR("com.apple.opengl")),
+      symbol);
+   CFRelease(symbol);
+   return proc;
+#endif
+}
+
 #ifdef IOS
 void apple_bind_game_view_fbo(void)
 {

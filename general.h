@@ -264,6 +264,7 @@ struct settings
    unsigned rewind_granularity;
 
    float slowmotion_ratio;
+   float fastforward_ratio;
 
    bool pause_nonactive;
    unsigned autosave_interval;
@@ -369,6 +370,12 @@ struct global
 
    struct
    {
+      rarch_time_t minimum_frame_time;
+      rarch_time_t last_frame_time;
+   } frame_limit;
+
+   struct
+   {
       struct retro_system_info info;
       struct retro_system_av_info av_info;
       float aspect_ratio;
@@ -386,9 +393,13 @@ struct global
       char valid_extensions[PATH_MAX];
       
       retro_keyboard_event_t key_event;
+      retro_audio_callback_t audio_callback;
 
       struct retro_disk_control_callback disk_control; 
       struct retro_hw_render_callback hw_render_callback;
+
+      struct retro_frame_time_callback frame_time;
+      retro_usec_t frame_time_last;
 
       core_option_manager_t *core_options;
    } system;
@@ -427,7 +438,6 @@ struct global
 
       float volume_db;
       float volume_gain;
-
    } audio_data;
 
    struct

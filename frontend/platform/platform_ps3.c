@@ -184,8 +184,9 @@ static void callback_sysutil_exit(uint64_t status, uint64_t param, void *userdat
 }
 #endif
 
-static void get_environment_settings(int argc, char *argv[])
+static void get_environment_settings(int argc, char *argv[], void *args)
 {
+   (void)args;
 #ifndef IS_SALAMANDER
    g_extern.verbose = true;
 
