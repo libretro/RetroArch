@@ -24,6 +24,7 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
          </activity>
+        <activity android:name=".browser.ReportIME"></activity>
         <activity android:name=".browser.HelpActivity"></activity>
         <activity android:name=".browser.DirectoryActivity"></activity>
         <activity android:name=".browser.ROMActivity"></activity>

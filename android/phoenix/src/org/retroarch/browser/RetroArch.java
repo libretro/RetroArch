@@ -377,10 +377,6 @@ public class RetroArch extends Activity implements
 			InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
 			imm.showInputMethodPicker();
 			return true;
-		case R.id.report_ime:
-			String current_ime = Settings.Secure.getString(getContentResolver(), Settings.Secure.DEFAULT_INPUT_METHOD);
-			new AlertDialog.Builder(this).setMessage(current_ime).setNeutralButton("Close", null).show();
-			return true;
 		default:
 			return false;
 		}

@@ -383,6 +383,14 @@
 	                android:title="R3 Button" />
 	        </PreferenceScreen>
         </PreferenceCategory>
+        <PreferenceCategory android:title="Diagnostics" >
+            <Preference android:title="Report IME"
+                android:summary="Reports the current IME (Input Method Editor) name.">
+                <intent
+                    android:targetClass="org.retroarch.browser.ReportIME"
+                    android:targetPackage="org.retroarch" />
+            </Preference>
+        </PreferenceCategory>
     </PreferenceScreen>
     <PreferenceScreen android:title="Path Options">
         <PreferenceCategory android:title="ROM paths">
