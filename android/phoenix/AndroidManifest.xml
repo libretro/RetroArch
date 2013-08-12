@@ -24,6 +24,9 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
          </activity>
+        <activity android:name=".browser.HoneycombPopupMenu"></activity>
+        <activity android:name=".browser.LazyPopupMenu"></activity>
+        <activity android:name=".browser.PopupMenuAbstract"></activity>
         <activity android:name=".browser.ReportIME"></activity>
         <activity android:name=".browser.HelpActivity"></activity>
         <activity android:name=".browser.DirectoryActivity"></activity>
