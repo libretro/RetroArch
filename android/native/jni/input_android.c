@@ -29,12 +29,6 @@
 
 typedef struct
 {
-   float dzone_min;
-   float dzone_max;
-} dpad_values_t;
-
-typedef struct
-{
    int16_t lx, ly;
    int16_t rx, ry;
 } analog_t;
@@ -48,7 +42,6 @@ static unsigned pads_connected;
 static int state_device_ids[MAX_PADS];
 static uint64_t state[MAX_PADS];
 static uint64_t keycode_lut[LAST_KEYCODE];
-dpad_values_t dpad_state[MAX_PADS]; 
 analog_t analog_state[MAX_PADS];
 
 struct input_pointer
@@ -194,8 +187,8 @@ static void engine_handle_dpad_default(AInputEvent *event,
       int source, bool debug_enable, unsigned emulation)
 {
    uint64_t *state_cur = &state[state_id];
-   float dzone_min = dpad_state[state_id].dzone_min;
-   float dzone_max = dpad_state[state_id].dzone_max;
+   float dzone_min = -g_settings.input.axis_threshold;
+   float dzone_max = g_settings.input.axis_threshold;
    float x = AMotionEvent_getX(event, motion_pointer);
    float y = AMotionEvent_getY(event, motion_pointer);
 
@@ -221,8 +214,8 @@ static void engine_handle_dpad_getaxisvalue(AInputEvent *event,
       bool debug_enable, unsigned emulation)
 {
    uint64_t *state_cur = &state[state_id];
-   float dzone_min = dpad_state[state_id].dzone_min;
-   float dzone_max = dpad_state[state_id].dzone_max;
+   float dzone_min = -g_settings.input.axis_threshold;
+   float dzone_max = g_settings.input.axis_threshold;
    float x = AMotionEvent_getAxisValue(event, AXIS_X, motion_pointer);
    float y = AMotionEvent_getAxisValue(event, AXIS_Y, motion_pointer);
    float z = AMotionEvent_getAxisValue(event, AXIS_Z, motion_pointer);
@@ -320,8 +313,6 @@ static void *android_input_init(void)
       g_settings.input.binds[i][RETRO_DEVICE_ID_JOYPAD_L3].joykey = (1ULL << RETRO_DEVICE_ID_JOYPAD_L3);
       g_settings.input.binds[i][RETRO_DEVICE_ID_JOYPAD_R3].joykey = (1ULL << RETRO_DEVICE_ID_JOYPAD_R3);
 
-      dpad_state[i].dzone_min = -0.99f;
-      dpad_state[i].dzone_max = 0.99f;
       g_settings.input.dpad_emulation[i] = ANALOG_DPAD_LSTICK;
    }
 
@@ -511,9 +502,6 @@ static void android_input_set_keybinds(void *data, unsigned device,
             g_settings.input.device[port] = device;
             strlcpy(g_settings.input.device_names[port], "TTT THT Arcade",
                   sizeof(g_settings.input.device_names[port]));
-            dpad_state[id].dzone_min = -2.00f;
-            dpad_state[id].dzone_max = 1.00f;
-
 
             /* same as Rumblepad 2 - merge? */
             //keycode_lut[AKEYCODE_BUTTON_7]  |=  ((RETRO_DEVICE_ID_JOYPAD_L2+1)     << shift);
@@ -652,8 +640,6 @@ static void android_input_set_keybinds(void *data, unsigned device,
             g_settings.input.device[port] = device;
             strlcpy(g_settings.input.device_names[port], "Huijia USB SNES",
                   sizeof(g_settings.input.device_names[port]));
-            dpad_state[id].dzone_min = -1.00f;
-            dpad_state[id].dzone_max = 1.00f;
 
             keycode_lut[AKEYCODE_BUTTON_3]  |= ((RETRO_DEVICE_ID_JOYPAD_B+1) << shift);
             keycode_lut[AKEYCODE_BUTTON_4]  |= ((RETRO_DEVICE_ID_JOYPAD_Y+1) << shift);
@@ -668,8 +654,6 @@ static void android_input_set_keybinds(void *data, unsigned device,
             g_settings.input.device[port] = device;
             strlcpy(g_settings.input.device_names[port], "Super Smartjoy",
                   sizeof(g_settings.input.device_names[port]));
-            dpad_state[id].dzone_min = -1.00f;
-            dpad_state[id].dzone_max = 1.00f;
 
             keycode_lut[AKEYCODE_BUTTON_3]  |= ((RETRO_DEVICE_ID_JOYPAD_B+1) << shift);
             keycode_lut[AKEYCODE_BUTTON_4]  |= ((RETRO_DEVICE_ID_JOYPAD_Y+1) << shift);
@@ -1076,8 +1060,6 @@ static void android_input_set_keybinds(void *data, unsigned device,
             g_settings.input.device[port] = device;
             strlcpy(g_settings.input.device_names[port], "Buffalo BGC FC801",
                   sizeof(g_settings.input.device_names[port]));
-            dpad_state[id].dzone_min = -1.00f;
-            dpad_state[id].dzone_max = 1.00f;
 
             keycode_lut[AKEYCODE_BUTTON_1]  |= ((RETRO_DEVICE_ID_JOYPAD_A+1) << shift);
             keycode_lut[AKEYCODE_BUTTON_2]  |= ((RETRO_DEVICE_ID_JOYPAD_B+1) << shift);
