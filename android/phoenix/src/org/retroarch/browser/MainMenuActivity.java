@@ -180,7 +180,7 @@ public class MainMenuActivity extends PreferenceActivity {
 		{
 			AlertDialog.Builder alert = new AlertDialog.Builder(this)
 			.setTitle("OUYA detected")
-			.setMessage("The ideal configuration options for your device will now be preconfigured.\nNOTE: For optimal performance, turn off Google Account sync, Google Play Store auto-updates, GPS and Wifi in your Android settings menu.")
+			.setMessage("The ideal configuration options for your device will now be preconfigured.\nNOTE: For optimal performance, turn off Google Account sync, GPS and Wifi in your Android settings menu.")
 			.setPositiveButton("OK", new DialogInterface.OnClickListener() {
 				@Override
 				public void onClick(DialogInterface dialog, int which) {
