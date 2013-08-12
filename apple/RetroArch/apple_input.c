@@ -86,6 +86,11 @@ void apple_input_enable_icade(bool on)
    icade_buttons = 0;
 }
 
+uint32_t apple_input_get_icade_buttons()
+{
+   return icade_enabled ? icade_buttons : 0;
+}
+
 void apple_input_handle_key_event(unsigned keycode, bool down)
 {
    keycode = HIDKEY(keycode);
@@ -131,7 +136,7 @@ static void apple_input_poll(void *data)
       }
 
       input_joypad_poll(g_joydriver);
-      g_polled_input_data.pad_buttons[0] |= icade_buttons;
+      g_polled_input_data.pad_buttons[0] |= apple_input_get_icade_buttons();
 
       g_current_input_data.mouse_delta[0] = 0;
       g_current_input_data.mouse_delta[1] = 0;

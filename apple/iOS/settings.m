@@ -755,7 +755,6 @@ static NSArray* build_input_port_group(config_file_t* config, uint32_t player)
       { "nul", 0x00},
    };
    
-   
    for (int i = 0; ios_key_name_map[i].hid_id; i++)
    {
       if (g_current_input_data.keys[ios_key_name_map[i].hid_id])
@@ -767,9 +766,12 @@ static NSArray* build_input_port_group(config_file_t* config, uint32_t player)
    }
 
    // Pad Buttons
-   for (int i = 0; g_current_input_data.pad_buttons[_value.player] && i < sizeof(g_current_input_data.pad_buttons[_value.player]) * 8; i++)
+   uint32_t buttons = g_current_input_data.pad_buttons[_value.player] |
+                      ((_value.player == 0) ? apple_input_get_icade_buttons() : 0);
+   
+   for (int i = 0; buttons && i < sizeof(buttons) * 8; i++)
    {
-      if (g_current_input_data.pad_buttons[_value.player] & (1 << i))
+      if (buttons & (1 << i))
       {
          _value.msubValues[1] = [NSString stringWithFormat:@"%d", i];
          [self finish];
