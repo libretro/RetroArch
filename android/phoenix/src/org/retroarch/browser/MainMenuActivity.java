@@ -176,6 +176,24 @@ public class MainMenuActivity extends PreferenceActivity {
 			alert.show();
 			retval = true;
 		}
+		else if (android.os.Build.MODEL.equals( "OUYA Console"))
+		{
+			AlertDialog.Builder alert = new AlertDialog.Builder(this)
+			.setTitle("OUYA detected")
+			.setMessage("The ideal configuration options for your device will now be preconfigured.\nNOTE: For optimal performance, turn off Google Account sync, Google Play Store auto-updates, GPS and Wifi in your Android settings menu.")
+			.setPositiveButton("OK", new DialogInterface.OnClickListener() {
+				@Override
+				public void onClick(DialogInterface dialog, int which) {
+					SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getBaseContext());
+					SharedPreferences.Editor edit = prefs.edit();
+					edit.putBoolean("input_overlay_enable", false);
+					edit.putBoolean("input_autodetect_enable", true);
+					edit.commit();
+				}
+			});
+			alert.show();
+			retval = true;
+		}
 		else if (android.os.Build.ID.equals("JSS15J"))
 		{
 			AlertDialog.Builder alert = new AlertDialog.Builder(this)
