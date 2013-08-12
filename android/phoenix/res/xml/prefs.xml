@@ -4,7 +4,7 @@
 
     <PreferenceScreen android:title="Select Game">
        <intent
-          android:targetClass="org.retroarch.browser.RetroArch"
+          android:targetClass="org.retroarch.browser.CoreSelection"
           android:targetPackage="org.retroarch" />
     </PreferenceScreen>
     <PreferenceScreen android:title="Video Options" >

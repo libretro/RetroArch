@@ -20,7 +20,7 @@ import android.view.inputmethod.*;
 
 // JELLY_BEAN_MR1 = 17
 
-public class RetroArch extends Activity implements
+public class CoreSelection extends Activity implements
 		AdapterView.OnItemClickListener {
 	private IconAdapter<ModuleWrapper> adapter;
 	static private final int ACTIVITY_LOAD_ROM = 0;

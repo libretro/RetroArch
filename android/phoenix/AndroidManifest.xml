@@ -15,7 +15,7 @@
         android:icon="@drawable/ic_launcher"
         android:label="@string/app_name"
         android:hasCode="true">
-        <activity android:name=".browser.RetroArch"></activity>
+        <activity android:name=".browser.CoreSelection"></activity>
         <activity android:name=".browser.DisplayRefreshRateTest"></activity>
         <activity android:name=".browser.RefreshRateSetOS"></activity>
         <activity android:name=".browser.MainMenuActivity">
