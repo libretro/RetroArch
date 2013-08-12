@@ -219,6 +219,7 @@ public class CoreSelection extends Activity implements
 		SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getBaseContext());
 		config.setBoolean("audio_rate_control", prefs.getBoolean("audio_rate_control", true));
 		config.setInt("audio_out_rate", getOptimalSamplingRate());
+		config.setInt("audio_latency", prefs.getBoolean("audio_high_latency", false) ? 160 : 64);
 		config.setBoolean("audio_enable", prefs.getBoolean("audio_enable", true));
 		config.setBoolean("video_smooth", prefs.getBoolean("video_smooth", true));
 		config.setBoolean("video_allow_rotate", prefs.getBoolean("video_allow_rotate", true));

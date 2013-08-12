@@ -98,6 +98,12 @@
                 android:summary="Enable dynamic rate control (recommended)."
                 android:title="Dynamic Rate Control"
                 android:dependency="audio_enable" />
+            <CheckBoxPreference 
+                android:defaultValue="false"
+                android:key="audio_high_latency"
+                android:summary="Use (very) high latency audio. Necessary for older Android devices with poor audio drivers."
+                android:title="High latency audio"
+                android:dependency="audio_enable" />
         </PreferenceCategory>
     </PreferenceScreen>
     <PreferenceScreen android:title="Input Options" >
