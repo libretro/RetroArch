@@ -17,43 +17,8 @@ import android.util.Log;
 import android.view.*;
 import android.view.ContextMenu.ContextMenuInfo;
 import android.view.inputmethod.*;
-import android.graphics.drawable.*;
 
 // JELLY_BEAN_MR1 = 17
-
-class ModuleWrapper implements IconAdapterItem {
-	public final File file;
-	private ConfigFile config;
-
-	public ModuleWrapper(Context aContext, File aFile, ConfigFile config) throws IOException {
-		file = aFile;
-		this.config = config;
-	}
-
-	@Override
-	public boolean isEnabled() {
-		return true;
-	}
-
-	@Override
-	public String getText() {
-		String stripped = file.getName().replace(".so", "");
-		if (config.keyExists(stripped)) {
-			return config.getString(stripped);
-		} else
-			return stripped;
-	}
-
-	@Override
-	public int getIconResourceId() {
-		return 0;
-	}
-
-	@Override
-	public Drawable getIconDrawable() {
-		return null;
-	}
-}
 
 public class RetroArch extends Activity implements
 		AdapterView.OnItemClickListener {
