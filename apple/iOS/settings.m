@@ -170,23 +170,26 @@ static RASettingData* custom_action(NSString* action, NSString* value, id data)
 
 static NSArray* build_input_port_group(config_file_t* config, uint32_t player)
 {
+   // Only player 1 should have default key bindings
+   #define DEFKEY(val) (player == 1) ? val : @"nul"
+
    return [NSArray arrayWithObjects:
             [NSArray arrayWithObjects:[NSString stringWithFormat:@"Player %d", player],
-               button_setting(config, player, @"up", @"Up", @"up"),
-               button_setting(config, player, @"down", @"Down", @"down"),
-               button_setting(config, player, @"left", @"Left", @"left"),
-               button_setting(config, player, @"right", @"Right", @"right"),
+               button_setting(config, player, @"up", @"Up", DEFKEY(@"up")),
+               button_setting(config, player, @"down", @"Down", DEFKEY(@"down")),
+               button_setting(config, player, @"left", @"Left", DEFKEY(@"left")),
+               button_setting(config, player, @"right", @"Right", DEFKEY(@"right")),
 
-               button_setting(config, player, @"start", @"Start", @"enter"),
-               button_setting(config, player, @"select", @"Select", @"rshift"),
+               button_setting(config, player, @"start", @"Start", DEFKEY(@"enter")),
+               button_setting(config, player, @"select", @"Select", DEFKEY(@"rshift")),
 
-               button_setting(config, player, @"b", @"B", @"z"),
-               button_setting(config, player, @"a", @"A", @"x"),
-               button_setting(config, player, @"x", @"X", @"s"),
-               button_setting(config, player, @"y", @"Y", @"a"),
+               button_setting(config, player, @"b", @"B", DEFKEY(@"z")),
+               button_setting(config, player, @"a", @"A", DEFKEY(@"x")),
+               button_setting(config, player, @"x", @"X", DEFKEY(@"s")),
+               button_setting(config, player, @"y", @"Y", DEFKEY(@"a")),
 
-               button_setting(config, player, @"l", @"L", @"q"),
-               button_setting(config, player, @"r", @"R", @"w"),
+               button_setting(config, player, @"l", @"L", DEFKEY(@"q")),
+               button_setting(config, player, @"r", @"R", DEFKEY(@"w")),
                button_setting(config, player, @"l2", @"L2", @"nul"),
                button_setting(config, player, @"r2", @"R2", @"nul"),
                button_setting(config, player, @"l3", @"L3", @"nul"),
