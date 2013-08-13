@@ -28,34 +28,65 @@ enum SettingTypes
 };
 
 @interface RASettingData : NSObject
-@property enum SettingTypes type;
+{
+   @public
+   enum SettingTypes type;
 
-@property (strong) NSString* label;
-@property (strong) NSString* name;
-@property (strong) NSString* value;
+   NSString* label;              // < The label displayed in the settings menu
+   NSString* name;               // < The key name of the value in the config file
+   NSString* value;              // < The current state of the setting
 
-@property (strong) NSString* path;
-@property (strong) NSArray* subValues;
-@property (strong) NSMutableArray* msubValues;
-
-@property double rangeMin;
-@property double rangeMax;
-
-@property uint32_t player;
-
-@property bool haveNoneOption;
-
-- (id)initWithType:(enum SettingTypes)aType label:(NSString*)aLabel name:(NSString*)aName;
+   uint32_t player;              // < The player that a ButtonSetting represents
+   NSString* button_bind;        // < The Gamepad button binding string
+   NSString* axis_bind;          // < The Gamepad axis binding string
+   
+   NSString* path;               // < The base path for FileListSettings
+   NSArray* subValues;           // < The available options for EnumerationSettings and FileListSettings
+   bool haveNoneOption;          // < Determines if a 'None' option is added to an Enumeration or FileList
+   bool haveDescriptions;        // < Determines if subValues containts friendly descriptions for each value
+   
+   double rangeMin;              // < The mininum value of a range setting
+   double rangeMax;              // < The maximum value of a range setting
+}
 @end
 
 @implementation RASettingData
 - (id)initWithType:(enum SettingTypes)aType label:(NSString*)aLabel name:(NSString*)aName
 {
-   self.type = aType;
-   self.label = aLabel;
-   self.name = aName;
+   type = aType;
+   label = aLabel;
+   name = aName;
    return self;
 }
+
+- (uint32_t)enumerationCount
+{
+   return subValues.count / (haveDescriptions ? 2 : 1);
+}
+
+- (NSString*)valueForEnumerationIndex:(uint32_t)index
+{
+   return subValues[index * (haveDescriptions ? 2 : 1)];
+}
+
+- (NSString*)labelForEnumerationIndex:(uint32_t)index
+{
+   return subValues[index * (haveDescriptions ? 2 : 1) + (haveDescriptions ? 1 : 0)];
+}
+
+- (NSString*)labelForEnumerationValue
+{
+   const uint32_t count = self.enumerationCount;
+   
+   for (int i = 0; haveDescriptions && i < count; i ++)
+   {
+      if ([value isEqualToString:subValues[i * 2]])
+         return subValues[i * 2 + 1];
+   }
+   
+   return value;
+}
+
 @end
 
 // Helper view definitions
@@ -71,7 +102,7 @@ enum SettingTypes
 static RASettingData* boolean_setting(config_file_t* config, NSString* name, NSString* label, NSString* defaultValue)
 {
    RASettingData* result = [[RASettingData alloc] initWithType:BooleanSetting label:label name:name];
-   result.value = objc_get_value_from_config(config, name, defaultValue);
+   result->value = objc_get_value_from_config(config, name, defaultValue);
    return result;
 }
 
@@ -80,27 +111,26 @@ static RASettingData* button_setting(config_file_t* config, uint32_t player, NSS
    NSString* realname = player ? [NSString stringWithFormat:@"input_player%d_%@", player, name] : name;
    
    RASettingData* result = [[RASettingData alloc] initWithType:ButtonSetting label:label name:realname];
-   result.msubValues = [NSMutableArray arrayWithObjects:
-                        objc_get_value_from_config(config, realname, defaultValue),
-                        objc_get_value_from_config(config, [realname stringByAppendingString:@"_btn"], @"nul"),
-                        objc_get_value_from_config(config, [realname stringByAppendingString:@"_axis"], @"nul"),
-                        nil];
-   result.player = player ? player - 1 : 0;
+   result->player = player ? player - 1 : 0;
+   result->value = objc_get_value_from_config(config, realname, defaultValue);
+   result->button_bind = objc_get_value_from_config(config, [realname stringByAppendingString:@"_btn"], @"nul");
+   result->axis_bind = objc_get_value_from_config(config, [realname stringByAppendingString:@"_axis"], @"nul");
    return result;
 }
 
 static RASettingData* group_setting(NSString* label, NSArray* settings)
 {
    RASettingData* result = [[RASettingData alloc] initWithType:GroupSetting label:label name:nil];
-   result.subValues = settings;
+   result->subValues = settings;
    return result;
 }
 
-static RASettingData* enumeration_setting(config_file_t* config, NSString* name, NSString* label, NSString* defaultValue, NSArray* values)
+static RASettingData* enumeration_setting(config_file_t* config, NSString* name, NSString* label, NSString* defaultValue, NSArray* values, bool haveDescriptions)
 {
    RASettingData* result = [[RASettingData alloc] initWithType:EnumerationSetting label:label name:name];
-   result.value = objc_get_value_from_config(config, name, defaultValue);
-   result.subValues = values;
+   result->value = objc_get_value_from_config(config, name, defaultValue);
+   result->subValues = values;
+   result->haveDescriptions = haveDescriptions;
    return result;
 }
 
@@ -113,19 +143,19 @@ static RASettingData* subpath_setting(config_file_t* config, NSString* name, NSS
    values = [values pathsMatchingExtensions:[NSArray arrayWithObject:extension]];
 
    RASettingData* result = [[RASettingData alloc] initWithType:FileListSetting label:label name:name];
-   result.value = value;
-   result.subValues = values;
-   result.path = path;
-   result.haveNoneOption = true;
+   result->value = value;
+   result->subValues = values;
+   result->path = path;
+   result->haveNoneOption = true;
    return result;
 }
 
 static RASettingData* range_setting(config_file_t* config, NSString* name, NSString* label, NSString* defaultValue, double minValue, double maxValue)
 {
    RASettingData* result = [[RASettingData alloc] initWithType:RangeSetting label:label name:name];
-   result.value = objc_get_value_from_config(config, name, defaultValue);
-   result.rangeMin = minValue;
-   result.rangeMax = maxValue;
+   result->value = objc_get_value_from_config(config, name, defaultValue);
+   result->rangeMin = minValue;
+   result->rangeMax = maxValue;
    return result;
 }
 
@@ -133,8 +163,8 @@ static RASettingData* aspect_setting(config_file_t* config, NSString* label)
 {
    // Why does this need to be so difficult?
 
-   RASettingData* result = [[RASettingData alloc] initWithType:AspectSetting label:label name:@"fram"];
-   result.subValues = [NSArray arrayWithObjects:@"Fill Screen", @"Game Aspect", @"Pixel Aspect", @"4:3", @"16:9", nil];
+   RASettingData* result = [[RASettingData alloc] initWithType:AspectSetting label:label name:@""];
+   result->subValues = [NSArray arrayWithObjects:@"Fill Screen", @"Game Aspect", @"Pixel Aspect", @"4:3", @"16:9", nil];
 
    bool videoForceAspect = true;
    bool videoAspectAuto = false;
@@ -148,11 +178,11 @@ static RASettingData* aspect_setting(config_file_t* config, NSString* label)
    }
    
    if (!videoForceAspect)
-      result.value = @"Fill Screen";
+      result->value = @"Fill Screen";
    else if (videoAspect < 0.0)
-      result.value = videoAspectAuto ? @"Game Aspect" : @"Pixel Aspect";
+      result->value = videoAspectAuto ? @"Game Aspect" : @"Pixel Aspect";
    else
-      result.value = (videoAspect < 1.5) ? @"4:3" : @"16:9";
+      result->value = (videoAspect < 1.5) ? @"4:3" : @"16:9";
    
    return result;
 }
@@ -160,7 +190,7 @@ static RASettingData* aspect_setting(config_file_t* config, NSString* label)
 static RASettingData* custom_action(NSString* action, NSString* value, id data)
 {
    RASettingData* result = [[RASettingData alloc] initWithType:CustomAction label:action name:nil];
-   result.value = value;
+   result->value = value;
    
    if (data != nil)
       objc_setAssociatedObject(result, "USERDATA", data, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
@@ -254,7 +284,7 @@ static NSArray* build_input_port_group(config_file_t* config, uint32_t player)
 
       [NSArray arrayWithObjects:@"Input",
          subpath_setting(config, @"input_overlay", @"Input Overlay", @"", overlay_path, @"cfg"),
-         range_setting(config, @"input_overlay_opacity", @"Overlay Opacity", @"1.0", 0.0, 1.0),
+         range_setting(config, @"overlay_opacity", @"Overlay Opacity", @"1.0", 0.0, 1.0),
          group_setting(@"System Keys", [NSArray arrayWithObjects:
             // TODO: Many of these strings will be cut off on an iPhone
             [NSArray arrayWithObjects:@"System Keys",
@@ -319,7 +349,7 @@ static NSArray* build_input_port_group(config_file_t* config, uint32_t player)
 
 - (void)handleCustomAction:(RASettingData*)setting
 {
-   if ([@"Core Info" isEqualToString:setting.label])
+   if ([@"Core Info" isEqualToString:setting->label])
       [[RetroArch_iOS get] pushViewController:[[RAModuleInfoList alloc] initWithModuleInfo:_module] animated:YES];
 }
 
@@ -330,15 +360,18 @@ static NSArray* build_input_port_group(config_file_t* config, uint32_t player)
 {
    config_file_t* config = config_file_new([[RetroArch_iOS get].systemConfigPath UTF8String]);
 
+   NSArray* bluetoothOptions = [NSArray arrayWithObjects:@"keyboard", @"Keyboard",
+                                                         @"icade", @"iCade Device",
+                                                         btstack_try_load() ? @"btstack" : nil, @"WiiMote/SixAxis (BTstack)",
+                                                         nil];
+
    NSArray* settings = [NSArray arrayWithObjects:
       [NSArray arrayWithObjects:@"Frontend",
          custom_action(@"Diagnostic Log", nil, nil),
          boolean_setting(config, @"ios_tv_mode", @"TV Mode", @"false"),
          nil],
       [NSArray arrayWithObjects:@"Bluetooth",
-         // TODO: Note that with this turned off the native bluetooth is expected to be a real keyboard
-         boolean_setting(config, @"ios_use_icade", @"Native BT is iCade", @"false"),
-         btstack_try_load() ? boolean_setting(config, @"ios_use_btstack", @"Enable BTstack", @"false") : nil,
+         enumeration_setting(config, @"ios_btmode", @"Mode", @"keyboard", bluetoothOptions, true),
          nil],
       [NSArray arrayWithObjects:@"Orientations",
          boolean_setting(config, @"ios_allow_portrait", @"Portrait", @"true"),
@@ -378,11 +411,11 @@ static NSArray* build_input_port_group(config_file_t* config, uint32_t player)
 
 - (void)handleCustomAction:(RASettingData*)setting
 {
-   if ([@"Diagnostic Log" isEqualToString:setting.label])
+   if ([@"Diagnostic Log" isEqualToString:setting->label])
       [[RetroArch_iOS get] pushViewController:[RALogView new] animated:YES];
-   else if ([@"Enable BTstack" isEqualToString:setting.label])
-      btstack_set_poweron([setting.value isEqualToString:@"true"]);
-   else if([@"Core Configuration" isEqualToString:setting.label])
+   else if ([@"Enable BTstack" isEqualToString:setting->label])
+      btstack_set_poweron([setting->value isEqualToString:@"true"]);
+   else if([@"Core Configuration" isEqualToString:setting->label])
       [RetroArch_iOS.get pushViewController:[[RASettingsList alloc] initWithModule:nil] animated:YES];
 }
 
@@ -423,35 +456,35 @@ static NSArray* build_input_port_group(config_file_t* config, uint32_t player)
       {
          RASettingData* setting = [group objectAtIndex:j];
          
-         switch (setting.type)
+         switch (setting->type)
          {         
             case GroupSetting:
-               [self writeSettings:setting.subValues toConfig:config];
+               [self writeSettings:setting->subValues toConfig:config];
                break;
                
             case FileListSetting:
-               if ([setting.value length] > 0)
-                  config_set_string(config, [setting.name UTF8String], [[setting.path stringByAppendingPathComponent:setting.value] UTF8String]);
+               if ([setting->value length] > 0)
+                  config_set_string(config, [setting->name UTF8String], [[setting->path stringByAppendingPathComponent:setting->value] UTF8String]);
                else
-                  config_set_string(config, [setting.name UTF8String], "");
+                  config_set_string(config, [setting->name UTF8String], "");
                break;
 
             case ButtonSetting:
-               if (setting.msubValues[0])
-                  config_set_string(config, [setting.name UTF8String], [setting.msubValues[0] UTF8String]);
-               if (setting.msubValues[1])
-                  config_set_string(config, [[setting.name stringByAppendingString:@"_btn"] UTF8String], [setting.msubValues[1] UTF8String]);
-               if (setting.msubValues[2])
-                  config_set_string(config, [[setting.name stringByAppendingString:@"_axis"] UTF8String], [setting.msubValues[2] UTF8String]);
+               if (setting->value)
+                  config_set_string(config, [setting->name UTF8String], [setting->value UTF8String]);
+               if (setting->button_bind)
+                  config_set_string(config, [[setting->name stringByAppendingString:@"_btn"] UTF8String], [setting->button_bind UTF8String]);
+               if (setting->axis_bind)
+                  config_set_string(config, [[setting->name stringByAppendingString:@"_axis"] UTF8String], [setting->axis_bind UTF8String]);
                break;
 
             case AspectSetting:
-               config_set_string(config, "video_force_aspect", [@"Fill Screen" isEqualToString:setting.value] ? "false" : "true");
-               config_set_string(config, "video_aspect_ratio_auto", [@"Game Aspect" isEqualToString:setting.value] ? "true" : "false");
+               config_set_string(config, "video_force_aspect", [@"Fill Screen" isEqualToString:setting->value] ? "false" : "true");
+               config_set_string(config, "video_aspect_ratio_auto", [@"Game Aspect" isEqualToString:setting->value] ? "true" : "false");
                config_set_string(config, "video_aspect_ratio", "-1.0");
-               if([@"4:3" isEqualToString:setting.value])
+               if([@"4:3" isEqualToString:setting->value])
                   config_set_string(config, "video_aspect_ratio", "1.33333333");
-               else if([@"16:9" isEqualToString:setting.value])
+               else if([@"16:9" isEqualToString:setting->value])
                   config_set_string(config, "video_aspect_ratio", "1.77777777");
                break;
 
@@ -459,7 +492,7 @@ static NSArray* build_input_port_group(config_file_t* config, uint32_t player)
                break;
 
             default:
-               config_set_string(config, [setting.name UTF8String], [setting.value UTF8String]);
+               config_set_string(config, [setting->name UTF8String], [setting->value UTF8String]);
                break;
          }
       }
@@ -470,7 +503,7 @@ static NSArray* build_input_port_group(config_file_t* config, uint32_t player)
 {
    RASettingData* setting = (RASettingData*)[self itemForIndexPath:indexPath];
    
-   switch (setting.type)
+   switch (setting->type)
    {
       case EnumerationSetting:
       case FileListSetting:
@@ -483,7 +516,7 @@ static NSArray* build_input_port_group(config_file_t* config, uint32_t player)
          break;
          
       case GroupSetting:
-         [[RetroArch_iOS get] pushViewController:[[RASettingsSubList alloc] initWithSettings:setting.subValues title:setting.label] animated:YES];
+         [[RetroArch_iOS get] pushViewController:[[RASettingsSubList alloc] initWithSettings:setting->subValues title:setting->label] animated:YES];
          break;
          
       default:
@@ -496,7 +529,7 @@ static NSArray* build_input_port_group(config_file_t* config, uint32_t player)
 - (void)handleBooleanSwitch:(UISwitch*)swt
 {
    RASettingData* setting = objc_getAssociatedObject(swt, "SETTING");
-   setting.value = (swt.on ? @"true" : @"false");
+   setting->value = (swt.on ? @"true" : @"false");
    
    [self handleCustomAction:setting];
 }
@@ -504,7 +537,7 @@ static NSArray* build_input_port_group(config_file_t* config, uint32_t player)
 - (void)handleSlider:(UISlider*)sld
 {
    RASettingData* setting = objc_getAssociatedObject(sld, "SETTING");
-   setting.value = [NSString stringWithFormat:@"%f", sld.value];
+   setting->value = [NSString stringWithFormat:@"%f", sld.value];
 
    [self handleCustomAction:setting];
 }
@@ -515,7 +548,7 @@ static NSArray* build_input_port_group(config_file_t* config, uint32_t player)
   
    UITableViewCell* cell = nil;
 
-   switch (setting.type)
+   switch (setting->type)
    {
       case BooleanSetting:
       {
@@ -532,10 +565,10 @@ static NSArray* build_input_port_group(config_file_t* config, uint32_t player)
             [cell setSelectionStyle:UITableViewCellSelectionStyleNone];
          }
       
-         cell.textLabel.text = setting.label;
+         cell.textLabel.text = setting->label;
       
          UISwitch* swt = (UISwitch*)cell.accessoryView;
-         swt.on = [setting.value isEqualToString:@"true"];
+         swt.on = [setting->value isEqualToString:@"true"];
          objc_setAssociatedObject(swt, "SETTING", setting, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
          
          return cell;
@@ -557,12 +590,12 @@ static NSArray* build_input_port_group(config_file_t* config, uint32_t player)
             [cell setSelectionStyle:UITableViewCellSelectionStyleNone];
          }
          
-         cell.textLabel.text = setting.label;
+         cell.textLabel.text = setting->label;
          
          UISlider* sld = (UISlider*)cell.accessoryView;
-         sld.minimumValue = setting.rangeMin;
-         sld.maximumValue = setting.rangeMax;
-         sld.value = [setting.value doubleValue];
+         sld.minimumValue = setting->rangeMin;
+         sld.maximumValue = setting->rangeMax;
+         sld.value = [setting->value doubleValue];
          objc_setAssociatedObject(sld, "SETTING", setting, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
          
          return cell;
@@ -579,15 +612,17 @@ static NSArray* build_input_port_group(config_file_t* config, uint32_t player)
             cell.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
          }
          
-         cell.textLabel.text = setting.label;
+         cell.textLabel.text = setting->label;
    
-         if (setting.type != ButtonSetting)
-            cell.detailTextLabel.text = setting.value;
-         else
+         if (setting->type == ButtonSetting)
             cell.detailTextLabel.text = [NSString stringWithFormat:@"[KB:%@] [JS:%@] [AX:%@]",
-               [setting.msubValues[0] length] ? setting.msubValues[0] : @"nul",
-               [setting.msubValues[1] length] ? setting.msubValues[1] : @"nul",
-               [setting.msubValues[2] length] ? setting.msubValues[2] : @"nul"];
+               [setting->value length] ? setting->value : @"nul",
+               [setting->button_bind length] ? setting->button_bind : @"nul",
+               [setting->axis_bind length] ? setting->axis_bind : @"nul"];
+         else if(setting->type == EnumerationSetting)
+            cell.detailTextLabel.text = setting.labelForEnumerationValue;
+         else
+            cell.detailTextLabel.text = setting->value;
 
          return cell;
       }
@@ -609,20 +644,20 @@ static NSArray* build_input_port_group(config_file_t* config, uint32_t player)
    
    _value = setting;
    _view = table;
-   _mainSection = _value.haveNoneOption ? 1 : 0;
+   _mainSection = _value->haveNoneOption ? 1 : 0;
    
-   [self setTitle: _value.label];
+   [self setTitle: _value->label];
    return self;
 }
 
 - (NSInteger)numberOfSectionsInTableView:(UITableView*)tableView
 {
-   return _value.haveNoneOption ? 2 : 1;
+   return _value->haveNoneOption ? 2 : 1;
 }
 
 - (NSInteger)tableView:(UITableView*)tableView numberOfRowsInSection:(NSInteger)section
 {
-   return (section == _mainSection) ? _value.subValues.count : 1;
+   return (section == _mainSection) ? _value.enumerationCount : 1;
 }
 
 - (UITableViewCell*)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath
@@ -630,14 +665,17 @@ static NSArray* build_input_port_group(config_file_t* config, uint32_t player)
    UITableViewCell* cell = [self.tableView dequeueReusableCellWithIdentifier:@"option"];
    cell = cell ? cell : [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:@"option"];
 
-   cell.textLabel.text = (indexPath.section == _mainSection) ? _value.subValues[indexPath.row] : @"None";
+   if (indexPath.section == _mainSection)
+      cell.textLabel.text = [_value labelForEnumerationIndex:indexPath.row];
+   else
+      cell.textLabel.text = @"None";
 
    return cell;
 }
 
 - (void)tableView:(UITableView*)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath
 {
-   _value.value = (indexPath.section == _mainSection) ? _value.subValues[indexPath.row] : @"";
+   _value->value = (indexPath.section == _mainSection) ? [_value valueForEnumerationIndex:indexPath.row] : @"";
    
    [_view reloadData];
    [[RetroArch_iOS get] popViewControllerAnimated:YES];
@@ -664,7 +702,7 @@ static NSArray* build_input_port_group(config_file_t* config, uint32_t player)
    _me = self;
 
    _alert = [[UIAlertView alloc] initWithTitle:@"RetroArch"
-                                 message:_value.label
+                                 message:_value->label
                                  delegate:self
                                  cancelButtonTitle:@"Cancel"
                                  otherButtonTitles:@"Clear Keyboard", @"Clear Joystick", @"Clear Axis", nil];
@@ -692,11 +730,11 @@ static NSArray* build_input_port_group(config_file_t* config, uint32_t player)
 - (void)alertView:(UIAlertView*)alertView willDismissWithButtonIndex:(NSInteger)buttonIndex
 {
    if (buttonIndex == _alert.firstOtherButtonIndex)
-      _value.msubValues[0] = @"nul";
+      _value->value = @"nul";
    else if(buttonIndex == _alert.firstOtherButtonIndex + 1)
-      _value.msubValues[1] = @"nul";
+      _value->button_bind = @"nul";
    else if(buttonIndex == _alert.firstOtherButtonIndex + 2)
-      _value.msubValues[2] = @"nul";
+      _value->axis_bind = @"nul";
 
    [self finish];
 }
@@ -762,21 +800,21 @@ static NSArray* build_input_port_group(config_file_t* config, uint32_t player)
    {
       if (g_current_input_data.keys[ios_key_name_map[i].hid_id])
       {
-         _value.msubValues[0] = [NSString stringWithUTF8String:ios_key_name_map[i].keyname];
+         _value->value = [NSString stringWithUTF8String:ios_key_name_map[i].keyname];
          [self finish];
          return;
       }
    }
 
    // Pad Buttons
-   uint32_t buttons = g_current_input_data.pad_buttons[_value.player] |
-                      ((_value.player == 0) ? apple_input_get_icade_buttons() : 0);
+   uint32_t buttons = g_current_input_data.pad_buttons[_value->player] |
+                      ((_value->player == 0) ? apple_input_get_icade_buttons() : 0);
    
    for (int i = 0; buttons && i < sizeof(buttons) * 8; i++)
    {
       if (buttons & (1 << i))
       {
-         _value.msubValues[1] = [NSString stringWithFormat:@"%d", i];
+         _value->button_bind = [NSString stringWithFormat:@"%d", i];
          [self finish];
          return;
       }
@@ -785,11 +823,11 @@ static NSArray* build_input_port_group(config_file_t* config, uint32_t player)
    // Pad Axis
    for (int i = 0; i < 4; i++)
    {
-      int16_t value = g_current_input_data.pad_axis[_value.player][i];
+      int16_t value = g_current_input_data.pad_axis[_value->player][i];
       
       if (abs(value) > 0x1000)
       {
-         _value.msubValues[2] = [NSString stringWithFormat:@"%s%d", (value > 0x1000) ? "+" : "-", i];
+         _value->axis_bind = [NSString stringWithFormat:@"%s%d", (value > 0x1000) ? "+" : "-", i];
          [self finish];
          break;
       }

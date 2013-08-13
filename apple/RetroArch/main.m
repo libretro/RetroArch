@@ -390,10 +390,12 @@ int main(int argc, char *argv[])
             _enabledOrientations |= orientationSettings[i].orientation;
       }
       
-      //
+      // Setup bluetooth mode
+      NSString* btmode = objc_get_value_from_config(conf, @"ios_btmode", @"keyboard");
+      apple_input_enable_icade([btmode isEqualToString:@"icade"]);
+      btstack_set_poweron([btmode isEqualToString:@"btstack"]);
+
       bool val;
-      apple_input_enable_icade(config_get_bool(conf, "ios_use_icade", &val) && val);
-      btstack_set_poweron(config_get_bool(conf, "ios_use_btstack", &val) && val);
       use_tv_mode = config_get_bool(conf, "ios_tv_mode", & val) && val;
       
       config_file_free(conf);
