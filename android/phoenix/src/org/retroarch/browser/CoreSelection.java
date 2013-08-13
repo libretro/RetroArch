@@ -317,9 +317,11 @@ public class CoreSelection extends Activity implements
 				myIntent.putExtra("CONFIGFILE", getDefaultConfigPath());
 				myIntent.putExtra("IME", current_ime);
 				startActivity(myIntent);
+				finish();
 			}
 			break;
 		}
+		
 	}
 
 	@Override
