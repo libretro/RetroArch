@@ -26,8 +26,6 @@ public class CoreSelection extends Activity implements
 	static private final int ACTIVITY_LOAD_ROM = 0;
 	static private String libretro_path;
 	static private final String TAG = "CoreSelection";
-	private ConfigFile config;
-	private ConfigFile core_config;
 	
 	private final double getDisplayRefreshRate() {
 		// Android is *very* likely to screw this up.
@@ -87,13 +85,8 @@ public class CoreSelection extends Activity implements
 
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
+		ConfigFile core_config;
 		super.onCreate(savedInstanceState);
-		
-		try {
-			config = new ConfigFile(new File(getDefaultConfigPath()));
-		} catch (IOException e) {
-			config = new ConfigFile();
-		}
 		
 		core_config = new ConfigFile();
 		try {
@@ -216,6 +209,13 @@ public class CoreSelection extends Activity implements
 	}
 	
 	private void updateConfigFile() {
+		ConfigFile config;
+		try {
+			config = new ConfigFile(new File(getDefaultConfigPath()));
+		} catch (IOException e) {
+			config = new ConfigFile();
+		}
+		
 		SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getBaseContext());
 		config.setBoolean("audio_rate_control", prefs.getBoolean("audio_rate_control", true));
 		config.setInt("audio_out_rate", getOptimalSamplingRate());
