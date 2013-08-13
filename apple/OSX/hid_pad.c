@@ -62,7 +62,7 @@ static void hid_input_callback(void* inContext, IOReturn inResult, void* inSende
          if (state)  g_current_input_data.pad_buttons[slot] |= (1 << (use - 1));
          else        g_current_input_data.pad_buttons[slot] &= ~(1 << (use - 1));
       }
-      else if (type == kIOHIDElementTypeInput_Axis && page == kHIDPage_GenericDesktop)
+      else if (type == kIOHIDElementTypeInput_Misc && page == kHIDPage_GenericDesktop)
       {
          static const uint32_t axis_use_ids[4] = { 48, 49, 50, 53 };
          for (int i = 0; i < 4; i ++)

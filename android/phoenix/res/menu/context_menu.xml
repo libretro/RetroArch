@@ -1,6 +1,4 @@
 <?xml version="1.0" encoding="utf-8"?>
 <menu xmlns:android="http://schemas.android.com/apk/res/android" >
     <item android:id="@+id/input_method_select" android:title="@string/input_method" android:showAsAction="ifRoom" />
-    <item android:id="@+id/report_ime" android:title="@string/report_ime"></item>
-    <item android:id="@+id/report_refreshrate" android:title="@string/report_refreshrate"></item>
 </menu>

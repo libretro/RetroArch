@@ -4,7 +4,7 @@
 
     <PreferenceScreen android:title="Select Game">
        <intent
-          android:targetClass="org.retroarch.browser.RetroArch"
+          android:targetClass="org.retroarch.browser.CoreSelection"
           android:targetPackage="org.retroarch" />
     </PreferenceScreen>
     <PreferenceScreen android:title="Video Options" >
@@ -34,7 +34,7 @@
         </PreferenceCategory>
         <PreferenceCategory android:title="Synchronization" >
             <CheckBoxPreference
-                android:defaultValue="false"
+                android:defaultValue="true"
                 android:key="video_threaded"
                 android:summary="Uses a multi-threaded video driver. Is likely to improve performance at the expense of slightly more latency and jitter. Use this if you have troubles getting good video and audio."
                 android:title="Threaded video driver" />
@@ -97,6 +97,12 @@
                 android:key="audio_rate_control"
                 android:summary="Enable dynamic rate control (recommended)."
                 android:title="Dynamic Rate Control"
+                android:dependency="audio_enable" />
+            <CheckBoxPreference 
+                android:defaultValue="false"
+                android:key="audio_high_latency"
+                android:summary="Use (very) high latency audio. Necessary for older Android devices with poor audio drivers."
+                android:title="High latency audio"
                 android:dependency="audio_enable" />
         </PreferenceCategory>
     </PreferenceScreen>
@@ -382,6 +388,14 @@
 	                android:key="input_player4_r3_btn"
 	                android:title="R3 Button" />
 	        </PreferenceScreen>
+        </PreferenceCategory>
+        <PreferenceCategory android:title="Diagnostics" >
+            <Preference android:title="Report IME"
+                android:summary="Reports the current IME (Input Method Editor) name.">
+                <intent
+                    android:targetClass="org.retroarch.browser.ReportIME"
+                    android:targetPackage="org.retroarch" />
+            </Preference>
         </PreferenceCategory>
     </PreferenceScreen>
     <PreferenceScreen android:title="Path Options">

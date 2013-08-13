@@ -17,50 +17,14 @@ import android.util.Log;
 import android.view.*;
 import android.view.ContextMenu.ContextMenuInfo;
 import android.view.inputmethod.*;
-import android.graphics.drawable.*;
 
 // JELLY_BEAN_MR1 = 17
 
-class ModuleWrapper implements IconAdapterItem {
-	public final File file;
-	private ConfigFile config;
-
-	public ModuleWrapper(Context aContext, File aFile, ConfigFile config) throws IOException {
-		file = aFile;
-		this.config = config;
-	}
-
-	@Override
-	public boolean isEnabled() {
-		return true;
-	}
-
-	@Override
-	public String getText() {
-		String stripped = file.getName().replace(".so", "");
-		if (config.keyExists(stripped)) {
-			return config.getString(stripped);
-		} else
-			return stripped;
-	}
-
-	@Override
-	public int getIconResourceId() {
-		return 0;
-	}
-
-	@Override
-	public Drawable getIconDrawable() {
-		return null;
-	}
-}
-
-public class RetroArch extends Activity implements
+public class CoreSelection extends Activity implements
 		AdapterView.OnItemClickListener {
 	private IconAdapter<ModuleWrapper> adapter;
 	static private final int ACTIVITY_LOAD_ROM = 0;
 	static private String libretro_path;
-	static private Double report_refreshrate;
 	static private final String TAG = "CoreSelection";
 	private ConfigFile config;
 	private ConfigFile core_config;
@@ -140,7 +104,6 @@ public class RetroArch extends Activity implements
 		
 		String cpuInfo = readCPUInfo();
 		boolean cpuIsNeon = cpuInfoIsNeon(cpuInfo);
-		report_refreshrate = getDisplayRefreshRate();
 		
 		setContentView(R.layout.line_list);
 
@@ -256,6 +219,7 @@ public class RetroArch extends Activity implements
 		SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getBaseContext());
 		config.setBoolean("audio_rate_control", prefs.getBoolean("audio_rate_control", true));
 		config.setInt("audio_out_rate", getOptimalSamplingRate());
+		config.setInt("audio_latency", prefs.getBoolean("audio_high_latency", false) ? 160 : 64);
 		config.setBoolean("audio_enable", prefs.getBoolean("audio_enable", true));
 		config.setBoolean("video_smooth", prefs.getBoolean("video_smooth", true));
 		config.setBoolean("video_allow_rotate", prefs.getBoolean("video_allow_rotate", true));
@@ -272,7 +236,7 @@ public class RetroArch extends Activity implements
 		config.setInt("input_autodetect_icade_profile_pad4", Integer.valueOf(prefs.getString("input_autodetect_icade_profile_pad4", "0")));
 		
 		config.setDouble("video_refresh_rate", getRefreshRate());
-		config.setBoolean("video_threaded", prefs.getBoolean("video_threaded", false));
+		config.setBoolean("video_threaded", prefs.getBoolean("video_threaded", true));
 		
 		String aspect = prefs.getString("video_aspect_ratio", "auto");
 		if (aspect.equals("full")) {
@@ -414,118 +378,8 @@ public class RetroArch extends Activity implements
 			InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
 			imm.showInputMethodPicker();
 			return true;
-		case R.id.report_ime:
-			String current_ime = Settings.Secure.getString(getContentResolver(), Settings.Secure.DEFAULT_INPUT_METHOD);
-			new AlertDialog.Builder(this).setMessage(current_ime).setNeutralButton("Close", null).show();
-			return true;
-		case R.id.report_refreshrate:
-			String current_rate = "Screen Refresh Rate: " + Double.valueOf(report_refreshrate).toString();
-			new AlertDialog.Builder(this).setMessage(current_rate).setNeutralButton("Close", null).show();
-			return true;
 		default:
 			return false;
-		}
-	}
-}
-
-abstract class LazyPopupMenu {
-	public abstract Menu getMenu();
-	public abstract MenuInflater getMenuInflater();
-	public abstract void setOnMenuItemClickListener(LazyPopupMenu.OnMenuItemClickListener listener);
-	public abstract void show();
-	public interface OnMenuItemClickListener {
-		public abstract boolean onMenuItemClick(MenuItem item);
-	}
-}
-
-@TargetApi(Build.VERSION_CODES.HONEYCOMB)
-class HoneycombPopupMenu extends LazyPopupMenu {
-	private PopupMenu instance;
-	HoneycombPopupMenu.OnMenuItemClickListener listen;
-	
-	public HoneycombPopupMenu(Context context, View anchor)
-	{
-		instance = new PopupMenu(context, anchor);
-	}
-
-	@Override
-	public void setOnMenuItemClickListener(HoneycombPopupMenu.OnMenuItemClickListener listener)
-	{
-		listen = listener;
-		instance.setOnMenuItemClickListener(new PopupMenu.OnMenuItemClickListener() {
-			@Override
-			public boolean onMenuItemClick(MenuItem item) {
-				return listen.onMenuItemClick(item);
-			}
-			
-		});
-	}
-
-	@Override
-	public Menu getMenu() {
-		return instance.getMenu();
-	}
-
-	@Override
-	public MenuInflater getMenuInflater() {
-		return instance.getMenuInflater();
-	}
-
-	@Override
-	public void show() {
-		instance.show();
-	}
-}
-
-class PopupMenuAbstract extends LazyPopupMenu
-{
-	private LazyPopupMenu lazy;
-	
-	public PopupMenuAbstract(Context context, View anchor)
-	{
-		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB)
-		{
-			lazy = new HoneycombPopupMenu(context, anchor);
-		}
-	}
-
-	@Override
-	public Menu getMenu() {
-		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB)
-		{
-			return lazy.getMenu();
-		}
-		else
-		{
-			return null;
-		}
-	}
-
-	@Override
-	public MenuInflater getMenuInflater() {
-		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB)
-		{
-			return lazy.getMenuInflater();
-		}
-		else
-		{
-			return null;
-		}
-	}
-
-	@Override
-	public void setOnMenuItemClickListener(PopupMenuAbstract.OnMenuItemClickListener listener) {
-		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB)
-		{
-			lazy.setOnMenuItemClickListener(listener);
-		}
-	}
-
-	@Override
-	public void show() {
-		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB)
-		{
-			lazy.show();
 		}
 	}
 }

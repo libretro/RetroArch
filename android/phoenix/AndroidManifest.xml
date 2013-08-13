@@ -15,7 +15,7 @@
         android:icon="@drawable/ic_launcher"
         android:label="@string/app_name"
         android:hasCode="true">
-        <activity android:name=".browser.RetroArch"></activity>
+        <activity android:name=".browser.CoreSelection"></activity>
         <activity android:name=".browser.DisplayRefreshRateTest"></activity>
         <activity android:name=".browser.RefreshRateSetOS"></activity>
         <activity android:name=".browser.MainMenuActivity">
@@ -24,7 +24,12 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
          </activity>
+        <activity android:name=".browser.HoneycombPopupMenu"></activity>
+        <activity android:name=".browser.LazyPopupMenu"></activity>
+        <activity android:name=".browser.PopupMenuAbstract"></activity>
+        <activity android:name=".browser.ReportIME"></activity>
         <activity android:name=".browser.HelpActivity"></activity>
+        <activity android:name=".browser.FileWrapper"></activity>
         <activity android:name=".browser.DirectoryActivity"></activity>
         <activity android:name=".browser.ROMActivity"></activity>
         
