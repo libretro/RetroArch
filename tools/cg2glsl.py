@@ -537,7 +537,7 @@ def preprocess_vertex(source_data):
    input_data = source_data.split('\n')
    ret = []
    for line in input_data:
-      if 'uniform float4x4' in line:
+      if ('uniform' in line) and ('float4x4' in line):
          ret.append('#pragma pack_matrix(column_major)\n')
          ret.append(line)
          ret.append('#pragma pack_matrix(row_major)\n')
