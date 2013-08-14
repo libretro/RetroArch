@@ -338,6 +338,8 @@ static NSArray* build_input_port_group(config_file_t* config, uint32_t player)
       if (config)
       {
          config_set_string(config, "system_directory", [[RetroArch_iOS get].systemDirectory UTF8String]);
+         config_set_string(config, "savefile_directory", [[RetroArch_iOS get].systemDirectory UTF8String]);
+         config_set_string(config, "savestate_directory", [[RetroArch_iOS get].systemDirectory UTF8String]);
          [self writeSettings:nil toConfig:config];
          config_file_write(config, [_configPath UTF8String]);
          config_file_free(config);

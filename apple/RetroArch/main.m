@@ -45,7 +45,6 @@ static bool use_tv_mode;
 id<RetroArch_Platform> apple_platform;
 
 // From frontend/frontend_ios.c
-extern void* rarch_main(void* args);
 extern void apple_frontend_post_event(void (*fn)(void*), void* userdata);
 
 
@@ -101,6 +100,22 @@ static bool apple_is_paused;
 static bool apple_is_running;
 static RAModuleInfo* apple_core;
 
+void* rarch_main_spring(void* args)
+{
+   char** argv = args;
+
+   uint32_t argc = 0;
+   while (argv && argv[argc ++]);
+   
+   if (rarch_main(argc, argv))
+   {
+      rarch_main_clear_state();
+      dispatch_async_f(dispatch_get_main_queue(), (void*)1, apple_rarch_exited);
+   }
+   
+   return 0;
+}
+
 void apple_run_core(RAModuleInfo* core, const char* file)
 {
    if (!apple_is_running)
@@ -110,23 +125,24 @@ void apple_run_core(RAModuleInfo* core, const char* file)
       apple_core = core;
       apple_is_running = true;
       
-      struct rarch_main_wrap* load_data = malloc(sizeof(struct rarch_main_wrap));
-      memset(load_data, 0, sizeof(struct rarch_main_wrap));
-
-      load_data->config_path = strdup(apple_platform.retroarchConfigPath.UTF8String);
-
-#ifdef IOS
-      load_data->sram_path = strdup(RetroArch_iOS.get.systemDirectory.UTF8String);
-      load_data->state_path = strdup(RetroArch_iOS.get.systemDirectory.UTF8String);
-#endif
-
+      static char config_path[PATH_MAX];
+      static char core_path[PATH_MAX];
+      static char file_path[PATH_MAX];
+      
+      static const char* argv[] = { "retroarch", "-c", config_path, "-L", core_path, file_path, 0 };
+      
+      strlcpy(config_path, apple_platform.retroarchConfigPath.UTF8String, sizeof(config_path));
+   
       if (file && core)
       {
-         load_data->libretro_path = strdup(apple_core.path.UTF8String);
-         load_data->rom_path = strdup(file);
+         argv[3] = "-L";
+         strlcpy(core_path, apple_core.path.UTF8String, sizeof(core_path));
+         strlcpy(file_path, file, sizeof(file_path));
       }
+      else
+         argv[3] = 0;
       
-      if (pthread_create(&apple_retro_thread, 0, rarch_main, load_data))
+      if (pthread_create(&apple_retro_thread, 0, rarch_main_spring, argv))
       {
          apple_rarch_exited((void*)1);
          return;

@@ -48,20 +48,6 @@ void apple_frontend_post_event(void (*fn)(void*), void* userdata)
    pthread_mutex_unlock(&apple_event_queue_lock);
 }
 
-static void apple_free_main_wrap(struct rarch_main_wrap* wrap)
-{
-   if (wrap)
-   {
-      free((char*)wrap->libretro_path);
-      free((char*)wrap->rom_path);
-      free((char*)wrap->sram_path);
-      free((char*)wrap->state_path);
-      free((char*)wrap->config_path);
-   }
-
-   free(wrap);
-}
-
 static void process_events(void)
 {
    pthread_mutex_lock(&apple_event_queue_lock);
@@ -83,24 +69,8 @@ static void system_shutdown(bool force)
       dispatch_async_f(dispatch_get_main_queue(), 0, apple_rarch_exited);
 }
 
-static void environment_get(int argc, char *argv[], void *args)
-{
-   (void)argc;
-   (void)argv;
-   (void)args;
-
-#ifdef IOS
-   char* system_directory = ios_get_rarch_system_directory();
-   strlcpy(g_extern.savestate_dir, system_directory, sizeof(g_extern.savestate_dir));
-   strlcpy(g_extern.savefile_dir, system_directory, sizeof(g_extern.savefile_dir));
-   free(system_directory);
-
-   config_load();
-#endif
-}
-
 const frontend_ctx_driver_t frontend_ctx_apple = {
-   environment_get,              /* environment_get */
+   NULL,                         /* environment_get */
    NULL,                         /* init */
    NULL,                         /* deinit */
    NULL,                         /* exitspawn */
