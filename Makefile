@@ -337,6 +337,11 @@ ifeq ($(DEBUG), 1)
    OPTIMIZE_FLAG = -O0
 endif
 
+ifeq ($(GL_DEBUG), 1)
+   CFLAGS += -DGL_DEBUG
+   CXXFLAGS += -DGL_DEBUG
+endif
+
 CFLAGS += -Wall $(OPTIMIZE_FLAG) $(INCLUDE_DIRS) -g -I.
 ifeq ($(CXX_BUILD), 1)
    LD = $(CXX)

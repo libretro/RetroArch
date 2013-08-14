@@ -237,6 +237,11 @@ else
    LDCXXFLAGS += -s
 endif
 
+ifeq ($(GL_DEBUG), 1)
+   CFLAGS += -DGL_DEBUG
+   CXXFLAGS += -DGL_DEBUG
+endif
+
 CFLAGS += -Wall -Wno-unused-result -Wno-unused-variable -I.
 CXXFLAGS += -Wall -Wno-unused-result -Wno-unused-variable -I. -std=c++0x -D__STDC_CONSTANT_MACROS
 ifeq ($(CXX_BUILD), 1)

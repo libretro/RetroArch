@@ -23,6 +23,7 @@
 #include "../performance.h"
 #include "scaler/scaler.h"
 #include "image.h"
+#include "../file.h"
 
 #include <stdint.h>
 #include "../libretro.h"
@@ -1661,11 +1662,33 @@ static bool resolve_extensions(gl_t *gl)
    }
 #endif
 
-#if 0
-   // Useful for debugging, but kinda obnoxious.
-   const char *ext = (const char*)glGetString(GL_EXTENSIONS);
-   if (ext)
-      RARCH_LOG("[GL] Supported extensions: %s\n", ext);
+#ifdef GL_DEBUG
+   // Useful for debugging, but kinda obnoxious otherwise.
+   RARCH_LOG("[GL]: Supported extensions:\n");
+   if (gl->core_context)
+   {
+#ifdef GL_NUM_EXTENSIONS
+      GLint exts = 0;
+      glGetIntegerv(GL_NUM_EXTENSIONS, &exts);
+      for (GLint i = 0; i < exts; i++)
+      {
+         const char *ext = (const char*)glGetStringi(GL_EXTENSIONS, i);
+         if (ext)
+            RARCH_LOG("\t%s\n", ext);
+      }
+#endif
+   }
+   else
+   {
+      const char *ext = (const char*)glGetString(GL_EXTENSIONS);
+      if (ext)
+      {
+         struct string_list *list = string_split(ext, " ");
+         for (size_t i = 0; i < list->size; i++)
+            RARCH_LOG("\t%s\n", list->elems[i].data);
+         string_list_free(list);
+      }
+   }
 #endif
 
    return true;
@@ -1814,6 +1837,84 @@ static const gfx_ctx_driver_t *gl_get_context(void)
       return gfx_ctx_init_first(api, major, minor);
 }
 
+#ifdef GL_DEBUG
+#ifdef HAVE_OPENGLES2
+#define DEBUG_CALLBACK_TYPE GL_APIENTRY
+#else
+#define DEBUG_CALLBACK_TYPE APIENTRY
+#endif
+static void DEBUG_CALLBACK_TYPE gl_debug_cb(GLenum source, GLenum type,
+      GLuint id, GLenum severity, GLsizei length,
+      const GLchar *message, void *userParam)
+{
+   (void)id;
+   (void)length;
+
+   gl_t *gl = (gl_t*)userParam; // Useful for debugger.
+   (void)gl;
+
+   const char *src;
+   switch (source)
+   {
+      case GL_DEBUG_SOURCE_API: src = "API"; break;
+      case GL_DEBUG_SOURCE_WINDOW_SYSTEM: src = "Window system"; break;
+      case GL_DEBUG_SOURCE_SHADER_COMPILER: src = "Shader compiler"; break;
+      case GL_DEBUG_SOURCE_THIRD_PARTY: src = "3rd party"; break;
+      case GL_DEBUG_SOURCE_APPLICATION: src = "Application"; break;
+      case GL_DEBUG_SOURCE_OTHER: src = "Other"; break;
+      default: src = "Unknown"; break;
+   }
+
+   const char *typestr;
+   switch (type)
+   {
+      case GL_DEBUG_TYPE_ERROR: typestr = "Error"; break;
+      case GL_DEBUG_TYPE_DEPRECATED_BEHAVIOR: typestr = "Deprecated behavior"; break;
+      case GL_DEBUG_TYPE_UNDEFINED_BEHAVIOR: typestr = "Undefined behavior"; break;
+      case GL_DEBUG_TYPE_PORTABILITY: typestr = "Portability"; break;
+      case GL_DEBUG_TYPE_PERFORMANCE: typestr = "Performance"; break;
+      case GL_DEBUG_TYPE_MARKER: typestr = "Marker"; break;
+      case GL_DEBUG_TYPE_PUSH_GROUP: typestr = "Push group"; break;
+      case GL_DEBUG_TYPE_POP_GROUP: typestr = "Pop group"; break;
+      case GL_DEBUG_TYPE_OTHER: typestr = "Other"; break;
+      default: typestr = "Unknown"; break;
+   }
+
+   switch (severity)
+   {
+      case GL_DEBUG_SEVERITY_HIGH:
+         RARCH_ERR("[GL debug (High, %s, %s)]: %s\n", src, typestr, message);
+         break;
+      case GL_DEBUG_SEVERITY_MEDIUM:
+         RARCH_WARN("[GL debug (Medium, %s, %s)]: %s\n", src, typestr, message);
+         break;
+      case GL_DEBUG_SEVERITY_LOW:
+         RARCH_LOG("[GL debug (Low, %s, %s)]: %s\n", src, typestr, message);
+         break;
+   }
+}
+
+static void gl_begin_debug(gl_t *gl)
+{
+   if (gl_query_extension(gl, "KHR_debug"))
+   {
+      glDebugMessageCallback(gl_debug_cb, gl);
+      glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, NULL, GL_TRUE);
+      glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
+   }
+#ifndef HAVE_OPENGLES2
+   else if (gl_query_extension(gl, "ARB_debug_output"))
+   {
+      glDebugMessageCallbackARB(gl_debug_cb, gl);
+      glDebugMessageControlARB(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, NULL, GL_TRUE);
+      glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS_ARB);
+   }
+#endif
+   else
+      RARCH_ERR("Neither GL_KHR_debug nor GL_ARB_debug_output are implemented. Cannot start GL debugging.\n");
+}
+#endif
+
 static void *gl_init(const video_info_t *video, const input_driver_t **input, void **input_data)
 {
 #ifdef _WIN32
@@ -1880,6 +1981,10 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
       free(gl);
       return NULL;
    }
+
+#ifdef GL_DEBUG
+   gl_begin_debug(gl);
+#endif
 
    gl->vsync      = video->vsync;
    gl->fullscreen = video->fullscreen;
