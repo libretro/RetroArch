@@ -1860,7 +1860,7 @@ static void load_auto_state(void)
    }
 }
 
-static void save_auto_state(void)
+void rarch_save_auto_state(void)
 {
    if (!g_settings.savestate_auto_save)
       return;
@@ -3145,7 +3145,7 @@ void rarch_main_deinit(void)
 #endif
 
    if (!g_extern.libretro_dummy && !g_extern.libretro_no_rom)
-      save_auto_state();
+      rarch_save_auto_state();
 
    uninit_drivers();
    pretro_unload_game();
