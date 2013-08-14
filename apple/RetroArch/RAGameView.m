@@ -189,17 +189,6 @@ static float g_screen_scale = 1.0f;
    ];
 }
 
-- (void)suspend
-{
-   g_view.context = nil;
-   [EAGLContext setCurrentContext:nil];
-}
-
-- (void)resume
-{
-   g_view.context = g_context;
-   [EAGLContext setCurrentContext:g_context];
-}
 #endif
 
 @end
@@ -215,7 +204,7 @@ bool apple_init_game_view()
       g_context = [[EAGLContext alloc] initWithAPI:kEAGLRenderingAPIOpenGLES2];
       [EAGLContext setCurrentContext:g_context];
       g_view.context = g_context;
-
+      
       // Show pause button for a few seconds, so people know it's there
       g_pause_indicator_view.alpha = 1.0f;
       [NSObject cancelPreviousPerformRequestsWithTarget:g_instance];
@@ -232,13 +221,6 @@ bool apple_init_game_view()
 void apple_destroy_game_view()
 {
    dispatch_sync(dispatch_get_main_queue(), ^{
-      // Clear the view, otherwise the last frame from this game will be displayed
-      // briefly on the next game.
-      [g_view bindDrawable];
-      glClearColor(0, 0, 0, 1);
-      glClear(GL_COLOR_BUFFER_BIT);
-      [g_view display];
-   
       glFinish();
       
 #ifdef IOS

@@ -39,9 +39,6 @@ extern id<RetroArch_Platform> apple_platform;
 + (RAGameView*)get;
 - (void)openPauseMenu;
 - (void)closePauseMenu;
-
-- (void)suspend;
-- (void)resume;
 @end
 
 @interface RetroArch_iOS : UINavigationController<UIApplicationDelegate, UINavigationControllerDelegate, RetroArch_Platform>

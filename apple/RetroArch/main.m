@@ -83,6 +83,18 @@ static void event_reload_config(void* userdata)
    init_drivers();
 }
 
+static pthread_mutex_t stasis_mutex = PTHREAD_MUTEX_INITIALIZER;
+
+static void event_stasis(void* userdata)
+{
+   // HACK: uninit_drivers is the nuclear option; uninit_audio would be better but will
+   //       crash when resuming.
+   uninit_drivers();
+   pthread_mutex_lock(&stasis_mutex);
+   pthread_mutex_unlock(&stasis_mutex);
+   init_drivers();
+}
+
 #pragma mark EMULATION
 static pthread_t apple_retro_thread;
 static bool apple_is_paused;
@@ -258,14 +270,19 @@ int main(int argc, char *argv[])
       apple_display_alert(@"No libretro cores were found. You will not be able to play any games.", 0);
 }
 
-- (void)applicationWillEnterForeground:(UIApplication *)application
+- (void)applicationDidBecomeActive:(UIApplication *)application
 {
-   [RAGameView.get resume];
+   if (apple_is_running)
+      pthread_mutex_unlock(&stasis_mutex);
 }
 
-- (void)applicationDidEnterBackground:(UIApplication *)application
+- (void)applicationWillResignActive:(UIApplication *)application
 {
-   [RAGameView.get suspend];
+   if (apple_is_running)
+   {
+      pthread_mutex_lock(&stasis_mutex);
+      apple_frontend_post_event(event_stasis, 0);
+   }
 }
 
 // UINavigationControllerDelegate
