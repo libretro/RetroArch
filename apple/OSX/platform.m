@@ -230,7 +230,7 @@
 - (NSString*)retroarchConfigPath
 {
    NSArray* paths = NSSearchPathForDirectoriesInDomains(NSApplicationSupportDirectory, NSUserDomainMask, YES);
-   return [paths[0] stringByAppendingPathComponent:@"RetroArch/retroarch.cfg"];
+   return [paths[0] stringByAppendingPathComponent:@"RetroArch"];
 }
 
 - (NSString*)corePath

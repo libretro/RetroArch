@@ -84,8 +84,6 @@ static void handle_touch_event(NSArray* touches)
    bool _isGameTop, _isRomList;
    uint32_t _settingMenusInBackStack;
    uint32_t _enabledOrientations;
-   
-   RAModuleInfo* _module;
 }
 
 + (RetroArch_iOS*)get
@@ -216,7 +214,7 @@ static void handle_touch_event(NSArray* touches)
 
 - (NSString*)retroarchConfigPath
 {
-   return [NSString stringWithFormat:@"%@/retroarch.cfg", self.systemDirectory];
+   return self.systemDirectory;
 }
 
 - (NSString*)corePath
@@ -321,7 +319,7 @@ static void handle_touch_event(NSArray* touches)
 
 - (IBAction)showSettings
 {
-   [self pushViewController:[[RASettingsList alloc] initWithModule:_module] animated:YES];
+   [self pushViewController:[[RASettingsList alloc] initWithModule:apple_core] animated:YES];
 }
 
 - (IBAction)showSystemSettings

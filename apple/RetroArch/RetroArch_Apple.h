@@ -27,7 +27,8 @@
 @protocol RetroArch_Platform
 - (void)loadingCore:(RAModuleInfo*)core withFile:(const char*)file;
 - (void)unloadingCore:(RAModuleInfo*)core;
-- (NSString*)retroarchConfigPath;
+
+- (NSString*)retroarchConfigPath; // < This returns the directory that contains retroarch.cfg and other custom configs
 - (NSString*)corePath;
 @end
 

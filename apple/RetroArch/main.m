@@ -133,7 +133,7 @@ void apple_run_core(RAModuleInfo* core, const char* file)
       
       static const char* argv[] = { "retroarch", "-c", config_path, "-L", core_path, file_path, 0 };
       
-      strlcpy(config_path, apple_platform.retroarchConfigPath.UTF8String, sizeof(config_path));
+      strlcpy(config_path, apple_core.configPath.UTF8String, sizeof(config_path));
    
       if (file && core)
       {

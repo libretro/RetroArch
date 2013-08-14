@@ -47,6 +47,8 @@ enum SettingTypes
    
    double rangeMin;              // < The mininum value of a range setting
    double rangeMax;              // < The maximum value of a range setting
+   
+   void (^reload)(RASettingData* action, id userdata);
 }
 @end
 
@@ -187,10 +189,11 @@ static RASettingData* aspect_setting(config_file_t* config, NSString* label)
    return result;
 }
 
-static RASettingData* custom_action(NSString* action, NSString* value, id data)
+static RASettingData* custom_action(NSString* action, NSString* value, id data, void (^reload_func)(RASettingData* action, id userdata))
 {
    RASettingData* result = [[RASettingData alloc] initWithType:CustomAction label:action name:nil];
    result->value = value;
+   result->reload = reload_func;
    
    if (data != nil)
       objc_setAssociatedObject(result, "USERDATA", data, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
@@ -252,7 +255,7 @@ static NSArray* build_input_port_group(config_file_t* config, uint32_t player)
 - (id)initWithModule:(RAModuleInfo*)module
 {
    _module = module;
-   _configPath = RetroArch_iOS.get.retroarchConfigPath;
+   _configPath = _module ? _module.configPath : RAModuleInfo.globalConfigPath;
 
    config_file_t* config = config_file_new([_configPath UTF8String]);
 
@@ -261,7 +264,8 @@ static NSArray* build_input_port_group(config_file_t* config, uint32_t player)
 
    NSArray* settings = [NSArray arrayWithObjects:
       [NSArray arrayWithObjects:@"Core",
-         custom_action(@"Core Info", nil, nil),
+         custom_action(@"Core Info", nil, nil, 0),
+         _module.hasCustomConfig ? custom_action(@"Delete Custom Config", nil, nil, 0) : nil,
          nil],
 
       [NSArray arrayWithObjects:@"Video",
@@ -353,6 +357,12 @@ static NSArray* build_input_port_group(config_file_t* config, uint32_t player)
 {
    if ([@"Core Info" isEqualToString:setting->label])
       [[RetroArch_iOS get] pushViewController:[[RAModuleInfoList alloc] initWithModuleInfo:_module] animated:YES];
+   else if([@"Delete Custom Config" isEqualToString:setting->label])
+   {
+      [_module deleteCustomConfig];
+      _cancelSave = true;
+      [self.navigationController popViewControllerAnimated:YES];
+   }
 }
 
 @end
@@ -361,6 +371,20 @@ static NSArray* build_input_port_group(config_file_t* config, uint32_t player)
 - (id)init
 {
    config_file_t* config = config_file_new([[RetroArch_iOS get].systemConfigPath UTF8String]);
+   
+   NSMutableArray* modules = [NSMutableArray array];
+   [modules addObject:@"Cores"];
+   [modules addObject:custom_action(@"Global Core Config", nil, nil, 0)];
+
+   NSArray* moduleList = [RAModuleInfo getModules];
+   for (RAModuleInfo* i in moduleList)
+   {
+      [modules addObject:custom_action(i.description, nil, i, ^(RASettingData* action, RAModuleInfo* userdata)
+         {
+            action->value = userdata.hasCustomConfig ? @"[Custom]" : @"[Global]";
+         })];
+   }
+
 
    NSArray* bluetoothOptions = [NSArray arrayWithObjects:@"keyboard", @"Keyboard",
                                                          @"icade", @"iCade Device",
@@ -369,7 +393,7 @@ static NSArray* build_input_port_group(config_file_t* config, uint32_t player)
 
    NSArray* settings = [NSArray arrayWithObjects:
       [NSArray arrayWithObjects:@"Frontend",
-         custom_action(@"Diagnostic Log", nil, nil),
+         custom_action(@"Diagnostic Log", nil, nil, 0),
          boolean_setting(config, @"ios_tv_mode", @"TV Mode", @"false"),
          nil],
       [NSArray arrayWithObjects:@"Bluetooth",
@@ -381,9 +405,7 @@ static NSArray* build_input_port_group(config_file_t* config, uint32_t player)
          boolean_setting(config, @"ios_allow_landscape_left", @"Landscape Left", @"true"),
          boolean_setting(config, @"ios_allow_landscape_right", @"Landscape Right", @"true"),
          nil],
-      [NSArray arrayWithObjects:@"Cores",
-         custom_action(@"Core Configuration", nil, nil),
-         nil],
+      modules,
       nil
    ];
 
@@ -417,8 +439,45 @@ static NSArray* build_input_port_group(config_file_t* config, uint32_t player)
       [[RetroArch_iOS get] pushViewController:[RALogView new] animated:YES];
    else if ([@"Enable BTstack" isEqualToString:setting->label])
       btstack_set_poweron([setting->value isEqualToString:@"true"]);
-   else if([@"Core Configuration" isEqualToString:setting->label])
+   else if([@"Global Core Config" isEqualToString:setting->label])
       [RetroArch_iOS.get pushViewController:[[RASettingsList alloc] initWithModule:nil] animated:YES];
+   else
+   {
+      RAModuleInfo* data = (RAModuleInfo*)objc_getAssociatedObject(setting, "USERDATA");
+      if (data)
+      {
+         if (!data.hasCustomConfig)
+         {
+            UIAlertView* alert = [[UIAlertView alloc] initWithTitle:@"RetroArch"
+                                                            message:@"No custom configuration for this core exists, "
+                                                                     "would you like to create one?"
+                                                           delegate:self
+                                                  cancelButtonTitle:@"No"
+                                                  otherButtonTitles:@"Yes", nil];
+            objc_setAssociatedObject(alert, "MODULE", data, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+            [alert show];
+         }
+         else
+            [RetroArch_iOS.get pushViewController:[[RASettingsList alloc] initWithModule:data] animated:YES];
+      }
+   }
+}
+
+- (void)alertView:(UIAlertView*)alertView willDismissWithButtonIndex:(NSInteger)buttonIndex
+{
+   RAModuleInfo* data = (RAModuleInfo*)objc_getAssociatedObject(alertView, "MODULE");
+
+   if (data)
+   {
+      if (buttonIndex == alertView.firstOtherButtonIndex)
+      {
+         [data createCustomConfig];
+         [self.tableView reloadData];
+      }
+
+      [RetroArch_iOS.get pushViewController:[[RASettingsList alloc] initWithModule:data] animated:YES];
+   }
+
 }
 
 @end
@@ -613,7 +672,10 @@ static NSArray* build_input_port_group(config_file_t* config, uint32_t player)
             cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleValue1 reuseIdentifier:@"default"];
             cell.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
          }
-         
+
+         if (setting->reload)
+            setting->reload(setting, objc_getAssociatedObject(setting, "USERDATA"));
+  
          cell.textLabel.text = setting->label;
    
          if (setting->type == ButtonSetting)

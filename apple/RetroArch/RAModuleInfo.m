@@ -44,6 +44,9 @@ static core_info_list_t* coreList;
          newInfo.data = core->data;
          newInfo.description = [NSString stringWithUTF8String:core->display_name];
 
+         NSString* baseName = newInfo.path.lastPathComponent.stringByDeletingPathExtension;
+         newInfo.customConfigPath = [NSString stringWithFormat:@"%@/%@.cfg", apple_platform.retroarchConfigPath, baseName];
+
          [moduleList addObject:newInfo];
       }
       
@@ -68,6 +71,37 @@ static core_info_list_t* coreList;
 - (bool)supportsFileAtPath:(NSString*)path
 {
    return does_core_support_file(self.info, path.UTF8String);
+}
+
++ (NSString*)globalConfigPath
+{
+   static NSString* path;
+   if (!path)
+      path = [NSString stringWithFormat:@"%@/retroarch.cfg", apple_platform.retroarchConfigPath];
+
+   return path;
+}
+
+- (void)createCustomConfig
+{
+   if (!self.hasCustomConfig)
+      [NSFileManager.defaultManager copyItemAtPath:RAModuleInfo.globalConfigPath toPath:self.customConfigPath error:nil];
+}
+
+- (void)deleteCustomConfig
+{
+   if (self.hasCustomConfig)
+      [NSFileManager.defaultManager removeItemAtPath:self.customConfigPath error:nil];
+}
+
+- (bool)hasCustomConfig
+{
+   return path_file_exists(self.customConfigPath.UTF8String);
+}
+
+- (NSString*)configPath
+{
+   return self.hasCustomConfig ? self.customConfigPath : RAModuleInfo.globalConfigPath;
 }
 
 @end

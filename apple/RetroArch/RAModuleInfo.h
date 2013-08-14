@@ -27,9 +27,17 @@
 @property core_info_t* info;
 @property config_file_t* data;
 @property (strong) NSString* description;
+@property (strong) NSString* customConfigPath;
 
 + (NSArray*)getModules;
 - (bool)supportsFileAtPath:(NSString*)path;
+
++ (NSString*)globalConfigPath;
+
+- (void)createCustomConfig;
+- (void)deleteCustomConfig;
+- (bool)hasCustomConfig;
+- (NSString*)configPath;
 
 @end
 
