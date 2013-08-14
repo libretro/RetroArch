@@ -155,7 +155,7 @@
       cell.imageView.image = [UIImage imageNamed:@"ic_dir"];
       cell.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
    } else {
-      cell.imageView.image = nil;
+      cell.imageView.image = [UIImage imageNamed:@"ic_file"];
       cell.accessoryType = UITableViewCellAccessoryDetailDisclosureButton;
    }
     
