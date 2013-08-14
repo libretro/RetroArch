@@ -125,10 +125,12 @@ void rarch_get_environment_console(void)
 #endif
 
 #if defined(IOS) || defined(OSX) || defined(HAVE_BB10)
-int rarch_main(int argc, char *argv[])
+#define main_entry rarch_main
 #else
-int main(int argc, char *argv[])
+#define main_entry main
 #endif
+
+int main_entry(int argc, char *argv[])
 {
    void* args = NULL;
    frontend_ctx = (frontend_ctx_driver_t*)frontend_ctx_init_first();
