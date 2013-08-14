@@ -32,6 +32,7 @@
         <activity android:name=".browser.FileWrapper"></activity>
         <activity android:name=".browser.DirectoryActivity"></activity>
         <activity android:name=".browser.ROMActivity"></activity>
+        <activity android:name=".browser.RetroTVMode"></activity>
         
         <activity android:name=".browser.ShaderActivity"></activity>
         <activity android:name=".browser.OverlayActivity"></activity>

@@ -2,7 +2,12 @@
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
     android:title="RetroArch 0.9.9.5 - Main Menu" >
 
-    <PreferenceScreen android:title="Select Game">
+    <PreferenceScreen android:title="TV Mode">
+       <intent
+          android:targetClass="org.retroarch.browser.RetroTVMode"
+          android:targetPackage="org.retroarch" />
+    </PreferenceScreen>
+    <PreferenceScreen android:title="Load Game">
        <intent
           android:targetClass="org.retroarch.browser.CoreSelection"
           android:targetPackage="org.retroarch" />
