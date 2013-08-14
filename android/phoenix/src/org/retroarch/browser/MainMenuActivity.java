@@ -1,13 +1,6 @@
 package org.retroarch.browser;
 
-import java.io.BufferedOutputStream;
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 
 import org.retroarch.R;
 
@@ -110,6 +103,23 @@ public class MainMenuActivity extends PreferenceActivity {
 		return rate;
 	}
 	
+	public static String readCPUInfo() {
+		String result = "";
+
+		try {
+			BufferedReader br = new BufferedReader(new InputStreamReader(
+					new FileInputStream("/proc/cpuinfo")));
+
+			String line;
+			while ((line = br.readLine()) != null)
+				result += line + "\n";
+			br.close();
+		} catch (IOException ex) {
+			ex.printStackTrace();
+		}
+		return result;
+	}
+	
 	@TargetApi(17)
 	public static int getLowLatencyOptimalSamplingRate() {
 		AudioManager manager = (AudioManager)MainMenuActivity.getInstance().getApplicationContext().getSystemService(Context.AUDIO_SERVICE);
@@ -164,6 +174,7 @@ public class MainMenuActivity extends PreferenceActivity {
 		}
 		
 		SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(MainMenuActivity.getInstance().getBaseContext());
+		config.setString("libretro_path", MainMenuActivity.getInstance().getApplicationInfo().nativeLibraryDir);
 		config.setBoolean("audio_rate_control", prefs.getBoolean("audio_rate_control", true));
 		config.setInt("audio_out_rate", MainMenuActivity.getOptimalSamplingRate());
 		config.setInt("audio_latency", prefs.getBoolean("audio_high_latency", false) ? 160 : 64);

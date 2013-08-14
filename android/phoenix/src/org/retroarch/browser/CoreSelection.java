@@ -23,30 +23,6 @@ public class CoreSelection extends Activity implements
 	static private final int ACTIVITY_LOAD_ROM = 0;
 	static private String libretro_path;
 	static private final String TAG = "CoreSelection";
-	
-
-	private String readCPUInfo() {
-		String result = "";
-
-		try {
-			BufferedReader br = new BufferedReader(new InputStreamReader(
-					new FileInputStream("/proc/cpuinfo")));
-
-			String line;
-			while ((line = br.readLine()) != null)
-				result += line + "\n";
-			br.close();
-		} catch (IOException ex) {
-			ex.printStackTrace();
-		}
-		return result;
-	}
-	
-	private boolean cpuInfoIsNeon(String info) {
-		return info.contains("neon");
-	}
-
-
 
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
@@ -60,8 +36,8 @@ public class CoreSelection extends Activity implements
 			Log.e(TAG, "Failed to load libretro_cores.cfg from assets.");
 		}
 		
-		String cpuInfo = readCPUInfo();
-		boolean cpuIsNeon = cpuInfoIsNeon(cpuInfo);
+		String cpuInfo = MainMenuActivity.readCPUInfo();
+		boolean cpuIsNeon = cpuInfo.contains("neon");
 		
 		setContentView(R.layout.line_list);
 
