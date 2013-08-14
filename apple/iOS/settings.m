@@ -345,7 +345,7 @@ static NSArray* build_input_port_group(config_file_t* config, uint32_t player)
          config_file_free(config);
       }
 
-      [[RetroArch_iOS get] refreshConfig];
+      apple_refresh_config();
    }
 }
 
