@@ -104,7 +104,15 @@ static void create_gl_context(HWND hwnd)
       return;
    }
 
-   if (g_major * 1000 + g_minor >= 3001) // Create core context
+#ifdef GL_DEBUG
+   bool debug = true;
+#else
+   bool debug = g_extern.system.hw_render_callback.debug_context;
+#endif
+
+   bool core_context = (g_major * 1000 + g_minor) >= 3001;
+
+   if (core_context || debug)
    {
 #ifndef WGL_CONTEXT_MAJOR_VERSION_ARB
 #define WGL_CONTEXT_MAJOR_VERSION_ARB 0x2091
@@ -124,13 +132,26 @@ static void create_gl_context(HWND hwnd)
 #ifndef WGL_CONTEXT_DEBUG_BIT_ARB
 #define WGL_CONTEXT_DEBUG_BIT_ARB 0x0001
 #endif
-      const int attribs[] = {
-         WGL_CONTEXT_MAJOR_VERSION_ARB, (int)g_major,
-         WGL_CONTEXT_MINOR_VERSION_ARB, (int)g_minor,
-         WGL_CONTEXT_PROFILE_MASK_ARB, WGL_CONTEXT_CORE_PROFILE_BIT_ARB,
-         WGL_CONTEXT_FLAGS_ARB, g_extern.system.hw_render_callback.debug_context ? WGL_CONTEXT_DEBUG_BIT_ARB : 0,
-         0,
-      };
+      int attribs[16];
+      int *aptr = attribs;
+
+      if (core_context)
+      {
+         *aptr++ = WGL_CONTEXT_MAJOR_VERSION_ARB;
+         *aptr++ = g_major;
+         *aptr++ = WGL_CONTEXT_MINOR_VERSION_ARB;
+         *aptr++ = g_minor;
+         *aptr++ = WGL_CONTEXT_PROFILE_MASK_ARB;
+         *aptr++ = WGL_CONTEXT_CORE_PROFILE_BIT_ARB;
+      }
+
+      if (debug)
+      {
+         *aptr++ = WGL_CONTEXT_FLAGS_ARB;
+         *aptr++ = WGL_CONTEXT_DEBUG_BIT_ARB;
+      }
+
+      *aptr = 0;
 
       if (!pcreate_context)
          pcreate_context = (wglCreateContextAttribsProc)wglGetProcAddress("wglCreateContextAttribsARB");

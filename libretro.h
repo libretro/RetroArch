@@ -575,7 +575,7 @@ struct retro_hw_render_callback
    // The reset callback might still be called in extreme situations such as if the context is lost beyond recovery. 
    // For optimal stability, set this to false, and allow context to be reset at any time.
    retro_hw_context_reset_t context_destroy; // A callback to be called before the context is destroyed. Resources can be deinitialized at this step. This can be set to NULL, in which resources will just be destroyed without any notification.
-   bool debug_context; // Creates a debug context. Only takes effect when using GL core.
+   bool debug_context; // Creates a debug context.
 };
 
 // Callback type passed in RETRO_ENVIRONMENT_SET_KEYBOARD_CALLBACK. Called by the frontend in response to keyboard events.
