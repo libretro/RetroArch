@@ -1,4 +1,4 @@
-display_name = "Neo Geo Pocket (Color)"
+display_name = "Neo Geo Pocket/Color (Mednafen Neopop)"
 supported_extensions = "ngp|ngc"
 corename = "Mednafen Neopop"
 manufacturer = "SNK"
