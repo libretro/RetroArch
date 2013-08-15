@@ -38,6 +38,12 @@ you select a core, then you select a game to go with it.
 * [Picodrive] Updates/32X compatibility/accuracy improvements
 * [NEStopia] Updated to 1.46 WIP - added ability to load NstDatabase.xml, fixes Vs. System games
 and Startropics 1/2
+* [iOS] Only player 1 gets default keyboard bindings
+* [iOS] Fixes PS3 gamepad bindings in RGUI
+* [iOS] Fixes iCade button mappings
+* [iOS] UI additions - Refresh / New Folder / Move options.
+* [iOS] Some lifecycle management fixes - should deal better now with phone calls
+received and then returning back to RA, etc.
 
 ------------------------------------------------------------------------------
 v0.9.9.3
