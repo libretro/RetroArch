@@ -347,6 +347,7 @@ void gl_shader_set_coords(void *data, const struct gl_coords *coords, const math
 
 #define gl_shader_num(gl) ((gl->shader) ? gl->shader->num_shaders() : 0)
 #define gl_shader_filter_type(gl, index, smooth) ((gl->shader) ? gl->shader->filter_type(index, smooth) : false)
+#define gl_shader_wrap_type(gl, index) ((gl->shader) ? gl->shader->wrap_type(index) : RARCH_WRAP_BORDER)
 
 #ifdef IOS
 // There is no default frame buffer on IOS.
@@ -465,16 +466,18 @@ static void gl_create_fbo_textures(void *data)
    {
       glBindTexture(GL_TEXTURE_2D, gl->fbo_texture[i]);
 
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, gl->border_type);
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, gl->border_type);
-
       GLuint filter_type = base_filt;
       bool smooth = false;
       if (gl_shader_filter_type(gl, i + 2, &smooth))
          filter_type = smooth ? GL_LINEAR : GL_NEAREST;
 
+      enum gfx_wrap_type wrap = gl_shader_wrap_type(gl, i + 2);
+      GLenum wrap_enum = gl_wrap_type_to_enum(wrap);
+
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, filter_type);
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, filter_type);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, wrap_enum);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, wrap_enum);
 
       bool fp_fbo = gl->fbo_scale[i].valid && gl->fbo_scale[i].fp_fbo;
 
@@ -1156,8 +1159,8 @@ static void gl_init_textures(void *data, const video_info_t *video)
    {
       glBindTexture(GL_TEXTURE_2D, gl->texture[i]);
 
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, gl->border_type);
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, gl->border_type);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, gl->wrap_mode);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, gl->wrap_mode);
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, gl->tex_filter);
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, gl->tex_filter);
 
@@ -1643,13 +1646,6 @@ static bool resolve_extensions(gl_t *gl)
       RARCH_LOG("[GL]: Using ARB_sync to reduce latency.\n");
 #endif
 
-#ifdef NO_GL_CLAMP_TO_BORDER
-   // NOTE: This will be a serious problem for some shaders.
-   gl->border_type = GL_CLAMP_TO_EDGE;
-#else
-   gl->border_type = GL_CLAMP_TO_BORDER;
-#endif
-
    driver.gfx_use_rgba = false;
 #ifdef HAVE_OPENGLES2
    if (gl_query_extension(gl, "BGRA8888"))
@@ -2055,6 +2051,7 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
       gl->tex_filter = force_smooth ? GL_LINEAR : GL_NEAREST;
    else
       gl->tex_filter = video->smooth ? GL_LINEAR : GL_NEAREST;
+   gl->wrap_mode = gl_wrap_type_to_enum(gl_shader_wrap_type(gl, 1));
 
    gl_set_texture_fmts(gl, video->rgb32);
 
@@ -2155,18 +2152,22 @@ static void gl_update_tex_filter_frame(gl_t *gl)
    bool smooth = false;
    if (!gl_shader_filter_type(gl, 1, &smooth))
       smooth = g_settings.video.smooth;
+   GLenum wrap_mode = gl_wrap_type_to_enum(gl_shader_wrap_type(gl, 1));
 
    gl->video_info.smooth = smooth;
    GLuint new_filt = smooth ? GL_LINEAR : GL_NEAREST;
-   if (new_filt == gl->tex_filter)
+   if (new_filt == gl->tex_filter && wrap_mode == gl->wrap_mode)
       return;
 
    gl->tex_filter = new_filt;
+   gl->wrap_mode = wrap_mode;
    for (unsigned i = 0; i < gl->textures; i++)
    {
       if (gl->texture[i])
       {
          glBindTexture(GL_TEXTURE_2D, gl->texture[i]);
+         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, gl->wrap_mode);
+         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, gl->wrap_mode);
          glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, gl->tex_filter);
          glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, gl->tex_filter);
       }
@@ -2394,8 +2395,8 @@ static bool gl_overlay_load(void *data, const uint32_t *image, unsigned width, u
       glGenTextures(1, &gl->tex_overlay);
 
    glBindTexture(GL_TEXTURE_2D, gl->tex_overlay);
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, gl->border_type);
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, gl->border_type);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 
@@ -2567,8 +2568,8 @@ static void gl_set_texture_frame(void *data,
    {
       glGenTextures(1, &gl->rgui_texture);
       glBindTexture(GL_TEXTURE_2D, gl->rgui_texture);
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, gl->border_type);
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, gl->border_type);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
    }

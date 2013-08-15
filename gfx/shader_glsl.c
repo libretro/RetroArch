@@ -1180,6 +1180,14 @@ static bool gl_glsl_filter_type(unsigned index, bool *smooth)
       return false;
 }
 
+static enum gfx_wrap_type gl_glsl_wrap_type(unsigned index)
+{
+   if (glsl_enable && index)
+      return glsl_shader->pass[index - 1].wrap;
+   else
+      return RARCH_WRAP_BORDER;
+}
+
 static void gl_glsl_shader_scale(unsigned index, struct gfx_fbo_scale *scale)
 {
    if (glsl_enable && index)
@@ -1221,6 +1229,7 @@ const gl_shader_backend_t gl_glsl_backend = {
    gl_glsl_use,
    gl_glsl_num,
    gl_glsl_filter_type,
+   gl_glsl_wrap_type,
    gl_glsl_shader_scale,
    gl_glsl_set_coords,
    gl_glsl_set_mvp,

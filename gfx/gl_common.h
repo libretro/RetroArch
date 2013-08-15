@@ -199,7 +199,7 @@ typedef struct gl
    GLenum internal_fmt;
    GLenum texture_type; // RGB565 or ARGB
    GLenum texture_fmt;
-   GLenum border_type;
+   GLenum wrap_mode;
    unsigned base_size; // 2 or 4
 
    // Fonts
@@ -313,6 +313,27 @@ void gl_shader_set_coords(void *data, const struct gl_coords *coords, const math
 
 void gl_init_fbo(void *data, unsigned width, unsigned height);
 void gl_deinit_fbo(void *data);
+
+static inline GLenum gl_wrap_type_to_enum(enum gfx_wrap_type type)
+{
+   switch (type)
+   {
+#ifndef HAVE_OPENGLES
+      case RARCH_WRAP_BORDER:
+         return GL_CLAMP_TO_BORDER;
+#else
+      case RARCH_WRAP_BORDER:
+#endif
+      case RARCH_WRAP_EDGE:
+         return GL_CLAMP_TO_EDGE;
+      case RARCH_WRAP_REPEAT:
+         return GL_REPEAT;
+      case RARCH_WRAP_MIRRORED_REPEAT:
+         return GL_MIRRORED_REPEAT;
+      default:
+         return 0;
+   }
+}
 
 #endif
 

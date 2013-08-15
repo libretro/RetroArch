@@ -40,7 +40,16 @@ enum gfx_filter_type
 {
    RARCH_FILTER_UNSPEC = 0,
    RARCH_FILTER_LINEAR,
-   RARCH_FILTER_NEAREST,
+   RARCH_FILTER_NEAREST
+};
+
+enum gfx_wrap_type
+{
+   RARCH_WRAP_BORDER = 0, // Kinda deprecated, but keep as default. Will be translated to EDGE in GLES.
+   RARCH_WRAP_DEFAULT = RARCH_WRAP_BORDER,
+   RARCH_WRAP_EDGE,
+   RARCH_WRAP_REPEAT,
+   RARCH_WRAP_MIRRORED_REPEAT
 };
 
 struct gfx_fbo_scale
@@ -69,6 +78,7 @@ struct gfx_shader_pass
 
    struct gfx_fbo_scale fbo;
    enum gfx_filter_type filter;
+   enum gfx_wrap_type wrap;
    unsigned frame_count_mod;
 };
 
@@ -77,6 +87,7 @@ struct gfx_shader_lut
    char id[64];
    char path[PATH_MAX];
    enum gfx_filter_type filter;
+   enum gfx_wrap_type wrap;
 };
 
 // This is pretty big, shouldn't be put on the stack.

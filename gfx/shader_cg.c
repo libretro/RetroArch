@@ -493,18 +493,12 @@ static bool load_plain(const char *path)
 
 #define print_buf(buf, ...) snprintf(buf, sizeof(buf), __VA_ARGS__)
 
-#ifdef HAVE_OPENGLES2
-#define BORDER_FUNC GL_CLAMP_TO_EDGE
-#else
-#define BORDER_FUNC GL_CLAMP_TO_BORDER
-#endif
-
-static void load_texture_data(GLuint obj, const struct texture_image *img, bool smooth)
+static void load_texture_data(GLuint obj, const struct texture_image *img, bool smooth, GLenum wrap)
 {
    glBindTexture(GL_TEXTURE_2D, obj);
 
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, BORDER_FUNC);
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, BORDER_FUNC);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, wrap);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, wrap);
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, smooth ? GL_LINEAR : GL_NEAREST);
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, smooth ? GL_LINEAR : GL_NEAREST);
 
@@ -538,7 +532,8 @@ static bool load_textures(void)
       }
 
       load_texture_data(lut_textures[i], &img,
-            cg_shader->lut[i].filter != RARCH_FILTER_NEAREST);
+            cg_shader->lut[i].filter != RARCH_FILTER_NEAREST,
+            gl_wrap_type_to_enum(cg_shader->lut[i].wrap));
    }
 
    glBindTexture(GL_TEXTURE_2D, 0);
@@ -903,6 +898,14 @@ static bool gl_cg_filter_type(unsigned index, bool *smooth)
       return false;
 }
 
+static enum gfx_wrap_type gl_cg_wrap_type(unsigned index)
+{
+   if (cg_active && index)
+      return cg_shader->pass[index - 1].wrap;
+   else
+      return RARCH_WRAP_BORDER;
+}
+
 static void gl_cg_shader_scale(unsigned index, struct gfx_fbo_scale *scale)
 {
    if (cg_active && index)
@@ -942,6 +945,7 @@ const gl_shader_backend_t gl_cg_backend = {
    gl_cg_use,
    gl_cg_num,
    gl_cg_filter_type,
+   gl_cg_wrap_type,
    gl_cg_shader_scale,
    gl_cg_set_coords,
    gl_cg_set_mvp,
