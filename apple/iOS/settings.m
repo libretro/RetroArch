@@ -48,8 +48,12 @@ enum SettingTypes
    double rangeMin;              // < The mininum value of a range setting
    double rangeMax;              // < The maximum value of a range setting
    
-   void (^reload)(RASettingData* action, id userdata);
+   void (*changed)(RASettingData* action);
+   void (*reload)(RASettingData* action, id userdata);
 }
+
+- (void)setValue:(NSString*)aValue;
+
 @end
 
 @implementation RASettingData
@@ -59,6 +63,14 @@ enum SettingTypes
    label = aLabel;
    name = aName;
    return self;
+}
+
+- (void)setValue:(NSString*)aValue;
+{
+   value = aValue;
+   
+   if (changed)
+      changed(self);
 }
 
 - (uint32_t)enumerationCount
@@ -189,7 +201,7 @@ static RASettingData* aspect_setting(config_file_t* config, NSString* label)
    return result;
 }
 
-static RASettingData* custom_action(NSString* action, NSString* value, id data, void (^reload_func)(RASettingData* action, id userdata))
+static RASettingData* custom_action(NSString* action, NSString* value, id data, void (*reload_func)(RASettingData* action, id userdata))
 {
    RASettingData* result = [[RASettingData alloc] initWithType:CustomAction label:action name:nil];
    result->value = value;
@@ -199,6 +211,14 @@ static RASettingData* custom_action(NSString* action, NSString* value, id data, 
       objc_setAssociatedObject(result, "USERDATA", data, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
    
    return result;
+}
+
+// This adds a change notify function to a setting and returns it; done this way so it can be used in NSArray
+// init lists.
+static RASettingData* change_notify(RASettingData* setting, void (*change_func)(RASettingData* setting))
+{
+   setting->changed = change_func;
+   return setting;
 }
 
 static NSArray* build_input_port_group(config_file_t* config, uint32_t player)
@@ -367,6 +387,18 @@ static NSArray* build_input_port_group(config_file_t* config, uint32_t player)
 
 @end
 
+#pragma mark System Settings
+
+static void reload_core_config_state(RASettingData* action, RAModuleInfo* userdata)
+{
+   [action setValue:userdata.hasCustomConfig ? @"[Custom]" : @"[Global]"];
+}
+
+static void bluetooth_option_changed(RASettingData* setting)
+{
+   ios_set_bluetooth_mode(setting->value);
+}
+
 @implementation RASystemSettingsList
 - (id)init
 {
@@ -379,10 +411,7 @@ static NSArray* build_input_port_group(config_file_t* config, uint32_t player)
    NSArray* moduleList = [RAModuleInfo getModules];
    for (RAModuleInfo* i in moduleList)
    {
-      [modules addObject:custom_action(i.description, nil, i, ^(RASettingData* action, RAModuleInfo* userdata)
-         {
-            action->value = userdata.hasCustomConfig ? @"[Custom]" : @"[Global]";
-         })];
+      [modules addObject:custom_action(i.description, nil, i, reload_core_config_state)];
    }
 
 
@@ -397,7 +426,7 @@ static NSArray* build_input_port_group(config_file_t* config, uint32_t player)
          boolean_setting(config, @"ios_tv_mode", @"TV Mode", @"false"),
          nil],
       [NSArray arrayWithObjects:@"Bluetooth",
-         enumeration_setting(config, @"ios_btmode", @"Mode", @"keyboard", bluetoothOptions, true),
+         change_notify(enumeration_setting(config, @"ios_btmode", @"Mode", @"keyboard", bluetoothOptions, true), bluetooth_option_changed),
          nil],
       [NSArray arrayWithObjects:@"Orientations",
          boolean_setting(config, @"ios_allow_portrait", @"Portrait", @"true"),
@@ -414,6 +443,12 @@ static NSArray* build_input_port_group(config_file_t* config, uint32_t player)
 
    self = [super initWithSettings:settings title:@"RetroArch Settings"];
    return self;
+}
+
+- (void)viewDidAppear:(BOOL)animated
+{
+   [self.tableView reloadData];
+   [super viewDidAppear:animated];
 }
 
 - (void)dealloc
@@ -590,7 +625,7 @@ static NSArray* build_input_port_group(config_file_t* config, uint32_t player)
 - (void)handleBooleanSwitch:(UISwitch*)swt
 {
    RASettingData* setting = objc_getAssociatedObject(swt, "SETTING");
-   setting->value = (swt.on ? @"true" : @"false");
+   [setting setValue:swt.on ? @"true" : @"false"];
    
    [self handleCustomAction:setting];
 }
@@ -598,7 +633,7 @@ static NSArray* build_input_port_group(config_file_t* config, uint32_t player)
 - (void)handleSlider:(UISlider*)sld
 {
    RASettingData* setting = objc_getAssociatedObject(sld, "SETTING");
-   setting->value = [NSString stringWithFormat:@"%f", sld.value];
+   [setting setValue:[NSString stringWithFormat:@"%f", sld.value]];
 
    [self handleCustomAction:setting];
 }
@@ -739,7 +774,7 @@ static NSArray* build_input_port_group(config_file_t* config, uint32_t player)
 
 - (void)tableView:(UITableView*)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath
 {
-   _value->value = (indexPath.section == _mainSection) ? [_value valueForEnumerationIndex:indexPath.row] : @"";
+   [_value setValue: (indexPath.section == _mainSection) ? [_value valueForEnumerationIndex:indexPath.row] : @""];
    
    [_view reloadData];
    [[RetroArch_iOS get] popViewControllerAnimated:YES];

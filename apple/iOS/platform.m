@@ -29,6 +29,11 @@
 #include "file.h"
 
 //#define HAVE_DEBUG_FILELOG
+void ios_set_bluetooth_mode(NSString* mode)
+{
+   apple_input_enable_icade([mode isEqualToString:@"icade"]);
+   btstack_set_poweron([mode isEqualToString:@"btstack"]);
+}
 
 // Input helpers: This is kept here because it needs objective-c
 static void handle_touch_event(NSArray* touches)
@@ -251,9 +256,7 @@ static void handle_touch_event(NSArray* touches)
       }
       
       // Setup bluetooth mode
-      NSString* btmode = objc_get_value_from_config(conf, @"ios_btmode", @"keyboard");
-      apple_input_enable_icade([btmode isEqualToString:@"icade"]);
-      btstack_set_poweron([btmode isEqualToString:@"btstack"]);
+      ios_set_bluetooth_mode(objc_get_value_from_config(conf, @"ios_btmode", @"keyboard"));
 
       bool val;
       apple_use_tv_mode = config_get_bool(conf, "ios_tv_mode", & val) && val;

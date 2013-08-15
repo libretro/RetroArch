@@ -39,4 +39,7 @@
 
 @end
 
+// modes are: keyboard, icade and btstack
+void ios_set_bluetooth_mode(NSString* mode);
+
 #endif
