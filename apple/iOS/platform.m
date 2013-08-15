@@ -127,12 +127,12 @@ static void handle_touch_event(NSArray* touches)
 
 - (void)applicationDidBecomeActive:(UIApplication *)application
 {
-   apple_enter_stasis();
+   apple_exit_stasis();
 }
 
 - (void)applicationWillResignActive:(UIApplication *)application
 {
-   apple_exit_stasis();
+   apple_enter_stasis();
 }
 
 // UINavigationControllerDelegate

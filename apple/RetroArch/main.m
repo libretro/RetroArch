@@ -24,7 +24,6 @@
 #include "file.h"
 
 //#define HAVE_DEBUG_FILELOG
-static bool use_tv_mode;
 
 id<RetroArch_Platform> apple_platform;
 
@@ -175,6 +174,6 @@ void apple_rarch_exited(void* result)
       [apple_platform unloadingCore:used_core];
    }
 
-   if (use_tv_mode)
+   if (apple_use_tv_mode)
       apple_run_core(nil, 0);
 }
