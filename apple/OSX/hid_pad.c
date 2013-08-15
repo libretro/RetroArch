@@ -19,6 +19,7 @@
 // NOTE: I pieced this together through trial and error, any corrections are welcome
 
 static IOHIDManagerRef g_hid_manager;
+static uint32_t g_num_pads;
 
 static void hid_input_callback(void* inContext, IOReturn inResult, void* inSender, IOHIDValueRef inIOHIDValueRef)
 {
@@ -83,9 +84,18 @@ static void hid_input_callback(void* inContext, IOReturn inResult, void* inSende
 
 static void hid_device_attached(void* inContext, IOReturn inResult, void* inSender, IOHIDDeviceRef inDevice)
 {
+   void* context = 0;
+
+   if (IOHIDDeviceConformsTo(inDevice, kHIDPage_GenericDesktop, kHIDUsage_GD_Joystick))
+   {
+      if (g_num_pads > 4)
+         return;
+      context = (void*)(g_num_pads++);
+   }
+
    IOHIDDeviceOpen(inDevice, kIOHIDOptionsTypeNone);
    IOHIDDeviceScheduleWithRunLoop(inDevice, CFRunLoopGetCurrent(), kCFRunLoopDefaultMode);
-   IOHIDDeviceRegisterInputValueCallback(inDevice, hid_input_callback, 0);
+   IOHIDDeviceRegisterInputValueCallback(inDevice, hid_input_callback, context);
 }
 
 static void hid_device_removed(void* inContext, IOReturn inResult, void* inSender, IOHIDDeviceRef inDevice)

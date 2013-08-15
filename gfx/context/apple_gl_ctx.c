@@ -34,7 +34,7 @@ static bool gfx_ctx_bind_api(enum gfx_ctx_api api, unsigned major, unsigned mino
 #ifdef IOS
    return api == GFX_CTX_OPENGL_ES_API;
 #else
-   return api == GFX_CTX_OPENGL_API;
+   return apple_create_gl_context((major << 12) | (minor << 8));
 #endif
 }
 

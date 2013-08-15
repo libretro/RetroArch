@@ -153,7 +153,7 @@ static bool check_sync_proc(gl_t *gl)
 #ifndef HAVE_OPENGLES
 static bool init_vao(gl_t *gl)
 {
-   if (!gl_query_extension(gl, "ARB_vertex_array_object"))
+   if (!gl->core_context && !gl_query_extension(gl, "ARB_vertex_array_object"))
       return false;
 
    bool present = glGenVertexArrays && glBindVertexArray && glDeleteVertexArrays;
@@ -184,7 +184,7 @@ static bool init_vao(gl_t *gl)
 #elif !defined(HAVE_OPENGLES2)
 static bool check_fbo_proc(gl_t *gl)
 {
-   if (!gl_query_extension(gl, "ARB_framebuffer_object"))
+   if (!gl->core_context && !gl_query_extension(gl, "ARB_framebuffer_object"))
       return false;
 
    return glGenFramebuffers && glBindFramebuffer && glFramebufferTexture2D && 

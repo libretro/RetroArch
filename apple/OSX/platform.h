@@ -19,7 +19,7 @@
 
 #import <AppKit/AppKit.h>
 
-@interface RAGameView : NSOpenGLView
+@interface RAGameView : NSView
 
 + (RAGameView*)get;
 - (void)display;

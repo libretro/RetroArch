@@ -35,6 +35,7 @@ static UIView* g_pause_indicator_view;
 
 static RAGameView* g_instance;
 static NSOpenGLContext* g_context;
+static NSOpenGLPixelFormat* g_format;
 
 #define g_view g_instance // < RAGameView is a container on iOS; on OSX these are both the same object
 
@@ -57,25 +58,22 @@ static float g_screen_scale = 1.0f;
 
 - (id)init
 {
-   static const NSOpenGLPixelFormatAttribute attributes [] = {
-      NSOpenGLPFAWindow,
-      NSOpenGLPFADoubleBuffer,	// double buffered
-      NSOpenGLPFADepthSize, (NSOpenGLPixelFormatAttribute)16, // 16 bit depth buffer
-      (NSOpenGLPixelFormatAttribute)nil
-   };
-
-   self = [super initWithFrame:CGRectMake(0, 0, 100, 100) pixelFormat:[[NSOpenGLPixelFormat alloc] initWithAttributes:attributes]];
-   self.autoresizingMask = NSViewWidthSizable | NSViewHeightSizable;   
-   
-   g_context = self.openGLContext;
-   [g_context makeCurrentContext];
-   
+   self = [super init];
+   self.autoresizingMask = NSViewWidthSizable | NSViewHeightSizable;
    return self;
+}
+
+- (void)setFrame:(NSRect)frameRect
+{
+   [super setFrame:frameRect];
+
+   if (g_view && g_context)
+      [g_context update];
 }
 
 - (void)display
 {
-   [self.openGLContext flushBuffer];
+   [g_context flushBuffer];
 }
 
 - (void)bindDrawable
@@ -237,6 +235,38 @@ void apple_destroy_game_view()
 #endif
 }
 
+bool apple_create_gl_context(uint32_t version)
+{
+#ifdef OSX
+   [NSOpenGLContext clearCurrentContext];
+   
+   dispatch_sync(dispatch_get_main_queue(), ^{
+      [NSOpenGLContext clearCurrentContext];
+      [g_context clearDrawable];
+      g_context = nil;
+      g_format = nil;
+   
+      NSOpenGLPixelFormatAttribute attributes [] = {
+         NSOpenGLPFADoubleBuffer,	// double buffered
+         NSOpenGLPFADepthSize, (NSOpenGLPixelFormatAttribute)16, // 16 bit depth buffer
+         version ? NSOpenGLPFAOpenGLProfile : 0, version,
+         (NSOpenGLPixelFormatAttribute)nil
+      };
+
+      g_format = [[NSOpenGLPixelFormat alloc] initWithAttributes:attributes];
+      g_context = [[NSOpenGLContext alloc] initWithFormat:g_format shareContext:nil];
+      g_context.view = g_view;
+      [g_context makeCurrentContext];
+   });
+   
+   [g_context makeCurrentContext];
+
+#endif
+
+   return true;
+
+}
+
 void apple_flip_game_view()
 {
    if (--g_fast_forward_skips < 0)
@@ -255,7 +285,7 @@ void apple_set_game_view_sync(unsigned interval)
    g_fast_forward_skips = interval ? 0 : 3;
 #elif defined(OSX)
    GLint value = interval ? 1 : 0;
-   [g_view.openGLContext setValues:&value forParameter:NSOpenGLCPSwapInterval];
+   [g_context setValues:&value forParameter:NSOpenGLCPSwapInterval];
 #endif
 }
 
