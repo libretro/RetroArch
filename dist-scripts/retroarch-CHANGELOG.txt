@@ -5,6 +5,9 @@ v0.9.9.6
 battle screens etc.
 * [VBA Next] Add a core option to change the control button layout from (left
 to right) B to A to (left to right) A to B.
+* [Android] Added Load Game History to Android Java UI
+* [Android] Will show a progressbar dialog during asset extraction so that the
+user knows what is happening.
 
 ------------------------------------------------------------------------------
 v0.9.9.5
