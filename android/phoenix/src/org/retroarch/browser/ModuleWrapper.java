@@ -28,6 +28,15 @@ class ModuleWrapper implements IconAdapterItem {
 		} else
 			return stripped;
 	}
+	
+	@Override
+	public String getSubText() {
+		String stripped = file.getName().replace(".so", "") + "_system";
+		if (config.keyExists(stripped)) {
+			return config.getString(stripped);
+		} else
+			return null;
+	}
 
 	@Override
 	public int getIconResourceId() {

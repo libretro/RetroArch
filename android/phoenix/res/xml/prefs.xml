@@ -12,6 +12,11 @@
           android:targetClass="org.retroarch.browser.CoreSelection"
           android:targetPackage="org.retroarch" />
     </PreferenceScreen>
+    <PreferenceScreen android:title="Load Game (History)">
+       <intent
+          android:targetClass="org.retroarch.browser.HistorySelection"
+          android:targetPackage="org.retroarch" />
+    </PreferenceScreen>
     <PreferenceScreen android:title="Video Options" >
         <PreferenceCategory android:title="General" >
             <CheckBoxPreference

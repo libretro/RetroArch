@@ -28,17 +28,17 @@ public class CoreSelection extends Activity implements
 	public void onCreate(Bundle savedInstanceState) {
 		ConfigFile core_config;
 		super.onCreate(savedInstanceState);
-		
+
 		core_config = new ConfigFile();
 		try {
 			core_config.append(getAssets().open("libretro_cores.cfg"));
 		} catch (IOException e) {
 			Log.e(TAG, "Failed to load libretro_cores.cfg from assets.");
 		}
-		
+
 		String cpuInfo = MainMenuActivity.readCPUInfo();
 		boolean cpuIsNeon = cpuInfo.contains("neon");
-		
+
 		setContentView(R.layout.line_list);
 
 		// Setup the list
@@ -50,15 +50,16 @@ public class CoreSelection extends Activity implements
 		setTitle("Select Libretro core");
 
 		// Populate the list
-		final String modulePath = MainMenuActivity.getInstance().getApplicationInfo().nativeLibraryDir;
+		final String modulePath = MainMenuActivity.getInstance()
+				.getApplicationInfo().nativeLibraryDir;
 		final File[] libs = new File(modulePath).listFiles();
 		for (final File lib : libs) {
 			String libName = lib.getName();
-			
+
 			// Never append a NEON lib if we don't have NEON.
 			if (libName.contains("neon") && !cpuIsNeon)
 				continue;
-			
+
 			// If we have a NEON version with NEON capable CPU,
 			// never append a non-NEON version.
 			if (cpuIsNeon && !libName.contains("neon")) {
@@ -66,18 +67,20 @@ public class CoreSelection extends Activity implements
 				for (final File lib_ : libs) {
 					String otherName = lib_.getName();
 					String baseName = libName.replace(".so", "");
-					if (otherName.contains("neon") && otherName.startsWith(baseName)) {
+					if (otherName.contains("neon")
+							&& otherName.startsWith(baseName)) {
 						hasNeonVersion = true;
 						break;
 					}
 				}
-				
+
 				if (hasNeonVersion)
 					continue;
 			}
-			
+
 			// Allow both libretro-core.so and libretro_core.so.
-			if (libName.startsWith("libretro") && !libName.startsWith("libretroarch")) {
+			if (libName.startsWith("libretro")
+					&& !libName.startsWith("libretroarch")) {
 				try {
 					adapter.add(new ModuleWrapper(this, lib, core_config));
 				} catch (IOException e) {
@@ -85,9 +88,9 @@ public class CoreSelection extends Activity implements
 				}
 			}
 		}
-		
+
 		this.setVolumeControlStream(AudioManager.STREAM_MUSIC);
-		
+
 		if (Build.VERSION.SDK_INT < Build.VERSION_CODES.HONEYCOMB) {
 			this.registerForContextMenu(findViewById(android.R.id.content));
 		}
@@ -106,10 +109,12 @@ public class CoreSelection extends Activity implements
 
 	protected void onActivityResult(int requestCode, int resultCode, Intent data) {
 		Intent myIntent;
-		String current_ime = Settings.Secure.getString(getContentResolver(), Settings.Secure.DEFAULT_INPUT_METHOD);
-		
+		String current_ime = Settings.Secure.getString(getContentResolver(),
+				Settings.Secure.DEFAULT_INPUT_METHOD);
+
 		MainMenuActivity.updateConfigFile();
-		
+		MainMenuActivity.waitAssetThread();
+
 		switch (requestCode) {
 		case ACTIVITY_LOAD_ROM:
 			if (data.getStringExtra("PATH") != null) {
@@ -119,14 +124,14 @@ public class CoreSelection extends Activity implements
 				myIntent = new Intent(this, RetroActivity.class);
 				myIntent.putExtra("ROM", data.getStringExtra("PATH"));
 				myIntent.putExtra("LIBRETRO", libretro_path);
-				myIntent.putExtra("CONFIGFILE", MainMenuActivity.getDefaultConfigPath());
+				myIntent.putExtra("CONFIGFILE",
+						MainMenuActivity.getDefaultConfigPath());
 				myIntent.putExtra("IME", current_ime);
 				startActivity(myIntent);
 				finish();
 			}
 			break;
 		}
-		
 	}
 
 	@Override
@@ -137,35 +142,31 @@ public class CoreSelection extends Activity implements
 	}
 
 	public void showPopup(View v) {
-		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB)
-		{
+		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB) {
 			PopupMenuAbstract menu = new PopupMenuAbstract(this, v);
 			MenuInflater inflater = menu.getMenuInflater();
 			inflater.inflate(R.menu.context_menu, menu.getMenu());
-			menu.setOnMenuItemClickListener(new PopupMenuAbstract.OnMenuItemClickListener()
-			{
+			menu.setOnMenuItemClickListener(new PopupMenuAbstract.OnMenuItemClickListener() {
 				@Override
 				public boolean onMenuItemClick(MenuItem item) {
 					return onContextItemSelected(item);
 				}
-				
+
 			});
 			menu.show();
-		}
-		else
-		{
+		} else {
 			this.openContextMenu(findViewById(android.R.id.content));
 		}
 	}
-	
+
 	@Override
 	public void onCreateContextMenu(ContextMenu menu, View v,
-	                                ContextMenuInfo menuInfo) {
-	    super.onCreateContextMenu(menu, v, menuInfo);
-	    MenuInflater inflater = getMenuInflater();
-	    inflater.inflate(R.menu.context_menu, menu);
+			ContextMenuInfo menuInfo) {
+		super.onCreateContextMenu(menu, v, menuInfo);
+		MenuInflater inflater = getMenuInflater();
+		inflater.inflate(R.menu.context_menu, menu);
 	}
-	
+
 	@Override
 	public boolean onOptionsItemSelected(MenuItem aItem) {
 		switch (aItem.getItemId()) {
@@ -177,7 +178,7 @@ public class CoreSelection extends Activity implements
 			return super.onOptionsItemSelected(aItem);
 		}
 	}
-	
+
 	@Override
 	public boolean onContextItemSelected(MenuItem item) {
 		switch (item.getItemId()) {
