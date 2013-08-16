@@ -68,7 +68,6 @@ public class HistorySelection extends Activity implements
 				Settings.Secure.DEFAULT_INPUT_METHOD);
 
 		MainMenuActivity.updateConfigFile();
-		MainMenuActivity.waitAssetThread();
 
 		Toast.makeText(this, "Loading: [" + gamePath + "] ...",
 				Toast.LENGTH_SHORT).show();

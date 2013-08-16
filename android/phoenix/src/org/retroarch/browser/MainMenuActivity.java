@@ -6,6 +6,7 @@ import org.retroarch.R;
 
 import android.annotation.TargetApi;
 import android.app.AlertDialog;
+import android.app.Dialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.SharedPreferences;
@@ -14,6 +15,7 @@ import android.content.res.AssetManager;
 import android.media.AudioManager;
 import android.media.AudioTrack;
 import android.os.Bundle;
+import android.os.Handler;
 import android.preference.PreferenceActivity;
 import android.preference.PreferenceManager;
 import android.util.Log;
@@ -24,18 +26,6 @@ import android.widget.Toast;
 public class MainMenuActivity extends PreferenceActivity {
 	private static MainMenuActivity instance = null;
 	static private final String TAG = "MainMenu";
-	static private Thread assetThread = null;
-	
-	public static void waitAssetThread() {
-		if (assetThread != null) {
-			try {
-				assetThread.join();
-			} catch (InterruptedException e) {
-				e.printStackTrace();
-			}
-			assetThread = null;
-		}
-	}
 
 	@SuppressWarnings("deprecation")
 	@Override
@@ -46,18 +36,11 @@ public class MainMenuActivity extends PreferenceActivity {
 		PreferenceManager.setDefaultValues(this, R.xml.prefs, false);
 		this.setVolumeControlStream(AudioManager.STREAM_MUSIC);
 
-		// Extracting assets appears to take considerable amount of time, so
-		// move extraction to a thread.
-		assetThread = new Thread(new Runnable() {
-			public void run() {
-				extractAssets();
-			}
-		});
-		assetThread.start();
-
 		SharedPreferences prefs = PreferenceManager
 				.getDefaultSharedPreferences(getBaseContext());
 
+		extractAssets();
+		
 		if (!prefs.getBoolean("first_time_refreshrate_calculate", false)) {
 			prefs.edit().putBoolean("first_time_refreshrate_calculate", true)
 					.commit();
@@ -66,7 +49,7 @@ public class MainMenuActivity extends PreferenceActivity {
 				AlertDialog.Builder alert = new AlertDialog.Builder(this)
 						.setTitle("Welcome to RetroArch")
 						.setMessage(
-								"This is your first time starting up RetroArch. RetroArch will now be preconfigured for the best possible gameplay experience. Please be aware that it might take some time until all shader and overlay assets are extracted...")
+								"This is your first time starting up RetroArch. RetroArch will now be preconfigured for the best possible gameplay experience. Please be aware that it might take some time until all shader and overlay assets are extracted ...")
 						.setPositiveButton("OK",
 								new DialogInterface.OnClickListener() {
 									@Override
@@ -85,7 +68,7 @@ public class MainMenuActivity extends PreferenceActivity {
 				AlertDialog.Builder alert = new AlertDialog.Builder(this)
 						.setTitle("Welcome to RetroArch")
 						.setMessage(
-								"This is your first time starting up RetroArch. Please be aware that it might take some time until all shader and overlay assets are extracted...")
+								"This is your first time starting up RetroArch. Please be aware that it might take some time until all shader and overlay assets are extracted ...")
 						.setPositiveButton("OK", null);
 				alert.show();
 			}
@@ -370,17 +353,21 @@ public class MainMenuActivity extends PreferenceActivity {
 			writer.close();
 		}
 	}
-
-	private void extractAssets() {
+	
+	private int getVersionCode() {
 		int version = 0;
 		try {
 			version = getPackageManager().getPackageInfo(getPackageName(), 0).versionCode;
 		} catch (NameNotFoundException e) {
-			// weird exception, shouldn't happen
 		}
-
+		
+		return version;
+	}
+	
+	private boolean areAssetsExtracted() {
+		int version = getVersionCode();
+		
 		try {
-			AssetManager assets = getAssets();
 			String dataDir = getApplicationInfo().dataDir;
 			File cacheVersion = new File(dataDir, ".cacheversion");
 			if (cacheVersion != null && cacheVersion.isFile()
@@ -397,9 +384,22 @@ public class MainMenuActivity extends PreferenceActivity {
 
 				if (currentCacheVersion == version) {
 					Log.i("ASSETS", "Assets already extracted, skipping...");
-					return;
+					return true;
 				}
 			}
+		} catch (IOException e) {
+			Log.e(TAG, "Failed to extract assets to cache.");
+			return false;
+		}
+		
+		return false;
+	}
+	
+	private void extractAssetsThread() {
+		try {
+			AssetManager assets = getAssets();
+			String dataDir = getApplicationInfo().dataDir;
+			File cacheVersion = new File(dataDir, ".cacheversion");
 
 			// extractAssets(assets, cacheDir, "", 0);
 			Log.i("ASSETS", "Extracting shader assets now ...");
@@ -418,22 +418,51 @@ public class MainMenuActivity extends PreferenceActivity {
 
 			DataOutputStream outputCacheVersion = new DataOutputStream(
 					new FileOutputStream(cacheVersion, false));
-			outputCacheVersion.writeInt(version);
+			outputCacheVersion.writeInt(getVersionCode());
 			outputCacheVersion.close();
 		} catch (IOException e) {
 			Log.e(TAG, "Failed to extract assets to cache.");
 		}
 	}
 
+	private void extractAssets() {
+		if (areAssetsExtracted())
+			return;
+		
+		final Dialog dialog = new Dialog(this);
+		final Handler handler = new Handler();
+		dialog.setContentView(R.layout.assets);
+		dialog.setCancelable(false);
+		
+		// Java is fun :)
+		Thread assetsThread = new Thread(new Runnable() {
+			public void run() {
+				extractAssetsThread();
+				handler.post(new Runnable() {
+					public void run() {
+						dialog.dismiss();
+					}
+				});
+			}
+		});
+		assetsThread.start();
+		
+		dialog.show();
+	}
+
 	boolean detectDevice(boolean show_dialog) {
 		boolean retval = false;
+		
+		boolean mentionPlayStore = !android.os.Build.MODEL.equals("OUYA Console");
+		final String message = "The ideal configuration options for your device will now be preconfigured.\n\nNOTE: For optimal performance, turn off Google Account sync, " +
+				(mentionPlayStore ? "Google Play Store auto-updates, " : "") +
+				"GPS and Wi-Fi in your Android settings menu.";
 
 		Log.i("Device MODEL", android.os.Build.MODEL);
 		if (android.os.Build.MODEL.equals("SHIELD")) {
 			AlertDialog.Builder alert = new AlertDialog.Builder(this)
 					.setTitle("NVidia Shield detected")
-					.setMessage(
-							"The ideal configuration options for your device will now be preconfigured.\nNOTE: For optimal performance, turn off Google Account sync, Google Play Store auto-updates, GPS and Wifi in your Android settings menu.")
+					.setMessage(message)
 					.setPositiveButton("OK",
 							new DialogInterface.OnClickListener() {
 								@Override
@@ -457,8 +486,7 @@ public class MainMenuActivity extends PreferenceActivity {
 		} else if (android.os.Build.MODEL.equals("OUYA Console")) {
 			AlertDialog.Builder alert = new AlertDialog.Builder(this)
 					.setTitle("OUYA detected")
-					.setMessage(
-							"The ideal configuration options for your device will now be preconfigured.\nNOTE: For optimal performance, turn off Google Account sync, GPS and Wifi in your Android settings menu.")
+					.setMessage(message)
 					.setPositiveButton("OK",
 							new DialogInterface.OnClickListener() {
 								@Override
@@ -480,8 +508,7 @@ public class MainMenuActivity extends PreferenceActivity {
 		} else if (android.os.Build.ID.equals("JSS15J")) {
 			AlertDialog.Builder alert = new AlertDialog.Builder(this)
 					.setTitle("Nexus 7 2013 detected")
-					.setMessage(
-							"The ideal configuration options for your device will now be preconfigured.\nNOTE: For optimal performance, turn off Google Account sync, Google Play Store auto-updates, GPS and Wifi in your Android settings menu.")
+					.setMessage(message)
 					.setPositiveButton("OK",
 							new DialogInterface.OnClickListener() {
 								@Override

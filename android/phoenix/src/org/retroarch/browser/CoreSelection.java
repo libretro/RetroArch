@@ -113,7 +113,6 @@ public class CoreSelection extends Activity implements
 				Settings.Secure.DEFAULT_INPUT_METHOD);
 
 		MainMenuActivity.updateConfigFile();
-		MainMenuActivity.waitAssetThread();
 
 		switch (requestCode) {
 		case ACTIVITY_LOAD_ROM:
