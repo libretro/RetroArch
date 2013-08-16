@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
-    android:title="RetroArch 0.9.9.5 - Main Menu" >
+    android:title="RetroArch 0.9.9.6 - Main Menu" >
 
     <PreferenceScreen android:title="TV Mode">
        <intent

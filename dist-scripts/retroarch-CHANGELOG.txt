@@ -1,4 +1,12 @@
 ------------------------------------------------------------------------------
+v0.9.9.6
+------------------------------------------------------------------------------
+* [VBA Next] Fixes serious regressions - most evident in Golden Sun games -
+battle screens etc.
+* [VBA Next] Add a core option to change the control button layout from (left
+to right) B to A to (left to right) A to B.
+
+------------------------------------------------------------------------------
 v0.9.9.5
 ------------------------------------------------------------------------------
 * [Android] Input autodetection fixes -

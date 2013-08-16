@@ -41,9 +41,9 @@
 #ifndef PACKAGE_VERSION
 #ifdef __QNX__
 /* FIXME - avoid too many decimal points in number error */
-#define PACKAGE_VERSION "0995"
+#define PACKAGE_VERSION "0996"
 #else
-#define PACKAGE_VERSION "0.9.9.5"
+#define PACKAGE_VERSION "0.9.9.6"
 #endif
 #endif
 

@@ -10,6 +10,11 @@
         android:layout_height="wrap_content"
         android:layout_margin="40px"
         android:text="
+        r21 (August 16, 2013)\n\n
+        * [VBA Next] Fixes serious regressions - most evident in Golden Sun games -\n
+         battle screens etc.\n
+        * [VBA Next] Add a core option to change the control button layout from (left\n
+         to right) B to A to (left to right) A to B.\n
         r19 (August 15, 2013)\n\n
         * [Android] Input autodetection fixes -\n
          - DualShock3 pad controls fixed\n
