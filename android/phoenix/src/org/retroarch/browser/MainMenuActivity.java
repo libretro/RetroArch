@@ -433,6 +433,7 @@ public class MainMenuActivity extends PreferenceActivity {
 		final Handler handler = new Handler();
 		dialog.setContentView(R.layout.assets);
 		dialog.setCancelable(false);
+		dialog.setTitle("Asset extraction");
 		
 		// Java is fun :)
 		Thread assetsThread = new Thread(new Runnable() {
