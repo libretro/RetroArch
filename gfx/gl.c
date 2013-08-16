@@ -1967,6 +1967,9 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    const char *renderer = (const char*)glGetString(GL_RENDERER);
    RARCH_LOG("[GL]: Vendor: %s, Renderer: %s.\n", vendor, renderer);
 
+   const char *version = (const char*)glGetString(GL_VERSION);
+   RARCH_LOG("[GL]: Version: %s.\n", version);
+
 #ifndef RARCH_CONSOLE
    rglgen_resolve_symbols(gl->ctx_driver->get_proc_address);
 #endif
