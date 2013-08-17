@@ -484,6 +484,29 @@ public class MainMenuActivity extends PreferenceActivity {
 							});
 			alert.show();
 			retval = true;
+		} else if (android.os.Build.MODEL.equals("GAMEMID_BT")) {
+			AlertDialog.Builder alert = new AlertDialog.Builder(this)
+			.setTitle("GameMID detected")
+			.setMessage(message)
+			.setPositiveButton("OK",
+					new DialogInterface.OnClickListener() {
+						@Override
+						public void onClick(DialogInterface dialog,
+								int which) {
+							SharedPreferences prefs = PreferenceManager
+									.getDefaultSharedPreferences(getBaseContext());
+							SharedPreferences.Editor edit = prefs
+									.edit();
+							edit.putBoolean("input_overlay_enable",
+									false);
+							edit.putBoolean("input_autodetect_enable",
+									true);
+							edit.putBoolean("audio_high_latency", true);
+							edit.commit();
+						}
+					});
+	alert.show();
+	retval = true;
 		} else if (android.os.Build.MODEL.equals("OUYA Console")) {
 			AlertDialog.Builder alert = new AlertDialog.Builder(this)
 					.setTitle("OUYA detected")
