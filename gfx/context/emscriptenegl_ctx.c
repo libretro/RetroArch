@@ -30,14 +30,12 @@
 
 #include <EGL/egl.h>
 #include <EGL/eglext.h>
-#include <GLES/gl.h>
 #include <SDL/SDL.h>
 
 static EGLContext g_egl_ctx;
 static EGLSurface g_egl_surf;
 static EGLDisplay g_egl_dpy;
 static EGLConfig g_config;
-static bool g_quit;
 
 static bool g_inited;
 
@@ -58,12 +56,13 @@ static void gfx_ctx_check_window(bool *quit,
    (void)height;
 
    *resize = false;
-   *quit   = g_quit;
+   *quit   = false;
 }
 
 static void gfx_ctx_swap_buffers(void)
 {
-   eglSwapBuffers(g_egl_dpy, g_egl_surf);
+   // no-op in emscripten, no way to force swap/wait for vsync in browsers
+   //eglSwapBuffers(g_egl_dpy, g_egl_surf);
 }
 
 static void gfx_ctx_set_resize(unsigned width, unsigned height)
@@ -209,7 +208,7 @@ static void gfx_ctx_input_driver(const input_driver_t **input, void **input_data
 {
    *input = NULL;
 
-   if (SDL_Init(SDL_INIT_VIDEO) != 0)
+   if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_NOPARACHUTE) != 0)
       return;
 
    void *sdlinput = input_sdl.init();
@@ -228,7 +227,7 @@ static bool gfx_ctx_has_focus(void)
 
 static gfx_ctx_proc_t gfx_ctx_get_proc_address(const char *symbol)
 {
-   return SDL_GL_GetProcAddress(symbol);
+   return eglGetProcAddress(symbol);
 }
 
 static float gfx_ctx_translate_aspect(unsigned width, unsigned height)

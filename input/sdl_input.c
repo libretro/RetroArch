@@ -24,7 +24,7 @@
 #include "../libretro.h"
 #include "input_common.h"
 
-#if !(SDL_MAJOR_VERSION <= 1 && SDL_MINOR_VERSION <= 2)
+#ifdef EMSCRIPTEN
 #define SDL_GetKeyState SDL_GetKeyboardState
 #endif
 
@@ -232,12 +232,7 @@ static void sdl_poll_mouse(sdl_input_t *sdl)
 
 static void sdl_input_poll(void *data)
 {
-#ifdef EMSCRIPTEN
-   SDL_Event event;
-   while (SDL_PollEvent(&event));
-#else
    SDL_PumpEvents();
-#endif
    sdl_input_t *sdl = (sdl_input_t*)data;
 
    input_joypad_poll(sdl->joypad);

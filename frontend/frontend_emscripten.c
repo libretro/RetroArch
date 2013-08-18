@@ -31,12 +31,33 @@
 
 static bool menuloop;
 
-void mainloop(void)
+static void endloop(void)
+{
+   g_extern.system.shutdown = false;
+   menu_free();
+
+   if (g_extern.config_save_on_exit && *g_extern.config_path)
+      config_save_file(g_extern.config_path);
+
+   if (g_extern.main_is_init)
+      rarch_main_deinit();
+
+   rarch_deinit_msg_queue();
+
+#ifdef PERF_TEST
+   rarch_perf_log();
+#endif
+
+   rarch_main_clear_state();
+
+   exit(0);
+}
+
+static void mainloop(void)
 {
    if (g_extern.system.shutdown)
    {
-      RARCH_ERR("Exit...\n");
-      exit(0);
+      endloop();
    }
    else if (menuloop)
    {
