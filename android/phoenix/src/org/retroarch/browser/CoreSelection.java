@@ -12,8 +12,6 @@ import android.provider.Settings;
 import android.widget.*;
 import android.util.Log;
 import android.view.*;
-import android.view.ContextMenu.ContextMenuInfo;
-import android.view.inputmethod.*;
 
 // JELLY_BEAN_MR1 = 17
 
@@ -90,10 +88,6 @@ public class CoreSelection extends Activity implements
 		}
 
 		this.setVolumeControlStream(AudioManager.STREAM_MUSIC);
-
-		if (Build.VERSION.SDK_INT < Build.VERSION_CODES.HONEYCOMB) {
-			this.registerForContextMenu(findViewById(android.R.id.content));
-		}
 	}
 
 	@Override
@@ -130,63 +124,6 @@ public class CoreSelection extends Activity implements
 				finish();
 			}
 			break;
-		}
-	}
-
-	@Override
-	public boolean onCreateOptionsMenu(Menu aMenu) {
-		super.onCreateOptionsMenu(aMenu);
-		getMenuInflater().inflate(R.menu.directory_list, aMenu);
-		return true;
-	}
-
-	public void showPopup(View v) {
-		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB) {
-			PopupMenuAbstract menu = new PopupMenuAbstract(this, v);
-			MenuInflater inflater = menu.getMenuInflater();
-			inflater.inflate(R.menu.context_menu, menu.getMenu());
-			menu.setOnMenuItemClickListener(new PopupMenuAbstract.OnMenuItemClickListener() {
-				@Override
-				public boolean onMenuItemClick(MenuItem item) {
-					return onContextItemSelected(item);
-				}
-
-			});
-			menu.show();
-		} else {
-			this.openContextMenu(findViewById(android.R.id.content));
-		}
-	}
-
-	@Override
-	public void onCreateContextMenu(ContextMenu menu, View v,
-			ContextMenuInfo menuInfo) {
-		super.onCreateContextMenu(menu, v, menuInfo);
-		MenuInflater inflater = getMenuInflater();
-		inflater.inflate(R.menu.context_menu, menu);
-	}
-
-	@Override
-	public boolean onOptionsItemSelected(MenuItem aItem) {
-		switch (aItem.getItemId()) {
-		case R.id.settings:
-			showPopup(findViewById(R.id.settings));
-			return true;
-
-		default:
-			return super.onOptionsItemSelected(aItem);
-		}
-	}
-
-	@Override
-	public boolean onContextItemSelected(MenuItem item) {
-		switch (item.getItemId()) {
-		case R.id.input_method_select:
-			InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
-			imm.showInputMethodPicker();
-			return true;
-		default:
-			return false;
 		}
 	}
 }
