@@ -423,7 +423,7 @@ static void android_input_set_keybinds(void *data, unsigned device,
             break;
          case DEVICE_GAMEMID:
             g_settings.input.device[port] = device;
-            g_settings.input.dpad_emulation[port] = ANALOG_DPAD_NONE;
+            g_settings.input.dpad_emulation[port] = ANALOG_DPAD_DUALANALOG;
             strlcpy(g_settings.input.device_names[port], "GameMID",
                   sizeof(g_settings.input.device_names[port]));
 
