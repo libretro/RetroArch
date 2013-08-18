@@ -4,11 +4,9 @@ import org.retroarch.R;
 
 import java.io.*;
 
-import android.content.*;
 import android.app.*;
 import android.media.AudioManager;
 import android.os.*;
-import android.provider.Settings;
 import android.widget.*;
 import android.util.Log;
 import android.view.*;
@@ -18,8 +16,6 @@ import android.view.*;
 public class CoreSelection extends Activity implements
 		AdapterView.OnItemClickListener {
 	private IconAdapter<ModuleWrapper> adapter;
-	static private final int ACTIVITY_LOAD_ROM = 0;
-	static private String libretro_path;
 	static private final String TAG = "CoreSelection";
 
 	@Override
@@ -94,36 +90,8 @@ public class CoreSelection extends Activity implements
 	public void onItemClick(AdapterView<?> aListView, View aView,
 			int aPosition, long aID) {
 		final ModuleWrapper item = adapter.getItem(aPosition);
-		libretro_path = item.file.getAbsolutePath();
-
-		Intent myIntent;
-		myIntent = new Intent(this, ROMActivity.class);
-		startActivityForResult(myIntent, ACTIVITY_LOAD_ROM);
-	}
-
-	protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-		Intent myIntent;
-		String current_ime = Settings.Secure.getString(getContentResolver(),
-				Settings.Secure.DEFAULT_INPUT_METHOD);
-
-		MainMenuActivity.updateConfigFile();
-
-		switch (requestCode) {
-		case ACTIVITY_LOAD_ROM:
-			if (data.getStringExtra("PATH") != null) {
-				Toast.makeText(this,
-						"Loading: [" + data.getStringExtra("PATH") + "]...",
-						Toast.LENGTH_SHORT).show();
-				myIntent = new Intent(this, RetroActivity.class);
-				myIntent.putExtra("ROM", data.getStringExtra("PATH"));
-				myIntent.putExtra("LIBRETRO", libretro_path);
-				myIntent.putExtra("CONFIGFILE",
-						MainMenuActivity.getDefaultConfigPath());
-				myIntent.putExtra("IME", current_ime);
-				startActivity(myIntent);
-				finish();
-			}
-			break;
-		}
+		MainMenuActivity.getInstance().setModule(item.file.getAbsolutePath(), item.getText());
+		MainMenuActivity.getInstance().updateConfigFile();
+		finish();
 	}
 }

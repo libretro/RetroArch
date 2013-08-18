@@ -11,7 +11,7 @@ public class RetroTVMode extends Activity {
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		
-		MainMenuActivity.updateConfigFile();
+		MainMenuActivity.getInstance().updateConfigFile();
 		
 		Intent myIntent = new Intent(this, RetroActivity.class);
 		String current_ime = Settings.Secure.getString(getContentResolver(), Settings.Secure.DEFAULT_INPUT_METHOD);

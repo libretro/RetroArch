@@ -9,6 +9,7 @@ import android.app.AlertDialog;
 import android.app.Dialog;
 import android.content.Context;
 import android.content.DialogInterface;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager.NameNotFoundException;
 import android.content.res.AssetManager;
@@ -18,6 +19,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.preference.PreferenceActivity;
 import android.preference.PreferenceManager;
+import android.provider.Settings;
 import android.util.Log;
 import android.view.Display;
 import android.view.WindowManager;
@@ -25,7 +27,10 @@ import android.widget.Toast;
 
 public class MainMenuActivity extends PreferenceActivity {
 	private static MainMenuActivity instance = null;
+	static private final int ACTIVITY_LOAD_ROM = 0;
 	static private final String TAG = "MainMenu";
+	static private String libretro_path;
+	static private String libretro_name;
 
 	@SuppressWarnings("deprecation")
 	@Override
@@ -65,6 +70,21 @@ public class MainMenuActivity extends PreferenceActivity {
 								});
 				alert.show();
 			}
+		}
+		
+		if (prefs.getString("libretro_path", "").isEmpty() == false) {
+			libretro_path = prefs.getString("libretro_path", "");
+			setCoreTitle("No core");
+			
+			if (prefs.getString("libretro_name", "").isEmpty() == false) {
+				libretro_name = prefs.getString("libretro_name", "No core");
+				setCoreTitle(libretro_name);
+			}
+		}
+		else {
+			libretro_path = MainMenuActivity.getInstance().getApplicationInfo().nativeLibraryDir;
+			libretro_name = "No core";
+			setCoreTitle("No core");
 		}
 	}
 
@@ -179,7 +199,7 @@ public class MainMenuActivity extends PreferenceActivity {
 			return "/mnt/sd/retroarch.cfg";
 	}
 
-	public static void updateConfigFile() {
+	public void updateConfigFile() {
 		ConfigFile config;
 		try {
 			config = new ConfigFile(new File(getDefaultConfigPath()));
@@ -190,8 +210,11 @@ public class MainMenuActivity extends PreferenceActivity {
 		SharedPreferences prefs = PreferenceManager
 				.getDefaultSharedPreferences(MainMenuActivity.getInstance()
 						.getBaseContext());
-		config.setString("libretro_path", MainMenuActivity.getInstance()
-				.getApplicationInfo().nativeLibraryDir);
+		
+		config.setString("libretro_path", libretro_path);
+		config.setString("libretro_name", libretro_name);
+		setCoreTitle(libretro_name);
+		
 		config.setBoolean("audio_rate_control",
 				prefs.getBoolean("audio_rate_control", true));
 		config.setInt("audio_out_rate",
@@ -443,6 +466,25 @@ public class MainMenuActivity extends PreferenceActivity {
 		
 		dialog.show();
 	}
+	
+	public void setModule(String core_path, String core_name) {
+		libretro_path = core_path;	
+		libretro_name = core_name;	
+		File libretro_path_file = new File(core_path);
+		setCoreTitle((libretro_path_file.isDirectory() == true) ? "No core" : core_name);
+		
+		SharedPreferences prefs = PreferenceManager
+				.getDefaultSharedPreferences(getBaseContext());
+		SharedPreferences.Editor edit = prefs
+				.edit();
+		edit.putString("libretro_path", libretro_path);
+		edit.putString("libretro_name", libretro_name);
+		edit.commit();
+	}
+	
+	public void setCoreTitle(String core_name) {
+		setTitle("RetroArch : " + core_name);
+	}
 
 	boolean detectDevice(boolean show_dialog) {
 		boolean retval = false;
@@ -558,4 +600,41 @@ public class MainMenuActivity extends PreferenceActivity {
 	protected void onStart() {
 		super.onStart();
 	}
+	
+    @Override
+    public void startActivity(Intent intent) {
+        if (intent.getComponent().getClassName().equals("org.retroarch.browser.ROMActivity")) {
+        	if (new File(libretro_path).isDirectory() == false) {
+            super.startActivityForResult(intent, ACTIVITY_LOAD_ROM);
+        	} else {
+				Toast.makeText(this,
+						"Go to 'Load Core' and select a core first.",
+						Toast.LENGTH_SHORT).show();
+        	}
+        } else {
+            super.startActivity(intent);
+        }
+    }
+
+    @Override
+    protected void onActivityResult(int reqCode, int resCode, Intent data) {
+        if (reqCode == ACTIVITY_LOAD_ROM) {
+        	if (data.getStringExtra("PATH") != null) {
+        		updateConfigFile();
+        		Intent myIntent;
+        		String current_ime = Settings.Secure.getString(getContentResolver(),
+        				Settings.Secure.DEFAULT_INPUT_METHOD);
+				Toast.makeText(this,
+						"Loading: [" + data.getStringExtra("PATH") + "]...",
+						Toast.LENGTH_SHORT).show();
+				myIntent = new Intent(this, RetroActivity.class);
+				myIntent.putExtra("ROM", data.getStringExtra("PATH"));
+				myIntent.putExtra("LIBRETRO", libretro_path);
+				myIntent.putExtra("CONFIGFILE",
+						MainMenuActivity.getDefaultConfigPath());
+				myIntent.putExtra("IME", current_ime);
+				startActivity(myIntent);
+			}
+        }
+    }
 }

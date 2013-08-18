@@ -62,12 +62,14 @@ public class HistorySelection extends Activity implements
 		final HistoryWrapper item = adapter.getItem(aPosition);
 		final String gamePath = item.getGamePath();
 		final String corePath = item.getCorePath();
+		
+		MainMenuActivity.getInstance().setModule(corePath, item.getCoreName());
 
 		Intent myIntent;
 		String current_ime = Settings.Secure.getString(getContentResolver(),
 				Settings.Secure.DEFAULT_INPUT_METHOD);
 
-		MainMenuActivity.updateConfigFile();
+		MainMenuActivity.getInstance().updateConfigFile();
 
 		Toast.makeText(this, "Loading: [" + gamePath + "] ...",
 				Toast.LENGTH_SHORT).show();
