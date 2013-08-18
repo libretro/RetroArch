@@ -123,6 +123,10 @@
     </PreferenceScreen>
     <PreferenceScreen android:title="Input Options" >
        <PreferenceCategory android:title="General" >
+            <CheckBoxPreference android:title="Enable global configuration"
+                android:summary="Enable global settings for all cores. Leave disabled if you want per-core settings."
+                android:key="global_config_enable"
+                android:defaultValue="true"/>
             <ListPreference
                 android:entries="@array/back_options"
                 android:entryValues="@array/back_options_values"

@@ -168,35 +168,52 @@ public class MainMenuActivity extends PreferenceActivity {
 	public static String getDefaultConfigPath() {
 		String internal = System.getenv("INTERNAL_STORAGE");
 		String external = System.getenv("EXTERNAL_STORAGE");
+		
+		SharedPreferences prefs = PreferenceManager
+				.getDefaultSharedPreferences(MainMenuActivity.getInstance()
+						.getBaseContext());
+		
+		boolean global_config_enable = prefs.getBoolean("global_config_enable", true);
+		boolean config_same_as_native_lib_dir = libretro_path.equals(MainMenuActivity.getInstance().getApplicationInfo().nativeLibraryDir);
+		String append_path;
+		if (!global_config_enable && (config_same_as_native_lib_dir == false)) {
+			String sanitized_name = libretro_path.substring(libretro_path.lastIndexOf("/")+1,libretro_path.lastIndexOf("."));
+			sanitized_name = sanitized_name.replace("neon", "");
+			sanitized_name = sanitized_name.replace("libretro_","");
+			append_path = File.separator + sanitized_name + "retroarch.cfg";
+		}
+		else {
+			append_path = File.separator + "retroarch.cfg";
+		}
 
 		if (external != null) {
-			String confPath = external + File.separator + "retroarch.cfg";
+			String confPath = external + append_path;
 			if (new File(confPath).exists())
 				return confPath;
 		} else if (internal != null) {
-			String confPath = internal + File.separator + "retroarch.cfg";
+			String confPath = internal + append_path;
 			if (new File(confPath).exists())
 				return confPath;
 		} else {
-			String confPath = "/mnt/extsd/retroarch.cfg";
+			String confPath = "/mnt/extsd" + append_path;
 			if (new File(confPath).exists())
 				return confPath;
 		}
 
 		if (internal != null
-				&& new File(internal + File.separator + "retroarch.cfg")
+				&& new File(internal + append_path)
 						.canWrite())
-			return internal + File.separator + "retroarch.cfg";
+			return internal + append_path;
 		else if (external != null
-				&& new File(internal + File.separator + "retroarch.cfg")
+				&& new File(internal + append_path)
 						.canWrite())
-			return external + File.separator + "retroarch.cfg";
+			return external + append_path;
 		else if ((MainMenuActivity.getInstance().getApplicationInfo().dataDir) != null)
 			return (MainMenuActivity.getInstance().getApplicationInfo().dataDir)
-					+ File.separator + "retroarch.cfg";
+					+ append_path;
 		else
 			// emergency fallback, all else failed
-			return "/mnt/sd/retroarch.cfg";
+			return "/mnt/sd" + append_path;
 	}
 
 	public void updateConfigFile() {
@@ -215,6 +232,10 @@ public class MainMenuActivity extends PreferenceActivity {
 		config.setString("libretro_name", libretro_name);
 		setCoreTitle(libretro_name);
 		
+		config.setString("rgui_browser_directory",
+				prefs.getString("rgui_browser_directory", ""));
+		config.setBoolean("global_config_enable",
+				prefs.getBoolean("global_config_enable", true));
 		config.setBoolean("audio_rate_control",
 				prefs.getBoolean("audio_rate_control", true));
 		config.setInt("audio_out_rate",
