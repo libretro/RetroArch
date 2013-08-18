@@ -115,6 +115,9 @@ static PFNGLEGLIMAGETARGETTEXTURE2DOESPROC pglEGLImageTargetTexture2DOES;
 
 static bool load_eglimage_proc(gl_t *gl)
 {
+   if (!gl_query_extension("OES_EGL_image"))
+      return false;
+
    LOAD_GL_SYM(EGLImageTargetTexture2DOES);
    return pglEGLImageTargetTexture2DOES;
 }
