@@ -49,7 +49,7 @@ public class MainMenuActivity extends PreferenceActivity {
 				AlertDialog.Builder alert = new AlertDialog.Builder(this)
 						.setTitle("Welcome to RetroArch")
 						.setMessage(
-								"This is your first time starting up RetroArch. RetroArch will now be preconfigured for the best possible gameplay experience. Please be aware that it might take some time until all shader and overlay assets are extracted ...")
+								"This is your first time starting up RetroArch. RetroArch will now be preconfigured for the best possible gameplay experience.")
 						.setPositiveButton("OK",
 								new DialogInterface.OnClickListener() {
 									@Override
@@ -63,13 +63,6 @@ public class MainMenuActivity extends PreferenceActivity {
 										edit.commit();
 									}
 								});
-				alert.show();
-			} else {
-				AlertDialog.Builder alert = new AlertDialog.Builder(this)
-						.setTitle("Welcome to RetroArch")
-						.setMessage(
-								"This is your first time starting up RetroArch. Please be aware that it might take some time until all shader and overlay assets are extracted ...")
-						.setPositiveButton("OK", null);
 				alert.show();
 			}
 		}
