@@ -664,8 +664,9 @@ bool config_load_file(const char *path)
    if (!strcmp(g_extern.overlay_dir, "default"))
       *g_extern.overlay_dir = '\0';
 
-   CONFIG_GET_FLOAT(input.overlay_opacity, "overlay_opacity");
-   CONFIG_GET_FLOAT(input.overlay_scale, "overlay_scale");
+   CONFIG_GET_PATH(input.overlay, "input_overlay");
+   CONFIG_GET_FLOAT(input.overlay_opacity, "input_overlay_opacity");
+   CONFIG_GET_FLOAT(input.overlay_scale, "input_overlay_scale");
 #endif
 
    CONFIG_GET_BOOL(rewind_enable, "rewind_enable");
@@ -702,9 +703,6 @@ bool config_load_file(const char *path)
    CONFIG_GET_INT(input.turbo_period, "input_turbo_period");
    CONFIG_GET_INT(input.turbo_duty_cycle, "input_duty_cycle");
 
-   CONFIG_GET_PATH(input.overlay, "input_overlay");
-   CONFIG_GET_FLOAT(input.overlay_opacity, "input_overlay_opacity");
-   CONFIG_GET_FLOAT(input.overlay_scale, "input_overlay_scale");
    CONFIG_GET_BOOL(input.debug_enable, "input_debug_enable");
 
    CONFIG_GET_BOOL(input.autodetect_enable, "input_autodetect_enable");
@@ -1014,8 +1012,9 @@ bool config_save_file(const char *path)
    else
       config_set_string(conf, "overlay_directory", "default");
    
-   config_set_float(conf, "overlay_opacity", g_settings.input.overlay_opacity);
-   config_set_float(conf, "overlay_scale", g_settings.input.overlay_scale);
+   config_set_string(conf, "input_overlay", g_settings.input.overlay);
+   config_set_float(conf, "input_overlay_opacity", g_settings.input.overlay_opacity);
+   config_set_float(conf, "input_overlay_scale", g_settings.input.overlay_scale);
 #endif
 
 #ifdef ANDROID
