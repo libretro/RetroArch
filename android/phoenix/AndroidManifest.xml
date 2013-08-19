@@ -19,7 +19,7 @@
         <activity android:name=".browser.HistorySelection"></activity>
         <activity android:name=".browser.DisplayRefreshRateTest"></activity>
         <activity android:name=".browser.RefreshRateSetOS"></activity>
-        <activity android:name=".browser.MainMenuActivity">
+        <activity android:name=".browser.MainMenuActivity" android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -42,7 +42,7 @@
         <activity android:name=".browser.StateDirActivity"></activity>
         <activity android:name=".browser.SystemDirActivity"></activity>
         
-        <activity android:name=".browser.RetroActivity" android:configChanges="mcc|mnc|locale|touchscreen|keyboard|keyboardHidden|navigation|orientation|screenLayout|uiMode|screenSize|smallestScreenSize|fontScale" android:theme="@android:style/Theme.NoTitleBar.Fullscreen" android:exported="true" >
+        <activity android:name=".browser.RetroActivity" android:configChanges="mcc|mnc|locale|touchscreen|keyboard|keyboardHidden|navigation|orientation|screenLayout|uiMode|screenSize|smallestScreenSize|fontScale" android:theme="@android:style/Theme.NoTitleBar.Fullscreen" >
         	<meta-data android:name="android.app.lib_name" android:value="retroarch-activity" />
          	<meta-data android:name="android.app.func_name" android:value="ANativeActivity_onCreate" />
         </activity>
