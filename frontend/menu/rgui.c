@@ -266,6 +266,10 @@ rgui_handle_t *rgui_init(void)
       aspectratio_lut[ASPECT_RATIO_CUSTOM].value =
          (float)custom->width / custom->height;
    }
+   else if (DEFAULT_ASPECT_RATIO > 0.0f)
+      aspectratio_lut[ASPECT_RATIO_CUSTOM].value = DEFAULT_ASPECT_RATIO;
+   else
+      aspectratio_lut[ASPECT_RATIO_CUSTOM].value = 4.0f / 3.0f; // Something arbitrary
 
    return rgui;
 }
