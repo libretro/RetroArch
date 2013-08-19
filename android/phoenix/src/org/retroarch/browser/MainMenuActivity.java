@@ -36,6 +36,13 @@ public class MainMenuActivity extends PreferenceActivity {
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
+		Intent startedByIntent = getIntent();
+		if (null != startedByIntent.getStringExtra("ROM")
+				&& null != startedByIntent.getStringExtra("LIBRETRO")) {
+			loadRomExternal(startedByIntent.getStringExtra("ROM"),
+					startedByIntent.getStringExtra("LIBRETRO"));
+			return;
+		}
 		instance = this;
 		addPreferencesFromResource(R.xml.prefs);
 		PreferenceManager.setDefaultValues(this, R.xml.prefs, false);
@@ -45,7 +52,7 @@ public class MainMenuActivity extends PreferenceActivity {
 				.getDefaultSharedPreferences(getBaseContext());
 
 		extractAssets();
-		
+
 		if (!prefs.getBoolean("first_time_refreshrate_calculate", false)) {
 			prefs.edit().putBoolean("first_time_refreshrate_calculate", true)
 					.commit();
@@ -71,17 +78,16 @@ public class MainMenuActivity extends PreferenceActivity {
 				alert.show();
 			}
 		}
-		
+
 		if (prefs.getString("libretro_path", "").isEmpty() == false) {
 			libretro_path = prefs.getString("libretro_path", "");
 			setCoreTitle("No core");
-			
+
 			if (prefs.getString("libretro_name", "").isEmpty() == false) {
 				libretro_name = prefs.getString("libretro_name", "No core");
 				setCoreTitle(libretro_name);
 			}
-		}
-		else {
+		} else {
 			libretro_path = MainMenuActivity.getInstance().getApplicationInfo().nativeLibraryDir;
 			libretro_name = "No core";
 			setCoreTitle("No core");
@@ -168,21 +174,24 @@ public class MainMenuActivity extends PreferenceActivity {
 	public static String getDefaultConfigPath() {
 		String internal = System.getenv("INTERNAL_STORAGE");
 		String external = System.getenv("EXTERNAL_STORAGE");
-		
+
 		SharedPreferences prefs = PreferenceManager
 				.getDefaultSharedPreferences(MainMenuActivity.getInstance()
 						.getBaseContext());
-		
-		boolean global_config_enable = prefs.getBoolean("global_config_enable", true);
-		boolean config_same_as_native_lib_dir = libretro_path.equals(MainMenuActivity.getInstance().getApplicationInfo().nativeLibraryDir);
+
+		boolean global_config_enable = prefs.getBoolean("global_config_enable",
+				true);
+		boolean config_same_as_native_lib_dir = libretro_path
+				.equals(MainMenuActivity.getInstance().getApplicationInfo().nativeLibraryDir);
 		String append_path;
 		if (!global_config_enable && (config_same_as_native_lib_dir == false)) {
-			String sanitized_name = libretro_path.substring(libretro_path.lastIndexOf("/")+1,libretro_path.lastIndexOf("."));
+			String sanitized_name = libretro_path.substring(
+					libretro_path.lastIndexOf("/") + 1,
+					libretro_path.lastIndexOf("."));
 			sanitized_name = sanitized_name.replace("neon", "");
-			sanitized_name = sanitized_name.replace("libretro_","");
+			sanitized_name = sanitized_name.replace("libretro_", "");
 			append_path = File.separator + sanitized_name + "retroarch.cfg";
-		}
-		else {
+		} else {
 			append_path = File.separator + "retroarch.cfg";
 		}
 
@@ -200,13 +209,10 @@ public class MainMenuActivity extends PreferenceActivity {
 				return confPath;
 		}
 
-		if (internal != null
-				&& new File(internal + append_path)
-						.canWrite())
+		if (internal != null && new File(internal + append_path).canWrite())
 			return internal + append_path;
 		else if (external != null
-				&& new File(internal + append_path)
-						.canWrite())
+				&& new File(internal + append_path).canWrite())
 			return external + append_path;
 		else if ((MainMenuActivity.getInstance().getApplicationInfo().dataDir) != null)
 			return (MainMenuActivity.getInstance().getApplicationInfo().dataDir)
@@ -227,11 +233,11 @@ public class MainMenuActivity extends PreferenceActivity {
 		SharedPreferences prefs = PreferenceManager
 				.getDefaultSharedPreferences(MainMenuActivity.getInstance()
 						.getBaseContext());
-		
+
 		config.setString("libretro_path", libretro_path);
 		config.setString("libretro_name", libretro_name);
 		setCoreTitle(libretro_name);
-		
+
 		config.setString("rgui_browser_directory",
 				prefs.getString("rgui_browser_directory", ""));
 		config.setBoolean("global_config_enable",
@@ -333,8 +339,9 @@ public class MainMenuActivity extends PreferenceActivity {
 
 		config.setBoolean("video_font_enable",
 				prefs.getBoolean("video_font_enable", true));
-		
-		config.setString("game_history_path", MainMenuActivity.getInstance().getApplicationInfo().dataDir + "/retroarch-history.txt");
+
+		config.setString("game_history_path", MainMenuActivity.getInstance()
+				.getApplicationInfo().dataDir + "/retroarch-history.txt");
 
 		for (int i = 1; i <= 4; i++) {
 			final String btns[] = { "up", "down", "left", "right", "a", "b",
@@ -390,20 +397,20 @@ public class MainMenuActivity extends PreferenceActivity {
 			writer.close();
 		}
 	}
-	
+
 	private int getVersionCode() {
 		int version = 0;
 		try {
 			version = getPackageManager().getPackageInfo(getPackageName(), 0).versionCode;
 		} catch (NameNotFoundException e) {
 		}
-		
+
 		return version;
 	}
-	
+
 	private boolean areAssetsExtracted() {
 		int version = getVersionCode();
-		
+
 		try {
 			String dataDir = getApplicationInfo().dataDir;
 			File cacheVersion = new File(dataDir, ".cacheversion");
@@ -428,10 +435,10 @@ public class MainMenuActivity extends PreferenceActivity {
 			Log.e(TAG, "Failed to extract assets to cache.");
 			return false;
 		}
-		
+
 		return false;
 	}
-	
+
 	private void extractAssetsThread() {
 		try {
 			AssetManager assets = getAssets();
@@ -465,13 +472,13 @@ public class MainMenuActivity extends PreferenceActivity {
 	private void extractAssets() {
 		if (areAssetsExtracted())
 			return;
-		
+
 		final Dialog dialog = new Dialog(this);
 		final Handler handler = new Handler();
 		dialog.setContentView(R.layout.assets);
 		dialog.setCancelable(false);
 		dialog.setTitle("Asset extraction");
-		
+
 		// Java is fun :)
 		Thread assetsThread = new Thread(new Runnable() {
 			public void run() {
@@ -484,36 +491,37 @@ public class MainMenuActivity extends PreferenceActivity {
 			}
 		});
 		assetsThread.start();
-		
+
 		dialog.show();
 	}
-	
+
 	public void setModule(String core_path, String core_name) {
-		libretro_path = core_path;	
-		libretro_name = core_name;	
+		libretro_path = core_path;
+		libretro_name = core_name;
 		File libretro_path_file = new File(core_path);
-		setCoreTitle((libretro_path_file.isDirectory() == true) ? "No core" : core_name);
-		
+		setCoreTitle((libretro_path_file.isDirectory() == true) ? "No core"
+				: core_name);
+
 		SharedPreferences prefs = PreferenceManager
 				.getDefaultSharedPreferences(getBaseContext());
-		SharedPreferences.Editor edit = prefs
-				.edit();
+		SharedPreferences.Editor edit = prefs.edit();
 		edit.putString("libretro_path", libretro_path);
 		edit.putString("libretro_name", libretro_name);
 		edit.commit();
 	}
-	
+
 	public void setCoreTitle(String core_name) {
 		setTitle("RetroArch : " + core_name);
 	}
 
 	boolean detectDevice(boolean show_dialog) {
 		boolean retval = false;
-		
-		boolean mentionPlayStore = !android.os.Build.MODEL.equals("OUYA Console");
-		final String message = "The ideal configuration options for your device will now be preconfigured.\n\nNOTE: For optimal performance, turn off Google Account sync, " +
-				(mentionPlayStore ? "Google Play Store auto-updates, " : "") +
-				"GPS and Wi-Fi in your Android settings menu.";
+
+		boolean mentionPlayStore = !android.os.Build.MODEL
+				.equals("OUYA Console");
+		final String message = "The ideal configuration options for your device will now be preconfigured.\n\nNOTE: For optimal performance, turn off Google Account sync, "
+				+ (mentionPlayStore ? "Google Play Store auto-updates, " : "")
+				+ "GPS and Wi-Fi in your Android settings menu.";
 
 		Log.i("Device MODEL", android.os.Build.MODEL);
 		if (android.os.Build.MODEL.equals("SHIELD")) {
@@ -542,27 +550,27 @@ public class MainMenuActivity extends PreferenceActivity {
 			retval = true;
 		} else if (android.os.Build.MODEL.equals("GAMEMID_BT")) {
 			AlertDialog.Builder alert = new AlertDialog.Builder(this)
-			.setTitle("GameMID detected")
-			.setMessage(message)
-			.setPositiveButton("OK",
-					new DialogInterface.OnClickListener() {
-						@Override
-						public void onClick(DialogInterface dialog,
-								int which) {
-							SharedPreferences prefs = PreferenceManager
-									.getDefaultSharedPreferences(getBaseContext());
-							SharedPreferences.Editor edit = prefs
-									.edit();
-							edit.putBoolean("input_overlay_enable",
-									false);
-							edit.putBoolean("input_autodetect_enable",
-									true);
-							edit.putBoolean("audio_high_latency", true);
-							edit.commit();
-						}
-					});
-	alert.show();
-	retval = true;
+					.setTitle("GameMID detected")
+					.setMessage(message)
+					.setPositiveButton("OK",
+							new DialogInterface.OnClickListener() {
+								@Override
+								public void onClick(DialogInterface dialog,
+										int which) {
+									SharedPreferences prefs = PreferenceManager
+											.getDefaultSharedPreferences(getBaseContext());
+									SharedPreferences.Editor edit = prefs
+											.edit();
+									edit.putBoolean("input_overlay_enable",
+											false);
+									edit.putBoolean("input_autodetect_enable",
+											true);
+									edit.putBoolean("audio_high_latency", true);
+									edit.commit();
+								}
+							});
+			alert.show();
+			retval = true;
 		} else if (android.os.Build.MODEL.equals("OUYA Console")) {
 			AlertDialog.Builder alert = new AlertDialog.Builder(this)
 					.setTitle("OUYA detected")
@@ -621,30 +629,33 @@ public class MainMenuActivity extends PreferenceActivity {
 	protected void onStart() {
 		super.onStart();
 	}
-	
-    @Override
-    public void startActivity(Intent intent) {
-        if (intent.getComponent().getClassName().equals("org.retroarch.browser.ROMActivity")) {
-        	if (new File(libretro_path).isDirectory() == false) {
-            super.startActivityForResult(intent, ACTIVITY_LOAD_ROM);
-        	} else {
+
+	@Override
+	public void startActivity(Intent intent) {
+		if (intent.getComponent().getClassName()
+				.equals("org.retroarch.browser.ROMActivity")) {
+			if (new File(libretro_path).isDirectory() == false) {
+				super.startActivityForResult(intent, ACTIVITY_LOAD_ROM);
+			} else {
 				Toast.makeText(this,
 						"Go to 'Load Core' and select a core first.",
 						Toast.LENGTH_SHORT).show();
-        	}
-        } else {
-            super.startActivity(intent);
-        }
-    }
+			}
+		} else {
+			super.startActivity(intent);
+		}
+	}
 
-    @Override
-    protected void onActivityResult(int reqCode, int resCode, Intent data) {
-        if (reqCode == ACTIVITY_LOAD_ROM) {
-        	if (data.getStringExtra("PATH") != null) {
-        		updateConfigFile();
-        		Intent myIntent;
-        		String current_ime = Settings.Secure.getString(getContentResolver(),
-        				Settings.Secure.DEFAULT_INPUT_METHOD);
+	@Override
+	protected void onActivityResult(int reqCode, int resCode, Intent data) {
+		switch (reqCode) {
+		case ACTIVITY_LOAD_ROM: {
+			if (data.getStringExtra("PATH") != null) {
+				updateConfigFile();
+				Intent myIntent;
+				String current_ime = Settings.Secure.getString(
+						getContentResolver(),
+						Settings.Secure.DEFAULT_INPUT_METHOD);
 				Toast.makeText(this,
 						"Loading: [" + data.getStringExtra("PATH") + "]...",
 						Toast.LENGTH_SHORT).show();
@@ -656,6 +667,24 @@ public class MainMenuActivity extends PreferenceActivity {
 				myIntent.putExtra("IME", current_ime);
 				startActivity(myIntent);
 			}
-        }
-    }
+		}
+			break;
+		}
+	}
+
+	private void loadRomExternal(String rom, String core) {
+
+		updateConfigFile();
+		Intent myIntent = new Intent(this, RetroActivity.class);
+		String current_ime = Settings.Secure.getString(getContentResolver(),
+				Settings.Secure.DEFAULT_INPUT_METHOD);
+		Toast.makeText(this, "Loading: [" + rom + "]...", Toast.LENGTH_SHORT)
+				.show();
+		myIntent.putExtra("ROM", rom);
+		myIntent.putExtra("LIBRETRO", core);
+		myIntent.putExtra("CONFIGFILE", MainMenuActivity.getDefaultConfigPath());
+		myIntent.putExtra("IME", current_ime);
+		startActivity(myIntent);
+
+	}
 }
