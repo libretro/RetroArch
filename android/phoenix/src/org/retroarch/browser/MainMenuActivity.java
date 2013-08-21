@@ -37,6 +37,7 @@ public class MainMenuActivity extends PreferenceActivity {
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		instance = this;
+
 		addPreferencesFromResource(R.xml.prefs);
 		PreferenceManager.setDefaultValues(this, R.xml.prefs, false);
 		this.setVolumeControlStream(AudioManager.STREAM_MUSIC);
@@ -85,18 +86,18 @@ public class MainMenuActivity extends PreferenceActivity {
 			libretro_name = "No core";
 			setCoreTitle("No core");
 		}
+
 		Intent startedByIntent = getIntent();
 		if (null != startedByIntent.getStringExtra("ROM")
 				&& null != startedByIntent.getStringExtra("LIBRETRO")) {
-			if (prefs.getInt("loadRomExternal", 0) == 0) {
+			if (null==savedInstanceState || !savedInstanceState.getBoolean("romexec"))
 				loadRomExternal(startedByIntent.getStringExtra("ROM"),
 						startedByIntent.getStringExtra("LIBRETRO"));
-				prefs.edit().putInt("loadRomExternal", 1).commit();
-			} else{
-				prefs.edit().putInt("loadRomExternal", 0).commit();
+			else
 				super.onBackPressed();
-			}
+			// return;
 		}
+
 	}
 
 	public static MainMenuActivity getInstance() {
@@ -675,6 +676,12 @@ public class MainMenuActivity extends PreferenceActivity {
 		}
 			break;
 		}
+	}
+
+	@Override
+	protected void onSaveInstanceState(Bundle data) {
+		super.onSaveInstanceState(data);
+		data.putBoolean("romexec", true);
 	}
 
 	private void loadRomExternal(String rom, String core) {
