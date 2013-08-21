@@ -90,12 +90,13 @@ public class MainMenuActivity extends PreferenceActivity {
 		Intent startedByIntent = getIntent();
 		if (null != startedByIntent.getStringExtra("ROM")
 				&& null != startedByIntent.getStringExtra("LIBRETRO")) {
-			if (null==savedInstanceState || !savedInstanceState.getBoolean("romexec"))
+			if (null == savedInstanceState
+					|| !savedInstanceState.getBoolean("romexec"))
 				loadRomExternal(startedByIntent.getStringExtra("ROM"),
 						startedByIntent.getStringExtra("LIBRETRO"));
-			else finish();
+			else
+				finish();
 		}
-
 	}
 
 	public static MainMenuActivity getInstance() {
@@ -683,7 +684,6 @@ public class MainMenuActivity extends PreferenceActivity {
 	}
 
 	private void loadRomExternal(String rom, String core) {
-
 		updateConfigFile();
 		Intent myIntent = new Intent(this, RetroActivity.class);
 		String current_ime = Settings.Secure.getString(getContentResolver(),
@@ -692,9 +692,8 @@ public class MainMenuActivity extends PreferenceActivity {
 				.show();
 		myIntent.putExtra("ROM", rom);
 		myIntent.putExtra("LIBRETRO", core);
-		myIntent.putExtra("CONFIGFILE", MainMenuActivity.getDefaultConfigPath());
+		myIntent.putExtra("CONFIGFILE", getDefaultConfigPath());
 		myIntent.putExtra("IME", current_ime);
 		startActivity(myIntent);
-
 	}
 }
