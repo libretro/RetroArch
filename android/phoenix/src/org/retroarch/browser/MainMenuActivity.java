@@ -41,7 +41,6 @@ public class MainMenuActivity extends PreferenceActivity {
 				&& null != startedByIntent.getStringExtra("LIBRETRO")) {
 			loadRomExternal(startedByIntent.getStringExtra("ROM"),
 					startedByIntent.getStringExtra("LIBRETRO"));
-			return;
 		}
 		instance = this;
 		addPreferencesFromResource(R.xml.prefs);
