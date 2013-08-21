@@ -36,12 +36,6 @@ public class MainMenuActivity extends PreferenceActivity {
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
-		Intent startedByIntent = getIntent();
-		if (null != startedByIntent.getStringExtra("ROM")
-				&& null != startedByIntent.getStringExtra("LIBRETRO")) {
-			loadRomExternal(startedByIntent.getStringExtra("ROM"),
-					startedByIntent.getStringExtra("LIBRETRO"));
-		}
 		instance = this;
 		addPreferencesFromResource(R.xml.prefs);
 		PreferenceManager.setDefaultValues(this, R.xml.prefs, false);
@@ -90,6 +84,18 @@ public class MainMenuActivity extends PreferenceActivity {
 			libretro_path = MainMenuActivity.getInstance().getApplicationInfo().nativeLibraryDir;
 			libretro_name = "No core";
 			setCoreTitle("No core");
+		}
+		Intent startedByIntent = getIntent();
+		if (null != startedByIntent.getStringExtra("ROM")
+				&& null != startedByIntent.getStringExtra("LIBRETRO")) {
+			if (prefs.getInt("loadRomExternal", 0) == 0) {
+				loadRomExternal(startedByIntent.getStringExtra("ROM"),
+						startedByIntent.getStringExtra("LIBRETRO"));
+				prefs.edit().putInt("loadRomExternal", 1).commit();
+			} else{
+				prefs.edit().putInt("loadRomExternal", 0).commit();
+				super.onBackPressed();
+			}
 		}
 	}
 
