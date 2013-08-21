@@ -93,9 +93,7 @@ public class MainMenuActivity extends PreferenceActivity {
 			if (null==savedInstanceState || !savedInstanceState.getBoolean("romexec"))
 				loadRomExternal(startedByIntent.getStringExtra("ROM"),
 						startedByIntent.getStringExtra("LIBRETRO"));
-			else
-				super.onBackPressed();
-			// return;
+			else finish();
 		}
 
 	}
