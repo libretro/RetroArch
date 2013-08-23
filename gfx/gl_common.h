@@ -207,6 +207,7 @@ typedef struct gl
    const gl_font_renderer_t *font_ctx;
    const font_renderer_driver_t *font_driver;
    GLuint font_tex;
+   GLint max_font_size;
    int font_tex_w, font_tex_h;
    uint32_t *font_tex_buf;
    char font_last_msg[256];

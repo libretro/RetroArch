@@ -35,6 +35,7 @@ static bool gl_init_font(void *data, const char *font_path, float font_size)
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
       glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
+      glGetIntegerv(GL_MAX_TEXTURE_SIZE, &gl->max_font_size);
    }
    else
    {
@@ -123,6 +124,11 @@ static void adjust_power_of_two(gl_t *gl, struct font_rect *geom)
    // Some systems really hate NPOT textures.
    geom->pot_width  = next_pow2(geom->width);
    geom->pot_height = next_pow2(geom->height);
+
+   if (geom->pot_width > gl->max_font_size)
+      geom->pot_width = gl->max_font_size;
+   if (geom->pot_height > gl->max_font_size)
+      geom->pot_height = gl->max_font_size;
 
    if ((geom->pot_width > gl->font_tex_w) || (geom->pot_height > gl->font_tex_h))
    {
