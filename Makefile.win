@@ -44,7 +44,8 @@ JOBJ := conf/config_file.o \
 	compat/compat.o \
 	file_path.o \
 	tools/input_common_joyconfig.o \
-	input/dinput.o
+	input/dinput.o \
+	input/winxinput_joypad.o
 
 CC = gcc
 CXX = g++
@@ -62,6 +63,8 @@ HAVE_STDIN_CMD = 1
 HAVE_THREADS = 1
 HAVE_RGUI = 1
 DYNAMIC = 1
+
+USE_WINXINPUT = 1
 
 ifeq ($(SLIM),)
    HAVE_SDL = 1
@@ -210,6 +213,11 @@ ifeq ($(HAVE_PYTHON), 1)
    LIBS += -lpython32
    DEFINES += -DHAVE_PYTHON -Ipython
    OBJ += gfx/py_state/py_state.o
+endif
+
+ifeq ($(USE_WINXINPUT), 1)
+   DEFINES += -DUSE_WINXINPUT
+   OBJ += input/winxinput_joypad.o
 endif
 
 ifeq ($(HAVE_DINPUT), 1)

@@ -39,6 +39,8 @@ static void sdl_joypad_destroy(void)
    memset(g_pads, 0, sizeof(g_pads));
 }
 
+extern const LPCTSTR XBOX_PAD_NAMES_TO_REJECT[];
+
 static bool sdl_joypad_init(void)
 {
    if (SDL_Init(SDL_INIT_JOYSTICK) < 0)
@@ -54,9 +56,32 @@ static bool sdl_joypad_init(void)
       pad->joypad = SDL_JoystickOpen(i);
       if (!pad->joypad)
       {
-         RARCH_ERR("Couldn't open SDL joystick #%u.\n", i);
-         goto error;
+       RARCH_ERR("Couldn't open SDL joystick #%u.\n", i);
+       goto error;
       }
+     
+
+   #ifdef USE_WINXINPUT
+      // Reject xbox 360 controllers, the xinput driver will take care of them.
+      unsigned test_name_index = 0;
+      while(1)
+      {
+         if (XBOX_PAD_NAMES_TO_REJECT[test_name_index] == NULL)
+            break;
+         if (lstrcmpi(SDL_JoystickName(i), XBOX_PAD_NAMES_TO_REJECT[test_name_index]) == 0)
+         {
+            RARCH_LOG("sdl joypad: Rejected XInput controller \"%s\"", SDL_JoystickName(i));
+            pad->joypad = NULL; pad->num_axes = 0; pad->num_buttons = 0; pad->num_hats = 0;
+            
+            goto continue_after_xinput_rejection;
+         }
+         ++test_name_index;
+      }
+   #endif
+   
+   continue_after_xinput_rejection:
+     
+     //
 
       RARCH_LOG("Opened Joystick: %s (#%u).\n", 
             SDL_JoystickName(i), i);

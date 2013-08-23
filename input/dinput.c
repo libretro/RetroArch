@@ -386,6 +386,8 @@ static BOOL CALLBACK enum_axes_cb(const DIDEVICEOBJECTINSTANCE *inst, void *p)
    return DIENUM_CONTINUE;
 }
 
+extern const LPCTSTR XBOX_PAD_NAMES_TO_REJECT[];
+
 static BOOL CALLBACK enum_joypad_cb(const DIDEVICEINSTANCE *inst, void *p)
 {
    (void)p;
@@ -399,7 +401,28 @@ static BOOL CALLBACK enum_joypad_cb(const DIDEVICEINSTANCE *inst, void *p)
 #else
    if (FAILED(IDirectInput8_CreateDevice(g_ctx, &inst->guidInstance, pad, NULL)))
 #endif
-      return DIENUM_CONTINUE;
+   return DIENUM_CONTINUE;
+   
+#ifdef USE_WINXINPUT
+   // Reject xbox 360 controllers, the xinput driver will take care of them
+   DIDEVICEINSTANCE info;
+   ZeroMemory(&info, sizeof(DIDEVICEINSTANCE));
+   info.dwSize = sizeof(DIDEVICEINSTANCE);
+   IDirectInputDevice8_GetDeviceInfo(*pad, &info);
+   
+   unsigned test_name_index = 0;
+   while(1)
+   {
+      if (XBOX_PAD_NAMES_TO_REJECT[test_name_index] == NULL)
+         break;
+      if (lstrcmpi(info.tszProductName, XBOX_PAD_NAMES_TO_REJECT[test_name_index]) == 0)
+      {
+         RARCH_LOG("dinput: Rejected XInput controller \"%s\"", info.tszProductName);
+         return DIENUM_CONTINUE;
+      }
+      ++test_name_index;
+   }
+#endif
 
    IDirectInputDevice8_SetDataFormat(*pad, &c_dfDIJoystick2);
    IDirectInputDevice8_SetCooperativeLevel(*pad, (HWND)driver.video_window,

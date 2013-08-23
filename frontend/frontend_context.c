@@ -36,12 +36,15 @@ static const frontend_ctx_driver_t *frontend_ctx_drivers[] = {
 #if defined(IOS) || defined(OSX)
    &frontend_ctx_apple,
 #endif
+   NULL // zero length array is not valid
 };
 
 const frontend_ctx_driver_t *frontend_ctx_find_driver(const char *ident)
 {
    for (unsigned i = 0; i < sizeof(frontend_ctx_drivers) / sizeof(frontend_ctx_drivers[0]); i++)
    {
+      if (!frontend_ctx_drivers[i]) // could be the dummy NULL
+         continue;
       if (strcmp(frontend_ctx_drivers[i]->ident, ident) == 0)
          return frontend_ctx_drivers[i];
    }
