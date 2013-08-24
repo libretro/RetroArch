@@ -201,6 +201,7 @@ struct settings
       char driver[32];
       bool enable;
       unsigned out_rate;
+      unsigned block_frames;
       float in_rate;
       char device[PATH_MAX];
       unsigned latency;

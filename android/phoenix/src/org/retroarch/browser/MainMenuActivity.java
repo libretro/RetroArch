@@ -11,6 +11,7 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
 import android.content.pm.PackageManager.NameNotFoundException;
 import android.content.res.AssetManager;
 import android.media.AudioManager;
@@ -157,7 +158,7 @@ public class MainMenuActivity extends PreferenceActivity {
 
 	@TargetApi(17)
 	public static int getLowLatencyOptimalSamplingRate() {
-		AudioManager manager = (AudioManager) MainMenuActivity.getInstance()
+		AudioManager manager = (AudioManager) getInstance()
 				.getApplicationContext()
 				.getSystemService(Context.AUDIO_SERVICE);
 		return Integer.parseInt(manager
@@ -166,14 +167,19 @@ public class MainMenuActivity extends PreferenceActivity {
 	
 	@TargetApi(17)
 	public static int getLowLatencyBufferSize() {
-		AudioManager manager = (AudioManager) MainMenuActivity.getInstance()
+		AudioManager manager = (AudioManager) getInstance()
 				.getApplicationContext()
 				.getSystemService(Context.AUDIO_SERVICE);
 		int buffersize = Integer.parseInt(manager
 				.getProperty(AudioManager.PROPERTY_OUTPUT_FRAMES_PER_BUFFER));
-		
-		Log.i(TAG, "Queried ideal buffer size: " + buffersize);
+		Log.i(TAG, "Queried ideal buffer size (frames): " + buffersize);
 		return buffersize;
+	}
+	
+	@TargetApi(17)
+	public static boolean hasLowLatencyAudio() {
+		PackageManager pm = getInstance().getPackageManager();
+		return pm.hasSystemFeature(PackageManager.FEATURE_AUDIO_LOW_LATENCY);
 	}
 
 	public static int getOptimalSamplingRate() {
@@ -261,21 +267,25 @@ public class MainMenuActivity extends PreferenceActivity {
 				prefs.getBoolean("global_config_enable", true));
 		config.setBoolean("audio_rate_control",
 				prefs.getBoolean("audio_rate_control", true));
-		config.setInt("audio_out_rate",
-				MainMenuActivity.getOptimalSamplingRate());
 		
-		int buffersize = 0;
+		int optimalRate = getOptimalSamplingRate();
+		config.setInt("audio_out_rate", optimalRate);
 		
 		if (android.os.Build.VERSION.SDK_INT >= 17) {
-			buffersize = getLowLatencyBufferSize();
-			if (config.getBoolean("audio_high_latency") == false) {
-				config.setInt("audio_latency", buffersize / 32);
+			int buffersize = getLowLatencyBufferSize();
+
+			boolean lowLatency = hasLowLatencyAudio();
+			Log.i(TAG, "Audio is low latency: " + (lowLatency ? "yes" : "no"));
+			
+			if (lowLatency && !prefs.getBoolean("audio_high_latency", false)) {
+				config.setInt("audio_latency", 64);
+				config.setInt("audio_block_frames", buffersize);
 			} else {
-				config.setInt("audio_latency",
-						prefs.getBoolean("audio_high_latency", false) ? 160 : 64);			
+				config.setInt("audio_latency", prefs.getBoolean(
+						"audio_high_latency", false) ? 160 : 64);
+				config.setInt("audio_block_frames", 0);
 			}
-		}
-		else {
+		} else {
 			config.setInt("audio_latency",
 					prefs.getBoolean("audio_high_latency", false) ? 160 : 64);		
 		}
