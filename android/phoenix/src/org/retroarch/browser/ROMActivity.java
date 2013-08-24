@@ -4,13 +4,12 @@ import java.io.File;
 
 import android.content.SharedPreferences;
 import android.os.Bundle;
-import android.preference.PreferenceManager;
 
 public class ROMActivity extends DirectoryActivity {
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		
-		SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getBaseContext());
+		SharedPreferences prefs = MainMenuActivity.getPreferences();
 		String startPath = prefs.getString("rgui_browser_directory", "");
 		if (!startPath.isEmpty() && new File(startPath).exists())
 			super.setStartDirectory(startPath);

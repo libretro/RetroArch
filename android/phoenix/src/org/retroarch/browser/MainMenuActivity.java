@@ -32,19 +32,39 @@ public class MainMenuActivity extends PreferenceActivity {
 	static private final String TAG = "MainMenu";
 	static private String libretro_path;
 	static private String libretro_name;
-
+	
 	@SuppressWarnings("deprecation")
+	private void refreshPreferenceScreen() {
+		setPreferenceScreen(null);
+		addPreferencesFromResource(R.xml.prefs);
+		
+		setCoreTitle(libretro_name);
+		PreferenceManager.setDefaultValues(this, R.xml.prefs, true);
+	}
+	
+	private boolean usePerCoreConfig() {
+		SharedPreferences prefs = getPreferences();
+
+		boolean global_config_enable = prefs.getBoolean("global_config_enable", true);
+		boolean config_same_as_native_lib_dir = libretro_path
+				.equals(getApplicationInfo().nativeLibraryDir);
+		
+		return !global_config_enable && !config_same_as_native_lib_dir;
+	}
+
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		instance = this;
+		
+		SharedPreferences prefs = getPreferences();
+		
+		libretro_path = prefs.getString("libretro_path", getApplicationInfo().nativeLibraryDir);
+		libretro_name = prefs.getString("libretro_name", "No core");
 
-		addPreferencesFromResource(R.xml.prefs);
-		PreferenceManager.setDefaultValues(this, R.xml.prefs, false);
+		refreshPreferenceScreen();
+		
 		this.setVolumeControlStream(AudioManager.STREAM_MUSIC);
-
-		SharedPreferences prefs = PreferenceManager
-				.getDefaultSharedPreferences(getBaseContext());
 
 		extractAssets();
 
@@ -57,35 +77,9 @@ public class MainMenuActivity extends PreferenceActivity {
 						.setTitle("Welcome to RetroArch")
 						.setMessage(
 								"This is your first time starting up RetroArch. RetroArch will now be preconfigured for the best possible gameplay experience.")
-						.setPositiveButton("OK",
-								new DialogInterface.OnClickListener() {
-									@Override
-									public void onClick(DialogInterface dialog,
-											int which) {
-										SharedPreferences prefs = PreferenceManager
-												.getDefaultSharedPreferences(getBaseContext());
-										SharedPreferences.Editor edit = prefs
-												.edit();
-										edit.putBoolean("video_threaded", true);
-										edit.commit();
-									}
-								});
+						.setPositiveButton("OK", null);
 				alert.show();
 			}
-		}
-
-		if (prefs.getString("libretro_path", "").isEmpty() == false) {
-			libretro_path = prefs.getString("libretro_path", "");
-			setCoreTitle("No core");
-
-			if (prefs.getString("libretro_name", "").isEmpty() == false) {
-				libretro_name = prefs.getString("libretro_name", "No core");
-				setCoreTitle(libretro_name);
-			}
-		} else {
-			libretro_path = getInstance().getApplicationInfo().nativeLibraryDir;
-			libretro_name = "No core";
-			setCoreTitle("No core");
 		}
 
 		Intent startedByIntent = getIntent();
@@ -120,9 +114,7 @@ public class MainMenuActivity extends PreferenceActivity {
 
 	public static final double getRefreshRate() {
 		double rate = 0;
-		SharedPreferences prefs = PreferenceManager
-				.getDefaultSharedPreferences(getInstance()
-						.getBaseContext());
+		SharedPreferences prefs = getPreferences();
 		String refresh_rate = prefs.getString("video_refresh_rate", "");
 		if (!refresh_rate.isEmpty()) {
 			try {
@@ -193,26 +185,23 @@ public class MainMenuActivity extends PreferenceActivity {
 		Log.i(TAG, "Using sampling rate: " + ret + " Hz");
 		return ret;
 	}
+	
+	private static String sanitizeLibretroPath(String path) {
+		String sanitized_name = path.substring(
+				path.lastIndexOf("/") + 1,
+				path.lastIndexOf("."));
+		sanitized_name = sanitized_name.replace("neon", "");
+		sanitized_name = sanitized_name.replace("libretro_", "");
+		return sanitized_name;
+	}
 
 	public static String getDefaultConfigPath() {
 		String internal = System.getenv("INTERNAL_STORAGE");
 		String external = System.getenv("EXTERNAL_STORAGE");
 
-		SharedPreferences prefs = PreferenceManager
-				.getDefaultSharedPreferences(getInstance()
-						.getBaseContext());
-
-		boolean global_config_enable = prefs.getBoolean("global_config_enable",
-				true);
-		boolean config_same_as_native_lib_dir = libretro_path
-				.equals(getInstance().getApplicationInfo().nativeLibraryDir);
 		String append_path;
-		if (!global_config_enable && (config_same_as_native_lib_dir == false)) {
-			String sanitized_name = libretro_path.substring(
-					libretro_path.lastIndexOf("/") + 1,
-					libretro_path.lastIndexOf("."));
-			sanitized_name = sanitized_name.replace("neon", "");
-			sanitized_name = sanitized_name.replace("libretro_", "");
+		if (getInstance().usePerCoreConfig()) {
+			String sanitized_name = sanitizeLibretroPath(libretro_path);
 			append_path = File.separator + sanitized_name + "retroarch.cfg";
 		} else {
 			append_path = File.separator + "retroarch.cfg";
@@ -253,9 +242,7 @@ public class MainMenuActivity extends PreferenceActivity {
 			config = new ConfigFile();
 		}
 
-		SharedPreferences prefs = PreferenceManager
-				.getDefaultSharedPreferences(getInstance()
-						.getBaseContext());
+		SharedPreferences prefs = getPreferences();
 
 		config.setString("libretro_path", libretro_path);
 		config.setString("libretro_name", libretro_name);
@@ -536,16 +523,16 @@ public class MainMenuActivity extends PreferenceActivity {
 
 		dialog.show();
 	}
+	
+	public static SharedPreferences getPreferences() {
+		return PreferenceManager.getDefaultSharedPreferences(getInstance().getBaseContext());
+	}
 
 	public void setModule(String core_path, String core_name) {
 		libretro_path = core_path;
 		libretro_name = core_name;
-		File libretro_path_file = new File(core_path);
-		setCoreTitle((libretro_path_file.isDirectory() == true) ? "No core"
-				: core_name);
 
-		SharedPreferences prefs = PreferenceManager
-				.getDefaultSharedPreferences(getBaseContext());
+		SharedPreferences prefs = getPreferences();
 		SharedPreferences.Editor edit = prefs.edit();
 		edit.putString("libretro_path", libretro_path);
 		edit.putString("libretro_name", libretro_name);
@@ -575,8 +562,7 @@ public class MainMenuActivity extends PreferenceActivity {
 								@Override
 								public void onClick(DialogInterface dialog,
 										int which) {
-									SharedPreferences prefs = PreferenceManager
-											.getDefaultSharedPreferences(getBaseContext());
+									SharedPreferences prefs = getPreferences();
 									SharedPreferences.Editor edit = prefs
 											.edit();
 									edit.putString("video_refresh_rate", Double
@@ -599,8 +585,7 @@ public class MainMenuActivity extends PreferenceActivity {
 								@Override
 								public void onClick(DialogInterface dialog,
 										int which) {
-									SharedPreferences prefs = PreferenceManager
-											.getDefaultSharedPreferences(getBaseContext());
+									SharedPreferences prefs = getPreferences();
 									SharedPreferences.Editor edit = prefs
 											.edit();
 									edit.putBoolean("input_overlay_enable",
@@ -622,8 +607,7 @@ public class MainMenuActivity extends PreferenceActivity {
 								@Override
 								public void onClick(DialogInterface dialog,
 										int which) {
-									SharedPreferences prefs = PreferenceManager
-											.getDefaultSharedPreferences(getBaseContext());
+									SharedPreferences prefs = getPreferences();
 									SharedPreferences.Editor edit = prefs
 											.edit();
 									edit.putBoolean("input_overlay_enable",
@@ -644,8 +628,7 @@ public class MainMenuActivity extends PreferenceActivity {
 								@Override
 								public void onClick(DialogInterface dialog,
 										int which) {
-									SharedPreferences prefs = PreferenceManager
-											.getDefaultSharedPreferences(getBaseContext());
+									SharedPreferences prefs = getPreferences();
 									SharedPreferences.Editor edit = prefs
 											.edit();
 									edit.putString("video_refresh_rate", Double
@@ -663,6 +646,8 @@ public class MainMenuActivity extends PreferenceActivity {
 					"Device either not detected in list or doesn't have any optimal settings in our database.",
 					Toast.LENGTH_SHORT).show();
 		}
+		
+		refreshPreferenceScreen();
 
 		return retval;
 	}
