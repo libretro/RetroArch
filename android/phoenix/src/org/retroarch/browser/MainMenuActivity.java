@@ -275,6 +275,13 @@ public class MainMenuActivity extends PreferenceActivity {
 			edit.remove(key);
 	}
 	
+	private void readbackFloat(ConfigFile cfg, SharedPreferences.Editor edit, String key) {
+		if (cfg.keyExists(key))
+			edit.putFloat(key, cfg.getFloat(key));
+		else
+			edit.remove(key);
+	}
+	
 	public void readbackConfigFile() {
 		String path = getDefaultConfigPath();
 		ConfigFile config;
