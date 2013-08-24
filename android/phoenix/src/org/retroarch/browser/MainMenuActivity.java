@@ -302,15 +302,28 @@ public class MainMenuActivity extends PreferenceActivity {
 		readbackBool(config, edit, "savefile_directory_enable"); // Ignored by RetroArch
 		readbackBool(config, edit, "savestate_directory_enable"); // Ignored by RetroArch
 
+		String input_overlay = config.getString("input_overlay");
+		
+		
 		readbackString(config, edit, "input_overlay");
 		readbackBool(config, edit, "input_overlay_enable");
 		readbackBool(config, edit, "video_scale_integer");
 		readbackBool(config, edit, "video_smooth");
+		readbackBool(config, edit, "video_threaded");
 		readbackBool(config, edit, "rewind_enable");
 		readbackBool(config, edit, "savestate_auto_load");
 		readbackBool(config, edit, "savestate_auto_save");
 		
+		readbackBool(config, edit, "audio_rate_control");
+		readbackBool(config, edit, "audio_enable");
+		// TODO: other audio settings
+		
 		readbackDouble(config, edit, "input_overlay_opacity");
+		readbackBool(config, edit, "input_autodetect_enable");
+		
+		readbackBool(config, edit, "video_allow_rotate");
+		
+		readbackBool(config, edit, "video_vsync");
 		
 		edit.commit();
 	}
@@ -433,7 +446,6 @@ public class MainMenuActivity extends PreferenceActivity {
 		} else {
 			config.setString("input_overlay", "");
 		}
-
 		config.setString(
 				"savefile_directory",
 				prefs.getBoolean("savefile_directory_enable", false) ? prefs
