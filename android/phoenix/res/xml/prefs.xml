@@ -123,10 +123,6 @@
     </PreferenceScreen>
     <PreferenceScreen android:title="Input Options" >
        <PreferenceCategory android:title="General" >
-            <CheckBoxPreference android:title="Enable global configuration"
-                android:summary="Enable global settings for all cores. Leave disabled if you want per-core settings."
-                android:key="global_config_enable"
-                android:defaultValue="true"/>
             <ListPreference
                 android:entries="@array/back_options"
                 android:entryValues="@array/back_options_values"
@@ -134,6 +130,17 @@
                 android:summary="Select how you want the Back button to behave."
                 android:title="Back behavior" />
        </PreferenceCategory>
+       
+       <PreferenceCategory android:title="IME" >
+            <Preference
+                android:summary="Sets IME to be used in-game."
+                android:title="Set Input Method" >
+                <intent
+                    android:targetClass="org.retroarch.browser.IMEActivity"
+                    android:targetPackage="org.retroarch" />
+            </Preference>
+        </PreferenceCategory>
+
         <PreferenceCategory android:title="Configuration Autodetect" >
             <CheckBoxPreference
                 android:defaultValue="true"
@@ -468,6 +475,14 @@
         </PreferenceCategory>
     </PreferenceScreen>
     <PreferenceScreen android:title="Settings" >
+        <PreferenceCategory android:title="Configuration style" >
+            <CheckBoxPreference
+                android:defaultValue="true"
+                android:key="global_config_enable"
+                android:summary="Enable global settings for all cores. Leave disabled if you want per-core settings."
+                android:title="Enable global configuration" />
+        </PreferenceCategory>
+
         <PreferenceCategory android:title="General" >
             <CheckBoxPreference
                 android:defaultValue="true"

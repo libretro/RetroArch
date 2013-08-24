@@ -83,7 +83,7 @@ public class MainMenuActivity extends PreferenceActivity {
 				setCoreTitle(libretro_name);
 			}
 		} else {
-			libretro_path = MainMenuActivity.getInstance().getApplicationInfo().nativeLibraryDir;
+			libretro_path = getInstance().getApplicationInfo().nativeLibraryDir;
 			libretro_name = "No core";
 			setCoreTitle("No core");
 		}
@@ -121,7 +121,7 @@ public class MainMenuActivity extends PreferenceActivity {
 	public static final double getRefreshRate() {
 		double rate = 0;
 		SharedPreferences prefs = PreferenceManager
-				.getDefaultSharedPreferences(MainMenuActivity.getInstance()
+				.getDefaultSharedPreferences(getInstance()
 						.getBaseContext());
 		String refresh_rate = prefs.getString("video_refresh_rate", "");
 		if (!refresh_rate.isEmpty()) {
@@ -129,10 +129,10 @@ public class MainMenuActivity extends PreferenceActivity {
 				rate = Double.parseDouble(refresh_rate);
 			} catch (NumberFormatException e) {
 				Log.e(TAG, "Cannot parse: " + refresh_rate + " as a double!");
-				rate = MainMenuActivity.getInstance().getDisplayRefreshRate();
+				rate = getInstance().getDisplayRefreshRate();
 			}
 		} else {
-			rate = MainMenuActivity.getInstance().getDisplayRefreshRate();
+			rate = getInstance().getDisplayRefreshRate();
 		}
 
 		Log.i(TAG, "Using refresh rate: " + rate + " Hz.");
@@ -199,13 +199,13 @@ public class MainMenuActivity extends PreferenceActivity {
 		String external = System.getenv("EXTERNAL_STORAGE");
 
 		SharedPreferences prefs = PreferenceManager
-				.getDefaultSharedPreferences(MainMenuActivity.getInstance()
+				.getDefaultSharedPreferences(getInstance()
 						.getBaseContext());
 
 		boolean global_config_enable = prefs.getBoolean("global_config_enable",
 				true);
 		boolean config_same_as_native_lib_dir = libretro_path
-				.equals(MainMenuActivity.getInstance().getApplicationInfo().nativeLibraryDir);
+				.equals(getInstance().getApplicationInfo().nativeLibraryDir);
 		String append_path;
 		if (!global_config_enable && (config_same_as_native_lib_dir == false)) {
 			String sanitized_name = libretro_path.substring(
@@ -237,8 +237,8 @@ public class MainMenuActivity extends PreferenceActivity {
 		else if (external != null
 				&& new File(internal + append_path).canWrite())
 			return external + append_path;
-		else if ((MainMenuActivity.getInstance().getApplicationInfo().dataDir) != null)
-			return (MainMenuActivity.getInstance().getApplicationInfo().dataDir)
+		else if ((getInstance().getApplicationInfo().dataDir) != null)
+			return (getInstance().getApplicationInfo().dataDir)
 					+ append_path;
 		else
 			// emergency fallback, all else failed
@@ -254,7 +254,7 @@ public class MainMenuActivity extends PreferenceActivity {
 		}
 
 		SharedPreferences prefs = PreferenceManager
-				.getDefaultSharedPreferences(MainMenuActivity.getInstance()
+				.getDefaultSharedPreferences(getInstance()
 						.getBaseContext());
 
 		config.setString("libretro_path", libretro_path);
@@ -323,7 +323,7 @@ public class MainMenuActivity extends PreferenceActivity {
 						"0")));
 
 		config.setDouble("video_refresh_rate",
-				MainMenuActivity.getRefreshRate());
+				getRefreshRate());
 		config.setBoolean("video_threaded",
 				prefs.getBoolean("video_threaded", true));
 
@@ -356,7 +356,7 @@ public class MainMenuActivity extends PreferenceActivity {
 		boolean useOverlay = prefs.getBoolean("input_overlay_enable", true);
 		if (useOverlay) {
 			String overlayPath = prefs
-					.getString("input_overlay", (MainMenuActivity.getInstance()
+					.getString("input_overlay", (getInstance()
 							.getApplicationInfo().dataDir)
 							+ "/overlays/snes-landscape.cfg");
 			config.setString("input_overlay", overlayPath);
@@ -382,7 +382,7 @@ public class MainMenuActivity extends PreferenceActivity {
 		config.setBoolean("video_font_enable",
 				prefs.getBoolean("video_font_enable", true));
 
-		config.setString("game_history_path", MainMenuActivity.getInstance()
+		config.setString("game_history_path", getInstance()
 				.getApplicationInfo().dataDir + "/retroarch-history.txt");
 
 		for (int i = 1; i <= 4; i++) {
@@ -705,7 +705,7 @@ public class MainMenuActivity extends PreferenceActivity {
 				myIntent.putExtra("ROM", data.getStringExtra("PATH"));
 				myIntent.putExtra("LIBRETRO", libretro_path);
 				myIntent.putExtra("CONFIGFILE",
-						MainMenuActivity.getDefaultConfigPath());
+						getDefaultConfigPath());
 				myIntent.putExtra("IME", current_ime);
 				startActivity(myIntent);
 			}
