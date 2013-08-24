@@ -163,6 +163,18 @@ public class MainMenuActivity extends PreferenceActivity {
 		return Integer.parseInt(manager
 				.getProperty(AudioManager.PROPERTY_OUTPUT_SAMPLE_RATE));
 	}
+	
+	@TargetApi(17)
+	public static int getLowLatencyBufferSize() {
+		AudioManager manager = (AudioManager) MainMenuActivity.getInstance()
+				.getApplicationContext()
+				.getSystemService(Context.AUDIO_SERVICE);
+		int buffersize = Integer.parseInt(manager
+				.getProperty(AudioManager.PROPERTY_OUTPUT_FRAMES_PER_BUFFER));
+		
+		Log.i(TAG, "Queried ideal buffer size: " + buffersize);
+		return buffersize;
+	}
 
 	public static int getOptimalSamplingRate() {
 		int ret;
@@ -251,8 +263,20 @@ public class MainMenuActivity extends PreferenceActivity {
 				prefs.getBoolean("audio_rate_control", true));
 		config.setInt("audio_out_rate",
 				MainMenuActivity.getOptimalSamplingRate());
-		config.setInt("audio_latency",
-				prefs.getBoolean("audio_high_latency", false) ? 160 : 64);
+		
+		int buffersize = 0;
+		
+		if (android.os.Build.VERSION.SDK_INT >= 17) {
+			buffersize = getLowLatencyBufferSize();
+			if (config.getBoolean("audio_high_latency") == false) {
+				config.setInt("audio_latency", buffersize / 32);
+			}
+		}
+		else {
+			config.setInt("audio_latency",
+					prefs.getBoolean("audio_high_latency", false) ? 160 : 64);		
+		}
+
 		config.setBoolean("audio_enable",
 				prefs.getBoolean("audio_enable", true));
 		config.setBoolean("video_smooth",
