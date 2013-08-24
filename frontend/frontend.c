@@ -63,8 +63,11 @@ static bool libretro_install_core(const char *path_prefix,
       return false;
    }
 
-   strlcpy(g_settings.libretro, new_path,
-         sizeof(g_settings.libretro));
+   struct retro_variable var;
+   var.key = "core_path";
+   var.value = new_path;
+
+   rarch_environment_cb(RETRO_ENVIRONMENT_SET_LIBRETRO_PATH, &var);
 
    return true;
 }

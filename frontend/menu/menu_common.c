@@ -438,13 +438,15 @@ void load_menu_game_prepare(void)
 void load_menu_game_history(unsigned game_index)
 {
    const char *path = NULL;
-   const char *core_path = NULL;
    const char *core_name = NULL;
+   struct retro_variable var;
+
+   var.key = "core_path";
 
    rom_history_get_index(rgui->history,
-         game_index, &path, &core_path, &core_name);
+         game_index, &path, &var.value, &core_name);
 
-   strlcpy(g_settings.libretro, core_path, sizeof(g_settings.libretro));
+   rarch_environment_cb(RETRO_ENVIRONMENT_SET_LIBRETRO_PATH, &var);
 
    if (path)
    {

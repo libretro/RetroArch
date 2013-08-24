@@ -509,7 +509,9 @@ enum retro_mod
                                            // Lets the core know how much time has passed since last invocation of retro_run().
                                            // The frontend can tamper with the timing to fake fast-forward, slow-motion, frame stepping, etc.
                                            // In this case the delta time will use the reference value in frame_time_callback..
-                                          
+#define RETRO_ENVIRONMENT_SET_LIBRETRO_PATH 22
+                                           // const char ** --
+                                           // Sets the absolute path for the libretro core pointed to.
 
 // Notifies libretro that audio data should be written.
 typedef void (*retro_audio_callback_t)(void);

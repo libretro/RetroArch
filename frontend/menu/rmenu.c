@@ -460,7 +460,6 @@ static int select_file(void *data, uint64_t input)
    char extensions[128];
    char comment[128];
    char path[PATH_MAX];
-   bool ret = true;
    bool pop_menu_stack = false;
    font_params_t font_parms = {0};
 
@@ -495,7 +494,7 @@ static int select_file(void *data, uint64_t input)
    if (input & (1ULL << DEVICE_NAV_B))
    {
       if (filebrowser_iterate(rgui->browser, FILEBROWSER_ACTION_PATH_ISDIR))
-         ret = filebrowser_iterate(rgui->browser, FILEBROWSER_ACTION_OK);
+         filebrowser_iterate(rgui->browser, FILEBROWSER_ACTION_OK);
       else
       {
          strlcpy(path, rgui->browser->current_dir.path, sizeof(path));
@@ -560,9 +559,16 @@ static int select_file(void *data, uint64_t input)
                         true, menu_texture->width, menu_texture->height, 1.0f);
                break;
             case LIBRETRO_CHOICE:
-               strlcpy(g_settings.libretro, path, sizeof(g_settings.libretro));
-               g_extern.lifecycle_mode_state |= (1ULL << MODE_EXITSPAWN);
-               return -1;
+               {
+                  struct retro_variable var;
+
+                  var.key = "core_path";
+                  var.value = path;
+
+                  rarch_environment_cb(RETRO_ENVIRONMENT_SET_LIBRETRO_PATH, &var);
+                  g_extern.lifecycle_mode_state |= (1ULL << MODE_EXITSPAWN);
+                  return -1;
+               }
          }
 
          pop_menu_stack = true;

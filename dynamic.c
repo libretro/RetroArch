@@ -93,8 +93,6 @@ unsigned (*pretro_get_region)(void);
 void *(*pretro_get_memory_data)(unsigned);
 size_t (*pretro_get_memory_size)(unsigned);
 
-static bool environment_cb(unsigned cmd, void *data);
-
 #ifdef HAVE_DYNAMIC
 #if defined(__APPLE__)
 #define DYNAMIC_EXT "dylib"
@@ -397,7 +395,7 @@ void init_libretro_sym(bool dummy)
 
    load_symbols(dummy);
 
-   pretro_set_environment(environment_cb);
+   pretro_set_environment(rarch_environment_cb);
 }
 
 void uninit_libretro_sym(void)
@@ -471,7 +469,7 @@ void dylib_close(dylib_t lib)
 }
 #endif
 
-static bool environment_cb(unsigned cmd, void *data)
+bool rarch_environment_cb(unsigned cmd, void *data)
 {
    switch (cmd)
    {
@@ -757,7 +755,12 @@ static bool environment_cb(unsigned cmd, void *data)
          g_extern.system.frame_time = *info;
          break;
       }
-
+      case RETRO_ENVIRONMENT_SET_LIBRETRO_PATH:
+      {
+         struct retro_variable *var = (struct retro_variable*)data;
+         strlcpy(g_settings.libretro, var->value, sizeof(g_settings.libretro));
+         break;
+      }
       default:
          RARCH_LOG("Environ UNSUPPORTED (#%u).\n", cmd);
          return false;

@@ -2654,7 +2654,13 @@ int rgui_iterate(rgui_handle_t *rgui)
                // Core selection on non-console just updates directory listing.
                // Will take affect on new ROM load.
 #elif defined(GEKKO) && defined(HW_RVL)
-               strlcpy(g_settings.libretro, path, sizeof(g_settings.libretro)); // Is this supposed to be here?
+               struct retro_variable var;
+
+               var.key = "core_path";
+               var.value = path;
+
+               rarch_environment_cb(RETRO_ENVIRONMENT_SET_LIBRETRO_PATH, &var);
+
                fill_pathname_join(g_extern.fullpath, default_paths.core_dir,
                      SALAMANDER_FILE, sizeof(g_extern.fullpath));
                g_extern.lifecycle_mode_state &= ~(1ULL << MODE_GAME);
