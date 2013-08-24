@@ -18,6 +18,8 @@ import android.media.AudioManager;
 import android.media.AudioTrack;
 import android.os.Bundle;
 import android.os.Handler;
+import android.preference.CheckBoxPreference;
+import android.preference.Preference;
 import android.preference.PreferenceActivity;
 import android.preference.PreferenceManager;
 import android.provider.Settings;
@@ -33,23 +35,41 @@ public class MainMenuActivity extends PreferenceActivity {
 	static private String libretro_path;
 	static private String libretro_name;
 	
+	private boolean globalConfigEnable = true;
+	
 	@SuppressWarnings("deprecation")
 	private void refreshPreferenceScreen() {
+		readbackConfigFile();
+		
 		setPreferenceScreen(null);
 		addPreferencesFromResource(R.xml.prefs);
 		
 		setCoreTitle(libretro_name);
-		PreferenceManager.setDefaultValues(this, R.xml.prefs, true);
+		PreferenceManager.setDefaultValues(this, R.xml.prefs, false);
+		
+		final CheckBoxPreference param = (CheckBoxPreference) findPreference("global_config_enable");
+		globalConfigEnable = param.isChecked();
+		param.setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
+			@Override
+			public boolean onPreferenceClick(Preference preference) {
+				updateConfigFile();
+				globalConfigEnable = param.isChecked();
+				SharedPreferences prefs = MainMenuActivity.getPreferences();
+				SharedPreferences.Editor edit = prefs.edit();
+				edit.putBoolean("global_config_enable", param.isChecked());
+				edit.commit();
+				
+				refreshPreferenceScreen();
+				return true;
+			}
+		});
 	}
 	
 	private boolean usePerCoreConfig() {
-		SharedPreferences prefs = getPreferences();
-
-		boolean global_config_enable = prefs.getBoolean("global_config_enable", true);
 		boolean config_same_as_native_lib_dir = libretro_path
 				.equals(getApplicationInfo().nativeLibraryDir);
 		
-		return !global_config_enable && !config_same_as_native_lib_dir;
+		return !globalConfigEnable && !config_same_as_native_lib_dir;
 	}
 
 	@Override
@@ -202,7 +222,7 @@ public class MainMenuActivity extends PreferenceActivity {
 		String append_path;
 		if (getInstance().usePerCoreConfig()) {
 			String sanitized_name = sanitizeLibretroPath(libretro_path);
-			append_path = File.separator + sanitized_name + "retroarch.cfg";
+			append_path = File.separator + sanitized_name + ".cfg";
 		} else {
 			append_path = File.separator + "retroarch.cfg";
 		}
@@ -233,25 +253,78 @@ public class MainMenuActivity extends PreferenceActivity {
 			// emergency fallback, all else failed
 			return "/mnt/sd" + append_path;
 	}
-
-	public void updateConfigFile() {
+	
+	private void readbackString(ConfigFile cfg, SharedPreferences.Editor edit, String key) {
+		if (cfg.keyExists(key))
+			edit.putString(key, cfg.getString(key));
+		else
+			edit.remove(key);
+	}
+	
+	private void readbackBool(ConfigFile cfg, SharedPreferences.Editor edit, String key) {
+		if (cfg.keyExists(key))
+			edit.putBoolean(key, cfg.getBoolean(key));
+		else
+			edit.remove(key);
+	}
+	
+	private void readbackDouble(ConfigFile cfg, SharedPreferences.Editor edit, String key) {
+		if (cfg.keyExists(key))
+			edit.putFloat(key, (float)cfg.getDouble(key));
+		else
+			edit.remove(key);
+	}
+	
+	public void readbackConfigFile() {
+		String path = getDefaultConfigPath();
 		ConfigFile config;
 		try {
-			config = new ConfigFile(new File(getDefaultConfigPath()));
+			config = new ConfigFile(new File(path));
+		} catch (IOException e) {
+			return;
+		}
+		
+		Log.i(TAG, "Config readback from: " + path);
+		
+		SharedPreferences prefs = getPreferences();
+		SharedPreferences.Editor edit = prefs.edit();
+		
+		readbackString(config, edit, "rgui_browser_directory");
+		readbackString(config, edit, "savefile_directory");
+		readbackString(config, edit, "savestate_directory");
+		readbackBool(config, edit, "savefile_directory_enable"); // Ignored by RetroArch
+		readbackBool(config, edit, "savestate_directory_enable"); // Ignored by RetroArch
+
+		readbackString(config, edit, "input_overlay");
+		readbackBool(config, edit, "input_overlay_enable");
+		readbackBool(config, edit, "video_scale_integer");
+		readbackBool(config, edit, "video_smooth");
+		readbackBool(config, edit, "rewind_enable");
+		readbackBool(config, edit, "savestate_auto_load");
+		readbackBool(config, edit, "savestate_auto_save");
+		
+		readbackDouble(config, edit, "input_overlay_opacity");
+		
+		edit.commit();
+	}
+
+	public void updateConfigFile() {
+		String path = getDefaultConfigPath();
+		ConfigFile config;
+		try {
+			config = new ConfigFile(new File(path));
 		} catch (IOException e) {
 			config = new ConfigFile();
 		}
+		
+		Log.i(TAG, "Writing config to: " + path);
 
 		SharedPreferences prefs = getPreferences();
 
 		config.setString("libretro_path", libretro_path);
-		config.setString("libretro_name", libretro_name);
-		setCoreTitle(libretro_name);
 
 		config.setString("rgui_browser_directory",
 				prefs.getString("rgui_browser_directory", ""));
-		config.setBoolean("global_config_enable",
-				prefs.getBoolean("global_config_enable", true));
 		config.setBoolean("audio_rate_control",
 				prefs.getBoolean("audio_rate_control", true));
 		
@@ -341,6 +414,7 @@ public class MainMenuActivity extends PreferenceActivity {
 						&& new File(shaderPath).exists());
 
 		boolean useOverlay = prefs.getBoolean("input_overlay_enable", true);
+		config.setBoolean("input_overlay_enable", useOverlay); // Not used by RetroArch directly.
 		if (useOverlay) {
 			String overlayPath = prefs
 					.getString("input_overlay", (getInstance()
@@ -383,11 +457,10 @@ public class MainMenuActivity extends PreferenceActivity {
 			}
 		}
 
-		String confPath = getDefaultConfigPath();
 		try {
-			config.write(new File(confPath));
+			config.write(new File(path));
 		} catch (IOException e) {
-			Log.e(TAG, "Failed to save config file to: " + confPath);
+			Log.e(TAG, "Failed to save config file to: " + path);
 		}
 	}
 
@@ -529,6 +602,8 @@ public class MainMenuActivity extends PreferenceActivity {
 	}
 
 	public void setModule(String core_path, String core_name) {
+		updateConfigFile();
+		
 		libretro_path = core_path;
 		libretro_name = core_name;
 
@@ -537,6 +612,9 @@ public class MainMenuActivity extends PreferenceActivity {
 		edit.putString("libretro_path", libretro_path);
 		edit.putString("libretro_name", libretro_name);
 		edit.commit();
+		
+		if (usePerCoreConfig())
+			refreshPreferenceScreen();
 	}
 
 	public void setCoreTitle(String core_name) {
