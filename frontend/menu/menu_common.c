@@ -449,24 +449,18 @@ void load_menu_game_history(unsigned game_index)
    rarch_environment_cb(RETRO_ENVIRONMENT_SET_LIBRETRO_PATH, &var);
 
    if (path)
-   {
       rgui->load_no_rom = false;
-      strlcpy(g_extern.fullpath, path, sizeof(g_extern.fullpath));
-   }
    else
-   {
       rgui->load_no_rom = true;
-      *g_extern.fullpath = '\0';
-   }
 
-#if !defined( HAVE_DYNAMIC) && defined(RARCH_CONSOLE)
-   g_extern.lifecycle_mode_state &= ~(1ULL << MODE_GAME);
-   g_extern.lifecycle_mode_state |= (1ULL << MODE_EXITSPAWN);
-   g_extern.lifecycle_mode_state |= (1ULL << MODE_EXITSPAWN_START_GAME);
-#elif defined(HAVE_DYNAMIC)
+   var.key = "EXEC_RELOAD";
+   var.value = path;
+
+   rarch_environment_cb(RETRO_ENVIRONMENT_EXEC, &var);
+
+#if defined(HAVE_DYNAMIC)
    libretro_free_system_info(&rgui->info);
    libretro_get_system_info(g_settings.libretro, &rgui->info, NULL);
-   g_extern.lifecycle_mode_state |= (1ULL << MODE_LOAD_GAME);
 #endif
 }
 

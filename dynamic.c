@@ -757,8 +757,33 @@ bool rarch_environment_cb(unsigned cmd, void *data)
       }
       case RETRO_ENVIRONMENT_SET_LIBRETRO_PATH:
       {
+         RARCH_LOG("Environ SET_LIBRETRO_PATH.\n");
+
          struct retro_variable *var = (struct retro_variable*)data;
          strlcpy(g_settings.libretro, var->value, sizeof(g_settings.libretro));
+         break;
+      }
+      case RETRO_ENVIRONMENT_EXEC:
+      {
+         RARCH_LOG("Environ EXEC.\n");
+
+         struct retro_variable *var = (struct retro_variable*)data;
+         if (var->value)
+            strlcpy(g_extern.fullpath, var->value, sizeof(g_extern.fullpath));
+         else
+            *g_extern.fullpath = '\0';
+
+         if (strcasecmp(var->key, "EXEC_RELOAD") == 0)
+         {
+#if !defined( HAVE_DYNAMIC) && defined(RARCH_CONSOLE)
+            g_extern.lifecycle_mode_state &= ~(1ULL << MODE_GAME);
+            g_extern.lifecycle_mode_state |= (1ULL << MODE_EXITSPAWN);
+            g_extern.lifecycle_mode_state |= (1ULL << MODE_EXITSPAWN_START_GAME);
+#elif defined(HAVE_DYNAMIC)
+            g_extern.lifecycle_mode_state |= (1ULL << MODE_LOAD_GAME);
+#endif
+         }
+
          break;
       }
       default:

@@ -512,6 +512,13 @@ enum retro_mod
 #define RETRO_ENVIRONMENT_SET_LIBRETRO_PATH 22
                                            // struct retro_variable * --
                                            // Sets the absolute path for the libretro core pointed to.
+#define RETRO_ENVIRONMENT_EXEC              23
+                                           // struct retro_variable * --
+                                           // Sets an input file for the libretro core to execute with, and (based on key name) will determine what
+                                           // exec method to follow.
+                                           // "EXEC_LOAD"   : will start the input file whose path was passed from the parameter to RETRO_ENVIRONMENT_EXEC.
+                                           // "EXEC_RELOAD" : will set the current libretro core, deinitialize the currently running media and then
+                                           // start the input file whose path was passed from the parameter to RETRO_ENVIRONMENT_EXEC.
 
 // Notifies libretro that audio data should be written.
 typedef void (*retro_audio_callback_t)(void);
