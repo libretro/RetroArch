@@ -634,6 +634,9 @@ public class MainMenuActivity extends PreferenceActivity {
 		
 		if (usePerCoreConfig())
 			refreshPreferenceScreen();
+		else {
+			setCoreTitle(libretro_name); // this still needs to be applied
+		}
 	}
 
 	public void setCoreTitle(String core_name) {
