@@ -445,7 +445,7 @@ enum retro_mod
                                            // If HW rendering is used, pass only RETRO_HW_FRAME_BUFFER_VALID or NULL to retro_video_refresh_t.
 #define RETRO_ENVIRONMENT_GET_VARIABLE 15
                                            // struct retro_variable * --
-                                           // Interface to aquire user-defined information from environment
+                                           // Interface to acquire user-defined information from environment
                                            // that cannot feasibly be supported in a multi-system way.
                                            // 'key' should be set to a key which has already been set by SET_VARIABLES.
                                            // 'data' will be set to a value or NULL.
