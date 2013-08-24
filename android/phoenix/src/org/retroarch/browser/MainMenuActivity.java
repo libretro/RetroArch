@@ -270,6 +270,9 @@ public class MainMenuActivity extends PreferenceActivity {
 			buffersize = getLowLatencyBufferSize();
 			if (config.getBoolean("audio_high_latency") == false) {
 				config.setInt("audio_latency", buffersize / 32);
+			} else {
+				config.setInt("audio_latency",
+						prefs.getBoolean("audio_high_latency", false) ? 160 : 64);			
 			}
 		}
 		else {
