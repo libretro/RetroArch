@@ -28,7 +28,12 @@ static void get_environment_settings(int argc, char *argv[], void *args)
 
 /* FIXME - should this apply for both BB10 and PB? */
 #if defined(__QNX__) && !defined(HAVE_BB10)
-   strlcpy(g_settings.libretro, "app/native/lib", sizeof(g_settings.libretro));
+   struct retro_variable var;
+
+   var.key = "core_path";
+   strlcpy(var.value, "app/native/lib", sizeof(var.value));
+   rarch_environment_cb(RETRO_ENVIRONMENT_SET_LIBRETRO_PATH, &var);
+
    strlcpy(g_extern.config_path, "app/native/retroarch.cfg", sizeof(g_extern.config_path));
    strlcpy(g_settings.video.shader_dir, "app/native/shaders_glsl", sizeof(g_settings.video.shader_dir));
 #endif
