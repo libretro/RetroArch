@@ -28,6 +28,7 @@
 #include <stdint.h>
 #include <unistd.h>
 
+#include <emscripten/emscripten.h>
 #include <EGL/egl.h>
 #include <EGL/eglext.h>
 #include <SDL/SDL.h>
@@ -52,10 +53,19 @@ static void gfx_ctx_check_window(bool *quit,
       bool *resize, unsigned *width, unsigned *height, unsigned frame_count)
 {
    (void)frame_count;
-   (void)width;
-   (void)height;
+   int iWidth, iHeight, isFullscreen;
 
-   *resize = false;
+   emscripten_get_canvas_size(&iWidth, &iHeight, &isFullscreen);
+   *width  = (unsigned) iWidth;
+   *height = (unsigned) iHeight;
+
+   if (*width != g_fb_width || *height != g_fb_height)
+      *resize = true;
+   else
+      *resize = false;
+
+   g_fb_width = (unsigned) iWidth;
+   g_fb_height = (unsigned) iHeight;
    *quit   = false;
 }
 
@@ -167,8 +177,10 @@ static bool gfx_ctx_set_video_mode(
    return true;
 }
 
-static bool gfx_ctx_bind_api(enum gfx_ctx_api api)
+static bool gfx_ctx_bind_api(enum gfx_ctx_api api, unsigned major, unsigned minor)
 {
+   (void)major;
+   (void)minor;
    switch (api)
    {
       case GFX_CTX_OPENGL_ES_API:
