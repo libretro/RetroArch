@@ -1961,7 +1961,6 @@ static bool check_fullscreen(void)
    was_pressed = pressed;
    return toggle;
 }
-#endif
 
 void rarch_state_slot_increase(void)
 {
@@ -2620,7 +2619,6 @@ static void check_volume(void)
 
    g_extern.audio_data.volume_gain = db_to_gain(g_extern.audio_data.volume_db);
 }
-#endif
 
 #ifdef HAVE_NETPLAY
 static void check_netplay_flip(void)
