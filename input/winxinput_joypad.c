@@ -50,18 +50,18 @@
    
    typedef struct
    {
-      WORD  wButtons;
-      BYTE  bLeftTrigger;
-      BYTE  bRightTrigger;
-      SHORT sThumbLX;
-      SHORT sThumbLY;
-      SHORT sThumbRX;
-      SHORT sThumbRY;
+      uint16_t wButtons;
+      uint8_t  bLeftTrigger;
+      uint8_t  bRightTrigger;
+      int16_t  sThumbLX;
+      int16_t  sThumbLY;
+      int16_t  sThumbRX;
+      int16_t  sThumbRY;
    } XINPUT_GAMEPAD;
 
    typedef struct
    {
-      DWORD          dwPacketNumber;
+      uint32_t       dwPacketNumber;
       XINPUT_GAMEPAD Gamepad;
    } XINPUT_STATE;
 
@@ -89,7 +89,7 @@ extern int g_xbox_pad_indexes[MAX_PLAYERS];
 static HINSTANCE g_winxinput_dll;
 
 // Function pointer, to be assigned with GetProcAddress
-typedef DWORD (__stdcall *XInputGetStateEx_t)(DWORD, XINPUT_STATE*);
+typedef uint32_t (__stdcall *XInputGetStateEx_t)(uint32_t, XINPUT_STATE*);
 static XInputGetStateEx_t g_XInputGetStateEx;
 
 // Guide button may or may not be available
@@ -120,7 +120,7 @@ static bool winxinput_joypad_init(void)
    
    // No need to check for existance as we will be checking LoadLibrary's
    // success anyway.
-   TCHAR dll_path[MAX_PATH];
+   char dll_path[MAX_PATH];
    strcpy(dll_path, "xinput1_3.dll");
    g_winxinput_dll = LoadLibrary(dll_path);
    if (!g_winxinput_dll)
@@ -141,7 +141,7 @@ static bool winxinput_joypad_init(void)
    
    // If we get here then an xinput DLL is correctly loaded.
    // First try to load ordinal 100 (XInputGetStateEx).
-   g_XInputGetStateEx = (XInputGetStateEx_t) GetProcAddress(g_winxinput_dll, (LPCSTR)100);
+   g_XInputGetStateEx = (XInputGetStateEx_t) GetProcAddress(g_winxinput_dll, (const char*)100);
    g_winxinput_guide_button_supported = true;
    
    if (!g_XInputGetStateEx)
@@ -161,7 +161,7 @@ static bool winxinput_joypad_init(void)
    
    // zero out the states
    for (unsigned i = 0; i < 4; ++i)
-      ZeroMemory(&g_winxinput_states[i], sizeof(winxinput_joypad_state));
+      memset(&g_winxinput_states[i], 0, sizeof(winxinput_joypad_state));
 
    // Do a dummy poll to check which controllers are connected.
    XINPUT_STATE dummy_state;
@@ -196,7 +196,7 @@ static bool winxinput_joypad_query_pad(unsigned pad)
 static void winxinput_joypad_destroy(void)
 {
    for (unsigned i = 0; i < 4; ++i)
-      ZeroMemory(&g_winxinput_states[i], sizeof(winxinput_joypad_state));
+      memset(&g_winxinput_states[i], 0, sizeof(winxinput_joypad_state));
       
    FreeLibrary(g_winxinput_dll);
    g_winxinput_dll    = NULL;
@@ -208,7 +208,7 @@ static void winxinput_joypad_destroy(void)
 // Buttons are provided by XInput as bits of a uint16.
 // Map from rarch button index (0..10) to a mask to bitwise-& the buttons against.
 // dpad is handled seperately.
-static const WORD button_index_to_bitmap_code[] =  {
+static const uint16_t button_index_to_bitmap_code[] =  {
    XINPUT_GAMEPAD_A             ,
    XINPUT_GAMEPAD_B             ,
    XINPUT_GAMEPAD_X             ,

@@ -399,11 +399,11 @@ static const LPCTSTR XBOX_PAD_NAMES[] =
    NULL
 };
 
-static bool name_is_360_pad(LPCSTR name)
+static bool name_is_360_pad(const char* name)
 {
    for (unsigned i = 0; ; ++i)
    {
-      LPCSTR t = XBOX_PAD_NAMES[i];
+      const char* t = XBOX_PAD_NAMES[i];
       if (t == NULL)
          return false;
       else if (lstrcmpi(name, t) == 0)
