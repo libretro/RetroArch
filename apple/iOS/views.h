@@ -38,17 +38,22 @@
 @end
 
 // browser.m
+@protocol RADirectoryListDelegate
+- (bool)directoryList:(id)list itemWasSelected:(RADirectoryItem*)path;
+@end
+
 @interface RADirectoryList : RATableViewController <UIActionSheetDelegate>
 @property (nonatomic, weak) RADirectoryItem *selectedItem;
-
-+ (id)directoryListAtBrowseRoot;
-+ (id)directoryListForPath:(NSString*)path;
-- (id)initWithPath:(NSString*)path;
+- (id)initWithPath:(NSString*)path delegate:(id<RADirectoryListDelegate>)delegate;
 @end
 
 // browser.m
+@protocol RAModuleListDelegate
+- (bool)moduleList:(id)list itemWasSelected:(RAModuleInfo*)module;
+@end
+
 @interface RAModuleList : RATableViewController
-- (id)initWithGame:(NSString*)path;
+- (id)initWithGame:(NSString*)path delegate:(id<RAModuleListDelegate>)delegate;
 @end
 
 // browser.m

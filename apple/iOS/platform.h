@@ -17,13 +17,16 @@
 #ifndef __RARCH_IOS_PLATFORM_H
 #define __RARCH_IOS_PLATFORM_H
 
+#include "views.h"
+
 @interface RAGameView : UIViewController
 + (RAGameView*)get;
 - (void)openPauseMenu;
 - (void)closePauseMenu;
 @end
 
-@interface RetroArch_iOS : UINavigationController<UIApplicationDelegate, UINavigationControllerDelegate, RetroArch_Platform>
+@interface RetroArch_iOS : UINavigationController<UIApplicationDelegate, UINavigationControllerDelegate, RetroArch_Platform,
+                                                   RADirectoryListDelegate, RAModuleListDelegate>
 
 + (RetroArch_iOS*)get;
 

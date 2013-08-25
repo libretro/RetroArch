@@ -29,44 +29,33 @@
 {
    NSString* _path;
    NSMutableArray* _sectionNames;
+   id<RADirectoryListDelegate> _delegate;
 }
 
-+ (id)directoryListAtBrowseRoot
-{
-   NSString* rootPath = RetroArch_iOS.get.documentsDirectory;
-   NSString* ragPath = [rootPath stringByAppendingPathComponent:@"RetroArchGames"];
-   RADirectoryList* list = [RADirectoryList directoryListForPath:path_is_directory(ragPath.UTF8String) ? ragPath : rootPath];
-   return list;
-}
 
-+ (id)directoryListForPath:(NSString*)path
-{
-   // NOTE: Don't remove or ignore this abstraction, this function will be expanded when cover art comes back.
-   return [[RADirectoryList alloc] initWithPath:path];
-}
-
-- (id)initWithPath:(NSString*)path
+- (id)initWithPath:(NSString*)path delegate:(id<RADirectoryListDelegate>)delegate
 {
    _path = path;
+   _delegate = delegate;
 
    self = [super initWithStyle:UITableViewStylePlain];
    self.title = path.lastPathComponent;
    self.hidesHeaders = YES;
     
-    NSMutableArray *toolbarButtons = [[NSMutableArray alloc] initWithCapacity:3];
+   NSMutableArray *toolbarButtons = [[NSMutableArray alloc] initWithCapacity:3];
     
-    UIBarButtonItem *refreshButton = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemRefresh target:self action:@selector(refresh)];
-    refreshButton.style = UIBarButtonItemStyleBordered;
-    [toolbarButtons addObject:refreshButton];
+   UIBarButtonItem *refreshButton = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemRefresh target:self action:@selector(refresh)];
+   refreshButton.style = UIBarButtonItemStyleBordered;
+   [toolbarButtons addObject:refreshButton];
     
-    UIBarButtonItem *flexibleSpace = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemFlexibleSpace target:self action:nil];
-    [toolbarButtons addObject:flexibleSpace];
+   UIBarButtonItem *flexibleSpace = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemFlexibleSpace target:self action:nil];
+   [toolbarButtons addObject:flexibleSpace];
     
-    UIBarButtonItem *newFolderButton = [[UIBarButtonItem alloc] initWithTitle:@"New Folder" style:UIBarButtonItemStyleBordered target:self action:@selector(createNewFolder)];
-    [toolbarButtons addObject:newFolderButton];
+   UIBarButtonItem *newFolderButton = [[UIBarButtonItem alloc] initWithTitle:@"New Folder" style:UIBarButtonItemStyleBordered target:self action:@selector(createNewFolder)];
+   [toolbarButtons addObject:newFolderButton];
     
-    [[[RetroArch_iOS get] toolbar] setItems:toolbarButtons];
-    [self setToolbarItems:toolbarButtons];
+   [[[RetroArch_iOS get] toolbar] setItems:toolbarButtons];
+   [self setToolbarItems:toolbarButtons];
     
    [self refresh];
 
@@ -127,18 +116,7 @@
 
 - (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath
 {
-   RADirectoryItem* path = (RADirectoryItem*)[self itemForIndexPath:indexPath];
-
-   if(path.isDirectory)
-      [[RetroArch_iOS get] pushViewController:[RADirectoryList directoryListForPath:path.path] animated:YES];
-   else
-   {
-      if (access(_path.UTF8String, R_OK | W_OK | X_OK))
-         apple_display_alert(@"The directory containing the selected file has limited permissions. This may "
-                              "prevent zipped games from loading, and will cause some cores to not function.", 0);
-
-      [[RetroArch_iOS get] pushViewController:[[RAModuleList alloc] initWithGame:path.path] animated:YES];
-   }
+   [_delegate directoryList:self itemWasSelected:[self itemForIndexPath:indexPath]];
 }
 
 - (UITableViewCell*)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath
@@ -224,15 +202,14 @@
 
 @implementation RAModuleList
 {
-   NSString* _game;
+   id<RAModuleListDelegate> _delegate;
 }
 
-- (id)initWithGame:(NSString*)path
+- (id)initWithGame:(NSString*)path delegate:(id<RAModuleListDelegate>)delegate
 {
    self = [super initWithStyle:UITableViewStyleGrouped];
-   [self setTitle:[path lastPathComponent]];
-   
-   _game = path;
+   [self setTitle:path ? [path lastPathComponent] : @"Cores"];
+   _delegate = delegate;
 
    // Load the modules with their data
    NSArray* moduleList = [RAModuleInfo getModules];
@@ -242,8 +219,8 @@
    
    for (RAModuleInfo* i in moduleList)
    {
-      if ([i supportsFileAtPath:_game]) [supported addObject:i];
-      else                              [other     addObject:i];
+      if (path && [i supportsFileAtPath:path]) [supported addObject:i];
+      else                                     [other     addObject:i];
    }
 
    if (supported.count > 1)
@@ -257,7 +234,7 @@
 
 - (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath
 {
-   apple_run_core((RAModuleInfo*)[self itemForIndexPath:indexPath], _game.UTF8String);
+   [_delegate moduleList:self itemWasSelected:[self itemForIndexPath:indexPath]];
 }
 
 - (void)infoButtonTapped:(id)sender
