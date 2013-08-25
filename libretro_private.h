@@ -35,6 +35,11 @@
                                            // const char * --
                                            // Requests that this core is deinitialized, and a new core is loaded.
                                            // The libretro core used is set with SET_LIBRETRO_PATH, and path to game is passed in _EXEC. NULL means no game.
+#define RETRO_ENVIRONMENT_EXEC_ESCAPE     (RETRO_ENVIRONMENT_PRIVATE | 2)
+                                           // const char * --
+                                           // Requests that this core is deinitialized, and a new core is loaded. It also escapes the main loop the core is currently
+                                           // bound to.
+                                           // The libretro core used is set with SET_LIBRETRO_PATH, and path to game is passed in _EXEC. NULL means no game.
 
 #endif
 

@@ -2719,7 +2719,6 @@ static void do_state_checks(void)
    if (!g_extern.netplay)
    {
 #endif
-#if !defined(RARCH_PERFORMANCE_MODE)
       check_pause();
       check_oneshot();
 
@@ -2728,7 +2727,6 @@ static void do_state_checks(void)
 
       if (g_extern.is_paused && !g_extern.is_oneshot)
          return;
-#endif
 
       check_fast_forward_button();
 

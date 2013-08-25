@@ -766,7 +766,7 @@ bool rarch_environment_cb(unsigned cmd, void *data)
          break;
 
       case RETRO_ENVIRONMENT_EXEC:
-         RARCH_LOG("Environ (Private) EXEC.\n");
+      case RETRO_ENVIRONMENT_EXEC_ESCAPE:
 
          if (data)
             strlcpy(g_extern.fullpath, (const char*)data, sizeof(g_extern.fullpath));
@@ -780,7 +780,14 @@ bool rarch_environment_cb(unsigned cmd, void *data)
 #elif defined(HAVE_DYNAMIC)
          g_extern.lifecycle_mode_state |= (1ULL << MODE_LOAD_GAME);
 #endif
-         g_extern.exec = true;
+
+         if (cmd == RETRO_ENVIRONMENT_EXEC_ESCAPE)
+         {
+            RARCH_LOG("Environ (Private) EXEC_ESCAPE.\n");
+            g_extern.exec = true;
+         }
+         else
+            RARCH_LOG("Environ (Private) EXEC.\n");
 
          break;
 
