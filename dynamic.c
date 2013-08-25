@@ -758,7 +758,11 @@ bool rarch_environment_cb(unsigned cmd, void *data)
 
       case RETRO_ENVIRONMENT_SET_LIBRETRO_PATH:
          RARCH_LOG("Environ (Private) SET_LIBRETRO_PATH.\n");
-         strlcpy(g_settings.libretro, (const char*)data, sizeof(g_settings.libretro));
+
+         if (path_file_exists((const char*)data))
+            strlcpy(g_settings.libretro, (const char*)data, sizeof(g_settings.libretro));
+         else
+            return false;
          break;
 
       case RETRO_ENVIRONMENT_EXEC:
