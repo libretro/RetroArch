@@ -282,6 +282,13 @@ public class MainMenuActivity extends PreferenceActivity {
 			edit.remove(key);
 	}
 	
+	private void readbackInt(ConfigFile cfg, SharedPreferences.Editor edit, String key) {
+		if (cfg.keyExists(key))
+			edit.putInt(key, cfg.getInt(key));
+		else
+			edit.remove(key);
+	}
+	
 	public void readbackConfigFile() {
 		String path = getDefaultConfigPath();
 		ConfigFile config;
@@ -301,9 +308,6 @@ public class MainMenuActivity extends PreferenceActivity {
 		readbackString(config, edit, "savestate_directory");
 		readbackBool(config, edit, "savefile_directory_enable"); // Ignored by RetroArch
 		readbackBool(config, edit, "savestate_directory_enable"); // Ignored by RetroArch
-
-		String input_overlay = config.getString("input_overlay");
-		
 		
 		readbackString(config, edit, "input_overlay");
 		readbackBool(config, edit, "input_overlay_enable");
@@ -321,6 +325,7 @@ public class MainMenuActivity extends PreferenceActivity {
 		
 		readbackDouble(config, edit, "input_overlay_opacity");
 		readbackBool(config, edit, "input_autodetect_enable");
+		readbackInt(config, edit, "input_back_behavior");
 		
 		readbackBool(config, edit, "video_allow_rotate");
 		readbackBool(config, edit, "video_font_enable");
