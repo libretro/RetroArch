@@ -313,6 +313,7 @@ public class MainMenuActivity extends PreferenceActivity {
 		readbackBool(config, edit, "rewind_enable");
 		readbackBool(config, edit, "savestate_auto_load");
 		readbackBool(config, edit, "savestate_auto_save");
+		readbackDouble(config, edit, "video_refresh_rate");
 		
 		readbackBool(config, edit, "audio_rate_control");
 		readbackBool(config, edit, "audio_enable");
@@ -322,6 +323,7 @@ public class MainMenuActivity extends PreferenceActivity {
 		readbackBool(config, edit, "input_autodetect_enable");
 		
 		readbackBool(config, edit, "video_allow_rotate");
+		readbackBool(config, edit, "video_font_enable");
 		
 		readbackBool(config, edit, "video_vsync");
 		
@@ -351,6 +353,7 @@ public class MainMenuActivity extends PreferenceActivity {
 		int optimalRate = getOptimalSamplingRate();
 		config.setInt("audio_out_rate", optimalRate);
 		
+		// Refactor this entire mess and make this usable for per-core config
 		if (android.os.Build.VERSION.SDK_INT >= 17) {
 			int buffersize = getLowLatencyBufferSize();
 
@@ -407,6 +410,8 @@ public class MainMenuActivity extends PreferenceActivity {
 		config.setBoolean("video_threaded",
 				prefs.getBoolean("video_threaded", true));
 
+		// Refactor these weird values - 'full', 'auto', 'square', whatever -
+		// go by what we have in RGUI - makes maintaining state easier too
 		String aspect = prefs.getString("video_aspect_ratio", "auto");
 		if (aspect.equals("full")) {
 			config.setBoolean("video_force_aspect", false);
