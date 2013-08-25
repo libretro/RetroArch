@@ -17,6 +17,9 @@
 #import "../RetroArch/RetroArch_Apple.h"
 #include "../RetroArch/setting_data.h"
 
+struct settings fake_settings;
+struct global fake_extern;
+
 @interface RASettingsDelegate : NSObject<NSTableViewDataSource,   NSTableViewDelegate,
                                          NSOutlineViewDataSource, NSOutlineViewDelegate>
 @end
@@ -36,6 +39,9 @@
    NSMutableArray* thisGroup = nil;
    NSMutableArray* thisSubGroup = nil;
    _settings = [NSMutableArray array];
+   
+   memcpy(&fake_settings, &g_settings, sizeof(struct settings));
+   memcpy(&fake_extern, &g_extern, sizeof(struct global));
    
    for (int i = 0; setting_data[i].type; i ++)
    {
@@ -83,11 +89,51 @@
 
 - (IBAction)close:(id)sender
 {
+#if 0
+   config_file_t* conf = config_file_new(0);
+   for (int i = 0; setting_data[i].type; i ++)
+   {
+      switch (setting_data[i].type)
+      {
+         case ST_BOOL:   config_set_bool  (conf, setting_data[i].name, * (bool*)setting_data[i].value); break;
+         case ST_INT:    config_set_int   (conf, setting_data[i].name, *  (int*)setting_data[i].value); break;
+         case ST_FLOAT:  config_set_float (conf, setting_data[i].name, *(float*)setting_data[i].value); break;
+         case ST_PATH:   config_set_string(conf, setting_data[i].name,   (char*)setting_data[i].value); break;
+         case ST_STRING: config_set_string(conf, setting_data[i].name,   (char*)setting_data[i].value); break;
+         case ST_HEX:    break;
+         default:        break;
+      }
+   }
+   config_file_free(conf);
+#endif
+
    [NSApplication.sharedApplication stopModal];
    [NSApplication.sharedApplication endSheet:_window returnCode:0];
    [_window orderOut:nil];
 }
 
+- (void)readConfigFile:(const char*)path
+{
+   config_file_t* conf = config_file_new(path);
+   if (conf)
+   {
+      for (int i = 0; setting_data[i].type; i ++)
+      {
+         switch (setting_data[i].type)
+         {
+            case ST_BOOL:   config_get_bool (conf, setting_data[i].name,  (bool*)setting_data[i].value); break;
+            case ST_INT:    config_get_int  (conf, setting_data[i].name,   (int*)setting_data[i].value); break;
+            case ST_FLOAT:  config_get_float(conf, setting_data[i].name, (float*)setting_data[i].value); break;
+            case ST_PATH:   config_get_array(conf, setting_data[i].name,  (char*)setting_data[i].value, setting_data[i].size); break;
+            case ST_STRING: config_get_array(conf, setting_data[i].name,  (char*)setting_data[i].value, setting_data[i].size); break;
+            case ST_HEX:    break;
+            default:        break;
+         }
+      }
+
+      config_file_free(conf);
+   }
+}
 
 #pragma mark View Builders
 - (NSView*)labelAccessoryFor:(NSString*)text onTable:(NSTableView*)table
@@ -105,7 +151,7 @@
    return result;
 }
 
-- (NSView*)booleanAccessoryFor:(const rarch_setting_t*)setting onTable:(NSTableView*)table
+- (NSView*)booleanAccessoryFor:(const rarch_setting_t*)setting index:(NSNumber*)index onTable:(NSTableView*)table
 {
    NSButton* result = [table makeViewWithIdentifier:@"boolean" owner:self];
    
@@ -114,10 +160,19 @@
       result = [NSButton new];
       result.buttonType = NSSwitchButton;
       result.title = @"";
+      result.target = self;
+      result.action = @selector(booleanChanged:);
    }
    
    result.state = *(bool*)setting->value;
+   objc_setAssociatedObject(result, "INDEX", index, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
    return result;
+}
+
+- (void)booleanChanged:(NSButton*)sender
+{
+   int index = [objc_getAssociatedObject(sender, "INDEX") intValue];
+   *(bool*)setting_data[index].value = sender.state;
 }
 
 #pragma mark Section Table
@@ -172,7 +227,7 @@
       {
          switch (setting->type)
          {
-            case ST_BOOL: return [self booleanAccessoryFor:setting onTable:outlineView];
+            case ST_BOOL: return [self booleanAccessoryFor:setting index:item onTable:outlineView];
          
             case ST_PATH:
             case ST_STRING:
