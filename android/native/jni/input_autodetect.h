@@ -24,6 +24,7 @@
 enum {
    ICADE_PROFILE_RED_SAMURAI = 0,
    ICADE_PROFILE_IPEGA_PG9017,
+   ICADE_PROFILE_IPEGA_PG9017_MODE2,
    ICADE_PROFILE_GAMESTOP_WIRELESS,
 } icade_profile_enums;
 
@@ -60,6 +61,7 @@ enum {
    AKEYCODE_NUMPAD_7        = 151,
    AKEYCODE_NUMPAD_8        = 152,
    AKEYCODE_NUMPAD_9        = 153,
+   AKEYCODE_WINDOW          = 171,
    AKEYCODE_BUTTON_1        = 188,
    AKEYCODE_BUTTON_2        = 189,
    AKEYCODE_BUTTON_3        = 190,
@@ -81,7 +83,7 @@ enum {
 
 #define LAST_KEYCODE AKEYCODE_ASSIST
 
-void input_autodetect_setup (void *data, char *msg, size_t sizeof_msg, unsigned port, unsigned id, int source);
+void input_autodetect_setup(void *data, char *msg, size_t sizeof_msg, unsigned port, unsigned id, int source, bool *primary);
 
 /* Xperia Play externs */
 extern unsigned zeus_port;

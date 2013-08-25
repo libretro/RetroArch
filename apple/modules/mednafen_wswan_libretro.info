@@ -1,6 +1,6 @@
-display_name = "WonderSwan (Color)"
+display_name = "WonderSwan/Color (Mednafen Cygne)"
 supported_extensions = "ws|wsc"
 corename = "Mednafen WonderSwan"
 manufacturer = "Bandai"
-systemname = "WonderSwan (Color)"
+systemname = "WonderSwan/Color"
 

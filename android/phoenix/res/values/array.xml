@@ -33,6 +33,7 @@
     <string-array name="icade_profiles">
         <item>Red Samurai</item>
         <item>iPega PG-9017</item>
+        <item>iPega PG-9017 (Mode 2)</item>
         <item>Gamestop Wireless</item>
     </string-array>
 
@@ -40,6 +41,7 @@
         <item>0</item>
         <item>1</item>
         <item>2</item>
+        <item>3</item>
     </string-array>
     
     <string-array name="key_bind_values">

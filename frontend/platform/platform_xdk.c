@@ -184,9 +184,17 @@ static HRESULT xbox_io_unmount(char *szDrive)
 static void get_environment_settings(int argc, char *argv[])
 {
    HRESULT ret;
-   (void)argc;
-   (void)argv;
    (void)ret;
+
+#ifndef IS_SALAMANDER
+   g_extern.verbose = true;
+
+#if defined(HAVE_LOGGER)
+   logger_init();
+#elif defined(HAVE_FILE_LOGGER)
+   g_extern.log_file = fopen("/retroarch-log.txt", "w");
+#endif
+#endif
 
 #ifdef _XBOX360
    // detect install environment
@@ -247,6 +255,18 @@ static void get_environment_settings(int argc, char *argv[])
    strlcpy(default_paths.system_dir, "game:\\system", sizeof(default_paths.system_dir));
    strlcpy(default_paths.filebrowser_startup_dir, "game:", sizeof(default_paths.filebrowser_startup_dir));
 #endif
+
+#ifndef IS_SALAMANDER
+   rarch_make_dir(default_paths.port_dir, "port_dir");
+   rarch_make_dir(default_paths.system_dir, "system_dir");
+   rarch_make_dir(default_paths.savestate_dir, "savestate_dir");
+   rarch_make_dir(default_paths.sram_dir, "sram_dir");
+   rarch_make_dir(default_paths.input_presets_dir, "input_presets_dir");
+
+   config_load();
+
+   rarch_get_environment_console();
+#endif
 }
 
 static void system_init(void)
@@ -262,7 +282,7 @@ static void system_init(void)
 #endif
 }
 
-static int system_process_args(int argc, char *argv[])
+static int system_process_args(int argc, char *argv[], void *args)
 {
    (void)argc;
    (void)argv;
@@ -299,17 +319,65 @@ static int system_process_args(int argc, char *argv[])
    return 0;
 }
 
-static void system_deinit(void) {}
+static void system_exec(const char *path, bool should_load_game);
 
 static void system_exitspawn(void)
 {
 #ifdef IS_SALAMANDER
-   rarch_console_exec(default_paths.libretro_path, false);
+   system_exec(default_paths.libretro_path, false);
 #else
    bool should_load_game = false;
    if (g_extern.lifecycle_mode_state & (1ULL << MODE_EXITSPAWN_START_GAME))
       should_load_game = true;
 
-   rarch_console_exec(g_settings.libretro, should_load_game);
+   system_exec(g_settings.libretro, should_load_game);
 #endif
 }
+
+#include <stdio.h>
+
+#include <xtl.h>
+
+#include "../../retroarch_logger.h"
+
+static void system_exec(const char *path, bool should_load_game)
+{
+   (void)should_load_game;
+
+   RARCH_LOG("Attempt to load executable: [%s].\n", path);
+#ifdef IS_SALAMANDER
+   XLaunchNewImage(path, NULL);
+#else
+#if defined(_XBOX1)
+   LAUNCH_DATA ptr;
+   memset(&ptr, 0, sizeof(ptr));
+   if (should_load_game)
+   {
+      snprintf((char*)ptr.Data, sizeof(ptr.Data), "%s", g_extern.fullpath);
+      XLaunchNewImage(path, &ptr);
+   }
+   else
+      XLaunchNewImage(path, NULL);
+#elif defined(_XBOX360)
+   char game_path[1024];
+   if (should_load_game)
+   {
+      strlcpy(game_path, g_extern.fullpath, sizeof(game_path));
+      XSetLaunchData(game_path, MAX_LAUNCH_DATA_SIZE);
+   }
+   XLaunchNewImage(path, NULL);
+#endif
+#endif
+}
+
+const frontend_ctx_driver_t frontend_ctx_xdk = {
+   get_environment_settings,     /* get_environment_settings */
+   system_init,                  /* init */
+   NULL,                         /* deinit */
+   system_exitspawn,             /* exitspawn */
+   system_process_args,          /* process_args */
+   NULL,                         /* process_events */
+   system_exec,                  /* exec */
+   NULL,                         /* shutdown */
+   "xdk",
+};

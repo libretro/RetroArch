@@ -36,7 +36,6 @@
    NSString* rootPath = RetroArch_iOS.get.documentsDirectory;
    NSString* ragPath = [rootPath stringByAppendingPathComponent:@"RetroArchGames"];
    RADirectoryList* list = [RADirectoryList directoryListForPath:path_is_directory(ragPath.UTF8String) ? ragPath : rootPath];
-                                            
    return list;
 }
 
@@ -156,7 +155,7 @@
       cell.imageView.image = [UIImage imageNamed:@"ic_dir"];
       cell.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
    } else {
-      cell.imageView.image = nil;
+      cell.imageView.image = [UIImage imageNamed:@"ic_file"];
       cell.accessoryType = UITableViewCellAccessoryDetailDisclosureButton;
    }
     

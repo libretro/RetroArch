@@ -16,6 +16,7 @@
 		96366C5516C9AC3300D64A22 /* CoreAudio.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 96366C5416C9AC3300D64A22 /* CoreAudio.framework */; };
 		96366C5916C9ACF500D64A22 /* AudioToolbox.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 96366C5816C9ACF500D64A22 /* AudioToolbox.framework */; };
 		963F5AC816CC523B009BBD19 /* RAGameView.m in Sources */ = {isa = PBXBuildFile; fileRef = 963F5AC516CC523B009BBD19 /* RAGameView.m */; };
+		9646869517BBBEAE00C5EA69 /* platform.m in Sources */ = {isa = PBXBuildFile; fileRef = 9646869417BBBEAE00C5EA69 /* platform.m */; };
 		966B9CBD16E41E7A005B61E1 /* Default-568h@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = 966B9CB816E41E7A005B61E1 /* Default-568h@2x.png */; };
 		966B9CBF16E41E7A005B61E1 /* Default.png in Resources */ = {isa = PBXBuildFile; fileRef = 966B9CB916E41E7A005B61E1 /* Default.png */; };
 		966B9CC116E41E7A005B61E1 /* Default@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = 966B9CBA16E41E7A005B61E1 /* Default@2x.png */; };
@@ -49,6 +50,7 @@
 		96366C5416C9AC3300D64A22 /* CoreAudio.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreAudio.framework; path = System/Library/Frameworks/CoreAudio.framework; sourceTree = SDKROOT; };
 		96366C5816C9ACF500D64A22 /* AudioToolbox.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AudioToolbox.framework; path = System/Library/Frameworks/AudioToolbox.framework; sourceTree = SDKROOT; };
 		963F5AC516CC523B009BBD19 /* RAGameView.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = RAGameView.m; sourceTree = "<group>"; };
+		9646869417BBBEAE00C5EA69 /* platform.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = platform.m; path = iOS/platform.m; sourceTree = SOURCE_ROOT; };
 		966B9CB816E41E7A005B61E1 /* Default-568h@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "Default-568h@2x.png"; sourceTree = "<group>"; };
 		966B9CB916E41E7A005B61E1 /* Default.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = Default.png; sourceTree = "<group>"; };
 		966B9CBA16E41E7A005B61E1 /* Default@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "Default@2x.png"; sourceTree = "<group>"; };
@@ -152,6 +154,7 @@
 		96AFAE3316C1D4EA009DE44C /* RetroArch */ = {
 			isa = PBXGroup;
 			children = (
+				9646869417BBBEAE00C5EA69 /* platform.m */,
 				967894571788EAAE00D6CA69 /* browser.m */,
 				967894581788EAAE00D6CA69 /* RALogView.m */,
 				967894591788EAAE00D6CA69 /* settings.m */,
@@ -305,6 +308,7 @@
 				9678945B1788EAAE00D6CA69 /* browser.m in Sources */,
 				9678945C1788EAAE00D6CA69 /* RALogView.m in Sources */,
 				9678945D1788EAAE00D6CA69 /* settings.m in Sources */,
+				9646869517BBBEAE00C5EA69 /* platform.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -365,7 +369,6 @@
 					"-D__LIBRETRO__",
 					"-DRARCH_PERFORMANCE_MODE",
 					"-DRARCH_MOBILE",
-					"-DPACKAGE_VERSION=\\\"0.9.9.3\\\"",
 					"-std=gnu99",
 					"-DHAVE_COREAUDIO",
 					"-DHAVE_FBO",
@@ -416,7 +419,6 @@
 					"-D__LIBRETRO__",
 					"-DRARCH_PERFORMANCE_MODE",
 					"-DRARCH_MOBILE",
-					"-DPACKAGE_VERSION=\\\"0.9.9.3\\\"",
 					"-std=gnu99",
 					"-DHAVE_COREAUDIO",
 					"-DHAVE_FBO",
@@ -458,7 +460,6 @@
 					"-D__LIBRETRO__",
 					"-DRARCH_PERFORMANCE_MODE",
 					"-DRARCH_MOBILE",
-					"-DPACKAGE_VERSION=\\\"0.9.9.3\\\"",
 					"-DHAVE_COREAUDIO",
 					"-DHAVE_DYNAMIC",
 					"-DHAVE_OVERLAY",
@@ -502,7 +503,6 @@
 					"-D__LIBRETRO__",
 					"-DRARCH_PERFORMANCE_MODE",
 					"-DRARCH_MOBILE",
-					"-DPACKAGE_VERSION=\\\"0.9.9.3\\\"",
 					"-DHAVE_COREAUDIO",
 					"-DHAVE_DYNAMIC",
 					"-DHAVE_OVERLAY",

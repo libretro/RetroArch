@@ -38,6 +38,9 @@
 
 #define MAX_PADS 4
 
+static u32 pad_connect[MAX_PADS];
+static u32 pad_type[MAX_PADS];
+static u32 pad_detect_pending[MAX_PADS];
 static uint64_t pad_state[MAX_PADS];
 static int16_t analog_state[MAX_PADS][2][2];
 
@@ -446,10 +449,19 @@ static void gx_input_set_keybinds(void *data, unsigned device, unsigned port,
          strlcpy(ret->desc, "Unknown", sizeof(ret->desc));
       }
    }
+
+   pad_detect_pending[port] = 1;
 }
 
 static void *gx_input_init(void)
 {
+   for (unsigned i = 0; i < MAX_PADS; i++)
+   {
+      pad_connect[i] = 0;
+      pad_type[i] = 0;
+      pad_detect_pending[i] = 1;
+   }
+
    PAD_Init();
 #ifdef HW_RVL
    WPAD_Init();
@@ -518,9 +530,17 @@ static void gx_input_poll(void *data)
       uint64_t *state_cur = &pad_state[port];
 
 #ifdef HW_RVL
-      uint32_t type = 0;
+      if (pad_detect_pending[port])
+      {
+         u32 *ptype = &pad_type[port];
+         pad_connect[port] = WPAD_Probe(port, ptype);
+         pad_detect_pending[port] = 0;
+      }
+
+      uint32_t connected = pad_connect[port];
+      uint32_t type = pad_type[port];
       
-      if (WPAD_Probe(port, &type) == WPAD_ERR_NONE)
+      if (connected == WPAD_ERR_NONE)
       {
          WPADData *wpaddata = WPAD_Data(port);
 
@@ -636,7 +656,6 @@ static void gx_input_poll(void *data)
             *state_cur |= (y > WII_JOYSTICK_THRESHOLD) ? GX_NUNCHUK_DOWN : 0;
          }
       }
-
 #endif
 
       if (SI_GetType(port) & SI_TYPE_GC)

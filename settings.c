@@ -102,6 +102,8 @@ const char *config_get_default_video(void)
          return "vg";
       case VIDEO_NULL:
          return "null";
+      case VIDEO_OMAP:
+         return "omap";
       default:
          return NULL;
    }
@@ -207,6 +209,7 @@ void config_set_defaults(void)
    g_settings.rewind_buffer_size = rewind_buffer_size;
    g_settings.rewind_granularity = rewind_granularity;
    g_settings.slowmotion_ratio = slowmotion_ratio;
+   g_settings.fastforward_ratio = fastforward_ratio;
    g_settings.pause_nonactive = pause_nonactive;
    g_settings.autosave_interval = autosave_interval;
 
@@ -302,7 +305,7 @@ void config_set_defaults(void)
 #elif defined(IOS)
    strlcpy(g_extern.overlay_dir, "/Applications/RetroArch.app/overlays/", sizeof(g_extern.overlay_dir));
 #elif defined(ANDROID)
-   strlcpy(g_extern.overlay_dir, "/data/data/org.retroarch/cache/Overlays/", sizeof(g_extern.overlay_dir));
+   strlcpy(g_extern.overlay_dir, "/data/data/org.retroarch/overlays/", sizeof(g_extern.overlay_dir));
 #endif
 #endif
 
@@ -312,7 +315,7 @@ void config_set_defaults(void)
 #elif defined(IOS)
    strlcpy(g_settings.video.shader_dir, "/Applications/RetroArch.app/shaders_glsl/", sizeof(g_settings.video.shader_dir));
 #elif defined(ANDROID)
-   strlcpy(g_settings.video.shader_dir, "/data/data/org.retroarch/cache/Shaders/", sizeof(g_settings.video.shader_dir));
+   strlcpy(g_settings.video.shader_dir, "/data/data/org.retroarch/shaders_glsl/", sizeof(g_settings.video.shader_dir));
 #endif
 #endif
 
@@ -661,8 +664,9 @@ bool config_load_file(const char *path)
    if (!strcmp(g_extern.overlay_dir, "default"))
       *g_extern.overlay_dir = '\0';
 
-   CONFIG_GET_FLOAT(input.overlay_opacity, "overlay_opacity");
-   CONFIG_GET_FLOAT(input.overlay_scale, "overlay_scale");
+   CONFIG_GET_PATH(input.overlay, "input_overlay");
+   CONFIG_GET_FLOAT(input.overlay_opacity, "input_overlay_opacity");
+   CONFIG_GET_FLOAT(input.overlay_scale, "input_overlay_scale");
 #endif
 
    CONFIG_GET_BOOL(rewind_enable, "rewind_enable");
@@ -675,6 +679,8 @@ bool config_load_file(const char *path)
    CONFIG_GET_FLOAT(slowmotion_ratio, "slowmotion_ratio");
    if (g_settings.slowmotion_ratio < 1.0f)
       g_settings.slowmotion_ratio = 1.0f;
+
+   CONFIG_GET_FLOAT(fastforward_ratio, "fastforward_ratio");
 
    CONFIG_GET_BOOL(pause_nonactive, "pause_nonactive");
    CONFIG_GET_INT(autosave_interval, "autosave_interval");
@@ -697,9 +703,6 @@ bool config_load_file(const char *path)
    CONFIG_GET_INT(input.turbo_period, "input_turbo_period");
    CONFIG_GET_INT(input.turbo_duty_cycle, "input_duty_cycle");
 
-   CONFIG_GET_PATH(input.overlay, "input_overlay");
-   CONFIG_GET_FLOAT(input.overlay_opacity, "input_overlay_opacity");
-   CONFIG_GET_FLOAT(input.overlay_scale, "input_overlay_scale");
    CONFIG_GET_BOOL(input.debug_enable, "input_debug_enable");
 
    CONFIG_GET_BOOL(input.autodetect_enable, "input_autodetect_enable");
@@ -1009,8 +1012,9 @@ bool config_save_file(const char *path)
    else
       config_set_string(conf, "overlay_directory", "default");
    
-   config_set_float(conf, "overlay_opacity", g_settings.input.overlay_opacity);
-   config_set_float(conf, "overlay_scale", g_settings.input.overlay_scale);
+   config_set_string(conf, "input_overlay", g_settings.input.overlay);
+   config_set_float(conf, "input_overlay_opacity", g_settings.input.overlay_opacity);
+   config_set_float(conf, "input_overlay_scale", g_settings.input.overlay_scale);
 #endif
 
 #ifdef ANDROID

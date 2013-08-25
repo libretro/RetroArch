@@ -29,6 +29,7 @@ void apple_destroy_game_view(void);
 void apple_flip_game_view(void);
 void apple_set_game_view_sync(unsigned interval);
 void apple_get_game_view_size(unsigned *width, unsigned *height);
+void *apple_get_proc_address(const char *symbol_name);
 
 #ifdef IOS
 void apple_bind_game_view_fbo(void);

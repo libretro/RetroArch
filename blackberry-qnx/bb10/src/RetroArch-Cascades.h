@@ -35,9 +35,7 @@ public:
 
     Q_INVOKABLE void startEmulator();
     Q_INVOKABLE void findDevices();
-    Q_INVOKABLE int mapButton(void* device, int player, int button);
-    Q_INVOKABLE QString buttonToString(void* deviceVp, int button);
-    Q_INVOKABLE void discoverController();
+    Q_INVOKABLE void discoverController(int player);
     void populateCores(core_info_list_t * info);
 
 signals:
@@ -49,7 +47,6 @@ public slots:
 	void aboutToQuit();
 	void onRotationCompleted();
 	void onCoreSelected(QVariant);
-	void onDeviceSelected(QVariant);
 
 private:
     /**

@@ -262,6 +262,8 @@
     </ClCompile>
     <ClCompile Include="..\..\frontend\frontend.c">
     </ClCompile>
+    <ClCompile Include="..\..\frontend\frontend_context.c">
+    </ClCompile>
     <ClCompile Include="..\..\retroarch.c">
     </ClCompile>
     <ClCompile Include="..\..\rewind.c">

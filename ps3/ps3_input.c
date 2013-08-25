@@ -366,7 +366,6 @@ bool oskutil_start(oskutil_params *params)
       goto do_deinit;
 
    params->flags |= OSK_IN_USE;
-   g_extern.lifecycle_mode_state |= (1ULL << MODE_OSK_DRAW);
 
    return true;
 

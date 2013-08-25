@@ -1224,7 +1224,6 @@ HRESULT CRetroArchCoreBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHandle
       {
          snprintf(g_settings.libretro, sizeof(g_settings.libretro), "%s\\%s",
                rgui->browser->current_dir.directory_path, str_buffer);
-         g_extern.lifecycle_mode_state |= (1ULL << MODE_EXIT);
          g_extern.lifecycle_mode_state |= (1ULL << MODE_EXITSPAWN);
          process_input_ret = -1;
       }
@@ -1409,7 +1408,6 @@ HRESULT CRetroArchMain::OnControlNavigate(XUIMessageControlNavigate *pControlNav
          if (input == XUI_CONTROL_NAVIGATE_OK)
          {
             g_extern.lifecycle_mode_state &= ~(1ULL << MODE_GAME);
-            g_extern.lifecycle_mode_state |= (1ULL << MODE_EXIT);
             process_input_ret = -1;
          }
          break;

@@ -1,4 +1,4 @@
-display_name = "Atari 2600"
+display_name = "Atari 2600 (Stella)"
 supported_extensions = "a26|bin"
 corename = "Stella"
 manufacturer = "Atari"

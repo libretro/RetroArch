@@ -28,6 +28,11 @@ Page
                 value: 3
             }
         ]
+        
+        onSelectedValueChanged: 
+        {
+            ButtonMap.refreshButtonMap(selectedValue)
+        }
     }
     
     actions: [
@@ -36,7 +41,7 @@ Page
             ActionBar.placement: ActionBarPlacement.OnBar
             imageSource: "asset:///images/search.png"
             onTriggered: {
-                RetroArch.discoverController();
+                RetroArch.discoverController(players.selectedValue);
             }
         }
     ]
@@ -48,17 +53,39 @@ Page
             preferredWidth: 650
             horizontalAlignment: HorizontalAlignment.Center
 
-            DropDown 
+            Container 
             {
-                objectName: "dropdown_devices"
-                title: "Device"
+                horizontalAlignment: HorizontalAlignment.Center
+                layout: StackLayout 
+                {
+                    orientation: LayoutOrientation.LeftToRight
+                }
+
+                DropDown
+                {
+                    horizontalAlignment: HorizontalAlignment.Left
+                    id: dropdown_device
+                    objectName: "dropdown_devices"
+                    title: "Device"
+                }
+
+                Button
+                {
+                    horizontalAlignment: HorizontalAlignment.Right
+                    text: "Set"
+
+                    onClicked:
+                    {
+                        ButtonMap.mapDevice(dropdown_device.selectedValue, players.selectedValue);
+                    }
+                }
             }
 
             ListView
             {
                 id: buttonMapList
                 objectName: "buttonMapList"
-    
+
                 listItemComponents: [
                     ListItemComponent
                     {
@@ -109,14 +136,13 @@ Page
                         }
                     }
                 ]
-    
-                //TODO: Map specific devices instead of 0.
+
                 onTriggered:
                 {
                     var sym, data;
                     data = dataModel.data(indexPath);
-                    sym = RetroArch.mapButton(0, players.selectedValue, data["index"]);
-                    data["button"] = RetroArch.buttonToString(0, sym);
+                    sym = ButtonMap.mapButton(0, players.selectedValue, data["index"]);
+                    data["button"] = ButtonMap.buttonToString(players.selectedValue, sym);
                     dataModel.replace(indexPath, data);
                 }
     

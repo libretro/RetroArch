@@ -18,35 +18,12 @@
 #include "../conf/config_file.h"
 #include "../file.h"
 
-#if defined(HAVE_RGUI)
-#include "menu/rgui.h"
-#elif defined(HAVE_RMENU)
-#include "menu/rmenu.h"
-#endif
-
-#if defined(__QNX__)
-#include <bps/bps.h>
-#elif defined(__CELLOS_LV2__)
-#include "platform/platform_ps3_exec.c"
-#include "platform/platform_ps3.c"
-#elif defined(GEKKO)
-#ifdef HW_RVL
-#include "platform/platform_gx_exec.c"
-#endif
-#include "platform/platform_gx.c"
-#elif defined(_XBOX)
-#include "platform/platform_xdk_exec.c"
-#include "platform/platform_xdk.c"
-#elif defined(PSP)
-#include "platform/platform_psp.c"
-#elif defined(__APPLE__)
-#include <dispatch/dispatch.h>
-#include <pthread.h>
-#include "../apple/RetroArch/rarch_wrapper.h"
-#endif
+#include "frontend_context.h"
+frontend_ctx_driver_t *frontend_ctx;
 
 #if defined(HAVE_RGUI) || defined(HAVE_RMENU) || defined(HAVE_RMENU_XUI)
 #define HAVE_MENU
+#include "frontend/menu/menu_common.h"
 #else
 #undef HAVE_MENU
 #endif
@@ -92,63 +69,22 @@ static bool libretro_install_core(const char *path_prefix,
    return true;
 }
 
-#define MAKE_DIR(x, name) { \
-   RARCH_LOG("Checking directory name %s [%s]\n", name, x); \
-   if (strlen(x) > 0) \
-   { \
-   if (!path_is_directory((x)) )\
-   { \
-      RARCH_WARN("Directory \"%s\" does not exists, creating\n", (x)); \
-      if (mkdir((x), 0777) != 0) \
-      { \
-         RARCH_ERR("Could not create directory \"%s\"\n", (x)); \
-      } \
-   } \
-   } \
-}
-#endif
-
-static void rarch_preinit(void)
+void rarch_make_dir(const char *x, const char *name)
 {
-#if defined(__QNX__) && !defined(HAVE_BB10)
-   //Initialize BPS libraries
-   bps_initialize();
-#elif defined(RARCH_CONSOLE)
-   system_init();
-#endif
+   RARCH_LOG("Checking directory name %s [%s]\n", name, x);
+   if (strlen(x) > 0)
+   {
+      if (!path_is_directory(x))
+      {
+         RARCH_WARN("Directory \"%s\" does not exists, creating\n", x);
+         if (mkdir((x), 0777) != 0)
+            RARCH_ERR("Could not create directory \"%s\"\n", x);
+      }
+   }
 }
 
-static void rarch_get_environment(int argc, char *argv[])
+void rarch_get_environment_console(void)
 {
-#if defined(__QNX__) && !defined(HAVE_BB10)
-   strlcpy(g_settings.libretro, "app/native/lib", sizeof(g_settings.libretro));
-   strlcpy(g_extern.config_path, "app/native/retroarch.cfg", sizeof(g_extern.config_path));
-   strlcpy(g_settings.video.shader_dir, "app/native/shaders_glsl", sizeof(g_settings.video.shader_dir));
-
-   config_load();
-
-   g_extern.verbose = true;
-#elif defined(RARCH_CONSOLE)
-#if defined(HAVE_LOGGER)
-   g_extern.verbose = true;
-   logger_init();
-#elif defined(HAVE_FILE_LOGGER)
-   g_extern.verbose = true;
-   g_extern.log_file = fopen("/retroarch-log.txt", "w");
-#endif
-   g_extern.verbose = true;
-
-   get_environment_settings(argc, argv);
-
-   MAKE_DIR(default_paths.port_dir, "port_dir");
-   MAKE_DIR(default_paths.system_dir, "system_dir");
-   MAKE_DIR(default_paths.savestate_dir, "savestate_dir");
-   MAKE_DIR(default_paths.sram_dir, "sram_dir");
-   MAKE_DIR(default_paths.input_presets_dir, "input_presets_dir");
-
-   config_load();
-
-   /* FIXME - when dummy loading becomes possible perhaps change this param  */
    init_libretro_sym(false);
    rarch_init_system_info();
 
@@ -185,119 +121,49 @@ static void rarch_get_environment(int argc, char *argv[])
    snprintf(g_extern.input_config_path, sizeof(g_extern.input_config_path), "%s/%s.cfg", default_paths.input_presets_dir, core_name);
    config_read_keybinds(g_extern.input_config_path);
 #endif
+}
 #endif
-}
 
-static void system_shutdown(void)
-{
-#if defined(__QNX__)
-   bps_shutdown();
-#elif defined(__APPLE__)
-   dispatch_async_f(dispatch_get_main_queue(), 0, apple_rarch_exited);
-#endif
-}
-
-#if defined(__APPLE__)
-static pthread_mutex_t apple_event_queue_lock = PTHREAD_MUTEX_INITIALIZER;
-
-static struct
-{
-   void (*function)(void*);
-   void* userdata;
-} apple_event_queue[16];
-
-static uint32_t apple_event_queue_size;
-
-void apple_frontend_post_event(void (*fn)(void*), void* userdata)
-{
-   pthread_mutex_lock(&apple_event_queue_lock);
-
-   if (apple_event_queue_size < 16)
-   {
-      apple_event_queue[apple_event_queue_size].function = fn;
-      apple_event_queue[apple_event_queue_size].userdata = userdata;
-      apple_event_queue_size ++;
-   }
-
-   pthread_mutex_unlock(&apple_event_queue_lock);
-}
-
-static void apple_free_main_wrap(struct rarch_main_wrap* wrap)
-{
-   if (wrap)
-   {
-      free((char*)wrap->libretro_path);
-      free((char*)wrap->rom_path);
-      free((char*)wrap->sram_path);
-      free((char*)wrap->state_path);
-      free((char*)wrap->config_path);
-   }
-
-   free(wrap);
-}
-
-static void process_events(void)
-{
-   pthread_mutex_lock(&apple_event_queue_lock);
-
-   for (int i = 0; i < apple_event_queue_size; i ++)
-      apple_event_queue[i].function(apple_event_queue[i].userdata);
-
-   apple_event_queue_size = 0;
-
-   pthread_mutex_unlock(&apple_event_queue_lock);
-}
-
-void* rarch_main(void* args)
+#if defined(IOS) || defined(OSX) || defined(HAVE_BB10)
+#define main_entry rarch_main
 #else
-int rarch_main(int argc, char *argv[])
+#define main_entry main
 #endif
-{
-   rarch_preinit();
 
-#if !defined(__APPLE__)
+int main_entry(int argc, char *argv[])
+{
+   void* args = NULL;
+   frontend_ctx = (frontend_ctx_driver_t*)frontend_ctx_init_first();
+
+   if (frontend_ctx && frontend_ctx->init)
+      frontend_ctx->init();
+
+#ifndef HAVE_BB10
    rarch_main_clear_state();
-   rarch_get_environment(argc, argv);
 #endif
 
+   if (frontend_ctx && frontend_ctx->environment_get)
+      frontend_ctx->environment_get(argc, argv, args);
 
-#if !defined(RARCH_CONSOLE)
-#if defined(__APPLE__)
-   struct rarch_main_wrap* argdata = (struct rarch_main_wrap*)args;
-   int init_ret = rarch_main_init_wrap(argdata);
-   apple_free_main_wrap(argdata);
-
-   if (init_ret)
-   {
-      rarch_main_clear_state();
-      dispatch_async_f(dispatch_get_main_queue(), (void*)1, apple_rarch_exited);
-      return 0;
-   }
-#else
+#if !defined(RARCH_CONSOLE) && !defined(HAVE_BB10)
    rarch_init_msg_queue();
    int init_ret;
    if ((init_ret = rarch_main_init(argc, argv))) return init_ret;
 #endif
-#endif
 
-#ifdef HAVE_MENU
-#ifdef IOS
-   char* system_directory = ios_get_rarch_system_directory();
-   strlcpy(g_extern.savestate_dir, system_directory, sizeof(g_extern.savestate_dir));
-   strlcpy(g_extern.savefile_dir, system_directory, sizeof(g_extern.savefile_dir));
-   free(system_directory);
-#endif
-
+#if defined(HAVE_MENU) || defined(HAVE_BB10)
    menu_init();
 
-#ifdef RARCH_CONSOLE
-   system_process_args(argc, argv);
+   if (frontend_ctx && frontend_ctx->process_args)
+      frontend_ctx->process_args(argc, argv, args);
+
+#if defined(RARCH_CONSOLE) || defined(HAVE_BB10)
    g_extern.lifecycle_mode_state |= 1ULL << MODE_LOAD_GAME;
 #else
    g_extern.lifecycle_mode_state |= 1ULL << MODE_GAME;
 #endif
 
-#ifndef RARCH_CONSOLE
+#if !defined(RARCH_CONSOLE) && !defined(HAVE_BB10)
    // If we started a ROM directly from command line,
    // push it to ROM history.
    if (!g_extern.libretro_dummy)
@@ -320,11 +186,9 @@ int rarch_main(int argc, char *argv[])
 #if defined(RARCH_CONSOLE) || defined(__QNX__)
             g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU);
 #else
-#if defined(__APPLE__)
-            // This needs to be here to tell the GUI thread that the emulator loop has stopped,
-            // the (void*)1 makes it display the 'Failed to load game' message.
-            dispatch_async_f(dispatch_get_main_queue(), (void*)1, apple_rarch_exited);
-#endif
+            if (frontend_ctx && frontend_ctx->shutdown)
+               frontend_ctx->shutdown(true);
+
             return 1;
 #endif
          }
@@ -335,16 +199,14 @@ int rarch_main(int argc, char *argv[])
       {
 #ifdef RARCH_CONSOLE
          driver.input->poll(NULL);
-
+#endif
          if (driver.video_poke->set_aspect_ratio)
             driver.video_poke->set_aspect_ratio(driver.video_data, g_settings.video.aspect_ratio_idx);
-#endif
 
          while ((g_extern.is_paused && !g_extern.is_oneshot) ? rarch_main_idle_iterate() : rarch_main_iterate())
          {
-#if defined(__APPLE__)
-            process_events();
-#endif
+            if (frontend_ctx && frontend_ctx->process_events)
+               frontend_ctx->process_events();
 
             if (!(g_extern.lifecycle_mode_state & (1ULL << MODE_GAME)))
                break;
@@ -362,9 +224,8 @@ int rarch_main(int argc, char *argv[])
 
          while (!g_extern.system.shutdown && menu_iterate())
          {
-#if defined(__APPLE__)
-            process_events();
-#endif
+            if (frontend_ctx && frontend_ctx->process_events)
+               frontend_ctx->process_events();
 
             if (!(g_extern.lifecycle_mode_state & (1ULL << MODE_MENU)))
                break;
@@ -372,7 +233,7 @@ int rarch_main(int argc, char *argv[])
 
          driver_set_nonblock_state(driver.nonblock_state);
 
-         if (driver.audio_data && !audio_start_func())
+         if (driver.audio_data && !g_extern.audio_data.mute && !audio_start_func())
          {
             RARCH_ERR("Failed to resume audio driver. Will continue without audio.\n");
             g_extern.audio_active = false;
@@ -395,24 +256,20 @@ int rarch_main(int argc, char *argv[])
    config_save_keybinds(g_extern.input_config_path);
 #endif
 
-   if (g_extern.main_is_init)
-      rarch_main_deinit();
-
 #ifdef RARCH_CONSOLE
    global_uninit_drivers();
 #endif
 #else
    while ((g_extern.is_paused && !g_extern.is_oneshot) ? rarch_main_idle_iterate() : rarch_main_iterate());
-   rarch_main_deinit();
 #endif
 
+   rarch_main_deinit();
    rarch_deinit_msg_queue();
 
 #ifdef PERF_TEST
    rarch_perf_log();
 #endif
 
-#ifdef RARCH_CONSOLE
 #if defined(HAVE_LOGGER)
    logger_shutdown();
 #elif defined(HAVE_FILE_LOGGER)
@@ -420,23 +277,18 @@ int rarch_main(int argc, char *argv[])
       fclose(g_extern.log_file);
    g_extern.log_file = NULL;
 #endif
-   system_deinit();
 
-   if (g_extern.lifecycle_mode_state & (1ULL << MODE_EXITSPAWN))
-      system_exitspawn();
-#endif
+   if (frontend_ctx && frontend_ctx->deinit)
+      frontend_ctx->deinit();
+
+   if (g_extern.lifecycle_mode_state & (1ULL << MODE_EXITSPAWN) && frontend_ctx
+         && frontend_ctx->exitspawn)
+      frontend_ctx->exitspawn();
 
    rarch_main_clear_state();
 
-   system_shutdown();
+   if (frontend_ctx && frontend_ctx->shutdown)
+      frontend_ctx->shutdown(false);
 
-// FIXME - should this be 1 for RARCH_CONSOLE?
    return 0;
 }
-
-#ifndef __APPLE__
-int main(int argc, char *argv[])
-{
-   return rarch_main(argc, argv);
-}
-#endif

@@ -31,8 +31,11 @@ static UIView* g_pause_indicator_view;
 
 #elif defined(OSX)
 
+#include "apple_input.h"
+
 static RAGameView* g_instance;
 static NSOpenGLContext* g_context;
+static NSOpenGLPixelFormat* g_format;
 
 #define g_view g_instance // < RAGameView is a container on iOS; on OSX these are both the same object
 
@@ -55,25 +58,22 @@ static float g_screen_scale = 1.0f;
 
 - (id)init
 {
-   static const NSOpenGLPixelFormatAttribute attributes [] = {
-      NSOpenGLPFAWindow,
-      NSOpenGLPFADoubleBuffer,	// double buffered
-      NSOpenGLPFADepthSize, (NSOpenGLPixelFormatAttribute)16, // 16 bit depth buffer
-      (NSOpenGLPixelFormatAttribute)nil
-   };
-
-   self = [super initWithFrame:CGRectMake(0, 0, 100, 100) pixelFormat:[[NSOpenGLPixelFormat alloc] initWithAttributes:attributes]];
-   self.autoresizingMask = NSViewWidthSizable | NSViewHeightSizable;   
-   
-   g_context = self.openGLContext;
-   [g_context makeCurrentContext];
-   
+   self = [super init];
+   self.autoresizingMask = NSViewWidthSizable | NSViewHeightSizable;
    return self;
+}
+
+- (void)setFrame:(NSRect)frameRect
+{
+   [super setFrame:frameRect];
+
+   if (g_view && g_context)
+      [g_context update];
 }
 
 - (void)display
 {
-   [self.openGLContext flushBuffer];
+   [g_context flushBuffer];
 }
 
 - (void)bindDrawable
@@ -87,8 +87,31 @@ static float g_screen_scale = 1.0f;
    return YES;
 }
 
+- (BOOL)isFlipped
+{
+   return YES;
+}
+
 - (void)keyDown:(NSEvent*)theEvent
 {
+}
+
+- (void)mouseDown:(NSEvent*)theEvent
+{
+   g_current_input_data.touch_count = 1;
+   [self mouseDragged:theEvent];
+}
+
+- (void)mouseUp:(NSEvent*)theEvent
+{
+   g_current_input_data.touch_count = 0;
+}
+
+- (void)mouseDragged:(NSEvent*)theEvent
+{
+   NSPoint pos = [self convertPoint:[theEvent locationInWindow] fromView:nil];
+   g_current_input_data.touches[0].screen_x = pos.x;
+   g_current_input_data.touches[0].screen_y = pos.y;
 }
 
 #elif defined(IOS) // < iOS Pause menu and lifecycle
@@ -164,17 +187,6 @@ static float g_screen_scale = 1.0f;
    ];
 }
 
-- (void)suspend
-{
-   g_view.context = nil;
-   [EAGLContext setCurrentContext:nil];
-}
-
-- (void)resume
-{
-   g_view.context = g_context;
-   [EAGLContext setCurrentContext:g_context];
-}
 #endif
 
 @end
@@ -190,7 +202,7 @@ bool apple_init_game_view()
       g_context = [[EAGLContext alloc] initWithAPI:kEAGLRenderingAPIOpenGLES2];
       [EAGLContext setCurrentContext:g_context];
       g_view.context = g_context;
-
+      
       // Show pause button for a few seconds, so people know it's there
       g_pause_indicator_view.alpha = 1.0f;
       [NSObject cancelPreviousPerformRequestsWithTarget:g_instance];
@@ -207,13 +219,6 @@ bool apple_init_game_view()
 void apple_destroy_game_view()
 {
    dispatch_sync(dispatch_get_main_queue(), ^{
-      // Clear the view, otherwise the last frame from this game will be displayed
-      // briefly on the next game.
-      [g_view bindDrawable];
-      glClearColor(0, 0, 0, 1);
-      glClear(GL_COLOR_BUFFER_BIT);
-      [g_view display];
-   
       glFinish();
       
 #ifdef IOS
@@ -228,6 +233,38 @@ void apple_destroy_game_view()
 #else
    [NSOpenGLContext clearCurrentContext];
 #endif
+}
+
+bool apple_create_gl_context(uint32_t version)
+{
+#ifdef OSX
+   [NSOpenGLContext clearCurrentContext];
+   
+   dispatch_sync(dispatch_get_main_queue(), ^{
+      [NSOpenGLContext clearCurrentContext];
+      [g_context clearDrawable];
+      g_context = nil;
+      g_format = nil;
+   
+      NSOpenGLPixelFormatAttribute attributes [] = {
+         NSOpenGLPFADoubleBuffer,	// double buffered
+         NSOpenGLPFADepthSize, (NSOpenGLPixelFormatAttribute)16, // 16 bit depth buffer
+         version ? NSOpenGLPFAOpenGLProfile : 0, version,
+         (NSOpenGLPixelFormatAttribute)nil
+      };
+
+      g_format = [[NSOpenGLPixelFormat alloc] initWithAttributes:attributes];
+      g_context = [[NSOpenGLContext alloc] initWithFormat:g_format shareContext:nil];
+      g_context.view = g_view;
+      [g_context makeCurrentContext];
+   });
+   
+   [g_context makeCurrentContext];
+
+#endif
+
+   return true;
+
 }
 
 void apple_flip_game_view()
@@ -248,7 +285,7 @@ void apple_set_game_view_sync(unsigned interval)
    g_fast_forward_skips = interval ? 0 : 3;
 #elif defined(OSX)
    GLint value = interval ? 1 : 0;
-   [g_view.openGLContext setValues:&value forParameter:NSOpenGLCPSwapInterval];
+   [g_context setValues:&value forParameter:NSOpenGLCPSwapInterval];
 #endif
 }
 
@@ -259,6 +296,20 @@ void apple_get_game_view_size(unsigned *width, unsigned *height)
    
    *height = g_view.bounds.size.height * g_screen_scale;
    *height = *height ? *height : 480;
+}
+
+void *apple_get_proc_address(const char *symbol_name)
+{
+#ifdef IOS
+   (void)symbol_name; // We don't need symbols above GLES2 on iOS.
+   return NULL;
+#else
+   CFStringRef symbol = CFStringCreateWithCString(kCFAllocatorDefault, symbol_name, kCFStringEncodingASCII);
+   void *proc = CFBundleGetFunctionPointerForName(CFBundleGetBundleWithIdentifier(CFSTR("com.apple.opengl")),
+      symbol);
+   CFRelease(symbol);
+   return proc;
+#endif
 }
 
 #ifdef IOS

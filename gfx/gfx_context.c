@@ -15,6 +15,7 @@
 
 #include "../general.h"
 #include "gfx_context.h"
+#include "../general.h"
 #include <string.h>
 
 #ifdef HAVE_CONFIG_H
@@ -68,11 +69,11 @@ const gfx_ctx_driver_t *gfx_ctx_find_driver(const char *ident)
    return NULL;
 }
 
-const gfx_ctx_driver_t *gfx_ctx_init_first(enum gfx_ctx_api api)
+const gfx_ctx_driver_t *gfx_ctx_init_first(enum gfx_ctx_api api, unsigned major, unsigned minor)
 {
    for (unsigned i = 0; i < ARRAY_SIZE(gfx_ctx_drivers); i++)
    {
-      if (gfx_ctx_drivers[i]->bind_api(api))
+      if (gfx_ctx_drivers[i]->bind_api(api, major, minor))
       {
          if (gfx_ctx_drivers[i]->init())
             return gfx_ctx_drivers[i];

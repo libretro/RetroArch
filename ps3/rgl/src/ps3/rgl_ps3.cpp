@@ -3130,7 +3130,7 @@ GLAPI void RGL_EXPORT psglSwap (void)
    rglGcmDriver *driver = (rglGcmDriver*)_CurrentDevice->rasterDriver;
    float * __restrict v = (float*)driver->sharedVPConstants;
 
-   thisContext->current[0] = (((33) << (18)) | ((0x00001efc)));
+   thisContext->current[0] = (((33) << (18)) | CELL_GCM_NV4097_SET_TRANSFORM_CONSTANT_LOAD);
    thisContext->current[1] = 0;
 
    __builtin_memcpy(&thisContext->current[2], v, sizeof(float)*16);

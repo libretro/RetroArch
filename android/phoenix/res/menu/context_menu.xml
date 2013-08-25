@@ -1,11 +1,4 @@
 <?xml version="1.0" encoding="utf-8"?>
 <menu xmlns:android="http://schemas.android.com/apk/res/android" >
-    <item android:id="@+id/rarch_settings" android:title="@string/rarch_settings" android:showAsAction="ifRoom" />
-    <item android:id="@+id/help" android:title="@string/help"></item>
     <item android:id="@+id/input_method_select" android:title="@string/input_method" android:showAsAction="ifRoom" />
-    <item android:id="@+id/report_ime" android:title="@string/report_ime"></item>
-    <item android:id="@+id/report_refreshrate" android:title="@string/report_refreshrate"></item>
-    <item android:id="@+id/retroarch_guide" android:title="@string/retroarch_guide"></item>
-    <item android:id="@+id/cores_guide" android:title="@string/cores_guide"></item>
-    <item android:id="@+id/overlay_guide" android:title="@string/overlay_guide"></item>
 </menu>

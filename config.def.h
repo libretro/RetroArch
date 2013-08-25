@@ -44,6 +44,7 @@ enum
    VIDEO_D3D9,
    VIDEO_VG,
    VIDEO_NULL,
+   VIDEO_OMAP,
 
    AUDIO_RSOUND,
    AUDIO_OSS,
@@ -379,6 +380,9 @@ static const bool savestate_auto_load = true;
 
 // Slowmotion ratio.
 static const float slowmotion_ratio = 3.0;
+
+// Maximum fast forward ratio (Negative => no limit).
+static const float fastforward_ratio = -1.0;
 
 // Enable stdin/network command interface
 static const bool network_cmd_enable = false;

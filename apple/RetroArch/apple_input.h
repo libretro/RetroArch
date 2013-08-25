@@ -33,6 +33,9 @@ typedef struct
    apple_touch_data_t touches[MAX_TOUCHES];
    uint32_t touch_count;
 
+   uint32_t mouse_buttons;
+   int16_t mouse_delta[2];
+
    uint32_t keys[MAX_KEYS];
 
    uint32_t pad_buttons[MAX_PADS];
@@ -44,6 +47,7 @@ extern apple_input_data_t g_polled_input_data;  //< Game thread data
 
 // Main thread only
 void apple_input_enable_icade(bool on);
+uint32_t apple_input_get_icade_buttons();
 void apple_input_handle_key_event(unsigned keycode, bool down);
 
 #endif

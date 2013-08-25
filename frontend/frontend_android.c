@@ -59,8 +59,6 @@ static void print_cur_config (void *data)
          AConfiguration_getUiModeNight(android_app->config));
 }
 
-#define MAX_ARGS 32
-
 static bool android_run_events (void *data)
 {
    int id = ALooper_pollOnce(-1, NULL, NULL, NULL);
@@ -155,9 +153,11 @@ static bool android_app_start_main(struct android_app *android_app)
    config_load();
 
    menu_init();
+
    ret = load_menu_game();
    if (ret)
       g_extern.lifecycle_mode_state |= (1ULL << MODE_GAME);
+
    return ret;
 }
 

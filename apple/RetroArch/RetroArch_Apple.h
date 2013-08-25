@@ -18,78 +18,51 @@
 #define __RARCH_APPLE_H
 
 #include <Foundation/Foundation.h>
+#import <CoreFoundation/CoreFoundation.h>
 #import "RAModuleInfo.h"
 
-void apple_run_core(RAModuleInfo* core, const char* file);
+#define GSEVENT_TYPE_KEYDOWN 10
+#define GSEVENT_TYPE_KEYUP 11
 
 @protocol RetroArch_Platform
 - (void)loadingCore:(RAModuleInfo*)core withFile:(const char*)file;
 - (void)unloadingCore:(RAModuleInfo*)core;
-- (NSString*)retroarchConfigPath;
+
+- (NSString*)retroarchConfigPath; // < This returns the directory that contains retroarch.cfg and other custom configs
 - (NSString*)corePath;
 @end
 
+#ifdef IOS
+#import "../iOS/platform.h"
+#elif defined(OSX)
+#import "../OSX/platform.h"
+#endif
+
+extern bool apple_is_paused;
+extern bool apple_is_running;
+extern bool apple_use_tv_mode;
+extern RAModuleInfo* apple_core;
+
 extern id<RetroArch_Platform> apple_platform;
 
-#ifdef IOS
+// main.m
+enum basic_event_t { RESET = 1, LOAD_STATE = 2, SAVE_STATE = 3, QUIT = 4 };
+extern void apple_event_basic_command(void* userdata);
+extern void apple_event_set_state_slot(void* userdata);
+extern void apple_event_show_rgui(void* userdata);
 
-// RAGameView.m
-@interface RAGameView : UIViewController
-+ (RAGameView*)get;
-- (void)openPauseMenu;
-- (void)closePauseMenu;
-
-- (void)suspend;
-- (void)resume;
-@end
-
-@interface RetroArch_iOS : UINavigationController<UIApplicationDelegate, UINavigationControllerDelegate, RetroArch_Platform>
-
-+ (RetroArch_iOS*)get;
-
-- (void)loadingCore:(RAModuleInfo*)core withFile:(const char*)file;
-- (void)unloadingCore:(RAModuleInfo*)core;
-- (NSString*)retroarchConfigPath;
-
-- (void)refreshConfig;
-- (void)refreshSystemConfig;
-
-@property (strong, nonatomic) NSString* documentsDirectory; // e.g. /var/mobile/Documents
-@property (strong, nonatomic) NSString* systemDirectory;    // e.g. /var/mobile/Documents/.RetroArch
-@property (strong, nonatomic) NSString* systemConfigPath;   // e.g. /var/mobile/Documents/.RetroArch/frontend.cfg
-
-@end
-
-#elif defined(OSX)
-
-#import <AppKit/AppKit.h>
-
-@interface RAGameView : NSOpenGLView
-
-+ (RAGameView*)get;
-- (void)display;
-
-@end
-
-@interface RetroArch_OSX : NSObject<RetroArch_Platform, NSApplicationDelegate>
-{
-@public
-   NSWindow IBOutlet *window;
-}
-
-+ (RetroArch_OSX*)get;
-
-- (void)loadingCore:(RAModuleInfo*)core withFile:(const char*)file;
-- (void)unloadingCore:(RAModuleInfo*)core;
-
-@end
-
-#endif
+extern void apple_refresh_config();
+extern void apple_enter_stasis();
+extern void apple_exit_stasis();
+extern void apple_run_core(RAModuleInfo* core, const char* file);
 
 // utility.m
 extern void apple_display_alert(NSString* message, NSString* title);
 extern void objc_clear_config_hack();
 extern bool path_make_and_check_directory(const char* path, mode_t mode, int amode);
 extern NSString* objc_get_value_from_config(config_file_t* config, NSString* name, NSString* defaultValue);
+
+// frontend/platform/platform_apple.c
+extern void apple_frontend_post_event(void (*fn)(void*), void* userdata);
 
 #endif

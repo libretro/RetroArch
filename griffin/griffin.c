@@ -111,6 +111,7 @@ VIDEO CONTEXT
 #include "../gfx/context/apple_gl_ctx.c"
 #endif
 
+
 #if defined(HAVE_OPENGL)
 
 #if defined(HAVE_KMS)
@@ -186,6 +187,11 @@ VIDEO DRIVER
 #include "../gfx/math/matrix_3x3.c"
 #endif
 
+#ifdef HAVE_OMAP
+#include "../gfx/omap_gfx.c"
+#include "../gfx/fbdev.c"
+#endif
+
 #ifdef HAVE_DYLIB
 #include "../gfx/ext_gfx.c"
 #endif
@@ -198,6 +204,16 @@ VIDEO DRIVER
 
 #ifdef HAVE_OPENGL
 #include "../gfx/gl.c"
+
+#ifndef HAVE_PSGL
+#include "../gfx/glsym/rglgen.c"
+#ifdef HAVE_OPENGLES2
+#include "../gfx/glsym/glsym_es2.c"
+#else
+#include "../gfx/glsym/glsym_gl.c"
+#endif
+#endif
+
 #endif
 
 #ifdef HAVE_XVIDEO
@@ -210,10 +226,8 @@ VIDEO DRIVER
 
 #if defined(GEKKO)
 #include "../gx/gx_video.c"
-#elif defined(SN_TARGET_PSP2)
-#include "../vita/vita_video.c"
-//#elif defined(PSP)
-//#include "../psp1/psp1_video.c"
+#elif defined(PSP)
+#include "../psp1/psp1_video.c"
 #elif defined(XENON)
 #include "../xenon/xenon360_video.c"
 #endif
@@ -290,7 +304,7 @@ INPUT
 #include "../blackberry-qnx/qnx_input.c"
 #endif
 
-#if defined(PANDORA) 
+#if defined(__linux__) && !defined(ANDROID) 
 #include "../input/linuxraw_input.c"
 #include "../input/linuxraw_joypad.c"
 #endif
@@ -441,6 +455,26 @@ REWIND
 #include "../rewind.c"
 
 /*============================================================
+FRONTEND
+============================================================ */
+
+#include "../frontend/frontend_context.c"
+
+#if defined(__CELLOS_LV2__)
+#include "../frontend/platform/platform_ps3.c"
+#elif defined(GEKKO)
+#include "../frontend/platform/platform_gx.c"
+#elif defined(_XBOX)
+#include "../frontend/platform/platform_xdk.c"
+#elif defined(PSP)
+#include "../frontend/platform/platform_psp.c"
+#elif defined(__QNX__)
+#include "../frontend/platform/platform_qnx.c"
+#elif defined(OSX) || defined(IOS)
+#include "../frontend/platform/platform_apple.c"
+#endif
+
+/*============================================================
 MAIN
 ============================================================ */
 #if defined(XENON)
@@ -464,6 +498,7 @@ THREAD
 #elif defined(HAVE_THREADS)
 #include "../thread.c"
 #include "../gfx/thread_wrapper.c"
+#include "../audio/thread_wrapper.c"
 #ifndef RARCH_CONSOLE
 #include "../autosave.c"
 #endif

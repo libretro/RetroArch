@@ -56,7 +56,7 @@ static bool apple_joypad_button(unsigned port, uint16_t joykey)
 
 static int16_t apple_joypad_axis(unsigned port, uint32_t joyaxis)
 {
-   if (joyaxis == AXIS_NONE || port != 0)
+   if (joyaxis == AXIS_NONE)
       return 0;
 
    int16_t val = 0;

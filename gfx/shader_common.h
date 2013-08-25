@@ -47,9 +47,11 @@ struct gl_shader_backend
    void (*use)(unsigned index);
    unsigned (*num_shaders)(void);
    bool (*filter_type)(unsigned index, bool *smooth);
+   enum gfx_wrap_type (*wrap_type)(unsigned index);
    void (*shader_scale)(unsigned index, struct gfx_fbo_scale *scale);
    bool (*set_coords)(const struct gl_coords *coords);
    bool (*set_mvp)(const math_matrix *mat);
+   unsigned (*get_prev_textures)(void);
 
    enum rarch_shader_type type;
 };

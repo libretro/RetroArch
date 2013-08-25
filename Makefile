@@ -3,6 +3,7 @@ include config.mk
 TARGET = retroarch tools/retroarch-joyconfig tools/retrolaunch/retrolaunch
 
 OBJ = frontend/frontend.o \
+		frontend/frontend_context.o \
 		retroarch.o \
 		file.o \
 		file_path.o \
@@ -92,7 +93,7 @@ ifeq ($(HAVE_RGUI), 1)
 endif
 
 ifeq ($(HAVE_THREADS), 1)
-   OBJ += autosave.o thread.o gfx/thread_wrapper.o
+   OBJ += autosave.o thread.o gfx/thread_wrapper.o audio/thread_wrapper.o
    ifeq ($(findstring Haiku,$(OS)),)
       LIBS += -lpthread
    endif
@@ -185,13 +186,18 @@ ifeq ($(HAVE_SDL), 1)
    LIBS += $(SDL_LIBS)
 endif
 
+ifeq ($(HAVE_OMAP), 1)
+	OBJ += gfx/omap_gfx.o gfx/fbdev.o
+endif
+
 ifeq ($(HAVE_OPENGL), 1)
    OBJ += gfx/gl.o \
 			 gfx/gfx_context.o \
 			 gfx/fonts/gl_font.o \
 			 gfx/fonts/gl_raster_font.o \
 			 gfx/math/matrix.o \
-			 gfx/state_tracker.o
+			 gfx/state_tracker.o \
+			 gfx/glsym/rglgen.o
 
    ifeq ($(HAVE_KMS), 1)
       OBJ += gfx/context/drm_egl_ctx.o
@@ -218,12 +224,14 @@ ifeq ($(HAVE_OPENGL), 1)
    ifeq ($(HAVE_GLES), 1)
       LIBS += -lGLESv2
       DEFINES += -DHAVE_OPENGLES -DHAVE_OPENGLES2
+      OBJ += gfx/glsym/glsym_es2.o
    else
+      DEFINES += -DHAVE_GL_SYNC
+      OBJ += gfx/glsym/glsym_gl.o
       ifeq ($(OSX), 1)
          LIBS += -framework OpenGL
       else
          LIBS += -lGL
-         DEFINES += -DHAVE_GL_SYNC
       endif
    endif
 
@@ -329,6 +337,11 @@ ifeq ($(DEBUG), 1)
    OPTIMIZE_FLAG = -O0
 endif
 
+ifeq ($(GL_DEBUG), 1)
+   CFLAGS += -DGL_DEBUG
+   CXXFLAGS += -DGL_DEBUG
+endif
+
 CFLAGS += -Wall $(OPTIMIZE_FLAG) $(INCLUDE_DIRS) -g -I.
 ifeq ($(CXX_BUILD), 1)
    LD = $(CXX)
@@ -419,6 +432,7 @@ clean:
 	rm -f audio/*.o
 	rm -f conf/*.o
 	rm -f gfx/*.o
+	rm -f gfx/glsym/*.o
 	rm -f gfx/rpng/*.o
 	rm -f gfx/fonts/*.o
 	rm -f gfx/math/*.o

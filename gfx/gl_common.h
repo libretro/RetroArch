@@ -35,35 +35,8 @@
 #include <EGL/eglext.h>
 #endif
 
-#if defined(IOS)
-#include <OpenGLES/ES2/gl.h>
-#include <OpenGLES/ES2/glext.h>
-#elif defined(__APPLE__)
-#include <OpenGL/gl.h>
-#include <OpenGL/glext.h>
-#elif defined(HAVE_PSGL)
-#include <PSGL/psgl.h>
-#include <PSGL/psglu.h>
-#include <GLES/glext.h>
-#elif defined(HAVE_OPENGL_MODERN)
-#include <GL3/gl3.h>
-#include <GL3/gl3ext.h>
-#elif defined(HAVE_OPENGLES2)
-#include <GLES2/gl2.h>
-#include <GLES2/gl2ext.h>
-#elif defined(HAVE_OPENGLES1)
-#include <GLES/gl.h>
-#include <GLES/glext.h>
-#else
-#define GL_GLEXT_PROTOTYPES
-#include <GL/gl.h>
-#include <GL/glext.h>
-#endif
+#include "glsym/glsym.h"
 
-
-#if defined(ANDROID) && defined(HAVE_GRIFFIN)
-#include "../griffin/hook_context.h"
-#else
 #define context_get_video_size_func(win, height)     gl->ctx_driver->get_video_size(win, height)
 #define context_update_window_title_func()           gl->ctx_driver->update_window_title()
 #define context_destroy_func()                       gl->ctx_driver->destroy()
@@ -84,17 +57,6 @@
 #define context_write_egl_image_func(frame, width, height, pitch, base_size, tex_index, img) \
    gl->ctx_driver->write_egl_image(frame, width, height, pitch, base_size, tex_index,img)
 #endif
-#endif
-
-static inline bool gl_query_extension(const char *ext)
-{
-   const char *str = (const char*)glGetString(GL_EXTENSIONS);
-   bool ret = str && strstr(str, ext);
-   RARCH_LOG("Querying GL extension: %s => %s\n",
-         ext, ret ? "exists" : "doesn't exist");
-
-   return ret;
-}
 
 static inline bool gl_check_error(void)
 {
@@ -172,13 +134,7 @@ struct gl_coords
 typedef struct gl_shader_backend gl_shader_backend_t;
 
 #define MAX_SHADERS 16
-
-#if (defined(HAVE_GLSL) || defined(HAVE_CG))
-#define TEXTURES 8
-#else
-#define TEXTURES 1
-#endif
-#define TEXTURES_MASK (TEXTURES - 1)
+#define MAX_TEXTURES 8
 
 typedef struct gl
 {
@@ -186,9 +142,10 @@ typedef struct gl
    const gl_shader_backend_t *shader;
 
    bool vsync;
-   GLuint texture[TEXTURES];
+   GLuint texture[MAX_TEXTURES];
    unsigned tex_index; // For use with PREV.
-   struct gl_tex_info prev_info[TEXTURES];
+   unsigned textures;
+   struct gl_tex_info prev_info[MAX_TEXTURES];
    GLuint tex_filter;
 
    void *empty_buf;
@@ -207,8 +164,8 @@ typedef struct gl
    int fbo_pass;
    bool fbo_inited;
 
-   GLuint hw_render_fbo[TEXTURES];
-   GLuint hw_render_depth[TEXTURES];
+   GLuint hw_render_fbo[MAX_TEXTURES];
+   GLuint hw_render_depth[MAX_TEXTURES];
    bool hw_render_fbo_init;
    bool hw_render_depth_init;
 #endif
@@ -227,20 +184,22 @@ typedef struct gl
    struct rarch_viewport vp;
    unsigned vp_out_width;
    unsigned vp_out_height;
-   unsigned last_width[TEXTURES];
-   unsigned last_height[TEXTURES];
+   unsigned last_width[MAX_TEXTURES];
+   unsigned last_height[MAX_TEXTURES];
    unsigned tex_w, tex_h;
    GLfloat tex_coords[8];
    math_matrix mvp, mvp_no_rot;
 
    struct gl_coords coords;
+   const GLfloat *vertex_ptr;
+   const GLfloat *white_color_ptr;
 
    GLuint pbo;
 
    GLenum internal_fmt;
    GLenum texture_type; // RGB565 or ARGB
    GLenum texture_fmt;
-   GLenum border_type;
+   GLenum wrap_mode;
    unsigned base_size; // 2 or 4
 
    // Fonts
@@ -248,14 +207,16 @@ typedef struct gl
    const gl_font_renderer_t *font_ctx;
    const font_renderer_driver_t *font_driver;
    GLuint font_tex;
+   GLint max_font_size;
    int font_tex_w, font_tex_h;
-   uint16_t *font_tex_buf;
+   uint32_t *font_tex_buf;
    char font_last_msg[256];
    int font_last_width, font_last_height;
    GLfloat font_color[16];
    GLfloat font_color_dark[16];
 
    bool egl_images;
+   video_info_t video_info;
 
 #ifdef HAVE_OVERLAY
    // Overlay rendering
@@ -289,16 +250,10 @@ typedef struct gl
    GLsync fences[MAX_FENCES];
    unsigned fence_count;
 #endif
-} gl_t;
 
-// Windows ... <_<
-#ifdef _WIN32
-extern PFNGLCLIENTACTIVETEXTUREPROC pglClientActiveTexture;
-extern PFNGLACTIVETEXTUREPROC pglActiveTexture;
-#else
-#define pglClientActiveTexture glClientActiveTexture
-#define pglActiveTexture glActiveTexture
-#endif
+   bool core_context;
+   GLuint vao;
+} gl_t;
 
 #if defined(HAVE_PSGL)
 #define RARCH_GL_INTERNAL_FORMAT32 GL_ARGB_SCE
@@ -353,15 +308,33 @@ extern PFNGLACTIVETEXTUREPROC pglActiveTexture;
 #undef GL_UNPACK_ROW_LENGTH
 #endif
 
-extern const GLfloat vertexes_flipped[];
-extern const GLfloat white_color[];
-
 void gl_set_projection(void *data, struct gl_ortho *ortho, bool allow_rotate);
 void gl_set_viewport(void *data, unsigned width, unsigned height, bool force_full, bool allow_rotate);
 void gl_shader_set_coords(void *data, const struct gl_coords *coords, const math_matrix *mat);
 
 void gl_init_fbo(void *data, unsigned width, unsigned height);
 void gl_deinit_fbo(void *data);
+
+static inline GLenum gl_wrap_type_to_enum(enum gfx_wrap_type type)
+{
+   switch (type)
+   {
+#ifndef HAVE_OPENGLES
+      case RARCH_WRAP_BORDER:
+         return GL_CLAMP_TO_BORDER;
+#else
+      case RARCH_WRAP_BORDER:
+#endif
+      case RARCH_WRAP_EDGE:
+         return GL_CLAMP_TO_EDGE;
+      case RARCH_WRAP_REPEAT:
+         return GL_REPEAT;
+      case RARCH_WRAP_MIRRORED_REPEAT:
+         return GL_MIRRORED_REPEAT;
+      default:
+         return 0;
+   }
+}
 
 #endif
 

@@ -11,6 +11,7 @@
 		9620F6651790004F001B3B81 /* Settings.xib in Resources */ = {isa = PBXBuildFile; fileRef = 9620F6641790004F001B3B81 /* Settings.xib */; };
 		962EE0E2178B3DF6004224FF /* IOKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 962EE0E1178B3DF6004224FF /* IOKit.framework */; };
 		96355CE31788E72A0010DBFA /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 96355CE21788E72A0010DBFA /* Cocoa.framework */; };
+		9646869817BBC14E00C5EA69 /* platform.m in Sources */ = {isa = PBXBuildFile; fileRef = 9646869617BBC14E00C5EA69 /* platform.m */; };
 		967894931788ECDB00D6CA69 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 9678948F1788ECDB00D6CA69 /* InfoPlist.strings */; };
 		967894941788ECDB00D6CA69 /* MainMenu.xib in Resources */ = {isa = PBXBuildFile; fileRef = 967894911788ECDB00D6CA69 /* MainMenu.xib */; };
 		967894961788ED1100D6CA69 /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 967894951788ED1100D6CA69 /* main.m */; };
@@ -35,6 +36,8 @@
 		96355CE51788E72A0010DBFA /* AppKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AppKit.framework; path = System/Library/Frameworks/AppKit.framework; sourceTree = SDKROOT; };
 		96355CE61788E72A0010DBFA /* CoreData.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreData.framework; path = System/Library/Frameworks/CoreData.framework; sourceTree = SDKROOT; };
 		96355CE71788E72A0010DBFA /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = System/Library/Frameworks/Foundation.framework; sourceTree = SDKROOT; };
+		9646869617BBC14E00C5EA69 /* platform.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = platform.m; path = OSX/platform.m; sourceTree = SOURCE_ROOT; };
+		9646869717BBC14E00C5EA69 /* platform.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = platform.h; path = OSX/platform.h; sourceTree = SOURCE_ROOT; };
 		9678948D1788ECCA00D6CA69 /* RetroArch-Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = "RetroArch-Info.plist"; path = "OSX/RetroArch-Info.plist"; sourceTree = SOURCE_ROOT; };
 		967894901788ECDB00D6CA69 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = OSX/en.lproj/InfoPlist.strings; sourceTree = SOURCE_ROOT; };
 		967894921788ECDB00D6CA69 /* en */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = en; path = OSX/en.lproj/MainMenu.xib; sourceTree = SOURCE_ROOT; };
@@ -109,6 +112,8 @@
 		96355CE81788E72A0010DBFA /* RetroArch */ = {
 			isa = PBXGroup;
 			children = (
+				9646869617BBC14E00C5EA69 /* platform.m */,
+				9646869717BBC14E00C5EA69 /* platform.h */,
 				9620F662178FD4D3001B3B81 /* settings.m */,
 				967894A01788F07D00D6CA69 /* griffin.c */,
 				967894971788F02600D6CA69 /* RAGameView.m */,
@@ -214,6 +219,7 @@
 				9678949F1788F02600D6CA69 /* utility.m in Sources */,
 				967894A11788F07D00D6CA69 /* griffin.c in Sources */,
 				9620F663178FD4D3001B3B81 /* settings.m in Sources */,
+				9646869817BBC14E00C5EA69 /* platform.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -354,7 +360,6 @@
 					"-D__LIBRETRO__",
 					"-DRARCH_PERFORMANCE_MODE",
 					"-DRARCH_MOBILE",
-					"-DPACKAGE_VERSION=\\\"0.9.9.3\\\"",
 					"-DHAVE_COREAUDIO",
 					"-DHAVE_DYNAMIC",
 					"-DHAVE_OVERLAY",

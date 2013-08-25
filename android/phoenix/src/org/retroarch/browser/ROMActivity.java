@@ -11,7 +11,7 @@ public class ROMActivity extends DirectoryActivity {
 	public void onCreate(Bundle savedInstanceState) {
 		
 		SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getBaseContext());
-		String startPath = prefs.getString("phoenix_rom_dir", "");
+		String startPath = prefs.getString("rgui_browser_directory", "");
 		if (!startPath.isEmpty() && new File(startPath).exists())
 			super.setStartDirectory(startPath);
 

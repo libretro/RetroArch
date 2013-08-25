@@ -1,3 +1,3 @@
-display_name = "PrBoom (DOOM)"
+display_name = "Doom (PrBoom)"
 supported_extensions = "wad|iwad"
 corename = "prboom"

@@ -1,4 +1,4 @@
-display_name = "Sega (MS/GG/MD/CD)"
+display_name = "Sega MS/GG/MD/CD (Genesis Plus GX)"
 supported_extensions = "md|smd|gen|sms|gg|sg|bin|cue|ios"
 corename = "Genesis Plus GX"
 manufacturer = "Sega"

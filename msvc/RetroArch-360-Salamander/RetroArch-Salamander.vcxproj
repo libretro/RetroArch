@@ -267,6 +267,7 @@
     </ClCompile>
     <ClCompile Include="..\..\file_path.c" />
     <ClCompile Include="..\..\frontend\frontend_salamander.c" />
+    <ClCompile Include="..\..\frontend\frontend_context.c" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

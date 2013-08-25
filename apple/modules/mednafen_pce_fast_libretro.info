@@ -1,4 +1,4 @@
-display_name = "PC Engine/TurboGrafx-16"
+display_name = "PC Engine/TurboGrafx-16 (Mednafen PCE Fast)"
 supported_extensions = "pce|sgx|cue"
 corename = "Mednafen PCE Fast"
 manufacturer = "NEC"

@@ -188,7 +188,7 @@ template<int SIZE> static void setVectorTypeSharedvpIndex (void *data, const voi
    memcpy(driver->sharedVPConstants + resource * 4 * sizeof( float ),
          dst, 4 * sizeof(float));
 
-   thisContext->current[0] = (((5) << (18)) | ((0x00001efc)));
+   thisContext->current[0] = (((5) << (18)) | CELL_GCM_NV4097_SET_TRANSFORM_CONSTANT_LOAD);
    thisContext->current[1] = resource;
    thisContext->current += 2;
 
@@ -214,7 +214,7 @@ template<int SIZE> static void setVectorTypeSharedvpIndexArray (void *data, cons
    memcpy(driver->sharedVPConstants + resource * 4 * sizeof( float ),
          dst, 4 * sizeof(float));
 
-   thisContext->current[0] = (((5) << (18)) | ((0x00001efc)));
+   thisContext->current[0] = (((5) << (18)) | CELL_GCM_NV4097_SET_TRANSFORM_CONSTANT_LOAD);
    thisContext->current[1] = resource;
    thisContext->current += 2;
 
@@ -1814,9 +1814,18 @@ GLAPI void APIENTRY glDrawArrays (GLenum mode, GLint first, GLsizei count)
                   // set 3 consts
                   {
                      GLfloat v2[12];
-                     v2[0] = value[0];v2[1] = value[3];v2[2] = value[6];v2[3] = 0;
-                     v2[4] = value[1];v2[5] = value[4];v2[6] = value[7];v2[7] = 0;
-                     v2[8] = value[2];v2[9] = value[5];v2[10] = value[8];v2[11] = 0;
+                     v2[0] = value[0];
+                     v2[1] = value[3];
+                     v2[2] = value[6];
+                     v2[3] = 0;
+                     v2[4] = value[1];
+                     v2[5] = value[4];
+                     v2[6] = value[7];
+                     v2[7] = 0;
+                     v2[8] = value[2];
+                     v2[9] = value[5];
+                     v2[10] = value[8];
+                     v2[11] = 0;
                      GCM_FUNC( cellGcmSetVertexProgramParameterBlock, parameterResource->resource, 3, v2 );
                   }
                   break;
