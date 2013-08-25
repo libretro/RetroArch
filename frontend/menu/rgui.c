@@ -1500,9 +1500,7 @@ static void rgui_settings_video_options_populate_entries(rgui_handle_t *rgui)
    rgui_list_push(rgui->selection_buf, "Integer Scale", RGUI_SETTINGS_VIDEO_INTEGER_SCALE, 0);
    rgui_list_push(rgui->selection_buf, "Aspect Ratio", RGUI_SETTINGS_VIDEO_ASPECT_RATIO, 0);
    rgui_list_push(rgui->selection_buf, "Custom Ratio", RGUI_SETTINGS_CUSTOM_VIEWPORT, 0);
-#ifndef RARCH_PERFORMANCE_MODE
    rgui_list_push(rgui->selection_buf, "Toggle Fullscreen", RGUI_SETTINGS_TOGGLE_FULLSCREEN, 0);
-#endif
    rgui_list_push(rgui->selection_buf, "Rotation", RGUI_SETTINGS_VIDEO_ROTATION, 0);
    rgui_list_push(rgui->selection_buf, "VSync", RGUI_SETTINGS_VIDEO_VSYNC, 0);
    rgui_list_push(rgui->selection_buf, "Hard GPU Sync", RGUI_SETTINGS_VIDEO_HARD_SYNC, 0);
@@ -1854,12 +1852,10 @@ static int video_option_toggle_setting(rgui_handle_t *rgui, unsigned setting, rg
             driver.video_poke->set_aspect_ratio(driver.video_data, g_settings.video.aspect_ratio_idx);
          break;
 
-#ifndef RARCH_PERFORMANCE_MODE
       case RGUI_SETTINGS_TOGGLE_FULLSCREEN:
          if (action == RGUI_ACTION_OK)
             rarch_set_fullscreen(!g_settings.video.fullscreen);
          break;
-#endif
 
 #ifdef GEKKO
       case RGUI_SETTINGS_VIDEO_RESOLUTION:
