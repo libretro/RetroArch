@@ -30,6 +30,7 @@
 #define RETRO_ENVIRONMENT_SET_LIBRETRO_PATH (RETRO_ENVIRONMENT_PRIVATE | 0)
                                            // const char * --
                                            // Sets the absolute path for the libretro core pointed to. RETRO_ENVIRONMENT_EXEC will use the last libretro core set with this call.
+                                           // Returns false if file for absolute path could not be found.
 #define RETRO_ENVIRONMENT_EXEC             (RETRO_ENVIRONMENT_PRIVATE | 1)
                                            // const char * --
                                            // Requests that this core is deinitialized, and a new core is loaded.
