@@ -386,7 +386,7 @@ static BOOL CALLBACK enum_axes_cb(const DIDEVICEOBJECTINSTANCE *inst, void *p)
    return DIENUM_CONTINUE;
 }
 
-static const LPCTSTR XBOX_PAD_NAMES[] = 
+static const char* const XBOX_PAD_NAMES[] = 
 {
    "Controller (Gamepad for Xbox 360)",
    "Controller (XBOX 360 For Windows)",
