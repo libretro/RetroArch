@@ -294,7 +294,7 @@ static void handle_touch_event(NSArray* touches)
       ios_set_bluetooth_mode(objc_get_value_from_config(conf, @"ios_btmode", @"keyboard"));
 
       bool val;
-      apple_use_tv_mode = config_get_bool(conf, "ios_tv_mode", & val) && val;
+      apple_use_tv_mode = config_get_bool(conf, "ios_tv_mode", &val) && val;
       
       config_file_free(conf);
    }

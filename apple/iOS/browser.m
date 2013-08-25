@@ -56,10 +56,18 @@
     
    [[[RetroArch_iOS get] toolbar] setItems:toolbarButtons];
    [self setToolbarItems:toolbarButtons];
-    
-   [self refresh];
 
    return self;
+}
+
+- (void)viewWillAppear:(BOOL)animated
+{
+   [self refresh];
+}
+ 
+- (void)viewDidDisappear:(BOOL)animated
+{
+   [self reset];
 }
 
 - (void)refresh
@@ -121,21 +129,22 @@
 
 - (UITableViewCell*)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath
 {
-   RADirectoryItem* path = (RADirectoryItem*)[self itemForIndexPath:indexPath];
-   static NSString *CellIdentifier = @"path";
+   static NSString* const cell_types[2] = { @"file", @"folder" };
+   static NSString* const icon_types[2] = { @"ic_file", @"ic_dir" };
+   static const UITableViewCellAccessoryType accessory_types[2] = { UITableViewCellAccessoryDetailDisclosureButton,
+                                                                    UITableViewCellAccessoryDisclosureIndicator };
+   RADirectoryItem* path = [self itemForIndexPath:indexPath];
+   uint32_t type_id = path.isDirectory ? 1 : 0;
 
-   UITableViewCell* cell = [self.tableView dequeueReusableCellWithIdentifier:CellIdentifier];
-   cell = (cell != nil) ? cell : [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:CellIdentifier];
-   cell.textLabel.text = [path.path lastPathComponent];
-   cell.accessoryType = (path.isDirectory) ? UITableViewCellAccessoryDisclosureIndicator : UITableViewCellAccessoryNone;
-    
-   if (path.isDirectory) {
-      cell.imageView.image = [UIImage imageNamed:@"ic_dir"];
-      cell.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
-   } else {
-      cell.imageView.image = [UIImage imageNamed:@"ic_file"];
-      cell.accessoryType = UITableViewCellAccessoryDetailDisclosureButton;
+   UITableViewCell* cell = [self.tableView dequeueReusableCellWithIdentifier:cell_types[type_id]];
+   if (!cell)
+   {
+      cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:cell_types[type_id]];
+      cell.imageView.image = [UIImage imageNamed:icon_types[type_id]];
+      cell.accessoryType = accessory_types[type_id];
    }
+   
+   cell.textLabel.text = [path.path lastPathComponent];
     
    return cell;
 }
@@ -340,21 +349,8 @@
     NSString *directoryPath = [currentDirectoryPath stringByAppendingPathComponent:cell.textLabel.text];
     NSString *newPath = [directoryPath stringByAppendingPathComponent:fileName];
 
-    BOOL didMove = [[NSFileManager defaultManager] moveItemAtPath:selectedFilePath toPath:newPath error:nil];
-
-    if (didMove) {
-        NSArray *viewsControllers = [[self presentingViewController] childViewControllers];
-
-        // Searches for RADirectoryList instance and call the refresh method
-        for (int i = 0; i < viewsControllers.count; i++) {
-            if ([viewsControllers[i] isKindOfClass:[RADirectoryList class]]) {
-                [viewsControllers[i] refresh];
-                break;
-            }
-        }
-    } else {
+    if (![[NSFileManager defaultManager] moveItemAtPath:selectedFilePath toPath:newPath error:nil])
         apple_display_alert(@"It was not possible to move the file", 0);
-    }
 
     [self dismissViewController];
 }

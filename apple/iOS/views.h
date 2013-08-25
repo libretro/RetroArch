@@ -29,6 +29,7 @@
 
 - (id)initWithStyle:(UITableViewStyle)style;
 - (id)itemForIndexPath:(NSIndexPath*)indexPath;
+- (void)reset;
 @end
 
 // browser.m
