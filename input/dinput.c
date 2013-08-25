@@ -68,11 +68,11 @@ static bool dinput_init_context(void)
    if (g_ctx)
       return true;
 
-   if (driver.display_type != RARCH_DISPLAY_WIN32)
+   /*if (driver.display_type != RARCH_DISPLAY_WIN32)
    {
       RARCH_ERR("Cannot open DInput as no Win32 window is present.\n");
       return false;
-   }
+   }*/ // Not needed, interferes with joyconfig
 
    CoInitialize(NULL);
 
@@ -386,7 +386,35 @@ static BOOL CALLBACK enum_axes_cb(const DIDEVICEOBJECTINSTANCE *inst, void *p)
    return DIENUM_CONTINUE;
 }
 
-extern const LPCTSTR XBOX_PAD_NAMES_TO_REJECT[];
+static const LPCTSTR XBOX_PAD_NAMES[] = 
+{
+   "Controller (Gamepad for Xbox 360)",
+   "Controller (XBOX 360 For Windows)",
+   "Controller (Xbox 360 Wireless Receiver for Windows)",
+   "Controller (Xbox wireless receiver for windows)",
+   "XBOX 360 For Windows (Controller)",
+   "Xbox 360 Wireless Receiver",
+   "Xbox Receiver for Windows (Wireless Controller)",
+   "Xbox wireless receiver for windows (Controller)",
+   NULL
+};
+
+static bool name_is_360_pad(LPCSTR name)
+{
+   for (unsigned i = 0; ; ++i)
+   {
+      LPCSTR t = XBOX_PAD_NAMES[i];
+      if (t == NULL)
+         return false;
+      else if (lstrcmpi(name, t) == 0)
+         return true;
+   }
+}
+
+// Keep track of which pad indexes are 360 controllers
+// not static, will be read in winxinput_joypad.c
+// -1 = not xbox pad, otherwise 0..3
+int g_xbox_pad_indexes[MAX_PLAYERS];
 
 static BOOL CALLBACK enum_joypad_cb(const DIDEVICEINSTANCE *inst, void *p)
 {
@@ -404,23 +432,13 @@ static BOOL CALLBACK enum_joypad_cb(const DIDEVICEINSTANCE *inst, void *p)
    return DIENUM_CONTINUE;
    
 #ifdef USE_WINXINPUT
-   // Reject xbox 360 controllers, the xinput driver will take care of them
-   DIDEVICEINSTANCE info;
-   ZeroMemory(&info, sizeof(DIDEVICEINSTANCE));
-   info.dwSize = sizeof(DIDEVICEINSTANCE);
-   IDirectInputDevice8_GetDeviceInfo(*pad, &info);
+   int last_xbox_pad_index = 0;
    
-   unsigned test_name_index = 0;
-   while(1)
+   if (name_is_360_pad(inst->tszProductName))
    {
-      if (XBOX_PAD_NAMES_TO_REJECT[test_name_index] == NULL)
-         break;
-      if (lstrcmpi(info.tszProductName, XBOX_PAD_NAMES_TO_REJECT[test_name_index]) == 0)
-      {
-         RARCH_LOG("dinput: Rejected XInput controller \"%s\"", info.tszProductName);
-         return DIENUM_CONTINUE;
-      }
-      ++test_name_index;
+      if (last_xbox_pad_index < 4)
+         g_xbox_pad_indexes[g_joypad_cnt] = last_xbox_pad_index;
+      ++last_xbox_pad_index;
    }
 #endif
 
@@ -440,6 +458,9 @@ static bool dinput_joypad_init(void)
 {
    if (!dinput_init_context())
       return false;
+      
+   for (unsigned i = 0; i < MAX_PLAYERS; ++i)
+      g_xbox_pad_indexes[i] = -1;
 
    RARCH_LOG("Enumerating DInput joypads ...\n");
    IDirectInput8_EnumDevices(g_ctx, DI8DEVCLASS_GAMECTRL,
