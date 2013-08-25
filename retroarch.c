@@ -3059,6 +3059,12 @@ bool rarch_main_iterate(void)
    if (check_enter_rgui())
       return false; // Enter menu, don't exit.
 
+   if (g_extern.exec)
+   {
+      g_extern.exec = false;
+      return false;
+   }
+
 #ifdef HAVE_COMMAND
    if (driver.command)
       rarch_cmd_pre_frame(driver.command);

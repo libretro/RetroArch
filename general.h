@@ -472,6 +472,8 @@ struct global
 
    msg_queue_t *msg_queue;
 
+   bool exec;
+
    // Rewind support.
    state_manager_t *state_manager;
    void *state_buf;

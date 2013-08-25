@@ -780,6 +780,7 @@ bool rarch_environment_cb(unsigned cmd, void *data)
 #elif defined(HAVE_DYNAMIC)
          g_extern.lifecycle_mode_state |= (1ULL << MODE_LOAD_GAME);
 #endif
+         g_extern.exec = true;
 
          break;
 
