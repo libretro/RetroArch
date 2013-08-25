@@ -45,10 +45,6 @@
 #include "msvc/msvc_compat.h"
 #endif
 
-#if defined(RARCH_CONSOLE) && !defined(RARCH_PERFORMANCE_MODE)
-#define RARCH_PERFORMANCE_MODE
-#endif
-
 // To avoid continous switching if we hold the button down, we require that the button must go from pressed,
 // unpressed back to pressed to be able to toggle between then.
 static void check_fast_forward_button(void)
@@ -1935,7 +1931,6 @@ static void check_savestates(bool immutable)
    }
 }
 
-#if !defined(RARCH_PERFORMANCE_MODE)
 void rarch_set_fullscreen(bool fullscreen)
 {
    g_settings.video.fullscreen = fullscreen;
@@ -2193,7 +2188,6 @@ static void check_movie(void)
 }
 #endif
 
-#if !defined(RARCH_PERFORMANCE_MODE)
 static void check_pause(void)
 {
    static bool old_state = false;
@@ -2266,7 +2260,6 @@ static void check_oneshot(void)
    g_extern.is_oneshot |= new_rewind_state && !old_rewind_state;
    old_rewind_state = new_rewind_state;
 }
-#endif
 
 void rarch_game_reset(void)
 {
@@ -2565,7 +2558,6 @@ static void check_dsp_config(void)
 }
 #endif
 
-#if !defined(RARCH_PERFORMANCE_MODE)
 static void check_mute(void)
 {
    if (!g_extern.audio_active)
@@ -2700,10 +2692,8 @@ static void do_state_checks(void)
 #if defined(HAVE_SCREENSHOTS) && !defined(_XBOX)
    check_screenshot();
 #endif
-#if !defined(RARCH_PERFORMANCE_MODE)
    check_mute();
    check_volume();
-#endif
 
    check_turbo();
 
@@ -2757,9 +2747,7 @@ static void do_state_checks(void)
    else
    {
       check_netplay_flip();
-#if !defined(RARCH_PERFORMANCE_MODE)
       check_fullscreen();
-#endif
    }
 #endif
 }
