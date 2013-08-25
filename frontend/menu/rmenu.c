@@ -559,16 +559,9 @@ static int select_file(void *data, uint64_t input)
                         true, menu_texture->width, menu_texture->height, 1.0f);
                break;
             case LIBRETRO_CHOICE:
-               {
-                  struct retro_variable var;
-
-                  var.key = "core_path";
-                  var.value = path;
-
-                  rarch_environment_cb(RETRO_ENVIRONMENT_SET_LIBRETRO_PATH, &var);
-                  g_extern.lifecycle_mode_state |= (1ULL << MODE_EXITSPAWN);
-                  return -1;
-               }
+               rarch_environment_cb(RETRO_ENVIRONMENT_SET_LIBRETRO_PATH, (void*)path);
+               g_extern.lifecycle_mode_state |= (1ULL << MODE_EXITSPAWN);
+               return -1;
          }
 
          pop_menu_stack = true;

@@ -19,7 +19,7 @@
 
 #include <sys/types.h>
 #include "boolean.h"
-#include "libretro.h"
+#include "libretro_private.h"
 #include <stdlib.h>
 #include <stdint.h>
 #include "msvc/msvc_compat.h"

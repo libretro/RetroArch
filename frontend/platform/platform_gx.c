@@ -18,7 +18,7 @@
 #include <stdbool.h>
 #include "../../driver.h"
 #include "../../general.h"
-#include "../../libretro.h"
+#include "../../libretro_private.h"
 
 #include "../../console/rarch_console.h"
 #include "../../file.h"
@@ -368,10 +368,9 @@ static int system_process_args(int argc, char *argv[], void *args)
    // so we make sure g_settings.libretro is set here
    if (!g_settings.libretro[0] && argc >= 1 && strrchr(argv[0], '/'))
    {
-      struct retro_variable var;
-      var.key = "core_path";
-      strlcpy(var.value, strrchr(argv[0], '/') + 1, sizeof(var.value));
-      rarch_environment_cb(RETRO_ENVIRONMENT_SET_LIBRETRO_PATH, &var);
+      char path[PATH_MAX];
+      strlcpy(path, strrchr(argv[0], '/') + 1, sizeof(path));
+      rarch_environment_cb(RETRO_ENVIRONMENT_SET_LIBRETRO_PATH, path);
    }
 
    if (argc > 2 && argv[1] != NULL && argv[2] != NULL)

@@ -357,6 +357,8 @@ enum retro_mod
 
 // If set, this call is not part of the public libretro API yet. It can change or be removed at any time.
 #define RETRO_ENVIRONMENT_EXPERIMENTAL 0x10000
+// Environment callback to be used internally in frontend.
+#define RETRO_ENVIRONMENT_PRIVATE 0x20000
 
 // Environment commands.
 #define RETRO_ENVIRONMENT_SET_ROTATION  1  // const unsigned * --
@@ -509,16 +511,7 @@ enum retro_mod
                                            // Lets the core know how much time has passed since last invocation of retro_run().
                                            // The frontend can tamper with the timing to fake fast-forward, slow-motion, frame stepping, etc.
                                            // In this case the delta time will use the reference value in frame_time_callback..
-#define RETRO_ENVIRONMENT_SET_LIBRETRO_PATH 22
-                                           // struct retro_variable * --
-                                           // Sets the absolute path for the libretro core pointed to.
-#define RETRO_ENVIRONMENT_EXEC              23
-                                           // struct retro_variable * --
-                                           // Sets an input file for the libretro core to execute with, and (based on key name) will determine what
-                                           // exec method to follow.
-                                           // "EXEC_LOAD"   : will start the input file whose path was passed from the parameter to RETRO_ENVIRONMENT_EXEC.
-                                           // "EXEC_RELOAD" : will set the current libretro core, deinitialize the currently running media and then
-                                           // start the input file whose path was passed from the parameter to RETRO_ENVIRONMENT_EXEC.
+
 
 // Notifies libretro that audio data should be written.
 typedef void (*retro_audio_callback_t)(void);

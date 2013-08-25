@@ -438,25 +438,20 @@ void load_menu_game_prepare(void)
 void load_menu_game_history(unsigned game_index)
 {
    const char *path = NULL;
+   const char *core_path = NULL;
    const char *core_name = NULL;
-   struct retro_variable var;
-
-   var.key = "core_path";
 
    rom_history_get_index(rgui->history,
-         game_index, &path, &var.value, &core_name);
+         game_index, &path, &core_path, &core_name);
 
-   rarch_environment_cb(RETRO_ENVIRONMENT_SET_LIBRETRO_PATH, &var);
+   rarch_environment_cb(RETRO_ENVIRONMENT_SET_LIBRETRO_PATH, (void*)core_path);
 
    if (path)
       rgui->load_no_rom = false;
    else
       rgui->load_no_rom = true;
 
-   var.key = "EXEC_RELOAD";
-   var.value = path;
-
-   rarch_environment_cb(RETRO_ENVIRONMENT_EXEC, &var);
+   rarch_environment_cb(RETRO_ENVIRONMENT_EXEC, (void*)path);
 
 #if defined(HAVE_DYNAMIC)
    libretro_free_system_info(&rgui->info);
