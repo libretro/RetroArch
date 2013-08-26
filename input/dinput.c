@@ -68,12 +68,6 @@ static bool dinput_init_context(void)
    if (g_ctx)
       return true;
 
-   if (driver.display_type != RARCH_DISPLAY_WIN32)
-   {
-      RARCH_ERR("Cannot open DInput as no Win32 window is present.\n");
-      return false;
-   }
-
    CoInitialize(NULL);
 
    // Who said we shouldn't have same call signature in a COM API? <_<
@@ -386,6 +380,36 @@ static BOOL CALLBACK enum_axes_cb(const DIDEVICEOBJECTINSTANCE *inst, void *p)
    return DIENUM_CONTINUE;
 }
 
+static const char* const XBOX_PAD_NAMES[] = 
+{
+   "Controller (Gamepad for Xbox 360)",
+   "Controller (XBOX 360 For Windows)",
+   "Controller (Xbox 360 Wireless Receiver for Windows)",
+   "Controller (Xbox wireless receiver for windows)",
+   "XBOX 360 For Windows (Controller)",
+   "Xbox 360 Wireless Receiver",
+   "Xbox Receiver for Windows (Wireless Controller)",
+   "Xbox wireless receiver for windows (Controller)",
+   NULL
+};
+
+static bool name_is_360_pad(const char* name)
+{
+   for (unsigned i = 0; ; ++i)
+   {
+      const char* t = XBOX_PAD_NAMES[i];
+      if (t == NULL)
+         return false;
+      else if (lstrcmpi(name, t) == 0)
+         return true;
+   }
+}
+
+// Keep track of which pad indexes are 360 controllers
+// not static, will be read in winxinput_joypad.c
+// -1 = not xbox pad, otherwise 0..3
+int g_xbox_pad_indexes[MAX_PLAYERS];
+
 static BOOL CALLBACK enum_joypad_cb(const DIDEVICEINSTANCE *inst, void *p)
 {
    (void)p;
@@ -399,7 +423,18 @@ static BOOL CALLBACK enum_joypad_cb(const DIDEVICEINSTANCE *inst, void *p)
 #else
    if (FAILED(IDirectInput8_CreateDevice(g_ctx, &inst->guidInstance, pad, NULL)))
 #endif
-      return DIENUM_CONTINUE;
+   return DIENUM_CONTINUE;
+   
+#ifdef HAVE_WINXINPUT
+   int last_xbox_pad_index = 0;
+   
+   if (name_is_360_pad(inst->tszProductName))
+   {
+      if (last_xbox_pad_index < 4)
+         g_xbox_pad_indexes[g_joypad_cnt] = last_xbox_pad_index;
+      ++last_xbox_pad_index;
+   }
+#endif
 
    IDirectInputDevice8_SetDataFormat(*pad, &c_dfDIJoystick2);
    IDirectInputDevice8_SetCooperativeLevel(*pad, (HWND)driver.video_window,
@@ -417,6 +452,9 @@ static bool dinput_joypad_init(void)
 {
    if (!dinput_init_context())
       return false;
+      
+   for (unsigned i = 0; i < MAX_PLAYERS; ++i)
+      g_xbox_pad_indexes[i] = -1;
 
    RARCH_LOG("Enumerating DInput joypads ...\n");
    IDirectInput8_EnumDevices(g_ctx, DI8DEVCLASS_GAMECTRL,
