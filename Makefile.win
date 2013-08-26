@@ -64,7 +64,7 @@ HAVE_THREADS = 1
 HAVE_RGUI = 1
 DYNAMIC = 1
 
-USE_WINXINPUT = 1
+HAVE_WINXINPUT = 1
 
 ifeq ($(SLIM),)
    HAVE_SDL = 1
@@ -215,8 +215,8 @@ ifeq ($(HAVE_PYTHON), 1)
    OBJ += gfx/py_state/py_state.o
 endif
 
-ifeq ($(USE_WINXINPUT), 1)
-   DEFINES += -DUSE_WINXINPUT
+ifeq ($(HAVE_WINXINPUT), 1)
+   DEFINES += -DHAVE_WINXINPUT
    OBJ += input/winxinput_joypad.o
 endif
 

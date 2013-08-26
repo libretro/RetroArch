@@ -68,12 +68,6 @@ static bool dinput_init_context(void)
    if (g_ctx)
       return true;
 
-   /*if (driver.display_type != RARCH_DISPLAY_WIN32)
-   {
-      RARCH_ERR("Cannot open DInput as no Win32 window is present.\n");
-      return false;
-   }*/ // Not needed, interferes with joyconfig
-
    CoInitialize(NULL);
 
    // Who said we shouldn't have same call signature in a COM API? <_<
@@ -431,7 +425,7 @@ static BOOL CALLBACK enum_joypad_cb(const DIDEVICEINSTANCE *inst, void *p)
 #endif
    return DIENUM_CONTINUE;
    
-#ifdef USE_WINXINPUT
+#ifdef HAVE_WINXINPUT
    int last_xbox_pad_index = 0;
    
    if (name_is_360_pad(inst->tszProductName))

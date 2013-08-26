@@ -1,6 +1,5 @@
 /*  RetroArch - A frontend for libretro.
- *  Copyright (C) 2010-2013 - Hans-Kristian Arntzen
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -33,37 +32,37 @@
 // Official and mingw xinput headers have different include guards
 #if ((!_XINPUT_H_) && (!__WINE_XINPUT_H))
 
-   #define XINPUT_GAMEPAD_DPAD_UP          0x0001
-   #define XINPUT_GAMEPAD_DPAD_DOWN        0x0002
-   #define XINPUT_GAMEPAD_DPAD_LEFT        0x0004
-   #define XINPUT_GAMEPAD_DPAD_RIGHT       0x0008
-   #define XINPUT_GAMEPAD_START            0x0010
-   #define XINPUT_GAMEPAD_BACK             0x0020
-   #define XINPUT_GAMEPAD_LEFT_THUMB       0x0040
-   #define XINPUT_GAMEPAD_RIGHT_THUMB      0x0080
-   #define XINPUT_GAMEPAD_LEFT_SHOULDER    0x0100
-   #define XINPUT_GAMEPAD_RIGHT_SHOULDER   0x0200
-   #define XINPUT_GAMEPAD_A                0x1000
-   #define XINPUT_GAMEPAD_B                0x2000
-   #define XINPUT_GAMEPAD_X                0x4000
-   #define XINPUT_GAMEPAD_Y                0x8000
-   
-   typedef struct
-   {
-      uint16_t wButtons;
-      uint8_t  bLeftTrigger;
-      uint8_t  bRightTrigger;
-      int16_t  sThumbLX;
-      int16_t  sThumbLY;
-      int16_t  sThumbRX;
-      int16_t  sThumbRY;
-   } XINPUT_GAMEPAD;
+#define XINPUT_GAMEPAD_DPAD_UP          0x0001
+#define XINPUT_GAMEPAD_DPAD_DOWN        0x0002
+#define XINPUT_GAMEPAD_DPAD_LEFT        0x0004
+#define XINPUT_GAMEPAD_DPAD_RIGHT       0x0008
+#define XINPUT_GAMEPAD_START            0x0010
+#define XINPUT_GAMEPAD_BACK             0x0020
+#define XINPUT_GAMEPAD_LEFT_THUMB       0x0040
+#define XINPUT_GAMEPAD_RIGHT_THUMB      0x0080
+#define XINPUT_GAMEPAD_LEFT_SHOULDER    0x0100
+#define XINPUT_GAMEPAD_RIGHT_SHOULDER   0x0200
+#define XINPUT_GAMEPAD_A                0x1000
+#define XINPUT_GAMEPAD_B                0x2000
+#define XINPUT_GAMEPAD_X                0x4000
+#define XINPUT_GAMEPAD_Y                0x8000
 
-   typedef struct
-   {
-      uint32_t       dwPacketNumber;
-      XINPUT_GAMEPAD Gamepad;
-   } XINPUT_STATE;
+typedef struct
+{
+   uint16_t wButtons;
+   uint8_t  bLeftTrigger;
+   uint8_t  bRightTrigger;
+   int16_t  sThumbLX;
+   int16_t  sThumbLY;
+   int16_t  sThumbRX;
+   int16_t  sThumbRY;
+} XINPUT_GAMEPAD;
+
+typedef struct
+{
+   uint32_t       dwPacketNumber;
+   XINPUT_GAMEPAD Gamepad;
+} XINPUT_STATE;
 
 #endif
 
@@ -71,11 +70,11 @@
 #define XINPUT_GAMEPAD_GUIDE 0x0400
 
 #ifndef ERROR_DEVICE_NOT_CONNECTED
-   #define ERROR_DEVICE_NOT_CONNECTED 1167
+#define ERROR_DEVICE_NOT_CONNECTED 1167
 #endif
 
 #ifndef HAVE_DINPUT
-   #error Cannot compile xinput without dinput.
+#error Cannot compile xinput without dinput.
 #endif
 
 // Due to 360 pads showing up under both XI and DI, and since we are going
@@ -120,20 +119,20 @@ static bool winxinput_joypad_init(void)
    
    // No need to check for existance as we will be checking LoadLibrary's
    // success anyway.
-   char dll_path[MAX_PATH];
-   strcpy(dll_path, "xinput1_3.dll");
-   g_winxinput_dll = LoadLibrary(dll_path);
+   const char* DLL_NAME = "xinput1_3.dll";
+   g_winxinput_dll = LoadLibrary(DLL_NAME); // Using dylib_* complicates building joyconfig.
    if (!g_winxinput_dll)
    {
       // Loading from working dir failed, try to load from system.
+      char dll_path[MAX_PATH];
       GetSystemDirectory(dll_path, sizeof(dll_path));
-      strcat(dll_path, "\\xinput1_3.dll");
+      strlcat(dll_path, "\\", 1);
+      strlcat(dll_path, DLL_NAME, sizeof(DLL_NAME));
       g_winxinput_dll = LoadLibrary(dll_path);
       
       if (!g_winxinput_dll)
       {
-         RARCH_ERR("Failed to init XInput, ensure DirectX and controller drivers are up to date.\n");
-         //g_dinput_should_filter_xinput_controllers = false;
+         RARCH_ERR("Failed to load xinput1_3.dll, ensure DirectX and controller drivers are up to date.\n");
          return false; // DLL does not exist or is invalid
       }
          
@@ -152,8 +151,7 @@ static bool winxinput_joypad_init(void)
       g_XInputGetStateEx = (XInputGetStateEx_t) GetProcAddress(g_winxinput_dll, "XInputGetState");
       if (!g_XInputGetStateEx)
       {
-         RARCH_ERR("Failed to init XInput: Found an XInput DLL but it is invalid or corrupt.\n");
-         //g_dinput_should_filter_xinput_controllers = false;
+         RARCH_ERR("Failed to init XInput: xinput1_3.dll is invalid or corrupt.\n");
          return false; // DLL was loaded but did not contain the correct function.
       }
       RARCH_WARN("XInput: No guide button support.\n");
@@ -173,12 +171,11 @@ static bool winxinput_joypad_init(void)
    }
    
    if ((!g_winxinput_states[0].connected) &&
-      (!g_winxinput_states[1].connected) &&
-      (!g_winxinput_states[2].connected) &&
-      (!g_winxinput_states[3].connected))
-         return false;
+       (!g_winxinput_states[1].connected) &&
+       (!g_winxinput_states[2].connected) &&
+       (!g_winxinput_states[3].connected))
+      return false;
    
-
    // We're going to have to be buddies with dinput if we want to be able
    // to use XI and non-XI controllers together.
    return dinput_joypad.init();
@@ -209,16 +206,16 @@ static void winxinput_joypad_destroy(void)
 // Map from rarch button index (0..10) to a mask to bitwise-& the buttons against.
 // dpad is handled seperately.
 static const uint16_t button_index_to_bitmap_code[] =  {
-   XINPUT_GAMEPAD_A             ,
-   XINPUT_GAMEPAD_B             ,
-   XINPUT_GAMEPAD_X             ,
-   XINPUT_GAMEPAD_Y             ,
-   XINPUT_GAMEPAD_LEFT_SHOULDER ,
+   XINPUT_GAMEPAD_A,
+   XINPUT_GAMEPAD_B,
+   XINPUT_GAMEPAD_X,
+   XINPUT_GAMEPAD_Y,
+   XINPUT_GAMEPAD_LEFT_SHOULDER,
    XINPUT_GAMEPAD_RIGHT_SHOULDER,
-   XINPUT_GAMEPAD_START         ,
-   XINPUT_GAMEPAD_BACK          ,
-   XINPUT_GAMEPAD_LEFT_THUMB    ,
-   XINPUT_GAMEPAD_RIGHT_THUMB   ,
+   XINPUT_GAMEPAD_START,
+   XINPUT_GAMEPAD_BACK,
+   XINPUT_GAMEPAD_LEFT_THUMB,
+   XINPUT_GAMEPAD_RIGHT_THUMB,
    XINPUT_GAMEPAD_GUIDE      
 };
 
