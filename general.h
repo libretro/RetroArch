@@ -201,6 +201,7 @@ struct settings
       char driver[32];
       bool enable;
       unsigned out_rate;
+      unsigned block_frames;
       float in_rate;
       char device[PATH_MAX];
       unsigned latency;
@@ -470,6 +471,8 @@ struct global
    } filter;
 
    msg_queue_t *msg_queue;
+
+   bool exec;
 
    // Rewind support.
    state_manager_t *state_manager;

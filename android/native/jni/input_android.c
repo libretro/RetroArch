@@ -1190,6 +1190,7 @@ static void android_input_set_keybinds(void *data, unsigned device,
             strlcpy(g_settings.input.device_names[port], "OUYA",
                   sizeof(g_settings.input.device_names[port]));
 
+            g_settings.input.dpad_emulation[port] = ANALOG_DPAD_DUALANALOG;
             keycode_lut[AKEYCODE_DPAD_UP] |=  ((RETRO_DEVICE_ID_JOYPAD_UP+1)      << shift);
             keycode_lut[AKEYCODE_DPAD_DOWN] |=  ((RETRO_DEVICE_ID_JOYPAD_DOWN+1)      << shift);
             keycode_lut[AKEYCODE_DPAD_LEFT] |=  ((RETRO_DEVICE_ID_JOYPAD_LEFT+1)      << shift);
@@ -1592,8 +1593,9 @@ static void android_input_set_keybinds(void *data, unsigned device,
 static void android_input_poll(void *data)
 {
    int ident;
+   uint64_t lifecycle_mask = (1ULL << RARCH_RESET) | (1ULL << RARCH_REWIND) | (1ULL << RARCH_FAST_FORWARD_KEY) | (1ULL << RARCH_FAST_FORWARD_HOLD_KEY) | (1ULL << RARCH_MUTE) | (1ULL << RARCH_SAVE_STATE_KEY) | (1ULL << RARCH_LOAD_STATE_KEY) | (1ULL << RARCH_STATE_SLOT_PLUS) | (1ULL << RARCH_STATE_SLOT_MINUS) | (1ULL << RARCH_QUIT_KEY) | (1ULL << RARCH_MENU_TOGGLE);
    uint64_t *lifecycle_state = &g_extern.lifecycle_state;
-   *lifecycle_state &= ~((1ULL << RARCH_RESET) | (1ULL << RARCH_REWIND) | (1ULL << RARCH_FAST_FORWARD_KEY) | (1ULL << RARCH_FAST_FORWARD_HOLD_KEY) | (1ULL << RARCH_MUTE) | (1ULL << RARCH_SAVE_STATE_KEY) | (1ULL << RARCH_LOAD_STATE_KEY) | (1ULL << RARCH_STATE_SLOT_PLUS) | (1ULL << RARCH_STATE_SLOT_MINUS) | (1ULL << RARCH_QUIT_KEY));
+   *lifecycle_state &= ~lifecycle_mask;
 
    while ((ident = ALooper_pollAll((input_key_pressed_func(RARCH_PAUSE_TOGGLE)) ? -1 : 0,
                NULL, NULL, NULL)) >= 0)
@@ -1752,9 +1754,6 @@ static void android_input_poll(void *data)
                }
                else if (type_event == AINPUT_EVENT_TYPE_KEY)
                {
-                  if (debug_enable)
-                     snprintf(msg, sizeof(msg), "Pad %d : %d, ac = %d, src = %d.\n", state_id, keycode, action, source);
-
                   /* Hack - we have to decrease the unpacked value by 1
                    * because we 'added' 1 to each entry in the LUT -
                    * RETRO_DEVICE_ID_JOYPAD_B is 0
@@ -1764,20 +1763,25 @@ static void android_input_poll(void *data)
                   int action  = AKeyEvent_getAction(event);
                   uint64_t *key = NULL;
 
-                  if(input_state < (1ULL << RARCH_FIRST_META_KEY))
+                  if (debug_enable)
+                     snprintf(msg, sizeof(msg), "Pad %d : %d, ac = %d, src = %d.\n", state_id, keycode, action, source);
+
+                  if (input_state < (1ULL << RARCH_FIRST_META_KEY))
                      key = &state[state_id];
-                  else if(input_state)
+                  else if (input_state/* && action == AKEY_EVENT_ACTION_DOWN*/)
                      key = &g_extern.lifecycle_state;
 
-                  if(key != NULL)
+                  if (key != NULL)
                   {
-                     if (action == AKEY_EVENT_ACTION_UP)
+                     // some controllers send both the up and down events at once when the button is released for "special" buttons, like menu buttons
+                     // work around that by only using down events for meta keys (which get cleared every poll anyway)
+                     if (action == AKEY_EVENT_ACTION_UP && !(input_state & lifecycle_mask))
                         *key &= ~(input_state);
                      else if (action == AKEY_EVENT_ACTION_DOWN)
                         *key |= input_state;
                   }
 
-                  if((keycode == AKEYCODE_VOLUME_UP || keycode == AKEYCODE_VOLUME_DOWN) && keycode_lut[keycode] == 0)
+                  if ((keycode == AKEYCODE_VOLUME_UP || keycode == AKEYCODE_VOLUME_DOWN) && keycode_lut[keycode] == 0)
                      handled = 0;
                }
 

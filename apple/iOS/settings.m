@@ -308,7 +308,7 @@ static NSArray* build_input_port_group(config_file_t* config, uint32_t player)
 
       [NSArray arrayWithObjects:@"Input",
          subpath_setting(config, @"input_overlay", @"Input Overlay", @"", overlay_path, @"cfg"),
-         range_setting(config, @"overlay_opacity", @"Overlay Opacity", @"1.0", 0.0, 1.0),
+         range_setting(config, @"input_overlay_opacity", @"Overlay Opacity", @"1.0", 0.0, 1.0),
          group_setting(@"System Keys", [NSArray arrayWithObjects:
             // TODO: Many of these strings will be cut off on an iPhone
             [NSArray arrayWithObjects:@"System Keys",

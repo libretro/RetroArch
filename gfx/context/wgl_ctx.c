@@ -472,10 +472,10 @@ static bool gfx_ctx_set_video_mode(
    if (!fullscreen)
    {
       SetMenu(g_hwnd, LoadMenu(GetModuleHandle(NULL), MAKEINTRESOURCE(IDR_MENU)));
-      RECT rcTemp = {0, 0, g_resize_height, 0x7FFF}; // 0x7FFF="Infinite" height
+      RECT rcTemp = {0, 0, width, 0x7FFF}; // 0x7FFF = "Infinite" height
       SendMessage(g_hwnd, WM_NCCALCSIZE, FALSE, (LPARAM)&rcTemp); // recalculate margin, taking possible menu wrap into account
-      g_resize_height += rcTemp.top + rect.top; // extend by new top margin and substract previous margin
-      SetWindowPos(g_hwnd, NULL, 0, 0, g_resize_width, g_resize_height, SWP_NOMOVE);
+      unsigned menu_height = rcTemp.top + rect.top; // rect.top is negative after AdjustWindowRect().
+      SetWindowPos(g_hwnd, NULL, 0, 0, width, height + menu_height, SWP_NOMOVE);
    }
 
    if (!fullscreen || windowed_full)

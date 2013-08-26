@@ -82,7 +82,7 @@
    if (cb.numberOfItems)
       [cb selectItemAtIndex:0];
    else
-      apple_display_alert(@"No libretro cores were found.", @"RetroArch");
+      apple_display_alert(@"No libretro cores were found.\nSelect \"Go->Cores Directory\" from the menu and place libretro dylib files there.", @"RetroArch");
 
    // Run RGUI if needed
    if (!_wantReload)
@@ -239,6 +239,11 @@
 }
 
 #pragma mark Menus
+- (IBAction)showCoresDirectory:(id)sender
+{
+   [[NSWorkspace sharedWorkspace] openFile:self.corePath];
+}
+
 - (IBAction)showPreferences:(id)sender
 {
    [[[NSWindowController alloc] initWithWindowNibName:@"Settings"] window];

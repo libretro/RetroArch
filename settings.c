@@ -196,6 +196,7 @@ void config_set_defaults(void)
 
    g_settings.audio.enable = audio_enable;
    g_settings.audio.out_rate = out_rate;
+   g_settings.audio.block_frames = 0;
    g_settings.audio.in_rate = out_rate;
    if (audio_device)
       strlcpy(g_settings.audio.device, audio_device, sizeof(g_settings.audio.device));
@@ -628,6 +629,7 @@ bool config_load_file(const char *path)
    // Audio settings.
    CONFIG_GET_BOOL(audio.enable, "audio_enable");
    CONFIG_GET_INT(audio.out_rate, "audio_out_rate");
+   CONFIG_GET_INT(audio.block_frames, "audio_block_frames");
    CONFIG_GET_STRING(audio.device, "audio_device");
    CONFIG_GET_INT(audio.latency, "audio_latency");
    CONFIG_GET_BOOL(audio.sync, "audio_sync");

@@ -110,6 +110,11 @@ char* ios_get_rarch_system_directory()
    return self.sections[indexPath.section][indexPath.row + 1];
 }
 
+- (void)reset
+{
+   self.sections = [NSMutableArray array];
+   [self.tableView reloadData];
+}
 @end
 
 #endif

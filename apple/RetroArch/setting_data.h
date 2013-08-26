@@ -28,6 +28,7 @@ typedef struct
    const char* name;
    
    void* value;
+   uint32_t size;
    
    const char* short_description;
    const char* long_description;
@@ -40,18 +41,25 @@ typedef struct
    bool allow_blank;
 }  rarch_setting_t;
 
-#define START_GROUP(NAME)                  { ST_GROUP,         NAME, 0,       0,     0, 0, 0, 0.0, 0.0, false },
-#define END_GROUP()                        { ST_END_GROUP,     0,    0,       0,     0, 0, 0, 0.0, 0.0, false },
-#define START_SUB_GROUP(NAME)              { ST_SUB_GROUP,     NAME, 0,       0,     0, 0, 0, 0.0, 0.0, false },
-#define END_SUB_GROUP()                    { ST_END_SUB_GROUP, 0,    0,       0,     0, 0, 0, 0.0, 0.0, false },
-#define START_GROUP(NAME)                  { ST_GROUP,         NAME, 0,       0,     0, 0, 0, 0.0, 0.0, false },
-#define END_GROUP()                        { ST_END_GROUP,     0,    0,       0,     0, 0, 0, 0.0, 0.0, false },
-#define CONFIG_BOOL(TARGET, NAME, SHORT)   { ST_BOOL,          NAME, &TARGET, SHORT, 0, 0, 0, 0.0, 0.0, false },
-#define CONFIG_INT(TARGET, NAME, SHORT)    { ST_INT,           NAME, &TARGET, SHORT, 0, 0, 0, 0.0, 0.0, false },
-#define CONFIG_FLOAT(TARGET, NAME, SHORT)  { ST_FLOAT,         NAME, &TARGET, SHORT, 0, 0, 0, 0.0, 0.0, false },
-#define CONFIG_PATH(TARGET, NAME, SHORT)   { ST_PATH,          NAME, &TARGET, SHORT, 0, 0, 0, 0.0, 0.0, false },
-#define CONFIG_STRING(TARGET, NAME, SHORT) { ST_STRING,        NAME, &TARGET, SHORT, 0, 0, 0, 0.0, 0.0, false },
-#define CONFIG_HEX(TARGET, NAME, SHORT)    { ST_HEX,           NAME, &TARGET, SHORT, 0, 0, 0, 0.0, 0.0, false },
+extern struct settings fake_settings;
+extern struct global fake_extern;
+
+// HACK
+#define g_settings fake_settings
+#define g_extern fake_extern
+
+#define START_GROUP(NAME)                  { ST_GROUP,         NAME },
+#define END_GROUP()                        { ST_END_GROUP },
+#define START_SUB_GROUP(NAME)              { ST_SUB_GROUP,     NAME },
+#define END_SUB_GROUP()                    { ST_END_SUB_GROUP },
+#define START_GROUP(NAME)                  { ST_GROUP,         NAME, 0,       0,              0,     0, 0, 0, 0.0, 0.0, false },
+#define END_GROUP()                        { ST_END_GROUP,     0,    0,       0,              0,     0, 0, 0, 0.0, 0.0, false },
+#define CONFIG_BOOL(TARGET, NAME, SHORT)   { ST_BOOL,          NAME, &TARGET, sizeof(TARGET), SHORT, 0, 0, 0, 0.0, 0.0, false },
+#define CONFIG_INT(TARGET, NAME, SHORT)    { ST_INT,           NAME, &TARGET, sizeof(TARGET), SHORT, 0, 0, 0, 0.0, 0.0, false },
+#define CONFIG_FLOAT(TARGET, NAME, SHORT)  { ST_FLOAT,         NAME, &TARGET, sizeof(TARGET), SHORT, 0, 0, 0, 0.0, 0.0, false },
+#define CONFIG_PATH(TARGET, NAME, SHORT)   { ST_PATH,          NAME, &TARGET, sizeof(TARGET), SHORT, 0, 0, 0, 0.0, 0.0, false },
+#define CONFIG_STRING(TARGET, NAME, SHORT) { ST_STRING,        NAME, &TARGET, sizeof(TARGET), SHORT, 0, 0, 0, 0.0, 0.0, false },
+#define CONFIG_HEX(TARGET, NAME, SHORT)    { ST_HEX,           NAME, &TARGET, sizeof(TARGET), SHORT, 0, 0, 0, 0.0, 0.0, false },
 
 const rarch_setting_t setting_data[] = 
 {
@@ -162,8 +170,8 @@ const rarch_setting_t setting_data[] =
          /* Input: Overlay */
          #ifdef HAVE_OVERLAY
             CONFIG_PATH(g_settings.input.overlay, "input_overlay", "Input Overlay")
-            CONFIG_FLOAT(g_settings.input.overlay_opacity, "overlay_opacity", "Overlay Opacity")
-            CONFIG_FLOAT(g_settings.input.overlay_scale, "overlay_scale", "Overlay Scale")
+            CONFIG_FLOAT(g_settings.input.overlay_opacity, "input_overlay_opacity", "Overlay Opacity")
+            CONFIG_FLOAT(g_settings.input.overlay_scale, "input_overlay_scale", "Overlay Scale")
          #endif
 
          /* Input: Android */
@@ -265,5 +273,9 @@ const rarch_setting_t setting_data[] =
 
    { 0 }
 };
+
+// HACK
+#undef g_settings fake_settings
+#undef g_extern fake_extern
 
 #endif

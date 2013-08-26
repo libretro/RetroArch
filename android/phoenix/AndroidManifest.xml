@@ -29,6 +29,7 @@
         <activity android:name=".browser.LazyPopupMenu"></activity>
         <activity android:name=".browser.PopupMenuAbstract"></activity>
         <activity android:name=".browser.ReportIME"></activity>
+        <activity android:name=".browser.IMEActivity"></activity>
         <activity android:name=".browser.HelpActivity"></activity>
         <activity android:name=".browser.FileWrapper"></activity>
         <activity android:name=".browser.DirectoryActivity"></activity>

@@ -17,6 +17,53 @@
 #import "../RetroArch/RetroArch_Apple.h"
 #include "../RetroArch/setting_data.h"
 
+struct settings fake_settings;
+struct global fake_extern;
+
+static const void* associated_name_tag = (void*)&associated_name_tag;
+
+@interface RASettingCell : NSTableCellView
+@property (strong) NSString* stringValue;
+@property (nonatomic) IBOutlet NSNumber* numericValue;
+@property (nonatomic) bool booleanValue;
+@property (nonatomic) const rarch_setting_t* setting;
+@end
+
+@implementation RASettingCell
+- (void)setSetting:(const rarch_setting_t *)aSetting
+{
+   _setting = aSetting;
+   
+   switch (aSetting->type)
+   {
+      case ST_INT:    self.numericValue = @(*(int*)aSetting->value); break;
+      case ST_FLOAT:  self.numericValue = @(*(float*)aSetting->value); break;
+      case ST_STRING: self.stringValue = @((const char*)aSetting->value); break;
+      case ST_PATH:   self.stringValue = @((const char*)aSetting->value); break;
+      case ST_BOOL:   self.booleanValue = *(bool*)aSetting->value; break;
+   }
+}
+
+- (IBAction)doBrowse:(id)sender
+{
+   NSOpenPanel* panel = [NSOpenPanel new];
+   [panel runModal];
+   
+   if (panel.URLs.count == 1)
+      self.stringValue = panel.URL.path;
+}
+
+- (IBAction)valueChanged:(id)sender
+{
+   printf("GABOR\n");
+}
+
+@end
+
+@protocol RASettingView
+@property const rarch_setting_t* setting;
+@end
+
 @interface RASettingsDelegate : NSObject<NSTableViewDataSource,   NSTableViewDelegate,
                                          NSOutlineViewDataSource, NSOutlineViewDelegate>
 @end
@@ -37,6 +84,9 @@
    NSMutableArray* thisSubGroup = nil;
    _settings = [NSMutableArray array];
    
+   memcpy(&fake_settings, &g_settings, sizeof(struct settings));
+   memcpy(&fake_extern, &g_extern, sizeof(struct global));
+   
    for (int i = 0; setting_data[i].type; i ++)
    {
       switch (setting_data[i].type)
@@ -44,7 +94,7 @@
          case ST_GROUP:
          {
             thisGroup = [NSMutableArray array];
-            objc_setAssociatedObject(thisGroup, "NAME", [NSString stringWithFormat:@"%s", setting_data[i].name], OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+            objc_setAssociatedObject(thisGroup, associated_name_tag, [NSString stringWithFormat:@"%s", setting_data[i].name], OBJC_ASSOCIATION_RETAIN_NONATOMIC);
             break;
          }
          
@@ -58,7 +108,7 @@
          case ST_SUB_GROUP:
          {
             thisSubGroup = [NSMutableArray array];
-            objc_setAssociatedObject(thisSubGroup, "NAME", [NSString stringWithFormat:@"%s", setting_data[i].name], OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+            objc_setAssociatedObject(thisSubGroup, associated_name_tag, [NSString stringWithFormat:@"%s", setting_data[i].name], OBJC_ASSOCIATION_RETAIN_NONATOMIC);
             break;
          }
          
@@ -83,40 +133,57 @@
 
 - (IBAction)close:(id)sender
 {
+#if 0
+   config_file_t* conf = config_file_new(0);
+   for (int i = 0; setting_data[i].type; i ++)
+   {
+      switch (setting_data[i].type)
+      {
+         case ST_BOOL:   config_set_bool  (conf, setting_data[i].name, * (bool*)setting_data[i].value); break;
+         case ST_INT:    config_set_int   (conf, setting_data[i].name, *  (int*)setting_data[i].value); break;
+         case ST_FLOAT:  config_set_float (conf, setting_data[i].name, *(float*)setting_data[i].value); break;
+         case ST_PATH:   config_set_string(conf, setting_data[i].name,   (char*)setting_data[i].value); break;
+         case ST_STRING: config_set_string(conf, setting_data[i].name,   (char*)setting_data[i].value); break;
+         case ST_HEX:    break;
+         default:        break;
+      }
+   }
+   config_file_free(conf);
+#endif
+
    [NSApplication.sharedApplication stopModal];
    [NSApplication.sharedApplication endSheet:_window returnCode:0];
    [_window orderOut:nil];
 }
 
+- (void)readConfigFile:(const char*)path
+{
+   config_file_t* conf = config_file_new(path);
+   if (conf)
+   {
+      for (int i = 0; setting_data[i].type; i ++)
+      {
+         switch (setting_data[i].type)
+         {
+            case ST_BOOL:   config_get_bool (conf, setting_data[i].name,  (bool*)setting_data[i].value); break;
+            case ST_INT:    config_get_int  (conf, setting_data[i].name,   (int*)setting_data[i].value); break;
+            case ST_FLOAT:  config_get_float(conf, setting_data[i].name, (float*)setting_data[i].value); break;
+            case ST_PATH:   config_get_array(conf, setting_data[i].name,  (char*)setting_data[i].value, setting_data[i].size); break;
+            case ST_STRING: config_get_array(conf, setting_data[i].name,  (char*)setting_data[i].value, setting_data[i].size); break;
+            case ST_HEX:    break;
+            default:        break;
+         }
+      }
+
+      config_file_free(conf);
+   }
+}
 
 #pragma mark View Builders
 - (NSView*)labelAccessoryFor:(NSString*)text onTable:(NSTableView*)table
 {
-   NSTextField* result = [table makeViewWithIdentifier:@"label" owner:self];
-   if (result == nil)
-   {
-      result = [NSTextField new];
-      result.bordered = NO;
-      result.drawsBackground = NO;
-      result.identifier = @"label";
-   }
- 
+   RASettingCell* result = [table makeViewWithIdentifier:@"RALabelSetting" owner:nil];
    result.stringValue = text;
-   return result;
-}
-
-- (NSView*)booleanAccessoryFor:(const rarch_setting_t*)setting onTable:(NSTableView*)table
-{
-   NSButton* result = [table makeViewWithIdentifier:@"boolean" owner:self];
-   
-   if (!result)
-   {
-      result = [NSButton new];
-      result.buttonType = NSSwitchButton;
-      result.title = @"";
-   }
-   
-   result.state = *(bool*)setting->value;
    return result;
 }
 
@@ -128,7 +195,7 @@
 
 - (NSView *)tableView:(NSTableView *)tableView viewForTableColumn:(NSTableColumn *)tableColumn row:(NSInteger)row
 {
-   return [self labelAccessoryFor:objc_getAssociatedObject(_settings[row], "NAME") onTable:tableView];
+   return [self labelAccessoryFor:objc_getAssociatedObject(_settings[row], associated_name_tag) onTable:tableView];
 }
 
 - (void)tableViewSelectionDidChange:(NSNotification *)aNotification
@@ -153,12 +220,16 @@
    return [item isKindOfClass:[NSArray class]];
 }
 
+- (BOOL)validateProposedFirstResponder:(NSResponder *)responder forEvent:(NSEvent *)event {
+    return YES;
+}
+
 - (NSView *)outlineView:(NSOutlineView *)outlineView viewForTableColumn:(NSTableColumn *)tableColumn item:(id)item
 {
    if ([item isKindOfClass:[NSArray class]])
    {
       if ([tableColumn.identifier isEqualToString:@"title"])
-         return [self labelAccessoryFor:objc_getAssociatedObject(item, "NAME") onTable:outlineView];
+         return [self labelAccessoryFor:objc_getAssociatedObject(item, associated_name_tag) onTable:outlineView];
       else
          return [self labelAccessoryFor:[NSString stringWithFormat:@"%d items", (int)[item count]] onTable:outlineView];
    }
@@ -167,25 +238,20 @@
       const rarch_setting_t* setting = &setting_data[[item intValue]];
 
       if ([tableColumn.identifier isEqualToString:@"title"])
-         return [self labelAccessoryFor:[NSString stringWithFormat:@"%s", setting->short_description] onTable:outlineView]; // < The outlineView will fill the value
+         return [self labelAccessoryFor:@(setting->short_description) onTable:outlineView];
       else if([tableColumn.identifier isEqualToString:@"accessory"])
       {
+         RASettingCell* s = nil;
          switch (setting->type)
          {
-            case ST_BOOL: return [self booleanAccessoryFor:setting onTable:outlineView];
-         
-            case ST_PATH:
-            case ST_STRING:
-               return [self labelAccessoryFor:[NSString stringWithFormat:@"%s", (const char*)setting->value] onTable:outlineView];
-            
-            case ST_INT:
-               return [self labelAccessoryFor:[NSString stringWithFormat:@"%d", *(int*)setting->value] onTable:outlineView];
-
-            case ST_FLOAT:
-               return [self labelAccessoryFor:[NSString stringWithFormat:@"%f", *(float*)setting->value] onTable:outlineView];
-
-            default: abort();
+            case ST_BOOL:   s = [outlineView makeViewWithIdentifier:@"RABooleanSetting" owner:nil]; break;
+            case ST_INT:    s = [outlineView makeViewWithIdentifier:@"RANumericSetting" owner:nil]; break;
+            case ST_FLOAT:  s = [outlineView makeViewWithIdentifier:@"RANumericSetting" owner:nil]; break;
+            case ST_PATH:   s = [outlineView makeViewWithIdentifier:@"RAPathSetting"    owner:nil]; break;
+            case ST_STRING: s = [outlineView makeViewWithIdentifier:@"RAStringSetting"  owner:nil]; break;
          }
+         s.setting = setting;
+         return s;
       }
    }
    

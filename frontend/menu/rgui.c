@@ -1500,9 +1500,7 @@ static void rgui_settings_video_options_populate_entries(rgui_handle_t *rgui)
    rgui_list_push(rgui->selection_buf, "Integer Scale", RGUI_SETTINGS_VIDEO_INTEGER_SCALE, 0);
    rgui_list_push(rgui->selection_buf, "Aspect Ratio", RGUI_SETTINGS_VIDEO_ASPECT_RATIO, 0);
    rgui_list_push(rgui->selection_buf, "Custom Ratio", RGUI_SETTINGS_CUSTOM_VIEWPORT, 0);
-#ifndef RARCH_PERFORMANCE_MODE
    rgui_list_push(rgui->selection_buf, "Toggle Fullscreen", RGUI_SETTINGS_TOGGLE_FULLSCREEN, 0);
-#endif
    rgui_list_push(rgui->selection_buf, "Rotation", RGUI_SETTINGS_VIDEO_ROTATION, 0);
    rgui_list_push(rgui->selection_buf, "VSync", RGUI_SETTINGS_VIDEO_VSYNC, 0);
    rgui_list_push(rgui->selection_buf, "Hard GPU Sync", RGUI_SETTINGS_VIDEO_HARD_SYNC, 0);
@@ -1854,12 +1852,10 @@ static int video_option_toggle_setting(rgui_handle_t *rgui, unsigned setting, rg
             driver.video_poke->set_aspect_ratio(driver.video_data, g_settings.video.aspect_ratio_idx);
          break;
 
-#ifndef RARCH_PERFORMANCE_MODE
       case RGUI_SETTINGS_TOGGLE_FULLSCREEN:
          if (action == RGUI_ACTION_OK)
             rarch_set_fullscreen(!g_settings.video.fullscreen);
          break;
-#endif
 
 #ifdef GEKKO
       case RGUI_SETTINGS_VIDEO_RESOLUTION:
@@ -2654,7 +2650,8 @@ int rgui_iterate(rgui_handle_t *rgui)
                // Core selection on non-console just updates directory listing.
                // Will take affect on new ROM load.
 #elif defined(GEKKO) && defined(HW_RVL)
-               strlcpy(g_settings.libretro, path, sizeof(g_settings.libretro)); // Is this supposed to be here?
+               rarch_environment_cb(RETRO_ENVIRONMENT_SET_LIBRETRO_PATH, (void*)path);
+
                fill_pathname_join(g_extern.fullpath, default_paths.core_dir,
                      SALAMANDER_FILE, sizeof(g_extern.fullpath));
                g_extern.lifecycle_mode_state &= ~(1ULL << MODE_GAME);

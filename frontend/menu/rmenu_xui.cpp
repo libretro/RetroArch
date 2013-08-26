@@ -1222,8 +1222,11 @@ HRESULT CRetroArchCoreBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHandle
       wcstombs(str_buffer, (const wchar_t *)XuiListGetText(m_menulist, index), sizeof(str_buffer));
       if(path_file_exists(rgui->browser->list->elems[index].data))
       {
-         snprintf(g_settings.libretro, sizeof(g_settings.libretro), "%s\\%s",
-               rgui->browser->current_dir.directory_path, str_buffer);
+         struct retro_variable var;
+         var.key = "core_path";
+         snprintf(var.value, sizeof(var.value), "%s\\%s", rgui->browser->current_dir.directory_path, str_buffer);
+         rarch_environment_cb(RETRO_ENVIRONMENT_SET_LIBRETRO_PATH, &var);
+
          g_extern.lifecycle_mode_state |= (1ULL << MODE_EXITSPAWN);
          process_input_ret = -1;
       }
