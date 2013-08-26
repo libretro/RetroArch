@@ -23,7 +23,7 @@ struct global fake_extern;
 static const void* associated_name_tag = (void*)&associated_name_tag;
 
 @interface RASettingCell : NSTableCellView
-@property (strong) NSString* stringValue;
+@property (nonatomic) NSString* stringValue;
 @property (nonatomic) IBOutlet NSNumber* numericValue;
 @property (nonatomic) bool booleanValue;
 @property (nonatomic) const rarch_setting_t* setting;
@@ -33,6 +33,9 @@ static const void* associated_name_tag = (void*)&associated_name_tag;
 - (void)setSetting:(const rarch_setting_t *)aSetting
 {
    _setting = aSetting;
+   
+   if (!_setting)
+      return;
    
    switch (aSetting->type)
    {
@@ -53,9 +56,30 @@ static const void* associated_name_tag = (void*)&associated_name_tag;
       self.stringValue = panel.URL.path;
 }
 
-- (IBAction)valueChanged:(id)sender
+- (void)setNumericValue:(NSNumber *)numericValue
 {
-   printf("GABOR\n");
+   _numericValue = numericValue;
+   
+   if (_setting && _setting->type == ST_INT)
+      *(int*)_setting->value = [_numericValue intValue];
+   else if (_setting && _setting->type == ST_FLOAT)
+      *(float*)_setting->value = [_numericValue floatValue];
+}
+
+- (void)setBooleanValue:(bool)booleanValue
+{
+   _booleanValue = booleanValue;
+   
+   if (_setting && _setting->type == ST_BOOL)
+      *(bool*)_setting->value = _booleanValue;
+}
+
+- (void)setStringValue:(NSString *)stringValue
+{
+   _stringValue = stringValue;
+   
+   if (_setting && (_setting->type == ST_STRING || _setting->type == ST_PATH))
+      strlcpy(_setting->value, _stringValue.UTF8String, _setting->size);
 }
 
 @end
@@ -127,14 +151,15 @@ static const void* associated_name_tag = (void*)&associated_name_tag;
       }
    }
    
+   [self load];
+   
    [NSApplication.sharedApplication beginSheet:_window modalForWindow:RetroArch_OSX.get->window modalDelegate:nil didEndSelector:nil contextInfo:nil];
    [NSApplication.sharedApplication runModalForWindow:_window];
 }
 
-- (IBAction)close:(id)sender
+- (void)load
 {
-#if 0
-   config_file_t* conf = config_file_new(0);
+   config_file_t* conf = config_file_new([RetroArch_OSX get].configPath.UTF8String);
    for (int i = 0; setting_data[i].type; i ++)
    {
       switch (setting_data[i].type)
@@ -149,7 +174,28 @@ static const void* associated_name_tag = (void*)&associated_name_tag;
       }
    }
    config_file_free(conf);
-#endif
+}
+
+- (IBAction)close:(id)sender
+{
+   config_file_t* conf = config_file_new(0);
+   for (int i = 0; setting_data[i].type; i ++)
+   {
+      switch (setting_data[i].type)
+      {
+         case ST_BOOL:   config_set_bool  (conf, setting_data[i].name, * (bool*)setting_data[i].value); break;
+         case ST_INT:    config_set_int   (conf, setting_data[i].name, *  (int*)setting_data[i].value); break;
+         case ST_FLOAT:  config_set_float (conf, setting_data[i].name, *(float*)setting_data[i].value); break;
+         case ST_PATH:   config_set_string(conf, setting_data[i].name,   (char*)setting_data[i].value); break;
+         case ST_STRING: config_set_string(conf, setting_data[i].name,   (char*)setting_data[i].value); break;
+         case ST_HEX:    break;
+         default:        break;
+      }
+   }
+   config_file_write(conf, [RetroArch_OSX get].configPath.UTF8String);
+   config_file_free(conf);
+
+   apple_refresh_config();
 
    [NSApplication.sharedApplication stopModal];
    [NSApplication.sharedApplication endSheet:_window returnCode:0];

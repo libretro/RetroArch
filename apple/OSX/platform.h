@@ -36,6 +36,7 @@
 
 - (void)loadingCore:(RAModuleInfo*)core withFile:(const char*)file;
 - (void)unloadingCore:(RAModuleInfo*)core;
+- (NSString*)configPath;
 
 @end
 

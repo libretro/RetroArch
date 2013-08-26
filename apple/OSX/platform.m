@@ -227,6 +227,11 @@
    _wantReload = false;
 }
 
+- (NSString*)configPath
+{
+   return [[self retroarchConfigPath] stringByAppendingPathComponent:@"retroarch.cfg"];
+}
+
 - (NSString*)retroarchConfigPath
 {
    NSArray* paths = NSSearchPathForDirectoriesInDomains(NSApplicationSupportDirectory, NSUserDomainMask, YES);
