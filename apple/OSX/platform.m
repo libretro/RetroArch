@@ -251,7 +251,8 @@
 
 - (IBAction)showPreferences:(id)sender
 {
-   [[[NSWindowController alloc] initWithWindowNibName:@"Settings"] window];
+   NSWindowController* wc = [[NSWindowController alloc] initWithWindowNibName:@"Settings"];
+   [NSApp runModalForWindow:wc.window];
 }
 
 - (IBAction)basicEvent:(id)sender

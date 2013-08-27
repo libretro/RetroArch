@@ -16,17 +16,65 @@
 #import <objc/runtime.h>
 #import "../RetroArch/RetroArch_Apple.h"
 #include "../RetroArch/setting_data.h"
+#include "../RetroArch/apple_input.h"
+
+#include "driver.h"
+#include "input/input_common.h"
 
 struct settings fake_settings;
 struct global fake_extern;
 
 static const void* associated_name_tag = (void*)&associated_name_tag;
 
+#define BINDFOR(s) (*(struct retro_keybind*)(&s)->value)
+
+static const char* key_name_for_id(uint32_t hidkey)
+{
+   for (int i = 0; apple_key_name_map[i].hid_id; i ++)
+      if (apple_key_name_map[i].hid_id == hidkey)
+         return apple_key_name_map[i].keyname;
+
+   return "nul";
+}
+
+static uint32_t key_id_for_name(const char* name)
+{
+   for (int i = 0; apple_key_name_map[i].hid_id; i ++)
+      if (strcmp(name, apple_key_name_map[i].keyname) == 0)
+         return apple_key_name_map[i].hid_id;
+   
+   return 0;
+}
+
+#define key_name_for_rk(X) key_name_for_id(input_translate_rk_to_keysym(X))
+#define key_rk_for_name(X) input_translate_keysym_to_rk(key_id_for_name(X))
+
+@interface RAInputBinder : NSWindow
+@end
+
+@implementation RAInputBinder
+
+- (IBAction)goAway:(id)sender
+{
+   [NSApp endSheet:self];
+   [self orderOut:nil];
+}
+
+// Stop the annoying sound when pressing a key
+- (void)keyDown:(NSEvent*)theEvent
+{
+}
+
+@end
+
 @interface RASettingCell : NSTableCellView
+@property (nonatomic) const rarch_setting_t* setting;
+
 @property (nonatomic) NSString* stringValue;
 @property (nonatomic) IBOutlet NSNumber* numericValue;
 @property (nonatomic) bool booleanValue;
-@property (nonatomic) const rarch_setting_t* setting;
+
+@property (nonatomic) NSTimer* bindTimer;
 @end
 
 @implementation RASettingCell
@@ -44,6 +92,7 @@ static const void* associated_name_tag = (void*)&associated_name_tag;
       case ST_STRING: self.stringValue = @((const char*)aSetting->value); break;
       case ST_PATH:   self.stringValue = @((const char*)aSetting->value); break;
       case ST_BOOL:   self.booleanValue = *(bool*)aSetting->value; break;
+      case ST_BIND:   [self updateInputString]; break;
    }
 }
 
@@ -61,9 +110,9 @@ static const void* associated_name_tag = (void*)&associated_name_tag;
    _numericValue = numericValue;
    
    if (_setting && _setting->type == ST_INT)
-      *(int*)_setting->value = [_numericValue intValue];
+      *(int*)_setting->value = _numericValue.intValue;
    else if (_setting && _setting->type == ST_FLOAT)
-      *(float*)_setting->value = [_numericValue floatValue];
+      *(float*)_setting->value = _numericValue.floatValue;
 }
 
 - (void)setBooleanValue:(bool)booleanValue
@@ -82,6 +131,63 @@ static const void* associated_name_tag = (void*)&associated_name_tag;
       strlcpy(_setting->value, _stringValue.UTF8String, _setting->size);
 }
 
+// Input Binding
+- (void)updateInputString
+{
+   self.stringValue = [NSString stringWithFormat:@"[KB:%s] [JS:%lld] [AX:nul]", key_name_for_rk(BINDFOR(*_setting).key),
+                                                                                BINDFOR(*_setting).joykey];
+}
+
+- (void)dismissBinder
+{
+   [self.bindTimer invalidate];
+   self.bindTimer = nil;
+
+   [self updateInputString];
+
+   [(id)self.window.attachedSheet goAway:nil];
+}
+
+- (void)checkBind:(NSTimer*)send
+{
+   // Keyboard
+   for (int i = 0; apple_key_name_map[i].hid_id; i++)
+   {
+      if (g_current_input_data.keys[apple_key_name_map[i].hid_id])
+      {
+         BINDFOR(*_setting).key = input_translate_keysym_to_rk(apple_key_name_map[i].hid_id);
+         [self dismissBinder];
+         return;
+      }
+   }
+
+   // Joystick
+   if (g_current_input_data.pad_buttons[0])
+   {
+      for (int i = 0; i != 32; i ++)
+      {
+         if (g_current_input_data.pad_buttons[0] & (1 << i))
+         {
+            BINDFOR(*_setting).joykey = i;
+            [self dismissBinder];
+            return;
+         }
+      }
+   }
+}
+
+- (IBAction)doGetBind:(id)sender
+{
+   static NSWindowController* controller;
+   if (!controller)
+      controller = [[NSWindowController alloc] initWithWindowNibName:@"InputBinder"];
+   
+   self.bindTimer = [NSTimer timerWithTimeInterval:.1f target:self selector:@selector(checkBind:) userInfo:nil repeats:YES];
+   [[NSRunLoop currentRunLoop] addTimer:self.bindTimer forMode:NSModalPanelRunLoopMode];
+
+   [NSApp beginSheet:controller.window modalForWindow:self.window modalDelegate:nil didEndSelector:nil contextInfo:nil];
+}
+
 @end
 
 @protocol RASettingView
@@ -89,12 +195,13 @@ static const void* associated_name_tag = (void*)&associated_name_tag;
 @end
 
 @interface RASettingsDelegate : NSObject<NSTableViewDataSource,   NSTableViewDelegate,
-                                         NSOutlineViewDataSource, NSOutlineViewDelegate>
+                                         NSOutlineViewDataSource, NSOutlineViewDelegate,
+                                         NSWindowDelegate>
 @end
 
 @implementation RASettingsDelegate
 {
-   NSWindow IBOutlet* _window;
+   NSWindow IBOutlet* _inputWindow;
    NSTableView IBOutlet* _table;
    NSOutlineView IBOutlet* _outline;
    
@@ -152,9 +259,6 @@ static const void* associated_name_tag = (void*)&associated_name_tag;
    }
    
    [self load];
-   
-   [NSApplication.sharedApplication beginSheet:_window modalForWindow:RetroArch_OSX.get->window modalDelegate:nil didEndSelector:nil contextInfo:nil];
-   [NSApplication.sharedApplication runModalForWindow:_window];
 }
 
 - (void)load
@@ -169,6 +273,12 @@ static const void* associated_name_tag = (void*)&associated_name_tag;
          case ST_FLOAT:  config_set_float (conf, setting_data[i].name, *(float*)setting_data[i].value); break;
          case ST_PATH:   config_set_string(conf, setting_data[i].name,   (char*)setting_data[i].value); break;
          case ST_STRING: config_set_string(conf, setting_data[i].name,   (char*)setting_data[i].value); break;
+         
+         case ST_BIND:   input_config_parse_key(conf, "input_player1", input_config_bind_map[0].base, setting_data[i].value);
+                         input_config_parse_joy_button(conf, "input_player1", input_config_bind_map[0].base, setting_data[i].value);
+                         input_config_parse_joy_axis(conf, "input_player1", input_config_bind_map[0].base, setting_data[i].value);
+                         break;
+         
          case ST_HEX:    break;
          default:        break;
       }
@@ -176,7 +286,7 @@ static const void* associated_name_tag = (void*)&associated_name_tag;
    config_file_free(conf);
 }
 
-- (IBAction)close:(id)sender
+- (void)windowWillClose:(NSNotification *)notification
 {
    config_file_t* conf = config_file_new(0);
    for (int i = 0; setting_data[i].type; i ++)
@@ -188,6 +298,13 @@ static const void* associated_name_tag = (void*)&associated_name_tag;
          case ST_FLOAT:  config_set_float (conf, setting_data[i].name, *(float*)setting_data[i].value); break;
          case ST_PATH:   config_set_string(conf, setting_data[i].name,   (char*)setting_data[i].value); break;
          case ST_STRING: config_set_string(conf, setting_data[i].name,   (char*)setting_data[i].value); break;
+         
+         case ST_BIND:
+         {
+            config_set_string(conf, setting_data[i].name, key_name_for_rk(BINDFOR(setting_data[i]).key));
+            break;
+         }
+         
          case ST_HEX:    break;
          default:        break;
       }
@@ -197,32 +314,7 @@ static const void* associated_name_tag = (void*)&associated_name_tag;
 
    apple_refresh_config();
 
-   [NSApplication.sharedApplication stopModal];
-   [NSApplication.sharedApplication endSheet:_window returnCode:0];
-   [_window orderOut:nil];
-}
-
-- (void)readConfigFile:(const char*)path
-{
-   config_file_t* conf = config_file_new(path);
-   if (conf)
-   {
-      for (int i = 0; setting_data[i].type; i ++)
-      {
-         switch (setting_data[i].type)
-         {
-            case ST_BOOL:   config_get_bool (conf, setting_data[i].name,  (bool*)setting_data[i].value); break;
-            case ST_INT:    config_get_int  (conf, setting_data[i].name,   (int*)setting_data[i].value); break;
-            case ST_FLOAT:  config_get_float(conf, setting_data[i].name, (float*)setting_data[i].value); break;
-            case ST_PATH:   config_get_array(conf, setting_data[i].name,  (char*)setting_data[i].value, setting_data[i].size); break;
-            case ST_STRING: config_get_array(conf, setting_data[i].name,  (char*)setting_data[i].value, setting_data[i].size); break;
-            case ST_HEX:    break;
-            default:        break;
-         }
-      }
-
-      config_file_free(conf);
-   }
+   [NSApp stopModal];
 }
 
 #pragma mark View Builders
@@ -295,6 +387,7 @@ static const void* associated_name_tag = (void*)&associated_name_tag;
             case ST_FLOAT:  s = [outlineView makeViewWithIdentifier:@"RANumericSetting" owner:nil]; break;
             case ST_PATH:   s = [outlineView makeViewWithIdentifier:@"RAPathSetting"    owner:nil]; break;
             case ST_STRING: s = [outlineView makeViewWithIdentifier:@"RAStringSetting"  owner:nil]; break;
+            case ST_BIND:   s = [outlineView makeViewWithIdentifier:@"RABindSetting"    owner:nil]; break;
          }
          s.setting = setting;
          return s;

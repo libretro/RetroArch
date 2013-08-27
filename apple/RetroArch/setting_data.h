@@ -18,8 +18,8 @@
 
 #include "general.h"
 
-enum setting_type { ST_NONE, ST_BOOL, ST_INT, ST_FLOAT, ST_PATH, ST_STRING, ST_HEX, ST_GROUP, ST_SUB_GROUP,
-                    ST_END_GROUP, ST_END_SUB_GROUP };
+enum setting_type { ST_NONE, ST_BOOL, ST_INT, ST_FLOAT, ST_PATH, ST_STRING, ST_HEX, ST_BIND,
+                    ST_GROUP, ST_SUB_GROUP, ST_END_GROUP, ST_END_SUB_GROUP };
 
 typedef struct
 {
@@ -52,14 +52,13 @@ extern struct global fake_extern;
 #define END_GROUP()                        { ST_END_GROUP },
 #define START_SUB_GROUP(NAME)              { ST_SUB_GROUP,     NAME },
 #define END_SUB_GROUP()                    { ST_END_SUB_GROUP },
-#define START_GROUP(NAME)                  { ST_GROUP,         NAME, 0,       0,              0,     0, 0, 0, 0.0, 0.0, false },
-#define END_GROUP()                        { ST_END_GROUP,     0,    0,       0,              0,     0, 0, 0, 0.0, 0.0, false },
 #define CONFIG_BOOL(TARGET, NAME, SHORT)   { ST_BOOL,          NAME, &TARGET, sizeof(TARGET), SHORT, 0, 0, 0, 0.0, 0.0, false },
 #define CONFIG_INT(TARGET, NAME, SHORT)    { ST_INT,           NAME, &TARGET, sizeof(TARGET), SHORT, 0, 0, 0, 0.0, 0.0, false },
 #define CONFIG_FLOAT(TARGET, NAME, SHORT)  { ST_FLOAT,         NAME, &TARGET, sizeof(TARGET), SHORT, 0, 0, 0, 0.0, 0.0, false },
 #define CONFIG_PATH(TARGET, NAME, SHORT)   { ST_PATH,          NAME, &TARGET, sizeof(TARGET), SHORT, 0, 0, 0, 0.0, 0.0, false },
 #define CONFIG_STRING(TARGET, NAME, SHORT) { ST_STRING,        NAME, &TARGET, sizeof(TARGET), SHORT, 0, 0, 0, 0.0, 0.0, false },
 #define CONFIG_HEX(TARGET, NAME, SHORT)    { ST_HEX,           NAME, &TARGET, sizeof(TARGET), SHORT, 0, 0, 0, 0.0, 0.0, false },
+#define CONFIG_BIND(TARGET, NAME, SHORT)   { ST_BIND,          NAME, &TARGET, sizeof(TARGET), SHORT },
 
 const rarch_setting_t setting_data[] = 
 {
@@ -98,7 +97,6 @@ const rarch_setting_t setting_data[] =
          #endif
       END_SUB_GROUP()
    END_GROUP()
-
 
 
    /*************/
@@ -182,6 +180,25 @@ const rarch_setting_t setting_data[] =
             CONFIG_INT(g_settings.input.icade_profile[2], "input_autodetect_icade_profile_pad3", "iCade 3")
             CONFIG_INT(g_settings.input.icade_profile[3], "input_autodetect_icade_profile_pad4", "iCade 4")
          #endif
+      END_SUB_GROUP()
+
+      START_SUB_GROUP("Player 1")
+         CONFIG_BIND(g_settings.input.binds[0][ 0], "input_player1_b", "B button (down)")
+         CONFIG_BIND(g_settings.input.binds[0][ 1], "input_player1_y", "Y button (left)")
+         CONFIG_BIND(g_settings.input.binds[0][ 2], "input_player1_select", "Select button")
+         CONFIG_BIND(g_settings.input.binds[0][ 3], "input_player1_start", "Start button")
+         CONFIG_BIND(g_settings.input.binds[0][ 4], "input_player1_up", "Up D-pad")
+         CONFIG_BIND(g_settings.input.binds[0][ 5], "input_player1_down", "Down D-pad")
+         CONFIG_BIND(g_settings.input.binds[0][ 6], "input_player1_left", "Left D-pad")
+         CONFIG_BIND(g_settings.input.binds[0][ 7], "input_player1_right", "Right D-pad")
+         CONFIG_BIND(g_settings.input.binds[0][ 8], "input_player1_a", "A button (right)")
+         CONFIG_BIND(g_settings.input.binds[0][ 9], "input_player1_x", "X button (top)")
+         CONFIG_BIND(g_settings.input.binds[0][10], "input_player1_l", "L button (left shoulder)")
+         CONFIG_BIND(g_settings.input.binds[0][11], "input_player1_r", "R button (right shoulder)")
+         CONFIG_BIND(g_settings.input.binds[0][12], "input_player1_l2", "L2 button (left shoulder #2)")
+         CONFIG_BIND(g_settings.input.binds[0][13], "input_player1_r2", "R2 button (right shoulder #2)")
+         CONFIG_BIND(g_settings.input.binds[0][14], "input_player1_l3", "L3 button (left analog button)")
+         CONFIG_BIND(g_settings.input.binds[0][15], "input_player1_r3", "R3 button (right analog button)")
       END_SUB_GROUP()
    END_GROUP()
 
@@ -275,7 +292,63 @@ const rarch_setting_t setting_data[] =
 };
 
 // HACK
-#undef g_settings fake_settings
-#undef g_extern fake_extern
+#undef g_settings
+#undef g_extern
+
+// Keyboard
+#include "keycode.h"
+static const struct
+{
+   const char* const keyname;
+   const uint32_t hid_id;
+} apple_key_name_map[] = {
+   { "left", KEY_Left },               { "right", KEY_Right },
+   { "up", KEY_Up },                   { "down", KEY_Down },
+   { "enter", KEY_Enter },             { "kp_enter", KP_Enter },
+   { "space", KEY_Space },             { "tab", KEY_Tab },
+   { "shift", KEY_LeftShift },         { "rshift", KEY_RightShift },
+   { "ctrl", KEY_LeftControl },        { "alt", KEY_LeftAlt },
+   { "escape", KEY_Escape },           { "backspace", KEY_DeleteForward },
+   { "backquote", KEY_Grave },         { "pause", KEY_Pause },
+
+   { "f1", KEY_F1 },                   { "f2", KEY_F2 },
+   { "f3", KEY_F3 },                   { "f4", KEY_F4 },
+   { "f5", KEY_F5 },                   { "f6", KEY_F6 },
+   { "f7", KEY_F7 },                   { "f8", KEY_F8 },
+   { "f9", KEY_F9 },                   { "f10", KEY_F10 },
+   { "f11", KEY_F11 },                 { "f12", KEY_F12 },
+
+   { "num0", KEY_0 },                  { "num1", KEY_1 },
+   { "num2", KEY_2 },                  { "num3", KEY_3 },
+   { "num4", KEY_4 },                  { "num5", KEY_5 },
+   { "num6", KEY_6 },                  { "num7", KEY_7 },
+   { "num8", KEY_8 },                  { "num9", KEY_9 },
+
+   { "insert", KEY_Insert },           { "del", KEY_DeleteForward },
+   { "home", KEY_Home },               { "end", KEY_End },
+   { "pageup", KEY_PageUp },           { "pagedown", KEY_PageDown },
+
+   { "add", KP_Add },                  { "subtract", KP_Subtract },
+   { "multiply", KP_Multiply },        { "divide", KP_Divide },
+   { "keypad0", KP_0 },                { "keypad1", KP_1 },
+   { "keypad2", KP_2 },                { "keypad3", KP_3 },
+   { "keypad4", KP_4 },                { "keypad5", KP_5 },
+   { "keypad6", KP_6 },                { "keypad7", KP_7 },
+   { "keypad8", KP_8 },                { "keypad9", KP_9 },
+
+   { "period", KEY_Period },           { "capslock", KEY_CapsLock },
+   { "numlock", KP_NumLock },          { "print_screen", KEY_PrintScreen },
+   { "scroll_lock", KEY_ScrollLock },
+
+   { "a", KEY_A }, { "b", KEY_B }, { "c", KEY_C }, { "d", KEY_D },
+   { "e", KEY_E }, { "f", KEY_F }, { "g", KEY_G }, { "h", KEY_H },
+   { "i", KEY_I }, { "j", KEY_J }, { "k", KEY_K }, { "l", KEY_L },
+   { "m", KEY_M }, { "n", KEY_N }, { "o", KEY_O }, { "p", KEY_P },
+   { "q", KEY_Q }, { "r", KEY_R }, { "s", KEY_S }, { "t", KEY_T },
+   { "u", KEY_U }, { "v", KEY_V }, { "w", KEY_W }, { "x", KEY_X },
+   { "y", KEY_Y }, { "z", KEY_Z },
+
+   { "nul", 0x00},
+};
 
 #endif
