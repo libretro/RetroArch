@@ -443,7 +443,7 @@ static BOOL CALLBACK enum_joypad_cb(const DIDEVICEINSTANCE *inst, void *p)
    return DIENUM_CONTINUE;
    
    size_t name_len = strlen(inst->tszProductName) + 1;
-   g_pad_names[g_joypad_cnt] = malloc(name_len);
+   g_pad_names[g_joypad_cnt] = (char*)malloc(name_len);
    strncpy(g_pad_names[g_joypad_cnt], inst->tszProductName, name_len);
    
 #ifdef HAVE_WINXINPUT
