@@ -31,11 +31,9 @@ typedef struct
    uint32_t size;
    
    const char* short_description;
-   const char* long_description;
-
-   const char** values;
 
    uint32_t input_player;
+
    double min;
    double max;
    bool allow_blank;
@@ -52,13 +50,14 @@ extern struct global fake_extern;
 #define END_GROUP()                        { ST_END_GROUP },
 #define START_SUB_GROUP(NAME)              { ST_SUB_GROUP,     NAME },
 #define END_SUB_GROUP()                    { ST_END_SUB_GROUP },
-#define CONFIG_BOOL(TARGET, NAME, SHORT)   { ST_BOOL,          NAME, &TARGET, sizeof(TARGET), SHORT, 0, 0, 0, 0.0, 0.0, false },
-#define CONFIG_INT(TARGET, NAME, SHORT)    { ST_INT,           NAME, &TARGET, sizeof(TARGET), SHORT, 0, 0, 0, 0.0, 0.0, false },
-#define CONFIG_FLOAT(TARGET, NAME, SHORT)  { ST_FLOAT,         NAME, &TARGET, sizeof(TARGET), SHORT, 0, 0, 0, 0.0, 0.0, false },
-#define CONFIG_PATH(TARGET, NAME, SHORT)   { ST_PATH,          NAME, &TARGET, sizeof(TARGET), SHORT, 0, 0, 0, 0.0, 0.0, false },
-#define CONFIG_STRING(TARGET, NAME, SHORT) { ST_STRING,        NAME, &TARGET, sizeof(TARGET), SHORT, 0, 0, 0, 0.0, 0.0, false },
-#define CONFIG_HEX(TARGET, NAME, SHORT)    { ST_HEX,           NAME, &TARGET, sizeof(TARGET), SHORT, 0, 0, 0, 0.0, 0.0, false },
-#define CONFIG_BIND(TARGET, NAME, SHORT)   { ST_BIND,          NAME, &TARGET, sizeof(TARGET), SHORT },
+#define CONFIG_BOOL(TARGET, NAME, SHORT)   { ST_BOOL,          NAME, &TARGET, sizeof(TARGET), SHORT },
+#define CONFIG_INT(TARGET, NAME, SHORT)    { ST_INT,           NAME, &TARGET, sizeof(TARGET), SHORT },
+#define CONFIG_FLOAT(TARGET, NAME, SHORT)  { ST_FLOAT,         NAME, &TARGET, sizeof(TARGET), SHORT },
+#define CONFIG_PATH(TARGET, NAME, SHORT)   { ST_PATH,          NAME, &TARGET, sizeof(TARGET), SHORT },
+#define CONFIG_STRING(TARGET, NAME, SHORT) { ST_STRING,        NAME, &TARGET, sizeof(TARGET), SHORT },
+#define CONFIG_HEX(TARGET, NAME, SHORT)    { ST_HEX,           NAME, &TARGET, sizeof(TARGET), SHORT },
+
+#define CONFIG_BIND(TARGET, PLAYER, NAME, SHORT)   { ST_BIND,          NAME, &TARGET, sizeof(TARGET), SHORT, PLAYER },
 
 const rarch_setting_t setting_data[] = 
 {
@@ -183,22 +182,31 @@ const rarch_setting_t setting_data[] =
       END_SUB_GROUP()
 
       START_SUB_GROUP("Player 1")
-         CONFIG_BIND(g_settings.input.binds[0][ 0], "input_player1_b", "B button (down)")
-         CONFIG_BIND(g_settings.input.binds[0][ 1], "input_player1_y", "Y button (left)")
-         CONFIG_BIND(g_settings.input.binds[0][ 2], "input_player1_select", "Select button")
-         CONFIG_BIND(g_settings.input.binds[0][ 3], "input_player1_start", "Start button")
-         CONFIG_BIND(g_settings.input.binds[0][ 4], "input_player1_up", "Up D-pad")
-         CONFIG_BIND(g_settings.input.binds[0][ 5], "input_player1_down", "Down D-pad")
-         CONFIG_BIND(g_settings.input.binds[0][ 6], "input_player1_left", "Left D-pad")
-         CONFIG_BIND(g_settings.input.binds[0][ 7], "input_player1_right", "Right D-pad")
-         CONFIG_BIND(g_settings.input.binds[0][ 8], "input_player1_a", "A button (right)")
-         CONFIG_BIND(g_settings.input.binds[0][ 9], "input_player1_x", "X button (top)")
-         CONFIG_BIND(g_settings.input.binds[0][10], "input_player1_l", "L button (left shoulder)")
-         CONFIG_BIND(g_settings.input.binds[0][11], "input_player1_r", "R button (right shoulder)")
-         CONFIG_BIND(g_settings.input.binds[0][12], "input_player1_l2", "L2 button (left shoulder #2)")
-         CONFIG_BIND(g_settings.input.binds[0][13], "input_player1_r2", "R2 button (right shoulder #2)")
-         CONFIG_BIND(g_settings.input.binds[0][14], "input_player1_l3", "L3 button (left analog button)")
-         CONFIG_BIND(g_settings.input.binds[0][15], "input_player1_r3", "R3 button (right analog button)")
+         CONFIG_BIND(g_settings.input.binds[0][ 0], 1, "b", "B button (down)")
+         CONFIG_BIND(g_settings.input.binds[0][ 1], 1, "y", "Y button (left)")
+         CONFIG_BIND(g_settings.input.binds[0][ 2], 1, "select", "Select button")
+         CONFIG_BIND(g_settings.input.binds[0][ 3], 1, "start", "Start button")
+         CONFIG_BIND(g_settings.input.binds[0][ 4], 1, "up", "Up D-pad")
+         CONFIG_BIND(g_settings.input.binds[0][ 5], 1, "down", "Down D-pad")
+         CONFIG_BIND(g_settings.input.binds[0][ 6], 1, "left", "Left D-pad")
+         CONFIG_BIND(g_settings.input.binds[0][ 7], 1, "right", "Right D-pad")
+         CONFIG_BIND(g_settings.input.binds[0][ 8], 1, "a", "A button (right)")
+         CONFIG_BIND(g_settings.input.binds[0][ 9], 1, "x", "X button (top)")
+         CONFIG_BIND(g_settings.input.binds[0][10], 1, "l", "L button (left shoulder)")
+         CONFIG_BIND(g_settings.input.binds[0][11], 1, "r", "R button (right shoulder)")
+         CONFIG_BIND(g_settings.input.binds[0][12], 1, "l2", "L2 button (left shoulder #2)")
+         CONFIG_BIND(g_settings.input.binds[0][13], 1, "r2", "R2 button (right shoulder #2)")
+         CONFIG_BIND(g_settings.input.binds[0][14], 1, "l3", "L3 button (left analog button)")
+         CONFIG_BIND(g_settings.input.binds[0][15], 1, "r3", "R3 button (right analog button)")
+         CONFIG_BIND(g_settings.input.binds[0][16], 1, "turbo", "Turbo enable")
+         CONFIG_BIND(g_settings.input.binds[0][17], 1, "l_x_plus", "Left analog X+ (right)")
+         CONFIG_BIND(g_settings.input.binds[0][18], 1, "l_x_minus", "Left analog X- (left)")
+         CONFIG_BIND(g_settings.input.binds[0][19], 1, "l_y_plus", "Left analog Y+ (down)")
+         CONFIG_BIND(g_settings.input.binds[0][20], 1, "l_y_minus", "Left analog Y- (up)")
+         CONFIG_BIND(g_settings.input.binds[0][21], 1, "r_x_plus", "Right analog X+ (right)")
+         CONFIG_BIND(g_settings.input.binds[0][22], 1, "r_x_minus", "Right analog X- (left)")
+         CONFIG_BIND(g_settings.input.binds[0][23], 1, "r_y_plus", "Right analog Y+ (down)")
+         CONFIG_BIND(g_settings.input.binds[0][24], 1, "r_y_minus", "Right analog Y- (up)")
       END_SUB_GROUP()
    END_GROUP()
 
