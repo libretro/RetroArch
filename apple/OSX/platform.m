@@ -85,7 +85,7 @@
       apple_display_alert(@"No libretro cores were found.\nSelect \"Go->Cores Directory\" from the menu and place libretro dylib files there.", @"RetroArch");
 
    // Run RGUI if needed
-   if (!_wantReload)
+   if (!_wantReload || apple_argv)
       apple_run_core(nil, 0);
    else
       [self chooseCore];
@@ -270,6 +270,23 @@
 
 int main(int argc, char *argv[])
 {
+   uint32_t current_argc = 0;
+
+   for (int i = 0; i != argc; i ++)
+   {
+      if (strcmp(argv[i], "--") == 0)
+      {
+         current_argc = 1;
+         apple_argv = malloc(sizeof(char*) * (argc + 1));
+         memset(apple_argv, 0, sizeof(char*) * (argc + 1));
+         apple_argv[0] = argv[0];
+      }
+      else if (current_argc)
+      {
+         apple_argv[current_argc ++] = argv[i];
+      }
+   }
+
    return NSApplicationMain(argc, (const char **) argv);
 }
 
