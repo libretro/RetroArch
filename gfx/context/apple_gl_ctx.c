@@ -42,10 +42,7 @@ static bool gfx_ctx_set_video_mode(
       unsigned width, unsigned height,
       bool fullscreen)
 {
-   (void)width;
-   (void)height;
-   (void)fullscreen;
-   return true;
+   return apple_set_video_mode(width, height, fullscreen);
 }
 
 static void gfx_ctx_update_window_title(void)

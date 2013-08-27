@@ -312,6 +312,31 @@ void *apple_get_proc_address(const char *symbol_name)
 #endif
 }
 
+bool apple_set_video_mode(unsigned width, unsigned height, bool fullscreen)
+{
+   __block bool result = true;
+   
+#ifdef OSX
+   dispatch_sync(dispatch_get_main_queue(),
+   ^{
+      // TODO: Multi-monitor support
+      // TODO: Sceen mode support
+      
+      if (fullscreen)
+         result = [g_view enterFullScreenMode:[NSScreen mainScreen] withOptions:nil];
+      else
+      {
+         [g_view exitFullScreenModeWithOptions:nil];
+         [g_view.window makeFirstResponder:g_view];
+      }
+   });
+#endif
+
+   // TODO: Maybe iOS users should be apple to show/hide the status bar here?
+
+   return result;
+}
+
 #ifdef IOS
 void apple_bind_game_view_fbo(void)
 {
