@@ -347,8 +347,9 @@ static int16_t winxinput_joypad_axis (unsigned port_num, uint32_t joyaxis)
 static void winxinput_joypad_poll(void)
 {
    for (unsigned i = 0; i < 4; ++i)
-      if (g_XInputGetStateEx(i, &(g_winxinput_states[i].xstate)) == ERROR_DEVICE_NOT_CONNECTED)
-         g_winxinput_states[i].connected = false;
+      if (g_winxinput_states[i].connected)
+         if (g_XInputGetStateEx(i, &(g_winxinput_states[i].xstate)) != ERROR_SUCCESS)
+            g_winxinput_states[i].connected = false;
          
    dinput_joypad.poll();
 }
