@@ -227,6 +227,11 @@
    _wantReload = false;
 }
 
+- (NSString*)configPath
+{
+   return [[self retroarchConfigPath] stringByAppendingPathComponent:@"retroarch.cfg"];
+}
+
 - (NSString*)retroarchConfigPath
 {
    NSArray* paths = NSSearchPathForDirectoriesInDomains(NSApplicationSupportDirectory, NSUserDomainMask, YES);
@@ -246,7 +251,8 @@
 
 - (IBAction)showPreferences:(id)sender
 {
-   [[[NSWindowController alloc] initWithWindowNibName:@"Settings"] window];
+   NSWindowController* wc = [[NSWindowController alloc] initWithWindowNibName:@"Settings"];
+   [NSApp runModalForWindow:wc.window];
 }
 
 - (IBAction)basicEvent:(id)sender

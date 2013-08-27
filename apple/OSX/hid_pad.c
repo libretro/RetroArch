@@ -94,7 +94,7 @@ static void hid_device_attached(void* inContext, IOReturn inResult, void* inSend
    }
 
    IOHIDDeviceOpen(inDevice, kIOHIDOptionsTypeNone);
-   IOHIDDeviceScheduleWithRunLoop(inDevice, CFRunLoopGetCurrent(), kCFRunLoopDefaultMode);
+   IOHIDDeviceScheduleWithRunLoop(inDevice, CFRunLoopGetCurrent(), kCFRunLoopCommonModes);
    IOHIDDeviceRegisterInputValueCallback(inDevice, hid_input_callback, context);
 }
 
@@ -139,7 +139,7 @@ void osx_pad_init()
 
       IOHIDManagerRegisterDeviceMatchingCallback(g_hid_manager, hid_device_attached, 0);
       IOHIDManagerRegisterDeviceRemovalCallback(g_hid_manager, hid_device_removed, 0);
-      IOHIDManagerScheduleWithRunLoop(g_hid_manager, CFRunLoopGetCurrent(), kCFRunLoopDefaultMode);
+      IOHIDManagerScheduleWithRunLoop(g_hid_manager, CFRunLoopGetMain(), kCFRunLoopCommonModes);
 
       IOHIDManagerOpen(g_hid_manager, kIOHIDOptionsTypeNone);
    }
@@ -150,7 +150,7 @@ void osx_pad_quit()
    if (g_hid_manager)
    {
       IOHIDManagerClose(g_hid_manager, kIOHIDOptionsTypeNone);
-      IOHIDManagerUnscheduleFromRunLoop(g_hid_manager, CFRunLoopGetCurrent(), kCFRunLoopDefaultMode);
+      IOHIDManagerUnscheduleFromRunLoop(g_hid_manager, CFRunLoopGetCurrent(), kCFRunLoopCommonModes);
       
       CFRelease(g_hid_manager);
    }
