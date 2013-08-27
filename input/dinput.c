@@ -562,7 +562,7 @@ static void dinput_joypad_poll(void)
    {
       struct dinput_joypad *pad = &g_pads[i];
 
-      if (pad->joypad)
+      if ((pad->joypad) && (g_xbox_pad_indexes[i] == -1))
       {
          memset(&pad->joy_state, 0, sizeof(pad->joy_state));
 

@@ -315,7 +315,7 @@ static void winxinput_joypad_poll(void)
 {
    for (unsigned i = 0; i < 4; ++i)
       if (g_winxinput_states[i].connected)
-         if (g_XInputGetStateEx(i, &(g_winxinput_states[i].xstate)) == ERROR_DEVICE_NOT_CONNECTED)
+         if (g_XInputGetStateEx(i, &(g_winxinput_states[i].xstate)) != ERROR_SUCCESS)
             g_winxinput_states[i].connected = false;
          
    dinput_joypad.poll();
