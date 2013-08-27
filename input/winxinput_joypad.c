@@ -108,6 +108,27 @@ static int pad_index_to_xplayer_index(unsigned pad)
    return g_xbox_pad_indexes[pad];
 }
 
+static const char* const XBOX_CONTROLLER_NAMES[4] = 
+{
+   "Xbox 360 Controller (Player 1)",
+   "Xbox 360 Controller (Player 2)",
+   "Xbox 360 Controller (Player 3)",
+   "Xbox 360 Controller (Player 4)"
+};
+
+const char* winxinput_joypad_name (unsigned pad)
+{
+   int xplayer = pad_index_to_xplayer_index(pad);
+   
+   if (xplayer < 0)
+      return dinput_joypad.name(pad);
+   else
+      // TODO: Different name if disconnected?
+      return XBOX_CONTROLLER_NAMES[xplayer];
+}
+
+
+
 static bool winxinput_joypad_init(void)
 {
    g_winxinput_dll = NULL;
@@ -120,6 +141,9 @@ static bool winxinput_joypad_init(void)
    
    // No need to check for existance as we will be checking LoadLibrary's
    // success anyway.
+   
+   // Note: Windows 8 ships with 1.4 but there doesn't
+   //       seem to be any compelling reason to use it.
    const char* DLL_NAME = "xinput1_3.dll";
    g_winxinput_dll = LoadLibrary(DLL_NAME); // Using dylib_* complicates building joyconfig.
    if (!g_winxinput_dll)
@@ -136,7 +160,6 @@ static bool winxinput_joypad_init(void)
          RARCH_ERR("Failed to load xinput1_3.dll, ensure DirectX and controller drivers are up to date.\n");
          return false; // DLL does not exist or is invalid
       }
-         
    }
    
    // If we get here then an xinput DLL is correctly loaded.
@@ -146,7 +169,7 @@ static bool winxinput_joypad_init(void)
    
    if (!g_XInputGetStateEx)
    {
-      // no ordinal 100. (old version of x360ce perhaps?) Load the ordinary XInputGetState,
+      // no ordinal 100. (Old version of x360ce perhaps?) Load the ordinary XInputGetState,
       // at the cost of losing guide button support.
       g_winxinput_guide_button_supported = false;
       g_XInputGetStateEx = (XInputGetStateEx_t) GetProcAddress(g_winxinput_dll, "XInputGetState");
@@ -158,7 +181,7 @@ static bool winxinput_joypad_init(void)
       RARCH_WARN("XInput: No guide button support.\n");
    }
    
-   // zero out the states
+   // Zero out the states
    for (unsigned i = 0; i < 4; ++i)
       memset(&g_winxinput_states[i], 0, sizeof(winxinput_joypad_state));
 
@@ -179,7 +202,15 @@ static bool winxinput_joypad_init(void)
    
    // We're going to have to be buddies with dinput if we want to be able
    // to use XI and non-XI controllers together.
-   return dinput_joypad.init();
+   if (!dinput_joypad.init())
+      return false;
+      
+   for (unsigned autoconf_pad = 0; autoconf_pad < MAX_PLAYERS; autoconf_pad++)
+      if (pad_index_to_xplayer_index(autoconf_pad) > -1)
+         input_config_autoconfigure_joypad(autoconf_pad, winxinput_joypad_name(autoconf_pad), winxinput_joypad.ident);
+   
+   return true;
+
 }
 
 static bool winxinput_joypad_query_pad(unsigned pad)
@@ -318,25 +349,6 @@ static void winxinput_joypad_poll(void)
          g_winxinput_states[i].connected = false;
          
    dinput_joypad.poll();
-}
-
-static const char* const XBOX_CONTROLLER_NAMES[4] = 
-{
-   "Xbox 360 Controller (Player 1)",
-   "Xbox 360 Controller (Player 2)",
-   "Xbox 360 Controller (Player 3)",
-   "Xbox 360 Controller (Player 4)"
-};
-
-const char* winxinput_joypad_name (unsigned pad)
-{
-   int xplayer = pad_index_to_xplayer_index(pad);
-   
-   if (xplayer < 0)
-      return dinput_joypad.name(pad);
-   else
-      // TODO: Different name if disconnected?
-      return XBOX_CONTROLLER_NAMES[xplayer];
 }
 
 const rarch_joypad_driver_t winxinput_joypad = {
