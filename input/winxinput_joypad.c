@@ -108,12 +108,14 @@ static int pad_index_to_xplayer_index(unsigned pad)
    return g_xbox_pad_indexes[pad];
 }
 
+// Generic "XInput" instead of "Xbox 360", because there are
+// some other non-xbox third party PC controllers.
 static const char* const XBOX_CONTROLLER_NAMES[4] = 
 {
-   "Xbox 360 Controller (Player 1)",
-   "Xbox 360 Controller (Player 2)",
-   "Xbox 360 Controller (Player 3)",
-   "Xbox 360 Controller (Player 4)"
+   "XInput Controller (Player 1)",
+   "XInput Controller (Player 2)",
+   "XInput Controller (Player 3)",
+   "XInput Controller (Player 4)"
 };
 
 const char* winxinput_joypad_name (unsigned pad)
@@ -169,8 +171,8 @@ static bool winxinput_joypad_init(void)
    
    if (!g_XInputGetStateEx)
    {
-      // no ordinal 100. (Old version of x360ce perhaps?) Load the ordinary XInputGetState,
-      // at the cost of losing guide button support.
+      // no ordinal 100. (Presumably a wrapper.) Load the ordinary
+      // XInputGetState, at the cost of losing guide button support.
       g_winxinput_guide_button_supported = false;
       g_XInputGetStateEx = (XInputGetStateEx_t) GetProcAddress(g_winxinput_dll, "XInputGetState");
       if (!g_XInputGetStateEx)

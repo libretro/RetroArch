@@ -394,8 +394,11 @@ static BOOL CALLBACK enum_axes_cb(const DIDEVICEOBJECTINSTANCE *inst, void *p)
    return DIENUM_CONTINUE;
 }
 
-// Is there a better way of detecting dual XInput/DInput pads? This is going to get
-// outdated, for example when the Xbox One controller becomes available.
+// TODO: Use a better way of detecting dual XInput/DInput pads. This current method
+// will not work correctly for third-party controllers or future MS pads (Xbox One?).
+// An example of this is provided in the DX SDK, which advises "Enum each PNP device
+// using WMI and check each device ID to see if it contains "IG_"". Unfortunately the
+// example code is a horrible unsightly mess.
 static const char* const XINPUT_PAD_NAMES[] = 
 {
    "Controller (Gamepad for Xbox 360)",
@@ -452,6 +455,8 @@ static BOOL CALLBACK enum_joypad_cb(const DIDEVICEINSTANCE *inst, void *p)
       if (last_xbox_pad_index < 4)
          g_xbox_pad_indexes[g_joypad_cnt] = last_xbox_pad_index;
       ++last_xbox_pad_index;
+      
+      goto enum_iteration_done;
    }
 #endif
 
@@ -472,9 +477,8 @@ static BOOL CALLBACK enum_joypad_cb(const DIDEVICEINSTANCE *inst, void *p)
       input_config_autoconfigure_joypad(g_joypad_cnt, dinput_joypad_name(g_joypad_cnt), dinput_joypad.ident);
    }
 
-
+enum_iteration_done:
    g_joypad_cnt++;
-
    return DIENUM_CONTINUE; 
 }
 
