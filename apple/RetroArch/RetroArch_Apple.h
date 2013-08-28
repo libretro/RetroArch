@@ -38,6 +38,7 @@
 #import "../OSX/platform.h"
 #endif
 
+extern char** apple_argv;
 extern bool apple_is_paused;
 extern bool apple_is_running;
 extern bool apple_use_tv_mode;
