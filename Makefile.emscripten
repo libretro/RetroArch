@@ -22,6 +22,7 @@ OBJ = frontend/frontend_emscripten.o \
 		screenshot.o \
 		cheats.o \
 		audio/utils.o \
+		emscripten/RWebAudio.o \
 		input/overlay.o \
 		fifo_buffer.o \
 		gfx/scaler/scaler.o \
@@ -39,7 +40,6 @@ OBJ = frontend/frontend_emscripten.o \
 		performance.o
 
 HAVE_OPENGL = 1
-HAVE_AL = 1
 HAVE_RGUI = 1
 HAVE_SDL = 1
 HAVE_SDL_IMAGE = 1
@@ -59,7 +59,7 @@ libretro = libretro_emscripten.bc
 
 LIBS = -lm
 DEFINES = -DHAVE_SCREENSHOTS -DHAVE_NULLAUDIO -DHAVE_BSV_MOVIE -DPACKAGE_VERSION=\"0.9.9.3\"
-LDFLAGS = -L. -s TOTAL_MEMORY=$(MEMORY)
+LDFLAGS = -L. -s TOTAL_MEMORY=$(MEMORY) --js-library emscripten/library_rwebaudio.js
 
 ifeq ($(SCALER_NO_SIMD), 1)
    DEFINES += -DSCALER_NO_SIMD
@@ -88,12 +88,6 @@ endif
 ifeq ($(HAVE_OPENGL), 1)
    OBJ += gfx/gl.o gfx/math/matrix.o gfx/fonts/gl_font.o gfx/fonts/gl_raster_font.o gfx/gfx_context.o gfx/context/emscriptenegl_ctx.o gfx/shader_glsl.o gfx/glsym/rglgen.o gfx/glsym/glsym_es2.o
    DEFINES += -DHAVE_OPENGL -DHAVE_OPENGLES -DHAVE_OPENGLES2 -DHAVE_EGL -DHAVE_OVERLAY -DHAVE_GLSL
-endif
-
-ifeq ($(HAVE_AL), 1)
-   OBJ += audio/openal.o
-   DEFINES += -DHAVE_AL
-   LIBS += -lopenal
 endif
 
 ifeq ($(HAVE_ZLIB), 1)
@@ -165,6 +159,7 @@ clean:
 	rm -f gfx/fonts/*.o
 	rm -f gfx/py_state/*.o
 	rm -f gfx/rpng/*.o
+	rm -f gfx/glsym/*.o
 	rm -f record/*.o
 	rm -f input/*.o
 	rm -f tools/*.o

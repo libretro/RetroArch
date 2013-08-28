@@ -63,6 +63,7 @@ enum
    AUDIO_PS3,
    AUDIO_XENON360,
    AUDIO_WII,
+   AUDIO_RWEBAUDIO,
    AUDIO_NULL,
 
    INPUT_ANDROID,
@@ -130,6 +131,8 @@ enum
 #define AUDIO_DEFAULT_DRIVER AUDIO_SL
 #elif defined(HAVE_DSOUND)
 #define AUDIO_DEFAULT_DRIVER AUDIO_DSOUND
+#elif defined(EMSCRIPTEN)
+#define AUDIO_DEFAULT_DRIVER AUDIO_RWEBAUDIO
 #elif defined(HAVE_SDL)
 #define AUDIO_DEFAULT_DRIVER AUDIO_SDL
 #elif defined(HAVE_XAUDIO)
@@ -335,6 +338,8 @@ static const bool rate_control = false;
 // Rate control delta. Defines how much rate_control is allowed to adjust input rate.
 #if defined(__QNX__)
 static const float rate_control_delta = 0.000;
+#elif defined(EMSCRIPTEN)
+static const float rate_control_delta = 0.002;
 #else
 static const float rate_control_delta = 0.005;
 #endif

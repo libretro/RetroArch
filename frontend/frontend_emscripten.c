@@ -18,6 +18,7 @@
 #include "../general.h"
 #include "../conf/config_file.h"
 #include "../file.h"
+#include "../emscripten/RWebAudio.h"
 
 #ifdef HAVE_RGUI
 #include "../frontend/menu/rgui.h"
@@ -55,6 +56,11 @@ static void endloop(void)
 
 static void mainloop(void)
 {
+   if (!RWebAudioEnoughSpace())
+   {
+      return;
+   }
+
    if (g_extern.system.shutdown)
    {
       endloop();

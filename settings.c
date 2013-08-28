@@ -67,6 +67,8 @@ const char *config_get_default_audio(void)
          return "ps3";
       case AUDIO_WII:
          return "gx";
+      case AUDIO_RWEBAUDIO:
+         return "rwebaudio";
       case AUDIO_NULL:
          return "null";
       default:
