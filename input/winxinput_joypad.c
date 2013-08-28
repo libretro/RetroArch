@@ -103,7 +103,7 @@ typedef struct
 
 static winxinput_joypad_state g_winxinput_states[4];
 
-static int pad_index_to_xplayer_index(unsigned pad)
+static inline int pad_index_to_xplayer_index(unsigned pad)
 {
    return g_xbox_pad_indexes[pad];
 }
@@ -219,7 +219,7 @@ static bool winxinput_joypad_query_pad(unsigned pad)
 {
    int xplayer = pad_index_to_xplayer_index(pad);
    if (xplayer > -1)
-      return g_winxinput_states[0].connected;
+      return g_winxinput_states[xplayer].connected;
    else
       return dinput_joypad.query_pad(pad);
 }
@@ -264,6 +264,8 @@ static bool winxinput_joypad_button (unsigned port_num, uint16_t joykey)
    
    if (!(g_winxinput_states[xplayer].connected))
       return false;
+      
+   //return false;
      
    uint16_t btn_word = g_winxinput_states[xplayer].xstate.Gamepad.wButtons;
    
@@ -348,7 +350,7 @@ static void winxinput_joypad_poll(void)
 {
    for (unsigned i = 0; i < 4; ++i)
       if (g_winxinput_states[i].connected)
-         if (g_XInputGetStateEx(i, &(g_winxinput_states[i].xstate)) != ERROR_SUCCESS)
+         if (g_XInputGetStateEx(i, &(g_winxinput_states[i].xstate)) == ERROR_DEVICE_NOT_CONNECTED)
             g_winxinput_states[i].connected = false;
          
    dinput_joypad.poll();
