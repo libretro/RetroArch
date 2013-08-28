@@ -208,8 +208,13 @@ static bool winxinput_joypad_init(void)
       return false;
       
    for (unsigned autoconf_pad = 0; autoconf_pad < MAX_PLAYERS; autoconf_pad++)
+   {
       if (pad_index_to_xplayer_index(autoconf_pad) > -1)
+      {
+         strlcpy(g_settings.input.device_names[autoconf_pad], winxinput_joypad_name(autoconf_pad), sizeof(g_settings.input.device_names[autoconf_pad]));
          input_config_autoconfigure_joypad(autoconf_pad, winxinput_joypad_name(autoconf_pad), winxinput_joypad.ident);
+      }
+   }
    
    return true;
 
