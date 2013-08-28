@@ -317,7 +317,7 @@ public class MainMenuActivity extends PreferenceActivity {
 		readbackBool(config, edit, "rewind_enable");
 		readbackBool(config, edit, "savestate_auto_load");
 		readbackBool(config, edit, "savestate_auto_save");
-		readbackDouble(config, edit, "video_refresh_rate");
+		//readbackDouble(config, edit, "video_refresh_rate");
 		
 		readbackBool(config, edit, "audio_rate_control");
 		readbackBool(config, edit, "audio_enable");
@@ -325,7 +325,7 @@ public class MainMenuActivity extends PreferenceActivity {
 		
 		readbackDouble(config, edit, "input_overlay_opacity");
 		readbackBool(config, edit, "input_autodetect_enable");
-		readbackInt(config, edit, "input_back_behavior");
+		//readbackInt(config, edit, "input_back_behavior");
 		
 		readbackBool(config, edit, "video_allow_rotate");
 		readbackBool(config, edit, "video_font_enable");
