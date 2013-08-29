@@ -361,11 +361,8 @@ static void dinput_joypad_destroy(void)
          IDirectInputDevice8_Release(g_pads[i].joypad);
       }
       
-      if (g_pads[i].joy_name)
-      {
-         free(g_pads[i].joy_name);
-         g_pads[i].joy_name = NULL;
-      }
+      free(g_pads[i].joy_name);
+      g_pads[i].joy_name = NULL;
 
    }
 
@@ -418,7 +415,7 @@ static bool name_is_360_pad(const char* name)
       const char* t = XINPUT_PAD_NAMES[i];
       if (t == NULL)
          return false;
-      else if (lstrcmpi(name, t) == 0)
+      else if (strcasecmp(name, t) == 0)
          return true;
    }
 }
@@ -441,9 +438,7 @@ static BOOL CALLBACK enum_joypad_cb(const DIDEVICEINSTANCE *inst, void *p)
 #endif
    return DIENUM_CONTINUE;
    
-   size_t name_len = strlen(inst->tszProductName) + 1;
-   g_pads[g_joypad_cnt].joy_name = (char*)malloc(name_len);
-   strncpy(g_pads[g_joypad_cnt].joy_name, inst->tszProductName, name_len);
+   g_pads[g_joypad_cnt].joy_name = strdup(inst->tszProductName);
    
 #ifdef HAVE_WINXINPUT
    int last_xbox_pad_index = 0;
@@ -468,8 +463,6 @@ static BOOL CALLBACK enum_joypad_cb(const DIDEVICEINSTANCE *inst, void *p)
          
 #ifdef HAVE_WINXINPUT
    if (!is_360_pad)
-#else
-   if (1)
 #endif
    {
       strlcpy(g_settings.input.device_names[g_joypad_cnt], dinput_joypad_name(g_joypad_cnt), sizeof(g_settings.input.device_names[g_joypad_cnt]));
