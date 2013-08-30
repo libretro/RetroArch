@@ -614,6 +614,17 @@ bool D3DVideo::frame(const void *frame,
    dev->SetViewport(&screen_vp);
    dev->Clear(0, 0, D3DCLEAR_TARGET, 0, 1, 0);
 
+   // Insert black frame first, so we can screenshot, etc.
+   if (g_settings.video.black_frame_insertion)
+   {
+      if (dev->Present(nullptr, nullptr, nullptr, nullptr) != D3D_OK)
+      {
+         needs_restore = true;
+         return true;
+      }
+      dev->Clear(0, 0, D3DCLEAR_TARGET, 0, 1, 0);
+   }
+
    if (!chain->render(frame, width, height, pitch, rotation))
    {
       RARCH_ERR("[D3D9]: Failed to render scene.\n");

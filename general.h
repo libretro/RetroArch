@@ -159,6 +159,7 @@ struct settings
       unsigned fullscreen_y;
       bool vsync;
       bool hard_sync;
+      bool black_frame_insertion;
       unsigned hard_sync_frames;
       bool smooth;
       bool force_aspect;
