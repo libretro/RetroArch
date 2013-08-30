@@ -418,6 +418,10 @@ static void render_text(rgui_handle_t *rgui)
       rgui->selection_ptr - TERM_HEIGHT / 2 : 0;
    size_t end = rgui->selection_ptr + TERM_HEIGHT <= rgui->selection_buf->size ?
       rgui->selection_ptr + TERM_HEIGHT : rgui->selection_buf->size;
+   
+   // Do not scroll if all items are visible.
+   if (rgui->selection_buf->size <= TERM_HEIGHT)
+      begin = 0;
 
    if (end - begin > TERM_HEIGHT)
       end = begin + TERM_HEIGHT;
