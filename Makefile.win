@@ -63,6 +63,7 @@ HAVE_STDIN_CMD = 1
 HAVE_THREADS = 1
 HAVE_RGUI = 1
 DYNAMIC = 1
+HAVE_WIN32GUI = 1
 
 HAVE_WINXINPUT = 1
 
@@ -101,6 +102,10 @@ JLIBS =
 ifeq ($(HAVE_RGUI), 1)
    DEFINES += -DHAVE_RGUI
    OBJ += frontend/menu/menu_common.o frontend/menu/rgui.o frontend/menu/history.o
+endif
+
+ifeq ($(HAVE_WIN32GUI), 1)
+   DEFINES += -DHAVE_WIN32GUI
 endif
 
 ifeq ($(HAVE_SDL), 1)
