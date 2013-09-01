@@ -605,6 +605,9 @@ static void render_text(rgui_handle_t *rgui)
             case RGUI_SETTINGS_VIDEO_BLACK_FRAME_INSERTION:
                strlcpy(type_str, g_settings.video.black_frame_insertion ? "ON" : "OFF", sizeof(type_str));
                break;
+            case RGUI_SETTINGS_VIDEO_SWAP_INTERVAL:
+               snprintf(type_str, sizeof(type_str), "%u", g_settings.video.swap_interval);
+               break;
             case RGUI_SETTINGS_VIDEO_HARD_SYNC_FRAMES:
                snprintf(type_str, sizeof(type_str), "%u", g_settings.video.hard_sync_frames);
                break;
@@ -1513,6 +1516,7 @@ static void rgui_settings_video_options_populate_entries(rgui_handle_t *rgui)
    rgui_list_push(rgui->selection_buf, "Hard GPU Sync", RGUI_SETTINGS_VIDEO_HARD_SYNC, 0);
    rgui_list_push(rgui->selection_buf, "Hard GPU Sync Frames", RGUI_SETTINGS_VIDEO_HARD_SYNC_FRAMES, 0);
    rgui_list_push(rgui->selection_buf, "Black Frame Insertion", RGUI_SETTINGS_VIDEO_BLACK_FRAME_INSERTION, 0);
+   rgui_list_push(rgui->selection_buf, "VSync Swap Interval", RGUI_SETTINGS_VIDEO_SWAP_INTERVAL, 0);
    rgui_list_push(rgui->selection_buf, "Estimated Monitor FPS", RGUI_SETTINGS_VIDEO_REFRESH_RATE_AUTO, 0);
 }
 
@@ -1957,6 +1961,36 @@ static int video_option_toggle_setting(rgui_handle_t *rgui, unsigned setting, rg
                break;
          }
          break;
+
+      case RGUI_SETTINGS_VIDEO_SWAP_INTERVAL:
+      {
+         unsigned old = g_settings.video.swap_interval;
+         switch (action)
+         {
+            case RGUI_ACTION_START:
+               g_settings.video.swap_interval = 1;
+               break;
+
+            case RGUI_ACTION_LEFT:
+               g_settings.video.swap_interval--;
+               break;
+
+            case RGUI_ACTION_RIGHT:
+            case RGUI_ACTION_OK:
+               g_settings.video.swap_interval++;
+               break;
+
+            default:
+               break;
+         }
+
+         g_settings.video.swap_interval = min(g_settings.video.swap_interval, 4);
+         g_settings.video.swap_interval = max(g_settings.video.swap_interval, 1);
+         if (old != g_settings.video.swap_interval && driver.video && driver.video_data)
+            video_set_nonblock_state_func(false); // This will update the current swap interval. Since we're in RGUI now, always apply VSync.
+
+         break;
+      }
 
       case RGUI_SETTINGS_VIDEO_HARD_SYNC_FRAMES:
          switch (action)

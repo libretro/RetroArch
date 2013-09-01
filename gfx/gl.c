@@ -1628,7 +1628,7 @@ static void gl_set_nonblock_state(void *data, bool state)
 
    gl_t *gl = (gl_t*)data;
    (void)gl;
-   context_swap_interval_func(state ? 0 : 1);
+   context_swap_interval_func(state ? 0 : g_settings.video.swap_interval);
 }
 
 static bool resolve_extensions(gl_t *gl)
