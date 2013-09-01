@@ -976,6 +976,9 @@ bool config_save_file(const char *path)
    config_set_string(conf, "video_shader", g_settings.video.shader_path);
    config_set_bool(conf, "video_shader_enable", g_settings.video.shader_enable);
    config_set_float(conf, "video_aspect_ratio", g_settings.video.aspect_ratio);
+   config_set_float(conf, "video_xscale", g_settings.video.xscale);
+   config_set_float(conf, "video_yscale", g_settings.video.yscale);
+   config_set_bool(conf, "video_crop_overscan", g_settings.video.crop_overscan);
    config_set_bool(conf, "video_scale_integer", g_settings.video.scale_integer);
    config_set_bool(conf, "video_smooth", g_settings.video.smooth);
    config_set_float(conf, "video_refresh_rate", g_settings.video.refresh_rate);

@@ -608,6 +608,15 @@ static void render_text(rgui_handle_t *rgui)
             case RGUI_SETTINGS_VIDEO_SWAP_INTERVAL:
                snprintf(type_str, sizeof(type_str), "%u", g_settings.video.swap_interval);
                break;
+            case RGUI_SETTINGS_VIDEO_WINDOW_SCALE_X:
+               snprintf(type_str, sizeof(type_str), "%.1fx", g_settings.video.xscale);
+               break;
+            case RGUI_SETTINGS_VIDEO_WINDOW_SCALE_Y:
+               snprintf(type_str, sizeof(type_str), "%.1fx", g_settings.video.yscale);
+               break;
+            case RGUI_SETTINGS_VIDEO_CROP_OVERSCAN:
+               strlcpy(type_str, g_settings.video.crop_overscan ? "ON" : "OFF", sizeof(type_str));
+               break;
             case RGUI_SETTINGS_VIDEO_HARD_SYNC_FRAMES:
                snprintf(type_str, sizeof(type_str), "%u", g_settings.video.hard_sync_frames);
                break;
@@ -1510,13 +1519,20 @@ static void rgui_settings_video_options_populate_entries(rgui_handle_t *rgui)
    rgui_list_push(rgui->selection_buf, "Integer Scale", RGUI_SETTINGS_VIDEO_INTEGER_SCALE, 0);
    rgui_list_push(rgui->selection_buf, "Aspect Ratio", RGUI_SETTINGS_VIDEO_ASPECT_RATIO, 0);
    rgui_list_push(rgui->selection_buf, "Custom Ratio", RGUI_SETTINGS_CUSTOM_VIEWPORT, 0);
+#if !defined(RARCH_CONSOLE) && !defined(RARCH_MOBILE)
    rgui_list_push(rgui->selection_buf, "Toggle Fullscreen", RGUI_SETTINGS_TOGGLE_FULLSCREEN, 0);
+#endif
    rgui_list_push(rgui->selection_buf, "Rotation", RGUI_SETTINGS_VIDEO_ROTATION, 0);
    rgui_list_push(rgui->selection_buf, "VSync", RGUI_SETTINGS_VIDEO_VSYNC, 0);
    rgui_list_push(rgui->selection_buf, "Hard GPU Sync", RGUI_SETTINGS_VIDEO_HARD_SYNC, 0);
    rgui_list_push(rgui->selection_buf, "Hard GPU Sync Frames", RGUI_SETTINGS_VIDEO_HARD_SYNC_FRAMES, 0);
    rgui_list_push(rgui->selection_buf, "Black Frame Insertion", RGUI_SETTINGS_VIDEO_BLACK_FRAME_INSERTION, 0);
    rgui_list_push(rgui->selection_buf, "VSync Swap Interval", RGUI_SETTINGS_VIDEO_SWAP_INTERVAL, 0);
+#if !defined(RARCH_CONSOLE) && !defined(RARCH_MOBILE)
+   rgui_list_push(rgui->selection_buf, "Windowed Scale (X)", RGUI_SETTINGS_VIDEO_WINDOW_SCALE_X, 0);
+   rgui_list_push(rgui->selection_buf, "Windowed Scale (Y)", RGUI_SETTINGS_VIDEO_WINDOW_SCALE_Y, 0);
+#endif
+   rgui_list_push(rgui->selection_buf, "Crop Overscan (reload)", RGUI_SETTINGS_VIDEO_CROP_OVERSCAN, 0);
    rgui_list_push(rgui->selection_buf, "Estimated Monitor FPS", RGUI_SETTINGS_VIDEO_REFRESH_RATE_AUTO, 0);
 }
 
@@ -1961,6 +1977,57 @@ static int video_option_toggle_setting(rgui_handle_t *rgui, unsigned setting, rg
                break;
          }
          break;
+
+      case RGUI_SETTINGS_VIDEO_CROP_OVERSCAN:
+         switch (action)
+         {
+            case RGUI_ACTION_START:
+               g_settings.video.crop_overscan = true;
+               break;
+
+            case RGUI_ACTION_LEFT:
+            case RGUI_ACTION_RIGHT:
+            case RGUI_ACTION_OK:
+               g_settings.video.crop_overscan = !g_settings.video.crop_overscan;
+               break;
+
+            default:
+               break;
+         }
+         break;
+
+      case RGUI_SETTINGS_VIDEO_WINDOW_SCALE_X:
+      case RGUI_SETTINGS_VIDEO_WINDOW_SCALE_Y:
+      {
+         float *scale = setting == RGUI_SETTINGS_VIDEO_WINDOW_SCALE_X ? &g_settings.video.xscale : &g_settings.video.yscale;
+         float old_scale = *scale;
+
+         switch (action)
+         {
+            case RGUI_ACTION_START:
+               *scale = 3.0f;
+               break;
+
+            case RGUI_ACTION_LEFT:
+               *scale -= 1.0f;
+               break;
+
+            case RGUI_ACTION_RIGHT:
+               *scale += 1.0f;
+               break;
+
+            default:
+               break;
+         }
+
+         *scale = roundf(*scale);
+         *scale = max(*scale, 1.0f);
+
+         if (old_scale != *scale && !g_settings.video.fullscreen)
+            rarch_set_fullscreen(g_settings.video.fullscreen); // Reinit video driver.
+
+         break;
+      }
 
       case RGUI_SETTINGS_VIDEO_SWAP_INTERVAL:
       {
