@@ -423,6 +423,8 @@ static bool name_is_360_pad(const char* name)
 // Forward declaration
 static const char *dinput_joypad_name(unsigned pad);
 
+static int g_last_xbox_pad_index;
+
 static BOOL CALLBACK enum_joypad_cb(const DIDEVICEINSTANCE *inst, void *p)
 {
    (void)p;
@@ -441,14 +443,13 @@ static BOOL CALLBACK enum_joypad_cb(const DIDEVICEINSTANCE *inst, void *p)
    g_pads[g_joypad_cnt].joy_name = strdup(inst->tszProductName);
    
 #ifdef HAVE_WINXINPUT
-   int last_xbox_pad_index = 0;
    bool is_360_pad = name_is_360_pad(inst->tszProductName);
    
    if (is_360_pad)
    {
-      if (last_xbox_pad_index < 4)
-         g_xbox_pad_indexes[g_joypad_cnt] = last_xbox_pad_index;
-      ++last_xbox_pad_index;
+      if (g_last_xbox_pad_index < 4)
+         g_xbox_pad_indexes[g_joypad_cnt] = g_last_xbox_pad_index;
+      ++g_last_xbox_pad_index;
       
       goto enum_iteration_done;
    }
@@ -478,7 +479,9 @@ static bool dinput_joypad_init(void)
 {
    if (!dinput_init_context())
       return false;
-      
+   
+   g_last_xbox_pad_index = 0;
+   
    for (unsigned i = 0; i < MAX_PLAYERS; ++i)
    {
       g_xbox_pad_indexes[i] = -1;
