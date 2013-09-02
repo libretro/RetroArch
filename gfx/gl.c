@@ -1950,7 +1950,7 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    context_get_video_size_func(&gl->full_x, &gl->full_y);
    RARCH_LOG("Detecting screen resolution %ux%u.\n", gl->full_x, gl->full_y);
 
-   context_swap_interval_func(video->vsync ? 1 : 0);
+   context_swap_interval_func(video->vsync ? g_settings.video.swap_interval : 0);
 
    unsigned win_width  = video->width;
    unsigned win_height = video->height;
