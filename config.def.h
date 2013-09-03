@@ -338,8 +338,6 @@ static const bool rate_control = false;
 // Rate control delta. Defines how much rate_control is allowed to adjust input rate.
 #if defined(__QNX__)
 static const float rate_control_delta = 0.000;
-#elif defined(EMSCRIPTEN)
-static const float rate_control_delta = 0.002;
 #else
 static const float rate_control_delta = 0.005;
 #endif

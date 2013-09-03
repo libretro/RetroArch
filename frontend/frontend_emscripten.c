@@ -56,11 +56,6 @@ static void endloop(void)
 
 static void mainloop(void)
 {
-   if (!RWebAudioEnoughSpace())
-   {
-      return;
-   }
-
    if (g_extern.system.shutdown)
    {
       endloop();

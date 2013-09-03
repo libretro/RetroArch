@@ -26,4 +26,3 @@ void RWebAudioSetNonblockState(bool state);
 void RWebAudioFree(void);
 size_t RWebAudioWriteAvail(void);
 size_t RWebAudioBufferSize(void);
-int RWebAudioEnoughSpace(void);

@@ -28,8 +28,8 @@ static void *ra_init(const char *device, unsigned rate, unsigned latency)
    (void)device;
    (void)rate;
    void *data = RWebAudioInit(latency);
-   g_settings.audio.out_rate = RWebAudioSampleRate();
-   RARCH_LOG("audio out rate: %u\n", g_settings.audio.out_rate);
+   if (data)
+      g_settings.audio.out_rate = RWebAudioSampleRate();
    return data;
 }
 
