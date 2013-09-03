@@ -1093,6 +1093,8 @@ bool config_save_file(const char *path)
       config_set_int(conf, cfg, g_settings.input.dpad_emulation[i]);
       snprintf(cfg, sizeof(cfg), "input_device_p%u", i + 1);
       config_set_int(conf, cfg, g_settings.input.device[i]);
+      snprintf(cfg, sizeof(cfg), "input_player%u_joypad_index", i + 1);
+      config_set_int(conf, cfg, g_settings.input.joypad_map[i]);
    }
 
    config_file_write(conf, path);  
