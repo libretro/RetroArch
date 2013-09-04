@@ -135,6 +135,8 @@ struct input_key_map
 };
 extern const struct input_key_map input_config_key_map[];
 
+extern const char* const input_builtin_autoconfs[];
+
 const char *input_config_get_prefix(unsigned player, bool meta);
 
 void input_config_parse_key(config_file_t *conf, const char *prefix, const char *btn,

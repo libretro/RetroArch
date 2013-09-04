@@ -17,6 +17,7 @@ OBJ = frontend/frontend.o \
 		movie.o \
 		gfx/gfx_common.o \
 		input/input_common.o \
+		input/autoconf_builtin.o \
 		core_options.o \
 		patch.o \
 		compat/compat.o \

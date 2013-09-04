@@ -829,25 +829,23 @@ void input_config_autoconfigure_joypad(unsigned index, const char *name, const c
    if (!name)
       return;
 
-   if (!*g_settings.input.autoconfig_dir)
-      return;
-
-   struct string_list *list = dir_list_new(g_settings.input.autoconfig_dir, "cfg", false);
-   if (!list)
-      return;
+   // false = load from both cfg files and internal
+   bool internal_only = (!*g_settings.input.autoconfig_dir);
 
    char ident[1024];
    char input_driver[1024];
-   for (size_t i = 0; i < list->size; i++)
+   
+   for (size_t i = 0; input_builtin_autoconfs[i] /* array is NULL terminated */; i++)
    {
       *ident = *input_driver = '\0';
 
-      config_file_t *conf = config_file_new(list->elems[i].data);
+      config_file_t *conf = config_file_new_from_string(input_builtin_autoconfs[i]);
       if (!conf)
          continue;
 
       config_get_array(conf, "input_device", ident, sizeof(ident));
       config_get_array(conf, "input_driver", input_driver, sizeof(input_driver));
+      
 
       if (!strcmp(ident, name) && !strcmp(driver, input_driver))
       {
@@ -868,6 +866,45 @@ void input_config_autoconfigure_joypad(unsigned index, const char *name, const c
       else
          config_file_free(conf);
    }
+   
+   struct string_list *list = dir_list_new(g_settings.input.autoconfig_dir, "cfg", false);
+   if ((!list) && (!internal_only))
+      return;
+   
+   if (!internal_only)
+   {
+      for (size_t i = 0; i < list->size; i++)
+      {
+         *ident = *input_driver = '\0';
+
+         config_file_t *conf = config_file_new(list->elems[i].data);
+         if (!conf)
+            continue;
+
+         config_get_array(conf, "input_device", ident, sizeof(ident));
+         config_get_array(conf, "input_driver", input_driver, sizeof(input_driver));
+
+         if (!strcmp(ident, name) && !strcmp(driver, input_driver))
+         {
+            g_settings.input.autoconfigured[index] = true;
+            input_autoconfigure_joypad_conf(conf, g_settings.input.autoconf_binds[index]);
+
+            char msg[512];
+            snprintf(msg, sizeof(msg), "Joypad port #%u (%s) configured.",
+                  index, name);
+
+            if (!block_osd_spam)
+               msg_queue_push(g_extern.msg_queue, msg, 0, 60);
+            RARCH_LOG("%s\n", msg);
+
+            config_file_free(conf);
+            break;
+         }
+         else
+            config_file_free(conf);
+      }
+   }
+
 
    string_list_free(list);
 }

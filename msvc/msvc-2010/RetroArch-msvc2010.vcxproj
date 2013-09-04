@@ -254,6 +254,8 @@
     </ClCompile>
     <ClCompile Include="..\..\input\input_common.c">
     </ClCompile>
+    <ClCompile Include="..\..\input\autoconf_builtin.c">
+    </ClCompile>
     <ClCompile Include="..\..\message.c">
     </ClCompile>
     <ClCompile Include="..\..\movie.c">
