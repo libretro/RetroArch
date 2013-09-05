@@ -48,6 +48,7 @@ struct overlay_desc
 
    enum overlay_type type;
    uint64_t key_mask;
+   float analog_saturate_pct;
 
    unsigned next_index;
    char next_index_name[64];
@@ -275,11 +276,19 @@ static bool input_overlay_load_desc(config_file_t *conf, struct overlay_desc *de
       goto end;
    }
 
-   if (desc->hitbox != OVERLAY_HITBOX_RADIAL && desc->type != OVERLAY_TYPE_BUTTONS)
+   if (desc->type != OVERLAY_TYPE_BUTTONS)
    {
-      RARCH_ERR("[Overlay]: Analog hitbox type must be \"radial\".\n");
-      ret = false;
-      goto end;
+      if (desc->hitbox != OVERLAY_HITBOX_RADIAL)
+      {
+         RARCH_ERR("[Overlay]: Analog hitbox type must be \"radial\".\n");
+         ret = false;
+         goto end;
+      }
+
+      char overlay_analog_saturate_key[64];
+      snprintf(overlay_analog_saturate_key, sizeof(overlay_analog_saturate_key), "overlay%u_desc%u_saturate_pct", ol_index, desc_index);
+      if (!config_get_float(conf, overlay_analog_saturate_key, &desc->analog_saturate_pct))
+         desc->analog_saturate_pct = 1.0f;
    }
 
    desc->range_x = strtod(list->elems[4].data, NULL) / width;
@@ -588,12 +597,18 @@ void input_overlay_poll(input_overlay_t *ol, input_overlay_state_t *out, int16_t
       }
       else
       {
-         float x_val = (x - ol->active->descs[i].x) / ol->active->descs[i].range_x * 32767.0f;
-         float y_val = (y - ol->active->descs[i].y) / ol->active->descs[i].range_y * 32767.0f;
+         float x_val = (x - ol->active->descs[i].x) / ol->active->descs[i].range_x / ol->active->descs[i].analog_saturate_pct;
+         float y_val = (y - ol->active->descs[i].y) / ol->active->descs[i].range_y / ol->active->descs[i].analog_saturate_pct;
+
+         if (fabs(x_val) > 1.0f)
+            x_val = (x_val > 0.0f) ? 1.0f : -1.0f;
+
+         if (fabs(y_val) > 1.0f)
+            y_val = (y_val > 0.0f) ? 1.0f : -1.0f;
 
          unsigned int base = (ol->active->descs[i].type == OVERLAY_TYPE_ANALOG_RIGHT) ? 2 : 0;
-         out->analog[base + 0] = x_val;
-         out->analog[base + 1] = y_val;
+         out->analog[base + 0] = x_val * 32767.0f;
+         out->analog[base + 1] = y_val * 32767.0f;
       }
    }
 
