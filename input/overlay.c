@@ -31,6 +31,13 @@ enum overlay_hitbox
    OVERLAY_HITBOX_RECT
 };
 
+enum overlay_type
+{
+   OVERLAY_TYPE_BUTTONS = 0,
+   OVERLAY_TYPE_ANALOG_LEFT,
+   OVERLAY_TYPE_ANALOG_RIGHT
+};
+
 struct overlay_desc
 {
    float x;
@@ -39,6 +46,7 @@ struct overlay_desc
    enum overlay_hitbox hitbox;
    float range_x, range_y;
 
+   enum overlay_type type;
    uint64_t key_mask;
 
    unsigned next_index;
@@ -234,14 +242,23 @@ static bool input_overlay_load_desc(config_file_t *conf, struct overlay_desc *de
    char *key = list->elems[0].data;
    char *save;
    desc->key_mask = 0;
-   for (const char *tmp = strtok_r(key, "|", &save); tmp; tmp = strtok_r(NULL, "|", &save))
-      desc->key_mask |= UINT64_C(1) << input_str_to_bind(tmp);
 
-   if (desc->key_mask & (UINT64_C(1) << RARCH_OVERLAY_NEXT))
+   if (strcmp(key, "analog_left") == 0)
+      desc->type = OVERLAY_TYPE_ANALOG_LEFT;
+   else if (strcmp(key, "analog_right") == 0)
+      desc->type = OVERLAY_TYPE_ANALOG_RIGHT;
+   else
    {
-      char overlay_target_key[64];
-      snprintf(overlay_target_key, sizeof(overlay_target_key), "overlay%u_desc%u_next_target", ol_index, desc_index);
-      config_get_array(conf, overlay_target_key, desc->next_index_name, sizeof(desc->next_index_name));
+      desc->type = OVERLAY_TYPE_BUTTONS;
+      for (const char *tmp = strtok_r(key, "|", &save); tmp; tmp = strtok_r(NULL, "|", &save))
+         desc->key_mask |= UINT64_C(1) << input_str_to_bind(tmp);
+
+      if (desc->key_mask & (UINT64_C(1) << RARCH_OVERLAY_NEXT))
+      {
+         char overlay_target_key[64];
+         snprintf(overlay_target_key, sizeof(overlay_target_key), "overlay%u_desc%u_next_target", ol_index, desc_index);
+         config_get_array(conf, overlay_target_key, desc->next_index_name, sizeof(desc->next_index_name));
+      }
    }
 
    desc->x        = strtod(x, NULL) / width;
@@ -254,6 +271,13 @@ static bool input_overlay_load_desc(config_file_t *conf, struct overlay_desc *de
    else
    {
       RARCH_ERR("[Overlay]: Hitbox type (%s) is invalid. Use \"radial\" or \"rect\".\n", box);
+      ret = false;
+      goto end;
+   }
+
+   if (desc->hitbox != OVERLAY_HITBOX_RADIAL && desc->type != OVERLAY_TYPE_BUTTONS)
+   {
+      RARCH_ERR("[Overlay]: Analog hitbox type must be \"radial\".\n");
       ret = false;
       goto end;
    }
@@ -550,13 +574,24 @@ uint64_t input_overlay_poll(input_overlay_t *ol, int16_t norm_x, int16_t norm_y)
    uint64_t state = 0;
    for (size_t i = 0; i < ol->active->size; i++)
    {
-      if (inside_hitbox(&ol->active->descs[i], x, y))
+      if (!inside_hitbox(&ol->active->descs[i], x, y))
+         continue;
+
+      if (ol->active->descs[i].type == OVERLAY_TYPE_BUTTONS)
       {
          uint64_t mask = ol->active->descs[i].key_mask;
          state |= mask;
 
          if (mask & (UINT64_C(1) << RARCH_OVERLAY_NEXT))
             ol->next_index = ol->active->descs[i].next_index;
+      }
+      else
+      {
+         float tgt_x = (x - ol->active->descs[i].x) / ol->active->descs[i].range_x;
+         float tgt_y = (y - ol->active->descs[i].y) / ol->active->descs[i].range_y;
+         unsigned base = (ol->active->descs[i].type == OVERLAY_TYPE_ANALOG_RIGHT) ? 2 : 0;
+         driver.overlay_analog_state[base + 0] = tgt_x * 32767.0f;
+         driver.overlay_analog_state[base + 1] = tgt_y * 32767.0f;
       }
    }
 

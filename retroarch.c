@@ -462,6 +462,7 @@ size_t audio_sample_batch(const int16_t *data, size_t frames)
 static inline void input_poll_overlay(void)
 {
    driver.overlay_state = 0;
+   memset(driver.overlay_analog_state, 0, sizeof(driver.overlay_analog_state));
 
    unsigned device = input_overlay_full_screen(driver.overlay) ?
       RARCH_DEVICE_POINTER_SCREEN : RETRO_DEVICE_POINTER;
@@ -544,6 +545,12 @@ static int16_t input_state(unsigned port, unsigned device, unsigned index, unsig
 #ifdef HAVE_OVERLAY
    if (device == RETRO_DEVICE_JOYPAD && port == 0)
       res |= driver.overlay_state & (UINT64_C(1) << id) ? 1 : 0;
+   else if (device == RETRO_DEVICE_ANALOG && port == 0)
+   {
+      unsigned base = (index == RETRO_DEVICE_INDEX_ANALOG_RIGHT) ? 2 : 0;
+      base += (id == RETRO_DEVICE_ID_ANALOG_Y) ? 1 : 0;
+      res += driver.overlay_analog_state[base];
+   }
 #endif
 
    // Don't allow turbo for D-pad.
