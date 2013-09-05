@@ -18,7 +18,7 @@
 #include <stdlib.h>
 
 #include "boolean.h"
-#include "../../../RetroArch/rarch_wrapper.h"
+#include "apple/common/rarch_wrapper.h"
 
 #include "btdynamic.h"
 #include "btpad.h"
@@ -37,7 +37,7 @@ struct btpad_ps3_data
 
 static void btpad_ps3_send_control(struct btpad_ps3_data* device)
 {
-   // TODO: Can this be modified to turn of motion tracking?
+   // TODO: Can this be modified to turn off motion tracking?
    static uint8_t report_buffer[] = {
       0x52, 0x01,
       0x00, 0x00, 0x00, 0x00, 0x00,

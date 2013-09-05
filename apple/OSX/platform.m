@@ -18,7 +18,7 @@
 
 #import "RetroArch_Apple.h"
 #include "rarch_wrapper.h"
-#include "../RetroArch/apple_input.h"
+#include "apple/common/apple_input.h"
 
 // If USE_XATTR is defined any loaded file will get a com.RetroArch.Core extended attribute
 // specifying which core was used to load.

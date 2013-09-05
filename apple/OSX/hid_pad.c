@@ -14,7 +14,7 @@
  */
 
 #include <IOKit/hid/IOHIDManager.h>
-#include "../RetroArch/apple_input.h"
+#include "apple/common/apple_input.h"
 
 // NOTE: I pieced this together through trial and error, any corrections are welcome
 

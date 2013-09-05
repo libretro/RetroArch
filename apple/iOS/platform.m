@@ -19,12 +19,12 @@
 #import "RetroArch_Apple.h"
 #include "rarch_wrapper.h"
 
-#include "../RetroArch/apple_input.h"
+#include "apple/common/apple_input.h"
 
 #import "views.h"
-#include "input/BTStack/btpad.h"
-#include "input/BTStack/btdynamic.h"
-#include "input/BTStack/btpad.h"
+#include "bluetooth/btpad.h"
+#include "bluetooth/btdynamic.h"
+#include "bluetooth/btpad.h"
 
 #include "file.h"
 

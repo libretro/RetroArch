@@ -120,7 +120,7 @@
 		96AFAE1A16C1D4EA009DE44C = {
 			isa = PBXGroup;
 			children = (
-				96AFAE3316C1D4EA009DE44C /* RetroArch */,
+				96AFAE3316C1D4EA009DE44C /* common */,
 				96AFAE9C16C1D976009DE44C /* core */,
 				966B9CB716E41E7A005B61E1 /* Assets */,
 				96AFAE2816C1D4EA009DE44C /* Frameworks */,
@@ -151,7 +151,7 @@
 			name = Frameworks;
 			sourceTree = "<group>";
 		};
-		96AFAE3316C1D4EA009DE44C /* RetroArch */ = {
+		96AFAE3316C1D4EA009DE44C /* common */ = {
 			isa = PBXGroup;
 			children = (
 				9646869417BBBEAE00C5EA69 /* platform.m */,
@@ -167,7 +167,7 @@
 				96355CD11788CF190010DBFA /* RetroArch_Apple.h */,
 				96337E81176AC6E5004685F3 /* utility.m */,
 			);
-			path = RetroArch;
+			path = common;
 			sourceTree = "<group>";
 		};
 		96AFAE3416C1D4EA009DE44C /* Supporting Files */ = {

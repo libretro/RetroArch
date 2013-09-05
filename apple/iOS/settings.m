@@ -13,13 +13,13 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#import "../RetroArch/RetroArch_Apple.h"
+#import "apple/common/RetroArch_Apple.h"
 #import "views.h"
 
-#include "../RetroArch/apple_input.h"
-#include "../RetroArch/keycode.h"
-#include "input/BTStack/btdynamic.h"
-#include "input/BTStack/btpad.h"
+#include "apple/common/apple_input.h"
+#include "apple/common/keycode.h"
+#include "bluetooth/btdynamic.h"
+#include "bluetooth/btpad.h"
 
 enum SettingTypes
 {

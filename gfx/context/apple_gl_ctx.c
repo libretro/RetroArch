@@ -25,7 +25,7 @@
 #include "../shader_glsl.h"
 #endif
 
-#include "../../apple/RetroArch/rarch_wrapper.h"
+#include "../../apple/common/rarch_wrapper.h"
 
 static bool gfx_ctx_bind_api(enum gfx_ctx_api api, unsigned major, unsigned minor)
 {
