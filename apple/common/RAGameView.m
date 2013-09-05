@@ -33,6 +33,7 @@ static UIView* g_pause_indicator_view;
 
 #include "apple_input.h"
 
+static bool g_has_went_fullscreen;
 static RAGameView* g_instance;
 static NSOpenGLContext* g_context;
 static NSOpenGLPixelFormat* g_format;
@@ -312,10 +313,38 @@ void *apple_get_proc_address(const char *symbol_name)
 #endif
 }
 
+void apple_update_window_title(void)
+{
+   static char buf[128];
+   bool got_text = gfx_get_fps(buf, sizeof(buf), false);
+#ifdef OSX
+   static const char* const text = buf; // < Can't access buf directly in the block
+   
+   if (got_text)
+   {
+      // NOTE: This could go bad if buf is updated again before this completes.
+      //       If it poses a problem it should be changed to dispatch_sync.
+      dispatch_async(dispatch_get_main_queue(), ^
+      {
+         g_view.window.title = @(text);
+      });
+   }
+#endif
+}
+
+bool apple_game_view_has_focus(void)
+{
+#ifdef OSX
+   return [NSApp isActive];
+#else
+   return true;
+#endif
+}
+
 bool apple_set_video_mode(unsigned width, unsigned height, bool fullscreen)
 {
    __block bool result = true;
-   
+
 #ifdef OSX
    dispatch_sync(dispatch_get_main_queue(),
    ^{
@@ -323,12 +352,24 @@ bool apple_set_video_mode(unsigned width, unsigned height, bool fullscreen)
       // TODO: Sceen mode support
       
       if (fullscreen)
-         result = [g_view enterFullScreenMode:[NSScreen mainScreen] withOptions:nil];
+      {
+         if (!g_has_went_fullscreen)
+            result = [g_view enterFullScreenMode:[NSScreen mainScreen] withOptions:nil];
+         g_has_went_fullscreen = true;
+      }
       else
       {
-         [g_view exitFullScreenModeWithOptions:nil];
-         [g_view.window makeFirstResponder:g_view];
+         if (g_has_went_fullscreen)
+         {
+            [g_view exitFullScreenModeWithOptions:nil];
+            [g_view.window makeFirstResponder:g_view];
+         }
+         g_has_went_fullscreen = false;
+
+         [g_view.window setContentSize:NSMakeSize(width, height)];
       }
+      
+      g_has_went_fullscreen = fullscreen;
    });
 #endif
 

@@ -38,19 +38,6 @@ static bool gfx_ctx_bind_api(enum gfx_ctx_api api, unsigned major, unsigned mino
 #endif
 }
 
-static bool gfx_ctx_set_video_mode(
-      unsigned width, unsigned height,
-      bool fullscreen)
-{
-   return apple_set_video_mode(width, height, fullscreen);
-}
-
-static void gfx_ctx_update_window_title(void)
-{
-   char buf[128];
-   gfx_get_fps(buf, sizeof(buf), false);
-}
-
 static void gfx_ctx_check_window(bool *quit,
       bool *resize, unsigned *width, unsigned *height, unsigned frame_count)
 {
@@ -74,16 +61,6 @@ static void gfx_ctx_set_resize(unsigned width, unsigned height)
    (void)height;
 }
 
-static bool gfx_ctx_has_focus(void)
-{
-   return true;
-}
-
-static void gfx_ctx_swap_buffers(void)
-{
-   apple_flip_game_view();
-}
-
 static void gfx_ctx_input_driver(const input_driver_t **input, void **input_data)
 {
    *input = NULL;
@@ -102,13 +79,13 @@ const gfx_ctx_driver_t gfx_ctx_apple = {
    apple_destroy_game_view,
    gfx_ctx_bind_api,
    apple_set_game_view_sync,
-   gfx_ctx_set_video_mode,
+   apple_set_video_mode,
    apple_get_game_view_size,
    NULL,
-   gfx_ctx_update_window_title,
+   apple_update_window_title,
    gfx_ctx_check_window,
    gfx_ctx_set_resize,
-   gfx_ctx_has_focus,
+   apple_game_view_has_focus,
    apple_flip_game_view,
    gfx_ctx_input_driver,
    gfx_ctx_get_proc_address,
