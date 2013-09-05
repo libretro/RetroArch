@@ -96,6 +96,32 @@ static void hid_device_attached(void* inContext, IOReturn inResult, void* inSend
    IOHIDDeviceOpen(inDevice, kIOHIDOptionsTypeNone);
    IOHIDDeviceScheduleWithRunLoop(inDevice, CFRunLoopGetCurrent(), kCFRunLoopCommonModes);
    IOHIDDeviceRegisterInputValueCallback(inDevice, hid_input_callback, context);
+   
+   // Set PS3 LEDs
+   CFStringRef device_name = IOHIDDeviceGetProperty(inDevice, CFSTR(kIOHIDProductKey));
+   if (!device_name)
+      return;
+
+   char buffer[1024];
+   CFStringGetCString(device_name, buffer, 1024, kCFStringEncodingUTF8);
+   if (strncmp(buffer, "PLAYSTATION(R)3 Controller", 1024) == 0)
+   {
+      static uint8_t report_buffer[] = {
+         0x01,
+         0x00, 0x00, 0x00, 0x00, 0x00,
+         0x00, 0x00, 0x00, 0x00, 0x00,
+         0xff, 0x27, 0x10, 0x00, 0x32,
+         0xff, 0x27, 0x10, 0x00, 0x32,
+         0xff, 0x27, 0x10, 0x00, 0x32,
+         0xff, 0x27, 0x10, 0x00, 0x32,
+         0x00, 0x00, 0x00, 0x00, 0x00,
+         0x00, 0x00, 0x00, 0x00, 0x00,
+         0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+      };
+      report_buffer[10] = 1 << (((int)context) + 1);
+      
+      IOHIDDeviceSetReport(inDevice, kIOHIDReportTypeOutput, 0x01, report_buffer, sizeof(report_buffer));
+   }
 }
 
 static void hid_device_removed(void* inContext, IOReturn inResult, void* inSender, IOHIDDeviceRef inDevice)
