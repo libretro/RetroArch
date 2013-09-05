@@ -31,6 +31,13 @@ enum overlay_hitbox
    OVERLAY_HITBOX_RECT
 };
 
+enum overlay_type
+{
+   OVERLAY_TYPE_BUTTONS = 0,
+   OVERLAY_TYPE_ANALOG_LEFT,
+   OVERLAY_TYPE_ANALOG_RIGHT
+};
+
 struct overlay_desc
 {
    float x;
@@ -39,7 +46,9 @@ struct overlay_desc
    enum overlay_hitbox hitbox;
    float range_x, range_y;
 
+   enum overlay_type type;
    uint64_t key_mask;
+   float analog_saturate_pct;
 
    unsigned next_index;
    char next_index_name[64];
@@ -234,14 +243,23 @@ static bool input_overlay_load_desc(config_file_t *conf, struct overlay_desc *de
    char *key = list->elems[0].data;
    char *save;
    desc->key_mask = 0;
-   for (const char *tmp = strtok_r(key, "|", &save); tmp; tmp = strtok_r(NULL, "|", &save))
-      desc->key_mask |= UINT64_C(1) << input_str_to_bind(tmp);
 
-   if (desc->key_mask & (UINT64_C(1) << RARCH_OVERLAY_NEXT))
+   if (strcmp(key, "analog_left") == 0)
+      desc->type = OVERLAY_TYPE_ANALOG_LEFT;
+   else if (strcmp(key, "analog_right") == 0)
+      desc->type = OVERLAY_TYPE_ANALOG_RIGHT;
+   else
    {
-      char overlay_target_key[64];
-      snprintf(overlay_target_key, sizeof(overlay_target_key), "overlay%u_desc%u_next_target", ol_index, desc_index);
-      config_get_array(conf, overlay_target_key, desc->next_index_name, sizeof(desc->next_index_name));
+      desc->type = OVERLAY_TYPE_BUTTONS;
+      for (const char *tmp = strtok_r(key, "|", &save); tmp; tmp = strtok_r(NULL, "|", &save))
+         desc->key_mask |= UINT64_C(1) << input_str_to_bind(tmp);
+
+      if (desc->key_mask & (UINT64_C(1) << RARCH_OVERLAY_NEXT))
+      {
+         char overlay_target_key[64];
+         snprintf(overlay_target_key, sizeof(overlay_target_key), "overlay%u_desc%u_next_target", ol_index, desc_index);
+         config_get_array(conf, overlay_target_key, desc->next_index_name, sizeof(desc->next_index_name));
+      }
    }
 
    desc->x        = strtod(x, NULL) / width;
@@ -256,6 +274,21 @@ static bool input_overlay_load_desc(config_file_t *conf, struct overlay_desc *de
       RARCH_ERR("[Overlay]: Hitbox type (%s) is invalid. Use \"radial\" or \"rect\".\n", box);
       ret = false;
       goto end;
+   }
+
+   if (desc->type != OVERLAY_TYPE_BUTTONS)
+   {
+      if (desc->hitbox != OVERLAY_HITBOX_RADIAL)
+      {
+         RARCH_ERR("[Overlay]: Analog hitbox type must be \"radial\".\n");
+         ret = false;
+         goto end;
+      }
+
+      char overlay_analog_saturate_key[64];
+      snprintf(overlay_analog_saturate_key, sizeof(overlay_analog_saturate_key), "overlay%u_desc%u_saturate_pct", ol_index, desc_index);
+      if (!config_get_float(conf, overlay_analog_saturate_key, &desc->analog_saturate_pct))
+         desc->analog_saturate_pct = 1.0f;
    }
 
    desc->range_x = strtod(list->elems[4].data, NULL) / width;
@@ -530,12 +563,14 @@ static bool inside_hitbox(const struct overlay_desc *desc, float x, float y)
    }
 }
 
-uint64_t input_overlay_poll(input_overlay_t *ol, int16_t norm_x, int16_t norm_y)
+void input_overlay_poll(input_overlay_t *ol, input_overlay_state_t *out, int16_t norm_x, int16_t norm_y)
 {
+   memset(out, 0, sizeof(*out));
+
    if (!ol->enable)
    {
       ol->blocked = false;
-      return 0;
+      return;
    }
 
    // norm_x and norm_y is in [-0x7fff, 0x7fff] range, like RETRO_DEVICE_POINTER.
@@ -547,25 +582,40 @@ uint64_t input_overlay_poll(input_overlay_t *ol, int16_t norm_x, int16_t norm_y)
    x /= ol->active->mod_w;
    y /= ol->active->mod_h;
 
-   uint64_t state = 0;
    for (size_t i = 0; i < ol->active->size; i++)
    {
-      if (inside_hitbox(&ol->active->descs[i], x, y))
+      if (!inside_hitbox(&ol->active->descs[i], x, y))
+         continue;
+
+      if (ol->active->descs[i].type == OVERLAY_TYPE_BUTTONS)
       {
          uint64_t mask = ol->active->descs[i].key_mask;
-         state |= mask;
+         out->buttons |= mask;
 
          if (mask & (UINT64_C(1) << RARCH_OVERLAY_NEXT))
             ol->next_index = ol->active->descs[i].next_index;
       }
+      else
+      {
+         float x_val = (x - ol->active->descs[i].x) / ol->active->descs[i].range_x / ol->active->descs[i].analog_saturate_pct;
+         float y_val = (y - ol->active->descs[i].y) / ol->active->descs[i].range_y / ol->active->descs[i].analog_saturate_pct;
+
+         if (fabs(x_val) > 1.0f)
+            x_val = (x_val > 0.0f) ? 1.0f : -1.0f;
+
+         if (fabs(y_val) > 1.0f)
+            y_val = (y_val > 0.0f) ? 1.0f : -1.0f;
+
+         unsigned int base = (ol->active->descs[i].type == OVERLAY_TYPE_ANALOG_RIGHT) ? 2 : 0;
+         out->analog[base + 0] = x_val * 32767.0f;
+         out->analog[base + 1] = y_val * 32767.0f;
+      }
    }
 
-   if (!state)
+   if (!out->buttons)
       ol->blocked = false;
    else if (ol->blocked)
-      state = 0;
-
-   return state;
+      memset(out, 0, sizeof(*out));
 }
 
 void input_overlay_poll_clear(input_overlay_t *ol)

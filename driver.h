@@ -462,7 +462,7 @@ typedef struct driver
 
 #ifdef HAVE_OVERLAY
    input_overlay_t *overlay;
-   uint64_t overlay_state;
+   input_overlay_state_t overlay_state;
 #endif
 
    // Interface for "poking".
