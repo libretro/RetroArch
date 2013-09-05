@@ -725,7 +725,7 @@ static uint64_t rgui_input(void)
       input_state |= input_input_state_func(binds,
             0, RETRO_DEVICE_JOYPAD, 0, maps[i + 0]) ? (1ULL << maps[i + 1]) : 0;
 #ifdef HAVE_OVERLAY
-      input_state |= (driver.overlay_state & (UINT64_C(1) << maps[i + 0])) ? (1ULL << maps[i + 1]) : 0;
+      input_state |= (driver.overlay_state.buttons & (UINT64_C(1) << maps[i + 0])) ? (1ULL << maps[i + 1]) : 0;
 #endif
    }
 

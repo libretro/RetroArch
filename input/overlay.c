@@ -554,12 +554,14 @@ static bool inside_hitbox(const struct overlay_desc *desc, float x, float y)
    }
 }
 
-uint64_t input_overlay_poll(input_overlay_t *ol, int16_t norm_x, int16_t norm_y)
+void input_overlay_poll(input_overlay_t *ol, input_overlay_state_t *out, int16_t norm_x, int16_t norm_y)
 {
+   memset(out, 0, sizeof(*out));
+
    if (!ol->enable)
    {
       ol->blocked = false;
-      return 0;
+      return;
    }
 
    // norm_x and norm_y is in [-0x7fff, 0x7fff] range, like RETRO_DEVICE_POINTER.
@@ -571,7 +573,6 @@ uint64_t input_overlay_poll(input_overlay_t *ol, int16_t norm_x, int16_t norm_y)
    x /= ol->active->mod_w;
    y /= ol->active->mod_h;
 
-   uint64_t state = 0;
    for (size_t i = 0; i < ol->active->size; i++)
    {
       if (!inside_hitbox(&ol->active->descs[i], x, y))
@@ -580,27 +581,26 @@ uint64_t input_overlay_poll(input_overlay_t *ol, int16_t norm_x, int16_t norm_y)
       if (ol->active->descs[i].type == OVERLAY_TYPE_BUTTONS)
       {
          uint64_t mask = ol->active->descs[i].key_mask;
-         state |= mask;
+         out->buttons |= mask;
 
          if (mask & (UINT64_C(1) << RARCH_OVERLAY_NEXT))
             ol->next_index = ol->active->descs[i].next_index;
       }
       else
       {
-         float tgt_x = (x - ol->active->descs[i].x) / ol->active->descs[i].range_x;
-         float tgt_y = (y - ol->active->descs[i].y) / ol->active->descs[i].range_y;
-         unsigned base = (ol->active->descs[i].type == OVERLAY_TYPE_ANALOG_RIGHT) ? 2 : 0;
-         driver.overlay_analog_state[base + 0] = tgt_x * 32767.0f;
-         driver.overlay_analog_state[base + 1] = tgt_y * 32767.0f;
+         float x_val = (x - ol->active->descs[i].x) / ol->active->descs[i].range_x * 32767.0f;
+         float y_val = (y - ol->active->descs[i].y) / ol->active->descs[i].range_y * 32767.0f;
+
+         unsigned int base = (ol->active->descs[i].type == OVERLAY_TYPE_ANALOG_RIGHT) ? 2 : 0;
+         out->analog[base + 0] = x_val;
+         out->analog[base + 1] = y_val;
       }
    }
 
-   if (!state)
+   if (!out->buttons)
       ol->blocked = false;
    else if (ol->blocked)
-      state = 0;
-
-   return state;
+      memset(out, 0, sizeof(*out));
 }
 
 void input_overlay_poll_clear(input_overlay_t *ol)
