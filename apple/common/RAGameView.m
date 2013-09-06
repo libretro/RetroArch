@@ -343,39 +343,33 @@ bool apple_game_view_has_focus(void)
 
 bool apple_set_video_mode(unsigned width, unsigned height, bool fullscreen)
 {
-   __block bool result = true;
-
 #ifdef OSX
    dispatch_sync(dispatch_get_main_queue(),
    ^{
       // TODO: Multi-monitor support
       // TODO: Sceen mode support
       
-      if (fullscreen)
+      if (fullscreen && !g_has_went_fullscreen)
       {
-         if (!g_has_went_fullscreen)
-            result = [g_view enterFullScreenMode:[NSScreen mainScreen] withOptions:nil];
-         g_has_went_fullscreen = true;
+         [g_view enterFullScreenMode:[NSScreen mainScreen] withOptions:nil];
+         [NSCursor hide];
       }
-      else
+      else if (!fullscreen && g_has_went_fullscreen)
       {
-         if (g_has_went_fullscreen)
-         {
-            [g_view exitFullScreenModeWithOptions:nil];
-            [g_view.window makeFirstResponder:g_view];
-         }
-         g_has_went_fullscreen = false;
-
-         [g_view.window setContentSize:NSMakeSize(width, height)];
+         [g_view exitFullScreenModeWithOptions:nil];
+         [g_view.window makeFirstResponder:g_view];
+         [NSCursor unhide];
       }
       
       g_has_went_fullscreen = fullscreen;
+      if (!g_has_went_fullscreen)
+         [g_view.window setContentSize:NSMakeSize(width, height)];
    });
 #endif
 
    // TODO: Maybe iOS users should be apple to show/hide the status bar here?
 
-   return result;
+   return true;
 }
 
 #ifdef IOS
