@@ -812,8 +812,8 @@ static void input_autoconfigure_joypad_conf(config_file_t *conf, struct retro_ke
 
 static bool input_try_autoconfigure_joypad_from_conf(config_file_t *conf, unsigned index, const char *name, const char *driver, bool block_osd_spam)
 {
-     if (!conf)
-         return false;
+   if (!conf)
+      return false;
          
    char ident[1024];
    char input_driver[1024];
@@ -875,12 +875,12 @@ void input_config_autoconfigure_joypad(unsigned index, const char *name, const c
    }
    
    // Now try files
-   struct string_list *list = dir_list_new(g_settings.input.autoconfig_dir, "cfg", false);
-   if (!list)
-      return;
-   
    if (!internal_only)
    {
+      struct string_list *list = dir_list_new(g_settings.input.autoconfig_dir, "cfg", false);
+      if (!list)
+         return;
+   
       for (size_t i = 0; i < list->size; i++)
       {
          config_file_t *conf = config_file_new(list->elems[i].data);
@@ -891,9 +891,9 @@ void input_config_autoconfigure_joypad(unsigned index, const char *name, const c
          if (success)
             break;
       }
+      
+      string_list_free(list);
    }
-
-   string_list_free(list);
 }
 #else
 void input_config_autoconfigure_joypad(unsigned index, const char *name, const char *driver)
