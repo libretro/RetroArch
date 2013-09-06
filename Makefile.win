@@ -17,7 +17,7 @@ OBJ = frontend/frontend.o \
 		movie.o \
 		gfx/gfx_common.o \
 		input/input_common.o \
-		input/autoconf_builtin.o \
+		input/autoconf/builtin_win.o \
 		core_options.o \
 		patch.o \
 		compat/compat.o \
@@ -83,7 +83,7 @@ endif
 libretro ?= -lretro
 
 LIBS = -lm
-DEFINES = -I. -DHAVE_SCREENSHOTS -DHAVE_BSV_MOVIE
+DEFINES = -I. -DHAVE_SCREENSHOTS -DHAVE_BSV_MOVIE -DHAVE_BUILTIN_AUTOCONFIG
 LDFLAGS = -L. -static-libgcc
 
 ifeq ($(TDM_GCC),)

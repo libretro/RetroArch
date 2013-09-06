@@ -862,10 +862,11 @@ void input_config_autoconfigure_joypad(unsigned index, const char *name, const c
       return;
 
    // false = load from both cfg files and internal
-   bool internal_only = (!*g_settings.input.autoconfig_dir);
+   bool internal_only = !*g_settings.input.autoconfig_dir;
 
+#ifdef HAVE_BUILTIN_AUTOCONFIG
    // First internal
-   for (size_t i = 0; input_builtin_autoconfs[i] /* array is NULL terminated */; i++)
+   for (size_t i = 0; input_builtin_autoconfs[i]; i++)
    {
       config_file_t *conf = config_file_new_from_string(input_builtin_autoconfs[i]);
       bool success = input_try_autoconfigure_joypad_from_conf(conf, index, name, driver, block_osd_spam);
@@ -873,6 +874,7 @@ void input_config_autoconfigure_joypad(unsigned index, const char *name, const c
       if (success)
          break;
    }
+#endif
    
    // Now try files
    if (!internal_only)
