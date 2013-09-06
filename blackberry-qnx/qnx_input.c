@@ -627,7 +627,7 @@ static int16_t qnx_input_state(void *data, const struct retro_keybind **retro_ke
 
 static bool qnx_input_key_pressed(void *data, int key)
 {
-   return ((g_extern.lifecycle_state.buttons | driver.overlay_state ) & (1ULL << key));
+   return ((g_extern.lifecycle_state | driver.overlay_state.buttons ) & (1ULL << key));
 }
 
 static void qnx_input_free_input(void *data)
