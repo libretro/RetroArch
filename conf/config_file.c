@@ -365,23 +365,17 @@ config_file_t *config_file_new_from_string(const char *from_string)
       return conf;
 
    conf->path = NULL;
-
    conf->include_depth = 0;
    
-   size_t pos = 0;
-   size_t len = strlen(from_string);
+   struct string_list *lines = string_split(from_string, "\n");
+   if (!lines)
+      return conf;
 
-   while (pos < len)
+   for (size_t i = 0; i < lines->size; i++)
    {
       struct config_entry_list *list = (struct config_entry_list*)calloc(1, sizeof(*list));
       
-      size_t next_newline_pos = strchr(from_string + pos, '\n') - (char*)from_string;
-      if (next_newline_pos > len)
-         next_newline_pos = len;
-      size_t line_len = next_newline_pos - pos;
-      char *line = (char*)malloc(line_len + 1);
-      strncpy(line, from_string+pos, line_len);
-      line[line_len] = '\0';
+      char* line = lines->elems[i].data;
     
       if (line)
       {
@@ -398,15 +392,13 @@ config_file_t *config_file_new_from_string(const char *from_string)
                conf->tail = list;
             }
          }
-
-         free(line);
       }
 
       if (list != conf->tail)
          free(list);
-      
-      pos += line_len + 1;
    }
+   
+   string_list_free(lines);
 
    return conf;
 }
