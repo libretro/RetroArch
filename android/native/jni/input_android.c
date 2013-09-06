@@ -1855,7 +1855,7 @@ static int16_t android_input_state(void *data, const struct retro_keybind **bind
 
 static bool android_input_key_pressed(void *data, int key)
 {
-   return ((g_extern.lifecycle_state | driver.overlay_state) & (1ULL << key));
+   return ((g_extern.lifecycle_state | driver.overlay_state.buttons) & (1ULL << key));
 }
 
 static void android_input_free_input(void *data)
