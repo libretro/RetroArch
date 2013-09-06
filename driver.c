@@ -1058,7 +1058,7 @@ void uninit_video_input(void)
    {
       input_overlay_free(driver.overlay);
       driver.overlay = NULL;
-      driver.overlay_state = 0;
+      memset(&driver.overlay_state, 0, sizeof(driver.overlay_state));
    }
 #endif
 
