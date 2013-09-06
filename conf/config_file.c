@@ -355,6 +355,54 @@ static config_file_t *config_file_new_internal(const char *path, unsigned depth)
    return conf;
 }
 
+config_file_t *config_file_new_from_string(const char *from_string)
+{
+   struct config_file *conf = (struct config_file*)calloc(1, sizeof(*conf));
+   if (!conf)
+      return NULL;
+
+   if (!from_string)
+      return conf;
+
+   conf->path = NULL;
+   conf->include_depth = 0;
+   
+   struct string_list *lines = string_split(from_string, "\n");
+   if (!lines)
+      return conf;
+
+   for (size_t i = 0; i < lines->size; i++)
+   {
+      struct config_entry_list *list = (struct config_entry_list*)calloc(1, sizeof(*list));
+      
+      char* line = lines->elems[i].data;
+    
+      if (line)
+      {
+         if (parse_line(conf, list, line))
+         {
+            if (conf->entries)
+            {
+               conf->tail->next = list;
+               conf->tail = list;
+            }
+            else
+            {
+               conf->entries = list;
+               conf->tail = list;
+            }
+         }
+      }
+
+      if (list != conf->tail)
+         free(list);
+   }
+   
+   string_list_free(lines);
+
+   return conf;
+}
+
 config_file_t *config_file_new(const char *path)
 {
    return config_file_new_internal(path, 0);

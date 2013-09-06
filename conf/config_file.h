@@ -41,6 +41,8 @@ typedef struct config_file config_file_t;
 // Loads a config file. Returns NULL if file doesn't exist.
 // NULL path will create an empty config file.
 config_file_t *config_file_new(const char *path);
+// Load a config file from a string.
+config_file_t *config_file_new_from_string(const char *from_string);
 // Frees config file.
 void config_file_free(config_file_t *conf);
 
