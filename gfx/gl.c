@@ -1402,18 +1402,7 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
       glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
 
 #ifdef HAVE_FBO
-      // Data is already on GPU :) Have to reset some state however incase core changed it.
-      if (gl->hw_render_fbo_init)
-      {
-         gl_update_input_size(gl, width, height, pitch, false);
-
-         if (!gl->fbo_inited)
-         {
-            gl_bind_backbuffer();
-            gl_set_viewport(gl, gl->win_width, gl->win_height, false, true);
-         }
-      }
-      else
+      if (!gl->hw_render_fbo_init)
 #endif
       {
          gl_update_input_size(gl, width, height, pitch, true);
@@ -1425,6 +1414,19 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
    }
    else
       glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
+
+#ifdef HAVE_FBO
+   // Data is already on GPU :) Have to reset some state however incase core changed it.
+   if (gl->hw_render_fbo_init)
+   {
+      gl_update_input_size(gl, width, height, pitch, false);
+      if (!gl->fbo_inited)
+      {
+         gl_bind_backbuffer();
+         gl_set_viewport(gl, gl->win_width, gl->win_height, false, true);
+      }
+   }
+#endif
 
    // Have to reset rendering state which libretro core could easily have overridden.
 #ifdef HAVE_FBO
