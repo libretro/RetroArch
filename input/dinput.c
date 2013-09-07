@@ -397,15 +397,26 @@ static BOOL CALLBACK enum_axes_cb(const DIDEVICEOBJECTINSTANCE *inst, void *p)
 // example code is a horrible unsightly mess.
 static const char* const XINPUT_PAD_NAMES[] = 
 {
+   "XBOX 360 For Windows",
    "Controller (Gamepad for Xbox 360)",
    "Controller (XBOX 360 For Windows)",
    "Controller (Xbox 360 Wireless Receiver for Windows)",
    "Controller (Xbox wireless receiver for windows)",
    "XBOX 360 For Windows (Controller)",
    "Xbox 360 Wireless Receiver",
+   "Xbox 360 Wireless Controller",
    "Xbox Receiver for Windows (Wireless Controller)",
    "Xbox wireless receiver for windows (Controller)",
+   "Gamepad F310 (Controller)",
    "Controller (Gamepad F310)",
+   "Wireless Gamepad F710 (Controller)",
+   "Controller (Batarang wired controller (XBOX))",
+   "Afterglow Gamepad for Xbox 360 (Controller)"
+   "Controller (Rumble Gamepad F510)",
+   "Controller (Wireless Gamepad F710)",
+   "Controller (Xbox 360 Wireless Receiver for Windows)",
+   "Controller (Xbox wireless receiver for windows)",
+   "Controller (XBOX360 GAMEPAD)",
    NULL
 };
 
