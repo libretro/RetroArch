@@ -30,6 +30,7 @@ DECL_BTN(l, 4) \
 DECL_BTN(r, 5) \
 DECL_BTN(l3, 8 )\
 DECL_BTN(r3, 9) \
+DECL_BTN(menu_toggle, 10) \
 DECL_AXIS(l2, +4) \
 DECL_AXIS(r2, +5) \
 DECL_AXIS(l_x_plus,  +0) \
