@@ -417,6 +417,7 @@ static const char* const XINPUT_PAD_NAMES[] =
    "Controller (Xbox 360 Wireless Receiver for Windows)",
    "Controller (Xbox wireless receiver for windows)",
    "Controller (XBOX360 GAMEPAD)",
+   "MadCatz GamePad",
    NULL
 };
 
