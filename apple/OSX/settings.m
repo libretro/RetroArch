@@ -52,7 +52,10 @@ static uint32_t key_id_for_name(const char* name)
 static const char* get_input_config_key(const rarch_setting_t* setting, const char* type)
 {
    static char buffer[32];
-   snprintf(buffer, 32, "input_player%d_%s%c%s", setting->input_player, setting->name, type ? '_' : '\0', type);
+   if (setting->input_player)
+      snprintf(buffer, 32, "input_player%d_%s%c%s", setting->input_player, setting->name, type ? '_' : '\0', type);
+   else
+      snprintf(buffer, 32, "input_%s%c%s", setting->name, type ? '_' : '\0', type);
    return buffer;
 }
 
@@ -127,6 +130,7 @@ static const char* get_axis_name(const rarch_setting_t* setting)
       case ST_PATH:   self.stringValue = @((const char*)aSetting->value); break;
       case ST_BOOL:   self.booleanValue = *(bool*)aSetting->value; break;
       case ST_BIND:   [self updateInputString]; break;
+      default:        break;
    }
 }
 
@@ -444,6 +448,7 @@ static const char* get_axis_name(const rarch_setting_t* setting)
             case ST_PATH:   s = [outlineView makeViewWithIdentifier:@"RAPathSetting"    owner:nil]; break;
             case ST_STRING: s = [outlineView makeViewWithIdentifier:@"RAStringSetting"  owner:nil]; break;
             case ST_BIND:   s = [outlineView makeViewWithIdentifier:@"RABindSetting"    owner:nil]; break;
+               default:        break;
          }
          s.setting = setting;
          return s;

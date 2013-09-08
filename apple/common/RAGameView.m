@@ -17,6 +17,7 @@
 #include "rarch_wrapper.h"
 
 #include "general.h"
+#include "gfx/gfx_common.h"
 
 #ifdef IOS
 
