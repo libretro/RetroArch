@@ -242,43 +242,18 @@ static const char* get_axis_name(const rarch_setting_t* setting)
 
 - (void)checkBind:(NSTimer*)send
 {
-   // Keyboard
-   for (int i = 0; apple_key_name_map[i].hid_id; i++)
-   {
-      if (g_current_input_data.keys[apple_key_name_map[i].hid_id])
-      {
-         BINDFOR(*_setting).key = input_translate_keysym_to_rk(apple_key_name_map[i].hid_id);
-         [self dismissBinder];
-         return;
-      }
-   }
+   int32_t value = 0;
 
-   // Joystick
-   if (g_current_input_data.pad_buttons[0])
-   {
-      for (int i = 0; i != 32; i ++)
-      {
-         if (g_current_input_data.pad_buttons[0] & (1 << i))
-         {
-            BINDFOR(*_setting).joykey = i;
-            [self dismissBinder];
-            return;
-         }
-      }
-   }
+   if ((value = apple_input_find_any_key()))
+      BINDFOR(*_setting).key = input_translate_keysym_to_rk(value);
+   else if ((value = apple_input_find_any_button(0)) >= 0)
+      BINDFOR(*_setting).joykey = value;
+   else if ((value = apple_input_find_any_axis(0)))
+      BINDFOR(*_setting).joyaxis = (value > 0) ? AXIS_POS(value - 1) : AXIS_NEG(value - 1);
+   else
+      return;
    
-   // Pad Axis
-   for (int i = 0; i < 4; i++)
-   {
-      int16_t value = g_current_input_data.pad_axis[0][i];
-      
-      if (abs(value) > 0x4000)
-      {
-         BINDFOR(*_setting).joyaxis = (value > 0x1000) ? AXIS_POS(i) : AXIS_NEG(i);
-         [self dismissBinder];
-         break;
-      }
-   }
+   [self dismissBinder];
 }
 
 - (IBAction)doGetBind:(id)sender
