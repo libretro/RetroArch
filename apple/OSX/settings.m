@@ -86,6 +86,49 @@ static const char* get_axis_name(const rarch_setting_t* setting)
    return buffer;
 }
 
+@interface RANumberFormatter : NSNumberFormatter
+@end
+
+@implementation RANumberFormatter
+- (id)initWithFloatSupport:(bool)allowFloat minimum:(double)min maximum:(double)max
+{
+   self = [super init];
+   self.allowsFloats = allowFloat;
+   self.maximumFractionDigits = 10;
+   
+   if (min || max)
+   {
+      self.minimum = @(min);
+      self.maximum = @(max);
+   }
+   
+   return self;
+}
+
+- (BOOL)isPartialStringValid:(NSString*)partialString newEditingString:(NSString**)newString errorDescription:(NSString**)error
+{
+   bool hasDot = false;
+
+   if (partialString.length)
+      for (int i = 0; i != partialString.length; i ++)
+      {
+         unichar ch = [partialString characterAtIndex:i];
+         
+         if (self.allowsFloats && !hasDot && ch == '.')
+         {
+            hasDot = true;
+            continue;
+         }
+         
+         if (!isnumber(ch))
+            return NO;
+      }
+
+   return YES;
+}
+@end
+
+
 @interface RAInputBinder : NSWindow
 @end
 
@@ -122,6 +165,16 @@ static const char* get_axis_name(const rarch_setting_t* setting)
    if (!_setting)
       return;
    
+   if (aSetting->type == ST_INT || aSetting->type == ST_FLOAT)
+   {
+      self.textField.formatter = [[RANumberFormatter alloc] initWithFloatSupport:aSetting->type == ST_FLOAT
+                                                                         minimum:aSetting->min
+                                                                         maximum:aSetting->max];
+   }
+   else
+      self.textField.formatter = nil;
+
+   // Set value
    switch (aSetting->type)
    {
       case ST_INT:    self.numericValue = @(*(int*)aSetting->value); break;
