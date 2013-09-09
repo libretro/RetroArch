@@ -20,14 +20,6 @@
 #include "rarch_wrapper.h"
 #include "apple/common/apple_input.h"
 
-// If USE_XATTR is defined any loaded file will get a com.RetroArch.Core extended attribute
-// specifying which core was used to load.
-//#define USE_XATTR
-
-#if defined(USE_XATTR)
-#include "sys/xattr.h"
-#endif
-
 #include "file.h"
 
 @interface RApplication : NSApplication
@@ -66,6 +58,11 @@
    apple_platform = self;
    _loaded = true;
 
+   NSArray* paths = NSSearchPathForDirectoriesInDomains(NSApplicationSupportDirectory, NSUserDomainMask, YES);
+   self.configDirectory = [paths[0] stringByAppendingPathComponent:@"RetroArch"];
+   self.globalConfigFile = [NSString stringWithFormat:@"%@/retroarch.cfg", self.configDirectory];
+   self.coreDirectory = [NSBundle.mainBundle.bundlePath stringByAppendingPathComponent:@"Contents/Resources/modules"];
+
    [window setCollectionBehavior:NSWindowCollectionBehaviorFullScreenPrimary];
    
    RAGameView.get.frame = [window.contentView bounds];
@@ -76,7 +73,7 @@
    // Create core select list
    NSComboBox* cb = (NSComboBox*)[_coreSelectSheet.contentView viewWithTag:1];
    
-   for (RAModuleInfo* i in RAModuleInfo.getModules)
+   for (RAModuleInfo* i in apple_get_modules())
       [cb addItemWithObjectValue:i];
 
    if (cb.numberOfItems)
@@ -162,23 +159,6 @@
 
 - (void)chooseCore
 {
-#ifdef USE_XATTR
-   char stored_name[PATH_MAX];
-   if (getxattr(_file.UTF8String, "com.RetroArch.Core", stored_name, PATH_MAX, 0, 0) > 0)
-   {
-      for (RAModuleInfo* i in RAModuleInfo.getModules)
-      {
-         const char* core_name = i.path.lastPathComponent.UTF8String;
-         if (strcmp(core_name, stored_name) == 0)
-         {
-            _core = i;
-            [self runCore];
-            return;
-         }
-      }
-   }
-#endif
-
    [NSApplication.sharedApplication beginSheet:_coreSelectSheet modalForWindow:window modalDelegate:nil didEndSelector:nil contextInfo:nil];
    [NSApplication.sharedApplication runModalForWindow:_coreSelectSheet];
 }
@@ -202,14 +182,7 @@
 - (void)loadingCore:(RAModuleInfo*)core withFile:(const char*)file
 {
    if (file)
-   {
-      [NSDocumentController.sharedDocumentController noteNewRecentDocumentURL:[NSURL fileURLWithPath:[NSString stringWithUTF8String:file]]];
-      
-#ifdef USE_XATTR
-      const char* core_name = core.path.lastPathComponent.UTF8String;
-      setxattr(file, "com.RetroArch.Core", core_name, strlen(core_name) + 1, 0, 0);
-#endif
-   }
+      [NSDocumentController.sharedDocumentController noteNewRecentDocumentURL:[NSURL fileURLWithPath:@(file)]];
 }
 
 - (void)unloadingCore:(RAModuleInfo*)core
@@ -227,26 +200,10 @@
    _wantReload = false;
 }
 
-- (NSString*)configPath
-{
-   return [[self retroarchConfigPath] stringByAppendingPathComponent:@"retroarch.cfg"];
-}
-
-- (NSString*)retroarchConfigPath
-{
-   NSArray* paths = NSSearchPathForDirectoriesInDomains(NSApplicationSupportDirectory, NSUserDomainMask, YES);
-   return [paths[0] stringByAppendingPathComponent:@"RetroArch"];
-}
-
-- (NSString*)corePath
-{
-   return [NSBundle.mainBundle.bundlePath stringByAppendingPathComponent:@"Contents/Resources/modules"];
-}
-
 #pragma mark Menus
 - (IBAction)showCoresDirectory:(id)sender
 {
-   [[NSWorkspace sharedWorkspace] openFile:self.corePath];
+   [[NSWorkspace sharedWorkspace] openFile:self.coreDirectory];
 }
 
 - (IBAction)showPreferences:(id)sender

@@ -25,8 +25,6 @@
 
 char** apple_argv;
 
-//#define HAVE_DEBUG_FILELOG
-
 id<RetroArch_Platform> apple_platform;
 
 void apple_event_basic_command(void* userdata)
@@ -134,27 +132,19 @@ void apple_run_core(RAModuleInfo* core, const char* file)
 
       if (!apple_argv)
       {
-         static const char* argv[] = { "retroarch", "-c", config_path, "-L", core_path, file_path, 0 };
+         NSString* config_to_use = apple_core ? apple_core.configFile : apple_platform.globalConfigFile;
+         strlcpy(config_path, config_to_use.UTF8String, sizeof(config_path));
 
-         if (apple_core)
-            strlcpy(config_path, apple_core.configPath.UTF8String, sizeof(config_path));
-         else
-            strlcpy(config_path, RAModuleInfo.globalConfigPath.UTF8String, sizeof(config_path));
+         static const char* const argv_game[] = { "retroarch", "-c", config_path, "-L", core_path, file_path, 0 };
+         static const char* const argv_menu[] = { "retroarch", "-c", config_path, "--menu", 0 };
    
          if (file && core)
          {
-            argv[3] = "-L";
-            argv[4] = core_path;
             strlcpy(core_path, apple_core.path.UTF8String, sizeof(core_path));
             strlcpy(file_path, file, sizeof(file_path));
          }
-         else
-         {
-            argv[3] = "--menu";
-            argv[4] = 0;
-         }
          
-         apple_argv = (char**)argv;
+         apple_argv = (char**)((file && core) ? argv_game : argv_menu);
       }
       
       if (pthread_create(&apple_retro_thread, 0, rarch_main_spring, apple_argv))

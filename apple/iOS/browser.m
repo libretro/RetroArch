@@ -101,7 +101,7 @@
          section = contents->elems[i].attr.b ? 0 : section;
 
          RADirectoryItem* item = RADirectoryItem.new;
-         item.path = [NSString stringWithUTF8String:contents->elems[i].data];
+         item.path = @(contents->elems[i].data);
          item.isDirectory = contents->elems[i].attr.b;
          [sectionLists[section] addObject:item];
       }
@@ -221,7 +221,7 @@
    _delegate = delegate;
 
    // Load the modules with their data
-   NSArray* moduleList = [RAModuleInfo getModules];
+   NSArray* moduleList = apple_get_modules();
 
    NSMutableArray* supported = [NSMutableArray arrayWithObject:@"Suggested Cores"];
    NSMutableArray* other = [NSMutableArray arrayWithObject:@"Other Cores"];

@@ -57,7 +57,7 @@ NSString* objc_get_value_from_config(config_file_t* config, NSString* name, NSSt
    if (config)
       config_get_string(config, [name UTF8String], &data);
    
-   NSString* result = data ? [NSString stringWithUTF8String:data] : defaultValue;
+   NSString* result = data ? @(data) : defaultValue;
    free(data);
    return result;
 }

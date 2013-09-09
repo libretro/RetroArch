@@ -275,7 +275,7 @@ static NSArray* build_input_port_group(config_file_t* config, uint32_t player)
 - (id)initWithModule:(RAModuleInfo*)module
 {
    _module = module;
-   _configPath = _module ? _module.configPath : RAModuleInfo.globalConfigPath;
+   _configPath = _module ? _module.configFile : apple_platform.globalConfigFile;
 
    config_file_t* config = config_file_new([_configPath UTF8String]);
 
@@ -408,7 +408,7 @@ static void bluetooth_option_changed(RASettingData* setting)
    [modules addObject:@"Cores"];
    [modules addObject:custom_action(@"Global Core Config", nil, nil, 0)];
 
-   NSArray* moduleList = [RAModuleInfo getModules];
+   NSArray* moduleList = apple_get_modules();
    for (RAModuleInfo* i in moduleList)
    {
       [modules addObject:custom_action(i.description, nil, i, reload_core_config_state)];
@@ -843,7 +843,7 @@ static void bluetooth_option_changed(RASettingData* setting)
    int32_t value = 0;
 
    if ((value = apple_input_find_any_key()))
-      _value->value = [NSString stringWithUTF8String:apple_keycode_hidusage_to_name(value)];
+      _value->value = @(apple_keycode_hidusage_to_name(value));
    else if ((value = apple_input_find_any_button(0)) >= 0)
       _value->button_bind = [NSString stringWithFormat:@"%d", value];
    else if ((value = apple_input_find_any_axis(0)))

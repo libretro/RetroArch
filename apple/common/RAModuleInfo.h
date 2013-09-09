@@ -22,22 +22,22 @@
 #include "conf/config_file.h"
 #include "core_info.h"
 
+extern NSArray* apple_get_modules();
+
 @interface RAModuleInfo : NSObject
-@property (strong) NSString* path;
+@property NSString* path;                    // e.g. /path/to/corename_libretro.dylib
+@property NSString* baseName;                // e.g. corename_libretro
 @property core_info_t* info;
 @property config_file_t* data;
-@property (strong) NSString* description;
-@property (strong) NSString* customConfigPath;
+@property NSString* description;             // Friendly name from config file, else just the filename
+@property NSString* customConfigFile;        // Path where custom config file would reside
+@property NSString* configFile;              // Path to effective config file
 
-+ (NSArray*)getModules;
 - (bool)supportsFileAtPath:(NSString*)path;
-
-+ (NSString*)globalConfigPath;
 
 - (void)createCustomConfig;
 - (void)deleteCustomConfig;
 - (bool)hasCustomConfig;
-- (NSString*)configPath;
 
 @end
 

@@ -28,8 +28,9 @@
 - (void)loadingCore:(RAModuleInfo*)core withFile:(const char*)file;
 - (void)unloadingCore:(RAModuleInfo*)core;
 
-- (NSString*)retroarchConfigPath; // < This returns the directory that contains retroarch.cfg and other custom configs
-- (NSString*)corePath;
+- (NSString*)configDirectory;   // < This returns the directory that contains retroarch.cfg and other custom configs
+- (NSString*)globalConfigFile;  // < This is the full path to retroarch.cfg
+- (NSString*)coreDirectory;     // < This is the default path to where libretro cores are installed
 @end
 
 #ifdef IOS

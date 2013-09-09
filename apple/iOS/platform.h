@@ -32,9 +32,12 @@
 
 - (void)loadingCore:(RAModuleInfo*)core withFile:(const char*)file;
 - (void)unloadingCore:(RAModuleInfo*)core;
-- (NSString*)retroarchConfigPath;
 
 - (void)refreshSystemConfig;
+
+@property (strong, nonatomic) NSString* configDirectory;    // e.g. /var/mobile/Documents/.RetroArch
+@property (strong, nonatomic) NSString* globalConfigFile;   // e.g. /var/mobile/Documents/.RetroArch/retroarch.cfg
+@property (strong, nonatomic) NSString* coreDirectory;      // e.g. /Applications/RetroArch.app/modules
 
 @property (strong, nonatomic) NSString* documentsDirectory; // e.g. /var/mobile/Documents
 @property (strong, nonatomic) NSString* systemDirectory;    // e.g. /var/mobile/Documents/.RetroArch

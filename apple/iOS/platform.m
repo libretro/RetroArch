@@ -112,6 +112,10 @@ static void handle_touch_event(NSArray* touches)
    self.documentsDirectory = [NSHomeDirectory() stringByAppendingPathComponent:@"Documents"];
    self.systemDirectory = [self.documentsDirectory stringByAppendingPathComponent:@".RetroArch"];
    self.systemConfigPath = [self.systemDirectory stringByAppendingPathComponent:@"frontend.cfg"];
+   
+   self.configDirectory = self.systemDirectory;
+   self.globalConfigFile = [NSString stringWithFormat:@"%@/retroarch.cfg", self.configDirectory];
+   self.coreDirectory = [NSBundle.mainBundle.bundlePath stringByAppendingPathComponent:@"modules"];
 
    if (!path_make_and_check_directory(self.documentsDirectory.UTF8String, 0755, R_OK | W_OK | X_OK))
       apple_display_alert([NSString stringWithFormat:@"Failed to create or access base directory: %@", self.documentsDirectory], 0);
@@ -122,7 +126,7 @@ static void handle_touch_event(NSArray* touches)
 
    
    // Warn if there are no cores present
-   if ([RAModuleInfo getModules].count == 0)
+   if (apple_get_modules().count == 0)
       apple_display_alert(@"No libretro cores were found. You will not be able to play any games.", 0);
 }
 
@@ -250,16 +254,6 @@ static void handle_touch_event(NSArray* touches)
    [self popViewControllerAnimated:NO];
       
    btpad_set_inquiry_state(true);
-}
-
-- (NSString*)retroarchConfigPath
-{
-   return self.systemDirectory;
-}
-
-- (NSString*)corePath
-{
-   return [NSBundle.mainBundle.bundlePath stringByAppendingPathComponent:@"modules"];
 }
 
 #pragma mark FRONTEND CONFIG

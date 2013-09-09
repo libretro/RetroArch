@@ -343,7 +343,7 @@ static const char* get_axis_name(const rarch_setting_t* setting)
 
 - (void)load
 {
-   config_file_t* conf = config_file_new([RetroArch_OSX get].configPath.UTF8String);
+   config_file_t* conf = config_file_new(apple_platform.globalConfigFile.UTF8String);
 
    for (int i = 0; setting_data[i].type; i ++)
    {
@@ -372,7 +372,7 @@ static const char* get_axis_name(const rarch_setting_t* setting)
 
 - (void)windowWillClose:(NSNotification *)notification
 {
-   config_file_t* conf = config_file_new([RetroArch_OSX get].configPath.UTF8String);
+   config_file_t* conf = config_file_new(apple_platform.globalConfigFile.UTF8String);
    conf = conf ? conf : config_file_new(0);
    
    for (int i = 0; setting_data[i].type; i ++)
@@ -397,7 +397,7 @@ static const char* get_axis_name(const rarch_setting_t* setting)
          default:        break;
       }
    }
-   config_file_write(conf, [RetroArch_OSX get].configPath.UTF8String);
+   config_file_write(conf, apple_platform.globalConfigFile.UTF8String);
    config_file_free(conf);
 
    apple_refresh_config();
