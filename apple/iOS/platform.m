@@ -132,7 +132,7 @@ static void handle_touch_event(NSArray* touches)
 
 - (void)applicationDidBecomeActive:(UIApplication *)application
 {
-   apple_exit_stasis();
+   apple_exit_stasis(false);
 }
 
 - (void)applicationWillResignActive:(UIApplication *)application

@@ -55,7 +55,7 @@ extern void apple_event_show_rgui(void* userdata);
 
 extern void apple_refresh_config();
 extern void apple_enter_stasis();
-extern void apple_exit_stasis();
+extern void apple_exit_stasis(bool reload_config);
 extern void apple_run_core(RAModuleInfo* core, const char* file);
 
 // utility.m

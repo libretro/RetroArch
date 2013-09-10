@@ -114,13 +114,11 @@ static const char* get_axis_name(const rarch_setting_t* setting)
       {
          unichar ch = [partialString characterAtIndex:i];
          
-         if (self.allowsFloats && !hasDot && ch == '.')
-         {
-            hasDot = true;
+         if (i == 0 && (!self.minimum || self.minimum.intValue < 0) && ch == '-')
             continue;
-         }
-         
-         if (!isnumber(ch))
+         else if (self.allowsFloats && !hasDot && ch == '.')
+            hasDot = true;
+         else if (!isdigit(ch))
             return NO;
       }
 
@@ -216,7 +214,7 @@ static const char* get_axis_name(const rarch_setting_t* setting)
 
 - (void)setStringValue:(NSString *)stringValue
 {
-   _stringValue = stringValue;
+   _stringValue = stringValue ? stringValue : @"";
    
    if (_setting && (_setting->type == ST_STRING || _setting->type == ST_PATH))
       strlcpy(_setting->value, _stringValue.UTF8String, _setting->size);
@@ -291,6 +289,8 @@ static const char* get_axis_name(const rarch_setting_t* setting)
 
 - (void)awakeFromNib
 {
+   apple_enter_stasis();
+
    NSMutableArray* thisGroup = nil;
    NSMutableArray* thisSubGroup = nil;
    _settings = [NSMutableArray array];
@@ -400,7 +400,7 @@ static const char* get_axis_name(const rarch_setting_t* setting)
    config_file_write(conf, apple_platform.globalConfigFile.UTF8String);
    config_file_free(conf);
 
-   apple_refresh_config();
+   apple_exit_stasis(true);
 
    [NSApp stopModal];
 }

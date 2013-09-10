@@ -71,8 +71,6 @@ pthread_mutex_t stasis_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 static void event_stasis(void* userdata)
 {
-   // HACK: uninit_drivers is the nuclear option; uninit_audio would be better but will
-   //       crash when resuming.
    uninit_drivers();
    pthread_mutex_lock(&stasis_mutex);
    pthread_mutex_unlock(&stasis_mutex);
@@ -88,8 +86,14 @@ void apple_enter_stasis()
    }
 }
 
-void apple_exit_stasis()
+void apple_exit_stasis(bool reload_config)
 {
+   if (reload_config)
+   {
+      objc_clear_config_hack();
+      config_load();
+   }
+
    if (apple_is_running)
       pthread_mutex_unlock(&stasis_mutex);
 }
