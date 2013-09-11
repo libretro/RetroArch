@@ -83,7 +83,8 @@ typedef struct
 // hack is required here. dinput_joypad_init will fill this.
 // For each pad index, the appropriate entry will be set to -1 if it is not
 // a 360 pad, or the correct XInput player number (0..3 inclusive) if it is.
-extern int g_xbox_pad_indexes[MAX_PLAYERS];
+extern int g_xinput_pad_indexes[MAX_PLAYERS];
+extern bool g_xinput_block_pads;
 
 // For xinput1_3.dll
 static HINSTANCE g_winxinput_dll;
@@ -105,7 +106,7 @@ static winxinput_joypad_state g_winxinput_states[4];
 
 static inline int pad_index_to_xplayer_index(unsigned pad)
 {
-   return g_xbox_pad_indexes[pad];
+   return g_xinput_pad_indexes[pad];
 }
 
 // Generic "XInput" instead of "Xbox 360", because there are
@@ -144,25 +145,21 @@ static bool winxinput_joypad_init(void)
    // No need to check for existance as we will be checking LoadLibrary's
    // success anyway.
    
-   // Note: Windows 8 ships with 1.4 but there doesn't
-   //       seem to be any compelling reason to use it.
-   const char* DLL_NAME = "xinput1_3.dll";
-   g_winxinput_dll = LoadLibrary(DLL_NAME); // Using dylib_* complicates building joyconfig.
+   const char *version = "1.4";
+   g_winxinput_dll = LoadLibrary("xinput1_4.dll"); // Using dylib_* complicates building joyconfig.
    if (!g_winxinput_dll)
    {
-      // Loading from working dir failed, try to load from system.
-      char dll_path[MAX_PATH];
-      GetSystemDirectory(dll_path, sizeof(dll_path));
-      strlcat(dll_path, "\\", 1);
-      strlcat(dll_path, DLL_NAME, sizeof(DLL_NAME));
-      g_winxinput_dll = LoadLibrary(dll_path);
-      
-      if (!g_winxinput_dll)
-      {
-         RARCH_ERR("Failed to load xinput1_3.dll, ensure DirectX and controller drivers are up to date.\n");
-         return false; // DLL does not exist or is invalid
-      }
+      g_winxinput_dll = LoadLibrary("xinput1_3.dll");
+      version = "1.3";
    }
+
+   if (!g_winxinput_dll)
+   {
+      RARCH_ERR("Failed to load xinput1_3.dll, ensure DirectX and controller drivers are up to date.\n");
+      return false; // DLL does not exist or is invalid
+   }
+
+   RARCH_LOG("Found XInput v%s.\n", version);
    
    // If we get here then an xinput DLL is correctly loaded.
    // First try to load ordinal 100 (XInputGetStateEx).
@@ -201,11 +198,16 @@ static bool winxinput_joypad_init(void)
        (!g_winxinput_states[2].connected) &&
        (!g_winxinput_states[3].connected))
       return false;
+
+   g_xinput_block_pads = true;
    
    // We're going to have to be buddies with dinput if we want to be able
    // to use XI and non-XI controllers together.
    if (!dinput_joypad.init())
+   {
+      g_xinput_block_pads = false;
       return false;
+   }
       
    for (unsigned autoconf_pad = 0; autoconf_pad < MAX_PLAYERS; autoconf_pad++)
    {
@@ -239,6 +241,7 @@ static void winxinput_joypad_destroy(void)
    g_XInputGetStateEx = NULL;
    
    dinput_joypad.destroy();
+   g_xinput_block_pads = false;
 }
 
 // Buttons are provided by XInput as bits of a uint16.

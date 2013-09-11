@@ -28,7 +28,7 @@ DECL_BTN(left, h0left) \
 DECL_BTN(right, h0right) \
 DECL_BTN(l, 4) \
 DECL_BTN(r, 5) \
-DECL_BTN(l3, 8 )\
+DECL_BTN(l3, 8) \
 DECL_BTN(r3, 9) \
 DECL_BTN(menu_toggle, 10) \
 DECL_AXIS(l2, +4) \
