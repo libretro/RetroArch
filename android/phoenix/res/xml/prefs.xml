@@ -43,6 +43,7 @@
             <ListPreference
                 android:entries="@array/aspect_ratios"
                 android:entryValues="@array/aspect_values"
+                android:defaultValue="auto"
                 android:key="video_aspect_ratio"
                 android:summary="Aspect ratio to enforce."
                 android:title="Aspect ratio" />
@@ -126,6 +127,7 @@
             <ListPreference
                 android:entries="@array/back_options"
                 android:entryValues="@array/back_options_values"
+                android:defaultValue="0"
                 android:key="input_back_behavior"
                 android:summary="Select how you want the Back button to behave."
                 android:title="Back behavior" />
