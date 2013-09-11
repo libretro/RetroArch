@@ -20,22 +20,19 @@
 #include "boolean.h"
 #include "apple/common/rarch_wrapper.h"
 
-#include "btdynamic.h"
-#include "btpad.h"
+#include "hidpad.h"
 
-struct btpad_ps3_data
+struct hidpad_ps3_data
 {
+   struct hidpad_connection* connection;
+
    uint8_t data[512];
-   
-   bd_addr_t address;
-   uint32_t handle;
-   uint32_t channels[2];
-   
+  
    uint32_t slot;
    bool have_led;
 };
 
-static void btpad_ps3_send_control(struct btpad_ps3_data* device)
+static void hidpad_ps3_send_control(struct hidpad_ps3_data* device)
 {
    // TODO: Can this be modified to turn off motion tracking?
    static uint8_t report_buffer[] = {
@@ -52,35 +49,38 @@ static void btpad_ps3_send_control(struct btpad_ps3_data* device)
    };
    
    report_buffer[11] = 1 << ((device->slot % 4) + 1);
-   bt_send_l2cap_ptr(device->channels[0], report_buffer, sizeof(report_buffer));
+#ifdef IOS
+   hidpad_send_control(device->connection, report_buffer, sizeof(report_buffer));
+#else
+   hidpad_send_control(device->connection, report_buffer + 1, sizeof(report_buffer) - 1);
+#endif
 }
 
-static void* btpad_ps3_connect(const btpad_connection_t* connection)
+static void* hidpad_ps3_connect(struct hidpad_connection* connection, uint32_t slot)
 {
-   struct btpad_ps3_data* device = malloc(sizeof(struct btpad_ps3_data));
+   struct hidpad_ps3_data* device = malloc(sizeof(struct hidpad_ps3_data));
    memset(device, 0, sizeof(*device));
-
-   memcpy(device->address, connection->address, BD_ADDR_LEN);
-   device->handle = connection->handle;
-   device->channels[0] = connection->channels[0];
-   device->channels[1] = connection->channels[1];
-   device->slot = connection->slot;
+   device->connection = connection;  
+   device->slot = slot;
    
    // Magic packet to start reports
+#ifdef IOS
    static uint8_t data[] = {0x53, 0xF4, 0x42, 0x03, 0x00, 0x00};
-   bt_send_l2cap_ptr(device->channels[0], data, 6);
+   hidpad_send_control(device->connection, data, 6);
+#endif
 
    // Without this the digital buttons won't be reported
-   btpad_ps3_send_control(device);
+   hidpad_ps3_send_control(device);
 
    return device;
 }
 
-static void btpad_ps3_disconnect(struct btpad_ps3_data* device)
+static void hidpad_ps3_disconnect(struct hidpad_ps3_data* device)
 {
+   free(device);
 }
 
-static uint32_t btpad_ps3_get_buttons(struct btpad_ps3_data* device)
+static uint32_t hidpad_ps3_get_buttons(struct hidpad_ps3_data* device)
 {
    #define KEY(X) RETRO_DEVICE_ID_JOYPAD_##X
    static const uint32_t button_mapping[17] =
@@ -102,7 +102,7 @@ static uint32_t btpad_ps3_get_buttons(struct btpad_ps3_data* device)
    return result;
 }
 
-static int16_t btpad_ps3_get_axis(struct btpad_ps3_data* device, unsigned axis)
+static int16_t hidpad_ps3_get_axis(struct hidpad_ps3_data* device, unsigned axis)
 {
    if (axis < 4)
    {
@@ -114,28 +114,28 @@ static int16_t btpad_ps3_get_axis(struct btpad_ps3_data* device, unsigned axis)
    return 0;
 }
 
-static void btpad_ps3_packet_handler(struct btpad_ps3_data* device, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size)
+static void hidpad_ps3_packet_handler(struct hidpad_ps3_data* device, uint8_t *packet, uint16_t size)
 {
-   if (packet_type == L2CAP_DATA_PACKET && packet[0] == 0xA1)
+   if (!device->have_led)
    {
-      if (!device->have_led)
-      {
-         btpad_ps3_send_control(device);
-         device->have_led = true;
-      }
-   
-      memcpy(device->data, packet, size);
-      g_current_input_data.pad_buttons[device->slot] = btpad_ps3_get_buttons(device);
-      for (int i = 0; i < 4; i ++)
-         g_current_input_data.pad_axis[device->slot][i] = btpad_ps3_get_axis(device, i);
+      hidpad_ps3_send_control(device);
+      device->have_led = true;
    }
+
+#ifdef IOS
+   memcpy(device->data, packet, size);
+#else
+   memcpy(device->data + 1, packet, size);
+#endif
+
+   g_current_input_data.pad_buttons[device->slot] = hidpad_ps3_get_buttons(device);
+   for (int i = 0; i < 4; i ++)
+      g_current_input_data.pad_axis[device->slot][i] = hidpad_ps3_get_axis(device, i);
 }
 
-struct btpad_interface btpad_ps3 =
+struct hidpad_interface hidpad_ps3 =
 {
-   (void*)&btpad_ps3_connect,
-   (void*)&btpad_ps3_disconnect,
-   (void*)&btpad_ps3_get_buttons,
-   (void*)&btpad_ps3_get_axis,
-   (void*)&btpad_ps3_packet_handler
+   (void*)&hidpad_ps3_connect,
+   (void*)&hidpad_ps3_disconnect,
+   (void*)&hidpad_ps3_packet_handler
 };

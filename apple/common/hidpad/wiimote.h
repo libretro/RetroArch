@@ -41,7 +41,7 @@
 #ifndef __WIIMOTE_H__
 #define __WIIMOTE_H__
 
-#include "btstack/utils.h"
+#include "hidpad.h"
 
 #if defined(__cplusplus)
 extern "C" {
@@ -232,11 +232,7 @@ extern "C" {
 	typedef struct wiimote_t {
 		int unid;						/**< user specified id						*/
 
-		uint16_t wiiMoteConHandle;
-		uint16_t i_source_cid;
-		uint16_t c_source_cid;
-		bd_addr_t addr;
-
+      struct hidpad_connection* connection;
    	    int state;						/**< various state flags					*/
 		byte leds;						/**< currently lit leds						*/
 		float battery_level;				/**< battery level							*/

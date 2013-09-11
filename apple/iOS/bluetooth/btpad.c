@@ -21,14 +21,38 @@
 #include <string.h>
 
 #include "apple/common/rarch_wrapper.h"
+#include "apple/common/hidpad/hidpad.h"
 #include "btdynamic.h"
 #include "btpad.h"
 #include "btpad_queue.h"
-#include "wiimote.h"
 
-static btpad_connection_t btpad_connection[MAX_PADS];
-static struct btpad_interface* btpad_iface[MAX_PADS];
-static void* btpad_device[MAX_PADS];
+// Private interface
+enum btpad_state { BTPAD_EMPTY, BTPAD_CONNECTING, BTPAD_CONNECTED };
+
+struct hidpad_connection
+{
+   uint32_t slot;
+
+   struct hidpad_interface* interface;
+   void* hidpad;
+
+   enum btpad_state state;
+
+   bool has_address;
+   bd_addr_t address;
+
+   uint16_t handle;
+   uint16_t channels[2]; //0: Control, 1: Interrupt
+};
+
+static struct hidpad_connection g_connected_pads[MAX_PADS];
+
+void hidpad_send_control(struct hidpad_connection* connection, uint8_t* data, size_t size)
+{
+   bt_send_l2cap_ptr(connection->channels[0], data, size);
+}
+
+
 static bool inquiry_off;
 static bool inquiry_running;
 
@@ -41,35 +65,18 @@ void btpad_set_inquiry_state(bool on)
       btpad_queue_hci_inquiry(HCI_INQUIRY_LAP, 3, 1);      
 }
 
-// MAIN THREAD ONLY
-uint32_t btpad_get_buttons(uint32_t slot)
-{
-   if (slot < MAX_PADS && btpad_device[slot] && btpad_iface[slot])
-      return btpad_iface[slot]->get_buttons(btpad_device[slot]);
-
-   return 0;
-}
-
-int16_t btpad_get_axis(uint32_t slot, unsigned axis)
-{
-   if (slot < MAX_PADS && btpad_device[slot] && btpad_iface[slot])
-      return btpad_iface[slot]->get_axis(btpad_device[slot], axis);
-
-   return 0;
-}
-
 // Internal interface:
 static int32_t btpad_find_slot_for(uint16_t handle, bd_addr_t address)
 {
    for (int i = 0; i < MAX_PADS; i ++)
    {
-      if (!btpad_connection[i].handle && !btpad_connection[i].has_address)
+      if (!g_connected_pads[i].handle && !g_connected_pads[i].has_address)
          continue;
 
-      if (handle && btpad_connection[i].handle && handle != btpad_connection[i].handle)
+      if (handle && g_connected_pads[i].handle && handle != g_connected_pads[i].handle)
          continue;
 
-      if (address && btpad_connection[i].has_address && (BD_ADDR_CMP(address, btpad_connection[i].address)))
+      if (address && g_connected_pads[i].has_address && (BD_ADDR_CMP(address, g_connected_pads[i].address)))
          continue;
 
       return i;
@@ -81,7 +88,7 @@ static int32_t btpad_find_slot_for(uint16_t handle, bd_addr_t address)
 static int32_t btpad_find_slot_with_state(enum btpad_state state)
 {
    for (int i = 0; i < MAX_PADS; i ++)
-      if (btpad_connection[i].state == state)
+      if (g_connected_pads[i].state == state)
          return i;
 
    return -1;
@@ -92,19 +99,16 @@ static void btpad_disconnect_pad(uint32_t slot)
    if (slot > MAX_PADS)
       return;
 
-   if (btpad_iface[slot] && btpad_device[slot])
+   if (g_connected_pads[slot].interface && g_connected_pads[slot].hidpad)
    {
       ios_add_log_message("BTpad: Disconnecting slot %d", slot);
-   
-      btpad_iface[slot]->disconnect(btpad_device[slot]);
-      btpad_device[slot] = 0;
-      btpad_iface[slot] = 0;
+      g_connected_pads[slot].interface->disconnect(g_connected_pads[slot].hidpad);
    }
 
-   if (btpad_connection[slot].handle)
-      btpad_queue_hci_disconnect(btpad_connection[slot].handle, 0x15);
+   if (g_connected_pads[slot].handle)
+      btpad_queue_hci_disconnect(g_connected_pads[slot].handle, 0x15);
 
-   memset(&btpad_connection[slot], 0, sizeof(btpad_connection_t));
+   memset(&g_connected_pads[slot], 0, sizeof(struct hidpad_connection));
 }
 
 static void btpad_disconnect_all_pads()
@@ -134,7 +138,7 @@ void btpad_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet
                
                btpad_queue_run(1);
             }
-            else if(packet[2] > HCI_STATE_WORKING && btpad_iface && btpad_device)
+            else if(packet[2] > HCI_STATE_WORKING)
             {
                btpad_disconnect_all_pads();
             }
@@ -171,14 +175,14 @@ void btpad_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet
                {
                   ios_add_log_message("BTpad: Inquiry found device (Slot %d)", slot);
 
-                  memcpy(btpad_connection[slot].address, event_addr, sizeof(bd_addr_t));
+                  memcpy(g_connected_pads[slot].address, event_addr, sizeof(bd_addr_t));
 
-                  btpad_connection[slot].has_address = true;
-                  btpad_connection[slot].state = BTPAD_CONNECTING;
-                  btpad_connection[slot].slot = slot;
+                  g_connected_pads[slot].has_address = true;
+                  g_connected_pads[slot].state = BTPAD_CONNECTING;
+                  g_connected_pads[slot].slot = slot;
 
-                  bt_send_cmd_ptr(l2cap_create_channel_ptr, btpad_connection[slot].address, PSM_HID_CONTROL);
-                  bt_send_cmd_ptr(l2cap_create_channel_ptr, btpad_connection[slot].address, PSM_HID_INTERRUPT);
+                  bt_send_cmd_ptr(l2cap_create_channel_ptr, g_connected_pads[slot].address, PSM_HID_CONTROL);
+                  bt_send_cmd_ptr(l2cap_create_channel_ptr, g_connected_pads[slot].address, PSM_HID_INTERRUPT);
                }
             }
          }
@@ -213,19 +217,19 @@ void btpad_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet
                }
 
                ios_add_log_message("BTpad: L2CAP channel opened: (Slot: %d, PSM: %02X)", slot, psm);
-               btpad_connection[slot].handle = handle;
+               g_connected_pads[slot].handle = handle;
             
                if (psm == PSM_HID_CONTROL)
-                  btpad_connection[slot].channels[0] = channel_id;
+                  g_connected_pads[slot].channels[0] = channel_id;
                else if (psm == PSM_HID_INTERRUPT)
-                  btpad_connection[slot].channels[1] = channel_id;
+                  g_connected_pads[slot].channels[1] = channel_id;
                else
                   ios_add_log_message("BTpad: Got unknown L2CAP PSM, ignoring (Slot: %d, PSM: %02X)", slot, psm);
 
-               if (btpad_connection[slot].channels[0] && btpad_connection[slot].channels[1])
+               if (g_connected_pads[slot].channels[0] && g_connected_pads[slot].channels[1])
                {
                   ios_add_log_message("BTpad: Got both L2CAP channels, requesting name (Slot: %d)", slot);
-                  btpad_queue_hci_remote_name_request(btpad_connection[slot].address, 0, 0, 0);
+                  btpad_queue_hci_remote_name_request(g_connected_pads[slot].address, 0, 0, 0);
                }
             }
             else
@@ -249,12 +253,12 @@ void btpad_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet
                {
                   ios_add_log_message("BTpad: Got new incoming connection (Slot: %d)", slot);
 
-                  memcpy(btpad_connection[slot].address, event_addr, sizeof(bd_addr_t));
+                  memcpy(g_connected_pads[slot].address, event_addr, sizeof(bd_addr_t));
 
-                  btpad_connection[slot].has_address = true;
-                  btpad_connection[slot].handle = handle;
-                  btpad_connection[slot].state = BTPAD_CONNECTING;
-                  btpad_connection[slot].slot = slot;
+                  g_connected_pads[slot].has_address = true;
+                  g_connected_pads[slot].handle = handle;
+                  g_connected_pads[slot].state = BTPAD_CONNECTING;
+                  g_connected_pads[slot].slot = slot;
                }
                else break;
             }
@@ -277,14 +281,14 @@ void btpad_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet
 
             ios_add_log_message("BTpad: Got %.200s (Slot: %d)", (char*)&packet[9], slot);
             if (strncmp((char*)&packet[9], "PLAYSTATION(R)3 Controller", 26) == 0)
-               btpad_iface[slot] = &btpad_ps3;
+               g_connected_pads[slot].interface = &hidpad_ps3;
             else if (strncmp((char*)&packet[9], "Nintendo RVL-CNT-01", 19) == 0)
-               btpad_iface[slot] = &btpad_wii;
+               g_connected_pads[slot].interface = &hidpad_wii;
 
-            if (btpad_iface[slot])
+            if (g_connected_pads[slot].interface)
             {
-               btpad_device[slot] = btpad_iface[slot]->connect(&btpad_connection[slot]);
-               btpad_connection[slot].state = BTPAD_CONNECTED;
+               g_connected_pads[slot].hidpad = g_connected_pads[slot].interface->connect(&g_connected_pads[slot], slot);
+               g_connected_pads[slot].state = BTPAD_CONNECTED;
             }
          }
          break;
@@ -307,7 +311,7 @@ void btpad_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet
                const int32_t slot = btpad_find_slot_for(handle, 0);
                if (slot >= 0)
                {
-                  btpad_connection[slot].handle = 0;
+                  g_connected_pads[slot].handle = 0;
                   btpad_disconnect_pad(slot);
 
                   ios_add_log_message("BTpad: Device disconnected (Slot: %d)", slot);
@@ -326,8 +330,14 @@ void btpad_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet
          break;
       }
    }
-
-   for (int i = 0; i < MAX_PADS; i ++)
-      if (btpad_device[i] && btpad_iface[i] && (btpad_connection[i].channels[0] == channel || btpad_connection[i].channels[1] == channel))
-         btpad_iface[i]->packet_handler(btpad_device[i], packet_type, channel, packet, size);
+   else if (packet_type == L2CAP_DATA_PACKET)
+   {
+      for (int i = 0; i < MAX_PADS; i ++)
+      {
+         struct hidpad_connection* connection = &g_connected_pads[i];
+   
+         if (connection->hidpad && connection->interface && (connection->channels[0] == channel || connection->channels[1] == channel))
+            connection->interface->packet_handler(connection->hidpad, packet, size);
+      }
+   }
 }

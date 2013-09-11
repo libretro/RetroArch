@@ -13,11 +13,20 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __IOS_RARCH_BTPAD_H__
-#define __IOS_RARCH_BTPAD_H__
+#ifndef __IOS_RARCH_HIDPAD_H__
+#define __IOS_RARCH_HIDPAD_H__
 
-#include "btstack/btstack.h"
+struct hidpad_connection;
+void hidpad_send_control(struct hidpad_connection* connection, uint8_t* data, size_t size);
 
-void btpad_set_inquiry_state(bool on);
+struct hidpad_interface
+{
+   void* (*connect)(struct hidpad_connection* connection, uint32_t slot);
+   void (*disconnect)(void* device);
+   void (*packet_handler)(void* device, uint8_t *packet, uint16_t size);
+};
+
+extern struct hidpad_interface hidpad_wii;
+extern struct hidpad_interface hidpad_ps3;
 
 #endif
