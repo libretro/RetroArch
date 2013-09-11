@@ -155,8 +155,8 @@ static bool winxinput_joypad_init(void)
 
    if (!g_winxinput_dll)
    {
-      RARCH_ERR("Failed to load xinput1_3.dll, ensure DirectX and controller drivers are up to date.\n");
-      return false; // DLL does not exist or is invalid
+      RARCH_ERR("Failed to load XInput, ensure DirectX and controller drivers are up to date.\n");
+      return false;
    }
 
    RARCH_LOG("Found XInput v%s.\n", version);
