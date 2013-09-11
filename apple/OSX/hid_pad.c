@@ -17,10 +17,6 @@
 #include "apple/common/apple_input.h"
 #include "apple/common/hidpad/hidpad.h"
 
-#include "apple/common/hidpad/hidpad_ps3.c"
-#include "apple/common/hidpad/hidpad_wii.c"
-#include "apple/common/hidpad/wiimote.c"
-
 struct hidpad_connection
 {
    uint32_t slot;
