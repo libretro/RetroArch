@@ -22,30 +22,29 @@
 static NSMutableArray* moduleList;
 static core_info_list_t* coreList;
 
-@implementation RAModuleInfo
-+ (NSArray*)getModules
+NSArray* apple_get_modules()
 {
    if (!moduleList)
    {   
-      coreList = get_core_info_list(apple_platform.corePath.UTF8String);
+      coreList = get_core_info_list(apple_platform.coreDirectory.UTF8String);
       
       if (!coreList)
          return nil;
-      
-      moduleList = [NSMutableArray arrayWithCapacity:coreList->count];
 
+      moduleList = [NSMutableArray arrayWithCapacity:coreList->count];
+      
       for (int i = 0; coreList && i < coreList->count; i ++)
       {
          core_info_t* core = &coreList->list[i];
       
          RAModuleInfo* newInfo = [RAModuleInfo new];
-         newInfo.path = [NSString stringWithUTF8String:core->path];
+         newInfo.path = @(core->path);
+         newInfo.baseName = newInfo.path.lastPathComponent.stringByDeletingPathExtension;
          newInfo.info = core;
          newInfo.data = core->data;
-         newInfo.description = [NSString stringWithUTF8String:core->display_name];
-
-         NSString* baseName = newInfo.path.lastPathComponent.stringByDeletingPathExtension;
-         newInfo.customConfigPath = [NSString stringWithFormat:@"%@/%@.cfg", apple_platform.retroarchConfigPath, baseName];
+         newInfo.description = @(core->display_name);
+         newInfo.customConfigFile = [NSString stringWithFormat:@"%@/%@.cfg", apple_platform.configDirectory, newInfo.baseName];
+         newInfo.configFile = newInfo.hasCustomConfig ? newInfo.customConfigFile : apple_platform.globalConfigFile;
 
          [moduleList addObject:newInfo];
       }
@@ -59,9 +58,7 @@ static core_info_list_t* coreList;
    return moduleList;
 }
 
-- (void)dealloc
-{
-}
+@implementation RAModuleInfo
 
 - (id)copyWithZone:(NSZone *)zone
 {
@@ -73,35 +70,21 @@ static core_info_list_t* coreList;
    return does_core_support_file(self.info, path.UTF8String);
 }
 
-+ (NSString*)globalConfigPath
-{
-   static NSString* path;
-   if (!path)
-      path = [NSString stringWithFormat:@"%@/retroarch.cfg", apple_platform.retroarchConfigPath];
-
-   return path;
-}
-
 - (void)createCustomConfig
 {
    if (!self.hasCustomConfig)
-      [NSFileManager.defaultManager copyItemAtPath:RAModuleInfo.globalConfigPath toPath:self.customConfigPath error:nil];
+      [NSFileManager.defaultManager copyItemAtPath:apple_platform.globalConfigFile toPath:self.customConfigFile error:nil];
 }
 
 - (void)deleteCustomConfig
 {
    if (self.hasCustomConfig)
-      [NSFileManager.defaultManager removeItemAtPath:self.customConfigPath error:nil];
+      [NSFileManager.defaultManager removeItemAtPath:self.customConfigFile error:nil];
 }
 
 - (bool)hasCustomConfig
 {
-   return path_file_exists(self.customConfigPath.UTF8String);
-}
-
-- (NSString*)configPath
-{
-   return self.hasCustomConfig ? self.customConfigPath : RAModuleInfo.globalConfigPath;
+   return path_file_exists(self.customConfigFile.UTF8String);
 }
 
 @end
@@ -148,7 +131,7 @@ static NSString* build_string_pair(NSString* stringA, NSString* stringB)
       for (int i = 0; i < firmwareCount; i ++)
       {
          NSString* path = objc_get_value_from_config(_data.data, [NSString stringWithFormat:@"firmware%d_path", i + 1], @"Unspecified");
-         path = [path stringByReplacingOccurrencesOfString:@"%sysdir%" withString:RetroArch_iOS.get.systemDirectory];      
+         path = [path stringByReplacingOccurrencesOfString:@"%sysdir%" withString:[RetroArch_iOS get].systemDirectory];
          [firmwareSection addObject:build_string_pair(objc_get_value_from_config(_data.data, [NSString stringWithFormat:@"firmware%d_desc", i + 1], @"Unspecified"), path)];
       }
 

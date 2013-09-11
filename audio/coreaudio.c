@@ -22,6 +22,10 @@
 #include "../boolean.h"
 #include <pthread.h>
 
+#ifdef OSX
+#include <CoreAudio/CoreAudio.h>
+#endif
+
 #include <CoreAudio/CoreAudioTypes.h>
 #include <AudioUnit/AudioUnit.h>
 #include <AudioUnit/AUComponent.h>
@@ -93,6 +97,48 @@ static OSStatus audio_write_cb(void *userdata, AudioUnitRenderActionFlags *actio
    return noErr;
 }
 
+#ifdef OSX
+static void choose_output_device(coreaudio_t *dev, const char* device)
+{
+   AudioObjectPropertyAddress propaddr =
+   { 
+      kAudioHardwarePropertyDevices, 
+      kAudioObjectPropertyScopeGlobal, 
+      kAudioObjectPropertyElementMaster 
+   };
+
+   UInt32 size = 0;
+
+   if (AudioObjectGetPropertyDataSize(kAudioObjectSystemObject, &propaddr, 0, 0, &size) != noErr)
+      return;
+
+   UInt32 deviceCount = size / sizeof(AudioDeviceID);
+   AudioDeviceID *devices = malloc(size);
+
+   if (!devices || AudioObjectGetPropertyData(kAudioObjectSystemObject, &propaddr, 0, 0, &size, devices) != noErr)
+      goto done;
+
+   propaddr.mScope = kAudioDevicePropertyScopeOutput;
+   propaddr.mSelector = kAudioDevicePropertyDeviceName;
+   size = 1024;
+
+   for (unsigned i = 0; i < deviceCount; i ++)
+   {
+      char device_name[1024];
+      device_name[0] = 0;
+
+      if (AudioObjectGetPropertyData(devices[i], &propaddr, 0, 0, &size, device_name) == noErr && strcmp(device_name, device) == 0)
+      {
+         AudioUnitSetProperty(dev->dev, kAudioOutputUnitProperty_CurrentDevice, kAudioUnitScope_Global, 0, &devices[i], sizeof(AudioDeviceID));
+         goto done;
+      }
+   }
+
+done:
+   free(devices);
+}
+#endif
+
 static void *coreaudio_init(const char *device, unsigned rate, unsigned latency)
 {
    (void)device;
@@ -120,6 +166,11 @@ static void *coreaudio_init(const char *device, unsigned rate, unsigned latency)
    
    if (AudioComponentInstanceNew(comp, &dev->dev) != noErr)
       goto error;
+
+#ifdef OSX
+   if (device)
+      choose_output_device(dev, device);
+#endif
 
    dev->dev_alive = true;
 

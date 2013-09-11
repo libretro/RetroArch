@@ -115,6 +115,8 @@ static void *sl_init(const char *device, unsigned rate, unsigned latency)
    if (!sl)
       goto error;
 
+   RARCH_LOG("[SLES]: Requested audio latency: %d ms.", latency);
+
    GOTO_IF_FAIL(slCreateEngine(&sl->engine_object, 0, NULL, 0, NULL, NULL));
    GOTO_IF_FAIL(SLObjectItf_Realize(sl->engine_object, SL_BOOLEAN_FALSE));
    GOTO_IF_FAIL(SLObjectItf_GetInterface(sl->engine_object, SL_IID_ENGINE, &sl->engine));
@@ -122,7 +124,11 @@ static void *sl_init(const char *device, unsigned rate, unsigned latency)
    GOTO_IF_FAIL(SLEngineItf_CreateOutputMix(sl->engine, &sl->output_mix, 0, NULL, NULL));
    GOTO_IF_FAIL(SLObjectItf_Realize(sl->output_mix, SL_BOOLEAN_FALSE));
 
-   sl->buf_size = next_pow2(32 * latency);
+   if (g_settings.audio.block_frames)
+      sl->buf_size = g_settings.audio.block_frames * 4;
+   else
+      sl->buf_size = next_pow2(32 * latency);
+
    sl->buf_count = (latency * 4 * out_rate + 500) / 1000;
    sl->buf_count = (sl->buf_count + sl->buf_size / 2) / sl->buf_size;
 
@@ -137,7 +143,7 @@ static void *sl_init(const char *device, unsigned rate, unsigned latency)
    for (unsigned i = 0; i < sl->buf_count; i++)
       sl->buffer[i] = sl->buffer_chunk + i * sl->buf_size;
 
-   RARCH_LOG("[SLES] : Setting audio latency: Block size = %u, Blocks = %u, Total = %u ...\n",
+   RARCH_LOG("[SLES]: Setting audio latency: Block size = %u, Blocks = %u, Total = %u ...\n",
          sl->buf_size, sl->buf_count, sl->buf_size * sl->buf_count);
 
    fmt_pcm.formatType    = SL_DATAFORMAT_PCM;

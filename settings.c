@@ -67,6 +67,8 @@ const char *config_get_default_audio(void)
          return "ps3";
       case AUDIO_WII:
          return "gx";
+      case AUDIO_RWEBAUDIO:
+         return "rwebaudio";
       case AUDIO_NULL:
          return "null";
       default:
@@ -137,6 +139,8 @@ const char *config_get_default_input(void)
          return "apple_input";
       case INPUT_QNX:
       	 return "qnx_input";
+      case INPUT_RWEBINPUT:
+      	 return "rwebinput";
       case INPUT_NULL:
          return "null";
       default:
@@ -168,6 +172,8 @@ void config_set_defaults(void)
    g_settings.video.vsync = vsync;
    g_settings.video.hard_sync = hard_sync;
    g_settings.video.hard_sync_frames = hard_sync_frames;
+   g_settings.video.black_frame_insertion = black_frame_insertion;
+   g_settings.video.swap_interval = swap_interval;
    g_settings.video.threaded = video_threaded;
    g_settings.video.smooth = video_smooth;
    g_settings.video.force_aspect = force_aspect;
@@ -196,6 +202,7 @@ void config_set_defaults(void)
 
    g_settings.audio.enable = audio_enable;
    g_settings.audio.out_rate = out_rate;
+   g_settings.audio.block_frames = 0;
    g_settings.audio.in_rate = out_rate;
    if (audio_device)
       strlcpy(g_settings.audio.device, audio_device, sizeof(g_settings.audio.device));
@@ -490,6 +497,10 @@ bool config_load_file(const char *path)
    if (g_settings.video.hard_sync_frames > 3)
       g_settings.video.hard_sync_frames = 3;
 
+   CONFIG_GET_BOOL(video.black_frame_insertion, "video_black_frame_insertion");
+   CONFIG_GET_INT(video.swap_interval, "video_swap_interval");
+   g_settings.video.swap_interval = max(g_settings.video.swap_interval, 1);
+   g_settings.video.swap_interval = min(g_settings.video.swap_interval, 4);
    CONFIG_GET_BOOL(video.threaded, "video_threaded");
    CONFIG_GET_BOOL(video.smooth, "video_smooth");
    CONFIG_GET_BOOL(video.force_aspect, "video_force_aspect");
@@ -628,6 +639,7 @@ bool config_load_file(const char *path)
    // Audio settings.
    CONFIG_GET_BOOL(audio.enable, "audio_enable");
    CONFIG_GET_INT(audio.out_rate, "audio_out_rate");
+   CONFIG_GET_INT(audio.block_frames, "audio_block_frames");
    CONFIG_GET_STRING(audio.device, "audio_device");
    CONFIG_GET_INT(audio.latency, "audio_latency");
    CONFIG_GET_BOOL(audio.sync, "audio_sync");
@@ -968,12 +980,17 @@ bool config_save_file(const char *path)
    config_set_string(conf, "video_shader", g_settings.video.shader_path);
    config_set_bool(conf, "video_shader_enable", g_settings.video.shader_enable);
    config_set_float(conf, "video_aspect_ratio", g_settings.video.aspect_ratio);
+   config_set_float(conf, "video_xscale", g_settings.video.xscale);
+   config_set_float(conf, "video_yscale", g_settings.video.yscale);
+   config_set_bool(conf, "video_crop_overscan", g_settings.video.crop_overscan);
    config_set_bool(conf, "video_scale_integer", g_settings.video.scale_integer);
    config_set_bool(conf, "video_smooth", g_settings.video.smooth);
    config_set_float(conf, "video_refresh_rate", g_settings.video.refresh_rate);
    config_set_bool(conf, "video_vsync", g_settings.video.vsync);
    config_set_bool(conf, "video_hard_sync", g_settings.video.hard_sync);
    config_set_int(conf, "video_hard_sync_frames", g_settings.video.hard_sync_frames);
+   config_set_bool(conf, "video_black_frame_insertion", g_settings.video.black_frame_insertion);
+   config_set_int(conf, "video_swap_interval", g_settings.video.swap_interval);
    config_set_int(conf, "aspect_ratio_index", g_settings.video.aspect_ratio_idx);
    config_set_string(conf, "audio_device", g_settings.audio.device);
    config_set_bool(conf, "audio_rate_control", g_settings.audio.rate_control);
@@ -1080,6 +1097,8 @@ bool config_save_file(const char *path)
       config_set_int(conf, cfg, g_settings.input.dpad_emulation[i]);
       snprintf(cfg, sizeof(cfg), "input_device_p%u", i + 1);
       config_set_int(conf, cfg, g_settings.input.device[i]);
+      snprintf(cfg, sizeof(cfg), "input_player%u_joypad_index", i + 1);
+      config_set_int(conf, cfg, g_settings.input.joypad_map[i]);
    }
 
    config_file_write(conf, path);  

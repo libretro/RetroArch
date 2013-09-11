@@ -18,15 +18,7 @@
 
 #import "RetroArch_Apple.h"
 #include "rarch_wrapper.h"
-#include "../RetroArch/apple_input.h"
-
-// If USE_XATTR is defined any loaded file will get a com.RetroArch.Core extended attribute
-// specifying which core was used to load.
-//#define USE_XATTR
-
-#if defined(USE_XATTR)
-#include "sys/xattr.h"
-#endif
+#include "apple/common/apple_input.h"
 
 #include "file.h"
 
@@ -66,6 +58,11 @@
    apple_platform = self;
    _loaded = true;
 
+   NSArray* paths = NSSearchPathForDirectoriesInDomains(NSApplicationSupportDirectory, NSUserDomainMask, YES);
+   self.configDirectory = [paths[0] stringByAppendingPathComponent:@"RetroArch"];
+   self.globalConfigFile = [NSString stringWithFormat:@"%@/retroarch.cfg", self.configDirectory];
+   self.coreDirectory = [NSBundle.mainBundle.bundlePath stringByAppendingPathComponent:@"Contents/Resources/modules"];
+
    [window setCollectionBehavior:NSWindowCollectionBehaviorFullScreenPrimary];
    
    RAGameView.get.frame = [window.contentView bounds];
@@ -76,16 +73,16 @@
    // Create core select list
    NSComboBox* cb = (NSComboBox*)[_coreSelectSheet.contentView viewWithTag:1];
    
-   for (RAModuleInfo* i in RAModuleInfo.getModules)
+   for (RAModuleInfo* i in apple_get_modules())
       [cb addItemWithObjectValue:i];
 
    if (cb.numberOfItems)
       [cb selectItemAtIndex:0];
    else
-      apple_display_alert(@"No libretro cores were found.", @"RetroArch");
+      apple_display_alert(@"No libretro cores were found.\nSelect \"Go->Cores Directory\" from the menu and place libretro dylib files there.", @"RetroArch");
 
    // Run RGUI if needed
-   if (!_wantReload)
+   if (!_wantReload || apple_argv)
       apple_run_core(nil, 0);
    else
       [self chooseCore];
@@ -162,23 +159,6 @@
 
 - (void)chooseCore
 {
-#ifdef USE_XATTR
-   char stored_name[PATH_MAX];
-   if (getxattr(_file.UTF8String, "com.RetroArch.Core", stored_name, PATH_MAX, 0, 0) > 0)
-   {
-      for (RAModuleInfo* i in RAModuleInfo.getModules)
-      {
-         const char* core_name = i.path.lastPathComponent.UTF8String;
-         if (strcmp(core_name, stored_name) == 0)
-         {
-            _core = i;
-            [self runCore];
-            return;
-         }
-      }
-   }
-#endif
-
    [NSApplication.sharedApplication beginSheet:_coreSelectSheet modalForWindow:window modalDelegate:nil didEndSelector:nil contextInfo:nil];
    [NSApplication.sharedApplication runModalForWindow:_coreSelectSheet];
 }
@@ -202,14 +182,7 @@
 - (void)loadingCore:(RAModuleInfo*)core withFile:(const char*)file
 {
    if (file)
-   {
-      [NSDocumentController.sharedDocumentController noteNewRecentDocumentURL:[NSURL fileURLWithPath:[NSString stringWithUTF8String:file]]];
-      
-#ifdef USE_XATTR
-      const char* core_name = core.path.lastPathComponent.UTF8String;
-      setxattr(file, "com.RetroArch.Core", core_name, strlen(core_name) + 1, 0, 0);
-#endif
-   }
+      [NSDocumentController.sharedDocumentController noteNewRecentDocumentURL:[NSURL fileURLWithPath:@(file)]];
 }
 
 - (void)unloadingCore:(RAModuleInfo*)core
@@ -227,21 +200,16 @@
    _wantReload = false;
 }
 
-- (NSString*)retroarchConfigPath
-{
-   NSArray* paths = NSSearchPathForDirectoriesInDomains(NSApplicationSupportDirectory, NSUserDomainMask, YES);
-   return [paths[0] stringByAppendingPathComponent:@"RetroArch"];
-}
-
-- (NSString*)corePath
-{
-   return [NSBundle.mainBundle.bundlePath stringByAppendingPathComponent:@"Contents/Resources/modules"];
-}
-
 #pragma mark Menus
+- (IBAction)showCoresDirectory:(id)sender
+{
+   [[NSWorkspace sharedWorkspace] openFile:self.coreDirectory];
+}
+
 - (IBAction)showPreferences:(id)sender
 {
-   [[[NSWindowController alloc] initWithWindowNibName:@"Settings"] window];
+   NSWindowController* wc = [[NSWindowController alloc] initWithWindowNibName:@"Settings"];
+   [NSApp runModalForWindow:wc.window];
 }
 
 - (IBAction)basicEvent:(id)sender
@@ -259,6 +227,23 @@
 
 int main(int argc, char *argv[])
 {
+   uint32_t current_argc = 0;
+
+   for (int i = 0; i != argc; i ++)
+   {
+      if (strcmp(argv[i], "--") == 0)
+      {
+         current_argc = 1;
+         apple_argv = malloc(sizeof(char*) * (argc + 1));
+         memset(apple_argv, 0, sizeof(char*) * (argc + 1));
+         apple_argv[0] = argv[0];
+      }
+      else if (current_argc)
+      {
+         apple_argv[current_argc ++] = argv[i];
+      }
+   }
+
    return NSApplicationMain(argc, (const char **) argv);
 }
 

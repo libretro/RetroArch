@@ -23,7 +23,7 @@
 
 #include "file.h"
 
-//#define HAVE_DEBUG_FILELOG
+char** apple_argv;
 
 id<RetroArch_Platform> apple_platform;
 
@@ -71,8 +71,6 @@ pthread_mutex_t stasis_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 static void event_stasis(void* userdata)
 {
-   // HACK: uninit_drivers is the nuclear option; uninit_audio would be better but will
-   //       crash when resuming.
    uninit_drivers();
    pthread_mutex_lock(&stasis_mutex);
    pthread_mutex_unlock(&stasis_mutex);
@@ -88,8 +86,14 @@ void apple_enter_stasis()
    }
 }
 
-void apple_exit_stasis()
+void apple_exit_stasis(bool reload_config)
 {
+   if (reload_config)
+   {
+      objc_clear_config_hack();
+      config_load();
+   }
+
    if (apple_is_running)
       pthread_mutex_unlock(&stasis_mutex);
 }
@@ -125,36 +129,37 @@ void apple_run_core(RAModuleInfo* core, const char* file)
 
       apple_core = core;
       apple_is_running = true;
-      
+
       static char config_path[PATH_MAX];
       static char core_path[PATH_MAX];
       static char file_path[PATH_MAX];
-      
-      static const char* argv[] = { "retroarch", "-c", config_path, "-L", core_path, file_path, 0 };
 
-      if (apple_core)
-         strlcpy(config_path, apple_core.configPath.UTF8String, sizeof(config_path));
-      else
-         strlcpy(config_path, RAModuleInfo.globalConfigPath.UTF8String, sizeof(config_path));
+      if (!apple_argv)
+      {
+         NSString* config_to_use = apple_core ? apple_core.configFile : apple_platform.globalConfigFile;
+         strlcpy(config_path, config_to_use.UTF8String, sizeof(config_path));
+
+         static const char* const argv_game[] = { "retroarch", "-c", config_path, "-L", core_path, file_path, 0 };
+         static const char* const argv_menu[] = { "retroarch", "-c", config_path, "--menu", 0 };
    
-      if (file && core)
-      {
-         argv[3] = "-L";
-         argv[4] = core_path;
-         strlcpy(core_path, apple_core.path.UTF8String, sizeof(core_path));
-         strlcpy(file_path, file, sizeof(file_path));
-      }
-      else
-      {
-         argv[3] = "--menu";
-         argv[4] = 0;
+         if (file && core)
+         {
+            strlcpy(core_path, apple_core.path.UTF8String, sizeof(core_path));
+            strlcpy(file_path, file, sizeof(file_path));
+         }
+         
+         apple_argv = (char**)((file && core) ? argv_game : argv_menu);
       }
       
-      if (pthread_create(&apple_retro_thread, 0, rarch_main_spring, argv))
+      if (pthread_create(&apple_retro_thread, 0, rarch_main_spring, apple_argv))
       {
+         apple_argv = 0;      
+      
          apple_rarch_exited((void*)1);
          return;
       }
+      
+      apple_argv = 0;
       
       pthread_detach(apple_retro_thread);
    }

@@ -13,13 +13,13 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#import "../RetroArch/RetroArch_Apple.h"
+#import "apple/common/RetroArch_Apple.h"
 #import "views.h"
 
-#include "../RetroArch/apple_input.h"
-#include "../RetroArch/keycode.h"
-#include "input/BTStack/btdynamic.h"
-#include "input/BTStack/btpad.h"
+#include "apple/common/apple_input.h"
+#include "apple/common/keycode.h"
+#include "bluetooth/btdynamic.h"
+#include "bluetooth/btpad.h"
 
 enum SettingTypes
 {
@@ -275,7 +275,7 @@ static NSArray* build_input_port_group(config_file_t* config, uint32_t player)
 - (id)initWithModule:(RAModuleInfo*)module
 {
    _module = module;
-   _configPath = _module ? _module.configPath : RAModuleInfo.globalConfigPath;
+   _configPath = _module ? _module.configFile : apple_platform.globalConfigFile;
 
    config_file_t* config = config_file_new([_configPath UTF8String]);
 
@@ -308,7 +308,7 @@ static NSArray* build_input_port_group(config_file_t* config, uint32_t player)
 
       [NSArray arrayWithObjects:@"Input",
          subpath_setting(config, @"input_overlay", @"Input Overlay", @"", overlay_path, @"cfg"),
-         range_setting(config, @"overlay_opacity", @"Overlay Opacity", @"1.0", 0.0, 1.0),
+         range_setting(config, @"input_overlay_opacity", @"Overlay Opacity", @"1.0", 0.0, 1.0),
          group_setting(@"System Keys", [NSArray arrayWithObjects:
             // TODO: Many of these strings will be cut off on an iPhone
             [NSArray arrayWithObjects:@"System Keys",
@@ -408,7 +408,7 @@ static void bluetooth_option_changed(RASettingData* setting)
    [modules addObject:@"Cores"];
    [modules addObject:custom_action(@"Global Core Config", nil, nil, 0)];
 
-   NSArray* moduleList = [RAModuleInfo getModules];
+   NSArray* moduleList = apple_get_modules();
    for (RAModuleInfo* i in moduleList)
    {
       [modules addObject:custom_action(i.description, nil, i, reload_core_config_state)];
@@ -840,97 +840,18 @@ static void bluetooth_option_changed(RASettingData* setting)
 
 - (void)checkInput
 {
-   // Keyboard
-   static const struct
-   {
-      const char* const keyname;
-      const uint32_t hid_id;
-   } ios_key_name_map[] = {
-      { "left", KEY_Left },               { "right", KEY_Right },
-      { "up", KEY_Up },                   { "down", KEY_Down },
-      { "enter", KEY_Enter },             { "kp_enter", KP_Enter },
-      { "space", KEY_Space },             { "tab", KEY_Tab },
-      { "shift", KEY_LeftShift },         { "rshift", KEY_RightShift },
-      { "ctrl", KEY_LeftControl },        { "alt", KEY_LeftAlt },
-      { "escape", KEY_Escape },           { "backspace", KEY_DeleteForward },
-      { "backquote", KEY_Grave },         { "pause", KEY_Pause },
+   int32_t value = 0;
 
-      { "f1", KEY_F1 },                   { "f2", KEY_F2 },
-      { "f3", KEY_F3 },                   { "f4", KEY_F4 },
-      { "f5", KEY_F5 },                   { "f6", KEY_F6 },
-      { "f7", KEY_F7 },                   { "f8", KEY_F8 },
-      { "f9", KEY_F9 },                   { "f10", KEY_F10 },
-      { "f11", KEY_F11 },                 { "f12", KEY_F12 },
-
-      { "num0", KEY_0 },                  { "num1", KEY_1 },
-      { "num2", KEY_2 },                  { "num3", KEY_3 },
-      { "num4", KEY_4 },                  { "num5", KEY_5 },
-      { "num6", KEY_6 },                  { "num7", KEY_7 },
-      { "num8", KEY_8 },                  { "num9", KEY_9 },
+   if ((value = apple_input_find_any_key()))
+      _value->value = @(apple_keycode_hidusage_to_name(value));
+   else if ((value = apple_input_find_any_button(0)) >= 0)
+      _value->button_bind = [NSString stringWithFormat:@"%d", value];
+   else if ((value = apple_input_find_any_axis(0)))
+      _value->axis_bind = [NSString stringWithFormat:@"%s%d", (value > 0) ? "+" : "-", value - 1];
+   else
+      return;
    
-      { "insert", KEY_Insert },           { "del", KEY_DeleteForward },
-      { "home", KEY_Home },               { "end", KEY_End },
-      { "pageup", KEY_PageUp },           { "pagedown", KEY_PageDown },
-   
-      { "add", KP_Add },                  { "subtract", KP_Subtract },
-      { "multiply", KP_Multiply },        { "divide", KP_Divide },
-      { "keypad0", KP_0 },                { "keypad1", KP_1 },
-      { "keypad2", KP_2 },                { "keypad3", KP_3 },
-      { "keypad4", KP_4 },                { "keypad5", KP_5 },
-      { "keypad6", KP_6 },                { "keypad7", KP_7 },
-      { "keypad8", KP_8 },                { "keypad9", KP_9 },
-   
-      { "period", KEY_Period },           { "capslock", KEY_CapsLock },
-      { "numlock", KP_NumLock },          { "print_screen", KEY_PrintScreen },
-      { "scroll_lock", KEY_ScrollLock },
-   
-      { "a", KEY_A }, { "b", KEY_B }, { "c", KEY_C }, { "d", KEY_D },
-      { "e", KEY_E }, { "f", KEY_F }, { "g", KEY_G }, { "h", KEY_H },
-      { "i", KEY_I }, { "j", KEY_J }, { "k", KEY_K }, { "l", KEY_L },
-      { "m", KEY_M }, { "n", KEY_N }, { "o", KEY_O }, { "p", KEY_P },
-      { "q", KEY_Q }, { "r", KEY_R }, { "s", KEY_S }, { "t", KEY_T },
-      { "u", KEY_U }, { "v", KEY_V }, { "w", KEY_W }, { "x", KEY_X },
-      { "y", KEY_Y }, { "z", KEY_Z },
-
-      { "nul", 0x00},
-   };
-   
-   for (int i = 0; ios_key_name_map[i].hid_id; i++)
-   {
-      if (g_current_input_data.keys[ios_key_name_map[i].hid_id])
-      {
-         _value->value = [NSString stringWithUTF8String:ios_key_name_map[i].keyname];
-         [self finish];
-         return;
-      }
-   }
-
-   // Pad Buttons
-   uint32_t buttons = g_current_input_data.pad_buttons[_value->player] |
-                      ((_value->player == 0) ? apple_input_get_icade_buttons() : 0);
-   
-   for (int i = 0; buttons && i < sizeof(buttons) * 8; i++)
-   {
-      if (buttons & (1 << i))
-      {
-         _value->button_bind = [NSString stringWithFormat:@"%d", i];
-         [self finish];
-         return;
-      }
-   }
-
-   // Pad Axis
-   for (int i = 0; i < 4; i++)
-   {
-      int16_t value = g_current_input_data.pad_axis[_value->player][i];
-      
-      if (abs(value) > 0x1000)
-      {
-         _value->axis_bind = [NSString stringWithFormat:@"%s%d", (value > 0x1000) ? "+" : "-", i];
-         [self finish];
-         break;
-      }
-   }
+   [self finish];
 }
 
 @end

@@ -1,6 +1,6 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="org.retroarch"
-    android:versionCode="23"
+    android:versionCode="24"
     android:versionName="0.9.9.6" >
 	<uses-feature android:glEsVersion="0x00020000" />
     <uses-feature android:name="android.hardware.touchscreen" android:required="false"/>
@@ -29,6 +29,7 @@
         <activity android:name=".browser.LazyPopupMenu"></activity>
         <activity android:name=".browser.PopupMenuAbstract"></activity>
         <activity android:name=".browser.ReportIME"></activity>
+        <activity android:name=".browser.IMEActivity"></activity>
         <activity android:name=".browser.HelpActivity"></activity>
         <activity android:name=".browser.FileWrapper"></activity>
         <activity android:name=".browser.DirectoryActivity"></activity>

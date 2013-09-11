@@ -14,14 +14,44 @@
  */
 
 #include <IOKit/hid/IOHIDManager.h>
-#include "../RetroArch/apple_input.h"
+#include "apple/common/apple_input.h"
 
 // NOTE: I pieced this together through trial and error, any corrections are welcome
 
 static IOHIDManagerRef g_hid_manager;
-static uint32_t g_num_pads;
+static uint32_t g_pad_slots;
 
-static void hid_input_callback(void* inContext, IOReturn inResult, void* inSender, IOHIDValueRef inIOHIDValueRef)
+#define HID_ISSET(t, x)  (t  &  (1 << x))
+#define HID_SET(t, x)   { t |=  (1 << x); }
+#define HID_CLEAR(t, x) { t &= ~(1 << x); }
+
+// Set the LEDs on PS3 controllers, if slot >= MAX_PADS the LEDs will be cleared
+static void osx_pad_set_leds(IOHIDDeviceRef device, uint32_t slot)
+{
+   char buffer[1024];
+
+   CFStringRef device_name = IOHIDDeviceGetProperty(device, CFSTR(kIOHIDProductKey));
+   if (device_name)
+   {
+      CFStringGetCString(device_name, buffer, 1024, kCFStringEncodingUTF8);
+
+      if (strncmp(buffer, "PLAYSTATION(R)3 Controller", 1024) == 0)
+      {
+         static uint8_t report_buffer[] = {
+            0x01,
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xff, 0x27,
+            0x10, 0x00, 0x32, 0xff, 0x27, 0x10, 0x00, 0x32, 0xff, 0x27, 0x10, 0x00,
+            0x32, 0xff, 0x27, 0x10, 0x00, 0x32, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+         };
+         report_buffer[10] = (slot >= MAX_PADS) ? 0 : (1 << (slot + 1));
+      
+         IOHIDDeviceSetReport(device, kIOHIDReportTypeOutput, 0x01, report_buffer, sizeof(report_buffer));
+      }
+   }
+}
+
+static void hid_device_input_callback(void* inContext, IOReturn inResult, void* inSender, IOHIDValueRef inIOHIDValueRef)
 {
    IOHIDElementRef element = IOHIDValueGetElement(inIOHIDValueRef);
    IOHIDDeviceRef device = IOHIDElementGetDevice(element);
@@ -82,25 +112,49 @@ static void hid_input_callback(void* inContext, IOReturn inResult, void* inSende
    }
 }
 
-static void hid_device_attached(void* inContext, IOReturn inResult, void* inSender, IOHIDDeviceRef inDevice)
+static void hid_device_removed(void* inContext, IOReturn inResult, void* inSender)
 {
-   void* context = 0;
+   IOHIDDeviceRef inDevice = (IOHIDDeviceRef)inSender;
 
    if (IOHIDDeviceConformsTo(inDevice, kHIDPage_GenericDesktop, kHIDUsage_GD_Joystick))
    {
-      if (g_num_pads > 4)
-         return;
-      context = (void*)(g_num_pads++);
+      uint32_t pad_index = (uint32_t)inContext;
+
+      if (pad_index < MAX_PADS)
+      {
+         HID_CLEAR(g_pad_slots, pad_index);
+
+         g_current_input_data.pad_buttons[pad_index] = 0;
+         memset(g_current_input_data.pad_axis[pad_index], 0, sizeof(g_current_input_data.pad_axis));
+      }
    }
 
-   IOHIDDeviceOpen(inDevice, kIOHIDOptionsTypeNone);
-   IOHIDDeviceScheduleWithRunLoop(inDevice, CFRunLoopGetCurrent(), kCFRunLoopDefaultMode);
-   IOHIDDeviceRegisterInputValueCallback(inDevice, hid_input_callback, context);
+   osx_pad_set_leds(inDevice, MAX_PADS);
+   IOHIDDeviceClose(inDevice, kIOHIDOptionsTypeNone);
 }
 
-static void hid_device_removed(void* inContext, IOReturn inResult, void* inSender, IOHIDDeviceRef inDevice)
+static void hid_manager_device_attached(void* inContext, IOReturn inResult, void* inSender, IOHIDDeviceRef inDevice)
 {
-   IOHIDDeviceClose(inDevice, kIOHIDOptionsTypeNone);
+   uint32_t pad_index = 0;
+   if (IOHIDDeviceConformsTo(inDevice, kHIDPage_GenericDesktop, kHIDUsage_GD_Joystick))
+   {
+      if ((g_pad_slots & 0xF) == 0xF)
+         return;
+      
+      for (pad_index = 0; pad_index != MAX_PADS; pad_index ++)
+         if (!HID_ISSET(g_pad_slots, pad_index))
+         {
+            HID_SET(g_pad_slots, pad_index);
+            break;
+         }
+   }
+   
+   IOHIDDeviceOpen(inDevice, kIOHIDOptionsTypeNone);
+   IOHIDDeviceScheduleWithRunLoop(inDevice, CFRunLoopGetCurrent(), kCFRunLoopCommonModes);
+   IOHIDDeviceRegisterInputValueCallback(inDevice, hid_device_input_callback, (void*)pad_index);
+   IOHIDDeviceRegisterRemovalCallback(inDevice, hid_device_removed, (void*)pad_index);
+
+   osx_pad_set_leds(inDevice, pad_index);
 }
 
 static CFMutableDictionaryRef build_matching_dictionary(uint32_t page, uint32_t use)
@@ -137,9 +191,8 @@ void osx_pad_init()
       IOHIDManagerSetDeviceMatchingMultiple(g_hid_manager, matcher);
       CFRelease(matcher);
 
-      IOHIDManagerRegisterDeviceMatchingCallback(g_hid_manager, hid_device_attached, 0);
-      IOHIDManagerRegisterDeviceRemovalCallback(g_hid_manager, hid_device_removed, 0);
-      IOHIDManagerScheduleWithRunLoop(g_hid_manager, CFRunLoopGetCurrent(), kCFRunLoopDefaultMode);
+      IOHIDManagerRegisterDeviceMatchingCallback(g_hid_manager, hid_manager_device_attached, 0);
+      IOHIDManagerScheduleWithRunLoop(g_hid_manager, CFRunLoopGetMain(), kCFRunLoopCommonModes);
 
       IOHIDManagerOpen(g_hid_manager, kIOHIDOptionsTypeNone);
    }
@@ -150,7 +203,7 @@ void osx_pad_quit()
    if (g_hid_manager)
    {
       IOHIDManagerClose(g_hid_manager, kIOHIDOptionsTypeNone);
-      IOHIDManagerUnscheduleFromRunLoop(g_hid_manager, CFRunLoopGetCurrent(), kCFRunLoopDefaultMode);
+      IOHIDManagerUnscheduleFromRunLoop(g_hid_manager, CFRunLoopGetCurrent(), kCFRunLoopCommonModes);
       
       CFRelease(g_hid_manager);
    }

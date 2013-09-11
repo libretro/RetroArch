@@ -16,6 +16,7 @@
 #include "input_common.h"
 #include <string.h>
 #include <stdlib.h>
+#include <ctype.h>
 
 #include "../general.h"
 #include "../driver.h"
@@ -41,6 +42,9 @@
 
 static const rarch_joypad_driver_t *joypad_drivers[] = {
 #ifndef IS_RETROLAUNCH
+#ifdef HAVE_WINXINPUT
+   &winxinput_joypad,
+#endif
 #ifdef HAVE_DINPUT
    &dinput_joypad,
 #endif
@@ -512,6 +516,96 @@ const struct rarch_key_map rarch_key_map_dinput[] = {
 };
 #endif
 
+#ifdef EMSCRIPTEN
+const struct rarch_key_map rarch_key_map_rwebinput[] = {
+   { 37, RETROK_LEFT },
+   { 39, RETROK_RIGHT },
+   { 38, RETROK_UP },
+   { 40, RETROK_DOWN },
+   { 13, RETROK_RETURN },
+   { 9, RETROK_TAB },
+   { 45, RETROK_INSERT },
+   { 46, RETROK_DELETE },
+   { 16, RETROK_RSHIFT },
+   { 16, RETROK_LSHIFT },
+   { 17, RETROK_LCTRL },
+   { 35, RETROK_END },
+   { 36, RETROK_HOME },
+   { 34, RETROK_PAGEDOWN },
+   { 33, RETROK_PAGEUP },
+   { 18, RETROK_LALT },
+   { 32, RETROK_SPACE },
+   { 27, RETROK_ESCAPE },
+   { 8, RETROK_BACKSPACE },
+   { 13, RETROK_KP_ENTER },
+   { 107, RETROK_KP_PLUS },
+   { 109, RETROK_KP_MINUS },
+   { 106, RETROK_KP_MULTIPLY },
+   { 111, RETROK_KP_DIVIDE },
+   { 192, RETROK_BACKQUOTE },
+   { 19, RETROK_PAUSE },
+   { 96, RETROK_KP0 },
+   { 97, RETROK_KP1 },
+   { 98, RETROK_KP2 },
+   { 99, RETROK_KP3 },
+   { 100, RETROK_KP4 },
+   { 101, RETROK_KP5 },
+   { 102, RETROK_KP6 },
+   { 103, RETROK_KP7 },
+   { 104, RETROK_KP8 },
+   { 105, RETROK_KP9 },
+   { 48, RETROK_0 },
+   { 49, RETROK_1 },
+   { 50, RETROK_2 },
+   { 51, RETROK_3 },
+   { 52, RETROK_4 },
+   { 53, RETROK_5 },
+   { 54, RETROK_6 },
+   { 55, RETROK_7 },
+   { 56, RETROK_8 },
+   { 57, RETROK_9 },
+   { 112, RETROK_F1 },
+   { 113, RETROK_F2 },
+   { 114, RETROK_F3 },
+   { 115, RETROK_F4 },
+   { 116, RETROK_F5 },
+   { 117, RETROK_F6 },
+   { 118, RETROK_F7 },
+   { 119, RETROK_F8 },
+   { 120, RETROK_F9 },
+   { 121, RETROK_F10 },
+   { 122, RETROK_F11 },
+   { 123, RETROK_F12 },
+   { 65, RETROK_a },
+   { 66, RETROK_b },
+   { 67, RETROK_c },
+   { 68, RETROK_d },
+   { 69, RETROK_e },
+   { 70, RETROK_f },
+   { 71, RETROK_g },
+   { 72, RETROK_h },
+   { 73, RETROK_i },
+   { 74, RETROK_j },
+   { 75, RETROK_k },
+   { 76, RETROK_l },
+   { 77, RETROK_m },
+   { 78, RETROK_n },
+   { 79, RETROK_o },
+   { 80, RETROK_p },
+   { 81, RETROK_q },
+   { 82, RETROK_r },
+   { 83, RETROK_s },
+   { 84, RETROK_t },
+   { 85, RETROK_u },
+   { 86, RETROK_v },
+   { 87, RETROK_w },
+   { 88, RETROK_x },
+   { 89, RETROK_y },
+   { 90, RETROK_z },
+   { 0, RETROK_UNKNOWN },
+};
+#endif
+
 static enum retro_key rarch_keysym_lut[RETROK_LAST];
 
 void input_init_keyboard_lut(const struct rarch_key_map *map)
@@ -807,6 +901,38 @@ static void input_autoconfigure_joypad_conf(config_file_t *conf, struct retro_ke
    }
 }
 
+static bool input_try_autoconfigure_joypad_from_conf(config_file_t *conf, unsigned index, const char *name, const char *driver, bool block_osd_spam)
+{
+   if (!conf)
+      return false;
+         
+   char ident[1024];
+   char input_driver[1024];
+   
+   *ident = *input_driver = '\0';
+   
+   config_get_array(conf, "input_device", ident, sizeof(ident));
+   config_get_array(conf, "input_driver", input_driver, sizeof(input_driver));
+
+   if (!strcmp(ident, name) && !strcmp(driver, input_driver))
+   {
+      g_settings.input.autoconfigured[index] = true;
+      input_autoconfigure_joypad_conf(conf, g_settings.input.autoconf_binds[index]);
+
+      char msg[512];
+      snprintf(msg, sizeof(msg), "Joypad port #%u (%s) configured.",
+            index, name);
+
+      if (!block_osd_spam)
+         msg_queue_push(g_extern.msg_queue, msg, 0, 60);
+      RARCH_LOG("%s\n", msg);
+
+      return true;
+   }
+
+   return false;
+}
+
 void input_config_autoconfigure_joypad(unsigned index, const char *name, const char *driver)
 {
    if (!g_settings.input.autodetect_enable)
@@ -826,47 +952,41 @@ void input_config_autoconfigure_joypad(unsigned index, const char *name, const c
    if (!name)
       return;
 
-   if (!*g_settings.input.autoconfig_dir)
-      return;
+   // false = load from both cfg files and internal
+   bool internal_only = !*g_settings.input.autoconfig_dir;
 
-   struct string_list *list = dir_list_new(g_settings.input.autoconfig_dir, "cfg", false);
-   if (!list)
-      return;
-
-   char ident[1024];
-   char input_driver[1024];
-   for (size_t i = 0; i < list->size; i++)
+#ifdef HAVE_BUILTIN_AUTOCONFIG
+   // First internal
+   for (size_t i = 0; input_builtin_autoconfs[i]; i++)
    {
-      *ident = *input_driver = '\0';
-
-      config_file_t *conf = config_file_new(list->elems[i].data);
-      if (!conf)
-         continue;
-
-      config_get_array(conf, "input_device", ident, sizeof(ident));
-      config_get_array(conf, "input_driver", input_driver, sizeof(input_driver));
-
-      if (!strcmp(ident, name) && !strcmp(driver, input_driver))
-      {
-         g_settings.input.autoconfigured[index] = true;
-         input_autoconfigure_joypad_conf(conf, g_settings.input.autoconf_binds[index]);
-
-         char msg[512];
-         snprintf(msg, sizeof(msg), "Joypad port #%u (%s) configured.",
-               index, name);
-
-         if (!block_osd_spam)
-            msg_queue_push(g_extern.msg_queue, msg, 0, 60);
-         RARCH_LOG("%s\n", msg);
-
-         config_file_free(conf);
+      config_file_t *conf = config_file_new_from_string(input_builtin_autoconfs[i]);
+      bool success = input_try_autoconfigure_joypad_from_conf(conf, index, name, driver, block_osd_spam);
+      config_file_free(conf);
+      if (success)
          break;
-      }
-      else
-         config_file_free(conf);
    }
-
-   string_list_free(list);
+#endif
+   
+   // Now try files
+   if (!internal_only)
+   {
+      struct string_list *list = dir_list_new(g_settings.input.autoconfig_dir, "cfg", false);
+      if (!list)
+         return;
+   
+      for (size_t i = 0; i < list->size; i++)
+      {
+         config_file_t *conf = config_file_new(list->elems[i].data);
+         if (!conf)
+            continue;
+         bool success = input_try_autoconfigure_joypad_from_conf(conf, index, name, driver, block_osd_spam);
+         config_file_free(conf);
+         if (success)
+            break;
+      }
+      
+      string_list_free(list);
+   }
 }
 #else
 void input_config_autoconfigure_joypad(unsigned index, const char *name, const char *driver)

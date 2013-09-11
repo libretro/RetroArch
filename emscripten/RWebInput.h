@@ -1,5 +1,5 @@
 /*  RetroArch - A frontend for libretro.
- *  Copyright (C) 2013 - Jason Fetters
+ *  Copyright (C) 2010-2013 - Michael Lelli
  * 
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -13,33 +13,17 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef _RA_MODULE_INFO_H
-#define _RA_MODULE_INFO_H
+#include <stdlib.h>
 
-#import <Foundation/Foundation.h>
-#include "compat/apple_compat.h"
+typedef struct rwebinput_state
+{
+   char keys[32];
+   int mouse_x;
+   int mouse_y;
+   char mouse_l;
+   char mouse_r;
+} rwebinput_state_t;
 
-#include "conf/config_file.h"
-#include "core_info.h"
-
-@interface RAModuleInfo : NSObject
-@property (strong) NSString* path;
-@property core_info_t* info;
-@property config_file_t* data;
-@property (strong) NSString* description;
-@property (strong) NSString* customConfigPath;
-
-+ (NSArray*)getModules;
-- (bool)supportsFileAtPath:(NSString*)path;
-
-+ (NSString*)globalConfigPath;
-
-- (void)createCustomConfig;
-- (void)deleteCustomConfig;
-- (bool)hasCustomConfig;
-- (NSString*)configPath;
-
-@end
-
-#endif
-
+int RWebInputInit(void);
+rwebinput_state_t *RWebInputPoll(int context);
+void RWebInputDestroy(int context);

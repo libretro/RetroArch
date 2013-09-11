@@ -17,6 +17,7 @@ OBJ = frontend/frontend.o \
 		movie.o \
 		gfx/gfx_common.o \
 		input/input_common.o \
+		input/autoconf/builtin_win.o \
 		core_options.o \
 		patch.o \
 		compat/compat.o \
@@ -44,7 +45,8 @@ JOBJ := conf/config_file.o \
 	compat/compat.o \
 	file_path.o \
 	tools/input_common_joyconfig.o \
-	input/dinput.o
+	input/dinput.o \
+	input/winxinput_joypad.o
 
 CC = gcc
 CXX = g++
@@ -62,6 +64,9 @@ HAVE_STDIN_CMD = 1
 HAVE_THREADS = 1
 HAVE_RGUI = 1
 DYNAMIC = 1
+HAVE_WIN32GUI = 1
+
+HAVE_WINXINPUT = 1
 
 ifeq ($(SLIM),)
    HAVE_SDL = 1
@@ -78,7 +83,7 @@ endif
 libretro ?= -lretro
 
 LIBS = -lm
-DEFINES = -I. -DHAVE_SCREENSHOTS -DHAVE_BSV_MOVIE
+DEFINES = -I. -DHAVE_SCREENSHOTS -DHAVE_BSV_MOVIE -DHAVE_BUILTIN_AUTOCONFIG
 LDFLAGS = -L. -static-libgcc
 
 ifeq ($(TDM_GCC),)
@@ -98,6 +103,10 @@ JLIBS =
 ifeq ($(HAVE_RGUI), 1)
    DEFINES += -DHAVE_RGUI
    OBJ += frontend/menu/menu_common.o frontend/menu/rgui.o frontend/menu/history.o
+endif
+
+ifeq ($(HAVE_WIN32GUI), 1)
+   DEFINES += -DHAVE_WIN32GUI
 endif
 
 ifeq ($(HAVE_SDL), 1)
@@ -210,6 +219,11 @@ ifeq ($(HAVE_PYTHON), 1)
    LIBS += -lpython32
    DEFINES += -DHAVE_PYTHON -Ipython
    OBJ += gfx/py_state/py_state.o
+endif
+
+ifeq ($(HAVE_WINXINPUT), 1)
+   DEFINES += -DHAVE_WINXINPUT
+   OBJ += input/winxinput_joypad.o
 endif
 
 ifeq ($(HAVE_DINPUT), 1)

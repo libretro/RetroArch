@@ -8,7 +8,6 @@ import android.content.SharedPreferences;
 import android.opengl.GLES20;
 import android.opengl.GLSurfaceView;
 import android.os.Bundle;
-import android.preference.PreferenceManager;
 import android.util.Log;
 import android.view.WindowManager;
 import android.widget.Toast;
@@ -36,7 +35,7 @@ public class DisplayRefreshRateTest extends Activity {
 		}
 		
 		private void setFPSSetting(double fps) {
-			SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getBaseContext());
+			SharedPreferences prefs = MainMenuActivity.getPreferences();
 			SharedPreferences.Editor edit = prefs.edit();
 			edit.putString("video_refresh_rate", Double.valueOf(fps).toString());
 			edit.commit();
@@ -117,7 +116,7 @@ public class DisplayRefreshRateTest extends Activity {
 	
 	@Override
 	protected void onDestroy() {
-		SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getBaseContext());
+		SharedPreferences prefs = MainMenuActivity.getPreferences();
 		String fps = prefs.getString("video_refresh_rate", "ERROR");
 		Toast.makeText(this, "Refresh rate measured to: " + fps + " Hz.", Toast.LENGTH_LONG).show();
 		super.onDestroy();

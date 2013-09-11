@@ -11,12 +11,15 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
 import android.content.pm.PackageManager.NameNotFoundException;
 import android.content.res.AssetManager;
 import android.media.AudioManager;
 import android.media.AudioTrack;
 import android.os.Bundle;
 import android.os.Handler;
+import android.preference.CheckBoxPreference;
+import android.preference.Preference;
 import android.preference.PreferenceActivity;
 import android.preference.PreferenceManager;
 import android.provider.Settings;
@@ -31,19 +34,57 @@ public class MainMenuActivity extends PreferenceActivity {
 	static private final String TAG = "MainMenu";
 	static private String libretro_path;
 	static private String libretro_name;
-
+	
+	private boolean globalConfigEnable = true;
+	
 	@SuppressWarnings("deprecation")
+	private void refreshPreferenceScreen() {
+		readbackConfigFile();
+		
+		setPreferenceScreen(null);
+		addPreferencesFromResource(R.xml.prefs);
+		
+		setCoreTitle(libretro_name);
+		PreferenceManager.setDefaultValues(this, R.xml.prefs, false);
+		
+		final CheckBoxPreference param = (CheckBoxPreference) findPreference("global_config_enable");
+		globalConfigEnable = param.isChecked();
+		param.setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
+			@Override
+			public boolean onPreferenceClick(Preference preference) {
+				updateConfigFile();
+				globalConfigEnable = param.isChecked();
+				SharedPreferences prefs = MainMenuActivity.getPreferences();
+				SharedPreferences.Editor edit = prefs.edit();
+				edit.putBoolean("global_config_enable", param.isChecked());
+				edit.commit();
+				
+				refreshPreferenceScreen();
+				return true;
+			}
+		});
+	}
+	
+	private boolean usePerCoreConfig() {
+		boolean config_same_as_native_lib_dir = libretro_path
+				.equals(getApplicationInfo().nativeLibraryDir);
+		
+		return !globalConfigEnable && !config_same_as_native_lib_dir;
+	}
+
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		instance = this;
+		
+		SharedPreferences prefs = getPreferences();
+		
+		libretro_path = prefs.getString("libretro_path", getApplicationInfo().nativeLibraryDir);
+		libretro_name = prefs.getString("libretro_name", "No core");
 
-		addPreferencesFromResource(R.xml.prefs);
-		PreferenceManager.setDefaultValues(this, R.xml.prefs, false);
+		refreshPreferenceScreen();
+		
 		this.setVolumeControlStream(AudioManager.STREAM_MUSIC);
-
-		SharedPreferences prefs = PreferenceManager
-				.getDefaultSharedPreferences(getBaseContext());
 
 		extractAssets();
 
@@ -56,35 +97,9 @@ public class MainMenuActivity extends PreferenceActivity {
 						.setTitle("Welcome to RetroArch")
 						.setMessage(
 								"This is your first time starting up RetroArch. RetroArch will now be preconfigured for the best possible gameplay experience.")
-						.setPositiveButton("OK",
-								new DialogInterface.OnClickListener() {
-									@Override
-									public void onClick(DialogInterface dialog,
-											int which) {
-										SharedPreferences prefs = PreferenceManager
-												.getDefaultSharedPreferences(getBaseContext());
-										SharedPreferences.Editor edit = prefs
-												.edit();
-										edit.putBoolean("video_threaded", true);
-										edit.commit();
-									}
-								});
+						.setPositiveButton("OK", null);
 				alert.show();
 			}
-		}
-
-		if (prefs.getString("libretro_path", "").isEmpty() == false) {
-			libretro_path = prefs.getString("libretro_path", "");
-			setCoreTitle("No core");
-
-			if (prefs.getString("libretro_name", "").isEmpty() == false) {
-				libretro_name = prefs.getString("libretro_name", "No core");
-				setCoreTitle(libretro_name);
-			}
-		} else {
-			libretro_path = MainMenuActivity.getInstance().getApplicationInfo().nativeLibraryDir;
-			libretro_name = "No core";
-			setCoreTitle("No core");
 		}
 
 		Intent startedByIntent = getIntent();
@@ -119,19 +134,17 @@ public class MainMenuActivity extends PreferenceActivity {
 
 	public static final double getRefreshRate() {
 		double rate = 0;
-		SharedPreferences prefs = PreferenceManager
-				.getDefaultSharedPreferences(MainMenuActivity.getInstance()
-						.getBaseContext());
+		SharedPreferences prefs = getPreferences();
 		String refresh_rate = prefs.getString("video_refresh_rate", "");
 		if (!refresh_rate.isEmpty()) {
 			try {
 				rate = Double.parseDouble(refresh_rate);
 			} catch (NumberFormatException e) {
 				Log.e(TAG, "Cannot parse: " + refresh_rate + " as a double!");
-				rate = MainMenuActivity.getInstance().getDisplayRefreshRate();
+				rate = getInstance().getDisplayRefreshRate();
 			}
 		} else {
-			rate = MainMenuActivity.getInstance().getDisplayRefreshRate();
+			rate = getInstance().getDisplayRefreshRate();
 		}
 
 		Log.i(TAG, "Using refresh rate: " + rate + " Hz.");
@@ -157,11 +170,28 @@ public class MainMenuActivity extends PreferenceActivity {
 
 	@TargetApi(17)
 	public static int getLowLatencyOptimalSamplingRate() {
-		AudioManager manager = (AudioManager) MainMenuActivity.getInstance()
+		AudioManager manager = (AudioManager) getInstance()
 				.getApplicationContext()
 				.getSystemService(Context.AUDIO_SERVICE);
 		return Integer.parseInt(manager
 				.getProperty(AudioManager.PROPERTY_OUTPUT_SAMPLE_RATE));
+	}
+	
+	@TargetApi(17)
+	public static int getLowLatencyBufferSize() {
+		AudioManager manager = (AudioManager) getInstance()
+				.getApplicationContext()
+				.getSystemService(Context.AUDIO_SERVICE);
+		int buffersize = Integer.parseInt(manager
+				.getProperty(AudioManager.PROPERTY_OUTPUT_FRAMES_PER_BUFFER));
+		Log.i(TAG, "Queried ideal buffer size (frames): " + buffersize);
+		return buffersize;
+	}
+	
+	@TargetApi(17)
+	public static boolean hasLowLatencyAudio() {
+		PackageManager pm = getInstance().getPackageManager();
+		return pm.hasSystemFeature(PackageManager.FEATURE_AUDIO_LOW_LATENCY);
 	}
 
 	public static int getOptimalSamplingRate() {
@@ -175,27 +205,24 @@ public class MainMenuActivity extends PreferenceActivity {
 		Log.i(TAG, "Using sampling rate: " + ret + " Hz");
 		return ret;
 	}
+	
+	private static String sanitizeLibretroPath(String path) {
+		String sanitized_name = path.substring(
+				path.lastIndexOf("/") + 1,
+				path.lastIndexOf("."));
+		sanitized_name = sanitized_name.replace("neon", "");
+		sanitized_name = sanitized_name.replace("libretro_", "");
+		return sanitized_name;
+	}
 
 	public static String getDefaultConfigPath() {
 		String internal = System.getenv("INTERNAL_STORAGE");
 		String external = System.getenv("EXTERNAL_STORAGE");
 
-		SharedPreferences prefs = PreferenceManager
-				.getDefaultSharedPreferences(MainMenuActivity.getInstance()
-						.getBaseContext());
-
-		boolean global_config_enable = prefs.getBoolean("global_config_enable",
-				true);
-		boolean config_same_as_native_lib_dir = libretro_path
-				.equals(MainMenuActivity.getInstance().getApplicationInfo().nativeLibraryDir);
 		String append_path;
-		if (!global_config_enable && (config_same_as_native_lib_dir == false)) {
-			String sanitized_name = libretro_path.substring(
-					libretro_path.lastIndexOf("/") + 1,
-					libretro_path.lastIndexOf("."));
-			sanitized_name = sanitized_name.replace("neon", "");
-			sanitized_name = sanitized_name.replace("libretro_", "");
-			append_path = File.separator + sanitized_name + "retroarch.cfg";
+		if (getInstance().usePerCoreConfig()) {
+			String sanitized_name = sanitizeLibretroPath(libretro_path);
+			append_path = File.separator + sanitized_name + ".cfg";
 		} else {
 			append_path = File.separator + "retroarch.cfg";
 		}
@@ -219,40 +246,138 @@ public class MainMenuActivity extends PreferenceActivity {
 		else if (external != null
 				&& new File(internal + append_path).canWrite())
 			return external + append_path;
-		else if ((MainMenuActivity.getInstance().getApplicationInfo().dataDir) != null)
-			return (MainMenuActivity.getInstance().getApplicationInfo().dataDir)
+		else if ((getInstance().getApplicationInfo().dataDir) != null)
+			return (getInstance().getApplicationInfo().dataDir)
 					+ append_path;
 		else
 			// emergency fallback, all else failed
 			return "/mnt/sd" + append_path;
 	}
-
-	public void updateConfigFile() {
+	
+	private void readbackString(ConfigFile cfg, SharedPreferences.Editor edit, String key) {
+		if (cfg.keyExists(key))
+			edit.putString(key, cfg.getString(key));
+		else
+			edit.remove(key);
+	}
+	
+	private void readbackBool(ConfigFile cfg, SharedPreferences.Editor edit, String key) {
+		if (cfg.keyExists(key))
+			edit.putBoolean(key, cfg.getBoolean(key));
+		else
+			edit.remove(key);
+	}
+	
+	private void readbackDouble(ConfigFile cfg, SharedPreferences.Editor edit, String key) {
+		if (cfg.keyExists(key))
+			edit.putFloat(key, (float)cfg.getDouble(key));
+		else
+			edit.remove(key);
+	}
+	
+	private void readbackFloat(ConfigFile cfg, SharedPreferences.Editor edit, String key) {
+		if (cfg.keyExists(key))
+			edit.putFloat(key, cfg.getFloat(key));
+		else
+			edit.remove(key);
+	}
+	
+	private void readbackInt(ConfigFile cfg, SharedPreferences.Editor edit, String key) {
+		if (cfg.keyExists(key))
+			edit.putInt(key, cfg.getInt(key));
+		else
+			edit.remove(key);
+	}
+	
+	public void readbackConfigFile() {
+		String path = getDefaultConfigPath();
 		ConfigFile config;
 		try {
-			config = new ConfigFile(new File(getDefaultConfigPath()));
+			config = new ConfigFile(new File(path));
+		} catch (IOException e) {
+			return;
+		}
+		
+		Log.i(TAG, "Config readback from: " + path);
+		
+		SharedPreferences prefs = getPreferences();
+		SharedPreferences.Editor edit = prefs.edit();
+		
+		readbackString(config, edit, "rgui_browser_directory");
+		readbackString(config, edit, "savefile_directory");
+		readbackString(config, edit, "savestate_directory");
+		readbackBool(config, edit, "savefile_directory_enable"); // Ignored by RetroArch
+		readbackBool(config, edit, "savestate_directory_enable"); // Ignored by RetroArch
+		
+		readbackString(config, edit, "input_overlay");
+		readbackBool(config, edit, "input_overlay_enable");
+		readbackBool(config, edit, "video_scale_integer");
+		readbackBool(config, edit, "video_smooth");
+		readbackBool(config, edit, "video_threaded");
+		readbackBool(config, edit, "rewind_enable");
+		readbackBool(config, edit, "savestate_auto_load");
+		readbackBool(config, edit, "savestate_auto_save");
+		//readbackDouble(config, edit, "video_refresh_rate");
+		
+		readbackBool(config, edit, "audio_rate_control");
+		readbackBool(config, edit, "audio_enable");
+		// TODO: other audio settings
+		
+		readbackDouble(config, edit, "input_overlay_opacity");
+		readbackBool(config, edit, "input_autodetect_enable");
+		//readbackInt(config, edit, "input_back_behavior");
+		
+		readbackBool(config, edit, "video_allow_rotate");
+		readbackBool(config, edit, "video_font_enable");
+		
+		readbackBool(config, edit, "video_vsync");
+		
+		edit.commit();
+	}
+
+	public void updateConfigFile() {
+		String path = getDefaultConfigPath();
+		ConfigFile config;
+		try {
+			config = new ConfigFile(new File(path));
 		} catch (IOException e) {
 			config = new ConfigFile();
 		}
+		
+		Log.i(TAG, "Writing config to: " + path);
 
-		SharedPreferences prefs = PreferenceManager
-				.getDefaultSharedPreferences(MainMenuActivity.getInstance()
-						.getBaseContext());
+		SharedPreferences prefs = getPreferences();
 
 		config.setString("libretro_path", libretro_path);
-		config.setString("libretro_name", libretro_name);
-		setCoreTitle(libretro_name);
 
 		config.setString("rgui_browser_directory",
 				prefs.getString("rgui_browser_directory", ""));
-		config.setBoolean("global_config_enable",
-				prefs.getBoolean("global_config_enable", true));
 		config.setBoolean("audio_rate_control",
 				prefs.getBoolean("audio_rate_control", true));
-		config.setInt("audio_out_rate",
-				MainMenuActivity.getOptimalSamplingRate());
-		config.setInt("audio_latency",
-				prefs.getBoolean("audio_high_latency", false) ? 160 : 64);
+		
+		int optimalRate = getOptimalSamplingRate();
+		config.setInt("audio_out_rate", optimalRate);
+		
+		// Refactor this entire mess and make this usable for per-core config
+		if (android.os.Build.VERSION.SDK_INT >= 17) {
+			int buffersize = getLowLatencyBufferSize();
+
+			boolean lowLatency = hasLowLatencyAudio();
+			Log.i(TAG, "Audio is low latency: " + (lowLatency ? "yes" : "no"));
+			
+			if (lowLatency && !prefs.getBoolean("audio_high_latency", false)) {
+				config.setInt("audio_latency", 64);
+				config.setInt("audio_block_frames", buffersize);
+			} else {
+				config.setInt("audio_latency", prefs.getBoolean(
+						"audio_high_latency", false) ? 160 : 64);
+				config.setInt("audio_block_frames", 0);
+			}
+		} else {
+			config.setInt("audio_latency",
+					prefs.getBoolean("audio_high_latency", false) ? 160 : 64);		
+		}
+
 		config.setBoolean("audio_enable",
 				prefs.getBoolean("audio_enable", true));
 		config.setBoolean("video_smooth",
@@ -286,10 +411,12 @@ public class MainMenuActivity extends PreferenceActivity {
 						"0")));
 
 		config.setDouble("video_refresh_rate",
-				MainMenuActivity.getRefreshRate());
+				getRefreshRate());
 		config.setBoolean("video_threaded",
 				prefs.getBoolean("video_threaded", true));
 
+		// Refactor these weird values - 'full', 'auto', 'square', whatever -
+		// go by what we have in RGUI - makes maintaining state easier too
 		String aspect = prefs.getString("video_aspect_ratio", "auto");
 		if (aspect.equals("full")) {
 			config.setBoolean("video_force_aspect", false);
@@ -317,9 +444,10 @@ public class MainMenuActivity extends PreferenceActivity {
 						&& new File(shaderPath).exists());
 
 		boolean useOverlay = prefs.getBoolean("input_overlay_enable", true);
+		config.setBoolean("input_overlay_enable", useOverlay); // Not used by RetroArch directly.
 		if (useOverlay) {
 			String overlayPath = prefs
-					.getString("input_overlay", (MainMenuActivity.getInstance()
+					.getString("input_overlay", (getInstance()
 							.getApplicationInfo().dataDir)
 							+ "/overlays/snes-landscape.cfg");
 			config.setString("input_overlay", overlayPath);
@@ -328,7 +456,6 @@ public class MainMenuActivity extends PreferenceActivity {
 		} else {
 			config.setString("input_overlay", "");
 		}
-
 		config.setString(
 				"savefile_directory",
 				prefs.getBoolean("savefile_directory_enable", false) ? prefs
@@ -345,7 +472,7 @@ public class MainMenuActivity extends PreferenceActivity {
 		config.setBoolean("video_font_enable",
 				prefs.getBoolean("video_font_enable", true));
 
-		config.setString("game_history_path", MainMenuActivity.getInstance()
+		config.setString("game_history_path", getInstance()
 				.getApplicationInfo().dataDir + "/retroarch-history.txt");
 
 		for (int i = 1; i <= 4; i++) {
@@ -359,11 +486,10 @@ public class MainMenuActivity extends PreferenceActivity {
 			}
 		}
 
-		String confPath = getDefaultConfigPath();
 		try {
-			config.write(new File(confPath));
+			config.write(new File(path));
 		} catch (IOException e) {
-			Log.e(TAG, "Failed to save config file to: " + confPath);
+			Log.e(TAG, "Failed to save config file to: " + path);
 		}
 	}
 
@@ -499,20 +625,28 @@ public class MainMenuActivity extends PreferenceActivity {
 
 		dialog.show();
 	}
+	
+	public static SharedPreferences getPreferences() {
+		return PreferenceManager.getDefaultSharedPreferences(getInstance().getBaseContext());
+	}
 
 	public void setModule(String core_path, String core_name) {
+		updateConfigFile();
+		
 		libretro_path = core_path;
 		libretro_name = core_name;
-		File libretro_path_file = new File(core_path);
-		setCoreTitle((libretro_path_file.isDirectory() == true) ? "No core"
-				: core_name);
 
-		SharedPreferences prefs = PreferenceManager
-				.getDefaultSharedPreferences(getBaseContext());
+		SharedPreferences prefs = getPreferences();
 		SharedPreferences.Editor edit = prefs.edit();
 		edit.putString("libretro_path", libretro_path);
 		edit.putString("libretro_name", libretro_name);
 		edit.commit();
+		
+		if (usePerCoreConfig())
+			refreshPreferenceScreen();
+		else {
+			setCoreTitle(libretro_name); // this still needs to be applied
+		}
 	}
 
 	public void setCoreTitle(String core_name) {
@@ -538,8 +672,7 @@ public class MainMenuActivity extends PreferenceActivity {
 								@Override
 								public void onClick(DialogInterface dialog,
 										int which) {
-									SharedPreferences prefs = PreferenceManager
-											.getDefaultSharedPreferences(getBaseContext());
+									SharedPreferences prefs = getPreferences();
 									SharedPreferences.Editor edit = prefs
 											.edit();
 									edit.putString("video_refresh_rate", Double
@@ -562,8 +695,7 @@ public class MainMenuActivity extends PreferenceActivity {
 								@Override
 								public void onClick(DialogInterface dialog,
 										int which) {
-									SharedPreferences prefs = PreferenceManager
-											.getDefaultSharedPreferences(getBaseContext());
+									SharedPreferences prefs = getPreferences();
 									SharedPreferences.Editor edit = prefs
 											.edit();
 									edit.putBoolean("input_overlay_enable",
@@ -585,8 +717,7 @@ public class MainMenuActivity extends PreferenceActivity {
 								@Override
 								public void onClick(DialogInterface dialog,
 										int which) {
-									SharedPreferences prefs = PreferenceManager
-											.getDefaultSharedPreferences(getBaseContext());
+									SharedPreferences prefs = getPreferences();
 									SharedPreferences.Editor edit = prefs
 											.edit();
 									edit.putBoolean("input_overlay_enable",
@@ -598,6 +729,27 @@ public class MainMenuActivity extends PreferenceActivity {
 							});
 			alert.show();
 			retval = true;
+		} else if (android.os.Build.MODEL.equals("R800x")) {
+					AlertDialog.Builder alert = new AlertDialog.Builder(this)
+							.setTitle("Xperia Play detected")
+							.setMessage(message)
+							.setPositiveButton("OK",
+									new DialogInterface.OnClickListener() {
+										@Override
+										public void onClick(DialogInterface dialog,
+												int which) {
+											SharedPreferences prefs = getPreferences();
+											SharedPreferences.Editor edit = prefs
+													.edit();
+											edit.putBoolean("input_overlay_enable",
+													false);
+											edit.putBoolean("input_autodetect_enable",
+													true);
+											edit.commit();
+										}
+									});
+					alert.show();
+					retval = true;
 		} else if (android.os.Build.ID.equals("JSS15J")) {
 			AlertDialog.Builder alert = new AlertDialog.Builder(this)
 					.setTitle("Nexus 7 2013 detected")
@@ -607,8 +759,7 @@ public class MainMenuActivity extends PreferenceActivity {
 								@Override
 								public void onClick(DialogInterface dialog,
 										int which) {
-									SharedPreferences prefs = PreferenceManager
-											.getDefaultSharedPreferences(getBaseContext());
+									SharedPreferences prefs = getPreferences();
 									SharedPreferences.Editor edit = prefs
 											.edit();
 									edit.putString("video_refresh_rate", Double
@@ -626,6 +777,8 @@ public class MainMenuActivity extends PreferenceActivity {
 					"Device either not detected in list or doesn't have any optimal settings in our database.",
 					Toast.LENGTH_SHORT).show();
 		}
+		
+		refreshPreferenceScreen();
 
 		return retval;
 	}
@@ -668,7 +821,7 @@ public class MainMenuActivity extends PreferenceActivity {
 				myIntent.putExtra("ROM", data.getStringExtra("PATH"));
 				myIntent.putExtra("LIBRETRO", libretro_path);
 				myIntent.putExtra("CONFIGFILE",
-						MainMenuActivity.getDefaultConfigPath());
+						getDefaultConfigPath());
 				myIntent.putExtra("IME", current_ime);
 				startActivity(myIntent);
 			}

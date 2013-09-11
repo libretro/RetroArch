@@ -13,6 +13,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "../general.h"
 #include "gfx_context.h"
 #include "../general.h"
 #include <string.h>
@@ -51,6 +52,9 @@ static const gfx_ctx_driver_t *gfx_ctx_drivers[] = {
 #endif
 #if defined(IOS) || defined(OSX) //< Don't use __APPLE__ as it breaks basic SDL builds
    &gfx_ctx_apple,
+#endif
+#ifdef EMSCRIPTEN
+   &gfx_ctx_emscripten,
 #endif
 };
 

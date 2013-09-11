@@ -80,6 +80,10 @@ public class ConfigFile {
 	public void setDouble(String key, double value) {
 		map.put(key, Double.toString(value));
 	}
+	
+	public void setFloat(String key, float value) {
+		map.put(key, Float.toString(value));
+	}
 
 	public boolean keyExists(String key) {
 		return map.containsKey(key);
@@ -105,6 +109,14 @@ public class ConfigFile {
 		String str = getString(key);
 		if (str != null)
 			return Double.parseDouble(str);
+		else
+			throw new NumberFormatException();
+	}
+	
+	public float getFloat(String key) throws NumberFormatException {
+		String str = getString(key);
+		if (str != null)
+			return Float.parseFloat(str);
 		else
 			throw new NumberFormatException();
 	}

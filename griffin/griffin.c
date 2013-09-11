@@ -298,8 +298,8 @@ INPUT
 #include "../android/native/jni/input_autodetect.c"
 #include "../android/native/jni/input_android.c"
 #elif defined(IOS) || defined(OSX)
-#include "../apple/RetroArch/apple_input.c"
-#include "../apple/RetroArch/apple_joypad.c"
+#include "../apple/common/apple_input.c"
+#include "../apple/common/apple_joypad.c"
 #elif defined(__BLACKBERRY_QNX__)
 #include "../blackberry-qnx/qnx_input.c"
 #endif

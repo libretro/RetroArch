@@ -22,13 +22,13 @@
 #include "general.h"
 #include "driver.h"
 
+#include "keycode.inc"
+
 extern const rarch_joypad_driver_t apple_joypad;
 static const rarch_joypad_driver_t* const g_joydriver = &apple_joypad;
 
 apple_input_data_t g_current_input_data;
 apple_input_data_t g_polled_input_data;
-
-static const struct rarch_key_map rarch_key_map_hidusage[];
 
 #ifdef OSX // Taken from https://github.com/depp/keycode, check keycode.h for license
 const unsigned char MAC_NATIVE_TO_HID[128] = {
@@ -101,6 +101,42 @@ void apple_input_handle_key_event(unsigned keycode, bool down)
       g_current_input_data.keys[keycode] = down;
 }
 
+
+int32_t apple_input_find_any_key()
+{
+   for (int i = 0; apple_key_name_map[i].hid_id; i++)
+      if (g_current_input_data.keys[apple_key_name_map[i].hid_id])
+         return apple_key_name_map[i].hid_id;
+
+   return 0;
+}
+
+int32_t apple_input_find_any_button(uint32_t port)
+{
+   uint32_t buttons = g_current_input_data.pad_buttons[port] |
+                      ((port == 0) ? apple_input_get_icade_buttons() : 0);
+
+   if (g_current_input_data.pad_buttons[port])
+      for (int i = 0; i != 32; i ++)
+         if (buttons & (1 << i))
+            return i;
+
+   return -1;
+}
+
+int32_t apple_input_find_any_axis(uint32_t port)
+{
+   for (int i = 0; i < 4; i++)
+   {
+      int16_t value = g_current_input_data.pad_axis[port][i];
+      
+      if (abs(value) > 0x4000)
+         return (value < 0) ? -(i + 1) : i + 1;
+   }
+
+   return 0;
+}
+
 // Game thread interface
 static bool apple_key_pressed(enum retro_key key)
 {
@@ -118,7 +154,7 @@ static bool apple_is_pressed(unsigned port_num, const struct retro_keybind *bind
 // Exported input driver
 static void *apple_input_init(void)
 {
-   input_init_keyboard_lut(rarch_key_map_hidusage);
+   input_init_keyboard_lut(apple_key_map_hidusage);
    memset(&g_polled_input_data, 0, sizeof(g_polled_input_data));
    return (void*)-1;
 }
@@ -272,151 +308,4 @@ const input_driver_t input_apple = {
    apple_input_free_input,
    apple_input_set_keybinds,
    "apple_input",
-};
-
-
-// Key table
-#include "keycode.h"
-static const struct rarch_key_map rarch_key_map_hidusage[] = {
-   { KEY_Delete, RETROK_BACKSPACE },
-   { KEY_Tab, RETROK_TAB },
-//   RETROK_CLEAR },
-   { KEY_Enter, RETROK_RETURN },
-   { KEY_Pause, RETROK_PAUSE },
-   { KEY_Escape, RETROK_ESCAPE },
-   { KEY_Space, RETROK_SPACE },
-//   RETROK_EXCLAIM },
-//   RETROK_QUOTEDBL },
-//   RETROK_HASH },
-//   RETROK_DOLLAR },
-//   RETROK_AMPERSAND },
-   { KEY_Quote, RETROK_QUOTE },
-//   RETROK_LEFTPAREN },
-//   RETROK_RIGHTPAREN },
-//   RETROK_ASTERISK },
-//   RETROK_PLUS },
-   { KEY_Comma, RETROK_COMMA },
-   { KEY_Minus, RETROK_MINUS },
-   { KEY_Period, RETROK_PERIOD },
-   { KEY_Slash, RETROK_SLASH },
-   { KEY_0, RETROK_0 },
-   { KEY_1, RETROK_1 },
-   { KEY_2, RETROK_2 },
-   { KEY_3, RETROK_3 },
-   { KEY_4, RETROK_4 },
-   { KEY_5, RETROK_5 },
-   { KEY_6, RETROK_6 },
-   { KEY_7, RETROK_7 },
-   { KEY_8, RETROK_8 },
-   { KEY_9, RETROK_9 },
-//   RETROK_COLON },
-   { KEY_Semicolon, RETROK_SEMICOLON },
-//   RETROK_LESS },
-   { KEY_Equals, RETROK_EQUALS },
-//   RETROK_GREATER },
-//   RETROK_QUESTION },
-//   RETROK_AT },
-   { KEY_LeftBracket, RETROK_LEFTBRACKET },
-   { KEY_Backslash, RETROK_BACKSLASH },
-   { KEY_RightBracket, RETROK_RIGHTBRACKET },
-//   RETROK_CARET },
-//   RETROK_UNDERSCORE },
-   { KEY_Grave, RETROK_BACKQUOTE },
-   { KEY_A, RETROK_a },
-   { KEY_B, RETROK_b },
-   { KEY_C, RETROK_c },
-   { KEY_D, RETROK_d },
-   { KEY_E, RETROK_e },
-   { KEY_F, RETROK_f },
-   { KEY_G, RETROK_g },
-   { KEY_H, RETROK_h },
-   { KEY_I, RETROK_i },
-   { KEY_J, RETROK_j },
-   { KEY_K, RETROK_k },
-   { KEY_L, RETROK_l },
-   { KEY_M, RETROK_m },
-   { KEY_N, RETROK_n },
-   { KEY_O, RETROK_o },
-   { KEY_P, RETROK_p },
-   { KEY_Q, RETROK_q },
-   { KEY_R, RETROK_r },
-   { KEY_S, RETROK_s },
-   { KEY_T, RETROK_t },
-   { KEY_U, RETROK_u },
-   { KEY_V, RETROK_v },
-   { KEY_W, RETROK_w },
-   { KEY_X, RETROK_x },
-   { KEY_Y, RETROK_y },
-   { KEY_Z, RETROK_z },
-   { KEY_DeleteForward, RETROK_DELETE },
-
-   { KP_0, RETROK_KP0 },
-   { KP_1, RETROK_KP1 },
-   { KP_2, RETROK_KP2 },
-   { KP_3, RETROK_KP3 },
-   { KP_4, RETROK_KP4 },
-   { KP_5, RETROK_KP5 },
-   { KP_6, RETROK_KP6 },
-   { KP_7, RETROK_KP7 },
-   { KP_8, RETROK_KP8 },
-   { KP_9, RETROK_KP9 },
-   { KP_Point, RETROK_KP_PERIOD },
-   { KP_Divide, RETROK_KP_DIVIDE },
-   { KP_Multiply, RETROK_KP_MULTIPLY },
-   { KP_Subtract, RETROK_KP_MINUS },
-   { KP_Add, RETROK_KP_PLUS },
-   { KP_Enter, RETROK_KP_ENTER },
-   { KP_Equals, RETROK_KP_EQUALS },
-
-   { KEY_Up, RETROK_UP },
-   { KEY_Down, RETROK_DOWN },
-   { KEY_Right, RETROK_RIGHT },
-   { KEY_Left, RETROK_LEFT },
-   { KEY_Insert, RETROK_INSERT },
-   { KEY_Home, RETROK_HOME },
-   { KEY_End, RETROK_END },
-   { KEY_PageUp, RETROK_PAGEUP },
-   { KEY_PageDown, RETROK_PAGEDOWN },
-
-   { KEY_F1, RETROK_F1 },
-   { KEY_F2, RETROK_F2 },
-   { KEY_F3, RETROK_F3 },
-   { KEY_F4, RETROK_F4 },
-   { KEY_F5, RETROK_F5 },
-   { KEY_F6, RETROK_F6 },
-   { KEY_F7, RETROK_F7 },
-   { KEY_F8, RETROK_F8 },
-   { KEY_F9, RETROK_F9 },
-   { KEY_F10, RETROK_F10 },
-   { KEY_F11, RETROK_F11 },
-   { KEY_F12, RETROK_F12 },
-   { KEY_F13, RETROK_F13 },
-   { KEY_F14, RETROK_F14 },
-   { KEY_F15, RETROK_F15 },
-
-//   RETROK_NUMLOCK },
-   { KEY_CapsLock, RETROK_CAPSLOCK },
-//   RETROK_SCROLLOCK },
-   { KEY_RightShift, RETROK_RSHIFT },
-   { KEY_LeftShift, RETROK_LSHIFT },
-   { KEY_RightControl, RETROK_RCTRL },
-   { KEY_LeftControl, RETROK_LCTRL },
-   { KEY_RightAlt, RETROK_RALT },
-   { KEY_LeftAlt, RETROK_LALT },
-   { KEY_RightGUI, RETROK_RMETA },
-   { KEY_LeftGUI, RETROK_RMETA },
-//   RETROK_LSUPER },
-//   RETROK_RSUPER },
-//   RETROK_MODE },
-//   RETROK_COMPOSE },
-
-//   RETROK_HELP },
-   { KEY_PrintScreen, RETROK_PRINT },
-//   RETROK_SYSREQ },
-//   RETROK_BREAK },
-   { KEY_Menu, RETROK_MENU },
-//   RETROK_POWER },
-//   RETROK_EURO },
-//   RETROK_UNDO },
-   { 0, RETROK_UNKNOWN }
 };

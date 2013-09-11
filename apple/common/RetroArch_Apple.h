@@ -28,8 +28,9 @@
 - (void)loadingCore:(RAModuleInfo*)core withFile:(const char*)file;
 - (void)unloadingCore:(RAModuleInfo*)core;
 
-- (NSString*)retroarchConfigPath; // < This returns the directory that contains retroarch.cfg and other custom configs
-- (NSString*)corePath;
+- (NSString*)configDirectory;   // < This returns the directory that contains retroarch.cfg and other custom configs
+- (NSString*)globalConfigFile;  // < This is the full path to retroarch.cfg
+- (NSString*)coreDirectory;     // < This is the default path to where libretro cores are installed
 @end
 
 #ifdef IOS
@@ -38,6 +39,7 @@
 #import "../OSX/platform.h"
 #endif
 
+extern char** apple_argv;
 extern bool apple_is_paused;
 extern bool apple_is_running;
 extern bool apple_use_tv_mode;
@@ -53,7 +55,7 @@ extern void apple_event_show_rgui(void* userdata);
 
 extern void apple_refresh_config();
 extern void apple_enter_stasis();
-extern void apple_exit_stasis();
+extern void apple_exit_stasis(bool reload_config);
 extern void apple_run_core(RAModuleInfo* core, const char* file);
 
 // utility.m

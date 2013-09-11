@@ -1402,18 +1402,7 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
       glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
 
 #ifdef HAVE_FBO
-      // Data is already on GPU :) Have to reset some state however incase core changed it.
-      if (gl->hw_render_fbo_init)
-      {
-         gl_update_input_size(gl, width, height, pitch, false);
-
-         if (!gl->fbo_inited)
-         {
-            gl_bind_backbuffer();
-            gl_set_viewport(gl, gl->win_width, gl->win_height, false, true);
-         }
-      }
-      else
+      if (!gl->hw_render_fbo_init)
 #endif
       {
          gl_update_input_size(gl, width, height, pitch, true);
@@ -1430,6 +1419,13 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
 #ifdef HAVE_FBO
    if (gl->hw_render_fbo_init)
    {
+      gl_update_input_size(gl, width, height, pitch, false);
+      if (!gl->fbo_inited)
+      {
+         gl_bind_backbuffer();
+         gl_set_viewport(gl, gl->win_width, gl->win_height, false, true);
+      }
+
 #ifndef HAVE_OPENGLES
       if (!gl->core_context)
          glEnable(GL_TEXTURE_2D);
@@ -1454,6 +1450,11 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
    memcpy(tex_info.coord, gl->tex_coords, sizeof(gl->tex_coords));
 
    glClear(GL_COLOR_BUFFER_BIT);
+   if (g_settings.video.black_frame_insertion)
+   {
+      context_swap_buffers_func();
+      glClear(GL_COLOR_BUFFER_BIT);
+   }
 
    if (gl->shader)
       gl->shader->set_params(width, height,
@@ -1623,7 +1624,7 @@ static void gl_set_nonblock_state(void *data, bool state)
 
    gl_t *gl = (gl_t*)data;
    (void)gl;
-   context_swap_interval_func(state ? 0 : 1);
+   context_swap_interval_func(state ? 0 : g_settings.video.swap_interval);
 }
 
 static bool resolve_extensions(gl_t *gl)
@@ -1945,7 +1946,7 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    context_get_video_size_func(&gl->full_x, &gl->full_y);
    RARCH_LOG("Detecting screen resolution %ux%u.\n", gl->full_x, gl->full_y);
 
-   context_swap_interval_func(video->vsync ? 1 : 0);
+   context_swap_interval_func(video->vsync ? g_settings.video.swap_interval : 0);
 
    unsigned win_width  = video->width;
    unsigned win_height = video->height;

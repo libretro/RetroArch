@@ -42,6 +42,8 @@
 #define EXT_EXECUTABLES "dol|DOL"
 #define SALAMANDER_FILE "boot.dol"
 #define DEFAULT_EXE_EXT ".dol"
+#elif defined(EMSCRIPTEN)
+#define EXT_EXECUTABLES ""
 #endif
 #endif
 

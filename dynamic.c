@@ -30,7 +30,7 @@
 #endif
 
 #include "boolean.h"
-#include "libretro.h"
+#include "libretro_private.h"
 #include "dynamic_dummy.h"
 
 #ifdef NEED_DYNAMIC
@@ -92,8 +92,6 @@ unsigned (*pretro_get_region)(void);
 
 void *(*pretro_get_memory_data)(unsigned);
 size_t (*pretro_get_memory_size)(unsigned);
-
-static bool environment_cb(unsigned cmd, void *data);
 
 #ifdef HAVE_DYNAMIC
 #if defined(__APPLE__)
@@ -397,7 +395,7 @@ void init_libretro_sym(bool dummy)
 
    load_symbols(dummy);
 
-   pretro_set_environment(environment_cb);
+   pretro_set_environment(rarch_environment_cb);
 }
 
 void uninit_libretro_sym(void)
@@ -471,7 +469,7 @@ void dylib_close(dylib_t lib)
 }
 #endif
 
-static bool environment_cb(unsigned cmd, void *data)
+bool rarch_environment_cb(unsigned cmd, void *data)
 {
    switch (cmd)
    {
@@ -757,6 +755,41 @@ static bool environment_cb(unsigned cmd, void *data)
          g_extern.system.frame_time = *info;
          break;
       }
+
+      case RETRO_ENVIRONMENT_SET_LIBRETRO_PATH:
+         RARCH_LOG("Environ (Private) SET_LIBRETRO_PATH.\n");
+
+         if (path_file_exists((const char*)data))
+            strlcpy(g_settings.libretro, (const char*)data, sizeof(g_settings.libretro));
+         else
+            return false;
+         break;
+
+      case RETRO_ENVIRONMENT_EXEC:
+      case RETRO_ENVIRONMENT_EXEC_ESCAPE:
+
+         if (data)
+            strlcpy(g_extern.fullpath, (const char*)data, sizeof(g_extern.fullpath));
+         else
+            *g_extern.fullpath = '\0';
+
+#if !defined( HAVE_DYNAMIC) && defined(RARCH_CONSOLE)
+         g_extern.lifecycle_mode_state &= ~(1ULL << MODE_GAME);
+         g_extern.lifecycle_mode_state |= (1ULL << MODE_EXITSPAWN);
+         g_extern.lifecycle_mode_state |= (1ULL << MODE_EXITSPAWN_START_GAME);
+#elif defined(HAVE_DYNAMIC)
+         g_extern.lifecycle_mode_state |= (1ULL << MODE_LOAD_GAME);
+#endif
+
+         if (cmd == RETRO_ENVIRONMENT_EXEC_ESCAPE)
+         {
+            RARCH_LOG("Environ (Private) EXEC_ESCAPE.\n");
+            g_extern.exec = true;
+         }
+         else
+            RARCH_LOG("Environ (Private) EXEC.\n");
+
+         break;
 
       default:
          RARCH_LOG("Environ UNSUPPORTED (#%u).\n", cmd);

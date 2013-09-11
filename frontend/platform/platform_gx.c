@@ -18,7 +18,7 @@
 #include <stdbool.h>
 #include "../../driver.h"
 #include "../../general.h"
-#include "../../libretro.h"
+#include "../../libretro_private.h"
 
 #include "../../console/rarch_console.h"
 #include "../../file.h"
@@ -367,7 +367,11 @@ static int system_process_args(int argc, char *argv[], void *args)
    // a big hack: sometimes salamander doesn't save the new core it loads on first boot,
    // so we make sure g_settings.libretro is set here
    if (!g_settings.libretro[0] && argc >= 1 && strrchr(argv[0], '/'))
-      strlcpy(g_settings.libretro, strrchr(argv[0], '/') + 1, sizeof(g_settings.libretro));
+   {
+      char path[PATH_MAX];
+      strlcpy(path, strrchr(argv[0], '/') + 1, sizeof(path));
+      rarch_environment_cb(RETRO_ENVIRONMENT_SET_LIBRETRO_PATH, path);
+   }
 
    if (argc > 2 && argv[1] != NULL && argv[2] != NULL)
    {

@@ -153,4 +153,21 @@ enum {
     KEY_RightAlt = 230,
     KEY_RightGUI = 231
 };
+
+//
+
+#include "input/input_common.h" // < For rarch_key_map
+
+struct apple_key_name_map_entry
+{
+   const char* const keyname;
+   const uint32_t hid_id;
+};
+
+extern const struct apple_key_name_map_entry apple_key_name_map[];
+extern const struct rarch_key_map apple_key_map_hidusage[];
+
+
+const char* apple_keycode_hidusage_to_name(uint32_t hid_usage);
+
 #endif

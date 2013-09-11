@@ -8,10 +8,11 @@
 
 /* Begin PBXBuildFile section */
 		9620F663178FD4D3001B3B81 /* settings.m in Sources */ = {isa = PBXBuildFile; fileRef = 9620F662178FD4D3001B3B81 /* settings.m */; };
-		9620F6651790004F001B3B81 /* Settings.xib in Resources */ = {isa = PBXBuildFile; fileRef = 9620F6641790004F001B3B81 /* Settings.xib */; };
 		962EE0E2178B3DF6004224FF /* IOKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 962EE0E1178B3DF6004224FF /* IOKit.framework */; };
 		96355CE31788E72A0010DBFA /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 96355CE21788E72A0010DBFA /* Cocoa.framework */; };
 		9646869817BBC14E00C5EA69 /* platform.m in Sources */ = {isa = PBXBuildFile; fileRef = 9646869617BBC14E00C5EA69 /* platform.m */; };
+		964DE7C117D84B34001CBB6C /* InputBinder.xib in Resources */ = {isa = PBXBuildFile; fileRef = 964DE7C317D84B34001CBB6C /* InputBinder.xib */; };
+		964DE7C417D84B57001CBB6C /* Settings.xib in Resources */ = {isa = PBXBuildFile; fileRef = 964DE7C617D84B57001CBB6C /* Settings.xib */; };
 		967894931788ECDB00D6CA69 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 9678948F1788ECDB00D6CA69 /* InfoPlist.strings */; };
 		967894941788ECDB00D6CA69 /* MainMenu.xib in Resources */ = {isa = PBXBuildFile; fileRef = 967894911788ECDB00D6CA69 /* MainMenu.xib */; };
 		967894961788ED1100D6CA69 /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 967894951788ED1100D6CA69 /* main.m */; };
@@ -29,7 +30,6 @@
 
 /* Begin PBXFileReference section */
 		9620F662178FD4D3001B3B81 /* settings.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = settings.m; path = OSX/settings.m; sourceTree = SOURCE_ROOT; };
-		9620F6641790004F001B3B81 /* Settings.xib */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.xib; name = Settings.xib; path = OSX/Settings.xib; sourceTree = "<group>"; };
 		962EE0E1178B3DF6004224FF /* IOKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = IOKit.framework; path = ../../../../../../../System/Library/Frameworks/IOKit.framework; sourceTree = "<group>"; };
 		96355CDF1788E72A0010DBFA /* RetroArch.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RetroArch.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		96355CE21788E72A0010DBFA /* Cocoa.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Cocoa.framework; path = System/Library/Frameworks/Cocoa.framework; sourceTree = SDKROOT; };
@@ -38,6 +38,8 @@
 		96355CE71788E72A0010DBFA /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = System/Library/Frameworks/Foundation.framework; sourceTree = SDKROOT; };
 		9646869617BBC14E00C5EA69 /* platform.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = platform.m; path = OSX/platform.m; sourceTree = SOURCE_ROOT; };
 		9646869717BBC14E00C5EA69 /* platform.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = platform.h; path = OSX/platform.h; sourceTree = SOURCE_ROOT; };
+		964DE7C217D84B34001CBB6C /* en */ = {isa = PBXFileReference; lastKnownFileType = file; name = en; path = en.lproj/InputBinder.xib; sourceTree = "<group>"; };
+		964DE7C517D84B57001CBB6C /* en */ = {isa = PBXFileReference; lastKnownFileType = file; name = en; path = en.lproj/Settings.xib; sourceTree = "<group>"; };
 		9678948D1788ECCA00D6CA69 /* RetroArch-Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = "RetroArch-Info.plist"; path = "OSX/RetroArch-Info.plist"; sourceTree = SOURCE_ROOT; };
 		967894901788ECDB00D6CA69 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = OSX/en.lproj/InfoPlist.strings; sourceTree = SOURCE_ROOT; };
 		967894921788ECDB00D6CA69 /* en */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = en; path = OSX/en.lproj/MainMenu.xib; sourceTree = SOURCE_ROOT; };
@@ -78,7 +80,7 @@
 			isa = PBXGroup;
 			children = (
 				962EE0E1178B3DF6004224FF /* IOKit.framework */,
-				96355CE81788E72A0010DBFA /* RetroArch */,
+				96355CE81788E72A0010DBFA /* common */,
 				967894E7178A2E9B00D6CA69 /* Assets */,
 				96355CE11788E72A0010DBFA /* Frameworks */,
 				96355CE01788E72A0010DBFA /* Products */,
@@ -109,7 +111,7 @@
 			name = Frameworks;
 			sourceTree = "<group>";
 		};
-		96355CE81788E72A0010DBFA /* RetroArch */ = {
+		96355CE81788E72A0010DBFA /* common */ = {
 			isa = PBXGroup;
 			children = (
 				9646869617BBC14E00C5EA69 /* platform.m */,
@@ -124,7 +126,7 @@
 				9678949C1788F02600D6CA69 /* utility.m */,
 				967894951788ED1100D6CA69 /* main.m */,
 			);
-			path = RetroArch;
+			path = common;
 			sourceTree = "<group>";
 		};
 		96355CE91788E72A0010DBFA /* Supporting Files */ = {
@@ -143,7 +145,8 @@
 				967894E8178A2EB400D6CA69 /* modules */,
 				967894911788ECDB00D6CA69 /* MainMenu.xib */,
 				C15874EE178F2094001171D4 /* RetroArch.icns */,
-				9620F6641790004F001B3B81 /* Settings.xib */,
+				964DE7C617D84B57001CBB6C /* Settings.xib */,
+				964DE7C317D84B34001CBB6C /* InputBinder.xib */,
 			);
 			name = Assets;
 			sourceTree = "<group>";
@@ -202,7 +205,8 @@
 				967894941788ECDB00D6CA69 /* MainMenu.xib in Resources */,
 				967894E9178A2EB400D6CA69 /* modules in Resources */,
 				C15874EF178F2094001171D4 /* RetroArch.icns in Resources */,
-				9620F6651790004F001B3B81 /* Settings.xib in Resources */,
+				964DE7C417D84B57001CBB6C /* Settings.xib in Resources */,
+				964DE7C117D84B34001CBB6C /* InputBinder.xib in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -226,6 +230,24 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXVariantGroup section */
+		964DE7C317D84B34001CBB6C /* InputBinder.xib */ = {
+			isa = PBXVariantGroup;
+			children = (
+				964DE7C217D84B34001CBB6C /* en */,
+			);
+			name = InputBinder.xib;
+			path = OSX;
+			sourceTree = "<group>";
+		};
+		964DE7C617D84B57001CBB6C /* Settings.xib */ = {
+			isa = PBXVariantGroup;
+			children = (
+				964DE7C517D84B57001CBB6C /* en */,
+			);
+			name = Settings.xib;
+			path = OSX;
+			sourceTree = "<group>";
+		};
 		9678948F1788ECDB00D6CA69 /* InfoPlist.strings */ = {
 			isa = PBXVariantGroup;
 			children = (
@@ -303,7 +325,6 @@
 					"-DINLINE=inline",
 					"-DLSB_FIRST",
 					"-D__LIBRETRO__",
-					"-DRARCH_PERFORMANCE_MODE",
 					"-DWANT_RPNG",
 					"-DHAVE_COREAUDIO",
 					"-DHAVE_DYNAMIC",
@@ -349,23 +370,22 @@
 					"-DHAVE_RARCH_MAIN_WRAP",
 					"-DHAVE_GRIFFIN",
 					"-DHAVE_RGUI",
-					"-DIOS",
+					"-DOSX",
 					"-DHAVE_OPENGL",
 					"-DHAVE_FBO",
 					"-DHAVE_VID_CONTEXT",
-					"-DHAVE_OPENGLES2",
 					"-DHAVE_GLSL",
 					"-DINLINE=inline",
 					"-DLSB_FIRST",
 					"-D__LIBRETRO__",
-					"-DRARCH_PERFORMANCE_MODE",
-					"-DRARCH_MOBILE",
+					"-DWANT_RPNG",
 					"-DHAVE_COREAUDIO",
 					"-DHAVE_DYNAMIC",
 					"-DHAVE_OVERLAY",
 					"-DHAVE_ZLIB",
 					"-DWANT_MINIZ",
 					"-DSINC_LOWER_QUALITY",
+					"-DHAVE_NETPLAY",
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = "";

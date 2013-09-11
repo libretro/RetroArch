@@ -23,12 +23,15 @@ char* ios_get_rarch_system_directory();
 // These functions should only be called as arguments to dispatch_sync
 void apple_rarch_exited (void* result);
 
-// These functions must only be called in gfx/context/ioseagl_ctx.c
+// These functions must only be called in gfx/context/apple_gl_context.c
 bool apple_init_game_view(void);
 void apple_destroy_game_view(void);
+bool apple_set_video_mode(unsigned width, unsigned height, bool fullscreen);
 void apple_flip_game_view(void);
 void apple_set_game_view_sync(unsigned interval);
 void apple_get_game_view_size(unsigned *width, unsigned *height);
+void apple_update_window_title(void);
+bool apple_game_view_has_focus(void);
 void *apple_get_proc_address(const char *symbol_name);
 
 #ifdef IOS

@@ -145,7 +145,20 @@ void D3DVideo::make_d3dpp(const video_info_t &info, D3DPRESENT_PARAMETERS &d3dpp
 
    d3dpp.Windowed = g_settings.video.windowed_fullscreen || !info.fullscreen;
 
-   d3dpp.PresentationInterval = info.vsync ? D3DPRESENT_INTERVAL_ONE : D3DPRESENT_INTERVAL_IMMEDIATE;
+   if (info.vsync)
+   {
+      switch (g_settings.video.swap_interval)
+      {
+         default:
+         case 1: d3dpp.PresentationInterval = D3DPRESENT_INTERVAL_ONE; break;
+         case 2: d3dpp.PresentationInterval = D3DPRESENT_INTERVAL_TWO; break;
+         case 3: d3dpp.PresentationInterval = D3DPRESENT_INTERVAL_THREE; break;
+         case 4: d3dpp.PresentationInterval = D3DPRESENT_INTERVAL_FOUR; break;
+      }
+   }
+   else
+      d3dpp.PresentationInterval = D3DPRESENT_INTERVAL_IMMEDIATE;
+
    d3dpp.SwapEffect = D3DSWAPEFFECT_DISCARD;
    d3dpp.hDeviceWindow = hWnd;
    d3dpp.BackBufferCount = 2;
@@ -613,6 +626,17 @@ bool D3DVideo::frame(const void *frame,
    screen_vp.Height = screen_height;
    dev->SetViewport(&screen_vp);
    dev->Clear(0, 0, D3DCLEAR_TARGET, 0, 1, 0);
+
+   // Insert black frame first, so we can screenshot, etc.
+   if (g_settings.video.black_frame_insertion)
+   {
+      if (dev->Present(nullptr, nullptr, nullptr, nullptr) != D3D_OK)
+      {
+         needs_restore = true;
+         return true;
+      }
+      dev->Clear(0, 0, D3DCLEAR_TARGET, 0, 1, 0);
+   }
 
    if (!chain->render(frame, width, height, pitch, rotation))
    {

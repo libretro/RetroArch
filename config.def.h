@@ -63,6 +63,7 @@ enum
    AUDIO_PS3,
    AUDIO_XENON360,
    AUDIO_WII,
+   AUDIO_RWEBAUDIO,
    AUDIO_NULL,
 
    INPUT_ANDROID,
@@ -77,6 +78,7 @@ enum
    INPUT_LINUXRAW,
    INPUT_APPLE,
    INPUT_QNX,
+   INPUT_RWEBINPUT,
    INPUT_NULL
 };
 
@@ -130,6 +132,8 @@ enum
 #define AUDIO_DEFAULT_DRIVER AUDIO_SL
 #elif defined(HAVE_DSOUND)
 #define AUDIO_DEFAULT_DRIVER AUDIO_DSOUND
+#elif defined(EMSCRIPTEN)
+#define AUDIO_DEFAULT_DRIVER AUDIO_RWEBAUDIO
 #elif defined(HAVE_SDL)
 #define AUDIO_DEFAULT_DRIVER AUDIO_SDL
 #elif defined(HAVE_XAUDIO)
@@ -152,6 +156,8 @@ enum
 #define INPUT_DEFAULT_DRIVER INPUT_ANDROID
 #elif defined(_WIN32)
 #define INPUT_DEFAULT_DRIVER INPUT_DINPUT
+#elif defined(EMSCRIPTEN)
+#define INPUT_DEFAULT_DRIVER INPUT_RWEBINPUT
 #elif defined(HAVE_SDL)
 #define INPUT_DEFAULT_DRIVER INPUT_SDL
 #elif defined(__CELLOS_LV2__)
@@ -214,6 +220,14 @@ static const bool hard_sync = false;
 // 1: Syncs to previous frame.
 // 2: Etc ...
 static const unsigned hard_sync_frames = 0;
+
+// Inserts a black frame inbetween frames.
+// Useful for 120 Hz monitors who want to play 60 Hz material with eliminated ghosting. video_refresh_rate should still be configured as if it is a 60 Hz monitor (divide refresh rate by 2).
+static bool black_frame_insertion = false;
+
+// Uses a custom swap interval for VSync.
+// Set this to effectively halve monitor refresh rate.
+static unsigned swap_interval = 1;
 
 // Threaded video. Will possibly increase performance significantly at cost of worse synchronization and latency.
 static const bool video_threaded = false;

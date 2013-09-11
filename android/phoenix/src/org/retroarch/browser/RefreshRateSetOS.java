@@ -4,7 +4,6 @@ import android.app.Activity;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.os.Bundle;
-import android.preference.PreferenceManager;
 import android.view.Display;
 import android.view.WindowManager;
 import android.widget.Toast;
@@ -18,7 +17,7 @@ public class RefreshRateSetOS extends Activity {
 		final WindowManager wm = (WindowManager) getSystemService(Context.WINDOW_SERVICE);
 		final Display display = wm.getDefaultDisplay();
 		double rate = display.getRefreshRate();
-		SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getBaseContext());
+		SharedPreferences prefs = MainMenuActivity.getPreferences();
 		SharedPreferences.Editor edit = prefs.edit();
 		edit.putString("video_refresh_rate", Double.valueOf(rate).toString());
 		edit.commit();

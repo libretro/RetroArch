@@ -49,6 +49,7 @@ struct dinput_joypad
 {
    LPDIRECTINPUTDEVICE8 joypad;
    DIJOYSTATE2 joy_state;
+   char* joy_name;
 };
 
 static unsigned g_joypad_cnt;
@@ -67,12 +68,6 @@ static bool dinput_init_context(void)
 {
    if (g_ctx)
       return true;
-
-   if (driver.display_type != RARCH_DISPLAY_WIN32)
-   {
-      RARCH_ERR("Cannot open DInput as no Win32 window is present.\n");
-      return false;
-   }
 
    CoInitialize(NULL);
 
@@ -351,6 +346,11 @@ const input_driver_t input_dinput = {
    dinput_grab_mouse,
 };
 
+// Keep track of which pad indexes are 360 controllers
+// not static, will be read in winxinput_joypad.c
+// -1 = not xbox pad, otherwise 0..3
+int g_xbox_pad_indexes[MAX_PLAYERS];
+
 static void dinput_joypad_destroy(void)
 {
    for (unsigned i = 0; i < MAX_PLAYERS; i++)
@@ -360,6 +360,10 @@ static void dinput_joypad_destroy(void)
          IDirectInputDevice8_Unacquire(g_pads[i].joypad);
          IDirectInputDevice8_Release(g_pads[i].joypad);
       }
+      
+      free(g_pads[i].joy_name);
+      g_pads[i].joy_name = NULL;
+
    }
 
    g_joypad_cnt = 0;
@@ -386,6 +390,54 @@ static BOOL CALLBACK enum_axes_cb(const DIDEVICEOBJECTINSTANCE *inst, void *p)
    return DIENUM_CONTINUE;
 }
 
+// TODO: Use a better way of detecting dual XInput/DInput pads. This current method
+// will not work correctly for third-party controllers or future MS pads (Xbox One?).
+// An example of this is provided in the DX SDK, which advises "Enum each PNP device
+// using WMI and check each device ID to see if it contains "IG_"". Unfortunately the
+// example code is a horrible unsightly mess.
+static const char* const XINPUT_PAD_NAMES[] = 
+{
+   "XBOX 360 For Windows",
+   "Controller (Gamepad for Xbox 360)",
+   "Controller (XBOX 360 For Windows)",
+   "Controller (Xbox 360 Wireless Receiver for Windows)",
+   "Controller (Xbox wireless receiver for windows)",
+   "XBOX 360 For Windows (Controller)",
+   "Xbox 360 Wireless Receiver",
+   "Xbox 360 Wireless Controller",
+   "Xbox Receiver for Windows (Wireless Controller)",
+   "Xbox wireless receiver for windows (Controller)",
+   "Gamepad F310 (Controller)",
+   "Controller (Gamepad F310)",
+   "Wireless Gamepad F710 (Controller)",
+   "Controller (Batarang wired controller (XBOX))",
+   "Afterglow Gamepad for Xbox 360 (Controller)"
+   "Controller (Rumble Gamepad F510)",
+   "Controller (Wireless Gamepad F710)",
+   "Controller (Xbox 360 Wireless Receiver for Windows)",
+   "Controller (Xbox wireless receiver for windows)",
+   "Controller (XBOX360 GAMEPAD)",
+   "MadCatz GamePad",
+   NULL
+};
+
+static bool name_is_360_pad(const char* name)
+{
+   for (unsigned i = 0; ; ++i)
+   {
+      const char* t = XINPUT_PAD_NAMES[i];
+      if (t == NULL)
+         return false;
+      else if (strcasecmp(name, t) == 0)
+         return true;
+   }
+}
+
+// Forward declaration
+static const char *dinput_joypad_name(unsigned pad);
+
+static int g_last_xbox_pad_index;
+
 static BOOL CALLBACK enum_joypad_cb(const DIDEVICEINSTANCE *inst, void *p)
 {
    (void)p;
@@ -399,7 +451,22 @@ static BOOL CALLBACK enum_joypad_cb(const DIDEVICEINSTANCE *inst, void *p)
 #else
    if (FAILED(IDirectInput8_CreateDevice(g_ctx, &inst->guidInstance, pad, NULL)))
 #endif
-      return DIENUM_CONTINUE;
+   return DIENUM_CONTINUE;
+   
+   g_pads[g_joypad_cnt].joy_name = strdup(inst->tszProductName);
+   
+#ifdef HAVE_WINXINPUT
+   bool is_360_pad = name_is_360_pad(inst->tszProductName);
+   
+   if (is_360_pad)
+   {
+      if (g_last_xbox_pad_index < 4)
+         g_xbox_pad_indexes[g_joypad_cnt] = g_last_xbox_pad_index;
+      ++g_last_xbox_pad_index;
+      
+      goto enum_iteration_done;
+   }
+#endif
 
    IDirectInputDevice8_SetDataFormat(*pad, &c_dfDIJoystick2);
    IDirectInputDevice8_SetCooperativeLevel(*pad, (HWND)driver.video_window,
@@ -407,9 +474,17 @@ static BOOL CALLBACK enum_joypad_cb(const DIDEVICEINSTANCE *inst, void *p)
 
    IDirectInputDevice8_EnumObjects(*pad, enum_axes_cb, 
          *pad, DIDFT_ABSAXIS);
+         
+#ifdef HAVE_WINXINPUT
+   if (!is_360_pad)
+#endif
+   {
+      strlcpy(g_settings.input.device_names[g_joypad_cnt], dinput_joypad_name(g_joypad_cnt), sizeof(g_settings.input.device_names[g_joypad_cnt]));
+      input_config_autoconfigure_joypad(g_joypad_cnt, dinput_joypad_name(g_joypad_cnt), dinput_joypad.ident);
+   }
 
+enum_iteration_done:
    g_joypad_cnt++;
-
    return DIENUM_CONTINUE; 
 }
 
@@ -417,6 +492,14 @@ static bool dinput_joypad_init(void)
 {
    if (!dinput_init_context())
       return false;
+   
+   g_last_xbox_pad_index = 0;
+   
+   for (unsigned i = 0; i < MAX_PLAYERS; ++i)
+   {
+      g_xbox_pad_indexes[i] = -1;
+      g_pads[i].joy_name = NULL;
+   }
 
    RARCH_LOG("Enumerating DInput joypads ...\n");
    IDirectInput8_EnumDevices(g_ctx, DI8DEVCLASS_GAMECTRL,
@@ -524,7 +607,7 @@ static void dinput_joypad_poll(void)
    {
       struct dinput_joypad *pad = &g_pads[i];
 
-      if (pad->joypad)
+      if ((pad->joypad) && (g_xbox_pad_indexes[i] == -1))
       {
          memset(&pad->joy_state, 0, sizeof(pad->joy_state));
 
@@ -555,10 +638,13 @@ static bool dinput_joypad_query_pad(unsigned pad)
    return pad < MAX_PLAYERS && g_pads[pad].joypad;
 }
 
+
+
 static const char *dinput_joypad_name(unsigned pad)
 {
-   (void)pad;
-   // FIXME
+   if (pad < MAX_PLAYERS)
+      return g_pads[pad].joy_name;
+
    return NULL;
 }
 

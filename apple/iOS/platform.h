@@ -17,21 +17,27 @@
 #ifndef __RARCH_IOS_PLATFORM_H
 #define __RARCH_IOS_PLATFORM_H
 
+#include "views.h"
+
 @interface RAGameView : UIViewController
 + (RAGameView*)get;
 - (void)openPauseMenu;
 - (void)closePauseMenu;
 @end
 
-@interface RetroArch_iOS : UINavigationController<UIApplicationDelegate, UINavigationControllerDelegate, RetroArch_Platform>
+@interface RetroArch_iOS : UINavigationController<UIApplicationDelegate, UINavigationControllerDelegate, RetroArch_Platform,
+                                                   RADirectoryListDelegate, RAModuleListDelegate>
 
 + (RetroArch_iOS*)get;
 
 - (void)loadingCore:(RAModuleInfo*)core withFile:(const char*)file;
 - (void)unloadingCore:(RAModuleInfo*)core;
-- (NSString*)retroarchConfigPath;
 
 - (void)refreshSystemConfig;
+
+@property (strong, nonatomic) NSString* configDirectory;    // e.g. /var/mobile/Documents/.RetroArch
+@property (strong, nonatomic) NSString* globalConfigFile;   // e.g. /var/mobile/Documents/.RetroArch/retroarch.cfg
+@property (strong, nonatomic) NSString* coreDirectory;      // e.g. /Applications/RetroArch.app/modules
 
 @property (strong, nonatomic) NSString* documentsDirectory; // e.g. /var/mobile/Documents
 @property (strong, nonatomic) NSString* systemDirectory;    // e.g. /var/mobile/Documents/.RetroArch

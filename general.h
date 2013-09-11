@@ -159,6 +159,8 @@ struct settings
       unsigned fullscreen_y;
       bool vsync;
       bool hard_sync;
+      bool black_frame_insertion;
+      unsigned swap_interval;
       unsigned hard_sync_frames;
       bool smooth;
       bool force_aspect;
@@ -201,6 +203,7 @@ struct settings
       char driver[32];
       bool enable;
       unsigned out_rate;
+      unsigned block_frames;
       float in_rate;
       char device[PATH_MAX];
       unsigned latency;
@@ -470,6 +473,8 @@ struct global
    } filter;
 
    msg_queue_t *msg_queue;
+
+   bool exec;
 
    // Rewind support.
    state_manager_t *state_manager;

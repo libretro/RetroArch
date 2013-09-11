@@ -357,6 +357,8 @@ enum retro_mod
 
 // If set, this call is not part of the public libretro API yet. It can change or be removed at any time.
 #define RETRO_ENVIRONMENT_EXPERIMENTAL 0x10000
+// Environment callback to be used internally in frontend.
+#define RETRO_ENVIRONMENT_PRIVATE 0x20000
 
 // Environment commands.
 #define RETRO_ENVIRONMENT_SET_ROTATION  1  // const unsigned * --
@@ -445,7 +447,7 @@ enum retro_mod
                                            // If HW rendering is used, pass only RETRO_HW_FRAME_BUFFER_VALID or NULL to retro_video_refresh_t.
 #define RETRO_ENVIRONMENT_GET_VARIABLE 15
                                            // struct retro_variable * --
-                                           // Interface to aquire user-defined information from environment
+                                           // Interface to acquire user-defined information from environment
                                            // that cannot feasibly be supported in a multi-system way.
                                            // 'key' should be set to a key which has already been set by SET_VARIABLES.
                                            // 'data' will be set to a value or NULL.
@@ -509,7 +511,7 @@ enum retro_mod
                                            // Lets the core know how much time has passed since last invocation of retro_run().
                                            // The frontend can tamper with the timing to fake fast-forward, slow-motion, frame stepping, etc.
                                            // In this case the delta time will use the reference value in frame_time_callback..
-                                          
+
 
 // Notifies libretro that audio data should be written.
 typedef void (*retro_audio_callback_t)(void);

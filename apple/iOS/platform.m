@@ -19,12 +19,12 @@
 #import "RetroArch_Apple.h"
 #include "rarch_wrapper.h"
 
-#include "../RetroArch/apple_input.h"
+#include "apple/common/apple_input.h"
 
 #import "views.h"
-#include "input/BTStack/btpad.h"
-#include "input/BTStack/btdynamic.h"
-#include "input/BTStack/btpad.h"
+#include "bluetooth/btpad.h"
+#include "bluetooth/btdynamic.h"
+#include "bluetooth/btpad.h"
 
 #include "file.h"
 
@@ -85,6 +85,7 @@ static void handle_touch_event(NSArray* touches)
 @implementation RetroArch_iOS
 {
    UIWindow* _window;
+   NSString* _path;
 
    bool _isGameTop, _isRomList;
    uint32_t _settingMenusInBackStack;
@@ -111,33 +112,71 @@ static void handle_touch_event(NSArray* touches)
    self.documentsDirectory = [NSHomeDirectory() stringByAppendingPathComponent:@"Documents"];
    self.systemDirectory = [self.documentsDirectory stringByAppendingPathComponent:@".RetroArch"];
    self.systemConfigPath = [self.systemDirectory stringByAppendingPathComponent:@"frontend.cfg"];
+   
+   self.configDirectory = self.systemDirectory;
+   self.globalConfigFile = [NSString stringWithFormat:@"%@/retroarch.cfg", self.configDirectory];
+   self.coreDirectory = [NSBundle.mainBundle.bundlePath stringByAppendingPathComponent:@"modules"];
 
    if (!path_make_and_check_directory(self.documentsDirectory.UTF8String, 0755, R_OK | W_OK | X_OK))
       apple_display_alert([NSString stringWithFormat:@"Failed to create or access base directory: %@", self.documentsDirectory], 0);
    else if (!path_make_and_check_directory(self.systemDirectory.UTF8String, 0755, R_OK | W_OK | X_OK))
       apple_display_alert([NSString stringWithFormat:@"Failed to create or access system directory: %@", self.systemDirectory], 0);
    else
-   {
-      [self pushViewController:[RADirectoryList directoryListAtBrowseRoot] animated:YES];
-      [self refreshSystemConfig];
-      
-      if (apple_use_tv_mode)
-         apple_run_core(nil, 0);
-   }
+      [self beginBrowsingForFile];
+
    
    // Warn if there are no cores present
-   if ([RAModuleInfo getModules].count == 0)
+   if (apple_get_modules().count == 0)
       apple_display_alert(@"No libretro cores were found. You will not be able to play any games.", 0);
 }
 
 - (void)applicationDidBecomeActive:(UIApplication *)application
 {
-   apple_exit_stasis();
+   apple_exit_stasis(false);
 }
 
 - (void)applicationWillResignActive:(UIApplication *)application
 {
    apple_enter_stasis();
+}
+
+#pragma mark Frontend Browsing Logic
+- (void)beginBrowsingForFile
+{
+   NSString* rootPath = RetroArch_iOS.get.documentsDirectory;
+   NSString* ragPath = [rootPath stringByAppendingPathComponent:@"RetroArchGames"];
+   NSString* target = path_is_directory(ragPath.UTF8String) ? ragPath : rootPath;
+   
+   [self pushViewController:[[RADirectoryList alloc] initWithPath:target delegate:self] animated:YES];
+
+   [self refreshSystemConfig];
+   if (apple_use_tv_mode)
+      apple_run_core(nil, 0);
+   
+}
+
+- (bool)directoryList:(id)list itemWasSelected:(RADirectoryItem*)path
+{
+   if(path.isDirectory)
+      [[RetroArch_iOS get] pushViewController:[[RADirectoryList alloc] initWithPath:path.path delegate:self] animated:YES];
+   else
+   {
+      _path = path.path;
+   
+      if (access([path.path stringByDeletingLastPathComponent].UTF8String, R_OK | W_OK | X_OK))
+         apple_display_alert(@"The directory containing the selected file has limited permissions. This may "
+                              "prevent zipped games from loading, and will cause some cores to not function.", 0);
+
+      [[RetroArch_iOS get] pushViewController:[[RAModuleList alloc] initWithGame:path.path delegate:self] animated:YES];
+   }
+   
+   return true;
+}
+
+- (bool)moduleList:(id)list itemWasSelected:(RAModuleInfo*)module
+{
+   apple_run_core(module, _path.UTF8String);
+   return true;
 }
 
 // UINavigationControllerDelegate
@@ -217,16 +256,6 @@ static void handle_touch_event(NSArray* touches)
    btpad_set_inquiry_state(true);
 }
 
-- (NSString*)retroarchConfigPath
-{
-   return self.systemDirectory;
-}
-
-- (NSString*)corePath
-{
-   return [NSBundle.mainBundle.bundlePath stringByAppendingPathComponent:@"modules"];
-}
-
 #pragma mark FRONTEND CONFIG
 - (void)refreshSystemConfig
 {
@@ -259,7 +288,7 @@ static void handle_touch_event(NSArray* touches)
       ios_set_bluetooth_mode(objc_get_value_from_config(conf, @"ios_btmode", @"keyboard"));
 
       bool val;
-      apple_use_tv_mode = config_get_bool(conf, "ios_tv_mode", & val) && val;
+      apple_use_tv_mode = config_get_bool(conf, "ios_tv_mode", &val) && val;
       
       config_file_free(conf);
    }

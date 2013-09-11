@@ -469,6 +469,7 @@ static bool gfx_ctx_set_video_mode(
    if (!g_hwnd)
       goto error;
 
+#ifdef HAVE_WIN32GUI
    if (!fullscreen)
    {
       SetMenu(g_hwnd, LoadMenu(GetModuleHandle(NULL), MAKEINTRESOURCE(IDR_MENU)));
@@ -477,6 +478,7 @@ static bool gfx_ctx_set_video_mode(
       unsigned menu_height = rcTemp.top + rect.top; // rect.top is negative after AdjustWindowRect().
       SetWindowPos(g_hwnd, NULL, 0, 0, width, height + menu_height, SWP_NOMOVE);
    }
+#endif
 
    if (!fullscreen || windowed_full)
    {
