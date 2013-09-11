@@ -23,21 +23,16 @@ var LibraryRWebInput = {
                break;
             case 'mouseup':
             case 'mousedown':
-               var l, r;
-
-               if (event.buttons & 1) l = 1;
-               else l = 0;
-
-               if (event.buttons & 2) r = 1;
-               else r = 0;
-
+               var value;
+               var offset;
+               if (event.button === 0) offset = 40;
+               else if (event.button === 2) offset = 41;
+               else break;
+               if (event.type === 'mouseup') value = 0;
+               else value = 1;
                for (i = 0; i < RI.contexts.length; i++) {
-                  {{{ makeSetValue('RI.contexts[i].state', '40', 'l', 'i8') }}};
-                  {{{ makeSetValue('RI.contexts[i].state', '41', 'r', 'i8') }}};
+                  {{{ makeSetValue('RI.contexts[i].state', 'offset', 'value', 'i8') }}};
                }
-               break;
-            case 'click':
-               e.preventDefault();
                break;
             case 'keyup':
             case 'keydown':
@@ -70,7 +65,6 @@ var LibraryRWebInput = {
          document.addEventListener('mousemove', RI.eventHandler, false);
          document.addEventListener('mouseup', RI.eventHandler, false);
          document.addEventListener('mousedown', RI.eventHandler, false);
-         document.addEventListener('click', RI.eventHandler, false);
          document.addEventListener('blur', RI.eventHandler, false);
          document.addEventListener('onvisbilitychange', RI.eventHandler, false);
       }
@@ -103,7 +97,6 @@ var LibraryRWebInput = {
             document.removeEventListener('mousemove', RI.eventHandler, false);
             document.removeEventListener('mouseup', RI.eventHandler, false);
             document.removeEventListener('mousedown', RI.eventHandler, false);
-            document.removeEventListener('click', RI.eventHandler, false);
             document.removeEventListener('blur', RI.eventHandler, false);
             document.removeEventListener('onvisbilitychange', RI.eventHandler, false);
          }
