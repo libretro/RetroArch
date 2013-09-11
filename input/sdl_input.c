@@ -24,10 +24,6 @@
 #include "../libretro.h"
 #include "input_common.h"
 
-#ifdef EMSCRIPTEN
-#define SDL_GetKeyState SDL_GetKeyboardState
-#endif
-
 typedef struct sdl_input
 {
    const rarch_joypad_driver_t *joypad;
@@ -55,7 +51,7 @@ static bool sdl_key_pressed(int key)
 
    int sym = input_translate_rk_to_keysym((enum retro_key)key);
 
-   int num_keys = 0xFFFF;
+   int num_keys;
    Uint8 *keymap = SDL_GetKeyState(&num_keys);
    if (sym < 0 || sym >= num_keys)
       return false;
@@ -220,14 +216,11 @@ static void sdl_input_free(void *data)
 
 static void sdl_poll_mouse(sdl_input_t *sdl)
 {
-   (void)sdl;
-#ifndef EMSCRIPTEN
    Uint8 btn = SDL_GetRelativeMouseState(&sdl->mouse_x, &sdl->mouse_y);
    SDL_GetMouseState(&sdl->mouse_abs_x, &sdl->mouse_abs_y);
    sdl->mouse_l = SDL_BUTTON(SDL_BUTTON_LEFT) & btn ? 1 : 0;
    sdl->mouse_r = SDL_BUTTON(SDL_BUTTON_RIGHT) & btn ? 1 : 0;
    sdl->mouse_m = SDL_BUTTON(SDL_BUTTON_MIDDLE) & btn ? 1 : 0;
-#endif
 }
 
 static void sdl_input_poll(void *data)
