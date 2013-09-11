@@ -16,7 +16,7 @@
 #include "../driver.h"
 #include "../general.h"
 
-#include "RWebAudio.h"
+#include "../emscripten/RWebAudio.h"
 
 static void ra_free(void *data)
 {

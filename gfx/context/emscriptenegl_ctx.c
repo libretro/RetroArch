@@ -31,7 +31,6 @@
 #include <emscripten/emscripten.h>
 #include <EGL/egl.h>
 #include <EGL/eglext.h>
-#include <SDL/SDL.h>
 
 static EGLContext g_egl_ctx;
 static EGLSurface g_egl_surf;
@@ -220,15 +219,12 @@ static void gfx_ctx_input_driver(const input_driver_t **input, void **input_data
 {
    *input = NULL;
 
-   if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_NOPARACHUTE) != 0)
-      return;
+   void *rwebinput = input_rwebinput.init();
 
-   void *sdlinput = input_sdl.init();
-
-   if (sdlinput)
+   if (rwebinput)
    {
-      *input      = &input_sdl;
-      *input_data = sdlinput;
+      *input      = &input_rwebinput;
+      *input_data = rwebinput;
    }
 }
 

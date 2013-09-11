@@ -139,6 +139,8 @@ const char *config_get_default_input(void)
          return "apple_input";
       case INPUT_QNX:
       	 return "qnx_input";
+      case INPUT_RWEBINPUT:
+      	 return "rwebinput";
       case INPUT_NULL:
          return "null";
       default:
