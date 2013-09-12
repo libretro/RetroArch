@@ -741,10 +741,13 @@ public class MainMenuActivity extends PreferenceActivity {
 											SharedPreferences prefs = getPreferences();
 											SharedPreferences.Editor edit = prefs
 													.edit();
+											edit.putBoolean("video_threaded", false);
 											edit.putBoolean("input_overlay_enable",
 													false);
 											edit.putBoolean("input_autodetect_enable",
 													true);
+											edit.putString("video_refresh_rate", Double
+													.valueOf(59.19132938771038).toString());
 											edit.commit();
 										}
 									});
