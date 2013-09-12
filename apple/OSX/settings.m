@@ -268,10 +268,6 @@ static const char* get_axis_name(const rarch_setting_t* setting)
 
 @end
 
-@protocol RASettingView
-@property const rarch_setting_t* setting;
-@end
-
 @interface RASettingsDelegate : NSObject<NSTableViewDataSource,   NSTableViewDelegate,
                                          NSOutlineViewDataSource, NSOutlineViewDelegate,
                                          NSWindowDelegate>

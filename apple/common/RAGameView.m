@@ -344,8 +344,6 @@ bool apple_game_view_has_focus(void)
 
 bool apple_set_video_mode(unsigned width, unsigned height, bool fullscreen)
 {
-   __block bool result = true;
-
 #ifdef OSX
    dispatch_sync(dispatch_get_main_queue(),
    ^{
@@ -353,14 +351,15 @@ bool apple_set_video_mode(unsigned width, unsigned height, bool fullscreen)
       
       if (fullscreen && !g_has_went_fullscreen)
       {
-         if (g_settings.video.monitor_index >= [NSScreen screens].count)
+         unsigned monitor = g_settings.video.monitor_index;
+         
+         if (monitor >= [NSScreen screens].count)
          {
-            apple_display_alert(@"Could not go fullscreen: Monitor index out of range.", nil);
-            result = false;
-            return;
+            RARCH_WARN("video_monitor_index is greater than the number of connected monitors; using main screen instead.\n");
+            monitor = 0;
          }
-      
-         [g_view enterFullScreenMode:[NSScreen screens][g_settings.video.monitor_index] withOptions:nil];
+
+         [g_view enterFullScreenMode:[NSScreen screens][monitor] withOptions:nil];
          [NSCursor hide];
       }
       else if (!fullscreen && g_has_went_fullscreen)
@@ -378,7 +377,7 @@ bool apple_set_video_mode(unsigned width, unsigned height, bool fullscreen)
 
    // TODO: Maybe iOS users should be apple to show/hide the status bar here?
 
-   return result;
+   return true;
 }
 
 #ifdef IOS
