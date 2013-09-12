@@ -2291,6 +2291,12 @@ static bool gl_read_viewport(void *data, uint8_t *buffer)
    RARCH_PERFORMANCE_INIT(read_viewport);
    RARCH_PERFORMANCE_START(read_viewport);
 
+#ifdef HAVE_FBO
+   // Make sure we're reading from backbuffer incase some state has been overridden.
+   if (gl->hw_render_fbo_init || gl->fbo_inited)
+      gl_bind_backbuffer();
+#endif
+
 #ifdef HAVE_OPENGLES
    glPixelStorei(GL_PACK_ALIGNMENT, get_alignment(gl->vp.width * 3));
    // GLES doesn't support glReadBuffer ... Take a chance that it'll work out right.
