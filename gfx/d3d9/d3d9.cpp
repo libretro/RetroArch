@@ -363,17 +363,17 @@ void D3DVideo::calculate_rect(unsigned width, unsigned height,
       else
       {
          float device_aspect = static_cast<float>(width) / static_cast<float>(height);
-         if (fabs(device_aspect - desired_aspect) < 0.0001)
+         if (fabsf(device_aspect - desired_aspect) < 0.0001f)
             set_viewport(0, 0, width, height);
          else if (device_aspect > desired_aspect)
          {
-            float delta = (desired_aspect / device_aspect - 1.0) / 2.0 + 0.5;
-            set_viewport(width * (0.5 - delta), 0, 2.0 * width * delta, height);
+            float delta = (desired_aspect / device_aspect - 1.0f) / 2.0f + 0.5f;
+            set_viewport(int(roundf(width * (0.5f - delta))), 0, unsigned(roundf(2.0f * width * delta)), height);
          }
          else
          {
-            float delta = (device_aspect / desired_aspect - 1.0) / 2.0 + 0.5;
-            set_viewport(0, height * (0.5 - delta), width, 2.0 * height * delta);
+            float delta = (device_aspect / desired_aspect - 1.0f) / 2.0f + 0.5f;
+            set_viewport(0, int(roundf(height * (0.5f - delta))), width, unsigned(roundf(2.0f * height * delta)));
          }
       }
    }
