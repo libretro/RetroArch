@@ -215,6 +215,7 @@ static bool menu_type_is_directory_browser(unsigned type)
       type == RGUI_SHADER_DIR_PATH ||
 #endif
       type == RGUI_SAVESTATE_DIR_PATH ||
+      type == RGUI_LIBRETRO_DIR_PATH ||
       type == RGUI_SAVEFILE_DIR_PATH ||
 #ifdef HAVE_OVERLAY
       type == RGUI_OVERLAY_DIR_PATH ||
@@ -471,6 +472,8 @@ static void render_text(rgui_handle_t *rgui)
       snprintf(title, sizeof(title), "SHADER DIR %s", dir);
    else if (menu_type == RGUI_SAVESTATE_DIR_PATH)
       snprintf(title, sizeof(title), "SAVESTATE DIR %s", dir);
+   else if (menu_type == RGUI_LIBRETRO_DIR_PATH)
+      snprintf(title, sizeof(title), "LIBRETRO DIR %s", dir);
    else if (menu_type == RGUI_SAVEFILE_DIR_PATH)
       snprintf(title, sizeof(title), "SAVEFILE DIR %s", dir);
 #ifdef HAVE_OVERLAY
@@ -652,10 +655,7 @@ static void render_text(rgui_handle_t *rgui)
                w = 5;
                break;
             case RGUI_SETTINGS_REWIND_ENABLE:
-               if (g_settings.rewind_enable)
-                  strlcpy(type_str, "ON", sizeof(type_str));
-               else
-                  strlcpy(type_str, "OFF", sizeof(type_str));
+               strlcpy(type_str, g_settings.rewind_enable ? "ON" : "OFF", sizeof(type_str));
                break;
             case RGUI_SETTINGS_REWIND_GRANULARITY:
                snprintf(type_str, sizeof(type_str), "%u", g_settings.rewind_granularity);
@@ -671,10 +671,7 @@ static void render_text(rgui_handle_t *rgui)
                snprintf(type_str, sizeof(type_str), "%d", g_extern.state_slot);
                break;
             case RGUI_SETTINGS_AUDIO_MUTE:
-               if (g_extern.audio_data.mute)
-                  strlcpy(type_str, "ON", sizeof(type_str));
-               else
-                  strlcpy(type_str, "OFF", sizeof(type_str));
+               strlcpy(type_str, g_extern.audio_data.mute ? "ON" : "OFF", sizeof(type_str));
                break;
             case RGUI_SETTINGS_AUDIO_CONTROL_RATE_DELTA:
                snprintf(type_str, sizeof(type_str), "%.3f", g_settings.audio.rate_control_delta);
@@ -683,42 +680,27 @@ static void render_text(rgui_handle_t *rgui)
                snprintf(type_str, sizeof(type_str), (g_extern.lifecycle_mode_state & (1ULL << MODE_FPS_DRAW)) ? "ON" : "OFF");
                break;
             case RGUI_BROWSER_DIR_PATH:
-               if (*g_settings.rgui_browser_directory)
-                  strlcpy(type_str, g_settings.rgui_browser_directory, sizeof(type_str));
-               else
-                  strlcpy(type_str, "<default>", sizeof(type_str));
+               strlcpy(type_str, *g_settings.rgui_browser_directory ? g_settings.rgui_browser_directory : "<default>", sizeof(type_str));
                break;
             case RGUI_SAVEFILE_DIR_PATH:
-               if (*g_extern.savefile_dir)
-                  strlcpy(type_str, g_extern.savefile_dir, sizeof(type_str));
-               else
-                  strlcpy(type_str, "<ROM dir>", sizeof(type_str));
+               strlcpy(type_str, *g_extern.savefile_dir ? g_extern.savefile_dir : "<ROM dir>", sizeof(type_str));
                break;
 #ifdef HAVE_OVERLAY
             case RGUI_OVERLAY_DIR_PATH:
-               if (*g_extern.overlay_dir)
-                  strlcpy(type_str, g_extern.overlay_dir, sizeof(type_str));
-               else
-                  strlcpy(type_str, "<default>", sizeof(type_str));
+               strlcpy(type_str, *g_extern.overlay_dir ? g_extern.overlay_dir : "<default>", sizeof(type_str));
                break;
 #endif
             case RGUI_SAVESTATE_DIR_PATH:
-               if (*g_extern.savestate_dir)
-                  strlcpy(type_str, g_extern.savestate_dir, sizeof(type_str));
-               else
-                  strlcpy(type_str, "<ROM dir>", sizeof(type_str));
+               strlcpy(type_str, *g_extern.savestate_dir ? g_extern.savestate_dir : "<ROM dir>", sizeof(type_str));
+               break;
+            case RGUI_LIBRETRO_DIR_PATH:
+               strlcpy(type_str, *rgui->libretro_dir ? rgui->libretro_dir : "<None>", sizeof(type_str));
                break;
             case RGUI_SHADER_DIR_PATH:
-               if (*g_settings.video.shader_dir)
-                  strlcpy(type_str, g_settings.video.shader_dir, sizeof(type_str));
-               else
-                  strlcpy(type_str, "<default>", sizeof(type_str));
+               strlcpy(type_str, *g_settings.video.shader_dir ? g_settings.video.shader_dir : "<default>", sizeof(type_str));
                break;
             case RGUI_SYSTEM_DIR_PATH:
-               if (*g_settings.system_directory)
-                  strlcpy(type_str, g_settings.system_directory, sizeof(type_str));
-               else
-                  strlcpy(type_str, "<ROM dir>", sizeof(type_str));
+               strlcpy(type_str, *g_settings.system_directory ? g_settings.system_directory : "<ROM dir>", sizeof(type_str));
                break;
             case RGUI_SETTINGS_DISK_INDEX:
             {
@@ -1407,6 +1389,10 @@ static int rgui_settings_toggle_setting(rgui_handle_t *rgui, unsigned setting, r
       case RGUI_SAVESTATE_DIR_PATH:
          if (action == RGUI_ACTION_START)
             *g_extern.savestate_dir = '\0';
+         break;
+      case RGUI_LIBRETRO_DIR_PATH:
+         if (action == RGUI_ACTION_START)
+            *rgui->libretro_dir = '\0';
          break;
       case RGUI_SHADER_DIR_PATH:
          if (action == RGUI_ACTION_START)
@@ -2119,6 +2105,9 @@ static void rgui_settings_path_populate_entries(rgui_handle_t *rgui)
 {
    rgui_list_clear(rgui->selection_buf);
    rgui_list_push(rgui->selection_buf, "Browser Directory", RGUI_BROWSER_DIR_PATH, 0);
+#ifdef HAVE_DYNAMIC
+   rgui_list_push(rgui->selection_buf, "Core Directory", RGUI_LIBRETRO_DIR_PATH, 0);
+#endif
 #ifdef HAVE_SHADER_MANAGER
    rgui_list_push(rgui->selection_buf, "Shader Directory", RGUI_SHADER_DIR_PATH, 0);
 #endif
@@ -2840,6 +2829,11 @@ int rgui_iterate(rgui_handle_t *rgui)
             else if (menu_type == RGUI_SAVESTATE_DIR_PATH)
             {
                strlcpy(g_extern.savestate_dir, dir, sizeof(g_extern.savestate_dir));
+               rgui_flush_menu_stack_type(rgui, RGUI_SETTINGS_PATH_OPTIONS);
+            }
+            else if (menu_type == RGUI_LIBRETRO_DIR_PATH)
+            {
+               strlcpy(rgui->libretro_dir, dir, sizeof(g_extern.savestate_dir));
                rgui_flush_menu_stack_type(rgui, RGUI_SETTINGS_PATH_OPTIONS);
             }
             else if (menu_type == RGUI_SHADER_DIR_PATH)
