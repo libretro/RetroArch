@@ -27,17 +27,6 @@
 
 #include "../../apple/common/rarch_wrapper.h"
 
-static bool gfx_ctx_bind_api(enum gfx_ctx_api api, unsigned major, unsigned minor)
-{
-   (void)major;
-   (void)minor;
-#ifdef IOS
-   return api == GFX_CTX_OPENGL_ES_API;
-#else
-   return apple_create_gl_context((major << 12) | (minor << 8));
-#endif
-}
-
 static void gfx_ctx_check_window(bool *quit,
       bool *resize, unsigned *width, unsigned *height, unsigned frame_count)
 {
@@ -46,7 +35,7 @@ static void gfx_ctx_check_window(bool *quit,
    *quit = false;
 
    unsigned new_width, new_height;
-   apple_get_game_view_size(&new_width, &new_height);
+   apple_gfx_ctx_get_video_size(&new_width, &new_height);
    if (new_width != *width || new_height != *height)
    {
       *width  = new_width;
@@ -67,28 +56,22 @@ static void gfx_ctx_input_driver(const input_driver_t **input, void **input_data
    *input_data = NULL;
 }
 
-static gfx_ctx_proc_t gfx_ctx_get_proc_address(const char *symbol_name)
-{
-   return (gfx_ctx_proc_t)apple_get_proc_address(symbol_name);
-}
-
 // The apple_* functions are implemented in apple/RetroArch/RAGameView.m
-
 const gfx_ctx_driver_t gfx_ctx_apple = {
-   apple_init_game_view,
-   apple_destroy_game_view,
-   gfx_ctx_bind_api,
-   apple_set_game_view_sync,
-   apple_set_video_mode,
-   apple_get_game_view_size,
+   apple_gfx_ctx_init,
+   apple_gfx_ctx_destroy,
+   apple_gfx_ctx_bind_api,
+   apple_gfx_ctx_swap_interval,
+   apple_gfx_ctx_set_video_mode,
+   apple_gfx_ctx_get_video_size,
    NULL,
-   apple_update_window_title,
+   apple_gfx_ctx_update_window_title,
    gfx_ctx_check_window,
    gfx_ctx_set_resize,
-   apple_game_view_has_focus,
-   apple_flip_game_view,
+   apple_gfx_ctx_has_focus,
+   apple_gfx_ctx_swap_buffers,
    gfx_ctx_input_driver,
-   gfx_ctx_get_proc_address,
+   apple_gfx_ctx_get_proc_address,
    NULL,
-   "ios",
+   "apple",
 };

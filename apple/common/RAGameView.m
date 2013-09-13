@@ -18,15 +18,47 @@
 
 #include "general.h"
 #include "gfx/gfx_common.h"
+#include "gfx/gfx_context.h"
+
+// Define compatibility symbols and categories
+#ifdef IOS
+#define APP_HAS_FOCUS ([UIApplication sharedApplication].applicationState == UIApplicationStateActive)
+
+#define GLContextClass EAGLContext
+#define GLAPIType GFX_CTX_OPENGL_ES_API
+#define GLFrameworkID CFSTR("com.apple.opengles")
+#define RAScreen UIScreen
+
+@interface EAGLContext (OSXCompat) @end
+@implementation EAGLContext (OSXCompat)
++ (void)clearCurrentContext { EAGLContext.currentContext = nil;  }
+- (void)makeCurrentContext  { EAGLContext.currentContext = self; }
+@end
+
+#elif defined(OSX)
+#define APP_HAS_FOCUS ([NSApp isActive])
+
+#define GLContextClass NSOpenGLContext
+#define GLAPIType GFX_CTX_OPENGL_API
+#define GLFrameworkID CFSTR("com.apple.opengl")
+#define RAScreen NSScreen
+
+#define g_view g_instance // < RAGameView is a container on iOS; on OSX these are both the same object
+
+@interface NSScreen (IOSCompat) @end
+@implementation NSScreen (IOSCompat)
+- (CGRect)bounds { return CGRectMake(0, 0, CGRectGetWidth(self.frame), CGRectGetHeight(self.frame)); }
+- (float) scale  { return 1.0f; }
+@end
+
+#endif
+
 
 #ifdef IOS
 
 #import "views.h"
-
 static const float ALMOST_INVISIBLE = .021f;
-static RAGameView* g_instance;
 static GLKView* g_view;
-static EAGLContext* g_context;
 static UIView* g_pause_view;
 static UIView* g_pause_indicator_view;
 
@@ -35,17 +67,18 @@ static UIView* g_pause_indicator_view;
 #include "apple_input.h"
 
 static bool g_has_went_fullscreen;
-static RAGameView* g_instance;
-static NSOpenGLContext* g_context;
 static NSOpenGLPixelFormat* g_format;
-
-#define g_view g_instance // < RAGameView is a container on iOS; on OSX these are both the same object
 
 #endif
 
+
+static bool g_initialized;
+static RAGameView* g_instance;
+static GLContextClass* g_context;
+
 static int g_fast_forward_skips;
 static bool g_is_syncing = true;
-static float g_screen_scale = 1.0f;
+
 
 @implementation RAGameView
 + (RAGameView*)get
@@ -76,11 +109,6 @@ static float g_screen_scale = 1.0f;
 - (void)display
 {
    [g_context flushBuffer];
-}
-
-- (void)bindDrawable
-{
-   glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
 // Stop the annoying sound when pressing a key
@@ -120,8 +148,6 @@ static float g_screen_scale = 1.0f;
 - (id)init
 {
    self = [super init];
-
-   g_screen_scale = [[UIScreen mainScreen] scale];
 
    UINib* xib = [UINib nibWithNibName:@"PauseView" bundle:nil];
    g_pause_view = [[xib instantiateWithOwner:[RetroArch_iOS get] options:nil] lastObject];
@@ -193,57 +219,67 @@ static float g_screen_scale = 1.0f;
 
 @end
 
-// Realistically these functions don't create or destroy the view; just the OpenGL context.
-bool apple_init_game_view()
+static RAScreen* get_chosen_screen()
 {
-#ifdef IOS
-   dispatch_sync(dispatch_get_main_queue(), ^{
-      // Make sure the view was created
-      [RAGameView get];
+   unsigned monitor = g_settings.video.monitor_index;
+         
+   if (monitor >= RAScreen.screens.count)
+   {
+      RARCH_WARN("video_monitor_index is greater than the number of connected monitors; using main screen instead.\n");
+      return RAScreen.mainScreen;
+   }
+   
+   return RAScreen.screens[monitor];
+}
 
-      g_context = [[EAGLContext alloc] initWithAPI:kEAGLRenderingAPIOpenGLES2];
-      [EAGLContext setCurrentContext:g_context];
-      g_view.context = g_context;
+bool apple_gfx_ctx_init()
+{
+   dispatch_sync(dispatch_get_main_queue(),
+   ^{
+      // Make sure the view was created
+      [RAGameView get];      
       
-      // Show pause button for a few seconds, so people know it's there
+#ifdef IOS // Show pause button for a few seconds, so people know it's there
       g_pause_indicator_view.alpha = 1.0f;
       [NSObject cancelPreviousPerformRequestsWithTarget:g_instance];
       [g_instance performSelector:@selector(hidePauseButton) withObject:g_instance afterDelay:3.0f];
+#endif
    });
 
-   [EAGLContext setCurrentContext:g_context];
-#else
-   [g_context makeCurrentContext];
-#endif
+   g_initialized = true;
+
    return true;
 }
 
-void apple_destroy_game_view()
+void apple_gfx_ctx_destroy()
 {
-   dispatch_sync(dispatch_get_main_queue(), ^{
-      glFinish();
-      
+   g_initialized = false;
+
+   [GLContextClass clearCurrentContext];
+
+   dispatch_sync(dispatch_get_main_queue(),
+   ^{
 #ifdef IOS
       g_view.context = nil;
-      [EAGLContext setCurrentContext:nil];
+#endif
+      [GLContextClass clearCurrentContext];
       g_context = nil;
-#endif
    });
-   
-#ifdef IOS
-   [EAGLContext setCurrentContext:nil];
-#else
-   [NSOpenGLContext clearCurrentContext];
-#endif
 }
 
-bool apple_create_gl_context(uint32_t version)
+bool apple_gfx_ctx_bind_api(enum gfx_ctx_api api, unsigned major, unsigned minor)
 {
-#ifdef OSX
-   [NSOpenGLContext clearCurrentContext];
+   if (api != GLAPIType)
+      return false;
+
+
+   [GLContextClass clearCurrentContext];
+
+   dispatch_sync(dispatch_get_main_queue(),
+   ^{
+      [GLContextClass clearCurrentContext];
    
-   dispatch_sync(dispatch_get_main_queue(), ^{
-      [NSOpenGLContext clearCurrentContext];
+#ifdef OSX
       [g_context clearDrawable];
       g_context = nil;
       g_format = nil;
@@ -251,38 +287,29 @@ bool apple_create_gl_context(uint32_t version)
       NSOpenGLPixelFormatAttribute attributes [] = {
          NSOpenGLPFADoubleBuffer,	// double buffered
          NSOpenGLPFADepthSize, (NSOpenGLPixelFormatAttribute)16, // 16 bit depth buffer
-         version ? NSOpenGLPFAOpenGLProfile : 0, version,
+         (major || minor) ? NSOpenGLPFAOpenGLProfile : 0, (major << 12) | (minor << 8),
          (NSOpenGLPixelFormatAttribute)nil
       };
 
       g_format = [[NSOpenGLPixelFormat alloc] initWithAttributes:attributes];
       g_context = [[NSOpenGLContext alloc] initWithFormat:g_format shareContext:nil];
       g_context.view = g_view;
+#else
+      g_context = [[EAGLContext alloc] initWithAPI:kEAGLRenderingAPIOpenGLES2];
+      g_view.context = g_context;
+#endif
+
       [g_context makeCurrentContext];
    });
    
    [g_context makeCurrentContext];
-
-#endif
-
    return true;
-
 }
 
-void apple_flip_game_view()
-{
-   if (--g_fast_forward_skips < 0)
-   {
-      dispatch_sync(dispatch_get_main_queue(), ^{
-         [g_view display];
-      });
-      g_fast_forward_skips = g_is_syncing ? 0 : 3;
-   }
-}
-
-void apple_set_game_view_sync(unsigned interval)
+void apple_gfx_ctx_swap_interval(unsigned interval)
 {
 #ifdef IOS // < No way to disable Vsync on iOS?
+           //   Just skip presents so fast forward still works.
    g_is_syncing = interval ? true : false;
    g_fast_forward_skips = interval ? 0 : 3;
 #elif defined(OSX)
@@ -291,58 +318,7 @@ void apple_set_game_view_sync(unsigned interval)
 #endif
 }
 
-void apple_get_game_view_size(unsigned *width, unsigned *height)
-{
-   *width  = g_view.bounds.size.width * g_screen_scale;
-   *width = *width ? *width : 640;
-   
-   *height = g_view.bounds.size.height * g_screen_scale;
-   *height = *height ? *height : 480;
-}
-
-void *apple_get_proc_address(const char *symbol_name)
-{
-#ifdef IOS
-   (void)symbol_name; // We don't need symbols above GLES2 on iOS.
-   return NULL;
-#else
-   CFStringRef symbol = CFStringCreateWithCString(kCFAllocatorDefault, symbol_name, kCFStringEncodingASCII);
-   void *proc = CFBundleGetFunctionPointerForName(CFBundleGetBundleWithIdentifier(CFSTR("com.apple.opengl")),
-      symbol);
-   CFRelease(symbol);
-   return proc;
-#endif
-}
-
-void apple_update_window_title(void)
-{
-   static char buf[128];
-   bool got_text = gfx_get_fps(buf, sizeof(buf), false);
-#ifdef OSX
-   static const char* const text = buf; // < Can't access buf directly in the block
-   
-   if (got_text)
-   {
-      // NOTE: This could go bad if buf is updated again before this completes.
-      //       If it poses a problem it should be changed to dispatch_sync.
-      dispatch_async(dispatch_get_main_queue(), ^
-      {
-         g_view.window.title = @(text);
-      });
-   }
-#endif
-}
-
-bool apple_game_view_has_focus(void)
-{
-#ifdef OSX
-   return [NSApp isActive];
-#else
-   return true;
-#endif
-}
-
-bool apple_set_video_mode(unsigned width, unsigned height, bool fullscreen)
+bool apple_gfx_ctx_set_video_mode(unsigned width, unsigned height, bool fullscreen)
 {
 #ifdef OSX
    dispatch_sync(dispatch_get_main_queue(),
@@ -351,15 +327,7 @@ bool apple_set_video_mode(unsigned width, unsigned height, bool fullscreen)
       
       if (fullscreen && !g_has_went_fullscreen)
       {
-         unsigned monitor = g_settings.video.monitor_index;
-         
-         if (monitor >= [NSScreen screens].count)
-         {
-            RARCH_WARN("video_monitor_index is greater than the number of connected monitors; using main screen instead.\n");
-            monitor = 0;
-         }
-
-         [g_view enterFullScreenMode:[NSScreen screens][monitor] withOptions:nil];
+         [g_view enterFullScreenMode:get_chosen_screen() withOptions:nil];
          [NSCursor hide];
       }
       else if (!fullscreen && g_has_went_fullscreen)
@@ -378,6 +346,58 @@ bool apple_set_video_mode(unsigned width, unsigned height, bool fullscreen)
    // TODO: Maybe iOS users should be apple to show/hide the status bar here?
 
    return true;
+}
+
+void apple_gfx_ctx_get_video_size(unsigned* width, unsigned* height)
+{
+   RAScreen* screen = get_chosen_screen();
+   CGRect size = g_initialized ? g_view.bounds : screen.bounds;
+
+   *width  = CGRectGetWidth(size)  * screen.scale;
+   *height = CGRectGetHeight(size) * screen.scale;
+}
+
+void apple_gfx_ctx_update_window_title(void)
+{
+#ifdef OSX
+   static char buf[128];
+   bool got_text = gfx_get_fps(buf, sizeof(buf), false);
+   static const char* const text = buf; // < Can't access buf directly in the block
+   
+   if (got_text)
+   {
+      // NOTE: This could go bad if buf is updated again before this completes.
+      //       If it poses a problem it should be changed to dispatch_sync.
+      dispatch_async(dispatch_get_main_queue(),
+      ^{
+         g_view.window.title = @(text);
+      });
+   }
+#endif
+}
+
+bool apple_gfx_ctx_has_focus(void)
+{
+   return APP_HAS_FOCUS;
+}
+
+void apple_gfx_ctx_swap_buffers()
+{
+   if (--g_fast_forward_skips < 0)
+   {
+      dispatch_sync(dispatch_get_main_queue(),
+      ^{
+         [g_view display];
+      });
+
+      g_fast_forward_skips = g_is_syncing ? 0 : 3;
+   }
+}
+
+gfx_ctx_proc_t apple_gfx_ctx_get_proc_address(const char *symbol_name)
+{
+   return (gfx_ctx_proc_t)CFBundleGetFunctionPointerForName(CFBundleGetBundleWithIdentifier(GLFrameworkID),
+                                                            (__bridge CFStringRef)(@(symbol_name)));
 }
 
 #ifdef IOS
