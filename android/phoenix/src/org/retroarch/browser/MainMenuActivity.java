@@ -366,17 +366,22 @@ public class MainMenuActivity extends PreferenceActivity {
 			boolean lowLatency = hasLowLatencyAudio();
 			Log.i(TAG, "Audio is low latency: " + (lowLatency ? "yes" : "no"));
 			
-			if (lowLatency && !prefs.getBoolean("audio_high_latency", false)) {
-				config.setInt("audio_latency", 64);
+			config.setInt("audio_latency", 64);
+			if (lowLatency) {
 				config.setInt("audio_block_frames", buffersize);
 			} else {
-				config.setInt("audio_latency", prefs.getBoolean(
-						"audio_high_latency", false) ? 160 : 64);
 				config.setInt("audio_block_frames", 0);
 			}
 		} else {
-			config.setInt("audio_latency",
-					prefs.getBoolean("audio_high_latency", false) ? 160 : 64);		
+			String latency_audio = prefs.getString("audio_latency", "64");
+			
+			if (latency_audio.equals("64")) {
+				config.setInt("audio_latency", 64);
+			} else if (latency_audio.equals("128")) {
+				config.setInt("audio_latency", 128);
+			} else if (latency_audio.equals("160")) {
+				config.setInt("audio_latency", 160);
+			}
 		}
 
 		config.setBoolean("audio_enable",
@@ -682,6 +687,8 @@ public class MainMenuActivity extends PreferenceActivity {
 											false);
 									edit.putBoolean("input_autodetect_enable",
 											true);
+									edit.putString("audio_latency", "64");
+									edit.putBoolean("audio_latency_auto", true);
 									edit.commit();
 								}
 							});
@@ -703,7 +710,8 @@ public class MainMenuActivity extends PreferenceActivity {
 											false);
 									edit.putBoolean("input_autodetect_enable",
 											true);
-									edit.putBoolean("audio_high_latency", true);
+									edit.putString("audio_latency", "160");
+									edit.putBoolean("audio_latency_auto", false);
 									edit.commit();
 								}
 							});
@@ -725,6 +733,8 @@ public class MainMenuActivity extends PreferenceActivity {
 											false);
 									edit.putBoolean("input_autodetect_enable",
 											true);
+									edit.putString("audio_latency", "64");
+									edit.putBoolean("audio_latency_auto", true);
 									edit.commit();
 								}
 							});
@@ -749,6 +759,8 @@ public class MainMenuActivity extends PreferenceActivity {
 													true);
 											edit.putString("video_refresh_rate", Double
 													.valueOf(59.19132938771038).toString());
+											edit.putString("audio_latency", "128");
+											edit.putBoolean("audio_latency_auto", false);
 											edit.commit();
 										}
 									});
@@ -768,6 +780,8 @@ public class MainMenuActivity extends PreferenceActivity {
 											.edit();
 									edit.putString("video_refresh_rate", Double
 											.valueOf(59.65).toString());
+									edit.putString("audio_latency", "64");
+									edit.putBoolean("audio_latency_auto", false);
 									edit.commit();
 								}
 							});
