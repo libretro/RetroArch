@@ -120,6 +120,12 @@
                 android:summary="Use (very) high latency audio. Necessary for older Android devices with poor audio drivers."
                 android:title="High latency audio"
                 android:dependency="audio_enable" />
+            <CheckBoxPreference 
+                android:defaultValue="true"
+                android:key="audio_latency_auto"
+                android:summary="Use automatic audio latency detection. Only available for Android 4.1 and up - your mileage may vary based on the device you are using."
+                android:title="Automatic audio latency"
+                android:dependency="audio_enable" />
         </PreferenceCategory>
     </PreferenceScreen>
     <PreferenceScreen android:title="Input Options" >

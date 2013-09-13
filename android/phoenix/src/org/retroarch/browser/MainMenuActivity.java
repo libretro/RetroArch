@@ -359,7 +359,8 @@ public class MainMenuActivity extends PreferenceActivity {
 		config.setInt("audio_out_rate", optimalRate);
 		
 		// Refactor this entire mess and make this usable for per-core config
-		if (android.os.Build.VERSION.SDK_INT >= 17) {
+		if (android.os.Build.VERSION.SDK_INT >= 17 &&
+				prefs.getBoolean("audio_latency_auto", true) == true) {
 			int buffersize = getLowLatencyBufferSize();
 
 			boolean lowLatency = hasLowLatencyAudio();
