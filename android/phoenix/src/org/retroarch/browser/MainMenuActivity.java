@@ -377,6 +377,8 @@ public class MainMenuActivity extends PreferenceActivity {
 			
 			if (latency_audio.equals("64")) {
 				config.setInt("audio_latency", 64);
+			} else if (latency_audio.equals("96")) {
+				config.setInt("audio_latency", 96);
 			} else if (latency_audio.equals("128")) {
 				config.setInt("audio_latency", 128);
 			} else if (latency_audio.equals("160")) {
