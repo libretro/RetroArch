@@ -1229,6 +1229,7 @@ static void android_input_set_keybinds(void *data, unsigned device,
             g_settings.input.device[port] = device;
             strlcpy(g_settings.input.device_names[port], "Xperia Play",
                   sizeof(g_settings.input.device_names[port]));
+            g_settings.input.dpad_emulation[port] = ANALOG_DPAD_NONE;
 
             if ((zeus_second_id != -1 && (zeus_second_id == id)))
             {
