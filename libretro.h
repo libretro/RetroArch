@@ -489,7 +489,10 @@ enum retro_mod
                                            // NULL is returned if the libretro was loaded statically (i.e. linked statically to frontend), or if the path cannot be determined.
                                            // Mostly useful in cooperation with SET_SUPPORT_NO_GAME as assets can be loaded without ugly hacks.
                                            //
-#define RETRO_ENVIRONMENT_SET_AUDIO_CALLBACK 20
+                                           //
+// Environment 20 was an obsolete version of SET_AUDIO_CALLBACK. It was not used by any known core at the time,
+// and was removed from the API.
+#define RETRO_ENVIRONMENT_SET_AUDIO_CALLBACK 22
                                            // const struct retro_audio_callback * --
                                            // Sets an interface which is used to notify a libretro core about audio being available for writing.
                                            // The callback can be called from any thread, so a core using this must have a thread safe audio implementation.
@@ -515,9 +518,15 @@ enum retro_mod
 
 // Notifies libretro that audio data should be written.
 typedef void (*retro_audio_callback_t)(void);
+
+// True: Audio driver in frontend is active, and callback is expected to be called regularily.
+// False: Audio driver in frontend is paused or inactive. Audio callback will not be called until set_state has been called with true.
+// Initial state is false (inactive).
+typedef void (*retro_audio_set_state_callback_t)(bool enabled);
 struct retro_audio_callback
 {
    retro_audio_callback_t callback;
+   retro_audio_set_state_callback_t set_state;
 };
 
 // Notifies a libretro core of time spent since last invocation of retro_run() in microseconds.

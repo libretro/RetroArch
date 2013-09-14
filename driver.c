@@ -512,7 +512,7 @@ void init_audio(void)
 
 #ifdef HAVE_THREADS
    find_audio_driver();
-   if (g_extern.system.audio_callback)
+   if (g_extern.system.audio_callback.callback)
    {
       RARCH_LOG("Starting threaded audio driver ...\n");
       if (!rarch_threaded_audio_init(&driver.audio, &driver.audio_data,
@@ -566,7 +566,7 @@ void init_audio(void)
    rarch_assert(g_extern.audio_data.outsamples = (float*)malloc(outsamples_max * sizeof(float)));
 
    g_extern.audio_data.rate_control = false;
-   if (!g_extern.system.audio_callback && g_extern.audio_active && g_settings.audio.rate_control)
+   if (!g_extern.system.audio_callback.callback && g_extern.audio_active && g_settings.audio.rate_control)
    {
       if (driver.audio->buffer_size && driver.audio->write_avail)
       {
@@ -586,7 +586,7 @@ void init_audio(void)
 
    g_extern.measure_data.buffer_free_samples_count = 0;
 
-   if (g_extern.audio_active && !g_extern.audio_data.mute && g_extern.system.audio_callback) // Threaded driver is initially stopped.
+   if (g_extern.audio_active && !g_extern.audio_data.mute && g_extern.system.audio_callback.callback) // Threaded driver is initially stopped.
       audio_start_func();
 }
 

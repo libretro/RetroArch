@@ -396,7 +396,8 @@ struct global
       char valid_extensions[PATH_MAX];
       
       retro_keyboard_event_t key_event;
-      retro_audio_callback_t audio_callback;
+
+      struct retro_audio_callback audio_callback;
 
       struct retro_disk_control_callback disk_control; 
       struct retro_hw_render_callback hw_render_callback;

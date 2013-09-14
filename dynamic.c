@@ -737,7 +737,7 @@ bool rarch_environment_cb(unsigned cmd, void *data)
             return false;
 #endif
 
-         g_extern.system.audio_callback = info->callback;
+         g_extern.system.audio_callback = *info;
          break;
       }
 #endif

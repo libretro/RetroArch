@@ -57,7 +57,7 @@ static void audio_thread_loop(void *data)
       }
 
       slock_unlock(thr->lock);
-      g_extern.system.audio_callback();
+      g_extern.system.audio_callback.callback();
    }
 }
 
@@ -98,12 +98,14 @@ static bool audio_thread_stop(void *data)
 {
    audio_thread_t *thr = (audio_thread_t*)data;
    audio_thread_block(thr);
+   g_extern.system.audio_callback.set_state(false);
    return true;
 }
 
 static bool audio_thread_start(void *data)
 {
    audio_thread_t *thr = (audio_thread_t*)data;
+   g_extern.system.audio_callback.set_state(true);
    audio_thread_unblock(thr);
    return true;
 }

@@ -1434,7 +1434,7 @@ void rarch_init_rewind(void)
    if (!g_settings.rewind_enable || g_extern.state_manager)
       return;
 
-   if (g_extern.system.audio_callback)
+   if (g_extern.system.audio_callback.callback)
    {
       RARCH_ERR("Implementation uses threaded audio. Cannot use rewind.\n");
       return;
