@@ -40,6 +40,23 @@ void shader_manager_init(rgui_handle_t *rgui)
 {
    memset(&rgui->shader, 0, sizeof(rgui->shader));
    config_file_t *conf = NULL;
+
+   // In a multi-config setting, we can't have conflicts on rgui.cgp/rgui.glslp.
+   if (*g_extern.config_path)
+   {
+      fill_pathname_base(rgui->default_glslp, g_extern.config_path, sizeof(rgui->default_glslp));
+      path_remove_extension(rgui->default_glslp);
+      strlcat(rgui->default_glslp, ".glslp", sizeof(rgui->default_glslp));
+      fill_pathname_base(rgui->default_cgp, g_extern.config_path, sizeof(rgui->default_cgp));
+      path_remove_extension(rgui->default_cgp);
+      strlcat(rgui->default_cgp, ".cgp", sizeof(rgui->default_cgp));
+   }
+   else
+   {
+      strlcpy(rgui->default_glslp, "rgui.glslp", sizeof(rgui->default_glslp));
+      strlcpy(rgui->default_cgp, "rgui.cgp", sizeof(rgui->default_cgp));
+   }
+
    char cgp_path[PATH_MAX];
 
    const char *ext = path_get_extension(g_settings.video.shader_path);

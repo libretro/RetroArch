@@ -1692,7 +1692,7 @@ static int shader_manager_toggle_setting(rgui_handle_t *rgui, unsigned setting, 
 
       if (rgui->shader.passes && type != RARCH_SHADER_NONE)
       {
-         const char *conf_path = type == RARCH_SHADER_GLSL ? "rgui.glslp" : "rgui.cgp";
+         const char *conf_path = type == RARCH_SHADER_GLSL ? rgui->default_glslp : rgui->default_cgp;
 
          char cgp_path[PATH_MAX];
          const char *shader_dir = *g_settings.video.shader_dir ?

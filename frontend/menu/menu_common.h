@@ -242,6 +242,8 @@ typedef struct
    bool msg_force;
 
    char base_path[PATH_MAX];
+   char default_glslp[PATH_MAX];
+   char default_cgp[PATH_MAX];
 
    const uint8_t *font;
    bool alloc_font;

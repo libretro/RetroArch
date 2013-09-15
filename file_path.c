@@ -185,6 +185,14 @@ const char *path_get_extension(const char *path)
       return "";
 }
 
+char *path_remove_extension(char *path)
+{
+   char *last = strrchr(path, '.');
+   if (*last)
+      *last = '\0';
+   return last;
+}
+
 static int qstrcmp_plain(const void *a_, const void *b_)
 {
    const struct string_list_elem *a = (const struct string_list_elem*)a_; 
