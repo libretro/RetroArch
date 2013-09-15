@@ -2380,7 +2380,7 @@ static int rgui_settings_iterate(rgui_handle_t *rgui, rgui_action_t action)
 #endif
    }
    else if (type == RGUI_SETTINGS_CONFIG)
-      label = rgui->config_dir;
+      label = g_settings.rgui_config_directory;
    else if (type == RGUI_SETTINGS_DISK_APPEND)
       label = rgui->base_path;
 

@@ -564,8 +564,6 @@ void menu_init(void)
    rgui->current_pad = 0;
 
    menu_update_libretro_info();
-   if (*g_extern.config_path)
-      fill_pathname_basedir(rgui->config_dir, g_extern.config_path, sizeof(rgui->config_dir));
 
 #ifdef HAVE_FILEBROWSER
    if (!(strlen(g_settings.rgui_browser_directory) > 0))

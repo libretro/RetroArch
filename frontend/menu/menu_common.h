@@ -248,7 +248,6 @@ typedef struct
 #ifdef HAVE_DYNAMIC
    char libretro_dir[PATH_MAX];
 #endif
-   char config_dir[PATH_MAX];
    struct retro_system_info info;
    bool load_no_rom;
 
