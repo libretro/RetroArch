@@ -215,7 +215,9 @@ static bool menu_type_is_directory_browser(unsigned type)
       type == RGUI_SHADER_DIR_PATH ||
 #endif
       type == RGUI_SAVESTATE_DIR_PATH ||
+#ifdef HAVE_DYNAMIC
       type == RGUI_LIBRETRO_DIR_PATH ||
+#endif
       type == RGUI_SAVEFILE_DIR_PATH ||
 #ifdef HAVE_OVERLAY
       type == RGUI_OVERLAY_DIR_PATH ||
@@ -472,8 +474,10 @@ static void render_text(rgui_handle_t *rgui)
       snprintf(title, sizeof(title), "SHADER DIR %s", dir);
    else if (menu_type == RGUI_SAVESTATE_DIR_PATH)
       snprintf(title, sizeof(title), "SAVESTATE DIR %s", dir);
+#ifdef HAVE_DYNAMIC
    else if (menu_type == RGUI_LIBRETRO_DIR_PATH)
       snprintf(title, sizeof(title), "LIBRETRO DIR %s", dir);
+#endif
    else if (menu_type == RGUI_SAVEFILE_DIR_PATH)
       snprintf(title, sizeof(title), "SAVEFILE DIR %s", dir);
 #ifdef HAVE_OVERLAY
@@ -693,9 +697,11 @@ static void render_text(rgui_handle_t *rgui)
             case RGUI_SAVESTATE_DIR_PATH:
                strlcpy(type_str, *g_extern.savestate_dir ? g_extern.savestate_dir : "<ROM dir>", sizeof(type_str));
                break;
+#ifdef HAVE_DYNAMIC
             case RGUI_LIBRETRO_DIR_PATH:
                strlcpy(type_str, *rgui->libretro_dir ? rgui->libretro_dir : "<None>", sizeof(type_str));
                break;
+#endif
             case RGUI_SHADER_DIR_PATH:
                strlcpy(type_str, *g_settings.video.shader_dir ? g_settings.video.shader_dir : "<default>", sizeof(type_str));
                break;
@@ -1390,10 +1396,12 @@ static int rgui_settings_toggle_setting(rgui_handle_t *rgui, unsigned setting, r
          if (action == RGUI_ACTION_START)
             *g_extern.savestate_dir = '\0';
          break;
+#ifdef HAVE_DYNAMIC
       case RGUI_LIBRETRO_DIR_PATH:
          if (action == RGUI_ACTION_START)
             *rgui->libretro_dir = '\0';
          break;
+#endif
       case RGUI_SHADER_DIR_PATH:
          if (action == RGUI_ACTION_START)
             *g_settings.video.shader_dir = '\0';
@@ -2831,11 +2839,13 @@ int rgui_iterate(rgui_handle_t *rgui)
                strlcpy(g_extern.savestate_dir, dir, sizeof(g_extern.savestate_dir));
                rgui_flush_menu_stack_type(rgui, RGUI_SETTINGS_PATH_OPTIONS);
             }
+#ifdef HAVE_DYNAMIC
             else if (menu_type == RGUI_LIBRETRO_DIR_PATH)
             {
                strlcpy(rgui->libretro_dir, dir, sizeof(g_extern.savestate_dir));
                rgui_flush_menu_stack_type(rgui, RGUI_SETTINGS_PATH_OPTIONS);
             }
+#endif
             else if (menu_type == RGUI_SHADER_DIR_PATH)
             {
                strlcpy(g_settings.video.shader_dir, dir, sizeof(g_settings.video.shader_dir));
