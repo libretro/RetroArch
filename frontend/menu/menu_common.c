@@ -472,6 +472,47 @@ void load_menu_game_history(unsigned game_index)
 #endif
 }
 
+static void menu_init_history(void)
+{
+   if (rgui->history)
+   {
+      rom_history_free(rgui->history);
+      rgui->history = NULL;
+   }
+
+   if (*g_extern.config_path)
+   {
+      char history_path[PATH_MAX];
+      if (*g_settings.game_history_path)
+         strlcpy(history_path, g_settings.game_history_path, sizeof(history_path));
+      else
+      {
+         fill_pathname_resolve_relative(history_path, g_extern.config_path,
+               ".retroarch-game-history.txt", sizeof(history_path));
+      }
+
+      RARCH_LOG("[RGUI]: Opening history: %s.\n", history_path);
+      rgui->history = rom_history_init(history_path, g_settings.game_history_size);
+   }
+}
+
+static void menu_update_libretro_info(void)
+{
+   *rgui->libretro_dir = '\0';
+#ifdef HAVE_DYNAMIC
+   libretro_free_system_info(&rgui->info);
+   if (path_is_directory(g_settings.libretro))
+      strlcpy(rgui->libretro_dir, g_settings.libretro, sizeof(rgui->libretro_dir));
+   else if (*g_settings.libretro)
+   {
+      fill_pathname_basedir(rgui->libretro_dir, g_settings.libretro, sizeof(rgui->libretro_dir));
+      libretro_get_system_info(g_settings.libretro, &rgui->info, NULL);
+   }
+#else
+   retro_get_system_info(&rgui->info);
+#endif
+}
+
 bool load_menu_game(void)
 {
    if (g_extern.main_is_init)
@@ -484,13 +525,15 @@ bool load_menu_game(void)
    args.sram_path     = *g_extern.savefile_dir ? g_extern.savefile_dir : NULL;
    args.state_path    = *g_extern.savestate_dir ? g_extern.savestate_dir : NULL;
    args.rom_path      = *g_extern.fullpath ? g_extern.fullpath : NULL;
-   args.libretro_path = g_settings.libretro;
+   args.libretro_path = *g_settings.libretro ? g_settings.libretro : NULL;
    args.no_rom        = rgui->load_no_rom;
    rgui->load_no_rom  = false;
 
    if (rarch_main_init_wrap(&args) == 0)
    {
       RARCH_LOG("rarch_main_init_wrap() succeeded.\n");
+      menu_update_libretro_info();
+      menu_init_history();
       return true;
    }
    else
@@ -520,24 +563,16 @@ void menu_init(void)
    rgui->frame_buf_show = true;
    rgui->current_pad = 0;
 
-#ifdef HAVE_DYNAMIC
-   if (path_is_directory(g_settings.libretro))
-      strlcpy(rgui->libretro_dir, g_settings.libretro, sizeof(rgui->libretro_dir));
-   else if (*g_settings.libretro)
-   {
-      fill_pathname_basedir(rgui->libretro_dir, g_settings.libretro, sizeof(rgui->libretro_dir));
-      libretro_get_system_info(g_settings.libretro, &rgui->info, NULL);
-   }
-#else
-   retro_get_system_info(&rgui->info);
-#endif
+   menu_update_libretro_info();
+   if (*g_extern.config_path)
+      fill_pathname_basedir(rgui->config_dir, g_extern.config_path, sizeof(rgui->config_dir));
 
 #ifdef HAVE_FILEBROWSER
    if (!(strlen(g_settings.rgui_browser_directory) > 0))
       strlcpy(g_settings.rgui_browser_directory, default_paths.filebrowser_startup_dir,
             sizeof(g_settings.rgui_browser_directory));
 
-   rgui->browser =  (filebrowser_t*)calloc(1, sizeof(*(rgui->browser)));
+   rgui->browser = (filebrowser_t*)calloc(1, sizeof(*(rgui->browser)));
 
    if (rgui->browser == NULL)
    {
@@ -565,21 +600,7 @@ void menu_init(void)
    shader_manager_init(rgui);
 #endif
 
-   if (*g_extern.config_path)
-   {
-      char history_path[PATH_MAX];
-      if (*g_settings.game_history_path)
-         strlcpy(history_path, g_settings.game_history_path, sizeof(history_path));
-      else
-      {
-         fill_pathname_resolve_relative(history_path, g_extern.config_path,
-               ".retroarch-game-history.txt", sizeof(history_path));
-      }
-
-      RARCH_LOG("[RGUI]: Opening history: %s.\n", history_path);
-      rgui->history = rom_history_init(history_path, g_settings.game_history_size);
-   }
-
+   menu_init_history();
    rgui->last_time = rarch_get_time_usec();
 }
 
@@ -880,3 +901,28 @@ deinit:
 }
 #endif
 #endif
+
+// Quite intrusive and error prone.
+// Likely to have lots of small bugs.
+// Cleanly exit the main loop to ensure that all the tiny details get set properly.
+// This should mitigate most of the smaller bugs.
+bool menu_replace_config(const char *path)
+{
+   if (strcmp(path, g_extern.config_path) == 0)
+      return false;
+
+   if (g_extern.config_save_on_exit && *g_extern.config_path)
+      config_save_file(g_extern.config_path);
+
+   strlcpy(g_extern.config_path, path, sizeof(g_extern.config_path));
+   g_extern.block_config_read = false;
+
+   // Load dummy core.
+   *g_extern.fullpath = '\0';
+   *g_settings.libretro = '\0'; // Load core in new config.
+   g_extern.lifecycle_mode_state |= (1ULL << MODE_LOAD_GAME);
+   rgui->load_no_rom = false;
+
+   return true;
+}
+

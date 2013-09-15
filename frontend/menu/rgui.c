@@ -443,6 +443,8 @@ static void render_text(rgui_handle_t *rgui)
 
    if (menu_type == RGUI_SETTINGS_CORE)
       snprintf(title, sizeof(title), "CORE SELECTION %s", dir);
+   else if (menu_type == RGUI_SETTINGS_CONFIG)
+      snprintf(title, sizeof(title), "CONFIG %s", dir);
    else if (menu_type == RGUI_SETTINGS_DISK_APPEND)
       snprintf(title, sizeof(title), "DISK APPEND %s", dir);
    else if (menu_type == RGUI_SETTINGS_VIDEO_OPTIONS)
@@ -561,6 +563,7 @@ static void render_text(rgui_handle_t *rgui)
       else
 #endif
       if (menu_type == RGUI_SETTINGS_CORE ||
+            menu_type == RGUI_SETTINGS_CONFIG ||
 #ifdef HAVE_OVERLAY
             menu_type == RGUI_SETTINGS_OVERLAY_PRESET ||
 #endif
@@ -738,6 +741,12 @@ static void render_text(rgui_handle_t *rgui)
                   snprintf(type_str, sizeof(type_str), "%u", current + 1);
                break;
             }
+            case RGUI_SETTINGS_CONFIG:
+               if (*g_extern.config_path)
+                  fill_pathname_base(type_str, g_extern.config_path, sizeof(type_str));
+               else
+                  strlcpy(type_str, "<default>", sizeof(type_str));
+               break;
             case RGUI_SETTINGS_OPEN_FILEBROWSER:
             case RGUI_SETTINGS_OPEN_HISTORY:
             case RGUI_SETTINGS_CORE_OPTIONS:
@@ -1490,6 +1499,7 @@ static void rgui_settings_populate_entries(rgui_handle_t *rgui)
 #ifndef HAVE_DYNAMIC
    rgui_list_push(rgui->selection_buf, "Restart RetroArch", RGUI_SETTINGS_RESTART_EMULATOR, 0);
 #endif
+   rgui_list_push(rgui->selection_buf, "RetroArch Config", RGUI_SETTINGS_CONFIG, 0);
    rgui_list_push(rgui->selection_buf, "Quit RetroArch", RGUI_SETTINGS_QUIT_RARCH, 0);
 }
 
@@ -2369,6 +2379,8 @@ static int rgui_settings_iterate(rgui_handle_t *rgui, rgui_action_t action)
       label = ""; // Shouldn't happen ...
 #endif
    }
+   else if (type == RGUI_SETTINGS_CONFIG)
+      label = rgui->config_dir;
    else if (type == RGUI_SETTINGS_DISK_APPEND)
       label = rgui->base_path;
 
@@ -2419,7 +2431,7 @@ static int rgui_settings_iterate(rgui_handle_t *rgui, rgui_action_t action)
             rgui->selection_ptr = 0;
             rgui->need_refresh = true;
          }
-         else if ((menu_type_is_settings(type) || type == RGUI_SETTINGS_CORE || type == RGUI_SETTINGS_DISK_APPEND) && action == RGUI_ACTION_OK)
+         else if ((menu_type_is_settings(type) || type == RGUI_SETTINGS_CORE || type == RGUI_SETTINGS_CONFIG || type == RGUI_SETTINGS_DISK_APPEND) && action == RGUI_ACTION_OK)
          {
             rgui_list_push(rgui->menu_stack, label, type, rgui->selection_ptr);
             rgui->selection_ptr = 0;
@@ -2471,7 +2483,9 @@ static int rgui_settings_iterate(rgui_handle_t *rgui, rgui_action_t action)
 #ifdef HAVE_OVERLAY
             menu_type == RGUI_SETTINGS_OVERLAY_PRESET ||
 #endif
-            menu_type == RGUI_SETTINGS_CORE || menu_type == RGUI_SETTINGS_DISK_APPEND ||
+            menu_type == RGUI_SETTINGS_CORE ||
+            menu_type == RGUI_SETTINGS_CONFIG ||
+            menu_type == RGUI_SETTINGS_DISK_APPEND ||
             menu_type == RGUI_SETTINGS_OPEN_HISTORY))
    {
       rgui->need_refresh = false;
@@ -2584,6 +2598,8 @@ static bool directory_parse(rgui_handle_t *rgui, const char *directory, unsigned
    char ext_buf[1024];
    if (menu_type == RGUI_SETTINGS_CORE)
       exts = EXT_EXECUTABLES;
+   else if (menu_type == RGUI_SETTINGS_CONFIG)
+      exts = "cfg";
 #ifdef HAVE_SHADER_MANAGER
    else if (menu_type == RGUI_SETTINGS_SHADER_PRESET)
       exts = "cgp|glslp";
@@ -2731,6 +2747,7 @@ static int rgui_iterate(void *data, unsigned action)
                type == RGUI_SETTINGS_OVERLAY_PRESET ||
 #endif
                type == RGUI_SETTINGS_CORE ||
+               type == RGUI_SETTINGS_CONFIG ||
                type == RGUI_SETTINGS_DISK_APPEND ||
                type == RGUI_FILE_DIRECTORY)
          {
@@ -2795,6 +2812,15 @@ static int rgui_iterate(void *data, unsigned action)
 #endif
 
                rgui_flush_menu_stack(rgui);
+            }
+            else if (menu_type == RGUI_SETTINGS_CONFIG)
+            {
+               char config[PATH_MAX];
+               fill_pathname_join(config, dir, path, sizeof(config));
+               rgui_flush_menu_stack(rgui);
+               rgui->msg_force = true;
+               if (menu_replace_config(config))
+                  ret = -1;
             }
 #ifdef HAVE_OVERLAY
             else if (menu_type == RGUI_SETTINGS_OVERLAY_PRESET)
@@ -2918,6 +2944,7 @@ static int rgui_iterate(void *data, unsigned action)
             menu_type == RGUI_SETTINGS_OVERLAY_PRESET ||
 #endif
             menu_type == RGUI_SETTINGS_CORE ||
+            menu_type == RGUI_SETTINGS_CONFIG ||
             menu_type == RGUI_SETTINGS_OPEN_HISTORY ||
             menu_type == RGUI_SETTINGS_DISK_APPEND))
    {
