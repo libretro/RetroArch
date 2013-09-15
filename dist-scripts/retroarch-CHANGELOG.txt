@@ -1,4 +1,62 @@
 ------------------------------------------------------------------------------
+v0.9.9.6
+------------------------------------------------------------------------------
+* [VBA Next] Fixes serious regressions - most evident in Golden Sun games -
+battle screens etc.
+* [VBA Next] Add a core option to change the control button layout from (left
+to right) B to A to (left to right) A to B.
+* [Android] Added Load Game History to Android Java UI
+* [Android] Will show a progressbar dialog during asset extraction so that the
+user knows what is happening.
+
+------------------------------------------------------------------------------
+v0.9.9.5
+------------------------------------------------------------------------------
+* [Android] Input autodetection fixes -
+  - DualShock3 pad controls fixed
+* [Android] It should now be possible to map D-pad to analog on several gamepads, such as:
+  - Xbox 360
+  - PlayStation3
+  - Shield
+* [Android] Threaded video is now the default due to positive user feedback. Purists and accuracy
+people can still go for static syncing for best results - although for PCSX ReARMed threaded
+video is essential. With the combination of threaded video and dynamic audio rate control,
+most of the audio pops and sync issues should be a thing of the past now. Yay.
+* [Android] UI has been reorganized and made less shitty (yes, we know). Still a long 
+way to go there. The entire menu should be gamepad-controllable now at least.
+* [Android] Shaders that were broken on Nexus 7/4/10 etc. should now work
+* [Android] Added some additional autodetection rules:
+  - Ouya: Input overlays are disabled by default
+* [Android] Added high-latency audio option for crappy/old Android devices that
+can't handle the lower-latency audio that is the default since 0.9.9.4. This should
+give you the same performance as 0.9.9.3 (r17). Turn this on if you get bad sound/performance
+(and it's not your device simply being slow). This might also apply for some of the newer 
+devices - perhaps OpenSL driver has not been updated/optimized there.
+* [Android] Added a TV mode. This will launch you straight into RGUI mode. This mode
+is identical to what you get from the Wii and PC ports of RetroArch at startup. First
+you select a core, then you select a game to go with it.
+* [SNES9x] Fixes by Alcaro to libretro port
+* [SNES9x Next] Fixes savestates from not being able to be loaded.
+* (LIBRETRO) Added bsnes/higan performance core [v0.92] (Android).
+  - bsnes/higan performance core will run all non-coprocessor games at fullspeed on an
+  nVidia Shield.
+  - Co-processor games (SuperFX/SA-1/DSP/Cx4/SA1) will run between ~40fps and 55-57fps 
+  on an nVidia Shield - depending on the specific co-processor. Note - you will need
+  BIOS files for these games - see byuu boards for information on them.
+* [Mednafen NGP] Fixes input issues in a number of games, such as:
+  - Card Fighters games
+  - Etc.
+* [Picodrive] Updates/32X compatibility/accuracy improvements
+* [NEStopia] Updated to 1.46 WIP - added ability to load NstDatabase.xml, fixes Vs. System games
+and Startropics 1/2
+* [iOS] Only player 1 gets default keyboard bindings
+* [iOS] Fixes PS3 gamepad bindings in RGUI
+* [iOS] Fixes iCade button mappings
+* [iOS] UI additions - Refresh / New Folder / Move options.
+* [iOS] Some lifecycle management fixes - should deal better now with phone calls
+received and then returning back to RA, etc.
+
+------------------------------------------------------------------------------
 v0.9.9.3
 ------------------------------------------------------------------------------
 * [Android] Input autodetection expanded -

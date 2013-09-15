@@ -1,4 +1,8 @@
 
+ifneq ($(EMSCRIPTEN),)
+   platform = emscripten
+endif
+
 ifeq ($(platform),)
 platform = unix
 ifeq ($(shell uname -a),)
@@ -30,6 +34,10 @@ else ifeq ($(platform), ios)
 	CC = clang -arch armv7 -isysroot $(IOSSDK)
 else ifeq ($(platform), qnx)
 	TARGET := $(TARGET_NAME)_libretro_qnx.so
+   fpic := -fPIC
+   SHARED := -shared -Wl,--version-script=link.T -Wl,--no-undefined
+else ifeq ($(platform), emscripten)
+   TARGET := $(TARGET_NAME)_libretro_emscripten.so
    fpic := -fPIC
    SHARED := -shared -Wl,--version-script=link.T -Wl,--no-undefined
 else

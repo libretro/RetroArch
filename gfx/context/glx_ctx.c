@@ -42,6 +42,7 @@ static GLXFBConfig g_fbc;
 static unsigned g_major;
 static unsigned g_minor;
 static bool g_core;
+static bool g_debug;
 
 typedef GLXContext (*glXCreateContextAttribsARBProc)(Display*,
       GLXFBConfig, GLXContext, Bool, const int*);
@@ -229,24 +230,22 @@ static bool gfx_ctx_init(void)
 
    int major, minor;
    glXQueryVersion(g_dpy, &major, &minor);
-   if (g_major * 1000 + g_minor >= 3001) // Core context
-   {
-      g_core = true;
-      // GLX 1.4+ required.
-      if ((major * 1000 + minor) < 1004)
-         goto error;
 
-      glx_create_context_attribs = (glXCreateContextAttribsARBProc)glXGetProcAddress((const GLubyte*)"glXCreateContextAttribsARB");
-      if (!glx_create_context_attribs)
-         goto error;
-   }
-   else
-   {
-      g_core = false;
-      // GLX 1.3+ required.
-      if ((major * 1000 + minor) < 1003)
-         goto error;
-   }
+   // GLX 1.3+ minimum required.
+   if ((major * 1000 + minor) < 1003)
+      goto error;
+
+   glx_create_context_attribs = (glXCreateContextAttribsARBProc)glXGetProcAddress((const GLubyte*)"glXCreateContextAttribsARB");
+
+#ifdef GL_DEBUG
+   g_debug = true;
+#else
+   g_debug = g_extern.system.hw_render_callback.debug_context;
+#endif
+
+   g_core = (g_major * 1000 + g_minor) >= 3001; // Have to use ContextAttribs
+   if ((g_core || g_debug) && !glx_create_context_attribs)
+      goto error;
 
    int nelements;
    fbcs = glXChooseFBConfig(g_dpy, DefaultScreen(g_dpy),
@@ -376,16 +375,28 @@ static bool gfx_ctx_set_video_mode(
 
    if (!g_ctx)
    {
-      if (g_core)
+      if (g_core || g_debug)
       {
-         const int attribs[] = {
-            GLX_CONTEXT_MAJOR_VERSION_ARB, (int)g_major,
-            GLX_CONTEXT_MINOR_VERSION_ARB, (int)g_minor,
-            GLX_CONTEXT_PROFILE_MASK_ARB, GLX_CONTEXT_CORE_PROFILE_BIT_ARB,
-            GLX_CONTEXT_FLAGS_ARB, g_extern.system.hw_render_callback.debug_context ? GLX_CONTEXT_DEBUG_BIT_ARB : 0,
-            None,
-         };
+         int attribs[16];
+         int *aptr = attribs;
 
+         if (g_core)
+         {
+            *aptr++ = GLX_CONTEXT_MAJOR_VERSION_ARB;
+            *aptr++ = g_major;
+            *aptr++ = GLX_CONTEXT_MINOR_VERSION_ARB;
+            *aptr++ = g_minor;
+            *aptr++ = GLX_CONTEXT_PROFILE_MASK_ARB;
+            *aptr++ = GLX_CONTEXT_CORE_PROFILE_BIT_ARB;
+         }
+
+         if (g_debug)
+         {
+            *aptr++ = GLX_CONTEXT_FLAGS_ARB;
+            *aptr++ = GLX_CONTEXT_DEBUG_BIT_ARB;
+         }
+
+         *aptr = None;
          g_ctx = glx_create_context_attribs(g_dpy, g_fbc, NULL, True, attribs);
       }
       else

@@ -30,6 +30,41 @@
 
 #define print_buf(buf, ...) snprintf(buf, sizeof(buf), __VA_ARGS__)
 
+static const char *wrap_mode_to_str(enum gfx_wrap_type type)
+{
+   switch (type)
+   {
+      case RARCH_WRAP_BORDER:
+         return "clamp_to_border";
+      case RARCH_WRAP_EDGE:
+         return "clamp_to_edge";
+      case RARCH_WRAP_REPEAT:
+         return "repeat";
+      case RARCH_WRAP_MIRRORED_REPEAT:
+         return "mirrored_repeat";
+      default:
+         return "???";
+   }
+}
+
+static enum gfx_wrap_type wrap_str_to_mode(const char *wrap_mode)
+{
+   if (strcmp(wrap_mode, "clamp_to_border") == 0)
+      return RARCH_WRAP_BORDER;
+   else if (strcmp(wrap_mode, "clamp_to_edge") == 0)
+      return RARCH_WRAP_EDGE;
+   else if (strcmp(wrap_mode, "repeat") == 0)
+      return RARCH_WRAP_REPEAT;
+   else if (strcmp(wrap_mode, "mirrored_repeat") == 0)
+      return RARCH_WRAP_MIRRORED_REPEAT;
+   else
+   {
+      RARCH_WARN("Invalid wrapping type %s. Valid ones are: clamp_to_border (default), clamp_to_edge, repeat and mirrored_repeat. Falling back to default.\n",
+            wrap_mode);
+      return RARCH_WRAP_DEFAULT;
+   }
+}
+
 // CGP
 static bool shader_parse_pass(config_file_t *conf, struct gfx_shader_pass *pass, unsigned i)
 {
@@ -51,6 +86,13 @@ static bool shader_parse_pass(config_file_t *conf, struct gfx_shader_pass *pass,
       pass->filter = smooth ? RARCH_FILTER_LINEAR : RARCH_FILTER_NEAREST;
    else
       pass->filter = RARCH_FILTER_UNSPEC;
+
+   // Wrapping mode
+   char wrap_name_buf[64];
+   print_buf(wrap_name_buf, "wrap_mode%u", i);
+   char wrap_mode[64];
+   if (config_get_array(conf, wrap_name_buf, wrap_mode, sizeof(wrap_mode)))
+      pass->wrap = wrap_str_to_mode(wrap_mode);
 
    // Frame count mod
    char frame_count_mod[64] = {0};
@@ -207,6 +249,12 @@ static bool shader_parse_textures(config_file_t *conf, struct gfx_shader *shader
          shader->lut[shader->luts].filter = smooth ? RARCH_FILTER_LINEAR : RARCH_FILTER_NEAREST;
       else
          shader->lut[shader->luts].filter = RARCH_FILTER_UNSPEC;
+
+      char id_wrap[64];
+      print_buf(id_wrap, "%s_wrap_mode", id);
+      char wrap_mode[64];
+      if (config_get_array(conf, id_wrap, wrap_mode, sizeof(wrap_mode)))
+         shader->lut[shader->luts].wrap = wrap_str_to_mode(wrap_mode);
    }
 
    return true;
@@ -998,6 +1046,9 @@ void gfx_shader_write_conf_cgp(config_file_t *conf, const struct gfx_shader *sha
          config_set_bool(conf, key, pass->filter == RARCH_FILTER_LINEAR);
       }
 
+      print_buf(key, "wrap_mode%u", i);
+      config_set_string(conf, key, wrap_mode_to_str(pass->wrap));
+
       if (pass->frame_count_mod)
       {
          print_buf(key, "frame_count_mod%u", i);
@@ -1031,6 +1082,9 @@ void gfx_shader_write_conf_cgp(config_file_t *conf, const struct gfx_shader *sha
             print_buf(key, "%s_linear", shader->lut[i].id);
             config_set_bool(conf, key, shader->lut[i].filter != RARCH_FILTER_LINEAR);
          }
+
+         print_buf(key, "%s_wrap_mode", shader->lut[i].id);
+         config_set_string(conf, key, wrap_mode_to_str(shader->lut[i].wrap));
       }
    }
 

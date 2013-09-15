@@ -19,7 +19,7 @@
 
 #include <sys/types.h>
 #include "boolean.h"
-#include "libretro.h"
+#include "libretro_private.h"
 #include <stdlib.h>
 #include <stdint.h>
 #include "msvc/msvc_compat.h"
@@ -462,7 +462,7 @@ typedef struct driver
 
 #ifdef HAVE_OVERLAY
    input_overlay_t *overlay;
-   uint64_t overlay_state;
+   input_overlay_state_t overlay_state;
 #endif
 
    // Interface for "poking".
@@ -511,6 +511,7 @@ extern const audio_driver_t audio_coreaudio;
 extern const audio_driver_t audio_xenon360;
 extern const audio_driver_t audio_ps3;
 extern const audio_driver_t audio_gx;
+extern const audio_driver_t audio_rwebaudio;
 extern const audio_driver_t audio_null;
 extern const video_driver_t video_gl;
 extern const video_driver_t video_psp1;
@@ -536,6 +537,7 @@ extern const input_driver_t input_xinput;
 extern const input_driver_t input_linuxraw;
 extern const input_driver_t input_apple;
 extern const input_driver_t input_qnx;
+extern const input_driver_t input_rwebinput;
 extern const input_driver_t input_null;
 
 #include "driver_funcs.h"

@@ -63,9 +63,7 @@ static bool libretro_install_core(const char *path_prefix,
       return false;
    }
 
-   strlcpy(g_settings.libretro, new_path,
-         sizeof(g_settings.libretro));
-
+   rarch_environment_cb(RETRO_ENVIRONMENT_SET_LIBRETRO_PATH, (void*)new_path);
    return true;
 }
 
@@ -124,20 +122,15 @@ void rarch_get_environment_console(void)
 }
 #endif
 
-#if defined(IOS) || defined(OSX)
-void* rarch_main(void* args)
-{
-   int argc = 0;
-   char *argv = NULL;
-#elif defined(HAVE_BB10)
-int rarch_main(int argc, char *argv[])
-{
-   void* args = NULL;
+#if defined(IOS) || defined(OSX) || defined(HAVE_BB10)
+#define main_entry rarch_main
 #else
-int main(int argc, char *argv[])
+#define main_entry main
+#endif
+
+int main_entry(int argc, char *argv[])
 {
    void* args = NULL;
-#endif
    frontend_ctx = (frontend_ctx_driver_t*)frontend_ctx_init_first();
 
    if (frontend_ctx && frontend_ctx->init)
@@ -151,31 +144,16 @@ int main(int argc, char *argv[])
       frontend_ctx->environment_get(argc, argv, args);
 
 #if !defined(RARCH_CONSOLE) && !defined(HAVE_BB10)
-#if defined(__APPLE__)
-   struct rarch_main_wrap* argdata = (struct rarch_main_wrap*)args;
-   int init_ret = rarch_main_init_wrap(argdata);
-   apple_free_main_wrap(argdata);
-
-   if (init_ret)
-   {
-      rarch_main_clear_state();
-      dispatch_async_f(dispatch_get_main_queue(), (void*)1, apple_rarch_exited);
-      return 0;
-   }
-#else
    rarch_init_msg_queue();
    int init_ret;
    if ((init_ret = rarch_main_init(argc, argv))) return init_ret;
-#endif
 #endif
 
 #if defined(HAVE_MENU) || defined(HAVE_BB10)
    menu_init();
 
-#ifndef __APPLE__
    if (frontend_ctx && frontend_ctx->process_args)
       frontend_ctx->process_args(argc, argv, args);
-#endif
 
 #if defined(RARCH_CONSOLE) || defined(HAVE_BB10)
    g_extern.lifecycle_mode_state |= 1ULL << MODE_LOAD_GAME;

@@ -1,4 +1,4 @@
-display_name = "Nintendo DS"
+display_name = "Nintendo DS (DeSmuME)"
 supported_extensions = "nds"
 corename = "DeSmuME"
 manufacturer = "Nintendo"

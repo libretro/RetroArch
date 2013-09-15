@@ -10,11 +10,9 @@ import android.widget.*;
 
 interface IconAdapterItem {
 	public abstract boolean isEnabled();
-
 	public abstract String getText();
-
+	public abstract String getSubText();
 	public abstract int getIconResourceId();
-
 	public abstract Drawable getIconDrawable();
 }
 
@@ -23,7 +21,6 @@ class IconAdapter<T extends IconAdapterItem> extends ArrayAdapter<T> {
 
 	public IconAdapter(Activity aContext, int aLayout) {
 		super(aContext, aLayout);
-
 		layout = aLayout;
 	}
 
@@ -44,6 +41,16 @@ class IconAdapter<T extends IconAdapterItem> extends ArrayAdapter<T> {
 		if (null != textView) {
 			textView.setText(item.getText());
 			textView.setEnabled(enabled);
+		}
+		
+		textView = (TextView) aConvertView.findViewById(R.id.sub_name);
+		if (null != textView) {
+			String subText = item.getSubText();
+			if (null != subText) {
+				textView.setVisibility(View.VISIBLE);
+				textView.setEnabled(item.isEnabled());
+				textView.setText(subText);
+			}
 		}
 
 		ImageView imageView = (ImageView) aConvertView.findViewById(R.id.icon);

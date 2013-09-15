@@ -41,9 +41,9 @@
 #ifndef PACKAGE_VERSION
 #ifdef __QNX__
 /* FIXME - avoid too many decimal points in number error */
-#define PACKAGE_VERSION "0994"
+#define PACKAGE_VERSION "0996"
 #else
-#define PACKAGE_VERSION "0.9.9.4"
+#define PACKAGE_VERSION "0.9.9.6"
 #endif
 #endif
 
@@ -159,6 +159,8 @@ struct settings
       unsigned fullscreen_y;
       bool vsync;
       bool hard_sync;
+      bool black_frame_insertion;
+      unsigned swap_interval;
       unsigned hard_sync_frames;
       bool smooth;
       bool force_aspect;
@@ -201,6 +203,7 @@ struct settings
       char driver[32];
       bool enable;
       unsigned out_rate;
+      unsigned block_frames;
       float in_rate;
       char device[PATH_MAX];
       unsigned latency;
@@ -393,7 +396,8 @@ struct global
       char valid_extensions[PATH_MAX];
       
       retro_keyboard_event_t key_event;
-      retro_audio_callback_t audio_callback;
+
+      struct retro_audio_callback audio_callback;
 
       struct retro_disk_control_callback disk_control; 
       struct retro_hw_render_callback hw_render_callback;
@@ -470,6 +474,8 @@ struct global
    } filter;
 
    msg_queue_t *msg_queue;
+
+   bool exec;
 
    // Rewind support.
    state_manager_t *state_manager;
@@ -676,11 +682,7 @@ bool config_save_keybinds(const char *path);
 void rarch_game_reset(void);
 void rarch_main_clear_state(void);
 void rarch_init_system_info(void);
-#ifdef __APPLE__
-void * rarch_main(void *args);
-#else
 int rarch_main(int argc, char *argv[]);
-#endif
 int rarch_main_init_wrap(const struct rarch_main_wrap *args);
 int rarch_main_init(int argc, char *argv[]);
 bool rarch_main_idle_iterate(void);

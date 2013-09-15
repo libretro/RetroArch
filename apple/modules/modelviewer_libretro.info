@@ -1,4 +1,4 @@
-display_name = "Modelviewer"
+display_name = "3D Models (Modelviewer)"
 recommended_extensions = "obj"
 corename = "Modelviewer"
 manufacturer = "Various"

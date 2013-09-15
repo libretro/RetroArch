@@ -83,7 +83,7 @@ do_build()
    BUILDTYPE="$3"
 
    if [ ! -d "$RetroArch_DIR" ]; then
-      git clone git://github.com/Themaister/RetroArch.git "$RetroArch_DIR"
+      git clone git://github.com/libretro/RetroArch.git "$RetroArch_DIR"
       cd "$RetroArch_DIR"
    else
       cd "$RetroArch_DIR"

@@ -215,6 +215,7 @@ static bool menu_type_is_directory_browser(unsigned type)
       type == RGUI_SHADER_DIR_PATH ||
 #endif
       type == RGUI_SAVESTATE_DIR_PATH ||
+      type == RGUI_LIBRETRO_DIR_PATH ||
       type == RGUI_SAVEFILE_DIR_PATH ||
 #ifdef HAVE_OVERLAY
       type == RGUI_OVERLAY_DIR_PATH ||
@@ -266,6 +267,10 @@ rgui_handle_t *rgui_init(void)
       aspectratio_lut[ASPECT_RATIO_CUSTOM].value =
          (float)custom->width / custom->height;
    }
+   else if (DEFAULT_ASPECT_RATIO > 0.0f)
+      aspectratio_lut[ASPECT_RATIO_CUSTOM].value = DEFAULT_ASPECT_RATIO;
+   else
+      aspectratio_lut[ASPECT_RATIO_CUSTOM].value = 4.0f / 3.0f; // Something arbitrary
 
    return rgui;
 }
@@ -414,6 +419,10 @@ static void render_text(rgui_handle_t *rgui)
       rgui->selection_ptr - TERM_HEIGHT / 2 : 0;
    size_t end = rgui->selection_ptr + TERM_HEIGHT <= rgui->selection_buf->size ?
       rgui->selection_ptr + TERM_HEIGHT : rgui->selection_buf->size;
+   
+   // Do not scroll if all items are visible.
+   if (rgui->selection_buf->size <= TERM_HEIGHT)
+      begin = 0;
 
    if (end - begin > TERM_HEIGHT)
       end = begin + TERM_HEIGHT;
@@ -463,6 +472,8 @@ static void render_text(rgui_handle_t *rgui)
       snprintf(title, sizeof(title), "SHADER DIR %s", dir);
    else if (menu_type == RGUI_SAVESTATE_DIR_PATH)
       snprintf(title, sizeof(title), "SAVESTATE DIR %s", dir);
+   else if (menu_type == RGUI_LIBRETRO_DIR_PATH)
+      snprintf(title, sizeof(title), "LIBRETRO DIR %s", dir);
    else if (menu_type == RGUI_SAVEFILE_DIR_PATH)
       snprintf(title, sizeof(title), "SAVEFILE DIR %s", dir);
 #ifdef HAVE_OVERLAY
@@ -594,6 +605,21 @@ static void render_text(rgui_handle_t *rgui)
             case RGUI_SETTINGS_VIDEO_HARD_SYNC:
                strlcpy(type_str, g_settings.video.hard_sync ? "ON" : "OFF", sizeof(type_str));
                break;
+            case RGUI_SETTINGS_VIDEO_BLACK_FRAME_INSERTION:
+               strlcpy(type_str, g_settings.video.black_frame_insertion ? "ON" : "OFF", sizeof(type_str));
+               break;
+            case RGUI_SETTINGS_VIDEO_SWAP_INTERVAL:
+               snprintf(type_str, sizeof(type_str), "%u", g_settings.video.swap_interval);
+               break;
+            case RGUI_SETTINGS_VIDEO_WINDOW_SCALE_X:
+               snprintf(type_str, sizeof(type_str), "%.1fx", g_settings.video.xscale);
+               break;
+            case RGUI_SETTINGS_VIDEO_WINDOW_SCALE_Y:
+               snprintf(type_str, sizeof(type_str), "%.1fx", g_settings.video.yscale);
+               break;
+            case RGUI_SETTINGS_VIDEO_CROP_OVERSCAN:
+               strlcpy(type_str, g_settings.video.crop_overscan ? "ON" : "OFF", sizeof(type_str));
+               break;
             case RGUI_SETTINGS_VIDEO_HARD_SYNC_FRAMES:
                snprintf(type_str, sizeof(type_str), "%u", g_settings.video.hard_sync_frames);
                break;
@@ -629,10 +655,7 @@ static void render_text(rgui_handle_t *rgui)
                w = 5;
                break;
             case RGUI_SETTINGS_REWIND_ENABLE:
-               if (g_settings.rewind_enable)
-                  strlcpy(type_str, "ON", sizeof(type_str));
-               else
-                  strlcpy(type_str, "OFF", sizeof(type_str));
+               strlcpy(type_str, g_settings.rewind_enable ? "ON" : "OFF", sizeof(type_str));
                break;
             case RGUI_SETTINGS_REWIND_GRANULARITY:
                snprintf(type_str, sizeof(type_str), "%u", g_settings.rewind_granularity);
@@ -648,10 +671,7 @@ static void render_text(rgui_handle_t *rgui)
                snprintf(type_str, sizeof(type_str), "%d", g_extern.state_slot);
                break;
             case RGUI_SETTINGS_AUDIO_MUTE:
-               if (g_extern.audio_data.mute)
-                  strlcpy(type_str, "ON", sizeof(type_str));
-               else
-                  strlcpy(type_str, "OFF", sizeof(type_str));
+               strlcpy(type_str, g_extern.audio_data.mute ? "ON" : "OFF", sizeof(type_str));
                break;
             case RGUI_SETTINGS_AUDIO_CONTROL_RATE_DELTA:
                snprintf(type_str, sizeof(type_str), "%.3f", g_settings.audio.rate_control_delta);
@@ -660,42 +680,27 @@ static void render_text(rgui_handle_t *rgui)
                snprintf(type_str, sizeof(type_str), (g_extern.lifecycle_mode_state & (1ULL << MODE_FPS_DRAW)) ? "ON" : "OFF");
                break;
             case RGUI_BROWSER_DIR_PATH:
-               if (*g_settings.rgui_browser_directory)
-                  strlcpy(type_str, g_settings.rgui_browser_directory, sizeof(type_str));
-               else
-                  strlcpy(type_str, "<default>", sizeof(type_str));
+               strlcpy(type_str, *g_settings.rgui_browser_directory ? g_settings.rgui_browser_directory : "<default>", sizeof(type_str));
                break;
             case RGUI_SAVEFILE_DIR_PATH:
-               if (*g_extern.savefile_dir)
-                  strlcpy(type_str, g_extern.savefile_dir, sizeof(type_str));
-               else
-                  strlcpy(type_str, "<ROM dir>", sizeof(type_str));
+               strlcpy(type_str, *g_extern.savefile_dir ? g_extern.savefile_dir : "<ROM dir>", sizeof(type_str));
                break;
 #ifdef HAVE_OVERLAY
             case RGUI_OVERLAY_DIR_PATH:
-               if (*g_extern.overlay_dir)
-                  strlcpy(type_str, g_extern.overlay_dir, sizeof(type_str));
-               else
-                  strlcpy(type_str, "<default>", sizeof(type_str));
+               strlcpy(type_str, *g_extern.overlay_dir ? g_extern.overlay_dir : "<default>", sizeof(type_str));
                break;
 #endif
             case RGUI_SAVESTATE_DIR_PATH:
-               if (*g_extern.savestate_dir)
-                  strlcpy(type_str, g_extern.savestate_dir, sizeof(type_str));
-               else
-                  strlcpy(type_str, "<ROM dir>", sizeof(type_str));
+               strlcpy(type_str, *g_extern.savestate_dir ? g_extern.savestate_dir : "<ROM dir>", sizeof(type_str));
+               break;
+            case RGUI_LIBRETRO_DIR_PATH:
+               strlcpy(type_str, *rgui->libretro_dir ? rgui->libretro_dir : "<None>", sizeof(type_str));
                break;
             case RGUI_SHADER_DIR_PATH:
-               if (*g_settings.video.shader_dir)
-                  strlcpy(type_str, g_settings.video.shader_dir, sizeof(type_str));
-               else
-                  strlcpy(type_str, "<default>", sizeof(type_str));
+               strlcpy(type_str, *g_settings.video.shader_dir ? g_settings.video.shader_dir : "<default>", sizeof(type_str));
                break;
             case RGUI_SYSTEM_DIR_PATH:
-               if (*g_settings.system_directory)
-                  strlcpy(type_str, g_settings.system_directory, sizeof(type_str));
-               else
-                  strlcpy(type_str, "<ROM dir>", sizeof(type_str));
+               strlcpy(type_str, *g_settings.system_directory ? g_settings.system_directory : "<ROM dir>", sizeof(type_str));
                break;
             case RGUI_SETTINGS_DISK_INDEX:
             {
@@ -1385,6 +1390,10 @@ static int rgui_settings_toggle_setting(rgui_handle_t *rgui, unsigned setting, r
          if (action == RGUI_ACTION_START)
             *g_extern.savestate_dir = '\0';
          break;
+      case RGUI_LIBRETRO_DIR_PATH:
+         if (action == RGUI_ACTION_START)
+            *rgui->libretro_dir = '\0';
+         break;
       case RGUI_SHADER_DIR_PATH:
          if (action == RGUI_ACTION_START)
             *g_settings.video.shader_dir = '\0';
@@ -1496,13 +1505,20 @@ static void rgui_settings_video_options_populate_entries(rgui_handle_t *rgui)
    rgui_list_push(rgui->selection_buf, "Integer Scale", RGUI_SETTINGS_VIDEO_INTEGER_SCALE, 0);
    rgui_list_push(rgui->selection_buf, "Aspect Ratio", RGUI_SETTINGS_VIDEO_ASPECT_RATIO, 0);
    rgui_list_push(rgui->selection_buf, "Custom Ratio", RGUI_SETTINGS_CUSTOM_VIEWPORT, 0);
-#ifndef RARCH_PERFORMANCE_MODE
+#if !defined(RARCH_CONSOLE) && !defined(RARCH_MOBILE)
    rgui_list_push(rgui->selection_buf, "Toggle Fullscreen", RGUI_SETTINGS_TOGGLE_FULLSCREEN, 0);
 #endif
    rgui_list_push(rgui->selection_buf, "Rotation", RGUI_SETTINGS_VIDEO_ROTATION, 0);
    rgui_list_push(rgui->selection_buf, "VSync", RGUI_SETTINGS_VIDEO_VSYNC, 0);
    rgui_list_push(rgui->selection_buf, "Hard GPU Sync", RGUI_SETTINGS_VIDEO_HARD_SYNC, 0);
    rgui_list_push(rgui->selection_buf, "Hard GPU Sync Frames", RGUI_SETTINGS_VIDEO_HARD_SYNC_FRAMES, 0);
+   rgui_list_push(rgui->selection_buf, "Black Frame Insertion", RGUI_SETTINGS_VIDEO_BLACK_FRAME_INSERTION, 0);
+   rgui_list_push(rgui->selection_buf, "VSync Swap Interval", RGUI_SETTINGS_VIDEO_SWAP_INTERVAL, 0);
+#if !defined(RARCH_CONSOLE) && !defined(RARCH_MOBILE)
+   rgui_list_push(rgui->selection_buf, "Windowed Scale (X)", RGUI_SETTINGS_VIDEO_WINDOW_SCALE_X, 0);
+   rgui_list_push(rgui->selection_buf, "Windowed Scale (Y)", RGUI_SETTINGS_VIDEO_WINDOW_SCALE_Y, 0);
+#endif
+   rgui_list_push(rgui->selection_buf, "Crop Overscan (reload)", RGUI_SETTINGS_VIDEO_CROP_OVERSCAN, 0);
    rgui_list_push(rgui->selection_buf, "Estimated Monitor FPS", RGUI_SETTINGS_VIDEO_REFRESH_RATE_AUTO, 0);
 }
 
@@ -1850,12 +1866,10 @@ static int video_option_toggle_setting(rgui_handle_t *rgui, unsigned setting, rg
             driver.video_poke->set_aspect_ratio(driver.video_data, g_settings.video.aspect_ratio_idx);
          break;
 
-#ifndef RARCH_PERFORMANCE_MODE
       case RGUI_SETTINGS_TOGGLE_FULLSCREEN:
          if (action == RGUI_ACTION_OK)
             rarch_set_fullscreen(!g_settings.video.fullscreen);
          break;
-#endif
 
 #ifdef GEKKO
       case RGUI_SETTINGS_VIDEO_RESOLUTION:
@@ -1932,6 +1946,105 @@ static int video_option_toggle_setting(rgui_handle_t *rgui, unsigned setting, rg
          }
          break;
 
+      case RGUI_SETTINGS_VIDEO_BLACK_FRAME_INSERTION:
+         switch (action)
+         {
+            case RGUI_ACTION_START:
+               g_settings.video.black_frame_insertion = false;
+               break;
+
+            case RGUI_ACTION_LEFT:
+            case RGUI_ACTION_RIGHT:
+            case RGUI_ACTION_OK:
+               g_settings.video.black_frame_insertion = !g_settings.video.black_frame_insertion;
+               break;
+
+            default:
+               break;
+         }
+         break;
+
+      case RGUI_SETTINGS_VIDEO_CROP_OVERSCAN:
+         switch (action)
+         {
+            case RGUI_ACTION_START:
+               g_settings.video.crop_overscan = true;
+               break;
+
+            case RGUI_ACTION_LEFT:
+            case RGUI_ACTION_RIGHT:
+            case RGUI_ACTION_OK:
+               g_settings.video.crop_overscan = !g_settings.video.crop_overscan;
+               break;
+
+            default:
+               break;
+         }
+         break;
+
+      case RGUI_SETTINGS_VIDEO_WINDOW_SCALE_X:
+      case RGUI_SETTINGS_VIDEO_WINDOW_SCALE_Y:
+      {
+         float *scale = setting == RGUI_SETTINGS_VIDEO_WINDOW_SCALE_X ? &g_settings.video.xscale : &g_settings.video.yscale;
+         float old_scale = *scale;
+
+         switch (action)
+         {
+            case RGUI_ACTION_START:
+               *scale = 3.0f;
+               break;
+
+            case RGUI_ACTION_LEFT:
+               *scale -= 1.0f;
+               break;
+
+            case RGUI_ACTION_RIGHT:
+               *scale += 1.0f;
+               break;
+
+            default:
+               break;
+         }
+
+         *scale = roundf(*scale);
+         *scale = max(*scale, 1.0f);
+
+         if (old_scale != *scale && !g_settings.video.fullscreen)
+            rarch_set_fullscreen(g_settings.video.fullscreen); // Reinit video driver.
+
+         break;
+      }
+
+      case RGUI_SETTINGS_VIDEO_SWAP_INTERVAL:
+      {
+         unsigned old = g_settings.video.swap_interval;
+         switch (action)
+         {
+            case RGUI_ACTION_START:
+               g_settings.video.swap_interval = 1;
+               break;
+
+            case RGUI_ACTION_LEFT:
+               g_settings.video.swap_interval--;
+               break;
+
+            case RGUI_ACTION_RIGHT:
+            case RGUI_ACTION_OK:
+               g_settings.video.swap_interval++;
+               break;
+
+            default:
+               break;
+         }
+
+         g_settings.video.swap_interval = min(g_settings.video.swap_interval, 4);
+         g_settings.video.swap_interval = max(g_settings.video.swap_interval, 1);
+         if (old != g_settings.video.swap_interval && driver.video && driver.video_data)
+            video_set_nonblock_state_func(false); // This will update the current swap interval. Since we're in RGUI now, always apply VSync.
+
+         break;
+      }
+
       case RGUI_SETTINGS_VIDEO_HARD_SYNC_FRAMES:
          switch (action)
          {
@@ -1992,6 +2105,9 @@ static void rgui_settings_path_populate_entries(rgui_handle_t *rgui)
 {
    rgui_list_clear(rgui->selection_buf);
    rgui_list_push(rgui->selection_buf, "Browser Directory", RGUI_BROWSER_DIR_PATH, 0);
+#ifdef HAVE_DYNAMIC
+   rgui_list_push(rgui->selection_buf, "Core Directory", RGUI_LIBRETRO_DIR_PATH, 0);
+#endif
 #ifdef HAVE_SHADER_MANAGER
    rgui_list_push(rgui->selection_buf, "Shader Directory", RGUI_SHADER_DIR_PATH, 0);
 #endif
@@ -2650,7 +2766,8 @@ int rgui_iterate(rgui_handle_t *rgui)
                // Core selection on non-console just updates directory listing.
                // Will take affect on new ROM load.
 #elif defined(GEKKO) && defined(HW_RVL)
-               strlcpy(g_settings.libretro, path, sizeof(g_settings.libretro)); // Is this supposed to be here?
+               rarch_environment_cb(RETRO_ENVIRONMENT_SET_LIBRETRO_PATH, (void*)path);
+
                fill_pathname_join(g_extern.fullpath, default_paths.core_dir,
                      SALAMANDER_FILE, sizeof(g_extern.fullpath));
                g_extern.lifecycle_mode_state &= ~(1ULL << MODE_GAME);
@@ -2712,6 +2829,11 @@ int rgui_iterate(rgui_handle_t *rgui)
             else if (menu_type == RGUI_SAVESTATE_DIR_PATH)
             {
                strlcpy(g_extern.savestate_dir, dir, sizeof(g_extern.savestate_dir));
+               rgui_flush_menu_stack_type(rgui, RGUI_SETTINGS_PATH_OPTIONS);
+            }
+            else if (menu_type == RGUI_LIBRETRO_DIR_PATH)
+            {
+               strlcpy(rgui->libretro_dir, dir, sizeof(g_extern.savestate_dir));
                rgui_flush_menu_stack_type(rgui, RGUI_SETTINGS_PATH_OPTIONS);
             }
             else if (menu_type == RGUI_SHADER_DIR_PATH)

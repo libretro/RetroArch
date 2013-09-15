@@ -9,7 +9,6 @@ import android.content.*;
 import android.app.*;
 import android.media.AudioManager;
 import android.os.*;
-import android.preference.PreferenceManager;
 import android.widget.*;
 import android.view.*;
 
@@ -107,7 +106,7 @@ public class DirectoryActivity extends Activity implements
 	
 	private void finishWithPath(String path) {
 		if (pathSettingKey != null && !pathSettingKey.isEmpty()) {
-			SharedPreferences settings = PreferenceManager.getDefaultSharedPreferences(getBaseContext());
+			SharedPreferences settings = MainMenuActivity.getPreferences();
 			SharedPreferences.Editor editor = settings.edit();
 			editor.putString(pathSettingKey, path);
 			editor.commit();

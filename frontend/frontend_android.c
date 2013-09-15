@@ -153,9 +153,11 @@ static bool android_app_start_main(struct android_app *android_app)
    config_load();
 
    menu_init();
+
    ret = load_menu_game();
    if (ret)
       g_extern.lifecycle_mode_state |= (1ULL << MODE_GAME);
+
    return ret;
 }
 

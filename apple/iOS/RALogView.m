@@ -34,7 +34,7 @@ void ios_add_log_message(const char* format, ...)
    va_start(args, format);
    vsnprintf(buffer, 512, format, args);
    va_end(args);
-   [g_messages addObject:[NSString stringWithUTF8String: buffer]];
+   [g_messages addObject:@(buffer)];
    
    pthread_mutex_unlock(&g_lock);
 }

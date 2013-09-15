@@ -56,7 +56,7 @@ static inline bool input_key_pressed_func(int key)
    bool ret = driver.input->key_pressed(driver.input_data, key);
 
 #ifdef HAVE_OVERLAY
-   ret |= driver.overlay_state & (UINT64_C(1) << key);
+   ret |= driver.overlay_state.buttons & (UINT64_C(1) << key);
 #endif
 
 #ifdef HAVE_COMMAND

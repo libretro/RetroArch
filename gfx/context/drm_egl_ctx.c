@@ -93,6 +93,8 @@ static void sighandler(int sig)
 static void gfx_ctx_swap_interval(unsigned interval)
 {
    g_interval = interval;
+   if (interval > 1)
+      RARCH_WARN("[KMS/EGL]: Swap intervals > 1 currently not supported. Will use swap interval of 1.\n");
 }
 
 static void gfx_ctx_check_window(bool *quit,

@@ -1,0 +1,5 @@
+display_name = "SNES / Super Famicom (SNES9x Next)"
+supported_extensions = "smc|sfc"
+corename = "bsnes/higan Performance"
+manufacturer = "Nintendo"
+systemname = "Super Nintendo Entertainment System"

@@ -43,6 +43,11 @@ class FileWrapper implements IconAdapterItem {
 		else
 			return file.getName();
 	}
+	
+	@Override
+	public String getSubText() {
+		return null;
+	}
 
 	@Override
 	public int getIconResourceId() {
