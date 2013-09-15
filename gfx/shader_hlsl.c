@@ -431,9 +431,11 @@ const gl_shader_backend_t hlsl_backend = {
    hlsl_use,
    hlsl_num,
    hlsl_filter_type,
+   NULL,              /* hlsl_wrap_type  */
    hlsl_shader_scale,
-   NULL, /* hlsl_set_coords */
+   NULL,              /* hlsl_set_coords */
    hlsl_set_mvp,
+   NULL,              /* hlsl_get_prev_textures */
 
    RARCH_SHADER_HLSL,
 };

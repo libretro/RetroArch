@@ -567,9 +567,9 @@ static void *xdk_d3d_init(const video_info_t *video, const input_driver_t **inpu
    d3d->tex_h = RARCH_SCALE_BASE * video->input_scale;
 
 #if defined(_XBOX1)
-   d3d->ctx_driver = gfx_ctx_init_first(GFX_CTX_DIRECT3D8_API);
+   d3d->ctx_driver = gfx_ctx_init_first(GFX_CTX_DIRECT3D8_API, 8, 0);
 #elif defined(_XBOX360)
-   d3d->ctx_driver = gfx_ctx_init_first(GFX_CTX_DIRECT3D9_API);
+   d3d->ctx_driver = gfx_ctx_init_first(GFX_CTX_DIRECT3D9_API, 9, 0);
 #endif
    if (d3d->ctx_driver)
    {
@@ -1039,8 +1039,8 @@ static bool xdk_d3d_alive(void *data)
 
 static bool xdk_d3d_focus(void *data)
 {
-   (void)data;
-   return gfx_ctx_window_has_focus();
+   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)data;
+   return d3d->ctx_driver->has_focus();
 }
 
 static void xdk_d3d_set_aspect_ratio(void *data, unsigned aspect_ratio_idx)

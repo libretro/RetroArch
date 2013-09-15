@@ -181,7 +181,7 @@ static HRESULT xbox_io_unmount(char *szDrive)
 }
 #endif
 
-static void get_environment_settings(int argc, char *argv[])
+static void get_environment_settings(int argc, char *argv[], void *args)
 {
    HRESULT ret;
    (void)ret;
