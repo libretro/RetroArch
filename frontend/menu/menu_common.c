@@ -38,6 +38,7 @@ const menu_ctx_driver_t *menu_ctx;
 #ifdef HAVE_SHADER_MANAGER
 void shader_manager_init(rgui_handle_t *rgui)
 {
+   memset(&rgui->shader, 0, sizeof(rgui->shader));
    config_file_t *conf = NULL;
    char cgp_path[PATH_MAX];
 
@@ -532,8 +533,10 @@ bool load_menu_game(void)
    if (rarch_main_init_wrap(&args) == 0)
    {
       RARCH_LOG("rarch_main_init_wrap() succeeded.\n");
+      // Update menu state which depends on config.
       menu_update_libretro_info();
       menu_init_history();
+      shader_manager_init(rgui);
       return true;
    }
    else
