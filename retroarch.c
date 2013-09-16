@@ -122,10 +122,24 @@ void rarch_take_screenshot(void)
 
    bool ret = false;
 
-   if ((g_settings.video.gpu_screenshot ||
-            g_extern.system.hw_render_callback.context_type != RETRO_HW_CONTEXT_NONE) &&
-         driver.video->read_viewport &&
-         driver.video->viewport_info)
+   bool viewport_read = (g_settings.video.gpu_screenshot ||
+         g_extern.system.hw_render_callback.context_type != RETRO_HW_CONTEXT_NONE) &&
+      driver.video->read_viewport &&
+      driver.video->viewport_info;
+
+   // Clear out message queue to avoid OSD fonts to appear on screenshot.
+   msg_queue_clear(g_extern.msg_queue);
+
+   if (viewport_read)
+   {
+      // Avoid taking screenshot of GUI overlays.
+      if (driver.video_poke && driver.video_poke->set_texture_enable)
+         driver.video_poke->set_texture_enable(driver.video_data, false, false);
+      if (driver.video)
+         rarch_render_cached_frame();
+   }
+
+   if (viewport_read)
       ret = take_screenshot_viewport();
    else if (g_extern.frame_cache.data && (g_extern.frame_cache.data != RETRO_HW_FRAME_BUFFER_VALID))
       ret = take_screenshot_raw();
@@ -143,8 +157,6 @@ void rarch_take_screenshot(void)
       RARCH_WARN("Failed to take screenshot ...\n");
       msg = "Failed to take screenshot.";
    }
-
-   msg_queue_clear(g_extern.msg_queue);
 
    if (g_extern.is_paused)
    {
