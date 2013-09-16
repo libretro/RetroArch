@@ -222,6 +222,9 @@ static bool menu_type_is_directory_browser(unsigned type)
 #ifdef HAVE_OVERLAY
       type == RGUI_OVERLAY_DIR_PATH ||
 #endif
+#ifdef HAVE_SCREENSHOTS
+      type == RGUI_SCREENSHOT_DIR_PATH ||
+#endif
       type == RGUI_SYSTEM_DIR_PATH;
 }
 
@@ -470,6 +473,10 @@ static void render_text(rgui_handle_t *rgui)
 #endif
    else if (menu_type == RGUI_BROWSER_DIR_PATH)
       snprintf(title, sizeof(title), "BROWSER DIR %s", dir);
+#ifdef HAVE_SCREENSHOTS
+   else if (menu_type == RGUI_SCREENSHOT_DIR_PATH)
+      snprintf(title, sizeof(title), "SCREENSHOT DIR %s", dir);
+#endif
    else if (menu_type == RGUI_SHADER_DIR_PATH)
       snprintf(title, sizeof(title), "SHADER DIR %s", dir);
    else if (menu_type == RGUI_SAVESTATE_DIR_PATH)
@@ -691,6 +698,11 @@ static void render_text(rgui_handle_t *rgui)
             case RGUI_BROWSER_DIR_PATH:
                strlcpy(type_str, *g_settings.rgui_browser_directory ? g_settings.rgui_browser_directory : "<default>", sizeof(type_str));
                break;
+#ifdef HAVE_SCREENSHOTS
+            case RGUI_SCREENSHOT_DIR_PATH:
+               strlcpy(type_str, *g_settings.screenshot_directory ? g_settings.screenshot_directory : "<ROM dir>", sizeof(type_str));
+               break;
+#endif
             case RGUI_SAVEFILE_DIR_PATH:
                strlcpy(type_str, *g_extern.savefile_dir ? g_extern.savefile_dir : "<ROM dir>", sizeof(type_str));
                break;
@@ -1386,6 +1398,12 @@ static int rgui_settings_toggle_setting(rgui_handle_t *rgui, unsigned setting, r
             *rgui->base_path = '\0';
          }
          break;
+#ifdef HAVE_SCREENSHOTS
+      case RGUI_SCREENSHOT_DIR_PATH:
+         if (action == RGUI_ACTION_START)
+            *g_settings.screenshot_directory = '\0';
+         break;
+#endif
       case RGUI_SAVEFILE_DIR_PATH:
          if (action == RGUI_ACTION_START)
             *g_extern.savefile_dir = '\0';
@@ -2132,6 +2150,9 @@ static void rgui_settings_path_populate_entries(rgui_handle_t *rgui)
    rgui_list_push(rgui->selection_buf, "Overlay Directory", RGUI_OVERLAY_DIR_PATH, 0);
 #endif
    rgui_list_push(rgui->selection_buf, "System Directory", RGUI_SYSTEM_DIR_PATH, 0);
+#ifdef HAVE_SCREENSHOTS
+   rgui_list_push(rgui->selection_buf, "Screenshot Directory", RGUI_SCREENSHOT_DIR_PATH, 0);
+#endif
 }
 
 static void rgui_settings_controller_populate_entries(rgui_handle_t *rgui)
@@ -2829,6 +2850,13 @@ int rgui_iterate(rgui_handle_t *rgui)
                strlcpy(rgui->base_path, dir, sizeof(rgui->base_path));
                rgui_flush_menu_stack_type(rgui, RGUI_SETTINGS_PATH_OPTIONS);
             }
+#ifdef HAVE_SCREENSHOTS
+            else if (menu_type == RGUI_SCREENSHOT_DIR_PATH)
+            {
+               strlcpy(g_settings.screenshot_directory, dir, sizeof(g_settings.screenshot_directory));
+               rgui_flush_menu_stack_type(rgui, RGUI_SETTINGS_PATH_OPTIONS);
+            }
+#endif
             else if (menu_type == RGUI_SAVEFILE_DIR_PATH)
             {
                strlcpy(g_extern.savefile_dir, dir, sizeof(g_extern.savefile_dir));

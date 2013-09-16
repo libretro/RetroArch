@@ -659,10 +659,15 @@ bool config_load_file(const char *path)
 
    CONFIG_GET_PATH(core_options_path, "core_options_path");
    CONFIG_GET_PATH(screenshot_directory, "screenshot_directory");
-   if (*g_settings.screenshot_directory && !path_is_directory(g_settings.screenshot_directory))
+   if (*g_settings.screenshot_directory)
    {
-      RARCH_WARN("screenshot_directory is not an existing directory, ignoring ...\n");
-      *g_settings.screenshot_directory = '\0';
+      if (!strcmp(g_settings.screenshot_directory, "default"))
+         *g_settings.screenshot_directory = '\0';
+      else if (!path_is_directory(g_settings.screenshot_directory))
+      {
+         RARCH_WARN("screenshot_directory is not an existing directory, ignoring ...\n");
+         *g_settings.screenshot_directory = '\0';
+      }
    }
 
 #ifdef HAVE_RGUI
@@ -992,6 +997,7 @@ bool config_save_file(const char *path)
    config_set_bool(conf, "video_black_frame_insertion", g_settings.video.black_frame_insertion);
    config_set_int(conf, "video_swap_interval", g_settings.video.swap_interval);
    config_set_bool(conf, "video_gpu_screenshot", g_settings.video.gpu_screenshot);
+   config_set_string(conf, "screenshot_directory", *g_settings.screenshot_directory ? g_settings.screenshot_directory : "default");
    config_set_int(conf, "aspect_ratio_index", g_settings.video.aspect_ratio_idx);
    config_set_string(conf, "audio_device", g_settings.audio.device);
    config_set_bool(conf, "audio_rate_control", g_settings.audio.rate_control);
