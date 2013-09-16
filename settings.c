@@ -991,6 +991,7 @@ bool config_save_file(const char *path)
    config_set_int(conf, "video_hard_sync_frames", g_settings.video.hard_sync_frames);
    config_set_bool(conf, "video_black_frame_insertion", g_settings.video.black_frame_insertion);
    config_set_int(conf, "video_swap_interval", g_settings.video.swap_interval);
+   config_set_bool(conf, "video_gpu_screenshot", g_settings.video.gpu_screenshot);
    config_set_int(conf, "aspect_ratio_index", g_settings.video.aspect_ratio_idx);
    config_set_string(conf, "audio_device", g_settings.audio.device);
    config_set_bool(conf, "audio_rate_control", g_settings.audio.rate_control);

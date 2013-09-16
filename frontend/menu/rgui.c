@@ -661,6 +661,11 @@ static void render_text(rgui_handle_t *rgui)
             case RGUI_SETTINGS_REWIND_ENABLE:
                strlcpy(type_str, g_settings.rewind_enable ? "ON" : "OFF", sizeof(type_str));
                break;
+#ifdef HAVE_SCREENSHOTS
+            case RGUI_SETTINGS_GPU_SCREENSHOT:
+               strlcpy(type_str, g_settings.video.gpu_screenshot ? "ON" : "OFF", sizeof(type_str));
+               break;
+#endif
             case RGUI_SETTINGS_REWIND_GRANULARITY:
                snprintf(type_str, sizeof(type_str), "%u", g_settings.rewind_granularity);
                break;
@@ -946,6 +951,16 @@ static int rgui_settings_toggle_setting(rgui_handle_t *rgui, unsigned setting, r
             rarch_deinit_rewind();
          }
          break;
+#ifdef HAVE_SCREENSHOTS
+      case RGUI_SETTINGS_GPU_SCREENSHOT:
+         if (action == RGUI_ACTION_OK ||
+               action == RGUI_ACTION_LEFT ||
+               action == RGUI_ACTION_RIGHT)
+            g_settings.video.gpu_screenshot = !g_settings.video.gpu_screenshot;
+         else if (action == RGUI_ACTION_START)
+            g_settings.video.gpu_screenshot = true;
+         break;
+#endif
       case RGUI_SETTINGS_REWIND_GRANULARITY:
          if (action == RGUI_ACTION_OK || action == RGUI_ACTION_RIGHT)
             g_settings.rewind_granularity++;
@@ -1425,6 +1440,9 @@ static void rgui_settings_options_populate_entries(rgui_handle_t *rgui)
    rgui_list_clear(rgui->selection_buf);
    rgui_list_push(rgui->selection_buf, "Rewind", RGUI_SETTINGS_REWIND_ENABLE, 0);
    rgui_list_push(rgui->selection_buf, "Rewind Granularity", RGUI_SETTINGS_REWIND_GRANULARITY, 0);
+#ifdef HAVE_SCREENSHOTS
+   rgui_list_push(rgui->selection_buf, "GPU Screenshots", RGUI_SETTINGS_GPU_SCREENSHOT, 0);
+#endif
    rgui_list_push(rgui->selection_buf, "Config Save On Exit", RGUI_SETTINGS_CONFIG_SAVE_ON_EXIT, 0);
 #if defined(HAVE_THREADS) && !defined(RARCH_CONSOLE)
    rgui_list_push(rgui->selection_buf, "SRAM Autosave", RGUI_SETTINGS_SRAM_AUTOSAVE, 0);
