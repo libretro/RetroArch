@@ -2831,7 +2831,10 @@ static int rgui_iterate(void *data, unsigned action)
                rgui_flush_menu_stack(rgui);
                rgui->msg_force = true;
                if (menu_replace_config(config))
+               {
+                  rgui->selection_ptr = 0; // Menu can shrink.
                   ret = -1;
+               }
             }
 #ifdef HAVE_OVERLAY
             else if (menu_type == RGUI_SETTINGS_OVERLAY_PRESET)
