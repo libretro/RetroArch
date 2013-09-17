@@ -222,14 +222,17 @@ static bool g_is_syncing = true;
 static RAScreen* get_chosen_screen()
 {
    unsigned monitor = g_settings.video.monitor_index;
-         
-   if (monitor >= RAScreen.screens.count)
+
+   @autoreleasepool
    {
-      RARCH_WARN("video_monitor_index is greater than the number of connected monitors; using main screen instead.\n");
-      return RAScreen.mainScreen;
+      if (monitor >= RAScreen.screens.count)
+      {
+         RARCH_WARN("video_monitor_index is greater than the number of connected monitors; using main screen instead.\n");
+         return RAScreen.mainScreen;
+      }
+
+      return RAScreen.screens[monitor];
    }
-   
-   return RAScreen.screens[monitor];
 }
 
 bool apple_gfx_ctx_init()
