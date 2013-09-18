@@ -133,6 +133,8 @@ void input_autodetect_setup(void *data, char *msg, size_t sizeof_msg, unsigned p
       device = DEVICE_SUPER_SMARTJOY;
    else if (strstr(name_buf, "Jess Tech Dual Analog Rumble Pad"))
       device = DEVICE_SAITEK_RUMBLE_P480;
+   else if (strstr(name_buf, "mtk-kpd"))
+      device = DEVICE_MUCH_IREADGO_I5;
    else if (strstr(name_buf, "Microsoft"))
    {
       if (strstr(name_buf, "Dual Strike"))
