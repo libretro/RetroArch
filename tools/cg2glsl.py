@@ -703,7 +703,7 @@ def main():
 
             try:
                ret = convert(source, dest)
-               print(source, '->', dest, '...', 'suceeded!' if ret == 0 else 'failed!')
+               print(source, '->', dest, '...', 'succeeded!' if ret == 0 else 'failed!')
 
                if ret == 0:
                   success_cnt += 1
