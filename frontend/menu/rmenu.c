@@ -2895,7 +2895,7 @@ int rgui_input_postprocess(void *data, uint64_t old_state)
    return ret;
 }
 
-int rgui_iterate(void *data)
+static int rgui_iterate(void *data)
 {
    rgui_handle_t *rgui = (rgui_handle_t*)data;
    rgui->menu_type = menu_stack_enum_array[stack_idx - 1];
@@ -2963,7 +2963,7 @@ int rgui_iterate(void *data)
 }
 
 
-void *rgui_init(void)
+static void* rgui_init(void)
 {
    rgui_handle_t *rgui = (rgui_handle_t*)calloc(1, sizeof(*rgui));
 
@@ -2984,7 +2984,7 @@ void *rgui_init(void)
    return rgui;
 }
 
-void rgui_free(void *data)
+static void rgui_free(void *data)
 {
    rgui_handle_t *rgui = (rgui_handle_t*)data;
 #ifdef _XBOX1

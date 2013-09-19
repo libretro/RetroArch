@@ -35,6 +35,7 @@ typedef struct menu_ctx_driver
 } menu_ctx_driver_t;
 
 extern const menu_ctx_driver_t menu_ctx_rmenu;
+extern const menu_ctx_driver_t menu_ctx_rmenu_xui;
 extern const menu_ctx_driver_t menu_ctx_rgui;
 
 const menu_ctx_driver_t *menu_ctx_find_driver(const char *ident); // Finds driver with ident. Does not initialize.

@@ -1443,7 +1443,7 @@ HRESULT CRetroArchMain::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled )
    return 0;
 }
 
-rgui_handle_t *rgui_init (void)
+static void* rgui_init (void)
 {
    HRESULT hr;
 
@@ -1518,8 +1518,9 @@ rgui_handle_t *rgui_init (void)
    return rgui;
 }
 
-void rgui_free (rgui_handle_t *rgui)
+static void rgui_free(void *data)
 {
+   rgui_handle_t *rgui = (rgui_handle_t*)data;
    app.Uninit();
 }
 
@@ -1651,3 +1652,10 @@ bool menu_iterate_xui(void)
    XuiTimersRun();
    return true;
 }
+
+const menu_ctx_driver_t menu_ctx_rmenu_xui = {
+   NULL,
+   rgui_init,
+   rgui_free,
+   "rmenu_xui",
+};
