@@ -135,6 +135,8 @@ void input_autodetect_setup(void *data, char *msg, size_t sizeof_msg, unsigned p
       device = DEVICE_SAITEK_RUMBLE_P480;
    else if (strstr(name_buf, "mtk-kpd"))
       device = DEVICE_MUCH_IREADGO_I5;
+   else if (strstr(name_buf, "Wikipad"))
+      device = DEVICE_WIKIPAD;
    else if (strstr(name_buf, "Microsoft"))
    {
       if (strstr(name_buf, "Dual Strike"))
