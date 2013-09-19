@@ -1140,27 +1140,22 @@ static int rgui_settings_toggle_setting(rgui_handle_t *rgui, unsigned setting, r
          switch (action)
          {
             case RGUI_ACTION_LEFT:
-               g_settings.input.overlay_opacity -= 0.01f;
+               settings_set(1ULL << S_INPUT_OVERLAY_OPACITY_DECREMENT);
                break;
 
             case RGUI_ACTION_RIGHT:
             case RGUI_ACTION_OK:
-               g_settings.input.overlay_opacity += 0.01f;
+               settings_set(1ULL << S_INPUT_OVERLAY_OPACITY_INCREMENT);
                break;
 
             case RGUI_ACTION_START:
-               g_settings.input.overlay_opacity = 1.0f;
+               settings_set(1ULL << S_DEF_INPUT_OVERLAY_OPACITY);
                break;
 
             default:
                changed = false;
                break;
          }
-
-         if (g_settings.input.overlay_opacity < 0.0f)
-            g_settings.input.overlay_opacity = 0.0f;
-         else if (g_settings.input.overlay_opacity > 1.0f)
-            g_settings.input.overlay_opacity = 1.0f;
 
          if (changed && driver.overlay)
             input_overlay_set_alpha_mod(driver.overlay,
@@ -1174,27 +1169,22 @@ static int rgui_settings_toggle_setting(rgui_handle_t *rgui, unsigned setting, r
          switch (action)
          {
             case RGUI_ACTION_LEFT:
-               g_settings.input.overlay_scale -= 0.01f;
+               settings_set(1ULL << S_INPUT_OVERLAY_SCALE_DECREMENT);
                break;
 
             case RGUI_ACTION_RIGHT:
             case RGUI_ACTION_OK:
-               g_settings.input.overlay_scale += 0.01f;
+               settings_set(1ULL << S_INPUT_OVERLAY_SCALE_INCREMENT);
                break;
 
             case RGUI_ACTION_START:
-               g_settings.input.overlay_scale = 1.0f;
+               settings_set(1ULL << S_DEF_INPUT_OVERLAY_SCALE);
                break;
 
             default:
                changed = false;
                break;
          }
-
-         if (g_settings.input.overlay_scale < 0.01f) // Avoid potential divide by zero.
-            g_settings.input.overlay_scale = 0.01f;
-         else if (g_settings.input.overlay_scale > 2.0f)
-            g_settings.input.overlay_scale = 2.0f;
 
          if (changed && driver.overlay)
             input_overlay_set_scale_factor(driver.overlay,
@@ -1947,13 +1937,13 @@ static int video_option_toggle_setting(rgui_handle_t *rgui, unsigned setting, rg
          switch (action)
          {
             case RGUI_ACTION_START:
-               g_settings.video.vsync = true;
+               settings_set(1ULL << S_DEF_VIDEO_VSYNC);
                break;
 
             case RGUI_ACTION_LEFT:
             case RGUI_ACTION_RIGHT:
             case RGUI_ACTION_OK:
-               g_settings.video.vsync = !g_settings.video.vsync;
+               settings_set(1ULL << S_VIDEO_VSYNC_TOGGLE);
                break;
 
             default:

@@ -1132,6 +1132,52 @@ bool config_save_keybinds(const char *path)
 
 void settings_set(uint64_t settings)
 {
+#ifdef HAVE_OVERLAY
+   if (settings & (1ULL << S_INPUT_OVERLAY_OPACITY_DECREMENT))
+   {
+      g_settings.input.overlay_opacity -= 0.01f;
+
+      if (g_settings.input.overlay_opacity < 0.0f)
+         g_settings.input.overlay_opacity = 0.0f;
+   }
+
+   if (settings & (1ULL << S_INPUT_OVERLAY_OPACITY_INCREMENT))
+   {
+      g_settings.input.overlay_opacity += 0.01f;
+
+      if (g_settings.input.overlay_opacity > 1.0f)
+         g_settings.input.overlay_opacity = 1.0f;
+   }
+
+   if (settings & (1ULL << S_DEF_INPUT_OVERLAY_OPACITY))
+      g_settings.input.overlay_opacity = 1.0f;
+
+   if (settings & (1ULL << S_INPUT_OVERLAY_SCALE_DECREMENT))
+   {
+      g_settings.input.overlay_scale -= 0.01f;
+
+      if (g_settings.input.overlay_scale < 0.01f) // Avoid potential divide by zero.
+         g_settings.input.overlay_scale = 0.01f;
+   }
+
+   if (settings & (1ULL << S_INPUT_OVERLAY_SCALE_INCREMENT))
+   {
+      g_settings.input.overlay_scale += 0.01f;
+
+      if (g_settings.input.overlay_scale > 2.0f)
+         g_settings.input.overlay_scale = 2.0f;
+   }
+
+   if (settings & (1ULL << S_DEF_INPUT_OVERLAY_SCALE))
+      g_settings.input.overlay_opacity = 1.0f;
+#endif
+
+   if (settings & (1ULL << S_VIDEO_VSYNC_TOGGLE))
+      g_settings.video.vsync = !g_settings.video.vsync;
+
+   if (settings & (1ULL << S_DEF_VIDEO_VSYNC))
+      g_settings.video.vsync = true;
+
    if (settings & (1ULL << S_ASPECT_RATIO_DECREMENT))
    {
       if (g_settings.video.aspect_ratio_idx > 0)
