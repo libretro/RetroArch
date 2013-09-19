@@ -295,13 +295,13 @@ static void set_dpad_emulation_label(unsigned port, char *str, size_t sizeof_str
    switch(g_settings.input.dpad_emulation[port])
    {
       case ANALOG_DPAD_NONE:
-         snprintf(str, sizeof_str, "D-Pad Emulation: None");
+         strlcpy(str, "D-Pad Emulation: None", sizeof_str);
          break;
       case ANALOG_DPAD_LSTICK:
-         snprintf(str, sizeof_str, "D-Pad Emulation: Left Stick");
+         strlcpy(str, "D-Pad Emulation: Left Stick", sizeof_str);
          break;
       case ANALOG_DPAD_RSTICK:
-         snprintf(str, sizeof_str, "D-Pad Emulation: Right Stick");
+         strlcpy(str, "D-Pad Emulation: Right Stick", sizeof_str);
          break;
    }
 }
