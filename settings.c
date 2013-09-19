@@ -1187,6 +1187,9 @@ void settings_set(uint64_t settings)
    if (settings & (1ULL << S_VIDEO_VSYNC_TOGGLE))
       g_settings.video.vsync = !g_settings.video.vsync;
 
+   if (settings & (1ULL << S_VIDEO_FULLSCREEN_TOGGLE))
+      g_settings.video.fullscreen = !g_settings.video.fullscreen;
+
    if (settings & (1ULL << S_DEF_VIDEO_VSYNC))
       g_settings.video.vsync = true;
 

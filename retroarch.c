@@ -2006,7 +2006,7 @@ static bool check_fullscreen(void)
    bool toggle = pressed && !was_pressed;
    if (toggle)
    {
-      g_settings.video.fullscreen = !g_settings.video.fullscreen;
+      settings_set(1ULL << S_VIDEO_FULLSCREEN_TOGGLE);
       rarch_set_fullscreen(g_settings.video.fullscreen);
    }
 
