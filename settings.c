@@ -1172,6 +1172,18 @@ void settings_set(uint64_t settings)
       g_settings.input.overlay_opacity = 1.0f;
 #endif
 
+   if (settings & (1ULL << S_REWIND_GRANULARITY_INCREMENT))
+      g_settings.rewind_granularity++;
+
+   if (settings & (1ULL << S_REWIND_GRANULARITY_DECREMENT))
+   {
+      if (g_settings.rewind_granularity > 1)
+         g_settings.rewind_granularity--;
+   }
+
+   if (settings & (1ULL << S_DEF_REWIND_GRANULARITY))
+      g_settings.rewind_granularity = 1;
+
    if (settings & (1ULL << S_VIDEO_VSYNC_TOGGLE))
       g_settings.video.vsync = !g_settings.video.vsync;
 

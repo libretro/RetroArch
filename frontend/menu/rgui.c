@@ -975,14 +975,11 @@ static int rgui_settings_toggle_setting(rgui_handle_t *rgui, unsigned setting, r
 #endif
       case RGUI_SETTINGS_REWIND_GRANULARITY:
          if (action == RGUI_ACTION_OK || action == RGUI_ACTION_RIGHT)
-            g_settings.rewind_granularity++;
+            settings_set(1ULL << S_REWIND_GRANULARITY_INCREMENT);
          else if (action == RGUI_ACTION_LEFT)
-         {
-            if (g_settings.rewind_granularity > 1)
-               g_settings.rewind_granularity--;
-         }
+            settings_set(1ULL << S_REWIND_GRANULARITY_DECREMENT);
          else if (action == RGUI_ACTION_START)
-            g_settings.rewind_granularity = 1;
+            settings_set(1ULL << S_DEF_REWIND_GRANULARITY);
          break;
       case RGUI_SETTINGS_CONFIG_SAVE_ON_EXIT:
          if (action == RGUI_ACTION_OK || action == RGUI_ACTION_RIGHT 
