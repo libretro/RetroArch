@@ -279,11 +279,6 @@ void menu_init(void);
 bool menu_iterate(void);
 void menu_free(void);
 
-int rgui_iterate(rgui_handle_t *rgui);
-
-rgui_handle_t *rgui_init(void);
-void rgui_free(rgui_handle_t *rgui);
-
 #ifndef HAVE_RMENU_XUI
 #if defined(HAVE_RGUI) || defined(HAVE_RMENU)
 int rgui_input_postprocess(void *data, uint64_t old_state);

@@ -190,6 +190,7 @@
     <ClCompile Include="..\..\frontend\menu\history.c" />
     <ClCompile Include="..\..\frontend\menu\rgui.c" />
     <ClCompile Include="..\..\frontend\menu\menu_common.c" />
+    <ClCompile Include="..\..\frontend\menu\menu_context.c" />
     <ClCompile Include="..\..\gfx\d3d9\d3d9.cpp" />
     <ClCompile Include="..\..\gfx\d3d9\render_chain.cpp" />
     <ClCompile Include="..\..\gfx\fonts\bitmapfont.c" />

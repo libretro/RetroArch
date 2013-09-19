@@ -28,10 +28,12 @@
 #else
 #include "utils/file_list.h"
 #endif
+#include "menu_context.h"
 
 #include "../../compat/posix_string.h"
 
 rgui_handle_t *rgui;
+menu_ctx_driver_t *menu_ctx;
 
 #ifdef HAVE_SHADER_MANAGER
 void shader_manager_init(rgui_handle_t *rgui)
@@ -420,7 +422,9 @@ void load_menu_game_prepare(void)
    rgui->old_input_state = rgui->trigger_state = 0;
    rgui->do_held = false;
    rgui->msg_force = true;
-   rgui_iterate(rgui);
+
+   if (menu_ctx && menu_ctx->iterate)
+      menu_ctx->iterate(rgui);
 #endif
 
    // Draw frame for loading message
@@ -495,9 +499,12 @@ bool load_menu_game(void)
 
 void menu_init(void)
 {
-   rgui = rgui_init();
+   menu_ctx = (menu_ctx_driver_t*)menu_ctx_init_first();
 
-   if (rgui == NULL)
+   if (menu_ctx && menu_ctx->init)
+      rgui = (rgui_handle_t*)menu_ctx->init();
+
+   if (rgui == NULL || menu_ctx == NULL)
    {
       RARCH_ERR("Could not initialize menu.\n");
       rarch_fail(1, "menu_init()");
@@ -574,7 +581,8 @@ void menu_init(void)
 
 void menu_free(void)
 {
-   rgui_free(rgui);
+   if (menu_ctx && menu_ctx->free)
+      menu_ctx->free(rgui);
 
 #ifdef HAVE_FILEBROWSER
    filebrowser_free(rgui->browser);
@@ -769,7 +777,7 @@ bool menu_iterate(void)
    static bool initial_held = true;
    static bool first_held = false;
    uint64_t input_state = 0;
-   int input_entry_ret;
+   int input_entry_ret = 0;
 
    if (g_extern.lifecycle_mode_state & (1ULL << MODE_MENU_PREINIT))
    {
@@ -816,7 +824,9 @@ bool menu_iterate(void)
 
    rgui->delay_count++;
    rgui->old_input_state = input_state;
-   input_entry_ret = rgui_iterate(rgui);
+
+   if (menu_ctx && menu_ctx->iterate)
+   input_entry_ret = menu_ctx->iterate(rgui);
 
    if (driver.video_poke && driver.video_poke->set_texture_enable)
       driver.video_poke->set_texture_enable(driver.video_data, rgui->frame_buf_show, MENU_TEXTURE_FULLSCREEN);

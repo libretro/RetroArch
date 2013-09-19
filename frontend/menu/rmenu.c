@@ -2895,8 +2895,9 @@ int rgui_input_postprocess(void *data, uint64_t old_state)
    return ret;
 }
 
-int rgui_iterate(rgui_handle_t *rgui)
+int rgui_iterate(void *data)
 {
+   rgui_handle_t *rgui = (rgui_handle_t*)data;
    rgui->menu_type = menu_stack_enum_array[stack_idx - 1];
 
    if (rgui->need_refresh)
@@ -2962,7 +2963,7 @@ int rgui_iterate(rgui_handle_t *rgui)
 }
 
 
-rgui_handle_t *rgui_init(void)
+void *rgui_init(void)
 {
    rgui_handle_t *rgui = (rgui_handle_t*)calloc(1, sizeof(*rgui));
 
@@ -2983,8 +2984,9 @@ rgui_handle_t *rgui_init(void)
    return rgui;
 }
 
-void rgui_free(rgui_handle_t *rgui)
+void rgui_free(void *data)
 {
+   rgui_handle_t *rgui = (rgui_handle_t*)data;
 #ifdef _XBOX1
 #ifdef HAVE_MENU_PANEL
    if (menu_panel->vertex_buf)
@@ -3024,3 +3026,10 @@ void rgui_free(rgui_handle_t *rgui)
    }
 #endif
 }
+
+const menu_ctx_driver_t menu_ctx_rmenu = {
+   rgui_iterate,
+   rgui_init,
+   rgui_free,
+   "rmenu",
+};

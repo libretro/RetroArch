@@ -22,6 +22,7 @@
 #include <limits.h>
 
 #include "rgui.h"
+#include "menu_context.h"
 #include "utils/file_list.h"
 #include "../../general.h"
 #include "../../file_ext.h"
@@ -230,7 +231,7 @@ static bool menu_type_is_directory_browser(unsigned type)
 
 static void rgui_settings_populate_entries(rgui_handle_t *rgui);
 
-rgui_handle_t *rgui_init(void)
+void *rgui_init(void)
 {
    uint16_t *framebuf = menu_framebuf;
    size_t framebuf_pitch = RGUI_WIDTH * sizeof(uint16_t);
@@ -280,8 +281,9 @@ rgui_handle_t *rgui_init(void)
    return rgui;
 }
 
-void rgui_free(rgui_handle_t *rgui)
+void rgui_free(void *data)
 {
+   rgui_handle_t *rgui = (rgui_handle_t*)data;
    if (rgui->alloc_font)
       free((uint8_t*)rgui->font);
 
@@ -2641,8 +2643,9 @@ static bool directory_parse(rgui_handle_t *rgui, const char *directory, unsigned
    return true;
 }
 
-int rgui_iterate(rgui_handle_t *rgui)
+int rgui_iterate(void *data)
 {
+   rgui_handle_t *rgui = (rgui_handle_t*)data;
    rgui_action_t action = RGUI_ACTION_NOOP;
 
    // don't run anything first frame, only capture held inputs for old_input_state
@@ -2977,3 +2980,10 @@ int rgui_input_postprocess(void *data, uint64_t old_state)
 
    return ret;
 }
+
+const menu_ctx_driver_t menu_ctx_rgui = {
+   rgui_iterate,
+   rgui_init,
+   rgui_free,
+   "rgui",
+};

@@ -526,6 +526,7 @@ MENU
 ============================================================ */
 #ifdef HAVE_MENU
 #include "../frontend/menu/menu_common.c"
+#include "../frontend/menu/menu_context.c"
 #include "../frontend/menu/history.c"
 
 #if defined(HAVE_RMENU_GUI)
