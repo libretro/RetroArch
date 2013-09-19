@@ -273,6 +273,7 @@ enum input_devices
    DEVICE_NVIDIA_SHIELD,
    DEVICE_MUCH_IREADGO_I5,
    DEVICE_WIKIPAD,
+   DEVICE_FC30_GAMEPAD,
 #elif defined(GEKKO)
    DEVICE_GAMECUBE = 0,
 #ifdef HW_RVL

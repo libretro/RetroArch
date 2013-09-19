@@ -189,6 +189,8 @@ void input_autodetect_setup(void *data, char *msg, size_t sizeof_msg, unsigned p
       device = DEVICE_USB_2_AXIS_8_BUTTON_GAMEPAD;
    else if (strstr(name_buf, "BUFFALO BGC-FC801"))
       device = DEVICE_BUFFALO_BGC_FC801;
+   else if (strstr(name_buf, "8Bitdo FC30"))
+      device = DEVICE_FC30_GAMEPAD;
    else if (strstr(name_buf, "RetroUSB.com RetroPad"))
       device = DEVICE_RETROUSB_RETROPAD;
    else if (strstr(name_buf, "RetroUSB.com SNES RetroPort"))
