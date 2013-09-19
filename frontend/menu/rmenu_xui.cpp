@@ -272,14 +272,13 @@ HRESULT CRetroArchFileBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHandle
       wcstombs(str_buffer, (const wchar_t *)XuiListGetText(m_menulist, index), sizeof(str_buffer));
       if (path_file_exists(rgui->browser->list->elems[index].data))
       {
-         snprintf(g_extern.fullpath, sizeof(g_extern.fullpath), "%s\\%s",
-               rgui->browser->current_dir.directory_path, str_buffer);
+         fill_pathname_join(g_extern.fullpath, rgui->browser->current_dir.directory_path, str_buffer, sizeof(g_extern.fullpath));
          g_extern.lifecycle_mode_state |= (1ULL << MODE_LOAD_GAME);
          process_input_ret = -1;
       }
       else if(rgui->browser->list->elems[index].attr.b)
       {
-         snprintf(path, sizeof(path), "%s\\%s", rgui->browser->current_dir.directory_path, str_buffer);
+         fill_pathname_join(path, rgui->browser->current_dir.directory_path, str_buffer, sizeof(path));
          uint64_t action = (1ULL << DEVICE_NAV_B);
          filebrowser_set_root_and_ext(rgui->browser, rgui->info.valid_extensions, path);
          filebrowser_fetch_directory_entries(action);
@@ -1185,7 +1184,7 @@ HRESULT CRetroArchShaderBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHand
       else if (rgui->browser->list->elems[index].attr.b)
       {
          wcstombs(str_buffer, (const wchar_t *)XuiListGetText(m_menulist, index), sizeof(str_buffer));
-         snprintf(path, sizeof(path), "%s\\%s", rgui->browser->current_dir.directory_path, str_buffer);
+         fill_pathname_join(path, rgui->browser->current_dir.directory_path, str_buffer, sizeof(path));
          filebrowser_set_root_and_ext(rgui->browser, "cg", path);
          uint64_t action = (1ULL << DEVICE_NAV_B);
          filebrowser_fetch_directory_entries(action);
@@ -1222,8 +1221,7 @@ HRESULT CRetroArchCoreBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHandle
       wcstombs(str_buffer, (const wchar_t *)XuiListGetText(m_menulist, index), sizeof(str_buffer));
       if(path_file_exists(rgui->browser->list->elems[index].data))
       {
-         char path[256];
-         snprintf(path, sizeof(path), "%s\\%s", rgui->browser->current_dir.directory_path, str_buffer);
+         fill_pathname_join(path, rgui->browser->current_dir.directory_path, str_buffer, sizeof(path));
          rarch_environment_cb(RETRO_ENVIRONMENT_SET_LIBRETRO_PATH, (void*)path);
 
          g_extern.lifecycle_mode_state |= (1ULL << MODE_EXITSPAWN);
@@ -1231,7 +1229,7 @@ HRESULT CRetroArchCoreBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHandle
       }
       else if (rgui->browser->list->elems[index].attr.b)
       {
-         snprintf(path, sizeof(path), "%s\\%s", rgui->browser->current_dir.directory_path, str_buffer);
+         fill_pathname_join(path, rgui->browser->current_dir.directory_path, str_buffer, sizeof(path));
          filebrowser_set_root_and_ext(rgui->browser, "xex|XEX", path);
          uint64_t action = (1ULL << DEVICE_NAV_B);
          filebrowser_fetch_directory_entries(action);
