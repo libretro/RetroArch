@@ -33,7 +33,7 @@
 #include "../../compat/posix_string.h"
 
 rgui_handle_t *rgui;
-menu_ctx_driver_t *menu_ctx;
+const menu_ctx_driver_t *menu_ctx;
 
 #ifdef HAVE_SHADER_MANAGER
 void shader_manager_init(rgui_handle_t *rgui)
@@ -499,12 +499,7 @@ bool load_menu_game(void)
 
 void menu_init(void)
 {
-   menu_ctx = (menu_ctx_driver_t*)menu_ctx_init_first();
-
-   if (menu_ctx && menu_ctx->init)
-      rgui = (rgui_handle_t*)menu_ctx->init();
-
-   if (rgui == NULL || menu_ctx == NULL)
+   if (!menu_ctx_init_first(&menu_ctx, &rgui))
    {
       RARCH_ERR("Could not initialize menu.\n");
       rarch_fail(1, "menu_init()");

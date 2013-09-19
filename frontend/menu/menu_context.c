@@ -44,10 +44,22 @@ const menu_ctx_driver_t *menu_ctx_find_driver(const char *ident)
    return NULL;
 }
 
-const menu_ctx_driver_t *menu_ctx_init_first(void)
+bool menu_ctx_init_first(const menu_ctx_driver_t **driver, rgui_handle_t **handle)
 {
-   for (unsigned i = 0; menu_ctx_drivers[i]; i++)
-      return menu_ctx_drivers[i];
+   if (!menu_ctx_drivers[0])
+      return false;
 
-   return NULL;
+   for (unsigned i = 0; menu_ctx_drivers[i]; i++)
+   {
+      void *h = menu_ctx_drivers[i]->init();
+      if (h)
+      {
+         *driver = menu_ctx_drivers[i];
+         *handle = h;
+         return true;
+      }
+   }
+
+   return false;
 }
+

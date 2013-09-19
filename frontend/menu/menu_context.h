@@ -24,6 +24,8 @@
 #include "../../config.h"
 #endif
 
+#include "menu_common.h"
+
 typedef struct menu_ctx_driver
 {
    int (*iterate)(void*);
@@ -39,6 +41,6 @@ extern const menu_ctx_driver_t menu_ctx_rmenu_xui;
 extern const menu_ctx_driver_t menu_ctx_rgui;
 
 const menu_ctx_driver_t *menu_ctx_find_driver(const char *ident); // Finds driver with ident. Does not initialize.
-const menu_ctx_driver_t *menu_ctx_init_first(void); // Finds first suitable driver and initializes.
+bool menu_ctx_init_first(const menu_ctx_driver_t **driver, rgui_handle_t **handle); // Finds first suitable driver and initializes.
 
 #endif
