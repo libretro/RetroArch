@@ -166,14 +166,14 @@ enum
 #define INPUT_DEFAULT_DRIVER INPUT_PSP
 #elif defined(GEKKO)
 #define INPUT_DEFAULT_DRIVER INPUT_WII
-#elif defined(HAVE_XVIDEO)
+#elif defined(PANDORA) || defined(HAVE_VIDEOCORE)
+#define INPUT_DEFAULT_DRIVER INPUT_LINUXRAW
+#elif defined(HAVE_X11)
 #define INPUT_DEFAULT_DRIVER INPUT_X
 #elif defined(IOS) || defined(OSX)
 #define INPUT_DEFAULT_DRIVER INPUT_APPLE
 #elif defined(__BLACKBERRY_QNX__)
 #define INPUT_DEFAULT_DRIVER INPUT_QNX
-#elif defined(PANDORA)
-#define INPUT_DEFAULT_DRIVER INPUT_LINUXRAW
 #else
 #define INPUT_DEFAULT_DRIVER INPUT_NULL
 #endif
