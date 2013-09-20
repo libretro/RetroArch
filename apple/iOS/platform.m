@@ -262,28 +262,28 @@ static void handle_touch_event(NSArray* touches)
    // Read load time settings
    config_file_t* conf = config_file_new([self.systemConfigPath UTF8String]);
 
+   // Get enabled orientations
+   static const struct { const char* setting; uint32_t orientation; } orientationSettings[4] =
+   {
+      { "ios_allow_portrait", UIInterfaceOrientationMaskPortrait },
+      { "ios_allow_portrait_upside_down", UIInterfaceOrientationMaskPortraitUpsideDown },
+      { "ios_allow_landscape_left", UIInterfaceOrientationMaskLandscapeLeft },
+      { "ios_allow_landscape_right", UIInterfaceOrientationMaskLandscapeRight }
+   };
+   
+   _enabledOrientations = 0;
+   
+   for (int i = 0; i < 4; i ++)
+   {
+      bool enabled = false;
+      bool found = conf && config_get_bool(conf, orientationSettings[i].setting, &enabled);
+         
+      if (!found || enabled)
+         _enabledOrientations |= orientationSettings[i].orientation;
+   }
+
    if (conf)
    {
-      // Get enabled orientations
-      static const struct { const char* setting; uint32_t orientation; } orientationSettings[4] =
-      {
-         { "ios_allow_portrait", UIInterfaceOrientationMaskPortrait },
-         { "ios_allow_portrait_upside_down", UIInterfaceOrientationMaskPortraitUpsideDown },
-         { "ios_allow_landscape_left", UIInterfaceOrientationMaskLandscapeLeft },
-         { "ios_allow_landscape_right", UIInterfaceOrientationMaskLandscapeRight }
-      };
-   
-      _enabledOrientations = 0;
-   
-      for (int i = 0; i < 4; i ++)
-      {
-         bool enabled = false;
-         bool found = config_get_bool(conf, orientationSettings[i].setting, &enabled);
-         
-         if (!found || enabled)
-            _enabledOrientations |= orientationSettings[i].orientation;
-      }
-      
       // Setup bluetooth mode
       ios_set_bluetooth_mode(objc_get_value_from_config(conf, @"ios_btmode", @"keyboard"));
 
