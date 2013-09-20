@@ -47,5 +47,6 @@
 
 // modes are: keyboard, icade and btstack
 void ios_set_bluetooth_mode(NSString* mode);
+bool is_ios_7();
 
 #endif

@@ -31,8 +31,17 @@
 //#define HAVE_DEBUG_FILELOG
 void ios_set_bluetooth_mode(NSString* mode)
 {
+#ifndef __IPHONE_7_0 // iOS7 iCade Support
    apple_input_enable_icade([mode isEqualToString:@"icade"]);
    btstack_set_poweron([mode isEqualToString:@"btstack"]);
+#else
+   apple_input_enable_icade(true);
+#endif
+}
+
+bool is_ios_7()
+{
+   return [[UIDevice currentDevice].systemVersion compare:@"7.0" options:NSNumericSearch] != NSOrderedAscending;
 }
 
 // Input helpers: This is kept here because it needs objective-c
@@ -79,6 +88,33 @@ static void handle_touch_event(NSArray* touches)
       CFBridgingRelease(eventMem);
    }
 }
+
+#ifdef __IPHONE_7_0 // iOS7 iCade Support
+
+- (NSArray*)keyCommands
+{
+   static NSMutableArray* key_commands;
+
+   if (!key_commands)
+   {
+      key_commands = [NSMutableArray array];
+   
+      for (int i = 0; i != 26; i ++)
+      {
+         [key_commands addObject:[UIKeyCommand keyCommandWithInput:[NSString stringWithFormat:@"%c", 'a' + i]
+                                               modifierFlags:0 action:@selector(keyGotten:)]];
+      }
+   }
+
+   return key_commands;
+}
+
+- (void)keyGotten:(UIKeyCommand *)keyCommand
+{
+   apple_input_handle_key_event([keyCommand.input characterAtIndex:0] - 'a' + 4, true);
+}
+
+#endif
 
 @end
 
@@ -196,6 +232,8 @@ static void handle_touch_event(NSArray* touches)
 // UINavigationController: Never animate when pushing onto, or popping, an RAGameView
 - (void)pushViewController:(UIViewController*)theView animated:(BOOL)animated
 {
+   apple_input_reset_icade_buttons();
+
    if ([theView respondsToSelector:@selector(isSettingsView)] && [(id)theView isSettingsView])
       _settingMenusInBackStack ++;
 
@@ -204,6 +242,8 @@ static void handle_touch_event(NSArray* touches)
 
 - (UIViewController*)popViewControllerAnimated:(BOOL)animated
 {
+   apple_input_reset_icade_buttons();
+
    if ([self.topViewController respondsToSelector:@selector(isSettingsView)] && [(id)self.topViewController isSettingsView])
       _settingMenusInBackStack --;
 

@@ -91,6 +91,11 @@ uint32_t apple_input_get_icade_buttons()
    return icade_enabled ? icade_buttons : 0;
 }
 
+void apple_input_reset_icade_buttons()
+{
+   icade_buttons = 0;
+}
+
 void apple_input_handle_key_event(unsigned keycode, bool down)
 {
    keycode = HIDKEY(keycode);
@@ -116,7 +121,7 @@ int32_t apple_input_find_any_button(uint32_t port)
    uint32_t buttons = g_current_input_data.pad_buttons[port] |
                       ((port == 0) ? apple_input_get_icade_buttons() : 0);
 
-   if (g_current_input_data.pad_buttons[port])
+   if (buttons)
       for (int i = 0; i != 32; i ++)
          if (buttons & (1 << i))
             return i;
