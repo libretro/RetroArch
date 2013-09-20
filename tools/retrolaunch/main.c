@@ -230,6 +230,7 @@ const char *SUFFIX_MATCH[] = {
 	".smd", "smd",
 	".sms", "sms",
 	".wsc", "wswan",
+	".z64", "n64",
 	NULL
 };
 
@@ -342,7 +343,7 @@ static int select_core(char *core_path, size_t max_len,
 	goto clean;
 
 success:
-	snprintf(core_path, max_len, "./cores/libretro-%s.so", token);
+	snprintf(core_path, max_len, "./cores/%s.so", token);
 	rv = 0;
 clean:
 	close(fd);
