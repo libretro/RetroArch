@@ -35,7 +35,9 @@ void ios_set_bluetooth_mode(NSString* mode)
    apple_input_enable_icade([mode isEqualToString:@"icade"]);
    btstack_set_poweron([mode isEqualToString:@"btstack"]);
 #else
-   apple_input_enable_icade(true);
+   bool enabled = [mode isEqualToString:@"icade"];
+   apple_input_enable_icade(enabled);
+   [[RAGameView get] iOS7SetiCadeMode:enabled];
 #endif
 }
 
@@ -77,7 +79,7 @@ static void handle_touch_event(NSArray* touches)
    if ([[event allTouches] count])
       handle_touch_event(event.allTouches.allObjects);
    else if ([event respondsToSelector:@selector(_gsEvent)])
-   {
+   {   
       // Stolen from: http://nacho4d-nacho4d.blogspot.com/2012/01/catching-keyboard-events-in-ios.html
       uint8_t* eventMem = (uint8_t*)(void*)CFBridgingRetain([event performSelector:@selector(_gsEvent)]);
       int eventType = eventMem ? *(int*)&eventMem[8] : 0;
@@ -177,6 +179,19 @@ static void handle_touch_event(NSArray* touches)
 }
 
 #pragma mark Frontend Browsing Logic
+-(BOOL)application:(UIApplication *)application openURL:(NSURL *)url sourceApplication:(NSString *)sourceApplication annotation:(id)annotation
+{
+   NSString* filename = url.path.lastPathComponent;
+
+   NSError* error = nil;
+   [NSFileManager.defaultManager moveItemAtPath:url.path toPath:[self.documentsDirectory stringByAppendingPathComponent:filename] error:&error];
+   
+   if (error)
+      printf("%s\n", error.description.UTF8String);
+   
+   return true;
+}
+
 - (void)beginBrowsingForFile
 {
    NSString* rootPath = RetroArch_iOS.get.documentsDirectory;

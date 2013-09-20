@@ -226,6 +226,12 @@ static bool g_is_syncing = true;
    ];
 }
 
+- (void)iOS7SetiCadeMode:(bool)on
+{
+   g_text_hide.enabled = on;
+   [self viewWillLayoutSubviews];
+}
+
 #endif
 
 @end

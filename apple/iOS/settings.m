@@ -416,23 +416,23 @@ static void bluetooth_option_changed(RASettingData* setting)
    }
 
 
-#ifndef __IPHONE_7_0 // iOS7 iCade Support
-   NSArray* bluetoothOptions = [NSArray arrayWithObjects:@"keyboard", @"Keyboard",
-                                                         @"icade", @"iCade Device",
-                                                         btstack_try_load() ? @"btstack" : nil, @"WiiMote/SixAxis (BTstack)",
-                                                         nil];
-#endif
+   NSArray* bluetoothOptions = nil;
+   
+   if (!is_ios_7() && btstack_try_load())
+      bluetoothOptions = @[@"keyboard", @"Keyboard", @"icade", @"iCade Device", @"btstack", @"WiiMote/SixAxis (BTstack)"];
+   else if (!is_ios_7())
+      bluetoothOptions = @[@"keyboard", @"Keyboard", @"icade", @"iCade Device"];
+   else // if (is_ios_7())
+      bluetoothOptions = @[@"none", @"None", @"icade", @"iCade Device"];
 
    NSArray* settings = [NSArray arrayWithObjects:
       [NSArray arrayWithObjects:@"Frontend",
          custom_action(@"Diagnostic Log", nil, nil, 0),
          boolean_setting(config, @"ios_tv_mode", @"TV Mode", @"false"),
          nil],
-#ifndef __IPHONE_7_0 // iOS7 iCade Support
       [NSArray arrayWithObjects:@"Bluetooth",
          change_notify(enumeration_setting(config, @"ios_btmode", @"Mode", @"keyboard", bluetoothOptions, true), bluetooth_option_changed),
          nil],
-#endif
       [NSArray arrayWithObjects:@"Orientations",
          boolean_setting(config, @"ios_allow_portrait", @"Portrait", @"true"),
          boolean_setting(config, @"ios_allow_portrait_upside_down", @"Portrait Upside Down", @"true"),
