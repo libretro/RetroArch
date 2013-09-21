@@ -315,6 +315,8 @@ clean:
 	rm -f gfx/rpng/*.o
 	rm -f record/*.o
 	rm -f input/*.o
+	rm -f input/autoconf/*.o
+	rm -f media/*.o
 	rm -f $(TARGET)
 	rm -f retroarch-joyconfig.exe
 	rm -f tools/*.o
