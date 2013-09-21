@@ -56,12 +56,10 @@ static bool libretro_install_core(const char *path_prefix,
    }
 
    /* Now attempt the renaming of the core. */
-   RARCH_LOG("Renaming core to: %s.\n", new_path);
    if (rename(core_exe_path, new_path) < 0)
-   {
-      RARCH_ERR("Failed to rename core.\n");
       return false;
-   }
+
+   RARCH_LOG("Renamed core successfully to: %s.\n", new_path);
 
    rarch_environment_cb(RETRO_ENVIRONMENT_SET_LIBRETRO_PATH, (void*)new_path);
    return true;
@@ -104,11 +102,14 @@ void rarch_get_environment_console(void)
    // Save new libretro core path to config file and exit
    if (path_file_exists(core_exe_path))
       if (libretro_install_core(path_prefix, core_exe_path))
+      {
+         RARCH_ERR("Failed to rename core.\n");
 #ifdef _XBOX
-    g_extern.system.shutdown = g_extern.system.shutdown;
+         g_extern.system.shutdown = g_extern.system.shutdown;
 #else
-	 g_extern.system.shutdown = true;
+         g_extern.system.shutdown = true;
 #endif
+      }
 #endif
 
 #ifdef GEKKO
