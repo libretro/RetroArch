@@ -21,6 +21,8 @@
 #include "../../config.h"
 #endif
 
+#include "../../performance.h"
+
 #ifdef HAVE_RGUI
 #define MENU_TEXTURE_FULLSCREEN false
 #else
