@@ -58,7 +58,7 @@
 @end
 
 // browser.m
-@interface RAFoldersList : UITableViewController
+@interface RAFoldersList : RATableViewController
 - (id) initWithFilePath:(NSString *)path;
 @end
 
