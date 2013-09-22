@@ -277,6 +277,10 @@ void config_set_defaults(void)
    g_extern.console.screen.viewports.custom_vp.y = 0;
 
    // Make sure settings from other configs carry over into defaults for another config.
+   if (!g_extern.has_set_save_path)
+      *g_extern.savefile_dir = '\0';
+   if (!g_extern.has_set_state_path)
+      *g_extern.savestate_dir = '\0';
    *g_settings.core_options_path = '\0';
    *g_settings.game_history_path = '\0';
    *g_settings.cheat_database = '\0';
