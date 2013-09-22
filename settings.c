@@ -1046,6 +1046,9 @@ bool config_save_file(const char *path)
    config_set_string(conf, "rgui_config_directory", *g_settings.rgui_config_directory ? g_settings.rgui_config_directory : "default");
 #endif
 
+   config_set_string(conf, "game_history_path", g_settings.game_history_path);
+   config_set_int(conf, "game_history_size", g_settings.game_history_size);
+
 #ifdef HAVE_OVERLAY
    config_set_string(conf, "overlay_directory", *g_extern.overlay_dir ? g_extern.overlay_dir : "default");
    config_set_string(conf, "input_overlay", g_settings.input.overlay);
