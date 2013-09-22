@@ -1023,6 +1023,7 @@ bool config_save_file(const char *path)
    config_set_bool(conf, "video_scale_integer", g_settings.video.scale_integer);
    config_set_bool(conf, "video_smooth", g_settings.video.smooth);
    config_set_float(conf, "video_refresh_rate", g_settings.video.refresh_rate);
+   config_set_string(conf, "video_driver", g_settings.video.driver);
    config_set_bool(conf, "video_vsync", g_settings.video.vsync);
    config_set_bool(conf, "video_hard_sync", g_settings.video.hard_sync);
    config_set_int(conf, "video_hard_sync_frames", g_settings.video.hard_sync_frames);
@@ -1035,6 +1036,9 @@ bool config_save_file(const char *path)
    config_set_string(conf, "audio_device", g_settings.audio.device);
    config_set_bool(conf, "audio_rate_control", g_settings.audio.rate_control);
    config_set_float(conf, "audio_rate_control_delta", g_settings.audio.rate_control_delta);
+   config_set_string(conf, "audio_driver", g_settings.audio.driver);
+   config_set_string(conf, "audio_device", g_settings.audio.device);
+   config_set_int(conf, "audio_out_rate", g_settings.audio.out_rate);
 
    config_set_string(conf, "system_directory", *g_settings.system_directory ? g_settings.system_directory : "default");
    config_set_string(conf, "savefile_directory", *g_extern.savefile_dir ? g_extern.savefile_dir : "default");
@@ -1094,6 +1098,7 @@ bool config_save_file(const char *path)
    config_set_int(conf, "screen_orientation", g_extern.console.screen.orientation);
    config_set_bool(conf, "custom_bgm_enable", g_extern.lifecycle_mode_state & (1ULL << MODE_AUDIO_CUSTOM_BGM_ENABLE));
 
+   config_set_string(conf, "input_driver", g_settings.input.driver);
    for (unsigned i = 0; i < MAX_PLAYERS; i++)
    {
       char cfg[64];
