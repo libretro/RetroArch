@@ -797,7 +797,7 @@ static void render_text(rgui_handle_t *rgui)
             case RGUI_SETTINGS_BIND_DEVICE_TYPE:
             {
                const char *name;
-               switch (g_extern.libretro_device[port])
+               switch (g_settings.input.libretro_device[port])
                {
                   case RETRO_DEVICE_NONE: name = "None"; break;
                   case RETRO_DEVICE_JOYPAD: name = "Joypad"; break;
@@ -1276,7 +1276,7 @@ static int rgui_settings_toggle_setting(rgui_handle_t *rgui, unsigned setting, r
             RETRO_DEVICE_LIGHTGUN_JUSTIFIERS,
          };
 
-         unsigned current_device = g_extern.libretro_device[port];
+         unsigned current_device = g_settings.input.libretro_device[port];
          unsigned current_index = 0;
          for (unsigned i = 0; i < ARRAY_SIZE(device_types); i++)
          {
@@ -1309,7 +1309,7 @@ static int rgui_settings_toggle_setting(rgui_handle_t *rgui, unsigned setting, r
 
          if (updated)
          {
-            g_extern.libretro_device[port] = current_device;
+            g_settings.input.libretro_device[port] = current_device;
             pretro_set_controller_port_device(port, current_device);
          }
 

@@ -263,7 +263,11 @@ void config_set_defaults(void)
 #endif
 
    for (int i = 0; i < MAX_PLAYERS; i++)
+   {
       g_settings.input.joypad_map[i] = i;
+      if (!g_extern.has_set_libretro_device[i])
+         g_settings.input.libretro_device[i] = RETRO_DEVICE_JOYPAD;
+   }
 
    g_extern.console.screen.viewports.custom_vp.width = 0;
    g_extern.console.screen.viewports.custom_vp.height = 0;
@@ -634,6 +638,12 @@ bool config_load_file(const char *path)
       char buf[64];
       snprintf(buf, sizeof(buf), "input_player%u_joypad_index", i + 1);
       CONFIG_GET_INT(input.joypad_map[i], buf);
+
+      if (!g_extern.has_set_libretro_device[i])
+      {
+         snprintf(buf, sizeof(buf), "input_libretro_device_p%u", i + 1);
+         CONFIG_GET_INT(input.libretro_device[i], buf);
+      }
    }
 
    // Audio settings.
@@ -1106,6 +1116,8 @@ bool config_save_file(const char *path)
       config_set_int(conf, cfg, g_settings.input.device[i]);
       snprintf(cfg, sizeof(cfg), "input_player%u_joypad_index", i + 1);
       config_set_int(conf, cfg, g_settings.input.joypad_map[i]);
+      snprintf(cfg, sizeof(cfg), "input_libretro_device_p%u", i + 1);
+      config_set_int(conf, cfg, g_settings.input.libretro_device[i]);
    }
 
    config_file_write(conf, path);  

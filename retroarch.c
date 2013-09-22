@@ -901,15 +901,18 @@ static void parse_input(int argc, char *argv[])
             exit(0);
 
          case '4':
-            g_extern.libretro_device[1] = RETRO_DEVICE_JOYPAD_MULTITAP;
+            g_settings.input.libretro_device[1] = RETRO_DEVICE_JOYPAD_MULTITAP;
+            g_extern.has_set_libretro_device[1] = true;
             break;
 
          case 'j':
-            g_extern.libretro_device[1] = RETRO_DEVICE_LIGHTGUN_JUSTIFIER;
+            g_settings.input.libretro_device[1] = RETRO_DEVICE_LIGHTGUN_JUSTIFIER;
+            g_extern.has_set_libretro_device[1] = true;
             break;
 
          case 'J':
-            g_extern.libretro_device[1] = RETRO_DEVICE_LIGHTGUN_JUSTIFIERS;
+            g_settings.input.libretro_device[1] = RETRO_DEVICE_LIGHTGUN_JUSTIFIERS;
+            g_extern.has_set_libretro_device[1] = true;
             break;
 
          case 'A':
@@ -920,7 +923,8 @@ static void parse_input(int argc, char *argv[])
                print_help();
                rarch_fail(1, "parse_input()");
             }
-            g_extern.libretro_device[port - 1] = RETRO_DEVICE_ANALOG;
+            g_settings.input.libretro_device[port - 1] = RETRO_DEVICE_ANALOG;
+            g_extern.has_set_libretro_device[port - 1] = true;
             break;
 
          case 's':
@@ -974,7 +978,8 @@ static void parse_input(int argc, char *argv[])
                print_help();
                rarch_fail(1, "parse_input()");
             }
-            g_extern.libretro_device[port - 1] = RETRO_DEVICE_MOUSE;
+            g_settings.input.libretro_device[port - 1] = RETRO_DEVICE_MOUSE;
+            g_extern.has_set_libretro_device[port - 1] = true;
             break;
 
          case 'N':
@@ -985,11 +990,13 @@ static void parse_input(int argc, char *argv[])
                print_help();
                rarch_fail(1, "parse_input()");
             }
-            g_extern.libretro_device[port - 1] = RETRO_DEVICE_NONE;
+            g_settings.input.libretro_device[port - 1] = RETRO_DEVICE_NONE;
+            g_extern.has_set_libretro_device[port - 1] = true;
             break;
 
          case 'p':
-            g_extern.libretro_device[1] = RETRO_DEVICE_LIGHTGUN_SUPER_SCOPE;
+            g_settings.input.libretro_device[1] = RETRO_DEVICE_LIGHTGUN_SUPER_SCOPE;
+            g_extern.has_set_libretro_device[1] = true;
             break;
 
          case 'c':
@@ -1186,7 +1193,7 @@ static void init_controllers(void)
 {
    for (unsigned i = 0; i < MAX_PLAYERS; i++)
    {
-      unsigned device = g_extern.libretro_device[i];
+      unsigned device = g_settings.input.libretro_device[i];
 
       // This is default, don't bother.
       if (device == RETRO_DEVICE_JOYPAD)
@@ -2807,9 +2814,13 @@ static void init_state(void)
    g_extern.video_active = true;
    g_extern.audio_active = true;
    g_extern.game_type = RARCH_CART_NORMAL;
+}
 
+static void init_state_first(void)
+{
+   init_state();
    for (unsigned i = 0; i < MAX_PLAYERS; i++)
-      g_extern.libretro_device[i] = RETRO_DEVICE_JOYPAD;
+      g_settings.input.libretro_device[i] = RETRO_DEVICE_JOYPAD;
 }
 
 void rarch_main_clear_state(void)
@@ -2821,7 +2832,7 @@ void rarch_main_clear_state(void)
 
    memset(&g_extern, 0, sizeof(g_extern));
 
-   init_state();
+   init_state_first();
 }
 
 #ifdef HAVE_ZLIB

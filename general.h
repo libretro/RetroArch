@@ -227,6 +227,8 @@ struct settings
       struct retro_keybind autoconf_binds[MAX_PLAYERS][RARCH_BIND_LIST_END];
       bool autoconfigured[MAX_PLAYERS];
 
+      unsigned libretro_device[MAX_PLAYERS];
+
       float axis_threshold;
       int joypad_map[MAX_PLAYERS];
       unsigned device[MAX_PLAYERS];
@@ -319,8 +321,6 @@ struct global
    bool video_active;
    bool force_fullscreen;
 
-   unsigned libretro_device[MAX_PLAYERS];
-
    bool rom_file_temporary;
    char last_rom[PATH_MAX];
    enum rarch_game_type game_type;
@@ -331,6 +331,7 @@ struct global
    char sufami_rom_path[2][PATH_MAX];
    bool has_set_save_path;
    bool has_set_state_path;
+   bool has_set_libretro_device[MAX_PLAYERS];
 
 #ifdef HAVE_RMENU
    char menu_texture_path[PATH_MAX];
