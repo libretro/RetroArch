@@ -596,7 +596,7 @@ static void render_text(rgui_handle_t *rgui)
          switch (type)
          {
             case RGUI_SETTINGS_VIDEO_ROTATION:
-               strlcpy(type_str, rotation_lut[g_extern.console.screen.orientation],
+               strlcpy(type_str, rotation_lut[g_settings.video.rotation],
                      sizeof(type_str));
                break;
             case RGUI_SETTINGS_VIDEO_SOFT_FILTER:
@@ -1812,18 +1812,18 @@ static int video_option_toggle_setting(rgui_handle_t *rgui, unsigned setting, rg
       case RGUI_SETTINGS_VIDEO_ROTATION:
          if (action == RGUI_ACTION_START)
          {
-            settings_set(1ULL << S_DEF_AUDIO_CONTROL_RATE);
-            video_set_rotation_func(g_extern.console.screen.orientation);
+            settings_set(1ULL << S_DEF_ROTATION);
+            video_set_rotation_func((g_settings.video.rotation + g_extern.system.rotation) % 4);
          }
          else if (action == RGUI_ACTION_LEFT)
          {
             settings_set(1ULL << S_ROTATION_DECREMENT);
-            video_set_rotation_func(g_extern.console.screen.orientation);
+            video_set_rotation_func((g_settings.video.rotation + g_extern.system.rotation) % 4);
          }
          else if (action == RGUI_ACTION_RIGHT)
          {
             settings_set(1ULL << S_ROTATION_INCREMENT);
-            video_set_rotation_func(g_extern.console.screen.orientation);
+            video_set_rotation_func((g_settings.video.rotation + g_extern.system.rotation) % 4);
          }
          break;
 

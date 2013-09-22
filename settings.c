@@ -199,6 +199,7 @@ void config_set_defaults(void)
    g_settings.video.post_filter_record = post_filter_record;
    g_settings.video.gpu_record = gpu_record;
    g_settings.video.gpu_screenshot = gpu_screenshot;
+   g_settings.video.rotation = ORIENTATION_NORMAL;
 
    g_settings.audio.enable = audio_enable;
    g_settings.audio.out_rate = out_rate;
@@ -291,7 +292,6 @@ void config_set_defaults(void)
    g_extern.lifecycle_mode_state |= (1ULL << MODE_VIDEO_SOFT_FILTER_ENABLE);
    g_extern.lifecycle_mode_state |= (1ULL << MODE_VIDEO_FLICKER_FILTER_ENABLE);
 
-   g_extern.console.screen.orientation = ORIENTATION_NORMAL;
    g_extern.console.screen.resolutions.current.id = 0;
    strlcpy(g_extern.savestate_dir, default_paths.savestate_dir, sizeof(g_extern.savestate_dir));
 #ifdef HAVE_RMENU
@@ -526,6 +526,7 @@ bool config_load_file(const char *path)
    CONFIG_GET_BOOL(video.font_scale, "video_font_scale");
    CONFIG_GET_FLOAT(video.msg_pos_x, "video_message_pos_x");
    CONFIG_GET_FLOAT(video.msg_pos_y, "video_message_pos_y");
+   CONFIG_GET_INT(video.rotation, "video_rotation");
 
 #ifdef RARCH_CONSOLE
    /* TODO - will be refactored later to make it more clean - it's more 
@@ -601,7 +602,6 @@ bool config_load_file(const char *path)
    CONFIG_GET_INT_EXTERN(console.screen.resolutions.current.id, "current_resolution_id");
    CONFIG_GET_INT_EXTERN(state_slot, "state_slot");
    CONFIG_GET_INT_EXTERN(audio_data.mute, "audio_mute");
-   CONFIG_GET_INT_EXTERN(console.screen.orientation, "screen_orientation");
    CONFIG_GET_INT_EXTERN(console.sound.mode, "sound_mode");
 #endif
 
@@ -1007,6 +1007,7 @@ bool config_save_file(const char *path)
    config_set_bool(conf, "video_black_frame_insertion", g_settings.video.black_frame_insertion);
    config_set_int(conf, "video_swap_interval", g_settings.video.swap_interval);
    config_set_bool(conf, "video_gpu_screenshot", g_settings.video.gpu_screenshot);
+   config_set_int(conf, "video_rotation", g_settings.video.rotation);
    config_set_string(conf, "screenshot_directory", *g_settings.screenshot_directory ? g_settings.screenshot_directory : "default");
    config_set_int(conf, "aspect_ratio_index", g_settings.video.aspect_ratio_idx);
    config_set_string(conf, "audio_device", g_settings.audio.device);
@@ -1100,7 +1101,6 @@ bool config_save_file(const char *path)
    config_set_int(conf, "sound_mode", g_extern.console.sound.mode);
    config_set_int(conf, "state_slot", g_extern.state_slot);
    config_set_int(conf, "audio_mute", g_extern.audio_data.mute);
-   config_set_int(conf, "screen_orientation", g_extern.console.screen.orientation);
 
    if (g_extern.lifecycle_mode_state & (1ULL << MODE_AUDIO_CUSTOM_BGM_ENABLE))
       config_set_bool(conf, "custom_bgm_enable", true);
@@ -1276,14 +1276,14 @@ void settings_set(uint64_t settings)
 
    if (settings & (1ULL << S_ROTATION_DECREMENT))
    {
-      if(g_extern.console.screen.orientation > 0)
-         g_extern.console.screen.orientation--;
+      if (g_settings.video.rotation > 0)
+         g_settings.video.rotation--;
    }
 
    if (settings & (1ULL << S_ROTATION_INCREMENT))
    {
-      if(g_extern.console.screen.orientation < LAST_ORIENTATION)
-         g_extern.console.screen.orientation++;
+      if (g_settings.video.rotation < LAST_ORIENTATION)
+         g_settings.video.rotation++;
    }
 
    if (settings & (1ULL << S_REWIND))
@@ -1291,7 +1291,7 @@ void settings_set(uint64_t settings)
 
    if (settings & (1ULL << S_SAVESTATE_DECREMENT))
    {
-      if(g_extern.state_slot != 0)
+      if (g_extern.state_slot != 0)
          g_extern.state_slot--;
    }
 
@@ -1347,7 +1347,7 @@ void settings_set(uint64_t settings)
       g_settings.video.smooth = video_smooth;
 
    if (settings & (1ULL << S_DEF_ROTATION))
-      g_extern.console.screen.orientation = ORIENTATION_NORMAL;
+      g_settings.video.rotation = ORIENTATION_NORMAL;
 
    if (settings & (1ULL << S_DEF_TRIPLE_BUFFERING))
       g_extern.lifecycle_mode_state |= (1ULL << MODE_VIDEO_TRIPLE_BUFFERING_ENABLE);

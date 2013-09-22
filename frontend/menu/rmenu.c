@@ -1365,19 +1365,19 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
          if (input & (1ULL << DEVICE_NAV_LEFT))
          {
             settings_set(1ULL << S_ROTATION_DECREMENT);
-            video_set_rotation_func(g_extern.console.screen.orientation);
+            video_set_rotation_func((g_extern.system.rotation + g_settings.video.rotation) % 4);
          }
 
          if ((input & (1ULL << DEVICE_NAV_RIGHT)) || (input & (1ULL << DEVICE_NAV_B)))
          {
             settings_set(1ULL << S_ROTATION_INCREMENT);
-            video_set_rotation_func(g_extern.console.screen.orientation);
+            video_set_rotation_func((g_extern.system.rotation + g_settings.video.rotation) % 4);
          }
 
          if (input & (1ULL << DEVICE_NAV_START))
          {
             settings_set(1ULL << S_DEF_ROTATION);
-            video_set_rotation_func(g_extern.console.screen.orientation);
+            video_set_rotation_func((g_extern.system.rotation + g_settings.video.rotation) % 4);
          }
          break;
       case INGAME_MENU_FRAME_ADVANCE:
@@ -1998,7 +1998,7 @@ static int select_setting(void *data, uint64_t input)
             break;
          case SETTING_ROTATION:
             strlcpy(text, "Rotation", sizeof(text));
-            strlcpy(setting_text, rotation_lut[g_extern.console.screen.orientation], sizeof(setting_text));
+            strlcpy(setting_text, rotation_lut[g_settings.video.rotation], sizeof(setting_text));
             strlcpy(comment, "Change orientation of the screen.", sizeof(comment));
             break;
          case SETTING_CUSTOM_VIEWPORT:

@@ -169,6 +169,7 @@ struct settings
       bool aspect_ratio_auto;
       bool scale_integer;
       unsigned aspect_ratio_idx;
+      unsigned rotation;
 
       char shader_path[PATH_MAX];
       bool shader_enable;
@@ -586,7 +587,6 @@ struct global
             rarch_viewport_t custom_vp;
          } viewports;
 
-         unsigned orientation;
          unsigned gamma_correction;
          unsigned char flicker_filter_index;
          unsigned char soft_filter_index;
