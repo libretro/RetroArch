@@ -130,6 +130,7 @@ typedef enum
    RGUI_SETTINGS_OPEN_HISTORY,
    RGUI_SETTINGS_CORE,
    RGUI_SETTINGS_CONFIG,
+   RGUI_SETTINGS_SAVE_CONFIG,
    RGUI_SETTINGS_CORE_OPTIONS,
    RGUI_SETTINGS_AUDIO_OPTIONS,
    RGUI_SETTINGS_INPUT_OPTIONS,
@@ -297,6 +298,8 @@ void menu_rom_history_push(const char *path, const char *core_path,
 void menu_rom_history_push_current(void);
 
 bool menu_replace_config(const char *path);
+
+bool menu_save_new_config(void);
 
 #ifdef __cplusplus
 }

@@ -1103,10 +1103,9 @@ bool config_save_file(const char *path)
       config_set_int(conf, cfg, g_settings.input.libretro_device[i]);
    }
 
-   config_file_write(conf, path);  
+   bool ret = config_file_write(conf, path);
    config_file_free(conf);
-
-   return true;
+   return ret;
 }
 
 bool config_save_keybinds(const char *path)

@@ -761,6 +761,7 @@ static void render_text(rgui_handle_t *rgui)
             case RGUI_SETTINGS_VIDEO_OPTIONS:
             case RGUI_SETTINGS_AUDIO_OPTIONS:
             case RGUI_SETTINGS_DISK_OPTIONS:
+            case RGUI_SETTINGS_SAVE_CONFIG:
 #ifdef HAVE_SHADER_MANAGER
             case RGUI_SETTINGS_SHADER_OPTIONS:
             case RGUI_SETTINGS_SHADER_PRESET:
@@ -1123,6 +1124,10 @@ static int rgui_settings_toggle_setting(rgui_handle_t *rgui, unsigned setting, r
             g_extern.lifecycle_mode_state &= ~(1ULL << MODE_GAME);
             return -1;
          }
+         break;
+      case RGUI_SETTINGS_SAVE_CONFIG:
+         if (action == RGUI_ACTION_OK)
+            menu_save_new_config();
          break;
 #ifdef HAVE_OVERLAY
       case RGUI_SETTINGS_OVERLAY_PRESET:
@@ -1510,6 +1515,7 @@ static void rgui_settings_populate_entries(rgui_handle_t *rgui)
    rgui_list_push(rgui->selection_buf, "Restart RetroArch", RGUI_SETTINGS_RESTART_EMULATOR, 0);
 #endif
    rgui_list_push(rgui->selection_buf, "RetroArch Config", RGUI_SETTINGS_CONFIG, 0);
+   rgui_list_push(rgui->selection_buf, "Save New Config", RGUI_SETTINGS_SAVE_CONFIG, 0);
    rgui_list_push(rgui->selection_buf, "Quit RetroArch", RGUI_SETTINGS_QUIT_RARCH, 0);
 }
 
