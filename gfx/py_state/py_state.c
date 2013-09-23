@@ -30,7 +30,6 @@
 static PyObject* py_read_wram(PyObject *self, PyObject *args)
 {
    (void)self;
-
    const uint8_t *data = (const uint8_t*)pretro_get_memory_data(RETRO_MEMORY_SYSTEM_RAM);
    if (!data)
    {
@@ -39,8 +38,8 @@ static PyObject* py_read_wram(PyObject *self, PyObject *args)
    }
 
    size_t max = pretro_get_memory_size(RETRO_MEMORY_SYSTEM_RAM);
-
    unsigned addr;
+
    if (!PyArg_ParseTuple(args, "I", &addr))
       return NULL;
 
@@ -53,10 +52,45 @@ static PyObject* py_read_wram(PyObject *self, PyObject *args)
    return PyLong_FromLong(data[addr]);
 }
 
+static PyObject* py_read_vram(PyObject *self, PyObject *args)
+{
+   (void)self;
+   const uint8_t *data = (const uint8_t*)pretro_get_memory_data(RETRO_MEMORY_VIDEO_RAM);
+   if (!data)
+   {
+      Py_INCREF(Py_None);
+      return Py_None;
+   }
+
+   size_t max = pretro_get_memory_size(RETRO_MEMORY_VIDEO_RAM);
+   unsigned addr;
+
+   if (!PyArg_ParseTuple(args, "I", &addr))
+      return NULL;
+
+   if (addr >= max)
+   {
+      Py_INCREF(Py_None);
+      return Py_None;
+   }
+
+   return PyLong_FromLong(data[addr]);
+}
+
+static const struct retro_keybind *py_binds[MAX_PLAYERS] = {
+   g_settings.input.binds[0],
+   g_settings.input.binds[1],
+   g_settings.input.binds[2],
+   g_settings.input.binds[3],
+   g_settings.input.binds[4],
+   g_settings.input.binds[5],
+   g_settings.input.binds[6],
+   g_settings.input.binds[7],
+};
+
 static PyObject *py_read_input(PyObject *self, PyObject *args)
 {
    (void)self;
-
    if (!driver.input_data)
       return PyBool_FromLong(0);
 
@@ -68,49 +102,38 @@ static PyObject *py_read_input(PyObject *self, PyObject *args)
    if (player > MAX_PLAYERS || player < 1 || key >= RARCH_FIRST_META_KEY)
       return NULL;
 
-   static const struct retro_keybind *binds[MAX_PLAYERS] = {
-      g_settings.input.binds[0],
-      g_settings.input.binds[1],
-      g_settings.input.binds[2],
-      g_settings.input.binds[3],
-      g_settings.input.binds[4],
-      g_settings.input.binds[5],
-      g_settings.input.binds[6],
-      g_settings.input.binds[7],
-   };
-
-   int16_t res = input_input_state_func(binds, player - 1, RETRO_DEVICE_JOYPAD, 0, key);
-
+   int16_t res = input_input_state_func(py_binds, player - 1, RETRO_DEVICE_JOYPAD, 0, key);
    return PyBool_FromLong(res);
 }
 
-static PyObject *py_read_input_meta(PyObject *self, PyObject *args)
+static PyObject *py_read_analog(PyObject *self, PyObject *args)
 {
    (void)self;
-
    if (!driver.input_data)
       return PyBool_FromLong(0);
 
-   unsigned key;
-   if (!PyArg_ParseTuple(args, "I", &key))
+   unsigned player;
+   unsigned index;
+   unsigned id;
+   if (!PyArg_ParseTuple(args, "III", &player, &index, &id))
       return NULL;
 
-   if (key < RARCH_FIRST_META_KEY)
+   if (player > MAX_PLAYERS || player < 1 || index > 1 || id > 1)
       return NULL;
 
-   bool ret = input_key_pressed_func(key);
-   return PyBool_FromLong(ret);
+   int16_t res = input_input_state_func(py_binds, player - 1, RETRO_DEVICE_ANALOG, index, id);
+   return PyFloat_FromDouble((double)res / 0x7fff);
 }
 
 static PyMethodDef RarchMethods[] = {
-   { "read_wram",    py_read_wram,              METH_VARARGS, "Read WRAM from system." },
-   { "input",        py_read_input,             METH_VARARGS, "Read input state from system." },
-   { "input_meta",   py_read_input_meta,        METH_VARARGS, "Read RetroArch specific input." },
+   { "read_wram",    py_read_wram,   METH_VARARGS, "Read WRAM from system." },
+   { "read_vram",    py_read_vram,   METH_VARARGS, "Read VRAM from system." },
+   { "input",        py_read_input,  METH_VARARGS, "Read input state from system." },
+   { "input_analog", py_read_analog, METH_VARARGS, "Read analog input state from system." },
    { NULL, NULL, 0, NULL }
 };
 
 #define DECL_ATTR_RETRO(attr) PyObject_SetAttrString(mod, #attr, PyLong_FromLong(RETRO_DEVICE_ID_JOYPAD_##attr))
-#define DECL_ATTR_RARCH(attr) PyObject_SetAttrString(mod, #attr, PyLong_FromLong(RARCH_##attr))
 static void py_set_attrs(PyObject *mod)
 {
    DECL_ATTR_RETRO(B);
@@ -130,32 +153,10 @@ static void py_set_attrs(PyObject *mod)
    DECL_ATTR_RETRO(L3);
    DECL_ATTR_RETRO(R3);
 
-   DECL_ATTR_RARCH(FAST_FORWARD_KEY);
-   DECL_ATTR_RARCH(FAST_FORWARD_HOLD_KEY);
-   DECL_ATTR_RARCH(LOAD_STATE_KEY);
-   DECL_ATTR_RARCH(SAVE_STATE_KEY);
-   DECL_ATTR_RARCH(FULLSCREEN_TOGGLE_KEY);
-   DECL_ATTR_RARCH(QUIT_KEY);
-   DECL_ATTR_RARCH(STATE_SLOT_PLUS);
-   DECL_ATTR_RARCH(STATE_SLOT_MINUS);
-   DECL_ATTR_RARCH(REWIND);
-   DECL_ATTR_RARCH(MOVIE_RECORD_TOGGLE);
-   DECL_ATTR_RARCH(PAUSE_TOGGLE);
-   DECL_ATTR_RARCH(FRAMEADVANCE);
-   DECL_ATTR_RARCH(RESET);
-   DECL_ATTR_RARCH(SHADER_NEXT);
-   DECL_ATTR_RARCH(SHADER_PREV);
-   DECL_ATTR_RARCH(CHEAT_INDEX_PLUS);
-   DECL_ATTR_RARCH(CHEAT_INDEX_MINUS);
-   DECL_ATTR_RARCH(CHEAT_TOGGLE);
-   DECL_ATTR_RARCH(SCREENSHOT);
-   DECL_ATTR_RARCH(DSP_CONFIG);
-   DECL_ATTR_RARCH(MUTE);
-   DECL_ATTR_RARCH(NETPLAY_FLIP);
-   DECL_ATTR_RARCH(SLOWMOTION);
-   DECL_ATTR_RARCH(ENABLE_HOTKEY);
-   DECL_ATTR_RARCH(VOLUME_UP);
-   DECL_ATTR_RARCH(VOLUME_DOWN);
+   PyObject_SetAttrString(mod, "ANALOG_LEFT", PyLong_FromLong(RETRO_DEVICE_INDEX_ANALOG_LEFT));
+   PyObject_SetAttrString(mod, "ANALOG_RIGHT", PyLong_FromLong(RETRO_DEVICE_INDEX_ANALOG_RIGHT));
+   PyObject_SetAttrString(mod, "ANALOG_X", PyLong_FromLong(RETRO_DEVICE_ID_ANALOG_X));
+   PyObject_SetAttrString(mod, "ANALOG_Y", PyLong_FromLong(RETRO_DEVICE_ID_ANALOG_Y));
 }
 
 static PyModuleDef RarchModule = {
@@ -314,18 +315,18 @@ error:
 
 void py_state_free(py_state_t *handle)
 {
-   if (handle)
-   {
-      PyErr_Print();
-      PyErr_Clear();
+   if (!handle)
+      return;
 
-      Py_CLEAR(handle->inst);
-      Py_CLEAR(handle->dict);
-      Py_CLEAR(handle->main);
+   PyErr_Print();
+   PyErr_Clear();
 
-      free(handle);
-      Py_Finalize();
-   }
+   Py_CLEAR(handle->inst);
+   Py_CLEAR(handle->dict);
+   Py_CLEAR(handle->main);
+
+   free(handle);
+   Py_Finalize();
 }
 
 float py_state_get(py_state_t *handle, const char *id,
