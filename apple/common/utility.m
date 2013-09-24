@@ -90,6 +90,18 @@ char* ios_get_rarch_system_directory()
    return self;
 }
 
+- (bool)getCellFor:(NSString*)reuseID withStyle:(UITableViewCellStyle)style result:(UITableViewCell**)output
+{
+   UITableViewCell* result = [self.tableView dequeueReusableCellWithIdentifier:reuseID];
+   
+   if (result)
+      *output = result;
+   else
+      *output = [[UITableViewCell alloc] initWithStyle:style reuseIdentifier:reuseID];
+   
+   return !result;
+}
+
 - (NSInteger)numberOfSectionsInTableView:(UITableView*)tableView
 {
    return self.sections.count;

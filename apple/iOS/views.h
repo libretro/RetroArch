@@ -28,6 +28,7 @@
 @property BOOL hidesHeaders;
 
 - (id)initWithStyle:(UITableViewStyle)style;
+- (bool)getCellFor:(NSString*)reuseID withStyle:(UITableViewCellStyle)style result:(UITableViewCell**)output;
 - (id)itemForIndexPath:(NSIndexPath*)indexPath;
 - (void)reset;
 @end
@@ -44,7 +45,8 @@
 @end
 
 @interface RADirectoryList : RATableViewController <UIActionSheetDelegate>
-@property (nonatomic, weak) RADirectoryItem *selectedItem;
+@property (nonatomic, weak) id<RADirectoryListDelegate> directoryDelegate;
+@property (nonatomic, weak) RADirectoryItem* selectedItem;
 - (id)initWithPath:(NSString*)path delegate:(id<RADirectoryListDelegate>)delegate;
 @end
 
@@ -54,12 +56,13 @@
 @end
 
 @interface RAModuleList : RATableViewController
+@property (nonatomic, weak) id<RAModuleListDelegate> moduleDelegate;
 - (id)initWithGame:(NSString*)path delegate:(id<RAModuleListDelegate>)delegate;
 @end
 
 // browser.m
 @interface RAFoldersList : RATableViewController
-- (id) initWithFilePath:(NSString *)path;
+- (id) initWithFilePath:(NSString*)path;
 @end
 
 // RAModuleInfo.m
