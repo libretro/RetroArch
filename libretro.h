@@ -514,7 +514,31 @@ enum retro_mod
                                            // Lets the core know how much time has passed since last invocation of retro_run().
                                            // The frontend can tamper with the timing to fake fast-forward, slow-motion, frame stepping, etc.
                                            // In this case the delta time will use the reference value in frame_time_callback..
+                                           //
+#define RETRO_ENVIRONMENT_GET_RUMBLE_INTERFACE (23 | RETRO_ENVIRONMENT_EXPERIMENTAL)
+                                           // struct retro_rumble_interface * --
+                                           // Gets an interface which is used by a libretro core to set state of rumble motors in controllers.
+                                           // A strong and weak motor is supported, and they can be controlled indepedently.
 
+
+enum retro_rumble_effect
+{
+   RETRO_RUMBLE_STRONG = 0,
+   RETRO_RUMBLE_WEAK = 1,
+
+   RETRO_RUMBLE_DUMMY = INT_MAX
+};
+
+// Sets rumble state for joypad plugged in port 'port'. Rumble effects are controlled independently,
+// and setting e.g. strong rumble does not override weak rumble.
+// Should only be called when rumble state changes.
+//
+// Returns true if rumble state request was honored. Calling this before first retro_run() is likely to return false.
+typedef bool (*retro_set_rumble_state_t)(unsigned port, enum retro_rumble_effect effect, bool enable);
+struct retro_rumble_interface
+{
+   retro_set_rumble_state_t set_rumble_state;
+};
 
 // Notifies libretro that audio data should be written.
 typedef void (*retro_audio_callback_t)(void);

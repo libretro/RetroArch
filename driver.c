@@ -309,6 +309,14 @@ void driver_set_nonblock_state(bool nonblock)
       g_extern.audio_data.nonblock_chunk_size : g_extern.audio_data.block_chunk_size;
 }
 
+bool driver_set_rumble_state(unsigned port, enum retro_rumble_effect effect, bool enable)
+{
+   if (driver.input && driver.input_data)
+      return driver.input->set_rumble(driver.input_data, port, effect, enable);
+   else
+      return false;
+}
+
 uintptr_t driver_get_current_framebuffer(void)
 {
 #ifdef HAVE_FBO

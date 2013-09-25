@@ -323,12 +323,6 @@ enum keybind_set_id
    KEYBINDS_ACTION_LAST
 };
 
-enum rarch_rumble_effect
-{
-   RARCH_RUMBLE_STRONG = 0,
-   RARCH_RUMBLE_WEAK = 1
-};
-
 typedef struct input_driver
 {
    void *(*init)(void);
@@ -341,7 +335,7 @@ typedef struct input_driver
    const char *ident;
 
    void (*grab_mouse)(void *data, bool state);
-   bool (*set_rumble)(void *data, unsigned port, enum rarch_rumble_effect effect, bool state);
+   bool (*set_rumble)(void *data, unsigned port, enum retro_rumble_effect effect, bool state);
 } input_driver_t;
 
 struct rarch_viewport;
@@ -501,6 +495,9 @@ void driver_set_nonblock_state(bool nonblock);
 // Used by RETRO_ENVIRONMENT_SET_HW_RENDER.
 uintptr_t driver_get_current_framebuffer(void);
 retro_proc_address_t driver_get_proc_address(const char *sym);
+
+// Used by RETRO_ENVIRONMENT_GET_RUMBLE_INTERFACE
+bool driver_set_rumble_state(unsigned port, enum retro_rumble_effect effect, bool enable);
 
 extern driver_t driver;
 
