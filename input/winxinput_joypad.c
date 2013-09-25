@@ -371,6 +371,7 @@ const rarch_joypad_driver_t winxinput_joypad = {
    winxinput_joypad_button,
    winxinput_joypad_axis,
    winxinput_joypad_poll,
+   NULL, // FIXME: Add rumble.
    winxinput_joypad_name,
    "winxinput",
 };

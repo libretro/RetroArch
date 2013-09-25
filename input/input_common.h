@@ -66,6 +66,7 @@ typedef struct rarch_joypad_driver
    bool (*button)(unsigned, uint16_t);
    int16_t (*axis)(unsigned, uint32_t);
    void (*poll)(void);
+   bool (*set_rumble)(unsigned, enum rarch_rumble_effect, bool); // Optional
    const char *(*name)(unsigned);
 
    const char *ident;
@@ -80,6 +81,9 @@ bool input_joypad_pressed(const rarch_joypad_driver_t *driver,
 
 int16_t input_joypad_analog(const rarch_joypad_driver_t *driver,
       unsigned port, unsigned index, unsigned id, const struct retro_keybind *binds);
+
+bool input_joypad_set_rumble(const rarch_joypad_driver_t *driver,
+      unsigned port, enum rarch_rumble_effect effect, bool state);
 
 int16_t input_joypad_axis_raw(const rarch_joypad_driver_t *driver,
       unsigned joypad, unsigned axis);

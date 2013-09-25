@@ -92,6 +92,7 @@ const rarch_joypad_driver_t apple_joypad = {
    apple_joypad_button,
    apple_joypad_axis,
    apple_joypad_poll,
+   NULL,
    apple_joypad_name,
    "apple"
 };

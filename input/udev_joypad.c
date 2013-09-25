@@ -177,14 +177,14 @@ end:
    udev_device_unref(dev);
 }
 
-static void udev_set_rumble(unsigned i, unsigned effect, bool state)
+static bool udev_set_rumble(unsigned i, unsigned effect, bool state)
 {
    struct udev_joypad *pad = &g_pads[i];
 
    if (pad->fd < 0)
-      return;
+      return false;
    if (!pad->support_ff[effect])
-      return;
+      return false;
 
    struct input_event play;
    memset(&play, 0, sizeof(play));
@@ -195,7 +195,10 @@ static void udev_set_rumble(unsigned i, unsigned effect, bool state)
    {
       RARCH_ERR("[udev]: Failed to set rumble effect %u on pad %u.\n",
             effect, i);
+      return false;
    }
+
+   return true;
 }
 
 static void udev_joypad_poll(void)
@@ -578,6 +581,7 @@ const rarch_joypad_driver_t udev_joypad = {
    udev_joypad_button,
    udev_joypad_axis,
    udev_joypad_poll,
+   udev_set_rumble,
    udev_joypad_name,
    "udev",
 };

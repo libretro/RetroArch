@@ -312,6 +312,7 @@ const rarch_joypad_driver_t linuxraw_joypad = {
    linuxraw_joypad_button,
    linuxraw_joypad_axis,
    linuxraw_joypad_poll,
+   NULL,
    linuxraw_joypad_name,
    "linuxraw",
 };

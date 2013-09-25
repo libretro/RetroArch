@@ -323,6 +323,12 @@ enum keybind_set_id
    KEYBINDS_ACTION_LAST
 };
 
+enum rarch_rumble_effect
+{
+   RARCH_RUMBLE_STRONG = 0,
+   RARCH_RUMBLE_WEAK = 1
+};
+
 typedef struct input_driver
 {
    void *(*init)(void);
@@ -335,6 +341,7 @@ typedef struct input_driver
    const char *ident;
 
    void (*grab_mouse)(void *data, bool state);
+   bool (*set_rumble)(void *data, unsigned port, enum rarch_rumble_effect effect, bool state);
 } input_driver_t;
 
 struct rarch_viewport;
