@@ -257,15 +257,15 @@ static void free_pad(unsigned pad)
    if (g_pads[pad].ident)
       *g_pads[pad].ident = '\0';
    memset(&g_pads[pad], 0, sizeof(g_pads[pad]));
-   g_pads[pad].fd = -1;
 
+   g_pads[pad].fd = -1;
+   g_pads[pad].ident = g_settings.input.device_names[pad];
    input_config_autoconfigure_joypad(pad, NULL, NULL);
 }
 
 static bool add_pad(unsigned i, int fd, const char *path)
 {
    struct udev_joypad *pad = &g_pads[i];
-   pad->ident = g_settings.input.device_names[i];
    if (ioctl(fd, EVIOCGNAME(sizeof(g_settings.input.device_names[0])), pad->ident) < 0)
    {
       RARCH_LOG("[udev]: Failed to get pad name.\n");
@@ -344,14 +344,12 @@ static bool add_pad(unsigned i, int fd, const char *path)
          effect.id = -1;
          effect.u.rumble.strong_magnitude = 0x8000;
          effect.u.rumble.weak_magnitude = 0;
-         effect.replay.length = 20000;
-         effect.replay.delay = 0;
          pad->support_ff[0] = ioctl(fd, EVIOCSFF, &effect) == 0;
          if (pad->support_ff[0])
          {
             RARCH_LOG("[udev]: Pad #%u (%s) supports \"strong\" rumble effect (id %d).\n",
                   i, path, effect.id);
-            pad->effects[0] = effect.id; // Gets updated by ioctl().
+            pad->effects[RETRO_RUMBLE_STRONG] = effect.id; // Gets updated by ioctl().
          }
 
          // Weak rumble.
@@ -360,18 +358,13 @@ static bool add_pad(unsigned i, int fd, const char *path)
          effect.id = -1;
          effect.u.rumble.strong_magnitude = 0;
          effect.u.rumble.weak_magnitude = 0xc000;
-         effect.replay.length = 20000;
-         effect.replay.delay = 0;
          pad->support_ff[1] = ioctl(fd, EVIOCSFF, &effect) == 0;
          if (pad->support_ff[1])
          {
             RARCH_LOG("[udev]: Pad #%u (%s) supports \"weak\" rumble effect (id %d).\n",
                   i, path, effect.id);
-            pad->effects[1] = effect.id; // Gets updated by ioctl().
+            pad->effects[RETRO_RUMBLE_WEAK] = effect.id; // Gets updated by ioctl().
          }
-
-         udev_set_rumble(i, RETRO_RUMBLE_STRONG, false);
-         udev_set_rumble(i, RETRO_RUMBLE_WEAK, false);
       }
    }
 
@@ -393,16 +386,13 @@ static void check_device(const char *path, bool hotplugged)
       }
    }
 
+   int pad = find_vacant_pad();
+   if (pad < 0)
+      return;
+
    int fd = open_joystick(path);
    if (fd < 0)
       return;
-
-   int pad = find_vacant_pad();
-   if (pad < 0)
-   {
-      close(fd);
-      return;
-   }
 
    if (add_pad(pad, fd, path))
    {
@@ -489,7 +479,9 @@ static bool udev_joypad_init(void)
    {
       const char *name = udev_list_entry_get_name(item);
       struct udev_device *dev = udev_device_new_from_syspath(g_udev, name);
-      check_device(udev_device_get_devnode(dev), false);
+      const char *devnode = udev_device_get_devnode(dev);
+      if (devnode)
+         check_device(devnode, false);
       udev_device_unref(dev);
    }
 
