@@ -25,13 +25,13 @@
 extern NSArray* apple_get_modules();
 
 @interface RAModuleInfo : NSObject
-@property NSString* path;                    // e.g. /path/to/corename_libretro.dylib
-@property NSString* baseName;                // e.g. corename_libretro
-@property core_info_t* info;
-@property config_file_t* data;
-@property NSString* description;             // Friendly name from config file, else just the filename
-@property NSString* customConfigFile;        // Path where custom config file would reside
-@property NSString* configFile;              // Path to effective config file
+@property (nonatomic) NSString* path;                    // e.g. /path/to/corename_libretro.dylib
+@property (nonatomic) NSString* baseName;                // e.g. corename_libretro
+@property (nonatomic) core_info_t* info;
+@property (nonatomic) config_file_t* data;
+@property (nonatomic) NSString* description;             // Friendly name from config file, else just the filename
+@property (nonatomic) NSString* customConfigFile;        // Path where custom config file would reside
+@property (nonatomic) NSString* configFile;              // Path to effective config file
 
 - (bool)supportsFileAtPath:(NSString*)path;
 

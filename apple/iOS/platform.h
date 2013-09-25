@@ -36,13 +36,13 @@
 
 - (void)refreshSystemConfig;
 
-@property (strong, nonatomic) NSString* configDirectory;    // e.g. /var/mobile/Documents/.RetroArch
-@property (strong, nonatomic) NSString* globalConfigFile;   // e.g. /var/mobile/Documents/.RetroArch/retroarch.cfg
-@property (strong, nonatomic) NSString* coreDirectory;      // e.g. /Applications/RetroArch.app/modules
+@property (nonatomic) NSString* configDirectory;    // e.g. /var/mobile/Documents/.RetroArch
+@property (nonatomic) NSString* globalConfigFile;   // e.g. /var/mobile/Documents/.RetroArch/retroarch.cfg
+@property (nonatomic) NSString* coreDirectory;      // e.g. /Applications/RetroArch.app/modules
 
-@property (strong, nonatomic) NSString* documentsDirectory; // e.g. /var/mobile/Documents
-@property (strong, nonatomic) NSString* systemDirectory;    // e.g. /var/mobile/Documents/.RetroArch
-@property (strong, nonatomic) NSString* systemConfigPath;   // e.g. /var/mobile/Documents/.RetroArch/frontend.cfg
+@property (nonatomic) NSString* documentsDirectory; // e.g. /var/mobile/Documents
+@property (nonatomic) NSString* systemDirectory;    // e.g. /var/mobile/Documents/.RetroArch
+@property (nonatomic) NSString* systemConfigPath;   // e.g. /var/mobile/Documents/.RetroArch/frontend.cfg
 
 @end
 

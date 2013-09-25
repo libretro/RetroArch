@@ -24,8 +24,8 @@
 
 // utility.m
 @interface RATableViewController : UITableViewController
-@property NSMutableArray* sections;
-@property BOOL hidesHeaders;
+@property (nonatomic) NSMutableArray* sections;
+@property (nonatomic) BOOL hidesHeaders;
 
 - (id)initWithStyle:(UITableViewStyle)style;
 - (bool)getCellFor:(NSString*)reuseID withStyle:(UITableViewCellStyle)style result:(UITableViewCell**)output;
@@ -35,8 +35,8 @@
 
 // browser.m
 @interface RADirectoryItem : NSObject
-@property (strong) NSString* path;
-@property bool isDirectory;
+@property (nonatomic) NSString* path;
+@property (nonatomic) bool isDirectory;
 @end
 
 // browser.m

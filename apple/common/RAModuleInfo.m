@@ -92,11 +92,13 @@ NSArray* apple_get_modules()
 #ifdef IOS
 #import "../iOS/views.h"
 
+static const void* const associated_string_key = &associated_string_key;
+
 // Build a string with a second associated string
 static NSString* build_string_pair(NSString* stringA, NSString* stringB)
 {
    NSString* string_pair = [NSString stringWithString:stringA];
-   objc_setAssociatedObject(string_pair, "OTHER", stringB, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+   objc_setAssociatedObject(string_pair, associated_string_key, stringB, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
    return string_pair;
 }
 
@@ -147,23 +149,25 @@ static NSString* build_string_pair(NSString* stringA, NSString* stringB)
    if (indexPath.section == _firmwareSectionIndex)
    {
       NSString* item = (NSString*)[self itemForIndexPath:indexPath];
-      apple_display_alert(objc_getAssociatedObject(item, "OTHER"), item);
+      apple_display_alert(objc_getAssociatedObject(item, associated_string_key), item);
    }
 }
 
 - (UITableViewCell*)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath
 {
-   UITableViewCell* cell = [self.tableView dequeueReusableCellWithIdentifier:@"datacell"];
+   static NSString* const cell_id = @"datacell";
+
+   UITableViewCell* cell = [self.tableView dequeueReusableCellWithIdentifier:cell_id];
    
    if (!cell)
    {
-      cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleValue1 reuseIdentifier:@"datacell"];
+      cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleValue1 reuseIdentifier:cell_id];
       cell.selectionStyle = UITableViewCellSelectionStyleNone;
       cell.detailTextLabel.adjustsFontSizeToFitWidth = YES;
    }
    
    NSString* item = (NSString*)[self itemForIndexPath:indexPath];
-   NSString* value = (NSString*)objc_getAssociatedObject(item, "OTHER");
+   NSString* value = (NSString*)objc_getAssociatedObject(item, associated_string_key);
    
    cell.textLabel.text = item;
    cell.detailTextLabel.text = value;

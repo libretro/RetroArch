@@ -296,7 +296,7 @@ static void file_action(enum file_action action, NSString* source, NSString* tar
 
 - (UITableViewCell*)tableView:(UITableView*)tableView cellForRowAtIndexPath:(NSIndexPath*)indexPath
 {
-   static NSString* const cell_id;
+   static NSString* const cell_id = @"module";
 
    UITableViewCell* cell = nil;
    if ([self getCellFor:cell_id withStyle:UITableViewCellStyleDefault result:&cell])

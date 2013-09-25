@@ -21,6 +21,10 @@
 #include "bluetooth/btdynamic.h"
 #include "bluetooth/btpad.h"
 
+static const void* const associated_userdata_key = &associated_userdata_key;
+static const void* const associated_module_key = &associated_module_key;
+static const void* const associated_setting_key = &associated_setting_key;
+
 enum SettingTypes
 {
    BooleanSetting, ButtonSetting, EnumerationSetting, FileListSetting,
@@ -209,7 +213,7 @@ static RASettingData* custom_action(NSString* action, NSString* value, id data, 
    result->reload = reload_func;
    
    if (data != nil)
-      objc_setAssociatedObject(result, "USERDATA", data, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+      objc_setAssociatedObject(result, associated_userdata_key, data, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
    
    return result;
 }
@@ -377,7 +381,7 @@ static NSArray* build_input_port_group(config_file_t* config, uint32_t player)
 - (void)handleCustomAction:(RASettingData*)setting
 {
    if ([@"Core Info" isEqualToString:setting->label])
-      [[RetroArch_iOS get] pushViewController:[[RAModuleInfoList alloc] initWithModuleInfo:_module] animated:YES];
+      [self.navigationController pushViewController:[[RAModuleInfoList alloc] initWithModuleInfo:_module] animated:YES];
    else if([@"Delete Custom Config" isEqualToString:setting->label])
    {
       [_module deleteCustomConfig];
@@ -476,14 +480,14 @@ static void bluetooth_option_changed(RASettingData* setting)
 - (void)handleCustomAction:(RASettingData*)setting
 {
    if ([@"Diagnostic Log" isEqualToString:setting->label])
-      [[RetroArch_iOS get] pushViewController:[RALogView new] animated:YES];
+      [self.navigationController pushViewController:[RALogView new] animated:YES];
    else if ([@"Enable BTstack" isEqualToString:setting->label])
       btstack_set_poweron([setting->value isEqualToString:@"true"]);
    else if([@"Global Core Config" isEqualToString:setting->label])
-      [RetroArch_iOS.get pushViewController:[[RASettingsList alloc] initWithModule:nil] animated:YES];
+      [self.navigationController pushViewController:[[RASettingsList alloc] initWithModule:nil] animated:YES];
    else
    {
-      RAModuleInfo* data = (RAModuleInfo*)objc_getAssociatedObject(setting, "USERDATA");
+      RAModuleInfo* data = (RAModuleInfo*)objc_getAssociatedObject(setting, associated_userdata_key);
       if (data)
       {
          if (!data.hasCustomConfig)
@@ -494,18 +498,18 @@ static void bluetooth_option_changed(RASettingData* setting)
                                                            delegate:self
                                                   cancelButtonTitle:@"No"
                                                   otherButtonTitles:@"Yes", nil];
-            objc_setAssociatedObject(alert, "MODULE", data, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+            objc_setAssociatedObject(alert, associated_module_key, data, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
             [alert show];
          }
          else
-            [RetroArch_iOS.get pushViewController:[[RASettingsList alloc] initWithModule:data] animated:YES];
+            [self.navigationController pushViewController:[[RASettingsList alloc] initWithModule:data] animated:YES];
       }
    }
 }
 
 - (void)alertView:(UIAlertView*)alertView willDismissWithButtonIndex:(NSInteger)buttonIndex
 {
-   RAModuleInfo* data = (RAModuleInfo*)objc_getAssociatedObject(alertView, "MODULE");
+   RAModuleInfo* data = (RAModuleInfo*)objc_getAssociatedObject(alertView, associated_module_key);
 
    if (data)
    {
@@ -515,7 +519,7 @@ static void bluetooth_option_changed(RASettingData* setting)
          [self.tableView reloadData];
       }
 
-      [RetroArch_iOS.get pushViewController:[[RASettingsList alloc] initWithModule:data] animated:YES];
+      [self.navigationController pushViewController:[[RASettingsList alloc] initWithModule:data] animated:YES];
    }
 
 }
@@ -614,7 +618,7 @@ static void bluetooth_option_changed(RASettingData* setting)
       case EnumerationSetting:
       case FileListSetting:
       case AspectSetting:
-         [[RetroArch_iOS get] pushViewController:[[RASettingEnumerationList alloc] initWithSetting:setting fromTable:(UITableView*)self.view] animated:YES];
+         [self.navigationController pushViewController:[[RASettingEnumerationList alloc] initWithSetting:setting fromTable:(UITableView*)self.view] animated:YES];
          break;
          
       case ButtonSetting:
@@ -622,7 +626,7 @@ static void bluetooth_option_changed(RASettingData* setting)
          break;
          
       case GroupSetting:
-         [[RetroArch_iOS get] pushViewController:[[RASettingsSubList alloc] initWithSettings:setting->subValues title:setting->label] animated:YES];
+         [self.navigationController pushViewController:[[RASettingsSubList alloc] initWithSettings:setting->subValues title:setting->label] animated:YES];
          break;
          
       default:
@@ -634,7 +638,7 @@ static void bluetooth_option_changed(RASettingData* setting)
 
 - (void)handleBooleanSwitch:(UISwitch*)swt
 {
-   RASettingData* setting = objc_getAssociatedObject(swt, "SETTING");
+   RASettingData* setting = objc_getAssociatedObject(swt, associated_setting_key);
    [setting setValue:swt.on ? @"true" : @"false"];
    
    [self handleCustomAction:setting];
@@ -642,7 +646,7 @@ static void bluetooth_option_changed(RASettingData* setting)
 
 - (void)handleSlider:(UISlider*)sld
 {
-   RASettingData* setting = objc_getAssociatedObject(sld, "SETTING");
+   RASettingData* setting = objc_getAssociatedObject(sld, associated_setting_key);
    [setting setValue:[NSString stringWithFormat:@"%f", sld.value]];
 
    [self handleCustomAction:setting];
@@ -658,11 +662,12 @@ static void bluetooth_option_changed(RASettingData* setting)
    {
       case BooleanSetting:
       {
-         cell = [self.tableView dequeueReusableCellWithIdentifier:@"boolean"];
+         static NSString* const cell_id = @"boolean";
+         cell = [self.tableView dequeueReusableCellWithIdentifier:cell_id];
 
          if (cell == nil)
          {
-            cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:@"boolean"];
+            cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:cell_id];
          
             UISwitch* accessory = [[UISwitch alloc] init];
             [accessory addTarget:self action:@selector(handleBooleanSwitch:) forControlEvents:UIControlEventValueChanged];
@@ -675,18 +680,19 @@ static void bluetooth_option_changed(RASettingData* setting)
       
          UISwitch* swt = (UISwitch*)cell.accessoryView;
          swt.on = [setting->value isEqualToString:@"true"];
-         objc_setAssociatedObject(swt, "SETTING", setting, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+         objc_setAssociatedObject(swt, associated_setting_key, setting, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
          
          return cell;
       }
 
       case RangeSetting:
       {
-         cell = [self.tableView dequeueReusableCellWithIdentifier:@"range"];
+         static NSString* const cell_id = @"range";
+         cell = [self.tableView dequeueReusableCellWithIdentifier:cell_id];
          
          if (cell == nil)
          {
-            cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:@"range"];
+            cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:cell_id];
 
             UISlider* accessory = [UISlider new];
             [accessory addTarget:self action:@selector(handleSlider:) forControlEvents:UIControlEventValueChanged];
@@ -702,7 +708,7 @@ static void bluetooth_option_changed(RASettingData* setting)
          sld.minimumValue = setting->rangeMin;
          sld.maximumValue = setting->rangeMax;
          sld.value = [setting->value doubleValue];
-         objc_setAssociatedObject(sld, "SETTING", setting, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+         objc_setAssociatedObject(sld, associated_setting_key, setting, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
          
          return cell;
       }
@@ -710,16 +716,17 @@ static void bluetooth_option_changed(RASettingData* setting)
          
       default:
       {
-         cell = [self.tableView dequeueReusableCellWithIdentifier:@"default"];
+         static NSString* const cell_id = @"default";
+         cell = [self.tableView dequeueReusableCellWithIdentifier:cell_id];
          
          if (!cell)
          {
-            cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleValue1 reuseIdentifier:@"default"];
+            cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleValue1 reuseIdentifier:cell_id];
             cell.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
          }
 
          if (setting->reload)
-            setting->reload(setting, objc_getAssociatedObject(setting, "USERDATA"));
+            setting->reload(setting, objc_getAssociatedObject(setting, associated_userdata_key));
   
          cell.textLabel.text = setting->label;
    
@@ -771,8 +778,10 @@ static void bluetooth_option_changed(RASettingData* setting)
 
 - (UITableViewCell*)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath
 {
-   UITableViewCell* cell = [self.tableView dequeueReusableCellWithIdentifier:@"option"];
-   cell = cell ? cell : [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:@"option"];
+   static NSString* const cell_id = @"option";
+
+   UITableViewCell* cell = [self.tableView dequeueReusableCellWithIdentifier:cell_id];
+   cell = cell ? cell : [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:cell_id];
 
    if (indexPath.section == _mainSection)
       cell.textLabel.text = [_value labelForEnumerationIndex:indexPath.row];
@@ -787,7 +796,7 @@ static void bluetooth_option_changed(RASettingData* setting)
    [_value setValue: (indexPath.section == _mainSection) ? [_value valueForEnumerationIndex:indexPath.row] : @""];
    
    [_view reloadData];
-   [[RetroArch_iOS get] popViewControllerAnimated:YES];
+   [self.navigationController popViewControllerAnimated:YES];
 }
 
 @end

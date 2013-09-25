@@ -69,8 +69,10 @@ void ios_add_log_message(const char* format, ...)
 
 - (UITableViewCell*)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath
 {
-   UITableViewCell* cell = [self.tableView dequeueReusableCellWithIdentifier:@"message"];
-   cell = cell ? cell : [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:@"message"];
+   static NSString* const cell_id = @"message";
+
+   UITableViewCell* cell = [self.tableView dequeueReusableCellWithIdentifier:cell_id];
+   cell = cell ? cell : [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:cell_id];
 
    pthread_mutex_lock(&g_lock);
    cell.textLabel.text = g_messages[indexPath.row];

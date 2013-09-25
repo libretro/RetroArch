@@ -209,7 +209,7 @@ static void handle_touch_event(NSArray* touches)
 - (bool)directoryList:(id)list itemWasSelected:(RADirectoryItem*)path
 {
    if(path.isDirectory)
-      [[RetroArch_iOS get] pushViewController:[[RADirectoryList alloc] initWithPath:path.path delegate:self] animated:YES];
+      [self pushViewController:[[RADirectoryList alloc] initWithPath:path.path delegate:self] animated:YES];
    else
    {
       _path = path.path;
@@ -218,7 +218,7 @@ static void handle_touch_event(NSArray* touches)
          apple_display_alert(@"The directory containing the selected file has limited permissions. This may "
                               "prevent zipped games from loading, and will cause some cores to not function.", 0);
 
-      [[RetroArch_iOS get] pushViewController:[[RAModuleList alloc] initWithGame:path.path delegate:self] animated:YES];
+      [self pushViewController:[[RAModuleList alloc] initWithGame:path.path delegate:self] animated:YES];
    }
    
    return true;
