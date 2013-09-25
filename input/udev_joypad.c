@@ -26,7 +26,7 @@
 #include <fcntl.h>
 #include <libudev.h>
 #include <linux/types.h>
-#include <linux/joystick.h>
+#include <linux/input.h>
 
 // Udev/evdev Linux joypad driver.
 // More complex and extremely low level,
@@ -53,6 +53,10 @@ struct udev_joypad
    uint8_t button_bind[KEY_MAX];
    uint8_t axes_bind[ABS_MAX];
    struct input_absinfo absinfo[NUM_AXES];
+
+   int num_effects;
+   int effects[2]; // [0] - strong, [1] - weak 
+   bool support_ff[2];
 
    char *ident;
    char *path;
@@ -173,6 +177,27 @@ end:
    udev_device_unref(dev);
 }
 
+static void udev_set_rumble(unsigned i, unsigned effect, bool state)
+{
+   struct udev_joypad *pad = &g_pads[i];
+
+   if (pad->fd < 0)
+      return;
+   if (!pad->support_ff[effect])
+      return;
+
+   struct input_event play;
+   memset(&play, 0, sizeof(play));
+   play.type = EV_FF;
+   play.code = pad->effects[effect];
+   play.value = state;
+   if (write(pad->fd, &play, sizeof(play)) < (ssize_t)sizeof(play))
+   {
+      RARCH_ERR("[udev]: Failed to set rumble effect %u on pad %u.\n",
+            effect, i);
+   }
+}
+
 static void udev_joypad_poll(void)
 {
    while (hotplug_available())
@@ -180,6 +205,19 @@ static void udev_joypad_poll(void)
 
    for (unsigned i = 0; i < MAX_PLAYERS; i++)
       poll_pad(i);
+
+#if 0 // Debug rumble.
+   static bool old_0;
+   static bool old_1;
+   bool new_0 = g_pads[0].buttons[0];
+   bool new_1 = g_pads[0].buttons[1];
+   if (new_0 != old_0)
+      udev_set_rumble(0, 0, new_0);
+   if (new_1 != old_1)
+      udev_set_rumble(0, 1, new_1);
+   old_0 = new_0;
+   old_1 = new_1;
+#endif
 }
 
 #define test_bit(nr, addr) \
@@ -188,7 +226,7 @@ static void udev_joypad_poll(void)
 
 static int open_joystick(const char *path)
 {
-   int fd = open(path, O_RDONLY | O_NONBLOCK);
+   int fd = open(path, O_RDWR | O_NONBLOCK);
    if (fd < 0)
       return fd;
 
@@ -223,7 +261,12 @@ static int find_vacant_pad(void)
 static void free_pad(unsigned pad)
 {
    if (g_pads[pad].fd >= 0)
+   {
+      udev_set_rumble(pad, 0, false);
+      udev_set_rumble(pad, 1, false);
       close(g_pads[pad].fd);
+   }
+
    free(g_pads[pad].path);
    memset(&g_pads[pad], 0, sizeof(g_pads[pad]));
    g_pads[pad].fd = -1;
@@ -287,6 +330,55 @@ static bool add_pad(unsigned i, int fd, const char *path)
    pad->path = strdup(path);
    if (*pad->ident)
       input_config_autoconfigure_joypad(i, pad->ident, "udev");
+
+   // Check for rumble features.
+   unsigned long ffbit[NBITS(FF_MAX)] = {0};
+   if (ioctl(fd, EVIOCGBIT(EV_FF, sizeof(ffbit)), ffbit) >= 0)
+   {
+      if (test_bit(FF_RUMBLE, ffbit))
+         RARCH_LOG("[udev]: Pad #%u (%s) supports force feedback.\n",
+               i, path);
+
+      if (ioctl(fd, EVIOCGEFFECTS, &pad->num_effects) >= 0)
+         RARCH_LOG("[udev]: Pad #%u (%s) supports %d force feedback effects.\n", i, path, pad->num_effects);
+
+      if (pad->num_effects >= 2)
+      {
+         struct ff_effect effect;
+
+         // Strong rumble.
+         memset(&effect, 0, sizeof(effect));
+         effect.type = FF_RUMBLE;
+         effect.id = -1;
+         effect.u.rumble.strong_magnitude = 0x8000;
+         effect.u.rumble.weak_magnitude = 0;
+         effect.replay.length = 20000;
+         effect.replay.delay = 0;
+         pad->support_ff[0] = ioctl(fd, EVIOCSFF, &effect) == 0;
+         if (pad->support_ff[0])
+         {
+            RARCH_LOG("[udev]: Pad #%u (%s) supports \"strong\" rumble effect (id %d).\n",
+                  i, path, effect.id);
+            pad->effects[0] = effect.id; // Gets updated by ioctl().
+         }
+
+         // Weak rumble.
+         memset(&effect, 0, sizeof(effect));
+         effect.type = FF_RUMBLE;
+         effect.id = -1;
+         effect.u.rumble.strong_magnitude = 0;
+         effect.u.rumble.weak_magnitude = 0xc000;
+         effect.replay.length = 20000;
+         effect.replay.delay = 0;
+         pad->support_ff[1] = ioctl(fd, EVIOCSFF, &effect) == 0;
+         if (pad->support_ff[1])
+         {
+            RARCH_LOG("[udev]: Pad #%u (%s) supports \"weak\" rumble effect (id %d).\n",
+                  i, path, effect.id);
+            pad->effects[1] = effect.id; // Gets updated by ioctl().
+         }
+      }
+   }
 
    return true;
 }
