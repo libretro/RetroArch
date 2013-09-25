@@ -179,7 +179,6 @@ end:
 
 static bool udev_set_rumble(unsigned i, enum retro_rumble_effect effect, bool state)
 {
-   fprintf(stderr, "Rumble: Pad %u, Effect %u, State %u.\n", i, (unsigned)effect, (unsigned)state);
    struct udev_joypad *pad = &g_pads[i];
 
    if (pad->fd < 0)
@@ -209,19 +208,6 @@ static void udev_joypad_poll(void)
 
    for (unsigned i = 0; i < MAX_PLAYERS; i++)
       poll_pad(i);
-
-#if 0 // Debug rumble.
-   static bool old_0;
-   static bool old_1;
-   bool new_0 = g_pads[0].buttons[0];
-   bool new_1 = g_pads[0].buttons[1];
-   if (new_0 != old_0)
-      udev_set_rumble(0, 0, new_0);
-   if (new_1 != old_1)
-      udev_set_rumble(0, 1, new_1);
-   old_0 = new_0;
-   old_1 = new_1;
-#endif
 }
 
 #define test_bit(nr, addr) \
@@ -383,6 +369,9 @@ static bool add_pad(unsigned i, int fd, const char *path)
                   i, path, effect.id);
             pad->effects[1] = effect.id; // Gets updated by ioctl().
          }
+
+         udev_set_rumble(i, RETRO_RUMBLE_STRONG, false);
+         udev_set_rumble(i, RETRO_RUMBLE_WEAK, false);
       }
    }
 
