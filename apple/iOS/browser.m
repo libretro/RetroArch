@@ -232,13 +232,16 @@ static void file_action(enum file_action action, NSString* source, NSString* tar
 // Called by various alert views created in this class, the alertView.tag value is the action to take.
 - (void)alertView:(UIAlertView*)alertView clickedButtonAtIndex:(NSInteger)buttonIndex
 {
+   if (buttonIndex != alertView.firstOtherButtonIndex)
+      return;
+
    if (alertView.tag == FA_DELETE)
       file_action(FA_DELETE, nil, self.selectedItem.path);
    else
    {
       NSString* text = [alertView textFieldAtIndex:0].text;
 
-      if (buttonIndex == alertView.firstOtherButtonIndex && text.length)
+      if (text.length)
          file_action(alertView.tag, self.selectedItem.path, [_path stringByAppendingPathComponent:text]);
    }
 
