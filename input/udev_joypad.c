@@ -177,8 +177,9 @@ end:
    udev_device_unref(dev);
 }
 
-static bool udev_set_rumble(unsigned i, unsigned effect, bool state)
+static bool udev_set_rumble(unsigned i, enum retro_rumble_effect effect, bool state)
 {
+   fprintf(stderr, "Rumble: Pad %u, Effect %u, State %u.\n", i, (unsigned)effect, (unsigned)state);
    struct udev_joypad *pad = &g_pads[i];
 
    if (pad->fd < 0)
@@ -264,13 +265,11 @@ static int find_vacant_pad(void)
 static void free_pad(unsigned pad)
 {
    if (g_pads[pad].fd >= 0)
-   {
-      udev_set_rumble(pad, 0, false);
-      udev_set_rumble(pad, 1, false);
       close(g_pads[pad].fd);
-   }
 
    free(g_pads[pad].path);
+   if (g_pads[pad].ident)
+      *g_pads[pad].ident = '\0';
    memset(&g_pads[pad], 0, sizeof(g_pads[pad]));
    g_pads[pad].fd = -1;
 
@@ -280,8 +279,12 @@ static void free_pad(unsigned pad)
 static bool add_pad(unsigned i, int fd, const char *path)
 {
    struct udev_joypad *pad = &g_pads[i];
+   pad->ident = g_settings.input.device_names[i];
    if (ioctl(fd, EVIOCGNAME(sizeof(g_settings.input.device_names[0])), pad->ident) < 0)
+   {
+      RARCH_LOG("[udev]: Failed to get pad name.\n");
       return false;
+   }
 
    RARCH_LOG("[udev]: Plugged pad: %s on port #%u.\n", pad->ident, i);
 

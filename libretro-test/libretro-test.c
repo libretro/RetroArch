@@ -61,6 +61,8 @@ static retro_environment_t environ_cb;
 static retro_input_poll_t input_poll_cb;
 static retro_input_state_t input_state_cb;
 
+static struct retro_rumble_interface rumble;
+
 void retro_set_environment(retro_environment_t cb)
 {
    environ_cb = cb;
@@ -173,6 +175,30 @@ static void update_input(void)
 
    x_coord = (x_coord + dir_x) & 31;
    y_coord = (y_coord + dir_y) & 31;
+
+   if (rumble.set_rumble_state)
+   {
+      static bool old_start;
+      static bool old_select;
+      bool start = input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_START);
+      bool select = input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_SELECT);
+      if (old_start != start)
+      {
+         fprintf(stderr, "Strong rumble: %s.\n", start ? "ON": "OFF");
+         if (!rumble.set_rumble_state(0, RETRO_RUMBLE_STRONG, start))
+            fprintf(stderr, "Strong rumble; failed to set state.\n");
+      }
+
+      if (old_select != select)
+      {
+         fprintf(stderr, "Weak rumble: %s.\n", select ? "ON": "OFF");
+         if (!rumble.set_rumble_state(0, RETRO_RUMBLE_WEAK, select))
+            fprintf(stderr, "Weak rumble; failed to set state.\n");
+      }
+
+      old_start = start;
+      old_select = select;
+   }
 }
 
 static void render_checkered(void)
@@ -262,6 +288,10 @@ bool retro_load_game(const struct retro_game_info *info)
 
    struct retro_keyboard_callback cb = { keyboard_cb };
    environ_cb(RETRO_ENVIRONMENT_SET_KEYBOARD_CALLBACK, &cb);
+   if (environ_cb(RETRO_ENVIRONMENT_GET_RUMBLE_INTERFACE, &rumble))
+      fprintf(stderr, "Rumble environment supported.\n");
+   else
+      fprintf(stderr, "Rumble environment not supported.\n");
 
    check_variables();
 

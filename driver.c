@@ -311,7 +311,7 @@ void driver_set_nonblock_state(bool nonblock)
 
 bool driver_set_rumble_state(unsigned port, enum retro_rumble_effect effect, bool enable)
 {
-   if (driver.input && driver.input_data)
+   if (driver.input && driver.input_data && driver.input->set_rumble)
       return driver.input->set_rumble(driver.input_data, port, effect, enable);
    else
       return false;

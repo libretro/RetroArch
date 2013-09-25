@@ -109,7 +109,7 @@ const char *input_joypad_name(const rarch_joypad_driver_t *driver, unsigned joyp
 bool input_joypad_set_rumble(const rarch_joypad_driver_t *driver,
       unsigned port, enum retro_rumble_effect effect, bool state)
 {
-   if (!driver)
+   if (!driver || !driver->set_rumble)
       return false;
 
    int joy_index = g_settings.input.joypad_map[port];
