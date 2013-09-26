@@ -390,7 +390,7 @@ static bool winxinput_joypad_rumble(unsigned pad, enum retro_rumble_effect effec
    if (xplayer == -1)
    {
       if (dinput_joypad.set_rumble)
-         return dinput_joypad.set_rumble(pad, effect, strength);.
+         return dinput_joypad.set_rumble(pad, effect, strength);
       else
          return false;
    }
