@@ -111,7 +111,7 @@ typedef struct
    bool         connected;
 } winxinput_joypad_state;
 
-static XINPUT_VIBRATION g_xinput_rumble_state;
+static XINPUT_VIBRATION g_xinput_rumble_states[4];
 
 static winxinput_joypad_state g_winxinput_states[4];
 
@@ -186,6 +186,7 @@ static bool winxinput_joypad_init(void)
       if (!g_XInputGetStateEx)
       {
          RARCH_ERR("Failed to init XInput: DLL is invalid or corrupt.\n");
+         FreeLibrary(g_winxinput_dll);
          return false; // DLL was loaded but did not contain the correct function.
       }
       RARCH_WARN("XInput: No guide button support.\n");
@@ -195,6 +196,7 @@ static bool winxinput_joypad_init(void)
    if (!g_XInputSetState)
    {
       RARCH_ERR("Failed to init XInput: DLL is invalid or corrupt.\n");
+      FreeLibrary(g_winxinput_dll);
       return false; // DLL was loaded but did not contain the correct function.
    }
    
@@ -384,17 +386,23 @@ static void winxinput_joypad_poll(void)
 
 static bool winxinput_joypad_rumble(unsigned pad, enum retro_rumble_effect effect, uint16_t strength)
 {
-   // Consider the low frequency (left) motor the "strong" one.
-   if (effect == RETRO_RUMBLE_STRONG)
-      g_xinput_rumble_state.wLeftMotorSpeed = strength;
-   else if (effect == RETRO_RUMBLE_WEAK)
-      g_xinput_rumble_state.wRightMotorSpeed = strength;
-      
    int xplayer = pad_index_to_xplayer_index(pad);
    if (xplayer == -1)
-      return dinput_joypad.set_rumble(pad, effect, strength);
+   {
+      if (dinput_joypad.set_rumble)
+         return dinput_joypad.set_rumble(pad, effect, strength);.
+      else
+         return false;
+   }
+
+
+   // Consider the low frequency (left) motor the "strong" one.
+   if (effect == RETRO_RUMBLE_STRONG)
+      g_xinput_rumble_states[xplayer].wLeftMotorSpeed = strength;
+   else if (effect == RETRO_RUMBLE_WEAK)
+      g_xinput_rumble_states[xplayer].wRightMotorSpeed = strength;
    
-   return (g_XInputSetState(xplayer, &g_xinput_rumble_state) == ERROR_SUCCESS);
+   return g_XInputSetState(xplayer, &g_xinput_rumble_states[xplayer]) == ERROR_SUCCESS;
 }
 
 const rarch_joypad_driver_t winxinput_joypad = {
