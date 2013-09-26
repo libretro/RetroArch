@@ -180,21 +180,17 @@ static void update_input(void)
    {
       static bool old_start;
       static bool old_select;
+      uint16_t strength_strong = input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_R2) ? 0x4000 : 0xffff;
+      uint16_t strength_weak = input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_L2) ? 0x4000 : 0xffff;
       bool start = input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_START);
       bool select = input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_SELECT);
       if (old_start != start)
-      {
          fprintf(stderr, "Strong rumble: %s.\n", start ? "ON": "OFF");
-         if (!rumble.set_rumble_state(0, RETRO_RUMBLE_STRONG, start))
-            fprintf(stderr, "Strong rumble; failed to set state.\n");
-      }
+      rumble.set_rumble_state(0, RETRO_RUMBLE_STRONG, start * strength_strong);
 
       if (old_select != select)
-      {
          fprintf(stderr, "Weak rumble: %s.\n", select ? "ON": "OFF");
-         if (!rumble.set_rumble_state(0, RETRO_RUMBLE_WEAK, select))
-            fprintf(stderr, "Weak rumble; failed to set state.\n");
-      }
+      rumble.set_rumble_state(0, RETRO_RUMBLE_WEAK, select * strength_weak);
 
       old_start = start;
       old_select = select;

@@ -269,10 +269,10 @@ static void x_grab_mouse(void *data, bool state)
    x11->grab_mouse = state;
 }
 
-static bool x_set_rumble(void *data, unsigned port, enum retro_rumble_effect effect, bool state)
+static bool x_set_rumble(void *data, unsigned port, enum retro_rumble_effect effect, uint16_t strength)
 {
    x11_input_t *x11 = (x11_input_t*)data;
-   return input_joypad_set_rumble(x11->joypad, port, effect, state);
+   return input_joypad_set_rumble(x11->joypad, port, effect, strength);
 }
 
 const input_driver_t input_x = {

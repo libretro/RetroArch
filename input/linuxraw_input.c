@@ -285,10 +285,10 @@ static void linuxraw_input_free(void *data)
    free(data);
 }
 
-static bool linuxraw_set_rumble(void *data, unsigned port, enum retro_rumble_effect effect, bool state)
+static bool linuxraw_set_rumble(void *data, unsigned port, enum retro_rumble_effect effect, uint16_t strength)
 {
    linuxraw_input_t *linuxraw = (linuxraw_input_t*)data;
-   return input_joypad_set_rumble(linuxraw->joypad, port, effect, state);
+   return input_joypad_set_rumble(linuxraw->joypad, port, effect, strength);
 }
 
 static void linuxraw_input_poll(void *data)

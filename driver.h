@@ -335,7 +335,7 @@ typedef struct input_driver
    const char *ident;
 
    void (*grab_mouse)(void *data, bool state);
-   bool (*set_rumble)(void *data, unsigned port, enum retro_rumble_effect effect, bool state);
+   bool (*set_rumble)(void *data, unsigned port, enum retro_rumble_effect effect, uint16_t state);
 } input_driver_t;
 
 struct rarch_viewport;
@@ -497,7 +497,7 @@ uintptr_t driver_get_current_framebuffer(void);
 retro_proc_address_t driver_get_proc_address(const char *sym);
 
 // Used by RETRO_ENVIRONMENT_GET_RUMBLE_INTERFACE
-bool driver_set_rumble_state(unsigned port, enum retro_rumble_effect effect, bool enable);
+bool driver_set_rumble_state(unsigned port, enum retro_rumble_effect effect, uint16_t strength);
 
 extern driver_t driver;
 

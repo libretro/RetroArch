@@ -107,7 +107,7 @@ const char *input_joypad_name(const rarch_joypad_driver_t *driver, unsigned joyp
 }
 
 bool input_joypad_set_rumble(const rarch_joypad_driver_t *driver,
-      unsigned port, enum retro_rumble_effect effect, bool state)
+      unsigned port, enum retro_rumble_effect effect, uint16_t strength)
 {
    if (!driver || !driver->set_rumble)
       return false;
@@ -116,7 +116,7 @@ bool input_joypad_set_rumble(const rarch_joypad_driver_t *driver,
    if (joy_index < 0 || joy_index >= MAX_PLAYERS)
       return false;
 
-   return driver->set_rumble(joy_index, effect, state);
+   return driver->set_rumble(joy_index, effect, strength);
 }
 
 bool input_joypad_pressed(const rarch_joypad_driver_t *driver,

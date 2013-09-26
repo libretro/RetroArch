@@ -334,10 +334,10 @@ static void dinput_grab_mouse(void *data, bool state)
    IDirectInputDevice8_Acquire(di->mouse);
 }
 
-static bool dinput_set_rumble(void *data, unsigned port, enum retro_rumble_effect effect, bool state)
+static bool dinput_set_rumble(void *data, unsigned port, enum retro_rumble_effect effect, uint16_t strength)
 {
    struct dinput_input *di = (struct dinput_input*)data;
-   return input_joypad_set_rumble(di->joypad, port, effect, state);
+   return input_joypad_set_rumble(di->joypad, port, effect, strength);
 }
 
 const input_driver_t input_dinput = {

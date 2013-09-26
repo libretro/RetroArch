@@ -214,10 +214,10 @@ static void sdl_input_free(void *data)
    free(data);
 }
 
-static bool sdl_set_rumble(void *data, unsigned port, enum retro_rumble_effect effect, bool state)
+static bool sdl_set_rumble(void *data, unsigned port, enum retro_rumble_effect effect, uint16_t strength)
 {
    sdl_input_t *sdl = (sdl_input_t*)data;
-   return input_joypad_set_rumble(sdl->joypad, port, effect, state);
+   return input_joypad_set_rumble(sdl->joypad, port, effect, strength);
 }
 
 static void sdl_poll_mouse(sdl_input_t *sdl)

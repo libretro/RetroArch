@@ -57,6 +57,7 @@ struct udev_joypad
    int num_effects;
    int effects[2]; // [0] - strong, [1] - weak 
    bool has_set_ff[2];
+   uint16_t strength[2];
 
    char *ident;
    char *path;
@@ -177,7 +178,7 @@ end:
    udev_device_unref(dev);
 }
 
-static bool udev_set_rumble(unsigned i, enum retro_rumble_effect effect, bool state)
+static bool udev_set_rumble(unsigned i, enum retro_rumble_effect effect, uint16_t strength)
 {
    struct udev_joypad *pad = &g_pads[i];
 
@@ -185,6 +186,30 @@ static bool udev_set_rumble(unsigned i, enum retro_rumble_effect effect, bool st
       return false;
    if (pad->num_effects < 2)
       return false;
+
+   if (pad->strength[effect] == strength)
+      return true;
+
+   if (pad->has_set_ff[effect] && strength != pad->strength[effect])
+   {
+      struct input_event play;
+      memset(&play, 0, sizeof(play));
+      play.type = EV_FF;
+      play.code = pad->effects[effect];
+      play.value = 0;
+      if (write(pad->fd, &play, sizeof(play)) < (ssize_t)sizeof(play))
+      {
+         RARCH_ERR("[udev]: Failed to set rumble effect %u on pad %u.\n",
+               effect, i);
+         return false;
+      }
+
+      if (ioctl(pad->fd, EVIOCRMFF, (void*)(uintptr_t)pad->effects[effect]) < 0)
+         RARCH_WARN("[udev]: Failed to remove effect.\n");
+
+      pad->has_set_ff[effect] = false;
+      pad->effects[effect] = -1;
+   }
 
    // Have to defer the force feedback settings to here.
    // For some reason, effects are getting dropped when they're set at init.
@@ -199,8 +224,8 @@ static bool udev_set_rumble(unsigned i, enum retro_rumble_effect effect, bool st
       e.id = -1;
       switch (effect)
       {
-         case RETRO_RUMBLE_STRONG: e.u.rumble.strong_magnitude = 0xc000; break;
-         case RETRO_RUMBLE_WEAK: e.u.rumble.weak_magnitude = 0xc000; break;
+         case RETRO_RUMBLE_STRONG: e.u.rumble.strong_magnitude = strength; break;
+         case RETRO_RUMBLE_WEAK: e.u.rumble.weak_magnitude = strength; break;
          default: return false;
       }
 
@@ -212,13 +237,14 @@ static bool udev_set_rumble(unsigned i, enum retro_rumble_effect effect, bool st
 
       pad->has_set_ff[effect] = true;
       pad->effects[effect] = e.id;
+      pad->strength[effect] = strength;
    }
 
    struct input_event play;
    memset(&play, 0, sizeof(play));
    play.type = EV_FF;
    play.code = pad->effects[effect];
-   play.value = state;
+   play.value = strength != 0;
    if (write(pad->fd, &play, sizeof(play)) < (ssize_t)sizeof(play))
    {
       RARCH_ERR("[udev]: Failed to set rumble effect %u on pad %u.\n",

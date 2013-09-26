@@ -309,10 +309,10 @@ void driver_set_nonblock_state(bool nonblock)
       g_extern.audio_data.nonblock_chunk_size : g_extern.audio_data.block_chunk_size;
 }
 
-bool driver_set_rumble_state(unsigned port, enum retro_rumble_effect effect, bool enable)
+bool driver_set_rumble_state(unsigned port, enum retro_rumble_effect effect, uint16_t strength)
 {
    if (driver.input && driver.input_data && driver.input->set_rumble)
-      return driver.input->set_rumble(driver.input_data, port, effect, enable);
+      return driver.input->set_rumble(driver.input_data, port, effect, strength);
    else
       return false;
 }

@@ -531,10 +531,10 @@ enum retro_rumble_effect
 
 // Sets rumble state for joypad plugged in port 'port'. Rumble effects are controlled independently,
 // and setting e.g. strong rumble does not override weak rumble.
-// Should only be called when rumble state changes.
+// Strength has a range of [0, 0xffff].
 //
 // Returns true if rumble state request was honored. Calling this before first retro_run() is likely to return false.
-typedef bool (*retro_set_rumble_state_t)(unsigned port, enum retro_rumble_effect effect, bool enable);
+typedef bool (*retro_set_rumble_state_t)(unsigned port, enum retro_rumble_effect effect, uint16_t strength);
 struct retro_rumble_interface
 {
    retro_set_rumble_state_t set_rumble_state;
