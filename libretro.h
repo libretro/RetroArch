@@ -515,7 +515,7 @@ enum retro_mod
                                            // The frontend can tamper with the timing to fake fast-forward, slow-motion, frame stepping, etc.
                                            // In this case the delta time will use the reference value in frame_time_callback..
                                            //
-#define RETRO_ENVIRONMENT_GET_RUMBLE_INTERFACE (23 | RETRO_ENVIRONMENT_EXPERIMENTAL)
+#define RETRO_ENVIRONMENT_GET_RUMBLE_INTERFACE 23
                                            // struct retro_rumble_interface * --
                                            // Gets an interface which is used by a libretro core to set state of rumble motors in controllers.
                                            // A strong and weak motor is supported, and they can be controlled indepedently.
