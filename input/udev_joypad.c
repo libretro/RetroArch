@@ -240,16 +240,19 @@ static bool udev_set_rumble(unsigned i, enum retro_rumble_effect effect, uint16_
       pad->strength[effect] = strength;
    }
 
-   struct input_event play;
-   memset(&play, 0, sizeof(play));
-   play.type = EV_FF;
-   play.code = pad->effects[effect];
-   play.value = strength != 0;
-   if (write(pad->fd, &play, sizeof(play)) < (ssize_t)sizeof(play))
+   if (strength)
    {
-      RARCH_ERR("[udev]: Failed to set rumble effect %u on pad %u.\n",
-            effect, i);
-      return false;
+      struct input_event play;
+      memset(&play, 0, sizeof(play));
+      play.type = EV_FF;
+      play.code = pad->effects[effect];
+      play.value = 1;
+      if (write(pad->fd, &play, sizeof(play)) < (ssize_t)sizeof(play))
+      {
+         RARCH_ERR("[udev]: Failed to set rumble effect %u on pad %u.\n",
+               effect, i);
+         return false;
+      }
    }
 
    return true;
