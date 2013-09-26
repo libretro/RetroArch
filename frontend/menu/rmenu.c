@@ -2311,13 +2311,13 @@ static int select_rom(void *data, uint64_t input)
          return -1;
       }
    }
-   else if (input & (1ULL << DEVICE_NAV_L1))
+   else if (input & (1ULL << DEVICE_NAV_L2))
    {
       const char * drive_map = menu_drive_mapping_previous();
       if (drive_map != NULL)
          filebrowser_set_root_and_ext(rgui->browser, rgui->browser->current_dir.extensions, drive_map);
    }
-   else if (input & (1ULL << DEVICE_NAV_R1))
+   else if (input & (1ULL << DEVICE_NAV_R2))
    {
       const char * drive_map = menu_drive_mapping_next();
       if (drive_map != NULL)
@@ -2985,7 +2985,6 @@ static void* rgui_init(void)
 
 static void rgui_free(void *data)
 {
-   rgui_handle_t *rgui = (rgui_handle_t*)data;
 #ifdef _XBOX1
 #ifdef HAVE_MENU_PANEL
    if (menu_panel->vertex_buf)

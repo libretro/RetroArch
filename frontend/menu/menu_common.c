@@ -265,9 +265,9 @@ void filebrowser_update(void *data, uint64_t input, const char *extensions)
       action = FILEBROWSER_ACTION_RIGHT;
    else if (input & (1ULL << DEVICE_NAV_LEFT))
       action = FILEBROWSER_ACTION_LEFT;
-   else if (input & (1ULL << DEVICE_NAV_R2))
+   else if (input & (1ULL << DEVICE_NAV_R1))
       action = FILEBROWSER_ACTION_SCROLL_DOWN;
-   else if (input & (1ULL << DEVICE_NAV_L2))
+   else if (input & (1ULL << DEVICE_NAV_L1))
       action = FILEBROWSER_ACTION_SCROLL_UP;
    else if (input & (1ULL << DEVICE_NAV_A))
    {
@@ -717,6 +717,8 @@ static uint64_t rgui_input(void)
       RETRO_DEVICE_ID_JOYPAD_RIGHT,  DEVICE_NAV_RIGHT,
       RETRO_DEVICE_ID_JOYPAD_A,      DEVICE_NAV_A,
       RETRO_DEVICE_ID_JOYPAD_B,      DEVICE_NAV_B,
+      RETRO_DEVICE_ID_JOYPAD_L,      DEVICE_NAV_L,
+      RETRO_DEVICE_ID_JOYPAD_R,      DEVICE_NAV_R,
       RETRO_DEVICE_ID_JOYPAD_START,  DEVICE_NAV_START,
       RETRO_DEVICE_ID_JOYPAD_SELECT, DEVICE_NAV_SELECT,
    };
@@ -737,31 +739,24 @@ static uint64_t rgui_input(void)
 
    rgui->trigger_state = input_state & ~rgui->old_input_state;
 
-#if defined(HAVE_RGUI)
    rgui->do_held = (input_state & (
-         (1ULL << DEVICE_NAV_UP) |
-         (1ULL << DEVICE_NAV_DOWN) |
-         (1ULL << DEVICE_NAV_LEFT) | 
-         (1ULL << DEVICE_NAV_RIGHT))) &&
-      !(input_state & (1ULL << DEVICE_NAV_MENU));
-#elif defined(HAVE_RMENU)
-   rgui->do_held = (input_state & (
-            (1ULL << DEVICE_NAV_LEFT) |
-            (1ULL << DEVICE_NAV_RIGHT) |
-            (1ULL << DEVICE_NAV_UP) |
-            (1ULL << DEVICE_NAV_DOWN) |
-            (1ULL << RARCH_ANALOG_LEFT_Y_DPAD_UP) |
-            (1ULL << RARCH_ANALOG_LEFT_Y_DPAD_DOWN) |
-            (1ULL << RARCH_ANALOG_LEFT_X_DPAD_LEFT) |
-            (1ULL << RARCH_ANALOG_LEFT_X_DPAD_RIGHT) |
-            (1ULL << RARCH_ANALOG_RIGHT_Y_DPAD_UP) |
-            (1ULL << RARCH_ANALOG_RIGHT_Y_DPAD_DOWN) |
-            (1ULL << RARCH_ANALOG_RIGHT_X_DPAD_LEFT) |
-            (1ULL << RARCH_ANALOG_RIGHT_X_DPAD_RIGHT) |
-            (1ULL << DEVICE_NAV_L2) |
-            (1ULL << DEVICE_NAV_R2)
-            )) && !(input_state & (1ULL << DEVICE_NAV_MENU));
+            (1ULL << DEVICE_NAV_LEFT)
+            | (1ULL << DEVICE_NAV_RIGHT)
+            | (1ULL << DEVICE_NAV_UP)
+            | (1ULL << DEVICE_NAV_DOWN)
+            | (1ULL << DEVICE_NAV_L1)
+            | (1ULL << DEVICE_NAV_R1)
+#if defined(HAVE_RMENU)
+            | (1ULL << RARCH_ANALOG_LEFT_Y_DPAD_UP)
+            | (1ULL << RARCH_ANALOG_LEFT_Y_DPAD_DOWN)
+            | (1ULL << RARCH_ANALOG_LEFT_X_DPAD_LEFT)
+            | (1ULL << RARCH_ANALOG_LEFT_X_DPAD_RIGHT)
+            | (1ULL << RARCH_ANALOG_RIGHT_Y_DPAD_UP)
+            | (1ULL << RARCH_ANALOG_RIGHT_Y_DPAD_DOWN)
+            | (1ULL << RARCH_ANALOG_RIGHT_X_DPAD_LEFT)
+            | (1ULL << RARCH_ANALOG_RIGHT_X_DPAD_RIGHT)
 #endif
+            )) && !(input_state & (1ULL << DEVICE_NAV_MENU));
 
    return input_state;
 }

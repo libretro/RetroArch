@@ -2657,6 +2657,10 @@ static int rgui_iterate(void *data)
       action = RGUI_ACTION_LEFT;
    else if (rgui->trigger_state & (1ULL << DEVICE_NAV_RIGHT))
       action = RGUI_ACTION_RIGHT;
+   else if (rgui->trigger_state & (1ULL << DEVICE_NAV_L))
+      action = RGUI_ACTION_SCROLL_UP;
+   else if (rgui->trigger_state & (1ULL << DEVICE_NAV_R))
+      action = RGUI_ACTION_SCROLL_DOWN;
    else if (rgui->trigger_state & (1ULL << DEVICE_NAV_B))
       action = RGUI_ACTION_CANCEL;
    else if (rgui->trigger_state & (1ULL << DEVICE_NAV_A))
@@ -2708,6 +2712,18 @@ static int rgui_iterate(void *data)
       case RGUI_ACTION_RIGHT:
          if (rgui->selection_ptr + 8 < rgui->selection_buf->size)
             rgui->selection_ptr += 8;
+         else
+            rgui->selection_ptr = rgui->selection_buf->size - 1;
+         break;
+      case RGUI_ACTION_SCROLL_UP:
+         if (rgui->selection_ptr > 16)
+            rgui->selection_ptr -= 16;
+         else
+            rgui->selection_ptr = 0;
+         break;
+      case RGUI_ACTION_SCROLL_DOWN:
+         if (rgui->selection_ptr + 16 < rgui->selection_buf->size)
+            rgui->selection_ptr += 16;
          else
             rgui->selection_ptr = rgui->selection_buf->size - 1;
          break;
