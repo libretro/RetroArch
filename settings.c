@@ -1099,6 +1099,7 @@ bool config_save_file(const char *path)
    config_set_bool(conf, "custom_bgm_enable", g_extern.lifecycle_mode_state & (1ULL << MODE_AUDIO_CUSTOM_BGM_ENABLE));
 
    config_set_string(conf, "input_driver", g_settings.input.driver);
+   config_set_string(conf, "input_joypad_driver", g_settings.input.joypad_driver);
    for (unsigned i = 0; i < MAX_PLAYERS; i++)
    {
       char cfg[64];
