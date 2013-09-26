@@ -433,7 +433,7 @@ void load_menu_game_prepare(void)
    rgui->msg_force = true;
 
    if (menu_ctx && menu_ctx->iterate)
-      menu_ctx->iterate(rgui);
+      menu_ctx->iterate(rgui, RGUI_ACTION_NOOP);
 #endif
 
    // Draw frame for loading message
@@ -850,7 +850,7 @@ bool menu_iterate(void)
       action = RGUI_ACTION_SETTINGS;
 
    if (menu_ctx && menu_ctx->iterate)
-   input_entry_ret = menu_ctx->iterate(rgui, action);
+      input_entry_ret = menu_ctx->iterate(rgui, action);
 
    if (driver.video_poke && driver.video_poke->set_texture_enable)
       driver.video_poke->set_texture_enable(driver.video_data, rgui->frame_buf_show, MENU_TEXTURE_FULLSCREEN);
