@@ -180,7 +180,6 @@ static void shader_manager_get_str_filter(char *type_str,
 
 static unsigned char menu_stack_enum_array[10];
 static unsigned stack_idx = 0;
-static uint8_t selected = 0;
 static unsigned shader_choice_set_shader_slot = 0;
 static unsigned setting_page_number = 0;
 
@@ -200,15 +199,15 @@ static void menu_stack_pop(unsigned menu_type)
       case INGAME_MENU_AUDIO_OPTIONS:
       case INGAME_MENU_INPUT_OPTIONS:
       case INGAME_MENU_PATH_OPTIONS:
-         selected = FIRST_INGAME_MENU_SETTING;
+         rgui->selection_ptr = FIRST_INGAME_MENU_SETTING;
          rgui->frame_buf_show = true;
          break;
       case INGAME_MENU_SHADER_OPTIONS:
-         selected = FIRST_VIDEO_SETTING;
+         rgui->selection_ptr = FIRST_VIDEO_SETTING;
          break;
 #ifdef HAVE_SHADER_MANAGER
       case CGP_CHOICE:
-         selected = FIRST_SHADERMAN_SETTING;
+         rgui->selection_ptr = FIRST_SHADERMAN_SETTING;
          break;
 #endif
       default:
@@ -236,27 +235,27 @@ static void menu_stack_push(unsigned menu_type, bool prev_dir)
    switch (menu_type)
    {
       case INGAME_MENU:
-         selected = FIRST_INGAME_MENU_SETTING;
+         rgui->selection_ptr = FIRST_INGAME_MENU_SETTING;
          break;
       case INGAME_MENU_VIDEO_OPTIONS:
-         selected = FIRST_VIDEO_SETTING;
+         rgui->selection_ptr = FIRST_VIDEO_SETTING;
          break;
 #ifdef HAVE_SHADER_MANAGER
       case INGAME_MENU_SHADER_OPTIONS:
-         selected = FIRST_SHADERMAN_SETTING;
+         rgui->selection_ptr = FIRST_SHADERMAN_SETTING;
          break;
 #endif
       case INGAME_MENU_AUDIO_OPTIONS:
-         selected = FIRST_AUDIO_SETTING;
+         rgui->selection_ptr = FIRST_AUDIO_SETTING;
          break;
       case INGAME_MENU_INPUT_OPTIONS:
-         selected = FIRST_CONTROLS_SETTING_PAGE_1;
+         rgui->selection_ptr = FIRST_CONTROLS_SETTING_PAGE_1;
          break;
       case INGAME_MENU_PATH_OPTIONS:
-         selected = FIRST_PATH_SETTING;
+         rgui->selection_ptr = FIRST_PATH_SETTING;
          break;
       case INGAME_MENU_SETTINGS:
-         selected = FIRST_SETTING;
+         rgui->selection_ptr = FIRST_SETTING;
          break;
       default:
          break;
@@ -2184,7 +2183,7 @@ static int select_setting(void *data, uint64_t input)
       }
 
       char setting_text_buf[256];
-      menu_ticker_line(setting_text_buf, TICKER_LABEL_CHARS_MAX_PER_LINE, g_extern.frame_count / 15, setting_text, i == selected);
+      menu_ticker_line(setting_text_buf, TICKER_LABEL_CHARS_MAX_PER_LINE, g_extern.frame_count / 15, setting_text, i == rgui->selection_ptr);
 
       if (!(j < NUM_ENTRY_PER_PAGE))
       {
@@ -2203,7 +2202,7 @@ static int select_setting(void *data, uint64_t input)
       font_parms.x = POSITION_X; 
       font_parms.y = y_increment;
       font_parms.scale = FONT_SIZE_VARIABLE;
-      font_parms.color = (i == selected) ? YELLOW : WHITE;
+      font_parms.color = (i == rgui->selection_ptr) ? YELLOW : WHITE;
 
       if (driver.video_poke->set_osd_msg)
          driver.video_poke->set_osd_msg(driver.video_data, text, &font_parms);
@@ -2214,7 +2213,7 @@ static int select_setting(void *data, uint64_t input)
       if (driver.video_poke->set_osd_msg)
          driver.video_poke->set_osd_msg(driver.video_data, setting_text_buf, &font_parms);
 
-      if (i != selected)
+      if (i != rgui->selection_ptr)
          continue;
 
 #ifdef HAVE_MENU_PANEL
@@ -2242,23 +2241,23 @@ static int select_setting(void *data, uint64_t input)
 
    if (input & (1ULL << DEVICE_NAV_UP))
    {
-      if (selected == first_setting)
-         selected = max_settings-1;
+      if (rgui->selection_ptr == first_setting)
+         rgui->selection_ptr = max_settings-1;
       else
-         selected--;
+         rgui->selection_ptr--;
 
-      if (items_pages[selected] != setting_page_number)
-         setting_page_number = items_pages[selected];
+      if (items_pages[rgui->selection_ptr] != setting_page_number)
+         setting_page_number = items_pages[rgui->selection_ptr];
    }
       
    if (input & (1ULL << DEVICE_NAV_DOWN))
    {
-      selected++;
+      rgui->selection_ptr++;
 
-      if (selected >= max_settings)
-         selected = first_setting; 
-      if (items_pages[selected] != setting_page_number)
-         setting_page_number = items_pages[selected];
+      if (rgui->selection_ptr >= max_settings)
+         rgui->selection_ptr = first_setting; 
+      if (items_pages[rgui->selection_ptr] != setting_page_number)
+         setting_page_number = items_pages[rgui->selection_ptr];
    }
 
    /* back to ROM menu if CIRCLE is pressed */
@@ -2266,7 +2265,7 @@ static int select_setting(void *data, uint64_t input)
          || (input & (1ULL << DEVICE_NAV_MENU)))
       menu_stack_pop(rgui->menu_type);
 
-   ret = set_setting_action(rgui->menu_type, selected, input);
+   ret = set_setting_action(rgui->menu_type, rgui->selection_ptr, input);
 
    if (ret != 0)
       return ret;
