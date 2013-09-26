@@ -2643,32 +2643,9 @@ static bool directory_parse(rgui_handle_t *rgui, const char *directory, unsigned
    return true;
 }
 
-static int rgui_iterate(void *data)
+static int rgui_iterate(void *data, unsigned action)
 {
    rgui_handle_t *rgui = (rgui_handle_t*)data;
-   rgui_action_t action = RGUI_ACTION_NOOP;
-
-   // don't run anything first frame, only capture held inputs for old_input_state
-   if (rgui->trigger_state & (1ULL << DEVICE_NAV_UP))
-      action = RGUI_ACTION_UP;
-   else if (rgui->trigger_state & (1ULL << DEVICE_NAV_DOWN))
-      action = RGUI_ACTION_DOWN;
-   else if (rgui->trigger_state & (1ULL << DEVICE_NAV_LEFT))
-      action = RGUI_ACTION_LEFT;
-   else if (rgui->trigger_state & (1ULL << DEVICE_NAV_RIGHT))
-      action = RGUI_ACTION_RIGHT;
-   else if (rgui->trigger_state & (1ULL << DEVICE_NAV_L))
-      action = RGUI_ACTION_SCROLL_UP;
-   else if (rgui->trigger_state & (1ULL << DEVICE_NAV_R))
-      action = RGUI_ACTION_SCROLL_DOWN;
-   else if (rgui->trigger_state & (1ULL << DEVICE_NAV_B))
-      action = RGUI_ACTION_CANCEL;
-   else if (rgui->trigger_state & (1ULL << DEVICE_NAV_A))
-      action = RGUI_ACTION_OK;
-   else if (rgui->trigger_state & (1ULL << DEVICE_NAV_SELECT))
-      action = RGUI_ACTION_START;
-   else if (rgui->trigger_state & (1ULL << DEVICE_NAV_START))
-      action = RGUI_ACTION_SETTINGS;
 
    const char *dir = 0;
    unsigned menu_type = 0;

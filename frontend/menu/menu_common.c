@@ -252,40 +252,49 @@ bool filebrowser_iterate(void *data, unsigned action)
    return ret;
 }
 
-void filebrowser_update(void *data, uint64_t input, const char *extensions)
+void filebrowser_update(void *data, uint64_t action_ori, const char *extensions)
 {
    filebrowser_action_t action = FILEBROWSER_ACTION_NOOP;
    bool ret = true;
 
-   if (input & (1ULL << DEVICE_NAV_DOWN))
-      action = FILEBROWSER_ACTION_DOWN;
-   else if (input & (1ULL << DEVICE_NAV_UP))
-      action = FILEBROWSER_ACTION_UP;
-   else if (input & (1ULL << DEVICE_NAV_RIGHT))
-      action = FILEBROWSER_ACTION_RIGHT;
-   else if (input & (1ULL << DEVICE_NAV_LEFT))
-      action = FILEBROWSER_ACTION_LEFT;
-   else if (input & (1ULL << DEVICE_NAV_R1))
-      action = FILEBROWSER_ACTION_SCROLL_DOWN;
-   else if (input & (1ULL << DEVICE_NAV_L1))
-      action = FILEBROWSER_ACTION_SCROLL_UP;
-   else if (input & (1ULL << DEVICE_NAV_A))
+   switch (action_ori)
    {
-      char tmp_str[PATH_MAX];
-      fill_pathname_parent_dir(tmp_str, rgui->browser->current_dir.directory_path, sizeof(tmp_str));
+      case RGUI_ACTION_DOWN:
+         action = FILEBROWSER_ACTION_DOWN;
+         break;
+      case RGUI_ACTION_UP:
+         action = FILEBROWSER_ACTION_UP;
+         break;
+      case RGUI_ACTION_RIGHT:
+         action = FILEBROWSER_ACTION_RIGHT;
+         break;
+      case RGUI_ACTION_LEFT:
+         action = FILEBROWSER_ACTION_LEFT;
+         break;
+      case RGUI_ACTION_SCROLL_DOWN:
+         action = FILEBROWSER_ACTION_SCROLL_DOWN;
+         break;
+      case RGUI_ACTION_SCROLL_UP:
+         action = FILEBROWSER_ACTION_SCROLL_UP;
+         break;
+      case RGUI_ACTION_CANCEL:
+         {
+            char tmp_str[PATH_MAX];
+            fill_pathname_parent_dir(tmp_str, rgui->browser->current_dir.directory_path, sizeof(tmp_str));
 
-      if (tmp_str[0] != '\0')
-         action = FILEBROWSER_ACTION_CANCEL;
-   }
-   else if (input & (1ULL << DEVICE_NAV_START))
-   {
-      action = FILEBROWSER_ACTION_RESET;
-      filebrowser_set_root_and_ext(rgui->browser, NULL, default_paths.filesystem_root_dir);
-      strlcpy(rgui->browser->current_dir.extensions, extensions,
-            sizeof(rgui->browser->current_dir.extensions));
+            if (tmp_str[0] != '\0')
+               action = FILEBROWSER_ACTION_CANCEL;
+         }
+         break;
+      case RGUI_ACTION_START:
+         action = FILEBROWSER_ACTION_RESET;
+         filebrowser_set_root_and_ext(rgui->browser, NULL, default_paths.filesystem_root_dir);
+         strlcpy(rgui->browser->current_dir.extensions, extensions,
+               sizeof(rgui->browser->current_dir.extensions));
 #ifdef HAVE_RMENU_XUI
-      filebrowser_fetch_directory_entries(1ULL << DEVICE_NAV_B);
+         filebrowser_fetch_directory_entries(1ULL << DEVICE_NAV_B);
 #endif
+         break;
    }
 
    if (action != FILEBROWSER_ACTION_NOOP)
@@ -764,6 +773,7 @@ static uint64_t rgui_input(void)
 bool menu_iterate(void)
 {
    rarch_time_t time, delta, target_msec, sleep_msec;
+   rgui_action_t action;
    static bool initial_held = true;
    static bool first_held = false;
    uint64_t input_state = 0;
@@ -815,8 +825,32 @@ bool menu_iterate(void)
    rgui->delay_count++;
    rgui->old_input_state = input_state;
 
+   action = RGUI_ACTION_NOOP;
+
+   // don't run anything first frame, only capture held inputs for old_input_state
+   if (rgui->trigger_state & (1ULL << DEVICE_NAV_UP))
+      action = RGUI_ACTION_UP;
+   else if (rgui->trigger_state & (1ULL << DEVICE_NAV_DOWN))
+      action = RGUI_ACTION_DOWN;
+   else if (rgui->trigger_state & (1ULL << DEVICE_NAV_LEFT))
+      action = RGUI_ACTION_LEFT;
+   else if (rgui->trigger_state & (1ULL << DEVICE_NAV_RIGHT))
+      action = RGUI_ACTION_RIGHT;
+   else if (rgui->trigger_state & (1ULL << DEVICE_NAV_L))
+      action = RGUI_ACTION_SCROLL_UP;
+   else if (rgui->trigger_state & (1ULL << DEVICE_NAV_R))
+      action = RGUI_ACTION_SCROLL_DOWN;
+   else if (rgui->trigger_state & (1ULL << DEVICE_NAV_B))
+      action = RGUI_ACTION_CANCEL;
+   else if (rgui->trigger_state & (1ULL << DEVICE_NAV_A))
+      action = RGUI_ACTION_OK;
+   else if (rgui->trigger_state & (1ULL << DEVICE_NAV_SELECT))
+      action = RGUI_ACTION_START;
+   else if (rgui->trigger_state & (1ULL << DEVICE_NAV_START))
+      action = RGUI_ACTION_SETTINGS;
+
    if (menu_ctx && menu_ctx->iterate)
-   input_entry_ret = menu_ctx->iterate(rgui);
+   input_entry_ret = menu_ctx->iterate(rgui, action);
 
    if (driver.video_poke && driver.video_poke->set_texture_enable)
       driver.video_poke->set_texture_enable(driver.video_data, rgui->frame_buf_show, MENU_TEXTURE_FULLSCREEN);

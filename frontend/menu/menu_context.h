@@ -28,7 +28,7 @@
 
 typedef struct menu_ctx_driver
 {
-   int (*iterate)(void*);
+   int (*iterate)(void*, unsigned);
    void* (*init)(void);
    void (*free)(void*);
 
