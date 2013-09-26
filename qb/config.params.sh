@@ -1,6 +1,7 @@
 HAVE_RGUI=yes           # Disable RGUI
 HAVE_DYNAMIC=yes        # Disable dynamic loading of libretro library
 HAVE_SDL=auto           # SDL support
+HAVE_UDEV=auto          # Udev/Evdev gamepad support
 HAVE_LIBRETRO=          # libretro library used
 HAVE_MAN_DIR=           # Manpage install directory
 HAVE_THREADS=auto       # Threading support
