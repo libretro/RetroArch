@@ -56,7 +56,7 @@ struct udev_joypad
 
    int num_effects;
    int effects[2]; // [0] - strong, [1] - weak 
-   bool support_ff[2];
+   bool has_set_ff[2];
 
    char *ident;
    char *path;
@@ -183,8 +183,36 @@ static bool udev_set_rumble(unsigned i, enum retro_rumble_effect effect, bool st
 
    if (pad->fd < 0)
       return false;
-   if (!pad->support_ff[effect])
+   if (pad->num_effects < 2)
       return false;
+
+   // Have to defer the force feedback settings to here.
+   // For some reason, effects are getting dropped when they're set at init.
+   // Setting at init seems to work for pads which are hotplugged ...
+   //
+   // This approach might be cleaner in the end if we end up supporting configurable force feedback.
+   if (!pad->has_set_ff[effect])
+   {
+      struct ff_effect e;
+      memset(&e, 0, sizeof(e));
+      e.type = FF_RUMBLE;
+      e.id = -1;
+      switch (effect)
+      {
+         case RETRO_RUMBLE_STRONG: e.u.rumble.strong_magnitude = 0xc000; break;
+         case RETRO_RUMBLE_WEAK: e.u.rumble.weak_magnitude = 0xc000; break;
+         default: return false;
+      }
+
+      if (ioctl(pad->fd, EVIOCSFF, &e) < 0)
+      {
+         RARCH_ERR("Failed to set rumble effect on pad #%u.\n", i);
+         return false;
+      }
+
+      pad->has_set_ff[effect] = true;
+      pad->effects[effect] = e.id;
+   }
 
    struct input_event play;
    memset(&play, 0, sizeof(play));
@@ -214,11 +242,83 @@ static void udev_joypad_poll(void)
    (((1UL << ((nr) % (sizeof(long) * CHAR_BIT))) & ((addr)[(nr) / (sizeof(long) * CHAR_BIT)])) != 0)
 #define NBITS(x) ((((x) - 1) / (sizeof(long) * CHAR_BIT)) + 1)
 
+#if 0
+static void test_initial_rumble(int fd, const char *path)
+{
+   // Check for rumble features.
+   unsigned long ffbit[NBITS(FF_MAX)] = {0};
+   if (ioctl(fd, EVIOCGBIT(EV_FF, sizeof(ffbit)), ffbit) >= 0)
+   {
+      if (test_bit(FF_RUMBLE, ffbit))
+         RARCH_LOG("[udev]: Pad (%s) supports force feedback.\n",
+               path);
+
+      int effects;
+      if (ioctl(fd, EVIOCGEFFECTS, &effects) >= 0)
+         RARCH_LOG("[udev]: Pad (%s) supports %d force feedback effects.\n", path, effects);
+
+      if (effects >= 2)
+      {
+         struct ff_effect effect;
+         bool support_ff[2];
+         int effects[2] = {-1, -1};
+
+         // Strong rumble.
+         memset(&effect, 0, sizeof(effect));
+         effect.type = FF_RUMBLE;
+         effect.id = -1;
+         effect.u.rumble.strong_magnitude = 0x8000;
+         effect.u.rumble.weak_magnitude = 0;
+         support_ff[0] = ioctl(fd, EVIOCSFF, &effect) == 0;
+         if (support_ff[0])
+         {
+            RARCH_LOG("[udev]: (%s) supports \"strong\" rumble effect (id %d).\n",
+                  path, effect.id);
+            effects[RETRO_RUMBLE_STRONG] = effect.id; // Gets updated by ioctl().
+         }
+
+         // Weak rumble.
+         memset(&effect, 0, sizeof(effect));
+         effect.type = FF_RUMBLE;
+         effect.id = -1;
+         effect.u.rumble.strong_magnitude = 0;
+         effect.u.rumble.weak_magnitude = 0xc000;
+         support_ff[1] = ioctl(fd, EVIOCSFF, &effect) == 0;
+         if (support_ff[1])
+         {
+            RARCH_LOG("[udev]: Pad (%s) supports \"weak\" rumble effect (id %d).\n",
+                  path, effect.id);
+            effects[RETRO_RUMBLE_WEAK] = effect.id;
+         }
+
+         struct input_event play;
+         memset(&play, 0, sizeof(play));
+         play.type = EV_FF;
+         play.code = effects[0];
+         play.value = true;
+         write(fd, &play, sizeof(play));
+         rarch_sleep(500);
+         play.value = false;
+         write(fd, &play, sizeof(play));
+         rarch_sleep(500);
+         play.code = effects[1];
+         play.value = true;
+         write(fd, &play, sizeof(play));
+         rarch_sleep(500);
+         play.value = false;
+         write(fd, &play, sizeof(play));
+      }
+   }
+
+}
+#endif
+
 static int open_joystick(const char *path)
 {
    int fd = open(path, O_RDWR | O_NONBLOCK);
    if (fd < 0)
       return fd;
+
 
    unsigned long evbit[NBITS(EV_MAX)] = {0};
    unsigned long keybit[NBITS(KEY_MAX)] = {0};
@@ -232,6 +332,7 @@ static int open_joystick(const char *path)
    // Has to at least support EV_KEY interface.
    if (!test_bit(EV_KEY, evbit))
       goto error;
+
 
    return fd;
 
@@ -271,6 +372,7 @@ static bool add_pad(unsigned i, int fd, const char *path)
       RARCH_LOG("[udev]: Failed to get pad name.\n");
       return false;
    }
+
 
    RARCH_LOG("[udev]: Plugged pad: %s on port #%u.\n", pad->ident, i);
 
@@ -333,39 +435,6 @@ static bool add_pad(unsigned i, int fd, const char *path)
 
       if (ioctl(fd, EVIOCGEFFECTS, &pad->num_effects) >= 0)
          RARCH_LOG("[udev]: Pad #%u (%s) supports %d force feedback effects.\n", i, path, pad->num_effects);
-
-      if (pad->num_effects >= 2)
-      {
-         struct ff_effect effect;
-
-         // Strong rumble.
-         memset(&effect, 0, sizeof(effect));
-         effect.type = FF_RUMBLE;
-         effect.id = -1;
-         effect.u.rumble.strong_magnitude = 0x8000;
-         effect.u.rumble.weak_magnitude = 0;
-         pad->support_ff[0] = ioctl(fd, EVIOCSFF, &effect) == 0;
-         if (pad->support_ff[0])
-         {
-            RARCH_LOG("[udev]: Pad #%u (%s) supports \"strong\" rumble effect (id %d).\n",
-                  i, path, effect.id);
-            pad->effects[RETRO_RUMBLE_STRONG] = effect.id; // Gets updated by ioctl().
-         }
-
-         // Weak rumble.
-         memset(&effect, 0, sizeof(effect));
-         effect.type = FF_RUMBLE;
-         effect.id = -1;
-         effect.u.rumble.strong_magnitude = 0;
-         effect.u.rumble.weak_magnitude = 0xc000;
-         pad->support_ff[1] = ioctl(fd, EVIOCSFF, &effect) == 0;
-         if (pad->support_ff[1])
-         {
-            RARCH_LOG("[udev]: Pad #%u (%s) supports \"weak\" rumble effect (id %d).\n",
-                  i, path, effect.id);
-            pad->effects[RETRO_RUMBLE_WEAK] = effect.id; // Gets updated by ioctl().
-         }
-      }
    }
 
    return true;
@@ -406,6 +475,10 @@ static void check_device(const char *path, bool hotplugged)
       }
 #else
       (void)hotplugged;
+#endif
+
+#if 0
+      test_initial_rumble(fd, path);
 #endif
    }
    else
