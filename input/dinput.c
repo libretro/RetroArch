@@ -334,6 +334,12 @@ static void dinput_grab_mouse(void *data, bool state)
    IDirectInputDevice8_Acquire(di->mouse);
 }
 
+static bool dinput_set_rumble(void *data, unsigned port, enum retro_rumble_effect effect, bool state)
+{
+   struct dinput_input *di = (struct dinput_input*)data;
+   return input_joypad_set_rumble(di->joypad, port, effect, state);
+}
+
 const input_driver_t input_dinput = {
    dinput_init,
    dinput_poll,
@@ -344,6 +350,7 @@ const input_driver_t input_dinput = {
    "dinput",
 
    dinput_grab_mouse,
+   dinput_set_rumble,
 };
 
 // Keep track of which pad indexes are 360 controllers
@@ -651,6 +658,7 @@ const rarch_joypad_driver_t dinput_joypad = {
    dinput_joypad_button,
    dinput_joypad_axis,
    dinput_joypad_poll,
+   NULL,
    dinput_joypad_name,
    "dinput",
 };

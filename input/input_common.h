@@ -66,6 +66,7 @@ typedef struct rarch_joypad_driver
    bool (*button)(unsigned, uint16_t);
    int16_t (*axis)(unsigned, uint32_t);
    void (*poll)(void);
+   bool (*set_rumble)(unsigned, enum retro_rumble_effect, bool); // Optional
    const char *(*name)(unsigned);
 
    const char *ident;
@@ -81,6 +82,9 @@ bool input_joypad_pressed(const rarch_joypad_driver_t *driver,
 int16_t input_joypad_analog(const rarch_joypad_driver_t *driver,
       unsigned port, unsigned index, unsigned id, const struct retro_keybind *binds);
 
+bool input_joypad_set_rumble(const rarch_joypad_driver_t *driver,
+      unsigned port, enum retro_rumble_effect effect, bool state);
+
 int16_t input_joypad_axis_raw(const rarch_joypad_driver_t *driver,
       unsigned joypad, unsigned axis);
 bool input_joypad_button_raw(const rarch_joypad_driver_t *driver,
@@ -93,6 +97,7 @@ const char *input_joypad_name(const rarch_joypad_driver_t *driver, unsigned joyp
 
 extern const rarch_joypad_driver_t dinput_joypad;
 extern const rarch_joypad_driver_t linuxraw_joypad;
+extern const rarch_joypad_driver_t udev_joypad;
 extern const rarch_joypad_driver_t winxinput_joypad; // Named as such to avoid confusion with xb1/360 port code
 extern const rarch_joypad_driver_t sdl_joypad;
 

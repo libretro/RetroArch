@@ -756,6 +756,15 @@ bool rarch_environment_cb(unsigned cmd, void *data)
          break;
       }
 
+      case RETRO_ENVIRONMENT_GET_RUMBLE_INTERFACE:
+      {
+         RARCH_LOG("Environ GET_RUMBLE_INTERFACE.\n");
+         struct retro_rumble_interface *iface = (struct retro_rumble_interface*)data;
+         iface->set_rumble_state = driver_set_rumble_state;
+         break;
+      }
+
+      // Private extensions for internal use, not part of libretro API.
       case RETRO_ENVIRONMENT_SET_LIBRETRO_PATH:
          RARCH_LOG("Environ (Private) SET_LIBRETRO_PATH.\n");
 

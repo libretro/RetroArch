@@ -712,6 +712,7 @@ void rarch_set_fullscreen(bool fullscreen);
 void rarch_disk_control_set_eject(bool state, bool log);
 void rarch_disk_control_set_index(unsigned index);
 void rarch_disk_control_append_image(const char *path);
+bool rarch_set_rumble_state(unsigned port, enum retro_rumble_effect effect, bool enable);
 void rarch_init_autosave(void);
 void rarch_deinit_autosave(void);
 void rarch_take_screenshot(void);

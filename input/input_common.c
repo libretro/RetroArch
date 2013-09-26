@@ -51,6 +51,9 @@ static const rarch_joypad_driver_t *joypad_drivers[] = {
 #if defined(__linux) && !defined(ANDROID)
    &linuxraw_joypad,
 #endif
+#ifdef HAVE_UDEV
+   &udev_joypad,
+#endif
 #ifdef HAVE_SDL
    &sdl_joypad,
 #endif
@@ -101,6 +104,19 @@ const char *input_joypad_name(const rarch_joypad_driver_t *driver, unsigned joyp
       return NULL;
 
    return driver->name(joypad);
+}
+
+bool input_joypad_set_rumble(const rarch_joypad_driver_t *driver,
+      unsigned port, enum retro_rumble_effect effect, bool state)
+{
+   if (!driver || !driver->set_rumble)
+      return false;
+
+   int joy_index = g_settings.input.joypad_map[port];
+   if (joy_index < 0 || joy_index >= MAX_PLAYERS)
+      return false;
+
+   return driver->set_rumble(joy_index, effect, state);
 }
 
 bool input_joypad_pressed(const rarch_joypad_driver_t *driver,

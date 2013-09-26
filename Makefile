@@ -182,6 +182,7 @@ endif
 ifeq ($(HAVE_SDL), 1)
    OBJ += gfx/sdl_gfx.o input/sdl_input.o input/sdl_joypad.o audio/sdl_audio.o
    JOYCONFIG_OBJ += input/sdl_joypad.o
+   JOYCONFIG_LIBS += $(SDL_LIBS)
    DEFINES += $(SDL_CFLAGS) $(BSD_LOCAL_INC)
    LIBS += $(SDL_LIBS)
 endif
@@ -316,11 +317,19 @@ ifeq ($(HAVE_PYTHON), 1)
    OBJ += gfx/py_state/py_state.o
 endif
 
+ifeq ($(HAVE_UDEV), 1)
+   DEFINES += $(UDEV_CFLAGS)
+   LIBS += $(UDEV_LIBS)
+   JOYCONFIG_LIBS += $(UDEV_LIBS)
+   OBJ += input/udev_joypad.o
+   JOYCONFIG_OBJ += tools/udev_joypad.o
+endif
+
 ifeq ($(HAVE_NEON),1)
-	OBJ += audio/sinc_neon.o
+   OBJ += audio/sinc_neon.o
 	# When compiled without this, tries to attempt to compile sinc lerp,
 	# which will error out
-	DEFINES += -DSINC_LOWER_QUALITY -DHAVE_NEON
+   DEFINES += -DSINC_LOWER_QUALITY -DHAVE_NEON
 endif
 
 OBJ += audio/utils.o
@@ -376,9 +385,9 @@ retroarch: $(OBJ)
 tools/retroarch-joyconfig: $(JOYCONFIG_OBJ)
 	@$(if $(Q), $(shell echo echo LD $@),)
 ifeq ($(CXX_BUILD), 1)
-	$(Q)$(CXX) -o $@ $(JOYCONFIG_OBJ) $(SDL_LIBS) $(LDFLAGS) $(LIBRARY_DIRS)
+	$(Q)$(CXX) -o $@ $(JOYCONFIG_OBJ) $(JOYCONFIG_LIBS) $(LDFLAGS) $(LIBRARY_DIRS)
 else
-	$(Q)$(CC) -o $@ $(JOYCONFIG_OBJ) $(SDL_LIBS) $(LDFLAGS) $(LIBRARY_DIRS)
+	$(Q)$(CC) -o $@ $(JOYCONFIG_OBJ) $(JOYCONFIG_LIBS) $(LDFLAGS) $(LIBRARY_DIRS)
 endif
 
 tools/retrolaunch/retrolaunch: $(RETROLAUNCH_OBJ)
@@ -390,6 +399,10 @@ tools/retrolaunch/retrolaunch: $(RETROLAUNCH_OBJ)
 	$(Q)$(CC) $(CFLAGS) $(DEFINES) -c -o $@ $<
 
 tools/linuxraw_joypad.o: input/linuxraw_joypad.c
+	@$(if $(Q), $(shell echo echo CC $<),)
+	$(Q)$(CC) $(CFLAGS) $(DEFINES) -DIS_JOYCONFIG -c -o $@ $<
+
+tools/udev_joypad.o: input/udev_joypad.c
 	@$(if $(Q), $(shell echo echo CC $<),)
 	$(Q)$(CC) $(CFLAGS) $(DEFINES) -DIS_JOYCONFIG -c -o $@ $<
 

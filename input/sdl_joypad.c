@@ -170,6 +170,7 @@ const rarch_joypad_driver_t sdl_joypad = {
    sdl_joypad_button,
    sdl_joypad_axis,
    sdl_joypad_poll,
+   NULL,
    sdl_joypad_name,
    "sdl",
 };

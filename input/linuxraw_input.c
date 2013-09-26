@@ -285,6 +285,12 @@ static void linuxraw_input_free(void *data)
    free(data);
 }
 
+static bool linuxraw_set_rumble(void *data, unsigned port, enum retro_rumble_effect effect, bool state)
+{
+   linuxraw_input_t *linuxraw = (linuxraw_input_t*)data;
+   return input_joypad_set_rumble(linuxraw->joypad, port, effect, state);
+}
+
 static void linuxraw_input_poll(void *data)
 {
    linuxraw_input_t *linuxraw = (linuxraw_input_t*)data;
@@ -316,5 +322,7 @@ const input_driver_t input_linuxraw = {
    linuxraw_bind_button_pressed,
    linuxraw_input_free,
    NULL,
-   "linuxraw"
+   "linuxraw",
+   NULL,
+   linuxraw_set_rumble,
 };

@@ -84,14 +84,14 @@ static bool linuxraw_joypad_init_pad(const char *path, struct linuxraw_joypad *p
       {
          RARCH_LOG("[Joypad]: Found pad: %s on %s.\n", pad->ident, path);
 
+#ifndef IS_JOYCONFIG
          if (g_hotplug)
          {
             char msg[512];
             snprintf(msg, sizeof(msg), "Joypad #%u (%s) connected.", (unsigned)(pad - g_pads), pad->ident);
-#ifndef IS_JOYCONFIG
             msg_queue_push(g_extern.msg_queue, msg, 0, 60);
-#endif
          }
+#endif
       }
 
       else
@@ -137,14 +137,14 @@ static void handle_plugged_pad(void)
          {
             if (g_pads[index].fd >= 0)
             {
+#ifndef IS_JOYCONFIG
                if (g_hotplug)
                {
                   char msg[512];
                   snprintf(msg, sizeof(msg), "Joypad #%u (%s) disconnected.", index, g_pads[index].ident);
-#ifndef IS_JOYCONFIG
                   msg_queue_push(g_extern.msg_queue, msg, 0, 60);
-#endif
                }
+#endif
 
                RARCH_LOG("[Joypad]: Joypad %s disconnected.\n", g_pads[index].ident);
                close(g_pads[index].fd);
@@ -312,6 +312,7 @@ const rarch_joypad_driver_t linuxraw_joypad = {
    linuxraw_joypad_button,
    linuxraw_joypad_axis,
    linuxraw_joypad_poll,
+   NULL,
    linuxraw_joypad_name,
    "linuxraw",
 };
