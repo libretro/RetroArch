@@ -217,6 +217,12 @@ int main_entry(int argc, char *argv[])
          g_extern.lifecycle_mode_state |= 1ULL << MODE_MENU_PREINIT;
          // Menu should always run with vsync on.
          video_set_nonblock_state_func(false);
+         // Stop all rumbling when entering RGUI.
+         for (unsigned i = 0; i < MAX_PLAYERS; i++)
+         {
+            driver_set_rumble_state(i, RETRO_RUMBLE_STRONG, 0);
+            driver_set_rumble_state(i, RETRO_RUMBLE_WEAK, 0);
+         }
 
          if (driver.audio_data)
             audio_stop_func();
