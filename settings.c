@@ -1095,7 +1095,6 @@ bool config_save_file(const char *path)
    config_set_int(conf, "sound_mode", g_extern.console.sound.mode);
    config_set_int(conf, "state_slot", g_extern.state_slot);
    config_set_int(conf, "audio_mute", g_extern.audio_data.mute);
-   config_set_int(conf, "screen_orientation", g_extern.console.screen.orientation);
    config_set_bool(conf, "custom_bgm_enable", g_extern.lifecycle_mode_state & (1ULL << MODE_AUDIO_CUSTOM_BGM_ENABLE));
 
    config_set_string(conf, "input_driver", g_settings.input.driver);
