@@ -216,7 +216,7 @@ static bool udev_set_rumble(unsigned i, enum retro_rumble_effect effect, uint16_
    // Setting at init seems to work for pads which are hotplugged ...
    //
    // This approach might be cleaner in the end if we end up supporting configurable force feedback.
-   if (!pad->has_set_ff[effect])
+   if (!pad->has_set_ff[effect] && strength)
    {
       struct ff_effect e;
       memset(&e, 0, sizeof(e));
@@ -237,8 +237,8 @@ static bool udev_set_rumble(unsigned i, enum retro_rumble_effect effect, uint16_
 
       pad->has_set_ff[effect] = true;
       pad->effects[effect] = e.id;
-      pad->strength[effect] = strength;
    }
+   pad->strength[effect] = strength;
 
    if (strength)
    {
@@ -348,7 +348,6 @@ static int open_joystick(const char *path)
    if (fd < 0)
       return fd;
 
-
    unsigned long evbit[NBITS(EV_MAX)] = {0};
    unsigned long keybit[NBITS(KEY_MAX)] = {0};
    unsigned long absbit[NBITS(ABS_MAX)] = {0};
@@ -361,7 +360,6 @@ static int open_joystick(const char *path)
    // Has to at least support EV_KEY interface.
    if (!test_bit(EV_KEY, evbit))
       goto error;
-
 
    return fd;
 
@@ -401,7 +399,6 @@ static bool add_pad(unsigned i, int fd, const char *path)
       RARCH_LOG("[udev]: Failed to get pad name.\n");
       return false;
    }
-
 
    RARCH_LOG("[udev]: Plugged pad: %s on port #%u.\n", pad->ident, i);
 
