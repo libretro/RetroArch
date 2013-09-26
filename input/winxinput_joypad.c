@@ -65,6 +65,12 @@ typedef struct
    XINPUT_GAMEPAD Gamepad;
 } XINPUT_STATE;
 
+typedef struct
+{
+  uint16_t wLeftMotorSpeed;
+  uint16_t wRightMotorSpeed;
+} XINPUT_VIBRATION;
+
 #endif
 
 // Guide constant is not officially documented
@@ -93,6 +99,9 @@ static HINSTANCE g_winxinput_dll;
 typedef uint32_t (__stdcall *XInputGetStateEx_t)(uint32_t, XINPUT_STATE*);
 static XInputGetStateEx_t g_XInputGetStateEx;
 
+typedef uint32_t (__stdcall *XInputSetState_t)(uint32_t, XINPUT_VIBRATION*);
+static XInputSetState_t g_XInputSetState;
+
 // Guide button may or may not be available
 static bool g_winxinput_guide_button_supported;
 
@@ -101,6 +110,8 @@ typedef struct
    XINPUT_STATE xstate;
    bool         connected;
 } winxinput_joypad_state;
+
+static XINPUT_VIBRATION g_xinput_rumble_state;
 
 static winxinput_joypad_state g_winxinput_states[4];
 
@@ -174,10 +185,17 @@ static bool winxinput_joypad_init(void)
       g_XInputGetStateEx = (XInputGetStateEx_t) GetProcAddress(g_winxinput_dll, "XInputGetState");
       if (!g_XInputGetStateEx)
       {
-         RARCH_ERR("Failed to init XInput: xinput1_3.dll is invalid or corrupt.\n");
+         RARCH_ERR("Failed to init XInput: DLL is invalid or corrupt.\n");
          return false; // DLL was loaded but did not contain the correct function.
       }
       RARCH_WARN("XInput: No guide button support.\n");
+   }
+   
+   g_XInputSetState = (XInputSetState_t) GetProcAddress(g_winxinput_dll, "XInputSetState");
+   if (!g_XInputSetState)
+   {
+      RARCH_ERR("Failed to init XInput: DLL is invalid or corrupt.\n");
+      return false; // DLL was loaded but did not contain the correct function.
    }
    
    // Zero out the states
@@ -364,6 +382,21 @@ static void winxinput_joypad_poll(void)
    dinput_joypad.poll();
 }
 
+static bool winxinput_joypad_rumble(unsigned pad, enum retro_rumble_effect effect, uint16_t strength)
+{
+   // Consider the low frequency (left) motor the "strong" one.
+   if (effect == RETRO_RUMBLE_STRONG)
+      g_xinput_rumble_state.wLeftMotorSpeed = strength;
+   else if (effect == RETRO_RUMBLE_WEAK)
+      g_xinput_rumble_state.wRightMotorSpeed = strength;
+      
+   int xplayer = pad_index_to_xplayer_index(pad);
+   if (xplayer == -1)
+      return dinput_joypad.set_rumble(pad, effect, strength);
+   
+   return (g_XInputSetState(xplayer, &g_xinput_rumble_state) == ERROR_SUCCESS);
+}
+
 const rarch_joypad_driver_t winxinput_joypad = {
    winxinput_joypad_init,
    winxinput_joypad_query_pad,
@@ -371,7 +404,7 @@ const rarch_joypad_driver_t winxinput_joypad = {
    winxinput_joypad_button,
    winxinput_joypad_axis,
    winxinput_joypad_poll,
-   NULL, // FIXME: Add rumble.
+   winxinput_joypad_rumble,
    winxinput_joypad_name,
    "winxinput",
 };
