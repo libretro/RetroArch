@@ -131,8 +131,8 @@ do_build()
 
 if [ "$BUILD_32BIT" = yes ]; then
    message "Building for 32-bit!"
-   C_COMPILER="${MINGW32_BASE}-gcc -msse"
-   CXX_COMPILER="${MINGW32_BASE}-g++ -msse"
+   C_COMPILER="${MINGW32_BASE}-gcc"
+   CXX_COMPILER="${MINGW32_BASE}-g++"
    WINDRES=${MINGW32_BASE}-windres
    do_build "RetroArch-w32" "RetroArch-win32-libs.zip" "x86"
 fi
