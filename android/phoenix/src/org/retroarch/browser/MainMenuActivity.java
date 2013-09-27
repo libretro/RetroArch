@@ -28,7 +28,7 @@ import android.view.Display;
 import android.view.WindowManager;
 import android.widget.Toast;
 
-public class MainMenuActivity extends PreferenceActivity {
+public final class MainMenuActivity extends PreferenceActivity {
 	private static MainMenuActivity instance = null;
 	static private final int ACTIVITY_LOAD_ROM = 0;
 	static private final String TAG = "MainMenu";
@@ -80,7 +80,7 @@ public class MainMenuActivity extends PreferenceActivity {
 		SharedPreferences prefs = getPreferences();
 		
 		libretro_path = prefs.getString("libretro_path", getApplicationInfo().nativeLibraryDir);
-		libretro_name = prefs.getString("libretro_name", "No core");
+		libretro_name = prefs.getString("libretro_name", getString(R.string.no_core));
 
 		refreshPreferenceScreen();
 		
@@ -94,9 +94,8 @@ public class MainMenuActivity extends PreferenceActivity {
 
 			if (!detectDevice(false)) {
 				AlertDialog.Builder alert = new AlertDialog.Builder(this)
-						.setTitle("Welcome to RetroArch")
-						.setMessage(
-								"This is your first time starting up RetroArch. RetroArch will now be preconfigured for the best possible gameplay experience.")
+						.setTitle(R.string.welcome_to_retroarch)
+						.setMessage(R.string.welcome_to_retroarch_desc)
 						.setPositiveButton("OK", null);
 				alert.show();
 			}
@@ -360,7 +359,7 @@ public class MainMenuActivity extends PreferenceActivity {
 		
 		// Refactor this entire mess and make this usable for per-core config
 		if (android.os.Build.VERSION.SDK_INT >= 17 &&
-				prefs.getBoolean("audio_latency_auto", true) == true) {
+				prefs.getBoolean("audio_latency_auto", true)) {
 			int buffersize = getLowLatencyBufferSize();
 
 			boolean lowLatency = hasLowLatencyAudio();
@@ -475,11 +474,11 @@ public class MainMenuActivity extends PreferenceActivity {
 				.getApplicationInfo().dataDir + "/retroarch-history.txt");
 
 		for (int i = 1; i <= 4; i++) {
-			final String btns[] = { "up", "down", "left", "right", "a", "b",
+			final String[] btns = { "up", "down", "left", "right", "a", "b",
 					"x", "y", "start", "select", "l", "r", "l2", "r2", "l3",
 					"r3" };
 			for (String b : btns) {
-				String p = "input_player" + String.valueOf(i) + "_" + b
+				String p = "input_player" + i + "_" + b
 						+ "_btn";
 				config.setInt(p, prefs.getInt(p, 0));
 			}
@@ -493,8 +492,7 @@ public class MainMenuActivity extends PreferenceActivity {
 	}
 
 	private byte[] loadAsset(String asset) throws IOException {
-		String path = asset;
-		InputStream stream = getAssets().open(path);
+		InputStream stream = getAssets().open(asset);
 		int len = stream.available();
 		byte[] buf = new byte[len];
 		stream.read(buf, 0, len);
@@ -544,8 +542,7 @@ public class MainMenuActivity extends PreferenceActivity {
 		try {
 			String dataDir = getApplicationInfo().dataDir;
 			File cacheVersion = new File(dataDir, ".cacheversion");
-			if (cacheVersion != null && cacheVersion.isFile()
-					&& cacheVersion.canRead() && cacheVersion.canWrite()) {
+			if (cacheVersion.isFile() && cacheVersion.canRead() && cacheVersion.canWrite()) {
 				DataInputStream cacheStream = new DataInputStream(
 						new FileInputStream(cacheVersion));
 
@@ -655,31 +652,23 @@ public class MainMenuActivity extends PreferenceActivity {
 	boolean detectDevice(boolean show_dialog) {
 		boolean retval = false;
 
-		boolean mentionPlayStore = !android.os.Build.MODEL
-				.equals("OUYA Console");
-		final String message = "The ideal configuration options for your device will now be preconfigured.\n\nNOTE: For optimal performance, turn off Google Account sync, "
-				+ (mentionPlayStore ? "Google Play Store auto-updates, " : "")
-				+ "GPS and Wi-Fi in your Android settings menu.";
+		final boolean mentionPlayStore = !android.os.Build.MODEL.equals("OUYA Console");
+		final String message = (mentionPlayStore ? getString(R.string.detect_device_msg_general) : getString(R.string.detect_device_msg_ouya));
 
 		Log.i("Device MODEL", android.os.Build.MODEL);
 		if (android.os.Build.MODEL.equals("SHIELD")) {
 			AlertDialog.Builder alert = new AlertDialog.Builder(this)
-					.setTitle("NVidia Shield detected")
+					.setTitle(R.string.nvidia_shield_detected)
 					.setMessage(message)
-					.setPositiveButton("OK",
+					.setPositiveButton(R.string.ok,
 							new DialogInterface.OnClickListener() {
 								@Override
-								public void onClick(DialogInterface dialog,
-										int which) {
+								public void onClick(DialogInterface dialog, int which) {
 									SharedPreferences prefs = getPreferences();
-									SharedPreferences.Editor edit = prefs
-											.edit();
-									edit.putString("video_refresh_rate", Double
-											.valueOf(60.00d).toString());
-									edit.putBoolean("input_overlay_enable",
-											false);
-									edit.putBoolean("input_autodetect_enable",
-											true);
+									SharedPreferences.Editor edit = prefs.edit();
+									edit.putString("video_refresh_rate", Double.toString(60.00d));
+									edit.putBoolean("input_overlay_enable", false);
+									edit.putBoolean("input_autodetect_enable", true);
 									edit.putString("audio_latency", "64");
 									edit.putBoolean("audio_latency_auto", true);
 									edit.commit();
@@ -689,20 +678,16 @@ public class MainMenuActivity extends PreferenceActivity {
 			retval = true;
 		} else if (android.os.Build.MODEL.equals("GAMEMID_BT")) {
 			AlertDialog.Builder alert = new AlertDialog.Builder(this)
-					.setTitle("GameMID detected")
+					.setTitle(R.string.game_mid_detected)
 					.setMessage(message)
-					.setPositiveButton("OK",
+					.setPositiveButton(R.string.ok,
 							new DialogInterface.OnClickListener() {
 								@Override
-								public void onClick(DialogInterface dialog,
-										int which) {
+								public void onClick(DialogInterface dialog, int which) {
 									SharedPreferences prefs = getPreferences();
-									SharedPreferences.Editor edit = prefs
-											.edit();
-									edit.putBoolean("input_overlay_enable",
-											false);
-									edit.putBoolean("input_autodetect_enable",
-											true);
+									SharedPreferences.Editor edit = prefs.edit();
+									edit.putBoolean("input_overlay_enable", false);
+									edit.putBoolean("input_autodetect_enable", true);
 									edit.putString("audio_latency", "160");
 									edit.putBoolean("audio_latency_auto", false);
 									edit.commit();
@@ -712,20 +697,16 @@ public class MainMenuActivity extends PreferenceActivity {
 			retval = true;
 		} else if (android.os.Build.MODEL.equals("OUYA Console")) {
 			AlertDialog.Builder alert = new AlertDialog.Builder(this)
-					.setTitle("OUYA detected")
+					.setTitle(R.string.ouya_detected)
 					.setMessage(message)
-					.setPositiveButton("OK",
+					.setPositiveButton(R.string.ok,
 							new DialogInterface.OnClickListener() {
 								@Override
-								public void onClick(DialogInterface dialog,
-										int which) {
+								public void onClick(DialogInterface dialog, int which) {
 									SharedPreferences prefs = getPreferences();
-									SharedPreferences.Editor edit = prefs
-											.edit();
-									edit.putBoolean("input_overlay_enable",
-											false);
-									edit.putBoolean("input_autodetect_enable",
-											true);
+									SharedPreferences.Editor edit = prefs.edit();
+									edit.putBoolean("input_overlay_enable", false);
+									edit.putBoolean("input_autodetect_enable", true);
 									edit.putString("audio_latency", "64");
 									edit.putBoolean("audio_latency_auto", true);
 									edit.commit();
@@ -735,23 +716,18 @@ public class MainMenuActivity extends PreferenceActivity {
 			retval = true;
 		} else if (android.os.Build.MODEL.equals("R800x")) {
 					AlertDialog.Builder alert = new AlertDialog.Builder(this)
-							.setTitle("Xperia Play detected")
+							.setTitle(R.string.xperia_play_detected)
 							.setMessage(message)
-							.setPositiveButton("OK",
+							.setPositiveButton(R.string.ok,
 									new DialogInterface.OnClickListener() {
 										@Override
-										public void onClick(DialogInterface dialog,
-												int which) {
+										public void onClick(DialogInterface dialog, int which) {
 											SharedPreferences prefs = getPreferences();
-											SharedPreferences.Editor edit = prefs
-													.edit();
+											SharedPreferences.Editor edit = prefs.edit();
 											edit.putBoolean("video_threaded", false);
-											edit.putBoolean("input_overlay_enable",
-													false);
-											edit.putBoolean("input_autodetect_enable",
-													true);
-											edit.putString("video_refresh_rate", Double
-													.valueOf(59.19132938771038).toString());
+											edit.putBoolean("input_overlay_enable", false);
+											edit.putBoolean("input_autodetect_enable", true);
+											edit.putString("video_refresh_rate", Double.toString(59.19132938771038));
 											edit.putString("audio_latency", "128");
 											edit.putBoolean("audio_latency_auto", false);
 											edit.commit();
@@ -761,18 +737,15 @@ public class MainMenuActivity extends PreferenceActivity {
 					retval = true;
 		} else if (android.os.Build.ID.equals("JSS15J")) {
 			AlertDialog.Builder alert = new AlertDialog.Builder(this)
-					.setTitle("Nexus 7 2013 detected")
+					.setTitle(R.string.nexus_7_2013_detected)
 					.setMessage(message)
-					.setPositiveButton("OK",
+					.setPositiveButton(R.string.ok,
 							new DialogInterface.OnClickListener() {
 								@Override
-								public void onClick(DialogInterface dialog,
-										int which) {
+								public void onClick(DialogInterface dialog, int which) {
 									SharedPreferences prefs = getPreferences();
-									SharedPreferences.Editor edit = prefs
-											.edit();
-									edit.putString("video_refresh_rate", Double
-											.valueOf(59.65).toString());
+									SharedPreferences.Editor edit = prefs.edit();
+									edit.putString("video_refresh_rate", Double.toString(59.65));
 									edit.putString("audio_latency", "64");
 									edit.putBoolean("audio_latency_auto", false);
 									edit.commit();
@@ -783,10 +756,7 @@ public class MainMenuActivity extends PreferenceActivity {
 		}
 
 		if (show_dialog) {
-			Toast.makeText(
-					this,
-					"Device either not detected in list or doesn't have any optimal settings in our database.",
-					Toast.LENGTH_SHORT).show();
+			Toast.makeText(this, R.string.no_optimal_settings, Toast.LENGTH_SHORT).show();
 		}
 		
 		refreshPreferenceScreen();
@@ -803,12 +773,10 @@ public class MainMenuActivity extends PreferenceActivity {
 	public void startActivity(Intent intent) {
 		if (intent.getComponent().getClassName()
 				.equals("org.retroarch.browser.ROMActivity")) {
-			if (new File(libretro_path).isDirectory() == false) {
+			if (!new File(libretro_path).isDirectory()) {
 				super.startActivityForResult(intent, ACTIVITY_LOAD_ROM);
 			} else {
-				Toast.makeText(this,
-						"Go to 'Load Core' and select a core first.",
-						Toast.LENGTH_SHORT).show();
+				Toast.makeText(this, R.string.load_a_core_first, Toast.LENGTH_SHORT).show();
 			}
 		} else {
 			super.startActivity(intent);
@@ -821,18 +789,12 @@ public class MainMenuActivity extends PreferenceActivity {
 		case ACTIVITY_LOAD_ROM: {
 			if (data.getStringExtra("PATH") != null) {
 				updateConfigFile();
-				Intent myIntent;
-				String current_ime = Settings.Secure.getString(
-						getContentResolver(),
-						Settings.Secure.DEFAULT_INPUT_METHOD);
-				Toast.makeText(this,
-						"Loading: [" + data.getStringExtra("PATH") + "]...",
-						Toast.LENGTH_SHORT).show();
-				myIntent = new Intent(this, RetroActivity.class);
+				String current_ime = Settings.Secure.getString(getContentResolver(), Settings.Secure.DEFAULT_INPUT_METHOD);
+				Toast.makeText(this,String.format(getString(R.string.loading_data), data.getStringExtra("PATH")), Toast.LENGTH_SHORT).show();
+				Intent myIntent = new Intent(this, RetroActivity.class);
 				myIntent.putExtra("ROM", data.getStringExtra("PATH"));
 				myIntent.putExtra("LIBRETRO", libretro_path);
-				myIntent.putExtra("CONFIGFILE",
-						getDefaultConfigPath());
+				myIntent.putExtra("CONFIGFILE", getDefaultConfigPath());
 				myIntent.putExtra("IME", current_ime);
 				startActivity(myIntent);
 			}
@@ -850,10 +812,8 @@ public class MainMenuActivity extends PreferenceActivity {
 	private void loadRomExternal(String rom, String core) {
 		updateConfigFile();
 		Intent myIntent = new Intent(this, RetroActivity.class);
-		String current_ime = Settings.Secure.getString(getContentResolver(),
-				Settings.Secure.DEFAULT_INPUT_METHOD);
-		Toast.makeText(this, "Loading: [" + rom + "]...", Toast.LENGTH_SHORT)
-				.show();
+		String current_ime = Settings.Secure.getString(getContentResolver(), Settings.Secure.DEFAULT_INPUT_METHOD);
+		Toast.makeText(this, String.format(getString(R.string.loading_data), rom), Toast.LENGTH_SHORT).show();
 		myIntent.putExtra("ROM", rom);
 		myIntent.putExtra("LIBRETRO", core);
 		myIntent.putExtra("CONFIGFILE", getDefaultConfigPath());

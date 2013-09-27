@@ -10,7 +10,7 @@ import java.io.PrintWriter;
 import java.util.HashMap;
 import java.util.Map;
 
-public class ConfigFile {
+public final class ConfigFile {
 	private HashMap<String, String> map = new HashMap<String, String>();
 
 	public void append(InputStream stream) throws IOException {

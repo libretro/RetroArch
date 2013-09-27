@@ -4,7 +4,7 @@ import java.io.File;
 
 import android.os.Bundle;
 
-public class ShaderActivity extends DirectoryActivity {
+public final class ShaderActivity extends DirectoryActivity {
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		File shaderDir = new File(getBaseContext().getApplicationInfo().dataDir, "shaders_glsl");

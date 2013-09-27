@@ -5,7 +5,7 @@ import java.io.File;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 
-public class ROMActivity extends DirectoryActivity {
+public final class ROMActivity extends DirectoryActivity {
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		

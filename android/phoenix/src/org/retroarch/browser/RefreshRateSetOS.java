@@ -1,5 +1,7 @@
 package org.retroarch.browser;
 
+import org.retroarch.R;
+
 import android.app.Activity;
 import android.content.Context;
 import android.content.SharedPreferences;
@@ -8,7 +10,7 @@ import android.view.Display;
 import android.view.WindowManager;
 import android.widget.Toast;
 
-public class RefreshRateSetOS extends Activity {
+public final class RefreshRateSetOS extends Activity {
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -22,7 +24,7 @@ public class RefreshRateSetOS extends Activity {
 		edit.putString("video_refresh_rate", Double.valueOf(rate).toString());
 		edit.commit();
 		
-		Toast.makeText(this, "Using OS-reported refresh rate of: " + rate + " Hz.", Toast.LENGTH_LONG).show();
+		Toast.makeText(this, String.format(getString(R.string.using_os_reported_refresh_rate), rate), Toast.LENGTH_LONG).show();
 		finish();
 	}
 }

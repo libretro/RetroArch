@@ -22,14 +22,14 @@ public class DirectoryActivity extends Activity implements
 		public String path;
 		public boolean parentIsBack;
 
-		public BackStackItem(String aPath, boolean aParentIsBack) {
-			path = aPath;
-			parentIsBack = aParentIsBack;
+		public BackStackItem(String path, boolean parentIsBack) {
+			this.path = path;
+			this.parentIsBack = parentIsBack;
 		}
 
-		private BackStackItem(Parcel aIn) {
-			path = aIn.readString();
-			parentIsBack = aIn.readInt() != 0;
+		private BackStackItem(Parcel in) {
+			this.path = in.readString();
+			this.parentIsBack = in.readInt() != 0;
 		}
 
 		public int describeContents() {
@@ -87,7 +87,7 @@ public class DirectoryActivity extends Activity implements
 			backStack = savedInstanceState.getParcelableArrayList("BACKSTACK");
 		}
 
-		if (backStack == null || backStack.size() == 0) {
+		if (backStack == null || backStack.isEmpty()) {
 			backStack = new ArrayList<BackStackItem>();
 			String startPath = (startDirectory == null || startDirectory.isEmpty()) ? Environment
 					.getExternalStorageDirectory().getPath() : startDirectory;
@@ -112,7 +112,7 @@ public class DirectoryActivity extends Activity implements
 			editor.commit();
 		}
 		
-		Intent intent = new Intent();			
+		Intent intent = new Intent();
 		intent.putExtra("PATH", path);
 		setResult(RESULT_OK, intent);
 		finish();

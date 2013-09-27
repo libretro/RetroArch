@@ -17,7 +17,7 @@ import android.widget.AdapterView;
 import android.widget.ListView;
 import android.widget.Toast;
 
-public class HistorySelection extends Activity implements
+public final class HistorySelection extends Activity implements
 		AdapterView.OnItemClickListener {
 	
 	private IconAdapter<HistoryWrapper> adapter;
@@ -34,7 +34,7 @@ public class HistorySelection extends Activity implements
 		list.setAdapter(adapter);
 		list.setOnItemClickListener(this);
 
-		setTitle("Recently played games");
+		setTitle(R.string.recently_played_games);
 		
 		File history = new File(getApplicationInfo().dataDir, "retroarch-history.txt");
 		
@@ -71,8 +71,7 @@ public class HistorySelection extends Activity implements
 
 		MainMenuActivity.getInstance().updateConfigFile();
 
-		Toast.makeText(this, "Loading: [" + gamePath + "] ...",
-				Toast.LENGTH_SHORT).show();
+		Toast.makeText(this, String.format(getString(R.string.loading_gamepath), gamePath), Toast.LENGTH_SHORT).show();
 		myIntent = new Intent(this, RetroActivity.class);
 		myIntent.putExtra("ROM", gamePath);
 		myIntent.putExtra("LIBRETRO", corePath);
