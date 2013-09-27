@@ -23,11 +23,6 @@
 
 #include "../../performance.h"
 #include "../../file.h"
-#ifdef HAVE_FILEBROWSER
-#include "utils/file_browser.h"
-#else
-#include "utils/file_list.h"
-#endif
 #include "menu_context.h"
 
 #include "../../compat/posix_string.h"
