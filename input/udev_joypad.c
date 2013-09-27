@@ -184,39 +184,17 @@ static bool udev_set_rumble(unsigned i, enum retro_rumble_effect effect, uint16_
 
    if (pad->fd < 0)
       return false;
-   if (pad->num_effects < 2)
+   if (pad->num_effects < 3) // Need one effect to overlap.
       return false;
 
    if (pad->strength[effect] == strength)
       return true;
 
-   if (pad->has_set_ff[effect] && strength != pad->strength[effect])
-   {
-      struct input_event play;
-      memset(&play, 0, sizeof(play));
-      play.type = EV_FF;
-      play.code = pad->effects[effect];
-      play.value = 0;
-      if (write(pad->fd, &play, sizeof(play)) < (ssize_t)sizeof(play))
-      {
-         RARCH_ERR("[udev]: Failed to set rumble effect %u on pad %u.\n",
-               effect, i);
-         return false;
-      }
+   int old_effect = pad->has_set_ff[effect] ? pad->effects[effect] : -1;
+   pad->strength[effect] = strength;
+   pad->has_set_ff[effect] = false;
 
-      if (ioctl(pad->fd, EVIOCRMFF, (void*)(uintptr_t)pad->effects[effect]) < 0)
-         RARCH_WARN("[udev]: Failed to remove effect.\n");
-
-      pad->has_set_ff[effect] = false;
-      pad->effects[effect] = -1;
-   }
-
-   // Have to defer the force feedback settings to here.
-   // For some reason, effects are getting dropped when they're set at init.
-   // Setting at init seems to work for pads which are hotplugged ...
-   //
-   // This approach might be cleaner in the end if we end up supporting configurable force feedback.
-   if (!pad->has_set_ff[effect] && strength)
+   if (strength)
    {
       struct ff_effect e;
       memset(&e, 0, sizeof(e));
@@ -237,11 +215,7 @@ static bool udev_set_rumble(unsigned i, enum retro_rumble_effect effect, uint16_
 
       pad->has_set_ff[effect] = true;
       pad->effects[effect] = e.id;
-   }
-   pad->strength[effect] = strength;
 
-   if (strength)
-   {
       struct input_event play;
       memset(&play, 0, sizeof(play));
       play.type = EV_FF;
@@ -249,10 +223,16 @@ static bool udev_set_rumble(unsigned i, enum retro_rumble_effect effect, uint16_
       play.value = 1;
       if (write(pad->fd, &play, sizeof(play)) < (ssize_t)sizeof(play))
       {
-         RARCH_ERR("[udev]: Failed to set rumble effect %u on pad %u.\n",
+         RARCH_ERR("[udev]: Failed to play rumble effect #%u on pad #%u.\n",
                effect, i);
          return false;
       }
+   }
+
+   if (old_effect >= 0)
+   {
+      if (ioctl(pad->fd, EVIOCRMFF, (void*)(uintptr_t)old_effect) < 0)
+         RARCH_WARN("[udev]: Failed to remove effect.\n");
    }
 
    return true;
