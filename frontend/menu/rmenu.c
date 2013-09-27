@@ -378,18 +378,18 @@ static void render_text(void *data)
       case FILE_BROWSER_MENU:
          snprintf(msg, sizeof(msg), "PATH: %s", rgui->browser->current_dir.directory_path);
 
+         font_params_t font_parms = {0};
+
+         font_parms.x = POSITION_X;
+         font_parms.y = CURRENT_PATH_Y_POSITION;
+         font_parms.scale = CURRENT_PATH_FONT_SIZE;
+         font_parms.color = WHITE;
+
          if (driver.video_poke->set_osd_msg)
             driver.video_poke->set_osd_msg(driver.video_data, msg, &font_parms);
          break;
    }
 
-
-   font_parms.x = POSITION_X; 
-   font_parms.y = CURRENT_PATH_Y_POSITION;
-   font_parms.scale = CURRENT_PATH_FONT_SIZE;
-   font_parms.color = WHITE;
-
-   
    font_parms.x = CORE_MSG_POSITION_X;
    font_parms.y = CORE_MSG_POSITION_Y;
    font_parms.scale = CORE_MSG_FONT_SIZE;
@@ -903,24 +903,6 @@ static int select_directory(void *data, uint64_t action)
 
    if (!ret)
       msg_queue_push(g_extern.msg_queue, "ERROR - Failed to open directory.", 1, 180);
-
-   struct platform_bind key_label_y = {0};
-
-   strlcpy(key_label_y.desc, "Unknown", sizeof(key_label_y.desc));
-   key_label_y.joykey = 1ULL << RETRO_DEVICE_ID_JOYPAD_Y;
-
-   if (driver.input->set_keybinds)
-      driver.input->set_keybinds(&key_label_y, 0, 0, 0, (1ULL << KEYBINDS_ACTION_GET_BIND_LABEL));
-
-   font_parms.x = POSITION_X; 
-   font_parms.y = COMMENT_POSITION_Y;
-   font_parms.scale = HARDCODE_FONT_SIZE;
-   font_parms.color = WHITE;
-
-   snprintf(msg, sizeof(msg), "INFO - Select a dir as path by pressing\n[%s].", key_label_y.desc);
-
-   if (driver.video_poke->set_osd_msg)
-      driver.video_poke->set_osd_msg(driver.video_data, msg, &font_parms);
 
    return 0;
 }
