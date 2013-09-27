@@ -744,10 +744,8 @@ bool menu_iterate(void)
       action = RGUI_ACTION_CANCEL;
    else if (rgui->trigger_state & (1ULL << RETRO_DEVICE_ID_JOYPAD_A))
       action = RGUI_ACTION_OK;
-   else if (rgui->trigger_state & (1ULL << RETRO_DEVICE_ID_JOYPAD_SELECT))
-      action = RGUI_ACTION_START;
    else if (rgui->trigger_state & (1ULL << RETRO_DEVICE_ID_JOYPAD_START))
-      action = RGUI_ACTION_SETTINGS;
+      action = RGUI_ACTION_START;
 
    if (menu_ctx && menu_ctx->iterate)
       input_entry_ret = menu_ctx->iterate(rgui, action);

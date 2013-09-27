@@ -2292,10 +2292,6 @@ static int rgui_viewport_iterate(rgui_handle_t *rgui, rgui_action_t action)
          }
          break;
 
-      case RGUI_ACTION_SETTINGS:
-         rgui_list_pop(rgui->menu_stack, &rgui->selection_ptr);
-         break;
-
       case RGUI_ACTION_MESSAGE:
          rgui->msg_force = true;
          break;
@@ -2891,12 +2887,6 @@ static int rgui_iterate(void *data, unsigned action)
          rgui->selection_ptr = 0;
          rgui->need_refresh = true;
          break;
-
-      case RGUI_ACTION_SETTINGS:
-         rgui->need_refresh = true;
-         while (rgui->menu_stack->size > 1)
-            rgui_list_pop(rgui->menu_stack, &rgui->selection_ptr);
-         return rgui_settings_iterate(rgui, RGUI_ACTION_REFRESH);
 
       case RGUI_ACTION_MESSAGE:
          rgui->msg_force = true;
