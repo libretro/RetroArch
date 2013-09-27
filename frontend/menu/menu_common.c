@@ -33,7 +33,25 @@ const menu_ctx_driver_t *menu_ctx;
 #ifdef HAVE_SHADER_MANAGER
 void shader_manager_init(rgui_handle_t *rgui)
 {
+   memset(&rgui->shader, 0, sizeof(rgui->shader));
    config_file_t *conf = NULL;
+
+   // In a multi-config setting, we can't have conflicts on rgui.cgp/rgui.glslp.
+   if (*g_extern.config_path)
+   {
+      fill_pathname_base(rgui->default_glslp, g_extern.config_path, sizeof(rgui->default_glslp));
+      path_remove_extension(rgui->default_glslp);
+      strlcat(rgui->default_glslp, ".glslp", sizeof(rgui->default_glslp));
+      fill_pathname_base(rgui->default_cgp, g_extern.config_path, sizeof(rgui->default_cgp));
+      path_remove_extension(rgui->default_cgp);
+      strlcat(rgui->default_cgp, ".cgp", sizeof(rgui->default_cgp));
+   }
+   else
+   {
+      strlcpy(rgui->default_glslp, "rgui.glslp", sizeof(rgui->default_glslp));
+      strlcpy(rgui->default_cgp, "rgui.cgp", sizeof(rgui->default_cgp));
+   }
+
    char cgp_path[PATH_MAX];
 
    const char *ext = path_get_extension(g_settings.video.shader_path);
@@ -463,6 +481,47 @@ void load_menu_game_history(unsigned game_index)
 #endif
 }
 
+static void menu_init_history(void)
+{
+   if (rgui->history)
+   {
+      rom_history_free(rgui->history);
+      rgui->history = NULL;
+   }
+
+   if (*g_extern.config_path)
+   {
+      char history_path[PATH_MAX];
+      if (*g_settings.game_history_path)
+         strlcpy(history_path, g_settings.game_history_path, sizeof(history_path));
+      else
+      {
+         fill_pathname_resolve_relative(history_path, g_extern.config_path,
+               ".retroarch-game-history.txt", sizeof(history_path));
+      }
+
+      RARCH_LOG("[RGUI]: Opening history: %s.\n", history_path);
+      rgui->history = rom_history_init(history_path, g_settings.game_history_size);
+   }
+}
+
+static void menu_update_libretro_info(void)
+{
+   *rgui->libretro_dir = '\0';
+#ifdef HAVE_DYNAMIC
+   libretro_free_system_info(&rgui->info);
+   if (path_is_directory(g_settings.libretro))
+      strlcpy(rgui->libretro_dir, g_settings.libretro, sizeof(rgui->libretro_dir));
+   else if (*g_settings.libretro)
+   {
+      fill_pathname_basedir(rgui->libretro_dir, g_settings.libretro, sizeof(rgui->libretro_dir));
+      libretro_get_system_info(g_settings.libretro, &rgui->info, NULL);
+   }
+#else
+   retro_get_system_info(&rgui->info);
+#endif
+}
+
 bool load_menu_game(void)
 {
    if (g_extern.main_is_init)
@@ -475,13 +534,17 @@ bool load_menu_game(void)
    args.sram_path     = *g_extern.savefile_dir ? g_extern.savefile_dir : NULL;
    args.state_path    = *g_extern.savestate_dir ? g_extern.savestate_dir : NULL;
    args.rom_path      = *g_extern.fullpath ? g_extern.fullpath : NULL;
-   args.libretro_path = g_settings.libretro;
+   args.libretro_path = *g_settings.libretro ? g_settings.libretro : NULL;
    args.no_rom        = rgui->load_no_rom;
    rgui->load_no_rom  = false;
 
    if (rarch_main_init_wrap(&args) == 0)
    {
       RARCH_LOG("rarch_main_init_wrap() succeeded.\n");
+      // Update menu state which depends on config.
+      menu_update_libretro_info();
+      menu_init_history();
+      shader_manager_init(rgui);
       return true;
    }
    else
@@ -511,24 +574,14 @@ void menu_init(void)
    rgui->frame_buf_show = true;
    rgui->current_pad = 0;
 
-#ifdef HAVE_DYNAMIC
-   if (path_is_directory(g_settings.libretro))
-      strlcpy(rgui->libretro_dir, g_settings.libretro, sizeof(rgui->libretro_dir));
-   else if (*g_settings.libretro)
-   {
-      fill_pathname_basedir(rgui->libretro_dir, g_settings.libretro, sizeof(rgui->libretro_dir));
-      libretro_get_system_info(g_settings.libretro, &rgui->info, NULL);
-   }
-#else
-   retro_get_system_info(&rgui->info);
-#endif
+   menu_update_libretro_info();
 
 #ifdef HAVE_FILEBROWSER
    if (!(strlen(g_settings.rgui_browser_directory) > 0))
       strlcpy(g_settings.rgui_browser_directory, default_paths.filebrowser_startup_dir,
             sizeof(g_settings.rgui_browser_directory));
 
-   rgui->browser =  (filebrowser_t*)calloc(1, sizeof(*(rgui->browser)));
+   rgui->browser = (filebrowser_t*)calloc(1, sizeof(*(rgui->browser)));
 
    if (rgui->browser == NULL)
    {
@@ -556,21 +609,7 @@ void menu_init(void)
    shader_manager_init(rgui);
 #endif
 
-   if (*g_extern.config_path)
-   {
-      char history_path[PATH_MAX];
-      if (*g_settings.game_history_path)
-         strlcpy(history_path, g_settings.game_history_path, sizeof(history_path));
-      else
-      {
-         fill_pathname_resolve_relative(history_path, g_extern.config_path,
-               ".retroarch-game-history.txt", sizeof(history_path));
-      }
-
-      RARCH_LOG("[RGUI]: Opening history: %s.\n", history_path);
-      rgui->history = rom_history_init(history_path, g_settings.game_history_size);
-   }
-
+   menu_init_history();
    rgui->last_time = rarch_get_time_usec();
 }
 
@@ -778,3 +817,106 @@ deinit:
 }
 #endif
 #endif
+
+// Quite intrusive and error prone.
+// Likely to have lots of small bugs.
+// Cleanly exit the main loop to ensure that all the tiny details get set properly.
+// This should mitigate most of the smaller bugs.
+bool menu_replace_config(const char *path)
+{
+   if (strcmp(path, g_extern.config_path) == 0)
+      return false;
+
+   if (g_extern.config_save_on_exit && *g_extern.config_path)
+      config_save_file(g_extern.config_path);
+
+   strlcpy(g_extern.config_path, path, sizeof(g_extern.config_path));
+   g_extern.block_config_read = false;
+
+   // Load dummy core.
+   *g_extern.fullpath = '\0';
+   *g_settings.libretro = '\0'; // Load core in new config.
+   g_extern.lifecycle_mode_state |= (1ULL << MODE_LOAD_GAME);
+   rgui->load_no_rom = false;
+
+   return true;
+}
+
+// Save a new config to a file. Filename is based on heuristics to avoid typing.
+bool menu_save_new_config(void)
+{
+   char config_dir[PATH_MAX];
+   *config_dir = '\0';
+
+   if (*g_settings.rgui_config_directory)
+      strlcpy(config_dir, g_settings.rgui_config_directory, sizeof(config_dir));
+   else if (*g_extern.config_path) // Fallback
+      fill_pathname_basedir(config_dir, g_extern.config_path, sizeof(config_dir));
+   else
+   {
+      const char *msg = "Config directory not set. Cannot save new config.";
+      msg_queue_clear(g_extern.msg_queue);
+      msg_queue_push(g_extern.msg_queue, msg, 1, 180);
+      RARCH_ERR("%s\n", msg);
+      return false;
+   }
+
+   bool found_path = false;
+   char config_name[PATH_MAX];
+   char config_path[PATH_MAX];
+   if (*g_settings.libretro && !path_is_directory(g_settings.libretro) && path_file_exists(g_settings.libretro)) // Infer file name based on libretro core.
+   {
+      // In case of collision, find an alternative name.
+      for (unsigned i = 0; i < 16; i++)
+      {
+         fill_pathname_base(config_name, g_settings.libretro, sizeof(config_name));
+         path_remove_extension(config_name);
+         fill_pathname_join(config_path, config_dir, config_name, sizeof(config_path));
+
+         char tmp[64];
+         *tmp = '\0';
+         if (i)
+            snprintf(tmp, sizeof(tmp), "-%u.cfg", i);
+         else
+            strlcpy(tmp, ".cfg", sizeof(tmp));
+
+         strlcat(config_path, tmp, sizeof(config_path));
+
+         if (!path_file_exists(config_path))
+         {
+            found_path = true;
+            break;
+         }
+      }
+   }
+
+   // Fallback to system time ...
+   if (!found_path)
+   {
+      RARCH_WARN("Cannot infer new config path. Use current time.\n");
+      fill_dated_filename(config_name, "cfg", sizeof(config_name));
+      fill_pathname_join(config_path, config_dir, config_name, sizeof(config_path));
+   }
+
+   char msg[512];
+   bool ret;
+   if (config_save_file(config_path))
+   {
+      strlcpy(g_extern.config_path, config_path, sizeof(g_extern.config_path));
+      snprintf(msg, sizeof(msg), "Saved new config to \"%s\".", config_path);
+      RARCH_LOG("%s\n", msg);
+      ret = true;
+   }
+   else
+   {
+      snprintf(msg, sizeof(msg), "Failed saving config to \"%s\".", config_path);
+      RARCH_ERR("%s\n", msg);
+      ret = false;
+   }
+
+   msg_queue_clear(g_extern.msg_queue);
+   msg_queue_push(g_extern.msg_queue, msg, 1, 180);
+   return ret;
+}
+
+

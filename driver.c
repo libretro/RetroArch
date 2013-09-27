@@ -545,6 +545,7 @@ void init_audio(void)
       g_extern.audio_active = false;
    }
 
+   g_extern.audio_data.use_float = false;
    if (g_extern.audio_active && driver.audio->use_float && audio_use_float_func())
       g_extern.audio_data.use_float = true;
 

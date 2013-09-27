@@ -74,6 +74,9 @@ bool path_is_directory(const char *path);
 bool path_file_exists(const char *path);
 const char *path_get_extension(const char *path);
 
+// Removes all text after and including the last '.'
+char *path_remove_extension(char *path);
+
 // Returns basename from path.
 const char *path_basename(const char *path);
 

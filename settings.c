@@ -244,6 +244,7 @@ void config_set_defaults(void)
          g_settings.input.autoconf_binds[i][j].joyaxis = AXIS_NONE;
       }
    }
+   memset(g_settings.input.autoconfigured, 0, sizeof(g_settings.input.autoconfigured));
 
    // Verify that binds are in proper order.
    for (int i = 0; i < MAX_PLAYERS; i++)
@@ -274,6 +275,24 @@ void config_set_defaults(void)
    g_extern.console.screen.viewports.custom_vp.height = 0;
    g_extern.console.screen.viewports.custom_vp.x = 0;
    g_extern.console.screen.viewports.custom_vp.y = 0;
+
+   // Make sure settings from other configs carry over into defaults for another config.
+   if (!g_extern.has_set_save_path)
+      *g_extern.savefile_dir = '\0';
+   if (!g_extern.has_set_state_path)
+      *g_extern.savestate_dir = '\0';
+   *g_settings.core_options_path = '\0';
+   *g_settings.game_history_path = '\0';
+   *g_settings.cheat_database = '\0';
+   *g_settings.cheat_settings_path = '\0';
+   *g_settings.screenshot_directory = '\0';
+   *g_settings.system_directory = '\0';
+   *g_settings.input.autoconfig_dir = '\0';
+   *g_settings.input.overlay = '\0';
+#if defined(HAVE_RGUI) || defined(HAVE_RMENU)
+   *g_settings.rgui_browser_directory = '\0';
+   *g_settings.rgui_config_directory = '\0';
+#endif
 
 #ifdef RARCH_CONSOLE
    g_extern.lifecycle_mode_state |= ((1ULL << MODE_INFO_DRAW) | (1ULL << MODE_MENU));
@@ -684,6 +703,9 @@ bool config_load_file(const char *path)
    CONFIG_GET_PATH(rgui_browser_directory, "rgui_browser_directory");
    if (!strcmp(g_settings.rgui_browser_directory, "default"))
       *g_settings.rgui_browser_directory = '\0';
+   CONFIG_GET_PATH(rgui_config_directory, "rgui_config_directory");
+   if (!strcmp(g_settings.rgui_config_directory, "default"))
+      *g_settings.rgui_config_directory = '\0';
 #endif
 
 #ifdef HAVE_OVERLAY
@@ -1001,6 +1023,7 @@ bool config_save_file(const char *path)
    config_set_bool(conf, "video_scale_integer", g_settings.video.scale_integer);
    config_set_bool(conf, "video_smooth", g_settings.video.smooth);
    config_set_float(conf, "video_refresh_rate", g_settings.video.refresh_rate);
+   config_set_string(conf, "video_driver", g_settings.video.driver);
    config_set_bool(conf, "video_vsync", g_settings.video.vsync);
    config_set_bool(conf, "video_hard_sync", g_settings.video.hard_sync);
    config_set_int(conf, "video_hard_sync_frames", g_settings.video.hard_sync_frames);
@@ -1013,40 +1036,26 @@ bool config_save_file(const char *path)
    config_set_string(conf, "audio_device", g_settings.audio.device);
    config_set_bool(conf, "audio_rate_control", g_settings.audio.rate_control);
    config_set_float(conf, "audio_rate_control_delta", g_settings.audio.rate_control_delta);
+   config_set_string(conf, "audio_driver", g_settings.audio.driver);
+   config_set_string(conf, "audio_device", g_settings.audio.device);
+   config_set_int(conf, "audio_out_rate", g_settings.audio.out_rate);
 
-   if (*g_settings.system_directory)
-      config_set_string(conf, "system_directory", g_settings.system_directory);
-   else
-      config_set_string(conf, "system_directory", "default");
-
-   if (*g_extern.savefile_dir)
-      config_set_string(conf, "savefile_directory", g_extern.savefile_dir);
-   else
-      config_set_string(conf, "savefile_directory", "default");
-
-   if (*g_extern.savestate_dir)
-      config_set_string(conf, "savestate_directory", g_extern.savestate_dir);
-   else
-      config_set_string(conf, "savestate_directory", "default");
-
-   if (*g_settings.video.shader_dir)
-      config_set_string(conf, "video_shader_dir", g_settings.video.shader_dir);
-   else
-      config_set_string(conf, "video_shader_dir", "default");
+   config_set_string(conf, "system_directory", *g_settings.system_directory ? g_settings.system_directory : "default");
+   config_set_string(conf, "savefile_directory", *g_extern.savefile_dir ? g_extern.savefile_dir : "default");
+   config_set_string(conf, "savestate_directory", *g_extern.savestate_dir ? g_extern.savestate_dir : "default");
+   config_set_string(conf, "video_shader_dir", *g_settings.video.shader_dir ? g_settings.video.shader_dir : "default");
 
 #if defined(HAVE_RGUI) || defined(HAVE_RMENU)
-   if (*g_settings.rgui_browser_directory)
-      config_set_string(conf, "rgui_browser_directory", g_settings.rgui_browser_directory);
-   else
-      config_set_string(conf, "rgui_browser_directory", "default");
+   config_set_string(conf, "rgui_browser_directory", *g_settings.rgui_browser_directory ? g_settings.rgui_browser_directory : "default");
+   config_set_string(conf, "rgui_config_directory", *g_settings.rgui_config_directory ? g_settings.rgui_config_directory : "default");
 #endif
 
+   config_set_string(conf, "game_history_path", g_settings.game_history_path);
+   config_set_int(conf, "game_history_size", g_settings.game_history_size);
+   config_set_string(conf, "joypad_autoconfig_dir", g_settings.input.autoconfig_dir);
+
 #ifdef HAVE_OVERLAY
-   if (*g_extern.overlay_dir)
-      config_set_string(conf, "overlay_directory", g_extern.overlay_dir);
-   else
-      config_set_string(conf, "overlay_directory", "default");
-   
+   config_set_string(conf, "overlay_directory", *g_extern.overlay_dir ? g_extern.overlay_dir : "default");
    config_set_string(conf, "input_overlay", g_settings.input.overlay);
    config_set_float(conf, "input_overlay_opacity", g_settings.input.overlay_opacity);
    config_set_float(conf, "input_overlay_scale", g_settings.input.overlay_scale);
@@ -1064,25 +1073,10 @@ bool config_save_file(const char *path)
 #ifdef _XBOX1
    config_set_int(conf, "sound_volume_level", g_extern.console.sound.volume_level);
 #endif
-   if (g_extern.lifecycle_mode_state & (1ULL << MODE_VIDEO_TRIPLE_BUFFERING_ENABLE))
-      config_set_bool(conf, "triple_buffering_enable", true);
-   else
-      config_set_bool(conf, "triple_buffering_enable", false);
-
-   if (g_extern.lifecycle_mode_state & (1ULL << MODE_INFO_DRAW))
-      config_set_bool(conf, "info_msg_enable", true);
-   else
-      config_set_bool(conf, "info_msg_enable", false);
-
-   if (g_extern.lifecycle_mode_state & (1ULL << MODE_VIDEO_SOFT_FILTER_ENABLE))
-      config_set_bool(conf, "soft_filter_enable", true);
-   else
-      config_set_bool(conf, "soft_filter_enable", false);
-
-   if (g_extern.lifecycle_mode_state & (1ULL << MODE_VIDEO_FLICKER_FILTER_ENABLE))
-      config_set_bool(conf, "flicker_filter_enable", true);
-   else
-      config_set_bool(conf, "flicker_filter_enable", false);
+   config_set_bool(conf, "triple_buffering_enable", g_extern.lifecycle_mode_state & (1ULL << MODE_VIDEO_TRIPLE_BUFFERING_ENABLE));
+   config_set_bool(conf, "info_msg_enable", g_extern.lifecycle_mode_state & (1ULL << MODE_INFO_DRAW));
+   config_set_bool(conf, "soft_filter_enable", g_extern.lifecycle_mode_state & (1ULL << MODE_VIDEO_SOFT_FILTER_ENABLE));
+   config_set_bool(conf, "flicker_filter_enable", g_extern.lifecycle_mode_state & (1ULL << MODE_VIDEO_FLICKER_FILTER_ENABLE));
 
    config_set_int(conf, "flicker_filter_index", g_extern.console.screen.flicker_filter_index);
    config_set_int(conf, "soft_filter_index", g_extern.console.screen.soft_filter_index);
@@ -1101,12 +1095,10 @@ bool config_save_file(const char *path)
    config_set_int(conf, "sound_mode", g_extern.console.sound.mode);
    config_set_int(conf, "state_slot", g_extern.state_slot);
    config_set_int(conf, "audio_mute", g_extern.audio_data.mute);
+   config_set_bool(conf, "custom_bgm_enable", g_extern.lifecycle_mode_state & (1ULL << MODE_AUDIO_CUSTOM_BGM_ENABLE));
 
-   if (g_extern.lifecycle_mode_state & (1ULL << MODE_AUDIO_CUSTOM_BGM_ENABLE))
-      config_set_bool(conf, "custom_bgm_enable", true);
-   else
-      config_set_bool(conf, "custom_bgm_enable", false);
-
+   config_set_string(conf, "input_driver", g_settings.input.driver);
+   config_set_string(conf, "input_joypad_driver", g_settings.input.joypad_driver);
    for (unsigned i = 0; i < MAX_PLAYERS; i++)
    {
       char cfg[64];
@@ -1120,10 +1112,9 @@ bool config_save_file(const char *path)
       config_set_int(conf, cfg, g_settings.input.libretro_device[i]);
    }
 
-   config_file_write(conf, path);  
+   bool ret = config_file_write(conf, path);
    config_file_free(conf);
-
-   return true;
+   return ret;
 }
 
 bool config_save_keybinds(const char *path)
