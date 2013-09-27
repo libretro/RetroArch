@@ -544,7 +544,9 @@ bool load_menu_game(void)
       // Update menu state which depends on config.
       menu_update_libretro_info();
       menu_init_history();
+#ifdef HAVE_SHADER_MANAGER
       shader_manager_init(rgui);
+#endif
       return true;
    }
    else
