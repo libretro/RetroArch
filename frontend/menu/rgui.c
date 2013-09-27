@@ -2558,7 +2558,7 @@ static void history_parse(rgui_handle_t *rgui)
    }
 }
 
-static bool directory_parse(rgui_handle_t *rgui, const char *directory, unsigned menu_type, void *ctx)
+static bool rgui_directory_parse(rgui_handle_t *rgui, const char *directory, unsigned menu_type, void *ctx)
 {
    if (!*directory)
    {
@@ -2970,7 +2970,7 @@ static int rgui_iterate(void *data, unsigned action)
       if (menu_type == RGUI_SETTINGS_OPEN_HISTORY)
          history_parse(rgui);
       else
-         directory_parse(rgui, dir, menu_type, rgui->selection_buf);
+         rgui_directory_parse(rgui, dir, menu_type, rgui->selection_buf);
 
       // Before a refresh, we could have deleted a file on disk, causing
       // selection_ptr to suddendly be out of range. Ensure it doesn't overflow.
