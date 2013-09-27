@@ -4,7 +4,7 @@ import java.io.File;
 
 import android.graphics.drawable.Drawable;
 
-public class HistoryWrapper implements IconAdapterItem {
+public final class HistoryWrapper implements IconAdapterItem {
 	
 	private String gamePath;
 	private String gamePathShort;

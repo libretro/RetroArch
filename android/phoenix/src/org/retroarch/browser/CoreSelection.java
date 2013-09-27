@@ -13,7 +13,7 @@ import android.view.*;
 
 // JELLY_BEAN_MR1 = 17
 
-public class CoreSelection extends Activity implements
+public final class CoreSelection extends Activity implements
 		AdapterView.OnItemClickListener {
 	private IconAdapter<ModuleWrapper> adapter;
 	static private final String TAG = "CoreSelection";
@@ -41,7 +41,7 @@ public class CoreSelection extends Activity implements
 		list.setAdapter(adapter);
 		list.setOnItemClickListener(this);
 
-		setTitle("Select Libretro core");
+		setTitle(R.string.select_libretro_core);
 
 		// Populate the list
 		final String modulePath = MainMenuActivity.getInstance()

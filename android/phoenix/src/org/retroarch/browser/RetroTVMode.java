@@ -5,7 +5,7 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.provider.Settings;
 
-public class RetroTVMode extends Activity {
+public final class RetroTVMode extends Activity {
 	
 	@Override
 	public void onCreate(Bundle savedInstanceState) {

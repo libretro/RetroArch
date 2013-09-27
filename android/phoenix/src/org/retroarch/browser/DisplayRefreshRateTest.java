@@ -3,6 +3,8 @@ package org.retroarch.browser;
 import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.opengles.GL10;
 
+import org.retroarch.R;
+
 import android.app.Activity;
 import android.content.SharedPreferences;
 import android.opengl.GLES20;
@@ -12,7 +14,7 @@ import android.util.Log;
 import android.view.WindowManager;
 import android.widget.Toast;
 
-public class DisplayRefreshRateTest extends Activity {
+public final class DisplayRefreshRateTest extends Activity {
 
 	private class Renderer implements GLSurfaceView.Renderer {
 		private static final String TAG = "GLESRenderer";
@@ -105,12 +107,12 @@ public class DisplayRefreshRateTest extends Activity {
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
-		Toast.makeText(this, "Touch the screen with your fingers for more accurate measurements.", Toast.LENGTH_LONG).show();
+		Toast.makeText(this, R.string.touch_screen_with_fingers, Toast.LENGTH_LONG).show();
 		surfaceView = new GLSurfaceView(this);
 		surfaceView.setEGLContextClientVersion(2);
 		surfaceView.setRenderer(new Renderer(this));
 		getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
-		setTitle("Refresh rate calibration");
+		setTitle(R.string.refresh_rate_calibration);
 		setContentView(surfaceView);
 	}
 	
@@ -118,7 +120,7 @@ public class DisplayRefreshRateTest extends Activity {
 	protected void onDestroy() {
 		SharedPreferences prefs = MainMenuActivity.getPreferences();
 		String fps = prefs.getString("video_refresh_rate", "ERROR");
-		Toast.makeText(this, "Refresh rate measured to: " + fps + " Hz.", Toast.LENGTH_LONG).show();
+		Toast.makeText(this, String.format(getString(R.string.refresh_rate_measured_to), fps), Toast.LENGTH_LONG).show();
 		super.onDestroy();
 	}
 }
