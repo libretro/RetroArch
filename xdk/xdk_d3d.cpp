@@ -685,7 +685,7 @@ static void *xdk_d3d_init(const video_info_t *video, const input_driver_t **inpu
    xdk_d3d_init_fbo(d3d);
 #endif
 
-   xdk_d3d_set_rotation(d3d, g_extern.console.screen.orientation);
+   xdk_d3d_set_rotation(d3d, g_settings.video.rotation);
 
    //really returns driver.video_data to driver.video_data - see comment above
    return d3d;

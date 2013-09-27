@@ -211,7 +211,7 @@ static void menu_settings_create_menu_item_label_w(wchar_t *strwbuf, unsigned se
          snprintf(str, size, "RetroArch %s", PACKAGE_VERSION);
          break;
       case S_LBL_ROTATION:
-         snprintf(str, size, "Rotation: %s", rotation_lut[g_extern.console.screen.orientation]);
+         snprintf(str, size, "Rotation: %s", rotation_lut[g_settings.video.rotation]);
          break;
       case S_LBL_LOAD_STATE_SLOT:
          snprintf(str, size, "Load State #%d", g_extern.state_slot);
@@ -1043,7 +1043,7 @@ HRESULT CRetroArchVideoOptions::OnInit(XUIMessageInit * pInitData, BOOL& bHandle
    XuiListInsertItems(m_menulist, MENU_XUI_ITEM_RESIZE_MODE, 1);
    XuiListSetText(m_menulist, MENU_XUI_ITEM_RESIZE_MODE, L"Custom Ratio ...");
 
-   driver.video->set_rotation(driver.video_data, g_extern.console.screen.orientation);
+   driver.video->set_rotation(driver.video_data, g_settings.video.rotation);
    menu_settings_create_menu_item_label_w(strw_buffer, S_LBL_ROTATION, sizeof(strw_buffer));
    XuiListInsertItems(m_menulist, MENU_XUI_ITEM_ORIENTATION, 1);
    XuiListSetText(m_menulist, MENU_XUI_ITEM_ORIENTATION, strw_buffer);
@@ -1104,7 +1104,7 @@ HRESULT CRetroArchVideoOptions::OnControlNavigate(XUIMessageControlNavigate *pCo
             settings_set(1ULL << S_ROTATION_DECREMENT);
             menu_settings_create_menu_item_label_w(strw_buffer, S_LBL_ROTATION, sizeof(strw_buffer));
             XuiListSetText(m_menulist, MENU_XUI_ITEM_ORIENTATION, strw_buffer);
-            driver.video->set_rotation(driver.video_data, g_extern.console.screen.orientation);
+            driver.video->set_rotation(driver.video_data, g_settings.video.rotation);
          }
          else if (input == XUI_CONTROL_NAVIGATE_RIGHT ||
                input == XUI_CONTROL_NAVIGATE_OK)
@@ -1112,7 +1112,7 @@ HRESULT CRetroArchVideoOptions::OnControlNavigate(XUIMessageControlNavigate *pCo
             settings_set(1ULL << S_ROTATION_INCREMENT);
             menu_settings_create_menu_item_label_w(strw_buffer, S_LBL_ROTATION, sizeof(strw_buffer));
             XuiListSetText(m_menulist, MENU_XUI_ITEM_ORIENTATION, strw_buffer);
-            driver.video->set_rotation(driver.video_data, g_extern.console.screen.orientation);
+            driver.video->set_rotation(driver.video_data, g_settings.video.rotation);
          }
          break;
    }
