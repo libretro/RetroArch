@@ -507,8 +507,8 @@ static void menu_init_history(void)
 
 static void menu_update_libretro_info(void)
 {
-   *rgui->libretro_dir = '\0';
 #ifdef HAVE_DYNAMIC
+   *rgui->libretro_dir = '\0';
    libretro_free_system_info(&rgui->info);
    if (path_is_directory(g_settings.libretro))
       strlcpy(rgui->libretro_dir, g_settings.libretro, sizeof(rgui->libretro_dir));
