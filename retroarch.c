@@ -3080,7 +3080,7 @@ static inline void limit_frame_time(void)
    rarch_time_t to_sleep_ms = (target - current) / 1000;
    if (to_sleep_ms > 0)
    {
-      rarch_sleep(to_sleep_ms);
+      rarch_sleep((unsigned int)to_sleep_ms);
       g_extern.frame_limit.last_frame_time += g_extern.frame_limit.minimum_frame_time; // Combat jitter a bit.
    }
    else

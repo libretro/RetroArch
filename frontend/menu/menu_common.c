@@ -800,7 +800,7 @@ bool menu_iterate(void)
    target_msec = 750 / g_settings.video.refresh_rate; // Try to sleep less, so we can hopefully rely on FPS logger.
    sleep_msec = target_msec - delta;
    if (sleep_msec > 0)
-      rarch_sleep(sleep_msec);
+      rarch_sleep((unsigned int)sleep_msec);
    rgui->last_time = rarch_get_time_usec();
 
    if (driver.video_poke && driver.video_poke->set_texture_enable)
