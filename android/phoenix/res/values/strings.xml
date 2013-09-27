@@ -30,6 +30,7 @@
     <!-- Display Refresh Rate Test Class -->
     <string name="refresh_rate_calibration">Refresh rate calibration</string>
     <string name="touch_screen_with_fingers">Touch the screen with your fingers for more accurate measurements.</string>
+    <string name="refresh_rate_measured_to">Refresh rate measured to: %1$s Hz.</string>
 
     <!-- History Selection Class -->
     <string name="recently_played_games">Recently played games</string>

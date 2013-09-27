@@ -120,7 +120,7 @@ public final class DisplayRefreshRateTest extends Activity {
 	protected void onDestroy() {
 		SharedPreferences prefs = MainMenuActivity.getPreferences();
 		String fps = prefs.getString("video_refresh_rate", "ERROR");
-		Toast.makeText(this, "Refresh rate measured to: " + fps + " Hz.", Toast.LENGTH_LONG).show();
+		Toast.makeText(this, String.format(getString(R.string.refresh_rate_measured_to), fps), Toast.LENGTH_LONG).show();
 		super.onDestroy();
 	}
 }
