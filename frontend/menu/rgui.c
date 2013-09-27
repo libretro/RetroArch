@@ -219,6 +219,7 @@ static bool menu_type_is_directory_browser(unsigned type)
 #ifdef HAVE_DYNAMIC
       type == RGUI_LIBRETRO_DIR_PATH ||
 #endif
+      type == RGUI_CONFIG_DIR_PATH ||
       type == RGUI_SAVEFILE_DIR_PATH ||
 #ifdef HAVE_OVERLAY
       type == RGUI_OVERLAY_DIR_PATH ||
@@ -443,6 +444,8 @@ static void render_text(rgui_handle_t *rgui)
 
    if (menu_type == RGUI_SETTINGS_CORE)
       snprintf(title, sizeof(title), "CORE SELECTION %s", dir);
+   else if (menu_type == RGUI_SETTINGS_CONFIG)
+      snprintf(title, sizeof(title), "CONFIG %s", dir);
    else if (menu_type == RGUI_SETTINGS_DISK_APPEND)
       snprintf(title, sizeof(title), "DISK APPEND %s", dir);
    else if (menu_type == RGUI_SETTINGS_VIDEO_OPTIONS)
@@ -487,6 +490,8 @@ static void render_text(rgui_handle_t *rgui)
    else if (menu_type == RGUI_LIBRETRO_DIR_PATH)
       snprintf(title, sizeof(title), "LIBRETRO DIR %s", dir);
 #endif
+   else if (menu_type == RGUI_CONFIG_DIR_PATH)
+      snprintf(title, sizeof(title), "CONFIG DIR %s", dir);
    else if (menu_type == RGUI_SAVEFILE_DIR_PATH)
       snprintf(title, sizeof(title), "SAVEFILE DIR %s", dir);
 #ifdef HAVE_OVERLAY
@@ -561,6 +566,7 @@ static void render_text(rgui_handle_t *rgui)
       else
 #endif
       if (menu_type == RGUI_SETTINGS_CORE ||
+            menu_type == RGUI_SETTINGS_CONFIG ||
 #ifdef HAVE_OVERLAY
             menu_type == RGUI_SETTINGS_OVERLAY_PRESET ||
 #endif
@@ -721,6 +727,9 @@ static void render_text(rgui_handle_t *rgui)
                strlcpy(type_str, *rgui->libretro_dir ? rgui->libretro_dir : "<None>", sizeof(type_str));
                break;
 #endif
+            case RGUI_CONFIG_DIR_PATH:
+               strlcpy(type_str, *g_settings.rgui_config_directory ? g_settings.rgui_config_directory : "<default>", sizeof(type_str));
+               break;
             case RGUI_SHADER_DIR_PATH:
                strlcpy(type_str, *g_settings.video.shader_dir ? g_settings.video.shader_dir : "<default>", sizeof(type_str));
                break;
@@ -738,6 +747,12 @@ static void render_text(rgui_handle_t *rgui)
                   snprintf(type_str, sizeof(type_str), "%u", current + 1);
                break;
             }
+            case RGUI_SETTINGS_CONFIG:
+               if (*g_extern.config_path)
+                  fill_pathname_base(type_str, g_extern.config_path, sizeof(type_str));
+               else
+                  strlcpy(type_str, "<default>", sizeof(type_str));
+               break;
             case RGUI_SETTINGS_OPEN_FILEBROWSER:
             case RGUI_SETTINGS_OPEN_HISTORY:
             case RGUI_SETTINGS_CORE_OPTIONS:
@@ -746,6 +761,7 @@ static void render_text(rgui_handle_t *rgui)
             case RGUI_SETTINGS_VIDEO_OPTIONS:
             case RGUI_SETTINGS_AUDIO_OPTIONS:
             case RGUI_SETTINGS_DISK_OPTIONS:
+            case RGUI_SETTINGS_SAVE_CONFIG:
 #ifdef HAVE_SHADER_MANAGER
             case RGUI_SETTINGS_SHADER_OPTIONS:
             case RGUI_SETTINGS_SHADER_PRESET:
@@ -1109,6 +1125,10 @@ static int rgui_settings_toggle_setting(rgui_handle_t *rgui, unsigned setting, r
             return -1;
          }
          break;
+      case RGUI_SETTINGS_SAVE_CONFIG:
+         if (action == RGUI_ACTION_OK)
+            menu_save_new_config();
+         break;
 #ifdef HAVE_OVERLAY
       case RGUI_SETTINGS_OVERLAY_PRESET:
          switch (action)
@@ -1413,6 +1433,10 @@ static int rgui_settings_toggle_setting(rgui_handle_t *rgui, unsigned setting, r
             *rgui->libretro_dir = '\0';
          break;
 #endif
+      case RGUI_CONFIG_DIR_PATH:
+         if (action == RGUI_ACTION_START)
+            *g_settings.rgui_config_directory = '\0';
+         break;
       case RGUI_SHADER_DIR_PATH:
          if (action == RGUI_ACTION_START)
             *g_settings.video.shader_dir = '\0';
@@ -1490,6 +1514,8 @@ static void rgui_settings_populate_entries(rgui_handle_t *rgui)
 #ifndef HAVE_DYNAMIC
    rgui_list_push(rgui->selection_buf, "Restart RetroArch", RGUI_SETTINGS_RESTART_EMULATOR, 0);
 #endif
+   rgui_list_push(rgui->selection_buf, "RetroArch Config", RGUI_SETTINGS_CONFIG, 0);
+   rgui_list_push(rgui->selection_buf, "Save New Config", RGUI_SETTINGS_SAVE_CONFIG, 0);
    rgui_list_push(rgui->selection_buf, "Quit RetroArch", RGUI_SETTINGS_QUIT_RARCH, 0);
 }
 
@@ -1672,7 +1698,7 @@ static int shader_manager_toggle_setting(rgui_handle_t *rgui, unsigned setting, 
 
       if (rgui->shader.passes && type != RARCH_SHADER_NONE)
       {
-         const char *conf_path = type == RARCH_SHADER_GLSL ? "rgui.glslp" : "rgui.cgp";
+         const char *conf_path = type == RARCH_SHADER_GLSL ? rgui->default_glslp : rgui->default_cgp;
 
          char cgp_path[PATH_MAX];
          const char *shader_dir = *g_settings.video.shader_dir ?
@@ -2127,6 +2153,7 @@ static void rgui_settings_path_populate_entries(rgui_handle_t *rgui)
 {
    rgui_list_clear(rgui->selection_buf);
    rgui_list_push(rgui->selection_buf, "Browser Directory", RGUI_BROWSER_DIR_PATH, 0);
+   rgui_list_push(rgui->selection_buf, "Config Directory", RGUI_CONFIG_DIR_PATH, 0);
 #ifdef HAVE_DYNAMIC
    rgui_list_push(rgui->selection_buf, "Core Directory", RGUI_LIBRETRO_DIR_PATH, 0);
 #endif
@@ -2365,6 +2392,8 @@ static int rgui_settings_iterate(rgui_handle_t *rgui, rgui_action_t action)
       label = ""; // Shouldn't happen ...
 #endif
    }
+   else if (type == RGUI_SETTINGS_CONFIG)
+      label = g_settings.rgui_config_directory;
    else if (type == RGUI_SETTINGS_DISK_APPEND)
       label = rgui->base_path;
 
@@ -2415,7 +2444,7 @@ static int rgui_settings_iterate(rgui_handle_t *rgui, rgui_action_t action)
             rgui->selection_ptr = 0;
             rgui->need_refresh = true;
          }
-         else if ((menu_type_is_settings(type) || type == RGUI_SETTINGS_CORE || type == RGUI_SETTINGS_DISK_APPEND) && action == RGUI_ACTION_OK)
+         else if ((menu_type_is_settings(type) || type == RGUI_SETTINGS_CORE || type == RGUI_SETTINGS_CONFIG || type == RGUI_SETTINGS_DISK_APPEND) && action == RGUI_ACTION_OK)
          {
             rgui_list_push(rgui->menu_stack, label, type, rgui->selection_ptr);
             rgui->selection_ptr = 0;
@@ -2467,7 +2496,9 @@ static int rgui_settings_iterate(rgui_handle_t *rgui, rgui_action_t action)
 #ifdef HAVE_OVERLAY
             menu_type == RGUI_SETTINGS_OVERLAY_PRESET ||
 #endif
-            menu_type == RGUI_SETTINGS_CORE || menu_type == RGUI_SETTINGS_DISK_APPEND ||
+            menu_type == RGUI_SETTINGS_CORE ||
+            menu_type == RGUI_SETTINGS_CONFIG ||
+            menu_type == RGUI_SETTINGS_DISK_APPEND ||
             menu_type == RGUI_SETTINGS_OPEN_HISTORY))
    {
       rgui->need_refresh = false;
@@ -2580,6 +2611,8 @@ static bool directory_parse(rgui_handle_t *rgui, const char *directory, unsigned
    char ext_buf[1024];
    if (menu_type == RGUI_SETTINGS_CORE)
       exts = EXT_EXECUTABLES;
+   else if (menu_type == RGUI_SETTINGS_CONFIG)
+      exts = "cfg";
 #ifdef HAVE_SHADER_MANAGER
    else if (menu_type == RGUI_SETTINGS_SHADER_PRESET)
       exts = "cgp|glslp";
@@ -2727,6 +2760,7 @@ static int rgui_iterate(void *data, unsigned action)
                type == RGUI_SETTINGS_OVERLAY_PRESET ||
 #endif
                type == RGUI_SETTINGS_CORE ||
+               type == RGUI_SETTINGS_CONFIG ||
                type == RGUI_SETTINGS_DISK_APPEND ||
                type == RGUI_FILE_DIRECTORY)
          {
@@ -2792,6 +2826,18 @@ static int rgui_iterate(void *data, unsigned action)
 
                rgui_flush_menu_stack(rgui);
             }
+            else if (menu_type == RGUI_SETTINGS_CONFIG)
+            {
+               char config[PATH_MAX];
+               fill_pathname_join(config, dir, path, sizeof(config));
+               rgui_flush_menu_stack(rgui);
+               rgui->msg_force = true;
+               if (menu_replace_config(config))
+               {
+                  rgui->selection_ptr = 0; // Menu can shrink.
+                  ret = -1;
+               }
+            }
 #ifdef HAVE_OVERLAY
             else if (menu_type == RGUI_SETTINGS_OVERLAY_PRESET)
             {
@@ -2856,7 +2902,12 @@ static int rgui_iterate(void *data, unsigned action)
 #ifdef HAVE_DYNAMIC
             else if (menu_type == RGUI_LIBRETRO_DIR_PATH)
             {
-               strlcpy(rgui->libretro_dir, dir, sizeof(g_extern.savestate_dir));
+               strlcpy(rgui->libretro_dir, dir, sizeof(rgui->libretro_dir));
+               rgui_flush_menu_stack_type(rgui, RGUI_SETTINGS_PATH_OPTIONS);
+            }
+            else if (menu_type == RGUI_CONFIG_DIR_PATH)
+            {
+               strlcpy(g_settings.rgui_config_directory, dir, sizeof(g_settings.rgui_config_directory));
                rgui_flush_menu_stack_type(rgui, RGUI_SETTINGS_PATH_OPTIONS);
             }
 #endif
@@ -2908,6 +2959,7 @@ static int rgui_iterate(void *data, unsigned action)
             menu_type == RGUI_SETTINGS_OVERLAY_PRESET ||
 #endif
             menu_type == RGUI_SETTINGS_CORE ||
+            menu_type == RGUI_SETTINGS_CONFIG ||
             menu_type == RGUI_SETTINGS_OPEN_HISTORY ||
             menu_type == RGUI_SETTINGS_DISK_APPEND))
    {

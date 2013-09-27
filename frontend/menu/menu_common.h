@@ -98,6 +98,8 @@ typedef enum
    RGUI_SETTINGS_OPEN_FILEBROWSER,
    RGUI_SETTINGS_OPEN_HISTORY,
    RGUI_SETTINGS_CORE,
+   RGUI_SETTINGS_CONFIG,
+   RGUI_SETTINGS_SAVE_CONFIG,
    RGUI_SETTINGS_CORE_OPTIONS,
    RGUI_SETTINGS_AUDIO_OPTIONS,
    RGUI_SETTINGS_INPUT_OPTIONS,
@@ -122,6 +124,7 @@ typedef enum
    RGUI_SAVESTATE_DIR_PATH,
    RGUI_SAVEFILE_DIR_PATH,
    RGUI_LIBRETRO_DIR_PATH,
+   RGUI_CONFIG_DIR_PATH,
 #ifdef HAVE_OVERLAY
    RGUI_OVERLAY_DIR_PATH,
 #endif
@@ -207,6 +210,8 @@ typedef struct
    bool msg_force;
 
    char base_path[PATH_MAX];
+   char default_glslp[PATH_MAX];
+   char default_cgp[PATH_MAX];
 
    const uint8_t *font;
    bool alloc_font;
@@ -258,6 +263,10 @@ void load_menu_game_history(unsigned game_index);
 void menu_rom_history_push(const char *path, const char *core_path,
       const char *core_name);
 void menu_rom_history_push_current(void);
+
+bool menu_replace_config(const char *path);
+
+bool menu_save_new_config(void);
 
 #ifdef __cplusplus
 }
