@@ -37,9 +37,8 @@ extern "C" {
 
 #ifdef HAVE_FILEBROWSER
 #include "utils/file_browser.h"
-#else
-#include "utils/file_list.h"
 #endif
+#include "utils/file_list.h"
 
 #if defined(HAVE_CG) || defined(HAVE_HLSL) || defined(HAVE_GLSL)
 #define HAVE_SHADER_MANAGER
@@ -201,10 +200,9 @@ typedef struct
 #ifdef HAVE_FILEBROWSER
    filebrowser_t *browser;
    unsigned menu_type;
-#else
+#endif
    rgui_list_t *menu_stack;
    rgui_list_t *selection_buf;
-#endif
    size_t selection_ptr;
    bool need_refresh;
    bool msg_force;

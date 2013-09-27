@@ -128,7 +128,6 @@ void shader_manager_get_str(struct gfx_shader *shader,
 #endif
 
 #ifdef HAVE_FILEBROWSER
-
 static bool directory_parse(void *data, const char *path)
 {
    filebrowser_t *filebrowser = (filebrowser_t*)data;
@@ -298,8 +297,7 @@ void filebrowser_update(void *data, uint64_t action_ori, const char *extensions)
    if (!ret)
       msg_queue_push(g_extern.msg_queue, "ERROR - Failed to open directory.", 1, 180);
 }
-
-#else
+#endif
 
 struct rgui_file
 {
@@ -368,8 +366,6 @@ void rgui_list_get_last(const rgui_list_t *list,
    if (list->size)
       rgui_list_get_at_offset(list, list->size - 1, path, file_type);
 }
-
-#endif
 
 void menu_rom_history_push(const char *path,
       const char *core_path,
