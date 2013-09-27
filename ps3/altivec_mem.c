@@ -213,6 +213,14 @@ void *vec_memset(void *s, int p, size_t len)
       ptr = (uint8_t *)ptr_w;
    }
    // Handle the remaining bytes
-   memset_rest_bytes(ptr, P, len);
+   switch(len)
+   {
+      case 3:
+         *ptr++ = P;
+      case 2:
+         *ptr++ = P;
+      case 1:
+         *ptr++ = P;
+   }
    return s;
 }

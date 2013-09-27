@@ -225,24 +225,7 @@ static inline void memset_fwd_until_simd_aligned(word_t *ptr_w, word_t w, size_t
   }
 }
 
-static inline void memset_rest_words(word_t *ptr_w, word_t w, size_t l)
-{
-  while (l--)
-      *ptr_w++ = w;
-}
 
-static inline int memset_rest_bytes(uint8_t *ptr, uint8_t c, size_t len)
-{
-   switch(len)
-   {
-      case 3:
-         *ptr++ = c;
-      case 2:
-         *ptr++ = c;
-      case 1:
-         *ptr++ = c;
-   }
-}
 #else
 
 #define word_t  uint32_t
@@ -357,28 +340,13 @@ static inline void memset_fwd_until_simd_aligned(word_t *ptr_w, word_t w, size_t
          *ptr_w++ = w;
    }
 }
+#endif
 
 static inline void memset_rest_words(word_t *ptr_w, word_t w, size_t l)
 {
-   while (l--)
-   {
+  while (l--)
       *ptr_w++ = w;
-   }
 }
-
-static inline int memset_rest_bytes(uint8_t *ptr, uint8_t c, size_t len)
-{
-   switch(len)
-   {
-      case 3:
-         *ptr++ = c;
-      case 2:
-         *ptr++ = c;
-      case 1:
-         *ptr++ = c;
-   }
-}
-#endif
 
 static inline void copy_fwd_rest_blocks_aligned(word_t *d, const uint8_t *s, size_t blocks)
 {
