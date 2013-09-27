@@ -222,8 +222,7 @@ public class DirectoryActivity extends Activity implements
 				boolean allowFile = file.isDirectory() || (filterPath(path) && !isDirectoryTarget);
 
 				if (allowFile)
-					adapter.add(new FileWrapper(file, FileWrapper.FILE,
-							file.isDirectory() || true));
+					adapter.add(new FileWrapper(file, FileWrapper.FILE, true));
 			}
 		}
 
