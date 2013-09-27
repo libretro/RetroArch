@@ -20,7 +20,7 @@ public final class HistoryWrapper implements IconAdapterItem {
 		gamePathShort = file.getName();
 		try {
 			gamePathShort = gamePathShort.substring(0, gamePathShort.lastIndexOf('.'));
-		} catch (Exception e) {
+		} catch (IndexOutOfBoundsException e) {
 		}
 	}
 	
