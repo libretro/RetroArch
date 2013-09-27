@@ -1,5 +1,7 @@
 package org.retroarch.browser;
 
+import org.retroarch.R;
+
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
@@ -16,7 +18,7 @@ public final class ReportIME extends Activity {
 		final Activity ctx = this;
 		AlertDialog.Builder dialog = new AlertDialog.Builder(this)
 				.setMessage(current_ime)
-				.setNeutralButton("Close",
+				.setNeutralButton(R.string.close,
 						new DialogInterface.OnClickListener() {
 							@Override
 							public void onClick(DialogInterface dialog,

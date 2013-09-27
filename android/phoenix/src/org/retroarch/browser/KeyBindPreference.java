@@ -45,9 +45,11 @@ final class KeyBindPreference extends DialogPreference implements View.OnKeyList
 	KeyBindEditText keyText;
 	private String[] key_labels;
 	private final int DEFAULT_KEYCODE = 0;
+	private final Context context;
 
 	public KeyBindPreference(Context context, AttributeSet attrs) {
 		super(context, attrs);
+		this.context = context;
 		key_labels = getContext().getResources().getStringArray(R.array.key_bind_values);
 	}
 	
@@ -57,7 +59,7 @@ final class KeyBindPreference extends DialogPreference implements View.OnKeyList
 		{
 			grabKeyCode = false;
 			key_bind_code = keyCode;
-			keyText.setText("Current: " + key_labels[key_bind_code]);
+			keyText.setText(String.format(context.getString(R.string.current_binding), key_labels[key_bind_code]));
 		}
 	}
 
@@ -84,7 +86,7 @@ final class KeyBindPreference extends DialogPreference implements View.OnKeyList
 		((Button) view.findViewById(R.id.key_bind_detect)).setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
             	grabKeyCode = true;
-    			keyText.setText("Press key to use");
+    			keyText.setText(R.string.press_key_to_use);
     			keyText.requestFocus();
             }
         });

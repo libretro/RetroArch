@@ -11,4 +11,41 @@
     <string name="optimal_settings_device">Optimal device settings</string>
     <string name="extracting_assets_please_wait_">Extracting assets, please wait …</string>
 
+    <!-- Core Selection Class -->
+    <string name="select_libretro_core">Select Libretro core</string>
+
+    <!-- Display Refresh Rate Test Class -->
+    <string name="refresh_rate_calibration">Refresh rate calibration</string>
+    <string name="touch_screen_with_fingers">Touch the screen with your fingers for more accurate measurements.</string>
+
+    <!-- History Selection Class -->
+    <string name="recently_played_games">Recently played games</string>
+    <string name="loading_gamepath">Loading [%1$s]…</string>
+    
+    <!-- Key Bind Preference Class -->
+    <string name="current_binding">Current: %1$s</string>
+    <string name="press_key_to_use">Press key to use</string>
+
+    <!-- Main Menu Class -->
+    <string name="no_core">No core</string>
+    <string name="welcome_to_retroarch">Welcome to RetroArch</string>
+    <string name="welcome_to_retroarch_desc">This is your first time starting up RetroArch. RetroArch will now be preconfigured for the best possible gameplay experience.</string>
+    <string name="detect_device_msg_ouya">The ideal configuration options for your device will now be preconfigured.\n\nNOTE: For optimal performance, turn off Google Account sync, GPS and Wi-Fi in your Android settings menu.</string>
+    <string name="detect_device_msg_general">The ideal configuration options for your device will now be preconfigured.\n\nNOTE: For optimal performance, turn off Google Account sync, Google Play Store auto-updates, GPS and Wi-Fi in your Android settings menu.</string>
+    <string name="nvidia_shield_detected">NVidia Shield detected</string>
+    <string name="game_mid_detected">GameMID detected</string>
+    <string name="ouya_detected">OUYA detected</string>
+    <string name="xperia_play_detected">Xperia Play detected</string>
+    <string name="nexus_7_2013_detected">Nexus 7 2013 detected</string>
+    <string name="no_optimal_settings">Device either not detected in list or doesn\'t have any optimal settings in our database.</string>
+    <string name="load_a_core_first">Go to \'Load Core\' and select a core first.</string>
+    <string name="loading_data">Loading [%1$s]…</string>
+    
+    <!-- Refresh Rate Set OS Class -->
+    <string name="using_os_reported_refresh_rate">Using OS-reported refresh rate of: %1$s Hz.</string>
+    
+    <!-- Miscellaneous -->
+    <string name="ok">OK</string>
+    <string name="close">Close</string>
+    
 </resources>
