@@ -2918,7 +2918,7 @@ int rgui_input_postprocess(void *data, uint64_t old_state)
 
    DEVICE_CAST device_ptr = (DEVICE_CAST)driver.video_data;
 
-   if ((rgui->trigger_state & (1ULL << DEVICE_NAV_MENU)) &&
+   if ((rgui->trigger_state & (1ULL << RARCH_MENU_TOGGLE)) &&
       g_extern.main_is_init)
    {
       g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU_INGAME_EXIT);

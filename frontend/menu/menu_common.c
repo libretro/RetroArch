@@ -292,7 +292,7 @@ void filebrowser_update(void *data, uint64_t action_ori, const char *extensions)
          strlcpy(rgui->browser->current_dir.extensions, extensions,
                sizeof(rgui->browser->current_dir.extensions));
 #ifdef HAVE_RMENU_XUI
-         filebrowser_fetch_directory_entries(1ULL << DEVICE_NAV_B);
+         filebrowser_fetch_directory_entries(1ULL << RETRO_DEVICE_ID_JOYPAD_B);
 #endif
          break;
    }
@@ -638,123 +638,32 @@ void menu_ticker_line(char *buf, size_t len, unsigned index, const char *str, bo
 
 #ifndef HAVE_RMENU_XUI
 #if defined(HAVE_RMENU) || defined(HAVE_RGUI)
-
-static const struct retro_keybind _menu_nav_binds[] = {
-#if defined(HW_RVL)
-   { 0, 0, NULL, 0, GX_GC_UP | GX_GC_LSTICK_UP | GX_GC_RSTICK_UP | GX_CLASSIC_UP | GX_CLASSIC_LSTICK_UP | GX_CLASSIC_RSTICK_UP | GX_WIIMOTE_UP | GX_NUNCHUK_UP, 0 },
-   { 0, 0, NULL, 0, GX_GC_DOWN | GX_GC_LSTICK_DOWN | GX_GC_RSTICK_DOWN | GX_CLASSIC_DOWN | GX_CLASSIC_LSTICK_DOWN | GX_CLASSIC_RSTICK_DOWN | GX_WIIMOTE_DOWN | GX_NUNCHUK_DOWN, 0 },
-   { 0, 0, NULL, 0, GX_GC_LEFT | GX_GC_LSTICK_LEFT | GX_GC_RSTICK_LEFT | GX_CLASSIC_LEFT | GX_CLASSIC_LSTICK_LEFT | GX_CLASSIC_RSTICK_LEFT | GX_WIIMOTE_LEFT | GX_NUNCHUK_LEFT, 0 },
-   { 0, 0, NULL, 0, GX_GC_RIGHT | GX_GC_LSTICK_RIGHT | GX_GC_RSTICK_RIGHT | GX_CLASSIC_RIGHT | GX_CLASSIC_LSTICK_RIGHT | GX_CLASSIC_RSTICK_RIGHT | GX_WIIMOTE_RIGHT | GX_NUNCHUK_RIGHT, 0 },
-   { 0, 0, NULL, 0, GX_GC_A | GX_CLASSIC_A | GX_WIIMOTE_A | GX_WIIMOTE_2, 0 },
-   { 0, 0, NULL, 0, GX_GC_B | GX_CLASSIC_B | GX_WIIMOTE_B | GX_WIIMOTE_1, 0 },
-   { 0, 0, NULL, 0, GX_GC_START | GX_CLASSIC_PLUS | GX_WIIMOTE_PLUS, 0 },
-   { 0, 0, NULL, 0, GX_GC_Z_TRIGGER | GX_CLASSIC_MINUS | GX_WIIMOTE_MINUS, 0 },
-   { 0, 0, NULL, 0, GX_WIIMOTE_HOME | GX_CLASSIC_HOME, 0 },
-#elif defined(HW_DOL)
-   { 0, 0, NULL, 0, GX_GC_UP | GX_GC_LSTICK_UP | GX_GC_RSTICK_UP, 0 },
-   { 0, 0, NULL, 0, GX_GC_DOWN | GX_GC_LSTICK_DOWN | GX_GC_RSTICK_DOWN, 0 },
-   { 0, 0, NULL, 0, GX_GC_LEFT | GX_GC_LSTICK_LEFT | GX_GC_RSTICK_LEFT, 0 },
-   { 0, 0, NULL, 0, GX_GC_RIGHT | GX_GC_LSTICK_RIGHT | GX_GC_RSTICK_RIGHT, 0 },
-   { 0, 0, NULL, 0, GX_GC_A, 0 },
-   { 0, 0, NULL, 0, GX_GC_B, 0 },
-   { 0, 0, NULL, 0, GX_GC_START, 0 },
-   { 0, 0, NULL, 0, GX_GC_Z_TRIGGER, 0 },
-   { 0, 0, NULL, 0, GX_WIIMOTE_HOME, 0 },
-#elif defined(__CELLOS_LV2__) || defined(_XBOX1)
-   { 0, 0, NULL, (enum retro_key)0, (1ULL << RETRO_DEVICE_ID_JOYPAD_UP) | (1ULL << RARCH_ANALOG_LEFT_Y_DPAD_UP), 0 },
-   { 0, 0, NULL, (enum retro_key)0, (1ULL << RETRO_DEVICE_ID_JOYPAD_DOWN) | (1ULL << RARCH_ANALOG_LEFT_Y_DPAD_DOWN), 0 },
-   { 0, 0, NULL, (enum retro_key)0, (1ULL << RETRO_DEVICE_ID_JOYPAD_LEFT) | (1ULL << RARCH_ANALOG_LEFT_X_DPAD_LEFT), 0 },
-   { 0, 0, NULL, (enum retro_key)0, (1ULL << RETRO_DEVICE_ID_JOYPAD_RIGHT) | (1ULL << RARCH_ANALOG_LEFT_X_DPAD_RIGHT), 0 },
-   { 0, 0, NULL, (enum retro_key)0, (1ULL << RARCH_ANALOG_LEFT_Y_DPAD_UP), 0 },
-   { 0, 0, NULL, (enum retro_key)0, (1ULL << RARCH_ANALOG_LEFT_Y_DPAD_DOWN), 0 },
-   { 0, 0, NULL, (enum retro_key)0, (1ULL << RARCH_ANALOG_LEFT_X_DPAD_LEFT), 0 },
-   { 0, 0, NULL, (enum retro_key)0, (1ULL << RARCH_ANALOG_LEFT_X_DPAD_RIGHT), 0 },
-   { 0, 0, NULL, (enum retro_key)0, (1ULL << RARCH_ANALOG_RIGHT_Y_DPAD_UP), 0 },
-   { 0, 0, NULL, (enum retro_key)0, (1ULL << RARCH_ANALOG_RIGHT_Y_DPAD_DOWN), 0 },
-   { 0, 0, NULL, (enum retro_key)0, (1ULL << RARCH_ANALOG_RIGHT_X_DPAD_LEFT), 0 },
-   { 0, 0, NULL, (enum retro_key)0, (1ULL << RARCH_ANALOG_RIGHT_X_DPAD_RIGHT), 0 },
-   { 0, 0, NULL, (enum retro_key)0, (1ULL << RETRO_DEVICE_ID_JOYPAD_B), 0 },
-   { 0, 0, NULL, (enum retro_key)0, (1ULL << RETRO_DEVICE_ID_JOYPAD_A), 0 },
-   { 0, 0, NULL, (enum retro_key)0, (1ULL << RETRO_DEVICE_ID_JOYPAD_X), 0 },
-   { 0, 0, NULL, (enum retro_key)0, (1ULL << RETRO_DEVICE_ID_JOYPAD_Y), 0 },
-   { 0, 0, NULL, (enum retro_key)0, (1ULL << RETRO_DEVICE_ID_JOYPAD_START), 0 },
-   { 0, 0, NULL, (enum retro_key)0, (1ULL << RETRO_DEVICE_ID_JOYPAD_SELECT), 0 },
-   { 0, 0, NULL, (enum retro_key)0, (1ULL << RETRO_DEVICE_ID_JOYPAD_L), 0 },
-   { 0, 0, NULL, (enum retro_key)0, (1ULL << RETRO_DEVICE_ID_JOYPAD_R), 0 },
-   { 0, 0, NULL, (enum retro_key)0, (1ULL << RETRO_DEVICE_ID_JOYPAD_L2), 0 },
-   { 0, 0, NULL, (enum retro_key)0, (1ULL << RETRO_DEVICE_ID_JOYPAD_R2), 0 },
-#else
-   { 0, 0, NULL, (enum retro_key)0, (1ULL << RETRO_DEVICE_ID_JOYPAD_UP), 0 },
-   { 0, 0, NULL, (enum retro_key)0, (1ULL << RETRO_DEVICE_ID_JOYPAD_DOWN), 0 },
-   { 0, 0, NULL, (enum retro_key)0, (1ULL << RETRO_DEVICE_ID_JOYPAD_LEFT), 0 },
-   { 0, 0, NULL, (enum retro_key)0, (1ULL << RETRO_DEVICE_ID_JOYPAD_RIGHT), 0 },
-   { 0, 0, NULL, (enum retro_key)0, (1ULL << RETRO_DEVICE_ID_JOYPAD_A), 0 },
-   { 0, 0, NULL, (enum retro_key)0, (1ULL << RETRO_DEVICE_ID_JOYPAD_B), 0 },
-   { 0, 0, NULL, (enum retro_key)0, (1ULL << RETRO_DEVICE_ID_JOYPAD_START), 0 },
-   { 0, 0, NULL, (enum retro_key)0, (1ULL << RETRO_DEVICE_ID_JOYPAD_SELECT), 0 },
-   { 0, 0, NULL, (enum retro_key)0, (1ULL << RARCH_MENU_TOGGLE), 0 },
-#endif
-};
-
-#if defined(RARCH_CONSOLE) || defined(ANDROID)
-static const struct retro_keybind *menu_nav_binds[] = {
-   _menu_nav_binds
-};
-#endif
-
 static uint64_t rgui_input(void)
 {
    uint64_t input_state = 0;
 
-   // FIXME: Very ugly. Should do something more uniform.
-#if defined(RARCH_CONSOLE) || defined(ANDROID)
-   for (unsigned i = 0; i < DEVICE_NAV_LAST; i++)
-      input_state |= driver.input->input_state(driver.input_data, menu_nav_binds, 0,
-            RETRO_DEVICE_JOYPAD, 0, i) ? (1ULL << i) : 0;
-
-   input_state |= driver.input->key_pressed(driver.input_data, RARCH_MENU_TOGGLE) ? (1ULL << DEVICE_NAV_MENU) : 0;
-
-#ifdef HAVE_OVERLAY
-   for (unsigned i = 0; i < DEVICE_NAV_LAST; i++)
-      input_state |= driver.overlay_state.buttons & menu_nav_binds[0][i].joykey ? (1ULL << i) : 0;
-#endif
-#else
-   static const int maps[] = {
-      RETRO_DEVICE_ID_JOYPAD_UP,     DEVICE_NAV_UP,
-      RETRO_DEVICE_ID_JOYPAD_DOWN,   DEVICE_NAV_DOWN,
-      RETRO_DEVICE_ID_JOYPAD_LEFT,   DEVICE_NAV_LEFT,
-      RETRO_DEVICE_ID_JOYPAD_RIGHT,  DEVICE_NAV_RIGHT,
-      RETRO_DEVICE_ID_JOYPAD_A,      DEVICE_NAV_A,
-      RETRO_DEVICE_ID_JOYPAD_B,      DEVICE_NAV_B,
-      RETRO_DEVICE_ID_JOYPAD_L,      DEVICE_NAV_L,
-      RETRO_DEVICE_ID_JOYPAD_R,      DEVICE_NAV_R,
-      RETRO_DEVICE_ID_JOYPAD_START,  DEVICE_NAV_START,
-      RETRO_DEVICE_ID_JOYPAD_SELECT, DEVICE_NAV_SELECT,
-   };
-
    static const struct retro_keybind *binds[] = { g_settings.input.binds[0] };
 
-   for (unsigned i = 0; i < ARRAY_SIZE(maps); i += 2)
+   for (unsigned i = 0; i < RETRO_DEVICE_ID_JOYPAD_R2; i++)
    {
       input_state |= input_input_state_func(binds,
-            0, RETRO_DEVICE_JOYPAD, 0, maps[i + 0]) ? (1ULL << maps[i + 1]) : 0;
+            0, RETRO_DEVICE_JOYPAD, 0, i) ? (1ULL << i) : 0;
 #ifdef HAVE_OVERLAY
-      input_state |= (driver.overlay_state.buttons & (UINT64_C(1) << maps[i + 0])) ? (1ULL << maps[i + 1]) : 0;
+      input_state |= (driver.overlay_state.buttons & (UINT64_C(1) << i)) ? (1ULL << i) : 0;
 #endif
    }
 
-   input_state |= input_key_pressed_func(RARCH_MENU_TOGGLE) ? (1ULL << DEVICE_NAV_MENU) : 0;
-#endif
+   input_state |= input_key_pressed_func(RARCH_MENU_TOGGLE) ? (1ULL << RARCH_MENU_TOGGLE) : 0;
 
    rgui->trigger_state = input_state & ~rgui->old_input_state;
 
    rgui->do_held = (input_state & (
-            (1ULL << DEVICE_NAV_LEFT)
-            | (1ULL << DEVICE_NAV_RIGHT)
-            | (1ULL << DEVICE_NAV_UP)
-            | (1ULL << DEVICE_NAV_DOWN)
-            | (1ULL << DEVICE_NAV_L)
-            | (1ULL << DEVICE_NAV_R)
+            (1ULL << RETRO_DEVICE_ID_JOYPAD_UP)
+            | (1ULL << RETRO_DEVICE_ID_JOYPAD_DOWN)
+            | (1ULL << RETRO_DEVICE_ID_JOYPAD_LEFT)
+            | (1ULL << RETRO_DEVICE_ID_JOYPAD_RIGHT)
+            | (1ULL << RETRO_DEVICE_ID_JOYPAD_L)
+            | (1ULL << RETRO_DEVICE_ID_JOYPAD_R)
 #if defined(HAVE_RMENU)
             | (1ULL << RARCH_ANALOG_LEFT_Y_DPAD_UP)
             | (1ULL << RARCH_ANALOG_LEFT_Y_DPAD_DOWN)
@@ -765,7 +674,7 @@ static uint64_t rgui_input(void)
             | (1ULL << RARCH_ANALOG_RIGHT_X_DPAD_LEFT)
             | (1ULL << RARCH_ANALOG_RIGHT_X_DPAD_RIGHT)
 #endif
-            )) && !(input_state & (1ULL << DEVICE_NAV_MENU));
+            )) && !(input_state & (1ULL << RARCH_MENU_TOGGLE));
 
    return input_state;
 }
@@ -783,7 +692,7 @@ bool menu_iterate(void)
    {
       rgui->need_refresh = true;
       g_extern.lifecycle_mode_state &= ~(1ULL << MODE_MENU_PREINIT);
-      rgui->old_input_state |= 1ULL << DEVICE_NAV_MENU;
+      rgui->old_input_state |= 1ULL << RARCH_MENU_TOGGLE;
    }
 
    rarch_input_poll();
@@ -828,25 +737,25 @@ bool menu_iterate(void)
    action = RGUI_ACTION_NOOP;
 
    // don't run anything first frame, only capture held inputs for old_input_state
-   if (rgui->trigger_state & (1ULL << DEVICE_NAV_UP))
+   if (rgui->trigger_state & (1ULL << RETRO_DEVICE_ID_JOYPAD_UP))
       action = RGUI_ACTION_UP;
-   else if (rgui->trigger_state & (1ULL << DEVICE_NAV_DOWN))
+   else if (rgui->trigger_state & (1ULL << RETRO_DEVICE_ID_JOYPAD_DOWN))
       action = RGUI_ACTION_DOWN;
-   else if (rgui->trigger_state & (1ULL << DEVICE_NAV_LEFT))
+   else if (rgui->trigger_state & (1ULL << RETRO_DEVICE_ID_JOYPAD_LEFT))
       action = RGUI_ACTION_LEFT;
-   else if (rgui->trigger_state & (1ULL << DEVICE_NAV_RIGHT))
+   else if (rgui->trigger_state & (1ULL << RETRO_DEVICE_ID_JOYPAD_RIGHT))
       action = RGUI_ACTION_RIGHT;
-   else if (rgui->trigger_state & (1ULL << DEVICE_NAV_L))
+   else if (rgui->trigger_state & (1ULL << RETRO_DEVICE_ID_JOYPAD_L))
       action = RGUI_ACTION_SCROLL_UP;
-   else if (rgui->trigger_state & (1ULL << DEVICE_NAV_R))
+   else if (rgui->trigger_state & (1ULL << RETRO_DEVICE_ID_JOYPAD_R))
       action = RGUI_ACTION_SCROLL_DOWN;
-   else if (rgui->trigger_state & (1ULL << DEVICE_NAV_B))
+   else if (rgui->trigger_state & (1ULL << RETRO_DEVICE_ID_JOYPAD_B))
       action = RGUI_ACTION_CANCEL;
-   else if (rgui->trigger_state & (1ULL << DEVICE_NAV_A))
+   else if (rgui->trigger_state & (1ULL << RETRO_DEVICE_ID_JOYPAD_A))
       action = RGUI_ACTION_OK;
-   else if (rgui->trigger_state & (1ULL << DEVICE_NAV_SELECT))
+   else if (rgui->trigger_state & (1ULL << RETRO_DEVICE_ID_JOYPAD_SELECT))
       action = RGUI_ACTION_START;
-   else if (rgui->trigger_state & (1ULL << DEVICE_NAV_START))
+   else if (rgui->trigger_state & (1ULL << RETRO_DEVICE_ID_JOYPAD_START))
       action = RGUI_ACTION_SETTINGS;
 
    if (menu_ctx && menu_ctx->iterate)

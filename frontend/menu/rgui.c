@@ -2948,7 +2948,7 @@ int rgui_input_postprocess(void *data, uint64_t old_state)
 
    int ret = 0;
 
-   if ((rgui->trigger_state & (1ULL << DEVICE_NAV_MENU)) &&
+   if ((rgui->trigger_state & (1ULL << RARCH_MENU_TOGGLE)) &&
          g_extern.main_is_init &&
          !g_extern.libretro_dummy)
    {
