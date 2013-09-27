@@ -1073,10 +1073,15 @@ bool config_save_file(const char *path)
 #ifdef _XBOX1
    config_set_int(conf, "sound_volume_level", g_extern.console.sound.volume_level);
 #endif
-   config_set_bool(conf, "triple_buffering_enable", g_extern.lifecycle_mode_state & (1ULL << MODE_VIDEO_TRIPLE_BUFFERING_ENABLE));
-   config_set_bool(conf, "info_msg_enable", g_extern.lifecycle_mode_state & (1ULL << MODE_INFO_DRAW));
-   config_set_bool(conf, "soft_filter_enable", g_extern.lifecycle_mode_state & (1ULL << MODE_VIDEO_SOFT_FILTER_ENABLE));
-   config_set_bool(conf, "flicker_filter_enable", g_extern.lifecycle_mode_state & (1ULL << MODE_VIDEO_FLICKER_FILTER_ENABLE));
+   bool triple_buffering_enable_val = g_extern.lifecycle_mode_state & (1ULL << MODE_VIDEO_TRIPLE_BUFFERING_ENABLE);
+   bool info_msg_enable_val = g_extern.lifecycle_mode_state & (1ULL << MODE_INFO_DRAW);
+   bool soft_filter_enable_val = g_extern.lifecycle_mode_state & (1ULL << MODE_VIDEO_SOFT_FILTER_ENABLE);
+   bool flicker_filter_enable_val = g_extern.lifecycle_mode_state & (1ULL << MODE_VIDEO_FLICKER_FILTER_ENABLE);
+
+   config_set_bool(conf, "triple_buffering_enable", triple_buffering_enable_val);
+   config_set_bool(conf, "info_msg_enable", info_msg_enable_val);
+   config_set_bool(conf, "soft_filter_enable", soft_filter_enable_val);
+   config_set_bool(conf, "flicker_filter_enable", flicker_filter_enable_val);
 
    config_set_int(conf, "flicker_filter_index", g_extern.console.screen.flicker_filter_index);
    config_set_int(conf, "soft_filter_index", g_extern.console.screen.soft_filter_index);
@@ -1095,7 +1100,9 @@ bool config_save_file(const char *path)
    config_set_int(conf, "sound_mode", g_extern.console.sound.mode);
    config_set_int(conf, "state_slot", g_extern.state_slot);
    config_set_int(conf, "audio_mute", g_extern.audio_data.mute);
-   config_set_bool(conf, "custom_bgm_enable", g_extern.lifecycle_mode_state & (1ULL << MODE_AUDIO_CUSTOM_BGM_ENABLE));
+
+   bool custom_bgm_enable_val = g_extern.lifecycle_mode_state & (1ULL << MODE_AUDIO_CUSTOM_BGM_ENABLE);
+   config_set_bool(conf, "custom_bgm_enable", custom_bgm_enable_val);
 
    config_set_string(conf, "input_driver", g_settings.input.driver);
    config_set_string(conf, "input_joypad_driver", g_settings.input.joypad_driver);
