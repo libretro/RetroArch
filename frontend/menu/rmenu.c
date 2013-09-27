@@ -488,8 +488,6 @@ static int select_file(void *data, uint64_t action)
          break;
    }
 
-   filebrowser_update(rgui->browser, action, extensions);
-
    switch (action)
    {
       case RGUI_ACTION_OK:
@@ -600,8 +598,6 @@ static int select_directory(void *data, uint64_t action)
 
    bool is_dir = filebrowser_iterate(rgui->browser, FILEBROWSER_ACTION_PATH_ISDIR);
    bool pop_menu_stack = false;
-
-   filebrowser_update(rgui->browser, action, "empty");
 
    switch (action)
    {
@@ -2425,7 +2421,6 @@ static int select_rom(void *data, uint64_t action)
    if (driver.input->set_keybinds)
       driver.input->set_keybinds(&key_label_b, 0, 0, 0, (1ULL << KEYBINDS_ACTION_GET_BIND_LABEL));
 
-   filebrowser_update(rgui->browser, action, rgui->browser->current_dir.extensions);
 
    switch (action)
    {
@@ -3015,6 +3010,8 @@ static int rgui_iterate(void *data, unsigned action)
          rgui->osk_callback = NULL;
    }
 #endif
+
+   filebrowser_update(rgui->browser, action, rgui->browser->current_dir.extensions);
 
    switch(rgui->menu_type)
    {
