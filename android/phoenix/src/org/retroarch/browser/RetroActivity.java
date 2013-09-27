@@ -5,9 +5,6 @@ import android.os.Bundle;
 import android.widget.Toast;
 
 public final class RetroActivity extends NativeActivity {
-	public RetroActivity() {
-		super();
-	}
 
 	@Override
 	public void onCreate(Bundle savedInstance) {

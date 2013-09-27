@@ -29,7 +29,7 @@ public final class SeekbarPreference extends DialogPreference implements SeekBar
 		seek_value = getPersistedFloat(1.0f);
 		int prog = (int) (seek_value * 100);
 		bar.setProgress(prog);
-		text.setText(String.valueOf(prog) + "%");
+		text.setText(prog + "%");
 		bar.setOnSeekBarChangeListener(this);
 		return view;
 	}
@@ -46,7 +46,7 @@ public final class SeekbarPreference extends DialogPreference implements SeekBar
 	@Override
 	public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
 		seek_value = (float) progress / 100.0f;
-		text.setText(String.valueOf((int)(seek_value * 100)) + "%");
+		text.setText((int) (seek_value * 100) + "%");
 	}
 
 	@Override

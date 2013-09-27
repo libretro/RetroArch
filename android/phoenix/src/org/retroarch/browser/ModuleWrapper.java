@@ -8,10 +8,10 @@ import android.graphics.drawable.Drawable;
 
 final class ModuleWrapper implements IconAdapterItem {
 	public final File file;
-	private ConfigFile config;
+	private final ConfigFile config;
 
-	public ModuleWrapper(Context aContext, File aFile, ConfigFile config) throws IOException {
-		file = aFile;
+	public ModuleWrapper(Context context, File file, ConfigFile config) throws IOException {
+		this.file = file;
 		this.config = config;
 	}
 

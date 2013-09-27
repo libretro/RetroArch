@@ -360,7 +360,7 @@ public final class MainMenuActivity extends PreferenceActivity {
 		
 		// Refactor this entire mess and make this usable for per-core config
 		if (android.os.Build.VERSION.SDK_INT >= 17 &&
-				prefs.getBoolean("audio_latency_auto", true) == true) {
+				prefs.getBoolean("audio_latency_auto", true)) {
 			int buffersize = getLowLatencyBufferSize();
 
 			boolean lowLatency = hasLowLatencyAudio();
@@ -475,11 +475,11 @@ public final class MainMenuActivity extends PreferenceActivity {
 				.getApplicationInfo().dataDir + "/retroarch-history.txt");
 
 		for (int i = 1; i <= 4; i++) {
-			final String btns[] = { "up", "down", "left", "right", "a", "b",
+			final String[] btns = { "up", "down", "left", "right", "a", "b",
 					"x", "y", "start", "select", "l", "r", "l2", "r2", "l3",
 					"r3" };
 			for (String b : btns) {
-				String p = "input_player" + String.valueOf(i) + "_" + b
+				String p = "input_player" + i + "_" + b
 						+ "_btn";
 				config.setInt(p, prefs.getInt(p, 0));
 			}
@@ -493,8 +493,7 @@ public final class MainMenuActivity extends PreferenceActivity {
 	}
 
 	private byte[] loadAsset(String asset) throws IOException {
-		String path = asset;
-		InputStream stream = getAssets().open(path);
+		InputStream stream = getAssets().open(asset);
 		int len = stream.available();
 		byte[] buf = new byte[len];
 		stream.read(buf, 0, len);
@@ -544,8 +543,7 @@ public final class MainMenuActivity extends PreferenceActivity {
 		try {
 			String dataDir = getApplicationInfo().dataDir;
 			File cacheVersion = new File(dataDir, ".cacheversion");
-			if (cacheVersion != null && cacheVersion.isFile()
-					&& cacheVersion.canRead() && cacheVersion.canWrite()) {
+			if (cacheVersion.isFile() && cacheVersion.canRead() && cacheVersion.canWrite()) {
 				DataInputStream cacheStream = new DataInputStream(
 						new FileInputStream(cacheVersion));
 
@@ -803,7 +801,7 @@ public final class MainMenuActivity extends PreferenceActivity {
 	public void startActivity(Intent intent) {
 		if (intent.getComponent().getClassName()
 				.equals("org.retroarch.browser.ROMActivity")) {
-			if (new File(libretro_path).isDirectory() == false) {
+			if (!new File(libretro_path).isDirectory()) {
 				super.startActivityForResult(intent, ACTIVITY_LOAD_ROM);
 			} else {
 				Toast.makeText(this,
