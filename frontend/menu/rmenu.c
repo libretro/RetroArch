@@ -1137,23 +1137,6 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
                break;
          }
          break;
-      case SETTING_FONT_SIZE:
-         switch (action)
-         {
-            case RGUI_ACTION_LEFT:
-               if (g_settings.video.font_size > 0) 
-                  g_settings.video.font_size -= 0.01f;
-               break;
-            case RGUI_ACTION_RIGHT:
-            case RGUI_ACTION_OK:
-               if ((g_settings.video.font_size < 2.0f))
-                  g_settings.video.font_size += 0.01f;
-               break;
-            case RGUI_ACTION_START:
-               g_settings.video.font_size = 1.0f;
-               break;
-         }
-         break;
       case SETTING_ASPECT_RATIO:
          switch (action)
          {
@@ -2116,10 +2099,6 @@ static int select_setting(void *data, uint64_t action)
             fill_pathname_base(fname, g_extern.menu_texture_path, sizeof(fname));
             strlcpy(text, "Menu Skin", sizeof(text));
             strlcpy(setting_text, fname, sizeof(setting_text));
-            break;
-         case SETTING_FONT_SIZE:
-            strlcpy(text, "Font Size", sizeof(text));
-            snprintf(setting_text, sizeof(setting_text), "%f", g_settings.video.font_size);
             break;
          case SETTING_HW_TEXTURE_FILTER:
             strlcpy(text, "Default Filter", sizeof(text));
