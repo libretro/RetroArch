@@ -486,13 +486,22 @@ static int select_file(void *data, uint64_t action)
          strlcpy(extensions, EXT_EXECUTABLES, sizeof(extensions));
          strlcpy(comment, "INFO - Select a Libretro core.", sizeof(comment));
          break;
+      case FILE_BROWSER_MENU:
+         strlcpy(extensions, rgui->browser->current_dir.extensions, sizeof(extensions));
+         strlcpy(comment, "INFO - Select a game to load with the core.", sizeof(comment));
    }
 
    switch (action)
    {
       case RGUI_ACTION_OK:
          if (filebrowser_iterate(rgui->browser, FILEBROWSER_ACTION_PATH_ISDIR))
-            filebrowser_iterate(rgui->browser, FILEBROWSER_ACTION_OK);
+         {
+            if (!filebrowser_iterate(rgui->browser, FILEBROWSER_ACTION_OK))
+            {
+               RARCH_ERR("Failed to open directory.\n");
+               msg_queue_push(g_extern.msg_queue, "ERROR - Failed to open directory.", 1, 180);
+            }
+         }
          else
          {
             strlcpy(path, rgui->browser->current_dir.path, sizeof(path));
@@ -560,6 +569,10 @@ static int select_file(void *data, uint64_t action)
                   rarch_environment_cb(RETRO_ENVIRONMENT_SET_LIBRETRO_PATH, (void*)path);
                   g_extern.lifecycle_mode_state |= (1ULL << MODE_EXITSPAWN);
                   return -1;
+               case FILE_BROWSER_MENU:
+                  strlcpy(g_extern.fullpath, path, sizeof(g_extern.fullpath));
+                  g_extern.lifecycle_mode_state |= (1ULL << MODE_LOAD_GAME);
+                  return -1;
             }
 
             pop_menu_stack = true;
@@ -567,6 +580,22 @@ static int select_file(void *data, uint64_t action)
          break;
       case RGUI_ACTION_CANCEL:
          pop_menu_stack = true;
+         break;
+      case RGUI_ACTION_MAPPING_PREVIOUS:
+         if (rgui->menu_type == FILE_BROWSER_MENU)
+         {
+            const char * drive_map = menu_drive_mapping_previous();
+            if (drive_map != NULL)
+               filebrowser_set_root_and_ext(rgui->browser, rgui->browser->current_dir.extensions, drive_map);
+         }
+         break;
+      case RGUI_ACTION_MAPPING_NEXT:
+         if (rgui->menu_type == FILE_BROWSER_MENU)
+         {
+            const char * drive_map = menu_drive_mapping_next();
+            if (drive_map != NULL)
+               filebrowser_set_root_and_ext(rgui->browser, rgui->browser->current_dir.extensions, drive_map);
+         }
          break;
    }
 
@@ -2407,80 +2436,6 @@ static int select_setting(void *data, uint64_t action)
    return 0;
 }
 
-static int select_rom(void *data, uint64_t action)
-{
-   rgui_handle_t *rgui = (rgui_handle_t*)data;
-   font_params_t font_parms = {0};
-   char msg[128];
-
-   struct platform_bind key_label_b = {0};
-
-   strlcpy(key_label_b.desc, "Unknown", sizeof(key_label_b.desc));
-   key_label_b.joykey = 1ULL << RETRO_DEVICE_ID_JOYPAD_B;
-
-   if (driver.input->set_keybinds)
-      driver.input->set_keybinds(&key_label_b, 0, 0, 0, (1ULL << KEYBINDS_ACTION_GET_BIND_LABEL));
-
-
-   switch (action)
-   {
-      case RGUI_ACTION_OK:
-         if (filebrowser_iterate(rgui->browser, FILEBROWSER_ACTION_PATH_ISDIR))
-         {
-            bool ret = filebrowser_iterate(rgui->browser, FILEBROWSER_ACTION_OK);
-
-            if (!ret)
-            {
-               RARCH_ERR("Failed to open directory.\n");
-               msg_queue_push(g_extern.msg_queue, "ERROR - Failed to open directory.", 1, 180);
-            }
-         }
-         else
-         {
-            strlcpy(g_extern.fullpath,
-                  rgui->browser->current_dir.path, sizeof(g_extern.fullpath));
-            g_extern.lifecycle_mode_state |= (1ULL << MODE_LOAD_GAME);
-            return -1;
-         }
-         break;
-      case RGUI_ACTION_MAPPING_PREVIOUS:
-         {
-            const char * drive_map = menu_drive_mapping_previous();
-            if (drive_map != NULL)
-               filebrowser_set_root_and_ext(rgui->browser, rgui->browser->current_dir.extensions, drive_map);
-         }
-         break;
-      case RGUI_ACTION_MAPPING_NEXT:
-         {
-            const char * drive_map = menu_drive_mapping_next();
-            if (drive_map != NULL)
-               filebrowser_set_root_and_ext(rgui->browser, rgui->browser->current_dir.extensions, drive_map);
-         }
-         break;
-      case RGUI_ACTION_CANCEL:
-         menu_stack_pop(rgui->menu_type);
-         break;
-   }
-
-   if (filebrowser_iterate(rgui->browser, FILEBROWSER_ACTION_PATH_ISDIR))
-      snprintf(msg, sizeof(msg), "INFO - Press [%s] to enter the directory.", key_label_b.desc);
-   else
-      snprintf(msg, sizeof(msg), "INFO - Press [%s] to load the game.", key_label_b.desc);
-
-   font_parms.x = POSITION_X; 
-   font_parms.y = COMMENT_POSITION_Y;
-   font_parms.scale = HARDCODE_FONT_SIZE;
-   font_parms.color = WHITE;
-
-   if (driver.video_poke->set_osd_msg)
-      driver.video_poke->set_osd_msg(driver.video_data, msg, &font_parms);
-
-   display_menubar(rgui->menu_type);
-   browser_render(rgui->browser);
-
-   return 0;
-}
-
 static int ingame_menu_resize(void *data, uint64_t action)
 {
    (void)data;
@@ -3024,7 +2979,6 @@ static int rgui_iterate(void *data, unsigned action)
       case INGAME_MENU_SCREENSHOT:
          return ingame_menu_screenshot(rgui, action);
       case FILE_BROWSER_MENU:
-         return select_rom(rgui, action);
       case LIBRETRO_CHOICE:
 #ifdef HAVE_SHADER_MANAGER
       case CGP_CHOICE:
