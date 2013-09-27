@@ -1,40 +1,40 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string-array name="back_options">
-        <item>Quit</item>
-        <item>Menu toggle</item>
+    <string-array name="back_options" translatable="false">
+        <item>@string/quit</item>
+        <item>@string/menu_toggle</item>
     </string-array>
 
-    <string-array name="back_options_values">
+    <string-array name="back_options_values" translatable="false">
         <item>0</item>
         <item>1</item>
     </string-array>
 
-    <string-array name="audio_latency_options">
-        <item> 64ms (Low)</item>
-        <item> 96ms (Medium)</item>
-        <item>128ms (Medium)</item>
-        <item>160ms (High)</item>
+    <string-array name="audio_latency_options" translatable="false">
+        <item>@string/sixty_four_ms</item>
+        <item>@string/ninety_six_ms</item>
+        <item>@string/one_twenty_eight_ms</item>
+        <item>@string/one_sixty_ms</item>
     </string-array>
 
-    <string-array name="audio_latency_options_values">
+    <string-array name="audio_latency_options_values" translatable="false">
        <item>64</item>
        <item>96</item>
        <item>128</item>
        <item>160</item>
     </string-array>
 
-    <string-array name="aspect_ratios">
-        <item>Full screen</item>
-        <item>Auto</item>
-        <item>Square pixel</item>
+    <string-array name="aspect_ratios" translatable="false">
+        <item>@string/fullscreen</item>
+        <item>@string/automatic</item>
+        <item>@string/square_pixel</item>
         <item>4:3</item>
         <item>16:9</item>
         <item>16:10</item>
         <item>8:7</item>
     </string-array>
     
-    <string-array name="aspect_values">
+    <string-array name="aspect_values" translatable="false">
         <item>full</item>
         <item>auto</item>
         <item>square</item>
@@ -44,21 +44,21 @@
         <item>1.14286</item>
     </string-array>
 
-    <string-array name="icade_profiles">
+    <string-array name="icade_profiles" translatable="false">
         <item>Red Samurai</item>
         <item>iPega PG-9017</item>
         <item>iPega PG-9017 (Mode 2)</item>
         <item>Gamestop Wireless</item>
     </string-array>
 
-    <string-array name="icade_profiles_values">
+    <string-array name="icade_profiles_values" translatable="false">
         <item>0</item>
         <item>1</item>
         <item>2</item>
         <item>3</item>
     </string-array>
     
-    <string-array name="key_bind_values">
+    <string-array name="key_bind_values" translatable="false">
         <item>UNBOUND</item>
         <item>SOFT LEFT</item>
         <item>SOFT RIGHT</item>
