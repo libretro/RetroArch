@@ -277,18 +277,15 @@ static void menu_stack_push(unsigned menu_type, bool prev_dir)
   EVENT CALLBACKS (AND RELATED)
   ============================================================ */
 
-static void display_menubar(uint8_t menu_type)
+static void render_text(void *data)
 {
-   char title[32];
-   char msg[128];
+   rgui_handle_t *rgui = (rgui_handle_t*)data;
    font_params_t font_parms = {0};
 
-   font_parms.x = POSITION_X; 
-   font_parms.y = CURRENT_PATH_Y_POSITION;
-   font_parms.scale = CURRENT_PATH_FONT_SIZE;
-   font_parms.color = WHITE;
+   char title[256];
+   char msg[128];
 
-   switch(menu_type)
+   switch(rgui->menu_type)
    {
 #ifdef HAVE_SHADER_MANAGER
       case SHADER_CHOICE:
@@ -362,7 +359,7 @@ static void display_menubar(uint8_t menu_type)
          break;
    }
 
-   switch(menu_type)
+   switch(rgui->menu_type)
    {
 #ifdef HAVE_SHADER_MANAGER
       case SHADER_CHOICE:
@@ -385,6 +382,13 @@ static void display_menubar(uint8_t menu_type)
             driver.video_poke->set_osd_msg(driver.video_data, msg, &font_parms);
          break;
    }
+
+
+   font_parms.x = POSITION_X; 
+   font_parms.y = CURRENT_PATH_Y_POSITION;
+   font_parms.scale = CURRENT_PATH_FONT_SIZE;
+   font_parms.color = WHITE;
+
    
    font_parms.x = CORE_MSG_POSITION_X;
    font_parms.y = CORE_MSG_POSITION_Y;
@@ -412,45 +416,292 @@ static void display_menubar(uint8_t menu_type)
    if (driver.video_poke->set_osd_msg)
       driver.video_poke->set_osd_msg(driver.video_data, msg, &font_parms);
 #endif
-}
 
-static void browser_render(void *data)
-{
-   unsigned file_count = rgui->browser->list->size;
-   unsigned current_index = 0;
-   unsigned page_number = 0;
-   unsigned page_base = 0;
-   unsigned i;
-   float y_increment = POSITION_Y_START;
-   font_params_t font_parms = {0};
+   bool render_browser = false;
+   bool render_ingame_menu_resize = false;
 
-   current_index = rgui->browser->current_dir.ptr;
-   page_number = current_index / NUM_ENTRY_PER_PAGE;
-   page_base = page_number * NUM_ENTRY_PER_PAGE;
-
-   font_parms.scale = FONT_SIZE_VARIABLE;
-
-   for (i = page_base; i < file_count && i < page_base + NUM_ENTRY_PER_PAGE; ++i)
+   switch(rgui->menu_type)
    {
-      char fname_tmp[128];
-      fill_pathname_base(fname_tmp, rgui->browser->list->elems[i].data, sizeof(fname_tmp));
-      y_increment += POSITION_Y_INCREMENT;
+      case FILE_BROWSER_MENU:
+      case LIBRETRO_CHOICE:
+#ifdef HAVE_SHADER_MANAGER
+      case CGP_CHOICE:
+      case SHADER_CHOICE:
+#endif
+      case INPUT_PRESET_CHOICE:
+      case BORDER_CHOICE:
+      case PATH_DEFAULT_ROM_DIR_CHOICE:
+      case PATH_SAVESTATES_DIR_CHOICE:
+      case PATH_SRAM_DIR_CHOICE:
+#ifdef HAVE_XML
+      case PATH_CHEATS_DIR_CHOICE:
+#endif
+      case PATH_SYSTEM_DIR_CHOICE:
+         render_browser = true;
+         break;
+      case INGAME_MENU_CUSTOM_RATIO:
+         render_ingame_menu_resize = true;
+         break;
+   }
+
+   if (render_browser)
+   {
+      unsigned file_count = rgui->browser->list->size;
+      unsigned current_index = 0;
+      unsigned page_number = 0;
+      unsigned page_base = 0;
+      unsigned i;
+      float y_increment = POSITION_Y_START;
+      font_params_t font_parms = {0};
+
+      current_index = rgui->browser->current_dir.ptr;
+      page_number = current_index / NUM_ENTRY_PER_PAGE;
+      page_base = page_number * NUM_ENTRY_PER_PAGE;
+
+      font_parms.scale = FONT_SIZE_VARIABLE;
+
+      for (i = page_base; i < file_count && i < page_base + NUM_ENTRY_PER_PAGE; ++i)
+      {
+         char fname_tmp[128];
+         fill_pathname_base(fname_tmp, rgui->browser->list->elems[i].data, sizeof(fname_tmp));
+         y_increment += POSITION_Y_INCREMENT;
 
 #ifdef HAVE_MENU_PANEL
-      //check if this is the currently selected file
-      if (strcmp(rgui->browser->current_dir.path, rgui->browser->list->elems[i].data) == 0)
-         menu_panel->y = y_increment;
+         //check if this is the currently selected file
+         if (strcmp(rgui->browser->current_dir.path, rgui->browser->list->elems[i].data) == 0)
+            menu_panel->y = y_increment;
 #endif
 
+         font_parms.x = POSITION_X; 
+         font_parms.y = y_increment;
+         font_parms.color = i == current_index ? RED : rgui->browser->list->elems[i].attr.b ? GREEN : WHITE;
+
+         if (driver.video_poke->set_osd_msg)
+            driver.video_poke->set_osd_msg(driver.video_data, fname_tmp, &font_parms);
+      }
+   }
+
+   if (render_ingame_menu_resize && rgui->frame_buf_show)
+   {
+      char viewport[32];
+      char msg[128];
+      struct platform_bind key_label_b = {0};
+      struct platform_bind key_label_a = {0};
+      struct platform_bind key_label_y = {0};
+      struct platform_bind key_label_x = {0};
+      struct platform_bind key_label_l1 = {0};
+      struct platform_bind key_label_l2 = {0};
+      struct platform_bind key_label_r1 = {0};
+      struct platform_bind key_label_r2 = {0};
+      struct platform_bind key_label_dpad_left = {0};
+      struct platform_bind key_label_dpad_right = {0};
+      struct platform_bind key_label_dpad_up = {0};
+      struct platform_bind key_label_dpad_down = {0};
+      
+      strlcpy(key_label_b.desc, "Unknown", sizeof(key_label_b.desc));
+      key_label_b.joykey = 1ULL << RETRO_DEVICE_ID_JOYPAD_B;
+      strlcpy(key_label_a.desc, "Unknown", sizeof(key_label_a.desc));
+      key_label_a.joykey = 1ULL << RETRO_DEVICE_ID_JOYPAD_A;
+      strlcpy(key_label_x.desc, "Unknown", sizeof(key_label_x.desc));
+      key_label_x.joykey = 1ULL << RETRO_DEVICE_ID_JOYPAD_X;
+      strlcpy(key_label_y.desc, "Unknown", sizeof(key_label_y.desc));
+      key_label_y.joykey = 1ULL << RETRO_DEVICE_ID_JOYPAD_Y;
+      strlcpy(key_label_l1.desc, "Unknown", sizeof(key_label_l1.desc));
+      key_label_l1.joykey = 1ULL << RETRO_DEVICE_ID_JOYPAD_L;
+      strlcpy(key_label_r1.desc, "Unknown", sizeof(key_label_r1.desc));
+      key_label_r1.joykey = 1ULL << RETRO_DEVICE_ID_JOYPAD_R;
+      strlcpy(key_label_l2.desc, "Unknown", sizeof(key_label_l2.desc));
+      key_label_l2.joykey = 1ULL << RETRO_DEVICE_ID_JOYPAD_L2;
+      strlcpy(key_label_r2.desc, "Unknown", sizeof(key_label_r2.desc));
+      key_label_r2.joykey = 1ULL << RETRO_DEVICE_ID_JOYPAD_R2;
+      strlcpy(key_label_dpad_left.desc, "Unknown", sizeof(key_label_dpad_left.desc));
+      key_label_dpad_left.joykey = 1ULL << RETRO_DEVICE_ID_JOYPAD_LEFT;
+      strlcpy(key_label_dpad_right.desc, "Unknown", sizeof(key_label_dpad_left.desc));
+      key_label_dpad_right.joykey = 1ULL << RETRO_DEVICE_ID_JOYPAD_RIGHT;
+      strlcpy(key_label_dpad_up.desc, "Unknown", sizeof(key_label_dpad_up.desc));
+      key_label_dpad_up.joykey = 1ULL << RETRO_DEVICE_ID_JOYPAD_UP;
+      strlcpy(key_label_dpad_down.desc, "Unknown", sizeof(key_label_dpad_down.desc));
+      key_label_dpad_down.joykey = 1ULL << RETRO_DEVICE_ID_JOYPAD_DOWN;
+
+      if (driver.input->set_keybinds)
+      {
+         driver.input->set_keybinds(&key_label_l1, 0, 0, 0, (1ULL << KEYBINDS_ACTION_GET_BIND_LABEL));
+         driver.input->set_keybinds(&key_label_r1, 0, 0, 0, (1ULL << KEYBINDS_ACTION_GET_BIND_LABEL));
+         driver.input->set_keybinds(&key_label_l2, 0, 0, 0, (1ULL << KEYBINDS_ACTION_GET_BIND_LABEL));
+         driver.input->set_keybinds(&key_label_r2, 0, 0, 0, (1ULL << KEYBINDS_ACTION_GET_BIND_LABEL));
+         driver.input->set_keybinds(&key_label_b, 0, 0, 0, (1ULL << KEYBINDS_ACTION_GET_BIND_LABEL));
+         driver.input->set_keybinds(&key_label_a, 0, 0, 0, (1ULL << KEYBINDS_ACTION_GET_BIND_LABEL));
+         driver.input->set_keybinds(&key_label_y, 0, 0, 0, (1ULL << KEYBINDS_ACTION_GET_BIND_LABEL));
+         driver.input->set_keybinds(&key_label_x, 0, 0, 0, (1ULL << KEYBINDS_ACTION_GET_BIND_LABEL));
+         driver.input->set_keybinds(&key_label_dpad_left, 0, 0, 0, (1ULL << KEYBINDS_ACTION_GET_BIND_LABEL));
+         driver.input->set_keybinds(&key_label_dpad_right, 0, 0, 0, (1ULL << KEYBINDS_ACTION_GET_BIND_LABEL));
+         driver.input->set_keybinds(&key_label_dpad_up, 0, 0, 0, (1ULL << KEYBINDS_ACTION_GET_BIND_LABEL));
+         driver.input->set_keybinds(&key_label_dpad_down, 0, 0, 0, (1ULL << KEYBINDS_ACTION_GET_BIND_LABEL));
+      }
+
+      char viewport_buf[256];
+      snprintf(viewport, sizeof(viewport), "Viewport X: #%d Y: %d (%dx%d)", g_extern.console.screen.viewports.custom_vp.x, g_extern.console.screen.viewports.custom_vp.y, g_extern.console.screen.viewports.custom_vp.width,
+            g_extern.console.screen.viewports.custom_vp.height);
+      menu_ticker_line(viewport_buf, TICKER_LABEL_CHARS_MAX_PER_LINE, g_extern.frame_count / 15, viewport, true);
+
       font_parms.x = POSITION_X; 
-      font_parms.y = y_increment;
-      font_parms.color = i == current_index ? RED : rgui->browser->list->elems[i].attr.b ? GREEN : WHITE;
+      font_parms.y = POSITION_Y_BEGIN;
+      font_parms.scale = HARDCODE_FONT_SIZE;
+      font_parms.color = WHITE;
 
       if (driver.video_poke->set_osd_msg)
-         driver.video_poke->set_osd_msg(driver.video_data, fname_tmp, &font_parms);
+         driver.video_poke->set_osd_msg(driver.video_data, viewport_buf, &font_parms);
+
+      snprintf(msg, sizeof(msg), "[%s]", key_label_dpad_left.desc);
+
+      font_parms.y = POSITION_Y_BEGIN + (POSITION_Y_INCREMENT * 4);
+      font_parms.color = WHITE;
+
+      if (driver.video_poke->set_osd_msg)
+         driver.video_poke->set_osd_msg(driver.video_data, msg, &font_parms);
+
+      font_parms.x = POSITION_X_CENTER;
+      font_parms.y = POSITION_Y_BEGIN + (POSITION_Y_INCREMENT * 4);
+
+      if (driver.video_poke->set_osd_msg)
+         driver.video_poke->set_osd_msg(driver.video_data, "- Viewport X--", &font_parms);
+
+      snprintf(msg, sizeof(msg), "[%s]", key_label_dpad_right.desc);
+
+      font_parms.x = POSITION_X; 
+      font_parms.y = POSITION_Y_BEGIN + (POSITION_Y_INCREMENT * 5);
+
+      if (driver.video_poke->set_osd_msg)
+         driver.video_poke->set_osd_msg(driver.video_data, msg, &font_parms);
+
+      font_parms.x = POSITION_X_CENTER;
+
+      if (driver.video_poke->set_osd_msg)
+         driver.video_poke->set_osd_msg(driver.video_data, "- Viewport X++", &font_parms);
+
+      snprintf(msg, sizeof(msg), "[%s]", key_label_dpad_up.desc);
+      font_parms.x = POSITION_X; 
+      font_parms.y = POSITION_Y_BEGIN + (POSITION_Y_INCREMENT * 6);
+
+      if (driver.video_poke->set_osd_msg)
+         driver.video_poke->set_osd_msg(driver.video_data, msg, &font_parms);
+
+      font_parms.x = POSITION_X_CENTER;
+
+      if (driver.video_poke->set_osd_msg)
+         driver.video_poke->set_osd_msg(driver.video_data, "- Viewport Y++", &font_parms);
+
+      snprintf(msg, sizeof(msg), "[%s]", key_label_dpad_down.desc);
+
+      font_parms.x = POSITION_X; 
+      font_parms.y = POSITION_Y_BEGIN + (POSITION_Y_INCREMENT * 7);
+
+      if (driver.video_poke->set_osd_msg)
+         driver.video_poke->set_osd_msg(driver.video_data, msg, &font_parms);
+
+      font_parms.x = POSITION_X_CENTER;
+
+      if (driver.video_poke->set_osd_msg)
+         driver.video_poke->set_osd_msg(driver.video_data, "- Viewport Y--", &font_parms);
+
+      snprintf(msg, sizeof(msg), "[%s]", key_label_l1.desc);
+
+      font_parms.x = POSITION_X; 
+      font_parms.y = POSITION_Y_BEGIN + (POSITION_Y_INCREMENT * 8);
+
+      if (driver.video_poke->set_osd_msg)
+         driver.video_poke->set_osd_msg(driver.video_data, msg, &font_parms);
+
+      font_parms.x = POSITION_X_CENTER;
+
+      if (driver.video_poke->set_osd_msg)
+         driver.video_poke->set_osd_msg(driver.video_data, "- Viewport W--", &font_parms);
+
+      snprintf(msg, sizeof(msg), "[%s]", key_label_r1.desc);
+
+      font_parms.x = POSITION_X; 
+      font_parms.y = POSITION_Y_BEGIN + (POSITION_Y_INCREMENT * 9);
+
+      if (driver.video_poke->set_osd_msg)
+         driver.video_poke->set_osd_msg(driver.video_data, msg, &font_parms);
+
+      font_parms.x = POSITION_X_CENTER;
+
+      if (driver.video_poke->set_osd_msg)
+         driver.video_poke->set_osd_msg(driver.video_data, "- Viewport W++", &font_parms);
+
+      snprintf(msg, sizeof(msg), "[%s]", key_label_l2.desc);
+
+      font_parms.x = POSITION_X; 
+      font_parms.y = POSITION_Y_BEGIN + (POSITION_Y_INCREMENT * 10);
+
+      if (driver.video_poke->set_osd_msg)
+         driver.video_poke->set_osd_msg(driver.video_data, msg, &font_parms);
+
+      font_parms.x = POSITION_X_CENTER;
+
+      if (driver.video_poke->set_osd_msg)
+         driver.video_poke->set_osd_msg(driver.video_data, "- Viewport H++", &font_parms);
+
+      snprintf(msg, sizeof(msg), "[%s]", key_label_r2.desc);
+
+      font_parms.x = POSITION_X; 
+      font_parms.y = POSITION_Y_BEGIN + (POSITION_Y_INCREMENT * 11);
+
+      if (driver.video_poke->set_osd_msg)
+         driver.video_poke->set_osd_msg(driver.video_data, msg, &font_parms);
+
+      font_parms.x = POSITION_X_CENTER;
+      
+      if (driver.video_poke->set_osd_msg)
+         driver.video_poke->set_osd_msg(driver.video_data, "- Viewport H--", &font_parms);
+
+      snprintf(msg, sizeof(msg), "[%s]", key_label_x.desc);
+
+      font_parms.x = POSITION_X; 
+      font_parms.y = POSITION_Y_BEGIN + (POSITION_Y_INCREMENT * 12);
+
+      if (driver.video_poke->set_osd_msg)
+         driver.video_poke->set_osd_msg(driver.video_data, msg, &font_parms);
+
+      font_parms.x = POSITION_X_CENTER;
+
+      if (driver.video_poke->set_osd_msg)
+         driver.video_poke->set_osd_msg(driver.video_data, "- Reset To Defaults", &font_parms);
+
+      snprintf(msg, sizeof(msg), "[%s]", key_label_y.desc);
+
+      font_parms.x = POSITION_X; 
+      font_parms.y = POSITION_Y_BEGIN + (POSITION_Y_INCREMENT * 13);
+
+      if (driver.video_poke->set_osd_msg)
+         driver.video_poke->set_osd_msg(driver.video_data, msg, &font_parms);
+
+      font_parms.x = POSITION_X_CENTER;
+
+      if (driver.video_poke->set_osd_msg)
+         driver.video_poke->set_osd_msg(driver.video_data, "- Show Game", &font_parms);
+
+      snprintf(msg, sizeof(msg), "[%s]", key_label_a.desc);
+      font_parms.x = POSITION_X; 
+      font_parms.y = POSITION_Y_BEGIN + (POSITION_Y_INCREMENT * 14);
+
+      if (driver.video_poke->set_osd_msg)
+         driver.video_poke->set_osd_msg(driver.video_data, msg, &font_parms);
+
+      font_parms.x = POSITION_X_CENTER;
+
+      if (driver.video_poke->set_osd_msg)
+         driver.video_poke->set_osd_msg(driver.video_data, "- Go back", &font_parms);
+
+      snprintf(msg, sizeof(msg), "Press [%s] to reset to defaults.", key_label_x.desc);
+      font_parms.x = POSITION_X; 
+      font_parms.y = COMMENT_POSITION_Y;
+
+      if (driver.video_poke->set_osd_msg)
+         driver.video_poke->set_osd_msg(driver.video_data, msg, &font_parms);
    }
 }
-
 
 static int select_file(void *data, uint64_t action)
 {
@@ -611,8 +862,6 @@ static int select_file(void *data, uint64_t action)
    if (driver.video_poke->set_osd_msg)
       driver.video_poke->set_osd_msg(driver.video_data, comment, &font_parms);
 
-   display_menubar(rgui->menu_type);
-   browser_render(rgui->browser);
 
    return 0;
 }
@@ -714,9 +963,6 @@ static int select_directory(void *data, uint64_t action)
 
    if (driver.video_poke->set_osd_msg)
       driver.video_poke->set_osd_msg(driver.video_data, msg, &font_parms);
-
-   display_menubar(rgui->menu_type);
-   browser_render(rgui->browser);
 
    return 0;
 }
@@ -2429,12 +2675,7 @@ static int select_setting(void *data, uint64_t action)
 
    ret = set_setting_action(rgui->menu_type, rgui->selection_ptr, action);
 
-   if (ret != 0)
-      return ret;
-
-   display_menubar(rgui->menu_type);
-
-   return 0;
+   return ret;
 }
 
 static int ingame_menu_resize(void *data, uint64_t action)
@@ -2478,229 +2719,6 @@ static int ingame_menu_resize(void *data, uint64_t action)
       case RGUI_ACTION_CANCEL:
          menu_stack_pop(rgui->menu_type);
          break;
-   }
-
-   if (rgui->frame_buf_show)
-   {
-      char viewport[32];
-      char msg[128];
-      struct platform_bind key_label_b = {0};
-      struct platform_bind key_label_a = {0};
-      struct platform_bind key_label_y = {0};
-      struct platform_bind key_label_x = {0};
-      struct platform_bind key_label_l1 = {0};
-      struct platform_bind key_label_l2 = {0};
-      struct platform_bind key_label_r1 = {0};
-      struct platform_bind key_label_r2 = {0};
-      struct platform_bind key_label_dpad_left = {0};
-      struct platform_bind key_label_dpad_right = {0};
-      struct platform_bind key_label_dpad_up = {0};
-      struct platform_bind key_label_dpad_down = {0};
-      
-      strlcpy(key_label_b.desc, "Unknown", sizeof(key_label_b.desc));
-      key_label_b.joykey = 1ULL << RETRO_DEVICE_ID_JOYPAD_B;
-      strlcpy(key_label_a.desc, "Unknown", sizeof(key_label_a.desc));
-      key_label_a.joykey = 1ULL << RETRO_DEVICE_ID_JOYPAD_A;
-      strlcpy(key_label_x.desc, "Unknown", sizeof(key_label_x.desc));
-      key_label_x.joykey = 1ULL << RETRO_DEVICE_ID_JOYPAD_X;
-      strlcpy(key_label_y.desc, "Unknown", sizeof(key_label_y.desc));
-      key_label_y.joykey = 1ULL << RETRO_DEVICE_ID_JOYPAD_Y;
-      strlcpy(key_label_l1.desc, "Unknown", sizeof(key_label_l1.desc));
-      key_label_l1.joykey = 1ULL << RETRO_DEVICE_ID_JOYPAD_L;
-      strlcpy(key_label_r1.desc, "Unknown", sizeof(key_label_r1.desc));
-      key_label_r1.joykey = 1ULL << RETRO_DEVICE_ID_JOYPAD_R;
-      strlcpy(key_label_l2.desc, "Unknown", sizeof(key_label_l2.desc));
-      key_label_l2.joykey = 1ULL << RETRO_DEVICE_ID_JOYPAD_L2;
-      strlcpy(key_label_r2.desc, "Unknown", sizeof(key_label_r2.desc));
-      key_label_r2.joykey = 1ULL << RETRO_DEVICE_ID_JOYPAD_R2;
-      strlcpy(key_label_dpad_left.desc, "Unknown", sizeof(key_label_dpad_left.desc));
-      key_label_dpad_left.joykey = 1ULL << RETRO_DEVICE_ID_JOYPAD_LEFT;
-      strlcpy(key_label_dpad_right.desc, "Unknown", sizeof(key_label_dpad_left.desc));
-      key_label_dpad_right.joykey = 1ULL << RETRO_DEVICE_ID_JOYPAD_RIGHT;
-      strlcpy(key_label_dpad_up.desc, "Unknown", sizeof(key_label_dpad_up.desc));
-      key_label_dpad_up.joykey = 1ULL << RETRO_DEVICE_ID_JOYPAD_UP;
-      strlcpy(key_label_dpad_down.desc, "Unknown", sizeof(key_label_dpad_down.desc));
-      key_label_dpad_down.joykey = 1ULL << RETRO_DEVICE_ID_JOYPAD_DOWN;
-
-      if (driver.input->set_keybinds)
-      {
-         driver.input->set_keybinds(&key_label_l1, 0, 0, 0, (1ULL << KEYBINDS_ACTION_GET_BIND_LABEL));
-         driver.input->set_keybinds(&key_label_r1, 0, 0, 0, (1ULL << KEYBINDS_ACTION_GET_BIND_LABEL));
-         driver.input->set_keybinds(&key_label_l2, 0, 0, 0, (1ULL << KEYBINDS_ACTION_GET_BIND_LABEL));
-         driver.input->set_keybinds(&key_label_r2, 0, 0, 0, (1ULL << KEYBINDS_ACTION_GET_BIND_LABEL));
-         driver.input->set_keybinds(&key_label_b, 0, 0, 0, (1ULL << KEYBINDS_ACTION_GET_BIND_LABEL));
-         driver.input->set_keybinds(&key_label_a, 0, 0, 0, (1ULL << KEYBINDS_ACTION_GET_BIND_LABEL));
-         driver.input->set_keybinds(&key_label_y, 0, 0, 0, (1ULL << KEYBINDS_ACTION_GET_BIND_LABEL));
-         driver.input->set_keybinds(&key_label_x, 0, 0, 0, (1ULL << KEYBINDS_ACTION_GET_BIND_LABEL));
-         driver.input->set_keybinds(&key_label_dpad_left, 0, 0, 0, (1ULL << KEYBINDS_ACTION_GET_BIND_LABEL));
-         driver.input->set_keybinds(&key_label_dpad_right, 0, 0, 0, (1ULL << KEYBINDS_ACTION_GET_BIND_LABEL));
-         driver.input->set_keybinds(&key_label_dpad_up, 0, 0, 0, (1ULL << KEYBINDS_ACTION_GET_BIND_LABEL));
-         driver.input->set_keybinds(&key_label_dpad_down, 0, 0, 0, (1ULL << KEYBINDS_ACTION_GET_BIND_LABEL));
-      }
-
-      display_menubar(rgui->menu_type);
-
-      char viewport_buf[256];
-      snprintf(viewport, sizeof(viewport), "Viewport X: #%d Y: %d (%dx%d)", g_extern.console.screen.viewports.custom_vp.x, g_extern.console.screen.viewports.custom_vp.y, g_extern.console.screen.viewports.custom_vp.width,
-            g_extern.console.screen.viewports.custom_vp.height);
-      menu_ticker_line(viewport_buf, TICKER_LABEL_CHARS_MAX_PER_LINE, g_extern.frame_count / 15, viewport, true);
-
-      font_parms.x = POSITION_X; 
-      font_parms.y = POSITION_Y_BEGIN;
-      font_parms.scale = HARDCODE_FONT_SIZE;
-      font_parms.color = WHITE;
-
-      if (driver.video_poke->set_osd_msg)
-         driver.video_poke->set_osd_msg(driver.video_data, viewport_buf, &font_parms);
-
-      snprintf(msg, sizeof(msg), "[%s]", key_label_dpad_left.desc);
-
-      font_parms.y = POSITION_Y_BEGIN + (POSITION_Y_INCREMENT * 4);
-      font_parms.color = WHITE;
-
-      if (driver.video_poke->set_osd_msg)
-         driver.video_poke->set_osd_msg(driver.video_data, msg, &font_parms);
-
-      font_parms.x = POSITION_X_CENTER;
-      font_parms.y = POSITION_Y_BEGIN + (POSITION_Y_INCREMENT * 4);
-
-      if (driver.video_poke->set_osd_msg)
-         driver.video_poke->set_osd_msg(driver.video_data, "- Viewport X--", &font_parms);
-
-      snprintf(msg, sizeof(msg), "[%s]", key_label_dpad_right.desc);
-
-      font_parms.x = POSITION_X; 
-      font_parms.y = POSITION_Y_BEGIN + (POSITION_Y_INCREMENT * 5);
-
-      if (driver.video_poke->set_osd_msg)
-         driver.video_poke->set_osd_msg(driver.video_data, msg, &font_parms);
-
-      font_parms.x = POSITION_X_CENTER;
-
-      if (driver.video_poke->set_osd_msg)
-         driver.video_poke->set_osd_msg(driver.video_data, "- Viewport X++", &font_parms);
-
-      snprintf(msg, sizeof(msg), "[%s]", key_label_dpad_up.desc);
-      font_parms.x = POSITION_X; 
-      font_parms.y = POSITION_Y_BEGIN + (POSITION_Y_INCREMENT * 6);
-
-      if (driver.video_poke->set_osd_msg)
-         driver.video_poke->set_osd_msg(driver.video_data, msg, &font_parms);
-
-      font_parms.x = POSITION_X_CENTER;
-
-      if (driver.video_poke->set_osd_msg)
-         driver.video_poke->set_osd_msg(driver.video_data, "- Viewport Y++", &font_parms);
-
-      snprintf(msg, sizeof(msg), "[%s]", key_label_dpad_down.desc);
-
-      font_parms.x = POSITION_X; 
-      font_parms.y = POSITION_Y_BEGIN + (POSITION_Y_INCREMENT * 7);
-
-      if (driver.video_poke->set_osd_msg)
-         driver.video_poke->set_osd_msg(driver.video_data, msg, &font_parms);
-
-      font_parms.x = POSITION_X_CENTER;
-
-      if (driver.video_poke->set_osd_msg)
-         driver.video_poke->set_osd_msg(driver.video_data, "- Viewport Y--", &font_parms);
-
-      snprintf(msg, sizeof(msg), "[%s]", key_label_l1.desc);
-
-      font_parms.x = POSITION_X; 
-      font_parms.y = POSITION_Y_BEGIN + (POSITION_Y_INCREMENT * 8);
-
-      if (driver.video_poke->set_osd_msg)
-         driver.video_poke->set_osd_msg(driver.video_data, msg, &font_parms);
-
-      font_parms.x = POSITION_X_CENTER;
-
-      if (driver.video_poke->set_osd_msg)
-         driver.video_poke->set_osd_msg(driver.video_data, "- Viewport W--", &font_parms);
-
-      snprintf(msg, sizeof(msg), "[%s]", key_label_r1.desc);
-
-      font_parms.x = POSITION_X; 
-      font_parms.y = POSITION_Y_BEGIN + (POSITION_Y_INCREMENT * 9);
-
-      if (driver.video_poke->set_osd_msg)
-         driver.video_poke->set_osd_msg(driver.video_data, msg, &font_parms);
-
-      font_parms.x = POSITION_X_CENTER;
-
-      if (driver.video_poke->set_osd_msg)
-         driver.video_poke->set_osd_msg(driver.video_data, "- Viewport W++", &font_parms);
-
-      snprintf(msg, sizeof(msg), "[%s]", key_label_l2.desc);
-
-      font_parms.x = POSITION_X; 
-      font_parms.y = POSITION_Y_BEGIN + (POSITION_Y_INCREMENT * 10);
-
-      if (driver.video_poke->set_osd_msg)
-         driver.video_poke->set_osd_msg(driver.video_data, msg, &font_parms);
-
-      font_parms.x = POSITION_X_CENTER;
-
-      if (driver.video_poke->set_osd_msg)
-         driver.video_poke->set_osd_msg(driver.video_data, "- Viewport H++", &font_parms);
-
-      snprintf(msg, sizeof(msg), "[%s]", key_label_r2.desc);
-
-      font_parms.x = POSITION_X; 
-      font_parms.y = POSITION_Y_BEGIN + (POSITION_Y_INCREMENT * 11);
-
-      if (driver.video_poke->set_osd_msg)
-         driver.video_poke->set_osd_msg(driver.video_data, msg, &font_parms);
-
-      font_parms.x = POSITION_X_CENTER;
-      
-      if (driver.video_poke->set_osd_msg)
-         driver.video_poke->set_osd_msg(driver.video_data, "- Viewport H--", &font_parms);
-
-      snprintf(msg, sizeof(msg), "[%s]", key_label_x.desc);
-
-      font_parms.x = POSITION_X; 
-      font_parms.y = POSITION_Y_BEGIN + (POSITION_Y_INCREMENT * 12);
-
-      if (driver.video_poke->set_osd_msg)
-         driver.video_poke->set_osd_msg(driver.video_data, msg, &font_parms);
-
-      font_parms.x = POSITION_X_CENTER;
-
-      if (driver.video_poke->set_osd_msg)
-         driver.video_poke->set_osd_msg(driver.video_data, "- Reset To Defaults", &font_parms);
-
-      snprintf(msg, sizeof(msg), "[%s]", key_label_y.desc);
-
-      font_parms.x = POSITION_X; 
-      font_parms.y = POSITION_Y_BEGIN + (POSITION_Y_INCREMENT * 13);
-
-      if (driver.video_poke->set_osd_msg)
-         driver.video_poke->set_osd_msg(driver.video_data, msg, &font_parms);
-
-      font_parms.x = POSITION_X_CENTER;
-
-      if (driver.video_poke->set_osd_msg)
-         driver.video_poke->set_osd_msg(driver.video_data, "- Show Game", &font_parms);
-
-      snprintf(msg, sizeof(msg), "[%s]", key_label_a.desc);
-      font_parms.x = POSITION_X; 
-      font_parms.y = POSITION_Y_BEGIN + (POSITION_Y_INCREMENT * 14);
-
-      if (driver.video_poke->set_osd_msg)
-         driver.video_poke->set_osd_msg(driver.video_data, msg, &font_parms);
-
-      font_parms.x = POSITION_X_CENTER;
-
-      if (driver.video_poke->set_osd_msg)
-         driver.video_poke->set_osd_msg(driver.video_data, "- Go back", &font_parms);
-
-      snprintf(msg, sizeof(msg), "Press [%s] to reset to defaults.", key_label_x.desc);
-      font_parms.x = POSITION_X; 
-      font_parms.y = COMMENT_POSITION_Y;
-
-      if (driver.video_poke->set_osd_msg)
-         driver.video_poke->set_osd_msg(driver.video_data, msg, &font_parms);
    }
 
    return 0;
@@ -2762,8 +2780,6 @@ static int ingame_menu_history_options(void *data, uint64_t action)
    }
    else if (driver.video_poke->set_osd_msg)
       driver.video_poke->set_osd_msg(driver.video_data, "No history available.", &font_parms);
-
-   display_menubar(rgui->menu_type);
 
    switch (action)
    {
@@ -2840,8 +2856,6 @@ static int ingame_menu_core_options(void *data, uint64_t action)
    }
    else if (driver.video_poke->set_osd_msg)
       driver.video_poke->set_osd_msg(driver.video_data, "No options available.", &font_parms);
-
-   display_menubar(rgui->menu_type);
 
    switch (action)
    {
@@ -2969,16 +2983,22 @@ static int rgui_iterate(void *data, unsigned action)
 
    filebrowser_update(rgui->browser, action, rgui->browser->current_dir.extensions);
 
+   int ret = -1;
+
    switch(rgui->menu_type)
    {
       case INGAME_MENU_CUSTOM_RATIO:
-         return ingame_menu_resize(rgui, action);
+         ret = ingame_menu_resize(rgui, action);
+         break;
       case INGAME_MENU_CORE_OPTIONS:
-         return ingame_menu_core_options(rgui, action);
+         ret = ingame_menu_core_options(rgui, action);
+         break;
       case INGAME_MENU_LOAD_GAME_HISTORY:
-         return ingame_menu_history_options(rgui, action);
+         ret = ingame_menu_history_options(rgui, action);
+         break;
       case INGAME_MENU_SCREENSHOT:
-         return ingame_menu_screenshot(rgui, action);
+         ret = ingame_menu_screenshot(rgui, action);
+         break;
       case FILE_BROWSER_MENU:
       case LIBRETRO_CHOICE:
 #ifdef HAVE_SHADER_MANAGER
@@ -2987,7 +3007,8 @@ static int rgui_iterate(void *data, unsigned action)
 #endif
       case INPUT_PRESET_CHOICE:
       case BORDER_CHOICE:
-         return select_file(rgui, action);
+         ret = select_file(rgui, action);
+         break;
       case PATH_DEFAULT_ROM_DIR_CHOICE:
       case PATH_SAVESTATES_DIR_CHOICE:
       case PATH_SRAM_DIR_CHOICE:
@@ -2995,7 +3016,8 @@ static int rgui_iterate(void *data, unsigned action)
       case PATH_CHEATS_DIR_CHOICE:
 #endif
       case PATH_SYSTEM_DIR_CHOICE:
-         return select_directory(rgui, action);
+         ret = select_directory(rgui, action);
+         break;
       case INGAME_MENU:
       case INGAME_MENU_SETTINGS:
       case INGAME_MENU_VIDEO_OPTIONS:
@@ -3003,13 +3025,15 @@ static int rgui_iterate(void *data, unsigned action)
       case INGAME_MENU_AUDIO_OPTIONS:
       case INGAME_MENU_INPUT_OPTIONS:
       case INGAME_MENU_PATH_OPTIONS:
-         return select_setting(rgui, action);
+         ret = select_setting(rgui, action);
+         break;
    }
 
-   RARCH_WARN("Menu type %d not implemented, exiting...\n", rgui->menu_type);
-   return -1;
-}
+   if (ret == 0)
+      render_text(rgui);
 
+   return ret;
+}
 
 static void* rgui_init(void)
 {
