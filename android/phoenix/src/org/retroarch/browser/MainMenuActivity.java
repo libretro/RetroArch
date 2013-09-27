@@ -28,7 +28,7 @@ import android.view.Display;
 import android.view.WindowManager;
 import android.widget.Toast;
 
-public class MainMenuActivity extends PreferenceActivity {
+public final class MainMenuActivity extends PreferenceActivity {
 	private static MainMenuActivity instance = null;
 	static private final int ACTIVITY_LOAD_ROM = 0;
 	static private final String TAG = "MainMenu";

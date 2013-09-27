@@ -8,7 +8,7 @@ import android.view.Display;
 import android.view.WindowManager;
 import android.widget.Toast;
 
-public class RefreshRateSetOS extends Activity {
+public final class RefreshRateSetOS extends Activity {
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {

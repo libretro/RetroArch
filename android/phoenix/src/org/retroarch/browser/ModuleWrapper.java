@@ -6,7 +6,7 @@ import java.io.IOException;
 import android.content.Context;
 import android.graphics.drawable.Drawable;
 
-class ModuleWrapper implements IconAdapterItem {
+final class ModuleWrapper implements IconAdapterItem {
 	public final File file;
 	private ConfigFile config;
 

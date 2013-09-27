@@ -5,7 +5,7 @@ import android.content.Context;
 import android.os.Bundle;
 import android.view.inputmethod.InputMethodManager;
 
-public class IMEActivity extends Activity {
+public final class IMEActivity extends Activity {
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);

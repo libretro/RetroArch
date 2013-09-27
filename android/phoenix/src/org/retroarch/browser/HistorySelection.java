@@ -17,7 +17,7 @@ import android.widget.AdapterView;
 import android.widget.ListView;
 import android.widget.Toast;
 
-public class HistorySelection extends Activity implements
+public final class HistorySelection extends Activity implements
 		AdapterView.OnItemClickListener {
 	
 	private IconAdapter<HistoryWrapper> adapter;

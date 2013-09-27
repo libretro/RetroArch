@@ -10,7 +10,7 @@ import android.view.View;
 import android.widget.SeekBar;
 import android.widget.TextView;
 
-public class SeekbarPreference extends DialogPreference implements SeekBar.OnSeekBarChangeListener {
+public final class SeekbarPreference extends DialogPreference implements SeekBar.OnSeekBarChangeListener {
 	float seek_value;
 	SeekBar bar;
 	TextView text;

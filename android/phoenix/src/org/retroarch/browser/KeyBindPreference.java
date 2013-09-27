@@ -14,7 +14,7 @@ import android.widget.EditText;
 import android.widget.ListView;
 import org.retroarch.R;
 
-class KeyBindEditText extends EditText
+final class KeyBindEditText extends EditText
 {
 	KeyBindPreference pref;
 	public KeyBindEditText(Context context, AttributeSet attrs) {
@@ -39,7 +39,7 @@ class KeyBindEditText extends EditText
 	}
 }
 
-class KeyBindPreference extends DialogPreference implements View.OnKeyListener, AdapterView.OnItemClickListener, LayoutInflater.Factory {
+final class KeyBindPreference extends DialogPreference implements View.OnKeyListener, AdapterView.OnItemClickListener, LayoutInflater.Factory {
 	private int key_bind_code;
 	private boolean grabKeyCode = false;
 	KeyBindEditText keyText;

@@ -2,7 +2,7 @@ package org.retroarch.browser;
 
 import android.os.Bundle;
 
-public class ROMDirActivity extends DirectoryActivity {
+public final class ROMDirActivity extends DirectoryActivity {
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		super.setPathSettingKey("rgui_browser_directory");

@@ -12,7 +12,7 @@ import android.util.Log;
 import android.view.WindowManager;
 import android.widget.Toast;
 
-public class DisplayRefreshRateTest extends Activity {
+public final class DisplayRefreshRateTest extends Activity {
 
 	private class Renderer implements GLSurfaceView.Renderer {
 		private static final String TAG = "GLESRenderer";
