@@ -489,6 +489,7 @@ static int select_file(void *data, uint64_t action)
       case FILE_BROWSER_MENU:
          strlcpy(extensions, rgui->browser->current_dir.extensions, sizeof(extensions));
          strlcpy(comment, "INFO - Select a game to load with the core.", sizeof(comment));
+         break;
    }
 
    switch (action)
