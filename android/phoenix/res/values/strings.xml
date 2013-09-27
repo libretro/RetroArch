@@ -9,6 +9,6 @@
     <string name="report_refreshrate">Report Refresh Rate</string>
     <string name="key_bind_detect">Detect</string>
     <string name="optimal_settings_device">Optimal device settings</string>
-    <string name="extracting_assets_please_wait_">Extracting assets, please wait ...</string>
+    <string name="extracting_assets_please_wait_">Extracting assets, please wait …</string>
 
 </resources>
