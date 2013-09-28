@@ -444,38 +444,53 @@ static void render_text(void *data)
 
    if (render_browser)
    {
-      unsigned file_count = rgui->browser->list->size;
-      unsigned current_index = 0;
-      unsigned page_number = 0;
-      unsigned page_base = 0;
-      unsigned i;
-      float y_increment = POSITION_Y_START;
       font_params_t font_parms = {0};
-
-      current_index = rgui->browser->current_dir.ptr;
-      page_number = current_index / NUM_ENTRY_PER_PAGE;
-      page_base = page_number * NUM_ENTRY_PER_PAGE;
-
       font_parms.scale = FONT_SIZE_VARIABLE;
 
-      for (i = page_base; i < file_count && i < page_base + NUM_ENTRY_PER_PAGE; ++i)
+      if (rgui->browser->list->size)
       {
-         char fname_tmp[128];
-         fill_pathname_base(fname_tmp, rgui->browser->list->elems[i].data, sizeof(fname_tmp));
-         y_increment += POSITION_Y_INCREMENT;
+         unsigned file_count = rgui->browser->list->size;
+         unsigned current_index = 0;
+         unsigned page_number = 0;
+         unsigned page_base = 0;
+         unsigned i;
+         float y_increment = POSITION_Y_START;
+
+         current_index = rgui->browser->current_dir.ptr;
+         page_number = current_index / NUM_ENTRY_PER_PAGE;
+         page_base = page_number * NUM_ENTRY_PER_PAGE;
+
+
+         for (i = page_base; i < file_count && i < page_base + NUM_ENTRY_PER_PAGE; ++i)
+         {
+            char fname_tmp[128];
+            fill_pathname_base(fname_tmp, rgui->browser->list->elems[i].data, sizeof(fname_tmp));
+            y_increment += POSITION_Y_INCREMENT;
 
 #ifdef HAVE_MENU_PANEL
-         //check if this is the currently selected file
-         if (strcmp(rgui->browser->current_dir.path, rgui->browser->list->elems[i].data) == 0)
-            menu_panel->y = y_increment;
+            //check if this is the currently selected file
+            if (strcmp(rgui->browser->current_dir.path, rgui->browser->list->elems[i].data) == 0)
+               menu_panel->y = y_increment;
 #endif
 
+            font_parms.x = POSITION_X; 
+            font_parms.y = y_increment;
+            font_parms.color = i == current_index ? YELLOW : rgui->browser->list->elems[i].attr.b ? GREEN : WHITE;
+
+            if (driver.video_poke->set_osd_msg)
+               driver.video_poke->set_osd_msg(driver.video_data, fname_tmp, &font_parms);
+         }
+      }
+      else
+      {
+         char entry[128];
          font_parms.x = POSITION_X; 
-         font_parms.y = y_increment;
-         font_parms.color = i == current_index ? YELLOW : rgui->browser->list->elems[i].attr.b ? GREEN : WHITE;
+         font_parms.y = POSITION_Y_START + POSITION_Y_INCREMENT;
+         font_parms.color = WHITE;
+         strlcpy(entry, "No entries available.", sizeof(entry));
 
          if (driver.video_poke->set_osd_msg)
-            driver.video_poke->set_osd_msg(driver.video_data, fname_tmp, &font_parms);
+            driver.video_poke->set_osd_msg(driver.video_data, entry, &font_parms);
       }
    }
 

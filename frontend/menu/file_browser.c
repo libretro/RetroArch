@@ -4,10 +4,11 @@ static bool directory_parse(void *data, const char *path)
 
    struct string_list *list = dir_list_new(path,
          filebrowser->current_dir.extensions, true);
-   if(!list || list->size < 1)
+   if(!list)
       return false;
    
-   dir_list_sort(list, true);
+   if (list->size)
+      dir_list_sort(list, true);
 
    filebrowser->current_dir.ptr   = 0;
    strlcpy(filebrowser->current_dir.directory_path,
@@ -56,34 +57,46 @@ bool filebrowser_iterate(void *data, unsigned action)
    switch(action)
    {
       case FILEBROWSER_ACTION_UP:
+         if (!filebrowser->list->size)
+            break;
          filebrowser->current_dir.ptr--;
          if (filebrowser->current_dir.ptr >= filebrowser->list->size)
             filebrowser->current_dir.ptr = filebrowser->list->size - 1;
          break;
       case FILEBROWSER_ACTION_DOWN:
+         if (!filebrowser->list->size)
+            break;
          filebrowser->current_dir.ptr++;
          if (filebrowser->current_dir.ptr >= filebrowser->list->size)
             filebrowser->current_dir.ptr = 0;
          break;
       case FILEBROWSER_ACTION_LEFT:
+         if (!filebrowser->list->size)
+            break;
          if (filebrowser->current_dir.ptr <= 5)
             filebrowser->current_dir.ptr = 0;
          else
             filebrowser->current_dir.ptr -= 5;
          break;
       case FILEBROWSER_ACTION_RIGHT:
+         if (!filebrowser->list->size)
+            break;
          filebrowser->current_dir.ptr = (min(filebrowser->current_dir.ptr + 5, 
-         filebrowser->list->size-1));
+                  filebrowser->list->size-1));
          break;
       case FILEBROWSER_ACTION_SCROLL_UP:
+         if (!filebrowser->list->size)
+            break;
          if (filebrowser->current_dir.ptr <= entries_to_scroll)
             filebrowser->current_dir.ptr= 0;
          else
             filebrowser->current_dir.ptr -= entries_to_scroll;
          break;
       case FILEBROWSER_ACTION_SCROLL_DOWN:
+         if (!filebrowser->list->size)
+            break;
          filebrowser->current_dir.ptr = (min(filebrowser->current_dir.ptr + 
-         entries_to_scroll, filebrowser->list->size-1));
+                  entries_to_scroll, filebrowser->list->size-1));
          break;
       case FILEBROWSER_ACTION_OK:
          ret = directory_parse(filebrowser, GET_CURRENT_PATH(filebrowser));
