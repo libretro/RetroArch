@@ -798,7 +798,13 @@ static int select_file(void *data, uint64_t action)
          }
          break;
       case RGUI_ACTION_CANCEL:
-         pop_menu_stack = true;
+         {
+            char tmp_str[PATH_MAX];
+            fill_pathname_parent_dir(tmp_str, rgui->browser->current_dir.directory_path, sizeof(tmp_str));
+
+            if (tmp_str[0] == '\0')
+               pop_menu_stack = true;
+         }
          break;
       case RGUI_ACTION_MAPPING_PREVIOUS:
          if (rgui->menu_type == FILE_BROWSER_MENU)
@@ -873,7 +879,13 @@ static int select_directory(void *data, uint64_t action)
          break;
 #endif
       case RGUI_ACTION_CANCEL:
-         pop_menu_stack = true;
+         {
+            char tmp_str[PATH_MAX];
+            fill_pathname_parent_dir(tmp_str, rgui->browser->current_dir.directory_path, sizeof(tmp_str));
+
+            if (tmp_str[0] == '\0')
+               pop_menu_stack = true;
+         }
          break;
    }
 
