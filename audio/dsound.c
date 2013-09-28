@@ -260,7 +260,7 @@ static void dsound_free(void *data)
          IDirectSoundBuffer_Release(ds->dsb);
       }
 
-      if (ds)
+      if (ds->ds)
          IDirectSound_Release(ds->ds);
 
       if (ds->event)
