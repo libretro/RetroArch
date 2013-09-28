@@ -212,8 +212,4 @@ enum
 #define MAX_NO_OF_SHADERMAN_SETTINGS   SHADERMAN_SHADER_PASSES+1
 #endif
 
-void menu_init (void);
-bool menu_iterate(void);
-void menu_free (void);
-
 #endif /* MENU_H_ */
