@@ -111,15 +111,6 @@ void rarch_get_environment_console(void)
 #endif
       }
 #endif
-
-#ifdef GEKKO
-   /* Per-core input config loading */
-   char core_name[64];
-
-   libretro_get_current_core_pathname(core_name, sizeof(core_name));
-   snprintf(g_extern.input_config_path, sizeof(g_extern.input_config_path), "%s/%s.cfg", default_paths.input_presets_dir, core_name);
-   config_read_keybinds(g_extern.input_config_path);
-#endif
 }
 #endif
 
@@ -255,11 +246,6 @@ int main_entry(int argc, char *argv[])
 
    if (g_extern.config_save_on_exit && *g_extern.config_path)
       config_save_file(g_extern.config_path);
-
-#ifdef GEKKO
-   /* Per-core input config saving */
-   config_save_keybinds(g_extern.input_config_path);
-#endif
 
 #ifdef RARCH_CONSOLE
    global_uninit_drivers();
