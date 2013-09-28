@@ -114,12 +114,11 @@ static const char *menu_drive_mapping_next(void)
 #define POSITION_Y_BEGIN (POSITION_Y_START + POSITION_Y_INCREMENT)
 #define POSITION_Y_INCREMENT 20
 #define COMMENT_POSITION_Y (Y_POSITION - ((POSITION_Y_INCREMENT/2) * 3))
-#define COMMENT_TWO_POSITION_Y (Y_POSITION - ((POSITION_Y_INCREMENT/2) * 1))
 #define CORE_MSG_POSITION_X FONT_SIZE
 #define CORE_MSG_POSITION_Y (MSG_PREV_NEXT_Y_POSITION + 0.01f)
 #define CORE_MSG_FONT_SIZE FONT_SIZE
 #define MSG_QUEUE_X_POSITION POSITION_X
-#define MSG_QUEUE_Y_POSITION (Y_POSITION - ((POSITION_Y_INCREMENT/2) * 7) + 5)
+#define MSG_QUEUE_Y_POSITION (Y_POSITION - ((POSITION_Y_INCREMENT/2) * 7) + 10)
 #define MSG_QUEUE_FONT_SIZE HARDCODE_FONT_SIZE
 #define MSG_PREV_NEXT_Y_POSITION 24
 #define CURRENT_PATH_Y_POSITION (POSITION_Y_START - ((POSITION_Y_INCREMENT/2)))
@@ -127,7 +126,7 @@ static const char *menu_drive_mapping_next(void)
 
 #define FONT_SIZE 21 
 
-#define NUM_ENTRY_PER_PAGE 12
+#define NUM_ENTRY_PER_PAGE 15
 #elif defined(__CELLOS_LV2__)
 #define HARDCODE_FONT_SIZE 0.91f
 #define FONT_SIZE_VARIABLE g_settings.video.font_size
@@ -136,21 +135,20 @@ static const char *menu_drive_mapping_next(void)
 #define POSITION_Y_START 0.17f
 #define POSITION_Y_INCREMENT 0.035f
 #define POSITION_Y_BEGIN (POSITION_Y_START + POSITION_Y_INCREMENT)
-#define COMMENT_TWO_POSITION_Y 0.91f
 #define COMMENT_POSITION_Y 0.82f
 #define CORE_MSG_POSITION_X 0.3f
 #define CORE_MSG_POSITION_Y 0.06f
 #define CORE_MSG_FONT_SIZE COMMENT_POSITION_Y
 
 #define MSG_QUEUE_X_POSITION g_settings.video.msg_pos_x
-#define MSG_QUEUE_Y_POSITION 0.76f
+#define MSG_QUEUE_Y_POSITION 0.90f
 #define MSG_QUEUE_FONT_SIZE 1.03f
 
 #define MSG_PREV_NEXT_Y_POSITION 0.03f
 #define CURRENT_PATH_Y_POSITION 0.15f
 #define CURRENT_PATH_FONT_SIZE (g_settings.video.font_size)
 
-#define NUM_ENTRY_PER_PAGE 15
+#define NUM_ENTRY_PER_PAGE 18
 #endif
 
 #ifdef HAVE_SHADER_MANAGER
@@ -833,7 +831,6 @@ static int select_file(void *data, uint64_t action)
 static int select_directory(void *data, uint64_t action)
 {
    rgui_handle_t *rgui = (rgui_handle_t*)data;
-   font_params_t font_parms = {0};
 
    char path[PATH_MAX];
    bool ret = true;

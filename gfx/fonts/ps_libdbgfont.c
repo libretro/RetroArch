@@ -82,7 +82,7 @@ static void gl_render_msg(void *data, const char *msg, void *parms)
    else
    {
       x = g_settings.video.msg_pos_x;
-      y = 0.76f;
+      y = 0.90f;
       scale = 1.04f;
       color = SILVER;
    }
