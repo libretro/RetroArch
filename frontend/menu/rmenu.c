@@ -474,7 +474,7 @@ static void render_text(void *data)
 
          font_parms.x = POSITION_X; 
          font_parms.y = y_increment;
-         font_parms.color = i == current_index ? RED : rgui->browser->list->elems[i].attr.b ? GREEN : WHITE;
+         font_parms.color = i == current_index ? YELLOW : rgui->browser->list->elems[i].attr.b ? GREEN : WHITE;
 
          if (driver.video_poke->set_osd_msg)
             driver.video_poke->set_osd_msg(driver.video_data, fname_tmp, &font_parms);
@@ -836,7 +836,6 @@ static int select_directory(void *data, uint64_t action)
    font_params_t font_parms = {0};
 
    char path[PATH_MAX];
-   char msg[256];
    bool ret = true;
 
    bool is_dir = filebrowser_iterate(rgui->browser, FILEBROWSER_ACTION_PATH_ISDIR);
