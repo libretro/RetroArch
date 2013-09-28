@@ -138,11 +138,6 @@ static void rgui_flush_menu_stack_type(rgui_handle_t *rgui, unsigned final_type)
    }
 }
 
-static void rgui_flush_menu_stack(rgui_handle_t *rgui)
-{
-   rgui_flush_menu_stack_type(rgui, RGUI_SETTINGS);
-}
-
 static bool menu_type_is_settings(unsigned type)
 {
    return type == RGUI_SETTINGS ||
@@ -2160,13 +2155,13 @@ static int rgui_iterate(void *data, unsigned action)
                ret = -1;
 #endif
 
-               rgui_flush_menu_stack(rgui);
+               rgui_flush_menu_stack_type(rgui, RGUI_SETTINGS);
             }
             else if (menu_type == RGUI_SETTINGS_CONFIG)
             {
                char config[PATH_MAX];
                fill_pathname_join(config, dir, path, sizeof(config));
-               rgui_flush_menu_stack(rgui);
+               rgui_flush_menu_stack_type(rgui, RGUI_SETTINGS);
                rgui->msg_force = true;
                if (menu_replace_config(config))
                {
@@ -2196,13 +2191,13 @@ static int rgui_iterate(void *data, unsigned action)
 
                g_extern.lifecycle_mode_state |= 1ULL << MODE_GAME;
 
-               rgui_flush_menu_stack(rgui);
+               rgui_flush_menu_stack_type(rgui, RGUI_SETTINGS);
                ret = -1;
             }
             else if (menu_type == RGUI_SETTINGS_OPEN_HISTORY)
             {
                load_menu_game_history(rgui->selection_ptr);
-               rgui_flush_menu_stack(rgui);
+               rgui_flush_menu_stack_type(rgui, RGUI_SETTINGS);
                ret = -1;
             }
             else if (menu_type == RGUI_BROWSER_DIR_PATH)
@@ -2262,7 +2257,7 @@ static int rgui_iterate(void *data, unsigned action)
                fill_pathname_join(g_extern.fullpath, dir, path, sizeof(g_extern.fullpath));
                g_extern.lifecycle_mode_state |= (1ULL << MODE_LOAD_GAME);
 
-               rgui_flush_menu_stack(rgui);
+               rgui_flush_menu_stack_type(rgui, RGUI_SETTINGS);
                rgui->msg_force = true;
                ret = -1;
             }
