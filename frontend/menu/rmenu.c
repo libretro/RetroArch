@@ -811,6 +811,9 @@ static int select_file(void *data, uint64_t action)
          }
          break;
       case RGUI_ACTION_CANCEL:
+         if (rgui->menu_type == LIBRETRO_CHOICE)
+            pop_menu_stack = true;
+         else
          {
             char tmp_str[PATH_MAX];
             fill_pathname_parent_dir(tmp_str, rgui->browser->current_dir.directory_path, sizeof(tmp_str));
@@ -2612,6 +2615,15 @@ static int ingame_menu_history_options(void *data, uint64_t action)
 
          if (hist_opt_selected >= history_size)
             hist_opt_selected = 0; 
+         break;
+      case RGUI_ACTION_LEFT:
+         if (hist_opt_selected <= 5)
+            hist_opt_selected = 0;
+         else
+            hist_opt_selected -= 5;
+         break;
+      case FILEBROWSER_ACTION_RIGHT:
+         hist_opt_selected = (min(hist_opt_selected + 5, history_size-1));
          break;
       case RGUI_ACTION_CANCEL:
          menu_stack_pop(rgui->menu_type);
