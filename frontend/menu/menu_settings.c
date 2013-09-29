@@ -119,6 +119,9 @@ int menu_set_settings(unsigned setting, unsigned action)
             else
                rarch_load_state();
             g_extern.lifecycle_mode_state |= (1ULL << MODE_GAME);
+#ifdef HAVE_RMENU
+            g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU_INGAME_EXIT);
+#endif
             return -1;
          }
          else if (action == RGUI_ACTION_START)
@@ -201,6 +204,9 @@ int menu_set_settings(unsigned setting, unsigned action)
          if (action == RGUI_ACTION_OK && (g_extern.main_is_init))
          {
             g_extern.lifecycle_mode_state |= (1ULL << MODE_GAME);
+#ifdef HAVE_RMENU
+            g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU_INGAME_EXIT);
+#endif
             return -1;
          }
          break;
@@ -208,6 +214,9 @@ int menu_set_settings(unsigned setting, unsigned action)
          if (action == RGUI_ACTION_OK)
          {
             g_extern.lifecycle_mode_state &= ~(1ULL << MODE_GAME);
+#ifdef HAVE_RMENU
+            g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU_INGAME_EXIT);
+#endif
             return -1;
          }
          break;

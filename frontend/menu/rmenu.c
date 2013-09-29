@@ -820,8 +820,10 @@ static void rgui_init_textures(void)
             true, menu_texture->width, menu_texture->height, 1.0f);
 }
 
-static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t action)
+static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t action_ori)
 {
+   unsigned action = (unsigned)action_ori;
+
    switch (switchvalue)
    {
 #ifdef __CELLOS_LV2__
@@ -904,47 +906,9 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
          }
          break;
       case SETTING_ASPECT_RATIO:
-         switch (action)
-         {
-            case RGUI_ACTION_LEFT:
-               settings_set(1ULL << S_ASPECT_RATIO_DECREMENT);
-
-               if (driver.video_poke->set_aspect_ratio)
-                  driver.video_poke->set_aspect_ratio(driver.video_data, g_settings.video.aspect_ratio_idx);
-               break;
-            case RGUI_ACTION_RIGHT:
-               settings_set(1ULL << S_ASPECT_RATIO_INCREMENT);
-
-               if (driver.video_poke->set_aspect_ratio)
-                  driver.video_poke->set_aspect_ratio(driver.video_data, g_settings.video.aspect_ratio_idx);
-               break;
-            case RGUI_ACTION_START:
-               settings_set(1ULL << S_DEF_ASPECT_RATIO);
-
-               if (driver.video_poke->set_aspect_ratio)
-                  driver.video_poke->set_aspect_ratio(driver.video_data, g_settings.video.aspect_ratio_idx);
-               break;
-         }
-         break;
+         return menu_set_settings(RGUI_SETTINGS_VIDEO_ASPECT_RATIO, action);
       case SETTING_HW_TEXTURE_FILTER:
-         switch (action)
-         {
-            case RGUI_ACTION_LEFT:
-            case RGUI_ACTION_RIGHT:
-            case RGUI_ACTION_OK:
-               settings_set(1ULL << S_HW_TEXTURE_FILTER);
-
-               if (driver.video_poke->set_filtering)
-                  driver.video_poke->set_filtering(driver.video_data, 1, g_settings.video.smooth);
-               break;
-            case RGUI_ACTION_START:
-               settings_set(1ULL << S_DEF_HW_TEXTURE_FILTER);
-
-               if (driver.video_poke->set_filtering)
-                  driver.video_poke->set_filtering(driver.video_data, 1, g_settings.video.smooth);
-               break;
-         }
-         break;
+         return menu_set_settings(RGUI_SETTINGS_VIDEO_FILTER, action);
 #ifdef _XBOX1
       case SETTING_FLICKER_FILTER:
          switch (action)
@@ -980,23 +944,7 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
          break;
 #endif
       case SETTING_REFRESH_RATE:
-         switch (action)
-         {
-            case RGUI_ACTION_LEFT:
-               settings_set(1ULL << S_REFRESH_RATE_DECREMENT);
-               driver_set_monitor_refresh_rate(g_settings.video.refresh_rate);
-               break;
-            case RGUI_ACTION_RIGHT:
-            case RGUI_ACTION_OK:
-               settings_set(1ULL << S_REFRESH_RATE_INCREMENT);
-               driver_set_monitor_refresh_rate(g_settings.video.refresh_rate);
-               break;
-            case RGUI_ACTION_START:
-               settings_set(1ULL << S_DEF_REFRESH_RATE);
-               driver_set_monitor_refresh_rate(g_settings.video.refresh_rate);
-               break;
-         }
-         break;
+         return menu_set_settings(RGUI_SETTINGS_VIDEO_REFRESH_RATE_AUTO, action);
       case SETTING_TRIPLE_BUFFERING:
          switch (action)
          {
@@ -1067,18 +1015,7 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
          break;
 #endif
       case SETTING_EMU_SHOW_DEBUG_INFO_MSG:
-         switch (action)
-         {
-            case RGUI_ACTION_LEFT:
-            case RGUI_ACTION_RIGHT:
-            case RGUI_ACTION_OK:
-               settings_set(1ULL << S_INFO_DEBUG_MSG_TOGGLE);
-               break;
-            case RGUI_ACTION_START:
-               settings_set(1ULL << S_DEF_INFO_DEBUG_MSG);
-               break;
-         }
-         break;
+         return menu_set_settings(RGUI_SETTINGS_DEBUG_TEXT, action);
       case SETTING_EMU_SHOW_INFO_MSG:
          switch (action)
          {
@@ -1093,56 +1030,11 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
          }
          break;
       case SETTING_REWIND_ENABLED:
-         switch (action)
-         {
-            case RGUI_ACTION_LEFT:
-            case RGUI_ACTION_RIGHT:
-            case RGUI_ACTION_OK:
-               settings_set(1ULL << S_REWIND);
-
-               if (g_settings.rewind_enable)
-                  rarch_init_rewind();
-               else
-                  rarch_deinit_rewind();
-               break;
-            case RGUI_ACTION_START:
-               if (g_settings.rewind_enable)
-               {
-                  g_settings.rewind_enable = false;
-                  rarch_deinit_rewind();
-               }
-               break;
-         }
-         break;
+         return menu_set_settings(RGUI_SETTINGS_REWIND_ENABLE, action);
       case SETTING_REWIND_GRANULARITY:
-         switch (action)
-         {
-            case RGUI_ACTION_LEFT:
-               if (g_settings.rewind_granularity > 1)
-                  g_settings.rewind_granularity--;
-               break;
-            case RGUI_ACTION_RIGHT:
-            case RGUI_ACTION_OK:
-               g_settings.rewind_granularity++;
-               break;
-            case RGUI_ACTION_START:
-               g_settings.rewind_granularity = 1;
-               break;
-         }
-         break;
+         return menu_set_settings(RGUI_SETTINGS_REWIND_GRANULARITY, action);
       case SETTING_EMU_AUDIO_MUTE:
-         switch (action)
-         {
-            case RGUI_ACTION_LEFT:
-            case RGUI_ACTION_RIGHT:
-            case RGUI_ACTION_OK:
-               settings_set(1ULL << S_AUDIO_MUTE);
-               break;
-            case RGUI_ACTION_START:
-               settings_set(1ULL << S_DEF_AUDIO_MUTE);
-               break;
-         }
-         break;
+         return menu_set_settings(RGUI_SETTINGS_AUDIO_MUTE, action);
 #ifdef _XBOX1
       case SETTING_EMU_AUDIO_SOUND_VOLUME_LEVEL:
          switch (action)
@@ -1261,76 +1153,9 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
          }
          break;
       case SETTING_CONTROLS_NUMBER:
-         switch (action)
-         {
-            case RGUI_ACTION_LEFT:
-               if (rgui->current_pad != 0)
-                  rgui->current_pad--;
-               break;
-            case RGUI_ACTION_RIGHT:
-            case RGUI_ACTION_OK:
-               if (rgui->current_pad < 6)
-                  rgui->current_pad++;
-               break;
-            case RGUI_ACTION_START:
-               rgui->current_pad = 0;
-               break;
-         }
-         break; 
+         return menu_set_settings(RGUI_SETTINGS_BIND_PLAYER, action);
       case SETTING_DPAD_EMULATION:
-         switch (action)
-         {
-            case RGUI_ACTION_LEFT:
-               if (driver.input->set_keybinds)
-               {
-                  unsigned keybind_action = 0;
-
-                  switch(g_settings.input.dpad_emulation[rgui->current_pad])
-                  {
-                     case ANALOG_DPAD_NONE:
-                        break;
-                     case ANALOG_DPAD_LSTICK:
-                        keybind_action = (1ULL << KEYBINDS_ACTION_SET_ANALOG_DPAD_NONE);
-                        break;
-                     case ANALOG_DPAD_RSTICK:
-                        keybind_action = (1ULL << KEYBINDS_ACTION_SET_ANALOG_DPAD_LSTICK);
-                        break;
-                     default:
-                        break;
-                  }
-
-                  if (keybind_action)
-                     driver.input->set_keybinds(driver.input_data, g_settings.input.device[rgui->current_pad], rgui->current_pad, 0, keybind_action);
-               }
-               break;
-            case RGUI_ACTION_RIGHT:
-            case RGUI_ACTION_OK:
-               if (driver.input->set_keybinds)
-               {
-                  unsigned keybind_action = 0;
-
-                  switch(g_settings.input.dpad_emulation[rgui->current_pad])
-                  {
-                     case ANALOG_DPAD_NONE:
-                        keybind_action = (1ULL << KEYBINDS_ACTION_SET_ANALOG_DPAD_LSTICK);
-                        break;
-                     case ANALOG_DPAD_LSTICK:
-                        keybind_action = (1ULL << KEYBINDS_ACTION_SET_ANALOG_DPAD_RSTICK);
-                        break;
-                     case ANALOG_DPAD_RSTICK:
-                        break;
-                  }
-
-                  if (keybind_action)
-                     driver.input->set_keybinds(driver.input_data, g_settings.input.device[rgui->current_pad], rgui->current_pad, 0, keybind_action);
-               }
-               break;
-            case RGUI_ACTION_START:
-               if (driver.input->set_keybinds)
-                  driver.input->set_keybinds(driver.input_data, g_settings.input.device[rgui->current_pad], rgui->current_pad, 0, (1ULL << KEYBINDS_ACTION_SET_ANALOG_DPAD_LSTICK));
-               break;
-         }
-         break;
+         return menu_set_settings(RGUI_SETTINGS_BIND_DPAD_EMULATION, action);
       case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_UP:
          set_keybind_digital(RETRO_DEVICE_ID_JOYPAD_UP, action);
          break;
@@ -1393,55 +1218,11 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
          }
          break;
       case INGAME_MENU_LOAD_STATE:
-         switch (action)
-         {
-            case RGUI_ACTION_OK:
-               rarch_load_state();
-               g_extern.lifecycle_mode_state |= (1ULL << MODE_GAME);
-               g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU_INGAME_EXIT);
-               return -1;
-            case RGUI_ACTION_LEFT:
-               rarch_state_slot_decrease();
-               break;
-            case RGUI_ACTION_RIGHT:
-               rarch_state_slot_increase();
-               break;
-         }
-         break;
+         return menu_set_settings(RGUI_SETTINGS_SAVESTATE_LOAD, action);
       case INGAME_MENU_SAVE_STATE:
-         switch (action)
-         {
-            case RGUI_ACTION_OK:
-               rarch_save_state();
-               g_extern.lifecycle_mode_state |= (1ULL << MODE_GAME);
-               g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU_INGAME_EXIT);
-               return -1;
-            case RGUI_ACTION_LEFT:
-               rarch_state_slot_decrease();
-               break;
-            case RGUI_ACTION_RIGHT:
-               rarch_state_slot_increase();
-               break;
-         }
-         break;
+         return menu_set_settings(RGUI_SETTINGS_SAVESTATE_SAVE, action);
       case SETTING_ROTATION:
-         switch (action)
-         {
-            case RGUI_ACTION_LEFT:
-               settings_set(1ULL << S_ROTATION_DECREMENT);
-               video_set_rotation_func((g_extern.system.rotation + g_settings.video.rotation) % 4);
-               break;
-            case RGUI_ACTION_RIGHT:
-            case RGUI_ACTION_OK:
-               settings_set(1ULL << S_ROTATION_INCREMENT);
-               video_set_rotation_func((g_extern.system.rotation + g_settings.video.rotation) % 4);
-               break;
-            case RGUI_ACTION_START:
-               settings_set(1ULL << S_DEF_ROTATION);
-               video_set_rotation_func((g_extern.system.rotation + g_settings.video.rotation) % 4);
-               break;
-         }
-         break;
+         return menu_set_settings(RGUI_SETTINGS_VIDEO_ROTATION, action);
       case SETTING_CUSTOM_VIEWPORT:
          if (action == RGUI_ACTION_OK)
             menu_stack_push(INGAME_MENU_CUSTOM_RATIO, false);
@@ -1459,13 +1240,7 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
             menu_stack_push(INGAME_MENU_SCREENSHOT, false);
          break;
       case INGAME_MENU_RETURN_TO_GAME:
-         if (action == RGUI_ACTION_OK)
-         {
-            g_extern.lifecycle_mode_state |= (1ULL << MODE_GAME);
-            g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU_INGAME_EXIT);
-            return -1;
-         }
-         break;
+         return menu_set_settings(RGUI_SETTINGS_VIDEO_ROTATION, action);
       case INGAME_MENU_CHANGE_GAME:
          if (action == RGUI_ACTION_OK)
             menu_stack_push(FILE_BROWSER_MENU, false);
@@ -1503,13 +1278,7 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
          break;
 #endif
       case INGAME_MENU_QUIT_RETROARCH:
-         if (action == RGUI_ACTION_OK)
-         {
-            g_extern.lifecycle_mode_state &= ~(1ULL << MODE_GAME);
-            g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU_INGAME_EXIT);
-            return -1;
-         }
-         break;
+         return menu_set_settings(RGUI_SETTINGS_QUIT_RARCH, action);
       case INGAME_MENU_VIDEO_OPTIONS_MODE:
          if (action == RGUI_ACTION_OK)
             menu_stack_push(INGAME_MENU_VIDEO_OPTIONS, false);
