@@ -594,61 +594,36 @@ HRESULT CRetroArchControls::OnControlNavigate(
    
    current_index = XuiListGetCurSel(m_menulist, NULL);
    unsigned input = pControlNavigateData->nControlNavigate;
+   unsigned action = 0;
+
+   switch (input)
+   {
+      case XUI_CONTROL_NAVIGATE_LEFT:
+         action = RGUI_ACTION_LEFT;
+         break;
+      case XUI_CONTROL_NAVIGATE_RIGHT:
+         action = RGUI_ACTION_RIGHT;
+         break;
+      case XUI_CONTROL_NAVIGATE_UP:
+         action = RGUI_ACTION_UP;
+         break;
+      case XUI_CONTROL_NAVIGATE_DOWN:
+         action = RGUI_ACTION_DOWN;
+         break;
+      case XUI_CONTROL_NAVIGATE_OK:
+         action = RGUI_ACTION_OK;
+         break;
+   }
 
    switch(current_index)
    {
       case SETTING_CONTROLS_DPAD_EMULATION:
-         if (input == XUI_CONTROL_NAVIGATE_LEFT)
-         {
-            if (driver.input->set_keybinds)
-            {
-               unsigned keybind_action = 0;
-
-               switch(g_settings.input.dpad_emulation[rgui->current_pad])
-               {
-                  case ANALOG_DPAD_NONE:
-                     break;
-                  case ANALOG_DPAD_LSTICK:
-                     keybind_action = (1ULL << KEYBINDS_ACTION_SET_ANALOG_DPAD_NONE);
-                     break;
-                  case ANALOG_DPAD_RSTICK:
-                     keybind_action = (1ULL << KEYBINDS_ACTION_SET_ANALOG_DPAD_LSTICK);
-                     break;
-               }
-
-               if (keybind_action)
-                  driver.input->set_keybinds(driver.input_data, g_settings.input.device[rgui->current_pad],
-                        rgui->current_pad, 0, keybind_action);
-            }
-         }
-         else if (input == XUI_CONTROL_NAVIGATE_RIGHT)
-         {
-            if (driver.input->set_keybinds)
-            {
-               unsigned keybind_action = 0;
-
-               switch(g_settings.input.dpad_emulation[rgui->current_pad])
-               {
-                  case ANALOG_DPAD_NONE:
-                     keybind_action = (1ULL << KEYBINDS_ACTION_SET_ANALOG_DPAD_LSTICK);
-                     break;
-                  case ANALOG_DPAD_LSTICK:
-                     keybind_action = (1ULL << KEYBINDS_ACTION_SET_ANALOG_DPAD_RSTICK);
-                     break;
-                  case ANALOG_DPAD_RSTICK:
-                     break;
-               }
-
-               if (keybind_action)
-                  driver.input->set_keybinds(driver.input_data, g_settings.input.device[rgui->current_pad],
-                        rgui->current_pad, 0, keybind_action);
-            }
-         }
+         menu_set_settings(RGUI_SETTINGS_BIND_DPAD_EMULATION, action);
          break;
       case SETTING_CONTROLS_DEFAULT_ALL:
          break;
       default:
-         if (input == XUI_CONTROL_NAVIGATE_LEFT)
+         if (action == RGUI_ACTION_LEFT)
          {
             struct platform_bind key_label;
             strlcpy(key_label.desc, "Unknown", sizeof(key_label.desc));
@@ -667,7 +642,7 @@ HRESULT CRetroArchControls::OnControlNavigate(
             mbstowcs(strw_buffer, button, sizeof(strw_buffer) / sizeof(wchar_t));
             XuiListSetText(m_menulist, current_index, strw_buffer);
          }
-         else if (input == XUI_CONTROL_NAVIGATE_RIGHT)
+         else if (action == RGUI_ACTION_RIGHT)
          {
             struct platform_bind key_label;
             strlcpy(key_label.desc, "Unknown", sizeof(key_label.desc));
@@ -757,31 +732,35 @@ HRESULT CRetroArchSettings::OnControlNavigate(XUIMessageControlNavigate *pContro
    current_index = XuiListGetCurSel(m_menulist, NULL);
 
    unsigned input = pControlNavigateData->nControlNavigate;
+   unsigned action = 0;
+
+   switch (input)
+   {
+      case XUI_CONTROL_NAVIGATE_LEFT:
+         action = RGUI_ACTION_LEFT;
+         break;
+      case XUI_CONTROL_NAVIGATE_RIGHT:
+         action = RGUI_ACTION_RIGHT;
+         break;
+      case XUI_CONTROL_NAVIGATE_UP:
+         action = RGUI_ACTION_UP;
+         break;
+      case XUI_CONTROL_NAVIGATE_DOWN:
+         action = RGUI_ACTION_DOWN;
+         break;
+      case XUI_CONTROL_NAVIGATE_OK:
+         action = RGUI_ACTION_OK;
+         break;
+   }
 
    switch(current_index)
    {
       case INGAME_MENU_REWIND_ENABLED:
-         if (input == XUI_CONTROL_NAVIGATE_LEFT)
-            settings_set(1ULL << S_REWIND);
-         else if (input == XUI_CONTROL_NAVIGATE_RIGHT ||
-               input == XUI_CONTROL_NAVIGATE_OK)
-            settings_set(1ULL << S_REWIND);
-
-         if (g_settings.rewind_enable)
-            rarch_init_rewind();
-         else
-            rarch_deinit_rewind();
+         menu_set_settings(RGUI_SETTINGS_REWIND_ENABLE, action);
          XuiListSetText(m_menulist, INGAME_MENU_REWIND_ENABLED, g_settings.rewind_enable ? L"Rewind: ON" : L"Rewind: OFF");
          break;
       case INGAME_MENU_REWIND_GRANULARITY:
-         if (input == XUI_CONTROL_NAVIGATE_LEFT)
-         {
-            if (g_settings.rewind_granularity > 1)
-               g_settings.rewind_granularity--;
-         }
-         else if (input == XUI_CONTROL_NAVIGATE_RIGHT ||
-               input == XUI_CONTROL_NAVIGATE_OK)
-            g_settings.rewind_granularity++;
+         menu_set_settings(RGUI_SETTINGS_REWIND_GRANULARITY, action);
          menu_settings_create_menu_item_label_w(strw_buffer, S_LBL_REWIND_GRANULARITY, sizeof(strw_buffer));
          XuiListSetText(m_menulist, INGAME_MENU_REWIND_GRANULARITY, strw_buffer);
          break;
@@ -805,23 +784,8 @@ HRESULT CRetroArchSettings::OnControlNavigate(XUIMessageControlNavigate *pContro
          }
          break;
       case SETTING_EMU_SHOW_DEBUG_INFO_MSG:
-         if (input == XUI_CONTROL_NAVIGATE_LEFT)
-         {
-            if (g_extern.lifecycle_mode_state & (1ULL << MODE_FPS_DRAW))
-               g_extern.lifecycle_mode_state &= ~(1ULL << MODE_FPS_DRAW);
-            else
-               g_extern.lifecycle_mode_state |= (1ULL << MODE_FPS_DRAW);
-            XuiListSetText(m_menulist, SETTING_EMU_SHOW_DEBUG_INFO_MSG, (g_extern.lifecycle_mode_state & (1ULL << MODE_FPS_DRAW)) ? L"Debug Info messages: ON" : L"Debug Info messages: OFF");
-         }
-         else if (input == XUI_CONTROL_NAVIGATE_RIGHT ||
-               input == XUI_CONTROL_NAVIGATE_OK)
-         {
-            if (g_extern.lifecycle_mode_state & (1ULL << MODE_FPS_DRAW))
-               g_extern.lifecycle_mode_state &= ~(1ULL << MODE_FPS_DRAW);
-            else
-               g_extern.lifecycle_mode_state |= (1ULL << MODE_FPS_DRAW);
-            XuiListSetText(m_menulist, SETTING_EMU_SHOW_DEBUG_INFO_MSG, (g_extern.lifecycle_mode_state & (1ULL << MODE_FPS_DRAW)) ? L"Debug Info messages: ON" : L"Debug Info messages: OFF");
-         }
+         menu_set_settings(RGUI_SETTINGS_DEBUG_TEXT, action);
+         XuiListSetText(m_menulist, SETTING_EMU_SHOW_DEBUG_INFO_MSG, (g_extern.lifecycle_mode_state & (1ULL << MODE_FPS_DRAW)) ? L"Debug Info messages: ON" : L"Debug Info messages: OFF");
          break;
       default:
          break;
@@ -829,12 +793,12 @@ HRESULT CRetroArchSettings::OnControlNavigate(XUIMessageControlNavigate *pContro
 
    bHandled = TRUE;
 
-   switch(pControlNavigateData->nControlNavigate)
+   switch(action)
    {
-      case XUI_CONTROL_NAVIGATE_LEFT:
-      case XUI_CONTROL_NAVIGATE_RIGHT:
-      case XUI_CONTROL_NAVIGATE_UP:
-      case XUI_CONTROL_NAVIGATE_DOWN:
+      case RGUI_ACTION_LEFT:
+      case RGUI_ACTION_RIGHT:
+      case RGUI_ACTION_UP:
+      case RGUI_ACTION_DOWN:
          pControlNavigateData->hObjDest = pControlNavigateData->hObjSource;
          break;
       default:
@@ -895,6 +859,26 @@ HRESULT CRetroArchCoreOptions::OnControlNavigate(XUIMessageControlNavigate *pCon
 {
    unsigned current_index = XuiListGetCurSel(m_menulist, NULL);
    unsigned input = pControlNavigateData->nControlNavigate;
+   unsigned action = 0;
+
+   switch (input)
+   {
+      case XUI_CONTROL_NAVIGATE_LEFT:
+         action = RGUI_ACTION_LEFT;
+         break;
+      case XUI_CONTROL_NAVIGATE_RIGHT:
+         action = RGUI_ACTION_RIGHT;
+         break;
+      case XUI_CONTROL_NAVIGATE_UP:
+         action = RGUI_ACTION_UP;
+         break;
+      case XUI_CONTROL_NAVIGATE_DOWN:
+         action = RGUI_ACTION_DOWN;
+         break;
+      case XUI_CONTROL_NAVIGATE_OK:
+         action = RGUI_ACTION_OK;
+         break;
+   }
 
    size_t opts = core_option_size(g_extern.system.core_options);
 
@@ -902,17 +886,15 @@ HRESULT CRetroArchCoreOptions::OnControlNavigate(XUIMessageControlNavigate *pCon
    {
       bool update_item = false;
 
-      switch(pControlNavigateData->nControlNavigate)
+      switch (action)
       {
-         case XUI_CONTROL_NAVIGATE_LEFT:
+         case RGUI_ACTION_LEFT:
             core_option_prev(g_extern.system.core_options,  current_index);
             update_item = true;
             break;
-         case XUI_CONTROL_NAVIGATE_RIGHT:
+         case RGUI_ACTION_RIGHT:
             core_option_next(g_extern.system.core_options,  current_index);
             update_item = true;
-            break;
-         default:
             break;
       }
 
@@ -931,12 +913,12 @@ HRESULT CRetroArchCoreOptions::OnControlNavigate(XUIMessageControlNavigate *pCon
 
    bHandled = TRUE;
 
-   switch(pControlNavigateData->nControlNavigate)
+   switch(action)
    {
-      case XUI_CONTROL_NAVIGATE_LEFT:
-      case XUI_CONTROL_NAVIGATE_RIGHT:
-      case XUI_CONTROL_NAVIGATE_UP:
-      case XUI_CONTROL_NAVIGATE_DOWN:
+      case RGUI_ACTION_LEFT:
+      case RGUI_ACTION_RIGHT:
+      case RGUI_ACTION_UP:
+      case RGUI_ACTION_DOWN:
          pControlNavigateData->hObjDest = pControlNavigateData->hObjSource;
          break;
       default:
@@ -966,28 +948,43 @@ HRESULT CRetroArchAudioOptions::OnControlNavigate(XUIMessageControlNavigate *pCo
 {
    int current_index = XuiListGetCurSel(m_menulist, NULL);
    unsigned input = pControlNavigateData->nControlNavigate;
+   unsigned action = 0;
+
+   switch (input)
+   {
+      case XUI_CONTROL_NAVIGATE_LEFT:
+         action = RGUI_ACTION_LEFT;
+         break;
+      case XUI_CONTROL_NAVIGATE_RIGHT:
+         action = RGUI_ACTION_RIGHT;
+         break;
+      case XUI_CONTROL_NAVIGATE_UP:
+         action = RGUI_ACTION_UP;
+         break;
+      case XUI_CONTROL_NAVIGATE_DOWN:
+         action = RGUI_ACTION_DOWN;
+         break;
+      case XUI_CONTROL_NAVIGATE_OK:
+         action = RGUI_ACTION_OK;
+         break;
+   }
 
    switch (current_index)
    {
       case MENU_XUI_ITEM_AUDIO_MUTE_AUDIO:
-         if (input == XUI_CONTROL_NAVIGATE_LEFT ||
-               input == XUI_CONTROL_NAVIGATE_RIGHT ||
-               input == XUI_CONTROL_NAVIGATE_OK)
-         {
-            settings_set(1ULL << S_AUDIO_MUTE);
-            XuiListSetText(m_menulist, MENU_XUI_ITEM_AUDIO_MUTE_AUDIO, g_extern.audio_data.mute ? L"Mute Audio : ON" : L"Mute Audio : OFF");
-         }
+         menu_set_settings(RGUI_SETTINGS_AUDIO_MUTE, action);
+         XuiListSetText(m_menulist, MENU_XUI_ITEM_AUDIO_MUTE_AUDIO, g_extern.audio_data.mute ? L"Mute Audio : ON" : L"Mute Audio : OFF");
          break;
    }
 
    bHandled = TRUE;
 
-   switch(pControlNavigateData->nControlNavigate)
+   switch(action)
    {
-      case XUI_CONTROL_NAVIGATE_LEFT:
-      case XUI_CONTROL_NAVIGATE_RIGHT:
-      case XUI_CONTROL_NAVIGATE_UP:
-      case XUI_CONTROL_NAVIGATE_DOWN:
+      case RGUI_ACTION_LEFT:
+      case RGUI_ACTION_RIGHT:
+      case RGUI_ACTION_UP:
+      case RGUI_ACTION_DOWN:
          pControlNavigateData->hObjDest = pControlNavigateData->hObjSource;
          break;
       default:
@@ -1055,21 +1052,32 @@ HRESULT CRetroArchVideoOptions::OnControlNavigate(XUIMessageControlNavigate *pCo
    current_index = XuiListGetCurSel(m_menulist, NULL);
 
    unsigned input = pControlNavigateData->nControlNavigate;
+   unsigned action = 0;
+
+   switch (input)
+   {
+      case XUI_CONTROL_NAVIGATE_LEFT:
+         action = RGUI_ACTION_LEFT;
+         break;
+      case XUI_CONTROL_NAVIGATE_RIGHT:
+         action = RGUI_ACTION_RIGHT;
+         break;
+      case XUI_CONTROL_NAVIGATE_UP:
+         action = RGUI_ACTION_UP;
+         break;
+      case XUI_CONTROL_NAVIGATE_DOWN:
+         action = RGUI_ACTION_DOWN;
+         break;
+      case XUI_CONTROL_NAVIGATE_OK:
+         action = RGUI_ACTION_OK;
+         break;
+   }
 
    switch (current_index)
    {
       case MENU_XUI_ITEM_HW_TEXTURE_FILTER:
-         if (input == XUI_CONTROL_NAVIGATE_LEFT)
-         {
-            g_settings.video.smooth = !g_settings.video.smooth;
-            XuiListSetText(m_menulist, MENU_XUI_ITEM_HW_TEXTURE_FILTER, g_settings.video.smooth ? L"Default Filter: Linear" : L"Default Filter: Nearest");
-         }
-         else if (input == XUI_CONTROL_NAVIGATE_RIGHT ||
-               input == XUI_CONTROL_NAVIGATE_OK)
-         {
-            g_settings.video.smooth = !g_settings.video.smooth;
-            XuiListSetText(m_menulist, MENU_XUI_ITEM_HW_TEXTURE_FILTER, g_settings.video.smooth ? L"Default Filter: Linear" : L"Default Filter: Nearest");
-         }
+         menu_set_settings(RGUI_SETTINGS_VIDEO_FILTER, action);
+         XuiListSetText(m_menulist, MENU_XUI_ITEM_HW_TEXTURE_FILTER, g_settings.video.smooth ? L"Default Filter: Linear" : L"Default Filter: Nearest");
          break;
       case MENU_XUI_ITEM_GAMMA_CORRECTION_ENABLED:
          if (input == XUI_CONTROL_NAVIGATE_LEFT ||
@@ -1082,53 +1090,26 @@ HRESULT CRetroArchVideoOptions::OnControlNavigate(XUIMessageControlNavigate *pCo
          }
          break;
       case MENU_XUI_ITEM_ASPECT_RATIO:
-         if (input == XUI_CONTROL_NAVIGATE_LEFT)
-         {
-            settings_set(1ULL << S_ASPECT_RATIO_DECREMENT);
-            aspectratio_changed = true;
-         }
-         else if (input == XUI_CONTROL_NAVIGATE_RIGHT ||
-               input == XUI_CONTROL_NAVIGATE_OK)
-         {
-            settings_set(1ULL << S_ASPECT_RATIO_INCREMENT);
-            aspectratio_changed = true;
-         }
+         menu_set_settings(RGUI_SETTINGS_VIDEO_ASPECT_RATIO, action);
+         menu_settings_create_menu_item_label_w(strw_buffer, S_LBL_ASPECT_RATIO, sizeof(strw_buffer));
+         XuiListSetText(m_menulist, MENU_XUI_ITEM_ASPECT_RATIO, strw_buffer);
          break;
       case MENU_XUI_ITEM_ORIENTATION:
-         if (input == XUI_CONTROL_NAVIGATE_LEFT)
-         {
-            settings_set(1ULL << S_ROTATION_DECREMENT);
-            menu_settings_create_menu_item_label_w(strw_buffer, S_LBL_ROTATION, sizeof(strw_buffer));
-            XuiListSetText(m_menulist, MENU_XUI_ITEM_ORIENTATION, strw_buffer);
-            driver.video->set_rotation(driver.video_data, g_settings.video.rotation);
-         }
-         else if (input == XUI_CONTROL_NAVIGATE_RIGHT ||
-               input == XUI_CONTROL_NAVIGATE_OK)
-         {
-            settings_set(1ULL << S_ROTATION_INCREMENT);
-            menu_settings_create_menu_item_label_w(strw_buffer, S_LBL_ROTATION, sizeof(strw_buffer));
-            XuiListSetText(m_menulist, MENU_XUI_ITEM_ORIENTATION, strw_buffer);
-            driver.video->set_rotation(driver.video_data, g_settings.video.rotation);
-         }
+         menu_set_settings(RGUI_SETTINGS_VIDEO_ROTATION, action);
+         menu_settings_create_menu_item_label_w(strw_buffer, S_LBL_ROTATION, sizeof(strw_buffer));
+         XuiListSetText(m_menulist, MENU_XUI_ITEM_ORIENTATION, strw_buffer);
+         driver.video->set_rotation(driver.video_data, g_settings.video.rotation);
          break;
-   }
-
-   if(aspectratio_changed)
-   {
-      if (driver.video_poke->set_aspect_ratio)
-         driver.video_poke->set_aspect_ratio(driver.video_data, g_settings.video.aspect_ratio_idx);
-      menu_settings_create_menu_item_label_w(strw_buffer, S_LBL_ASPECT_RATIO, sizeof(strw_buffer));
-      XuiListSetText(m_menulist, MENU_XUI_ITEM_ASPECT_RATIO, strw_buffer);
    }
 
    bHandled = TRUE;
 
-   switch(pControlNavigateData->nControlNavigate)
+   switch(action)
    {
-      case XUI_CONTROL_NAVIGATE_LEFT:
-      case XUI_CONTROL_NAVIGATE_RIGHT:
-      case XUI_CONTROL_NAVIGATE_UP:
-      case XUI_CONTROL_NAVIGATE_DOWN:
+      case RGUI_ACTION_LEFT:
+      case RGUI_ACTION_RIGHT:
+      case RGUI_ACTION_UP:
+      case RGUI_ACTION_DOWN:
          pControlNavigateData->hObjDest = pControlNavigateData->hObjSource;
          break;
       default:
@@ -1262,6 +1243,26 @@ HRESULT CRetroArchMain::OnControlNavigate(XUIMessageControlNavigate *pControlNav
    current_index= XuiListGetCurSel(m_menulist, NULL);
 
    unsigned input = pControlNavigateData->nControlNavigate;
+   unsigned action = 0;
+
+   switch (input)
+   {
+      case XUI_CONTROL_NAVIGATE_LEFT:
+         action = RGUI_ACTION_LEFT;
+         break;
+      case XUI_CONTROL_NAVIGATE_RIGHT:
+         action = RGUI_ACTION_RIGHT;
+         break;
+      case XUI_CONTROL_NAVIGATE_UP:
+         action = RGUI_ACTION_UP;
+         break;
+      case XUI_CONTROL_NAVIGATE_DOWN:
+         action = RGUI_ACTION_DOWN;
+         break;
+      case XUI_CONTROL_NAVIGATE_OK:
+         action = RGUI_ACTION_OK;
+         break;
+   }
 
    HXUIOBJ current_obj = current_menu;
 
@@ -1358,21 +1359,14 @@ HRESULT CRetroArchMain::OnControlNavigate(XUIMessageControlNavigate *pControlNav
          }
          break;
       case INGAME_MENU_LOAD_STATE:
+         process_input_ret = menu_set_settings(RGUI_SETTINGS_SAVESTATE_LOAD, action);
+         menu_settings_create_menu_item_label_w(strw_buffer, S_LBL_LOAD_STATE_SLOT, sizeof(strw_buffer));
+         XuiListSetText(m_menulist, INGAME_MENU_LOAD_STATE, strw_buffer);
+         menu_settings_create_menu_item_label_w(strw_buffer, S_LBL_SAVE_STATE_SLOT, sizeof(strw_buffer));
+         XuiListSetText(m_menulist, INGAME_MENU_SAVE_STATE, strw_buffer);
+         break;
       case INGAME_MENU_SAVE_STATE:
-         if (input == XUI_CONTROL_NAVIGATE_LEFT)
-            rarch_state_slot_decrease();
-         else if (input == XUI_CONTROL_NAVIGATE_RIGHT)
-            rarch_state_slot_increase();
-         else if (input == XUI_CONTROL_NAVIGATE_OK)
-         {
-            if (current_index == INGAME_MENU_LOAD_STATE)
-               rarch_load_state();
-            else if (current_index == INGAME_MENU_SAVE_STATE)
-               rarch_save_state();
-            g_extern.lifecycle_mode_state |= (1ULL << MODE_GAME);
-            process_input_ret = -1;
-         }
-
+         process_input_ret = menu_set_settings(RGUI_SETTINGS_SAVESTATE_SAVE, action);
          menu_settings_create_menu_item_label_w(strw_buffer, S_LBL_LOAD_STATE_SLOT, sizeof(strw_buffer));
          XuiListSetText(m_menulist, INGAME_MENU_LOAD_STATE, strw_buffer);
          menu_settings_create_menu_item_label_w(strw_buffer, S_LBL_SAVE_STATE_SLOT, sizeof(strw_buffer));
@@ -1381,37 +1375,24 @@ HRESULT CRetroArchMain::OnControlNavigate(XUIMessageControlNavigate *pControlNav
       case INGAME_MENU_SCREENSHOT_MODE:
          break;
       case INGAME_MENU_RETURN_TO_GAME:
-         if (input == XUI_CONTROL_NAVIGATE_OK)
-         {
-            g_extern.lifecycle_mode_state |= (1ULL << MODE_GAME);
-            process_input_ret = -1;
-         }
+         process_input_ret = menu_set_settings(RGUI_SETTINGS_RESUME_GAME, action);
          break;
       case INGAME_MENU_RESET:
-         if (input == XUI_CONTROL_NAVIGATE_OK)
-         {
-            rarch_game_reset();
-            g_extern.lifecycle_mode_state |= (1ULL << MODE_GAME);
-            process_input_ret = -1;
-         }
+         process_input_ret = menu_set_settings(RGUI_SETTINGS_RESTART_GAME, action);
          break;
       case INGAME_MENU_QUIT_RETROARCH:
-         if (input == XUI_CONTROL_NAVIGATE_OK)
-         {
-            g_extern.lifecycle_mode_state &= ~(1ULL << MODE_GAME);
-            process_input_ret = -1;
-         }
+         process_input_ret = menu_set_settings(RGUI_SETTINGS_QUIT_RARCH, action);
          break;
    }
 
    bHandled = TRUE;
 
-   switch(pControlNavigateData->nControlNavigate)
+   switch(action)
    {
-      case XUI_CONTROL_NAVIGATE_LEFT:
-      case XUI_CONTROL_NAVIGATE_RIGHT:
-      case XUI_CONTROL_NAVIGATE_UP:
-      case XUI_CONTROL_NAVIGATE_DOWN:
+      case RGUI_ACTION_LEFT:
+      case RGUI_ACTION_RIGHT:
+      case RGUI_ACTION_UP:
+      case RGUI_ACTION_DOWN:
          pControlNavigateData->hObjDest = pControlNavigateData->hObjSource;
          break;
       default:
