@@ -1950,6 +1950,13 @@ static int select_setting(void *data, uint64_t action)
 
       if (driver.video_poke->set_osd_msg)
          driver.video_poke->set_osd_msg(driver.video_data, setting_text_buf, &font_parms);
+
+      if (i != rgui->selection_ptr)
+         continue;
+
+#ifdef HAVE_MENU_PANEL
+      menu_panel->y = y_increment;
+#endif
    }
 
    switch (action)
