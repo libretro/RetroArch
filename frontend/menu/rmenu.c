@@ -1828,8 +1828,6 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
                break;
          }
          break;
-      case SHADERMAN_AUTOSTART_CGP_ON_STARTUP:
-         break;
       case SHADERMAN_SHADER_0:
       case SHADERMAN_SHADER_1:
       case SHADERMAN_SHADER_2:
@@ -2333,10 +2331,6 @@ static int select_setting(void *data, uint64_t action)
 #ifdef HAVE_SHADER_MANAGER
          case SHADERMAN_LOAD_CGP:
             strlcpy(text, "Load Shader Preset", sizeof(text));
-            strlcpy(setting_text, "", sizeof(setting_text));
-            break;
-         case SHADERMAN_AUTOSTART_CGP_ON_STARTUP:
-            strlcpy(text, "Autostart CGP at startup", sizeof(text));
             strlcpy(setting_text, "", sizeof(setting_text));
             break;
          case SHADERMAN_SAVE_CGP:
