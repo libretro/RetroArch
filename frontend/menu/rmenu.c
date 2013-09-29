@@ -1481,18 +1481,6 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
                break;
          }
          break;
-      case SETTING_CONTROLS_SCHEME:
-         switch (action)
-         {
-            case RGUI_ACTION_LEFT:
-            case RGUI_ACTION_RIGHT:
-            case RGUI_ACTION_OK:
-            case RGUI_ACTION_START:
-               menu_stack_push(INPUT_PRESET_CHOICE, true);
-               filebrowser_set_root_and_ext(rgui->browser, EXT_INPUT_PRESETS, default_paths.input_presets_dir);
-               break;
-         }
-         break;
       case SETTING_CONTROLS_NUMBER:
          switch (action)
          {
@@ -1612,21 +1600,6 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
       case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_R3:
          set_keybind_digital(RETRO_DEVICE_ID_JOYPAD_R3, action);
          break;
-#ifdef HAVE_OSKUTIL
-      case SETTING_CONTROLS_SAVE_CUSTOM_CONTROLS:
-         switch (action)
-         {
-            case RGUI_ACTION_LEFT:
-            case RGUI_ACTION_RIGHT:
-            case RGUI_ACTION_OK:
-            case RGUI_ACTION_START:
-               rgui->osk_param = INPUT_PRESET_FILE;
-               rgui->osk_init = osk_callback_enter_filename_init;
-               rgui->osk_callback = osk_callback_enter_filename;
-               break;
-         }
-         break;
-#endif
       case SETTING_CONTROLS_DEFAULT_ALL:
          switch (action)
          {
@@ -2183,10 +2156,6 @@ static int select_setting(void *data, uint64_t action)
             strlcpy(text, "System Directory", sizeof(text));
             strlcpy(setting_text, g_settings.system_directory, sizeof(setting_text));
             break;
-         case SETTING_CONTROLS_SCHEME:
-            strlcpy(text, "Load Controls Preset", sizeof(text));
-            strlcpy(setting_text, g_extern.input_config_path, sizeof(setting_text));
-            break;
          case SETTING_CONTROLS_NUMBER:
             strlcpy(text, "Player", sizeof(text));
             snprintf(setting_text, sizeof(setting_text), "%d", rgui->current_pad+1);
@@ -2233,10 +2202,6 @@ static int select_setting(void *data, uint64_t action)
                strlcpy(text, g_settings.input.binds[rgui->current_pad][id].desc, sizeof(text));
                strlcpy(setting_text, key_label.desc, sizeof(setting_text));
             }
-            break;
-         case SETTING_CONTROLS_SAVE_CUSTOM_CONTROLS:
-            strlcpy(text, "Save Controls Preset", sizeof(text));
-            strlcpy(setting_text, "", sizeof(setting_text));
             break;
          case SETTING_CONTROLS_DEFAULT_ALL:
             strlcpy(text, "DEFAULTS", sizeof(text));
