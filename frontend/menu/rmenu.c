@@ -1981,9 +1981,12 @@ static int select_setting(void *data, uint64_t action)
 
          menu_stack_pop(rgui->menu_type);
          break;
+      case RGUI_ACTION_LEFT:
+      case RGUI_ACTION_RIGHT:
+      case RGUI_ACTION_OK:
+         ret = set_setting_action(rgui->menu_type, rgui->selection_ptr, action);
+         break;
    }
-
-   ret = set_setting_action(rgui->menu_type, rgui->selection_ptr, action);
 
    return ret;
 }
