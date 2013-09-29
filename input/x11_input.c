@@ -275,6 +275,12 @@ static bool x_set_rumble(void *data, unsigned port, enum retro_rumble_effect eff
    return input_joypad_set_rumble(x11->joypad, port, effect, strength);
 }
 
+static const rarch_joypad_driver_t *x_get_joypad_driver(void *data)
+{
+   x11_input_t *x11 = (x11_input_t*)data;
+   return x11->joypad;
+}
+
 const input_driver_t input_x = {
    x_input_init,
    x_input_poll,
@@ -285,5 +291,6 @@ const input_driver_t input_x = {
    "x",
    x_grab_mouse,
    x_set_rumble,
+   x_get_joypad_driver,
 };
 

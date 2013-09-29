@@ -1179,7 +1179,7 @@ void settings_set(uint64_t settings)
    }
 
    if (settings & (1ULL << S_DEF_INPUT_OVERLAY_SCALE))
-      g_settings.input.overlay_opacity = 1.0f;
+      g_settings.input.overlay_scale = 1.0f;
 #endif
 
    if (settings & (1ULL << S_REWIND_GRANULARITY_INCREMENT))

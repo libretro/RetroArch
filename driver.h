@@ -323,6 +323,8 @@ enum keybind_set_id
    KEYBINDS_ACTION_LAST
 };
 
+typedef struct rarch_joypad_driver rarch_joypad_driver_t;
+
 typedef struct input_driver
 {
    void *(*init)(void);
@@ -336,6 +338,7 @@ typedef struct input_driver
 
    void (*grab_mouse)(void *data, bool state);
    bool (*set_rumble)(void *data, unsigned port, enum retro_rumble_effect effect, uint16_t state);
+   const rarch_joypad_driver_t *(*get_joypad_driver)(void *data);
 } input_driver_t;
 
 struct rarch_viewport;

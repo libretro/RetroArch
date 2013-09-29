@@ -230,6 +230,7 @@ static void render_text(rgui_handle_t *rgui)
          (menu_type == RGUI_SETTINGS_PATH_OPTIONS) ||
          (menu_type == RGUI_SETTINGS_OPTIONS) ||
          (menu_type == RGUI_SETTINGS_CUSTOM_VIEWPORT || menu_type == RGUI_SETTINGS_CUSTOM_VIEWPORT_2) ||
+         menu_type == RGUI_SETTINGS_CUSTOM_BIND ||
          menu_type == RGUI_SETTINGS)
       snprintf(title, sizeof(title), "MENU %s", dir);
    else if (menu_type == RGUI_SETTINGS_OPEN_HISTORY)
@@ -303,7 +304,7 @@ static void render_text(rgui_handle_t *rgui)
       rgui_list_get_at_offset(rgui->selection_buf, i, &path, &type);
       char message[256];
       char type_str[256];
-      unsigned w = (menu_type == RGUI_SETTINGS_INPUT_OPTIONS || menu_type == RGUI_SETTINGS_PATH_OPTIONS) ? 24 : 19;
+      unsigned w = (menu_type == RGUI_SETTINGS_INPUT_OPTIONS || menu_type == RGUI_SETTINGS_PATH_OPTIONS || menu_type == RGUI_SETTINGS_CUSTOM_BIND) ? 24 : 19;
       unsigned port = rgui->current_pad;
       
 #ifdef HAVE_SHADER_MANAGER
@@ -624,18 +625,59 @@ static void render_text(rgui_handle_t *rgui)
             case RGUI_SETTINGS_BIND_R2:
             case RGUI_SETTINGS_BIND_L3:
             case RGUI_SETTINGS_BIND_R3:
+            {
+               unsigned id = type - RGUI_SETTINGS_BIND_B;
+               struct platform_bind key_label;
+               strlcpy(key_label.desc, "Unknown", sizeof(key_label.desc));
+               key_label.joykey = g_settings.input.binds[port][id].joykey;
+
+               if (driver.input->set_keybinds)
                {
-                  unsigned id = rgui_controller_lut[type - RGUI_SETTINGS_BIND_UP];
-                  struct platform_bind key_label;
-                  strlcpy(key_label.desc, "Unknown", sizeof(key_label.desc));
-                  key_label.joykey = g_settings.input.binds[port][id].joykey;
-
-                  if (driver.input->set_keybinds)
-                     driver.input->set_keybinds(&key_label, 0, 0, 0, (1ULL << KEYBINDS_ACTION_GET_BIND_LABEL));
-
+                  driver.input->set_keybinds(&key_label, 0, 0, 0, (1ULL << KEYBINDS_ACTION_GET_BIND_LABEL));
                   strlcpy(type_str, key_label.desc, sizeof(type_str));
                }
+               else
+               {
+                  const struct retro_keybind *bind = &g_settings.input.binds[port][type - RGUI_SETTINGS_BIND_B];
+                  if (bind->joykey != NO_BTN)
+                  {
+                     if (GET_HAT_DIR(bind->joykey))
+                     {
+                        const char *dir;
+                        switch (GET_HAT_DIR(bind->joykey))
+                        {
+                           case HAT_UP_MASK: dir = "up"; break;
+                           case HAT_DOWN_MASK: dir = "down"; break;
+                           case HAT_LEFT_MASK: dir = "left"; break;
+                           case HAT_RIGHT_MASK: dir = "right"; break;
+                           default: dir = "?"; break;
+                        }
+                        snprintf(type_str, sizeof(type_str), "Hat #%u %s", (unsigned)GET_HAT(bind->joykey), dir);
+                     }
+                     else
+                        snprintf(type_str, sizeof(type_str), "%u (btn)", (unsigned)bind->joykey);
+                  }
+                  else if (bind->joyaxis != AXIS_NONE)
+                  {
+                     unsigned axis = 0;
+                     char dir = '\0';
+                     if (AXIS_NEG_GET(bind->joyaxis) != AXIS_DIR_NONE)
+                     {
+                        dir = '-';
+                        axis = AXIS_NEG_GET(bind->joyaxis);
+                     }
+                     else if (AXIS_POS_GET(bind->joyaxis) != AXIS_DIR_NONE)
+                     {
+                        dir = '+';
+                        axis = AXIS_POS_GET(bind->joyaxis);
+                     }
+                     snprintf(type_str, sizeof(type_str), "%c%u (axis)", dir, axis);
+                  }
+                  else
+                     strlcpy(type_str, "<default>", sizeof(type_str));
+               }
                break;
+            }
             default:
                type_str[0] = 0;
                w = 0;

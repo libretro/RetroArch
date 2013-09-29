@@ -147,22 +147,25 @@ typedef enum
    RGUI_SETTINGS_BIND_DEVICE,
    RGUI_SETTINGS_BIND_DEVICE_TYPE,
    RGUI_SETTINGS_BIND_DPAD_EMULATION,
+
+   // Match up with libretro order for simplicity.
+   RGUI_SETTINGS_BIND_B,
+   RGUI_SETTINGS_BIND_Y,
+   RGUI_SETTINGS_BIND_SELECT,
+   RGUI_SETTINGS_BIND_START,
    RGUI_SETTINGS_BIND_UP,
    RGUI_SETTINGS_BIND_DOWN,
    RGUI_SETTINGS_BIND_LEFT,
    RGUI_SETTINGS_BIND_RIGHT,
    RGUI_SETTINGS_BIND_A,
-   RGUI_SETTINGS_BIND_B,
    RGUI_SETTINGS_BIND_X,
-   RGUI_SETTINGS_BIND_Y,
-   RGUI_SETTINGS_BIND_START,
-   RGUI_SETTINGS_BIND_SELECT,
    RGUI_SETTINGS_BIND_L,
    RGUI_SETTINGS_BIND_R,
    RGUI_SETTINGS_BIND_L2,
    RGUI_SETTINGS_BIND_R2,
    RGUI_SETTINGS_BIND_L3,
    RGUI_SETTINGS_BIND_R3,
+   RGUI_SETTINGS_CUSTOM_BIND,
 
    RGUI_SETTINGS_CORE_OPTION_NONE = 0xffff,
    RGUI_SETTINGS_CORE_OPTION_START = 0x10000
@@ -185,6 +188,27 @@ typedef enum
    RGUI_ACTION_MAPPING_NEXT,
    RGUI_ACTION_NOOP
 } rgui_action_t;
+
+#define RGUI_MAX_BUTTONS 32
+#define RGUI_MAX_AXES 32
+#define RGUI_MAX_HATS 4
+struct rgui_bind_state_port
+{
+   bool buttons[RGUI_MAX_BUTTONS];
+   int16_t axes[RGUI_MAX_AXES];
+   uint16_t hats[RGUI_MAX_HATS];
+};
+
+struct rgui_bind_state
+{
+   struct retro_keybind *target;
+   unsigned player;
+   struct rgui_bind_state_port state[MAX_PLAYERS];
+   bool skip;
+};
+
+void menu_poll_bind_state(struct rgui_bind_state *state);
+bool menu_poll_find_trigger(struct rgui_bind_state *state, const struct rgui_bind_state *new_state);
 
 typedef struct
 {
@@ -235,6 +259,8 @@ typedef struct
 
    rom_history_t *history;
    rarch_time_t last_time; // Used to throttle RGUI in case VSync is broken.
+
+   struct rgui_bind_state binds;
 } rgui_handle_t;
 
 extern rgui_handle_t *rgui;

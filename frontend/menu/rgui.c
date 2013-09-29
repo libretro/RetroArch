@@ -107,25 +107,6 @@ static int shader_manager_toggle_setting(rgui_handle_t *rgui, unsigned setting, 
 #endif
 static int video_option_toggle_setting(rgui_handle_t *rgui, unsigned setting, rgui_action_t action);
 
-static const unsigned rgui_controller_lut[] = {
-   RETRO_DEVICE_ID_JOYPAD_UP,
-   RETRO_DEVICE_ID_JOYPAD_DOWN,
-   RETRO_DEVICE_ID_JOYPAD_LEFT,
-   RETRO_DEVICE_ID_JOYPAD_RIGHT,
-   RETRO_DEVICE_ID_JOYPAD_A,
-   RETRO_DEVICE_ID_JOYPAD_B,
-   RETRO_DEVICE_ID_JOYPAD_X,
-   RETRO_DEVICE_ID_JOYPAD_Y,
-   RETRO_DEVICE_ID_JOYPAD_START,
-   RETRO_DEVICE_ID_JOYPAD_SELECT,
-   RETRO_DEVICE_ID_JOYPAD_L,
-   RETRO_DEVICE_ID_JOYPAD_R,
-   RETRO_DEVICE_ID_JOYPAD_L2,
-   RETRO_DEVICE_ID_JOYPAD_R2,
-   RETRO_DEVICE_ID_JOYPAD_L3,
-   RETRO_DEVICE_ID_JOYPAD_R3,
-};
-
 static void rgui_flush_menu_stack_type(rgui_handle_t *rgui, unsigned final_type)
 {
    rgui->need_refresh = true;
@@ -726,10 +707,28 @@ static int rgui_settings_toggle_setting(rgui_handle_t *rgui, unsigned setting, r
             else if (action == RGUI_ACTION_RIGHT)
                keybind_action = (1ULL << KEYBINDS_ACTION_INCREMENT_BIND);
 
+            // FIXME: The array indices here look totally wrong ... Fixed it so it looks sane for now.
             if (keybind_action != KEYBINDS_ACTION_NONE)
-               driver.input->set_keybinds(driver.input_data, g_settings.input.device[setting - RGUI_SETTINGS_BIND_UP], port,
-                     rgui_controller_lut[setting - RGUI_SETTINGS_BIND_UP], keybind_action); 
+               driver.input->set_keybinds(driver.input_data, g_settings.input.device[port], port,
+                     setting - RGUI_SETTINGS_BIND_B, keybind_action); 
          }
+         else
+         {
+            struct retro_keybind *bind = &g_settings.input.binds[port][setting - RGUI_SETTINGS_BIND_B];
+            if (action == RGUI_ACTION_OK)
+            {
+               rgui->binds.target = bind;
+               rgui->binds.player = port;
+               rgui_list_push(rgui->menu_stack, "", RGUI_SETTINGS_CUSTOM_BIND, rgui->selection_ptr);
+               menu_poll_bind_state(&rgui->binds);
+            }
+            else if (action == RGUI_ACTION_START)
+            {
+               bind->joykey = NO_BTN;
+               bind->joyaxis = AXIS_NONE;
+            }
+         }
+         break;
       case RGUI_BROWSER_DIR_PATH:
          if (action == RGUI_ACTION_START)
          {
@@ -1514,25 +1513,42 @@ static void rgui_settings_controller_populate_entries(rgui_handle_t *rgui)
    rgui_list_push(rgui->selection_buf, "Device Type", RGUI_SETTINGS_BIND_DEVICE_TYPE, 0);
 
    if (driver.input && driver.input->set_keybinds)
-   {
       rgui_list_push(rgui->selection_buf, "DPad Emulation", RGUI_SETTINGS_BIND_DPAD_EMULATION, 0);
-      rgui_list_push(rgui->selection_buf, "Up", RGUI_SETTINGS_BIND_UP, 0);
-      rgui_list_push(rgui->selection_buf, "Down", RGUI_SETTINGS_BIND_DOWN, 0);
-      rgui_list_push(rgui->selection_buf, "Left", RGUI_SETTINGS_BIND_LEFT, 0);
-      rgui_list_push(rgui->selection_buf, "Right", RGUI_SETTINGS_BIND_RIGHT, 0);
-      rgui_list_push(rgui->selection_buf, "A", RGUI_SETTINGS_BIND_A, 0);
-      rgui_list_push(rgui->selection_buf, "B", RGUI_SETTINGS_BIND_B, 0);
-      rgui_list_push(rgui->selection_buf, "X", RGUI_SETTINGS_BIND_X, 0);
-      rgui_list_push(rgui->selection_buf, "Y", RGUI_SETTINGS_BIND_Y, 0);
-      rgui_list_push(rgui->selection_buf, "Start", RGUI_SETTINGS_BIND_START, 0);
-      rgui_list_push(rgui->selection_buf, "Select", RGUI_SETTINGS_BIND_SELECT, 0);
-      rgui_list_push(rgui->selection_buf, "L", RGUI_SETTINGS_BIND_L, 0);
-      rgui_list_push(rgui->selection_buf, "R", RGUI_SETTINGS_BIND_R, 0);
-      rgui_list_push(rgui->selection_buf, "L2", RGUI_SETTINGS_BIND_L2, 0);
-      rgui_list_push(rgui->selection_buf, "R2", RGUI_SETTINGS_BIND_R2, 0);
-      rgui_list_push(rgui->selection_buf, "L3", RGUI_SETTINGS_BIND_L3, 0);
-      rgui_list_push(rgui->selection_buf, "R3", RGUI_SETTINGS_BIND_R3, 0);
-   }
+
+   rgui_list_push(rgui->selection_buf, "Up", RGUI_SETTINGS_BIND_UP, 0);
+   rgui_list_push(rgui->selection_buf, "Down", RGUI_SETTINGS_BIND_DOWN, 0);
+   rgui_list_push(rgui->selection_buf, "Left", RGUI_SETTINGS_BIND_LEFT, 0);
+   rgui_list_push(rgui->selection_buf, "Right", RGUI_SETTINGS_BIND_RIGHT, 0);
+   rgui_list_push(rgui->selection_buf, "A (right)", RGUI_SETTINGS_BIND_A, 0);
+   rgui_list_push(rgui->selection_buf, "B (down)", RGUI_SETTINGS_BIND_B, 0);
+   rgui_list_push(rgui->selection_buf, "X (top)", RGUI_SETTINGS_BIND_X, 0);
+   rgui_list_push(rgui->selection_buf, "Y (left)", RGUI_SETTINGS_BIND_Y, 0);
+   rgui_list_push(rgui->selection_buf, "Start", RGUI_SETTINGS_BIND_START, 0);
+   rgui_list_push(rgui->selection_buf, "Select", RGUI_SETTINGS_BIND_SELECT, 0);
+   rgui_list_push(rgui->selection_buf, "L", RGUI_SETTINGS_BIND_L, 0);
+   rgui_list_push(rgui->selection_buf, "R", RGUI_SETTINGS_BIND_R, 0);
+   rgui_list_push(rgui->selection_buf, "L2", RGUI_SETTINGS_BIND_L2, 0);
+   rgui_list_push(rgui->selection_buf, "R2", RGUI_SETTINGS_BIND_R2, 0);
+   rgui_list_push(rgui->selection_buf, "L3", RGUI_SETTINGS_BIND_L3, 0);
+   rgui_list_push(rgui->selection_buf, "R3", RGUI_SETTINGS_BIND_R3, 0);
+}
+
+// This only makes sense for PC so far.
+// Consoles use set_keybind callbacks instead.
+static int rgui_custom_bind_iterate(rgui_handle_t *rgui, rgui_action_t action)
+{
+   (void)action; // Have to ignore action here. Only bind that should work here is Quit RetroArch or something like that.
+
+   render_text(rgui);
+   render_messagebox(rgui, "[key] press joypad (RETURN to skip)");
+
+   struct rgui_bind_state binds = rgui->binds;
+   menu_poll_bind_state(&binds);
+
+   if ((binds.skip && !rgui->binds.skip) || menu_poll_find_trigger(&rgui->binds, &binds))
+      rgui_list_pop(rgui->menu_stack, &rgui->selection_ptr);
+   rgui->binds = binds;
+   return 0;
 }
 
 static int rgui_viewport_iterate(rgui_handle_t *rgui, rgui_action_t action)
@@ -2019,6 +2035,8 @@ static int rgui_iterate(void *data, unsigned action)
       return rgui_settings_iterate(rgui, action);
    else if (menu_type == RGUI_SETTINGS_CUSTOM_VIEWPORT || menu_type == RGUI_SETTINGS_CUSTOM_VIEWPORT_2)
       return rgui_viewport_iterate(rgui, action);
+   else if (menu_type == RGUI_SETTINGS_CUSTOM_BIND)
+      return rgui_custom_bind_iterate(rgui, action);
 
    if (rgui->need_refresh && action != RGUI_ACTION_MESSAGE)
       action = RGUI_ACTION_NOOP;
