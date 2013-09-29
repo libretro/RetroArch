@@ -133,6 +133,7 @@ struct input_bind_map
    unsigned retro_key;
 };
 extern const struct input_bind_map input_config_bind_map[];
+extern const char *input_bind_to_str[];
 
 struct input_key_map
 {

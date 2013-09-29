@@ -304,7 +304,13 @@ static void render_text(rgui_handle_t *rgui)
       rgui_list_get_at_offset(rgui->selection_buf, i, &path, &type);
       char message[256];
       char type_str[256];
-      unsigned w = (menu_type == RGUI_SETTINGS_INPUT_OPTIONS || menu_type == RGUI_SETTINGS_PATH_OPTIONS || menu_type == RGUI_SETTINGS_CUSTOM_BIND) ? 24 : 19;
+
+      unsigned w = 19;
+      if (menu_type == RGUI_SETTINGS_INPUT_OPTIONS || menu_type == RGUI_SETTINGS_CUSTOM_BIND)
+         w = 21;
+      else if (menu_type == RGUI_SETTINGS_PATH_OPTIONS)
+         w = 24;
+
       unsigned port = rgui->current_pad;
       
 #ifdef HAVE_SHADER_MANAGER
@@ -535,6 +541,7 @@ static void render_text(rgui_handle_t *rgui)
             case RGUI_SETTINGS_PATH_OPTIONS:
             case RGUI_SETTINGS_OPTIONS:
             case RGUI_SETTINGS_CUSTOM_BIND_ALL:
+            case RGUI_SETTINGS_CUSTOM_BIND_DEFAULT_ALL:
                strlcpy(type_str, "...", sizeof(type_str));
                break;
 #ifdef HAVE_OVERLAY
@@ -626,6 +633,15 @@ static void render_text(rgui_handle_t *rgui)
             case RGUI_SETTINGS_BIND_R2:
             case RGUI_SETTINGS_BIND_L3:
             case RGUI_SETTINGS_BIND_R3:
+            case RGUI_SETTINGS_BIND_ANALOG_LEFT_X_PLUS:
+            case RGUI_SETTINGS_BIND_ANALOG_LEFT_X_MINUS:
+            case RGUI_SETTINGS_BIND_ANALOG_LEFT_Y_PLUS:
+            case RGUI_SETTINGS_BIND_ANALOG_LEFT_Y_MINUS:
+            case RGUI_SETTINGS_BIND_ANALOG_RIGHT_X_PLUS:
+            case RGUI_SETTINGS_BIND_ANALOG_RIGHT_X_MINUS:
+            case RGUI_SETTINGS_BIND_ANALOG_RIGHT_Y_PLUS:
+            case RGUI_SETTINGS_BIND_ANALOG_RIGHT_Y_MINUS:
+            case RGUI_SETTINGS_BIND_MENU_TOGGLE:
             {
                unsigned id = type - RGUI_SETTINGS_BIND_B;
                struct platform_bind key_label;

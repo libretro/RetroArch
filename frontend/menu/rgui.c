@@ -33,6 +33,7 @@
 #include "../../compat/posix_string.h"
 #include "../../gfx/shader_parse.h"
 #include "../../performance.h"
+#include "../../input/input_common.h"
 
 #ifdef HAVE_OPENGL
 #include "../../gfx/gl_common.h"
@@ -684,11 +685,24 @@ static int rgui_settings_toggle_setting(rgui_handle_t *rgui, unsigned setting, r
          if (action == RGUI_ACTION_OK)
          {
             rgui->binds.target = &g_settings.input.binds[port][0];
-            rgui->binds.begin = RGUI_SETTINGS_BIND_B;
-            rgui->binds.last = RGUI_SETTINGS_BIND_R3;
+            rgui->binds.begin = RGUI_SETTINGS_BIND_BEGIN;
+            rgui->binds.last = RGUI_SETTINGS_BIND_LAST;
             rgui_list_push(rgui->menu_stack, "", RGUI_SETTINGS_CUSTOM_BIND, rgui->selection_ptr);
             menu_poll_bind_get_rested_axes(&rgui->binds);
             menu_poll_bind_state(&rgui->binds);
+         }
+         break;
+      case RGUI_SETTINGS_CUSTOM_BIND_DEFAULT_ALL:
+         if (action == RGUI_ACTION_OK)
+         {
+            struct retro_keybind *target = &g_settings.input.binds[port][0];
+            rgui->binds.begin = RGUI_SETTINGS_BIND_BEGIN;
+            rgui->binds.last = RGUI_SETTINGS_BIND_LAST;
+            for (unsigned i = RGUI_SETTINGS_BIND_BEGIN; i < RGUI_SETTINGS_BIND_LAST; i++, target++)
+            {
+               target->joykey = NO_BTN;
+               target->joyaxis = AXIS_NONE;
+            }
          }
          break;
       case RGUI_SETTINGS_BIND_UP:
@@ -707,6 +721,15 @@ static int rgui_settings_toggle_setting(rgui_handle_t *rgui, unsigned setting, r
       case RGUI_SETTINGS_BIND_R2:
       case RGUI_SETTINGS_BIND_L3:
       case RGUI_SETTINGS_BIND_R3:
+      case RGUI_SETTINGS_BIND_ANALOG_LEFT_X_PLUS:
+      case RGUI_SETTINGS_BIND_ANALOG_LEFT_X_MINUS:
+      case RGUI_SETTINGS_BIND_ANALOG_LEFT_Y_PLUS:
+      case RGUI_SETTINGS_BIND_ANALOG_LEFT_Y_MINUS:
+      case RGUI_SETTINGS_BIND_ANALOG_RIGHT_X_PLUS:
+      case RGUI_SETTINGS_BIND_ANALOG_RIGHT_X_MINUS:
+      case RGUI_SETTINGS_BIND_ANALOG_RIGHT_Y_PLUS:
+      case RGUI_SETTINGS_BIND_ANALOG_RIGHT_Y_MINUS:
+      case RGUI_SETTINGS_BIND_MENU_TOGGLE:
          if (driver.input->set_keybinds)
          {
             unsigned keybind_action = KEYBINDS_ACTION_NONE;
@@ -721,11 +744,11 @@ static int rgui_settings_toggle_setting(rgui_handle_t *rgui, unsigned setting, r
             // FIXME: The array indices here look totally wrong ... Fixed it so it looks kind of sane for now.
             if (keybind_action != KEYBINDS_ACTION_NONE)
                driver.input->set_keybinds(driver.input_data, g_settings.input.device[port], port,
-                     setting - RGUI_SETTINGS_BIND_B, keybind_action); 
+                     setting - RGUI_SETTINGS_BIND_BEGIN, keybind_action); 
          }
          else
          {
-            struct retro_keybind *bind = &g_settings.input.binds[port][setting - RGUI_SETTINGS_BIND_B];
+            struct retro_keybind *bind = &g_settings.input.binds[port][setting - RGUI_SETTINGS_BIND_BEGIN];
             if (action == RGUI_ACTION_OK)
             {
                rgui->binds.begin = setting;
@@ -1514,6 +1537,7 @@ static void rgui_settings_path_populate_entries(rgui_handle_t *rgui)
 #endif
 }
 
+// TODO: Move to some extern. Maybe in input_common.c?
 static void rgui_settings_controller_populate_entries(rgui_handle_t *rgui)
 {
    rgui_list_clear(rgui->selection_buf);
@@ -1529,24 +1553,15 @@ static void rgui_settings_controller_populate_entries(rgui_handle_t *rgui)
    if (driver.input && driver.input->set_keybinds)
       rgui_list_push(rgui->selection_buf, "DPad Emulation", RGUI_SETTINGS_BIND_DPAD_EMULATION, 0);
    else
-      rgui_list_push(rgui->selection_buf, "Configure All", RGUI_SETTINGS_CUSTOM_BIND_ALL, 0); // This doesn't make sense on anything else than PC.
+   {
+      rgui_list_push(rgui->selection_buf, "Configure All (RetroPad)", RGUI_SETTINGS_CUSTOM_BIND_ALL, 0); // This doesn't make sense on anything else than PC.
+      rgui_list_push(rgui->selection_buf, "Default All (RetroPad)", RGUI_SETTINGS_CUSTOM_BIND_DEFAULT_ALL, 0); // This doesn't make sense on anything else than PC.
+   }
 
-   rgui_list_push(rgui->selection_buf, "Up", RGUI_SETTINGS_BIND_UP, 0);
-   rgui_list_push(rgui->selection_buf, "Down", RGUI_SETTINGS_BIND_DOWN, 0);
-   rgui_list_push(rgui->selection_buf, "Left", RGUI_SETTINGS_BIND_LEFT, 0);
-   rgui_list_push(rgui->selection_buf, "Right", RGUI_SETTINGS_BIND_RIGHT, 0);
-   rgui_list_push(rgui->selection_buf, "A (right)", RGUI_SETTINGS_BIND_A, 0);
-   rgui_list_push(rgui->selection_buf, "B (down)", RGUI_SETTINGS_BIND_B, 0);
-   rgui_list_push(rgui->selection_buf, "X (top)", RGUI_SETTINGS_BIND_X, 0);
-   rgui_list_push(rgui->selection_buf, "Y (left)", RGUI_SETTINGS_BIND_Y, 0);
-   rgui_list_push(rgui->selection_buf, "Start", RGUI_SETTINGS_BIND_START, 0);
-   rgui_list_push(rgui->selection_buf, "Select", RGUI_SETTINGS_BIND_SELECT, 0);
-   rgui_list_push(rgui->selection_buf, "L", RGUI_SETTINGS_BIND_L, 0);
-   rgui_list_push(rgui->selection_buf, "R", RGUI_SETTINGS_BIND_R, 0);
-   rgui_list_push(rgui->selection_buf, "L2", RGUI_SETTINGS_BIND_L2, 0);
-   rgui_list_push(rgui->selection_buf, "R2", RGUI_SETTINGS_BIND_R2, 0);
-   rgui_list_push(rgui->selection_buf, "L3", RGUI_SETTINGS_BIND_L3, 0);
-   rgui_list_push(rgui->selection_buf, "R3", RGUI_SETTINGS_BIND_R3, 0);
+   rgui_list_push(rgui->selection_buf, "RGUI Menu Toggle", RGUI_SETTINGS_BIND_MENU_TOGGLE, 0);
+   unsigned last = (driver.input && driver.input->set_keybinds) ? RGUI_SETTINGS_BIND_R3 : RGUI_SETTINGS_BIND_LAST;
+   for (unsigned i = RGUI_SETTINGS_BIND_BEGIN; i <= last; i++)
+      rgui_list_push(rgui->selection_buf, input_bind_to_str[i - RGUI_SETTINGS_BIND_BEGIN], i, 0);
 }
 
 // This only makes sense for PC so far.
@@ -1557,27 +1572,8 @@ static int rgui_custom_bind_iterate(rgui_handle_t *rgui, rgui_action_t action)
 
    render_text(rgui);
 
-   static const char *rgui_key_to_str[] = {
-      "B (down)",
-      "Y (left)",
-      "Select",
-      "Start",
-      "D-pad Up",
-      "D-pad Down",
-      "D-pad Left",
-      "D-pad Right",
-      "A (right)",
-      "X (top)",
-      "L (trigger)",
-      "R (trigger)",
-      "L2 (trigger)",
-      "R2 (trigger)",
-      "L3 (thumb)",
-      "R3 (thumb)",
-   };
-
    char msg[256];
-   snprintf(msg, sizeof(msg), "[%s] press joypad (RETURN to skip)", rgui_key_to_str[rgui->binds.begin - RGUI_SETTINGS_BIND_B]);
+   snprintf(msg, sizeof(msg), "[%s] press joypad (RETURN to skip)", input_bind_to_str[rgui->binds.begin - RGUI_SETTINGS_BIND_BEGIN]);
    render_messagebox(rgui, msg);
 
    struct rgui_bind_state binds = rgui->binds;
