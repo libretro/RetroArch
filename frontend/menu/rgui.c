@@ -539,6 +539,7 @@ static int rgui_settings_toggle_setting(rgui_handle_t *rgui, unsigned setting, r
          }
 
          port = rgui->current_pad;
+         rgui->need_refresh = true;
          break;
       case RGUI_SETTINGS_BIND_DEVICE:
          // If set_keybinds is supported, we do it more fancy, and scroll through
@@ -1558,7 +1559,8 @@ static void rgui_settings_controller_populate_entries(rgui_handle_t *rgui)
       rgui_list_push(rgui->selection_buf, "Default All (RetroPad)", RGUI_SETTINGS_CUSTOM_BIND_DEFAULT_ALL, 0); // This doesn't make sense on anything else than PC.
    }
 
-   rgui_list_push(rgui->selection_buf, "RGUI Menu Toggle", RGUI_SETTINGS_BIND_MENU_TOGGLE, 0);
+   if (rgui->current_pad == 0)
+      rgui_list_push(rgui->selection_buf, "RGUI Menu Toggle", RGUI_SETTINGS_BIND_MENU_TOGGLE, 0);
    unsigned last = (driver.input && driver.input->set_keybinds) ? RGUI_SETTINGS_BIND_R3 : RGUI_SETTINGS_BIND_LAST;
    for (unsigned i = RGUI_SETTINGS_BIND_BEGIN; i <= last; i++)
       rgui_list_push(rgui->selection_buf, input_bind_to_str[i - RGUI_SETTINGS_BIND_BEGIN], i, 0);
