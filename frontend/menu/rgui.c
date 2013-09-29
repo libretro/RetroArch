@@ -1490,13 +1490,9 @@ int rgui_input_postprocess(void *data, uint64_t old_state)
          g_extern.main_is_init &&
          !g_extern.libretro_dummy)
    {
-      g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU_INGAME_EXIT);
       g_extern.lifecycle_mode_state |= (1ULL << MODE_GAME);
       ret = -1;
    }
-
-   if (g_extern.lifecycle_mode_state & (1ULL << MODE_MENU_INGAME_EXIT))
-      g_extern.lifecycle_mode_state &= ~(1ULL << MODE_MENU_INGAME_EXIT);
 
    if (ret < 0)
    {

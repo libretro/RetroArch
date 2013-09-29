@@ -1240,7 +1240,7 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
             menu_stack_push(INGAME_MENU_SCREENSHOT, false);
          break;
       case INGAME_MENU_RETURN_TO_GAME:
-         return menu_set_settings(RGUI_SETTINGS_VIDEO_ROTATION, action);
+         return menu_set_settings(RGUI_SETTINGS_RESUME_GAME, action);
       case INGAME_MENU_CHANGE_GAME:
          if (action == RGUI_ACTION_OK)
             menu_stack_push(FILE_BROWSER_MENU, false);
@@ -1254,7 +1254,6 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
          {
             rarch_game_reset();
             g_extern.lifecycle_mode_state |= (1ULL << MODE_GAME);
-            g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU_INGAME_EXIT);
             return -1;
          }
          break;
@@ -1270,7 +1269,6 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
          if (action == RGUI_ACTION_OK)
          {
             g_extern.lifecycle_mode_state &= ~(1ULL << MODE_GAME);
-            g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU_INGAME_EXIT);
             g_extern.lifecycle_mode_state |= (1ULL << MODE_EXITSPAWN);
             g_extern.lifecycle_mode_state |= (1ULL << MODE_EXITSPAWN_MULTIMAN);
             return -1;
@@ -1981,7 +1979,6 @@ static int select_setting(void *data, uint64_t action)
       case RGUI_ACTION_CANCEL:
          if (rgui->menu_type == INGAME_MENU)
          {
-            g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU_INGAME_EXIT);
             g_extern.lifecycle_mode_state |= (1ULL << MODE_GAME);
             return -1;
          }
@@ -2262,9 +2259,7 @@ int rgui_input_postprocess(void *data, uint64_t old_state)
    if ((rgui->trigger_state & (1ULL << RARCH_MENU_TOGGLE)) &&
       g_extern.main_is_init)
    {
-      g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU_INGAME_EXIT);
       g_extern.lifecycle_mode_state |= (1ULL << MODE_GAME);
-
       ret = -1;
    }
 
@@ -2274,11 +2269,6 @@ int rgui_input_postprocess(void *data, uint64_t old_state)
    if (quit)
       ret = -1;
 
-   if (g_extern.lifecycle_mode_state & (1ULL << MODE_MENU_INGAME_EXIT))
-   {
-      menu_stack_pop(rgui->menu_type);
-      g_extern.lifecycle_mode_state &= ~(1ULL << MODE_MENU_INGAME_EXIT);
-   }
 
    return ret;
 }
@@ -2357,6 +2347,9 @@ static int rgui_iterate(void *data, unsigned action)
 
    if (ret == 0)
       render_text(rgui);
+
+   if (ret == -1)
+      menu_stack_pop(rgui->menu_type);
 
    return ret;
 }
