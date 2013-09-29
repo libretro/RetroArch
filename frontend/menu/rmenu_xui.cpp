@@ -847,9 +847,8 @@ HRESULT CRetroArchCoreOptions::OnControlNavigate(XUIMessageControlNavigate *pCon
    unsigned current_index = XuiListGetCurSel(m_menulist, NULL);
    unsigned input = pControlNavigateData->nControlNavigate;
    unsigned action = xui_input_to_rgui_action(input);
-   size_t opts = core_option_size(g_extern.system.core_options);
 
-   if ((current_index < opts) && opts > 0)
+   if (g_extern.system.core_options)
    {
       bool update_item = false;
 
