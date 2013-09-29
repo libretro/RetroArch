@@ -268,6 +268,9 @@ bool menu_replace_config(const char *path);
 
 bool menu_save_new_config(void);
 
+int menu_set_settings(unsigned setting, unsigned action);
+extern const unsigned rgui_controller_lut[];
+
 #ifdef __cplusplus
 }
 #endif
