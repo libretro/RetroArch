@@ -459,10 +459,6 @@ static void init_menulist(unsigned menu_id)
          XuiListInsertItems(m_menulist, INGAME_MENU_RESET, 1);
          XuiListSetText(m_menulist, INGAME_MENU_RESET, L"Restart Game");
 
-
-         XuiListInsertItems(m_menulist, INGAME_MENU_FRAME_ADVANCE, 1);
-         XuiListSetText(m_menulist, INGAME_MENU_FRAME_ADVANCE, L"Frame Advance");
-
          XuiListInsertItems(m_menulist, INGAME_MENU_QUIT_RETROARCH, 1);
          XuiListSetText(m_menulist, INGAME_MENU_QUIT_RETROARCH, L"Quit RetroArch");
          break;
@@ -1398,11 +1394,6 @@ HRESULT CRetroArchMain::OnControlNavigate(XUIMessageControlNavigate *pControlNav
             g_extern.lifecycle_mode_state |= (1ULL << MODE_GAME);
             process_input_ret = -1;
          }
-         break;
-      case INGAME_MENU_FRAME_ADVANCE:
-         g_extern.lifecycle_state |= (1ULL << RARCH_FRAMEADVANCE);
-         settings_set(1ULL << S_FRAME_ADVANCE);
-         process_input_ret = -1;
          break;
       case INGAME_MENU_QUIT_RETROARCH:
          if (input == XUI_CONTROL_NAVIGATE_OK)

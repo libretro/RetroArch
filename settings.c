@@ -1242,12 +1242,6 @@ void settings_set(uint64_t settings)
       g_settings.audio.rate_control = true;
    }
 
-   if (settings & (1ULL << S_FRAME_ADVANCE))
-   {
-      g_extern.lifecycle_state |= (1ULL << RARCH_FRAMEADVANCE);
-      g_extern.lifecycle_mode_state |= (1ULL << MODE_GAME);
-   }
-
    if (settings & (1ULL << S_HW_TEXTURE_FILTER))
       g_settings.video.smooth = !g_settings.video.smooth;
 

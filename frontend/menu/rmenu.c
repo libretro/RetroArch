@@ -1690,18 +1690,6 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
                break;
          }
          break;
-      case INGAME_MENU_FRAME_ADVANCE:
-         switch (action)
-         {
-            case RGUI_ACTION_OK:
-            case RGUI_ACTION_SCROLL_DOWN:
-            case RGUI_ACTION_SCROLL_UP:
-               g_extern.lifecycle_state |= (1ULL << RARCH_FRAMEADVANCE);
-               g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU_INGAME_EXIT);
-               settings_set(1ULL << S_FRAME_ADVANCE);
-               return -1;
-         }
-         break;
       case SETTING_CUSTOM_VIEWPORT:
          if (action == RGUI_ACTION_OK)
             menu_stack_push(INGAME_MENU_CUSTOM_RATIO, false);
@@ -2309,10 +2297,6 @@ static int select_setting(void *data, uint64_t action)
          case INGAME_MENU_SETTINGS_MODE:
             strlcpy(text, "Settings", sizeof(text));
             strlcpy(setting_text, "...", sizeof(setting_text));
-            break;
-         case INGAME_MENU_FRAME_ADVANCE:
-            strlcpy(text, "Frame Advance", sizeof(text));
-            strlcpy(setting_text, "", sizeof(setting_text));
             break;
          case INGAME_MENU_SCREENSHOT_MODE:
             strlcpy(text, "Take Screenshot", sizeof(text));
