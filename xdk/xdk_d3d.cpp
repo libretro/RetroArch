@@ -763,7 +763,7 @@ static bool texture_image_render(struct texture_image *out_img,
 }
 #endif
 
-#if defined(HAVE_RGUI) || defined(HAVE_RMENU)
+#if defined(HAVE_RGUI) || defined(HAVE_RMENU) || defined(HAVE_RMENU_XUI)
 
 #ifdef HAVE_MENU_PANEL
 extern struct texture_image *menu_panel;
@@ -984,7 +984,7 @@ NULL, NULL, NULL, 0);
    }
 #endif
 
-#if defined(HAVE_RGUI) || defined(HAVE_RMENU)
+#if defined(HAVE_RGUI) || defined(HAVE_RMENU) || defined(HAVE_RMENU_XUI)
 
 #if defined(HAVE_RMENU_XUI) || defined(HAVE_RGUI)
    if (d3d->rgui_texture_enable)
