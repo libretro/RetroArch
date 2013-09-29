@@ -340,6 +340,12 @@ static bool dinput_set_rumble(void *data, unsigned port, enum retro_rumble_effec
    return input_joypad_set_rumble(di->joypad, port, effect, strength);
 }
 
+static const rarch_joypad_driver_t *dinput_get_joypad_driver(void *data)
+{
+   struct dinput_input *di = (struct dinput_input*)data;
+   return di->joypad;
+}
+
 const input_driver_t input_dinput = {
    dinput_init,
    dinput_poll,
@@ -351,6 +357,7 @@ const input_driver_t input_dinput = {
 
    dinput_grab_mouse,
    dinput_set_rumble,
+   dinput_get_joypad_driver,
 };
 
 // Keep track of which pad indexes are 360 controllers
