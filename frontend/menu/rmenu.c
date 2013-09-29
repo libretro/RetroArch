@@ -491,10 +491,8 @@ static void render_text(void *data)
    if (render_ingame_menu_resize && rgui->frame_buf_show)
    {
       char viewport[32];
-      char viewport_buf[256];
       snprintf(viewport, sizeof(viewport), "Viewport X: #%d Y: %d (%dx%d)", g_extern.console.screen.viewports.custom_vp.x, g_extern.console.screen.viewports.custom_vp.y, g_extern.console.screen.viewports.custom_vp.width,
             g_extern.console.screen.viewports.custom_vp.height);
-      menu_ticker_line(viewport_buf, TICKER_LABEL_CHARS_MAX_PER_LINE, g_extern.frame_count / 15, viewport, true);
 
       font_parms.x = POSITION_X; 
       font_parms.y = POSITION_Y_BEGIN;
@@ -502,7 +500,7 @@ static void render_text(void *data)
       font_parms.color = WHITE;
 
       if (driver.video_poke->set_osd_msg)
-         driver.video_poke->set_osd_msg(driver.video_data, viewport_buf, &font_parms);
+         driver.video_poke->set_osd_msg(driver.video_data, viewport, &font_parms);
    }
 }
 
@@ -2240,10 +2238,10 @@ static int ingame_menu_resize(void *data, uint64_t action)
          g_extern.console.screen.viewports.custom_vp.x += 1;
          break;
       case RGUI_ACTION_UP:
-         g_extern.console.screen.viewports.custom_vp.y += 1;
+         g_extern.console.screen.viewports.custom_vp.y -= 1;
          break;
       case RGUI_ACTION_DOWN:
-         g_extern.console.screen.viewports.custom_vp.y -= 1;
+         g_extern.console.screen.viewports.custom_vp.y += 1;
          break;
       case RGUI_ACTION_SCROLL_UP:
          g_extern.console.screen.viewports.custom_vp.width -= 1;
