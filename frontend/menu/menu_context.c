@@ -55,7 +55,7 @@ bool menu_ctx_init_first(const menu_ctx_driver_t **driver, rgui_handle_t **handl
       if (h)
       {
          *driver = menu_ctx_drivers[i];
-         *handle = h;
+         *handle = (rgui_handle_t*)h;
          return true;
       }
    }
