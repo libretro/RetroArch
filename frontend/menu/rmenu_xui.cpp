@@ -255,8 +255,7 @@ HRESULT CRetroArchFileBrowser::OnInit(XUIMessageInit * pInitData, BOOL& bHandled
    filebrowser_set_root_and_ext(rgui->browser, rgui->info.valid_extensions,
          default_paths.filebrowser_startup_dir);
 
-   uint64_t action = (1ULL << DEVICE_NAV_B);
-   filebrowser_fetch_directory_entries(action);
+   filebrowser_fetch_directory_entries(FILEBROWSER_ACTION_OK);
 
    return 0;
 }
@@ -279,9 +278,8 @@ HRESULT CRetroArchFileBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHandle
       else if(rgui->browser->list->elems[index].attr.b)
       {
          fill_pathname_join(path, rgui->browser->current_dir.directory_path, str_buffer, sizeof(path));
-         uint64_t action = (1ULL << DEVICE_NAV_B);
          filebrowser_set_root_and_ext(rgui->browser, rgui->info.valid_extensions, path);
-         filebrowser_fetch_directory_entries(action);
+         filebrowser_fetch_directory_entries(FILEBROWSER_ACTION_OK);
       }
    }
 
@@ -465,6 +463,25 @@ static void init_menulist(unsigned menu_id)
    }
 }
 
+unsigned xui_input_to_rgui_action(unsigned input)
+{
+   switch (input)
+   {
+      case XUI_CONTROL_NAVIGATE_LEFT:
+         return RGUI_ACTION_LEFT;
+      case XUI_CONTROL_NAVIGATE_RIGHT:
+         return RGUI_ACTION_RIGHT;
+      case XUI_CONTROL_NAVIGATE_UP:
+         return RGUI_ACTION_UP;
+      case XUI_CONTROL_NAVIGATE_DOWN:
+         return RGUI_ACTION_DOWN;
+      case XUI_CONTROL_NAVIGATE_OK:
+         return RGUI_ACTION_OK;
+   }
+
+   return RGUI_ACTION_NOOP;
+}
+
 HRESULT CRetroArchLoadGameHistory::OnControlNavigate(
       XUIMessageControlNavigate *pControlNavigateData, BOOL& bHandled)
 {
@@ -576,24 +593,7 @@ HRESULT CRetroArchCoreBrowser::OnControlNavigate(
    return 0;
 }
 
-unsigned xui_input_to_rgui_action(unsigned input)
-{
-   switch (input)
-   {
-      case XUI_CONTROL_NAVIGATE_LEFT:
-         return RGUI_ACTION_LEFT;
-      case XUI_CONTROL_NAVIGATE_RIGHT:
-         return RGUI_ACTION_RIGHT;
-      case XUI_CONTROL_NAVIGATE_UP:
-         return RGUI_ACTION_UP;
-      case XUI_CONTROL_NAVIGATE_DOWN:
-         return RGUI_ACTION_DOWN;
-      case XUI_CONTROL_NAVIGATE_OK:
-         return RGUI_ACTION_OK;
-   }
 
-   return RGUI_ACTION_NOOP;
-}
 
 HRESULT CRetroArchControls::OnControlNavigate(
       XUIMessageControlNavigate *pControlNavigateData, BOOL& bHandled)
@@ -1071,8 +1071,7 @@ HRESULT CRetroArchShaderBrowser::OnInit(XUIMessageInit * pInitData, BOOL& bHandl
    GetChildById(L"XuiTxtBottom", &m_menutitlebottom);
 
    filebrowser_set_root_and_ext(rgui->browser, "cg", "game:\\media\\shaders");
-   uint64_t action = (1ULL << DEVICE_NAV_B);
-   filebrowser_fetch_directory_entries(action);
+   filebrowser_fetch_directory_entries(FILEBROWSER_ACTION_OK);
 
    return 0;
 }
@@ -1092,8 +1091,7 @@ HRESULT CRetroArchShaderBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHand
          wcstombs(str_buffer, (const wchar_t *)XuiListGetText(m_menulist, index), sizeof(str_buffer));
          fill_pathname_join(path, rgui->browser->current_dir.directory_path, str_buffer, sizeof(path));
          filebrowser_set_root_and_ext(rgui->browser, "cg", path);
-         uint64_t action = (1ULL << DEVICE_NAV_B);
-         filebrowser_fetch_directory_entries(action);
+         filebrowser_fetch_directory_entries(FILEBROWSER_ACTION_OK);
       }
    }
 
@@ -1109,8 +1107,7 @@ HRESULT CRetroArchCoreBrowser::OnInit(XUIMessageInit * pInitData, BOOL& bHandled
    GetChildById(L"XuiTxtBottom", &m_menutitlebottom);
 
    filebrowser_set_root_and_ext(rgui->browser, "xex|XEX", "game:");
-   uint64_t action = (1ULL << DEVICE_NAV_B);
-   filebrowser_fetch_directory_entries(action);
+   filebrowser_fetch_directory_entries(FILEBROWSER_ACTION_OK);
 
    return 0;
 }
@@ -1137,8 +1134,7 @@ HRESULT CRetroArchCoreBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHandle
       {
          fill_pathname_join(path, rgui->browser->current_dir.directory_path, str_buffer, sizeof(path));
          filebrowser_set_root_and_ext(rgui->browser, "xex|XEX", path);
-         uint64_t action = (1ULL << DEVICE_NAV_B);
-         filebrowser_fetch_directory_entries(action);
+         filebrowser_fetch_directory_entries(FILEBROWSER_ACTION_OK);
       }
    }
 

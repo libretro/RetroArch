@@ -334,7 +334,6 @@ void xdk_d3d_deinit_fbo(void *data)
 
 void xdk_d3d_init_fbo(void *data)
 {
-   HRESULT ret;
    xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)data;
 
 #if 0
