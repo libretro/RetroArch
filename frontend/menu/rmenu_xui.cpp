@@ -471,8 +471,9 @@ HRESULT CRetroArchLoadGameHistory::OnControlNavigate(
 
    unsigned current_index = XuiListGetCurSel(m_menulist, NULL);
    unsigned input = pControlNavigateData->nControlNavigate;
+   unsigned action = xui_input_to_rgui_action(input);
 
-   if (input == XUI_CONTROL_NAVIGATE_OK)
+   if (action == RGUI_ACTION_OK)
    {
       load_menu_game_history(current_index);
       process_input_ret = -1;
@@ -480,12 +481,12 @@ HRESULT CRetroArchLoadGameHistory::OnControlNavigate(
 
    bHandled = TRUE;
 
-   switch(pControlNavigateData->nControlNavigate)
+   switch (action)
    {
-      case XUI_CONTROL_NAVIGATE_LEFT:
-      case XUI_CONTROL_NAVIGATE_RIGHT:
-      case XUI_CONTROL_NAVIGATE_UP:
-      case XUI_CONTROL_NAVIGATE_DOWN:
+      case RGUI_ACTION_LEFT:
+      case RGUI_ACTION_RIGHT:
+      case RGUI_ACTION_UP:
+      case RGUI_ACTION_DOWN:
          pControlNavigateData->hObjDest = pControlNavigateData->hObjSource;
          break;
       default:
@@ -513,13 +514,15 @@ HRESULT CRetroArchFileBrowser::OnControlNavigate(
       XUIMessageControlNavigate *pControlNavigateData, BOOL& bHandled)
 {
    bHandled = TRUE;
+   unsigned input = pControlNavigateData->nControlNavigate;
+   unsigned action = xui_input_to_rgui_action(input);
 
-   switch(pControlNavigateData->nControlNavigate)
+   switch(action)
    {
-      case XUI_CONTROL_NAVIGATE_LEFT:
-      case XUI_CONTROL_NAVIGATE_RIGHT:
-      case XUI_CONTROL_NAVIGATE_UP:
-      case XUI_CONTROL_NAVIGATE_DOWN:
+      case RGUI_ACTION_LEFT:
+      case RGUI_ACTION_RIGHT:
+      case RGUI_ACTION_UP:
+      case RGUI_ACTION_DOWN:
          pControlNavigateData->hObjDest = pControlNavigateData->hObjSource;
          break;
       default:
@@ -532,14 +535,16 @@ HRESULT CRetroArchFileBrowser::OnControlNavigate(
 HRESULT CRetroArchShaderBrowser::OnControlNavigate(
       XUIMessageControlNavigate *pControlNavigateData, BOOL& bHandled)
 {
+   unsigned input = pControlNavigateData->nControlNavigate;
+   unsigned action = xui_input_to_rgui_action(input);
    bHandled = TRUE;
 
-   switch(pControlNavigateData->nControlNavigate)
+   switch(action)
    {
-      case XUI_CONTROL_NAVIGATE_LEFT:
-      case XUI_CONTROL_NAVIGATE_RIGHT:
-      case XUI_CONTROL_NAVIGATE_UP:
-      case XUI_CONTROL_NAVIGATE_DOWN:
+      case RGUI_ACTION_LEFT:
+      case RGUI_ACTION_RIGHT:
+      case RGUI_ACTION_UP:
+      case RGUI_ACTION_DOWN:
          pControlNavigateData->hObjDest = pControlNavigateData->hObjSource;
          break;
       default:
@@ -552,14 +557,16 @@ HRESULT CRetroArchShaderBrowser::OnControlNavigate(
 HRESULT CRetroArchCoreBrowser::OnControlNavigate(
       XUIMessageControlNavigate *pControlNavigateData, BOOL& bHandled)
 {
+   unsigned input = pControlNavigateData->nControlNavigate;
+   unsigned action = xui_input_to_rgui_action(input);
    bHandled = TRUE;
 
-   switch(pControlNavigateData->nControlNavigate)
+   switch(action)
    {
-      case XUI_CONTROL_NAVIGATE_LEFT:
-      case XUI_CONTROL_NAVIGATE_RIGHT:
-      case XUI_CONTROL_NAVIGATE_UP:
-      case XUI_CONTROL_NAVIGATE_DOWN:
+      case RGUI_ACTION_LEFT:
+      case RGUI_ACTION_RIGHT:
+      case RGUI_ACTION_UP:
+      case RGUI_ACTION_DOWN:
          pControlNavigateData->hObjDest = pControlNavigateData->hObjSource;
          break;
       default:
@@ -746,7 +753,7 @@ HRESULT CRetroArchSettings::OnControlNavigate(XUIMessageControlNavigate *pContro
          XuiListSetText(m_menulist, INGAME_MENU_REWIND_GRANULARITY, strw_buffer);
          break;
       case SETTING_EMU_SHOW_INFO_MSG:
-         if (input == XUI_CONTROL_NAVIGATE_LEFT)
+         if (action == RGUI_ACTION_LEFT)
          {
             if (g_extern.lifecycle_mode_state & (1ULL << MODE_INFO_DRAW))
                g_extern.lifecycle_mode_state &= ~(1ULL << MODE_INFO_DRAW);
@@ -754,8 +761,7 @@ HRESULT CRetroArchSettings::OnControlNavigate(XUIMessageControlNavigate *pContro
                g_extern.lifecycle_mode_state |= (1ULL << MODE_INFO_DRAW);
             XuiListSetText(m_menulist, SETTING_EMU_SHOW_INFO_MSG, (g_extern.lifecycle_mode_state & (1ULL << MODE_INFO_DRAW)) ? L"Info messages: ON" : L"Info messages: OFF");
          }
-         else if (input == XUI_CONTROL_NAVIGATE_RIGHT ||
-               input == XUI_CONTROL_NAVIGATE_OK)
+         else if (action == RGUI_ACTION_RIGHT || action == RGUI_ACTION_OK)
          {
             if (g_extern.lifecycle_mode_state & (1ULL << MODE_INFO_DRAW))
                g_extern.lifecycle_mode_state &= ~(1ULL << MODE_INFO_DRAW);
@@ -1003,9 +1009,9 @@ HRESULT CRetroArchVideoOptions::OnControlNavigate(XUIMessageControlNavigate *pCo
          XuiListSetText(m_menulist, MENU_XUI_ITEM_HW_TEXTURE_FILTER, g_settings.video.smooth ? L"Default Filter: Linear" : L"Default Filter: Nearest");
          break;
       case MENU_XUI_ITEM_GAMMA_CORRECTION_ENABLED:
-         if (input == XUI_CONTROL_NAVIGATE_LEFT ||
-               input == XUI_CONTROL_NAVIGATE_RIGHT ||
-               input == XUI_CONTROL_NAVIGATE_OK)
+         if (action == RGUI_ACTION_LEFT ||
+               action == RGUI_ACTION_RIGHT ||
+               action == RGUI_ACTION_OK)
          {
             g_extern.console.screen.gamma_correction = g_extern.console.screen.gamma_correction ? 0 : 1;
             XuiListSetText(m_menulist, MENU_XUI_ITEM_GAMMA_CORRECTION_ENABLED, g_extern.console.screen.gamma_correction ? L"Gamma correction: ON" : L"Gamma correction: OFF");
@@ -1173,7 +1179,7 @@ HRESULT CRetroArchMain::OnControlNavigate(XUIMessageControlNavigate *pControlNav
    switch (current_index)
    {
       case INGAME_MENU_CHANGE_LIBRETRO_CORE:
-         if (input == XUI_CONTROL_NAVIGATE_OK)
+         if (action == RGUI_ACTION_OK)
          {
             hr = XuiSceneCreate(hdmenus_allowed ? L"file://game:/media/hd/" : L"file://game:/media/sd/", L"rarch_libretrocore_browser.xur", NULL, &current_menu);
 
@@ -1184,7 +1190,7 @@ HRESULT CRetroArchMain::OnControlNavigate(XUIMessageControlNavigate *pControlNav
          }
          break;
       case INGAME_MENU_LOAD_GAME_HISTORY_MODE:
-         if (input == XUI_CONTROL_NAVIGATE_OK)
+         if (action == RGUI_ACTION_OK)
          {
             hr = XuiSceneCreate(hdmenus_allowed ? L"file://game:/media/hd/" : L"file://game:/media/sd/", L"rarch_load_game_history.xur", NULL, &current_menu);
 
@@ -1195,7 +1201,7 @@ HRESULT CRetroArchMain::OnControlNavigate(XUIMessageControlNavigate *pControlNav
          }
          break;
       case INGAME_MENU_CHANGE_GAME:
-         if (input == XUI_CONTROL_NAVIGATE_OK)
+         if (action == RGUI_ACTION_OK)
          {
             hr = XuiSceneCreate(hdmenus_allowed ? L"file://game:/media/hd/" : L"file://game:/media/sd/", L"rarch_filebrowser.xur", NULL, &current_menu);
 
@@ -1206,7 +1212,7 @@ HRESULT CRetroArchMain::OnControlNavigate(XUIMessageControlNavigate *pControlNav
          }
          break;
       case INGAME_MENU_CORE_OPTIONS_MODE:
-         if (input == XUI_CONTROL_NAVIGATE_OK)
+         if (action == RGUI_ACTION_OK)
          {
             hr = XuiSceneCreate(hdmenus_allowed ? L"file://game:/media/hd/" : L"file://game:/media/sd/", L"rarch_core_options.xur", NULL, &current_menu);
 
@@ -1217,7 +1223,7 @@ HRESULT CRetroArchMain::OnControlNavigate(XUIMessageControlNavigate *pControlNav
          }
          break;
       case INGAME_MENU_VIDEO_OPTIONS_MODE:
-         if (input == XUI_CONTROL_NAVIGATE_OK)
+         if (action == RGUI_ACTION_OK)
          {
             hr = XuiSceneCreate(hdmenus_allowed ? L"file://game:/media/hd/" : L"file://game:/media/sd/", L"rarch_video_options.xur", NULL, &current_menu);
 
@@ -1228,7 +1234,7 @@ HRESULT CRetroArchMain::OnControlNavigate(XUIMessageControlNavigate *pControlNav
          }
          break;
       case INGAME_MENU_AUDIO_OPTIONS_MODE:
-         if (input == XUI_CONTROL_NAVIGATE_OK)
+         if (action == RGUI_ACTION_OK)
          {
             hr = XuiSceneCreate(hdmenus_allowed ? L"file://game:/media/hd/" : L"file://game:/media/sd/", L"rarch_audio_options.xur", NULL, &current_menu);
 
@@ -1239,7 +1245,7 @@ HRESULT CRetroArchMain::OnControlNavigate(XUIMessageControlNavigate *pControlNav
          }
          break;
       case INGAME_MENU_INPUT_OPTIONS_MODE:
-         if (input == XUI_CONTROL_NAVIGATE_OK)
+         if (action == RGUI_ACTION_OK)
          {
             hr = XuiSceneCreate(hdmenus_allowed ? L"file://game:/media/hd/" : L"file://game:/media/sd/", L"rarch_controls.xur", NULL, &current_menu);
 
@@ -1252,7 +1258,7 @@ HRESULT CRetroArchMain::OnControlNavigate(XUIMessageControlNavigate *pControlNav
       case INGAME_MENU_PATH_OPTIONS_MODE:
          break;
       case INGAME_MENU_SETTINGS_MODE:
-         if (input == XUI_CONTROL_NAVIGATE_OK)
+         if (action == RGUI_ACTION_OK)
          {
             hr = XuiSceneCreate(hdmenus_allowed ? L"file://game:/media/hd/" : L"file://game:/media/sd/", L"rarch_settings.xur", NULL, &current_menu);
 
