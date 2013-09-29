@@ -197,6 +197,15 @@ struct rgui_bind_state_port
    bool buttons[RGUI_MAX_BUTTONS];
    int16_t axes[RGUI_MAX_AXES];
    uint16_t hats[RGUI_MAX_HATS];
+
+};
+
+struct rgui_bind_axis_state
+{
+   // Default axis state.
+   int16_t rested_axes[RGUI_MAX_AXES];
+   // Locked axis state. If we configured an axis, avoid having the same axis state trigger something again right away.
+   int16_t locked_axes[RGUI_MAX_AXES];
 };
 
 struct rgui_bind_state
@@ -204,11 +213,13 @@ struct rgui_bind_state
    struct retro_keybind *target;
    unsigned player;
    struct rgui_bind_state_port state[MAX_PLAYERS];
+   struct rgui_bind_axis_state axis_state[MAX_PLAYERS];
    bool skip;
 };
 
+void menu_poll_bind_get_rested_axes(struct rgui_bind_state *state);
 void menu_poll_bind_state(struct rgui_bind_state *state);
-bool menu_poll_find_trigger(struct rgui_bind_state *state, const struct rgui_bind_state *new_state);
+bool menu_poll_find_trigger(struct rgui_bind_state *state, struct rgui_bind_state *new_state);
 
 typedef struct
 {

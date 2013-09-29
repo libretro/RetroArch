@@ -787,10 +787,28 @@ void menu_poll_bind_state(struct rgui_bind_state *state)
    }
 }
 
-static bool menu_poll_find_trigger_pad(struct rgui_bind_state *state, const struct rgui_bind_state *new_state, unsigned p)
+void menu_poll_bind_get_rested_axes(struct rgui_bind_state *state)
+{
+   const rarch_joypad_driver_t *joypad = NULL;
+   if (driver.input && driver.input_data && driver.input->get_joypad_driver)
+      joypad = driver.input->get_joypad_driver(driver.input_data);
+
+   if (!joypad)
+   {
+      RARCH_ERR("Cannot poll raw joypad state.");
+      return;
+   }
+
+   for (unsigned p = 0; p < MAX_PLAYERS; p++)
+      for (unsigned a = 0; a < RGUI_MAX_AXES; a++)
+         state->axis_state[p].rested_axes[a] = input_joypad_axis_raw(joypad, p, a);
+}
+
+static bool menu_poll_find_trigger_pad(struct rgui_bind_state *state, struct rgui_bind_state *new_state, unsigned p)
 {
    const struct rgui_bind_state_port *n = &new_state->state[p];
    const struct rgui_bind_state_port *o = &state->state[p];
+
    for (unsigned b = 0; b < RGUI_MAX_BUTTONS; b++)
    {
       if (n->buttons[b] && !o->buttons[b])
@@ -801,15 +819,26 @@ static bool menu_poll_find_trigger_pad(struct rgui_bind_state *state, const stru
       }
    }
 
+   // Axes are a bit tricky ...
    for (unsigned a = 0; a < RGUI_MAX_AXES; a++)
    {
-      int axis_distance = abs(n->axes[a] - o->axes[a]);
-      if (abs(n->axes[a]) >= 20000 && axis_distance >= 20000) // Take care of case where axis rests on +/- 0x7fff (e.g. 360 controller on Linux)
+      int locked_distance = abs(n->axes[a] - new_state->axis_state[p].locked_axes[a]);
+      int rested_distance = abs(n->axes[a] - new_state->axis_state[p].rested_axes[a]);
+
+      if (abs(n->axes[a]) >= 20000 &&
+            locked_distance >= 20000 &&
+            rested_distance >= 20000) // Take care of case where axis rests on +/- 0x7fff (e.g. 360 controller on Linux)
       {
          state->target->joyaxis = n->axes[a] > 0 ? AXIS_POS(a) : AXIS_NEG(a);
          state->target->joykey = NO_BTN;
+
+         // Lock the current axis.
+         new_state->axis_state[p].locked_axes[a] = n->axes[a] > 0 ? 0x7fff : -0x7fff; 
          return true;
       }
+
+      if (locked_distance >= 20000) // Unlock the axis.
+         new_state->axis_state[p].locked_axes[a] = 0;
    }
 
    for (unsigned h = 0; h < RGUI_MAX_HATS; h++)
@@ -836,7 +865,7 @@ static bool menu_poll_find_trigger_pad(struct rgui_bind_state *state, const stru
    return false;
 }
 
-bool menu_poll_find_trigger(struct rgui_bind_state *state, const struct rgui_bind_state *new_state)
+bool menu_poll_find_trigger(struct rgui_bind_state *state, struct rgui_bind_state *new_state)
 {
    for (unsigned p = 0; p < MAX_PLAYERS; p++)
    {

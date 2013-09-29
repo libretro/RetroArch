@@ -720,6 +720,7 @@ static int rgui_settings_toggle_setting(rgui_handle_t *rgui, unsigned setting, r
                rgui->binds.target = bind;
                rgui->binds.player = port;
                rgui_list_push(rgui->menu_stack, "", RGUI_SETTINGS_CUSTOM_BIND, rgui->selection_ptr);
+               menu_poll_bind_get_rested_axes(&rgui->binds);
                menu_poll_bind_state(&rgui->binds);
             }
             else if (action == RGUI_ACTION_START)
