@@ -463,7 +463,7 @@ static void init_menulist(unsigned menu_id)
    }
 }
 
-unsigned xui_input_to_rgui_action(unsigned input)
+static unsigned xui_input_to_rgui_action(unsigned input)
 {
    switch (input)
    {

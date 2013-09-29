@@ -1066,7 +1066,7 @@ static void xdk_d3d_apply_state_changes(void *data)
    d3d->should_resize = true;
 }
 
-#if defined(HAVE_RGUI) || defined(HAVE_RMENU)
+#if defined(HAVE_RGUI) || defined(HAVE_RMENU) || defined(HAVE_RMENU_XUI)
 static void xdk_d3d_set_texture_frame(void *data,
    const void *frame, bool rgb32, unsigned width, unsigned height,
    float alpha)
@@ -1103,7 +1103,7 @@ static const video_poke_interface_t d3d_poke_interface = {
 #endif
    xdk_d3d_set_aspect_ratio,
    xdk_d3d_apply_state_changes,
-#if defined(HAVE_RGUI) || defined(HAVE_RMENU)
+#if defined(HAVE_RGUI) || defined(HAVE_RMENU) || defined(HAVE_RMENU_XUI)
    xdk_d3d_set_texture_frame,
    xdk_d3d_set_texture_enable,
 #endif
