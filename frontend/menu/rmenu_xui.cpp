@@ -569,6 +569,25 @@ HRESULT CRetroArchCoreBrowser::OnControlNavigate(
    return 0;
 }
 
+unsigned xui_input_to_rgui_action(unsigned input)
+{
+   switch (input)
+   {
+      case XUI_CONTROL_NAVIGATE_LEFT:
+         return RGUI_ACTION_LEFT;
+      case XUI_CONTROL_NAVIGATE_RIGHT:
+         return RGUI_ACTION_RIGHT;
+      case XUI_CONTROL_NAVIGATE_UP:
+         return RGUI_ACTION_UP;
+      case XUI_CONTROL_NAVIGATE_DOWN:
+         return RGUI_ACTION_DOWN;
+      case XUI_CONTROL_NAVIGATE_OK:
+         return RGUI_ACTION_OK;
+   }
+
+   return RGUI_ACTION_NOOP;
+}
+
 HRESULT CRetroArchControls::OnControlNavigate(
       XUIMessageControlNavigate *pControlNavigateData, BOOL& bHandled)
 {
@@ -594,26 +613,7 @@ HRESULT CRetroArchControls::OnControlNavigate(
    
    current_index = XuiListGetCurSel(m_menulist, NULL);
    unsigned input = pControlNavigateData->nControlNavigate;
-   unsigned action = 0;
-
-   switch (input)
-   {
-      case XUI_CONTROL_NAVIGATE_LEFT:
-         action = RGUI_ACTION_LEFT;
-         break;
-      case XUI_CONTROL_NAVIGATE_RIGHT:
-         action = RGUI_ACTION_RIGHT;
-         break;
-      case XUI_CONTROL_NAVIGATE_UP:
-         action = RGUI_ACTION_UP;
-         break;
-      case XUI_CONTROL_NAVIGATE_DOWN:
-         action = RGUI_ACTION_DOWN;
-         break;
-      case XUI_CONTROL_NAVIGATE_OK:
-         action = RGUI_ACTION_OK;
-         break;
-   }
+   unsigned action = xui_input_to_rgui_action(input);
 
    switch(current_index)
    {
@@ -732,26 +732,7 @@ HRESULT CRetroArchSettings::OnControlNavigate(XUIMessageControlNavigate *pContro
    current_index = XuiListGetCurSel(m_menulist, NULL);
 
    unsigned input = pControlNavigateData->nControlNavigate;
-   unsigned action = 0;
-
-   switch (input)
-   {
-      case XUI_CONTROL_NAVIGATE_LEFT:
-         action = RGUI_ACTION_LEFT;
-         break;
-      case XUI_CONTROL_NAVIGATE_RIGHT:
-         action = RGUI_ACTION_RIGHT;
-         break;
-      case XUI_CONTROL_NAVIGATE_UP:
-         action = RGUI_ACTION_UP;
-         break;
-      case XUI_CONTROL_NAVIGATE_DOWN:
-         action = RGUI_ACTION_DOWN;
-         break;
-      case XUI_CONTROL_NAVIGATE_OK:
-         action = RGUI_ACTION_OK;
-         break;
-   }
+   unsigned action = xui_input_to_rgui_action(input);
 
    switch(current_index)
    {
@@ -859,27 +840,7 @@ HRESULT CRetroArchCoreOptions::OnControlNavigate(XUIMessageControlNavigate *pCon
 {
    unsigned current_index = XuiListGetCurSel(m_menulist, NULL);
    unsigned input = pControlNavigateData->nControlNavigate;
-   unsigned action = 0;
-
-   switch (input)
-   {
-      case XUI_CONTROL_NAVIGATE_LEFT:
-         action = RGUI_ACTION_LEFT;
-         break;
-      case XUI_CONTROL_NAVIGATE_RIGHT:
-         action = RGUI_ACTION_RIGHT;
-         break;
-      case XUI_CONTROL_NAVIGATE_UP:
-         action = RGUI_ACTION_UP;
-         break;
-      case XUI_CONTROL_NAVIGATE_DOWN:
-         action = RGUI_ACTION_DOWN;
-         break;
-      case XUI_CONTROL_NAVIGATE_OK:
-         action = RGUI_ACTION_OK;
-         break;
-   }
-
+   unsigned action = xui_input_to_rgui_action(input);
    size_t opts = core_option_size(g_extern.system.core_options);
 
    if ((current_index < opts) && opts > 0)
@@ -948,26 +909,7 @@ HRESULT CRetroArchAudioOptions::OnControlNavigate(XUIMessageControlNavigate *pCo
 {
    int current_index = XuiListGetCurSel(m_menulist, NULL);
    unsigned input = pControlNavigateData->nControlNavigate;
-   unsigned action = 0;
-
-   switch (input)
-   {
-      case XUI_CONTROL_NAVIGATE_LEFT:
-         action = RGUI_ACTION_LEFT;
-         break;
-      case XUI_CONTROL_NAVIGATE_RIGHT:
-         action = RGUI_ACTION_RIGHT;
-         break;
-      case XUI_CONTROL_NAVIGATE_UP:
-         action = RGUI_ACTION_UP;
-         break;
-      case XUI_CONTROL_NAVIGATE_DOWN:
-         action = RGUI_ACTION_DOWN;
-         break;
-      case XUI_CONTROL_NAVIGATE_OK:
-         action = RGUI_ACTION_OK;
-         break;
-   }
+   unsigned action = xui_input_to_rgui_action(input);
 
    switch (current_index)
    {
@@ -1052,26 +994,7 @@ HRESULT CRetroArchVideoOptions::OnControlNavigate(XUIMessageControlNavigate *pCo
    current_index = XuiListGetCurSel(m_menulist, NULL);
 
    unsigned input = pControlNavigateData->nControlNavigate;
-   unsigned action = 0;
-
-   switch (input)
-   {
-      case XUI_CONTROL_NAVIGATE_LEFT:
-         action = RGUI_ACTION_LEFT;
-         break;
-      case XUI_CONTROL_NAVIGATE_RIGHT:
-         action = RGUI_ACTION_RIGHT;
-         break;
-      case XUI_CONTROL_NAVIGATE_UP:
-         action = RGUI_ACTION_UP;
-         break;
-      case XUI_CONTROL_NAVIGATE_DOWN:
-         action = RGUI_ACTION_DOWN;
-         break;
-      case XUI_CONTROL_NAVIGATE_OK:
-         action = RGUI_ACTION_OK;
-         break;
-   }
+   unsigned action = xui_input_to_rgui_action(input);
 
    switch (current_index)
    {
@@ -1243,26 +1166,7 @@ HRESULT CRetroArchMain::OnControlNavigate(XUIMessageControlNavigate *pControlNav
    current_index= XuiListGetCurSel(m_menulist, NULL);
 
    unsigned input = pControlNavigateData->nControlNavigate;
-   unsigned action = 0;
-
-   switch (input)
-   {
-      case XUI_CONTROL_NAVIGATE_LEFT:
-         action = RGUI_ACTION_LEFT;
-         break;
-      case XUI_CONTROL_NAVIGATE_RIGHT:
-         action = RGUI_ACTION_RIGHT;
-         break;
-      case XUI_CONTROL_NAVIGATE_UP:
-         action = RGUI_ACTION_UP;
-         break;
-      case XUI_CONTROL_NAVIGATE_DOWN:
-         action = RGUI_ACTION_DOWN;
-         break;
-      case XUI_CONTROL_NAVIGATE_OK:
-         action = RGUI_ACTION_OK;
-         break;
-   }
+   unsigned action = xui_input_to_rgui_action(input);
 
    HXUIOBJ current_obj = current_menu;
 
