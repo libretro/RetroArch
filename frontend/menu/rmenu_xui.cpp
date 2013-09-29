@@ -1436,42 +1436,11 @@ static void ingame_menu_resize (void)
    }
 }
 
-bool menu_iterate(void)
+static int rgui_iterate(void *data, unsigned action)
 {
-   xdk_d3d_video_t *device_ptr = (xdk_d3d_video_t*)driver.video_data;
+   rgui_handle_t *rgui = (rgui_handle_t*)data;
 
-   if (g_extern.lifecycle_mode_state & (1ULL << MODE_MENU_PREINIT))
-   {
-      g_extern.lifecycle_mode_state &= ~(1ULL << MODE_MENU_PREINIT);
-      /* FIXME - hack for now */
-      rgui->delay_count = 0;
-   }
-
-   rgui->trigger_state = 0;
-
-   XINPUT_STATE state;
-   XInputGetState(0, &state);
-
-   if((state.Gamepad.wButtons & XINPUT_GAMEPAD_B) && current_menu != root_menu)
-      rgui->trigger_state = RGUI_ACTION_CANCEL;
-   else if ((state.Gamepad.wButtons & XINPUT_GAMEPAD_A))
-      rgui->trigger_state = RGUI_ACTION_OK;
-
-   /* FIXME - hack for now */
-   if (rgui->delay_count > 30)
-   {
-      bool rmenu_enable = ((state.Gamepad.wButtons & XINPUT_GAMEPAD_LEFT_THUMB) &&
-            (state.Gamepad.wButtons & XINPUT_GAMEPAD_RIGHT_THUMB)
-            ) && g_extern.main_is_init;
-
-      if (rmenu_enable)
-      {
-         g_extern.lifecycle_mode_state |= (1ULL << MODE_GAME);
-         process_input_ret = -1;
-      }
-   }
-
-   if (rgui->trigger_state == RGUI_ACTION_CANCEL)
+   if (action == RGUI_ACTION_OK)
    {
       XuiSceneNavigateBack(current_menu, root_menu, XUSER_INDEX_ANY);
       current_menu = root_menu;
@@ -1479,31 +1448,7 @@ bool menu_iterate(void)
       init_menulist(INGAME_MENU_MAIN_MODE);
    }
 
-#if 0
-   if (input_loop == INPUT_LOOP_RESIZE_MODE)
-      ingame_menu_resize();
-#endif
-
-   if (driver.video_poke && driver.video_poke->set_texture_enable)
-      driver.video_poke->set_texture_enable(driver.video_data, true, true);
-
-   rarch_render_cached_frame();
-
-   if (driver.video_poke && driver.video_poke->set_texture_enable)
-      driver.video_poke->set_texture_enable(driver.video_data, false, true);
-
-   /* FIXME - hack for now */
-   rgui->delay_count++;
-
-   if(process_input_ret != 0)
-      goto deinit;
-
-   return true;
-
-deinit:
-   process_input_ret = 0;
-
-   return false;
+   return 0;
 }
 
 bool menu_iterate_xui(void)
@@ -1530,8 +1475,33 @@ bool menu_iterate_xui(void)
    return true;
 }
 
+int rgui_input_postprocess(void *data, uint64_t old_state)
+{
+   rgui_handle_t *rgui = (rgui_handle_t*)data;
+   bool quit = false;
+   bool resize = false;
+   unsigned width;
+   unsigned height;
+   unsigned frame_count;
+
+   if ((rgui->trigger_state & (1ULL << RARCH_MENU_TOGGLE)) &&
+      g_extern.main_is_init)
+   {
+      g_extern.lifecycle_mode_state |= (1ULL << MODE_GAME);
+      process_input_ret = -1;
+   }
+
+   if (quit)
+      process_input_ret = -1;
+
+   int process_input_ret_old = process_input_ret; 
+   process_input_ret = 0;
+
+   return process_input_ret_old;
+}
+
 const menu_ctx_driver_t menu_ctx_rmenu_xui = {
-   NULL,
+   rgui_iterate,
    rgui_init,
    rgui_free,
    "rmenu_xui",

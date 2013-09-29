@@ -500,8 +500,7 @@ void menu_ticker_line(char *buf, size_t len, unsigned index, const char *str, bo
    }
 }
 
-#ifndef HAVE_RMENU_XUI
-#if defined(HAVE_RMENU) || defined(HAVE_RGUI)
+#if defined(HAVE_RMENU) || defined(HAVE_RGUI) || defined(HAVE_RMENU_XUI)
 static uint64_t rgui_input(void)
 {
    uint64_t input_state = 0;
@@ -649,7 +648,6 @@ bool menu_iterate(void)
 deinit:
    return false;
 }
-#endif
 #endif
 
 // Quite intrusive and error prone.

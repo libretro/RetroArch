@@ -243,10 +243,8 @@ void menu_init(void);
 bool menu_iterate(void);
 void menu_free(void);
 
-#ifndef HAVE_RMENU_XUI
-#if defined(HAVE_RGUI) || defined(HAVE_RMENU)
+#if defined(HAVE_RGUI) || defined(HAVE_RMENU) || defined(HAVE_RMENU_XUI)
 int rgui_input_postprocess(void *data, uint64_t old_state);
-#endif
 #endif
 
 #ifdef HAVE_SHADER_MANAGER
