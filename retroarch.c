@@ -69,7 +69,7 @@ static void check_fast_forward_button(void)
    old_hold_button_state = new_hold_button_state;
 }
 
-#if defined(HAVE_SCREENSHOTS) && !defined(_XBOX)
+#if defined(HAVE_SCREENSHOTS) && !defined(_XBOX1)
 static bool take_screenshot_viewport(void)
 {
    struct rarch_viewport vp = {0};
