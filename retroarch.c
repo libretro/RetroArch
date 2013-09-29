@@ -3153,15 +3153,6 @@ bool rarch_main_iterate(void)
    unlock_autosave();
 #endif
 
-#ifdef HAVE_RMENU
-   if (input_key_pressed_func(RARCH_FRAMEADVANCE))
-   {
-      g_extern.lifecycle_state &= ~(1ULL << RARCH_FRAMEADVANCE);
-      g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU);
-      return false;
-   }
-#endif
-
    return true;
 }
 
