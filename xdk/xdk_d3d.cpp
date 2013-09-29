@@ -386,7 +386,9 @@ void xdk_d3d_generate_pp(D3DPRESENT_PARAMETERS *d3dpp, const video_info_t *video
    d3d->base_size   = video->rgb32 ? sizeof(uint32_t) : sizeof(uint16_t);
 
    unsigned width, height;
-   d3d->ctx_driver->get_video_size(&width, &height);
+
+   if (d3d->ctx_driver)
+      d3d->ctx_driver->get_video_size(&width, &height);
 
    d3dpp->BackBufferWidth  = d3d->win_width = width;
    d3dpp->BackBufferHeight = d3d->win_height = height;

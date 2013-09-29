@@ -289,7 +289,7 @@ void config_set_defaults(void)
    *g_settings.system_directory = '\0';
    *g_settings.input.autoconfig_dir = '\0';
    *g_settings.input.overlay = '\0';
-#if defined(HAVE_RGUI) || defined(HAVE_RMENU)
+#if defined(HAVE_RGUI) || defined(HAVE_RMENU) || defined(HAVE_RMENU_XUI)
    *g_settings.rgui_browser_directory = '\0';
    *g_settings.rgui_config_directory = '\0';
 #endif
@@ -351,7 +351,7 @@ void config_set_defaults(void)
 
    g_extern.config_save_on_exit = config_save_on_exit;
 
-#if defined(HAVE_RMENU) || defined(HAVE_RGUI)
+#if defined(HAVE_RMENU) || defined(HAVE_RGUI) || defined(HAVE_RMENU_XUI)
    /* Avoid reloading config on every ROM load */
    g_extern.block_config_read = true;
 #endif
@@ -1045,7 +1045,7 @@ bool config_save_file(const char *path)
    config_set_string(conf, "savestate_directory", *g_extern.savestate_dir ? g_extern.savestate_dir : "default");
    config_set_string(conf, "video_shader_dir", *g_settings.video.shader_dir ? g_settings.video.shader_dir : "default");
 
-#if defined(HAVE_RGUI) || defined(HAVE_RMENU)
+#if defined(HAVE_RGUI) || defined(HAVE_RMENU) || defined(HAVE_RMENU_XUI)
    config_set_string(conf, "rgui_browser_directory", *g_settings.rgui_browser_directory ? g_settings.rgui_browser_directory : "default");
    config_set_string(conf, "rgui_config_directory", *g_settings.rgui_config_directory ? g_settings.rgui_config_directory : "default");
 #endif
