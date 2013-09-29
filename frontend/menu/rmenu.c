@@ -50,7 +50,6 @@
 #endif
 
 #define EXT_IMAGES "png|PNG"JPEG_FORMATS
-#define EXT_INPUT_PRESETS "cfg|CFG"
 
 struct texture_image *menu_texture;
 #ifdef HAVE_MENU_PANEL
@@ -299,9 +298,6 @@ static void render_text(void *data)
       case LIBRETRO_CHOICE:
          strlcpy(title, "Libretro", sizeof(title));
          break;
-      case INPUT_PRESET_CHOICE:
-         strlcpy(title, "Input", sizeof(title));
-         break;
       case PATH_SAVESTATES_DIR_CHOICE:
       case PATH_DEFAULT_ROM_DIR_CHOICE:
 #ifdef HAVE_XML
@@ -365,7 +361,6 @@ static void render_text(void *data)
 #endif
       case BORDER_CHOICE:
       case LIBRETRO_CHOICE:
-      case INPUT_PRESET_CHOICE:
       case PATH_SAVESTATES_DIR_CHOICE:
       case PATH_DEFAULT_ROM_DIR_CHOICE:
 #ifdef HAVE_XML
@@ -426,7 +421,6 @@ static void render_text(void *data)
       case CGP_CHOICE:
       case SHADER_CHOICE:
 #endif
-      case INPUT_PRESET_CHOICE:
       case BORDER_CHOICE:
       case PATH_DEFAULT_ROM_DIR_CHOICE:
       case PATH_SAVESTATES_DIR_CHOICE:
@@ -766,10 +760,6 @@ static int select_file(void *data, uint64_t action)
                   }
                   break;
 #endif
-               case INPUT_PRESET_CHOICE:
-                  strlcpy(g_extern.input_config_path, path, sizeof(g_extern.input_config_path));
-                  config_read_keybinds(path);
-                  break;
                case BORDER_CHOICE:
                   if (menu_texture)
                   {
@@ -997,11 +987,6 @@ static bool osk_callback_enter_filename(void *data)
                config_file_write(conf, filepath);
                config_file_free(conf);
             }
-            break;
-         case INPUT_PRESET_FILE:
-            snprintf(filepath, sizeof(filepath), "%s/%s.cfg", default_paths.input_presets_dir, tmp_str);
-            RARCH_LOG("[osk_callback_enter_filename]: filepath is: %s.\n", filepath);
-            config_save_keybinds(filepath);
             break;
       }
 
@@ -2774,7 +2759,6 @@ static int rgui_iterate(void *data, unsigned action)
       case CGP_CHOICE:
       case SHADER_CHOICE:
 #endif
-      case INPUT_PRESET_CHOICE:
       case BORDER_CHOICE:
          ret = select_file(rgui, action);
          break;
