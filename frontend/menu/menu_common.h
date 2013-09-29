@@ -166,6 +166,7 @@ typedef enum
    RGUI_SETTINGS_BIND_L3,
    RGUI_SETTINGS_BIND_R3,
    RGUI_SETTINGS_CUSTOM_BIND,
+   RGUI_SETTINGS_CUSTOM_BIND_ALL,
 
    RGUI_SETTINGS_CORE_OPTION_NONE = 0xffff,
    RGUI_SETTINGS_CORE_OPTION_START = 0x10000
@@ -211,6 +212,8 @@ struct rgui_bind_axis_state
 struct rgui_bind_state
 {
    struct retro_keybind *target;
+   unsigned begin;
+   unsigned last;
    unsigned player;
    struct rgui_bind_state_port state[MAX_PLAYERS];
    struct rgui_bind_axis_state axis_state[MAX_PLAYERS];

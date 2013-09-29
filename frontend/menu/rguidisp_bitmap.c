@@ -534,6 +534,7 @@ static void render_text(rgui_handle_t *rgui)
             case RGUI_SETTINGS_INPUT_OPTIONS:
             case RGUI_SETTINGS_PATH_OPTIONS:
             case RGUI_SETTINGS_OPTIONS:
+            case RGUI_SETTINGS_CUSTOM_BIND_ALL:
                strlcpy(type_str, "...", sizeof(type_str));
                break;
 #ifdef HAVE_OVERLAY

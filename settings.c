@@ -1119,11 +1119,15 @@ bool config_save_file(const char *path)
       config_set_int(conf, cfg, g_settings.input.libretro_device[i]);
    }
 
+   for (unsigned i = 0; i < MAX_PLAYERS; i++)
+      save_keybinds_player(conf, i);
+
    bool ret = config_file_write(conf, path);
    config_file_free(conf);
    return ret;
 }
 
+// FIXME: This is probably obsolete now.
 bool config_save_keybinds(const char *path)
 {
    config_file_t *conf = config_file_new(path);
