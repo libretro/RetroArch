@@ -275,7 +275,6 @@ static void get_environment_settings(int argc, char *argv[], void *args)
 
       /* now we fill in all the variables */
       snprintf(default_paths.menu_border_file, sizeof(default_paths.menu_border_file), "%s/borders/Menu/main-menu_1080p.png", default_paths.core_dir);
-      snprintf(default_paths.input_presets_dir, sizeof(default_paths.input_presets_dir), "%s/presets", default_paths.core_dir);
       snprintf(default_paths.border_dir, sizeof(default_paths.border_dir), "%s/borders", default_paths.core_dir);
 #if defined(HAVE_CG) || defined(HAVE_GLSL)
       snprintf(g_settings.video.shader_dir, sizeof(g_settings.video.shader_dir), "%s/shaders", default_paths.core_dir);
@@ -293,7 +292,6 @@ static void get_environment_settings(int argc, char *argv[], void *args)
    rarch_make_dir(default_paths.system_dir, "system_dir");
    rarch_make_dir(default_paths.savestate_dir, "savestate_dir");
    rarch_make_dir(default_paths.sram_dir, "sram_dir");
-   rarch_make_dir(default_paths.input_presets_dir, "input_presets_dir");
 
    config_load();
 
