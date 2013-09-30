@@ -215,6 +215,12 @@ int main_entry(int argc, char *argv[])
             driver_set_rumble_state(i, RETRO_RUMBLE_WEAK, 0);
          }
 
+         // Override keyboard callback to redirect to menu instead.
+         // We'll use this later for something ...
+         // FIXME: This should probably be moved to menu_common somehow.
+         retro_keyboard_event_t key_event = g_extern.system.key_event;
+         g_extern.system.key_event = menu_key_event;
+
          if (driver.audio_data)
             audio_stop_func();
 
@@ -236,6 +242,9 @@ int main_entry(int argc, char *argv[])
          }
 
          g_extern.lifecycle_mode_state &= ~(1ULL << MODE_MENU);
+
+         // Restore libretro keyboard callback.
+         g_extern.system.key_event = key_event;
       }
       else
          break;

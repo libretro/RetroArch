@@ -147,22 +147,38 @@ typedef enum
    RGUI_SETTINGS_BIND_DEVICE,
    RGUI_SETTINGS_BIND_DEVICE_TYPE,
    RGUI_SETTINGS_BIND_DPAD_EMULATION,
+
+   // Match up with libretro order for simplicity.
+   RGUI_SETTINGS_BIND_BEGIN,
+   RGUI_SETTINGS_BIND_B = RGUI_SETTINGS_BIND_BEGIN,
+   RGUI_SETTINGS_BIND_Y,
+   RGUI_SETTINGS_BIND_SELECT,
+   RGUI_SETTINGS_BIND_START,
    RGUI_SETTINGS_BIND_UP,
    RGUI_SETTINGS_BIND_DOWN,
    RGUI_SETTINGS_BIND_LEFT,
    RGUI_SETTINGS_BIND_RIGHT,
    RGUI_SETTINGS_BIND_A,
-   RGUI_SETTINGS_BIND_B,
    RGUI_SETTINGS_BIND_X,
-   RGUI_SETTINGS_BIND_Y,
-   RGUI_SETTINGS_BIND_START,
-   RGUI_SETTINGS_BIND_SELECT,
    RGUI_SETTINGS_BIND_L,
    RGUI_SETTINGS_BIND_R,
    RGUI_SETTINGS_BIND_L2,
    RGUI_SETTINGS_BIND_R2,
    RGUI_SETTINGS_BIND_L3,
    RGUI_SETTINGS_BIND_R3,
+   RGUI_SETTINGS_BIND_ANALOG_LEFT_X_PLUS,
+   RGUI_SETTINGS_BIND_ANALOG_LEFT_X_MINUS,
+   RGUI_SETTINGS_BIND_ANALOG_LEFT_Y_PLUS,
+   RGUI_SETTINGS_BIND_ANALOG_LEFT_Y_MINUS,
+   RGUI_SETTINGS_BIND_ANALOG_RIGHT_X_PLUS,
+   RGUI_SETTINGS_BIND_ANALOG_RIGHT_X_MINUS,
+   RGUI_SETTINGS_BIND_ANALOG_RIGHT_Y_PLUS,
+   RGUI_SETTINGS_BIND_ANALOG_RIGHT_Y_MINUS,
+   RGUI_SETTINGS_BIND_LAST = RGUI_SETTINGS_BIND_ANALOG_RIGHT_Y_MINUS,
+   RGUI_SETTINGS_BIND_MENU_TOGGLE = RGUI_SETTINGS_BIND_BEGIN + RARCH_MENU_TOGGLE,
+   RGUI_SETTINGS_CUSTOM_BIND,
+   RGUI_SETTINGS_CUSTOM_BIND_ALL,
+   RGUI_SETTINGS_CUSTOM_BIND_DEFAULT_ALL,
 
    RGUI_SETTINGS_CORE_OPTION_NONE = 0xffff,
    RGUI_SETTINGS_CORE_OPTION_START = 0x10000
@@ -186,6 +202,38 @@ typedef enum
    RGUI_ACTION_NOOP
 } rgui_action_t;
 
+#define RGUI_MAX_BUTTONS 32
+#define RGUI_MAX_AXES 32
+#define RGUI_MAX_HATS 4
+struct rgui_bind_state_port
+{
+   bool buttons[RGUI_MAX_BUTTONS];
+   int16_t axes[RGUI_MAX_AXES];
+   uint16_t hats[RGUI_MAX_HATS];
+};
+
+struct rgui_bind_axis_state
+{
+   // Default axis state.
+   int16_t rested_axes[RGUI_MAX_AXES];
+   // Locked axis state. If we configured an axis, avoid having the same axis state trigger something again right away.
+   int16_t locked_axes[RGUI_MAX_AXES];
+};
+
+struct rgui_bind_state
+{
+   struct retro_keybind *target;
+   unsigned begin;
+   unsigned last;
+   unsigned player;
+   struct rgui_bind_state_port state[MAX_PLAYERS];
+   struct rgui_bind_axis_state axis_state[MAX_PLAYERS];
+   bool skip;
+};
+
+void menu_poll_bind_get_rested_axes(struct rgui_bind_state *state);
+void menu_poll_bind_state(struct rgui_bind_state *state);
+bool menu_poll_find_trigger(struct rgui_bind_state *state, struct rgui_bind_state *new_state);
 
 #ifdef GEKKO
 enum
@@ -264,6 +312,8 @@ typedef struct
 
    rom_history_t *history;
    rarch_time_t last_time; // Used to throttle RGUI in case VSync is broken.
+
+   struct rgui_bind_state binds;
 } rgui_handle_t;
 
 extern rgui_handle_t *rgui;
@@ -303,7 +353,8 @@ bool menu_replace_config(const char *path);
 bool menu_save_new_config(void);
 
 int menu_set_settings(unsigned setting, unsigned action);
-extern const unsigned rgui_controller_lut[];
+
+void menu_key_event(bool down, unsigned keycode, uint32_t character, uint16_t key_modifiers);
 
 #ifdef __cplusplus
 }

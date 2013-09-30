@@ -879,23 +879,8 @@ static void save_keybind_key(config_file_t *conf, const char *prefix, const char
    char key[64];
    snprintf(key, sizeof(key), "%s_%s", prefix, base);
 
-   char ascii[2] = {0};
-   const char *btn = ascii;
-
-   if (bind->key >= RETROK_a && bind->key <= RETROK_z)
-      ascii[0] = 'a' + (bind->key - RETROK_a);
-   else
-   {
-      for (unsigned i = 0; input_config_key_map[i].str; i++)
-      {
-         if (input_config_key_map[i].key == bind->key)
-         {
-            btn = input_config_key_map[i].str;
-            break;
-         }
-      }
-   }
-
+   char btn[64];
+   input_translate_rk_to_str(bind->key, btn, sizeof(btn));
    config_set_string(conf, key, btn);
 }
 
@@ -1119,11 +1104,15 @@ bool config_save_file(const char *path)
       config_set_int(conf, cfg, g_settings.input.libretro_device[i]);
    }
 
+   for (unsigned i = 0; i < MAX_PLAYERS; i++)
+      save_keybinds_player(conf, i);
+
    bool ret = config_file_write(conf, path);
    config_file_free(conf);
    return ret;
 }
 
+// FIXME: This is probably obsolete now.
 bool config_save_keybinds(const char *path)
 {
    config_file_t *conf = config_file_new(path);
@@ -1179,7 +1168,7 @@ void settings_set(uint64_t settings)
    }
 
    if (settings & (1ULL << S_DEF_INPUT_OVERLAY_SCALE))
-      g_settings.input.overlay_opacity = 1.0f;
+      g_settings.input.overlay_scale = 1.0f;
 #endif
 
    if (settings & (1ULL << S_REWIND_GRANULARITY_INCREMENT))

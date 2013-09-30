@@ -56,11 +56,8 @@ extern "C" {
 enum // RetroArch specific bind IDs.
 {
    // Custom binds that extend the scope of RETRO_DEVICE_JOYPAD for RetroArch specifically.
-   // Turbo
-   RARCH_TURBO_ENABLE = RARCH_FIRST_CUSTOM_BIND, 
-
    // Analogs (RETRO_DEVICE_ANALOG)
-   RARCH_ANALOG_LEFT_X_PLUS,
+   RARCH_ANALOG_LEFT_X_PLUS = RARCH_FIRST_CUSTOM_BIND,
    RARCH_ANALOG_LEFT_X_MINUS,
    RARCH_ANALOG_LEFT_Y_PLUS,
    RARCH_ANALOG_LEFT_Y_MINUS,
@@ -69,6 +66,7 @@ enum // RetroArch specific bind IDs.
    RARCH_ANALOG_RIGHT_Y_PLUS,
    RARCH_ANALOG_RIGHT_Y_MINUS,
 #ifdef RARCH_CONSOLE
+   // D-pad emulation
    RARCH_ANALOG_LEFT_X_DPAD_LEFT,
    RARCH_ANALOG_LEFT_X_DPAD_RIGHT,
    RARCH_ANALOG_LEFT_Y_DPAD_UP,
@@ -78,6 +76,9 @@ enum // RetroArch specific bind IDs.
    RARCH_ANALOG_RIGHT_Y_DPAD_UP,
    RARCH_ANALOG_RIGHT_Y_DPAD_DOWN,
 #endif
+
+   // Turbo
+   RARCH_TURBO_ENABLE,
 
    RARCH_CUSTOM_BIND_LIST_END,
 
@@ -323,6 +324,8 @@ enum keybind_set_id
    KEYBINDS_ACTION_LAST
 };
 
+typedef struct rarch_joypad_driver rarch_joypad_driver_t;
+
 typedef struct input_driver
 {
    void *(*init)(void);
@@ -336,6 +339,7 @@ typedef struct input_driver
 
    void (*grab_mouse)(void *data, bool state);
    bool (*set_rumble)(void *data, unsigned port, enum retro_rumble_effect effect, uint16_t state);
+   const rarch_joypad_driver_t *(*get_joypad_driver)(void *data);
 } input_driver_t;
 
 struct rarch_viewport;

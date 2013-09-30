@@ -22,8 +22,10 @@
 #include "menu_common.h"
 
 #include "../../performance.h"
+#include "../../driver.h"
 #include "../../file.h"
 #include "menu_context.h"
+#include "../../input/input_common.h"
 
 #include "../../compat/posix_string.h"
 
@@ -786,4 +788,135 @@ bool menu_save_new_config(void)
    return ret;
 }
 
+void menu_poll_bind_state(struct rgui_bind_state *state)
+{
+   memset(state->state, 0, sizeof(state->state));
+   state->skip = input_input_state_func(NULL, 0, RETRO_DEVICE_KEYBOARD, 0, RETROK_RETURN);
+
+   const rarch_joypad_driver_t *joypad = NULL;
+   if (driver.input && driver.input_data && driver.input->get_joypad_driver)
+      joypad = driver.input->get_joypad_driver(driver.input_data);
+
+   if (!joypad)
+   {
+      RARCH_ERR("Cannot poll raw joypad state.");
+      return;
+   }
+
+   input_joypad_poll(joypad);
+   for (unsigned p = 0; p < MAX_PLAYERS; p++)
+   {
+      for (unsigned b = 0; b < RGUI_MAX_BUTTONS; b++)
+         state->state[p].buttons[b] = input_joypad_button_raw(joypad, p, b);
+      for (unsigned a = 0; a < RGUI_MAX_AXES; a++)
+         state->state[p].axes[a] = input_joypad_axis_raw(joypad, p, a);
+      for (unsigned h = 0; h < RGUI_MAX_HATS; h++)
+      {
+         state->state[p].hats[h] |= input_joypad_hat_raw(joypad, p, HAT_UP_MASK, h) ? HAT_UP_MASK : 0;
+         state->state[p].hats[h] |= input_joypad_hat_raw(joypad, p, HAT_DOWN_MASK, h) ? HAT_DOWN_MASK : 0;
+         state->state[p].hats[h] |= input_joypad_hat_raw(joypad, p, HAT_LEFT_MASK, h) ? HAT_LEFT_MASK : 0;
+         state->state[p].hats[h] |= input_joypad_hat_raw(joypad, p, HAT_RIGHT_MASK, h) ? HAT_RIGHT_MASK : 0;
+      }
+   }
+}
+
+void menu_poll_bind_get_rested_axes(struct rgui_bind_state *state)
+{
+   const rarch_joypad_driver_t *joypad = NULL;
+   if (driver.input && driver.input_data && driver.input->get_joypad_driver)
+      joypad = driver.input->get_joypad_driver(driver.input_data);
+
+   if (!joypad)
+   {
+      RARCH_ERR("Cannot poll raw joypad state.");
+      return;
+   }
+
+   for (unsigned p = 0; p < MAX_PLAYERS; p++)
+      for (unsigned a = 0; a < RGUI_MAX_AXES; a++)
+         state->axis_state[p].rested_axes[a] = input_joypad_axis_raw(joypad, p, a);
+}
+
+static bool menu_poll_find_trigger_pad(struct rgui_bind_state *state, struct rgui_bind_state *new_state, unsigned p)
+{
+   const struct rgui_bind_state_port *n = &new_state->state[p];
+   const struct rgui_bind_state_port *o = &state->state[p];
+
+   for (unsigned b = 0; b < RGUI_MAX_BUTTONS; b++)
+   {
+      if (n->buttons[b] && !o->buttons[b])
+      {
+         state->target->joykey = b;
+         state->target->joyaxis = AXIS_NONE;
+         return true;
+      }
+   }
+
+   // Axes are a bit tricky ...
+   for (unsigned a = 0; a < RGUI_MAX_AXES; a++)
+   {
+      int locked_distance = abs(n->axes[a] - new_state->axis_state[p].locked_axes[a]);
+      int rested_distance = abs(n->axes[a] - new_state->axis_state[p].rested_axes[a]);
+
+      if (abs(n->axes[a]) >= 20000 &&
+            locked_distance >= 20000 &&
+            rested_distance >= 20000) // Take care of case where axis rests on +/- 0x7fff (e.g. 360 controller on Linux)
+      {
+         state->target->joyaxis = n->axes[a] > 0 ? AXIS_POS(a) : AXIS_NEG(a);
+         state->target->joykey = NO_BTN;
+
+         // Lock the current axis.
+         new_state->axis_state[p].locked_axes[a] = n->axes[a] > 0 ? 0x7fff : -0x7fff; 
+         return true;
+      }
+
+      if (locked_distance >= 20000) // Unlock the axis.
+         new_state->axis_state[p].locked_axes[a] = 0;
+   }
+
+   for (unsigned h = 0; h < RGUI_MAX_HATS; h++)
+   {
+      uint16_t trigged = n->hats[h] & (~o->hats[h]);
+      uint16_t sane_trigger = 0;
+      if (trigged & HAT_UP_MASK)
+         sane_trigger = HAT_UP_MASK;
+      else if (trigged & HAT_DOWN_MASK)
+         sane_trigger = HAT_DOWN_MASK;
+      else if (trigged & HAT_LEFT_MASK)
+         sane_trigger = HAT_LEFT_MASK;
+      else if (trigged & HAT_RIGHT_MASK)
+         sane_trigger = HAT_RIGHT_MASK;
+
+      if (sane_trigger)
+      {
+         state->target->joykey = HAT_MAP(h, sane_trigger);
+         state->target->joyaxis = AXIS_NONE;
+         return true;
+      }
+   }
+
+   return false;
+}
+
+bool menu_poll_find_trigger(struct rgui_bind_state *state, struct rgui_bind_state *new_state)
+{
+   for (unsigned p = 0; p < MAX_PLAYERS; p++)
+   {
+      if (menu_poll_find_trigger_pad(state, new_state, p))
+      {
+         g_settings.input.joypad_map[state->player] = p; // Update the joypad mapping automatically. More friendly that way.
+         return true;
+      }
+   }
+   return false;
+}
+
+void menu_key_event(bool down, unsigned keycode, uint32_t character, uint16_t key_modifiers)
+{
+   // TODO: Do something with this. Stub for now.
+   (void)down;
+   (void)keycode;
+   (void)character;
+   (void)key_modifiers;
+}
 
