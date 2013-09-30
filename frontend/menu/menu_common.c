@@ -911,3 +911,12 @@ bool menu_poll_find_trigger(struct rgui_bind_state *state, struct rgui_bind_stat
    return false;
 }
 
+void menu_key_event(bool down, unsigned keycode, uint32_t character, uint16_t key_modifiers)
+{
+   // TODO: Do something with this. Stub for now.
+   (void)down;
+   (void)keycode;
+   (void)character;
+   (void)key_modifiers;
+}
+
