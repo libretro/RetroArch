@@ -642,12 +642,27 @@ enum retro_key input_translate_keysym_to_rk(unsigned sym)
    return RETROK_UNKNOWN;
 }
 
-const char *input_translate_rk_to_str(enum retro_key key)
+void input_translate_rk_to_str(enum retro_key key, char *buf, size_t size)
 {
-   for (unsigned i = 0; input_config_key_map[i].str; i++)
-      if (input_config_key_map[i].key == key)
-         return input_config_key_map[i].str;
-   return NULL;
+   rarch_assert(size >= 2);
+   *buf = '\0';
+
+   if (key >= RETROK_a && key <= RETROK_z)
+   {
+      buf[0] = (key - RETROK_a) + 'a';
+      buf[1] = '\0';
+   }
+   else
+   {
+      for (unsigned i = 0; input_config_key_map[i].str; i++)
+      {
+         if (input_config_key_map[i].key == key)
+         {
+            strlcpy(buf, input_config_key_map[i].str, size);
+            break;
+         }
+      }
+   }
 }
 
 unsigned input_translate_rk_to_keysym(enum retro_key key)
@@ -804,6 +819,7 @@ const struct input_key_map input_config_key_map[] = {
 
 void input_get_bind_string(char *buf, const struct retro_keybind *bind, size_t size)
 {
+   *buf = '\0';
    if (bind->joykey != NO_BTN)
    {
       if (GET_HAT_DIR(bind->joykey))
@@ -817,10 +833,10 @@ void input_get_bind_string(char *buf, const struct retro_keybind *bind, size_t s
             case HAT_RIGHT_MASK: dir = "right"; break;
             default: dir = "?"; break;
          }
-         snprintf(buf, size, "Hat #%u %s", (unsigned)GET_HAT(bind->joykey), dir);
+         snprintf(buf, size, "Hat #%u %s ", (unsigned)GET_HAT(bind->joykey), dir);
       }
       else
-         snprintf(buf, size, "%u (btn)", (unsigned)bind->joykey);
+         snprintf(buf, size, "%u (btn) ", (unsigned)bind->joykey);
    }
    else if (bind->joyaxis != AXIS_NONE)
    {
@@ -836,10 +852,17 @@ void input_get_bind_string(char *buf, const struct retro_keybind *bind, size_t s
          dir = '+';
          axis = AXIS_POS_GET(bind->joyaxis);
       }
-      snprintf(buf, size, "%c%u (axis)", dir, axis);
+      snprintf(buf, size, "%c%u (axis) ", dir, axis);
    }
-   else
-      strlcpy(buf, "<default>", size);
+
+   char key[64];
+   input_translate_rk_to_str(bind->key, key, sizeof(key));
+   if (!strcmp(key, "nul"))
+      *key = '\0';
+
+   char keybuf[64];
+   snprintf(keybuf, sizeof(keybuf), "(Key: %s)", key);
+   strlcat(buf, keybuf, size);
 }
 
 static enum retro_key find_sk_bind(const char *str)

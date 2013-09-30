@@ -143,7 +143,7 @@ struct input_key_map
    enum retro_key key;
 };
 extern const struct input_key_map input_config_key_map[];
-const char *input_translate_rk_to_str(enum retro_key key);
+void input_translate_rk_to_str(enum retro_key key, char *buf, size_t size);
 
 extern const char* const input_builtin_autoconfs[];
 

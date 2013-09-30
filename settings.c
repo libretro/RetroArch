@@ -879,23 +879,8 @@ static void save_keybind_key(config_file_t *conf, const char *prefix, const char
    char key[64];
    snprintf(key, sizeof(key), "%s_%s", prefix, base);
 
-   char ascii[2] = {0};
-   const char *btn = ascii;
-
-   if (bind->key >= RETROK_a && bind->key <= RETROK_z)
-      ascii[0] = 'a' + (bind->key - RETROK_a);
-   else
-   {
-      for (unsigned i = 0; input_config_key_map[i].str; i++)
-      {
-         if (input_config_key_map[i].key == bind->key)
-         {
-            btn = input_config_key_map[i].str;
-            break;
-         }
-      }
-   }
-
+   char btn[64];
+   input_translate_rk_to_str(bind->key, btn, sizeof(btn));
    config_set_string(conf, key, btn);
 }
 
