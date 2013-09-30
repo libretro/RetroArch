@@ -1228,6 +1228,8 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
          }
          break;
 #endif
+      case INGAME_MENU_SAVE_CONFIG:
+         return menu_set_settings(RGUI_SETTINGS_SAVE_CONFIG, action);
       case INGAME_MENU_QUIT_RETROARCH:
          return menu_set_settings(RGUI_SETTINGS_QUIT_RARCH, action);
       case INGAME_MENU_VIDEO_OPTIONS_MODE:
@@ -1736,6 +1738,10 @@ static int select_setting(void *data, uint64_t action)
             strlcpy(setting_text, "", sizeof(setting_text));
             break;
 #endif
+         case INGAME_MENU_SAVE_CONFIG:
+            strlcpy(text, "Save Config", sizeof(text));
+            strlcpy(setting_text, "...", sizeof(setting_text));
+            break;
          case INGAME_MENU_QUIT_RETROARCH:
             strlcpy(text, "Quit RetroArch", sizeof(text));
             strlcpy(setting_text, "", sizeof(setting_text));
