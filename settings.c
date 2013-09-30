@@ -1113,23 +1113,6 @@ bool config_save_file(const char *path)
    return ret;
 }
 
-// FIXME: This is probably obsolete now.
-bool config_save_keybinds(const char *path)
-{
-   config_file_t *conf = config_file_new(path);
-   if (!conf)
-      conf = config_file_new(NULL);
-   if (!conf)
-      return NULL;
-
-   for (unsigned i = 0; i < MAX_PLAYERS; i++)
-      save_keybinds_player(conf, i);
-
-   config_file_write(conf, path);
-   config_file_free(conf);
-   return true;
-}
-
 void settings_set(uint64_t settings)
 {
 #ifdef HAVE_OVERLAY
