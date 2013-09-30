@@ -353,7 +353,6 @@ bool menu_replace_config(const char *path);
 bool menu_save_new_config(void);
 
 int menu_set_settings(unsigned setting, unsigned action);
-extern const unsigned rgui_controller_lut[];
 
 void menu_key_event(bool down, unsigned keycode, uint32_t character, uint16_t key_modifiers);
 
