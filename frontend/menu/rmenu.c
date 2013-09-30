@@ -1331,22 +1331,7 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
 #endif
          break;
       case SHADERMAN_SHADER_PASSES:
-         switch (action)
-         {
-            case RGUI_ACTION_LEFT:
-               if (rgui->shader.passes)
-                  rgui->shader.passes--;
-               break;
-            case RGUI_ACTION_RIGHT:
-            case RGUI_ACTION_OK:
-               if (rgui->shader.passes < RGUI_MAX_SHADERS)
-                  rgui->shader.passes++;
-               break;
-            case RGUI_ACTION_START:
-            rgui->shader.passes= 0;
-               break;
-         }
-         break;
+         return menu_set_settings(RGUI_SETTINGS_SHADER_PASSES, action);
       case SHADERMAN_SHADER_0:
       case SHADERMAN_SHADER_1:
       case SHADERMAN_SHADER_2:
@@ -1438,45 +1423,10 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
          }
          break;
       case SHADERMAN_APPLY_CHANGES:
-         switch (action)
-         {
-            case RGUI_ACTION_LEFT:
-            case RGUI_ACTION_RIGHT:
-            case RGUI_ACTION_OK:
-            case RGUI_ACTION_START:
-               {
-                  bool ret = false;
-                  char cgp_path[PATH_MAX];
-
-                  if (rgui->shader.passes)
-                  {
-                     const char *shader_dir = *g_settings.video.shader_dir ?
-                        g_settings.video.shader_dir : g_settings.system_directory;
-                     fill_pathname_join(cgp_path, shader_dir, "rgui.cgp", sizeof(cgp_path));
-                     config_file_t *conf = config_file_new(NULL);
-                     if (!conf)
-                        return 0;
-                     gfx_shader_write_conf_cgp(conf, &rgui->shader);
-                     config_file_write(conf, cgp_path);
-                     config_file_free(conf);
-                  }
-                  else
-                     cgp_path[0] = '\0';
-
-                  ret = video_set_shader_func(RARCH_SHADER_CG, (cgp_path[0] != '\0') ? cgp_path : NULL); 
-
-                  if (ret)
-                     g_settings.video.shader_enable = true;
-                  else
-                  {
-                     RARCH_ERR("Setting RGUI CGP failed.\n");
-                     g_settings.video.shader_enable = false;
-                  }
-               }
-               break;
-         }
-         break;
+         return menu_set_settings(RGUI_SETTINGS_SHADER_APPLY, action);
 #endif
+      default:
+         break;
    }
 
    return 0;

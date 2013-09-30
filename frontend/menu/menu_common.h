@@ -251,6 +251,8 @@ int rgui_input_postprocess(void *data, uint64_t old_state);
 void shader_manager_init(rgui_handle_t *rgui);
 void shader_manager_get_str(struct gfx_shader *shader,
       char *type_str, size_t type_str_size, unsigned type);
+void shader_manager_set_preset(struct gfx_shader *shader,
+      enum rarch_shader_type type, const char *path);
 #endif
 
 void menu_ticker_line(char *buf, size_t len, unsigned tick, const char *str, bool selected);

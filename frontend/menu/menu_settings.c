@@ -17,6 +17,7 @@
 
 #include <stdint.h>
 #include <string.h>
+#include "../../file.h"
 #include "menu_common.h"
 
 #ifdef GEKKO
@@ -43,6 +44,36 @@ const unsigned rgui_controller_lut[] = {
    RETRO_DEVICE_ID_JOYPAD_L3,
    RETRO_DEVICE_ID_JOYPAD_R3,
 };
+
+#ifdef HAVE_SHADER_MANAGER
+static enum rarch_shader_type shader_manager_get_type(const struct gfx_shader *shader)
+{
+   // All shader types must be the same, or we cannot use it.
+   enum rarch_shader_type type = RARCH_SHADER_NONE;
+
+   for (unsigned i = 0; i < shader->passes; i++)
+   {
+      enum rarch_shader_type pass_type = gfx_shader_parse_type(shader->pass[i].source.cg,
+            RARCH_SHADER_NONE);
+
+      switch (pass_type)
+      {
+         case RARCH_SHADER_CG:
+         case RARCH_SHADER_GLSL:
+            if (type == RARCH_SHADER_NONE)
+               type = pass_type;
+            else if (type != pass_type)
+               return RARCH_SHADER_NONE;
+            break;
+
+         default:
+            return RARCH_SHADER_NONE;
+      }
+   }
+
+   return type;
+}
+#endif
 
 int menu_set_settings(unsigned setting, unsigned action)
 {
@@ -835,6 +866,73 @@ int menu_set_settings(unsigned setting, unsigned action)
 
             default:
                break;
+         }
+         break;
+      case RGUI_SETTINGS_SHADER_PASSES:
+         switch (action)
+         {
+            case RGUI_ACTION_START:
+               rgui->shader.passes = 0;
+               break;
+
+            case RGUI_ACTION_LEFT:
+               if (rgui->shader.passes)
+                  rgui->shader.passes--;
+               break;
+
+            case RGUI_ACTION_RIGHT:
+            case RGUI_ACTION_OK:
+               if (rgui->shader.passes < RGUI_MAX_SHADERS)
+                  rgui->shader.passes++;
+               break;
+
+            default:
+               break;
+         }
+
+#ifndef HAVE_RMENU
+         rgui->need_refresh = true;
+#endif
+         break;
+      case RGUI_SETTINGS_SHADER_APPLY:
+         {
+            if (!driver.video->set_shader || action != RGUI_ACTION_OK)
+               return 0;
+
+            RARCH_LOG("Applying shader ...\n");
+
+            enum rarch_shader_type type = shader_manager_get_type(&rgui->shader);
+
+            if (rgui->shader.passes && type != RARCH_SHADER_NONE)
+            {
+               const char *conf_path = type == RARCH_SHADER_GLSL ? rgui->default_glslp : rgui->default_cgp;
+
+               char cgp_path[PATH_MAX];
+               const char *shader_dir = *g_settings.video.shader_dir ?
+                  g_settings.video.shader_dir : g_settings.system_directory;
+               fill_pathname_join(cgp_path, shader_dir, conf_path, sizeof(cgp_path));
+               config_file_t *conf = config_file_new(NULL);
+               if (!conf)
+                  return 0;
+               gfx_shader_write_conf_cgp(conf, &rgui->shader);
+               config_file_write(conf, cgp_path);
+               config_file_free(conf);
+
+               shader_manager_set_preset(NULL, type, cgp_path); 
+            }
+            else
+            {
+               type = gfx_shader_parse_type("", DEFAULT_SHADER_TYPE);
+               if (type == RARCH_SHADER_NONE)
+               {
+#if defined(HAVE_GLSL)
+                  type = RARCH_SHADER_GLSL;
+#elif defined(HAVE_CG) || defined(HAVE_HLSL)
+                  type = RARCH_SHADER_CG;
+#endif
+               }
+               shader_manager_set_preset(NULL, type, NULL);
+            }
          }
          break;
       default:
