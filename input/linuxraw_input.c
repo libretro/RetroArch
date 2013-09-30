@@ -291,6 +291,12 @@ static bool linuxraw_set_rumble(void *data, unsigned port, enum retro_rumble_eff
    return input_joypad_set_rumble(linuxraw->joypad, port, effect, strength);
 }
 
+static const rarch_joypad_driver_t *linuxraw_get_joypad_driver(void *data)
+{
+   linuxraw_input_t *linuxraw = (linuxraw_input_t*)data;
+   return linuxraw->joypad;
+}
+
 static void linuxraw_input_poll(void *data)
 {
    linuxraw_input_t *linuxraw = (linuxraw_input_t*)data;
@@ -325,4 +331,5 @@ const input_driver_t input_linuxraw = {
    "linuxraw",
    NULL,
    linuxraw_set_rumble,
+   linuxraw_get_joypad_driver,
 };

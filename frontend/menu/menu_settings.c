@@ -26,25 +26,6 @@
 #define MAX_GAMMA_SETTING 1
 #endif
 
-const unsigned rgui_controller_lut[] = {
-   RETRO_DEVICE_ID_JOYPAD_UP,
-   RETRO_DEVICE_ID_JOYPAD_DOWN,
-   RETRO_DEVICE_ID_JOYPAD_LEFT,
-   RETRO_DEVICE_ID_JOYPAD_RIGHT,
-   RETRO_DEVICE_ID_JOYPAD_A,
-   RETRO_DEVICE_ID_JOYPAD_B,
-   RETRO_DEVICE_ID_JOYPAD_X,
-   RETRO_DEVICE_ID_JOYPAD_Y,
-   RETRO_DEVICE_ID_JOYPAD_START,
-   RETRO_DEVICE_ID_JOYPAD_SELECT,
-   RETRO_DEVICE_ID_JOYPAD_L,
-   RETRO_DEVICE_ID_JOYPAD_R,
-   RETRO_DEVICE_ID_JOYPAD_L2,
-   RETRO_DEVICE_ID_JOYPAD_R2,
-   RETRO_DEVICE_ID_JOYPAD_L3,
-   RETRO_DEVICE_ID_JOYPAD_R3,
-};
-
 #ifdef HAVE_SHADER_MANAGER
 static enum rarch_shader_type shader_manager_get_type(const struct gfx_shader *shader)
 {
@@ -486,6 +467,30 @@ int menu_set_settings(unsigned setting, unsigned action)
                      keybind_action);
          }
          break;
+      case RGUI_SETTINGS_CUSTOM_BIND_ALL:
+         if (action == RGUI_ACTION_OK)
+         {
+            rgui->binds.target = &g_settings.input.binds[port][0];
+            rgui->binds.begin = RGUI_SETTINGS_BIND_BEGIN;
+            rgui->binds.last = RGUI_SETTINGS_BIND_LAST;
+            rgui_list_push(rgui->menu_stack, "", RGUI_SETTINGS_CUSTOM_BIND, rgui->selection_ptr);
+            menu_poll_bind_get_rested_axes(&rgui->binds);
+            menu_poll_bind_state(&rgui->binds);
+         }
+         break;
+      case RGUI_SETTINGS_CUSTOM_BIND_DEFAULT_ALL:
+         if (action == RGUI_ACTION_OK)
+         {
+            struct retro_keybind *target = &g_settings.input.binds[port][0];
+            rgui->binds.begin = RGUI_SETTINGS_BIND_BEGIN;
+            rgui->binds.last = RGUI_SETTINGS_BIND_LAST;
+            for (unsigned i = RGUI_SETTINGS_BIND_BEGIN; i <= RGUI_SETTINGS_BIND_LAST; i++, target++)
+            {
+               target->joykey = NO_BTN;
+               target->joyaxis = AXIS_NONE;
+            }
+         }
+         break;
       case RGUI_SETTINGS_BIND_UP:
       case RGUI_SETTINGS_BIND_DOWN:
       case RGUI_SETTINGS_BIND_LEFT:
@@ -502,6 +507,15 @@ int menu_set_settings(unsigned setting, unsigned action)
       case RGUI_SETTINGS_BIND_R2:
       case RGUI_SETTINGS_BIND_L3:
       case RGUI_SETTINGS_BIND_R3:
+      case RGUI_SETTINGS_BIND_ANALOG_LEFT_X_PLUS:
+      case RGUI_SETTINGS_BIND_ANALOG_LEFT_X_MINUS:
+      case RGUI_SETTINGS_BIND_ANALOG_LEFT_Y_PLUS:
+      case RGUI_SETTINGS_BIND_ANALOG_LEFT_Y_MINUS:
+      case RGUI_SETTINGS_BIND_ANALOG_RIGHT_X_PLUS:
+      case RGUI_SETTINGS_BIND_ANALOG_RIGHT_X_MINUS:
+      case RGUI_SETTINGS_BIND_ANALOG_RIGHT_Y_PLUS:
+      case RGUI_SETTINGS_BIND_ANALOG_RIGHT_Y_MINUS:
+      case RGUI_SETTINGS_BIND_MENU_TOGGLE:
          if (driver.input->set_keybinds)
          {
             unsigned keybind_action = KEYBINDS_ACTION_NONE;
@@ -513,10 +527,31 @@ int menu_set_settings(unsigned setting, unsigned action)
             else if (action == RGUI_ACTION_RIGHT)
                keybind_action = (1ULL << KEYBINDS_ACTION_INCREMENT_BIND);
 
+            // FIXME: The array indices here look totally wrong ... Fixed it so it looks kind of sane for now.
             if (keybind_action != KEYBINDS_ACTION_NONE)
-               driver.input->set_keybinds(driver.input_data, g_settings.input.device[setting - RGUI_SETTINGS_BIND_UP], port,
-                     rgui_controller_lut[setting - RGUI_SETTINGS_BIND_UP], keybind_action); 
+               driver.input->set_keybinds(driver.input_data, g_settings.input.device[port], port,
+                     setting - RGUI_SETTINGS_BIND_BEGIN, keybind_action); 
          }
+         else
+         {
+            struct retro_keybind *bind = &g_settings.input.binds[port][setting - RGUI_SETTINGS_BIND_BEGIN];
+            if (action == RGUI_ACTION_OK)
+            {
+               rgui->binds.begin = setting;
+               rgui->binds.last = setting;
+               rgui->binds.target = bind;
+               rgui->binds.player = port;
+               rgui_list_push(rgui->menu_stack, "", RGUI_SETTINGS_CUSTOM_BIND, rgui->selection_ptr);
+               menu_poll_bind_get_rested_axes(&rgui->binds);
+               menu_poll_bind_state(&rgui->binds);
+            }
+            else if (action == RGUI_ACTION_START)
+            {
+               bind->joykey = NO_BTN;
+               bind->joyaxis = AXIS_NONE;
+            }
+         }
+         break;
       case RGUI_BROWSER_DIR_PATH:
          if (action == RGUI_ACTION_START)
          {

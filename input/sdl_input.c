@@ -220,6 +220,12 @@ static bool sdl_set_rumble(void *data, unsigned port, enum retro_rumble_effect e
    return input_joypad_set_rumble(sdl->joypad, port, effect, strength);
 }
 
+static const rarch_joypad_driver_t *sdl_get_joypad_driver(void *data)
+{
+   sdl_input_t *sdl = (sdl_input_t*)data;
+   return sdl->joypad;
+}
+
 static void sdl_poll_mouse(sdl_input_t *sdl)
 {
    Uint8 btn = SDL_GetRelativeMouseState(&sdl->mouse_x, &sdl->mouse_y);
@@ -248,5 +254,6 @@ const input_driver_t input_sdl = {
    "sdl",
    NULL,
    sdl_set_rumble,
+   sdl_get_joypad_driver,
 };
 

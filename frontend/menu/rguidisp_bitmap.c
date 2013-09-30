@@ -145,17 +145,36 @@ static void render_messagebox(rgui_handle_t *rgui, const char *message)
    if (!message || !*message)
       return;
 
-   char *msg = strdup(message);
-   if (strlen(msg) > TERM_WIDTH)
+   struct string_list *list = string_split(message, "\n");
+   if (!list)
+      return;
+   if (list->elems == 0)
    {
-      msg[TERM_WIDTH - 2] = '.';
-      msg[TERM_WIDTH - 1] = '.';
-      msg[TERM_WIDTH - 0] = '.';
-      msg[TERM_WIDTH + 1] = '\0';
+      string_list_free(list);
+      return;
    }
 
-   unsigned width = strlen(msg) * FONT_WIDTH_STRIDE - 1 + 6 + 10;
-   unsigned height = FONT_HEIGHT + 6 + 10;
+   unsigned width = 0;
+   unsigned glyphs_width = 0;
+   for (size_t i = 0; i < list->size; i++)
+   {
+      char *msg = list->elems[i].data;
+      unsigned msglen = strlen(msg);
+      if (msglen > TERM_WIDTH)
+      {
+         msg[TERM_WIDTH - 2] = '.';
+         msg[TERM_WIDTH - 1] = '.';
+         msg[TERM_WIDTH - 0] = '.';
+         msg[TERM_WIDTH + 1] = '\0';
+         msglen = TERM_WIDTH;
+      }
+
+      unsigned line_width = msglen * FONT_WIDTH_STRIDE - 1 + 6 + 10;
+      width = max(width, line_width);
+      glyphs_width = max(glyphs_width, msglen);
+   }
+
+   unsigned height = FONT_HEIGHT_STRIDE * list->size + 6 + 10;
    int x = (RGUI_WIDTH - width) / 2;
    int y = (RGUI_HEIGHT - height) / 2;
    
@@ -174,8 +193,15 @@ static void render_messagebox(rgui_handle_t *rgui, const char *message)
    fill_rect(rgui->frame_buf, rgui->frame_buf_pitch,
          x, y + 5, 5, height - 5, green_filler);
 
-   blit_line(rgui, x + 8, y + 8, msg, false);
-   free(msg);
+   for (size_t i = 0; i < list->size; i++)
+   {
+      const char *msg = list->elems[i].data;
+      int offset_x = FONT_WIDTH_STRIDE * (glyphs_width - strlen(msg)) / 2;
+      int offset_y = FONT_HEIGHT_STRIDE * i;
+      blit_line(rgui, x + 8 + offset_x, y + 8 + offset_y, msg, false);
+   }
+
+   string_list_free(list);
 }
 
 static void render_text(rgui_handle_t *rgui)
@@ -230,6 +256,7 @@ static void render_text(rgui_handle_t *rgui)
          (menu_type == RGUI_SETTINGS_PATH_OPTIONS) ||
          (menu_type == RGUI_SETTINGS_OPTIONS) ||
          (menu_type == RGUI_SETTINGS_CUSTOM_VIEWPORT || menu_type == RGUI_SETTINGS_CUSTOM_VIEWPORT_2) ||
+         menu_type == RGUI_SETTINGS_CUSTOM_BIND ||
          menu_type == RGUI_SETTINGS)
       snprintf(title, sizeof(title), "MENU %s", dir);
    else if (menu_type == RGUI_SETTINGS_OPEN_HISTORY)
@@ -303,7 +330,13 @@ static void render_text(rgui_handle_t *rgui)
       rgui_list_get_at_offset(rgui->selection_buf, i, &path, &type);
       char message[256];
       char type_str[256];
-      unsigned w = (menu_type == RGUI_SETTINGS_INPUT_OPTIONS || menu_type == RGUI_SETTINGS_PATH_OPTIONS) ? 24 : 19;
+
+      unsigned w = 19;
+      if (menu_type == RGUI_SETTINGS_INPUT_OPTIONS || menu_type == RGUI_SETTINGS_CUSTOM_BIND)
+         w = 21;
+      else if (menu_type == RGUI_SETTINGS_PATH_OPTIONS)
+         w = 24;
+
       unsigned port = rgui->current_pad;
       
 #ifdef HAVE_SHADER_MANAGER
@@ -533,6 +566,8 @@ static void render_text(rgui_handle_t *rgui)
             case RGUI_SETTINGS_INPUT_OPTIONS:
             case RGUI_SETTINGS_PATH_OPTIONS:
             case RGUI_SETTINGS_OPTIONS:
+            case RGUI_SETTINGS_CUSTOM_BIND_ALL:
+            case RGUI_SETTINGS_CUSTOM_BIND_DEFAULT_ALL:
                strlcpy(type_str, "...", sizeof(type_str));
                break;
 #ifdef HAVE_OVERLAY
@@ -624,18 +659,33 @@ static void render_text(rgui_handle_t *rgui)
             case RGUI_SETTINGS_BIND_R2:
             case RGUI_SETTINGS_BIND_L3:
             case RGUI_SETTINGS_BIND_R3:
+            case RGUI_SETTINGS_BIND_ANALOG_LEFT_X_PLUS:
+            case RGUI_SETTINGS_BIND_ANALOG_LEFT_X_MINUS:
+            case RGUI_SETTINGS_BIND_ANALOG_LEFT_Y_PLUS:
+            case RGUI_SETTINGS_BIND_ANALOG_LEFT_Y_MINUS:
+            case RGUI_SETTINGS_BIND_ANALOG_RIGHT_X_PLUS:
+            case RGUI_SETTINGS_BIND_ANALOG_RIGHT_X_MINUS:
+            case RGUI_SETTINGS_BIND_ANALOG_RIGHT_Y_PLUS:
+            case RGUI_SETTINGS_BIND_ANALOG_RIGHT_Y_MINUS:
+            case RGUI_SETTINGS_BIND_MENU_TOGGLE:
+            {
+               unsigned id = type - RGUI_SETTINGS_BIND_B;
+               struct platform_bind key_label;
+               strlcpy(key_label.desc, "Unknown", sizeof(key_label.desc));
+               key_label.joykey = g_settings.input.binds[port][id].joykey;
+
+               if (driver.input->set_keybinds)
                {
-                  unsigned id = rgui_controller_lut[type - RGUI_SETTINGS_BIND_UP];
-                  struct platform_bind key_label;
-                  strlcpy(key_label.desc, "Unknown", sizeof(key_label.desc));
-                  key_label.joykey = g_settings.input.binds[port][id].joykey;
-
-                  if (driver.input->set_keybinds)
-                     driver.input->set_keybinds(&key_label, 0, 0, 0, (1ULL << KEYBINDS_ACTION_GET_BIND_LABEL));
-
+                  driver.input->set_keybinds(&key_label, 0, 0, 0, (1ULL << KEYBINDS_ACTION_GET_BIND_LABEL));
                   strlcpy(type_str, key_label.desc, sizeof(type_str));
                }
+               else
+               {
+                  const struct retro_keybind *bind = &g_settings.input.binds[port][type - RGUI_SETTINGS_BIND_BEGIN];
+                  input_get_bind_string(type_str, bind, sizeof(type_str));
+               }
                break;
+            }
             default:
                type_str[0] = 0;
                w = 0;
@@ -679,3 +729,4 @@ static void render_text(rgui_handle_t *rgui)
    render_messagebox(rgui, message_queue);
 #endif
 }
+

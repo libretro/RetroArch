@@ -33,6 +33,7 @@
 #include "../../compat/posix_string.h"
 #include "../../gfx/shader_parse.h"
 #include "../../performance.h"
+#include "../../input/input_common.h"
 
 #ifdef HAVE_OPENGL
 #include "../../gfx/gl_common.h"
@@ -527,25 +528,49 @@ static void rgui_settings_controller_populate_entries(rgui_handle_t *rgui)
    rgui_list_push(rgui->selection_buf, "Device Type", RGUI_SETTINGS_BIND_DEVICE_TYPE, 0);
 
    if (driver.input && driver.input->set_keybinds)
-   {
       rgui_list_push(rgui->selection_buf, "DPad Emulation", RGUI_SETTINGS_BIND_DPAD_EMULATION, 0);
-      rgui_list_push(rgui->selection_buf, "Up", RGUI_SETTINGS_BIND_UP, 0);
-      rgui_list_push(rgui->selection_buf, "Down", RGUI_SETTINGS_BIND_DOWN, 0);
-      rgui_list_push(rgui->selection_buf, "Left", RGUI_SETTINGS_BIND_LEFT, 0);
-      rgui_list_push(rgui->selection_buf, "Right", RGUI_SETTINGS_BIND_RIGHT, 0);
-      rgui_list_push(rgui->selection_buf, "A", RGUI_SETTINGS_BIND_A, 0);
-      rgui_list_push(rgui->selection_buf, "B", RGUI_SETTINGS_BIND_B, 0);
-      rgui_list_push(rgui->selection_buf, "X", RGUI_SETTINGS_BIND_X, 0);
-      rgui_list_push(rgui->selection_buf, "Y", RGUI_SETTINGS_BIND_Y, 0);
-      rgui_list_push(rgui->selection_buf, "Start", RGUI_SETTINGS_BIND_START, 0);
-      rgui_list_push(rgui->selection_buf, "Select", RGUI_SETTINGS_BIND_SELECT, 0);
-      rgui_list_push(rgui->selection_buf, "L", RGUI_SETTINGS_BIND_L, 0);
-      rgui_list_push(rgui->selection_buf, "R", RGUI_SETTINGS_BIND_R, 0);
-      rgui_list_push(rgui->selection_buf, "L2", RGUI_SETTINGS_BIND_L2, 0);
-      rgui_list_push(rgui->selection_buf, "R2", RGUI_SETTINGS_BIND_R2, 0);
-      rgui_list_push(rgui->selection_buf, "L3", RGUI_SETTINGS_BIND_L3, 0);
-      rgui_list_push(rgui->selection_buf, "R3", RGUI_SETTINGS_BIND_R3, 0);
+   else
+   {
+      rgui_list_push(rgui->selection_buf, "Configure All (RetroPad)", RGUI_SETTINGS_CUSTOM_BIND_ALL, 0); // This doesn't make sense on anything else than PC.
+      rgui_list_push(rgui->selection_buf, "Default All (RetroPad)", RGUI_SETTINGS_CUSTOM_BIND_DEFAULT_ALL, 0); // This doesn't make sense on anything else than PC.
    }
+
+   if (rgui->current_pad == 0)
+      rgui_list_push(rgui->selection_buf, "RGUI Menu Toggle", RGUI_SETTINGS_BIND_MENU_TOGGLE, 0);
+   unsigned last = (driver.input && driver.input->set_keybinds) ? RGUI_SETTINGS_BIND_R3 : RGUI_SETTINGS_BIND_LAST;
+   for (unsigned i = RGUI_SETTINGS_BIND_BEGIN; i <= last; i++)
+      rgui_list_push(rgui->selection_buf, input_config_bind_map[i - RGUI_SETTINGS_BIND_BEGIN].desc, i, 0);
+}
+
+// This only makes sense for PC so far.
+// Consoles use set_keybind callbacks instead.
+static int rgui_custom_bind_iterate(rgui_handle_t *rgui, rgui_action_t action)
+{
+   (void)action; // Have to ignore action here. Only bind that should work here is Quit RetroArch or something like that.
+
+   render_text(rgui);
+
+   char msg[256];
+   snprintf(msg, sizeof(msg), "[%s]\npress joypad\n(RETURN to skip)", input_config_bind_map[rgui->binds.begin - RGUI_SETTINGS_BIND_BEGIN].desc);
+   render_messagebox(rgui, msg);
+
+   struct rgui_bind_state binds = rgui->binds;
+   menu_poll_bind_state(&binds);
+
+   if ((binds.skip && !rgui->binds.skip) || menu_poll_find_trigger(&rgui->binds, &binds))
+   {
+      binds.begin++;
+      if (binds.begin <= binds.last)
+         binds.target++;
+      else
+         rgui_list_pop(rgui->menu_stack, &rgui->selection_ptr);
+
+      // Avoid new binds triggering things right away.
+      rgui->trigger_state = 0;
+      rgui->old_input_state = -1ULL;
+   }
+   rgui->binds = binds;
+   return 0;
 }
 
 static int rgui_viewport_iterate(rgui_handle_t *rgui, rgui_action_t action)
@@ -1032,6 +1057,8 @@ static int rgui_iterate(void *data, unsigned action)
       return rgui_settings_iterate(rgui, action);
    else if (menu_type == RGUI_SETTINGS_CUSTOM_VIEWPORT || menu_type == RGUI_SETTINGS_CUSTOM_VIEWPORT_2)
       return rgui_viewport_iterate(rgui, action);
+   else if (menu_type == RGUI_SETTINGS_CUSTOM_BIND)
+      return rgui_custom_bind_iterate(rgui, action);
 
    if (rgui->need_refresh && action != RGUI_ACTION_MESSAGE)
       action = RGUI_ACTION_NOOP;
