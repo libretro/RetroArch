@@ -113,7 +113,6 @@ enum menu_enums
    MODE_MENU_WIDESCREEN,
    MODE_MENU_HD,
    MODE_MENU_PREINIT,
-   MODE_MENU_INGAME_EXIT,
    MODE_INFO_DRAW,
    MODE_FPS_DRAW,
    MODE_EXTLAUNCH_MULTIMAN,
@@ -284,7 +283,7 @@ struct settings
    uint16_t network_cmd_port;
    bool stdin_cmd_enable;
 
-#if defined(HAVE_RGUI) || defined(HAVE_RMENU)
+#if defined(HAVE_RGUI) || defined(HAVE_RMENU) || defined(HAVE_RMENU_XUI)
    char rgui_browser_directory[PATH_MAX];
    char rgui_config_directory[PATH_MAX];
 #endif

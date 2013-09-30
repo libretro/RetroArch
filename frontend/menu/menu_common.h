@@ -235,6 +235,34 @@ void menu_poll_bind_get_rested_axes(struct rgui_bind_state *state);
 void menu_poll_bind_state(struct rgui_bind_state *state);
 bool menu_poll_find_trigger(struct rgui_bind_state *state, struct rgui_bind_state *new_state);
 
+#ifdef GEKKO
+enum
+{
+   GX_RESOLUTIONS_512_192 = 0,
+   GX_RESOLUTIONS_598_200,
+   GX_RESOLUTIONS_640_200,
+   GX_RESOLUTIONS_384_224,
+   GX_RESOLUTIONS_448_224,
+   GX_RESOLUTIONS_480_224,
+   GX_RESOLUTIONS_512_224,
+   GX_RESOLUTIONS_340_232,
+   GX_RESOLUTIONS_512_232,
+   GX_RESOLUTIONS_512_236,
+   GX_RESOLUTIONS_336_240,
+   GX_RESOLUTIONS_384_240,
+   GX_RESOLUTIONS_512_240,
+   GX_RESOLUTIONS_576_224,
+   GX_RESOLUTIONS_608_224,
+   GX_RESOLUTIONS_640_224,
+   GX_RESOLUTIONS_530_240,
+   GX_RESOLUTIONS_640_240,
+   GX_RESOLUTIONS_512_448,
+   GX_RESOLUTIONS_640_448, 
+   GX_RESOLUTIONS_640_480,
+   GX_RESOLUTIONS_LAST,
+};
+#endif
+
 typedef struct
 {
    uint64_t old_input_state;
@@ -290,20 +318,25 @@ typedef struct
 
 extern rgui_handle_t *rgui;
 
+#ifdef GEKKO
+extern unsigned rgui_gx_resolutions[GX_RESOLUTIONS_LAST][2];
+extern unsigned rgui_current_gx_resolution;
+#endif
+
 void menu_init(void);
 bool menu_iterate(void);
 void menu_free(void);
 
-#ifndef HAVE_RMENU_XUI
-#if defined(HAVE_RGUI) || defined(HAVE_RMENU)
+#if defined(HAVE_RGUI) || defined(HAVE_RMENU) || defined(HAVE_RMENU_XUI)
 int rgui_input_postprocess(void *data, uint64_t old_state);
-#endif
 #endif
 
 #ifdef HAVE_SHADER_MANAGER
 void shader_manager_init(rgui_handle_t *rgui);
 void shader_manager_get_str(struct gfx_shader *shader,
       char *type_str, size_t type_str_size, unsigned type);
+void shader_manager_set_preset(struct gfx_shader *shader,
+      enum rarch_shader_type type, const char *path);
 #endif
 
 void menu_ticker_line(char *buf, size_t len, unsigned tick, const char *str, bool selected);
@@ -318,6 +351,9 @@ void menu_rom_history_push_current(void);
 bool menu_replace_config(const char *path);
 
 bool menu_save_new_config(void);
+
+int menu_set_settings(unsigned setting, unsigned action);
+extern const unsigned rgui_controller_lut[];
 
 #ifdef __cplusplus
 }

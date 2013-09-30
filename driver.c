@@ -348,7 +348,7 @@ retro_proc_address_t driver_get_proc_address(const char *sym)
 void global_init_drivers(void)
 {
    init_drivers_pre(); // Set driver.* function callbacks.
-#if defined(HAVE_RGUI) || defined(HAVE_RMENU)
+#if defined(HAVE_RGUI) || defined(HAVE_RMENU) || defined(HAVE_RMENU_XUI)
    driver.video->start(); // Statically starts video driver. Sets driver.video_data.
 #endif
    driver.input_data = driver.input->init();

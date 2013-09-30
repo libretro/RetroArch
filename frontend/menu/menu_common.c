@@ -96,6 +96,41 @@ void shader_manager_init(rgui_handle_t *rgui)
    }
 }
 
+void shader_manager_set_preset(struct gfx_shader *shader, enum rarch_shader_type type, const char *path)
+{
+   RARCH_LOG("Setting RGUI shader: %s.\n", path ? path : "N/A (stock)");
+   bool ret = video_set_shader_func(type, path);
+   if (ret)
+   {
+      // Makes sure that we use RGUI CGP shader on driver reinit.
+      // Only do this when the cgp actually works to avoid potential errors.
+      strlcpy(g_settings.video.shader_path, path ? path : "",
+            sizeof(g_settings.video.shader_path));
+      g_settings.video.shader_enable = true;
+
+      if (path && shader)
+      {
+         // Load stored CGP into RGUI menu on success.
+         // Used when a preset is directly loaded.
+         // No point in updating when the CGP was created from RGUI itself.
+         config_file_t *conf = config_file_new(path);
+         if (conf)
+         {
+            gfx_shader_read_conf_cgp(conf, shader);
+            gfx_shader_resolve_relative(shader, path);
+            config_file_free(conf);
+         }
+
+         rgui->need_refresh = true;
+      }
+   }
+   else
+   {
+      RARCH_ERR("Setting RGUI CGP failed.\n");
+      g_settings.video.shader_enable = false;
+   }
+}
+
 void shader_manager_get_str(struct gfx_shader *shader,
       char *type_str, size_t type_str_size, unsigned type)
 {
@@ -502,8 +537,7 @@ void menu_ticker_line(char *buf, size_t len, unsigned index, const char *str, bo
    }
 }
 
-#ifndef HAVE_RMENU_XUI
-#if defined(HAVE_RMENU) || defined(HAVE_RGUI)
+#if defined(HAVE_RMENU) || defined(HAVE_RGUI) || defined(HAVE_RMENU_XUI)
 static uint64_t rgui_input(void)
 {
    uint64_t input_state = 0;
@@ -651,7 +685,6 @@ bool menu_iterate(void)
 deinit:
    return false;
 }
-#endif
 #endif
 
 // Quite intrusive and error prone.

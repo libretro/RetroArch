@@ -334,7 +334,6 @@ void xdk_d3d_deinit_fbo(void *data)
 
 void xdk_d3d_init_fbo(void *data)
 {
-   HRESULT ret;
    xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)data;
 
 #if 0
@@ -387,7 +386,9 @@ void xdk_d3d_generate_pp(D3DPRESENT_PARAMETERS *d3dpp, const video_info_t *video
    d3d->base_size   = video->rgb32 ? sizeof(uint32_t) : sizeof(uint16_t);
 
    unsigned width, height;
-   d3d->ctx_driver->get_video_size(&width, &height);
+
+   if (d3d->ctx_driver)
+      d3d->ctx_driver->get_video_size(&width, &height);
 
    d3dpp->BackBufferWidth  = d3d->win_width = width;
    d3dpp->BackBufferHeight = d3d->win_height = height;
@@ -764,7 +765,7 @@ static bool texture_image_render(struct texture_image *out_img,
 }
 #endif
 
-#if defined(HAVE_RGUI) || defined(HAVE_RMENU)
+#if defined(HAVE_RGUI) || defined(HAVE_RMENU) || defined(HAVE_RMENU_XUI)
 
 #ifdef HAVE_MENU_PANEL
 extern struct texture_image *menu_panel;
@@ -985,7 +986,7 @@ NULL, NULL, NULL, 0);
    }
 #endif
 
-#if defined(HAVE_RGUI) || defined(HAVE_RMENU)
+#if defined(HAVE_RGUI) || defined(HAVE_RMENU) || defined(HAVE_RMENU_XUI)
 
 #if defined(HAVE_RMENU_XUI) || defined(HAVE_RGUI)
    if (d3d->rgui_texture_enable)
@@ -1067,7 +1068,7 @@ static void xdk_d3d_apply_state_changes(void *data)
    d3d->should_resize = true;
 }
 
-#if defined(HAVE_RGUI) || defined(HAVE_RMENU)
+#if defined(HAVE_RGUI) || defined(HAVE_RMENU) || defined(HAVE_RMENU_XUI)
 static void xdk_d3d_set_texture_frame(void *data,
    const void *frame, bool rgb32, unsigned width, unsigned height,
    float alpha)
@@ -1104,7 +1105,7 @@ static const video_poke_interface_t d3d_poke_interface = {
 #endif
    xdk_d3d_set_aspect_ratio,
    xdk_d3d_apply_state_changes,
-#if defined(HAVE_RGUI) || defined(HAVE_RMENU)
+#if defined(HAVE_RGUI) || defined(HAVE_RMENU) || defined(HAVE_RMENU_XUI)
    xdk_d3d_set_texture_frame,
    xdk_d3d_set_texture_enable,
 #endif
