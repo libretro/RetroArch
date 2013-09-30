@@ -515,7 +515,6 @@ static void rgui_settings_path_populate_entries(rgui_handle_t *rgui)
 #endif
 }
 
-// TODO: Move to some extern. Maybe in input_common.c?
 static void rgui_settings_controller_populate_entries(rgui_handle_t *rgui)
 {
    rgui_list_clear(rgui->selection_buf);
