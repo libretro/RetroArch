@@ -868,6 +868,7 @@ int menu_set_settings(unsigned setting, unsigned action)
                break;
          }
          break;
+#ifdef HAVE_SHADER_MANAGER
       case RGUI_SETTINGS_SHADER_PASSES:
          switch (action)
          {
@@ -935,6 +936,7 @@ int menu_set_settings(unsigned setting, unsigned action)
             }
          }
          break;
+#endif
       default:
          break;
    }
