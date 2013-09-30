@@ -56,11 +56,8 @@ extern "C" {
 enum // RetroArch specific bind IDs.
 {
    // Custom binds that extend the scope of RETRO_DEVICE_JOYPAD for RetroArch specifically.
-   // Turbo
-   RARCH_TURBO_ENABLE = RARCH_FIRST_CUSTOM_BIND, 
-
    // Analogs (RETRO_DEVICE_ANALOG)
-   RARCH_ANALOG_LEFT_X_PLUS,
+   RARCH_ANALOG_LEFT_X_PLUS = RARCH_FIRST_CUSTOM_BIND,
    RARCH_ANALOG_LEFT_X_MINUS,
    RARCH_ANALOG_LEFT_Y_PLUS,
    RARCH_ANALOG_LEFT_Y_MINUS,
@@ -69,6 +66,7 @@ enum // RetroArch specific bind IDs.
    RARCH_ANALOG_RIGHT_Y_PLUS,
    RARCH_ANALOG_RIGHT_Y_MINUS,
 #ifdef RARCH_CONSOLE
+   // D-pad emulation
    RARCH_ANALOG_LEFT_X_DPAD_LEFT,
    RARCH_ANALOG_LEFT_X_DPAD_RIGHT,
    RARCH_ANALOG_LEFT_Y_DPAD_UP,
@@ -78,6 +76,9 @@ enum // RetroArch specific bind IDs.
    RARCH_ANALOG_RIGHT_Y_DPAD_UP,
    RARCH_ANALOG_RIGHT_Y_DPAD_DOWN,
 #endif
+
+   // Turbo
+   RARCH_TURBO_ENABLE,
 
    RARCH_CUSTOM_BIND_LIST_END,
 
