@@ -132,8 +132,10 @@ struct input_bind_map
    const char *desc;
    unsigned retro_key;
 };
+
 extern const struct input_bind_map input_config_bind_map[];
-extern const char *input_bind_to_str[];
+
+void input_get_bind_string(char *buf, const struct retro_keybind *bind, size_t size);
 
 struct input_key_map
 {
@@ -141,6 +143,7 @@ struct input_key_map
    enum retro_key key;
 };
 extern const struct input_key_map input_config_key_map[];
+const char *input_translate_rk_to_str(enum retro_key key);
 
 extern const char* const input_builtin_autoconfs[];
 

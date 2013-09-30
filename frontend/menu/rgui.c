@@ -540,7 +540,7 @@ static void rgui_settings_controller_populate_entries(rgui_handle_t *rgui)
       rgui_list_push(rgui->selection_buf, "RGUI Menu Toggle", RGUI_SETTINGS_BIND_MENU_TOGGLE, 0);
    unsigned last = (driver.input && driver.input->set_keybinds) ? RGUI_SETTINGS_BIND_R3 : RGUI_SETTINGS_BIND_LAST;
    for (unsigned i = RGUI_SETTINGS_BIND_BEGIN; i <= last; i++)
-      rgui_list_push(rgui->selection_buf, input_bind_to_str[i - RGUI_SETTINGS_BIND_BEGIN], i, 0);
+      rgui_list_push(rgui->selection_buf, input_config_bind_map[i - RGUI_SETTINGS_BIND_BEGIN].desc, i, 0);
 }
 
 // This only makes sense for PC so far.
@@ -552,7 +552,7 @@ static int rgui_custom_bind_iterate(rgui_handle_t *rgui, rgui_action_t action)
    render_text(rgui);
 
    char msg[256];
-   snprintf(msg, sizeof(msg), "[%s] press joypad (RETURN to skip)", input_bind_to_str[rgui->binds.begin - RGUI_SETTINGS_BIND_BEGIN]);
+   snprintf(msg, sizeof(msg), "[%s] press joypad (RETURN to skip)", input_config_bind_map[rgui->binds.begin - RGUI_SETTINGS_BIND_BEGIN].desc);
    render_messagebox(rgui, msg);
 
    struct rgui_bind_state binds = rgui->binds;

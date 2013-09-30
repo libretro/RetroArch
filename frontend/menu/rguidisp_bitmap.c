@@ -655,43 +655,8 @@ static void render_text(rgui_handle_t *rgui)
                }
                else
                {
-                  const struct retro_keybind *bind = &g_settings.input.binds[port][type - RGUI_SETTINGS_BIND_B];
-                  if (bind->joykey != NO_BTN)
-                  {
-                     if (GET_HAT_DIR(bind->joykey))
-                     {
-                        const char *dir;
-                        switch (GET_HAT_DIR(bind->joykey))
-                        {
-                           case HAT_UP_MASK: dir = "up"; break;
-                           case HAT_DOWN_MASK: dir = "down"; break;
-                           case HAT_LEFT_MASK: dir = "left"; break;
-                           case HAT_RIGHT_MASK: dir = "right"; break;
-                           default: dir = "?"; break;
-                        }
-                        snprintf(type_str, sizeof(type_str), "Hat #%u %s", (unsigned)GET_HAT(bind->joykey), dir);
-                     }
-                     else
-                        snprintf(type_str, sizeof(type_str), "%u (btn)", (unsigned)bind->joykey);
-                  }
-                  else if (bind->joyaxis != AXIS_NONE)
-                  {
-                     unsigned axis = 0;
-                     char dir = '\0';
-                     if (AXIS_NEG_GET(bind->joyaxis) != AXIS_DIR_NONE)
-                     {
-                        dir = '-';
-                        axis = AXIS_NEG_GET(bind->joyaxis);
-                     }
-                     else if (AXIS_POS_GET(bind->joyaxis) != AXIS_DIR_NONE)
-                     {
-                        dir = '+';
-                        axis = AXIS_POS_GET(bind->joyaxis);
-                     }
-                     snprintf(type_str, sizeof(type_str), "%c%u (axis)", dir, axis);
-                  }
-                  else
-                     strlcpy(type_str, "<default>", sizeof(type_str));
+                  const struct retro_keybind *bind = &g_settings.input.binds[port][type - RGUI_SETTINGS_BIND_BEGIN];
+                  input_get_bind_string(type_str, bind, sizeof(type_str));
                }
                break;
             }
@@ -738,3 +703,4 @@ static void render_text(rgui_handle_t *rgui)
    render_messagebox(rgui, message_queue);
 #endif
 }
+

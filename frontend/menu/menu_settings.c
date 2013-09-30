@@ -503,7 +503,7 @@ int menu_set_settings(unsigned setting, unsigned action)
             struct retro_keybind *target = &g_settings.input.binds[port][0];
             rgui->binds.begin = RGUI_SETTINGS_BIND_BEGIN;
             rgui->binds.last = RGUI_SETTINGS_BIND_LAST;
-            for (unsigned i = RGUI_SETTINGS_BIND_BEGIN; i < RGUI_SETTINGS_BIND_LAST; i++, target++)
+            for (unsigned i = RGUI_SETTINGS_BIND_BEGIN; i <= RGUI_SETTINGS_BIND_LAST; i++, target++)
             {
                target->joykey = NO_BTN;
                target->joyaxis = AXIS_NONE;

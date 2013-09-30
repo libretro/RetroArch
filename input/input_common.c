@@ -642,6 +642,14 @@ enum retro_key input_translate_keysym_to_rk(unsigned sym)
    return RETROK_UNKNOWN;
 }
 
+const char *input_translate_rk_to_str(enum retro_key key)
+{
+   for (unsigned i = 0; input_config_key_map[i].str; i++)
+      if (input_config_key_map[i].key == key)
+         return input_config_key_map[i].str;
+   return NULL;
+}
+
 unsigned input_translate_rk_to_keysym(enum retro_key key)
 {
    return rarch_keysym_lut[key];
@@ -672,12 +680,12 @@ const struct input_bind_map input_config_bind_map[RARCH_BIND_LIST_END_NULL] = {
       DECLARE_BIND(right,     RETRO_DEVICE_ID_JOYPAD_RIGHT, "Right D-pad"),
       DECLARE_BIND(a,         RETRO_DEVICE_ID_JOYPAD_A, "A button (right)"),
       DECLARE_BIND(x,         RETRO_DEVICE_ID_JOYPAD_X, "X button (top)"),
-      DECLARE_BIND(l,         RETRO_DEVICE_ID_JOYPAD_L, "L button (left shoulder)"),
-      DECLARE_BIND(r,         RETRO_DEVICE_ID_JOYPAD_R, "R button (right shoulder)"),
-      DECLARE_BIND(l2,        RETRO_DEVICE_ID_JOYPAD_L2, "L2 button (left shoulder #2)"),
-      DECLARE_BIND(r2,        RETRO_DEVICE_ID_JOYPAD_R2, "R2 button (right shoulder #2)"),
-      DECLARE_BIND(l3,        RETRO_DEVICE_ID_JOYPAD_L3, "L3 button (left analog button)"),
-      DECLARE_BIND(r3,        RETRO_DEVICE_ID_JOYPAD_R3, "R3 button (right analog button)"),
+      DECLARE_BIND(l,         RETRO_DEVICE_ID_JOYPAD_L, "L button (shoulder)"),
+      DECLARE_BIND(r,         RETRO_DEVICE_ID_JOYPAD_R, "R button (shoulder)"),
+      DECLARE_BIND(l2,        RETRO_DEVICE_ID_JOYPAD_L2, "L2 button (trigger)"),
+      DECLARE_BIND(r2,        RETRO_DEVICE_ID_JOYPAD_R2, "R2 button (trigger)"),
+      DECLARE_BIND(l3,        RETRO_DEVICE_ID_JOYPAD_L3, "L3 button (thumb)"),
+      DECLARE_BIND(r3,        RETRO_DEVICE_ID_JOYPAD_R3, "R3 button (thumb)"),
       DECLARE_BIND(turbo,     RARCH_TURBO_ENABLE, "Turbo enable"),
       DECLARE_BIND(l_x_plus,  RARCH_ANALOG_LEFT_X_PLUS, "Left analog X+ (right)"),
       DECLARE_BIND(l_x_minus, RARCH_ANALOG_LEFT_X_MINUS, "Left analog X- (left)"),
@@ -794,76 +802,45 @@ const struct input_key_map input_config_key_map[] = {
    { NULL, RETROK_UNKNOWN },
 };
 
-const char *input_bind_to_str[] = {
-   "B (down)",
-   "Y (left)",
-   "Select",
-   "Start",
-   "D-pad Up",
-   "D-pad Down",
-   "D-pad Left",
-   "D-pad Right",
-   "A (right)",
-   "X (top)",
-   "L (trigger)",
-   "R (trigger)",
-   "L2 (trigger)",
-   "R2 (trigger)",
-   "L3 (thumb)",
-   "R3 (thumb)",
-   "Left analog X+ (right)",
-   "Left analog X- (left)",
-   "Left analog Y+ (down)",
-   "Left analog Y- (up)",
-   "Right analog X+ (right)",
-   "Right analog X- (left)",
-   "Right analog Y+ (down)",
-   "Right analog Y- (up)",
-#ifdef RARCH_CONSOLE
-   "Left analog X D-pad left",
-   "Left analog X D-pad right",
-   "Left analog Y D-pad up",
-   "Left analog Y D-pad down",
-   "Right analog X D-pad left",
-   "Right analog X D-pad right",
-   "Right analog Y D-pad up",
-   "Right analog Y D-pad down",
-#endif
-
-   "Turbo enable",
-   "Fast forward",
-   "Fast forward hold",
-   "Load state",
-   "Save state",
-   "Fullscreen toggle",
-   "Quit RetroArch",
-   "State slot (+)",
-   "State slot (-)",
-   "Rewind",
-   "Movie record toggle",
-   "Pause toggle",
-   "Frame advance",
-   "Reset game",
-   "Next shader",
-   "Previous shader",
-   "Cheat index (+)",
-   "Cheat index (-)",
-   "Cheat toggle",
-   "Take screenshot",
-   "DSP plugin config",
-   "Mute audio",
-   "Netplay flip players",
-   "Slow motion",
-   "Hotkey enable",
-   "Volume (+)",
-   "Volume (-)",
-   "Next overlay",
-   "Disk eject toggle",
-   "Disk next",
-   "Grab mouse toggle",
-   "RGUI menu toggle",
-};
-
+void input_get_bind_string(char *buf, const struct retro_keybind *bind, size_t size)
+{
+   if (bind->joykey != NO_BTN)
+   {
+      if (GET_HAT_DIR(bind->joykey))
+      {
+         const char *dir;
+         switch (GET_HAT_DIR(bind->joykey))
+         {
+            case HAT_UP_MASK: dir = "up"; break;
+            case HAT_DOWN_MASK: dir = "down"; break;
+            case HAT_LEFT_MASK: dir = "left"; break;
+            case HAT_RIGHT_MASK: dir = "right"; break;
+            default: dir = "?"; break;
+         }
+         snprintf(buf, size, "Hat #%u %s", (unsigned)GET_HAT(bind->joykey), dir);
+      }
+      else
+         snprintf(buf, size, "%u (btn)", (unsigned)bind->joykey);
+   }
+   else if (bind->joyaxis != AXIS_NONE)
+   {
+      unsigned axis = 0;
+      char dir = '\0';
+      if (AXIS_NEG_GET(bind->joyaxis) != AXIS_DIR_NONE)
+      {
+         dir = '-';
+         axis = AXIS_NEG_GET(bind->joyaxis);
+      }
+      else if (AXIS_POS_GET(bind->joyaxis) != AXIS_DIR_NONE)
+      {
+         dir = '+';
+         axis = AXIS_POS_GET(bind->joyaxis);
+      }
+      snprintf(buf, size, "%c%u (axis)", dir, axis);
+   }
+   else
+      strlcpy(buf, "<default>", size);
+}
 
 static enum retro_key find_sk_bind(const char *str)
 {
