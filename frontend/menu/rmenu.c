@@ -279,25 +279,22 @@ static void render_text(void *data)
    rgui_handle_t *rgui = (rgui_handle_t*)data;
    font_params_t font_parms = {0};
 
-   char title[256];
    char msg[128];
+   char label[64];
+
+   font_parms.x = POSITION_X;
+   font_parms.y = CURRENT_PATH_Y_POSITION;
+   font_parms.scale = CURRENT_PATH_FONT_SIZE;
+   font_parms.color = WHITE;
 
    switch(rgui->menu_type)
    {
 #ifdef HAVE_SHADER_MANAGER
       case SHADER_CHOICE:
-         strlcpy(title, "Shaders", sizeof(title));
-         break;
       case CGP_CHOICE:
-         strlcpy(title, "CGP", sizeof(title));
-         break;
 #endif
       case BORDER_CHOICE:
-         strlcpy(title, "Borders", sizeof(title));
-         break;
       case LIBRETRO_CHOICE:
-         strlcpy(title, "Libretro", sizeof(title));
-         break;
       case PATH_SAVESTATES_DIR_CHOICE:
       case PATH_DEFAULT_ROM_DIR_CHOICE:
 #ifdef HAVE_XML
@@ -305,110 +302,65 @@ static void render_text(void *data)
 #endif
       case PATH_SRAM_DIR_CHOICE:
       case PATH_SYSTEM_DIR_CHOICE:
-         strlcpy(title, "Path", sizeof(title));
-         break;
-      case INGAME_MENU:
-         strlcpy(title, "Menu", sizeof(title));
-         break;
-      case INGAME_MENU_CORE_OPTIONS:
-         strlcpy(title, "Core", sizeof(title));
+      case FILE_BROWSER_MENU:
+         if (rgui->menu_type == LIBRETRO_CHOICE)
+            strlcpy(label, "CORE SELECTION", sizeof(label));
+         else
+            strlcpy(label, "PATH", sizeof(label));
+         snprintf(msg, sizeof(msg), "%s %s", label, rgui->browser->current_dir.directory_path);
          break;
       case INGAME_MENU_LOAD_GAME_HISTORY:
-         strlcpy(title, "History", sizeof(title));
+         strlcpy(msg, "LOAD HISTORY", sizeof(msg));
+         break;
+      case INGAME_MENU:
+         strlcpy(msg, "MENU", sizeof(msg));
+         break;
+      case INGAME_MENU_CORE_OPTIONS:
+         strlcpy(msg, "CORE OPTIONS", sizeof(msg));
          break;
       case INGAME_MENU_VIDEO_OPTIONS:
       case INGAME_MENU_VIDEO_OPTIONS_MODE:
-         strlcpy(title, "Video", sizeof(title));
+         strlcpy(msg, "VIDEO OPTIONS", sizeof(msg));
          break;
 #ifdef HAVE_SHADER_MANAGER
       case INGAME_MENU_SHADER_OPTIONS:
       case INGAME_MENU_SHADER_OPTIONS_MODE:
-         strlcpy(title, "Shader", sizeof(title));
+         strlcpy(msg, "SHADER OPTIONS", sizeof(msg));
          break;
 #endif
       case INGAME_MENU_INPUT_OPTIONS:
       case INGAME_MENU_INPUT_OPTIONS_MODE:
-         strlcpy(title, "Input", sizeof(title));
+         strlcpy(msg, "INPUT OPTIONS", sizeof(msg));
          break;
       case INGAME_MENU_CUSTOM_RATIO:
-         strlcpy(title, "Resize", sizeof(title));
-         break;
-      case INGAME_MENU_SCREENSHOT:
-         strlcpy(title, "Menu", sizeof(title));
-         break;
-      case FILE_BROWSER_MENU:
-         strlcpy(title, "Game", sizeof(title));
+         strlcpy(msg, "CUSTOM RATIO", sizeof(msg));
          break;
       case INGAME_MENU_SETTINGS:
       case INGAME_MENU_SETTINGS_MODE:
-         strlcpy(title, "Settings", sizeof(title));
+         strlcpy(msg, "MENU SETTINGS", sizeof(msg));
          break;
       case INGAME_MENU_AUDIO_OPTIONS:
       case INGAME_MENU_AUDIO_OPTIONS_MODE:
-         strlcpy(title, "Audio", sizeof(title));
+         strlcpy(msg, "AUDIO OPTIONS", sizeof(msg));
          break;
       case INGAME_MENU_PATH_OPTIONS:
       case INGAME_MENU_PATH_OPTIONS_MODE:
-         strlcpy(title, "Path", sizeof(title));
+         strlcpy(msg, "PATH OPTIONS", sizeof(msg));
          break;
    }
 
-   switch(rgui->menu_type)
-   {
-#ifdef HAVE_SHADER_MANAGER
-      case SHADER_CHOICE:
-      case CGP_CHOICE:
-#endif
-      case BORDER_CHOICE:
-      case LIBRETRO_CHOICE:
-      case PATH_SAVESTATES_DIR_CHOICE:
-      case PATH_DEFAULT_ROM_DIR_CHOICE:
-#ifdef HAVE_XML
-      case PATH_CHEATS_DIR_CHOICE:
-#endif
-      case PATH_SRAM_DIR_CHOICE:
-      case PATH_SYSTEM_DIR_CHOICE:
-      case FILE_BROWSER_MENU:
-         snprintf(msg, sizeof(msg), "PATH: %s", rgui->browser->current_dir.directory_path);
+   if (driver.video_poke->set_osd_msg && msg[0] != '\0')
+      driver.video_poke->set_osd_msg(driver.video_data, msg, &font_parms);
 
-         font_params_t font_parms = {0};
-
-         font_parms.x = POSITION_X;
-         font_parms.y = CURRENT_PATH_Y_POSITION;
-         font_parms.scale = CURRENT_PATH_FONT_SIZE;
-         font_parms.color = WHITE;
-
-         if (driver.video_poke->set_osd_msg)
-            driver.video_poke->set_osd_msg(driver.video_data, msg, &font_parms);
-         break;
-   }
-
-   font_parms.x = CORE_MSG_POSITION_X;
+   font_parms.x = POSITION_X;
    font_parms.y = CORE_MSG_POSITION_Y;
    font_parms.scale = CORE_MSG_FONT_SIZE;
    font_parms.color = WHITE;
 
-   if (driver.video_poke->set_osd_msg)
-      driver.video_poke->set_osd_msg(driver.video_data, rgui->info.library_name, &font_parms);
-#ifdef __CELLOS_LV2__
-
-   font_parms.x = POSITION_X; 
-   font_parms.y = 0.05f;
-   font_parms.scale = 1.4f;
-   font_parms.color = WHITE;
-
-   if (driver.video_poke->set_osd_msg)
-      driver.video_poke->set_osd_msg(driver.video_data, title, &font_parms);
-
-   font_parms.x = 0.80f;
-   font_parms.y = 0.015f;
-   font_parms.scale = 0.82f;
-   font_parms.color = WHITE;
-   snprintf(msg, sizeof(msg), "v%s", PACKAGE_VERSION);
+   snprintf(msg, sizeof(msg), "%s - %s %s", PACKAGE_VERSION, rgui->info.library_name, rgui->info.library_version);
 
    if (driver.video_poke->set_osd_msg)
       driver.video_poke->set_osd_msg(driver.video_data, msg, &font_parms);
-#endif
 
    bool render_browser = false;
    bool render_ingame_menu_resize = false;
@@ -635,6 +587,7 @@ static int select_directory(void *data, uint64_t action)
    rgui_handle_t *rgui = (rgui_handle_t*)data;
 
    char path[PATH_MAX];
+   (void)path;
    bool ret = true;
 
    bool is_dir = filebrowser_iterate(rgui->browser, FILEBROWSER_ACTION_PATH_ISDIR);
