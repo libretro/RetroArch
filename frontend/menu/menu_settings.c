@@ -324,6 +324,8 @@ int menu_set_settings(unsigned setting, unsigned action)
                rgui->current_pad++;
          }
 
+         if (port != rgui->current_pad)
+            rgui->need_refresh = true;
          port = rgui->current_pad;
          break;
       case RGUI_SETTINGS_BIND_DEVICE:
