@@ -1588,6 +1588,10 @@ static int rgui_custom_bind_iterate(rgui_handle_t *rgui, rgui_action_t action)
          binds.target++;
       else
          rgui_list_pop(rgui->menu_stack, &rgui->selection_ptr);
+
+      // Avoid new binds triggering things right away.
+      rgui->trigger_state = 0;
+      rgui->old_input_state = -1ULL;
    }
    rgui->binds = binds;
    return 0;
