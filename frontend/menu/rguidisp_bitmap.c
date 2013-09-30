@@ -145,17 +145,36 @@ static void render_messagebox(rgui_handle_t *rgui, const char *message)
    if (!message || !*message)
       return;
 
-   char *msg = strdup(message);
-   if (strlen(msg) > TERM_WIDTH)
+   struct string_list *list = string_split(message, "\n");
+   if (!list)
+      return;
+   if (list->elems == 0)
    {
-      msg[TERM_WIDTH - 2] = '.';
-      msg[TERM_WIDTH - 1] = '.';
-      msg[TERM_WIDTH - 0] = '.';
-      msg[TERM_WIDTH + 1] = '\0';
+      string_list_free(list);
+      return;
    }
 
-   unsigned width = strlen(msg) * FONT_WIDTH_STRIDE - 1 + 6 + 10;
-   unsigned height = FONT_HEIGHT + 6 + 10;
+   unsigned width = 0;
+   unsigned glyphs_width = 0;
+   for (size_t i = 0; i < list->size; i++)
+   {
+      char *msg = list->elems[i].data;
+      unsigned msglen = strlen(msg);
+      if (msglen > TERM_WIDTH)
+      {
+         msg[TERM_WIDTH - 2] = '.';
+         msg[TERM_WIDTH - 1] = '.';
+         msg[TERM_WIDTH - 0] = '.';
+         msg[TERM_WIDTH + 1] = '\0';
+         msglen = TERM_WIDTH;
+      }
+
+      unsigned line_width = msglen * FONT_WIDTH_STRIDE - 1 + 6 + 10;
+      width = max(width, line_width);
+      glyphs_width = max(glyphs_width, msglen);
+   }
+
+   unsigned height = FONT_HEIGHT_STRIDE * list->size + 6 + 10;
    int x = (RGUI_WIDTH - width) / 2;
    int y = (RGUI_HEIGHT - height) / 2;
    
@@ -174,8 +193,15 @@ static void render_messagebox(rgui_handle_t *rgui, const char *message)
    fill_rect(rgui->frame_buf, rgui->frame_buf_pitch,
          x, y + 5, 5, height - 5, green_filler);
 
-   blit_line(rgui, x + 8, y + 8, msg, false);
-   free(msg);
+   for (size_t i = 0; i < list->size; i++)
+   {
+      const char *msg = list->elems[i].data;
+      int offset_x = FONT_WIDTH_STRIDE * (glyphs_width - strlen(msg)) / 2;
+      int offset_y = FONT_HEIGHT_STRIDE * i;
+      blit_line(rgui, x + 8 + offset_x, y + 8 + offset_y, msg, false);
+   }
+
+   string_list_free(list);
 }
 
 static void render_text(rgui_handle_t *rgui)

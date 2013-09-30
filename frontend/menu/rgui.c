@@ -552,7 +552,7 @@ static int rgui_custom_bind_iterate(rgui_handle_t *rgui, rgui_action_t action)
    render_text(rgui);
 
    char msg[256];
-   snprintf(msg, sizeof(msg), "[%s] press joypad (RETURN to skip)", input_config_bind_map[rgui->binds.begin - RGUI_SETTINGS_BIND_BEGIN].desc);
+   snprintf(msg, sizeof(msg), "[%s]\npress joypad\n(RETURN to skip)", input_config_bind_map[rgui->binds.begin - RGUI_SETTINGS_BIND_BEGIN].desc);
    render_messagebox(rgui, msg);
 
    struct rgui_bind_state binds = rgui->binds;
