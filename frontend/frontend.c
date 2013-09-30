@@ -217,6 +217,7 @@ int main_entry(int argc, char *argv[])
 
          // Override keyboard callback to redirect to menu instead.
          // We'll use this later for something ...
+         // FIXME: This should probably be moved to menu_common somehow.
          retro_keyboard_event_t key_event = g_extern.system.key_event;
          g_extern.system.key_event = menu_key_event;
 
