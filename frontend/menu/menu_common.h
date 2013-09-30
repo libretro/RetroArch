@@ -186,6 +186,35 @@ typedef enum
    RGUI_ACTION_NOOP
 } rgui_action_t;
 
+
+#ifdef GEKKO
+enum
+{
+   GX_RESOLUTIONS_512_192 = 0,
+   GX_RESOLUTIONS_598_200,
+   GX_RESOLUTIONS_640_200,
+   GX_RESOLUTIONS_384_224,
+   GX_RESOLUTIONS_448_224,
+   GX_RESOLUTIONS_480_224,
+   GX_RESOLUTIONS_512_224,
+   GX_RESOLUTIONS_340_232,
+   GX_RESOLUTIONS_512_232,
+   GX_RESOLUTIONS_512_236,
+   GX_RESOLUTIONS_336_240,
+   GX_RESOLUTIONS_384_240,
+   GX_RESOLUTIONS_512_240,
+   GX_RESOLUTIONS_576_224,
+   GX_RESOLUTIONS_608_224,
+   GX_RESOLUTIONS_640_224,
+   GX_RESOLUTIONS_530_240,
+   GX_RESOLUTIONS_640_240,
+   GX_RESOLUTIONS_512_448,
+   GX_RESOLUTIONS_640_448, 
+   GX_RESOLUTIONS_640_480,
+   GX_RESOLUTIONS_LAST,
+};
+#endif
+
 typedef struct
 {
    uint64_t old_input_state;
@@ -238,6 +267,11 @@ typedef struct
 } rgui_handle_t;
 
 extern rgui_handle_t *rgui;
+
+#ifdef GEKKO
+extern unsigned rgui_gx_resolutions[GX_RESOLUTIONS_LAST][2];
+extern unsigned rgui_current_gx_resolution;
+#endif
 
 void menu_init(void);
 bool menu_iterate(void);
