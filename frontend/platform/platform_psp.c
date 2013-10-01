@@ -71,10 +71,10 @@ static void get_environment_settings(int argc, char *argv[])
    snprintf(g_extern.config_path, sizeof(g_extern.config_path), "%s/retroarch.cfg", default_paths.port_dir);
 
 #ifndef IS_SALAMANDER
-   rarch_make_dir(default_paths.port_dir, "port_dir");
-   rarch_make_dir(default_paths.system_dir, "system_dir");
-   rarch_make_dir(default_paths.savestate_dir, "savestate_dir");
-   rarch_make_dir(default_paths.sram_dir, "sram_dir");
+   path_mkdir(default_paths.port_dir);
+   path_mkdir(default_paths.system_dir);
+   path_mkdir(default_paths.savestate_dir);
+   path_mkdir(default_paths.sram_dir);
 
    config_load();
 

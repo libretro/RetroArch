@@ -568,7 +568,6 @@ void path_resolve_realpath(char *buf, size_t size)
 
 static bool path_mkdir_norecurse(const char *dir)
 {
-#if (defined(_WIN32) && !defined(_XBOX)) || !defined(RARCH_CONSOLE)
 #ifdef _WIN32
    int ret = _mkdir(dir);
 #else
@@ -579,10 +578,6 @@ static bool path_mkdir_norecurse(const char *dir)
    if (ret < 0)
       RARCH_ERR("mkdir(%s) error: %s.\n", dir, strerror(errno));
    return ret == 0;
-#else
-   (void)dir;
-   return false;
-#endif
 }
 
 bool path_mkdir(const char *dir)

@@ -65,21 +65,6 @@ static bool libretro_install_core(const char *path_prefix,
    return true;
 }
 
-void rarch_make_dir(const char *x, const char *name)
-{
-   // FIXME: This should use path_mkdir() in file_path.c.
-   RARCH_LOG("Checking directory name %s [%s]\n", name, x);
-   if (strlen(x) > 0)
-   {
-      if (!path_is_directory(x))
-      {
-         RARCH_WARN("Directory \"%s\" does not exists, creating\n", x);
-         if (mkdir((x), 0777) != 0)
-            RARCH_ERR("Could not create directory \"%s\"\n", x);
-      }
-   }
-}
-
 void rarch_get_environment_console(void)
 {
    init_libretro_sym(false);
