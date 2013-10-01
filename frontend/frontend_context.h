@@ -56,8 +56,4 @@ extern const frontend_ctx_driver_t frontend_ctx_apple;
 const frontend_ctx_driver_t *frontend_ctx_find_driver(const char *ident); // Finds driver with ident. Does not initialize.
 const frontend_ctx_driver_t *frontend_ctx_init_first(void); // Finds first suitable driver and initializes.
 
-#ifdef RARCH_CONSOLE
-extern void rarch_get_environment_console(void);
-#endif
-
 #endif

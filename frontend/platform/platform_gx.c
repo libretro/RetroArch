@@ -271,17 +271,6 @@ static void get_environment_settings(int argc, char *argv[], void *args)
    else
       gx_rom_path[0] = '\0';
 #endif
-
-#ifndef IS_SALAMANDER
-   path_mkdir(default_paths.port_dir);
-   path_mkdir(default_paths.system_dir);
-   path_mkdir(default_paths.savestate_dir);
-   path_mkdir(default_paths.sram_dir);
-
-   config_load();
-
-   rarch_get_environment_console();
-#endif
 }
 
 extern void __exception_setreload(int t);

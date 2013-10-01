@@ -65,7 +65,7 @@ static bool libretro_install_core(const char *path_prefix,
    return true;
 }
 
-void rarch_get_environment_console(void)
+static void rarch_get_environment_console(void)
 {
    init_libretro_sym(false);
    rarch_init_system_info();
@@ -121,7 +121,16 @@ int main_entry(int argc, char *argv[])
    if (frontend_ctx && frontend_ctx->environment_get)
       frontend_ctx->environment_get(argc, argv, args);
 
-#if !defined(RARCH_CONSOLE) && !defined(HAVE_BB10)
+#if defined(RARCH_CONSOLE)
+   path_mkdir(default_paths.port_dir);
+   path_mkdir(default_paths.system_dir);
+   path_mkdir(default_paths.savestate_dir);
+   path_mkdir(default_paths.sram_dir);
+
+   config_load();
+
+   rarch_get_environment_console();
+#elif !defined(HAVE_BB10)
    rarch_init_msg_queue();
    int init_ret;
    if ((init_ret = rarch_main_init(argc, argv))) return init_ret;

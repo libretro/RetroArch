@@ -255,17 +255,6 @@ static void get_environment_settings(int argc, char *argv[], void *args)
    strlcpy(default_paths.system_dir, "game:\\system", sizeof(default_paths.system_dir));
    strlcpy(default_paths.filebrowser_startup_dir, "game:", sizeof(default_paths.filebrowser_startup_dir));
 #endif
-
-#ifndef IS_SALAMANDER
-   path_mkdir(default_paths.port_dir);
-   path_mkdir(default_paths.system_dir);
-   path_mkdir(default_paths.savestate_dir);
-   path_mkdir(default_paths.sram_dir);
-
-   config_load();
-
-   rarch_get_environment_console();
-#endif
 }
 
 static void system_init(void)
