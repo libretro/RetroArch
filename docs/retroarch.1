@@ -77,7 +77,8 @@ Should this not be defined, \fBretroarch\fR will look in platform specific paths
 /etc/retroarch.cfg should serve as a skeleton config only, and not used as a config file.
 
 .IP
-Unix-like systems will look in $XDG_CONFIG_HOME/retroarch/retroarch.cfg first. If $XDG_CONFIG_HOME is not defined, it is assumed to be $HOME/.config as per specification. Then it will try $HOME/.retroarch.cfg. If both paths fail, RetroArch will try to create a new, default config file in $XDG_CONFIG_HOME/retroarch/retroarch.cfg (or the $HOME/.config default for $XDG_CONFIG_HOME). If saving a default config also fails, it will try /etc/retroarch.cfg. If no configuration is found at all, default settings will be assumed.
+Unix-like systems will look in $XDG_CONFIG_HOME/retroarch/retroarch.cfg first. If $XDG_CONFIG_HOME is not defined, it is assumed to be $HOME/.config as per specification. Then it will try $HOME/.retroarch.cfg. If both paths fail, RetroArch will try to create a new, default config file in $XDG_CONFIG_HOME/retroarch/retroarch.cfg (or the $HOME/.config default for $XDG_CONFIG_HOME). If no configuration is found at all, default settings will be assumed.
+RetroArch will not attempt to load the skeleton config /etc/retroarch.cfg.
 A configuration file does not need to define every possible option, only those which should be overridden.
 
 If config_save_on_exit = true is set in the config file, RetroArch will overwrite the config file on exit. Settings can be changed from within RGUI.
