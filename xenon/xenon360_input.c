@@ -102,32 +102,6 @@ static void xenon360_input_set_keybinds(void *data, unsigned device,
 
 static void* xenon360_input_init(void)
 {
-   for(unsigned i = 0; i < MAX_PLAYERS; i++)
-      xenon360_input_set_keybinds(driver.input_data, 0, i,
-            (1ULL << KEYBINDS_ACTION_SET_DEFAULT_BINDS));
-
-   for(unsigned i = 0; i < MAX_PADS; i++)
-   {
-      unsigned keybind_action = 0;
-
-      switch (g_settings.input.dpad_emulation[i])
-      {
-         case ANALOG_DPAD_LSTICK:
-            keybind_action = (1ULL << KEYBINDS_ACTION_SET_ANALOG_DPAD_LSTICK);
-            break;
-         case ANALOG_DPAD_RSTICK:
-            keybind_action = (1ULL << KEYBINDS_ACTION_SET_ANALOG_DPAD_RSTICK);
-            break;
-         case ANALOG_DPAD_NONE:
-            keybind_action = (1ULL << KEYBINDS_ACTION_SET_ANALOG_DPAD_NONE);
-         default:
-            break;
-      }
-
-      if (keybind_action)
-         xenon360_input_set_keybinds(driver.input_data, 0, i, keybind_action);
-   }
-
    return (void*)-1;
 }
 
