@@ -392,6 +392,28 @@ static config_file_t *open_default_config_file(void)
       }
    }
 
+   // Try to create a new config file.
+   if (!conf)
+   {
+      conf = config_file_new(NULL);
+      bool saved = false;
+      if (conf) // Since this is a clean config file, we can safely use config_save_on_exit.
+      {
+         fill_pathname_resolve_relative(conf_path, app_path, "retroarch.cfg", sizeof(conf_path));
+         config_set_bool(conf, "config_save_on_exit", true);
+         saved = config_file_write(conf, conf_path);
+      }
+
+      if (saved)
+         RARCH_WARN("Created new config file in: \"%s\".\n", conf_path); // WARN here to make sure user has a good chance of seeing it.
+      else
+      {
+         RARCH_ERR("Failed to create new config file in: \"%s\".\n", conf_path);
+         config_file_free(conf);
+         conf = NULL;
+      }
+   }
+
    if (conf)
       strlcpy(g_extern.config_path, conf_path, sizeof(g_extern.config_path));
 #elif !defined(__CELLOS_LV2__) && !defined(_XBOX)
@@ -401,9 +423,9 @@ static config_file_t *open_default_config_file(void)
 
    // XDG_CONFIG_HOME falls back to $HOME/.config.
    if (xdg)
-      snprintf(conf_path, sizeof(conf_path), "%s/retroarch/retroarch.cfg", xdg);
+      fill_pathname_join(conf_path, xdg, "retroarch/retroarch.cfg", sizeof(conf_path));
    else if (home)
-      snprintf(conf_path, sizeof(conf_path), "%s/.config/retroarch/retroarch.cfg", home);
+      fill_pathname_join(conf_path, home, ".config/retroarch/retroarch.cfg", sizeof(conf_path));
 
    if (xdg || home)
    {
@@ -414,20 +436,42 @@ static config_file_t *open_default_config_file(void)
    // Fallback to $HOME/.retroarch.cfg.
    if (!conf && home)
    {
-      snprintf(conf_path, sizeof(conf_path), "%s/.retroarch.cfg", home);
+      fill_pathname_join(conf_path, home, ".retroarch.cfg", sizeof(conf_path));
       RARCH_LOG("Looking for config in: \"%s\".\n", conf_path);
       conf = config_file_new(conf_path);
    }
 
-   // Try this as a last chance ...
-   if (!conf)
+   // Try to create a new config file.
+   if (!conf && (home || xdg))
    {
-#ifndef GLOBAL_CONFIG_DIR
-#define GLOBAL_CONFIG_DIR "/etc"
-#endif
-      fill_pathname_join(conf_path, GLOBAL_CONFIG_DIR, "retroarch.cfg", sizeof(conf_path));
-      RARCH_LOG("Looking for config in: \"%s\".\n", conf_path);
-      conf = config_file_new(conf_path);
+      // XDG_CONFIG_HOME falls back to $HOME/.config.
+      if (xdg)
+         fill_pathname_join(conf_path, xdg, "retroarch/retroarch.cfg", sizeof(conf_path));
+      else if (home)
+         fill_pathname_join(conf_path, home, ".config/retroarch/retroarch.cfg", sizeof(conf_path));
+
+      char basedir[PATH_MAX];
+      fill_pathname_basedir(basedir, conf_path, sizeof(basedir));
+
+      if (path_mkdir(basedir))
+      {
+         conf = config_file_new(NULL);
+         bool saved = false;
+         if (conf)
+         {
+            config_set_bool(conf, "config_save_on_exit", true); // Since this is a clean config file, we can safely use config_save_on_exit.
+            saved = config_file_write(conf, conf_path);
+         }
+
+         if (saved)
+            RARCH_WARN("Created new config file in: \"%s\".\n", conf_path); // WARN here to make sure user has a good chance of seeing it.
+         else
+         {
+            RARCH_ERR("Failed to create new config file in: \"%s\".\n", conf_path);
+            config_file_free(conf);
+            conf = NULL;
+         }
+      }
    }
 
    if (conf)

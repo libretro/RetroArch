@@ -16,8 +16,21 @@ retroarch-joyconfig \- Tool to configure joypad bindings for \fBretroarch\fR.
 It reads in necessary joypad bindings for a certain player and joypad.
 
 .SH "EXAMPLE COMMANDLINES"
+
+.TP
+\fBConfigure joypad for player 1, using first joypad. Configuration is dumped to a file.\fR
+retroarch-joyconfig -p 1 -j 0 -o inputconfig.cfg
+
+.TP
+\fBConfigure joypad for player 1, using first joypad. Update retroarch.cfg directly.\fR
+retroarch-joyconfig -p 1 -j 0 -i retroarch.cfg -o retroarch.cfg
+
+.TP
+\fBConfigure joypad for player 1, using first joypad. Configuration is dumped to stdout.\fR
 retroarch-joyconfig -p 1 -j 0
 
+.TP
+\fBCreate an autoconfig file using first joypad.\fR
 retroarch-joyconfig -j 0 -a ~/.config/retroarch/autoconfig/pad.cfg
 
 .SH "GENERAL OPTIONS"
