@@ -67,6 +67,7 @@ static bool libretro_install_core(const char *path_prefix,
 
 void rarch_make_dir(const char *x, const char *name)
 {
+   // FIXME: This should use path_mkdir() in file_path.c.
    RARCH_LOG("Checking directory name %s [%s]\n", name, x);
    if (strlen(x) > 0)
    {

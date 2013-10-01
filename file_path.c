@@ -19,6 +19,7 @@
 #include "boolean.h"
 #include <string.h>
 #include <time.h>
+#include <errno.h>
 #include "compat/strl.h"
 #include "compat/posix_string.h"
 
@@ -44,6 +45,7 @@
 #else
 #include <io.h>
 #include <fcntl.h>
+#include <direct.h>
 #include <windows.h>
 #endif
 #else
@@ -562,6 +564,64 @@ void path_resolve_realpath(char *buf, size_t size)
    (void)buf;
    (void)size;
 #endif
+}
+
+static bool path_mkdir_norecurse(const char *dir)
+{
+#if (defined(_WIN32) && !defined(_XBOX)) || !defined(RARCH_CONSOLE)
+#ifdef _WIN32
+   int ret = _mkdir(dir);
+#else
+   int ret = mkdir(dir, 0750);
+#endif
+   if (ret < 0 && errno == EEXIST && path_is_directory(dir)) // Don't treat this as an error.
+      ret = 0;
+   if (ret < 0)
+      RARCH_ERR("mkdir(%s) error: %s.\n", dir, strerror(errno));
+   return ret == 0;
+#else
+   (void)dir;
+   return false;
+#endif
+}
+
+bool path_mkdir(const char *dir)
+{
+   const char *target = NULL;
+   char *basedir = strdup(dir); // Use heap. Real chance of stack overflow if we recurse too hard.
+   bool ret = true;
+
+   if (!basedir)
+      return false;
+
+   path_parent_dir(basedir);
+   if (!*basedir || !strcmp(basedir, dir))
+   {
+      ret = false;
+      goto end;
+   }
+
+   if (path_is_directory(basedir))
+   {
+      target = dir;
+      ret = path_mkdir_norecurse(dir);
+   }
+   else
+   {
+      target = basedir;
+      ret = path_mkdir(basedir);
+      if (ret)
+      {
+         target = dir;
+         ret = path_mkdir_norecurse(dir);
+      }
+   }
+
+end:
+   if (target && !ret)
+      RARCH_ERR("Failed to create directory: \"%s\".\n", target);
+   free(basedir);
+   return ret;
 }
 
 void fill_pathname_resolve_relative(char *out_path, const char *in_refpath, const char *in_path, size_t size)
