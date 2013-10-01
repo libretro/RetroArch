@@ -4,7 +4,7 @@
 
 .SH NAME
 
-retroarch \- A simple frontend for the libretro API.
+retroarch \- The reference frontend for the libretro API.
 
 .SH SYNOPSIS
 
@@ -12,12 +12,31 @@ retroarch \- A simple frontend for the libretro API.
 
 .SH "DESCRIPTION"
 
-\fBretroarch\fR is an emulator frontend for the libretro API.
-libretro provides emulation of a game system, and can be implemented by any frontend.
+\fBretroarch\fR is the reference frontend for the libretro API.
+libretro is an abstraction of a game system, and can be implemented by any frontend.
+The libretro API is designed for games and emulators.
 \fBretroarch\fR focuses on exposing needed functionality for the game system through the use of command line and configuration files.
+It also features a simple built-in UI called RGUI.
 
 .SH "EXAMPLE COMMANDLINE"
+
+.TP
+\fBLoad a ROM, using a specific libretro core and config file.\fR
 retroarch --config ~/.config/retroarch/retroarch.cfg --libretro /path/to/libretro/core.so /path/to/rom.rom --verbose
+
+.TP
+\fBNo command line options will start RetroArch in RGUI mode.\fR
+retroarch
+
+.TP
+\fBStart RetroArch in RGUI, with verbose logging.\fR
+retroarch --menu --verbose
+
+.SH "RGUI"
+RGUI is the built-in GUI system for RetroArch. It is aimed at being controlled with a gamepad only.
+
+.SH "DEFAULT CONTROLS"
+By default, only keyboard input is accepted.
 
 .SH "GENERAL OPTIONS"
 
