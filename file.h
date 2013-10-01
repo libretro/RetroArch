@@ -74,6 +74,8 @@ bool path_is_directory(const char *path);
 bool path_file_exists(const char *path);
 const char *path_get_extension(const char *path);
 
+bool path_mkdir(const char *dir);
+
 // Removes all text after and including the last '.'
 char *path_remove_extension(char *path);
 
