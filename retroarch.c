@@ -600,9 +600,9 @@ static int16_t input_state(unsigned port, unsigned device, unsigned index, unsig
 }
 
 #ifdef _WIN32
-#define RARCH_DEFAULT_CONF_PATH_STR "\n\t\tDefaults to retroarch.cfg in same directory as retroarch.exe."
+#define RARCH_DEFAULT_CONF_PATH_STR "\n\t\tDefaults to retroarch.cfg in same directory as retroarch.exe.\n\t\tIf a default config is not found, RetroArch will attempt to create one."
 #else
-#define RARCH_DEFAULT_CONF_PATH_STR "\n\t\tBy default looks for config in $XDG_CONFIG_HOME/retroarch/retroarch.cfg,\n\t\t$HOME/.config/retroarch/retroarch.cfg,\n\t\tand $HOME/.retroarch.cfg."
+#define RARCH_DEFAULT_CONF_PATH_STR "\n\t\tBy default looks for config in $XDG_CONFIG_HOME/retroarch/retroarch.cfg,\n\t\t$HOME/.config/retroarch/retroarch.cfg,\n\t\tand $HOME/.retroarch.cfg.\n\t\tIf a default config is not found, RetroArch will attempt to create one."
 #endif
 
 #include "config.features.h"
@@ -772,17 +772,6 @@ static void set_paths(const char *path)
    // do not overwrite it as this was initialized before in a menu or otherwise.
    if (!*g_settings.system_directory)
       fill_pathname_basedir(g_settings.system_directory, path, sizeof(g_settings.system_directory));
-
-   if (*g_extern.config_path && path_is_directory(g_extern.config_path))
-   {
-      fill_pathname_dir(g_extern.config_path, g_extern.basename, ".cfg", sizeof(g_extern.config_path));
-      RARCH_LOG("Redirecting config file to \"%s\".\n", g_extern.config_path);
-      if (!path_file_exists(g_extern.config_path))
-      {
-         *g_extern.config_path = '\0';
-         RARCH_LOG("Did not find config file. Using system default.\n");
-      }
-   }
 }
 
 static void parse_input(int argc, char *argv[])
