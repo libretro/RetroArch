@@ -41,34 +41,6 @@
 
 #include "../../screenshot.h"
 
-#ifdef GEKKO
-unsigned rgui_gx_resolutions[GX_RESOLUTIONS_LAST][2] = {
-   { 512, 192 },
-   { 598, 200 },
-   { 640, 200 },
-   { 384, 224 },
-   { 448, 224 },
-   { 480, 224 },
-   { 512, 224 },
-   { 340, 232 },
-   { 512, 232 },
-   { 512, 236 },
-   { 336, 240 },
-   { 384, 240 },
-   { 512, 240 },
-   { 576, 224 },
-   { 608, 224 },
-   { 640, 224 },
-   { 530, 240 },
-   { 640, 240 },
-   { 512, 448 },
-   { 640, 448 },
-   { 640, 480 },
-};
-
-unsigned rgui_current_gx_resolution = GX_RESOLUTIONS_640_480;
-#endif
-
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_HLSL)
 #define HAVE_SHADER_MANAGER
 #endif

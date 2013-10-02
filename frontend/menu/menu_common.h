@@ -318,11 +318,6 @@ typedef struct
 
 extern rgui_handle_t *rgui;
 
-#ifdef GEKKO
-extern unsigned rgui_gx_resolutions[GX_RESOLUTIONS_LAST][2];
-extern unsigned rgui_current_gx_resolution;
-#endif
-
 void menu_init(void);
 bool menu_iterate(void);
 void menu_free(void);
