@@ -290,6 +290,7 @@ typedef struct
    // Rebuilt when parsing directory.
    size_t scroll_indices[2 * (26 + 2) + 1];
    unsigned scroll_indices_size;
+   unsigned scroll_accel;
 
    char base_path[PATH_MAX];
    char default_glslp[PATH_MAX];
