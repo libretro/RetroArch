@@ -49,6 +49,7 @@ struct apple_pad_interface
    void* (*connect)(struct apple_pad_connection* connection, uint32_t slot);
    void (*disconnect)(void* device);
    void (*packet_handler)(void* device, uint8_t *packet, uint16_t size);
+   void (*set_rumble)(void* device, enum retro_rumble_effect effect, uint16_t strength);
 };
 
 
@@ -61,8 +62,8 @@ void apple_joypad_packet(uint32_t slot, uint8_t* data, uint32_t length);
 void apple_joypad_send_hid_control(struct apple_pad_connection* connection, uint8_t* data, size_t size);
 
 // Input data for the main thread and the game thread
-extern apple_input_data_t g_current_input_data; //< Main thread data
-extern apple_input_data_t g_polled_input_data;  //< Game thread data
+extern apple_input_data_t g_current_input_data;
+extern apple_input_data_t g_polled_input_data;
 
 // Main thread only
 void apple_input_enable_icade(bool on);

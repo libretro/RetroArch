@@ -98,9 +98,15 @@ static void hidpad_wii_packet_handler(struct wiimote_t* device, uint8_t *packet,
       g_current_input_data.pad_axis[device->unid][i] = hidpad_wii_get_axis(device, i);
 }
 
+static void hidpad_wii_set_rumble(struct wiimote_t* device, enum retro_rumble_effect effect, uint16_t strength)
+{
+   // TODO
+}
+
 struct apple_pad_interface apple_pad_wii =
 {
    (void*)&hidpad_wii_connect,
    (void*)&hidpad_wii_disconnect,
-   (void*)&hidpad_wii_packet_handler
+   (void*)&hidpad_wii_packet_handler,
+   (void*)&hidpad_wii_set_rumble
 };

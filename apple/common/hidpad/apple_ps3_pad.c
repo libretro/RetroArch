@@ -28,6 +28,8 @@ struct hidpad_ps3_data
   
    uint32_t slot;
    bool have_led;
+
+   uint16_t motors[2];
 };
 
 static void hidpad_ps3_send_control(struct hidpad_ps3_data* device)
@@ -35,7 +37,7 @@ static void hidpad_ps3_send_control(struct hidpad_ps3_data* device)
    // TODO: Can this be modified to turn off motion tracking?
    static uint8_t report_buffer[] = {
       0x52, 0x01,
-      0x00, 0x00, 0x00, 0x00, 0x00,
+      0x00, 0xFF, 0x00, 0xFF, 0x00,
       0x00, 0x00, 0x00, 0x00, 0x00,
       0xff, 0x27, 0x10, 0x00, 0x32,
       0xff, 0x27, 0x10, 0x00, 0x32,
@@ -47,6 +49,8 @@ static void hidpad_ps3_send_control(struct hidpad_ps3_data* device)
    };
    
    report_buffer[11] = 1 << ((device->slot % 4) + 1);
+   report_buffer[4] = device->motors[1] >> 8;
+   report_buffer[6] = device->motors[0] >> 8;
    apple_pad_send_control(device->connection, report_buffer, sizeof(report_buffer));
 }
 
@@ -122,9 +126,21 @@ static void hidpad_ps3_packet_handler(struct hidpad_ps3_data* device, uint8_t *p
       g_current_input_data.pad_axis[device->slot][i] = hidpad_ps3_get_axis(device, i);
 }
 
+static void hidpad_ps3_set_rumble(struct hidpad_ps3_data* device, enum retro_rumble_effect effect, uint16_t strength)
+{
+   unsigned index = (effect == RETRO_RUMBLE_STRONG) ? 0 : 1;
+
+   if (device->motors[index] != strength)
+   {
+      device->motors[index] = strength;
+      hidpad_ps3_send_control(device);
+   }
+}
+
 struct apple_pad_interface apple_pad_ps3 =
 {
    (void*)&hidpad_ps3_connect,
    (void*)&hidpad_ps3_disconnect,
-   (void*)&hidpad_ps3_packet_handler
+   (void*)&hidpad_ps3_packet_handler,
+   (void*)&hidpad_ps3_set_rumble
 };

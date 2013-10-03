@@ -242,6 +242,7 @@ static bool apple_bind_button_pressed(void *data, int key)
 static void apple_input_free_input(void *data)
 {
    (void)data;
+   g_joydriver->destroy();
 }
 
 static void apple_input_set_keybinds(void *data, unsigned device, unsigned port,
@@ -305,6 +306,12 @@ static void apple_input_set_keybinds(void *data, unsigned device, unsigned port,
 #endif
 }
 
+static bool apple_input_set_rumble(void *data, unsigned port, enum retro_rumble_effect effect, uint16_t strength)
+{
+   return input_joypad_set_rumble(g_joydriver, port, effect, strength);
+}
+
+
 const input_driver_t input_apple = {
    apple_input_init,
    apple_input_poll,
@@ -313,4 +320,7 @@ const input_driver_t input_apple = {
    apple_input_free_input,
    apple_input_set_keybinds,
    "apple_input",
+   NULL,
+   apple_input_set_rumble,
+   NULL
 };

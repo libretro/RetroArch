@@ -108,6 +108,14 @@ static bool apple_joypad_query_pad(unsigned pad)
 
 static void apple_joypad_destroy(void)
 {
+   for (int i = 0; i != MAX_PLAYERS; i ++)
+   {
+      if (slots[i].used && slots[i].iface)
+      {
+         slots[i].iface->set_rumble(slots[i].data, RETRO_RUMBLE_STRONG, 0);
+         slots[i].iface->set_rumble(slots[i].data, RETRO_RUMBLE_WEAK, 0);
+      }
+   }
 }
 
 static bool apple_joypad_button(unsigned port, uint16_t joykey)
@@ -146,6 +154,18 @@ static void apple_joypad_poll(void)
 {
 }
 
+static bool apple_joypad_rumble(unsigned pad, enum retro_rumble_effect effect, uint16_t strength)
+{
+   if (pad < MAX_PLAYERS && slots[pad].used && slots[pad].iface)
+   {
+      slots[pad].iface->set_rumble(slots[pad].data, effect, strength);
+      return true;
+   }
+
+   return false;
+}
+
+
 static const char *apple_joypad_name(unsigned joypad)
 {
    (void)joypad;
@@ -159,7 +179,7 @@ const rarch_joypad_driver_t apple_joypad = {
    apple_joypad_button,
    apple_joypad_axis,
    apple_joypad_poll,
-   NULL,
+   apple_joypad_rumble,
    apple_joypad_name,
    "apple"
 };
