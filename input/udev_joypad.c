@@ -58,6 +58,7 @@ struct udev_joypad
    int effects[2]; // [0] - strong, [1] - weak 
    bool has_set_ff[2];
    uint16_t strength[2];
+   uint16_t configured_strength[2];
 
    char *ident;
    char *path;
@@ -184,22 +185,22 @@ static bool udev_set_rumble(unsigned i, enum retro_rumble_effect effect, uint16_
 
    if (pad->fd < 0)
       return false;
-   if (pad->num_effects < 3) // Need one effect to overlap.
+   if (pad->num_effects < 2)
       return false;
 
-   if (pad->strength[effect] == strength)
+   uint16_t old_strength = pad->strength[effect];
+   if (old_strength == strength)
       return true;
 
    int old_effect = pad->has_set_ff[effect] ? pad->effects[effect] : -1;
-   pad->strength[effect] = strength;
-   pad->has_set_ff[effect] = false;
 
-   if (strength)
+   if (strength && strength != pad->configured_strength[effect])
    {
+      // Create new or update old playing state.
       struct ff_effect e;
       memset(&e, 0, sizeof(e));
       e.type = FF_RUMBLE;
-      e.id = -1;
+      e.id = old_effect;
       switch (effect)
       {
          case RETRO_RUMBLE_STRONG: e.u.rumble.strong_magnitude = strength; break;
@@ -213,26 +214,26 @@ static bool udev_set_rumble(unsigned i, enum retro_rumble_effect effect, uint16_
          return false;
       }
 
-      pad->has_set_ff[effect] = true;
       pad->effects[effect] = e.id;
+      pad->has_set_ff[effect] = true;
+      pad->configured_strength[effect] = strength;
+   }
+   pad->strength[effect] = strength;
 
+   // It seems that we can update strength with EVIOCSFF atomically.
+   if ((!!strength) != (!!old_strength))
+   {
       struct input_event play;
       memset(&play, 0, sizeof(play));
       play.type = EV_FF;
       play.code = pad->effects[effect];
-      play.value = 1;
+      play.value = !!strength;
       if (write(pad->fd, &play, sizeof(play)) < (ssize_t)sizeof(play))
       {
          RARCH_ERR("[udev]: Failed to play rumble effect #%u on pad #%u.\n",
                effect, i);
          return false;
       }
-   }
-
-   if (old_effect >= 0)
-   {
-      if (ioctl(pad->fd, EVIOCRMFF, (void*)(uintptr_t)old_effect) < 0)
-         RARCH_WARN("[udev]: Failed to remove effect.\n");
    }
 
    return true;
