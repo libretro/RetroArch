@@ -356,7 +356,7 @@ static int find_vacant_pad(void)
    return -1;
 }
 
-static void free_pad(unsigned pad)
+static void free_pad(unsigned pad, bool hotplug)
 {
    if (g_pads[pad].fd >= 0)
       close(g_pads[pad].fd);
@@ -368,7 +368,10 @@ static void free_pad(unsigned pad)
 
    g_pads[pad].fd = -1;
    g_pads[pad].ident = g_settings.input.device_names[pad];
-   input_config_autoconfigure_joypad(pad, NULL, NULL);
+
+   // Avoid autoconfig spam if we're reiniting driver.
+   if (hotplug)
+      input_config_autoconfigure_joypad(pad, NULL, NULL);
 }
 
 static bool add_pad(unsigned i, int fd, const char *path)
@@ -506,7 +509,7 @@ static void remove_device(const char *path)
          msg_queue_push(g_extern.msg_queue, msg, 0, 60);
          RARCH_LOG("[udev]: %s\n", msg);
 #endif
-         free_pad(i);
+         free_pad(i, true);
          break;
       }
    }
@@ -515,7 +518,7 @@ static void remove_device(const char *path)
 static void udev_joypad_destroy(void)
 {
    for (unsigned i = 0; i < MAX_PLAYERS; i++)
-      free_pad(i);
+      free_pad(i, false);
 
    if (g_udev_mon)
       udev_monitor_unref(g_udev_mon);
