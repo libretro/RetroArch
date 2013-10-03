@@ -1111,7 +1111,8 @@ static int rgui_iterate(void *data, unsigned action)
    if (rgui->need_refresh && action != RGUI_ACTION_MESSAGE)
       action = RGUI_ACTION_NOOP;
 
-   unsigned scroll_speed = (max(rgui->scroll_accel, 4) - 4) / 4 + 1;
+   unsigned scroll_speed = (max(rgui->scroll_accel, 2) - 2) / 4 + 1;
+   unsigned fast_scroll_speed = 4 + 4 * scroll_speed;
 
    switch (action)
    {
@@ -1130,15 +1131,15 @@ static int rgui_iterate(void *data, unsigned action)
          break;
 
       case RGUI_ACTION_LEFT:
-         if (rgui->selection_ptr > 8 * scroll_speed)
-            rgui->selection_ptr -= 8 * scroll_speed;
+         if (rgui->selection_ptr > fast_scroll_speed)
+            rgui->selection_ptr -= fast_scroll_speed;
          else
             rgui->selection_ptr = 0;
          break;
 
       case RGUI_ACTION_RIGHT:
-         if (rgui->selection_ptr + 8 * scroll_speed < rgui->selection_buf->size)
-            rgui->selection_ptr += 8 * scroll_speed;
+         if (rgui->selection_ptr + fast_scroll_speed < rgui->selection_buf->size)
+            rgui->selection_ptr += fast_scroll_speed;
          else
             rgui->selection_ptr = rgui->selection_buf->size - 1;
          break;
