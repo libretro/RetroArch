@@ -15,32 +15,25 @@
 
 #include <IOKit/hid/IOHIDManager.h>
 #include "apple/common/apple_input.h"
-#include "apple/common/hidpad/hidpad.h"
 
-struct hidpad_connection
+struct apple_pad_connection
 {
    uint32_t slot;
-
-   struct hidpad_interface* interface;
-   void* hidpad;
-
    IOHIDDeviceRef device;
-   
    uint8_t data[2048];
 };
 
 static IOHIDManagerRef g_hid_manager;
-static struct hidpad_connection g_connected_pads[MAX_PADS];
 
-void hidpad_send_control(struct hidpad_connection* connection, uint8_t* data, size_t size)
+void apple_pad_send_control(struct apple_pad_connection* connection, uint8_t* data, size_t size)
 {
-   IOHIDDeviceSetReport(connection->device, kIOHIDReportTypeOutput, 0x01, data, size);
+   IOHIDDeviceSetReport(connection->device, kIOHIDReportTypeOutput, 0x01, data + 1, size - 1);
 }
 
 // NOTE: I pieced this together through trial and error, any corrections are welcome
 static void hid_device_input_callback(void* context, IOReturn result, void* sender, IOHIDValueRef value)
 {
-   struct hidpad_connection* connection = context;
+   struct apple_pad_connection* connection = context;
 
    IOHIDElementRef element = IOHIDValueGetElement(value);
    uint32_t type = IOHIDElementGetType(element);
@@ -97,16 +90,15 @@ static void hid_device_input_callback(void* context, IOReturn result, void* send
 
 static void hid_device_removed(void* context, IOReturn result, void* sender)
 {
-   struct hidpad_connection* connection = (struct hidpad_connection*)context;
+   struct apple_pad_connection* connection = (struct apple_pad_connection*)context;
 
-   if (connection && connection->slot < MAX_PADS)
+   if (connection && connection->slot < MAX_PLAYERS)
    {
       g_current_input_data.pad_buttons[connection->slot] = 0;
       memset(g_current_input_data.pad_axis[connection->slot], 0, sizeof(g_current_input_data.pad_axis));
       
-      if (connection->interface)
-         connection->interface->disconnect(connection->hidpad);
-      memset(connection, 0, sizeof(*connection));
+      apple_joypad_disconnect(connection->slot);
+      free(connection);
    }
 
    IOHIDDeviceClose(sender, kIOHIDOptionsTypeNone);
@@ -114,8 +106,8 @@ static void hid_device_removed(void* context, IOReturn result, void* sender)
 
 static void hid_device_report(void* context, IOReturn result, void *sender, IOHIDReportType type, uint32_t reportID, uint8_t *report, CFIndex reportLength)
 {
-   struct hidpad_connection* connection = (struct hidpad_connection*)context;
-   connection->interface->packet_handler(connection->hidpad, report, reportLength);
+   struct apple_pad_connection* connection = (struct apple_pad_connection*)context;
+   apple_joypad_packet(connection->slot, connection->data, reportLength + 1);
 }
 
 static void hid_manager_device_attached(void* context, IOReturn result, void* sender, IOHIDDeviceRef device)
@@ -123,24 +115,9 @@ static void hid_manager_device_attached(void* context, IOReturn result, void* se
    bool is_pad = (IOHIDDeviceConformsTo(device, kHIDPage_GenericDesktop, kHIDUsage_GD_Joystick) ||
                   IOHIDDeviceConformsTo(device, kHIDPage_GenericDesktop, kHIDUsage_GD_GamePad));
 
-   struct hidpad_connection* connection = 0;
-   
-   if (is_pad)
-   {
-      for (int i = 0; i != MAX_PADS; i ++)
-      {
-         if (!g_connected_pads[i].device)
-         {
-            connection = &g_connected_pads[i];
-            connection->device = device;
-            connection->slot = i;
-            break;
-         }
-      }
-
-      if (!connection)
-         return;
-   }
+   struct apple_pad_connection* connection = calloc(1, sizeof(struct apple_pad_connection));
+   connection->device = device;
+   connection->slot = MAX_PLAYERS;
 
    IOHIDDeviceOpen(device, kIOHIDOptionsTypeNone);
    IOHIDDeviceScheduleWithRunLoop(device, CFRunLoopGetCurrent(), kCFRunLoopCommonModes);
@@ -149,27 +126,14 @@ static void hid_manager_device_attached(void* context, IOReturn result, void* se
    CFStringRef device_name = IOHIDDeviceGetProperty(device, CFSTR(kIOHIDProductKey));
    if (is_pad && device_name)
    {
-      static const struct { const char* name; struct hidpad_interface* iface; } hidpad_map[] = {
-         { "Nintendo RVL-CNT-01",         &hidpad_wii },
-         { "PLAYSTATION(R)3 Controller",  &hidpad_ps3 },
-         { 0, 0} };
-   
       char buffer[1024];
       CFStringGetCString(device_name, buffer, 1024, kCFStringEncodingUTF8);
 
-      for (int i = 0; hidpad_map[i].name; i ++)
-      {
-         if (strstr(buffer, hidpad_map[i].name))
-         {
-            connection->interface = hidpad_map[i].iface;
-            IOHIDDeviceRegisterInputReportCallback(device, connection->data, 2048, hid_device_report, connection);
-            connection->hidpad = connection->interface->connect(connection, connection->slot);
-            return;
-         }
-      }
+      connection->slot = apple_joypad_connect(buffer, connection);
+      IOHIDDeviceRegisterInputReportCallback(device, connection->data + 1, sizeof(connection->data) - 1, hid_device_report, connection);
    }
- 
-   IOHIDDeviceRegisterInputValueCallback(device, hid_device_input_callback, connection);
+   else
+      IOHIDDeviceRegisterInputValueCallback(device, hid_device_input_callback, connection);
 }
 
 static void append_matching_dictionary(CFMutableArrayRef array, uint32_t page, uint32_t use)

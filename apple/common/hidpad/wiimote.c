@@ -358,11 +358,7 @@ int wiimote_send(struct wiimote_t* wm, byte report_type, byte* msg, int len)
    printf("\n");
 #endif
 
-#ifdef IOS
-   hidpad_send_control(wm->connection, buf, len + 2);
-#else
-   hidpad_send_control(wm->connection, buf + 1, len + 1);
-#endif
+   apple_pad_send_control(wm->connection, buf, len + 2);
    return 1;
 }
 

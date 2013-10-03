@@ -21,12 +21,10 @@
 #include "apple/common/rarch_wrapper.h"
 
 #include "wiimote.h"
-#include "hidpad.h"
 
-static void* hidpad_wii_connect(struct hidpad_connection* connection, uint32_t slot)
+static void* hidpad_wii_connect(struct apple_pad_connection* connection, uint32_t slot)
 {
-   struct wiimote_t* device = malloc(sizeof(struct wiimote_t));
-   memset(device, 0, sizeof(struct wiimote_t));
+   struct wiimote_t* device = calloc(1, sizeof(struct wiimote_t));
 
    device->connection = connection;
    device->unid = slot;
@@ -64,13 +62,8 @@ static int16_t hidpad_wii_get_axis(struct wiimote_t* device, unsigned axis)
 
 static void hidpad_wii_packet_handler(struct wiimote_t* device, uint8_t *packet, uint16_t size)
 {
-#ifdef IOS
    byte* msg = packet + 2;
    switch (packet[1])
-#else
-   byte* msg = packet + 1;
-   switch (packet[0])
-#endif
    {
       case WM_RPT_BTN:
       {
@@ -105,7 +98,7 @@ static void hidpad_wii_packet_handler(struct wiimote_t* device, uint8_t *packet,
       g_current_input_data.pad_axis[device->unid][i] = hidpad_wii_get_axis(device, i);
 }
 
-struct hidpad_interface hidpad_wii =
+struct apple_pad_interface apple_pad_wii =
 {
    (void*)&hidpad_wii_connect,
    (void*)&hidpad_wii_disconnect,

@@ -41,8 +41,6 @@
 #ifndef __WIIMOTE_H__
 #define __WIIMOTE_H__
 
-#include "hidpad.h"
-
 #if defined(__cplusplus)
 extern "C" {
 #endif
@@ -232,7 +230,7 @@ extern "C" {
 	typedef struct wiimote_t {
 		int unid;						/**< user specified id						*/
 
-      struct hidpad_connection* connection;
+      struct apple_pad_connection* connection;
    	    int state;						/**< various state flags					*/
 		byte leds;						/**< currently lit leds						*/
 		float battery_level;				/**< battery level							*/

@@ -29,21 +29,26 @@
 #include "file.h"
 
 //#define HAVE_DEBUG_FILELOG
-void ios_set_bluetooth_mode(NSString* mode)
-{
-#ifndef __IPHONE_7_0 // iOS7 iCade Support
-   apple_input_enable_icade([mode isEqualToString:@"icade"]);
-   btstack_set_poweron([mode isEqualToString:@"btstack"]);
-#else
-   bool enabled = [mode isEqualToString:@"icade"];
-   apple_input_enable_icade(enabled);
-   [[RAGameView get] iOS7SetiCadeMode:enabled];
-#endif
-}
-
 bool is_ios_7()
 {
    return [[UIDevice currentDevice].systemVersion compare:@"7.0" options:NSNumericSearch] != NSOrderedAscending;
+}
+
+void ios_set_bluetooth_mode(NSString* mode)
+{
+   if (!is_ios_7())
+   {
+      apple_input_enable_icade([mode isEqualToString:@"icade"]);
+      btstack_set_poweron([mode isEqualToString:@"btstack"]);
+   }
+#ifdef __IPHONE_7_0 // iOS7 iCade Support
+   else
+   {
+      bool enabled = [mode isEqualToString:@"icade"];
+      apple_input_enable_icade(enabled);
+      [[RAGameView get] iOS7SetiCadeMode:enabled];
+   }
+#endif
 }
 
 // Input helpers: This is kept here because it needs objective-c

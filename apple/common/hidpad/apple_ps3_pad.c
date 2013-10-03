@@ -18,13 +18,11 @@
 #include <stdlib.h>
 
 #include "boolean.h"
-#include "apple/common/rarch_wrapper.h"
-
-#include "hidpad.h"
+#include "apple/common/apple_input.h"
 
 struct hidpad_ps3_data
 {
-   struct hidpad_connection* connection;
+   struct apple_pad_connection* connection;
 
    uint8_t data[512];
   
@@ -49,24 +47,19 @@ static void hidpad_ps3_send_control(struct hidpad_ps3_data* device)
    };
    
    report_buffer[11] = 1 << ((device->slot % 4) + 1);
-#ifdef IOS
-   hidpad_send_control(device->connection, report_buffer, sizeof(report_buffer));
-#else
-   hidpad_send_control(device->connection, report_buffer + 1, sizeof(report_buffer) - 1);
-#endif
+   apple_pad_send_control(device->connection, report_buffer, sizeof(report_buffer));
 }
 
-static void* hidpad_ps3_connect(struct hidpad_connection* connection, uint32_t slot)
+static void* hidpad_ps3_connect(struct apple_pad_connection* connection, uint32_t slot)
 {
-   struct hidpad_ps3_data* device = malloc(sizeof(struct hidpad_ps3_data));
-   memset(device, 0, sizeof(*device));
+   struct hidpad_ps3_data* device = calloc(1, sizeof(struct hidpad_ps3_data));
    device->connection = connection;  
    device->slot = slot;
    
    // Magic packet to start reports
 #ifdef IOS
    static uint8_t data[] = {0x53, 0xF4, 0x42, 0x03, 0x00, 0x00};
-   hidpad_send_control(device->connection, data, 6);
+   apple_pad_send_control(device->connection, data, 6);
 #endif
 
    // Without this the digital buttons won't be reported
@@ -122,18 +115,14 @@ static void hidpad_ps3_packet_handler(struct hidpad_ps3_data* device, uint8_t *p
       device->have_led = true;
    }
 
-#ifdef IOS
    memcpy(device->data, packet, size);
-#else
-   memcpy(device->data + 1, packet, size);
-#endif
 
    g_current_input_data.pad_buttons[device->slot] = hidpad_ps3_get_buttons(device);
    for (int i = 0; i < 4; i ++)
       g_current_input_data.pad_axis[device->slot][i] = hidpad_ps3_get_axis(device, i);
 }
 
-struct hidpad_interface hidpad_ps3 =
+struct apple_pad_interface apple_pad_ps3 =
 {
    (void*)&hidpad_ps3_connect,
    (void*)&hidpad_ps3_disconnect,

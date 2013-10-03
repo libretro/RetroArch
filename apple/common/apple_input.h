@@ -16,10 +16,11 @@
 #ifndef __APPLE_RARCH_INPUT_H__
 #define __APPLE_RARCH_INPUT_H__
 
+#include "general.h"
+
 // Input responder
 #define MAX_TOUCHES 16
 #define MAX_KEYS 256
-#define MAX_PADS 4
 
 typedef struct
 {
@@ -38,10 +39,28 @@ typedef struct
 
    uint32_t keys[MAX_KEYS];
 
-   uint32_t pad_buttons[MAX_PADS];
-   int16_t pad_axis[MAX_PADS][4];
+   uint32_t pad_buttons[MAX_PLAYERS];
+   int16_t pad_axis[MAX_PLAYERS][4];
 } apple_input_data_t;
 
+struct apple_pad_connection;
+struct apple_pad_interface
+{
+   void* (*connect)(struct apple_pad_connection* connection, uint32_t slot);
+   void (*disconnect)(void* device);
+   void (*packet_handler)(void* device, uint8_t *packet, uint16_t size);
+};
+
+
+// Joypad data
+int32_t apple_joypad_connect(const char* name, struct apple_pad_connection* connection);
+void apple_joypad_disconnect(uint32_t slot);
+void apple_joypad_packet(uint32_t slot, uint8_t* data, uint32_t length);
+
+// This is implemented in the platform specific portions of the input code
+void apple_joypad_send_hid_control(struct apple_pad_connection* connection, uint8_t* data, size_t size);
+
+// Input data for the main thread and the game thread
 extern apple_input_data_t g_current_input_data; //< Main thread data
 extern apple_input_data_t g_polled_input_data;  //< Game thread data
 
@@ -50,7 +69,6 @@ void apple_input_enable_icade(bool on);
 uint32_t apple_input_get_icade_buttons();
 void apple_input_reset_icade_buttons();
 void apple_input_handle_key_event(unsigned keycode, bool down);
-
 
 extern int32_t apple_input_find_any_key();
 extern int32_t apple_input_find_any_button(uint32_t port);
