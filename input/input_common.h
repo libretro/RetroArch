@@ -58,7 +58,7 @@ enum back_button_enums
 };
 #endif
 
-typedef struct rarch_joypad_driver
+struct rarch_joypad_driver
 {
    bool (*init)(void);
    bool (*query_pad)(unsigned);
@@ -70,7 +70,7 @@ typedef struct rarch_joypad_driver
    const char *(*name)(unsigned);
 
    const char *ident;
-} rarch_joypad_driver_t;
+};
 
 // If ident points to NULL or a zero-length string, equivalent to calling input_joypad_init_first().
 const rarch_joypad_driver_t *input_joypad_init_driver(const char *ident);
