@@ -17,6 +17,8 @@
 #ifndef MENU_COMMON_H__
 #define MENU_COMMON_H__
 
+#include "../../general.h"
+
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
 #endif
