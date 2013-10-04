@@ -455,7 +455,17 @@ static config_file_t *open_default_config_file(void)
 
       if (path_mkdir(basedir))
       {
-         conf = config_file_new(NULL);
+#ifndef GLOBAL_CONFIG_DIR
+#define GLOBAL_CONFIG_DIR "/etc"
+#endif
+         char skeleton_conf[PATH_MAX];
+         fill_pathname_join(skeleton_conf, GLOBAL_CONFIG_DIR, "retroarch.cfg", sizeof(skeleton_conf));
+         conf = config_file_new(skeleton_conf);
+         if (conf)
+            RARCH_WARN("Using skeleton config \"%s\" as base for a new config file.\n", skeleton_conf);
+         else
+            conf = config_file_new(NULL);
+
          bool saved = false;
          if (conf)
          {
