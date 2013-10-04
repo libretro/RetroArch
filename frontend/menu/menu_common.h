@@ -56,6 +56,7 @@ typedef enum
    RGUI_FILE_DEVICE,
    RGUI_FILE_USE_DIRECTORY,
    RGUI_SETTINGS,
+   RGUI_START_SCREEN,
 
    // Shader stuff
    RGUI_SETTINGS_VIDEO_OPTIONS,
@@ -285,6 +286,7 @@ typedef struct
    size_t selection_ptr;
    bool need_refresh;
    bool msg_force;
+   bool push_start_screen;
 
    char base_path[PATH_MAX];
    char default_glslp[PATH_MAX];

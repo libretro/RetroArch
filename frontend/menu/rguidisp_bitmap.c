@@ -257,6 +257,7 @@ static void render_text(rgui_handle_t *rgui)
          (menu_type == RGUI_SETTINGS_OPTIONS) ||
          (menu_type == RGUI_SETTINGS_CUSTOM_VIEWPORT || menu_type == RGUI_SETTINGS_CUSTOM_VIEWPORT_2) ||
          menu_type == RGUI_SETTINGS_CUSTOM_BIND ||
+         menu_type == RGUI_START_SCREEN ||
          menu_type == RGUI_SETTINGS)
       snprintf(title, sizeof(title), "MENU %s", dir);
    else if (menu_type == RGUI_SETTINGS_OPEN_HISTORY)

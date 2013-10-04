@@ -142,6 +142,7 @@ static void *rgui_init(void)
    rgui->selection_buf = (rgui_list_t*)calloc(1, sizeof(rgui_list_t));
    rgui_list_push(rgui->menu_stack, "", RGUI_SETTINGS, 0);
    rgui->selection_ptr = 0;
+   rgui->push_start_screen = true;
    rgui_settings_populate_entries(rgui);
 
    // Make sure that custom viewport is something sane incase we use it
@@ -545,6 +546,35 @@ static int rgui_custom_bind_iterate(rgui_handle_t *rgui, rgui_action_t action)
    return 0;
 }
 
+static int rgui_start_screen_iterate(rgui_handle_t *rgui, rgui_action_t action)
+{
+   render_text(rgui);
+   render_messagebox(rgui,
+         "-- Welcome to RetroArch --\n"
+         " \n" // strtok_r doesn't split empty strings.
+
+#if !defined(RARCH_CONSOLE) && !defined(RARCH_MOBILE)
+         "Default keyboard controls: \n"
+         " Arrow keys: Navigate      \n"
+         " X:  Accept/OK             \n"
+         " Z:  Back                  \n"
+         " F1: Enter/Exit RGUI       \n"
+         " ESC: Exit RetroArch       \n"
+         " \n"
+#endif
+
+         "To play a game:              \n"
+         " Load a libretro core (Core).\n"
+         " Load a ROM (Load Game).     \n"
+         " \n"
+
+         "Press Accept/OK to continue.");
+
+   if (action == RGUI_ACTION_OK)
+      rgui_list_pop(rgui->menu_stack, &rgui->selection_ptr);
+   return 0;
+}
+
 static int rgui_viewport_iterate(rgui_handle_t *rgui, rgui_action_t action)
 {
    rarch_viewport_t *custom = &g_extern.console.screen.viewports.custom_vp;
@@ -866,6 +896,13 @@ static int rgui_settings_iterate(rgui_handle_t *rgui, rgui_action_t action)
 
    render_text(rgui);
 
+   // Have to defer it so we let settings refresh.
+   if (rgui->push_start_screen)
+   {
+      rgui->push_start_screen = false;
+      rgui_list_push(rgui->menu_stack, "", RGUI_START_SCREEN, 0);
+   }
+
    return 0;
 }
 
@@ -1025,7 +1062,9 @@ static int rgui_iterate(void *data, unsigned action)
       driver.video_poke->set_texture_frame(driver.video_data, menu_framebuf,
             false, RGUI_WIDTH, RGUI_HEIGHT, 1.0f);
 
-   if (menu_type_is_settings(menu_type))
+   if (menu_type == RGUI_START_SCREEN)
+      return rgui_start_screen_iterate(rgui, action);
+   else if (menu_type_is_settings(menu_type))
       return rgui_settings_iterate(rgui, action);
    else if (menu_type == RGUI_SETTINGS_CUSTOM_VIEWPORT || menu_type == RGUI_SETTINGS_CUSTOM_VIEWPORT_2)
       return rgui_viewport_iterate(rgui, action);
