@@ -227,6 +227,18 @@ static void rgui_resolve_libretro_names(rgui_list_t *list, const char *dir)
    }
 }
 
+static void rgui_resolve_supported_cores(rgui_handle_t *rgui)
+{
+   const core_info_t *info = NULL;
+   size_t cores = 0;
+   core_info_list_get_supported_cores(rgui->core_info, rgui->deferred_path, &info, &cores);
+   for (size_t i = 0; i < cores; i++)
+   {
+      rgui_list_push(rgui->selection_buf, info[i].path, RGUI_FILE_PLAIN, 0);
+      rgui_list_set_alt_at_offset(rgui->selection_buf, i, info[i].display_name);
+   }
+}
+
 static int rgui_settings_toggle_setting(rgui_handle_t *rgui, unsigned setting, rgui_action_t action, unsigned menu_type)
 {
 #ifdef HAVE_SHADER_MANAGER
@@ -277,7 +289,18 @@ static void rgui_settings_populate_entries(rgui_handle_t *rgui)
 #endif
    if (rgui->history)
       rgui_list_push(rgui->selection_buf, "Load Game (History)", RGUI_SETTINGS_OPEN_HISTORY, 0);
-   rgui_list_push(rgui->selection_buf, "Load Game", RGUI_SETTINGS_OPEN_FILEBROWSER, 0);
+
+   if (rgui->core_info)
+      rgui_list_push(rgui->selection_buf, "Load Game (Autodetect Core)", RGUI_SETTINGS_OPEN_FILEBROWSER_DEFERRED_CORE, 0);
+
+   if (rgui->info.library_name || g_extern.system.info.library_name)
+   {
+      char load_game_core_msg[64];
+      snprintf(load_game_core_msg, sizeof(load_game_core_msg), "Load Game (%s)",
+            rgui->info.library_name ? rgui->info.library_name : g_extern.system.info.library_name);
+      rgui_list_push(rgui->selection_buf, load_game_core_msg, RGUI_SETTINGS_OPEN_FILEBROWSER, 0);
+   }
+
    rgui_list_push(rgui->selection_buf, "Core Options", RGUI_SETTINGS_CORE_OPTIONS, 0);
    rgui_list_push(rgui->selection_buf, "Video Options", RGUI_SETTINGS_VIDEO_OPTIONS, 0);
    rgui_list_push(rgui->selection_buf, "Audio Options", RGUI_SETTINGS_AUDIO_OPTIONS, 0);
@@ -799,8 +822,10 @@ static int rgui_settings_iterate(rgui_handle_t *rgui, rgui_action_t action)
       case RGUI_ACTION_RIGHT:
       case RGUI_ACTION_OK:
       case RGUI_ACTION_START:
-         if (type == RGUI_SETTINGS_OPEN_FILEBROWSER && action == RGUI_ACTION_OK)
+         if ((type == RGUI_SETTINGS_OPEN_FILEBROWSER || type == RGUI_SETTINGS_OPEN_FILEBROWSER_DEFERRED_CORE)
+               && action == RGUI_ACTION_OK)
          {
+            rgui->defer_core = type == RGUI_SETTINGS_OPEN_FILEBROWSER_DEFERRED_CORE;
             rgui_list_push(rgui->menu_stack, rgui->base_path, RGUI_FILE_DIRECTORY, rgui->selection_ptr);
             rgui->selection_ptr = 0;
             rgui->need_refresh = true;
@@ -1066,6 +1091,8 @@ static bool rgui_directory_parse(rgui_handle_t *rgui, const char *directory, uns
 #endif
    else if (menu_type_is_directory_browser(menu_type))
       exts = ""; // we ignore files anyway
+   else if (rgui->defer_core)
+      exts = rgui->core_info ? core_info_list_get_all_extensions(rgui->core_info) : "";
    else if (rgui->info.valid_extensions)
    {
       exts = ext_buf;
@@ -1238,7 +1265,23 @@ static int rgui_iterate(void *data, unsigned action)
             }
             else
 #endif
-            if (menu_type == RGUI_SETTINGS_CORE)
+            if (menu_type == RGUI_SETTINGS_DEFERRED_CORE)
+            {
+               // FIXME: Add for consoles.
+#ifdef HAVE_DYNAMIC
+               strlcpy(g_settings.libretro, path, sizeof(g_settings.libretro));
+               libretro_free_system_info(&rgui->info);
+               libretro_get_system_info(g_settings.libretro, &rgui->info,
+                     &rgui->load_no_rom);
+
+               strlcpy(g_extern.fullpath, rgui->deferred_path, sizeof(g_extern.fullpath));
+               g_extern.lifecycle_mode_state |= (1ULL << MODE_LOAD_GAME);
+               rgui->msg_force = true;
+               ret = -1;
+#endif
+               rgui_flush_menu_stack_type(rgui, RGUI_SETTINGS);
+            }
+            else if (menu_type == RGUI_SETTINGS_CORE)
             {
 #if defined(HAVE_DYNAMIC)
                fill_pathname_join(g_settings.libretro, dir, path, sizeof(g_settings.libretro));
@@ -1346,6 +1389,10 @@ static int rgui_iterate(void *data, unsigned action)
             else if (menu_type == RGUI_LIBRETRO_DIR_PATH)
             {
                strlcpy(rgui->libretro_dir, dir, sizeof(rgui->libretro_dir));
+               core_info_list_free(rgui->core_info);
+               rgui->core_info = NULL;
+               if (*rgui->libretro_dir)
+                  rgui->core_info = core_info_list_new(rgui->libretro_dir);
                rgui_flush_menu_stack_type(rgui, RGUI_SETTINGS_PATH_OPTIONS);
             }
             else if (menu_type == RGUI_CONFIG_DIR_PATH)
@@ -1366,12 +1413,47 @@ static int rgui_iterate(void *data, unsigned action)
             }
             else
             {
-               fill_pathname_join(g_extern.fullpath, dir, path, sizeof(g_extern.fullpath));
-               g_extern.lifecycle_mode_state |= (1ULL << MODE_LOAD_GAME);
+               if (rgui->defer_core)
+               {
+                  fill_pathname_join(rgui->deferred_path, dir, path, sizeof(rgui->deferred_path));
 
-               rgui_flush_menu_stack_type(rgui, RGUI_SETTINGS);
-               rgui->msg_force = true;
-               ret = -1;
+                  const core_info_t *info = NULL;
+                  size_t supported = 0;
+                  if (rgui->core_info)
+                     core_info_list_get_supported_cores(rgui->core_info, rgui->deferred_path, &info, &supported);
+
+                  if (supported == 1) // Can make a decision right now.
+                  {
+                     strlcpy(g_extern.fullpath, rgui->deferred_path, sizeof(g_extern.fullpath));
+
+                     strlcpy(g_settings.libretro, info->path, sizeof(g_settings.libretro));
+
+#ifdef HAVE_DYNAMIC
+                     libretro_free_system_info(&rgui->info);
+                     libretro_get_system_info(g_settings.libretro, &rgui->info,
+                           &rgui->load_no_rom);
+#endif
+
+                     g_extern.lifecycle_mode_state |= (1ULL << MODE_LOAD_GAME);
+                     rgui_flush_menu_stack_type(rgui, RGUI_SETTINGS);
+                     rgui->msg_force = true;
+                     ret = -1;
+                  }
+                  else // Present a selection.
+                  {
+                     rgui_list_push(rgui->menu_stack, rgui->libretro_dir, RGUI_SETTINGS_DEFERRED_CORE, 0);
+                     rgui->need_refresh = true;
+                  }
+               }
+               else
+               {
+                  fill_pathname_join(g_extern.fullpath, dir, path, sizeof(g_extern.fullpath));
+                  g_extern.lifecycle_mode_state |= (1ULL << MODE_LOAD_GAME);
+
+                  rgui_flush_menu_stack_type(rgui, RGUI_SETTINGS);
+                  rgui->msg_force = true;
+                  ret = -1;
+               }
             }
          }
          break;
@@ -1401,6 +1483,7 @@ static int rgui_iterate(void *data, unsigned action)
 #ifdef HAVE_OVERLAY
             menu_type == RGUI_SETTINGS_OVERLAY_PRESET ||
 #endif
+            menu_type == RGUI_SETTINGS_DEFERRED_CORE ||
             menu_type == RGUI_SETTINGS_CORE ||
             menu_type == RGUI_SETTINGS_CONFIG ||
             menu_type == RGUI_SETTINGS_OPEN_HISTORY ||
@@ -1412,11 +1495,13 @@ static int rgui_iterate(void *data, unsigned action)
       rgui->scroll_indices_size = 0;
       if (menu_type == RGUI_SETTINGS_OPEN_HISTORY)
          history_parse(rgui);
-      else
+      else if (menu_type != RGUI_SETTINGS_DEFERRED_CORE)
          rgui_directory_parse(rgui, dir, menu_type, rgui->selection_buf);
 
       if (menu_type == RGUI_SETTINGS_CORE)
          rgui_resolve_libretro_names(rgui->selection_buf, dir);
+      else if (menu_type == RGUI_SETTINGS_DEFERRED_CORE)
+         rgui_resolve_supported_cores(rgui);
 
       // Before a refresh, we could have deleted a file on disk, causing
       // selection_ptr to suddendly be out of range. Ensure it doesn't overflow.

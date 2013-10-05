@@ -610,7 +610,11 @@ int menu_set_settings(unsigned setting, unsigned action)
 #ifdef HAVE_DYNAMIC
       case RGUI_LIBRETRO_DIR_PATH:
          if (action == RGUI_ACTION_START)
+         {
             *rgui->libretro_dir = '\0';
+            core_info_list_free(rgui->core_info);
+            rgui->core_info = NULL;
+         }
          break;
 #endif
       case RGUI_CONFIG_DIR_PATH:

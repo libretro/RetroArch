@@ -408,6 +408,11 @@ static void menu_update_libretro_info(void)
 #else
    retro_get_system_info(&rgui->info);
 #endif
+
+   core_info_list_free(rgui->core_info);
+   rgui->core_info = NULL;
+   if (*rgui->libretro_dir)
+      rgui->core_info = core_info_list_new(rgui->libretro_dir);
 }
 
 bool load_menu_game(void)
@@ -513,6 +518,7 @@ void menu_free(void)
 #endif
 
    rom_history_free(rgui->history);
+   core_info_list_free(rgui->core_info);
 
    free(rgui);
 }

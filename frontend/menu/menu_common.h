@@ -24,6 +24,7 @@
 #endif
 
 #include "../../performance.h"
+#include "../../core_info.h"
 
 #ifdef HAVE_RGUI
 #define MENU_TEXTURE_FULLSCREEN false
@@ -98,8 +99,10 @@ typedef enum
 
    // settings options are done here too
    RGUI_SETTINGS_OPEN_FILEBROWSER,
+   RGUI_SETTINGS_OPEN_FILEBROWSER_DEFERRED_CORE,
    RGUI_SETTINGS_OPEN_HISTORY,
    RGUI_SETTINGS_CORE,
+   RGUI_SETTINGS_DEFERRED_CORE,
    RGUI_SETTINGS_CONFIG,
    RGUI_SETTINGS_SAVE_CONFIG,
    RGUI_SETTINGS_CORE_OPTIONS,
@@ -287,6 +290,10 @@ typedef struct
    size_t selection_ptr;
    bool need_refresh;
    bool msg_force;
+
+   core_info_list_t *core_info;
+   bool defer_core;
+   char deferred_path[PATH_MAX];
 
    // Quick jumping indices with L/R.
    // Rebuilt when parsing directory.

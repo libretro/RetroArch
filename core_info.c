@@ -42,6 +42,7 @@ core_info_list_t *core_info_list_new(const char *modules_path)
 
    for (size_t i = 0; i < contents->size; i++)
    {
+#if 0
       char buffer[PATH_MAX];
       char info_path[PATH_MAX];
    
@@ -63,6 +64,11 @@ core_info_list_t *core_info_list_new(const char *modules_path)
          snprintf(info_path, PATH_MAX, "%s.info", buffer);
       else
          fill_pathname(info_path, buffer, ".info", sizeof(info_path));
+#else
+      core_info[i].path = strdup(contents->elems[i].data);
+      char info_path[PATH_MAX];
+      fill_pathname(info_path, core_info[i].path, ".info", sizeof(info_path));
+#endif
 
       core_info[i].data = config_file_new(info_path);
 
@@ -76,6 +82,27 @@ core_info_list_t *core_info_list_new(const char *modules_path)
 
       if (!core_info[i].display_name)
          core_info[i].display_name = strdup(path_basename(core_info[i].path));
+   }
+
+   size_t all_ext_len = 0;
+   for (size_t i = 0; i < core_info_list->count; i++)
+   {
+      all_ext_len += core_info_list->list[i].supported_extensions ?
+         (strlen(core_info_list->list[i].supported_extensions) + 2) : 0;
+   }
+
+   if (all_ext_len)
+      core_info_list->all_ext = (char*)calloc(1, all_ext_len);
+   if (core_info_list->all_ext)
+   {
+      for (size_t i = 0; i < core_info_list->count; i++)
+      {
+         if (core_info_list->list[i].supported_extensions)
+         {
+            strlcat(core_info_list->all_ext, core_info_list->list[i].supported_extensions, all_ext_len);
+            strlcat(core_info_list->all_ext, "|", all_ext_len);
+         }
+      }
    }
 
    dir_list_free(contents);
@@ -102,15 +129,51 @@ void core_info_list_free(core_info_list_t *core_info_list)
       config_file_free(core_info_list->list[i].data);
    }
 
+   free(core_info_list->all_ext);
    free(core_info_list->list);
    free(core_info_list);
 }
 
-bool core_info_list_does_support_file(core_info_t *core, const char *path)
+bool core_info_does_support_file(const core_info_t *core, const char *path)
 {
    if (!path || !core || !core->supported_extensions_list)
       return false;
 
    return string_list_find_elem_prefix(core->supported_extensions_list, ".", path_get_extension(path));
+}
+
+const char *core_info_list_get_all_extensions(core_info_list_t *core_info_list)
+{
+   return core_info_list->all_ext;
+}
+
+static const char *core_info_tmp_path; // qsort_r() is not in standard C, sadly.
+static int core_info_qsort_cmp(const void *a_, const void *b_)
+{
+   const core_info_t *a = (const core_info_t*)a_;
+   const core_info_t *b = (const core_info_t*)b_;
+   int support_a = core_info_does_support_file(a, core_info_tmp_path);
+   int support_b = core_info_does_support_file(b, core_info_tmp_path);
+   if (support_a != support_b)
+      return support_b - support_a;
+   else
+      return strcasecmp(a->display_name, b->display_name);
+}
+
+void core_info_list_get_supported_cores(core_info_list_t *core_info_list, const char *path,
+      const core_info_t **infos, size_t *num_infos)
+{
+   core_info_tmp_path = path;
+   qsort(core_info_list->list, core_info_list->count, sizeof(core_info_t), core_info_qsort_cmp);
+
+   size_t supported = 0;
+   for (size_t i = 0; i < core_info_list->count; i++, supported++)
+   {
+      if (!core_info_does_support_file(&core_info_list->list[i], path))
+         break;
+   }
+
+   *infos = core_info_list->list;
+   *num_infos = supported;
 }
 
