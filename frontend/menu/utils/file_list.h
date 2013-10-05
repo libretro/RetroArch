@@ -43,6 +43,11 @@ void rgui_list_get_last(const rgui_list_t *list,
 void rgui_list_get_at_offset(const rgui_list_t *list, size_t index,
       const char **path, unsigned *type);
 
+void rgui_list_set_alt_at_offset(rgui_list_t *list, size_t index,
+      const char *alt);
+void rgui_list_get_alt_at_offset(const rgui_list_t *list, size_t index,
+      const char **alt);
+
 #ifdef __cplusplus
 }
 #endif

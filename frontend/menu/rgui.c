@@ -201,6 +201,32 @@ static int rgui_core_setting_toggle(unsigned setting, rgui_action_t action)
    return 0;
 }
 
+static void rgui_resolve_libretro_names(rgui_list_t *list, const char *dir)
+{
+   for (size_t i = 0; i < list->size; i++)
+   {
+      const char *path;
+      unsigned type = 0;
+      rgui_list_get_at_offset(list, i, &path, &type);
+      if (type != RGUI_FILE_PLAIN)
+         continue;
+
+      char core_path[PATH_MAX];
+      fill_pathname_join(core_path, dir, path, sizeof(core_path));
+      char info_path[PATH_MAX];
+      fill_pathname(info_path, core_path, ".info", sizeof(info_path));
+
+      config_file_t *conf = config_file_new(info_path);
+      if (!conf)
+         continue;
+
+      char display_name[256];
+      if (config_get_array(conf, "display_name", display_name, sizeof(display_name)))
+         rgui_list_set_alt_at_offset(list, i, display_name);
+      config_file_free(conf);
+   }
+}
+
 static int rgui_settings_toggle_setting(rgui_handle_t *rgui, unsigned setting, rgui_action_t action, unsigned menu_type)
 {
 #ifdef HAVE_SHADER_MANAGER
@@ -1388,6 +1414,9 @@ static int rgui_iterate(void *data, unsigned action)
          history_parse(rgui);
       else
          rgui_directory_parse(rgui, dir, menu_type, rgui->selection_buf);
+
+      if (menu_type == RGUI_SETTINGS_CORE)
+         rgui_resolve_libretro_names(rgui->selection_buf, dir);
 
       // Before a refresh, we could have deleted a file on disk, causing
       // selection_ptr to suddendly be out of range. Ensure it doesn't overflow.
