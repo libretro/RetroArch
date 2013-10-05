@@ -610,8 +610,6 @@ bool config_load_file(const char *path)
    for (unsigned i = 0; i < MAX_PLAYERS; i++)
    {
       char cfg[64];
-      snprintf(cfg, sizeof(cfg), "input_dpad_emulation_p%u", i + 1);
-      CONFIG_GET_INT(input.dpad_emulation[i], cfg);
       snprintf(cfg, sizeof(cfg), "input_device_p%u", i + 1);
       CONFIG_GET_INT(input.device[i], cfg);
    }
@@ -1153,8 +1151,6 @@ bool config_save_file(const char *path)
    for (unsigned i = 0; i < MAX_PLAYERS; i++)
    {
       char cfg[64];
-      snprintf(cfg, sizeof(cfg), "input_dpad_emulation_p%u", i + 1);
-      config_set_int(conf, cfg, g_settings.input.dpad_emulation[i]);
       snprintf(cfg, sizeof(cfg), "input_device_p%u", i + 1);
       config_set_int(conf, cfg, g_settings.input.device[i]);
       snprintf(cfg, sizeof(cfg), "input_player%u_joypad_index", i + 1);

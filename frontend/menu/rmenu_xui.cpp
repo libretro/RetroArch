@@ -290,18 +290,6 @@ HRESULT CRetroArchFileBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHandle
 
 static void set_dpad_emulation_label(unsigned port, char *str, size_t sizeof_str)
 {
-   switch(g_settings.input.dpad_emulation[port])
-   {
-      case ANALOG_DPAD_NONE:
-         strlcpy(str, "D-Pad Emulation: None", sizeof_str);
-         break;
-      case ANALOG_DPAD_LSTICK:
-         strlcpy(str, "D-Pad Emulation: Left Stick", sizeof_str);
-         break;
-      case ANALOG_DPAD_RSTICK:
-         strlcpy(str, "D-Pad Emulation: Right Stick", sizeof_str);
-         break;
-   }
 }
 
 static void init_menulist(unsigned menu_id)
@@ -391,10 +379,11 @@ static void init_menulist(unsigned menu_id)
                XuiListSetText(m_menulist, i, strw_buffer);
             }
 
-            set_dpad_emulation_label(rgui->current_pad, buttons[0], sizeof(buttons[0]));
-            mbstowcs(strw_buffer, buttons[0], sizeof(strw_buffer) / sizeof(wchar_t));
+            //set_dpad_emulation_label(rgui->current_pad, buttons[0], sizeof(buttons[0]));
+            //mbstowcs(strw_buffer, buttons[0], sizeof(strw_buffer) / sizeof(wchar_t));
             XuiListInsertItems(m_menulist, keybind_end, 1);
-            XuiListSetText(m_menulist, SETTING_CONTROLS_DPAD_EMULATION, strw_buffer);
+            //XuiListSetText(m_menulist, SETTING_CONTROLS_DPAD_EMULATION, strw_buffer);
+            XuiListSetText(m_menulist, SETTING_CONTROLS_DPAD_EMULATION, L"Stub");
 
             XuiListInsertItems(m_menulist, keybind_end + 1, 1);
             XuiListSetText(m_menulist, SETTING_CONTROLS_DEFAULT_ALL, L"Reset all buttons to default");
@@ -625,7 +614,6 @@ HRESULT CRetroArchControls::OnControlNavigate(
    switch(current_index)
    {
       case SETTING_CONTROLS_DPAD_EMULATION:
-         menu_set_settings(RGUI_SETTINGS_BIND_DPAD_EMULATION, action);
          break;
       case SETTING_CONTROLS_DEFAULT_ALL:
          break;
@@ -670,10 +658,11 @@ HRESULT CRetroArchControls::OnControlNavigate(
          break;
    }
 
-   set_dpad_emulation_label(rgui->current_pad, button, sizeof(button));
+   //set_dpad_emulation_label(rgui->current_pad, button, sizeof(button));
 
-   mbstowcs(strw_buffer, button, sizeof(strw_buffer) / sizeof(wchar_t));
-   XuiListSetText(m_menulist, SETTING_CONTROLS_DPAD_EMULATION, strw_buffer);
+   //mbstowcs(strw_buffer, button, sizeof(strw_buffer) / sizeof(wchar_t));
+   //XuiListSetText(m_menulist, SETTING_CONTROLS_DPAD_EMULATION, strw_buffer);
+   XuiListSetText(m_menulist, SETTING_CONTROLS_DPAD_EMULATION, L"Stub");
    XuiListSetText(m_menulist, SETTING_CONTROLS_DEFAULT_ALL, L"Reset all buttons to default");
 
    return 0;
@@ -1403,37 +1392,6 @@ static void rgui_free(void *data)
 
 static void ingame_menu_resize (void)
 {
-   XINPUT_STATE state;
-
-   XInputGetState(0, &state);
-
-   if(state.Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_LEFT || state.Gamepad.sThumbLX < -DEADZONE)
-      g_extern.console.screen.viewports.custom_vp.x -= 1;
-   else if (state.Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_RIGHT || state.Gamepad.sThumbLX > DEADZONE)
-      g_extern.console.screen.viewports.custom_vp.x += 1;
-
-   if (state.Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_UP || state.Gamepad.sThumbLY > DEADZONE)
-      g_extern.console.screen.viewports.custom_vp.y += 1;
-   else if (state.Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_DOWN || state.Gamepad.sThumbLY < -DEADZONE) 
-      g_extern.console.screen.viewports.custom_vp.y -= 1;
-
-   if (state.Gamepad.sThumbRX < -DEADZONE || state.Gamepad.wButtons & XINPUT_GAMEPAD_LEFT_THUMB)
-      g_extern.console.screen.viewports.custom_vp.width -= 1;
-   else if (state.Gamepad.sThumbRX > DEADZONE || state.Gamepad.wButtons & XINPUT_GAMEPAD_RIGHT_THUMB)
-      g_extern.console.screen.viewports.custom_vp.width += 1;
-
-   if (state.Gamepad.sThumbRY > DEADZONE || state.Gamepad.wButtons & XINPUT_GAMEPAD_LEFT_SHOULDER)
-      g_extern.console.screen.viewports.custom_vp.height += 1;
-   else if (state.Gamepad.sThumbRY < -DEADZONE || state.Gamepad.wButtons & XINPUT_GAMEPAD_RIGHT_SHOULDER)
-      g_extern.console.screen.viewports.custom_vp.height -= 1;
-
-   if (state.Gamepad.wButtons & XINPUT_GAMEPAD_Y)
-   {
-      g_extern.console.screen.viewports.custom_vp.x = 0;
-      g_extern.console.screen.viewports.custom_vp.y = 0;
-      g_extern.console.screen.viewports.custom_vp.width = 1280; //FIXME: hardcoded
-      g_extern.console.screen.viewports.custom_vp.height = 720; //FIXME: hardcoded
-   }
 }
 
 static int rgui_iterate(void *data, unsigned action)

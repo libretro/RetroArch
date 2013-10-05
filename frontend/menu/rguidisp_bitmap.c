@@ -648,21 +648,7 @@ static void render_text(rgui_handle_t *rgui)
                break;
             }
             case RGUI_SETTINGS_BIND_DPAD_EMULATION:
-               switch (g_settings.input.dpad_emulation[port])
-               {
-                  case ANALOG_DPAD_NONE:
-                     strlcpy(type_str, "None", sizeof(type_str));
-                     break;
-                  case ANALOG_DPAD_LSTICK:
-                     strlcpy(type_str, "Left Stick", sizeof(type_str));
-                     break;
-                  case ANALOG_DPAD_DUALANALOG:
-                     strlcpy(type_str, "Dual Analog", sizeof(type_str));
-                     break;
-                  case ANALOG_DPAD_RSTICK:
-                     strlcpy(type_str, "Right Stick", sizeof(type_str));
-                     break;
-               }
+	    strlcpy(type_str, "TODO", sizeof(type_str));
                break;
             case RGUI_SETTINGS_BIND_UP:
             case RGUI_SETTINGS_BIND_DOWN:

@@ -1612,19 +1612,7 @@ static int select_setting(void *data, uint64_t action)
             snprintf(setting_text, sizeof(setting_text), "%d", rgui->current_pad+1);
             break;
          case SETTING_DPAD_EMULATION:
-            strlcpy(text, "D-Pad Emulation", sizeof(text));
-            switch(g_settings.input.dpad_emulation[rgui->current_pad])
-            {
-               case ANALOG_DPAD_NONE:
-                  strlcpy(setting_text, "None", sizeof(setting_text));
-                  break;
-               case ANALOG_DPAD_LSTICK:
-                  strlcpy(setting_text, "Left Stick", sizeof(setting_text));
-                  break;
-               case ANALOG_DPAD_RSTICK:
-                  strlcpy(setting_text, "Right Stick", sizeof(setting_text));
-                  break;
-            }
+            strlcpy(text, "TODO", sizeof(text));
             break;
          case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_B:
          case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_Y:

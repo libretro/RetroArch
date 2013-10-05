@@ -43,6 +43,7 @@ static int state_device_ids[MAX_PADS];
 static uint64_t state[MAX_PADS];
 static uint64_t keycode_lut[LAST_KEYCODE];
 analog_t analog_state[MAX_PADS];
+static unsigned dpad_emulation[MAX_PLAYERS];
 
 struct input_pointer
 {
@@ -313,7 +314,7 @@ static void *android_input_init(void)
       g_settings.input.binds[i][RETRO_DEVICE_ID_JOYPAD_L3].joykey = (1ULL << RETRO_DEVICE_ID_JOYPAD_L3);
       g_settings.input.binds[i][RETRO_DEVICE_ID_JOYPAD_R3].joykey = (1ULL << RETRO_DEVICE_ID_JOYPAD_R3);
 
-      g_settings.input.dpad_emulation[i] = ANALOG_DPAD_LSTICK;
+      dpad_emulation[i] = ANALOG_DPAD_LSTICK;
    }
 
    for (i = 0; i < MAX_PLAYERS; i++)
@@ -356,7 +357,7 @@ static void android_input_set_keybinds(void *data, unsigned device,
        * one for each of the 8 pads */
       unsigned shift = 8 + (port * 8);
 
-      g_settings.input.dpad_emulation[port] = ANALOG_DPAD_LSTICK;
+      dpad_emulation[port] = ANALOG_DPAD_LSTICK;
 
       // NOTE - we have to add '1' to the bit mask because
       // RETRO_DEVICE_ID_JOYPAD_B is 0
@@ -370,7 +371,7 @@ static void android_input_set_keybinds(void *data, unsigned device,
             strlcpy(g_settings.input.device_names[port], "Logitech Rumblepad 2",
                   sizeof(g_settings.input.device_names[port]));
 
-            g_settings.input.dpad_emulation[port] = ANALOG_DPAD_DUALANALOG;
+            dpad_emulation[port] = ANALOG_DPAD_DUALANALOG;
             keycode_lut[AKEYCODE_BUTTON_2]  |=  ((RETRO_DEVICE_ID_JOYPAD_B+1)       << shift);
             keycode_lut[AKEYCODE_BUTTON_1]  |=  ((RETRO_DEVICE_ID_JOYPAD_Y+1)       << shift);
             keycode_lut[AKEYCODE_BUTTON_9]  |=  ((RETRO_DEVICE_ID_JOYPAD_SELECT+1)  << shift);
@@ -423,7 +424,7 @@ static void android_input_set_keybinds(void *data, unsigned device,
             break;
          case DEVICE_GAMEMID:
             g_settings.input.device[port] = device;
-            g_settings.input.dpad_emulation[port] = ANALOG_DPAD_DUALANALOG;
+            dpad_emulation[port] = ANALOG_DPAD_DUALANALOG;
             strlcpy(g_settings.input.device_names[port], "GameMID",
                   sizeof(g_settings.input.device_names[port]));
 
@@ -450,7 +451,7 @@ static void android_input_set_keybinds(void *data, unsigned device,
             break;
          case DEVICE_ICONTROLPAD_HID_JOYSTICK:
             g_settings.input.device[port] = device;
-            g_settings.input.dpad_emulation[port] = ANALOG_DPAD_NONE;
+            dpad_emulation[port] = ANALOG_DPAD_NONE;
             strlcpy(g_settings.input.device_names[port], "iControlPad HID Joystick profile",
                   sizeof(g_settings.input.device_names[port]));
 
@@ -469,7 +470,7 @@ static void android_input_set_keybinds(void *data, unsigned device,
             break;
          case DEVICE_ICONTROLPAD_BLUEZ_IME:
             g_settings.input.device[port] = device;
-            g_settings.input.dpad_emulation[port] = ANALOG_DPAD_NONE;
+            dpad_emulation[port] = ANALOG_DPAD_NONE;
             strlcpy(g_settings.input.device_names[port], "iControlPad SPP profile (using Bluez IME)",
                   sizeof(g_settings.input.device_names[port]));
 
@@ -537,7 +538,7 @@ static void android_input_set_keybinds(void *data, unsigned device,
             break;
          case DEVICE_TOMMO_NEOGEOX_ARCADE:
             g_settings.input.device[port] = device;
-            g_settings.input.dpad_emulation[port] = ANALOG_DPAD_NONE;
+            dpad_emulation[port] = ANALOG_DPAD_NONE;
             strlcpy(g_settings.input.device_names[port], "TOMMO Neogeo X Arcade",
                   sizeof(g_settings.input.device_names[port]));
 
@@ -595,7 +596,7 @@ static void android_input_set_keybinds(void *data, unsigned device,
             strlcpy(g_settings.input.device_names[port], "iDroid x360",
                   sizeof(g_settings.input.device_names[port]));
 
-            g_settings.input.dpad_emulation[port] = ANALOG_DPAD_NONE;
+            dpad_emulation[port] = ANALOG_DPAD_NONE;
             keycode_lut[AKEYCODE_DPAD_UP] |=  ((RETRO_DEVICE_ID_JOYPAD_UP+1)      << shift);
             keycode_lut[AKEYCODE_DPAD_DOWN] |=  ((RETRO_DEVICE_ID_JOYPAD_DOWN+1)      << shift);
             keycode_lut[AKEYCODE_DPAD_LEFT] |=  ((RETRO_DEVICE_ID_JOYPAD_LEFT+1)      << shift);
@@ -721,7 +722,7 @@ static void android_input_set_keybinds(void *data, unsigned device,
             strlcpy(g_settings.input.device_names[port], "Xbox",
                   sizeof(g_settings.input.device_names[port]));
 
-            g_settings.input.dpad_emulation[port] = ANALOG_DPAD_DUALANALOG;
+            dpad_emulation[port] = ANALOG_DPAD_DUALANALOG;
             keycode_lut[AKEYCODE_BUTTON_MODE] |= ((RARCH_MENU_TOGGLE + 1) << shift);
             keycode_lut[AKEYCODE_BACK] |=  ((RETRO_DEVICE_ID_JOYPAD_SELECT+1)      << shift);
             keycode_lut[AKEYCODE_BUTTON_SELECT] |= ((RETRO_DEVICE_ID_JOYPAD_SELECT+1) << shift);
@@ -740,7 +741,7 @@ static void android_input_set_keybinds(void *data, unsigned device,
             strlcpy(g_settings.input.device_names[port], "WiseGroup PlayStation2",
                   sizeof(g_settings.input.device_names[port]));
 
-            g_settings.input.dpad_emulation[port] = ANALOG_DPAD_DUALANALOG;
+            dpad_emulation[port] = ANALOG_DPAD_DUALANALOG;
             keycode_lut[AKEYCODE_BUTTON_13] |=  ((RETRO_DEVICE_ID_JOYPAD_UP+1)      << shift);
             keycode_lut[AKEYCODE_BUTTON_15] |=  ((RETRO_DEVICE_ID_JOYPAD_DOWN+1)      << shift);
             keycode_lut[AKEYCODE_BUTTON_16] |=  ((RETRO_DEVICE_ID_JOYPAD_LEFT+1)      << shift);
@@ -844,7 +845,7 @@ static void android_input_set_keybinds(void *data, unsigned device,
             strlcpy(g_settings.input.device_names[port], "PlayStation3",
                   sizeof(g_settings.input.device_names[port]));
 
-            g_settings.input.dpad_emulation[port] = ANALOG_DPAD_NONE;
+            dpad_emulation[port] = ANALOG_DPAD_NONE;
             keycode_lut[AKEYCODE_DPAD_UP] |=  ((RETRO_DEVICE_ID_JOYPAD_UP+1)      << shift);
             keycode_lut[AKEYCODE_DPAD_DOWN] |=  ((RETRO_DEVICE_ID_JOYPAD_DOWN+1)      << shift);
             keycode_lut[AKEYCODE_DPAD_LEFT] |=  ((RETRO_DEVICE_ID_JOYPAD_LEFT+1)      << shift);
@@ -865,7 +866,7 @@ static void android_input_set_keybinds(void *data, unsigned device,
             break;
          case DEVICE_MOGA:
             g_settings.input.device[port] = device;
-            g_settings.input.dpad_emulation[port] = ANALOG_DPAD_NONE;
+            dpad_emulation[port] = ANALOG_DPAD_NONE;
             strlcpy(g_settings.input.device_names[port], "MOGA",
                   sizeof(g_settings.input.device_names[port]));
 
@@ -921,7 +922,7 @@ static void android_input_set_keybinds(void *data, unsigned device,
             break;
          case DEVICE_JXD_S7300B:
             g_settings.input.device[port] = device;
-            g_settings.input.dpad_emulation[port] = ANALOG_DPAD_NONE;
+            dpad_emulation[port] = ANALOG_DPAD_NONE;
             strlcpy(g_settings.input.device_names[port], "JXD S7300B",
                   sizeof(g_settings.input.device_names[port]));
 
@@ -1089,7 +1090,7 @@ static void android_input_set_keybinds(void *data, unsigned device,
             break;
          case DEVICE_MAYFLASH_WII_CLASSIC:
             g_settings.input.device[port] = device;
-            g_settings.input.dpad_emulation[port] = ANALOG_DPAD_NONE;
+            dpad_emulation[port] = ANALOG_DPAD_NONE;
             strlcpy(g_settings.input.device_names[port], "Mayflash Wii Classic",
                   sizeof(g_settings.input.device_names[port]));
 
@@ -1111,7 +1112,7 @@ static void android_input_set_keybinds(void *data, unsigned device,
             break;
          case DEVICE_SZMY_POWER_DUAL_BOX_WII:
             g_settings.input.device[port] = device;
-            g_settings.input.dpad_emulation[port] = ANALOG_DPAD_NONE;
+            dpad_emulation[port] = ANALOG_DPAD_NONE;
             strlcpy(g_settings.input.device_names[port], "SZMy Power Dual Box Wii",
                   sizeof(g_settings.input.device_names[port]));
 
@@ -1190,7 +1191,7 @@ static void android_input_set_keybinds(void *data, unsigned device,
             strlcpy(g_settings.input.device_names[port], "OUYA",
                   sizeof(g_settings.input.device_names[port]));
 
-            g_settings.input.dpad_emulation[port] = ANALOG_DPAD_DUALANALOG;
+            dpad_emulation[port] = ANALOG_DPAD_DUALANALOG;
             keycode_lut[AKEYCODE_DPAD_UP] |=  ((RETRO_DEVICE_ID_JOYPAD_UP+1)      << shift);
             keycode_lut[AKEYCODE_DPAD_DOWN] |=  ((RETRO_DEVICE_ID_JOYPAD_DOWN+1)      << shift);
             keycode_lut[AKEYCODE_DPAD_LEFT] |=  ((RETRO_DEVICE_ID_JOYPAD_LEFT+1)      << shift);
@@ -1229,7 +1230,7 @@ static void android_input_set_keybinds(void *data, unsigned device,
             g_settings.input.device[port] = device;
             strlcpy(g_settings.input.device_names[port], "Xperia Play",
                   sizeof(g_settings.input.device_names[port]));
-            g_settings.input.dpad_emulation[port] = ANALOG_DPAD_NONE;
+            dpad_emulation[port] = ANALOG_DPAD_NONE;
 
             if ((zeus_second_id != -1 && (zeus_second_id == id)))
             {
@@ -1460,7 +1461,7 @@ static void android_input_set_keybinds(void *data, unsigned device,
             g_settings.input.device[port] = device;
             strlcpy(g_settings.input.device_names[port], "NVIDIA Shield",
                   sizeof(g_settings.input.device_names[port]));
-            g_settings.input.dpad_emulation[port] = ANALOG_DPAD_DUALANALOG;
+            dpad_emulation[port] = ANALOG_DPAD_DUALANALOG;
             keycode_lut[AKEYCODE_BUTTON_B] |= ((RETRO_DEVICE_ID_JOYPAD_A+1) << shift);
             keycode_lut[AKEYCODE_BUTTON_A] |= ((RETRO_DEVICE_ID_JOYPAD_B+1) << shift);
             keycode_lut[AKEYCODE_BUTTON_Y] |= ((RETRO_DEVICE_ID_JOYPAD_X+1) << shift);
@@ -1475,7 +1476,7 @@ static void android_input_set_keybinds(void *data, unsigned device,
             g_settings.input.device[port] = device;
             strlcpy(g_settings.input.device_names[port], "MUCH iReadGo i5",
                   sizeof(g_settings.input.device_names[port]));
-            g_settings.input.dpad_emulation[port] = ANALOG_DPAD_NONE;
+            dpad_emulation[port] = ANALOG_DPAD_NONE;
 
             keycode_lut[AKEYCODE_DPAD_UP]   |= ((RETRO_DEVICE_ID_JOYPAD_UP+1)    << shift);
             keycode_lut[AKEYCODE_DPAD_DOWN] |= ((RETRO_DEVICE_ID_JOYPAD_DOWN+1)    << shift);
@@ -1495,7 +1496,7 @@ static void android_input_set_keybinds(void *data, unsigned device,
             g_settings.input.device[port] = device;
             strlcpy(g_settings.input.device_names[port], "Wikipad",
                   sizeof(g_settings.input.device_names[port]));
-            g_settings.input.dpad_emulation[port] = ANALOG_DPAD_DUALANALOG;
+            dpad_emulation[port] = ANALOG_DPAD_DUALANALOG;
 
             keycode_lut[AKEYCODE_DPAD_UP]   |= ((RETRO_DEVICE_ID_JOYPAD_UP+1)    << shift);
             keycode_lut[AKEYCODE_DPAD_DOWN] |= ((RETRO_DEVICE_ID_JOYPAD_DOWN+1)    << shift);
@@ -1518,7 +1519,7 @@ static void android_input_set_keybinds(void *data, unsigned device,
             g_settings.input.device[port] = device;
             strlcpy(g_settings.input.device_names[port], "FC30 Gamepad",
                   sizeof(g_settings.input.device_names[port]));
-            g_settings.input.dpad_emulation[port] = ANALOG_DPAD_NONE;
+            dpad_emulation[port] = ANALOG_DPAD_NONE;
 
             keycode_lut[AKEYCODE_DPAD_UP]   |= ((RETRO_DEVICE_ID_JOYPAD_UP+1)    << shift);
             keycode_lut[AKEYCODE_DPAD_DOWN] |= ((RETRO_DEVICE_ID_JOYPAD_DOWN+1)    << shift);
@@ -1538,7 +1539,7 @@ static void android_input_set_keybinds(void *data, unsigned device,
             g_settings.input.device[port] = device;
             strlcpy(g_settings.input.device_names[port], "ccpCreations WiiUse IME",
                   sizeof(g_settings.input.device_names[port]));
-            g_settings.input.dpad_emulation[port] = ANALOG_DPAD_NONE;
+            dpad_emulation[port] = ANALOG_DPAD_NONE;
 
             /* Player 1 */
             keycode_lut[AKEYCODE_DPAD_UP]   |= ((RETRO_DEVICE_ID_JOYPAD_UP+1)    << shift);
@@ -1778,9 +1779,9 @@ static void android_input_poll(void *data)
 
                   if (source & ~(AINPUT_SOURCE_TOUCHSCREEN | AINPUT_SOURCE_MOUSE))
                   {
-                     if (g_settings.input.dpad_emulation[state_id] != ANALOG_DPAD_NONE)
+                     if (dpad_emulation[state_id] != ANALOG_DPAD_NONE)
                         engine_handle_dpad(event, motion_pointer, state_id, msg, sizeof(msg), source, debug_enable,
-                              g_settings.input.dpad_emulation[state_id]);
+                              dpad_emulation[state_id]);
                   }
                   else
                   {

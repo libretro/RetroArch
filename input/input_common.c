@@ -710,18 +710,6 @@ const struct input_bind_map input_config_bind_map[RARCH_BIND_LIST_END_NULL] = {
       DECLARE_BIND(r_y_plus,  RARCH_ANALOG_RIGHT_Y_PLUS, "Right analog Y+ (down)"),
       DECLARE_BIND(r_y_minus, RARCH_ANALOG_RIGHT_Y_MINUS, "Right analog Y- (up)"),
 
-      // FIXME: Unsure what to do here.
-      // The D-pad emulation concept really needs a rethink ...
-#ifdef RARCH_CONSOLE
-      DECLARE_BIND(dpad_l_x_l, RARCH_ANALOG_LEFT_X_DPAD_LEFT, "Left analog D-pad left"),
-      DECLARE_BIND(dpad_l_x_r, RARCH_ANALOG_LEFT_X_DPAD_RIGHT, "Left analog D-pad right"),
-      DECLARE_BIND(dpad_l_y_u, RARCH_ANALOG_LEFT_Y_DPAD_UP, "Left analog D-pad up"),
-      DECLARE_BIND(dpad_l_y_d, RARCH_ANALOG_LEFT_Y_DPAD_DOWN, "Left analog D-pad down"),
-      DECLARE_BIND(dpad_r_x_l, RARCH_ANALOG_RIGHT_X_DPAD_LEFT, "Right analog D-pad left"),
-      DECLARE_BIND(dpad_r_x_r, RARCH_ANALOG_RIGHT_X_DPAD_RIGHT, "Right analog D-pad right"),
-      DECLARE_BIND(dpad_r_y_u, RARCH_ANALOG_RIGHT_Y_DPAD_UP, "Right analog D-pad up"),
-      DECLARE_BIND(dpad_r_y_d, RARCH_ANALOG_RIGHT_Y_DPAD_DOWN, "Right analog D-pad down"),
-#endif
       DECLARE_BIND(turbo, RARCH_TURBO_ENABLE, "Turbo enable"),
 
       DECLARE_META_BIND(1, toggle_fast_forward,   RARCH_FAST_FORWARD_KEY, "Fast forward toggle"),

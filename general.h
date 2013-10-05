@@ -233,7 +233,6 @@ struct settings
       int joypad_map[MAX_PLAYERS];
       unsigned device[MAX_PLAYERS];
       char device_names[MAX_PLAYERS][64];
-      unsigned dpad_emulation[MAX_PLAYERS];
       bool debug_enable;
       bool autodetect_enable;
 #ifdef ANDROID

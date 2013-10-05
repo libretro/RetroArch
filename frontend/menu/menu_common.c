@@ -583,16 +583,6 @@ static uint64_t rgui_input(void)
             | (1ULL << RETRO_DEVICE_ID_JOYPAD_RIGHT)
             | (1ULL << RETRO_DEVICE_ID_JOYPAD_L)
             | (1ULL << RETRO_DEVICE_ID_JOYPAD_R)
-#if defined(HAVE_RMENU)
-            | (1ULL << RARCH_ANALOG_LEFT_Y_DPAD_UP)
-            | (1ULL << RARCH_ANALOG_LEFT_Y_DPAD_DOWN)
-            | (1ULL << RARCH_ANALOG_LEFT_X_DPAD_LEFT)
-            | (1ULL << RARCH_ANALOG_LEFT_X_DPAD_RIGHT)
-            | (1ULL << RARCH_ANALOG_RIGHT_Y_DPAD_UP)
-            | (1ULL << RARCH_ANALOG_RIGHT_Y_DPAD_DOWN)
-            | (1ULL << RARCH_ANALOG_RIGHT_X_DPAD_LEFT)
-            | (1ULL << RARCH_ANALOG_RIGHT_X_DPAD_RIGHT)
-#endif
             )) && !(input_state & (1ULL << RARCH_MENU_TOGGLE));
 
    return input_state;

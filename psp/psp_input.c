@@ -58,19 +58,11 @@ const struct platform_bind platform_keys[] = {
    { PSP_GAMEPAD_LSTICK_RIGHT_MASK, "LStick Right" },
    { PSP_GAMEPAD_LSTICK_UP_MASK, "LStick Up" },
    { PSP_GAMEPAD_LSTICK_DOWN_MASK, "LStick Down" },
-   { PSP_GAMEPAD_DPAD_LEFT | PSP_GAMEPAD_LSTICK_LEFT_MASK, "LStick D-Pad Left" },
-   { PSP_GAMEPAD_DPAD_RIGHT | PSP_GAMEPAD_LSTICK_RIGHT_MASK, "LStick D-Pad Right" },
-   { PSP_GAMEPAD_DPAD_UP | PSP_GAMEPAD_LSTICK_UP_MASK, "LStick D-Pad Up" },
-   { PSP_GAMEPAD_DPAD_DOWN | PSP_GAMEPAD_LSTICK_DOWN_MASK, "LStick D-Pad Down" },
 #ifdef SN_TARGET_PSP2
    { PSP_GAMEPAD_RSTICK_LEFT_MASK, "RStick Left" },
    { PSP_GAMEPAD_RSTICK_RIGHT_MASK, "RStick Right" },
    { PSP_GAMEPAD_RSTICK_UP_MASK, "RStick Up" },
    { PSP_GAMEPAD_RSTICK_DOWN_MASK, "RStick Down" },
-   { PSP_GAMEPAD_DPAD_LEFT | PSP_GAMEPAD_RSTICK_LEFT_MASK, "RStick D-Pad Left" },
-   { PSP_GAMEPAD_DPAD_RIGHT | PSP_GAMEPAD_RSTICK_RIGHT_MASK, "RStick D-Pad Right" },
-   { PSP_GAMEPAD_DPAD_UP | PSP_GAMEPAD_RSTICK_UP_MASK, "RStick D-Pad Up" },
-   { PSP_GAMEPAD_DPAD_DOWN | PSP_GAMEPAD_RSTICK_DOWN_MASK, "RStick D-Pad Down" },
 #else
    { 0, "Unused" },
    { 0, "Unused" },
@@ -158,7 +150,6 @@ static void psp_input_set_keybinds(void *data, unsigned device, unsigned port,
          g_settings.input.binds[port][i].def_joykey = platform_keys[i].joykey;
          g_settings.input.binds[port][i].joykey = g_settings.input.binds[port][i].def_joykey;
       }
-      g_settings.input.dpad_emulation[port] = ANALOG_DPAD_LSTICK;
    }
 }
 

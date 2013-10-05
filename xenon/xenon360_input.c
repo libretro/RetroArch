@@ -96,7 +96,6 @@ static void xenon360_input_set_keybinds(void *data, unsigned device,
          g_settings.input.binds[port][i].id = i;
          g_settings.input.binds[port][i].joykey = g_settings.input.binds[port][i].def_joykey;
       }
-      g_settings.input.dpad_emulation[port] = ANALOG_DPAD_LSTICK;
    }
 }
 

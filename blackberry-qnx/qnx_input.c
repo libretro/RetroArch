@@ -716,7 +716,6 @@ static void qnx_input_set_keybinds(void *data, unsigned device, unsigned port,
             g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_L3].def_joykey     = SCREEN_L3_GAME_BUTTON;
             g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_R3].def_joykey     = SCREEN_R3_GAME_BUTTON;
             g_settings.input.binds[port][RARCH_MENU_TOGGLE].def_joykey             = SCREEN_MENU3_GAME_BUTTON;
-            g_settings.input.dpad_emulation[port] = ANALOG_DPAD_NONE;
             controller->port = port;
             port_device[port] = controller;
             break;
@@ -741,7 +740,6 @@ static void qnx_input_set_keybinds(void *data, unsigned device, unsigned port,
             g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_L3].def_joykey     = NO_BTN;
             g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_R3].def_joykey     = NO_BTN;
             g_settings.input.binds[port][RARCH_MENU_TOGGLE].def_joykey             = KEYCODE_P & 0xFF;
-            g_settings.input.dpad_emulation[port] = ANALOG_DPAD_NONE;
             controller->port = port;
             port_device[port] = controller;
             break;
@@ -767,7 +765,6 @@ static void qnx_input_set_keybinds(void *data, unsigned device, unsigned port,
             g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_L3].def_joykey     = NO_BTN;
             g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_R3].def_joykey     = NO_BTN;
             g_settings.input.binds[port][RARCH_MENU_TOGGLE].def_joykey             = KEYCODE_TILDE;
-            g_settings.input.dpad_emulation[port] = ANALOG_DPAD_NONE;
             controller->port = port;
             port_device[port] = controller;
             break;
@@ -792,7 +789,6 @@ static void qnx_input_set_keybinds(void *data, unsigned device, unsigned port,
             g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_L3].def_joykey     = 0;
             g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_R3].def_joykey     = 0;
             g_settings.input.binds[port][RARCH_MENU_TOGGLE].def_joykey             = 0;
-            g_settings.input.dpad_emulation[port] = ANALOG_DPAD_NONE;
             controller->port = port;
             port_device[port] = controller;
             break;
@@ -818,7 +814,6 @@ static void qnx_input_set_keybinds(void *data, unsigned device, unsigned port,
             g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_L3].def_joykey     = SCREEN_L3_GAME_BUTTON;
             g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_R3].def_joykey     = SCREEN_R3_GAME_BUTTON;
             g_settings.input.binds[port][RARCH_MENU_TOGGLE].def_joykey             = NO_BTN; //TODO: Find a good mappnig
-            g_settings.input.dpad_emulation[port] = ANALOG_DPAD_NONE;
             controller->port = port;
             port_device[port] = controller;
             break;

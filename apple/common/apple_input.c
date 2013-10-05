@@ -276,7 +276,6 @@ static void apple_input_set_keybinds(void *data, unsigned device, unsigned port,
             g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_L2].joykey     = 23;
             g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_R2].joykey     = 18;
 				g_settings.input.binds[port][RARCH_MENU_TOGGLE].joykey				 = 27;
-            g_settings.input.dpad_emulation[port] = ANALOG_DPAD_NONE;
             break;
          case DEVICE_SIXAXIS:
             strlcpy(g_settings.input.device_names[port], "SixAxis/DualShock3",
@@ -299,7 +298,6 @@ static void apple_input_set_keybinds(void *data, unsigned device, unsigned port,
             g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_L3].joykey     = 14;
             g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_R3].joykey     = 15;
             g_settings.input.binds[port][RARCH_MENU_TOGGLE].joykey             = 16;
-            g_settings.input.dpad_emulation[port] = ANALOG_DPAD_NONE;
             break;
       }
    }

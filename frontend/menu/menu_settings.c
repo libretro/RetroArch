@@ -377,21 +377,6 @@ int menu_set_settings(unsigned setting, unsigned action)
 
             unsigned keybind_action = (1ULL << KEYBINDS_ACTION_SET_DEFAULT_BINDS);
 
-            switch (g_settings.input.dpad_emulation[port])
-            {
-               case ANALOG_DPAD_LSTICK:
-                  keybind_action |= (1ULL << KEYBINDS_ACTION_SET_ANALOG_DPAD_LSTICK);
-                  break;
-               case ANALOG_DPAD_RSTICK:
-                  keybind_action |= (1ULL << KEYBINDS_ACTION_SET_ANALOG_DPAD_RSTICK);
-                  break;
-               case ANALOG_DPAD_NONE:
-                  keybind_action |= (1ULL << KEYBINDS_ACTION_SET_ANALOG_DPAD_NONE);
-                  break;
-               default:
-                  break;
-            }
-
             driver.input->set_keybinds(driver.input_data, g_settings.input.device[port], port, 0,
                   keybind_action);
          }
@@ -465,40 +450,6 @@ int menu_set_settings(unsigned setting, unsigned action)
 
             break;
          }
-      case RGUI_SETTINGS_BIND_DPAD_EMULATION:
-         g_settings.input.dpad_emulation[port] += ANALOG_DPAD_LAST;
-         if (action == RGUI_ACTION_START)
-            g_settings.input.dpad_emulation[port] = ANALOG_DPAD_LSTICK;
-         else if (action == RGUI_ACTION_LEFT)
-            g_settings.input.dpad_emulation[port]--;
-         else if (action == RGUI_ACTION_RIGHT)
-            g_settings.input.dpad_emulation[port]++;
-         g_settings.input.dpad_emulation[port] %= ANALOG_DPAD_LAST;
-
-         if (driver.input->set_keybinds)
-         {
-            unsigned keybind_action = 0;
-
-            switch (g_settings.input.dpad_emulation[port])
-            {
-               case ANALOG_DPAD_LSTICK:
-                  keybind_action = (1ULL << KEYBINDS_ACTION_SET_ANALOG_DPAD_LSTICK);
-                  break;
-               case ANALOG_DPAD_RSTICK:
-                  keybind_action = (1ULL << KEYBINDS_ACTION_SET_ANALOG_DPAD_RSTICK);
-                  break;
-               case ANALOG_DPAD_NONE:
-                  keybind_action = (1ULL << KEYBINDS_ACTION_SET_ANALOG_DPAD_NONE);
-                  break;
-               default:
-                  break;
-            }
-
-            if (keybind_action)
-               driver.input->set_keybinds(driver.input_data, g_settings.input.device[port], port, 0,
-                     keybind_action);
-         }
-         break;
       case RGUI_SETTINGS_CUSTOM_BIND_ALL:
          if (action == RGUI_ACTION_OK)
          {

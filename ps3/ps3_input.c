@@ -94,14 +94,6 @@ const struct platform_bind platform_keys[] = {
    { (1ULL << RARCH_ANALOG_RIGHT_X_MINUS), "RStick Right" },
    { (1ULL << RARCH_ANALOG_RIGHT_Y_PLUS), "RStick Up" },
    { (1ULL << RARCH_ANALOG_RIGHT_Y_MINUS), "RStick Down" },
-   { (1ULL << RETRO_DEVICE_ID_JOYPAD_LEFT) | (1ULL << RARCH_ANALOG_LEFT_X_DPAD_LEFT), "LStick D-Pad Left" },
-   { (1ULL << RETRO_DEVICE_ID_JOYPAD_RIGHT) | (1ULL << RARCH_ANALOG_LEFT_X_DPAD_RIGHT), "LStick D-Pad Right" },
-   { (1ULL << RETRO_DEVICE_ID_JOYPAD_UP) | (1ULL << RARCH_ANALOG_LEFT_Y_DPAD_UP), "LStick D-Pad Up" },
-   { (1ULL << RETRO_DEVICE_ID_JOYPAD_DOWN) | (1ULL << RARCH_ANALOG_LEFT_Y_DPAD_DOWN), "LStick D-Pad Down" },
-   { (1ULL << RETRO_DEVICE_ID_JOYPAD_LEFT) | (1ULL << RARCH_ANALOG_RIGHT_X_DPAD_LEFT), "RStick D-Pad Left" },
-   { (1ULL << RETRO_DEVICE_ID_JOYPAD_RIGHT) | (1ULL << RARCH_ANALOG_RIGHT_X_DPAD_RIGHT), "RStick D-Pad Right" },
-   { (1ULL << RETRO_DEVICE_ID_JOYPAD_UP) | (1ULL << RARCH_ANALOG_RIGHT_Y_DPAD_UP), "RStick D-Pad Up" },
-   { (1ULL << RETRO_DEVICE_ID_JOYPAD_DOWN) | (1ULL << RARCH_ANALOG_RIGHT_Y_DPAD_DOWN), "RStick D-Pad Down" },
 };
 
 static uint64_t state[MAX_PADS];
@@ -123,7 +115,6 @@ static void ps3_input_poll(void *data)
       if (state_tmp.len != 0)
       {
          uint64_t *state_cur = &state[i];
-         bool dpad_emulation = (g_settings.input.dpad_emulation[i] != ANALOG_DPAD_NONE);
          *state_cur = 0;
 #ifdef __PSL1GHT__
          *state_cur |= (state_tmp.BTN_LEFT)     ? (1ULL << RETRO_DEVICE_ID_JOYPAD_LEFT) : 0;
@@ -142,18 +133,6 @@ static void ps3_input_poll(void *data)
          *state_cur |= (state_tmp.BTN_L1)       ? (1ULL << RETRO_DEVICE_ID_JOYPAD_L) : 0;
          *state_cur |= (state_tmp.BTN_R2)       ? (1ULL << RETRO_DEVICE_ID_JOYPAD_R2) : 0;
          *state_cur |= (state_tmp.BTN_L2)       ? (1ULL << RETRO_DEVICE_ID_JOYPAD_L2) : 0;
-
-         if (dpad_emulation)
-         {
-            *state_cur |= (state_tmp.ANA_L_H <= DEADZONE_LOW) ? (1ULL << RARCH_ANALOG_LEFT_X_DPAD_LEFT) : 0;
-            *state_cur |= (state_tmp.ANA_L_H >= DEADZONE_HIGH) ? (1ULL << RARCH_ANALOG_LEFT_X_DPAD_RIGHT) : 0;
-            *state_cur |= (state_tmp.ANA_L_V <= DEADZONE_LOW) ? (1ULL << RARCH_ANALOG_LEFT_Y_DPAD_UP) : 0;
-            *state_cur |= (state_tmp.ANA_L_V >= DEADZONE_HIGH) ? (1ULL << RARCH_ANALOG_LEFT_Y_DPAD_DOWN) : 0;
-            *state_cur |= (state_tmp.ANA_R_H <= DEADZONE_LOW) ? (1ULL << RARCH_ANALOG_RIGHT_X_DPAD_LEFT) : 0;
-            *state_cur |= (state_tmp.ANA_R_H >= DEADZONE_HIGH) ? (1ULL << RARCH_ANALOG_RIGHT_X_DPAD_RIGHT) : 0;
-            *state_cur |= (state_tmp.ANA_R_V <= DEADZONE_LOW) ? (1ULL << RARCH_ANALOG_RIGHT_Y_DPAD_UP) : 0;
-            *state_cur |= (state_tmp.ANA_R_V >= DEADZONE_HIGH) ? (1ULL << RARCH_ANALOG_RIGHT_Y_DPAD_DOWN) : 0;
-         }
 #else
          *state_cur |= (state_tmp.button[CELL_PAD_BTN_OFFSET_DIGITAL1] & CELL_PAD_CTRL_LEFT) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_LEFT) : 0;
          *state_cur |= (state_tmp.button[CELL_PAD_BTN_OFFSET_DIGITAL1] & CELL_PAD_CTRL_DOWN) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_DOWN) : 0;
@@ -171,24 +150,12 @@ static void ps3_input_poll(void *data)
          *state_cur |= (state_tmp.button[CELL_PAD_BTN_OFFSET_DIGITAL2] & CELL_PAD_CTRL_L1) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_L) : 0;
          *state_cur |= (state_tmp.button[CELL_PAD_BTN_OFFSET_DIGITAL2] & CELL_PAD_CTRL_R2) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_R2) : 0;
          *state_cur |= (state_tmp.button[CELL_PAD_BTN_OFFSET_DIGITAL2] & CELL_PAD_CTRL_L2) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_L2) : 0;
-         if (dpad_emulation)
-         {
-            *state_cur |= (state_tmp.button[CELL_PAD_BTN_OFFSET_ANALOG_LEFT_X] <= DEADZONE_LOW) ? (1ULL << RARCH_ANALOG_LEFT_X_DPAD_LEFT) : 0;
-            *state_cur |= (state_tmp.button[CELL_PAD_BTN_OFFSET_ANALOG_LEFT_X] >= DEADZONE_HIGH) ? (1ULL << RARCH_ANALOG_LEFT_X_DPAD_RIGHT) : 0;
-            *state_cur |= (state_tmp.button[CELL_PAD_BTN_OFFSET_ANALOG_LEFT_Y] <= DEADZONE_LOW) ? (1ULL << RARCH_ANALOG_LEFT_Y_DPAD_UP) : 0;
-            *state_cur |= (state_tmp.button[CELL_PAD_BTN_OFFSET_ANALOG_LEFT_Y] >= DEADZONE_HIGH) ? (1ULL << RARCH_ANALOG_LEFT_Y_DPAD_DOWN) : 0;
-            *state_cur |= (state_tmp.button[CELL_PAD_BTN_OFFSET_ANALOG_RIGHT_X] <= DEADZONE_LOW) ? (1ULL << RARCH_ANALOG_RIGHT_X_DPAD_LEFT) : 0;
-            *state_cur |= (state_tmp.button[CELL_PAD_BTN_OFFSET_ANALOG_RIGHT_X] >= DEADZONE_HIGH) ? (1ULL << RARCH_ANALOG_RIGHT_X_DPAD_RIGHT) : 0;
-            *state_cur |= (state_tmp.button[CELL_PAD_BTN_OFFSET_ANALOG_RIGHT_Y] <= DEADZONE_LOW) ? (1ULL << RARCH_ANALOG_RIGHT_Y_DPAD_UP) : 0;
-            *state_cur |= (state_tmp.button[CELL_PAD_BTN_OFFSET_ANALOG_RIGHT_Y] >= DEADZONE_HIGH) ? (1ULL << RARCH_ANALOG_RIGHT_Y_DPAD_DOWN) : 0;
-         }
 #endif
       }
    }
 
    uint64_t *state_p1 = &state[0];
    uint64_t *lifecycle_state = &g_extern.lifecycle_state;
-   bool dpad_emulation = (g_settings.input.dpad_emulation[0] != ANALOG_DPAD_NONE);
 
    *lifecycle_state &= ~(
          (1ULL << RARCH_FAST_FORWARD_HOLD_KEY) | 
@@ -199,22 +166,6 @@ static void ps3_input_poll(void *data)
          (1ULL << RARCH_REWIND) |
          (1ULL << RARCH_QUIT_KEY) |
          (1ULL << RARCH_MENU_TOGGLE));
-
-   if (dpad_emulation)
-   {
-      if ((*state_p1 & (1ULL << RARCH_ANALOG_RIGHT_Y_DPAD_DOWN)) && !(*state_p1 & (1ULL << RETRO_DEVICE_ID_JOYPAD_R2)))
-         *lifecycle_state |= (1ULL << RARCH_FAST_FORWARD_HOLD_KEY);
-      if ((*state_p1 & (1ULL << RARCH_ANALOG_RIGHT_Y_DPAD_UP)) && (*state_p1 & (1ULL << RETRO_DEVICE_ID_JOYPAD_R2)))
-         *lifecycle_state |= (1ULL << RARCH_LOAD_STATE_KEY);
-      if ((*state_p1 & (1ULL << RARCH_ANALOG_RIGHT_Y_DPAD_DOWN)) && (*state_p1 & (1ULL << RETRO_DEVICE_ID_JOYPAD_R2)))
-         *lifecycle_state |= (1ULL << RARCH_SAVE_STATE_KEY);
-      if ((*state_p1 & (1ULL << RARCH_ANALOG_RIGHT_X_DPAD_RIGHT)) && (*state_p1 & (1ULL << RETRO_DEVICE_ID_JOYPAD_R2)))
-         *lifecycle_state |= (1ULL << RARCH_STATE_SLOT_PLUS);
-      if ((*state_p1 & (1ULL << RARCH_ANALOG_RIGHT_X_DPAD_LEFT)) && (*state_p1 & (1ULL << RETRO_DEVICE_ID_JOYPAD_R2)))
-         *lifecycle_state |= (1ULL << RARCH_STATE_SLOT_MINUS);
-      if ((*state_p1 & (1ULL << RARCH_ANALOG_RIGHT_Y_DPAD_UP)) && !(*state_p1 & (1ULL << RETRO_DEVICE_ID_JOYPAD_R2)))
-         *lifecycle_state |= (1ULL << RARCH_REWIND);
-   }
 
    if ((*state_p1 & (1ULL << RETRO_DEVICE_ID_JOYPAD_L3)) && (*state_p1 & (1ULL << RETRO_DEVICE_ID_JOYPAD_R3)))
       *lifecycle_state |= (1ULL << RARCH_MENU_TOGGLE);
@@ -445,36 +396,8 @@ static void ps3_input_set_keybinds(void *data, unsigned device,
          g_settings.input.binds[port][i].def_joykey = platform_keys[i].joykey;
          g_settings.input.binds[port][i].joykey = g_settings.input.binds[port][i].def_joykey;
       }
-      g_settings.input.dpad_emulation[port] = ANALOG_DPAD_LSTICK;
    }
    
-   if (keybind_action & (1ULL << KEYBINDS_ACTION_SET_ANALOG_DPAD_NONE))
-   {
-      g_settings.input.dpad_emulation[port] = ANALOG_DPAD_NONE;
-      g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_UP].joykey	= platform_keys[RETRO_DEVICE_ID_JOYPAD_UP].joykey;
-      g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_DOWN].joykey	= platform_keys[RETRO_DEVICE_ID_JOYPAD_DOWN].joykey;
-      g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_LEFT].joykey	= platform_keys[RETRO_DEVICE_ID_JOYPAD_LEFT].joykey;
-      g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_RIGHT].joykey	= platform_keys[RETRO_DEVICE_ID_JOYPAD_RIGHT].joykey;
-   }
-
-   if (keybind_action & (1ULL << KEYBINDS_ACTION_SET_ANALOG_DPAD_LSTICK))
-   {
-      g_settings.input.dpad_emulation[port] = ANALOG_DPAD_LSTICK;
-      g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_UP].joykey	= platform_keys[RARCH_ANALOG_LEFT_Y_DPAD_UP].joykey;
-      g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_DOWN].joykey	= platform_keys[RARCH_ANALOG_LEFT_Y_DPAD_DOWN].joykey;
-      g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_LEFT].joykey	= platform_keys[RARCH_ANALOG_LEFT_X_DPAD_LEFT].joykey;
-      g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_RIGHT].joykey	= platform_keys[RARCH_ANALOG_LEFT_X_DPAD_RIGHT].joykey;
-   }
-
-   if (keybind_action & (1ULL << KEYBINDS_ACTION_SET_ANALOG_DPAD_RSTICK))
-   {
-      g_settings.input.dpad_emulation[port] = ANALOG_DPAD_RSTICK;
-      g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_UP].joykey	= platform_keys[RARCH_ANALOG_RIGHT_Y_DPAD_UP].joykey;
-      g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_DOWN].joykey	= platform_keys[RARCH_ANALOG_RIGHT_Y_DPAD_DOWN].joykey;
-      g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_LEFT].joykey	= platform_keys[RARCH_ANALOG_RIGHT_X_DPAD_LEFT].joykey;
-      g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_RIGHT].joykey	= platform_keys[RARCH_ANALOG_RIGHT_X_DPAD_RIGHT].joykey;
-   }
-
    if (keybind_action & (1ULL << KEYBINDS_ACTION_GET_BIND_LABEL))
    {
       struct platform_bind *ret = (struct platform_bind*)data;
