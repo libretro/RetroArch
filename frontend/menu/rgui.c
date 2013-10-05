@@ -143,6 +143,8 @@ static void *rgui_init(void)
    rgui->selection_buf = (rgui_list_t*)calloc(1, sizeof(rgui_list_t));
    rgui_list_push(rgui->menu_stack, "", RGUI_SETTINGS, 0);
    rgui->selection_ptr = 0;
+   rgui->push_start_screen = g_settings.rgui_show_start_screen;
+   g_settings.rgui_show_start_screen = false;
    rgui_settings_populate_entries(rgui);
 
    // Make sure that custom viewport is something sane incase we use it
@@ -303,6 +305,7 @@ static void rgui_settings_populate_entries(rgui_handle_t *rgui)
 #endif
    rgui_list_push(rgui->selection_buf, "RetroArch Config", RGUI_SETTINGS_CONFIG, 0);
    rgui_list_push(rgui->selection_buf, "Save New Config", RGUI_SETTINGS_SAVE_CONFIG, 0);
+   rgui_list_push(rgui->selection_buf, "Help", RGUI_START_SCREEN, 0);
    rgui_list_push(rgui->selection_buf, "Quit RetroArch", RGUI_SETTINGS_QUIT_RARCH, 0);
 }
 
@@ -569,6 +572,70 @@ static int rgui_custom_bind_iterate(rgui_handle_t *rgui, rgui_action_t action)
       rgui->old_input_state = -1ULL;
    }
    rgui->binds = binds;
+   return 0;
+}
+
+static int rgui_start_screen_iterate(rgui_handle_t *rgui, rgui_action_t action)
+{
+   render_text(rgui);
+   char msg[1024];
+
+   char desc[6][64];
+   static const unsigned binds[] = {
+      RETRO_DEVICE_ID_JOYPAD_UP,
+      RETRO_DEVICE_ID_JOYPAD_DOWN,
+      RETRO_DEVICE_ID_JOYPAD_A,
+      RETRO_DEVICE_ID_JOYPAD_B,
+      RARCH_MENU_TOGGLE,
+      RARCH_QUIT_KEY,
+   };
+
+   for (unsigned i = 0; i < ARRAY_SIZE(binds); i++)
+   {
+      if (driver.input && driver.input->set_keybinds)
+      {
+         struct platform_bind key_label;
+         strlcpy(key_label.desc, "Unknown", sizeof(key_label.desc));
+         key_label.joykey = g_settings.input.binds[0][binds[i]].joykey;
+         driver.input->set_keybinds(&key_label, 0, 0, 0, 1ULL << KEYBINDS_ACTION_GET_BIND_LABEL);
+         strlcpy(desc[i], key_label.desc, sizeof(desc[i]));
+      }
+      else
+      {
+         const struct retro_keybind *bind = &g_settings.input.binds[0][binds[i]];
+         input_get_bind_string(desc[i], bind, sizeof(desc[i]));
+      }
+   }
+
+   snprintf(msg, sizeof(msg),
+         "-- Welcome to RetroArch / RGUI --\n"
+         " \n" // strtok_r doesn't split empty strings.
+
+         "Basic RGUI controls:\n"
+         "    Scroll (Up): %-20s\n"
+         "  Scroll (Down): %-20s\n"
+         "      Accept/OK: %-20s\n"
+         "           Back: %-20s\n"
+         "Enter/Exit RGUI: %-20s\n"
+         " Exit RetroArch: %-20s\n"
+         " \n"
+
+         "To play a game:\n"
+         "Load a libretro core (Core).\n"
+         "Load a ROM (Load Game).     \n"
+         " \n"
+
+         "See Path Options to set directories\n"
+         "for faster access to files.\n"
+         " \n"
+
+         "Press Accept/OK to continue.",
+         desc[0], desc[1], desc[2], desc[3], desc[4], desc[5]);
+
+   render_messagebox(rgui, msg);
+
+   if (action == RGUI_ACTION_OK)
+      rgui_list_pop(rgui->menu_stack, &rgui->selection_ptr);
    return 0;
 }
 
@@ -893,6 +960,13 @@ static int rgui_settings_iterate(rgui_handle_t *rgui, rgui_action_t action)
 
    render_text(rgui);
 
+   // Have to defer it so we let settings refresh.
+   if (rgui->push_start_screen)
+   {
+      rgui->push_start_screen = false;
+      rgui_list_push(rgui->menu_stack, "", RGUI_START_SCREEN, 0);
+   }
+
    return 0;
 }
 
@@ -1127,7 +1201,9 @@ static int rgui_iterate(void *data, unsigned action)
       driver.video_poke->set_texture_frame(driver.video_data, menu_framebuf,
             false, RGUI_WIDTH, RGUI_HEIGHT, 1.0f);
 
-   if (menu_type_is_settings(menu_type))
+   if (menu_type == RGUI_START_SCREEN)
+      return rgui_start_screen_iterate(rgui, action);
+   else if (menu_type_is_settings(menu_type))
       return rgui_settings_iterate(rgui, action);
    else if (menu_type == RGUI_SETTINGS_CUSTOM_VIEWPORT || menu_type == RGUI_SETTINGS_CUSTOM_VIEWPORT_2)
       return rgui_viewport_iterate(rgui, action);

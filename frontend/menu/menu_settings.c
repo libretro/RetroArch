@@ -88,6 +88,10 @@ int menu_set_settings(unsigned setting, unsigned action)
 
    switch (setting)
    {
+      case RGUI_START_SCREEN:
+         if (action == RGUI_ACTION_OK)
+            rgui_list_push(rgui->menu_stack, "", RGUI_START_SCREEN, 0);
+         break;
       case RGUI_SETTINGS_REWIND_ENABLE:
          if (action == RGUI_ACTION_OK ||
                action == RGUI_ACTION_LEFT ||

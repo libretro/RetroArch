@@ -406,6 +406,9 @@ static const bool stdin_cmd_enable = false;
 // Number of entries that will be kept in ROM history file.
 static const unsigned game_history_size = 100;
 
+// Show RGUI start-up screen on boot.
+static const bool rgui_show_start_screen = true;
+
 
 ////////////////////
 // Keybinds, Joypad
