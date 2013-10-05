@@ -189,6 +189,7 @@ void shader_manager_get_str(struct gfx_shader *shader,
 struct rgui_file
 {
    char *path;
+   char *alt;
    unsigned type;
    size_t directory_ptr;
 };
@@ -209,6 +210,7 @@ void rgui_list_push(void *userdata,
    }
 
    list->list[list->size].path = strdup(path);
+   list->list[list->size].alt = NULL;
    list->list[list->size].type = type;
    list->list[list->size].directory_ptr = directory_ptr;
    list->size++;
@@ -234,8 +236,25 @@ void rgui_list_free(rgui_list_t *list)
 void rgui_list_clear(rgui_list_t *list)
 {
    for (size_t i = 0; i < list->size; i++)
+   {
       free(list->list[i].path);
+      free(list->list[i].alt);
+   }
    list->size = 0;
+}
+
+void rgui_list_set_alt_at_offset(rgui_list_t *list, size_t index,
+      const char *alt)
+{
+   free(list->list[index].alt);
+   list->list[index].alt = strdup(alt);
+}
+
+void rgui_list_get_alt_at_offset(const rgui_list_t *list, size_t index,
+      const char **alt)
+{
+   if (alt)
+      *alt = list->list[index].alt ? list->list[index].alt : list->list[index].path;
 }
 
 void rgui_list_get_at_offset(const rgui_list_t *list, size_t index,

@@ -360,6 +360,25 @@ static void render_text(rgui_handle_t *rgui)
       }
       else
 #endif
+#ifdef HAVE_DYNAMIC
+      // Pretty-print libretro cores from menu.
+      if (menu_type == RGUI_SETTINGS_CORE)
+      {
+         if (type == RGUI_FILE_PLAIN)
+         {
+            strlcpy(type_str, "(CORE)", sizeof(type_str));
+            rgui_list_get_alt_at_offset(rgui->selection_buf, i, &path);
+            w = 6;
+         }
+         else
+         {
+            strlcpy(type_str, "(DIR)", sizeof(type_str));
+            type = RGUI_FILE_DIRECTORY;
+            w = 5;
+         }
+      }
+      else 
+#endif
       if (menu_type == RGUI_SETTINGS_CORE ||
             menu_type == RGUI_SETTINGS_CONFIG ||
 #ifdef HAVE_OVERLAY
