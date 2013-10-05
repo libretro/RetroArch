@@ -1,0 +1,5 @@
+display_name = "Arcade (MAME 2013)"
+supported_extensions = "zip|7z|chd"
+corename = "MAME 2013 (0.150)"
+manufacturer = "Various"
+systemname = "Arcade (various)"
