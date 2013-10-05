@@ -79,7 +79,7 @@ static bool string_list_capacity(struct string_list *list, size_t cap)
    return true;
 }
 
-static struct string_list *string_list_new(void)
+struct string_list *string_list_new(void)
 {
    struct string_list *list = (struct string_list*)calloc(1, sizeof(*list));
    if (!list)
@@ -94,7 +94,7 @@ static struct string_list *string_list_new(void)
    return list;
 }
 
-static bool string_list_append(struct string_list *list, const char *elem, union string_list_elem_attr attr)
+bool string_list_append(struct string_list *list, const char *elem, union string_list_elem_attr attr)
 {
    if (list->size >= list->cap &&
          !string_list_capacity(list, list->cap * 2))
