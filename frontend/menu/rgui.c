@@ -142,7 +142,8 @@ static void *rgui_init(void)
    rgui->selection_buf = (rgui_list_t*)calloc(1, sizeof(rgui_list_t));
    rgui_list_push(rgui->menu_stack, "", RGUI_SETTINGS, 0);
    rgui->selection_ptr = 0;
-   rgui->push_start_screen = true;
+   rgui->push_start_screen = g_settings.rgui_show_start_screen;
+   g_settings.rgui_show_start_screen = false;
    rgui_settings_populate_entries(rgui);
 
    // Make sure that custom viewport is something sane incase we use it

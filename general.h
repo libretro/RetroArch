@@ -286,6 +286,7 @@ struct settings
 #if defined(HAVE_RGUI) || defined(HAVE_RMENU) || defined(HAVE_RMENU_XUI)
    char rgui_browser_directory[PATH_MAX];
    char rgui_config_directory[PATH_MAX];
+   bool rgui_show_start_screen;
 #endif
 };
 
