@@ -20,6 +20,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <limits.h>
+#include <ctype.h>
 
 #include "rgui.h"
 #include "menu_context.h"
@@ -898,6 +899,80 @@ static void history_parse(rgui_handle_t *rgui)
    }
 }
 
+static inline bool rgui_list_elem_is_dir(rgui_list_t *buf, unsigned offset)
+{
+   const char *path = NULL;
+   unsigned type = 0;
+   rgui_list_get_at_offset(buf, offset, &path, &type);
+   return type != RGUI_FILE_PLAIN;
+}
+
+static inline int rgui_list_get_first_char(rgui_list_t *buf, unsigned offset)
+{
+   const char *path = NULL;
+   unsigned type = 0;
+   rgui_list_get_at_offset(buf, offset, &path, &type);
+   int ret = tolower(*path);
+  
+   // "Normalize" non-alphabetical entries so they are lumped together for purposes of jumping.
+   if (ret < 'a')
+      ret = 'a' - 1;
+   else if (ret > 'z')
+      ret = 'z' + 1;
+   return ret;
+}
+
+static void rgui_build_scroll_indices(rgui_handle_t *rgui, rgui_list_t *buf)
+{
+   rgui->scroll_indices_size = 0;
+   if (!buf->size)
+      return;
+
+   rgui->scroll_indices[rgui->scroll_indices_size++] = 0;
+   int current = rgui_list_get_first_char(buf, 0);
+   bool current_is_dir = rgui_list_elem_is_dir(buf, 0);
+
+   for (size_t i = 1; i < buf->size; i++)
+   {
+      int first = rgui_list_get_first_char(buf, i);
+      bool is_dir = rgui_list_elem_is_dir(buf, i);
+
+      if ((current_is_dir && !is_dir) || (first > current))
+         rgui->scroll_indices[rgui->scroll_indices_size++] = i;
+
+      current = first;
+      current_is_dir = is_dir;
+   }
+
+   rgui->scroll_indices[rgui->scroll_indices_size++] = buf->size - 1;
+}
+
+static inline void rgui_descend_alphabet(rgui_handle_t *rgui, size_t *ptr_out)
+{
+   if (!rgui->scroll_indices_size)
+      return;
+   size_t ptr = *ptr_out;
+   if (ptr == 0)
+      return;
+   size_t i = rgui->scroll_indices_size - 1;
+   while (i && rgui->scroll_indices[i - 1] >= ptr)
+      i--;
+   *ptr_out = rgui->scroll_indices[i - 1];
+}
+
+static inline void rgui_ascend_alphabet(rgui_handle_t *rgui, size_t *ptr_out)
+{
+   if (!rgui->scroll_indices_size)
+      return;
+   size_t ptr = *ptr_out;
+   if (ptr == rgui->scroll_indices[rgui->scroll_indices_size - 1])
+      return;
+   size_t i = 0;
+   while (i < rgui->scroll_indices_size - 1 && rgui->scroll_indices[i + 1] <= ptr)
+      i++;
+   *ptr_out = rgui->scroll_indices[i + 1];
+}
+
 static bool rgui_directory_parse(rgui_handle_t *rgui, const char *directory, unsigned menu_type, void *ctx)
 {
    if (!*directory)
@@ -1009,6 +1084,7 @@ static bool rgui_directory_parse(rgui_handle_t *rgui, const char *directory, uns
    }
 
    string_list_free(list);
+   rgui_build_scroll_indices(rgui, (rgui_list_t*)ctx);
    return true;
 }
 
@@ -1035,46 +1111,44 @@ static int rgui_iterate(void *data, unsigned action)
    if (rgui->need_refresh && action != RGUI_ACTION_MESSAGE)
       action = RGUI_ACTION_NOOP;
 
+   unsigned scroll_speed = (max(rgui->scroll_accel, 2) - 2) / 4 + 1;
+   unsigned fast_scroll_speed = 4 + 4 * scroll_speed;
+
    switch (action)
    {
       case RGUI_ACTION_UP:
-         if (rgui->selection_ptr > 0)
-            rgui->selection_ptr--;
+         if (rgui->selection_ptr >= scroll_speed)
+            rgui->selection_ptr -= scroll_speed;
          else
             rgui->selection_ptr = rgui->selection_buf->size - 1;
          break;
 
       case RGUI_ACTION_DOWN:
-         if (rgui->selection_ptr + 1 < rgui->selection_buf->size)
-            rgui->selection_ptr++;
+         if (rgui->selection_ptr + scroll_speed < rgui->selection_buf->size)
+            rgui->selection_ptr += scroll_speed;
          else
             rgui->selection_ptr = 0;
          break;
 
       case RGUI_ACTION_LEFT:
-         if (rgui->selection_ptr > 8)
-            rgui->selection_ptr -= 8;
+         if (rgui->selection_ptr > fast_scroll_speed)
+            rgui->selection_ptr -= fast_scroll_speed;
          else
             rgui->selection_ptr = 0;
          break;
 
       case RGUI_ACTION_RIGHT:
-         if (rgui->selection_ptr + 8 < rgui->selection_buf->size)
-            rgui->selection_ptr += 8;
+         if (rgui->selection_ptr + fast_scroll_speed < rgui->selection_buf->size)
+            rgui->selection_ptr += fast_scroll_speed;
          else
             rgui->selection_ptr = rgui->selection_buf->size - 1;
          break;
+
       case RGUI_ACTION_SCROLL_UP:
-         if (rgui->selection_ptr > 16)
-            rgui->selection_ptr -= 16;
-         else
-            rgui->selection_ptr = 0;
+         rgui_descend_alphabet(rgui, &rgui->selection_ptr);
          break;
       case RGUI_ACTION_SCROLL_DOWN:
-         if (rgui->selection_ptr + 16 < rgui->selection_buf->size)
-            rgui->selection_ptr += 16;
-         else
-            rgui->selection_ptr = rgui->selection_buf->size - 1;
+         rgui_ascend_alphabet(rgui, &rgui->selection_ptr);
          break;
       
       case RGUI_ACTION_CANCEL:
@@ -1309,6 +1383,7 @@ static int rgui_iterate(void *data, unsigned action)
       rgui->need_refresh = false;
       rgui_list_clear(rgui->selection_buf);
 
+      rgui->scroll_indices_size = 0;
       if (menu_type == RGUI_SETTINGS_OPEN_HISTORY)
          history_parse(rgui);
       else
