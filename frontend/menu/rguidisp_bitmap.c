@@ -569,6 +569,7 @@ static void render_text(rgui_handle_t *rgui)
             case RGUI_SETTINGS_OPTIONS:
             case RGUI_SETTINGS_CUSTOM_BIND_ALL:
             case RGUI_SETTINGS_CUSTOM_BIND_DEFAULT_ALL:
+            case RGUI_START_SCREEN:
                strlcpy(type_str, "...", sizeof(type_str));
                break;
 #ifdef HAVE_OVERLAY
