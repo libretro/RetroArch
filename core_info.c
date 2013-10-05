@@ -23,49 +23,52 @@ core_info_list_t *get_core_info_list(const char *modules_path)
 {
    struct string_list *contents = dir_list_new(modules_path, EXT_EXECUTABLES, false);
 
-   core_info_t *core_info;
-   core_info_list_t *core_info_list;
-   unsigned i;
+   core_info_t *core_info = NULL;
+   core_info_list_t *core_info_list = NULL;
 
    if (!contents)
       return NULL;
 
-   core_info = (core_info_t*)malloc(contents->size * sizeof(core_info_t));
-   memset(core_info, 0, contents->size * sizeof(core_info_t));
+   core_info_list = (core_info_list_t*)calloc(1, sizeof(*core_info_list));
+   if (!core_info_list)
+      goto error;
 
-   core_info_list = (core_info_list_t*)malloc(sizeof(core_info_list_t));
-   memset(core_info_list, 0, sizeof(core_info_list_t));
+   core_info = (core_info_t*)calloc(contents->size, sizeof(*core_info));
+   if (!core_info)
+      goto error;
+
    core_info_list->list = core_info;
    core_info_list->count = contents->size;
 
-   for (i = 0; i < contents->size; i ++)
+   for (size_t i = 0; i < contents->size; i++)
    {
       char buffer[PATH_MAX];
       char info_path[PATH_MAX];
-      char *substr;
    
       core_info[i].path = strdup(contents->elems[i].data);
 
+      // FIXME: Need to do something about this logic.
+      // fill_pathname() *should* be sufficient.
+      //
       // NOTE: This assumes all modules are named module_name_{tag}.ext
       //       {tag} must not contain an underscore. (This isn't true for PC versions)
-      snprintf(buffer, PATH_MAX, "%s", contents->elems[i].data);
-      substr = strrchr(buffer, '_');
+      strlcpy(buffer, contents->elems[i].data, sizeof(buffer));
+      char *substr = strrchr(buffer, '_');
       if (substr)
-         *substr = 0;
+         *substr = '\0';
 
       // NOTE: Can't just use fill_pathname on iOS as it will cut at RetroArch.app;
       //       perhaps fill_pathname shouldn't cut before the last path element.
       if (substr)
          snprintf(info_path, PATH_MAX, "%s.info", buffer);
       else
-         fill_pathname(info_path, buffer, ".info", PATH_MAX);         
+         fill_pathname(info_path, buffer, ".info", sizeof(info_path));
 
       core_info[i].data = config_file_new(info_path);
 
       if (core_info[i].data)
       {
          config_get_string(core_info[i].data, "display_name", &core_info[i].display_name);
-
          if (config_get_string(core_info[i].data, "supported_extensions", &core_info[i].supported_extensions) &&
                core_info[i].supported_extensions)
             core_info[i].supported_extensions_list = string_split(core_info[i].supported_extensions, "|");
@@ -76,18 +79,21 @@ core_info_list_t *get_core_info_list(const char *modules_path)
    }
 
    dir_list_free(contents);
-
    return core_info_list;
+
+error:
+   if (contents)
+      dir_list_free(contents);
+   free_core_info_list(core_info_list);
+   return NULL;
 }
 
 void free_core_info_list(core_info_list_t *core_info_list)
 {
-   int i;
-
    if (!core_info_list)
       return;
 
-   for (i = 0; i < core_info_list->count; i++)
+   for (size_t i = 0; i < core_info_list->count; i++)
    {
       free(core_info_list->list[i].path);
       free(core_info_list->list[i].display_name);
@@ -100,7 +106,7 @@ void free_core_info_list(core_info_list_t *core_info_list)
    free(core_info_list);
 }
 
-bool does_core_support_file(core_info_t* core, const char *path)
+bool does_core_support_file(core_info_t *core, const char *path)
 {
    if (!path || !core || !core->supported_extensions_list)
       return false;

@@ -16,29 +16,31 @@
 #ifndef CORE_INFO_H_
 #define CORE_INFO_H_
 
+#include "conf/config_file.h"
+#include "file.h"
+#include <stddef.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-#include "conf/config_file.h"
-
 typedef struct {
-   char * path;
-   config_file_t* data;
-   char * display_name;
-   char * supported_extensions;
-   struct string_list * supported_extensions_list;
+   char *path;
+   config_file_t *data;
+   char *display_name;
+   char *supported_extensions;
+   struct string_list *supported_extensions_list;
 } core_info_t;
 
 typedef struct {
    core_info_t *list;
-   int count;
+   size_t count;
 } core_info_list_t;
 
 core_info_list_t *get_core_info_list(const char *modules_path);
-void free_core_info_list(core_info_list_t * core_info_list);
+void free_core_info_list(core_info_list_t *core_info_list);
 
-bool does_core_support_file(core_info_t* core, const char *path);
+bool does_core_support_file(core_info_t *core, const char *path);
 
 #ifdef __cplusplus
 }

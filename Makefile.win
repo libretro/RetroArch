@@ -23,6 +23,7 @@ OBJ = frontend/frontend.o \
 		compat/compat.o \
 		screenshot.o \
 		cheats.o \
+		core_info.o \
 		audio/utils.o \
 		input/overlay.o \
 		fifo_buffer.o \
