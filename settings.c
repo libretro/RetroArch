@@ -230,6 +230,8 @@ void config_set_defaults(void)
    g_settings.stdin_cmd_enable     = stdin_cmd_enable;
    g_settings.game_history_size    = game_history_size;
 
+   g_settings.rgui_show_start_screen = rgui_show_start_screen;
+
    rarch_assert(sizeof(g_settings.input.binds[0]) >= sizeof(retro_keybinds_1));
    rarch_assert(sizeof(g_settings.input.binds[1]) >= sizeof(retro_keybinds_rest));
    memcpy(g_settings.input.binds[0], retro_keybinds_1, sizeof(retro_keybinds_1));
@@ -760,6 +762,7 @@ bool config_load_file(const char *path)
    CONFIG_GET_PATH(rgui_config_directory, "rgui_config_directory");
    if (!strcmp(g_settings.rgui_config_directory, "default"))
       *g_settings.rgui_config_directory = '\0';
+   CONFIG_GET_BOOL(rgui_show_start_screen, "rgui_show_start_screen");
 #endif
 
 #ifdef HAVE_OVERLAY
@@ -1088,6 +1091,7 @@ bool config_save_file(const char *path)
 #if defined(HAVE_RGUI) || defined(HAVE_RMENU) || defined(HAVE_RMENU_XUI)
    config_set_string(conf, "rgui_browser_directory", *g_settings.rgui_browser_directory ? g_settings.rgui_browser_directory : "default");
    config_set_string(conf, "rgui_config_directory", *g_settings.rgui_config_directory ? g_settings.rgui_config_directory : "default");
+   config_set_bool(conf, "rgui_show_start_screen", g_settings.rgui_show_start_screen);
 #endif
 
    config_set_string(conf, "game_history_path", g_settings.game_history_path);
