@@ -293,13 +293,17 @@ static void render_text(rgui_handle_t *rgui)
       snprintf(title, sizeof(title), "SYSTEM DIR %s", dir);
    else
    {
-      const char *core_name = rgui->info.library_name;
-      if (!core_name)
-         core_name = g_extern.system.info.library_name;
-      if (!core_name)
-         core_name = "No Core";
-
-      snprintf(title, sizeof(title), "GAME (%s) %s", core_name, dir);
+      if (rgui->defer_core)
+         snprintf(title, sizeof(title), "GAME %s", dir);
+      else
+      {
+         const char *core_name = rgui->info.library_name;
+         if (!core_name)
+            core_name = g_extern.system.info.library_name;
+         if (!core_name)
+            core_name = "No Core";
+         snprintf(title, sizeof(title), "GAME (%s) %s", core_name, dir);
+      }
    }
 
    char title_buf[256];
