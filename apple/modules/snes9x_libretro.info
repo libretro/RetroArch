@@ -1,5 +1,0 @@
-display_name = "SNES / Super Famicom (SNES9x)"
-supported_extensions = "smc|fig|sfc|gd3|gd7|dx2|bsx|swc"
-corename = "SNES9x"
-manufacturer = "Nintendo"
-systemname = "Super Nintendo Entertainment System"

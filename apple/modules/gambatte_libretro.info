@@ -1,5 +1,0 @@
-display_name = "Game Boy / Game Boy Color (Gambatte)"
-supported_extensions = "gb|gbc|dmg"
-corename = "gambatte"
-manufacturer = "Nintendo"
-systemname = "Game Boy Color"

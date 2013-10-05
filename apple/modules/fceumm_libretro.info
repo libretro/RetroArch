@@ -1,6 +1,0 @@
-display_name = "NES / Famicom (FCEUmm)"
-supported_extensions = "nes|unif"
-corename = "FCEUmm"
-manufacturer = "Nintendo"
-systemname = "Nintendo Entertainment System"
-
