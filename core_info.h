@@ -37,10 +37,10 @@ typedef struct {
    size_t count;
 } core_info_list_t;
 
-core_info_list_t *get_core_info_list(const char *modules_path);
-void free_core_info_list(core_info_list_t *core_info_list);
+core_info_list_t *core_info_list_new(const char *modules_path);
+void core_info_list_free(core_info_list_t *core_info_list);
 
-bool does_core_support_file(core_info_t *core, const char *path);
+bool core_info_list_does_support_file(core_info_t *core, const char *path);
 
 #ifdef __cplusplus
 }

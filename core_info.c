@@ -19,7 +19,7 @@
 #include "file_ext.h"
 #include "config.def.h"
 
-core_info_list_t *get_core_info_list(const char *modules_path)
+core_info_list_t *core_info_list_new(const char *modules_path)
 {
    struct string_list *contents = dir_list_new(modules_path, EXT_EXECUTABLES, false);
 
@@ -84,11 +84,11 @@ core_info_list_t *get_core_info_list(const char *modules_path)
 error:
    if (contents)
       dir_list_free(contents);
-   free_core_info_list(core_info_list);
+   core_info_list_free(core_info_list);
    return NULL;
 }
 
-void free_core_info_list(core_info_list_t *core_info_list)
+void core_info_list_free(core_info_list_t *core_info_list)
 {
    if (!core_info_list)
       return;
@@ -106,7 +106,7 @@ void free_core_info_list(core_info_list_t *core_info_list)
    free(core_info_list);
 }
 
-bool does_core_support_file(core_info_t *core, const char *path)
+bool core_info_list_does_support_file(core_info_t *core, const char *path)
 {
    if (!path || !core || !core->supported_extensions_list)
       return false;
