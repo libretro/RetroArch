@@ -17,7 +17,12 @@
 #include "general.h"
 #include "file.h"
 #include "file_ext.h"
+#include "file_extract.h"
 #include "config.def.h"
+
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
 
 core_info_list_t *core_info_list_new(const char *modules_path)
 {
@@ -92,7 +97,11 @@ core_info_list_t *core_info_list_new(const char *modules_path)
    }
 
    if (all_ext_len)
+   {
+      all_ext_len += strlen("|zip");
       core_info_list->all_ext = (char*)calloc(1, all_ext_len);
+   }
+
    if (core_info_list->all_ext)
    {
       for (size_t i = 0; i < core_info_list->count; i++)
@@ -103,6 +112,7 @@ core_info_list_t *core_info_list_new(const char *modules_path)
             strlcat(core_info_list->all_ext, "|", all_ext_len);
          }
       }
+      strlcat(core_info_list->all_ext, "|zip", all_ext_len);
    }
 
    dir_list_free(contents);
@@ -134,6 +144,17 @@ void core_info_list_free(core_info_list_t *core_info_list)
    free(core_info_list);
 }
 
+bool core_info_does_support_any_file(const core_info_t *core, const struct string_list *list)
+{
+   if (!list || !core || !core->supported_extensions_list)
+      return false;
+
+   for (size_t i = 0; i < list->size; i++)
+      if (string_list_find_elem_prefix(core->supported_extensions_list, ".", path_get_extension(list->elems[i].data)))
+         return true;
+   return false;
+}
+
 bool core_info_does_support_file(const core_info_t *core, const char *path)
 {
    if (!path || !core || !core->supported_extensions_list)
@@ -147,13 +168,20 @@ const char *core_info_list_get_all_extensions(core_info_list_t *core_info_list)
    return core_info_list->all_ext;
 }
 
-static const char *core_info_tmp_path; // qsort_r() is not in standard C, sadly.
+// qsort_r() is not in standard C, sadly.
+static const char *core_info_tmp_path;
+static const struct string_list *core_info_tmp_list;
+
 static int core_info_qsort_cmp(const void *a_, const void *b_)
 {
    const core_info_t *a = (const core_info_t*)a_;
    const core_info_t *b = (const core_info_t*)b_;
-   int support_a = core_info_does_support_file(a, core_info_tmp_path);
-   int support_b = core_info_does_support_file(b, core_info_tmp_path);
+
+   int support_a = core_info_does_support_any_file(a, core_info_tmp_list) ||
+      core_info_does_support_file(a, core_info_tmp_path);
+   int support_b = core_info_does_support_any_file(b, core_info_tmp_list) ||
+      core_info_does_support_file(b, core_info_tmp_path);
+
    if (support_a != support_b)
       return support_b - support_a;
    else
@@ -164,14 +192,29 @@ void core_info_list_get_supported_cores(core_info_list_t *core_info_list, const 
       const core_info_t **infos, size_t *num_infos)
 {
    core_info_tmp_path = path;
+
+#ifdef HAVE_ZLIB
+   struct string_list *list = NULL;
+   if (!strcasecmp(path_get_extension(path), "zip"))
+      list = zlib_get_file_list(path);
+   core_info_tmp_list = list;
+#endif
+
+   // Let supported core come first in list so we can return a pointer to them.
    qsort(core_info_list->list, core_info_list->count, sizeof(core_info_t), core_info_qsort_cmp);
 
    size_t supported = 0;
    for (size_t i = 0; i < core_info_list->count; i++, supported++)
    {
-      if (!core_info_does_support_file(&core_info_list->list[i], path))
+      const core_info_t *core = &core_info_list->list[i];
+      if (!core_info_does_support_file(core, path) && !core_info_does_support_any_file(core, list))
          break;
    }
+
+#ifdef HAVE_ZLIB
+   if (list)
+      string_list_free(list);
+#endif
 
    *infos = core_info_list->list;
    *num_infos = supported;

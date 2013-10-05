@@ -1441,7 +1441,8 @@ static int rgui_iterate(void *data, unsigned action)
                   }
                   else // Present a selection.
                   {
-                     rgui_list_push(rgui->menu_stack, rgui->libretro_dir, RGUI_SETTINGS_DEFERRED_CORE, 0);
+                     rgui_list_push(rgui->menu_stack, rgui->libretro_dir, RGUI_SETTINGS_DEFERRED_CORE, rgui->selection_ptr);
+                     rgui->selection_ptr = 0;
                      rgui->need_refresh = true;
                   }
                }
