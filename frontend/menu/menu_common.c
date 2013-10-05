@@ -621,6 +621,7 @@ bool menu_iterate(void)
       {
          first_held = false;
          rgui->trigger_state = input_state;
+         rgui->scroll_accel = min(rgui->scroll_accel + 1, 64);
       }
 
       initial_held = false;
@@ -629,6 +630,7 @@ bool menu_iterate(void)
    {
       first_held = false;
       initial_held = true;
+      rgui->scroll_accel = 0;
    }
 
    rgui->delay_count++;
