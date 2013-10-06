@@ -1518,15 +1518,15 @@ static int select_setting(void *data, uint64_t action)
             break;
          case SETTING_PATH_DEFAULT_ROM_DIRECTORY:
             strlcpy(text, "Browser Directory", sizeof(text));
-            strlcpy(setting_text, g_settings.rgui_browser_directory, sizeof(setting_text));
+            menu_set_settings_label(setting_text, sizeof(setting_text), &w, settings_lut[i]);
             break;
          case SETTING_PATH_SAVESTATES_DIRECTORY:
             strlcpy(text, "Savestate Directory", sizeof(text));
-            strlcpy(setting_text, g_extern.savestate_dir, sizeof(setting_text));
+            menu_set_settings_label(setting_text, sizeof(setting_text), &w, settings_lut[i]);
             break;
          case SETTING_PATH_SRAM_DIRECTORY:
             strlcpy(text, "Savefile Directory", sizeof(text));
-            strlcpy(setting_text, g_extern.savefile_dir, sizeof(setting_text));
+            menu_set_settings_label(setting_text, sizeof(setting_text), &w, settings_lut[i]);
             break;
 #ifdef HAVE_XML
          case SETTING_PATH_CHEATS:
@@ -2200,25 +2200,28 @@ static void* rgui_init(void)
    oskutil_init(osk, 0);
 #endif
    
-   settings_lut[SETTING_CHANGE_RESOLUTION]         = RGUI_SETTINGS_VIDEO_RESOLUTION;
-   settings_lut[SETTING_ASPECT_RATIO]              = RGUI_SETTINGS_VIDEO_ASPECT_RATIO;
-   settings_lut[SETTING_HW_TEXTURE_FILTER]         = RGUI_SETTINGS_VIDEO_FILTER;
-   settings_lut[SETTING_REFRESH_RATE]              = RGUI_SETTINGS_VIDEO_REFRESH_RATE_AUTO;
-   settings_lut[SETTING_EMU_SHOW_DEBUG_INFO_MSG]   = RGUI_SETTINGS_DEBUG_TEXT;
-   settings_lut[SETTING_REWIND_ENABLED]            = RGUI_SETTINGS_REWIND_ENABLE;
-   settings_lut[SETTING_REWIND_GRANULARITY]        = RGUI_SETTINGS_REWIND_GRANULARITY;
-   settings_lut[SETTING_EMU_AUDIO_MUTE]            = RGUI_SETTINGS_AUDIO_MUTE;
-   settings_lut[SETTING_CONTROLS_NUMBER]           = RGUI_SETTINGS_BIND_PLAYER;
-   settings_lut[SETTING_DPAD_EMULATION]            = RGUI_SETTINGS_BIND_DPAD_EMULATION;
-   settings_lut[INGAME_MENU_LOAD_STATE]            = RGUI_SETTINGS_SAVESTATE_LOAD;
-   settings_lut[INGAME_MENU_SAVE_STATE]            = RGUI_SETTINGS_SAVESTATE_SAVE;
-   settings_lut[SETTING_ROTATION]                  = RGUI_SETTINGS_VIDEO_ROTATION;
-   settings_lut[INGAME_MENU_RETURN_TO_GAME]        = RGUI_SETTINGS_RESUME_GAME;
-   settings_lut[SHADERMAN_APPLY_CHANGES]           = RGUI_SETTINGS_SHADER_APPLY;
-   settings_lut[SHADERMAN_SHADER_PASSES]           = RGUI_SETTINGS_SHADER_PASSES;
-   settings_lut[INGAME_MENU_SAVE_CONFIG]           = RGUI_SETTINGS_SAVE_CONFIG;
-   settings_lut[INGAME_MENU_QUIT_RETROARCH]        = RGUI_SETTINGS_QUIT_RARCH;
-   settings_lut[SETTING_PATH_SYSTEM]               = RGUI_SYSTEM_DIR_PATH;
+   settings_lut[SETTING_CHANGE_RESOLUTION]          = RGUI_SETTINGS_VIDEO_RESOLUTION;
+   settings_lut[SETTING_ASPECT_RATIO]               = RGUI_SETTINGS_VIDEO_ASPECT_RATIO;
+   settings_lut[SETTING_HW_TEXTURE_FILTER]          = RGUI_SETTINGS_VIDEO_FILTER;
+   settings_lut[SETTING_REFRESH_RATE]               = RGUI_SETTINGS_VIDEO_REFRESH_RATE_AUTO;
+   settings_lut[SETTING_EMU_SHOW_DEBUG_INFO_MSG]    = RGUI_SETTINGS_DEBUG_TEXT;
+   settings_lut[SETTING_REWIND_ENABLED]             = RGUI_SETTINGS_REWIND_ENABLE;
+   settings_lut[SETTING_REWIND_GRANULARITY]         = RGUI_SETTINGS_REWIND_GRANULARITY;
+   settings_lut[SETTING_EMU_AUDIO_MUTE]             = RGUI_SETTINGS_AUDIO_MUTE;
+   settings_lut[SETTING_CONTROLS_NUMBER]            = RGUI_SETTINGS_BIND_PLAYER;
+   settings_lut[SETTING_DPAD_EMULATION]             = RGUI_SETTINGS_BIND_DPAD_EMULATION;
+   settings_lut[INGAME_MENU_LOAD_STATE]             = RGUI_SETTINGS_SAVESTATE_LOAD;
+   settings_lut[INGAME_MENU_SAVE_STATE]             = RGUI_SETTINGS_SAVESTATE_SAVE;
+   settings_lut[SETTING_ROTATION]                   = RGUI_SETTINGS_VIDEO_ROTATION;
+   settings_lut[INGAME_MENU_RETURN_TO_GAME]         = RGUI_SETTINGS_RESUME_GAME;
+   settings_lut[SHADERMAN_APPLY_CHANGES]            = RGUI_SETTINGS_SHADER_APPLY;
+   settings_lut[SHADERMAN_SHADER_PASSES]            = RGUI_SETTINGS_SHADER_PASSES;
+   settings_lut[INGAME_MENU_SAVE_CONFIG]            = RGUI_SETTINGS_SAVE_CONFIG;
+   settings_lut[INGAME_MENU_QUIT_RETROARCH]         = RGUI_SETTINGS_QUIT_RARCH;
+   settings_lut[SETTING_PATH_SAVESTATES_DIRECTORY]  = RGUI_SAVESTATE_DIR_PATH;
+   settings_lut[SETTING_PATH_SRAM_DIRECTORY]        = RGUI_SAVEFILE_DIR_PATH;
+   settings_lut[SETTING_PATH_SYSTEM]                = RGUI_SYSTEM_DIR_PATH;
+   settings_lut[SETTING_PATH_DEFAULT_ROM_DIRECTORY] = RGUI_BROWSER_DIR_PATH;
 
    return rgui;
 }
