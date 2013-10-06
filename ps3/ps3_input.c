@@ -30,38 +30,10 @@
 #include "../libretro.h"
 #include "../general.h"
 
-/*============================================================
-  PS3 MOUSE
-  ============================================================ */
-
 #ifdef HAVE_MOUSE
-
 #ifndef __PSL1GHT__
 #define MAX_MICE 7
 #endif
-
-static void ps3_mouse_input_deinit(void)
-{
-   cellMouseEnd();
-}
-
-static uint32_t ps3_mouse_input_mice_connected(void)
-{
-   CellMouseInfo mouse_info;
-   cellMouseGetInfo(&mouse_info);
-   return mouse_info.now_connect;
-}
-
-CellMouseData ps3_mouse_input_poll_device(uint32_t id)
-{
-   CellMouseData mouse_data;
-
-   // Get new pad data
-   cellMouseGetData(id, &mouse_data);
-
-   return mouse_data;
-}
-
 #endif
 
 /*============================================================
@@ -173,7 +145,9 @@ static void ps3_input_poll(void *data)
    cellPadGetInfo2(&pad_info);
    pads_connected = pad_info.now_connect; 
 #ifdef HAVE_MOUSE
-   mice_connected = ps3_mouse_input_mice_connected();
+   CellMouseInfo mouse_info;
+   cellMouseGetInfo(&mouse_info);
+   mice_connected = mouse_info.now_connect;
 #endif
 }
 
@@ -181,7 +155,8 @@ static void ps3_input_poll(void *data)
 
 static int16_t ps3_mouse_device_state(void *data, unsigned player, unsigned id)
 {
-   CellMouseData mouse_state = ps3_mouse_input_poll_device(player);
+   CellMouseData mouse_state;
+   cellMouseGetData(id, &mouse_state);
 
    switch (id)
    {
@@ -334,6 +309,7 @@ static void ps3_input_free_input(void *data)
 {
    (void)data;
    //cellPadEnd();
+   //cellMouseEnd();
 }
 
 static void ps3_input_set_keybinds(void *data, unsigned device,
