@@ -257,6 +257,20 @@ void rgui_list_get_alt_at_offset(const rgui_list_t *list, size_t index,
       *alt = list->list[index].alt ? list->list[index].alt : list->list[index].path;
 }
 
+static int rgui_list_alt_cmp(const void *a_, const void *b_)
+{
+   const struct rgui_file *a = (const struct rgui_file*)a_;
+   const struct rgui_file *b = (const struct rgui_file*)b_;
+   const char *cmp_a = a->alt ? a->alt : a->path;
+   const char *cmp_b = b->alt ? b->alt : b->path;
+   return strcasecmp(cmp_a, cmp_b);
+}
+
+void rgui_list_sort_on_alt(rgui_list_t *list)
+{
+   qsort(list->list, list->size, sizeof(list->list[0]), rgui_list_alt_cmp);
+}
+
 void rgui_list_get_at_offset(const rgui_list_t *list, size_t index,
       const char **path, unsigned *file_type)
 {
@@ -956,6 +970,8 @@ void menu_resolve_libretro_names(rgui_list_t *list, const char *dir)
                core_path, display_name, sizeof(display_name)))
          rgui_list_set_alt_at_offset(list, i, display_name);
    }
+
+   rgui_list_sort_on_alt(rgui->selection_buf);
 }
 
 void menu_resolve_supported_cores(rgui_handle_t *rgui)
@@ -968,6 +984,7 @@ void menu_resolve_supported_cores(rgui_handle_t *rgui)
       rgui_list_push(rgui->selection_buf, info[i].path, RGUI_FILE_PLAIN, 0);
       rgui_list_set_alt_at_offset(rgui->selection_buf, i, info[i].display_name);
    }
-}
 
+   rgui_list_sort_on_alt(rgui->selection_buf);
+}
 

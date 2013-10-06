@@ -48,6 +48,8 @@ void rgui_list_set_alt_at_offset(rgui_list_t *list, size_t index,
 void rgui_list_get_alt_at_offset(const rgui_list_t *list, size_t index,
       const char **alt);
 
+void rgui_list_sort_on_alt(rgui_list_t *list);
+
 #ifdef __cplusplus
 }
 #endif

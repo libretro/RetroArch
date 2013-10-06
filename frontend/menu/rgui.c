@@ -997,8 +997,7 @@ static inline bool rgui_list_elem_is_dir(rgui_list_t *buf, unsigned offset)
 static inline int rgui_list_get_first_char(rgui_list_t *buf, unsigned offset)
 {
    const char *path = NULL;
-   unsigned type = 0;
-   rgui_list_get_at_offset(buf, offset, &path, &type);
+   rgui_list_get_alt_at_offset(buf, offset, &path);
    int ret = tolower(*path);
   
    // "Normalize" non-alphabetical entries so they are lumped together for purposes of jumping.
@@ -1173,7 +1172,6 @@ static bool rgui_directory_parse(rgui_handle_t *rgui, const char *directory, uns
    }
 
    string_list_free(list);
-   rgui_build_scroll_indices(rgui, (rgui_list_t*)ctx);
    return true;
 }
 
@@ -1531,7 +1529,6 @@ static int rgui_iterate(void *data, unsigned action)
       rgui->need_refresh = false;
       rgui_list_clear(rgui->selection_buf);
 
-      rgui->scroll_indices_size = 0;
       if (menu_type == RGUI_SETTINGS_OPEN_HISTORY)
          history_parse(rgui);
       else if (menu_type != RGUI_SETTINGS_DEFERRED_CORE)
@@ -1541,6 +1538,10 @@ static int rgui_iterate(void *data, unsigned action)
          menu_resolve_libretro_names(rgui->selection_buf, dir);
       else if (menu_type == RGUI_SETTINGS_DEFERRED_CORE)
          menu_resolve_supported_cores(rgui);
+
+      rgui->scroll_indices_size = 0;
+      if (menu_type != RGUI_SETTINGS_OPEN_HISTORY)
+         rgui_build_scroll_indices(rgui, rgui->selection_buf);
 
       // Before a refresh, we could have deleted a file on disk, causing
       // selection_ptr to suddendly be out of range. Ensure it doesn't overflow.
