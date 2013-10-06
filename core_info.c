@@ -47,31 +47,18 @@ core_info_list_t *core_info_list_new(const char *modules_path)
 
    for (size_t i = 0; i < contents->size; i++)
    {
-#if 0
-      char buffer[PATH_MAX];
       char info_path[PATH_MAX];
-   
       core_info[i].path = strdup(contents->elems[i].data);
 
-      // FIXME: Need to do something about this logic.
-      // fill_pathname() *should* be sufficient.
-      //
-      // NOTE: This assumes all modules are named module_name_{tag}.ext
-      //       {tag} must not contain an underscore. (This isn't true for PC versions)
+#if defined(IOS) || defined(HAVE_BB10) || defined(__QNX__)
+      // Libs are deployed with a suffix (*_ios.dylib, *_qnx.so, etc).
+      char buffer[PATH_MAX];
       strlcpy(buffer, contents->elems[i].data, sizeof(buffer));
       char *substr = strrchr(buffer, '_');
       if (substr)
          *substr = '\0';
-
-      // NOTE: Can't just use fill_pathname on iOS as it will cut at RetroArch.app;
-      //       perhaps fill_pathname shouldn't cut before the last path element.
-      if (substr)
-         snprintf(info_path, PATH_MAX, "%s.info", buffer);
-      else
-         fill_pathname(info_path, buffer, ".info", sizeof(info_path));
+      fill_pathname(info_path, buffer, ".info", sizeof(info_path));
 #else
-      core_info[i].path = strdup(contents->elems[i].data);
-      char info_path[PATH_MAX];
       fill_pathname(info_path, core_info[i].path, ".info", sizeof(info_path));
 #endif
 

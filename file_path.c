@@ -180,7 +180,7 @@ bool string_list_find_elem_prefix(const struct string_list *list, const char *pr
 
 const char *path_get_extension(const char *path)
 {
-   const char *ext = strrchr(path, '.');
+   const char *ext = strrchr(path_basename(path), '.');
    if (ext)
       return ext + 1;
    else
@@ -189,7 +189,7 @@ const char *path_get_extension(const char *path)
 
 char *path_remove_extension(char *path)
 {
-   char *last = strrchr(path, '.');
+   char *last = strrchr(path_basename(path), '.');
    if (*last)
       *last = '\0';
    return last;
@@ -417,7 +417,7 @@ void fill_pathname(char *out_path, const char *in_path, const char *replace, siz
    char tmp_path[PATH_MAX];
 
    rarch_assert(strlcpy(tmp_path, in_path, sizeof(tmp_path)) < sizeof(tmp_path));
-   char *tok = strrchr(tmp_path, '.');
+   char *tok = strrchr(path_basename(tmp_path), '.');
    if (tok)
       *tok = '\0';
 
