@@ -1417,12 +1417,8 @@ static int select_setting(void *data, uint64_t action)
       {
 #ifdef __CELLOS_LV2__
          case SETTING_CHANGE_RESOLUTION:
-            {
-               unsigned width = gfx_ctx_get_resolution_width(g_extern.console.screen.resolutions.list[g_extern.console.screen.resolutions.current.idx]);
-               unsigned height = gfx_ctx_get_resolution_height(g_extern.console.screen.resolutions.list[g_extern.console.screen.resolutions.current.idx]);
-               strlcpy(text, "Resolution", sizeof(text));
-               snprintf(setting_text, sizeof(setting_text), "%dx%d", width, height);
-            }
+            strlcpy(text, "Resolution", sizeof(text));
+            menu_set_settings_label(setting_text, sizeof(setting_text), &w, settings_lut[i]);
             break;
          case SETTING_PAL60_MODE:
             strlcpy(text, "PAL60 Mode", sizeof(text));

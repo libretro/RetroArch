@@ -1072,12 +1072,19 @@ void menu_set_settings_label(char *type_str, size_t type_str_size, unsigned *w, 
       case RGUI_SETTINGS_VIDEO_ASPECT_RATIO:
          strlcpy(type_str, aspectratio_lut[g_settings.video.aspect_ratio_idx].name, type_str_size);
          break;
-#ifdef GEKKO
+#if defined(GEKKO)
       case RGUI_SETTINGS_VIDEO_RESOLUTION:
          strlcpy(type_str, gx_get_video_mode(), type_str_size);
          break;
+#elif defined(__CELLOS_LV2__)
+      case RGUI_SETTINGS_VIDEO_RESOLUTION:
+         {
+               unsigned width = gfx_ctx_get_resolution_width(g_extern.console.screen.resolutions.list[g_extern.console.screen.resolutions.current.idx]);
+               unsigned height = gfx_ctx_get_resolution_height(g_extern.console.screen.resolutions.list[g_extern.console.screen.resolutions.current.idx]);
+               snprintf(type_str, type_str_size, "%dx%d", width, height);
+         }
+         break;
 #endif
-
       case RGUI_FILE_PLAIN:
          strlcpy(type_str, "(FILE)", type_str_size);
          *w = 6;
