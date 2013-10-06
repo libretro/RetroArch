@@ -201,39 +201,6 @@ static int rgui_core_setting_toggle(unsigned setting, rgui_action_t action)
    return 0;
 }
 
-static void rgui_resolve_libretro_names(rgui_list_t *list, const char *dir)
-{
-   for (size_t i = 0; i < list->size; i++)
-   {
-      const char *path;
-      unsigned type = 0;
-      rgui_list_get_at_offset(list, i, &path, &type);
-      if (type != RGUI_FILE_PLAIN)
-         continue;
-
-      char core_path[PATH_MAX];
-      fill_pathname_join(core_path, dir, path, sizeof(core_path));
-
-      char display_name[256];
-      if (rgui->core_info &&
-            core_info_list_get_display_name(rgui->core_info,
-               core_path, display_name, sizeof(display_name)))
-         rgui_list_set_alt_at_offset(list, i, display_name);
-   }
-}
-
-static void rgui_resolve_supported_cores(rgui_handle_t *rgui)
-{
-   const core_info_t *info = NULL;
-   size_t cores = 0;
-   core_info_list_get_supported_cores(rgui->core_info, rgui->deferred_path, &info, &cores);
-   for (size_t i = 0; i < cores; i++)
-   {
-      rgui_list_push(rgui->selection_buf, info[i].path, RGUI_FILE_PLAIN, 0);
-      rgui_list_set_alt_at_offset(rgui->selection_buf, i, info[i].display_name);
-   }
-}
-
 static int rgui_settings_toggle_setting(rgui_handle_t *rgui, unsigned setting, rgui_action_t action, unsigned menu_type)
 {
 #ifdef HAVE_SHADER_MANAGER
@@ -1495,9 +1462,9 @@ static int rgui_iterate(void *data, unsigned action)
          rgui_directory_parse(rgui, dir, menu_type, rgui->selection_buf);
 
       if (menu_type == RGUI_SETTINGS_CORE)
-         rgui_resolve_libretro_names(rgui->selection_buf, dir);
+         menu_resolve_libretro_names(rgui->selection_buf, dir);
       else if (menu_type == RGUI_SETTINGS_DEFERRED_CORE)
-         rgui_resolve_supported_cores(rgui);
+         menu_resolve_supported_cores(rgui);
 
       // Before a refresh, we could have deleted a file on disk, causing
       // selection_ptr to suddendly be out of range. Ensure it doesn't overflow.
