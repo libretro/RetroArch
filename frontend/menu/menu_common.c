@@ -408,6 +408,11 @@ static void menu_update_libretro_info(void)
 #else
    retro_get_system_info(&rgui->info);
 #endif
+
+   core_info_list_free(rgui->core_info);
+   rgui->core_info = NULL;
+   if (*rgui->libretro_dir)
+      rgui->core_info = core_info_list_new(rgui->libretro_dir);
 }
 
 bool load_menu_game(void)
@@ -513,6 +518,7 @@ void menu_free(void)
 #endif
 
    rom_history_free(rgui->history);
+   core_info_list_free(rgui->core_info);
 
    free(rgui);
 }
@@ -930,4 +936,38 @@ void menu_key_event(bool down, unsigned keycode, uint32_t character, uint16_t ke
    (void)character;
    (void)key_modifiers;
 }
+
+void menu_resolve_libretro_names(rgui_list_t *list, const char *dir)
+{
+   for (size_t i = 0; i < list->size; i++)
+   {
+      const char *path;
+      unsigned type = 0;
+      rgui_list_get_at_offset(list, i, &path, &type);
+      if (type != RGUI_FILE_PLAIN)
+         continue;
+
+      char core_path[PATH_MAX];
+      fill_pathname_join(core_path, dir, path, sizeof(core_path));
+
+      char display_name[256];
+      if (rgui->core_info &&
+            core_info_list_get_display_name(rgui->core_info,
+               core_path, display_name, sizeof(display_name)))
+         rgui_list_set_alt_at_offset(list, i, display_name);
+   }
+}
+
+void menu_resolve_supported_cores(rgui_handle_t *rgui)
+{
+   const core_info_t *info = NULL;
+   size_t cores = 0;
+   core_info_list_get_supported_cores(rgui->core_info, rgui->deferred_path, &info, &cores);
+   for (size_t i = 0; i < cores; i++)
+   {
+      rgui_list_push(rgui->selection_buf, info[i].path, RGUI_FILE_PLAIN, 0);
+      rgui_list_set_alt_at_offset(rgui->selection_buf, i, info[i].display_name);
+   }
+}
+
 

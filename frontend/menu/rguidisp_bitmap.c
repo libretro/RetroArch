@@ -232,6 +232,8 @@ static void render_text(rgui_handle_t *rgui)
 
    if (menu_type == RGUI_SETTINGS_CORE)
       snprintf(title, sizeof(title), "CORE SELECTION %s", dir);
+   else if (menu_type == RGUI_SETTINGS_DEFERRED_CORE)
+      snprintf(title, sizeof(title), "DETECTED CORES %s", dir);
    else if (menu_type == RGUI_SETTINGS_CONFIG)
       snprintf(title, sizeof(title), "CONFIG %s", dir);
    else if (menu_type == RGUI_SETTINGS_DISK_APPEND)
@@ -292,13 +294,17 @@ static void render_text(rgui_handle_t *rgui)
       snprintf(title, sizeof(title), "SYSTEM DIR %s", dir);
    else
    {
-      const char *core_name = rgui->info.library_name;
-      if (!core_name)
-         core_name = g_extern.system.info.library_name;
-      if (!core_name)
-         core_name = "No Core";
-
-      snprintf(title, sizeof(title), "GAME (%s) %s", core_name, dir);
+      if (rgui->defer_core)
+         snprintf(title, sizeof(title), "GAME %s", dir);
+      else
+      {
+         const char *core_name = rgui->info.library_name;
+         if (!core_name)
+            core_name = g_extern.system.info.library_name;
+         if (!core_name)
+            core_name = "No Core";
+         snprintf(title, sizeof(title), "GAME (%s) %s", core_name, dir);
+      }
    }
 
    char title_buf[256];
@@ -361,9 +367,8 @@ static void render_text(rgui_handle_t *rgui)
       }
       else
 #endif
-#ifdef HAVE_DYNAMIC
       // Pretty-print libretro cores from menu.
-      if (menu_type == RGUI_SETTINGS_CORE)
+      if (menu_type == RGUI_SETTINGS_CORE || menu_type == RGUI_SETTINGS_DEFERRED_CORE)
       {
          if (type == RGUI_FILE_PLAIN)
          {
@@ -378,10 +383,7 @@ static void render_text(rgui_handle_t *rgui)
             w = 5;
          }
       }
-      else 
-#endif
-      if (menu_type == RGUI_SETTINGS_CORE ||
-            menu_type == RGUI_SETTINGS_CONFIG ||
+      else if (menu_type == RGUI_SETTINGS_CONFIG ||
 #ifdef HAVE_OVERLAY
             menu_type == RGUI_SETTINGS_OVERLAY_PRESET ||
 #endif
@@ -569,6 +571,7 @@ static void render_text(rgui_handle_t *rgui)
                   strlcpy(type_str, "<default>", sizeof(type_str));
                break;
             case RGUI_SETTINGS_OPEN_FILEBROWSER:
+            case RGUI_SETTINGS_OPEN_FILEBROWSER_DEFERRED_CORE:
             case RGUI_SETTINGS_OPEN_HISTORY:
             case RGUI_SETTINGS_CORE_OPTIONS:
             case RGUI_SETTINGS_CUSTOM_VIEWPORT:

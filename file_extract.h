@@ -17,9 +17,21 @@
 #define FILE_EXTRACT_H__
 
 #include "boolean.h"
+#include "file.h"
 #include <stddef.h>
+#include <stdint.h>
 
+// Returns true when parsing should continue. False to stop.
+typedef bool (*zlib_file_cb)(const char *name,
+      const uint8_t *cdata, unsigned cmode, uint32_t csize, uint32_t size,
+      uint32_t crc32, void *userdata);
+
+// Low-level file parsing. Enumerates over all files and calls file_cb with userdata.
+bool zlib_parse_file(const char *file, zlib_file_cb file_cb, void *userdata);
+
+// Built with zlib_parse_file.
 bool zlib_extract_first_rom(char *zip_path, size_t zip_path_size, const char *valid_exts);
+struct string_list *zlib_get_file_list(const char *path);
 
 #endif
 

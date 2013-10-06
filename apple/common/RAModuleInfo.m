@@ -26,7 +26,7 @@ NSArray* apple_get_modules()
 {
    if (!moduleList)
    {   
-      coreList = get_core_info_list(apple_platform.coreDirectory.UTF8String);
+      coreList = core_info_list_new(apple_platform.coreDirectory.UTF8String);
       
       if (!coreList)
          return nil;

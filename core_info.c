@@ -17,55 +17,58 @@
 #include "general.h"
 #include "file.h"
 #include "file_ext.h"
+#include "file_extract.h"
 #include "config.def.h"
 
-core_info_list_t *get_core_info_list(const char *modules_path)
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
+core_info_list_t *core_info_list_new(const char *modules_path)
 {
    struct string_list *contents = dir_list_new(modules_path, EXT_EXECUTABLES, false);
 
-   core_info_t *core_info;
-   core_info_list_t *core_info_list;
-   unsigned i;
+   core_info_t *core_info = NULL;
+   core_info_list_t *core_info_list = NULL;
 
    if (!contents)
       return NULL;
 
-   core_info = (core_info_t*)malloc(contents->size * sizeof(core_info_t));
-   memset(core_info, 0, contents->size * sizeof(core_info_t));
+   core_info_list = (core_info_list_t*)calloc(1, sizeof(*core_info_list));
+   if (!core_info_list)
+      goto error;
 
-   core_info_list = (core_info_list_t*)malloc(sizeof(core_info_list_t));
-   memset(core_info_list, 0, sizeof(core_info_list_t));
+   core_info = (core_info_t*)calloc(contents->size, sizeof(*core_info));
+   if (!core_info)
+      goto error;
+
    core_info_list->list = core_info;
    core_info_list->count = contents->size;
 
-   for (i = 0; i < contents->size; i ++)
+   for (size_t i = 0; i < contents->size; i++)
    {
-      char buffer[PATH_MAX];
       char info_path[PATH_MAX];
-      char *substr;
-   
       core_info[i].path = strdup(contents->elems[i].data);
+      if (!core_info[i].path)
+         break;
 
-      // NOTE: This assumes all modules are named module_name_{tag}.ext
-      //       {tag} must not contain an underscore. (This isn't true for PC versions)
-      snprintf(buffer, PATH_MAX, "%s", contents->elems[i].data);
-      substr = strrchr(buffer, '_');
+#if defined(IOS) || defined(HAVE_BB10) || defined(__QNX__)
+      // Libs are deployed with a suffix (*_ios.dylib, *_qnx.so, etc).
+      char buffer[PATH_MAX];
+      strlcpy(buffer, contents->elems[i].data, sizeof(buffer));
+      char *substr = strrchr(buffer, '_');
       if (substr)
-         *substr = 0;
-
-      // NOTE: Can't just use fill_pathname on iOS as it will cut at RetroArch.app;
-      //       perhaps fill_pathname shouldn't cut before the last path element.
-      if (substr)
-         snprintf(info_path, PATH_MAX, "%s.info", buffer);
-      else
-         fill_pathname(info_path, buffer, ".info", PATH_MAX);         
+         *substr = '\0';
+      fill_pathname(info_path, buffer, ".info", sizeof(info_path));
+#else
+      fill_pathname(info_path, core_info[i].path, ".info", sizeof(info_path));
+#endif
 
       core_info[i].data = config_file_new(info_path);
 
       if (core_info[i].data)
       {
          config_get_string(core_info[i].data, "display_name", &core_info[i].display_name);
-
          if (config_get_string(core_info[i].data, "supported_extensions", &core_info[i].supported_extensions) &&
                core_info[i].supported_extensions)
             core_info[i].supported_extensions_list = string_split(core_info[i].supported_extensions, "|");
@@ -75,19 +78,48 @@ core_info_list_t *get_core_info_list(const char *modules_path)
          core_info[i].display_name = strdup(path_basename(core_info[i].path));
    }
 
-   dir_list_free(contents);
+   size_t all_ext_len = 0;
+   for (size_t i = 0; i < core_info_list->count; i++)
+   {
+      all_ext_len += core_info_list->list[i].supported_extensions ?
+         (strlen(core_info_list->list[i].supported_extensions) + 2) : 0;
+   }
 
+   if (all_ext_len)
+   {
+      all_ext_len += strlen("|zip");
+      core_info_list->all_ext = (char*)calloc(1, all_ext_len);
+   }
+
+   if (core_info_list->all_ext)
+   {
+      for (size_t i = 0; i < core_info_list->count; i++)
+      {
+         if (core_info_list->list[i].supported_extensions)
+         {
+            strlcat(core_info_list->all_ext, core_info_list->list[i].supported_extensions, all_ext_len);
+            strlcat(core_info_list->all_ext, "|", all_ext_len);
+         }
+      }
+      strlcat(core_info_list->all_ext, "|zip", all_ext_len);
+   }
+
+   dir_list_free(contents);
    return core_info_list;
+
+error:
+   if (contents)
+      dir_list_free(contents);
+   core_info_list_free(core_info_list);
+   return NULL;
 }
 
-void free_core_info_list(core_info_list_t *core_info_list)
+void core_info_list_free(core_info_list_t *core_info_list)
 {
-   int i;
-
    if (!core_info_list)
       return;
 
-   for (i = 0; i < core_info_list->count; i++)
+   for (size_t i = 0; i < core_info_list->count; i++)
    {
       free(core_info_list->list[i].path);
       free(core_info_list->list[i].display_name);
@@ -96,15 +128,99 @@ void free_core_info_list(core_info_list_t *core_info_list)
       config_file_free(core_info_list->list[i].data);
    }
 
+   free(core_info_list->all_ext);
    free(core_info_list->list);
    free(core_info_list);
 }
 
-bool does_core_support_file(core_info_t* core, const char *path)
+bool core_info_list_get_display_name(core_info_list_t *core_info_list, const char *path, char *buf, size_t size)
+{
+   for (size_t i = 0; i < core_info_list->count; i++)
+   {
+      const core_info_t *info = &core_info_list->list[i];
+      if (!strcmp(info->path, path) && info->display_name)
+      {
+         strlcpy(buf, info->display_name, size);
+         return true;
+      }
+   }
+
+   return false;
+}
+
+bool core_info_does_support_any_file(const core_info_t *core, const struct string_list *list)
+{
+   if (!list || !core || !core->supported_extensions_list)
+      return false;
+
+   for (size_t i = 0; i < list->size; i++)
+      if (string_list_find_elem_prefix(core->supported_extensions_list, ".", path_get_extension(list->elems[i].data)))
+         return true;
+   return false;
+}
+
+bool core_info_does_support_file(const core_info_t *core, const char *path)
 {
    if (!path || !core || !core->supported_extensions_list)
       return false;
 
    return string_list_find_elem_prefix(core->supported_extensions_list, ".", path_get_extension(path));
+}
+
+const char *core_info_list_get_all_extensions(core_info_list_t *core_info_list)
+{
+   return core_info_list->all_ext;
+}
+
+// qsort_r() is not in standard C, sadly.
+static const char *core_info_tmp_path;
+static const struct string_list *core_info_tmp_list;
+
+static int core_info_qsort_cmp(const void *a_, const void *b_)
+{
+   const core_info_t *a = (const core_info_t*)a_;
+   const core_info_t *b = (const core_info_t*)b_;
+
+   int support_a = core_info_does_support_any_file(a, core_info_tmp_list) ||
+      core_info_does_support_file(a, core_info_tmp_path);
+   int support_b = core_info_does_support_any_file(b, core_info_tmp_list) ||
+      core_info_does_support_file(b, core_info_tmp_path);
+
+   if (support_a != support_b)
+      return support_b - support_a;
+   else
+      return strcasecmp(a->display_name, b->display_name);
+}
+
+void core_info_list_get_supported_cores(core_info_list_t *core_info_list, const char *path,
+      const core_info_t **infos, size_t *num_infos)
+{
+   core_info_tmp_path = path;
+
+#ifdef HAVE_ZLIB
+   struct string_list *list = NULL;
+   if (!strcasecmp(path_get_extension(path), "zip"))
+      list = zlib_get_file_list(path);
+   core_info_tmp_list = list;
+#endif
+
+   // Let supported core come first in list so we can return a pointer to them.
+   qsort(core_info_list->list, core_info_list->count, sizeof(core_info_t), core_info_qsort_cmp);
+
+   size_t supported = 0;
+   for (size_t i = 0; i < core_info_list->count; i++, supported++)
+   {
+      const core_info_t *core = &core_info_list->list[i];
+      if (!core_info_does_support_file(core, path) && !core_info_does_support_any_file(core, list))
+         break;
+   }
+
+#ifdef HAVE_ZLIB
+   if (list)
+      string_list_free(list);
+#endif
+
+   *infos = core_info_list->list;
+   *num_infos = supported;
 }
 

@@ -68,15 +68,20 @@ void dir_list_free(struct string_list *list);
 bool string_list_find_elem(const struct string_list *list, const char *elem);
 bool string_list_find_elem_prefix(const struct string_list *list, const char *prefix, const char *elem);
 struct string_list *string_split(const char *str, const char *delim);
+struct string_list *string_list_new(void);
+bool string_list_append(struct string_list *list, const char *elem, union string_list_elem_attr attr);
 void string_list_free(struct string_list *list);
 
 bool path_is_directory(const char *path);
 bool path_file_exists(const char *path);
+
+// Gets extension of file. Only '.'s after the last slash are considered.
 const char *path_get_extension(const char *path);
 
 bool path_mkdir(const char *dir);
 
-// Removes all text after and including the last '.'
+// Removes all text after and including the last '.'.
+// Only '.'s after the last slash are considered.
 char *path_remove_extension(char *path);
 
 // Returns basename from path.
@@ -100,6 +105,7 @@ bool path_is_absolute(const char *path);
 
 // Replaces filename extension with 'replace' and outputs result to out_path.
 // The extension here is considered to be the string from the last '.' to the end.
+// Only '.'s after the last slash are considered as extensions.
 // If no '.' is present, in_path and replace will simply be concatenated.
 // 'size' is buffer size of 'out_path'.
 // E.g.: in_path = "/foo/bar/baz/boo.c", replace = ".asm" => out_path = "/foo/bar/baz/boo.asm" 

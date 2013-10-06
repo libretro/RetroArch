@@ -18,6 +18,7 @@
 #include "compat/strl.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #ifdef WANT_MINIZ
 #include "deps/miniz/zlib.h"
@@ -46,7 +47,7 @@ static uint32_t read_le(const uint8_t *data, unsigned size)
    return val;
 }
 
-static bool inflate_data_to_file(const char *path, uint8_t *cdata,
+static bool inflate_data_to_file(const char *path, const uint8_t *cdata,
       uint32_t csize, uint32_t size, uint32_t crc32)
 {
    bool ret = true;
@@ -60,7 +61,7 @@ static bool inflate_data_to_file(const char *path, uint8_t *cdata,
    if (inflateInit2(&stream, -MAX_WBITS) != Z_OK)
       GOTO_END_ERROR();
 
-   stream.next_in = cdata;
+   stream.next_in = (uint8_t*)cdata;
    stream.avail_in = csize;
    stream.next_out = out_data;
    stream.avail_out = size;
@@ -85,24 +86,14 @@ end:
    return ret;
 }
 
-bool zlib_extract_first_rom(char *zip_path, size_t zip_path_size, const char *valid_exts)
+bool zlib_parse_file(const char *file, zlib_file_cb file_cb, void *userdata)
 {
    const uint8_t *footer = NULL;
    const uint8_t *directory = NULL;
 
    bool ret = true;
-   if (!valid_exts)
-   {
-      RARCH_ERR("Libretro implementation does not have any valid extensions. Cannot unzip without knowing this.\n");
-      return false;
-   }
-
-   struct string_list *list = string_split(valid_exts, "|");
-   if (!list)
-      return false;
-
    uint8_t *data = NULL;
-   ssize_t zip_size = read_file(zip_path, (void**)&data);
+   ssize_t zip_size = read_file(file, (void**)&data);
    if (zip_size < 22)
       GOTO_END_ERROR();
 
@@ -150,44 +141,126 @@ bool zlib_extract_first_rom(char *zip_path, size_t zip_path_size, const char *va
 
       RARCH_LOG("OFFSET: %u, CSIZE: %u, SIZE: %u.\n", offset + 30 + offsetNL + offsetEL, csize, size);
 
-      // Extract first ROM that matches our list.
-      const char *ext = path_get_extension(filename);
-      if (ext && string_list_find_elem(list, ext))
-      {
-         char new_path[PATH_MAX];
-         fill_pathname_resolve_relative(new_path, zip_path,
-               path_basename(filename), sizeof(new_path));
-
-         switch (cmode)
-         {
-            case 0: // Uncompressed
-               if (!write_file(new_path, cdata, size))
-                  GOTO_END_ERROR();
-               goto end;
-
-            case 8: // Deflate
-               if (inflate_data_to_file(new_path, cdata, csize, size, crc32))
-               {
-                  strlcpy(zip_path, new_path, zip_path_size);
-                  goto end;
-               }
-               else
-                  GOTO_END_ERROR();
-
-            default:
-               GOTO_END_ERROR();
-         }
-      }
+      if (!file_cb(filename, cdata, cmode, csize, size, crc32, userdata))
+         break;
 
       directory += 46 + namelength + extralength + commentlength;
    }
 
-   RARCH_ERR("Didn't find any ROMS that matched valid extensions for libretro implementation.\n");
-   GOTO_END_ERROR();
-
 end:
    free(data);
-   string_list_free(list);
    return ret;
+}
+
+struct zip_extract_userdata
+{
+   char *zip_path;
+   size_t zip_path_size;
+   struct string_list *ext;
+   bool found_rom;
+};
+
+static bool zip_extract_cb(const char *name, const uint8_t *cdata, unsigned cmode, uint32_t csize, uint32_t size,
+      uint32_t crc32, void *userdata)
+{
+   struct zip_extract_userdata *data = (struct zip_extract_userdata*)userdata;
+
+   // Extract first ROM that matches our list.
+   const char *ext = path_get_extension(name);
+   if (ext && string_list_find_elem(data->ext, ext))
+   {
+      char new_path[PATH_MAX];
+      fill_pathname_resolve_relative(new_path, data->zip_path,
+            path_basename(name), sizeof(new_path));
+
+      switch (cmode)
+      {
+         case 0: // Uncompressed
+            data->found_rom = write_file(new_path, cdata, size);
+            return false;
+
+         case 8: // Deflate
+            if (inflate_data_to_file(new_path, cdata, csize, size, crc32))
+            {
+               strlcpy(data->zip_path, new_path, data->zip_path_size);
+               data->found_rom = true;
+               return false;
+            }
+            else
+               return false;
+
+         default:
+            return false;
+      }
+   }
+
+   return true;
+}
+
+bool zlib_extract_first_rom(char *zip_path, size_t zip_path_size, const char *valid_exts)
+{
+   if (!valid_exts)
+   {
+      RARCH_ERR("Libretro implementation does not have any valid extensions. Cannot unzip without knowing this.\n");
+      return false;
+   }
+
+   bool ret = true;
+   struct string_list *list = string_split(valid_exts, "|");
+   if (!list)
+      GOTO_END_ERROR();
+
+   struct zip_extract_userdata userdata = {0};
+   userdata.zip_path = zip_path;
+   userdata.zip_path_size = zip_path_size;
+   userdata.ext = list;
+
+   if (!zlib_parse_file(zip_path, zip_extract_cb, &userdata))
+   {
+      RARCH_ERR("Parsing ZIP failed.\n");
+      GOTO_END_ERROR();
+   }
+
+   if (!userdata.found_rom)
+   {
+      RARCH_ERR("Didn't find any ROMS that matched valid extensions for libretro implementation.\n");
+      GOTO_END_ERROR();
+   }
+
+end:
+   if (list)
+      string_list_free(list);
+   return ret;
+}
+
+static bool zlib_get_file_list_cb(const char *path, const uint8_t *cdata, unsigned cmode,
+      uint32_t csize, uint32_t size,
+      uint32_t crc32, void *userdata)
+{
+   (void)cdata;
+   (void)cmode;
+   (void)csize;
+   (void)size;
+   (void)crc32;
+   struct string_list *list = (struct string_list*)userdata;
+   union string_list_elem_attr attr;
+   memset(&attr, 0, sizeof(attr));
+   return string_list_append(list, path, attr);
+}
+
+struct string_list *zlib_get_file_list(const char *path)
+{
+   struct string_list *list = string_list_new();
+   if (!list)
+      return NULL;
+
+   if (!zlib_parse_file(path, zlib_get_file_list_cb, list))
+   {
+      RARCH_ERR("Parsing ZIP failed.\n");
+      string_list_free(list);
+      return NULL;
+   }
+   else
+      return list;
 }
 
