@@ -67,7 +67,7 @@ NSArray* apple_get_modules()
 
 - (bool)supportsFileAtPath:(NSString*)path
 {
-   return does_core_support_file(self.info, path.UTF8String);
+   return core_info_does_support_file(self.info, path.UTF8String);
 }
 
 - (void)createCustomConfig
