@@ -1424,6 +1424,7 @@ static int select_setting(void *data, uint64_t action)
       char fname[PATH_MAX];
       char text[PATH_MAX];
       char setting_text[PATH_MAX];
+      unsigned w;
       (void)fname;
 
       switch (i)
@@ -1452,10 +1453,7 @@ static int select_setting(void *data, uint64_t action)
             break;
          case SETTING_HW_TEXTURE_FILTER:
             strlcpy(text, "Default Filter", sizeof(text));
-            if (g_settings.video.smooth)
-               strlcpy(setting_text, "Linear", sizeof(setting_text));
-            else
-               strlcpy(setting_text, "Nearest", sizeof(setting_text));
+            menu_set_settings_label(setting_text, sizeof(setting_text), &w, settings_lut[i]);
             break;
 #ifdef _XBOX1
          case SETTING_FLICKER_FILTER:
@@ -1468,8 +1466,8 @@ static int select_setting(void *data, uint64_t action)
             break;
 #endif
          case SETTING_REFRESH_RATE:
-            strlcpy(text, "Refresh rate", sizeof(text));
-            snprintf(setting_text, sizeof(setting_text), "%fHz", g_settings.video.refresh_rate);
+            strlcpy(text, "Estimated Monitor FPS", sizeof(text));
+            menu_set_settings_label(setting_text, sizeof(setting_text), &w, settings_lut[i]);
             break;
          case SETTING_TRIPLE_BUFFERING:
             strlcpy(text, "Triple Buffering", sizeof(text));
@@ -1512,21 +1510,15 @@ static int select_setting(void *data, uint64_t action)
             break;
          case SETTING_REWIND_ENABLED:
             strlcpy(text, "Rewind", sizeof(text));
-            if (g_settings.rewind_enable)
-               strlcpy(setting_text, "ON", sizeof(setting_text));
-            else
-               strlcpy(setting_text, "OFF", sizeof(setting_text));
+            menu_set_settings_label(setting_text, sizeof(setting_text), &w, settings_lut[i]);
             break;
          case SETTING_REWIND_GRANULARITY:
             strlcpy(text, "Rewind Granularity", sizeof(text));
-            snprintf(setting_text, sizeof(setting_text), "%d", g_settings.rewind_granularity);
+            menu_set_settings_label(setting_text, sizeof(setting_text), &w, settings_lut[i]);
             break;
          case SETTING_EMU_AUDIO_MUTE:
             strlcpy(text, "Mute Audio", sizeof(text));
-            if (g_extern.audio_data.mute)
-               strlcpy(setting_text, "ON", sizeof(setting_text));
-            else
-               strlcpy(setting_text, "OFF", sizeof(setting_text));
+            menu_set_settings_label(setting_text, sizeof(setting_text), &w, settings_lut[i]);
             break;
 #ifdef _XBOX1
          case SETTING_EMU_AUDIO_SOUND_VOLUME_LEVEL:
@@ -1558,11 +1550,11 @@ static int select_setting(void *data, uint64_t action)
 #endif
          case SETTING_PATH_SYSTEM:
             strlcpy(text, "System Directory", sizeof(text));
-            strlcpy(setting_text, g_settings.system_directory, sizeof(setting_text));
+            menu_set_settings_label(setting_text, sizeof(setting_text), &w, settings_lut[i]);
             break;
          case SETTING_CONTROLS_NUMBER:
             strlcpy(text, "Player", sizeof(text));
-            snprintf(setting_text, sizeof(setting_text), "%d", rgui->current_pad+1);
+            menu_set_settings_label(setting_text, sizeof(setting_text), &w, settings_lut[i]);
             break;
          case SETTING_DPAD_EMULATION:
             strlcpy(text, "TODO", sizeof(text));
@@ -1609,11 +1601,11 @@ static int select_setting(void *data, uint64_t action)
             break;
          case SETTING_ASPECT_RATIO:
             strlcpy(text, "Aspect Ratio", sizeof(text));
-            strlcpy(setting_text, aspectratio_lut[g_settings.video.aspect_ratio_idx].name, sizeof(setting_text));
+            menu_set_settings_label(setting_text, sizeof(setting_text), &w, settings_lut[i]);
             break;
          case SETTING_ROTATION:
             strlcpy(text, "Rotation", sizeof(text));
-            strlcpy(setting_text, rotation_lut[g_settings.video.rotation], sizeof(setting_text));
+            menu_set_settings_label(setting_text, sizeof(setting_text), &w, settings_lut[i]);
             break;
          case SETTING_CUSTOM_VIEWPORT:
             strlcpy(text, "Custom Ratio", sizeof(text));
@@ -2240,6 +2232,7 @@ static void* rgui_init(void)
    settings_lut[SHADERMAN_SHADER_PASSES]           = RGUI_SETTINGS_SHADER_PASSES;
    settings_lut[INGAME_MENU_SAVE_CONFIG]           = RGUI_SETTINGS_SAVE_CONFIG;
    settings_lut[INGAME_MENU_QUIT_RETROARCH]        = RGUI_SETTINGS_QUIT_RARCH;
+   settings_lut[SETTING_PATH_SYSTEM]               = RGUI_SYSTEM_DIR_PATH;
 
    return rgui;
 }
