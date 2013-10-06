@@ -359,9 +359,10 @@ int menu_set_settings(unsigned setting, unsigned action)
             if (rgui->current_pad < MAX_PLAYERS - 1)
                rgui->current_pad++;
          }
-
+#ifdef HAVE_RGUI
          if (port != rgui->current_pad)
             rgui->need_refresh = true;
+#endif
          port = rgui->current_pad;
          break;
       case RGUI_SETTINGS_BIND_DEVICE:

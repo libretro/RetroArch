@@ -780,6 +780,7 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
       case SETTING_REWIND_GRANULARITY:
       case SETTING_EMU_AUDIO_MUTE:
       case SETTING_CONTROLS_NUMBER:
+      case SETTING_CONTROLS_BIND_DEVICE_TYPE:
       case INGAME_MENU_LOAD_STATE:
       case INGAME_MENU_SAVE_STATE:
       case SETTING_ROTATION:
@@ -1539,6 +1540,10 @@ static int select_setting(void *data, uint64_t action)
             strlcpy(text, "Player", sizeof(text));
             menu_set_settings_label(setting_text, sizeof(setting_text), &w, settings_lut[i]);
             break;
+         case SETTING_CONTROLS_BIND_DEVICE_TYPE:
+            strlcpy(text, "Device Type", sizeof(text));
+            menu_set_settings_label(setting_text, sizeof(setting_text), &w, settings_lut[i]);
+            break;
          case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_B:
          case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_Y:
          case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_SELECT:
@@ -2205,6 +2210,7 @@ static void* rgui_init(void)
    settings_lut[SETTING_REWIND_GRANULARITY]         = RGUI_SETTINGS_REWIND_GRANULARITY;
    settings_lut[SETTING_EMU_AUDIO_MUTE]             = RGUI_SETTINGS_AUDIO_MUTE;
    settings_lut[SETTING_CONTROLS_NUMBER]            = RGUI_SETTINGS_BIND_PLAYER;
+   settings_lut[SETTING_CONTROLS_BIND_DEVICE_TYPE]  = RGUI_SETTINGS_BIND_DEVICE_TYPE;
    settings_lut[INGAME_MENU_LOAD_STATE]             = RGUI_SETTINGS_SAVESTATE_LOAD;
    settings_lut[INGAME_MENU_SAVE_STATE]             = RGUI_SETTINGS_SAVESTATE_SAVE;
    settings_lut[SETTING_ROTATION]                   = RGUI_SETTINGS_VIDEO_ROTATION;
