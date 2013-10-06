@@ -310,9 +310,7 @@ typedef struct
    const uint8_t *font;
    bool alloc_font;
 
-#ifdef HAVE_DYNAMIC
    char libretro_dir[PATH_MAX];
-#endif
    struct retro_system_info info;
    bool load_no_rom;
 

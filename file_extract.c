@@ -199,18 +199,21 @@ static bool zip_extract_cb(const char *name, const uint8_t *cdata, unsigned cmod
 
 bool zlib_extract_first_rom(char *zip_path, size_t zip_path_size, const char *valid_exts)
 {
+   bool ret;
+   struct zip_extract_userdata userdata = {0};
+   struct string_list *list;
+
    if (!valid_exts)
    {
       RARCH_ERR("Libretro implementation does not have any valid extensions. Cannot unzip without knowing this.\n");
       return false;
    }
 
-   bool ret = true;
-   struct string_list *list = string_split(valid_exts, "|");
+   ret = true;
+   list = string_split(valid_exts, "|");
    if (!list)
       GOTO_END_ERROR();
 
-   struct zip_extract_userdata userdata = {0};
    userdata.zip_path = zip_path;
    userdata.zip_path_size = zip_path_size;
    userdata.ext = list;

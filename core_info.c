@@ -27,6 +27,7 @@
 core_info_list_t *core_info_list_new(const char *modules_path)
 {
    struct string_list *contents = dir_list_new(modules_path, EXT_EXECUTABLES, false);
+   size_t all_ext_len;
 
    core_info_t *core_info = NULL;
    core_info_list_t *core_info_list = NULL;
@@ -78,7 +79,7 @@ core_info_list_t *core_info_list_new(const char *modules_path)
          core_info[i].display_name = strdup(path_basename(core_info[i].path));
    }
 
-   size_t all_ext_len = 0;
+   all_ext_len = 0;
    for (size_t i = 0; i < core_info_list->count; i++)
    {
       all_ext_len += core_info_list->list[i].supported_extensions ?
