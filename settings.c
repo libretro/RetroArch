@@ -964,7 +964,6 @@ static void save_keybind_hat(config_file_t *conf, const char *key, const struct 
          break;
 
       default:
-         RARCH_ERR("Hat direction is invalid: 0x%x.\n", (unsigned)GET_HAT_DIR(hat));
          rarch_assert(0);
    }
 
