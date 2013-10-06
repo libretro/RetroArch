@@ -87,7 +87,7 @@ RetroArch::RetroArch()
          //Get core DropDown reference to populate it in C++
          coreSelection = mAppPane->findChild<DropDown*>("dropdown_core");
          connect(coreSelection, SIGNAL(selectedValueChanged(QVariant)), this, SLOT(onCoreSelected(QVariant)));
-         core_info_list = get_core_info_list(g_settings.libretro);
+         core_info_list = core_info_list_new(g_settings.libretro);
          populateCores(core_info_list);
 
          Application::instance()->setScene(mAppPane);
@@ -112,7 +112,7 @@ RetroArch::RetroArch()
 
 RetroArch::~RetroArch()
 {
-   free_core_info_list(core_info_list);
+   core_info_list_free(core_info_list);
 }
 
 void RetroArch::aboutToQuit()

@@ -79,7 +79,7 @@ static bool string_list_capacity(struct string_list *list, size_t cap)
    return true;
 }
 
-static struct string_list *string_list_new(void)
+struct string_list *string_list_new(void)
 {
    struct string_list *list = (struct string_list*)calloc(1, sizeof(*list));
    if (!list)
@@ -94,7 +94,7 @@ static struct string_list *string_list_new(void)
    return list;
 }
 
-static bool string_list_append(struct string_list *list, const char *elem, union string_list_elem_attr attr)
+bool string_list_append(struct string_list *list, const char *elem, union string_list_elem_attr attr)
 {
    if (list->size >= list->cap &&
          !string_list_capacity(list, list->cap * 2))
@@ -180,7 +180,7 @@ bool string_list_find_elem_prefix(const struct string_list *list, const char *pr
 
 const char *path_get_extension(const char *path)
 {
-   const char *ext = strrchr(path, '.');
+   const char *ext = strrchr(path_basename(path), '.');
    if (ext)
       return ext + 1;
    else
@@ -189,7 +189,7 @@ const char *path_get_extension(const char *path)
 
 char *path_remove_extension(char *path)
 {
-   char *last = strrchr(path, '.');
+   char *last = strrchr(path_basename(path), '.');
    if (*last)
       *last = '\0';
    return last;
@@ -417,7 +417,7 @@ void fill_pathname(char *out_path, const char *in_path, const char *replace, siz
    char tmp_path[PATH_MAX];
 
    rarch_assert(strlcpy(tmp_path, in_path, sizeof(tmp_path)) < sizeof(tmp_path));
-   char *tok = strrchr(tmp_path, '.');
+   char *tok = strrchr(path_basename(tmp_path), '.');
    if (tok)
       *tok = '\0';
 

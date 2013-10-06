@@ -24,6 +24,7 @@
 #endif
 
 #include "../../performance.h"
+#include "../../core_info.h"
 
 #ifdef HAVE_RGUI
 #define MENU_TEXTURE_FULLSCREEN false
@@ -99,8 +100,10 @@ typedef enum
 
    // settings options are done here too
    RGUI_SETTINGS_OPEN_FILEBROWSER,
+   RGUI_SETTINGS_OPEN_FILEBROWSER_DEFERRED_CORE,
    RGUI_SETTINGS_OPEN_HISTORY,
    RGUI_SETTINGS_CORE,
+   RGUI_SETTINGS_DEFERRED_CORE,
    RGUI_SETTINGS_CONFIG,
    RGUI_SETTINGS_SAVE_CONFIG,
    RGUI_SETTINGS_CORE_OPTIONS,
@@ -290,6 +293,10 @@ typedef struct
    bool msg_force;
    bool push_start_screen;
 
+   core_info_list_t *core_info;
+   bool defer_core;
+   char deferred_path[PATH_MAX];
+
    // Quick jumping indices with L/R.
    // Rebuilt when parsing directory.
    size_t scroll_indices[2 * (26 + 2) + 1];
@@ -345,6 +352,9 @@ void shader_manager_set_preset(struct gfx_shader *shader,
 #endif
 
 void menu_ticker_line(char *buf, size_t len, unsigned tick, const char *str, bool selected);
+
+void menu_resolve_libretro_names(rgui_list_t *list, const char *dir);
+void menu_resolve_supported_cores(rgui_handle_t *rgui);
 
 void load_menu_game_prepare(void);
 bool load_menu_game(void);
