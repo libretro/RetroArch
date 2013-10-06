@@ -509,10 +509,6 @@ int menu_set_settings(unsigned setting, unsigned action)
 
             if (action == RGUI_ACTION_START)
                keybind_action = (1ULL << KEYBINDS_ACTION_SET_DEFAULT_BIND);
-            else if (action == RGUI_ACTION_LEFT)
-               keybind_action = (1ULL << KEYBINDS_ACTION_DECREMENT_BIND);
-            else if (action == RGUI_ACTION_RIGHT)
-               keybind_action = (1ULL << KEYBINDS_ACTION_INCREMENT_BIND);
 
             // FIXME: The array indices here look totally wrong ... Fixed it so it looks kind of sane for now.
             if (keybind_action != KEYBINDS_ACTION_NONE)

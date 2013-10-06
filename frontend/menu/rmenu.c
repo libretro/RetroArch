@@ -658,13 +658,6 @@ static void set_keybind_digital(unsigned default_retro_joypad_id, uint64_t actio
 
    switch (action)
    {
-      case RGUI_ACTION_LEFT:
-         keybind_action = (1ULL << KEYBINDS_ACTION_DECREMENT_BIND);
-         break;
-      case RGUI_ACTION_RIGHT:
-      case RGUI_ACTION_OK:
-         keybind_action = (1ULL << KEYBINDS_ACTION_INCREMENT_BIND);
-         break;
       case RGUI_ACTION_START:
          keybind_action = (1ULL << KEYBINDS_ACTION_SET_DEFAULT_BIND);
          break;

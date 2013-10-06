@@ -618,43 +618,6 @@ HRESULT CRetroArchControls::OnControlNavigate(
       case SETTING_CONTROLS_DEFAULT_ALL:
          break;
       default:
-         if (action == RGUI_ACTION_LEFT)
-         {
-            struct platform_bind key_label;
-            strlcpy(key_label.desc, "Unknown", sizeof(key_label.desc));
-            key_label.joykey = g_settings.input.binds[rgui->current_pad][current_index].joykey;
-
-            if (driver.input->set_keybinds)
-               driver.input->set_keybinds(&key_label, 0, 0, 0, (1ULL << KEYBINDS_ACTION_GET_BIND_LABEL));
-
-            if (driver.input->set_keybinds)
-               driver.input->set_keybinds(driver.input_data, g_settings.input.device[rgui->current_pad],
-                     rgui->current_pad, current_index, (1ULL << KEYBINDS_ACTION_DECREMENT_BIND));
-
-            snprintf(button, sizeof(button), "%s #%d: %s",
-                  g_settings.input.binds[rgui->current_pad][current_index].desc,
-                  rgui->current_pad, key_label.desc);
-            mbstowcs(strw_buffer, button, sizeof(strw_buffer) / sizeof(wchar_t));
-            XuiListSetText(m_menulist, current_index, strw_buffer);
-         }
-         else if (action == RGUI_ACTION_RIGHT)
-         {
-            struct platform_bind key_label;
-            strlcpy(key_label.desc, "Unknown", sizeof(key_label.desc));
-            key_label.joykey = g_settings.input.binds[rgui->current_pad][current_index].joykey;
-
-            if (driver.input->set_keybinds)
-               driver.input->set_keybinds(&key_label, 0, 0, 0, (1ULL << KEYBINDS_ACTION_GET_BIND_LABEL));
-            if (driver.input->set_keybinds)
-               driver.input->set_keybinds(driver.input_data, g_settings.input.device[rgui->current_pad],
-                     rgui->current_pad, current_index, (1ULL << KEYBINDS_ACTION_INCREMENT_BIND));
-
-            snprintf(button, sizeof(button), "%s #%d: %s",
-                  g_settings.input.binds[rgui->current_pad][current_index].desc, rgui->current_pad, 
-                  key_label.desc);
-            mbstowcs(strw_buffer, button, sizeof(strw_buffer) / sizeof(wchar_t));
-            XuiListSetText(m_menulist, current_index, strw_buffer);
-         }
          break;
    }
 
