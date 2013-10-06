@@ -986,9 +986,9 @@ void init_video_input(void)
 
    const input_driver_t *tmp = driver.input;
 #ifdef HAVE_THREADS
+   find_video_driver(); // Need to grab the "real" video driver interface on a reinit.
    if (g_settings.video.threaded && !g_extern.system.hw_render_callback.context_type) // Can't do hardware rendering with threaded driver currently.
    {
-      find_video_driver(); // Need to grab the "real" video driver interface on a reinit.
       RARCH_LOG("Starting threaded video driver ...\n");
       if (!rarch_threaded_video_init(&driver.video, &driver.video_data,
                &driver.input, &driver.input_data,

@@ -447,6 +447,9 @@ static void render_text(rgui_handle_t *rgui)
             case RGUI_SETTINGS_VIDEO_SWAP_INTERVAL:
                snprintf(type_str, sizeof(type_str), "%u", g_settings.video.swap_interval);
                break;
+            case RGUI_SETTINGS_VIDEO_THREADED:
+               strlcpy(type_str, g_settings.video.threaded ? "ON" : "OFF", sizeof(type_str));
+               break;
             case RGUI_SETTINGS_VIDEO_WINDOW_SCALE_X:
                snprintf(type_str, sizeof(type_str), "%.1fx", g_settings.video.xscale);
                break;

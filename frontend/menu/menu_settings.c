@@ -812,6 +812,21 @@ int menu_set_settings(unsigned setting, unsigned action)
          break;
       }
 
+      case RGUI_SETTINGS_VIDEO_THREADED:
+      {
+         bool old = g_settings.video.threaded;
+         if (action == RGUI_ACTION_OK ||
+               action == RGUI_ACTION_LEFT ||
+               action == RGUI_ACTION_RIGHT)
+            g_settings.video.threaded = !g_settings.video.threaded;
+         else if (action == RGUI_ACTION_START)
+            g_settings.video.threaded = false;
+
+         if (g_settings.video.threaded != old)
+            rarch_set_fullscreen(g_settings.video.fullscreen); // Reinit video driver.
+         break;
+      }
+
       case RGUI_SETTINGS_VIDEO_SWAP_INTERVAL:
       {
          unsigned old = g_settings.video.swap_interval;
