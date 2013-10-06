@@ -672,7 +672,7 @@ int menu_set_settings(unsigned setting, unsigned action)
             rarch_set_fullscreen(!g_settings.video.fullscreen);
          break;
 
-#ifdef GEKKO
+#if defined(GEKKO)
       case RGUI_SETTINGS_VIDEO_RESOLUTION:
          if (action == RGUI_ACTION_LEFT)
          {
@@ -696,6 +696,28 @@ int menu_set_settings(unsigned setting, unsigned action)
                gx_set_video_mode(rgui_gx_resolutions[rgui_current_gx_resolution][0],
                      rgui_gx_resolutions[rgui_current_gx_resolution][1]);
             }
+         }
+         break;
+#elif defined(__CELLOS_LV2__)
+      case RGUI_SETTINGS_VIDEO_RESOLUTION:
+         if (action == RGUI_ACTION_LEFT)
+            settings_set(1ULL << S_RESOLUTION_PREVIOUS);
+         else if (action == RGUI_ACTION_RIGHT)
+            settings_set(1ULL << S_RESOLUTION_NEXT);
+         else if (action == RGUI_ACTION_OK)
+         {
+            if (g_extern.console.screen.resolutions.list[g_extern.console.screen.resolutions.current.idx] == CELL_VIDEO_OUT_RESOLUTION_576)
+            {
+               if (g_extern.console.screen.pal_enable)
+                  g_extern.lifecycle_mode_state |= (1ULL<< MODE_VIDEO_PAL_ENABLE);
+            }
+            else
+            {
+               g_extern.lifecycle_mode_state &= ~(1ULL << MODE_VIDEO_PAL_ENABLE);
+               g_extern.lifecycle_mode_state &= ~(1ULL << MODE_VIDEO_PAL_TEMPORAL_ENABLE);
+            }
+            driver.video->restart();
+            rgui_init_textures();
          }
          break;
 #endif

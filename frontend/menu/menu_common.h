@@ -64,7 +64,7 @@ typedef enum
    // Shader stuff
    RGUI_SETTINGS_VIDEO_OPTIONS,
    RGUI_SETTINGS_VIDEO_OPTIONS_FIRST,
-#ifdef GEKKO
+#if defined(GEKKO) || defined(__CELLOS_LV2__)
    RGUI_SETTINGS_VIDEO_RESOLUTION,
 #endif
    RGUI_SETTINGS_VIDEO_FILTER,
@@ -369,6 +369,10 @@ bool menu_save_new_config(void);
 int menu_set_settings(unsigned setting, unsigned action);
 
 void menu_key_event(bool down, unsigned keycode, uint32_t character, uint16_t key_modifiers);
+
+#ifdef HAVE_RMENU
+void rgui_init_textures(void);
+#endif
 
 #ifdef __cplusplus
 }

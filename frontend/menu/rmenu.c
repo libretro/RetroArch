@@ -761,7 +761,7 @@ static bool osk_callback_enter_filename_init(void *data)
 #endif
 #endif
 
-static void rgui_init_textures(void)
+void rgui_init_textures(void)
 {
 #ifdef HAVE_MENU_PANEL
    texture_image_load("D:\\Media\\menuMainRomSelectPanel.png", menu_panel);
@@ -781,31 +781,7 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
    {
 #ifdef __CELLOS_LV2__
       case SETTING_CHANGE_RESOLUTION:
-         switch (action)
-         {
-            case RGUI_ACTION_RIGHT:
-               settings_set(1ULL << S_RESOLUTION_NEXT);
-               break;
-            case RGUI_ACTION_LEFT:
-               settings_set(1ULL << S_RESOLUTION_PREVIOUS);
-               break;
-            case RGUI_ACTION_OK:
-               if (g_extern.console.screen.resolutions.list[g_extern.console.screen.resolutions.current.idx] == CELL_VIDEO_OUT_RESOLUTION_576)
-               {
-                  if (g_extern.console.screen.pal_enable)
-                     g_extern.lifecycle_mode_state |= (1ULL<< MODE_VIDEO_PAL_ENABLE);
-               }
-               else
-               {
-                  g_extern.lifecycle_mode_state &= ~(1ULL << MODE_VIDEO_PAL_ENABLE);
-                  g_extern.lifecycle_mode_state &= ~(1ULL << MODE_VIDEO_PAL_TEMPORAL_ENABLE);
-               }
-
-
-               driver.video->restart();
-               rgui_init_textures();
-               break;
-         }
+         menu_set_settings(RGUI_SETTINGS_VIDEO_RESOLUTION, action);
          break;
       case SETTING_PAL60_MODE:
          switch (action)
