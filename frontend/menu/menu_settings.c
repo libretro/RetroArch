@@ -19,6 +19,8 @@
 #include <string.h>
 #include "../../file.h"
 #include "menu_common.h"
+#include "../../gfx/gfx_common.h"
+#include "../../input/input_common.h"
 
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
@@ -1003,4 +1005,296 @@ int menu_set_settings(unsigned setting, unsigned action)
    }
 
    return 0;
+}
+
+void menu_set_settings_label(char *type_str, size_t type_str_size, unsigned *w, unsigned type)
+{
+   switch (type)
+   {
+      case RGUI_SETTINGS_VIDEO_ROTATION:
+         strlcpy(type_str, rotation_lut[g_settings.video.rotation],
+               type_str_size);
+         break;
+      case RGUI_SETTINGS_VIDEO_SOFT_FILTER:
+         snprintf(type_str, type_str_size,
+               (g_extern.lifecycle_mode_state & (1ULL << MODE_VIDEO_SOFT_FILTER_ENABLE)) ? "ON" : "OFF");
+         break;
+      case RGUI_SETTINGS_VIDEO_FILTER:
+         if (g_settings.video.smooth)
+            strlcpy(type_str, "Bilinear filtering", type_str_size);
+         else
+            strlcpy(type_str, "Point filtering", type_str_size);
+         break;
+      case RGUI_SETTINGS_VIDEO_GAMMA:
+         snprintf(type_str, type_str_size, "%d", g_extern.console.screen.gamma_correction);
+         break;
+      case RGUI_SETTINGS_VIDEO_VSYNC:
+         strlcpy(type_str, g_settings.video.vsync ? "ON" : "OFF", type_str_size);
+         break;
+      case RGUI_SETTINGS_VIDEO_HARD_SYNC:
+         strlcpy(type_str, g_settings.video.hard_sync ? "ON" : "OFF", type_str_size);
+         break;
+      case RGUI_SETTINGS_VIDEO_BLACK_FRAME_INSERTION:
+         strlcpy(type_str, g_settings.video.black_frame_insertion ? "ON" : "OFF", type_str_size);
+         break;
+      case RGUI_SETTINGS_VIDEO_SWAP_INTERVAL:
+         snprintf(type_str, type_str_size, "%u", g_settings.video.swap_interval);
+         break;
+      case RGUI_SETTINGS_VIDEO_THREADED:
+         strlcpy(type_str, g_settings.video.threaded ? "ON" : "OFF", type_str_size);
+         break;
+      case RGUI_SETTINGS_VIDEO_WINDOW_SCALE_X:
+         snprintf(type_str, type_str_size, "%.1fx", g_settings.video.xscale);
+         break;
+      case RGUI_SETTINGS_VIDEO_WINDOW_SCALE_Y:
+         snprintf(type_str, type_str_size, "%.1fx", g_settings.video.yscale);
+         break;
+      case RGUI_SETTINGS_VIDEO_CROP_OVERSCAN:
+         strlcpy(type_str, g_settings.video.crop_overscan ? "ON" : "OFF", type_str_size);
+         break;
+      case RGUI_SETTINGS_VIDEO_HARD_SYNC_FRAMES:
+         snprintf(type_str, type_str_size, "%u", g_settings.video.hard_sync_frames);
+         break;
+      case RGUI_SETTINGS_VIDEO_REFRESH_RATE_AUTO:
+         {
+            double refresh_rate = 0.0;
+            double deviation = 0.0;
+            unsigned sample_points = 0;
+            if (driver_monitor_fps_statistics(&refresh_rate, &deviation, &sample_points))
+               snprintf(type_str, type_str_size, "%.3f Hz (%.1f%% dev, %u samples)", refresh_rate, 100.0 * deviation, sample_points);
+            else
+               strlcpy(type_str, "N/A", type_str_size);
+            break;
+         }
+      case RGUI_SETTINGS_VIDEO_INTEGER_SCALE:
+         strlcpy(type_str, g_settings.video.scale_integer ? "ON" : "OFF", type_str_size);
+         break;
+      case RGUI_SETTINGS_VIDEO_ASPECT_RATIO:
+         strlcpy(type_str, aspectratio_lut[g_settings.video.aspect_ratio_idx].name, type_str_size);
+         break;
+#ifdef GEKKO
+      case RGUI_SETTINGS_VIDEO_RESOLUTION:
+         strlcpy(type_str, gx_get_video_mode(), type_str_size);
+         break;
+#endif
+
+      case RGUI_FILE_PLAIN:
+         strlcpy(type_str, "(FILE)", type_str_size);
+         *w = 6;
+         break;
+      case RGUI_FILE_DIRECTORY:
+         strlcpy(type_str, "(DIR)", type_str_size);
+         *w = 5;
+         break;
+      case RGUI_SETTINGS_REWIND_ENABLE:
+         strlcpy(type_str, g_settings.rewind_enable ? "ON" : "OFF", type_str_size);
+         break;
+#ifdef HAVE_SCREENSHOTS
+      case RGUI_SETTINGS_GPU_SCREENSHOT:
+         strlcpy(type_str, g_settings.video.gpu_screenshot ? "ON" : "OFF", type_str_size);
+         break;
+#endif
+      case RGUI_SETTINGS_REWIND_GRANULARITY:
+         snprintf(type_str, type_str_size, "%u", g_settings.rewind_granularity);
+         break;
+      case RGUI_SETTINGS_CONFIG_SAVE_ON_EXIT:
+         strlcpy(type_str, g_extern.config_save_on_exit ? "ON" : "OFF", type_str_size);
+         break;
+      case RGUI_SETTINGS_SRAM_AUTOSAVE:
+         strlcpy(type_str, g_settings.autosave_interval ? "ON" : "OFF", type_str_size);
+         break;
+      case RGUI_SETTINGS_SAVESTATE_SAVE:
+      case RGUI_SETTINGS_SAVESTATE_LOAD:
+         snprintf(type_str, type_str_size, "%d", g_extern.state_slot);
+         break;
+      case RGUI_SETTINGS_AUDIO_MUTE:
+         strlcpy(type_str, g_extern.audio_data.mute ? "ON" : "OFF", type_str_size);
+         break;
+      case RGUI_SETTINGS_AUDIO_CONTROL_RATE_DELTA:
+         snprintf(type_str, type_str_size, "%.3f", g_settings.audio.rate_control_delta);
+         break;
+      case RGUI_SETTINGS_DEBUG_TEXT:
+         snprintf(type_str, type_str_size, (g_extern.lifecycle_mode_state & (1ULL << MODE_FPS_DRAW)) ? "ON" : "OFF");
+         break;
+      case RGUI_BROWSER_DIR_PATH:
+         strlcpy(type_str, *g_settings.rgui_browser_directory ? g_settings.rgui_browser_directory : "<default>", type_str_size);
+         break;
+#ifdef HAVE_SCREENSHOTS
+      case RGUI_SCREENSHOT_DIR_PATH:
+         strlcpy(type_str, *g_settings.screenshot_directory ? g_settings.screenshot_directory : "<ROM dir>", type_str_size);
+         break;
+#endif
+      case RGUI_SAVEFILE_DIR_PATH:
+         strlcpy(type_str, *g_extern.savefile_dir ? g_extern.savefile_dir : "<ROM dir>", type_str_size);
+         break;
+#ifdef HAVE_OVERLAY
+      case RGUI_OVERLAY_DIR_PATH:
+         strlcpy(type_str, *g_extern.overlay_dir ? g_extern.overlay_dir : "<default>", type_str_size);
+         break;
+#endif
+      case RGUI_SAVESTATE_DIR_PATH:
+         strlcpy(type_str, *g_extern.savestate_dir ? g_extern.savestate_dir : "<ROM dir>", type_str_size);
+         break;
+#ifdef HAVE_DYNAMIC
+      case RGUI_LIBRETRO_DIR_PATH:
+         strlcpy(type_str, *rgui->libretro_dir ? rgui->libretro_dir : "<None>", type_str_size);
+         break;
+#endif
+      case RGUI_CONFIG_DIR_PATH:
+         strlcpy(type_str, *g_settings.rgui_config_directory ? g_settings.rgui_config_directory : "<default>", type_str_size);
+         break;
+      case RGUI_SHADER_DIR_PATH:
+         strlcpy(type_str, *g_settings.video.shader_dir ? g_settings.video.shader_dir : "<default>", type_str_size);
+         break;
+      case RGUI_SYSTEM_DIR_PATH:
+         strlcpy(type_str, *g_settings.system_directory ? g_settings.system_directory : "<ROM dir>", type_str_size);
+         break;
+      case RGUI_SETTINGS_DISK_INDEX:
+         {
+            const struct retro_disk_control_callback *control = &g_extern.system.disk_control;
+            unsigned images = control->get_num_images();
+            unsigned current = control->get_image_index();
+            if (current >= images)
+               strlcpy(type_str, "No Disk", type_str_size);
+            else
+               snprintf(type_str, type_str_size, "%u", current + 1);
+            break;
+         }
+      case RGUI_SETTINGS_CONFIG:
+         if (*g_extern.config_path)
+            fill_pathname_base(type_str, g_extern.config_path, type_str_size);
+         else
+            strlcpy(type_str, "<default>", type_str_size);
+         break;
+      case RGUI_SETTINGS_OPEN_FILEBROWSER:
+      case RGUI_SETTINGS_OPEN_FILEBROWSER_DEFERRED_CORE:
+      case RGUI_SETTINGS_OPEN_HISTORY:
+      case RGUI_SETTINGS_CORE_OPTIONS:
+      case RGUI_SETTINGS_CUSTOM_VIEWPORT:
+      case RGUI_SETTINGS_TOGGLE_FULLSCREEN:
+      case RGUI_SETTINGS_VIDEO_OPTIONS:
+      case RGUI_SETTINGS_AUDIO_OPTIONS:
+      case RGUI_SETTINGS_DISK_OPTIONS:
+      case RGUI_SETTINGS_SAVE_CONFIG:
+#ifdef HAVE_SHADER_MANAGER
+      case RGUI_SETTINGS_SHADER_OPTIONS:
+      case RGUI_SETTINGS_SHADER_PRESET:
+#endif
+      case RGUI_SETTINGS_CORE:
+      case RGUI_SETTINGS_DISK_APPEND:
+      case RGUI_SETTINGS_INPUT_OPTIONS:
+      case RGUI_SETTINGS_PATH_OPTIONS:
+      case RGUI_SETTINGS_OPTIONS:
+      case RGUI_SETTINGS_CUSTOM_BIND_ALL:
+      case RGUI_SETTINGS_CUSTOM_BIND_DEFAULT_ALL:
+      case RGUI_START_SCREEN:
+         strlcpy(type_str, "...", type_str_size);
+         break;
+#ifdef HAVE_OVERLAY
+      case RGUI_SETTINGS_OVERLAY_PRESET:
+         strlcpy(type_str, path_basename(g_settings.input.overlay), type_str_size);
+         break;
+
+      case RGUI_SETTINGS_OVERLAY_OPACITY:
+         {
+            snprintf(type_str, type_str_size, "%.2f", g_settings.input.overlay_opacity);
+            break;
+         }
+
+      case RGUI_SETTINGS_OVERLAY_SCALE:
+         {
+            snprintf(type_str, type_str_size, "%.2f", g_settings.input.overlay_scale);
+            break;
+         }
+#endif
+      case RGUI_SETTINGS_BIND_PLAYER:
+         {
+            snprintf(type_str, type_str_size, "#%d", rgui->current_pad + 1);
+            break;
+         }
+      case RGUI_SETTINGS_BIND_DEVICE:
+         {
+            int map = g_settings.input.joypad_map[rgui->current_pad];
+            if (map >= 0 && map < MAX_PLAYERS)
+            {
+               const char *device_name = g_settings.input.device_names[map];
+               if (*device_name)
+                  strlcpy(type_str, device_name, type_str_size);
+               else
+                  snprintf(type_str, type_str_size, "N/A (port #%u)", map);
+            }
+            else
+               strlcpy(type_str, "Disabled", type_str_size);
+            break;
+         }
+      case RGUI_SETTINGS_BIND_DEVICE_TYPE:
+         {
+            const char *name;
+            switch (g_settings.input.libretro_device[rgui->current_pad])
+            {
+               case RETRO_DEVICE_NONE: name = "None"; break;
+               case RETRO_DEVICE_JOYPAD: name = "Joypad"; break;
+               case RETRO_DEVICE_ANALOG: name = "Joypad w/ Analog"; break;
+               case RETRO_DEVICE_JOYPAD_MULTITAP: name = "Multitap"; break;
+               case RETRO_DEVICE_MOUSE: name = "Mouse"; break;
+               case RETRO_DEVICE_LIGHTGUN_JUSTIFIER: name = "Justifier"; break;
+               case RETRO_DEVICE_LIGHTGUN_JUSTIFIERS: name = "Justifiers"; break;
+               case RETRO_DEVICE_LIGHTGUN_SUPER_SCOPE: name = "SuperScope"; break;
+               default: name = "Unknown"; break;
+            }
+
+            strlcpy(type_str, name, type_str_size);
+            break;
+         }
+      case RGUI_SETTINGS_BIND_DPAD_EMULATION:
+         strlcpy(type_str, "TODO", type_str_size);
+         break;
+      case RGUI_SETTINGS_BIND_UP:
+      case RGUI_SETTINGS_BIND_DOWN:
+      case RGUI_SETTINGS_BIND_LEFT:
+      case RGUI_SETTINGS_BIND_RIGHT:
+      case RGUI_SETTINGS_BIND_A:
+      case RGUI_SETTINGS_BIND_B:
+      case RGUI_SETTINGS_BIND_X:
+      case RGUI_SETTINGS_BIND_Y:
+      case RGUI_SETTINGS_BIND_START:
+      case RGUI_SETTINGS_BIND_SELECT:
+      case RGUI_SETTINGS_BIND_L:
+      case RGUI_SETTINGS_BIND_R:
+      case RGUI_SETTINGS_BIND_L2:
+      case RGUI_SETTINGS_BIND_R2:
+      case RGUI_SETTINGS_BIND_L3:
+      case RGUI_SETTINGS_BIND_R3:
+      case RGUI_SETTINGS_BIND_ANALOG_LEFT_X_PLUS:
+      case RGUI_SETTINGS_BIND_ANALOG_LEFT_X_MINUS:
+      case RGUI_SETTINGS_BIND_ANALOG_LEFT_Y_PLUS:
+      case RGUI_SETTINGS_BIND_ANALOG_LEFT_Y_MINUS:
+      case RGUI_SETTINGS_BIND_ANALOG_RIGHT_X_PLUS:
+      case RGUI_SETTINGS_BIND_ANALOG_RIGHT_X_MINUS:
+      case RGUI_SETTINGS_BIND_ANALOG_RIGHT_Y_PLUS:
+      case RGUI_SETTINGS_BIND_ANALOG_RIGHT_Y_MINUS:
+      case RGUI_SETTINGS_BIND_MENU_TOGGLE:
+         {
+            unsigned id = type - RGUI_SETTINGS_BIND_B;
+            struct platform_bind key_label;
+            strlcpy(key_label.desc, "Unknown", sizeof(key_label.desc));
+            key_label.joykey = g_settings.input.binds[rgui->current_pad][id].joykey;
+
+            if (driver.input->set_keybinds)
+            {
+               driver.input->set_keybinds(&key_label, 0, 0, 0, (1ULL << KEYBINDS_ACTION_GET_BIND_LABEL));
+               strlcpy(type_str, key_label.desc, type_str_size);
+            }
+            else
+            {
+               const struct retro_keybind *bind = &g_settings.input.binds[rgui->current_pad][type - RGUI_SETTINGS_BIND_BEGIN];
+               input_get_bind_string(type_str, bind, type_str_size);
+            }
+            break;
+         }
+      default:
+         type_str[0] = 0;
+         w = 0;
+         break;
+   }
 }
