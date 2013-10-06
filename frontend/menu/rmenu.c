@@ -56,33 +56,31 @@ struct texture_image *menu_texture;
 struct texture_image *menu_panel;
 #endif
 
-const char drive_mappings[][32] = {
+
 #if defined(_XBOX1)
-   "C:",
-   "D:",
-   "E:",
-   "F:",
-   "G:"
+const char drive_mappings[][32] = {
+   "C:\\",
+   "D:\\",
+   "E:\\",
+   "F:\\",
+   "G:\\"
+};
+
+size_t drive_mapping_idx = 2;
+
+#define TICKER_LABEL_CHARS_MAX_PER_LINE 16
+
 #elif defined(__CELLOS_LV2__)
+const char drive_mappings[][32] = {
    "/app_home/",
    "/dev_hdd0/",
    "/dev_hdd1/",
    "/host_root/"
-#endif
 };
 
-#if defined(_XBOX1)
-#define TICKER_LABEL_CHARS_MAX_PER_LINE 16
-#else
-#define TICKER_LABEL_CHARS_MAX_PER_LINE 25
-#endif
-
-#if defined__CELLOS_LV2__
 size_t drive_mapping_idx = 1;
-#elif defined(_XBOX1)
-size_t drive_mapping_idx = 2;
-#else
-size_t drive_mapping_idx = 0;
+
+#define TICKER_LABEL_CHARS_MAX_PER_LINE 25
 #endif
 
 static const char *menu_drive_mapping_previous(void)
