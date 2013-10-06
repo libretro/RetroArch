@@ -20,6 +20,10 @@
 #include "../../file.h"
 #include "menu_common.h"
 
+#ifdef HAVE_CONFIG_H
+#include "../../config.h"
+#endif
+
 #ifdef GEKKO
 #define MAX_GAMMA_SETTING 2
 
@@ -812,6 +816,7 @@ int menu_set_settings(unsigned setting, unsigned action)
          break;
       }
 
+#ifdef HAVE_THREADS
       case RGUI_SETTINGS_VIDEO_THREADED:
       {
          bool old = g_settings.video.threaded;
@@ -826,6 +831,7 @@ int menu_set_settings(unsigned setting, unsigned action)
             rarch_set_fullscreen(g_settings.video.fullscreen); // Reinit video driver.
          break;
       }
+#endif
 
       case RGUI_SETTINGS_VIDEO_SWAP_INTERVAL:
       {
