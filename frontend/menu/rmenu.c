@@ -83,6 +83,8 @@ size_t drive_mapping_idx = 1;
 #define TICKER_LABEL_CHARS_MAX_PER_LINE 25
 #endif
 
+unsigned settings_lut[SETTING_LAST_LAST] = {0};
+
 static const char *menu_drive_mapping_previous(void)
 {
    if (drive_mapping_idx > 0)
@@ -770,10 +772,28 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
 
    switch (switchvalue)
    {
+      case SETTING_ASPECT_RATIO:
+      case SETTING_HW_TEXTURE_FILTER:
+      case SETTING_REFRESH_RATE:
+      case SETTING_EMU_SHOW_DEBUG_INFO_MSG:
+      case SETTING_REWIND_ENABLED:
+      case SETTING_REWIND_GRANULARITY:
+      case SETTING_EMU_AUDIO_MUTE:
+      case SETTING_CONTROLS_NUMBER:
+      case SETTING_DPAD_EMULATION:
+      case INGAME_MENU_LOAD_STATE:
+      case INGAME_MENU_SAVE_STATE:
+      case SETTING_ROTATION:
+      case INGAME_MENU_RETURN_TO_GAME:
+      case SHADERMAN_APPLY_CHANGES:
+      case SHADERMAN_SHADER_PASSES:
+      case INGAME_MENU_SAVE_CONFIG:
+      case INGAME_MENU_QUIT_RETROARCH:
 #ifdef __CELLOS_LV2__
       case SETTING_CHANGE_RESOLUTION:
-         menu_set_settings(RGUI_SETTINGS_VIDEO_RESOLUTION, action);
-         break;
+#endif
+         return menu_set_settings(settings_lut[switchvalue], action);
+#ifdef __CELLOS_LV2__
       case SETTING_PAL60_MODE:
          switch (action)
          {
@@ -825,10 +845,6 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
                break;
          }
          break;
-      case SETTING_ASPECT_RATIO:
-         return menu_set_settings(RGUI_SETTINGS_VIDEO_ASPECT_RATIO, action);
-      case SETTING_HW_TEXTURE_FILTER:
-         return menu_set_settings(RGUI_SETTINGS_VIDEO_FILTER, action);
 #ifdef _XBOX1
       case SETTING_FLICKER_FILTER:
          switch (action)
@@ -863,8 +879,6 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
          }
          break;
 #endif
-      case SETTING_REFRESH_RATE:
-         return menu_set_settings(RGUI_SETTINGS_VIDEO_REFRESH_RATE_AUTO, action);
       case SETTING_TRIPLE_BUFFERING:
          switch (action)
          {
@@ -934,8 +948,6 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
          }
          break;
 #endif
-      case SETTING_EMU_SHOW_DEBUG_INFO_MSG:
-         return menu_set_settings(RGUI_SETTINGS_DEBUG_TEXT, action);
       case SETTING_EMU_SHOW_INFO_MSG:
          switch (action)
          {
@@ -949,12 +961,6 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
                break;
          }
          break;
-      case SETTING_REWIND_ENABLED:
-         return menu_set_settings(RGUI_SETTINGS_REWIND_ENABLE, action);
-      case SETTING_REWIND_GRANULARITY:
-         return menu_set_settings(RGUI_SETTINGS_REWIND_GRANULARITY, action);
-      case SETTING_EMU_AUDIO_MUTE:
-         return menu_set_settings(RGUI_SETTINGS_AUDIO_MUTE, action);
 #ifdef _XBOX1
       case SETTING_EMU_AUDIO_SOUND_VOLUME_LEVEL:
          switch (action)
@@ -1072,10 +1078,6 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
                break;
          }
          break;
-      case SETTING_CONTROLS_NUMBER:
-         return menu_set_settings(RGUI_SETTINGS_BIND_PLAYER, action);
-      case SETTING_DPAD_EMULATION:
-         return menu_set_settings(RGUI_SETTINGS_BIND_DPAD_EMULATION, action);
       case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_UP:
          set_keybind_digital(RETRO_DEVICE_ID_JOYPAD_UP, action);
          break;
@@ -1137,12 +1139,6 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
                break;
          }
          break;
-      case INGAME_MENU_LOAD_STATE:
-         return menu_set_settings(RGUI_SETTINGS_SAVESTATE_LOAD, action);
-      case INGAME_MENU_SAVE_STATE:
-         return menu_set_settings(RGUI_SETTINGS_SAVESTATE_SAVE, action);
-      case SETTING_ROTATION:
-         return menu_set_settings(RGUI_SETTINGS_VIDEO_ROTATION, action);
       case SETTING_CUSTOM_VIEWPORT:
          if (action == RGUI_ACTION_OK)
             menu_stack_push(INGAME_MENU_CUSTOM_RATIO, false);
@@ -1159,8 +1155,6 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
          if (action == RGUI_ACTION_OK)
             menu_stack_push(INGAME_MENU_SCREENSHOT, false);
          break;
-      case INGAME_MENU_RETURN_TO_GAME:
-         return menu_set_settings(RGUI_SETTINGS_RESUME_GAME, action);
       case INGAME_MENU_CHANGE_GAME:
          if (action == RGUI_ACTION_OK)
             menu_stack_push(FILE_BROWSER_MENU, false);
@@ -1195,10 +1189,6 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
          }
          break;
 #endif
-      case INGAME_MENU_SAVE_CONFIG:
-         return menu_set_settings(RGUI_SETTINGS_SAVE_CONFIG, action);
-      case INGAME_MENU_QUIT_RETROARCH:
-         return menu_set_settings(RGUI_SETTINGS_QUIT_RARCH, action);
       case INGAME_MENU_VIDEO_OPTIONS_MODE:
          if (action == RGUI_ACTION_OK)
             menu_stack_push(INGAME_MENU_VIDEO_OPTIONS, false);
@@ -1252,8 +1242,6 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
          }
 #endif
          break;
-      case SHADERMAN_SHADER_PASSES:
-         return menu_set_settings(RGUI_SETTINGS_SHADER_PASSES, action);
       case SHADERMAN_SHADER_0:
       case SHADERMAN_SHADER_1:
       case SHADERMAN_SHADER_2:
@@ -1344,8 +1332,6 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
             }
          }
          break;
-      case SHADERMAN_APPLY_CHANGES:
-         return menu_set_settings(RGUI_SETTINGS_SHADER_APPLY, action);
 #endif
       default:
          break;
@@ -2235,6 +2221,25 @@ static void* rgui_init(void)
    oskutil_params *osk = &rgui->oskutil_handle;
    oskutil_init(osk, 0);
 #endif
+   
+   settings_lut[SETTING_CHANGE_RESOLUTION]         = RGUI_SETTINGS_VIDEO_RESOLUTION;
+   settings_lut[SETTING_ASPECT_RATIO]              = RGUI_SETTINGS_VIDEO_ASPECT_RATIO;
+   settings_lut[SETTING_HW_TEXTURE_FILTER]         = RGUI_SETTINGS_VIDEO_FILTER;
+   settings_lut[SETTING_REFRESH_RATE]              = RGUI_SETTINGS_VIDEO_REFRESH_RATE_AUTO;
+   settings_lut[SETTING_EMU_SHOW_DEBUG_INFO_MSG]   = RGUI_SETTINGS_DEBUG_TEXT;
+   settings_lut[SETTING_REWIND_ENABLED]            = RGUI_SETTINGS_REWIND_ENABLE;
+   settings_lut[SETTING_REWIND_GRANULARITY]        = RGUI_SETTINGS_REWIND_GRANULARITY;
+   settings_lut[SETTING_EMU_AUDIO_MUTE]            = RGUI_SETTINGS_AUDIO_MUTE;
+   settings_lut[SETTING_CONTROLS_NUMBER]           = RGUI_SETTINGS_BIND_PLAYER;
+   settings_lut[SETTING_DPAD_EMULATION]            = RGUI_SETTINGS_BIND_DPAD_EMULATION;
+   settings_lut[INGAME_MENU_LOAD_STATE]            = RGUI_SETTINGS_SAVESTATE_LOAD;
+   settings_lut[INGAME_MENU_SAVE_STATE]            = RGUI_SETTINGS_SAVESTATE_SAVE;
+   settings_lut[SETTING_ROTATION]                  = RGUI_SETTINGS_VIDEO_ROTATION;
+   settings_lut[INGAME_MENU_RETURN_TO_GAME]        = RGUI_SETTINGS_RESUME_GAME;
+   settings_lut[SHADERMAN_APPLY_CHANGES]           = RGUI_SETTINGS_SHADER_APPLY;
+   settings_lut[SHADERMAN_SHADER_PASSES]           = RGUI_SETTINGS_SHADER_PASSES;
+   settings_lut[INGAME_MENU_SAVE_CONFIG]           = RGUI_SETTINGS_SAVE_CONFIG;
+   settings_lut[INGAME_MENU_QUIT_RETROARCH]        = RGUI_SETTINGS_QUIT_RARCH;
 
    return rgui;
 }
