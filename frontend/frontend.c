@@ -65,21 +65,10 @@ static bool libretro_install_core(const char *path_prefix,
    return true;
 }
 
-static void input_default_binds_console(void)
-{
-  for(unsigned i = 0; i < MAX_PLAYERS; i++)
-      if (driver.input->set_keybinds)
-         driver.input->set_keybinds(driver.input_data, g_settings.input.device[i], i, 0,
-               (1ULL << KEYBINDS_ACTION_SET_DEFAULT_BINDS));
-}
-
 static void rarch_get_environment_console(void)
 {
    init_libretro_sym(false);
    rarch_init_system_info();
-
-   global_init_drivers();
-   input_default_binds_console();
 
 #ifdef HAVE_LIBRETRO_MANAGEMENT
    char path_prefix[PATH_MAX];
@@ -139,6 +128,7 @@ int main_entry(int argc, char *argv[])
    config_load();
 
    rarch_get_environment_console();
+   global_init_drivers();
 #elif !defined(HAVE_BB10)
    rarch_init_msg_queue();
    int init_ret;

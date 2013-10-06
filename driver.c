@@ -353,6 +353,11 @@ void global_init_drivers(void)
 #endif
    driver.input_data = driver.input->init();
 
+   for(unsigned i = 0; i < MAX_PLAYERS; i++)
+      if (driver.input->set_keybinds)
+         driver.input->set_keybinds(driver.input_data, g_settings.input.device[i], i, 0,
+               (1ULL << KEYBINDS_ACTION_SET_DEFAULT_BINDS));
+
 #ifdef HAVE_OVERLAY
    if (*g_settings.input.overlay)
    {
