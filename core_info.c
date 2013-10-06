@@ -49,6 +49,8 @@ core_info_list_t *core_info_list_new(const char *modules_path)
    {
       char info_path[PATH_MAX];
       core_info[i].path = strdup(contents->elems[i].data);
+      if (!core_info[i].path)
+         break;
 
 #if defined(IOS) || defined(HAVE_BB10) || defined(__QNX__)
       // Libs are deployed with a suffix (*_ios.dylib, *_qnx.so, etc).
@@ -129,6 +131,21 @@ void core_info_list_free(core_info_list_t *core_info_list)
    free(core_info_list->all_ext);
    free(core_info_list->list);
    free(core_info_list);
+}
+
+bool core_info_list_get_display_name(core_info_list_t *core_info_list, const char *path, char *buf, size_t size)
+{
+   for (size_t i = 0; i < core_info_list->count; i++)
+   {
+      const core_info_t *info = &core_info_list->list[i];
+      if (!strcmp(info->path, path) && info->display_name)
+      {
+         strlcpy(buf, info->display_name, size);
+         return true;
+      }
+   }
+
+   return false;
 }
 
 bool core_info_does_support_any_file(const core_info_t *core, const struct string_list *list)
