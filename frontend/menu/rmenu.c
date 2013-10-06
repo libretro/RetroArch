@@ -785,8 +785,10 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
       case INGAME_MENU_SAVE_STATE:
       case SETTING_ROTATION:
       case INGAME_MENU_RETURN_TO_GAME:
+#ifdef HAVE_SHADER_MANAGER
       case SHADERMAN_APPLY_CHANGES:
       case SHADERMAN_SHADER_PASSES:
+#endif
       case INGAME_MENU_SAVE_CONFIG:
       case INGAME_MENU_QUIT_RETROARCH:
 #ifdef __CELLOS_LV2__
@@ -2196,7 +2198,9 @@ static void* rgui_init(void)
    oskutil_init(osk, 0);
 #endif
    
+#ifdef __CELLOS_LV2__
    settings_lut[SETTING_CHANGE_RESOLUTION]          = RGUI_SETTINGS_VIDEO_RESOLUTION;
+#endif
    settings_lut[SETTING_ASPECT_RATIO]               = RGUI_SETTINGS_VIDEO_ASPECT_RATIO;
    settings_lut[SETTING_HW_TEXTURE_FILTER]          = RGUI_SETTINGS_VIDEO_FILTER;
    settings_lut[SETTING_REFRESH_RATE]               = RGUI_SETTINGS_VIDEO_REFRESH_RATE_AUTO;
@@ -2210,8 +2214,10 @@ static void* rgui_init(void)
    settings_lut[INGAME_MENU_SAVE_STATE]             = RGUI_SETTINGS_SAVESTATE_SAVE;
    settings_lut[SETTING_ROTATION]                   = RGUI_SETTINGS_VIDEO_ROTATION;
    settings_lut[INGAME_MENU_RETURN_TO_GAME]         = RGUI_SETTINGS_RESUME_GAME;
+#ifdef HAVE_SHADER_MANAGER
    settings_lut[SHADERMAN_APPLY_CHANGES]            = RGUI_SETTINGS_SHADER_APPLY;
    settings_lut[SHADERMAN_SHADER_PASSES]            = RGUI_SETTINGS_SHADER_PASSES;
+#endif
    settings_lut[INGAME_MENU_SAVE_CONFIG]            = RGUI_SETTINGS_SAVE_CONFIG;
    settings_lut[INGAME_MENU_QUIT_RETROARCH]         = RGUI_SETTINGS_QUIT_RARCH;
    settings_lut[SETTING_PATH_SAVESTATES_DIRECTORY]  = RGUI_SAVESTATE_DIR_PATH;
