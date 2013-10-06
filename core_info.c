@@ -53,7 +53,7 @@ core_info_list_t *core_info_list_new(const char *modules_path)
       if (!core_info[i].path)
          break;
 
-#if defined(IOS) || defined(HAVE_BB10) || defined(__QNX__)
+#if defined(RARCH_MOBILE) || defined(RARCH_CONSOLE)
       // Libs are deployed with a suffix (*_ios.dylib, *_qnx.so, etc).
       char buffer[PATH_MAX];
       strlcpy(buffer, contents->elems[i].data, sizeof(buffer));
