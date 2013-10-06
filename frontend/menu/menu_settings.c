@@ -1253,9 +1253,6 @@ void menu_set_settings_label(char *type_str, size_t type_str_size, unsigned *w, 
             strlcpy(type_str, name, type_str_size);
             break;
          }
-      case RGUI_SETTINGS_BIND_DPAD_EMULATION:
-         strlcpy(type_str, "TODO", type_str_size);
-         break;
       case RGUI_SETTINGS_BIND_UP:
       case RGUI_SETTINGS_BIND_DOWN:
       case RGUI_SETTINGS_BIND_LEFT:
