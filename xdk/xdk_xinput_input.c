@@ -30,7 +30,6 @@
 
 
 static uint64_t state[MAX_PADS];
-unsigned pads_connected;
 
 #ifdef _XBOX1
 static HANDLE gamepads[MAX_PADS];
@@ -98,7 +97,6 @@ static void xdk_input_poll(void *data)
 
          gamepads[i] = NULL;
          state[i] = 0;
-         pads_connected--;
       }
 
       // handle inserted devices
@@ -112,7 +110,6 @@ static void xdk_input_poll(void *data)
          m_pollingParameters.bInputInterval = 8;
          m_pollingParameters.bOutputInterval = 8;
          gamepads[i] = XInputOpen(XDEVICE_TYPE_GAMEPAD, i, XDEVICE_NO_SLOT, NULL);
-         pads_connected++;
       }
 
       if (!gamepads[i])
@@ -131,7 +128,8 @@ static void xdk_input_poll(void *data)
       if (XInputGetState(gamepads[i], &state_tmp) != ERROR_SUCCESS)
          continue;
 #elif defined(_XBOX360)
-      pads_connected += (XInputGetState(i, &state_tmp) == ERROR_DEVICE_NOT_CONNECTED) ? 0 : 1;
+      if (XInputGetState(i, &state_tmp) == ERROR_DEVICE_NOT_CONNECTED)
+         continue;
 #endif
 
       uint64_t *state_cur = &state[i];
