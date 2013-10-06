@@ -1008,8 +1008,6 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
       case SETTING_PATH_DEFAULT_ROM_DIRECTORY:
          switch (action)
          {
-            case RGUI_ACTION_LEFT:
-            case RGUI_ACTION_RIGHT:
             case RGUI_ACTION_OK:
                menu_stack_push(PATH_DEFAULT_ROM_DIR_CHOICE, true);
                filebrowser_set_root_and_ext(rgui->browser, "empty", default_paths.filesystem_root_dir);
@@ -1023,8 +1021,6 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
       case SETTING_PATH_SAVESTATES_DIRECTORY:
          switch (action)
          {
-            case RGUI_ACTION_LEFT:
-            case RGUI_ACTION_RIGHT:
             case RGUI_ACTION_OK:
                menu_stack_push(PATH_SAVESTATES_DIR_CHOICE, true);
                filebrowser_set_root_and_ext(rgui->browser, "empty", default_paths.filesystem_root_dir);
@@ -1037,8 +1033,6 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
       case SETTING_PATH_SRAM_DIRECTORY:
          switch (action)
          {
-            case RGUI_ACTION_LEFT:
-            case RGUI_ACTION_RIGHT:
             case RGUI_ACTION_OK:
                menu_stack_push(PATH_SRAM_DIR_CHOICE, true);
                filebrowser_set_root_and_ext(rgui->browser, "empty", default_paths.filesystem_root_dir);
@@ -1052,8 +1046,6 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
       case SETTING_PATH_CHEATS:
          switch (action)
          {
-            case RGUI_ACTION_LEFT:
-            case RGUI_ACTION_RIGHT:
             case RGUI_ACTION_OK:
                menu_stack_push(PATH_CHEATS_DIR_CHOICE, true);
                filebrowser_set_root_and_ext(rmenu->browser, "empty", default_paths.filesystem_root_dir);
@@ -1067,8 +1059,6 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
       case SETTING_PATH_SYSTEM:
          switch (action)
          {
-            case RGUI_ACTION_LEFT:
-            case RGUI_ACTION_RIGHT:
             case RGUI_ACTION_OK:
                menu_stack_push(PATH_SYSTEM_DIR_CHOICE, true);
                filebrowser_set_root_and_ext(rgui->browser, "empty", default_paths.system_dir);
@@ -1215,8 +1205,6 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
       case SHADERMAN_LOAD_CGP:
          switch (action)
          {
-            case RGUI_ACTION_LEFT:
-            case RGUI_ACTION_RIGHT:
             case RGUI_ACTION_OK:
                menu_stack_push(CGP_CHOICE, true);
                filebrowser_set_root_and_ext(rgui->browser, EXT_CGP_PRESETS, g_settings.video.shader_dir);
@@ -1232,8 +1220,6 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
 #ifdef HAVE_OSKUTIL
          switch (action)
          {
-            case RGUI_ACTION_LEFT:
-            case RGUI_ACTION_RIGHT:
             case RGUI_ACTION_OK:
                rgui->osk_param = SHADER_PRESET_FILE;
                rgui->osk_init = osk_callback_enter_filename_init;
