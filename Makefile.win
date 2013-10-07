@@ -102,7 +102,7 @@ JLIBS =
 
 ifeq ($(HAVE_RGUI), 1)
    DEFINES += -DHAVE_RGUI
-   OBJ += frontend/menu/menu_common.o frontend/menu/menu_settings.o frontend/menu/menu_context.o frontend/menu/rgui.o frontend/menu/history.o
+   OBJ += frontend/menu/menu_common.o frontend/menu/menu_settings.o frontend/menu/menu_context.o frontend/menu/file_list.o frontend/menu/rgui.o frontend/menu/history.o
 endif
 
 ifeq ($(HAVE_SDL), 1)

@@ -188,6 +188,7 @@
     <ClCompile Include="..\..\deps\miniz\miniz.c" />
     <ClCompile Include="..\..\file_extract.c" />
     <ClCompile Include="..\..\frontend\menu\history.c" />
+    <ClCompile Include="..\..\frontend\menu\file_list.c" />
     <ClCompile Include="..\..\frontend\menu\rgui.c" />
     <ClCompile Include="..\..\frontend\menu\menu_common.c" />
     <ClCompile Include="..\..\frontend\menu\menu_settings.c" />

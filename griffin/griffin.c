@@ -530,6 +530,11 @@ MENU
 #include "../frontend/menu/menu_settings.c"
 #include "../frontend/menu/history.c"
 
+#ifdef HAVE_FILEBROWSER
+#include "../frontend/menu/file_browser.c"
+#endif
+#include "../frontend/menu/file_list.c"
+
 #if defined(HAVE_RMENU_GUI)
 #include "../frontend/menu/rmenu.c"
 #elif defined(HAVE_RGUI)
