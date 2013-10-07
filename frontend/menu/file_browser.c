@@ -139,7 +139,6 @@ bool filebrowser_iterate(void *data, unsigned action)
          }
          break;
       case RGUI_ACTION_START:
-         filebrowser_set_root_and_ext(rgui->browser, NULL, default_paths.filesystem_root_dir);
 #ifdef HAVE_RMENU_XUI
          filebrowser_fetch_directory_entries(RGUI_ACTION_OK);
 #endif
