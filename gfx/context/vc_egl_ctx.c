@@ -111,6 +111,9 @@ static void gfx_ctx_update_window_title(void)
 {
    char buf[128], buf_fps[128]
    gfx_get_fps(buf, sizeof(buf), false, buf_fps, sizeof(buf_fps));
+
+   if ((g_extern.lifecycle_mode_state & (1ULL << MODE_FPS_DRAW)))
+      msg_queue_push(g_extern.msg_queue, buf_fps, 1, 1);
 }
 
 static void gfx_ctx_get_video_size(unsigned *width, unsigned *height)
