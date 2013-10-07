@@ -47,19 +47,6 @@
 #include <sdcard/gcsd.h>
 #include <fat.h>
 
-#define MAKE_FILE(x) {\
-   if (!path_file_exists((x)))\
-   {\
-      RARCH_WARN("File \"%s\" does not exists, creating\n", (x));\
-      FILE *f = fopen((x), "wb");\
-      if (!f)\
-      {\
-         RARCH_ERR("Could not create file \"%s\"\n", (x));\
-      }\
-      fclose(f);\
-   }\
-}
-
 #ifdef IS_SALAMANDER
 
 static void find_and_set_first_file(void)
