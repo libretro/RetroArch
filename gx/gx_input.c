@@ -57,22 +57,6 @@ const struct platform_bind platform_keys[] = {
    { GX_GC_START, "GC Start button" },
    { GX_GC_L_TRIGGER, "GC Left Trigger" },
    { GX_GC_R_TRIGGER, "GC Right Trigger" },
-   { GX_GC_LSTICK_LEFT, "GC Main Stick Left" },
-   { GX_GC_LSTICK_RIGHT, "GC Main Stick Right" },
-   { GX_GC_LSTICK_UP, "GC Main Stick Up" },
-   { GX_GC_LSTICK_DOWN, "GC Main Stick Down" },
-   { GX_GC_LSTICK_LEFT | GX_GC_LEFT, "GC Main Stick D-Pad Left" },
-   { GX_GC_LSTICK_RIGHT | GX_GC_RIGHT, "GC Main Stick D-Pad Right" },
-   { GX_GC_LSTICK_UP | GX_GC_UP, "GC Main Stick D-Pad Up" },
-   { GX_GC_LSTICK_DOWN | GX_GC_DOWN, "GC Main Stick D-Pad Down" },
-   { GX_GC_RSTICK_LEFT, "GC C-Stick Left" },
-   { GX_GC_RSTICK_RIGHT, "GC C-Stick Right" },
-   { GX_GC_RSTICK_UP, "GC C-Stick Up" },
-   { GX_GC_RSTICK_DOWN, "GC C-Stick Down" },
-   { GX_GC_RSTICK_LEFT | GX_GC_LEFT, "GC C-Stick D-Pad Left" },
-   { GX_GC_RSTICK_RIGHT | GX_GC_RIGHT, "GC C-Stick D-Pad Right" },
-   { GX_GC_RSTICK_UP | GX_GC_UP, "GC C-Stick D-Pad Up" },
-   { GX_GC_RSTICK_DOWN | GX_GC_DOWN, "GC C-Stick D-Pad Down" },
 
 #ifdef HW_RVL
    // CLASSIC CONTROLLER
@@ -91,22 +75,6 @@ const struct platform_bind platform_keys[] = {
    { GX_CLASSIC_R_TRIGGER, "Classic R Trigger" },
    { GX_CLASSIC_ZL_TRIGGER, "Classic ZL Trigger" },
    { GX_CLASSIC_ZR_TRIGGER, "Classic ZR Trigger" },
-   { GX_CLASSIC_LSTICK_LEFT, "Classic LStick Left" },
-   { GX_CLASSIC_LSTICK_RIGHT, "Classic LStick Right" },
-   { GX_CLASSIC_LSTICK_UP, "Classic LStick Up" },
-   { GX_CLASSIC_LSTICK_DOWN, "Classic LStick Down" },
-   { GX_CLASSIC_LSTICK_LEFT | GX_CLASSIC_LEFT, "Classic LStick D-Pad Left" },
-   { GX_CLASSIC_LSTICK_RIGHT | GX_CLASSIC_RIGHT, "Classic LStick D-Pad Right" },
-   { GX_CLASSIC_LSTICK_UP | GX_CLASSIC_UP, "Classic LStick D-Pad Up" },
-   { GX_CLASSIC_LSTICK_DOWN | GX_CLASSIC_DOWN, "Classic LStick D-Pad Down" },
-   { GX_CLASSIC_RSTICK_LEFT, "Classic RStick Left" },
-   { GX_CLASSIC_RSTICK_RIGHT, "Classic RStick Right" },
-   { GX_CLASSIC_RSTICK_UP, "Classic RStick Up" },
-   { GX_CLASSIC_RSTICK_DOWN, "Classic RStick Down" },
-   { GX_CLASSIC_RSTICK_LEFT | GX_CLASSIC_LEFT, "Classic RStick D-Pad Left" },
-   { GX_CLASSIC_RSTICK_RIGHT | GX_CLASSIC_RIGHT, "Classic RStick D-Pad Right" },
-   { GX_CLASSIC_RSTICK_UP | GX_CLASSIC_UP, "Classic RStick D-Pad Up" },
-   { GX_CLASSIC_RSTICK_DOWN | GX_CLASSIC_DOWN, "Classic RStick D-Pad Down" },
 
    // WIIMOTE (PLUS OPTIONAL NUNCHUK)
    { GX_WIIMOTE_A, "Wiimote A button" },
@@ -126,10 +94,6 @@ const struct platform_bind platform_keys[] = {
    { GX_NUNCHUK_RIGHT, "Nunchuk Stick Right" },
    { GX_NUNCHUK_UP, "Nunchuk Stick Up" },
    { GX_NUNCHUK_DOWN, "Nunchuk Stick Down" },
-   { GX_NUNCHUK_LEFT | GX_WIIMOTE_LEFT, "Nunchuk Stick D-Pad Left" },
-   { GX_NUNCHUK_RIGHT | GX_WIIMOTE_RIGHT, "Nunchuk Stick D-Pad Right" },
-   { GX_NUNCHUK_UP | GX_WIIMOTE_UP, "Nunchuk Stick D-Pad Up" },
-   { GX_NUNCHUK_DOWN | GX_WIIMOTE_DOWN, "Nunchuk Stick D-Pad Down" },
 #endif
 };
 
@@ -434,16 +398,6 @@ static void gx_input_poll(void *data)
             analog_state[port][RETRO_DEVICE_INDEX_ANALOG_LEFT][RETRO_DEVICE_ID_ANALOG_Y] = ls_y;
             analog_state[port][RETRO_DEVICE_INDEX_ANALOG_RIGHT][RETRO_DEVICE_ID_ANALOG_X] = rs_x;
             analog_state[port][RETRO_DEVICE_INDEX_ANALOG_RIGHT][RETRO_DEVICE_ID_ANALOG_Y] = rs_y;
-
-            *state_cur |= (ls_x > WII_JOYSTICK_THRESHOLD) ? GX_CLASSIC_LSTICK_RIGHT : 0;
-            *state_cur |= (ls_x < -WII_JOYSTICK_THRESHOLD) ? GX_CLASSIC_LSTICK_LEFT : 0;
-            *state_cur |= (ls_y < -WII_JOYSTICK_THRESHOLD) ? GX_CLASSIC_LSTICK_UP : 0;
-            *state_cur |= (ls_y > WII_JOYSTICK_THRESHOLD) ? GX_CLASSIC_LSTICK_DOWN : 0;
-
-            *state_cur |= (rs_x > WII_JOYSTICK_THRESHOLD) ? GX_CLASSIC_RSTICK_RIGHT : 0;
-            *state_cur |= (rs_x < -WII_JOYSTICK_THRESHOLD) ? GX_CLASSIC_RSTICK_LEFT: 0;
-            *state_cur |= (rs_y < -WII_JOYSTICK_THRESHOLD) ? GX_CLASSIC_RSTICK_UP : 0;
-            *state_cur |= (rs_y > WII_JOYSTICK_THRESHOLD) ? GX_CLASSIC_RSTICK_DOWN : 0;
          }
          else if (type == WPAD_EXP_NUNCHUK)
          {
@@ -472,11 +426,6 @@ static void gx_input_poll(void *data)
 
             analog_state[port][RETRO_DEVICE_INDEX_ANALOG_LEFT][RETRO_DEVICE_ID_ANALOG_X] = x;
             analog_state[port][RETRO_DEVICE_INDEX_ANALOG_LEFT][RETRO_DEVICE_ID_ANALOG_Y] = y;
-
-            *state_cur |= (x > WII_JOYSTICK_THRESHOLD) ? GX_NUNCHUK_RIGHT : 0;
-            *state_cur |= (x < -WII_JOYSTICK_THRESHOLD) ? GX_NUNCHUK_LEFT : 0;
-            *state_cur |= (y < -WII_JOYSTICK_THRESHOLD) ? GX_NUNCHUK_UP : 0;
-            *state_cur |= (y > WII_JOYSTICK_THRESHOLD) ? GX_NUNCHUK_DOWN : 0;
          }
       }
 #endif
@@ -508,17 +457,7 @@ static void gx_input_poll(void *data)
          analog_state[port][RETRO_DEVICE_INDEX_ANALOG_RIGHT][RETRO_DEVICE_ID_ANALOG_X] = rs_x;
          analog_state[port][RETRO_DEVICE_INDEX_ANALOG_RIGHT][RETRO_DEVICE_ID_ANALOG_Y] = rs_y;
 
-         *state_cur |= (ls_x < -GC_JOYSTICK_THRESHOLD) ? GX_GC_LSTICK_LEFT : 0;
-         *state_cur |= (ls_x > GC_JOYSTICK_THRESHOLD) ? GX_GC_LSTICK_RIGHT : 0;
-         *state_cur |= (ls_y > GC_JOYSTICK_THRESHOLD) ? GX_GC_LSTICK_DOWN : 0;
-         *state_cur |= (ls_y < -GC_JOYSTICK_THRESHOLD) ? GX_GC_LSTICK_UP : 0;
-
-         *state_cur |= (rs_x < -GC_JOYSTICK_THRESHOLD) ? GX_GC_RSTICK_LEFT : 0;
-         *state_cur |= (rs_x > GC_JOYSTICK_THRESHOLD) ? GX_GC_RSTICK_RIGHT : 0;
-         *state_cur |= (rs_y > GC_JOYSTICK_THRESHOLD) ? GX_GC_RSTICK_DOWN : 0;
-         *state_cur |= (rs_y < -GC_JOYSTICK_THRESHOLD) ? GX_GC_RSTICK_UP : 0;
-
-         if ((*state_cur & (GX_GC_LSTICK_UP | GX_GC_RSTICK_UP | GX_GC_L_TRIGGER | GX_GC_R_TRIGGER)) == (GX_GC_LSTICK_UP | GX_GC_RSTICK_UP | GX_GC_L_TRIGGER | GX_GC_R_TRIGGER))
+         if ((*state_cur & (GX_GC_START | GX_GC_Z_TRIGGER | GX_GC_L_TRIGGER | GX_GC_R_TRIGGER)) == (GX_GC_START | GX_GC_Z_TRIGGER | GX_GC_L_TRIGGER | GX_GC_R_TRIGGER))
             *state_cur |= GX_WIIMOTE_HOME;
       }
    }
@@ -535,49 +474,6 @@ static void gx_input_poll(void *data)
          (1ULL << RARCH_REWIND) |
          (1ULL << RARCH_QUIT_KEY) |
          (1ULL << RARCH_MENU_TOGGLE));
-
-   if (
-#ifdef HW_RVL
-         ((*state_p1 & GX_CLASSIC_RSTICK_DOWN) && !(*state_p1 & GX_CLASSIC_ZR_TRIGGER)) ||
-#endif
-         ((*state_p1 & GX_GC_RSTICK_DOWN) && !(*state_p1 & GX_GC_Z_TRIGGER))
-      )
-      *lifecycle_state |= (1ULL << RARCH_FAST_FORWARD_HOLD_KEY);
-   if (
-#ifdef HW_RVL
-         ((*state_p1 & GX_CLASSIC_RSTICK_UP) && (*state_p1 & GX_CLASSIC_ZR_TRIGGER)) ||
-#endif
-         ((*state_p1 & GX_GC_RSTICK_UP) && (*state_p1 & GX_GC_Z_TRIGGER))
-      )
-      *lifecycle_state |= (1ULL << RARCH_LOAD_STATE_KEY);
-   if (
-#ifdef HW_RVL
-         ((*state_p1 & GX_CLASSIC_RSTICK_DOWN) && (*state_p1 & GX_CLASSIC_ZR_TRIGGER)) ||
-#endif
-         ((*state_p1 & GX_GC_RSTICK_DOWN) && (*state_p1 & GX_GC_Z_TRIGGER))
-      )
-      *lifecycle_state |= (1ULL << RARCH_SAVE_STATE_KEY);
-   if (
-#ifdef HW_RVL
-         ((*state_p1 & GX_CLASSIC_RSTICK_RIGHT) && (*state_p1 & GX_CLASSIC_ZR_TRIGGER)) ||
-#endif
-         ((*state_p1 & GX_GC_RSTICK_RIGHT) && (*state_p1 & GX_GC_Z_TRIGGER))
-      )
-      *lifecycle_state |= (1ULL << RARCH_STATE_SLOT_PLUS);
-   if (
-#ifdef HW_RVL
-         ((*state_p1 & GX_CLASSIC_RSTICK_LEFT) && (*state_p1 & GX_CLASSIC_ZR_TRIGGER)) ||
-#endif
-         ((*state_p1 & GX_GC_RSTICK_LEFT) && (*state_p1 & GX_GC_Z_TRIGGER))
-      )
-      *lifecycle_state |= (1ULL << RARCH_STATE_SLOT_MINUS);
-   if (
-#ifdef HW_RVL
-         ((*state_p1 & GX_CLASSIC_RSTICK_UP) && !(*state_p1 & GX_CLASSIC_ZR_TRIGGER)) ||
-#endif
-         ((*state_p1 & GX_GC_RSTICK_UP) && !(*state_p1 & GX_GC_Z_TRIGGER))
-      )
-      *lifecycle_state |= (1ULL << RARCH_REWIND);
 
    if (g_menu)
    {
