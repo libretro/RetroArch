@@ -168,7 +168,7 @@ static void menu_stack_pop(unsigned menu_type)
    if (rgui->browser->prev_dir.directory_path[0] != '\0')
    {
       memcpy(&rgui->browser->current_dir, &rgui->browser->prev_dir, sizeof(*(&rgui->browser->current_dir)));
-      filebrowser_iterate(rgui->browser, FILEBROWSER_ACTION_RESET_CURRENT_DIR);
+      filebrowser_reset_current_dir(rgui->browser);
       rgui->browser->current_dir.ptr = rgui->browser->prev_dir.ptr;
       strlcpy(rgui->browser->current_dir.path, rgui->browser->prev_dir.path,
             sizeof(rgui->browser->current_dir.path));
@@ -244,7 +244,7 @@ static int select_file(void *data, uint64_t action)
    switch (action)
    {
       case RGUI_ACTION_OK:
-         if (filebrowser_iterate(rgui->browser, FILEBROWSER_ACTION_PATH_ISDIR))
+         if (filebrowser_is_current_entry_dir(rgui->browser))
          {
             if (!filebrowser_iterate(rgui->browser, FILEBROWSER_ACTION_OK))
             {
@@ -371,7 +371,7 @@ static int select_directory(void *data, uint64_t action)
    (void)path;
    bool ret = true;
 
-   bool is_dir = filebrowser_iterate(rgui->browser, FILEBROWSER_ACTION_PATH_ISDIR);
+   bool is_dir = filebrowser_is_current_entry_dir(rgui->browser);
    bool pop_menu_stack = false;
 
    switch (action)

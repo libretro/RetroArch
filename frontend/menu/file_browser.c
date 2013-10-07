@@ -129,12 +129,6 @@ bool filebrowser_iterate(void *data, unsigned action)
       case FILEBROWSER_ACTION_RESET:
          ret = directory_parse(filebrowser, filebrowser->current_dir.root_dir);
          break;
-      case FILEBROWSER_ACTION_RESET_CURRENT_DIR:
-         ret = directory_parse(filebrowser, filebrowser->current_dir.directory_path);
-         break;
-      case FILEBROWSER_ACTION_PATH_ISDIR:
-         ret = filebrowser->list->elems[filebrowser->current_dir.ptr].attr.b;
-         break;
       case FILEBROWSER_ACTION_NOOP:
       default:
          break;
@@ -145,6 +139,18 @@ bool filebrowser_iterate(void *data, unsigned action)
          sizeof(filebrowser->current_dir.path));
 
    return ret;
+}
+
+bool filebrowser_is_current_entry_dir(void *data)
+{
+   filebrowser_t *filebrowser = (filebrowser_t*)data;
+   return filebrowser->list->elems[filebrowser->current_dir.ptr].attr.b;
+}
+
+bool filebrowser_reset_current_dir(void *data)
+{
+   filebrowser_t *filebrowser = (filebrowser_t*)data;
+   return directory_parse(filebrowser, filebrowser->current_dir.directory_path);
 }
 
 void filebrowser_update(void *data, uint64_t action_ori, const char *extensions)
