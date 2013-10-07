@@ -994,24 +994,23 @@ NULL, NULL, NULL, 0);
       xdk_d3d_draw_texture(d3d);
 #endif
 
-#if defined(_XBOX1)
-   float msg_width  = 60;
-   float msg_height = 365;
-#elif defined(_XBOX360)
-   float msg_width  = (lifecycle_mode_state & (1ULL << MODE_MENU_HD)) ? 160 : 100;
-   float msg_height = 120;
-#endif
+   d3d->ctx_driver->update_window_title();
 
-#if 0
    if (msg)
    {
+#if defined(_XBOX1)
+      float msg_width  = 60;
+      float msg_height = 365;
+#elif defined(_XBOX360)
+      float msg_width  = (lifecycle_mode_state & (1ULL << MODE_MENU_HD)) ? 160 : 100;
+      float msg_height = 120;
+#endif
+      font_params_t font_parms = {0};
       font_parms.x = msg_width;
       font_parms.y = msg_height;
+      font_parms.scale = 21;
       d3d->font_ctx->render_msg(d3d, msg, &font_parms);
    }
-#endif
-
-   d3d->ctx_driver->update_window_title();
 
    gfx_ctx_xdk_swap_buffers();
 

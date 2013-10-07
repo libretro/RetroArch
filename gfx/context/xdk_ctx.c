@@ -85,14 +85,14 @@ static void gfx_ctx_xdk_update_window_title(void)
 {
    char buf[128], buf_fps[128];
    bool fps_draw = g_extern.lifecycle_mode_state & (1ULL << MODE_FPS_DRAW);
+   gfx_get_fps(buf, sizeof(buf), fps_draw ? buf_fps : NULL, sizeof(buf_fps));
 
-   if (gfx_get_fps(buf, sizeof(buf), fps_draw ? buf_fps : NULL, sizeof(buf_fps)) &&
-         fps_draw)
+   if (fps_draw)
    {
       char mem[128];
       MEMORYSTATUS stat;
       GlobalMemoryStatus(&stat);
-      snprintf(mem, sizeof(mem), "|| MEM: %.2f/%.2f MB", stat.dwAvailPhys/(1024.0f*1024.0f), stat.dwTotalPhys/(1024.0f*1024.0f));
+      snprintf(mem, sizeof(mem), "|| MEM: %.2f/%.2fMB", stat.dwAvailPhys/(1024.0f*1024.0f), stat.dwTotalPhys/(1024.0f*1024.0f));
       strlcat(buf_fps, mem, sizeof(buf_fps));
       msg_queue_push(g_extern.msg_queue, buf_fps, 1, 1);
    }
