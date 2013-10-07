@@ -500,6 +500,7 @@ static bool osk_callback_enter_filename(void *data)
          case SHADER_PRESET_FILE:
             {
                fill_pathname_join(filepath, g_settings.video.shader_dir, tmp_str, sizeof(filepath));
+               strlcat(filepath, ".cgp", sizeof(filepath));
                RARCH_LOG("[osk_callback_enter_filename]: filepath is: %s.\n", filepath);
                config_file_t *conf = config_file_new(NULL);
                if (!conf)
