@@ -195,7 +195,7 @@ returntype main_entry(signature())
       }
       else if (g_extern.lifecycle_mode_state & (1ULL << MODE_GAME))
       {
-#ifdef RARCH_CONSOLE || defined(ANDROID)
+#if defined(RARCH_CONSOLE) || defined(ANDROID)
          driver.input->poll(NULL);
 #endif
          if (driver.video_poke->set_aspect_ratio)

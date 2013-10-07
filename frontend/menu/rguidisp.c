@@ -346,8 +346,6 @@ static void render_text(void *data)
       else if (menu_type == RGUI_SETTINGS_PATH_OPTIONS)
          w = 24;
 
-      unsigned port = rgui->current_pad;
-      
 #ifdef HAVE_SHADER_MANAGER
       if (type >= RGUI_SETTINGS_SHADER_FILTER &&
             type <= RGUI_SETTINGS_SHADER_LAST)
