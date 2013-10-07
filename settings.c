@@ -607,13 +607,6 @@ bool config_load_file(const char *path)
    /* TODO - will be refactored later to make it more clean - it's more 
     * important that it works for consoles right now */
 
-   for (unsigned i = 0; i < MAX_PLAYERS; i++)
-   {
-      char cfg[64];
-      snprintf(cfg, sizeof(cfg), "input_device_p%u", i + 1);
-      CONFIG_GET_INT(input.device[i], cfg);
-   }
-
    CONFIG_GET_BOOL_EXTERN(console.screen.gamma_correction, "gamma_correction");
 
    bool msg_enable = false;
