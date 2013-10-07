@@ -775,10 +775,12 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
       case SETTING_ASPECT_RATIO:
       case SETTING_HW_TEXTURE_FILTER:
       case SETTING_REFRESH_RATE:
+      case SETTING_VIDEO_VSYNC:
       case SETTING_EMU_SHOW_DEBUG_INFO_MSG:
       case SETTING_REWIND_ENABLED:
       case SETTING_REWIND_GRANULARITY:
       case SETTING_EMU_AUDIO_MUTE:
+      case SETTING_AUDIO_CONTROL_RATE_DELTA:
       case SETTING_CONTROLS_NUMBER:
       case SETTING_CONTROLS_BIND_DEVICE_TYPE:
       case INGAME_MENU_LOAD_STATE:
@@ -1453,6 +1455,10 @@ static int select_setting(void *data, uint64_t action)
             strlcpy(text, "Estimated Monitor FPS", sizeof(text));
             menu_set_settings_label(setting_text, sizeof(setting_text), &w, settings_lut[i]);
             break;
+         case SETTING_VIDEO_VSYNC:
+            strlcpy(text, "VSync", sizeof(text));
+            menu_set_settings_label(setting_text, sizeof(setting_text), &w, settings_lut[i]);
+            break;
          case SETTING_TRIPLE_BUFFERING:
             strlcpy(text, "Triple Buffering", sizeof(text));
             snprintf(setting_text, sizeof(setting_text), (g_extern.lifecycle_mode_state & (1ULL << MODE_VIDEO_TRIPLE_BUFFERING_ENABLE)) ? "ON" : "OFF");
@@ -1502,6 +1508,10 @@ static int select_setting(void *data, uint64_t action)
             break;
          case SETTING_EMU_AUDIO_MUTE:
             strlcpy(text, "Mute Audio", sizeof(text));
+            menu_set_settings_label(setting_text, sizeof(setting_text), &w, settings_lut[i]);
+            break;
+         case SETTING_AUDIO_CONTROL_RATE_DELTA:
+            strlcpy(text, "Rate Control Delta", sizeof(text));
             menu_set_settings_label(setting_text, sizeof(setting_text), &w, settings_lut[i]);
             break;
 #ifdef _XBOX1
@@ -1643,7 +1653,8 @@ static int select_setting(void *data, uint64_t action)
             strlcpy(setting_text, "", sizeof(setting_text));
             break;
          case INGAME_MENU_CHANGE_GAME:
-            strlcpy(text, "Load Game", sizeof(text));
+            snprintf(text, sizeof(text), "Load Game (%s)",
+                  rgui->info.library_name ? rgui->info.library_name : g_extern.system.info.library_name);
             strlcpy(setting_text, "...", sizeof(setting_text));
             break;
          case INGAME_MENU_CHANGE_LIBRETRO_CORE:
@@ -2206,9 +2217,11 @@ static void* rgui_init(void)
    settings_lut[SETTING_HW_TEXTURE_FILTER]          = RGUI_SETTINGS_VIDEO_FILTER;
    settings_lut[SETTING_REFRESH_RATE]               = RGUI_SETTINGS_VIDEO_REFRESH_RATE_AUTO;
    settings_lut[SETTING_EMU_SHOW_DEBUG_INFO_MSG]    = RGUI_SETTINGS_DEBUG_TEXT;
+   settings_lut[SETTING_VIDEO_VSYNC]                = RGUI_SETTINGS_VIDEO_VSYNC;
    settings_lut[SETTING_REWIND_ENABLED]             = RGUI_SETTINGS_REWIND_ENABLE;
    settings_lut[SETTING_REWIND_GRANULARITY]         = RGUI_SETTINGS_REWIND_GRANULARITY;
    settings_lut[SETTING_EMU_AUDIO_MUTE]             = RGUI_SETTINGS_AUDIO_MUTE;
+   settings_lut[SETTING_AUDIO_CONTROL_RATE_DELTA]   = RGUI_SETTINGS_AUDIO_CONTROL_RATE_DELTA;
    settings_lut[SETTING_CONTROLS_NUMBER]            = RGUI_SETTINGS_BIND_PLAYER;
    settings_lut[SETTING_CONTROLS_BIND_DEVICE_TYPE]  = RGUI_SETTINGS_BIND_DEVICE_TYPE;
    settings_lut[INGAME_MENU_LOAD_STATE]             = RGUI_SETTINGS_SAVESTATE_LOAD;
