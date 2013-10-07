@@ -294,7 +294,7 @@ exit:
 
    // exit() here is nasty.
    // pthread_exit(NULL) or return NULL; causes hanging ...
-   // Should probably called ANativeActivity_finsih(), but it's bugged, it will hang our app.
+   // Should probably call ANativeActivity_finish(), but it's bugged, it will hang our app.
    exit(0);
 }
 

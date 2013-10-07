@@ -98,13 +98,24 @@ static void rarch_get_environment_console(void)
 }
 #endif
 
-#if defined(IOS) || defined(OSX) || defined(HAVE_BB10)
+#if defined(ANDROID)
+#define main_entry android_app_entry
+#define returntype void*
+#define signature() void* data
+#define returnfunc() exit(0)
+#elif defined(IOS) || defined(OSX) || defined(HAVE_BB10)
 #define main_entry rarch_main
+#define returntype int
+#define signature() int argc, char *argv[]
+#define returnfunc() return 0
 #else
 #define main_entry main
+#define returntype int
+#define signature() int argc, char *argv[]
+#define returnfunc() return 0
 #endif
 
-int main_entry(int argc, char *argv[])
+returntype main_entry(signature())
 {
    void* args = NULL;
    frontend_ctx = (frontend_ctx_driver_t*)frontend_ctx_init_first();
@@ -284,5 +295,5 @@ int main_entry(int argc, char *argv[])
    if (frontend_ctx && frontend_ctx->shutdown)
       frontend_ctx->shutdown(false);
 
-   return 0;
+   returnfunc();
 }
