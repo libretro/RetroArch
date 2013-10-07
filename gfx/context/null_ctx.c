@@ -64,7 +64,7 @@ static void gfx_ctx_set_resize(unsigned width, unsigned height)
 static void gfx_ctx_update_window_title(void)
 {
    char buf[128], buf_fps[128];
-   gfx_get_fps(buf, sizeof(buf), false, buf_fps, sizeof(buf_fps));
+   gfx_get_fps(buf, sizeof(buf), buf_fps, sizeof(buf_fps));
 }
 
 static bool gfx_ctx_set_video_mode(

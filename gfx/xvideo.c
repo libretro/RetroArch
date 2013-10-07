@@ -409,7 +409,7 @@ static void *xv_init(const video_info_t *video, const input_driver_t **input, vo
 
    XMapWindow(xv->display, xv->window);
 
-   if (gfx_get_fps(buf, sizeof(buf), false, buf_fps, sizeof(buf_fps)))
+   if (gfx_get_fps(buf, sizeof(buf), NULL, 0))
       XStoreName(xv->display, xv->window, buf);
 
    x11_set_window_attr(xv->display, xv->window);
@@ -700,8 +700,8 @@ static bool xv_frame(void *data, const void *frame, unsigned width, unsigned hei
          true);
    XSync(xv->display, False);
 
-   char buf[128], buf_fps[128];
-   if (gfx_get_fps(buf, sizeof(buf), false, buf_fps, sizeof(buf_fps)))
+   char buf[128];
+   if (gfx_get_fps(buf, sizeof(buf), NULL, 0))
       XStoreName(xv->display, xv->window, buf);
 
    g_extern.frame_count++;

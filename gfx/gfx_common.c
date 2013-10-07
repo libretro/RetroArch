@@ -24,7 +24,7 @@ static inline float time_to_fps(rarch_time_t last_time, rarch_time_t new_time, i
 }
 
 #define FPS_UPDATE_INTERVAL 256
-bool gfx_get_fps(char *buf, size_t size, bool always_write, char *buf_fps, size_t size_fps)
+bool gfx_get_fps(char *buf, size_t size, char *buf_fps, size_t size_fps)
 {
    static rarch_time_t time;
    static rarch_time_t fps_time;
@@ -45,20 +45,19 @@ bool gfx_get_fps(char *buf, size_t size, bool always_write, char *buf_fps, size_
          last_fps = time_to_fps(time, new_time, FPS_UPDATE_INTERVAL);
          time = new_time;
 
-         snprintf(buf_fps, size_fps, "FPS: %6.1f || Frames: %d", last_fps, g_extern.frame_count);
          snprintf(buf, size, "%s || FPS: %6.1f || Frames: %d", g_extern.title_buf, last_fps, g_extern.frame_count);
          ret = true;
       }
-      else if (always_write)
-      {
+
+      if (buf_fps)
          snprintf(buf_fps, size_fps, "FPS: %6.1f || Frames: %d", last_fps, g_extern.frame_count);
-         snprintf(buf, size, "%s || FPS: %6.1f || Frames: %d", g_extern.title_buf, last_fps, g_extern.frame_count);
-      }
    }
    else
    {
       time = fps_time = new_time;
-      snprintf(buf, size, "%s", g_extern.title_buf);
+      strlcpy(buf, g_extern.title_buf, size);
+      if (buf_fps)
+         strlcpy(buf_fps, "N/A", size_fps);
       ret = true;
    }
 

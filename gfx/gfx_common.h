@@ -28,9 +28,9 @@ extern "C" {
 #include "../config.h"
 #endif
 
-// If always_write is true, will always update FPS value
-// If always_write is false, returns true if FPS value was updated.
-bool gfx_get_fps(char *buf, size_t size, bool always_write, char *buf_fps, size_t size_fps);
+// bufs gets a string suitable for Window title, buf_fps for raw FPS only.
+// buf_fps is optional.
+bool gfx_get_fps(char *buf, size_t size, char *buf_fps, size_t size_fps);
 
 #ifdef _WIN32
 void gfx_set_dwm(void);

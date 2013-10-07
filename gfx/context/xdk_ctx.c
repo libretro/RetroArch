@@ -84,10 +84,11 @@ extern unsigned font_x, font_y;
 static void gfx_ctx_xdk_update_window_title(void)
 {
    char buf[128], buf_fps[128];
+   bool fps_draw = g_extern.lifecycle_mode_state & (1ULL << MODE_FPS_DRAW);
    xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
 
-   if (gfx_get_fps(buf, sizeof(buf), false, buf_fps, sizeof(buf_fps)) &&
-   g_extern.lifecycle_mode_state & (1ULL << MODE_FPS_DRAW))
+   if (gfx_get_fps(buf, sizeof(buf), fps_draw ? buf_fps : NULL, sizeof(buf_fps)) &&
+         fps_draw)
    {
       MEMORYSTATUS stat;
       font_params_t font_parms = {0};
