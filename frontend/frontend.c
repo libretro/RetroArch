@@ -103,16 +103,19 @@ static void rarch_get_environment_console(void)
 #define returntype void*
 #define signature() void* data
 #define returnfunc() exit(0)
+#define return_negative() return NULL
 #elif defined(IOS) || defined(OSX) || defined(HAVE_BB10)
 #define main_entry rarch_main
 #define returntype int
 #define signature() int argc, char *argv[]
 #define returnfunc() return 0
+#define return_negative() return 1
 #else
 #define main_entry main
 #define returntype int
 #define signature() int argc, char *argv[]
 #define returnfunc() return 0
+#define return_negative() return 1
 #endif
 
 returntype main_entry(signature())
@@ -184,7 +187,7 @@ returntype main_entry(signature())
             if (frontend_ctx && frontend_ctx->shutdown)
                frontend_ctx->shutdown(true);
 
-            return 1;
+            return_negative();
 #endif
          }
 
@@ -192,7 +195,7 @@ returntype main_entry(signature())
       }
       else if (g_extern.lifecycle_mode_state & (1ULL << MODE_GAME))
       {
-#ifdef RARCH_CONSOLE
+#ifdef RARCH_CONSOLE || defined(ANDROID)
          driver.input->poll(NULL);
 #endif
          if (driver.video_poke->set_aspect_ratio)
