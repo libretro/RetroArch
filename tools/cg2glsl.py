@@ -683,6 +683,7 @@ def main():
    if len(sys.argv) != 3:
       print('Usage: {} prog.cg(p) prog.glsl(p)'.format(sys.argv[0]))
       print('Batch mode usage: {} cg-dir out-xml-shader-dir'.format(sys.argv[0]))
+      print('Requires Python 3 and cgc (nvidia-cg-toolkit) 3.1.')
       return 1
 
    if os.path.isdir(sys.argv[1]):
