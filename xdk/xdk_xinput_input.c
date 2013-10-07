@@ -60,15 +60,6 @@ const struct platform_bind platform_keys[] = {
 #endif
    { (1ULL << RETRO_DEVICE_ID_JOYPAD_L3), "Left thumb" },
    { (1ULL << RETRO_DEVICE_ID_JOYPAD_R3), "Right thumb" },
-   { (1ULL << RARCH_TURBO_ENABLE), "Turbo button (Unmapped)" },
-   { (1ULL << RARCH_ANALOG_LEFT_X_PLUS), "LStick Left" },
-   { (1ULL << RARCH_ANALOG_LEFT_X_MINUS), "LStick Right" },
-   { (1ULL << RARCH_ANALOG_LEFT_Y_PLUS), "LStick Up" },
-   { (1ULL << RARCH_ANALOG_LEFT_Y_MINUS), "LStick Down" },
-   { (1ULL << RARCH_ANALOG_RIGHT_X_PLUS), "RStick Left" },
-   { (1ULL << RARCH_ANALOG_RIGHT_X_MINUS), "RStick Right" },
-   { (1ULL << RARCH_ANALOG_RIGHT_Y_PLUS), "RStick Up" },
-   { (1ULL << RARCH_ANALOG_RIGHT_Y_MINUS), "RStick Down" },
 };
 
 static void xdk_input_poll(void *data)
