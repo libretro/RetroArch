@@ -35,21 +35,6 @@ typedef struct
    filebrowser_dir_type_t prev_dir;
 } filebrowser_t;
 
-typedef enum
-{
-   FILEBROWSER_ACTION_UP,
-   FILEBROWSER_ACTION_DOWN,
-   FILEBROWSER_ACTION_LEFT,
-   FILEBROWSER_ACTION_RIGHT,
-   FILEBROWSER_ACTION_OK,
-   FILEBROWSER_ACTION_CANCEL,
-   FILEBROWSER_ACTION_SCROLL_UP,
-   FILEBROWSER_ACTION_SCROLL_DOWN,
-   FILEBROWSER_ACTION_RESET,
-   FILEBROWSER_ACTION_NOOP
-} filebrowser_action_t;
-
-void filebrowser_update(void *data, uint64_t input, const char *extensions);
 void filebrowser_set_root_and_ext(void *data, const char *ext, const char *root_dir);
 bool filebrowser_iterate(void *data, unsigned action);
 void filebrowser_free(void *data);

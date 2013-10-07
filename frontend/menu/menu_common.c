@@ -409,7 +409,7 @@ void menu_init(void)
    strlcpy(rgui->browser->current_dir.root_dir, g_settings.rgui_browser_directory,
          sizeof(rgui->browser->current_dir.root_dir));
 
-   filebrowser_iterate(rgui->browser, FILEBROWSER_ACTION_RESET);
+   filebrowser_iterate(rgui->browser, RGUI_ACTION_START);
 #endif
 
 #ifdef HAVE_SHADER_MANAGER

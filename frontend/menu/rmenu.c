@@ -246,7 +246,7 @@ static int select_file(void *data, uint64_t action)
       case RGUI_ACTION_OK:
          if (filebrowser_is_current_entry_dir(rgui->browser))
          {
-            if (!filebrowser_iterate(rgui->browser, FILEBROWSER_ACTION_OK))
+            if (!filebrowser_iterate(rgui->browser, RGUI_ACTION_OK))
             {
                RARCH_ERR("Failed to open directory.\n");
                msg_queue_push(g_extern.msg_queue, "ERROR - Failed to open directory.", 1, 180);
@@ -379,7 +379,7 @@ static int select_directory(void *data, uint64_t action)
       case RGUI_ACTION_OK:
 #if 1
          if (is_dir)
-            ret = filebrowser_iterate(rgui->browser, FILEBROWSER_ACTION_OK);
+            ret = filebrowser_iterate(rgui->browser, RGUI_ACTION_OK);
 #else
          /* TODO - extra conditional needed here to recognize if user pressed <Use this directory> entry */
          if (is_dir)
@@ -1298,7 +1298,7 @@ static int ingame_menu_history_options(void *data, uint64_t action)
          else
             hist_opt_selected -= 5;
          break;
-      case FILEBROWSER_ACTION_RIGHT:
+      case RGUI_ACTION_RIGHT:
          hist_opt_selected = (min(hist_opt_selected + 5, rom_history_size(rgui->history)-1));
          break;
       case RGUI_ACTION_CANCEL:
@@ -1430,7 +1430,7 @@ static int rgui_iterate(void *data, unsigned action)
    }
 #endif
 
-   filebrowser_update(rgui->browser, action, rgui->browser->current_dir.extensions);
+   filebrowser_iterate(rgui->browser, action);
 
    int ret = -1;
 

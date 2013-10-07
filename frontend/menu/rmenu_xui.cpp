@@ -229,7 +229,7 @@ static void menu_settings_create_menu_item_label_w(wchar_t *strwbuf, unsigned se
 
 void filebrowser_fetch_directory_entries(uint64_t action)
 {
-   filebrowser_update(rgui->browser, action, rgui->browser->current_dir.extensions); 
+   filebrowser_iterate(rgui->browser, action); 
 
    mbstowcs(strw_buffer, rgui->browser->current_dir.directory_path, sizeof(strw_buffer) / sizeof(wchar_t));
    XuiTextElementSetText(m_menutitle, strw_buffer);
@@ -255,7 +255,7 @@ HRESULT CRetroArchFileBrowser::OnInit(XUIMessageInit * pInitData, BOOL& bHandled
    filebrowser_set_root_and_ext(rgui->browser, rgui->info.valid_extensions,
          default_paths.filebrowser_startup_dir);
 
-   filebrowser_fetch_directory_entries(FILEBROWSER_ACTION_OK);
+   filebrowser_fetch_directory_entries(RGUI_ACTION_OK);
 
    return 0;
 }
@@ -279,7 +279,7 @@ HRESULT CRetroArchFileBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHandle
       {
          fill_pathname_join(path, rgui->browser->current_dir.directory_path, str_buffer, sizeof(path));
          filebrowser_set_root_and_ext(rgui->browser, rgui->info.valid_extensions, path);
-         filebrowser_fetch_directory_entries(FILEBROWSER_ACTION_OK);
+         filebrowser_fetch_directory_entries(RGUI_ACTION_OK);
       }
    }
 
@@ -1022,7 +1022,7 @@ HRESULT CRetroArchShaderBrowser::OnInit(XUIMessageInit * pInitData, BOOL& bHandl
    GetChildById(L"XuiTxtBottom", &m_menutitlebottom);
 
    filebrowser_set_root_and_ext(rgui->browser, "cg", "game:\\media\\shaders");
-   filebrowser_fetch_directory_entries(FILEBROWSER_ACTION_OK);
+   filebrowser_fetch_directory_entries(RGUI_ACTION_OK);
 
    return 0;
 }
@@ -1042,7 +1042,7 @@ HRESULT CRetroArchShaderBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHand
          wcstombs(str_buffer, (const wchar_t *)XuiListGetText(m_menulist, index), sizeof(str_buffer));
          fill_pathname_join(path, rgui->browser->current_dir.directory_path, str_buffer, sizeof(path));
          filebrowser_set_root_and_ext(rgui->browser, "cg", path);
-         filebrowser_fetch_directory_entries(FILEBROWSER_ACTION_OK);
+         filebrowser_fetch_directory_entries(RGUI_ACTION_OK);
       }
    }
 
@@ -1058,7 +1058,7 @@ HRESULT CRetroArchCoreBrowser::OnInit(XUIMessageInit * pInitData, BOOL& bHandled
    GetChildById(L"XuiTxtBottom", &m_menutitlebottom);
 
    filebrowser_set_root_and_ext(rgui->browser, "xex|XEX", "game:");
-   filebrowser_fetch_directory_entries(FILEBROWSER_ACTION_OK);
+   filebrowser_fetch_directory_entries(RGUI_ACTION_OK);
 
    return 0;
 }
@@ -1085,7 +1085,7 @@ HRESULT CRetroArchCoreBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHandle
       {
          fill_pathname_join(path, rgui->browser->current_dir.directory_path, str_buffer, sizeof(path));
          filebrowser_set_root_and_ext(rgui->browser, "xex|XEX", path);
-         filebrowser_fetch_directory_entries(FILEBROWSER_ACTION_OK);
+         filebrowser_fetch_directory_entries(RGUI_ACTION_OK);
       }
    }
 

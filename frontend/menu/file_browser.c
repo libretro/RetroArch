@@ -61,7 +61,7 @@ void filebrowser_set_root_and_ext(void *data, const char *ext, const char *root_
 
    strlcpy(filebrowser->current_dir.root_dir,
          root_dir, sizeof(filebrowser->current_dir.root_dir));
-   filebrowser_iterate(filebrowser, FILEBROWSER_ACTION_RESET);
+   filebrowser_iterate(filebrowser, RGUI_ACTION_START);
 }
 
 #define GET_CURRENT_PATH(browser) (browser->list->elems[browser->current_dir.ptr].data)
@@ -74,21 +74,21 @@ bool filebrowser_iterate(void *data, unsigned action)
 
    switch(action)
    {
-      case FILEBROWSER_ACTION_UP:
+      case RGUI_ACTION_UP:
          if (!filebrowser->list->size)
             break;
          filebrowser->current_dir.ptr--;
          if (filebrowser->current_dir.ptr >= filebrowser->list->size)
             filebrowser->current_dir.ptr = filebrowser->list->size - 1;
          break;
-      case FILEBROWSER_ACTION_DOWN:
+      case RGUI_ACTION_DOWN:
          if (!filebrowser->list->size)
             break;
          filebrowser->current_dir.ptr++;
          if (filebrowser->current_dir.ptr >= filebrowser->list->size)
             filebrowser->current_dir.ptr = 0;
          break;
-      case FILEBROWSER_ACTION_LEFT:
+      case RGUI_ACTION_LEFT:
          if (!filebrowser->list->size)
             break;
          if (filebrowser->current_dir.ptr <= 5)
@@ -96,13 +96,13 @@ bool filebrowser_iterate(void *data, unsigned action)
          else
             filebrowser->current_dir.ptr -= 5;
          break;
-      case FILEBROWSER_ACTION_RIGHT:
+      case RGUI_ACTION_RIGHT:
          if (!filebrowser->list->size)
             break;
          filebrowser->current_dir.ptr = (min(filebrowser->current_dir.ptr + 5, 
                   filebrowser->list->size-1));
          break;
-      case FILEBROWSER_ACTION_SCROLL_UP:
+      case RGUI_ACTION_SCROLL_UP:
          if (!filebrowser->list->size)
             break;
          if (filebrowser->current_dir.ptr <= entries_to_scroll)
@@ -110,26 +110,39 @@ bool filebrowser_iterate(void *data, unsigned action)
          else
             filebrowser->current_dir.ptr -= entries_to_scroll;
          break;
-      case FILEBROWSER_ACTION_SCROLL_DOWN:
+      case RGUI_ACTION_SCROLL_DOWN:
          if (!filebrowser->list->size)
             break;
          filebrowser->current_dir.ptr = (min(filebrowser->current_dir.ptr + 
                   entries_to_scroll, filebrowser->list->size-1));
          break;
-      case FILEBROWSER_ACTION_OK:
+      case RGUI_ACTION_OK:
          ret = directory_parse(filebrowser, GET_CURRENT_PATH(filebrowser));
          break;
-      case FILEBROWSER_ACTION_CANCEL:
-         fill_pathname_parent_dir(filebrowser->current_dir.directory_path,
-               filebrowser->current_dir.directory_path,
-               sizeof(filebrowser->current_dir.directory_path));
+      case RGUI_ACTION_CANCEL:
+         {
+            char tmp_str[PATH_MAX];
+            fill_pathname_parent_dir(tmp_str, rgui->browser->current_dir.directory_path, sizeof(tmp_str));
 
-         ret = directory_parse(filebrowser, filebrowser->current_dir.directory_path);
+            if (tmp_str[0] != '\0')
+            {
+               fill_pathname_parent_dir(filebrowser->current_dir.directory_path,
+                     filebrowser->current_dir.directory_path,
+                     sizeof(filebrowser->current_dir.directory_path));
+
+               ret = directory_parse(filebrowser, filebrowser->current_dir.directory_path);
+            }
+            else
+               ret = false;
+         }
          break;
-      case FILEBROWSER_ACTION_RESET:
+      case RGUI_ACTION_START:
+         filebrowser_set_root_and_ext(rgui->browser, NULL, default_paths.filesystem_root_dir);
+#ifdef HAVE_RMENU_XUI
+         filebrowser_fetch_directory_entries(RGUI_ACTION_OK);
+#endif
          ret = directory_parse(filebrowser, filebrowser->current_dir.root_dir);
          break;
-      case FILEBROWSER_ACTION_NOOP:
       default:
          break;
    }
@@ -151,56 +164,4 @@ bool filebrowser_reset_current_dir(void *data)
 {
    filebrowser_t *filebrowser = (filebrowser_t*)data;
    return directory_parse(filebrowser, filebrowser->current_dir.directory_path);
-}
-
-void filebrowser_update(void *data, uint64_t action_ori, const char *extensions)
-{
-   filebrowser_action_t action = FILEBROWSER_ACTION_NOOP;
-   bool ret = true;
-
-   switch (action_ori)
-   {
-      case RGUI_ACTION_DOWN:
-         action = FILEBROWSER_ACTION_DOWN;
-         break;
-      case RGUI_ACTION_UP:
-         action = FILEBROWSER_ACTION_UP;
-         break;
-      case RGUI_ACTION_RIGHT:
-         action = FILEBROWSER_ACTION_RIGHT;
-         break;
-      case RGUI_ACTION_LEFT:
-         action = FILEBROWSER_ACTION_LEFT;
-         break;
-      case RGUI_ACTION_SCROLL_DOWN:
-         action = FILEBROWSER_ACTION_SCROLL_DOWN;
-         break;
-      case RGUI_ACTION_SCROLL_UP:
-         action = FILEBROWSER_ACTION_SCROLL_UP;
-         break;
-      case RGUI_ACTION_CANCEL:
-         {
-            char tmp_str[PATH_MAX];
-            fill_pathname_parent_dir(tmp_str, rgui->browser->current_dir.directory_path, sizeof(tmp_str));
-
-            if (tmp_str[0] != '\0')
-               action = FILEBROWSER_ACTION_CANCEL;
-         }
-         break;
-      case RGUI_ACTION_START:
-         action = FILEBROWSER_ACTION_RESET;
-         filebrowser_set_root_and_ext(rgui->browser, NULL, default_paths.filesystem_root_dir);
-         strlcpy(rgui->browser->current_dir.extensions, extensions,
-               sizeof(rgui->browser->current_dir.extensions));
-#ifdef HAVE_RMENU_XUI
-         filebrowser_fetch_directory_entries(1ULL << RETRO_DEVICE_ID_JOYPAD_B);
-#endif
-         break;
-   }
-
-   if (action != FILEBROWSER_ACTION_NOOP)
-      ret = filebrowser_iterate(rgui->browser, action);
-
-   if (!ret)
-      msg_queue_push(g_extern.msg_queue, "ERROR - Failed to open directory.", 1, 180);
 }
