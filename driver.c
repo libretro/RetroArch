@@ -196,6 +196,15 @@ static void find_audio_driver(void)
 
 static void find_video_driver(void)
 {
+#if defined(HAVE_OPENGL) && defined(HAVE_FBO)
+   if (g_extern.system.hw_render_callback.context_type)
+   {
+      RARCH_LOG("Using HW render, OpenGL driver forced.\n");
+      driver.video = &video_gl;
+      return;
+   }
+#endif
+
    for (unsigned i = 0; i < ARRAY_SIZE(video_drivers); i++)
    {
       if (strcasecmp(g_settings.video.driver, video_drivers[i]->ident) == 0)
@@ -990,8 +999,8 @@ void init_video_input(void)
    video.rgb32 = g_extern.filter.active || (g_extern.system.pix_fmt == RETRO_PIXEL_FORMAT_XRGB8888);
 
    const input_driver_t *tmp = driver.input;
-#ifdef HAVE_THREADS
    find_video_driver(); // Need to grab the "real" video driver interface on a reinit.
+#ifdef HAVE_THREADS
    if (g_settings.video.threaded && !g_extern.system.hw_render_callback.context_type) // Can't do hardware rendering with threaded driver currently.
    {
       RARCH_LOG("Starting threaded video driver ...\n");

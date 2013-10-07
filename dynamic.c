@@ -665,7 +665,6 @@ bool rarch_environment_cb(unsigned cmd, void *data)
 #if defined(HAVE_OPENGLES2)
             case RETRO_HW_CONTEXT_OPENGLES2:
                RARCH_LOG("Requesting OpenGLES2 context.\n");
-               driver.video = &video_gl;
                break;
 
             case RETRO_HW_CONTEXT_OPENGL:
@@ -679,12 +678,10 @@ bool rarch_environment_cb(unsigned cmd, void *data)
 
             case RETRO_HW_CONTEXT_OPENGL:
                RARCH_LOG("Requesting OpenGL context.\n");
-               driver.video = &video_gl;
                break;
 
             case RETRO_HW_CONTEXT_OPENGL_CORE:
                RARCH_LOG("Requesting core OpenGL context (%u.%u).\n", cb->version_major, cb->version_minor);
-               driver.video = &video_gl;
                break;
 #endif
 
