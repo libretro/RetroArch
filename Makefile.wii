@@ -6,7 +6,6 @@ HAVE_FILE_LOGGER	= 0
 PERF_TEST		= 0
 WHOLE_ARCHIVE_LINK	= 0
 BIG_STACK		= 0
-CUSTOM_LIBOGC  = 0
 
 PC_DEVELOPMENT_IP_ADDRESS	= "192.168.1.6"
 PC_DEVELOPMENT_UDP_PORT		= 3490
@@ -32,10 +31,6 @@ ELF_TARGET := retroarch_wii.elf
 
 INCLUDE := -I. -I$(DEVKITPRO)/libogc/include -I$(DEVKITPRO)/libogc/include/ogc
 LIBDIRS := -L$(DEVKITPRO)/libogc/lib/wii -L.
-
-ifeq ($(CUSTOM_LIBOGC), 1)
-CFLAGS += -DHAVE_MINIOGC
-endif
 
 MACHDEP := -DGEKKO -DHW_RVL -mrvl -mcpu=750 -meabi -mhard-float
 CFLAGS += -Wall -std=gnu99 $(MACHDEP) $(INCLUDE)
