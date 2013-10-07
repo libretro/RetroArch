@@ -56,12 +56,13 @@ static void rarch_get_environment_console(void)
 
    if (path_file_exists(old_path))
    {
-      // Rename core filename executable to a more sane name.
+      // Rename core filename executable (old_path) to a more sane name (new_path).
 
-      /* If new_path already exists, we are upgrading the core - 
-       * delete existing file first. */
       if (path_file_exists(new_path))
       {
+         /* If new_path already exists, we are upgrading the core - 
+          * delete existing file first. */
+
          if (remove(new_path) < 0)
             RARCH_ERR("Failed to remove file: %s.\n", new_path);
          else
