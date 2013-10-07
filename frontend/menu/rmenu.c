@@ -302,9 +302,12 @@ static void render_text(void *data)
 #endif
       case PATH_SRAM_DIR_CHOICE:
       case PATH_SYSTEM_DIR_CHOICE:
+      case CONFIG_CHOICE:
       case FILE_BROWSER_MENU:
          if (rgui->menu_type == LIBRETRO_CHOICE)
             strlcpy(label, "CORE SELECTION", sizeof(label));
+         else if (rgui->menu_type == CONFIG_CHOICE)
+            strlcpy(label, "CONFIG", sizeof(label));
          else
             strlcpy(label, "PATH", sizeof(label));
          snprintf(msg, sizeof(msg), "%s %s", label, rgui->browser->current_dir.directory_path);
@@ -369,6 +372,7 @@ static void render_text(void *data)
    {
       case FILE_BROWSER_MENU:
       case LIBRETRO_CHOICE:
+      case CONFIG_CHOICE:
 #ifdef HAVE_SHADER_MANAGER
       case CGP_CHOICE:
       case SHADER_CHOICE:
@@ -481,6 +485,9 @@ static int select_file(void *data, uint64_t action)
             switch(rgui->menu_type)
             {
 #ifdef HAVE_SHADER_MANAGER
+               case CONFIG_CHOICE:
+                  menu_replace_config(path);
+                  break;
                case SHADER_CHOICE:
                   strlcpy(rgui->shader.pass[shader_choice_set_shader_slot].source.cg, path,
                         sizeof(rgui->shader.pass[shader_choice_set_shader_slot].source.cg));
@@ -832,11 +839,18 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
          }
          break;
 #endif
+      case INGAME_MENU_CONFIG:
+         switch (action)
+         {
+            case RGUI_ACTION_OK:
+               menu_stack_push(CONFIG_CHOICE, true);
+               filebrowser_set_root_and_ext(rgui->browser, "cfg", default_paths.core_dir);
+               break;
+         }
+         break;
       case SETTING_EMU_SKIN:
          switch (action)
          {
-            case RGUI_ACTION_LEFT:
-            case RGUI_ACTION_RIGHT:
             case RGUI_ACTION_OK:
                menu_stack_push(BORDER_CHOICE, true);
                filebrowser_set_root_and_ext(rgui->browser, EXT_IMAGES, default_paths.border_dir);
@@ -1672,6 +1686,10 @@ static int select_setting(void *data, uint64_t action)
             strlcpy(setting_text, "", sizeof(setting_text));
             break;
 #endif
+         case INGAME_MENU_CONFIG:
+            strlcpy(text, "RetroArch Config", sizeof(text));
+            menu_set_settings_label(setting_text, sizeof(setting_text), &w, settings_lut[i]);
+            break;
          case INGAME_MENU_SAVE_CONFIG:
             strlcpy(text, "Save Config", sizeof(text));
             strlcpy(setting_text, "...", sizeof(setting_text));
@@ -2161,6 +2179,7 @@ static int rgui_iterate(void *data, unsigned action)
          break;
       case FILE_BROWSER_MENU:
       case LIBRETRO_CHOICE:
+      case CONFIG_CHOICE:
 #ifdef HAVE_SHADER_MANAGER
       case CGP_CHOICE:
       case SHADER_CHOICE:
@@ -2244,6 +2263,7 @@ static void* rgui_init(void)
    settings_lut[SETTING_PATH_SRAM_DIRECTORY]        = RGUI_SAVEFILE_DIR_PATH;
    settings_lut[SETTING_PATH_SYSTEM]                = RGUI_SYSTEM_DIR_PATH;
    settings_lut[SETTING_PATH_DEFAULT_ROM_DIRECTORY] = RGUI_BROWSER_DIR_PATH;
+   settings_lut[INGAME_MENU_CONFIG]                 = RGUI_SETTINGS_CONFIG;
 
    return rgui;
 }
