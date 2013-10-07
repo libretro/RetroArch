@@ -205,10 +205,15 @@ int menu_set_settings(unsigned setting, unsigned action)
             settings_set(1ULL << S_AUDIO_CONTROL_RATE_INCREMENT);
          break;
       case RGUI_SETTINGS_DEBUG_TEXT:
-         if (action == RGUI_ACTION_START || action == RGUI_ACTION_LEFT)
+         if (action == RGUI_ACTION_START)
             g_extern.lifecycle_mode_state &= ~(1ULL << MODE_FPS_DRAW);
-         else if (action == RGUI_ACTION_RIGHT)
-            g_extern.lifecycle_mode_state |= (1ULL << MODE_FPS_DRAW);
+         else if (action == RGUI_ACTION_LEFT || RGUI_ACTION_RIGHT)
+         {
+            if (g_extern.lifecycle_mode_state & (1ULL << MODE_FPS_DRAW))
+               g_extern.lifecycle_mode_state &= ~(1ULL << MODE_FPS_DRAW);
+            else
+               g_extern.lifecycle_mode_state |= (1ULL << MODE_FPS_DRAW);
+         }
          break;
       case RGUI_SETTINGS_DISK_INDEX:
          {
