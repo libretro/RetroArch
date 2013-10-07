@@ -776,6 +776,7 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
       case SETTING_HW_TEXTURE_FILTER:
       case SETTING_REFRESH_RATE:
       case SETTING_VIDEO_VSYNC:
+      case SETTING_VIDEO_CROP_OVERSCAN:
       case SETTING_EMU_SHOW_DEBUG_INFO_MSG:
       case SETTING_REWIND_ENABLED:
       case SETTING_REWIND_GRANULARITY:
@@ -1457,6 +1458,10 @@ static int select_setting(void *data, uint64_t action)
             break;
          case SETTING_VIDEO_VSYNC:
             strlcpy(text, "VSync", sizeof(text));
+            menu_set_settings_label(setting_text, sizeof(setting_text), &w, settings_lut[i]);
+            break;
+         case SETTING_VIDEO_CROP_OVERSCAN:
+            strlcpy(text, "Crop Overscan (reload)", sizeof(text));
             menu_set_settings_label(setting_text, sizeof(setting_text), &w, settings_lut[i]);
             break;
          case SETTING_TRIPLE_BUFFERING:
@@ -2218,6 +2223,7 @@ static void* rgui_init(void)
    settings_lut[SETTING_REFRESH_RATE]               = RGUI_SETTINGS_VIDEO_REFRESH_RATE_AUTO;
    settings_lut[SETTING_EMU_SHOW_DEBUG_INFO_MSG]    = RGUI_SETTINGS_DEBUG_TEXT;
    settings_lut[SETTING_VIDEO_VSYNC]                = RGUI_SETTINGS_VIDEO_VSYNC;
+   settings_lut[SETTING_VIDEO_CROP_OVERSCAN]        = RGUI_SETTINGS_VIDEO_CROP_OVERSCAN;
    settings_lut[SETTING_REWIND_ENABLED]             = RGUI_SETTINGS_REWIND_ENABLE;
    settings_lut[SETTING_REWIND_GRANULARITY]         = RGUI_SETTINGS_REWIND_GRANULARITY;
    settings_lut[SETTING_EMU_AUDIO_MUTE]             = RGUI_SETTINGS_AUDIO_MUTE;
