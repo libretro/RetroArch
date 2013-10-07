@@ -413,8 +413,8 @@ static void render_text(void *data)
 
          for (i = page_base; i < file_count && i < page_base + NUM_ENTRY_PER_PAGE; ++i)
          {
-            char fname_tmp[128];
-            fill_pathname_base(fname_tmp, rgui->browser->list->elems[i].data, sizeof(fname_tmp));
+            char fname[128];
+            fill_pathname_base(fname, rgui->browser->list->elems[i].data, sizeof(fname));
             y_increment += POSITION_Y_INCREMENT;
 
 #ifdef HAVE_MENU_PANEL
@@ -428,7 +428,7 @@ static void render_text(void *data)
             font_parms.color = i == current_index ? YELLOW : rgui->browser->list->elems[i].attr.b ? GREEN : WHITE;
 
             if (driver.video_poke->set_osd_msg)
-               driver.video_poke->set_osd_msg(driver.video_data, fname_tmp, &font_parms);
+               driver.video_poke->set_osd_msg(driver.video_data, fname, &font_parms);
          }
       }
       else
@@ -1426,18 +1426,17 @@ static int select_setting(void *data, uint64_t action)
 
    for(i = first_setting; i < max_settings; i++)
    {
-      char fname[PATH_MAX];
       char text[PATH_MAX];
       char setting_text[PATH_MAX];
       unsigned w;
-      (void)fname;
+
+      strlcpy(setting_text, "", sizeof(setting_text));
 
       switch (i)
       {
 #ifdef __CELLOS_LV2__
          case SETTING_CHANGE_RESOLUTION:
             strlcpy(text, "Resolution", sizeof(text));
-            menu_set_settings_label(setting_text, sizeof(setting_text), &w, settings_lut[i]);
             break;
          case SETTING_PAL60_MODE:
             strlcpy(text, "PAL60 Mode", sizeof(text));
@@ -1448,13 +1447,11 @@ static int select_setting(void *data, uint64_t action)
             break;
 #endif
          case SETTING_EMU_SKIN:
-            fill_pathname_base(fname, g_extern.menu_texture_path, sizeof(fname));
             strlcpy(text, "Menu Skin", sizeof(text));
-            strlcpy(setting_text, fname, sizeof(setting_text));
+            fill_pathname_base(setting_text, g_extern.menu_texture_path, sizeof(setting_text));
             break;
          case SETTING_HW_TEXTURE_FILTER:
             strlcpy(text, "Default Filter", sizeof(text));
-            menu_set_settings_label(setting_text, sizeof(setting_text), &w, settings_lut[i]);
             break;
 #ifdef _XBOX1
          case SETTING_FLICKER_FILTER:
@@ -1468,15 +1465,12 @@ static int select_setting(void *data, uint64_t action)
 #endif
          case SETTING_REFRESH_RATE:
             strlcpy(text, "Estimated Monitor FPS", sizeof(text));
-            menu_set_settings_label(setting_text, sizeof(setting_text), &w, settings_lut[i]);
             break;
          case SETTING_VIDEO_VSYNC:
             strlcpy(text, "VSync", sizeof(text));
-            menu_set_settings_label(setting_text, sizeof(setting_text), &w, settings_lut[i]);
             break;
          case SETTING_VIDEO_CROP_OVERSCAN:
             strlcpy(text, "Crop Overscan (reload)", sizeof(text));
-            menu_set_settings_label(setting_text, sizeof(setting_text), &w, settings_lut[i]);
             break;
          case SETTING_TRIPLE_BUFFERING:
             strlcpy(text, "Triple Buffering", sizeof(text));
@@ -1519,19 +1513,15 @@ static int select_setting(void *data, uint64_t action)
             break;
          case SETTING_REWIND_ENABLED:
             strlcpy(text, "Rewind", sizeof(text));
-            menu_set_settings_label(setting_text, sizeof(setting_text), &w, settings_lut[i]);
             break;
          case SETTING_REWIND_GRANULARITY:
             strlcpy(text, "Rewind Granularity", sizeof(text));
-            menu_set_settings_label(setting_text, sizeof(setting_text), &w, settings_lut[i]);
             break;
          case SETTING_EMU_AUDIO_MUTE:
             strlcpy(text, "Mute Audio", sizeof(text));
-            menu_set_settings_label(setting_text, sizeof(setting_text), &w, settings_lut[i]);
             break;
          case SETTING_AUDIO_CONTROL_RATE_DELTA:
             strlcpy(text, "Rate Control Delta", sizeof(text));
-            menu_set_settings_label(setting_text, sizeof(setting_text), &w, settings_lut[i]);
             break;
 #ifdef _XBOX1
          case SETTING_EMU_AUDIO_SOUND_VOLUME_LEVEL:
@@ -1545,15 +1535,12 @@ static int select_setting(void *data, uint64_t action)
             break;
          case SETTING_PATH_DEFAULT_ROM_DIRECTORY:
             strlcpy(text, "Browser Directory", sizeof(text));
-            menu_set_settings_label(setting_text, sizeof(setting_text), &w, settings_lut[i]);
             break;
          case SETTING_PATH_SAVESTATES_DIRECTORY:
             strlcpy(text, "Savestate Directory", sizeof(text));
-            menu_set_settings_label(setting_text, sizeof(setting_text), &w, settings_lut[i]);
             break;
          case SETTING_PATH_SRAM_DIRECTORY:
             strlcpy(text, "Savefile Directory", sizeof(text));
-            menu_set_settings_label(setting_text, sizeof(setting_text), &w, settings_lut[i]);
             break;
 #ifdef HAVE_XML
          case SETTING_PATH_CHEATS:
@@ -1563,15 +1550,12 @@ static int select_setting(void *data, uint64_t action)
 #endif
          case SETTING_PATH_SYSTEM:
             strlcpy(text, "System Directory", sizeof(text));
-            menu_set_settings_label(setting_text, sizeof(setting_text), &w, settings_lut[i]);
             break;
          case SETTING_CONTROLS_NUMBER:
             strlcpy(text, "Player", sizeof(text));
-            menu_set_settings_label(setting_text, sizeof(setting_text), &w, settings_lut[i]);
             break;
          case SETTING_CONTROLS_BIND_DEVICE_TYPE:
             strlcpy(text, "Device Type", sizeof(text));
-            menu_set_settings_label(setting_text, sizeof(setting_text), &w, settings_lut[i]);
             break;
          case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_B:
          case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_Y:
@@ -1603,7 +1587,6 @@ static int select_setting(void *data, uint64_t action)
             break;
          case SETTING_CONTROLS_DEFAULT_ALL:
             strlcpy(text, "DEFAULTS", sizeof(text));
-            strlcpy(setting_text, "", sizeof(setting_text));
             break;
          case INGAME_MENU_LOAD_STATE:
             strlcpy(text, "Load State", sizeof(text));
@@ -1615,99 +1598,77 @@ static int select_setting(void *data, uint64_t action)
             break;
          case SETTING_ASPECT_RATIO:
             strlcpy(text, "Aspect Ratio", sizeof(text));
-            menu_set_settings_label(setting_text, sizeof(setting_text), &w, settings_lut[i]);
             break;
          case SETTING_ROTATION:
             strlcpy(text, "Rotation", sizeof(text));
-            menu_set_settings_label(setting_text, sizeof(setting_text), &w, settings_lut[i]);
             break;
          case SETTING_CUSTOM_VIEWPORT:
             strlcpy(text, "Custom Ratio", sizeof(text));
-            strlcpy(setting_text, "...", sizeof(setting_text));
             break;
          case INGAME_MENU_CORE_OPTIONS_MODE:
             strlcpy(text, "Core Options", sizeof(text));
-            strlcpy(setting_text, "...", sizeof(setting_text));
             break;
 #ifdef HAVE_SHADER_MANAGER
          case INGAME_MENU_SHADER_OPTIONS_MODE:
             strlcpy(text, "Shader Options", sizeof(text));
-            strlcpy(setting_text, "...", sizeof(setting_text));
             break;
 #endif
          case INGAME_MENU_LOAD_GAME_HISTORY_MODE:
             strlcpy(text, "Load Game (History)", sizeof(text));
-            strlcpy(setting_text, "...", sizeof(setting_text));
             break;
          case INGAME_MENU_VIDEO_OPTIONS_MODE:
             strlcpy(text, "Video Options", sizeof(text));
-            strlcpy(setting_text, "...", sizeof(setting_text));
             break;
          case INGAME_MENU_AUDIO_OPTIONS_MODE:
             strlcpy(text, "Audio Options", sizeof(text));
-            strlcpy(setting_text, "...", sizeof(setting_text));
             break;
          case INGAME_MENU_INPUT_OPTIONS_MODE:
             strlcpy(text, "Input Options", sizeof(text));
-            strlcpy(setting_text, "...", sizeof(setting_text));
             break;
          case INGAME_MENU_PATH_OPTIONS_MODE:
             strlcpy(text, "Path Options", sizeof(text));
-            strlcpy(setting_text, "...", sizeof(setting_text));
             break;
          case INGAME_MENU_SETTINGS_MODE:
             strlcpy(text, "Settings", sizeof(text));
-            strlcpy(setting_text, "...", sizeof(setting_text));
             break;
          case INGAME_MENU_SCREENSHOT_MODE:
             strlcpy(text, "Take Screenshot", sizeof(text));
-            strlcpy(setting_text, "", sizeof(setting_text));
             break;
          case INGAME_MENU_RESET:
             strlcpy(text, "Restart Game", sizeof(text));
-            strlcpy(setting_text, "", sizeof(setting_text));
             break;
          case INGAME_MENU_RETURN_TO_GAME:
             strlcpy(text, "Resume Game", sizeof(text));
-            strlcpy(setting_text, "", sizeof(setting_text));
             break;
          case INGAME_MENU_CHANGE_GAME:
             snprintf(text, sizeof(text), "Load Game (%s)",
                   rgui->info.library_name ? rgui->info.library_name : g_extern.system.info.library_name);
-            strlcpy(setting_text, "...", sizeof(setting_text));
             break;
          case INGAME_MENU_CHANGE_LIBRETRO_CORE:
             strlcpy(text, "Core", sizeof(text));
-            strlcpy(setting_text, "...", sizeof(setting_text));
             break;
 #ifdef HAVE_MULTIMAN
          case INGAME_MENU_RETURN_TO_MULTIMAN:
             strlcpy(text, "Return to multiMAN", sizeof(text));
-            strlcpy(setting_text, "", sizeof(setting_text));
             break;
 #endif
          case INGAME_MENU_CONFIG:
             strlcpy(text, "RetroArch Config", sizeof(text));
-            menu_set_settings_label(setting_text, sizeof(setting_text), &w, settings_lut[i]);
             break;
          case INGAME_MENU_SAVE_CONFIG:
             strlcpy(text, "Save Config", sizeof(text));
-            strlcpy(setting_text, "...", sizeof(setting_text));
             break;
          case INGAME_MENU_QUIT_RETROARCH:
             strlcpy(text, "Quit RetroArch", sizeof(text));
-            strlcpy(setting_text, "", sizeof(setting_text));
             break;
          default:
             break;
 #ifdef HAVE_SHADER_MANAGER
          case SHADERMAN_LOAD_CGP:
             strlcpy(text, "Load Shader Preset", sizeof(text));
-            strlcpy(setting_text, "", sizeof(setting_text));
             break;
          case SHADERMAN_SAVE_CGP:
             strlcpy(text, "Save Shader Preset", sizeof(text));
-            strlcpy(setting_text, "", sizeof(setting_text));
             break;
          case SHADERMAN_SHADER_PASSES:
             strlcpy(text, "Shader Passes", sizeof(text));
@@ -1715,7 +1676,6 @@ static int select_setting(void *data, uint64_t action)
             break;
          case SHADERMAN_APPLY_CHANGES:
             strlcpy(text, "Apply Shader Changes", sizeof(text));
-            strlcpy(setting_text, "", sizeof(setting_text));
             break;
          case SHADERMAN_SHADER_0:
          case SHADERMAN_SHADER_1:
@@ -1777,6 +1737,48 @@ static int select_setting(void *data, uint64_t action)
             }
             break;
 #endif
+      }
+
+      switch (i)
+      {
+#ifdef __CELLOS_LV2__
+         case SETTING_CHANGE_RESOLUTION:
+#endif
+         case INGAME_MENU_CONFIG:
+         case SETTING_ROTATION:
+         case SETTING_ASPECT_RATIO:
+         case SETTING_CONTROLS_BIND_DEVICE_TYPE:
+         case SETTING_CONTROLS_NUMBER:
+         case SETTING_PATH_SYSTEM:
+         case SETTING_PATH_SRAM_DIRECTORY:
+         case SETTING_PATH_SAVESTATES_DIRECTORY:
+         case SETTING_PATH_DEFAULT_ROM_DIRECTORY:
+         case SETTING_AUDIO_CONTROL_RATE_DELTA:
+         case SETTING_EMU_AUDIO_MUTE:
+         case SETTING_REWIND_GRANULARITY:
+         case SETTING_REWIND_ENABLED:
+         case SETTING_VIDEO_CROP_OVERSCAN:
+         case SETTING_VIDEO_VSYNC:
+         case SETTING_REFRESH_RATE:
+         case SETTING_HW_TEXTURE_FILTER:
+            menu_set_settings_label(setting_text, sizeof(setting_text), &w, settings_lut[i]);
+            break;
+         case SETTING_CUSTOM_VIEWPORT:
+         case INGAME_MENU_SAVE_CONFIG:
+         case INGAME_MENU_CHANGE_LIBRETRO_CORE:
+         case INGAME_MENU_CHANGE_GAME:
+         case INGAME_MENU_SETTINGS_MODE:
+         case INGAME_MENU_PATH_OPTIONS_MODE:
+         case INGAME_MENU_INPUT_OPTIONS_MODE:
+         case INGAME_MENU_AUDIO_OPTIONS_MODE:
+         case INGAME_MENU_VIDEO_OPTIONS_MODE:
+         case INGAME_MENU_LOAD_GAME_HISTORY_MODE:
+#ifdef HAVE_SHADER_MANAGER
+         case INGAME_MENU_SHADER_OPTIONS_MODE:
+#endif
+         case INGAME_MENU_CORE_OPTIONS_MODE:
+            strlcpy(setting_text, "...", sizeof(setting_text));
+            break;
       }
 
       char setting_text_buf[256];
