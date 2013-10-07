@@ -39,9 +39,9 @@ extern "C" {
 #endif
 
 #ifdef HAVE_FILEBROWSER
-#include "utils/file_browser.h"
+#include "file_browser.h"
 #endif
-#include "utils/file_list.h"
+#include "file_list.h"
 
 #if defined(HAVE_CG) || defined(HAVE_HLSL) || defined(HAVE_GLSL)
 #define HAVE_SHADER_MANAGER

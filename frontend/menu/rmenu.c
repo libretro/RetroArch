@@ -15,7 +15,7 @@
  */
 
 #include "rmenu.h"
-#include "utils/file_browser.h"
+#include "file_browser.h"
 
 #if defined(__CELLOS_LV2__)
 #include <sdk_version.h>
