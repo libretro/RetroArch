@@ -165,7 +165,13 @@ static void render_text(void *data)
       case INGAME_MENU_CUSTOM_RATIO:
          render_ingame_menu_resize = true;
          break;
+      case INGAME_MENU:
       case INGAME_MENU_SETTINGS:
+      case INGAME_MENU_VIDEO_OPTIONS:
+      case INGAME_MENU_SHADER_OPTIONS:
+      case INGAME_MENU_AUDIO_OPTIONS:
+      case INGAME_MENU_INPUT_OPTIONS:
+      case INGAME_MENU_PATH_OPTIONS:
          render_settings = true;
          break;
       case INGAME_MENU_LOAD_GAME_HISTORY:

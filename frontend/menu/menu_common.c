@@ -396,12 +396,11 @@ void menu_init(void)
       rarch_fail(1, "menu_init()");
    }
 
-   strlcpy(rgui->browser->current_dir.extensions, rgui->info.valid_extensions,
-         sizeof(rgui->browser->current_dir.extensions));
-
    // Look for zips to extract as well.
    if (*rgui->info.valid_extensions)
    {
+      strlcpy(rgui->browser->current_dir.extensions, rgui->info.valid_extensions,
+            sizeof(rgui->browser->current_dir.extensions));
       strlcat(rgui->browser->current_dir.extensions, "|zip",
          sizeof(rgui->browser->current_dir.extensions));
    }

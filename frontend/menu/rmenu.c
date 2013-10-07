@@ -1431,7 +1431,9 @@ static int rgui_iterate(void *data, unsigned action)
    }
 #endif
 
-   filebrowser_iterate(rgui->browser, action);
+   if (action != RGUI_ACTION_OK &&
+         action != RGUI_ACTION_NOOP)
+      filebrowser_iterate(rgui->browser, action);
 
    int ret = -1;
 
