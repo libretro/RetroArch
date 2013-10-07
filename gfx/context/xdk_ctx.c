@@ -92,7 +92,7 @@ static void gfx_ctx_xdk_update_window_title(void)
       char mem[128];
       MEMORYSTATUS stat;
       GlobalMemoryStatus(&stat);
-      snprintf(mem, sizeof(mem) "|| MEM: %.2f/%.2f MB", stat.dwAvailPhys/(1024.0f*1024.0f), stat.dwTotalPhys/(1024.0f*1024.0f));
+      snprintf(mem, sizeof(mem), "|| MEM: %.2f/%.2f MB", stat.dwAvailPhys/(1024.0f*1024.0f), stat.dwTotalPhys/(1024.0f*1024.0f));
       strlcat(buf_fps, mem, sizeof(buf_fps));
       msg_queue_push(g_extern.msg_queue, buf_fps, 1, 1);
    }
