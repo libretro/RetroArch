@@ -75,46 +75,48 @@ bool filebrowser_iterate(void *data, unsigned action)
    switch(action)
    {
       case RGUI_ACTION_UP:
-         if (!filebrowser->list->size)
-            break;
-         filebrowser->current_dir.ptr--;
-         if (filebrowser->current_dir.ptr >= filebrowser->list->size)
-            filebrowser->current_dir.ptr = filebrowser->list->size - 1;
+         if (filebrowser->list->size)
+         {
+            filebrowser->current_dir.ptr--;
+            if (filebrowser->current_dir.ptr >= filebrowser->list->size)
+               filebrowser->current_dir.ptr = filebrowser->list->size - 1;
+         }
          break;
       case RGUI_ACTION_DOWN:
-         if (!filebrowser->list->size)
-            break;
-         filebrowser->current_dir.ptr++;
-         if (filebrowser->current_dir.ptr >= filebrowser->list->size)
-            filebrowser->current_dir.ptr = 0;
+         if (filebrowser->list->size)
+         {
+            filebrowser->current_dir.ptr++;
+            if (filebrowser->current_dir.ptr >= filebrowser->list->size)
+               filebrowser->current_dir.ptr = 0;
+         }
          break;
       case RGUI_ACTION_LEFT:
-         if (!filebrowser->list->size)
-            break;
-         if (filebrowser->current_dir.ptr <= 5)
-            filebrowser->current_dir.ptr = 0;
-         else
-            filebrowser->current_dir.ptr -= 5;
+         if (filebrowser->list->size)
+         {
+            if (filebrowser->current_dir.ptr <= 5)
+               filebrowser->current_dir.ptr = 0;
+            else
+               filebrowser->current_dir.ptr -= 5;
+         }
          break;
       case RGUI_ACTION_RIGHT:
-         if (!filebrowser->list->size)
-            break;
-         filebrowser->current_dir.ptr = (min(filebrowser->current_dir.ptr + 5, 
-                  filebrowser->list->size-1));
+         if (filebrowser->list->size)
+            filebrowser->current_dir.ptr = (min(filebrowser->current_dir.ptr + 5, 
+                     filebrowser->list->size-1));
          break;
       case RGUI_ACTION_SCROLL_UP:
-         if (!filebrowser->list->size)
-            break;
-         if (filebrowser->current_dir.ptr <= entries_to_scroll)
-            filebrowser->current_dir.ptr= 0;
-         else
-            filebrowser->current_dir.ptr -= entries_to_scroll;
+         if (filebrowser->list->size)
+         {
+            if (filebrowser->current_dir.ptr <= entries_to_scroll)
+               filebrowser->current_dir.ptr= 0;
+            else
+               filebrowser->current_dir.ptr -= entries_to_scroll;
+         }
          break;
       case RGUI_ACTION_SCROLL_DOWN:
-         if (!filebrowser->list->size)
-            break;
-         filebrowser->current_dir.ptr = (min(filebrowser->current_dir.ptr + 
-                  entries_to_scroll, filebrowser->list->size-1));
+         if (filebrowser->list->size)
+            filebrowser->current_dir.ptr = (min(filebrowser->current_dir.ptr + 
+                     entries_to_scroll, filebrowser->list->size-1));
          break;
       case RGUI_ACTION_OK:
          ret = directory_parse(filebrowser, GET_CURRENT_PATH(filebrowser));
