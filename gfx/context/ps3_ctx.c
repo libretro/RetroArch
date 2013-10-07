@@ -189,9 +189,9 @@ static void gfx_ctx_set_resize(unsigned width, unsigned height) { }
 static void gfx_ctx_update_window_title(void)
 {
    gl_t *gl = (gl_t*)driver.video_data;
-   char buf[128];
+   char buf[128], buf_fps[128];
 
-   if (gfx_get_fps(buf, sizeof(buf), false) &&
+   if (gfx_get_fps(buf, sizeof(buf), false, buf_fps, sizeof(buf_fps)) &&
    (g_extern.lifecycle_mode_state & (1ULL << MODE_FPS_DRAW)) &&
          gl->font_ctx)
    {

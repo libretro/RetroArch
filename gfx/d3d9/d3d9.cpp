@@ -489,8 +489,8 @@ D3DVideo::D3DVideo(const video_info_t *info) :
       win_height = rect.bottom - rect.top;
    }
 
-   char buffer[128];
-   gfx_get_fps(buffer, sizeof(buffer), false);
+   char buffer[128], buffer_fps[128];
+   gfx_get_fps(buffer, sizeof(buffer), false, buffer_fps, sizeof(buffer_fps));
    std::string title = buffer;
    title += " || Direct3D9";
 
@@ -1006,8 +1006,8 @@ void D3DVideo::deinit_font()
 
 void D3DVideo::update_title()
 {
-   char buffer[128];
-   if (gfx_get_fps(buffer, sizeof(buffer), false))
+   char buffer[128], buffer_fps[128];
+   if (gfx_get_fps(buffer, sizeof(buffer), false, buffer_fps, sizeof(buffer_fps)))
    {
       std::string title = buffer;
       title += " || Direct3D9";

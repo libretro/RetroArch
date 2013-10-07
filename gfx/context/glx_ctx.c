@@ -166,13 +166,13 @@ static void gfx_ctx_set_resize(unsigned width, unsigned height)
 static void gfx_ctx_update_window_title(void)
 {
    gl_t *gl = (gl_t*)driver.video_data;
-   char buf[128];
-   if (gfx_get_fps(buf, sizeof(buf), true))
+   char buf[128], buf_fps[128];
+   if (gfx_get_fps(buf, sizeof(buf), true, buf_fps, sizeof(buf_fps)))
       XStoreName(g_dpy, g_win, buf);
 
    if ((g_extern.lifecycle_mode_state & (1ULL << MODE_FPS_DRAW)) &&
          gl->font_ctx)
-      msg_queue_push(g_extern.msg_queue, buf, 1, 1);
+      msg_queue_push(g_extern.msg_queue, buf_fps, 1, 1);
 }
 
 static void gfx_ctx_get_video_size(unsigned *width, unsigned *height)

@@ -943,8 +943,8 @@ static bool gx_frame(void *data, const void *frame,
       GX_DrawDone();
    }
 
-   char fps_txt[128];
-   gfx_get_fps(fps_txt, sizeof(fps_txt), lifecycle_mode_state & (1ULL << MODE_FPS_DRAW) ? true : false);
+   char fps_txt[128], fps_text_buf[128];
+   gfx_get_fps(fps_txt, sizeof(fps_txt), lifecycle_mode_state & (1ULL << MODE_FPS_DRAW) ? true : false, fps_text_buf, sizeof(fps_text_buf));
 
    if (lifecycle_mode_state & (1ULL << MODE_FPS_DRAW))
    {
