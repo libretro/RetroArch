@@ -546,7 +546,7 @@ def preprocess_vertex(source_data):
    return '\n'.join(ret)
 
 def convert(source, dest):
-   vert_cmd = ['cgc', '-profile', 'glesv', '-entry', 'main_vertex']
+   vert_cmd = ['cgc', '-profile', 'glesv', '-entry', 'main_vertex', '-quiet', '-I', os.path.split(source)[0]]
    with open(source, 'r') as f:
       source_data = f.read()
    p = subprocess.Popen(vert_cmd, stdin = subprocess.PIPE, stderr = subprocess.PIPE, stdout = subprocess.PIPE)
@@ -559,7 +559,7 @@ def convert(source, dest):
       log('Vertex compilation failed ...')
       return 1
 
-   frag_cmd = ['cgc', '-profile', 'glesf', '-entry', 'main_fragment', source]
+   frag_cmd = ['cgc', '-profile', 'glesf', '-entry', 'main_fragment', '-quiet', source]
    p = subprocess.Popen(frag_cmd, stderr = subprocess.PIPE, stdout = subprocess.PIPE)
    fragment_source, stderr_ret = p.communicate()
    log(stderr_ret.decode())
