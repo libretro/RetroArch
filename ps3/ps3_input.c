@@ -57,15 +57,6 @@ const struct platform_bind platform_keys[] = {
    { (1ULL << RETRO_DEVICE_ID_JOYPAD_R2), "R2 button" },
    { (1ULL << RETRO_DEVICE_ID_JOYPAD_L3), "L3 button" },
    { (1ULL << RETRO_DEVICE_ID_JOYPAD_R3), "R3 button" },
-   { (1ULL << RARCH_TURBO_ENABLE), "Turbo button (Unmapped)" },
-   { (1ULL << RARCH_ANALOG_LEFT_X_PLUS), "LStick Left" },
-   { (1ULL << RARCH_ANALOG_LEFT_X_MINUS), "LStick Right" },
-   { (1ULL << RARCH_ANALOG_LEFT_Y_PLUS), "LStick Up" },
-   { (1ULL << RARCH_ANALOG_LEFT_Y_MINUS), "LStick Down" },
-   { (1ULL << RARCH_ANALOG_RIGHT_X_PLUS), "RStick Left" },
-   { (1ULL << RARCH_ANALOG_RIGHT_X_MINUS), "RStick Right" },
-   { (1ULL << RARCH_ANALOG_RIGHT_Y_PLUS), "RStick Up" },
-   { (1ULL << RARCH_ANALOG_RIGHT_Y_MINUS), "RStick Down" },
 };
 
 static uint64_t state[MAX_PADS];
