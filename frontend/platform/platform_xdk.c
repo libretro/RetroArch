@@ -22,10 +22,6 @@
 
 #include "platform_xdk.h"
 
-#if defined(_XBOX360)
-#include <xfilecache.h>
-#endif
-
 #include <xbdm.h>
 
 #include "../../console/rarch_console.h"
