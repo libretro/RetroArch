@@ -455,4 +455,3 @@ static void render_text(rgui_handle_t *rgui)
    render_messagebox(rgui, message_queue);
 #endif
 }
-
