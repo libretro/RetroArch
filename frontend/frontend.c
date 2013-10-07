@@ -35,65 +35,48 @@ frontend_ctx_driver_t *frontend_ctx;
 
 default_paths_t default_paths;
 
-// Rename core filename executable to a more sane name.
-static bool libretro_install_core(const char *path_prefix,
-      const char *core_exe_path)
-{
-   char old_path[PATH_MAX], new_path[PATH_MAX];
-
-   libretro_get_current_core_pathname(old_path, sizeof(old_path));
-
-   strlcat(old_path, DEFAULT_EXE_EXT, sizeof(old_path));
-   snprintf(new_path, sizeof(new_path), "%s%s", path_prefix, old_path);
-
-   /* If core already exists, we are upgrading the core - 
-    * delete existing file first. */
-   if (path_file_exists(new_path))
-   {
-      RARCH_LOG("Removing temporary ROM file: %s.\n", new_path);
-      if (remove(new_path) < 0)
-         RARCH_ERR("Failed to remove file: %s.\n", new_path);
-   }
-
-   /* Now attempt the renaming of the core. */
-   if (rename(core_exe_path, new_path) < 0)
-      return false;
-
-   RARCH_LOG("Renamed core successfully to: %s.\n", new_path);
-
-   rarch_environment_cb(RETRO_ENVIRONMENT_SET_LIBRETRO_PATH, (void*)new_path);
-   return true;
-}
-
 static void rarch_get_environment_console(void)
 {
    init_libretro_sym(false);
    rarch_init_system_info();
 
 #ifdef HAVE_LIBRETRO_MANAGEMENT
-   char path_prefix[PATH_MAX];
-#if defined(_WIN32)
-   char slash = '\\';
-#else
-   char slash = '/';
-#endif
+   char basename[PATH_MAX];
+   char basename_new[PATH_MAX];
+   char old_path[PATH_MAX];
+   char new_path[PATH_MAX];
 
-   snprintf(path_prefix, sizeof(path_prefix), "%s%c", default_paths.core_dir, slash);
+   strlcpy(basename, "CORE", sizeof(basename));
+   strlcat(basename, DEFAULT_EXE_EXT, sizeof(basename));
+   fill_pathname_join(old_path, default_paths.core_dir, basename, sizeof(old_path));
 
-   char core_exe_path[256];
-   snprintf(core_exe_path, sizeof(core_exe_path), "%sCORE%s", path_prefix, DEFAULT_EXE_EXT);
+   libretro_get_current_core_pathname(basename_new, sizeof(basename_new));
+   strlcat(basename_new, DEFAULT_EXE_EXT, sizeof(basename_new));
+   fill_pathname_join(new_path, default_paths.core_dir, basename_new, sizeof(new_path));
 
-   // Save new libretro core path to config file and exit
-   if (path_file_exists(core_exe_path))
-      if (libretro_install_core(path_prefix, core_exe_path))
+   if (path_file_exists(old_path))
+   {
+      // Rename core filename executable to a more sane name.
+
+      /* If new_path already exists, we are upgrading the core - 
+       * delete existing file first. */
+      if (path_file_exists(new_path))
       {
-         RARCH_ERR("Failed to rename core.\n");
-#ifdef _XBOX
-         g_extern.system.shutdown = g_extern.system.shutdown;
-#else
-         g_extern.system.shutdown = true;
-#endif
+         if (remove(new_path) < 0)
+            RARCH_ERR("Failed to remove file: %s.\n", new_path);
+         else
+            RARCH_LOG("Removed temporary ROM file: %s.\n", new_path);
       }
+
+      /* Now attempt the renaming of the core. */
+      if (rename(old_path, new_path) < 0)
+         RARCH_ERR("Failed to rename core.\n");
+      else
+      {
+         rarch_environment_cb(RETRO_ENVIRONMENT_SET_LIBRETRO_PATH, (void*)new_path);
+         RARCH_LOG("Renamed core successfully to: %s.\n", new_path);
+      }
+   }
 #endif
 }
 #endif
