@@ -204,8 +204,10 @@ static void render_messagebox(rgui_handle_t *rgui, const char *message)
    string_list_free(list);
 }
 
-static void render_text(rgui_handle_t *rgui)
+static void render_text(void *data)
 {
+   rgui_handle_t *rgui = (rgui_handle_t*)data;
+
    if (rgui->need_refresh && 
          (g_extern.lifecycle_mode_state & (1ULL << MODE_MENU))
          && !rgui->msg_force)
