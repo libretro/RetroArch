@@ -114,7 +114,7 @@ static bool menu_type_is_directory_browser(unsigned type)
 
 static void rgui_settings_populate_entries(rgui_handle_t *rgui);
 
-#include "rguidisp_bitmap.c"
+#include "rguidisp.c"
 
 static void *rgui_init(void)
 {
