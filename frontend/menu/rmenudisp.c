@@ -370,7 +370,6 @@ static void render_text(void *data)
 #endif
             case SETTING_EMU_SHOW_DEBUG_INFO_MSG:
                strlcpy(text, "Show Framerate", sizeof(text));
-               snprintf(setting_text, sizeof(setting_text), (g_extern.lifecycle_mode_state & (1ULL << MODE_FPS_DRAW)) ? "ON" : "OFF");
                break;
             case SETTING_EMU_SHOW_INFO_MSG:
                strlcpy(text, "Info Messages", sizeof(text));
@@ -626,6 +625,7 @@ static void render_text(void *data)
             case SETTING_VIDEO_VSYNC:
             case SETTING_REFRESH_RATE:
             case SETTING_HW_TEXTURE_FILTER:
+            case SETTING_EMU_SHOW_DEBUG_INFO_MSG:
                menu_set_settings_label(setting_text, sizeof(setting_text), &w, settings_lut[i]);
                break;
             case SETTING_CUSTOM_VIEWPORT:
