@@ -90,9 +90,9 @@ public final class ConfigFile {
 	}
 
 	public String getString(String key) {
-		Object ret = map.get(key);
+		String ret = map.get(key);
 		if (ret != null)
-			return (String) ret;
+			return ret;
 		else
 			return null;
 	}
