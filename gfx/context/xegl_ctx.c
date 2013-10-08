@@ -184,7 +184,7 @@ static void gfx_ctx_update_window_title(void)
    if (gfx_get_fps(buf, sizeof(buf), fps_draw ? buf_fps : NULL, sizeof(buf_fps)))
       XStoreName(g_dpy, g_win, buf);
 
-   if (fps_draw)
+   if (fps_draw && buf_fps != NULL)
       msg_queue_push(g_extern.msg_queue, buf_fps, 1, 1);
 }
 
