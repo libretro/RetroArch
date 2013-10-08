@@ -6,7 +6,7 @@ import org.retroarch.R;
 
 import android.graphics.drawable.Drawable;
 
-final class FileWrapper implements IconAdapterItem {
+public final class FileWrapper implements IconAdapterItem {
 	public final File file;
 	public final boolean parentItem;
 	public final boolean dirSelectItem;

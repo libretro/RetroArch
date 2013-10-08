@@ -1,6 +1,9 @@
-package org.retroarch.browser;
+package org.retroarch.browser.diractivities;
 
 import org.retroarch.R;
+import org.retroarch.browser.FileWrapper;
+import org.retroarch.browser.IconAdapter;
+import org.retroarch.browser.MainMenuActivity;
 
 import java.util.*;
 import java.io.*;
@@ -13,8 +16,7 @@ import android.widget.*;
 import android.view.*;
 
 
-public class DirectoryActivity extends Activity implements
-		AdapterView.OnItemClickListener {
+public class DirectoryActivity extends Activity implements AdapterView.OnItemClickListener {
 	private IconAdapter<FileWrapper> adapter;
 	private File listedDirectory;
 

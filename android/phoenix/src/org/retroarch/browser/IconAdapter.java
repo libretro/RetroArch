@@ -16,7 +16,7 @@ interface IconAdapterItem {
 	public abstract Drawable getIconDrawable();
 }
 
-final class IconAdapter<T extends IconAdapterItem> extends ArrayAdapter<T> {
+public final class IconAdapter<T extends IconAdapterItem> extends ArrayAdapter<T> {
 	private final int layout;
 
 	public IconAdapter(Activity aContext, int aLayout) {

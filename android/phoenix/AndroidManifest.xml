@@ -25,21 +25,21 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
          </activity>
-        <activity android:name=".browser.ReportIME"></activity>
-        <activity android:name=".browser.IMEActivity"></activity>
-        <activity android:name=".browser.HelpActivity"></activity>
-        <activity android:name=".browser.FileWrapper"></activity>
-        <activity android:name=".browser.DirectoryActivity"></activity>
-        <activity android:name=".browser.ROMActivity"></activity>
-        <activity android:name=".browser.RetroTVMode"></activity>
-        
-        <activity android:name=".browser.ShaderActivity"></activity>
-        <activity android:name=".browser.OverlayActivity"></activity>
-        <activity android:name=".browser.ROMDirActivity"></activity>
-        <activity android:name=".browser.SRMDirActivity"></activity>
-        <activity android:name=".browser.StateDirActivity"></activity>
-        <activity android:name=".browser.SystemDirActivity"></activity>
-        
+        <activity android:name=".browser.ReportIME"/>
+        <activity android:name=".browser.IMEActivity"/>
+        <activity android:name=".browser.HelpActivity"/>
+        <activity android:name=".browser.FileWrapper"/>
+        <activity android:name=".browser.RetroTVMode"/>
+
+        <activity android:name=".browser.diractivities.DirectoryActivity"/>
+        <activity android:name=".browser.diractivities.ROMActivity"/>
+        <activity android:name=".browser.diractivities.ROMDirActivity"/>
+        <activity android:name=".browser.diractivities.ShaderActivity"/>
+        <activity android:name=".browser.diractivities.OverlayActivity"/>
+        <activity android:name=".browser.diractivities.SRMDirActivity"/>
+        <activity android:name=".browser.diractivities.StateDirActivity"/>
+        <activity android:name=".browser.diractivities.SystemDirActivity"/>
+
         <activity android:name=".browser.RetroActivity" android:configChanges="mcc|mnc|locale|touchscreen|keyboard|keyboardHidden|navigation|orientation|screenLayout|uiMode|screenSize|smallestScreenSize|fontScale" android:theme="@android:style/Theme.NoTitleBar.Fullscreen" >
         	<meta-data android:name="android.app.lib_name" android:value="retroarch-activity" />
          	<meta-data android:name="android.app.func_name" android:value="ANativeActivity_onCreate" />

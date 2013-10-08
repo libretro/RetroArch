@@ -3,6 +3,7 @@ package org.retroarch.browser;
 import java.io.*;
 
 import org.retroarch.R;
+import org.retroarch.browser.preferences.ConfigFile;
 
 import android.annotation.TargetApi;
 import android.app.AlertDialog;
@@ -772,7 +773,7 @@ public final class MainMenuActivity extends PreferenceActivity {
 	@Override
 	public void startActivity(Intent intent) {
 		if (intent.getComponent().getClassName()
-				.equals("org.retroarch.browser.ROMActivity")) {
+				.equals("org.retroarch.browser.diractivites.ROMActivity")) {
 			if (!new File(libretro_path).isDirectory()) {
 				super.startActivityForResult(intent, ACTIVITY_LOAD_ROM);
 			} else {

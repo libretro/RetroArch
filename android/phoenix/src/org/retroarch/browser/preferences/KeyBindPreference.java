@@ -1,4 +1,4 @@
-package org.retroarch.browser;
+package org.retroarch.browser.preferences;
 
 import android.content.Context;
 import android.preference.DialogPreference;

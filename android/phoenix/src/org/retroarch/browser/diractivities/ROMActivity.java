@@ -1,6 +1,8 @@
-package org.retroarch.browser;
+package org.retroarch.browser.diractivities;
 
 import java.io.File;
+
+import org.retroarch.browser.MainMenuActivity;
 
 import android.content.SharedPreferences;
 import android.os.Bundle;
