@@ -241,7 +241,7 @@ static void rgui_settings_options_populate_entries(rgui_handle_t *rgui)
 #if defined(HAVE_THREADS) && !defined(RARCH_CONSOLE)
    rgui_list_push(rgui->selection_buf, "SRAM Autosave", RGUI_SETTINGS_SRAM_AUTOSAVE, 0);
 #endif
-   rgui_list_push(rgui->selection_buf, "Debug Info Messages", RGUI_SETTINGS_DEBUG_TEXT, 0);
+   rgui_list_push(rgui->selection_buf, "Show Framerate", RGUI_SETTINGS_DEBUG_TEXT, 0);
 }
 
 static void rgui_settings_populate_entries(rgui_handle_t *rgui)

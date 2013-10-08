@@ -369,7 +369,7 @@ static void render_text(void *data)
                break;
 #endif
             case SETTING_EMU_SHOW_DEBUG_INFO_MSG:
-               strlcpy(text, "Debug Info Messages", sizeof(text));
+               strlcpy(text, "Show Framerate", sizeof(text));
                snprintf(setting_text, sizeof(setting_text), (g_extern.lifecycle_mode_state & (1ULL << MODE_FPS_DRAW)) ? "ON" : "OFF");
                break;
             case SETTING_EMU_SHOW_INFO_MSG:
