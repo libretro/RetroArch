@@ -219,7 +219,7 @@ static void gfx_ctx_update_window_title(void)
    bool fps_draw = g_extern.lifecycle_mode_state & (1ULL << MODE_FPS_DRAW);
    gfx_get_fps(buf, sizeof(buf), fps_draw ? buf_fps : NULL, sizeof(buf_fps));
 
-   if (fps_draw && buf_fps != NULL)
+   if (fps_draw)
       msg_queue_push(g_extern.msg_queue, buf_fps, 1, 1);
 }
 
