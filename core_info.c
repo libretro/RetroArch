@@ -212,7 +212,11 @@ void core_info_list_get_supported_cores(core_info_list_t *core_info_list, const 
    for (size_t i = 0; i < core_info_list->count; i++, supported++)
    {
       const core_info_t *core = &core_info_list->list[i];
-      if (!core_info_does_support_file(core, path) && !core_info_does_support_any_file(core, list))
+      if (!core_info_does_support_file(core, path)
+#ifdef HAVE_ZLIB
+            && !core_info_does_support_any_file(core, list)
+#endif
+            )
          break;
    }
 

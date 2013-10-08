@@ -381,7 +381,8 @@ void apple_gfx_ctx_update_window_title(void)
 {
 #ifdef OSX
    static char buf[128], buf_fps[128];
-   bool got_text = gfx_get_fps(buf, sizeof(buf), false, buf_fps, sizeof(buf_fps));
+   bool fps_draw = g_extern.lifecycle_mode_state & (1ULL << MODE_FPS_DRAW);
+   bool got_text = gfx_get_fps(buf, sizeof(buf), fps_draw ? buf_fps : NULL, sizeof(buf_fps));
    static const char* const text = buf; // < Can't access buf directly in the block
    
    if (got_text)
@@ -393,6 +394,9 @@ void apple_gfx_ctx_update_window_title(void)
          g_view.window.title = @(text);
       });
    }
+
+   if (fps_draw)
+      msg_queue_push(g_extern.msg_queue, buf_fps, 1, 1);
 #endif
 }
 
