@@ -45,8 +45,7 @@ public final class CoreSelection extends Activity implements AdapterView.OnItemC
 		setTitle(R.string.select_libretro_core);
 
 		// Populate the list
-		final String modulePath = MainMenuActivity.getInstance()
-				.getApplicationInfo().nativeLibraryDir;
+		final String modulePath = getApplicationInfo().nativeLibraryDir;
 		final File[] libs = new File(modulePath).listFiles();
 		for (final File lib : libs) {
 			String libName = lib.getName();

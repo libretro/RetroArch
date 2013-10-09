@@ -262,10 +262,10 @@ public final class MainMenuActivity extends PreferenceActivity {
 	private boolean detectDevice(boolean show_dialog) {
 		boolean retval = false;
 
-		final boolean mentionPlayStore = !android.os.Build.MODEL.equals("OUYA Console");
+		final boolean mentionPlayStore = !Build.MODEL.equals("OUYA Console");
 		final String message = (mentionPlayStore ? getString(R.string.detect_device_msg_general) : getString(R.string.detect_device_msg_ouya));
 
-		Log.i("Device MODEL", android.os.Build.MODEL);
+		Log.i("Device MODEL", Build.MODEL);
 		if (Build.MODEL.equals("SHIELD")) {
 			AlertDialog.Builder alert = new AlertDialog.Builder(this)
 					.setTitle(R.string.nvidia_shield_detected)
