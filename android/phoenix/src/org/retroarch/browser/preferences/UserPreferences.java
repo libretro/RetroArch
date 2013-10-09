@@ -223,7 +223,7 @@ public final class UserPreferences
 		config.setInt("input_back_behavior", Integer.parseInt(prefs.getString("input_back_behavior", "0")));
 
 		// Set the iCade profiles
-		config.setInt("input_autodetect_icade_profile_pad1", Integer.parseInt(prefs.getString("", "0")));
+		config.setInt("input_autodetect_icade_profile_pad1", Integer.parseInt(prefs.getString("input_autodetect_icade_profile_pad1", "0")));
 		config.setInt("input_autodetect_icade_profile_pad2", Integer.parseInt(prefs.getString("input_autodetect_icade_profile_pad2", "0")));
 		config.setInt("input_autodetect_icade_profile_pad3", Integer.parseInt(prefs.getString("input_autodetect_icade_profile_pad3", "0")));
 		config.setInt("input_autodetect_icade_profile_pad4", Integer.parseInt(prefs.getString("input_autodetect_icade_profile_pad4", "0")));
