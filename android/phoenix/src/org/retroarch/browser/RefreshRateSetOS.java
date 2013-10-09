@@ -4,7 +4,6 @@ import org.retroarch.R;
 import org.retroarch.browser.preferences.UserPreferences;
 
 import android.app.Activity;
-import android.content.Context;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.view.Display;

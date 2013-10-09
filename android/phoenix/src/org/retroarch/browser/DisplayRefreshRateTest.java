@@ -40,7 +40,7 @@ public final class DisplayRefreshRateTest extends Activity {
 		private void setFPSSetting(double fps) {
 			SharedPreferences prefs = UserPreferences.getPreferences(DisplayRefreshRateTest.this);
 			SharedPreferences.Editor edit = prefs.edit();
-			edit.putString("video_refresh_rate", Double.valueOf(fps).toString());
+			edit.putString("video_refresh_rate", Double.toString(fps));
 			edit.commit();
 		}
 
