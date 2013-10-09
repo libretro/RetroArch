@@ -2,6 +2,7 @@ package org.retroarch.browser;
 
 import org.retroarch.R;
 import org.retroarch.browser.preferences.ConfigFile;
+import org.retroarch.browser.preferences.UserPreferences;
 
 import java.io.*;
 
@@ -14,10 +15,9 @@ import android.view.*;
 
 // JELLY_BEAN_MR1 = 17
 
-public final class CoreSelection extends Activity implements
-		AdapterView.OnItemClickListener {
+public final class CoreSelection extends Activity implements AdapterView.OnItemClickListener {
 	private IconAdapter<ModuleWrapper> adapter;
-	static private final String TAG = "CoreSelection";
+	private static final String TAG = "CoreSelection";
 
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
@@ -88,11 +88,10 @@ public final class CoreSelection extends Activity implements
 	}
 
 	@Override
-	public void onItemClick(AdapterView<?> aListView, View aView,
-			int aPosition, long aID) {
-		final ModuleWrapper item = adapter.getItem(aPosition);
+	public void onItemClick(AdapterView<?> listView, View view, int position, long id) {
+		final ModuleWrapper item = adapter.getItem(position);
 		MainMenuActivity.getInstance().setModule(item.file.getAbsolutePath(), item.getText());
-		MainMenuActivity.getInstance().updateConfigFile();
+		UserPreferences.updateConfigFile(this);
 		finish();
 	}
 }

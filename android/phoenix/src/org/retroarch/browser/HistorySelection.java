@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 
 import org.retroarch.R;
+import org.retroarch.browser.preferences.UserPreferences;
 
 import android.app.Activity;
 import android.content.Intent;
@@ -17,8 +18,7 @@ import android.widget.AdapterView;
 import android.widget.ListView;
 import android.widget.Toast;
 
-public final class HistorySelection extends Activity implements
-		AdapterView.OnItemClickListener {
+public final class HistorySelection extends Activity implements AdapterView.OnItemClickListener {
 	
 	private IconAdapter<HistoryWrapper> adapter;
 
@@ -57,9 +57,8 @@ public final class HistorySelection extends Activity implements
 	}
 	
 	@Override
-	public void onItemClick(AdapterView<?> aListView, View aView,
-			int aPosition, long aID) {
-		final HistoryWrapper item = adapter.getItem(aPosition);
+	public void onItemClick(AdapterView<?> listView, View view, int position, long id) {
+		final HistoryWrapper item = adapter.getItem(position);
 		final String gamePath = item.getGamePath();
 		final String corePath = item.getCorePath();
 		
@@ -69,13 +68,13 @@ public final class HistorySelection extends Activity implements
 		String current_ime = Settings.Secure.getString(getContentResolver(),
 				Settings.Secure.DEFAULT_INPUT_METHOD);
 
-		MainMenuActivity.getInstance().updateConfigFile();
+		UserPreferences.updateConfigFile(this);
 
 		Toast.makeText(this, String.format(getString(R.string.loading_gamepath), gamePath), Toast.LENGTH_SHORT).show();
 		myIntent = new Intent(this, RetroActivity.class);
 		myIntent.putExtra("ROM", gamePath);
 		myIntent.putExtra("LIBRETRO", corePath);
-		myIntent.putExtra("CONFIGFILE", MainMenuActivity.getDefaultConfigPath());
+		myIntent.putExtra("CONFIGFILE", UserPreferences.getDefaultConfigPath(this));
 		myIntent.putExtra("IME", current_ime);
 		startActivity(myIntent);
 		finish();
