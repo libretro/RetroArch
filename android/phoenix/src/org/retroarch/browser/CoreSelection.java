@@ -31,7 +31,7 @@ public final class CoreSelection extends Activity implements AdapterView.OnItemC
 			Log.e(TAG, "Failed to load libretro_cores.cfg from assets.");
 		}
 
-		String cpuInfo = MainMenuActivity.readCPUInfo();
+		String cpuInfo = UserPreferences.readCPUInfo();
 		boolean cpuIsNeon = cpuInfo.contains("neon");
 
 		setContentView(R.layout.line_list);

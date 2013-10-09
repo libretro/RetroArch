@@ -102,22 +102,7 @@ public final class MainMenuActivity extends PreferenceActivity {
 		return instance;
 	}
 
-	public static String readCPUInfo() {
-		String result = "";
-
-		try {
-			BufferedReader br = new BufferedReader(new InputStreamReader(
-					new FileInputStream("/proc/cpuinfo")));
-
-			String line;
-			while ((line = br.readLine()) != null)
-				result += line + "\n";
-			br.close();
-		} catch (IOException ex) {
-			ex.printStackTrace();
-		}
-		return result;
-	}
+	
 
 	private byte[] loadAsset(String asset) throws IOException {
 		InputStream stream = getAssets().open(asset);

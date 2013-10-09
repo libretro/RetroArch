@@ -1,7 +1,10 @@
 package org.retroarch.browser.preferences;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStreamReader;
 
 import org.retroarch.R;
 
@@ -18,13 +21,20 @@ import android.view.Display;
 import android.view.WindowManager;
 
 /**
- * Class retrieving, saving, or loading preferences.
+ * Utility class for retrieving, saving, or loading preferences.
  */
 public final class UserPreferences
 {
 	// Logging tag.
 	private static final String TAG = "UserPreferences";
 
+	/**
+	 * Retrieves the path to the default location of the libretro config.
+	 * 
+	 * @param ctx the current {@link Context}
+	 * 
+	 * @return the path to the default location of the libretro config.
+	 */
 	public static String getDefaultConfigPath(Context ctx)
 	{
 		// Internal/External storage dirs.
@@ -85,6 +95,12 @@ public final class UserPreferences
 			return "/mnt/sd" + append_path;
 	}
 
+	/**
+	 * Re-reads the configuration file into the {@link SharedPreferences}
+	 * instance that contains all of the settings for the front-end.
+	 * 
+	 * @param ctx the current {@link Context}.
+	 */
 	public static void readbackConfigFile(Context ctx)
 	{
 		String path = getDefaultConfigPath(ctx);
@@ -134,7 +150,13 @@ public final class UserPreferences
 
 		edit.commit();
 	}
-	
+
+	/**
+	 * Updates the libretro configuration file
+	 * with new values if settings have changed.
+	 * 
+	 * @param ctx the current {@link Context}.
+	 */
 	public static void updateConfigFile(Context ctx)
 	{
 		String path = getDefaultConfigPath(ctx);
@@ -337,11 +359,13 @@ public final class UserPreferences
 			edit.remove(key);
 	}
 
-	public static SharedPreferences getPreferences(Context ctx)
-	{
-		return PreferenceManager.getDefaultSharedPreferences(ctx);
-	}
-
+	/**
+	 * Sanitizes a libretro core path.
+	 * 
+	 * @param path The path to the libretro core.
+	 * 
+	 * @return the sanitized libretro path.
+	 */
 	private static String sanitizeLibretroPath(String path)
 	{
 		String sanitized_name = path.substring(
@@ -349,10 +373,34 @@ public final class UserPreferences
 				path.lastIndexOf("."));
 		sanitized_name = sanitized_name.replace("neon", "");
 		sanitized_name = sanitized_name.replace("libretro_", "");
+
 		return sanitized_name;
 	}
 
-	public static double getRefreshRate(Context ctx)
+	/**
+	 * Gets a {@link SharedPreferences} instance containing current settings.
+	 * 
+	 * @param ctx the current {@link Context}.
+	 * 
+	 * @return A SharedPreference instance containing current settings.
+	 */
+	public static SharedPreferences getPreferences(Context ctx)
+	{
+		return PreferenceManager.getDefaultSharedPreferences(ctx);
+	}
+
+	/**
+	 * Retrieves an approximate display refresh rate for a device.
+	 * <p>
+	 * Note that some devices will return completely wrong values
+	 * with the {@link Display#getRefreshRate()} method, and so
+	 * this method attempts to ballpark an appropriate value.
+	 * 
+	 * @param ctx the current {@link Context}.
+	 * 
+	 * @return an approximately correct display refresh rate for a device.
+	 */
+	private static double getRefreshRate(Context ctx)
 	{
 		double rate = 0;
 		SharedPreferences prefs = getPreferences(ctx);
@@ -378,6 +426,7 @@ public final class UserPreferences
 		return rate;
 	}
 
+	// Utility function used with getRefreshRate.
 	private static double getDisplayRefreshRate(Context ctx)
 	{
 		// Android is *very* likely to screw this up.
@@ -393,8 +442,15 @@ public final class UserPreferences
 		return rate;
 	}
 
+	/**
+	 * Gets the optimal sampling rate for low-latency audio playback.
+	 * 
+	 * @param ctx the current {@link Context}.
+	 * 
+	 * @return the optimal sampling rate for low-latency audio playback in Hz.
+	 */
 	@TargetApi(17)
-	public static int getLowLatencyOptimalSamplingRate(Context ctx)
+	private static int getLowLatencyOptimalSamplingRate(Context ctx)
 	{
 		AudioManager manager = (AudioManager) ctx.getSystemService(Context.AUDIO_SERVICE);
 
@@ -402,8 +458,15 @@ public final class UserPreferences
 				.getProperty(AudioManager.PROPERTY_OUTPUT_SAMPLE_RATE));
 	}
 
+	/**
+	 * Gets the optimal buffer size for low-latency audio playback.
+	 * 
+	 * @param ctx the current {@link Context}.
+	 * 
+	 * @return the optimal output buffer size in decimal PCM frames.
+	 */
 	@TargetApi(17)
-	public static int getLowLatencyBufferSize(Context ctx)
+	private static int getLowLatencyBufferSize(Context ctx)
 	{
 		AudioManager manager = (AudioManager) ctx.getSystemService(Context.AUDIO_SERVICE);
 		int buffersize = Integer.parseInt(manager
@@ -412,14 +475,34 @@ public final class UserPreferences
 		return buffersize;
 	}
 
+	/**
+	 * Checks whether or not a device supports low-latency audio.
+	 * 
+	 * @param ctx the current {@link Context}.
+	 * 
+	 * @return true if the device supports low-latency audio; false otherwise.
+	 */
 	@TargetApi(17)
-	public static boolean hasLowLatencyAudio(Context ctx)
+	private static boolean hasLowLatencyAudio(Context ctx)
 	{
 		PackageManager pm = ctx.getPackageManager();
 		return pm.hasSystemFeature(PackageManager.FEATURE_AUDIO_LOW_LATENCY);
 	}
 
-	public static int getOptimalSamplingRate(Context ctx)
+	/**
+	 * Gets the optimal audio sampling rate.
+	 * <p>
+	 * On Android 4.2+ devices this will retrieve the optimal low-latency sampling rate,
+	 * since Android 4.2 adds support for low latency audio in general.
+	 * <p>
+	 * On other devices, it simply returns the regular optimal sampling rate
+	 * as returned by the hardware.
+	 * 
+	 * @param ctx The current {@link Context}.
+	 * 
+	 * @return the optimal audio sampling rate in Hz.
+	 */
+	private static int getOptimalSamplingRate(Context ctx)
 	{
 		int ret;
 		if (Build.VERSION.SDK_INT >= 17)
@@ -429,5 +512,32 @@ public final class UserPreferences
 
 		Log.i(TAG, "Using sampling rate: " + ret + " Hz");
 		return ret;
+	}
+
+	/**
+	 * Retrieves the CPU info, as provided by /proc/cpuinfo.
+	 * 
+	 * @return the CPU info.
+	 */
+	public static String readCPUInfo()
+	{
+		String result = "";
+
+		try
+		{
+			BufferedReader br = new BufferedReader(new InputStreamReader(
+					new FileInputStream("/proc/cpuinfo")));
+
+			String line;
+			while ((line = br.readLine()) != null)
+				result += line + "\n";
+			br.close();
+		}
+		catch (IOException ex)
+		{
+			ex.printStackTrace();
+		}
+
+		return result;
 	}
 }
