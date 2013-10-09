@@ -7,7 +7,6 @@ import org.retroarch.browser.preferences.UserPreferences;
 
 import android.app.AlertDialog;
 import android.app.Dialog;
-import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -23,8 +22,6 @@ import android.preference.PreferenceActivity;
 import android.preference.PreferenceManager;
 import android.provider.Settings;
 import android.util.Log;
-import android.view.Display;
-import android.view.WindowManager;
 import android.widget.Toast;
 
 public final class MainMenuActivity extends PreferenceActivity {
@@ -33,17 +30,17 @@ public final class MainMenuActivity extends PreferenceActivity {
 	private static final String TAG = "MainMenu";
 	private static String libretro_path;
 	private static String libretro_name;
-	
+
 	@SuppressWarnings("deprecation")
 	private void refreshPreferenceScreen() {
 		UserPreferences.readbackConfigFile(this);
-		
+
 		setPreferenceScreen(null);
 		addPreferencesFromResource(R.xml.prefs);
-		
+
 		setCoreTitle(libretro_name);
 		PreferenceManager.setDefaultValues(this, R.xml.prefs, false);
-		
+
 		final CheckBoxPreference param = (CheckBoxPreference) findPreference("global_config_enable");
 		param.setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
 			@Override
@@ -53,7 +50,7 @@ public final class MainMenuActivity extends PreferenceActivity {
 				SharedPreferences.Editor edit = prefs.edit();
 				edit.putBoolean("global_config_enable", param.isChecked());
 				edit.commit();
-				
+
 				refreshPreferenceScreen();
 				return true;
 			}
@@ -64,21 +61,23 @@ public final class MainMenuActivity extends PreferenceActivity {
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		instance = this;
-		
+
+		// Get libretro path and name.
 		SharedPreferences prefs = getPreferences();
-		
 		libretro_path = prefs.getString("libretro_path", getApplicationInfo().nativeLibraryDir);
 		libretro_name = prefs.getString("libretro_name", getString(R.string.no_core));
 
+		// Refresh the prefscreen and reload preferences.
 		refreshPreferenceScreen();
-		
-		this.setVolumeControlStream(AudioManager.STREAM_MUSIC);
 
+		// Bind audio stream to hardware controls.
+		setVolumeControlStream(AudioManager.STREAM_MUSIC);
+
+		// Extract assets. 
 		extractAssets();
 
 		if (!prefs.getBoolean("first_time_refreshrate_calculate", false)) {
-			prefs.edit().putBoolean("first_time_refreshrate_calculate", true)
-					.commit();
+			prefs.edit().putBoolean("first_time_refreshrate_calculate", true).commit();
 
 			if (!detectDevice(false)) {
 				AlertDialog.Builder alert = new AlertDialog.Builder(this)
@@ -90,10 +89,8 @@ public final class MainMenuActivity extends PreferenceActivity {
 		}
 
 		Intent startedByIntent = getIntent();
-		if (null != startedByIntent.getStringExtra("ROM")
-				&& null != startedByIntent.getStringExtra("LIBRETRO")) {
-			if (null == savedInstanceState
-					|| !savedInstanceState.getBoolean("romexec"))
+		if (startedByIntent.getStringExtra("ROM") != null && startedByIntent.getStringExtra("LIBRETRO") != null) {
+			if (savedInstanceState == null || !savedInstanceState.getBoolean("romexec"))
 				loadRomExternal(startedByIntent.getStringExtra("ROM"),
 						startedByIntent.getStringExtra("LIBRETRO"));
 			else
@@ -103,39 +100,6 @@ public final class MainMenuActivity extends PreferenceActivity {
 
 	public static MainMenuActivity getInstance() {
 		return instance;
-	}
-
-	private final double getDisplayRefreshRate() {
-		// Android is *very* likely to screw this up.
-		// It is rarely a good value to use, so make sure it's not
-		// completely wrong. Some phones return refresh rates that are
-		// completely bogus
-		// (like 0.3 Hz, etc), so try to be very conservative here.
-		final WindowManager wm = (WindowManager) getSystemService(Context.WINDOW_SERVICE);
-		final Display display = wm.getDefaultDisplay();
-		double rate = display.getRefreshRate();
-		if (rate > 61.0 || rate < 58.0)
-			rate = 59.95;
-		return rate;
-	}
-
-	public static final double getRefreshRate() {
-		double rate = 0;
-		SharedPreferences prefs = getPreferences();
-		String refresh_rate = prefs.getString("video_refresh_rate", "");
-		if (!refresh_rate.isEmpty()) {
-			try {
-				rate = Double.parseDouble(refresh_rate);
-			} catch (NumberFormatException e) {
-				Log.e(TAG, "Cannot parse: " + refresh_rate + " as a double!");
-				rate = getInstance().getDisplayRefreshRate();
-			}
-		} else {
-			rate = getInstance().getDisplayRefreshRate();
-		}
-
-		Log.i(TAG, "Using refresh rate: " + rate + " Hz.");
-		return rate;
 	}
 
 	public static String readCPUInfo() {
@@ -300,10 +264,10 @@ public final class MainMenuActivity extends PreferenceActivity {
 		edit.putString("libretro_path", libretro_path);
 		edit.putString("libretro_name", libretro_name);
 		edit.commit();
-		
+
 		final boolean globalConfigEnabled = prefs.getBoolean("global_config_enable", true);
 		final String nativeLibraryDir = getApplicationInfo().nativeLibraryDir;
-		
+
 		// Check if per-core settings are being used.
 		if (!globalConfigEnabled && !libretro_path.equals(nativeLibraryDir))
 			refreshPreferenceScreen();
@@ -429,11 +393,6 @@ public final class MainMenuActivity extends PreferenceActivity {
 		refreshPreferenceScreen();
 
 		return retval;
-	}
-
-	@Override
-	protected void onStart() {
-		super.onStart();
 	}
 
 	@Override
