@@ -1,4 +1,4 @@
-package org.retroarch.browser;
+package org.retroarch.browser.diractivities;
 
 import android.os.Bundle;
 

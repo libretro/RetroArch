@@ -1,6 +1,8 @@
-package org.retroarch.browser;
+package org.retroarch.browser.diractivities;
 
 import java.io.File;
+
+import org.retroarch.browser.preferences.UserPreferences;
 
 import android.content.SharedPreferences;
 import android.os.Bundle;
@@ -9,7 +11,7 @@ public final class ROMActivity extends DirectoryActivity {
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		
-		SharedPreferences prefs = MainMenuActivity.getPreferences();
+		SharedPreferences prefs = UserPreferences.getPreferences(this);
 		String startPath = prefs.getString("rgui_browser_directory", "");
 		if (!startPath.isEmpty() && new File(startPath).exists())
 			super.setStartDirectory(startPath);

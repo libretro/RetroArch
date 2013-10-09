@@ -6,7 +6,7 @@ import org.retroarch.R;
 
 import android.graphics.drawable.Drawable;
 
-final class FileWrapper implements IconAdapterItem {
+public final class FileWrapper implements IconAdapterItem {
 	public final File file;
 	public final boolean parentItem;
 	public final boolean dirSelectItem;
@@ -19,14 +19,14 @@ final class FileWrapper implements IconAdapterItem {
 	
 	protected final int typeIndex;
 
-	public FileWrapper(File aFile, int type, boolean aIsEnabled) {
-		file = aFile;
-		
-		parentItem = type == PARENT;
-		dirSelectItem = type == DIRSELECT;		
-		typeIndex = type == FILE ? (FILE + (file.isDirectory() ? 0 : 1)) : type;	
-		
-		enabled = parentItem || dirSelectItem || aIsEnabled;
+	public FileWrapper(File file, int type, boolean isEnabled) {
+		this.file = file;
+
+		this.parentItem = type == PARENT;
+		this.dirSelectItem = type == DIRSELECT;		
+		this.typeIndex = type == FILE ? (FILE + (file.isDirectory() ? 0 : 1)) : type;	
+
+		this.enabled = parentItem || dirSelectItem || isEnabled;
 	}
 
 	@Override
@@ -63,13 +63,13 @@ final class FileWrapper implements IconAdapterItem {
 		return null;
 	}
 
-	public int compareTo(FileWrapper aOther) {
-		if (aOther != null) {
+	public int compareTo(FileWrapper other) {
+		if (other != null) {
 			// Who says ternary is hard to follow
-			if (isEnabled() == aOther.isEnabled()) {
-				return (typeIndex == aOther.typeIndex) ? file
-						.compareTo(aOther.file)
-						: ((typeIndex < aOther.typeIndex) ? -1 : 1);
+			if (isEnabled() == other.isEnabled()) {
+				return (typeIndex == other.typeIndex) ? file
+						.compareTo(other.file)
+						: ((typeIndex < other.typeIndex) ? -1 : 1);
 			} else {
 				return isEnabled() ? -1 : 1;
 			}
