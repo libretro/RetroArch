@@ -46,7 +46,7 @@ public final class MainMenuActivity extends PreferenceActivity {
 			@Override
 			public boolean onPreferenceClick(Preference preference) {
 				UserPreferences.updateConfigFile(MainMenuActivity.this);
-				SharedPreferences prefs = MainMenuActivity.getPreferences();
+				SharedPreferences prefs = UserPreferences.getPreferences(MainMenuActivity.this);
 				SharedPreferences.Editor edit = prefs.edit();
 				edit.putBoolean("global_config_enable", param.isChecked());
 				edit.commit();
@@ -63,7 +63,7 @@ public final class MainMenuActivity extends PreferenceActivity {
 		instance = this;
 
 		// Get libretro path and name.
-		SharedPreferences prefs = getPreferences();
+		SharedPreferences prefs = UserPreferences.getPreferences(this);
 		libretro_path = prefs.getString("libretro_path", getApplicationInfo().nativeLibraryDir);
 		libretro_name = prefs.getString("libretro_name", getString(R.string.no_core));
 
@@ -101,8 +101,6 @@ public final class MainMenuActivity extends PreferenceActivity {
 	public static MainMenuActivity getInstance() {
 		return instance;
 	}
-
-	
 
 	private byte[] loadAsset(String asset) throws IOException {
 		InputStream stream = getAssets().open(asset);
@@ -233,10 +231,6 @@ public final class MainMenuActivity extends PreferenceActivity {
 
 		dialog.show();
 	}
-	
-	public static SharedPreferences getPreferences() {
-		return PreferenceManager.getDefaultSharedPreferences(getInstance().getBaseContext());
-	}
 
 	public void setModule(String core_path, String core_name) {
 		UserPreferences.updateConfigFile(this);
@@ -244,7 +238,7 @@ public final class MainMenuActivity extends PreferenceActivity {
 		libretro_path = core_path;
 		libretro_name = core_name;
 
-		SharedPreferences prefs = getPreferences();
+		SharedPreferences prefs = UserPreferences.getPreferences(this);
 		SharedPreferences.Editor edit = prefs.edit();
 		edit.putString("libretro_path", libretro_path);
 		edit.putString("libretro_name", libretro_name);
@@ -280,7 +274,7 @@ public final class MainMenuActivity extends PreferenceActivity {
 							new DialogInterface.OnClickListener() {
 								@Override
 								public void onClick(DialogInterface dialog, int which) {
-									SharedPreferences prefs = getPreferences();
+									SharedPreferences prefs = UserPreferences.getPreferences(MainMenuActivity.this);
 									SharedPreferences.Editor edit = prefs.edit();
 									edit.putString("video_refresh_rate", Double.toString(60.00d));
 									edit.putBoolean("input_overlay_enable", false);
@@ -300,7 +294,7 @@ public final class MainMenuActivity extends PreferenceActivity {
 							new DialogInterface.OnClickListener() {
 								@Override
 								public void onClick(DialogInterface dialog, int which) {
-									SharedPreferences prefs = getPreferences();
+									SharedPreferences prefs = UserPreferences.getPreferences(MainMenuActivity.this);
 									SharedPreferences.Editor edit = prefs.edit();
 									edit.putBoolean("input_overlay_enable", false);
 									edit.putBoolean("input_autodetect_enable", true);
@@ -319,7 +313,7 @@ public final class MainMenuActivity extends PreferenceActivity {
 							new DialogInterface.OnClickListener() {
 								@Override
 								public void onClick(DialogInterface dialog, int which) {
-									SharedPreferences prefs = getPreferences();
+									SharedPreferences prefs = UserPreferences.getPreferences(MainMenuActivity.this);
 									SharedPreferences.Editor edit = prefs.edit();
 									edit.putBoolean("input_overlay_enable", false);
 									edit.putBoolean("input_autodetect_enable", true);
@@ -338,7 +332,7 @@ public final class MainMenuActivity extends PreferenceActivity {
 									new DialogInterface.OnClickListener() {
 										@Override
 										public void onClick(DialogInterface dialog, int which) {
-											SharedPreferences prefs = getPreferences();
+											SharedPreferences prefs = UserPreferences.getPreferences(MainMenuActivity.this);
 											SharedPreferences.Editor edit = prefs.edit();
 											edit.putBoolean("video_threaded", false);
 											edit.putBoolean("input_overlay_enable", false);
@@ -359,7 +353,7 @@ public final class MainMenuActivity extends PreferenceActivity {
 							new DialogInterface.OnClickListener() {
 								@Override
 								public void onClick(DialogInterface dialog, int which) {
-									SharedPreferences prefs = getPreferences();
+									SharedPreferences prefs = UserPreferences.getPreferences(MainMenuActivity.this);
 									SharedPreferences.Editor edit = prefs.edit();
 									edit.putString("video_refresh_rate", Double.toString(59.65));
 									edit.putString("audio_latency", "64");

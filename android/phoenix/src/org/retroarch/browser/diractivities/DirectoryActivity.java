@@ -3,7 +3,7 @@ package org.retroarch.browser.diractivities;
 import org.retroarch.R;
 import org.retroarch.browser.FileWrapper;
 import org.retroarch.browser.IconAdapter;
-import org.retroarch.browser.MainMenuActivity;
+import org.retroarch.browser.preferences.UserPreferences;
 
 import java.util.*;
 import java.io.*;
@@ -108,7 +108,7 @@ public class DirectoryActivity extends Activity implements AdapterView.OnItemCli
 	
 	private void finishWithPath(String path) {
 		if (pathSettingKey != null && !pathSettingKey.isEmpty()) {
-			SharedPreferences settings = MainMenuActivity.getPreferences();
+			SharedPreferences settings = UserPreferences.getPreferences(this);
 			SharedPreferences.Editor editor = settings.edit();
 			editor.putString(pathSettingKey, path);
 			editor.commit();

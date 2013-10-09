@@ -1,6 +1,7 @@
 package org.retroarch.browser;
 
 import org.retroarch.R;
+import org.retroarch.browser.preferences.UserPreferences;
 
 import android.app.Activity;
 import android.content.Context;
@@ -19,7 +20,7 @@ public final class RefreshRateSetOS extends Activity {
 		final WindowManager wm = (WindowManager) getSystemService(Context.WINDOW_SERVICE);
 		final Display display = wm.getDefaultDisplay();
 		double rate = display.getRefreshRate();
-		SharedPreferences prefs = MainMenuActivity.getPreferences();
+		SharedPreferences prefs = UserPreferences.getPreferences(this);
 		SharedPreferences.Editor edit = prefs.edit();
 		edit.putString("video_refresh_rate", Double.valueOf(rate).toString());
 		edit.commit();
