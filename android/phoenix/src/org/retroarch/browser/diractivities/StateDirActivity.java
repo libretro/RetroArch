@@ -1,11 +1,11 @@
-package org.retroarch.browser;
+package org.retroarch.browser.diractivities;
 
 import android.os.Bundle;
 
-public final class SRMDirActivity extends DirectoryActivity {
+public final class StateDirActivity extends DirectoryActivity {
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
-		super.setPathSettingKey("savefile_directory");
+		super.setPathSettingKey("savestate_directory");
 		super.setIsDirectoryTarget(true);
 		super.onCreate(savedInstanceState);
 	}

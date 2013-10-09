@@ -4,6 +4,7 @@ import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.opengles.GL10;
 
 import org.retroarch.R;
+import org.retroarch.browser.preferences.UserPreferences;
 
 import android.app.Activity;
 import android.content.SharedPreferences;
@@ -37,9 +38,9 @@ public final class DisplayRefreshRateTest extends Activity {
 		}
 		
 		private void setFPSSetting(double fps) {
-			SharedPreferences prefs = MainMenuActivity.getPreferences();
+			SharedPreferences prefs = UserPreferences.getPreferences(DisplayRefreshRateTest.this);
 			SharedPreferences.Editor edit = prefs.edit();
-			edit.putString("video_refresh_rate", Double.valueOf(fps).toString());
+			edit.putString("video_refresh_rate", Double.toString(fps));
 			edit.commit();
 		}
 
@@ -118,7 +119,7 @@ public final class DisplayRefreshRateTest extends Activity {
 	
 	@Override
 	protected void onDestroy() {
-		SharedPreferences prefs = MainMenuActivity.getPreferences();
+		SharedPreferences prefs = UserPreferences.getPreferences(this);
 		String fps = prefs.getString("video_refresh_rate", "ERROR");
 		Toast.makeText(this, String.format(getString(R.string.refresh_rate_measured_to), fps), Toast.LENGTH_LONG).show();
 		super.onDestroy();

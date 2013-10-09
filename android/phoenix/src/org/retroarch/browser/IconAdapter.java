@@ -2,48 +2,48 @@ package org.retroarch.browser;
 
 import org.retroarch.R;
 
-import android.app.*;
 import android.content.*;
 import android.graphics.drawable.*;
 import android.view.*;
 import android.widget.*;
 
 interface IconAdapterItem {
-	public abstract boolean isEnabled();
-	public abstract String getText();
-	public abstract String getSubText();
-	public abstract int getIconResourceId();
-	public abstract Drawable getIconDrawable();
+	public boolean isEnabled();
+	public String getText();
+	public String getSubText();
+	public int getIconResourceId();
+	public Drawable getIconDrawable();
 }
 
-final class IconAdapter<T extends IconAdapterItem> extends ArrayAdapter<T> {
-	private final int layout;
+public final class IconAdapter<T extends IconAdapterItem> extends ArrayAdapter<T> {
+	private final int resourceId;
+	private final Context context;
 
-	public IconAdapter(Activity aContext, int aLayout) {
-		super(aContext, aLayout);
-		layout = aLayout;
+	public IconAdapter(Context context, int resourceId) {
+		super(context, resourceId);
+		this.context = context;
+		this.resourceId = resourceId;
 	}
 
 	@Override
-	public View getView(int aPosition, View aConvertView, ViewGroup aParent) {
+	public View getView(int position, View convertView, ViewGroup parent) {
 		// Build the view
-		if (aConvertView == null) {
-			LayoutInflater inflater = (LayoutInflater) aParent.getContext()
-					.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-			aConvertView = inflater.inflate(layout, aParent, false);
+		if (convertView == null) {
+			LayoutInflater inflater = LayoutInflater.from(context);
+			convertView = inflater.inflate(resourceId, parent, false);
 		}
 
 		// Fill the view
-		IconAdapterItem item = getItem(aPosition);
+		IconAdapterItem item = getItem(position);
 		final boolean enabled = item.isEnabled();
 
-		TextView textView = (TextView) aConvertView.findViewById(R.id.name);
+		TextView textView = (TextView) convertView.findViewById(R.id.name);
 		if (null != textView) {
 			textView.setText(item.getText());
 			textView.setEnabled(enabled);
 		}
 		
-		textView = (TextView) aConvertView.findViewById(R.id.sub_name);
+		textView = (TextView) convertView.findViewById(R.id.sub_name);
 		if (null != textView) {
 			String subText = item.getSubText();
 			if (null != subText) {
@@ -53,7 +53,7 @@ final class IconAdapter<T extends IconAdapterItem> extends ArrayAdapter<T> {
 			}
 		}
 
-		ImageView imageView = (ImageView) aConvertView.findViewById(R.id.icon);
+		ImageView imageView = (ImageView) convertView.findViewById(R.id.icon);
 		if (null != imageView) {
 			if (enabled) {
 				final int id = item.getIconResourceId();
@@ -67,12 +67,11 @@ final class IconAdapter<T extends IconAdapterItem> extends ArrayAdapter<T> {
 			}
 		}
 
-		return aConvertView;
+		return convertView;
 	}
 
 	@Override
 	public boolean isEnabled(int aPosition) {
 		return getItem(aPosition).isEnabled();
 	}
-
 }

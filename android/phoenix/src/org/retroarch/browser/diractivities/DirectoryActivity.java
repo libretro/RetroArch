@@ -1,6 +1,9 @@
-package org.retroarch.browser;
+package org.retroarch.browser.diractivities;
 
 import org.retroarch.R;
+import org.retroarch.browser.FileWrapper;
+import org.retroarch.browser.IconAdapter;
+import org.retroarch.browser.preferences.UserPreferences;
 
 import java.util.*;
 import java.io.*;
@@ -13,8 +16,7 @@ import android.widget.*;
 import android.view.*;
 
 
-public class DirectoryActivity extends Activity implements
-		AdapterView.OnItemClickListener {
+public class DirectoryActivity extends Activity implements AdapterView.OnItemClickListener {
 	private IconAdapter<FileWrapper> adapter;
 	private File listedDirectory;
 
@@ -106,7 +108,7 @@ public class DirectoryActivity extends Activity implements
 	
 	private void finishWithPath(String path) {
 		if (pathSettingKey != null && !pathSettingKey.isEmpty()) {
-			SharedPreferences settings = MainMenuActivity.getPreferences();
+			SharedPreferences settings = UserPreferences.getPreferences(this);
 			SharedPreferences.Editor editor = settings.edit();
 			editor.putString(pathSettingKey, path);
 			editor.commit();

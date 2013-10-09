@@ -3,6 +3,8 @@ package org.retroarch.browser;
 import java.io.File;
 import java.io.IOException;
 
+import org.retroarch.browser.preferences.ConfigFile;
+
 import android.content.Context;
 import android.graphics.drawable.Drawable;
 
