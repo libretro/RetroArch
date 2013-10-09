@@ -42,15 +42,16 @@ final class KeyBindEditText extends EditText
 final class KeyBindPreference extends DialogPreference implements View.OnKeyListener, AdapterView.OnItemClickListener, LayoutInflater.Factory {
 	private int key_bind_code;
 	private boolean grabKeyCode = false;
-	KeyBindEditText keyText;
+	private KeyBindEditText keyText;
 	private String[] key_labels;
 	private final int DEFAULT_KEYCODE = 0;
 	private final Context context;
 
 	public KeyBindPreference(Context context, AttributeSet attrs) {
 		super(context, attrs);
+
 		this.context = context;
-		key_labels = getContext().getResources().getStringArray(R.array.key_bind_values);
+		this.key_labels = getContext().getResources().getStringArray(R.array.key_bind_values);
 	}
 	
 	private void setKey(int keyCode, boolean force)
@@ -62,16 +63,11 @@ final class KeyBindPreference extends DialogPreference implements View.OnKeyList
 			keyText.setText(String.format(context.getString(R.string.current_binding), key_labels[key_bind_code]));
 		}
 	}
-
-	@Override
-	protected void onBindDialogView(View view) {
-	    super.onBindDialogView(view);
-	}
 	
 	@Override
 	protected View onCreateDialogView()
 	{
-		LayoutInflater inflater = ((LayoutInflater) getContext().getSystemService(Context.LAYOUT_INFLATER_SERVICE)).cloneInContext(getContext());
+		LayoutInflater inflater = LayoutInflater.from(context).cloneInContext(getContext());
 		inflater.setFactory(this);
 		View view = inflater.inflate(R.layout.key_bind_dialog, null);
 		keyText = (KeyBindEditText) view.findViewById(R.id.key_bind_value);
@@ -79,17 +75,17 @@ final class KeyBindPreference extends DialogPreference implements View.OnKeyList
 		view.setOnKeyListener(this);
 		((ListView) view.findViewById(R.id.key_bind_list)).setOnItemClickListener(this);
 		((Button) view.findViewById(R.id.key_bind_clear)).setOnClickListener(new View.OnClickListener() {
-            public void onClick(View v) {
-        		setKey(0, true);
-            }
-        });
+			public void onClick(View v) {
+				setKey(0, true);
+			}
+		});
 		((Button) view.findViewById(R.id.key_bind_detect)).setOnClickListener(new View.OnClickListener() {
-            public void onClick(View v) {
-            	grabKeyCode = true;
-    			keyText.setText(R.string.press_key_to_use);
-    			keyText.requestFocus();
-            }
-        });
+			public void onClick(View v) {
+				grabKeyCode = true;
+				keyText.setText(R.string.press_key_to_use);
+				keyText.requestFocus();
+			}
+		});
 		InputMethodManager imm = (InputMethodManager) getContext().getSystemService(Context.INPUT_METHOD_SERVICE);
 		imm.hideSoftInputFromWindow(keyText.getWindowToken(), 0);
 		setKey(getPersistedInt(DEFAULT_KEYCODE), true);
@@ -98,12 +94,12 @@ final class KeyBindPreference extends DialogPreference implements View.OnKeyList
 
 	@Override
 	protected void onDialogClosed(boolean positiveResult) {
-	   super.onDialogClosed(positiveResult);
+		super.onDialogClosed(positiveResult);
 	
-	    if (positiveResult) {
-	    	persistInt(key_bind_code);
-	    	notifyChanged();
-	    }
+		if (positiveResult) {
+			persistInt(key_bind_code);
+			notifyChanged();
+		}
 	}
 	
 	@Override
@@ -121,21 +117,21 @@ final class KeyBindPreference extends DialogPreference implements View.OnKeyList
 		setKey((int)id, true);
 	}
 
-    @Override
-    public CharSequence getSummary() {
-    	int code = getPersistedInt(DEFAULT_KEYCODE);
+	@Override
+	public CharSequence getSummary() {
+		int code = getPersistedInt(DEFAULT_KEYCODE);
 		if (code >= key_labels.length)
 			return "";
 		else
 			return key_labels[code];
-    }
-    
-    @Override
-    public View onCreateView(String name, Context context, AttributeSet attrs) {
-    	Log.i("RetroArch", "view name: " + name);
-    	if (name.equals("EditText"))
-    		return new KeyBindEditText(context, attrs);
-    	else
-    		return null;
-    }
+	}
+
+	@Override
+	public View onCreateView(String name, Context context, AttributeSet attrs) {
+		Log.i("RetroArch", "view name: " + name);
+		if (name.equals("EditText"))
+			return new KeyBindEditText(context, attrs);
+		else
+			return null;
+	}
 }
