@@ -21,18 +21,17 @@ public final class CoreSelection extends Activity implements AdapterView.OnItemC
 
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
-		ConfigFile core_config;
 		super.onCreate(savedInstanceState);
 
-		core_config = new ConfigFile();
+		ConfigFile core_config = new ConfigFile();
 		try {
 			core_config.append(getAssets().open("libretro_cores.cfg"));
 		} catch (IOException e) {
 			Log.e(TAG, "Failed to load libretro_cores.cfg from assets.");
 		}
 
-		String cpuInfo = UserPreferences.readCPUInfo();
-		boolean cpuIsNeon = cpuInfo.contains("neon");
+		final String cpuInfo = UserPreferences.readCPUInfo();
+		final boolean cpuIsNeon = cpuInfo.contains("neon");
 
 		setContentView(R.layout.line_list);
 
