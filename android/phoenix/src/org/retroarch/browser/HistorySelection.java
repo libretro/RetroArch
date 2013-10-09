@@ -64,14 +64,13 @@ public final class HistorySelection extends Activity implements AdapterView.OnIt
 		
 		MainMenuActivity.getInstance().setModule(corePath, item.getCoreName());
 
-		Intent myIntent;
 		String current_ime = Settings.Secure.getString(getContentResolver(),
 				Settings.Secure.DEFAULT_INPUT_METHOD);
 
 		UserPreferences.updateConfigFile(this);
 
 		Toast.makeText(this, String.format(getString(R.string.loading_gamepath), gamePath), Toast.LENGTH_SHORT).show();
-		myIntent = new Intent(this, RetroActivity.class);
+		Intent myIntent = new Intent(this, RetroActivity.class);
 		myIntent.putExtra("ROM", gamePath);
 		myIntent.putExtra("LIBRETRO", corePath);
 		myIntent.putExtra("CONFIGFILE", UserPreferences.getDefaultConfigPath(this));
