@@ -610,7 +610,6 @@ bool config_load_file(const char *path)
 
    CONFIG_GET_BOOL_EXTERN(console.screen.gamma_correction, "gamma_correction");
 
-   bool msg_enable = false;
    bool triple_buffering_enable = false;
    bool custom_bgm_enable = false;
    bool flicker_filter_enable = false;
@@ -659,10 +658,10 @@ bool config_load_file(const char *path)
    CONFIG_GET_INT_EXTERN(console.sound.volume_level, "sound_volume_level");
 #endif
    CONFIG_GET_INT_EXTERN(console.screen.resolutions.current.id, "current_resolution_id");
-   CONFIG_GET_INT_EXTERN(state_slot, "state_slot");
-   CONFIG_GET_INT_EXTERN(audio_data.mute, "audio_mute");
    CONFIG_GET_INT_EXTERN(console.sound.mode, "sound_mode");
 #endif
+   CONFIG_GET_INT_EXTERN(state_slot, "state_slot");
+   CONFIG_GET_INT_EXTERN(audio_data.mute, "audio_mute");
 
    CONFIG_GET_INT_EXTERN(console.screen.viewports.custom_vp.x, "custom_viewport_x");
    CONFIG_GET_INT_EXTERN(console.screen.viewports.custom_vp.y, "custom_viewport_y");
