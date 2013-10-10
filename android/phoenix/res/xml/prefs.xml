@@ -2,26 +2,35 @@
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
     android:title="@string/mainmenu_title" >
 
+    <!-- TV Mode -->
     <PreferenceScreen android:title="@string/tv_mode">
        <intent
           android:targetClass="org.retroarch.browser.RetroTVMode"
           android:targetPackage="org.retroarch" />
     </PreferenceScreen>
+
+    <!-- Load Core -->
     <PreferenceScreen android:title="@string/load_core">
        <intent
           android:targetClass="org.retroarch.browser.CoreSelection"
           android:targetPackage="org.retroarch" />
     </PreferenceScreen>
+
+    <!-- Load Game -->
     <PreferenceScreen android:title="@string/load_game">
        <intent
           android:targetClass="org.retroarch.browser.diractivities.ROMActivity"
           android:targetPackage="org.retroarch" />
     </PreferenceScreen>
+
+    <!-- Load Game (History) -->
     <PreferenceScreen android:title="@string/load_game_history">
        <intent
           android:targetClass="org.retroarch.browser.HistorySelection"
           android:targetPackage="org.retroarch" />
     </PreferenceScreen>
+
+    <!-- Video Options -->
     <PreferenceScreen android:title="@string/video_options" >
         <PreferenceCategory android:title="@string/general" >
             <CheckBoxPreference
@@ -102,6 +111,8 @@
                 android:defaultValue="true"/>
         </PreferenceCategory>
     </PreferenceScreen>
+
+    <!-- Audio Options -->
     <PreferenceScreen android:title="@string/audio_options" >
         <PreferenceCategory android:title="@string/audio" >
             <CheckBoxPreference
@@ -130,6 +141,8 @@
                 android:dependency="audio_enable" />
         </PreferenceCategory>
     </PreferenceScreen>
+
+    <!-- Input Options -->
     <PreferenceScreen android:title="@string/input_options" >
        <PreferenceCategory android:title="@string/general" >
             <ListPreference
@@ -158,10 +171,9 @@
                 android:summary="@string/config_autodetect_desc"
                 android:title="@string/enable"
                 android:disableDependentsState="true" />
-        <PreferenceScreen android:title="@string/list_autodetected" >
-       <PreferenceCategory android:title="@string/autodetected_pads" android:layout="@layout/faq_supported_pads" >
-        </PreferenceCategory>
-     </PreferenceScreen>
+            <PreferenceScreen android:title="@string/list_autodetected" >
+                <PreferenceCategory android:title="@string/autodetected_pads" android:layout="@layout/faq_supported_pads" />
+            </PreferenceScreen>
             <ListPreference
                 android:entries="@array/icade_profiles"
                 android:entryValues="@array/icade_profiles_values"
@@ -434,6 +446,8 @@
             </Preference>
         </PreferenceCategory>
     </PreferenceScreen>
+    
+    <!-- Path Options -->
     <PreferenceScreen android:title="@string/path_options">
         <PreferenceCategory android:title="@string/rom_paths">
             <Preference android:title="@string/rom_directory"
@@ -484,6 +498,8 @@
             </Preference>
         </PreferenceCategory>
     </PreferenceScreen>
+
+    <!-- Settings -->
     <PreferenceScreen android:title="@string/settings" >
         <PreferenceCategory android:title="@string/config_style" >
             <CheckBoxPreference
@@ -513,11 +529,15 @@
                 android:title="@string/enable" />
         </PreferenceCategory>
     </PreferenceScreen>
+
+    <!-- Help -->
     <PreferenceScreen android:title="@string/help">
        <intent
           android:targetClass="org.retroarch.browser.HelpActivity"
           android:targetPackage="org.retroarch" />
     </PreferenceScreen>
+
+    <!-- About -->
     <PreferenceScreen android:title="@string/about">
         <PreferenceCategory android:title="@string/websites">
            <Preference android:title="@string/retro_website"
