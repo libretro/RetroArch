@@ -131,7 +131,6 @@ public final class MainMenuActivity extends PreferenceActivity {
 					new FileOutputStream(new File(dataDir, relativePath)));
 
 			writer.write(asset, 0, asset.length);
-			writer.flush();
 			writer.close();
 		}
 	}
