@@ -16,7 +16,7 @@ import android.widget.*;
 import android.view.*;
 
 
-public class DirectoryActivity extends Activity implements AdapterView.OnItemClickListener {
+public class DirectoryActivity extends ListActivity implements AdapterView.OnItemClickListener {
 	private IconAdapter<FileWrapper> adapter;
 	private File listedDirectory;
 
@@ -80,7 +80,7 @@ public class DirectoryActivity extends Activity implements AdapterView.OnItemCli
 
 		// Setup the list
 		adapter = new IconAdapter<FileWrapper>(this, R.layout.line_list_item);
-		ListView list = (ListView) findViewById(R.id.list);
+		ListView list = getListView();
 		list.setAdapter(adapter);
 		list.setOnItemClickListener(this);
 
