@@ -734,6 +734,8 @@ bool config_load_file(const char *path)
    if (!*g_settings.libretro)
       CONFIG_GET_PATH(libretro, "libretro_path");
 
+   CONFIG_GET_PATH(libretro_info_path, "libretro_info_path");
+
    CONFIG_GET_PATH(core_options_path, "core_options_path");
    CONFIG_GET_PATH(screenshot_directory, "screenshot_directory");
    if (*g_settings.screenshot_directory)
@@ -1045,6 +1047,7 @@ bool config_save_file(const char *path)
    RARCH_LOG("Saving config at path: \"%s\"\n", path);
 
    config_set_string(conf, "libretro_path", g_settings.libretro);
+   config_set_string(conf, "libretro_info_path", g_settings.libretro_info_path);
    config_set_string(conf, "cheat_database_path", g_settings.cheat_database);
    config_set_bool(conf, "rewind_enable", g_settings.rewind_enable);
    config_set_int(conf, "rewind_granularity", g_settings.rewind_granularity);

@@ -74,7 +74,7 @@ core_info_list_t *core_info_list_new(const char *modules_path)
 #endif
       strlcat(info_path_base, ".info", sizeof(info_path_base));
 
-      fill_pathname(info_path, (*g_settings.libretro_info_path) ? g_settings.libretro_info_path : modules_path,
+      fill_pathname_join(info_path, (*g_settings.libretro_info_path) ? g_settings.libretro_info_path : modules_path,
             info_path_base, sizeof(info_path));
 
       core_info[i].data = config_file_new(info_path);

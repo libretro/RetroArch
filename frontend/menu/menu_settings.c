@@ -580,6 +580,10 @@ int menu_set_settings(unsigned setting, unsigned action)
          }
          break;
 #endif
+      case RGUI_LIBRETRO_INFO_DIR_PATH:
+         if (action == RGUI_ACTION_START)
+            *g_settings.libretro_info_path = '\0';
+         break;
       case RGUI_CONFIG_DIR_PATH:
          if (action == RGUI_ACTION_START)
             *g_settings.rgui_config_directory = '\0';
@@ -1153,6 +1157,9 @@ void menu_set_settings_label(char *type_str, size_t type_str_size, unsigned *w, 
          strlcpy(type_str, *rgui->libretro_dir ? rgui->libretro_dir : "<None>", type_str_size);
          break;
 #endif
+      case RGUI_LIBRETRO_INFO_DIR_PATH:
+         strlcpy(type_str, *g_settings.libretro_info_path ? g_settings.libretro_info_path : "<Core dir>", type_str_size);
+         break;
       case RGUI_CONFIG_DIR_PATH:
          strlcpy(type_str, *g_settings.rgui_config_directory ? g_settings.rgui_config_directory : "<default>", type_str_size);
          break;

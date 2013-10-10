@@ -100,6 +100,7 @@ static bool menu_type_is_directory_browser(unsigned type)
       type == RGUI_SAVESTATE_DIR_PATH ||
 #ifdef HAVE_DYNAMIC
       type == RGUI_LIBRETRO_DIR_PATH ||
+      type == RGUI_LIBRETRO_INFO_DIR_PATH ||
 #endif
       type == RGUI_CONFIG_DIR_PATH ||
       type == RGUI_SAVEFILE_DIR_PATH ||
@@ -491,6 +492,7 @@ static void rgui_settings_path_populate_entries(rgui_handle_t *rgui)
 #ifdef HAVE_DYNAMIC
    rgui_list_push(rgui->selection_buf, "Core Directory", RGUI_LIBRETRO_DIR_PATH, 0);
 #endif
+   rgui_list_push(rgui->selection_buf, "Core Info Directory", RGUI_LIBRETRO_INFO_DIR_PATH, 0);
 #ifdef HAVE_SHADER_MANAGER
    rgui_list_push(rgui->selection_buf, "Shader Directory", RGUI_SHADER_DIR_PATH, 0);
 #endif
@@ -1436,6 +1438,11 @@ static int rgui_iterate(void *data, unsigned action)
                rgui_flush_menu_stack_type(rgui, RGUI_SETTINGS_PATH_OPTIONS);
             }
 #endif
+            else if (menu_type == RGUI_LIBRETRO_INFO_DIR_PATH)
+            {
+               strlcpy(g_settings.libretro_info_path, dir, sizeof(g_settings.libretro_info_path));
+               rgui_flush_menu_stack_type(rgui, RGUI_SETTINGS_PATH_OPTIONS);
+            }
             else if (menu_type == RGUI_SHADER_DIR_PATH)
             {
                strlcpy(g_settings.video.shader_dir, dir, sizeof(g_settings.video.shader_dir));
