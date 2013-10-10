@@ -373,6 +373,7 @@ public final class UserPreferences
 				path.lastIndexOf("."));
 		sanitized_name = sanitized_name.replace("neon", "");
 		sanitized_name = sanitized_name.replace("libretro_", "");
+		sanitized_name = sanitized_name.replace("_android", "");
 
 		return sanitized_name;
 	}
