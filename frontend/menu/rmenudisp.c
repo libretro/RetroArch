@@ -371,10 +371,6 @@ static void render_text(void *data)
             case SETTING_EMU_SHOW_DEBUG_INFO_MSG:
                strlcpy(text, "Show Framerate", sizeof(text));
                break;
-            case SETTING_EMU_SHOW_INFO_MSG:
-               strlcpy(text, "Info Messages", sizeof(text));
-               snprintf(setting_text, sizeof(setting_text), (g_extern.lifecycle_mode_state & (1ULL << MODE_INFO_DRAW)) ? "ON" : "OFF");
-               break;
             case SETTING_REWIND_ENABLED:
                strlcpy(text, "Rewind", sizeof(text));
                break;

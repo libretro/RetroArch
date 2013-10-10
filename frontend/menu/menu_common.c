@@ -216,8 +216,7 @@ void load_menu_game_prepare(void)
 {
    if (*g_extern.fullpath || rgui->load_no_rom)
    {
-      if (*g_extern.fullpath &&
-            g_extern.lifecycle_mode_state & (1ULL << MODE_INFO_DRAW))
+      if (*g_extern.fullpath)
       {
          char tmp[PATH_MAX];
          char str[PATH_MAX];

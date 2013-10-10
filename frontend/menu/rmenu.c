@@ -742,19 +742,6 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
          }
          break;
 #endif
-      case SETTING_EMU_SHOW_INFO_MSG:
-         switch (action)
-         {
-            case RGUI_ACTION_LEFT:
-            case RGUI_ACTION_RIGHT:
-            case RGUI_ACTION_OK:
-               settings_set(1ULL << S_INFO_MSG_TOGGLE);
-               break;
-            case RGUI_ACTION_START:
-               settings_set(1ULL << S_DEF_INFO_MSG);
-               break;
-         }
-         break;
 #ifdef _XBOX1
       case SETTING_EMU_AUDIO_SOUND_VOLUME_LEVEL:
          switch (action)
@@ -763,13 +750,11 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
             case RGUI_ACTION_RIGHT:
             case RGUI_ACTION_OK:
                g_extern.console.sound.volume_level = !g_extern.console.sound.volume_level;
-               if (g_extern.lifecycle_mode_state & (1ULL << MODE_INFO_DRAW))
-                  msg_queue_push(g_extern.msg_queue, "INFO - You need to restart RetroArch.", 1, 180);
+               msg_queue_push(g_extern.msg_queue, "INFO - You need to restart RetroArch.", 1, 180);
                break;
             case RGUI_ACTION_START:
                g_extern.console.sound.volume_level = 0;
-               if (g_extern.lifecycle_mode_state & (1ULL << MODE_INFO_DRAW))
-                  msg_queue_push(g_extern.msg_queue, "INFO - You need to restart RetroArch.", 1, 180);
+               msg_queue_push(g_extern.msg_queue, "INFO - You need to restart RetroArch.", 1, 180);
                break;
          }
          break;

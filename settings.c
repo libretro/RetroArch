@@ -298,7 +298,7 @@ void config_set_defaults(void)
 #endif
 
 #ifdef RARCH_CONSOLE
-   g_extern.lifecycle_mode_state |= ((1ULL << MODE_INFO_DRAW) | (1ULL << MODE_MENU));
+   g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU);
 
    strlcpy(g_settings.system_directory, default_paths.system_dir, sizeof(g_settings.system_directory));
 
@@ -620,14 +620,6 @@ bool config_load_file(const char *path)
    if (config_get_path(conf, "menu_texture_path", tmp_str, sizeof(tmp_str)))
       strlcpy(g_extern.menu_texture_path, tmp_str, sizeof(g_extern.menu_texture_path));
 #endif
-
-   if (config_get_bool(conf, "info_msg_enable", &msg_enable))
-   {
-      if (msg_enable)
-         g_extern.lifecycle_mode_state |= (1ULL << MODE_INFO_DRAW);
-      else 
-         g_extern.lifecycle_mode_state &= ~(1ULL << MODE_INFO_DRAW);
-   }
 
    if (config_get_bool(conf, "triple_buffering_enable", &triple_buffering_enable))
    {
@@ -1117,12 +1109,10 @@ bool config_save_file(const char *path)
    config_set_int(conf, "sound_volume_level", g_extern.console.sound.volume_level);
 #endif
    bool triple_buffering_enable_val = g_extern.lifecycle_mode_state & (1ULL << MODE_VIDEO_TRIPLE_BUFFERING_ENABLE);
-   bool info_msg_enable_val = g_extern.lifecycle_mode_state & (1ULL << MODE_INFO_DRAW);
    bool soft_filter_enable_val = g_extern.lifecycle_mode_state & (1ULL << MODE_VIDEO_SOFT_FILTER_ENABLE);
    bool flicker_filter_enable_val = g_extern.lifecycle_mode_state & (1ULL << MODE_VIDEO_FLICKER_FILTER_ENABLE);
 
    config_set_bool(conf, "triple_buffering_enable", triple_buffering_enable_val);
-   config_set_bool(conf, "info_msg_enable", info_msg_enable_val);
    config_set_bool(conf, "soft_filter_enable", soft_filter_enable_val);
    config_set_bool(conf, "flicker_filter_enable", flicker_filter_enable_val);
 
@@ -1335,14 +1325,6 @@ void settings_set(uint64_t settings)
    if (settings & (1ULL << S_INFO_DEBUG_MSG_TOGGLE))
       g_settings.fps_show = !g_settings.fps_show;
 
-   if (settings & (1ULL << S_INFO_MSG_TOGGLE))
-   {
-      if (g_extern.lifecycle_mode_state & (1ULL << MODE_INFO_DRAW))
-         g_extern.lifecycle_mode_state &= ~(1ULL << MODE_INFO_DRAW);
-      else
-         g_extern.lifecycle_mode_state |= (1ULL << MODE_INFO_DRAW);
-   }
-
    if (settings & (1ULL << S_DEF_ASPECT_RATIO))
       g_settings.video.aspect_ratio_idx = aspect_ratio_idx;
 
@@ -1375,7 +1357,4 @@ void settings_set(uint64_t settings)
 
    if (settings & (1ULL << S_DEF_INFO_DEBUG_MSG))
       g_settings.fps_show = false;
-
-   if (settings & (1ULL << S_DEF_INFO_MSG))
-      g_extern.lifecycle_mode_state |= (1ULL << MODE_INFO_DRAW);
 }
