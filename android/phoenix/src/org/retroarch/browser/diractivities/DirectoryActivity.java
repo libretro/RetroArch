@@ -16,7 +16,7 @@ import android.widget.*;
 import android.view.*;
 
 
-public class DirectoryActivity extends ListActivity implements AdapterView.OnItemClickListener {
+public class DirectoryActivity extends ListActivity {
 	private IconAdapter<FileWrapper> adapter;
 	private File listedDirectory;
 
@@ -82,7 +82,6 @@ public class DirectoryActivity extends ListActivity implements AdapterView.OnIte
 		adapter = new IconAdapter<FileWrapper>(this, R.layout.line_list_item);
 		ListView list = getListView();
 		list.setAdapter(adapter);
-		list.setOnItemClickListener(this);
 
 		// Load Directory
 		if (savedInstanceState != null) {
@@ -121,9 +120,8 @@ public class DirectoryActivity extends ListActivity implements AdapterView.OnIte
 	}
 
 	@Override
-	public void onItemClick(AdapterView<?> aListView, View aView,
-			int aPosition, long aID) {
-		final FileWrapper item = adapter.getItem(aPosition);
+	public void onListItemClick(ListView listView, View aView, int position, long id) {
+		final FileWrapper item = adapter.getItem(position);
 
 		if (item.parentItem && backStack.get(backStack.size() - 1).parentIsBack) {
 			backStack.remove(backStack.size() - 1);
