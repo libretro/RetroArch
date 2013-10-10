@@ -114,7 +114,6 @@ enum menu_enums
    MODE_MENU_HD,
    MODE_MENU_PREINIT,
    MODE_INFO_DRAW,
-   MODE_FPS_DRAW,
    MODE_EXTLAUNCH_MULTIMAN,
    MODE_EXITSPAWN,
    MODE_EXITSPAWN_START_GAME,
@@ -288,6 +287,7 @@ struct settings
    char rgui_config_directory[PATH_MAX];
    bool rgui_show_start_screen;
 #endif
+   bool fps_show;
 };
 
 enum rarch_game_type

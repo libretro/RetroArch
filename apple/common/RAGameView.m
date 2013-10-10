@@ -379,12 +379,11 @@ void apple_gfx_ctx_get_video_size(unsigned* width, unsigned* height)
 
 void apple_gfx_ctx_update_window_title(void)
 {
-#ifdef OSX
    static char buf[128], buf_fps[128];
-   bool fps_draw = g_extern.lifecycle_mode_state & (1ULL << MODE_FPS_DRAW);
+   bool fps_draw = g_settings.fps_show;
    bool got_text = gfx_get_fps(buf, sizeof(buf), fps_draw ? buf_fps : NULL, sizeof(buf_fps));
    static const char* const text = buf; // < Can't access buf directly in the block
-   
+#ifdef OSX
    if (got_text)
    {
       // NOTE: This could go bad if buf is updated again before this completes.
@@ -394,10 +393,9 @@ void apple_gfx_ctx_update_window_title(void)
          g_view.window.title = @(text);
       });
    }
-
+#endif
    if (fps_draw)
       msg_queue_push(g_extern.msg_queue, buf_fps, 1, 1);
-#endif
 }
 
 bool apple_gfx_ctx_has_focus(void)

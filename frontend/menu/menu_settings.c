@@ -206,14 +206,9 @@ int menu_set_settings(unsigned setting, unsigned action)
          break;
       case RGUI_SETTINGS_DEBUG_TEXT:
          if (action == RGUI_ACTION_START)
-            g_extern.lifecycle_mode_state &= ~(1ULL << MODE_FPS_DRAW);
+            g_settings.fps_show = false;
          else if (action == RGUI_ACTION_LEFT || RGUI_ACTION_RIGHT)
-         {
-            if (g_extern.lifecycle_mode_state & (1ULL << MODE_FPS_DRAW))
-               g_extern.lifecycle_mode_state &= ~(1ULL << MODE_FPS_DRAW);
-            else
-               g_extern.lifecycle_mode_state |= (1ULL << MODE_FPS_DRAW);
-         }
+            g_settings.fps_show = !g_settings.fps_show;
          break;
       case RGUI_SETTINGS_DISK_INDEX:
          {
@@ -1131,7 +1126,7 @@ void menu_set_settings_label(char *type_str, size_t type_str_size, unsigned *w, 
          snprintf(type_str, type_str_size, "%.3f", g_settings.audio.rate_control_delta);
          break;
       case RGUI_SETTINGS_DEBUG_TEXT:
-         snprintf(type_str, type_str_size, (g_extern.lifecycle_mode_state & (1ULL << MODE_FPS_DRAW)) ? "ON" : "OFF");
+         snprintf(type_str, type_str_size, (g_settings.fps_show) ? "ON" : "OFF");
          break;
       case RGUI_BROWSER_DIR_PATH:
          strlcpy(type_str, *g_settings.rgui_browser_directory ? g_settings.rgui_browser_directory : "<default>", type_str_size);

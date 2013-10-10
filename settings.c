@@ -734,6 +734,8 @@ bool config_load_file(const char *path)
    if (!*g_settings.libretro)
       CONFIG_GET_PATH(libretro, "libretro_path");
 
+   CONFIG_GET_BOOL(fps_show, "fps_show");
+
    CONFIG_GET_PATH(libretro_info_path, "libretro_info_path");
 
    CONFIG_GET_PATH(core_options_path, "core_options_path");
@@ -1046,6 +1048,7 @@ bool config_save_file(const char *path)
 
    RARCH_LOG("Saving config at path: \"%s\"\n", path);
 
+   config_set_bool(conf, "fps_show", g_settings.fps_show);
    config_set_string(conf, "libretro_path", g_settings.libretro);
    config_set_string(conf, "libretro_info_path", g_settings.libretro_info_path);
    config_set_string(conf, "cheat_database_path", g_settings.cheat_database);
@@ -1330,12 +1333,7 @@ void settings_set(uint64_t settings)
       g_settings.video.refresh_rate += 0.01f;
 
    if (settings & (1ULL << S_INFO_DEBUG_MSG_TOGGLE))
-   {
-      if (g_extern.lifecycle_mode_state & (1ULL << MODE_FPS_DRAW))
-         g_extern.lifecycle_mode_state &= ~(1ULL << MODE_FPS_DRAW);
-      else
-         g_extern.lifecycle_mode_state |= (1ULL << MODE_FPS_DRAW);
-   }
+      g_settings.fps_show = !g_settings.fps_show;
 
    if (settings & (1ULL << S_INFO_MSG_TOGGLE))
    {
@@ -1376,7 +1374,7 @@ void settings_set(uint64_t settings)
       g_settings.video.refresh_rate = refresh_rate;
 
    if (settings & (1ULL << S_DEF_INFO_DEBUG_MSG))
-      g_extern.lifecycle_mode_state &= ~(1ULL << MODE_FPS_DRAW);
+      g_settings.fps_show = false;
 
    if (settings & (1ULL << S_DEF_INFO_MSG))
       g_extern.lifecycle_mode_state |= (1ULL << MODE_INFO_DRAW);

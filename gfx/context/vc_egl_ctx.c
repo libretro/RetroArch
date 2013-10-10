@@ -110,7 +110,7 @@ static void gfx_ctx_set_resize(unsigned width, unsigned height)
 static void gfx_ctx_update_window_title(void)
 {
    char buf[128], buf_fps[128];
-   bool fps_draw = g_extern.lifecycle_mode_state & (1ULL << MODE_FPS_DRAW);
+   bool fps_draw = g_settings.fps_show;
    gfx_get_fps(buf, sizeof(buf), fps_draw ? buf_fps : NULL, sizeof(buf_fps));
 
    if (fps_draw)

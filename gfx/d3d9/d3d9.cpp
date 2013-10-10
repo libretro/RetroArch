@@ -1007,7 +1007,7 @@ void D3DVideo::deinit_font()
 void D3DVideo::update_title()
 {
    char buffer[128], buffer_fps[128];
-   bool fps_draw = g_extern.lifecycle_mode_state & (1ULL << MODE_FPS_DRAW);
+   bool fps_draw = g_settings.fps_show;
    if (gfx_get_fps(buffer, sizeof(buffer), fps_draw ? buffer_fps : NULL, sizeof(buffer_fps)))
    {
       std::string title = buffer;
