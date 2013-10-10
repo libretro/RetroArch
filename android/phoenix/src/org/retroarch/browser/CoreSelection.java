@@ -48,9 +48,7 @@ public final class CoreSelection extends ListActivity {
 		for (final File lib : libs) {
 			String libName = lib.getName();
 
-<<<<<<< HEAD
 			Log.i(TAG, "Libretro core: " + libName);
-=======
 			// Never append a NEON lib if we don't have NEON.
 			if (libName.contains("neon") && !cpuIsNeon)
 				continue;
@@ -72,7 +70,6 @@ public final class CoreSelection extends ListActivity {
 				if (hasNeonVersion)
 					continue;
 			}
->>>>>>> parent of 1bcf1af... (Android) Some preliminary changes for new libretro core naming convention - still not
 
 			// Allow both libretro-core.so and libretro_core.so.
 			if (libName.startsWith("libretro")
