@@ -48,30 +48,33 @@ core_info_list_t *core_info_list_new(const char *modules_path)
 
    for (size_t i = 0; i < contents->size; i++)
    {
-      char info_path[PATH_MAX];
+      char info_path_base[PATH_MAX], info_path[PATH_MAX];
       core_info[i].path = strdup(contents->elems[i].data);
+
       if (!core_info[i].path)
          break;
 
+      fill_pathname_base(info_path_base, contents->elems[i].data, sizeof(info_path_base));
+      path_remove_extension(info_path_base);
+
 #if defined(RARCH_MOBILE) || defined(RARCH_CONSOLE)
       // Libs are deployed with a suffix (*_ios.dylib, *_qnx.so, etc).
-      char buffer[PATH_MAX];
-      strlcpy(buffer, contents->elems[i].data, sizeof(buffer));
 #ifdef ANDROID
       // Android libs have to be prefixed with 'lib' - so cores begin with 'libretro_' prefix 
-      char *substr = strstr(buffer, "libretro_");
+      char *substr = strstr(info_path_base, "libretro_");
       if (substr)
          *substr = '\0';
-      fill_pathname(info_path, buffer, "_libretro.info", sizeof(info_path));
+      strlcat(info_path_base, "_libretro", sizeof(info_path_base));
 #else
-      char *substr = strrchr(buffer, '_');
+      char *substr = strrchr(info_path_base, '_');
       if (substr)
          *substr = '\0';
-      fill_pathname(info_path, buffer, ".info", sizeof(info_path));
 #endif
-#else
-      fill_pathname(info_path, core_info[i].path, ".info", sizeof(info_path));
 #endif
+      strlcat(info_path_base, ".info", sizeof(info_path_base));
+
+      fill_pathname(info_path, (*g_settings.libretro_info_path) ? g_settings.libretro_info_path : modules_path,
+            info_path_base, sizeof(info_path));
 
       core_info[i].data = config_file_new(info_path);
 

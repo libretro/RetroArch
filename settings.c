@@ -283,6 +283,7 @@ void config_set_defaults(void)
       *g_extern.savefile_dir = '\0';
    if (!g_extern.has_set_state_path)
       *g_extern.savestate_dir = '\0';
+   *g_settings.libretro_info_path = '\0';
    *g_settings.core_options_path = '\0';
    *g_settings.game_history_path = '\0';
    *g_settings.cheat_database = '\0';
