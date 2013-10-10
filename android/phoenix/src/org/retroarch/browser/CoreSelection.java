@@ -15,7 +15,7 @@ import android.view.*;
 
 // JELLY_BEAN_MR1 = 17
 
-public final class CoreSelection extends Activity implements AdapterView.OnItemClickListener {
+public final class CoreSelection extends ListActivity {
 	private IconAdapter<ModuleWrapper> adapter;
 	private static final String TAG = "CoreSelection";
 
@@ -37,9 +37,8 @@ public final class CoreSelection extends Activity implements AdapterView.OnItemC
 
 		// Setup the list
 		adapter = new IconAdapter<ModuleWrapper>(this, R.layout.line_list_item);
-		ListView list = (ListView) findViewById(R.id.list);
+		ListView list = getListView();
 		list.setAdapter(adapter);
-		list.setOnItemClickListener(this);
 
 		setTitle(R.string.select_libretro_core);
 
@@ -49,7 +48,7 @@ public final class CoreSelection extends Activity implements AdapterView.OnItemC
 		for (final File lib : libs) {
 			String libName = lib.getName();
 
-         Log.i(TAG, "Libretro core: " + libName);
+			Log.i(TAG, "Libretro core: " + libName);
 
 			// Allow both libretro-core.so and libretro_core.so.
 			if (!libName.startsWith("libretroarch")) {
@@ -65,7 +64,7 @@ public final class CoreSelection extends Activity implements AdapterView.OnItemC
 	}
 
 	@Override
-	public void onItemClick(AdapterView<?> listView, View view, int position, long id) {
+	public void onListItemClick(ListView listView, View view, int position, long id) {
 		final ModuleWrapper item = adapter.getItem(position);
 		MainMenuActivity.getInstance().setModule(item.file.getAbsolutePath(), item.getText());
 		UserPreferences.updateConfigFile(this);
