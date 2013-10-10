@@ -9,16 +9,15 @@ import java.io.InputStreamReader;
 import org.retroarch.R;
 import org.retroarch.browser.preferences.UserPreferences;
 
-import android.app.Activity;
+import android.app.ListActivity;
 import android.content.Intent;
 import android.os.Bundle;
 import android.provider.Settings;
 import android.view.View;
-import android.widget.AdapterView;
 import android.widget.ListView;
 import android.widget.Toast;
 
-public final class HistorySelection extends Activity implements AdapterView.OnItemClickListener {
+public final class HistorySelection extends ListActivity {
 	
 	private IconAdapter<HistoryWrapper> adapter;
 
@@ -30,9 +29,8 @@ public final class HistorySelection extends Activity implements AdapterView.OnIt
 
 		// Setup the list
 		adapter = new IconAdapter<HistoryWrapper>(this, R.layout.line_list_item);
-		ListView list = (ListView) findViewById(R.id.list);
+		ListView list = getListView();
 		list.setAdapter(adapter);
-		list.setOnItemClickListener(this);
 
 		setTitle(R.string.recently_played_games);
 		
@@ -57,7 +55,7 @@ public final class HistorySelection extends Activity implements AdapterView.OnIt
 	}
 	
 	@Override
-	public void onItemClick(AdapterView<?> listView, View view, int position, long id) {
+	public void onListItemClick(ListView listView, View view, int position, long id) {
 		final HistoryWrapper item = adapter.getItem(position);
 		final String gamePath = item.getGamePath();
 		final String corePath = item.getCorePath();
