@@ -58,7 +58,6 @@ core_info_list_t *core_info_list_new(const char *modules_path)
       path_remove_extension(info_path_base);
 
 #if defined(RARCH_MOBILE) || defined(RARCH_CONSOLE)
-      // Libs are deployed with a suffix (*_ios.dylib, *_qnx.so, etc).
 #ifdef ANDROID
       // Android libs have to be prefixed with 'lib' - so cores begin with 'libretro_' prefix 
       char *substr = strstr(info_path_base, "libretro_");
@@ -66,6 +65,7 @@ core_info_list_t *core_info_list_new(const char *modules_path)
          *substr = '\0';
       strlcat(info_path_base, "_libretro", sizeof(info_path_base));
 #else
+      // Libs are deployed with a suffix (*_ios.dylib, *_qnx.so, etc).
       char *substr = strrchr(info_path_base, '_');
       if (substr)
          *substr = '\0';
