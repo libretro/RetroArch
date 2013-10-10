@@ -57,10 +57,18 @@ core_info_list_t *core_info_list_new(const char *modules_path)
       // Libs are deployed with a suffix (*_ios.dylib, *_qnx.so, etc).
       char buffer[PATH_MAX];
       strlcpy(buffer, contents->elems[i].data, sizeof(buffer));
+#ifdef ANDROID
+      // Android libs have to be prefixed with 'lib' - so cores begin with 'libretro_' prefix 
+      char *substr = strstr(buffer, "libretro_");
+      if (substr)
+         *substr = '\0';
+      fill_pathname(info_path, buffer, "_libretro.info", sizeof(info_path));
+#else
       char *substr = strrchr(buffer, '_');
       if (substr)
          *substr = '\0';
       fill_pathname(info_path, buffer, ".info", sizeof(info_path));
+#endif
 #else
       fill_pathname(info_path, core_info[i].path, ".info", sizeof(info_path));
 #endif
