@@ -21,8 +21,8 @@ public class DirectoryActivity extends ListActivity {
 	private File listedDirectory;
 
 	public static class BackStackItem implements Parcelable {
-		public String path;
-		public boolean parentIsBack;
+		private final String path;
+		private final boolean parentIsBack;
 
 		public BackStackItem(String path, boolean parentIsBack) {
 			this.path = path;
