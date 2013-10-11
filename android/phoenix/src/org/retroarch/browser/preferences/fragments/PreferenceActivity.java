@@ -11,6 +11,7 @@ import android.support.v7.app.ActionBar;
 import android.support.v7.app.ActionBar.Tab;
 import android.support.v7.app.ActionBar.TabListener;
 import android.support.v7.app.ActionBarActivity;
+
 import org.retroarch.R;
 import org.retroarch.browser.preferences.fragments.util.PreferenceListFragment;
 import org.retroarch.browser.preferences.fragments.util.PreferenceListFragment.OnPreferenceAttachedListener;
@@ -68,6 +69,15 @@ public final class PreferenceActivity extends ActionBarActivity implements TabLi
 		super.onDestroy();
 
 		// Update the config file upon closing the settings.
+		UserPreferences.updateConfigFile(this);
+	}
+
+	@Override
+	public void onPause()
+	{
+		super.onPause();
+
+		// Update the preferences if the setting activity gets paused.
 		UserPreferences.updateConfigFile(this);
 	}
 
