@@ -11,10 +11,10 @@ import android.support.v7.app.ActionBar;
 import android.support.v7.app.ActionBar.Tab;
 import android.support.v7.app.ActionBar.TabListener;
 import android.support.v7.app.ActionBarActivity;
-
 import org.retroarch.R;
 import org.retroarch.browser.preferences.fragments.util.PreferenceListFragment;
 import org.retroarch.browser.preferences.fragments.util.PreferenceListFragment.OnPreferenceAttachedListener;
+import org.retroarch.browser.preferences.util.UserPreferences;
 
 /**
  * {@link ActionBarActivity} responsible for handling all of the {@link PreferenceListFragment}s.
@@ -60,6 +60,15 @@ public final class PreferenceActivity extends ActionBarActivity implements TabLi
 				actionBar.setSelectedNavigationItem(position);
 			}
 		} );
+	}
+
+	@Override
+	public void onDestroy()
+	{
+		super.onDestroy();
+
+		// Update the config file upon closing the settings.
+		UserPreferences.updateConfigFile(this);
 	}
 
 	@Override
