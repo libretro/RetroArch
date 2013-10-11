@@ -4,7 +4,6 @@ import org.retroarch.R;
 import org.retroarch.browser.preferences.fragments.util.PreferenceListFragment;
 import org.retroarch.browser.preferences.util.UserPreferences;
 
-import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.preference.CheckBoxPreference;
 import android.preference.Preference;
