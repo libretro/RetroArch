@@ -577,7 +577,13 @@ int menu_set_settings(unsigned setting, unsigned action)
 #endif
       case RGUI_LIBRETRO_INFO_DIR_PATH:
          if (action == RGUI_ACTION_START)
+         {
             *g_settings.libretro_info_path = '\0';
+            core_info_list_free(rgui->core_info);
+            rgui->core_info = NULL;
+            if (*rgui->libretro_dir)
+               rgui->core_info = core_info_list_new(rgui->libretro_dir);
+         }
          break;
       case RGUI_CONFIG_DIR_PATH:
          if (action == RGUI_ACTION_START)
