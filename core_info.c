@@ -61,12 +61,15 @@ core_info_list_t *core_info_list_new(const char *modules_path)
       // Android libs are deployed with a prefix 'lib' (libretro_*.so, etc)
       // Non-Android Libs (mobile/console) are deployed with a system name suffix (*_ios.dylib, *_qnx.so, etc).
 #ifdef ANDROID
+      size_t prefix_len = strlen("libretro_");
       char *substr = strstr(info_path_base, "libretro_");
+      if (substr && substr == info_path_base)
+         memmove(info_path_base, info_path_base + prefix_len, strlen(info_path_base) + 1 - prefix_len);
 #else
       char *substr = strrchr(info_path_base, '_');
-#endif
       if (substr)
          *substr = '\0';
+#endif
 #endif
 
 #ifdef ANDROID
