@@ -883,3 +883,12 @@ void menu_resolve_supported_cores(rgui_handle_t *rgui)
 
    rgui_list_sort_on_alt(rgui->selection_buf);
 }
+
+void menu_init_core_info(rgui_handle_t *rgui)
+{
+   core_info_list_free(rgui->core_info);
+   rgui->core_info = NULL;
+   if (*rgui->libretro_dir)
+      rgui->core_info = core_info_list_new(rgui->libretro_dir);
+}
+

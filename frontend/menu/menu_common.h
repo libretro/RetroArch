@@ -355,6 +355,8 @@ void menu_ticker_line(char *buf, size_t len, unsigned tick, const char *str, boo
 void menu_resolve_libretro_names(rgui_list_t *list, const char *dir);
 void menu_resolve_supported_cores(rgui_handle_t *rgui);
 
+void menu_init_core_info(rgui_handle_t *rgui);
+
 void load_menu_game_prepare(void);
 bool load_menu_game(void);
 void load_menu_game_history(unsigned game_index);

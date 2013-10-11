@@ -1426,10 +1426,7 @@ static int rgui_iterate(void *data, unsigned action)
             else if (menu_type == RGUI_LIBRETRO_DIR_PATH)
             {
                strlcpy(rgui->libretro_dir, dir, sizeof(rgui->libretro_dir));
-               core_info_list_free(rgui->core_info);
-               rgui->core_info = NULL;
-               if (*rgui->libretro_dir)
-                  rgui->core_info = core_info_list_new(rgui->libretro_dir);
+               menu_init_core_info(rgui);
                rgui_flush_menu_stack_type(rgui, RGUI_SETTINGS_PATH_OPTIONS);
             }
             else if (menu_type == RGUI_CONFIG_DIR_PATH)
@@ -1441,10 +1438,7 @@ static int rgui_iterate(void *data, unsigned action)
             else if (menu_type == RGUI_LIBRETRO_INFO_DIR_PATH)
             {
                strlcpy(g_settings.libretro_info_path, dir, sizeof(g_settings.libretro_info_path));
-               core_info_list_free(rgui->core_info);
-               rgui->core_info = NULL;
-               if (*rgui->libretro_dir)
-                  rgui->core_info = core_info_list_new(rgui->libretro_dir);
+               menu_init_core_info(rgui);
                rgui_flush_menu_stack_type(rgui, RGUI_SETTINGS_PATH_OPTIONS);
             }
             else if (menu_type == RGUI_SHADER_DIR_PATH)

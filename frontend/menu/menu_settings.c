@@ -570,8 +570,7 @@ int menu_set_settings(unsigned setting, unsigned action)
          if (action == RGUI_ACTION_START)
          {
             *rgui->libretro_dir = '\0';
-            core_info_list_free(rgui->core_info);
-            rgui->core_info = NULL;
+            menu_init_core_info(rgui);
          }
          break;
 #endif
@@ -579,10 +578,7 @@ int menu_set_settings(unsigned setting, unsigned action)
          if (action == RGUI_ACTION_START)
          {
             *g_settings.libretro_info_path = '\0';
-            core_info_list_free(rgui->core_info);
-            rgui->core_info = NULL;
-            if (*rgui->libretro_dir)
-               rgui->core_info = core_info_list_new(rgui->libretro_dir);
+            menu_init_core_info(rgui);
          }
          break;
       case RGUI_CONFIG_DIR_PATH:
