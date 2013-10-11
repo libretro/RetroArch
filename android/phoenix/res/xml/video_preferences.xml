@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+        <PreferenceCategory android:title="@string/general" >
+            <CheckBoxPreference
+                android:defaultValue="true"
+                android:key="video_vsync"
+                android:summary="@string/vsync_desc"
+                android:title="@string/vsync" />
+            <CheckBoxPreference
+                android:defaultValue="true"
+                android:key="video_allow_rotate"
+                android:summary="@string/auto_rotate_desc"
+                android:title="@string/auto_rotate" />
+            <CheckBoxPreference
+                android:defaultValue="false"
+                android:key="video_scale_integer"
+                android:summary="@string/scale_integer_desc"
+                android:title="@string/scale_integer" />
+
+            <ListPreference
+                android:entries="@array/aspect_ratios"
+                android:entryValues="@array/aspect_values"
+                android:defaultValue="auto"
+                android:key="video_aspect_ratio"
+                android:summary="@string/aspect_ratio_desc"
+                android:title="@string/aspect_ratio" />
+        </PreferenceCategory>
+        <PreferenceCategory android:title="@string/synchronization" >
+            <CheckBoxPreference
+                android:defaultValue="true"
+                android:key="video_threaded"
+                android:summary="@string/threaded_video_driver_desc"
+                android:title="@string/threaded_video_driver" />
+            <EditTextPreference
+                android:key="video_refresh_rate"
+                android:numeric="decimal"
+                android:summary="@string/forced_refresh_rate_desc"
+                android:title="@string/forced_refresh_rate" />
+            <Preference
+                android:summary="@string/calibrate_refresh_rate_desc"
+                android:title="@string/calibrate_refresh_rate" >
+                <intent
+                    android:targetClass="org.retroarch.browser.DisplayRefreshRateTest"
+                    android:targetPackage="org.retroarch" />
+            </Preference>
+            <Preference
+                android:summary="@string/set_os_reported_refresh_rate_desc"
+                android:title="@string/set_os_reported_refresh_rate" >
+                <intent
+                    android:targetClass="org.retroarch.browser.RefreshRateSetOS"
+                    android:targetPackage="org.retroarch" />
+            </Preference>
+        </PreferenceCategory>
+        <PreferenceCategory android:title="@string/shaders" >
+            <CheckBoxPreference
+                android:defaultValue="true"
+                android:key="video_smooth"
+                android:summary="@string/bilinear_filter_desc"
+                android:title="@string/bilinear_filter" />
+            <CheckBoxPreference
+                android:summary="@string/first_pass_shader_desc"
+                android:defaultValue="false"
+                android:key="video_shader_enable"
+                android:title="@string/first_pass_shader" />
+
+            <Preference
+                android:summary="@string/glsl_shader_desc"
+                android:title="@string/glsl_shader"
+                android:dependency="video_shader_enable" >
+                <intent
+                    android:targetClass="org.retroarch.browser.diractivities.ShaderActivity"
+                    android:targetPackage="org.retroarch" />
+            </Preference>
+        </PreferenceCategory>
+        <PreferenceCategory android:title="@string/fonts">
+            <CheckBoxPreference android:title="@string/onscreen_fonts"
+                android:summary="@string/onscreen_fonts_desc"
+                android:key="video_font_enable"
+                android:defaultValue="true"/>
+        </PreferenceCategory>
+    </PreferenceScreen>

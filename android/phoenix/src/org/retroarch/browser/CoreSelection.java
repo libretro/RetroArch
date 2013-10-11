@@ -1,8 +1,8 @@
 package org.retroarch.browser;
 
 import org.retroarch.R;
-import org.retroarch.browser.preferences.ConfigFile;
-import org.retroarch.browser.preferences.UserPreferences;
+import org.retroarch.browser.preferences.util.ConfigFile;
+import org.retroarch.browser.preferences.util.UserPreferences;
 
 import java.io.*;
 

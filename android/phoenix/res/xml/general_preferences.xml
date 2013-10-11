@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+    <PreferenceCategory android:title="@string/config_style" >
+        <CheckBoxPreference
+            android:defaultValue="true"
+            android:key="global_config_enable"
+            android:summary="@string/global_config_desc"
+            android:title="@string/global_config" />
+    </PreferenceCategory>
+
+    <PreferenceCategory android:title="@string/general" >
+        <CheckBoxPreference
+            android:defaultValue="true"
+            android:key="savestate_auto_load"
+            android:summary="@string/auto_load_state_desc"
+            android:title="@string/auto_load_state" />
+        <CheckBoxPreference
+            android:defaultValue="false"
+            android:key="savestate_auto_save"
+            android:summary="@string/auto_save_state_desc"
+            android:title="@string/auto_save_state" />
+    </PreferenceCategory>
+    <PreferenceCategory android:title="@string/rewinding" >
+        <CheckBoxPreference
+            android:defaultValue="false"
+            android:key="rewind_enable"
+            android:summary="@string/rewinding_desc"
+            android:title="@string/enable" />
+    </PreferenceCategory>
+</PreferenceScreen>

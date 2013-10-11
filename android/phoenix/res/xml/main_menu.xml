@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
+    android:title="@string/mainmenu_title" >
+
+    <!-- TV Mode -->
+    <PreferenceScreen android:title="@string/tv_mode">
+       <intent
+          android:targetClass="org.retroarch.browser.RetroTVMode"
+          android:targetPackage="org.retroarch" />
+    </PreferenceScreen>
+
+    <!-- Load Core -->
+    <PreferenceScreen android:title="@string/load_core">
+       <intent
+          android:targetClass="org.retroarch.browser.CoreSelection"
+          android:targetPackage="org.retroarch" />
+    </PreferenceScreen>
+
+    <!-- Load Game -->
+    <PreferenceScreen android:title="@string/load_game">
+       <intent
+          android:targetClass="org.retroarch.browser.diractivities.ROMActivity"
+          android:targetPackage="org.retroarch" />
+    </PreferenceScreen>
+
+    <!-- Load Game (History) -->
+    <PreferenceScreen android:title="@string/load_game_history">
+       <intent
+          android:targetClass="org.retroarch.browser.HistorySelection"
+          android:targetPackage="org.retroarch" />
+    </PreferenceScreen>
+
+    <!-- Settings -->
+    <PreferenceScreen android:title="@string/settings">
+       <intent
+          android:targetClass="org.retroarch.browser.preferences.fragments.PreferenceActivity"
+          android:targetPackage="org.retroarch" />
+    </PreferenceScreen>
+
+    <!-- Help -->
+    <PreferenceScreen android:title="@string/help">
+       <intent
+          android:targetClass="org.retroarch.browser.HelpActivity"
+          android:targetPackage="org.retroarch" />
+    </PreferenceScreen>
+
+    <!-- About -->
+    <PreferenceScreen android:title="@string/about">
+        <PreferenceCategory android:title="@string/websites">
+           <Preference android:title="@string/retro_website"
+              android:summary="@string/retro_website_desc">
+                <intent
+                    android:action="android.intent.action.VIEW"
+                    android:data="http://www.libretro.com" />
+            </Preference>
+        </PreferenceCategory>
+        <PreferenceCategory android:title="@string/manuals">
+           <Preference android:title="@string/retroarch_guide"
+              android:summary="@string/retroarch_guide_desc">
+                <intent
+                    android:action="android.intent.action.VIEW"
+                    android:data="http://www.libretro.com/documents/retroarch-manual.pdf" />
+            </Preference>
+           <Preference android:title="@string/cores_guide"
+              android:summary="@string/cores_guide_desc">
+                <intent
+                    android:action="android.intent.action.VIEW"
+                    android:data="http://www.libretro.com/documents/retroarch-cores-manual.pdf" />
+            </Preference>
+        </PreferenceCategory>
+        <PreferenceCategory android:title="@string/development">
+           <Preference android:title="@string/overlay_guide"
+              android:summary="@string/overlay_guide_desc">
+                <intent
+                    android:action="android.intent.action.VIEW"
+                    android:data="http://www.libretro.com/documents/overlay.pdf" />
+            </Preference>
+        </PreferenceCategory>
+    </PreferenceScreen>
+</PreferenceScreen>
