@@ -80,8 +80,7 @@ public class DirectoryActivity extends ListActivity {
 
 		// Setup the list
 		adapter = new IconAdapter<FileWrapper>(this, R.layout.line_list_item);
-		ListView list = getListView();
-		list.setAdapter(adapter);
+		setListAdapter(adapter);
 
 		// Load Directory
 		if (savedInstanceState != null) {

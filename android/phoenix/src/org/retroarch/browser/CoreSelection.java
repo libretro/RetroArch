@@ -33,13 +33,14 @@ public final class CoreSelection extends ListActivity {
 		final String cpuInfo = UserPreferences.readCPUInfo();
 		final boolean cpuIsNeon = cpuInfo.contains("neon");
 
+		// Setup the layout
 		setContentView(R.layout.line_list);
 
 		// Setup the list
 		adapter = new IconAdapter<ModuleWrapper>(this, R.layout.line_list_item);
-		ListView list = getListView();
-		list.setAdapter(adapter);
+		setListAdapter(adapter);
 
+		// Set the activity title.
 		setTitle(R.string.select_libretro_core);
 
 		// Populate the list
