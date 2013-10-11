@@ -21,8 +21,8 @@ public class DirectoryActivity extends ListActivity {
 	private File listedDirectory;
 
 	public static class BackStackItem implements Parcelable {
-		public String path;
-		public boolean parentIsBack;
+		private final String path;
+		private final boolean parentIsBack;
 
 		public BackStackItem(String path, boolean parentIsBack) {
 			this.path = path;
@@ -80,8 +80,7 @@ public class DirectoryActivity extends ListActivity {
 
 		// Setup the list
 		adapter = new IconAdapter<FileWrapper>(this, R.layout.line_list_item);
-		ListView list = getListView();
-		list.setAdapter(adapter);
+		setListAdapter(adapter);
 
 		// Load Directory
 		if (savedInstanceState != null) {
@@ -123,21 +122,20 @@ public class DirectoryActivity extends ListActivity {
 	public void onListItemClick(ListView listView, View aView, int position, long id) {
 		final FileWrapper item = adapter.getItem(position);
 
-		if (item.parentItem && backStack.get(backStack.size() - 1).parentIsBack) {
+		if (item.isParentItem() && backStack.get(backStack.size() - 1).parentIsBack) {
 			backStack.remove(backStack.size() - 1);
 			wrapFiles();
 			return;
-		} else if (item.dirSelectItem) {
+		} else if (item.isDirSelectItem()) {
 			finishWithPath(listedDirectory.getAbsolutePath());
 			return;
 		}
 
-		final File selected = item.parentItem ? listedDirectory.getParentFile()
-				: item.file;
+		final File selected = item.isParentItem() ? listedDirectory.getParentFile() : item.getFile();
 
 		if (selected.isDirectory()) {
 			backStack.add(new BackStackItem(selected.getAbsolutePath(),
-					!item.parentItem));
+					!item.isParentItem()));
 			wrapFiles();
 		} else {
 			String filePath = selected.getAbsolutePath();
@@ -229,8 +227,8 @@ public class DirectoryActivity extends ListActivity {
 		// Sort items
 		adapter.sort(new Comparator<FileWrapper>() {
 			@Override
-			public int compare(FileWrapper aLeft, FileWrapper aRight) {
-				return aLeft.compareTo(aRight);
+			public int compare(FileWrapper left, FileWrapper right) {
+				return left.compareTo(right);
 			};
 		});
 

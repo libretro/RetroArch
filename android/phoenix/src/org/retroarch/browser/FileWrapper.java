@@ -6,25 +6,24 @@ import org.retroarch.R;
 
 import android.graphics.drawable.Drawable;
 
-public final class FileWrapper implements IconAdapterItem {
-	public final File file;
-	public final boolean parentItem;
-	public final boolean dirSelectItem;
-	
-	protected final boolean enabled;
-	
+public final class FileWrapper implements IconAdapterItem, Comparable<FileWrapper> {
+
 	public static final int DIRSELECT = 0;
 	public static final int PARENT = 1;
 	public static final int FILE = 2;
-	
-	protected final int typeIndex;
+
+	private final File file;
+	private final boolean parentItem;
+	private final boolean dirSelectItem;
+	private final boolean enabled;
+	private final int typeIndex;
 
 	public FileWrapper(File file, int type, boolean isEnabled) {
 		this.file = file;
 
-		this.parentItem = type == PARENT;
-		this.dirSelectItem = type == DIRSELECT;		
-		this.typeIndex = type == FILE ? (FILE + (file.isDirectory() ? 0 : 1)) : type;	
+		this.parentItem    = (type == PARENT);
+		this.dirSelectItem = (type == DIRSELECT);		
+		this.typeIndex     = (type == FILE) ? (FILE + (file.isDirectory() ? 0 : 1)) : type;	
 
 		this.enabled = parentItem || dirSelectItem || isEnabled;
 	}
@@ -43,7 +42,7 @@ public final class FileWrapper implements IconAdapterItem {
 		else
 			return file.getName();
 	}
-	
+
 	@Override
 	public String getSubText() {
 		return null;
@@ -63,6 +62,38 @@ public final class FileWrapper implements IconAdapterItem {
 		return null;
 	}
 
+	/**
+	 * Checks whether or not the wrapped {@link File} is 
+	 * the "Parent Directory" item in the file browser.
+	 * 
+	 * @return true if the wrapped {@link File} is the "Parent Directory"
+	 *         item in the file browser; false otherwise.
+	 */
+	public boolean isParentItem() {
+		return parentItem;
+	}
+
+	/**
+	 * Checks whether or not the wrapped {@link File}
+	 * is the "use this directory" item.
+	 * 
+	 * @return true if the wrapped {@link File} is the "Use this directory"
+	 *         item in the file browser; false otherwise.
+	 */
+	public boolean isDirSelectItem() {
+		return dirSelectItem;
+	}
+	
+	/**
+	 * Gets the file wrapped by this FileWrapper.
+	 * 
+	 * @return the file wrapped by this FileWrapper.
+	 */
+	public File getFile() {
+		return file;
+	}
+
+	@Override
 	public int compareTo(FileWrapper other) {
 		if (other != null) {
 			// Who says ternary is hard to follow

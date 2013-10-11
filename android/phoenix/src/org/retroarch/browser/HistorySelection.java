@@ -24,18 +24,19 @@ public final class HistorySelection extends ListActivity {
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
-		
+
+		// Setup the layout.
 		setContentView(R.layout.line_list);
 
 		// Setup the list
 		adapter = new IconAdapter<HistoryWrapper>(this, R.layout.line_list_item);
-		ListView list = getListView();
-		list.setAdapter(adapter);
+		setListAdapter(adapter);
 
+		// Set activity title.
 		setTitle(R.string.recently_played_games);
-		
+
 		File history = new File(getApplicationInfo().dataDir, "retroarch-history.txt");
-		
+
 		try {
 			BufferedReader br = new BufferedReader(new InputStreamReader(
 					new FileInputStream(history)));
@@ -46,14 +47,14 @@ public final class HistorySelection extends ListActivity {
 				String name = br.readLine();
 				if (game == null || core == null || name == null)
 					break;
-				
+
 				adapter.add(new HistoryWrapper(game, core, name));
 			}
 			br.close();
 		} catch (IOException ex) {
 		}
 	}
-	
+
 	@Override
 	public void onListItemClick(ListView listView, View view, int position, long id) {
 		final HistoryWrapper item = adapter.getItem(position);
