@@ -541,7 +541,7 @@ static bool input_apply_turbo(unsigned port, unsigned id, bool res)
       g_extern.turbo_enable[port] &= ~(1 << id);
 
    if (g_extern.turbo_enable[port] & (1 << id))
-      return res & ((g_extern.turbo_count % g_settings.input.turbo_period) < g_settings.input.turbo_duty_cycle);
+      return res && ((g_extern.turbo_count % g_settings.input.turbo_period) < g_settings.input.turbo_duty_cycle);
    else
       return res;
 }
