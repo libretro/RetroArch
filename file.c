@@ -428,7 +428,8 @@ void load_ram_file(const char *path, int type)
    {
       if (rc > (ssize_t)size)
       {
-         RARCH_WARN("SRAM is larger than implementation expects, doing partial load.\n");
+         RARCH_WARN("SRAM is larger than implementation expects, doing partial load (truncating %u bytes to %u).\n",
+               (unsigned)rc, (unsigned)size);
          rc = size;
       }
       memcpy(data, buf, rc);
