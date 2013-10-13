@@ -390,7 +390,7 @@ static bool png_reverse_filter(uint32_t *data, const struct png_ihdr *ihdr,
    uint8_t *prev_scanline    = (uint8_t*)calloc(1, pitch);
    uint8_t *decoded_scanline = (uint8_t*)calloc(1, pitch);
 
-   if (!decoded_scanline || !decoded_scanline)
+   if (!prev_scanline || !decoded_scanline)
       GOTO_END_ERROR();
 
    for (unsigned h = 0; h < ihdr->height;
