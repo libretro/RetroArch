@@ -124,8 +124,7 @@ public final class MainMenuActivity extends PreferenceActivity {
 
 			String apk = getApplicationInfo().sourceDir;
 			Log.i(TAG, "Extracting RetroArch assets from: " + apk + " ...");
-			AssetExtractor asset = new AssetExtractor(apk);
-			boolean success = asset.extractTo("assets", dataDir);
+			boolean success = NativeInterface.extractArchiveTo(apk, "assets", dataDir);
 			if (!success) {
 				throw new IOException("Failed to extract assets ...");
 			}
