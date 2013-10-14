@@ -1,6 +1,0 @@
-LOCAL_PATH := $(call my-dir)
-
-include $(CLEAR_VARS)
-LOCAL_MODULE := $(notdir $(RETRO_MODULE_OBJECT))
-LOCAL_SRC_FILES := $(notdir $(RETRO_MODULE_OBJECT))
-include $(PREBUILT_SHARED_LIBRARY)
