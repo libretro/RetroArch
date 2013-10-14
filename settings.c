@@ -352,6 +352,10 @@ void config_set_defaults(void)
 #endif
 #endif
 
+#ifdef ANDROID
+   strlcpy(g_settings.libretro_info_path, "/data/data/org.retroarch/info/", sizeof(g_settings.libretro_info_path));
+#endif
+
    g_extern.config_save_on_exit = config_save_on_exit;
 
 #if defined(HAVE_RMENU) || defined(HAVE_RGUI) || defined(HAVE_RMENU_XUI)
