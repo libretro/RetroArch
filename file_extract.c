@@ -294,7 +294,7 @@ bool zlib_parse_file(const char *file, zlib_file_cb file_cb, void *userdata)
 
       const uint8_t *cdata = data + offset + 30 + offsetNL + offsetEL;
 
-      RARCH_LOG("OFFSET: %u, CSIZE: %u, SIZE: %u.\n", offset + 30 + offsetNL + offsetEL, csize, size);
+      //RARCH_LOG("OFFSET: %u, CSIZE: %u, SIZE: %u.\n", offset + 30 + offsetNL + offsetEL, csize, size);
 
       if (!file_cb(filename, cdata, cmode, csize, size, crc32, userdata))
          break;

@@ -10,6 +10,8 @@ import android.app.Dialog;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.PackageInfo;
+import android.content.pm.PackageManager;
 import android.content.pm.PackageManager.NameNotFoundException;
 import android.content.res.AssetManager;
 import android.media.AudioManager;
@@ -149,27 +151,21 @@ public final class MainMenuActivity extends PreferenceActivity {
 		return false;
 	}
 
+	// Extract assets from native code. Doing it from Java side is apparently unbearably slow ...
 	private void extractAssetsThread() {
 		try {
-			AssetManager assets = getAssets();
 			String dataDir = getApplicationInfo().dataDir;
+
+			String apk = getApplicationInfo().sourceDir;
+			Log.i(TAG, "Extracting RetroArch assets from: " + apk + " ...");
+			AssetExtractor asset = new AssetExtractor(apk);
+			boolean success = asset.extractTo("assets", dataDir);
+			if (!success) {
+				throw new IOException("Failed to extract assets ...");
+			}
+			Log.i(TAG, "Extracted assets ...");
+
 			File cacheVersion = new File(dataDir, ".cacheversion");
-
-			// extractAssets(assets, cacheDir, "", 0);
-			Log.i("ASSETS", "Extracting shader assets now ...");
-			try {
-				extractAssets(assets, dataDir, "shaders_glsl", 1);
-			} catch (IOException e) {
-				Log.i("ASSETS", "Failed to extract shaders ...");
-			}
-
-			Log.i("ASSETS", "Extracting overlay assets now ...");
-			try {
-				extractAssets(assets, dataDir, "overlays", 1);
-			} catch (IOException e) {
-				Log.i("ASSETS", "Failed to extract overlays ...");
-			}
-
 			DataOutputStream outputCacheVersion = new DataOutputStream(
 					new FileOutputStream(cacheVersion, false));
 			outputCacheVersion.writeInt(getVersionCode());
