@@ -266,6 +266,7 @@ static CGprogramGroup rglCgCreateProgramGroupFromFile( CGcontext ctx, const char
    if ( NULL == ptr )
    {
       rglCgRaiseError( CG_MEMORY_ALLOC_ERROR );
+      fclose(fp);
       return ( CGprogramGroup )NULL;
    }
 

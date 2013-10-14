@@ -54,6 +54,7 @@ static bool gl_init_font(void *data, const char *font_path, float font_size)
 #endif
 
    DbgFontInit(&cfg);
+   free(handle);
 
    return true;
 }

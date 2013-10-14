@@ -126,6 +126,7 @@ static int get_sha1(const char *path, char *result)
 	}
 
 	if (!SHA1Result(&sha)) {
+		close(fd);
 		return -1;
 	}
 
@@ -134,6 +135,7 @@ static int get_sha1(const char *path, char *result)
 		sha.Message_Digest[1],
 		sha.Message_Digest[2],
 		sha.Message_Digest[3], sha.Message_Digest[4]);
+	close(fd);
 	return 0;
 }
 
