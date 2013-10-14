@@ -87,7 +87,6 @@ public class PreferenceListFragment extends ListFragment
         lv.setScrollBarStyle(View.SCROLLBARS_INSIDE_OVERLAY);
         addPreferencesFromResource(xmlId);
         postBindPreferences();
-        ((OnPreferenceAttachedListener)getActivity()).onPreferenceAttached(getPreferenceScreen(), xmlId);
     }
 
     @Override
@@ -292,10 +291,5 @@ public class PreferenceListFragment extends ListFragment
         }
 
         return mPreferenceManager.findPreference(key);
-    }
-
-    public interface OnPreferenceAttachedListener
-    {
-        void onPreferenceAttached(PreferenceScreen root, int xmlId);
     }
 }

@@ -4,7 +4,6 @@ import android.content.SharedPreferences;
 import android.content.SharedPreferences.OnSharedPreferenceChangeListener;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
-import android.preference.PreferenceScreen;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentPagerAdapter;
@@ -17,7 +16,6 @@ import android.support.v7.app.ActionBarActivity;
 
 import org.retroarch.R;
 import org.retroarch.browser.preferences.fragments.util.PreferenceListFragment;
-import org.retroarch.browser.preferences.fragments.util.PreferenceListFragment.OnPreferenceAttachedListener;
 import org.retroarch.browser.preferences.util.UserPreferences;
 
 /**
@@ -26,7 +24,7 @@ import org.retroarch.browser.preferences.util.UserPreferences;
  * This class can be considered the central activity for the settings, as this class
  * provides the backbone for the {@link ViewPager} that handles all of the fragments being used.
  */
-public final class PreferenceActivity extends ActionBarActivity implements TabListener, OnPreferenceAttachedListener, OnSharedPreferenceChangeListener
+public final class PreferenceActivity extends ActionBarActivity implements TabListener, OnSharedPreferenceChangeListener
 {
 	// ViewPager for the fragments.
 	private ViewPager viewPager;
@@ -94,12 +92,6 @@ public final class PreferenceActivity extends ActionBarActivity implements TabLi
 	{
 		// Update the config file immediately when a preference has changed.
 		UserPreferences.updateConfigFile(this);
-	}
-
-	@Override
-	public void onPreferenceAttached(PreferenceScreen root, int xmlId)
-	{
-		// Do nothing
 	}
 
 	/**
