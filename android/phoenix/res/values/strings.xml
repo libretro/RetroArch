@@ -16,10 +16,6 @@
     <string name="load_core">Load Core</string>
     <string name="load_game">Load Game</string>
     <string name="load_game_history">Load Game (History)</string>
-    <string name="video_options">Video Options</string>
-    <string name="audio_options">Audio Options</string>
-    <string name="input_options">Input Options</string>
-    <string name="path_options">Path Options</string>
     <string name="settings">Settings</string>
     <string name="help">Help</string>
     <string name="about">About</string>
@@ -65,7 +61,7 @@
     <string name="menu_toggle">Menu toggle</string>
     
     <!-- Audio Settings -->
-    <string name="audio">Audio</string>
+    <string name="audio_options">Audio</string>
     <string name="enable_audio">Enable audio</string>
     <string name="dynamic_rate_control">Dynamic rate control</string>
     <string name="dynamic_rate_control_desc">Enable dynamic rate control (recommended).</string>
@@ -79,6 +75,7 @@
     <string name="one_sixty_ms">160ms (High)</string>
 
     <!-- Input Settings -->
+    <string name="input_options">Input</string>
     <string name="back_behavior">Back behavior</string>
     <string name="back_behavior_desc">Select how you want the Back button to behave.</string>
     <string name="ime">IME</string>
@@ -130,6 +127,7 @@
     <string name="report_ime_desc">Reports the current IME (Input Method Editor) name.</string>
 
     <!-- Path Settings -->
+    <string name="path_options">Paths</string>
     <string name="rom_paths">ROM paths</string>
     <string name="rom_directory">ROM directory</string>
     <string name="rom_directory_desc">Sets directory where ROM browser will first browse for ROM files.</string>
@@ -147,7 +145,8 @@
     <string name="system_directory">System directory</string>
     <string name="system_directory_desc">Sets directory where system files are loaded from.</string>
 
-    <!-- Settings Menu -->
+    <!-- General Settings -->
+    <string name="general_options">General</string>
     <string name="config_style">Configuration style</string>
     <string name="global_config">Global configuration</string>
     <string name="global_config_desc">Enable global settings for all cores. Leave disabled if you want per-core settings.</string>
@@ -159,6 +158,7 @@
     <string name="rewinding_desc">Enable real-time rewinding of gameplay. (WARNING: Very CPU intensive - will decrease ingame performance by a lot - only use this option on a powerful device).</string>
 
     <!-- Video Settings -->
+    <string name="video_options">Video</string>
     <string name="fullscreen">Full screen</string>
     <string name="automatic">Auto</string>
     <string name="square_pixel">Square pixel</string>

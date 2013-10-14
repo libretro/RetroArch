@@ -7,7 +7,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 
 import org.retroarch.R;
-import org.retroarch.browser.preferences.UserPreferences;
+import org.retroarch.browser.preferences.util.UserPreferences;
 
 import android.app.ListActivity;
 import android.content.Intent;

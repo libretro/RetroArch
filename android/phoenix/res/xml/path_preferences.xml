@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+    <PreferenceCategory android:title="@string/rom_paths">
+        <Preference android:title="@string/rom_directory"
+            android:summary="@string/rom_directory_desc">
+            <intent
+                android:targetClass="org.retroarch.browser.diractivities.ROMDirActivity"
+                android:targetPackage="org.retroarch" />
+        </Preference>
+    </PreferenceCategory>
+    
+    <PreferenceCategory android:title="@string/save_files">
+        <CheckBoxPreference android:title="@string/enable_custom_dir"
+            android:summary="@string/savefiles_custom_dir"
+            android:key="savefile_directory_enable"
+            android:defaultValue="false"/>
+        <Preference android:title="@string/savefile_directory"
+            android:summary="@string/savefile_directory_desc"
+            android:dependency="savefile_directory_enable">
+            <intent
+                android:targetClass="org.retroarch.browser.diractivities.SRMDirActivity"
+                android:targetPackage="org.retroarch" />
+        </Preference>
+    </PreferenceCategory>
+    <PreferenceCategory android:title="@string/save_states">
+        <CheckBoxPreference android:title="@string/enable_custom_dir"
+            android:summary="@string/savestates_custom_dir"
+            android:key="savestate_directory_enable"
+            android:defaultValue="false"/>
+        <Preference android:title="@string/save_state_directory"
+            android:summary="@string/save_state_directory_desc"
+            android:dependency="savestate_directory_enable">
+            <intent
+                android:targetClass="org.retroarch.browser.diractivities.StateDirActivity"
+                android:targetPackage="org.retroarch" />
+        </Preference>
+    </PreferenceCategory>
+    <PreferenceCategory android:title="@string/system">
+        <CheckBoxPreference android:title="@string/enable_custom_dir"
+            android:summary="@string/system_custom_dir"
+            android:key="system_directory_enable"
+            android:defaultValue="false"/>
+        <Preference android:title="@string/system_directory"
+            android:summary="@string/system_directory_desc"
+            android:dependency="system_directory_enable">
+            <intent
+                android:targetClass="org.retroarch.browser.diractivities.SystemDirActivity"
+                android:targetPackage="org.retroarch" />
+        </Preference>
+    </PreferenceCategory>
+</PreferenceScreen>

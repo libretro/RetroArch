@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+    <CheckBoxPreference
+        android:defaultValue="true"
+        android:key="audio_enable"
+        android:title="@string/enable_audio" />
+    <CheckBoxPreference
+        android:defaultValue="true"
+        android:key="audio_rate_control"
+        android:summary="@string/dynamic_rate_control_desc"
+        android:title="@string/dynamic_rate_control"
+        android:dependency="audio_enable" />
+    <ListPreference
+        android:entries="@array/audio_latency_options"
+        android:entryValues="@array/audio_latency_options_values"
+        android:defaultValue="64"
+        android:key="audio_latency"
+        android:summary="@string/audio_latency_desc"
+        android:title="@string/audio_latency"
+        android:dependency="audio_enable" />
+    <CheckBoxPreference 
+        android:defaultValue="true"
+        android:key="audio_latency_auto"
+        android:summary="@string/auto_audio_latency_desc"
+        android:title="@string/auto_audio_latency"
+        android:dependency="audio_enable" />
+</PreferenceScreen>

@@ -3,7 +3,7 @@ package org.retroarch.browser.diractivities;
 import org.retroarch.R;
 import org.retroarch.browser.FileWrapper;
 import org.retroarch.browser.IconAdapter;
-import org.retroarch.browser.preferences.UserPreferences;
+import org.retroarch.browser.preferences.util.UserPreferences;
 
 import java.util.*;
 import java.io.*;
