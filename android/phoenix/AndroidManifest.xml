@@ -40,6 +40,7 @@
         <activity android:name=".browser.diractivities.SRMDirActivity"/>
         <activity android:name=".browser.diractivities.StateDirActivity"/>
         <activity android:name=".browser.diractivities.SystemDirActivity"/>
+        <activity android:name=".browser.preferences.fragments.PreferenceActivity" android:theme="@style/Theme.AppCompat" />
 
         <activity android:name=".browser.RetroActivity" android:configChanges="mcc|mnc|locale|touchscreen|keyboard|keyboardHidden|navigation|orientation|screenLayout|uiMode|screenSize|smallestScreenSize|fontScale" android:theme="@android:style/Theme.NoTitleBar.Fullscreen" >
             <meta-data android:name="android.app.lib_name" android:value="retroarch-activity" />

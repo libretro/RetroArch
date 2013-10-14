@@ -3,7 +3,7 @@ package org.retroarch.browser;
 import java.io.*;
 
 import org.retroarch.R;
-import org.retroarch.browser.preferences.UserPreferences;
+import org.retroarch.browser.preferences.util.UserPreferences;
 
 import android.app.AlertDialog;
 import android.app.Dialog;
@@ -16,10 +16,7 @@ import android.media.AudioManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
-import android.preference.CheckBoxPreference;
-import android.preference.Preference;
 import android.preference.PreferenceActivity;
-import android.preference.PreferenceManager;
 import android.provider.Settings;
 import android.util.Log;
 import android.widget.Toast;
@@ -31,44 +28,21 @@ public final class MainMenuActivity extends PreferenceActivity {
 	private static String libretro_path;
 	private static String libretro_name;
 
-	@SuppressWarnings("deprecation")
-	private void refreshPreferenceScreen() {
-		UserPreferences.readbackConfigFile(this);
-
-		setPreferenceScreen(null);
-		addPreferencesFromResource(R.xml.prefs);
-
-		setCoreTitle(libretro_name);
-		PreferenceManager.setDefaultValues(this, R.xml.prefs, false);
-
-		final CheckBoxPreference param = (CheckBoxPreference) findPreference("global_config_enable");
-		param.setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
-			@Override
-			public boolean onPreferenceClick(Preference preference) {
-				UserPreferences.updateConfigFile(MainMenuActivity.this);
-				SharedPreferences prefs = UserPreferences.getPreferences(MainMenuActivity.this);
-				SharedPreferences.Editor edit = prefs.edit();
-				edit.putBoolean("global_config_enable", param.isChecked());
-				edit.commit();
-
-				refreshPreferenceScreen();
-				return true;
-			}
-		});
-	}
-
 	@Override
+	@SuppressWarnings("deprecation")
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
+
+		// Load the main menu XML.
+		addPreferencesFromResource(R.xml.main_menu);
+
+		// Cache an instance of this class (TODO: Bad practice, kill this somehow).
 		instance = this;
 
 		// Get libretro path and name.
 		SharedPreferences prefs = UserPreferences.getPreferences(this);
 		libretro_path = prefs.getString("libretro_path", getApplicationInfo().nativeLibraryDir);
 		libretro_name = prefs.getString("libretro_name", getString(R.string.no_core));
-
-		// Refresh the prefscreen and reload preferences.
-		refreshPreferenceScreen();
 
 		// Bind audio stream to hardware controls.
 		setVolumeControlStream(AudioManager.STREAM_MUSIC);
@@ -243,15 +217,9 @@ public final class MainMenuActivity extends PreferenceActivity {
 		edit.putString("libretro_name", libretro_name);
 		edit.commit();
 
-		final boolean globalConfigEnabled = prefs.getBoolean("global_config_enable", true);
-		final String nativeLibraryDir = getApplicationInfo().nativeLibraryDir;
-
-		// Check if per-core settings are being used.
-		if (!globalConfigEnabled && !libretro_path.equals(nativeLibraryDir))
-			refreshPreferenceScreen();
-		else {
-			setCoreTitle(libretro_name); // this still needs to be applied
-		}
+		// Set the title section to contain the name of the selected core.
+		setCoreTitle(libretro_name);
+		
 	}
 
 	public void setCoreTitle(String core_name) {
@@ -367,8 +335,6 @@ public final class MainMenuActivity extends PreferenceActivity {
 		if (show_dialog) {
 			Toast.makeText(this, R.string.no_optimal_settings, Toast.LENGTH_SHORT).show();
 		}
-		
-		refreshPreferenceScreen();
 
 		return retval;
 	}
@@ -415,9 +381,9 @@ public final class MainMenuActivity extends PreferenceActivity {
 
 	private void loadRomExternal(String rom, String core) {
 		UserPreferences.updateConfigFile(this);
-		Intent myIntent = new Intent(this, RetroActivity.class);
 		String current_ime = Settings.Secure.getString(getContentResolver(), Settings.Secure.DEFAULT_INPUT_METHOD);
 		Toast.makeText(this, String.format(getString(R.string.loading_data), rom), Toast.LENGTH_SHORT).show();
+		Intent myIntent = new Intent(this, RetroActivity.class);
 		myIntent.putExtra("ROM", rom);
 		myIntent.putExtra("LIBRETRO", core);
 		myIntent.putExtra("CONFIGFILE", UserPreferences.getDefaultConfigPath(this));

@@ -2,7 +2,7 @@ package org.retroarch.browser.diractivities;
 
 import java.io.File;
 
-import org.retroarch.browser.preferences.UserPreferences;
+import org.retroarch.browser.preferences.util.UserPreferences;
 
 import android.content.SharedPreferences;
 import android.os.Bundle;
