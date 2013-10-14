@@ -254,6 +254,7 @@ int find_first_cue(const char* m3u_path, char* cue_path, size_t max_len) {
                     skip = 0;
                 } else if(midstream) {
                     cue_path[0] = '\0';
+                    close(fd);
                     return 0;
                 }
                 break;
@@ -270,6 +271,7 @@ int find_first_cue(const char* m3u_path, char* cue_path, size_t max_len) {
         }
     }
 
+    close(fd);
     return -EINVAL;
 }
 

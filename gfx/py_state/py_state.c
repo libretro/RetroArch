@@ -210,13 +210,17 @@ static char *align_program(const char *program)
    size_t prog_size = strlen(program) + 1;
    char *new_prog = (char*)calloc(1, prog_size);
    if (!new_prog)
+   {
+      free(prog);
       return NULL;
+   }
 
    char *save;
    char *line = dupe_newline(strtok_r(prog, "\n", &save));
    if (!line)
    {
       free(prog);
+      free(new_prog);
       return NULL;
    }
 
