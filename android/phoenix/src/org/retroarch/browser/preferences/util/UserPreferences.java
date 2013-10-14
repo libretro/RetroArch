@@ -119,34 +119,38 @@ public final class UserPreferences
 		SharedPreferences prefs = getPreferences(ctx);
 		SharedPreferences.Editor edit = prefs.edit();
 
+		// General Settings
+		readbackBool(config, edit, "rewind_enable");
+		readbackBool(config, edit, "savestate_auto_load");
+		readbackBool(config, edit, "savestate_auto_save");
+
+		// Audio Settings.
+		// TODO: Other audio settings
+		readbackBool(config, edit, "audio_rate_control");
+		readbackBool(config, edit, "audio_enable");
+
+		// Input Settings
+		readbackString(config, edit, "input_overlay");
+		readbackBool(config, edit, "input_overlay_enable");
+		readbackDouble(config, edit, "input_overlay_opacity");
+		readbackBool(config, edit, "input_autodetect_enable");
+		//readbackInt(config, edit, "input_back_behavior");
+
+		// Video Settings
+		readbackBool(config, edit, "video_scale_integer");
+		readbackBool(config, edit, "video_smooth");
+		readbackBool(config, edit, "video_threaded");
+		readbackBool(config, edit, "video_allow_rotate");
+		readbackBool(config, edit, "video_font_enable");
+		readbackBool(config, edit, "video_vsync");
+		//readbackDouble(config, edit, "video_refresh_rate");
+
+		// Path settings
 		readbackString(config, edit, "rgui_browser_directory");
 		readbackString(config, edit, "savefile_directory");
 		readbackString(config, edit, "savestate_directory");
 		readbackBool(config, edit, "savefile_directory_enable"); // Ignored by RetroArch
 		readbackBool(config, edit, "savestate_directory_enable"); // Ignored by RetroArch
-
-		readbackString(config, edit, "input_overlay");
-		readbackBool(config, edit, "input_overlay_enable");
-		readbackBool(config, edit, "video_scale_integer");
-		readbackBool(config, edit, "video_smooth");
-		readbackBool(config, edit, "video_threaded");
-		readbackBool(config, edit, "rewind_enable");
-		readbackBool(config, edit, "savestate_auto_load");
-		readbackBool(config, edit, "savestate_auto_save");
-		//readbackDouble(config, edit, "video_refresh_rate");
-
-		readbackBool(config, edit, "audio_rate_control");
-		readbackBool(config, edit, "audio_enable");
-		// TODO: other audio settings
-
-		readbackDouble(config, edit, "input_overlay_opacity");
-		readbackBool(config, edit, "input_autodetect_enable");
-		//readbackInt(config, edit, "input_back_behavior");
-
-		readbackBool(config, edit, "video_allow_rotate");
-		readbackBool(config, edit, "video_font_enable");
-
-		readbackBool(config, edit, "video_vsync");
 
 		edit.commit();
 	}
