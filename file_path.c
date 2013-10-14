@@ -55,6 +55,102 @@
 #include <unistd.h>
 #endif
 
+// Dump stuff to file.
+bool write_file(const char *path, const void *data, size_t size)
+{
+   FILE *file = fopen(path, "wb");
+   if (!file)
+      return false;
+   else
+   {
+      bool ret = fwrite(data, 1, size, file) == size;
+      fclose(file);
+      return ret;
+   }
+}
+
+// Generic file loader.
+ssize_t read_file(const char *path, void **buf)
+{
+   void *rom_buf = NULL;
+   FILE *file = fopen(path, "rb");
+   ssize_t rc = 0;
+   size_t len = 0;
+   if (!file)
+      goto error;
+
+   fseek(file, 0, SEEK_END);
+   len = ftell(file);
+   rewind(file);
+   rom_buf = malloc(len + 1);
+   if (!rom_buf)
+   {
+      RARCH_ERR("Couldn't allocate memory.\n");
+      goto error;
+   }
+
+   if ((rc = fread(rom_buf, 1, len, file)) < (ssize_t)len)
+      RARCH_WARN("Didn't read whole file.\n");
+
+   *buf = rom_buf;
+   // Allow for easy reading of strings to be safe.
+   // Will only work with sane character formatting (Unix).
+   ((char*)rom_buf)[len] = '\0'; 
+   fclose(file);
+   return rc;
+
+error:
+   if (file)
+      fclose(file);
+   free(rom_buf);
+   *buf = NULL;
+   return -1;
+}
+
+// Reads file content as one string.
+bool read_file_string(const char *path, char **buf)
+{
+   *buf = NULL;
+   FILE *file = fopen(path, "r");
+   size_t len = 0;
+   char *ptr = NULL;
+
+   if (!file)
+      goto error;
+
+   fseek(file, 0, SEEK_END);
+   len = ftell(file) + 2; // Takes account of being able to read in EOF and '\0' at end.
+   rewind(file);
+
+   *buf = (char*)calloc(len, sizeof(char));
+   if (!*buf)
+      goto error;
+
+   ptr = *buf;
+
+   while (ptr && !feof(file))
+   {
+      size_t bufsize = (size_t)(((ptrdiff_t)*buf + (ptrdiff_t)len) - (ptrdiff_t)ptr);
+      fgets(ptr, bufsize, file);
+
+      ptr += strlen(ptr);
+   }
+
+   ptr = strchr(ptr, EOF);
+   if (ptr)
+      *ptr = '\0';
+
+   fclose(file);
+   return true;
+
+error:
+   if (file)
+      fclose(file);
+   if (*buf)
+      free(*buf);
+   return false;
+}
+
 void string_list_free(struct string_list *list)
 {
    if (!list)

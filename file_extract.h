@@ -33,5 +33,8 @@ bool zlib_parse_file(const char *file, zlib_file_cb file_cb, void *userdata);
 bool zlib_extract_first_rom(char *zip_path, size_t zip_path_size, const char *valid_exts);
 struct string_list *zlib_get_file_list(const char *path);
 
+bool zlib_inflate_data_to_file(const char *path, const uint8_t *data,
+      uint32_t csize, uint32_t size, uint32_t crc32);
+
 #endif
 

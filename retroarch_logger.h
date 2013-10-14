@@ -21,7 +21,7 @@
 #include <android/log.h>
 #endif
 
-#ifdef IS_SALAMANDER
+#if defined(IS_SALAMANDER) || defined(RARCH_DUMMY_LOG)
 #define LOG_FILE (stderr)
 #else
 #define LOG_FILE (g_extern.log_file ? g_extern.log_file : stderr)
@@ -30,6 +30,12 @@
 #if defined(RARCH_CONSOLE) && (defined(HAVE_LOGGER) || defined(_XBOX1))
 #include <logger_override.h>
 #else
+
+#ifdef RARCH_DUMMY_LOG
+#define RARCH_LOG_VERBOSE (true)
+#else
+#define RARCH_LOG_VERBOSE g_extern.verbose
+#endif
 
 #ifndef RARCH_LOG
 #if defined(ANDROID) && defined(HAVE_LOGGER)
@@ -41,7 +47,7 @@
    } while (0)
 #else
 #define RARCH_LOG(...) do { \
-      if (g_extern.verbose) \
+      if (RARCH_LOG_VERBOSE) \
       { \
          fprintf(LOG_FILE, "RetroArch: " __VA_ARGS__); \
          fflush(LOG_FILE); \
@@ -60,7 +66,7 @@
    } while (0)
 #else
 #define RARCH_LOG_OUTPUT(...) do { \
-      if (g_extern.verbose) \
+      if (RARCH_LOG_VERBOSE) \
       { \
          fprintf(LOG_FILE, __VA_ARGS__); \
          fflush(LOG_FILE); \
@@ -135,3 +141,4 @@
 #endif
 
 #endif
+
