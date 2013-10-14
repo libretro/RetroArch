@@ -7,6 +7,7 @@ import org.retroarch.browser.preferences.util.UserPreferences;
 
 import android.app.AlertDialog;
 import android.app.Dialog;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -189,6 +190,7 @@ public final class MainMenuActivity extends PreferenceActivity {
 	private boolean detectDevice(boolean show_dialog) {
 		boolean retval = false;
 
+		final Context ctx = this;
 		final boolean mentionPlayStore = !Build.MODEL.equals("OUYA Console");
 		final String message = (mentionPlayStore ? getString(R.string.detect_device_msg_general) : getString(R.string.detect_device_msg_ouya));
 
@@ -209,6 +211,7 @@ public final class MainMenuActivity extends PreferenceActivity {
 									edit.putString("audio_latency", "64");
 									edit.putBoolean("audio_latency_auto", true);
 									edit.commit();
+									UserPreferences.updateConfigFile(ctx);
 								}
 							});
 			alert.show();
@@ -228,6 +231,7 @@ public final class MainMenuActivity extends PreferenceActivity {
 									edit.putString("audio_latency", "160");
 									edit.putBoolean("audio_latency_auto", false);
 									edit.commit();
+									UserPreferences.updateConfigFile(ctx);
 								}
 							});
 			alert.show();
@@ -247,6 +251,7 @@ public final class MainMenuActivity extends PreferenceActivity {
 									edit.putString("audio_latency", "64");
 									edit.putBoolean("audio_latency_auto", true);
 									edit.commit();
+									UserPreferences.updateConfigFile(ctx);
 								}
 							});
 			alert.show();
@@ -268,6 +273,7 @@ public final class MainMenuActivity extends PreferenceActivity {
 											edit.putString("audio_latency", "128");
 											edit.putBoolean("audio_latency_auto", false);
 											edit.commit();
+											UserPreferences.updateConfigFile(ctx);
 										}
 									});
 					alert.show();
@@ -286,6 +292,7 @@ public final class MainMenuActivity extends PreferenceActivity {
 									edit.putString("audio_latency", "64");
 									edit.putBoolean("audio_latency_auto", false);
 									edit.commit();
+									UserPreferences.updateConfigFile(ctx);
 								}
 							});
 			alert.show();
