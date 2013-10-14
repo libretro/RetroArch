@@ -28,6 +28,149 @@
 
 #include "hash.h"
 
+// File backends. Can be fleshed out later, but keep it simple for now.
+// The file is mapped to memory directly (via mmap() or just plain read_file()).
+struct zlib_file_backend
+{
+   void *(*open)(const char *path);
+   const uint8_t *(*data)(void *handle);
+   size_t (*size)(void *handle);
+   void (*free)(void *handle); // Closes, unmaps and frees.
+};
+
+#ifdef HAVE_MMAP
+#include <sys/mman.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <errno.h>
+#include <unistd.h>
+typedef struct
+{
+   int fd;
+   void *data;
+   size_t size;
+} zlib_file_data_t;
+
+static void zlib_file_free(void *handle)
+{
+   zlib_file_data_t *data = (zlib_file_data_t*)handle;
+   if (data->data)
+      munmap(data->data, data->size);
+   if (data->fd >= 0)
+      close(data->fd);
+   free(data);
+}
+
+static const uint8_t *zlib_file_data(void *handle)
+{
+   zlib_file_data_t *data = (zlib_file_data_t*)handle;
+   return (const uint8_t*)data->data;
+}
+
+static size_t zlib_file_size(void *handle)
+{
+   zlib_file_data_t *data = (zlib_file_data_t*)handle;
+   return data->size;
+}
+
+static void *zlib_file_open(const char *path)
+{
+   zlib_file_data_t *data = (zlib_file_data_t*)calloc(1, sizeof(*data));
+   if (!data)
+      return NULL;
+   data->fd = open(path, O_RDONLY);
+   if (data->fd < 0)
+   {
+      RARCH_ERR("Failed to open archive: %s (%s).\n",
+            path, strerror(errno));
+      goto error;
+   }
+
+   struct stat fds;
+   if (fstat(data->fd, &fds) < 0)
+      goto error;
+
+   data->size = fds.st_size;
+   if (!data->size)
+      return data;
+
+   data->data = mmap(NULL, data->size, PROT_READ, MAP_SHARED, data->fd, 0);
+   if (data->data == MAP_FAILED)
+   {
+      data->data = NULL;
+      RARCH_ERR("Failed to mmap() file: %s (%s).\n", path, strerror(errno));
+      goto error;
+   }
+
+   return data;
+
+error:
+   zlib_file_free(data);
+   return NULL;
+}
+#else
+typedef struct
+{
+   void *data;
+   size_t size;
+} zlib_file_data_t;
+
+static void zlib_file_free(void *handle)
+{
+   zlib_file_data_t *data = (zlib_file_data_t*)handle;
+   if (!data)
+      return;
+   free(data->data);
+   free(data);
+}
+
+static const uint8_t *zlib_file_data(void *handle)
+{
+   zlib_file_data_t *data = (zlib_file_data_t*)handle;
+   return (const uint8_t*)data->data;
+}
+
+static size_t zlib_file_size(void *handle)
+{
+   zlib_file_data_t *data = (zlib_file_data_t*)handle;
+   return data->size;
+}
+
+static void *zlib_file_open(const char *path)
+{
+   zlib_file_data_t *data = (zlib_file_data_t*)calloc(1, sizeof(*data));
+   if (!data)
+      return NULL;
+   ssize_t ret = read_file(path, &data->data);
+   if (ret < 0)
+   {
+      RARCH_ERR("Failed to open archive: %s.\n",
+            path);
+      goto error;
+   }
+
+   data->size = ret;
+   return data;
+
+error:
+   zlib_file_free(data);
+   return NULL;
+}
+#endif
+
+static const struct zlib_file_backend zlib_backend = {
+   zlib_file_open,
+   zlib_file_data,
+   zlib_file_size,
+   zlib_file_free,
+};
+
+const struct zlib_file_backend *zlib_get_default_file_backend(void)
+{
+   return &zlib_backend;
+}
+
+
 // Modified from nall::unzip (higan).
 
 #undef GOTO_END_ERROR
@@ -47,7 +190,7 @@ static uint32_t read_le(const uint8_t *data, unsigned size)
    return val;
 }
 
-static bool inflate_data_to_file(const char *path, const uint8_t *cdata,
+bool zlib_inflate_data_to_file(const char *path, const uint8_t *cdata,
       uint32_t csize, uint32_t size, uint32_t crc32)
 {
    bool ret = true;
@@ -92,10 +235,22 @@ bool zlib_parse_file(const char *file, zlib_file_cb file_cb, void *userdata)
    const uint8_t *directory = NULL;
 
    bool ret = true;
-   uint8_t *data = NULL;
-   ssize_t zip_size = read_file(file, (void**)&data);
+   const uint8_t *data = NULL;
+
+   const struct zlib_file_backend *backend = zlib_get_default_file_backend();
+   if (!backend)
+      return NULL;
+
+   ssize_t zip_size = 0;
+   void *handle = backend->open(file);
+   if (!handle)
+      GOTO_END_ERROR();
+
+   zip_size = backend->size(handle);
    if (zip_size < 22)
       GOTO_END_ERROR();
+
+   data = backend->data(handle);
 
    footer = data + zip_size - 22;
    for (;; footer--)
@@ -137,7 +292,7 @@ bool zlib_parse_file(const char *file, zlib_file_cb file_cb, void *userdata)
       unsigned offsetNL = read_le(data + offset + 26, 2);
       unsigned offsetEL = read_le(data + offset + 28, 2);
 
-      uint8_t *cdata = data + offset + 30 + offsetNL + offsetEL;
+      const uint8_t *cdata = data + offset + 30 + offsetNL + offsetEL;
 
       RARCH_LOG("OFFSET: %u, CSIZE: %u, SIZE: %u.\n", offset + 30 + offsetNL + offsetEL, csize, size);
 
@@ -148,7 +303,8 @@ bool zlib_parse_file(const char *file, zlib_file_cb file_cb, void *userdata)
    }
 
 end:
-   free(data);
+   if (handle)
+      backend->free(handle);
    return ret;
 }
 
@@ -180,7 +336,7 @@ static bool zip_extract_cb(const char *name, const uint8_t *cdata, unsigned cmod
             return false;
 
          case 8: // Deflate
-            if (inflate_data_to_file(new_path, cdata, csize, size, crc32))
+            if (zlib_inflate_data_to_file(new_path, cdata, csize, size, crc32))
             {
                strlcpy(data->zip_path, new_path, data->zip_path_size);
                data->found_rom = true;
