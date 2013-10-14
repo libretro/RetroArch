@@ -126,6 +126,7 @@ static int get_sha1(const char *path, char *result)
 	}
 
 	if (!SHA1Result(&sha)) {
+		close(fd);
 		return -1;
 	}
 
