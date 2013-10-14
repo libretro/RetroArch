@@ -10,10 +10,7 @@ import android.app.Dialog;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.content.pm.PackageInfo;
-import android.content.pm.PackageManager;
 import android.content.pm.PackageManager.NameNotFoundException;
-import android.content.res.AssetManager;
 import android.media.AudioManager;
 import android.os.Build;
 import android.os.Bundle;
@@ -76,39 +73,6 @@ public final class MainMenuActivity extends PreferenceActivity {
 
 	public static MainMenuActivity getInstance() {
 		return instance;
-	}
-
-	private byte[] loadAsset(String asset) throws IOException {
-		InputStream stream = getAssets().open(asset);
-		int len = stream.available();
-		byte[] buf = new byte[len];
-		stream.read(buf, 0, len);
-		return buf;
-	}
-
-	private void extractAssets(AssetManager manager, String dataDir, String relativePath, int level) throws IOException {
-		final String[] paths = manager.list(relativePath);
-		if (paths != null && paths.length > 0) { // Directory
-			// Log.d(TAG, "Extracting assets directory: " + relativePath);
-			for (final String path : paths)
-				extractAssets(manager, dataDir, relativePath
-						+ (level > 0 ? File.separator : "") + path, level + 1);
-		} else { // File, extract.
-			// Log.d(TAG, "Extracting assets file: " + relativePath);
-
-			String parentPath = new File(relativePath).getParent();
-			if (parentPath != null) {
-				File parentFile = new File(dataDir, parentPath);
-				parentFile.mkdirs(); // Doesn't throw.
-			}
-
-			byte[] asset = loadAsset(relativePath);
-			BufferedOutputStream writer = new BufferedOutputStream(
-					new FileOutputStream(new File(dataDir, relativePath)));
-
-			writer.write(asset, 0, asset.length);
-			writer.close();
-		}
 	}
 
 	private int getVersionCode() {
