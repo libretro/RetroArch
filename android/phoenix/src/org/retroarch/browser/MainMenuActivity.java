@@ -24,6 +24,7 @@ import android.widget.Toast;
 public final class MainMenuActivity extends PreferenceActivity {
 	private static MainMenuActivity instance = null;
 	private static final int ACTIVITY_LOAD_ROM = 0;
+	private static final int ACTIVITY_RETROARCH = 1;
 	private static final String TAG = "MainMenu";
 	private static String libretro_path;
 	private static String libretro_name;
@@ -333,10 +334,17 @@ public final class MainMenuActivity extends PreferenceActivity {
 				myIntent.putExtra("LIBRETRO", libretro_path);
 				myIntent.putExtra("CONFIGFILE", UserPreferences.getDefaultConfigPath(this));
 				myIntent.putExtra("IME", current_ime);
-				startActivity(myIntent);
+				startActivityForResult(myIntent, ACTIVITY_RETROARCH);
 			}
-		}
 			break;
+		}
+		
+		case ACTIVITY_RETROARCH: {
+			Log.i(TAG, "RetroArch finished running.");
+			UserPreferences.readbackConfigFile(this);
+			break;
+		}
+
 		}
 	}
 
