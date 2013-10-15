@@ -26,7 +26,6 @@
                 <category android:name="tv.ouya.intent.category.GAME" />
             </intent-filter>
         </activity>
-        <activity android:name=".browser.IMEActivity"/>
         <activity android:name=".browser.HelpActivity"/>
         <activity android:name=".browser.FileWrapper"/>
         <activity android:name=".browser.RetroTVMode"/>

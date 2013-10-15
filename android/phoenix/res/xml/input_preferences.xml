@@ -12,12 +12,9 @@
    
    <PreferenceCategory android:title="@string/ime" >
         <Preference
+            android:key="set_ime_pref"
             android:summary="@string/ime_method_desc"
-            android:title="@string/ime_method" >
-            <intent
-                android:targetClass="org.retroarch.browser.IMEActivity"
-                android:targetPackage="org.retroarch" />
-        </Preference>
+            android:title="@string/ime_method" />
     </PreferenceCategory>
 
     <PreferenceCategory android:title="@string/config_autodetect" >
