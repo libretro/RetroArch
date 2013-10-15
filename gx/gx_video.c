@@ -92,6 +92,8 @@ static void retrace_callback(u32 retrace_count)
 
 void gx_set_video_mode(unsigned fbWidth, unsigned lines)
 {
+   u32 level;
+   _CPU_ISR_Disable(level);
 #ifdef GX_OPTS
    struct __gx_regdef *__gx = (struct __gx_regdef*)__gxregs;
 #endif
@@ -272,6 +274,7 @@ void gx_set_video_mode(unsigned fbWidth, unsigned lines)
    }
 
    g_current_framebuf = 0;
+   _CPU_ISR_Restore(level);
 }
 
 const char *gx_get_video_mode(void)
