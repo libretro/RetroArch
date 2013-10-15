@@ -18,16 +18,13 @@
         <activity android:name=".browser.CoreSelection"/>
         <activity android:name=".browser.HistorySelection"/>
         <activity android:name=".browser.DisplayRefreshRateTest"/>
-        <activity android:name=".browser.RefreshRateSetOS"/>
         <activity android:name=".browser.MainMenuActivity" android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
                 <category android:name="tv.ouya.intent.category.GAME" />
             </intent-filter>
-         </activity>
-        <activity android:name=".browser.ReportIME"/>
-        <activity android:name=".browser.IMEActivity"/>
+        </activity>
         <activity android:name=".browser.HelpActivity"/>
         <activity android:name=".browser.FileWrapper"/>
         <activity android:name=".browser.RetroTVMode"/>
