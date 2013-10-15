@@ -18,7 +18,6 @@
         <activity android:name=".browser.CoreSelection"/>
         <activity android:name=".browser.HistorySelection"/>
         <activity android:name=".browser.DisplayRefreshRateTest"/>
-        <activity android:name=".browser.RefreshRateSetOS"/>
         <activity android:name=".browser.MainMenuActivity" android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

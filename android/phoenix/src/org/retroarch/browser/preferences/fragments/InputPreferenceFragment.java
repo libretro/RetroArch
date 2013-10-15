@@ -26,7 +26,7 @@ public final class InputPreferenceFragment extends PreferenceListFragment
 
 		// Set Input Method preference
 		final Preference setImePref = findPreference("set_ime_pref");
-		setImePref.setOnPreferenceClickListener(new Preference.OnPreferenceClickListener()
+		setImePref.setOnPreferenceClickListener(new OnPreferenceClickListener()
 		{
 			@Override
 			public boolean onPreferenceClick(Preference preference)
