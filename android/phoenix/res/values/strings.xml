@@ -123,6 +123,7 @@
     <string name="r2_button">R2 Button</string>
     <string name="r3_button">R3 Button</string>
     <string name="diagnostics">Diagnostics</string>
+    <string name="current_ime">Current IME</string>
     <string name="report_ime">Report IME</string>
     <string name="report_ime_desc">Reports the current IME (Input Method Editor) name.</string>
 

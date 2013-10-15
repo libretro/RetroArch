@@ -25,8 +25,7 @@
                 <category android:name="android.intent.category.LAUNCHER" />
                 <category android:name="tv.ouya.intent.category.GAME" />
             </intent-filter>
-         </activity>
-        <activity android:name=".browser.ReportIME"/>
+        </activity>
         <activity android:name=".browser.IMEActivity"/>
         <activity android:name=".browser.HelpActivity"/>
         <activity android:name=".browser.FileWrapper"/>

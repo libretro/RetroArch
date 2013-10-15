@@ -294,11 +294,9 @@
         </PreferenceScreen>
     </PreferenceCategory>
     <PreferenceCategory android:title="@string/diagnostics" >
-        <Preference android:title="@string/report_ime"
-            android:summary="@string/report_ime_desc">
-            <intent
-                android:targetClass="org.retroarch.browser.ReportIME"
-                android:targetPackage="org.retroarch" />
-        </Preference>
+        <Preference
+            android:key="report_ime_pref"
+            android:title="@string/report_ime"
+            android:summary="@string/report_ime_desc"/>
     </PreferenceCategory>
 </PreferenceScreen>
