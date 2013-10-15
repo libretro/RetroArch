@@ -956,7 +956,7 @@ static bool gx_frame(void *data, const void *frame,
       unsigned x = 15;
       unsigned y = 35;
 
-      gx_blit_line(x, y, fps_txt);
+      gx_blit_line(x, y, fps_text_buf);
       y += FONT_HEIGHT * (gx->double_strike ? 1 : 2);
       snprintf(mem1_txt, sizeof(mem1_txt), "MEM1: %8d / %8d", SYSMEM1_SIZE - SYS_GetArena1Size(), SYSMEM1_SIZE);
       gx_blit_line(x, y, mem1_txt);
