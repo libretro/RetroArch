@@ -44,6 +44,9 @@ static gx_audio_t *g_audio;
 
 static void dma_callback(void)
 {
+   // erase last chunk to avoid repeating audio
+   memset(g_audio->data[g_audio->dma_busy], 0, CHUNK_SIZE);
+
    g_audio->dma_busy = g_audio->dma_next;
    g_audio->dma_next = (g_audio->dma_next + 1) & (BLOCKS - 1);
 
@@ -140,6 +143,8 @@ static bool gx_audio_stop(void *data)
 {
    (void)data;
    AUDIO_StopDMA();
+   memset(g_audio->data, 0, sizeof(g_audio->data));
+   DCFlushRange(g_audio->data, sizeof(g_audio->data));
    return true;
 }
 
