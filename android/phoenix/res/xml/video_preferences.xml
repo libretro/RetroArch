@@ -44,12 +44,9 @@
                     android:targetPackage="org.retroarch" />
             </Preference>
             <Preference
+                android:key="set_os_reported_ref_rate_pref"
                 android:summary="@string/set_os_reported_refresh_rate_desc"
-                android:title="@string/set_os_reported_refresh_rate" >
-                <intent
-                    android:targetClass="org.retroarch.browser.RefreshRateSetOS"
-                    android:targetPackage="org.retroarch" />
-            </Preference>
+                android:title="@string/set_os_reported_refresh_rate" />
         </PreferenceCategory>
         <PreferenceCategory android:title="@string/shaders" >
             <CheckBoxPreference
