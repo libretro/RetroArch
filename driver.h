@@ -332,14 +332,21 @@ typedef struct input_driver
 struct rarch_viewport;
 
 #ifdef HAVE_OVERLAY
+struct video_overlay_image
+{
+   const uint32_t *image;
+   unsigned width;
+   unsigned height;
+};
+
 typedef struct video_overlay_interface
 {
    void (*enable)(void *data, bool state);
-   bool (*load)(void *data, const uint32_t *image, unsigned width, unsigned height);
-   void (*tex_geom)(void *data, float x, float y, float w, float h);
-   void (*vertex_geom)(void *data, float x, float y, float w, float h);
+   bool (*load)(void *data, const struct video_overlay_image *images, unsigned num_images);
+   void (*tex_geom)(void *data, unsigned image, float x, float y, float w, float h);
+   void (*vertex_geom)(void *data, unsigned image, float x, float y, float w, float h);
    void (*full_screen)(void *data, bool enable);
-   void (*set_alpha)(void *data, float mod);
+   void (*set_alpha)(void *data, unsigned image, float mod);
 } video_overlay_interface_t;
 #endif
 

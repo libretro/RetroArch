@@ -190,7 +190,7 @@ void input_overlay_set_scale_factor(input_overlay_t *ol, float scale)
    for (size_t i = 0; i < ol->size; i++)
       input_overlay_scale(&ol->overlays[i], scale);
 
-   ol->iface->vertex_geom(ol->iface_data,
+   ol->iface->vertex_geom(ol->iface_data, 0,
          ol->active->mod_x, ol->active->mod_y, ol->active->mod_w, ol->active->mod_h);
 }
 
@@ -262,8 +262,8 @@ static bool input_overlay_load_desc(config_file_t *conf, struct overlay_desc *de
       }
    }
 
-   desc->x        = strtod(x, NULL) / width;
-   desc->y        = strtod(y, NULL) / height;
+   desc->x = strtod(x, NULL) / width;
+   desc->y = strtod(y, NULL) / height;
 
    if (!strcmp(box, "radial"))
       desc->hitbox = OVERLAY_HITBOX_RADIAL;
@@ -516,8 +516,13 @@ input_overlay_t *input_overlay_new(const char *overlay)
       goto error;
 
    ol->active = &ol->overlays[0];
-   ol->iface->load(ol->iface_data, ol->active->image, ol->active->width, ol->active->height);
-   ol->iface->vertex_geom(ol->iface_data,
+   struct video_overlay_image image = {
+      ol->active->image,
+      ol->active->width,
+      ol->active->height,
+   };
+   ol->iface->load(ol->iface_data, &image, 1);
+   ol->iface->vertex_geom(ol->iface_data, 0,
          ol->active->mod_x, ol->active->mod_y, ol->active->mod_w, ol->active->mod_h);
    ol->iface->full_screen(ol->iface_data, ol->active->full_screen);
 
@@ -628,10 +633,16 @@ void input_overlay_next(input_overlay_t *ol)
    ol->index = ol->next_index;
    ol->active = &ol->overlays[ol->index];
 
-   ol->iface->load(ol->iface_data, ol->active->image, ol->active->width, ol->active->height);
-   ol->iface->vertex_geom(ol->iface_data,
+   struct video_overlay_image image = {
+      ol->active->image,
+      ol->active->width,
+      ol->active->height,
+   };
+   ol->iface->load(ol->iface_data, &image, 1);
+   ol->iface->vertex_geom(ol->iface_data, 0,
          ol->active->mod_x, ol->active->mod_y, ol->active->mod_w, ol->active->mod_h);
    ol->iface->full_screen(ol->iface_data, ol->active->full_screen);
+   ol->iface->set_alpha(ol->iface_data, 0, g_settings.input.overlay_opacity);
    ol->blocked = true;
    ol->next_index = (ol->index + 1) % ol->size;
 }
@@ -656,7 +667,7 @@ void input_overlay_free(input_overlay_t *ol)
 
 void input_overlay_set_alpha_mod(input_overlay_t *ol, float mod)
 {
-   ol->iface->set_alpha(ol->iface_data, mod);
+   ol->iface->set_alpha(ol->iface_data, 0, mod);
 }
 
 
