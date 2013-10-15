@@ -882,7 +882,6 @@ static bool gx_frame(void *data, const void *frame,
    struct __gx_regdef *__gx = (struct __gx_regdef*)__gxregs;
 #endif
    u8 clear_efb = GX_FALSE;
-   uint64_t lifecycle_mode_state = g_extern.lifecycle_mode_state;
 
    (void)data;
 
