@@ -255,7 +255,7 @@ static void rgui_settings_populate_entries(rgui_handle_t *rgui)
    if (rgui->history)
       rgui_list_push(rgui->selection_buf, "Load Game (History)", RGUI_SETTINGS_OPEN_HISTORY, 0);
 
-   if (rgui->core_info && rgui->core_info->count)
+   if (rgui->core_info && core_info_list_num_info_files(rgui->core_info))
       rgui_list_push(rgui->selection_buf, "Load Game (Detect Core)", RGUI_SETTINGS_OPEN_FILEBROWSER_DEFERRED_CORE, 0);
 
    if (rgui->info.library_name || g_extern.system.info.library_name)

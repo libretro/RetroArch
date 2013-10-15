@@ -149,6 +149,14 @@ void core_info_list_free(core_info_list_t *core_info_list)
    free(core_info_list);
 }
 
+size_t core_info_list_num_info_files(core_info_list_t *core_info_list)
+{
+   size_t num = 0;
+   for (size_t i = 0; i < core_info_list->count; i++)
+      num += !!core_info_list->list[i].data;
+   return num;
+}
+
 bool core_info_list_get_display_name(core_info_list_t *core_info_list, const char *path, char *buf, size_t size)
 {
    for (size_t i = 0; i < core_info_list->count; i++)
