@@ -1,7 +1,6 @@
 package org.retroarch.browser;
 
 import java.io.File;
-import java.io.IOException;
 
 import org.retroarch.browser.preferences.util.ConfigFile;
 
@@ -12,7 +11,7 @@ final class ModuleWrapper implements IconAdapterItem {
 	public final File file;
 	private final ConfigFile config;
 
-	public ModuleWrapper(Context context, File file, ConfigFile config) throws IOException {
+	public ModuleWrapper(Context context, File file, ConfigFile config) {
 		this.file = file;
 		this.config = config;
 	}
