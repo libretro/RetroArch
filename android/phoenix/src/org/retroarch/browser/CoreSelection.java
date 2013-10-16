@@ -73,13 +73,8 @@ public final class CoreSelection extends ListActivity {
 			}
 
 			// Allow both libretro-core.so and libretro_core.so.
-			if (libName.startsWith("libretro")
-					&& !libName.startsWith("libretroarch")) {
-				try {
-					adapter.add(new ModuleWrapper(this, lib, core_config));
-				} catch (IOException e) {
-					e.printStackTrace();
-				}
+			if (libName.startsWith("libretro") && !libName.startsWith("libretroarch")) {
+				adapter.add(new ModuleWrapper(this, lib, core_config));
 			}
 		}
 
