@@ -1258,7 +1258,7 @@ static void* rgui_init (void)
    rgui_handle_t *rgui = (rgui_handle_t*)calloc(1, sizeof(*rgui));
    if (rgui == NULL)
    {
-      RARCH_LOG("Could not allocate RGUI handle.\n");
+      RARCH_ERR("Could not allocate RGUI handle.\n");
       return NULL;
    }
 
