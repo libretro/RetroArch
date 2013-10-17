@@ -1,6 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+
+        <!-- General -->
         <PreferenceCategory android:title="@string/general" >
+            <ListPreference
+                android:entries="@array/aspect_ratios"
+                android:entryValues="@array/aspect_values"
+                android:defaultValue="auto"
+                android:key="video_aspect_ratio"
+                android:summary="@string/aspect_ratio_desc"
+                android:title="@string/aspect_ratio" />
             <CheckBoxPreference
                 android:defaultValue="true"
                 android:key="video_vsync"
@@ -16,15 +25,9 @@
                 android:key="video_scale_integer"
                 android:summary="@string/scale_integer_desc"
                 android:title="@string/scale_integer" />
-
-            <ListPreference
-                android:entries="@array/aspect_ratios"
-                android:entryValues="@array/aspect_values"
-                android:defaultValue="auto"
-                android:key="video_aspect_ratio"
-                android:summary="@string/aspect_ratio_desc"
-                android:title="@string/aspect_ratio" />
         </PreferenceCategory>
+
+        <!-- Synchronization -->
         <PreferenceCategory android:title="@string/synchronization" >
             <CheckBoxPreference
                 android:defaultValue="true"
@@ -48,6 +51,8 @@
                 android:summary="@string/set_os_reported_refresh_rate_desc"
                 android:title="@string/set_os_reported_refresh_rate" />
         </PreferenceCategory>
+
+        <!-- Shaders -->
         <PreferenceCategory android:title="@string/shaders" >
             <CheckBoxPreference
                 android:defaultValue="true"
@@ -69,6 +74,8 @@
                     android:targetPackage="org.retroarch" />
             </Preference>
         </PreferenceCategory>
+
+        <!-- Fonts -->
         <PreferenceCategory android:title="@string/fonts">
             <CheckBoxPreference android:title="@string/onscreen_fonts"
                 android:summary="@string/onscreen_fonts_desc"
