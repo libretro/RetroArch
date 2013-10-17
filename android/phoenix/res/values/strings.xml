@@ -81,7 +81,7 @@
     <string name="ime">IME</string>
     <string name="ime_method">Set Input Method</string>
     <string name="ime_method_desc">Sets IME to be used in-game.</string>
-    <string name="config_autodetect">Enable configuration autodetect</string>
+    <string name="config_autodetect">Configuration autodetection</string>
     <string name="config_autodetect_desc">This will attempt to preconfigure various gamepads and/or IME apps that you connect.</string>
     <string name="list_autodetected">List of autodetected devices</string>
     <string name="autodetected_pads">Configuration Autodetect - Supported Pads</string>
