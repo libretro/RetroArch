@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- Configuration Style -->
     <PreferenceCategory android:title="@string/config_style" >
         <CheckBoxPreference
             android:defaultValue="true"
@@ -8,6 +10,7 @@
             android:title="@string/global_config" />
     </PreferenceCategory>
 
+    <!-- General -->
     <PreferenceCategory android:title="@string/general" >
         <CheckBoxPreference
             android:defaultValue="true"
@@ -20,6 +23,8 @@
             android:summary="@string/auto_save_state_desc"
             android:title="@string/auto_save_state" />
     </PreferenceCategory>
+
+    <!-- Rewinding -->
     <PreferenceCategory android:title="@string/rewinding" >
         <CheckBoxPreference
             android:defaultValue="false"
