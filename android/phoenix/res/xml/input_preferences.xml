@@ -1,22 +1,26 @@
 <?xml version="1.0" encoding="utf-8"?>
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
-   <PreferenceCategory android:title="@string/general" >
-        <ListPreference
-            android:entries="@array/back_options"
-            android:entryValues="@array/back_options_values"
-            android:defaultValue="0"
-            android:key="input_back_behavior"
-            android:summary="@string/back_behavior_desc"
-            android:title="@string/back_behavior" />
-   </PreferenceCategory>
-   
-   <PreferenceCategory android:title="@string/ime" >
-        <Preference
-            android:key="set_ime_pref"
-            android:summary="@string/ime_method_desc"
-            android:title="@string/ime_method" />
+
+    <!-- General -->
+    <PreferenceCategory android:title="@string/general" >
+         <ListPreference
+             android:entries="@array/back_options"
+             android:entryValues="@array/back_options_values"
+             android:defaultValue="0"
+             android:key="input_back_behavior"
+             android:summary="@string/back_behavior_desc"
+             android:title="@string/back_behavior" />
     </PreferenceCategory>
 
+    <!-- IME -->
+    <PreferenceCategory android:title="@string/ime" >
+         <Preference
+             android:key="set_ime_pref"
+             android:summary="@string/ime_method_desc"
+             android:title="@string/ime_method" />
+    </PreferenceCategory>
+
+    <!-- Configuration Autodetection -->
     <PreferenceCategory android:title="@string/config_autodetect" >
         <CheckBoxPreference
             android:defaultValue="true"
@@ -52,6 +56,8 @@
             android:summary="@string/icade_profile_pad_four_desc"
             android:title="@string/icade_profile_pad_four" />
     </PreferenceCategory>
+
+    <!-- Debug Input Reporting -->
     <PreferenceCategory android:title="@string/debug_input_reporting" >
         <CheckBoxPreference
             android:defaultValue="false"
@@ -59,6 +65,8 @@
             android:summary="@string/debug_input_reporting_desc"
             android:title="@string/enable" />
     </PreferenceCategory>
+
+    <!-- Touchscreen Overlay -->
     <PreferenceCategory android:title="@string/touchscreen_overlay" >
         <CheckBoxPreference
             android:defaultValue="true"
@@ -80,6 +88,8 @@
             android:key="input_overlay_opacity"
             android:dependency="input_overlay_enable" />
     </PreferenceCategory>
+
+    <!-- Custom Bindings -->
     <PreferenceCategory android:title="@string/custom_binds">
         <PreferenceScreen
             android:title="@string/player_1_custom_binds"
@@ -290,6 +300,8 @@
                 android:title="@string/r3_button" />
         </PreferenceScreen>
     </PreferenceCategory>
+
+    <!-- Diagnostics -->
     <PreferenceCategory android:title="@string/diagnostics" >
         <Preference
             android:key="report_ime_pref"

@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- ROM Paths -->
     <PreferenceCategory android:title="@string/rom_paths">
         <Preference android:title="@string/rom_directory"
             android:summary="@string/rom_directory_desc">
@@ -8,7 +10,8 @@
                 android:targetPackage="org.retroarch" />
         </Preference>
     </PreferenceCategory>
-    
+
+    <!-- Save Files -->
     <PreferenceCategory android:title="@string/save_files">
         <CheckBoxPreference android:title="@string/enable_custom_dir"
             android:summary="@string/savefiles_custom_dir"
@@ -22,6 +25,8 @@
                 android:targetPackage="org.retroarch" />
         </Preference>
     </PreferenceCategory>
+
+    <!-- Save States -->
     <PreferenceCategory android:title="@string/save_states">
         <CheckBoxPreference android:title="@string/enable_custom_dir"
             android:summary="@string/savestates_custom_dir"
@@ -35,6 +40,8 @@
                 android:targetPackage="org.retroarch" />
         </Preference>
     </PreferenceCategory>
+
+    <!-- System -->
     <PreferenceCategory android:title="@string/system">
         <CheckBoxPreference android:title="@string/enable_custom_dir"
             android:summary="@string/system_custom_dir"
