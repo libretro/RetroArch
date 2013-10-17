@@ -1256,6 +1256,11 @@ static void* rgui_init (void)
    HRESULT hr;
 
    rgui_handle_t *rgui = (rgui_handle_t*)calloc(1, sizeof(*rgui));
+   if (rgui == NULL)
+   {
+      RARCH_ERR("Could not allocate RGUI handle.\n");
+      return NULL;
+   }
 
    xdk_d3d_video_t *device_ptr = (xdk_d3d_video_t*)driver.video_data;
 
@@ -1281,6 +1286,7 @@ static void* rgui_init (void)
    if (hr != S_OK)
    {
       RARCH_ERR("Failed initializing XUI application.\n");
+      free(rgui);
       return NULL;
    }
 
@@ -1294,6 +1300,7 @@ static void* rgui_init (void)
    if (hr != S_OK)
    {
       RARCH_ERR("Failed to register default typeface.\n");
+      free(rgui);
       return NULL;
    }
 
@@ -1301,6 +1308,7 @@ static void* rgui_init (void)
    if (hr != S_OK)
    {
       RARCH_ERR("Failed to load skin.\n");
+      free(rgui);
       return NULL;
    }
 
@@ -1308,6 +1316,7 @@ static void* rgui_init (void)
    if (hr != S_OK)
    {
       RARCH_ERR("Failed to create scene 'rarch_main.xur'.\n");
+      free(rgui);
       return NULL;
    }
 
@@ -1316,6 +1325,7 @@ static void* rgui_init (void)
    if (hr != S_OK)
    {
       RARCH_ERR("XuiSceneNavigateFirst failed.\n");
+      free(rgui);
       return NULL;
    }
 
