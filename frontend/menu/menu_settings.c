@@ -978,18 +978,45 @@ int menu_set_settings(unsigned setting, unsigned action)
             {
                const char *conf_path = type == RARCH_SHADER_GLSL ? rgui->default_glslp : rgui->default_cgp;
 
+               char config_directory[PATH_MAX];
+               if (*g_extern.config_path)
+                  fill_pathname_basedir(config_directory, g_extern.config_path, sizeof(config_directory));
+               else
+                  *config_directory = '\0';
+
                char cgp_path[PATH_MAX];
-               const char *shader_dir = *g_settings.video.shader_dir ?
-                  g_settings.video.shader_dir : g_settings.system_directory;
-               fill_pathname_join(cgp_path, shader_dir, conf_path, sizeof(cgp_path));
+               const char *dirs[] = {
+                  g_settings.video.shader_dir,
+                  g_settings.rgui_config_directory,
+                  config_directory,
+               };
+
                config_file_t *conf = config_file_new(NULL);
                if (!conf)
                   return 0;
                gfx_shader_write_conf_cgp(conf, &rgui->shader);
-               config_file_write(conf, cgp_path);
-               config_file_free(conf);
 
-               shader_manager_set_preset(NULL, type, cgp_path); 
+               bool ret = false;
+               for (unsigned d = 0; d < ARRAY_SIZE(dirs); d++)
+               {
+                  if (!*dirs[d])
+                     continue;
+
+                  fill_pathname_join(cgp_path, dirs[d], conf_path, sizeof(cgp_path));
+                  if (config_file_write(conf, cgp_path))
+                  {
+                     RARCH_LOG("Saved shader preset to %s.\n", cgp_path);
+                     shader_manager_set_preset(NULL, type, cgp_path);
+                     ret = true;
+                     break;
+                  }
+                  else
+                     RARCH_LOG("Failed writing shader preset to %s.\n", cgp_path);
+               }
+
+               config_file_free(conf);
+               if (!ret)
+                  RARCH_ERR("Failed to save shader preset. Make sure config directory and/or shader dir are writable.\n");
             }
             else
             {
