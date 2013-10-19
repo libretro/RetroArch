@@ -34,7 +34,8 @@ static bool allocate_filters(struct scaler_ctx *ctx)
 
 static void gen_filter_point_sub(struct scaler_filter *filter, int len, int pos, int step)
 {
-   for (int i = 0; i < len; i++, pos += step)
+   int i;
+   for (i = 0; i < len; i++, pos += step)
    {
       filter->filter_pos[i] = pos >> 16;
       filter->filter[i]     = FILTER_UNITY;
@@ -66,7 +67,8 @@ static bool gen_filter_point(struct scaler_ctx *ctx)
 
 static void gen_filter_bilinear_sub(struct scaler_filter *filter, int len, int pos, int step)
 {
-   for (int i = 0; i < len; i++, pos += step)
+   int i;
+   for (i = 0; i < len; i++, pos += step)
    {
       filter->filter_pos[i]     = pos >> 16;
       filter->filter[i * 2 + 1] = (pos & 0xffff) >> 2;
@@ -105,14 +107,15 @@ static inline double filter_sinc(double phase)
 
 static void gen_filter_sinc_sub(struct scaler_filter *filter, int len, int pos, int step, double phase_mul)
 {
+   int i, j;
    const int sinc_size = filter->filter_len;
 
-   for (int i = 0; i < len; i++, pos += step)
+   for (i = 0; i < len; i++, pos += step)
    {
       filter->filter_pos[i] = pos >> 16;
 
       //int16_t sinc_sum = 0;
-      for (int j = 0; j < sinc_size; j++)
+      for (j = 0; j < sinc_size; j++)
       {
          double sinc_phase    = M_PI * ((double)((sinc_size << 15) + (pos & 0xffff)) / 0x10000 - j);
          double lanczos_phase = sinc_phase / ((sinc_size >> 1));
@@ -154,8 +157,9 @@ static bool gen_filter_sinc(struct scaler_ctx *ctx)
 
 static bool validate_filter(struct scaler_ctx *ctx)
 {
+   int i;
    int max_w_pos = ctx->in_width - ctx->horiz.filter_len;
-   for (int i = 0; i < ctx->out_width; i++)
+   for (i = 0; i < ctx->out_width; i++)
    {
       if (ctx->horiz.filter_pos[i] > max_w_pos || ctx->horiz.filter_pos[i] < 0)
       {
@@ -165,7 +169,7 @@ static bool validate_filter(struct scaler_ctx *ctx)
    }
 
    int max_h_pos = ctx->in_height - ctx->vert.filter_len;
-   for (int i = 0; i < ctx->out_height; i++)
+   for (i = 0; i < ctx->out_height; i++)
    {
       if (ctx->vert.filter_pos[i] > max_h_pos || ctx->vert.filter_pos[i] < 0)
       {
@@ -179,9 +183,10 @@ static bool validate_filter(struct scaler_ctx *ctx)
 
 static void fixup_filter_sub(struct scaler_filter *filter, int out_len, int in_len)
 {
+   int i;
    int max_pos = in_len - filter->filter_len;
 
-   for (int i = 0; i < out_len; i++)
+   for (i = 0; i < out_len; i++)
    {
       int postsample = filter->filter_pos[i] - max_pos;
       int presample  = -filter->filter_pos[i];
