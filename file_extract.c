@@ -182,9 +182,10 @@ const struct zlib_file_backend *zlib_get_default_file_backend(void)
 
 static uint32_t read_le(const uint8_t *data, unsigned size)
 {
+   unsigned i;
    uint32_t val = 0;
    size *= 8;
-   for (unsigned i = 0; i < size; i += 8)
+   for (i = 0; i < size; i += 8)
       val |= *data++ << i;
 
    return val;

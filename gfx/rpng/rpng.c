@@ -112,7 +112,8 @@ struct idat_buffer
 
 static enum png_chunk_type png_chunk_type(const struct png_chunk *chunk)
 {
-   for (unsigned i = 0; i < ARRAY_SIZE(chunk_map); i++)
+   unsigned i;
+   for (i = 0; i < ARRAY_SIZE(chunk_map); i++)
    {
       if (memcmp(chunk->type, chunk_map[i].id, 4) == 0)
          return chunk_map[i].type;
@@ -146,6 +147,7 @@ static void png_free_chunk(struct png_chunk *chunk)
 
 static bool png_parse_ihdr(FILE *file, struct png_chunk *chunk, struct png_ihdr *ihdr)
 {
+   unsigned i;
    bool ret = true;
    if (!png_read_chunk(file, chunk))
       return false;
@@ -173,7 +175,7 @@ static bool png_parse_ihdr(FILE *file, struct png_chunk *chunk, struct png_ihdr 
    {
       static const unsigned valid_bpp[] = { 1, 2, 4, 8, 16 };
       bool correct_bpp = false;
-      for (unsigned i = 0; i < ARRAY_SIZE(valid_bpp); i++)
+      for (i = 0; i < ARRAY_SIZE(valid_bpp); i++)
       {
          if (valid_bpp[i] == ihdr->depth)
          {
@@ -189,7 +191,7 @@ static bool png_parse_ihdr(FILE *file, struct png_chunk *chunk, struct png_ihdr 
    {
       static const unsigned valid_bpp[] = { 1, 2, 4, 8 };
       bool correct_bpp = false;
-      for (unsigned i = 0; i < ARRAY_SIZE(valid_bpp); i++)
+      for (i = 0; i < ARRAY_SIZE(valid_bpp); i++)
       {
          if (valid_bpp[i] == ihdr->depth)
          {
@@ -242,8 +244,9 @@ static inline int paeth(int a, int b, int c)
 
 static inline void copy_line_rgb(uint32_t *data, const uint8_t *decoded, unsigned width, unsigned bpp)
 {
+   unsigned i;
    bpp /= 8;
-   for (unsigned i = 0; i < width; i++)
+   for (i = 0; i < width; i++)
    {
       uint32_t r = *decoded;
       decoded += bpp;
@@ -257,8 +260,9 @@ static inline void copy_line_rgb(uint32_t *data, const uint8_t *decoded, unsigne
 
 static inline void copy_line_rgba(uint32_t *data, const uint8_t *decoded, unsigned width, unsigned bpp)
 {
+   unsigned i;
    bpp /= 8;
-   for (unsigned i = 0; i < width; i++)
+   for (i = 0; i < width; i++)
    {
       uint32_t r = *decoded;
       decoded += bpp;
@@ -274,9 +278,10 @@ static inline void copy_line_rgba(uint32_t *data, const uint8_t *decoded, unsign
 
 static inline void copy_line_bw(uint32_t *data, const uint8_t *decoded, unsigned width, unsigned depth)
 {
+   unsigned i, bit;
    if (depth == 16)
    {
-      for (unsigned i = 0; i < width; i++)
+      for (i = 0; i < width; i++)
       {
          uint32_t val = decoded[i << 1];
          data[i] = (val * 0x010101) | (0xffu << 24);
@@ -287,7 +292,8 @@ static inline void copy_line_bw(uint32_t *data, const uint8_t *decoded, unsigned
       static const unsigned mul_table[] = { 0, 0xff, 0x55, 0, 0x11, 0, 0, 0, 0x01 };
       unsigned mul = mul_table[depth];
       unsigned mask = (1 << depth) - 1;
-      for (unsigned i = 0, bit = 0; i < width; i++, bit += depth)
+      bit = 0;
+      for (i = 0; i < width; i++, bit += depth)
       {
          unsigned byte = bit >> 3;
          unsigned val = decoded[byte] >> (8 - depth - (bit & 7));
@@ -302,8 +308,9 @@ static inline void copy_line_bw(uint32_t *data, const uint8_t *decoded, unsigned
 static inline void copy_line_gray_alpha(uint32_t *data, const uint8_t *decoded, unsigned width,
       unsigned bpp)
 {
+   unsigned i;
    bpp /= 8;
-   for (unsigned i = 0; i < width; i++)
+   for (i = 0; i < width; i++)
    {
       uint32_t gray = *decoded;
       decoded += bpp;
@@ -316,8 +323,10 @@ static inline void copy_line_gray_alpha(uint32_t *data, const uint8_t *decoded, 
 
 static inline void copy_line_plt(uint32_t *data, const uint8_t *decoded, unsigned width, unsigned depth, const uint32_t *palette)
 {
+   unsigned i, bit;
    unsigned mask = (1 << depth) - 1;
-   for (unsigned i = 0, bit = 0; i < width; i++, bit += depth)
+   bit = 0;
+   for (i = 0; i < width; i++, bit += depth)
    {
       unsigned byte = bit >> 3;
       unsigned val = decoded[byte] >> (8 - depth - (bit & 7));
@@ -377,6 +386,7 @@ static void png_pass_geom(const struct png_ihdr *ihdr,
 static bool png_reverse_filter(uint32_t *data, const struct png_ihdr *ihdr,
       const uint8_t *inflate_buf, size_t inflate_buf_size, const uint32_t *palette)
 {
+   unsigned i, h;
    bool ret = true;
 
    unsigned bpp;
@@ -393,7 +403,7 @@ static bool png_reverse_filter(uint32_t *data, const struct png_ihdr *ihdr,
    if (!prev_scanline || !decoded_scanline)
       GOTO_END_ERROR();
 
-   for (unsigned h = 0; h < ihdr->height;
+   for (h = 0; h < ihdr->height;
          h++, inflate_buf += pitch, data += ihdr->width)
    {
       unsigned filter = *inflate_buf++;
@@ -404,24 +414,24 @@ static bool png_reverse_filter(uint32_t *data, const struct png_ihdr *ihdr,
             break;
 
          case 1: // Sub
-            for (unsigned i = 0; i < bpp; i++)
+            for (i = 0; i < bpp; i++)
                decoded_scanline[i] = inflate_buf[i];
-            for (unsigned i = bpp; i < pitch; i++)
+            for (i = bpp; i < pitch; i++)
                decoded_scanline[i] = decoded_scanline[i - bpp] + inflate_buf[i];
             break;
 
          case 2: // Up
-            for (unsigned i = 0; i < pitch; i++)
+            for (i = 0; i < pitch; i++)
                decoded_scanline[i] = prev_scanline[i] + inflate_buf[i];
             break;
 
          case 3: // Average
-            for (unsigned i = 0; i < bpp; i++)
+            for (i = 0; i < bpp; i++)
             {
                uint8_t avg = prev_scanline[i] >> 1;
                decoded_scanline[i] = avg + inflate_buf[i];
             }
-            for (unsigned i = bpp; i < pitch; i++)
+            for (i = bpp; i < pitch; i++)
             {
                uint8_t avg = (decoded_scanline[i - bpp] + prev_scanline[i]) >> 1;
                decoded_scanline[i] = avg + inflate_buf[i];
@@ -429,9 +439,9 @@ static bool png_reverse_filter(uint32_t *data, const struct png_ihdr *ihdr,
             break;
 
          case 4: // Paeth
-            for (unsigned i = 0; i < bpp; i++)
+            for (i = 0; i < bpp; i++)
                decoded_scanline[i] = paeth(0, prev_scanline[i], 0) + inflate_buf[i];
-            for (unsigned i = bpp; i < pitch; i++)
+            for (i = bpp; i < pitch; i++)
                decoded_scanline[i] = paeth(decoded_scanline[i - bpp], prev_scanline[i], prev_scanline[i - bpp]) + inflate_buf[i];
             break;
 
@@ -470,11 +480,12 @@ struct adam7_pass
 static void deinterlace_pass(uint32_t *data, const struct png_ihdr *ihdr,
       const uint32_t *input, unsigned pass_width, unsigned pass_height, const struct adam7_pass *pass)
 {
+   unsigned x, y;
    data += pass->y * ihdr->width + pass->x;
-   for (unsigned y = 0; y < pass_height; y++, data += ihdr->width * pass->stride_y, input += pass_width)
+   for (y = 0; y < pass_height; y++, data += ihdr->width * pass->stride_y, input += pass_width)
    {
       uint32_t *out = data;
-      for (unsigned x = 0; x < pass_width; x++, out += pass->stride_x)
+      for (x = 0; x < pass_width; x++, out += pass->stride_x)
          *out = input[x];
    }
 }
@@ -482,6 +493,7 @@ static void deinterlace_pass(uint32_t *data, const struct png_ihdr *ihdr,
 static bool png_reverse_filter_adam7(uint32_t *data, const struct png_ihdr *ihdr,
       const uint8_t *inflate_buf, size_t inflate_buf_size, const uint32_t *palette)
 {
+   unsigned pass;
    static const struct adam7_pass passes[] = {
       { 0, 0, 8, 8 },
       { 4, 0, 8, 8 },
@@ -492,7 +504,7 @@ static bool png_reverse_filter_adam7(uint32_t *data, const struct png_ihdr *ihdr
       { 0, 1, 1, 2 },
    };
 
-   for (unsigned pass = 0; pass < ARRAY_SIZE(passes); pass++)
+   for (pass = 0; pass < ARRAY_SIZE(passes); pass++)
    {
       if (ihdr->width <= passes[pass].x || ihdr->height <= passes[pass].y) // Empty pass
          continue;
@@ -550,6 +562,7 @@ static bool png_append_idat(FILE *file, const struct png_chunk *chunk, struct id
 
 static bool png_read_plte(FILE *file, uint32_t *buffer, unsigned entries)
 {
+   unsigned i;
    if (entries > 256)
       return false;
 
@@ -557,7 +570,7 @@ static bool png_read_plte(FILE *file, uint32_t *buffer, unsigned entries)
    if (fread(buf, 3, entries, file) != entries)
       return false;
 
-   for (unsigned i = 0; i < entries; i++)
+   for (i = 0; i < entries; i++)
    {
       uint32_t r = buf[3 * i + 0];
       uint32_t g = buf[3 * i + 1];
@@ -573,6 +586,7 @@ static bool png_read_plte(FILE *file, uint32_t *buffer, unsigned entries)
 
 bool rpng_load_image_argb(const char *path, uint32_t **data, unsigned *width, unsigned *height)
 {
+   long pos;
    *data   = NULL;
    *width  = 0;
    *height = 0;
@@ -606,7 +620,7 @@ bool rpng_load_image_argb(const char *path, uint32_t **data, unsigned *width, un
       GOTO_END_ERROR();
 
    // feof() apparently isn't triggered after a seek (IEND).
-   for (long pos = ftell(file); pos < file_len && pos >= 0; pos = ftell(file))
+   for (pos = ftell(file); pos < file_len && pos >= 0; pos = ftell(file))
    {
       struct png_chunk chunk = {0};
       if (!read_chunk_header(file, &chunk))
@@ -792,7 +806,8 @@ static bool png_write_iend(FILE *file)
 
 static void copy_argb_line(uint8_t *dst, const uint32_t *src, unsigned width)
 {
-   for (unsigned i = 0; i < width; i++)
+   unsigned i;
+   for (i = 0; i < width; i++)
    {
       uint32_t col = src[i];
       *dst++ = (uint8_t)(col >> 16);
@@ -804,7 +819,8 @@ static void copy_argb_line(uint8_t *dst, const uint32_t *src, unsigned width)
 
 static void copy_bgr24_line(uint8_t *dst, const uint8_t *src, unsigned width)
 {
-   for (unsigned i = 0; i < width; i++, dst += 3, src += 3)
+   unsigned i;
+   for (i = 0; i < width; i++, dst += 3, src += 3)
    {
       dst[2] = src[0];
       dst[1] = src[1];
@@ -814,8 +830,9 @@ static void copy_bgr24_line(uint8_t *dst, const uint8_t *src, unsigned width)
 
 static unsigned count_sad(const uint8_t *data, size_t size)
 {
+   size_t i;
    unsigned cnt = 0;
-   for (size_t i = 0; i < size; i++)
+   for (i = 0; i < size; i++)
       cnt += abs((int8_t)data[i]);
    return cnt;
 }
@@ -823,8 +840,9 @@ static unsigned count_sad(const uint8_t *data, size_t size)
 static unsigned filter_up(uint8_t *target, const uint8_t *line, const uint8_t *prev,
       unsigned width, unsigned bpp)
 {
+   unsigned i;
    width *= bpp;
-   for (unsigned i = 0; i < width; i++)
+   for (i = 0; i < width; i++)
       target[i] = line[i] - prev[i];
 
    return count_sad(target, width);
@@ -833,10 +851,11 @@ static unsigned filter_up(uint8_t *target, const uint8_t *line, const uint8_t *p
 static unsigned filter_sub(uint8_t *target, const uint8_t *line,
       unsigned width, unsigned bpp)
 {
+   unsigned i;
    width *= bpp;
-   for (unsigned i = 0; i < bpp; i++)
+   for (i = 0; i < bpp; i++)
       target[i] = line[i];
-   for (unsigned i = bpp; i < width; i++)
+   for (i = bpp; i < width; i++)
       target[i] = line[i] - line[i - bpp];
 
    return count_sad(target, width);
@@ -845,10 +864,11 @@ static unsigned filter_sub(uint8_t *target, const uint8_t *line,
 static unsigned filter_avg(uint8_t *target, const uint8_t *line, const uint8_t *prev,
       unsigned width, unsigned bpp)
 {
+   unsigned i;
    width *= bpp;
-   for (unsigned i = 0; i < bpp; i++)
+   for (i = 0; i < bpp; i++)
       target[i] = line[i] - (prev[i] >> 1);
-   for (unsigned i = bpp; i < width; i++)
+   for (i = bpp; i < width; i++)
       target[i] = line[i] - ((line[i - bpp] + prev[i]) >> 1);
 
    return count_sad(target, width);
@@ -857,10 +877,11 @@ static unsigned filter_avg(uint8_t *target, const uint8_t *line, const uint8_t *
 static unsigned filter_paeth(uint8_t *target, const uint8_t *line, const uint8_t *prev,
       unsigned width, unsigned bpp)
 {
+   unsigned i;
    width *= bpp;
-   for (unsigned i = 0; i < bpp; i++)
+   for (i = 0; i < bpp; i++)
       target[i] = line[i] - paeth(0, prev[i], 0);
-   for (unsigned i = bpp; i < width; i++)
+   for (i = bpp; i < width; i++)
       target[i] = line[i] - paeth(line[i - bpp], prev[i], prev[i - bpp]);
 
    return count_sad(target, width);
@@ -869,6 +890,7 @@ static unsigned filter_paeth(uint8_t *target, const uint8_t *line, const uint8_t
 static bool rpng_save_image(const char *path, const uint8_t *data,
       unsigned width, unsigned height, unsigned pitch, unsigned bpp)
 {
+   unsigned h;
    bool ret = true;
    struct png_ihdr ihdr = {0};
 
@@ -917,7 +939,7 @@ static bool rpng_save_image(const char *path, const uint8_t *data,
       GOTO_END_ERROR();
 
    encode_target = encode_buf;
-   for (unsigned h = 0; h < height;
+   for (h = 0; h < height;
          h++, encode_target += width * bpp, data += pitch)
    {
       if (bpp == sizeof(uint32_t))

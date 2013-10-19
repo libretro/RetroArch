@@ -19,16 +19,18 @@
 
 void matrix_identity(math_matrix *mat)
 {
+   unsigned i;
    memset(mat, 0, sizeof(*mat));
-   for (unsigned i = 0; i < 4; i++)
+   for (i = 0; i < 4; i++)
       MAT_ELEM(*mat, i, i) = 1.0f;
 }
 
 void matrix_transpose(math_matrix *out, const math_matrix *in)
 {
+   unsigned i, j;
    math_matrix mat;
-   for (unsigned i = 0; i < 4; i++)
-      for (unsigned j = 0; j < 4; j++)
+   for (i = 0; i < 4; i++)
+      for (j = 0; j < 4; j++)
          MAT_ELEM(mat, j, i) = MAT_ELEM(*in, i, j);
 
    *out = mat;
@@ -125,14 +127,15 @@ void matrix_projection(math_matrix *out, float znear,
 void matrix_multiply(math_matrix *out,
       const math_matrix *a, const math_matrix *b)
 {
+   unsigned r, c, k;
    math_matrix mat;
 
-   for (unsigned r = 0; r < 4; r++)
+   for (r = 0; r < 4; r++)
    {
-      for (unsigned c = 0; c < 4; c++)
+      for (c = 0; c < 4; c++)
       {
          float dot = 0.0f;
-         for (unsigned k = 0; k < 4; k++)
+         for (k = 0; k < 4; k++)
             dot += MAT_ELEM(*a, r, k) * MAT_ELEM(*b, k, c);
          MAT_ELEM(mat, r, c) = dot;
       }

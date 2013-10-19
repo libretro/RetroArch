@@ -170,12 +170,14 @@ static void sha256_final(struct sha256_ctx *p)
 
 static void sha256_subhash(struct sha256_ctx *p, uint32_t *t) 
 {
-   for (unsigned i = 0; i < 8; i++) 
+   unsigned i;
+   for (i = 0; i < 8; i++) 
       store32be(t++, p->h[i]);
 }
 
 void sha256_hash(char *out, const uint8_t *in, size_t size)
 {
+   unsigned i;
    struct sha256_ctx sha;
 
    union
@@ -189,7 +191,7 @@ void sha256_hash(char *out, const uint8_t *in, size_t size)
    sha256_final(&sha);
    sha256_subhash(&sha, shahash.u32);
 
-   for (unsigned i = 0; i < 32; i++)
+   for (i = 0; i < 32; i++)
       snprintf(out + 2 * i, 3, "%02x", (unsigned)shahash.u8[i]);
 }
 
@@ -248,8 +250,9 @@ uint32_t crc32_adjust(uint32_t crc32, uint8_t input)
 
 uint32_t crc32_calculate(const uint8_t *data, size_t length)
 {
+   size_t i;
    uint32_t crc32 = ~0;
-   for (size_t i = 0; i < length; i++)
+   for (i = 0; i < length; i++)
       crc32 = crc32_adjust(crc32, data[i]);
    return ~crc32;
 }

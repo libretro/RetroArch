@@ -78,8 +78,9 @@ void rarch_perf_register(struct rarch_perf_counter *perf)
 
 void rarch_perf_log(void)
 {
+   unsigned i;
    RARCH_LOG("[PERF]: Performance counters:\n");
-   for (unsigned i = 0; i < perf_ptr; i++)
+   for (i = 0; i < perf_ptr; i++)
       RARCH_PERFORMANCE_LOG(perf_counters[i]->ident, *perf_counters[i]);
 }
 

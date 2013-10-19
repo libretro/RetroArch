@@ -28,15 +28,17 @@
 void audio_convert_s16_to_float_C(float *out,
       const int16_t *in, size_t samples, float gain)
 {
+   size_t i;
    gain = gain / 0x8000;
-   for (size_t i = 0; i < samples; i++)
+   for (i = 0; i < samples; i++)
       out[i] = (float)in[i] * gain; 
 }
 
 void audio_convert_float_to_s16_C(int16_t *out,
       const float *in, size_t samples)
 {
-   for (size_t i = 0; i < samples; i++)
+   size_t i;
+   for (i = 0; i < samples; i++)
    {
       int32_t val = (int32_t)(in[i] * 0x8000);
       out[i] = (val > 0x7FFF) ? 0x7FFF : (val < -0x8000 ? -0x8000 : (int16_t)val);

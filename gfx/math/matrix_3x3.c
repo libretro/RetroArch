@@ -23,8 +23,9 @@
 
 void matrix_3x3_identity(math_matrix_3x3 *mat)
 {
+   unsigned i;
    memset(mat, 0, sizeof(*mat));
-   for (unsigned i = 0; i < 3; i++)
+   for (i = 0; i < 3; i++)
       MAT_ELEM_3X3(*mat, i, i) = 1.0f;
 }
 
@@ -46,9 +47,10 @@ void matrix_3x3_inits(math_matrix_3x3 *mat,
 
 void matrix_3x3_transpose(math_matrix_3x3 *out, const math_matrix_3x3 *in)
 {
+   unsigned i, j;
    math_matrix_3x3 mat;
-   for (unsigned i = 0; i < 3; i++)
-      for (unsigned j = 0; j < 3; j++)
+   for (i = 0; i < 3; i++)
+      for (j = 0; j < 3; j++)
          MAT_ELEM_3X3(mat, j, i) = MAT_ELEM_3X3(*in, i, j);
 
    *out = mat;
@@ -57,13 +59,14 @@ void matrix_3x3_transpose(math_matrix_3x3 *out, const math_matrix_3x3 *in)
 void matrix_3x3_multiply(math_matrix_3x3 *out,
       const math_matrix_3x3 *a, const math_matrix_3x3 *b)
 {
+   unsigned r, c, k;
    math_matrix_3x3 mat;
-   for (unsigned r = 0; r < 3; r++)
+   for (r = 0; r < 3; r++)
    {
-      for (unsigned c = 0; c < 3; c++)
+      for (c = 0; c < 3; c++)
       {
          float dot = 0.0f;
-         for (unsigned k = 0; k < 3; k++)
+         for (k = 0; k < 3; k++)
             dot += MAT_ELEM_3X3(*a, r, k) * MAT_ELEM_3X3(*b, k, c);
          MAT_ELEM_3X3(mat, r, c) = dot;
       }
@@ -74,8 +77,9 @@ void matrix_3x3_multiply(math_matrix_3x3 *out,
 
 void matrix_3x3_divide_scalar(math_matrix_3x3 *mat, const float s)
 {
-   for (unsigned i = 0; i < 3; i++)
-      for (unsigned j = 0; j < 3; j++)
+   unsigned i, j;
+   for (i = 0; i < 3; i++)
+      for (j = 0; j < 3; j++)
          MAT_ELEM_3X3(*mat, i, j) /= s;
 }
 

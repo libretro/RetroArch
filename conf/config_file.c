@@ -357,6 +357,7 @@ static config_file_t *config_file_new_internal(const char *path, unsigned depth)
 
 config_file_t *config_file_new_from_string(const char *from_string)
 {
+   size_t i;
    struct config_file *conf = (struct config_file*)calloc(1, sizeof(*conf));
    if (!conf)
       return NULL;
@@ -371,7 +372,7 @@ config_file_t *config_file_new_from_string(const char *from_string)
    if (!lines)
       return conf;
 
-   for (size_t i = 0; i < lines->size; i++)
+   for (i = 0; i < lines->size; i++)
    {
       struct config_entry_list *list = (struct config_entry_list*)calloc(1, sizeof(*list));
       

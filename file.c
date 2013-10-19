@@ -233,9 +233,11 @@ bool save_state(const char *path)
 
 bool load_state(const char *path)
 {
-   RARCH_LOG("Loading state: \"%s\".\n", path);
+   unsigned i;
    void *buf = NULL;
    ssize_t size = read_file(path, &buf);
+
+   RARCH_LOG("Loading state: \"%s\".\n", path);
 
    if (size < 0)
    {
@@ -278,16 +280,16 @@ bool load_state(const char *path)
       }
    }
 
-   for (unsigned i = 0; i < 2; i++)
+   for (i = 0; i < 2; i++)
       if (block_type[i] != -1)
          block_size[i] = pretro_get_memory_size(block_type[i]);
 
-   for (unsigned i = 0; i < 2; i++)
+   for (i = 0; i < 2; i++)
       if (block_size[i])
          block_buf[i] = malloc(block_size[i]);
 
    // Backup current SRAM which is overwritten by unserialize.
-   for (unsigned i = 0; i < 2; i++)
+   for (i = 0; i < 2; i++)
    {
       if (block_buf[i])
       {
@@ -300,7 +302,7 @@ bool load_state(const char *path)
    ret = pretro_unserialize(buf, size);
 
    // Flush back :D
-   for (unsigned i = 0; i < 2 && ret; i++)
+   for (i = 0; i < 2 && ret; i++)
    {
       if (block_buf[i])
       {
@@ -310,7 +312,7 @@ bool load_state(const char *path)
       }
    }
 
-   for (unsigned i = 0; i < 2; i++)
+   for (i = 0; i < 2; i++)
       if (block_buf[i])
          free(block_buf[i]);
 
@@ -376,6 +378,7 @@ static char *load_xml_map(const char *path)
 
 static bool load_roms(unsigned rom_type, const char **rom_paths, size_t roms)
 {
+   size_t i;
    bool ret = true;
 
    if (roms == 0)
@@ -409,7 +412,7 @@ static bool load_roms(unsigned rom_type, const char **rom_paths, size_t roms)
    info[0].size = rom_len[0];
    info[0].meta = xml_buf;
 
-   for (size_t i = 1; i < roms; i++)
+   for (i = 1; i < roms; i++)
    {
       if (rom_paths[i] &&
             !g_extern.system.info.need_fullpath &&
@@ -434,7 +437,7 @@ static bool load_roms(unsigned rom_type, const char **rom_paths, size_t roms)
       RARCH_ERR("Failed to load game.\n");
 
 end:
-   for (unsigned i = 0; i < MAX_ROMS; i++)
+   for (i = 0; i < MAX_ROMS; i++)
       free(rom_buf[i]);
    free(xml_buf);
 

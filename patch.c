@@ -77,6 +77,7 @@ patch_error_t bps_apply_patch(
       const uint8_t *source_data, size_t source_length,
       uint8_t *target_data, size_t *target_length)
 {
+   size_t i;
    if (modify_length < 19)
       return PATCH_PATCH_TOO_SMALL;
 
@@ -96,7 +97,7 @@ patch_error_t bps_apply_patch(
    size_t modify_source_size = bps_decode(&bps);
    size_t modify_target_size = bps_decode(&bps);
    size_t modify_markup_size = bps_decode(&bps);
-   for (size_t i = 0; i < modify_markup_size; i++)
+   for (i = 0; i < modify_markup_size; i++)
       bps_read(&bps);
 
    if (modify_source_size > bps.source_length)
@@ -150,13 +151,13 @@ patch_error_t bps_apply_patch(
    }
 
    uint32_t modify_source_checksum = 0, modify_target_checksum = 0, modify_modify_checksum = 0;
-   for (unsigned i = 0; i < 32; i += 8)
+   for (i = 0; i < 32; i += 8)
       modify_source_checksum |= bps_read(&bps) << i;
-   for (unsigned i = 0; i < 32; i += 8)
+   for (i = 0; i < 32; i += 8)
       modify_target_checksum |= bps_read(&bps) << i;
 
    uint32_t checksum = ~bps.modify_checksum;
-   for (unsigned i = 0; i < 32; i += 8)
+   for (i = 0; i < 32; i += 8)
       modify_modify_checksum |= bps_read(&bps) << i;
 
    bps.source_checksum = crc32_calculate(bps.source_data, bps.source_length);
@@ -236,6 +237,7 @@ patch_error_t ups_apply_patch(
       const uint8_t *sourcedata, size_t sourcelength,
       uint8_t *targetdata, size_t *targetlength)
 {
+   size_t i;
    struct ups_data data = {0};
    data.patch_data = patchdata;
    data.source_data = sourcedata;
@@ -287,16 +289,16 @@ patch_error_t ups_apply_patch(
       ups_target_write(&data, ups_source_read(&data));
 
    uint32_t patch_read_checksum = 0, source_read_checksum = 0, target_read_checksum = 0;
-   for (unsigned i = 0; i < 4; i++) 
+   for (i = 0; i < 4; i++) 
       source_read_checksum |= ups_patch_read(&data) << (i * 8);
-   for (unsigned i = 0; i < 4; i++) 
+   for (i = 0; i < 4; i++) 
       target_read_checksum |= ups_patch_read(&data) << (i * 8);
 
    uint32_t patch_result_checksum = ~data.patch_checksum;
    data.source_checksum = ~data.source_checksum;
    data.target_checksum = ~data.target_checksum;
 
-   for (unsigned i = 0; i < 4; i++) 
+   for (i = 0; i < 4; i++) 
       patch_read_checksum |= ups_patch_read(&data) << (i * 8);
 
    if (patch_result_checksum != patch_read_checksum) 
