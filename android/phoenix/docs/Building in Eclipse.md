@@ -1,16 +1,16 @@
 ## How to import the project:
 
-   1 - Open Eclipse, do: File->Import->Existing Projects Into Workspace.
+   1. - Open Eclipse, do: File->Import->Existing Projects Into Workspace.
 
-   2 - Choose select root directory, and also check "Search for nested projects"
+   2. - Choose "Select root directory", and also check "Search for nested projects"
 
-   3 - Browse to the location of the folder named "phoenix" in the RetroArch repository and select it as the root dir. (as of writing, it is /android/phoenix).
+   3. - Browse to the location of the folder named "phoenix" in the RetroArch repository and select it as the root dir. (as of writing, it is /android/phoenix).
 
-   4 - You should see two projects have been found, "RetroArch" and "android-support-v7-appcompat". Import both of these.
+   4. - You should see two projects have been found, "RetroArch" and "android-support-v7-appcompat". Import both of these.
 
-   5 - Let Eclipse finish building the workspace, or whatever.
+   5. - Let Eclipse finish building the workspace, or whatever.
 
-   6 - You should now be able to build it normally like any application.
+   6. - You should now be able to build it normally like any application.
 
 
 
