@@ -190,12 +190,17 @@ static void input_overlay_scale(struct overlay *overlay, float scale)
    for (size_t i = 0; i < overlay->size; i++)
    {
       struct overlay_desc *desc = &overlay->descs[i];
-      desc->mod_w = 2.0f * scale * desc->range_x;
-      desc->mod_h = 2.0f * scale * desc->range_y;
-      float center_x = (desc->x - overlay->center_x) * scale + overlay->center_x;
-      float center_y = (desc->y - overlay->center_y) * scale + overlay->center_y;
-      desc->mod_x = center_x - scale * desc->range_x;
-      desc->mod_y = center_y - scale * desc->range_y;
+
+      float scale_w = overlay->mod_w * desc->range_x;
+      float scale_h = overlay->mod_h * desc->range_y;
+
+      desc->mod_w = 2.0f * scale_w;
+      desc->mod_h = 2.0f * scale_h;
+
+      float adj_center_x = overlay->mod_x + desc->x * overlay->mod_w;
+      float adj_center_y = overlay->mod_y + desc->y * overlay->mod_h;
+      desc->mod_x = adj_center_x - scale_w;
+      desc->mod_y = adj_center_y - scale_h;
    }
 }
 
@@ -658,7 +663,7 @@ input_overlay_t *input_overlay_new(const char *overlay)
    ol->enable = true;
 
    input_overlay_set_alpha_mod(ol, g_settings.input.overlay_opacity);
-   input_overlay_set_scale_factor(ol, 1.0f);
+   input_overlay_set_scale_factor(ol, g_settings.input.overlay_scale);
    ol->next_index = (ol->index + 1) % ol->size;
 
    return ol;
