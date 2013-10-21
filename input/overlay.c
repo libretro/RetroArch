@@ -45,6 +45,7 @@ struct overlay_desc
 
    enum overlay_hitbox hitbox;
    float range_x, range_y;
+   float range_x_mod, range_y_mod;
    float mod_x, mod_y, mod_w, mod_h;
 
    enum overlay_type type;
@@ -58,6 +59,7 @@ struct overlay_desc
    unsigned image_index;
 
    float alpha_mod;
+   float range_mod;
 };
 
 struct overlay
@@ -238,7 +240,8 @@ static void input_overlay_free_overlays(input_overlay_t *ol)
 
 static bool input_overlay_load_desc(input_overlay_t *ol, config_file_t *conf, struct overlay_desc *desc,
       unsigned ol_index, unsigned desc_index,
-      unsigned width, unsigned height, bool normalized)
+      unsigned width, unsigned height,
+      bool normalized, float alpha_mod, float range_mod)
 {
    bool ret = true;
    char overlay_desc_key[64];
@@ -365,10 +368,17 @@ static bool input_overlay_load_desc(input_overlay_t *ol, config_file_t *conf, st
    desc->mod_y = desc->y - desc->range_y;
    desc->mod_h = 2.0f * desc->range_y;
 
-   char alpha_mod_key[64];
-   snprintf(alpha_mod_key, sizeof(alpha_mod_key), "overlay%u_desc%u_alpha_mod", ol_index, desc_index);
-   desc->alpha_mod = 1.0f;
-   config_get_float(conf, alpha_mod_key, &desc->alpha_mod);
+   char conf_key[64];
+   snprintf(conf_key, sizeof(conf_key), "overlay%u_desc%u_alpha_mod", ol_index, desc_index);
+   desc->alpha_mod = alpha_mod;
+   config_get_float(conf, conf_key, &desc->alpha_mod);
+
+   snprintf(conf_key, sizeof(conf_key), "overlay%u_desc%u_range_mod", ol_index, desc_index);
+   desc->range_mod = range_mod;
+   config_get_float(conf, conf_key, &desc->range_mod);
+
+   desc->range_x_mod = desc->range_x;
+   desc->range_y_mod = desc->range_y;
 
 end:
    if (list)
@@ -455,16 +465,25 @@ static bool input_overlay_load_overlay(input_overlay_t *ol, config_file_t *conf,
 
    overlay->size = descs;
 
+   char conf_key[64];
    bool normalized = false;
-   char overlay_normalized_key[64];
-   snprintf(overlay_normalized_key, sizeof(overlay_normalized_key),
+   snprintf(conf_key, sizeof(conf_key),
          "overlay%u_normalized", index);
-   config_get_bool(conf, overlay_normalized_key, &normalized);
+   config_get_bool(conf, conf_key, &normalized);
+
+   float alpha_mod = 1.0f;
+   snprintf(conf_key, sizeof(conf_key), "overlay%u_alpha_mod", index);
+   config_get_float(conf, conf_key, &alpha_mod);
+
+   float range_mod = 1.0f;
+   snprintf(conf_key, sizeof(conf_key), "overlay%u_range_mod", index);
+   config_get_float(conf, conf_key, &range_mod);
 
    for (size_t i = 0; i < overlay->size; i++)
    {
       if (!input_overlay_load_desc(ol, conf, &overlay->descs[i], index, i,
-               overlay->image.width, overlay->image.height, normalized))
+               overlay->image.width, overlay->image.height,
+               normalized, alpha_mod, range_mod))
       {
          RARCH_ERR("[Overlay]: Failed to load overlay descs for overlay #%u.\n", (unsigned)i);
          return false;
@@ -662,15 +681,15 @@ static bool inside_hitbox(const struct overlay_desc *desc, float x, float y)
       case OVERLAY_HITBOX_RADIAL:
       {
          // Ellipsis.
-         float x_dist = (x - desc->x) / desc->range_x;
-         float y_dist = (y - desc->y) / desc->range_y;
+         float x_dist = (x - desc->x) / desc->range_x_mod;
+         float y_dist = (y - desc->y) / desc->range_y_mod;
          float sq_dist = x_dist * x_dist + y_dist * y_dist;
          return sq_dist <= 1.0f;
       }
       
       case OVERLAY_HITBOX_RECT:
-         return (fabs(x - desc->x) <= desc->range_x) &&
-            (fabs(y - desc->y) <= desc->range_y);
+         return (fabs(x - desc->x) <= desc->range_x_mod) &&
+            (fabs(y - desc->y) <= desc->range_y_mod);
 
       default:
          return false;
@@ -710,27 +729,36 @@ void input_overlay_poll(input_overlay_t *ol, input_overlay_state_t *out, int16_t
 
    for (size_t i = 0; i < ol->active->size; i++)
    {
-      if (!inside_hitbox(&ol->active->descs[i], x, y))
-         continue;
-
-      if (ol->active->descs[i].image.image)
-         ol->iface->set_alpha(ol->iface_data, ol->active->descs[i].image_index,
-               ol->active->descs[i].alpha_mod * g_settings.input.overlay_opacity);
-
-      if (ol->active->descs[i].type == OVERLAY_TYPE_BUTTONS)
+      struct overlay_desc *desc = &ol->active->descs[i];
+      if (!inside_hitbox(desc, x, y))
       {
-         uint64_t mask = ol->active->descs[i].key_mask;
+         desc->range_x_mod = desc->range_x;
+         desc->range_y_mod = desc->range_y;
+         continue;
+      }
+
+      // If pressed, change the hitbox.
+      desc->range_x_mod = desc->range_x * desc->range_mod;
+      desc->range_y_mod = desc->range_y * desc->range_mod;
+
+      if (desc->image.image)
+         ol->iface->set_alpha(ol->iface_data, desc->image_index,
+               desc->alpha_mod * g_settings.input.overlay_opacity);
+
+      if (desc->type == OVERLAY_TYPE_BUTTONS)
+      {
+         uint64_t mask = desc->key_mask;
          out->buttons |= mask;
 
          if (mask & (UINT64_C(1) << RARCH_OVERLAY_NEXT))
-            ol->next_index = ol->active->descs[i].next_index;
+            ol->next_index = desc->next_index;
       }
       else
       {
-         float x_val = (x - ol->active->descs[i].x) / ol->active->descs[i].range_x / ol->active->descs[i].analog_saturate_pct;
-         float y_val = (y - ol->active->descs[i].y) / ol->active->descs[i].range_y / ol->active->descs[i].analog_saturate_pct;
+         float x_val = (x - desc->x) / desc->range_x_mod / desc->analog_saturate_pct;
+         float y_val = (y - desc->y) / desc->range_y_mod / desc->analog_saturate_pct;
 
-         unsigned int base = (ol->active->descs[i].type == OVERLAY_TYPE_ANALOG_RIGHT) ? 2 : 0;
+         unsigned int base = (desc->type == OVERLAY_TYPE_ANALOG_RIGHT) ? 2 : 0;
          out->analog[base + 0] = clamp(x_val, -1.0f, 1.0f) * 32767.0f;
          out->analog[base + 1] = clamp(y_val, -1.0f, 1.0f) * 32767.0f;
       }
@@ -746,6 +774,13 @@ void input_overlay_poll_clear(input_overlay_t *ol)
 {
    ol->blocked = false;
    input_overlay_set_alpha_mod(ol, g_settings.input.overlay_opacity);
+
+   for (size_t i = 0; i < ol->active->size; i++)
+   {
+      struct overlay_desc *desc = &ol->active->descs[i];
+      desc->range_x_mod = desc->range_x;
+      desc->range_y_mod = desc->range_y;
+   }
 }
 
 void input_overlay_next(input_overlay_t *ol)
