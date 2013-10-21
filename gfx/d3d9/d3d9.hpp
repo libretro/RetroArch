@@ -45,8 +45,8 @@ typedef struct
    Coords tex_coords;
    Coords vert_coords;
    unsigned tex_w, tex_h;
-   bool enabled;
    bool fullscreen;
+   bool enabled;
    float alpha_mod;
    IDirect3DTexture9 *tex;
    IDirect3DVertexBuffer9 *vert_buf;
@@ -77,12 +77,12 @@ class D3DVideo
       void overlay_render(overlay_t &overlay);
 
 #ifdef HAVE_OVERLAY
-      bool overlay_load(const uint32_t *image, unsigned width, unsigned height);
-      void overlay_tex_geom(float x, float y, float w, float h);
-      void overlay_vertex_geom(float x, float y, float w, float h);
+      bool overlay_load(const video_overlay_image *images, unsigned num_images);
+      void overlay_tex_geom(unsigned index, float x, float y, float w, float h);
+      void overlay_vertex_geom(unsigned index, float x, float y, float w, float h);
       void overlay_enable(bool state);
       void overlay_full_screen(bool enable);
-      void overlay_set_alpha(float mod);
+      void overlay_set_alpha(unsigned index, float mod);
 #endif
 
 #ifdef HAVE_RGUI
@@ -153,8 +153,12 @@ class D3DVideo
       void update_title();
 
 #ifdef HAVE_OVERLAY
-      overlay_t overlay;
+      bool overlays_enabled;
+      std::vector<overlay_t> overlays;
+      void free_overlays();
 #endif
+
+      void free_overlay(overlay_t &overlay);
 
 #ifdef HAVE_RGUI
       overlay_t rgui;
