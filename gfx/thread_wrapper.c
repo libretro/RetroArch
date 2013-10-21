@@ -112,14 +112,20 @@ typedef struct thread_video
 
       struct
       {
+         unsigned index;
          float x, y, w, h;
       } rect;
 
       struct
       {
-         const uint32_t *data;
-         unsigned width;
-         unsigned height;
+         unsigned index;
+         float mod;
+      } alpha;
+
+      struct
+      {
+         const struct video_overlay_image *data;
+         unsigned num;
       } image;
 
       struct
@@ -242,13 +248,13 @@ static void thread_loop(void *data)
          case CMD_OVERLAY_LOAD:
             thr->cmd_data.b = thr->overlay->load(thr->driver_data,
                   thr->cmd_data.image.data,
-                  thr->cmd_data.image.width,
-                  thr->cmd_data.image.height);
+                  thr->cmd_data.image.num);
             thread_reply(thr, CMD_OVERLAY_LOAD);
             break;
 
          case CMD_OVERLAY_TEX_GEOM:
             thr->overlay->tex_geom(thr->driver_data,
+                  thr->cmd_data.rect.index,
                   thr->cmd_data.rect.x,
                   thr->cmd_data.rect.y,
                   thr->cmd_data.rect.w,
@@ -258,6 +264,7 @@ static void thread_loop(void *data)
 
          case CMD_OVERLAY_VERTEX_GEOM:
             thr->overlay->vertex_geom(thr->driver_data,
+                  thr->cmd_data.rect.index,
                   thr->cmd_data.rect.x,
                   thr->cmd_data.rect.y,
                   thr->cmd_data.rect.w,
@@ -271,7 +278,7 @@ static void thread_loop(void *data)
             break;
 
          case CMD_OVERLAY_SET_ALPHA:
-            thr->overlay->set_alpha(thr->driver_data, thr->cmd_data.f);
+            thr->overlay->set_alpha(thr->driver_data, thr->cmd_data.alpha.index, thr->cmd_data.alpha.mod);
             thread_reply(thr, CMD_OVERLAY_SET_ALPHA);
             break;
 #endif
@@ -573,20 +580,20 @@ static void thread_overlay_enable(void *data, bool state)
    thread_wait_reply(thr, CMD_OVERLAY_ENABLE);
 }
 
-static bool thread_overlay_load(void *data, const uint32_t *image, unsigned width, unsigned height)
+static bool thread_overlay_load(void *data, const struct video_overlay_image *images, unsigned num_images)
 {
    thread_video_t *thr = (thread_video_t*)data;
-   thr->cmd_data.image.data = image;
-   thr->cmd_data.image.width = width;
-   thr->cmd_data.image.height = height;
+   thr->cmd_data.image.data = images;
+   thr->cmd_data.image.num = num_images;
    thread_send_cmd(thr, CMD_OVERLAY_LOAD);
    thread_wait_reply(thr, CMD_OVERLAY_LOAD);
    return thr->cmd_data.b;
 }
 
-static void thread_overlay_tex_geom(void *data, float x, float y, float w, float h)
+static void thread_overlay_tex_geom(void *data, unsigned index, float x, float y, float w, float h)
 {
    thread_video_t *thr = (thread_video_t*)data;
+   thr->cmd_data.rect.index = index;
    thr->cmd_data.rect.x = x;
    thr->cmd_data.rect.y = y;
    thr->cmd_data.rect.w = w;
@@ -595,9 +602,10 @@ static void thread_overlay_tex_geom(void *data, float x, float y, float w, float
    thread_wait_reply(thr, CMD_OVERLAY_TEX_GEOM);
 }
 
-static void thread_overlay_vertex_geom(void *data, float x, float y, float w, float h)
+static void thread_overlay_vertex_geom(void *data, unsigned index, float x, float y, float w, float h)
 {
    thread_video_t *thr = (thread_video_t*)data;
+   thr->cmd_data.rect.index = index;
    thr->cmd_data.rect.x = x;
    thr->cmd_data.rect.y = y;
    thr->cmd_data.rect.w = w;
@@ -614,10 +622,11 @@ static void thread_overlay_full_screen(void *data, bool enable)
    thread_wait_reply(thr, CMD_OVERLAY_FULL_SCREEN);
 }
 
-static void thread_overlay_set_alpha(void *data, float mod)
+static void thread_overlay_set_alpha(void *data, unsigned index, float mod)
 {
    thread_video_t *thr = (thread_video_t*)data;
-   thr->cmd_data.f = mod;
+   thr->cmd_data.alpha.index = index;
+   thr->cmd_data.alpha.mod = mod;
    thread_send_cmd(thr, CMD_OVERLAY_SET_ALPHA);
    thread_wait_reply(thr, CMD_OVERLAY_SET_ALPHA);
 }

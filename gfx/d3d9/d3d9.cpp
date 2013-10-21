@@ -431,14 +431,10 @@ RECT D3DVideo::monitor_rect()
 
 D3DVideo::D3DVideo(const video_info_t *info) :
    g_pD3D(nullptr), dev(nullptr), font(nullptr),
-   rotation(0), needs_restore(false), cgCtx(nullptr)
+   rotation(0), needs_restore(false), cgCtx(nullptr), overlays_enabled(false)
 {
    should_resize = false;
    gfx_set_dwm();
-
-#ifdef HAVE_OVERLAY
-   std::memset(&overlay, 0, sizeof(overlay));
-#endif
 
 #ifdef HAVE_RGUI
    std::memset(&rgui, 0, sizeof(rgui));
@@ -508,7 +504,7 @@ D3DVideo::D3DVideo(const video_info_t *info) :
 
    show_cursor(!info->fullscreen
 #ifdef HAVE_OVERLAY
-      || overlay.enabled
+      || overlays_enabled
 #endif
    );
    Callback::quit = false;
@@ -544,20 +540,31 @@ void D3DVideo::deinit()
    needs_restore = false;
 }
 
-D3DVideo::~D3DVideo()
-{
-   deinit();
 #ifdef HAVE_OVERLAY
+void D3DVideo::free_overlays()
+{
+   for (unsigned i = 0; i < overlays.size(); i++)
+      free_overlay(overlays[i]);
+   overlays.clear();
+}
+#endif
+
+void D3DVideo::free_overlay(overlay_t &overlay)
+{
    if (overlay.tex)
       overlay.tex->Release();
    if (overlay.vert_buf)
       overlay.vert_buf->Release();
+}
+
+D3DVideo::~D3DVideo()
+{
+   deinit();
+#ifdef HAVE_OVERLAY
+   free_overlays();
 #endif
 #ifdef HAVE_RGUI
-   if (rgui.tex)
-      rgui.tex->Release();
-   if (rgui.vert_buf)
-      rgui.vert_buf->Release();
+   free_overlay(rgui);
 #endif
    if (dev)
       dev->Release();
@@ -652,8 +659,11 @@ bool D3DVideo::frame(const void *frame,
 #endif
 
 #ifdef HAVE_OVERLAY
-   if (overlay.enabled)
-      overlay_render(overlay);
+   if (overlays_enabled)
+   {
+      for (unsigned i = 0; i < overlays.size(); i++)
+         overlay_render(overlays[i]);
+   }
 #endif
 
    RARCH_PERFORMANCE_STOP(d3d_frame);
@@ -1037,70 +1047,81 @@ void D3DVideo::resize(unsigned new_width, unsigned new_height)
 }
 
 #ifdef HAVE_OVERLAY
-bool D3DVideo::overlay_load(const uint32_t *image, unsigned width, unsigned height)
+bool D3DVideo::overlay_load(const video_overlay_image *images, unsigned num_images)
 {
-   if (overlay.tex)
-      overlay.tex->Release();
-   if (FAILED(dev->CreateTexture(width, height, 1,
-               0,
-               D3DFMT_A8R8G8B8,
-               D3DPOOL_MANAGED,
-               &overlay.tex, nullptr)))
-   {
-      RARCH_ERR("[D3D9]: Failed to create overlay texture\n");
-      return false;
-   }
-   
-   D3DLOCKED_RECT d3dlr;
-   if (SUCCEEDED(overlay.tex->LockRect(0, &d3dlr, nullptr, D3DLOCK_NOSYSLOCK)))
-   {
-      std::memcpy(d3dlr.pBits, image, height * d3dlr.Pitch);
-      overlay.tex->UnlockRect(0);
-   }
+   free_overlays();
+   overlays.resize(num_images);
 
-   overlay.tex_w = width;
-   overlay.tex_h = height;
+   for (unsigned i = 0; i < num_images; i++)
+   {
+      unsigned width = images[i].width;
+      unsigned height = images[i].height;
+      overlay_t &overlay = overlays[i];
+      if (FAILED(dev->CreateTexture(width, height, 1,
+                  0,
+                  D3DFMT_A8R8G8B8,
+                  D3DPOOL_MANAGED,
+                  &overlay.tex, nullptr)))
+      {
+         RARCH_ERR("[D3D9]: Failed to create overlay texture\n");
+         return false;
+      }
 
-   overlay_tex_geom(0, 0, 1, 1); // Default. Stretch to whole screen.
-   overlay_vertex_geom(0, 0, 1, 1);
+      D3DLOCKED_RECT d3dlr;
+      if (SUCCEEDED(overlay.tex->LockRect(0, &d3dlr, nullptr, D3DLOCK_NOSYSLOCK)))
+      {
+         uint32_t *dst = static_cast<uint32_t*>(d3dlr.pBits);
+         const uint32_t *src = images[i].image;
+         unsigned pitch = d3dlr.Pitch >> 2;
+         for (unsigned y = 0; y < height; y++, dst += pitch, src += width)
+            std::memcpy(dst, src, width << 2);
+         overlay.tex->UnlockRect(0);
+      }
+
+      overlay.tex_w = width;
+      overlay.tex_h = height;
+      overlay_tex_geom(i, 0, 0, 1, 1); // Default. Stretch to whole screen.
+      overlay_vertex_geom(i, 0, 0, 1, 1);
+   }
 
    return true;
 }
 
-void D3DVideo::overlay_tex_geom(float x, float y, float w, float h)
+void D3DVideo::overlay_tex_geom(unsigned index, float x, float y, float w, float h)
 {
-   overlay.tex_coords.x = x;
-   overlay.tex_coords.y = y;
-   overlay.tex_coords.w = w;
-   overlay.tex_coords.h = h;
+   overlays[index].tex_coords.x = x;
+   overlays[index].tex_coords.y = y;
+   overlays[index].tex_coords.w = w;
+   overlays[index].tex_coords.h = h;
 }
 
-void D3DVideo::overlay_vertex_geom(float x, float y, float w, float h)
+void D3DVideo::overlay_vertex_geom(unsigned index, float x, float y, float w, float h)
 {
    y = 1.0f - y;
    h = -h;
-   overlay.vert_coords.x = x;
-   overlay.vert_coords.y = y;
-   overlay.vert_coords.w = w;
-   overlay.vert_coords.h = h;
+   overlays[index].vert_coords.x = x;
+   overlays[index].vert_coords.y = y;
+   overlays[index].vert_coords.w = w;
+   overlays[index].vert_coords.h = h;
 }
 
 void D3DVideo::overlay_enable(bool state)
 {
-   overlay.enabled = state;
+   for (unsigned i = 0; i < overlays.size(); i++)
+      overlays_enabled = state;
    show_cursor(state);
 }
 
 void D3DVideo::overlay_full_screen(bool enable)
 {
-   overlay.fullscreen = enable;
+   for (unsigned i = 0; i < overlays.size(); i++)
+      overlays[i].fullscreen = enable;
 }
 
-void D3DVideo::overlay_set_alpha(float mod)
+void D3DVideo::overlay_set_alpha(unsigned index, float mod)
 {
-   overlay.alpha_mod = mod;
+   overlays[index].alpha_mod = mod;
 }
-
 #endif
 
 void D3DVideo::overlay_render(overlay_t &overlay)
@@ -1178,7 +1199,7 @@ void D3DVideo::overlay_render(overlay_t &overlay)
       {0, 20, D3DDECLTYPE_FLOAT4, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_COLOR, 0},
       D3DDECL_END()
    };
-   IDirect3DVertexDeclaration9 * vertex_decl;
+   IDirect3DVertexDeclaration9 *vertex_decl;
    dev->CreateVertexDeclaration(vElems, &vertex_decl);
    dev->SetVertexDeclaration(vertex_decl);
    vertex_decl->Release();
@@ -1210,7 +1231,7 @@ void D3DVideo::overlay_render(overlay_t &overlay)
       dev->EndScene();
    }
 
-   //restore previous state
+   // restore previous state
    dev->SetRenderState(D3DRS_ALPHABLENDENABLE, FALSE);
    dev->SetViewport(&final_viewport);
 }
@@ -1367,23 +1388,25 @@ static void d3d9_get_poke_interface(void *data, const video_poke_interface_t **i
 #endif
 
 #ifdef HAVE_OVERLAY
-static bool d3d9_overlay_load(void *data, const uint32_t *image, unsigned width, unsigned height)
+static bool d3d9_overlay_load(void *data, const video_overlay_image *images, unsigned num_images)
 {
-   return reinterpret_cast<D3DVideo*>(data)->overlay_load(image, width, height);
+   return reinterpret_cast<D3DVideo*>(data)->overlay_load(images, num_images);
 }
 
 static void d3d9_overlay_tex_geom(void *data,
+      unsigned index,
       float x, float y,
       float w, float h)
 {
-   return reinterpret_cast<D3DVideo*>(data)->overlay_tex_geom(x, y, w, h);
+   return reinterpret_cast<D3DVideo*>(data)->overlay_tex_geom(index, x, y, w, h);
 }
 
 static void d3d9_overlay_vertex_geom(void *data,
+      unsigned index,
       float x, float y,
       float w, float h)
 {
-   return reinterpret_cast<D3DVideo*>(data)->overlay_vertex_geom(x, y, w, h);
+   return reinterpret_cast<D3DVideo*>(data)->overlay_vertex_geom(index, x, y, w, h);
 }
 
 static void d3d9_overlay_enable(void *data, bool state)
@@ -1396,9 +1419,9 @@ static void d3d9_overlay_full_screen(void *data, bool enable)
    return reinterpret_cast<D3DVideo*>(data)->overlay_full_screen(enable);
 }
 
-static void d3d9_overlay_set_alpha(void *data, float mod)
+static void d3d9_overlay_set_alpha(void *data, unsigned index, float mod)
 {
-   return reinterpret_cast<D3DVideo*>(data)->overlay_set_alpha(mod);
+   return reinterpret_cast<D3DVideo*>(data)->overlay_set_alpha(index, mod);
 }
 
 static const video_overlay_interface_t d3d9_overlay_interface = {
