@@ -121,10 +121,11 @@ public final class MainMenuActivity extends PreferenceActivity {
 	private void extractAssetsThread() {
 		try {
 			String dataDir = getApplicationInfo().dataDir;
+			String userDataDir = getExternalFilesDir(null).getAbsolutePath();
 
 			String apk = getApplicationInfo().sourceDir;
 			Log.i(TAG, "Extracting RetroArch assets from: " + apk + " ...");
-			boolean success = NativeInterface.extractArchiveTo(apk, "assets", dataDir);
+			boolean success = NativeInterface.extractArchiveTo(apk, "assets", userDataDir);
 			if (!success) {
 				throw new IOException("Failed to extract assets ...");
 			}
