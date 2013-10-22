@@ -77,15 +77,16 @@ static void poll_joypad(const rarch_joypad_driver_t *driver,
       unsigned pad,
       struct poll_data *data)
 {
+   unsigned i;
    input_joypad_poll(driver);
 
-   for (unsigned i = 0; i < MAX_BUTTONS; i++)
+   for (i = 0; i < MAX_BUTTONS; i++)
       data->buttons[i] = input_joypad_button_raw(driver, pad, i);
 
-   for (unsigned i = 0; i < MAX_AXES; i++)
+   for (i = 0; i < MAX_AXES; i++)
       data->axes[i] = input_joypad_axis_raw(driver, pad, i);
 
-   for (unsigned i = 0; i < MAX_HATS; i++)
+   for (i = 0; i < MAX_HATS; i++)
    {
       uint16_t hat = 0;
       hat |= input_joypad_hat_raw(driver, pad, HAT_UP_MASK, i)    << HAT_UP_SHIFT;
@@ -99,6 +100,7 @@ static void poll_joypad(const rarch_joypad_driver_t *driver,
 
 static void get_binds(config_file_t *conf, config_file_t *auto_conf, int player, int joypad)
 {
+   int i, timeout_cnt;
    const rarch_joypad_driver_t *driver = input_joypad_init_driver(g_driver);
    if (!driver)
    {
@@ -136,7 +138,7 @@ static void get_binds(config_file_t *conf, config_file_t *auto_conf, int player,
    getchar();
    poll_joypad(driver, joypad, &old_poll);
 
-   for (int i = 0; i < MAX_AXES; i++)
+   for (i = 0; i < MAX_AXES; i++)
    {
       int16_t initial = input_joypad_axis_raw(driver, joypad, i);
       if (abs(initial) < 20000)
@@ -152,7 +154,7 @@ static void get_binds(config_file_t *conf, config_file_t *auto_conf, int player,
       initial_axes[i] = initial;
    }
 
-   for (int i = 0; i < MAX_BUTTONS; i++)
+   for (i = 0; i < MAX_BUTTONS; i++)
    {
       if (old_poll.buttons[i])
          fprintf(stderr, "Button %d was initially pressed. This indicates broken initial state.\n", i);
@@ -161,8 +163,9 @@ static void get_binds(config_file_t *conf, config_file_t *auto_conf, int player,
    fprintf(stderr, "Configuring binds for player #%d on joypad #%d.\n\n",
          player + 1, joypad);
 
-   for (unsigned i = 0, timeout_cnt = 0; input_config_bind_map[i].valid; i++, timeout_cnt = 0)
+   for (i = 0, timeout_cnt = 0; input_config_bind_map[i].valid; i++, timeout_cnt = 0)
    {
+      int j;
       if (i == RARCH_TURBO_ENABLE)
          continue;
 
@@ -194,7 +197,7 @@ static void get_binds(config_file_t *conf, config_file_t *auto_conf, int player,
          }
 
          poll_joypad(driver, joypad, &new_poll);
-         for (int j = 0; j < MAX_BUTTONS; j++)
+         for (j = 0; j < MAX_BUTTONS; j++)
          {
             if (new_poll.buttons[j] && !old_poll.buttons[j])
             {
@@ -215,7 +218,7 @@ static void get_binds(config_file_t *conf, config_file_t *auto_conf, int player,
             }
          }
 
-         for (int j = 0; j < MAX_AXES; j++)
+         for (j = 0; j < MAX_AXES; j++)
          {
             if (new_poll.axes[j] == old_poll.axes[j])
                continue;
@@ -270,7 +273,7 @@ static void get_binds(config_file_t *conf, config_file_t *auto_conf, int player,
             }
          }
 
-         for (int j = 0; j < MAX_HATS; j++)
+         for (j = 0; j < MAX_HATS; j++)
          {
             const char *quark  = NULL;
             uint16_t value     = new_poll.hats[j];

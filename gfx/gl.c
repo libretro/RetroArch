@@ -1586,7 +1586,8 @@ static void gl_free(void *data)
 #ifdef HAVE_GL_SYNC
    if (gl->have_sync)
    {
-      for (unsigned i = 0; i < gl->fence_count; i++)
+      unsigned i;
+      for (i = 0; i < gl->fence_count; i++)
       {
          glClientWaitSync(gl->fences[i], GL_SYNC_FLUSH_COMMANDS_BIT, 1000000000);
          glDeleteSync(gl->fences[i]);
@@ -1789,6 +1790,7 @@ static inline void gl_reinit_textures(void *data, const video_info_t *video)
 #if !defined(HAVE_OPENGLES) && defined(HAVE_FFMPEG)
 static void gl_init_pbo_readback(void *data)
 {
+   unsigned i;
    gl_t *gl = (gl_t*)data;
    // Only bother with this if we're doing FFmpeg GPU recording.
    gl->pbo_readback_enable = g_settings.video.gpu_record && g_extern.recording;
@@ -1798,7 +1800,7 @@ static void gl_init_pbo_readback(void *data)
    RARCH_LOG("Async PBO readback enabled.\n");
 
    glGenBuffers(4, gl->pbo_readback);
-   for (unsigned i = 0; i < 4; i++)
+   for (i = 0; i < 4; i++)
    {
       glBindBuffer(GL_PIXEL_PACK_BUFFER, gl->pbo_readback[i]);
       glBufferData(GL_PIXEL_PACK_BUFFER, gl->vp.width * gl->vp.height * sizeof(uint32_t),

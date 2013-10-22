@@ -104,7 +104,8 @@ static void rarch_get_environment_console(void)
 
 returntype main_entry(signature())
 {
-   void* args = NULL;
+   void *args = NULL;
+   unsigned i;
    frontend_ctx = (frontend_ctx_driver_t*)frontend_ctx_init_first();
 
    if (frontend_ctx && frontend_ctx->init)
@@ -201,7 +202,7 @@ returntype main_entry(signature())
          // Menu should always run with vsync on.
          video_set_nonblock_state_func(false);
          // Stop all rumbling when entering RGUI.
-         for (unsigned i = 0; i < MAX_PLAYERS; i++)
+         for (i = 0; i < MAX_PLAYERS; i++)
          {
             driver_set_rumble_state(i, RETRO_RUMBLE_STRONG, 0);
             driver_set_rumble_state(i, RETRO_RUMBLE_WEAK, 0);

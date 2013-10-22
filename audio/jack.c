@@ -44,6 +44,8 @@ typedef struct jack
 
 static int process_cb(jack_nframes_t nframes, void *data)
 {
+   int i;
+   jack_nframes_t f;
    jack_t *jd = (jack_t*)data;
    if (nframes <= 0)
    {
@@ -59,13 +61,13 @@ static int process_cb(jack_nframes_t nframes, void *data)
    if (min_avail > nframes)
       min_avail = nframes;
 
-   for (int i = 0; i < 2; i++)
+   for (i = 0; i < 2; i++)
    {
       jack_default_audio_sample_t *out = (jack_default_audio_sample_t*)jack_port_get_buffer(jd->ports[i], nframes);
       assert(out);
       jack_ringbuffer_read(jd->buffer[i], (char*)out, min_avail * sizeof(jack_default_audio_sample_t));
 
-      for (jack_nframes_t f = min_avail; f < nframes; f++)
+      for (f = min_avail; f < nframes; f++)
       {
          out[f] = 0.0f;
       }
@@ -83,17 +85,18 @@ static void shutdown_cb(void *data)
 
 static int parse_ports(char **dest_ports, const char **jports)
 {
-   int parsed = 0;
-
+   int i;
    char *save;
    const char *con = strtok_r(g_settings.audio.device, ",", &save);
+   int parsed = 0;
+
    if (con)
       dest_ports[parsed++] = strdup(con);
    con = strtok_r(NULL, ",", &save);
    if (con)
       dest_ports[parsed++] = strdup(con);
 
-   for (int i = parsed; i < 2; i++)
+   for (i = parsed; i < 2; i++)
       dest_ports[i] = strdup(jports[i]);
 
    return 2;
@@ -101,11 +104,12 @@ static int parse_ports(char **dest_ports, const char **jports)
 
 static size_t find_buffersize(jack_t *jd, int latency)
 {
+   int i;
    int frames = latency * g_settings.audio.out_rate / 1000;
 
    jack_latency_range_t range;
    int jack_latency = 0;
-   for (int i = 0; i < 2; i++)
+   for (i = 0; i < 2; i++)
    {
       jack_port_get_latency_range(jd->ports[i], JackPlaybackLatency, &range);
       if ((int)range.max > jack_latency)
@@ -126,6 +130,7 @@ static size_t find_buffersize(jack_t *jd, int latency)
 
 static void *ja_init(const char *device, unsigned rate, unsigned latency)
 {
+   int i;
    jack_t *jd = (jack_t*)calloc(1, sizeof(jack_t));
    if (!jd)
       return NULL;
@@ -166,7 +171,7 @@ static void *ja_init(const char *device, unsigned rate, unsigned latency)
    jd->buffer_size = bufsize;
 
    RARCH_LOG("JACK: Internal buffer size: %d frames.\n", (int)(bufsize / sizeof(jack_default_audio_sample_t)));
-   for (int i = 0; i < 2; i++)
+   for (i = 0; i < 2; i++)
    {
       jd->buffer[i] = jack_ringbuffer_create(bufsize);
       if (jd->buffer[i] == NULL)
@@ -184,7 +189,7 @@ static void *ja_init(const char *device, unsigned rate, unsigned latency)
       goto error;
    }
 
-   for (int i = 0; i < 2; i++)
+   for (i = 0; i < 2; i++)
    {
       if (jack_connect(jd->client, jack_port_name(jd->ports[i]), dest_ports[i]))
       {
@@ -193,7 +198,7 @@ static void *ja_init(const char *device, unsigned rate, unsigned latency)
       }
    }
 
-   for (int i = 0; i < parsed; i++)
+   for (i = 0; i < parsed; i++)
       free(dest_ports[i]);
   
    jack_free(jports);
@@ -207,10 +212,12 @@ error:
 
 static size_t write_buffer(jack_t *jd, const float *buf, size_t size)
 {
+   int i;
+   size_t j;
    jack_default_audio_sample_t out_deinterleaved_buffer[2][AUDIO_CHUNK_SIZE_NONBLOCKING];
 
-   for (int i = 0; i < 2; i++)
-      for (size_t j = 0; j < FRAMES(size); j++)
+   for (i = 0; i < 2; i++)
+      for (j = 0; j < FRAMES(size); j++)
          out_deinterleaved_buffer[i][j] = buf[j * 2 + i];
 
    size_t frames = FRAMES(size);
@@ -233,7 +240,7 @@ static size_t write_buffer(jack_t *jd, const float *buf, size_t size)
 
       if (write_frames > 0)
       {
-         for (int i = 0; i < 2; i++)
+         for (i = 0; i < 2; i++)
          {
             jack_ringbuffer_write(jd->buffer[i], (const char*)&out_deinterleaved_buffer[i][written],
                   write_frames * sizeof(jack_default_audio_sample_t));
@@ -281,6 +288,7 @@ static bool ja_start(void *data)
 
 static void ja_free(void *data)
 {
+   int i;
    jack_t *jd = (jack_t*)data;
 
    jd->shutdown = true;
@@ -291,7 +299,7 @@ static void ja_free(void *data)
       jack_client_close(jd->client);
    }
 
-   for (int i = 0; i < 2; i++)
+   for (i = 0; i < 2; i++)
       if (jd->buffer[i] != NULL)
          jack_ringbuffer_free(jd->buffer[i]);
 

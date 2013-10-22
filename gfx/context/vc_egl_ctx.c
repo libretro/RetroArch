@@ -267,9 +267,10 @@ static bool gfx_ctx_bind_api(enum gfx_ctx_api api, unsigned major, unsigned mino
 
 static void gfx_ctx_destroy(void)
 {
+   unsigned i;
    if (g_egl_dpy)
    {
-      for (unsigned i = 0; i < MAX_EGLIMAGE_TEXTURES; i++)
+      for (i = 0; i < MAX_EGLIMAGE_TEXTURES; i++)
       {
          if (eglBuffer[i] && peglDestroyImageKHR)
          {
@@ -327,7 +328,7 @@ static void gfx_ctx_destroy(void)
    g_config       = 0;
    g_inited       = false;
 
-   for (unsigned i = 0; i < MAX_EGLIMAGE_TEXTURES; i++)
+   for (i = 0; i < MAX_EGLIMAGE_TEXTURES; i++)
    {
       eglBuffer[i]     = NULL;
       g_egl_vgimage[i] = 0;

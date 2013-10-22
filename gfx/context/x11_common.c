@@ -131,8 +131,9 @@ void x11_suspend_screensaver(Window wnd)
 
 static bool get_video_mode(Display *dpy, unsigned width, unsigned height, XF86VidModeModeInfo *mode, XF86VidModeModeInfo *desktop_mode)
 {
-   XF86VidModeModeInfo **modes = NULL;
+   int i;
    int num_modes = 0;
+   XF86VidModeModeInfo **modes = NULL;
    XF86VidModeGetAllModeLines(dpy, DefaultScreen(dpy), &num_modes, &modes);
 
    if (!num_modes)
@@ -144,7 +145,7 @@ static bool get_video_mode(Display *dpy, unsigned width, unsigned height, XF86Vi
    *desktop_mode = *modes[0];
 
    bool ret = false;
-   for (int i = 0; i < num_modes; i++)
+   for (i = 0; i < num_modes; i++)
    {
       if (modes[i]->hdisplay == width && modes[i]->vdisplay == height)
       {
@@ -200,13 +201,14 @@ static XineramaScreenInfo *x11_query_screens(Display *dpy, int *num_screens)
 bool x11_get_xinerama_coord(Display *dpy, int screen,
       int *x, int *y, unsigned *w, unsigned *h)
 {
+   int i;
    bool ret = false;
 
    int num_screens = 0;
    XineramaScreenInfo *info = x11_query_screens(dpy, &num_screens);
    RARCH_LOG("[X11]: Xinerama screens: %d.\n", num_screens);
 
-   for (int i = 0; i < num_screens; i++)
+   for (i = 0; i < num_screens; i++)
    {
       if (info[i].screen_number == screen)
       {
@@ -226,6 +228,7 @@ bool x11_get_xinerama_coord(Display *dpy, int screen,
 unsigned x11_get_xinerama_monitor(Display *dpy, int x, int y,
       int w, int h)
 {
+   int i;
    unsigned monitor = 0;
    int largest_area = 0;
 
@@ -233,7 +236,7 @@ unsigned x11_get_xinerama_monitor(Display *dpy, int x, int y,
    XineramaScreenInfo *info = x11_query_screens(dpy, &num_screens);
    RARCH_LOG("[X11]: Xinerama screens: %d.\n", num_screens);
 
-   for (int i = 0; i < num_screens; i++)
+   for (i = 0; i < num_screens; i++)
    {
       int max_lx = max(x, info[i].x_org);
       int min_rx = min(x + w, info[i].x_org + info[i].width);

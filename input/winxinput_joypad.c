@@ -145,6 +145,7 @@ const char* winxinput_joypad_name (unsigned pad)
 
 static bool winxinput_joypad_init(void)
 {
+   unsigned i, autoconf_pad;
    g_winxinput_dll = NULL;
 
    // Find the correct path to load the DLL from.
@@ -201,12 +202,12 @@ static bool winxinput_joypad_init(void)
    }
 
    // Zero out the states
-   for (unsigned i = 0; i < 4; ++i)
+   for (i = 0; i < 4; ++i)
       memset(&g_winxinput_states[i], 0, sizeof(winxinput_joypad_state));
 
    // Do a dummy poll to check which controllers are connected.
    XINPUT_STATE dummy_state;
-   for (unsigned i = 0; i < 4; ++i)
+   for (i = 0; i < 4; ++i)
    {
       g_winxinput_states[i].connected = !(g_XInputGetStateEx(i, &dummy_state) == ERROR_DEVICE_NOT_CONNECTED);
       if (g_winxinput_states[i].connected)
@@ -229,7 +230,7 @@ static bool winxinput_joypad_init(void)
       return false;
    }
 
-   for (unsigned autoconf_pad = 0; autoconf_pad < MAX_PLAYERS; autoconf_pad++)
+   for (autoconf_pad = 0; autoconf_pad < MAX_PLAYERS; autoconf_pad++)
    {
       if (pad_index_to_xplayer_index(autoconf_pad) > -1)
       {
@@ -253,7 +254,8 @@ static bool winxinput_joypad_query_pad(unsigned pad)
 
 static void winxinput_joypad_destroy(void)
 {
-   for (unsigned i = 0; i < 4; ++i)
+   unsigned i;
+   for (i = 0; i < 4; ++i)
       memset(&g_winxinput_states[i], 0, sizeof(winxinput_joypad_state));
 
    FreeLibrary(g_winxinput_dll);
@@ -376,7 +378,8 @@ static int16_t winxinput_joypad_axis (unsigned port_num, uint32_t joyaxis)
 
 static void winxinput_joypad_poll(void)
 {
-   for (unsigned i = 0; i < 4; ++i)
+   unsigned i;
+   for (i = 0; i < 4; ++i)
       if (g_winxinput_states[i].connected)
          if (g_XInputGetStateEx(i, &(g_winxinput_states[i].xstate)) == ERROR_DEVICE_NOT_CONNECTED)
             g_winxinput_states[i].connected = false;
@@ -416,3 +419,4 @@ const rarch_joypad_driver_t winxinput_joypad = {
    winxinput_joypad_name,
    "winxinput",
 };
+

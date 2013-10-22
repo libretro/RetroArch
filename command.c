@@ -243,7 +243,8 @@ static const struct cmd_action_map action_map[] = {
 
 static bool command_get_arg(const char *tok, const char **arg, unsigned *index)
 {
-   for (unsigned i = 0; i < ARRAY_SIZE(map); i++)
+   unsigned i;
+   for (i = 0; i < ARRAY_SIZE(map); i++)
    {
       if (strcmp(tok, map[i].str) == 0)
       {
@@ -257,7 +258,7 @@ static bool command_get_arg(const char *tok, const char **arg, unsigned *index)
       }
    }
 
-   for (unsigned i = 0; i < ARRAY_SIZE(action_map); i++)
+   for (i = 0; i < ARRAY_SIZE(action_map); i++)
    {
       const char *str = strstr(tok, action_map[i].str);
       if (str == tok)
@@ -356,6 +357,7 @@ static void network_cmd_pre_frame(rarch_cmd_t *handle)
 // Oh you, Win32 ... <_<
 static size_t read_stdin(char *buf, size_t size)
 {
+   DWORD i;
    HANDLE hnd = GetStdHandle(STD_INPUT_HANDLE);
    if (hnd == INVALID_HANDLE_VALUE)
       return 0;
@@ -383,7 +385,7 @@ static size_t read_stdin(char *buf, size_t size)
          return 0;
 
       bool has_key = false;
-      for (DWORD i = 0; i < has_read; i++)
+      for (i = 0; i < has_read; i++)
       {
          // Very crude, but should get the job done ...
          if (recs[i].EventType == KEY_EVENT &&
@@ -414,7 +416,7 @@ static size_t read_stdin(char *buf, size_t size)
    if (!ReadFile(hnd, buf, avail, &has_read, NULL))
       return 0;
 
-   for (DWORD i = 0; i < has_read; i++)
+   for (i = 0; i < has_read; i++)
       if (buf[i] == '\r')
          buf[i] = '\n';
 
@@ -554,15 +556,16 @@ end:
 
 static bool verify_command(const char *cmd)
 {
+   unsigned i;
    if (command_get_arg(cmd, NULL, NULL))
       return true;
 
    RARCH_ERR("Command \"%s\" is not recognized by RetroArch.\n", cmd);
    RARCH_ERR("\tValid commands:\n");
-   for (unsigned i = 0; i < sizeof(map) / sizeof(map[0]); i++)
+   for (i = 0; i < sizeof(map) / sizeof(map[0]); i++)
       RARCH_ERR("\t\t%s\n", map[i].str);
 
-   for (unsigned i = 0; i < sizeof(action_map) / sizeof(action_map[0]); i++)
+   for (i = 0; i < sizeof(action_map) / sizeof(action_map[0]); i++)
       RARCH_ERR("\t\t%s %s\n", action_map[i].str, action_map[i].arg_desc);
 
    return false;

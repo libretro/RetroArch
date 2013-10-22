@@ -29,7 +29,8 @@ static struct sdl_joypad g_pads[MAX_PLAYERS];
 
 static void sdl_joypad_destroy(void)
 {
-   for (unsigned i = 0; i < MAX_PLAYERS; i++)
+   unsigned i;
+   for (i = 0; i < MAX_PLAYERS; i++)
    {
       if (g_pads[i].joypad)
          SDL_JoystickClose(g_pads[i].joypad);
@@ -41,6 +42,7 @@ static void sdl_joypad_destroy(void)
 
 static bool sdl_joypad_init(void)
 {
+   unsigned i;
    if (SDL_Init(SDL_INIT_JOYSTICK) < 0)
       return false;
 
@@ -48,7 +50,7 @@ static bool sdl_joypad_init(void)
    if (num_sticks > MAX_PLAYERS)
       num_sticks = MAX_PLAYERS;
 
-   for (unsigned i = 0; i < num_sticks; i++)
+   for (i = 0; i < num_sticks; i++)
    {
       struct sdl_joypad *pad = &g_pads[i];
       pad->joypad = SDL_JoystickOpen(i);

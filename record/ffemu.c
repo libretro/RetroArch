@@ -173,7 +173,8 @@ struct ffemu
 
 static bool ffemu_codec_has_sample_format(enum AVSampleFormat fmt, const enum AVSampleFormat *fmts)
 {
-   for (unsigned i = 0; fmts[i] != AV_SAMPLE_FMT_NONE; i++)
+   unsigned i;
+   for (i = 0; fmts[i] != AV_SAMPLE_FMT_NONE; i++)
       if (fmt == fmts[i])
          return true;
    return false;
@@ -216,6 +217,7 @@ static void ffemu_audio_resolve_format(struct ff_audio_info *audio, const AVCode
 
 static void ffemu_audio_resolve_sample_rate(ffemu_t *handle, const AVCodec *codec)
 {
+   unsigned i;
    struct ff_config_param *params = &handle->config;
    struct ffemu_params *param     = &handle->params;
 
@@ -228,7 +230,7 @@ static void ffemu_audio_resolve_sample_rate(ffemu_t *handle, const AVCodec *code
       int best_rate = codec->supported_samplerates[0];
       int best_diff = best_rate - input_rate;
 
-      for (unsigned i = 1; codec->supported_samplerates[i]; i++)
+      for (i = 1; codec->supported_samplerates[i]; i++)
       {
          int diff = codec->supported_samplerates[i] - input_rate;
 
@@ -702,6 +704,7 @@ void ffemu_free(ffemu_t *handle)
 
 bool ffemu_push_video(ffemu_t *handle, const struct ffemu_video_data *data)
 {
+   unsigned y;
    bool drop_frame = handle->video.frame_drop_count++ % handle->video.frame_drop_ratio;
    handle->video.frame_drop_count %= handle->video.frame_drop_ratio;
    if (drop_frame)
@@ -745,7 +748,7 @@ bool ffemu_push_video(ffemu_t *handle, const struct ffemu_video_data *data)
    fifo_write(handle->attr_fifo, &attr_data, sizeof(attr_data));
 
    int offset = 0;
-   for (unsigned y = 0; y < attr_data.height; y++, offset += data->pitch)
+   for (y = 0; y < attr_data.height; y++, offset += data->pitch)
       fifo_write(handle->video_fifo, (const uint8_t*)data->data + offset, attr_data.pitch);
 
    slock_unlock(handle->lock);
@@ -882,7 +885,8 @@ static bool ffemu_push_video_thread(ffemu_t *handle, const struct ffemu_video_da
 
 static void planarize_float(float *out, const float *in, size_t frames)
 {
-   for (size_t i = 0; i < frames; i++)
+   size_t i;
+   for (i = 0; i < frames; i++)
    {
       out[i] = in[2 * i + 0];
       out[i + frames] = in[2 * i + 1];
@@ -891,7 +895,8 @@ static void planarize_float(float *out, const float *in, size_t frames)
 
 static void planarize_s16(int16_t *out, const int16_t *in, size_t frames)
 {
-   for (size_t i = 0; i < frames; i++)
+   size_t i;
+   for (i = 0; i < frames; i++)
    {
       out[i] = in[2 * i + 0];
       out[i + frames] = in[2 * i + 1];

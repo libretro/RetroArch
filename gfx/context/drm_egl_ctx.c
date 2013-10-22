@@ -231,6 +231,7 @@ static void gfx_ctx_get_video_size(unsigned *width, unsigned *height)
 
 static bool gfx_ctx_init(void)
 {
+   int i;
    if (g_inited)
       return false;
 
@@ -248,7 +249,7 @@ static bool gfx_ctx_init(void)
       goto error;
    }
 
-   for (int i = 0; i < g_resources->count_connectors; i++)
+   for (i = 0; i < g_resources->count_connectors; i++)
    {
       g_connector = drmModeGetConnector(g_drm_fd, g_resources->connectors[i]);
 
@@ -267,7 +268,7 @@ static bool gfx_ctx_init(void)
       goto error;
    }
 
-   for (int i = 0; i < g_resources->count_encoders; i++)
+   for (i = 0; i < g_resources->count_encoders; i++)
    {
       g_encoder = drmModeGetEncoder(g_drm_fd, g_resources->encoders[i]);
 

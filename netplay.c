@@ -446,6 +446,7 @@ bool netplay_can_poll(netplay_t *handle)
 // The alternative would have been checking serialization sizes, but it was troublesome for cross platform compat.
 static uint32_t implementation_magic_value(void)
 {
+   size_t i;
    uint32_t res = 0;
    unsigned api = pretro_api_version();
 
@@ -453,17 +454,17 @@ static uint32_t implementation_magic_value(void)
 
    const char *lib = g_extern.system.info.library_name;
    size_t len = strlen(lib);
-   for (size_t i = 0; i < len; i++)
+   for (i = 0; i < len; i++)
       res ^= lib[i] << (i & 0xf);
 
    lib = g_extern.system.info.library_version;
    len = strlen(lib);
-   for (size_t i = 0; i < len; i++)
+   for (i = 0; i < len; i++)
       res ^= lib[i] << (i & 0xf);
 
    const char *ver = PACKAGE_VERSION;
    len = strlen(ver);
-   for (size_t i = 0; i < len; i++)
+   for (i = 0; i < len; i++)
       res ^= ver[i] << ((i & 0xf) + 16);
 
    return res;
@@ -728,9 +729,10 @@ static bool get_info_spectate(netplay_t *handle)
 
 static void init_buffers(netplay_t *handle)
 {
+   unsigned i;
    handle->buffer = (struct delta_frame*)calloc(handle->buffer_size, sizeof(*handle->buffer));
    handle->state_size = pretro_serialize_size();
-   for (unsigned i = 0; i < handle->buffer_size; i++)
+   for (i = 0; i < handle->buffer_size; i++)
    {
       handle->buffer[i].state = malloc(handle->state_size);
       handle->buffer[i].is_simulated = true;
@@ -742,6 +744,7 @@ netplay_t *netplay_new(const char *server, uint16_t port,
       bool spectate,
       const char *nick)
 {
+   unsigned i;
    if (frames > UDP_FRAME_PACKETS)
       frames = UDP_FRAME_PACKETS;
 
@@ -771,7 +774,7 @@ netplay_t *netplay_new(const char *server, uint16_t port,
             goto error;
       }
 
-      for (unsigned i = 0; i < MAX_SPECTATORS; i++)
+      for (i = 0; i < MAX_SPECTATORS; i++)
          handle->spectate_fds[i] = -1;
    }
    else
@@ -890,13 +893,14 @@ static int poll_input(netplay_t *handle, bool block)
 // Grab our own input state and send this over the network.
 static bool get_self_input_state(netplay_t *handle)
 {
+   unsigned i;
    struct delta_frame *ptr = &handle->buffer[handle->self_ptr];
 
    uint32_t state = 0;
    if (handle->frame_count > 0) // First frame we always give zero input since relying on input from first frame screws up when we use -F 0.
    {
       retro_input_state_t cb = handle->cbs.state_cb;
-      for (unsigned i = 0; i < RARCH_FIRST_META_KEY; i++)
+      for (i = 0; i < RARCH_FIRST_META_KEY; i++)
       {
          int16_t tmp = cb(g_settings.input.netplay_client_swap_input ? 0 : !handle->port,
                RETRO_DEVICE_JOYPAD, 0, i);
@@ -934,10 +938,11 @@ static void simulate_input(netplay_t *handle)
 
 static void parse_packet(netplay_t *handle, uint32_t *buffer, unsigned size)
 {
-   for (unsigned i = 0; i < size * 2; i++)
+   unsigned i;
+   for (i = 0; i < size * 2; i++)
       buffer[i] = ntohl(buffer[i]);
 
-   for (unsigned i = 0; i < size && handle->read_frame_count <= handle->frame_count; i++)
+   for (i = 0; i < size && handle->read_frame_count <= handle->frame_count; i++)
    {
       uint32_t frame = buffer[2 * i + 0];
       uint32_t state = buffer[2 * i + 1];
@@ -1194,11 +1199,12 @@ int16_t netplay_input_state(netplay_t *handle, bool port, unsigned device, unsig
 
 void netplay_free(netplay_t *handle)
 {
+   unsigned i;
    close(handle->fd);
 
    if (handle->spectate)
    {
-      for (unsigned i = 0; i < MAX_SPECTATORS; i++)
+      for (i = 0; i < MAX_SPECTATORS; i++)
          if (handle->spectate_fds[i] >= 0)
             close(handle->spectate_fds[i]);
 
@@ -1208,7 +1214,7 @@ void netplay_free(netplay_t *handle)
    {
       close(handle->udp_fd);
 
-      for (unsigned i = 0; i < handle->buffer_size; i++)
+      for (i = 0; i < handle->buffer_size; i++)
          free(handle->buffer[i].state);
 
       free(handle->buffer);
@@ -1276,6 +1282,7 @@ int16_t input_state_spectate_client(unsigned port, unsigned device, unsigned ind
 
 static void netplay_pre_frame_spectate(netplay_t *handle)
 {
+   unsigned i;
    if (handle->spectate_client)
       return;
 
@@ -1300,7 +1307,7 @@ static void netplay_pre_frame_spectate(netplay_t *handle)
    }
 
    int index = -1;
-   for (unsigned i = 0; i < MAX_SPECTATORS; i++)
+   for (i = 0; i < MAX_SPECTATORS; i++)
    {
       if (handle->spectate_fds[i] == -1)
       {
@@ -1416,10 +1423,11 @@ static void netplay_post_frame_net(netplay_t *handle)
 
 static void netplay_post_frame_spectate(netplay_t *handle)
 {
+   unsigned i;
    if (handle->spectate_client)
       return;
 
-   for (unsigned i = 0; i < MAX_SPECTATORS; i++)
+   for (i = 0; i < MAX_SPECTATORS; i++)
    {
       if (handle->spectate_fds[i] == -1)
          continue;

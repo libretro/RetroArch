@@ -91,6 +91,7 @@ static void sdl_init_font(sdl_video_t *vid, const char *font_path, unsigned font
 static void sdl_render_msg(sdl_video_t *vid, SDL_Surface *buffer,
       const char *msg, unsigned width, unsigned height, const SDL_PixelFormat *fmt)
 {
+   int x, y;
    if (!vid->font)
       return;
 
@@ -142,9 +143,9 @@ static void sdl_render_msg(sdl_video_t *vid, SDL_Surface *buffer,
 
       uint32_t *out = (uint32_t*)buffer->pixels + base_y * (buffer->pitch >> 2) + base_x;
 
-      for (int y = 0; y < glyph_height; y++, src += head->pitch, out += buffer->pitch >> 2)
+      for (y = 0; y < glyph_height; y++, src += head->pitch, out += buffer->pitch >> 2)
       {
-         for (int x = 0; x < glyph_width; x++)
+         for (x = 0; x < glyph_width; x++)
          {
             unsigned blend = src[x];
             unsigned out_pix = out[x];

@@ -80,19 +80,19 @@ static inline int16_t compute_axis(const struct input_absinfo *info, int value)
       return axis;
 }
 
-static void poll_pad(unsigned i)
+static void poll_pad(unsigned p)
 {
-   struct udev_joypad *pad = &g_pads[i];
+   struct udev_joypad *pad = &g_pads[p];
    if (pad->fd < 0)
       return;
 
-   int len;
+   int i, len;
    struct input_event events[32];
 
    while ((len = read(pad->fd, events, sizeof(events))) > 0)
    {
       len /= sizeof(*events);
-      for (int i = 0; i < len; i++)
+      for (i = 0; i < len; i++)
       {
          int code = events[i].code;
          switch (events[i].type)
@@ -241,10 +241,11 @@ static bool udev_set_rumble(unsigned i, enum retro_rumble_effect effect, uint16_
 
 static void udev_joypad_poll(void)
 {
+   unsigned i;
    while (hotplug_available())
       handle_hotplug();
 
-   for (unsigned i = 0; i < MAX_PLAYERS; i++)
+   for (i = 0; i < MAX_PLAYERS; i++)
       poll_pad(i);
 }
 
@@ -351,7 +352,8 @@ error:
 
 static int find_vacant_pad(void)
 {
-   for (unsigned i = 0; i < MAX_PLAYERS; i++)
+   unsigned i;
+   for (i = 0; i < MAX_PLAYERS; i++)
       if (g_pads[i].fd < 0)
          return i;
    return -1;
@@ -375,16 +377,17 @@ static void free_pad(unsigned pad, bool hotplug)
       input_config_autoconfigure_joypad(pad, NULL, NULL);
 }
 
-static bool add_pad(unsigned i, int fd, const char *path)
+static bool add_pad(unsigned p, int fd, const char *path)
 {
-   struct udev_joypad *pad = &g_pads[i];
+   int i;
+   struct udev_joypad *pad = &g_pads[p];
    if (ioctl(fd, EVIOCGNAME(sizeof(g_settings.input.device_names[0])), pad->ident) < 0)
    {
       RARCH_LOG("[udev]: Failed to get pad name.\n");
       return false;
    }
 
-   RARCH_LOG("[udev]: Plugged pad: %s on port #%u.\n", pad->ident, i);
+   RARCH_LOG("[udev]: Plugged pad: %s on port #%u.\n", pad->ident, p);
 
    struct stat st;
    if (fstat(fd, &st) < 0)
@@ -401,13 +404,13 @@ static bool add_pad(unsigned i, int fd, const char *path)
    // and map them to button/axes/hat indices.
    unsigned buttons = 0;
    unsigned axes = 0;
-   for (int i = BTN_JOYSTICK; i < KEY_MAX && buttons < NUM_BUTTONS; i++)
+   for (i = BTN_JOYSTICK; i < KEY_MAX && buttons < NUM_BUTTONS; i++)
       if (test_bit(i, keybit))
          pad->button_bind[i] = buttons++;
-   for (int i = BTN_MISC; i < BTN_JOYSTICK; i++)
+   for (i = BTN_MISC; i < BTN_JOYSTICK; i++)
       if (test_bit(i, keybit))
          pad->button_bind[i] = buttons++;
-   for (int i = 0; i < ABS_MISC && axes < NUM_AXES; i++)
+   for (i = 0; i < ABS_MISC && axes < NUM_AXES; i++)
    {
       // Skip hats for now.
       if (i == ABS_HAT0X)
@@ -452,11 +455,12 @@ static bool add_pad(unsigned i, int fd, const char *path)
 
 static void check_device(const char *path, bool hotplugged)
 {
+   unsigned i;
    struct stat st;
    if (stat(path, &st) < 0)
       return;
 
-   for (unsigned i = 0; i < MAX_PLAYERS; i++)
+   for (i = 0; i < MAX_PLAYERS; i++)
    {
       if (st.st_rdev == g_pads[i].device)
       {
@@ -500,7 +504,8 @@ static void check_device(const char *path, bool hotplugged)
 
 static void remove_device(const char *path)
 {
-   for (unsigned i = 0; i < MAX_PLAYERS; i++)
+   unsigned i;
+   for (i = 0; i < MAX_PLAYERS; i++)
    {
       if (g_pads[i].path && !strcmp(g_pads[i].path, path))
       {
@@ -518,7 +523,8 @@ static void remove_device(const char *path)
 
 static void udev_joypad_destroy(void)
 {
-   for (unsigned i = 0; i < MAX_PLAYERS; i++)
+   unsigned i;
+   for (i = 0; i < MAX_PLAYERS; i++)
       free_pad(i, false);
 
    if (g_udev_mon)
@@ -531,7 +537,8 @@ static void udev_joypad_destroy(void)
 
 static bool udev_joypad_init(void)
 {
-   for (unsigned i = 0; i < MAX_PLAYERS; i++)
+   unsigned i;
+   for (i = 0; i < MAX_PLAYERS; i++)
    {
       g_pads[i].fd = -1;
       g_pads[i].ident = g_settings.input.device_names[i];
@@ -558,7 +565,7 @@ static bool udev_joypad_init(void)
    udev_enumerate_add_match_property(enumerate, "ID_INPUT_JOYSTICK", "1");
    udev_enumerate_scan_devices(enumerate);
    devs = udev_enumerate_get_list_entry(enumerate);
-   for (struct udev_list_entry *item = devs; item; item = udev_list_entry_get_next(item))
+   for (item = devs; item; item = udev_list_entry_get_next(item))
    {
       const char *name = udev_list_entry_get_name(item);
       struct udev_device *dev = udev_device_new_from_syspath(g_udev, name);

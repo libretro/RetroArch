@@ -149,7 +149,8 @@ static unsigned cg_attrib_index;
 
 static void gl_cg_reset_attrib(void)
 {
-   for (unsigned i = 0; i < cg_attrib_index; i++)
+   unsigned i;
+   for (i = 0; i < cg_attrib_index; i++)
       cgGLDisableClientState(cg_attribs[i]);
    cg_attrib_index = 0;
 }
@@ -201,6 +202,7 @@ static void gl_cg_set_params(unsigned width, unsigned height,
       const struct gl_tex_info *fbo_info,
       unsigned fbo_info_cnt)
 {
+   unsigned i;
    if (!cg_active || (active_index == 0) || (active_index == GL_SHADER_STOCK_BLEND))
       return;
 
@@ -245,7 +247,7 @@ static void gl_cg_set_params(unsigned width, unsigned height,
    }
 
    // Set prev textures.
-   for (unsigned i = 0; i < PREV_TEXTURES; i++)
+   for (i = 0; i < PREV_TEXTURES; i++)
    {
       param = prg[active_index].prev[i].tex;
       if (param)
@@ -268,7 +270,7 @@ static void gl_cg_set_params(unsigned width, unsigned height,
    }
 
    // Set lookup textures.
-   for (unsigned i = 0; i < cg_shader->luts; i++)
+   for (i = 0; i < cg_shader->luts; i++)
    {
       CGparameter fparam = cgGetNamedParameter(prg[active_index].fprg, cg_shader->lut[i].id);
       if (fparam)
@@ -288,7 +290,7 @@ static void gl_cg_set_params(unsigned width, unsigned height,
    // Set FBO textures.
    if (active_index > 2)
    {
-      for (unsigned i = 0; i < fbo_info_cnt; i++)
+      for (i = 0; i < fbo_info_cnt; i++)
       {
          if (prg[active_index].fbo[i].tex)
          {
@@ -321,7 +323,7 @@ static void gl_cg_set_params(unsigned width, unsigned height,
       if (active_index == 1)
          cnt = state_get_uniform(state_tracker, info, MAX_VARIABLES, frame_count);
 
-      for (unsigned i = 0; i < cnt; i++)
+      for (i = 0; i < cnt; i++)
       {
          CGparameter param_v = cgGetNamedParameter(prg[active_index].vprg, info[i].id);
          CGparameter param_f = cgGetNamedParameter(prg[active_index].fprg, info[i].id);
@@ -333,12 +335,13 @@ static void gl_cg_set_params(unsigned width, unsigned height,
 
 static void gl_cg_deinit_progs(void)
 {
+   unsigned i;
    RARCH_LOG("CG: Destroying programs.\n");
    cgGLUnbindProgram(cgFProf);
    cgGLUnbindProgram(cgVProf);
 
    // Programs may alias [0].
-   for (unsigned i = 1; i < GFX_MAX_SHADERS; i++)
+   for (i = 1; i < GFX_MAX_SHADERS; i++)
    {
       if (prg[i].fprg && prg[i].fprg != prg[0].fprg)
          cgDestroyProgram(prg[i].fprg);
@@ -514,12 +517,13 @@ static void load_texture_data(GLuint obj, const struct texture_image *img, bool 
 
 static bool load_textures(void)
 {
+   unsigned i;
    if (!cg_shader->luts)
       return true;
 
    glGenTextures(cg_shader->luts, lut_textures);
 
-   for (unsigned i = 0; i < cg_shader->luts; i++)
+   for (i = 0; i < cg_shader->luts; i++)
    {
       RARCH_LOG("Loading image from: \"%s\".\n",
             cg_shader->lut[i].path);
@@ -542,12 +546,13 @@ static bool load_textures(void)
 
 static bool load_imports(void)
 {
+   unsigned i;
    if (!cg_shader->variables)
       return true;
 
    struct state_tracker_info tracker_info = {0};
 
-   for (unsigned i = 0; i < cg_shader->variables; i++)
+   for (i = 0; i < cg_shader->variables; i++)
    {
       unsigned memtype;
       switch (cg_shader->variable[i].ram_type)
@@ -601,6 +606,7 @@ static bool load_shader(unsigned i)
 
 static bool load_preset(const char *path)
 {
+   unsigned i;
    if (!load_stock())
       return false;
 
@@ -632,7 +638,7 @@ static bool load_preset(const char *path)
       RARCH_WARN("Too many shaders ... Capping shader amount to %d.\n", GFX_MAX_SHADERS - 3);
       cg_shader->passes = GFX_MAX_SHADERS - 3;
    }
-   for (unsigned i = 0; i < cg_shader->passes; i++)
+   for (i = 0; i < cg_shader->passes; i++)
    {
       if (!load_shader(i))
       {
@@ -718,6 +724,7 @@ static void set_pass_attrib(struct cg_program *prg, struct cg_fbo_params *fbo,
 
 static void set_program_attributes(unsigned i)
 {
+   unsigned j;
    cgGLBindProgram(prg[i].fprg);
    cgGLBindProgram(prg[i].vprg);
 
@@ -752,7 +759,7 @@ static void set_program_attributes(unsigned i)
       set_pass_attrib(&prg[i], &prg[i].orig, pass_str);
    }
 
-   for (unsigned j = 0; j < PREV_TEXTURES; j++)
+   for (j = 0; j < PREV_TEXTURES; j++)
    {
       char attr_buf_tex[64];
       char attr_buf_vid_size[64];
@@ -784,7 +791,7 @@ static void set_program_attributes(unsigned i)
       prg[i].prev[j].coord = cgGetNamedParameter(prg[i].vprg, attr_buf_coord);
    }
 
-   for (unsigned j = 0; j < i - 1; j++)
+   for (j = 0; j < i - 1; j++)
    {
       char pass_str[64];
       snprintf(pass_str, sizeof(pass_str), "PASS%u", j + 1);
@@ -796,6 +803,7 @@ static void set_program_attributes(unsigned i)
 
 static bool gl_cg_init(const char *path)
 {
+   unsigned i;
 #ifdef HAVE_CG_RUNTIME_COMPILER
    cgRTCgcInit();
 #endif
@@ -842,7 +850,7 @@ static bool gl_cg_init(const char *path)
    }
 
    prg[0].mvp = cgGetNamedParameter(prg[0].vprg, "IN.mvp_matrix");
-   for (unsigned i = 1; i <= cg_shader->passes; i++)
+   for (i = 1; i <= cg_shader->passes; i++)
       set_program_attributes(i);
 
    // If we aren't using last pass non-FBO shader, 
@@ -916,12 +924,13 @@ static void gl_cg_shader_scale(unsigned index, struct gfx_fbo_scale *scale)
 
 static unsigned gl_cg_get_prev_textures(void)
 {
+   unsigned i, j;
    if (!cg_active)
       return 0;
 
    unsigned max_prev = 0;
-   for (unsigned i = 1; i <= cg_shader->passes; i++)
-      for (unsigned j = 0; j < PREV_TEXTURES; j++)
+   for (i = 1; i <= cg_shader->passes; i++)
+      for (j = 0; j < PREV_TEXTURES; j++)
          if (prg[i].prev[j].tex)
             max_prev = max(j + 1, max_prev);
 

@@ -70,6 +70,7 @@ error:
 
 static void ft_renderer_msg(void *data, const char *msg, struct font_output_list *output) 
 {
+   size_t i;
    font_renderer_t *handle = (font_renderer_t*)data;
    output->head = NULL;
 
@@ -78,7 +79,7 @@ static void ft_renderer_msg(void *data, const char *msg, struct font_output_list
    size_t len = strlen(msg);
    int off_x = 0, off_y = 0;
 
-   for (size_t i = 0; i < len; i++)
+   for (i = 0; i < len; i++)
    {
       FT_Error err = FT_Load_Char(handle->face, msg[i], FT_LOAD_RENDER);
 
@@ -159,7 +160,8 @@ static const char *font_paths[] = {
 // Highly OS/platform dependent.
 static const char *ft_renderer_get_default_font(void)
 {
-   for (size_t i = 0; i < sizeof(font_paths) / sizeof(font_paths[0]); i++)
+   size_t i;
+   for (i = 0; i < ARRAY_SIZE(font_paths); i++)
    {
       if (path_file_exists(font_paths[i]))
          return font_paths[i];

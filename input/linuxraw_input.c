@@ -152,8 +152,9 @@ static const struct key_bind lut_binds[] = {
 
 static void init_lut(void)
 {
+   unsigned i;
    memset(keysym_lut, 0, sizeof(keysym_lut));
-   for (unsigned i = 0; i < sizeof(lut_binds) / sizeof(lut_binds[0]); i++)
+   for (i = 0; i < ARRAY_SIZE(lut_binds); i++)
       keysym_lut[lut_binds[i].sk] = lut_binds[i].x;
 }
 

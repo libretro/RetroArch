@@ -368,7 +368,8 @@ bool g_xinput_block_pads;
 
 static void dinput_joypad_destroy(void)
 {
-   for (unsigned i = 0; i < MAX_PLAYERS; i++)
+   unsigned i;
+   for (i = 0; i < MAX_PLAYERS; i++)
    {
       if (g_pads[i].joypad)
       {
@@ -440,14 +441,14 @@ static const char* const XINPUT_PAD_NAMES[] =
 
 static bool name_is_xinput_pad(const char* name)
 {
-   for (unsigned i = 0; ; ++i)
+   unsigned i;
+   for (i = 0; XINPUT_PAD_NAMES[i]; i++)
    {
-      const char* t = XINPUT_PAD_NAMES[i];
-      if (t == NULL)
-         return false;
-      else if (strcasecmp(name, t) == 0)
+      if (strcasecmp(name, XINPUT_PAD_NAMES[i]) == 0)
          return true;
    }
+
+   return false;
 }
 
 // Forward declaration
@@ -504,12 +505,13 @@ enum_iteration_done:
 
 static bool dinput_joypad_init(void)
 {
+   unsigned i;
    if (!dinput_init_context())
       return false;
    
    g_last_xinput_pad_index = 0;
    
-   for (unsigned i = 0; i < MAX_PLAYERS; ++i)
+   for (i = 0; i < MAX_PLAYERS; ++i)
    {
       g_xinput_pad_indexes[i] = -1;
       g_pads[i].joy_name = NULL;
@@ -617,7 +619,8 @@ static int16_t dinput_joypad_axis(unsigned port_num, uint32_t joyaxis)
 
 static void dinput_joypad_poll(void)
 {
-   for (unsigned i = 0; i < MAX_PLAYERS; i++)
+   unsigned i;
+   for (i = 0; i < MAX_PLAYERS; i++)
    {
       struct dinput_joypad *pad = &g_pads[i];
 
