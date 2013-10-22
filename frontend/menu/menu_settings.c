@@ -208,7 +208,7 @@ int menu_set_settings(unsigned setting, unsigned action)
       case RGUI_SETTINGS_DEBUG_TEXT:
          if (action == RGUI_ACTION_START)
             g_settings.fps_show = false;
-         else if (action == RGUI_ACTION_LEFT || RGUI_ACTION_RIGHT)
+         else if (action == RGUI_ACTION_LEFT || action == RGUI_ACTION_RIGHT)
             g_settings.fps_show = !g_settings.fps_show;
          break;
       case RGUI_SETTINGS_DISK_INDEX:
