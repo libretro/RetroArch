@@ -139,7 +139,7 @@ void autosave_free(autosave_t *handle)
 void lock_autosave(void)
 {
    unsigned i;
-   for (i = 0; i < sizeof(g_extern.autosave)/sizeof(g_extern.autosave[0]); i++)
+   for (i = 0; i < ARRAY_SIZE(g_extern.autosave); i++)
    {
       if (g_extern.autosave[i])
          autosave_lock(g_extern.autosave[i]);
@@ -149,7 +149,7 @@ void lock_autosave(void)
 void unlock_autosave(void)
 {
    unsigned i;
-   for (i = 0; i < sizeof(g_extern.autosave)/sizeof(g_extern.autosave[0]); i++)
+   for (i = 0; i < ARRAY_SIZE(g_extern.autosave); i++)
    {
       if (g_extern.autosave[i])
          autosave_unlock(g_extern.autosave[i]);
