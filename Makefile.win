@@ -257,7 +257,9 @@ CXXFLAGS += -Wall -Wno-unused-result -Wno-unused-variable -I. -std=c++0x -D__STD
 ifeq ($(CXX_BUILD), 1)
    CFLAGS += -std=c++0x -xc++ -D__STDC_CONSTANT_MACROS
 else
-   CFLAGS += -std=gnu99
+   ifneq ($(GNU90_BUILD), 1)
+      CFLAGS += -std=gnu99
+   endif
 endif
 
 all: $(TARGET) $(JTARGET)
