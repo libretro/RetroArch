@@ -16,9 +16,9 @@
 
 ## How to import the project into Eclipse and build the front-end:
 
-   1. Open Eclipse, do: File->Import->Existing Projects Into Workspace.
+   1. Install the Android ADT plugin for Eclipse if you haven't. (http://developer.android.com/sdk/installing/installing-adt.html)
 
-   2. Choose "Select root directory", and also check "Search for nested projects"
+   2. In Eclipse, do: File->Import->Existing Android Code Into Workspace.
 
    3. Browse to the location of the folder named "phoenix" in the RetroArch repository and select it as the root dir. (as of writing, it is /android/phoenix).
 
