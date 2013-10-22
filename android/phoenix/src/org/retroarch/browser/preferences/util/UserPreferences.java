@@ -178,6 +178,7 @@ public final class UserPreferences
 
 		// Native library and data directories.
 		final String dataDir = ctx.getApplicationInfo().dataDir;
+		final String userDataDir = ctx.getExternalFilesDir(null).getAbsolutePath();
 		final String nativeLibraryDir = ctx.getApplicationInfo().nativeLibraryDir;
 
 		final SharedPreferences prefs = getPreferences(ctx);
@@ -277,7 +278,7 @@ public final class UserPreferences
 		config.setBoolean("input_overlay_enable", useOverlay); // Not used by RetroArch directly.
 		if (useOverlay)
 		{
-			String overlayPath = prefs.getString("input_overlay", dataDir + "/overlays/snes-landscape.cfg");
+			String overlayPath = prefs.getString("input_overlay", userDataDir + "/overlays/snes-landscape.cfg");
 			config.setString("input_overlay", overlayPath);
 			config.setDouble("input_overlay_opacity", prefs.getFloat("input_overlay_opacity", 1.0f));
 		}
