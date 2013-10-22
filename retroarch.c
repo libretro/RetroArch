@@ -455,8 +455,10 @@ static void audio_sample_rewind(int16_t left, int16_t right)
 
 size_t audio_sample_batch_rewind(const int16_t *data, size_t frames)
 {
-   size_t samples = frames << 1;
-   for (size_t i = 0; i < samples; i++)
+   size_t i, samples;
+
+   samples = frames << 1;
+   for (i = 0; i < samples; i++)
       g_extern.audio_data.rewind_buf[--g_extern.audio_data.rewind_ptr] = data[i];
 
    return frames;
@@ -494,7 +496,8 @@ static inline void input_poll_overlay(void)
       RARCH_DEVICE_POINTER_SCREEN : RETRO_DEVICE_POINTER;
 
    bool polled = false;
-   for (unsigned i = 0;
+   unsigned i, j;
+   for (i = 0;
          input_input_state_func(NULL, 0, device, i, RETRO_DEVICE_ID_POINTER_PRESSED);
          i++)
    {
@@ -508,7 +511,7 @@ static inline void input_poll_overlay(void)
 
       driver.overlay_state.buttons |= polled_data.buttons;
 
-      for (unsigned j = 0; j < 4; j ++)
+      for (j = 0; j < 4; j ++)
          if (driver.overlay_state.analog[j] == 0)
             driver.overlay_state.analog[j] = polled_data.analog[j];
 
@@ -1183,7 +1186,8 @@ static void parse_input(int argc, char *argv[])
 
 static void init_controllers(void)
 {
-   for (unsigned i = 0; i < MAX_PLAYERS; i++)
+   unsigned i;
+   for (i = 0; i < MAX_PLAYERS; i++)
    {
       unsigned device = g_settings.input.libretro_device[i];
 
@@ -1708,7 +1712,8 @@ void rarch_init_autosave(void)
 
    if (g_settings.autosave_interval > 0)
    {
-      for (unsigned i = 0; i < sizeof(g_extern.autosave) / sizeof(g_extern.autosave[0]); i++)
+      unsigned i;
+      for (i = 0; i < sizeof(g_extern.autosave) / sizeof(g_extern.autosave[0]); i++)
       {
          if (ram_paths[i] && *ram_paths[i] && pretro_get_memory_size(ram_types[i]) > 0)
          {
@@ -1725,7 +1730,8 @@ void rarch_init_autosave(void)
 
 void rarch_deinit_autosave(void)
 {
-   for (unsigned i = 0; i < ARRAY_SIZE(g_extern.autosave); i++)
+   unsigned i;
+   for (i = 0; i < ARRAY_SIZE(g_extern.autosave); i++)
    {
       if (g_extern.autosave[i])
          autosave_free(g_extern.autosave[i]);
@@ -1754,7 +1760,8 @@ static void set_savestate_auto_index(void)
    if (!dir_list)
       return;
 
-   for (size_t i = 0; i < dir_list->size; i++)
+   size_t i;
+   for (i = 0; i < dir_list->size; i++)
    {
       const char *dir_elem = dir_list->elems[i].data;
 
@@ -2082,9 +2089,10 @@ static inline void flush_rewind_audio(void)
 
 static inline void setup_rewind_audio(void)
 {
+   unsigned i;
    // Push audio ready to be played.
    g_extern.audio_data.rewind_ptr = g_extern.audio_data.rewind_size;
-   for (unsigned i = 0; i < g_extern.audio_data.data_ptr; i += 2)
+   for (i = 0; i < g_extern.audio_data.data_ptr; i += 2)
    {
       g_extern.audio_data.rewind_buf[--g_extern.audio_data.rewind_ptr] =
          g_extern.audio_data.conv_outsamples[i + 1];
@@ -2332,6 +2340,8 @@ static void check_reset(void)
 
 static void check_turbo(void)
 {
+   unsigned i;
+
    g_extern.turbo_count++;
 
    static const struct retro_keybind *binds[MAX_PLAYERS] = {
@@ -2345,7 +2355,7 @@ static void check_turbo(void)
       g_settings.input.binds[7],
    };
 
-   for (unsigned i = 0; i < MAX_PLAYERS; i++)
+   for (i = 0; i < MAX_PLAYERS; i++)
       g_extern.turbo_frame_enable[i] =
          input_input_state_func(binds, i, RETRO_DEVICE_JOYPAD, 0, RARCH_TURBO_ENABLE);
 }
@@ -2810,8 +2820,10 @@ static void init_state(void)
 
 static void init_state_first(void)
 {
+   unsigned i;
+
    init_state();
-   for (unsigned i = 0; i < MAX_PLAYERS; i++)
+   for (i = 0; i < MAX_PLAYERS; i++)
       g_settings.input.libretro_device[i] = RETRO_DEVICE_JOYPAD;
 }
 
@@ -3203,6 +3215,7 @@ void rarch_main_deinit(void)
 
 int rarch_main_init_wrap(const struct rarch_main_wrap *args)
 {
+   unsigned i;
    if (g_extern.main_is_init)
       rarch_main_deinit();
 
@@ -3256,7 +3269,7 @@ int rarch_main_init_wrap(const struct rarch_main_wrap *args)
       argv[argc++] = strdup("-v");
 
 #ifdef HAVE_FILE_LOGGER
-   for (int i = 0; i < argc; i++)
+   for (i = 0; i < argc; i++)
       RARCH_LOG("arg #%d: %s\n", i, argv[i]);
 #endif
 
@@ -3265,7 +3278,7 @@ int rarch_main_init_wrap(const struct rarch_main_wrap *args)
 
    int ret = rarch_main_init(argc, argv);
 
-   for (unsigned i = 0; i < ARRAY_SIZE(argv_copy); i++)
+   for (i = 0; i < ARRAY_SIZE(argv_copy); i++)
       free(argv_copy[i]);
 
    return ret;

@@ -150,6 +150,7 @@ const char *config_get_default_input(void)
 
 void config_set_defaults(void)
 {
+   unsigned i, j;
    const char *def_video = config_get_default_video();
    const char *def_audio = config_get_default_audio();
    const char *def_input = config_get_default_input();
@@ -235,12 +236,12 @@ void config_set_defaults(void)
    rarch_assert(sizeof(g_settings.input.binds[0]) >= sizeof(retro_keybinds_1));
    rarch_assert(sizeof(g_settings.input.binds[1]) >= sizeof(retro_keybinds_rest));
    memcpy(g_settings.input.binds[0], retro_keybinds_1, sizeof(retro_keybinds_1));
-   for (unsigned i = 1; i < MAX_PLAYERS; i++)
+   for (i = 1; i < MAX_PLAYERS; i++)
       memcpy(g_settings.input.binds[i], retro_keybinds_rest, sizeof(retro_keybinds_rest));
 
-   for (unsigned i = 0; i < MAX_PLAYERS; i++)
+   for (i = 0; i < MAX_PLAYERS; i++)
    {
-      for (unsigned j = 0; j < RARCH_BIND_LIST_END; j++)
+      for (j = 0; j < RARCH_BIND_LIST_END; j++)
       {
          g_settings.input.autoconf_binds[i][j].joykey = NO_BTN;
          g_settings.input.autoconf_binds[i][j].joyaxis = AXIS_NONE;
@@ -249,8 +250,8 @@ void config_set_defaults(void)
    memset(g_settings.input.autoconfigured, 0, sizeof(g_settings.input.autoconfigured));
 
    // Verify that binds are in proper order.
-   for (int i = 0; i < MAX_PLAYERS; i++)
-      for (int j = 0; j < RARCH_BIND_LIST_END; j++)
+   for (i = 0; i < MAX_PLAYERS; i++)
+      for (j = 0; j < RARCH_BIND_LIST_END; j++)
          if (g_settings.input.binds[i][j].valid)
             rarch_assert(j == g_settings.input.binds[i][j].id);
 
@@ -266,7 +267,7 @@ void config_set_defaults(void)
    g_settings.input.back_behavior = BACK_BUTTON_QUIT;
 #endif
 
-   for (int i = 0; i < MAX_PLAYERS; i++)
+   for (i = 0; i < MAX_PLAYERS; i++)
    {
       g_settings.input.joypad_map[i] = i;
       if (!g_extern.has_set_libretro_device[i])
@@ -527,6 +528,7 @@ static void parse_config_file(void)
 
 bool config_load_file(const char *path)
 {
+   unsigned i;
    config_file_t *conf = NULL;
 
    if (path)
@@ -695,7 +697,7 @@ bool config_load_file(const char *path)
    CONFIG_GET_FLOAT(input.axis_threshold, "input_axis_threshold");
    CONFIG_GET_BOOL(input.netplay_client_swap_input, "netplay_client_swap_input");
 
-   for (unsigned i = 0; i < MAX_PLAYERS; i++)
+   for (i = 0; i < MAX_PLAYERS; i++)
    {
       char buf[64];
       snprintf(buf, sizeof(buf), "input_player%u_joypad_index", i + 1);
@@ -893,7 +895,8 @@ static void read_keybinds_axis(config_file_t *conf, unsigned player, unsigned in
 
 static void read_keybinds_player(config_file_t *conf, unsigned player)
 {
-   for (unsigned i = 0; input_config_bind_map[i].valid; i++)
+   unsigned i;
+   for (i = 0; input_config_bind_map[i].valid; i++)
    {
       struct retro_keybind *bind = &g_settings.input.binds[player][i];
       if (!bind->valid)
@@ -907,7 +910,8 @@ static void read_keybinds_player(config_file_t *conf, unsigned player)
 
 static void config_read_keybinds_conf(config_file_t *conf)
 {
-   for (unsigned i = 0; i < MAX_PLAYERS; i++)
+   unsigned i;
+   for (i = 0; i < MAX_PLAYERS; i++)
       read_keybinds_player(conf, i);
 }
 
@@ -1025,7 +1029,8 @@ static void save_keybind(config_file_t *conf, const char *prefix, const char *ba
 
 static void save_keybinds_player(config_file_t *conf, unsigned player)
 {
-   for (unsigned i = 0; input_config_bind_map[i].valid; i++)
+   unsigned i = 0;
+   for (i = 0; input_config_bind_map[i].valid; i++)
    {
       const char *prefix = input_config_get_prefix(player, input_config_bind_map[i].meta);
       if (prefix)
@@ -1035,6 +1040,7 @@ static void save_keybinds_player(config_file_t *conf, unsigned player)
 
 bool config_save_file(const char *path)
 {
+   unsigned i = 0;
    config_file_t *conf = config_file_new(path);
    if (!conf)
       conf = config_file_new(NULL);
@@ -1142,7 +1148,7 @@ bool config_save_file(const char *path)
 
    config_set_string(conf, "input_driver", g_settings.input.driver);
    config_set_string(conf, "input_joypad_driver", g_settings.input.joypad_driver);
-   for (unsigned i = 0; i < MAX_PLAYERS; i++)
+   for (i = 0; i < MAX_PLAYERS; i++)
    {
       char cfg[64];
       snprintf(cfg, sizeof(cfg), "input_device_p%u", i + 1);
@@ -1153,7 +1159,7 @@ bool config_save_file(const char *path)
       config_set_int(conf, cfg, g_settings.input.libretro_device[i]);
    }
 
-   for (unsigned i = 0; i < MAX_PLAYERS; i++)
+   for (i = 0; i < MAX_PLAYERS; i++)
       save_keybinds_player(conf, i);
 
    bool ret = config_file_write(conf, path);

@@ -247,6 +247,7 @@ static const char *stock_fragment_core_blend =
 
 static GLint get_uniform(GLuint prog, const char *base)
 {
+   unsigned i;
    char buf[64];
 
    snprintf(buf, sizeof(buf), "%s%s", glsl_shader->prefix, base);
@@ -254,7 +255,7 @@ static GLint get_uniform(GLuint prog, const char *base)
    if (loc >= 0)
       return loc;
 
-   for (unsigned i = 0; i < ARRAY_SIZE(glsl_prefixes); i++)
+   for (i = 0; i < ARRAY_SIZE(glsl_prefixes); i++)
    {
       snprintf(buf, sizeof(buf), "%s%s", glsl_prefixes[i], base);
       GLint loc = glGetUniformLocation(prog, buf);
@@ -267,13 +268,14 @@ static GLint get_uniform(GLuint prog, const char *base)
 
 static GLint get_attrib(GLuint prog, const char *base)
 {
+   unsigned i;
    char buf[64];
    snprintf(buf, sizeof(buf), "%s%s", glsl_shader->prefix, base);
    GLint loc = glGetUniformLocation(prog, buf);
    if (loc >= 0)
       return loc;
 
-   for (unsigned i = 0; i < ARRAY_SIZE(glsl_prefixes); i++)
+   for (i = 0; i < ARRAY_SIZE(glsl_prefixes); i++)
    {
       snprintf(buf, sizeof(buf), "%s%s", glsl_prefixes[i], base);
       GLint loc = glGetAttribLocation(prog, buf);
@@ -286,12 +288,13 @@ static GLint get_attrib(GLuint prog, const char *base)
 
 static bool load_luts(void)
 {
+   unsigned i;
    if (!glsl_shader->luts)
       return true;
 
    glGenTextures(1, gl_teximage);
 
-   for (unsigned i = 0; i < glsl_shader->luts; i++)
+   for (i = 0; i < glsl_shader->luts; i++)
    {
       RARCH_LOG("Loading texture image from: \"%s\" ...\n",
             glsl_shader->lut[i].path);
@@ -479,7 +482,8 @@ static bool load_source_path(struct gfx_shader_pass *pass, const char *path)
 
 static bool compile_programs(GLuint *gl_prog)
 {
-   for (unsigned i = 0; i < glsl_shader->passes; i++)
+   unsigned i;
+   for (i = 0; i < glsl_shader->passes; i++)
    {
       struct gfx_shader_pass *pass = &glsl_shader->pass[i];
 
@@ -510,7 +514,8 @@ static bool compile_programs(GLuint *gl_prog)
 
 static void gl_glsl_reset_attrib(void)
 {
-   for (unsigned i = 0; i < gl_attrib_index; i++)
+   unsigned i;
+   for (i = 0; i < gl_attrib_index; i++)
       glDisableVertexAttribArray(gl_attribs[i]);
    gl_attrib_index = 0;
 }
@@ -529,11 +534,12 @@ static void gl_glsl_set_vbo(GLfloat *buffer, size_t *buffer_elems, const GLfloat
 static void gl_glsl_set_attribs(GLuint vbo, GLfloat *buffer, size_t *buffer_elems,
       const GLfloat *data, size_t elems, const struct glsl_attrib *attrs, size_t num_attrs)
 {
+   size_t i;
    glBindBuffer(GL_ARRAY_BUFFER, vbo);
 
    gl_glsl_set_vbo(buffer, buffer_elems, data, elems);
 
-   for (size_t i = 0; i < num_attrs; i++)
+   for (i = 0; i < num_attrs; i++)
    {
       GLint loc = attrs[i].loc;
       glEnableVertexAttribArray(loc);
@@ -578,6 +584,7 @@ static void find_uniforms_frame(GLuint prog, struct shader_uniforms_frame *frame
 
 static void find_uniforms(unsigned pass, GLuint prog, struct shader_uniforms *uni)
 {
+   unsigned i;
    glUseProgram(prog);
 
    uni->mvp           = get_uniform(prog, "MVPMatrix");
@@ -593,7 +600,7 @@ static void find_uniforms(unsigned pass, GLuint prog, struct shader_uniforms *un
    uni->frame_count     = get_uniform(prog, "FrameCount");
    uni->frame_direction = get_uniform(prog, "FrameDirection");
 
-   for (unsigned i = 0; i < glsl_shader->luts; i++)
+   for (i = 0; i < glsl_shader->luts; i++)
       uni->lut_texture[i] = glGetUniformLocation(prog, glsl_shader->lut[i].id);
 
    char frame_base[64];
@@ -605,7 +612,7 @@ static void find_uniforms(unsigned pass, GLuint prog, struct shader_uniforms *un
       find_uniforms_frame(prog, &uni->orig, frame_base);
    }
 
-   for (unsigned i = 0; i < GFX_MAX_SHADERS; i++)
+   for (i = 0; i < GFX_MAX_SHADERS; i++)
    {
       snprintf(frame_base, sizeof(frame_base), "Pass%u", i + 1);
       clear_uniforms_frame(&uni->pass[i]);
@@ -619,7 +626,7 @@ static void find_uniforms(unsigned pass, GLuint prog, struct shader_uniforms *un
 
    clear_uniforms_frame(&uni->prev[0]);
    find_uniforms_frame(prog, &uni->prev[0], "Prev");
-   for (unsigned i = 1; i < PREV_TEXTURES; i++)
+   for (i = 1; i < PREV_TEXTURES; i++)
    {
       snprintf(frame_base, sizeof(frame_base), "Prev%u", i);
       clear_uniforms_frame(&uni->prev[i]);
@@ -631,11 +638,11 @@ static void find_uniforms(unsigned pass, GLuint prog, struct shader_uniforms *un
 
 static void gl_glsl_delete_shader(GLuint prog)
 {
-   GLsizei count;
+   GLsizei count, i;
    GLuint shaders[2] = {0};
 
    glGetAttachedShaders(prog, 2, &count, shaders);
-   for (GLsizei i = 0; i < count; i++)
+   for (i = 0; i < count; i++)
    {
       glDetachShader(prog, shaders[i]);
       glDeleteShader(shaders[i]);
@@ -646,10 +653,11 @@ static void gl_glsl_delete_shader(GLuint prog)
 
 static void gl_glsl_free_shader(void)
 {
+   unsigned i;
    if (!glsl_shader)
       return;
 
-   for (unsigned i = 0; i < glsl_shader->passes; i++)
+   for (i = 0; i < glsl_shader->passes; i++)
    {
       free(glsl_shader->pass[i].source.xml.vertex);
       free(glsl_shader->pass[i].source.xml.fragment);
@@ -662,8 +670,9 @@ static void gl_glsl_free_shader(void)
 
 static void gl_glsl_deinit(void)
 {
+   unsigned i;
    glUseProgram(0);
-   for (unsigned i = 0; i < GFX_MAX_SHADERS; i++)
+   for (i = 0; i < GFX_MAX_SHADERS; i++)
    {
       if (gl_program[i] == 0 || (i && gl_program[i] == gl_program[0]))
          continue;
@@ -687,7 +696,7 @@ static void gl_glsl_deinit(void)
 
    gl_glsl_reset_attrib();
 
-   for (unsigned i = 0; i < GFX_MAX_SHADERS; i++)
+   for (i = 0; i < GFX_MAX_SHADERS; i++)
    {
       if (glsl_vbo[i].vbo_primary)
          glDeleteBuffers(1, &glsl_vbo[i].vbo_primary);
@@ -699,6 +708,7 @@ static void gl_glsl_deinit(void)
 
 static bool gl_glsl_init(const char *path)
 {
+   unsigned i;
 #ifndef HAVE_OPENGLES2
    RARCH_LOG("Checking GLSL shader support ...\n");
    bool shader_support = glCreateProgram && glUseProgram && glCreateShader
@@ -804,7 +814,7 @@ static bool gl_glsl_init(const char *path)
       goto error;
    }
 
-   for (unsigned i = 0; i <= glsl_shader->passes; i++)
+   for (i = 0; i <= glsl_shader->passes; i++)
       find_uniforms(i, gl_program[i], &gl_uniforms[i]);
 
 #ifdef GLSL_DEBUG
@@ -848,7 +858,7 @@ static bool gl_glsl_init(const char *path)
 
    gl_glsl_reset_attrib();
 
-   for (unsigned i = 0; i < GFX_MAX_SHADERS; i++)
+   for (i = 0; i < GFX_MAX_SHADERS; i++)
    {
       glGenBuffers(1, &glsl_vbo[i].vbo_primary);
       glGenBuffers(1, &glsl_vbo[i].vbo_secondary);
@@ -880,6 +890,7 @@ static void gl_glsl_set_params(unsigned width, unsigned height,
       return;
 
    GLfloat buffer[128];
+   unsigned i;
    size_t size = 0;
    struct glsl_attrib attribs[32];
    size_t attribs_size = 0;
@@ -911,7 +922,7 @@ static void gl_glsl_set_params(unsigned width, unsigned height,
    if (uni->frame_direction >= 0)
       glUniform1i(uni->frame_direction, g_extern.frame_is_reverse ? -1 : 1);
 
-   for (unsigned i = 0; i < glsl_shader->luts; i++)
+   for (i = 0; i < glsl_shader->luts; i++)
    {
       if (uni->lut_texture[i] >= 0)
       {
@@ -964,7 +975,7 @@ static void gl_glsl_set_params(unsigned width, unsigned height,
       }
 
       // Bind FBO textures.
-      for (unsigned i = 0; i < fbo_info_cnt; i++)
+      for (i = 0; i < fbo_info_cnt; i++)
       {
          if (uni->pass[i].texture)
             glUniform1i(uni->pass[i].texture, texunit);
@@ -1001,7 +1012,7 @@ static void gl_glsl_set_params(unsigned width, unsigned height,
       // Unbind any lurking FBO passes.
       // Rendering to a texture that is bound to a texture unit
       // sounds very shaky ... ;)
-      for (unsigned i = 0; i < glsl_shader->passes; i++)
+      for (i = 0; i < glsl_shader->passes; i++)
       {
          glActiveTexture(GL_TEXTURE0 + base_tex + i);
          glBindTexture(GL_TEXTURE_2D, 0);
@@ -1009,7 +1020,7 @@ static void gl_glsl_set_params(unsigned width, unsigned height,
    }
 
    // Set previous textures. Only bind if they're actually used.
-   for (unsigned i = 0; i < PREV_TEXTURES; i++)
+   for (i = 0; i < PREV_TEXTURES; i++)
    {
       if (uni->prev[i].texture >= 0)
       {
@@ -1058,7 +1069,7 @@ static void gl_glsl_set_params(unsigned width, unsigned height,
       if (active_index == 1)
          cnt = state_get_uniform(gl_state_tracker, info, GFX_MAX_VARIABLES, frame_count);
 
-      for (unsigned i = 0; i < cnt; i++)
+      for (i = 0; i < cnt; i++)
       {
          int location = glGetUniformLocation(gl_program[active_index], info[i].id);
          glUniform1f(location, info[i].value);
@@ -1198,12 +1209,13 @@ static void gl_glsl_shader_scale(unsigned index, struct gfx_fbo_scale *scale)
 
 static unsigned gl_glsl_get_prev_textures(void)
 {
+   int i, j;
    if (!glsl_enable)
       return 0;
 
    unsigned max_prev = 0;
-   for (unsigned i = 1; i <= glsl_shader->passes; i++)
-      for (unsigned j = 0; j < PREV_TEXTURES; j++)
+   for (i = 1; i <= glsl_shader->passes; i++)
+      for (j = 0; j < PREV_TEXTURES; j++)
          if (gl_uniforms[i].prev[j].texture >= 0)
             max_prev = max(j + 1, max_prev);
 

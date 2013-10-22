@@ -167,7 +167,8 @@ static const struct str_to_bind_map str_to_bind[] = {
 
 static unsigned input_str_to_bind(const char *str)
 {
-   for (unsigned i = 0; i < ARRAY_SIZE(str_to_bind); i++)
+   unsigned i;
+   for (i = 0; i < ARRAY_SIZE(str_to_bind); i++)
    {
       if (!strcmp(str_to_bind[i].str, str))
          return str_to_bind[i].bind;
@@ -178,6 +179,7 @@ static unsigned input_str_to_bind(const char *str)
 
 static void input_overlay_scale(struct overlay *overlay, float scale)
 {
+   size_t i;
    if (overlay->block_scale)
       scale = 1.0f;
 
@@ -187,7 +189,7 @@ static void input_overlay_scale(struct overlay *overlay, float scale)
    overlay->mod_x = overlay->center_x + (overlay->x - overlay->center_x) * scale;
    overlay->mod_y = overlay->center_y + (overlay->y - overlay->center_y) * scale;
 
-   for (size_t i = 0; i < overlay->size; i++)
+   for (i = 0; i < overlay->size; i++)
    {
       struct overlay_desc *desc = &overlay->descs[i];
 
@@ -206,11 +208,12 @@ static void input_overlay_scale(struct overlay *overlay, float scale)
 
 static void input_overlay_set_vertex_geom(input_overlay_t *ol)
 {
+   size_t i;
    if (ol->active->image.image)
       ol->iface->vertex_geom(ol->iface_data, 0,
             ol->active->mod_x, ol->active->mod_y, ol->active->mod_w, ol->active->mod_h);
 
-   for (size_t i = 0; i < ol->active->size; i++)
+   for (i = 0; i < ol->active->size; i++)
    {
       struct overlay_desc *desc = &ol->active->descs[i];
       if (desc->image.image)
@@ -221,7 +224,8 @@ static void input_overlay_set_vertex_geom(input_overlay_t *ol)
 
 void input_overlay_set_scale_factor(input_overlay_t *ol, float scale)
 {
-   for (size_t i = 0; i < ol->size; i++)
+   size_t i;
+   for (i = 0; i < ol->size; i++)
       input_overlay_scale(&ol->overlays[i], scale);
 
    input_overlay_set_vertex_geom(ol);
@@ -229,7 +233,8 @@ void input_overlay_set_scale_factor(input_overlay_t *ol, float scale)
 
 static void input_overlay_free_overlay(struct overlay *overlay)
 {
-   for (size_t i = 0; i < overlay->size; i++)
+   size_t i;
+   for (i = 0; i < overlay->size; i++)
       free((void*)overlay->descs[i].image.image);
    free(overlay->load_images);
    free(overlay->descs);
@@ -238,7 +243,8 @@ static void input_overlay_free_overlay(struct overlay *overlay)
 
 static void input_overlay_free_overlays(input_overlay_t *ol)
 {
-   for (size_t i = 0; i < ol->size; i++)
+   size_t i;
+   for (i = 0; i < ol->size; i++)
       input_overlay_free_overlay(&ol->overlays[i]);
    free(ol->overlays);
 }
@@ -318,8 +324,9 @@ static bool input_overlay_load_desc(input_overlay_t *ol, config_file_t *conf, st
       desc->type = OVERLAY_TYPE_ANALOG_RIGHT;
    else
    {
+      const char *tmp;
       desc->type = OVERLAY_TYPE_BUTTONS;
-      for (const char *tmp = strtok_r(key, "|", &save); tmp; tmp = strtok_r(NULL, "|", &save))
+      for (tmp = strtok_r(key, "|", &save); tmp; tmp = strtok_r(NULL, "|", &save))
       {
          if (strcmp(tmp, "nul") != 0)
             desc->key_mask |= UINT64_C(1) << input_str_to_bind(tmp);
@@ -394,6 +401,7 @@ end:
 static bool input_overlay_load_overlay(input_overlay_t *ol, config_file_t *conf, const char *config_path,
       struct overlay *overlay, unsigned index)
 {
+   size_t i;
    char overlay_path_key[64];
    char overlay_name_key[64];
    char overlay_path[PATH_MAX];
@@ -484,7 +492,7 @@ static bool input_overlay_load_overlay(input_overlay_t *ol, config_file_t *conf,
    snprintf(conf_key, sizeof(conf_key), "overlay%u_range_mod", index);
    config_get_float(conf, conf_key, &range_mod);
 
-   for (size_t i = 0; i < overlay->size; i++)
+   for (i = 0; i < overlay->size; i++)
    {
       if (!input_overlay_load_desc(ol, conf, &overlay->descs[i], index, i,
                overlay->image.width, overlay->image.height,
@@ -506,7 +514,7 @@ static bool input_overlay_load_overlay(input_overlay_t *ol, config_file_t *conf,
    if (overlay->image.image)
       overlay->load_images[overlay->load_images_size++] = overlay->image;
 
-   for (size_t i = 0; i < overlay->size; i++)
+   for (i = 0; i < overlay->size; i++)
    {
       if (overlay->descs[i].image.image)
       {
@@ -526,7 +534,8 @@ static bool input_overlay_load_overlay(input_overlay_t *ol, config_file_t *conf,
 
 static ssize_t input_overlay_find_index(const struct overlay *ol, const char *name, size_t size)
 {
-   for (size_t i = 0; i < size; i++)
+   size_t i;
+   for (i = 0; i < size; i++)
    {
       if (strcmp(ol[i].name, name) == 0)
          return i;
@@ -537,9 +546,10 @@ static ssize_t input_overlay_find_index(const struct overlay *ol, const char *na
 
 static bool input_overlay_resolve_targets(struct overlay *ol, size_t index, size_t size)
 {
+   size_t i;
    struct overlay *current = &ol[index];
 
-   for (size_t i = 0; i < current->size; i++)
+   for (i = 0; i < current->size; i++)
    {
       const char *next = current->descs[i].next_index_name;
       if (*next)
@@ -562,6 +572,7 @@ static bool input_overlay_resolve_targets(struct overlay *ol, size_t index, size
 
 static bool input_overlay_load_overlays(input_overlay_t *ol, const char *path)
 {
+   size_t i;
    bool ret = true;
    config_file_t *conf = config_file_new(path);
    if (!conf)
@@ -593,7 +604,7 @@ static bool input_overlay_load_overlays(input_overlay_t *ol, const char *path)
 
    ol->size = overlays;
 
-   for (size_t i = 0; i < ol->size; i++)
+   for (i = 0; i < ol->size; i++)
    {
       if (!input_overlay_load_overlay(ol, conf, path, &ol->overlays[i], i))
       {
@@ -603,7 +614,7 @@ static bool input_overlay_load_overlays(input_overlay_t *ol, const char *path)
       }
    }
 
-   for (size_t i = 0; i < ol->size; i++)
+   for (i = 0; i < ol->size; i++)
    {
       if (!input_overlay_resolve_targets(ol->overlays, i, ol->size))
       {
@@ -713,6 +724,7 @@ static inline float clamp(float val, float lower, float upper)
 
 void input_overlay_poll(input_overlay_t *ol, input_overlay_state_t *out, int16_t norm_x, int16_t norm_y)
 {
+   size_t i;
    memset(out, 0, sizeof(*out));
 
    if (!ol->enable)
@@ -732,7 +744,7 @@ void input_overlay_poll(input_overlay_t *ol, input_overlay_state_t *out, int16_t
 
    input_overlay_set_alpha_mod(ol, g_settings.input.overlay_opacity);
 
-   for (size_t i = 0; i < ol->active->size; i++)
+   for (i = 0; i < ol->active->size; i++)
    {
       struct overlay_desc *desc = &ol->active->descs[i];
       if (!inside_hitbox(desc, x, y))
@@ -777,10 +789,11 @@ void input_overlay_poll(input_overlay_t *ol, input_overlay_state_t *out, int16_t
 
 void input_overlay_poll_clear(input_overlay_t *ol)
 {
+   size_t i;
    ol->blocked = false;
    input_overlay_set_alpha_mod(ol, g_settings.input.overlay_opacity);
 
-   for (size_t i = 0; i < ol->active->size; i++)
+   for (i = 0; i < ol->active->size; i++)
    {
       struct overlay_desc *desc = &ol->active->descs[i];
       desc->range_x_mod = desc->range_x;
@@ -820,7 +833,8 @@ void input_overlay_free(input_overlay_t *ol)
 
 void input_overlay_set_alpha_mod(input_overlay_t *ol, float mod)
 {
-   for (unsigned i = 0; i < ol->active->load_images_size; i++)
+   unsigned i;
+   for (i = 0; i < ol->active->load_images_size; i++)
       ol->iface->set_alpha(ol->iface_data, i, g_settings.input.overlay_opacity);
 }
 

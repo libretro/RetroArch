@@ -59,7 +59,8 @@ void rgui_list_pop(rgui_list_t *list, size_t *directory_ptr)
 
 void rgui_list_free(rgui_list_t *list)
 {
-   for (size_t i = 0; i < list->size; i++)
+   size_t i;
+   for (i = 0; i < list->size; i++)
       free(list->list[i].path);
    free(list->list);
    free(list);
@@ -67,7 +68,8 @@ void rgui_list_free(rgui_list_t *list)
 
 void rgui_list_clear(rgui_list_t *list)
 {
-   for (size_t i = 0; i < list->size; i++)
+   size_t i;
+   for (i = 0; i < list->size; i++)
    {
       free(list->list[i].path);
       free(list->list[i].alt);

@@ -62,6 +62,7 @@ struct state_tracker
 
 state_tracker_t* state_tracker_init(const struct state_tracker_info *info)
 {
+   unsigned i;
    state_tracker_t *tracker = (state_tracker_t*)calloc(1, sizeof(*tracker));
    if (!tracker)
       return NULL;
@@ -82,7 +83,7 @@ state_tracker_t* state_tracker_init(const struct state_tracker_info *info)
    tracker->info = (struct state_tracker_internal*)calloc(info->info_elem, sizeof(struct state_tracker_internal));
    tracker->info_elem = info->info_elem;
 
-   for (unsigned i = 0; i < info->info_elem; i++)
+   for (i = 0; i < info->info_elem; i++)
    {
       strlcpy(tracker->info[i].id, info->info[i].id, sizeof(tracker->info[i].id));
       tracker->info[i].addr  = info->info[i].addr;
@@ -218,6 +219,7 @@ static void update_element(
 // Updates 16-bit input in same format as SNES itself.
 static void update_input(state_tracker_t *tracker)
 {
+   unsigned i;
    if (driver.input == NULL)
       return;
 
@@ -243,23 +245,24 @@ static void update_input(state_tracker_t *tracker)
    };
 
    uint16_t state[2] = {0};
-   for (unsigned i = 4; i < 16; i++)
+   for (i = 4; i < 16; i++)
    {
       state[0] |= (input_input_state_func(binds, 0, RETRO_DEVICE_JOYPAD, 0, buttons[i - 4]) ? 1 : 0) << i;
       state[1] |= (input_input_state_func(binds, 1, RETRO_DEVICE_JOYPAD, 0, buttons[i - 4]) ? 1 : 0) << i;
    }
 
-   for (unsigned i = 0; i < 2; i++)
+   for (i = 0; i < 2; i++)
       tracker->input_state[i] = state[i];
 }
 
 unsigned state_get_uniform(state_tracker_t *tracker, struct state_tracker_uniform *uniforms, unsigned elem, unsigned frame_count)
 {
-   unsigned elems = tracker->info_elem < elem ? tracker->info_elem : elem;
+   unsigned i, elems;
+   elems = tracker->info_elem < elem ? tracker->info_elem : elem;
 
    update_input(tracker);
 
-   for (unsigned i = 0; i < elems; i++)
+   for (i = 0; i < elems; i++)
       update_element(&uniforms[i], &tracker->info[i], frame_count);
 
    return elems;

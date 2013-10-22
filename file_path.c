@@ -153,10 +153,11 @@ error:
 
 void string_list_free(struct string_list *list)
 {
+   size_t i;
    if (!list)
       return;
 
-   for (size_t i = 0; i < list->size; i++)
+   for (i = 0; i < list->size; i++)
       free(list->elems[i].data);
    free(list->elems);
    free(list);
@@ -244,10 +245,11 @@ error:
 
 bool string_list_find_elem(const struct string_list *list, const char *elem)
 {
+   size_t i;
    if (!list)
       return false;
 
-   for (size_t i = 0; i < list->size; i++)
+   for (i = 0; i < list->size; i++)
    {
       if (strcasecmp(list->elems[i].data, elem) == 0)
          return true;
@@ -258,13 +260,14 @@ bool string_list_find_elem(const struct string_list *list, const char *elem)
 
 bool string_list_find_elem_prefix(const struct string_list *list, const char *prefix, const char *elem)
 {
+   size_t i;
    if (!list)
       return false;
 
    char prefixed[PATH_MAX];
    snprintf(prefixed, sizeof(prefixed), "%s%s", prefix, elem);
 
-   for (size_t i = 0; i < list->size; i++)
+   for (i = 0; i < list->size; i++)
    {
       if (strcasecmp(list->elems[i].data, elem) == 0 ||
             strcasecmp(list->elems[i].data, prefixed) == 0)
@@ -740,6 +743,7 @@ void fill_pathname_join(char *out_path, const char *dir, const char *path, size_
 #ifndef RARCH_CONSOLE
 void fill_pathname_application_path(char *buf, size_t size)
 {
+   size_t i;
    if (!size)
       return;
 
@@ -752,7 +756,7 @@ void fill_pathname_application_path(char *buf, size_t size)
    pid_t pid = getpid(); 
    char link_path[PATH_MAX];
    static const char *exts[] = { "exe", "file", "path/a.out" }; // Linux, BSD and Solaris paths. Not standardized.
-   for (unsigned i = 0; i < ARRAY_SIZE(exts); i++)
+   for (i = 0; i < ARRAY_SIZE(exts); i++)
    {
       snprintf(link_path, sizeof(link_path), "/proc/%u/%s", (unsigned)pid, exts[i]);
       ssize_t ret = readlink(link_path, buf, size - 1);

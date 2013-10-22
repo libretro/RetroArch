@@ -208,12 +208,13 @@ char rotation_lut[4][32] =
 
 void gfx_set_square_pixel_viewport(unsigned width, unsigned height)
 {
+   unsigned len, highest, i;
    if (width == 0 || height == 0)
       return;
 
-   unsigned len = min(width, height);
-   unsigned highest = 1;
-   for (unsigned i = 1; i < len; i++)
+   len = min(width, height);
+   highest = 1;
+   for (i = 1; i < len; i++)
    {
       if ((width % i) == 0 && (height % i) == 0)
          highest = i;

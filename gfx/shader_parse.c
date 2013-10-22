@@ -224,12 +224,13 @@ static bool shader_parse_pass(config_file_t *conf, struct gfx_shader_pass *pass,
 
 static bool shader_parse_textures(config_file_t *conf, struct gfx_shader *shader)
 {
+   const char *id;
+   char *save;
    char textures[1024];
    if (!config_get_array(conf, "textures", textures, sizeof(textures)))
       return true;
 
-   char *save;
-   for (const char *id = strtok_r(textures, ";", &save);
+   for (id = strtok_r(textures, ";", &save);
          id && shader->luts < GFX_MAX_TEXTURES;
          shader->luts++, id = strtok_r(NULL, ";", &save))
    {
@@ -263,11 +264,12 @@ static bool shader_parse_textures(config_file_t *conf, struct gfx_shader *shader
 static bool shader_parse_imports(config_file_t *conf, struct gfx_shader *shader)
 {
    char imports[1024];
+   char *save;
+   const char *id;
    if (!config_get_array(conf, "imports", imports, sizeof(imports)))
       return true;
 
-   char *save;
-   for (const char *id = strtok_r(imports, ";", &save);
+   for (id = strtok_r(imports, ";", &save);
          id && shader->variables < GFX_MAX_VARIABLES;
          shader->variables++, id = strtok_r(NULL, ";", &save))
    {
@@ -359,11 +361,12 @@ static bool shader_parse_imports(config_file_t *conf, struct gfx_shader *shader)
 
 bool gfx_shader_read_conf_cgp(config_file_t *conf, struct gfx_shader *shader)
 {
+   unsigned shaders, i;
    memset(shader, 0, sizeof(*shader));
 
    shader->type = RARCH_SHADER_CG;
 
-   unsigned shaders = 0;
+   shaders = 0;
    if (!config_get_uint(conf, "shaders", &shaders))
    {
       RARCH_ERR("Cannot find \"shaders\" param.\n");
@@ -377,7 +380,7 @@ bool gfx_shader_read_conf_cgp(config_file_t *conf, struct gfx_shader *shader)
    }
 
    shader->passes = min(shaders, GFX_MAX_SHADERS);
-   for (unsigned i = 0; i < shader->passes; i++)
+   for (i = 0; i < shader->passes; i++)
    {
       if (!shader_parse_pass(conf, &shader->pass[i], i))
          return false;
@@ -1031,8 +1034,9 @@ static void shader_write_variable(config_file_t *conf, const struct state_tracke
 
 void gfx_shader_write_conf_cgp(config_file_t *conf, const struct gfx_shader *shader)
 {
+   unsigned i;
    config_set_int(conf, "shaders", shader->passes);
-   for (unsigned i = 0; i < shader->passes; i++)
+   for (i = 0; i < shader->passes; i++)
    {
       const struct gfx_shader_pass *pass = &shader->pass[i];
 
@@ -1062,7 +1066,7 @@ void gfx_shader_write_conf_cgp(config_file_t *conf, const struct gfx_shader *sha
    {
       char textures[4096] = {0};
       strlcpy(textures, shader->lut[0].id, sizeof(textures));
-      for (unsigned i = 1; i < shader->luts; i++)
+      for (i = 1; i < shader->luts; i++)
       {
          // O(n^2), but number of textures is very limited.
          strlcat(textures, ";", sizeof(textures));
@@ -1071,7 +1075,7 @@ void gfx_shader_write_conf_cgp(config_file_t *conf, const struct gfx_shader *sha
 
       config_set_string(conf, "textures", textures);
 
-      for (unsigned i = 0; i < shader->luts; i++)
+      for (i = 0; i < shader->luts; i++)
       {
          char key[64];
 
@@ -1097,7 +1101,7 @@ void gfx_shader_write_conf_cgp(config_file_t *conf, const struct gfx_shader *sha
    {
       char variables[4096] = {0};
       strlcpy(variables, shader->variable[0].id, sizeof(variables));
-      for (unsigned i = 1; i < shader->variables; i++)
+      for (i = 1; i < shader->variables; i++)
       {
          strlcat(variables, ";", sizeof(variables));
          strlcat(variables, shader->variable[i].id, sizeof(variables));
@@ -1105,7 +1109,7 @@ void gfx_shader_write_conf_cgp(config_file_t *conf, const struct gfx_shader *sha
 
       config_set_string(conf, "imports", variables);
 
-      for (unsigned i = 0; i < shader->variables; i++)
+      for (i = 0; i < shader->variables; i++)
          shader_write_variable(conf, &shader->variable[i]);
    }
 }
@@ -1127,8 +1131,9 @@ enum rarch_shader_type gfx_shader_parse_type(const char *path, enum rarch_shader
 
 void gfx_shader_resolve_relative(struct gfx_shader *shader, const char *ref_path)
 {
+   unsigned i;
    char tmp_path[PATH_MAX];
-   for (unsigned i = 0; i < shader->passes; i++)
+   for (i = 0; i < shader->passes; i++)
    {
       if (!*shader->pass[i].source.cg)
          continue;
@@ -1138,7 +1143,7 @@ void gfx_shader_resolve_relative(struct gfx_shader *shader, const char *ref_path
             ref_path, tmp_path, sizeof(shader->pass[i].source.cg));
    }
 
-   for (unsigned i = 0; i < shader->luts; i++)
+   for (i = 0; i < shader->luts; i++)
    {
       strlcpy(tmp_path, shader->lut[i].path, sizeof(tmp_path));
       fill_pathname_resolve_relative(shader->lut[i].path,

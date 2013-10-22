@@ -27,7 +27,7 @@
 core_info_list_t *core_info_list_new(const char *modules_path)
 {
    struct string_list *contents = dir_list_new(modules_path, EXT_EXECUTABLES, false);
-   size_t all_ext_len;
+   size_t all_ext_len, i;
 
    core_info_t *core_info = NULL;
    core_info_list_t *core_info_list = NULL;
@@ -46,7 +46,7 @@ core_info_list_t *core_info_list_new(const char *modules_path)
    core_info_list->list = core_info;
    core_info_list->count = contents->size;
 
-   for (size_t i = 0; i < contents->size; i++)
+   for (i = 0; i < contents->size; i++)
    {
       char info_path_base[PATH_MAX], info_path[PATH_MAX];
       core_info[i].path = strdup(contents->elems[i].data);
@@ -95,7 +95,7 @@ core_info_list_t *core_info_list_new(const char *modules_path)
    }
 
    all_ext_len = 0;
-   for (size_t i = 0; i < core_info_list->count; i++)
+   for (i = 0; i < core_info_list->count; i++)
    {
       all_ext_len += core_info_list->list[i].supported_extensions ?
          (strlen(core_info_list->list[i].supported_extensions) + 2) : 0;
@@ -109,7 +109,7 @@ core_info_list_t *core_info_list_new(const char *modules_path)
 
    if (core_info_list->all_ext)
    {
-      for (size_t i = 0; i < core_info_list->count; i++)
+      for (i = 0; i < core_info_list->count; i++)
       {
          if (core_info_list->list[i].supported_extensions)
          {
@@ -132,10 +132,11 @@ error:
 
 void core_info_list_free(core_info_list_t *core_info_list)
 {
+   size_t i;
    if (!core_info_list)
       return;
 
-   for (size_t i = 0; i < core_info_list->count; i++)
+   for (i = 0; i < core_info_list->count; i++)
    {
       free(core_info_list->list[i].path);
       free(core_info_list->list[i].display_name);
@@ -151,15 +152,17 @@ void core_info_list_free(core_info_list_t *core_info_list)
 
 size_t core_info_list_num_info_files(core_info_list_t *core_info_list)
 {
-   size_t num = 0;
-   for (size_t i = 0; i < core_info_list->count; i++)
+   size_t i, num;
+   num = 0;
+   for (i = 0; i < core_info_list->count; i++)
       num += !!core_info_list->list[i].data;
    return num;
 }
 
 bool core_info_list_get_display_name(core_info_list_t *core_info_list, const char *path, char *buf, size_t size)
 {
-   for (size_t i = 0; i < core_info_list->count; i++)
+   size_t i;
+   for (i = 0; i < core_info_list->count; i++)
    {
       const core_info_t *info = &core_info_list->list[i];
       if (!strcmp(info->path, path) && info->display_name)
@@ -174,10 +177,11 @@ bool core_info_list_get_display_name(core_info_list_t *core_info_list, const cha
 
 bool core_info_does_support_any_file(const core_info_t *core, const struct string_list *list)
 {
+   size_t i;
    if (!list || !core || !core->supported_extensions_list)
       return false;
 
-   for (size_t i = 0; i < list->size; i++)
+   for (i = 0; i < list->size; i++)
       if (string_list_find_elem_prefix(core->supported_extensions_list, ".", path_get_extension(list->elems[i].data)))
          return true;
    return false;
@@ -231,8 +235,9 @@ void core_info_list_get_supported_cores(core_info_list_t *core_info_list, const 
    // Let supported core come first in list so we can return a pointer to them.
    qsort(core_info_list->list, core_info_list->count, sizeof(core_info_t), core_info_qsort_cmp);
 
-   size_t supported = 0;
-   for (size_t i = 0; i < core_info_list->count; i++, supported++)
+   size_t supported, i;
+   supported = 0;
+   for (i = 0; i < core_info_list->count; i++, supported++)
    {
       const core_info_t *core = &core_info_list->list[i];
       if (!core_info_does_support_file(core, path)

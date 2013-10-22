@@ -90,7 +90,8 @@ void msg_queue_push(msg_queue_t *queue, const char *msg, unsigned prio, unsigned
 
 void msg_queue_clear(msg_queue_t *queue)
 {
-   for (size_t i = 1; i < queue->ptr; i++)
+   size_t i;
+   for (i = 1; i < queue->ptr; i++)
    {
       if (queue->elems[i])
       {

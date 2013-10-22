@@ -1703,7 +1703,8 @@ static void android_input_poll(void *data)
                   state_id = 0; // touch overlay is always player 1
                else
                {
-                  for (unsigned i = 0; i < pads_connected; i++)
+                  unsigned i;
+                  for (i = 0; i < pads_connected; i++)
                      if (state_device_ids[i] == id)
                         state_id = i;
                }

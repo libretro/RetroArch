@@ -301,8 +301,10 @@ static void rgui_settings_core_options_populate_entries(rgui_handle_t *rgui)
 
    if (g_extern.system.core_options)
    {
-      size_t opts = core_option_size(g_extern.system.core_options);
-      for (size_t i = 0; i < opts; i++)
+      size_t i, opts;
+
+      opts = core_option_size(g_extern.system.core_options);
+      for (i = 0; i < opts; i++)
          rgui_list_push(rgui->selection_buf,
                core_option_get_desc(g_extern.system.core_options, i), RGUI_SETTINGS_CORE_OPTION_START + i, 0);
    }
@@ -352,6 +354,7 @@ static void rgui_settings_video_options_populate_entries(rgui_handle_t *rgui)
 #ifdef HAVE_SHADER_MANAGER
 static void rgui_settings_shader_manager_populate_entries(rgui_handle_t *rgui)
 {
+   unsigned i;
    rgui_list_clear(rgui->selection_buf);
    rgui_list_push(rgui->selection_buf, "Apply Shader Changes",
          RGUI_SETTINGS_SHADER_APPLY, 0);
@@ -361,7 +364,7 @@ static void rgui_settings_shader_manager_populate_entries(rgui_handle_t *rgui)
    rgui_list_push(rgui->selection_buf, "Shader Passes",
          RGUI_SETTINGS_SHADER_PASSES, 0);
 
-   for (unsigned i = 0; i < rgui->shader.passes; i++)
+   for (i = 0; i < rgui->shader.passes; i++)
    {
       char buf[64];
 
@@ -509,6 +512,8 @@ static void rgui_settings_path_populate_entries(rgui_handle_t *rgui)
 
 static void rgui_settings_controller_populate_entries(rgui_handle_t *rgui)
 {
+   unsigned i, last;
+
    rgui_list_clear(rgui->selection_buf);
 #ifdef HAVE_OVERLAY
    rgui_list_push(rgui->selection_buf, "Overlay Preset", RGUI_SETTINGS_OVERLAY_PRESET, 0);
@@ -524,8 +529,9 @@ static void rgui_settings_controller_populate_entries(rgui_handle_t *rgui)
 
    if (rgui->current_pad == 0)
       rgui_list_push(rgui->selection_buf, "RGUI Menu Toggle", RGUI_SETTINGS_BIND_MENU_TOGGLE, 0);
-   unsigned last = (driver.input && driver.input->set_keybinds) ? RGUI_SETTINGS_BIND_R3 : RGUI_SETTINGS_BIND_LAST;
-   for (unsigned i = RGUI_SETTINGS_BIND_BEGIN; i <= last; i++)
+
+   last = (driver.input && driver.input->set_keybinds) ? RGUI_SETTINGS_BIND_R3 : RGUI_SETTINGS_BIND_LAST;
+   for (i = RGUI_SETTINGS_BIND_BEGIN; i <= last; i++)
       rgui_list_push(rgui->selection_buf, input_config_bind_map[i - RGUI_SETTINGS_BIND_BEGIN].desc, i, 0);
 }
 
@@ -563,6 +569,7 @@ static int rgui_custom_bind_iterate(rgui_handle_t *rgui, rgui_action_t action)
 static int rgui_start_screen_iterate(rgui_handle_t *rgui, rgui_action_t action)
 {
    render_text(rgui);
+   unsigned i;
    char msg[1024];
 
    char desc[6][64];
@@ -575,7 +582,7 @@ static int rgui_start_screen_iterate(rgui_handle_t *rgui, rgui_action_t action)
       RARCH_QUIT_KEY,
    };
 
-   for (unsigned i = 0; i < ARRAY_SIZE(binds); i++)
+   for (i = 0; i < ARRAY_SIZE(binds); i++)
    {
       if (driver.input && driver.input->set_keybinds)
       {
@@ -959,8 +966,9 @@ static int rgui_settings_iterate(rgui_handle_t *rgui, rgui_action_t action)
 
 static void history_parse(rgui_handle_t *rgui)
 {
-   size_t history_size = rom_history_size(rgui->history);
-   for (size_t i = 0; i < history_size; i++)
+   size_t i, history_size;
+   history_size = rom_history_size(rgui->history);
+   for (i = 0; i < history_size; i++)
    {
       const char *path = NULL;
       const char *core_path = NULL;
@@ -1010,18 +1018,26 @@ static inline int rgui_list_get_first_char(rgui_list_t *buf, unsigned offset)
 
 static void rgui_build_scroll_indices(rgui_handle_t *rgui, rgui_list_t *buf)
 {
+   size_t i;
+   int current;
+   bool current_is_dir;
+
    rgui->scroll_indices_size = 0;
    if (!buf->size)
       return;
 
    rgui->scroll_indices[rgui->scroll_indices_size++] = 0;
-   int current = rgui_list_get_first_char(buf, 0);
-   bool current_is_dir = rgui_list_elem_is_dir(buf, 0);
 
-   for (size_t i = 1; i < buf->size; i++)
+   current = rgui_list_get_first_char(buf, 0);
+   current_is_dir = rgui_list_elem_is_dir(buf, 0);
+
+   for (i = 1; i < buf->size; i++)
    {
-      int first = rgui_list_get_first_char(buf, i);
-      bool is_dir = rgui_list_elem_is_dir(buf, i);
+      int first;
+      bool is_dir;
+
+      first = rgui_list_get_first_char(buf, i);
+      is_dir = rgui_list_elem_is_dir(buf, i);
 
       if ((current_is_dir && !is_dir) || (first > current))
          rgui->scroll_indices[rgui->scroll_indices_size++] = i;
@@ -1061,6 +1077,8 @@ static inline void rgui_ascend_alphabet(rgui_handle_t *rgui, size_t *ptr_out)
 
 static bool rgui_directory_parse(rgui_handle_t *rgui, const char *directory, unsigned menu_type, void *ctx)
 {
+   size_t i;
+
    if (!*directory)
    {
 #if defined(GEKKO)
@@ -1079,7 +1097,7 @@ static bool rgui_directory_parse(rgui_handle_t *rgui, const char *directory, uns
 #elif defined(_WIN32)
       unsigned drives = GetLogicalDrives();
       char drive[] = " :\\";
-      for (unsigned i = 0; i < 32; i++)
+      for (i = 0; i < 32; i++)
       {
          drive[0] = 'A' + i;
          if (drives & (1 << i))
@@ -1146,7 +1164,7 @@ static bool rgui_directory_parse(rgui_handle_t *rgui, const char *directory, uns
    if (menu_type_is_directory_browser(menu_type))
       rgui_list_push(ctx, "<Use this directory>", RGUI_FILE_USE_DIRECTORY, 0);
 
-   for (size_t i = 0; i < list->size; i++)
+   for (i = 0; i < list->size; i++)
    {
       bool is_dir = list->elems[i].attr.b;
 

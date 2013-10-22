@@ -178,7 +178,8 @@ static const input_driver_t *input_drivers[] = {
 
 static void find_audio_driver(void)
 {
-   for (unsigned i = 0; i < ARRAY_SIZE(audio_drivers); i++)
+   unsigned i;
+   for (i = 0; i < ARRAY_SIZE(audio_drivers); i++)
    {
       if (strcasecmp(g_settings.audio.driver, audio_drivers[i]->ident) == 0)
       {
@@ -188,7 +189,7 @@ static void find_audio_driver(void)
    }
    RARCH_ERR("Couldn't find any audio driver named \"%s\"\n", g_settings.audio.driver);
    RARCH_LOG_OUTPUT("Available audio drivers are:\n");
-   for (size_t i = 0; i < ARRAY_SIZE(audio_drivers); i++)
+   for (i = 0; i < ARRAY_SIZE(audio_drivers); i++)
       RARCH_LOG_OUTPUT("\t%s\n", audio_drivers[i]->ident);
 
    rarch_fail(1, "find_audio_driver()");
@@ -196,6 +197,7 @@ static void find_audio_driver(void)
 
 static void find_video_driver(void)
 {
+   unsigned i;
 #if defined(HAVE_OPENGL) && defined(HAVE_FBO)
    if (g_extern.system.hw_render_callback.context_type)
    {
@@ -205,7 +207,7 @@ static void find_video_driver(void)
    }
 #endif
 
-   for (unsigned i = 0; i < ARRAY_SIZE(video_drivers); i++)
+   for (i = 0; i < ARRAY_SIZE(video_drivers); i++)
    {
       if (strcasecmp(g_settings.video.driver, video_drivers[i]->ident) == 0)
       {
@@ -215,7 +217,7 @@ static void find_video_driver(void)
    }
    RARCH_ERR("Couldn't find any video driver named \"%s\"\n", g_settings.video.driver);
    RARCH_LOG_OUTPUT("Available video drivers are:\n");
-   for (size_t i = 0; i < ARRAY_SIZE(video_drivers); i++)
+   for (i = 0; i < ARRAY_SIZE(video_drivers); i++)
       RARCH_LOG_OUTPUT("\t%s\n", video_drivers[i]->ident);
 
    rarch_fail(1, "find_video_driver()");
@@ -223,7 +225,8 @@ static void find_video_driver(void)
 
 static void find_input_driver(void)
 {
-   for (unsigned i = 0; i < ARRAY_SIZE(input_drivers); i++)
+   unsigned i;
+   for (i = 0; i < ARRAY_SIZE(input_drivers); i++)
    {
       if (strcasecmp(g_settings.input.driver, input_drivers[i]->ident) == 0)
       {
@@ -233,7 +236,7 @@ static void find_input_driver(void)
    }
    RARCH_ERR("Couldn't find any input driver named \"%s\"\n", g_settings.input.driver);
    RARCH_LOG_OUTPUT("Available input drivers are:\n");
-   for (size_t i = 0; i < ARRAY_SIZE(input_drivers); i++)
+   for (i = 0; i < ARRAY_SIZE(input_drivers); i++)
       RARCH_LOG_OUTPUT("\t%s\n", input_drivers[i]->ident);
 
    rarch_fail(1, "find_input_driver()");
@@ -356,13 +359,14 @@ retro_proc_address_t driver_get_proc_address(const char *sym)
 
 void global_init_drivers(void)
 {
+   unsigned i;
    init_drivers_pre(); // Set driver.* function callbacks.
 #if defined(HAVE_RGUI) || defined(HAVE_RMENU) || defined(HAVE_RMENU_XUI)
    driver.video->start(); // Statically starts video driver. Sets driver.video_data.
 #endif
    driver.input_data = driver.input->init();
 
-   for(unsigned i = 0; i < MAX_PLAYERS; i++)
+   for(i = 0; i < MAX_PLAYERS; i++)
       if (driver.input->set_keybinds)
          driver.input->set_keybinds(driver.input_data, g_settings.input.device[i], i, 0,
                (1ULL << KEYBINDS_ACTION_SET_DEFAULT_BINDS));
@@ -615,18 +619,19 @@ void init_audio(void)
 
 static void compute_audio_buffer_statistics(void)
 {
-   unsigned samples = min(g_extern.measure_data.buffer_free_samples_count, AUDIO_BUFFER_FREE_SAMPLES_COUNT);
+   unsigned i, samples;
+   samples = min(g_extern.measure_data.buffer_free_samples_count, AUDIO_BUFFER_FREE_SAMPLES_COUNT);
    if (samples < 3)
       return;
 
    uint64_t accum = 0;
-   for (unsigned i = 1; i < samples; i++)
+   for (i = 1; i < samples; i++)
       accum += g_extern.measure_data.buffer_free_samples[i];
 
    int avg = accum / (samples - 1);
 
    uint64_t accum_var = 0;
-   for (unsigned i = 1; i < samples; i++)
+   for (i = 1; i < samples; i++)
    {
       int diff = avg - g_extern.measure_data.buffer_free_samples[i];
       accum_var += diff * diff;
@@ -642,7 +647,7 @@ static void compute_audio_buffer_statistics(void)
 
    unsigned low_water_count = 0;
    unsigned high_water_count = 0;
-   for (unsigned i = 1; i < samples; i++)
+   for (i = 1; i < samples; i++)
    {
       if (g_extern.measure_data.buffer_free_samples[i] >= low_water_size)
          low_water_count++;
@@ -659,6 +664,7 @@ static void compute_audio_buffer_statistics(void)
 
 bool driver_monitor_fps_statistics(double *refresh_rate, double *deviation, unsigned *sample_points)
 {
+   unsigned i;
    if (g_settings.video.threaded)
       return false;
 
@@ -668,11 +674,11 @@ bool driver_monitor_fps_statistics(double *refresh_rate, double *deviation, unsi
 
    // Measure statistics on frame time (microsecs), *not* FPS.
    rarch_time_t accum = 0;
-   for (unsigned i = 0; i < samples; i++)
+   for (i = 0; i < samples; i++)
       accum += g_extern.measure_data.frame_time_samples[i];
 
 #if 0
-   for (unsigned i = 0; i < samples; i++)
+   for (i = 0; i < samples; i++)
       RARCH_LOG("Interval #%u: %d usec / frame.\n",
             i, (int)g_extern.measure_data.frame_time_samples[i]);
 #endif
@@ -681,7 +687,7 @@ bool driver_monitor_fps_statistics(double *refresh_rate, double *deviation, unsi
    rarch_time_t accum_var = 0;
 
    // Drop first measurement. It is likely to be bad.
-   for (unsigned i = 0; i < samples; i++)
+   for (i = 0; i < samples; i++)
    {
       rarch_time_t diff = g_extern.measure_data.frame_time_samples[i] - avg;
       accum_var += diff * diff;
@@ -774,6 +780,7 @@ static void deinit_filter(void)
 
 static void init_filter(bool rgb32)
 {
+   unsigned i;
    if (g_extern.filter.active)
       return;
    if (!*g_settings.video.filter_path)
@@ -833,7 +840,7 @@ static void init_filter(bool rgb32)
       goto error;
 
    // Set up conversion map from 16-bit XRGB1555 to 32-bit ARGB.
-   for (unsigned i = 0; i < 0x10000; i++)
+   for (i = 0; i < 0x10000; i++)
    {
       unsigned r = (i >> 10) & 0x1f;
       unsigned g = (i >>  5) & 0x1f;
@@ -874,6 +881,7 @@ static void deinit_shader_dir(void)
 
 static void init_shader_dir(void)
 {
+   unsigned i;
    if (!*g_settings.video.shader_dir)
       return;
 
@@ -887,7 +895,7 @@ static void init_shader_dir(void)
    g_extern.shader_dir.ptr  = 0;
    dir_list_sort(g_extern.shader_dir.list, false);
 
-   for (unsigned i = 0; i < g_extern.shader_dir.list->size; i++)
+   for (i = 0; i < g_extern.shader_dir.list->size; i++)
       RARCH_LOG("Found shader \"%s\"\n", g_extern.shader_dir.list->elems[i].data);
 }
 

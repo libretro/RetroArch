@@ -62,7 +62,8 @@ void rom_history_push(rom_history_t *hist,
       const char *path, const char *core_path,
       const char *core_name)
 {
-   for (size_t i = 0; i < hist->size; i++)
+   size_t i;
+   for (i = 0; i < hist->size; i++)
    {
       bool equal_path = (!path && !hist->entries[i].path) ||
          (path && hist->entries[i].path && !strcmp(path, hist->entries[i].path));
@@ -100,11 +101,12 @@ void rom_history_push(rom_history_t *hist,
 
 static void rom_history_write_file(rom_history_t *hist)
 {
+   size_t i;
    FILE *file = fopen(hist->conf_path, "w");
    if (!file)
       return;
 
-   for (size_t i = 0; i < hist->size; i++)
+   for (i = 0; i < hist->size; i++)
    {
       fprintf(file, "%s\n%s\n%s\n",
             hist->entries[i].path ? hist->entries[i].path : "",
@@ -117,6 +119,7 @@ static void rom_history_write_file(rom_history_t *hist)
 
 void rom_history_free(rom_history_t *hist)
 {
+   size_t i;
    if (!hist)
       return;
 
@@ -124,7 +127,7 @@ void rom_history_free(rom_history_t *hist)
       rom_history_write_file(hist);
    free(hist->conf_path);
 
-   for (size_t i = 0; i < hist->cap; i++)
+   for (i = 0; i < hist->cap; i++)
       rom_history_free_entry(&hist->entries[i]);
    free(hist->entries);
 
@@ -145,10 +148,11 @@ static bool rom_history_read_file(rom_history_t *hist, const char *path)
    char buf[3][PATH_MAX];
    struct rom_history_entry *entry = NULL;
    char *last = NULL;
+   unsigned i;
 
    for (hist->size = 0; hist->size < hist->cap; hist->size++)
    {
-      for (unsigned i = 0; i < 3; i++)
+      for (i = 0; i < 3; i++)
       {
          *buf[i] = '\0';
          if (!fgets(buf[i], sizeof(buf[i]), file))

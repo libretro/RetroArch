@@ -43,7 +43,8 @@ static bool is_long_option(const char *str)
 
 static int find_short_index(char * const *argv)
 {
-   for (int index = 0; argv[index]; index++)
+   int index;
+   for (index = 0; argv[index]; index++)
    {
       if (is_short_option(argv[index]))
          return index;
@@ -54,7 +55,8 @@ static int find_short_index(char * const *argv)
 
 static int find_long_index(char * const *argv)
 {
-   for (int index = 0; argv[index]; index++)
+   int index;
+   for (index = 0; argv[index]; index++)
    {
       if (is_long_option(argv[index]))
          return index;
@@ -109,8 +111,9 @@ static int parse_short(const char *optstring, char * const *argv)
 
 static int parse_long(const struct option *longopts, char * const *argv)
 {
+   size_t indice;
    const struct option *opt = NULL;
-   for (size_t indice = 0; longopts[indice].name; indice++)
+   for (indice = 0; longopts[indice].name; indice++)
    {
       if (strcmp(longopts[indice].name, &argv[0][2]) == 0)
       {

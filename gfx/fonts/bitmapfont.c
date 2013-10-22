@@ -30,17 +30,18 @@ struct font_renderer
 
 static void char_to_texture(font_renderer_t *handle, uint8_t letter)
 {
+   unsigned y, x, xo, yo;
    handle->bitmap_chars[letter] = &handle->bitmap_alloc[letter * FONT_WIDTH * FONT_HEIGHT * handle->scale_factor * handle->scale_factor];
-   for (unsigned y = 0; y < FONT_HEIGHT; y++)
+   for (y = 0; y < FONT_HEIGHT; y++)
    {
-      for (unsigned x = 0; x < FONT_WIDTH; x++)
+      for (x = 0; x < FONT_WIDTH; x++)
       {
          uint8_t rem = 1 << ((x + y * FONT_WIDTH) & 7);
          unsigned offset = (x + y * FONT_WIDTH) >> 3;
          uint8_t col = (bitmap_bin[FONT_OFFSET(letter) + offset] & rem) ? 0xFF : 0;
 
-         for (unsigned xo = 0; xo < handle->scale_factor; xo++)
-            for (unsigned yo = 0; yo < handle->scale_factor; yo++)
+         for (xo = 0; xo < handle->scale_factor; xo++)
+            for (yo = 0; yo < handle->scale_factor; yo++)
                handle->bitmap_chars[letter][x * handle->scale_factor + xo + (y * handle->scale_factor + yo) * FONT_WIDTH * handle->scale_factor] = col;
       }
    }
@@ -49,6 +50,7 @@ static void char_to_texture(font_renderer_t *handle, uint8_t letter)
 
 static void *font_renderer_init(const char *font_path, float font_size)
 {
+   unsigned i;
    font_renderer_t *handle = (font_renderer_t*)calloc(1, sizeof(*handle));
    if (!handle)
       return NULL;
@@ -65,7 +67,7 @@ static void *font_renderer_init(const char *font_path, float font_size)
       return NULL;
    }
 
-   for (unsigned i = 0; i < 256; i++)
+   for (i = 0; i < 256; i++)
       char_to_texture(handle, i);
 
    return handle;
@@ -73,6 +75,7 @@ static void *font_renderer_init(const char *font_path, float font_size)
 
 static void font_renderer_msg(void *data, const char *msg, struct font_output_list *output) 
 {
+   size_t i;
    font_renderer_t *handle = (font_renderer_t*)data;
    output->head = NULL;
 
@@ -80,7 +83,7 @@ static void font_renderer_msg(void *data, const char *msg, struct font_output_li
    size_t len = strlen(msg);
    int off_x = 0;
 
-   for (size_t i = 0; i < len; i++)
+   for (i = 0; i < len; i++)
    {
       struct font_output *tmp = (struct font_output*)calloc(1, sizeof(*tmp));
       if (!tmp)

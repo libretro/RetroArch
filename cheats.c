@@ -143,9 +143,10 @@ static bool xml_grab_cheats(cheat_manager_t *handle, xmlNodePtr ptr)
 
 static void cheat_manager_apply_cheats(cheat_manager_t *handle)
 {
-   unsigned index = 0;
+   unsigned i, index;
+   index = 0;
    pretro_cheat_reset();
-   for (unsigned i = 0; i < handle->size; i++)
+   for (i = 0; i < handle->size; i++)
    {
       if (handle->cheats[i].state)
          pretro_cheat_set(index++, true, handle->cheats[i].code);
@@ -200,10 +201,11 @@ static void cheat_manager_save_config(cheat_manager_t *handle, const char *path,
       return;
    }
 
+   unsigned i;
    char conf_str[512] = {0};
    char tmp[32] = {0};
 
-   for (unsigned i = 0; i < handle->size; i++)
+   for (i = 0; i < handle->size; i++)
    {
       if (handle->cheats[i].state)
       {
@@ -328,13 +330,14 @@ error:
 
 void cheat_manager_free(cheat_manager_t *handle)
 {
+   unsigned i;
    if (!handle)
       return;
 
    if (handle->cheats)
    {
       cheat_manager_save_config(handle, g_settings.cheat_settings_path, g_extern.sha256);
-      for (unsigned i = 0; i < handle->size; i++)
+      for (i = 0; i < handle->size; i++)
       {
          xmlFree(handle->cheats[i].desc);
          free(handle->cheats[i].code);

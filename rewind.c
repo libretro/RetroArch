@@ -149,6 +149,7 @@ static void reassign_bottom(state_manager_t *state)
 
 static void generate_delta(state_manager_t *state, const void *data)
 {
+   uint64_t i;
    bool crossed = false;
    const uint32_t *old_state = state->tmp_state;
    const uint32_t *new_state = (const uint32_t*)data;
@@ -160,7 +161,7 @@ static void generate_delta(state_manager_t *state, const void *data)
    if (state->top_ptr == state->bottom_ptr)
       crossed = true;
 
-   for (uint64_t i = 0; i < state->state_size; i++)
+   for (i = 0; i < state->state_size; i++)
    {
       uint64_t xor_ = old_state[i] ^ new_state[i];
 

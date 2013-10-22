@@ -61,10 +61,11 @@ static unsigned rgui_current_gx_resolution = GX_RESOLUTIONS_640_480;
 #ifdef HAVE_SHADER_MANAGER
 static enum rarch_shader_type shader_manager_get_type(const struct gfx_shader *shader)
 {
+   unsigned i;
    // All shader types must be the same, or we cannot use it.
    enum rarch_shader_type type = RARCH_SHADER_NONE;
 
-   for (unsigned i = 0; i < shader->passes; i++)
+   for (i = 0; i < shader->passes; i++)
    {
       enum rarch_shader_type pass_type = gfx_shader_parse_type(shader->pass[i].source.cg,
             RARCH_SHADER_NONE);
@@ -418,9 +419,10 @@ int menu_set_settings(unsigned setting, unsigned action)
                RETRO_DEVICE_LIGHTGUN_JUSTIFIERS,
             };
 
-            unsigned current_device = g_settings.input.libretro_device[port];
-            unsigned current_index = 0;
-            for (unsigned i = 0; i < ARRAY_SIZE(device_types); i++)
+            unsigned current_device, current_index, i;
+            current_device = g_settings.input.libretro_device[port];
+            current_index = 0;
+            for (i = 0; i < ARRAY_SIZE(device_types); i++)
             {
                if (current_device == device_types[i])
                {
@@ -471,10 +473,11 @@ int menu_set_settings(unsigned setting, unsigned action)
       case RGUI_SETTINGS_CUSTOM_BIND_DEFAULT_ALL:
          if (action == RGUI_ACTION_OK)
          {
+            unsigned i;
             struct retro_keybind *target = &g_settings.input.binds[port][0];
             rgui->binds.begin = RGUI_SETTINGS_BIND_BEGIN;
             rgui->binds.last = RGUI_SETTINGS_BIND_LAST;
-            for (unsigned i = RGUI_SETTINGS_BIND_BEGIN; i <= RGUI_SETTINGS_BIND_LAST; i++, target++)
+            for (i = RGUI_SETTINGS_BIND_BEGIN; i <= RGUI_SETTINGS_BIND_LAST; i++, target++)
             {
                target->joykey = NO_BTN;
                target->joyaxis = AXIS_NONE;
@@ -997,7 +1000,8 @@ int menu_set_settings(unsigned setting, unsigned action)
                gfx_shader_write_conf_cgp(conf, &rgui->shader);
 
                bool ret = false;
-               for (unsigned d = 0; d < ARRAY_SIZE(dirs); d++)
+               unsigned d;
+               for (d = 0; d < ARRAY_SIZE(dirs); d++)
                {
                   if (!*dirs[d])
                      continue;

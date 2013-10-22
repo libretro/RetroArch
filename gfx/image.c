@@ -32,6 +32,7 @@
 bool texture_image_load_argb_shift(const char *path, struct texture_image *out_img,
       unsigned a_shift, unsigned r_shift, unsigned g_shift, unsigned b_shift)
 {
+   int y, x;
    SDL_Surface *img = IMG_Load(path);
    if (!img)
       return false;
@@ -52,12 +53,12 @@ bool texture_image_load_argb_shift(const char *path, struct texture_image *out_i
    RARCH_LOG("SDL_image: %dx%d @ %d bpp\n", img->w, img->h, img->format->BitsPerPixel);
    if (img->format->BitsPerPixel == 32)
    {
-      for (int y = 0; y < img->h; y++)
+      for (y = 0; y < img->h; y++)
       {
          uint32_t *dst = out_img->pixels + y * img->w;
          const uint32_t *src = (const uint32_t*)img->pixels + y * img->pitch / sizeof(uint32_t);
 
-         for (int x = 0; x < img->w; x++)
+         for (x = 0; x < img->w; x++)
          {
             uint32_t r = (src[x] & fmt->Rmask) >> fmt->Rshift;
             uint32_t g = (src[x] & fmt->Gmask) >> fmt->Gshift;
@@ -69,12 +70,12 @@ bool texture_image_load_argb_shift(const char *path, struct texture_image *out_i
    }
    else if (img->format->BitsPerPixel == 24)
    {
-      for (int y = 0; y < img->h; y++)
+      for (y = 0; y < img->h; y++)
       {
          uint32_t *dst = out_img->pixels + y * img->w;
          const uint8_t *src = (const uint8_t*)img->pixels + y * img->pitch;
 
-         for (int x = 0; x < img->w; x++)
+         for (x = 0; x < img->w; x++)
          {
             // Correct?
             uint32_t color = 0;
@@ -105,6 +106,7 @@ bool texture_image_load_argb_shift(const char *path, struct texture_image *out_i
 static bool texture_image_load_tga_shift(const char *path, struct texture_image *out_img,
       unsigned a_shift, unsigned r_shift, unsigned g_shift, unsigned b_shift)
 {
+   unsigned i;
    void *raw_buf = NULL;
    ssize_t len = read_file(path, &raw_buf);
    if (len < 0)
@@ -148,7 +150,7 @@ static bool texture_image_load_tga_shift(const char *path, struct texture_image 
    const uint8_t *tmp = buf + 18;
    if (bits == 32)
    {
-      for (unsigned i = 0; i < width * height; i++)
+      for (i = 0; i < width * height; i++)
       {
          uint32_t b = tmp[i * 4 + 0];
          uint32_t g = tmp[i * 4 + 1];
@@ -160,7 +162,7 @@ static bool texture_image_load_tga_shift(const char *path, struct texture_image 
    }
    else if (bits == 24)
    {
-      for (unsigned i = 0; i < width * height; i++)
+      for (i = 0; i < width * height; i++)
       {
          uint32_t b = tmp[i * 3 + 0];
          uint32_t g = tmp[i * 3 + 1];
@@ -186,6 +188,7 @@ static bool texture_image_load_tga_shift(const char *path, struct texture_image 
 bool texture_image_load_argb_shift(const char *path, struct texture_image *out_img,
       unsigned a_shift, unsigned r_shift, unsigned g_shift, unsigned b_shift)
 {
+   unsigned i;
    if (strstr(path, ".tga"))
       return texture_image_load_tga_shift(path, out_img, a_shift, r_shift, g_shift, b_shift);
 #ifdef HAVE_ZLIB
@@ -201,7 +204,7 @@ bool texture_image_load_argb_shift(const char *path, struct texture_image *out_i
       {
          unsigned num_pixels = out_img->width * out_img->height;
          uint32_t *pixels = out_img->pixels;
-         for (unsigned i = 0; i < num_pixels; i++)
+         for (i = 0; i < num_pixels; i++)
          {
             uint32_t col = pixels[i];
             uint8_t a = (uint8_t)(col >> 24);

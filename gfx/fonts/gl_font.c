@@ -27,7 +27,8 @@ static const gl_font_renderer_t *gl_font_backends[] = {
 
 const gl_font_renderer_t *gl_font_init_first(void *data, const char *font_path, float font_size)
 {
-   for (unsigned i = 0; i < ARRAY_SIZE(gl_font_backends); i++)
+   size_t i;
+   for (i = 0; i < ARRAY_SIZE(gl_font_backends); i++)
    {
       if (gl_font_backends[i]->init(data, font_path, font_size))
          return gl_font_backends[i];

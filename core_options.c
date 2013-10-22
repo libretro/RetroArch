@@ -38,10 +38,11 @@ struct core_option_manager
 
 void core_option_free(core_option_manager_t *opt)
 {
+   size_t i;
    if (!opt)
       return;
 
-   for (size_t i = 0; i < opt->size; i++)
+   for (i = 0; i < opt->size; i++)
    {
       free(opt->opts[i].desc);
       free(opt->opts[i].key);
@@ -56,8 +57,9 @@ void core_option_free(core_option_manager_t *opt)
 
 void core_option_get(core_option_manager_t *opt, struct retro_variable *var)
 {
+   size_t i;
    opt->updated = false;
-   for (size_t i = 0; i < opt->size; i++)
+   for (i = 0; i < opt->size; i++)
    {
       if (strcmp(opt->opts[i].key, var->key) == 0)
       {
@@ -71,6 +73,7 @@ void core_option_get(core_option_manager_t *opt, struct retro_variable *var)
 
 static bool parse_variable(core_option_manager_t *opt, size_t index, const struct retro_variable *var)
 {
+   size_t i;
    struct core_option *option = &opt->opts[index];
    option->key = strdup(var->key);
 
@@ -98,7 +101,7 @@ static bool parse_variable(core_option_manager_t *opt, size_t index, const struc
    char *config_val = NULL;
    if (config_get_string(opt->conf, option->key, &config_val))
    {
-      for (size_t i = 0; i < option->vals->size; i++)
+      for (i = 0; i < option->vals->size; i++)
       {
          if (strcmp(option->vals->elems[i].data, config_val) == 0)
          {
@@ -117,7 +120,7 @@ static bool parse_variable(core_option_manager_t *opt, size_t index, const struc
    RARCH_LOG("\tKey: %s\n", option->key);
    RARCH_LOG("\tCurrent value: %s\n", core_option_get_val(opt, index));
    RARCH_LOG("\tPossible values:\n");
-   for (size_t i = 0; i < option->vals->size; i++)
+   for (i = 0; i < option->vals->size; i++)
       RARCH_LOG("\t\t%s\n", option->vals->elems[i].data);
 
    return true;
@@ -125,6 +128,7 @@ static bool parse_variable(core_option_manager_t *opt, size_t index, const struc
 
 core_option_manager_t *core_option_new(const char *conf_path, const struct retro_variable *vars)
 {
+   const struct retro_variable *var;
    core_option_manager_t *opt = (core_option_manager_t*)calloc(1, sizeof(*opt));
    if (!opt)
       return NULL;
@@ -141,7 +145,7 @@ core_option_manager_t *core_option_new(const char *conf_path, const struct retro
    if (!opt->conf)
       goto error;
 
-   for (const struct retro_variable *var = vars; var->key && var->value; var++)
+   for (var = vars; var->key && var->value; var++)
       size++;
 
    opt->opts = (struct core_option*)calloc(size, sizeof(*opt->opts));
@@ -151,7 +155,7 @@ core_option_manager_t *core_option_new(const char *conf_path, const struct retro
    opt->size = size;
 
    size = 0;
-   for (const struct retro_variable *var = vars; var->key && var->value; size++, var++)
+   for (var = vars; var->key && var->value; size++, var++)
    {
       if (!parse_variable(opt, size, var))
          goto error;
@@ -171,7 +175,8 @@ bool core_option_updated(core_option_manager_t *opt)
 
 void core_option_flush(core_option_manager_t *opt)
 {
-   for (size_t i = 0; i < opt->size; i++)
+   size_t i;
+   for (i = 0; i < opt->size; i++)
    {
       struct core_option *option = &opt->opts[i];
       config_set_string(opt->conf, option->key, core_option_get_val(opt, i));

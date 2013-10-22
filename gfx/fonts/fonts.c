@@ -29,7 +29,8 @@ static const font_renderer_driver_t *font_backends[] = {
 
 bool font_renderer_create_default(const font_renderer_driver_t **driver, void **handle)
 {
-   for (unsigned i = 0; i < ARRAY_SIZE(font_backends); i++)
+   unsigned i;
+   for (i = 0; i < ARRAY_SIZE(font_backends); i++)
    {
       const char *font_path = *g_settings.video.font_path ? g_settings.video.font_path : NULL;
       if (!font_path)

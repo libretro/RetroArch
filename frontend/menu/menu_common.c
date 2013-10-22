@@ -475,11 +475,12 @@ void menu_ticker_line(char *buf, size_t len, unsigned index, const char *str, bo
 #if defined(HAVE_RMENU) || defined(HAVE_RGUI) || defined(HAVE_RMENU_XUI)
 static uint64_t rgui_input(void)
 {
+   unsigned i;
    uint64_t input_state = 0;
 
    static const struct retro_keybind *binds[] = { g_settings.input.binds[0] };
 
-   for (unsigned i = 0; i < RETRO_DEVICE_ID_JOYPAD_R2; i++)
+   for (i = 0; i < RETRO_DEVICE_ID_JOYPAD_R2; i++)
    {
       input_state |= input_input_state_func(binds,
             0, RETRO_DEVICE_JOYPAD, 0, i) ? (1ULL << i) : 0;
@@ -662,8 +663,9 @@ bool menu_save_new_config(void)
    char config_path[PATH_MAX];
    if (*g_settings.libretro && !path_is_directory(g_settings.libretro) && path_file_exists(g_settings.libretro)) // Infer file name based on libretro core.
    {
+      unsigned i;
       // In case of collision, find an alternative name.
-      for (unsigned i = 0; i < 16; i++)
+      for (i = 0; i < 16; i++)
       {
          fill_pathname_base(config_name, g_settings.libretro, sizeof(config_name));
          path_remove_extension(config_name);
@@ -717,6 +719,7 @@ bool menu_save_new_config(void)
 
 void menu_poll_bind_state(struct rgui_bind_state *state)
 {
+   unsigned p, b, a, h;
    memset(state->state, 0, sizeof(state->state));
    state->skip = input_input_state_func(NULL, 0, RETRO_DEVICE_KEYBOARD, 0, RETROK_RETURN);
 
@@ -731,13 +734,13 @@ void menu_poll_bind_state(struct rgui_bind_state *state)
    }
 
    input_joypad_poll(joypad);
-   for (unsigned p = 0; p < MAX_PLAYERS; p++)
+   for (p = 0; p < MAX_PLAYERS; p++)
    {
-      for (unsigned b = 0; b < RGUI_MAX_BUTTONS; b++)
+      for (b = 0; b < RGUI_MAX_BUTTONS; b++)
          state->state[p].buttons[b] = input_joypad_button_raw(joypad, p, b);
-      for (unsigned a = 0; a < RGUI_MAX_AXES; a++)
+      for (a = 0; a < RGUI_MAX_AXES; a++)
          state->state[p].axes[a] = input_joypad_axis_raw(joypad, p, a);
-      for (unsigned h = 0; h < RGUI_MAX_HATS; h++)
+      for (h = 0; h < RGUI_MAX_HATS; h++)
       {
          state->state[p].hats[h] |= input_joypad_hat_raw(joypad, p, HAT_UP_MASK, h) ? HAT_UP_MASK : 0;
          state->state[p].hats[h] |= input_joypad_hat_raw(joypad, p, HAT_DOWN_MASK, h) ? HAT_DOWN_MASK : 0;
@@ -749,6 +752,7 @@ void menu_poll_bind_state(struct rgui_bind_state *state)
 
 void menu_poll_bind_get_rested_axes(struct rgui_bind_state *state)
 {
+   unsigned p, a;
    const rarch_joypad_driver_t *joypad = NULL;
    if (driver.input && driver.input_data && driver.input->get_joypad_driver)
       joypad = driver.input->get_joypad_driver(driver.input_data);
@@ -759,17 +763,18 @@ void menu_poll_bind_get_rested_axes(struct rgui_bind_state *state)
       return;
    }
 
-   for (unsigned p = 0; p < MAX_PLAYERS; p++)
-      for (unsigned a = 0; a < RGUI_MAX_AXES; a++)
+   for (p = 0; p < MAX_PLAYERS; p++)
+      for (a = 0; a < RGUI_MAX_AXES; a++)
          state->axis_state[p].rested_axes[a] = input_joypad_axis_raw(joypad, p, a);
 }
 
 static bool menu_poll_find_trigger_pad(struct rgui_bind_state *state, struct rgui_bind_state *new_state, unsigned p)
 {
+   unsigned a, b, h;
    const struct rgui_bind_state_port *n = &new_state->state[p];
    const struct rgui_bind_state_port *o = &state->state[p];
 
-   for (unsigned b = 0; b < RGUI_MAX_BUTTONS; b++)
+   for (b = 0; b < RGUI_MAX_BUTTONS; b++)
    {
       if (n->buttons[b] && !o->buttons[b])
       {
@@ -780,7 +785,7 @@ static bool menu_poll_find_trigger_pad(struct rgui_bind_state *state, struct rgu
    }
 
    // Axes are a bit tricky ...
-   for (unsigned a = 0; a < RGUI_MAX_AXES; a++)
+   for (a = 0; a < RGUI_MAX_AXES; a++)
    {
       int locked_distance = abs(n->axes[a] - new_state->axis_state[p].locked_axes[a]);
       int rested_distance = abs(n->axes[a] - new_state->axis_state[p].rested_axes[a]);
@@ -801,7 +806,7 @@ static bool menu_poll_find_trigger_pad(struct rgui_bind_state *state, struct rgu
          new_state->axis_state[p].locked_axes[a] = 0;
    }
 
-   for (unsigned h = 0; h < RGUI_MAX_HATS; h++)
+   for (h = 0; h < RGUI_MAX_HATS; h++)
    {
       uint16_t trigged = n->hats[h] & (~o->hats[h]);
       uint16_t sane_trigger = 0;
@@ -827,7 +832,8 @@ static bool menu_poll_find_trigger_pad(struct rgui_bind_state *state, struct rgu
 
 bool menu_poll_find_trigger(struct rgui_bind_state *state, struct rgui_bind_state *new_state)
 {
-   for (unsigned p = 0; p < MAX_PLAYERS; p++)
+   unsigned p;
+   for (p = 0; p < MAX_PLAYERS; p++)
    {
       if (menu_poll_find_trigger_pad(state, new_state, p))
       {
@@ -849,7 +855,9 @@ void menu_key_event(bool down, unsigned keycode, uint32_t character, uint16_t ke
 
 void menu_resolve_libretro_names(rgui_list_t *list, const char *dir)
 {
-   for (size_t i = 0; i < list->size; i++)
+   size_t i;
+
+   for (i = 0; i < list->size; i++)
    {
       const char *path;
       unsigned type = 0;
@@ -872,10 +880,12 @@ void menu_resolve_libretro_names(rgui_list_t *list, const char *dir)
 
 void menu_resolve_supported_cores(rgui_handle_t *rgui)
 {
+   size_t i;
    const core_info_t *info = NULL;
    size_t cores = 0;
    core_info_list_get_supported_cores(rgui->core_info, rgui->deferred_path, &info, &cores);
-   for (size_t i = 0; i < cores; i++)
+
+   for (i = 0; i < cores; i++)
    {
       rgui_list_push(rgui->selection_buf, info[i].path, RGUI_FILE_PLAIN, 0);
       rgui_list_set_alt_at_offset(rgui->selection_buf, i, info[i].display_name);

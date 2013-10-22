@@ -7,9 +7,10 @@
 
 static void rgui_copy_glyph(uint8_t *glyph, const uint8_t *buf)
 {
-   for (int y = 0; y < FONT_HEIGHT; y++)
+   int y, x;
+   for (y = 0; y < FONT_HEIGHT; y++)
    {
-      for (int x = 0; x < FONT_WIDTH; x++)
+      for (x = 0; x < FONT_WIDTH; x++)
       {
          uint32_t col =
             ((uint32_t)buf[3 * (-y * 256 + x) + 0] << 0) |
@@ -54,19 +55,21 @@ static void fill_rect(uint16_t *buf, unsigned pitch,
       unsigned width, unsigned height,
       uint16_t (*col)(unsigned x, unsigned y))
 {
-   for (unsigned j = y; j < y + height; j++)
-      for (unsigned i = x; i < x + width; i++)
+   unsigned j, i;
+   for (j = y; j < y + height; j++)
+      for (i = x; i < x + width; i++)
          buf[j * (pitch >> 1) + i] = col(i, j);
 }
 
 static void blit_line(rgui_handle_t *rgui,
       int x, int y, const char *message, bool green)
 {
+   int j, i;
    while (*message)
    {
-      for (int j = 0; j < FONT_HEIGHT; j++)
+      for (j = 0; j < FONT_HEIGHT; j++)
       {
-         for (int i = 0; i < FONT_WIDTH; i++)
+         for (i = 0; i < FONT_WIDTH; i++)
          {
             uint8_t rem = 1 << ((i + j * FONT_WIDTH) & 7);
             int offset = (i + j * FONT_WIDTH) >> 3;
@@ -91,9 +94,10 @@ static void blit_line(rgui_handle_t *rgui,
 
 static void init_font(rgui_handle_t *rgui, const uint8_t *font_bmp_buf)
 {
+   unsigned i;
    uint8_t *font = (uint8_t *) calloc(1, FONT_OFFSET(256));
    rgui->alloc_font = true;
-   for (unsigned i = 0; i < 256; i++)
+   for (i = 0; i < 256; i++)
    {
       unsigned y = i / 16;
       unsigned x = i % 16;
@@ -142,6 +146,8 @@ static void render_background(rgui_handle_t *rgui)
 
 static void render_messagebox(rgui_handle_t *rgui, const char *message)
 {
+   size_t i;
+
    if (!message || !*message)
       return;
 
@@ -156,7 +162,7 @@ static void render_messagebox(rgui_handle_t *rgui, const char *message)
 
    unsigned width = 0;
    unsigned glyphs_width = 0;
-   for (size_t i = 0; i < list->size; i++)
+   for (i = 0; i < list->size; i++)
    {
       char *msg = list->elems[i].data;
       unsigned msglen = strlen(msg);
@@ -193,7 +199,7 @@ static void render_messagebox(rgui_handle_t *rgui, const char *message)
    fill_rect(rgui->frame_buf, rgui->frame_buf_pitch,
          x, y + 5, 5, height - 5, green_filler);
 
-   for (size_t i = 0; i < list->size; i++)
+   for (i = 0; i < list->size; i++)
    {
       const char *msg = list->elems[i].data;
       int offset_x = FONT_WIDTH_STRIDE * (glyphs_width - strlen(msg)) / 2;
@@ -329,10 +335,13 @@ static void render_text(void *data)
    snprintf(title_msg, sizeof(title_msg), "%s - %s %s", PACKAGE_VERSION, core_name, core_version);
    blit_line(rgui, TERM_START_X + 15, (TERM_HEIGHT * FONT_HEIGHT_STRIDE) + TERM_START_Y + 2, title_msg, true);
 
-   unsigned x = TERM_START_X;
-   unsigned y = TERM_START_Y;
+   unsigned x, y;
+   size_t i;
 
-   for (size_t i = begin; i < end; i++, y += FONT_HEIGHT_STRIDE)
+   x = TERM_START_X;
+   y = TERM_START_Y;
+
+   for (i = begin; i < end; i++, y += FONT_HEIGHT_STRIDE)
    {
       const char *path = 0;
       unsigned type = 0;

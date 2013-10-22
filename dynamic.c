@@ -186,6 +186,7 @@ void libretro_free_system_info(struct retro_system_info *info)
 static bool find_first_libretro(char *path, size_t size,
       const char *dir, const char *rom_path)
 {
+   size_t i;
    bool ret = false;
    const char *ext = path_get_extension(rom_path);
    if (!ext || !*ext)
@@ -203,7 +204,7 @@ static bool find_first_libretro(char *path, size_t size,
       return false;
    }
 
-   for (size_t i = 0; i < list->size && !ret; i++)
+   for (i = 0; i < list->size && !ret; i++)
    {
       RARCH_LOG("Checking library: \"%s\".\n", list->elems[i].data);
 
@@ -340,6 +341,7 @@ static void load_symbols(bool is_dummy)
 
 void libretro_get_current_core_pathname(char *name, size_t size)
 {
+   size_t i;
    if (size == 0)
       return;
 
@@ -355,7 +357,7 @@ void libretro_get_current_core_pathname(char *name, size_t size)
 
    name[strlen(id)] = '\0';
 
-   for (size_t i = 0; id[i] != '\0'; i++)
+   for (i = 0; id[i] != '\0'; i++)
    {
       char c = id[i];
       if (isspace(c) || isblank(c))
@@ -471,6 +473,7 @@ void dylib_close(dylib_t lib)
 
 bool rarch_environment_cb(unsigned cmd, void *data)
 {
+   unsigned p, id;
    switch (cmd)
    {
       case RETRO_ENVIRONMENT_GET_OVERSCAN:
@@ -622,9 +625,9 @@ bool rarch_environment_cb(unsigned cmd, void *data)
          };
 
          RARCH_LOG("Environ SET_INPUT_DESCRIPTORS:\n");
-         for (unsigned p = 0; p < MAX_PLAYERS; p++)
+         for (p = 0; p < MAX_PLAYERS; p++)
          {
-            for (unsigned id = 0; id < RARCH_FIRST_CUSTOM_BIND; id++)
+            for (id = 0; id < RARCH_FIRST_CUSTOM_BIND; id++)
             {
                const char *desc = g_extern.system.input_desc_btn[p][id];
                if (desc)

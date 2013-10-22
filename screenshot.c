@@ -61,7 +61,8 @@ static bool write_header_bmp(FILE *file, unsigned width, unsigned height)
 
 static void dump_lines_file(FILE *file, uint8_t **lines, size_t line_size, unsigned height)
 {
-   for (unsigned i = 0; i < height; i++)
+   unsigned i;
+   for (i = 0; i < height; i++)
       fwrite(lines[i], 1, line_size, file);
 }
 
@@ -72,7 +73,8 @@ static void dump_line_bgr(uint8_t *line, const uint8_t *src, unsigned width)
 
 static void dump_line_16(uint8_t *line, const uint16_t *src, unsigned width)
 {
-   for (unsigned i = 0; i < width; i++)
+   unsigned i;
+   for (i = 0; i < width; i++)
    {
       uint16_t pixel = *src++;
       uint8_t b = (pixel >>  0) & 0x1f;
@@ -86,7 +88,8 @@ static void dump_line_16(uint8_t *line, const uint16_t *src, unsigned width)
 
 static void dump_line_32(uint8_t *line, const uint32_t *src, unsigned width)
 {
-   for (unsigned i = 0; i < width; i++)
+   unsigned i;
+   for (i = 0; i < width; i++)
    {
       uint32_t pixel = *src++;
       *line++ = (pixel >>  0) & 0xff;
@@ -98,6 +101,7 @@ static void dump_line_32(uint8_t *line, const uint32_t *src, unsigned width)
 static void dump_content(FILE *file, const void *frame,
       int width, int height, int pitch, bool bgr24)
 {
+   int i, j;
    union
    {
       const uint8_t *u8;
@@ -112,7 +116,7 @@ static void dump_content(FILE *file, const void *frame,
 
    size_t line_size = (width * 3 + 3) & ~3;
 
-   for (int i = 0; i < height; i++)
+   for (i = 0; i < height; i++)
    {
       lines[i] = (uint8_t*)calloc(1, line_size);
       if (!lines[i])
@@ -121,24 +125,24 @@ static void dump_content(FILE *file, const void *frame,
 
    if (bgr24) // BGR24 byte order. Can directly copy.
    {
-      for (int j = 0; j < height; j++, u.u8 += pitch)
+      for (j = 0; j < height; j++, u.u8 += pitch)
          dump_line_bgr(lines[j], u.u8, width);
    }
    else if (g_extern.system.pix_fmt == RETRO_PIXEL_FORMAT_XRGB8888)
    {
-      for (int j = 0; j < height; j++, u.u8 += pitch)
+      for (j = 0; j < height; j++, u.u8 += pitch)
          dump_line_32(lines[j], u.u32, width);
    }
    else // RGB565
    {
-      for (int j = 0; j < height; j++, u.u8 += pitch)
+      for (j = 0; j < height; j++, u.u8 += pitch)
          dump_line_16(lines[j], u.u16, width);
    }
 
    dump_lines_file(file, lines, line_size, height);
 
 end:
-   for (int i = 0; i < height; i++)
+   for (i = 0; i < height; i++)
       free(lines[i]);
    free(lines);
 }

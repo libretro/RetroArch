@@ -430,7 +430,8 @@ static bool thread_frame(void *data, const void *frame_,
    {
       if (src)
       {
-         for (unsigned h = 0; h < height; h++, src += pitch, dst += copy_stride)
+         unsigned h;
+         for (h = 0; h < height; h++, src += pitch, dst += copy_stride)
             memcpy(dst, src, copy_stride);
       }
 

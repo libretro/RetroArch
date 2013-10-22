@@ -20,6 +20,7 @@
 
 static bool gl_init_font(void *data, const char *font_path, float font_size)
 {
+   size_t i, j;
    if (!g_settings.video.font_enable)
       return false;
 
@@ -43,7 +44,7 @@ static bool gl_init_font(void *data, const char *font_path, float font_size)
       return false;
    }
 
-   for (unsigned i = 0; i < 4; i++)
+   for (i = 0; i < 4; i++)
    {
       gl->font_color[4 * i + 0] = g_settings.video.msg_color_r;
       gl->font_color[4 * i + 1] = g_settings.video.msg_color_g;
@@ -51,9 +52,9 @@ static bool gl_init_font(void *data, const char *font_path, float font_size)
       gl->font_color[4 * i + 3] = 1.0;
    }
 
-   for (unsigned i = 0; i < 4; i++)
+   for (i = 0; i < 4; i++)
    {
-      for (unsigned j = 0; j < 3; j++)
+      for (j = 0; j < 3; j++)
          gl->font_color_dark[4 * i + j] = 0.3 * gl->font_color[4 * i + j];
       gl->font_color_dark[4 * i + 3] = 1.0;
    }
@@ -145,6 +146,7 @@ static void adjust_power_of_two(gl_t *gl, struct font_rect *geom)
 
 static void copy_glyph(const struct font_output *head, const struct font_rect *geom, uint32_t *buffer, unsigned width, unsigned height)
 {
+   int h, w;
    // head has top-left oriented coords.
    int x = head->off_x - geom->x;
    int y = head->off_y - geom->y;
@@ -173,10 +175,10 @@ static void copy_glyph(const struct font_output *head, const struct font_rect *g
       font_height = height - y;
 
    uint32_t *dst = buffer + y * width + x;
-   for (int h = 0; h < font_height; h++, dst += width, src += head->pitch)
+   for (h = 0; h < font_height; h++, dst += width, src += head->pitch)
    {
       uint8_t *d = (uint8_t*)dst;
-      for (int w = 0; w < font_width; w++)
+      for (w = 0; w < font_width; w++)
       {
          *d++ = 0xff;
          *d++ = 0xff;
@@ -207,6 +209,7 @@ static void blit_fonts(gl_t *gl, const struct font_output *head, const struct fo
 static void calculate_font_coords(gl_t *gl,
       GLfloat font_vertex[8], GLfloat font_vertex_dark[8], GLfloat font_tex_coords[8], GLfloat scale, GLfloat pos_x, GLfloat pos_y)
 {
+   unsigned i;
    GLfloat scale_factor = scale;
 
    GLfloat lx = pos_x;
@@ -225,7 +228,7 @@ static void calculate_font_coords(gl_t *gl,
 
    GLfloat shift_x = 2.0f / gl->vp.width;
    GLfloat shift_y = 2.0f / gl->vp.height;
-   for (unsigned i = 0; i < 4; i++)
+   for (i = 0; i < 4; i++)
    {
       font_vertex_dark[2 * i + 0] = font_vertex[2 * i + 0] - shift_x;
       font_vertex_dark[2 * i + 1] = font_vertex[2 * i + 1] - shift_y;
