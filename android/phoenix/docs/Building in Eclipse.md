@@ -34,3 +34,8 @@
 
 Simply place all built cores (and the libretro activity) within the directory [phoenix root]/libs/armeabi-v7a.
 After placing your cores there, building the front-end, and sending it off to your Android device, they should show up within the core selection screen of the front-end.
+
+## Notes
+
+1. If you’re running into an issue where adding an existing Android project results in “Invalid project description”, please select a workspace location that doesn’t contain the Android projects.
+2. If Eclipse still complains about missing appcompat, right-click on RetroArch->Properties->Android->Library->Add “android-support-v7-appcompat”, and then remove the old appcompat reference.
