@@ -1327,12 +1327,35 @@ static void android_input_set_keybinds(void *data, unsigned device,
                      keycode_lut[AKEYCODE_Q]  |= ((RETRO_DEVICE_ID_JOYPAD_L+1)      << shift);
                      keycode_lut[AKEYCODE_P]  |= ((RETRO_DEVICE_ID_JOYPAD_R+1)      << shift);
                      keycode_lut[AKEYCODE_R]  |= ((RETRO_DEVICE_ID_JOYPAD_SELECT+1) << shift);
-                     keycode_lut[AKEYCODE_Y] |= ((RETRO_DEVICE_ID_JOYPAD_START+1)  << shift);
+                     keycode_lut[AKEYCODE_Y]  |= ((RETRO_DEVICE_ID_JOYPAD_START+1)  << shift);
                      keycode_lut[AKEYCODE_DPAD_UP]   |= ((RETRO_DEVICE_ID_JOYPAD_UP+1)     << shift);
                      keycode_lut[AKEYCODE_DPAD_DOWN] |= ((RETRO_DEVICE_ID_JOYPAD_DOWN+1)   << shift);
                      keycode_lut[AKEYCODE_DPAD_LEFT] |= ((RETRO_DEVICE_ID_JOYPAD_LEFT+1)   << shift);
                      keycode_lut[AKEYCODE_DPAD_RIGHT]|= ((RETRO_DEVICE_ID_JOYPAD_RIGHT+1)  << shift);
                      break;
+                  case ICADE_PROFILE_G910:
+                     strlcpy(g_settings.input.device_names[port], "G910",
+                        sizeof(g_settings.input.device_names[port]));
+                     /* Face buttons map to SNES layout, not button labels on gamepad -- SNES layout has A to the right of B */
+                     keycode_lut[AKEYCODE_NUMPAD_LCK_3]  |= ((RETRO_DEVICE_ID_JOYPAD_Y+1)      << shift); /* Button labeled X on gamepad */
+                     keycode_lut[AKEYCODE_NUMPAD_LCK_0]  |= ((RETRO_DEVICE_ID_JOYPAD_B+1)      << shift); /* Button labeled A on gamepad */
+                     keycode_lut[AKEYCODE_NUMPAD_LCK_1]  |= ((RETRO_DEVICE_ID_JOYPAD_A+1)      << shift); /* Button labeled B on gamepad */
+                     keycode_lut[AKEYCODE_NUMPAD_LCK_4]  |= ((RETRO_DEVICE_ID_JOYPAD_X+1)      << shift); /* Button labeled Y on gamepad */
+                     keycode_lut[AKEYCODE_NUMPAD_LCK_6]  |= ((RETRO_DEVICE_ID_JOYPAD_L+1)      << shift);
+                     keycode_lut[AKEYCODE_NUMPAD_LCK_8]  |= ((RETRO_DEVICE_ID_JOYPAD_L2+1)     << shift);
+                     keycode_lut[AKEYCODE_NUMPAD_LCK_2]  |= ((RETRO_DEVICE_ID_JOYPAD_L3+1)     << shift);
+                     keycode_lut[AKEYCODE_NUMPAD_LCK_7]  |= ((RETRO_DEVICE_ID_JOYPAD_R+1)      << shift);
+                     keycode_lut[AKEYCODE_NUMPAD_LCK_9]  |= ((RETRO_DEVICE_ID_JOYPAD_R2+1)     << shift);
+                     keycode_lut[AKEYCODE_NUMPAD_LCK_5]  |= ((RETRO_DEVICE_ID_JOYPAD_R3+1)     << shift);
+                     keycode_lut[AKEYCODE_NUMPAD_SUB]    |= ((RETRO_DEVICE_ID_JOYPAD_SELECT+1) << shift);
+                     keycode_lut[AKEYCODE_OTHR_108]      |= ((RETRO_DEVICE_ID_JOYPAD_START+1)  << shift);
+                     /* These don't work, in gamepad mode the dpad sends AXIS_HAT_X and AXIS_HAT_Y motion events
+                        instead of button events, so they get processed by engine_handle_dpad_getaxisvalue()  */
+                     keycode_lut[AKEYCODE_DPAD_UP]   |= ((RETRO_DEVICE_ID_JOYPAD_UP+1)     << shift);
+                     keycode_lut[AKEYCODE_DPAD_DOWN] |= ((RETRO_DEVICE_ID_JOYPAD_DOWN+1)   << shift);
+                     keycode_lut[AKEYCODE_DPAD_LEFT] |= ((RETRO_DEVICE_ID_JOYPAD_LEFT+1)   << shift);
+                     keycode_lut[AKEYCODE_DPAD_RIGHT]|= ((RETRO_DEVICE_ID_JOYPAD_RIGHT+1)  << shift);
+                     break;   
                   case ICADE_PROFILE_GAMESTOP_WIRELESS:
                      strlcpy(g_settings.input.device_names[port], "Gamestop Wireless",
                         sizeof(g_settings.input.device_names[port]));
