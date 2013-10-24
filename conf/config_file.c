@@ -267,6 +267,9 @@ static char *strip_comment(char *str)
 
 static bool parse_line(config_file_t *conf, struct config_entry_list *list, char *line)
 {
+   if (!*line)
+      return false;
+
    char *comment = strip_comment(line);
 
    // Starting line with # and include includes config files. :)
