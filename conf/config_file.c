@@ -228,12 +228,46 @@ static void add_sub_conf(config_file_t *conf, char *line)
    free(path);
 }
 
+static char *strip_comment(char *str)
+{
+   // Remove everything after comment. Keep #s inside string literals.
+   char *strend = str + strlen(str);
+   bool cut_comment = true;
+
+   while (*str)
+   {
+      char *literal = strchr(str, '\"');
+      if (!literal)
+         literal = strend;
+      char *comment = strchr(str, '#');
+      if (!comment)
+         comment = strend;
+
+      if (cut_comment && literal < comment)
+      {
+         cut_comment = false;
+         str = literal + 1;
+      }
+      else if (!cut_comment && literal)
+      {
+         cut_comment = true;
+         str = literal + 1;
+      }
+      else if (comment)
+      {
+         *comment = '\0';
+         str = comment;
+      }
+      else
+         str = strend;
+   }
+
+   return str;
+}
+
 static bool parse_line(config_file_t *conf, struct config_entry_list *list, char *line)
 {
-   // Remove everything after comment.
-   char *comment = strchr(line, '#');
-   if (comment)
-      *comment = '\0';
+   char *comment = strip_comment(line);
 
    // Starting line with # and include includes config files. :)
    if ((comment == line) && (conf->include_depth < MAX_INCLUDE_DEPTH))
