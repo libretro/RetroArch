@@ -444,10 +444,10 @@ static bool add_pad(unsigned p, int fd, const char *path)
    {
       if (test_bit(FF_RUMBLE, ffbit))
          RARCH_LOG("[udev]: Pad #%u (%s) supports force feedback.\n",
-               i, path);
+               p, path);
 
       if (ioctl(fd, EVIOCGEFFECTS, &pad->num_effects) >= 0)
-         RARCH_LOG("[udev]: Pad #%u (%s) supports %d force feedback effects.\n", i, path, pad->num_effects);
+         RARCH_LOG("[udev]: Pad #%u (%s) supports %d force feedback effects.\n", p, path, pad->num_effects);
    }
 
    return true;
