@@ -1040,7 +1040,7 @@ void init_video_input(void)
       driver.video->poke_interface(driver.video_data, &driver.video_poke);
 
    // Force custom viewport to have sane parameters.
-   if (!custom_vp->width || !custom_vp->height)
+   if (driver.video->viewport_info && (!custom_vp->width || !custom_vp->height))
    {
       custom_vp->width = width;
       custom_vp->height = height;
