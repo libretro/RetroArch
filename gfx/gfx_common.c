@@ -232,10 +232,9 @@ void gfx_set_square_pixel_viewport(unsigned width, unsigned height)
 
 void gfx_set_core_viewport(void)
 {
-   if (!g_extern.main_is_init)
-      return;
-
    const struct retro_game_geometry *geom = &g_extern.system.av_info.geometry;
+   if (geom->base_width <= 0.0f || geom->base_height <= 0.0f)
+      return;
 
    // Fallback to 1:1 pixel ratio if none provided
    if (geom->aspect_ratio > 0.0f)

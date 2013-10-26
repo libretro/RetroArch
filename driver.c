@@ -947,17 +947,21 @@ void init_video_input(void)
    if (g_extern.filter.active)
       scale = g_extern.filter.scale;
 
-   g_extern.system.aspect_ratio = g_settings.video.aspect_ratio;
+   // Update core-dependent aspect ratio values.
+   gfx_set_square_pixel_viewport(geom->base_width, geom->base_height);
+   gfx_set_core_viewport();
+   gfx_set_config_viewport();
 
-   if (g_extern.system.aspect_ratio < 0.0f)
+   // Update CUSTOM viewport.
+   rarch_viewport_t *custom_vp = &g_extern.console.screen.viewports.custom_vp;
+   if (g_settings.video.aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
    {
-      if (geom->aspect_ratio > 0.0f && g_settings.video.aspect_ratio_auto)
-         g_extern.system.aspect_ratio = geom->aspect_ratio;
-      else
-         g_extern.system.aspect_ratio = (float)geom->base_width / geom->base_height; // 1:1 PAR.
-
-      RARCH_LOG("Adjusting aspect ratio to %.2f\n", g_extern.system.aspect_ratio);
+      float default_aspect = aspectratio_lut[ASPECT_RATIO_CORE].value;
+      aspectratio_lut[ASPECT_RATIO_CUSTOM].value = (custom_vp->width && custom_vp->height) ?
+         (float)custom_vp->width / custom_vp->height : default_aspect;
    }
+
+   g_extern.system.aspect_ratio = aspectratio_lut[g_settings.video.aspect_ratio_idx].value;
 
    unsigned width;
    unsigned height;
@@ -970,7 +974,8 @@ void init_video_input(void)
    {
       if (g_settings.video.force_aspect)
       {
-         unsigned base_width = roundf(geom->base_height * g_extern.system.aspect_ratio); // Do rounding here to simplify integer scale correctness.
+         // Do rounding here to simplify integer scale correctness.
+         unsigned base_width = roundf(geom->base_height * g_extern.system.aspect_ratio);
          width = roundf(base_width * g_settings.video.xscale);
          height = roundf(geom->base_height * g_settings.video.yscale);
       }
@@ -1034,12 +1039,16 @@ void init_video_input(void)
    if (driver.video->poke_interface)
       driver.video->poke_interface(driver.video_data, &driver.video_poke);
 
+   // Force custom viewport to have sane parameters.
+   if (!custom_vp->width || !custom_vp->height)
+   {
+      custom_vp->width = width;
+      custom_vp->height = height;
+      driver.video->viewport_info(driver.video_data, custom_vp);
+   }
+
    if (driver.video->set_rotation)
       video_set_rotation_func((g_settings.video.rotation + g_extern.system.rotation) % 4);
-
-   if (driver.video_poke && driver.video_poke->set_aspect_ratio &&
-         g_settings.video.aspect_ratio_idx != ASPECT_RATIO_CONFIG)
-      driver.video_poke->set_aspect_ratio(driver.video_data, g_settings.video.aspect_ratio_idx);
 
 #ifdef HAVE_X11
    if (driver.display_type == RARCH_DISPLAY_X11)

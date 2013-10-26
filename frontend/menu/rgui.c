@@ -148,20 +148,6 @@ static void *rgui_init(void)
    g_settings.rgui_show_start_screen = false;
    rgui_settings_populate_entries(rgui);
 
-   // Make sure that custom viewport is something sane incase we use it
-   // before it's configured.
-   rarch_viewport_t *custom = &g_extern.console.screen.viewports.custom_vp;
-   if (driver.video_data && (!custom->width || !custom->height))
-   {
-      driver.video->viewport_info(driver.video_data, custom);
-      aspectratio_lut[ASPECT_RATIO_CUSTOM].value =
-         (float)custom->width / custom->height;
-   }
-   else if (DEFAULT_ASPECT_RATIO > 0.0f)
-      aspectratio_lut[ASPECT_RATIO_CUSTOM].value = DEFAULT_ASPECT_RATIO;
-   else
-      aspectratio_lut[ASPECT_RATIO_CUSTOM].value = 4.0f / 3.0f; // Something arbitrary
-
    return rgui;
 }
 
