@@ -1234,6 +1234,15 @@ static inline void gl_copy_frame(void *data, const void *frame, unsigned width, 
                0, 0, 0, width, height, gl->texture_type,
                gl->texture_fmt, gl->conv_buffer);
       }
+      else if (gl->support_unpack_row_length)
+      {
+         glPixelStorei(GL_UNPACK_ROW_LENGTH, pitch / gl->base_size);
+         glTexSubImage2D(GL_TEXTURE_2D,
+               0, 0, 0, width, height, gl->texture_type,
+               gl->texture_fmt, frame);
+
+         glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
+      }
       else
       {
          // No GL_UNPACK_ROW_LENGTH ;(
@@ -2150,6 +2159,15 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
 
 #if !defined(HAVE_OPENGLES) && defined(HAVE_FFMPEG)
    gl_init_pbo_readback(gl);
+#endif
+
+#if defined(HAVE_OPENGLES)
+   gl->support_unpack_row_length = false;
+   if (gl_query_extension(gl, "GL_EXT_unpack_subimage"))
+   {
+      RARCH_LOG("[GL]: Extension GL_EXT_unpack_subimage, can copy textures faster using UNPACK_ROW_LENGTH.\n");
+      gl->support_unpack_row_length = true;
+   }
 #endif
 
    if (!gl_check_error())

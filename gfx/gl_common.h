@@ -209,6 +209,9 @@ typedef struct gl
    GLenum texture_fmt;
    GLenum wrap_mode;
    unsigned base_size; // 2 or 4
+#ifdef HAVE_OPENGLES
+   bool support_unpack_row_length;
+#endif
 
    // Fonts
    void *font;
@@ -309,8 +312,12 @@ typedef struct gl
 #define NO_GL_CLAMP_TO_BORDER
 #endif
 
-#if defined(HAVE_OPENGLES2) // It's an extension. Don't bother checking for it atm.
-#undef GL_UNPACK_ROW_LENGTH
+#if defined(HAVE_OPENGLES)
+
+#ifndef GL_UNPACK_ROW_LENGTH
+#define GL_UNPACK_ROW_LENGTH  0x0CF2
+#endif
+
 #endif
 
 void gl_set_projection(void *data, struct gl_ortho *ortho, bool allow_rotate);
