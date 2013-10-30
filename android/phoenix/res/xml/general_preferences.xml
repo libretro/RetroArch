@@ -1,6 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
 
+    <!-- Core Management -->
+    <PreferenceCategory android:title="@string/core_management">
+        <Preference 
+            android:title="@string/manage_cores">
+            <intent
+                android:targetClass="com.retroarch.browser.coremanager.CoreManagerActivity"
+                android:targetPackage="com.retroarch"/>
+        </Preference>
+    </PreferenceCategory>
+
     <!-- Configuration Style -->
     <PreferenceCategory android:title="@string/config_style" >
         <CheckBoxPreference
