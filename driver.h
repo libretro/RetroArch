@@ -486,6 +486,13 @@ void uninit_video_input(void);
 void init_audio(void);
 void uninit_audio(void);
 
+void find_prev_video_driver(char *str, size_t sizeof_str);
+void find_prev_audio_driver(char *str, size_t sizeof_str);
+void find_prev_input_driver(char *str, size_t sizeof_str);
+void find_next_video_driver(char *str, size_t sizeof_str);
+void find_next_audio_driver(char *str, size_t sizeof_str);
+void find_next_input_driver(char *str, size_t sizeof_str);
+
 void driver_set_monitor_refresh_rate(float hz);
 bool driver_monitor_fps_statistics(double *refresh_rate, double *deviation, unsigned *sample_points);
 void driver_set_nonblock_state(bool nonblock);

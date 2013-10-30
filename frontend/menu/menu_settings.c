@@ -624,6 +624,67 @@ int menu_set_settings(unsigned setting, unsigned action)
             driver.video_poke->set_filtering(driver.video_data, 1, g_settings.video.smooth);
          break;
 
+      case RGUI_SETTINGS_DRIVER_VIDEO:
+         if (action == RGUI_ACTION_LEFT)
+         {
+            char driver[32];
+            driver[0] = '\0';
+            find_next_video_driver(driver, sizeof(driver));
+
+            if (driver[0] != '\0')
+               strlcpy(g_settings.video.driver, driver, sizeof(g_settings.video.driver));
+         }
+         else if (action == RGUI_ACTION_RIGHT)
+         {
+            char driver[32];
+            driver[0] = '\0';
+            find_prev_video_driver(driver, sizeof(driver));
+
+            if (driver[0] != '\0')
+               strlcpy(g_settings.video.driver, driver, sizeof(g_settings.video.driver));
+         }
+         break;
+      case RGUI_SETTINGS_DRIVER_AUDIO:
+         if (action == RGUI_ACTION_LEFT)
+         {
+            char driver[32];
+            driver[0] = '\0';
+            find_next_audio_driver(driver, sizeof(driver));
+
+            if (driver[0] != '\0')
+               strlcpy(g_settings.audio.driver, driver, sizeof(g_settings.audio.driver));
+         }
+         else if (action == RGUI_ACTION_RIGHT)
+         {
+            char driver[32];
+            driver[0] = '\0';
+            find_prev_audio_driver(driver, sizeof(driver));
+
+            if (driver[0] != '\0')
+               strlcpy(g_settings.audio.driver, driver, sizeof(g_settings.audio.driver));
+         }
+         break;
+      case RGUI_SETTINGS_DRIVER_INPUT:
+         if (action == RGUI_ACTION_LEFT)
+         {
+            char driver[32];
+            driver[0] = '\0';
+            find_next_input_driver(driver, sizeof(driver));
+
+            if (driver[0] != '\0')
+               strlcpy(g_settings.input.driver, driver, sizeof(g_settings.input.driver));
+         }
+         else if (action == RGUI_ACTION_RIGHT)
+         {
+            char driver[32];
+            driver[0] = '\0';
+            find_prev_input_driver(driver, sizeof(driver));
+
+            if (driver[0] != '\0')
+               strlcpy(g_settings.input.driver, driver, sizeof(g_settings.input.driver));
+         }
+         break;
+
       case RGUI_SETTINGS_VIDEO_GAMMA:
          if (action == RGUI_ACTION_START)
          {
@@ -1094,13 +1155,13 @@ void menu_set_settings_label(char *type_str, size_t type_str_size, unsigned *w, 
          snprintf(type_str, type_str_size, "%u", g_settings.video.hard_sync_frames);
          break;
       case RGUI_SETTINGS_DRIVER_VIDEO:
-         strlcpy(type_str, driver.video->ident, type_str_size);
+         strlcpy(type_str, g_settings.video.driver, type_str_size);
          break;
       case RGUI_SETTINGS_DRIVER_AUDIO:
-         strlcpy(type_str, driver.audio->ident, type_str_size);
+         strlcpy(type_str, g_settings.audio.driver, type_str_size);
          break;
       case RGUI_SETTINGS_DRIVER_INPUT:
-         strlcpy(type_str, driver.input->ident, type_str_size);
+         strlcpy(type_str, g_settings.input.driver, type_str_size);
          break;
       case RGUI_SETTINGS_VIDEO_REFRESH_RATE_AUTO:
          {
