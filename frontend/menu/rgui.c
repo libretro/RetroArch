@@ -78,7 +78,7 @@ static bool menu_type_is_settings(unsigned type)
       type == RGUI_SETTINGS_DISK_OPTIONS ||
       type == RGUI_SETTINGS_PATH_OPTIONS ||
       type == RGUI_SETTINGS_OPTIONS ||
-      type == RGUI_SETTINGS_INFO ||
+      type == RGUI_SETTINGS_DRIVERS ||
       (type == RGUI_SETTINGS_INPUT_OPTIONS);
 }
 
@@ -235,9 +235,9 @@ static void rgui_settings_options_populate_entries(rgui_handle_t *rgui)
 static void rgui_settings_info_options_populate_entries(rgui_handle_t *rgui)
 {
    rgui_list_clear(rgui->selection_buf);
-   rgui_list_push(rgui->selection_buf, "Video driver", RGUI_SETTINGS_INFO_VIDEO_DRIVER, 0);
-   rgui_list_push(rgui->selection_buf, "Audio driver", RGUI_SETTINGS_INFO_AUDIO_DRIVER, 0);
-   rgui_list_push(rgui->selection_buf, "Input driver", RGUI_SETTINGS_INFO_INPUT_DRIVER, 0);
+   rgui_list_push(rgui->selection_buf, "Video driver", RGUI_SETTINGS_DRIVER_VIDEO, 0);
+   rgui_list_push(rgui->selection_buf, "Audio driver", RGUI_SETTINGS_DRIVER_AUDIO, 0);
+   rgui_list_push(rgui->selection_buf, "Input driver", RGUI_SETTINGS_DRIVER_INPUT, 0);
 }
 
 static void rgui_settings_populate_entries(rgui_handle_t *rgui)
@@ -267,7 +267,7 @@ static void rgui_settings_populate_entries(rgui_handle_t *rgui)
    rgui_list_push(rgui->selection_buf, "Input Options", RGUI_SETTINGS_INPUT_OPTIONS, 0);
    rgui_list_push(rgui->selection_buf, "Path Options", RGUI_SETTINGS_PATH_OPTIONS, 0);
    rgui_list_push(rgui->selection_buf, "Settings", RGUI_SETTINGS_OPTIONS, 0);
-   rgui_list_push(rgui->selection_buf, "Info", RGUI_SETTINGS_INFO, 0);
+   rgui_list_push(rgui->selection_buf, "Drivers", RGUI_SETTINGS_DRIVERS, 0);
 
    if (g_extern.main_is_init && !g_extern.libretro_dummy)
    {
@@ -932,7 +932,7 @@ static int rgui_settings_iterate(rgui_handle_t *rgui, rgui_action_t action)
          rgui_settings_path_populate_entries(rgui);
       else if (menu_type == RGUI_SETTINGS_OPTIONS)
          rgui_settings_options_populate_entries(rgui);
-      else if (menu_type == RGUI_SETTINGS_INFO)
+      else if (menu_type == RGUI_SETTINGS_DRIVERS)
          rgui_settings_info_options_populate_entries(rgui);
       else if (menu_type == RGUI_SETTINGS_CORE_OPTIONS)
          rgui_settings_core_options_populate_entries(rgui);

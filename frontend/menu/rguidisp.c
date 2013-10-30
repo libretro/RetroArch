@@ -248,8 +248,8 @@ static void render_text(void *data)
       snprintf(title, sizeof(title), "DISK APPEND %s", dir);
    else if (menu_type == RGUI_SETTINGS_VIDEO_OPTIONS)
       strlcpy(title, "VIDEO OPTIONS", sizeof(title));
-   else if (menu_type == RGUI_SETTINGS_INFO)
-      strlcpy(title, "INFO OPTIONS", sizeof(title));
+   else if (menu_type == RGUI_SETTINGS_DRIVERS)
+      strlcpy(title, "DRIVER OPTIONS", sizeof(title));
 #ifdef HAVE_SHADER_MANAGER
    else if (menu_type == RGUI_SETTINGS_SHADER_OPTIONS)
       strlcpy(title, "SHADER OPTIONS", sizeof(title));
