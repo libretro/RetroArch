@@ -90,6 +90,7 @@ static const audio_driver_t *audio_drivers[] = {
 #ifdef HAVE_NULLAUDIO
    &audio_null,
 #endif
+   NULL,
 };
 
 static const video_driver_t *video_drivers[] = {
@@ -129,6 +130,7 @@ static const video_driver_t *video_drivers[] = {
 #ifdef HAVE_OMAP
    &video_omap,
 #endif
+   NULL,
 };
 
 static const input_driver_t *input_drivers[] = {
@@ -174,58 +176,73 @@ static const input_driver_t *input_drivers[] = {
 #ifdef HAVE_NULLINPUT
    &input_null,
 #endif
+   NULL,
 };
+
+static int find_audio_driver_index(const char *driver)
+{
+   unsigned i;
+   for (i = 0; audio_drivers[i]; i++)
+      if (strcasecmp(driver, audio_drivers[i]->ident) == 0)
+         return i;
+   return -1;
+}
+
+static int find_video_driver_index(const char *driver)
+{
+   unsigned i;
+   for (i = 0; video_drivers[i]; i++)
+      if (strcasecmp(driver, video_drivers[i]->ident) == 0)
+         return i;
+   return -1;
+}
+
+static int find_input_driver_index(const char *driver)
+{
+   unsigned i;
+   for (i = 0; input_drivers[i]; i++)
+      if (strcasecmp(driver, input_drivers[i]->ident) == 0)
+         return i;
+   return -1;
+}
 
 static void find_audio_driver(void)
 {
-   unsigned i;
-   for (i = 0; i < ARRAY_SIZE(audio_drivers); i++)
+   int i = find_audio_driver_index(g_settings.audio.driver);
+   if (i >= 0)
+      driver.audio = audio_drivers[i];
+   else
    {
-      if (strcasecmp(g_settings.audio.driver, audio_drivers[i]->ident) == 0)
-      {
-         driver.audio = audio_drivers[i];
-         return;
-      }
-   }
-   RARCH_ERR("Couldn't find any audio driver named \"%s\"\n", g_settings.audio.driver);
-   RARCH_LOG_OUTPUT("Available audio drivers are:\n");
-   for (i = 0; i < ARRAY_SIZE(audio_drivers); i++)
-      RARCH_LOG_OUTPUT("\t%s\n", audio_drivers[i]->ident);
+      unsigned d;
+      RARCH_ERR("Couldn't find any audio driver named \"%s\"\n", g_settings.audio.driver);
+      RARCH_LOG_OUTPUT("Available audio drivers are:\n");
+      for (d = 0; audio_drivers[d]; d++)
+         RARCH_LOG_OUTPUT("\t%s\n", audio_drivers[d]->ident);
 
-   rarch_fail(1, "find_audio_driver()");
+      rarch_fail(1, "find_audio_driver()");
+   }
 }
 
 void find_prev_audio_driver(void)
 {
-   unsigned i;
-   for (i = (ARRAY_SIZE(audio_drivers)-1); i > 0; i--)
-   {
-      if (strcasecmp(g_settings.audio.driver, audio_drivers[i]->ident) == 0)
-      {
-         strlcpy(g_settings.audio.driver, audio_drivers[i-1]->ident, sizeof(g_settings.audio.driver));
-         return;
-      }
-   }
-   RARCH_WARN("Couldn't find any previous audio driver (current one: \"%s\")\n", g_settings.audio.driver);
+   int i = find_audio_driver_index(g_settings.audio.driver);
+   if (i > 0)
+      strlcpy(g_settings.audio.driver, audio_drivers[i - 1]->ident, sizeof(g_settings.audio.driver));
+   else
+      RARCH_WARN("Couldn't find any previous audio driver (current one: \"%s\").\n", g_settings.audio.driver);
 }
 
 void find_next_audio_driver(void)
 {
-   unsigned i;
-   for (i = 0; i < (ARRAY_SIZE(audio_drivers)-1); i++)
-   {
-      if (strcasecmp(g_settings.audio.driver, audio_drivers[i]->ident) == 0)
-      {
-         strlcpy(g_settings.audio.driver, audio_drivers[i+1]->ident, sizeof(g_settings.audio.driver));
-         return;
-      }
-   }
-   RARCH_WARN("Couldn't find any next audio driver (current one: \"%s\")\n", g_settings.audio.driver);
+   int i = find_audio_driver_index(g_settings.audio.driver);
+   if (i >= 0 && audio_drivers[i + 1])
+      strlcpy(g_settings.audio.driver, audio_drivers[i + 1]->ident, sizeof(g_settings.audio.driver));
+   else
+      RARCH_WARN("Couldn't find any next audio driver (current one: \"%s\").\n", g_settings.audio.driver);
 }
 
 static void find_video_driver(void)
 {
-   unsigned i;
 #if defined(HAVE_OPENGL) && defined(HAVE_FBO)
    if (g_extern.system.hw_render_callback.context_type)
    {
@@ -235,113 +252,74 @@ static void find_video_driver(void)
    }
 #endif
 
-   for (i = 0; i < ARRAY_SIZE(video_drivers); i++)
+   int i = find_video_driver_index(g_settings.video.driver);
+   if (i >= 0)
+      driver.video = video_drivers[i];
+   else
    {
-      if (strcasecmp(g_settings.video.driver, video_drivers[i]->ident) == 0)
-      {
-         driver.video = video_drivers[i];
-         return;
-      }
-   }
-   RARCH_ERR("Couldn't find any video driver named \"%s\"\n", g_settings.video.driver);
-   RARCH_LOG_OUTPUT("Available video drivers are:\n");
-   for (i = 0; i < ARRAY_SIZE(video_drivers); i++)
-      RARCH_LOG_OUTPUT("\t%s\n", video_drivers[i]->ident);
+      unsigned d;
+      RARCH_ERR("Couldn't find any video driver named \"%s\"\n", g_settings.video.driver);
+      RARCH_LOG_OUTPUT("Available video drivers are:\n");
+      for (d = 0; video_drivers[d]; d++)
+         RARCH_LOG_OUTPUT("\t%s\n", video_drivers[d]->ident);
 
-   rarch_fail(1, "find_video_driver()");
+      rarch_fail(1, "find_video_driver()");
+   }
 }
 
 void find_prev_video_driver(void)
 {
-   unsigned i;
-#if defined(HAVE_OPENGL) && defined(HAVE_FBO)
-   if (g_extern.system.hw_render_callback.context_type)
-   {
-      RARCH_LOG("Using HW render, OpenGL driver forced.\n");
-      strlcpy(g_settings.video.driver, video_gl.ident, sizeof(g_settings.video.driver));
-      return;
-   }
-#endif
-
-   for (i = (ARRAY_SIZE(video_drivers)-1); i > 0; i--)
-   {
-      if (strcasecmp(g_settings.video.driver, video_drivers[i]->ident) == 0)
-      {
-         strlcpy(g_settings.video.driver, video_drivers[i-1]->ident, sizeof(g_settings.video.driver));
-         return;
-      }
-   }
-   RARCH_WARN("Couldn't find any previous video driver (current one: \"%s\")\n", g_settings.video.driver);
+   // No need to enforce GL if HW render. This is done at driver init anyways.
+   int i = find_video_driver_index(g_settings.video.driver);
+   if (i > 0)
+      strlcpy(g_settings.video.driver, video_drivers[i - 1]->ident, sizeof(g_settings.video.driver));
+   else
+      RARCH_WARN("Couldn't find any previous video driver (current one: \"%s\").\n", g_settings.video.driver);
 }
 
 void find_next_video_driver(void)
 {
-   unsigned i;
-#if defined(HAVE_OPENGL) && defined(HAVE_FBO)
-   if (g_extern.system.hw_render_callback.context_type)
-   {
-      RARCH_LOG("Using HW render, OpenGL driver forced.\n");
-      strlcpy(g_settings.video.driver, video_gl.ident, sizeof(g_settings.video.driver));
-      return;
-   }
-#endif
-
-   for (i = 0; i < (ARRAY_SIZE(video_drivers)-1); i++)
-   {
-      if (strcasecmp(g_settings.video.driver, video_drivers[i]->ident) == 0)
-      {
-         strlcpy(g_settings.video.driver, video_drivers[i]->ident, sizeof(g_settings.video.driver));
-         return;
-      }
-   }
-   RARCH_WARN("Couldn't find any next video driver (current one: \"%s\")\n", g_settings.video.driver);
+   // No need to enforce GL if HW render. This is done at driver init anyways.
+   int i = find_video_driver_index(g_settings.video.driver);
+   if (i >= 0 && video_drivers[i + 1])
+      strlcpy(g_settings.video.driver, video_drivers[i + 1]->ident, sizeof(g_settings.video.driver));
+   else
+      RARCH_WARN("Couldn't find any next video driver (current one: \"%s\").\n", g_settings.video.driver);
 }
 
 static void find_input_driver(void)
 {
-   unsigned i;
-   for (i = 0; i < ARRAY_SIZE(input_drivers); i++)
+   int i = find_input_driver_index(g_settings.input.driver);
+   if (i >= 0)
+      driver.input = input_drivers[i];
+   else
    {
-      if (strcasecmp(g_settings.input.driver, input_drivers[i]->ident) == 0)
-      {
-         driver.input = input_drivers[i];
-         return;
-      }
-   }
-   RARCH_ERR("Couldn't find any input driver named \"%s\"\n", g_settings.input.driver);
-   RARCH_LOG_OUTPUT("Available input drivers are:\n");
-   for (i = 0; i < ARRAY_SIZE(input_drivers); i++)
-      RARCH_LOG_OUTPUT("\t%s\n", input_drivers[i]->ident);
+      unsigned d;
+      RARCH_ERR("Couldn't find any input driver named \"%s\"\n", g_settings.input.driver);
+      RARCH_LOG_OUTPUT("Available input drivers are:\n");
+      for (d = 0; input_drivers[d]; d++)
+         RARCH_LOG_OUTPUT("\t%s\n", input_drivers[d]->ident);
 
-   rarch_fail(1, "find_input_driver()");
+      rarch_fail(1, "find_input_driver()");
+   }
 }
 
 void find_prev_input_driver(void)
 {
-   unsigned i;
-   for (i = (ARRAY_SIZE(input_drivers)-1); i > 0; i--)
-   {
-      if (strcasecmp(g_settings.input.driver, input_drivers[i]->ident) == 0)
-      {
-         strlcpy(g_settings.input.driver, input_drivers[i-1]->ident, sizeof(g_settings.input.driver));
-         return;
-      }
-   }
-   RARCH_ERR("Couldn't find any previous input driver (current one: \"%s\")\n", g_settings.input.driver);
+   int i = find_input_driver_index(g_settings.input.driver);
+   if (i > 0)
+      strlcpy(g_settings.input.driver, input_drivers[i - 1]->ident, sizeof(g_settings.input.driver));
+   else
+      RARCH_ERR("Couldn't find any previous input driver (current one: \"%s\").\n", g_settings.input.driver);
 }
 
 void find_next_input_driver(void)
 {
-   unsigned i;
-   for (i = 0; i < (ARRAY_SIZE(input_drivers)-1); i++)
-   {
-      if (strcasecmp(g_settings.input.driver, input_drivers[i]->ident) == 0)
-      {
-         strlcpy(g_settings.input.driver, input_drivers[i]->ident, sizeof(g_settings.input.driver));
-         return;
-      }
-   }
-   RARCH_ERR("Couldn't find any next input driver (current one: \"%s\")\n", g_settings.input.driver);
+   int i = find_input_driver_index(g_settings.input.driver);
+   if (i >= 0 && input_drivers[i + 1])
+      strlcpy(g_settings.input.driver, input_drivers[i + 1]->ident, sizeof(g_settings.input.driver));
+   else
+      RARCH_ERR("Couldn't find any next input driver (current one: \"%s\").\n", g_settings.input.driver);
 }
 
 void init_drivers_pre(void)
