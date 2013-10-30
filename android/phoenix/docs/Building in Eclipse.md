@@ -30,10 +30,10 @@
 
 
 
-## Where do I place the built cores?
+## Where do I place the built libretro cores?
 
-Simply place all built cores (and the libretro activity) within the directory [phoenix root]/libs/armeabi-v7a.
-After placing your cores there, building the front-end, and sending it off to your Android device, they should show up within the core selection screen of the front-end.
+Simply place all built libretro cores within the directory [phoenix root]/assets/cores. Create this directory if it doesn't exist already.
+After placing your cores there, they should show up within the core selection screen of the front-end.
 
 ## Notes
 
