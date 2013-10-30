@@ -70,11 +70,8 @@ public final class CoreSelection extends ListActivity {
 				if (hasNeonVersion)
 					continue;
 			}
-
-			// Allow both libretro-core.so and libretro_core.so.
-			if (libName.startsWith("libretro")) {
-				adapter.add(new ModuleWrapper(this, lib, core_config));
-			}
+			
+			adapter.add(new ModuleWrapper(this, lib, core_config));
 		}
 
 		this.setVolumeControlStream(AudioManager.STREAM_MUSIC);
