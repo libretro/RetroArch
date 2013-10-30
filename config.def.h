@@ -282,7 +282,6 @@ static const char *default_overlay_dir = NULL;
 #endif
 #endif
 
-#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_HLSL)
 #if defined(__QNX__)
 static const char *default_shader_dir = "/app/native/shaders_glsl/";
 #elif defined(IOS)
@@ -292,6 +291,11 @@ static const char *default_shader_dir = "/data/data/com.retroarch/shaders_glsl/"
 #else
 static const char *default_shader_dir = NULL;
 #endif
+
+#if defined(HAVE_RMENU) || defined(HAVE_RGUI) || defined(HAVE_RMENU_XUI)
+static bool default_block_config_read = true;
+#else
+static bool default_block_config_read = false;
 #endif
 
 #if defined(ANDROID)

@@ -341,20 +341,16 @@ void config_set_defaults(void)
    }
 #endif
 
-#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_HLSL)
    if (default_shader_dir)
       strlcpy(g_settings.video.shader_dir, default_shader_dir, sizeof(g_settings.video.shader_dir));
-#endif
 
    if (default_libretro_info_path)
       strlcpy(g_settings.libretro_info_path, default_libretro_info_path, sizeof(g_settings.libretro_info_path));
 
    g_extern.config_save_on_exit = config_save_on_exit;
 
-#if defined(HAVE_RMENU) || defined(HAVE_RGUI) || defined(HAVE_RMENU_XUI)
    /* Avoid reloading config on every ROM load */
-   g_extern.block_config_read = true;
-#endif
+   g_extern.block_config_read = default_block_config_read;
 
    rarch_init_msg_queue();
 }
