@@ -44,7 +44,7 @@ public final class CoreSelection extends ListActivity {
 		setTitle(R.string.select_libretro_core);
 
 		// Populate the list
-		final File[] libs = new File(getApplicationInfo().dataDir, "cores").listFiles();
+		final File[] libs = new File(getApplicationInfo().dataDir, "/cores").listFiles();
 		for (final File lib : libs) {
 			String libName = lib.getName();
 

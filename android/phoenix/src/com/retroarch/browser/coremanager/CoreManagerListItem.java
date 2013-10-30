@@ -5,7 +5,7 @@ import java.io.File;
 /**
  * Represents a list item within the CoreManager fragments.
  */
-public final class CoreManagerListItem
+public final class CoreManagerListItem implements Comparable<CoreManagerListItem>
 {
 	private final String name;
 	private final String subtitle;
@@ -65,5 +65,14 @@ public final class CoreManagerListItem
 	public File getUnderlyingFile()
 	{
 		return underlyingFile;
+	}
+
+	@Override
+	public int compareTo(CoreManagerListItem other)
+	{
+		if(name != null)
+			return name.toLowerCase().compareTo(other.getName().toLowerCase()); 
+		else 
+			throw new NullPointerException("The name of this CoreManagerListItem is null");
 	}
 }

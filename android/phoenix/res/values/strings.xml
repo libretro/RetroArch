@@ -26,6 +26,10 @@
 
     <!-- Core Manager -->
     <string name="installed_cores">Installed Cores</string>
+    <string name="uninstall_core">Uninstall Core</string>
+    <string name="uninstall_core_message">Would you like to uninstall %1$s?</string>
+    <string name="uninstall_failure">Failed to uninstall core: %1$s.</string>
+    <string name="uninstall_success">Successfully uninstalled core: %1$s.</string>
     <string name="downloadable_cores">Downloadable Cores</string>
 
     <!-- Display Refresh Rate Test Class -->
@@ -214,8 +218,10 @@
     <!-- Miscellaneous -->
     <string name="ok">OK</string>
     <string name="close">Close</string>
-    <string name="general">General</string>
     <string name="enable">Enable</string>
+    <string name="general">General</string>
+    <string name="no">No</string>
+    <string name="yes">Yes</string>
 
     
 </resources>
