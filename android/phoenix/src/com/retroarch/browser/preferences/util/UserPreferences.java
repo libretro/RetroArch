@@ -6,8 +6,6 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 
-import com.retroarch.R;
-
 import android.annotation.TargetApi;
 import android.content.Context;
 import android.content.SharedPreferences;
@@ -48,7 +46,6 @@ public final class UserPreferences
 		// Get libretro name and path
 		final SharedPreferences prefs = getPreferences(ctx);
 		final String libretro_path = prefs.getString("libretro_path", nativeLibraryDir);
-		final String libretro_name = prefs.getString("libretro_name", ctx.getString(R.string.no_core));
 
 		// Check if global config is being used. Return true upon failure.
 		final boolean globalConfigEnabled = prefs.getBoolean("global_config_enable", true);
