@@ -276,7 +276,7 @@ static const char *default_overlay_dir = "app/native/overlays/";
 #elif defined(IOS)
 static const char *default_overlay_dir = "/Applications/RetroArch.app/overlays/";
 #elif defined(ANDROID)
-static const char *default_overlay_dir = "/data/data/org.retroarch/overlays/";
+static const char *default_overlay_dir = "/data/data/com.retroarch/overlays/";
 #else
 static const char *default_overlay_dir = NULL;
 #endif
@@ -288,14 +288,14 @@ static const char *default_shader_dir = "/app/native/shaders_glsl/";
 #elif defined(IOS)
 static const char *default_shader_dir = "/Applications/RetroArch.app/shaders_glsl/";
 #elif defined(ANDROID)
-static const char *default_shader_dir = "/data/data/org.retroarch/shaders_glsl/";
+static const char *default_shader_dir = "/data/data/com.retroarch/shaders_glsl/";
 #else
 static const char *default_shader_dir = NULL;
 #endif
 #endif
 
 #if defined(ANDROID)
-static const char *default_libretro_info_path = "/data/data/org.retroarch/info/";
+static const char *default_libretro_info_path = "/data/data/com.retroarch/info/";
 #elif defined(__QNX__)
 static const char *default_libretro_info_path = "/app/native/info/";
 #elif defined(IOS)
