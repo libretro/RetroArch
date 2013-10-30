@@ -42,7 +42,7 @@ public final class MainMenuActivity extends PreferenceActivity {
 
 		// Get libretro path and name.
 		SharedPreferences prefs = UserPreferences.getPreferences(this);
-		libretro_path = prefs.getString("libretro_path", getApplicationInfo().nativeLibraryDir);
+		libretro_path = prefs.getString("libretro_path", getApplicationInfo().dataDir + "/cores");
 		libretro_name = prefs.getString("libretro_name", getString(R.string.no_core));
 
 		// Bind audio stream to hardware controls.
