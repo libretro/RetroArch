@@ -332,21 +332,21 @@ void config_set_defaults(void)
 #endif
    
 #ifdef HAVE_OVERLAY
-   if (default_overlay_dir != NULL)
+   if (default_overlay_dir)
    {
       strlcpy(g_extern.overlay_dir, default_overlay_dir, sizeof(g_extern.overlay_dir));
 #if defined(__QNX__)
-      snprintf(g_settings.input.overlay, sizeof(g_settings.input.overlay), "%ssnes-landscape.cfg", default_overlay_dir);
+      fill_pathname_join(g_settings.input.overlay, default_overlay_dir, "snes-landscape.cfg", sizeof(g_settings.input.overlay));
 #endif
    }
 #endif
 
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_HLSL)
-   if (default_shader_dir != NULL)
+   if (default_shader_dir)
       strlcpy(g_settings.video.shader_dir, default_shader_dir, sizeof(g_settings.video.shader_dir));
 #endif
 
-   if (default_libretro_info_path != NULL)
+   if (default_libretro_info_path)
       strlcpy(g_settings.libretro_info_path, default_libretro_info_path, sizeof(g_settings.libretro_info_path));
 
    g_extern.config_save_on_exit = config_save_on_exit;

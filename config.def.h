@@ -272,7 +272,7 @@ static bool config_save_on_exit = false;
 #ifdef HAVE_OVERLAY
 // Default overlay directory
 #if defined(__QNX__)
-static const char *default_overlay = "app/native/overlays/";
+static const char *default_overlay_dir = "app/native/overlays/";
 #elif defined(IOS)
 static const char *default_overlay_dir = "/Applications/RetroArch.app/overlays/";
 #elif defined(ANDROID)
@@ -303,7 +303,6 @@ static const char *default_libretro_info_path = "/Applications/RetroArch.app/inf
 #else
 static const char *default_libretro_info_path = NULL;
 #endif
-
 
 // Crop overscanned frames.
 static const bool crop_overscan = true;
