@@ -308,6 +308,12 @@ static const char *default_libretro_info_path = "/Applications/RetroArch.app/inf
 static const char *default_libretro_info_path = NULL;
 #endif
 
+#if defined(ANDROID)
+static const char *default_libretro_path = "/data/data/com.retroarch/cores/";
+#else
+static const char *default_libretro_path = NULL;
+#endif
+
 // Crop overscanned frames.
 static const bool crop_overscan = true;
 

@@ -344,6 +344,9 @@ void config_set_defaults(void)
    if (default_shader_dir)
       strlcpy(g_settings.video.shader_dir, default_shader_dir, sizeof(g_settings.video.shader_dir));
 
+   if (default_libretro_path)
+      strlcpy(g_settings.libretro, default_libretro_path, sizeof(g_settings.libretro));
+
    if (default_libretro_info_path)
       strlcpy(g_settings.libretro_info_path, default_libretro_info_path, sizeof(g_settings.libretro_info_path));
 
