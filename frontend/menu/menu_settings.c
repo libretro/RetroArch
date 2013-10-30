@@ -1093,6 +1093,15 @@ void menu_set_settings_label(char *type_str, size_t type_str_size, unsigned *w, 
       case RGUI_SETTINGS_VIDEO_HARD_SYNC_FRAMES:
          snprintf(type_str, type_str_size, "%u", g_settings.video.hard_sync_frames);
          break;
+      case RGUI_SETTINGS_INFO_VIDEO_DRIVER:
+         strlcpy(type_str, driver.video->ident, type_str_size);
+         break;
+      case RGUI_SETTINGS_INFO_AUDIO_DRIVER:
+         strlcpy(type_str, driver.audio->ident, type_str_size);
+         break;
+      case RGUI_SETTINGS_INFO_INPUT_DRIVER:
+         strlcpy(type_str, driver.input->ident, type_str_size);
+         break;
       case RGUI_SETTINGS_VIDEO_REFRESH_RATE_AUTO:
          {
             double refresh_rate = 0.0;
@@ -1233,6 +1242,7 @@ void menu_set_settings_label(char *type_str, size_t type_str_size, unsigned *w, 
       case RGUI_SETTINGS_INPUT_OPTIONS:
       case RGUI_SETTINGS_PATH_OPTIONS:
       case RGUI_SETTINGS_OPTIONS:
+      case RGUI_SETTINGS_INFO:
       case RGUI_SETTINGS_CUSTOM_BIND_ALL:
       case RGUI_SETTINGS_CUSTOM_BIND_DEFAULT_ALL:
       case RGUI_START_SCREEN:
