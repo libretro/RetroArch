@@ -58,23 +58,11 @@ core_info_list_t *core_info_list_new(const char *modules_path)
       path_remove_extension(info_path_base);
 
 #if defined(RARCH_MOBILE) || defined(RARCH_CONSOLE)
-      // Android libs are deployed with a prefix 'lib' (libretro_*.so, etc)
-      // Non-Android Libs (mobile/console) are deployed with a system name suffix (*_ios.dylib, *_qnx.so, etc).
-#ifdef ANDROID
-      size_t prefix_len = strlen("libretro_");
-      char *substr = strstr(info_path_base, "libretro_");
-      if (substr && substr == info_path_base)
-         memmove(info_path_base, info_path_base + prefix_len, strlen(info_path_base) + 1 - prefix_len);
-#else
       char *substr = strrchr(info_path_base, '_');
       if (substr)
          *substr = '\0';
 #endif
-#endif
 
-#ifdef ANDROID
-      strlcat(info_path_base, "_libretro", sizeof(info_path_base));
-#endif
       strlcat(info_path_base, ".info", sizeof(info_path_base));
 
       fill_pathname_join(info_path, (*g_settings.libretro_info_path) ? g_settings.libretro_info_path : modules_path,
