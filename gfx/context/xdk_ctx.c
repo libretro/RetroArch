@@ -237,7 +237,11 @@ static void gfx_ctx_xdk_destroy(void)
    }
 }
 
-static void gfx_ctx_xdk_input_driver(const input_driver_t **input, void **input_data) { }
+static void gfx_ctx_xdk_input_driver(const input_driver_t **input, void **input_data)
+{
+   *input = NULL;
+   *input_data = NULL;
+}
 
 static bool gfx_ctx_xdk_bind_api(enum gfx_ctx_api api, unsigned major, unsigned minor)
 {
