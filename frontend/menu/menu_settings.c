@@ -626,63 +626,21 @@ int menu_set_settings(unsigned setting, unsigned action)
 
       case RGUI_SETTINGS_DRIVER_VIDEO:
          if (action == RGUI_ACTION_LEFT)
-         {
-            char driver[32];
-            driver[0] = '\0';
-            find_next_video_driver(driver, sizeof(driver));
-
-            if (driver[0] != '\0')
-               strlcpy(g_settings.video.driver, driver, sizeof(g_settings.video.driver));
-         }
+            find_prev_video_driver();
          else if (action == RGUI_ACTION_RIGHT)
-         {
-            char driver[32];
-            driver[0] = '\0';
-            find_prev_video_driver(driver, sizeof(driver));
-
-            if (driver[0] != '\0')
-               strlcpy(g_settings.video.driver, driver, sizeof(g_settings.video.driver));
-         }
+            find_next_video_driver();
          break;
       case RGUI_SETTINGS_DRIVER_AUDIO:
          if (action == RGUI_ACTION_LEFT)
-         {
-            char driver[32];
-            driver[0] = '\0';
-            find_next_audio_driver(driver, sizeof(driver));
-
-            if (driver[0] != '\0')
-               strlcpy(g_settings.audio.driver, driver, sizeof(g_settings.audio.driver));
-         }
+            find_prev_audio_driver();
          else if (action == RGUI_ACTION_RIGHT)
-         {
-            char driver[32];
-            driver[0] = '\0';
-            find_prev_audio_driver(driver, sizeof(driver));
-
-            if (driver[0] != '\0')
-               strlcpy(g_settings.audio.driver, driver, sizeof(g_settings.audio.driver));
-         }
+            find_next_audio_driver();
          break;
       case RGUI_SETTINGS_DRIVER_INPUT:
          if (action == RGUI_ACTION_LEFT)
-         {
-            char driver[32];
-            driver[0] = '\0';
-            find_next_input_driver(driver, sizeof(driver));
-
-            if (driver[0] != '\0')
-               strlcpy(g_settings.input.driver, driver, sizeof(g_settings.input.driver));
-         }
+            find_prev_input_driver();
          else if (action == RGUI_ACTION_RIGHT)
-         {
-            char driver[32];
-            driver[0] = '\0';
-            find_prev_input_driver(driver, sizeof(driver));
-
-            if (driver[0] != '\0')
-               strlcpy(g_settings.input.driver, driver, sizeof(g_settings.input.driver));
-         }
+            find_next_input_driver();
          break;
 
       case RGUI_SETTINGS_VIDEO_GAMMA:
