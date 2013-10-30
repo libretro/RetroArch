@@ -269,6 +269,42 @@ static bool config_save_on_exit = true;
 static bool config_save_on_exit = false;
 #endif
 
+#ifdef HAVE_OVERLAY
+// Default overlay directory
+#if defined(__QNX__)
+static const char *default_overlay = "app/native/overlays/";
+#elif defined(IOS)
+static const char *default_overlay_dir = "/Applications/RetroArch.app/overlays/";
+#elif defined(ANDROID)
+static const char *default_overlay_dir = "/data/data/org.retroarch/overlays/";
+#else
+static const char *default_overlay_dir = NULL;
+#endif
+#endif
+
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_HLSL)
+#if defined(__QNX__)
+static const char *default_shader_dir = "/app/native/shaders_glsl/";
+#elif defined(IOS)
+static const char *default_shader_dir = "/Applications/RetroArch.app/shaders_glsl/";
+#elif defined(ANDROID)
+static const char *default_shader_dir = "/data/data/org.retroarch/shaders_glsl/";
+#else
+static const char *default_shader_dir = NULL;
+#endif
+#endif
+
+#if defined(ANDROID)
+static const char *default_libretro_info_path = "/data/data/org.retroarch/info/";
+#elif defined(__QNX__)
+static const char *default_libretro_info_path = "/app/native/info/";
+#elif defined(IOS)
+static const char *default_libretro_info_path = "/Applications/RetroArch.app/info/";
+#else
+static const char *default_libretro_info_path = NULL;
+#endif
+
+
 // Crop overscanned frames.
 static const bool crop_overscan = true;
 

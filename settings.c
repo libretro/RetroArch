@@ -332,34 +332,22 @@ void config_set_defaults(void)
 #endif
    
 #ifdef HAVE_OVERLAY
+   if (default_overlay_dir != NULL)
+   {
+      strlcpy(g_extern.overlay_dir, default_overlay_dir, sizeof(g_extern.overlay_dir));
 #if defined(__QNX__)
-   strlcpy(g_extern.overlay_dir, "app/native/overlays/", sizeof(g_extern.overlay_dir));
-   RARCH_LOG("Setting default overlay %s ...\n", "app/native/overlays/snes-landscape.cfg");
-   strlcpy(g_settings.input.overlay, "app/native/overlays/snes-landscape.cfg", sizeof(g_settings.input.overlay));
-#elif defined(IOS)
-   strlcpy(g_extern.overlay_dir, "/Applications/RetroArch.app/overlays/", sizeof(g_extern.overlay_dir));
-#elif defined(ANDROID)
-   strlcpy(g_extern.overlay_dir, "/data/data/org.retroarch/overlays/", sizeof(g_extern.overlay_dir));
+      snprintf(g_settings.input.overlay, sizeof(g_settings.input.overlay), "%ssnes-landscape.cfg", default_overlay_dir);
 #endif
+   }
 #endif
 
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_HLSL)
-#if defined(__QNX__)
-   strlcpy(g_settings.video.shader_dir, "/app/native/shaders_glsl/", sizeof(g_settings.video.shader_dir));
-#elif defined(IOS)
-   strlcpy(g_settings.video.shader_dir, "/Applications/RetroArch.app/shaders_glsl/", sizeof(g_settings.video.shader_dir));
-#elif defined(ANDROID)
-   strlcpy(g_settings.video.shader_dir, "/data/data/org.retroarch/shaders_glsl/", sizeof(g_settings.video.shader_dir));
-#endif
+   if (default_shader_dir != NULL)
+      strlcpy(g_settings.video.shader_dir, default_shader_dir, sizeof(g_settings.video.shader_dir));
 #endif
 
-#if defined(ANDROID)
-   strlcpy(g_settings.libretro_info_path, "/data/data/org.retroarch/info/", sizeof(g_settings.libretro_info_path));
-#elif defined(__QNX__)
-   strlcpy(g_settings.libretro_info_path, "app/native/info/", sizeof(g_settings.libretro_info_path));
-#elif defined(IOS)
-   strlcpy(g_settings.libretro_info_path, "/Applications/RetroArch.app/info/", sizeof(g_settings.libretro_info_path));
-#endif
+   if (default_libretro_info_path != NULL)
+      strlcpy(g_settings.libretro_info_path, default_libretro_info_path, sizeof(g_settings.libretro_info_path));
 
    g_extern.config_save_on_exit = config_save_on_exit;
 
