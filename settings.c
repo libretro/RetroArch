@@ -353,8 +353,12 @@ void config_set_defaults(void)
 #endif
 #endif
 
-#ifdef ANDROID
+#if defined(ANDROID)
    strlcpy(g_settings.libretro_info_path, "/data/data/org.retroarch/info/", sizeof(g_settings.libretro_info_path));
+#elif defined(__QNX__)
+   strlcpy(g_settings.libretro_info_path, "app/native/info/", sizeof(g_settings.libretro_info_path));
+#elif defined(IOS)
+   strlcpy(g_settings.libretro_info_path, "/Applications/RetroArch.app/info/", sizeof(g_settings.libretro_info_path));
 #endif
 
    g_extern.config_save_on_exit = config_save_on_exit;
