@@ -2,7 +2,7 @@
 #include "file.h"
 
 #include <stdio.h>
-#include "../native/org_retroarch_browser_NativeInterface.h"
+#include "../native/com_retroarch_browser_NativeInterface.h"
 
 struct userdata
 {
@@ -60,7 +60,7 @@ static bool zlib_cb(const char *name, const uint8_t *cdata, unsigned cmode, uint
    return true;
 }
 
-JNIEXPORT jboolean JNICALL Java_org_retroarch_browser_NativeInterface_extractArchiveTo(
+JNIEXPORT jboolean JNICALL Java_com_retroarch_browser_NativeInterface_extractArchiveTo(
       JNIEnv *env, jclass cls, jstring archive, jstring subdir, jstring dest)
 {
    const char *archive_c = (*env)->GetStringUTFChars(env, archive, NULL);

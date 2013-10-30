@@ -6,8 +6,8 @@
         <Preference android:title="@string/rom_directory"
             android:summary="@string/rom_directory_desc">
             <intent
-                android:targetClass="org.retroarch.browser.diractivities.ROMDirActivity"
-                android:targetPackage="org.retroarch" />
+                android:targetClass="com.retroarch.browser.diractivities.ROMDirActivity"
+                android:targetPackage="com.retroarch" />
         </Preference>
     </PreferenceCategory>
 
@@ -21,8 +21,8 @@
             android:summary="@string/savefile_directory_desc"
             android:dependency="savefile_directory_enable">
             <intent
-                android:targetClass="org.retroarch.browser.diractivities.SRMDirActivity"
-                android:targetPackage="org.retroarch" />
+                android:targetClass="com.retroarch.browser.diractivities.SRMDirActivity"
+                android:targetPackage="com.retroarch" />
         </Preference>
     </PreferenceCategory>
 
@@ -36,8 +36,8 @@
             android:summary="@string/save_state_directory_desc"
             android:dependency="savestate_directory_enable">
             <intent
-                android:targetClass="org.retroarch.browser.diractivities.StateDirActivity"
-                android:targetPackage="org.retroarch" />
+                android:targetClass="com.retroarch.browser.diractivities.StateDirActivity"
+                android:targetPackage="com.retroarch" />
         </Preference>
     </PreferenceCategory>
 
@@ -51,8 +51,8 @@
             android:summary="@string/system_directory_desc"
             android:dependency="system_directory_enable">
             <intent
-                android:targetClass="org.retroarch.browser.diractivities.SystemDirActivity"
-                android:targetPackage="org.retroarch" />
+                android:targetClass="com.retroarch.browser.diractivities.SystemDirActivity"
+                android:targetPackage="com.retroarch" />
         </Preference>
     </PreferenceCategory>
 </PreferenceScreen>
