@@ -706,7 +706,7 @@ static int64_t rsnd_get_time_usec(void)
 #elif defined(EMSCRIPTEN)
    return emscripten_get_now() * 1000;
 #else
-#error "Your platform does not have a timer function implemented in rarch_get_time_usec(). Cannot continue."
+#error "Your platform does not have a timer function implemented in rsnd_get_time_usec(). Cannot continue."
 #endif
 }
 
