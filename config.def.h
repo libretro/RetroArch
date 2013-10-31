@@ -292,6 +292,12 @@ static const char *default_shader_dir = "/data/data/com.retroarch/shaders_glsl/"
 static const char *default_shader_dir = NULL;
 #endif
 
+#if defined(__QNX__)
+static const char *default_config_path = "app/native/retroarch.cfg";
+#else
+static const char *default_config_path = NULL;
+#endif
+
 #if defined(HAVE_RMENU) || defined(HAVE_RGUI) || defined(HAVE_RMENU_XUI)
 static bool default_block_config_read = true;
 #else

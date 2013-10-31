@@ -350,6 +350,9 @@ void config_set_defaults(void)
    if (default_libretro_info_path)
       strlcpy(g_settings.libretro_info_path, default_libretro_info_path, sizeof(g_settings.libretro_info_path));
 
+   if (default_config_path)
+      strlcpy(g_extern.config_path, default_config_path, sizeof(g_extern.config_path));
+
    g_extern.config_save_on_exit = config_save_on_exit;
 
    /* Avoid reloading config on every ROM load */
