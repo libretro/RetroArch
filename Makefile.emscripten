@@ -38,7 +38,8 @@ OBJ = frontend/frontend_emscripten.o \
 		audio/resampler.o \
 		audio/sinc.o \
 		audio/null.o \
-		performance.o
+		performance.o \
+		core_info.o
 
 HAVE_OPENGL = 1
 HAVE_RGUI = 1
