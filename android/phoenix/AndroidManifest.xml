@@ -18,7 +18,7 @@
         <activity android:name="com.retroarch.browser.CoreSelection"/>
         <activity android:name="com.retroarch.browser.HistorySelection"/>
         <activity android:name="com.retroarch.browser.DisplayRefreshRateTest"/>
-        <activity android:name="com.retroarch.browser.MainMenuActivity" android:exported="true">
+        <activity android:name="com.retroarch.browser.mainmenu.MainMenuActivity" android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />

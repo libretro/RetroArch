@@ -12,6 +12,7 @@
 
     <!-- Main Menu Strings -->
     <string name="mainmenu_title">RetroArch - Main Menu</string>
+    <string name="asset_extraction">Asset Extraction</string>
     <string name="tv_mode">TV Mode</string>
     <string name="load_core">Load Core</string>
     <string name="load_game">Load Game</string>
