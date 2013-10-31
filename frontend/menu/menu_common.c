@@ -315,10 +315,12 @@ static void menu_update_libretro_info(void)
       fill_pathname_basedir(rgui->libretro_dir, g_settings.libretro, sizeof(rgui->libretro_dir));
 #ifdef HAVE_DYNAMIC
       libretro_get_system_info(g_settings.libretro, &rgui->info, NULL);
-#else
-      retro_get_system_info(&rgui->info);
 #endif
    }
+
+#ifndef HAVE_DYNAMIC
+   retro_get_system_info(&rgui->info);
+#endif
 
    core_info_list_free(rgui->core_info);
    rgui->core_info = NULL;
