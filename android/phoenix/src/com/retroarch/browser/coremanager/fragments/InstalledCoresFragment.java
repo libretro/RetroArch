@@ -1,14 +1,12 @@
 package com.retroarch.browser.coremanager.fragments;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
 import com.retroarch.R;
-import com.retroarch.browser.coremanager.CoreManagerListItem;
-import com.retroarch.browser.preferences.util.ConfigFile;
+import com.retroarch.browser.ModuleWrapper;
 import com.retroarch.browser.preferences.util.UserPreferences;
 
 import android.app.AlertDialog;
@@ -17,7 +15,6 @@ import android.content.DialogInterface;
 import android.content.DialogInterface.OnClickListener;
 import android.os.Bundle;
 import android.support.v4.app.ListFragment;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -43,18 +40,7 @@ public final class InstalledCoresFragment extends ListFragment
 		super.onCreate(savedInstanceState);
 
 		// The list of items that will be added to the adapter backing this ListFragment.
-		final List<CoreManagerListItem> items = new ArrayList<CoreManagerListItem>();
-
-		// Initialize the core config for retrieving core names.
-		ConfigFile coreConfig = new ConfigFile();
-		try
-		{
-			coreConfig.append(getActivity().getAssets().open("libretro_cores.cfg"));
-		}
-		catch (IOException ioe)
-		{
-			Log.e("InstalledCoresFragment", "Failed to load libretro_cores.cfg from assets.");
-		}
+		final List<ModuleWrapper> items = new ArrayList<ModuleWrapper>();
 
 		// Check if the device supports NEON.
 		final String cpuInfo = UserPreferences.readCPUInfo();
@@ -91,26 +77,8 @@ public final class InstalledCoresFragment extends ListFragment
 					continue;
 			}
 
-			// Attempt to get the core name.
-			String coreName;
-			String strippedName = libName.replace(".so", "");
-			if (coreConfig.keyExists(strippedName))
-				coreName = coreConfig.getString(strippedName);
-			else
-				coreName = strippedName;
-
-			// Attempt to get the core subtitle.
-			String subtitle = strippedName + "_system";
-			if (coreConfig.keyExists(subtitle))
-				subtitle = coreConfig.getString(subtitle);
-			else
-				subtitle = "";
-
-			Log.d("InstalledCoresFragment", "Core Name: " + coreName);
-			Log.d("InstalledCoresFragment", "Core Subtitle: " + subtitle);
-
 			// Add it to the list.
-			items.add(new CoreManagerListItem(coreName, subtitle, lib.getPath()));
+			items.add(new ModuleWrapper(getActivity(), lib));
 		}
 
 		// Sort the list alphabetically
@@ -141,10 +109,10 @@ public final class InstalledCoresFragment extends ListFragment
 		public boolean onItemLongClick(AdapterView<?> parent, View view, int position, long id)
 		{
 			// Begin building the AlertDialog
-			final CoreManagerListItem item = adapter.getItem(position);
+			final ModuleWrapper item = adapter.getItem(position);
 			final AlertDialog.Builder alert = new AlertDialog.Builder(getActivity());
 			alert.setTitle(R.string.uninstall_core);
-			alert.setMessage(String.format(getString(R.string.uninstall_core_message), item.getName()));
+			alert.setMessage(String.format(getString(R.string.uninstall_core_message), item.getText()));
 			alert.setNegativeButton(R.string.no, null);
 			alert.setPositiveButton(R.string.yes, new OnClickListener()
 			{
@@ -154,13 +122,13 @@ public final class InstalledCoresFragment extends ListFragment
 					// Attempt to uninstall the core item.
 					if (item.getUnderlyingFile().delete())
 					{
-						Toast.makeText(getActivity(), String.format(getString(R.string.uninstall_success), item.getName()), Toast.LENGTH_LONG).show();
+						Toast.makeText(getActivity(), String.format(getString(R.string.uninstall_success), item.getText()), Toast.LENGTH_LONG).show();
 						adapter.remove(item);
 						adapter.notifyDataSetChanged();
 					}
 					else // Failed to uninstall.
 					{
-						Toast.makeText(getActivity(), String.format(getString(R.string.uninstall_failure), item.getName()), Toast.LENGTH_LONG).show();
+						Toast.makeText(getActivity(), String.format(getString(R.string.uninstall_failure), item.getText()), Toast.LENGTH_LONG).show();
 					}
 				}
 			});
@@ -173,11 +141,11 @@ public final class InstalledCoresFragment extends ListFragment
 	/**
 	 * The {@link ArrayAdapter} that backs this InstalledCoresFragment.
 	 */
-	private final class InstalledCoresAdapter extends ArrayAdapter<CoreManagerListItem>
+	private final class InstalledCoresAdapter extends ArrayAdapter<ModuleWrapper>
 	{
 		private final Context context;
 		private final int resourceId;
-		private final List<CoreManagerListItem> items;
+		private final List<ModuleWrapper> items;
 
 		/**
 		 * Constructor
@@ -186,7 +154,7 @@ public final class InstalledCoresFragment extends ListFragment
 		 * @param resourceId The resource ID for a layout file containing a layout to use when instantiating views.
 		 * @param items      The list of items to represent in this adapter.
 		 */
-		public InstalledCoresAdapter(Context context, int resourceId, List<CoreManagerListItem> items)
+		public InstalledCoresAdapter(Context context, int resourceId, List<ModuleWrapper> items)
 		{
 			super(context, resourceId, items);
 
@@ -196,7 +164,7 @@ public final class InstalledCoresFragment extends ListFragment
 		}
 
 		@Override
-		public CoreManagerListItem getItem(int i)
+		public ModuleWrapper getItem(int i)
 		{
 			return items.get(i);
 		}
@@ -210,7 +178,7 @@ public final class InstalledCoresFragment extends ListFragment
 				convertView = vi.inflate(resourceId, parent, false);
 			}
 
-			final CoreManagerListItem item = items.get(position);
+			final ModuleWrapper item = items.get(position);
 			if (item != null)
 			{
 				TextView title    = (TextView) convertView.findViewById(R.id.CoreManagerListItemTitle);
@@ -219,12 +187,12 @@ public final class InstalledCoresFragment extends ListFragment
 
 				if (title != null)
 				{
-					title.setText(item.getName());
+					title.setText(item.getText());
 				}
 
 				if (subtitle != null)
 				{
-					subtitle.setText(item.getSubtitle());
+					subtitle.setText(item.getSubText());
 				}
 
 				if (icon != null)

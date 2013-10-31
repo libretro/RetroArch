@@ -104,15 +104,7 @@ public final class UserPreferences
 	public static void readbackConfigFile(Context ctx)
 	{
 		String path = getDefaultConfigPath(ctx);
-		ConfigFile config;
-		try
-		{
-			config = new ConfigFile(new File(path));
-		}
-		catch (IOException e)
-		{
-			return;
-		}
+		ConfigFile config = new ConfigFile(path);
 
 		Log.i(TAG, "Config readback from: " + path);
 		
@@ -164,15 +156,7 @@ public final class UserPreferences
 	public static void updateConfigFile(Context ctx)
 	{
 		String path = getDefaultConfigPath(ctx);
-		ConfigFile config;
-		try
-		{
-			config = new ConfigFile(new File(path));
-		}
-		catch (IOException e)
-		{
-			config = new ConfigFile();
-		}
+		ConfigFile config = new ConfigFile(path);
 
 		Log.i(TAG, "Writing config to: " + path);
 
@@ -315,7 +299,7 @@ public final class UserPreferences
 
 		try
 		{
-			config.write(new File(path));
+			config.write(path);
 		}
 		catch (IOException e)
 		{
