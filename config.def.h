@@ -316,6 +316,8 @@ static const char *default_libretro_info_path = NULL;
 
 #if defined(ANDROID)
 static const char *default_libretro_path = "/data/data/com.retroarch/cores/";
+#elif defined(__QNX__)
+static const char *default_libretro_path = "/app/native/lib/";
 #else
 static const char *default_libretro_path = NULL;
 #endif
