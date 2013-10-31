@@ -20,7 +20,6 @@
 extern "C" {
 #endif
 
-#ifdef RSD_EXPOSE_STRUCT
 #include <sys/types.h>
 #include <unistd.h>
 #include <pthread.h>
@@ -28,12 +27,8 @@ extern "C" {
 #include <time.h>
 #include <stdint.h>
 #include <stddef.h>
-#else
-#include <stddef.h>
-#include <sys/types.h>
-#endif
 
-#include "../../fifo_buffer.h"
+#include "../fifo_buffer.h"
 
 #ifdef _WIN32
 #define RSD_DEFAULT_HOST "127.0.0.1" // Stupid Windows.
@@ -135,9 +130,6 @@ extern "C" {
    /* Error callback. Signals caller that stream has been stopped, either by audio callback returning -1 or stream was hung up. */
    typedef void (*rsd_error_callback_t)(void *userdata);
 
-
-#ifdef RSD_EXPOSE_STRUCT
-
    /* Defines the main structure for use with the API. */
    typedef struct rsound
    {
@@ -191,9 +183,6 @@ extern "C" {
       void *cb_data;
       pthread_mutex_t cb_lock;
    } rsound_t;
-#else
-   typedef struct rsound rsound_t;
-#endif
 
    /* -- API --
       All functions (except for rsd_write() return 0 for success, and -1 for error. errno is currently not set. */
@@ -329,11 +318,17 @@ extern "C" {
    /* Frees an rsound_t struct. Make sure that the stream is properly closed down with rsd_stop() before calling rsd_free(). */
    int rsd_free (rsound_t *rd);
 
+#ifndef HAVE_STRL
+// Avoid possible naming collisions during link since we prefer to use the actual name.
+#define strlcpy(dst, src, size) strlcpy_rarch__(dst, src, size)
+#define strlcat(dst, src, size) strlcat_rarch__(dst, src, size)
+
+size_t strlcpy(char *dest, const char *source, size_t size);
+size_t strlcat(char *dest, const char *source, size_t size);
+#endif
+
 #ifdef __cplusplus
 }
 #endif
 
 #endif
-
-
-

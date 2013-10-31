@@ -16,12 +16,8 @@
 
 #include "../driver.h"
 #include <stdlib.h>
-#if defined(RARCH_CONSOLE) || defined(HAVE_GRIFFIN)
-#include "../deps/librsound/rsound.h"
-#else
-#include <rsound.h>
-#endif
-#include "fifo_buffer.h"
+#include "rsound.h"
+#include "../fifo_buffer.h"
 #include "../boolean.h"
 #include "../thread.h"
 

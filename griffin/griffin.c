@@ -347,11 +347,7 @@ AUDIO RESAMPLER
 RSOUND
 ============================================================ */
 #ifdef HAVE_RSOUND
-#ifdef __CELLOS_LV2__
-#include "../deps/librsound/librsound.c"
-#else
-#include "../deps/librsound/librsound_orig.c"
-#endif
+#include "../audio/librsound.c"
 #include "../audio/rsound.c"
 #endif
 
