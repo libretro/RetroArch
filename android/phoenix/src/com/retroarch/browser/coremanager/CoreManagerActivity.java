@@ -75,7 +75,7 @@ public final class CoreManagerActivity extends ActionBarActivity implements TabL
 		// Do nothing. Not used.
 	}
 
-	// Adapter for the CoreView ViewPager class.
+	// Adapter for the core manager ViewPager.
 	private final class ViewPagerAdapter extends FragmentPagerAdapter
 	{
 		/**

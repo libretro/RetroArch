@@ -215,14 +215,14 @@ public final class ConfigFile
 	 * 
 	 * @return the Integer value associated with the given key.
 	 */
-	public int getInt(String key) throws NumberFormatException
+	public int getInt(String key)
 	{
 		String str = getString(key);
 
 		if (str != null)
 			return Integer.parseInt(str);
 		else
-			throw new NumberFormatException();
+			throw new IllegalArgumentException("Config key '" + key + "' is invalid.");
 	}
 
 	/**
@@ -232,14 +232,14 @@ public final class ConfigFile
 	 * 
 	 * @return the double value associated with the given key.
 	 */
-	public double getDouble(String key) throws NumberFormatException
+	public double getDouble(String key)
 	{
 		String str = getString(key);
 
 		if (str != null)
 			return Double.parseDouble(str);
 		else
-			throw new NumberFormatException();
+			throw new IllegalArgumentException("Config key '" + key + "' is invalid.");
 	}
 
 	/**
@@ -249,14 +249,14 @@ public final class ConfigFile
 	 * 
 	 * @return the float value associated with the given key.
 	 */
-	public float getFloat(String key) throws NumberFormatException
+	public float getFloat(String key)
 	{
 		String str = getString(key);
 
 		if (str != null)
 			return Float.parseFloat(str);
 		else
-			throw new NumberFormatException();
+			throw new IllegalArgumentException("Config key '" + key + "' is invalid.");
 	}
 
 	/**
@@ -270,6 +270,9 @@ public final class ConfigFile
 	{
 		String str = getString(key);
 
-		return Boolean.parseBoolean(str);
+		if (str != null)
+			return Boolean.parseBoolean(str);
+		else
+			throw new IllegalArgumentException("Config key '" + key + "' is invalid.");
 	}
 }
