@@ -34,6 +34,9 @@ public final class ConfigFile
 	 */
 	public ConfigFile(String filePath)
 	{
+		if (filePath == null)
+			throw new IllegalArgumentException("filePath cannot be null.");
+
 		try 
 		{
 			open(filePath);
