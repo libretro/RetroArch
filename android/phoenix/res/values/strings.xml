@@ -196,7 +196,7 @@
     <string name="bilinear_filter">Bilinear filter</string>
     <string name="bilinear_filter_desc">Applies Bilinear filtering, smooths out edges (settings still apply even if no shader is selected).</string>
     <string name="first_pass_shader">First-pass shader</string>
-    <string name="first_pass_shader_desc">Enable first pass shader (WARNING: recommended system requirements for these shaders is a Tegra 4 / Exynos 5 class GPU and/or higher).</string>
+    <string name="first_pass_shader_desc">Enable first pass shader (WARNING: performance varies per device and per shader).</string>
     <string name="glsl_shader">GLSL shader</string>
     <string name="glsl_shader_desc">Sets GLES2 style shader.</string>
     <string name="fonts">Fonts</string>
