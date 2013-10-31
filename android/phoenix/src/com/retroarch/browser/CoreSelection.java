@@ -1,7 +1,6 @@
 package com.retroarch.browser;
 
 import com.retroarch.R;
-import com.retroarch.browser.preferences.util.ConfigFile;
 import com.retroarch.browser.preferences.util.UserPreferences;
 
 import java.io.*;
@@ -10,25 +9,16 @@ import android.app.*;
 import android.media.AudioManager;
 import android.os.*;
 import android.widget.*;
-import android.util.Log;
 import android.view.*;
 
 // JELLY_BEAN_MR1 = 17
 
 public final class CoreSelection extends ListActivity {
 	private IconAdapter<ModuleWrapper> adapter;
-	private static final String TAG = "CoreSelection";
 
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
-
-		ConfigFile core_config = new ConfigFile();
-		try {
-			core_config.append(getAssets().open("libretro_cores.cfg"));
-		} catch (IOException e) {
-			Log.e(TAG, "Failed to load libretro_cores.cfg from assets.");
-		}
 
 		final String cpuInfo = UserPreferences.readCPUInfo();
 		final boolean cpuIsNeon = cpuInfo.contains("neon");
@@ -48,7 +38,6 @@ public final class CoreSelection extends ListActivity {
 		for (final File lib : libs) {
 			String libName = lib.getName();
 
-			Log.i(TAG, "Libretro core: " + libName);
 			// Never append a NEON lib if we don't have NEON.
 			if (libName.contains("neon") && !cpuIsNeon)
 				continue;
