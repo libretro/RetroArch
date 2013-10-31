@@ -3,10 +3,12 @@ package com.retroarch.browser;
 import com.retroarch.browser.preferences.util.ConfigFile;
 
 import java.io.File;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 import android.content.Context;
 import android.graphics.drawable.Drawable;
-import android.util.Log;
 
 /**
  * Wrapper class that encapsulates a libretro core 
@@ -20,7 +22,7 @@ public final class ModuleWrapper implements IconAdapterItem, Comparable<ModuleWr
 	private final String manufacturer;
 	private final String systemName;
 	private final String license;
-	private final String[] supportedExtensions;
+	private final List<String> supportedExtensions;
 
 	/**
 	 * Constructor
@@ -35,7 +37,6 @@ public final class ModuleWrapper implements IconAdapterItem, Comparable<ModuleWr
 		// Attempt to get the core's info file.
 		// Basically this is dataDir/info/[core name].info
 
-		Log.d("ModuleWrapper", "File Name: " + file.getName());
 		// So first, since the core name will contain platform specific strings at the end of name, we trim this.
 		final String coreName = file.getName().substring(0, file.getName().lastIndexOf("_android.so"));
 
@@ -46,8 +47,6 @@ public final class ModuleWrapper implements IconAdapterItem, Comparable<ModuleWr
 		// and attempt to read it as a config file (since it has the same key-value layout).
 		final String infoFilePath = infoFileDir + File.separator + coreName + ".info";
 		final ConfigFile infoFile = new ConfigFile(infoFilePath);
-		Log.d("ModuleWrapper", "Info file path: " + infoFilePath);
-		Log.d("ModuleWrapper", "Info file exists: " + new File(infoFilePath).exists());
 
 		// Now read info out of the info file. Make them an empty string if the key doesn't exist.
 		this.displayName  = (infoFile.keyExists("display_name")) ? infoFile.getString("display_name") : "";
@@ -64,14 +63,14 @@ public final class ModuleWrapper implements IconAdapterItem, Comparable<ModuleWr
 		// don't contain the '|' delimiter, so we just create a String array with
 		// a size of 1, and just directly assign the retrieved extensions to it.
 		final String supportedExts = infoFile.getString("supported_extensions");
-		if (supportedExts.contains("|"))
+		if (supportedExts != null && supportedExts.contains("|"))
 		{
-			this.supportedExtensions = supportedExts.split("|");
+			this.supportedExtensions = new ArrayList<String>(Arrays.asList(supportedExts.split("|")));
 		}
 		else
 		{
-			this.supportedExtensions = new String[1];
-			this.supportedExtensions[0] = supportedExts;
+			this.supportedExtensions = new ArrayList<String>(); 
+			this.supportedExtensions.add(supportedExts);
 		}
 	}
 
@@ -115,6 +114,16 @@ public final class ModuleWrapper implements IconAdapterItem, Comparable<ModuleWr
 	public String getManufacturer()
 	{
 		return manufacturer;
+	}
+
+	/**
+	 * Gets the List of supported extensions for this core.
+	 * 
+	 * @return the List of supported extensions for this core.
+	 */
+	public List<String> getSupportedExtensions()
+	{
+		return supportedExtensions;
 	}
 
 	@Override
