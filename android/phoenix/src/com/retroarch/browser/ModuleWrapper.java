@@ -46,31 +46,43 @@ public final class ModuleWrapper implements IconAdapterItem, Comparable<ModuleWr
 		// Now, based off of the trimmed core name, we can get the core info file.
 		// and attempt to read it as a config file (since it has the same key-value layout).
 		final String infoFilePath = infoFileDir + File.separator + coreName + ".info";
-		final ConfigFile infoFile = new ConfigFile(infoFilePath);
-
-		// Now read info out of the info file. Make them an empty string if the key doesn't exist.
-		this.displayName  = (infoFile.keyExists("display_name")) ? infoFile.getString("display_name") : "";
-		this.coreName     = (infoFile.keyExists("corename"))     ? infoFile.getString("corename")     : "";
-		this.systemName   = (infoFile.keyExists("systemname"))   ? infoFile.getString("systemname")   : "";
-		this.manufacturer = (infoFile.keyExists("manufacturer")) ? infoFile.getString("manufacturer") : "";
-		this.license      = (infoFile.keyExists("license"))      ? infoFile.getString("license")      : "";
-
-		// Getting supported extensions is a little different.
-		// We need to split at every '|' character, since it is
-		// the delimiter for a new extension that the core supports.
-		//
-		// Cores that don't have multiple extensions supported
-		// don't contain the '|' delimiter, so we just create a String array with
-		// a size of 1, and just directly assign the retrieved extensions to it.
-		final String supportedExts = infoFile.getString("supported_extensions");
-		if (supportedExts != null && supportedExts.contains("|"))
+		if (new File(infoFilePath).exists())
 		{
-			this.supportedExtensions = new ArrayList<String>(Arrays.asList(supportedExts.split("|")));
+			final ConfigFile infoFile = new ConfigFile(infoFilePath);
+	
+			// Now read info out of the info file. Make them an empty string if the key doesn't exist.
+			this.displayName  = (infoFile.keyExists("display_name")) ? infoFile.getString("display_name") : "";
+			this.coreName     = (infoFile.keyExists("corename"))     ? infoFile.getString("corename")     : "";
+			this.systemName   = (infoFile.keyExists("systemname"))   ? infoFile.getString("systemname")   : "";
+			this.manufacturer = (infoFile.keyExists("manufacturer")) ? infoFile.getString("manufacturer") : "";
+			this.license      = (infoFile.keyExists("license"))      ? infoFile.getString("license")      : "";
+	
+			// Getting supported extensions is a little different.
+			// We need to split at every '|' character, since it is
+			// the delimiter for a new extension that the core supports.
+			//
+			// Cores that don't have multiple extensions supported
+			// don't contain the '|' delimiter, so we just create a String array with
+			// a size of 1, and just directly assign the retrieved extensions to it.
+			final String supportedExts = infoFile.getString("supported_extensions");
+			if (supportedExts != null && supportedExts.contains("|"))
+			{
+				this.supportedExtensions = new ArrayList<String>(Arrays.asList(supportedExts.split("|")));
+			}
+			else
+			{
+				this.supportedExtensions = new ArrayList<String>(); 
+				this.supportedExtensions.add(supportedExts);
+			}
 		}
-		else
+		else // No info file.
 		{
-			this.supportedExtensions = new ArrayList<String>(); 
-			this.supportedExtensions.add(supportedExts);
+			this.displayName = "N/A";
+			this.systemName = "N/A";
+			this.manufacturer = "N/A";
+			this.license = "N/A";
+			this.supportedExtensions = new ArrayList<String>();
+			this.coreName = coreName;
 		}
 	}
 
