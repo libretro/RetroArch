@@ -9,10 +9,10 @@
     <string name="key_bind_detect">Detect</string>
     <string name="optimal_settings_device">Optimal device settings</string>
     <string name="extracting_assets_please_wait_">Extracting assets, please wait …</string>
+    <string name="asset_extraction">Asset Extraction</string>
 
     <!-- Main Menu Strings -->
     <string name="mainmenu_title">RetroArch - Main Menu</string>
-    <string name="asset_extraction">Asset Extraction</string>
     <string name="tv_mode">TV Mode</string>
     <string name="load_core">Load Core</string>
     <string name="load_game">Load Game</string>

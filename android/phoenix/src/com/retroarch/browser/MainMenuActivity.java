@@ -1,13 +1,10 @@
-package com.retroarch.browser.mainmenu;
+package com.retroarch.browser;
 
 import java.io.*;
 
 import com.retroarch.R;
-import com.retroarch.browser.NativeInterface;
-import com.retroarch.browser.RetroActivity;
 import com.retroarch.browser.preferences.util.UserPreferences;
 
-import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Dialog;
 import android.content.Context;
@@ -19,38 +16,34 @@ import android.media.AudioManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
-import android.preference.PreferenceManager;
+import android.preference.PreferenceActivity;
 import android.provider.Settings;
-import android.support.v4.app.Fragment;
-import android.support.v4.app.FragmentActivity;
-import android.support.v4.app.FragmentManager;
 import android.util.Log;
 import android.widget.Toast;
 
-/**
- * Class representing the {@link FragmentActivity} for the main menu.
- */
-public final class MainMenuActivity extends FragmentActivity {
+public final class MainMenuActivity extends PreferenceActivity {
 	private static MainMenuActivity instance = null;
+	private static final int ACTIVITY_LOAD_ROM = 0;
+	private static final int ACTIVITY_RETROARCH = 1;
 	private static final String TAG = "MainMenu";
+	private static String libretro_path;
+	private static String libretro_name;
 
 	@Override
+	@SuppressWarnings("deprecation")
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 
-		// Set the content view. This will give us the FrameLayout to switch fragments in and out of.
-		setContentView(R.layout.main_menu_layout);
-
-		// Show the main UI for this FragmentActivity.
-		final Fragment mainMenuFragment = new MainMenuFragment();
-		final FragmentManager fm = getSupportFragmentManager();
-		fm.beginTransaction().replace(R.id.content_frame, mainMenuFragment).commit();
+		// Load the main menu XML.
+		addPreferencesFromResource(R.xml.main_menu);
 
 		// Cache an instance of this class (TODO: Bad practice, kill this somehow).
 		instance = this;
 
 		// Get libretro path and name.
 		SharedPreferences prefs = UserPreferences.getPreferences(this);
+		libretro_path = prefs.getString("libretro_path", getApplicationInfo().dataDir + "/cores");
+		libretro_name = prefs.getString("libretro_name", getString(R.string.no_core));
 
 		// Bind audio stream to hardware controls.
 		setVolumeControlStream(AudioManager.STREAM_MUSIC);
@@ -73,7 +66,8 @@ public final class MainMenuActivity extends FragmentActivity {
 		Intent startedByIntent = getIntent();
 		if (startedByIntent.getStringExtra("ROM") != null && startedByIntent.getStringExtra("LIBRETRO") != null) {
 			if (savedInstanceState == null || !savedInstanceState.getBoolean("romexec"))
-				loadRomExternal(startedByIntent.getStringExtra("ROM"), startedByIntent.getStringExtra("LIBRETRO"));
+				loadRomExternal(startedByIntent.getStringExtra("ROM"),
+						startedByIntent.getStringExtra("LIBRETRO"));
 			else
 				finish();
 		}
@@ -111,7 +105,7 @@ public final class MainMenuActivity extends FragmentActivity {
 				cacheStream.close();
 
 				if (currentCacheVersion == version) {
-					Log.i(TAG, "Assets already extracted, skipping...");
+					Log.i("ASSETS", "Assets already extracted, skipping...");
 					return true;
 				}
 			}
@@ -154,7 +148,7 @@ public final class MainMenuActivity extends FragmentActivity {
 		final Handler handler = new Handler();
 		dialog.setContentView(R.layout.assets);
 		dialog.setCancelable(false);
-		dialog.setTitle(R.string.asset_extraction);
+		dialog.setTitle("Asset extraction");
 
 		// Java is fun :)
 		Thread assetsThread = new Thread(new Runnable() {
@@ -175,8 +169,8 @@ public final class MainMenuActivity extends FragmentActivity {
 	public void setModule(String core_path, String core_name) {
 		UserPreferences.updateConfigFile(this);
 		
-		String libretro_path = core_path;
-		String libretro_name = core_name;
+		libretro_path = core_path;
+		libretro_name = core_name;
 
 		SharedPreferences prefs = UserPreferences.getPreferences(this);
 		SharedPreferences.Editor edit = prefs.edit();
@@ -186,6 +180,7 @@ public final class MainMenuActivity extends FragmentActivity {
 
 		// Set the title section to contain the name of the selected core.
 		setCoreTitle(libretro_name);
+		
 	}
 
 	public void setCoreTitle(String core_name) {
@@ -313,15 +308,10 @@ public final class MainMenuActivity extends FragmentActivity {
 
 	@Override
 	public void startActivity(Intent intent) {
-		final SharedPreferences sPrefs = PreferenceManager.getDefaultSharedPreferences(this);
-		final String corePath = sPrefs.getString("libretro_path", "");
-
-		// If ROMActivity is attempting to be accessed.
-		if (intent.getComponent().getClassName().equals("com.retroarch.browser.diractivities.ROMActivity")) {
-			// If the path for a core hasn't been set yet, prompt the user to do so.
-			// otherwise, launch the activity to browse for a ROM to load.
-			if (!new File(corePath).isDirectory()) {
-				startActivity(intent);
+		if (intent.getComponent().getClassName()
+				.equals("com.retroarch.browser.diractivities.ROMActivity")) {
+			if (!new File(libretro_path).isDirectory()) {
+				super.startActivityForResult(intent, ACTIVITY_LOAD_ROM);
 			} else {
 				Toast.makeText(this, R.string.load_a_core_first, Toast.LENGTH_SHORT).show();
 			}
@@ -331,9 +321,45 @@ public final class MainMenuActivity extends FragmentActivity {
 	}
 
 	@Override
+	protected void onActivityResult(int reqCode, int resCode, Intent data) {
+		switch (reqCode) {
+			case ACTIVITY_LOAD_ROM: {
+				if (data.getStringExtra("PATH") != null) {
+					UserPreferences.updateConfigFile(this);
+					String current_ime = Settings.Secure.getString(getContentResolver(), Settings.Secure.DEFAULT_INPUT_METHOD);
+					Toast.makeText(this,String.format(getString(R.string.loading_data), data.getStringExtra("PATH")), Toast.LENGTH_SHORT).show();
+					Intent myIntent = new Intent(this, RetroActivity.class);
+					myIntent.putExtra("ROM", data.getStringExtra("PATH"));
+					myIntent.putExtra("LIBRETRO", libretro_path);
+					myIntent.putExtra("CONFIGFILE", UserPreferences.getDefaultConfigPath(this));
+					myIntent.putExtra("IME", current_ime);
+					startActivityForResult(myIntent, ACTIVITY_RETROARCH);
+				}
+				break;
+			}
+		
+			case ACTIVITY_RETROARCH: {
+				Log.i(TAG, "RetroArch finished running.");
+				UserPreferences.readbackConfigFile(this);
+				break;
+			}
+		}
+	}
+
+	@Override
 	protected void onSaveInstanceState(Bundle data) {
 		super.onSaveInstanceState(data);
+		data.putCharSequence("title", getTitle());
 		data.putBoolean("romexec", true);
+	}
+
+	@Override
+	protected void onRestoreInstanceState(Bundle state) {
+		super.onRestoreInstanceState(state);
+
+		if (state != null) {
+			setTitle(state.getCharSequence("title"));
+		}
 	}
 
 	private void loadRomExternal(String rom, String core) {

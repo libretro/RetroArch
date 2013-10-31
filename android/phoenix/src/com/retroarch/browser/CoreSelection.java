@@ -1,7 +1,6 @@
 package com.retroarch.browser;
 
 import com.retroarch.R;
-import com.retroarch.browser.mainmenu.MainMenuActivity;
 import com.retroarch.browser.preferences.util.ConfigFile;
 import com.retroarch.browser.preferences.util.UserPreferences;
 
