@@ -89,7 +89,7 @@ void engine_handle_cmd(void)
    switch (cmd)
    {
       case APP_CMD_INPUT_CHANGED:
-         pthread_mutex_lock(&android_app->mutex);
+         slock_lock(android_app->mutex);
 
          if (android_app->inputQueue != NULL)
             AInputQueue_detachLooper(android_app->inputQueue);
@@ -104,40 +104,40 @@ void engine_handle_cmd(void)
                   NULL);
          }
 
-         pthread_cond_broadcast(&android_app->cond);
-         pthread_mutex_unlock(&android_app->mutex);
+         scond_broadcast(android_app->cond);
+         slock_unlock(android_app->mutex);
          
          break;
 
       case APP_CMD_INIT_WINDOW:
-         pthread_mutex_lock(&android_app->mutex);
+         slock_lock(android_app->mutex);
          android_app->window = android_app->pendingWindow;
-         pthread_cond_broadcast(&android_app->cond);
-         pthread_mutex_unlock(&android_app->mutex);
+         scond_broadcast(android_app->cond);
+         slock_unlock(android_app->mutex);
 
          if (g_extern.lifecycle_state & (1ULL << RARCH_PAUSE_TOGGLE))
             init_drivers();
          break;
 
       case APP_CMD_RESUME:
-         pthread_mutex_lock(&android_app->mutex);
+         slock_lock(android_app->mutex);
          android_app->activityState = cmd;
-         pthread_cond_broadcast(&android_app->cond);
-         pthread_mutex_unlock(&android_app->mutex);
+         scond_broadcast(android_app->cond);
+         slock_unlock(android_app->mutex);
          break;
 
       case APP_CMD_START:
-         pthread_mutex_lock(&android_app->mutex);
+         slock_lock(android_app->mutex);
          android_app->activityState = cmd;
-         pthread_cond_broadcast(&android_app->cond);
-         pthread_mutex_unlock(&android_app->mutex);
+         scond_broadcast(android_app->cond);
+         slock_unlock(android_app->mutex);
          break;
 
       case APP_CMD_PAUSE:
-         pthread_mutex_lock(&android_app->mutex);
+         slock_lock(android_app->mutex);
          android_app->activityState = cmd;
-         pthread_cond_broadcast(&android_app->cond);
-         pthread_mutex_unlock(&android_app->mutex);
+         scond_broadcast(android_app->cond);
+         slock_unlock(android_app->mutex);
 
          if (!(g_extern.lifecycle_state & (1ULL << RARCH_QUIT_KEY)))
          {
@@ -147,16 +147,16 @@ void engine_handle_cmd(void)
          break;
 
       case APP_CMD_STOP:
-         pthread_mutex_lock(&android_app->mutex);
+         slock_lock(android_app->mutex);
          android_app->activityState = cmd;
-         pthread_cond_broadcast(&android_app->cond);
-         pthread_mutex_unlock(&android_app->mutex);
+         scond_broadcast(android_app->cond);
+         slock_unlock(android_app->mutex);
          break;
 
       case APP_CMD_CONFIG_CHANGED:
          break;
       case APP_CMD_TERM_WINDOW:
-         pthread_mutex_lock(&android_app->mutex);
+         slock_lock(android_app->mutex);
 
          /* The window is being hidden or closed, clean it up. */
          /* terminate display/EGL context here */
@@ -166,8 +166,8 @@ void engine_handle_cmd(void)
             RARCH_WARN("Window is terminated outside PAUSED state.\n");
 
          android_app->window = NULL;
-         pthread_cond_broadcast(&android_app->cond);
-         pthread_mutex_unlock(&android_app->mutex);
+         scond_broadcast(android_app->cond);
+         slock_unlock(android_app->mutex);
          break;
 
       case APP_CMD_GAINED_FOCUS:

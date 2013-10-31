@@ -168,6 +168,13 @@ void scond_signal(scond_t *cond)
    SetEvent(cond->event);
 }
 
+/* FIXME - check how this function should differ from scond_signal implementation */
+int scond_broadcast(scond_t *cond)
+{
+   SetEvent(cond->event);
+   return 0;
+}
+
 void scond_free(scond_t *cond)
 {
    CloseHandle(cond->event);
@@ -286,6 +293,11 @@ void scond_free(scond_t *cond)
 void scond_wait(scond_t *cond, slock_t *lock)
 {
    pthread_cond_wait(&cond->cond, &lock->lock);
+}
+
+int scond_broadcast(scond_t *cond)
+{
+   return pthread_cond_broadcast(&cond->cond);
 }
 
 #ifndef RARCH_CONSOLE

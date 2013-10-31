@@ -19,13 +19,14 @@
 #define _FRONTEND_ANDROID_H
 
 #include <poll.h>
-#include <pthread.h>
 #include <sched.h>
 
 #include <android/configuration.h>
 #include <android/looper.h>
 #include <android/native_activity.h>
 #include <android/window.h>
+
+#include "../thread.h"
 
 struct android_app
 {
@@ -38,13 +39,13 @@ struct android_app
    ANativeWindow* window;
    int activityState;
 
-   pthread_mutex_t mutex;
-   pthread_cond_t cond;
+   slock_t *mutex;
+   scond_t *cond;
 
    int msgread;
    int msgwrite;
 
-   pthread_t thread;
+   sthread_t *thread;
 
    int running;
    AInputQueue* pendingInputQueue;
