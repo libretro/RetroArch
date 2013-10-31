@@ -18,22 +18,23 @@ import android.support.v4.app.ListFragment;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.ViewParent;
 import android.widget.ListView;
 
 public class PreferenceListFragment extends ListFragment
 {
+	private static final String PREFERENCES_TAG = "android:preferences";
     private PreferenceManager mPreferenceManager;
-    private ListView lv;
-    private int xmlId;
+    private ListView mList;
+    private boolean mHavePrefs;
+    private boolean mInitDone;
 
     /**
      * The starting request code given out to preference framework.
      */
     private static final int FIRST_REQUEST_CODE = 100;
 
-    private static final int MSG_BIND_PREFERENCES = 0;
-    private Handler mHandler = new Handler()
+    private static final int MSG_BIND_PREFERENCES = 1;
+    private final Handler mHandler = new Handler()
     {
         @Override
         public void handleMessage(Message msg)
@@ -47,21 +48,22 @@ public class PreferenceListFragment extends ListFragment
         }
     };
 
-    //must be provided
-    public PreferenceListFragment()
+    private final Runnable mRequestFocus = new Runnable()
     {
-    }
-
-    public PreferenceListFragment(int xmlId)
-    {
-        this.xmlId = xmlId;
-    }
+        @Override
+        public void run()
+        {
+            mList.focusableViewAvailable(mList);
+        }
+    };
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle b)
     {
-        postBindPreferences();
-        return lv;
+        View view = inflater.inflate(R.layout.preference_list_content, container, false);
+        view.setScrollBarStyle(View.SCROLLBARS_INSIDE_OVERLAY);
+
+        return view;
     }
 
     @Override
@@ -69,9 +71,39 @@ public class PreferenceListFragment extends ListFragment
     {
         super.onDestroyView();
 
-        ViewParent p = lv.getParent();
-        if(p != null)
-            ((ViewGroup)p).removeView(lv);
+        // Kill the list
+        mList = null;
+
+        // Remove callbacks and messages.
+        mHandler.removeCallbacks(mRequestFocus);
+        mHandler.removeMessages(MSG_BIND_PREFERENCES);
+    }
+
+    @Override
+    public void onActivityCreated(Bundle savedInstanceState)
+    {
+        super.onActivityCreated(savedInstanceState);
+
+        if (mHavePrefs)
+        {
+        	bindPreferences();
+        }
+
+        // Done initializing.
+        mInitDone = true;
+
+        if (savedInstanceState != null)
+        {
+            Bundle container = savedInstanceState.getBundle(PREFERENCES_TAG);
+            if (container != null)
+            {
+                final PreferenceScreen preferenceScreen = getPreferenceScreen();
+                if (preferenceScreen != null)
+                {
+                    preferenceScreen.restoreHierarchyState(container);
+                }
+            }
+        }
     }
 
     @Override
@@ -79,13 +111,8 @@ public class PreferenceListFragment extends ListFragment
     {
         super.onCreate(savedInstanceState);
 
-        if(savedInstanceState != null)
-            xmlId = savedInstanceState.getInt("xml");
-
         mPreferenceManager = onCreatePreferenceManager();
-        lv = (ListView) LayoutInflater.from(getActivity()).inflate(R.layout.preference_list_content, null);
-        lv.setScrollBarStyle(View.SCROLLBARS_INSIDE_OVERLAY);
-        addPreferencesFromResource(xmlId);
+
         postBindPreferences();
     }
 
@@ -111,7 +138,6 @@ public class PreferenceListFragment extends ListFragment
     {
         super.onDestroy();
 
-        lv = null;
         try
         {
             Method m = PreferenceManager.class.getDeclaredMethod("dispatchActivityDestroy");
@@ -127,8 +153,15 @@ public class PreferenceListFragment extends ListFragment
     @Override
     public void onSaveInstanceState(Bundle outState)
     {
-        outState.putInt("xml", xmlId);
         super.onSaveInstanceState(outState);
+
+        final PreferenceScreen preferenceScreen = getPreferenceScreen();
+        if (preferenceScreen != null)
+        {
+            Bundle container = new Bundle();
+            preferenceScreen.saveHierarchyState(container);
+            outState.putBundle(PREFERENCES_TAG, container);
+        }
     }
 
     @Override
@@ -156,7 +189,11 @@ public class PreferenceListFragment extends ListFragment
      */
     private void postBindPreferences()
     {
-        if (mHandler.hasMessages(MSG_BIND_PREFERENCES)) return;
+        if (mHandler.hasMessages(MSG_BIND_PREFERENCES))
+        {
+            return;
+        }
+
         mHandler.obtainMessage(MSG_BIND_PREFERENCES).sendToTarget();
     }
 
@@ -165,14 +202,14 @@ public class PreferenceListFragment extends ListFragment
         final PreferenceScreen preferenceScreen = getPreferenceScreen();
         if (preferenceScreen != null)
         {
-            preferenceScreen.bind(lv);
+            preferenceScreen.bind(getListView());
         }
     }
 
     /**
      * Creates the {@link PreferenceManager}.
      * 
-     * @return The {@link PreferenceManager} used by this activity.
+     * @return The {@link PreferenceManager} used by this fragment.
      */
     private PreferenceManager onCreatePreferenceManager()
     {
@@ -180,7 +217,8 @@ public class PreferenceListFragment extends ListFragment
         {
             Constructor<PreferenceManager> c = PreferenceManager.class.getDeclaredConstructor(Activity.class, int.class);
             c.setAccessible(true);
-            PreferenceManager preferenceManager = c.newInstance(this.getActivity(), FIRST_REQUEST_CODE);
+
+            PreferenceManager preferenceManager = c.newInstance(getActivity(), FIRST_REQUEST_CODE);
             return preferenceManager;
         }
         catch(Exception e)
@@ -191,8 +229,9 @@ public class PreferenceListFragment extends ListFragment
     }
 
     /**
-     * Returns the {@link PreferenceManager} used by this activity.
-     * @return The {@link PreferenceManager}.
+     * Gets the {@link PreferenceManager} used by this fragment.
+     * 
+     * @return The {@link PreferenceManager} used by this fragment.
      */
     public PreferenceManager getPreferenceManager()
     {
@@ -200,7 +239,7 @@ public class PreferenceListFragment extends ListFragment
     }
 
     /**
-     * Sets the root of the preference hierarchy that this activity is showing.
+     * Sets the root of the preference hierarchy that this fragment is showing.
      * 
      * @param preferenceScreen The root {@link PreferenceScreen} of the preference hierarchy.
      */
@@ -213,7 +252,11 @@ public class PreferenceListFragment extends ListFragment
             boolean result = (Boolean) m.invoke(mPreferenceManager, preferenceScreen);
             if (result && preferenceScreen != null)
             {
-                postBindPreferences();
+                mHavePrefs = true;
+                if (mInitDone)
+                {
+                    postBindPreferences();
+                }
             }
         }
         catch(Exception e)
@@ -223,7 +266,7 @@ public class PreferenceListFragment extends ListFragment
     }
 
     /**
-     * Gets the root of the preference hierarchy that this activity is showing.
+     * Gets the root of the preference hierarchy that this fragment is showing.
      * 
      * @return The {@link PreferenceScreen} that is the root of the preference
      *         hierarchy.
@@ -291,5 +334,39 @@ public class PreferenceListFragment extends ListFragment
         }
 
         return mPreferenceManager.findPreference(key);
+    }
+
+    public ListView getListView()
+    {
+        ensureList();
+        return mList;
+    }
+
+    private void ensureList()
+    {
+        if (mList != null)
+        {
+            return;
+        }
+
+        final View root = getView();
+        if (root == null)
+        {
+            throw new IllegalStateException("Content view not yet created");
+        }
+
+        final View rawListView = root.findViewById(android.R.id.list);
+        if (!(rawListView instanceof ListView))
+        {
+            throw new RuntimeException("Content has view with id attribute 'android.R.id.list' that is not a ListView class");
+        }
+
+        mList = (ListView)rawListView;
+        if (mList == null)
+        {
+            throw new RuntimeException("Your content must have a ListView whose id attribute is 'android.R.id.list'");
+        }
+
+        mHandler.post(mRequestFocus);
     }
 }

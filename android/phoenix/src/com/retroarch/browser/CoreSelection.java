@@ -44,7 +44,7 @@ public final class CoreSelection extends ListActivity {
 		setTitle(R.string.select_libretro_core);
 
 		// Populate the list
-		final File[] libs = new File(getApplicationInfo().dataDir, "cores").listFiles();
+		final File[] libs = new File(getApplicationInfo().dataDir, "/cores").listFiles();
 		for (final File lib : libs) {
 			String libName = lib.getName();
 
@@ -71,7 +71,7 @@ public final class CoreSelection extends ListActivity {
 					continue;
 			}
 			
-			adapter.add(new ModuleWrapper(this, lib, core_config));
+			adapter.add(new ModuleWrapper(this, lib));
 		}
 
 		this.setVolumeControlStream(AudioManager.STREAM_MUSIC);
@@ -80,7 +80,7 @@ public final class CoreSelection extends ListActivity {
 	@Override
 	public void onListItemClick(ListView listView, View view, int position, long id) {
 		final ModuleWrapper item = adapter.getItem(position);
-		MainMenuActivity.getInstance().setModule(item.file.getAbsolutePath(), item.getText());
+		MainMenuActivity.getInstance().setModule(item.getUnderlyingFile().getAbsolutePath(), item.getText());
 		UserPreferences.updateConfigFile(this);
 		finish();
 	}

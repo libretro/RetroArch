@@ -323,34 +323,43 @@ public final class MainMenuActivity extends PreferenceActivity {
 	@Override
 	protected void onActivityResult(int reqCode, int resCode, Intent data) {
 		switch (reqCode) {
-		case ACTIVITY_LOAD_ROM: {
-			if (data.getStringExtra("PATH") != null) {
-				UserPreferences.updateConfigFile(this);
-				String current_ime = Settings.Secure.getString(getContentResolver(), Settings.Secure.DEFAULT_INPUT_METHOD);
-				Toast.makeText(this,String.format(getString(R.string.loading_data), data.getStringExtra("PATH")), Toast.LENGTH_SHORT).show();
-				Intent myIntent = new Intent(this, RetroActivity.class);
-				myIntent.putExtra("ROM", data.getStringExtra("PATH"));
-				myIntent.putExtra("LIBRETRO", libretro_path);
-				myIntent.putExtra("CONFIGFILE", UserPreferences.getDefaultConfigPath(this));
-				myIntent.putExtra("IME", current_ime);
-				startActivityForResult(myIntent, ACTIVITY_RETROARCH);
+			case ACTIVITY_LOAD_ROM: {
+				if (data.getStringExtra("PATH") != null) {
+					UserPreferences.updateConfigFile(this);
+					String current_ime = Settings.Secure.getString(getContentResolver(), Settings.Secure.DEFAULT_INPUT_METHOD);
+					Toast.makeText(this,String.format(getString(R.string.loading_data), data.getStringExtra("PATH")), Toast.LENGTH_SHORT).show();
+					Intent myIntent = new Intent(this, RetroActivity.class);
+					myIntent.putExtra("ROM", data.getStringExtra("PATH"));
+					myIntent.putExtra("LIBRETRO", libretro_path);
+					myIntent.putExtra("CONFIGFILE", UserPreferences.getDefaultConfigPath(this));
+					myIntent.putExtra("IME", current_ime);
+					startActivityForResult(myIntent, ACTIVITY_RETROARCH);
+				}
+				break;
 			}
-			break;
-		}
 		
-		case ACTIVITY_RETROARCH: {
-			Log.i(TAG, "RetroArch finished running.");
-			UserPreferences.readbackConfigFile(this);
-			break;
-		}
-
+			case ACTIVITY_RETROARCH: {
+				Log.i(TAG, "RetroArch finished running.");
+				UserPreferences.readbackConfigFile(this);
+				break;
+			}
 		}
 	}
 
 	@Override
 	protected void onSaveInstanceState(Bundle data) {
 		super.onSaveInstanceState(data);
+		data.putCharSequence("title", getTitle());
 		data.putBoolean("romexec", true);
+	}
+
+	@Override
+	protected void onRestoreInstanceState(Bundle state) {
+		super.onRestoreInstanceState(state);
+
+		if (state != null) {
+			setTitle(state.getCharSequence("title"));
+		}
 	}
 
 	private void loadRomExternal(String rom, String core) {

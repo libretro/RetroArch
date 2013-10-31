@@ -17,22 +17,23 @@ import com.retroarch.R;
 
 final class KeyBindEditText extends EditText
 {
-	KeyBindPreference pref;
+	private KeyBindPreference pref;
+
 	public KeyBindEditText(Context context, AttributeSet attrs) {
 		super(context, attrs);
 	}
-	
+
 	public void setBoundPreference(KeyBindPreference pref)
 	{
 		this.pref = pref;
 	}
-	
+
 	@Override
 	public boolean onKeyPreIme(int keyCode, KeyEvent event)
 	{
 		return pref.onKey(null, event.getKeyCode(), event);
 	}
-	
+
 	@Override
 	public boolean onKeyDown(int keyCode, KeyEvent event)
 	{
