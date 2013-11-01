@@ -21,7 +21,7 @@
 
 #include "rmenu_xui.h"
 
-#include "utils/file_browser.h"
+#include "file_browser.h"
 
 #include "../../console/rarch_console.h"
 
