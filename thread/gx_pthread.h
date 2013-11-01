@@ -56,11 +56,21 @@ static inline int pthread_mutex_unlock(pthread_mutex_t *mutex)
    return LWP_MutexUnlock(*mutex);
 }
 
+static inline void pthread_exit(void *retval)
+{
+   /* FIXME: No LWP equivalent for this? */
+   (void)retval;
+}
+
+static inline int pthread_detach(pthread_t thread)
+{
+   /* FIXME: pthread_detach equivalent missing? */
+   (void)thread;
+}
+
 static inline int pthread_join(pthread_t thread, void **retval)
 {
-   // FIXME: Shouldn't the second arg to LWP_JoinThread take retval?
-   (void)retval;
-   return LWP_JoinThread(thread, NULL);
+   return LWP_JoinThread(thread, retval);
 }
 
 static inline int pthread_mutex_trylock(pthread_mutex_t *mutex)
