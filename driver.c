@@ -440,24 +440,14 @@ retro_proc_address_t driver_get_proc_address(const char *sym)
 void global_init_drivers(void)
 {
    unsigned i;
-   init_drivers_pre(); // Set driver.* function callbacks.
-#if defined(HAVE_RGUI) || defined(HAVE_RMENU) || defined(HAVE_RMENU_XUI)
-   driver.video->start(); // Statically starts video driver. Sets driver.video_data.
-#endif
+   find_audio_driver();
+   find_input_driver();
+   init_video_input();
 
    for(i = 0; i < MAX_PLAYERS; i++)
       if (driver.input->set_keybinds)
          driver.input->set_keybinds(driver.input_data, g_settings.input.device[i], i, 0,
                (1ULL << KEYBINDS_ACTION_SET_DEFAULT_BINDS));
-
-#ifdef HAVE_OVERLAY
-   if (*g_settings.input.overlay)
-   {
-      driver.overlay = input_overlay_new(g_settings.input.overlay);
-      if (!driver.overlay)
-	     RARCH_ERR("Failed to load overlay.\n");
-   }
-#endif
 }
 
 void global_uninit_drivers(void)

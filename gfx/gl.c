@@ -2442,7 +2442,7 @@ static void gl_restart(void)
 #ifdef HAVE_CG
    gl_cg_invalidate_context();
 #endif
-   gl_start();
+   init_video_input();
 }
 #endif
 
