@@ -32,9 +32,7 @@ enum CGBIO_ERROR {
 } // cgc namespace
 
 #include "cgbi.hpp"
-#include "cgbo.hpp"
 #include "nvbi.hpp"
-#include "nvbo.hpp"
 
 namespace cgc {
 namespace bio {
@@ -46,10 +44,8 @@ namespace bio {
 		static void delete_instance();
 
 	    CGBIO_ERROR new_elf_reader( elf_reader** obj ) const;
-	    CGBIO_ERROR new_elf_writer( elf_writer** obj ) const;
 
 	    CGBIO_ERROR new_nvb_reader( nvb_reader** obj ) const;
-	    CGBIO_ERROR new_nvb_writer( nvb_writer** obj ) const;
 
 	    const char *error_string( CGBIO_ERROR error ) const;
 

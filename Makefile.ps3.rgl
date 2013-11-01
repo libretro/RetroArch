@@ -20,7 +20,7 @@ INCDIRS = -I. -Ips3/rgl/include
 
 RGL_DIR = ps3/rgl/src
 
-PPU_SRCS		=  $(RGL_DIR)/libelf/readelf.cpp \
+PPU_SRCS		=  $(RGL_DIR)/libelf/readelf.c \
 			  $(RGL_DIR)/ps3/rgl_ps3_raster.cpp \
 			  $(RGL_DIR)/ps3/rgl_ps3.cpp
 
