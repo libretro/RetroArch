@@ -1,6 +1,0 @@
-Building:
-
-* Put any compiled module libraries in Andretro/jni/modules, the file must be named like libretro_{MODNAME}.so.
-* Ensure a matching libretro_{MODNAME}.so.xml exists in the Andretro/assets directory. The xml file contains basic information used by the file browser before the .so itself is loaded.
-* In the Andretro directory, run the ndk-build script supplied with the Android NDK.
-* In the Andretro directory, run 'ant debug install' to install to the device. The java code can alternatively be built with the included eclipse project.
