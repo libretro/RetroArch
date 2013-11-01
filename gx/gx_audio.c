@@ -40,26 +40,28 @@ typedef struct
    bool nonblock;
 } gx_audio_t;
 
-static gx_audio_t *g_audio;
-
 static void dma_callback(void)
 {
+   gx_audio_t *wa = (gx_audio_t*)driver.audio_data;
    // erase last chunk to avoid repeating audio
-   memset(g_audio->data[g_audio->dma_busy], 0, CHUNK_SIZE);
+   memset(wa->data[wa->dma_busy], 0, CHUNK_SIZE);
 
-   g_audio->dma_busy = g_audio->dma_next;
-   g_audio->dma_next = (g_audio->dma_next + 1) & (BLOCKS - 1);
+   wa->dma_busy = wa->dma_next;
+   wa->dma_next = (wa->dma_next + 1) & (BLOCKS - 1);
 
-   DCFlushRange(g_audio->data[g_audio->dma_next], CHUNK_SIZE);
-   AUDIO_InitDMA((u32)g_audio->data[g_audio->dma_next], CHUNK_SIZE);
+   DCFlushRange(wa->data[wa->dma_next], CHUNK_SIZE);
+   AUDIO_InitDMA((uint32_t)wa->data[wa->dma_next], CHUNK_SIZE);
 
-   LWP_ThreadSignal(g_audio->cond);
+   LWP_ThreadSignal(wa->cond);
 }
 
 static void *gx_audio_init(const char *device, unsigned rate, unsigned latency)
 {
-   if (g_audio)
-      return g_audio;
+   gx_audio_t *wa = (gx_audio_t*)memalign(32, sizeof(*wa));
+   if (!wa)
+      return NULL;
+
+   memset(wa, 0, sizeof(*wa));
 
    AUDIO_Init(NULL);
    AUDIO_RegisterDMACallback(dma_callback);
@@ -75,26 +77,14 @@ static void *gx_audio_init(const char *device, unsigned rate, unsigned latency)
       g_settings.audio.out_rate = 48000;
    }
 
-   if (!g_audio)
-   {
-      g_audio = memalign(32, sizeof(*g_audio));
-      memset(g_audio, 0, sizeof(*g_audio));
-      LWP_InitQueue(&g_audio->cond);
-   }
-   else
-   {
-      memset(g_audio->data, 0, sizeof(g_audio->data));
-      g_audio->dma_busy = g_audio->dma_next = 0;
-      g_audio->write_ptr = 0;
-      g_audio->nonblock = false;
-   }
+   LWP_InitQueue(&wa->cond);
 
-   g_audio->dma_write = BLOCKS - 1;
-   DCFlushRange(g_audio->data, sizeof(g_audio->data));
-   AUDIO_InitDMA((u32)g_audio->data[g_audio->dma_next], CHUNK_SIZE);
+   wa->dma_write = BLOCKS - 1;
+   DCFlushRange(wa->data, sizeof(wa->data));
+   AUDIO_InitDMA((uint32_t)wa->data[wa->dma_next], CHUNK_SIZE);
    AUDIO_StartDMA();
 
-   return g_audio;
+   return wa;
 }
 
 // Wii uses silly R, L, R, L interleaving ...
@@ -141,16 +131,16 @@ static ssize_t gx_audio_write(void *data, const void *buf_, size_t size)
 
 static bool gx_audio_stop(void *data)
 {
-   (void)data;
+   gx_audio_t *wa = (gx_audio_t*)data;
    AUDIO_StopDMA();
-   memset(g_audio->data, 0, sizeof(g_audio->data));
-   DCFlushRange(g_audio->data, sizeof(g_audio->data));
+   memset(wa->data, 0, sizeof(wa->data));
+   DCFlushRange(wa->data, sizeof(wa->data));
    return true;
 }
 
 static void gx_audio_set_nonblock_state(void *data, bool state)
 {
-   gx_audio_t *wa = data;
+   gx_audio_t *wa = (gx_audio_t*)data;
    wa->nonblock = state;
 }
 
@@ -163,21 +153,22 @@ static bool gx_audio_start(void *data)
 
 static void gx_audio_free(void *data)
 {
+   gx_audio_t *wa = (gx_audio_t*)data;
    AUDIO_StopDMA();
    AUDIO_RegisterDMACallback(NULL);
-   if (g_audio && g_audio->cond)
+   if (wa && wa->cond)
    {
-      LWP_CloseQueue(g_audio->cond);
-      g_audio->cond = 0;
+      LWP_CloseQueue(wa->cond);
+      wa->cond = 0;
    }
    if (data)
       free(data);
-   g_audio = NULL;
+   wa = NULL;
 }
 
 static size_t gx_audio_write_avail(void *data)
 {
-   gx_audio_t *wa = data;
+   gx_audio_t *wa = (gx_audio_t*)data;
    return ((wa->dma_busy - wa->dma_write + BLOCKS) & (BLOCKS - 1)) * CHUNK_SIZE;
 }
 
