@@ -691,7 +691,14 @@ static void *xdk_d3d_init(const video_info_t *video, const input_driver_t **inpu
 
    xdk_d3d_set_rotation(d3d, g_settings.video.rotation);
 
-   //really returns driver.video_data to driver.video_data - see comment above
+#if defined(_XBOX1)
+   font_x = 0;
+   font_y = 0;
+#elif defined(_XBOX360)
+   strlcpy(g_settings.video.font_path, "game:\\media\\Arial_12.xpr", sizeof(g_settings.video.font_path));
+#endif
+   d3d->font_ctx = d3d_font_init_first(d3d, g_settings.video.font_path, 0 /* font size - fixed/unused */);
+
    return d3d;
 }
 
@@ -1135,14 +1142,6 @@ static void xdk_d3d_start(void)
 
    xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
    d3d_get_poke_interface(d3d, &driver.video_poke);
-
-#if defined(_XBOX1)
-   font_x = 0;
-   font_y = 0;
-#elif defined(_XBOX360)
-   snprintf(g_settings.video.font_path, sizeof(g_settings.video.font_path), "game:\\media\\Arial_12.xpr");
-#endif
-   d3d->font_ctx = d3d_font_init_first(d3d, g_settings.video.font_path, 0 /* font size - fixed/unused */);
 }
 
 static void xdk_d3d_restart(void)

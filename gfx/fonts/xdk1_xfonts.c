@@ -26,8 +26,7 @@ static bool xfonts_init_font(void *data, const char *font_path, unsigned font_si
 {
    (void)font_path;
    (void)font_size;
-
-   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)data;
+   (void)data;
 
    XFONT_OpenDefaultFont(&debug_font);
    debug_font->SetBkMode(XFONT_TRANSPARENT);
