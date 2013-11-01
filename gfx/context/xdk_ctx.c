@@ -239,8 +239,9 @@ static void gfx_ctx_xdk_destroy(void)
 
 static void gfx_ctx_xdk_input_driver(const input_driver_t **input, void **input_data)
 {
-   *input = NULL;
-   *input_data = NULL;
+   void *xinput = input_xinput.init();
+   *input = xinput ? (const input_driver_t*)&input_xinput : NULL;
+   *input_data = xinput;
 }
 
 static bool gfx_ctx_xdk_bind_api(enum gfx_ctx_api api, unsigned major, unsigned minor)

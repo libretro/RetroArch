@@ -686,6 +686,9 @@ static void *xdk_d3d_init(const video_info_t *video, const input_driver_t **inpu
    xdk_d3d_init_fbo(d3d);
 #endif
 
+   if (input && input_data)
+      d3d->ctx_driver->input_driver(input, input_data);
+
    xdk_d3d_set_rotation(d3d, g_settings.video.rotation);
 
    //really returns driver.video_data to driver.video_data - see comment above
@@ -1128,7 +1131,7 @@ static void xdk_d3d_start(void)
    video_info.fullscreen = true;
    video_info.rgb32 = false;
 
-   driver.video_data = xdk_d3d_init(&video_info, NULL, NULL);
+   driver.video_data = xdk_d3d_init(&video_info, &driver.input, &driver.input_data);
 
    xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
    d3d_get_poke_interface(d3d, &driver.video_poke);

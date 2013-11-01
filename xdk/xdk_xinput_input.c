@@ -28,15 +28,17 @@
 #include "../general.h"
 #include "../libretro.h"
 
-
-static uint64_t state[MAX_PADS];
-
+typedef struct xdk_input
+{
+   uint64_t state[MAX_PADS];
 #ifdef _XBOX1
-static HANDLE gamepads[MAX_PADS];
-static DWORD dwDeviceMask;
-static bool bInserted[MAX_PADS];
-static bool bRemoved[MAX_PADS];
+   HANDLE gamepads[MAX_PADS];
+   DWORD dwDeviceMask;
+   bool bInserted[MAX_PADS];
+   bool bRemoved[MAX_PADS];
 #endif
+} xdk_input_t;
+
 
 const struct platform_bind platform_keys[] = {
    { (1ULL << RETRO_DEVICE_ID_JOYPAD_B), "A button" },
@@ -64,7 +66,7 @@ const struct platform_bind platform_keys[] = {
 
 static void xdk_input_poll(void *data)
 {
-   (void)data;
+   xdk_input_t *xdk = (xdk_input_t*)data;
 
 #if defined(_XBOX1)
    unsigned int dwInsertions, dwRemovals;
@@ -77,33 +79,33 @@ static void xdk_input_poll(void *data)
       XINPUT_CAPABILITIES caps[MAX_PADS];
       (void)caps;
       // handle removed devices
-      bRemoved[i] = (dwRemovals & (1<<i)) ? true : false;
+      xdk->bRemoved[i] = (dwRemovals & (1<<i)) ? true : false;
 
-      if(bRemoved[i])
+      if(xdk->bRemoved[i])
       {
          // if the controller was removed after XGetDeviceChanges but before
          // XInputOpen, the device handle will be NULL
-         if(gamepads[i])
-            XInputClose(gamepads[i]);
+         if(xdk->gamepads[i])
+            XInputClose(xdk->gamepads[i]);
 
-         gamepads[i] = NULL;
-         state[i] = 0;
+         xdk->gamepads[i] = NULL;
+         xdk->state[i] = 0;
       }
 
       // handle inserted devices
-      bInserted[i] = (dwInsertions & (1<<i)) ? true : false;
+      xdk->bInserted[i] = (dwInsertions & (1<<i)) ? true : false;
 
-      if(bInserted[i])
+      if(xdk->bInserted[i])
       {
          XINPUT_POLLING_PARAMETERS m_pollingParameters;
          m_pollingParameters.fAutoPoll = FALSE;
          m_pollingParameters.fInterruptOut = TRUE;
          m_pollingParameters.bInputInterval = 8;
          m_pollingParameters.bOutputInterval = 8;
-         gamepads[i] = XInputOpen(XDEVICE_TYPE_GAMEPAD, i, XDEVICE_NO_SLOT, NULL);
+         xdk->gamepads[i] = XInputOpen(XDEVICE_TYPE_GAMEPAD, i, XDEVICE_NO_SLOT, NULL);
       }
 
-      if (!gamepads[i])
+      if (!xdk->gamepads[i])
          continue;
 
       // if the controller is removed after XGetDeviceChanges but before
@@ -113,17 +115,17 @@ static void xdk_input_poll(void *data)
       XINPUT_STATE state_tmp;
 
 #if defined(_XBOX1)
-      if (XInputPoll(gamepads[i]) != ERROR_SUCCESS)
+      if (XInputPoll(xdk->gamepads[i]) != ERROR_SUCCESS)
          continue;
 
-      if (XInputGetState(gamepads[i], &state_tmp) != ERROR_SUCCESS)
+      if (XInputGetState(xdk->gamepads[i], &state_tmp) != ERROR_SUCCESS)
          continue;
 #elif defined(_XBOX360)
       if (XInputGetState(i, &state_tmp) == ERROR_DEVICE_NOT_CONNECTED)
          continue;
 #endif
 
-      uint64_t *state_cur = &state[i];
+      uint64_t *state_cur = &xdk->state[i];
 
       *state_cur = 0;
       *state_cur |= ((state_tmp.Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_LEFT) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_LEFT) : 0);
@@ -156,7 +158,7 @@ static void xdk_input_poll(void *data)
       *state_cur |= ((state_tmp.Gamepad.wButtons & XINPUT_GAMEPAD_RIGHT_THUMB) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_R3) : 0);
    }
 
-   uint64_t *state_p1 = &state[0];
+   uint64_t *state_p1 = &xdk->state[0];
    uint64_t *lifecycle_state = &g_extern.lifecycle_state;
 
    *lifecycle_state &= ~(
@@ -177,11 +179,11 @@ static int16_t xdk_input_state(void *data, const struct retro_keybind **binds,
       unsigned port, unsigned device,
       unsigned index, unsigned id)
 {
-   (void)data;
+   xdk_input_t *xdk = (xdk_input_t*)data;
    unsigned player = port;
    uint64_t button = binds[player][id].joykey;
 
-   return (state[player] & button) ? 1 : 0;
+   return (xdk->state[player] & button) ? 1 : 0;
 }
 
 static void xdk_input_free_input(void *data)
@@ -234,10 +236,14 @@ static void xdk_input_set_keybinds(void *data, unsigned device,
 
 static void *xdk_input_init(void)
 {
+   xdk_input_t *xdk = (xdk_input_t*)calloc(1, sizeof(*xdk));
+   if (!xdk)
+      return NULL;
+
 #ifdef _XBOX1
    XInitDevices(0, NULL);
 
-   dwDeviceMask = XGetDevices(XDEVICE_TYPE_GAMEPAD);
+   xdk->dwDeviceMask = XGetDevices(XDEVICE_TYPE_GAMEPAD);
 
    //Check the device status
    switch(XGetDeviceEnumerationStatus())
@@ -253,7 +259,7 @@ static void *xdk_input_init(void)
    while(XGetDeviceEnumerationStatus() == XDEVICE_ENUMERATION_BUSY) {}
 #endif
 
-   return (void*)-1;
+   return xdk;
 }
 
 static bool xdk_input_key_pressed(void *data, int key)
