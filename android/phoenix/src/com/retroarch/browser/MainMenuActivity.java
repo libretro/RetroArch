@@ -28,6 +28,33 @@ public final class MainMenuActivity extends PreferenceActivity {
 	private static final String TAG = "MainMenu";
 	private static String libretro_path;
 	private static String libretro_name;
+	
+	private void showGPLWaiver() {
+			AlertDialog.Builder alert = new AlertDialog.Builder(this)
+					.setTitle(R.string.gpl_waiver)
+					.setMessage(R.string.gpl_waiver_desc)
+					.setPositiveButton("Keep", null)
+					.setNegativeButton("Remove non-GPL cores",
+							new DialogInterface.OnClickListener() {
+								@Override
+								public void onClick(DialogInterface dialog, int which) {
+									final File[] libs = new File(getApplicationInfo().dataDir, "/cores").listFiles();
+									for (final File lib : libs) {
+										ModuleWrapper module = new ModuleWrapper(getApplicationContext(), lib);
+										
+										boolean gplv3 = module.getCoreLicense().equals("GPLv3");
+										boolean gplv2 = module.getCoreLicense().equals("GPLv2");
+										
+										if (!gplv3 && !gplv2) {
+											String libName = lib.getName();
+											Log.i("GPL WAIVER", "Deleting non-GPL core" + libName + "...");
+											lib.delete();
+										}
+									}
+								}
+							});
+			alert.show();
+	}
 
 	@Override
 	@SuppressWarnings("deprecation")
@@ -61,6 +88,8 @@ public final class MainMenuActivity extends PreferenceActivity {
 						.setPositiveButton("OK", null);
 				alert.show();
 			}
+			
+			showGPLWaiver();
 		}
 
 		Intent startedByIntent = getIntent();
