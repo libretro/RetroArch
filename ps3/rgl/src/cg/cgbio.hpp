@@ -31,7 +31,6 @@ enum CGBIO_ERROR {
 } // bio namespace
 } // cgc namespace
 
-#include "cgbi.hpp"
 #include "nvbi.hpp"
 
 namespace cgc {
@@ -42,8 +41,6 @@ namespace bio {
 	public:
 	    static const bin_io* instance();
 		static void delete_instance();
-
-	    CGBIO_ERROR new_elf_reader( elf_reader** obj ) const;
 
 	    CGBIO_ERROR new_nvb_reader( nvb_reader** obj ) const;
 
