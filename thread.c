@@ -87,6 +87,7 @@ sthread_t *sthread_create(void (*thread_func)(void*), void *userdata)
 int sthread_detach(sthread_t *thread)
 {
    CloseHandle(thread->thread);
+   free(thread);
    return 0;
 }
 
@@ -95,12 +96,6 @@ void sthread_join(sthread_t *thread)
    WaitForSingleObject(thread->thread, INFINITE);
    CloseHandle(thread->thread);
    free(thread);
-}
-
-/* FIXME - what to do here? */
-void sthread_exit(sthread_t *thread)
-{
-   (void)thread;
 }
 
 struct slock
@@ -237,19 +232,13 @@ sthread_t *sthread_create(void (*thread_func)(void*), void *userdata)
 
 int sthread_detach(sthread_t *thread)
 {
-   (void)thread;
-   return pthread_detach(pthread_self());
+   return pthread_detach(thread->id);
 }
 
 void sthread_join(sthread_t *thread)
 {
    pthread_join(thread->id, NULL);
    free(thread);
-}
-
-void sthread_exit(sthread_t *thread)
-{
-   pthread_exit(NULL);
 }
 
 struct slock

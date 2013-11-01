@@ -1127,7 +1127,7 @@ static void rsnd_thread ( void * thread_data )
 
             /* This thread will not be joined, so detach. */
             sthread_detach(rd->thread.thread);
-            sthread_exit(rd->thread.thread);
+            return;
          }
 
          /* If this was the first write, set the start point for the timer. */
@@ -1173,7 +1173,7 @@ static void rsnd_thread ( void * thread_data )
       else
       {
          scond_signal(rd->thread.cond);
-         sthread_exit(rd->thread.thread);
+         return;
       }
 
    }
@@ -1206,7 +1206,7 @@ static void rsnd_cb_thread(void *thread_data)
             rsnd_reset(rd);
             sthread_detach(rd->thread.thread);
             rd->error_callback(rd->cb_data);
-            sthread_exit(rd->thread.thread);
+            return;
          }
 
          has_read += ret;
@@ -1235,7 +1235,7 @@ static void rsnd_cb_thread(void *thread_data)
          rsnd_reset(rd);
          sthread_detach(rd->thread.thread);
          rd->error_callback(rd->cb_data);
-         sthread_exit(rd->thread.thread);
+         return;
       }
 
       /* If this was the first write, set the start point for the timer. */
@@ -1256,7 +1256,6 @@ static void rsnd_cb_thread(void *thread_data)
       if (rd->has_written)
          rsd_delay_wait(rd);
    }
-   sthread_exit(rd->thread.thread);
 }
 
 static int rsnd_reset(rsound_t *rd)
