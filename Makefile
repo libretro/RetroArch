@@ -113,8 +113,9 @@ ifeq ($(HAVE_COMMAND), 1)
 endif
 
 ifeq ($(HAVE_RSOUND), 1)
-   OBJ += audio/librsound.o audio/rsound.o
-   DEFINES += -DHAVE_RSOUND
+   OBJ += audio/rsound.o
+   DEFINES += $(RSOUND_CFLAGS)
+   LIBS += $(RSOUND_LIBS)
 endif
 
 ifeq ($(HAVE_OSS), 1)
