@@ -21,7 +21,6 @@
 #include <poll.h>
 #include <sched.h>
 
-#include <android/configuration.h>
 #include <android/looper.h>
 #include <android/native_activity.h>
 #include <android/window.h>
@@ -31,7 +30,6 @@
 struct android_app
 {
    ANativeActivity* activity;
-   AConfiguration* config;
 
    ALooper* looper;
    AInputQueue* inputQueue;

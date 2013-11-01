@@ -32,33 +32,6 @@
 
 struct android_app *g_android;
 
-static void print_cur_config (void *data)
-{
-   struct android_app *android_app = (struct android_app*)data;
-   char lang[2], country[2];
-   AConfiguration_getLanguage(android_app->config, lang);
-   AConfiguration_getCountry(android_app->config, country);
-
-   RARCH_LOG("Config: mcc=%d mnc=%d lang=%c%c cnt=%c%c orien=%d touch=%d dens=%d "
-         "keys=%d nav=%d keysHid=%d navHid=%d sdk=%d size=%d long=%d "
-         "modetype=%d modenight=%d\n",
-         AConfiguration_getMcc(android_app->config),
-         AConfiguration_getMnc(android_app->config),
-         lang[0], lang[1], country[0], country[1],
-         AConfiguration_getOrientation(android_app->config),
-         AConfiguration_getTouchscreen(android_app->config),
-         AConfiguration_getDensity(android_app->config),
-         AConfiguration_getKeyboard(android_app->config),
-         AConfiguration_getNavigation(android_app->config),
-         AConfiguration_getKeysHidden(android_app->config),
-         AConfiguration_getNavHidden(android_app->config),
-         AConfiguration_getSdkVersion(android_app->config),
-         AConfiguration_getScreenSize(android_app->config),
-         AConfiguration_getScreenLong(android_app->config),
-         AConfiguration_getUiModeType(android_app->config),
-         AConfiguration_getUiModeNight(android_app->config));
-}
-
 static bool android_run_events (void *data)
 {
    int id = ALooper_pollOnce(-1, NULL, NULL, NULL);
@@ -164,11 +137,6 @@ static bool android_app_start_main(struct android_app *android_app)
 static void android_app_entry(void *data)
 {
    struct android_app* android_app = (struct android_app*)data;
-
-   android_app->config = AConfiguration_new();
-   AConfiguration_fromAssetManager(android_app->config, android_app->activity->assetManager);
-
-   print_cur_config(android_app);
 
    ALooper* looper = ALooper_prepare(ALOOPER_PREPARE_ALLOW_NON_CALLBACKS);
    ALooper_addFd(looper, android_app->msgread, LOOPER_ID_MAIN, ALOOPER_EVENT_INPUT, NULL, NULL);
@@ -290,7 +258,6 @@ exit:
    RARCH_LOG("android_app_destroy!");
    if (android_app->inputQueue != NULL)
       AInputQueue_detachLooper(android_app->inputQueue);
-   AConfiguration_delete(android_app->config);
 
    // exit() here is nasty.
    // pthread_exit(NULL) or return NULL; causes hanging ...
