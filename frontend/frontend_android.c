@@ -199,8 +199,6 @@ static void android_app_entry(void *data)
       }
       else if (g_extern.lifecycle_mode_state & (1ULL << MODE_GAME))
       {
-         driver.input->poll(NULL);
-
          if (driver.video_poke->set_aspect_ratio)
             driver.video_poke->set_aspect_ratio(driver.video_data, g_settings.video.aspect_ratio_idx);
 

@@ -38,11 +38,14 @@
 
 #define MAX_PADS 4
 
-static u32 pad_connect[MAX_PADS];
-static u32 pad_type[MAX_PADS];
-static u32 pad_detect_pending[MAX_PADS];
-static uint64_t pad_state[MAX_PADS];
-static int16_t analog_state[MAX_PADS][2][2];
+typedef struct gx_input
+{
+   uint32_t pad_connect[MAX_PADS];
+   uint32_t pad_type[MAX_PADS];
+   uint32_t pad_detect_pending[MAX_PADS];
+   uint64_t pad_state[MAX_PADS];
+   int16_t analog_state[MAX_PADS][2][2];
+} gx_input_t;
 
 const struct platform_bind platform_keys[] = {
    { GX_GC_A, "GC A button" },
@@ -107,7 +110,7 @@ static int16_t gx_input_state(void *data, const struct retro_keybind **binds,
       unsigned port, unsigned device,
       unsigned index, unsigned id)
 {
-   (void)data;
+   gx_input_t *gx = (gx_input_t*)data;
 
    if (port >= MAX_PADS)
       return 0;
@@ -115,9 +118,9 @@ static int16_t gx_input_state(void *data, const struct retro_keybind **binds,
    switch (device)
    {
       case RETRO_DEVICE_JOYPAD:
-         return (binds[port][id].joykey & pad_state[port]) ? 1 : 0;
+         return (binds[port][id].joykey & gx->pad_state[port]) ? 1 : 0;
       case RETRO_DEVICE_ANALOG:
-         return analog_state[port][index][id];
+         return gx->analog_state[port][index][id];
       default:
          return 0;
    }
@@ -143,6 +146,7 @@ static void power_callback(void)
 static void gx_input_set_keybinds(void *data, unsigned device, unsigned port,
       unsigned id, unsigned keybind_action)
 {
+   gx_input_t *gx = (gx_input_t*)data;
    uint64_t *key = &g_settings.input.binds[port][id].joykey;
    size_t arr_size = sizeof(platform_keys) / sizeof(platform_keys[0]);
 
@@ -267,16 +271,20 @@ static void gx_input_set_keybinds(void *data, unsigned device, unsigned port,
       }
    }
 
-   pad_detect_pending[port] = 1;
+   gx->pad_detect_pending[port] = 1;
 }
 
 static void *gx_input_init(void)
 {
+   gx_input_t *gx = (gx_input_t*)calloc(1, sizeof(*gx));
+   if (!gx)
+      return NULL;
+
    for (unsigned i = 0; i < MAX_PADS; i++)
    {
-      pad_connect[i] = 0;
-      pad_type[i] = 0;
-      pad_detect_pending[i] = 1;
+      gx->pad_connect[i] = 0;
+      gx->pad_type[i] = 0;
+      gx->pad_detect_pending[i] = 1;
    }
 
    PAD_Init();
@@ -288,21 +296,21 @@ static void *gx_input_init(void)
    SYS_SetPowerCallback(power_callback);
 #endif
 
-   return (void*)-1;
+   return gx;
 }
 
 static void gx_input_poll(void *data)
 {
-   (void)data;
+   gx_input_t *gx = (gx_input_t*)data;
 
-   pad_state[0] = 0;
-   pad_state[1] = 0;
-   pad_state[2] = 0;
-   pad_state[3] = 0;
-   analog_state[0][0][0] = analog_state[0][0][1] = analog_state[0][1][0] = analog_state[0][1][1] = 0;
-   analog_state[1][0][0] = analog_state[1][0][1] = analog_state[1][1][0] = analog_state[1][1][1] = 0;
-   analog_state[2][0][0] = analog_state[2][0][1] = analog_state[2][1][0] = analog_state[2][1][1] = 0;
-   analog_state[3][0][0] = analog_state[3][0][1] = analog_state[3][1][0] = analog_state[3][1][1] = 0;
+   gx->pad_state[0] = 0;
+   gx->pad_state[1] = 0;
+   gx->pad_state[2] = 0;
+   gx->pad_state[3] = 0;
+   gx->analog_state[0][0][0] = gx->analog_state[0][0][1] = gx->analog_state[0][1][0] = gx->analog_state[0][1][1] = 0;
+   gx->analog_state[1][0][0] = gx->analog_state[1][0][1] = gx->analog_state[1][1][0] = gx->analog_state[1][1][1] = 0;
+   gx->analog_state[2][0][0] = gx->analog_state[2][0][1] = gx->analog_state[2][1][0] = gx->analog_state[2][1][1] = 0;
+   gx->analog_state[3][0][0] = gx->analog_state[3][0][1] = gx->analog_state[3][1][0] = gx->analog_state[3][1][1] = 0;
 
    PAD_ScanPads();
 
@@ -313,18 +321,18 @@ static void gx_input_poll(void *data)
    for (unsigned port = 0; port < MAX_PADS; port++)
    {
       uint32_t down = 0;
-      uint64_t *state_cur = &pad_state[port];
+      uint64_t *state_cur = &gx->pad_state[port];
 
 #ifdef HW_RVL
-      if (pad_detect_pending[port])
+      if (gx->pad_detect_pending[port])
       {
-         u32 *ptype = &pad_type[port];
-         pad_connect[port] = WPAD_Probe(port, ptype);
-         pad_detect_pending[port] = 0;
+         uint32_t *ptype = &gx->pad_type[port];
+         gx->pad_connect[port] = WPAD_Probe(port, ptype);
+         gx->pad_detect_pending[port] = 0;
       }
 
-      uint32_t connected = pad_connect[port];
-      uint32_t type = pad_type[port];
+      uint32_t connected = gx->pad_connect[port];
+      uint32_t type = gx->pad_type[port];
       
       if (connected == WPAD_ERR_NONE)
       {
@@ -393,10 +401,10 @@ static void gx_input_poll(void *data)
             int16_t rs_x = (int16_t)(rjs_val_x * 32767.0f);
             int16_t rs_y = (int16_t)(rjs_val_y * 32767.0f);
 
-            analog_state[port][RETRO_DEVICE_INDEX_ANALOG_LEFT][RETRO_DEVICE_ID_ANALOG_X] = ls_x;
-            analog_state[port][RETRO_DEVICE_INDEX_ANALOG_LEFT][RETRO_DEVICE_ID_ANALOG_Y] = ls_y;
-            analog_state[port][RETRO_DEVICE_INDEX_ANALOG_RIGHT][RETRO_DEVICE_ID_ANALOG_X] = rs_x;
-            analog_state[port][RETRO_DEVICE_INDEX_ANALOG_RIGHT][RETRO_DEVICE_ID_ANALOG_Y] = rs_y;
+            gx->analog_state[port][RETRO_DEVICE_INDEX_ANALOG_LEFT][RETRO_DEVICE_ID_ANALOG_X] = ls_x;
+            gx->analog_state[port][RETRO_DEVICE_INDEX_ANALOG_LEFT][RETRO_DEVICE_ID_ANALOG_Y] = ls_y;
+            gx->analog_state[port][RETRO_DEVICE_INDEX_ANALOG_RIGHT][RETRO_DEVICE_ID_ANALOG_X] = rs_x;
+            gx->analog_state[port][RETRO_DEVICE_INDEX_ANALOG_RIGHT][RETRO_DEVICE_ID_ANALOG_Y] = rs_y;
          }
          else if (type == WPAD_EXP_NUNCHUK)
          {
@@ -423,8 +431,8 @@ static void gx_input_poll(void *data)
             int16_t x = (int16_t)(js_val_x * 32767.0f);
             int16_t y = (int16_t)(js_val_y * 32767.0f);
 
-            analog_state[port][RETRO_DEVICE_INDEX_ANALOG_LEFT][RETRO_DEVICE_ID_ANALOG_X] = x;
-            analog_state[port][RETRO_DEVICE_INDEX_ANALOG_LEFT][RETRO_DEVICE_ID_ANALOG_Y] = y;
+            gx->analog_state[port][RETRO_DEVICE_INDEX_ANALOG_LEFT][RETRO_DEVICE_ID_ANALOG_X] = x;
+            gx->analog_state[port][RETRO_DEVICE_INDEX_ANALOG_LEFT][RETRO_DEVICE_ID_ANALOG_Y] = y;
          }
       }
 #endif
@@ -451,17 +459,17 @@ static void gx_input_poll(void *data)
          int16_t rs_x = (int16_t)PAD_SubStickX(port) * 256;
          int16_t rs_y = (int16_t)PAD_SubStickY(port) * -256;
 
-         analog_state[port][RETRO_DEVICE_INDEX_ANALOG_LEFT][RETRO_DEVICE_ID_ANALOG_X] = ls_x;
-         analog_state[port][RETRO_DEVICE_INDEX_ANALOG_LEFT][RETRO_DEVICE_ID_ANALOG_Y] = ls_y;
-         analog_state[port][RETRO_DEVICE_INDEX_ANALOG_RIGHT][RETRO_DEVICE_ID_ANALOG_X] = rs_x;
-         analog_state[port][RETRO_DEVICE_INDEX_ANALOG_RIGHT][RETRO_DEVICE_ID_ANALOG_Y] = rs_y;
+         gx->analog_state[port][RETRO_DEVICE_INDEX_ANALOG_LEFT][RETRO_DEVICE_ID_ANALOG_X] = ls_x;
+         gx->analog_state[port][RETRO_DEVICE_INDEX_ANALOG_LEFT][RETRO_DEVICE_ID_ANALOG_Y] = ls_y;
+         gx->analog_state[port][RETRO_DEVICE_INDEX_ANALOG_RIGHT][RETRO_DEVICE_ID_ANALOG_X] = rs_x;
+         gx->analog_state[port][RETRO_DEVICE_INDEX_ANALOG_RIGHT][RETRO_DEVICE_ID_ANALOG_Y] = rs_y;
 
          if ((*state_cur & (GX_GC_START | GX_GC_Z_TRIGGER | GX_GC_L_TRIGGER | GX_GC_R_TRIGGER)) == (GX_GC_START | GX_GC_Z_TRIGGER | GX_GC_L_TRIGGER | GX_GC_R_TRIGGER))
             *state_cur |= GX_WIIMOTE_HOME;
       }
    }
 
-   uint64_t *state_p1 = &pad_state[0];
+   uint64_t *state_p1 = &gx->pad_state[0];
    uint64_t *lifecycle_state = &g_extern.lifecycle_state;
 
    *lifecycle_state &= ~(

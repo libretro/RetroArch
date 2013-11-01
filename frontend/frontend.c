@@ -180,9 +180,6 @@ returntype main_entry(signature())
       }
       else if (g_extern.lifecycle_mode_state & (1ULL << MODE_GAME))
       {
-#if defined(RARCH_CONSOLE) || defined(ANDROID)
-         driver.input->poll(NULL);
-#endif
          if (driver.video_poke->set_aspect_ratio)
             driver.video_poke->set_aspect_ratio(driver.video_data, g_settings.video.aspect_ratio_idx);
 

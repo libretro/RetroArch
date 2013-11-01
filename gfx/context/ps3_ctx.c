@@ -292,8 +292,9 @@ static void gfx_ctx_destroy(void)
 
 static void gfx_ctx_input_driver(const input_driver_t **input, void **input_data)
 {
-   *input = NULL;
-   *input_data = NULL;
+   void *ps3input = input_ps3.init();
+   *input = ps3input ? &input_ps3 : NULL;
+   *input_data = ps3input;
 }
 
 static bool gfx_ctx_bind_api(enum gfx_ctx_api api, unsigned major, unsigned minor)

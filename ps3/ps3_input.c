@@ -59,16 +59,19 @@ const struct platform_bind platform_keys[] = {
    { (1ULL << RETRO_DEVICE_ID_JOYPAD_R3), "R3 button" },
 };
 
-static uint64_t state[MAX_PADS];
-static unsigned pads_connected;
+typedef struct ps3_input
+{
+   uint64_t state[MAX_PADS];
+   unsigned pads_connected;
 #ifdef HAVE_MOUSE
-static unsigned mice_connected;
+   unsigned mice_connected;
 #endif
+} ps3_input_t;
 
 static void ps3_input_poll(void *data)
 {
    CellPadInfo2 pad_info;
-   (void)data;
+   ps3_input_t *ps3 = (ps3_input_t*)data;
 
    for (unsigned i = 0; i < MAX_PADS; i++)
    {
@@ -77,7 +80,7 @@ static void ps3_input_poll(void *data)
 
       if (state_tmp.len != 0)
       {
-         uint64_t *state_cur = &state[i];
+         uint64_t *state_cur = &ps3->state[i];
          *state_cur = 0;
 #ifdef __PSL1GHT__
          *state_cur |= (state_tmp.BTN_LEFT)     ? (1ULL << RETRO_DEVICE_ID_JOYPAD_LEFT) : 0;
@@ -117,7 +120,7 @@ static void ps3_input_poll(void *data)
       }
    }
 
-   uint64_t *state_p1 = &state[0];
+   uint64_t *state_p1 = &ps3->state[0];
    uint64_t *lifecycle_state = &g_extern.lifecycle_state;
 
    *lifecycle_state &= ~(
@@ -134,11 +137,11 @@ static void ps3_input_poll(void *data)
       *lifecycle_state |= (1ULL << RARCH_MENU_TOGGLE);
 
    cellPadGetInfo2(&pad_info);
-   pads_connected = pad_info.now_connect; 
+   ps3->pads_connected = pad_info.now_connect; 
 #ifdef HAVE_MOUSE
    CellMouseInfo mouse_info;
    cellMouseGetInfo(&mouse_info);
-   mice_connected = mouse_info.now_connect;
+   ps3->mice_connected = mouse_info.now_connect;
 #endif
 }
 
@@ -146,19 +149,20 @@ static void ps3_input_poll(void *data)
 
 static int16_t ps3_mouse_device_state(void *data, unsigned player, unsigned id)
 {
+   ps3_input_t *ps3 = (ps3_input_t*)data;
    CellMouseData mouse_state;
    cellMouseGetData(id, &mouse_state);
 
    switch (id)
    {
       case RETRO_DEVICE_ID_MOUSE_LEFT:
-         return (!mice_connected ? 0 : mouse_state.buttons & CELL_MOUSE_BUTTON_1);
+         return (!ps3->mice_connected ? 0 : mouse_state.buttons & CELL_MOUSE_BUTTON_1);
       case RETRO_DEVICE_ID_MOUSE_RIGHT:
-         return (!mice_connected ? 0 : mouse_state.buttons & CELL_MOUSE_BUTTON_2);
+         return (!ps3->mice_connected ? 0 : mouse_state.buttons & CELL_MOUSE_BUTTON_2);
       case RETRO_DEVICE_ID_MOUSE_X:
-         return (!mice_connected ? 0 : mouse_state.x_axis);
+         return (!ps3->mice_connected ? 0 : mouse_state.x_axis);
       case RETRO_DEVICE_ID_MOUSE_Y:
-         return (!mice_connected ? 0 : mouse_state.y_axis);
+         return (!ps3->mice_connected ? 0 : mouse_state.y_axis);
       default:
          return 0;
    }
@@ -170,18 +174,18 @@ static int16_t ps3_input_state(void *data, const struct retro_keybind **binds,
       unsigned port, unsigned device,
       unsigned index, unsigned id)
 {
-   (void)data;
+   ps3_input_t *ps3 = (ps3_input_t*)data;
 
    unsigned player = port;
    uint64_t button = binds[player][id].joykey;
    int16_t retval = 0;
 
-   if (player < pads_connected)
+   if (player < ps3->pads_connected)
    {
       switch (device)
       {
          case RETRO_DEVICE_JOYPAD:
-            retval = (state[player] & button) ? 1 : 0;
+            retval = (ps3->state[player] & button) ? 1 : 0;
             break;
 #ifdef HAVE_MOUSE
          case RETRO_DEVICE_MOUSE:
@@ -298,16 +302,20 @@ do_deinit:
 
 static void ps3_input_free_input(void *data)
 {
-   (void)data;
+   if (!data)
+      return;
+
    //cellPadEnd();
+#ifdef HAVE_MOUSE
    //cellMouseEnd();
+#endif
 }
 
 static void ps3_input_set_keybinds(void *data, unsigned device,
       unsigned port, unsigned id, unsigned keybind_action)
 {
    uint64_t *key = &g_settings.input.binds[port][id].joykey;
-   uint64_t joykey = *key;
+   //uint64_t joykey = *key;
    size_t arr_size = sizeof(platform_keys) / sizeof(platform_keys[0]);
 
    (void)device;
@@ -348,12 +356,16 @@ static void ps3_input_set_keybinds(void *data, unsigned device,
 
 static void* ps3_input_init(void)
 {
+   ps3_input_t *ps3 = (ps3_input_t*)calloc(1, sizeof(*ps3));
+   if (!ps3)
+      return NULL;
+
    cellPadInit(MAX_PADS);
 #ifdef HAVE_MOUSE
    cellMouseInit(MAX_MICE);
 #endif
 
-   return (void*)-1;
+   return ps3;
 }
 
 static bool ps3_input_key_pressed(void *data, int key)

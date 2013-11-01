@@ -2425,7 +2425,7 @@ static void gl_start(void)
       video_info.height = g_extern.console.screen.viewports.custom_vp.height;
    }
 
-   driver.video_data = gl_init(&video_info, NULL, NULL);
+   driver.video_data = gl_init(&video_info, &driver.input, &driver.input_data);
 
    gl_t *gl = (gl_t*)driver.video_data;
    gl_get_poke_interface(gl, &driver.video_poke);

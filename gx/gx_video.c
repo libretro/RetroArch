@@ -454,6 +454,11 @@ static void *gx_init(const video_info_t *video,
    gx_video_t *gx = (gx_video_t*)calloc(1, sizeof(gx_video_t));
    if (!gx)
       return NULL;
+
+   void *gxinput = input_gx.init();
+   *input = gxinput ? &input_gx : NULL;
+   *input_data = gxinput;
+
    return gx;
 }
 
@@ -465,7 +470,7 @@ static void gx_start(void)
 
    video_info.vsync = g_settings.video.vsync;
 
-   driver.video_data = gx_init(&video_info, NULL, NULL);
+   driver.video_data = gx_init(&video_info, &driver.input, &driver.input_data);
 
    VIDEO_Init();
    GX_Init(gx_fifo, sizeof(gx_fifo));

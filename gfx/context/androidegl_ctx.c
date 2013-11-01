@@ -217,8 +217,9 @@ static bool gfx_ctx_set_video_mode(
 
 static void gfx_ctx_input_driver(const input_driver_t **input, void **input_data)
 {
-   *input = NULL;
-   *input_data = NULL;
+   void *androidinput = input_android.init();
+   *input = androidinput ? &input_android : NULL;
+   *input_data = androidinput;
 }
 
 static unsigned gfx_ctx_get_resolution_width(unsigned resolution_id)

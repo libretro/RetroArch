@@ -444,7 +444,6 @@ void global_init_drivers(void)
 #if defined(HAVE_RGUI) || defined(HAVE_RMENU) || defined(HAVE_RMENU_XUI)
    driver.video->start(); // Statically starts video driver. Sets driver.video_data.
 #endif
-   driver.input_data = driver.input->init();
 
    for(i = 0; i < MAX_PLAYERS; i++)
       if (driver.input->set_keybinds)
@@ -464,9 +463,7 @@ void global_init_drivers(void)
 void global_uninit_drivers(void)
 {
    if (driver.video_data)
-   {
       driver.video_data = NULL;
-   }
 
    if (driver.input_data)
    {
