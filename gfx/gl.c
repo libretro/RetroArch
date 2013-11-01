@@ -1700,6 +1700,13 @@ static bool resolve_extensions(gl_t *gl)
       RARCH_WARN("[GL]: GLES implementation does not have BGRA8888 extension.\n"
                  "32-bit path will require conversion.\n");
    }
+
+   gl->support_unpack_row_length = false;
+   if (gl_query_extension(gl, "GL_EXT_unpack_subimage"))
+   {
+      RARCH_LOG("[GL]: Extension GL_EXT_unpack_subimage, can copy textures faster using UNPACK_ROW_LENGTH.\n");
+      gl->support_unpack_row_length = true;
+   }
 #endif
 
 #ifdef GL_DEBUG
@@ -2151,23 +2158,14 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    if (input && input_data)
       context_input_driver_func(input, input_data);
    
-#if !defined(RARCH_CONSOLE)
-   // Comes too early for console - moved to gl_start
    if (g_settings.video.font_enable)
-      gl->font_ctx = gl_font_init_first(gl, g_settings.video.font_path, g_settings.video.font_size);
-#endif
+   {
+      gl->font_ctx = gl_font_init_first(gl, g_settings.video.font_path, g_settings.video.font_size,
+            gl->win_width, gl->win_height);
+   }
 
 #if !defined(HAVE_OPENGLES) && defined(HAVE_FFMPEG)
    gl_init_pbo_readback(gl);
-#endif
-
-#if defined(HAVE_OPENGLES)
-   gl->support_unpack_row_length = false;
-   if (gl_query_extension(gl, "GL_EXT_unpack_subimage"))
-   {
-      RARCH_LOG("[GL]: Extension GL_EXT_unpack_subimage, can copy textures faster using UNPACK_ROW_LENGTH.\n");
-      gl->support_unpack_row_length = true;
-   }
 #endif
 
    if (!gl_check_error())
@@ -2429,9 +2427,6 @@ static void gl_start(void)
 
    gl_t *gl = (gl_t*)driver.video_data;
    gl_get_poke_interface(gl, &driver.video_poke);
-
-   // Comes too early for console - moved to gl_start
-   gl->font_ctx = gl_font_init_first(gl, g_settings.video.font_path, g_settings.video.font_size);
 }
 
 static void gl_restart(void)

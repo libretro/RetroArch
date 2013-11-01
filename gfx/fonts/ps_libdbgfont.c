@@ -32,7 +32,8 @@
 #define DbgFontExit cellDbgFontExit
 #endif
 
-static bool gl_init_font(void *data, const char *font_path, float font_size)
+static bool gl_init_font(void *data, const char *font_path, float font_size,
+      unsigned win_width, unsigned win_height)
 {
    (void)font_path;
    (void)font_size;
@@ -45,12 +46,9 @@ static bool gl_init_font(void *data, const char *font_path, float font_size)
 #if defined(SN_TARGET_PSP2)
    cfg.fontSize     = SCE_DBGFONT_FONTSIZE_LARGE;
 #elif defined(__CELLOS_LV2__)
-   // FIXME - We need to do init_font_first in gl_start because of this
-   gl_t *gl = (gl_t*)driver.video_data;
-
    cfg.bufSize      = SCE_DBGFONT_BUFSIZE_LARGE;
-   cfg.screenWidth  = gl->win_width;
-   cfg.screenHeight = gl->win_height;
+   cfg.screenWidth  = win_width;
+   cfg.screenHeight = win_height;
 #endif
 
    DbgFontInit(&cfg);

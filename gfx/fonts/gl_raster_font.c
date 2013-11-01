@@ -18,9 +18,12 @@
 #include "../gl_common.h"
 #include "../shader_common.h"
 
-static bool gl_init_font(void *data, const char *font_path, float font_size)
+static bool gl_init_font(void *data, const char *font_path, float font_size, unsigned win_width, unsigned win_height)
 {
    size_t i, j;
+   (void)win_width;
+   (void)win_height;
+
    if (!g_settings.video.font_enable)
       return false;
 
