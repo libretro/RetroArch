@@ -50,15 +50,14 @@ static void jni_get (void *data_in, void *data_out)
 {
    struct jni_params *in_params = (struct jni_params*)data_in;
    struct jni_out_params_char *out_args = (struct jni_out_params_char*)data_out;
-   char obj_method_name[128];
-   char obj_method_signature[128];
+   char obj_method_name[128], obj_method_signature[128];
    jclass class_ptr = NULL;
    jobject obj = NULL;
    jmethodID giid = NULL;
    jstring ret_char;
 
-   snprintf(obj_method_name, sizeof(obj_method_name), "getStringExtra");
-   snprintf(obj_method_signature, sizeof(obj_method_signature), "(Ljava/lang/String;)Ljava/lang/String;");
+   strlcpy(obj_method_name, "getStringExtra", sizeof(obj_method_name));
+   strlcpy(obj_method_signature, "(Ljava/lang/String;)Ljava/lang/String;", sizeof(obj_method_signature));
 
    GET_OBJECT_CLASS(in_params->env, class_ptr, in_params->class_obj);
    GET_METHOD_ID(in_params->env, giid, class_ptr, in_params->method_name, in_params->method_signature);
@@ -72,7 +71,7 @@ static void jni_get (void *data_in, void *data_out)
    if (giid != NULL && ret_char)
    {
       const char *test_argv = (*in_params->env)->GetStringUTFChars(in_params->env, ret_char, 0);
-      strncpy(out_args->out, test_argv, out_args->out_sizeof);
+      strlcpy(out_args->out, test_argv, out_args->out_sizeof);
       (*in_params->env)->ReleaseStringUTFChars(in_params->env, ret_char, test_argv);
    }
 }
@@ -319,7 +318,6 @@ static void onDestroy(ANativeActivity* activity)
    RARCH_LOG("Destroy: %p\n", activity);
    struct android_app* android_app = (struct android_app*)activity->instance;
 
-   RARCH_LOG("Joining with RetroArch thread.\n");
    sthread_join(android_app->thread);
    RARCH_LOG("Joined with RetroArch thread.\n");
 
@@ -438,7 +436,7 @@ void ANativeActivity_onCreate(ANativeActivity* activity,
       android_app->msgread = msgpipe[0];
       android_app->msgwrite = msgpipe[1];
 
-      android_app->thread = sthread_create(android_app_entry, android_app);
+      android_app->thread = (sthread_t*)sthread_create(android_app_entry, android_app);
 
       // Wait for thread to start.
       slock_lock(android_app->mutex);
