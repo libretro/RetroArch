@@ -90,25 +90,25 @@ static void retrace_callback(u32 retrace_count)
    LWP_ThreadSignal(g_video_cond);
 }
 
-void gx_set_video_mode(unsigned fbWidth, unsigned lines)
+void gx_set_video_mode(void *data, unsigned fbWidth, unsigned lines)
 {
-   u32 level;
-   _CPU_ISR_Disable(level);
+   unsigned modetype, level, viHeightMultiplier, viWidth, tvmode,
+            max_width, max_height, i;
+   bool progressive;
+   gx_video_t *gx = (gx_video_t*)data;
 #ifdef GX_OPTS
    struct __gx_regdef *__gx = (struct __gx_regdef*)__gxregs;
 #endif
+   _CPU_ISR_Disable(level);
    VIDEO_SetBlack(true);
    VIDEO_Flush();
-   gx_video_t *gx = (gx_video_t*)driver.video_data;
-   unsigned modetype;
-   unsigned viHeightMultiplier = 1;
-   unsigned viWidth = 640;
+   viHeightMultiplier = 1;
+   viWidth = 640;
 #if defined(HW_RVL)
    if (CONF_GetAspectRatio() == CONF_ASPECT_16_9)
       viWidth = 678;
 
-   bool progressive = CONF_GetProgressiveScan() > 0 && VIDEO_HaveComponentCable();
-   unsigned tvmode;
+   progressive = CONF_GetProgressiveScan() > 0 && VIDEO_HaveComponentCable();
    switch (CONF_GetVideo())
    {
       case CONF_VIDEO_PAL:
@@ -125,10 +125,9 @@ void gx_set_video_mode(unsigned fbWidth, unsigned lines)
          break;
    }
 #else
-   bool progressive = VIDEO_HaveComponentCable();
-   unsigned tvmode = VIDEO_GetCurrentTvMode();
+   progressive = VIDEO_HaveComponentCable();
+   tvmode = VIDEO_GetCurrentTvMode();
 #endif
-   unsigned max_width, max_height;
    switch (tvmode)
    {
       case VI_PAL:
@@ -193,7 +192,7 @@ void gx_set_video_mode(unsigned fbWidth, unsigned lines)
    gx_mode.field_rendering = GX_FALSE;
    gx_mode.aa = GX_FALSE;
 
-   for (unsigned i = 0; i < 12; i++)
+   for (i = 0; i < 12; i++)
       gx_mode.sample_pattern[i][0] = gx_mode.sample_pattern[i][1] = 6;
 
    if (modetype == VI_INTERLACE)
@@ -300,7 +299,7 @@ static void gx_set_aspect_ratio(void *data, unsigned aspect_ratio_idx)
    gx->should_resize = true;
 }
 
-static void setup_video_mode(void)
+static void setup_video_mode(void *data)
 {
    for (unsigned i = 0; i < 2; i++)
       g_framebuf[i] = MEM_K0_TO_K1(memalign(32, 640 * 576 * VI_DISPLAY_PIX_SZ));
@@ -311,17 +310,17 @@ static void setup_video_mode(void)
    LWP_InitQueue(&g_video_cond);
 
    VIDEO_GetPreferredMode(&gx_mode);
-   gx_set_video_mode(0, 0);
+   gx_set_video_mode(data, 0, 0);
 }
 
-static void init_texture(unsigned width, unsigned height)
+static void init_texture(void *data, unsigned width, unsigned height)
 {
 #ifdef GX_OPTS
    struct __gx_regdef *__gx = (struct __gx_regdef*)__gxregs;
 #endif
    width &= ~3;
    height &= ~3;
-   gx_video_t *gx = (gx_video_t*)driver.video_data;
+   gx_video_t *gx = (gx_video_t*)data;
    unsigned g_filter = g_settings.video.smooth ? GX_LINEAR : GX_NEAR;
 
    GX_InitTexObj(&g_tex.obj, g_tex.data, width, height, (gx->rgb32) ? GX_TF_RGBA8 : gx->rgui_texture_enable ? GX_TF_RGB5A3 : GX_TF_RGB565, GX_CLAMP, GX_CLAMP, GX_FALSE);
@@ -331,7 +330,7 @@ static void init_texture(unsigned width, unsigned height)
    GX_InvalidateTexAll();
 }
 
-static void init_vtx(void)
+static void init_vtx(void *data)
 {
    GX_SetCullMode(GX_CULL_NONE);
    GX_SetClipMode(GX_CLIP_DISABLE);
@@ -364,7 +363,7 @@ static void init_vtx(void)
    g_tex.data = memalign(32, 4 * 4 * 4);
    memset(g_tex.data, 0, 4 * 4 * 4);
    DCFlushRange(g_tex.data, 4 * 4 * 4);
-   init_texture(4, 4); // for menu texture
+   init_texture(data, 4, 4); // for menu texture
    GX_Flush();
 }
 
@@ -459,6 +458,18 @@ static void *gx_init(const video_info_t *video,
    *input = gxinput ? &input_gx : NULL;
    *input_data = gxinput;
 
+   VIDEO_Init();
+   GX_Init(gx_fifo, sizeof(gx_fifo));
+
+   setup_video_mode(gx);
+   init_vtx(gx);
+   build_disp_list();
+
+   gx->vp.full_width = gx_mode.fbWidth;
+   gx->vp.full_height = gx_mode.xfbHeight;
+   gx->should_resize = true;
+   gx_old_width = gx_old_height = 0;
+
    return gx;
 }
 
@@ -472,19 +483,8 @@ static void gx_start(void)
 
    driver.video_data = gx_init(&video_info, &driver.input, &driver.input_data);
 
-   VIDEO_Init();
-   GX_Init(gx_fifo, sizeof(gx_fifo));
-
-   setup_video_mode();
-   init_vtx();
-   build_disp_list();
-
    gx_video_t *gx = (gx_video_t*)driver.video_data;
    gx_get_poke_interface(gx, &driver.video_poke);
-   gx->vp.full_width = gx_mode.fbWidth;
-   gx->vp.full_height = gx_mode.xfbHeight;
-   gx->should_resize = true;
-   gx_old_width = gx_old_height = 0;
 }
 
 #define ASM_BLITTER
@@ -792,7 +792,7 @@ static void gx_resize(void *data)
    guMtxConcat(m1, m2, m1);
    GX_LoadPosMtxImm(m1, GX_PNMTX0);
 
-   init_texture(4, 4);
+   init_texture(data, 4, 4);
    gx_old_width = gx_old_height = 0;
    gx->should_resize = false;
 }
@@ -909,7 +909,7 @@ static bool gx_frame(void *data, const void *frame,
 
    if (width != gx_old_width || height != gx_old_height)
    {
-      init_texture(width, height);
+      init_texture(data, width, height);
       gx_old_width = width;
       gx_old_height = height;
    }

@@ -30,7 +30,7 @@ typedef struct gx_video
    unsigned scale;
 } gx_video_t;
 
-void gx_set_video_mode(unsigned fbWidth, unsigned lines);
+void gx_set_video_mode(void *data, unsigned fbWidth, unsigned lines);
 const char *gx_get_video_mode(void);
 
 #endif
