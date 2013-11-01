@@ -2404,31 +2404,6 @@ static bool gl_read_viewport(void *data, uint8_t *buffer)
 #endif
 
 #if defined(HAVE_RGUI) || defined(HAVE_RMENU)
-static void gl_get_poke_interface(void *data, const video_poke_interface_t **iface);
-
-static void gl_start(void)
-{
-   video_info_t video_info = {0};
-
-   // Might have to supply correct values here.
-   video_info.vsync = g_settings.video.vsync;
-   video_info.force_aspect = false;
-   video_info.smooth = g_settings.video.smooth;
-   video_info.input_scale = 2;
-   video_info.fullscreen = true;
-
-   if (g_settings.video.aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
-   {
-      video_info.width  = g_extern.console.screen.viewports.custom_vp.width;
-      video_info.height = g_extern.console.screen.viewports.custom_vp.height;
-   }
-
-   driver.video_data = gl_init(&video_info, &driver.input, &driver.input_data);
-
-   gl_t *gl = (gl_t*)driver.video_data;
-   gl_get_poke_interface(gl, &driver.video_poke);
-}
-
 static void gl_restart(void)
 {
    gl_t *gl = (gl_t*)driver.video_data;
@@ -2748,7 +2723,6 @@ const video_driver_t video_gl = {
    "gl",
 
 #if defined(HAVE_RGUI) || defined(HAVE_RMENU)
-   gl_start,
    gl_restart,
 #endif
    gl_set_rotation,

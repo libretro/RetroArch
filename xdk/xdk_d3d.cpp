@@ -1127,23 +1127,6 @@ static void d3d_get_poke_interface(void *data, const video_poke_interface_t **if
    *iface = &d3d_poke_interface;
 }
 
-static void xdk_d3d_start(void)
-{
-   video_info_t video_info = {0};
-
-   video_info.vsync = g_settings.video.vsync;
-   video_info.force_aspect = false;
-   video_info.smooth = g_settings.video.smooth;
-   video_info.input_scale = 2;
-   video_info.fullscreen = true;
-   video_info.rgb32 = false;
-
-   driver.video_data = xdk_d3d_init(&video_info, &driver.input, &driver.input_data);
-
-   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
-   d3d_get_poke_interface(d3d, &driver.video_poke);
-}
-
 static void xdk_d3d_restart(void)
 {
    xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
@@ -1179,7 +1162,6 @@ const video_driver_t video_xdk_d3d = {
 #endif
    xdk_d3d_free,
    "xdk_d3d",
-   xdk_d3d_start,
    xdk_d3d_restart,
    xdk_d3d_set_rotation,
    NULL, /* viewport_info */

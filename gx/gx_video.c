@@ -418,9 +418,7 @@ static void gx_efb_screenshot(void)
 
 #endif
 
-static void gx_restart(void)
-{
-}
+static void gx_restart(void) { }
 
 static void *gx_init(const video_info_t *video,
       const input_driver_t **input, void **input_data)
@@ -471,20 +469,6 @@ static void *gx_init(const video_info_t *video,
    gx_old_width = gx_old_height = 0;
 
    return gx;
-}
-
-static void gx_get_poke_interface(void *data, const video_poke_interface_t **iface);
-
-static void gx_start(void)
-{
-   video_info_t video_info = {0};
-
-   video_info.vsync = g_settings.video.vsync;
-
-   driver.video_data = gx_init(&video_info, &driver.input, &driver.input_data);
-
-   gx_video_t *gx = (gx_video_t*)driver.video_data;
-   gx_get_poke_interface(gx, &driver.video_poke);
 }
 
 #define ASM_BLITTER
@@ -1077,7 +1061,6 @@ const video_driver_t video_gx = {
    .ident = "gx",
    .set_rotation = gx_set_rotation,
    .viewport_info = gx_viewport_info,
-   .start = gx_start,
    .restart = gx_restart,
    .poke_interface = gx_get_poke_interface,
 };
