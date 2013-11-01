@@ -20,9 +20,15 @@
 extern "C" {
 #endif
 
+//#define STANDALONE
+
 #include <sys/types.h>
 #include <unistd.h>
-#include <pthread.h>
+#ifdef STANDALONE
+#include "thread.h"
+#else
+#include "../thread.h"
+#endif
 #include <sys/time.h>
 #include <time.h>
 #include <stdint.h>
@@ -169,10 +175,10 @@ extern "C" {
       int samplesize;
 
       struct {
-         pthread_t threadId;
-         pthread_mutex_t mutex;
-         pthread_mutex_t cond_mutex;
-         pthread_cond_t cond;
+         sthread_t *thread;
+         slock_t *mutex;
+         slock_t *cond_mutex;
+         scond_t *cond;
       } thread;
 
       char identity[256];
@@ -181,7 +187,7 @@ extern "C" {
       rsd_error_callback_t error_callback;
       size_t cb_max_size;
       void *cb_data;
-      pthread_mutex_t cb_lock;
+      slock_t *cb_lock;
    } rsound_t;
 
    /* -- API --

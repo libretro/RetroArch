@@ -1,5 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2013 - Hans-Kristian Arntzen
+ *  Copyright (C) 2011-2013 - Daniel De Matteis
  * 
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -83,11 +84,23 @@ sthread_t *sthread_create(void (*thread_func)(void*), void *userdata)
    return thread;
 }
 
+int sthread_detach(sthread_t *thread)
+{
+   CloseHandle(thread->thread);
+   return 0;
+}
+
 void sthread_join(sthread_t *thread)
 {
    WaitForSingleObject(thread->thread, INFINITE);
    CloseHandle(thread->thread);
    free(thread);
+}
+
+/* FIXME - what to do here? */
+void sthread_exit(sthread_t *thread)
+{
+   (void)thread;
 }
 
 struct slock
@@ -222,10 +235,21 @@ sthread_t *sthread_create(void (*thread_func)(void*), void *userdata)
    return thr;
 }
 
+int sthread_detach(sthread_t *thread)
+{
+   (void)thread;
+   return pthread_detach(pthread_self());
+}
+
 void sthread_join(sthread_t *thread)
 {
    pthread_join(thread->id, NULL);
    free(thread);
+}
+
+void sthread_exit(sthread_t *thread)
+{
+   pthread_exit(NULL);
 }
 
 struct slock

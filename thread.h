@@ -25,7 +25,9 @@ typedef struct sthread sthread_t;
 
 // Threading
 sthread_t *sthread_create(void (*thread_func)(void*), void *userdata);
+int sthread_detach(sthread_t *thread);
 void sthread_join(sthread_t *thread);
+void sthread_exit(sthread_t *thread);
 
 // Mutexes
 typedef struct slock slock_t;
