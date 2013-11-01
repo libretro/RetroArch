@@ -59,7 +59,7 @@ var LibraryRWebAudio = {
          var startTime;
          if (RA.bufIndex) startTime = RA.buffers[RA.bufIndex - 1].endTime;
          else startTime = RA.context.currentTime;
-         RA.buffers[index].endTime = RA.getCurrentPerfTime() + RA.buffers[index].duration;
+         RA.buffers[index].endTime = startTime + RA.buffers[index].duration;
 
          var bufferSource = RA.context.createBufferSource();
          bufferSource.buffer = RA.buffers[index];
