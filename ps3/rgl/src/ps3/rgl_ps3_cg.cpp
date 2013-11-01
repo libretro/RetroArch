@@ -170,14 +170,14 @@ static int rglGcmGenerateProgram (void *data, int profileIndex, const CgProgramH
             const float *itemDefaultValues = program->defaultValues + program->defaultValuesIndices[i].defaultValueIndex;
             int registerStride = isMatrix(( CGtype )parameterResource->type ) ? rglGetTypeRowCount(( CGtype )parameterResource->type ) : 1;
             if ( parameterEntry->flags & CGP_CONTIGUOUS )
-               __builtin_memcpy( rtParameter->pushBufferPointer, itemDefaultValues, arrayCount * registerStride *4*sizeof( float ) );
+               memcpy( rtParameter->pushBufferPointer, itemDefaultValues, arrayCount * registerStride *4*sizeof( float ) );
             else
             {
                unsigned int *pushBufferPointer = (( unsigned int * )rtParameter->pushBufferPointer );
                for ( int j = 0;j < arrayCount;j++ )
                {
                   unsigned int *pushBufferAddress = isArray ? ( *( unsigned int** )pushBufferPointer ) : pushBufferPointer;
-                  __builtin_memcpy( pushBufferAddress, itemDefaultValues, registerStride*4*sizeof( float ) );
+                  memcpy( pushBufferAddress, itemDefaultValues, registerStride*4*sizeof( float ) );
                   pushBufferPointer += isArray ? 1 : 3 + registerStride * 4;
                   itemDefaultValues += 4 * registerStride;
                }
@@ -927,14 +927,13 @@ static CGparameter rglAdvanceParameter( CGparameter param, int distance )
       return nextParameter->id;
    }
    else
-   {
       return ( CGparameter )NULL;
-   }
 }
 
 void rglCgDestroyContextParam( CgRuntimeParameter* ptr )
 {
-   if ( _cgParameterDestroyHook ) _cgParameterDestroyHook( ptr );
+   if (_cgParameterDestroyHook)
+      _cgParameterDestroyHook( ptr );
 
    rglEraseName( &_CurrentContext->cgParameterNameSpace, (unsigned int)( ptr->id ) );
 
@@ -972,9 +971,8 @@ static _CGparameter *_cgGetNamedParameter( _CGprogram* progPtr, const char* name
       containerCount = _entryCount;
    }
    else
-   {
       currentEntry = program->parametersEntries;
-   }
+
    lastEntry = program->parametersEntries + program->rtParametersCount;
 
    int isInArray = 0;
@@ -1037,14 +1035,14 @@ static _CGparameter *_cgGetNamedParameter( _CGprogram* progPtr, const char* name
                //skip as many entry as necessary
                if ( currentEntry->flags & CGP_STRUCTURE )
                {
-                  const CgParameterStructure *parameterStructure = rglGetParameterStructure( program, currentEntry );
+                  const CgParameterStructure *parameterStructure = (const CgParameterStructure*)rglGetParameterStructure( program, currentEntry );
                   skipCount += parameterStructure->memberCount;
                }
                else if ( currentEntry->flags & CGP_ARRAY )
                {
                   if ( currentEntry->flags & CGP_UNROLLED )
                   {
-                     const CgParameterArray *parameterArray =  rglGetParameterArray( program, currentEntry );
+                     const CgParameterArray *parameterArray =  (const CgParameterArray*)rglGetParameterArray( program, currentEntry );
                      skipCount += rglGetSizeofSubArray(( short* )parameterArray->dimensions, parameterArray->dimensionCount );
                   }
                   else
@@ -1419,9 +1417,7 @@ CG_API int cgGetArraySize( CGparameter param, int dimension )
          return -1;
       }
       else
-      {
-         return ( int )parameterArray->dimensions[dimension];
-      }
+         return (int)parameterArray->dimensions[dimension];
    }
    return -1;
 }
@@ -1430,20 +1426,14 @@ CG_API CGprogram cgGetParameterProgram( CGparameter param )
 {
    // check parameter handle
    CgRuntimeParameter *rtParameter = ( CgRuntimeParameter* )rglCgGLTestParameter( param );
-   if ( !rtParameter )
-   {
+   if (!rtParameter)
       return ( CGprogram )NULL;
-   }
+   // I don't think we want to expose the fact that we internally store runtime created effect and context parameters in a program
    else if ( RGL_UNLIKELY( rtParameter->parameterEntry->flags & CGP_RTCREATED ) )
-   {
-      // I don't think we want to expose the fact that we internally store runtime created effect and context parameters in a program
       return ( CGprogram )NULL;
-   }
    else
-   {
       return rtParameter->program->id;
-   }
-   return ( CGprogram )NULL;
+   return (CGprogram)NULL;
 }
 
 CG_API CGcontext cgGetParameterContext( CGparameter param )
@@ -1527,15 +1517,13 @@ CG_API const char* cgGetParameterSemantic( CGparameter param )
 
 static bool rglPrependString( char *dst, const char *src, size_t size )
 {
-   int len = strlen( src );
-   int previousLen = strlen( dst );
-   int spaceLeft = size - ( previousLen + 1 ); //+1 for white space
-   if ( spaceLeft < len )
-   {
+   int len = strlen(src);
+   int previousLen = strlen(dst);
+   int spaceLeft = size - (previousLen + 1); //+1 for white space
+   if (spaceLeft < len)
       return false;
-   }
-   memmove( dst + len, dst, previousLen + 1 );
-   strncpy( dst, src, len );
+   memmove(dst + len, dst, previousLen + 1);
+   strncpy(dst, src, len);
    return true;
 }
 
@@ -1548,9 +1536,7 @@ CG_API const char* cgGetParameterName( CGparameter param )
 
    // runtime created parameters have their names stored in the entry differently than compile created params
    if ( rtParameter->parameterEntry->flags & CGP_RTCREATED )
-   {
-      return reinterpret_cast<const char*>( rtParameter->parameterEntry->nameOffset );
-   }
+      return (const char*)( rtParameter->parameterEntry->nameOffset );
 
    char *currentParameterName = rtParameter->program->parentContext->currentParameterName;
    currentParameterName[0] = '\0';
@@ -1604,18 +1590,18 @@ CG_API const char* cgGetParameterName( CGparameter param )
          case CGP_STRUCTURE:
             {
                const CgParameterStructure *parameterStructure = rglGetParameterStructure( rtParameter->program, paramEntry );
+               //the parameter is not in this structure, so I need to remove from the distance all the structure item
                if ( distance > parameterStructure->memberCount )
-               {
-                  //the parameter is not in this structure, so I need to remove from the distance all the structure item
                   distance -= parameterStructure->memberCount;
-               }
                else
                {
                   //the parameter is in this structure, prepend the name
                   res = rglPrependString( currentParameterName, ".", stringSize );
-                  if ( !res ) return NULL;
+                  if (!res )
+                     return NULL;
                   res = rglPrependString( currentParameterName, rtParameter->program->stringTable + paramEntry->nameOffset, stringSize );
-                  if ( !res ) return NULL;
+                  if (!res)
+                     return NULL;
                   distance = 0;
                }
                break;
@@ -1676,145 +1662,6 @@ CG_API CGenum cgGetParameterDirection( CGparameter param )
   CG TOKENS
   ============================================================ */
 
-typedef struct RGLcgProfileMapType
-{
-   CGprofile id;
-   char* string;
-   int is_vertex_program;
-}
-RGLcgProfileMapType;
-
-typedef struct RGLcgTypeMapType
-{
-   CGtype id;
-   char* string;
-   CGparameterclass parameter_class;
-}
-RGLcgTypeMapType;
-
-// string tables ------------------------
-// string tables map enum values to printable strings
-
-static const RGLcgTypeMapType RGLcgTypeMap[] =
-{
-   { CG_UNKNOWN_TYPE, "unknown", CG_PARAMETERCLASS_UNKNOWN},
-   { CG_STRUCT, "struct", CG_PARAMETERCLASS_STRUCT},
-   { CG_ARRAY, "array", CG_PARAMETERCLASS_ARRAY},
-
-   //NOTE: string is compiler friendly lower-case version of type name
-#define CG_DATATYPE_MACRO(name, compiler_name, enum_name, base_enum, nrows, ncols,classname) \
-   { enum_name, #compiler_name, classname },
-#include <Cg/cg_datatypes.h>
-
-   // note: assumes CG_UNKNOWN_TYPE == 0
-   { CGtype( 0 ), "", CG_PARAMETERCLASS_UNKNOWN }
-};
-
-// templated map lookup functions  ---------
-
-
-   template<typename T, size_t N>
-const T*rglLookupEnum( const T( &map )[N], const int key )
-{
-   const unsigned int count = sizeof( map ) / sizeof( map[0] );
-   for ( unsigned int i = 0; i < count; ++i )
-   {
-      if ( map[i].id == key )
-      {
-         return map + i;
-      }
-   }
-   return 0;
-}
-
-
-   template<typename T, size_t N>
-const T* rglLookupString( const T( &map )[N], const char *key )
-{
-   const unsigned int count = sizeof( map ) / sizeof( map[0] );
-   if (key != NULL)
-   {
-      for ( unsigned int i = 0; i < count; ++i )
-      {
-         if (strcmp( map[i].string, key) == 0)
-            return map + i;
-      }
-   }
-   return 0;
-}
-
-
-
-
-
-
-// API type functions -----------------------
-
-CG_API const char* cgGetTypeString( CGtype type )
-{
-   const RGLcgTypeMapType *ptr = rglLookupEnum( RGLcgTypeMap, type );
-   if (ptr != 0)
-      return const_cast<const char*>( ptr->string );
-   return "";
-}
-
-CG_API CGtype cgGetType( const char* type_string )
-{
-   const RGLcgTypeMapType *ptr = rglLookupString( RGLcgTypeMap, type_string );
-   if (ptr != 0)
-      return static_cast<CGtype>( ptr->id );
-   return CG_UNKNOWN_TYPE;
-}
-
-
-// User type functions ----------------------
-
-CG_API CGtype cgGetNamedUserType( CGhandle handle, const char* name )
-{
-   // TODO **************
-   return CG_UNKNOWN_TYPE;
-}
-
-CG_API int cgGetNumUserTypes( CGhandle handle )
-{
-   // TODO **************
-   return 0;
-}
-
-CG_API CGtype cgGetUserType( CGhandle handle, int index )
-{
-   // TODO **************
-   return CG_UNKNOWN_TYPE;
-}
-
-CG_API int cgGetNumParentTypes( CGtype type )
-{
-   // TODO **************
-   return 0;
-}
-
-CG_API CGtype cgGetParentType( CGtype type, int index )
-{
-   // TODO **************
-   return CG_UNKNOWN_TYPE;
-}
-
-CG_API CGbool cgIsParentType( CGtype parent, CGtype child )
-{
-   // TODO **************
-   return CG_FALSE;
-}
-
-CG_API CGbool cgIsInterfaceType( CGtype type )
-{
-
-   // TODO **************
-   return CG_FALSE;
-}
-
-// Profile functions -------------------------
-
-
 // ErrorFunctions ----------------------------
 CG_API CGerror cgGetError( void )
 {
@@ -1855,36 +1702,12 @@ CG_API const char* cgGetString( CGenum sname )
    return NULL;
 }
 
-CG_API CGparameterclass cgGetTypeClass( CGtype type )
-{
-   const RGLcgTypeMapType *ptr = rglLookupEnum( RGLcgTypeMap, type );
-   if (ptr == 0)
-      return CG_PARAMETERCLASS_UNKNOWN;
-   return ptr->parameter_class;
-}
-
-CG_API CGtype cgGetTypeBase( CGtype type )
-{
-   // get the base type of a usertype without having to create
-   // a parameter of that type.
-
-   // TODO: usertypes not supported in Jetstream
-   return CG_UNKNOWN_TYPE;
-}
-
 /*============================================================
   CG CONTEXT
   ============================================================ */
 
 RGL_EXPORT CgcontextHookFunction _cgContextCreateHook = NULL;
 RGL_EXPORT CgcontextHookFunction _cgContextDestroyHook = NULL;
-
-void rglCgContextZero( _CGcontext* p )
-{
-   memset( p, 0, sizeof( *p ) );
-   p->compileType = CG_UNKNOWN;
-
-}
 
 void rglCgContextPushFront( _CGcontext* ctx )
 {
@@ -1903,7 +1726,8 @@ static void destroy_context( _CGcontext*ctx )
    // free the id
    rglEraseName( &_CurrentContext->cgContextNameSpace, (unsigned int)ctx->id );
    // zero the memory
-   rglCgContextZero( ctx );
+   memset(ctx, 0, sizeof( *ctx));
+   ctx->compileType = CG_UNKNOWN;
    // return context to free store
    free( ctx );
 }
@@ -1918,16 +1742,12 @@ void rglCgContextPopFront()
       // free the id as well
       destroy_context( head );
 
+      // this is not the end of the list, feel free to dereference it.
       if ( temp )
-      {
-         // this is not the end of the list, feel free to dereference it.
          _CurrentContext->RGLcgContextHead = temp->id;
-      }
+      // nothing left, no dereferenceing for you, mister.
       else
-      {
-         // nothing left, no dereferenceing for you, mister.
          _CurrentContext->RGLcgContextHead = 0;
-      }
    }
 }
 
@@ -1946,10 +1766,7 @@ CG_API CGcontext cgCreateContext( void )
 {
    // create a context out of thin air and add it to the hidden global list.
 
-   _CGcontext* ptr = NULL;
-
-   // alloc new context
-   ptr = ( _CGcontext* )malloc( sizeof( _CGcontext ) );
+   _CGcontext* ptr = (_CGcontext*)malloc(sizeof(_CGcontext));
    if ( NULL == ptr )
    {
       rglCgRaiseError( CG_MEMORY_ALLOC_ERROR );
@@ -1957,7 +1774,8 @@ CG_API CGcontext cgCreateContext( void )
    }
 
    // initialise member variables
-   rglCgContextZero( ptr );
+   memset(ptr, 0, sizeof( *ptr));
+   ptr->compileType = CG_UNKNOWN;
 
    // get a new id for the object
    CGcontext result = ( CGcontext )rglCreateName( &_CurrentContext->cgContextNameSpace, ptr );
@@ -1998,7 +1816,8 @@ CG_API void cgDestroyContext( CGcontext c )
 
       // find the context that occurs before this one
       _CGcontext* ptr = head;
-      while ( ptr->next != ctx ) ptr = ptr->next;
+      while ( ptr->next != ctx )
+         ptr = ptr->next;
       // relink
       ptr->next = ctx->next;
       destroy_context( ctx );
@@ -2010,16 +1829,12 @@ CG_API void cgDestroyContext( CGcontext c )
       _CGcontext* second = head->next;
       destroy_context( head );
 
+      // link to second element
       if ( second )
-      {
-         // link to second element
          _CurrentContext->RGLcgContextHead = second->id;
-      }
+      // nothing left
       else
-      {
-         // nothing left
          _CurrentContext->RGLcgContextHead = 0;
-      }
    }
 }
 
@@ -2027,9 +1842,7 @@ CG_API CGbool cgIsContext( CGcontext ctx )
 {
    // is the pointer valid?
    if ( CG_IS_CONTEXT( ctx ) )
-   {
       return CG_TRUE;
-   }
    return CG_FALSE;
 }
 
@@ -3656,26 +3469,26 @@ CG_API CGprogram cgCreateProgram( CGcontext ctx,
       //we have an ELF file, it will be used in place ( case where the elf file has been passed as a memory pointer )
       CGELFBinary elfBinary;
       CGELFProgram elfProgram;
+
+      /* CG binary not aligned to 16 bytes, needed for ucode section */
       if ((( intptr_t )binaryBuffer ) & 15 )
       {
-         //_RGL_REPORT_EXTRA( RGL_REPORT_CG_ERROR, "CG Binary not aligned on 16 bytes, needed for ucode section" );
          rglCgRaiseError( CG_PROGRAM_LOAD_ERROR );
          return NULL;
       }
       bool res = cgOpenElf( binaryBuffer, 0, &elfBinary );
+
+      /* Not a valid ELF file */;
       if ( !res )
       {
-         //_RGL_REPORT_EXTRA( RGL_REPORT_CG_ERROR, "not a valid ELF" );
          rglCgRaiseError( CG_PROGRAM_LOAD_ERROR );
          return NULL;
       }
-      if ( !cgGetElfProgramByName( &elfBinary, entry, &elfProgram ) )
-      {
-         //_RGL_REPORT_EXTRA( RGL_REPORT_CG_ERROR, "couldn't find the shader entry in the CG binary" );
-         return NULL;
-      }
 
-      //success
+      /* Couldn't find the shader entry in the CG binary */
+      if ( !cgGetElfProgramByName( &elfBinary, entry, &elfProgram ) )
+         return NULL;
+
       programHeader = ( CgProgramHeader* )elfBinary.shadertab + elfProgram.index;
       ucode = ( char* )elfProgram.texttab;
       parameterHeader = ( CgParameterTableHeader* )elfProgram.paramtab;
@@ -3725,8 +3538,6 @@ CG_API CGprogram cgCreateProgramFromFile( CGcontext ctx,
    if ( RGL_LIKELY( program_type == CG_BINARY ) )
    {
       CGprogram ret = NULL;
-      //assume we have an elf at that point
-      //if (filetag == ElfTag)
 
       _CGcontext *context = _cgGetContextPtr( ctx );
       CGprogramGroup group = NULL;
@@ -3767,7 +3578,7 @@ CG_API CGprogram cgCreateProgramFromFile( CGcontext ctx,
          // check that file exists
          fp = fopen( program_file, "rb" );
 
-         if ( NULL == fp )
+         if (fp == NULL)
          {
             rglCgRaiseError( CG_FILE_READ_ERROR );
             return ( CGprogram )NULL;
@@ -3813,8 +3624,6 @@ CG_API CGprogram cgCreateProgramFromFile( CGcontext ctx,
             }
             return ret;
          }
-         //else
-         //rewind(); //we should rewind here, but no need since we are doing fseek after
       }
    }
 
@@ -3822,7 +3631,7 @@ CG_API CGprogram cgCreateProgramFromFile( CGcontext ctx,
    if ( !fp )
    {
       fp = fopen( program_file, "rb" );
-      if ( NULL == fp )
+      if (fp  == NULL)
       {
          rglCgRaiseError( CG_FILE_READ_ERROR );
          return ( CGprogram )NULL;
@@ -3837,7 +3646,7 @@ CG_API CGprogram cgCreateProgramFromFile( CGcontext ctx,
 
    // alloc memory for the file
    char* ptr = ( char* )malloc( file_size + 1 );
-   if ( NULL == ptr )
+   if (ptr == NULL)
    {
       rglCgRaiseError( CG_MEMORY_ALLOC_ERROR );
       fclose( fp );
@@ -3873,7 +3682,7 @@ CG_API CGprogram cgCopyProgram( CGprogram program )
       return NULL;
    }
    _CGprogram* prog = _cgGetProgPtr( program );
-   if ( NULL == prog )
+   if (prog == NULL)
    {
       rglCgRaiseError( CG_INVALID_PROGRAM_HANDLE_ERROR );
       return ( CGprogram )NULL;
@@ -5018,7 +4827,7 @@ class CgArrayType : public CgBaseType
       virtual ~CgArrayType()
       {
          if (_elementType)
-            delete _elementType;
+            free(_elementType);
       }
       CgBaseType *_elementType;
       unsigned char _dimensionCount;
@@ -5051,10 +4860,10 @@ class CgStructureType : public CgBaseType
       {
          int i=0;
          int count = (int)_elements.size();
-         for (i=0;i<count;i++)
+         for (i = 0;i < count; i++)
          {
             if (_elements[i]._type)
-               delete _elements[i]._type;
+               free(_elements[i]._type);
          }
       }
 
@@ -5160,7 +4969,6 @@ static unsigned int stringTableAddUnique( std::vector<char> &stringTable, const 
    return ret;
 }
 
-template<class Type> static void array_push(char* &parameterOffset, std::vector<Type> &array);
 static unsigned short getFlags(CGenum var, CGenum dir, int no,	bool is_referenced, bool is_shared, int paramIndex);
 
 //////////////////////////////////////////////////////////////////////////////
@@ -5200,10 +5008,7 @@ int convertNvToElfFromFile(const char *sourceFile, int endianness, int constTabl
    return -1;
 }
 
-static inline uint32_t swap16(const uint32_t v)
-{
-   return (v>>16) | (v<<16);
-}
+#define swap16(v) ((v>>16) | (v<<16))
 
 int convertNvToElfFromMemory(const void *sourceData, size_t size, int endianness, int constTableOffset, void **binaryShader, int *binarySize,
       std::vector<char> &stringTable, std::vector<float> &defaultValues)
@@ -5898,7 +5703,7 @@ int convertNvToElfFromMemory(const void *sourceData, size_t size, int endianness
    //Allocate the binary file
    int ucodeOffset = (((sizeof(CgProgramHeader)-1)/16)+1)*16;
    size_t programSize = ucodeOffset + ucodeSize + parameterTableSize;
-   char *program = new char[programSize];
+   char *program = (char*)malloc(programSize * sizeof(char));
 
    //header
    memcpy(program,&cgShader,sizeof(CgProgramHeader));
@@ -5907,33 +5712,35 @@ int convertNvToElfFromMemory(const void *sourceData, size_t size, int endianness
 
    //ucode
    memcpy(program + ucodeOffset,ucode,ucodeSize);
-   //we can delete buffer ( memory block pointed by ucode )
-   if (!bIsVertexProgram && doSwap)
-      delete[] buffer;
-   // !!!xxx this is to workaround what appears to be a linux platform specific bug
-   // that manifests as a memory overwrite in properly allocated memory during a std::vector resize
-   else
-      delete[] buffer;
-   // end workaround
+   if (buffer)
+      free(buffer);
 
    //parameters
    char *parameterOffset = program + ucodeOffset + ucodeSize;
+   size_t datasize;
 
    memcpy(parameterOffset,&header,sizeof(CgParameterTableHeader));
    parameterOffset += sizeof(CgParameterTableHeader);
-   array_push(parameterOffset, parameterEntries);
-   array_push(parameterOffset, parameterResources);
-   array_push(parameterOffset, containers._resources);
-   //TODO: Tmp: patch the default Value indices, no sharing yet
-   /*unsigned short offset = (unsigned short)constTableOffset;
-     for (int i=0;i<(int)containers._defaultValuesIndices.size();i+=2)
-     {
-     unsigned short value = CNV2END(containers._defaultValuesIndices[i+1]);
-     containers._defaultValuesIndices[i+1] = CNV2END((unsigned short)(value + offset));
-     }*/
-   //array_push(parameterOffset, containers._defaultValuesIndices);
-   array_push(parameterOffset, containers._elfDefaultsIndices);
-   array_push(parameterOffset, containers._semanticIndices);
+
+   datasize = parameterEntries.size() * sizeof(parameterEntries[0]);
+   memcpy(parameterOffset, &parameterEntries[0], datasize);
+   parameterOffset += datasize;
+
+   datasize = parameterResources.size() * sizeof(parameterResources[0]);
+   memcpy(parameterOffset, &parameterResources[0], datasize);
+   parameterOffset += datasize;
+
+   datasize = containers._resources.size() * sizeof(containers._resources[0]);
+   memcpy(parameterOffset, &containers._resources[0], datasize);
+   parameterOffset += datasize;
+
+   datasize = containers._elfDefaultsIndices.size() * sizeof(containers._elfDefaultsIndices[0]);
+   memcpy(parameterOffset, &containers._elfDefaultsIndices[0], datasize);
+   parameterOffset += datasize;
+
+   datasize = containers._semanticIndices.size() * sizeof(containers._semanticIndices[0]);
+   memcpy(parameterOffset, &containers._semanticIndices[0], datasize);
+   parameterOffset += datasize;
 
    //RGL_ASSERT2(parameterOffset == program + programSize,("error\n"));
    //set the return values
@@ -5946,7 +5753,9 @@ int convertNvToElfFromMemory(const void *sourceData, size_t size, int endianness
 int convertNvToElfFreeBinaryShader(void *binaryShader)
 {
    char *program = (char *)binaryShader;
-   delete[] program;
+
+   if (program)
+      free(program);
    return 0;
 }
 
@@ -6293,12 +6102,6 @@ static int getSizeofSubArray(_CGNVCONTAINERS &containers, int dimensionIndex, in
    return res;
 }
 
-template<class Type> static void array_push(char* &parameterOffset, std::vector<Type> &array)
-{
-   size_t dataSize = array.size()*sizeof(array[0]);
-   memcpy(parameterOffset,&array[0],dataSize);
-   parameterOffset += dataSize;
-}
 
 
 unsigned short getFlags(CGenum var, CGenum dir, int no,	bool is_referenced, bool is_shared, int paramIndex)
@@ -6374,29 +6177,9 @@ namespace cgc {
          {
             if (instance_ != 0)
             {
-               delete instance_;
+               free(instance_);
                instance_ = 0;
             }
-         }
-
-      CGBIO_ERROR
-         bin_io::new_elf_reader( elf_reader** obj ) const
-         {
-            CGBIO_ERROR ret = CGBIO_ERROR_NO_ERROR;
-            *obj = new elf_reader_impl;
-            if ( *obj == 0 )
-               ret = CGBIO_ERROR_MEMORY;
-            return ret;
-         }
-
-      CGBIO_ERROR
-         bin_io::new_elf_writer( elf_writer** obj ) const
-         {
-            CGBIO_ERROR ret = CGBIO_ERROR_NO_ERROR;
-            *obj = new elf_writer_impl;
-            if ( *obj == 0 )
-               ret = CGBIO_ERROR_MEMORY;
-            return ret;
          }
 
       const char*
@@ -6437,959 +6220,10 @@ namespace cgc {
                ret = CGBIO_ERROR_MEMORY;
             return ret;
          }
-
-      CGBIO_ERROR
-         bin_io::new_nvb_writer( nvb_writer** obj ) const
-         {
-            CGBIO_ERROR ret = CGBIO_ERROR_NO_ERROR;
-            *obj = new nvb_writer_impl;
-            if (*obj == 0)
-               ret = CGBIO_ERROR_MEMORY;
-            return ret;
-         }
-
-
    } // bio namespace
 } // cgc namespace
-
-/*============================================================
-  CGBII IMPLEMENTATION
-  ============================================================ */
 
 using std::fill_n;
-
-namespace cgc {
-   namespace bio {
-
-      elf_reader_impl::elf_reader_impl()
-      {
-         ref_count_ = 1;
-         initialized_ = false;
-         fill_n( reinterpret_cast<char*>( &header_ ), sizeof( header_ ), '\0' );
-      }
-
-      elf_reader_impl::~elf_reader_impl()
-      {
-         if (initialized_)
-         {
-            // NYI
-         }
-      }
-
-      CGBIO_ERROR
-         elf_reader_impl::load( const char* filename )
-         {
-            // NYI
-            return CGBIO_ERROR_NO_ERROR;
-         }
-
-      CGBIO_ERROR
-         elf_reader_impl::load( std::istream* stream, int start )
-         {
-            // NYI
-            return CGBIO_ERROR_NO_ERROR;
-         }
-
-      bool
-         elf_reader_impl::is_initialized() const
-         {
-            return initialized_;
-         }
-
-      ptrdiff_t
-         elf_reader_impl::reference() const
-         {
-            return ++ref_count_;
-         }
-
-      ptrdiff_t
-         elf_reader_impl::release() const
-         {
-            ptrdiff_t ret = --ref_count_;
-            if (ref_count_ == 0)
-               delete this;
-
-            return ret;
-         }
-
-   } // bio namespace
-} // cgc namespace
-
-/*============================================================
-  CGBO IMPLEMENTATION
-  ============================================================ */
-
-namespace cgc {
-   namespace bio {
-
-      elf_writer_impl::elf_writer_impl()
-      {
-         ref_count_ = 1;
-         std::fill_n( reinterpret_cast<char*>( &header_ ), sizeof( header_ ), '\0' );
-      }
-
-      elf_writer_impl::~elf_writer_impl()
-      {
-         std::vector<osection_impl*>::iterator it;
-         for ( it = sections_.begin(); it != sections_.end(); ++it)
-         {
-            delete (*it);
-         }
-      }
-
-      ptrdiff_t
-         elf_writer_impl::reference()
-         {
-            return ++ref_count_;
-         }
-
-      ptrdiff_t
-         elf_writer_impl::release()
-         {
-            ptrdiff_t ret = --ref_count_;
-            if (ref_count_ == 0)
-               delete this;
-            return ret;
-         }
-
-      CGBIO_ERROR
-         elf_writer_impl::save( ofstream& ofs )
-         {
-            CGBIO_ERROR ret = CGBIO_ERROR_NO_ERROR;
-            if ( !ofs )
-            {
-               return CGBIO_ERROR_FILEIO;
-            }
-            header_.e_shoff = convert_endianness( (uint32_t) sizeof( Elf32_Ehdr ), endianness() );
-            header_.e_phnum = convert_endianness( (uint16_t)0, endianness() );
-            header_.e_shnum = convert_endianness( (uint16_t)num_of_sections(), endianness() );
-
-            streampos header  = convert_endianness( header_.e_shoff, endianness() );
-            for ( unsigned int ii = 0; ii < sections_.size(); ++ii )
-            {
-               sections_[ii]->save( ofs, header, section_offset( ii ) );
-               header += sizeof( Elf32_Shdr );
-            }
-
-            ofs.seekp( 0 );
-            ofs.write( reinterpret_cast<const char*>( &header_ ), sizeof( Elf32_Ehdr ) );
-            ofs.close();
-
-            return ret;
-         }
-
-      CGBIO_ERROR
-         elf_writer_impl::save( const char* filename )
-         {
-            ofstream ofs( filename, std::ios::out | std::ios::binary );
-            return save( ofs );
-         }
-
-      CGBIO_ERROR
-         elf_writer_impl::set_attr( const unsigned char file_class,
-               const unsigned char endianness,
-               const unsigned char ELFversion,
-               const unsigned char abi,
-               const unsigned char ABIversion,
-               const uint16_t type,
-               const uint16_t machine,
-               const uint32_t version,
-               const uint32_t flags )
-         {
-            header_.e_ident[EI_MAG0]    = ELFMAG0;
-            header_.e_ident[EI_MAG1]    = ELFMAG1;
-            header_.e_ident[EI_MAG2]    = ELFMAG2;
-            header_.e_ident[EI_MAG3]    = ELFMAG3;
-            header_.e_ident[EI_CLASS]   = file_class;
-            header_.e_ident[EI_DATA]    = endianness;
-            header_.e_ident[EI_VERSION] = ELFversion;
-            header_.e_ident[EI_OSABI]	= abi;
-            header_.e_ident[EI_ABIVERSION]	= ABIversion;
-
-            header_.e_type    = convert_endianness( type,    endianness );
-            header_.e_machine = convert_endianness( machine, endianness );
-            header_.e_version = convert_endianness( version, endianness );
-            header_.e_flags   = convert_endianness( flags,   endianness );
-
-            header_.e_ehsize    = convert_endianness( (uint16_t)(sizeof( header_ )),    endianness );
-            header_.e_phentsize = convert_endianness( (uint16_t)(sizeof( Elf32_Phdr )), endianness );
-            header_.e_shentsize = convert_endianness( (uint16_t)(sizeof( Elf32_Shdr )), endianness );
-            header_.e_shstrndx  = convert_endianness( (uint16_t)1, endianness );
-
-            // Create empty and section header string table sections
-            osection_impl* sec0 = new osection_impl( 0, this, "", 0, 0, 0, 0, 0 );
-            sections_.push_back( sec0 );
-            sec0->set_name_index( 0 );
-
-
-            osection_impl* shstrtab = new osection_impl( 1, this, ".shstrtab", SHT_STRTAB, 0, 0, 0, 0 );
-            sections_.push_back( shstrtab );
-
-            // Add the name to the section header string table
-            ostring_table* strtbl = 0;
-            void* vp = strtbl;
-            if ( CGBIO_ERROR_NO_ERROR == new_section_out( CGBO_STR, shstrtab, &vp ) )
-            {
-               strtbl = static_cast<ostring_table*>( vp );
-               uint32_t index = strtbl->add(shstrtab->name());
-               shstrtab->set_name_index( index );
-               strtbl->release();
-            }
-            return CGBIO_ERROR_NO_ERROR;
-         }
-
-      Elf32_Addr
-         elf_writer_impl::get_entry() const
-         {
-            return convert_endianness( header_.e_entry, endianness() );
-         }
-
-      CGBIO_ERROR
-         elf_writer_impl::set_entry( Elf32_Addr entry )
-         {
-            header_.e_entry = convert_endianness( entry, endianness() );
-            return CGBIO_ERROR_NO_ERROR;
-         }
-
-      unsigned char
-         elf_writer_impl::endianness() const
-         {
-            return header_.e_ident[EI_DATA];
-         }
-
-      uint16_t
-         elf_writer_impl::num_of_sections() const
-         {
-            return (uint16_t)sections_.size();
-         }
-
-      osection*
-         elf_writer_impl::get_section( uint16_t index ) const
-         {
-            osection* ret = 0;
-            if ( index < num_of_sections() )
-            {
-               ret = sections_[index];
-               ret->reference();
-            }
-            return ret;
-         }
-
-      osection*
-         elf_writer_impl::get_section( const char* name ) const
-         {
-            osection* ret = 0;
-
-            std::vector<osection_impl*>::const_iterator it;
-            for ( it = sections_.begin(); it != sections_.end(); ++it )
-            {
-               if ( (*it)->name() == name )
-               {
-                  ret = *it;
-                  ret->reference();
-                  break;
-               }
-            }
-            return ret;
-         }
-
-      osection*
-         elf_writer_impl::add_section( const char* name,
-               uint32_t type,
-               uint32_t flags,
-               uint32_t info,
-               uint32_t align,
-               uint32_t esize )
-         {
-            osection_impl* sec = new osection_impl( (uint16_t)sections_.size(), this, name, type, flags, info, align, esize );
-            if (sec == 0)
-               return sec;
-            sec->reference();
-            sections_.push_back( sec );
-            osection* shstrtab = get_section( 1 );
-            ostring_table* strtbl;
-            void* vp;
-            if ( CGBIO_ERROR_NO_ERROR == new_section_out( CGBO_STR, shstrtab, &vp ) )
-            {
-               strtbl = static_cast<ostring_table*>( vp );
-               uint32_t index = strtbl->add( name );
-               sec->set_name_index( index );
-               strtbl->release();
-            }
-            shstrtab->release();
-            return sec;
-         }
-
-      streampos
-         elf_writer_impl::section_offset( uint16_t index ) const
-         {
-            streampos ret = sizeof( Elf32_Ehdr ) + sizeof( Elf32_Shdr ) * num_of_sections();
-            uint16_t size = (uint16_t)sections_.size();
-            uint32_t align = 0;
-            for ( uint16_t ii = 0; ii < size && ii < index; ++ii )
-            {
-               if ( sections_[ii]->type() != SHT_NOBITS && sections_[ii]->type() != SHT_NULL )
-               {
-                  align = sections_[ii]->addralign();
-                  if ( align > 1 && ret % align != 0 )
-                  {
-                     ret += align - ret % align;
-                  }
-                  ret += sections_[ii]->size();
-               }
-            }
-            if ( sections_[index]->type() != SHT_NOBITS && sections_[index]->type() != SHT_NULL )
-            {
-               align = sections_[index]->addralign();
-               if ( align > 1 && ret % align != 0 )
-               {
-                  ret += align - ret % align;
-               }
-            }
-            return ret;
-         }
-
-      CGBIO_ERROR
-         elf_writer_impl::new_section_out( PRODUCER type, osection* sec, void** obj ) const
-         {
-            CGBIO_ERROR ret = CGBIO_ERROR_NO_ERROR;
-
-            switch ( type )
-            {
-               case CGBO_STR:
-                  *obj = new ostring_table_impl( const_cast<elf_writer_impl*>( this ), sec );
-                  break;
-               case CGBO_SYM:
-                  *obj = new osymbol_table_impl( const_cast<elf_writer_impl*>( this ), sec );
-                  break;
-               case CGBO_REL:
-                  *obj = new orelocation_table_impl( const_cast<elf_writer_impl*>( this ), sec );
-                  break;
-               case CGBO_PARAM:
-                  *obj = new oparam_table_impl( const_cast<elf_writer_impl*>( this ), sec );
-                  break;
-               case CGBO_CONST:
-                  *obj = new oconst_table_impl( const_cast<elf_writer_impl*>( this ), sec );
-                  break;
-               default:
-                  ret  = CGBIO_ERROR_UNKNOWN_TYPE;
-                  obj = 0;
-            }
-            return ret;
-         }
-
-
-      osection_impl::osection_impl( uint16_t index,
-            elf_writer* cgbo,
-            const char* name,
-            uint32_t type,
-            uint32_t flags,
-            uint32_t info,
-            uint32_t align,
-            uint32_t esize ) :
-         index_( index ),
-         cgbo_( cgbo ),
-         data_( 0 )
-      {
-         strncpy(name_, name,sizeof(name_));
-         name_[sizeof(name_)-1] = '\0';
-         std::fill_n( reinterpret_cast<char*>( &sh_ ), sizeof( sh_ ), '\0' );
-         sh_.sh_type      = convert_endianness( type, cgbo_->endianness() );
-         sh_.sh_flags     = convert_endianness( flags, cgbo_->endianness() );
-         sh_.sh_info      = convert_endianness( info, cgbo_->endianness() );
-         sh_.sh_addralign = convert_endianness( align, cgbo_->endianness() );
-         sh_.sh_entsize   = convert_endianness( esize, cgbo_->endianness() );
-      }
-
-      osection_impl::~osection_impl()
-      {
-         delete [] data_;
-      }
-
-      ptrdiff_t
-         osection_impl::reference()
-         {
-            return cgbo_->reference();
-         }
-
-      ptrdiff_t
-         osection_impl::release()
-         {
-            return cgbo_->release();
-         }
-
-      CGBIO_ERROR
-         osection_impl::save(ofstream& of, streampos header, streampos data)
-         {
-            CGBIO_ERROR ret = CGBIO_ERROR_NO_ERROR;
-
-            if (index() != 0 && SHT_NOBITS != type())
-            {
-               sh_.sh_offset = convert_endianness( (uint32_t)data, cgbo_->endianness() );
-            }
-            of.seekp( header );
-            of.write( reinterpret_cast<const char*>( &sh_ ), sizeof( Elf32_Shdr ) );
-            if ( SHT_NOBITS != type() )
-            {
-               of.seekp( data );
-               of.write( get_data(), size() );
-            }
-            return ret;
-         }
-
-      uint16_t
-         osection_impl::index() const
-         {
-            return index_;
-         }
-
-      const char *
-         osection_impl::name() const
-         {
-            return name_;
-         }
-
-      uint32_t
-         osection_impl::type() const
-         {
-            return convert_endianness( sh_.sh_type, cgbo_->endianness() );
-         }
-
-      uint32_t
-         osection_impl::flags() const
-         {
-            return convert_endianness( sh_.sh_flags, cgbo_->endianness() );
-         }
-
-      uint32_t
-         osection_impl::info() const
-         {
-            return convert_endianness( sh_.sh_info, cgbo_->endianness() );
-         }
-
-      uint32_t
-         osection_impl::addralign() const
-         {
-            return convert_endianness( sh_.sh_addralign, cgbo_->endianness() );
-         }
-
-      uint32_t
-         osection_impl::entsize() const
-         {
-            return convert_endianness( sh_.sh_entsize, cgbo_->endianness() );
-         }
-
-      uint32_t
-         osection_impl::size() const
-         {
-            return convert_endianness( sh_.sh_size, cgbo_->endianness() );
-         }
-
-      uint32_t
-         osection_impl::get_name_index() const
-         {
-            return convert_endianness( sh_.sh_name, cgbo_->endianness() );
-         }
-
-      void
-         osection_impl::set_name_index( uint32_t index )
-         {
-            sh_.sh_name = convert_endianness( index, cgbo_->endianness() );
-         }
-
-      Elf32_Addr
-         osection_impl::get_address() const
-         {
-            return convert_endianness( sh_.sh_addr, cgbo_->endianness() );
-         }
-
-      void
-         osection_impl::set_address( Elf32_Addr addr )
-         {
-            sh_.sh_addr = convert_endianness( addr, cgbo_->endianness() );
-         }
-
-      uint32_t
-         osection_impl::get_link() const
-         {
-            return convert_endianness( sh_.sh_link, cgbo_->endianness() );
-         }
-
-      void
-         osection_impl::set_link( uint32_t link )
-         {
-            sh_.sh_link = convert_endianness( link, cgbo_->endianness() );
-         }
-
-      char*
-         osection_impl::get_data() const
-         {
-            return data_;
-         }
-
-      CGBIO_ERROR
-         osection_impl::set_data( const char* data, const uint32_t size )
-         {
-            CGBIO_ERROR ret = CGBIO_ERROR_NO_ERROR;
-            sh_.sh_size = convert_endianness( size, cgbo_->endianness() );
-
-            if ( SHT_NOBITS == type() )
-            {
-               return ret;
-            }
-            delete [] data_;
-            data_ = new char[size];
-            if (size != 0)
-            {
-               if (data_ == 0)
-               {
-                  sh_.sh_size = 0;
-                  ret = CGBIO_ERROR_MEMORY;
-               }
-               else if (data != 0)
-                  std::copy( data, data + size, data_ );
-            }
-
-            return ret;
-         }
-
-      CGBIO_ERROR
-         osection_impl::add_data( const char* data, const uint32_t size )
-         {
-            CGBIO_ERROR ret = CGBIO_ERROR_NO_ERROR;
-
-            char* new_data = new char[ osection_impl::size() + size];
-            if (new_data == 0)
-               ret = CGBIO_ERROR_MEMORY;
-            else
-            {
-               std::copy( data_, data_ + osection_impl::size(), new_data );
-               std::copy( data, data + size, new_data + osection_impl::size() );
-               delete [] data_;
-               data_ = new_data;
-               sh_.sh_size = convert_endianness(osection_impl::size()+size, cgbo_->endianness() );
-            }
-
-            return ret;
-         }
-
-      ostring_table_impl::ostring_table_impl( elf_writer* cgbo, osection* section )
-         : ref_count_( 1 )
-           , cgbo_( cgbo )
-           , section_( section )
-      {
-         if ( section->get_data() != 0 && section->size() != 0)
-         {
-            data_.insert(data_.end(), section->get_data(),section->get_data() + section->size());
-            //data_.append( section->get_data(), section->size() );
-         }
-         cgbo_->reference();
-         section_->reference();
-      }
-
-      ostring_table_impl::~ostring_table_impl()
-      {
-      }
-
-      ptrdiff_t
-         ostring_table_impl::reference()
-         {
-            cgbo_->reference();
-            section_->reference();
-            return ++ref_count_;
-         }
-
-      ptrdiff_t
-         ostring_table_impl::release()
-         {
-            ptrdiff_t ret = --ref_count_;
-            elf_writer* cgbo = cgbo_;
-            osection* sec = section_;
-
-            if (ref_count_ == 0)
-            {
-               section_->set_data( &data_[0], (uint32_t)data_.size() );
-               delete this;
-            }
-            sec->release();
-            cgbo->release();
-            return ret;
-         }
-
-      const char*
-         ostring_table_impl::get( uint32_t index ) const
-         {
-            if ( index < data_.size() )
-            {
-               const char* data = &data_[0];
-               if (data != 0)
-                  return data + index;
-            }
-            return 0;
-         }
-
-      uint32_t
-         ostring_table_impl::find( const char* str  ) const
-         {
-            const char* data = &data_[0];
-            size_t size = data_.size();
-            const char *end = data + size;
-
-            size_t length = strlen(str);
-            if (length+1 > size)
-               return 0;
-            data += length;
-
-            const char *p = (char*)memchr(data,'\0',end-data);
-            while (p && (end-data)>0)
-            {
-               if (!memcmp(p - length, str, length))
-               {
-#ifdef MSVC
-#pragma warning( push )
-#pragma warning ( disable : 4311 )
-#endif
-                  return (uint32_t)(p - length - &data_[0]);
-#ifdef MSVC
-#pragma warning ( pop )
-#endif
-               }
-               data = p+1;	
-               p = (char*)memchr(data,'\0',end-data);
-            }
-            return 0;
-         }
-
-      uint32_t
-         ostring_table_impl::addUnique( const char* str )
-         {
-            if ( data_.size() == 0 )
-               data_.push_back('\0');
-            uint32_t ret = find(str);
-            if (ret == 0 && str[0] != '\0')
-               ret = add(str);
-            return ret;
-         }
-
-      uint32_t
-         ostring_table_impl::add( const char* str )
-         {
-            uint32_t ret = (uint32_t)data_.size();
-
-            if ( data_.size() == 0 )
-            {
-               data_.push_back('\0');
-               ret = 1;
-            }
-
-            data_.insert( data_.end(), str ,str + strlen(str) + 1);
-
-            return ret;
-         }
-
-      oconst_table_impl::oconst_table_impl( elf_writer* cgbo, osection* section )
-         : ref_count_( 1 )
-           , cgbo_( cgbo )
-           , section_( section )
-      {
-         if (section->get_data() != 0 && section->size() != 0)
-         {
-            size_t count = section->size()/sizeof(uint32_t);
-            data_.resize(count);
-            memcpy(&data_[0],section->get_data(),count*sizeof(uint32_t));
-         }
-         cgbo_->reference();
-         section_->reference();
-      }
-
-      oconst_table_impl::~oconst_table_impl()
-      {
-      }
-
-      ptrdiff_t
-         oconst_table_impl::reference()
-         {
-            cgbo_->reference();
-            section_->reference();
-            return ++ref_count_;
-         }
-
-      ptrdiff_t
-         oconst_table_impl::release()
-         {
-            ptrdiff_t ret = --ref_count_;
-            elf_writer* cgbo = cgbo_;
-            osection* sec = section_;
-
-            if (ref_count_ == 0)
-            {
-               section_->set_data( (const char*)&data_[0], (uint32_t)(data_.size()*sizeof(uint32_t)) );
-               delete this;
-            }
-            sec->release();
-            cgbo->release();
-            return ret;
-         }
-
-      const uint32_t*
-         oconst_table_impl::get( uint32_t index ) const
-         {
-            if ( index < data_.size() )
-            {
-               return &data_[index];
-            }
-            return NULL;
-         }
-
-      uint32_t
-         oconst_table_impl::add( const uint32_t *data, uint32_t count)
-         {
-            uint32_t ret = (uint32_t)data_.size();
-            data_.resize(ret+count);
-            memcpy(&data_[ret],data,count*sizeof(uint32_t));
-            return ret;
-         }
-
-      osymbol_table_impl::osymbol_table_impl( elf_writer* cgbo, osection* sec ) :
-         ref_count_( 1 ), cgbo_( cgbo ), section_( sec )
-      {
-         cgbo_->reference();
-         section_->reference();
-         if (section_->size() == 0)
-         {
-            Elf32_Sym entry;
-            entry.st_name  = 0;
-            entry.st_value = 0;
-            entry.st_size  = 0;
-            entry.st_info  = 0;
-            entry.st_other = 0;
-            entry.st_shndx = 0;
-            CGBIO_ERROR err = section_->add_data( reinterpret_cast<char*>( &entry ), sizeof( entry ) );
-            if ( CGBIO_ERROR_NO_ERROR != err )
-            {
-               ;
-            }
-         }
-      }
-
-      osymbol_table_impl::~osymbol_table_impl()
-      {
-      }
-
-      ptrdiff_t
-         osymbol_table_impl::reference()
-         {
-            cgbo_->reference();
-            section_->reference();
-            return ++ref_count_;
-         }
-
-      ptrdiff_t
-         osymbol_table_impl::release()
-         {
-            ptrdiff_t ret = --ref_count_;
-            elf_writer* cgbo = cgbo_;
-            osection* sec = section_;
-            if (ref_count_ == 0 )
-            {
-               delete this;
-            }
-            sec->release();
-            cgbo->release();
-            return ret;
-         }
-
-      uint32_t
-         osymbol_table_impl::add_entry( uint32_t	name,
-               Elf32_Addr	value,
-               uint32_t	size,
-               unsigned char	info,
-               unsigned char	other,
-               uint16_t	shndx )
-         {
-            Elf32_Sym entry;
-            entry.st_name  = convert_endianness( name, cgbo_->endianness() );
-            entry.st_value = convert_endianness( value, cgbo_->endianness() );
-            entry.st_size  = convert_endianness( size, cgbo_->endianness() );;
-            entry.st_info  = info;
-            entry.st_other = other;
-            entry.st_shndx = convert_endianness( shndx, cgbo_->endianness() );
-            CGBIO_ERROR err = section_->add_data( reinterpret_cast<char*>( &entry ), sizeof( entry ) );
-            if ( CGBIO_ERROR_NO_ERROR != err )
-            {
-               ;
-            }
-            uint32_t ret = section_->size() / sizeof(Elf32_Sym) - 1;
-            return ret;
-         }
-
-      uint32_t
-         osymbol_table_impl::add_entry( uint32_t	name,
-               Elf32_Addr	value,
-               uint32_t	size,
-               unsigned char	bind,
-               unsigned char	type,
-               unsigned char	other,
-               uint16_t	shndx )
-         {
-            return 0;
-         }
-
-      uint32_t
-         osymbol_table_impl::add_entry( ostring_table*	strtab,
-               const char*	str,
-               Elf32_Addr	value,
-               uint32_t	size,
-               unsigned char	info,
-               unsigned char	other,
-               uint16_t	shndx )
-         {
-            return 0;
-         }
-
-      uint32_t
-         osymbol_table_impl::add_entry( ostring_table*	strtab,
-               const char*	str,
-               Elf32_Addr	value,
-               uint32_t	size,
-               unsigned char	bind,
-               unsigned char	type,
-               unsigned char	other,
-               uint16_t	shndx )
-         {
-            return 0;
-         }
-
-
-      orelocation_table_impl::orelocation_table_impl( elf_writer* cgbo, osection* sec )
-      {
-      }
-
-      orelocation_table_impl::~orelocation_table_impl()
-      {
-      }
-
-      ptrdiff_t
-         orelocation_table_impl::reference()
-         {
-            return 0;
-         }
-
-      ptrdiff_t
-         orelocation_table_impl::release()
-         {
-            return 0;
-         }
-
-      CGBIO_ERROR
-         orelocation_table_impl::add_entry( Elf32_Addr offset,
-               uint32_t info )
-         {
-            return CGBIO_ERROR_NO_ERROR;
-         }
-
-      CGBIO_ERROR
-         orelocation_table_impl::add_entry( Elf32_Addr offset,
-               uint32_t symbol,
-               unsigned char type )
-         {
-            return CGBIO_ERROR_NO_ERROR;
-         }
-
-      CGBIO_ERROR
-         orelocation_table_impl::add_entry( Elf32_Addr offset,
-               uint32_t info,
-               Elf32_Sword addend )
-         {
-            return CGBIO_ERROR_NO_ERROR;
-         }
-
-
-      CGBIO_ERROR
-         orelocation_table_impl::add_entry( Elf32_Addr offset,
-               uint32_t symbol,
-               unsigned char type,
-               Elf32_Sword addend )
-         {
-            return CGBIO_ERROR_NO_ERROR;
-         }
-
-
-      CGBIO_ERROR
-         orelocation_table_impl::add_entry( ostring_table* pStrWriter,
-               const char* str,
-               osymbol_table* pSymWriter,
-               Elf32_Addr value,
-               uint32_t size,
-               unsigned char symInfo,
-               unsigned char other,
-               uint16_t shndx,
-               Elf32_Addr offset,
-               unsigned char type )
-         {
-            return CGBIO_ERROR_NO_ERROR;
-         }
-
-
-      CGBIO_ERROR
-         orelocation_table_impl::add_entry( ostring_table* pStrWriter,
-               const char* str,
-               osymbol_table* pSymWriter,
-               Elf32_Addr value,
-               uint32_t size,
-               unsigned char symInfo,
-               unsigned char other,
-               uint16_t shndx,
-               Elf32_Addr offset,
-               unsigned char type,
-               Elf32_Sword addend )
-         {
-            return CGBIO_ERROR_NO_ERROR;
-         }
-
-
-      oparam_table_impl::oparam_table_impl( elf_writer* cgbo, osection* sec ) :
-         ref_count_( 1 ), cgbo_( cgbo ), section_( sec )
-      {
-         cgbo_->reference();
-         section_->reference();
-      }
-
-      oparam_table_impl::~oparam_table_impl()
-      {
-      }
-
-      ptrdiff_t
-         oparam_table_impl::reference()
-         {
-            cgbo_->reference();
-            section_->reference();
-            return ++ref_count_;
-         }
-
-      ptrdiff_t
-         oparam_table_impl::release()
-         {
-            ptrdiff_t ret = --ref_count_;
-            elf_writer* cgbo = cgbo_;
-            osection* sec = section_;
-            if (ref_count_ == 0)
-               delete this;
-            sec->release();
-            cgbo->release();
-            return ret;
-         }
-
-      CGBIO_ERROR
-         oparam_table_impl::add_entry( Elf32_cgParameter& parameter )
-         {
-            void* vp = &parameter;
-            return section_->add_data( static_cast<char*>( vp ), sizeof( parameter ) );
-         }
-
-
-   } // bio namespace
-} // cgc namespace
 
 /*============================================================
   NVBI IMPLEMENTATION
@@ -7406,13 +6240,13 @@ namespace cgc {
          owner_ = false;
          loaded_ = false;
          endianness_ = host_endianness();
-         std::fill_n( reinterpret_cast<char*>( &header_ ), sizeof( header_ ), '\0' );
+         std::fill_n( (char*)( &header_ ), sizeof( header_ ), '\0' );
       }
 
       nvb_reader_impl::~nvb_reader_impl()
       {
          if (image_ != 0)
-            delete [] image_;
+            free(image_);
       }
 
       ptrdiff_t
@@ -7426,9 +6260,7 @@ namespace cgc {
          {
             ptrdiff_t ret = --ref_count_;
             if (ref_count_ == 0)
-            {
                delete this;
-            }
             return ret;
          }
 
@@ -7457,9 +6289,8 @@ namespace cgc {
                      break;
                   }
                }
-               size_t sz = length;
-               image_ = new char[sz];
-               memcpy(image_,source,sz);
+               image_ = (char*)malloc(length * sizeof(char));
+               memcpy(image_, source , length);
                loaded_ = true;
                ret = CGBIO_ERROR_NO_ERROR;
                break;
@@ -7522,7 +6353,7 @@ namespace cgc {
          {
             if (image_ == 0)
                return 0;
-            return reinterpret_cast<CgBinaryFragmentProgram*>( &image_[convert_endianness( header_.program, endianness_ )] );
+            return (CgBinaryFragmentProgram*)( &image_[convert_endianness( header_.program, endianness_ )] );
          }
 
       const CgBinaryVertexProgram*
@@ -7530,7 +6361,7 @@ namespace cgc {
          {
             if (image_ == 0)
                return 0;
-            return reinterpret_cast<CgBinaryVertexProgram*>( &image_[convert_endianness( header_.program, endianness_ )] );
+            return (CgBinaryVertexProgram*)( &image_[convert_endianness( header_.program, endianness_ )] );
          }
 
       CGBIO_ERROR
@@ -7542,7 +6373,7 @@ namespace cgc {
             if (image_ == 0)
                return CGBIO_ERROR_NO_ERROR;
 
-            const CgBinaryParameter* params = reinterpret_cast<CgBinaryParameter*>( &image_[convert_endianness( header_.parameterArray, endianness_ )] );
+            const CgBinaryParameter* params = (CgBinaryParameter*)( &image_[convert_endianness( header_.parameterArray, endianness_ )] );
             const CgBinaryParameter& pp = params[index];
             is_referenced = convert_endianness( pp.isReferenced, endianness() ) != 0;
             CgBinaryStringOffset nm_offset = convert_endianness( pp.name,endianness() );
@@ -7574,7 +6405,7 @@ namespace cgc {
             if (image_ == 0)
                return CGBIO_ERROR_NO_ERROR;
 
-            const CgBinaryParameter* params = reinterpret_cast<CgBinaryParameter*>( &image_[convert_endianness( header_.parameterArray, endianness_ )] );
+            const CgBinaryParameter* params = (CgBinaryParameter*)( &image_[convert_endianness( header_.parameterArray, endianness_ )] );
             const CgBinaryParameter& pp = params[index];
             type		= static_cast<CGtype>(		convert_endianness( static_cast<unsigned int>( pp.type ),	endianness() ) );
             resource		= static_cast<CGresource>(	convert_endianness( static_cast<unsigned int>( pp.res ),	endianness() ) );
@@ -7621,157 +6452,6 @@ namespace cgc {
                }
             }
             return CGBIO_ERROR_NO_ERROR;
-         }
-
-
-   }
-}
-
-/*============================================================
-  NVBO IMPLEMENTATION
-  ============================================================ */
-
-using std::copy;
-using std::fill_n;
-
-namespace cgc {
-   namespace bio {
-
-      nvb_writer_impl::nvb_writer_impl()
-      {
-         ref_count_ = 1;
-         fill_n( reinterpret_cast<char*>( &header_ ), sizeof( header_ ), '\0' );
-      }
-
-      nvb_writer_impl::~nvb_writer_impl()
-      {
-      }
-
-      ptrdiff_t
-         nvb_writer_impl::reference()
-         {
-            return ++ref_count_;
-         }
-
-      ptrdiff_t
-         nvb_writer_impl::release()
-         {
-            ptrdiff_t ret = --ref_count_;
-            if (ref_count_ == 0)
-               delete this;
-            return ret;
-         }
-
-      CGBIO_ERROR
-         nvb_writer_impl::save( ofstream& ofs )
-         {
-            CGBIO_ERROR ret = CGBIO_ERROR_NO_ERROR;
-            if ( !ofs )
-            {
-               return CGBIO_ERROR_FILEIO;
-            }
-            header_.e_shoff = convert_endianness( (uint32_t)sizeof( Elf32_Ehdr ), endianness() );
-            header_.e_phnum = convert_endianness( 0, endianness() );
-            ofs.seekp( 0 );
-            ofs.write( reinterpret_cast<const char*>( &header_ ), sizeof( Elf32_Ehdr ) );
-            ofs.close();
-
-            return ret;
-         }
-
-      CGBIO_ERROR
-         nvb_writer_impl::save( const char* filename )
-         {
-            ofstream ofs( filename, std::ios::out | std::ios::binary );
-            return save( ofs );
-         }
-
-      CGBIO_ERROR
-         nvb_writer_impl::set_attr( const unsigned char file_class,
-               const unsigned char endianness,
-               const unsigned char ELFversion,
-               const unsigned char abi,
-               const unsigned char ABIversion,
-               const uint16_t type,
-               const uint16_t machine,
-               const uint32_t version,
-               const uint32_t flags )
-         {
-            header_.e_ident[EI_MAG0]    = ELFMAG0;
-            header_.e_ident[EI_MAG1]    = ELFMAG1;
-            header_.e_ident[EI_MAG2]    = ELFMAG2;
-            header_.e_ident[EI_MAG3]    = ELFMAG3;
-            header_.e_ident[EI_CLASS]   = file_class;
-            header_.e_ident[EI_DATA]    = endianness;
-            header_.e_ident[EI_VERSION] = ELFversion;
-            header_.e_ident[EI_OSABI]	= abi;
-            header_.e_ident[EI_ABIVERSION]	= ABIversion;
-
-            header_.e_type    = convert_endianness( type,    endianness );
-            header_.e_machine = convert_endianness( machine, endianness );
-            header_.e_version = convert_endianness( version, endianness );
-            header_.e_flags   = convert_endianness( flags,   endianness );
-
-            header_.e_ehsize    = convert_endianness( (uint16_t)sizeof( header_ ),    endianness );
-            header_.e_phentsize = convert_endianness( (uint16_t)sizeof( Elf32_Phdr ), endianness );
-            header_.e_shentsize = convert_endianness( (uint16_t)sizeof( Elf32_Shdr ), endianness );
-            header_.e_shstrndx  = convert_endianness( 1, endianness );
-            return CGBIO_ERROR_NO_ERROR;
-         }
-
-      Elf32_Addr
-         nvb_writer_impl::get_entry() const
-         {
-            return convert_endianness( header_.e_entry, endianness() );
-         }
-
-      CGBIO_ERROR
-         nvb_writer_impl::set_entry( Elf32_Addr entry )
-         {
-            header_.e_entry = convert_endianness( entry, endianness() );
-            return CGBIO_ERROR_NO_ERROR;
-         }
-
-      unsigned char
-         nvb_writer_impl::endianness() const
-         {
-            return header_.e_ident[EI_DATA];
-         }
-
-      oparam_array_impl::oparam_array_impl( nvb_writer* cgbo ) :
-         ref_count_( 1 ), cgbo_( cgbo )
-      {
-         cgbo_->reference();
-      }
-
-      oparam_array_impl::~oparam_array_impl()
-      {
-      }
-
-      ptrdiff_t oparam_array_impl::reference()
-      {
-         cgbo_->reference();
-         return ++ref_count_;
-      }
-
-      ptrdiff_t
-         oparam_array_impl::release()
-         {
-            ptrdiff_t ret = --ref_count_;
-            nvb_writer* cgbo = cgbo_;
-
-            if (ref_count_ == 0)
-               delete this;
-
-            cgbo->release();
-            return ret;
-         }
-
-      CGBIO_ERROR
-         oparam_array_impl::add_entry()
-         {
-            CGBIO_ERROR ret = CGBIO_ERROR_NO_ERROR;
-            return ret;
          }
 
 

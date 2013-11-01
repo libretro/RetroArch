@@ -1534,7 +1534,7 @@ uint32_t gmmAlloc(void *data,
    uint32_t        retId;
    uint32_t        newSize;
 
-   if (__builtin_expect((size == 0),0))
+   if (size == 0)
       return GMM_ERROR;
 
    pAllocator =  pGmmLocalAllocator;
@@ -3133,8 +3133,8 @@ GLAPI void RGL_EXPORT psglSwap (void)
    thisContext->current[0] = (((33) << (18)) | CELL_GCM_NV4097_SET_TRANSFORM_CONSTANT_LOAD);
    thisContext->current[1] = 0;
 
-   __builtin_memcpy(&thisContext->current[2], v, sizeof(float)*16);
-   __builtin_memcpy(&thisContext->current[18], &v[16], sizeof(float)*16);
+   memcpy(&thisContext->current[2], v, sizeof(float)*16);
+   memcpy(&thisContext->current[18], &v[16], sizeof(float)*16);
    thisContext->current += 34;
    v += 32; 
 
@@ -3283,7 +3283,7 @@ GLAPI GLboolean APIENTRY glUnmapBuffer( GLenum target )
 
 GLAPI void APIENTRY glDeleteBuffers( GLsizei n, const GLuint *buffers )
 {
-   RGLcontext *LContext = _CurrentContext;
+   RGLcontext *LContext = (RGLcontext*)_CurrentContext;
    for (int i = 0; i < n; ++i)
    {
       if(!rglTexNameSpaceIsName(&LContext->bufferObjectNameSpace, buffers[i]))
@@ -3312,13 +3312,13 @@ GLAPI void APIENTRY glDeleteBuffers( GLsizei n, const GLuint *buffers )
 
 GLAPI void APIENTRY glGenBuffers( GLsizei n, GLuint *buffers )
 {
-   RGLcontext *LContext = _CurrentContext;
+   RGLcontext *LContext = (RGLcontext*)_CurrentContext;
    rglTexNameSpaceGenNames( &LContext->bufferObjectNameSpace, n, buffers );
 }
 
 GLAPI void APIENTRY glBufferData( GLenum target, GLsizeiptr size, const GLvoid * data, GLenum usage )
 {
-   RGLcontext *LContext = _CurrentContext;
+   RGLcontext *LContext = (RGLcontext*)_CurrentContext;
 
    GLuint name = 0;
 
@@ -3355,14 +3355,14 @@ GLAPI void APIENTRY glBufferData( GLenum target, GLsizeiptr size, const GLvoid *
    bufferObject->height = 0;
    bufferObject->internalFormat = GL_NONE;
 
-   if ( size > 0 )
+   if (size)
    {
-      GLboolean created = rglpCreateBufferObject(bufferObject);
-      if ( !created )
+      if (!rglpCreateBufferObject(bufferObject))
       {
          rglSetError( GL_OUT_OF_MEMORY );
          return;
       }
+
       if (data)
          rglPlatformBufferObjectSetData( bufferObject, 0, size, data, GL_TRUE );
    }
@@ -3378,18 +3378,18 @@ GLAPI void APIENTRY glClearColor( GLclampf red, GLclampf green, GLclampf blue, G
 
 GLAPI void APIENTRY glBlendColor( GLclampf red, GLclampf green, GLclampf blue, GLclampf alpha )
 {
-   RGLcontext*	LContext = _CurrentContext;
-   LContext->BlendColor.R = rglClampf( red );
-   LContext->BlendColor.G = rglClampf( green );
-   LContext->BlendColor.B = rglClampf( blue );
-   LContext->BlendColor.A = rglClampf( alpha );
+   RGLcontext*	LContext = (RGLcontext*)_CurrentContext;
+   LContext->BlendColor.R = rglClampf(red);
+   LContext->BlendColor.G = rglClampf(green);
+   LContext->BlendColor.B = rglClampf(blue);
+   LContext->BlendColor.A = rglClampf(alpha);
 
    LContext->needValidate |= RGL_VALIDATE_BLENDING;
 }
 
 GLAPI void APIENTRY glBlendFunc( GLenum sfactor, GLenum dfactor )
 {
-   RGLcontext*	LContext = _CurrentContext;
+   RGLcontext*	LContext = (RGLcontext*)_CurrentContext;
 
    LContext->BlendFactorSrcRGB = sfactor;
    LContext->BlendFactorSrcAlpha = sfactor;
@@ -4007,9 +4007,8 @@ static void rglResetContext (void *data)
 
 static rglTexture *rglAllocateTexture(void)
 {
-   GLuint size = sizeof(rglTexture) + sizeof(rglGcmTexture);
-   rglTexture *texture = (rglTexture*)malloc(size);
-   memset( texture, 0, size );
+   rglTexture *texture = (rglTexture*)malloc(sizeof(rglTexture) + sizeof(rglGcmTexture));
+   memset( texture, 0, sizeof(rglTexture) + sizeof(rglGcmTexture));
    texture->target = 0;
    texture->minFilter = GL_NEAREST_MIPMAP_LINEAR;
    texture->magFilter = GL_LINEAR;
@@ -4283,8 +4282,7 @@ GLAPI const GLubyte* APIENTRY glGetString( GLenum name )
 
 void psglInit (void *data)
 {
-   RGLinitOptions *options = (RGLinitOptions*)data;
-   rglPsglPlatformInit(options);
+   rglPsglPlatformInit((RGLinitOptions*)data);
 }
 
 void psglExit(void)
@@ -4346,7 +4344,7 @@ rglTexture *rglGetCurrentTexture (const void *data, GLenum target)
 static void rglGetImage( GLenum target, GLint level, rglTexture **texture, rglImage **image, GLsizei reallocateSize )
 {
    RGLcontext*	LContext = _CurrentContext;
-   rglTextureImageUnit *unit = LContext->CurrentImageUnit;
+   rglTextureImageUnit *unit = (rglTextureImageUnit*)LContext->CurrentImageUnit;
 
    GLenum expectedTarget = GL_TEXTURE_2D;
 

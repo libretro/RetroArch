@@ -192,7 +192,7 @@ template<int SIZE> static void setVectorTypeSharedvpIndex (void *data, const voi
    thisContext->current[1] = resource;
    thisContext->current += 2;
 
-   __builtin_memcpy(thisContext->current, dst, sizeof(float)*4);
+   memcpy(thisContext->current, dst, sizeof(float)*4);
    thisContext->current += 4;
    dst += 4; 
 }
@@ -218,7 +218,7 @@ template<int SIZE> static void setVectorTypeSharedvpIndexArray (void *data, cons
    thisContext->current[1] = resource;
    thisContext->current += 2;
 
-   __builtin_memcpy(thisContext->current, dst, sizeof(float)*4);
+   memcpy(thisContext->current, dst, sizeof(float)*4);
    thisContext->current += 4;
    dst += 4; 
 }
@@ -603,7 +603,7 @@ void rglCreatePushBuffer(void *data)
    int extraStorageInWords = 0;
    int offsetCount = 0;
    int samplerCount = 0;
-   int profileIndex = ( program->header.profile == CG_PROFILE_SCE_FP_TYPEB || //program->header.profile==CG_PROFILE_SCE_FP_TYPEC ||
+   int profileIndex = ( program->header.profile == CG_PROFILE_SCE_FP_TYPEB || 
          program->header.profile == CG_PROFILE_SCE_FP_RSX ) ? FRAGMENT_PROFILE_INDEX : VERTEX_PROFILE_INDEX;
 
    bool hasSharedParams = false;
@@ -667,9 +667,7 @@ void rglCreatePushBuffer(void *data)
                {
                   hasSharedParams = true;
                   if ( !( parameterEntry->flags & CGP_CONTIGUOUS ) )
-                  {
                      programPushBufferPointersSize += arrayCount;
-                  }
                }
             }
             else //profileIndex == FRAGMENT_PROFILE_INDEX
@@ -1145,7 +1143,7 @@ void rglPlatformBufferObjectSetData(void *buf_data, GLintptr offset, GLsizeiptr 
    rglGcmBufferObject *rglBuffer = ( rglGcmBufferObject * )bufferObject->platformBufferObject;
 
    if ( size == bufferObject->size && tryImmediateCopy )
-      __builtin_memcpy( gmmIdToAddress( rglBuffer->bufferId ) + offset, data, size );
+      memcpy( gmmIdToAddress( rglBuffer->bufferId ) + offset, data, size );
    else if ( size >= bufferObject->size )
    {
       // reallocate the buffer
@@ -1157,12 +1155,12 @@ void rglPlatformBufferObjectSetData(void *buf_data, GLintptr offset, GLsizeiptr 
       // copy directly to newly allocated memory
       //  TODO: For GPU destination, should we copy to system memory and
       //  pull from GPU?
-      __builtin_memcpy( gmmIdToAddress( rglBuffer->bufferId ), data, size );
+      memcpy( gmmIdToAddress( rglBuffer->bufferId ), data, size );
    }
       else
       {
-         if ( tryImmediateCopy )
-            __builtin_memcpy( gmmIdToAddress( rglBuffer->bufferId ) + offset, data, size );
+         if (tryImmediateCopy)
+            memcpy( gmmIdToAddress( rglBuffer->bufferId ) + offset, data, size );
          else
          {
             // partial buffer write
@@ -1175,7 +1173,7 @@ void rglPlatformBufferObjectSetData(void *buf_data, GLintptr offset, GLsizeiptr 
 
 GLAPI void APIENTRY glBufferSubData( GLenum target, GLintptr offset, GLsizeiptr size, const GLvoid *data )
 {
-   RGLcontext *LContext = _CurrentContext;
+   RGLcontext *LContext = (RGLcontext*)_CurrentContext;
    GLuint name = 0;
 
    switch ( target )
@@ -1358,8 +1356,7 @@ GLAPI void APIENTRY glClear( GLbitfield mask )
 
 rglFramebuffer* rglCreateFramebuffer (void)
 {
-   rglFramebuffer* framebuffer = new rglPlatformFramebuffer();
-   return framebuffer;
+   return new rglPlatformFramebuffer();
 }
 
 void rglDestroyFramebuffer (void *data)
@@ -1373,7 +1370,7 @@ void rglDestroyFramebuffer (void *data)
 GLenum rglPlatformFramebufferCheckStatus (void *data)
 {
    rglFramebuffer *framebuffer = (rglFramebuffer*)data;
-   RGLcontext* LContext = _CurrentContext;
+   RGLcontext* LContext = (RGLcontext*)_CurrentContext;
 
    GLuint nBuffers = 0;	// number of attached buffers
    int width = 0;
@@ -2025,9 +2022,8 @@ beginning:
                // don't transfer data that is not going to be used, from 0 to first*stride
                GLuint offset = ( dparams->firstVertex / freq ) * stride;
 
-               char * b = ( char * )xferBuffer + dparams->attribXferOffset[i];
-               __builtin_memcpy(b + offset,
-                     ( char*)attrib->clientData + offset,
+               char * b = (char*)xferBuffer + dparams->attribXferOffset[i];
+               memcpy(b + offset, (char*)attrib->clientData + offset,
                      dparams->attribXferSize[i] - offset);
 
                // draw directly from bounce buffer
@@ -2417,8 +2413,7 @@ source:		RGLGCM_SURFACE_SOURCE_TEXTURE,
             src.dataIdOffset = 0;
 
             // NPOT DXT
-            __builtin_memcpy( gmmIdToAddress( src.dataId ), 
-                  image->data, image->storageSize );
+            memcpy( gmmIdToAddress( src.dataId ), image->data, image->storageSize );
          }
 
          // use surface copy functions
