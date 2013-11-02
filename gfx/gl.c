@@ -2181,7 +2181,7 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
 static bool gl_alive(void *data)
 {
    gl_t *gl = (gl_t*)data;
-   bool quit, resize;
+   bool quit = false, resize = false;
 
    context_check_window_func(&quit,
          &resize, &gl->win_width, &gl->win_height,
