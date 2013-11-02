@@ -346,6 +346,20 @@ static const rarch_joypad_driver_t *dinput_get_joypad_driver(void *data)
    return di->joypad;
 }
 
+static uint64_t dinput_get_capabilities(void *data)
+{
+   uint64_t caps = 0;
+
+   caps |= (1 << RETRO_DEVICE_JOYPAD);
+   caps |= (1 << RETRO_DEVICE_MOUSE);
+   caps |= (1 << RETRO_DEVICE_KEYBOARD);
+   caps |= (1 << RETRO_DEVICE_LIGHTGUN);
+   caps |= (1 << RETRO_DEVICE_POINTER);
+   caps |= (1 << RETRO_DEVICE_ANALOG);
+
+   return caps;
+}
+
 const input_driver_t input_dinput = {
    dinput_init,
    dinput_poll,
@@ -353,6 +367,7 @@ const input_driver_t input_dinput = {
    dinput_key_pressed,
    dinput_free,
    NULL,
+   dinput_get_capabilities,
    "dinput",
 
    dinput_grab_mouse,
@@ -663,20 +678,6 @@ static const char *dinput_joypad_name(unsigned pad)
    return NULL;
 }
 
-static uint64_t dinput_get_capabilities(void *data)
-{
-   uint64_t caps = 0;
-
-   caps |= (1 << RETRO_DEVICE_JOYPAD);
-   caps |= (1 << RETRO_DEVICE_MOUSE);
-   caps |= (1 << RETRO_DEVICE_KEYBOARD);
-   caps |= (1 << RETRO_DEVICE_LIGHTGUN);
-   caps |= (1 << RETRO_DEVICE_POINTER);
-   caps |= (1 << RETRO_DEVICE_ANALOG);
-
-   return caps;
-}
-
 const rarch_joypad_driver_t dinput_joypad = {
    dinput_joypad_init,
    dinput_joypad_query_pad,
@@ -686,7 +687,5 @@ const rarch_joypad_driver_t dinput_joypad = {
    dinput_joypad_poll,
    NULL,
    dinput_joypad_name,
-   dinput_get_capabilities,
    "dinput",
 };
-
