@@ -28,7 +28,7 @@ static inline GLuint rglPlatformGetBitsPerPixel (GLenum internalFormat)
 
 #define rglGcmSetVertexData4f(thisContext, index, v) \
  thisContext->current[0] = (((4) << (18)) | (CELL_GCM_NV4097_SET_VERTEX_DATA4F_M + (index) * 16)); \
- __builtin_memcpy(&thisContext->current[1], v, sizeof(float)*4); \
+ memcpy(&thisContext->current[1], v, sizeof(float)*4); \
  thisContext->current += 5;
 
 #define rglGcmSetVertexDataArray(thisContext, index, frequency, stride, size, type, location, offset) \
@@ -448,9 +448,8 @@ static inline void rglGcmSetVertexProgramLoad(struct CellGcmContextData *thisCon
    for (i = 0; i < loop; i++)
    {
       thisContext->current[0] = (((32) << (18)) | CELL_GCM_NV4097_SET_TRANSFORM_PROGRAM);
-
-      __builtin_memcpy(&thisContext->current[1], &rawData[0], sizeof(uint32_t)*16);
-      __builtin_memcpy(&thisContext->current[17], &rawData[16], sizeof(uint32_t)*16);
+      memcpy(&thisContext->current[1], &rawData[0], sizeof(uint32_t)*16);
+      memcpy(&thisContext->current[17], &rawData[16], sizeof(uint32_t)*16);
 
       thisContext->current += (1 + 32);
       rawData += 32;

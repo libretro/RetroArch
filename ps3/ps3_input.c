@@ -356,6 +356,7 @@ static void ps3_input_set_keybinds(void *data, unsigned device,
 
 static void* ps3_input_init(void)
 {
+   unsigned i;
    ps3_input_t *ps3 = (ps3_input_t*)calloc(1, sizeof(*ps3));
    if (!ps3)
       return NULL;

@@ -113,7 +113,6 @@ uint32_t gmmInit(
       );
 
 uint32_t gmmDestroy(void);
-uint32_t gmmIdToOffset(const uint32_t id);
 char *gmmIdToAddress(const uint32_t id);
 
 uint32_t gmmFPOffsetToId(
@@ -132,14 +131,21 @@ uint32_t gmmAlloc(
       const uint32_t size
       );
 
-uint32_t gmmGetBlockSize (const uint32_t id);
+extern GmmAllocator         *pGmmLocalAllocator;
+
+#define GMM_ADDRESS_TO_OFFSET(address) (address - pGmmLocalAllocator->memoryBase)
+
+#define gmmGetBlockSize(id) (((GmmBaseBlock*)id)->size)
+#define gmmGetTileData(id) (((GmmTileBlock*)id)->pData)
+#define gmmIdToOffset(id)  (GMM_ADDRESS_TO_OFFSET(((GmmBaseBlock*)id)->address))
+#define gmmAllocFixedTileBlock() ((GmmTileBlock*)gmmAllocFixed(1))
+#define gmmFreeFixedTileBlock(data)  (gmmFreeFixed(1, (GmmTileBlock*)data))
+#define gmmFreeFixedBlock(data)  (gmmFreeFixed(0, (GmmBlock*)data))
 
 void gmmSetTileAttrib(
       const uint32_t id,
       const uint32_t tag,
       void *pData
       );
-
-void *gmmGetTileData (const uint32_t id);
 
 #endif

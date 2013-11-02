@@ -279,13 +279,12 @@ void rglTexNameSpaceDeleteNames(void *data, GLsizei n, const GLuint *names )
   MEMORY MANAGER
   ============================================================ */
 
-static GmmAllocator         *pGmmLocalAllocator = NULL;
+GmmAllocator         *pGmmLocalAllocator = NULL;
 static volatile uint32_t    *pLock = NULL;
 static uint32_t             cachedLockValue = 0;
 static GmmFixedAllocData    *pGmmFixedAllocData = NULL;
 
 #define PAD(x, pad) ((x + pad - 1) / pad * pad)
-#define GMM_ADDRESS_TO_OFFSET(address) (address - pGmmLocalAllocator->memoryBase)
 
 static uint32_t gmmInitFixedAllocator(void)
 {
@@ -439,23 +438,6 @@ static void gmmDestroyFixedAllocator (void)
 
 #define GMM_ALLOC_FIXED_BLOCK() ((GmmBlock*)gmmAllocFixed(0))
 
-static void gmmFreeFixedBlock (void *data)
-{
-   GmmBlock *pBlock = (GmmBlock*)data;
-   gmmFreeFixed(0, pBlock);
-}
-
-static GmmTileBlock *gmmAllocFixedTileBlock (void)
-{
-   return (GmmTileBlock *)gmmAllocFixed(1);
-}
-
-static void gmmFreeFixedTileBlock (void *data)
-{
-   GmmTileBlock *pTileBlock = (GmmTileBlock*)data;
-   gmmFreeFixed(1, pTileBlock);
-}
-
 uint32_t gmmInit(
       const void *localMemoryBase,
       const void *localStartAddress,
@@ -547,16 +529,6 @@ uint32_t gmmDestroy (void)
    return CELL_OK;
 }
 
-uint32_t gmmGetBlockSize(const uint32_t id)
-{
-   return ((GmmBaseBlock *)id)->size;
-}
-
-void *gmmGetTileData(const uint32_t id)
-{
-   return ((GmmTileBlock *)id)->pData;
-}
-
 void gmmSetTileAttrib(const uint32_t id, const uint32_t tag,
       void *pData)
 {
@@ -564,12 +536,6 @@ void gmmSetTileAttrib(const uint32_t id, const uint32_t tag,
 
    pTileBlock->tileTag = tag;
    pTileBlock->pData = pData;
-}
-
-uint32_t gmmIdToOffset(const uint32_t id)
-{
-   GmmBaseBlock    *pBaseBlock = (GmmBaseBlock *)id;
-   return GMM_ADDRESS_TO_OFFSET(pBaseBlock->address);
 }
 
 char *gmmIdToAddress (const uint32_t id)
@@ -621,9 +587,7 @@ static GmmBlock *gmmAllocBlock(
    {
       pNewBlock = GMM_ALLOC_FIXED_BLOCK();
       if (pNewBlock == NULL)
-      {
          return NULL;
-      }
 
       memset(pNewBlock, 0, sizeof(GmmBlock));
 
@@ -1119,7 +1083,7 @@ static inline void gmmLocalMemcpy(void *data, const uint32_t dstOffset,
    int32_t sizeLeft = moveSize;
    int32_t dimension = 4096;
 
-   while (sizeLeft > 0)
+   while (sizeLeft)
    {
       while(sizeLeft >= dimension*dimension*4)
       {
@@ -1138,7 +1102,7 @@ static inline void gmmLocalMemcpy(void *data, const uint32_t dstOffset,
                4);
 
          offset = offset + dimension*dimension*4;
-         sizeLeft = sizeLeft - (dimension*dimension*4);
+         sizeLeft -= (dimension*dimension*4);
       }
 
       dimension = dimension >> 1;
@@ -1147,7 +1111,7 @@ static inline void gmmLocalMemcpy(void *data, const uint32_t dstOffset,
          break;
    }
 
-   if (sizeLeft > 0)
+   if (sizeLeft)
    {
       rglGcmSetTransferImage(gCellGcmCurrentContext, 
             CELL_GCM_TRANSFER_LOCAL_TO_LOCAL,
@@ -1172,12 +1136,10 @@ static inline void gmmMemcpy(void *data, const uint8_t mode,
    CellGcmContextData *thisContext = (CellGcmContextData*)data;
 
    if (dstOffset + moveSize <= srcOffset)
-   {
       gmmLocalMemcpy(thisContext,
             dstOffset,
             srcOffset,
             moveSize);
-   }
    else
    {
       uint32_t moveBlockSize = srcOffset-dstOffset;
@@ -1318,9 +1280,7 @@ static uint8_t gmmInternalSweep(void *data)
             }
 
             if (pBlock->pPrev)
-            {
                availableSize = pBlock->base.address - (pBlock->pPrev->base.address + pBlock->pPrev->base.size);
-            }
 
             pTempBlock = pTempBlockNext;
          }

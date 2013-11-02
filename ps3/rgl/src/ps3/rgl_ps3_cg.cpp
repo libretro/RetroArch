@@ -4981,33 +4981,6 @@ static void fillStructureItems(_CGNVCONTAINERS &containers, CgStructureType *str
       unsigned short *arrayDefaultValueIndex = NULL);
 
 
-int convertNvToElfFromFile(const char *sourceFile, int endianness, int constTableOffset, void **binaryShader, int *size,
-      std::vector<char> &stringTable, std::vector<float> &defaultValues)
-{
-   FILE *fp = fopen(sourceFile, "rb");
-   if (fp)
-   {
-      fseek(fp,0,SEEK_END);
-      size_t filesize = ftell(fp);
-      fseek(fp,0,SEEK_SET);
-      void *data = malloc(filesize);
-      if (data == NULL)
-      {
-         fclose(fp);
-         //RGL_ASSERT2(0,("not enough memory to read the shader source"));
-         return -2;
-      }
-      fread(data,filesize,1,fp);
-      fclose(fp);
-
-      int res = convertNvToElfFromMemory(data,filesize,endianness,constTableOffset, binaryShader, size,stringTable,defaultValues);
-      free(data);
-      return res;
-   }
-   //RGL_ASSERT2(0,("couldn't open source file %s\n",sourceFile));
-   return -1;
-}
-
 #define swap16(v) ((v>>16) | (v<<16))
 
 int convertNvToElfFromMemory(const void *sourceData, size_t size, int endianness, int constTableOffset, void **binaryShader, int *binarySize,
