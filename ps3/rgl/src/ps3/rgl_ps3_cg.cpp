@@ -4784,8 +4784,8 @@ static unsigned short getFlags(CGenum var, CGenum dir, int no,	bool is_reference
 static void fillStructureItems(_CGNVCONTAINERS &containers, CgStructureType *structure,
       int endianness,
       std::vector<CgParameterEntry> &parameterEntries,
-      std::vector<char> &parameterResources, std::vector<char> &stringTable, unsigned short *arrayResourceIndex = NULL,
-      unsigned short *arrayDefaultValueIndex = NULL);
+      std::vector<char> &parameterResources, std::vector<char> &stringTable, unsigned short *arrayResourceIndex,
+      unsigned short *arrayDefaultValueIndex);
 
 
 #define swap16(v) ((v>>16) | (v<<16))
@@ -5444,7 +5444,7 @@ int convertNvToElfFromMemory(const void *sourceData, size_t size, int endianness
    //transform the extracted structure into the file format
    std::vector<CgParameterEntry> parameterEntries;
    std::vector<char> parameterResources;
-   fillStructureItems(containers,&root,endianness,parameterEntries,parameterResources,stringTable);
+   fillStructureItems(containers,&root,endianness,parameterEntries,parameterResources,stringTable, NULL, NULL);
 
    //save it
    CgParameterTableHeader header;
@@ -5652,7 +5652,7 @@ static void fillStructureItems(_CGNVCONTAINERS &containers, CgStructureType *str
                if (hasDefaults)
                   fillStructureItems(containers,structureType,endianness,parameterEntries,parameterResources,stringTable,&_arrayResourceIndex,&_arrayDefaultValueIndex);
                else
-                  fillStructureItems(containers,structureType,endianness,parameterEntries,parameterResources,stringTable,&_arrayResourceIndex);
+                  fillStructureItems(containers,structureType,endianness,parameterEntries,parameterResources,stringTable,&_arrayResourceIndex, NULL);
             }
 
             if (hasDefaults)
@@ -5817,7 +5817,7 @@ static void fillStructureItems(_CGNVCONTAINERS &containers, CgStructureType *str
          parameterStructure->memberCount = CNV2END((unsigned short)structureType->_elements.size());
          parameterStructure->reserved = CNV2END((unsigned short)0);
 
-         fillStructureItems(containers,structureType,endianness,parameterEntries,parameterResources,stringTable);
+         fillStructureItems(containers,structureType,endianness,parameterEntries,parameterResources,stringTable, NULL, NULL);
 
          if (containers._defaultValuesIndices.size() && structure->_root)
          {
