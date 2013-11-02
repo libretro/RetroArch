@@ -19,10 +19,6 @@
 
 static CGbool rglpSupportsVertexProgram( CGprofile p )
 {
-   if ( p == CG_PROFILE_SCE_VP_TYPEB )
-      return CG_TRUE;
-   if ( p == CG_PROFILE_SCE_VP_TYPEC )
-      return CG_TRUE;
    if ( p == CG_PROFILE_SCE_VP_RSX )
       return CG_TRUE;
    return CG_FALSE;
@@ -30,8 +26,6 @@ static CGbool rglpSupportsVertexProgram( CGprofile p )
 
 static CGbool rglpSupportsFragmentProgram( CGprofile p )
 {
-   if ( p == CG_PROFILE_SCE_FP_TYPEB )
-      return CG_TRUE;
    if ( CG_PROFILE_SCE_FP_RSX == p )
       return CG_TRUE;
    return CG_FALSE;
@@ -59,18 +53,9 @@ static int rglGcmGenerateProgram (void *data, int profileIndex, const CgProgramH
 
    int need_swapping = 0;
 
-   //hack to counter removal of TypeC during beta
-   if ( profile == ( CGprofile )7005 )
-      profile = CG_PROFILE_SCE_VP_RSX;
-   if ( profile == ( CGprofile )7006 )
-      profile = CG_PROFILE_SCE_FP_RSX;
-
    // if can't match a known profile, the data may be in wrong endianness
-   if (( profile != CG_PROFILE_SCE_FP_TYPEB ) && ( profile != CG_PROFILE_SCE_VP_TYPEB ) &&
-         ( profile != CG_PROFILE_SCE_FP_RSX ) && ( profile != CG_PROFILE_SCE_VP_RSX ) )
-   {
+   if ((( profile != CG_PROFILE_SCE_FP_RSX ) && ( profile != CG_PROFILE_SCE_VP_RSX ) ))
       need_swapping = 1;
-   }
 
    // check that this program block is of the right revision
    // i.e. that the cgBinary.h header hasn't changed since it was
@@ -78,24 +63,22 @@ static int rglGcmGenerateProgram (void *data, int profileIndex, const CgProgramH
 
    // validate the profile
    int invalidProfile = 0;
+
    switch ( ENDIAN_32( profile, need_swapping ) )
    {
-      case CG_PROFILE_SCE_VP_TYPEB:
-         if ( profileIndex != VERTEX_PROFILE_INDEX ) invalidProfile = 1;
-         break;
-      case CG_PROFILE_SCE_FP_TYPEB:
-         if ( profileIndex != FRAGMENT_PROFILE_INDEX ) invalidProfile = 1;
-         break;
       case CG_PROFILE_SCE_VP_RSX:
-         if ( profileIndex != VERTEX_PROFILE_INDEX ) invalidProfile = 1;
+         if ( profileIndex != VERTEX_PROFILE_INDEX )
+         invalidProfile = 1;
          break;
       case CG_PROFILE_SCE_FP_RSX:
-         if ( profileIndex != FRAGMENT_PROFILE_INDEX ) invalidProfile = 1;
+         if ( profileIndex != FRAGMENT_PROFILE_INDEX )
+         invalidProfile = 1;
          break;
       default:
          invalidProfile = 1;
          break;
    }
+
    if ( invalidProfile )
    {
       rglCgRaiseError( CG_UNKNOWN_PROFILE_ERROR );
@@ -146,7 +129,6 @@ static int rglGcmGenerateProgram (void *data, int profileIndex, const CgProgramH
    if ( profileIndex != FRAGMENT_PROFILE_INDEX )
    {
       /* modifies the push buffer */
-
       for (int i = 0; i < count; i++)
       {
          int index = ( int )program->defaultValuesIndices[i].entryIndex;
@@ -189,6 +171,7 @@ static int rglGcmGenerateProgram (void *data, int profileIndex, const CgProgramH
    // not loaded yet
    program->loadProgramId = GMM_ERROR;
    program->loadProgramOffset = 0;
+
    if ( profileIndex == FRAGMENT_PROFILE_INDEX )
    {
       // always load fragment shaders.
@@ -249,7 +232,7 @@ static CGprogramGroup rglCgCreateProgramGroupFromFile( CGcontext ctx, const char
    // check that file exists
    FILE* fp = fopen( group_file, "rb" );
 
-   if ( NULL == fp )
+   if (fp == NULL)
    {
       rglCgRaiseError( CG_FILE_READ_ERROR );
       return ( CGprogramGroup )NULL;
@@ -431,10 +414,9 @@ int rglCgGetProgramIndex (CGprogramGroup group, const char *name)
 {
    int i;
    for ( i = 0;i < ( int )group->programCount;i++ )
-   {
       if ( !strcmp( name, group->programs[i].name ) )
          return i;
-   }
+
    return -1;
 }
 
@@ -499,12 +481,9 @@ int rglpCopyProgram (void *src_data, void *dst_data)
    //allocate the copy of the program
    switch ( source->header.profile )
    {
-      case CG_PROFILE_SCE_VP_TYPEB:
       case CG_PROFILE_SCE_VP_RSX:
          profileIndex = VERTEX_PROFILE_INDEX;
          break;
-
-      case CG_PROFILE_SCE_FP_TYPEB:
       case CG_PROFILE_SCE_FP_RSX:
          profileIndex = FRAGMENT_PROFILE_INDEX;
          break;
@@ -518,8 +497,7 @@ int rglpGenerateVertexProgram (void *data, const CgProgramHeader *programHeader,
       const void *ucode, const CgParameterTableHeader *parameterHeader, const char *stringTable,
       const float *defaultValues )
 {
-   _CGprogram *program = (_CGprogram*)data;
-   return rglGcmGenerateProgram( program, VERTEX_PROFILE_INDEX, programHeader,
+   return rglGcmGenerateProgram( (_CGprogram*)data, VERTEX_PROFILE_INDEX, programHeader,
          ucode, parameterHeader, NULL, stringTable, defaultValues );
 
 }
@@ -527,8 +505,7 @@ int rglpGenerateVertexProgram (void *data, const CgProgramHeader *programHeader,
 int rglpGenerateFragmentProgram (void *data, const CgProgramHeader *programHeader, const void *ucode,
       const CgParameterTableHeader *parameterHeader, const char *stringTable, const float *defaultValues )
 {
-   _CGprogram *program = (_CGprogram*)data;
-   return rglGcmGenerateProgram( program, FRAGMENT_PROFILE_INDEX, programHeader, ucode, parameterHeader, NULL, stringTable, defaultValues );
+   return rglGcmGenerateProgram( (_CGprogram*)data, FRAGMENT_PROFILE_INDEX, programHeader, ucode, parameterHeader, NULL, stringTable, defaultValues );
 
 }
 
@@ -1955,11 +1932,7 @@ void rglCgProgramErase( _CGprogram* prog )
 
    switch ( prog->header.profile )
    {
-      case CG_PROFILE_SCE_VP_TYPEB:
-         //case CG_PROFILE_SCE_VP_TYPEC:
       case CG_PROFILE_SCE_VP_RSX:
-      case CG_PROFILE_SCE_FP_TYPEB:
-         //case CG_PROFILE_SCE_FP_TYPEC:
       case CG_PROFILE_SCE_FP_RSX:
          rglpProgramErase( prog );
          break;
@@ -3129,8 +3102,6 @@ bool rglCgCreateProgramChecks( CGcontext ctx, CGprofile profile, CGenum program_
    // check the profile.
    switch ( profile )
    {
-      case CG_PROFILE_SCE_VP_TYPEB:
-      case CG_PROFILE_SCE_FP_TYPEB:
       case CG_PROFILE_SCE_VP_RSX:
       case CG_PROFILE_SCE_FP_RSX:
          break;
@@ -3281,14 +3252,10 @@ CGprogram rglCgCreateProgram( CGcontext ctx, CGprofile profile, const CgProgramH
    // load the binary into the program object
    switch ( profile )
    {
-      case CG_PROFILE_SCE_VP_TYPEB:
-         //case CG_PROFILE_SCE_VP_TYPEC:
       case CG_PROFILE_SCE_VP_RSX:
          // TODO ************** need to include the entry symbol too
          success = rglpGenerateVertexProgram( prog, programHeader, ucode, parameterHeader, stringTable, defaultValues );
          break;
-      case CG_PROFILE_SCE_FP_TYPEB:
-         //case CG_PROFILE_SCE_FP_TYPEC:
       case CG_PROFILE_SCE_FP_RSX:
          success = rglpGenerateFragmentProgram( prog, programHeader, ucode, parameterHeader, stringTable, defaultValues );
          break;
@@ -3398,14 +3365,13 @@ CG_API CGprogram cgCreateProgram( CGcontext ctx,
       char *runtimeElfShader = NULL;
       //check the endianness
       int totalSize;
-      if (( nvProgram->profile != CG_PROFILE_SCE_FP_TYPEB ) && ( nvProgram->profile != CG_PROFILE_SCE_VP_TYPEB ) &&
-            ( nvProgram->profile != ( CGprofile )7006 ) && ( nvProgram->profile != ( CGprofile )7005 ) &&
+
+      if (( nvProgram->profile != ( CGprofile )7006 ) && ( nvProgram->profile != ( CGprofile )7005 ) &&
             ( nvProgram->profile != CG_PROFILE_SCE_FP_RSX ) && ( nvProgram->profile != CG_PROFILE_SCE_VP_RSX ) )
-      {
          totalSize = endianSwapWord( nvProgram->totalSize );
-      }
       else
          totalSize = nvProgram->totalSize;
+
       int res = convertNvToElfFromMemory( binaryBuffer, totalSize, 2, 0, ( void** ) & runtimeElfShader, &compiled_program_size, stringTableArray, defaultValuesArray );
       if (res != 0)
       {
@@ -3692,7 +3658,7 @@ CG_API CGprogram cgCopyProgram( CGprogram program )
    size_t paddedProgramSize = 0;
    size_t ucodeSize = 0;
 
-   if (prog->header.profile == CG_PROFILE_SCE_FP_TYPEB || prog->header.profile == CG_PROFILE_SCE_FP_RSX)
+   if (prog->header.profile == CG_PROFILE_SCE_FP_RSX)
    {
       paddedProgramSize = rglPad( sizeof( _CGprogram ), 16);
       ucodeSize = prog->header.instructionCount * 16;
@@ -3725,11 +3691,7 @@ CG_API CGprogram cgCopyProgram( CGprogram program )
    int success = 0;
    switch ( prog->header.profile )
    {
-      case CG_PROFILE_SCE_VP_TYPEB:
-         //case CG_PROFILE_SCE_VP_TYPEC:
       case CG_PROFILE_SCE_VP_RSX:
-      case CG_PROFILE_SCE_FP_TYPEB:
-         //case CG_PROFILE_SCE_FP_TYPEC:
       case CG_PROFILE_SCE_FP_RSX:
          success = rglpCopyProgram( prog, newprog );
          break;
@@ -3747,7 +3709,7 @@ CG_API CGprogram cgCopyProgram( CGprogram program )
       return ( CGprogram )NULL;
    }
 
-   if (prog->header.profile == CG_PROFILE_SCE_FP_TYPEB || prog->header.profile == CG_PROFILE_SCE_FP_RSX)
+   if (prog->header.profile == CG_PROFILE_SCE_FP_RSX)
    {
       newprog->ucode = (char*)newprog + paddedProgramSize;
       memcpy((char*)newprog->ucode, (char*)prog->ucode, ucodeSize);
@@ -3889,50 +3851,6 @@ CG_API CGcontext cgGetProgramContext( CGprogram prog )
    return ptr->parentContext->id;
 }
 
-CG_API CGbool cgIsProgram( CGprogram program )
-{
-   if ( CG_IS_PROGRAM( program ) )
-   {
-      // the id was valid.
-      return CG_TRUE;
-   }
-   // failed to find a valid id.
-   return CG_FALSE;
-}
-
-CG_API void cgCompileProgram( CGprogram program )
-{
-   // check the program input
-   if ( !CG_IS_PROGRAM( program ) )
-   {
-      rglCgRaiseError( CG_INVALID_PROGRAM_HANDLE_ERROR );
-      return;
-   }
-
-   // TODO ****** use this function to re-link our program after creating parameter objects?
-
-   return;
-}
-
-CG_API CGbool cgIsProgramCompiled( CGprogram program )
-{
-   // check the program input
-   if ( !CG_IS_PROGRAM( program ) )
-   {
-      rglCgRaiseError( CG_INVALID_PROGRAM_HANDLE_ERROR );
-      return CG_FALSE;
-   }
-
-   // TODO ********** use this function to find out if our program has unresolved symbols?
-
-   return CG_TRUE;
-}
-
-CG_API void CGENTRY cgSetLastListing( CGhandle handle, const char *listing )
-{
-   return;
-}
-
 CG_API CGprofile cgGetProgramProfile( CGprogram prog )
 {
    // check the program input
@@ -3944,70 +3862,6 @@ CG_API CGprofile cgGetProgramProfile( CGprogram prog )
 
    // return the profile the program was compiled under
    return ( CGprofile )_cgGetProgPtr( prog )->header.profile;
-}
-
-CG_API int cgGetNumProgramDomains( CGprogram program )
-{
-   // check the program input
-   if ( !CG_IS_PROGRAM( program ) )
-   {
-      rglCgRaiseError( CG_INVALID_PROGRAM_HANDLE_ERROR );
-      return CG_PROFILE_UNKNOWN;
-   }
-   // under Jetstream, unlike GLSL, all programs have a single domain.
-   return 1;
-}
-
-CG_API CGprogram cgCombinePrograms( int n, const CGprogram *exeList )
-{
-   // jetstream does not support combination of GLSL programs.
-   return 0;
-}
-
-CG_API CGprogram cgCombinePrograms2( const CGprogram exe1, const CGprogram exe2 )
-{
-   // jetstream does not support combination of GLSL programs.
-   return 0;
-}
-
-CG_API CGprogram cgCombinePrograms3( const CGprogram exe1, const CGprogram exe2, const CGprogram exe3 )
-{
-   // jetstream does not support combination of GLSL programs.
-   return 0;
-}
-
-CG_API CGprofile cgGetProgramDomainProfile( CGprogram program, int index )
-{
-   // check the program input
-   if ( !CG_IS_PROGRAM( program ) )
-   {
-      rglCgRaiseError( CG_INVALID_PROGRAM_HANDLE_ERROR );
-      return CG_PROFILE_UNKNOWN;
-   }
-
-   if ( index >= 1 )
-   {
-      // jetstream programs can only have a single domain
-      return CG_PROFILE_UNKNOWN;
-   }
-
-   // return the single profile under which the shader was compiled.
-   return ( CGprofile )_cgGetProgPtr( program )->header.profile;
-}
-
-CG_API char const * const * cgGetProgramOptions( CGprogram program )
-{
-   // check the program input
-   if ( !CG_IS_PROGRAM( program ) )
-   {
-      rglCgRaiseError( CG_INVALID_PROGRAM_HANDLE_ERROR );
-      return NULL;
-   }
-
-   // NOTE: currently unsupported by Jetstream precompiled programs
-   // TODO: get program options from ".note.MyShader" section of CG ELF Binary
-   // or from compiler arguments of a runtime-compiled program.
-   return NULL;
 }
 
 /*============================================================
@@ -4024,9 +3878,7 @@ inline static float *rglGetUniformValuePtr( CGparameter param, CgRuntimeParamete
       CgRuntimeParameter *rtInArrayCheckParameter = rtParameter - 1;
       // check is array
       if ( rtInArrayCheckParameter->parameterEntry->flags & CGP_ARRAY )
-      {
          value = *(( float** )( rtParameter->pushBufferPointer ) + CG_GETINDEX( param ) );
-      }
    }
    return value;
 }
@@ -4046,20 +3898,10 @@ inline static float *rglGetUniformValuePtr( CGparameter param, CgRuntimeParamete
 
 CGGL_API CGbool cgGLIsProfileSupported( CGprofile profile )
 {
-   //hack to counter removal of TypeC during beta
-   if ( profile == ( CGprofile )7005 )
-      profile = CG_PROFILE_SCE_VP_RSX;
-   if ( profile == ( CGprofile )7006 )
-      profile = CG_PROFILE_SCE_FP_RSX;
-
    switch ( profile )
    {
-      case CG_PROFILE_SCE_VP_TYPEB:
-         //case CG_PROFILE_SCE_VP_TYPEC:
       case CG_PROFILE_SCE_VP_RSX:
          return ( CGbool ) rglpSupportsVertexProgram( profile );
-      case CG_PROFILE_SCE_FP_TYPEB:
-         //case CG_PROFILE_SCE_FP_TYPEC:
       case CG_PROFILE_SCE_FP_RSX:
          return ( CGbool ) rglpSupportsFragmentProgram( profile );
       default:
@@ -4069,23 +3911,14 @@ CGGL_API CGbool cgGLIsProfileSupported( CGprofile profile )
 
 CGGL_API void cgGLEnableProfile( CGprofile profile )
 {
-   //hack to counter removal of TypeC during beta
-   if ( profile == ( CGprofile )7005 )
-      profile = CG_PROFILE_SCE_VP_RSX;
-   if ( profile == ( CGprofile )7006 )
-      profile = CG_PROFILE_SCE_FP_RSX;
-
    // this is a logical extension to glEnable
    RGLcontext* LContext = _CurrentContext;
    switch ( profile )
    {
-      case CG_PROFILE_SCE_VP_TYPEB:
       case CG_PROFILE_SCE_VP_RSX:
          LContext->VertexProgram = GL_TRUE;
          LContext->needValidate |= RGL_VALIDATE_VERTEX_PROGRAM;
          break;
-
-      case CG_PROFILE_SCE_FP_TYPEB:
       case CG_PROFILE_SCE_FP_RSX:
          {
             LContext->FragmentProgram = GL_TRUE;
@@ -4110,25 +3943,15 @@ CGGL_API void cgGLEnableProfile( CGprofile profile )
 
 CGGL_API void cgGLDisableProfile( CGprofile profile )
 {
-   //hack to counter removal of TypeC during beta
-   if ( profile == ( CGprofile )7005 )
-      profile = CG_PROFILE_SCE_VP_RSX;
-   if ( profile == ( CGprofile )7006 )
-      profile = CG_PROFILE_SCE_FP_RSX;
-
    // this is a logical extension to glDisable
    RGLcontext* LContext = _CurrentContext;
    switch ( profile )
    {
-      case CG_PROFILE_SCE_VP_TYPEB:
-         //case CG_PROFILE_SCE_VP_TYPEC:
       case CG_PROFILE_SCE_VP_RSX:
          LContext->VertexProgram = GL_FALSE;
          // no need to invalidate textures because they are only available on programmable pipe.
          LContext->needValidate |= RGL_VALIDATE_VERTEX_PROGRAM ;
          break;
-      case CG_PROFILE_SCE_FP_TYPEB:
-         //case CG_PROFILE_SCE_FP_TYPEC:
       case CG_PROFILE_SCE_FP_RSX:
          LContext->FragmentProgram = GL_FALSE;
          break;
@@ -4180,8 +4003,6 @@ CGGL_API void cgGLBindProgram( CGprogram program )
    // now do the binding.
    switch ( ptr->header.profile )
    {
-      case CG_PROFILE_SCE_VP_TYPEB:
-         //hack to counter removal of TypeC during beta
       case 7005:
       case CG_PROFILE_SCE_VP_RSX:
          // the program is a vertex program, just update the GL state
@@ -4191,8 +4012,6 @@ CGGL_API void cgGLBindProgram( CGprogram program )
          _CurrentContext->needValidate |= PSGL_VALIDATE_VERTEX_PROGRAM;
          break;
 
-      case CG_PROFILE_SCE_FP_TYPEB:
-         //hack to counter removal of TypeC during beta
       case 7006:
       case CG_PROFILE_SCE_FP_RSX:
          _CurrentContext->BoundFragmentProgram = ptr;
@@ -4228,20 +4047,12 @@ CGGL_API void cgGLUnbindProgram( CGprofile profile )
 {
    switch ( profile )
    {
-      case CG_PROFILE_SCE_VP_TYPEB:
-         //case CG_PROFILE_SCE_VP_TYPEC:
       case CG_PROFILE_SCE_VP_RSX:
-         //hack to counter removal of TypeC during beta
-      case 7005:
          _CurrentContext->BoundVertexProgram = NULL;
          _CurrentContext->needValidate |= PSGL_VALIDATE_VERTEX_PROGRAM;
          // no need to invalidate textures because they are only available on programmable pipe.
          break;
-      case CG_PROFILE_SCE_FP_TYPEB:
-         //case CG_PROFILE_SCE_FP_TYPEC:
       case CG_PROFILE_SCE_FP_RSX:
-         //hack to counter removal of TypeC during beta
-      case 7006:
          _CurrentContext->BoundFragmentProgram = NULL;
          break;
       default:
@@ -4787,12 +4598,8 @@ CGGL_API GLenum cgGLGetTextureEnum( CGparameter param )
    }
 
    // XXX  what about the vertex texture enums !?
-   if (( ptr->program->header.profile == CG_PROFILE_SCE_VP_TYPEB )
-         //|| (ptr->program->header.profile==CG_PROFILE_SCE_VP_TYPEC)
-         || ( ptr->program->header.profile == CG_PROFILE_SCE_VP_RSX ) )
-   {
+   if ( ptr->program->header.profile == CG_PROFILE_SCE_VP_RSX)
       return GL_INVALID_OPERATION;
-   }
 
    if ( !( ptr->parameterEntry->flags & CGPF_REFERENCED ) || !(( ptr->parameterEntry->flags & CGPV_MASK ) == CGPV_UNIFORM ) ) { rglCgRaiseError( CG_INVALID_PARAMETER_ERROR ); return GL_INVALID_OPERATION; }
    const CgParameterResource *parameterResource = rglGetParameterResource( ptr->program, ptr->parameterEntry );
@@ -5000,19 +4807,11 @@ int convertNvToElfFromMemory(const void *sourceData, size_t size, int endianness
    bool doSwap = !(nvbr->endianness() == (HOST_ENDIANNESS)elfEndianness);
 
    CGprofile NVProfile = nvbr->profile();
-   //hack to counter removal of TypeC during beta
-   if (NVProfile == (CGprofile)7005 )
-      NVProfile = CG_PROFILE_SCE_VP_RSX;
-   if (NVProfile == (CGprofile)7006 )
-      NVProfile = CG_PROFILE_SCE_FP_RSX;
-   if (NVProfile == CG_PROFILE_SCE_VP_TYPEB || NVProfile == CG_PROFILE_SCE_VP_RSX)
-   {
+
+   if (NVProfile == CG_PROFILE_SCE_VP_RSX)
       bIsVertexProgram = true;
-   }
-   else if (NVProfile == CG_PROFILE_SCE_FP_TYPEB || NVProfile == CG_PROFILE_SCE_FP_RSX)
-   {
+   else if (NVProfile == CG_PROFILE_SCE_FP_RSX)
       bIsVertexProgram = false;
-   }
    else
    {
       //RGL_ASSERT2(0,("error: unknown shader profile\n"));
