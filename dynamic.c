@@ -764,6 +764,17 @@ bool rarch_environment_cb(unsigned cmd, void *data)
          break;
       }
 
+      case RETRO_ENVIRONMENT_GET_INPUT_DEVICE_CAPABILITIES:
+      {
+         RARCH_LOG("Environ GET_INPUT_DEVICE_CAPABILITIES.\n");
+         uint64_t *mask = (uint64_t*)data;
+         if (driver.input && driver.input->get_capabilities && driver.input_data)
+            *mask = driver.input->get_capabilities(driver.input_data);
+         else
+            return false;
+         break;
+      }
+
       // Private extensions for internal use, not part of libretro API.
       case RETRO_ENVIRONMENT_SET_LIBRETRO_PATH:
          RARCH_LOG("Environ (Private) SET_LIBRETRO_PATH.\n");

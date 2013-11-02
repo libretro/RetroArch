@@ -519,6 +519,13 @@ enum retro_mod
                                            // struct retro_rumble_interface * --
                                            // Gets an interface which is used by a libretro core to set state of rumble motors in controllers.
                                            // A strong and weak motor is supported, and they can be controlled indepedently.
+                                           //
+#define RETRO_ENVIRONMENT_GET_INPUT_DEVICE_CAPABILITIES 24
+                                           // uint64_t * --
+                                           // Gets a bitmask telling which device type are expected to be handled properly in a call to retro_input_state_t.
+                                           // Devices which are not handled or recognized always return 0 in retro_input_state_t.
+                                           // Example bitmask: caps = (1 << RETRO_DEVICE_JOYPAD) | (1 << RETRO_DEVICE_ANALOG).
+                                           // Should only be called in retro_run().
 
 
 enum retro_rumble_effect
