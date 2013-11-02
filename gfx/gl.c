@@ -2445,9 +2445,7 @@ static bool gl_overlay_load(void *data, const struct video_overlay_image *images
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 
-#ifndef HAVE_PSGL
       glPixelStorei(GL_UNPACK_ALIGNMENT, get_alignment(images[i].width * sizeof(uint32_t)));
-#endif
       glTexImage2D(GL_TEXTURE_2D, 0, driver.gfx_use_rgba ? GL_RGBA : RARCH_GL_INTERNAL_FORMAT32,
             images[i].width, images[i].height, 0, driver.gfx_use_rgba ? GL_RGBA : RARCH_GL_TEXTURE_TYPE32,
             RARCH_GL_FORMAT32, images[i].image);
@@ -2630,10 +2628,8 @@ static void gl_set_texture_frame(void *data,
 
    gl->rgui_texture_alpha = alpha;
 
-#ifndef HAVE_PSGL
    unsigned base_size = rgb32 ? sizeof(uint32_t) : sizeof(uint16_t);
    glPixelStorei(GL_UNPACK_ALIGNMENT, get_alignment(width * base_size));
-#endif
 
    if (rgb32)
    {

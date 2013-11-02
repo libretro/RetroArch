@@ -2872,3 +2872,18 @@ void rglGcmFifoGlSetRenderTarget (const void *data)
    uint32_t log2Height = 31 - ({__asm__("cntlzw %0,%1" : "=r" (log2Height) : "r" (grt->height)); log2Height;});
    rglGcmSetSurface(thisContext, grt, CELL_GCM_WINDOW_ORIGIN_BOTTOM, CELL_GCM_WINDOW_PIXEL_CENTER_HALF, log2Width, log2Height);
 }
+
+GLAPI void APIENTRY glPixelStorei( GLenum pname, GLint param )
+{
+   RGLcontext*	LContext = _CurrentContext;
+
+    switch ( pname )
+    {
+        case GL_PACK_ALIGNMENT:
+            LContext->packAlignment = param;
+            break;
+        case GL_UNPACK_ALIGNMENT:
+            LContext->unpackAlignment = param;
+            break;
+    }
+}
