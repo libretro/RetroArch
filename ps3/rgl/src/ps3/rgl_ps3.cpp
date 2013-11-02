@@ -480,15 +480,6 @@ uint32_t gmmInit(
    return gmmInitFixedAllocator();
 }
 
-static inline void gmmWaitForSweep (void)
-{
-   while (cachedLockValue != 0)
-   {
-      sys_timer_usleep(30);
-      cachedLockValue = *pLock;
-   }
-}
-
 uint32_t gmmDestroy (void)
 {
    GmmBlock *pBlock, *pTmpBlock;
@@ -529,46 +520,15 @@ uint32_t gmmDestroy (void)
    return CELL_OK;
 }
 
-void gmmSetTileAttrib(const uint32_t id, const uint32_t tag,
-      void *pData)
-{
-   GmmTileBlock    *pTileBlock = (GmmTileBlock *)id;
-
-   pTileBlock->tileTag = tag;
-   pTileBlock->pData = pData;
-}
-
 char *gmmIdToAddress (const uint32_t id)
 {
-   GmmBaseBlock    *pBaseBlock = (GmmBaseBlock *)id;
-
-   gmmWaitForSweep();
-
-   return (char *)pBaseBlock->address;
-}
-
-void gmmPinId(const uint32_t id)
-{
-   GmmBaseBlock    *pBaseBlock = (GmmBaseBlock *)id;
-
-   if (!pBaseBlock->isTile)
+   while (cachedLockValue != 0)
    {
-      GmmBlock *pBlock = (GmmBlock *)id;
-
-      pBlock->isPinned = 1;
+      // wait for sweep
+      sys_timer_usleep(30);
+      cachedLockValue = *pLock;
    }
-}
-
-void gmmUnpinId(const uint32_t id)
-{
-   GmmBaseBlock    *pBaseBlock = (GmmBaseBlock *)id;
-
-   if (!pBaseBlock->isTile)
-   {
-      GmmBlock *pBlock = (GmmBlock *)id;
-
-      pBlock->isPinned = 0;
-   }
+   return (char *)((GmmBaseBlock*)id)->address;
 }
 
 static GmmBlock *gmmAllocBlock(
@@ -807,7 +767,7 @@ static uint32_t gmmAllocExtendedTileBlock(const uint32_t size, const uint32_t ta
                if (pNewBlock->pPrev->pData != pNewBlock->pNext->pData)
                   resizeSucceed = rglGcmTryResizeTileRegion( (GLuint)gmmIdToOffset((uint32_t)pNewBlock), tileSize+newSize, pBlock->pData );
             }
-            gmmSetTileAttrib( retId, tag, pBlock->pData );
+            gmmSetTileAttrib(retId, tag, pBlock->pData);
             break;
          }
 
@@ -2316,7 +2276,9 @@ GLuint rglGcmAllocCreateRegion(
    if ( id != GMM_ERROR )
    {
       if ( rglGcmTryResizeTileRegion( (GLuint)gmmIdToOffset(id), gmmGetBlockSize(id), data ) )
+      {
          gmmSetTileAttrib( id, tag, data );
+      }
       else
       {
          gmmFree( id );

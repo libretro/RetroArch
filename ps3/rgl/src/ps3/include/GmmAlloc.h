@@ -69,16 +69,18 @@ typedef struct GmmBlock{
    uint32_t    fence;
 }GmmBlock;
 
-typedef struct GmmTileBlock{
+typedef struct GmmTileBlock
+{
    GmmBaseBlock        base;	// inheritence
    struct GmmTileBlock *pPrev;
    struct GmmTileBlock *pNext;
 
    uint32_t    tileTag;
    void        *pData;
-}GmmTileBlock;
+} GmmTileBlock;
 
-typedef struct GmmAllocator{
+typedef struct GmmAllocator
+{
    uint32_t    memoryBase;
 
    uint32_t    startAddress;
@@ -104,7 +106,7 @@ typedef struct GmmAllocator{
    GmmBlock    *pFreeTail[GMM_NUM_FREE_BINS];
 
    uint32_t    totalSize;		// == size + tileSize
-}GmmAllocator;
+} GmmAllocator;
 
 uint32_t gmmInit(
       const void *localMemoryBase,
@@ -114,17 +116,7 @@ uint32_t gmmInit(
 
 uint32_t gmmDestroy(void);
 char *gmmIdToAddress(const uint32_t id);
-
-uint32_t gmmFPOffsetToId(
-      const uint32_t offset,
-      uint32_t *pOutOffset,
-      bool bLocalMemory
-      );
-
-void gmmPinId (const uint32_t id);
-void gmmUnpinId (const uint32_t id);
 uint32_t gmmFree (const uint32_t freeId);
-
 uint32_t gmmAlloc(
       void *data,
       const uint8_t isTile,
@@ -143,10 +135,16 @@ extern GmmAllocator         *pGmmLocalAllocator;
 #define gmmFreeFixedBlock(data)  (gmmFreeFixed(0, (GmmBlock*)data))
 #define gmmAllocTileBlock(pAllocator, size, pBlock) ((pBlock == NULL) ? gmmCreateTileBlock(pAllocator, size) : pBlock)
 
-void gmmSetTileAttrib(
-      const uint32_t id,
-      const uint32_t tag,
-      void *pData
-      );
+#define gmmSetTileAttrib(id, tag, data) \
+   ((GmmTileBlock*)id)->tileTag = tag; \
+   ((GmmTileBlock*)id)->pData = data;
+
+#define gmmPinId(id) \
+   if (!((GmmBaseBlock*)id)->isTile) \
+      ((GmmBlock *)id)->isPinned = 1;
+
+#define gmmUnpinId(id) \
+   if (!((GmmBaseBlock*)id)->isTile) \
+      ((GmmBlock *)id)->isPinned = 0;
 
 #endif
