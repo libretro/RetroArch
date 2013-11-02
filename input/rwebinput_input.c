@@ -136,6 +136,17 @@ static void rwebinput_grab_mouse(void *data, bool state)
    (void)state;
 }
 
+static uint64_t rwebinput_get_capabilities(void *data)
+{
+   uint64_t caps = 0;
+
+   caps |= (1 << RETRO_DEVICE_JOYPAD);
+   caps |= (1 << RETRO_DEVICE_KEYBOARD);
+   caps |= (1 << RETRO_DEVICE_MOUSE);
+
+   return caps;
+}
+
 const input_driver_t input_rwebinput = {
    rwebinput_input_init,
    rwebinput_input_poll,
@@ -143,6 +154,7 @@ const input_driver_t input_rwebinput = {
    rwebinput_bind_button_pressed,
    rwebinput_input_free,
    NULL,
+   rwebinput_get_capabilities,
    "rwebinput",
    rwebinput_grab_mouse,
 };

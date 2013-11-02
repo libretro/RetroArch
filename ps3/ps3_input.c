@@ -374,13 +374,26 @@ static bool ps3_input_key_pressed(void *data, int key)
    return (g_extern.lifecycle_state & (1ULL << key));
 }
 
+static uint64_t ps3_input_get_capabilities(void *data)
+{
+   uint64_t caps = 0;
+
+   caps |= (1 << RETRO_DEVICE_JOYPAD);
+#ifdef HAVE_MOUSE
+   caps |= (1 << RETRO_DEVICE_MOUSE);
+#endif
+
+   return caps;
+}
+
 const input_driver_t input_ps3 = {
-   .init = ps3_input_init,
-   .poll = ps3_input_poll,
-   .input_state = ps3_input_state,
-   .key_pressed = ps3_input_key_pressed,
-   .free = ps3_input_free_input,
-   .set_keybinds = ps3_input_set_keybinds,
-   .ident = "ps3",
+   ps3_input_init,
+   ps3_input_poll,
+   ps3_input_state,
+   ps3_input_key_pressed,
+   ps3_input_free_input,
+   ps3_input_set_keybinds,
+   ps3_input_get_capabilities,
+   "ps3",
 };
 

@@ -322,6 +322,16 @@ static void linuxraw_input_poll(void *data)
    input_joypad_poll(linuxraw->joypad);
 }
 
+static uint64_t linuxraw_get_capabilities(void *data)
+{
+   uint64_t caps = 0;
+
+   caps |= (1 << RETRO_DEVICE_JOYPAD);
+   caps |= (1 << RETRO_DEVICE_ANALOG);
+
+   return caps;
+}
+
 const input_driver_t input_linuxraw = {
    linuxraw_input_init,
    linuxraw_input_poll,
@@ -329,6 +339,7 @@ const input_driver_t input_linuxraw = {
    linuxraw_bind_button_pressed,
    linuxraw_input_free,
    NULL,
+   linuxraw_get_capabilities,
    "linuxraw",
    NULL,
    linuxraw_set_rumble,

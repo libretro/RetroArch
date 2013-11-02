@@ -244,6 +244,20 @@ static void sdl_input_poll(void *data)
    sdl_poll_mouse(sdl);
 }
 
+static uint64_t sdl_get_capabilities(void *data)
+{
+   uint64_t caps = 0;
+
+   caps |= (1 << RETRO_DEVICE_JOYPAD);
+   caps |= (1 << RETRO_DEVICE_MOUSE);
+   caps |= (1 << RETRO_DEVICE_KEYBOARD);
+   caps |= (1 << RETRO_DEVICE_LIGHTGUN);
+   caps |= (1 << RETRO_DEVICE_POINTER);
+   caps |= (1 << RETRO_DEVICE_ANALOG);
+
+   return caps;
+}
+
 const input_driver_t input_sdl = {
    sdl_input_init,
    sdl_input_poll,
@@ -251,6 +265,7 @@ const input_driver_t input_sdl = {
    sdl_bind_button_pressed,
    sdl_input_free,
    NULL,
+   sdl_get_capabilities,
    "sdl",
    NULL,
    sdl_set_rumble,

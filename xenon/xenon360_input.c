@@ -109,13 +109,22 @@ static bool xenon360_input_key_pressed(void *data, int key)
    return (g_extern.lifecycle_state & (1ULL << key));
 }
 
+static uint64_t xenon360_get_capabilities(void *data)
+{
+   uint64_t caps = 0;
+
+   caps |= (1 << RETRO_DEVICE_JOYPAD);
+
+   return caps;
+}
 
 const input_driver_t input_xenon360 = {
-   .init = xenon360_input_init,
-   .poll = xenon360_input_poll,
-   .input_state = xenon360_input_state,
-   .key_pressed = xenon360_input_key_pressed,
-   .free = xenon360_input_free_input,
-   .set_keybinds = xenon360_input_set_keybinds,
-   .ident = "xenon360",
+   xenon360_input_init,
+   xenon360_input_poll,
+   xenon360_input_state,
+   xenon360_input_key_pressed,
+   xenon360_input_free_input,
+   xenon360_input_set_keybinds,
+   xenon360_input_get_capabilities,
+   "xenon360",
 };

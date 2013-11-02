@@ -309,6 +309,18 @@ static bool apple_input_set_rumble(void *data, unsigned port, enum retro_rumble_
    return input_joypad_set_rumble(g_joydriver, port, effect, strength);
 }
 
+static uint64_t apple_get_capabilities(void *data)
+{
+   uint64_t caps = 0;
+
+   caps |= (1 << RETRO_DEVICE_JOYPAD);
+   caps |= (1 << RETRO_DEVICE_MOUSE);
+   caps |= (1 << RETRO_DEVICE_KEYBOARD);
+   caps |= (1 << RETRO_DEVICE_POINTER);
+   caps |= (1 << RETRO_DEVICE_ANALOG);
+
+   return caps;
+}
 
 const input_driver_t input_apple = {
    apple_input_init,
@@ -317,6 +329,7 @@ const input_driver_t input_apple = {
    apple_bind_button_pressed,
    apple_input_free_input,
    apple_input_set_keybinds,
+   apple_input_get_capabilities,
    "apple_input",
    NULL,
    apple_input_set_rumble,

@@ -61,6 +61,15 @@ static void nullinput_set_keybinds(void *data, unsigned device,
    (void)keybind_action;
 }
 
+static uint64_t nullinput_get_capabilities(void *data)
+{
+   uint64_t caps = 0;
+
+   caps |= (1 << RETRO_DEVICE_JOYPAD);
+
+   return caps;
+}
+
 const input_driver_t input_null = {
    nullinput_input_init,
    nullinput_input_poll,
@@ -68,6 +77,7 @@ const input_driver_t input_null = {
    nullinput_input_key_pressed,
    nullinput_input_free_input,
    nullinput_set_keybinds,
+   nullinput_get_capabilities,
    "null",
 };
 

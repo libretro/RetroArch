@@ -267,6 +267,15 @@ static bool xdk_input_key_pressed(void *data, int key)
    return (g_extern.lifecycle_state & (1ULL << key));
 }
 
+static uint64_t xdk_input_get_capabilities(void *data)
+{
+   uint64_t caps = 0;
+
+   caps |= (1 << RETRO_DEVICE_JOYPAD);
+
+   return caps;
+}
+
 const input_driver_t input_xinput = 
 {
    xdk_input_init,
@@ -275,5 +284,6 @@ const input_driver_t input_xinput =
    xdk_input_key_pressed,
    xdk_input_free_input,
    xdk_input_set_keybinds,
+   xdk_input_get_capabilities,
    "xinput"
 };

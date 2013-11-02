@@ -839,6 +839,19 @@ static void qnx_input_set_keybinds(void *data, unsigned device, unsigned port,
 #endif
 }
 
+static uint64_t qnx_input_get_capabilities(void *data)
+{
+   uint64_t caps = 0;
+
+   caps |= (1 << RETRO_DEVICE_JOYPAD);
+   caps |= (1 << RETRO_DEVICE_POINTER);
+#ifdef HAVE_BB10
+   caps |= (1 << RETRO_DEVICE_ANALOG);
+#endif
+
+   return caps;
+}
+
 const input_driver_t input_qnx = {
    qnx_input_init,
    qnx_input_poll,
@@ -846,6 +859,6 @@ const input_driver_t input_qnx = {
    qnx_input_key_pressed,
    qnx_input_free_input,
    qnx_input_set_keybinds,
+   qnx_input_get_capabilities,
    "qnx_input",
 };
-

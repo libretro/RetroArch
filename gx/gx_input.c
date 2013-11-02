@@ -501,13 +501,24 @@ static bool gx_input_key_pressed(void *data, int key)
    return (g_extern.lifecycle_state & (1ULL << key));
 }
 
+static uint64_t gx_input_get_capabilities(void *data)
+{
+   uint64_t caps = 0;
+
+   caps |= (1 << RETRO_DEVICE_JOYPAD);
+   caps |= (1 << RETRO_DEVICE_ANALOG);
+
+   return caps;
+}
+
 
 const input_driver_t input_gx = {
-   .init = gx_input_init,
-   .poll = gx_input_poll,
-   .input_state = gx_input_state,
-   .key_pressed = gx_input_key_pressed,
-   .free = gx_input_free_input,
-   .set_keybinds = gx_input_set_keybinds,
-   .ident = "gx",
+   gx_input_init,
+   gx_input_poll,
+   gx_input_state,
+   gx_input_key_pressed,
+   gx_input_free_input,
+   gx_input_set_keybinds,
+   gx_input_get_capabilities,
+   "gx",
 };

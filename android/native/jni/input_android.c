@@ -1965,6 +1965,17 @@ static void android_input_free_input(void *data)
    (void)data;
 }
 
+static uint64_t android_get_capabilities(void *data)
+{
+   uint64_t caps = 0;
+
+   caps |= (1 << RETRO_DEVICE_JOYPAD);
+   caps |= (1 << RETRO_DEVICE_POINTER);
+   caps |= (1 << RETRO_DEVICE_ANALOG);
+
+   return caps;
+}
+
 const input_driver_t input_android = {
    android_input_init,
    android_input_poll,
@@ -1972,5 +1983,6 @@ const input_driver_t input_android = {
    android_input_key_pressed,
    android_input_free_input,
    android_input_set_keybinds,
+   android_input_get_capabilities,
    "android_input",
 };
