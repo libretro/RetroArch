@@ -3034,16 +3034,8 @@ GLAPI void RGL_EXPORT psglSwap (void)
       }
    }
 
-   rglGcmDriver *driver = (rglGcmDriver*)_CurrentDevice->rasterDriver;
-   float * __restrict v = (float*)driver->sharedVPConstants;
-
    thisContext->current[0] = (((33) << (18)) | CELL_GCM_NV4097_SET_TRANSFORM_CONSTANT_LOAD);
    thisContext->current[1] = 0;
-
-   memcpy(&thisContext->current[2], v, sizeof(float)*16);
-   memcpy(&thisContext->current[18], &v[16], sizeof(float)*16);
-   thisContext->current += 34;
-   v += 32; 
 
    rglGcmSetDitherEnable(thisContext, RGLGCM_TRUE );
 

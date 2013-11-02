@@ -118,109 +118,17 @@ template<int SIZE> static void setVectorTypefp( void *dat, const void* __restric
 
 template<int SIZE> static void setVectorTypeSharedfpIndex (void *data, const void* __restrict v, const int /*index*/ )
 {
-   CellGcmContextData *thisContext = (CellGcmContextData*)gCellGcmCurrentContext;
-   CgRuntimeParameter *ptr = (CgRuntimeParameter*)data;
-   RGLcontext * LContext = _CurrentContext;
-   rglGcmDriver *driver = (rglGcmDriver*)_CurrentDevice->rasterDriver;
-   const CgParameterResource *parameterResource = rglGetParameterResource( ptr->program, ptr->parameterEntry );
-   unsigned short resource = parameterResource->resource;
-   unsigned short sharedResource = *(( unsigned short * )( ptr->program->resources ) + resource );
-   const unsigned int * __restrict vi = ( const unsigned int* )v;
-
-   GLuint dstVidOffset = gmmIdToOffset( driver->sharedFPConstantsId ) + sharedResource * 16;
-   unsigned int values[4];
-   values[0] = SWAP_IF_BIG_ENDIAN( vi[0] );
-   values[1] = ( 1 < SIZE ) ? SWAP_IF_BIG_ENDIAN( vi[1] ) : 0;
-   values[2] = ( 2 < SIZE ) ? SWAP_IF_BIG_ENDIAN( vi[2] ) : 0;
-   values[3] = ( 3 < SIZE ) ? SWAP_IF_BIG_ENDIAN( vi[3] ) : 0;
-   rglGcmInlineTransfer(thisContext, dstVidOffset, values, 4, 0 );
-
-   // XXX we don't care about 32bit wrapping, do we ?
-   ++LContext->LastFPConstantModification;
 }
 
 template<int SIZE> static void setVectorTypeSharedfpIndexArray (void *data, const void* __restrict v, const int index )
 {
-   CellGcmContextData *thisContext = (CellGcmContextData*)gCellGcmCurrentContext;
-   CgRuntimeParameter *ptr = (CgRuntimeParameter*)data;
-   RGLcontext * LContext = _CurrentContext;
-   rglGcmDriver *driver = (rglGcmDriver*)_CurrentDevice->rasterDriver;
-   const CgParameterResource *parameterResource = rglGetParameterResource( ptr->program, ptr->parameterEntry );
-   unsigned short resource = parameterResource->resource;
-
-   //slow... skip the indices
-   unsigned short *sharedResourcePtr = (( unsigned short * )( ptr->program->resources ) + resource );//no +1 here, we want the register
-   int arrayIndex = index;
-   while ( arrayIndex ) //jump to the right index... this is slow
-   {
-      sharedResourcePtr += (( *sharedResourcePtr ) + 2 );////+1 for the register, +1 for the count, +count for the number of embedded consts
-      arrayIndex--;
-   }
-   unsigned short sharedResource = *sharedResourcePtr;
-
-   const unsigned int * __restrict vi = ( const unsigned int* )v;
-
-   GLuint dstVidOffset = gmmIdToOffset( driver->sharedFPConstantsId ) + sharedResource * 16;
-   unsigned int values[4];
-   values[0] = SWAP_IF_BIG_ENDIAN( vi[0] );
-   values[1] = ( 1 < SIZE ) ? SWAP_IF_BIG_ENDIAN( vi[1] ) : 0;
-   values[2] = ( 2 < SIZE ) ? SWAP_IF_BIG_ENDIAN( vi[2] ) : 0;
-   values[3] = ( 3 < SIZE ) ? SWAP_IF_BIG_ENDIAN( vi[3] ) : 0;
-   rglGcmInlineTransfer(thisContext, dstVidOffset, values, 4, 0 ); 
-
-   // XXX we don't care about 32bit wrapping, do we ?
-   ++LContext->LastFPConstantModification;
 }
 template<int SIZE> static void setVectorTypeSharedvpIndex (void *data, const void* __restrict v, const int /*index*/ )
 {
-   CellGcmContextData *thisContext = (CellGcmContextData*)gCellGcmCurrentContext;
-   CgRuntimeParameter *ptr = (CgRuntimeParameter*)data;
-   const float * __restrict f = ( const float * __restrict )v;
-   const CgParameterResource *parameterResource = rglGetParameterResource( ptr->program, ptr->parameterEntry );
-   unsigned short resource = parameterResource->resource;
-   float * __restrict dst = ( float * __restrict )ptr->pushBufferPointer;
-   for ( long i = 0; i < SIZE; ++ i )
-      dst[i] = f[i];
-
-   // save to shared memory for context restore after flip
-   rglGcmDriver *driver = (rglGcmDriver*)_CurrentDevice->rasterDriver;
-
-   memcpy(driver->sharedVPConstants + resource * 4 * sizeof( float ),
-         dst, 4 * sizeof(float));
-
-   thisContext->current[0] = (((5) << (18)) | CELL_GCM_NV4097_SET_TRANSFORM_CONSTANT_LOAD);
-   thisContext->current[1] = resource;
-   thisContext->current += 2;
-
-   memcpy(thisContext->current, dst, sizeof(float)*4);
-   thisContext->current += 4;
-   dst += 4; 
 }
 
 template<int SIZE> static void setVectorTypeSharedvpIndexArray (void *data, const void* __restrict v, const int index )
 {
-   CellGcmContextData *thisContext = (CellGcmContextData*)gCellGcmCurrentContext;
-   CgRuntimeParameter *ptr = (CgRuntimeParameter*)data;
-   const float * __restrict f = ( const float * __restrict )v;
-   const CgParameterResource *parameterResource = rglGetParameterResource( ptr->program, ptr->parameterEntry );
-   unsigned short resource = parameterResource->resource + index; ///TODO: assume contiguous here , right ?
-   float * __restrict dst = ( float * __restrict )ptr->pushBufferPointer;
-   for ( long i = 0; i < SIZE; ++ i )
-      dst[i] = f[i];
-
-   // save to shared memory for context restore after flip
-   rglGcmDriver *driver = (rglGcmDriver*)_CurrentDevice->rasterDriver;
-
-   memcpy(driver->sharedVPConstants + resource * 4 * sizeof( float ),
-         dst, 4 * sizeof(float));
-
-   thisContext->current[0] = (((5) << (18)) | CELL_GCM_NV4097_SET_TRANSFORM_CONSTANT_LOAD);
-   thisContext->current[1] = resource;
-   thisContext->current += 2;
-
-   memcpy(thisContext->current, dst, sizeof(float)*4);
-   thisContext->current += 4;
-   dst += 4; 
 }
 
 
@@ -316,90 +224,10 @@ template <int ROWS, int COLS, int ORDER, bool isVpIndexArray> static void setMat
 
 template <int ROWS, int COLS, int ORDER> static void setMatrixSharedfpIndex (void *data, const void* __restrict v, const int /*index*/ )
 {
-   CellGcmContextData *thisContext = (CellGcmContextData*)gCellGcmCurrentContext;
-   CgRuntimeParameter *ptr = (CgRuntimeParameter*)data;
-   rglGcmDriver *driver = (rglGcmDriver*)_CurrentDevice->rasterDriver;
-
-   const CgParameterResource *parameterResource = rglGetParameterResource( ptr->program, ptr->parameterEntry );
-   unsigned short resource = parameterResource->resource;
-   unsigned short sharedResource = *(( unsigned short * )( ptr->program->resources ) + resource );
-
-   GLuint dstVidOffset = gmmIdToOffset( driver->sharedFPConstantsId ) + sharedResource * 16;
-   //we assume that the assignment is contiguous
-   const unsigned int * __restrict u = ( const unsigned int* )v;
-
-   unsigned int tmp[ROWS*4];
-   for ( long row = 0; row < ROWS; ++row )
-   {
-      tmp[row*4 + 0] = (( ORDER == ROW_MAJOR ) ? u[row * COLS + 0] : u[0 * ROWS + row] );
-      tmp[row*4 + 1] = (( 1 < COLS ) ? (( ORDER == ROW_MAJOR ) ? u[row * COLS + 1] : u[1 * ROWS + row] ) : 0 );
-      tmp[row*4 + 2] = (( 2 < COLS ) ? (( ORDER == ROW_MAJOR ) ? u[row * COLS + 2] : u[2 * ROWS + row] ) : 0 );
-      tmp[row*4 + 3] = (( 3 < COLS ) ? (( ORDER == ROW_MAJOR ) ? u[row * COLS + 3] : u[3 * ROWS + row] ) : 0 );
-   }
-   rglGcmSetTransferLocation(thisContext, CELL_GCM_LOCATION_LOCAL );
-   void *pointer=NULL;
-   rglGcmSetInlineTransferPointer(thisContext, dstVidOffset, (4*ROWS), pointer);
-   float *fp = (float*)pointer;
-   float *src = (float*)tmp;
-   for (uint32_t j=0; j<ROWS;j++)
-   {
-      fp[0] = cellGcmSwap16Float32(src[0]);
-      fp[1] = cellGcmSwap16Float32(src[1]);
-      fp[2] = cellGcmSwap16Float32(src[2]);
-      fp[3] = cellGcmSwap16Float32(src[3]);
-      fp+=4;src+=4;
-   }
-
-   RGLcontext * LContext = _CurrentContext;
-   ++LContext->LastFPConstantModification;
 }
 
 template <int ROWS, int COLS, int ORDER> static void setMatrixSharedfpIndexArray (void *data, const void* __restrict v, const int index )
 {
-   CellGcmContextData *thisContext = (CellGcmContextData*)gCellGcmCurrentContext;
-   CgRuntimeParameter *ptr = (CgRuntimeParameter*)data;
-   //TODO: double check for the semi endian swap... not done here, is it done by the RSX ?
-   rglGcmDriver *driver = (rglGcmDriver*)_CurrentDevice->rasterDriver;
-
-   const CgParameterResource *parameterResource = rglGetParameterResource( ptr->program, ptr->parameterEntry );
-   unsigned short resource = parameterResource->resource;
-   //slow... skip the indices
-   unsigned short *sharedResourcePtr = (( unsigned short * )( ptr->program->resources ) + resource );
-   int arrayIndex = index * ROWS;
-   while ( arrayIndex ) //jump to the right index... this is slow
-   {
-      sharedResourcePtr += (( *sharedResourcePtr ) + 2 );//+1 for the register, +1 for the count, +count for the number of embedded consts
-      arrayIndex--;
-   }
-   unsigned short sharedResource = *sharedResourcePtr;
-
-   GLuint dstVidOffset = gmmIdToOffset( driver->sharedFPConstantsId ) + sharedResource * 16;
-   //we assume that the assignment is contiguous
-   const unsigned int * __restrict u = ( const unsigned int* )v;
-
-   unsigned int tmp[ROWS*4];
-   for ( long row = 0; row < ROWS; ++row )
-   {
-      tmp[row*4 + 0] = (( ORDER == ROW_MAJOR ) ? u[row * COLS + 0] : u[0 * ROWS + row] );
-      tmp[row*4 + 1] = (( 1 < COLS ) ? (( ORDER == ROW_MAJOR ) ? u[row * COLS + 1] : u[1 * ROWS + row] ) : 0 );
-      tmp[row*4 + 2] = (( 2 < COLS ) ? (( ORDER == ROW_MAJOR ) ? u[row * COLS + 2] : u[2 * ROWS + row] ) : 0 );
-      tmp[row*4 + 3] = (( 3 < COLS ) ? (( ORDER == ROW_MAJOR ) ? u[row * COLS + 3] : u[3 * ROWS + row] ) : 0 );
-   }
-
-   rglGcmSetTransferLocation(thisContext, CELL_GCM_LOCATION_LOCAL );
-
-   void *pointer=NULL;
-   rglGcmSetInlineTransferPointer(thisContext, dstVidOffset, (4*ROWS), pointer);
-   float *fp = (float*)pointer;
-   const float *src = (const float*)tmp;
-   for (uint32_t j=0; j<4*ROWS;j++)
-   {
-      *fp = cellGcmSwap16Float32(*src);
-      fp++;src++;
-   }
-
-   RGLcontext * LContext = _CurrentContext;
-   ++LContext->LastFPConstantModification;
 }
 
 template <int ROWS, int COLS, int ORDER> static void setMatrixvpIndexArray (void *data, const void* __restrict v, const int index )
@@ -638,66 +466,35 @@ void rglCreatePushBuffer(void *data)
             }
             else if ( profileIndex == VERTEX_PROFILE_INDEX )
             {
-               if ( parameterResource->type == CGP_SCF_BOOL )
-               {
-                  //do nothing
-               }
-               else if ( !( parameterEntry->flags & CGPF_SHARED ) )
-               {
-                  int registerStride = isMatrix(( CGtype )parameterResource->type ) ? rglGetTypeRowCount(( CGtype )parameterResource->type ) : 1;
-                  if ( parameterEntry->flags & CGP_CONTIGUOUS )
-                     bufferSize += 3 + 4 * arrayCount * registerStride;
-                  else
-                  {
-                     programPushBufferPointersSize += arrayCount;
-                     int resourceIndex = parameterResource->resource;
-                     int referencedSize = 3 + 4 * registerStride;
-                     int notReferencedSize = 4 * registerStride;
-                     for ( int j = 0;j < arrayCount;j++, resourceIndex += registerStride )
-                     {
-                        //I use the programPushBuffer pointer so it's valid to have element in an array without any affectation
-                        if ( program->resources[resourceIndex] != 0xffff )
-                           bufferSize += referencedSize; //referenced: push buffer
-                        else
-                           extraStorageInWords += notReferencedSize; //not referenced , extra storage location
-                     }
-                  }
-               }
+               int registerStride = isMatrix(( CGtype )parameterResource->type ) ? rglGetTypeRowCount(( CGtype )parameterResource->type ) : 1;
+               if ( parameterEntry->flags & CGP_CONTIGUOUS )
+                  bufferSize += 3 + 4 * arrayCount * registerStride;
                else
                {
-                  hasSharedParams = true;
-                  if ( !( parameterEntry->flags & CGP_CONTIGUOUS ) )
-                     programPushBufferPointersSize += arrayCount;
+                  programPushBufferPointersSize += arrayCount;
+                  int resourceIndex = parameterResource->resource;
+                  int referencedSize = 3 + 4 * registerStride;
+                  int notReferencedSize = 4 * registerStride;
+                  for ( int j = 0;j < arrayCount;j++, resourceIndex += registerStride )
+                  {
+                     //I use the programPushBuffer pointer so it's valid to have element in an array without any affectation
+                     if ( program->resources[resourceIndex] != 0xffff )
+                        bufferSize += referencedSize; //referenced: push buffer
+                     else
+                        extraStorageInWords += notReferencedSize; //not referenced , extra storage location
+                  }
                }
             }
             else //profileIndex == FRAGMENT_PROFILE_INDEX
             {
                int registerStride = isMatrix(( CGtype )parameterResource->type ) ? rglGetTypeRowCount(( CGtype )parameterResource->type ) : 1;
-               if ( !( parameterEntry->flags & CGPF_SHARED ) )
-               {
                   //TODO: check this case
                   extraStorageInWords += 4 * arrayCount * registerStride;
-               }
-               else
-               {
-                  hasSharedParams = true;
-                  unsigned short *resource = program->resources + parameterResource->resource;
-                  for ( int j = 0;j < arrayCount*registerStride;j++ )
-                  {
-                     resource++;
-                     unsigned short count = *resource++;
-                     bufferSize += 24 * count;
-                     resource += count;
-                  }
-               }
             }
          }
       }
       arrayCount = 1;
    }
-
-   if (( profileIndex == FRAGMENT_PROFILE_INDEX ) && (hasSharedParams))
-      bufferSize += 8 + 3 + 2; // GCM_PORT_TESTED [CEDRIC] +3 for the channel switch that gcm does + 2 for the OUT end
 
    bufferSize = rglPad( bufferSize, 4 );
 
@@ -821,83 +618,51 @@ void rglCreatePushBuffer(void *data)
             {
                if ( profileIndex == VERTEX_PROFILE_INDEX )
                {
-                  if ( parameterResource->type == CGP_SCF_BOOL )
+                  int registerStride = isMatrix(( CGtype )parameterResource->type ) ? rglGetTypeRowCount(( CGtype )parameterResource->type ) : 1;
+                  int registerCount = arrayCount * registerStride;
+                  if ( parameterEntry->flags & CGP_CONTIGUOUS )
                   {
-                     //do nothing
-                  }
-                  else if ( !( parameterEntry->flags & CGPF_SHARED ) )
-                  {
-                     int registerStride = isMatrix(( CGtype )parameterResource->type ) ? rglGetTypeRowCount(( CGtype )parameterResource->type ) : 1;
-                     int registerCount = arrayCount * registerStride;
-                     if ( parameterEntry->flags & CGP_CONTIGUOUS )
-                     {
-                        memset( rglGcmCurrent, 0, 4*( 4*registerCount + 3 ) );
-                        CellGcmContextData gcmContext;
-                        gcmContext.current = (uint32_t*)rglGcmCurrent;
-                        cellGcmSetVertexProgramParameterBlockUnsafeInline(&gcmContext, parameterResource->resource, registerCount, ( float* )rglGcmCurrent );
-                        rglGcmCurrent = (typeof(rglGcmCurrent))gcmContext.current;
+                     memset( rglGcmCurrent, 0, 4*( 4*registerCount + 3 ) );
+                     CellGcmContextData gcmContext;
+                     gcmContext.current = (uint32_t*)rglGcmCurrent;
+                     cellGcmSetVertexProgramParameterBlockUnsafeInline(&gcmContext, parameterResource->resource, registerCount, ( float* )rglGcmCurrent );
+                     rglGcmCurrent = (typeof(rglGcmCurrent))gcmContext.current;
 
-                        rtParameter->pushBufferPointer = rglGcmCurrent - 4 * registerCount;
-                     }
-                     else
-                     {
-                        rtParameter->pushBufferPointer = programPushBuffer;
-                        int resourceIndex = parameterResource->resource;
-                        for ( int j = 0;j < arrayCount;j++, resourceIndex += registerStride )
-                        {
-                           //I use the programPushBuffer pointer so it's valid to have element in an array without any affectation
-                           if ( program->resources[resourceIndex] != 0xffff )
-                           {
-                              memset( rglGcmCurrent, 0, 4*( 4*registerStride + 3 ) );
-                              CellGcmContextData gcmContext;
-                              gcmContext.current = (uint32_t*)rglGcmCurrent;
-                              cellGcmSetVertexProgramParameterBlockUnsafeInline(&gcmContext, program->resources[resourceIndex], registerStride, ( float* )rglGcmCurrent );
-                              rglGcmCurrent = (typeof(rglGcmCurrent))gcmContext.current;
-                              *( programPushBuffer++ ) = ( unsigned int* )( rglGcmCurrent - 4 * registerStride );
-                           }
-                           else
-                           {
-                              //This case is when there is an array item which is not referenced
-                              //we still call tbe setter function, so we have to store the info somewhere...
-                              //and we need to return the value previously set in case of the user asks for a get
-                              *( programPushBuffer++ ) = ( unsigned int* )currentStorage;
-                              currentStorage += 4 * registerStride;
-                           }
-                        }
-                     }
+                     rtParameter->pushBufferPointer = rglGcmCurrent - 4 * registerCount;
                   }
                   else
                   {
-                     rglGcmDriver *driver = (rglGcmDriver*)_CurrentDevice->rasterDriver;
-
-                     if ( parameterEntry->flags & CGP_CONTIGUOUS )
-                        rtParameter->pushBufferPointer = driver->sharedVPConstants + parameterResource->resource * 4 * sizeof( float );
-                     else
+                     rtParameter->pushBufferPointer = programPushBuffer;
+                     int resourceIndex = parameterResource->resource;
+                     for ( int j = 0;j < arrayCount;j++, resourceIndex += registerStride )
                      {
-                        int registerStride = isMatrix(( CGtype )parameterResource->type ) ? rglGetTypeRowCount(( CGtype )parameterResource->type ) : 1;
-                        int registerCount = arrayCount * registerStride;
-                        for ( int j = 0;j < registerCount;j += registerStride )
+                        //I use the programPushBuffer pointer so it's valid to have element in an array without any affectation
+                        if ( program->resources[resourceIndex] != 0xffff )
                         {
-                           *programPushBuffer = ( unsigned int* )driver->sharedVPConstants + program->resources[parameterResource->resource+j] * 4 * sizeof( float );
-                           rtParameter->pushBufferPointer = programPushBuffer++;
+                           memset( rglGcmCurrent, 0, 4*( 4*registerStride + 3 ) );
+                           CellGcmContextData gcmContext;
+                           gcmContext.current = (uint32_t*)rglGcmCurrent;
+                           cellGcmSetVertexProgramParameterBlockUnsafeInline(&gcmContext, program->resources[resourceIndex], registerStride, ( float* )rglGcmCurrent );
+                           rglGcmCurrent = (typeof(rglGcmCurrent))gcmContext.current;
+                           *( programPushBuffer++ ) = ( unsigned int* )( rglGcmCurrent - 4 * registerStride );
+                        }
+                        else
+                        {
+                           //This case is when there is an array item which is not referenced
+                           //we still call tbe setter function, so we have to store the info somewhere...
+                           //and we need to return the value previously set in case of the user asks for a get
+                           *( programPushBuffer++ ) = ( unsigned int* )currentStorage;
+                           currentStorage += 4 * registerStride;
                         }
                      }
                   }
                }
                else //if (profileIndex == FRAGMENT_PROFILE_INDEX)
                {
-                  if ( parameterEntry->flags & CGPF_SHARED )
-                  {
-                     // XXX needs an offset for the get
-                     rtParameter->pushBufferPointer = NULL;
-                  }
-                  else
-                  {
-                     int registerStride = isMatrix(( CGtype )parameterResource->type ) ? rglGetTypeRowCount(( CGtype )parameterResource->type ) : 1;
-                     int registerCount = arrayCount * registerStride;
-                     rtParameter->pushBufferPointer = currentStorage;
-                     currentStorage += 4 * registerCount;
-                  }
+                  int registerStride = isMatrix(( CGtype )parameterResource->type ) ? rglGetTypeRowCount(( CGtype )parameterResource->type ) : 1;
+                  int registerCount = arrayCount * registerStride;
+                  rtParameter->pushBufferPointer = currentStorage;
+                  currentStorage += 4 * registerCount;
                }
 
                switch ( parameterResource->type )
@@ -1588,9 +1353,6 @@ void *rglPlatformRasterInit (void)
    driver->flushBufferCount = 0;
 
    // [YLIN] Make it 16 byte align
-   driver->sharedVPConstants = (char*)memalign(16, 4 * sizeof( float ) * RGL_MAX_VP_SHARED_CONSTANTS);
-   driver->sharedFPConstantsId = gmmAlloc((CellGcmContextData*)&rglGcmState_i.fifo,
-         0, 4 * sizeof(float) * RGL_MAX_FP_SHARED_CONSTANTS);
 
    return driver;
 }
@@ -1599,9 +1361,6 @@ void *rglPlatformRasterInit (void)
 void rglPlatformRasterExit (void *data)
 {
    rglGcmDriver *driver = (rglGcmDriver*)data;
-
-   gmmFree( driver->sharedFPConstantsId );
-   free( driver->sharedVPConstants );
 
    if (driver)
       free(driver);
