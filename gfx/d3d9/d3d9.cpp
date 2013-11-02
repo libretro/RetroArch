@@ -1533,7 +1533,6 @@ const video_driver_t video_d3d9 = {
    "d3d9",
 #ifdef HAVE_RGUI
    nullptr,
-   nullptr,
 #endif
    d3d9_set_rotation,
    d3d9_viewport_info,
