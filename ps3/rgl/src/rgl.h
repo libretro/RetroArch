@@ -45,4 +45,15 @@ RGL_EXPORT RGLdevice*	rglPlatformCreateDeviceAuto( GLenum colorFormat, GLenum de
 RGL_EXPORT RGLdevice*	rglPlatformCreateDeviceExtended (const void *data);
 RGL_EXPORT GLfloat rglPlatformGetDeviceAspectRatio (const void *data);
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+char *rglPlatformBufferObjectMapTextureReference(void *data, GLenum access);
+GLboolean rglPlatformBufferObjectUnmapTextureReference (void *data);
+
+#ifdef __cplusplus
+}
+#endif
+
 #endif

@@ -1223,6 +1223,7 @@ GLAPI void APIENTRY glBufferSubData( GLenum target, GLintptr offset, GLsizeiptr 
    rglPlatformBufferObjectSetData( bufferObject, offset, size, data, GL_FALSE );
 }
 
+
 char *rglPlatformBufferObjectMap (void *data, GLenum access)
 {
    rglBufferObject *bufferObject = (rglBufferObject*)data;
@@ -1298,6 +1299,37 @@ GLboolean rglPlatformBufferObjectUnmap (void *data)
 
    return GL_TRUE;
 }
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+char *rglPlatformBufferObjectMapTextureReference(void *data, GLenum access)
+{
+   rglBufferObject *bufferObject = (rglBufferObject*)data;
+   rglGcmFifo *fifo = (rglGcmFifo*)&rglGcmState_i.fifo;
+   rglGcmBufferObject *rglBuffer = (rglGcmBufferObject*)bufferObject->platformBufferObject;
+   CellGcmContextData *thisContext = (CellGcmContextData*)gCellGcmCurrentContext;
+   rglBuffer->mapAccess = access;
+
+   // only need to pin the first time we map
+   gmmPinId( rglBuffer->bufferId );
+
+   return gmmIdToAddress( rglBuffer->bufferId );
+}
+
+GLboolean rglPlatformBufferObjectUnmapTextureReference (void *data)
+{
+   rglBufferObject *bufferObject = (rglBufferObject*)data;
+   rglGcmBufferObject *rglBuffer = ( rglGcmBufferObject * )bufferObject->platformBufferObject;
+   rglBuffer->mapAccess = GL_NONE;
+   gmmUnpinId( rglBuffer->bufferId );
+   return GL_TRUE;
+}
+
+#ifdef __cplusplus
+}
+#endif
 
 /*============================================================
   PLATFORM FRAMEBUFFER

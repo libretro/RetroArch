@@ -3146,7 +3146,7 @@ GLAPI GLvoid* APIENTRY glMapBufferTextureReferenceRA( GLenum target, GLenum acce
    rglBufferObject* bufferObject = (rglBufferObject*)LContext->bufferObjectNameSpace.data[LContext->TextureBuffer];
    bufferObject->mapped = GL_TRUE;
 
-   return rglPlatformBufferObjectMap(bufferObject, access);
+   return rglPlatformBufferObjectMapTextureReference(bufferObject, access);
 }
 
 GLAPI GLboolean APIENTRY glUnmapBufferTextureReferenceRA( GLenum target )
@@ -3154,7 +3154,7 @@ GLAPI GLboolean APIENTRY glUnmapBufferTextureReferenceRA( GLenum target )
    RGLcontext *LContext = _CurrentContext;
    rglBufferObject* bufferObject = (rglBufferObject*)LContext->bufferObjectNameSpace.data[LContext->TextureBuffer];
    bufferObject->mapped = GL_FALSE;
-   return rglPlatformBufferObjectUnmap( bufferObject );
+   return rglPlatformBufferObjectUnmapTextureReference( bufferObject );
 }
 
 #ifdef __cplusplus
