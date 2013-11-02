@@ -187,14 +187,14 @@ void engine_handle_cmd(void)
       case APP_CMD_GAINED_FOCUS:
          g_extern.lifecycle_state &= ~(1ULL << RARCH_PAUSE_TOGGLE);
 
-         if (android->sensor_state_mask & (1ULL << RETRO_SENSOR_ACCELEROMETER_ENABLE)
+         if ((android->sensor_state_mask & (1ULL << RETRO_SENSOR_ACCELEROMETER_ENABLE))
                && android->accelerometerSensor == NULL)
             android_input_set_sensor_state(android, 0, RETRO_SENSOR_ACCELEROMETER_ENABLE,
                   android->accelerometer_event_rate);
          break;
       case APP_CMD_LOST_FOCUS:
          // Avoid draining battery while app is not being used
-         if (android->sensor_state_mask & (1ULL << RETRO_SENSOR_ACCELEROMETER_ENABLE)
+         if ((android->sensor_state_mask & (1ULL << RETRO_SENSOR_ACCELEROMETER_ENABLE))
                && android->accelerometerSensor != NULL)
             android_input_set_sensor_state(android, 0, RETRO_SENSOR_ACCELEROMETER_DISABLE,
                   android->accelerometer_event_rate);
