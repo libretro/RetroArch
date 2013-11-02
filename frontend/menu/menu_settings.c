@@ -744,7 +744,9 @@ int menu_set_settings(unsigned setting, unsigned action)
                g_extern.lifecycle_mode_state &= ~(1ULL << MODE_VIDEO_PAL_TEMPORAL_ENABLE);
             }
             driver.video->restart();
+#ifdef HAVE_RMENU
             rgui_init_textures();
+#endif
          }
          break;
 #endif
