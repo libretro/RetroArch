@@ -57,6 +57,7 @@ const struct platform_bind platform_keys[] = {
    { (1ULL << RETRO_DEVICE_ID_JOYPAD_R2), "R2 button" },
    { (1ULL << RETRO_DEVICE_ID_JOYPAD_L3), "L3 button" },
    { (1ULL << RETRO_DEVICE_ID_JOYPAD_R3), "R3 button" },
+   { (1ULL << RARCH_TURBO_ENABLE), "Turbo button (unmapped)" },
 };
 
 typedef struct ps3_input
@@ -356,7 +357,6 @@ static void ps3_input_set_keybinds(void *data, unsigned device,
 
 static void* ps3_input_init(void)
 {
-   unsigned i;
    ps3_input_t *ps3 = (ps3_input_t*)calloc(1, sizeof(*ps3));
    if (!ps3)
       return NULL;
