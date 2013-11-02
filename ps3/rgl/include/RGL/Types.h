@@ -386,9 +386,6 @@ extern "C" {
       GLuint	PixelUnpackBuffer;
       GLuint	TextureBuffer;
 
-      // synchronization objects
-      rglTexNameSpace	fenceObjectNameSpace;
-
       // framebuffer objects
       GLuint			framebuffer;	// GL_FRAMEBUFFER_OES binding
       rglTexNameSpace	framebufferNameSpace;

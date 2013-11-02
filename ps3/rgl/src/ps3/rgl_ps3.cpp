@@ -3824,7 +3824,6 @@ static void rglResetContext (void *data)
    rglTexNameSpaceResetNames( &LContext->textureNameSpace );
    rglTexNameSpaceResetNames( &LContext->bufferObjectNameSpace );
    rglTexNameSpaceResetNames( &LContext->framebufferNameSpace );
-   rglTexNameSpaceResetNames( &LContext->fenceObjectNameSpace );
 
    LContext->ViewPort.X = 0;
    LContext->ViewPort.Y = 0;
@@ -4074,7 +4073,6 @@ void RGL_EXPORT psglDestroyContext (void *data)
 
    rglTexNameSpaceFree( &LContext->textureNameSpace );
    rglTexNameSpaceFree( &LContext->bufferObjectNameSpace );
-   rglTexNameSpaceFree( &LContext->fenceObjectNameSpace );
    rglTexNameSpaceFree( &LContext->framebufferNameSpace );
 
    if ( _CurrentContext == LContext )
