@@ -411,6 +411,8 @@ extern "C"
 
    /* Texture Reference */
    GLAPI void APIENTRY glTextureReferenceSCE( GLenum target, GLuint levels, GLuint baseWidth, GLuint baseHeight, GLuint baseDepth, GLenum internalFormat, GLuint pitch, GLintptr offset );
+   GLAPI GLvoid* APIENTRY glMapBufferTextureReferenceRA( GLenum target, GLenum access );
+   GLAPI GLboolean APIENTRY glUnmapBufferTextureReferenceRA( GLenum target );
 
 #ifdef __cplusplus
 }

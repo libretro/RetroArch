@@ -26,6 +26,14 @@ static inline GLuint rglPlatformGetBitsPerPixel (GLenum internalFormat)
 #define SUBPIXEL_BITS 12
 #define SUBPIXEL_ADJUST (0.5/(1<<SUBPIXEL_BITS))
 
+#define rglDisableVertexAttribArrayNVInline(context, index) \
+ RGLBIT_FALSE(context->attribs->EnabledMask, index); \
+ RGLBIT_TRUE(context->attribs->DirtyMask, index);
+
+#define rglEnableVertexAttribArrayNVInline(context, index) \
+ RGLBIT_TRUE(context->attribs->EnabledMask, index); \
+ RGLBIT_TRUE(context->attribs->DirtyMask, index);
+
 #define rglGcmSetVertexData4f(thisContext, index, v) \
  thisContext->current[0] = (((4) << (18)) | (CELL_GCM_NV4097_SET_VERTEX_DATA4F_M + (index) * 16)); \
  memcpy(&thisContext->current[1], v, sizeof(float)*4); \

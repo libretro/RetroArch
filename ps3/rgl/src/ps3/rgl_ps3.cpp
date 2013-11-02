@@ -838,17 +838,6 @@ static uint32_t gmmAllocExtendedTileBlock(const uint32_t size, const uint32_t ta
    return retId;
 }
 
-static GmmTileBlock *gmmAllocTileBlock(GmmAllocator *pAllocator,
-      const uint32_t size)
-{
-   GmmTileBlock    *pBlock = gmmFindFreeTileBlock(pAllocator, size); 
-
-   if (pBlock == NULL)
-      pBlock = gmmCreateTileBlock(pAllocator, size);
-
-   return pBlock;
-}
-
 static void gmmFreeBlock (void *data)
 {
    GmmBlock *pBlock = (GmmBlock*)data;
@@ -1330,22 +1319,6 @@ static uint8_t gmmInternalSweep(void *data)
    return ret;
 }
 
-static void gmmRemovePendingFree (GmmAllocator *pAllocator,
-      GmmBlock *pBlock)
-{
-   if (pBlock == pAllocator->pPendingFreeHead)
-      pAllocator->pPendingFreeHead = pBlock->pNextFree;
-
-   if (pBlock == pAllocator->pPendingFreeTail)
-      pAllocator->pPendingFreeTail = pBlock->pPrevFree;
-
-   if (pBlock->pNextFree)
-      pBlock->pNextFree->pPrevFree = pBlock->pPrevFree;
-
-   if (pBlock->pPrevFree)
-      pBlock->pPrevFree->pNextFree = pBlock->pNextFree;
-}
-
 static void gmmFreeAll(void)
 {
    GmmBlock        *pBlock;
@@ -1400,7 +1373,10 @@ static uint32_t gmmInternalAlloc(
    uint32_t        retId;
 
    if (isTile)
-      retId = (uint32_t)gmmAllocTileBlock(pAllocator, size);
+   {
+      GmmTileBlock    *pBlock = gmmFindFreeTileBlock(pAllocator, size); 
+      retId = (uint32_t)gmmAllocTileBlock(pAllocator, size, pBlock);
+   }
    else
       retId = (uint32_t)gmmAllocBlock(pAllocator, size);
 
@@ -3029,7 +3005,16 @@ GLAPI void RGL_EXPORT psglSwap (void)
 
       if ( !(( fence - pBlock->fence ) & 0x80000000 ) )
       {
-         gmmRemovePendingFree(pAllocator, pBlock);
+         /* remove pending free  */
+         if (pBlock == pAllocator->pPendingFreeHead)
+            pAllocator->pPendingFreeHead = pBlock->pNextFree;
+         if (pBlock == pAllocator->pPendingFreeTail)
+            pAllocator->pPendingFreeTail = pBlock->pPrevFree;
+         if (pBlock->pNextFree)
+            pBlock->pNextFree->pPrevFree = pBlock->pPrevFree;
+         if (pBlock->pPrevFree)
+            pBlock->pPrevFree->pNextFree = pBlock->pNextFree;
+
          gmmAddFree(pAllocator, pBlock);
       }
 
@@ -3188,6 +3173,32 @@ GLAPI void APIENTRY glBindBuffer( GLenum target, GLuint name )
    }
 }
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+GLAPI GLvoid* APIENTRY glMapBufferTextureReferenceRA( GLenum target, GLenum access )
+{
+   RGLcontext *LContext = _CurrentContext;
+
+   rglBufferObject* bufferObject = (rglBufferObject*)LContext->bufferObjectNameSpace.data[LContext->TextureBuffer];
+   bufferObject->mapped = GL_TRUE;
+
+   return rglPlatformBufferObjectMap(bufferObject, access);
+}
+
+GLAPI GLboolean APIENTRY glUnmapBufferTextureReferenceRA( GLenum target )
+{
+   RGLcontext *LContext = _CurrentContext;
+   rglBufferObject* bufferObject = (rglBufferObject*)LContext->bufferObjectNameSpace.data[LContext->TextureBuffer];
+   bufferObject->mapped = GL_FALSE;
+   return rglPlatformBufferObjectUnmap( bufferObject );
+}
+
+#ifdef __cplusplus
+}
+#endif
+
 GLAPI GLvoid* APIENTRY glMapBuffer( GLenum target, GLenum access )
 {
    RGLcontext *LContext = _CurrentContext;
@@ -3241,6 +3252,7 @@ GLAPI GLboolean APIENTRY glUnmapBuffer( GLenum target )
    return result;
 }
 
+
 GLAPI void APIENTRY glDeleteBuffers( GLsizei n, const GLuint *buffers )
 {
    RGLcontext *LContext = (RGLcontext*)_CurrentContext;
@@ -3272,8 +3284,7 @@ GLAPI void APIENTRY glDeleteBuffers( GLsizei n, const GLuint *buffers )
 
 GLAPI void APIENTRY glGenBuffers( GLsizei n, GLuint *buffers )
 {
-   RGLcontext *LContext = (RGLcontext*)_CurrentContext;
-   rglTexNameSpaceGenNames( &LContext->bufferObjectNameSpace, n, buffers );
+   rglTexNameSpaceGenNames( &((RGLcontext*)_CurrentContext)->bufferObjectNameSpace, n, buffers );
 }
 
 GLAPI void APIENTRY glBufferData( GLenum target, GLsizeiptr size, const GLvoid * data, GLenum usage )
@@ -4184,39 +4195,35 @@ GLAPI void APIENTRY glDisable( GLenum cap )
 
 GLAPI void APIENTRY glEnableClientState( GLenum array )
 {
-   switch ( array )
+   RGLcontext *context = (RGLcontext*)_CurrentContext;
+   switch (array)
    {
       case GL_VERTEX_ARRAY:
-         rglEnableVertexAttribArrayNV( RGL_ATTRIB_POSITION_INDEX );
+         rglEnableVertexAttribArrayNVInline(context, RGL_ATTRIB_POSITION_INDEX );
          break;
       case GL_COLOR_ARRAY:
-         rglEnableVertexAttribArrayNV( RGL_ATTRIB_PRIMARY_COLOR_INDEX );
+         rglEnableVertexAttribArrayNVInline(context, RGL_ATTRIB_PRIMARY_COLOR_INDEX );
          break;
       case GL_NORMAL_ARRAY:
-         rglEnableVertexAttribArrayNV( RGL_ATTRIB_NORMAL_INDEX );
+         rglEnableVertexAttribArrayNVInline(context, RGL_ATTRIB_NORMAL_INDEX );
          break;
-      default:
-         rglSetError( GL_INVALID_ENUM );
-         return;
    }
 }
 
 GLAPI void APIENTRY glDisableClientState( GLenum array )
 {
-   switch ( array )
+   RGLcontext *context = (RGLcontext*)_CurrentContext;
+   switch (array)
    {
       case GL_VERTEX_ARRAY:
-         rglDisableVertexAttribArrayNV( RGL_ATTRIB_POSITION_INDEX );
+         rglDisableVertexAttribArrayNVInline(context, RGL_ATTRIB_POSITION_INDEX );
          break;
       case GL_COLOR_ARRAY:
-         rglDisableVertexAttribArrayNV( RGL_ATTRIB_PRIMARY_COLOR_INDEX );
+         rglDisableVertexAttribArrayNVInline(context, RGL_ATTRIB_PRIMARY_COLOR_INDEX );
          break;
       case GL_NORMAL_ARRAY:
-         rglDisableVertexAttribArrayNV( RGL_ATTRIB_NORMAL_INDEX );
+         rglDisableVertexAttribArrayNVInline(context, RGL_ATTRIB_NORMAL_INDEX );
          break;
-      default:
-         rglSetError( GL_INVALID_ENUM );
-         return;
    }
 }
 

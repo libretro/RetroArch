@@ -141,6 +141,7 @@ extern GmmAllocator         *pGmmLocalAllocator;
 #define gmmAllocFixedTileBlock() ((GmmTileBlock*)gmmAllocFixed(1))
 #define gmmFreeFixedTileBlock(data)  (gmmFreeFixed(1, (GmmTileBlock*)data))
 #define gmmFreeFixedBlock(data)  (gmmFreeFixed(0, (GmmBlock*)data))
+#define gmmAllocTileBlock(pAllocator, size, pBlock) ((pBlock == NULL) ? gmmCreateTileBlock(pAllocator, size) : pBlock)
 
 void gmmSetTileAttrib(
       const uint32_t id,

@@ -298,6 +298,14 @@ typedef struct gl
 // Platform specific workarounds/hacks.
 #if defined(__CELLOS_LV2__)
 #define NO_GL_READ_VIEWPORT
+
+// Performance hacks
+#ifdef HAVE_RGL
+extern GLvoid* glMapBufferTextureReferenceRA( GLenum target, GLenum access );
+extern GLboolean glUnmapBufferTextureReferenceRA( GLenum target );
+#define glMapBuffer(target, access) glMapBufferTextureReferenceRA(target, access)
+#define glUnmapBuffer(target) glUnmapBufferTextureReferenceRA(target)
+#endif
 #endif
 
 #if defined(HAVE_OPENGL_MODERN) || defined(HAVE_OPENGLES2) || defined(HAVE_PSGL)
