@@ -16,9 +16,9 @@ for f in *_xdk.lib ; do
    echo $name
    if [ $name = "tyrquake" ] || [ $name = "genesis_plus_gx" ] ; then
    	cp -f "$f" ../msvc/RetroArch-Xbox1/Release_LTCG_BigStack/libretro_xdk.lib
-   	cmd.exe /k xdk1_env_bigstack.bat $name
+   	cmd.exe /k xdk1_env_bigstack.bat ${name}_libretro_xdk1
    else
    	cp -f "$f" ../msvc/RetroArch-Xbox1/Release_LTCG/libretro_xdk.lib
-   	cmd.exe /k xdk1_env.bat $name
+   	cmd.exe /k xdk1_env.bat ${name}_libretro_xdk1
    fi
 done

@@ -14,6 +14,6 @@ for f in *_ngc.a ; do
    fi
    cp -f "$f" ../libretro_ngc.a
    make -C ../ -f Makefile.ngc $whole_archive $big_stack -j3 || exit 1
-   mv -f ../retroarch_ngc.dol ../ngc/pkg/$name.dol
+   mv -f ../retroarch_ngc.dol ../ngc/pkg/${name}_libretro_ngc.dol
    rm -f ../retroarch_ngc.dol ../retroarch_ngc.elf ../retroarch_ngc.elf.map
 done

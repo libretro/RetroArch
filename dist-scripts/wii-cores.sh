@@ -18,6 +18,6 @@ for f in *_wii.a ; do
    fi
    cp -f "$f" ../libretro_wii.a
    make -C ../ -f Makefile.wii $whole_archive $big_stack -j3 || exit 1
-   mv -f ../retroarch_wii.dol ../wii/pkg/$name.dol
+   mv -f ../retroarch_wii.dol ../wii/pkg/${name}_libretro_wii.dol
    rm -f ../retroarch_wii.dol ../retroarch_wii.elf ../retroarch_wii.elf.map
 done

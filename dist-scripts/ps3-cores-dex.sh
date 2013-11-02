@@ -21,7 +21,7 @@ for f in *_ps3.a ; do
    cp -f "$f" ../libretro_ps3.a
    make -C ../ -f Makefile.ps3 $whole_archive -j3 || exit 1
    $MAKE_FSELF_NPDRM ../retroarch_ps3.elf ../CORE.SELF
-   mv -f ../CORE.SELF ../ps3/pkg/USRDIR/cores/"$name.SELF"
+   mv -f ../CORE.SELF ../ps3/pkg/USRDIR/cores/"${name}_libretro_ps3.SELF"
    rm -f ../retroarch_ps3.elf ../retroarch_ps3.self ../CORE.SELF
 done
 

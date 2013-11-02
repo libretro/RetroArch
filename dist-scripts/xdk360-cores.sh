@@ -13,5 +13,5 @@ for f in *_xdk360.lib ; do
    name=`echo "$f" | sed 's/\(_libretro\|\)_xdk360.lib$//'`
    echo $name
    cp -f "$f" ../msvc/RetroArch-360/Release_LTCG/libretro_xdk360.lib
-   cmd.exe /k xdk360_env.bat $name
+   cmd.exe /k xdk360_env.bat ${name}_libretro_xdk360
 done
