@@ -1028,14 +1028,13 @@ static void gl_update_input_size(void *data, unsigned width, unsigned height, un
 
       if (clear)
       {
+         glPixelStorei(GL_UNPACK_ALIGNMENT, get_alignment(width * sizeof(uint32_t)));
 #if defined(HAVE_PSGL)
          glBufferSubData(GL_TEXTURE_REFERENCE_BUFFER_SCE,
                gl->tex_w * gl->tex_h * gl->tex_index * gl->base_size,
                gl->tex_w * gl->tex_h * gl->base_size,
                gl->empty_buf);
 #else
-         glPixelStorei(GL_UNPACK_ALIGNMENT, get_alignment(width * sizeof(uint32_t)));
-
          glTexSubImage2D(GL_TEXTURE_2D,
                0, 0, 0, gl->tex_w, gl->tex_h, gl->texture_type,
                gl->texture_fmt, gl->empty_buf);

@@ -263,7 +263,7 @@ FONTS
 #include "../gfx/fonts/d3d_font.c"
 #endif
 
-#if defined(HAVE_LIBDBGFONT)
+#if defined(HAVE_LIBDBGFONT) && !defined(HAVE_RGUI)
 #include "../gfx/fonts/ps_libdbgfont.c"
 #elif defined(HAVE_OPENGL)
 #include "../gfx/fonts/gl_raster_font.c"

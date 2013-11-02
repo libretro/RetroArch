@@ -204,9 +204,16 @@ static void blit_fonts(gl_t *gl, const struct font_output *head, const struct fo
    }
 
    glPixelStorei(GL_UNPACK_ALIGNMENT, 8);
+#if defined(HAVE_PSGL)
+         glBufferSubData(GL_TEXTURE_REFERENCE_BUFFER_SCE,
+               gl->tex_w * gl->tex_h * gl->tex_index * gl->base_size,
+               gl->tex_w * gl->tex_h * gl->base_size,
+               gl->font_tex_buf);
+#else
    glTexSubImage2D(GL_TEXTURE_2D,
       0, 0, 0, gl->font_tex_w, gl->font_tex_h,
       GL_RGBA, GL_UNSIGNED_BYTE, gl->font_tex_buf);
+#endif
 }
 
 static void calculate_font_coords(gl_t *gl,
