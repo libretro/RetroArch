@@ -96,12 +96,6 @@ static bool android_app_start_main(struct android_app *android_app)
    strlcpy(out_args.in, "ROM", sizeof(out_args.in));
    jni_get(&in_params, &out_args);
 
-   // libretro
-   out_args.out = g_settings.libretro;
-   out_args.out_sizeof = sizeof(g_settings.libretro);
-   strlcpy(out_args.in, "LIBRETRO", sizeof(out_args.in));
-   jni_get(&in_params, &out_args);
-
    // Config file
    out_args.out = g_extern.config_path;
    out_args.out_sizeof = sizeof(g_extern.config_path);
@@ -114,17 +108,26 @@ static bool android_app_start_main(struct android_app *android_app)
    strlcpy(out_args.in, "IME", sizeof(out_args.in));
    jni_get(&in_params, &out_args);
 
-   (*in_params.java_vm)->DetachCurrentThread(in_params.java_vm);
-
    RARCH_LOG("Checking arguments passed ...\n");
    RARCH_LOG("ROM Filename: [%s].\n", g_extern.fullpath);
-   RARCH_LOG("Libretro path: [%s].\n", g_settings.libretro);
    RARCH_LOG("Config file: [%s].\n", g_extern.config_path);
    RARCH_LOG("Current IME: [%s].\n", android_app->current_ime);
 
    config_load();
 
+   // libretro
+   out_args.out = g_settings.libretro;
+   out_args.out_sizeof = sizeof(g_settings.libretro);
+   strlcpy(out_args.in, "LIBRETRO", sizeof(out_args.in));
+   jni_get(&in_params, &out_args);
+
+   RARCH_LOG("Checking arguments passed ...\n");
+   RARCH_LOG("Libretro path: [%s].\n", g_settings.libretro);
+
+   (*in_params.java_vm)->DetachCurrentThread(in_params.java_vm);
+
    menu_init();
+
 
    ret = load_menu_game();
    if (ret)
