@@ -201,25 +201,6 @@ template <int ROWS, int COLS, int ORDER> static void setMatrixvpIndex (void *dat
 
 template <int ROWS, int COLS, int ORDER, bool isVpIndexArray> static void setMatrixSharedvpIndex (void *data, const void*  __restrict v, const int index )
 {
-   CgRuntimeParameter *ptr = (CgRuntimeParameter*)data;
-   float * __restrict f = ( float* )v;
-   float * __restrict dst = ( float* )ptr->pushBufferPointer;
-
-   const CgParameterResource *parameterResource = rglGetParameterResource( ptr->program, ptr->parameterEntry );
-   unsigned short resource = parameterResource->resource;
-
-   if (isVpIndexArray)
-      resource += index * ROWS;
-
-   float tmp[ROWS*4];
-   for ( long row = 0; row < ROWS; ++row )
-   {
-      for ( long col = 0; col < COLS; ++col )
-         tmp[row*4 + col] = dst[row * 4 + col] = ( ORDER == ROW_MAJOR ) ? f[row * COLS + col] : f[col * ROWS + row];
-      for ( long col = COLS; col < 4; ++col ) tmp[row*4 + col] = dst[row*4+col];
-   }
-
-   GCM_FUNC( cellGcmSetVertexProgramParameterBlock, resource, ROWS, (const float*)tmp);
 }
 
 template <int ROWS, int COLS, int ORDER> static void setMatrixSharedfpIndex (void *data, const void* __restrict v, const int /*index*/ )
