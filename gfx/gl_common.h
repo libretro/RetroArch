@@ -303,8 +303,10 @@ typedef struct gl
 #ifdef HAVE_RGL
 extern GLvoid* glMapBufferTextureReferenceRA( GLenum target, GLenum access );
 extern GLboolean glUnmapBufferTextureReferenceRA( GLenum target );
+extern void glBufferSubDataTextureReferenceRA( GLenum target, GLintptr offset, GLsizeiptr size, const GLvoid *data );
 #define glMapBuffer(target, access) glMapBufferTextureReferenceRA(target, access)
 #define glUnmapBuffer(target) glUnmapBufferTextureReferenceRA(target)
+#define glBufferSubData(target, offset, size, data) glBufferSubDataTextureReferenceRA(target, offset, size, data)
 #endif
 #endif
 

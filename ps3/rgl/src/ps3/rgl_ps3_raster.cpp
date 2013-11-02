@@ -1171,6 +1171,7 @@ void rglPlatformBufferObjectSetData(void *buf_data, GLintptr offset, GLsizeiptr 
       }
 }
 
+
 GLAPI void APIENTRY glBufferSubData( GLenum target, GLintptr offset, GLsizeiptr size, const GLvoid *data )
 {
    RGLcontext *LContext = (RGLcontext*)_CurrentContext;
@@ -1193,33 +1194,6 @@ GLAPI void APIENTRY glBufferSubData( GLenum target, GLintptr offset, GLsizeiptr 
    }
 
    rglBufferObject* bufferObject = (rglBufferObject*)LContext->bufferObjectNameSpace.data[name];
-
-   if ( bufferObject->refCount > 1 )
-   {
-      rglBufferObject* oldBufferObject = bufferObject;
-
-      rglTexNameSpaceDeleteNames( &LContext->bufferObjectNameSpace, 1, &name );
-      rglTexNameSpaceCreateNameLazy( &LContext->bufferObjectNameSpace, name );
-
-      bufferObject = (rglBufferObject*)LContext->bufferObjectNameSpace.data[name];
-      bufferObject->size = oldBufferObject->size;
-
-      GLboolean created = rglpCreateBufferObject(bufferObject);
-      if ( !created )
-      {
-         rglSetError( GL_OUT_OF_MEMORY );
-         return;
-      }
-      rglGcmDriver *driver = (rglGcmDriver*)_CurrentDevice->rasterDriver;
-
-      rglBufferObject *in_dst = (rglBufferObject*)bufferObject;
-      rglBufferObject *in_src = (rglBufferObject*)oldBufferObject;
-      rglGcmBufferObject* dst = (rglGcmBufferObject*)in_dst->platformBufferObject;
-      rglGcmBufferObject* src = (rglGcmBufferObject*)in_src->platformBufferObject;
-
-      rglGcmTransferData( dst->bufferId, 0, src->bufferSize, src->bufferId, 0, src->bufferSize, src->bufferSize, 1 );
-   }
-
    rglPlatformBufferObjectSetData( bufferObject, offset, size, data, GL_FALSE );
 }
 
@@ -1303,6 +1277,46 @@ GLboolean rglPlatformBufferObjectUnmap (void *data)
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+static void rglPlatformBufferObjectSetDataTextureReference(void *buf_data, GLintptr offset, GLsizeiptr size, const GLvoid *data, GLboolean tryImmediateCopy)
+{
+   rglBufferObject *bufferObject = (rglBufferObject*)buf_data;
+   rglGcmDriver *driver = (rglGcmDriver*)_CurrentDevice->rasterDriver;
+   rglGcmBufferObject *rglBuffer = ( rglGcmBufferObject * )bufferObject->platformBufferObject;
+
+   if ( size >= bufferObject->size )
+   {
+      // reallocate the buffer
+      //  To avoid waiting for the GPU to finish with the buffer, just
+      //  allocate a whole new one.
+      rglBuffer->bufferSize = rglPad( size, RGL_BUFFER_OBJECT_BLOCK_SIZE );
+      rglpsAllocateBuffer( bufferObject );
+
+      // copy directly to newly allocated memory
+      //  TODO: For GPU destination, should we copy to system memory and
+      //  pull from GPU?
+      memset( gmmIdToAddress(rglBuffer->bufferId), 0, size );
+   }
+   else
+   {
+      // partial buffer write
+      //  STREAM and DYNAMIC buffers get transfer via a bounce buffer.
+      // copy via bounce buffer
+      GLuint id = gmmAlloc((CellGcmContextData*)&rglGcmState_i.fifo, 0, size);
+      memset(gmmIdToAddress(id), 0, size);
+      rglGcmTransferData(rglBuffer->bufferId, offset, rglBuffer->pitch, id, 0, size, size, 1);
+      gmmFree(id);
+   }
+}
+
+GLAPI void APIENTRY glBufferSubDataTextureReferenceRA( GLenum target, GLintptr offset, GLsizeiptr size, const GLvoid *data )
+{
+   RGLcontext *LContext = (RGLcontext*)_CurrentContext;
+   GLuint name = LContext->TextureBuffer;
+
+   rglBufferObject* bufferObject = (rglBufferObject*)LContext->bufferObjectNameSpace.data[name];
+   rglPlatformBufferObjectSetDataTextureReference( bufferObject, offset, size, data, GL_FALSE );
+}
 
 char *rglPlatformBufferObjectMapTextureReference(void *data, GLenum access)
 {

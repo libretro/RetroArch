@@ -3272,14 +3272,6 @@ GLAPI void APIENTRY glBufferData( GLenum target, GLsizeiptr size, const GLvoid *
    }
    rglBufferObject* bufferObject = (rglBufferObject*)LContext->bufferObjectNameSpace.data[name];
 
-   if ( bufferObject->refCount > 1 )
-   {
-      rglTexNameSpaceDeleteNames( &LContext->bufferObjectNameSpace, 1, &name );
-      rglTexNameSpaceCreateNameLazy( &LContext->bufferObjectNameSpace, name );
-
-      bufferObject = (rglBufferObject*)LContext->bufferObjectNameSpace.data[name];
-   }
-
    if (bufferObject->size > 0)
       rglPlatformDestroyBufferObject( bufferObject );
 
