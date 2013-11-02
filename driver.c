@@ -434,9 +434,6 @@ retro_proc_address_t driver_get_proc_address(const char *sym)
 // before retroarch core starts.
 // Core handles audio.
 
-// FIXME - start() and stop() can't be ifdeffable with
-// RARCH_CONSOLE since more systems now need similar functionality
-
 void global_init_drivers(void)
 {
    unsigned i;
