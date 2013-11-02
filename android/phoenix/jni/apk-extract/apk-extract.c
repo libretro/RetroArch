@@ -4,6 +4,13 @@
 #include <stdio.h>
 #include "../native/com_retroarch_browser_NativeInterface.h"
 
+//#define VERBOSE_LOG
+
+#ifndef VERBOSE_LOG
+#undef RARCH_LOG
+#define RARCH_LOG(...)
+#endif
+
 struct userdata
 {
    const char *subdir;
@@ -85,4 +92,3 @@ JNIEXPORT jboolean JNICALL Java_com_retroarch_browser_NativeInterface_extractArc
    (*env)->ReleaseStringUTFChars(env, dest, dest_c);
    return ret;
 }
-
