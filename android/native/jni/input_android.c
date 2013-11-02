@@ -1965,7 +1965,7 @@ static void android_input_free_input(void *data)
    (void)data;
 }
 
-static uint64_t android_get_capabilities(void *data)
+static uint64_t android_input_get_capabilities(void *data)
 {
    uint64_t caps = 0;
 
