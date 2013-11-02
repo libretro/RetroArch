@@ -154,6 +154,7 @@ const input_driver_t input_rwebinput = {
    rwebinput_bind_button_pressed,
    rwebinput_input_free,
    NULL,
+   NULL,
    rwebinput_get_capabilities,
    "rwebinput",
    rwebinput_grab_mouse,

@@ -367,6 +367,7 @@ const input_driver_t input_dinput = {
    dinput_key_pressed,
    dinput_free,
    NULL,
+   NULL,
    dinput_get_capabilities,
    "dinput",
 

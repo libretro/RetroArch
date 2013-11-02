@@ -94,6 +94,8 @@ extern "C" {
 // Eventually _PRESSED will return false for an index. No further presses are registered at this point.
 #define RETRO_DEVICE_POINTER      6
 
+#define RETRO_DEVICE_SENSOR_ACCELEROMETER 7
+
 // These device types are specializations of the base types above.
 // They should only be used in retro_set_controller_type() to inform libretro implementations
 // about use of a very specific device type.
@@ -149,6 +151,11 @@ extern "C" {
 #define RETRO_DEVICE_ID_POINTER_X         0
 #define RETRO_DEVICE_ID_POINTER_Y         1
 #define RETRO_DEVICE_ID_POINTER_PRESSED   2
+
+// Id values for SENSOR types.
+#define RETRO_DEVICE_ID_SENSOR_ACCELEROMETER_X      0
+#define RETRO_DEVICE_ID_SENSOR_ACCELEROMETER_Y      1
+#define RETRO_DEVICE_ID_SENSOR_ACCELEROMETER_Z      2
 
 // Returned from retro_get_region().
 #define RETRO_REGION_NTSC  0
@@ -535,6 +542,14 @@ enum retro_rumble_effect
 
    RETRO_RUMBLE_DUMMY = INT_MAX
 };
+
+enum retro_sensor_action
+{
+   RETRO_SENSOR_ACCELEROMETER_ENABLE = 0,
+   RETRO_SENSOR_ACCELEROMETER_DISABLE,
+};
+
+typedef bool (*retro_set_sensor_state_t)(unsigned port, enum retro_sensor_action action, unsigned event_rate);
 
 // Sets rumble state for joypad plugged in port 'port'. Rumble effects are controlled independently,
 // and setting e.g. strong rumble does not override weak rumble.

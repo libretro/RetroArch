@@ -177,12 +177,23 @@ static bool psp_input_key_pressed(void *data, int key)
    }
 }
 
+static uint64_t psp_input_get_capabilities(void *data)
+{
+   uint64_t caps = 0;
+
+   caps |= (1 << RETRO_DEVICE_JOYPAD);
+
+   return caps;
+}
+
 const input_driver_t input_psp = {
-   .init = psp_input_initialize,
-   .poll = psp_input_poll,
-   .input_state = psp_input_state,
-   .key_pressed = psp_input_key_pressed,
-   .free = psp_input_free_input,
-   .set_keybinds = psp_input_set_keybinds,
-   .ident = "psp",
+   psp_input_initialize,
+   psp_input_poll,
+   psp_input_state,
+   psp_input_key_pressed,
+   psp_input_free_input,
+   psp_input_set_keybinds,
+   NULL,
+   psp_input_get_capabilities,
+   "psp",
 };

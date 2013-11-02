@@ -322,6 +322,7 @@ typedef struct input_driver
    bool (*key_pressed)(void *data, int key);
    void (*free)(void *data);
    void (*set_keybinds)(void *data, unsigned device, unsigned port, unsigned id, unsigned keybind_action);
+   void (*set_sensor_state)(void *data, unsigned port, unsigned action, unsigned event_rate);
    uint64_t (*get_capabilities)(void *data);
    const char *ident;
 

@@ -339,6 +339,7 @@ const input_driver_t input_linuxraw = {
    linuxraw_bind_button_pressed,
    linuxraw_input_free,
    NULL,
+   NULL,
    linuxraw_get_capabilities,
    "linuxraw",
    NULL,

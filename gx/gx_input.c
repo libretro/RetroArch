@@ -519,6 +519,7 @@ const input_driver_t input_gx = {
    gx_input_key_pressed,
    gx_input_free_input,
    gx_input_set_keybinds,
+   NULL,
    gx_input_get_capabilities,
    "gx",
 };

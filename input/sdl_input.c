@@ -265,6 +265,7 @@ const input_driver_t input_sdl = {
    sdl_bind_button_pressed,
    sdl_input_free,
    NULL,
+   NULL,
    sdl_get_capabilities,
    "sdl",
    NULL,

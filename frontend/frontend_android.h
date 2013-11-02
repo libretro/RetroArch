@@ -30,24 +30,18 @@
 struct android_app
 {
    ANativeActivity* activity;
-
    ALooper* looper;
    AInputQueue* inputQueue;
-
+   AInputQueue* pendingInputQueue;
    ANativeWindow* window;
-   int activityState;
-
+   ANativeWindow* pendingWindow;
    slock_t *mutex;
    scond_t *cond;
-
+   int activityState;
    int msgread;
    int msgwrite;
-
-   sthread_t *thread;
-
    int running;
-   AInputQueue* pendingInputQueue;
-   ANativeWindow* pendingWindow;
+   sthread_t *thread;
    char current_ime[PATH_MAX];
 };
 

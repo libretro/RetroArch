@@ -125,6 +125,7 @@ const input_driver_t input_xenon360 = {
    xenon360_input_key_pressed,
    xenon360_input_free_input,
    xenon360_input_set_keybinds,
+   NULL,
    xenon360_input_get_capabilities,
    "xenon360",
 };

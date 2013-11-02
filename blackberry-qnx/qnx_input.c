@@ -859,6 +859,7 @@ const input_driver_t input_qnx = {
    qnx_input_key_pressed,
    qnx_input_free_input,
    qnx_input_set_keybinds,
+   NULL,
    qnx_input_get_capabilities,
    "qnx_input",
 };

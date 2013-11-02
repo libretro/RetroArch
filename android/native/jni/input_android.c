@@ -16,6 +16,7 @@
  */
 
 #include <android/keycodes.h>
+#include <android/sensor.h>
 #include <unistd.h>
 #include <dlfcn.h>
 #include "input_autodetect.h"
@@ -36,6 +37,13 @@ typedef struct
    int16_t lx, ly;
    int16_t rx, ry;
 } analog_t;
+
+typedef struct
+{
+   float x;
+   float y;
+   float z;
+} sensor_t;
 
 struct input_pointer
 {
@@ -62,12 +70,19 @@ typedef struct android_input
    uint64_t state[MAX_PADS];
    uint64_t keycode_lut[LAST_KEYCODE];
    analog_t analog_state[MAX_PADS];
+   sensor_t accelerometer_state;
+   unsigned accelerometer_event_rate;
    unsigned dpad_emulation[MAX_PLAYERS];
    struct input_pointer pointer[MAX_TOUCH];
    unsigned pointer_count;
+   ASensorManager* sensorManager;
+   const ASensor* accelerometerSensor;
+   ASensorEventQueue* sensorEventQueue;
+   uint64_t sensor_state_mask;
 } android_input_t;
 
 void (*engine_handle_dpad)(void *data, AInputEvent*, size_t, int, char*, size_t, int, bool, unsigned);
+static void android_input_set_sensor_state(void *data, unsigned port, unsigned action, unsigned event_rate);
 
 extern float AMotionEvent_getAxisValue(const AInputEvent* motion_event,
       int32_t axis, size_t pointer_index);
@@ -79,6 +94,7 @@ static typeof(AMotionEvent_getAxisValue) *p_AMotionEvent_getAxisValue;
 void engine_handle_cmd(void)
 {
    struct android_app *android_app = (struct android_app*)g_android;
+   android_input_t *android = (android_input_t*)driver.input_data;
    int8_t cmd;
 
    if (read(android_app->msgread, &cmd, sizeof(cmd)) != sizeof(cmd))
@@ -170,9 +186,18 @@ void engine_handle_cmd(void)
 
       case APP_CMD_GAINED_FOCUS:
          g_extern.lifecycle_state &= ~(1ULL << RARCH_PAUSE_TOGGLE);
-         break;
 
+         if (android->sensor_state_mask & (1ULL << RETRO_SENSOR_ACCELEROMETER_ENABLE)
+               && android->accelerometerSensor == NULL)
+            android_input_set_sensor_state(android, 0, RETRO_SENSOR_ACCELEROMETER_ENABLE,
+                  android->accelerometer_event_rate);
+         break;
       case APP_CMD_LOST_FOCUS:
+         // Avoid draining battery while app is not being used
+         if (android->sensor_state_mask & (1ULL << RETRO_SENSOR_ACCELEROMETER_ENABLE)
+               && android->accelerometerSensor != NULL)
+            android_input_set_sensor_state(android, 0, RETRO_SENSOR_ACCELEROMETER_DISABLE,
+                  android->accelerometer_event_rate);
          break;
 
       case APP_CMD_DESTROY:
@@ -1899,6 +1924,19 @@ static void android_input_poll(void *data)
 #endif
          }
       }
+      else if (ident == LOOPER_ID_USER)
+      {
+         if (android->sensor_state_mask & (1ULL << RETRO_SENSOR_ACCELEROMETER_ENABLE))
+         {
+            ASensorEvent event;
+            while (ASensorEventQueue_getEvents(android->sensorEventQueue, &event, 1) > 0)
+            {
+               android->accelerometer_state.x = event.acceleration.x;
+               android->accelerometer_state.y = event.acceleration.y;
+               android->accelerometer_state.z = event.acceleration.z;
+            }
+         }
+      }
       else if (ident == LOOPER_ID_MAIN)
          engine_handle_cmd();
    }
@@ -1950,6 +1988,19 @@ static int16_t android_input_state(void *data, const struct retro_keybind **bind
             default:
                return 0;
          }
+      case RETRO_DEVICE_SENSOR_ACCELEROMETER:
+         switch (id)
+         {
+            case RETRO_DEVICE_ID_SENSOR_ACCELEROMETER_X:
+               return android->accelerometer_state.x;
+            case RETRO_DEVICE_ID_SENSOR_ACCELEROMETER_Y:
+               return android->accelerometer_state.y;
+            case RETRO_DEVICE_ID_SENSOR_ACCELEROMETER_Z:
+               return android->accelerometer_state.z;
+            default:
+               return 0;
+         }
+         break;
       default:
          return 0;
    }
@@ -1972,8 +2023,62 @@ static uint64_t android_input_get_capabilities(void *data)
    caps |= (1 << RETRO_DEVICE_JOYPAD);
    caps |= (1 << RETRO_DEVICE_POINTER);
    caps |= (1 << RETRO_DEVICE_ANALOG);
+   caps |= (1 << RETRO_DEVICE_SENSOR_ACCELEROMETER);
 
    return caps;
+}
+
+static void android_input_enable_sensor_manager(void *data)
+{
+   android_input_t *android = (android_input_t*)data;
+   struct android_app *android_app = (struct android_app*)g_android;
+
+   android->sensorManager = ASensorManager_getInstance();
+   android->accelerometerSensor = ASensorManager_getDefaultSensor(android->sensorManager,
+         ASENSOR_TYPE_ACCELEROMETER);
+   android->sensorEventQueue = ASensorManager_createEventQueue(android->sensorManager,
+         android_app->looper, LOOPER_ID_USER, NULL, NULL);
+}
+
+static void android_input_set_sensor_state(void *data, unsigned port, unsigned action, unsigned event_rate)
+{
+   android_input_t *android = (android_input_t*)data;
+
+   if (event_rate == 0)
+      event_rate = 60;
+
+   switch (action)
+   {
+      case RETRO_SENSOR_ACCELEROMETER_ENABLE:
+         if (android->sensor_state_mask &
+               (1ULL << RETRO_SENSOR_ACCELEROMETER_ENABLE))
+            return;
+
+         if (android->accelerometerSensor == NULL)
+            android_input_enable_sensor_manager(android);
+
+         ASensorEventQueue_enableSensor(android->sensorEventQueue,
+               android->accelerometerSensor);
+
+         // events per second (in us).
+         ASensorEventQueue_setEventRate(android->sensorEventQueue,
+               android->accelerometerSensor, (1000L / event_rate) * 1000);
+
+         android->sensor_state_mask &= ~(1ULL << RETRO_SENSOR_ACCELEROMETER_DISABLE);
+         android->sensor_state_mask |= (1ULL  << RETRO_SENSOR_ACCELEROMETER_ENABLE);
+         break;
+      case RETRO_SENSOR_ACCELEROMETER_DISABLE:
+         if (android->sensor_state_mask &
+               (1ULL << RETRO_SENSOR_ACCELEROMETER_DISABLE))
+            return;
+
+         ASensorEventQueue_disableSensor(android->sensorEventQueue,
+               android->accelerometerSensor);
+         
+         android->sensor_state_mask &= ~(1ULL << RETRO_SENSOR_ACCELEROMETER_ENABLE);
+         android->sensor_state_mask |= (1ULL  << RETRO_SENSOR_ACCELEROMETER_DISABLE);
+         break;
+   }
 }
 
 const input_driver_t input_android = {
@@ -1983,6 +2088,7 @@ const input_driver_t input_android = {
    android_input_key_pressed,
    android_input_free_input,
    android_input_set_keybinds,
+   android_input_set_sensor_state,
    android_input_get_capabilities,
    "android_input",
 };
