@@ -190,7 +190,7 @@ returntype main_entry(signature())
       if ((init_ret = rarch_main_init(argc, argv))) return_var(init_ret);
    }
 
-#if defined(HAVE_MENU) || defined(HAVE_BB10)
+#if defined(HAVE_MENU)
    menu_init();
 
    if (frontend_ctx && frontend_ctx->process_args)
