@@ -215,8 +215,12 @@ static void xdk_d3d_set_viewport(bool force_full)
    unsigned width, height;      // Set the viewport based on the current resolution
    int m_viewport_x_temp, m_viewport_y_temp, m_viewport_width_temp, m_viewport_height_temp;
    float m_zNear, m_zFar;
+   width = 0;
+   height = 0;
 
-   d3d->ctx_driver->get_video_size(&width, &height);
+   if (d3d->ctx_driver)
+      d3d->ctx_driver->get_video_size(&width, &height);
+
    m_viewport_x_temp = 0;
    m_viewport_y_temp = 0;
    m_viewport_width_temp = width;
@@ -386,6 +390,8 @@ void xdk_d3d_generate_pp(D3DPRESENT_PARAMETERS *d3dpp, const video_info_t *video
    d3d->base_size   = video->rgb32 ? sizeof(uint32_t) : sizeof(uint16_t);
 
    unsigned width, height;
+   width = 0;
+   height = 0;
 
    if (d3d->ctx_driver)
       d3d->ctx_driver->get_video_size(&width, &height);
@@ -665,7 +671,9 @@ static void *xdk_d3d_init(const video_info_t *video, const input_driver_t **inpu
    }
 #endif
 
-   d3d->ctx_driver->get_video_size(&d3d->win_width, &d3d->win_height);
+   if (d3d->ctx_driver)
+      d3d->ctx_driver->get_video_size(&d3d->win_width, &d3d->win_height);
+
    RARCH_LOG("Detecting screen resolution: %ux%u.\n", d3d->win_width, d3d->win_height);
 
    d3d->ctx_driver->swap_interval(d3d->vsync ? 1 : 0);
