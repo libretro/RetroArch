@@ -409,6 +409,14 @@ bool driver_set_rumble_state(unsigned port, enum retro_rumble_effect effect, uin
       return false;
 }
 
+bool driver_set_sensor_state(unsigned port, enum retro_sensor_action action, unsigned rate)
+{
+   if (driver.input && driver.input_data && driver.input->set_sensor_state)
+      return driver.input->set_sensor_state(driver.input_data, port, action, rate);
+   else
+      return false;
+}
+
 uintptr_t driver_get_current_framebuffer(void)
 {
 #ifdef HAVE_FBO

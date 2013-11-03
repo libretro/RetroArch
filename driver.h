@@ -322,7 +322,7 @@ typedef struct input_driver
    bool (*key_pressed)(void *data, int key);
    void (*free)(void *data);
    void (*set_keybinds)(void *data, unsigned device, unsigned port, unsigned id, unsigned keybind_action);
-   void (*set_sensor_state)(void *data, unsigned port, unsigned action, unsigned event_rate);
+   bool (*set_sensor_state)(void *data, unsigned port, enum retro_sensor_action action, unsigned rate);
    uint64_t (*get_capabilities)(void *data);
    const char *ident;
 
@@ -504,6 +504,8 @@ retro_proc_address_t driver_get_proc_address(const char *sym);
 
 // Used by RETRO_ENVIRONMENT_GET_RUMBLE_INTERFACE
 bool driver_set_rumble_state(unsigned port, enum retro_rumble_effect effect, uint16_t strength);
+// Used by RETRO_ENVIRONMENT_GET_SENSOR_INTERFACE
+bool driver_set_sensor_state(unsigned port, enum retro_sensor_action action, unsigned rate);
 
 extern driver_t driver;
 

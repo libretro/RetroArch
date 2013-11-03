@@ -82,7 +82,7 @@ typedef struct android_input
 } android_input_t;
 
 void (*engine_handle_dpad)(void *data, AInputEvent*, size_t, int, char*, size_t, int, bool, unsigned);
-static void android_input_set_sensor_state(void *data, unsigned port, unsigned action, unsigned event_rate);
+static bool android_input_set_sensor_state(void *data, unsigned port, enum retro_sensor_action action, unsigned event_rate);
 
 extern float AMotionEvent_getAxisValue(const AInputEvent* motion_event,
       int32_t axis, size_t pointer_index);
@@ -1991,7 +1991,10 @@ static int16_t android_input_state(void *data, const struct retro_keybind **bind
       case RETRO_DEVICE_SENSOR_ACCELEROMETER:
          switch (id)
          {
-            /* FIXME - these are float values - might need a separate input state function */
+            // FIXME: These are float values.
+            // If they have a fixed range, e.g. (-1, 1), they can
+            // be converted to fixed point easily. If they have unbound range, this should be
+            // queried from a function in retro_sensor_interface.
             case RETRO_DEVICE_ID_SENSOR_ACCELEROMETER_X:
                return android->accelerometer_state.x;
             case RETRO_DEVICE_ID_SENSOR_ACCELEROMETER_Y:
@@ -2041,7 +2044,7 @@ static void android_input_enable_sensor_manager(void *data)
          android_app->looper, LOOPER_ID_USER, NULL, NULL);
 }
 
-static void android_input_set_sensor_state(void *data, unsigned port, unsigned action, unsigned event_rate)
+static bool android_input_set_sensor_state(void *data, unsigned port, enum retro_sensor_action action, unsigned event_rate)
 {
    android_input_t *android = (android_input_t*)data;
 
@@ -2053,7 +2056,7 @@ static void android_input_set_sensor_state(void *data, unsigned port, unsigned a
       case RETRO_SENSOR_ACCELEROMETER_ENABLE:
          if (android->sensor_state_mask &
                (1ULL << RETRO_SENSOR_ACCELEROMETER_ENABLE))
-            return;
+            return true;
 
          if (android->accelerometerSensor == NULL)
             android_input_enable_sensor_manager(android);
@@ -2067,18 +2070,22 @@ static void android_input_set_sensor_state(void *data, unsigned port, unsigned a
 
          android->sensor_state_mask &= ~(1ULL << RETRO_SENSOR_ACCELEROMETER_DISABLE);
          android->sensor_state_mask |= (1ULL  << RETRO_SENSOR_ACCELEROMETER_ENABLE);
-         break;
+         return true;
+
       case RETRO_SENSOR_ACCELEROMETER_DISABLE:
          if (android->sensor_state_mask &
                (1ULL << RETRO_SENSOR_ACCELEROMETER_DISABLE))
-            return;
+            return true;
 
          ASensorEventQueue_disableSensor(android->sensorEventQueue,
                android->accelerometerSensor);
          
          android->sensor_state_mask &= ~(1ULL << RETRO_SENSOR_ACCELEROMETER_ENABLE);
          android->sensor_state_mask |= (1ULL  << RETRO_SENSOR_ACCELEROMETER_DISABLE);
-         break;
+         return true;
+
+      default:
+         return false;
    }
 }
 

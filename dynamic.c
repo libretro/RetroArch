@@ -775,6 +775,14 @@ bool rarch_environment_cb(unsigned cmd, void *data)
          break;
       }
 
+      case RETRO_ENVIRONMENT_GET_SENSOR_INTERFACE:
+      {
+         RARCH_LOG("Environ GET_SENSOR_INTERFACE.\n");
+         struct retro_sensor_interface *iface = (struct retro_sensor_interface*)data;
+         iface->set_sensor_state = driver_set_sensor_state;
+         break;
+      }
+
       // Private extensions for internal use, not part of libretro API.
       case RETRO_ENVIRONMENT_SET_LIBRETRO_PATH:
          RARCH_LOG("Environ (Private) SET_LIBRETRO_PATH.\n");

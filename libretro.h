@@ -94,6 +94,7 @@ extern "C" {
 // Eventually _PRESSED will return false for an index. No further presses are registered at this point.
 #define RETRO_DEVICE_POINTER      6
 
+// FIXME: Document this.
 #define RETRO_DEVICE_SENSOR_ACCELEROMETER 7
 
 // These device types are specializations of the base types above.
@@ -533,7 +534,30 @@ enum retro_mod
                                            // Devices which are not handled or recognized always return 0 in retro_input_state_t.
                                            // Example bitmask: caps = (1 << RETRO_DEVICE_JOYPAD) | (1 << RETRO_DEVICE_ANALOG).
                                            // Should only be called in retro_run().
+                                           //
+#define RETRO_ENVIRONMENT_GET_SENSOR_INTERFACE (25 | RETRO_ENVIRONMENT_EXPERIMENTAL)
+                                           // struct retro_sensor_interface * --
+                                           // Gets access to the sensor interface.
+                                           // The purpose of this interface is to allow
+                                           // setting state related to sensors such as polling rate, enabling/disable it entirely, etc.
+                                           // Reading sensor state is done via the normal input_state_callback API.
 
+// FIXME: Document the sensor API and work out behavior.
+// It will be marked as experimental until then.
+enum retro_sensor_action
+{
+   RETRO_SENSOR_ACCELEROMETER_ENABLE = 0,
+   RETRO_SENSOR_ACCELEROMETER_DISABLE,
+
+   RETRO_SENSOR_DUMMY = INT_MAX
+};
+
+typedef bool (*retro_set_sensor_state_t)(unsigned port, enum retro_sensor_action action, unsigned rate);
+struct retro_sensor_interface
+{
+   retro_set_sensor_state_t set_sensor_state;
+};
+////
 
 enum retro_rumble_effect
 {
@@ -542,14 +566,6 @@ enum retro_rumble_effect
 
    RETRO_RUMBLE_DUMMY = INT_MAX
 };
-
-enum retro_sensor_action
-{
-   RETRO_SENSOR_ACCELEROMETER_ENABLE = 0,
-   RETRO_SENSOR_ACCELEROMETER_DISABLE,
-};
-
-typedef bool (*retro_set_sensor_state_t)(unsigned port, enum retro_sensor_action action, unsigned event_rate);
 
 // Sets rumble state for joypad plugged in port 'port'. Rumble effects are controlled independently,
 // and setting e.g. strong rumble does not override weak rumble.
