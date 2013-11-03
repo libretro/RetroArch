@@ -93,7 +93,7 @@ static void rarch_get_environment_console(void)
 
 #if defined(ANDROID)
 #define main_entry android_app_entry
-#define returntype void*
+#define returntype void
 #define signature() void* data
 #define returnfunc() exit(0)
 #define return_negative() return

@@ -477,8 +477,6 @@ MAIN
 ============================================================ */
 #if defined(XENON)
 #include "../frontend/frontend_xenon.c"
-#elif defined(ANDROID)
-#include "../frontend/frontend_android.c"
 #else
 #include "../frontend/frontend.c"
 #endif
