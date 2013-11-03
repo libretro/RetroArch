@@ -4891,7 +4891,7 @@ int convertNvToElfFromMemory(const void *sourceData, size_t size, int endianness
    if (doSwap)
    {
       int size = (int)nvbr->ucode_size()/sizeof(uint32_t);
-      buffer = new uint32_t[size];
+      buffer = (uint32_t*)malloc(size * sizeof(uint32_t));
 
       for (int i = 0; i < size; i++)
       {
@@ -4908,7 +4908,7 @@ int convertNvToElfFromMemory(const void *sourceData, size_t size, int endianness
       // !!!xxx this is to workaround what appears to be a linux platform specific bug
       // that manifests as a memory overwrite in properly allocated memory during a std::vector resize
       int size = (int)nvbr->ucode_size()/sizeof(uint32_t);
-      buffer = new uint32_t[size];
+      buffer = (uint32_t*)malloc(size * sizeof(uint32_t));
 
       for (int i = 0; i < size; i++)
          buffer[i] = tmp[i];
