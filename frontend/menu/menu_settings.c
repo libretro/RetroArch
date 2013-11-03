@@ -1273,24 +1273,16 @@ void menu_set_settings_label(char *type_str, size_t type_str_size, unsigned *w, 
       case RGUI_SETTINGS_OVERLAY_PRESET:
          strlcpy(type_str, path_basename(g_settings.input.overlay), type_str_size);
          break;
-
       case RGUI_SETTINGS_OVERLAY_OPACITY:
-         {
-            snprintf(type_str, type_str_size, "%.2f", g_settings.input.overlay_opacity);
-            break;
-         }
-
+         snprintf(type_str, type_str_size, "%.2f", g_settings.input.overlay_opacity);
+         break;
       case RGUI_SETTINGS_OVERLAY_SCALE:
-         {
-            snprintf(type_str, type_str_size, "%.2f", g_settings.input.overlay_scale);
-            break;
-         }
+         snprintf(type_str, type_str_size, "%.2f", g_settings.input.overlay_scale);
+         break;
 #endif
       case RGUI_SETTINGS_BIND_PLAYER:
-         {
-            snprintf(type_str, type_str_size, "#%d", rgui->current_pad + 1);
-            break;
-         }
+         snprintf(type_str, type_str_size, "#%d", rgui->current_pad + 1);
+         break;
       case RGUI_SETTINGS_BIND_DEVICE:
          {
             int map = g_settings.input.joypad_map[rgui->current_pad];
@@ -1370,7 +1362,7 @@ void menu_set_settings_label(char *type_str, size_t type_str_size, unsigned *w, 
          }
       default:
          type_str[0] = 0;
-         w = 0;
+         *w = 0;
          break;
    }
 }
