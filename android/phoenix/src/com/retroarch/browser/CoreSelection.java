@@ -4,6 +4,9 @@ import com.retroarch.R;
 import com.retroarch.browser.preferences.util.UserPreferences;
 
 import java.io.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 import android.app.*;
 import android.media.AudioManager;
@@ -26,14 +29,11 @@ public final class CoreSelection extends ListActivity {
 		// Setup the layout
 		setContentView(R.layout.line_list);
 
-		// Setup the list
-		adapter = new IconAdapter<ModuleWrapper>(this, R.layout.line_list_item);
-		setListAdapter(adapter);
-
 		// Set the activity title.
 		setTitle(R.string.select_libretro_core);
 
 		// Populate the list
+		final List<ModuleWrapper> cores = new ArrayList<ModuleWrapper>();
 		final File[] libs = new File(getApplicationInfo().dataDir, "/cores").listFiles();
 		for (final File lib : libs) {
 			String libName = lib.getName();
@@ -59,9 +59,16 @@ public final class CoreSelection extends ListActivity {
 				if (hasNeonVersion)
 					continue;
 			}
-			
-			adapter.add(new ModuleWrapper(this, lib));
+
+			cores.add(new ModuleWrapper(this, lib));
 		}
+
+		// Sort the list of cores alphabetically
+		Collections.sort(cores);
+
+		// Initialize the IconAdapter with the list of cores.
+		adapter = new IconAdapter<ModuleWrapper>(this, R.layout.line_list_item, cores);
+		setListAdapter(adapter);
 
 		this.setVolumeControlStream(AudioManager.STREAM_MUSIC);
 	}
