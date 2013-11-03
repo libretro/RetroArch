@@ -309,7 +309,7 @@ static bool apple_input_set_rumble(void *data, unsigned port, enum retro_rumble_
    return input_joypad_set_rumble(g_joydriver, port, effect, strength);
 }
 
-static uint64_t apple_get_capabilities(void *data)
+static uint64_t apple_input_get_capabilities(void *data)
 {
    uint64_t caps = 0;
 
