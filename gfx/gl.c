@@ -51,10 +51,6 @@
 
 #include "shader_common.h"
 
-#ifdef ANDROID
-#include "../frontend/frontend_android.h"
-#endif
-
 // Used for the last pass when rendering to the back buffer.
 static const GLfloat vertexes_flipped[] = {
    0, 1,

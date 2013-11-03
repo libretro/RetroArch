@@ -14,7 +14,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../../../frontend/frontend_android.h"
+#include "../../../frontend/platform/platform_android.h"
 #include "jni_macros.h"
 #include "input_autodetect.h"
 

@@ -15,8 +15,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef _FRONTEND_ANDROID_H
-#define _FRONTEND_ANDROID_H
+#ifndef _PLATFORM_ANDROID_H
+#define _PLATFORM_ANDROID_H
 
 #include <poll.h>
 #include <sched.h>
@@ -25,7 +25,7 @@
 #include <android/native_activity.h>
 #include <android/window.h>
 
-#include "../thread.h"
+#include "../../thread.h"
 
 struct android_app
 {
@@ -151,4 +151,4 @@ extern void engine_handle_cmd(void);
 
 extern struct android_app *g_android;
 
-#endif /* _FRONTEND_ANDROID_H */
+#endif /* _PLATFORM_ANDROID_H */

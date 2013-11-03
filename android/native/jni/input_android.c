@@ -20,7 +20,7 @@
 #include <unistd.h>
 #include <dlfcn.h>
 #include "input_autodetect.h"
-#include "../../../frontend/frontend_android.h"
+#include "../../../frontend/platform/platform_android.h"
 #include "../../../input/input_common.h"
 #include "../../../performance.h"
 #include "../../../general.h"

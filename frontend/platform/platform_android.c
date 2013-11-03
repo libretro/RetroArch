@@ -21,7 +21,7 @@
 #include <string.h>
 #include <sys/resource.h>
 
-#include "../frontend_android.h"
+#include "platform_android.h"
 #include "../../android/native/jni/jni_macros.h"
 
 #include "../../conf/config_file.h"
