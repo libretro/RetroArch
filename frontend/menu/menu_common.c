@@ -227,10 +227,9 @@ void load_menu_game_prepare(void)
          msg_queue_push(g_extern.msg_queue, str, 1, 1);
       }
 
-      if (g_extern.system.no_game || *g_extern.fullpath)
-         menu_rom_history_push(*g_extern.fullpath ? g_extern.fullpath : NULL,
-               g_settings.libretro,
-               rgui->info.library_name ? rgui->info.library_name : "");
+      menu_rom_history_push(*g_extern.fullpath ? g_extern.fullpath : NULL,
+            g_settings.libretro,
+            rgui->info.library_name ? rgui->info.library_name : "");
    }
 
 #ifdef HAVE_RGUI
