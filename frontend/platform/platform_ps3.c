@@ -59,8 +59,7 @@ static void find_and_set_first_file(void)
 
    if(first_file)
    {
-      snprintf(default_paths.libretro_path, sizeof(default_paths.libretro_path), 
-            "%s/%s", default_paths.core_dir, first_file);
+      fill_pathname_join(default_paths.libretro_path, default_paths.core_dir, first_file, sizeof(default_paths.libretro_path));
       RARCH_LOG("libretro_path now set to: %s.\n", default_paths.libretro_path);
    }
    else
@@ -91,12 +90,12 @@ static void salamander_init_settings(void)
 
       //try to find CORE executable
       char core_executable[1024];
-      snprintf(core_executable, sizeof(core_executable), "%s/CORE.SELF", default_paths.core_dir);
+      fill_pathname_join(core_executable, default_paths.core_dir, "CORE.SELF", sizeof(core_executable));
 
       if(path_file_exists(core_executable))
       {
          //Start CORE executable
-         snprintf(default_paths.libretro_path, sizeof(default_paths.libretro_path), core_executable);
+         strlcpy(default_paths.libretro_path, core_executable, sizeof(default_paths.libretro_path));
          RARCH_LOG("Start [%s].\n", default_paths.libretro_path);
       }
       else
@@ -106,7 +105,7 @@ static void salamander_init_settings(void)
             config_file_t * conf = config_file_new(default_paths.config_path);
             config_get_array(conf, "libretro_path", tmp_str, sizeof(tmp_str));
             config_file_free(conf);
-            snprintf(default_paths.libretro_path, sizeof(default_paths.libretro_path), tmp_str);
+            strlcpy(default_paths.libretro_path, tmp_str, sizeof(default_paths.libretro_path));
          }
 
          if (!config_file_exists || !strcmp(default_paths.libretro_path, ""))
@@ -249,15 +248,13 @@ static void get_environment_settings(int argc, char *argv[], void *args)
 #ifdef HAVE_MULTIMAN
       if (g_extern.lifecycle_mode_state & (1ULL << MODE_EXTLAUNCH_MULTIMAN))
       {
-         snprintf(contentInfoPath, sizeof(contentInfoPath), "/dev_hdd0/game/%s", EMULATOR_CONTENT_DIR);
+         fill_pathname_join(contentInfoPath, "/dev_hdd0/game/", EMULATOR_CONTENT_DIR, sizeof(contentInfoPath));
          snprintf(default_paths.port_dir, sizeof(default_paths.port_dir), "/dev_hdd0/game/%s/USRDIR", EMULATOR_CONTENT_DIR);
       }
 #endif
 
       if(ret < 0)
-      {
          RARCH_ERR("cellGameContentPermit() Error: 0x%x\n", ret);
-      }
       else
       {
          RARCH_LOG("cellGameContentPermit() OK.\n");
@@ -265,25 +262,24 @@ static void get_environment_settings(int argc, char *argv[], void *args)
          RARCH_LOG("usrDirPath : [%s].\n", default_paths.port_dir);
       }
 
-      snprintf(default_paths.core_dir, sizeof(default_paths.core_dir), "%s/cores", default_paths.port_dir);
-      snprintf(default_paths.savestate_dir, sizeof(default_paths.savestate_dir), "%s/savestates", default_paths.core_dir);
-      snprintf(default_paths.filesystem_root_dir, sizeof(default_paths.filesystem_root_dir), "/");
-      snprintf(default_paths.filebrowser_startup_dir, sizeof(default_paths.filebrowser_startup_dir), default_paths.filesystem_root_dir);
-      snprintf(default_paths.sram_dir, sizeof(default_paths.sram_dir), "%s/savefiles", default_paths.core_dir);
-
-      snprintf(default_paths.system_dir, sizeof(default_paths.system_dir), "%s/system", default_paths.core_dir);
+      fill_pathname_join(default_paths.core_dir, default_paths.port_dir, "cores", sizeof(default_paths.core_dir));
+      fill_pathname_join(default_paths.savestate_dir, default_paths.core_dir, "savestates", sizeof(default_paths.savestate_dir));
+      strlcpy(default_paths.filesystem_root_dir, "/", sizeof(default_paths.filesystem_root_dir));
+      strlcpy(default_paths.filebrowser_startup_dir, default_paths.filesystem_root_dir, sizeof(default_paths.filebrowser_startup_dir));
+      fill_pathname_join(default_paths.sram_dir, default_paths.core_dir, "savefiles", sizeof(default_paths.sram_dir));
+      fill_pathname_join(default_paths.system_dir, default_paths.core_dir, "system", sizeof(default_paths.system_dir));
 
       /* now we fill in all the variables */
-      snprintf(default_paths.menu_border_file, sizeof(default_paths.menu_border_file), "%s/borders/Menu/main-menu_1080p.png", default_paths.core_dir);
-      snprintf(default_paths.border_dir, sizeof(default_paths.border_dir), "%s/borders", default_paths.core_dir);
+      fill_pathname_join(default_paths.menu_border_file, default_paths.core_dir, "borders/Menu/main-menu_1080p.png", sizeof(default_paths.menu_border_file));
+      fill_pathname_join(default_paths.border_dir, default_paths.core_dir, "borders", sizeof(default_paths.border_dir));
 #if defined(HAVE_CG) || defined(HAVE_GLSL)
-      snprintf(g_settings.video.shader_dir, sizeof(g_settings.video.shader_dir), "%s/shaders", default_paths.core_dir);
+      fill_pathname_join(g_settings.video.shader_dir, default_paths.core_dir, "shaders", sizeof(g_settings.video.shader_dir));
 #endif
 
 #ifdef IS_SALAMANDER
-      snprintf(default_paths.config_path, sizeof(default_paths.config_path), "%s/retroarch.cfg", default_paths.port_dir);
+      fill_pathname_join(default_paths.config_path, default_paths.port_dir, "retroarch.cfg",  sizeof(default_paths.config_path));
 #else
-      snprintf(g_extern.config_path, sizeof(g_extern.config_path), "%s/retroarch.cfg", default_paths.port_dir);
+      fill_pathname_join(g_extern.config_path, default_paths.port_dir, "retroarch.cfg",  sizeof(g_extern.config_path));
 #endif
    }
 }

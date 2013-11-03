@@ -31,6 +31,9 @@ frontend_ctx_driver_t *frontend_ctx;
 #include "platform/platform_ps3.c"
 #elif defined(GEKKO)
 #include "platform/platform_gx.c"
+#ifdef HW_RVL
+#include "platform/platform_wii.c"
+#endif
 #elif defined(_XBOX)
 #include "platform/platform_xdk.c"
 #elif defined(PSP)
@@ -102,10 +105,10 @@ int main(int argc, char *argv[])
    if (system_ctx_init() != 0)
       return 0;
 
-   frontend_ctx->init();
+   frontend_ctx->init(args);
    get_environment_settings(argc, argv, args);
    salamander_init_settings();
-   frontend_ctx->deinit();
+   frontend_ctx->deinit(args);
    frontend_ctx->exitspawn();
 
    return 1;

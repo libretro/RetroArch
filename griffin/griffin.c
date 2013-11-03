@@ -460,6 +460,9 @@ FRONTEND
 #include "../frontend/platform/platform_ps3.c"
 #elif defined(GEKKO)
 #include "../frontend/platform/platform_gx.c"
+#ifdef HW_RVL
+#include "../frontend/platform/platform_wii.c"
+#endif
 #elif defined(_XBOX)
 #include "../frontend/platform/platform_xdk.c"
 #elif defined(PSP)
