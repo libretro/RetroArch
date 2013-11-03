@@ -40,6 +40,13 @@
   PS3 PAD
   ============================================================ */
 
+typedef struct
+{
+   float x;
+   float y;
+   float z;
+} sensor_t;
+
 const struct platform_bind platform_keys[] = {
    { (1ULL << RETRO_DEVICE_ID_JOYPAD_B), "Cross button" },
    { (1ULL << RETRO_DEVICE_ID_JOYPAD_Y), "Square button" },
@@ -67,6 +74,7 @@ typedef struct ps3_input
 #ifdef HAVE_MOUSE
    unsigned mice_connected;
 #endif
+   sensor_t accelerometer_state[MAX_PADS];
 } ps3_input_t;
 
 int16_t analog_state[MAX_PADS][2][2];
@@ -128,6 +136,9 @@ static void ps3_input_poll(void *data)
          analog_state[port][RETRO_DEVICE_INDEX_ANALOG_LEFT ][RETRO_DEVICE_ID_ANALOG_Y] = (int16_t)state_tmp.button[CELL_PAD_BTN_OFFSET_ANALOG_LEFT_Y];
          analog_state[port][RETRO_DEVICE_INDEX_ANALOG_RIGHT][RETRO_DEVICE_ID_ANALOG_X] = (int16_t)state_tmp.button[CELL_PAD_BTN_OFFSET_ANALOG_RIGHT_X];
          analog_state[port][RETRO_DEVICE_INDEX_ANALOG_RIGHT][RETRO_DEVICE_ID_ANALOG_Y] = (int16_t)state_tmp.button[CELL_PAD_BTN_OFFSET_ANALOG_RIGHT_Y];
+         ps3->accelerometer_state[port].x = state_tmp.button[CELL_PAD_BTN_OFFSET_SENSOR_X];
+         ps3->accelerometer_state[port].y = state_tmp.button[CELL_PAD_BTN_OFFSET_SENSOR_Y];
+         ps3->accelerometer_state[port].z = state_tmp.button[CELL_PAD_BTN_OFFSET_SENSOR_Z];
 #endif
       }
    }
@@ -149,6 +160,7 @@ static void ps3_input_poll(void *data)
 
    cellPadGetInfo2(&pad_info);
    ps3->pads_connected = pad_info.now_connect; 
+
 #ifdef HAVE_MOUSE
    CellMouseInfo mouse_info;
    cellMouseGetInfo(&mouse_info);
@@ -199,6 +211,20 @@ static int16_t ps3_input_state(void *data, const struct retro_keybind **binds,
             break;
          case RETRO_DEVICE_ANALOG:
             retval = analog_state[port][index][id];
+            break;
+         case RETRO_DEVICE_SENSOR_ACCELEROMETER:
+            switch (id)
+            {
+               // fixed range of 0x000 - 0x3ff
+               case RETRO_DEVICE_ID_SENSOR_ACCELEROMETER_X:
+                  retval = ps3->accelerometer_state[port].x;
+               case RETRO_DEVICE_ID_SENSOR_ACCELEROMETER_Y:
+                  retval = ps3->accelerometer_state[port].y;
+               case RETRO_DEVICE_ID_SENSOR_ACCELEROMETER_Z:
+                  retval = ps3->accelerometer_state[port].z;
+               default:
+                  retval = 0;
+            }
             break;
 #ifdef HAVE_MOUSE
          case RETRO_DEVICE_MOUSE:
@@ -397,8 +423,32 @@ static uint64_t ps3_input_get_capabilities(void *data)
    caps |= (1 << RETRO_DEVICE_MOUSE);
 #endif
    caps |= (1 << RETRO_DEVICE_ANALOG);
+   caps |= (1 << RETRO_DEVICE_SENSOR_ACCELEROMETER);
 
    return caps;
+}
+
+static bool ps3_input_set_sensor_state(void *data, unsigned port, enum retro_sensor_action action, unsigned event_rate)
+{
+   CellPadInfo2 pad_info;
+   (void)event_rate;
+
+   switch (action)
+   {
+      case RETRO_SENSOR_ACCELEROMETER_ENABLE:
+         cellPadGetInfo2(&pad_info);
+         if ((pad_info.device_capability[port] & CELL_PAD_CAPABILITY_SENSOR_MODE) != CELL_PAD_CAPABILITY_SENSOR_MODE)
+            return false;
+
+         cellPadSetPortSetting(port, CELL_PAD_SETTING_SENSOR_ON);
+         return true;
+      case RETRO_SENSOR_ACCELEROMETER_DISABLE:
+         cellPadSetPortSetting(port, 0);
+         return true;
+
+      default:
+         return false;
+   }
 }
 
 const input_driver_t input_ps3 = {
@@ -408,7 +458,7 @@ const input_driver_t input_ps3 = {
    ps3_input_key_pressed,
    ps3_input_free_input,
    ps3_input_set_keybinds,
-   NULL,
+   ps3_input_set_sensor_state,
    ps3_input_get_capabilities,
    "ps3",
 };
