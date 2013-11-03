@@ -143,8 +143,8 @@ static struct rxml_attrib_node *rxml_parse_attrs(const char *str)
       if (!end || end != (elem + strlen(elem) - 1))
          goto end;
 
-      char *attrib = strdup_range_escape(elem, eq);
-      char *value  = strdup_range_escape(eq + 2, end);
+      attrib = strdup_range_escape(elem, eq);
+      value  = strdup_range_escape(eq + 2, end);
       if (!attrib || !value)
          goto end;
 
