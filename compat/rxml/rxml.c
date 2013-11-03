@@ -129,6 +129,8 @@ static struct rxml_attrib_node *rxml_parse_attrs(const char *str)
    struct rxml_attrib_node *list = NULL;
    struct rxml_attrib_node *tail = NULL;
 
+   char *attrib = NULL;
+   char *value = NULL;
    char *save;
    const char *elem = strtok_r(copy, " \n\t\f\v\r", &save);
    while (elem)
@@ -152,6 +154,8 @@ static struct rxml_attrib_node *rxml_parse_attrs(const char *str)
 
       new_node->attrib = attrib;
       new_node->value  = value;
+      attrib = NULL;
+      value = NULL;
 
       if (tail)
       {
@@ -166,6 +170,8 @@ static struct rxml_attrib_node *rxml_parse_attrs(const char *str)
 
 end:
    free(copy);
+   free(attrib);
+   free(value);
    return list;
 }
 
