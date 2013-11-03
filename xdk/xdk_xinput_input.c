@@ -300,8 +300,9 @@ static bool xdk_input_set_rumble(void *data, unsigned port, enum retro_rumble_ef
       rumble_state.Rumble.wLeftMotorSpeed = strength;
    else if (effect == RETRO_RUMBLE_WEAK)
       rumble_state.Rumble.wRightMotorSpeed = strength;
-   val = XInputSetState(xdk->gamepads[port], port, &rumble_state) == ERROR_SUCCESS;
+   val = XInputSetState(xdk->gamepads[port], &rumble_state) == ERROR_SUCCESS;
 #endif
+   return val;
 }
 
 const input_driver_t input_xinput = 
