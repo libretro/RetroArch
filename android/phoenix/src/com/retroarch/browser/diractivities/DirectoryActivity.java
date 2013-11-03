@@ -15,7 +15,17 @@ import android.os.*;
 import android.widget.*;
 import android.view.*;
 
-
+/**
+ * {@link ListActivity} subclass that provides a file-browser
+ * like UI for browsing for specific files.
+ * <p>
+ * This file browser also allows for custom filtering
+ * depending on the type of class that inherits it.
+ * <p>
+ * This file browser also uses an implementation of a 
+ * backstack for remembering previously browsed folders
+ * within this DirectoryActivity.
+ */
 public class DirectoryActivity extends ListActivity {
 	private IconAdapter<FileWrapper> adapter;
 	private File listedDirectory;
@@ -180,14 +190,37 @@ public class DirectoryActivity extends ListActivity {
 
 		return true;
 	}
-	
+
+	/**
+	 * Allows specifying an allowed file extension.
+	 * <p>
+	 * Any files that contain this file extension will be shown
+	 * within the DirectoryActivity file browser. Those that don't
+	 * contain this extension will not be shows.
+	 * <p>
+	 * It is possible to specify more than one allowed extension by
+	 * simply calling this method with a different file extension specified.
+	 * 
+	 * @param ext The file extension to allow being shown in this DirectoryActivity.
+	 */
 	protected void addAllowedExt(String ext) {
 		if (allowedExt == null)
 			allowedExt = new ArrayList<String>();
 		
 		allowedExt.add(ext);
 	}
-	
+
+	/**
+	 * Allows specifying a disallowed file extension.
+	 * <p>
+	 * Any files that contain this file extension will not be shown
+	 * within the DirectoryActivity file browser.
+	 * <p>
+	 * It is possible to specify more than one disallowed extension by
+	 * simply calling this method with a different file extension specified.
+	 * 
+	 * @param ext The file extension to hide from being shown in this DirectoryActivity.
+	 */
 	protected void addDisallowedExt(String ext) {
 		if (disallowedExt == null)
 			disallowedExt = new ArrayList<String>();

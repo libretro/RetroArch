@@ -15,6 +15,10 @@ import android.util.Log;
 import android.view.WindowManager;
 import android.widget.Toast;
 
+/**
+ * {@link Activity} subclass that provides the functionality
+ * for the refresh rate testing for device displays.
+ */
 public final class DisplayRefreshRateTest extends Activity {
 
 	private class Renderer implements GLSurfaceView.Renderer {

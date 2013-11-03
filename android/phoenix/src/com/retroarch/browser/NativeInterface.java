@@ -1,6 +1,8 @@
 package com.retroarch.browser;
 
-// Helper class which calls into JNI for various tasks.
+/**
+ * Helper class which calls into JNI for various tasks.
+ */
 public final class NativeInterface {
 
 	static {

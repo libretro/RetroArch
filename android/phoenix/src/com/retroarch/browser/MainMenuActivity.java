@@ -21,6 +21,10 @@ import android.provider.Settings;
 import android.util.Log;
 import android.widget.Toast;
 
+/**
+ * {@link PreferenceActivity} subclass that provides all of the
+ * functionality of the main menu screen.
+ */
 public final class MainMenuActivity extends PreferenceActivity {
 	private static MainMenuActivity instance = null;
 	private static final int ACTIVITY_LOAD_ROM = 0;
@@ -30,30 +34,30 @@ public final class MainMenuActivity extends PreferenceActivity {
 	private static String libretro_name;
 	
 	private void showGPLWaiver() {
-			AlertDialog.Builder alert = new AlertDialog.Builder(this)
-					.setTitle(R.string.gpl_waiver)
-					.setMessage(R.string.gpl_waiver_desc)
-					.setPositiveButton("Keep", null)
-					.setNegativeButton("Remove non-GPL cores",
-							new DialogInterface.OnClickListener() {
-								@Override
-								public void onClick(DialogInterface dialog, int which) {
-									final File[] libs = new File(getApplicationInfo().dataDir, "/cores").listFiles();
-									for (final File lib : libs) {
-										ModuleWrapper module = new ModuleWrapper(getApplicationContext(), lib);
-										
-										boolean gplv3 = module.getCoreLicense().equals("GPLv3");
-										boolean gplv2 = module.getCoreLicense().equals("GPLv2");
-										
-										if (!gplv3 && !gplv2) {
-											String libName = lib.getName();
-											Log.i("GPL WAIVER", "Deleting non-GPL core" + libName + "...");
-											lib.delete();
-										}
+		AlertDialog.Builder alert = new AlertDialog.Builder(this)
+				.setTitle(R.string.gpl_waiver)
+				.setMessage(R.string.gpl_waiver_desc)
+				.setPositiveButton("Keep", null)
+				.setNegativeButton("Remove non-GPL cores",
+						new DialogInterface.OnClickListener() {
+							@Override
+							public void onClick(DialogInterface dialog, int which) {
+								final File[] libs = new File(getApplicationInfo().dataDir, "/cores").listFiles();
+								for (final File lib : libs) {
+									ModuleWrapper module = new ModuleWrapper(getApplicationContext(), lib);
+									
+									boolean gplv3 = module.getCoreLicense().equals("GPLv3");
+									boolean gplv2 = module.getCoreLicense().equals("GPLv2");
+									
+									if (!gplv3 && !gplv2) {
+										String libName = lib.getName();
+										Log.i("GPL WAIVER", "Deleting non-GPL core" + libName + "...");
+										lib.delete();
 									}
 								}
-							});
-			alert.show();
+							}
+						});
+		alert.show();
 	}
 
 	@Override

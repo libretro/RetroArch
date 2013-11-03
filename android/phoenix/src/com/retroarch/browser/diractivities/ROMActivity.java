@@ -7,6 +7,11 @@ import com.retroarch.browser.preferences.util.UserPreferences;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 
+/**
+ * {@link DirectoryActivity} subclass used for the sole
+ * purpose of navigating the Android filesystem for selecting
+ * a ROM file to execute during emulation.
+ */
 public final class ROMActivity extends DirectoryActivity {
 	@Override
 	public void onCreate(Bundle savedInstanceState) {

@@ -4,6 +4,11 @@ import java.io.File;
 
 import android.os.Bundle;
 
+/**
+ * {@link DirectoryActivity} subclass used for the sole
+ * purpose of navigating the Android filesystem for selecting
+ * a shader to use during emulation.
+ */
 public final class ShaderActivity extends DirectoryActivity {
 	@Override
 	public void onCreate(Bundle savedInstanceState) {

@@ -8,6 +8,9 @@ import android.os.Bundle;
 import android.provider.Settings;
 import android.util.Log;
 
+/**
+ * The {@link Activity} derivative responsible for displaying the TV Mode feature.
+ */
 public final class RetroTVMode extends Activity {
 	private static final String TAG = "RetroTVMode";
 	private static final int ACTIVITY_RETROARCH = 1;

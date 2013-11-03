@@ -14,8 +14,10 @@ import android.os.*;
 import android.widget.*;
 import android.view.*;
 
-// JELLY_BEAN_MR1 = 17
-
+/**
+ * {@link ListActivity} subclass that displays the list
+ * of selectable cores for emulating games.
+ */
 public final class CoreSelection extends ListActivity {
 	private IconAdapter<ModuleWrapper> adapter;
 
