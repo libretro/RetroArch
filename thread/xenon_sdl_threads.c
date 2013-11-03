@@ -23,7 +23,7 @@
 
 SDL_cond *SDL_CreateCond(void)
 {
-   bool *sleeping = calloc(1, sizeof(sleeping));
+   bool *sleeping = calloc(1, sizeof(*sleeping));
    return (SDL_cond*)sleeping;
 }
 
