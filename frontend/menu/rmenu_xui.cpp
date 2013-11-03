@@ -1348,7 +1348,7 @@ static void ingame_menu_resize (void)
 
 static int rgui_iterate(void *data, unsigned action)
 {
-   rgui_handle_t *rgui = (rgui_handle_t*)data;
+   (void)data;
 
    if (action == RGUI_ACTION_OK)
    {
