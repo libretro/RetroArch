@@ -280,7 +280,7 @@ static uint64_t xdk_input_get_capabilities(void *data)
 
 static bool xdk_input_set_rumble(void *data, unsigned port, enum retro_rumble_effect effect, uint16_t strength)
 {
-   xdk_input_t *xdk = (xdk_input_t*)calloc(1, sizeof(*xdk));
+   xdk_input_t *xdk = (xdk_input_t*)data;
    (void)xdk;
    bool val = false;
 
