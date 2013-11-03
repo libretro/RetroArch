@@ -202,7 +202,10 @@ static void *linuxraw_input_init(void)
       newTerm.c_cc[VTIME] = 0;
 
       if (ioctl(0, KDGKBMODE, &oldKbmd) != 0)
+      {
+         free(linuxraw);
          return NULL;
+      }
    }
 
    tcsetattr(0, TCSAFLUSH, &newTerm);
@@ -210,6 +213,7 @@ static void *linuxraw_input_init(void)
    if (ioctl(0, KDSKBMODE, K_MEDIUMRAW) != 0)
    {
       linuxraw_resetKbmd();
+      free(linuxraw);
       return NULL;
    }
 
