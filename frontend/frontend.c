@@ -283,10 +283,9 @@ returntype main_entry(signature())
    while ((g_extern.is_paused && !g_extern.is_oneshot) ? rarch_main_idle_iterate() : rarch_main_iterate());
 #endif
 
-   global_uninit_drivers();
-
    rarch_main_deinit();
    rarch_deinit_msg_queue();
+   global_uninit_drivers();
 
 #ifdef PERF_TEST
    rarch_perf_log();

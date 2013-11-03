@@ -449,10 +449,13 @@ void global_init_drivers(void)
 
 void global_uninit_drivers(void)
 {
-   if (driver.video_data)
+   if (driver.video && driver.video_data)
+   {
+      driver.video->free(driver.video_data);
       driver.video_data = NULL;
+   }
 
-   if (driver.input_data)
+   if (driver.input && driver.input_data)
    {
       driver.input->free(driver.input_data);
       driver.input_data = NULL;
