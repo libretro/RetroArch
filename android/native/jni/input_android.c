@@ -1991,6 +1991,7 @@ static int16_t android_input_state(void *data, const struct retro_keybind **bind
       case RETRO_DEVICE_SENSOR_ACCELEROMETER:
          switch (id)
          {
+            /* FIXME - these are float values - might need a separate input state function */
             case RETRO_DEVICE_ID_SENSOR_ACCELEROMETER_X:
                return android->accelerometer_state.x;
             case RETRO_DEVICE_ID_SENSOR_ACCELEROMETER_Y:
