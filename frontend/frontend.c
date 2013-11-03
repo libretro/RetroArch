@@ -37,6 +37,13 @@ default_paths_t default_paths;
 
 static void rarch_get_environment_console(void)
 {
+   path_mkdir(default_paths.port_dir);
+   path_mkdir(default_paths.system_dir);
+   path_mkdir(default_paths.savestate_dir);
+   path_mkdir(default_paths.sram_dir);
+
+   config_load();
+
    init_libretro_sym(false);
    rarch_init_system_info();
 
@@ -79,6 +86,8 @@ static void rarch_get_environment_console(void)
       }
    }
 #endif
+
+   global_init_drivers();
 }
 #endif
 
@@ -102,6 +111,34 @@ static void rarch_get_environment_console(void)
 #define return_negative() return 1
 #endif
 
+#if defined(HAVE_BB10)
+#define ra_preinited true
+#else
+#define ra_preinited false
+#endif
+
+#if defined(HAVE_BB10)
+#define attempt_load_game false
+#else
+#define attempt_load_game true
+#endif
+
+#if defined(RARCH_CONSOLE) || defined(HAVE_BB10)
+#define initial_menu_lifecycle_state (1ULL << MODE_LOAD_GAME)
+#else
+#define initial_menu_lifecycle_state (1ULL << MODE_GAME)
+#endif
+
+#if !defined(RARCH_CONSOLE) && !defined(HAVE_BB10)
+#define attempt_load_game_push_history false
+#else
+#define attempt_load_game_push_history true
+#endif
+
+#ifndef RARCH_CONSOLE
+#define rarch_get_environment_console() (void)0
+#endif
+
 returntype main_entry(signature())
 {
    void *args = NULL;
@@ -111,28 +148,21 @@ returntype main_entry(signature())
    if (frontend_ctx && frontend_ctx->init)
       frontend_ctx->init();
 
-#ifndef HAVE_BB10
-   rarch_main_clear_state();
-#endif
+   if (!ra_preinited)
+      rarch_main_clear_state();
 
    if (frontend_ctx && frontend_ctx->environment_get)
+   {
       frontend_ctx->environment_get(argc, argv, args);
+      rarch_get_environment_console();
+   }
 
-#if defined(RARCH_CONSOLE)
-   path_mkdir(default_paths.port_dir);
-   path_mkdir(default_paths.system_dir);
-   path_mkdir(default_paths.savestate_dir);
-   path_mkdir(default_paths.sram_dir);
-
-   config_load();
-
-   rarch_get_environment_console();
-   global_init_drivers();
-#elif !defined(HAVE_BB10)
-   rarch_init_msg_queue();
-   int init_ret;
-   if ((init_ret = rarch_main_init(argc, argv))) return init_ret;
-#endif
+   if (attempt_load_game)
+   {
+      rarch_init_msg_queue();
+      int init_ret;
+      if ((init_ret = rarch_main_init(argc, argv))) return init_ret;
+   }
 
 #if defined(HAVE_MENU) || defined(HAVE_BB10)
    menu_init();
@@ -140,18 +170,15 @@ returntype main_entry(signature())
    if (frontend_ctx && frontend_ctx->process_args)
       frontend_ctx->process_args(argc, argv, args);
 
-#if defined(RARCH_CONSOLE) || defined(HAVE_BB10)
-   g_extern.lifecycle_mode_state |= 1ULL << MODE_LOAD_GAME;
-#else
-   g_extern.lifecycle_mode_state |= 1ULL << MODE_GAME;
-#endif
+   g_extern.lifecycle_mode_state |= initial_menu_lifecycle_state;
 
-#if !defined(RARCH_CONSOLE) && !defined(HAVE_BB10)
-   // If we started a ROM directly from command line,
-   // push it to ROM history.
-   if (!g_extern.libretro_dummy)
-      menu_rom_history_push_current();
-#endif
+   if (attempt_load_game_push_history)
+   {
+      // If we started a ROM directly from command line,
+      // push it to ROM history.
+      if (!g_extern.libretro_dummy)
+         menu_rom_history_push_current();
+   }
 
    for (;;)
    {
@@ -245,13 +272,11 @@ returntype main_entry(signature())
 
    if (g_extern.config_save_on_exit && *g_extern.config_path)
       config_save_file(g_extern.config_path);
-
-#ifdef RARCH_CONSOLE
-   global_uninit_drivers();
-#endif
 #else
    while ((g_extern.is_paused && !g_extern.is_oneshot) ? rarch_main_idle_iterate() : rarch_main_iterate());
 #endif
+
+   global_uninit_drivers();
 
    rarch_main_deinit();
    rarch_deinit_msg_queue();
