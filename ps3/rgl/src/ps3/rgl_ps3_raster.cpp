@@ -116,22 +116,6 @@ template<int SIZE> static void setVectorTypefp( void *dat, const void* __restric
    }
 }
 
-template<int SIZE> static void setVectorTypeSharedfpIndex (void *data, const void* __restrict v, const int /*index*/ )
-{
-}
-
-template<int SIZE> static void setVectorTypeSharedfpIndexArray (void *data, const void* __restrict v, const int index )
-{
-}
-template<int SIZE> static void setVectorTypeSharedvpIndex (void *data, const void* __restrict v, const int /*index*/ )
-{
-}
-
-template<int SIZE> static void setVectorTypeSharedvpIndexArray (void *data, const void* __restrict v, const int index )
-{
-}
-
-
 //  matrix uniforms
 // note that Cg generated matrices are 1 row per binary param
 // storage within the parameter is row major (so register setting is easier)
@@ -179,9 +163,7 @@ template<int SIZE, bool isIndex> static void setVectorTypefpIndex (void *dat, co
       }
    }
    if ( RGL_LIKELY( *ec ) )
-   {
       swapandsetfp<SIZE>( program->header.instructionCount*16, program->loadProgramId, program->loadProgramOffset, ec, ( unsigned int * )data );
-   }
 }
 
 //matrices
@@ -199,18 +181,6 @@ template <int ROWS, int COLS, int ORDER> static void setMatrixvpIndex (void *dat
    LContext->needValidate |= RGL_VALIDATE_VERTEX_CONSTANTS;
 }
 
-template <int ROWS, int COLS, int ORDER, bool isVpIndexArray> static void setMatrixSharedvpIndex (void *data, const void*  __restrict v, const int index )
-{
-}
-
-template <int ROWS, int COLS, int ORDER> static void setMatrixSharedfpIndex (void *data, const void* __restrict v, const int /*index*/ )
-{
-}
-
-template <int ROWS, int COLS, int ORDER> static void setMatrixSharedfpIndexArray (void *data, const void* __restrict v, const int index )
-{
-}
-
 template <int ROWS, int COLS, int ORDER> static void setMatrixvpIndexArray (void *data, const void* __restrict v, const int index )
 {
    CgRuntimeParameter *ptr = (CgRuntimeParameter*)data;
@@ -224,6 +194,7 @@ template <int ROWS, int COLS, int ORDER> static void setMatrixvpIndexArray (void
    }
    LContext->needValidate |= RGL_VALIDATE_VERTEX_CONSTANTS;
 }
+
 template <int ROWS, int COLS, int ORDER> static void setMatrixfpIndex (void *data, const void* __restrict v, const int /*index*/ )
 {
    CgRuntimeParameter *ptr = (CgRuntimeParameter*)data;
@@ -245,6 +216,7 @@ template <int ROWS, int COLS, int ORDER> static void setMatrixfpIndex (void *dat
       ec += count + 2; //+1 for the register, +1 for the count, + count for the number of embedded consts
    }
 }
+
 template <int ROWS, int COLS, int ORDER> static void setMatrixfpIndexArray (void *data, const void* __restrict v, const int index )
 {
    CgRuntimeParameter *ptr = (CgRuntimeParameter*)data;
@@ -274,26 +246,18 @@ template <int ROWS, int COLS, int ORDER> static void setMatrixfpIndexArray (void
    }
 }
 
-static _cgSetArrayIndexFunction setVectorTypeIndex[2][2][2][4] =
+static _cgSetArrayIndexFunction setVectorTypeIndex[2][1][2][4] =
 {
-   {
+  {
       {
          {&setVectorTypevpIndex<1, 0>, &setVectorTypevpIndex<2, 0>, &setVectorTypevpIndex<3, 0>, &setVectorTypevpIndex<4, 0>, },
          {&setVectorTypefpIndex<1, 0>, &setVectorTypefpIndex<2, 0>, &setVectorTypefpIndex<3, 0>, &setVectorTypefpIndex<4, 0>, }
-      },
-      {
-         {&setVectorTypeSharedvpIndex<1>, &setVectorTypeSharedvpIndex<2>, &setVectorTypeSharedvpIndex<3>, &setVectorTypeSharedvpIndex<4>, }, //should be the shared
-         {&setVectorTypeSharedfpIndex<1>, &setVectorTypeSharedfpIndex<2>, &setVectorTypeSharedfpIndex<3>, &setVectorTypeSharedfpIndex<4>, } //should be the shared
       },
    },
    {
       {
          {&setVectorTypevpIndex<1, 1>, &setVectorTypevpIndex<2, 1>, &setVectorTypevpIndex<3, 1>, &setVectorTypevpIndex<4, 1>, },
          {&setVectorTypefpIndex<1, 1>, &setVectorTypefpIndex<2, 1>, &setVectorTypefpIndex<3, 1>, &setVectorTypefpIndex<4, 1>, }
-      },
-      {
-         {&setVectorTypeSharedvpIndexArray<1>, &setVectorTypeSharedvpIndexArray<2>, &setVectorTypeSharedvpIndexArray<3>, &setVectorTypeSharedvpIndexArray<4>, }, //should be the shared
-         {&setVectorTypeSharedfpIndexArray<1>, &setVectorTypeSharedfpIndexArray<2>, &setVectorTypeSharedfpIndexArray<3>, &setVectorTypeSharedfpIndexArray<4>, } //should be the shared
       },
    },
 };
@@ -303,30 +267,36 @@ static _cgSetArrayIndexFunction setMatrixTypeIndex[2][2][2][4][4][2] =
    {
       {
          {
-            {{ &setMatrixvpIndex<1, 1, 0>, &setMatrixvpIndex<1, 1, 1>}, { &setMatrixvpIndex<1, 2, 0>, &setMatrixvpIndex<1, 2, 1>}, { &setMatrixvpIndex<1, 3, 0>, &setMatrixvpIndex<1, 3, 1>}, { &setMatrixvpIndex<1, 4, 0>, &setMatrixvpIndex<1, 4, 1>}},
-            {{ &setMatrixvpIndex<2, 1, 0>, &setMatrixvpIndex<2, 1, 1>}, { &setMatrixvpIndex<2, 2, 0>, &setMatrixvpIndex<2, 2, 1>}, { &setMatrixvpIndex<2, 3, 0>, &setMatrixvpIndex<2, 3, 1>}, { &setMatrixvpIndex<2, 4, 0>, &setMatrixvpIndex<2, 4, 1>}},
-            {{ &setMatrixvpIndex<3, 1, 0>, &setMatrixvpIndex<3, 1, 1>}, { &setMatrixvpIndex<3, 2, 0>, &setMatrixvpIndex<3, 2, 1>}, { &setMatrixvpIndex<3, 3, 0>, &setMatrixvpIndex<3, 3, 1>}, { &setMatrixvpIndex<3, 4, 0>, &setMatrixvpIndex<3, 4, 1>}},
-            {{ &setMatrixvpIndex<4, 1, 0>, &setMatrixvpIndex<4, 1, 1>}, { &setMatrixvpIndex<4, 2, 0>, &setMatrixvpIndex<4, 2, 1>}, { &setMatrixvpIndex<4, 3, 0>, &setMatrixvpIndex<4, 3, 1>}, { &setMatrixvpIndex<4, 4, 0>, &setMatrixvpIndex<4, 4, 1>}},
+            {
+               { &setMatrixvpIndex<1, 1, 0>, &setMatrixvpIndex<1, 1, 1>},
+               { &setMatrixvpIndex<1, 2, 0>, &setMatrixvpIndex<1, 2, 1>},
+               { &setMatrixvpIndex<1, 3, 0>, &setMatrixvpIndex<1, 3, 1>},
+               { &setMatrixvpIndex<1, 4, 0>, &setMatrixvpIndex<1, 4, 1>}
+            },
+            {
+               { &setMatrixvpIndex<2, 1, 0>, &setMatrixvpIndex<2, 1, 1>},
+               { &setMatrixvpIndex<2, 2, 0>, &setMatrixvpIndex<2, 2, 1>},
+               { &setMatrixvpIndex<2, 3, 0>, &setMatrixvpIndex<2, 3, 1>},
+               { &setMatrixvpIndex<2, 4, 0>, &setMatrixvpIndex<2, 4, 1>}
+            },
+            {
+               { &setMatrixvpIndex<3, 1, 0>, &setMatrixvpIndex<3, 1, 1>},
+               { &setMatrixvpIndex<3, 2, 0>, &setMatrixvpIndex<3, 2, 1>},
+               { &setMatrixvpIndex<3, 3, 0>, &setMatrixvpIndex<3, 3, 1>},
+               { &setMatrixvpIndex<3, 4, 0>, &setMatrixvpIndex<3, 4, 1>}
+            },
+            {
+               { &setMatrixvpIndex<4, 1, 0>, &setMatrixvpIndex<4, 1, 1>},
+               { &setMatrixvpIndex<4, 2, 0>, &setMatrixvpIndex<4, 2, 1>},
+               { &setMatrixvpIndex<4, 3, 0>, &setMatrixvpIndex<4, 3, 1>},
+               { &setMatrixvpIndex<4, 4, 0>, &setMatrixvpIndex<4, 4, 1>}
+            },
          },
          {
             {{ &setMatrixfpIndex<1, 1, 0>, &setMatrixfpIndex<1, 1, 1>}, { &setMatrixfpIndex<1, 2, 0>, &setMatrixfpIndex<1, 2, 1>}, { &setMatrixfpIndex<1, 3, 0>, &setMatrixfpIndex<1, 3, 1>}, { &setMatrixfpIndex<1, 4, 0>, &setMatrixfpIndex<1, 4, 1>}},
             {{ &setMatrixfpIndex<2, 1, 0>, &setMatrixfpIndex<2, 1, 1>}, { &setMatrixfpIndex<2, 2, 0>, &setMatrixfpIndex<2, 2, 1>}, { &setMatrixfpIndex<2, 3, 0>, &setMatrixfpIndex<2, 3, 1>}, { &setMatrixfpIndex<2, 4, 0>, &setMatrixfpIndex<2, 4, 1>}},
             {{ &setMatrixfpIndex<3, 1, 0>, &setMatrixfpIndex<3, 1, 1>}, { &setMatrixfpIndex<3, 2, 0>, &setMatrixfpIndex<3, 2, 1>}, { &setMatrixfpIndex<3, 3, 0>, &setMatrixfpIndex<3, 3, 1>}, { &setMatrixfpIndex<3, 4, 0>, &setMatrixfpIndex<3, 4, 1>}},
             {{ &setMatrixfpIndex<4, 1, 0>, &setMatrixfpIndex<4, 1, 1>}, { &setMatrixfpIndex<4, 2, 0>, &setMatrixfpIndex<4, 2, 1>}, { &setMatrixfpIndex<4, 3, 0>, &setMatrixfpIndex<4, 3, 1>}, { &setMatrixfpIndex<4, 4, 0>, &setMatrixfpIndex<4, 4, 1>}},
-         },
-      },
-      { //should be shared
-         {
-            {{ &setMatrixSharedvpIndex<1, 1, 0, 0>, &setMatrixSharedvpIndex<1, 1, 1, 0>}, { &setMatrixSharedvpIndex<1, 2, 0, 0>, &setMatrixSharedvpIndex<1, 2, 1, 0>}, { &setMatrixSharedvpIndex<1, 3, 0, 0>, &setMatrixSharedvpIndex<1, 3, 1, 0>}, { &setMatrixSharedvpIndex<1, 4, 0, 0>, &setMatrixSharedvpIndex<1, 4, 1, 0>}},
-            {{ &setMatrixSharedvpIndex<2, 1, 0, 0>, &setMatrixSharedvpIndex<2, 1, 1, 0>}, { &setMatrixSharedvpIndex<2, 2, 0, 0>, &setMatrixSharedvpIndex<2, 2, 1, 0>}, { &setMatrixSharedvpIndex<2, 3, 0, 0>, &setMatrixSharedvpIndex<2, 3, 1, 0>}, { &setMatrixSharedvpIndex<2, 4, 0, 0>, &setMatrixSharedvpIndex<2, 4, 1, 0>}},
-            {{ &setMatrixSharedvpIndex<3, 1, 0, 0>, &setMatrixSharedvpIndex<3, 1, 1, 0>}, { &setMatrixSharedvpIndex<3, 2, 0, 0>, &setMatrixSharedvpIndex<3, 2, 1, 0>}, { &setMatrixSharedvpIndex<3, 3, 0, 0>, &setMatrixSharedvpIndex<3, 3, 1, 0>}, { &setMatrixSharedvpIndex<3, 4, 0, 0>, &setMatrixSharedvpIndex<3, 4, 1, 0>}},
-            {{ &setMatrixSharedvpIndex<4, 1, 0, 0>, &setMatrixSharedvpIndex<4, 1, 1, 0>}, { &setMatrixSharedvpIndex<4, 2, 0, 0>, &setMatrixSharedvpIndex<4, 2, 1, 0>}, { &setMatrixSharedvpIndex<4, 3, 0, 0>, &setMatrixSharedvpIndex<4, 3, 1, 0>}, { &setMatrixSharedvpIndex<4, 4, 0, 0>, &setMatrixSharedvpIndex<4, 4, 1, 0>}},
-         },
-         {
-            {{ &setMatrixSharedfpIndex<1, 1, 0>, &setMatrixSharedfpIndex<1, 1, 1>}, { &setMatrixSharedfpIndex<1, 2, 0>, &setMatrixSharedfpIndex<1, 2, 1>}, { &setMatrixSharedfpIndex<1, 3, 0>, &setMatrixSharedfpIndex<1, 3, 1>}, { &setMatrixSharedfpIndex<1, 4, 0>, &setMatrixSharedfpIndex<1, 4, 1>}},
-            {{ &setMatrixSharedfpIndex<2, 1, 0>, &setMatrixSharedfpIndex<2, 1, 1>}, { &setMatrixSharedfpIndex<2, 2, 0>, &setMatrixSharedfpIndex<2, 2, 1>}, { &setMatrixSharedfpIndex<2, 3, 0>, &setMatrixSharedfpIndex<2, 3, 1>}, { &setMatrixSharedfpIndex<2, 4, 0>, &setMatrixSharedfpIndex<2, 4, 1>}},
-            {{ &setMatrixSharedfpIndex<3, 1, 0>, &setMatrixSharedfpIndex<3, 1, 1>}, { &setMatrixSharedfpIndex<3, 2, 0>, &setMatrixSharedfpIndex<3, 2, 1>}, { &setMatrixSharedfpIndex<3, 3, 0>, &setMatrixSharedfpIndex<3, 3, 1>}, { &setMatrixSharedfpIndex<3, 4, 0>, &setMatrixSharedfpIndex<3, 4, 1>}},
-            {{ &setMatrixSharedfpIndex<4, 1, 0>, &setMatrixSharedfpIndex<4, 1, 1>}, { &setMatrixSharedfpIndex<4, 2, 0>, &setMatrixSharedfpIndex<4, 2, 1>}, { &setMatrixSharedfpIndex<4, 3, 0>, &setMatrixSharedfpIndex<4, 3, 1>}, { &setMatrixSharedfpIndex<4, 4, 0>, &setMatrixSharedfpIndex<4, 4, 1>}},
          },
       },
    },
@@ -343,20 +313,6 @@ static _cgSetArrayIndexFunction setMatrixTypeIndex[2][2][2][4][4][2] =
             {{ &setMatrixfpIndexArray<2, 1, 0>, &setMatrixfpIndexArray<2, 1, 1>}, { &setMatrixfpIndexArray<2, 2, 0>, &setMatrixfpIndexArray<2, 2, 1>}, { &setMatrixfpIndexArray<2, 3, 0>, &setMatrixfpIndexArray<2, 3, 1>}, { &setMatrixfpIndexArray<2, 4, 0>, &setMatrixfpIndexArray<2, 4, 1>}},
             {{ &setMatrixfpIndexArray<3, 1, 0>, &setMatrixfpIndexArray<3, 1, 1>}, { &setMatrixfpIndexArray<3, 2, 0>, &setMatrixfpIndexArray<3, 2, 1>}, { &setMatrixfpIndexArray<3, 3, 0>, &setMatrixfpIndexArray<3, 3, 1>}, { &setMatrixfpIndexArray<3, 4, 0>, &setMatrixfpIndexArray<3, 4, 1>}},
             {{ &setMatrixfpIndexArray<4, 1, 0>, &setMatrixfpIndexArray<4, 1, 1>}, { &setMatrixfpIndexArray<4, 2, 0>, &setMatrixfpIndexArray<4, 2, 1>}, { &setMatrixfpIndexArray<4, 3, 0>, &setMatrixfpIndexArray<4, 3, 1>}, { &setMatrixfpIndexArray<4, 4, 0>, &setMatrixfpIndexArray<4, 4, 1>}},
-         },
-      },
-      { //should be shared
-         {
-            {{ &setMatrixSharedvpIndex<1, 1, 0, 1>, &setMatrixSharedvpIndex<1, 1, 1, 1>}, { &setMatrixSharedvpIndex<1, 2, 0, 1>, &setMatrixSharedvpIndex<1, 2, 1, 1>}, { &setMatrixSharedvpIndex<1, 3, 0, 1>, &setMatrixSharedvpIndex<1, 3, 1, 1>}, { &setMatrixSharedvpIndex<1, 4, 0, 1>, &setMatrixSharedvpIndex<1, 4, 1, 1>}},
-            {{ &setMatrixSharedvpIndex<2, 1, 0, 1>, &setMatrixSharedvpIndex<2, 1, 1, 1>}, { &setMatrixSharedvpIndex<2, 2, 0, 1>, &setMatrixSharedvpIndex<2, 2, 1, 1>}, { &setMatrixSharedvpIndex<2, 3, 0, 1>, &setMatrixSharedvpIndex<2, 3, 1, 1>}, { &setMatrixSharedvpIndex<2, 4, 0, 1>, &setMatrixSharedvpIndex<2, 4, 1, 1>}},
-            {{ &setMatrixSharedvpIndex<3, 1, 0, 1>, &setMatrixSharedvpIndex<3, 1, 1, 1>}, { &setMatrixSharedvpIndex<3, 2, 0, 1>, &setMatrixSharedvpIndex<3, 2, 1, 1>}, { &setMatrixSharedvpIndex<3, 3, 0, 1>, &setMatrixSharedvpIndex<3, 3, 1, 1>}, { &setMatrixSharedvpIndex<3, 4, 0, 1>, &setMatrixSharedvpIndex<3, 4, 1, 1>}},
-            {{ &setMatrixSharedvpIndex<4, 1, 0, 1>, &setMatrixSharedvpIndex<4, 1, 1, 1>}, { &setMatrixSharedvpIndex<4, 2, 0, 1>, &setMatrixSharedvpIndex<4, 2, 1, 1>}, { &setMatrixSharedvpIndex<4, 3, 0, 1>, &setMatrixSharedvpIndex<4, 3, 1, 1>}, { &setMatrixSharedvpIndex<4, 4, 0, 1>, &setMatrixSharedvpIndex<4, 4, 1, 1>}},
-         },
-         {
-            {{ &setMatrixSharedfpIndexArray<1, 1, 0>, &setMatrixSharedfpIndexArray<1, 1, 1>}, { &setMatrixSharedfpIndexArray<1, 2, 0>, &setMatrixSharedfpIndexArray<1, 2, 1>}, { &setMatrixSharedfpIndexArray<1, 3, 0>, &setMatrixSharedfpIndexArray<1, 3, 1>}, { &setMatrixSharedfpIndexArray<1, 4, 0>, &setMatrixSharedfpIndexArray<1, 4, 1>}},
-            {{ &setMatrixSharedfpIndexArray<2, 1, 0>, &setMatrixSharedfpIndexArray<2, 1, 1>}, { &setMatrixSharedfpIndexArray<2, 2, 0>, &setMatrixSharedfpIndexArray<2, 2, 1>}, { &setMatrixSharedfpIndexArray<2, 3, 0>, &setMatrixSharedfpIndexArray<2, 3, 1>}, { &setMatrixSharedfpIndexArray<2, 4, 0>, &setMatrixSharedfpIndexArray<2, 4, 1>}},
-            {{ &setMatrixSharedfpIndexArray<3, 1, 0>, &setMatrixSharedfpIndexArray<3, 1, 1>}, { &setMatrixSharedfpIndexArray<3, 2, 0>, &setMatrixSharedfpIndexArray<3, 2, 1>}, { &setMatrixSharedfpIndexArray<3, 3, 0>, &setMatrixSharedfpIndexArray<3, 3, 1>}, { &setMatrixSharedfpIndexArray<3, 4, 0>, &setMatrixSharedfpIndexArray<3, 4, 1>}},
-            {{ &setMatrixSharedfpIndexArray<4, 1, 0>, &setMatrixSharedfpIndexArray<4, 1, 1>}, { &setMatrixSharedfpIndexArray<4, 2, 0>, &setMatrixSharedfpIndexArray<4, 2, 1>}, { &setMatrixSharedfpIndexArray<4, 3, 0>, &setMatrixSharedfpIndexArray<4, 3, 1>}, { &setMatrixSharedfpIndexArray<4, 4, 0>, &setMatrixSharedfpIndexArray<4, 4, 1>}},
          },
       },
    }
@@ -653,7 +609,7 @@ void rglCreatePushBuffer(void *data)
                      // if this gets updated, don't forget the halfs below
                      {
                         unsigned int floatCount = rglCountFloatsInCgType(( CGtype )parameterResource->type );
-                        rtParameter->setterIndex = setVectorTypeIndex[( containerEntry->flags&CGP_ARRAY ) ? 1 : 0][( containerEntry->flags&CGPF_SHARED ) ? 1 : 0][profileIndex][floatCount - 1];
+                        rtParameter->setterIndex = setVectorTypeIndex[( containerEntry->flags&CGP_ARRAY ) ? 1 : 0][0][profileIndex][floatCount - 1];
                      }
                      break;
                   case CG_FLOAT1x1: case CG_FLOAT1x2: case CG_FLOAT1x3: case CG_FLOAT1x4:
@@ -661,8 +617,8 @@ void rglCreatePushBuffer(void *data)
                   case CG_FLOAT3x1: case CG_FLOAT3x2: case CG_FLOAT3x3: case CG_FLOAT3x4:
                   case CG_FLOAT4x1: case CG_FLOAT4x2: case CG_FLOAT4x3: case CG_FLOAT4x4:
                      // if this gets updated, don't forget the halfs below
-                     rtParameter->setterrIndex = setMatrixTypeIndex[( containerEntry->flags&CGP_ARRAY ) ? 1 : 0][( containerEntry->flags&CGPF_SHARED ) ? 1 : 0][profileIndex][rglGetTypeRowCount(( CGtype )parameterResource->type ) - 1][rglGetTypeColCount(( CGtype )parameterResource->type ) - 1][ROW_MAJOR];
-                     rtParameter->settercIndex = setMatrixTypeIndex[( containerEntry->flags&CGP_ARRAY ) ? 1 : 0][( containerEntry->flags&CGPF_SHARED ) ? 1 : 0][profileIndex][rglGetTypeRowCount(( CGtype )parameterResource->type ) - 1][rglGetTypeColCount(( CGtype )parameterResource->type ) - 1][COL_MAJOR];
+                     rtParameter->setterrIndex = setMatrixTypeIndex[( containerEntry->flags&CGP_ARRAY ) ? 1 : 0][0][profileIndex][rglGetTypeRowCount(( CGtype )parameterResource->type ) - 1][rglGetTypeColCount(( CGtype )parameterResource->type ) - 1][ROW_MAJOR];
+                     rtParameter->settercIndex = setMatrixTypeIndex[( containerEntry->flags&CGP_ARRAY ) ? 1 : 0][0][profileIndex][rglGetTypeRowCount(( CGtype )parameterResource->type ) - 1][rglGetTypeColCount(( CGtype )parameterResource->type ) - 1][COL_MAJOR];
                      break;
                   case CG_SAMPLER1D: case CG_SAMPLER2D: case CG_SAMPLER3D: case CG_SAMPLERRECT: case CG_SAMPLERCUBE:
                      // A used sampler that does not have a TEXUNIT resource ?
@@ -680,7 +636,7 @@ void rglCreatePushBuffer(void *data)
                   case CG_FIXED1: case CG_FIXED2: case CG_FIXED3: case CG_FIXED4:
                      {
                         unsigned int floatCount = rglCountFloatsInCgType(( CGtype )parameterResource->type );
-                        rtParameter->setterIndex = setVectorTypeIndex[( containerEntry->flags&CGP_ARRAY ) ? 1 : 0][( containerEntry->flags&CGPF_SHARED ) ? 1 : 0][profileIndex][floatCount - 1];
+                        rtParameter->setterIndex = setVectorTypeIndex[( containerEntry->flags&CGP_ARRAY ) ? 1 : 0][0][profileIndex][floatCount - 1];
                      }
                      break;
                   case CG_HALF1x1: case CG_HALF1x2: case CG_HALF1x3: case CG_HALF1x4:
@@ -699,8 +655,8 @@ void rglCreatePushBuffer(void *data)
                   case CG_FIXED2x1: case CG_FIXED2x2: case CG_FIXED2x3: case CG_FIXED2x4:
                   case CG_FIXED3x1: case CG_FIXED3x2: case CG_FIXED3x3: case CG_FIXED3x4:
                   case CG_FIXED4x1: case CG_FIXED4x2: case CG_FIXED4x3: case CG_FIXED4x4:
-                     rtParameter->setterrIndex = setMatrixTypeIndex[( containerEntry->flags&CGP_ARRAY ) ? 1 : 0][( containerEntry->flags&CGPF_SHARED ) ? 1 : 0][profileIndex][rglGetTypeRowCount(( CGtype )parameterResource->type ) - 1][rglGetTypeColCount(( CGtype )parameterResource->type ) - 1][ROW_MAJOR];
-                     rtParameter->settercIndex = setMatrixTypeIndex[( containerEntry->flags&CGP_ARRAY ) ? 1 : 0][( containerEntry->flags&CGPF_SHARED ) ? 1 : 0][profileIndex][rglGetTypeRowCount(( CGtype )parameterResource->type ) - 1][rglGetTypeColCount(( CGtype )parameterResource->type ) - 1][COL_MAJOR];
+                     rtParameter->setterrIndex = setMatrixTypeIndex[( containerEntry->flags&CGP_ARRAY ) ? 1 : 0][0][profileIndex][rglGetTypeRowCount(( CGtype )parameterResource->type ) - 1][rglGetTypeColCount(( CGtype )parameterResource->type ) - 1][ROW_MAJOR];
+                     rtParameter->settercIndex = setMatrixTypeIndex[( containerEntry->flags&CGP_ARRAY ) ? 1 : 0][0][profileIndex][rglGetTypeRowCount(( CGtype )parameterResource->type ) - 1][rglGetTypeColCount(( CGtype )parameterResource->type ) - 1][COL_MAJOR];
                      break;
                      // addition to be compatible with cgc 2.0 
                   case CG_STRING:
