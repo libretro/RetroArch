@@ -34,12 +34,12 @@ typedef struct frontend_ctx_driver
 {
    void (*environment_get)(int argc, char *argv[], void *args);
 
-   void (*init)(void);
-   void (*deinit)(void);
+   void (*init)(void *data);
+   void (*deinit)(void *data);
    void (*exitspawn)(void);
 
    int (*process_args)(int argc, char *argv[], void *args);
-   int (*process_events)(void);
+   int (*process_events)(void *data);
    void (*exec)(const char *, bool);
    void (*shutdown)(bool);
 
@@ -52,6 +52,7 @@ extern const frontend_ctx_driver_t frontend_ctx_ps3;
 extern const frontend_ctx_driver_t frontend_ctx_xdk;
 extern const frontend_ctx_driver_t frontend_ctx_qnx;
 extern const frontend_ctx_driver_t frontend_ctx_apple;
+extern const frontend_ctx_driver_t frontend_ctx_android;
 
 const frontend_ctx_driver_t *frontend_ctx_find_driver(const char *ident); // Finds driver with ident. Does not initialize.
 const frontend_ctx_driver_t *frontend_ctx_init_first(void); // Finds first suitable driver and initializes.

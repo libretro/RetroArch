@@ -262,8 +262,9 @@ static void get_environment_settings(int argc, char *argv[], void *args)
 
 extern void __exception_setreload(int t);
 
-static void system_init(void)
+static void system_init(void *data)
 {
+   (void)data;
 #ifdef HW_RVL
    IOS_ReloadIOS(IOS_GetVersion());
    L2Enhance();
@@ -320,8 +321,9 @@ static void system_exitspawn(void)
 #endif
 }
 
-static void system_deinit(void)
+static void system_deinit(void *data)
 {
+   (void)data;
 #ifndef IS_SALAMANDER
    // we never init GX/VIDEO subsystems in salamander
    GX_DrawDone();

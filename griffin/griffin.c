@@ -468,6 +468,8 @@ FRONTEND
 #include "../frontend/platform/platform_qnx.c"
 #elif defined(OSX) || defined(IOS)
 #include "../frontend/platform/platform_apple.c"
+#elif defined(ANDROID)
+#include "../frontend/platform/platform_android.c"
 #endif
 
 /*============================================================

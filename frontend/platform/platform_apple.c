@@ -48,8 +48,9 @@ void apple_frontend_post_event(void (*fn)(void*), void* userdata)
    pthread_mutex_unlock(&apple_event_queue_lock);
 }
 
-static void process_events(void)
+static void process_events(void *data)
 {
+   (void)data;
    pthread_mutex_lock(&apple_event_queue_lock);
 
    for (int i = 0; i < apple_event_queue_size; i ++)

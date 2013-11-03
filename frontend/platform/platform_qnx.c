@@ -36,8 +36,9 @@ static void get_environment_settings(int argc, char *argv[], void *args)
    config_load();
 }
 
-static void system_init(void)
+static void system_init(void *data)
 {
+   (void)data;
 /* FIXME - should this apply for both BB10 and PB? */
 #if defined(__QNX__) && !defined(HAVE_BB10)
    bps_initialize();

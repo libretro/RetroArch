@@ -253,8 +253,9 @@ static void get_environment_settings(int argc, char *argv[], void *args)
 #endif
 }
 
-static void system_init(void)
+static void system_init(void *data)
 {
+   (void)data;
 #if defined(_XBOX1) && !defined(IS_SALAMANDER)
    // Mount drives
    xbox_io_mount("A:", "cdrom0");

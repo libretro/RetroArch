@@ -90,8 +90,9 @@ static int setup_callback(void)
    return thread_id;
 }
 
-static void system_init(void)
+static void system_init(void *data)
 {
+   (void)data;
    //initialize debug screen
    pspDebugScreenInit();
    pspDebugScreenClear();
@@ -99,8 +100,9 @@ static void system_init(void)
    setup_callback();
 }
 
-static void system_deinit(void)
+static void system_deinit(void *data)
 {
+   (void)data;
    sceKernelExitGame();
 }
 

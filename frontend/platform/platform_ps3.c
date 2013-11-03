@@ -288,8 +288,9 @@ static void get_environment_settings(int argc, char *argv[], void *args)
    }
 }
 
-static void system_init(void)
+static void system_init(void *data)
 {
+   (void)data;
 #ifdef HAVE_SYSUTILS
    RARCH_LOG("Registering system utility callback...\n");
    cellSysutilRegisterCallback(0, callback_sysutil_exit, NULL);
@@ -359,8 +360,9 @@ static int system_process_args(int argc, char *argv[], void *args)
    return 0;
 }
 
-static void system_deinit(void)
+static void system_deinit(void *data)
 {
+   (void)data;
 #ifndef IS_SALAMANDER
 
 #if defined(HAVE_SYSMODULES)

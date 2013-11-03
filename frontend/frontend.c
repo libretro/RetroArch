@@ -96,22 +96,37 @@ static void rarch_get_environment_console(void)
 #define returntype void*
 #define signature() void* data
 #define returnfunc() exit(0)
-#define return_negative() return NULL
+#define return_negative() return
+#define return_var(var) return
+#define declare_argc() int argc = 0;
+#define declare_argv() char *argv[1]
+#define args_type() struct android_app*
+#define args_initial_ptr() data
 #elif defined(IOS) || defined(OSX) || defined(HAVE_BB10)
 #define main_entry rarch_main
 #define returntype int
 #define signature() int argc, char *argv[]
 #define returnfunc() return 0
 #define return_negative() return 1
+#define return_var(var) return var
+#define declare_argc()
+#define declare_argv()
+#define args_type() void*
+#define args_initial_ptr() NULL
 #else
 #define main_entry main
 #define returntype int
 #define signature() int argc, char *argv[]
 #define returnfunc() return 0
 #define return_negative() return 1
+#define return_var(var) return var
+#define declare_argc()
+#define declare_argv()
+#define args_type() void*
+#define args_initial_ptr() NULL
 #endif
 
-#if defined(HAVE_BB10)
+#if defined(HAVE_BB10) || defined(ANDROID)
 #define ra_preinited true
 #else
 #define ra_preinited false
@@ -123,13 +138,13 @@ static void rarch_get_environment_console(void)
 #define attempt_load_game true
 #endif
 
-#if defined(RARCH_CONSOLE) || defined(HAVE_BB10)
+#if defined(RARCH_CONSOLE) || defined(HAVE_BB10) || defined(ANDROID)
 #define initial_menu_lifecycle_state (1ULL << MODE_LOAD_GAME)
 #else
 #define initial_menu_lifecycle_state (1ULL << MODE_GAME)
 #endif
 
-#if !defined(RARCH_CONSOLE) && !defined(HAVE_BB10)
+#if !defined(RARCH_CONSOLE) && !defined(HAVE_BB10) && !defined(ANDROID)
 #define attempt_load_game_push_history false
 #else
 #define attempt_load_game_push_history true
@@ -139,7 +154,7 @@ static void rarch_get_environment_console(void)
 #define rarch_get_environment_console() (void)0
 #endif
 
-#if defined(RARCH_CONSOLE) || defined(__QNX__)
+#if defined(RARCH_CONSOLE) || defined(__QNX__) || defined(ANDROID)
 #define attempt_load_game_fails (1ULL << MODE_MENU)
 #else
 #define attempt_load_game_fails (1ULL << MODE_EXIT)
@@ -147,15 +162,20 @@ static void rarch_get_environment_console(void)
 
 returntype main_entry(signature())
 {
-   void *args = NULL;
+   declare_argc();
+   declare_argv();
+   args_type() args = (args_type())args_initial_ptr();
    unsigned i;
    frontend_ctx = (frontend_ctx_driver_t*)frontend_ctx_init_first();
 
    if (frontend_ctx && frontend_ctx->init)
-      frontend_ctx->init();
+      frontend_ctx->init(args);
 
    if (!ra_preinited)
+   {
       rarch_main_clear_state();
+      rarch_init_msg_queue();
+   }
 
    if (frontend_ctx && frontend_ctx->environment_get)
    {
@@ -165,9 +185,8 @@ returntype main_entry(signature())
 
    if (attempt_load_game)
    {
-      rarch_init_msg_queue();
       int init_ret;
-      if ((init_ret = rarch_main_init(argc, argv))) return init_ret;
+      if ((init_ret = rarch_main_init(argc, argv))) return_var(init_ret);
    }
 
 #if defined(HAVE_MENU) || defined(HAVE_BB10)
@@ -220,7 +239,7 @@ returntype main_entry(signature())
          while ((g_extern.is_paused && !g_extern.is_oneshot) ? rarch_main_idle_iterate() : rarch_main_iterate())
          {
             if (frontend_ctx && frontend_ctx->process_events)
-               frontend_ctx->process_events();
+               frontend_ctx->process_events(args);
 
             if (!(g_extern.lifecycle_mode_state & (1ULL << MODE_GAME)))
                break;
@@ -251,7 +270,7 @@ returntype main_entry(signature())
          while (!g_extern.system.shutdown && menu_iterate())
          {
             if (frontend_ctx && frontend_ctx->process_events)
-               frontend_ctx->process_events();
+               frontend_ctx->process_events(args);
 
             if (!(g_extern.lifecycle_mode_state & (1ULL << MODE_MENU)))
                break;
@@ -291,7 +310,7 @@ returntype main_entry(signature())
    rarch_perf_log();
 #endif
 
-#if defined(HAVE_LOGGER)
+#if defined(HAVE_LOGGER) && !defined(ANDROID)
    logger_shutdown();
 #elif defined(HAVE_FILE_LOGGER)
    if (g_extern.log_file)
@@ -300,7 +319,7 @@ returntype main_entry(signature())
 #endif
 
    if (frontend_ctx && frontend_ctx->deinit)
-      frontend_ctx->deinit();
+      frontend_ctx->deinit(args);
 
    if (g_extern.lifecycle_mode_state & (1ULL << MODE_EXITSPAWN) && frontend_ctx
          && frontend_ctx->exitspawn)
