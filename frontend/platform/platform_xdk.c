@@ -49,7 +49,7 @@ static void find_and_set_first_file(void)
    if(first_file)
    {
 #ifdef _XBOX1
-      snprintf(default_paths.libretro_path, sizeof(default_paths.libretro_path), "D:\\%s", first_file);
+      fill_pathname_join(default_paths.libretro_path, "D:", first_file, sizeof(default_paths.libretro_path));
 #else
       strlcpy(default_paths.libretro_path, first_file, sizeof(default_paths.libretro_path));
 #endif
@@ -87,15 +87,15 @@ static void salamander_init_settings(void)
 	   //try to find CORE executable
 	   char core_executable[1024];
 #if defined(_XBOX360)
-	   snprintf(core_executable, sizeof(core_executable), "game:\\CORE.xex");
+      strlcpy(core_executable, "game:\\CORE.xex", sizeof(core_executable));
 #elif defined(_XBOX1)
-	   snprintf(core_executable, sizeof(core_executable), "D:\\CORE.xbe");
+      fill_pathname_join(core_executable, "D:", "CORE.xbe", sizeof(core_executable));
 #endif
 
 	   if(path_file_exists(core_executable))
 	   {
 		   //Start CORE executable
-		   snprintf(default_paths.libretro_path, sizeof(default_paths.libretro_path), core_executable);
+		   strlcpy(default_paths.libretro_path, core_executable, sizeof(default_paths.libretro_path));
 		   RARCH_LOG("Start [%s].\n", default_paths.libretro_path);
 	   }
 	   else
@@ -104,7 +104,7 @@ static void salamander_init_settings(void)
 		   {
 			   config_file_t * conf = config_file_new(default_paths.config_path);
 			   config_get_array(conf, "libretro_path", tmp_str, sizeof(tmp_str));
-			   snprintf(default_paths.libretro_path, sizeof(default_paths.libretro_path), tmp_str);
+            strlcpy(default_paths.libretro_path, tmp_str, sizeof(default_paths.libretro_path));
 		   }
 
 		   if(!config_file_exists || !strcmp(default_paths.libretro_path, ""))
@@ -224,17 +224,17 @@ static void get_environment_settings(int argc, char *argv[], void *args)
 #if defined(_XBOX1)
    strlcpy(default_paths.core_dir, "D:", sizeof(default_paths.core_dir));
 #ifdef IS_SALAMANDER
-   strlcpy(default_paths.config_path, "D:\\retroarch.cfg", sizeof(default_paths.config_path));
+   fill_pathname_join(default_paths.config_path, default_paths.core_dir, "retroarch.cfg", sizeof(default_paths.config_path));
 #else
-   strlcpy(g_extern.config_path, "D:\\retroarch.cfg", sizeof(g_extern.config_path));
+   fill_pathname_join(g_extern.config_path, default_paths.core_dir, "retroarch.cfg", sizeof(g_extern.config_path));
 #endif
-   strlcpy(default_paths.savestate_dir, "D:\\savestates", sizeof(default_paths.savestate_dir));
-   strlcpy(default_paths.sram_dir, "D:\\savefiles", sizeof(default_paths.sram_dir));
-   strlcpy(default_paths.system_dir, "D:\\system", sizeof(default_paths.system_dir));
-   strlcpy(default_paths.filesystem_root_dir, "D:", sizeof(default_paths.filesystem_root_dir));
-   strlcpy(default_paths.filebrowser_startup_dir, "D:", sizeof(default_paths.filebrowser_startup_dir));
+   fill_pathname_join(default_paths.savestate_dir, default_paths.core_dir, "savestates", sizeof(default_paths.savestate_dir));
+   fill_pathname_join(default_paths.sram_dir, default_paths.core_dir, "savefiles", sizeof(default_paths.sram_dir));
+   fill_pathname_join(default_paths.system_dir, default_paths.core_dir, "system", sizeof(default_paths.system_dir));
+   strlcpy(default_paths.filesystem_root_dir, default_paths.core_dir, sizeof(default_paths.filesystem_root_dir));
+   strlcpy(default_paths.filebrowser_startup_dir, default_paths.core_dir, sizeof(default_paths.filebrowser_startup_dir));
 #ifndef IS_SALAMANDER
-   strlcpy(g_settings.screenshot_directory, "D:\\screenshots", sizeof(g_settings.screenshot_directory));
+   fill_pathname_join(g_settings.screenshot_directory, default_paths.core_dir, "screenshots", sizeof(g_settings.screenshot_directory));
 #endif
    strlcpy(default_paths.menu_border_file, "D:\\Media\\main-menu_480p.png", sizeof(default_paths.menu_border_file));
 #elif defined(_XBOX360)
