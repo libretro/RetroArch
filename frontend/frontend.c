@@ -139,6 +139,12 @@ static void rarch_get_environment_console(void)
 #define rarch_get_environment_console() (void)0
 #endif
 
+#if defined(RARCH_CONSOLE) || defined(__QNX__)
+#define attempt_load_game_fails (1ULL << MODE_MENU)
+#else
+#define attempt_load_game_fails (1ULL << MODE_EXIT)
+#endif
+
 returntype main_entry(signature())
 {
    void *args = NULL;
@@ -193,14 +199,15 @@ returntype main_entry(signature())
             g_extern.lifecycle_mode_state |= (1ULL << MODE_GAME);
          else
          {
-#if defined(RARCH_CONSOLE) || defined(__QNX__)
-            g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU);
-#else
-            if (frontend_ctx && frontend_ctx->shutdown)
-               frontend_ctx->shutdown(true);
+            g_extern.lifecycle_mode_state = attempt_load_game_fails;
 
-            return_negative();
-#endif
+            if (g_extern.lifecycle_mode_state & (1ULL << MODE_EXIT))
+            {
+               if (frontend_ctx && frontend_ctx->shutdown)
+                  frontend_ctx->shutdown(true);
+
+               return_negative();
+            }
          }
 
          g_extern.lifecycle_mode_state &= ~(1ULL << MODE_LOAD_GAME);
