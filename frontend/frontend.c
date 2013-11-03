@@ -117,7 +117,7 @@ static void rarch_get_environment_console(void)
 #define ra_preinited false
 #endif
 
-#if defined(HAVE_BB10)
+#if defined(HAVE_BB10) || defined(RARCH_CONSOLE)
 #define attempt_load_game false
 #else
 #define attempt_load_game true
