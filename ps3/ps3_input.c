@@ -451,6 +451,28 @@ static bool ps3_input_set_sensor_state(void *data, unsigned port, enum retro_sen
    }
 }
 
+static bool ps3_input_set_rumble(void *data, unsigned port, enum retro_rumble_effect effect, uint16_t strength)
+{
+   CellPadActParam params;
+
+   switch (effect)
+   {
+      case RETRO_RUMBLE_WEAK:
+         if (strength > 1)
+            strength = 1;
+         params.motor[0] = strength;
+         break;
+      case RETRO_RUMBLE_STRONG:
+         if (strength > 255)
+            strength = 255;
+         params.motor[1] = strength;
+   }
+
+   cellPadSetActDirect(port, &params);
+
+   return true;
+}
+
 const input_driver_t input_ps3 = {
    ps3_input_init,
    ps3_input_poll,
@@ -461,5 +483,8 @@ const input_driver_t input_ps3 = {
    ps3_input_set_sensor_state,
    ps3_input_get_capabilities,
    "ps3",
-};
 
+   NULL,
+   ps3_input_set_rumble,
+   NULL,
+};
