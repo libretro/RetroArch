@@ -1338,7 +1338,7 @@ static void* rgui_init (void)
 
 static void rgui_free(void *data)
 {
-   rgui_handle_t *rgui = (rgui_handle_t*)data;
+   (void)data;
    app.Uninit();
 }
 
