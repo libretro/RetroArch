@@ -6,6 +6,9 @@ import android.os.Bundle;
 import android.preference.PreferenceActivity;
 import android.preference.PreferenceManager;
 
+/**
+ * Basic {@link PreferenceActivity} responsible for displaying the help articles.
+ */
 public final class HelpActivity extends PreferenceActivity {
 	@SuppressWarnings("deprecation")
 	@Override

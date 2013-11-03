@@ -17,6 +17,10 @@ import android.view.View;
 import android.widget.ListView;
 import android.widget.Toast;
 
+/**
+ * Represents the {@link ListActivity} responsible
+ * for displaying the list of previously played games.
+ */
 public final class HistorySelection extends ListActivity {
 	
 	private IconAdapter<HistoryWrapper> adapter;
