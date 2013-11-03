@@ -69,20 +69,26 @@ typedef struct ps3_input
 #endif
 } ps3_input_t;
 
+int16_t analog_state[MAX_PADS][2][2];
+
 static void ps3_input_poll(void *data)
 {
    CellPadInfo2 pad_info;
    ps3_input_t *ps3 = (ps3_input_t*)data;
 
-   for (unsigned i = 0; i < MAX_PADS; i++)
+   for (unsigned port = 0; port < MAX_PADS; port++)
    {
       static CellPadData state_tmp;
-      cellPadGetData(i, &state_tmp);
+      cellPadGetData(port, &state_tmp);
 
       if (state_tmp.len != 0)
       {
-         uint64_t *state_cur = &ps3->state[i];
+         uint64_t *state_cur = &ps3->state[port];
          *state_cur = 0;
+         analog_state[0][0][0] = analog_state[0][0][1] = analog_state[0][1][0] = analog_state[0][1][1] = 0;
+         analog_state[1][0][0] = analog_state[1][0][1] = analog_state[1][1][0] = analog_state[1][1][1] = 0;
+         analog_state[2][0][0] = analog_state[2][0][1] = analog_state[2][1][0] = analog_state[2][1][1] = 0;
+         analog_state[3][0][0] = analog_state[3][0][1] = analog_state[3][1][0] = analog_state[3][1][1] = 0;
 #ifdef __PSL1GHT__
          *state_cur |= (state_tmp.BTN_LEFT)     ? (1ULL << RETRO_DEVICE_ID_JOYPAD_LEFT) : 0;
          *state_cur |= (state_tmp.BTN_DOWN)     ? (1ULL << RETRO_DEVICE_ID_JOYPAD_DOWN) : 0;
@@ -117,6 +123,11 @@ static void ps3_input_poll(void *data)
          *state_cur |= (state_tmp.button[CELL_PAD_BTN_OFFSET_DIGITAL2] & CELL_PAD_CTRL_L1) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_L) : 0;
          *state_cur |= (state_tmp.button[CELL_PAD_BTN_OFFSET_DIGITAL2] & CELL_PAD_CTRL_R2) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_R2) : 0;
          *state_cur |= (state_tmp.button[CELL_PAD_BTN_OFFSET_DIGITAL2] & CELL_PAD_CTRL_L2) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_L2) : 0;
+         *state_cur |= (state_tmp.button[CELL_PAD_BTN_OFFSET_DIGITAL2] & CELL_PAD_CTRL_L2) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_L2) : 0;
+         analog_state[port][RETRO_DEVICE_INDEX_ANALOG_LEFT ][RETRO_DEVICE_ID_ANALOG_X] = (int16_t)state_tmp.button[CELL_PAD_BTN_OFFSET_ANALOG_LEFT_X];
+         analog_state[port][RETRO_DEVICE_INDEX_ANALOG_LEFT ][RETRO_DEVICE_ID_ANALOG_Y] = (int16_t)state_tmp.button[CELL_PAD_BTN_OFFSET_ANALOG_LEFT_Y];
+         analog_state[port][RETRO_DEVICE_INDEX_ANALOG_RIGHT][RETRO_DEVICE_ID_ANALOG_X] = (int16_t)state_tmp.button[CELL_PAD_BTN_OFFSET_ANALOG_RIGHT_X];
+         analog_state[port][RETRO_DEVICE_INDEX_ANALOG_RIGHT][RETRO_DEVICE_ID_ANALOG_Y] = (int16_t)state_tmp.button[CELL_PAD_BTN_OFFSET_ANALOG_RIGHT_Y];
 #endif
       }
    }
@@ -125,8 +136,7 @@ static void ps3_input_poll(void *data)
    uint64_t *lifecycle_state = &g_extern.lifecycle_state;
 
    *lifecycle_state &= ~(
-         (1ULL << RARCH_FAST_FORWARD_HOLD_KEY) | 
-         (1ULL << RARCH_LOAD_STATE_KEY) | 
+         (1ULL << RARCH_FAST_FORWARD_HOLD_KEY) | (1ULL << RARCH_LOAD_STATE_KEY) | 
          (1ULL << RARCH_SAVE_STATE_KEY) | 
          (1ULL << RARCH_STATE_SLOT_PLUS) | 
          (1ULL << RARCH_STATE_SLOT_MINUS) | 
@@ -177,20 +187,22 @@ static int16_t ps3_input_state(void *data, const struct retro_keybind **binds,
 {
    ps3_input_t *ps3 = (ps3_input_t*)data;
 
-   unsigned player = port;
-   uint64_t button = binds[player][id].joykey;
+   uint64_t button = binds[port][id].joykey;
    int16_t retval = 0;
 
-   if (player < ps3->pads_connected)
+   if (port < ps3->pads_connected)
    {
       switch (device)
       {
          case RETRO_DEVICE_JOYPAD:
-            retval = (ps3->state[player] & button) ? 1 : 0;
+            retval = (ps3->state[port] & button) ? 1 : 0;
+            break;
+         case RETRO_DEVICE_ANALOG:
+            retval = analog_state[port][index][id];
             break;
 #ifdef HAVE_MOUSE
          case RETRO_DEVICE_MOUSE:
-            retval = ps3_mouse_device_state(data, player, id);
+            retval = ps3_mouse_device_state(data, port, id);
             break;
 #endif
       }
@@ -306,7 +318,9 @@ static void ps3_input_free_input(void *data)
    if (!data)
       return;
 
-   //cellPadEnd();
+#ifndef __CELLOS_LV2__
+   cellPadEnd();
+#endif
 #ifdef HAVE_MOUSE
    //cellMouseEnd();
 #endif
@@ -382,6 +396,7 @@ static uint64_t ps3_input_get_capabilities(void *data)
 #ifdef HAVE_MOUSE
    caps |= (1 << RETRO_DEVICE_MOUSE);
 #endif
+   caps |= (1 << RETRO_DEVICE_ANALOG);
 
    return caps;
 }
