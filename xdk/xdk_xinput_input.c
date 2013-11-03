@@ -276,6 +276,34 @@ static uint64_t xdk_input_get_capabilities(void *data)
    return caps;
 }
 
+// FIXME - are we sure about treating low frequency motor as the "strong" motor? Does it apply for Xbox too?
+
+static bool xdk_input_set_rumble(void *data, unsigned port, enum retro_rumble_effect effect, uint16_t strength)
+{
+   xdk_input_t *xdk = (xdk_input_t*)calloc(1, sizeof(*xdk));
+   (void)xdk;
+   bool val = false;
+
+  
+#if defined(_XBOX360)
+   XINPUT_VIBRATION rumble_state;
+
+   if (effect == RETRO_RUMBLE_STRONG)
+      rumble_state.wLeftMotorSpeed = strength;
+   else if (effect == RETRO_RUMBLE_WEAK)
+      rumble_state.wRightMotorSpeed = strength;
+   val = XInputSetState(port, &rumble_state) == ERROR_SUCCESS;
+#elif defined(_XBOX1)
+   XINPUT_FEEDBACK rumble_state;
+
+   if (effect == RETRO_RUMBLE_STRONG)
+      rumble_state.Rumble.wLeftMotorSpeed = strength;
+   else if (effect == RETRO_RUMBLE_WEAK)
+      rumble_state.Rumble.wRightMotorSpeed = strength;
+   val = XInputSetState(xdk->gamepads[port], port, &rumble_state) == ERROR_SUCCESS;
+#endif
+}
+
 const input_driver_t input_xinput = 
 {
    xdk_input_init,
@@ -286,5 +314,9 @@ const input_driver_t input_xinput =
    xdk_input_set_keybinds,
    NULL,
    xdk_input_get_capabilities,
-   "xinput"
+   "xinput",
+
+   NULL,
+   xdk_input_set_rumble,
+   NULL,
 };
