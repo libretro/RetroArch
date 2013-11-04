@@ -110,6 +110,7 @@ public final class UserPreferences
 
 		// General Settings
 		readbackBool(config, edit, "rewind_enable");
+		readbackString(config, edit, "rewind_granularity");
 		readbackBool(config, edit, "savestate_auto_load");
 		readbackBool(config, edit, "savestate_auto_save");
 
@@ -202,6 +203,7 @@ public final class UserPreferences
 		config.setBoolean("savestate_auto_load", prefs.getBoolean("savestate_auto_load", true));
 		config.setBoolean("savestate_auto_save", prefs.getBoolean("savestate_auto_save", false));
 		config.setBoolean("rewind_enable", prefs.getBoolean("rewind_enable", false));
+		config.setInt("rewind_granularity", Integer.parseInt(prefs.getString("rewind_granularity", "1")));
 		config.setBoolean("video_vsync", prefs.getBoolean("video_vsync", true));
 		config.setBoolean("input_autodetect_enable", prefs.getBoolean("input_autodetect_enable", true));
 		config.setBoolean("input_debug_enable", prefs.getBoolean("input_debug_enable", false));

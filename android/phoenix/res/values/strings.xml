@@ -171,6 +171,8 @@
     <string name="auto_save_state_desc">Automatically saves state (*.state.auto) when exiting game.</string>
     <string name="rewinding">Rewinding</string>
     <string name="rewinding_desc">Enable real-time rewinding of gameplay. (WARNING: Very CPU intensive - will decrease ingame performance by a lot - only use this option on a powerful device).</string>
+    <string name="rewind_granularity">Rewind Granularity</string>
+    <string name="rewind_granularity_desc">Number of frames to rewind at a time.</string>
 
     <!-- Video Settings -->
     <string name="video_options">Video</string>
