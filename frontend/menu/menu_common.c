@@ -382,6 +382,15 @@ void menu_init(void)
       rarch_fail(1, "menu_init()");
    }
 
+   strlcpy(rgui->base_path, g_settings.rgui_browser_directory, sizeof(rgui->base_path));
+   rgui->menu_stack = (rgui_list_t*)calloc(1, sizeof(rgui_list_t));
+   rgui->selection_buf = (rgui_list_t*)calloc(1, sizeof(rgui_list_t));
+   rgui_list_push(rgui->menu_stack, "", RGUI_SETTINGS, 0);
+   rgui->selection_ptr = 0;
+   rgui->push_start_screen = g_settings.rgui_show_start_screen;
+   g_settings.rgui_show_start_screen = false;
+   menu_populate_entries(rgui, RGUI_SETTINGS);
+
    rgui->trigger_state = 0;
    rgui->old_input_state = 0;
    rgui->do_held = false;
@@ -430,6 +439,13 @@ void menu_free(void)
 {
    if (menu_ctx && menu_ctx->free)
       menu_ctx->free(rgui);
+
+#ifdef HAVE_DYNAMIC
+   libretro_free_system_info(&rgui->info);
+#endif
+
+   rgui_list_free(rgui->menu_stack);
+   rgui_list_free(rgui->selection_buf);
 
 #ifdef HAVE_FILEBROWSER
    filebrowser_free(rgui->browser);

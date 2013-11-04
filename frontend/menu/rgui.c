@@ -87,16 +87,6 @@ static void *rgui_init(void)
       return NULL;
    }
 
-   strlcpy(rgui->base_path, g_settings.rgui_browser_directory, sizeof(rgui->base_path));
-
-   rgui->menu_stack = (rgui_list_t*)calloc(1, sizeof(rgui_list_t));
-   rgui->selection_buf = (rgui_list_t*)calloc(1, sizeof(rgui_list_t));
-   rgui_list_push(rgui->menu_stack, "", RGUI_SETTINGS, 0);
-   rgui->selection_ptr = 0;
-   rgui->push_start_screen = g_settings.rgui_show_start_screen;
-   g_settings.rgui_show_start_screen = false;
-   menu_populate_entries(rgui, RGUI_SETTINGS);
-
    return rgui;
 }
 
@@ -105,13 +95,6 @@ static void rgui_free(void *data)
    rgui_handle_t *rgui = (rgui_handle_t*)data;
    if (rgui->alloc_font)
       free((uint8_t*)rgui->font);
-
-#ifdef HAVE_DYNAMIC
-   libretro_free_system_info(&rgui->info);
-#endif
-
-   rgui_list_free(rgui->menu_stack);
-   rgui_list_free(rgui->selection_buf);
 }
 
 static int rgui_core_setting_toggle(unsigned setting, rgui_action_t action)
