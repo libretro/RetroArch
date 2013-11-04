@@ -54,15 +54,17 @@ typedef struct dsound
 {
    LPDIRECTSOUND ds;
    LPDIRECTSOUNDBUFFER dsb;
-   HANDLE event;
-   bool nonblock;
 
    fifo_buffer_t *buffer;
    CRITICAL_SECTION crit;
 
-   volatile bool thread_alive;
+   HANDLE event;
    HANDLE thread;
+
    unsigned buffer_size;
+
+   bool nonblock;
+   volatile bool thread_alive;
 } dsound_t;
 
 static inline unsigned write_avail(unsigned read_ptr, unsigned write_ptr, unsigned buffer_size)

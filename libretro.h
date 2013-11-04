@@ -633,22 +633,42 @@ enum retro_hw_context_type
 
 struct retro_hw_render_callback
 {
-   enum retro_hw_context_type context_type; // Which API to use. Set by libretro core.
-   retro_hw_context_reset_t context_reset; // Called when a context has been created or when it has been reset.
-   retro_hw_get_current_framebuffer_t get_current_framebuffer; // Set by frontend.
-   retro_hw_get_proc_address_t get_proc_address; // Set by frontend.
-   bool depth; // Set if render buffers should have depth component attached.
-   bool stencil; // Set if stencil buffers should be attached.
-   // If depth and stencil are true, a packed 24/8 buffer will be added. Only attaching stencil is invalid and will be ignored.
-   bool bottom_left_origin; // Use conventional bottom-left origin convention. Is false, standard libretro top-left origin semantics are used.
+   // Which API to use. Set by libretro core.
+   enum retro_hw_context_type context_type;
+
+   // Called when a context has been created or when it has been reset.
+   retro_hw_context_reset_t context_reset;
+
+   // A callback to be called before the context is destroyed.
+   // Resources can be deinitialized at this step. This can be set to NULL, in which resources will just be destroyed without any notification.
+   retro_hw_context_reset_t context_destroy; 
+
+   // Set by frontend
+   retro_hw_get_current_framebuffer_t get_current_framebuffer;
+
+   // Set by frontend
+   retro_hw_get_proc_address_t get_proc_address;
+
    unsigned version_major; // Major version number for core GL context.
    unsigned version_minor; // Minor version number for core GL context.
 
-   bool cache_context; // If this is true, the frontend will go very far to avoid resetting context in scenarios like toggling fullscreen, etc.
+   // Set if render buffers should have depth component attached.
+   bool depth;
+
+   // Set if stencil buffers should be attached.
+   // If depth and stencil are true, a packed 24/8 buffer will be added. Only attaching stencil is invalid and will be ignored.
+   bool stencil;
+
+    // Use conventional bottom-left origin convention. Is false, standard libretro top-left origin semantics are used.
+   bool bottom_left_origin;
+
+   // If this is true, the frontend will go very far to avoid resetting context in scenarios like toggling fullscreen, etc.
    // The reset callback might still be called in extreme situations such as if the context is lost beyond recovery. 
    // For optimal stability, set this to false, and allow context to be reset at any time.
-   retro_hw_context_reset_t context_destroy; // A callback to be called before the context is destroyed. Resources can be deinitialized at this step. This can be set to NULL, in which resources will just be destroyed without any notification.
-   bool debug_context; // Creates a debug context.
+   bool cache_context;
+
+   // Creates a debug context.
+   bool debug_context;
 };
 
 // Callback type passed in RETRO_ENVIRONMENT_SET_KEYBOARD_CALLBACK. Called by the frontend in response to keyboard events.
