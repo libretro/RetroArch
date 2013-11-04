@@ -135,6 +135,7 @@ int main(int argc, char *argv[])
 #ifdef HAVE_MENU
    menu_init();
    g_extern.lifecycle_mode_state |= 1ULL << MODE_GAME;
+   g_extern.lifecycle_mode_state |= 1ULL << MODE_GAME_ONESHOT;
 
    // If we started a ROM directly from command line,
    // push it to ROM history.

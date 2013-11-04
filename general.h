@@ -108,6 +108,7 @@ extern "C" {
 enum menu_enums
 {
    MODE_GAME = 0,
+   MODE_GAME_ONESHOT,
    MODE_LOAD_GAME,
    MODE_MENU,
    MODE_EXIT,
