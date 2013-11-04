@@ -512,7 +512,7 @@ static void rgui_render(void *data)
    else
       message_queue = driver.current_msg;
 
-   render_messagebox(rgui, message_queue);
+   rgui_render_messagebox(rgui, message_queue);
 #endif
 }
 

@@ -90,6 +90,8 @@ static void retrace_callback(u32 retrace_count)
    LWP_ThreadSignal(g_video_cond);
 }
 
+extern rgui_handle_t *rgui;
+
 void gx_set_video_mode(void *data, unsigned fbWidth, unsigned lines)
 {
    unsigned modetype, level, viHeightMultiplier, viWidth, tvmode,
@@ -223,15 +225,15 @@ void gx_set_video_mode(void *data, unsigned fbWidth, unsigned lines)
    gx->double_strike = (modetype == VI_NON_INTERLACE);
    gx->should_resize = true;
 
-   RGUI_HEIGHT = gx_mode.efbHeight / (gx->double_strike ? 1 : 2);
-   RGUI_HEIGHT &= ~3;
-   if (RGUI_HEIGHT > 240)
-      RGUI_HEIGHT = 240;
+   rgui->height = gx_mode.efbHeight / (gx->double_strike ? 1 : 2);
+   rgui->height &= ~3;
+   if (rgui->height > 240)
+      rgui->height = 240;
 
-   RGUI_WIDTH = gx_mode.fbWidth / (gx_mode.fbWidth < 400 ? 1 : 2);
-   RGUI_WIDTH &= ~3;
-   if (RGUI_WIDTH > 400)
-      RGUI_WIDTH = 400;
+   rgui->width = gx_mode.fbWidth / (gx_mode.fbWidth < 400 ? 1 : 2);
+   rgui->width &= ~3;
+   if (rgui->width > 400)
+      rgui->width = 400;
 
    VIDEO_Configure(&gx_mode);
    VIDEO_ClearFrameBuffer(&gx_mode, g_framebuf[0], COLOR_BLACK);
@@ -325,7 +327,7 @@ static void init_texture(void *data, unsigned width, unsigned height)
 
    GX_InitTexObj(&g_tex.obj, g_tex.data, width, height, (gx->rgb32) ? GX_TF_RGBA8 : gx->rgui_texture_enable ? GX_TF_RGB5A3 : GX_TF_RGB565, GX_CLAMP, GX_CLAMP, GX_FALSE);
    GX_InitTexObjFilterMode(&g_tex.obj, g_filter, g_filter);
-   GX_InitTexObj(&menu_tex.obj, menu_tex.data, RGUI_WIDTH, RGUI_HEIGHT, GX_TF_RGB5A3, GX_CLAMP, GX_CLAMP, GX_FALSE);
+   GX_InitTexObj(&menu_tex.obj, menu_tex.data, rgui->width, rgui->height, GX_TF_RGB5A3, GX_CLAMP, GX_CLAMP, GX_FALSE);
    GX_InitTexObjFilterMode(&menu_tex.obj, g_filter, g_filter);
    GX_InvalidateTexAll();
 }
@@ -915,8 +917,8 @@ static bool gx_frame(void *data, const void *frame,
 
    if (gx->rgui_texture_enable && gx->menu_data)
    {
-      convert_texture16(gx->menu_data, menu_tex.data, RGUI_WIDTH, RGUI_HEIGHT, RGUI_WIDTH * 2);
-      DCFlushRange(menu_tex.data, RGUI_WIDTH * RGUI_HEIGHT * 2);
+      convert_texture16(gx->menu_data, menu_tex.data, rgui->width, rgui->height, rgui->width * 2);
+      DCFlushRange(menu_tex.data, rgui->width * rgui->height * 2);
    }
 
    GX_InvalidateTexAll();
