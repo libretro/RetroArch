@@ -1346,7 +1346,7 @@ static void ingame_menu_resize (void)
 {
 }
 
-static int rgui_iterate(void *data, unsigned action)
+int rmenu_xui_iterate(void *data, unsigned action)
 {
    (void)data;
 
@@ -1411,7 +1411,9 @@ int rgui_input_postprocess(void *data, uint64_t old_state)
 }
 
 const menu_ctx_driver_t menu_ctx_rmenu_xui = {
-   rgui_iterate,
+   NULL,
+   NULL,
+   NULL,
    rgui_init,
    rgui_free,
    "rmenu_xui",
