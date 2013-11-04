@@ -54,15 +54,17 @@ typedef struct dsound
 {
    LPDIRECTSOUND ds;
    LPDIRECTSOUNDBUFFER dsb;
-   HANDLE event;
-   bool nonblock;
 
    fifo_buffer_t *buffer;
    CRITICAL_SECTION crit;
 
-   volatile bool thread_alive;
+   HANDLE event;
    HANDLE thread;
+
    unsigned buffer_size;
+
+   bool nonblock;
+   volatile bool thread_alive;
 } dsound_t;
 
 static inline unsigned write_avail(unsigned read_ptr, unsigned write_ptr, unsigned buffer_size)
@@ -80,8 +82,8 @@ static inline void get_positions(dsound_t *ds, DWORD *read_ptr, DWORD *write_ptr
 struct audio_lock
 {
    void *chunk1;
-   DWORD size1;
    void *chunk2;
+   DWORD size1;
    DWORD size2;
 };
 

@@ -32,11 +32,11 @@ typedef int64_t rarch_time_t;
 
 typedef struct rarch_perf_counter
 {
-   const char *ident;
    rarch_perf_tick_t start;
    rarch_perf_tick_t total;
    rarch_perf_tick_t call_cnt;
 
+   const char *ident;
    bool registered;
 } rarch_perf_counter_t;
 

@@ -49,8 +49,9 @@ struct delta_frame
 
    uint16_t real_input_state;
    uint16_t simulated_input_state;
-   bool is_simulated;
    uint16_t self_state;
+
+   bool is_simulated;
    bool used_real;
 };
 

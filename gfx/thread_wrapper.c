@@ -74,11 +74,11 @@ typedef struct thread_video
    {
       void *frame;
       size_t frame_cap;
-      bool frame_updated;
-      bool rgb32;
       unsigned width;
       unsigned height;
       float alpha;
+      bool frame_updated;
+      bool rgb32;
       bool enable;
       bool full_screen;
    } texture;

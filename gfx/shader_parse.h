@@ -54,7 +54,6 @@ enum gfx_wrap_type
 
 struct gfx_fbo_scale
 {
-   bool valid;
    enum gfx_scale_type type_x;
    enum gfx_scale_type type_y;
    float scale_x;
@@ -62,6 +61,7 @@ struct gfx_fbo_scale
    unsigned abs_x;
    unsigned abs_y;
    bool fp_fbo;
+   bool valid;
 };
 
 struct gfx_shader_pass
