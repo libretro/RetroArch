@@ -95,7 +95,7 @@ static void *rgui_init(void)
    rgui->selection_ptr = 0;
    rgui->push_start_screen = g_settings.rgui_show_start_screen;
    g_settings.rgui_show_start_screen = false;
-   menu_set_settings_populate_entries(rgui, RGUI_SETTINGS);
+   menu_populate_entries(rgui, RGUI_SETTINGS);
 
    return rgui;
 }
@@ -657,9 +657,9 @@ static int rgui_settings_iterate(rgui_handle_t *rgui, rgui_action_t action)
             || menu_type == RGUI_SETTINGS_VIDEO_OPTIONS 
             || menu_type == RGUI_SETTINGS_SHADER_OPTIONS
             )
-         menu_set_settings_populate_entries(rgui, menu_type);
+         menu_populate_entries(rgui, menu_type);
       else
-         menu_set_settings_populate_entries(rgui, RGUI_SETTINGS);
+         menu_populate_entries(rgui, RGUI_SETTINGS);
    }
 
    render_text(rgui);

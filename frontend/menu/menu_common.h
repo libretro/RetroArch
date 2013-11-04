@@ -365,7 +365,7 @@ int menu_set_settings(unsigned setting, unsigned action);
 void menu_set_settings_label(char *type_str, size_t type_str_size, unsigned *w, unsigned type);
 
 void menu_key_event(bool down, unsigned keycode, uint32_t character, uint16_t key_modifiers);
-void menu_set_settings_populate_entries(void *data, unsigned menu_type);
+void menu_populate_entries(void *data, unsigned menu_type);
 unsigned menu_type_is(unsigned type);
 
 #ifdef HAVE_RMENU
