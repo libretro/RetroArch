@@ -56,8 +56,9 @@ static uint16_t menu_framebuf[400 * 240];
 
 static void rgui_flush_menu_stack_type(rgui_handle_t *rgui, unsigned final_type)
 {
+   unsigned type;
+   type = 0;
    rgui->need_refresh = true;
-   unsigned type = 0;
    rgui_list_get_last(rgui->menu_stack, NULL, &type);
    while (type != final_type)
    {
