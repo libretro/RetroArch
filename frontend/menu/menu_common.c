@@ -24,6 +24,7 @@
 #include "../../performance.h"
 #include "../../driver.h"
 #include "../../file.h"
+#include "../../file_ext.h"
 #include "menu_context.h"
 #include "../../input/input_common.h"
 
@@ -859,7 +860,7 @@ void menu_key_event(bool down, unsigned keycode, uint32_t character, uint16_t ke
    (void)key_modifiers;
 }
 
-void menu_resolve_names(void *data, unsigned menu_type)
+void menu_parse_and_resolve(void *data, unsigned menu_type)
 {
    const core_info_t *info = NULL;
    const char *dir;
@@ -868,7 +869,158 @@ void menu_resolve_names(void *data, unsigned menu_type)
    rgui_handle_t *rgui;
 
    rgui = (rgui_handle_t*)data;
+   dir = NULL;
 
+   rgui_list_clear(rgui->selection_buf);
+
+   // parsing switch
+   switch (menu_type)
+   {
+      case RGUI_SETTINGS_OPEN_HISTORY:
+         /* History parse */
+         list_size = rom_history_size(rgui->history);
+
+         for (i = 0; i < list_size; i++)
+         {
+            const char *path, *core_path, *core_name;
+            char fill_buf[PATH_MAX];
+
+            path = NULL;
+            core_path = NULL;
+            core_name = NULL;
+
+            rom_history_get_index(rgui->history, i,
+                  &path, &core_path, &core_name);
+
+            if (path)
+            {
+               char path_short[PATH_MAX];
+               fill_pathname(path_short, path_basename(path), "", sizeof(path_short));
+
+               snprintf(fill_buf, sizeof(fill_buf), "%s (%s)",
+                     path_short, core_name);
+            }
+            else
+               strlcpy(fill_buf, core_name, sizeof(fill_buf));
+
+            rgui_list_push(rgui->selection_buf, fill_buf, RGUI_FILE_PLAIN, 0);
+         }
+         break;
+      case RGUI_SETTINGS_DEFERRED_CORE:
+         break;
+      default:
+         {
+            /* Directory parse */
+            rgui_list_get_last(rgui->menu_stack, &dir, &menu_type);
+
+            if (!*dir)
+            {
+#if defined(GEKKO)
+#ifdef HW_RVL
+               rgui_list_push(rgui->selection_buf, "sd:/", menu_type, 0);
+               rgui_list_push(rgui->selection_buf, "usb:/", menu_type, 0);
+#endif
+               rgui_list_push(rgui->selection_buf, "carda:/", menu_type, 0);
+               rgui_list_push(rgui->selection_buf, "cardb:/", menu_type, 0);
+#elif defined(_XBOX1)
+               rgui_list_push(rgui->selection_buf, "C:\\", menu_type, 0);
+               rgui_list_push(rgui->selection_buf, "D:\\", menu_type, 0);
+               rgui_list_push(rgui->selection_buf, "E:\\", menu_type, 0);
+               rgui_list_push(rgui->selection_buf, "F:\\", menu_type, 0);
+               rgui_list_push(rgui->selection_buf, "G:\\", menu_type, 0);
+#elif defined(_WIN32)
+               unsigned drives = GetLogicalDrives();
+               char drive[] = " :\\";
+               for (i = 0; i < 32; i++)
+               {
+                  drive[0] = 'A' + i;
+                  if (drives & (1 << i))
+                     rgui_list_push(rgui->selection_buf, drive, menu_type, 0);
+               }
+#elif defined(__CELLOS_LV2__)
+               rgui_list_push(rgui->selection_buf, "app_home:/", menu_type, 0);
+               rgui_list_push(rgui->selection_buf, "dev_hdd0:/", menu_type, 0);
+               rgui_list_push(rgui->selection_buf, "dev_hdd1:/", menu_type, 0);
+               rgui_list_push(rgui->selection_buf, "host_root:/", menu_type, 0);
+#else
+               rgui_list_push(rgui->selection_buf, "/", menu_type, 0);
+#endif
+               return;
+            }
+#if defined(GEKKO) && defined(HW_RVL)
+            LWP_MutexLock(gx_device_mutex);
+            int dev = gx_get_device_from_path(dir);
+
+            if (dev != -1 && !gx_devices[dev].mounted && gx_devices[dev].interface->isInserted())
+               fatMountSimple(gx_devices[dev].name, gx_devices[dev].interface);
+
+            LWP_MutexUnlock(gx_device_mutex);
+#endif
+
+            const char *exts;
+            char ext_buf[1024];
+            if (menu_type == RGUI_SETTINGS_CORE)
+               exts = EXT_EXECUTABLES;
+            else if (menu_type == RGUI_SETTINGS_CONFIG)
+               exts = "cfg";
+            else if (menu_type == RGUI_SETTINGS_SHADER_PRESET)
+               exts = "cgp|glslp";
+            else if (menu_type_is(menu_type) == RGUI_SETTINGS_SHADER_OPTIONS)
+               exts = "cg|glsl";
+            else if (menu_type == RGUI_SETTINGS_OVERLAY_PRESET)
+               exts = "cfg";
+            else if (menu_type_is(menu_type) == RGUI_FILE_DIRECTORY)
+               exts = ""; // we ignore files anyway
+            else if (rgui->defer_core)
+               exts = rgui->core_info ? core_info_list_get_all_extensions(rgui->core_info) : "";
+            else if (rgui->info.valid_extensions)
+            {
+               exts = ext_buf;
+               if (*rgui->info.valid_extensions)
+                  snprintf(ext_buf, sizeof(ext_buf), "%s|zip", rgui->info.valid_extensions);
+               else
+                  *ext_buf = '\0';
+            }
+            else
+               exts = g_extern.system.valid_extensions;
+
+            struct string_list *list = dir_list_new(dir, exts, true);
+            if (!list)
+               return;
+
+            dir_list_sort(list, true);
+
+            if (menu_type_is(menu_type) == RGUI_FILE_DIRECTORY)
+               rgui_list_push(rgui->selection_buf, "<Use this directory>", RGUI_FILE_USE_DIRECTORY, 0);
+
+            for (i = 0; i < list->size; i++)
+            {
+               bool is_dir = list->elems[i].attr.b;
+
+               if ((menu_type_is(menu_type) == RGUI_FILE_DIRECTORY) && !is_dir)
+                  continue;
+
+#ifdef HAVE_LIBRETRO_MANAGEMENT
+               if (menu_type == RGUI_SETTINGS_CORE && (is_dir || strcasecmp(list->elems[i].data, SALAMANDER_FILE) == 0))
+                  continue;
+#endif
+
+               // Need to preserve slash first time.
+               const char *path = list->elems[i].data;
+               if (*dir)
+                  path = path_basename(path);
+
+               // Push menu_type further down in the chain.
+               // Needed for shader manager currently.
+               rgui_list_push(rgui->selection_buf, path,
+                     is_dir ? menu_type : RGUI_FILE_PLAIN, 0);
+            }
+
+            string_list_free(list);
+         }
+   }
+
+   // resolving switch
    switch (menu_type)
    {
       case RGUI_SETTINGS_CORE:
