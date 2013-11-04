@@ -261,7 +261,7 @@ static void render_text(void *data)
    else if (menu_type == RGUI_SETTINGS_CORE_OPTIONS)
       strlcpy(title, "CORE OPTIONS", sizeof(title));
 #ifdef HAVE_SHADER_MANAGER
-   else if (menu_type_is_shader_browser(menu_type))
+   else if (menu_type_is(menu_type) == RGUI_SETTINGS_SHADER_OPTIONS)
       snprintf(title, sizeof(title), "SHADER %s", dir);
 #endif
    else if ((menu_type == RGUI_SETTINGS_INPUT_OPTIONS) ||
@@ -362,7 +362,8 @@ static void render_text(void *data)
             type <= RGUI_SETTINGS_SHADER_LAST)
       {
          // HACK. Work around that we're using the menu_type as dir type to propagate state correctly.
-         if (menu_type_is_shader_browser(menu_type) && menu_type_is_shader_browser(type))
+         if ((menu_type_is(menu_type) == RGUI_SETTINGS_SHADER_OPTIONS)
+               && (menu_type_is(type) == RGUI_SETTINGS_SHADER_OPTIONS))
          {
             type = RGUI_FILE_DIRECTORY;
             strlcpy(type_str, "(DIR)", sizeof(type_str));
@@ -399,7 +400,7 @@ static void render_text(void *data)
             menu_type == RGUI_SETTINGS_OVERLAY_PRESET ||
 #endif
             menu_type == RGUI_SETTINGS_DISK_APPEND ||
-            menu_type_is_directory_browser(menu_type))
+            menu_type_is(menu_type) == RGUI_FILE_DIRECTORY)
       {
          if (type == RGUI_FILE_PLAIN)
          {

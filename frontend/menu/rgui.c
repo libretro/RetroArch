@@ -66,9 +66,13 @@ static void rgui_flush_menu_stack_type(rgui_handle_t *rgui, unsigned final_type)
    }
 }
 
-static bool menu_type_is_settings(unsigned type)
+unsigned menu_type_is(unsigned type)
 {
-   return type == RGUI_SETTINGS ||
+   unsigned ret = 0;
+   bool type_found;
+
+   type_found = 
+      type == RGUI_SETTINGS ||
       type == RGUI_SETTINGS_CORE_OPTIONS ||
       type == RGUI_SETTINGS_VIDEO_OPTIONS ||
       type == RGUI_SETTINGS_SHADER_OPTIONS ||
@@ -78,19 +82,25 @@ static bool menu_type_is_settings(unsigned type)
       type == RGUI_SETTINGS_OPTIONS ||
       type == RGUI_SETTINGS_DRIVERS ||
       (type == RGUI_SETTINGS_INPUT_OPTIONS);
-}
 
-static bool menu_type_is_shader_browser(unsigned type)
-{
-   return (type >= RGUI_SETTINGS_SHADER_0 &&
+   if (type_found)
+   {
+      ret = RGUI_SETTINGS;
+      return ret;
+   }
+
+   type_found = (type >= RGUI_SETTINGS_SHADER_0 &&
          type <= RGUI_SETTINGS_SHADER_LAST &&
          ((type - RGUI_SETTINGS_SHADER_0) % 3) == 0) ||
       type == RGUI_SETTINGS_SHADER_PRESET;
-}
 
-static bool menu_type_is_directory_browser(unsigned type)
-{
-   return type == RGUI_BROWSER_DIR_PATH ||
+   if (type_found)
+   {
+      ret = RGUI_SETTINGS_SHADER_OPTIONS;
+      return ret;
+   }
+
+   type_found = type == RGUI_BROWSER_DIR_PATH ||
       type == RGUI_SHADER_DIR_PATH ||
       type == RGUI_SAVESTATE_DIR_PATH ||
       type == RGUI_LIBRETRO_DIR_PATH ||
@@ -100,6 +110,14 @@ static bool menu_type_is_directory_browser(unsigned type)
       type == RGUI_OVERLAY_DIR_PATH ||
       type == RGUI_SCREENSHOT_DIR_PATH ||
       type == RGUI_SYSTEM_DIR_PATH;
+
+   if (type_found)
+   {
+      ret = RGUI_FILE_DIRECTORY;
+      return ret;
+   }
+
+   return ret;
 }
 
 #include "rguidisp.c"
@@ -624,13 +642,13 @@ static int rgui_settings_iterate(rgui_handle_t *rgui, rgui_action_t action)
             rgui->selection_ptr = 0;
             rgui->need_refresh = true;
          }
-         else if ((type == RGUI_SETTINGS_OPEN_HISTORY || menu_type_is_directory_browser(type)) && action == RGUI_ACTION_OK)
+         else if ((type == RGUI_SETTINGS_OPEN_HISTORY || menu_type_is(type) == RGUI_FILE_DIRECTORY) && action == RGUI_ACTION_OK)
          {
             rgui_list_push(rgui->menu_stack, "", type, rgui->selection_ptr);
             rgui->selection_ptr = 0;
             rgui->need_refresh = true;
          }
-         else if ((menu_type_is_settings(type) || type == RGUI_SETTINGS_CORE || type == RGUI_SETTINGS_CONFIG || type == RGUI_SETTINGS_DISK_APPEND) && action == RGUI_ACTION_OK)
+         else if ((menu_type_is(type) == RGUI_SETTINGS || type == RGUI_SETTINGS_CORE || type == RGUI_SETTINGS_CONFIG || type == RGUI_SETTINGS_DISK_APPEND) && action == RGUI_ACTION_OK)
          {
             rgui_list_push(rgui->menu_stack, label, type, rgui->selection_ptr);
             rgui->selection_ptr = 0;
@@ -675,8 +693,8 @@ static int rgui_settings_iterate(rgui_handle_t *rgui, rgui_action_t action)
    rgui_list_get_last(rgui->menu_stack, &dir, &menu_type);
 
    if (rgui->need_refresh && !(menu_type == RGUI_FILE_DIRECTORY ||
-            menu_type_is_shader_browser(menu_type) ||
-            menu_type_is_directory_browser(menu_type) ||
+            menu_type_is(menu_type) == RGUI_SETTINGS_SHADER_OPTIONS||
+            menu_type_is(menu_type) == RGUI_FILE_DIRECTORY ||
             menu_type == RGUI_SETTINGS_OVERLAY_PRESET ||
             menu_type == RGUI_SETTINGS_CORE ||
             menu_type == RGUI_SETTINGS_CONFIG ||
@@ -880,11 +898,11 @@ static bool rgui_directory_parse(rgui_handle_t *rgui, const char *directory, uns
       exts = "cfg";
    else if (menu_type == RGUI_SETTINGS_SHADER_PRESET)
       exts = "cgp|glslp";
-   else if (menu_type_is_shader_browser(menu_type))
+   else if (menu_type_is(menu_type) == RGUI_SETTINGS_SHADER_OPTIONS)
       exts = "cg|glsl";
    else if (menu_type == RGUI_SETTINGS_OVERLAY_PRESET)
       exts = "cfg";
-   else if (menu_type_is_directory_browser(menu_type))
+   else if (menu_type_is(menu_type) == RGUI_FILE_DIRECTORY)
       exts = ""; // we ignore files anyway
    else if (rgui->defer_core)
       exts = rgui->core_info ? core_info_list_get_all_extensions(rgui->core_info) : "";
@@ -905,14 +923,14 @@ static bool rgui_directory_parse(rgui_handle_t *rgui, const char *directory, uns
 
    dir_list_sort(list, true);
 
-   if (menu_type_is_directory_browser(menu_type))
+   if (menu_type_is(menu_type) == RGUI_FILE_DIRECTORY)
       rgui_list_push(ctx, "<Use this directory>", RGUI_FILE_USE_DIRECTORY, 0);
 
    for (i = 0; i < list->size; i++)
    {
       bool is_dir = list->elems[i].attr.b;
 
-      if (menu_type_is_directory_browser(menu_type) && !is_dir)
+      if ((menu_type_is(menu_type) == RGUI_FILE_DIRECTORY) && !is_dir)
          continue;
 
 #ifdef HAVE_LIBRETRO_MANAGEMENT
@@ -950,7 +968,7 @@ static int rgui_iterate(void *data, unsigned action)
 
    if (menu_type == RGUI_START_SCREEN)
       return rgui_start_screen_iterate(rgui, action);
-   else if (menu_type_is_settings(menu_type))
+   else if (menu_type_is(menu_type) == RGUI_SETTINGS)
       return rgui_settings_iterate(rgui, action);
    else if (menu_type == RGUI_SETTINGS_CUSTOM_VIEWPORT || menu_type == RGUI_SETTINGS_CUSTOM_VIEWPORT_2)
       return rgui_viewport_iterate(rgui, action);
@@ -1018,8 +1036,8 @@ static int rgui_iterate(void *data, unsigned action)
          rgui_list_get_at_offset(rgui->selection_buf, rgui->selection_ptr, &path, &type);
 
          if (
-               menu_type_is_shader_browser(type) ||
-               menu_type_is_directory_browser(type) ||
+               menu_type_is(type) == RGUI_SETTINGS_SHADER_OPTIONS ||
+               menu_type_is(type) == RGUI_FILE_DIRECTORY ||
                type == RGUI_SETTINGS_OVERLAY_PRESET ||
                type == RGUI_SETTINGS_CORE ||
                type == RGUI_SETTINGS_CONFIG ||
@@ -1036,7 +1054,7 @@ static int rgui_iterate(void *data, unsigned action)
          else
          {
 #ifdef HAVE_SHADER_MANAGER
-            if (menu_type_is_shader_browser(menu_type))
+            if (menu_type_is(menu_type) == RGUI_SETTINGS_SHADER_OPTIONS)
             {
                if (menu_type == RGUI_SETTINGS_SHADER_PRESET)
                {
@@ -1277,8 +1295,8 @@ static int rgui_iterate(void *data, unsigned action)
    rgui_list_get_last(rgui->menu_stack, &dir, &menu_type);
 
    if (rgui->need_refresh && (menu_type == RGUI_FILE_DIRECTORY ||
-            menu_type_is_shader_browser(menu_type) ||
-            menu_type_is_directory_browser(menu_type) || 
+            menu_type_is(menu_type) == RGUI_SETTINGS_SHADER_OPTIONS ||
+            menu_type_is(menu_type) == RGUI_FILE_DIRECTORY || 
             menu_type == RGUI_SETTINGS_OVERLAY_PRESET ||
             menu_type == RGUI_SETTINGS_DEFERRED_CORE ||
             menu_type == RGUI_SETTINGS_CORE ||
