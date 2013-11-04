@@ -167,7 +167,7 @@ static int shader_manager_toggle_setting(rgui_handle_t *rgui, unsigned setting, 
       }
    }
    else if (setting == RGUI_SETTINGS_SHADER_APPLY || setting == RGUI_SETTINGS_SHADER_PASSES)
-      return menu_set_settings(setting, action);
+      return menu_set_settings(rgui, setting, action);
    else if ((dist_shader % 3) == 0 || setting == RGUI_SETTINGS_SHADER_PRESET)
    {
       dist_shader /= 3;
@@ -279,11 +279,12 @@ int rgui_settings_toggle_setting(rgui_handle_t *rgui, unsigned setting, rgui_act
    if (setting >= RGUI_SETTINGS_CORE_OPTION_START)
       return rgui_core_setting_toggle(setting, action);
 
-   return menu_set_settings(setting, action);
+   return menu_set_settings(rgui, setting, action);
 }
 
-int menu_set_settings(unsigned setting, unsigned action)
+int menu_set_settings(void *data, unsigned setting, unsigned action)
 {
+   rgui_handle_t *rgui = (rgui_handle_t*)data;
    unsigned port = rgui->current_pad;
 
    switch (setting)
@@ -938,7 +939,7 @@ int menu_set_settings(unsigned setting, unsigned action)
             }
             driver.video->restart();
 #ifdef HAVE_RMENU
-            rgui_init_textures();
+            rgui_init_textures(rgui);
 #endif
          }
          break;

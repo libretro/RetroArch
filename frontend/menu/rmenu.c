@@ -1291,8 +1291,9 @@ static bool osk_callback_enter_filename_init(void *data)
 #endif
 #endif
 
-void rgui_init_textures(void)
+void rgui_init_textures(void *data)
 {
+   rgui_handle_t *rgui = (rgui_handle_t*)data;
 #ifdef HAVE_MENU_PANEL
    texture_image_load("D:\\Media\\menuMainRomSelectPanel.png", menu_panel);
 #endif
@@ -1303,9 +1304,10 @@ void rgui_init_textures(void)
    rmenu_set_texture(rgui, true);
 }
 
-static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t action_ori)
+static int set_setting_action(void *data, uint8_t menu_type, unsigned switchvalue, uint64_t action_ori)
 {
    unsigned action = (unsigned)action_ori;
+   rgui_handle_t *rgui = (rgui_handle_t*)data;
 
    switch (switchvalue)
    {
@@ -1334,7 +1336,7 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
 #ifdef __CELLOS_LV2__
       case SETTING_CHANGE_RESOLUTION:
 #endif
-         return menu_set_settings(settings_lut[switchvalue], action);
+         return menu_set_settings(rgui, settings_lut[switchvalue], action);
 #ifdef __CELLOS_LV2__
       case SETTING_PAL60_MODE:
          switch (action)
@@ -1354,7 +1356,7 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
                   }
 
                   driver.video->restart();
-                  rgui_init_textures();
+                  rgui_init_textures(rgui);
                }
                break;
             case RGUI_ACTION_START:
@@ -1363,7 +1365,7 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
                   g_extern.lifecycle_mode_state &= ~(1ULL << MODE_VIDEO_PAL_TEMPORAL_ENABLE);
 
                   driver.video->restart();
-                  rgui_init_textures();
+                  rgui_init_textures(rgui);
                }
                break;
          }
@@ -1437,7 +1439,7 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
                settings_set(1ULL << S_TRIPLE_BUFFERING);
 
                driver.video->restart();
-               rgui_init_textures();
+               rgui_init_textures(rgui);
                break;
             case RGUI_ACTION_START:
                settings_set(1ULL << S_DEF_TRIPLE_BUFFERING);
@@ -1445,7 +1447,7 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
                if (!(g_extern.lifecycle_mode_state & (1ULL << MODE_VIDEO_TRIPLE_BUFFERING_ENABLE)))
                {
                   driver.video->restart();
-                  rgui_init_textures();
+                  rgui_init_textures(rgui);
                }
                break;
          }
@@ -1960,7 +1962,7 @@ static int select_setting(void *data, uint64_t action)
       case RGUI_ACTION_LEFT:
       case RGUI_ACTION_RIGHT:
       case RGUI_ACTION_OK:
-         ret = set_setting_action(rgui->menu_type, rgui->selection_ptr, action);
+         ret = set_setting_action(data, rgui->menu_type, rgui->selection_ptr, action);
          break;
    }
 
@@ -2239,8 +2241,7 @@ static void* rmenu_init(void)
    menu_panel = (struct texture_image*)calloc(1, sizeof(*menu_panel));
 #endif
 
-   rgui_init_textures();
-
+   rgui_init_textures(rgui);
 
 #ifdef HAVE_OSKUTIL
    oskutil_params *osk = &rgui->oskutil_handle;
