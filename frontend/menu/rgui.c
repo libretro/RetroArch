@@ -1258,10 +1258,7 @@ static int rgui_iterate(void *data, unsigned action)
       else if (menu_type != RGUI_SETTINGS_DEFERRED_CORE)
          rgui_directory_parse(rgui, dir, menu_type, rgui->selection_buf);
 
-      if (menu_type == RGUI_SETTINGS_CORE)
-         menu_resolve_libretro_names(rgui->selection_buf, dir);
-      else if (menu_type == RGUI_SETTINGS_DEFERRED_CORE)
-         menu_resolve_supported_cores(rgui);
+      menu_resolve_names(rgui, menu_type);
 
       rgui->scroll_indices_size = 0;
       if (menu_type != RGUI_SETTINGS_OPEN_HISTORY)

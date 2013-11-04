@@ -725,7 +725,7 @@ bool menu_save_new_config(void)
 
 void menu_poll_bind_state(struct rgui_bind_state *state)
 {
-   unsigned p, b, a, h;
+   unsigned i, b, a, h;
    memset(state->state, 0, sizeof(state->state));
    state->skip = input_input_state_func(NULL, 0, RETRO_DEVICE_KEYBOARD, 0, RETROK_RETURN);
 
@@ -740,25 +740,25 @@ void menu_poll_bind_state(struct rgui_bind_state *state)
    }
 
    input_joypad_poll(joypad);
-   for (p = 0; p < MAX_PLAYERS; p++)
+   for (i = 0; i < MAX_PLAYERS; i++)
    {
       for (b = 0; b < RGUI_MAX_BUTTONS; b++)
-         state->state[p].buttons[b] = input_joypad_button_raw(joypad, p, b);
+         state->state[i].buttons[b] = input_joypad_button_raw(joypad, i, b);
       for (a = 0; a < RGUI_MAX_AXES; a++)
-         state->state[p].axes[a] = input_joypad_axis_raw(joypad, p, a);
+         state->state[i].axes[a] = input_joypad_axis_raw(joypad, i, a);
       for (h = 0; h < RGUI_MAX_HATS; h++)
       {
-         state->state[p].hats[h] |= input_joypad_hat_raw(joypad, p, HAT_UP_MASK, h) ? HAT_UP_MASK : 0;
-         state->state[p].hats[h] |= input_joypad_hat_raw(joypad, p, HAT_DOWN_MASK, h) ? HAT_DOWN_MASK : 0;
-         state->state[p].hats[h] |= input_joypad_hat_raw(joypad, p, HAT_LEFT_MASK, h) ? HAT_LEFT_MASK : 0;
-         state->state[p].hats[h] |= input_joypad_hat_raw(joypad, p, HAT_RIGHT_MASK, h) ? HAT_RIGHT_MASK : 0;
+         state->state[i].hats[h] |= input_joypad_hat_raw(joypad, i, HAT_UP_MASK, h) ? HAT_UP_MASK : 0;
+         state->state[i].hats[h] |= input_joypad_hat_raw(joypad, i, HAT_DOWN_MASK, h) ? HAT_DOWN_MASK : 0;
+         state->state[i].hats[h] |= input_joypad_hat_raw(joypad, i, HAT_LEFT_MASK, h) ? HAT_LEFT_MASK : 0;
+         state->state[i].hats[h] |= input_joypad_hat_raw(joypad, i, HAT_RIGHT_MASK, h) ? HAT_RIGHT_MASK : 0;
       }
    }
 }
 
 void menu_poll_bind_get_rested_axes(struct rgui_bind_state *state)
 {
-   unsigned p, a;
+   unsigned i, a;
    const rarch_joypad_driver_t *joypad = NULL;
    if (driver.input && driver.input_data && driver.input->get_joypad_driver)
       joypad = driver.input->get_joypad_driver(driver.input_data);
@@ -769,9 +769,9 @@ void menu_poll_bind_get_rested_axes(struct rgui_bind_state *state)
       return;
    }
 
-   for (p = 0; p < MAX_PLAYERS; p++)
+   for (i = 0; i < MAX_PLAYERS; i++)
       for (a = 0; a < RGUI_MAX_AXES; a++)
-         state->axis_state[p].rested_axes[a] = input_joypad_axis_raw(joypad, p, a);
+         state->axis_state[i].rested_axes[a] = input_joypad_axis_raw(joypad, i, a);
 }
 
 static bool menu_poll_find_trigger_pad(struct rgui_bind_state *state, struct rgui_bind_state *new_state, unsigned p)
@@ -838,12 +838,12 @@ static bool menu_poll_find_trigger_pad(struct rgui_bind_state *state, struct rgu
 
 bool menu_poll_find_trigger(struct rgui_bind_state *state, struct rgui_bind_state *new_state)
 {
-   unsigned p;
-   for (p = 0; p < MAX_PLAYERS; p++)
+   unsigned i;
+   for (i = 0; i < MAX_PLAYERS; i++)
    {
-      if (menu_poll_find_trigger_pad(state, new_state, p))
+      if (menu_poll_find_trigger_pad(state, new_state, i))
       {
-         g_settings.input.joypad_map[state->player] = p; // Update the joypad mapping automatically. More friendly that way.
+         g_settings.input.joypad_map[state->player] = i; // Update the joypad mapping automatically. More friendly that way.
          return true;
       }
    }
@@ -859,45 +859,54 @@ void menu_key_event(bool down, unsigned keycode, uint32_t character, uint16_t ke
    (void)key_modifiers;
 }
 
-void menu_resolve_libretro_names(rgui_list_t *list, const char *dir)
+void menu_resolve_names(void *data, unsigned menu_type)
 {
-   size_t i;
-
-   for (i = 0; i < list->size; i++)
-   {
-      const char *path;
-      unsigned type = 0;
-      rgui_list_get_at_offset(list, i, &path, &type);
-      if (type != RGUI_FILE_PLAIN)
-         continue;
-
-      char core_path[PATH_MAX];
-      fill_pathname_join(core_path, dir, path, sizeof(core_path));
-
-      char display_name[256];
-      if (rgui->core_info &&
-            core_info_list_get_display_name(rgui->core_info,
-               core_path, display_name, sizeof(display_name)))
-         rgui_list_set_alt_at_offset(list, i, display_name);
-   }
-
-   rgui_list_sort_on_alt(rgui->selection_buf);
-}
-
-void menu_resolve_supported_cores(rgui_handle_t *rgui)
-{
-   size_t i;
    const core_info_t *info = NULL;
-   size_t cores = 0;
-   core_info_list_get_supported_cores(rgui->core_info, rgui->deferred_path, &info, &cores);
+   const char *dir;
+   size_t i, list_size;
+   rgui_list_t *list;
+   rgui_handle_t *rgui;
 
-   for (i = 0; i < cores; i++)
+   rgui = (rgui_handle_t*)data;
+
+   switch (menu_type)
    {
-      rgui_list_push(rgui->selection_buf, info[i].path, RGUI_FILE_PLAIN, 0);
-      rgui_list_set_alt_at_offset(rgui->selection_buf, i, info[i].display_name);
-   }
+      case RGUI_SETTINGS_CORE:
+         dir = NULL;
+         list = (rgui_list_t*)rgui->selection_buf;
+         rgui_list_get_last(rgui->menu_stack, &dir, &menu_type);
+         list_size = list->size;
+         for (i = 0; i < list_size; i++)
+         {
+            const char *path;
+            unsigned type = 0;
+            rgui_list_get_at_offset(list, i, &path, &type);
+            if (type != RGUI_FILE_PLAIN)
+               continue;
 
-   rgui_list_sort_on_alt(rgui->selection_buf);
+            char core_path[PATH_MAX];
+            fill_pathname_join(core_path, dir, path, sizeof(core_path));
+
+            char display_name[256];
+            if (rgui->core_info &&
+                  core_info_list_get_display_name(rgui->core_info,
+                     core_path, display_name, sizeof(display_name)))
+               rgui_list_set_alt_at_offset(list, i, display_name);
+         }
+         rgui_list_sort_on_alt(rgui->selection_buf);
+         break;
+      case RGUI_SETTINGS_DEFERRED_CORE:
+         core_info_list_get_supported_cores(rgui->core_info, rgui->deferred_path, &info, &list_size);
+         for (i = 0; i < list_size; i++)
+         {
+            rgui_list_push(rgui->selection_buf, info[i].path, RGUI_FILE_PLAIN, 0);
+            rgui_list_set_alt_at_offset(rgui->selection_buf, i, info[i].display_name);
+         }
+         rgui_list_sort_on_alt(rgui->selection_buf);
+         break;
+      default:
+         (void)0;
+   }
 }
 
 void menu_init_core_info(rgui_handle_t *rgui)
@@ -907,4 +916,3 @@ void menu_init_core_info(rgui_handle_t *rgui)
    if (*rgui->libretro_dir)
       rgui->core_info = core_info_list_new(rgui->libretro_dir);
 }
-

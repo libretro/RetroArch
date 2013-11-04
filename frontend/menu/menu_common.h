@@ -346,8 +346,7 @@ void shader_manager_set_preset(struct gfx_shader *shader,
 
 void menu_ticker_line(char *buf, size_t len, unsigned tick, const char *str, bool selected);
 
-void menu_resolve_libretro_names(rgui_list_t *list, const char *dir);
-void menu_resolve_supported_cores(rgui_handle_t *rgui);
+void menu_resolve_names(void *data, unsigned menu_type);
 
 void menu_init_core_info(rgui_handle_t *rgui);
 
