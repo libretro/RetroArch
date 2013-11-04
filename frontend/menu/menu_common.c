@@ -2073,10 +2073,10 @@ void menu_parse_and_resolve(void *data, unsigned menu_type)
                      rgui_list_push(rgui->selection_buf, drive, menu_type, 0);
                }
 #elif defined(__CELLOS_LV2__)
-               rgui_list_push(rgui->selection_buf, "app_home:/", menu_type, 0);
-               rgui_list_push(rgui->selection_buf, "dev_hdd0:/", menu_type, 0);
-               rgui_list_push(rgui->selection_buf, "dev_hdd1:/", menu_type, 0);
-               rgui_list_push(rgui->selection_buf, "host_root:/", menu_type, 0);
+               rgui_list_push(rgui->selection_buf, "/app_home/", menu_type, 0);
+               rgui_list_push(rgui->selection_buf, "/dev_hdd0/", menu_type, 0);
+               rgui_list_push(rgui->selection_buf, "/dev_hdd1/", menu_type, 0);
+               rgui_list_push(rgui->selection_buf, "/host_root/", menu_type, 0);
 #else
                rgui_list_push(rgui->selection_buf, "/", menu_type, 0);
 #endif
