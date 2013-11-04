@@ -535,8 +535,8 @@ static bool send_udp_packet(const char *host, uint16_t port, const char *msg)
       }
 
       ssize_t len = strlen(msg);
-      ssize_t ret = sendto(fd, msg, len, 0, tmp->ai_addr, tmp->ai_addrlen);
-      if (ret < len)
+      ssize_t ret_len = sendto(fd, msg, len, 0, tmp->ai_addr, tmp->ai_addrlen);
+      if (ret_len < len)
       {
          ret = false;
          goto end;
