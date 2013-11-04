@@ -141,7 +141,146 @@ static enum rarch_shader_type shader_manager_get_type(const struct gfx_shader *s
 
    return type;
 }
+
+static int shader_manager_toggle_setting(rgui_handle_t *rgui, unsigned setting, rgui_action_t action)
+{
+   unsigned dist_shader = setting - RGUI_SETTINGS_SHADER_0;
+   unsigned dist_filter = setting - RGUI_SETTINGS_SHADER_0_FILTER;
+   unsigned dist_scale  = setting - RGUI_SETTINGS_SHADER_0_SCALE;
+
+   if (setting == RGUI_SETTINGS_SHADER_FILTER)
+   {
+      switch (action)
+      {
+         case RGUI_ACTION_START:
+            g_settings.video.smooth = true;
+            break;
+
+         case RGUI_ACTION_LEFT:
+         case RGUI_ACTION_RIGHT:
+         case RGUI_ACTION_OK:
+            g_settings.video.smooth = !g_settings.video.smooth;
+            break;
+
+         default:
+            break;
+      }
+   }
+   else if (setting == RGUI_SETTINGS_SHADER_APPLY || setting == RGUI_SETTINGS_SHADER_PASSES)
+      return menu_set_settings(setting, action);
+   else if ((dist_shader % 3) == 0 || setting == RGUI_SETTINGS_SHADER_PRESET)
+   {
+      dist_shader /= 3;
+      struct gfx_shader_pass *pass = setting == RGUI_SETTINGS_SHADER_PRESET ? 
+         &rgui->shader.pass[dist_shader] : NULL;
+      switch (action)
+      {
+         case RGUI_ACTION_OK:
+            rgui_list_push(rgui->menu_stack, g_settings.video.shader_dir, setting, rgui->selection_ptr);
+            rgui->selection_ptr = 0;
+            rgui->need_refresh = true;
+            break;
+
+         case RGUI_ACTION_START:
+            if (pass)
+               *pass->source.cg = '\0';
+            break;
+
+         default:
+            break;
+      }
+   }
+   else if ((dist_filter % 3) == 0)
+   {
+      dist_filter /= 3;
+      struct gfx_shader_pass *pass = &rgui->shader.pass[dist_filter];
+      switch (action)
+      {
+         case RGUI_ACTION_START:
+            rgui->shader.pass[dist_filter].filter = RARCH_FILTER_UNSPEC;
+            break;
+
+         case RGUI_ACTION_LEFT:
+         case RGUI_ACTION_RIGHT:
+         case RGUI_ACTION_OK:
+         {
+            unsigned delta = action == RGUI_ACTION_LEFT ? 2 : 1;
+            pass->filter = (enum gfx_filter_type)((pass->filter + delta) % 3);
+            break;
+         }
+
+         default:
+         break;
+      }
+   }
+   else if ((dist_scale % 3) == 0)
+   {
+      dist_scale /= 3;
+      struct gfx_shader_pass *pass = &rgui->shader.pass[dist_scale];
+      switch (action)
+      {
+         case RGUI_ACTION_START:
+            pass->fbo.scale_x = pass->fbo.scale_y = 0;
+            pass->fbo.valid = false;
+            break;
+
+         case RGUI_ACTION_LEFT:
+         case RGUI_ACTION_RIGHT:
+         case RGUI_ACTION_OK:
+         {
+            unsigned current_scale = pass->fbo.scale_x;
+            unsigned delta = action == RGUI_ACTION_LEFT ? 5 : 1;
+            current_scale = (current_scale + delta) % 6;
+            pass->fbo.valid = current_scale;
+            pass->fbo.scale_x = pass->fbo.scale_y = current_scale;
+            break;
+         }
+
+         default:
+         break;
+      }
+   }
+
+   return 0;
+}
 #endif
+
+static int rgui_core_setting_toggle(unsigned setting, rgui_action_t action)
+{
+   unsigned index = setting - RGUI_SETTINGS_CORE_OPTION_START;
+   switch (action)
+   {
+      case RGUI_ACTION_LEFT:
+         core_option_prev(g_extern.system.core_options, index);
+         break;
+
+      case RGUI_ACTION_RIGHT:
+      case RGUI_ACTION_OK:
+         core_option_next(g_extern.system.core_options, index);
+         break;
+
+      case RGUI_ACTION_START:
+         core_option_set_default(g_extern.system.core_options, index);
+         break;
+
+      default:
+         break;
+   }
+
+   return 0;
+}
+
+int rgui_settings_toggle_setting(rgui_handle_t *rgui, unsigned setting, rgui_action_t action, unsigned menu_type)
+{
+#ifdef HAVE_SHADER_MANAGER
+   if (setting >= RGUI_SETTINGS_SHADER_FILTER && setting <= RGUI_SETTINGS_SHADER_LAST)
+      return shader_manager_toggle_setting(rgui, setting, action);
+#endif
+   if (setting >= RGUI_SETTINGS_CORE_OPTION_START)
+      return rgui_core_setting_toggle(setting, action);
+
+   return menu_set_settings(setting, action);
+}
 
 int menu_set_settings(unsigned setting, unsigned action)
 {
