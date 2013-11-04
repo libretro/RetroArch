@@ -71,9 +71,7 @@ static bool menu_type_is_settings(unsigned type)
    return type == RGUI_SETTINGS ||
       type == RGUI_SETTINGS_CORE_OPTIONS ||
       type == RGUI_SETTINGS_VIDEO_OPTIONS ||
-#ifdef HAVE_SHADER_MANAGER
       type == RGUI_SETTINGS_SHADER_OPTIONS ||
-#endif
       type == RGUI_SETTINGS_AUDIO_OPTIONS ||
       type == RGUI_SETTINGS_DISK_OPTIONS ||
       type == RGUI_SETTINGS_PATH_OPTIONS ||
@@ -82,7 +80,6 @@ static bool menu_type_is_settings(unsigned type)
       (type == RGUI_SETTINGS_INPUT_OPTIONS);
 }
 
-#ifdef HAVE_SHADER_MANAGER
 static bool menu_type_is_shader_browser(unsigned type)
 {
    return (type >= RGUI_SETTINGS_SHADER_0 &&
@@ -90,27 +87,18 @@ static bool menu_type_is_shader_browser(unsigned type)
          ((type - RGUI_SETTINGS_SHADER_0) % 3) == 0) ||
       type == RGUI_SETTINGS_SHADER_PRESET;
 }
-#endif
 
 static bool menu_type_is_directory_browser(unsigned type)
 {
    return type == RGUI_BROWSER_DIR_PATH ||
-#ifdef HAVE_SHADER_MANAGER
       type == RGUI_SHADER_DIR_PATH ||
-#endif
       type == RGUI_SAVESTATE_DIR_PATH ||
-#ifdef HAVE_DYNAMIC
       type == RGUI_LIBRETRO_DIR_PATH ||
       type == RGUI_LIBRETRO_INFO_DIR_PATH ||
-#endif
       type == RGUI_CONFIG_DIR_PATH ||
       type == RGUI_SAVEFILE_DIR_PATH ||
-#ifdef HAVE_OVERLAY
       type == RGUI_OVERLAY_DIR_PATH ||
-#endif
-#ifdef HAVE_SCREENSHOTS
       type == RGUI_SCREENSHOT_DIR_PATH ||
-#endif
       type == RGUI_SYSTEM_DIR_PATH;
 }
 
@@ -687,13 +675,9 @@ static int rgui_settings_iterate(rgui_handle_t *rgui, rgui_action_t action)
    rgui_list_get_last(rgui->menu_stack, &dir, &menu_type);
 
    if (rgui->need_refresh && !(menu_type == RGUI_FILE_DIRECTORY ||
-#ifdef HAVE_SHADER_MANAGER
             menu_type_is_shader_browser(menu_type) ||
-#endif
             menu_type_is_directory_browser(menu_type) ||
-#ifdef HAVE_OVERLAY
             menu_type == RGUI_SETTINGS_OVERLAY_PRESET ||
-#endif
             menu_type == RGUI_SETTINGS_CORE ||
             menu_type == RGUI_SETTINGS_CONFIG ||
             menu_type == RGUI_SETTINGS_DISK_APPEND ||
@@ -709,9 +693,7 @@ static int rgui_settings_iterate(rgui_handle_t *rgui, rgui_action_t action)
             || menu_type == RGUI_SETTINGS_AUDIO_OPTIONS
             || menu_type == RGUI_SETTINGS_DISK_OPTIONS
             || menu_type == RGUI_SETTINGS_VIDEO_OPTIONS 
-#ifdef HAVE_SHADER_MANAGER
             || menu_type == RGUI_SETTINGS_SHADER_OPTIONS
-#endif
             )
          menu_set_settings_populate_entries(rgui, menu_type);
       else
@@ -896,16 +878,12 @@ static bool rgui_directory_parse(rgui_handle_t *rgui, const char *directory, uns
       exts = EXT_EXECUTABLES;
    else if (menu_type == RGUI_SETTINGS_CONFIG)
       exts = "cfg";
-#ifdef HAVE_SHADER_MANAGER
    else if (menu_type == RGUI_SETTINGS_SHADER_PRESET)
       exts = "cgp|glslp";
    else if (menu_type_is_shader_browser(menu_type))
       exts = "cg|glsl";
-#endif
-#ifdef HAVE_OVERLAY
    else if (menu_type == RGUI_SETTINGS_OVERLAY_PRESET)
       exts = "cfg";
-#endif
    else if (menu_type_is_directory_browser(menu_type))
       exts = ""; // we ignore files anyway
    else if (rgui->defer_core)
@@ -1040,13 +1018,9 @@ static int rgui_iterate(void *data, unsigned action)
          rgui_list_get_at_offset(rgui->selection_buf, rgui->selection_ptr, &path, &type);
 
          if (
-#ifdef HAVE_SHADER_MANAGER
                menu_type_is_shader_browser(type) ||
-#endif
                menu_type_is_directory_browser(type) ||
-#ifdef HAVE_OVERLAY
                type == RGUI_SETTINGS_OVERLAY_PRESET ||
-#endif
                type == RGUI_SETTINGS_CORE ||
                type == RGUI_SETTINGS_CONFIG ||
                type == RGUI_SETTINGS_DISK_APPEND ||
@@ -1303,13 +1277,9 @@ static int rgui_iterate(void *data, unsigned action)
    rgui_list_get_last(rgui->menu_stack, &dir, &menu_type);
 
    if (rgui->need_refresh && (menu_type == RGUI_FILE_DIRECTORY ||
-#ifdef HAVE_SHADER_MANAGER
             menu_type_is_shader_browser(menu_type) ||
-#endif
             menu_type_is_directory_browser(menu_type) || 
-#ifdef HAVE_OVERLAY
             menu_type == RGUI_SETTINGS_OVERLAY_PRESET ||
-#endif
             menu_type == RGUI_SETTINGS_DEFERRED_CORE ||
             menu_type == RGUI_SETTINGS_CORE ||
             menu_type == RGUI_SETTINGS_CONFIG ||
