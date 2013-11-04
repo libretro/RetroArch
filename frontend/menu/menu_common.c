@@ -19,6 +19,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <limits.h>
+#include <ctype.h>
 #include "menu_common.h"
 
 #include "../../performance.h"
@@ -860,6 +861,61 @@ void menu_key_event(bool down, unsigned keycode, uint32_t character, uint16_t ke
    (void)key_modifiers;
 }
 
+static inline int rgui_list_get_first_char(rgui_list_t *buf, unsigned offset)
+{
+   const char *path = NULL;
+   rgui_list_get_alt_at_offset(buf, offset, &path);
+   int ret = tolower(*path);
+  
+   // "Normalize" non-alphabetical entries so they are lumped together for purposes of jumping.
+   if (ret < 'a')
+      ret = 'a' - 1;
+   else if (ret > 'z')
+      ret = 'z' + 1;
+   return ret;
+}
+
+static inline bool rgui_list_elem_is_dir(rgui_list_t *buf, unsigned offset)
+{
+   const char *path = NULL;
+   unsigned type = 0;
+   rgui_list_get_at_offset(buf, offset, &path, &type);
+   return type != RGUI_FILE_PLAIN;
+}
+
+static void rgui_build_scroll_indices(rgui_handle_t *rgui, rgui_list_t *buf)
+{
+   size_t i;
+   int current;
+   bool current_is_dir;
+
+   rgui->scroll_indices_size = 0;
+   if (!buf->size)
+      return;
+
+   rgui->scroll_indices[rgui->scroll_indices_size++] = 0;
+
+   current = rgui_list_get_first_char(buf, 0);
+   current_is_dir = rgui_list_elem_is_dir(buf, 0);
+
+   for (i = 1; i < buf->size; i++)
+   {
+      int first;
+      bool is_dir;
+
+      first = rgui_list_get_first_char(buf, i);
+      is_dir = rgui_list_elem_is_dir(buf, i);
+
+      if ((current_is_dir && !is_dir) || (first > current))
+         rgui->scroll_indices[rgui->scroll_indices_size++] = i;
+
+      current = first;
+      current_is_dir = is_dir;
+   }
+
+   rgui->scroll_indices[rgui->scroll_indices_size++] = buf->size - 1;
+}
+
 void menu_parse_and_resolve(void *data, unsigned menu_type)
 {
    const core_info_t *info = NULL;
@@ -1059,6 +1115,17 @@ void menu_parse_and_resolve(void *data, unsigned menu_type)
       default:
          (void)0;
    }
+
+   rgui->scroll_indices_size = 0;
+   if (menu_type != RGUI_SETTINGS_OPEN_HISTORY)
+      rgui_build_scroll_indices(rgui, rgui->selection_buf);
+
+   // Before a refresh, we could have deleted a file on disk, causing
+   // selection_ptr to suddendly be out of range. Ensure it doesn't overflow.
+   if (rgui->selection_ptr >= rgui->selection_buf->size && rgui->selection_buf->size)
+      rgui->selection_ptr = rgui->selection_buf->size - 1;
+   else if (!rgui->selection_buf->size)
+      rgui->selection_ptr = 0;
 }
 
 void menu_init_core_info(rgui_handle_t *rgui)
