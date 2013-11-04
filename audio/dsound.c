@@ -82,8 +82,8 @@ static inline void get_positions(dsound_t *ds, DWORD *read_ptr, DWORD *write_ptr
 struct audio_lock
 {
    void *chunk1;
-   DWORD size1;
    void *chunk2;
+   DWORD size1;
    DWORD size2;
 };
 
