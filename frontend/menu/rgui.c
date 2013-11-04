@@ -676,33 +676,161 @@ static int rgui_settings_iterate(rgui_handle_t *rgui, rgui_action_t action)
    return 0;
 }
 
-static void history_parse(rgui_handle_t *rgui)
+static void menu_parse(void *data, unsigned menu_type)
 {
-   size_t i, history_size;
-   history_size = rom_history_size(rgui->history);
-   for (i = 0; i < history_size; i++)
+   rgui_handle_t *rgui;
+   const char *dir;
+   size_t i, size;
+
+   rgui = (rgui_handle_t*)data;
+   dir = NULL;
+
+   rgui_list_clear(rgui->selection_buf);
+
+   switch (menu_type)
    {
-      const char *path = NULL;
-      const char *core_path = NULL;
-      const char *core_name = NULL;
+      case RGUI_SETTINGS_OPEN_HISTORY:
+         /* History parse */
+         size = rom_history_size(rgui->history);
 
-      rom_history_get_index(rgui->history, i,
-            &path, &core_path, &core_name);
+         for (i = 0; i < size; i++)
+         {
+            const char *path, *core_path, *core_name;
+            char fill_buf[PATH_MAX];
 
-      char fill_buf[PATH_MAX];
+            path = NULL;
+            core_path = NULL;
+            core_name = NULL;
 
-      if (path)
-      {
-         char path_short[PATH_MAX];
-         fill_pathname(path_short, path_basename(path), "", sizeof(path_short));
+            rom_history_get_index(rgui->history, i,
+                  &path, &core_path, &core_name);
 
-         snprintf(fill_buf, sizeof(fill_buf), "%s (%s)",
-               path_short, core_name);
-      }
-      else
-         strlcpy(fill_buf, core_name, sizeof(fill_buf));
+            if (path)
+            {
+               char path_short[PATH_MAX];
+               fill_pathname(path_short, path_basename(path), "", sizeof(path_short));
 
-      rgui_list_push(rgui->selection_buf, fill_buf, RGUI_FILE_PLAIN, 0);
+               snprintf(fill_buf, sizeof(fill_buf), "%s (%s)",
+                     path_short, core_name);
+            }
+            else
+               strlcpy(fill_buf, core_name, sizeof(fill_buf));
+
+            rgui_list_push(rgui->selection_buf, fill_buf, RGUI_FILE_PLAIN, 0);
+         }
+         break;
+      case RGUI_SETTINGS_DEFERRED_CORE:
+         break;
+      default:
+         {
+            /* Directory parse */
+            rgui_list_get_last(rgui->menu_stack, &dir, &menu_type);
+
+            if (!*dir)
+            {
+#if defined(GEKKO)
+#ifdef HW_RVL
+               rgui_list_push(rgui->selection_buf, "sd:/", menu_type, 0);
+               rgui_list_push(rgui->selection_buf, "usb:/", menu_type, 0);
+#endif
+               rgui_list_push(rgui->selection_buf, "carda:/", menu_type, 0);
+               rgui_list_push(rgui->selection_buf, "cardb:/", menu_type, 0);
+#elif defined(_XBOX1)
+               rgui_list_push(rgui->selection_buf, "C:\\", menu_type, 0);
+               rgui_list_push(rgui->selection_buf, "D:\\", menu_type, 0);
+               rgui_list_push(rgui->selection_buf, "E:\\", menu_type, 0);
+               rgui_list_push(rgui->selection_buf, "F:\\", menu_type, 0);
+               rgui_list_push(rgui->selection_buf, "G:\\", menu_type, 0);
+#elif defined(_WIN32)
+               unsigned drives = GetLogicalDrives();
+               char drive[] = " :\\";
+               for (i = 0; i < 32; i++)
+               {
+                  drive[0] = 'A' + i;
+                  if (drives & (1 << i))
+                     rgui_list_push(rgui->selection_buf, drive, menu_type, 0);
+               }
+#elif defined(__CELLOS_LV2__)
+               rgui_list_push(rgui->selection_buf, "app_home:/", menu_type, 0);
+               rgui_list_push(rgui->selection_buf, "dev_hdd0:/", menu_type, 0);
+               rgui_list_push(rgui->selection_buf, "dev_hdd1:/", menu_type, 0);
+               rgui_list_push(rgui->selection_buf, "host_root:/", menu_type, 0);
+#else
+               rgui_list_push(rgui->selection_buf, "/", menu_type, 0);
+#endif
+               return;
+            }
+#if defined(GEKKO) && defined(HW_RVL)
+            LWP_MutexLock(gx_device_mutex);
+            int dev = gx_get_device_from_path(dir);
+
+            if (dev != -1 && !gx_devices[dev].mounted && gx_devices[dev].interface->isInserted())
+               fatMountSimple(gx_devices[dev].name, gx_devices[dev].interface);
+
+            LWP_MutexUnlock(gx_device_mutex);
+#endif
+
+            const char *exts;
+            char ext_buf[1024];
+            if (menu_type == RGUI_SETTINGS_CORE)
+               exts = EXT_EXECUTABLES;
+            else if (menu_type == RGUI_SETTINGS_CONFIG)
+               exts = "cfg";
+            else if (menu_type == RGUI_SETTINGS_SHADER_PRESET)
+               exts = "cgp|glslp";
+            else if (menu_type_is(menu_type) == RGUI_SETTINGS_SHADER_OPTIONS)
+               exts = "cg|glsl";
+            else if (menu_type == RGUI_SETTINGS_OVERLAY_PRESET)
+               exts = "cfg";
+            else if (menu_type_is(menu_type) == RGUI_FILE_DIRECTORY)
+               exts = ""; // we ignore files anyway
+            else if (rgui->defer_core)
+               exts = rgui->core_info ? core_info_list_get_all_extensions(rgui->core_info) : "";
+            else if (rgui->info.valid_extensions)
+            {
+               exts = ext_buf;
+               if (*rgui->info.valid_extensions)
+                  snprintf(ext_buf, sizeof(ext_buf), "%s|zip", rgui->info.valid_extensions);
+               else
+                  *ext_buf = '\0';
+            }
+            else
+               exts = g_extern.system.valid_extensions;
+
+            struct string_list *list = dir_list_new(dir, exts, true);
+            if (!list)
+               return;
+
+            dir_list_sort(list, true);
+
+            if (menu_type_is(menu_type) == RGUI_FILE_DIRECTORY)
+               rgui_list_push(rgui->selection_buf, "<Use this directory>", RGUI_FILE_USE_DIRECTORY, 0);
+
+            for (i = 0; i < list->size; i++)
+            {
+               bool is_dir = list->elems[i].attr.b;
+
+               if ((menu_type_is(menu_type) == RGUI_FILE_DIRECTORY) && !is_dir)
+                  continue;
+
+#ifdef HAVE_LIBRETRO_MANAGEMENT
+               if (menu_type == RGUI_SETTINGS_CORE && (is_dir || strcasecmp(list->elems[i].data, SALAMANDER_FILE) == 0))
+                  continue;
+#endif
+
+               // Need to preserve slash first time.
+               const char *path = list->elems[i].data;
+               if (*dir)
+                  path = path_basename(path);
+
+               // Push menu_type further down in the chain.
+               // Needed for shader manager currently.
+               rgui_list_push(rgui->selection_buf, path,
+                     is_dir ? menu_type : RGUI_FILE_PLAIN, 0);
+            }
+
+            string_list_free(list);
+         }
    }
 }
 
@@ -787,117 +915,6 @@ static inline void rgui_ascend_alphabet(rgui_handle_t *rgui, size_t *ptr_out)
    *ptr_out = rgui->scroll_indices[i + 1];
 }
 
-static bool rgui_directory_parse(rgui_handle_t *rgui, const char *directory, unsigned menu_type, void *ctx)
-{
-   size_t i;
-
-   if (!*directory)
-   {
-#if defined(GEKKO)
-#ifdef HW_RVL
-      rgui_list_push(ctx, "sd:/", menu_type, 0);
-      rgui_list_push(ctx, "usb:/", menu_type, 0);
-#endif
-      rgui_list_push(ctx, "carda:/", menu_type, 0);
-      rgui_list_push(ctx, "cardb:/", menu_type, 0);
-#elif defined(_XBOX1)
-      rgui_list_push(ctx, "C:\\", menu_type, 0);
-      rgui_list_push(ctx, "D:\\", menu_type, 0);
-      rgui_list_push(ctx, "E:\\", menu_type, 0);
-      rgui_list_push(ctx, "F:\\", menu_type, 0);
-      rgui_list_push(ctx, "G:\\", menu_type, 0);
-#elif defined(_WIN32)
-      unsigned drives = GetLogicalDrives();
-      char drive[] = " :\\";
-      for (i = 0; i < 32; i++)
-      {
-         drive[0] = 'A' + i;
-         if (drives & (1 << i))
-            rgui_list_push(ctx, drive, menu_type, 0);
-      }
-#elif defined(__CELLOS_LV2__)
-      rgui_list_push(ctx, "app_home:/", menu_type, 0);
-      rgui_list_push(ctx, "dev_hdd0:/", menu_type, 0);
-      rgui_list_push(ctx, "dev_hdd1:/", menu_type, 0);
-      rgui_list_push(ctx, "host_root:/", menu_type, 0);
-#else
-      rgui_list_push(ctx, "/", menu_type, 0);
-#endif
-      return true;
-   }
-
-#if defined(GEKKO) && defined(HW_RVL)
-   LWP_MutexLock(gx_device_mutex);
-   int dev = gx_get_device_from_path(directory);
-
-   if (dev != -1 && !gx_devices[dev].mounted && gx_devices[dev].interface->isInserted())
-      fatMountSimple(gx_devices[dev].name, gx_devices[dev].interface);
-
-   LWP_MutexUnlock(gx_device_mutex);
-#endif
-
-   const char *exts;
-   char ext_buf[1024];
-   if (menu_type == RGUI_SETTINGS_CORE)
-      exts = EXT_EXECUTABLES;
-   else if (menu_type == RGUI_SETTINGS_CONFIG)
-      exts = "cfg";
-   else if (menu_type == RGUI_SETTINGS_SHADER_PRESET)
-      exts = "cgp|glslp";
-   else if (menu_type_is(menu_type) == RGUI_SETTINGS_SHADER_OPTIONS)
-      exts = "cg|glsl";
-   else if (menu_type == RGUI_SETTINGS_OVERLAY_PRESET)
-      exts = "cfg";
-   else if (menu_type_is(menu_type) == RGUI_FILE_DIRECTORY)
-      exts = ""; // we ignore files anyway
-   else if (rgui->defer_core)
-      exts = rgui->core_info ? core_info_list_get_all_extensions(rgui->core_info) : "";
-   else if (rgui->info.valid_extensions)
-   {
-      exts = ext_buf;
-      if (*rgui->info.valid_extensions)
-         snprintf(ext_buf, sizeof(ext_buf), "%s|zip", rgui->info.valid_extensions);
-      else
-         *ext_buf = '\0';
-   }
-   else
-      exts = g_extern.system.valid_extensions;
-
-   struct string_list *list = dir_list_new(directory, exts, true);
-   if (!list)
-      return false;
-
-   dir_list_sort(list, true);
-
-   if (menu_type_is(menu_type) == RGUI_FILE_DIRECTORY)
-      rgui_list_push(ctx, "<Use this directory>", RGUI_FILE_USE_DIRECTORY, 0);
-
-   for (i = 0; i < list->size; i++)
-   {
-      bool is_dir = list->elems[i].attr.b;
-
-      if ((menu_type_is(menu_type) == RGUI_FILE_DIRECTORY) && !is_dir)
-         continue;
-
-#ifdef HAVE_LIBRETRO_MANAGEMENT
-      if (menu_type == RGUI_SETTINGS_CORE && (is_dir || strcasecmp(list->elems[i].data, SALAMANDER_FILE) == 0))
-         continue;
-#endif
-
-      // Need to preserve slash first time.
-      const char *path = list->elems[i].data;
-      if (*directory)
-         path = path_basename(path);
-
-      // Push menu_type further down in the chain.
-      // Needed for shader manager currently.
-      rgui_list_push(ctx, path,
-            is_dir ? menu_type : RGUI_FILE_PLAIN, 0);
-   }
-
-   string_list_free(list);
-   return true;
-}
 
 static int rgui_iterate(void *data, unsigned action)
 {
@@ -1251,13 +1268,8 @@ static int rgui_iterate(void *data, unsigned action)
             menu_type == RGUI_SETTINGS_DISK_APPEND))
    {
       rgui->need_refresh = false;
-      rgui_list_clear(rgui->selection_buf);
 
-      if (menu_type == RGUI_SETTINGS_OPEN_HISTORY)
-         history_parse(rgui);
-      else if (menu_type != RGUI_SETTINGS_DEFERRED_CORE)
-         rgui_directory_parse(rgui, dir, menu_type, rgui->selection_buf);
-
+      menu_parse(rgui, menu_type);
       menu_resolve_names(rgui, menu_type);
 
       rgui->scroll_indices_size = 0;
