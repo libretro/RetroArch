@@ -66,60 +66,6 @@ static void rgui_flush_menu_stack_type(rgui_handle_t *rgui, unsigned final_type)
    }
 }
 
-unsigned menu_type_is(unsigned type)
-{
-   unsigned ret = 0;
-   bool type_found;
-
-   type_found = 
-      type == RGUI_SETTINGS ||
-      type == RGUI_SETTINGS_CORE_OPTIONS ||
-      type == RGUI_SETTINGS_VIDEO_OPTIONS ||
-      type == RGUI_SETTINGS_SHADER_OPTIONS ||
-      type == RGUI_SETTINGS_AUDIO_OPTIONS ||
-      type == RGUI_SETTINGS_DISK_OPTIONS ||
-      type == RGUI_SETTINGS_PATH_OPTIONS ||
-      type == RGUI_SETTINGS_OPTIONS ||
-      type == RGUI_SETTINGS_DRIVERS ||
-      (type == RGUI_SETTINGS_INPUT_OPTIONS);
-
-   if (type_found)
-   {
-      ret = RGUI_SETTINGS;
-      return ret;
-   }
-
-   type_found = (type >= RGUI_SETTINGS_SHADER_0 &&
-         type <= RGUI_SETTINGS_SHADER_LAST &&
-         ((type - RGUI_SETTINGS_SHADER_0) % 3) == 0) ||
-      type == RGUI_SETTINGS_SHADER_PRESET;
-
-   if (type_found)
-   {
-      ret = RGUI_SETTINGS_SHADER_OPTIONS;
-      return ret;
-   }
-
-   type_found = type == RGUI_BROWSER_DIR_PATH ||
-      type == RGUI_SHADER_DIR_PATH ||
-      type == RGUI_SAVESTATE_DIR_PATH ||
-      type == RGUI_LIBRETRO_DIR_PATH ||
-      type == RGUI_LIBRETRO_INFO_DIR_PATH ||
-      type == RGUI_CONFIG_DIR_PATH ||
-      type == RGUI_SAVEFILE_DIR_PATH ||
-      type == RGUI_OVERLAY_DIR_PATH ||
-      type == RGUI_SCREENSHOT_DIR_PATH ||
-      type == RGUI_SYSTEM_DIR_PATH;
-
-   if (type_found)
-   {
-      ret = RGUI_FILE_DIRECTORY;
-      return ret;
-   }
-
-   return ret;
-}
-
 #include "rguidisp.c"
 
 static void *rgui_init(void)
