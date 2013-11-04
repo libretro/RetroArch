@@ -1468,7 +1468,20 @@ bool menu_iterate(void)
       driver.video_poke->set_texture_enable(driver.video_data, false,
             MENU_TEXTURE_FULLSCREEN);
 
-   if (rgui_input_postprocess(rgui, rgui->old_input_state) || input_entry_ret)
+   int ret = rgui_input_postprocess(rgui, rgui->old_input_state);
+
+   if (ret < 0)
+   {
+      unsigned type = 0;
+      rgui_list_get_last(rgui->menu_stack, NULL, &type);
+      while (type != RGUI_SETTINGS)
+      {
+         rgui_list_pop(rgui->menu_stack, &rgui->selection_ptr);
+         rgui_list_get_last(rgui->menu_stack, NULL, &type);
+      }
+   }
+
+   if (ret || input_entry_ret)
       goto deinit;
 
    return true;

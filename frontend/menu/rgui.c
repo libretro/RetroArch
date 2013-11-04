@@ -565,17 +565,6 @@ int rgui_input_postprocess(void *data, uint64_t old_state)
       ret = -1;
    }
 
-   if (ret < 0)
-   {
-      unsigned type = 0;
-      rgui_list_get_last(rgui->menu_stack, NULL, &type);
-      while (type != RGUI_SETTINGS)
-      {
-         rgui_list_pop(rgui->menu_stack, &rgui->selection_ptr);
-         rgui_list_get_last(rgui->menu_stack, NULL, &type);
-      }
-   }
-
    return ret;
 }
 
