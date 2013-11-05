@@ -1,10 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
     android:title="Help" >
-    <PreferenceScreen android:title="What's New?" >
-       <PreferenceCategory android:title="What's New?" android:layout="@layout/faq_whats_new" >
-        </PreferenceCategory>
-    </PreferenceScreen>
     <PreferenceScreen android:title="Where are the games?" >
        <PreferenceCategory android:title="Where are the games?" android:layout="@layout/faq_where_are_the_games" >
         </PreferenceCategory>
