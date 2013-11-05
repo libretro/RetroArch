@@ -27,9 +27,18 @@
 #include <stdlib.h>
 #include <stddef.h>
 #include <string.h>
+#include <windowsx.h>
 
 // Context has to be global as joypads also ride on this context.
 static LPDIRECTINPUT8 g_ctx;
+
+struct pointer_status
+{
+   int pointer_id;
+   int pointer_x;
+   int pointer_y;
+   struct pointer_status *next;
+};
 
 struct dinput_input
 {
@@ -43,6 +52,7 @@ struct dinput_input
    int mouse_x;
    int mouse_y;
    bool mouse_l, mouse_r, mouse_m;
+   struct pointer_status pointer_head;  // dummy head for easier iteration
 };
 
 struct dinput_joypad
@@ -234,11 +244,22 @@ static int16_t dinput_mouse_state(struct dinput_input *di, unsigned id)
 
 static int16_t dinput_pointer_state(struct dinput_input *di, unsigned index, unsigned id, bool screen)
 {
-   if (index != 0)
+   int16_t res_x = 0, res_y = 0, res_screen_x = 0, res_screen_y = 0;
+   unsigned num = 0;
+   struct pointer_status *check_pos = di->pointer_head.next;
+   while (check_pos && num < index)
+   {
+      num++;
+      check_pos = check_pos->next;
+   }
+   if (!check_pos && index > 0) // index = 0 has mouse fallback
       return 0;
 
-   int16_t res_x = 0, res_y = 0, res_screen_x = 0, res_screen_y = 0;
-   bool valid = input_translate_coord_viewport(di->mouse_x, di->mouse_y,
+   int x = check_pos ? check_pos->pointer_x : di->mouse_x;
+   int y = check_pos ? check_pos->pointer_y : di->mouse_y;
+   bool pointer_down = check_pos ? true : di->mouse_l;
+
+   bool valid = input_translate_coord_viewport(x, y,
          &res_x, &res_y, &res_screen_x, &res_screen_y);
 
    if (!valid)
@@ -262,7 +283,7 @@ static int16_t dinput_pointer_state(struct dinput_input *di, unsigned index, uns
       case RETRO_DEVICE_ID_POINTER_Y:
          return res_y;
       case RETRO_DEVICE_ID_POINTER_PRESSED:
-         return di->mouse_l;
+         return pointer_down;
       default:
          return 0;
    }
@@ -299,6 +320,116 @@ static int16_t dinput_input_state(void *data,
    }
 }
 
+// these are defined in later SDKs, thus ifdeffed
+#ifndef WM_POINTERUPDATE
+#define WM_POINTERUPDATE                0x0245
+#endif
+#ifndef WM_POINTERDOWN
+#define WM_POINTERDOWN                  0x0246
+#endif
+#ifndef WM_POINTERUP
+#define WM_POINTERUP                    0x0247
+#endif
+#ifndef GET_POINTERID_WPARAM
+#define GET_POINTERID_WPARAM(wParam)                (LOWORD(wParam))
+#endif
+
+// stores x/y in client coordinates
+void dinput_pointer_store_pos(struct pointer_status *pointer, WPARAM lParam)
+{
+   POINT point;
+   point.x = GET_X_LPARAM(lParam);
+   point.y = GET_Y_LPARAM(lParam);
+   ScreenToClient((HWND)driver.video_window, &point);
+   pointer->pointer_x = point.x;
+   pointer->pointer_y = point.y;
+}
+
+void dinput_add_pointer(struct dinput_input *di, struct pointer_status *new_pointer)
+{
+   new_pointer->next = NULL;
+   struct pointer_status *insert_pos = &di->pointer_head;
+   while (insert_pos->next)
+      insert_pos = insert_pos->next;
+   insert_pos->next = new_pointer;
+}
+
+void dinput_delete_pointer(struct dinput_input *di, int pointer_id)
+{
+   struct pointer_status *check_pos = &di->pointer_head;
+   while (check_pos && check_pos->next)
+   {
+      if (check_pos->next->pointer_id == pointer_id)
+      {
+         struct pointer_status *to_delete = check_pos->next;
+         check_pos->next = check_pos->next->next;
+         free(to_delete);
+      }
+      check_pos = check_pos->next;
+   }
+}
+
+struct pointer_status *dinput_find_pointer(struct dinput_input *di, int pointer_id)
+{
+   struct pointer_status *check_pos = di->pointer_head.next;
+   while (check_pos)
+   {
+      if (check_pos->pointer_id == pointer_id)
+         break;
+      check_pos = check_pos->next;
+   }
+   return check_pos;
+}
+
+void dinput_clear_pointers(struct dinput_input *di)
+{
+   struct pointer_status *pointer = &di->pointer_head;
+   while (pointer->next)
+   {
+      struct pointer_status *del = pointer->next;
+      pointer->next = pointer->next->next;
+      free(del);
+   }
+}
+
+#ifdef __cplusplus
+extern "C"
+#endif
+bool dinput_handle_message(void *dinput, UINT message, WPARAM wParam, LPARAM lParam)
+{
+   struct dinput_input *di = (struct dinput_input *)dinput;
+   /* WM_POINTERDOWN arrives for each new touch event with a new id - add to list
+      WM_POINTERUP arrives once the pointer is no longer down - remove from list
+      WM_POINTERUPDATE arrives for both pressed and hovering pointers - ignore hovering
+   */
+   switch (message)
+   {
+   case WM_POINTERDOWN:
+   {
+      struct pointer_status *new_pointer = (struct pointer_status *)malloc(sizeof(struct pointer_status));
+      new_pointer->pointer_id = GET_POINTERID_WPARAM(wParam);
+      dinput_pointer_store_pos(new_pointer, lParam);
+      dinput_add_pointer(di, new_pointer);
+      return true;
+   }
+   case WM_POINTERUP:
+   {
+      int pointer_id = GET_POINTERID_WPARAM(wParam);
+      dinput_delete_pointer(di, pointer_id);
+      return true;
+   }
+   case WM_POINTERUPDATE:
+   {
+      int pointer_id = GET_POINTERID_WPARAM(wParam);
+      struct pointer_status *pointer = dinput_find_pointer(di, pointer_id);
+      if (pointer)
+         dinput_pointer_store_pos(pointer, lParam);
+      return true;
+   }
+   }
+   return false;
+}
+
 static void dinput_free(void *data)
 {
    struct dinput_input *di = (struct dinput_input*)data;
@@ -309,6 +440,8 @@ static void dinput_free(void *data)
       g_ctx = NULL; // Prevent a joypad driver to kill our context prematurely.
       di->joypad->destroy();
       g_ctx = hold_ctx;
+
+      dinput_clear_pointers(di); // clear any leftover pointers
 
       if (di->keyboard)
          IDirectInputDevice8_Release(di->keyboard);

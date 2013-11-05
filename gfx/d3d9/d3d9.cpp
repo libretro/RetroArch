@@ -60,11 +60,17 @@ namespace Monitor
    static unsigned cur_mon_id;
 }
 
+#ifdef __cplusplus
+extern "C"
+#endif
+bool dinput_handle_message(void *dinput, UINT message, WPARAM wParam, LPARAM lParam);
+
 namespace Callback
 {
    static bool quit = false;
    static D3DVideo *curD3D = nullptr;
    static HRESULT d3d_err;
+   static void *dinput;
 
    LRESULT CALLBACK WindowProc(HWND hWnd, UINT message,
          WPARAM wParam, LPARAM lParam)
@@ -98,10 +104,9 @@ namespace Callback
             if (new_width && new_height)
                curD3D->resize(new_width, new_height);
             return 0;
-
-         default:
-            return DefWindowProc(hWnd, message, wParam, lParam);
       }
+      if (dinput_handle_message(dinput, message, wParam, lParam))
+         return 0;
       return DefWindowProc(hWnd, message, wParam, lParam);
    }
 }
@@ -1317,9 +1322,9 @@ static void *d3d9_init(const video_info_t *info, const input_driver_t **input,
 
      if (input && input_data)
      {
-        void *dinput = input_dinput.init();
-        *input       = dinput ? &input_dinput : nullptr;
-        *input_data  = dinput;
+        Callback::dinput = input_dinput.init();
+        *input = Callback::dinput ? &input_dinput : nullptr;
+        *input_data = Callback::dinput;
      }
 
      return vid;
