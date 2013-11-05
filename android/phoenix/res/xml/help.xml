@@ -13,10 +13,6 @@
        <PreferenceCategory android:title="What is a 'Libretro core'?" android:layout="@layout/faq_what_is_a_libretro_core" >
         </PreferenceCategory>
     </PreferenceScreen>
-    <PreferenceScreen android:title="Libretro core system requirements" >
-       <PreferenceCategory android:title="Libretro core system requirements" android:layout="@layout/faq_system_requirements" >
-        </PreferenceCategory>
-    </PreferenceScreen>
     <PreferenceScreen android:title="Why do games sound choppy on my device?" >
        <PreferenceCategory android:title="Games sound choppy on my device?" android:layout="@layout/faq_sound_choppy" >
         </PreferenceCategory>
