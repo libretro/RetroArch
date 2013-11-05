@@ -37,13 +37,6 @@
           android:targetPackage="com.retroarch" />
     </PreferenceScreen>
 
-    <!-- Help -->
-    <PreferenceScreen android:title="@string/help">
-       <intent
-          android:targetClass="com.retroarch.browser.HelpActivity"
-          android:targetPackage="com.retroarch" />
-    </PreferenceScreen>
-
     <!-- About -->
     <PreferenceScreen android:title="@string/about">
         <PreferenceCategory android:title="@string/websites">

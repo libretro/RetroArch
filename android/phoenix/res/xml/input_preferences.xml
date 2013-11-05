@@ -28,9 +28,6 @@
             android:summary="@string/config_autodetect_desc"
             android:title="@string/enable"
             android:disableDependentsState="true" />
-        <PreferenceScreen android:title="@string/list_autodetected" >
-            <PreferenceCategory android:title="@string/autodetected_pads" android:layout="@layout/faq_supported_pads" />
-        </PreferenceScreen>
         <ListPreference
             android:entries="@array/icade_profiles"
             android:entryValues="@array/icade_profiles_values"
