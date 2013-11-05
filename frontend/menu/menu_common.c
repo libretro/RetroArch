@@ -1167,11 +1167,15 @@ static int rgui_iterate(void *data, unsigned action)
 
                // Core selection on non-console just updates directory listing.
                // Will take affect on new ROM load.
-#elif defined(GEKKO) && defined(HW_RVL)
+#elif defined(RARCH_CONSOLE
                rarch_environment_cb(RETRO_ENVIRONMENT_SET_LIBRETRO_PATH, (void*)path);
 
+#if defined(GEKKO) && defined(HW_RVL)
                fill_pathname_join(g_extern.fullpath, default_paths.core_dir,
                      SALAMANDER_FILE, sizeof(g_extern.fullpath));
+#else
+               fill_pathname_join(g_settings.libretro, dir, path, sizeof(g_settings.libretro));
+#endif
                g_extern.lifecycle_mode_state &= ~(1ULL << MODE_GAME);
                g_extern.lifecycle_mode_state |= (1ULL << MODE_EXITSPAWN);
                ret = -1;
