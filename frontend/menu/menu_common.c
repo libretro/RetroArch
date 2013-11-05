@@ -1167,7 +1167,7 @@ static int rgui_iterate(void *data, unsigned action)
 
                // Core selection on non-console just updates directory listing.
                // Will take affect on new ROM load.
-#elif defined(RARCH_CONSOLE
+#elif defined(RARCH_CONSOLE)
                rarch_environment_cb(RETRO_ENVIRONMENT_SET_LIBRETRO_PATH, (void*)path);
 
 #if defined(GEKKO) && defined(HW_RVL)
