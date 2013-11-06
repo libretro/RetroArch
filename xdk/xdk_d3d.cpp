@@ -28,7 +28,7 @@
 
 #include "./../gfx/gfx_context.h"
 #include "../general.h"
-#include "../message.h"
+#include "../message_queue.h"
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"

@@ -73,7 +73,7 @@
     <ClInclude Include="..\..\general.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\message.h">
+    <ClInclude Include="..\..\message_queue.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\..\netplay.h">

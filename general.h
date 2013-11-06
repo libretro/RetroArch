@@ -23,7 +23,7 @@
 #include <setjmp.h>
 #include "driver.h"
 #include "record/ffemu.h"
-#include "message.h"
+#include "message_queue.h"
 #include "rewind.h"
 #include "movie.h"
 #include "autosave.h"

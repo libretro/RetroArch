@@ -28,7 +28,7 @@
 #include "../../gfx/gfx_common.h"
 #include "../../gfx/gfx_context.h"
 
-#include "../../message.h"
+#include "../../message_queue.h"
 #include "../../general.h"
 
 enum {

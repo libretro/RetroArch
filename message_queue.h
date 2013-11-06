@@ -17,8 +17,6 @@
 #ifndef __RARCH_MSG_QUEUE_H
 #define __RARCH_MSG_QUEUE_H
 
-#include <stddef.h>
-
 #ifdef __cplusplus
 extern "C" {
 #endif

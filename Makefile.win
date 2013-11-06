@@ -12,7 +12,7 @@ OBJ = frontend/frontend.o \
 		hash.o \
 		dynamic.o \
 		dynamic_dummy.o \
-		message.o \
+		message_queue.o \
 		rewind.o \
 		movie.o \
 		gfx/gfx_common.o \

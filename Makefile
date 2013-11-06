@@ -12,7 +12,7 @@ OBJ = frontend/frontend.o \
 		settings.o \
 		dynamic.o \
 		dynamic_dummy.o \
-		message.o \
+		message_queue.o \
 		rewind.o \
 		gfx/gfx_common.o \
 		input/input_common.o \

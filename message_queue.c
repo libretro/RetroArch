@@ -13,9 +13,10 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "message.h"
 #include <stdlib.h>
 #include <string.h>
+#include <stddef.h>
+#include "message_queue.h"
 #include "boolean.h"
 #include "compat/posix_string.h"
 

@@ -371,7 +371,7 @@
     <ClInclude Include="..\..\file.h" />
     <ClInclude Include="..\..\general.h" />
     <ClInclude Include="..\..\libretro.hpp" />
-    <ClInclude Include="..\..\message.h" />
+    <ClInclude Include="..\..\message_queue.h" />
     <ClInclude Include="..\..\netplay.h" />
     <ClInclude Include="..\..\rewind.h" />
     <ClInclude Include="..\..\screenshot.h" />

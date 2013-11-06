@@ -259,7 +259,7 @@
     </ClCompile>
     <ClCompile Include="..\..\input\autoconf\builtin_win.c">
     </ClCompile>
-    <ClCompile Include="..\..\message.c">
+    <ClCompile Include="..\..\message_queue.c">
     </ClCompile>
     <ClCompile Include="..\..\movie.c">
     </ClCompile>
