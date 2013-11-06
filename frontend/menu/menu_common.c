@@ -1878,6 +1878,15 @@ void menu_populate_entries(void *data, unsigned menu_type)
          break;
       case RGUI_SETTINGS_OPTIONS:
          rgui_list_clear(rgui->selection_buf);
+         rgui_list_push(rgui->selection_buf, "Video Options", RGUI_SETTINGS_VIDEO_OPTIONS, 0);
+         rgui_list_push(rgui->selection_buf, "Audio Options", RGUI_SETTINGS_AUDIO_OPTIONS, 0);
+         rgui_list_push(rgui->selection_buf, "Input Options", RGUI_SETTINGS_INPUT_OPTIONS, 0);
+         rgui_list_push(rgui->selection_buf, "Path Options", RGUI_SETTINGS_PATH_OPTIONS, 0);
+         if (g_extern.main_is_init && !g_extern.libretro_dummy)
+         {
+            if (g_extern.system.disk_control.get_num_images)
+               rgui_list_push(rgui->selection_buf, "Disk Options", RGUI_SETTINGS_DISK_OPTIONS, 0);
+         }
          rgui_list_push(rgui->selection_buf, "Rewind", RGUI_SETTINGS_REWIND_ENABLE, 0);
          rgui_list_push(rgui->selection_buf, "Rewind Granularity", RGUI_SETTINGS_REWIND_GRANULARITY, 0);
 #ifdef HAVE_SCREENSHOTS
@@ -1968,17 +1977,11 @@ void menu_populate_entries(void *data, unsigned menu_type)
          }
 
          rgui_list_push(rgui->selection_buf, "Core Options", RGUI_SETTINGS_CORE_OPTIONS, 0);
-         rgui_list_push(rgui->selection_buf, "Video Options", RGUI_SETTINGS_VIDEO_OPTIONS, 0);
-         rgui_list_push(rgui->selection_buf, "Audio Options", RGUI_SETTINGS_AUDIO_OPTIONS, 0);
-         rgui_list_push(rgui->selection_buf, "Input Options", RGUI_SETTINGS_INPUT_OPTIONS, 0);
-         rgui_list_push(rgui->selection_buf, "Path Options", RGUI_SETTINGS_PATH_OPTIONS, 0);
          rgui_list_push(rgui->selection_buf, "Settings", RGUI_SETTINGS_OPTIONS, 0);
          rgui_list_push(rgui->selection_buf, "Drivers", RGUI_SETTINGS_DRIVERS, 0);
 
          if (g_extern.main_is_init && !g_extern.libretro_dummy)
          {
-            if (g_extern.system.disk_control.get_num_images)
-               rgui_list_push(rgui->selection_buf, "Disk Options", RGUI_SETTINGS_DISK_OPTIONS, 0);
             rgui_list_push(rgui->selection_buf, "Save State", RGUI_SETTINGS_SAVESTATE_SAVE, 0);
             rgui_list_push(rgui->selection_buf, "Load State", RGUI_SETTINGS_SAVESTATE_LOAD, 0);
 #ifdef HAVE_SCREENSHOTS
