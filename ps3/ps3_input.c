@@ -77,7 +77,7 @@ typedef struct ps3_input
    sensor_t accelerometer_state[MAX_PADS];
 } ps3_input_t;
 
-int16_t analog_state[MAX_PADS][2][2];
+uint8_t analog_state[MAX_PADS][2][2];
 
 static void ps3_input_poll(void *data)
 {
@@ -132,10 +132,10 @@ static void ps3_input_poll(void *data)
          *state_cur |= (state_tmp.button[CELL_PAD_BTN_OFFSET_DIGITAL2] & CELL_PAD_CTRL_R2) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_R2) : 0;
          *state_cur |= (state_tmp.button[CELL_PAD_BTN_OFFSET_DIGITAL2] & CELL_PAD_CTRL_L2) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_L2) : 0;
          *state_cur |= (state_tmp.button[CELL_PAD_BTN_OFFSET_DIGITAL2] & CELL_PAD_CTRL_L2) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_L2) : 0;
-         analog_state[port][RETRO_DEVICE_INDEX_ANALOG_LEFT ][RETRO_DEVICE_ID_ANALOG_X] = (int16_t)state_tmp.button[CELL_PAD_BTN_OFFSET_ANALOG_LEFT_X];
-         analog_state[port][RETRO_DEVICE_INDEX_ANALOG_LEFT ][RETRO_DEVICE_ID_ANALOG_Y] = (int16_t)state_tmp.button[CELL_PAD_BTN_OFFSET_ANALOG_LEFT_Y];
-         analog_state[port][RETRO_DEVICE_INDEX_ANALOG_RIGHT][RETRO_DEVICE_ID_ANALOG_X] = (int16_t)state_tmp.button[CELL_PAD_BTN_OFFSET_ANALOG_RIGHT_X];
-         analog_state[port][RETRO_DEVICE_INDEX_ANALOG_RIGHT][RETRO_DEVICE_ID_ANALOG_Y] = (int16_t)state_tmp.button[CELL_PAD_BTN_OFFSET_ANALOG_RIGHT_Y];
+         analog_state[port][RETRO_DEVICE_INDEX_ANALOG_LEFT ][RETRO_DEVICE_ID_ANALOG_X] = state_tmp.button[CELL_PAD_BTN_OFFSET_ANALOG_LEFT_X];
+         analog_state[port][RETRO_DEVICE_INDEX_ANALOG_LEFT ][RETRO_DEVICE_ID_ANALOG_Y] = state_tmp.button[CELL_PAD_BTN_OFFSET_ANALOG_LEFT_Y];
+         analog_state[port][RETRO_DEVICE_INDEX_ANALOG_RIGHT][RETRO_DEVICE_ID_ANALOG_X] = state_tmp.button[CELL_PAD_BTN_OFFSET_ANALOG_RIGHT_X];
+         analog_state[port][RETRO_DEVICE_INDEX_ANALOG_RIGHT][RETRO_DEVICE_ID_ANALOG_Y] = state_tmp.button[CELL_PAD_BTN_OFFSET_ANALOG_RIGHT_Y];
          ps3->accelerometer_state[port].x = state_tmp.button[CELL_PAD_BTN_OFFSET_SENSOR_X];
          ps3->accelerometer_state[port].y = state_tmp.button[CELL_PAD_BTN_OFFSET_SENSOR_Y];
          ps3->accelerometer_state[port].z = state_tmp.button[CELL_PAD_BTN_OFFSET_SENSOR_Z];
@@ -210,7 +210,12 @@ static int16_t ps3_input_state(void *data, const struct retro_keybind **binds,
             retval = (ps3->state[port] & button) ? 1 : 0;
             break;
          case RETRO_DEVICE_ANALOG:
-            retval = analog_state[port][index][id];
+            {
+               int analog = (analog_state[port][index][id] - 128) * 0x0101;
+               if (analog < -0x7fff)
+                  analog = -0x7fff;
+               retval = analog;
+            }
             break;
          case RETRO_DEVICE_SENSOR_ACCELEROMETER:
             switch (id)
