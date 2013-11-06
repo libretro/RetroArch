@@ -32,6 +32,14 @@
 
 #include "retroarch_logger.h"
 
+// Some platforms do not set this value.
+// Just assume a value. It's usually 4KiB.
+// Platforms with a known value (like Win32)
+// set this value explicitly in platform specific headers.
+#ifndef PATH_MAX
+#define PATH_MAX 4096
+#endif
+
 #ifndef max
 #define max(a, b) ((a) > (b) ? (a) : (b))
 #endif
