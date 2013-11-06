@@ -23,8 +23,10 @@
 
 #if defined(IS_SALAMANDER) || defined(RARCH_DUMMY_LOG)
 #define LOG_FILE (stderr)
+#elif defined(HAVE_FILE_LOGGER)
+#define LOG_FILE (g_extern.log_file)
 #else
-#define LOG_FILE (g_extern.log_file ? g_extern.log_file : stderr)
+#define LOG_FILE (stderr)
 #endif
 
 #if defined(RARCH_CONSOLE) && (defined(HAVE_LOGGER) || defined(_XBOX1))

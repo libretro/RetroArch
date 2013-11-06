@@ -13,8 +13,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "file.h"
-#include "general.h"
+#include "file_path.h"
 #include <stdlib.h>
 #include "boolean.h"
 #include <string.h>
@@ -22,6 +21,7 @@
 #include <errno.h>
 #include "compat/strl.h"
 #include "compat/posix_string.h"
+#include "miscellaneous.h"
 
 #if defined(__CELLOS_LV2__) && !defined(__PSL1GHT__) || defined(__BLACKBERRY_QNX__)
 #include <unistd.h> //stat() is defined here
