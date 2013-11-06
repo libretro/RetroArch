@@ -17,6 +17,14 @@
 #ifndef __RARCH_MISCELLANEOUS_H
 #define __RARCH_MISCELLANEOUS_H
 
+#if defined(__CELLOS_LV2__) && !defined(__PSL1GHT__)
+#include <sys/timer.h>
+#elif defined(XENON)
+#include <time/time.h>
+#else
+#include <time.h>
+#endif
+
 #include "retroarch_logger.h"
 
 #ifndef max

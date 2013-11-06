@@ -16,10 +16,10 @@
 // SHA256 implementation from bSNES. Written by valditx.
 //
 
-#include "general.h"
-#include "hash.h"
 #include <string.h>
 #include <stdio.h>
+#include "hash.h"
+#include "miscellaneous.h"
 
 #define SWAP32(x) ((uint32_t)(           \
          (((uint32_t)(x) & 0x000000ff) << 24) | \

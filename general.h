@@ -19,7 +19,6 @@
 
 #include "boolean.h"
 #include <stdio.h>
-#include <time.h>
 #include <limits.h>
 #include <setjmp.h>
 #include "driver.h"
@@ -52,13 +51,7 @@
 // Platform-specific headers
 // PS3
 #if defined(__CELLOS_LV2__) && !defined(__PSL1GHT__)
-#include <sys/timer.h>
 #include "ps3/ps3_input.h"
-#endif
-
-// libxenon
-#ifdef XENON
-#include <time/time.h>
 #endif
 
 // Windows
