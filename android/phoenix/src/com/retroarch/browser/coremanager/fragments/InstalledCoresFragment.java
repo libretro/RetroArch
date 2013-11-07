@@ -21,23 +21,51 @@ import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemLongClickListener;
 import android.widget.ArrayAdapter;
-import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
 /**
  * {@link ListFragment} that displays all of the currently installed cores
+ * <p>
+ * In terms of layout, this is the fragment that is placed on the
+ * left side of the screen within the core manager
  */
 public final class InstalledCoresFragment extends ListFragment
 {
+	// Callback for the interface.
+	private OnCoreItemClickedListener callback;
+
 	// Adapter backing this ListFragment.
 	private InstalledCoresAdapter adapter;
 
-	@Override
-	public void onCreate(Bundle savedInstanceState)
+	/**
+	 * Interface that a parent fragment must implement
+	 * in order to display the core info view.
+	 */
+	interface OnCoreItemClickedListener
 	{
-		super.onCreate(savedInstanceState);
+		/**
+		 * The action to perform when a core is selected within the list view.
+		 * 
+		 * @param position The position of the item in the list.
+		 * @param core     A reference to the actual {@link ModuleWrapper}
+		 *                 represented by that list item.
+		 */
+		void onCoreItemClicked(int position, ModuleWrapper core);
+	}
+
+	@Override
+	public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState)
+	{
+		// Inflate the layout for this ListFragment.
+		ListView parentView = (ListView) inflater.inflate(R.layout.coremanager_listview, container, false);
+
+		// Set the long click listener.
+		parentView.setOnItemLongClickListener(itemLongClickListener);
+
+		// Get the callback. (implemented within InstalledCoresManagerFragment).
+		callback = (OnCoreItemClickedListener) getParentFragment();
 
 		// The list of items that will be added to the adapter backing this ListFragment.
 		final List<ModuleWrapper> items = new ArrayList<ModuleWrapper>();
@@ -48,58 +76,59 @@ public final class InstalledCoresFragment extends ListFragment
 
 		// Populate the list
 		final File[] libs = new File(getActivity().getApplicationInfo().dataDir, "/cores").listFiles();
-		for (File lib : libs)
+		if (libs != null)
 		{
-			String libName = lib.getName();
-
-			// Never append a NEON lib if we don't have NEON.
-			if (libName.contains("neon") && !supportsNeon)
-				continue;
-
-			// If we have a NEON version with NEON capable CPU,
-			// never append a non-NEON version.
-			if (supportsNeon && !libName.contains("neon"))
+			for (File lib : libs)
 			{
-				boolean hasNeonVersion = false;
-				for (File lib_ : libs)
-				{
-					String otherName = lib_.getName();
-					String baseName = libName.replace(".so", "");
-
-					if (otherName.contains("neon") && otherName.startsWith(baseName))
-					{
-						hasNeonVersion = true;
-						break;
-					}
-				}
-
-				if (hasNeonVersion)
+				String libName = lib.getName();
+	
+				// Never append a NEON lib if we don't have NEON.
+				if (libName.contains("neon") && !supportsNeon)
 					continue;
+	
+				// If we have a NEON version with NEON capable CPU,
+				// never append a non-NEON version.
+				if (supportsNeon && !libName.contains("neon"))
+				{
+					boolean hasNeonVersion = false;
+					for (File lib_ : libs)
+					{
+						String otherName = lib_.getName();
+						String baseName = libName.replace(".so", "");
+	
+						if (otherName.contains("neon") && otherName.startsWith(baseName))
+						{
+							hasNeonVersion = true;
+							break;
+						}
+					}
+	
+					if (hasNeonVersion)
+						continue;
+				}
+	
+				// Add it to the list.
+				items.add(new ModuleWrapper(getActivity(), lib));
 			}
-
-			// Add it to the list.
-			items.add(new ModuleWrapper(getActivity(), lib));
 		}
 
 		// Sort the list alphabetically
 		Collections.sort(items);
 
 		// Initialize and set the backing adapter for this ListFragment.
-		adapter = new InstalledCoresAdapter(getActivity(), R.layout.coremanager_list_item, items);
-		setListAdapter(adapter);
+		adapter = new InstalledCoresAdapter(getActivity(), android.R.layout.simple_list_item_2, items);
+		parentView.setAdapter(adapter);
+
+		return parentView;
 	}
 
 	@Override
-	public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState)
+	public void onListItemClick(ListView l, View v, int position, long id)
 	{
-		// Inflate the layout for this ListFragment.
-		View parentView = inflater.inflate(R.layout.coremanager_listview, container, false);
-		
-		// Set the long click listener.
-		ListView mainList = (ListView) parentView.findViewById(android.R.id.list);
-		mainList.setOnItemLongClickListener(itemLongClickListener);
+		callback.onCoreItemClicked(position, adapter.getItem(position));
 
-		return mainList;
+		// Set the item as checked so it highlights in the two-fragment view.
+		getListView().setItemChecked(position, true);
 	}
 
 	// This will be the handler for long clicks on individual list items in this ListFragment.
@@ -181,9 +210,8 @@ public final class InstalledCoresFragment extends ListFragment
 			final ModuleWrapper item = items.get(position);
 			if (item != null)
 			{
-				TextView title    = (TextView) convertView.findViewById(R.id.CoreManagerListItemTitle);
-				TextView subtitle = (TextView) convertView.findViewById(R.id.CoreManagerListItemSubTitle);
-				ImageView icon    = (ImageView) convertView.findViewById(R.id.CoreManagerListItemIcon);
+				TextView title    = (TextView) convertView.findViewById(android.R.id.text1);
+				TextView subtitle = (TextView) convertView.findViewById(android.R.id.text2);
 
 				if (title != null)
 				{
@@ -193,11 +221,6 @@ public final class InstalledCoresFragment extends ListFragment
 				if (subtitle != null)
 				{
 					subtitle.setText(item.getSubText());
-				}
-
-				if (icon != null)
-				{
-					// TODO: Set core icon.
 				}
 			}
 
