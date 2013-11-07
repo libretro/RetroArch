@@ -59,9 +59,7 @@
 #endif
 
 struct texture_image *menu_texture;
-#ifdef HAVE_MENU_PANEL
 struct texture_image *menu_panel;
-#endif
 
 static void render_background(rgui_handle_t *rgui)
 {
@@ -383,9 +381,7 @@ static void *rgui_init(void)
    rgui_handle_t *rgui = (rgui_handle_t*)calloc(1, sizeof(*rgui));
 
    menu_texture = (struct texture_image*)calloc(1, sizeof(*menu_texture));
-#ifdef HAVE_MENU_PANEL
    menu_panel = (struct texture_image*)calloc(1, sizeof(*menu_panel));
-#endif
 
    rgui_init_textures(rgui);
 
@@ -397,7 +393,6 @@ static void rgui_free(void *data)
    rgui_handle_t *rgui = (rgui_handle_t*)data;
 
 #ifdef _XBOX1
-#ifdef HAVE_MENU_PANEL
    if (menu_panel->vertex_buf)
    {
       menu_panel->vertex_buf->Release();
@@ -408,7 +403,7 @@ static void rgui_free(void *data)
       menu_panel->pixels->Release();
       menu_panel->pixels = NULL;
    }
-#endif
+
    if (menu_texture->vertex_buf)
    {
       menu_texture->vertex_buf->Release();
@@ -420,13 +415,11 @@ static void rgui_free(void *data)
       menu_texture->pixels = NULL;
    }
 #else
-#ifdef HAVE_MENU_PANEL
    if (menu_panel)
    {
       free(menu_panel->pixels);
       menu_panel->pixels = NULL;
    }
-#endif
 
    if (menu_texture)
    {
