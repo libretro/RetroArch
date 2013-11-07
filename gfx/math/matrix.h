@@ -16,7 +16,7 @@
 #ifndef MATH_MATRIX_H__
 #define MATH_MATRIX_H__
 
-// Colunm-major matrix (OpenGL-style).
+// Column-major matrix (OpenGL-style).
 // Reimplements functionality from FF OpenGL pipeline to be able to work on GLES 2.0 and modern GL variants.
 typedef struct math_matrix
 {
