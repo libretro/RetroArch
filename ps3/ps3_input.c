@@ -198,8 +198,7 @@ static int16_t ps3_input_state(void *data, const struct retro_keybind **binds,
       unsigned index, unsigned id)
 {
    ps3_input_t *ps3 = (ps3_input_t*)data;
-
-   uint64_t button = binds[port][id].joykey;
+   uint64_t button;
    int16_t retval = 0;
 
    if (port < ps3->pads_connected)
@@ -207,6 +206,7 @@ static int16_t ps3_input_state(void *data, const struct retro_keybind **binds,
       switch (device)
       {
          case RETRO_DEVICE_JOYPAD:
+            button = binds[port][id].joykey;
             retval = (ps3->state[port] & button) ? 1 : 0;
             break;
          case RETRO_DEVICE_ANALOG:
@@ -236,6 +236,8 @@ static int16_t ps3_input_state(void *data, const struct retro_keybind **binds,
             retval = ps3_mouse_device_state(data, port, id);
             break;
 #endif
+         default:
+            return 0;
       }
    }
 
