@@ -76,6 +76,10 @@ core_info_list_t *core_info_list_new(const char *modules_path)
          if (config_get_string(core_info[i].data, "supported_extensions", &core_info[i].supported_extensions) &&
                core_info[i].supported_extensions)
             core_info[i].supported_extensions_list = string_split(core_info[i].supported_extensions, "|");
+
+         if (config_get_string(core_info[i].data, "authors", &core_info[i].authors) &&
+               core_info[i].authors)
+            core_info[i].authors_list = string_split(core_info[i].authors, "|");
       }
 
       if (!core_info[i].display_name)
@@ -129,7 +133,9 @@ void core_info_list_free(core_info_list_t *core_info_list)
       free(core_info_list->list[i].path);
       free(core_info_list->list[i].display_name);
       free(core_info_list->list[i].supported_extensions);
+      free(core_info_list->list[i].authors);
       string_list_free(core_info_list->list[i].supported_extensions_list);
+      string_list_free(core_info_list->list[i].authors_list);
       config_file_free(core_info_list->list[i].data);
    }
 

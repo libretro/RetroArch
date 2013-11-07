@@ -29,7 +29,9 @@ typedef struct {
    config_file_t *data;
    char *display_name;
    char *supported_extensions;
+   char *authors;
    struct string_list *supported_extensions_list;
+   struct string_list *authors_list;
 } core_info_t;
 
 typedef struct {
