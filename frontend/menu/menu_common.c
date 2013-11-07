@@ -1305,12 +1305,12 @@ static int rgui_iterate(void *data, unsigned action)
                      libretro_free_system_info(&rgui->info);
                      libretro_get_system_info(g_settings.libretro, &rgui->info,
                            &rgui->load_no_rom);
+                     g_extern.lifecycle_state |= (1ULL << MODE_LOAD_GAME);
 #else
                      rarch_environment_cb(RETRO_ENVIRONMENT_SET_LIBRETRO_PATH, (void*)g_settings.libretro);
                      rarch_environment_cb(RETRO_ENVIRONMENT_EXEC, (void*)g_extern.fullpath);
 #endif
 
-                     g_extern.lifecycle_state |= (1ULL << MODE_LOAD_GAME);
                      rgui_flush_menu_stack_type(rgui, RGUI_SETTINGS);
                      rgui->msg_force = true;
                      ret = -1;
