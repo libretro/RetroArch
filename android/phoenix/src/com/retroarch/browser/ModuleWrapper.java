@@ -22,6 +22,7 @@ public final class ModuleWrapper implements IconAdapterItem, Comparable<ModuleWr
 	private final String manufacturer;
 	private final String systemName;
 	private final String license;
+	private final List<String> authors;
 	private final List<String> supportedExtensions;
 
 	/**
@@ -54,28 +55,39 @@ public final class ModuleWrapper implements IconAdapterItem, Comparable<ModuleWr
 			final ConfigFile infoFile = new ConfigFile(infoFilePath);
 	
 			// Now read info out of the info file. Make them an empty string if the key doesn't exist.
-			this.displayName  = (infoFile.keyExists("display_name")) ? infoFile.getString("display_name") : "";
-			this.coreName     = (infoFile.keyExists("corename"))     ? infoFile.getString("corename")     : "";
-			this.systemName   = (infoFile.keyExists("systemname"))   ? infoFile.getString("systemname")   : "";
-			this.manufacturer = (infoFile.keyExists("manufacturer")) ? infoFile.getString("manufacturer") : "";
-			this.license      = (infoFile.keyExists("license"))      ? infoFile.getString("license")      : "";
+			this.displayName  = (infoFile.keyExists("display_name")) ? infoFile.getString("display_name") : "N/A";
+			this.coreName     = (infoFile.keyExists("corename"))     ? infoFile.getString("corename")     : "N/A";
+			this.systemName   = (infoFile.keyExists("systemname"))   ? infoFile.getString("systemname")   : "N/A";
+			this.manufacturer = (infoFile.keyExists("manufacturer")) ? infoFile.getString("manufacturer") : "N/A";
+			this.license      = (infoFile.keyExists("license"))      ? infoFile.getString("license")      : "N/A";
 	
-			// Getting supported extensions is a little different.
+			// Getting supported extensions and authors is a little different.
 			// We need to split at every '|' character, since it is
 			// the delimiter for a new extension that the core supports.
 			//
 			// Cores that don't have multiple extensions supported
-			// don't contain the '|' delimiter, so we just create a String array with
-			// a size of 1, and just directly assign the retrieved extensions to it.
+			// don't contain the '|' delimiter, so we just create a String list
+			// and just directly assign the retrieved extensions to it.
 			final String supportedExts = infoFile.getString("supported_extensions");
 			if (supportedExts != null && supportedExts.contains("|"))
 			{
-				this.supportedExtensions = new ArrayList<String>(Arrays.asList(supportedExts.split("|")));
+				this.supportedExtensions = new ArrayList<String>(Arrays.asList(supportedExts.split("\\|")));
 			}
 			else
 			{
-				this.supportedExtensions = new ArrayList<String>(); 
+				this.supportedExtensions = new ArrayList<String>();
 				this.supportedExtensions.add(supportedExts);
+			}
+
+			final String emuAuthors = infoFile.getString("authors");
+			if (emuAuthors != null && emuAuthors.contains("|"))
+			{
+				this.authors = new ArrayList<String>(Arrays.asList(emuAuthors.split("\\|")));
+			}
+			else
+			{
+				this.authors = new ArrayList<String>();
+				this.authors.add(emuAuthors);
 			}
 		}
 		else // No info file.
@@ -84,6 +96,7 @@ public final class ModuleWrapper implements IconAdapterItem, Comparable<ModuleWr
 			this.systemName = "N/A";
 			this.manufacturer = "N/A";
 			this.license = "N/A";
+			this.authors = new ArrayList<String>();
 			this.supportedExtensions = new ArrayList<String>();
 			this.coreName = coreName;
 		}
@@ -110,6 +123,26 @@ public final class ModuleWrapper implements IconAdapterItem, Comparable<ModuleWr
 	}
 
 	/**
+	 * Gets the internal core name for this wrapped core.
+	 * 
+	 * @return the internal core name for this wrapped core.
+	 */
+	public String getInternalName()
+	{
+		return coreName;
+	}
+
+	/**
+	 * Gets the name of the system that is emulated by this wrapped core.
+	 * 
+	 * @return the name of the system that is emulated by this wrapped core.
+	 */
+	public String getEmulatedSystemName()
+	{
+		return systemName;
+	}
+
+	/**
 	 * Gets the license that this core is protected under.
 	 * 
 	 * @return the license that this core is protected under.
@@ -129,6 +162,16 @@ public final class ModuleWrapper implements IconAdapterItem, Comparable<ModuleWr
 	public String getManufacturer()
 	{
 		return manufacturer;
+	}
+
+	/**
+	 * Gets the list of authors of this emulator core.
+	 * 
+	 * @return the list of authors of this emulator core.
+	 */
+	public List<String> getEmulatorAuthors()
+	{
+		return authors;
 	}
 
 	/**

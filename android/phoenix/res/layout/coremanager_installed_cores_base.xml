@@ -1,0 +1,7 @@
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_weight="1"
+    android:id="@+id/installed_cores_fragment_container1"
+    android:layout_width="0dp"
+    android:layout_height="match_parent" />
+
+
