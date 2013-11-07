@@ -20,7 +20,7 @@
 #include "../../general.h"
 #include "../../xdk/xdk_resources.h"
 
-#define FONT_SCALE ((g_extern.lifecycle_mode_state & (1ULL << MODE_MENU_HD)) ? 2 : 1)
+#define FONT_SCALE ((g_extern.lifecycle_state & (1ULL << MODE_MENU_HD)) ? 2 : 1)
 
 typedef struct GLYPH_ATTR
 {
@@ -457,7 +457,7 @@ static void xdk_render_msg(void *driver, const char *str_msg, void *parms)
    }
    else
    {
-      x = (g_extern.lifecycle_mode_state & (1ULL << MODE_MENU_HD)) ? 160 : 100;
+      x = (g_extern.lifecycle_state & (1ULL << MODE_MENU_HD)) ? 160 : 100;
       y = 120;
    }
 

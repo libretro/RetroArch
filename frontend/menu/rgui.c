@@ -263,7 +263,7 @@ static void rgui_render(void *data)
    rgui_handle_t *rgui = (rgui_handle_t*)data;
 
    if (rgui->need_refresh && 
-         (g_extern.lifecycle_mode_state & (1ULL << MODE_MENU))
+         (g_extern.lifecycle_state & (1ULL << MODE_MENU))
          && !rgui->msg_force)
       return;
 
@@ -537,7 +537,7 @@ static void *rgui_init(void)
       RARCH_ERR("No font bitmap or binary, abort");
       /* TODO - should be refactored - perhaps don't do rarch_fail but instead
        * exit program */
-      g_extern.lifecycle_mode_state &= ~((1ULL << MODE_MENU) | (1ULL << MODE_GAME));
+      g_extern.lifecycle_state &= ~((1ULL << MODE_MENU) | (1ULL << MODE_GAME));
       return NULL;
    }
 
@@ -561,7 +561,7 @@ int rgui_input_postprocess(void *data, uint64_t old_state)
          g_extern.main_is_init &&
          !g_extern.libretro_dummy)
    {
-      g_extern.lifecycle_mode_state |= (1ULL << MODE_GAME);
+      g_extern.lifecycle_state |= (1ULL << MODE_GAME);
       ret = -1;
    }
 

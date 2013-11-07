@@ -123,7 +123,7 @@ static void rgui_render(void *data)
    font_params_t font_parms;
 
    if (rgui->need_refresh && 
-         (g_extern.lifecycle_mode_state & (1ULL << MODE_MENU))
+         (g_extern.lifecycle_state & (1ULL << MODE_MENU))
          && !rgui->msg_force)
       return; size_t begin = rgui->selection_ptr >= (ENTRIES_HEIGHT / 2) ?  (rgui->selection_ptr - (ENTRIES_HEIGHT / 2)) : 0;
    size_t end = (rgui->selection_ptr + ENTRIES_HEIGHT) <= rgui->selection_buf->size ?
@@ -469,7 +469,7 @@ int rgui_input_postprocess(void *data, uint64_t old_state)
          g_extern.main_is_init &&
          !g_extern.libretro_dummy)
    {
-      g_extern.lifecycle_mode_state |= (1ULL << MODE_GAME);
+      g_extern.lifecycle_state |= (1ULL << MODE_GAME);
       ret = -1;
    }
 

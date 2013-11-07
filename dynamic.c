@@ -801,12 +801,12 @@ bool rarch_environment_cb(unsigned cmd, void *data)
          else
             *g_extern.fullpath = '\0';
 
-#if !defined( HAVE_DYNAMIC) && defined(RARCH_CONSOLE)
-         g_extern.lifecycle_mode_state &= ~(1ULL << MODE_GAME);
-         g_extern.lifecycle_mode_state |= (1ULL << MODE_EXITSPAWN);
-         g_extern.lifecycle_mode_state |= (1ULL << MODE_EXITSPAWN_START_GAME);
+#if defined(RARCH_CONSOLE)
+         g_extern.lifecycle_state &= ~(1ULL << MODE_GAME);
+         g_extern.lifecycle_state |= (1ULL << MODE_EXITSPAWN);
+         g_extern.lifecycle_state |= (1ULL << MODE_EXITSPAWN_START_GAME);
 #elif defined(HAVE_DYNAMIC)
-         g_extern.lifecycle_mode_state |= (1ULL << MODE_LOAD_GAME);
+         g_extern.lifecycle_state |= (1ULL << MODE_LOAD_GAME);
 #endif
 
          if (cmd == RETRO_ENVIRONMENT_EXEC_ESCAPE)

@@ -299,7 +299,7 @@ void config_set_defaults(void)
 #endif
 
 #ifdef RARCH_CONSOLE
-   g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU);
+   g_extern.lifecycle_state |= (1ULL << MODE_MENU);
 
    strlcpy(g_settings.system_directory, default_paths.system_dir, sizeof(g_settings.system_directory));
 
@@ -310,10 +310,10 @@ void config_set_defaults(void)
    // g_extern
    strlcpy(g_extern.savefile_dir, default_paths.sram_dir, sizeof(g_extern.savefile_dir));
    g_extern.console.screen.gamma_correction = DEFAULT_GAMMA;
-   g_extern.lifecycle_mode_state |= (1ULL << MODE_AUDIO_CUSTOM_BGM_ENABLE);
-   g_extern.lifecycle_mode_state |= (1ULL << MODE_VIDEO_TRIPLE_BUFFERING_ENABLE);
-   g_extern.lifecycle_mode_state |= (1ULL << MODE_VIDEO_SOFT_FILTER_ENABLE);
-   g_extern.lifecycle_mode_state |= (1ULL << MODE_VIDEO_FLICKER_FILTER_ENABLE);
+   g_extern.lifecycle_state |= (1ULL << MODE_AUDIO_CUSTOM_BGM_ENABLE);
+   g_extern.lifecycle_state |= (1ULL << MODE_VIDEO_TRIPLE_BUFFERING_ENABLE);
+   g_extern.lifecycle_state |= (1ULL << MODE_VIDEO_SOFT_FILTER_ENABLE);
+   g_extern.lifecycle_state |= (1ULL << MODE_VIDEO_FLICKER_FILTER_ENABLE);
 
    g_extern.console.screen.resolutions.current.id = 0;
    strlcpy(g_extern.savestate_dir, default_paths.savestate_dir, sizeof(g_extern.savestate_dir));
@@ -623,33 +623,33 @@ bool config_load_file(const char *path)
    if (config_get_bool(conf, "triple_buffering_enable", &triple_buffering_enable))
    {
       if (triple_buffering_enable)
-         g_extern.lifecycle_mode_state |= (1ULL << MODE_VIDEO_TRIPLE_BUFFERING_ENABLE);
+         g_extern.lifecycle_state |= (1ULL << MODE_VIDEO_TRIPLE_BUFFERING_ENABLE);
       else
-         g_extern.lifecycle_mode_state &= ~(1ULL << MODE_VIDEO_TRIPLE_BUFFERING_ENABLE);
+         g_extern.lifecycle_state &= ~(1ULL << MODE_VIDEO_TRIPLE_BUFFERING_ENABLE);
    }
 
    if (config_get_bool(conf, "custom_bgm_enable", &custom_bgm_enable))
    {
       if (custom_bgm_enable)
-         g_extern.lifecycle_mode_state |= (1ULL << MODE_AUDIO_CUSTOM_BGM_ENABLE);
+         g_extern.lifecycle_state |= (1ULL << MODE_AUDIO_CUSTOM_BGM_ENABLE);
       else
-         g_extern.lifecycle_mode_state &= ~(1ULL << MODE_AUDIO_CUSTOM_BGM_ENABLE);
+         g_extern.lifecycle_state &= ~(1ULL << MODE_AUDIO_CUSTOM_BGM_ENABLE);
    }
 
    if (config_get_bool(conf, "flicker_filter_enable", &flicker_filter_enable))
    {
       if (flicker_filter_enable)
-         g_extern.lifecycle_mode_state |= (1ULL << MODE_VIDEO_FLICKER_FILTER_ENABLE);
+         g_extern.lifecycle_state |= (1ULL << MODE_VIDEO_FLICKER_FILTER_ENABLE);
       else 
-         g_extern.lifecycle_mode_state &= ~(1ULL << MODE_VIDEO_FLICKER_FILTER_ENABLE);
+         g_extern.lifecycle_state &= ~(1ULL << MODE_VIDEO_FLICKER_FILTER_ENABLE);
    }
 
    if (config_get_bool(conf, "soft_filter_enable", &soft_filter_enable))
    {
       if (soft_filter_enable)
-         g_extern.lifecycle_mode_state |= (1ULL << MODE_VIDEO_SOFT_FILTER_ENABLE);
+         g_extern.lifecycle_state |= (1ULL << MODE_VIDEO_SOFT_FILTER_ENABLE);
       else 
-         g_extern.lifecycle_mode_state &= ~(1ULL << MODE_VIDEO_SOFT_FILTER_ENABLE);
+         g_extern.lifecycle_state &= ~(1ULL << MODE_VIDEO_SOFT_FILTER_ENABLE);
    }
 
    CONFIG_GET_INT_EXTERN(console.screen.flicker_filter_index, "flicker_filter_index");
@@ -1115,9 +1115,9 @@ bool config_save_file(const char *path)
 #ifdef _XBOX1
    config_set_int(conf, "sound_volume_level", g_extern.console.sound.volume_level);
 #endif
-   bool triple_buffering_enable_val = g_extern.lifecycle_mode_state & (1ULL << MODE_VIDEO_TRIPLE_BUFFERING_ENABLE);
-   bool soft_filter_enable_val = g_extern.lifecycle_mode_state & (1ULL << MODE_VIDEO_SOFT_FILTER_ENABLE);
-   bool flicker_filter_enable_val = g_extern.lifecycle_mode_state & (1ULL << MODE_VIDEO_FLICKER_FILTER_ENABLE);
+   bool triple_buffering_enable_val = g_extern.lifecycle_state & (1ULL << MODE_VIDEO_TRIPLE_BUFFERING_ENABLE);
+   bool soft_filter_enable_val = g_extern.lifecycle_state & (1ULL << MODE_VIDEO_SOFT_FILTER_ENABLE);
+   bool flicker_filter_enable_val = g_extern.lifecycle_state & (1ULL << MODE_VIDEO_FLICKER_FILTER_ENABLE);
 
    config_set_bool(conf, "triple_buffering_enable", triple_buffering_enable_val);
    config_set_bool(conf, "soft_filter_enable", soft_filter_enable_val);
@@ -1141,7 +1141,7 @@ bool config_save_file(const char *path)
    config_set_int(conf, "state_slot", g_extern.state_slot);
    config_set_int(conf, "audio_mute", g_extern.audio_data.mute);
 
-   bool custom_bgm_enable_val = g_extern.lifecycle_mode_state & (1ULL << MODE_AUDIO_CUSTOM_BGM_ENABLE);
+   bool custom_bgm_enable_val = g_extern.lifecycle_state & (1ULL << MODE_AUDIO_CUSTOM_BGM_ENABLE);
    config_set_bool(conf, "custom_bgm_enable", custom_bgm_enable_val);
 
    config_set_string(conf, "input_driver", g_settings.input.driver);
@@ -1317,10 +1317,10 @@ void settings_set(uint64_t settings)
 
    if (settings & (1ULL << S_TRIPLE_BUFFERING))
    {
-      if (g_extern.lifecycle_mode_state & (1ULL << MODE_VIDEO_TRIPLE_BUFFERING_ENABLE))
-         g_extern.lifecycle_mode_state &= ~(1ULL << MODE_VIDEO_TRIPLE_BUFFERING_ENABLE);
+      if (g_extern.lifecycle_state & (1ULL << MODE_VIDEO_TRIPLE_BUFFERING_ENABLE))
+         g_extern.lifecycle_state &= ~(1ULL << MODE_VIDEO_TRIPLE_BUFFERING_ENABLE);
       else
-         g_extern.lifecycle_mode_state |= (1ULL << MODE_VIDEO_TRIPLE_BUFFERING_ENABLE);
+         g_extern.lifecycle_state |= (1ULL << MODE_VIDEO_TRIPLE_BUFFERING_ENABLE);
    }
 
    if (settings & (1ULL << S_REFRESH_RATE_DECREMENT))
@@ -1354,7 +1354,7 @@ void settings_set(uint64_t settings)
       g_settings.video.rotation = ORIENTATION_NORMAL;
 
    if (settings & (1ULL << S_DEF_TRIPLE_BUFFERING))
-      g_extern.lifecycle_mode_state |= (1ULL << MODE_VIDEO_TRIPLE_BUFFERING_ENABLE);
+      g_extern.lifecycle_state |= (1ULL << MODE_VIDEO_TRIPLE_BUFFERING_ENABLE);
 
    if (settings & (1ULL << S_DEF_SAVE_STATE))
       g_extern.state_slot = 0;

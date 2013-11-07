@@ -1139,7 +1139,7 @@ static int rgui_iterate(void *data, unsigned action)
                libretro_get_system_info(g_settings.libretro, &rgui->info,
                      &rgui->load_no_rom);
 
-               g_extern.lifecycle_mode_state |= (1ULL << MODE_LOAD_GAME);
+               g_extern.lifecycle_state |= (1ULL << MODE_LOAD_GAME);
 #else
                rarch_environment_cb(RETRO_ENVIRONMENT_SET_LIBRETRO_PATH, (void*)g_settings.libretro);
                rarch_environment_cb(RETRO_ENVIRONMENT_EXEC, (void*)g_extern.fullpath);
@@ -1159,7 +1159,7 @@ static int rgui_iterate(void *data, unsigned action)
                // No ROM needed for this core, load game immediately.
                if (rgui->load_no_rom)
                {
-                  g_extern.lifecycle_mode_state |= (1ULL << MODE_LOAD_GAME);
+                  g_extern.lifecycle_state |= (1ULL << MODE_LOAD_GAME);
                   *g_extern.fullpath = '\0';
                   rgui->msg_force = true;
                   ret = -1;
@@ -1176,8 +1176,8 @@ static int rgui_iterate(void *data, unsigned action)
 #else
                fill_pathname_join(g_settings.libretro, dir, path, sizeof(g_settings.libretro));
 #endif
-               g_extern.lifecycle_mode_state &= ~(1ULL << MODE_GAME);
-               g_extern.lifecycle_mode_state |= (1ULL << MODE_EXITSPAWN);
+               g_extern.lifecycle_state &= ~(1ULL << MODE_GAME);
+               g_extern.lifecycle_state |= (1ULL << MODE_EXITSPAWN);
                ret = -1;
 #endif
 
@@ -1215,7 +1215,7 @@ static int rgui_iterate(void *data, unsigned action)
                fill_pathname_join(image, dir, path, sizeof(image));
                rarch_disk_control_append_image(image);
 
-               g_extern.lifecycle_mode_state |= 1ULL << MODE_GAME;
+               g_extern.lifecycle_state |= 1ULL << MODE_GAME;
 
                rgui_flush_menu_stack_type(rgui, RGUI_SETTINGS);
                ret = -1;
@@ -1310,7 +1310,7 @@ static int rgui_iterate(void *data, unsigned action)
                      rarch_environment_cb(RETRO_ENVIRONMENT_EXEC, (void*)g_extern.fullpath);
 #endif
 
-                     g_extern.lifecycle_mode_state |= (1ULL << MODE_LOAD_GAME);
+                     g_extern.lifecycle_state |= (1ULL << MODE_LOAD_GAME);
                      rgui_flush_menu_stack_type(rgui, RGUI_SETTINGS);
                      rgui->msg_force = true;
                      ret = -1;
@@ -1325,7 +1325,7 @@ static int rgui_iterate(void *data, unsigned action)
                else
                {
                   fill_pathname_join(g_extern.fullpath, dir, path, sizeof(g_extern.fullpath));
-                  g_extern.lifecycle_mode_state |= (1ULL << MODE_LOAD_GAME);
+                  g_extern.lifecycle_state |= (1ULL << MODE_LOAD_GAME);
 
                   rgui_flush_menu_stack_type(rgui, RGUI_SETTINGS);
                   rgui->msg_force = true;
@@ -1381,10 +1381,10 @@ bool menu_iterate(void)
    uint64_t input_state = 0;
    int input_entry_ret = 0;
 
-   if (g_extern.lifecycle_mode_state & (1ULL << MODE_MENU_PREINIT))
+   if (g_extern.lifecycle_state & (1ULL << MODE_MENU_PREINIT))
    {
       rgui->need_refresh = true;
-      g_extern.lifecycle_mode_state &= ~(1ULL << MODE_MENU_PREINIT);
+      g_extern.lifecycle_state &= ~(1ULL << MODE_MENU_PREINIT);
       rgui->old_input_state |= 1ULL << RARCH_MENU_TOGGLE;
    }
 
@@ -1395,7 +1395,7 @@ bool menu_iterate(void)
 
    if (input_key_pressed_func(RARCH_QUIT_KEY) || !video_alive_func())
    {
-      g_extern.lifecycle_mode_state |= (1ULL << MODE_GAME);
+      g_extern.lifecycle_state |= (1ULL << MODE_GAME);
       goto deinit;
    }
 
@@ -1513,7 +1513,7 @@ bool menu_replace_config(const char *path)
    // Load dummy core.
    *g_extern.fullpath = '\0';
    *g_settings.libretro = '\0'; // Load core in new config.
-   g_extern.lifecycle_mode_state |= (1ULL << MODE_LOAD_GAME);
+   g_extern.lifecycle_state |= (1ULL << MODE_LOAD_GAME);
    rgui->load_no_rom = false;
 
    return true;

@@ -243,7 +243,7 @@ returntype main_entry(signature())
       frontend_ctx->process_args(argc, argv, args);
 
    if (!initial_lifecycle_state_preinit)
-      g_extern.lifecycle_mode_state |= initial_menu_lifecycle_state;
+      g_extern.lifecycle_state |= initial_menu_lifecycle_state;
 
    if (attempt_load_game_push_history)
    {
@@ -259,18 +259,18 @@ returntype main_entry(signature())
       {
          break_loop;
       }
-      else if (g_extern.lifecycle_mode_state & (1ULL << MODE_LOAD_GAME))
+      else if (g_extern.lifecycle_state & (1ULL << MODE_LOAD_GAME))
       {
          load_menu_game_prepare();
 
          // If ROM load fails, we exit RetroArch. On console it might make more sense to go back to menu though ...
          if (load_menu_game())
-            g_extern.lifecycle_mode_state |= (1ULL << MODE_GAME);
+            g_extern.lifecycle_state |= (1ULL << MODE_GAME);
          else
          {
-            g_extern.lifecycle_mode_state = attempt_load_game_fails;
+            g_extern.lifecycle_state = attempt_load_game_fails;
 
-            if (g_extern.lifecycle_mode_state & (1ULL << MODE_EXIT))
+            if (g_extern.lifecycle_state & (1ULL << MODE_EXIT))
             {
                if (frontend_ctx && frontend_ctx->shutdown)
                   frontend_ctx->shutdown(true);
@@ -279,9 +279,9 @@ returntype main_entry(signature())
             }
          }
 
-         g_extern.lifecycle_mode_state &= ~(1ULL << MODE_LOAD_GAME);
+         g_extern.lifecycle_state &= ~(1ULL << MODE_LOAD_GAME);
       }
-      else if (g_extern.lifecycle_mode_state & (1ULL << MODE_GAME))
+      else if (g_extern.lifecycle_state & (1ULL << MODE_GAME))
       {
          if (driver.video_poke->set_aspect_ratio)
             driver.video_poke->set_aspect_ratio(driver.video_data, g_settings.video.aspect_ratio_idx);
@@ -291,16 +291,16 @@ returntype main_entry(signature())
             if (frontend_ctx && frontend_ctx->process_events)
                frontend_ctx->process_events(args);
 
-            if (!(g_extern.lifecycle_mode_state & (1ULL << MODE_GAME)))
+            if (!(g_extern.lifecycle_state & (1ULL << MODE_GAME)))
             {
                break_loop;
             }
          }
-         g_extern.lifecycle_mode_state &= ~(1ULL << MODE_GAME);
+         g_extern.lifecycle_state &= ~(1ULL << MODE_GAME);
       }
-      else if (g_extern.lifecycle_mode_state & (1ULL << MODE_MENU))
+      else if (g_extern.lifecycle_state & (1ULL << MODE_MENU))
       {
-         g_extern.lifecycle_mode_state |= 1ULL << MODE_MENU_PREINIT;
+         g_extern.lifecycle_state |= 1ULL << MODE_MENU_PREINIT;
          // Menu should always run with vsync on.
          video_set_nonblock_state_func(false);
          // Stop all rumbling when entering RGUI.
@@ -324,7 +324,7 @@ returntype main_entry(signature())
             if (frontend_ctx && frontend_ctx->process_events)
                frontend_ctx->process_events(args);
 
-            if (!(g_extern.lifecycle_mode_state & (1ULL << MODE_MENU)))
+            if (!(g_extern.lifecycle_state & (1ULL << MODE_MENU)))
             {
                break_loop;
             }
@@ -338,7 +338,7 @@ returntype main_entry(signature())
             g_extern.audio_active = false;
          }
 
-         g_extern.lifecycle_mode_state &= ~(1ULL << MODE_MENU);
+         g_extern.lifecycle_state &= ~(1ULL << MODE_MENU);
 
          // Restore libretro keyboard callback.
          g_extern.system.key_event = key_event;
@@ -384,7 +384,7 @@ returntype main_entry(signature())
    if (frontend_ctx && frontend_ctx->deinit)
       frontend_ctx->deinit(args);
 
-   if (g_extern.lifecycle_mode_state & (1ULL << MODE_EXITSPAWN) && frontend_ctx
+   if (g_extern.lifecycle_state & (1ULL << MODE_EXITSPAWN) && frontend_ctx
          && frontend_ctx->exitspawn)
       frontend_ctx->exitspawn();
 

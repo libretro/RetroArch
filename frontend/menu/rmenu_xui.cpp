@@ -271,7 +271,7 @@ HRESULT CRetroArchFileBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHandle
       if (path_file_exists(rgui->browser->list->elems[index].data))
       {
          fill_pathname_join(g_extern.fullpath, rgui->browser->current_dir.directory_path, str_buffer, sizeof(g_extern.fullpath));
-         g_extern.lifecycle_mode_state |= (1ULL << MODE_LOAD_GAME);
+         g_extern.lifecycle_state |= (1ULL << MODE_LOAD_GAME);
          process_input_ret = -1;
       }
       else if(rgui->browser->list->elems[index].attr.b)
@@ -1057,7 +1057,7 @@ HRESULT CRetroArchCoreBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHandle
          fill_pathname_join(path, rgui->browser->current_dir.directory_path, str_buffer, sizeof(path));
          rarch_environment_cb(RETRO_ENVIRONMENT_SET_LIBRETRO_PATH, (void*)path);
 
-         g_extern.lifecycle_mode_state |= (1ULL << MODE_EXITSPAWN);
+         g_extern.lifecycle_state |= (1ULL << MODE_EXITSPAWN);
          process_input_ret = -1;
       }
       else if (rgui->browser->list->elems[index].attr.b)
@@ -1093,7 +1093,7 @@ HRESULT CRetroArchMain::OnControlNavigate(XUIMessageControlNavigate *pControlNav
    xdk_d3d_video_t *vid = (xdk_d3d_video_t*)driver.video_data;
    HRESULT hr;
    int current_index;
-   bool hdmenus_allowed = (g_extern.lifecycle_mode_state & (1ULL << MODE_MENU_HD));
+   bool hdmenus_allowed = (g_extern.lifecycle_state & (1ULL << MODE_MENU_HD));
 
    current_index= XuiListGetCurSel(m_menulist, NULL);
 
@@ -1264,7 +1264,7 @@ static void* rgui_init (void)
 
    xdk_d3d_video_t *device_ptr = (xdk_d3d_video_t*)driver.video_data;
 
-   bool hdmenus_allowed = (g_extern.lifecycle_mode_state & (1ULL << MODE_MENU_HD));
+   bool hdmenus_allowed = (g_extern.lifecycle_state & (1ULL << MODE_MENU_HD));
 
    if (hdmenus_allowed)
       RARCH_LOG("HD menus enabled.\n");
@@ -1397,7 +1397,7 @@ int rgui_input_postprocess(void *data, uint64_t old_state)
    if ((rgui->trigger_state & (1ULL << RARCH_MENU_TOGGLE)) &&
       g_extern.main_is_init)
    {
-      g_extern.lifecycle_mode_state |= (1ULL << MODE_GAME);
+      g_extern.lifecycle_state |= (1ULL << MODE_GAME);
       process_input_ret = -1;
    }
 

@@ -542,7 +542,7 @@ static void rmenu_render(void *data)
                break;
             case SETTING_PAL60_MODE:
                strlcpy(text, "PAL60 Mode", sizeof(text));
-               if (g_extern.lifecycle_mode_state & (1ULL << MODE_VIDEO_PAL_TEMPORAL_ENABLE))
+               if (g_extern.lifecycle_state & (1ULL << MODE_VIDEO_PAL_TEMPORAL_ENABLE))
                   strlcpy(setting_text, "ON", sizeof(setting_text));
                else
                   strlcpy(setting_text, "OFF", sizeof(setting_text));
@@ -562,7 +562,7 @@ static void rmenu_render(void *data)
                break;
             case SETTING_SOFT_DISPLAY_FILTER:
                strlcpy(text, "Soft Display Filter", sizeof(text));
-               snprintf(setting_text, sizeof(setting_text), (g_extern.lifecycle_mode_state & (1ULL << MODE_VIDEO_SOFT_FILTER_ENABLE)) ? "ON" : "OFF");
+               snprintf(setting_text, sizeof(setting_text), (g_extern.lifecycle_state & (1ULL << MODE_VIDEO_SOFT_FILTER_ENABLE)) ? "ON" : "OFF");
                break;
 #endif
             case SETTING_REFRESH_RATE:
@@ -576,7 +576,7 @@ static void rmenu_render(void *data)
                break;
             case SETTING_TRIPLE_BUFFERING:
                strlcpy(text, "Triple Buffering", sizeof(text));
-               snprintf(setting_text, sizeof(setting_text), (g_extern.lifecycle_mode_state & (1ULL << MODE_VIDEO_TRIPLE_BUFFERING_ENABLE)) ? "ON" : "OFF");
+               snprintf(setting_text, sizeof(setting_text), (g_extern.lifecycle_state & (1ULL << MODE_VIDEO_TRIPLE_BUFFERING_ENABLE)) ? "ON" : "OFF");
                break;
             case SETTING_SOUND_MODE:
                strlcpy(text, "Sound Output", sizeof(text));
@@ -628,7 +628,7 @@ static void rmenu_render(void *data)
 #endif
             case SETTING_ENABLE_CUSTOM_BGM:
                strlcpy(text, "Custom BGM Option", sizeof(text));
-               snprintf(setting_text, sizeof(setting_text), (g_extern.lifecycle_mode_state & (1ULL << MODE_AUDIO_CUSTOM_BGM_ENABLE)) ? "ON" : "OFF");
+               snprintf(setting_text, sizeof(setting_text), (g_extern.lifecycle_state & (1ULL << MODE_AUDIO_CUSTOM_BGM_ENABLE)) ? "ON" : "OFF");
                break;
             case SETTING_PATH_DEFAULT_ROM_DIRECTORY:
                strlcpy(text, "Browser Directory", sizeof(text));
@@ -1071,11 +1071,11 @@ static int select_file(void *data, uint64_t action)
                   break;
                case LIBRETRO_CHOICE:
                   rarch_environment_cb(RETRO_ENVIRONMENT_SET_LIBRETRO_PATH, (void*)path);
-                  g_extern.lifecycle_mode_state |= (1ULL << MODE_EXITSPAWN);
+                  g_extern.lifecycle_state |= (1ULL << MODE_EXITSPAWN);
                   return -1;
                case FILE_BROWSER_MENU:
                   strlcpy(g_extern.fullpath, path, sizeof(g_extern.fullpath));
-                  g_extern.lifecycle_mode_state |= (1ULL << MODE_LOAD_GAME);
+                  g_extern.lifecycle_state |= (1ULL << MODE_LOAD_GAME);
                   return -1;
             }
 
@@ -1209,7 +1209,7 @@ static void set_keybind_digital(unsigned default_retro_joypad_id, uint64_t actio
 
 static bool osk_callback_enter_rsound(void *data)
 {
-   if (g_extern.lifecycle_mode_state & (1ULL << MODE_OSK_ENTRY_SUCCESS))
+   if (g_extern.lifecycle_state & (1ULL << MODE_OSK_ENTRY_SUCCESS))
    {
       RARCH_LOG("OSK - Applying input data.\n");
       char tmp_str[256];
@@ -1218,13 +1218,13 @@ static bool osk_callback_enter_rsound(void *data)
       strlcpy(g_settings.audio.device, tmp_str, sizeof(g_settings.audio.device));
       goto do_exit;
    }
-   else if (g_extern.lifecycle_mode_state & (1ULL << MODE_OSK_ENTRY_FAIL))
+   else if (g_extern.lifecycle_state & (1ULL << MODE_OSK_ENTRY_FAIL))
       goto do_exit;
 
    return false;
 
 do_exit:
-   g_extern.lifecycle_mode_state &= ~((1ULL << MODE_OSK_ENTRY_SUCCESS) |
+   g_extern.lifecycle_state &= ~((1ULL << MODE_OSK_ENTRY_SUCCESS) |
          (1ULL << MODE_OSK_ENTRY_FAIL));
    return true;
 }
@@ -1240,7 +1240,7 @@ static bool osk_callback_enter_rsound_init(void *data)
 
 static bool osk_callback_enter_filename(void *data)
 {
-   if (g_extern.lifecycle_mode_state & (1ULL << MODE_OSK_ENTRY_SUCCESS))
+   if (g_extern.lifecycle_state & (1ULL << MODE_OSK_ENTRY_SUCCESS))
    {
       RARCH_LOG("OSK - Applying input data.\n");
       char tmp_str[256];
@@ -1269,12 +1269,12 @@ static bool osk_callback_enter_filename(void *data)
 
       goto do_exit;
    }
-   else if (g_extern.lifecycle_mode_state & (1ULL << MODE_OSK_ENTRY_FAIL))
+   else if (g_extern.lifecycle_state & (1ULL << MODE_OSK_ENTRY_FAIL))
       goto do_exit;
 
    return false;
 do_exit:
-   g_extern.lifecycle_mode_state &= ~((1ULL << MODE_OSK_ENTRY_SUCCESS) |
+   g_extern.lifecycle_state &= ~((1ULL << MODE_OSK_ENTRY_SUCCESS) |
          (1ULL << MODE_OSK_ENTRY_FAIL));
    return true;
 }
@@ -1344,15 +1344,15 @@ static int set_setting_action(void *data, uint8_t menu_type, unsigned switchvalu
             case RGUI_ACTION_LEFT:
             case RGUI_ACTION_RIGHT:
             case RGUI_ACTION_OK:
-               if (g_extern.lifecycle_mode_state & (1ULL << MODE_VIDEO_PAL_ENABLE))
+               if (g_extern.lifecycle_state & (1ULL << MODE_VIDEO_PAL_ENABLE))
                {
-                  if (g_extern.lifecycle_mode_state & (1ULL << MODE_VIDEO_PAL_TEMPORAL_ENABLE))
+                  if (g_extern.lifecycle_state & (1ULL << MODE_VIDEO_PAL_TEMPORAL_ENABLE))
                   {
-                     g_extern.lifecycle_mode_state &= ~(1ULL << MODE_VIDEO_PAL_TEMPORAL_ENABLE);
+                     g_extern.lifecycle_state &= ~(1ULL << MODE_VIDEO_PAL_TEMPORAL_ENABLE);
                   }
                   else
                   {
-                     g_extern.lifecycle_mode_state |= (1ULL << MODE_VIDEO_PAL_TEMPORAL_ENABLE);
+                     g_extern.lifecycle_state |= (1ULL << MODE_VIDEO_PAL_TEMPORAL_ENABLE);
                   }
 
                   driver.video->restart();
@@ -1360,9 +1360,9 @@ static int set_setting_action(void *data, uint8_t menu_type, unsigned switchvalu
                }
                break;
             case RGUI_ACTION_START:
-               if (g_extern.lifecycle_mode_state & (1ULL << MODE_VIDEO_PAL_ENABLE))
+               if (g_extern.lifecycle_state & (1ULL << MODE_VIDEO_PAL_ENABLE))
                {
-                  g_extern.lifecycle_mode_state &= ~(1ULL << MODE_VIDEO_PAL_TEMPORAL_ENABLE);
+                  g_extern.lifecycle_state &= ~(1ULL << MODE_VIDEO_PAL_TEMPORAL_ENABLE);
 
                   driver.video->restart();
                   rgui_init_textures(rgui);
@@ -1419,13 +1419,13 @@ static int set_setting_action(void *data, uint8_t menu_type, unsigned switchvalu
             case RGUI_ACTION_LEFT:
             case RGUI_ACTION_RIGHT:
             case RGUI_ACTION_OK:
-               if (g_extern.lifecycle_mode_state & (1ULL << MODE_VIDEO_SOFT_FILTER_ENABLE))
-                  g_extern.lifecycle_mode_state &= ~(1ULL << MODE_VIDEO_SOFT_FILTER_ENABLE);
+               if (g_extern.lifecycle_state & (1ULL << MODE_VIDEO_SOFT_FILTER_ENABLE))
+                  g_extern.lifecycle_state &= ~(1ULL << MODE_VIDEO_SOFT_FILTER_ENABLE);
                else
-                  g_extern.lifecycle_mode_state |= (1ULL << MODE_VIDEO_SOFT_FILTER_ENABLE);
+                  g_extern.lifecycle_state |= (1ULL << MODE_VIDEO_SOFT_FILTER_ENABLE);
                break;
             case RGUI_ACTION_START:
-               g_extern.lifecycle_mode_state |= (1ULL << MODE_VIDEO_SOFT_FILTER_ENABLE);
+               g_extern.lifecycle_state |= (1ULL << MODE_VIDEO_SOFT_FILTER_ENABLE);
                break;
          }
          break;
@@ -1444,7 +1444,7 @@ static int set_setting_action(void *data, uint8_t menu_type, unsigned switchvalu
             case RGUI_ACTION_START:
                settings_set(1ULL << S_DEF_TRIPLE_BUFFERING);
 
-               if (!(g_extern.lifecycle_mode_state & (1ULL << MODE_VIDEO_TRIPLE_BUFFERING_ENABLE)))
+               if (!(g_extern.lifecycle_state & (1ULL << MODE_VIDEO_TRIPLE_BUFFERING_ENABLE)))
                {
                   driver.video->restart();
                   rgui_init_textures(rgui);
@@ -1523,11 +1523,11 @@ static int set_setting_action(void *data, uint8_t menu_type, unsigned switchvalu
             case RGUI_ACTION_RIGHT:
             case RGUI_ACTION_OK:
 #if (CELL_SDK_VERSION > 0x340000)
-               if (g_extern.lifecycle_mode_state & (1ULL << MODE_AUDIO_CUSTOM_BGM_ENABLE))
-                  g_extern.lifecycle_mode_state &= ~(1ULL << MODE_AUDIO_CUSTOM_BGM_ENABLE);
+               if (g_extern.lifecycle_state & (1ULL << MODE_AUDIO_CUSTOM_BGM_ENABLE))
+                  g_extern.lifecycle_state &= ~(1ULL << MODE_AUDIO_CUSTOM_BGM_ENABLE);
                else
-                  g_extern.lifecycle_mode_state |= (1ULL << MODE_AUDIO_CUSTOM_BGM_ENABLE);
-               if (g_extern.lifecycle_mode_state & (1ULL << MODE_AUDIO_CUSTOM_BGM_ENABLE))
+                  g_extern.lifecycle_state |= (1ULL << MODE_AUDIO_CUSTOM_BGM_ENABLE);
+               if (g_extern.lifecycle_state & (1ULL << MODE_AUDIO_CUSTOM_BGM_ENABLE))
                   cellSysutilEnableBgmPlayback();
                else
                   cellSysutilDisableBgmPlayback();
@@ -1536,7 +1536,7 @@ static int set_setting_action(void *data, uint8_t menu_type, unsigned switchvalu
                break;
             case RGUI_ACTION_START:
 #if (CELL_SDK_VERSION > 0x340000)
-               g_extern.lifecycle_mode_state |= (1ULL << MODE_AUDIO_CUSTOM_BGM_ENABLE);
+               g_extern.lifecycle_state |= (1ULL << MODE_AUDIO_CUSTOM_BGM_ENABLE);
 #endif
                break;
          }
@@ -1693,7 +1693,7 @@ static int set_setting_action(void *data, uint8_t menu_type, unsigned switchvalu
          if (action == RGUI_ACTION_OK)
          {
             rarch_game_reset();
-            g_extern.lifecycle_mode_state |= (1ULL << MODE_GAME);
+            g_extern.lifecycle_state |= (1ULL << MODE_GAME);
             return -1;
          }
          break;
@@ -1708,9 +1708,9 @@ static int set_setting_action(void *data, uint8_t menu_type, unsigned switchvalu
       case INGAME_MENU_RETURN_TO_MULTIMAN:
          if (action == RGUI_ACTION_OK)
          {
-            g_extern.lifecycle_mode_state &= ~(1ULL << MODE_GAME);
-            g_extern.lifecycle_mode_state |= (1ULL << MODE_EXITSPAWN);
-            g_extern.lifecycle_mode_state |= (1ULL << MODE_EXITSPAWN_MULTIMAN);
+            g_extern.lifecycle_state &= ~(1ULL << MODE_GAME);
+            g_extern.lifecycle_state |= (1ULL << MODE_EXITSPAWN);
+            g_extern.lifecycle_state |= (1ULL << MODE_EXITSPAWN_MULTIMAN);
             return -1;
          }
          break;
@@ -1953,7 +1953,7 @@ static int select_setting(void *data, uint64_t action)
       case RGUI_ACTION_CANCEL:
          if (rgui->menu_type == INGAME_MENU)
          {
-            g_extern.lifecycle_mode_state |= (1ULL << MODE_GAME);
+            g_extern.lifecycle_state |= (1ULL << MODE_GAME);
             return -1;
          }
 
@@ -2134,7 +2134,7 @@ int rgui_input_postprocess(void *data, uint64_t old_state)
    if ((rgui->trigger_state & (1ULL << RARCH_MENU_TOGGLE)) &&
       g_extern.main_is_init)
    {
-      g_extern.lifecycle_mode_state |= (1ULL << MODE_GAME);
+      g_extern.lifecycle_state |= (1ULL << MODE_GAME);
       ret = -1;
    }
 

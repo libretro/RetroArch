@@ -3039,7 +3039,7 @@ static inline bool check_enter_rgui(void)
    bool rmenu_toggle = input_key_pressed_func(RARCH_MENU_TOGGLE) || (g_extern.libretro_dummy && !old_rmenu_toggle);
    if (rmenu_toggle && !old_rmenu_toggle)
    {
-      g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU);
+      g_extern.lifecycle_state |= (1ULL << MODE_MENU);
       old_rmenu_toggle = true;
       g_extern.system.frame_time_last = 0;
       return true;

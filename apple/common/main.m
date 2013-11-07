@@ -45,9 +45,9 @@ void apple_event_set_state_slot(void* userdata)
 
 void apple_event_show_rgui(void* userdata)
 {
-   const bool in_menu = g_extern.lifecycle_mode_state & (1 << MODE_MENU);
-   g_extern.lifecycle_mode_state &= ~(1ULL << (in_menu ? MODE_MENU : MODE_GAME));
-   g_extern.lifecycle_mode_state |=  (1ULL << (in_menu ? MODE_GAME : MODE_MENU));
+   const bool in_menu = g_extern.lifecycle_state & (1 << MODE_MENU);
+   g_extern.lifecycle_state &= ~(1ULL << (in_menu ? MODE_MENU : MODE_GAME));
+   g_extern.lifecycle_state |=  (1ULL << (in_menu ? MODE_GAME : MODE_MENU));
 }
 
 static void event_reload_config(void* userdata)

@@ -146,7 +146,7 @@ static void callback_sysutil_exit(uint64_t status, uint64_t param, void *userdat
    {
       case CELL_SYSUTIL_REQUEST_EXITGAME:
          gl->quitting = true;
-         g_extern.lifecycle_mode_state &= ~((1ULL << MODE_MENU) | (1ULL << MODE_GAME));
+         g_extern.lifecycle_state &= ~((1ULL << MODE_MENU) | (1ULL << MODE_GAME));
          break;
 #ifdef HAVE_OSKUTIL
       case CELL_SYSUTIL_OSKDIALOG_LOADED:
@@ -163,12 +163,12 @@ static void callback_sysutil_exit(uint64_t status, uint64_t param, void *userdat
          if (osk->outputInfo.result == CELL_OSKDIALOG_INPUT_FIELD_RESULT_OK)
          {
             RARCH_LOG("Setting MODE_OSK_ENTRY_SUCCESS.\n");
-            g_extern.lifecycle_mode_state |= (1ULL << MODE_OSK_ENTRY_SUCCESS);
+            g_extern.lifecycle_state |= (1ULL << MODE_OSK_ENTRY_SUCCESS);
          }
          else
          {
             RARCH_LOG("Setting MODE_OSK_ENTRY_FAIL.\n");
-            g_extern.lifecycle_mode_state |= (1ULL << MODE_OSK_ENTRY_FAIL);
+            g_extern.lifecycle_state |= (1ULL << MODE_OSK_ENTRY_FAIL);
          }
 
          osk->flags &= ~OSK_IN_USE;
@@ -208,7 +208,7 @@ static void get_environment_settings(int argc, char *argv[], void *args)
    // second param is multiMAN SELF file
    if(path_file_exists(argv[2]) && argc > 1 && (strcmp(argv[2], EMULATOR_CONTENT_DIR) == 0))
    {
-      g_extern.lifecycle_mode_state |= (1ULL << MODE_EXTLAUNCH_MULTIMAN);
+      g_extern.lifecycle_state |= (1ULL << MODE_EXTLAUNCH_MULTIMAN);
       RARCH_LOG("Started from multiMAN, auto-game start enabled.\n");
    }
    else
@@ -246,7 +246,7 @@ static void get_environment_settings(int argc, char *argv[], void *args)
       ret = cellGameContentPermit(contentInfoPath, default_paths.port_dir);
 
 #ifdef HAVE_MULTIMAN
-      if (g_extern.lifecycle_mode_state & (1ULL << MODE_EXTLAUNCH_MULTIMAN))
+      if (g_extern.lifecycle_state & (1ULL << MODE_EXTLAUNCH_MULTIMAN))
       {
          fill_pathname_join(contentInfoPath, "/dev_hdd0/game/", EMULATOR_CONTENT_DIR, sizeof(contentInfoPath));
          snprintf(default_paths.port_dir, sizeof(default_paths.port_dir), "/dev_hdd0/game/%s/USRDIR", EMULATOR_CONTENT_DIR);
@@ -335,7 +335,7 @@ static void system_init(void *data)
    cellScreenShotEnable();
 #endif
 #ifdef HAVE_SYSUTILS
-   //if (g_extern.lifecycle_mode_state & (1ULL << MODE_AUDIO_CUSTOM_BGM_ENABLE))
+   //if (g_extern.lifecycle_state & (1ULL << MODE_AUDIO_CUSTOM_BGM_ENABLE))
    cellSysutilEnableBgmPlayback();
 #endif
 #endif
@@ -403,7 +403,7 @@ static void system_exitspawn(void)
 #else
    char core_launch[256];
 #ifdef HAVE_MULTIMAN 
-   if (g_extern.lifecycle_mode_state & (1ULL << MODE_EXITSPAWN_MULTIMAN))
+   if (g_extern.lifecycle_state & (1ULL << MODE_EXITSPAWN_MULTIMAN))
    {
       RARCH_LOG("Boot Multiman: %s.\n", MULTIMAN_SELF_FILE);
       strlcpy(core_launch, MULTIMAN_SELF_FILE, sizeof(core_launch));
@@ -412,7 +412,7 @@ static void system_exitspawn(void)
 #endif
    strlcpy(core_launch, g_settings.libretro, sizeof(core_launch));
    bool should_load_game = false;
-   if (g_extern.lifecycle_mode_state & (1ULL << MODE_EXITSPAWN_START_GAME))
+   if (g_extern.lifecycle_state & (1ULL << MODE_EXITSPAWN_START_GAME))
       should_load_game = true;
 
    system_exec(core_launch, should_load_game);

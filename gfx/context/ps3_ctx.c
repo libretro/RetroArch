@@ -228,7 +228,7 @@ static bool gfx_ctx_init(void)
    params.depthFormat = GL_NONE;
    params.multisamplingMode = GL_MULTISAMPLING_NONE_SCE;
 
-   if (g_extern.lifecycle_mode_state & (1ULL << MODE_VIDEO_TRIPLE_BUFFERING_ENABLE))
+   if (g_extern.lifecycle_state & (1ULL << MODE_VIDEO_TRIPLE_BUFFERING_ENABLE))
    {
       RARCH_LOG("[PSGL Context]: Setting triple buffering.\n");
       params.enable |= PSGL_DEVICE_PARAMETERS_BUFFERING_MODE;
@@ -244,13 +244,13 @@ static bool gfx_ctx_init(void)
       if (params.width == 720 && params.height == 576)
       {
          RARCH_LOG("[PSGL Context]: 720x576 resolution detected, setting MODE_VIDEO_PAL_ENABLE.\n");
-         g_extern.lifecycle_mode_state |= (1ULL << MODE_VIDEO_PAL_ENABLE);
+         g_extern.lifecycle_state |= (1ULL << MODE_VIDEO_PAL_ENABLE);
       }
       else
-         g_extern.lifecycle_mode_state &= ~(1ULL << MODE_VIDEO_PAL_ENABLE);
+         g_extern.lifecycle_state &= ~(1ULL << MODE_VIDEO_PAL_ENABLE);
    }
 
-   if (g_extern.lifecycle_mode_state & (1ULL << MODE_VIDEO_PAL_TEMPORAL_ENABLE))
+   if (g_extern.lifecycle_state & (1ULL << MODE_VIDEO_PAL_TEMPORAL_ENABLE))
    {
       RARCH_LOG("[PSGL Context]: Setting temporal PAL60 mode.\n");
       params.enable |= PSGL_DEVICE_PARAMETERS_RESC_PAL_TEMPORAL_MODE;

@@ -361,7 +361,7 @@ int menu_set_settings(void *data, unsigned setting, unsigned action)
                rarch_save_state();
             else
                rarch_load_state();
-            g_extern.lifecycle_mode_state |= (1ULL << MODE_GAME);
+            g_extern.lifecycle_state |= (1ULL << MODE_GAME);
             return -1;
          }
          else if (action == RGUI_ACTION_START)
@@ -381,7 +381,7 @@ int menu_set_settings(void *data, unsigned setting, unsigned action)
          if (action == RGUI_ACTION_OK)
          {
             rarch_game_reset();
-            g_extern.lifecycle_mode_state |= (1ULL << MODE_GAME);
+            g_extern.lifecycle_state |= (1ULL << MODE_GAME);
             return -1;
          }
          break;
@@ -435,22 +435,22 @@ int menu_set_settings(void *data, unsigned setting, unsigned action)
             fill_pathname_join(g_extern.fullpath, default_paths.core_dir, SALAMANDER_FILE,
                   sizeof(g_extern.fullpath));
 #endif
-            g_extern.lifecycle_mode_state &= ~(1ULL << MODE_GAME);
-            g_extern.lifecycle_mode_state |= (1ULL << MODE_EXITSPAWN);
+            g_extern.lifecycle_state &= ~(1ULL << MODE_GAME);
+            g_extern.lifecycle_state |= (1ULL << MODE_EXITSPAWN);
             return -1;
          }
          break;
       case RGUI_SETTINGS_RESUME_GAME:
          if (action == RGUI_ACTION_OK)
          {
-            g_extern.lifecycle_mode_state |= (1ULL << MODE_GAME);
+            g_extern.lifecycle_state |= (1ULL << MODE_GAME);
             return -1;
          }
          break;
       case RGUI_SETTINGS_QUIT_RARCH:
          if (action == RGUI_ACTION_OK)
          {
-            g_extern.lifecycle_mode_state &= ~(1ULL << MODE_GAME);
+            g_extern.lifecycle_state &= ~(1ULL << MODE_GAME);
             return -1;
          }
          break;
@@ -930,12 +930,12 @@ int menu_set_settings(void *data, unsigned setting, unsigned action)
             if (g_extern.console.screen.resolutions.list[g_extern.console.screen.resolutions.current.idx] == CELL_VIDEO_OUT_RESOLUTION_576)
             {
                if (g_extern.console.screen.pal_enable)
-                  g_extern.lifecycle_mode_state |= (1ULL<< MODE_VIDEO_PAL_ENABLE);
+                  g_extern.lifecycle_state |= (1ULL<< MODE_VIDEO_PAL_ENABLE);
             }
             else
             {
-               g_extern.lifecycle_mode_state &= ~(1ULL << MODE_VIDEO_PAL_ENABLE);
-               g_extern.lifecycle_mode_state &= ~(1ULL << MODE_VIDEO_PAL_TEMPORAL_ENABLE);
+               g_extern.lifecycle_state &= ~(1ULL << MODE_VIDEO_PAL_ENABLE);
+               g_extern.lifecycle_state &= ~(1ULL << MODE_VIDEO_PAL_TEMPORAL_ENABLE);
             }
             driver.video->restart();
 #ifdef HAVE_RMENU
@@ -946,10 +946,10 @@ int menu_set_settings(void *data, unsigned setting, unsigned action)
 #endif
 #ifdef HW_RVL
       case RGUI_SETTINGS_VIDEO_SOFT_FILTER:
-         if (g_extern.lifecycle_mode_state & (1ULL << MODE_VIDEO_SOFT_FILTER_ENABLE))
-            g_extern.lifecycle_mode_state &= ~(1ULL << MODE_VIDEO_SOFT_FILTER_ENABLE);
+         if (g_extern.lifecycle_state & (1ULL << MODE_VIDEO_SOFT_FILTER_ENABLE))
+            g_extern.lifecycle_state &= ~(1ULL << MODE_VIDEO_SOFT_FILTER_ENABLE);
          else
-            g_extern.lifecycle_mode_state |= (1ULL << MODE_VIDEO_SOFT_FILTER_ENABLE);
+            g_extern.lifecycle_state |= (1ULL << MODE_VIDEO_SOFT_FILTER_ENABLE);
 
          if (driver.video_poke->apply_state_changes)
             driver.video_poke->apply_state_changes(driver.video_data);
@@ -1277,7 +1277,7 @@ void menu_set_settings_label(char *type_str, size_t type_str_size, unsigned *w, 
          break;
       case RGUI_SETTINGS_VIDEO_SOFT_FILTER:
          snprintf(type_str, type_str_size,
-               (g_extern.lifecycle_mode_state & (1ULL << MODE_VIDEO_SOFT_FILTER_ENABLE)) ? "ON" : "OFF");
+               (g_extern.lifecycle_state & (1ULL << MODE_VIDEO_SOFT_FILTER_ENABLE)) ? "ON" : "OFF");
          break;
       case RGUI_SETTINGS_VIDEO_FILTER:
          if (g_settings.video.smooth)

@@ -682,12 +682,9 @@ static void gx_resize(void *data)
 
    int x = 0, y = 0;
    unsigned width = gx->vp.full_width, height = gx->vp.full_height;
-   uint64_t lifecycle_mode_state = g_extern.lifecycle_mode_state;
-
-   (void)lifecycle_mode_state;
 
 #ifdef HW_RVL
-   VIDEO_SetTrapFilter(lifecycle_mode_state & (1ULL << MODE_VIDEO_SOFT_FILTER_ENABLE));
+   VIDEO_SetTrapFilter(g_extern.lifecycle_state & (1ULL << MODE_VIDEO_SOFT_FILTER_ENABLE));
 #endif
    GX_SetDispCopyGamma(g_extern.console.screen.gamma_correction);
 

@@ -74,28 +74,28 @@ static void mainloop(void)
             g_extern.audio_active = false;
          }
 
-         g_extern.lifecycle_mode_state &= ~(1ULL << MODE_MENU);
+         g_extern.lifecycle_state &= ~(1ULL << MODE_MENU);
       }
    }
-   else if (g_extern.lifecycle_mode_state & (1ULL << MODE_LOAD_GAME))
+   else if (g_extern.lifecycle_state & (1ULL << MODE_LOAD_GAME))
    {
       load_menu_game_prepare();
 
       // If ROM load fails, we exit RetroArch. On console it might make more sense to go back to menu though ...
       if (load_menu_game())
-         g_extern.lifecycle_mode_state |= (1ULL << MODE_GAME);
+         g_extern.lifecycle_state |= (1ULL << MODE_GAME);
       else
       {
 #ifdef RARCH_CONSOLE
-         g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU);
+         g_extern.lifecycle_state |= (1ULL << MODE_MENU);
 #else
          return;
 #endif
       }
 
-      g_extern.lifecycle_mode_state &= ~(1ULL << MODE_LOAD_GAME);
+      g_extern.lifecycle_state &= ~(1ULL << MODE_LOAD_GAME);
    }
-   else if (g_extern.lifecycle_mode_state & (1ULL << MODE_GAME))
+   else if (g_extern.lifecycle_state & (1ULL << MODE_GAME))
    {
       bool r;
       if (g_extern.is_paused && !g_extern.is_oneshot)
@@ -103,11 +103,11 @@ static void mainloop(void)
       else
          r = rarch_main_iterate();
       if (!r)
-         g_extern.lifecycle_mode_state &= ~(1ULL << MODE_GAME);
+         g_extern.lifecycle_state &= ~(1ULL << MODE_GAME);
    }
-   else if (g_extern.lifecycle_mode_state & (1ULL << MODE_MENU))
+   else if (g_extern.lifecycle_state & (1ULL << MODE_MENU))
    {
-      g_extern.lifecycle_mode_state |= 1ULL << MODE_MENU_PREINIT;
+      g_extern.lifecycle_state |= 1ULL << MODE_MENU_PREINIT;
       // Menu should always run with vsync on.
       video_set_nonblock_state_func(false);
 
@@ -134,8 +134,8 @@ int main(int argc, char *argv[])
 
 #ifdef HAVE_MENU
    menu_init();
-   g_extern.lifecycle_mode_state |= 1ULL << MODE_GAME;
-   g_extern.lifecycle_mode_state |= 1ULL << MODE_GAME_ONESHOT;
+   g_extern.lifecycle_state |= 1ULL << MODE_GAME;
+   g_extern.lifecycle_state |= 1ULL << MODE_GAME_ONESHOT;
 
    // If we started a ROM directly from command line,
    // push it to ROM history.

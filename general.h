@@ -592,8 +592,6 @@ struct global
    } console;
 
    uint64_t lifecycle_state;
-   uint64_t lifecycle_mode_state;
-
 
    // If this is non-NULL. RARCH_LOG and friends will write to this file.
    FILE *log_file;

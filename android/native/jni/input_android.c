@@ -1268,7 +1268,7 @@ static void android_input_set_keybinds(void *data, unsigned device,
                shift = 8 + (port * 8);
             }
 
-            g_extern.lifecycle_mode_state |= (1ULL << MODE_INPUT_XPERIA_PLAY_HACK);
+            g_extern.lifecycle_state |= (1ULL << MODE_INPUT_XPERIA_PLAY_HACK);
 
             android->keycode_lut[AKEYCODE_DPAD_CENTER] |=  ((RETRO_DEVICE_ID_JOYPAD_B+1)      << shift);
             android->keycode_lut[AKEYCODE_BACK] |=  ((RETRO_DEVICE_ID_JOYPAD_A+1)      << shift);
@@ -1794,7 +1794,7 @@ static void android_input_poll(void *data)
                   uint8_t unpacked = (android->keycode_lut[AKEYCODE_BACK] >> ((state_id+1) << 3)) - 1;
                   uint64_t input_state = (1ULL << unpacked);
 
-                  if (g_extern.lifecycle_mode_state & (1ULL << MODE_INPUT_XPERIA_PLAY_HACK))
+                  if (g_extern.lifecycle_state & (1ULL << MODE_INPUT_XPERIA_PLAY_HACK))
                   {
                      int meta = AKeyEvent_getMetaState(event);
                      if (!(meta & AMETA_ALT_ON))

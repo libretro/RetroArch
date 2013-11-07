@@ -312,7 +312,7 @@ static void system_exitspawn(void)
    system_exec(default_paths.libretro_path, false);
 #else
    bool should_load_game = false;
-   if (g_extern.lifecycle_mode_state & (1ULL << MODE_EXITSPAWN_START_GAME))
+   if (g_extern.lifecycle_state & (1ULL << MODE_EXITSPAWN_START_GAME))
       should_load_game = true;
 
    system_exec(g_settings.libretro, should_load_game);

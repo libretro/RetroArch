@@ -146,14 +146,7 @@ static void ps3_input_poll(void *data)
    uint64_t *state_p1 = &ps3->state[0];
    uint64_t *lifecycle_state = &g_extern.lifecycle_state;
 
-   *lifecycle_state &= ~(
-         (1ULL << RARCH_FAST_FORWARD_HOLD_KEY) | (1ULL << RARCH_LOAD_STATE_KEY) | 
-         (1ULL << RARCH_SAVE_STATE_KEY) | 
-         (1ULL << RARCH_STATE_SLOT_PLUS) | 
-         (1ULL << RARCH_STATE_SLOT_MINUS) | 
-         (1ULL << RARCH_REWIND) |
-         (1ULL << RARCH_QUIT_KEY) |
-         (1ULL << RARCH_MENU_TOGGLE));
+   *lifecycle_state &= ~((1ULL << RARCH_MENU_TOGGLE));
 
    if ((*state_p1 & (1ULL << RETRO_DEVICE_ID_JOYPAD_L3)) && (*state_p1 & (1ULL << RETRO_DEVICE_ID_JOYPAD_R3)))
       *lifecycle_state |= (1ULL << RARCH_MENU_TOGGLE);
