@@ -218,22 +218,10 @@ void gx_set_video_mode(void *data, unsigned fbWidth, unsigned lines)
       gx_mode.vfilter[6] = 0;
    }
 
-   RARCH_LOG("GX Resolution: %dx%d (%s)\n", gx_mode.fbWidth, gx_mode.efbHeight, (gx_mode.viTVMode & 3) == VI_INTERLACE ? "interlaced" : "progressive");
-
    gx->vp.full_width = gx_mode.fbWidth;
    gx->vp.full_height = gx_mode.xfbHeight;
    gx->double_strike = (modetype == VI_NON_INTERLACE);
    gx->should_resize = true;
-
-   rgui->height = gx_mode.efbHeight / (gx->double_strike ? 1 : 2);
-   rgui->height &= ~3;
-   if (rgui->height > 240)
-      rgui->height = 240;
-
-   rgui->width = gx_mode.fbWidth / (gx_mode.fbWidth < 400 ? 1 : 2);
-   rgui->width &= ~3;
-   if (rgui->width > 400)
-      rgui->width = 400;
 
    VIDEO_Configure(&gx_mode);
    VIDEO_ClearFrameBuffer(&gx_mode, g_framebuf[0], COLOR_BLACK);
@@ -258,6 +246,22 @@ void gx_set_video_mode(void *data, unsigned fbWidth, unsigned lines)
    GX_SetPixelFmt(GX_PF_RGB8_Z24, GX_ZC_LINEAR);
    GX_InvalidateTexAll();
    GX_Flush();
+   _CPU_ISR_Restore(level);
+
+   RARCH_LOG("GX Resolution: %dx%d (%s)\n", gx_mode.fbWidth, gx_mode.efbHeight, (gx_mode.viTVMode & 3) == VI_INTERLACE ? "interlaced" : "progressive");
+
+   if (rgui)
+   {
+      rgui->height = gx_mode.efbHeight / (gx->double_strike ? 1 : 2);
+      rgui->height &= ~3;
+      if (rgui->height > 240)
+         rgui->height = 240;
+
+      rgui->width = gx_mode.fbWidth / (gx_mode.fbWidth < 400 ? 1 : 2);
+      rgui->width &= ~3;
+      if (rgui->width > 400)
+         rgui->width = 400;
+   }
 
    if (tvmode == VI_PAL)
    {
@@ -274,8 +278,10 @@ void gx_set_video_mode(void *data, unsigned fbWidth, unsigned lines)
          driver_set_monitor_refresh_rate(59.94f);
    }
 
+   // don't spam the queue when scrolling through resolutions
+   msg_queue_clear(g_extern.msg_queue);
+
    g_current_framebuf = 0;
-   _CPU_ISR_Restore(level);
 }
 
 const char *gx_get_video_mode(void)
@@ -324,10 +330,22 @@ static void init_texture(void *data, unsigned width, unsigned height)
    height &= ~3;
    gx_video_t *gx = (gx_video_t*)data;
    unsigned g_filter = g_settings.video.smooth ? GX_LINEAR : GX_NEAR;
+   unsigned rgui_w, rgui_h;
+
+   if (rgui)
+   {
+      rgui_w = rgui->width;
+      rgui_h = rgui->height;
+   }
+   else
+   {
+      rgui_w = 320;
+      rgui_h = 240;
+   }
 
    GX_InitTexObj(&g_tex.obj, g_tex.data, width, height, (gx->rgb32) ? GX_TF_RGBA8 : gx->rgui_texture_enable ? GX_TF_RGB5A3 : GX_TF_RGB565, GX_CLAMP, GX_CLAMP, GX_FALSE);
    GX_InitTexObjFilterMode(&g_tex.obj, g_filter, g_filter);
-   GX_InitTexObj(&menu_tex.obj, menu_tex.data, rgui->width, rgui->height, GX_TF_RGB5A3, GX_CLAMP, GX_CLAMP, GX_FALSE);
+   GX_InitTexObj(&menu_tex.obj, menu_tex.data, rgui_w, rgui_h, GX_TF_RGB5A3, GX_CLAMP, GX_CLAMP, GX_FALSE);
    GX_InitTexObjFilterMode(&menu_tex.obj, g_filter, g_filter);
    GX_InvalidateTexAll();
 }

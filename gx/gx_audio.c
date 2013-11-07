@@ -40,9 +40,11 @@ typedef struct
    bool nonblock;
 } gx_audio_t;
 
+static volatile gx_audio_t *gx_audio_data;
+
 static void dma_callback(void)
 {
-   gx_audio_t *wa = (gx_audio_t*)driver.audio_data;
+   gx_audio_t *wa = (gx_audio_t*)gx_audio_data;
    // erase last chunk to avoid repeating audio
    memset(wa->data[wa->dma_busy], 0, CHUNK_SIZE);
 
@@ -60,6 +62,8 @@ static void *gx_audio_init(const char *device, unsigned rate, unsigned latency)
    gx_audio_t *wa = (gx_audio_t*)memalign(32, sizeof(*wa));
    if (!wa)
       return NULL;
+
+   gx_audio_data = wa;
 
    memset(wa, 0, sizeof(*wa));
 
