@@ -60,6 +60,7 @@
 
 struct texture_image *menu_texture;
 struct texture_image *menu_panel;
+static bool render_normal = true;
 
 static void render_background(rgui_handle_t *rgui)
 {
@@ -67,21 +68,64 @@ static void render_background(rgui_handle_t *rgui)
 
 static void rgui_render_messagebox(void *data, const char *message)
 {
+   rgui_handle_t *rgui = (rgui_handle_t*)data;
+   font_params_t font_parms;
+
+   size_t i, j;
+
+   if (!message || !*message)
+      return;
+
+   struct string_list *list = string_split(message, "\n");
+   if (!list)
+      return;
+   if (list->elems == 0)
+   {
+      string_list_free(list);
+      return;
+   }
+
+   for (i = 0; i < list->size; i++, j++)
+   {
+      char *msg = list->elems[i].data;
+      unsigned msglen = strlen(msg);
+      if (msglen > TERM_WIDTH)
+      {
+         msg[TERM_WIDTH - 2] = '.';
+         msg[TERM_WIDTH - 1] = '.';
+         msg[TERM_WIDTH - 0] = '.';
+         msg[TERM_WIDTH + 1] = '\0';
+         msglen = TERM_WIDTH;
+      }
+
+      font_parms.x = POSITION_EDGE_MIN + POSITION_OFFSET;
+      font_parms.y = POSITION_EDGE_MIN + POSITION_RENDER_OFFSET + (POSITION_OFFSET * j);
+      font_parms.scale = FONT_SIZE_NORMAL;
+      font_parms.color = WHITE;
+
+      if (driver.video_poke->set_osd_msg)
+         driver.video_poke->set_osd_msg(driver.video_data, msg, &font_parms);
+   }
+
+   render_normal = false;
 }
 
 
 static void rgui_render(void *data)
 {
+   if (!render_normal)
+   {
+      render_normal = true;
+      return;
+   }
+  
    rgui_handle_t *rgui = (rgui_handle_t*)data;
    font_params_t font_parms;
 
    if (rgui->need_refresh && 
          (g_extern.lifecycle_mode_state & (1ULL << MODE_MENU))
          && !rgui->msg_force)
-      return;
-
-   size_t begin = rgui->selection_ptr >= (ENTRIES_HEIGHT / 2) ?
-      (rgui->selection_ptr - (ENTRIES_HEIGHT / 2)) : 0;
+      return; size_t begin = rgui->selection_ptr >= (ENTRIES_HEIGHT / 2) ?  (rgui->selection_ptr - (ENTRIES_HEIGHT / 2)) : 0;
    size_t end = (rgui->selection_ptr + ENTRIES_HEIGHT) <= rgui->selection_buf->size ?
       rgui->selection_ptr + ENTRIES_HEIGHT : rgui->selection_buf->size;
 
@@ -331,20 +375,6 @@ static void rgui_render(void *data)
       if (driver.video_poke->set_osd_msg)
          driver.video_poke->set_osd_msg(driver.video_data, type_str_buf, &font_parms);
    }
-
-#ifdef GEKKO
-   const char *message_queue;
-
-   if (rgui->msg_force)
-   {
-      message_queue = msg_queue_pull(g_extern.msg_queue);
-      rgui->msg_force = false;
-   }
-   else
-      message_queue = driver.current_msg;
-
-   rgui_render_messagebox(rgui, message_queue);
-#endif
 }
 
 void rmenu_set_texture(void *data, bool enable)
