@@ -263,7 +263,7 @@ FONTS
 #include "../gfx/fonts/d3d_font.c"
 #endif
 
-#if defined(HAVE_LIBDBGFONT) && !defined(HAVE_RGUI)
+#if defined(HAVE_LIBDBGFONT)
 #include "../gfx/fonts/ps_libdbgfont.c"
 #elif defined(HAVE_OPENGL)
 #include "../gfx/fonts/gl_raster_font.c"
@@ -535,7 +535,7 @@ MENU
 #include "../frontend/menu/file_list.c"
 
 #if defined(HAVE_RMENU_GUI)
-#include "../frontend/menu/rmenu.c"
+#include "../frontend/menu/rmenu_disp.c"
 #elif defined(HAVE_RGUI)
 #include "../frontend/menu/rgui.c"
 #elif defined(HAVE_RMENU_XUI)

@@ -41,7 +41,7 @@ static int rgui_iterate(void *data, unsigned action);
 #if defined(HAVE_RGUI)
 #define menu_iterate_func(a, b) rgui_iterate(a, b)
 #elif defined(HAVE_RMENU)
-#define menu_iterate_func(a, b) rmenu_iterate(a, b)
+#define menu_iterate_func(a, b) rgui_iterate(a, b)
 #elif defined(HAVE_RMENU_XUI)
 #define menu_iterate_func(a, b) rmenu_xui_iterate(a, b)
 #endif

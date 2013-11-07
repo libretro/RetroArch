@@ -18,7 +18,7 @@
 #include "../../general.h"
 
 static const gl_font_renderer_t *gl_font_backends[] = {
-#if defined(HAVE_LIBDBGFONT) && !defined(HAVE_RGUI)
+#if defined(HAVE_LIBDBGFONT)
    &libdbg_font,
 #else
    &gl_raster_font,
