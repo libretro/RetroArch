@@ -41,7 +41,6 @@
 
 #include "cg/cgbtypes.h"
 #include "cg/cgnv2rt.h"
-#include "cg/cgnv2elfversion.h"
 
 #include "cg/cgbio.hpp"
 #include "cg/nvbiimpl.hpp"

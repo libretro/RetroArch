@@ -1,9 +1,0 @@
-LIBRARY	cgbu
-EXPORTS
-;?CreateCGBI@CGBIO@@QBE?AW4CGBIO_Err@@PAPAVCGBI@@@Z
-;?instance@CGBIO@@SAPBV1@XZ
-;?get_revision@CGBIImpl@@UBEHXZ
-get_revision
-instance
-CreateCGBI
-

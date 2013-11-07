@@ -2,10 +2,6 @@
 #define ELF_H
 
 /*
- * Data Representation
- */
-
-/*
  * ELF header
  */
 

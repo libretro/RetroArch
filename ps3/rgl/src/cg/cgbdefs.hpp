@@ -1,17 +1,6 @@
 #ifndef _CGC_CGBIO_CGBDEFS_HPP
 #define _CGC_CGBIO_CGBDEFS_HPP
 
-// Platform depended definitions:
-typedef unsigned int	Elf32_Addr;
-typedef unsigned short	Elf32_Half;
-typedef short		Elf32_Shalf;
-typedef unsigned int	Elf32_Off;
-typedef signed   int	Elf32_Sword;
-typedef unsigned int	Elf32_Word;
-
-typedef unsigned short	Elf64_Half;
-typedef short		Elf64_Shalf;
-
 ///////////////////////
 // ELF Header Constants
 
@@ -248,21 +237,24 @@ typedef short		Elf64_Shalf;
 #define R_RSX_FLOAT4	1
 
 /* Note header in a PT_NOTE section */
-struct Elf32_Note {
-	Elf32_Word	n_namesz;	/* Name size */
-	Elf32_Word	n_descsz;	/* Content size */
-	Elf32_Word	n_type;		/* Content type */
+struct Elf32_Note
+{
+	unsigned int	n_namesz;	/* Name size */
+	unsigned int	n_descsz;	/* Content size */
+	unsigned int	n_type;		/* Content type */
 };
 
 
 // Relocation entries
 
 // Dynamic structure
-struct Elf32_Dyn {
-    Elf32_Sword d_tag;
-    union {
-        Elf32_Word d_val;
-        Elf32_Addr d_ptr;
+struct Elf32_Dyn
+{
+    signed int d_tag;
+    union
+    {
+        unsigned int d_val;
+        unsigned int d_ptr;
     } d_un;
 };
 
