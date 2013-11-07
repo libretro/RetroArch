@@ -1166,13 +1166,19 @@ int menu_set_settings(void *data, unsigned setting, unsigned action)
 
             case RGUI_ACTION_LEFT:
                if (rgui->shader.passes)
+               {
                   rgui->shader.passes--;
+                  rgui->need_refresh = true;
+               }
                break;
 
             case RGUI_ACTION_RIGHT:
             case RGUI_ACTION_OK:
                if (rgui->shader.passes < RGUI_MAX_SHADERS)
+               {
                   rgui->shader.passes++;
+                  rgui->need_refresh = true;
+               }
                break;
 
             default:
