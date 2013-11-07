@@ -590,9 +590,11 @@ static int16_t input_state(unsigned port, unsigned device, unsigned index, unsig
    }
 #endif
 
+#ifndef RARCH_CONSOLE
    // Don't allow turbo for D-pad.
    if (device == RETRO_DEVICE_JOYPAD && (id < RETRO_DEVICE_ID_JOYPAD_UP || id > RETRO_DEVICE_ID_JOYPAD_RIGHT))
       res = input_apply_turbo(port, id, res);
+#endif
 
 #ifdef HAVE_BSV_MOVIE
    if (g_extern.bsv.movie && !g_extern.bsv.movie_playback)
