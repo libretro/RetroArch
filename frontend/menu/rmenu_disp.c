@@ -53,9 +53,9 @@
 #define POSITION_EDGE_MIN 0.00f
 #define POSITION_EDGE_CENTER 0.70f
 #define POSITION_RENDER_OFFSET 0.20f
-#define POSITION_OFFSET 0.02f
+#define POSITION_OFFSET 0.03f
 #define FONT_SIZE_NORMAL 0.95f
-#define TERM_WIDTH 70
+#define TERM_WIDTH 60
 #endif
 
 struct texture_image *menu_texture;
@@ -331,7 +331,7 @@ static void rgui_render(void *data)
       font_parms.x = POSITION_EDGE_CENTER + POSITION_OFFSET;
 
       if (driver.video_poke->set_osd_msg)
-         driver.video_poke->set_osd_msg(driver.video_data, type_str, &font_parms);
+         driver.video_poke->set_osd_msg(driver.video_data, type_str_buf, &font_parms);
    }
 
 #ifdef GEKKO
