@@ -311,8 +311,12 @@ bool apple_gfx_ctx_bind_api(enum gfx_ctx_api api, unsigned major, unsigned minor
    
       NSOpenGLPixelFormatAttribute attributes [] = {
          NSOpenGLPFADoubleBuffer,	// double buffered
-         NSOpenGLPFADepthSize, (NSOpenGLPixelFormatAttribute)16, // 16 bit depth buffer
-         (major || minor) ? NSOpenGLPFAOpenGLProfile : 0, (major << 12) | (minor << 8),
+         NSOpenGLPFADepthSize,
+		  (NSOpenGLPixelFormatAttribute)16, // 16 bit depth buffer
+#ifdef MAC_OS_X_VERSION_10_7
+         (major || minor) ? NSOpenGLPFAOpenGLProfile : 0,
+		  (major << 12) | (minor << 8),
+#endif
          (NSOpenGLPixelFormatAttribute)nil
       };
 
