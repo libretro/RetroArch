@@ -85,7 +85,7 @@ class D3DVideo
       void overlay_set_alpha(unsigned index, float mod);
 #endif
 
-#ifdef HAVE_RGUI
+#ifdef HAVE_MENU
       void set_rgui_texture_frame(const void *frame,
             bool rgb32, unsigned width, unsigned height,
             float alpha);
@@ -160,7 +160,7 @@ class D3DVideo
 
       void free_overlay(overlay_t &overlay);
 
-#ifdef HAVE_RGUI
+#ifdef HAVE_MENU
       overlay_t rgui;
 #endif
 };

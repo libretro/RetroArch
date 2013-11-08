@@ -850,7 +850,7 @@ const video_driver_t video_omap = {
    omap_gfx_free,
    "omap",
 
-#ifdef HAVE_RGUI
+#ifdef HAVE_MENU
    NULL,
    NULL,
 #endif

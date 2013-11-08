@@ -18,10 +18,6 @@
 #include "../msvc/msvc_compat.h"
 #endif
 
-#if defined(HAVE_RMENU) || defined(HAVE_RGUI) || defined(HAVE_RMENU_XUI)
-#define HAVE_MENU
-#endif
-
 #ifdef __CELLOS_LV2__
 #include "../ps3/altivec_mem.c"
 #endif
@@ -532,7 +528,7 @@ MENU
 #endif
 #include "../frontend/menu/file_list.c"
 
-#if defined(HAVE_RMENU_GUI)
+#if defined(HAVE_RMENU)
 #include "../frontend/menu/rmenu_disp.c"
 #elif defined(HAVE_RGUI)
 #include "../frontend/menu/rgui.c"

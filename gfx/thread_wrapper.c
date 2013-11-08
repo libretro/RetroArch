@@ -69,7 +69,7 @@ typedef struct thread_video
    const input_driver_t **input;
    void **input_data;
 
-#if defined(HAVE_RGUI) || defined(HAVE_RMENU)
+#if defined(HAVE_MENU)
    struct
    {
       void *frame;
@@ -305,7 +305,7 @@ static void thread_loop(void *data)
       {
          slock_lock(thr->frame.lock);
 
-#if defined(HAVE_RGUI) || defined(HAVE_RMENU)
+#if defined(HAVE_MENU)
          if (thr->texture.frame_updated)
          {
             thr->poke->set_texture_frame(thr->driver_data,
@@ -447,7 +447,7 @@ static bool thread_frame(void *data, const void *frame_,
 
       scond_signal(thr->cond_thread);
 
-#if defined(HAVE_RGUI) || defined(HAVE_RMENU)
+#if defined(HAVE_MENU)
       if (thr->texture.enable)
       {
          while (thr->frame.updated)
@@ -557,7 +557,7 @@ static void thread_free(void *data)
    thread_wait_reply(thr, CMD_FREE);
    sthread_join(thr->thread);
 
-#if defined(HAVE_RGUI) || defined(HAVE_RMENU)
+#if defined(HAVE_MENU)
    free(thr->texture.frame);
 #endif
    free(thr->frame.buffer);
@@ -666,7 +666,7 @@ static void thread_set_aspect_ratio(void *data, unsigned aspectratio_index)
    thread_wait_reply(thr, CMD_POKE_SET_ASPECT_RATIO);
 }
 
-#if defined(HAVE_RGUI) || defined(HAVE_RMENU)
+#if defined(HAVE_MENU)
 static void thread_set_texture_frame(void *data, const void *frame,
       bool rgb32, unsigned width, unsigned height, float alpha)
 {
@@ -719,7 +719,7 @@ static const video_poke_interface_t thread_poke = {
 #endif
    thread_set_aspect_ratio,
    thread_apply_state_changes,
-#if defined(HAVE_RGUI) || defined(HAVE_RMENU)
+#if defined(HAVE_MENU)
    thread_set_texture_frame,
    thread_set_texture_enable,
 #endif
@@ -738,7 +738,7 @@ static void thread_get_poke_interface(void *data, const video_poke_interface_t *
       *iface = NULL;
 }
 
-#if defined(HAVE_RMENU) || defined(HAVE_RGUI)
+#if defined(HAVE_MENU)
 // all stubs for now, might not have to implement them unless we want to port this to consoles
 static void thread_restart(void) {}
 #endif
@@ -752,7 +752,7 @@ static const video_driver_t video_thread = {
    thread_set_shader,
    thread_free,
    "Thread wrapper",
-#if defined(HAVE_RMENU) || defined(HAVE_RGUI) 
+#if defined(HAVE_MENU)
    thread_restart,
 #endif
    thread_set_rotation,

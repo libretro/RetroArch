@@ -779,7 +779,7 @@ void gl_set_viewport(void *data, unsigned width, unsigned height, bool force_ful
       float desired_aspect = g_extern.system.aspect_ratio;
       float delta;
 
-#if defined(HAVE_RGUI) || defined(HAVE_RMENU)
+#if defined(HAVE_MENU)
       if (g_settings.video.aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
       {
          const struct rarch_viewport *custom =
@@ -1338,7 +1338,7 @@ static void gl_pbo_async_readback(void *data)
 }
 #endif
 
-#if defined(HAVE_RGUI) || defined(HAVE_RMENU)
+#if defined(HAVE_MENU)
 static inline void gl_draw_texture(void *data)
 {
    gl_t *gl = (gl_t*)data;
@@ -1497,7 +1497,7 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
 
    gl_set_prev_texture(gl, &tex_info);
 
-#if defined(HAVE_RGUI) || defined(HAVE_RMENU)
+#if defined(HAVE_MENU)
    if (gl->rgui_texture_enable)
       gl_draw_texture(gl);
 #endif
@@ -1610,7 +1610,7 @@ static void gl_free(void *data)
 
    glDeleteTextures(gl->textures, gl->texture);
 
-#if defined(HAVE_RGUI) || defined(HAVE_RMENU)
+#if defined(HAVE_MENU)
    if (gl->rgui_texture)
       glDeleteTextures(1, &gl->rgui_texture);
 #endif
@@ -2398,7 +2398,7 @@ static bool gl_read_viewport(void *data, uint8_t *buffer)
 }
 #endif
 
-#if defined(HAVE_RGUI) || defined(HAVE_RMENU)
+#if defined(HAVE_MENU)
 static void gl_restart(void)
 {
    gl_t *gl = (gl_t*)driver.video_data;
@@ -2602,7 +2602,7 @@ static void gl_set_aspect_ratio(void *data, unsigned aspect_ratio_idx)
    gl->should_resize = true;
 }
 
-#if defined(HAVE_RGUI) || defined(HAVE_RMENU)
+#if defined(HAVE_MENU)
 static void gl_set_texture_frame(void *data,
       const void *frame, bool rgb32, unsigned width, unsigned height,
       float alpha)
@@ -2682,7 +2682,7 @@ static const video_poke_interface_t gl_poke_interface = {
 #endif
    gl_set_aspect_ratio,
    gl_apply_state_changes,
-#if defined(HAVE_RGUI) || defined(HAVE_RMENU)
+#if defined(HAVE_MENU)
    gl_set_texture_frame,
    gl_set_texture_enable,
 #endif
@@ -2713,7 +2713,7 @@ const video_driver_t video_gl = {
    gl_free,
    "gl",
 
-#if defined(HAVE_RGUI) || defined(HAVE_RMENU)
+#if defined(HAVE_MENU)
    gl_restart,
 #endif
    gl_set_rotation,

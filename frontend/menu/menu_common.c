@@ -245,7 +245,7 @@ void load_menu_game_prepare(void)
             rgui->info.library_name ? rgui->info.library_name : "");
    }
 
-#ifdef HAVE_RGUI
+#ifdef HAVE_MENU
    // redraw RGUI frame
    rgui->old_input_state = rgui->trigger_state = 0;
    rgui->do_held = false;
@@ -504,7 +504,7 @@ void menu_ticker_line(char *buf, size_t len, unsigned index, const char *str, bo
    }
 }
 
-#if defined(HAVE_RMENU) || defined(HAVE_RGUI) || defined(HAVE_RMENU_XUI)
+#ifdef HAVE_MENU
 static uint64_t menu_input(void)
 {
    unsigned i;

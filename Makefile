@@ -91,6 +91,7 @@ endif
 
 ifeq ($(HAVE_RGUI), 1)
    OBJ += frontend/menu/menu_common.o frontend/menu/menu_settings.o frontend/menu/menu_context.o frontend/menu/file_list.o frontend/menu/rgui.o frontend/menu/history.o
+	DEFINES += -DHAVE_MENU
 endif
 
 ifeq ($(HAVE_THREADS), 1)

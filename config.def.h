@@ -298,7 +298,7 @@ static const char *default_config_path = "app/native/retroarch.cfg";
 static const char *default_config_path = NULL;
 #endif
 
-#if defined(HAVE_RMENU) || defined(HAVE_RGUI) || defined(HAVE_RMENU_XUI)
+#ifdef HAVE_MENU
 static bool default_block_config_read = true;
 #else
 static bool default_block_config_read = false;

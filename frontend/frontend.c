@@ -22,11 +22,8 @@
 #include "frontend_context.h"
 frontend_ctx_driver_t *frontend_ctx;
 
-#if defined(HAVE_RGUI) || defined(HAVE_RMENU) || defined(HAVE_RMENU_XUI)
-#define HAVE_MENU
+#if defined(HAVE_MENU)
 #include "menu/menu_common.h"
-#else
-#undef HAVE_MENU
 #endif
 
 #include "../file_ext.h"

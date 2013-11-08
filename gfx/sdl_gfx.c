@@ -359,7 +359,7 @@ const video_driver_t video_sdl = {
    sdl_gfx_free,
    "sdl",
 
-#ifdef HAVE_RGUI
+#ifdef HAVE_MENU
    NULL,
 #endif
 

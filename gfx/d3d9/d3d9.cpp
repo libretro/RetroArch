@@ -441,7 +441,7 @@ D3DVideo::D3DVideo(const video_info_t *info) :
    should_resize = false;
    gfx_set_dwm();
 
-#ifdef HAVE_RGUI
+#ifdef HAVE_MENU
    std::memset(&rgui, 0, sizeof(rgui));
    rgui.tex_coords.x = 0;
    rgui.tex_coords.y = 0;
@@ -568,7 +568,7 @@ D3DVideo::~D3DVideo()
 #ifdef HAVE_OVERLAY
    free_overlays();
 #endif
-#ifdef HAVE_RGUI
+#ifdef HAVE_MENU
    free_overlay(rgui);
 #endif
    if (dev)
@@ -658,7 +658,7 @@ bool D3DVideo::frame(const void *frame,
 
    render_msg(msg);
 
-#ifdef HAVE_RGUI
+#ifdef HAVE_MENU
    if (rgui.enabled)
       overlay_render(rgui);
 #endif
@@ -1241,7 +1241,7 @@ void D3DVideo::overlay_render(overlay_t &overlay)
    dev->SetViewport(&final_viewport);
 }
 
-#ifdef HAVE_RGUI
+#ifdef HAVE_MENU
 void D3DVideo::set_rgui_texture_frame(const void *frame,
       bool rgb32, unsigned width, unsigned height,
       float alpha)
@@ -1388,7 +1388,7 @@ static bool d3d9_set_shader(void *data, enum rarch_shader_type type, const char 
    return reinterpret_cast<D3DVideo*>(data)->set_shader(shader);
 }
 
-#if defined(HAVE_RGUI)
+#ifdef HAVE_MENU
 static void d3d9_get_poke_interface(void *data, const video_poke_interface_t **iface);
 #endif
 
@@ -1490,7 +1490,7 @@ static void d3d9_show_mouse(void *data, bool state)
    show_cursor(state);
 }
 
-#ifdef HAVE_RGUI
+#ifdef HAVE_MENU
 static void d3d9_set_rgui_texture_frame(void *data,
       const void *frame, bool rgb32, unsigned width, unsigned height,
       float alpha)
@@ -1512,7 +1512,7 @@ static const video_poke_interface_t d3d9_poke_interface = {
 #endif
    d3d9_set_aspect_ratio,
    d3d9_apply_state_changes,
-#ifdef HAVE_RGUI
+#ifdef HAVE_MENU
    d3d9_set_rgui_texture_frame,
    d3d9_set_rgui_texture_enable,
 #endif
@@ -1536,7 +1536,7 @@ const video_driver_t video_d3d9 = {
    d3d9_set_shader,
    d3d9_free,
    "d3d9",
-#ifdef HAVE_RGUI
+#ifdef HAVE_MENU
    nullptr,
 #endif
    d3d9_set_rotation,

@@ -67,7 +67,7 @@ typedef struct xdk_d3d_video
    LPDIRECT3DTEXTURE lpTexture_ot;
    IDirect3DVertexDeclaration9* v_decl;
 #endif
-#if defined(HAVE_RGUI) || defined(HAVE_RMENU) || defined(HAVE_RMENU_XUI)
+#ifdef HAVE_MENU
    bool rgui_texture_enable;
    bool rgui_texture_full_screen;
 #endif

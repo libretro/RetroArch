@@ -40,10 +40,6 @@
 
 #include "../xdk/xdk_resources.h"
 
-#ifdef HAVE_RGUI
-#include "../frontend/menu/rgui.h"
-#endif
-
 #if defined(_XBOX1)
 unsigned font_x, font_y;
 #elif defined(_XBOX360)
@@ -782,7 +778,7 @@ static bool texture_image_render(struct texture_image *out_img,
 }
 #endif
 
-#if defined(HAVE_RGUI) || defined(HAVE_RMENU) || defined(HAVE_RMENU_XUI)
+#ifdef HAVE_MENU
 
 #ifdef HAVE_MENU_PANEL
 extern struct texture_image *menu_panel;
@@ -1002,7 +998,7 @@ NULL, NULL, NULL, 0);
    }
 #endif
 
-#if defined(HAVE_RGUI) || defined(HAVE_RMENU) || defined(HAVE_RMENU_XUI)
+#ifdef HAVE_MENU
 
 #if defined(HAVE_RMENU_XUI) || defined(HAVE_RGUI)
    if (d3d->rgui_texture_enable)
@@ -1083,7 +1079,7 @@ static void xdk_d3d_apply_state_changes(void *data)
    d3d->should_resize = true;
 }
 
-#if defined(HAVE_RGUI) || defined(HAVE_RMENU) || defined(HAVE_RMENU_XUI)
+#ifdef HAVE_MENU
 static void xdk_d3d_set_texture_frame(void *data,
    const void *frame, bool rgb32, unsigned width, unsigned height,
    float alpha)
@@ -1120,7 +1116,7 @@ static const video_poke_interface_t d3d_poke_interface = {
 #endif
    xdk_d3d_set_aspect_ratio,
    xdk_d3d_apply_state_changes,
-#if defined(HAVE_RGUI) || defined(HAVE_RMENU) || defined(HAVE_RMENU_XUI)
+#ifdef HAVE_MENU
    xdk_d3d_set_texture_frame,
    xdk_d3d_set_texture_enable,
 #endif

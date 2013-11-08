@@ -25,12 +25,6 @@
 #include "../frontend/menu/rgui.h"
 #endif
 
-#if defined(HAVE_RGUI) || defined(HAVE_RMENU) || defined(HAVE_RMENU_XUI)
-#define HAVE_MENU
-#else
-#undef HAVE_MENU
-#endif
-
 static bool menuloop;
 
 static void endloop(void)
