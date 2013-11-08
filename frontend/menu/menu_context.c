@@ -20,6 +20,8 @@
 #include "../../config.h"
 #endif
 
+#include "menu_common.h"
+
 static const menu_ctx_driver_t *menu_ctx_drivers[] = {
 #if defined(HAVE_RMENU)
    &menu_ctx_rmenu,

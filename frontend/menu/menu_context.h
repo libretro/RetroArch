@@ -24,8 +24,6 @@
 #include "../../config.h"
 #endif
 
-#include "menu_common.h"
-
 typedef struct menu_ctx_driver
 {
    void  (*set_texture)(void*, bool);
