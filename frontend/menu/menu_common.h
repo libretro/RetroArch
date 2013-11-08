@@ -342,9 +342,7 @@ int rmenu_iterate(void *data, unsigned action);
 int rmenu_xui_iterate(void *data, unsigned action);
 #endif
 
-#if defined(HAVE_RGUI) || defined(HAVE_RMENU) || defined(HAVE_RMENU_XUI)
 int rgui_input_postprocess(void *data, uint64_t old_state);
-#endif
 
 #ifdef HAVE_SHADER_MANAGER
 void shader_manager_init(rgui_handle_t *rgui);
