@@ -68,7 +68,6 @@ static void render_background(rgui_handle_t *rgui)
 
 static void rgui_render_messagebox(void *data, const char *message)
 {
-   rgui_handle_t *rgui = (rgui_handle_t*)data;
    font_params_t font_parms;
 
    size_t i, j;
@@ -420,8 +419,6 @@ static void *rgui_init(void)
 
 static void rgui_free(void *data)
 {
-   rgui_handle_t *rgui = (rgui_handle_t*)data;
-
 #ifdef _XBOX1
    if (menu_panel->vertex_buf)
    {
