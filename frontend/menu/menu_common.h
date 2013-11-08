@@ -371,7 +371,7 @@ bool menu_replace_config(const char *path);
 
 bool menu_save_new_config(void);
 
-int rgui_settings_toggle_setting(rgui_handle_t *rgui, unsigned setting, unsigned action, unsigned menu_type);
+int menu_settings_toggle_setting(rgui_handle_t *rgui, unsigned setting, unsigned action, unsigned menu_type);
 int menu_set_settings(void *data, unsigned setting, unsigned action);
 void menu_set_settings_label(char *type_str, size_t type_str_size, unsigned *w, unsigned type);
 

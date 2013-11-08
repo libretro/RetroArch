@@ -905,7 +905,7 @@ static int menu_settings_iterate(rgui_handle_t *rgui, unsigned action)
          }
          else
          {
-            int ret = rgui_settings_toggle_setting(rgui, type, action, menu_type);
+            int ret = menu_settings_toggle_setting(rgui, type, action, menu_type);
             if (ret)
                return ret;
          }

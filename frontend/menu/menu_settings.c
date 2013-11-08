@@ -245,7 +245,7 @@ static int shader_manager_toggle_setting(rgui_handle_t *rgui, unsigned setting, 
 }
 #endif
 
-static int rgui_core_setting_toggle(unsigned setting, rgui_action_t action)
+static int menu_core_setting_toggle(unsigned setting, rgui_action_t action)
 {
    unsigned index = setting - RGUI_SETTINGS_CORE_OPTION_START;
    switch (action)
@@ -270,14 +270,14 @@ static int rgui_core_setting_toggle(unsigned setting, rgui_action_t action)
    return 0;
 }
 
-int rgui_settings_toggle_setting(rgui_handle_t *rgui, unsigned setting, rgui_action_t action, unsigned menu_type)
+int menu_settings_toggle_setting(rgui_handle_t *rgui, unsigned setting, rgui_action_t action, unsigned menu_type)
 {
 #ifdef HAVE_SHADER_MANAGER
    if (setting >= RGUI_SETTINGS_SHADER_FILTER && setting <= RGUI_SETTINGS_SHADER_LAST)
       return shader_manager_toggle_setting(rgui, setting, action);
 #endif
    if (setting >= RGUI_SETTINGS_CORE_OPTION_START)
-      return rgui_core_setting_toggle(setting, action);
+      return menu_core_setting_toggle(setting, action);
 
    return menu_set_settings(rgui, setting, action);
 }
