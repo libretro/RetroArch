@@ -85,7 +85,7 @@ static inline int pthread_cond_wait(pthread_cond_t *cond, pthread_mutex_t *mutex
 
 static inline int pthread_cond_timedwait(pthread_cond_t *cond, pthread_mutex_t *mutex, const struct timespec *abstime)
 {
-   return LWP_CondWait(*cond, *mutex);
+   return LWP_CondTimedWait(*cond, *mutex, abstime);
 }
 
 static inline int pthread_cond_init(pthread_cond_t *cond, const pthread_condattr_t *attr)
