@@ -324,6 +324,7 @@ int mz_inflateInit2(mz_streamp pStream, int window_bits);
 //   MZ_BUF_ERROR if no forward progress is possible because the input buffer is empty but the inflater needs more input to continue, or if the output buffer is not large enough. Call mz_inflate() again
 //   with more input data, or with more room in the output buffer (except when using single call decompression, described above).
 int mz_inflate(mz_streamp pStream, int flush);
+int mz_inflateReset(mz_streamp pStream);
 
 // Deinitializes a decompressor.
 int mz_inflateEnd(mz_streamp pStream);
@@ -392,9 +393,6 @@ const char *mz_error(int err);
   #define compressBound         mz_compressBound
   #define inflateInit           mz_inflateInit
   #define inflateInit2          mz_inflateInit2
-  #define inflate               mz_inflate
-  #define inflateEnd		mz_inflateEnd
-  #define uncompress            mz_uncompress
   #define crc32                 crc32
   #define adler32               mz_adler32
   #define MAX_WBITS             15
@@ -408,6 +406,13 @@ const char *mz_error(int err);
   #define ZLIB_VER_SUBREVISION  MZ_VER_SUBREVISION
   #define zlibVersion           mz_version
   #define zlib_version          mz_version()
+
+typedef z_stream *z_streamp;
+int inflateReset(z_streamp pStream);
+int uncompress(Bytef *pDest, uLongf *pDest_len, const Bytef *pSource, uLong source_len);
+int inflateEnd(z_streamp pStream);
+int inflate(z_streamp pStream, int flush);
+int inflateInit2_(z_streamp pStream, int window_bits, char *version, int stream_size);
 #endif // #ifndef MINIZ_NO_ZLIB_COMPATIBLE_NAMES
 
 #endif // MINIZ_NO_ZLIB_APIS

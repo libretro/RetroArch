@@ -127,6 +127,11 @@ typedef struct
   tinfl_status m_last_status;
 } inflate_state;
 
+int inflateInit2_(z_streamp pStream, int window_bits, char *version, int stream_size)
+{
+   return mz_inflateInit2(pStream, window_bits);
+}
+
 int mz_inflateInit2(mz_streamp pStream, int window_bits)
 {
   inflate_state *pDecomp;
@@ -159,6 +164,11 @@ int mz_inflateInit2(mz_streamp pStream, int window_bits)
 int mz_inflateInit(mz_streamp pStream)
 {
    return mz_inflateInit2(pStream, MZ_DEFAULT_WINDOW_BITS);
+}
+
+int inflate(z_streamp pStream, int flush)
+{
+   return mz_inflate(pStream, flush);
 }
 
 int mz_inflate(mz_streamp pStream, int flush)
@@ -252,6 +262,22 @@ int mz_inflate(mz_streamp pStream, int flush)
   return ((status == TINFL_STATUS_DONE) && (!pState->m_dict_avail)) ? MZ_STREAM_END : MZ_OK;
 }
 
+int inflateReset(z_streamp pStream)
+{
+   return mz_inflateReset(pStream);
+}
+
+int mz_inflateReset(mz_streamp pStream)
+{
+   mz_inflateEnd(pStream);
+   return mz_inflateInit(pStream);
+}
+
+int inflateEnd(z_streamp pStream)
+{
+   return mz_inflateEnd(pStream);
+}
+
 int mz_inflateEnd(mz_streamp pStream)
 {
   if (!pStream)
@@ -262,6 +288,11 @@ int mz_inflateEnd(mz_streamp pStream)
     pStream->state = NULL;
   }
   return MZ_OK;
+}
+
+int uncompress(Bytef *pDest, uLongf *pDest_len, const Bytef *pSource, uLong source_len)
+{
+   return mz_uncompress(pDest, pDest_len, pSource, source_len);
 }
 
 int mz_uncompress(unsigned char *pDest, mz_ulong *pDest_len, const unsigned char *pSource, mz_ulong source_len)
