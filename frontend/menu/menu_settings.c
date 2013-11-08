@@ -953,6 +953,34 @@ int menu_set_settings(void *data, unsigned setting, unsigned action)
 #endif
          }
          break;
+      case RGUI_SETTINGS_VIDEO_PAL60:
+         switch (action)
+         {
+            case RGUI_ACTION_LEFT:
+            case RGUI_ACTION_RIGHT:
+            case RGUI_ACTION_OK:
+               if (g_extern.lifecycle_state & (1ULL << MODE_VIDEO_PAL_ENABLE))
+               {
+                  if (g_extern.lifecycle_state & (1ULL << MODE_VIDEO_PAL_TEMPORAL_ENABLE))
+                     g_extern.lifecycle_state &= ~(1ULL << MODE_VIDEO_PAL_TEMPORAL_ENABLE);
+                  else
+                     g_extern.lifecycle_state |= (1ULL << MODE_VIDEO_PAL_TEMPORAL_ENABLE);
+
+                  driver.video->restart();
+                  rgui_init_textures(rgui);
+               }
+               break;
+            case RGUI_ACTION_START:
+               if (g_extern.lifecycle_state & (1ULL << MODE_VIDEO_PAL_ENABLE))
+               {
+                  g_extern.lifecycle_state &= ~(1ULL << MODE_VIDEO_PAL_TEMPORAL_ENABLE);
+
+                  driver.video->restart();
+                  rgui_init_textures(rgui);
+               }
+               break;
+         }
+         break;
 #endif
 #ifdef HW_RVL
       case RGUI_SETTINGS_VIDEO_SOFT_FILTER:
@@ -1362,6 +1390,12 @@ void menu_set_settings_label(char *type_str, size_t type_str_size, unsigned *w, 
                unsigned height = gfx_ctx_get_resolution_height(g_extern.console.screen.resolutions.list[g_extern.console.screen.resolutions.current.idx]);
                snprintf(type_str, type_str_size, "%dx%d", width, height);
          }
+         break;
+      case RGUI_SETTINGS_VIDEO_PAL60:
+         if (g_extern.lifecycle_state & (1ULL << MODE_VIDEO_PAL_TEMPORAL_ENABLE))
+            strlcpy(type_str, "ON", sizeof(type_str));
+         else
+            strlcpy(type_str, "OFF", sizeof(type_str));
          break;
 #endif
       case RGUI_FILE_PLAIN:

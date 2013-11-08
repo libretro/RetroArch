@@ -1347,13 +1347,9 @@ static int set_setting_action(void *data, uint8_t menu_type, unsigned switchvalu
                if (g_extern.lifecycle_state & (1ULL << MODE_VIDEO_PAL_ENABLE))
                {
                   if (g_extern.lifecycle_state & (1ULL << MODE_VIDEO_PAL_TEMPORAL_ENABLE))
-                  {
                      g_extern.lifecycle_state &= ~(1ULL << MODE_VIDEO_PAL_TEMPORAL_ENABLE);
-                  }
                   else
-                  {
                      g_extern.lifecycle_state |= (1ULL << MODE_VIDEO_PAL_TEMPORAL_ENABLE);
-                  }
 
                   driver.video->restart();
                   rgui_init_textures(rgui);
