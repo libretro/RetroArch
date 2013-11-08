@@ -344,7 +344,7 @@ int rmenu_xui_iterate(void *data, unsigned action);
 int rgui_input_postprocess(void *data, uint64_t old_state);
 
 #ifdef HAVE_SHADER_MANAGER
-void shader_manager_init(rgui_handle_t *rgui);
+void shader_manager_init(void *data);
 void shader_manager_get_str(struct gfx_shader *shader,
       char *type_str, size_t type_str_size, unsigned type);
 void shader_manager_set_preset(struct gfx_shader *shader,
@@ -355,7 +355,7 @@ void menu_ticker_line(char *buf, size_t len, unsigned tick, const char *str, boo
 
 void menu_parse_and_resolve(void *data, unsigned menu_type);
 
-void menu_init_core_info(rgui_handle_t *rgui);
+void menu_init_core_info(void *data);
 
 void load_menu_game_prepare(void);
 bool load_menu_game(void);
@@ -368,7 +368,7 @@ bool menu_replace_config(const char *path);
 
 bool menu_save_new_config(void);
 
-int menu_settings_toggle_setting(rgui_handle_t *rgui, unsigned setting, unsigned action, unsigned menu_type);
+int menu_settings_toggle_setting(void *data, unsigned setting, unsigned action, unsigned menu_type);
 int menu_set_settings(void *data, unsigned setting, unsigned action);
 void menu_set_settings_label(char *type_str, size_t type_str_size, unsigned *w, unsigned type);
 

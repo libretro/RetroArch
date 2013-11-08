@@ -42,8 +42,9 @@ static int menu_iterate_func(void *data, unsigned action);
 #endif
 
 #ifdef HAVE_SHADER_MANAGER
-void shader_manager_init(rgui_handle_t *rgui)
+void shader_manager_init(void *data)
 {
+   rgui_handle_t *rgui = (rgui_handle_t*)data;
    memset(&rgui->shader, 0, sizeof(rgui->shader));
    config_file_t *conf = NULL;
 
@@ -538,8 +539,9 @@ static uint64_t menu_input(void)
 
 // This only makes sense for PC so far.
 // Consoles use set_keybind callbacks instead.
-static int menu_custom_bind_iterate(rgui_handle_t *rgui, unsigned action)
+static int menu_custom_bind_iterate(void *data, unsigned action)
 {
+   rgui_handle_t *rgui = (rgui_handle_t*)data;
    (void)action; // Have to ignore action here. Only bind that should work here is Quit RetroArch or something like that.
 
    if (menu_ctx && menu_ctx->render)
@@ -570,12 +572,14 @@ static int menu_custom_bind_iterate(rgui_handle_t *rgui, unsigned action)
    return 0;
 }
 
-static int menu_start_screen_iterate(rgui_handle_t *rgui, unsigned action)
+static int menu_start_screen_iterate(void *data, unsigned action)
 {
-   if (menu_ctx && menu_ctx->render)
-      menu_ctx->render(rgui);
    unsigned i;
    char msg[1024];
+   rgui_handle_t *rgui = (rgui_handle_t*)data;
+
+   if (menu_ctx && menu_ctx->render)
+      menu_ctx->render(rgui);
 
    char desc[6][64];
    static const unsigned binds[] = {
@@ -637,8 +641,9 @@ static int menu_start_screen_iterate(rgui_handle_t *rgui, unsigned action)
    return 0;
 }
 
-static int menu_viewport_iterate(rgui_handle_t *rgui, unsigned action)
+static int menu_viewport_iterate(void *data, unsigned action)
 {
+   rgui_handle_t *rgui = (rgui_handle_t*)data;
    rarch_viewport_t *custom = &g_extern.console.screen.viewports.custom_vp;
 
    unsigned menu_type = 0;
@@ -809,8 +814,9 @@ static int menu_viewport_iterate(rgui_handle_t *rgui, unsigned action)
    return 0;
 }
 
-static int menu_settings_iterate(rgui_handle_t *rgui, unsigned action)
+static int menu_settings_iterate(void *data, unsigned action)
 {
+   rgui_handle_t *rgui = (rgui_handle_t*)data;
    rgui->frame_buf_pitch = rgui->width * 2;
    unsigned type = 0;
    const char *label = NULL;
@@ -964,8 +970,9 @@ static int menu_settings_iterate(rgui_handle_t *rgui, unsigned action)
    return 0;
 }
 
-static inline void menu_descend_alphabet(rgui_handle_t *rgui, size_t *ptr_out)
+static inline void menu_descend_alphabet(void *data, size_t *ptr_out)
 {
+   rgui_handle_t *rgui = (rgui_handle_t*)data;
    if (!rgui->scroll_indices_size)
       return;
    size_t ptr = *ptr_out;
@@ -977,8 +984,9 @@ static inline void menu_descend_alphabet(rgui_handle_t *rgui, size_t *ptr_out)
    *ptr_out = rgui->scroll_indices[i - 1];
 }
 
-static inline void menu_ascend_alphabet(rgui_handle_t *rgui, size_t *ptr_out)
+static inline void menu_ascend_alphabet(void *data, size_t *ptr_out)
 {
+   rgui_handle_t *rgui = (rgui_handle_t*)data;
    if (!rgui->scroll_indices_size)
       return;
    size_t ptr = *ptr_out;
@@ -990,8 +998,9 @@ static inline void menu_ascend_alphabet(rgui_handle_t *rgui, size_t *ptr_out)
    *ptr_out = rgui->scroll_indices[i + 1];
 }
 
-static void menu_flush_stack_type(rgui_handle_t *rgui, unsigned final_type)
+static void menu_flush_stack_type(void *data, unsigned final_type)
 {
+   rgui_handle_t *rgui = (rgui_handle_t*)data;
    unsigned type;
    type = 0;
    rgui->need_refresh = true;
@@ -1751,11 +1760,12 @@ static inline bool menu_list_elem_is_dir(file_list_t *buf, unsigned offset)
    return type != RGUI_FILE_PLAIN;
 }
 
-static void menu_build_scroll_indices(rgui_handle_t *rgui, file_list_t *buf)
+static void menu_build_scroll_indices(void *data, file_list_t *buf)
 {
    size_t i;
    int current;
    bool current_is_dir;
+   rgui_handle_t *rgui = (rgui_handle_t*)data;
 
    rgui->scroll_indices_size = 0;
    if (!buf->size)
@@ -2213,8 +2223,9 @@ void menu_parse_and_resolve(void *data, unsigned menu_type)
       rgui->selection_ptr = 0;
 }
 
-void menu_init_core_info(rgui_handle_t *rgui)
+void menu_init_core_info(void *data)
 {
+   rgui_handle_t *rgui = (rgui_handle_t*)data;
    core_info_list_free(rgui->core_info);
    rgui->core_info = NULL;
    if (*rgui->libretro_dir)
