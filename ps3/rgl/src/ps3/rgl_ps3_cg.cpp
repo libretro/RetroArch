@@ -2763,7 +2763,7 @@ void PopulateDataForParamResource( CgParameterEntry* paramEntry, CgParameterEntr
       ( *nvParams )->isReferenced = (( paramEntry->flags & CGPF_REFERENCED ) != 0 );
 
       // isShared
-      ( *nvParams )->isShared = (( paramEntry->flags & CGPF_SHARED ) != 0 );
+      ( *nvParams )->isShared = false;
 
 
       // increment param cursor
@@ -4873,25 +4873,6 @@ int convertNvToElfFromMemory(const void *sourceData, size_t size, int endianness
       bool is_shared;
       nvbr->get_param( i, type, res, var, rin, &name, dv, ec, &sem, dir, no, is_referenced, is_shared );
 
-      //This code is there twice,
-      //here it fixes a sce-cgc "bug" or weak feature, the user has asked for a shared parameter, but the flag is not set
-      //it happens for unreferenced item in a structure
-      //it will break if we support unshared with the semantic 'C###'
-      //later it will be there to fix the contiguity for arrays and the "share" part, but it's actually 2 different problems.
-      if (strlen(sem)>=2 && sem[0] == 'C')
-      {
-         const char *szSem = sem+1;
-         //check if we have a number
-         while (*szSem != '\0')
-         {
-            if ( (*szSem) < '0' || (*szSem) > '9')
-               break;
-            szSem++;
-         }
-         if (*szSem == '\0')
-            is_shared = 1;
-      }
-
       const char *parameterName = name;
       const char *structureEnd = NULL;
       CgStructureType *container = &root;
@@ -5014,35 +4995,7 @@ int convertNvToElfFromMemory(const void *sourceData, size_t size, int endianness
                }
                arrayType->_elementType->_resource = res;
                arrayType->_elementType->_resourceIndex = -1;
-               //special case here for shared vertex array ??? I consider them contiguous and referenced
-               //I need to detect this case and it's complex
-               if (bIsVertexProgram && strlen(sem)>=2 && sem[0] == 'C')
-               {
-                  //I have to parse the semantic !!!! that's the only info I have at that level from sce-cgc...
-                  //TODO: it's going to break if we support unshared with the semantic 'C###'
-                  const char *szSem = sem+1;
-                  //check if we have a number
-                  while (*szSem != '\0')
-                  {
-                     if ( (*szSem) < '0' || (*szSem) > '9')
-                        break;
-                     szSem++;
-                  }
-                  if (*szSem == '\0')
-                  {
-                     //fix the is_shared variable.... sce-cgc doesn't set it that's why I am doing this parsing
-                     is_shared = 1;
-                     int registerIndex = atoi(sem+1);
-                     structuralElement->_flags |= CGP_CONTIGUOUS;
-                     structuralElement->_flags |= CGPF_SHARED;
-                     structuralElement->_type->_resourceIndex = registerIndex;
-                  }
-                  else
-                     structuralElement->_type->_resourceIndex = (int)containers._resources.size();
-               }
-               else
-                  structuralElement->_type->_resourceIndex = (int)containers._resources.size();
-
+               structuralElement->_type->_resourceIndex = (int)containers._resources.size();
                structuralElement->_type->_resource = res;
             }
             else
@@ -5156,18 +5109,10 @@ int convertNvToElfFromMemory(const void *sourceData, size_t size, int endianness
             //so it doesn't has the correct resource type
             if (is_referenced)
             {
-               bool sharedContiguous = (structuralElement->_flags & CGPF_SHARED) && (structuralElement->_flags & CGP_CONTIGUOUS);
                structuralElement->_flags = getFlags(var,dir,no,is_referenced,is_shared,paramIndex);
-               //special case here for shared vertex array ??? I consider them contiguous and referenced
-               if (sharedContiguous) //reset the contiguous flag too then
-                  structuralElement->_flags |= ( CGP_CONTIGUOUS | CGPF_SHARED);
             }
             if (bIsVertexProgram)
-            {
-               //special case here for shared vertex array ??? I consider them contiguous and referenced
-               if (!is_shared) //if shared it's contiguous and we don't have to do that
-                  containers._resources.push_back(CNV2END((unsigned short)rin));
-            }
+               containers._resources.push_back(CNV2END((unsigned short)rin));
             else
             {
                //fragment program
@@ -5220,15 +5165,7 @@ int convertNvToElfFromMemory(const void *sourceData, size_t size, int endianness
                   int rowCount = rows[itemType->_type-1];
                   if (!rowCount) //no matrix here
                   {
-                     //special case here for shared vertex array ??? I consider them contiguous and referenced
-                     //so I add this if and don't add the resource if we have a shared here
-                     //this is part of a big workaround around sce_cgc ...
-                     bool sharedContiguous = (structuralElement->_flags & CGPF_SHARED) && (structuralElement->_flags & CGP_CONTIGUOUS);
-                     if (!bIsVertexProgram || !sharedContiguous)
-                     {
-                        //add the resource index ... scary
-                        containers._resources.push_back(CNV2END((unsigned short)rin));
-                     }
+                     containers._resources.push_back(CNV2END((unsigned short)rin));
 
                      //fragment program
                      if (!bIsVertexProgram)
@@ -5275,16 +5212,8 @@ int convertNvToElfFromMemory(const void *sourceData, size_t size, int endianness
                      {
                         if (arrayType)
                         {
-                           //special case here for shared vertex array ??? I consider them contiguous and referenced
-                           //so I add this if and don't add the resource if we have a shared here
-                           //this is part of a big workaround around sce_cgc ...
-                           bool sharedContiguous = (structuralElement->_flags & CGPF_SHARED) && (structuralElement->_flags & CGP_CONTIGUOUS);
-                           if (!sharedContiguous)
-                           {
-                              //RGL_ASSERT2((int)containers._resources.size() == structuralElement->_type->_resourceIndex + arrayCellIndex*rows[itemType->_type-1] + embeddedConstants + index,("matrix index mismatch. some indices have been skipped"));
-                              //add the resource index ... scary
-                              containers._resources.push_back(CNV2END((unsigned short)rin));
-                           }
+                           //add the resource index ... scary
+                           containers._resources.push_back(CNV2END((unsigned short)rin));
                         }
                      }
                      else
@@ -5309,15 +5238,8 @@ int convertNvToElfFromMemory(const void *sourceData, size_t size, int endianness
             // matrix single or array or array of matrix: the flags should be the same for all the referenced items
             if (is_referenced)
             {
-               bool sharedContiguous = (structuralElement->_flags & CGPF_SHARED) && (structuralElement->_flags & CGP_CONTIGUOUS);
-
                unsigned short flag = getFlags(var,dir,no,is_referenced,is_shared,paramIndex);
                structuralElement->_flags = flag;
-
-               //special case here for shared vertex array ??? I consider them contiguous and referenced
-               if (sharedContiguous) //reset the contiguous flag too then
-                  structuralElement->_flags |= ( CGP_CONTIGUOUS | CGPF_SHARED);
-
                structuralElement->_type->_resource = res;
                //if array
                if (arrayType)
@@ -5650,21 +5572,8 @@ static void fillStructureItems(_CGNVCONTAINERS &containers, CgStructureType *str
                   }
                   else
                   {
-                     //if it's not contiguous , I am not sure what to do
-                     //RGL_ASSERT2(CNV2END(parameterEntry->flags) & CGP_CONTIGUOUS,("assumed parameterEntry->flags & CGP_CONTIGUOUS"));
-
-                     if (structuralElement->_flags & CGPF_SHARED)
-                     {
-                        int stride = getStride(itemType);
-                        parameterResource->resource = *arrayResourceIndex;
-                        (*arrayResourceIndex) = tmp+stride;
-                     }
-                     else
-                     {
-                        //this is a  hack, the info will be at 2 places
-                        parameterResource->resource = containers._resources[tmp];//_resources is already converted
-                        (*arrayResourceIndex) = tmp+1;
-                     }
+                     parameterResource->resource = containers._resources[tmp];//_resources is already converted
+                     (*arrayResourceIndex) = tmp+1;
 
                      //we are unrolling an array of struct, so we get individual items
                      //we should mark if they are referenced individually
@@ -5813,8 +5722,6 @@ unsigned short getFlags(CGenum var, CGenum dir, int no,	bool is_referenced, bool
    //boolean
    if (is_referenced)
       flags |= CGPF_REFERENCED;
-   if (is_shared)
-      flags |= CGPF_SHARED;
 
    //is it a global parameter ?
    if (no == -1)
@@ -6098,7 +6005,7 @@ namespace cgc {
             direction		= static_cast<CGenum>(		convert_endianness( static_cast<unsigned int>( pp.direction ),	endianness() ) );
             paramno		=				convert_endianness( pp.paramno,					endianness() );
             is_referenced	=				convert_endianness( pp.isReferenced,				endianness() ) != 0;
-            is_shared		=				convert_endianness( pp.isShared,				endianness() ) != 0;
+            is_shared		=				false;
             CgBinaryStringOffset		nm_offset =	convert_endianness( pp.name,					endianness() );
             CgBinaryFloatOffset			dv_offset =	convert_endianness( pp.defaultValue,				endianness() );
             CgBinaryEmbeddedConstantOffset	ec_offset =	convert_endianness( pp.embeddedConst,				endianness() );
