@@ -1388,7 +1388,7 @@ void menu_set_settings_label(char *type_str, size_t type_str_size, unsigned *w, 
          break;
       case RGUI_SETTINGS_SRAM_AUTOSAVE:
          if (g_settings.autosave_interval)
-            snprintf(type_str, type_str_size, "%u", g_settings.autosave_interval);
+            snprintf(type_str, type_str_size, "%u seconds", g_settings.autosave_interval);
          else
             strlcpy(type_str, "OFF", type_str_size);
          break;
