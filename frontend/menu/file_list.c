@@ -26,10 +26,10 @@ struct rgui_file
    size_t directory_ptr;
 };
 
-void rgui_list_push(void *userdata,
+void file_list_push(void *userdata,
       const char *path, unsigned type, size_t directory_ptr)
 {
-   rgui_list_t *list = (rgui_list_t*)userdata;
+   file_list_t *list = (file_list_t*)userdata;
 
    if (!list)
       return;
@@ -48,7 +48,7 @@ void rgui_list_push(void *userdata,
    list->size++;
 }
 
-void rgui_list_pop(rgui_list_t *list, size_t *directory_ptr)
+void file_list_pop(file_list_t *list, size_t *directory_ptr)
 {
    if (!(list->size == 0))
       free(list->list[--list->size].path);
@@ -57,7 +57,7 @@ void rgui_list_pop(rgui_list_t *list, size_t *directory_ptr)
       *directory_ptr = list->list[list->size].directory_ptr;
 }
 
-void rgui_list_free(rgui_list_t *list)
+void file_list_free(file_list_t *list)
 {
    size_t i;
    for (i = 0; i < list->size; i++)
@@ -66,7 +66,7 @@ void rgui_list_free(rgui_list_t *list)
    free(list);
 }
 
-void rgui_list_clear(rgui_list_t *list)
+void file_list_clear(file_list_t *list)
 {
    size_t i;
    for (i = 0; i < list->size; i++)
@@ -77,21 +77,21 @@ void rgui_list_clear(rgui_list_t *list)
    list->size = 0;
 }
 
-void rgui_list_set_alt_at_offset(rgui_list_t *list, size_t index,
+void file_list_set_alt_at_offset(file_list_t *list, size_t index,
       const char *alt)
 {
    free(list->list[index].alt);
    list->list[index].alt = strdup(alt);
 }
 
-void rgui_list_get_alt_at_offset(const rgui_list_t *list, size_t index,
+void file_list_get_alt_at_offset(const file_list_t *list, size_t index,
       const char **alt)
 {
    if (alt)
       *alt = list->list[index].alt ? list->list[index].alt : list->list[index].path;
 }
 
-static int rgui_list_alt_cmp(const void *a_, const void *b_)
+static int file_list_alt_cmp(const void *a_, const void *b_)
 {
    const struct rgui_file *a = (const struct rgui_file*)a_;
    const struct rgui_file *b = (const struct rgui_file*)b_;
@@ -100,12 +100,12 @@ static int rgui_list_alt_cmp(const void *a_, const void *b_)
    return strcasecmp(cmp_a, cmp_b);
 }
 
-void rgui_list_sort_on_alt(rgui_list_t *list)
+void file_list_sort_on_alt(file_list_t *list)
 {
-   qsort(list->list, list->size, sizeof(list->list[0]), rgui_list_alt_cmp);
+   qsort(list->list, list->size, sizeof(list->list[0]), file_list_alt_cmp);
 }
 
-void rgui_list_get_at_offset(const rgui_list_t *list, size_t index,
+void file_list_get_at_offset(const file_list_t *list, size_t index,
       const char **path, unsigned *file_type)
 {
    if (path)
@@ -114,9 +114,9 @@ void rgui_list_get_at_offset(const rgui_list_t *list, size_t index,
       *file_type = list->list[index].type;
 }
 
-void rgui_list_get_last(const rgui_list_t *list,
+void file_list_get_last(const file_list_t *list,
       const char **path, unsigned *file_type)
 {
    if (list->size)
-      rgui_list_get_at_offset(list, list->size - 1, path, file_type);
+      file_list_get_at_offset(list, list->size - 1, path, file_type);
 }

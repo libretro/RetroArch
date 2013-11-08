@@ -284,7 +284,7 @@ static void rgui_render(void *data)
    char title[256];
    const char *dir = NULL;
    unsigned menu_type = 0;
-   rgui_list_get_last(rgui->menu_stack, &dir, &menu_type);
+   file_list_get_last(rgui->menu_stack, &dir, &menu_type);
 
    if (menu_type == RGUI_SETTINGS_CORE)
       snprintf(title, sizeof(title), "CORE SELECTION %s", dir);
@@ -395,7 +395,7 @@ static void rgui_render(void *data)
    {
       const char *path = 0;
       unsigned type = 0;
-      rgui_list_get_at_offset(rgui->selection_buf, i, &path, &type);
+      file_list_get_at_offset(rgui->selection_buf, i, &path, &type);
       char message[256];
       char type_str[256];
 
@@ -433,7 +433,7 @@ static void rgui_render(void *data)
          if (type == RGUI_FILE_PLAIN)
          {
             strlcpy(type_str, "(CORE)", sizeof(type_str));
-            rgui_list_get_alt_at_offset(rgui->selection_buf, i, &path);
+            file_list_get_alt_at_offset(rgui->selection_buf, i, &path);
             w = 6;
          }
          else

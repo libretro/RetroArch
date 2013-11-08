@@ -285,8 +285,8 @@ typedef struct
    filebrowser_t *browser;
    unsigned menu_type;
 #endif
-   rgui_list_t *menu_stack;
-   rgui_list_t *selection_buf;
+   file_list_t *menu_stack;
+   file_list_t *selection_buf;
    size_t selection_ptr;
    bool need_refresh;
    bool msg_force;

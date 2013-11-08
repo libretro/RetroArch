@@ -22,33 +22,33 @@ extern "C" {
 #endif
 
 struct rgui_file;
-typedef struct rgui_list
+typedef struct file_list
 {
    struct rgui_file *list;
 
    size_t capacity;
    size_t size;
-} rgui_list_t;
+} file_list_t;
 
-void rgui_list_free(rgui_list_t *list);
+void file_list_free(file_list_t *list);
 
-void rgui_list_push(void *userdata, const char *path,
+void file_list_push(void *userdata, const char *path,
       unsigned type, size_t current_directory_ptr);
-void rgui_list_pop(rgui_list_t *list, size_t *directory_ptr);
-void rgui_list_clear(rgui_list_t *list);
+void file_list_pop(file_list_t *list, size_t *directory_ptr);
+void file_list_clear(file_list_t *list);
 
-void rgui_list_get_last(const rgui_list_t *list,
+void file_list_get_last(const file_list_t *list,
       const char **path, unsigned *type);
 
-void rgui_list_get_at_offset(const rgui_list_t *list, size_t index,
+void file_list_get_at_offset(const file_list_t *list, size_t index,
       const char **path, unsigned *type);
 
-void rgui_list_set_alt_at_offset(rgui_list_t *list, size_t index,
+void file_list_set_alt_at_offset(file_list_t *list, size_t index,
       const char *alt);
-void rgui_list_get_alt_at_offset(const rgui_list_t *list, size_t index,
+void file_list_get_alt_at_offset(const file_list_t *list, size_t index,
       const char **alt);
 
-void rgui_list_sort_on_alt(rgui_list_t *list);
+void file_list_sort_on_alt(file_list_t *list);
 
 #ifdef __cplusplus
 }

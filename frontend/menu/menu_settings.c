@@ -176,7 +176,7 @@ static int shader_manager_toggle_setting(rgui_handle_t *rgui, unsigned setting, 
       switch (action)
       {
          case RGUI_ACTION_OK:
-            rgui_list_push(rgui->menu_stack, g_settings.video.shader_dir, setting, rgui->selection_ptr);
+            file_list_push(rgui->menu_stack, g_settings.video.shader_dir, setting, rgui->selection_ptr);
             rgui->selection_ptr = 0;
             rgui->need_refresh = true;
             break;
@@ -291,7 +291,7 @@ int menu_set_settings(void *data, unsigned setting, unsigned action)
    {
       case RGUI_START_SCREEN:
          if (action == RGUI_ACTION_OK)
-            rgui_list_push(rgui->menu_stack, "", RGUI_START_SCREEN, 0);
+            file_list_push(rgui->menu_stack, "", RGUI_START_SCREEN, 0);
          break;
       case RGUI_SETTINGS_REWIND_ENABLE:
          if (action == RGUI_ACTION_OK ||
@@ -473,7 +473,7 @@ int menu_set_settings(void *data, unsigned setting, unsigned action)
          switch (action)
          {
             case RGUI_ACTION_OK:
-               rgui_list_push(rgui->menu_stack, g_extern.overlay_dir, setting, rgui->selection_ptr);
+               file_list_push(rgui->menu_stack, g_extern.overlay_dir, setting, rgui->selection_ptr);
                rgui->selection_ptr = 0;
                rgui->need_refresh = true;
                break;
@@ -669,7 +669,7 @@ int menu_set_settings(void *data, unsigned setting, unsigned action)
             rgui->binds.target = &g_settings.input.binds[port][0];
             rgui->binds.begin = RGUI_SETTINGS_BIND_BEGIN;
             rgui->binds.last = RGUI_SETTINGS_BIND_LAST;
-            rgui_list_push(rgui->menu_stack, "", RGUI_SETTINGS_CUSTOM_BIND, rgui->selection_ptr);
+            file_list_push(rgui->menu_stack, "", RGUI_SETTINGS_CUSTOM_BIND, rgui->selection_ptr);
             menu_poll_bind_get_rested_axes(&rgui->binds);
             menu_poll_bind_state(&rgui->binds);
          }
@@ -734,7 +734,7 @@ int menu_set_settings(void *data, unsigned setting, unsigned action)
                rgui->binds.last = setting;
                rgui->binds.target = bind;
                rgui->binds.player = port;
-               rgui_list_push(rgui->menu_stack, "", RGUI_SETTINGS_CUSTOM_BIND, rgui->selection_ptr);
+               file_list_push(rgui->menu_stack, "", RGUI_SETTINGS_CUSTOM_BIND, rgui->selection_ptr);
                menu_poll_bind_get_rested_axes(&rgui->binds);
                menu_poll_bind_state(&rgui->binds);
             }
