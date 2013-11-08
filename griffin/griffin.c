@@ -526,7 +526,7 @@ MENU
 #ifdef HAVE_FILEBROWSER
 #include "../frontend/menu/file_browser.c"
 #endif
-#include "../frontend/menu/file_list.c"
+#include "../file_list.c"
 
 #if defined(HAVE_RMENU)
 #include "../frontend/menu/rmenu_disp.c"
