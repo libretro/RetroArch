@@ -49,9 +49,8 @@
 @implementation NSScreen (IOSCompat)
 - (CGRect)bounds
 {
-	CGRect rect_width  = NSRectToCGRect(self.frame);
-	CGRect rect_height = NSRectToCGRect(self.frame);
-	return CGRectMake(0, 0, CGRectGetWidth(rect_width), CGRectGetHeight(rect_height));
+	CGRect cgrect  = NSRectToCGRect(self.frame);
+	return CGRectMake(0, 0, CGRectGetWidth(cgrect), CGRectGetHeight(cgrect));
 }
 - (float) scale  { return 1.0f; }
 @end
