@@ -18,7 +18,7 @@
 #include <string.h>
 #include "file_list.h"
 
-struct rgui_file
+struct item_file
 {
    char *path;
    char *alt;
@@ -38,7 +38,7 @@ void file_list_push(void *userdata,
    {
       list->capacity++;
       list->capacity *= 2;
-      list->list = (struct rgui_file*)realloc(list->list, list->capacity * sizeof(struct rgui_file));
+      list->list = (struct item_file*)realloc(list->list, list->capacity * sizeof(struct item_file));
    }
 
    list->list[list->size].path = strdup(path);
@@ -93,8 +93,8 @@ void file_list_get_alt_at_offset(const file_list_t *list, size_t index,
 
 static int file_list_alt_cmp(const void *a_, const void *b_)
 {
-   const struct rgui_file *a = (const struct rgui_file*)a_;
-   const struct rgui_file *b = (const struct rgui_file*)b_;
+   const struct item_file *a = (const struct item_file*)a_;
+   const struct item_file *b = (const struct item_file*)b_;
    const char *cmp_a = a->alt ? a->alt : a->path;
    const char *cmp_b = b->alt ? b->alt : b->path;
    return strcasecmp(cmp_a, cmp_b);

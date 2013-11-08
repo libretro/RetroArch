@@ -21,10 +21,10 @@
 extern "C" {
 #endif
 
-struct rgui_file;
+struct item_file;
 typedef struct file_list
 {
-   struct rgui_file *list;
+   struct item_file *list;
 
    size_t capacity;
    size_t size;
