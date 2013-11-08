@@ -948,9 +948,9 @@ int menu_set_settings(void *data, unsigned setting, unsigned action)
                g_extern.lifecycle_state &= ~(1ULL << MODE_VIDEO_PAL_TEMPORAL_ENABLE);
             }
             driver.video->restart();
-#ifdef HAVE_RMENU
-            rgui_init_textures(rgui);
-#endif
+
+            if (menu_ctx && menu_ctx->init_assets)
+               menu_ctx->init_assets(rgui);
          }
          break;
       case RGUI_SETTINGS_VIDEO_PAL60:
@@ -967,7 +967,8 @@ int menu_set_settings(void *data, unsigned setting, unsigned action)
                      g_extern.lifecycle_state |= (1ULL << MODE_VIDEO_PAL_TEMPORAL_ENABLE);
 
                   driver.video->restart();
-                  rgui_init_textures(rgui);
+                  if (menu_ctx && menu_ctx->init_assets)
+                     menu_ctx->init_assets(rgui);
                }
                break;
             case RGUI_ACTION_START:
@@ -976,7 +977,8 @@ int menu_set_settings(void *data, unsigned setting, unsigned action)
                   g_extern.lifecycle_state &= ~(1ULL << MODE_VIDEO_PAL_TEMPORAL_ENABLE);
 
                   driver.video->restart();
-                  rgui_init_textures(rgui);
+                  if (menu_ctx && menu_ctx->init_assets)
+                     menu_ctx->init_assets(rgui);
                }
                break;
          }

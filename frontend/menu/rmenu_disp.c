@@ -66,7 +66,7 @@ static void render_background(rgui_handle_t *rgui)
 {
 }
 
-static void rgui_render_messagebox(void *data, const char *message)
+static void rmenu_render_messagebox(void *data, const char *message)
 {
    font_params_t font_parms;
 
@@ -110,7 +110,7 @@ static void rgui_render_messagebox(void *data, const char *message)
 }
 
 
-static void rgui_render(void *data)
+static void rmenu_render(void *data)
 {
    if (!render_normal)
    {
@@ -392,7 +392,7 @@ void rmenu_set_texture(void *data, bool enable)
    }
 }
 
-void rgui_init_textures(void *data)
+static void rmenu_init_assets(void *data)
 {
    rgui_handle_t *rgui = (rgui_handle_t*)data;
 #ifdef HAVE_MENU_PANEL
@@ -405,19 +405,19 @@ void rgui_init_textures(void *data)
    rmenu_set_texture(rgui, true);
 }
 
-static void *rgui_init(void)
+static void *rmenu_init(void)
 {
    rgui_handle_t *rgui = (rgui_handle_t*)calloc(1, sizeof(*rgui));
 
    menu_texture = (struct texture_image*)calloc(1, sizeof(*menu_texture));
    menu_panel = (struct texture_image*)calloc(1, sizeof(*menu_panel));
 
-   rgui_init_textures(rgui);
+   rmenu_init_assets(rgui);
 
    return rgui;
 }
 
-static void rgui_free(void *data)
+static void rmenu_free_assets(void *data)
 {
 #ifdef _XBOX1
    if (menu_panel->vertex_buf)
@@ -456,6 +456,11 @@ static void rgui_free(void *data)
 #endif
 }
 
+static void rmenu_free(void *data)
+{
+   rmenu_free_assets(data);
+}
+
 int rgui_input_postprocess(void *data, uint64_t old_state)
 {
    (void)data;
@@ -476,9 +481,11 @@ int rgui_input_postprocess(void *data, uint64_t old_state)
 
 const menu_ctx_driver_t menu_ctx_rmenu = {
    rmenu_set_texture,
-   rgui_render_messagebox,
-   rgui_render,
-   rgui_init,
-   rgui_free,
+   rmenu_render_messagebox,
+   rmenu_render,
+   rmenu_init,
+   rmenu_free,
+   rmenu_init_assets,
+   rmenu_free_assets,
    "rmenu",
 };

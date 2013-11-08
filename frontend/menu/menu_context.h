@@ -28,11 +28,13 @@
 
 typedef struct menu_ctx_driver
 {
-   void (*set_texture)(void*, bool);
-   void (*render_messagebox)(void*, const char*);
-   void (*render)(void*);
+   void  (*set_texture)(void*, bool);
+   void  (*render_messagebox)(void*, const char*);
+   void  (*render)(void*);
    void* (*init)(void);
-   void (*free)(void*);
+   void  (*free)(void*);
+   void  (*init_assets)(void*);
+   void  (*free_assets)(void*);
 
    // Human readable string.
    const char *ident;
@@ -43,6 +45,6 @@ extern const menu_ctx_driver_t menu_ctx_rmenu_xui;
 extern const menu_ctx_driver_t menu_ctx_rgui;
 
 const menu_ctx_driver_t *menu_ctx_find_driver(const char *ident); // Finds driver with ident. Does not initialize.
-bool menu_ctx_init_first(const menu_ctx_driver_t **driver, rgui_handle_t **handle); // Finds first suitable driver and initializes.
+bool menu_ctx_init_first(const menu_ctx_driver_t **driver, void **handle); // Finds first suitable driver and initializes.
 
 #endif

@@ -27,7 +27,6 @@
 #include "../../driver.h"
 #include "../../file.h"
 #include "../../file_ext.h"
-#include "menu_context.h"
 #include "../../input/input_common.h"
 
 #include "../../compat/posix_string.h"
@@ -384,7 +383,7 @@ bool load_menu_game(void)
 
 void menu_init(void)
 {
-   if (!menu_ctx_init_first(&menu_ctx, &rgui))
+   if (!menu_ctx_init_first(&menu_ctx, ((void**)&rgui)))
    {
       RARCH_ERR("Could not initialize menu.\n");
       rarch_fail(1, "menu_init()");
