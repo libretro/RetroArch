@@ -1675,7 +1675,7 @@ static void init_libretro_cbs(void)
 #endif
 }
 
-#if defined(HAVE_THREADS) && !defined(RARCH_CONSOLE)
+#if defined(HAVE_THREADS)
 void rarch_init_autosave(void)
 {
    int ram_types[2] = {-1, -1};
@@ -2467,7 +2467,7 @@ void rarch_disk_control_append_image(const char *path)
    msg_queue_clear(g_extern.msg_queue);
    msg_queue_push(g_extern.msg_queue, msg, 0, 180);
 
-#if defined(HAVE_THREADS) && !defined(RARCH_CONSOLE)
+#if defined(HAVE_THREADS)
    rarch_deinit_autosave();
 #endif
 
@@ -2478,7 +2478,7 @@ void rarch_disk_control_append_image(const char *path)
    set_paths(path);
    fill_pathnames();
 
-#if defined(HAVE_THREADS) && !defined(RARCH_CONSOLE)
+#if defined(HAVE_THREADS)
    rarch_init_autosave();
 #endif
 
@@ -3003,7 +3003,7 @@ int rarch_main_init(int argc, char *argv[])
    if (!g_extern.use_sram)
       RARCH_LOG("SRAM will not be saved.\n");
 
-#if defined(HAVE_THREADS) && !defined(RARCH_CONSOLE)
+#if defined(HAVE_THREADS)
    if (g_extern.use_sram)
       rarch_init_autosave();
 #endif
@@ -3127,7 +3127,7 @@ bool rarch_main_iterate(void)
    do_state_checks();
 
    // Run libretro for one frame.
-#if defined(HAVE_THREADS) && !defined(RARCH_CONSOLE)
+#if defined(HAVE_THREADS)
    lock_autosave();
 #endif
 
@@ -3155,7 +3155,7 @@ bool rarch_main_iterate(void)
       netplay_post_frame(g_extern.netplay);
 #endif
 
-#if defined(HAVE_THREADS) && !defined(RARCH_CONSOLE)
+#if defined(HAVE_THREADS)
    unlock_autosave();
 #endif
 
@@ -3171,7 +3171,7 @@ void rarch_main_deinit(void)
    deinit_command();
 #endif
 
-#if defined(HAVE_THREADS) && !defined(RARCH_CONSOLE)
+#if defined(HAVE_THREADS)
    if (g_extern.use_sram)
       rarch_deinit_autosave();
 #endif

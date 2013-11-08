@@ -313,7 +313,6 @@ int scond_broadcast(scond_t *cond)
    return pthread_cond_broadcast(&cond->cond);
 }
 
-#ifndef RARCH_CONSOLE
 bool scond_wait_timeout(scond_t *cond, slock_t *lock, int64_t timeout_us)
 {
    struct timespec now;
@@ -326,20 +325,28 @@ bool scond_wait_timeout(scond_t *cond, slock_t *lock, int64_t timeout_us)
    mach_port_deallocate(mach_task_self(), cclock);
    now.tv_sec = mts.tv_sec;
    now.tv_nsec = mts.tv_nsec;
+#elif defined(__CELLOS_LV2__)
+   sys_time_sec_t s;
+   sys_time_nsec_t n;
+   sys_time_get_current_time(&s, &n);
 #else
    clock_gettime(CLOCK_REALTIME, &now);
 #endif
 
+#if defined(__CELLOS_LV2__)
+   now.tv_sec  = s;
+   now.tv_nsec = n;
+#else
    now.tv_sec += timeout_us / 1000000LL;
    now.tv_nsec += timeout_us * 1000LL;
 
    now.tv_sec += now.tv_nsec / 1000000000LL;
    now.tv_nsec = now.tv_nsec % 1000000000LL;
+#endif
 
    int ret = pthread_cond_timedwait(&cond->cond, &lock->lock, &now);
    return ret == 0;
 }
-#endif
 
 void scond_signal(scond_t *cond)
 {
