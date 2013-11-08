@@ -387,7 +387,7 @@ typedef struct video_driver
    void (*free)(void *data);
    const char *ident;
 
-#if defined(HAVE_RMENU) || defined(HAVE_RGUI) || defined(HAVE_RMENU_XUI)
+#ifdef HAVE_MENU
    void (*restart)(void);
 #endif
 

@@ -337,9 +337,7 @@ void menu_init(void);
 bool menu_iterate(void);
 void menu_free(void);
 
-#if defined(HAVE_RMENU)
-int rmenu_iterate(void *data, unsigned action);
-#elif defined(HAVE_RMENU_XUI)
+#if defined(HAVE_RMENU_XUI)
 int rmenu_xui_iterate(void *data, unsigned action);
 #endif
 
