@@ -337,14 +337,24 @@ int menu_set_settings(void *data, unsigned setting, unsigned action)
          else if (action == RGUI_ACTION_START)
             g_extern.config_save_on_exit = true;
          break;
-#if defined(HAVE_THREADS) && !defined(RARCH_CONSOLE)
+#if defined(HAVE_THREADS)
       case RGUI_SETTINGS_SRAM_AUTOSAVE:
-         if (action == RGUI_ACTION_OK || action == RGUI_ACTION_RIGHT || action == RGUI_ACTION_LEFT)
+         if (action == RGUI_ACTION_OK || action == RGUI_ACTION_RIGHT)
          {
             rarch_deinit_autosave();
-            g_settings.autosave_interval = (!g_settings.autosave_interval) * 10;
+            g_settings.autosave_interval += 10;
             if (g_settings.autosave_interval)
                rarch_init_autosave();
+         }
+         else if (action == RGUI_ACTION_LEFT)
+         {
+            if (g_settings.autosave_interval)
+            {
+               rarch_deinit_autosave();
+               g_settings.autosave_interval -= min(10, g_settings.autosave_interval);
+               if (g_settings.autosave_interval)
+                  rarch_init_autosave();
+            }
          }
          else if (action == RGUI_ACTION_START)
          {
@@ -1377,7 +1387,10 @@ void menu_set_settings_label(char *type_str, size_t type_str_size, unsigned *w, 
          strlcpy(type_str, g_extern.config_save_on_exit ? "ON" : "OFF", type_str_size);
          break;
       case RGUI_SETTINGS_SRAM_AUTOSAVE:
-         strlcpy(type_str, g_settings.autosave_interval ? "ON" : "OFF", type_str_size);
+         if (g_settings.autosave_interval)
+            snprintf(type_str, type_str_size, "%u", g_settings.autosave_interval);
+         else
+            strlcpy(type_str, "OFF", type_str_size);
          break;
       case RGUI_SETTINGS_SAVESTATE_SAVE:
       case RGUI_SETTINGS_SAVESTATE_LOAD:
