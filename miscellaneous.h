@@ -21,6 +21,8 @@
 #include <sys/timer.h>
 #elif defined(XENON)
 #include <time/time.h>
+#elif defined(GEKKO) || defined(__PSL1GHT__) || defined(__QNX__)
+#include <unistd.h>
 #else
 #include <time.h>
 #endif

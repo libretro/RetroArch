@@ -315,7 +315,7 @@ int scond_broadcast(scond_t *cond)
 
 bool scond_wait_timeout(scond_t *cond, slock_t *lock, int64_t timeout_us)
 {
-   struct timespec now;
+   struct timespec now = {0};
 
 #ifdef __MACH__ // OSX doesn't have clock_gettime ... :(
    clock_serv_t cclock;
@@ -329,7 +329,7 @@ bool scond_wait_timeout(scond_t *cond, slock_t *lock, int64_t timeout_us)
    sys_time_sec_t s;
    sys_time_nsec_t n;
    sys_time_get_current_time(&s, &n);
-#else
+#elif !defined(GEKKO) // timeout on libogc is duration, not end time
    clock_gettime(CLOCK_REALTIME, &now);
 #endif
 
