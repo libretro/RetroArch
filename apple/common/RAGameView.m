@@ -399,7 +399,7 @@ void apple_gfx_ctx_update_window_title(void)
       //       If it poses a problem it should be changed to dispatch_sync.
       dispatch_async(dispatch_get_main_queue(),
       ^{
-         g_view.window.title = @(text);
+		  g_view.window.title = [NSString stringWithCString:text encoding:NSUTF8StringEncoding];
       });
    }
 #endif

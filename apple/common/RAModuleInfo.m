@@ -38,11 +38,11 @@ NSArray* apple_get_modules()
          core_info_t* core = &coreList->list[i];
       
          RAModuleInfo* newInfo = [RAModuleInfo new];
-         newInfo.path = @(core->path);
+         newInfo.path = [NSString stringWithCString:core->path encoding:NSUTF8StringEncoding];
          newInfo.baseName = newInfo.path.lastPathComponent.stringByDeletingPathExtension;
          newInfo.info = core;
          newInfo.data = core->data;
-         newInfo.description = @(core->display_name);
+         newInfo.description = [NSString stringWithCString:core->display_name encoding:NSUTF8StringEncoding];
          newInfo.customConfigFile = [NSString stringWithFormat:@"%@/%@.cfg", apple_platform.configDirectory, newInfo.baseName];
          newInfo.configFile = newInfo.hasCustomConfig ? newInfo.customConfigFile : apple_platform.globalConfigFile;
 

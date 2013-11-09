@@ -98,8 +98,8 @@ static const char* get_axis_name(const rarch_setting_t* setting)
    
    if (min || max)
    {
-      self.minimum = @(min);
-      self.maximum = @(max);
+      self.minimum = [NSNumber numberWithInt:min];
+      self.maximum = [NSNumber numberWithInt:max];
    }
    
    return self;
