@@ -242,6 +242,19 @@ static bool g_is_syncing = true;
 
 static RAScreen* get_chosen_screen()
 {
+#if __has_feature(objc_arc)
+    @autoreleasepool {
+        if (g_settings.video.monitor_index >= RAScreen.screens.count)
+        {
+            RARCH_WARN("video_monitor_index is greater than the number of connected monitors; using main screen instead.\n");
+            return RAScreen.mainScreen;
+        }
+        
+        NSArray *screens = [RAScreen screens];
+        RAScreen *s = (RAScreen*)[screens objectAtIndex:g_settings.video.monitor_index];
+        return s;
+    }
+#else
    NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
 	
    if (g_settings.video.monitor_index >= RAScreen.screens.count)
@@ -255,6 +268,7 @@ static RAScreen* get_chosen_screen()
    RAScreen *s = (RAScreen*)[screens objectAtIndex:g_settings.video.monitor_index];
    [pool drain];
    return s;
+#endif
 }
 
 bool apple_gfx_ctx_init()

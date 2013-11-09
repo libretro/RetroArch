@@ -1199,6 +1199,7 @@ static void gl_init_textures(void *data, const video_info_t *video)
 static inline void gl_copy_frame(void *data, const void *frame, unsigned width, unsigned height, unsigned pitch)
 {
    unsigned h;
+   (void)h;
    gl_t *gl = (gl_t*)data;
 #if defined(HAVE_OPENGLES2)
 #if defined(HAVE_EGL)
@@ -2335,6 +2336,7 @@ static bool gl_read_viewport(void *data, uint8_t *buffer)
 {
    unsigned i;
    gl_t *gl = (gl_t*)data;
+   (void)i;
 
    RARCH_PERFORMANCE_INIT(read_viewport);
    RARCH_PERFORMANCE_START(read_viewport);
