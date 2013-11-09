@@ -323,9 +323,9 @@ static int16_t dinput_input_state(void *data,
          return dinput_keyboard_pressed(di, id);
 
       case RETRO_DEVICE_ANALOG:
-         ret = input_joypad_analog(di->joypad, port, index, id, g_settings.input.binds[port]);
+         ret = dinput_pressed_analog(di, binds[port], index, id);
          if (!ret)
-            dinput_pressed_analog(di, binds[port], index, id);
+            ret = input_joypad_analog(di->joypad, port, index, id, g_settings.input.binds[port]);
          return ret;
 
       case RETRO_DEVICE_MOUSE:

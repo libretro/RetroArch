@@ -101,9 +101,9 @@ static int16_t sdl_joypad_device_state(sdl_input_t *sdl, const struct retro_keyb
 static int16_t sdl_analog_device_state(sdl_input_t *sdl, const struct retro_keybind **binds,
       unsigned port_num, unsigned index, unsigned id)
 {
-   int16_t ret = input_joypad_analog(sdl->joypad, port_num, index, id, binds[port_num]);
+   int16_t ret = sdl_analog_pressed(sdl, binds[port_num], index, id);
    if (!ret)
-      ret = sdl_analog_pressed(sdl, binds[port_num], index, id);
+      ret = input_joypad_analog(sdl->joypad, port_num, index, id, binds[port_num]);
    return ret;
 }
 
