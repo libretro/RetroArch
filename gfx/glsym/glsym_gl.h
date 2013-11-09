@@ -21,6 +21,9 @@ typedef void *GLeglImageOES;
 #if !defined(GL_OES_fixed_point) && !defined(HAVE_OPENGLES2)
 typedef GLint GLfixed;
 #endif
+#if defined(OSX) && !defined(MAC_OS_X_VERSION_10_7)
+#define OSX_10_6_SNOW_LEOPARD 1
+#endif
 typedef void (APIENTRYP RGLSYMGLBLENDCOLORPROC) (GLfloat red, GLfloat green, GLfloat blue, GLfloat alpha);
 typedef void (APIENTRYP RGLSYMGLBLENDEQUATIONPROC) (GLenum mode);
 typedef void (APIENTRYP RGLSYMGLDRAWRANGEELEMENTSPROC) (GLenum mode, GLuint start, GLuint end, GLsizei count, GLenum type, const GLvoid *indices);
@@ -330,8 +333,10 @@ typedef void (APIENTRYP RGLSYMGLDRAWARRAYSINSTANCEDPROC) (GLenum mode, GLint fir
 typedef void (APIENTRYP RGLSYMGLDRAWELEMENTSINSTANCEDPROC) (GLenum mode, GLsizei count, GLenum type, const GLvoid *indices, GLsizei instancecount);
 typedef void (APIENTRYP RGLSYMGLTEXBUFFERPROC) (GLenum target, GLenum internalformat, GLuint buffer);
 typedef void (APIENTRYP RGLSYMGLPRIMITIVERESTARTINDEXPROC) (GLuint index);
+#ifndef OSX_10_6_SNOW_LEOPARD
 typedef void (APIENTRYP RGLSYMGLGETINTEGER64I_VPROC) (GLenum target, GLuint index, GLint64 *data);
 typedef void (APIENTRYP RGLSYMGLGETBUFFERPARAMETERI64VPROC) (GLenum target, GLenum pname, GLint64 *params);
+#endif
 typedef void (APIENTRYP RGLSYMGLFRAMEBUFFERTEXTUREPROC) (GLenum target, GLenum attachment, GLuint texture, GLint level);
 typedef void (APIENTRYP RGLSYMGLVERTEXATTRIBDIVISORPROC) (GLuint index, GLuint divisor);
 typedef void (APIENTRYP RGLSYMGLMINSAMPLESHADINGPROC) (GLfloat value);
@@ -590,6 +595,7 @@ typedef void (APIENTRYP RGLSYMGLDRAWRANGEELEMENTSBASEVERTEXPROC) (GLenum mode, G
 typedef void (APIENTRYP RGLSYMGLDRAWELEMENTSINSTANCEDBASEVERTEXPROC) (GLenum mode, GLsizei count, GLenum type, const GLvoid *indices, GLsizei instancecount, GLint basevertex);
 typedef void (APIENTRYP RGLSYMGLMULTIDRAWELEMENTSBASEVERTEXPROC) (GLenum mode, const GLsizei *count, GLenum type, const GLvoid* const *indices, GLsizei drawcount, const GLint *basevertex);
 typedef void (APIENTRYP RGLSYMGLPROVOKINGVERTEXPROC) (GLenum mode);
+#ifndef OSX_10_6_SNOW_LEOPARD
 typedef GLsync (APIENTRYP RGLSYMGLFENCESYNCPROC) (GLenum condition, GLbitfield flags);
 typedef GLboolean (APIENTRYP RGLSYMGLISSYNCPROC) (GLsync sync);
 typedef void (APIENTRYP RGLSYMGLDELETESYNCPROC) (GLsync sync);
@@ -597,6 +603,8 @@ typedef GLenum (APIENTRYP RGLSYMGLCLIENTWAITSYNCPROC) (GLsync sync, GLbitfield f
 typedef void (APIENTRYP RGLSYMGLWAITSYNCPROC) (GLsync sync, GLbitfield flags, GLuint64 timeout);
 typedef void (APIENTRYP RGLSYMGLGETINTEGER64VPROC) (GLenum pname, GLint64 *params);
 typedef void (APIENTRYP RGLSYMGLGETSYNCIVPROC) (GLsync sync, GLenum pname, GLsizei bufSize, GLsizei *length, GLint *values);
+#endif
+
 typedef void (APIENTRYP RGLSYMGLTEXIMAGE2DMULTISAMPLEPROC) (GLenum target, GLsizei samples, GLint internalformat, GLsizei width, GLsizei height, GLboolean fixedsamplelocations);
 typedef void (APIENTRYP RGLSYMGLTEXIMAGE3DMULTISAMPLEPROC) (GLenum target, GLsizei samples, GLint internalformat, GLsizei width, GLsizei height, GLsizei depth, GLboolean fixedsamplelocations);
 typedef void (APIENTRYP RGLSYMGLGETMULTISAMPLEFVPROC) (GLenum pname, GLuint index, GLfloat *val);
@@ -629,8 +637,10 @@ typedef void (APIENTRYP RGLSYMGLGETSAMPLERPARAMETERIIVPROC) (GLuint sampler, GLe
 typedef void (APIENTRYP RGLSYMGLGETSAMPLERPARAMETERFVPROC) (GLuint sampler, GLenum pname, GLfloat *params);
 typedef void (APIENTRYP RGLSYMGLGETSAMPLERPARAMETERIUIVPROC) (GLuint sampler, GLenum pname, GLuint *params);
 typedef void (APIENTRYP RGLSYMGLQUERYCOUNTERPROC) (GLuint id, GLenum target);
+#ifndef OSX_10_6_SNOW_LEOPARD
 typedef void (APIENTRYP RGLSYMGLGETQUERYOBJECTI64VPROC) (GLuint id, GLenum pname, GLint64 *params);
 typedef void (APIENTRYP RGLSYMGLGETQUERYOBJECTUI64VPROC) (GLuint id, GLenum pname, GLuint64 *params);
+#endif
 typedef void (APIENTRYP RGLSYMGLVERTEXP2UIPROC) (GLenum type, GLuint value);
 typedef void (APIENTRYP RGLSYMGLVERTEXP2UIVPROC) (GLenum type, const GLuint *value);
 typedef void (APIENTRYP RGLSYMGLVERTEXP3UIPROC) (GLenum type, GLuint value);
@@ -798,7 +808,9 @@ typedef void (APIENTRYP RGLSYMGLDEPTHRANGEARRAYVPROC) (GLuint first, GLsizei cou
 typedef void (APIENTRYP RGLSYMGLDEPTHRANGEINDEXEDPROC) (GLuint index, GLdouble n, GLdouble f);
 typedef void (APIENTRYP RGLSYMGLGETFLOATI_VPROC) (GLenum target, GLuint index, GLfloat *data);
 typedef void (APIENTRYP RGLSYMGLGETDOUBLEI_VPROC) (GLenum target, GLuint index, GLdouble *data);
+#ifndef OSX_10_6_SNOW_LEOPARD
 typedef GLsync (APIENTRYP RGLSYMGLCREATESYNCFROMCLEVENTARBPROC) (struct _cl_context * context, struct _cl_event * event, GLbitfield flags);
+#endif
 typedef void (APIENTRYP RGLSYMGLDEBUGMESSAGECONTROLARBPROC) (GLenum source, GLenum type, GLenum severity, GLsizei count, const GLuint *ids, GLboolean enabled);
 typedef void (APIENTRYP RGLSYMGLDEBUGMESSAGEINSERTARBPROC) (GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar *buf);
 typedef void (APIENTRYP RGLSYMGLDEBUGMESSAGECALLBACKARBPROC) (RGLGENGLDEBUGPROCARB callback, const GLvoid *userParam);
@@ -859,7 +871,9 @@ typedef void (APIENTRYP RGLSYMGLVERTEXATTRIBBINDINGPROC) (GLuint attribindex, GL
 typedef void (APIENTRYP RGLSYMGLVERTEXBINDINGDIVISORPROC) (GLuint bindingindex, GLuint divisor);
 typedef void (APIENTRYP RGLSYMGLFRAMEBUFFERPARAMETERIPROC) (GLenum target, GLenum pname, GLint param);
 typedef void (APIENTRYP RGLSYMGLGETFRAMEBUFFERPARAMETERIVPROC) (GLenum target, GLenum pname, GLint *params);
+#ifndef OSX_10_6_SNOW_LEOPARD
 typedef void (APIENTRYP RGLSYMGLGETINTERNALFORMATI64VPROC) (GLenum target, GLenum internalformat, GLenum pname, GLsizei bufSize, GLint64 *params);
+#endif
 typedef void (APIENTRYP RGLSYMGLINVALIDATETEXSUBIMAGEPROC) (GLuint texture, GLint level, GLint xoffset, GLint yoffset, GLint zoffset, GLsizei width, GLsizei height, GLsizei depth);
 typedef void (APIENTRYP RGLSYMGLINVALIDATETEXIMAGEPROC) (GLuint texture, GLint level);
 typedef void (APIENTRYP RGLSYMGLINVALIDATEBUFFERSUBDATAPROC) (GLuint buffer, GLintptr offset, GLsizeiptr length);
@@ -2324,8 +2338,10 @@ extern RGLSYMGLDRAWARRAYSINSTANCEDPROC __rglgen_glDrawArraysInstanced;
 extern RGLSYMGLDRAWELEMENTSINSTANCEDPROC __rglgen_glDrawElementsInstanced;
 extern RGLSYMGLTEXBUFFERPROC __rglgen_glTexBuffer;
 extern RGLSYMGLPRIMITIVERESTARTINDEXPROC __rglgen_glPrimitiveRestartIndex;
+#ifndef OSX_10_6_SNOW_LEOPARD
 extern RGLSYMGLGETINTEGER64I_VPROC __rglgen_glGetInteger64i_v;
 extern RGLSYMGLGETBUFFERPARAMETERI64VPROC __rglgen_glGetBufferParameteri64v;
+#endif
 extern RGLSYMGLFRAMEBUFFERTEXTUREPROC __rglgen_glFramebufferTexture;
 extern RGLSYMGLVERTEXATTRIBDIVISORPROC __rglgen_glVertexAttribDivisor;
 extern RGLSYMGLMINSAMPLESHADINGPROC __rglgen_glMinSampleShading;
@@ -2584,6 +2600,7 @@ extern RGLSYMGLDRAWRANGEELEMENTSBASEVERTEXPROC __rglgen_glDrawRangeElementsBaseV
 extern RGLSYMGLDRAWELEMENTSINSTANCEDBASEVERTEXPROC __rglgen_glDrawElementsInstancedBaseVertex;
 extern RGLSYMGLMULTIDRAWELEMENTSBASEVERTEXPROC __rglgen_glMultiDrawElementsBaseVertex;
 extern RGLSYMGLPROVOKINGVERTEXPROC __rglgen_glProvokingVertex;
+#ifndef OSX_10_6_SNOW_LEOPARD
 extern RGLSYMGLFENCESYNCPROC __rglgen_glFenceSync;
 extern RGLSYMGLISSYNCPROC __rglgen_glIsSync;
 extern RGLSYMGLDELETESYNCPROC __rglgen_glDeleteSync;
@@ -2591,6 +2608,7 @@ extern RGLSYMGLCLIENTWAITSYNCPROC __rglgen_glClientWaitSync;
 extern RGLSYMGLWAITSYNCPROC __rglgen_glWaitSync;
 extern RGLSYMGLGETINTEGER64VPROC __rglgen_glGetInteger64v;
 extern RGLSYMGLGETSYNCIVPROC __rglgen_glGetSynciv;
+#endif
 extern RGLSYMGLTEXIMAGE2DMULTISAMPLEPROC __rglgen_glTexImage2DMultisample;
 extern RGLSYMGLTEXIMAGE3DMULTISAMPLEPROC __rglgen_glTexImage3DMultisample;
 extern RGLSYMGLGETMULTISAMPLEFVPROC __rglgen_glGetMultisamplefv;
@@ -2623,8 +2641,10 @@ extern RGLSYMGLGETSAMPLERPARAMETERIIVPROC __rglgen_glGetSamplerParameterIiv;
 extern RGLSYMGLGETSAMPLERPARAMETERFVPROC __rglgen_glGetSamplerParameterfv;
 extern RGLSYMGLGETSAMPLERPARAMETERIUIVPROC __rglgen_glGetSamplerParameterIuiv;
 extern RGLSYMGLQUERYCOUNTERPROC __rglgen_glQueryCounter;
+#ifndef OSX_10_6_SNOW_LEOPARD
 extern RGLSYMGLGETQUERYOBJECTI64VPROC __rglgen_glGetQueryObjecti64v;
 extern RGLSYMGLGETQUERYOBJECTUI64VPROC __rglgen_glGetQueryObjectui64v;
+#endif
 extern RGLSYMGLVERTEXP2UIPROC __rglgen_glVertexP2ui;
 extern RGLSYMGLVERTEXP2UIVPROC __rglgen_glVertexP2uiv;
 extern RGLSYMGLVERTEXP3UIPROC __rglgen_glVertexP3ui;
@@ -2792,7 +2812,9 @@ extern RGLSYMGLDEPTHRANGEARRAYVPROC __rglgen_glDepthRangeArrayv;
 extern RGLSYMGLDEPTHRANGEINDEXEDPROC __rglgen_glDepthRangeIndexed;
 extern RGLSYMGLGETFLOATI_VPROC __rglgen_glGetFloati_v;
 extern RGLSYMGLGETDOUBLEI_VPROC __rglgen_glGetDoublei_v;
+#ifndef OSX_10_6_SNOW_LEOPARD
 extern RGLSYMGLCREATESYNCFROMCLEVENTARBPROC __rglgen_glCreateSyncFromCLeventARB;
+#endif
 extern RGLSYMGLDEBUGMESSAGECONTROLARBPROC __rglgen_glDebugMessageControlARB;
 extern RGLSYMGLDEBUGMESSAGEINSERTARBPROC __rglgen_glDebugMessageInsertARB;
 extern RGLSYMGLDEBUGMESSAGECALLBACKARBPROC __rglgen_glDebugMessageCallbackARB;
@@ -2853,7 +2875,9 @@ extern RGLSYMGLVERTEXATTRIBBINDINGPROC __rglgen_glVertexAttribBinding;
 extern RGLSYMGLVERTEXBINDINGDIVISORPROC __rglgen_glVertexBindingDivisor;
 extern RGLSYMGLFRAMEBUFFERPARAMETERIPROC __rglgen_glFramebufferParameteri;
 extern RGLSYMGLGETFRAMEBUFFERPARAMETERIVPROC __rglgen_glGetFramebufferParameteriv;
+#ifndef OSX_10_6_SNOW_LEOPARD
 extern RGLSYMGLGETINTERNALFORMATI64VPROC __rglgen_glGetInternalformati64v;
+#endif
 extern RGLSYMGLINVALIDATETEXSUBIMAGEPROC __rglgen_glInvalidateTexSubImage;
 extern RGLSYMGLINVALIDATETEXIMAGEPROC __rglgen_glInvalidateTexImage;
 extern RGLSYMGLINVALIDATEBUFFERSUBDATAPROC __rglgen_glInvalidateBufferSubData;

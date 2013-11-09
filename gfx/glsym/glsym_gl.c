@@ -311,8 +311,10 @@ const struct rglgen_sym_map rglgen_symbol_map[] = {
     SYM(DrawElementsInstanced),
     SYM(TexBuffer),
     SYM(PrimitiveRestartIndex),
+#ifndef OSX_10_6_SNOW_LEOPARD
     SYM(GetInteger64i_v),
     SYM(GetBufferParameteri64v),
+#endif
     SYM(FramebufferTexture),
     SYM(VertexAttribDivisor),
     SYM(MinSampleShading),
@@ -571,6 +573,7 @@ const struct rglgen_sym_map rglgen_symbol_map[] = {
     SYM(DrawElementsInstancedBaseVertex),
     SYM(MultiDrawElementsBaseVertex),
     SYM(ProvokingVertex),
+#ifndef OSX_10_6_SNOW_LEOPARD
     SYM(FenceSync),
     SYM(IsSync),
     SYM(DeleteSync),
@@ -578,6 +581,7 @@ const struct rglgen_sym_map rglgen_symbol_map[] = {
     SYM(WaitSync),
     SYM(GetInteger64v),
     SYM(GetSynciv),
+#endif
     SYM(TexImage2DMultisample),
     SYM(TexImage3DMultisample),
     SYM(GetMultisamplefv),
@@ -610,8 +614,10 @@ const struct rglgen_sym_map rglgen_symbol_map[] = {
     SYM(GetSamplerParameterfv),
     SYM(GetSamplerParameterIuiv),
     SYM(QueryCounter),
+#ifndef OSX_10_6_SNOW_LEOPARD
     SYM(GetQueryObjecti64v),
     SYM(GetQueryObjectui64v),
+#endif
     SYM(VertexP2ui),
     SYM(VertexP2uiv),
     SYM(VertexP3ui),
@@ -779,8 +785,10 @@ const struct rglgen_sym_map rglgen_symbol_map[] = {
     SYM(DepthRangeIndexed),
     SYM(GetFloati_v),
     SYM(GetDoublei_v),
+#ifndef OSX_10_6_SNOW_LEOPARD
     SYM(CreateSyncFromCLeventARB),
     SYM(DebugMessageControlARB),
+#endif
     SYM(DebugMessageInsertARB),
     SYM(DebugMessageCallbackARB),
     SYM(GetDebugMessageLogARB),
@@ -840,7 +848,9 @@ const struct rglgen_sym_map rglgen_symbol_map[] = {
     SYM(VertexBindingDivisor),
     SYM(FramebufferParameteri),
     SYM(GetFramebufferParameteriv),
+#ifndef OSX_10_6_SNOW_LEOPARD
     SYM(GetInternalformati64v),
+#endif
     SYM(InvalidateTexSubImage),
     SYM(InvalidateTexImage),
     SYM(InvalidateBufferSubData),
@@ -1310,8 +1320,10 @@ RGLSYMGLDRAWARRAYSINSTANCEDPROC __rglgen_glDrawArraysInstanced;
 RGLSYMGLDRAWELEMENTSINSTANCEDPROC __rglgen_glDrawElementsInstanced;
 RGLSYMGLTEXBUFFERPROC __rglgen_glTexBuffer;
 RGLSYMGLPRIMITIVERESTARTINDEXPROC __rglgen_glPrimitiveRestartIndex;
+#ifndef OSX_10_6_SNOW_LEOPARD
 RGLSYMGLGETINTEGER64I_VPROC __rglgen_glGetInteger64i_v;
 RGLSYMGLGETBUFFERPARAMETERI64VPROC __rglgen_glGetBufferParameteri64v;
+#endif
 RGLSYMGLFRAMEBUFFERTEXTUREPROC __rglgen_glFramebufferTexture;
 RGLSYMGLVERTEXATTRIBDIVISORPROC __rglgen_glVertexAttribDivisor;
 RGLSYMGLMINSAMPLESHADINGPROC __rglgen_glMinSampleShading;
@@ -1570,6 +1582,7 @@ RGLSYMGLDRAWRANGEELEMENTSBASEVERTEXPROC __rglgen_glDrawRangeElementsBaseVertex;
 RGLSYMGLDRAWELEMENTSINSTANCEDBASEVERTEXPROC __rglgen_glDrawElementsInstancedBaseVertex;
 RGLSYMGLMULTIDRAWELEMENTSBASEVERTEXPROC __rglgen_glMultiDrawElementsBaseVertex;
 RGLSYMGLPROVOKINGVERTEXPROC __rglgen_glProvokingVertex;
+#ifndef OSX_10_6_SNOW_LEOPARD
 RGLSYMGLFENCESYNCPROC __rglgen_glFenceSync;
 RGLSYMGLISSYNCPROC __rglgen_glIsSync;
 RGLSYMGLDELETESYNCPROC __rglgen_glDeleteSync;
@@ -1577,6 +1590,7 @@ RGLSYMGLCLIENTWAITSYNCPROC __rglgen_glClientWaitSync;
 RGLSYMGLWAITSYNCPROC __rglgen_glWaitSync;
 RGLSYMGLGETINTEGER64VPROC __rglgen_glGetInteger64v;
 RGLSYMGLGETSYNCIVPROC __rglgen_glGetSynciv;
+#endif
 RGLSYMGLTEXIMAGE2DMULTISAMPLEPROC __rglgen_glTexImage2DMultisample;
 RGLSYMGLTEXIMAGE3DMULTISAMPLEPROC __rglgen_glTexImage3DMultisample;
 RGLSYMGLGETMULTISAMPLEFVPROC __rglgen_glGetMultisamplefv;
@@ -1609,8 +1623,10 @@ RGLSYMGLGETSAMPLERPARAMETERIIVPROC __rglgen_glGetSamplerParameterIiv;
 RGLSYMGLGETSAMPLERPARAMETERFVPROC __rglgen_glGetSamplerParameterfv;
 RGLSYMGLGETSAMPLERPARAMETERIUIVPROC __rglgen_glGetSamplerParameterIuiv;
 RGLSYMGLQUERYCOUNTERPROC __rglgen_glQueryCounter;
+#ifndef OSX_10_6_SNOW_LEOPARD
 RGLSYMGLGETQUERYOBJECTI64VPROC __rglgen_glGetQueryObjecti64v;
 RGLSYMGLGETQUERYOBJECTUI64VPROC __rglgen_glGetQueryObjectui64v;
+#endif
 RGLSYMGLVERTEXP2UIPROC __rglgen_glVertexP2ui;
 RGLSYMGLVERTEXP2UIVPROC __rglgen_glVertexP2uiv;
 RGLSYMGLVERTEXP3UIPROC __rglgen_glVertexP3ui;
@@ -1778,7 +1794,9 @@ RGLSYMGLDEPTHRANGEARRAYVPROC __rglgen_glDepthRangeArrayv;
 RGLSYMGLDEPTHRANGEINDEXEDPROC __rglgen_glDepthRangeIndexed;
 RGLSYMGLGETFLOATI_VPROC __rglgen_glGetFloati_v;
 RGLSYMGLGETDOUBLEI_VPROC __rglgen_glGetDoublei_v;
+#ifndef OSX_10_6_SNOW_LEOPARD
 RGLSYMGLCREATESYNCFROMCLEVENTARBPROC __rglgen_glCreateSyncFromCLeventARB;
+#endif
 RGLSYMGLDEBUGMESSAGECONTROLARBPROC __rglgen_glDebugMessageControlARB;
 RGLSYMGLDEBUGMESSAGEINSERTARBPROC __rglgen_glDebugMessageInsertARB;
 RGLSYMGLDEBUGMESSAGECALLBACKARBPROC __rglgen_glDebugMessageCallbackARB;
@@ -1839,7 +1857,9 @@ RGLSYMGLVERTEXATTRIBBINDINGPROC __rglgen_glVertexAttribBinding;
 RGLSYMGLVERTEXBINDINGDIVISORPROC __rglgen_glVertexBindingDivisor;
 RGLSYMGLFRAMEBUFFERPARAMETERIPROC __rglgen_glFramebufferParameteri;
 RGLSYMGLGETFRAMEBUFFERPARAMETERIVPROC __rglgen_glGetFramebufferParameteriv;
+#ifndef OSX_10_6_SNOW_LEOPARD
 RGLSYMGLGETINTERNALFORMATI64VPROC __rglgen_glGetInternalformati64v;
+#endif
 RGLSYMGLINVALIDATETEXSUBIMAGEPROC __rglgen_glInvalidateTexSubImage;
 RGLSYMGLINVALIDATETEXIMAGEPROC __rglgen_glInvalidateTexImage;
 RGLSYMGLINVALIDATEBUFFERSUBDATAPROC __rglgen_glInvalidateBufferSubData;
