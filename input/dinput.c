@@ -197,6 +197,24 @@ static bool dinput_is_pressed(struct dinput_input *di, const struct retro_keybin
    return dinput_keyboard_pressed(di, bind->key) || input_joypad_pressed(di->joypad, port, binds, id);
 }
 
+static int16_t dinput_pressed_analog(struct dinput_input *di,
+      const struct retro_keybind *binds,
+      unsigned index, unsigned id)
+{
+   unsigned id_minus = 0;
+   unsigned id_plus  = 0;
+   input_conv_analog_id_to_bind_id(index, id, &id_minus, &id_plus);
+
+   const struct retro_keybind *bind_minus = &binds[id_minus];
+   const struct retro_keybind *bind_plus  = &binds[id_plus];
+   if (!bind_minus->valid || !bind_plus->valid)
+      return 0;
+
+   int16_t pressed_minus = dinput_keyboard_pressed(di, bind_minus->key) ? -0x7fff : 0;
+   int16_t pressed_plus = dinput_keyboard_pressed(di, bind_plus->key) ? 0x7fff : 0;
+   return pressed_plus + pressed_minus;
+}
+
 static bool dinput_key_pressed(void *data, int key)
 {
    return dinput_is_pressed((struct dinput_input*)data, g_settings.input.binds[0], 0, key);
@@ -294,6 +312,8 @@ static int16_t dinput_input_state(void *data,
       unsigned device, unsigned index, unsigned id)
 {
    struct dinput_input *di = (struct dinput_input*)data;
+   int16_t ret;
+
    switch (device)
    {
       case RETRO_DEVICE_JOYPAD:
@@ -303,7 +323,10 @@ static int16_t dinput_input_state(void *data,
          return dinput_keyboard_pressed(di, id);
 
       case RETRO_DEVICE_ANALOG:
-         return input_joypad_analog(di->joypad, port, index, id, g_settings.input.binds[port]);
+         ret = input_joypad_analog(di->joypad, port, index, id, g_settings.input.binds[port]);
+         if (!ret)
+            dinput_pressed_analog(di, binds[port], index, id);
+         return ret;
 
       case RETRO_DEVICE_MOUSE:
          return dinput_mouse_state(di, id);

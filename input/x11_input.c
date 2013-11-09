@@ -85,6 +85,17 @@ static bool x_is_pressed(x11_input_t *x11, const struct retro_keybind *binds, un
       return false;
 }
 
+static int16_t x_pressed_analog(x11_input_t *x11, const struct retro_keybind *binds, unsigned index, unsigned id)
+{
+   unsigned id_minus = 0;
+   unsigned id_plus  = 0;
+   input_conv_analog_id_to_bind_id(index, id, &id_minus, &id_plus);
+
+   int16_t pressed_minus = x_is_pressed(x11, binds, id_minus) ? -0x7fff : 0;
+   int16_t pressed_plus = x_is_pressed(x11, binds, id_plus) ? 0x7fff : 0;
+   return pressed_plus + pressed_minus;
+}
+
 static bool x_bind_button_pressed(void *data, int key)
 {
    x11_input_t *x11 = (x11_input_t*)data;
@@ -171,6 +182,7 @@ static int16_t x_lightgun_state(x11_input_t *x11, unsigned id)
 static int16_t x_input_state(void *data, const struct retro_keybind **binds, unsigned port, unsigned device, unsigned index, unsigned id)
 {
    x11_input_t *x11 = (x11_input_t*)data;
+   int16_t ret;
 
    switch (device)
    {
@@ -182,7 +194,10 @@ static int16_t x_input_state(void *data, const struct retro_keybind **binds, uns
          return x_key_pressed(x11, id);
 
       case RETRO_DEVICE_ANALOG:
-         return input_joypad_analog(x11->joypad, port, index, id, binds[port]);
+         ret = input_joypad_analog(x11->joypad, port, index, id, binds[port]);
+         if (!ret)
+            ret = x_pressed_analog(x11, binds[port], index, id);
+         return ret;
 
       case RETRO_DEVICE_MOUSE:
          return x_mouse_state(x11, id);

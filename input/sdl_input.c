@@ -67,6 +67,18 @@ static bool sdl_is_pressed(sdl_input_t *sdl, unsigned port_num, const struct ret
    return input_joypad_pressed(sdl->joypad, port_num, binds, key);
 }
 
+static int16_t sdl_analog_pressed(sdl_input_t *sdl, const struct retro_keybind *binds,
+      unsigned index, unsigned id)
+{
+   unsigned id_minus = 0;
+   unsigned id_plus  = 0;
+   input_conv_analog_id_to_bind_id(index, id, &id_minus, &id_plus);
+
+   int16_t pressed_minus = sdl_key_pressed(binds[id_minus].key) ? -0x7fff : 0;
+   int16_t pressed_plus = sdl_key_pressed(binds[id_plus].key) ? 0x7fff : 0;
+   return pressed_plus + pressed_minus;
+}
+
 static bool sdl_bind_button_pressed(void *data, int key)
 {
    const struct retro_keybind *binds = g_settings.input.binds[0];
@@ -89,7 +101,10 @@ static int16_t sdl_joypad_device_state(sdl_input_t *sdl, const struct retro_keyb
 static int16_t sdl_analog_device_state(sdl_input_t *sdl, const struct retro_keybind **binds,
       unsigned port_num, unsigned index, unsigned id)
 {
-   return input_joypad_analog(sdl->joypad, port_num, index, id, binds[port_num]);
+   int16_t ret = input_joypad_analog(sdl->joypad, port_num, index, id, binds[port_num]);
+   if (!ret)
+      ret = sdl_analog_pressed(sdl, binds[port_num], index, id);
+   return ret;
 }
 
 static int16_t sdl_keyboard_device_state(sdl_input_t *sdl, unsigned id)
