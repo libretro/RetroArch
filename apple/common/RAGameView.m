@@ -242,7 +242,7 @@ static bool g_is_syncing = true;
 
 static RAScreen* get_chosen_screen()
 {
-#if __has_feature(objc_arc)
+#ifdef MAC_OS_X_VERSION_10_7
     @autoreleasepool {
         if (g_settings.video.monitor_index >= RAScreen.screens.count)
         {
