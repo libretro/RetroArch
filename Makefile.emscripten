@@ -59,7 +59,7 @@ libretro = libretro_emscripten.bc
 
 LIBS = -lm
 DEFINES = -DHAVE_SCREENSHOTS -DHAVE_NULLAUDIO -DHAVE_BSV_MOVIE
-LDFLAGS = -L. -s TOTAL_MEMORY=$(MEMORY) --js-library emscripten/library_rwebaudio.js --js-library emscripten/library_rwebinput.js
+LDFLAGS = -L. -s TOTAL_MEMORY=$(MEMORY) --js-library emscripten/library_rwebaudio.js --js-library emscripten/library_rwebinput.js --no-heap-copy
 
 ifeq ($(PERF_TEST), 1)
    DEFINES += -DPERF_TEST
