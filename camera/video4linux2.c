@@ -54,32 +54,15 @@ typedef struct video4linux
    bool ready;
    io_method io;
    struct buffer *buffers;
-   unsigned int n_buffers;
+   unsigned n_buffers;
    size_t width;
    size_t height;
 } video4linux_t;
 
-#if 0
-static void YCbCrToRGB(int y, int cb, int cr, uint8_t * r, uint8_t * g, uint8_t * b)
-{
-   double Y = (double)y;
-   double Cb = (double)cb;
-   double Cr = (double)cr;
-
-   int R = (int)(Y + 1.40200 * (Cr - 0x80));
-   int G = (int)(Y - 0.34414 * (Cb - 0x80) - 0.71414 * (Cr - 0x80));
-   int B = (int)(Y + 1.77200 * (Cb - 0x80));
-
-   *r = max(0, min(255, R));
-   *g = max(0, min(255, G));
-   *b = max(0, min(255, B));
-}
-#endif
-
+// FIXME: Shouldn't use LUTs for this.
+// The LUT is simply too big, and the conversion can be done efficiently with fixed-point SIMD anyways.
 /* 
  * YCbCr to RGB lookup table
- *
- * Indexes are [Y][Cb][Cr]
  * Y, Cb, Cr range is 0-255
  *
  * Stored value bits:
@@ -87,13 +70,19 @@ static void YCbCrToRGB(int y, int cb, int cr, uint8_t * r, uint8_t * g, uint8_t 
  *   15-8  Green
  *   7-0   Blue
  */
-uint32_t YCbCr_to_RGB[256][256][256];
+#define YUV_SHIFT(y, cb, cr) ((y << 16) | (cb << 8) | (cr << 0))
+#define RGB_SHIFT(r, g, b) ((r << 16) | (g << 8) | (b << 0))
+static uint32_t *YCbCr_to_RGB;
 
 static void generate_YCbCr_to_RGB_lookup(void)
 {
    int y;
    int cb;
    int cr;
+
+   YCbCr_to_RGB = (uint32_t*)realloc(YCbCr_to_RGB, 256 * 256 * 256);
+   if (!YCbCr_to_RGB)
+      return;
 
    for (y = 0; y < 256; y++)
    {
@@ -105,23 +94,19 @@ static void generate_YCbCr_to_RGB_lookup(void)
             double Cb = (double)cb;
             double Cr = (double)cr;
 
-            int R = (int)(Y+1.40200*(Cr - 0x80));
-            int G = (int)(Y-0.34414*(Cb - 0x80)-0.71414*(Cr - 0x80));
-            int B = (int)(Y+1.77200*(Cb - 0x80));
+            int R = (int)(Y + 1.40200 * (Cr - 0x80));
+            int G = (int)(Y - 0.34414 * (Cb - 0x80) - 0.71414 * (Cr - 0x80));
+            int B = (int)(Y + 1.77200 * (Cb - 0x80));
 
             R = max(0, min(255, R));
             G = max(0, min(255, G));
             B = max(0, min(255, B));
 
-            YCbCr_to_RGB[y][cb][cr] = R << 16 | G << 8 | B;
+            YCbCr_to_RGB[YUV_SHIFT(y, cb, cr)] = RGB_SHIFT(R, G, B);
          }
       }
    }
 }
-
-#define COLOR_GET_RED(color)   ((color >> 16) & 0xFF)
-#define COLOR_GET_GREEN(color) ((color >> 8) & 0xFF)
-#define COLOR_GET_BLUE(color)  (color & 0xFF)
 
 /**
  *  Converts YUV422 to RGB
@@ -136,22 +121,15 @@ static void generate_YCbCr_to_RGB_lookup(void)
 // eventually - GL binding to texture and color conversion through shaders,
 // and this approach
 
-static inline void YUV422_to_RGB(uint8_t * output, const uint8_t * input)
+static inline void YUV422_to_RGB(uint32_t *output, const uint8_t *input)
 {
    uint8_t y0 = input[0];
    uint8_t cb = input[1];
    uint8_t y1 = input[2];
    uint8_t cr = input[3];
 
-   uint32_t rgb = YCbCr_to_RGB[y0][cb][cr];
-   output[0] = COLOR_GET_RED(rgb);
-   output[1] = COLOR_GET_GREEN(rgb);
-   output[2] = COLOR_GET_BLUE(rgb);
-
-   rgb = YCbCr_to_RGB[y1][cb][cr];
-   output[3] = COLOR_GET_RED(rgb);
-   output[4] = COLOR_GET_GREEN(rgb);
-   output[5] = COLOR_GET_BLUE(rgb);
+   output[0] = YCbCr_to_RGB[YUV_SHIFT(y0, cb, cr)];
+   output[1] = YCbCr_to_RGB[YUV_SHIFT(y1, cb, cr)];
 }
 
 static void process_image(const void *p)
@@ -199,7 +177,7 @@ static int init_read(void *data, unsigned int buffer_size)
    }
 
    v4l->buffers[0].length = buffer_size;
-   v4l->buffers[0].start = (void*)malloc(buffer_size);
+   v4l->buffers[0].start = malloc(buffer_size);
 
    if (!v4l->buffers[0].start)
    {
@@ -249,7 +227,7 @@ static int init_mmap(void *data)
       return -1;
    }
 
-   for (v4l->n_buffers = 0; v4l->n_buffers < req.count; ++v4l->n_buffers)
+   for (v4l->n_buffers = 0; v4l->n_buffers < req.count; v4l->n_buffers++)
    {
       struct v4l2_buffer buf;
 
@@ -290,7 +268,7 @@ static int init_userp(void *data, unsigned int buffer_size)
    page_size = getpagesize();
    buffer_size = (buffer_size + page_size - 1) & ~(page_size - 1);
 
-   memset (&(req), 0, sizeof (req));
+   memset(&req, 0, sizeof(req));
 
    req.count = 4;
    req.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
@@ -318,7 +296,7 @@ static int init_userp(void *data, unsigned int buffer_size)
       return -1;
    }
 
-   for (v4l->n_buffers = 0; v4l->n_buffers < 4; ++v4l->n_buffers)
+   for (v4l->n_buffers = 0; v4l->n_buffers < 4; v4l->n_buffers++)
    {
       v4l->buffers[v4l->n_buffers].length = buffer_size;
       v4l->buffers[v4l->n_buffers].start = memalign( /* boundary */ page_size,
@@ -496,7 +474,7 @@ static int v4l_start(void *data)
          break;
 
       case IO_METHOD_MMAP:
-         for (i = 0; i < v4l->n_buffers; ++i)
+         for (i = 0; i < v4l->n_buffers; i++)
          {
             struct v4l2_buffer buf;
 
@@ -524,7 +502,7 @@ static int v4l_start(void *data)
          break;
 
       case IO_METHOD_USERPTR:
-         for (i = 0; i < v4l->n_buffers; ++i)
+         for (i = 0; i < v4l->n_buffers; i++)
          {
             struct v4l2_buffer buf;
 
@@ -618,7 +596,7 @@ static void v4l_free(void *data)
          free(v4l->buffers[0].start);
          break;
       case IO_METHOD_MMAP:
-         for (i = 0; i < v4l->n_buffers; ++i)
+         for (i = 0; i < v4l->n_buffers; i++)
             if (munmap(v4l->buffers[i].start, v4l->buffers[i].length) == -1)
             {
                RARCH_ERR("munmap failed.\n");
@@ -626,7 +604,7 @@ static void v4l_free(void *data)
             }
          break;
       case IO_METHOD_USERPTR:
-         for (i = 0; i < v4l->n_buffers; ++i)
+         for (i = 0; i < v4l->n_buffers; i++)
             free(v4l->buffers[i].start);
          break;
    }
@@ -635,13 +613,18 @@ static void v4l_free(void *data)
       RARCH_ERR("close of file descriptor failed.\n");
 
    v4l->fd = -1;
+   free(v4l);
+
+   // Assumes one instance. LUT will be gone at some point anyways.
+   free(YCbCr_to_RGB);
+   YCbCr_to_RGB = NULL;
 }
 
 static void preprocess_image(void *data)
 {
    video4linux_t *v4l = (video4linux_t*)data;
    struct v4l2_buffer buf;
-   unsigned int i;
+   unsigned i;
 
    switch (v4l->io)
    {
@@ -725,7 +708,7 @@ static void preprocess_image(void *data)
             }
          }
 
-         for (i = 0; i < v4l->n_buffers; ++i)
+         for (i = 0; i < v4l->n_buffers; i++)
             if (buf.m.userptr == (unsigned long)v4l->buffers[i].start
                   && buf.length == v4l->buffers[i].length)
                break;
