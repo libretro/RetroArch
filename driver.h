@@ -339,7 +339,7 @@ typedef struct camera_driver
    void (*free)(void *data);
    int  (*start)(void *data);
    int  (*stop)(void *data);
-   int  (*ready)(void *data, unsigned *width, unsigned *height);
+   bool (*ready)(void *data, unsigned *width, unsigned *height);
    void (*texture_image_2d)(void *data);
    void (*texture_subimage_2d)(void *data);
    const char *ident;

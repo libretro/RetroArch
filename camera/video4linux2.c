@@ -51,7 +51,7 @@ typedef struct video4linux
 {
    char *dev_name;
    int fd;
-   int ready;
+   bool ready;
    io_method io;
    struct buffer *buffers;
    unsigned int n_buffers;
@@ -182,7 +182,7 @@ static int xioctl(int fd, int request, void *args)
    do
    {
       r = ioctl(fd, request, args);
-   }while(r == -1 && errno == EINTR);
+   } while (r == -1 && errno == EINTR);
 
    return r;
 }
@@ -478,7 +478,7 @@ static int v4l_stop(void *data)
          break;
    }
 
-   v4l->ready = 0;
+   v4l->ready = false;
 
    return 0;
 }
@@ -554,7 +554,7 @@ static int v4l_start(void *data)
          break;
    }
 
-   v4l->ready = 1;
+   v4l->ready = true;
 
    return 0;
 }
@@ -570,7 +570,7 @@ static void *v4l_init(void)
    v4l->dev_name = "/dev/video0";
    v4l->width    = 640;
    v4l->height   = 480;
-   v4l->ready    = 0;
+   v4l->ready    = false;
 
    if (stat(v4l->dev_name, &st) == -1)
    {
@@ -751,7 +751,7 @@ static void v4l_texture_subimage_2d(void *data)
    preprocess_image(data);
 }
 
-static int v4l_ready(void *data, unsigned *width, unsigned *height)
+static bool v4l_ready(void *data, unsigned *width, unsigned *height)
 {
    video4linux_t *v4l = (video4linux_t*)data;
    return v4l->ready;
