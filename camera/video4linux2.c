@@ -750,7 +750,7 @@ static void v4l_texture_subimage_2d(void *data)
    preprocess_image(data);
 }
 
-static int v4l_ready(void *data)
+static int v4l_ready(void *data, unsigned *width, unsigned *height)
 {
    video4linux_t *v4l = (video4linux_t*)data;
    return v4l->ready;
