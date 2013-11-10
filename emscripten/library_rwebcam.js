@@ -40,8 +40,9 @@ var LibraryRWebCam = {
       return 1;
    },
 
+   RWebCamTexImage2D__deps: ['RWebCamReady'],
    RWebCamTexImage2D: function(width, height) {
-      if (RWC.runMode != 2 || RWC.videoElement.paused) return 0;
+      if (!_RWebCamReady()) return 0;
 
       Module.ctx.texImage2D(Module.ctx.TEXTURE_2D, 0, Module.ctx.RGB, Module.ctx.RGB, Module.ctx.UNSIGNED_BYTE, RWC.videoElement);
 
@@ -49,14 +50,15 @@ var LibraryRWebCam = {
       if (height) {{{ makeSetValue('height', '0', 'RWC.videoElement.videoHeight', 'i32') }}};
    },
 
+   RWebCamTexSubImage2D__deps: ['RWebCamReady'],
    RWebCamTexSubImage2D: function(x, y) {
-      if (RWC.runMode != 2 || RWC.videoElement.paused) return 0;
+      if (!_RWebCamReady()) return 0;
 
       Module.ctx.texSubImage2D(Module.ctx.TEXTURE_2D, 0, x, y, Module.ctx.RGB, Module.ctx.UNSIGNED_BYTE, RWC.videoElement);
    },
 
    RWebCamReady: function() {
-      return RWC.runMode == 2 ? 1 : 0;
+      return (RWC.runMode == 2 && !RWC.videoElement.paused && RWC.videoElement.videoWidth != 0 && RWC.videoElement.videoHeight != 0) ? 1 : 0;
    },
 
    RWebCamFree: function() {
