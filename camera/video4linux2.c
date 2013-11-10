@@ -80,7 +80,7 @@ static void generate_YCbCr_to_RGB_lookup(void)
    int cb;
    int cr;
 
-   YCbCr_to_RGB = (uint32_t*)realloc(YCbCr_to_RGB, 256 * 256 * 256);
+   YCbCr_to_RGB = (uint32_t*)realloc(YCbCr_to_RGB, 256 * 256 * 256 * sizeof(uint32_t));
    if (!YCbCr_to_RGB)
       return;
 
