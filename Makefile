@@ -156,6 +156,11 @@ ifeq ($(HAVE_AL), 1)
    endif
 endif
 
+ifeq ($(HAVE_V4L2),1)
+	OBJ += camera/video4linux2.o
+	DEFINES += -DHAVE_CAMERA -DHAVE_V4L2
+endif
+
 ifeq ($(HAVE_JACK),1)
    OBJ += audio/jack.o
    LIBS += $(JACK_LIBS)

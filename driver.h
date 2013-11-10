@@ -331,6 +331,20 @@ typedef struct input_driver
    const rarch_joypad_driver_t *(*get_joypad_driver)(void *data);
 } input_driver_t;
 
+typedef struct camera_driver
+{
+   //FIXME - params for init - queries for resolution, framerate, color format
+   //which might or might not be honored
+   void *(*init)(void);
+   void (*free)(void *data);
+   int  (*start)(void *data);
+   int  (*stop)(void *data);
+   int  (*ready)(void *data);
+   void (*texture_image_2d)(void *data);
+   void (*texture_subimage_2d)(void *data);
+   const char *ident;
+} camera_driver_t;
+
 struct rarch_viewport;
 
 #ifdef HAVE_OVERLAY
@@ -554,6 +568,7 @@ extern const input_driver_t input_apple;
 extern const input_driver_t input_qnx;
 extern const input_driver_t input_rwebinput;
 extern const input_driver_t input_null;
+extern const camera_driver_t camera_v4l2;
 
 #include "driver_funcs.h"
 
