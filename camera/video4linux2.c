@@ -280,6 +280,59 @@ static int init_mmap(void *data)
    return 0;
 }
 
+static int init_userp(void *data, unsigned int buffer_size)
+{
+   struct v4l2_requestbuffers req;
+   unsigned int page_size;
+   video4linux_t *v4l = (video4linux_t*)data;
+
+   page_size = getpagesize();
+   buffer_size = (buffer_size + page_size - 1) & ~(page_size - 1);
+
+   memset (&(req), 0, sizeof (req));
+
+   req.count = 4;
+   req.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+   req.memory = V4L2_MEMORY_USERPTR;
+
+   if (xioctl(v4l->fd, VIDIOC_REQBUFS, &req) == -1)
+   {
+      if (errno == EINVAL)
+      {
+         RARCH_ERR("%s does not support user pointer I/O\n", v4l->dev_name);
+         return -1;
+      }
+      else
+      {
+         RARCH_ERR("VIDIOC_REQBUFS.\n");
+         return -1;
+      }
+   }
+
+   v4l->buffers = calloc(4, sizeof(*v4l->buffers));
+
+   if (!v4l->buffers)
+   {
+      RARCH_ERR("Out of memory\n");
+      return -1;
+   }
+
+   for (v4l->n_buffers = 0; v4l->n_buffers < 4; ++v4l->n_buffers)
+   {
+      v4l->buffers[v4l->n_buffers].length = buffer_size;
+      v4l->buffers[v4l->n_buffers].start = memalign( /* boundary */ page_size,
+            buffer_size);
+
+      if (!v4l->buffers[v4l->n_buffers].start)
+      {
+         RARCH_ERR("Out of memory\n");
+         return -1;
+      }
+   }
+
+   return 0;
+}
+
 static int init_device(void *data)
 {
    struct v4l2_capability cap;
@@ -393,7 +446,7 @@ static int init_device(void *data)
       case IO_METHOD_MMAP:
          return init_mmap(v4l);
       case IO_METHOD_USERPTR:
-         //init_userp(fmt.fmt.pix.sizeimage);
+         init_userp(v4l, fmt.fmt.pix.sizeimage);
          break;
    }
 
