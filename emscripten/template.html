@@ -25,7 +25,7 @@
       <canvas class="emscripten" id="canvas" oncontextmenu="event.preventDefault()"></canvas>
     </div>
     <div class="emscripten emscripten_border" id="openrom">
-      <button id="fakerom" onclick="document.getElementById('rom').click()">Select a SNES ROM</button>
+      <button id="fakerom" onclick="document.getElementById('rom').click()">Select a ROM</button>
       <input style="display: none" type="file" id="rom" name="upload" onclick="document.getElementById('fakerom').click();" onchange="runEmulator(event.target.files);" multiple />
     </div>
     <hr/>
