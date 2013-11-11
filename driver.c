@@ -212,6 +212,24 @@ static void find_camera_driver(void)
       rarch_fail(1, "find_camera_driver()");
    }
 }
+
+void find_prev_camera_driver(void)
+{
+   int i = find_camera_driver_index(g_settings.camera.driver);
+   if (i > 0)
+      strlcpy(g_settings.camera.driver, camera_drivers[i - 1]->ident, sizeof(g_settings.camera.driver));
+   else
+      RARCH_WARN("Couldn't find any previous camera driver (current one: \"%s\").\n", g_settings.camera.driver);
+}
+
+void find_next_camera_driver(void)
+{
+   int i = find_camera_driver_index(g_settings.camera.driver);
+   if (i >= 0 && camera_drivers[i + 1])
+      strlcpy(g_settings.camera.driver, camera_drivers[i + 1]->ident, sizeof(g_settings.camera.driver));
+   else
+      RARCH_WARN("Couldn't find any next camera driver (current one: \"%s\").\n", g_settings.camera.driver);
+}
 #endif
 
 static int find_audio_driver_index(const char *driver)

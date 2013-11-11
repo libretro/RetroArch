@@ -1932,6 +1932,9 @@ void menu_populate_entries(void *data, unsigned menu_type)
          file_list_push(rgui->selection_buf, "Video driver", RGUI_SETTINGS_DRIVER_VIDEO, 0);
          file_list_push(rgui->selection_buf, "Audio driver", RGUI_SETTINGS_DRIVER_AUDIO, 0);
          file_list_push(rgui->selection_buf, "Input driver", RGUI_SETTINGS_DRIVER_INPUT, 0);
+#ifdef HAVE_CAMERA
+         file_list_push(rgui->selection_buf, "Camera driver", RGUI_SETTINGS_DRIVER_CAMERA, 0);
+#endif
          break;
       case RGUI_SETTINGS:
          file_list_clear(rgui->selection_buf);

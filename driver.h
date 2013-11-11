@@ -515,6 +515,13 @@ void find_next_video_driver(void);
 void find_next_audio_driver(void);
 void find_next_input_driver(void);
 
+#ifdef HAVE_CAMERA
+void init_camera(void);
+void uninit_camera(void);
+void find_prev_camera_driver(void);
+void find_next_camera_driver(void);
+#endif
+
 void driver_set_monitor_refresh_rate(float hz);
 bool driver_monitor_fps_statistics(double *refresh_rate, double *deviation, unsigned *sample_points);
 void driver_set_nonblock_state(bool nonblock);

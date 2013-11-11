@@ -888,7 +888,14 @@ int menu_set_settings(void *data, unsigned setting, unsigned action)
          else if (action == RGUI_ACTION_RIGHT)
             find_next_input_driver();
          break;
-
+#ifdef HAVE_CAMERA
+      case RGUI_SETTINGS_DRIVER_CAMERA:
+         if (action == RGUI_ACTION_LEFT)
+            find_prev_camera_driver();
+         else if (action == RGUI_ACTION_RIGHT)
+            find_next_camera_driver();
+         break;
+#endif
       case RGUI_SETTINGS_VIDEO_GAMMA:
          if (action == RGUI_ACTION_START)
          {
@@ -1427,6 +1434,11 @@ void menu_set_settings_label(char *type_str, size_t type_str_size, unsigned *w, 
       case RGUI_SETTINGS_DRIVER_INPUT:
          strlcpy(type_str, g_settings.input.driver, type_str_size);
          break;
+#ifdef HAVE_CAMERA
+      case RGUI_SETTINGS_DRIVER_CAMERA:
+         strlcpy(type_str, g_settings.camera.driver, type_str_size);
+         break;
+#endif
       case RGUI_SETTINGS_VIDEO_REFRESH_RATE_AUTO:
          {
             double refresh_rate = 0.0;
