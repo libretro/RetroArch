@@ -523,9 +523,6 @@ MENU
 #include "../frontend/menu/menu_settings.c"
 #include "../frontend/menu/history.c"
 
-#ifdef HAVE_FILEBROWSER
-#include "../frontend/menu/file_browser.c"
-#endif
 #include "../file_list.c"
 
 #if defined(HAVE_RMENU)

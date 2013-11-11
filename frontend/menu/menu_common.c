@@ -407,34 +407,6 @@ void menu_init(void)
 
    menu_update_libretro_info();
 
-#ifdef HAVE_FILEBROWSER
-   if (!(strlen(g_settings.rgui_browser_directory) > 0))
-      strlcpy(g_settings.rgui_browser_directory, default_paths.filebrowser_startup_dir,
-            sizeof(g_settings.rgui_browser_directory));
-
-   rgui->browser = (filebrowser_t*)calloc(1, sizeof(*(rgui->browser)));
-
-   if (rgui->browser == NULL)
-   {
-      RARCH_ERR("Could not initialize filebrowser.\n");
-      rarch_fail(1, "menu_init()");
-   }
-
-   // Look for zips to extract as well.
-   if (*rgui->info.valid_extensions)
-   {
-      strlcpy(rgui->browser->current_dir.extensions, rgui->info.valid_extensions,
-            sizeof(rgui->browser->current_dir.extensions));
-      strlcat(rgui->browser->current_dir.extensions, "|zip",
-         sizeof(rgui->browser->current_dir.extensions));
-   }
-
-   strlcpy(rgui->browser->current_dir.root_dir, g_settings.rgui_browser_directory,
-         sizeof(rgui->browser->current_dir.root_dir));
-
-   filebrowser_iterate(rgui->browser, RGUI_ACTION_START);
-#endif
-
 #ifdef HAVE_SHADER_MANAGER
    shader_manager_init(rgui);
 #endif
@@ -454,10 +426,6 @@ void menu_free(void)
 
    file_list_free(rgui->menu_stack);
    file_list_free(rgui->selection_buf);
-
-#ifdef HAVE_FILEBROWSER
-   filebrowser_free(rgui->browser);
-#endif
 
    rom_history_free(rgui->history);
    core_info_list_free(rgui->core_info);

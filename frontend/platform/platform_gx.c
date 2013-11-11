@@ -249,8 +249,6 @@ static void get_environment_settings(int argc, char *argv[], void *args)
    snprintf(default_paths.system_dir, sizeof(default_paths.system_dir), "%s/system", default_paths.port_dir);
    snprintf(default_paths.sram_dir, sizeof(default_paths.savestate_dir), "%s/savefiles", default_paths.port_dir);
    snprintf(default_paths.savestate_dir, sizeof(default_paths.savestate_dir), "%s/savestates", default_paths.port_dir);
-   strlcpy(default_paths.filesystem_root_dir, "/", sizeof(default_paths.filesystem_root_dir));
-   strlcpy(default_paths.filebrowser_startup_dir, default_paths.filesystem_root_dir, sizeof(default_paths.filebrowser_startup_dir));
 
 #ifdef IS_SALAMANDER
    if (argc > 2 && argv[1] != NULL && argv[2] != NULL)

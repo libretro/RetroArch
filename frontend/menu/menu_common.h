@@ -39,9 +39,6 @@
 extern "C" {
 #endif
 
-#ifdef HAVE_FILEBROWSER
-#include "file_browser.h"
-#endif
 #include "../../file_list.h"
 
 #if defined(HAVE_CG) || defined(HAVE_HLSL) || defined(HAVE_GLSL)
@@ -282,10 +279,6 @@ typedef struct
    size_t frame_buf_pitch;
    bool frame_buf_show;
 
-#ifdef HAVE_FILEBROWSER
-   filebrowser_t *browser;
-   unsigned menu_type;
-#endif
    file_list_t *menu_stack;
    file_list_t *selection_buf;
    size_t selection_ptr;

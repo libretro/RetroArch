@@ -30,8 +30,6 @@ typedef struct
    char core_dir[MAXIMUM_PATH];
    char config_path[MAXIMUM_PATH];
    char libretro_path[MAXIMUM_PATH];
-   char filebrowser_startup_dir[MAXIMUM_PATH];
-   char filesystem_root_dir[MAXIMUM_PATH];
    char port_dir[MAXIMUM_PATH];
    char savestate_dir[MAXIMUM_PATH];
    char sram_dir[MAXIMUM_PATH];

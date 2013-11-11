@@ -264,8 +264,6 @@ static void get_environment_settings(int argc, char *argv[], void *args)
 
       fill_pathname_join(default_paths.core_dir, default_paths.port_dir, "cores", sizeof(default_paths.core_dir));
       fill_pathname_join(default_paths.savestate_dir, default_paths.core_dir, "savestates", sizeof(default_paths.savestate_dir));
-      strlcpy(default_paths.filesystem_root_dir, "/", sizeof(default_paths.filesystem_root_dir));
-      strlcpy(default_paths.filebrowser_startup_dir, default_paths.filesystem_root_dir, sizeof(default_paths.filebrowser_startup_dir));
       fill_pathname_join(default_paths.sram_dir, default_paths.core_dir, "savefiles", sizeof(default_paths.sram_dir));
       fill_pathname_join(default_paths.system_dir, default_paths.core_dir, "system", sizeof(default_paths.system_dir));
 

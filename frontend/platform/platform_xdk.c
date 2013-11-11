@@ -231,15 +231,12 @@ static void get_environment_settings(int argc, char *argv[], void *args)
    fill_pathname_join(default_paths.savestate_dir, default_paths.core_dir, "savestates", sizeof(default_paths.savestate_dir));
    fill_pathname_join(default_paths.sram_dir, default_paths.core_dir, "savefiles", sizeof(default_paths.sram_dir));
    fill_pathname_join(default_paths.system_dir, default_paths.core_dir, "system", sizeof(default_paths.system_dir));
-   strlcpy(default_paths.filesystem_root_dir, default_paths.core_dir, sizeof(default_paths.filesystem_root_dir));
-   strlcpy(default_paths.filebrowser_startup_dir, default_paths.core_dir, sizeof(default_paths.filebrowser_startup_dir));
 #ifndef IS_SALAMANDER
    fill_pathname_join(g_settings.screenshot_directory, default_paths.core_dir, "screenshots", sizeof(g_settings.screenshot_directory));
 #endif
    strlcpy(default_paths.menu_border_file, "D:\\Media\\main-menu_480p.png", sizeof(default_paths.menu_border_file));
 #elif defined(_XBOX360)
    strlcpy(default_paths.core_dir, "game:", sizeof(default_paths.core_dir));
-   strlcpy(default_paths.filesystem_root_dir, "game:\\", sizeof(default_paths.filesystem_root_dir));
 #ifdef IS_SALAMANDER
    strlcpy(default_paths.config_path, "game:\\retroarch.cfg", sizeof(default_paths.config_path));
 #else
@@ -249,7 +246,6 @@ static void get_environment_settings(int argc, char *argv[], void *args)
    strlcpy(default_paths.savestate_dir, "game:\\savestates", sizeof(default_paths.savestate_dir));
    strlcpy(default_paths.sram_dir, "game:\\savefiles", sizeof(default_paths.sram_dir));
    strlcpy(default_paths.system_dir, "game:\\system", sizeof(default_paths.system_dir));
-   strlcpy(default_paths.filebrowser_startup_dir, "game:", sizeof(default_paths.filebrowser_startup_dir));
 #endif
 }
 
