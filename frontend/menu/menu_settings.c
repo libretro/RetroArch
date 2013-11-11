@@ -21,7 +21,7 @@
 #include "menu_common.h"
 #include "../../gfx/gfx_common.h"
 #include "../../input/input_common.h"
-#include "config.def.h"
+#include "../../config.def.h"
 
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
