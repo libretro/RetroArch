@@ -46,6 +46,14 @@
 #endif
 
 #if defined(_XBOX1)
+#define ENTRIES_HEIGHT 15
+#define POSITION_EDGE_MAX (640)
+#define POSITION_EDGE_MIN 0
+#define POSITION_EDGE_CENTER (320)
+#define POSITION_OFFSET 60
+#define POSITION_RENDER_OFFSET 60
+#define TERM_WIDTH 45
+#define FONT_SIZE_NORMAL 21
 #elif defined(__CELLOS_LV2__)
 #define ENTRIES_HEIGHT 25
 #define POSITION_MIDDLE 0.50f

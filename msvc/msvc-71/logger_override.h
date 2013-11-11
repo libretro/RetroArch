@@ -17,6 +17,9 @@
 #ifndef __MSVC_71_H
 #define __MSVC_71_H
 
+#ifdef _XBOX1
+#include <xtl.h>
+#endif
 #include <stdarg.h>
 
 #include "../msvc_compat.h"

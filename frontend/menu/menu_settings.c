@@ -142,7 +142,7 @@ static enum rarch_shader_type shader_manager_get_type(const struct gfx_shader *s
    return type;
 }
 
-static int shader_manager_toggle_setting(void *data, unsigned setting, rgui_action_t action)
+static int shader_manager_toggle_setting(void *data, unsigned setting, unsigned action)
 {
    unsigned dist_shader, dist_filter, dist_scale;
    rgui_handle_t *rgui = (rgui_handle_t*)data;
@@ -247,7 +247,7 @@ static int shader_manager_toggle_setting(void *data, unsigned setting, rgui_acti
 }
 #endif
 
-static int menu_core_setting_toggle(unsigned setting, rgui_action_t action)
+static int menu_core_setting_toggle(unsigned setting, unsigned action)
 {
    unsigned index = setting - RGUI_SETTINGS_CORE_OPTION_START;
    switch (action)
@@ -272,7 +272,7 @@ static int menu_core_setting_toggle(unsigned setting, rgui_action_t action)
    return 0;
 }
 
-int menu_settings_toggle_setting(void *data, unsigned setting, rgui_action_t action, unsigned menu_type)
+int menu_settings_toggle_setting(void *data, unsigned setting, unsigned action, unsigned menu_type)
 {
    rgui_handle_t *rgui = (rgui_handle_t*)data;
 #ifdef HAVE_SHADER_MANAGER

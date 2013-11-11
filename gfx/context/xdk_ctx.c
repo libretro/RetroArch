@@ -220,10 +220,6 @@ static void gfx_ctx_xdk_destroy(void)
 {
    xdk_d3d_video_t * d3d = (xdk_d3d_video_t*)driver.video_data;
 
-#ifdef HAVE_MENU
-   texture_image_free(&d3d->rgui_texture);
-#endif
-
    if (d3d->d3d_render_device)
    {
       d3d->d3d_render_device->Release();

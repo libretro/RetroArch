@@ -286,6 +286,7 @@ static bool xdk_input_set_rumble(void *data, unsigned port, enum retro_rumble_ef
       rumble_state.wRightMotorSpeed = strength;
    val = XInputSetState(port, &rumble_state) == ERROR_SUCCESS;
 #elif defined(_XBOX1)
+#if 0
    XINPUT_FEEDBACK rumble_state;
 
    if (effect == RETRO_RUMBLE_STRONG)
@@ -293,6 +294,7 @@ static bool xdk_input_set_rumble(void *data, unsigned port, enum retro_rumble_ef
    else if (effect == RETRO_RUMBLE_WEAK)
       rumble_state.Rumble.wRightMotorSpeed = strength;
    val = XInputSetState(xdk->gamepads[port], &rumble_state) == ERROR_SUCCESS;
+#endif
 #endif
    return val;
 }
