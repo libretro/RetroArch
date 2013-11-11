@@ -581,6 +581,8 @@ static void *v4l_init(void)
 
 error:
    RARCH_ERR("V4L2: Failed to initialize camera.\n");
+   if (v4l)
+      free(v4l);
    return NULL;
 }
 
