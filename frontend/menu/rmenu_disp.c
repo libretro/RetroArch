@@ -67,7 +67,6 @@
 #endif
 
 struct texture_image *menu_texture;
-struct texture_image *menu_panel;
 static bool render_normal = true;
 
 static void render_background(rgui_handle_t *rgui)
@@ -405,9 +404,6 @@ void rmenu_set_texture(void *data, bool enable)
 static void rmenu_init_assets(void *data)
 {
    rgui_handle_t *rgui = (rgui_handle_t*)data;
-#ifdef HAVE_MENU_PANEL
-   texture_image_load("D:\\Media\\menuMainRomSelectPanel.png", menu_panel);
-#endif
    texture_image_load(g_extern.menu_texture_path, menu_texture);
    rgui->width = menu_texture->width;
    rgui->height = menu_texture->height;
@@ -420,7 +416,6 @@ static void *rmenu_init(void)
    rgui_handle_t *rgui = (rgui_handle_t*)calloc(1, sizeof(*rgui));
 
    menu_texture = (struct texture_image*)calloc(1, sizeof(*menu_texture));
-   menu_panel = (struct texture_image*)calloc(1, sizeof(*menu_panel));
 
    rmenu_init_assets(rgui);
 
@@ -430,17 +425,6 @@ static void *rmenu_init(void)
 static void rmenu_free_assets(void *data)
 {
 #ifdef _XBOX1
-   if (menu_panel->vertex_buf)
-   {
-      menu_panel->vertex_buf->Release();
-      menu_panel->vertex_buf = NULL;
-   }
-   if (menu_panel->pixels)
-   {
-      menu_panel->pixels->Release();
-      menu_panel->pixels = NULL;
-   }
-
    if (menu_texture->vertex_buf)
    {
       menu_texture->vertex_buf->Release();
@@ -452,12 +436,6 @@ static void rmenu_free_assets(void *data)
       menu_texture->pixels = NULL;
    }
 #else
-   if (menu_panel)
-   {
-      free(menu_panel->pixels);
-      menu_panel->pixels = NULL;
-   }
-
    if (menu_texture)
    {
       free(menu_texture->pixels);

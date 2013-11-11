@@ -780,10 +780,6 @@ static bool texture_image_render(struct texture_image *out_img,
 
 #ifdef HAVE_MENU
 
-#ifdef HAVE_MENU_PANEL
-extern struct texture_image *menu_panel;
-#endif
-
 static inline void xdk_d3d_draw_texture(void *data)
 {
    xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)data;
@@ -803,16 +799,6 @@ static inline void xdk_d3d_draw_texture(void *data)
          640, 480, true);
       d3d->d3d_render_device->SetRenderState(D3DRS_ALPHABLENDENABLE, false);
    }
-
-#ifdef HAVE_MENU_PANEL
-   if ((menu_panel->x != 0) || (menu_panel->y != 0))
-   {
-      texture_image_render(menu_panel, menu_panel->x, menu_panel->y,
-         610, 20, false);
-      menu_panel->x = 0;
-      menu_panel->y = 0;
-   }
-#endif
 #endif
 }
 #endif
