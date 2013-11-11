@@ -1204,7 +1204,7 @@ static void set_keybind_digital(unsigned default_retro_joypad_id, uint64_t actio
             default_retro_joypad_id, keybind_action);
 }
 
-#if defined(HAVE_OSKUTIL)
+#if defined(HAVE_OSK)
 #ifdef __CELLOS_LV2__
 
 static bool osk_callback_enter_rsound(void *data)
@@ -1486,7 +1486,7 @@ static int set_setting_action(void *data, uint8_t menu_type, unsigned switchvalu
             case RGUI_ACTION_LEFT:
             case RGUI_ACTION_RIGHT:
             case RGUI_ACTION_OK:
-#ifdef HAVE_OSKUTIL
+#ifdef HAVE_OSK
                rgui->osk_init = osk_callback_enter_rsound_init;
                rgui->osk_callback = osk_callback_enter_rsound;
 #endif
@@ -1751,7 +1751,7 @@ static int set_setting_action(void *data, uint8_t menu_type, unsigned switchvalu
          }
          break;
       case SHADERMAN_SAVE_CGP:
-#ifdef HAVE_OSKUTIL
+#ifdef HAVE_OSK
          switch (action)
          {
             case RGUI_ACTION_OK:
@@ -2157,7 +2157,7 @@ int rmenu_iterate(void *data, unsigned action)
       rgui->need_refresh = false;
    }
 
-#ifdef HAVE_OSKUTIL
+#ifdef HAVE_OSK
    if (rgui->osk_init != NULL)
    {
       if (rgui->osk_init(rgui))
@@ -2241,7 +2241,7 @@ static void* rmenu_init(void)
 
    rgui_init_textures(rgui);
 
-#ifdef HAVE_OSKUTIL
+#ifdef HAVE_OSK
    oskutil_params *osk = &rgui->oskutil_handle;
    oskutil_init(osk, 0);
 #endif

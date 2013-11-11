@@ -411,6 +411,11 @@ void menu_init(void)
    shader_manager_init(rgui);
 #endif
 
+#ifdef HAVE_OSK
+   //FIXME - will go through a proper interface
+   rgui->oskutil_handle = (ps3_osk_t*)oskutil_init(0);
+#endif
+
    menu_init_history();
    rgui->last_time = rarch_get_time_usec();
 }
@@ -422,6 +427,12 @@ void menu_free(void)
 
 #ifdef HAVE_DYNAMIC
    libretro_free_system_info(&rgui->info);
+#endif
+
+#ifdef HAVE_OSK
+   //FIXME - will go through a proper interface
+   if (rgui->oskutil_handle)
+      oskutil_free(rgui->oskutil_handle);
 #endif
 
    file_list_free(rgui->menu_stack);

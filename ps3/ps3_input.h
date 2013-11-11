@@ -29,9 +29,8 @@
 #define DEADZONE_LOW 55
 #define DEADZONE_HIGH 210
 
-#ifdef HAVE_OSKUTIL
-
-typedef struct
+#ifdef HAVE_OSK
+typedef struct ps3_osk
 {
    unsigned int osk_memorycontainer;
    wchar_t init_message[CELL_OSKDIALOG_STRING_SIZE + 1];
@@ -43,12 +42,12 @@ typedef struct
    CellOskDialogInputFieldInfo inputFieldInfo;
    CellOskDialogCallbackReturnParam outputInfo;
    CellOskDialogParam dialogParam;
-} oskutil_params;
+} ps3_osk_t;
 
-void oskutil_write_message(oskutil_params *params, const wchar_t* msg);
-void oskutil_write_initial_message(oskutil_params *params, const wchar_t* msg);
-void oskutil_init(oskutil_params *params, unsigned containersize);
-
+void oskutil_write_message(void *params, const void* msg);
+void oskutil_write_initial_message(void *params, const void* msg);
+void *oskutil_init(unsigned containersize);
+void oskutil_free(void *data);
 #endif
 
 #endif

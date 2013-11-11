@@ -308,9 +308,9 @@ typedef struct
    struct retro_system_info info;
    bool load_no_rom;
 
-#ifdef HAVE_OSKUTIL
+#ifdef HAVE_OSK
    unsigned osk_param;
-   oskutil_params oskutil_handle;
+   ps3_osk_t *oskutil_handle;
    bool (*osk_init)(void *data);
    bool (*osk_callback)(void *data);
 #endif
