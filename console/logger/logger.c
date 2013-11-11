@@ -14,7 +14,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifdef __CELLOS_LV2__
+#if defined(__CELLOS_LV2__)
 #include "../../ps3/sdk_defines.h"
 #ifndef __PSL1GHT__
 #include <netex/net.h>
@@ -25,9 +25,7 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
-#endif
-
-#ifdef GEKKO
+#elif defined(GEKKO)
 #include <network.h>
 #endif
 
