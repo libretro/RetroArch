@@ -31,6 +31,8 @@
 #include "../../general.h"
 
 #ifdef IS_SALAMANDER
+char config_path[512];
+char libretro_path[512];
 
 static void find_and_set_first_file(void)
 {
@@ -49,11 +51,11 @@ static void find_and_set_first_file(void)
    if(first_file)
    {
 #ifdef _XBOX1
-      fill_pathname_join(default_paths.libretro_path, "D:", first_file, sizeof(default_paths.libretro_path));
+      fill_pathname_join(libretro_path, "D:", first_file, sizeof(libretro_path));
 #else
-      strlcpy(default_paths.libretro_path, first_file, sizeof(default_paths.libretro_path));
+      strlcpy(libretro_path, first_file, sizeof(libretro_path));
 #endif
-      RARCH_LOG("libretro_path now set to: %s.\n", default_paths.libretro_path);
+      RARCH_LOG("libretro_path now set to: %s.\n", libretro_path);
    }
    else
       RARCH_ERR("Failed last fallback - RetroArch Salamander will exit.\n");
@@ -81,7 +83,7 @@ static void salamander_init_settings(void)
 	   char tmp_str[PATH_MAX];
 	   bool config_file_exists = false;
 
-	   if(path_file_exists(default_paths.config_path))
+	   if(path_file_exists(config_path))
 		   config_file_exists = true;
 
 	   //try to find CORE executable
@@ -95,32 +97,32 @@ static void salamander_init_settings(void)
 	   if(path_file_exists(core_executable))
 	   {
 		   //Start CORE executable
-		   strlcpy(default_paths.libretro_path, core_executable, sizeof(default_paths.libretro_path));
-		   RARCH_LOG("Start [%s].\n", default_paths.libretro_path);
+		   strlcpy(libretro_path, core_executable, sizeof(libretro_path));
+		   RARCH_LOG("Start [%s].\n", libretro_path);
 	   }
 	   else
 	   {
 		   if(config_file_exists)
 		   {
-			   config_file_t * conf = config_file_new(default_paths.config_path);
+			   config_file_t * conf = config_file_new(config_path);
 			   config_get_array(conf, "libretro_path", tmp_str, sizeof(tmp_str));
-            strlcpy(default_paths.libretro_path, tmp_str, sizeof(default_paths.libretro_path));
+            strlcpy(libretro_path, tmp_str, sizeof(libretro_path));
 		   }
 
-		   if(!config_file_exists || !strcmp(default_paths.libretro_path, ""))
+		   if(!config_file_exists || !strcmp(libretro_path, ""))
 		   {
 			   find_and_set_first_file();
 		   }
 		   else
 		   {
-			   RARCH_LOG("Start [%s] found in retroarch.cfg.\n", default_paths.libretro_path);
+			   RARCH_LOG("Start [%s] found in retroarch.cfg.\n", libretro_path);
 		   }
 
 		   if (!config_file_exists)
 		   {
 			   config_file_t *new_conf = config_file_new(NULL);
-			   config_set_string(new_conf, "libretro_path", default_paths.libretro_path);
-			   config_file_write(new_conf, default_paths.config_path);
+			   config_set_string(new_conf, "libretro_path", libretro_path);
+			   config_file_write(new_conf, config_path);
 			   config_file_free(new_conf);
 		   }
 	   }
@@ -224,7 +226,7 @@ static void get_environment_settings(int argc, char *argv[], void *args)
 #if defined(_XBOX1)
    strlcpy(default_paths.core_dir, "D:", sizeof(default_paths.core_dir));
 #ifdef IS_SALAMANDER
-   fill_pathname_join(default_paths.config_path, default_paths.core_dir, "retroarch.cfg", sizeof(default_paths.config_path));
+   fill_pathname_join(config_path, default_paths.core_dir, "retroarch.cfg", sizeof(config_path));
 #else
    fill_pathname_join(g_extern.config_path, default_paths.core_dir, "retroarch.cfg", sizeof(g_extern.config_path));
 #endif
@@ -233,12 +235,12 @@ static void get_environment_settings(int argc, char *argv[], void *args)
    fill_pathname_join(default_paths.system_dir, default_paths.core_dir, "system", sizeof(default_paths.system_dir));
 #ifndef IS_SALAMANDER
    fill_pathname_join(g_settings.screenshot_directory, default_paths.core_dir, "screenshots", sizeof(g_settings.screenshot_directory));
+   strlcpy(g_extern.menu_texture_path, "D:\\Media\\main-menu_480p.png", sizeof(g_extern.menu_texture_path));
 #endif
-   strlcpy(default_paths.menu_border_file, "D:\\Media\\main-menu_480p.png", sizeof(default_paths.menu_border_file));
 #elif defined(_XBOX360)
    strlcpy(default_paths.core_dir, "game:", sizeof(default_paths.core_dir));
 #ifdef IS_SALAMANDER
-   strlcpy(default_paths.config_path, "game:\\retroarch.cfg", sizeof(default_paths.config_path));
+   strlcpy(config_path, "game:\\retroarch.cfg", sizeof(config_path));
 #else
    strlcpy(g_settings.screenshot_directory, "game:", sizeof(g_settings.screenshot_directory));
    strlcpy(g_extern.config_path, "game:\\retroarch.cfg", sizeof(g_extern.config_path));
@@ -305,7 +307,7 @@ static void system_exec(const char *path, bool should_load_game);
 static void system_exitspawn(void)
 {
 #ifdef IS_SALAMANDER
-   system_exec(default_paths.libretro_path, false);
+   system_exec(libretro_path, false);
 #else
    bool should_load_game = false;
    if (g_extern.lifecycle_state & (1ULL << MODE_EXITSPAWN_START_GAME))

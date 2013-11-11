@@ -317,9 +317,6 @@ void config_set_defaults(void)
 
    g_extern.console.screen.resolutions.current.id = 0;
    strlcpy(g_extern.savestate_dir, default_paths.savestate_dir, sizeof(g_extern.savestate_dir));
-#ifdef HAVE_RMENU
-   strlcpy(g_extern.menu_texture_path, default_paths.menu_border_file, sizeof(g_extern.menu_texture_path));
-#endif
 
    g_extern.state_slot = 0;
    g_extern.audio_data.mute = 0;

@@ -25,11 +25,8 @@
 
 typedef struct
 {
-   char menu_border_file[MAXIMUM_PATH];
    char border_dir[MAXIMUM_PATH];
    char core_dir[MAXIMUM_PATH];
-   char config_path[MAXIMUM_PATH];
-   char libretro_path[MAXIMUM_PATH];
    char port_dir[MAXIMUM_PATH];
    char savestate_dir[MAXIMUM_PATH];
    char sram_dir[MAXIMUM_PATH];

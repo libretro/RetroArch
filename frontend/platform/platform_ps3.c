@@ -49,6 +49,9 @@ SYS_PROCESS_PARAM(1001, 0x200000)
 #include <cell/pad.h>
 #include <cell/sysmodule.h>
 
+char config_path[512];
+char libretro_path[512];
+
 static void find_and_set_first_file(void)
 {
    //Last fallback - we'll need to start the first executable file 
@@ -59,8 +62,8 @@ static void find_and_set_first_file(void)
 
    if(first_file)
    {
-      fill_pathname_join(default_paths.libretro_path, default_paths.core_dir, first_file, sizeof(default_paths.libretro_path));
-      RARCH_LOG("libretro_path now set to: %s.\n", default_paths.libretro_path);
+      fill_pathname_join(libretro_path, default_paths.core_dir, first_file, sizeof(libretro_path));
+      RARCH_LOG("libretro_path now set to: %s.\n", libretro_path);
    }
    else
       RARCH_ERR("Failed last fallback - RetroArch Salamander will exit.\n");
@@ -85,7 +88,7 @@ static void salamander_init_settings(void)
       char tmp_str[PATH_MAX];
       bool config_file_exists = false;
 
-      if (path_file_exists(default_paths.config_path))
+      if (path_file_exists(config_path))
          config_file_exists = true;
 
       //try to find CORE executable
@@ -95,29 +98,29 @@ static void salamander_init_settings(void)
       if(path_file_exists(core_executable))
       {
          //Start CORE executable
-         strlcpy(default_paths.libretro_path, core_executable, sizeof(default_paths.libretro_path));
-         RARCH_LOG("Start [%s].\n", default_paths.libretro_path);
+         strlcpy(libretro_path, core_executable, sizeof(libretro_path));
+         RARCH_LOG("Start [%s].\n", libretro_path);
       }
       else
       {
          if (config_file_exists)
          {
-            config_file_t * conf = config_file_new(default_paths.config_path);
+            config_file_t * conf = config_file_new(config_path);
             config_get_array(conf, "libretro_path", tmp_str, sizeof(tmp_str));
             config_file_free(conf);
-            strlcpy(default_paths.libretro_path, tmp_str, sizeof(default_paths.libretro_path));
+            strlcpy(libretro_path, tmp_str, sizeof(libretro_path));
          }
 
-         if (!config_file_exists || !strcmp(default_paths.libretro_path, ""))
+         if (!config_file_exists || !strcmp(libretro_path, ""))
             find_and_set_first_file();
          else
-            RARCH_LOG("Start [%s] found in retroarch.cfg.\n", default_paths.libretro_path);
+            RARCH_LOG("Start [%s] found in retroarch.cfg.\n", libretro_path);
 
          if (!config_file_exists)
          {
             config_file_t *new_conf = config_file_new(NULL);
-            config_set_string(new_conf, "libretro_path", default_paths.libretro_path);
-            config_file_write(new_conf, default_paths.config_path);
+            config_set_string(new_conf, "libretro_path", libretro_path);
+            config_file_write(new_conf, config_path);
             config_file_free(new_conf);
          }
       }
@@ -268,15 +271,16 @@ static void get_environment_settings(int argc, char *argv[], void *args)
       fill_pathname_join(default_paths.system_dir, default_paths.core_dir, "system", sizeof(default_paths.system_dir));
 
       /* now we fill in all the variables */
-      fill_pathname_join(default_paths.menu_border_file, default_paths.core_dir, "borders/Menu/main-menu_1080p.png", sizeof(default_paths.menu_border_file));
       fill_pathname_join(default_paths.border_dir, default_paths.core_dir, "borders", sizeof(default_paths.border_dir));
 #if defined(HAVE_CG) || defined(HAVE_GLSL)
       fill_pathname_join(g_settings.video.shader_dir, default_paths.core_dir, "shaders", sizeof(g_settings.video.shader_dir));
 #endif
 
 #ifdef IS_SALAMANDER
-      fill_pathname_join(default_paths.config_path, default_paths.port_dir, "retroarch.cfg",  sizeof(default_paths.config_path));
+      fill_pathname_join(config_path, default_paths.port_dir, "retroarch.cfg",  sizeof(config_path));
 #else
+      fill_pathname_join(g_extern.menu_texture_path, default_paths.core_dir, "borders/Menu/main-menu_1080p.png",
+            sizeof(g_extern.menu_texture_path));
       fill_pathname_join(g_extern.config_path, default_paths.port_dir, "retroarch.cfg",  sizeof(g_extern.config_path));
 #endif
    }
@@ -393,7 +397,7 @@ static void system_exitspawn(void)
 #ifdef HAVE_RARCH_EXEC
 
 #ifdef IS_SALAMANDER
-   system_exec(default_paths.libretro_path, false);
+   system_exec(libretro_path, false);
 
    cellSysmoduleUnloadModule(CELL_SYSMODULE_SYSUTIL_GAME);
    cellSysmoduleLoadModule(CELL_SYSMODULE_FS);
