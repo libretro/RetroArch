@@ -21,7 +21,7 @@
 #include <string.h>
 #include <limits.h>
 
-#include "rgui.h"
+#include "menu_common.h"
 #include "menu_context.h"
 #include "../../file_list.h"
 #include "../../general.h"
