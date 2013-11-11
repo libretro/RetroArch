@@ -79,7 +79,10 @@ enum
    INPUT_APPLE,
    INPUT_QNX,
    INPUT_RWEBINPUT,
-   INPUT_NULL
+   INPUT_NULL,
+
+   CAMERA_V4L2,
+   CAMERA_NULL,
 };
 
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES) || defined(__CELLOS_LV2__)
@@ -176,6 +179,12 @@ enum
 #define INPUT_DEFAULT_DRIVER INPUT_QNX
 #else
 #define INPUT_DEFAULT_DRIVER INPUT_NULL
+#endif
+
+#if defined(HAVE_V4L2)
+#define CAMERA_DEFAULT_DRIVER CAMERA_V4L2
+#else
+#define CAMERA_DEFAULT_DRIVER CAMERA_NULL
 #endif
 
 #if defined(XENON) || defined(_XBOX360) || defined(__CELLOS_LV2__)

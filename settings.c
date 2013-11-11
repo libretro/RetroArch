@@ -148,13 +148,33 @@ const char *config_get_default_input(void)
    }
 }
 
+#ifdef HAVE_CAMERA
+const char *config_get_default_camera(void)
+{
+   switch (CAMERA_DEFAULT_DRIVER)
+   {
+      case CAMERA_V4L2:
+         return "video4linux2";
+      case CAMERA_NULL:
+         return "null";
+      default:
+         return NULL;
+   }
+}
+#endif
+
 void config_set_defaults(void)
 {
    unsigned i, j;
    const char *def_video = config_get_default_video();
    const char *def_audio = config_get_default_audio();
    const char *def_input = config_get_default_input();
+#ifdef HAVE_CAMERA
+   const char *def_camera = config_get_default_camera();
 
+   if (def_camera)
+      strlcpy(g_settings.camera.driver, def_camera, sizeof(g_settings.camera.driver));
+#endif
    if (def_video)
       strlcpy(g_settings.video.driver, def_video, sizeof(g_settings.video.driver));
    if (def_audio)

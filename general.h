@@ -185,6 +185,16 @@ struct settings
       bool allow_rotate;
    } video;
 
+#ifdef HAVE_CAMERA
+   struct
+   {
+      char driver[32];
+      char device[PATH_MAX];
+      unsigned width;
+      unsigned height;
+   } camera;
+#endif
+
    struct
    {
       char driver[32];
@@ -309,6 +319,9 @@ struct global
    bool verbose;
    bool audio_active;
    bool video_active;
+#ifdef HAVE_CAMERA
+   bool camera_active;
+#endif
    bool force_fullscreen;
 
    bool rom_file_temporary;
@@ -621,6 +634,9 @@ struct rarch_main_wrap
 // Public functions
 void config_load(void);
 void config_set_defaults(void);
+#ifdef HAVE_CAMERA
+const char *config_get_default_camera(void);
+#endif
 const char *config_get_default_video(void);
 const char *config_get_default_audio(void);
 const char *config_get_default_input(void);

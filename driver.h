@@ -335,7 +335,7 @@ typedef struct camera_driver
 {
    //FIXME - params for init - queries for resolution, framerate, color format
    //which might or might not be honored
-   void *(*init)(void);
+   void *(*init)(const char *device, unsigned width, unsigned height);
    void (*free)(void *data);
    int  (*start)(void *data);
    int  (*stop)(void *data);
@@ -430,6 +430,10 @@ typedef struct driver
    const audio_driver_t *audio;
    const video_driver_t *video;
    const input_driver_t *input;
+#ifdef HAVE_CAMERA
+   const camera_driver_t *camera;
+   void *camera_data;
+#endif
    void *audio_data;
    void *video_data;
    void *input_data;
@@ -451,6 +455,9 @@ typedef struct driver
    bool video_data_own;
    bool audio_data_own;
    bool input_data_own;
+#ifdef HAVE_CAMERA
+   bool camera_data_own;
+#endif
 
 #ifdef HAVE_COMMAND
    rarch_cmd_t *command;

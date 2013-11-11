@@ -29,6 +29,7 @@
 #include <sys/time.h>
 #include <sys/mman.h>
 #include <sys/ioctl.h>
+#include "../compat/strl.h"
 
 #include <asm/types.h>
 
@@ -49,7 +50,7 @@ struct buffer
 
 typedef struct video4linux
 {
-   char *dev_name;
+   char dev_name[256];
    int fd;
    bool ready;
    io_method io;
@@ -537,17 +538,23 @@ static int v4l_start(void *data)
    return 0;
 }
 
-static void *v4l_init(void)
+static void *v4l_init(const char *device, unsigned width, unsigned height)
 {
+   (void)width;
+   (void)height;
+
    struct stat st;
    video4linux_t *v4l = (video4linux_t*)calloc(1, sizeof(video4linux_t));
    if (!v4l)
       return NULL;
 
-   // FIXME - /dev/video0 assumed for now - should allow for selecting which device
-   v4l->dev_name = "/dev/video0";
-   v4l->width    = 640;
-   v4l->height   = 480;
+   if (device == NULL)
+      strlcpy(v4l->dev_name, "/dev/video0", sizeof(v4l->dev_name));
+   else
+      strlcpy(v4l->dev_name, device, sizeof(v4l->dev_name));
+
+   v4l->width    = 640; //FIXME - use width param
+   v4l->height   = 480; //FIXME - use height param
    v4l->ready    = false;
 
    if (stat(v4l->dev_name, &st) == -1)
