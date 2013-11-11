@@ -533,6 +533,7 @@ void rarch_input_poll(void)
 #endif
 }
 
+#ifndef RARCH_CONSOLE
 // Turbo scheme: If turbo button is held, all buttons pressed except for D-pad will go into
 // a turbo mode. Until the button is released again, the input state will be modulated by a periodic pulse defined
 // by the configured duty cycle.
@@ -548,6 +549,7 @@ static bool input_apply_turbo(unsigned port, unsigned id, bool res)
    else
       return res;
 }
+#endif
 
 static int16_t input_state(unsigned port, unsigned device, unsigned index, unsigned id)
 {
