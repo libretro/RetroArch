@@ -1996,7 +1996,6 @@ static void check_savestates(bool immutable)
 void rarch_set_fullscreen(bool fullscreen)
 {
    g_settings.video.fullscreen = fullscreen;
-
    driver.video_cache_context = g_extern.system.hw_render_callback.cache_context;
    driver.video_cache_context_ack = false;
    uninit_drivers();
@@ -2014,9 +2013,10 @@ static bool check_fullscreen(void)
    static bool was_pressed = false;
    bool pressed = input_key_pressed_func(RARCH_FULLSCREEN_TOGGLE_KEY);
    bool toggle = pressed && !was_pressed;
+
    if (toggle)
    {
-      settings_set(1ULL << S_VIDEO_FULLSCREEN_TOGGLE);
+      g_settings.video.fullscreen = !g_settings.video.fullscreen;
       rarch_set_fullscreen(g_settings.video.fullscreen);
    }
 
