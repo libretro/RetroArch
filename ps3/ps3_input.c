@@ -216,10 +216,13 @@ static int16_t ps3_input_state(void *data, const struct retro_keybind **binds,
                // fixed range of 0x000 - 0x3ff
                case RETRO_DEVICE_ID_SENSOR_ACCELEROMETER_X:
                   retval = ps3->accelerometer_state[port].x;
+                  break;
                case RETRO_DEVICE_ID_SENSOR_ACCELEROMETER_Y:
                   retval = ps3->accelerometer_state[port].y;
+                  break;
                case RETRO_DEVICE_ID_SENSOR_ACCELEROMETER_Z:
                   retval = ps3->accelerometer_state[port].z;
+                  break;
                default:
                   retval = 0;
             }
