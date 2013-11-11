@@ -21,6 +21,7 @@
 #include "menu_common.h"
 #include "../../gfx/gfx_common.h"
 #include "../../input/input_common.h"
+#include "config.def.h"
 
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
@@ -301,7 +302,7 @@ int menu_set_settings(void *data, unsigned setting, unsigned action)
                action == RGUI_ACTION_LEFT ||
                action == RGUI_ACTION_RIGHT)
          {
-            settings_set(1ULL << S_REWIND);
+            g_settings.rewind_enable = !g_settings.rewind_enable;
             if (g_settings.rewind_enable)
                rarch_init_rewind();
             else
@@ -325,11 +326,14 @@ int menu_set_settings(void *data, unsigned setting, unsigned action)
 #endif
       case RGUI_SETTINGS_REWIND_GRANULARITY:
          if (action == RGUI_ACTION_OK || action == RGUI_ACTION_RIGHT)
-            settings_set(1ULL << S_REWIND_GRANULARITY_INCREMENT);
+            g_settings.rewind_granularity++;
          else if (action == RGUI_ACTION_LEFT)
-            settings_set(1ULL << S_REWIND_GRANULARITY_DECREMENT);
+         {
+            if (g_settings.rewind_granularity > 1)
+               g_settings.rewind_granularity--;
+         }
          else if (action == RGUI_ACTION_START)
-            settings_set(1ULL << S_DEF_REWIND_GRANULARITY);
+            g_settings.rewind_granularity = 1;
          break;
       case RGUI_SETTINGS_CONFIG_SAVE_ON_EXIT:
          if (action == RGUI_ACTION_OK || action == RGUI_ACTION_RIGHT 
@@ -378,11 +382,14 @@ int menu_set_settings(void *data, unsigned setting, unsigned action)
             return -1;
          }
          else if (action == RGUI_ACTION_START)
-            settings_set(1ULL << S_DEF_SAVE_STATE);
+            g_extern.state_slot = 0;
          else if (action == RGUI_ACTION_LEFT)
-            settings_set(1ULL << S_SAVESTATE_DECREMENT);
+         {
+            if (g_extern.state_slot != 0)
+               g_extern.state_slot--;
+         }
          else if (action == RGUI_ACTION_RIGHT)
-            settings_set(1ULL << S_SAVESTATE_INCREMENT);
+            g_extern.state_slot++;
          break;
 #ifdef HAVE_SCREENSHOTS
       case RGUI_SETTINGS_SCREENSHOT:
@@ -400,17 +407,35 @@ int menu_set_settings(void *data, unsigned setting, unsigned action)
          break;
       case RGUI_SETTINGS_AUDIO_MUTE:
          if (action == RGUI_ACTION_START)
-            settings_set(1ULL << S_DEF_AUDIO_MUTE);
+            g_extern.audio_data.mute = false;
          else
-            settings_set(1ULL << S_AUDIO_MUTE);
+            g_extern.audio_data.mute = !g_extern.audio_data.mute;
          break;
       case RGUI_SETTINGS_AUDIO_CONTROL_RATE_DELTA:
          if (action == RGUI_ACTION_START)
-            settings_set(1ULL << S_DEF_AUDIO_CONTROL_RATE);
+         {
+            g_settings.audio.rate_control_delta = rate_control_delta;
+            g_settings.audio.rate_control = rate_control;
+         }
          else if (action == RGUI_ACTION_LEFT)
-            settings_set(1ULL << S_AUDIO_CONTROL_RATE_DECREMENT);
+         {
+            if (g_settings.audio.rate_control_delta > 0.0)
+               g_settings.audio.rate_control_delta -= 0.001;
+
+            if (g_settings.audio.rate_control_delta < 0.0005)
+            {
+               g_settings.audio.rate_control = false;
+               g_settings.audio.rate_control_delta = 0.0;
+            }
+            else
+               g_settings.audio.rate_control = true;
+         }
          else if (action == RGUI_ACTION_RIGHT)
-            settings_set(1ULL << S_AUDIO_CONTROL_RATE_INCREMENT);
+         {
+            if (g_settings.audio.rate_control_delta < 0.2)
+               g_settings.audio.rate_control_delta += 0.001;
+            g_settings.audio.rate_control = true;
+         }
          break;
       case RGUI_SETTINGS_DEBUG_TEXT:
          if (action == RGUI_ACTION_START)
@@ -501,16 +526,22 @@ int menu_set_settings(void *data, unsigned setting, unsigned action)
             switch (action)
             {
                case RGUI_ACTION_LEFT:
-                  settings_set(1ULL << S_INPUT_OVERLAY_OPACITY_DECREMENT);
+                  g_settings.input.overlay_opacity -= 0.01f;
+
+                  if (g_settings.input.overlay_opacity < 0.0f)
+                     g_settings.input.overlay_opacity = 0.0f;
                   break;
 
                case RGUI_ACTION_RIGHT:
                case RGUI_ACTION_OK:
-                  settings_set(1ULL << S_INPUT_OVERLAY_OPACITY_INCREMENT);
+                  g_settings.input.overlay_opacity += 0.01f;
+
+                  if (g_settings.input.overlay_opacity > 1.0f)
+                     g_settings.input.overlay_opacity = 1.0f;
                   break;
 
                case RGUI_ACTION_START:
-                  settings_set(1ULL << S_DEF_INPUT_OVERLAY_OPACITY);
+                  g_settings.input.overlay_opacity = 1.0f;
                   break;
 
                default:
@@ -530,16 +561,22 @@ int menu_set_settings(void *data, unsigned setting, unsigned action)
             switch (action)
             {
                case RGUI_ACTION_LEFT:
-                  settings_set(1ULL << S_INPUT_OVERLAY_SCALE_DECREMENT);
+                  g_settings.input.overlay_scale -= 0.01f;
+
+                  if (g_settings.input.overlay_scale < 0.01f) // Avoid potential divide by zero.
+                     g_settings.input.overlay_scale = 0.01f;
                   break;
 
                case RGUI_ACTION_RIGHT:
                case RGUI_ACTION_OK:
-                  settings_set(1ULL << S_INPUT_OVERLAY_SCALE_INCREMENT);
+                  g_settings.input.overlay_scale += 0.01f;
+
+                  if (g_settings.input.overlay_scale > 2.0f)
+                     g_settings.input.overlay_scale = 2.0f;
                   break;
 
                case RGUI_ACTION_START:
-                  settings_set(1ULL << S_DEF_INPUT_OVERLAY_SCALE);
+                  g_settings.input.overlay_scale = 1.0f;
                   break;
 
                default:
@@ -806,26 +843,28 @@ int menu_set_settings(void *data, unsigned setting, unsigned action)
       case RGUI_SETTINGS_VIDEO_ROTATION:
          if (action == RGUI_ACTION_START)
          {
-            settings_set(1ULL << S_DEF_ROTATION);
+            g_settings.video.rotation = ORIENTATION_NORMAL;
             video_set_rotation_func((g_settings.video.rotation + g_extern.system.rotation) % 4);
          }
          else if (action == RGUI_ACTION_LEFT)
          {
-            settings_set(1ULL << S_ROTATION_DECREMENT);
+            if (g_settings.video.rotation > 0)
+               g_settings.video.rotation--;
             video_set_rotation_func((g_settings.video.rotation + g_extern.system.rotation) % 4);
          }
          else if (action == RGUI_ACTION_RIGHT)
          {
-            settings_set(1ULL << S_ROTATION_INCREMENT);
+            if (g_settings.video.rotation < LAST_ORIENTATION)
+               g_settings.video.rotation++;
             video_set_rotation_func((g_settings.video.rotation + g_extern.system.rotation) % 4);
          }
          break;
 
       case RGUI_SETTINGS_VIDEO_FILTER:
          if (action == RGUI_ACTION_START)
-            settings_set(1ULL << S_DEF_HW_TEXTURE_FILTER);
+            g_settings.video.smooth = video_smooth;
          else
-            settings_set(1ULL << S_HW_TEXTURE_FILTER);
+            g_settings.video.smooth = !g_settings.video.smooth;
 
          if (driver.video_poke->set_filtering)
             driver.video_poke->set_filtering(driver.video_data, 1, g_settings.video.smooth);
@@ -879,11 +918,11 @@ int menu_set_settings(void *data, unsigned setting, unsigned action)
 
       case RGUI_SETTINGS_VIDEO_INTEGER_SCALE:
          if (action == RGUI_ACTION_START)
-            settings_set(1ULL << S_DEF_SCALE_INTEGER);
+            g_settings.video.scale_integer = scale_integer;
          else if (action == RGUI_ACTION_LEFT ||
                action == RGUI_ACTION_RIGHT ||
                action == RGUI_ACTION_OK)
-            settings_set(1ULL << S_SCALE_INTEGER_TOGGLE);
+            g_settings.video.scale_integer = !g_settings.video.scale_integer;
 
          if (driver.video_poke->apply_state_changes)
             driver.video_poke->apply_state_changes(driver.video_data);
@@ -891,11 +930,17 @@ int menu_set_settings(void *data, unsigned setting, unsigned action)
 
       case RGUI_SETTINGS_VIDEO_ASPECT_RATIO:
          if (action == RGUI_ACTION_START)
-            settings_set(1ULL << S_DEF_ASPECT_RATIO);
+            g_settings.video.aspect_ratio_idx = aspect_ratio_idx;
          else if (action == RGUI_ACTION_LEFT)
-            settings_set(1ULL << S_ASPECT_RATIO_DECREMENT);
+         {
+            if (g_settings.video.aspect_ratio_idx > 0)
+               g_settings.video.aspect_ratio_idx--;
+         }
          else if (action == RGUI_ACTION_RIGHT)
-            settings_set(1ULL << S_ASPECT_RATIO_INCREMENT);
+         {
+            if (g_settings.video.aspect_ratio_idx < LAST_ASPECT_RATIO)
+               g_settings.video.aspect_ratio_idx++;
+         }
 
          if (driver.video_poke->set_aspect_ratio)
             driver.video_poke->set_aspect_ratio(driver.video_data, g_settings.video.aspect_ratio_idx);
@@ -935,9 +980,24 @@ int menu_set_settings(void *data, unsigned setting, unsigned action)
 #elif defined(__CELLOS_LV2__)
       case RGUI_SETTINGS_VIDEO_RESOLUTION:
          if (action == RGUI_ACTION_LEFT)
-            settings_set(1ULL << S_RESOLUTION_PREVIOUS);
+         {
+            if (g_extern.console.screen.resolutions.current.idx)
+            {
+               g_extern.console.screen.resolutions.current.idx--;
+               g_extern.console.screen.resolutions.current.id = 
+                  g_extern.console.screen.resolutions.list[g_extern.console.screen.resolutions.current.idx];
+            }
+         }
          else if (action == RGUI_ACTION_RIGHT)
-            settings_set(1ULL << S_RESOLUTION_NEXT);
+         {
+            if (g_extern.console.screen.resolutions.current.idx + 1 < 
+                  g_extern.console.screen.resolutions.count)
+            {
+               g_extern.console.screen.resolutions.current.idx++;
+               g_extern.console.screen.resolutions.current.id = 
+                  g_extern.console.screen.resolutions.list[g_extern.console.screen.resolutions.current.idx];
+            }
+         }
          else if (action == RGUI_ACTION_OK)
          {
             if (g_extern.console.screen.resolutions.list[g_extern.console.screen.resolutions.current.idx] == CELL_VIDEO_OUT_RESOLUTION_576)
@@ -1003,13 +1063,13 @@ int menu_set_settings(void *data, unsigned setting, unsigned action)
          switch (action)
          {
             case RGUI_ACTION_START:
-               settings_set(1ULL << S_DEF_VIDEO_VSYNC);
+               g_settings.video.vsync = true;
                break;
 
             case RGUI_ACTION_LEFT:
             case RGUI_ACTION_RIGHT:
             case RGUI_ACTION_OK:
-               settings_set(1ULL << S_VIDEO_VSYNC_TOGGLE);
+               g_settings.video.vsync = !g_settings.video.vsync;
                break;
 
             default:

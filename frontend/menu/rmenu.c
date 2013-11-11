@@ -1432,14 +1432,16 @@ static int set_setting_action(void *data, uint8_t menu_type, unsigned switchvalu
             case RGUI_ACTION_LEFT:
             case RGUI_ACTION_RIGHT:
             case RGUI_ACTION_OK:
-               settings_set(1ULL << S_TRIPLE_BUFFERING);
+               if (g_extern.lifecycle_state & (1ULL << MODE_VIDEO_TRIPLE_BUFFERING_ENABLE))
+                  g_extern.lifecycle_state &= ~(1ULL << MODE_VIDEO_TRIPLE_BUFFERING_ENABLE);
+               else
+                  g_extern.lifecycle_state |= (1ULL << MODE_VIDEO_TRIPLE_BUFFERING_ENABLE);
 
                driver.video->restart();
                rgui_init_textures(rgui);
                break;
             case RGUI_ACTION_START:
-               settings_set(1ULL << S_DEF_TRIPLE_BUFFERING);
-
+               g_extern.lifecycle_state |= (1ULL << MODE_VIDEO_TRIPLE_BUFFERING_ENABLE);
                if (!(g_extern.lifecycle_state & (1ULL << MODE_VIDEO_TRIPLE_BUFFERING_ENABLE)))
                {
                   driver.video->restart();
