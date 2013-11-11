@@ -2074,11 +2074,11 @@ void menu_parse_and_resolve(void *data, unsigned menu_type)
                file_list_push(rgui->selection_buf, "carda:/", menu_type, 0);
                file_list_push(rgui->selection_buf, "cardb:/", menu_type, 0);
 #elif defined(_XBOX1)
-               file_list_push(rgui->selection_buf, "C:\\", menu_type, 0);
-               file_list_push(rgui->selection_buf, "D:\\", menu_type, 0);
-               file_list_push(rgui->selection_buf, "E:\\", menu_type, 0);
-               file_list_push(rgui->selection_buf, "F:\\", menu_type, 0);
-               file_list_push(rgui->selection_buf, "G:\\", menu_type, 0);
+               file_list_push(rgui->selection_buf, "C:", menu_type, 0);
+               file_list_push(rgui->selection_buf, "D:", menu_type, 0);
+               file_list_push(rgui->selection_buf, "E:", menu_type, 0);
+               file_list_push(rgui->selection_buf, "F:", menu_type, 0);
+               file_list_push(rgui->selection_buf, "G:", menu_type, 0);
 #elif defined(_WIN32)
                unsigned drives = GetLogicalDrives();
                char drive[] = " :\\";
