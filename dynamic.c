@@ -783,9 +783,9 @@ bool rarch_environment_cb(unsigned cmd, void *data)
          break;
       }
 
+#ifdef HAVE_CAMERA
       case RETRO_ENVIRONMENT_SET_CAMERA_RETRIEVE:
       {
-#ifdef HAVE_CAMERA
          RARCH_LOG("Environ SET_CAMERA_RETRIEVE.\n");
          uint64_t *mask_ptr = (uint64_t*)data;
          uint64_t mask = *mask_ptr;
@@ -793,9 +793,9 @@ bool rarch_environment_cb(unsigned cmd, void *data)
             *mask_ptr = driver.camera->set_capabilities(driver.camera_data, mask);
          else
             *mask_ptr = 0;
-#endif
+         break;
       }
-      break;
+#endif
 
       // Private extensions for internal use, not part of libretro API.
       case RETRO_ENVIRONMENT_SET_LIBRETRO_PATH:
