@@ -179,6 +179,59 @@ static const input_driver_t *input_drivers[] = {
    NULL,
 };
 
+#ifdef HAVE_OSK
+static const input_osk_driver_t *osk_drivers[] = {
+#ifdef __CELLOS_LV2__
+   &input_ps3_osk,
+#endif
+   NULL,
+};
+
+static int find_osk_driver_index(const char *driver)
+{
+   unsigned i;
+   for (i = 0; osk_drivers[i]; i++)
+      if (strcasecmp(driver, osk_drivers[i]->ident) == 0)
+         return i;
+   return -1;
+}
+
+static void find_osk_driver(void)
+{
+   int i = find_osk_driver_index(g_settings.osk.driver);
+   if (i >= 0)
+      driver.osk = osk_drivers[i];
+   else
+   {
+      unsigned d;
+      RARCH_ERR("Couldn't find any OSK driver named \"%s\"\n", g_settings.osk.driver);
+      RARCH_LOG_OUTPUT("Available OSK drivers are:\n");
+      for (d = 0; osk_drivers[d]; d++)
+         RARCH_LOG_OUTPUT("\t%s\n", osk_drivers[d]->ident);
+
+      rarch_fail(1, "find_osk_driver()");
+   }
+}
+
+void find_prev_osk_driver(void)
+{
+   int i = find_osk_driver_index(g_settings.osk.driver);
+   if (i > 0)
+      strlcpy(g_settings.osk.driver, osk_drivers[i - 1]->ident, sizeof(g_settings.osk.driver));
+   else
+      RARCH_WARN("Couldn't find any previous osk driver (current one: \"%s\").\n", g_settings.osk.driver);
+}
+
+void find_next_osk_driver(void)
+{
+   int i = find_osk_driver_index(g_settings.osk.driver);
+   if (i >= 0 && osk_drivers[i + 1])
+      strlcpy(g_settings.osk.driver, osk_drivers[i + 1]->ident, sizeof(g_settings.osk.driver));
+   else
+      RARCH_WARN("Couldn't find any next osk driver (current one: \"%s\").\n", g_settings.osk.driver);
+}
+#endif
+
 #ifdef HAVE_CAMERA
 static const camera_driver_t *camera_drivers[] = {
 #ifdef HAVE_V4L2
@@ -383,6 +436,9 @@ void init_drivers_pre(void)
 #ifdef HAVE_CAMERA
    find_camera_driver();
 #endif
+#ifdef HAVE_OSK
+   find_osk_driver();
+#endif
 }
 
 static void adjust_system_rates(void)
@@ -558,6 +614,14 @@ void global_uninit_drivers(void)
       driver.camera_data = NULL;
    }
 #endif
+
+#ifdef HAVE_OSK
+   if (driver.osk && driver.osk_data)
+   {
+      driver.osk->free(driver.osk_data);
+      driver.osk_data = NULL;
+   }
+#endif
 }
 
 #ifdef HAVE_CAMERA
@@ -583,6 +647,26 @@ void init_camera(void)
 }
 #endif
 
+#ifdef HAVE_OSK
+void init_osk(void)
+{
+   // Resource leaks will follow if osk is initialized twice.
+   if (driver.osk_data)
+      return;
+
+   find_osk_driver();
+
+   //FIXME - refactor params later based on semantics 
+   driver.osk_data = osk_init_func(0);
+
+   if (!driver.osk_data)
+   {
+      RARCH_ERR("Failed to initialize OSK driver. Will continue without OSK.\n");
+      g_extern.osk_active = false;
+   }
+}
+#endif
+
 void init_drivers(void)
 {
    driver.video_data_own = !driver.video_data;
@@ -590,6 +674,9 @@ void init_drivers(void)
    driver.input_data_own = !driver.input_data;
 #ifdef HAVE_CAMERA
    driver.camera_data_own = !driver.camera_data;
+#endif
+#ifdef HAVE_OSK
+   driver.osk_data_own = !driver.osk_data;
 #endif
 
    adjust_system_rates();
@@ -609,6 +696,10 @@ void init_drivers(void)
       init_camera();
 #endif
 
+#ifdef HAVE_OSK
+   init_osk();
+#endif
+
    // Keep non-throttled state as good as possible.
    if (driver.nonblock_state)
       driver_set_nonblock_state(driver.nonblock_state);
@@ -621,6 +712,14 @@ void uninit_camera(void)
 {
    if (driver.camera_data && driver.camera)
       driver.camera->free(driver.camera_data);
+}
+#endif
+
+#ifdef HAVE_OSK
+void uninit_osk(void)
+{
+   if (driver.osk_data && driver.osk)
+      driver.osk->free(driver.osk_data);
 }
 #endif
 
@@ -639,6 +738,12 @@ void uninit_drivers(void)
    if (driver.camera_data_own)
       driver.camera_data = NULL;
 #endif
+#ifdef HAVE_OSK
+   uninit_osk();
+
+   if (driver.osk_data_own)
+      driver.osk_data = NULL;
+#endif
    if (driver.video_data_own)
       driver.video_data = NULL;
    if (driver.audio_data_own)
@@ -648,6 +753,9 @@ void uninit_drivers(void)
 
 #ifdef HAVE_CAMERA
    driver.camera_data_own = false;
+#endif
+#ifdef HAVE_OSK
+   driver.osk_data_own    = false;
 #endif
    driver.video_data_own  = false;
    driver.audio_data_own  = false;

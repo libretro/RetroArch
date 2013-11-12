@@ -148,6 +148,21 @@ const char *config_get_default_input(void)
    }
 }
 
+#ifdef HAVE_OSK
+const char *config_get_default_osk(void)
+{
+   switch (OSK_DEFAULT_DRIVER)
+   {
+      case OSK_PS3:
+         return "ps3osk";
+      case OSK_NULL:
+         return "null";
+      default:
+         return NULL;
+   }
+}
+#endif
+
 #ifdef HAVE_CAMERA
 const char *config_get_default_camera(void)
 {
@@ -174,6 +189,12 @@ void config_set_defaults(void)
 
    if (def_camera)
       strlcpy(g_settings.camera.driver, def_camera, sizeof(g_settings.camera.driver));
+#endif
+#ifdef HAVE_OSK
+   const char *def_osk = config_get_default_osk();
+
+   if (def_osk)
+      strlcpy(g_settings.osk.driver, def_osk, sizeof(g_settings.osk.driver));
 #endif
    if (def_video)
       strlcpy(g_settings.video.driver, def_video, sizeof(g_settings.video.driver));

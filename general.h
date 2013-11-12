@@ -195,6 +195,16 @@ struct settings
    } camera;
 #endif
 
+#ifdef HAVE_OSK
+   struct
+   {
+      char driver[32];
+      uint64_t state;
+      bool (*cb_init)(void *data);
+      bool (*cb_callback)(void *data);
+   } osk;
+#endif
+
    struct
    {
       char driver[32];
@@ -321,6 +331,9 @@ struct global
    bool video_active;
 #ifdef HAVE_CAMERA
    bool camera_active;
+#endif
+#ifdef HAVE_OSK
+   bool osk_active;
 #endif
    bool force_fullscreen;
 
@@ -637,6 +650,9 @@ void config_load(void);
 void config_set_defaults(void);
 #ifdef HAVE_CAMERA
 const char *config_get_default_camera(void);
+#endif
+#ifdef HAVE_OSK
+const char *config_get_default_osk(void);
 #endif
 const char *config_get_default_video(void);
 const char *config_get_default_audio(void);

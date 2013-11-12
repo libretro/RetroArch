@@ -154,7 +154,8 @@ static void callback_sysutil_exit(uint64_t status, uint64_t param, void *userdat
       case CELL_SYSUTIL_OSKDIALOG_INPUT_CANCELED:
       case CELL_SYSUTIL_OSKDIALOG_FINISHED:
       case CELL_SYSUTIL_OSKDIALOG_UNLOADED:
-         oskutil_lifecycle(osk, status);
+         if (driver.osk && driver.osk_data)
+            driver.osk->lifecycle(driver.osk_data, status);
          break;
 #endif
    }

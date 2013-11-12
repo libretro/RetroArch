@@ -341,9 +341,6 @@ typedef struct input_osk_driver
    void (*write_initial_msg)(void *data, const void *msg);
    bool (*start)(void *data);
    void (*lifecycle)(void *data, uint64_t status);
-   bool (*cb_init)(void *data);
-   bool (*cb_callback)(void *data);
-   unsigned action;
    const char *ident;
 } input_osk_driver_t;
 
@@ -452,6 +449,10 @@ typedef struct driver
    const audio_driver_t *audio;
    const video_driver_t *video;
    const input_driver_t *input;
+#ifdef HAVE_OSK
+   const input_osk_driver_t *osk;
+   void *osk_data;
+#endif
 #ifdef HAVE_CAMERA
    const camera_driver_t *camera;
    void *camera_data;
@@ -479,6 +480,9 @@ typedef struct driver
    bool input_data_own;
 #ifdef HAVE_CAMERA
    bool camera_data_own;
+#endif
+#ifdef HAVE_OSK
+   bool osk_data_own;
 #endif
 
 #ifdef HAVE_COMMAND

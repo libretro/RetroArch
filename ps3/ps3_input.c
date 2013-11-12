@@ -399,9 +399,6 @@ const input_osk_driver_t input_ps3_osk = {
    oskutil_write_initial_message,
    oskutil_start,
    oskutil_lifecycle,
-   NULL,
-   NULL,
-   0,
    "ps3osk"
 };
 #endif

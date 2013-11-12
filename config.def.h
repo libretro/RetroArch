@@ -83,6 +83,9 @@ enum
 
    CAMERA_V4L2,
    CAMERA_NULL,
+
+   OSK_PS3,
+   OSK_NULL,
 };
 
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES) || defined(__CELLOS_LV2__)
@@ -185,6 +188,12 @@ enum
 #define CAMERA_DEFAULT_DRIVER CAMERA_V4L2
 #else
 #define CAMERA_DEFAULT_DRIVER CAMERA_NULL
+#endif
+
+#if defined(__CELLOS_LV2__)
+#define OSK_DEFAULT_DRIVER OSK_PS3
+#else
+#define OSK_DEFAULT_DRIVER OSK_NULL
 #endif
 
 #if defined(XENON) || defined(_XBOX360) || defined(__CELLOS_LV2__)
