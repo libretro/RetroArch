@@ -2032,11 +2032,7 @@ void rarch_state_slot_increase(void)
       msg_queue_clear(g_extern.msg_queue);
    char msg[256];
 
-#ifdef HAVE_BSV_MOVIE
-   snprintf(msg, sizeof(msg), "Save state/movie slot: %u", g_extern.state_slot);
-#else
-   snprintf(msg, sizeof(msg), "Save state slot: %u", g_extern.state_slot);
-#endif
+   snprintf(msg, sizeof(msg), "State slot: %u", g_extern.state_slot);
 
    if (g_extern.msg_queue)
       msg_queue_push(g_extern.msg_queue, msg, 1, 180);
@@ -2054,11 +2050,7 @@ void rarch_state_slot_decrease(void)
 
    char msg[256];
 
-#ifdef HAVE_BSV_MOVIE
-   snprintf(msg, sizeof(msg), "Save state/movie slot: %u", g_extern.state_slot);
-#else
-   snprintf(msg, sizeof(msg), "Save state slot: %u", g_extern.state_slot);
-#endif
+   snprintf(msg, sizeof(msg), "State slot: %u", g_extern.state_slot);
 
    if (g_extern.msg_queue)
       msg_queue_push(g_extern.msg_queue, msg, 1, 180);
@@ -2538,14 +2530,14 @@ void rarch_disk_control_set_index(unsigned next_index)
       if (next_index < num_disks)
          snprintf(msg, sizeof(msg), "Setting disk %u of %u in tray.", next_index + 1, num_disks);
       else
-         snprintf(msg, sizeof(msg), "Removed disk from tray.");
+         strlcpy(msg, "Removed disk from tray.", sizeof(msg));
    }
    else
    {
       if (next_index < num_disks)
          snprintf(msg, sizeof(msg), "Failed to set disk %u of %u.", next_index + 1, num_disks);
       else
-         snprintf(msg, sizeof(msg), "Failed to remove disk from tray.");
+         strlcpy(msg, "Failed to remove disk from tray.", sizeof(msg));
       error = true;
    }
 
