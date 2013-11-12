@@ -228,7 +228,7 @@ static void get_environment_settings(int argc, char *argv[], void *args)
       if (g_extern.lifecycle_state & (1ULL << MODE_EXTLAUNCH_MULTIMAN))
       {
          fill_pathname_join(contentInfoPath, "/dev_hdd0/game/", EMULATOR_CONTENT_DIR, sizeof(contentInfoPath));
-         snprintf(default_paths.port_dir, sizeof(default_paths.port_dir), "/dev_hdd0/game/%s/USRDIR", EMULATOR_CONTENT_DIR);
+         fill_pathname_join(default_paths.port_dir, contentInfoPath, "USRDIR", sizeof(default_paths.port_dir));
       }
 #endif
 
@@ -247,7 +247,6 @@ static void get_environment_settings(int argc, char *argv[], void *args)
       fill_pathname_join(default_paths.system_dir, default_paths.core_dir, "system", sizeof(default_paths.system_dir));
 
       /* now we fill in all the variables */
-      fill_pathname_join(default_paths.border_dir, default_paths.core_dir, "borders", sizeof(default_paths.border_dir));
 #if defined(HAVE_CG) || defined(HAVE_GLSL)
       fill_pathname_join(g_settings.video.shader_dir, default_paths.core_dir, "shaders", sizeof(g_settings.video.shader_dir));
 #endif

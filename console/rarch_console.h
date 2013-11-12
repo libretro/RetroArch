@@ -25,7 +25,6 @@
 
 typedef struct
 {
-   char border_dir[MAXIMUM_PATH];
    char core_dir[MAXIMUM_PATH];
    char port_dir[MAXIMUM_PATH];
    char savestate_dir[MAXIMUM_PATH];

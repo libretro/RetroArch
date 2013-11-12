@@ -63,7 +63,6 @@ static void get_environment_settings(int argc, char *argv[])
    snprintf(default_paths.system_dir, sizeof(default_paths.system_dir), "%s/system", default_paths.core_dir);
 
    /* now we fill in all the variables */
-   snprintf(default_paths.border_dir, sizeof(default_paths.border_dir), "%s/borders", default_paths.core_dir);
    snprintf(g_extern.config_path, sizeof(g_extern.config_path), "%s/retroarch.cfg", default_paths.port_dir);
 }
 
