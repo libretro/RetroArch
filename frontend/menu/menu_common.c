@@ -467,7 +467,7 @@ void menu_free(void)
 
 #ifdef HAVE_OSK
    if (osk)
-      osk->free(osk);
+      free(osk);
 #endif
 
    file_list_free(rgui->menu_stack);
