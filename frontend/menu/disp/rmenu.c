@@ -21,31 +21,35 @@
 #include <string.h>
 #include <limits.h>
 
-#include "rgui.h"
-#include "menu_context.h"
-#include "../../file_list.h"
-#include "../../general.h"
-#include "../../gfx/gfx_common.h"
-#include "../../config.def.h"
-#include "../../file.h"
-#include "../../dynamic.h"
-#include "../../compat/posix_string.h"
-#include "../../gfx/shader_parse.h"
-#include "../../performance.h"
-#include "../../input/input_common.h"
+#include "../menu_common.h"
+#include "../menu_context.h"
+#include "../../../file_list.h"
+#include "../../../general.h"
+#include "../../../gfx/gfx_common.h"
+#include "../../../config.def.h"
+#include "../../../file.h"
+#include "../../../dynamic.h"
+#include "../../../compat/posix_string.h"
+#include "../../../gfx/shader_parse.h"
+#include "../../../performance.h"
+#include "../../../input/input_common.h"
 
-#ifdef HAVE_OPENGL
-#include "../../gfx/gl_common.h"
-#endif
-
-#include "../../screenshot.h"
-#include "../../gfx/fonts/bitmap.h"
+#include "../../../screenshot.h"
+#include "../../../gfx/fonts/bitmap.h"
 
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_HLSL)
 #define HAVE_SHADER_MANAGER
 #endif
 
 #if defined(_XBOX1)
+#define ENTRIES_HEIGHT 10
+#define POSITION_EDGE_MAX (480)
+#define POSITION_EDGE_MIN 0
+#define POSITION_EDGE_CENTER (450)
+#define POSITION_OFFSET 30
+#define POSITION_RENDER_OFFSET 100
+#define TERM_WIDTH 45
+#define FONT_SIZE_NORMAL 21
 #elif defined(__CELLOS_LV2__)
 #define ENTRIES_HEIGHT 25
 #define POSITION_MIDDLE 0.50f
@@ -59,7 +63,6 @@
 #endif
 
 struct texture_image *menu_texture;
-struct texture_image *menu_panel;
 static bool render_normal = true;
 
 static void render_background(rgui_handle_t *rgui)
@@ -68,6 +71,7 @@ static void render_background(rgui_handle_t *rgui)
 
 static void rmenu_render_messagebox(void *data, const char *message)
 {
+#ifndef _XBOX1
    font_params_t font_parms;
 
    size_t i, j;
@@ -107,6 +111,7 @@ static void rmenu_render_messagebox(void *data, const char *message)
    }
 
    render_normal = false;
+#endif
 }
 
 
@@ -395,9 +400,6 @@ void rmenu_set_texture(void *data, bool enable)
 static void rmenu_init_assets(void *data)
 {
    rgui_handle_t *rgui = (rgui_handle_t*)data;
-#ifdef HAVE_MENU_PANEL
-   texture_image_load("D:\\Media\\menuMainRomSelectPanel.png", menu_panel);
-#endif
    texture_image_load(g_extern.menu_texture_path, menu_texture);
    rgui->width = menu_texture->width;
    rgui->height = menu_texture->height;
@@ -410,7 +412,6 @@ static void *rmenu_init(void)
    rgui_handle_t *rgui = (rgui_handle_t*)calloc(1, sizeof(*rgui));
 
    menu_texture = (struct texture_image*)calloc(1, sizeof(*menu_texture));
-   menu_panel = (struct texture_image*)calloc(1, sizeof(*menu_panel));
 
    rmenu_init_assets(rgui);
 
@@ -420,17 +421,6 @@ static void *rmenu_init(void)
 static void rmenu_free_assets(void *data)
 {
 #ifdef _XBOX1
-   if (menu_panel->vertex_buf)
-   {
-      menu_panel->vertex_buf->Release();
-      menu_panel->vertex_buf = NULL;
-   }
-   if (menu_panel->pixels)
-   {
-      menu_panel->pixels->Release();
-      menu_panel->pixels = NULL;
-   }
-
    if (menu_texture->vertex_buf)
    {
       menu_texture->vertex_buf->Release();
@@ -442,12 +432,6 @@ static void rmenu_free_assets(void *data)
       menu_texture->pixels = NULL;
    }
 #else
-   if (menu_panel)
-   {
-      free(menu_panel->pixels);
-      menu_panel->pixels = NULL;
-   }
-
    if (menu_texture)
    {
       free(menu_texture->pixels);

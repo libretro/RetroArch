@@ -194,9 +194,9 @@ static int16_t x_input_state(void *data, const struct retro_keybind **binds, uns
          return x_key_pressed(x11, id);
 
       case RETRO_DEVICE_ANALOG:
-         ret = input_joypad_analog(x11->joypad, port, index, id, binds[port]);
+         ret = x_pressed_analog(x11, binds[port], index, id);
          if (!ret)
-            ret = x_pressed_analog(x11, binds[port], index, id);
+            ret = input_joypad_analog(x11->joypad, port, index, id, binds[port]);
          return ret;
 
       case RETRO_DEVICE_MOUSE:

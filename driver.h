@@ -331,6 +331,42 @@ typedef struct input_driver
    const rarch_joypad_driver_t *(*get_joypad_driver)(void *data);
 } input_driver_t;
 
+typedef struct input_osk_driver
+{
+   void *(*init)(size_t size);
+   void (*free)(void *data);
+   bool (*enable_key_layout)(void *data);
+   void (*oskutil_create_activation_parameters)(void *data);
+   void (*write_msg)(void *data, const void *msg);
+   void (*write_initial_msg)(void *data, const void *msg);
+   bool (*start)(void *data);
+   void (*lifecycle)(void *data, uint64_t status);
+   bool (*cb_init)(void *data);
+   bool (*cb_callback)(void *data);
+   unsigned action;
+   const char *ident;
+} input_osk_driver_t;
+
+typedef struct camera_driver
+{
+   // FIXME: params for init - queries for resolution, framerate, color format
+   // which might or might not be honored
+   void *(*init)(const char *device, uint64_t buffer_types, unsigned width, unsigned height);
+   void (*free)(void *data);
+
+   bool (*start)(void *data);
+   void (*stop)(void *data);
+
+   // Polls the camera driver.
+   // Will call the appropriate callback if a new frame is ready.
+   // Returns true if a new frame was handled.
+   bool (*poll)(void *data,
+         retro_camera_frame_raw_framebuffer_t frame_raw_cb,
+         retro_camera_frame_opengl_texture_t frame_gl_cb);
+
+   const char *ident;
+} camera_driver_t;
+
 struct rarch_viewport;
 
 #ifdef HAVE_OVERLAY
@@ -416,6 +452,10 @@ typedef struct driver
    const audio_driver_t *audio;
    const video_driver_t *video;
    const input_driver_t *input;
+#ifdef HAVE_CAMERA
+   const camera_driver_t *camera;
+   void *camera_data;
+#endif
    void *audio_data;
    void *video_data;
    void *input_data;
@@ -437,6 +477,9 @@ typedef struct driver
    bool video_data_own;
    bool audio_data_own;
    bool input_data_own;
+#ifdef HAVE_CAMERA
+   bool camera_data_own;
+#endif
 
 #ifdef HAVE_COMMAND
    rarch_cmd_t *command;
@@ -494,6 +537,13 @@ void find_next_video_driver(void);
 void find_next_audio_driver(void);
 void find_next_input_driver(void);
 
+#ifdef HAVE_CAMERA
+void init_camera(void);
+void uninit_camera(void);
+void find_prev_camera_driver(void);
+void find_next_camera_driver(void);
+#endif
+
 void driver_set_monitor_refresh_rate(float hz);
 bool driver_monitor_fps_statistics(double *refresh_rate, double *deviation, unsigned *sample_points);
 void driver_set_nonblock_state(bool nonblock);
@@ -506,6 +556,13 @@ retro_proc_address_t driver_get_proc_address(const char *sym);
 bool driver_set_rumble_state(unsigned port, enum retro_rumble_effect effect, uint16_t strength);
 // Used by RETRO_ENVIRONMENT_GET_SENSOR_INTERFACE
 bool driver_set_sensor_state(unsigned port, enum retro_sensor_action action, unsigned rate);
+
+// Used by RETRO_ENVIRONMENT_GET_CAMERA_INTERFACE
+#ifdef HAVE_CAMERA
+bool driver_camera_start(void);
+void driver_camera_stop(void);
+void driver_camera_poll(void);
+#endif
 
 extern driver_t driver;
 
@@ -554,6 +611,8 @@ extern const input_driver_t input_apple;
 extern const input_driver_t input_qnx;
 extern const input_driver_t input_rwebinput;
 extern const input_driver_t input_null;
+extern const camera_driver_t camera_v4l2;
+extern const input_osk_driver_t input_ps3_osk;
 
 #include "driver_funcs.h"
 

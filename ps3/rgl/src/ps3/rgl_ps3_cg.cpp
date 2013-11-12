@@ -695,13 +695,6 @@ void _cgIgnoreParamIndex (void *data, const void*v, const int index )
    // nothing
 }
 
-CgRuntimeParameter* _cgGLTestArrayParameter( CGparameter paramIn, long offset, long nelements )
-{
-   CgRuntimeParameter* param = rglCgGLTestParameter( paramIn );
-
-   return param;
-}
-
 CgRuntimeParameter* _cgGLTestTextureParameter( CGparameter param )
 {
    CgRuntimeParameter* ptr = rglCgGLTestParameter( param );
@@ -1226,163 +1219,6 @@ CG_API CGparameter cgGetNextParameter( CGparameter param )
    }
 }
 
-CG_API CGparameter cgGetFirstStructParameter( CGparameter param )
-{
-   //check parameter handle
-   CgRuntimeParameter *rtParameter = ( CgRuntimeParameter* )rglCgGLTestParameter( param );
-   if ( !rtParameter )
-      return ( CGparameter )NULL;
-
-   const CgParameterEntry *parameterEntry = rtParameter->parameterEntry;
-   if (( parameterEntry->flags & CGP_STRUCTURE ) != CGP_STRUCTURE )
-   {
-      // failure, there was no child.
-      rglCgRaiseError( CG_INVALID_PARAM_HANDLE_ERROR );
-      return ( CGparameter )NULL;
-   }
-
-   const CgParameterStructure *parameterStructure = rglGetParameterStructure( rtParameter->program, parameterEntry );
-   if ( parameterStructure->memberCount > 0 ) //is is needed ?
-   {
-      CgRuntimeParameter *firstStructureItem = rtParameter + 1;
-      return firstStructureItem->id;
-   }
-   else
-      return ( CGparameter )NULL; //we have a struct with 0 items ?
-}
-
-CG_API CGparameter cgGetArrayParameter( CGparameter param, int arrayIndex )
-{
-   // check parameter handle
-   CgRuntimeParameter *rtParameter = ( CgRuntimeParameter* )_cgGLTestArrayParameter( param, arrayIndex, 1 );
-   if ( !rtParameter )
-      return ( CGparameter )NULL;
-
-   CGparameter arrayFirstItemID;
-   if ( rtParameter->parameterEntry->flags & CGP_UNROLLED )
-   {
-      //move over the first item of the array and starts from here
-      rtParameter++;
-      arrayFirstItemID = rtParameter->id;
-   }
-   else
-   {
-      // SPECIAL CASE FOR ARRAY_OF_SAMPLERS
-      if ( RGL_UNLIKELY( !( rtParameter->parameterEntry->flags & ( CGP_STRUCTURE | CGP_ARRAY ) ) ) &&
-            isSampler( rglGetParameterCGtype( rtParameter->program, rtParameter->parameterEntry ) ) )
-      {
-         for ( int i = 0; i < arrayIndex; ++i )
-         {
-            rtParameter++;
-         }
-         return rtParameter->id;
-      }
-      // END SPECIAL CASE FOR ARRAY_OF_SAMPLERS
-
-      //move to the type item
-      rtParameter++;
-      //and create the ID for the item 0
-      //I know this is stupid, and that this really the same as the previous case, but that's to make the code understandable
-      arrayFirstItemID = ( CGparameter )((( unsigned int )rtParameter->id ) | ( 0 << CG_PARAMETERSIZE ) );
-   }
-   CGparameter arrayItemID = rglAdvanceParameter( arrayFirstItemID, arrayIndex );
-   return arrayItemID;
-}
-
-CG_API int cgGetArraySize( CGparameter param, int dimension )
-{
-   // check parameter handle
-   CgRuntimeParameter *rtParameter = ( CgRuntimeParameter* )rglCgGLTestParameter( param );
-   if ( !rtParameter )
-      return -1;
-
-   // this is another rarely queried value (see also cgGetArrayDimension), so we
-   // do not store it. Instead we calculate it every time it is requested.
-   // recurse down the array tree decrementing "dimension" until either it reached zero
-   // and we return the arraySize or we fail to find a child in which case the
-   // dimension was invalid.
-
-   const CgParameterEntry *parameterEntry = rtParameter->parameterEntry;
-   if (( parameterEntry->flags & CGP_ARRAY ) == 0 )
-   {
-      // ***** NOT IN CG DOCUMENTATION, but should be ****
-      rglCgRaiseError( CG_ARRAY_PARAM_ERROR );
-      return CG_UNKNOWN_TYPE;
-   }
-   else
-   {
-      const CgParameterArray *parameterArray = rglGetParameterArray( rtParameter->program, parameterEntry );
-      if ( dimension < 0 || dimension >= parameterArray->dimensionCount )
-      {
-         rglCgRaiseError( CG_INVALID_DIMENSION_ERROR );
-         return -1;
-      }
-      else
-         return (int)parameterArray->dimensions[dimension];
-   }
-   return -1;
-}
-
-CG_API CGprogram cgGetParameterProgram( CGparameter param )
-{
-   // check parameter handle
-   CgRuntimeParameter *rtParameter = ( CgRuntimeParameter* )rglCgGLTestParameter( param );
-   if (!rtParameter)
-      return ( CGprogram )NULL;
-   // I don't think we want to expose the fact that we internally store runtime created effect and context parameters in a program
-   else if ( RGL_UNLIKELY( rtParameter->parameterEntry->flags & CGP_RTCREATED ) )
-      return ( CGprogram )NULL;
-   else
-      return rtParameter->program->id;
-   return (CGprogram)NULL;
-}
-
-CG_API CGcontext cgGetParameterContext( CGparameter param )
-{
-   // check parameter handle
-   if ( !CG_IS_PARAMETER( param ) )
-   {
-      rglCgRaiseError( CG_INVALID_PARAM_HANDLE_ERROR );
-      return ( CGcontext )NULL;
-   }
-
-   CGcontext result = cgGetProgramContext( cgGetParameterProgram( param ) );
-
-   return result;
-}
-
-CG_API CGbool cgIsParameter( CGparameter param )
-{
-   if ( RGL_LIKELY( CG_IS_PARAMETER( param ) ) )
-   {
-      return CG_TRUE;
-   }
-   return CG_FALSE;
-}
-
-CG_API CGtype cgGetParameterType( CGparameter param )
-{
-   CgRuntimeParameter *rtParameter = ( CgRuntimeParameter* )rglCgGLTestParameter( param );
-   if ( !rtParameter )
-      return CG_UNKNOWN_TYPE;
-   else
-   {
-      if ( rtParameter->parameterEntry->flags & CGP_ARRAY )
-         return CG_ARRAY;
-      else if ( rtParameter->parameterEntry->flags & CGP_STRUCTURE )
-         return CG_STRUCT;
-      else
-      {
-         return rglGetParameterCGtype( rtParameter->program, rtParameter->parameterEntry );
-      }
-   }
-}
-
-CG_API CGtype cgGetParameterNamedType( CGparameter param )
-{
-   return cgGetParameterType( param );
-}
-
 CG_API const char* cgGetParameterSemantic( CGparameter param )
 {
    // check parameter handle
@@ -1426,95 +1262,6 @@ static bool rglPrependString( char *dst, const char *src, size_t size )
    memmove(dst + len, dst, previousLen + 1);
    strncpy(dst, src, len);
    return true;
-}
-
-CG_API const char* cgGetParameterName( CGparameter param )
-{
-   // check parameter handle
-   CgRuntimeParameter *rtParameter = ( CgRuntimeParameter* )rglCgGLTestParameter( param );
-   if ( !rtParameter )
-      return NULL;
-
-   // runtime created parameters have their names stored in the entry differently than compile created params
-   if ( rtParameter->parameterEntry->flags & CGP_RTCREATED )
-      return (const char*)( rtParameter->parameterEntry->nameOffset );
-
-   char *currentParameterName = rtParameter->program->parentContext->currentParameterName;
-   currentParameterName[0] = '\0';
-   size_t stringSize = sizeof( rtParameter->program->parentContext->currentParameterName );
-
-   //I walk down the parameterEntry list until I find the root
-   const CgParameterEntry *paramEntry = rtParameter->parameterEntry;
-   const CgParameterEntry *firstEntry = rtParameter->program->parametersEntries;
-
-   //start by the current name
-   bool res = rglPrependString( currentParameterName, rtParameter->program->stringTable + paramEntry->nameOffset, stringSize );
-   if ( !res )
-      return NULL;
-   //are we starting from an array ?
-   if ( paramEntry > firstEntry )
-   {
-      const CgParameterEntry *previousEntry = paramEntry - 1;
-      if (( previousEntry->flags & CGP_ARRAY ) && !( previousEntry->flags & CGP_UNROLLED ) )
-      {
-         //ok we are in an non unrolled array
-         //I need to append the array index, I should use the dimensions , no time for now
-         int index = CG_GETINDEX( param );
-         //should divide the index on the dimensions... later...
-         char buffer[256];
-         sprintf( buffer, "[%i]", index );
-         if ( strlen( currentParameterName ) + strlen( buffer ) + 1 < stringSize )
-            strcat( currentParameterName, buffer );
-         else
-         {
-            return NULL;
-         }
-         //prepend array name
-         res = rglPrependString( currentParameterName, rtParameter->program->stringTable + previousEntry->nameOffset, stringSize );
-         if ( !res )
-            return NULL;
-         paramEntry--;
-      }
-   }
-
-   //we have already treated the current entry at that point, the loop starts on the previous one, the distance is 1
-   int distance = 1;
-   paramEntry--;
-
-   while ( paramEntry >= firstEntry )
-   {
-      switch ( paramEntry->flags & CGP_TYPE_MASK )
-      {
-         case CGP_ARRAY:
-            distance--; // the array has one extra item, whether it's a structure or if it's an intrinsic type
-            break;
-         case CGP_STRUCTURE:
-            {
-               const CgParameterStructure *parameterStructure = rglGetParameterStructure( rtParameter->program, paramEntry );
-               //the parameter is not in this structure, so I need to remove from the distance all the structure item
-               if ( distance > parameterStructure->memberCount )
-                  distance -= parameterStructure->memberCount;
-               else
-               {
-                  //the parameter is in this structure, prepend the name
-                  res = rglPrependString( currentParameterName, ".", stringSize );
-                  if (!res )
-                     return NULL;
-                  res = rglPrependString( currentParameterName, rtParameter->program->stringTable + paramEntry->nameOffset, stringSize );
-                  if (!res)
-                     return NULL;
-                  distance = 0;
-               }
-               break;
-            }
-         case CGP_INTRINSIC:
-            break;
-      }
-      distance++;
-      paramEntry--;
-   }
-   return currentParameterName;
-
 }
 
 CG_API CGenum cgGetParameterVariability( CGparameter param )
@@ -1633,34 +1380,6 @@ static void destroy_context( _CGcontext*ctx )
    free( ctx );
 }
 
-void rglCgContextPopFront()
-{
-   // remove and delete the context at the head of the list
-   if ( _CurrentContext->RGLcgContextHead )
-   {
-      _CGcontext* head = _cgGetContextPtr( _CurrentContext->RGLcgContextHead );
-      _CGcontext* temp = head->next;
-      // free the id as well
-      destroy_context( head );
-
-      // this is not the end of the list, feel free to dereference it.
-      if ( temp )
-         _CurrentContext->RGLcgContextHead = temp->id;
-      // nothing left, no dereferenceing for you, mister.
-      else
-         _CurrentContext->RGLcgContextHead = 0;
-   }
-}
-
-
-void rglCgContextEraseAfter( _CGcontext* c )
-{
-   _CGcontext* eraseme = c->next;
-   c->next = eraseme->next;
-
-   destroy_context( eraseme );
-}
-
 // API functions ----------------------------------------
 
 CG_API CGcontext cgCreateContext( void )
@@ -1739,14 +1458,6 @@ CG_API void cgDestroyContext( CGcontext c )
    }
 }
 
-CG_API CGbool cgIsContext( CGcontext ctx )
-{
-   // is the pointer valid?
-   if ( CG_IS_CONTEXT( ctx ) )
-      return CG_TRUE;
-   return CG_FALSE;
-}
-
 CG_API const char* cgGetLastListing( CGcontext c )
 {
    // check to see if context is a valid one
@@ -1763,29 +1474,6 @@ CG_API const char* cgGetLastListing( CGcontext c )
    return NULL;
 }
 
-
-CG_API void cgSetAutoCompile( CGcontext c, CGenum flag )
-{
-   // check to see if context is a valid one
-   if ( !CG_IS_CONTEXT( c ) )
-   {
-      rglCgRaiseError( CG_INVALID_CONTEXT_HANDLE_ERROR );
-      return;
-   }
-
-   // check if enum has any meaning here
-   switch ( flag )
-   {
-      case CG_COMPILE_MANUAL:
-      case CG_COMPILE_IMMEDIATE:
-      case CG_COMPILE_LAZY:
-         // set the value and return
-         _cgGetContextPtr( c )->compileType = flag;
-         break;
-      default:
-         rglCgRaiseError( CG_INVALID_ENUMERANT_ERROR );
-   }
-}
 
 /*============================================================
   CG PROGRAM
@@ -1804,14 +1492,6 @@ RGL_EXPORT cgRTCgcFreeHookFunction _cgRTCgcFreeCompiledProgramHook;
 // include intrusive "next" pointers in this data block so instead we'll use
 // a non-intrusive list. The list is walked using cgGetFirstProgram() and
 // cgGetNextProgram()
-
-void rglCgProgramZero( _CGprogram* p )
-{
-   // zero all pointers in the node and enclosed binary program
-   // this makes sure cgIsProgram calls on invalid pointers always fail
-   memset( p, 0, sizeof( _CGprogram ) );
-   return;
-}
 
 void rglCgProgramPushFront( _CGcontext* ctx, _CGprogram* prog )
 {
@@ -1873,7 +1553,7 @@ void rglCgProgramErase( _CGprogram* prog )
       free( prog->runtimeElf );
 
    // zero out all pointers
-   rglCgProgramZero( prog );
+   memset( prog, 0, sizeof( _CGprogram ) );
 }
 
 void rglCgProgramEraseAfter( _CGprogram* prog )
@@ -3137,7 +2817,7 @@ CGprogram rglCgCreateProgram( CGcontext ctx, CGprofile profile, const CgProgramH
    }
 
    // zero out the fields
-   rglCgProgramZero( prog );
+   memset( prog, 0, sizeof( _CGprogram ) );
 
    // fill in the fields we know
    prog->parentContext = _cgGetContextPtr( ctx );
@@ -3586,7 +3266,7 @@ CG_API CGprogram cgCopyProgram( CGprogram program )
       rglCgRaiseError( CG_MEMORY_ALLOC_ERROR );
       return ( CGprogram )NULL;
    }
-   rglCgProgramZero( newprog );
+   memset( newprog, 0, sizeof( _CGprogram ) );
 
    // copy information from the old program
    newprog->header.profile = prog->header.profile;
@@ -3643,7 +3323,6 @@ CG_API CGprogram cgCopyProgram( CGprogram program )
 
    return newprog->id;
 }
-
 
 CG_API void cgDestroyProgram( CGprogram program )
 {
@@ -3709,100 +3388,9 @@ CG_API void cgDestroyProgram( CGprogram program )
 }
 
 
-CG_API CGprogram cgGetFirstProgram( CGcontext ctx )
-{
-   if ( !CG_IS_CONTEXT( ctx ) )
-   {
-      rglCgRaiseError( CG_INVALID_CONTEXT_HANDLE_ERROR );
-      return ( CGprogram )NULL;
-   }
-   // check context
-   _CGcontext* c = _cgGetContextPtr( ctx );
-
-   // return the id of the head of the program list in the context (got all that? good)
-   _CGprogram* ptr = c->programList;
-   if ( ptr )
-   {
-      // if any programs have been allocated...
-      return c->programList->id;
-   }
-
-   return ( CGprogram )NULL;
-}
-
-CG_API CGprogram cgGetNextProgram( CGprogram current )
-{
-   // check the program input
-   if ( !CG_IS_PROGRAM( current ) )
-   {
-      rglCgRaiseError( CG_INVALID_PROGRAM_HANDLE_ERROR );
-      return NULL;
-   }
-   _CGprogram* ptr = _cgGetProgPtr( current );
-
-   // increment the iterator down the program list
-   if ( ptr->next != NULL )
-   {
-      return ptr->next->id;
-   }
-
-   // failed, so return an empty program
-   return NULL;
-}
-
-CG_API CGcontext cgGetProgramContext( CGprogram prog )
-{
-   // check the program input
-   if ( !CG_IS_PROGRAM( prog ) )
-   {
-      rglCgRaiseError( CG_INVALID_PROGRAM_HANDLE_ERROR );
-      return NULL;
-   }
-   _CGprogram* ptr = _cgGetProgPtr( prog );
-
-   return ptr->parentContext->id;
-}
-
-CG_API CGprofile cgGetProgramProfile( CGprogram prog )
-{
-   // check the program input
-   if ( !CG_IS_PROGRAM( prog ) )
-   {
-      rglCgRaiseError( CG_INVALID_PROGRAM_HANDLE_ERROR );
-      return CG_PROFILE_UNKNOWN;
-   }
-
-   // return the profile the program was compiled under
-   return ( CGprofile )_cgGetProgPtr( prog )->header.profile;
-}
-
 /*============================================================
   CG GL
   ============================================================ */
-
-inline static float *rglGetUniformValuePtr( CGparameter param, CgRuntimeParameter *rtParameter )
-{
-   float* value = ( float* )( rtParameter->pushBufferPointer );
-
-   // check in bounds to know if you should even bother checking that it is in an array
-   if ( rtParameter > rtParameter->program->runtimeParameters )
-   {
-      CgRuntimeParameter *rtInArrayCheckParameter = rtParameter - 1;
-      // check is array
-      if ( rtInArrayCheckParameter->parameterEntry->flags & CGP_ARRAY )
-         value = *(( float** )( rtParameter->pushBufferPointer ) + CG_GETINDEX( param ) );
-   }
-   return value;
-}
-
-
-// endian swapping of the fragment uniforms, if necessary
-#if RGL_ENDIAN == RGL_BIG_ENDIAN
-#define SWAP_IF_BE(arg) endianSwapWordByHalf(arg)
-#else
-#define SWAP_IF_BE(arg) arg
-#endif
-
 
 /******************************************************************************
  *** Profile Functions
@@ -3974,27 +3562,6 @@ CGGL_API void cgGLUnbindProgram( CGprofile profile )
 
 }
 
-
-// this API exposes internal implementation of Cg.
-// Since we do not rely on program objects, always return 0.
-CGGL_API GLuint cgGLGetProgramID( CGprogram program )
-{
-   return 0;
-}
-
-CGGL_API void cgGLEnableProgramProfiles( CGprogram program )
-{
-   // TODO: unsupported in Jetstream
-   return;
-}
-
-CGGL_API void cgGLDisableProgramProfiles( CGprogram program )
-{
-   // TODO: unsupported in Jetstream
-   return;
-}
-
-
 /******************************************************************************
  *** Parameter Managment Functions
  *****************************************************************************/
@@ -4016,400 +3583,6 @@ CGGL_API void cgGLSetParameter2f( CGparameter param, float x, float y )
    // otherwise apply the values to the parameter
    float v[4] = {x, y, y, y};
    ptr->setterIndex( ptr, v, CG_GETINDEX( param ) );
-}
-
-CGGL_API void cgGLSetParameter3f( CGparameter param, float x, float y, float z )
-{
-   CgRuntimeParameter *ptr = rglCgGLTestParameter( param );
-
-   // otherwise apply the values to the parameter
-   float v[4] = {x, y, z, z};
-   ptr->setterIndex( ptr, v, CG_GETINDEX( param ) );
-}
-
-CGGL_API void cgGLSetParameter4f( CGparameter param, float x, float y, float z, float w )
-{
-   CgRuntimeParameter *ptr = rglCgGLTestParameter( param );
-
-   // otherwise apply the values to the parameter
-   float v[4] = {x, y, z, w};
-   ptr->setterIndex( ptr, v, CG_GETINDEX( param ) );
-}
-
-CGGL_API void cgGLSetParameter1fv( CGparameter param, const float *v )
-{
-   CgRuntimeParameter *ptr = rglCgGLTestParameter( param );
-
-   float v2[4] = { v[0], v[0], v[0], v[0]};
-   ptr->setterIndex( ptr, v2, CG_GETINDEX( param ) );
-}
-
-CGGL_API void cgGLSetParameter2fv( CGparameter param, const float *v )
-{
-   CgRuntimeParameter *ptr = rglCgGLTestParameter( param );
-
-   float v2[4] = { v[0], v[1], v[1], v[1]};
-   ptr->setterIndex( ptr, v2, CG_GETINDEX( param ) );
-}
-
-CGGL_API void cgGLSetParameter3fv( CGparameter param, const float *v )
-{
-   CgRuntimeParameter *ptr = rglCgGLTestParameter( param );
-
-   float v2[4] = { v[0], v[1], v[2], v[2]};
-   ptr->setterIndex( ptr, v2, CG_GETINDEX( param ) );
-}
-
-CGGL_API void cgGLSetParameter4fv( CGparameter param, const float *v )
-{
-   CgRuntimeParameter *ptr = rglCgGLTestParameter( param );
-
-   float v2[4] = { v[0], v[1], v[2], v[3]};
-   ptr->setterIndex( ptr, v2, CG_GETINDEX( param ) );
-}
-
-CGGL_API void cgGLGetParameter1f( CGparameter param, float *v )
-{
-   //check parameter handle
-   CgRuntimeParameter *rtParameter = rglCgGLTestParameter( param );
-   if ( !rtParameter )
-      return;
-
-   const CgParameterEntry *parameterEntry = rtParameter->parameterEntry;
-   if (( parameterEntry->flags & CGP_TYPE_MASK ) != CGP_INTRINSIC ||
-         (( parameterEntry->flags & CGPV_MASK ) != CGPV_UNIFORM && ( parameterEntry->flags & CGPV_MASK ) != CGPV_CONSTANT ) )
-   {
-      rglCgRaiseError( CG_INVALID_PARAMETER_ERROR );
-      return;
-   }
-
-   // uniforms only
-   float* value = rglGetUniformValuePtr( param, rtParameter );
-   if ( !value )
-   {
-      rglCgRaiseError( CG_INVALID_PARAMETER_ERROR );
-      return;
-   }
-
-   const CgParameterResource *parameterResource = rglGetParameterResource( rtParameter->program, parameterEntry );
-
-   switch ( parameterResource->type )
-   {
-      case CG_FLOAT4:
-      case CG_FLOAT3:
-      case CG_FLOAT2:
-      case CG_FLOAT:
-      case CG_HALF4:
-      case CG_HALF3:
-      case CG_HALF2:
-      case CG_HALF:
-      case CG_INT4:
-      case CG_INT3:
-      case CG_INT2:
-      case CG_INT:
-      case CG_BOOL4:
-      case CG_BOOL3:
-      case CG_BOOL2:
-      case CG_BOOL:
-      case CG_FIXED4:
-      case CG_FIXED3:
-      case CG_FIXED2:
-      case CG_FIXED:
-         *v = *value; // fall through...
-         break;
-      default:
-         rglCgRaiseError( CG_INVALID_PARAMETER_ERROR );
-   }
-}
-
-CGGL_API void cgGLGetParameter2f( CGparameter param, float *v )
-{
-   //check parameter handle
-   CgRuntimeParameter *rtParameter = rglCgGLTestParameter( param );
-   if ( !rtParameter )
-      return;
-
-   const CgParameterEntry *parameterEntry = rtParameter->parameterEntry;
-   if (( parameterEntry->flags & CGP_TYPE_MASK ) != CGP_INTRINSIC ||
-         (( parameterEntry->flags & CGPV_MASK ) != CGPV_UNIFORM && ( parameterEntry->flags & CGPV_MASK ) != CGPV_CONSTANT ) )
-   {
-      rglCgRaiseError( CG_INVALID_PARAMETER_ERROR );
-      return;
-   }
-
-   // uniforms only
-   float* value = rglGetUniformValuePtr( param, rtParameter );
-   if ( !value )
-   {
-      rglCgRaiseError( CG_INVALID_PARAMETER_ERROR );
-      return;
-   }
-
-   // peek into image for value
-   const CgParameterResource *parameterResource = rglGetParameterResource( rtParameter->program, parameterEntry );
-   switch ( parameterResource->type )
-   {
-      case CG_FLOAT2:
-      case CG_FLOAT3:
-      case CG_FLOAT4:
-      case CG_HALF2:
-      case CG_HALF3:
-      case CG_HALF4:
-      case CG_INT2:
-      case CG_INT3:
-      case CG_INT4:
-      case CG_BOOL2:
-      case CG_BOOL3:
-      case CG_BOOL4:
-      case CG_FIXED2:
-      case CG_FIXED3:
-      case CG_FIXED4:
-         v[0] = value[0];
-         v[1] = value[1];
-         break;
-      default:
-         rglCgRaiseError( CG_INVALID_PARAMETER_ERROR );
-         break;
-   }
-}
-
-CGGL_API void cgGLGetParameter3f( CGparameter param, float *v )
-{
-   //check parameter handle
-   CgRuntimeParameter *rtParameter = rglCgGLTestParameter( param );
-   if ( !rtParameter )
-      return;
-
-   const CgParameterEntry *parameterEntry = rtParameter->parameterEntry;
-   if (( parameterEntry->flags & CGP_TYPE_MASK ) != CGP_INTRINSIC ||
-         (( parameterEntry->flags & CGPV_MASK ) != CGPV_UNIFORM && ( parameterEntry->flags & CGPV_MASK ) != CGPV_CONSTANT ) )
-   {
-      rglCgRaiseError( CG_INVALID_PARAMETER_ERROR );
-      return;
-   }
-
-   // uniforms only
-   float* value = rglGetUniformValuePtr( param, rtParameter );
-   if ( !value )
-   {
-      rglCgRaiseError( CG_INVALID_PARAMETER_ERROR );
-      return;
-   }
-
-   // peek into image for value
-   const CgParameterResource *parameterResource = rglGetParameterResource( rtParameter->program, parameterEntry );
-   switch ( parameterResource->type )
-   {
-      case CG_FLOAT3:
-      case CG_FLOAT4:
-      case CG_HALF3:
-      case CG_HALF4:
-      case CG_INT3:
-      case CG_INT4:
-      case CG_BOOL3:
-      case CG_BOOL4:
-      case CG_FIXED3:
-      case CG_FIXED4:
-         v[0] = value[0];
-         v[1] = value[1];
-         v[2] = value[2];
-         break;
-      default:
-         rglCgRaiseError( CG_INVALID_PARAMETER_ERROR );
-         break;
-   }
-}
-
-CGGL_API void cgGLGetParameter4f( CGparameter param, float *v )
-{
-   //check parameter handle
-   CgRuntimeParameter *rtParameter = rglCgGLTestParameter( param );
-   if ( !rtParameter )
-      return;
-
-   const CgParameterEntry *parameterEntry = rtParameter->parameterEntry;
-   if (( parameterEntry->flags & CGP_TYPE_MASK ) != CGP_INTRINSIC ||
-         (( parameterEntry->flags & CGPV_MASK ) != CGPV_UNIFORM && ( parameterEntry->flags & CGPV_MASK ) != CGPV_CONSTANT ) )
-   {
-      rglCgRaiseError( CG_INVALID_PARAMETER_ERROR );
-      return;
-   }
-
-   // uniforms only
-   float* value = rglGetUniformValuePtr( param, rtParameter );
-   if ( !value )
-   {
-      rglCgRaiseError( CG_INVALID_PARAMETER_ERROR );
-      return;
-   }
-
-   // peek into image for value
-   const CgParameterResource *parameterResource = rglGetParameterResource( rtParameter->program, parameterEntry );
-   switch ( parameterResource->type )
-   {
-      case CG_FLOAT4:
-      case CG_HALF4:
-      case CG_INT4:
-      case CG_BOOL4:
-      case CG_FIXED4:
-         v[0] = value[0];
-         v[1] = value[1];
-         v[2] = value[2];
-         v[3] = value[3];
-         break;
-      default:
-         rglCgRaiseError( CG_INVALID_PARAMETER_ERROR );
-         break;
-   }
-}
-
-CGGL_API void cgGLSetParameterArray1f( CGparameter param,
-      long offset,
-      long nelements,
-      const float *v )
-{
-   CgRuntimeParameter* ptr = _cgGLTestArrayParameter( param, offset, nelements );
-
-
-   if ( nelements == 0 )
-   {
-      const CgParameterArray *parameterArray = rglGetParameterArray( ptr->program, ptr->parameterEntry );
-      nelements = rglGetSizeofSubArray( parameterArray->dimensions, parameterArray->dimensionCount ) - offset;
-   }
-
-   //we have an array here, the parameterEntry of the type is the next one
-   ptr++;
-
-   // loop over array elements
-   for ( int i = 0; i < nelements; ++i )
-   {
-      ptr->setterIndex( ptr, v + i, i + offset );
-   }
-}
-
-CGGL_API void cgGLSetParameterArray2f( CGparameter param,
-      long offset,
-      long nelements,
-      const float *v )
-{
-   CgRuntimeParameter* ptr = _cgGLTestArrayParameter( param, offset, nelements );
-
-   if ( nelements == 0 )
-   {
-      const CgParameterArray *parameterArray = rglGetParameterArray( ptr->program, ptr->parameterEntry );
-      nelements = rglGetSizeofSubArray( parameterArray->dimensions, parameterArray->dimensionCount ) - offset;
-   }
-
-   //we have an array here, the parameterEntry of the type is the next one
-   ptr++;
-
-   // loop over array elements
-   for ( int i = 0; i < nelements; ++i )
-   {
-      ptr->setterIndex( ptr, v + 2 * i, i + offset );
-   }
-}
-
-CGGL_API void cgGLSetParameterArray3f( CGparameter param,
-      long offset,
-      long nelements,
-      const float *v )
-{
-
-   CgRuntimeParameter* ptr = _cgGLTestArrayParameter( param, offset, nelements );
-   if ( nelements == 0 )
-   {
-      const CgParameterArray *parameterArray = rglGetParameterArray( ptr->program, ptr->parameterEntry );
-      nelements = rglGetSizeofSubArray( parameterArray->dimensions, parameterArray->dimensionCount ) - offset;
-   }
-
-   //we have an array here, the parameterEntry of the type is the next one
-   ptr++;
-   // loop over array elements
-   for ( int i = 0; i < nelements; ++i )
-   {
-      ptr->setterIndex( ptr, v + 3 * i, i + offset );
-   }
-}
-
-CGGL_API void cgGLSetParameterArray4f( CGparameter param,
-      long offset,
-      long nelements,
-      const float *v )
-{
-
-   CgRuntimeParameter* ptr = _cgGLTestArrayParameter( param, offset, nelements );
-   if ( nelements == 0 )
-   {
-      const CgParameterArray *parameterArray = rglGetParameterArray( ptr->program, ptr->parameterEntry );
-      nelements = rglGetSizeofSubArray( parameterArray->dimensions, parameterArray->dimensionCount ) - offset;
-   }
-
-   //we have an array here, the parameterEntry of the type is the next one
-   ptr++;
-   // loop over array elements
-   for ( int i = 0; i < nelements; ++i )
-   {
-      ptr->setterIndex( ptr, v + 4 * i, i + offset );
-   }
-}
-
-CGGL_API void cgGLGetParameterArray1f( CGparameter param,
-      long offset,
-      long nelements,
-      float *v )
-{
-   if ( nelements == 0 )  nelements = cgGetArraySize( param, 0 ) - offset;
-   // loop over array elements
-   for ( int i = 0; i < nelements; ++i )
-   {
-      CGparameter p = cgGetArrayParameter( param, i + offset );
-      cgGLGetParameter1f( p, v + i );
-   }
-}
-
-CGGL_API void cgGLGetParameterArray2f( CGparameter param,
-      long offset,
-      long nelements,
-      float *v )
-{
-   if ( nelements == 0 )  nelements = cgGetArraySize( param, 0 ) - offset;
-   // loop over array elements
-   for ( int i = 0; i < nelements; ++i )
-   {
-      CGparameter p = cgGetArrayParameter( param, i + offset );
-      cgGLGetParameter2f( p, v + 2*i );
-   }
-}
-
-CGGL_API void cgGLGetParameterArray3f( CGparameter param,
-      long offset,
-      long nelements,
-      float *v )
-{
-
-   if ( nelements == 0 )  nelements = cgGetArraySize( param, 0 ) - offset;
-   // loop over array elements
-   for ( int i = 0; i < nelements; ++i )
-   {
-      CGparameter p = cgGetArrayParameter( param, i + offset );
-      cgGLGetParameter3f( p, v + 3*i );
-   }
-}
-
-CGGL_API void cgGLGetParameterArray4f( CGparameter param,
-      long offset,
-      long nelements,
-      float *v )
-{
-
-   if ( nelements == 0 )  nelements = cgGetArraySize( param, 0 ) - offset;
-   // loop over array elements
-   for ( int i = 0; i < nelements; ++i )
-   {
-      CGparameter p = cgGetArrayParameter( param, i + offset );
-      cgGLGetParameter4f( p, v + 4*i );
-   }
 }
 
 CGGL_API void cgGLSetParameterPointer( CGparameter param,
@@ -4493,33 +3666,6 @@ CGGL_API void cgGLDisableTextureParameter( CGparameter param )
    {
       // this does not do anything on nvidia's implementation
    }
-}
-
-CGGL_API GLenum cgGLGetTextureEnum( CGparameter param )
-{
-   // The returned value is the texture unit assigned to this parameter
-   // by the Cg compiler.
-   CgRuntimeParameter* ptr = _cgGLTestTextureParameter( param );
-   if ( ptr == NULL ) return GL_INVALID_OPERATION;
-
-   if ( ptr->parameterEntry->flags & CGP_RTCREATED )
-   {
-      // runtime created texture parameters do not have allocated texture units
-      rglCgRaiseError( CG_INVALID_PARAMETER_ERROR );
-      return GL_INVALID_OPERATION;
-   }
-
-   // XXX  what about the vertex texture enums !?
-   if ( ptr->program->header.profile == CG_PROFILE_SCE_VP_RSX)
-      return GL_INVALID_OPERATION;
-
-   if ( !( ptr->parameterEntry->flags & CGPF_REFERENCED ) || !(( ptr->parameterEntry->flags & CGPV_MASK ) == CGPV_UNIFORM ) ) { rglCgRaiseError( CG_INVALID_PARAMETER_ERROR ); return GL_INVALID_OPERATION; }
-   const CgParameterResource *parameterResource = rglGetParameterResource( ptr->program, ptr->parameterEntry );
-   return GL_TEXTURE0 + parameterResource->resource - CG_TEXUNIT0;
-}
-
-CGGL_API void cgGLSetDebugMode( CGbool debug )
-{
 }
 
 /*============================================================

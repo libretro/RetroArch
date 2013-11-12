@@ -21,25 +21,21 @@
 #include <string.h>
 #include <limits.h>
 
-#include "rgui.h"
-#include "menu_context.h"
-#include "../../file_list.h"
-#include "../../general.h"
-#include "../../gfx/gfx_common.h"
-#include "../../config.def.h"
-#include "../../file.h"
-#include "../../dynamic.h"
-#include "../../compat/posix_string.h"
-#include "../../gfx/shader_parse.h"
-#include "../../performance.h"
-#include "../../input/input_common.h"
+#include "../menu_common.h"
+#include "../menu_context.h"
+#include "../../../file_list.h"
+#include "../../../general.h"
+#include "../../../gfx/gfx_common.h"
+#include "../../../config.def.h"
+#include "../../../file.h"
+#include "../../../dynamic.h"
+#include "../../../compat/posix_string.h"
+#include "../../../gfx/shader_parse.h"
+#include "../../../performance.h"
+#include "../../../input/input_common.h"
 
-#ifdef HAVE_OPENGL
-#include "../../gfx/gl_common.h"
-#endif
-
-#include "../../screenshot.h"
-#include "../../gfx/fonts/bitmap.h"
+#include "../../../screenshot.h"
+#include "../../../gfx/fonts/bitmap.h"
 
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_HLSL)
 #define HAVE_SHADER_MANAGER

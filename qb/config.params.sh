@@ -31,6 +31,7 @@ HAVE_FREETYPE=auto      # Enable FreeType support
 HAVE_XVIDEO=auto        # Enable XVideo support
 HAVE_SDL_IMAGE=auto     # Enable SDL_image support
 HAVE_PYTHON=auto        # Enable Python 3 support for shaders
+HAVE_V4L2=auto          # Enable video4linux2 support
 HAVE_BSV_MOVIE=yes      # Disable BSV movie support
 HAVE_NEON=no            # Forcefully enable ARM NEON optimizations
 HAVE_SSE=no             # Forcefully enable x86 SSE optimizations (SSE, SSE2)

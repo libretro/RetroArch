@@ -2657,11 +2657,7 @@ GLAPI void APIENTRY glTextureReferenceSCE( GLenum target, GLuint levels,
    newLayout.pixelBits = rglPlatformGetBitsPerPixel( newLayout.internalFormat );
    newLayout.pitch = pitch ? pitch : GET_TEXTURE_PITCH(texture);
 
-   GLboolean isRenderTarget = GL_FALSE;
-   GLboolean vertexEnable = GL_FALSE;
-
-   texture->isRenderTarget = isRenderTarget;
-   texture->vertexEnable = vertexEnable;
+   texture->isRenderTarget = GL_FALSE;
 
    if ( gcmTexture->gpuAddressId != GMM_ERROR )
       rglPlatformDestroyTexture( texture );

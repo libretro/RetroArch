@@ -39,9 +39,6 @@
 extern "C" {
 #endif
 
-#ifdef HAVE_FILEBROWSER
-#include "file_browser.h"
-#endif
 #include "../../file_list.h"
 
 #if defined(HAVE_CG) || defined(HAVE_HLSL) || defined(HAVE_GLSL)
@@ -123,6 +120,7 @@ typedef enum
    RGUI_SETTINGS_DRIVER_VIDEO,
    RGUI_SETTINGS_DRIVER_AUDIO,
    RGUI_SETTINGS_DRIVER_INPUT,
+   RGUI_SETTINGS_DRIVER_CAMERA,
    RGUI_SETTINGS_SCREENSHOT,
    RGUI_SETTINGS_GPU_SCREENSHOT,
    RGUI_SCREENSHOT_DIR_PATH,
@@ -266,6 +264,7 @@ enum
 };
 #endif
 
+
 typedef struct
 {
    uint64_t old_input_state;
@@ -282,10 +281,6 @@ typedef struct
    size_t frame_buf_pitch;
    bool frame_buf_show;
 
-#ifdef HAVE_FILEBROWSER
-   filebrowser_t *browser;
-   unsigned menu_type;
-#endif
    file_list_t *menu_stack;
    file_list_t *selection_buf;
    size_t selection_ptr;
@@ -314,12 +309,6 @@ typedef struct
    struct retro_system_info info;
    bool load_no_rom;
 
-#ifdef HAVE_OSKUTIL
-   unsigned osk_param;
-   oskutil_params oskutil_handle;
-   bool (*osk_init)(void *data);
-   bool (*osk_callback)(void *data);
-#endif
 #ifdef HAVE_SHADER_MANAGER
    struct gfx_shader shader;
 #endif
@@ -332,6 +321,9 @@ typedef struct
 } rgui_handle_t;
 
 extern rgui_handle_t *rgui;
+#ifdef HAVE_OSK
+extern input_osk_driver_t *osk;
+#endif
 
 void menu_init(void);
 bool menu_iterate(void);

@@ -31,14 +31,29 @@
 
 #include "rsound.h"
 
-#ifdef __CELLOS_LV2__
+#if defined(__CELLOS_LV2__)
+#include <cell/sysmodule.h>
+#include <sys/timer.h>
+#include <sys/sys_time.h>
+
+// network headers
 #include <netex/net.h>
 #include <netex/errno.h>
+#define NETWORK_COMPAT_HEADERS 1
+#elif defined(GEKKO)
+#include <network.h>
+#else
+#define NETWORK_COMPAT_HEADERS 1
 #endif
+
+#ifdef NETWORK_COMPAT_HEADERS
 #include <sys/socket.h>
 #include <netdb.h>
 #include <netinet/in.h>
 #include <netinet/tcp.h>
+#include <arpa/inet.h>
+#include <sys/poll.h>
+#endif
 #include <fcntl.h>
 #ifdef _WIN32
 #include <direct.h>
@@ -51,16 +66,8 @@
 #include <string.h>
 #include <assert.h>
 #include <stdarg.h>
-#include <sys/poll.h>
 #include <time.h>
 #include <errno.h> 
-#include <arpa/inet.h>
-
-#ifdef __CELLOS_LV2__
-#include <cell/sysmodule.h>
-#include <sys/timer.h>
-#include <sys/sys_time.h>
-#endif
 
 /* 
  ****************************************************************************   
@@ -91,6 +98,41 @@ enum rsd_conn_type
 #define RSD_ERR(fmt, args...)
 #define RSD_DEBUG(fmt, args...)
 
+#if defined(__CELLOS_LV2__)
+static int init_count = 0;
+#define pollfd_fd(x) x.fd
+#define net_send(a,b,c,d) send(a,b,c,d)
+#define net_socket(a,b,c) socket(a,b,c)
+#define net_connect(a,b,c) connect(a,b,c)
+#define net_shutdown(a,b) shutdown(a,b)
+#define net_socketclose(x) socketclose(x)
+#define net_recv(a,b,c,d) recv(a,b,c,d)
+#elif defined(GEKKO)
+#define SHUT_RD 0
+
+#define socketpoll(x, y, z)  net_poll(x, y, z)
+#define pollfd pollsd
+#define pollfd_fd(x) x.socket
+#define gethostbyname net_gethostbyname
+#define getsockopt net_getsockopt
+#define setsockopt net_setsockopt
+#define net_send(a,b,c,d) net_send(a,b,c,d)
+#define net_socket(a,b,c) net_socket(a,b,c)
+#define net_connect(a,b,c) net_connect(a,b,c)
+#define net_shutdown(a,b) net_shutdown(a,b)
+#define net_socketclose(x) net_close(x)
+#define net_recv(a,b,c,d) net_recv(a,b,c,d)
+#else
+#define pollfd_fd(x) x.fd
+#define net_socket(a,b,c) socket(a,b,c)
+#define socketpoll(x, y, z)  poll(x, y, z)
+#define net_send(a,b,c,d) send(a,b,c,d)
+#define net_connect(a,b,c) connect(a,b,c)
+#define net_shutdown(a,b) shutdown(a,b)
+#define net_socketclose(x) close(x)
+#define net_recv(a,b,c,d) recv(a,b,c,d)
+#endif
+
 static ssize_t rsnd_send_chunk(int socket, const void *buf, size_t size, int blocking);
 static ssize_t rsnd_recv_chunk(int socket, void *buf, size_t size, int blocking);
 static int rsnd_start_thread(rsound_t *rd);
@@ -111,12 +153,6 @@ static void rsnd_sleep(int msec);
 static void rsnd_cb_thread(void *thread_data);
 static void rsnd_thread(void *thread_data);
 
-#ifdef __CELLOS_LV2__
-static int init_count = 0;
-#else
-#define socketclose(x) close(x)
-#define socketpoll(x, y, z)  poll(x, y, z)
-#endif
 
 /* Determine whether we're running big- or little endian */
 static inline int rsnd_is_little_endian(void)
@@ -202,11 +238,11 @@ static int rsnd_connect_server( rsound_t *rd )
    rd->conn_type = RSD_CONN_TCP;
 
 
-   rd->conn.socket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+   rd->conn.socket = net_socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
    if ( rd->conn.socket < 0 )
       goto error;
 
-   rd->conn.ctl_socket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+   rd->conn.ctl_socket = net_socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
    if ( rd->conn.ctl_socket < 0 )
       goto error;
 
@@ -221,18 +257,18 @@ static int rsnd_connect_server( rsound_t *rd )
 #endif
 
    /* Nonblocking connect with 3 second timeout */
-   connect(rd->conn.socket, (struct sockaddr*)&addr, sizeof(addr));
+   net_connect(rd->conn.socket, (struct sockaddr*)&addr, sizeof(addr));
 
-   fd.fd = rd->conn.socket;
+   pollfd_fd(fd) = rd->conn.socket;
    fd.events = POLLOUT;
 
    rsnd_poll(&fd, 1, 3000);
    if (!(fd.revents & POLLOUT))
       goto error;
 
-   connect(rd->conn.ctl_socket, (struct sockaddr*)&addr, sizeof(addr));
+   net_connect(rd->conn.ctl_socket, (struct sockaddr*)&addr, sizeof(addr));
 
-   fd.fd = rd->conn.ctl_socket;
+   pollfd_fd(fd) = rd->conn.ctl_socket;
    rsnd_poll(&fd, 1, 3000);
    if (!(fd.revents & POLLOUT))
       goto error;
@@ -466,9 +502,9 @@ static int rsnd_get_backend_info ( rsound_t *rd )
 
    // We no longer want to read from this socket.
 #ifdef _WIN32
-   shutdown(rd->conn.socket, SD_RECEIVE);
+   net_shutdown(rd->conn.socket, SD_RECEIVE);
 #elif !defined(__APPLE__) // OSX doesn't seem to like shutdown()
-   shutdown(rd->conn.socket, SHUT_RD);
+   net_shutdown(rd->conn.socket, SHUT_RD);
 #endif
 
    return 0;
@@ -492,10 +528,9 @@ static int rsnd_create_connection(rsound_t *rd)
       }
 
       /* After connecting, makes really sure that we have a working connection. */
-      struct pollfd fd = {
-         .fd = rd->conn.socket,
-         .events = POLLOUT
-      };
+      struct pollfd fd;
+      pollfd_fd(fd) = rd->conn.socket;
+      fd.events = POLLOUT;
 
       if ( rsnd_poll(&fd, 1, 2000) < 0 )
       {
@@ -561,10 +596,9 @@ static ssize_t rsnd_send_chunk(int socket, const void* buf, size_t size, int blo
    ssize_t rc = 0;
    size_t wrote = 0;
    ssize_t send_size = 0;
-   struct pollfd fd = {
-      .fd = socket,
-      .events = POLLOUT
-   };
+   struct pollfd fd;
+   pollfd_fd(fd) = socket;
+   fd.events = POLLOUT;
 
    int sleep_time = (blocking) ? 10000 : 0;
 
@@ -585,7 +619,7 @@ static ssize_t rsnd_send_chunk(int socket, const void* buf, size_t size, int blo
       {
          /* We try to limit ourselves to 1KiB packet sizes. */
          send_size = (size - wrote) > MAX_PACKET_SIZE ? MAX_PACKET_SIZE : size - wrote;
-         rc = send(socket, (const char*)buf + wrote, send_size, 0);
+         rc = net_send(socket, (const char*)buf + wrote, send_size, 0);
          if ( rc < 0 )
          {
             RSD_ERR("[RSound] Error sending chunk, %s.\n", strerror(errno));
@@ -613,10 +647,9 @@ static ssize_t rsnd_recv_chunk(int socket, void *buf, size_t size, int blocking)
    ssize_t rc = 0;
    size_t has_read = 0;
    ssize_t read_size = 0;
-   struct pollfd fd = {
-      .fd = socket,
-      .events = POLLIN
-   };
+   struct pollfd fd;
+   pollfd_fd(fd) = socket;
+   fd.events = POLLIN;
 
    int sleep_time = (blocking) ? 5000 : 0;
 
@@ -637,7 +670,7 @@ static ssize_t rsnd_recv_chunk(int socket, void *buf, size_t size, int blocking)
       if ( fd.revents & POLLIN )
       {
          read_size = (size - has_read) > MAX_PACKET_SIZE ? MAX_PACKET_SIZE : size - has_read;
-         rc = recv(socket, (char*)buf + has_read, read_size, 0);
+         rc = net_recv(socket, (char*)buf + has_read, read_size, 0);
          if ( rc <= 0 )
          {
             RSD_ERR("[RSound] Error receiving chunk, %s.\n", strerror(errno));
@@ -899,10 +932,9 @@ static int rsnd_close_ctl(rsound_t *rd)
    if ( !(rd->conn_type & RSD_CONN_PROTO) )
       return -1;
 
-   struct pollfd fd = {
-      .fd = rd->conn.ctl_socket,
-      .events = POLLOUT
-   };
+   struct pollfd fd;
+   pollfd_fd(fd) = rd->conn.ctl_socket;
+   fd.events = POLLOUT;
 
    if ( rsnd_poll(&fd, 1, 0) < 0 )
       return -1;
@@ -910,7 +942,7 @@ static int rsnd_close_ctl(rsound_t *rd)
    if ( fd.revents & POLLOUT )
    {
       const char *sendbuf = "RSD    9 CLOSECTL";
-      if ( send(rd->conn.ctl_socket, sendbuf, strlen(sendbuf), 0) < 0 )
+      if (net_send(rd->conn.ctl_socket, sendbuf, strlen(sendbuf), 0) < 0 )
          return -1;
    }
    else if ( fd.revents & POLLHUP )
@@ -935,7 +967,7 @@ static int rsnd_close_ctl(rsound_t *rd)
          const char *subchar;
 
          // We just read everything in large chunks until we find what we're looking for
-         int rc = recv(rd->conn.ctl_socket, buf + index, RSD_PROTO_MAXSIZE*2 - 1 - index, 0);
+         int rc = net_recv(rd->conn.ctl_socket, buf + index, RSD_PROTO_MAXSIZE*2 - 1 - index, 0);
 
          if (rc  <= 0 )
             return -1;
@@ -960,7 +992,7 @@ static int rsnd_close_ctl(rsound_t *rd)
          return -1;
    }
 
-   socketclose(rd->conn.ctl_socket);
+   net_socketclose(rd->conn.ctl_socket);
    return 0;
 }
 
@@ -1261,10 +1293,10 @@ static void rsnd_cb_thread(void *thread_data)
 static int rsnd_reset(rsound_t *rd)
 {
    if ( rd->conn.socket != -1 )
-      socketclose(rd->conn.socket);
+      net_socketclose(rd->conn.socket);
 
    if ( rd->conn.socket != 1 )
-      socketclose(rd->conn.ctl_socket);
+      net_socketclose(rd->conn.ctl_socket);
 
    /* Pristine stuff, baby! */
    slock_lock(rd->thread.mutex);
@@ -1385,7 +1417,7 @@ int rsd_exec(rsound_t *rsound)
       if ( rsnd_send_chunk(fd, buffer, sizeof(buffer), 1) != (ssize_t)sizeof(buffer) )
       {
          RSD_DEBUG("[RSound] Failed flushing buffer.\n");
-         socketclose(fd);
+         net_socketclose(fd);
          return -1;
       }
    }

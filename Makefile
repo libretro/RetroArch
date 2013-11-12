@@ -90,7 +90,7 @@ ifneq ($(findstring Linux,$(OS)),)
 endif
 
 ifeq ($(HAVE_RGUI), 1)
-   OBJ += frontend/menu/menu_common.o frontend/menu/menu_settings.o frontend/menu/menu_context.o file_list.o frontend/menu/rgui.o frontend/menu/history.o
+   OBJ += frontend/menu/menu_common.o frontend/menu/menu_settings.o frontend/menu/menu_context.o file_list.o frontend/menu/disp/rgui.o frontend/menu/history.o
 	DEFINES += -DHAVE_MENU
 endif
 
@@ -154,6 +154,11 @@ ifeq ($(HAVE_AL), 1)
    else
       LIBS += -lopenal
    endif
+endif
+
+ifeq ($(HAVE_V4L2),1)
+	OBJ += camera/video4linux2.o
+	DEFINES += -DHAVE_CAMERA -DHAVE_V4L2
 endif
 
 ifeq ($(HAVE_JACK),1)

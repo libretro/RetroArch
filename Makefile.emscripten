@@ -59,7 +59,7 @@ libretro = libretro_emscripten.bc
 
 LIBS = -lm
 DEFINES = -DHAVE_SCREENSHOTS -DHAVE_NULLAUDIO -DHAVE_BSV_MOVIE
-LDFLAGS = -L. -s TOTAL_MEMORY=$(MEMORY) --js-library emscripten/library_rwebaudio.js --js-library emscripten/library_rwebinput.js --js-library emscripten/library_rwebcam.js
+LDFLAGS = -L. -s TOTAL_MEMORY=$(MEMORY) -s OUTLINING_LIMIT=50000 --js-library emscripten/library_rwebaudio.js --js-library emscripten/library_rwebinput.js --no-heap-copy
 
 ifeq ($(PERF_TEST), 1)
    DEFINES += -DPERF_TEST
@@ -67,7 +67,7 @@ endif
 
 ifeq ($(HAVE_RGUI), 1)
    DEFINES += -DHAVE_MENU -DHAVE_RGUI
-   OBJ += frontend/menu/menu_common.o frontend/menu/menu_settings.o frontend/menu/menu_context.o file_list.o frontend/menu/rgui.o frontend/menu/history.o
+   OBJ += frontend/menu/menu_common.o frontend/menu/menu_settings.o frontend/menu/menu_context.o file_list.o frontend/menu/disp/rgui.o frontend/menu/history.o
 endif
 
 ifeq ($(HAVE_SDL), 1)

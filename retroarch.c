@@ -533,6 +533,7 @@ void rarch_input_poll(void)
 #endif
 }
 
+#ifndef RARCH_CONSOLE
 // Turbo scheme: If turbo button is held, all buttons pressed except for D-pad will go into
 // a turbo mode. Until the button is released again, the input state will be modulated by a periodic pulse defined
 // by the configured duty cycle.
@@ -548,6 +549,7 @@ static bool input_apply_turbo(unsigned port, unsigned id, bool res)
    else
       return res;
 }
+#endif
 
 static int16_t input_state(unsigned port, unsigned device, unsigned index, unsigned id)
 {
@@ -1994,7 +1996,6 @@ static void check_savestates(bool immutable)
 void rarch_set_fullscreen(bool fullscreen)
 {
    g_settings.video.fullscreen = fullscreen;
-
    driver.video_cache_context = g_extern.system.hw_render_callback.cache_context;
    driver.video_cache_context_ack = false;
    uninit_drivers();
@@ -2012,9 +2013,10 @@ static bool check_fullscreen(void)
    static bool was_pressed = false;
    bool pressed = input_key_pressed_func(RARCH_FULLSCREEN_TOGGLE_KEY);
    bool toggle = pressed && !was_pressed;
+
    if (toggle)
    {
-      settings_set(1ULL << S_VIDEO_FULLSCREEN_TOGGLE);
+      g_settings.video.fullscreen = !g_settings.video.fullscreen;
       rarch_set_fullscreen(g_settings.video.fullscreen);
    }
 
@@ -2030,11 +2032,7 @@ void rarch_state_slot_increase(void)
       msg_queue_clear(g_extern.msg_queue);
    char msg[256];
 
-#ifdef HAVE_BSV_MOVIE
-   snprintf(msg, sizeof(msg), "Save state/movie slot: %u", g_extern.state_slot);
-#else
-   snprintf(msg, sizeof(msg), "Save state slot: %u", g_extern.state_slot);
-#endif
+   snprintf(msg, sizeof(msg), "State slot: %u", g_extern.state_slot);
 
    if (g_extern.msg_queue)
       msg_queue_push(g_extern.msg_queue, msg, 1, 180);
@@ -2052,11 +2050,7 @@ void rarch_state_slot_decrease(void)
 
    char msg[256];
 
-#ifdef HAVE_BSV_MOVIE
-   snprintf(msg, sizeof(msg), "Save state/movie slot: %u", g_extern.state_slot);
-#else
-   snprintf(msg, sizeof(msg), "Save state slot: %u", g_extern.state_slot);
-#endif
+   snprintf(msg, sizeof(msg), "State slot: %u", g_extern.state_slot);
 
    if (g_extern.msg_queue)
       msg_queue_push(g_extern.msg_queue, msg, 1, 180);
@@ -2536,14 +2530,14 @@ void rarch_disk_control_set_index(unsigned next_index)
       if (next_index < num_disks)
          snprintf(msg, sizeof(msg), "Setting disk %u of %u in tray.", next_index + 1, num_disks);
       else
-         snprintf(msg, sizeof(msg), "Removed disk from tray.");
+         strlcpy(msg, "Removed disk from tray.", sizeof(msg));
    }
    else
    {
       if (next_index < num_disks)
          snprintf(msg, sizeof(msg), "Failed to set disk %u of %u.", next_index + 1, num_disks);
       else
-         snprintf(msg, sizeof(msg), "Failed to remove disk from tray.");
+         strlcpy(msg, "Failed to remove disk from tray.", sizeof(msg));
       error = true;
    }
 
@@ -3139,6 +3133,11 @@ bool rarch_main_iterate(void)
 #ifdef HAVE_BSV_MOVIE
    if (g_extern.bsv.movie)
       bsv_movie_set_frame_start(g_extern.bsv.movie);
+#endif
+
+#ifdef HAVE_CAMERA
+   if (g_extern.system.camera_callback.caps)
+      driver_camera_poll();
 #endif
 
    update_frame_time();

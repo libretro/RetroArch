@@ -143,7 +143,7 @@ extern int audioAddData(uint32_t portNum, float *data, uint32_t frames, float vo
 	OSK PROTOTYPES
 ============================================================ */
 
-#ifdef HAVE_OSKUTIL
+#ifdef HAVE_OSK
 
 #ifdef __PSL1GHT__
 #include <sysutil/osk.h>

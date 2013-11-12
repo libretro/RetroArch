@@ -179,6 +179,59 @@ static const input_driver_t *input_drivers[] = {
    NULL,
 };
 
+#ifdef HAVE_CAMERA
+static const camera_driver_t *camera_drivers[] = {
+#ifdef HAVE_V4L2
+   &camera_v4l2,
+#endif
+   NULL,
+};
+
+static int find_camera_driver_index(const char *driver)
+{
+   unsigned i;
+   for (i = 0; camera_drivers[i]; i++)
+      if (strcasecmp(driver, camera_drivers[i]->ident) == 0)
+         return i;
+   return -1;
+}
+
+static void find_camera_driver(void)
+{
+   int i = find_camera_driver_index(g_settings.camera.driver);
+   if (i >= 0)
+      driver.camera = camera_drivers[i];
+   else
+   {
+      unsigned d;
+      RARCH_ERR("Couldn't find any camera driver named \"%s\"\n", g_settings.camera.driver);
+      RARCH_LOG_OUTPUT("Available camera drivers are:\n");
+      for (d = 0; camera_drivers[d]; d++)
+         RARCH_LOG_OUTPUT("\t%s\n", camera_drivers[d]->ident);
+
+      rarch_fail(1, "find_camera_driver()");
+   }
+}
+
+void find_prev_camera_driver(void)
+{
+   int i = find_camera_driver_index(g_settings.camera.driver);
+   if (i > 0)
+      strlcpy(g_settings.camera.driver, camera_drivers[i - 1]->ident, sizeof(g_settings.camera.driver));
+   else
+      RARCH_WARN("Couldn't find any previous camera driver (current one: \"%s\").\n", g_settings.camera.driver);
+}
+
+void find_next_camera_driver(void)
+{
+   int i = find_camera_driver_index(g_settings.camera.driver);
+   if (i >= 0 && camera_drivers[i + 1])
+      strlcpy(g_settings.camera.driver, camera_drivers[i + 1]->ident, sizeof(g_settings.camera.driver));
+   else
+      RARCH_WARN("Couldn't find any next camera driver (current one: \"%s\").\n", g_settings.camera.driver);
+}
+#endif
+
 static int find_audio_driver_index(const char *driver)
 {
    unsigned i;
@@ -327,6 +380,9 @@ void init_drivers_pre(void)
    find_audio_driver();
    find_video_driver();
    find_input_driver();
+#ifdef HAVE_CAMERA
+   find_camera_driver();
+#endif
 }
 
 static void adjust_system_rates(void)
@@ -417,6 +473,32 @@ bool driver_set_sensor_state(unsigned port, enum retro_sensor_action action, uns
       return false;
 }
 
+#ifdef HAVE_CAMERA
+bool driver_camera_start(void)
+{
+   if (driver.camera && driver.camera_data)
+      return driver.camera->start(driver.camera_data);
+   else
+      return false;
+}
+
+void driver_camera_stop(void)
+{
+   if (driver.camera && driver.camera_data)
+      driver.camera->stop(driver.camera_data);
+}
+
+void driver_camera_poll(void)
+{
+   if (driver.camera && driver.camera_data)
+   {
+      driver.camera->poll(driver.camera_data,
+            g_extern.system.camera_callback.frame_raw_framebuffer,
+            g_extern.system.camera_callback.frame_opengl_texture);
+   }
+}
+#endif
+
 uintptr_t driver_get_current_framebuffer(void)
 {
 #ifdef HAVE_FBO
@@ -468,13 +550,47 @@ void global_uninit_drivers(void)
       driver.input->free(driver.input_data);
       driver.input_data = NULL;
    }
+
+#ifdef HAVE_CAMERA
+   if (driver.camera && driver.camera_data)
+   {
+      driver.camera->free(driver.camera_data);
+      driver.camera_data = NULL;
+   }
+#endif
 }
+
+#ifdef HAVE_CAMERA
+void init_camera(void)
+{
+   // Resource leaks will follow if camera is initialized twice.
+   if (driver.camera_data)
+      return;
+
+   find_camera_driver();
+
+   driver.camera_data = camera_init_func(
+         *g_settings.camera.device ? g_settings.camera.device : NULL,
+         g_extern.system.camera_callback.caps,
+         g_settings.camera.width ? g_settings.camera.width : g_extern.system.camera_callback.width,
+         g_settings.camera.height ? g_settings.camera.height : g_extern.system.camera_callback.height);
+
+   if (!driver.camera_data)
+   {
+      RARCH_ERR("Failed to initialize camera driver. Will continue without camera.\n");
+      g_extern.camera_active = false;
+   }
+}
+#endif
 
 void init_drivers(void)
 {
    driver.video_data_own = !driver.video_data;
    driver.audio_data_own = !driver.audio_data;
    driver.input_data_own = !driver.input_data;
+#ifdef HAVE_CAMERA
+   driver.camera_data_own = !driver.camera_data;
+#endif
 
    adjust_system_rates();
 
@@ -487,12 +603,26 @@ void init_drivers(void)
 
    init_audio();
 
+#ifdef HAVE_CAMERA
+   // Only init camera driver if we're ever going to use it.
+   if (g_extern.system.camera_callback.caps)
+      init_camera();
+#endif
+
    // Keep non-throttled state as good as possible.
    if (driver.nonblock_state)
       driver_set_nonblock_state(driver.nonblock_state);
 
    g_extern.system.frame_time_last = 0;
 }
+
+#ifdef HAVE_CAMERA
+void uninit_camera(void)
+{
+   if (driver.camera_data && driver.camera)
+      driver.camera->free(driver.camera_data);
+}
+#endif
 
 void uninit_drivers(void)
 {
@@ -503,6 +633,12 @@ void uninit_drivers(void)
 
    uninit_video_input();
 
+#ifdef HAVE_CAMERA
+   uninit_camera();
+
+   if (driver.camera_data_own)
+      driver.camera_data = NULL;
+#endif
    if (driver.video_data_own)
       driver.video_data = NULL;
    if (driver.audio_data_own)
@@ -510,9 +646,12 @@ void uninit_drivers(void)
    if (driver.input_data_own)
       driver.input_data = NULL;
 
-   driver.video_data_own = false;
-   driver.audio_data_own = false;
-   driver.input_data_own = false;
+#ifdef HAVE_CAMERA
+   driver.camera_data_own = false;
+#endif
+   driver.video_data_own  = false;
+   driver.audio_data_own  = false;
+   driver.input_data_own  = false;
 }
 
 #ifdef HAVE_DYLIB
@@ -691,6 +830,7 @@ void init_audio(void)
    if (g_extern.audio_active && !g_extern.audio_data.mute && g_extern.system.audio_callback.callback) // Threaded driver is initially stopped.
       audio_start_func();
 }
+
 
 static void compute_audio_buffer_statistics(void)
 {

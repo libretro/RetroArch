@@ -33,6 +33,9 @@
 
 rgui_handle_t *rgui;
 const menu_ctx_driver_t *menu_ctx;
+#ifdef HAVE_OSK
+input_osk_driver_t *osk;
+#endif
 
 //forward decl
 static int menu_iterate_func(void *data, unsigned action);
@@ -382,6 +385,36 @@ bool load_menu_game(void)
    }
 }
 
+#ifdef HAVE_OSK
+static const input_osk_driver_t *osk_drivers[] = {
+#if defined(__CELLOS_LV2__)
+   &input_ps3_osk,
+#endif
+   NULL // zero length array is not valid
+};
+
+static bool osk_init_first(void **data)
+{
+   unsigned i;
+   input_osk_driver_t **handle = (input_osk_driver_t**)data;
+
+   if (!osk_drivers[0])
+      return false;
+
+   for (i = 0; osk_drivers[i]; i++)
+   {
+      void *h = osk_drivers[i]->init(0);
+      if (h)
+      {
+         *handle = (input_osk_driver_t*)h;
+         return true;
+      }
+   }
+
+   return false;
+}
+#endif
+
 void menu_init(void)
 {
    if (!menu_ctx_init_first(&menu_ctx, ((void**)&rgui)))
@@ -407,36 +440,16 @@ void menu_init(void)
 
    menu_update_libretro_info();
 
-#ifdef HAVE_FILEBROWSER
-   if (!(strlen(g_settings.rgui_browser_directory) > 0))
-      strlcpy(g_settings.rgui_browser_directory, default_paths.filebrowser_startup_dir,
-            sizeof(g_settings.rgui_browser_directory));
-
-   rgui->browser = (filebrowser_t*)calloc(1, sizeof(*(rgui->browser)));
-
-   if (rgui->browser == NULL)
-   {
-      RARCH_ERR("Could not initialize filebrowser.\n");
-      rarch_fail(1, "menu_init()");
-   }
-
-   // Look for zips to extract as well.
-   if (*rgui->info.valid_extensions)
-   {
-      strlcpy(rgui->browser->current_dir.extensions, rgui->info.valid_extensions,
-            sizeof(rgui->browser->current_dir.extensions));
-      strlcat(rgui->browser->current_dir.extensions, "|zip",
-         sizeof(rgui->browser->current_dir.extensions));
-   }
-
-   strlcpy(rgui->browser->current_dir.root_dir, g_settings.rgui_browser_directory,
-         sizeof(rgui->browser->current_dir.root_dir));
-
-   filebrowser_iterate(rgui->browser, RGUI_ACTION_START);
-#endif
-
 #ifdef HAVE_SHADER_MANAGER
    shader_manager_init(rgui);
+#endif
+
+#ifdef HAVE_OSK
+   if (!osk_init_first(((void**)&osk)))
+   {
+      RARCH_ERR("Could not initialize OSK.\n");
+      rarch_fail(1, "osk_init()");
+   }
 #endif
 
    menu_init_history();
@@ -452,12 +465,13 @@ void menu_free(void)
    libretro_free_system_info(&rgui->info);
 #endif
 
+#ifdef HAVE_OSK
+   if (osk)
+      free(osk);
+#endif
+
    file_list_free(rgui->menu_stack);
    file_list_free(rgui->selection_buf);
-
-#ifdef HAVE_FILEBROWSER
-   filebrowser_free(rgui->browser);
-#endif
 
    rom_history_free(rgui->history);
    core_info_list_free(rgui->core_info);
@@ -1964,6 +1978,9 @@ void menu_populate_entries(void *data, unsigned menu_type)
          file_list_push(rgui->selection_buf, "Video driver", RGUI_SETTINGS_DRIVER_VIDEO, 0);
          file_list_push(rgui->selection_buf, "Audio driver", RGUI_SETTINGS_DRIVER_AUDIO, 0);
          file_list_push(rgui->selection_buf, "Input driver", RGUI_SETTINGS_DRIVER_INPUT, 0);
+#ifdef HAVE_CAMERA
+         file_list_push(rgui->selection_buf, "Camera driver", RGUI_SETTINGS_DRIVER_CAMERA, 0);
+#endif
          break;
       case RGUI_SETTINGS:
          file_list_clear(rgui->selection_buf);
@@ -2074,11 +2091,11 @@ void menu_parse_and_resolve(void *data, unsigned menu_type)
                file_list_push(rgui->selection_buf, "carda:/", menu_type, 0);
                file_list_push(rgui->selection_buf, "cardb:/", menu_type, 0);
 #elif defined(_XBOX1)
-               file_list_push(rgui->selection_buf, "C:\\", menu_type, 0);
-               file_list_push(rgui->selection_buf, "D:\\", menu_type, 0);
-               file_list_push(rgui->selection_buf, "E:\\", menu_type, 0);
-               file_list_push(rgui->selection_buf, "F:\\", menu_type, 0);
-               file_list_push(rgui->selection_buf, "G:\\", menu_type, 0);
+               file_list_push(rgui->selection_buf, "C:", menu_type, 0);
+               file_list_push(rgui->selection_buf, "D:", menu_type, 0);
+               file_list_push(rgui->selection_buf, "E:", menu_type, 0);
+               file_list_push(rgui->selection_buf, "F:", menu_type, 0);
+               file_list_push(rgui->selection_buf, "G:", menu_type, 0);
 #elif defined(_WIN32)
                unsigned drives = GetLogicalDrives();
                char drive[] = " :\\";

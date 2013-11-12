@@ -287,9 +287,9 @@ static int16_t linuxraw_input_state(void *data, const struct retro_keybind **bin
             input_joypad_pressed(linuxraw->joypad, port, binds[port], id);
 
       case RETRO_DEVICE_ANALOG:
-         ret = input_joypad_analog(linuxraw->joypad, port, index, id, binds[port]);
+         ret = linuxraw_analog_pressed(linuxraw, binds[port], index, id);
          if (!ret)
-            ret = linuxraw_analog_pressed(linuxraw, binds[port], index, id);
+            ret = input_joypad_analog(linuxraw->joypad, port, index, id, binds[port]);
          return ret;
 
       default:

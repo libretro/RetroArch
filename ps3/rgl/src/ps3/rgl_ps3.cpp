@@ -3408,8 +3408,7 @@ GLAPI void APIENTRY glDeleteFramebuffersOES( GLsizei n, const GLuint *framebuffe
 
 GLAPI void APIENTRY glGenFramebuffersOES( GLsizei n, GLuint *framebuffers )
 {
-   RGLcontext *LContext = _CurrentContext;
-   rglTexNameSpaceGenNames( &LContext->framebufferNameSpace, n, framebuffers );
+   rglTexNameSpaceGenNames( &_CurrentContext->framebufferNameSpace, n, framebuffers );
 }
 
 GLAPI GLenum APIENTRY glCheckFramebufferStatusOES( GLenum target )
@@ -3417,11 +3416,7 @@ GLAPI GLenum APIENTRY glCheckFramebufferStatusOES( GLenum target )
    RGLcontext* LContext = _CurrentContext;
 
    if (LContext->framebuffer)
-   {
-      rglFramebuffer* framebuffer = rglGetFramebuffer( LContext, LContext->framebuffer );
-
-      return rglPlatformFramebufferCheckStatus( framebuffer );
-   }
+      return rglPlatformFramebufferCheckStatus( rglGetFramebuffer( LContext, LContext->framebuffer ) );
 
    return GL_FRAMEBUFFER_COMPLETE_OES;
 }
@@ -3941,7 +3936,6 @@ static rglTexture *rglAllocateTexture(void)
    texture->compareMode = GL_NONE;
    texture->compareFunc = GL_LEQUAL;
    texture->gammaRemap = 0;
-   texture->vertexEnable = GL_FALSE;
    texture->usage = 0;
    texture->isRenderTarget = GL_FALSE;
    texture->image = NULL;
@@ -4249,9 +4243,9 @@ rglTexture *rglGetCurrentTexture (const void *data, GLenum target)
    rglTexture *defaultTexture = unit->default2D;
 
    if (name)
-      return ( rglTexture * )LContext->textureNameSpace.data[name];
-   else
-      return defaultTexture;
+      defaultTexture = (rglTexture *)LContext->textureNameSpace.data[name];
+
+   return defaultTexture;
 }
 
 static void rglGetImage( GLenum target, GLint level, rglTexture **texture, rglImage **image, GLsizei reallocateSize )
@@ -4358,13 +4352,6 @@ GLAPI void APIENTRY glTexParameteri( GLenum target, GLenum pname, GLint param )
          break;
       case GL_TEXTURE_WRAP_R:
          texture->wrapR = param;
-         break;
-      case GL_TEXTURE_FROM_VERTEX_PROGRAM_SCE:
-         if ( param != 0 )
-            texture->vertexEnable = GL_TRUE;
-         else
-            texture->vertexEnable = GL_FALSE;
-         texture->revalidate |= RGL_TEXTURE_REVALIDATE_LAYOUT;
          break;
       case GL_TEXTURE_COMPARE_MODE_ARB:
          texture->compareMode = param;

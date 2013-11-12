@@ -783,6 +783,18 @@ bool rarch_environment_cb(unsigned cmd, void *data)
          break;
       }
 
+#ifdef HAVE_CAMERA
+      case RETRO_ENVIRONMENT_GET_CAMERA_INTERFACE:
+      {
+         RARCH_LOG("Environ GET_CAMERA_INTERFACE.\n");
+         struct retro_camera_callback *cb = (struct retro_camera_callback*)data;
+         cb->start = driver_camera_start;
+         cb->stop = driver_camera_stop;
+         g_extern.system.camera_callback = *cb;
+         break;
+      }
+#endif
+
       // Private extensions for internal use, not part of libretro API.
       case RETRO_ENVIRONMENT_SET_LIBRETRO_PATH:
          RARCH_LOG("Environ (Private) SET_LIBRETRO_PATH.\n");
