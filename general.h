@@ -49,11 +49,6 @@
 #endif
 
 // Platform-specific headers
-// PS3
-#if defined(__CELLOS_LV2__) && !defined(__PSL1GHT__)
-#include "ps3/ps3_input.h"
-#endif
-
 // Windows
 #ifdef _WIN32
 #ifdef _XBOX

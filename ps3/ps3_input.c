@@ -22,10 +22,11 @@
 #endif
 
 #include <sys/memory.h>
+#include <stdbool.h>
+#include <wchar.h>
 
 #include "sdk_defines.h"
 
-#include "ps3_input.h"
 #include "../driver.h"
 #include "../libretro.h"
 #include "../general.h"
@@ -34,6 +35,29 @@
 #ifndef __PSL1GHT__
 #define MAX_MICE 7
 #endif
+#endif
+
+#ifndef __PSL1GHT__
+#define MAX_PADS 7
+#endif
+
+#define DEADZONE_LOW 55
+#define DEADZONE_HIGH 210
+
+#ifdef HAVE_OSK
+typedef struct ps3_osk
+{
+   unsigned int osk_memorycontainer;
+   wchar_t init_message[CELL_OSKDIALOG_STRING_SIZE + 1];
+   wchar_t message[CELL_OSKDIALOG_STRING_SIZE + 1];
+   wchar_t text_buf[CELL_OSKDIALOG_STRING_SIZE + 1];
+   uint32_t flags;
+   sys_memory_container_t containerid;
+   CellOskDialogPoint pos;
+   CellOskDialogInputFieldInfo inputFieldInfo;
+   CellOskDialogCallbackReturnParam outputInfo;
+   CellOskDialogParam dialogParam;
+} ps3_osk_t;
 #endif
 
 /*============================================================
