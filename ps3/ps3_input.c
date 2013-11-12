@@ -248,7 +248,7 @@ static int16_t ps3_input_state(void *data, const struct retro_keybind **binds,
 
 #define OSK_IN_USE 1
 
-void *oskutil_init(unsigned containersize)
+void *oskutil_init(size_t size)
 {
    ps3_osk_t *params = (ps3_osk_t*)calloc(1, sizeof(*params));
 
@@ -256,8 +256,8 @@ void *oskutil_init(unsigned containersize)
       return NULL;
 
    params->flags = 0;
-   if (containersize)
-      params->osk_memorycontainer =  containersize; 
+   if (size)
+      params->osk_memorycontainer =  size; 
    else
       params->osk_memorycontainer =  1024*1024*2;
 
@@ -272,7 +272,7 @@ void oskutil_free(void *data)
       free(params);
 }
 
-static bool oskutil_enable_key_layout (void *data)
+static bool oskutil_enable_key_layout(void *data)
 {
    (void)data;
 
@@ -389,6 +389,21 @@ void oskutil_lifecycle(void *data, uint64_t status)
          break;
    }
 }
+
+const input_osk_driver_t input_ps3_osk = {
+   oskutil_init,
+   oskutil_free,
+   oskutil_enable_key_layout,
+   oskutil_create_activation_parameters,
+   oskutil_write_message,
+   oskutil_write_initial_message,
+   oskutil_start,
+   oskutil_lifecycle,
+   NULL,
+   NULL,
+   0,
+   "ps3osk"
+};
 #endif
 
 /*============================================================

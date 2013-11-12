@@ -264,6 +264,7 @@ enum
 };
 #endif
 
+
 typedef struct
 {
    uint64_t old_input_state;
@@ -308,12 +309,6 @@ typedef struct
    struct retro_system_info info;
    bool load_no_rom;
 
-#ifdef HAVE_OSK
-   unsigned osk_param;
-   ps3_osk_t *oskutil_handle;
-   bool (*osk_init)(void *data);
-   bool (*osk_callback)(void *data);
-#endif
 #ifdef HAVE_SHADER_MANAGER
    struct gfx_shader shader;
 #endif
@@ -326,6 +321,9 @@ typedef struct
 } rgui_handle_t;
 
 extern rgui_handle_t *rgui;
+#ifdef HAVE_OSK
+extern input_osk_driver_t *osk;
+#endif
 
 void menu_init(void);
 bool menu_iterate(void);

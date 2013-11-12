@@ -33,6 +33,9 @@
 
 rgui_handle_t *rgui;
 const menu_ctx_driver_t *menu_ctx;
+#ifdef HAVE_OSK
+input_osk_driver_t *osk;
+#endif
 
 //forward decl
 static int menu_iterate_func(void *data, unsigned action);
@@ -382,6 +385,36 @@ bool load_menu_game(void)
    }
 }
 
+#ifdef HAVE_OSK
+static const input_osk_driver_t *osk_drivers[] = {
+#if defined(__CELLOS_LV2__)
+   &input_ps3_osk,
+#endif
+   NULL // zero length array is not valid
+};
+
+static bool osk_init_first(void **data)
+{
+   unsigned i;
+   input_osk_driver_t **handle = (input_osk_driver_t**)data;
+
+   if (!osk_drivers[0])
+      return false;
+
+   for (i = 0; osk_drivers[i]; i++)
+   {
+      void *h = osk_drivers[i]->init(0);
+      if (h)
+      {
+         *handle = (input_osk_driver_t*)h;
+         return true;
+      }
+   }
+
+   return false;
+}
+#endif
+
 void menu_init(void)
 {
    if (!menu_ctx_init_first(&menu_ctx, ((void**)&rgui)))
@@ -412,8 +445,11 @@ void menu_init(void)
 #endif
 
 #ifdef HAVE_OSK
-   //FIXME - will go through a proper interface
-   rgui->oskutil_handle = (ps3_osk_t*)oskutil_init(0);
+   if (!osk_init_first(((void**)&osk)))
+   {
+      RARCH_ERR("Could not initialize OSK.\n");
+      rarch_fail(1, "osk_init()");
+   }
 #endif
 
    menu_init_history();
@@ -430,9 +466,8 @@ void menu_free(void)
 #endif
 
 #ifdef HAVE_OSK
-   //FIXME - will go through a proper interface
-   if (rgui->oskutil_handle)
-      oskutil_free(rgui->oskutil_handle);
+   if (osk)
+      osk->free(osk);
 #endif
 
    file_list_free(rgui->menu_stack);

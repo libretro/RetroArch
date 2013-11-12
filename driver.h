@@ -331,6 +331,22 @@ typedef struct input_driver
    const rarch_joypad_driver_t *(*get_joypad_driver)(void *data);
 } input_driver_t;
 
+typedef struct input_osk_driver
+{
+   void *(*init)(size_t size);
+   void (*free)(void *data);
+   bool (*enable_key_layout)(void *data);
+   void (*oskutil_create_activation_parameters)(void *data);
+   void (*write_msg)(void *data, const void *msg);
+   void (*write_initial_msg)(void *data, const void *msg);
+   bool (*start)(void *data);
+   void (*lifecycle)(void *data, uint64_t status);
+   bool (*cb_init)(void *data);
+   bool (*cb_callback)(void *data);
+   unsigned action;
+   const char *ident;
+} input_osk_driver_t;
+
 typedef struct camera_driver
 {
    // FIXME: params for init - queries for resolution, framerate, color format
@@ -596,6 +612,7 @@ extern const input_driver_t input_qnx;
 extern const input_driver_t input_rwebinput;
 extern const input_driver_t input_null;
 extern const camera_driver_t camera_v4l2;
+extern const input_osk_driver_t input_ps3_osk;
 
 #include "driver_funcs.h"
 
