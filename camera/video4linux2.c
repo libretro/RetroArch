@@ -35,13 +35,6 @@
 
 #include <linux/videodev2.h>
 
-typedef enum
-{
-   IO_METHOD_READ,
-   IO_METHOD_MMAP,
-   IO_METHOD_USERPTR,
-} io_method;
-
 struct buffer
 {
    void *start;
@@ -53,7 +46,6 @@ typedef struct video4linux
    char dev_name[256];
    int fd;
    bool ready;
-   io_method io;
    struct buffer *buffers;
    unsigned n_buffers;
    size_t width;
@@ -166,29 +158,6 @@ static int xioctl(int fd, int request, void *args)
    return r;
 }
 
-static int init_read(void *data, unsigned int buffer_size)
-{
-   video4linux_t *v4l = (video4linux_t*)data;
-   v4l->buffers = (struct buffer*)calloc(1, sizeof(*v4l->buffers));
-
-   if (!v4l->buffers)
-   {
-      RARCH_ERR("Out of memory allocating V4L2 buffers.\n");
-      return -1;
-   }
-
-   v4l->buffers[0].length = buffer_size;
-   v4l->buffers[0].start = malloc(buffer_size);
-
-   if (!v4l->buffers[0].start)
-   {
-      RARCH_ERR("Out of memory allocating V4L2 buffers.\n");
-      return -1;
-   }
-
-   return 0;
-}
-
 static int init_mmap(void *data)
 {
    struct v4l2_requestbuffers req;
@@ -260,66 +229,13 @@ static int init_mmap(void *data)
    return 0;
 }
 
-static int init_userp(void *data, unsigned int buffer_size)
-{
-   struct v4l2_requestbuffers req;
-   unsigned int page_size;
-   video4linux_t *v4l = (video4linux_t*)data;
-
-   page_size = getpagesize();
-   buffer_size = (buffer_size + page_size - 1) & ~(page_size - 1);
-
-   memset(&req, 0, sizeof(req));
-
-   req.count = 4;
-   req.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-   req.memory = V4L2_MEMORY_USERPTR;
-
-   if (xioctl(v4l->fd, VIDIOC_REQBUFS, &req) == -1)
-   {
-      if (errno == EINVAL)
-      {
-         RARCH_ERR("%s does not support user pointer I/O\n", v4l->dev_name);
-         return -1;
-      }
-      else
-      {
-         RARCH_ERR("VIDIOC_REQBUFS.\n");
-         return -1;
-      }
-   }
-
-   v4l->buffers = calloc(4, sizeof(*v4l->buffers));
-
-   if (!v4l->buffers)
-   {
-      RARCH_ERR("Out of memory\n");
-      return -1;
-   }
-
-   for (v4l->n_buffers = 0; v4l->n_buffers < 4; v4l->n_buffers++)
-   {
-      v4l->buffers[v4l->n_buffers].length = buffer_size;
-      v4l->buffers[v4l->n_buffers].start = memalign( /* boundary */ page_size,
-            buffer_size);
-
-      if (!v4l->buffers[v4l->n_buffers].start)
-      {
-         RARCH_ERR("Out of memory\n");
-         return -1;
-      }
-   }
-
-   return 0;
-}
-
 static int init_device(void *data)
 {
    struct v4l2_capability cap;
    struct v4l2_cropcap cropcap;
    struct v4l2_crop crop;
    struct v4l2_format fmt;
-   unsigned int min;
+   unsigned min;
    video4linux_t *v4l = (video4linux_t*)data;
 
    if (xioctl(v4l->fd, VIDIOC_QUERYCAP, &cap) == -1)
@@ -342,31 +258,15 @@ static int init_device(void *data)
       return -1;
    }
 
-   switch (v4l->io)
+   if (!(cap.capabilities & V4L2_CAP_STREAMING))
    {
-      case IO_METHOD_READ:
-         if (!(cap.capabilities & V4L2_CAP_READWRITE))
-         {
-            RARCH_ERR("%s does not support read I/O (V4L2_CAP_READWRITE).\n", v4l->dev_name);
-            return -1;
-         }
-
-         break;
-
-      case IO_METHOD_MMAP:
-      case IO_METHOD_USERPTR:
-         if (!(cap.capabilities & V4L2_CAP_STREAMING))
-         {
-            RARCH_ERR("%s does not support streaming I/O (V4L2_CAP_STREAMING).\n", v4l->dev_name);
-            return -1;
-         }
-
-         break;
+      RARCH_ERR("%s does not support streaming I/O (V4L2_CAP_STREAMING).\n", v4l->dev_name);
+      return -1;
    }
 
    /* Select video input, video standard and tune here. */
 
-   memset (&(cropcap), 0, sizeof (cropcap));
+   memset(&cropcap, 0, sizeof(cropcap));
 
    cropcap.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
 
@@ -394,6 +294,7 @@ static int init_device(void *data)
    fmt.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
    fmt.fmt.pix.width  = v4l->width;
    fmt.fmt.pix.height = v4l->height;
+   // TODO: See if we can use a saner format here.
    fmt.fmt.pix.pixelformat = V4L2_PIX_FMT_YUYV;
    fmt.fmt.pix.field = V4L2_FIELD_INTERLACED;
 
@@ -419,18 +320,7 @@ static int init_device(void *data)
    if (fmt.fmt.pix.height != v4l->height)
       v4l->height = fmt.fmt.pix.height;
 
-   switch (v4l->io)
-   {
-      case IO_METHOD_READ:
-         return init_read(v4l, fmt.fmt.pix.sizeimage);
-      case IO_METHOD_MMAP:
-         return init_mmap(v4l);
-      case IO_METHOD_USERPTR:
-         init_userp(v4l, fmt.fmt.pix.sizeimage);
-         break;
-   }
-
-   return 0;
+   return init_mmap(v4l);
 }
 
 static int v4l_stop(void *data)
@@ -438,101 +328,50 @@ static int v4l_stop(void *data)
    enum v4l2_buf_type type;
    video4linux_t *v4l = (video4linux_t*)data;
 
-   switch (v4l->io)
+   type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+
+   if (xioctl(v4l->fd, VIDIOC_STREAMOFF, &type) == -1)
    {
-      case IO_METHOD_READ:
-         /* Nothing to do. */
-         break;
-
-      case IO_METHOD_MMAP:
-      case IO_METHOD_USERPTR:
-         type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-
-         if (xioctl(v4l->fd, VIDIOC_STREAMOFF, &type) == -1)
-         {
-            RARCH_ERR("Error - VIDIOC_STREAMOFF.\n");
-            return -1;
-         }
-
-         break;
+      RARCH_ERR("Error - VIDIOC_STREAMOFF.\n");
+      return -1;
    }
 
    v4l->ready = false;
-
    return 0;
 }
 
 static int v4l_start(void *data)
 {
    video4linux_t *v4l = (video4linux_t*)data;
-   unsigned int i;
+   unsigned i;
    enum v4l2_buf_type type;
 
-   switch (v4l->io)
+   for (i = 0; i < v4l->n_buffers; i++)
    {
-      case IO_METHOD_READ:
-         /* Nothing to do. */
-         break;
+      struct v4l2_buffer buf;
 
-      case IO_METHOD_MMAP:
-         for (i = 0; i < v4l->n_buffers; i++)
-         {
-            struct v4l2_buffer buf;
+      memset(&buf, 0, sizeof(buf));
 
-            memset(&buf, 0, sizeof(buf));
+      buf.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+      buf.memory = V4L2_MEMORY_MMAP;
+      buf.index = i;
 
-            buf.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-            buf.memory = V4L2_MEMORY_MMAP;
-            buf.index = i;
-
-            if (xioctl(v4l->fd, VIDIOC_QBUF, &buf) == -1)
-            {
-               RARCH_ERR("Error - VIDIOC_QBUF.\n");
-               return -1;
-            }
-         }
-
-         type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-
-         if (xioctl(v4l->fd, VIDIOC_STREAMON, &type) == -1)
-         {
-            RARCH_ERR("Error - VIDIOC_STREAMON.\n");
-            return -1;
-         }
-
-         break;
-
-      case IO_METHOD_USERPTR:
-         for (i = 0; i < v4l->n_buffers; i++)
-         {
-            struct v4l2_buffer buf;
-
-            memset(&buf, 0, sizeof(buf));
-
-            buf.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-            buf.memory = V4L2_MEMORY_USERPTR;
-            buf.index = i;
-            buf.m.userptr = (unsigned long)v4l->buffers[i].start;
-            buf.length = v4l->buffers[i].length;
-
-            if (xioctl(v4l->fd, VIDIOC_QBUF, &buf) == -1)
-            {
-               RARCH_ERR("Error - VIDIOC_QBUF.\n");
-               return -1;
-            }
-         }
-
-         type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-
-         if (xioctl(v4l->fd, VIDIOC_STREAMON, &type) == -1)
-         {
-            RARCH_ERR("Error - VIDIOC_STREAMON.\n");
-            return -1;
-         }
-
-         break;
+      if (xioctl(v4l->fd, VIDIOC_QBUF, &buf) == -1)
+      {
+         RARCH_ERR("Error - VIDIOC_QBUF.\n");
+         return -1;
+      }
    }
 
+   type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+
+   if (xioctl(v4l->fd, VIDIOC_STREAMON, &type) == -1)
+   {
+      RARCH_ERR("Error - VIDIOC_STREAMON.\n");
+      return -1;
+   }
+
+   generate_YCbCr_to_RGB_lookup();
    v4l->ready = true;
 
    return 0;
@@ -577,19 +416,14 @@ static void *v4l_init(const char *device, unsigned width, unsigned height)
       goto error;
    }
 
-   v4l->io = IO_METHOD_MMAP;
-
    if (init_device(v4l) == -1)
       goto error;
-
-   generate_YCbCr_to_RGB_lookup();
 
    return v4l;
 
 error:
    RARCH_ERR("V4L2: Failed to initialize camera.\n");
-   if (v4l)
-      free(v4l);
+   free(v4l);
    return NULL;
 }
 
@@ -597,31 +431,13 @@ static void v4l_free(void *data)
 {
    video4linux_t *v4l = (video4linux_t*)data;
 
-   unsigned int i;
+   unsigned i;
+   for (i = 0; i < v4l->n_buffers; i++)
+      if (munmap(v4l->buffers[i].start, v4l->buffers[i].length) == -1)
+         RARCH_ERR("munmap failed.\n");
 
-   switch (v4l->io)
-   {
-      case IO_METHOD_READ:
-         free(v4l->buffers[0].start);
-         break;
-      case IO_METHOD_MMAP:
-         for (i = 0; i < v4l->n_buffers; i++)
-            if (munmap(v4l->buffers[i].start, v4l->buffers[i].length) == -1)
-            {
-               RARCH_ERR("munmap failed.\n");
-               return;
-            }
-         break;
-      case IO_METHOD_USERPTR:
-         for (i = 0; i < v4l->n_buffers; i++)
-            free(v4l->buffers[i].start);
-         break;
-   }
-
-   if (close(v4l->fd) == -1)
-      RARCH_ERR("close of file descriptor failed.\n");
-
-   v4l->fd = -1;
+   if (v4l->fd >= 0)
+      close(v4l->fd);
    free(v4l);
 
    // Assumes one instance. LUT will be gone at some point anyways.
@@ -635,102 +451,34 @@ static void preprocess_image(void *data)
    struct v4l2_buffer buf;
    unsigned i;
 
-   switch (v4l->io)
+   memset(&buf, 0, sizeof(buf));
+
+   buf.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+   buf.memory = V4L2_MEMORY_MMAP;
+
+   if (xioctl(v4l->fd, VIDIOC_DQBUF, &buf) == -1)
    {
-      case IO_METHOD_READ:
-         if (read(v4l->fd, v4l->buffers[0].start, v4l->buffers[0].length) == -1)
-         {
-            switch (errno)
-            {
-               case EAGAIN:
-                  return;
-               case EIO:
-                  /* Could ignore EIO, see spec. */
-
-                  /* fall through */
-
-               default:
-                  return;
-            }
-         }
-
-         process_image(v4l->buffers[0].start);
-
-         break;
-
-      case IO_METHOD_MMAP:
-         memset(&buf, 0, sizeof(buf));
-
-         buf.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-         buf.memory = V4L2_MEMORY_MMAP;
-
-         if (xioctl(v4l->fd, VIDIOC_DQBUF, &buf) == -1)
-         {
-            switch (errno)
-            {
-               case EAGAIN:
-                  return;
-               case EIO:
-                  /* Could ignore EIO, see spec. */
-
-                  /* fall through */
-
-               default:
-                  RARCH_ERR("VIDIOC_DQBUF.\n");
-                  return;
-            }
-         }
-
-         assert(buf.index < v4l->n_buffers);
-
-         process_image(v4l->buffers[buf.index].start);
-
-         if (xioctl(v4l->fd, VIDIOC_QBUF, &buf) == -1)
-         {
-            RARCH_ERR("VIDIOC_QBUF\n");
+      switch (errno)
+      {
+         case EAGAIN:
             return;
-         }
+         case EIO:
+            /* Could ignore EIO, see spec. */
 
-         break;
+            /* fall through */
 
-      case IO_METHOD_USERPTR:
-         memset(&buf, 0, sizeof(buf));
-
-         buf.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-         buf.memory = V4L2_MEMORY_USERPTR;
-
-         if (xioctl(v4l->fd, VIDIOC_DQBUF, &buf) == -1)
-         {
-            switch (errno)
-            {
-               case EAGAIN:
-                  return;
-
-               case EIO:
-                  /* Could ignore EIO, see spec. */
-
-                  /* fall through */
-
-               default:
-                  RARCH_ERR("VIDIOC_DQBUF.\n");
-                  return;
-            }
-         }
-
-         for (i = 0; i < v4l->n_buffers; i++)
-            if (buf.m.userptr == (unsigned long)v4l->buffers[i].start
-                  && buf.length == v4l->buffers[i].length)
-               break;
-
-         assert(i < v4l->n_buffers);
-
-         process_image((void *)buf.m.userptr);
-
-         if (xioctl(v4l->fd, VIDIOC_QBUF, &buf) == -1)
-            RARCH_ERR("VIDIOC_QBUF.\n");
-
-         break;
+         default:
+            RARCH_ERR("VIDIOC_DQBUF.\n");
+            return;
+      }
    }
+
+   assert(buf.index < v4l->n_buffers);
+
+   process_image(v4l->buffers[buf.index].start);
+
+   if (xioctl(v4l->fd, VIDIOC_QBUF, &buf) == -1)
+      RARCH_ERR("VIDIOC_QBUF\n");
 }
 
 static void v4l_texture_image_2d(void *data)
