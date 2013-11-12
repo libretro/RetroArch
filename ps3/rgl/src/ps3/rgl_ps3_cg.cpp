@@ -1380,34 +1380,6 @@ static void destroy_context( _CGcontext*ctx )
    free( ctx );
 }
 
-void rglCgContextPopFront()
-{
-   // remove and delete the context at the head of the list
-   if ( _CurrentContext->RGLcgContextHead )
-   {
-      _CGcontext* head = _cgGetContextPtr( _CurrentContext->RGLcgContextHead );
-      _CGcontext* temp = head->next;
-      // free the id as well
-      destroy_context( head );
-
-      // this is not the end of the list, feel free to dereference it.
-      if ( temp )
-         _CurrentContext->RGLcgContextHead = temp->id;
-      // nothing left, no dereferenceing for you, mister.
-      else
-         _CurrentContext->RGLcgContextHead = 0;
-   }
-}
-
-
-void rglCgContextEraseAfter( _CGcontext* c )
-{
-   _CGcontext* eraseme = c->next;
-   c->next = eraseme->next;
-
-   destroy_context( eraseme );
-}
-
 // API functions ----------------------------------------
 
 CG_API CGcontext cgCreateContext( void )
@@ -1521,14 +1493,6 @@ RGL_EXPORT cgRTCgcFreeHookFunction _cgRTCgcFreeCompiledProgramHook;
 // a non-intrusive list. The list is walked using cgGetFirstProgram() and
 // cgGetNextProgram()
 
-void rglCgProgramZero( _CGprogram* p )
-{
-   // zero all pointers in the node and enclosed binary program
-   // this makes sure cgIsProgram calls on invalid pointers always fail
-   memset( p, 0, sizeof( _CGprogram ) );
-   return;
-}
-
 void rglCgProgramPushFront( _CGcontext* ctx, _CGprogram* prog )
 {
    // push the program to the context.
@@ -1589,7 +1553,7 @@ void rglCgProgramErase( _CGprogram* prog )
       free( prog->runtimeElf );
 
    // zero out all pointers
-   rglCgProgramZero( prog );
+   memset( prog, 0, sizeof( _CGprogram ) );
 }
 
 void rglCgProgramEraseAfter( _CGprogram* prog )
@@ -2853,7 +2817,7 @@ CGprogram rglCgCreateProgram( CGcontext ctx, CGprofile profile, const CgProgramH
    }
 
    // zero out the fields
-   rglCgProgramZero( prog );
+   memset( prog, 0, sizeof( _CGprogram ) );
 
    // fill in the fields we know
    prog->parentContext = _cgGetContextPtr( ctx );
@@ -3302,7 +3266,7 @@ CG_API CGprogram cgCopyProgram( CGprogram program )
       rglCgRaiseError( CG_MEMORY_ALLOC_ERROR );
       return ( CGprogram )NULL;
    }
-   rglCgProgramZero( newprog );
+   memset( newprog, 0, sizeof( _CGprogram ) );
 
    // copy information from the old program
    newprog->header.profile = prog->header.profile;
@@ -3359,7 +3323,6 @@ CG_API CGprogram cgCopyProgram( CGprogram program )
 
    return newprog->id;
 }
-
 
 CG_API void cgDestroyProgram( CGprogram program )
 {
@@ -3424,18 +3387,6 @@ CG_API void cgDestroyProgram( CGprogram program )
    return;
 }
 
-CG_API CGprofile cgGetProgramProfile( CGprogram prog )
-{
-   // check the program input
-   if ( !CG_IS_PROGRAM( prog ) )
-   {
-      rglCgRaiseError( CG_INVALID_PROGRAM_HANDLE_ERROR );
-      return CG_PROFILE_UNKNOWN;
-   }
-
-   // return the profile the program was compiled under
-   return ( CGprofile )_cgGetProgPtr( prog )->header.profile;
-}
 
 /*============================================================
   CG GL
