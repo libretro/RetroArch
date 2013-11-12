@@ -342,6 +342,7 @@ typedef struct camera_driver
    bool (*ready)(void *data, unsigned *width, unsigned *height);
    void (*texture_image_2d)(void *data);
    void (*texture_subimage_2d)(void *data);
+   uint64_t (*set_capabilities)(void *data, uint64_t mask);
    const char *ident;
 } camera_driver_t;
 

@@ -749,6 +749,21 @@ static bool v4l_ready(void *data, unsigned *width, unsigned *height)
    return v4l->ready;
 }
 
+static uint64_t v4l_set_capabilities(void *data, uint64_t state)
+{
+   (void)data;
+   uint64_t ret = 0;
+
+   //FIXME - set when driver supports this
+   //if (state & (1 << RETRO_CAMERA_RECV_GL_TEXTURE))
+      //ret |= (1 << RETRO_CAMERA_RECV_GL_TEXTURE);
+
+   if (state & (1 << RETRO_CAMERA_RECV_RAW_FRAMEBUFFER))
+      ret |= (1 << RETRO_CAMERA_RECV_RAW_FRAMEBUFFER);
+
+   return ret;
+}
+
 const camera_driver_t camera_v4l2 = {
    v4l_init,
    v4l_free,
@@ -757,5 +772,6 @@ const camera_driver_t camera_v4l2 = {
    v4l_ready,
    v4l_texture_image_2d,
    v4l_texture_subimage_2d,
+   v4l_set_capabilities,
    "video4linux2",
 };

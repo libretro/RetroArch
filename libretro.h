@@ -541,6 +541,12 @@ enum retro_mod
                                            // The purpose of this interface is to allow
                                            // setting state related to sensors such as polling rate, enabling/disable it entirely, etc.
                                            // Reading sensor state is done via the normal input_state_callback API.
+#define RETRO_ENVIRONMENT_SET_CAMERA_RETRIEVE (26 | RETRO_ENVIRONMENT_EXPERIMENTAL)
+                                           // uint64_t * --
+                                           // Sends a bitmask value to the camera driver, telling it which receive modes are expected to be handled by the 
+                                           // camera interface._
+                                           // Example bitmask: caps = (1 << RETRO_CAMERA_RECV_GL_TEXTURE) | (1 << RETRO_CAMERA_RECV_RAW_FRAMEBUFFER).
+                                           // Returns a bitmask value that tells which camera retrieval modes have been set by the driver.
 
 // FIXME: Document the sensor API and work out behavior.
 // It will be marked as experimental until then.
@@ -550,6 +556,14 @@ enum retro_sensor_action
    RETRO_SENSOR_ACCELEROMETER_DISABLE,
 
    RETRO_SENSOR_DUMMY = INT_MAX
+};
+
+enum retro_camera_mode
+{
+   RETRO_CAMERA_RECV_GL_TEXTURE = 0,
+   RETRO_CAMERA_RECV_RAW_FRAMEBUFFER,
+
+   RETRO_CAMERA_DUMMY = INT_MAX
 };
 
 typedef bool (*retro_set_sensor_state_t)(unsigned port, enum retro_sensor_action action, unsigned rate);
