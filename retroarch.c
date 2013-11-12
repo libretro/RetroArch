@@ -3135,6 +3135,11 @@ bool rarch_main_iterate(void)
       bsv_movie_set_frame_start(g_extern.bsv.movie);
 #endif
 
+#ifdef HAVE_CAMERA
+   if (g_extern.system.camera_callback.caps)
+      driver_camera_poll();
+#endif
+
    update_frame_time();
    pretro_run();
    limit_frame_time();

@@ -473,6 +473,32 @@ bool driver_set_sensor_state(unsigned port, enum retro_sensor_action action, uns
       return false;
 }
 
+#ifdef HAVE_CAMERA
+bool driver_camera_start(void)
+{
+   if (driver.camera && driver.camera_data)
+      return driver.camera->start(driver.camera_data);
+   else
+      return false;
+}
+
+void driver_camera_stop(void)
+{
+   if (driver.camera && driver.camera_data)
+      driver.camera->stop(driver.camera_data);
+}
+
+void driver_camera_poll(void)
+{
+   if (driver.camera && driver.camera_data)
+   {
+      driver.camera->poll(driver.camera_data,
+            g_extern.system.camera_callback.frame_raw_framebuffer,
+            g_extern.system.camera_callback.frame_opengl_texture);
+   }
+}
+#endif
+
 uintptr_t driver_get_current_framebuffer(void)
 {
 #ifdef HAVE_FBO
@@ -543,8 +569,11 @@ void init_camera(void)
 
    find_camera_driver();
 
-   driver.camera_data = camera_init_func(*g_settings.camera.device ? g_settings.camera.device : NULL,
-         g_settings.camera.width, g_settings.camera.height);
+   driver.camera_data = camera_init_func(
+         *g_settings.camera.device ? g_settings.camera.device : NULL,
+         g_extern.system.camera_callback.caps,
+         g_settings.camera.width ? g_settings.camera.width : g_extern.system.camera_callback.width,
+         g_settings.camera.height ? g_settings.camera.height : g_extern.system.camera_callback.height);
 
    if (!driver.camera_data)
    {
@@ -560,7 +589,7 @@ void init_drivers(void)
    driver.audio_data_own = !driver.audio_data;
    driver.input_data_own = !driver.input_data;
 #ifdef HAVE_CAMERA
-   driver.camera_data_own = !driver.camera_data_own;
+   driver.camera_data_own = !driver.camera_data;
 #endif
 
    adjust_system_rates();
@@ -575,7 +604,9 @@ void init_drivers(void)
    init_audio();
 
 #ifdef HAVE_CAMERA
-   init_camera();
+   // Only init camera driver if we're ever going to use it.
+   if (g_extern.system.camera_callback.caps)
+      init_camera();
 #endif
 
    // Keep non-throttled state as good as possible.

@@ -446,8 +446,6 @@ enum retro_mod
                                            // swapped out by the user (e.g. PSX).
 #define RETRO_ENVIRONMENT_SET_HW_RENDER 14
                                            // struct retro_hw_render_callback * --
-                                           // NOTE: This call is currently very experimental, and should not be considered part of the public API.
-                                           // The interface could be changed or removed at any time.
                                            // Sets an interface to let a libretro core render with hardware acceleration.
                                            // Should be called in retro_load_game().
                                            // If successful, libretro cores will be able to render to a frontend-provided framebuffer.
@@ -541,12 +539,23 @@ enum retro_mod
                                            // The purpose of this interface is to allow
                                            // setting state related to sensors such as polling rate, enabling/disable it entirely, etc.
                                            // Reading sensor state is done via the normal input_state_callback API.
-#define RETRO_ENVIRONMENT_SET_CAMERA_RETRIEVE (26 | RETRO_ENVIRONMENT_EXPERIMENTAL)
-                                           // uint64_t * --
-                                           // Sends a bitmask value to the camera driver, telling it which receive modes are expected to be handled by the 
-                                           // camera interface._
-                                           // Example bitmask: caps = (1 << RETRO_CAMERA_RECV_GL_TEXTURE) | (1 << RETRO_CAMERA_RECV_RAW_FRAMEBUFFER).
-                                           // Returns a bitmask value that tells which camera retrieval modes have been set by the driver.
+#define RETRO_ENVIRONMENT_GET_CAMERA_INTERFACE (26 | RETRO_ENVIRONMENT_EXPERIMENTAL)
+                                           // struct retro_camera_interface * --
+                                           // Gets an interface to a video camera driver.
+                                           // A libretro core can use this interface to get access to a video camera.
+                                           // New video frames are delivered in a callback in same thread as retro_run().
+                                           //
+                                           // GET_CAMERA_INTERFACE should be called in retro_load_game().
+                                           //
+                                           // Depending on the camera implementation used, camera frames will be delivered as a raw framebuffer,
+                                           // or as an OpenGL texture directly.
+                                           //
+                                           // The core has to tell the frontend here which types of buffers can be handled properly.
+                                           // An OpenGL texture can only be handled when using a libretro GL core (SET_HW_RENDER).
+                                           // It is recommended to use a libretro GL core when using camera interface.
+                                           //
+                                           // The camera is not started automatically. The retrieved start/stop functions must be used to explicitly
+                                           // start and stop the camera driver.
 
 // FIXME: Document the sensor API and work out behavior.
 // It will be marked as experimental until then.
@@ -558,20 +567,54 @@ enum retro_sensor_action
    RETRO_SENSOR_DUMMY = INT_MAX
 };
 
-enum retro_camera_mode
-{
-   RETRO_CAMERA_RECV_GL_TEXTURE = 0,
-   RETRO_CAMERA_RECV_RAW_FRAMEBUFFER,
-
-   RETRO_CAMERA_DUMMY = INT_MAX
-};
-
 typedef bool (*retro_set_sensor_state_t)(unsigned port, enum retro_sensor_action action, unsigned rate);
 struct retro_sensor_interface
 {
    retro_set_sensor_state_t set_sensor_state;
 };
 ////
+
+enum retro_camera_buffer
+{
+   RETRO_CAMERA_BUFFER_OPENGL_TEXTURE = 0,
+   RETRO_CAMERA_BUFFER_RAW_FRAMEBUFFER,
+
+   RETRO_CAMERA_BUFFER_DUMMY = INT_MAX
+};
+
+// Starts the camera driver. Can only be called in retro_run().
+typedef bool (*retro_camera_start_t)(void);
+// Stops the camera driver. Can only be called in retro_run().
+typedef void (*retro_camera_stop_t)(void);
+// A callback for raw framebuffer data. buffer points to an XRGB8888 buffer.
+// Width, height and pitch are similar to retro_video_refresh_t.
+// First pixel is top-left origin.
+typedef void (*retro_camera_frame_raw_framebuffer_t)(const uint32_t *buffer, unsigned width, unsigned height, size_t pitch);
+// A callback for when OpenGL textures are used.
+//
+// texture_id is a texture owned by camera driver.
+// Its state or content should be considered immutable, except for things like texture filtering and clamping.
+//
+// texture_target is the texture target for the GL texture.
+// These can include e.g. GL_TEXTURE_2D, GL_TEXTURE_RECTANGLE, and possibly more depending on extensions.
+// 
+// affine points to a packed 3x3 column-major matrix used to apply an affine transform to texture coordinates. (affine_matrix * vec3(coord_x, coord_y, 1.0))
+// After transform, normalized texture coord (0, 0) should be bottom-left and (1, 1) should be top-right (or (width, height) for RECTANGLE).
+//
+// GL-specific typedefs are avoided here to avoid relying on gl.h in the API definition.
+typedef void (*retro_camera_frame_opengl_texture_t)(unsigned texture_id, unsigned texture_target, const float *affine);
+struct retro_camera_callback
+{
+   uint64_t caps; // Set by libretro core. Example bitmask: caps = (1 << RETRO_CAMERA_BUFFER_OPENGL_TEXTURE) | (1 << RETRO_CAMERA_BUFFER_RAW_FRAMEBUFFER).
+
+   unsigned width; // Desired resolution for camera. Is only used as a hint.
+   unsigned height;
+   retro_camera_start_t start; // Set by frontend.
+   retro_camera_stop_t stop; // Set by frontend.
+
+   retro_camera_frame_raw_framebuffer_t frame_raw_framebuffer; // Set by libretro core if raw framebuffer callbacks will be used.
+   retro_camera_frame_opengl_texture_t frame_opengl_texture; // Set by libretro core if OpenGL texture callbacks will be used.
+};
 
 enum retro_rumble_effect
 {

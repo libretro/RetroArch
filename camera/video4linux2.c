@@ -323,7 +323,7 @@ static int init_device(void *data)
    return init_mmap(v4l);
 }
 
-static int v4l_stop(void *data)
+static void v4l_stop(void *data)
 {
    enum v4l2_buf_type type;
    video4linux_t *v4l = (video4linux_t*)data;
@@ -331,16 +331,12 @@ static int v4l_stop(void *data)
    type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
 
    if (xioctl(v4l->fd, VIDIOC_STREAMOFF, &type) == -1)
-   {
       RARCH_ERR("Error - VIDIOC_STREAMOFF.\n");
-      return -1;
-   }
 
    v4l->ready = false;
-   return 0;
 }
 
-static int v4l_start(void *data)
+static bool v4l_start(void *data)
 {
    video4linux_t *v4l = (video4linux_t*)data;
    unsigned i;
@@ -359,7 +355,7 @@ static int v4l_start(void *data)
       if (xioctl(v4l->fd, VIDIOC_QBUF, &buf) == -1)
       {
          RARCH_ERR("Error - VIDIOC_QBUF.\n");
-         return -1;
+         return false;
       }
    }
 
@@ -368,21 +364,25 @@ static int v4l_start(void *data)
    if (xioctl(v4l->fd, VIDIOC_STREAMON, &type) == -1)
    {
       RARCH_ERR("Error - VIDIOC_STREAMON.\n");
-      return -1;
+      return false;
    }
 
    generate_YCbCr_to_RGB_lookup();
    v4l->ready = true;
 
-   return 0;
+   return true;
 }
 
-static void *v4l_init(const char *device, unsigned width, unsigned height)
+static void *v4l_init(const char *device, uint64_t caps, unsigned width, unsigned height)
 {
-   (void)width;
-   (void)height;
-
    struct stat st;
+
+   if (!(caps & RETRO_CAMERA_BUFFER_RAW_FRAMEBUFFER))
+   {
+      RARCH_ERR("video4linux2 returns raw framebuffers.\n");
+      return NULL;
+   }
+
    video4linux_t *v4l = (video4linux_t*)calloc(1, sizeof(video4linux_t));
    if (!v4l)
       return NULL;
@@ -392,8 +392,8 @@ static void *v4l_init(const char *device, unsigned width, unsigned height)
    else
       strlcpy(v4l->dev_name, device, sizeof(v4l->dev_name));
 
-   v4l->width    = 640; //FIXME - use width param
-   v4l->height   = 480; //FIXME - use height param
+   v4l->width    = width;
+   v4l->height   = height;
    v4l->ready    = false;
 
    if (stat(v4l->dev_name, &st) == -1)
@@ -445,7 +445,7 @@ static void v4l_free(void *data)
    YCbCr_to_RGB = NULL;
 }
 
-static void preprocess_image(void *data)
+static bool preprocess_image(void *data)
 {
    video4linux_t *v4l = (video4linux_t*)data;
    struct v4l2_buffer buf;
@@ -461,7 +461,7 @@ static void preprocess_image(void *data)
       switch (errno)
       {
          case EAGAIN:
-            return;
+            return false;
          case EIO:
             /* Could ignore EIO, see spec. */
 
@@ -469,7 +469,7 @@ static void preprocess_image(void *data)
 
          default:
             RARCH_ERR("VIDIOC_DQBUF.\n");
-            return;
+            return false;
       }
    }
 
@@ -479,37 +479,27 @@ static void preprocess_image(void *data)
 
    if (xioctl(v4l->fd, VIDIOC_QBUF, &buf) == -1)
       RARCH_ERR("VIDIOC_QBUF\n");
+
+   return true;
 }
 
-static void v4l_texture_image_2d(void *data)
-{
-   preprocess_image(data);
-}
-
-static void v4l_texture_subimage_2d(void *data)
-{
-   preprocess_image(data);
-}
-
-static bool v4l_ready(void *data, unsigned *width, unsigned *height)
+static bool v4l_poll(void *data, retro_camera_frame_raw_framebuffer_t frame_raw_cb,
+      retro_camera_frame_opengl_texture_t frame_gl_cb)
 {
    video4linux_t *v4l = (video4linux_t*)data;
-   return v4l->ready;
-}
+   if (!v4l->ready)
+      return false;
 
-static uint64_t v4l_set_capabilities(void *data, uint64_t state)
-{
-   (void)data;
-   uint64_t ret = 0;
+   (void)frame_raw_cb;
+   (void)frame_gl_cb;
 
-   //FIXME - set when driver supports this
-   //if (state & (1 << RETRO_CAMERA_RECV_GL_TEXTURE))
-      //ret |= (1 << RETRO_CAMERA_RECV_GL_TEXTURE);
-
-   if (state & (1 << RETRO_CAMERA_RECV_RAW_FRAMEBUFFER))
-      ret |= (1 << RETRO_CAMERA_RECV_RAW_FRAMEBUFFER);
-
-   return ret;
+   if (preprocess_image(data))
+   {
+      // TODO: Call frame_raw_cb() here with updated data if new data was processed.
+      return true;
+   }
+   else
+      return false;
 }
 
 const camera_driver_t camera_v4l2 = {
@@ -517,9 +507,7 @@ const camera_driver_t camera_v4l2 = {
    v4l_free,
    v4l_start,
    v4l_stop,
-   v4l_ready,
-   v4l_texture_image_2d,
-   v4l_texture_subimage_2d,
-   v4l_set_capabilities,
+   v4l_poll,
    "video4linux2",
 };
+

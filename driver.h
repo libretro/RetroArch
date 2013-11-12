@@ -333,16 +333,21 @@ typedef struct input_driver
 
 typedef struct camera_driver
 {
-   //FIXME - params for init - queries for resolution, framerate, color format
-   //which might or might not be honored
-   void *(*init)(const char *device, unsigned width, unsigned height);
+   // FIXME: params for init - queries for resolution, framerate, color format
+   // which might or might not be honored
+   void *(*init)(const char *device, uint64_t buffer_types, unsigned width, unsigned height);
    void (*free)(void *data);
-   int  (*start)(void *data);
-   int  (*stop)(void *data);
-   bool (*ready)(void *data, unsigned *width, unsigned *height);
-   void (*texture_image_2d)(void *data);
-   void (*texture_subimage_2d)(void *data);
-   uint64_t (*set_capabilities)(void *data, uint64_t mask);
+
+   bool (*start)(void *data);
+   void (*stop)(void *data);
+
+   // Polls the camera driver.
+   // Will call the appropriate callback if a new frame is ready.
+   // Returns true if a new frame was handled.
+   bool (*poll)(void *data,
+         retro_camera_frame_raw_framebuffer_t frame_raw_cb,
+         retro_camera_frame_opengl_texture_t frame_gl_cb);
+
    const char *ident;
 } camera_driver_t;
 
@@ -535,6 +540,13 @@ retro_proc_address_t driver_get_proc_address(const char *sym);
 bool driver_set_rumble_state(unsigned port, enum retro_rumble_effect effect, uint16_t strength);
 // Used by RETRO_ENVIRONMENT_GET_SENSOR_INTERFACE
 bool driver_set_sensor_state(unsigned port, enum retro_sensor_action action, unsigned rate);
+
+// Used by RETRO_ENVIRONMENT_GET_CAMERA_INTERFACE
+#ifdef HAVE_CAMERA
+bool driver_camera_start(void);
+void driver_camera_stop(void);
+void driver_camera_poll(void);
+#endif
 
 extern driver_t driver;
 
