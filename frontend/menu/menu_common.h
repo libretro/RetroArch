@@ -321,9 +321,6 @@ typedef struct
 } rgui_handle_t;
 
 extern rgui_handle_t *rgui;
-#ifdef HAVE_OSK
-extern input_osk_driver_t *osk;
-#endif
 
 void menu_init(void);
 bool menu_iterate(void);
