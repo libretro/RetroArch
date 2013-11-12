@@ -242,20 +242,19 @@ static void get_environment_settings(int argc, char *argv[], void *args)
    if (device_end)
       snprintf(default_paths.port_dir, sizeof(default_paths.port_dir), "%.*s/retroarch", device_end - default_paths.core_dir, default_paths.core_dir);
    else
-      strlcpy(default_paths.port_dir, "/retroarch", sizeof(default_paths.port_dir));
+      fill_pathname_join(default_paths.port_dir, default_paths.port_dir, "retroarch", sizeof(default_paths.port_dir));
 #ifdef IS_SALAMANDER
-   snprintf(config_path, sizeof(config_path), "%s/retroarch.cfg", default_paths.port_dir);
+   fill_pathname_join(config_path, default_paths.port_dir, "retroarch.cfg", sizeof(config_path));
 #else
-   snprintf(g_extern.config_path, sizeof(g_extern.config_path), "%s/retroarch.cfg", default_paths.port_dir);
+   fill_pathname_join(g_extern.config_path, default_paths.port_dir, "retroarch.cfg", sizeof(g_extern.config_path));
 #endif
-   snprintf(default_paths.system_dir, sizeof(default_paths.system_dir), "%s/system", default_paths.port_dir);
-   snprintf(default_paths.sram_dir, sizeof(default_paths.savestate_dir), "%s/savefiles", default_paths.port_dir);
-   snprintf(default_paths.savestate_dir, sizeof(default_paths.savestate_dir), "%s/savestates", default_paths.port_dir);
+   fill_pathname_join(default_paths.system_dir, default_paths.port_dir, "system", sizeof(default_paths.system_dir));
+   fill_pathname_join(default_paths.sram_dir, default_paths.port_dir, "savefiles", sizeof(default_paths.sram_dir));
+   fill_pathname_join(default_paths.savestate_dir, default_paths.port_dir, "savefiles", sizeof(default_paths.savestate_dir));
 
 #ifdef IS_SALAMANDER
    if (argc > 2 && argv[1] != NULL && argv[2] != NULL)
-      snprintf(gx_rom_path, sizeof(gx_rom_path),
-            "%s%s", argv[1], argv[2]);
+      fill_pathname_join(gx_rom_path, argv[1], argv[2], sizeof(gx_rom_path));
    else
       gx_rom_path[0] = '\0';
 #endif
