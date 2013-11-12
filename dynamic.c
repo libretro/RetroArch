@@ -793,9 +793,9 @@ bool rarch_environment_cb(unsigned cmd, void *data)
             *mask_ptr = driver.camera->set_capabilities(driver.camera_data, mask);
          else
             *mask_ptr = 0;
-         break;
 #endif
       }
+      break;
 
       // Private extensions for internal use, not part of libretro API.
       case RETRO_ENVIRONMENT_SET_LIBRETRO_PATH:
