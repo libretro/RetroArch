@@ -540,7 +540,7 @@ enum retro_mod
                                            // setting state related to sensors such as polling rate, enabling/disable it entirely, etc.
                                            // Reading sensor state is done via the normal input_state_callback API.
 #define RETRO_ENVIRONMENT_GET_CAMERA_INTERFACE (26 | RETRO_ENVIRONMENT_EXPERIMENTAL)
-                                           // struct retro_camera_interface * --
+                                           // struct retro_camera_callback * --
                                            // Gets an interface to a video camera driver.
                                            // A libretro core can use this interface to get access to a video camera.
                                            // New video frames are delivered in a callback in same thread as retro_run().
