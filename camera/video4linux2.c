@@ -66,6 +66,7 @@ typedef struct video4linux
 #define YUV_SHIFT(y, cb, cr) ((y << 16) | (cb << 8) | (cr << 0))
 #define RGB_SHIFT(r, g, b) ((r << 16) | (g << 8) | (b << 0))
 static uint32_t *YCbCr_to_RGB;
+static uint32_t *buffer_output;
 
 static void generate_YCbCr_to_RGB_lookup(void)
 {
@@ -125,25 +126,16 @@ static inline void YUV422_to_RGB(uint32_t *output, const uint8_t *input)
    output[1] = YCbCr_to_RGB[YUV_SHIFT(y1, cb, cr)];
 }
 
-static void process_image(const void *p)
+static void process_image(void *data, const void *p)
 {
-   (void)p;
-   //FIXME - fill in here how we are going to render
-   //this - could have two codepaths - one for GL
-   //and one non-GL
-#if 0
+   video4linux_t *v4l = (video4linux_t*)data;
    const uint8_t *buffer_yuv = p;
+   size_t x, y;
 
-   size_t x;
-   size_t y;
-
-   for (y = 0; y < height; y++)
-      for (x = 0; x < width; x += 2)
-         YUV422_to_RGB(buffer_sdl + (y * width + x) * 3,
-               buffer_yuv + (y * width + x) * 2);
-
-   render(data_sf);
-#endif
+   for (y = 0; y < v4l->height; y++)
+      for (x = 0; x < v4l->width; x += 2)
+         YUV422_to_RGB(buffer_output + (y * v4l->width + x) * 3,
+               buffer_yuv + (y * v4l->width + x) * 2);
 }
 
 static int xioctl(int fd, int request, void *args)
@@ -419,6 +411,8 @@ static void *v4l_init(const char *device, uint64_t caps, unsigned width, unsigne
    if (init_device(v4l) == -1)
       goto error;
 
+   buffer_output = (uint32_t*)malloc( v4l->width * v4l->height * sizeof(uint32_t));
+
    return v4l;
 
 error:
@@ -443,6 +437,10 @@ static void v4l_free(void *data)
    // Assumes one instance. LUT will be gone at some point anyways.
    free(YCbCr_to_RGB);
    YCbCr_to_RGB = NULL;
+
+   if (buffer_output)
+      free(buffer_output);
+   buffer_output = NULL;
 }
 
 static bool preprocess_image(void *data)
@@ -475,7 +473,7 @@ static bool preprocess_image(void *data)
 
    assert(buf.index < v4l->n_buffers);
 
-   process_image(v4l->buffers[buf.index].start);
+   process_image(v4l, v4l->buffers[buf.index].start);
 
    if (xioctl(v4l->fd, VIDIOC_QBUF, &buf) == -1)
       RARCH_ERR("VIDIOC_QBUF\n");
@@ -490,12 +488,11 @@ static bool v4l_poll(void *data, retro_camera_frame_raw_framebuffer_t frame_raw_
    if (!v4l->ready)
       return false;
 
-   (void)frame_raw_cb;
    (void)frame_gl_cb;
 
    if (preprocess_image(data))
    {
-      // TODO: Call frame_raw_cb() here with updated data if new data was processed.
+      frame_raw_cb(buffer_output, v4l->width, v4l->height, v4l->width);
       return true;
    }
    else
