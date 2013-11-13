@@ -21,8 +21,8 @@
 #include "../file.h"
 #include "../emscripten/RWebAudio.h"
 
-#ifdef HAVE_RGUI
-#include "../frontend/menu/rgui.h"
+#ifdef HAVE_MENU
+#include "../frontend/menu/menu_common.h"
 #endif
 
 static bool menuloop;
