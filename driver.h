@@ -612,6 +612,7 @@ extern const input_driver_t input_qnx;
 extern const input_driver_t input_rwebinput;
 extern const input_driver_t input_null;
 extern const camera_driver_t camera_v4l2;
+extern const camera_driver_t camera_rwebcam;
 extern const input_osk_driver_t input_ps3_osk;
 
 #include "driver_funcs.h"

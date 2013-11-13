@@ -39,7 +39,8 @@ OBJ = frontend/frontend_emscripten.o \
 		audio/sinc.o \
 		audio/null.o \
 		performance.o \
-		core_info.o
+		core_info.o \
+		camera/rwebcam.o
 
 HAVE_OPENGL = 1
 HAVE_RGUI = 1
@@ -58,8 +59,8 @@ endif
 libretro = libretro_emscripten.bc
 
 LIBS = -lm
-DEFINES = -DHAVE_SCREENSHOTS -DHAVE_NULLAUDIO -DHAVE_BSV_MOVIE
-LDFLAGS = -L. -s TOTAL_MEMORY=$(MEMORY) -s OUTLINING_LIMIT=50000 --js-library emscripten/library_rwebaudio.js --js-library emscripten/library_rwebinput.js --no-heap-copy
+DEFINES = -DHAVE_SCREENSHOTS -DHAVE_CAMERA -DHAVE_NULLAUDIO -DHAVE_BSV_MOVIE
+LDFLAGS = -L. -s TOTAL_MEMORY=$(MEMORY) -s OUTLINING_LIMIT=50000 --js-library emscripten/library_rwebaudio.js --js-library emscripten/library_rwebinput.js --js-library emscripten/library_rwebcam.js --no-heap-copy
 
 ifeq ($(PERF_TEST), 1)
    DEFINES += -DPERF_TEST
