@@ -44,22 +44,6 @@
 #define DEADZONE_LOW 55
 #define DEADZONE_HIGH 210
 
-#ifdef HAVE_OSK
-typedef struct ps3_osk
-{
-   unsigned int osk_memorycontainer;
-   wchar_t init_message[CELL_OSKDIALOG_STRING_SIZE + 1];
-   wchar_t message[CELL_OSKDIALOG_STRING_SIZE + 1];
-   wchar_t text_buf[CELL_OSKDIALOG_STRING_SIZE + 1];
-   uint32_t flags;
-   sys_memory_container_t containerid;
-   CellOskDialogPoint pos;
-   CellOskDialogInputFieldInfo inputFieldInfo;
-   CellOskDialogCallbackReturnParam outputInfo;
-   CellOskDialogParam dialogParam;
-} ps3_osk_t;
-#endif
-
 /*============================================================
   PS3 PAD
   ============================================================ */
@@ -270,9 +254,23 @@ static int16_t ps3_input_state(void *data, const struct retro_keybind **binds,
 
 #ifdef HAVE_OSK
 
+typedef struct ps3_osk
+{
+   unsigned int osk_memorycontainer;
+   wchar_t init_message[CELL_OSKDIALOG_STRING_SIZE + 1];
+   wchar_t message[CELL_OSKDIALOG_STRING_SIZE + 1];
+   wchar_t text_buf[CELL_OSKDIALOG_STRING_SIZE + 1];
+   uint32_t flags;
+   sys_memory_container_t containerid;
+   CellOskDialogPoint pos;
+   CellOskDialogInputFieldInfo inputFieldInfo;
+   CellOskDialogCallbackReturnParam outputInfo;
+   CellOskDialogParam dialogParam;
+} ps3_osk_t;
+
 #define OSK_IN_USE 1
 
-void *oskutil_init(size_t size)
+static void *oskutil_init(size_t size)
 {
    ps3_osk_t *params = (ps3_osk_t*)calloc(1, sizeof(*params));
 
@@ -288,7 +286,7 @@ void *oskutil_init(size_t size)
    return params;
 }
 
-void oskutil_free(void *data)
+static void oskutil_free(void *data)
 {
    ps3_osk_t *params = (ps3_osk_t*)data;
 
@@ -325,21 +323,21 @@ static void oskutil_create_activation_parameters(void *data)
    params->dialogParam.osk_prohibit_flags = 0;
 }
 
-void oskutil_write_message(void *data, const void *data_msg)
+static void oskutil_write_message(void *data, const void *data_msg)
 {
    ps3_osk_t *params = (ps3_osk_t*)data;
    const wchar_t *msg = (const wchar_t*)data_msg;
    params->inputFieldInfo.osk_inputfield_message = (uint16_t*)msg;
 }
 
-void oskutil_write_initial_message(void *data, const void *data_msg)
+static void oskutil_write_initial_message(void *data, const void *data_msg)
 {
    ps3_osk_t *params = (ps3_osk_t*)data;
    const wchar_t *msg = (const wchar_t*)data_msg;
    params->inputFieldInfo.osk_inputfield_starttext = (uint16_t*)msg;
 }
 
-bool oskutil_start(void *data) 
+static bool oskutil_start(void *data) 
 {
    ps3_osk_t *params = (ps3_osk_t*)data;
 
@@ -377,7 +375,13 @@ do_deinit:
    return false;
 }
 
-void oskutil_lifecycle(void *data, uint64_t status)
+static void *oskutil_get_text_buf(void *data)
+{
+   ps3_osk_t *osk = (ps3_osk_t*)data;
+   return osk->text_buf;
+}
+
+static void oskutil_lifecycle(void *data, uint64_t status)
 {
    ps3_osk_t *osk = (ps3_osk_t*)data;
 
@@ -423,6 +427,7 @@ const input_osk_driver_t input_ps3_osk = {
    oskutil_write_initial_message,
    oskutil_start,
    oskutil_lifecycle,
+   oskutil_get_text_buf,
    "ps3osk"
 };
 #endif

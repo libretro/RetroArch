@@ -286,6 +286,47 @@ int menu_settings_toggle_setting(void *data, unsigned setting, unsigned action, 
    return menu_set_settings(rgui, setting, action);
 }
 
+#ifdef HAVE_OSK
+static bool osk_callback_enter_rsound(void *data)
+{
+   if (g_extern.lifecycle_state & (1ULL << MODE_OSK_ENTRY_SUCCESS)
+         && driver.osk && driver.osk->get_text_buf)
+   {
+      RARCH_LOG("OSK - Applying input data.\n");
+      char tmp_str[256];
+      wchar_t *text_buf = (wchar_t*)driver.osk->get_text_buf(driver.osk_data);
+      int num = wcstombs(tmp_str, text_buf, sizeof(tmp_str));
+      tmp_str[num] = 0;
+      strlcpy(g_settings.audio.device, tmp_str, sizeof(g_settings.audio.device));
+      goto do_exit;
+   }
+   else if (g_extern.lifecycle_state & (1ULL << MODE_OSK_ENTRY_FAIL))
+      goto do_exit;
+
+   return false;
+
+do_exit:
+   g_extern.lifecycle_state &= ~((1ULL << MODE_OSK_ENTRY_SUCCESS) |
+         (1ULL << MODE_OSK_ENTRY_FAIL));
+   return true;
+}
+
+static bool osk_callback_enter_rsound_init(void *data)
+{
+   if (!driver.osk)
+      return false;
+
+   if (driver.osk->write_initial_msg)
+      driver.osk->write_initial_msg(driver.osk_data, L"192.168.1.1");
+   if (driver.osk->write_msg)
+      driver.osk->write_msg(driver.osk_data, L"Enter IP address for the RSound Server.");
+   if (driver.osk->start)
+      driver.osk->start(driver.osk_data);
+
+   return true;
+}
+#endif
+
 int menu_set_settings(void *data, unsigned setting, unsigned action)
 {
    rgui_handle_t *rgui = (rgui_handle_t*)data;
@@ -1297,6 +1338,15 @@ int menu_set_settings(void *data, unsigned setting, unsigned action)
 
 #ifndef HAVE_RMENU
          rgui->need_refresh = true;
+#endif
+         break;
+      case RGUI_SETTINGS_RSOUND_SERVER_IP_ADDRESS:
+#if defined(HAVE_RSOUND) && defined(HAVE_OSK)
+         if (action == RGUI_ACTION_OK)
+         {
+            g_settings.osk.cb_init = osk_callback_enter_rsound_init;
+            g_settings.osk.cb_callback = osk_callback_enter_rsound;
+         }
 #endif
          break;
       case RGUI_SETTINGS_SHADER_APPLY:

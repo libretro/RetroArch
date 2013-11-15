@@ -341,6 +341,7 @@ typedef struct input_osk_driver
    void (*write_initial_msg)(void *data, const void *msg);
    bool (*start)(void *data);
    void (*lifecycle)(void *data, uint64_t status);
+   void *(*get_text_buf)(void *data);
    const char *ident;
 } input_osk_driver_t;
 

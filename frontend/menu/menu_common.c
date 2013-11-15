@@ -992,6 +992,22 @@ static int menu_iterate_func(void *data, unsigned action)
    if (menu_ctx && menu_ctx->set_texture)
       menu_ctx->set_texture(rgui, false);
 
+#ifdef HAVE_OSK
+   // process pending osk init callback
+   if (g_settings.osk.cb_init != NULL)
+   {
+      if (g_settings.osk.cb_init(driver.osk_data))
+         g_settings.osk.cb_init = NULL;
+   }
+
+   // process pending osk callback
+   if (g_settings.osk.cb_callback != NULL)
+   {
+      if (g_settings.osk.cb_callback(driver.osk_data))
+         g_settings.osk.cb_callback = NULL;
+   }
+#endif
+
    if (menu_type == RGUI_START_SCREEN)
       return menu_start_screen_iterate(rgui, action);
    else if (menu_type_is(menu_type) == RGUI_SETTINGS)
@@ -1321,21 +1337,6 @@ static int menu_iterate_func(void *data, unsigned action)
          break;
    }
 
-#ifdef HAVE_OSK
-   // process pending osk init callback
-   if (g_settings.osk.cb_init != NULL)
-   {
-      if (g_settings.osk.cb_init(driver.osk_data))
-         g_settings.osk.cb_init = NULL;
-   }
-
-   // process pending osk callback
-   if (g_settings.osk.cb_callback != NULL)
-   {
-      if (g_settings.osk.cb_callback(driver.osk_data))
-         g_settings.osk.cb_callback = NULL;
-   }
-#endif
 
    // refresh values in case the stack changed
    file_list_get_last(rgui->menu_stack, &dir, &menu_type);

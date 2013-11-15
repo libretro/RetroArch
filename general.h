@@ -607,7 +607,7 @@ struct global
       struct
       {
          unsigned mode;
-#ifdef _XBOX1
+#ifdef RARCH_CONSOLE
          unsigned volume_level;
 #endif
       } sound;
