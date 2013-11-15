@@ -58,7 +58,7 @@ var LibraryRWebCam = {
       RWC.contexts[data] = null;
    },
 
-   RWebCamStart__deps: ['glGenTextures', 'glBindTexture', 'glGetIntegerv', 'glTexParameteri'],
+   RWebCamStart__deps: ['glGenTextures', 'glBindTexture', 'glGetIntegerv', 'glTexParameteri', 'malloc'],
    RWebCamStart: function(data) {
       var ret = 0;
       if (RWC.contexts[data].glTex) {
@@ -79,14 +79,27 @@ var LibraryRWebCam = {
             ret = 1;
          }
       }
+      if (RWC.contexts[data].rawFb) {
+         RWC.contexts[data].rawFbCanvas = document.createElement("canvas");
+         ret = 1;
+      }
 
       return ret;
    },
 
-   RWebCamStop__deps: ['glDeleteTextures'],
+   RWebCamStop__deps: ['glDeleteTextures', 'free'],
    RWebCamStop: function(data) {
       if (RWC.contexts[data].glTexId) {
          _glDeleteTextures(1, RWC.contexts[data].glTexId);
+      }
+
+      if (RWC.contexts[data].rawFbCanvas) {
+         if (RWC.contexts[data].rawBuffer) {
+            _free(RWC.contexts[data].rawBuffer);
+            RWC.contexts[data].rawBuffer = 0;
+            RWC.contexts[data].rawFbCanvasCtx = null
+         }
+         RWC.contexts[data].rawFbCanvas = null;
       }
    },
 
@@ -107,6 +120,22 @@ var LibraryRWebCam = {
          }
          _glBindTexture(0x0DE1 /* GL_TEXTURE_2D */, prev);
          Runtime.dynCall('viii', frame_gl_cb, [RWC.contexts[data].glTexId, 0x0DE1 /* GL_TEXTURE_2D */, 0]);
+
+         ret = 1;
+      }
+
+      if (RWC.contexts[data].rawFbCanvas && frame_raw_cb !== 0)
+      {
+         if (!RWC.contexts[data].rawFbCanvasCtx) {
+            RWC.contexts[data].rawFbCanvas.width = RWC.contexts[data].videoElement.videoWidth;
+            RWC.contexts[data].rawFbCanvas.height = RWC.contexts[data].videoElement.videoHeight;
+            RWC.contexts[data].rawFbCanvasCtx = RWC.contexts[data].rawFbCanvas.getContext("2d");
+            RWC.contexts[data].rawBuffer = _malloc(RWC.contexts[data].videoElement.videoWidth * RWC.contexts[data].videoElement.videoHeight * 4);
+         }
+         RWC.contexts[data].rawFbCanvasCtx.drawImage(RWC.contexts[data].videoElement, 0, 0, RWC.contexts[data].rawFbCanvas.width, RWC.contexts[data].rawFbCanvas.height);
+         var image = RWC.contexts[data].rawFbCanvasCtx.getImageData(0, 0, RWC.contexts[data].videoElement.videoWidth, RWC.contexts[data].videoElement.videoHeight);
+         Module.HEAPU8.set(image.data, RWC.contexts[data].rawBuffer);
+         Runtime.dynCall('viiii', frame_raw_cb, [RWC.contexts[data].rawBuffer, RWC.contexts[data].videoElement.videoWidth, RWC.contexts[data].videoElement.videoHeight, RWC.contexts[data].videoElement.videoWidth * 4]);
 
          ret = 1;
       }
