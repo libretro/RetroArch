@@ -105,11 +105,15 @@ int main(int argc, char *argv[])
    if (system_ctx_init() != 0)
       return 0;
 
-   frontend_ctx->init(args);
+   if (frontend_ctx && frontend_ctx->init)
+      frontend_ctx->init(args);
    get_environment_settings(argc, argv, args);
    salamander_init_settings();
-   frontend_ctx->deinit(args);
-   frontend_ctx->exitspawn();
+
+   if (frontend_ctx && frontend_ctx->deinit)
+      frontend_ctx->deinit(args);
+   if (frontend_ctx && frontend_ctx->exitspawn)
+      frontend_ctx->exitspawn();
 
    return 1;
 }
