@@ -1321,6 +1321,22 @@ static int menu_iterate_func(void *data, unsigned action)
          break;
    }
 
+#ifdef HAVE_OSK
+   // process pending osk init callback
+   if (g_settings.osk.cb_init != NULL)
+   {
+      if (g_settings.osk.cb_init(driver.osk_data))
+         g_settings.osk.cb_init = NULL;
+   }
+
+   // process pending osk callback
+   if (g_settings.osk.cb_callback != NULL)
+   {
+      if (g_settings.osk.cb_callback(driver.osk_data))
+         g_settings.osk.cb_callback = NULL;
+   }
+#endif
+
    // refresh values in case the stack changed
    file_list_get_last(rgui->menu_stack, &dir, &menu_type);
 
