@@ -1942,6 +1942,12 @@ void menu_populate_entries(void *data, unsigned menu_type)
          file_list_clear(rgui->selection_buf);
          file_list_push(rgui->selection_buf, "Mute Audio", RGUI_SETTINGS_AUDIO_MUTE, 0);
          file_list_push(rgui->selection_buf, "Rate Control Delta", RGUI_SETTINGS_AUDIO_CONTROL_RATE_DELTA, 0);
+#ifdef _XBOX1
+         file_list_push(rgui->selection_buf, "Volume Level", RGUI_SETTINGS_AUDIO_VOLUME_LEVEL, 0);
+#endif
+#ifdef HAVE_RSOUND
+         file_list_push(rgui->selection_buf, "RSound Server IP Address", RGUI_SETTINGS_RSOUND_SERVER_IP_ADDRESS, 0);
+#endif
          break;
       case RGUI_SETTINGS_DRIVERS:
          file_list_clear(rgui->selection_buf);

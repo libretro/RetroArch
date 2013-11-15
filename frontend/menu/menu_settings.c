@@ -1685,6 +1685,14 @@ void menu_set_settings_label(char *type_str, size_t type_str_size, unsigned *w, 
             }
             break;
          }
+      case RGUI_SETTINGS_AUDIO_VOLUME_LEVEL:
+#ifdef RARCH_CONSOLE
+         strlcpy(type_str, (g_extern.console.sound.volume_level) ? "Loud" : "Normal", type_str_size);
+         break;
+#endif
+      case RGUI_SETTINGS_RSOUND_SERVER_IP_ADDRESS:
+         strlcpy(type_str, g_settings.audio.device, type_str_size);
+         break;
       default:
          type_str[0] = 0;
          *w = 0;
