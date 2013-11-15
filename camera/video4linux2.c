@@ -369,7 +369,7 @@ static void *v4l_init(const char *device, uint64_t caps, unsigned width, unsigne
 {
    struct stat st;
 
-   if (!(caps & RETRO_CAMERA_BUFFER_RAW_FRAMEBUFFER))
+   if ((caps & (1ULL << RETRO_CAMERA_BUFFER_RAW_FRAMEBUFFER)) == 0)
    {
       RARCH_ERR("video4linux2 returns raw framebuffers.\n");
       return NULL;
