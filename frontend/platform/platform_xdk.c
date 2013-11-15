@@ -28,7 +28,6 @@
 #include "../../conf/config_file.h"
 #include "../../conf/config_file_macros.h"
 #include "../../file.h"
-#include "../../general.h"
 
 #ifdef IS_SALAMANDER
 char config_path[512];
@@ -128,7 +127,8 @@ static void salamander_init_settings(void)
 	   }
    }
 }
-
+#else
+#include "../../general.h"
 #endif
 
 #ifdef _XBOX1
@@ -270,6 +270,7 @@ static int system_process_args(int argc, char *argv[], void *args)
    (void)argc;
    (void)argv;
 
+#ifndef IS_SALAMANDER
 #if defined(_XBOX1)
    LAUNCH_DATA ptr;
    DWORD launch_type;
@@ -298,6 +299,7 @@ static int system_process_args(int argc, char *argv[], void *args)
       delete []pLaunchData;
       return 1;
    }
+#endif
 #endif
    return 0;
 }
