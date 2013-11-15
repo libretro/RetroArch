@@ -786,13 +786,13 @@ static inline void xdk_d3d_draw_texture(void *data)
    menu_texture->x = 0;
    menu_texture->y = 0;
 
-   if (d3d->rgui_texture_enable && d3d->last_width && d3d->last_height)
+   if (d3d->rgui_texture_enable)
    {
       d3d->d3d_render_device->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_ONE);
       d3d->d3d_render_device->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
       d3d->d3d_render_device->SetRenderState(D3DRS_ALPHABLENDENABLE, true);
       texture_image_render(menu_texture, menu_texture->x, menu_texture->y,
-         d3d->last_width, d3d->last_height, true);
+         d3d->win_width, d3d->win_height, true);
       d3d->d3d_render_device->SetRenderState(D3DRS_ALPHABLENDENABLE, false);
    }
 #endif
