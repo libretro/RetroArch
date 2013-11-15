@@ -1705,19 +1705,6 @@ void rglGcmAllocDestroy()
    rglGcmDestroy();
 }
 
-void rglGcmSend( unsigned int dstId, unsigned dstOffset, unsigned int pitch,
-      const char *src, unsigned int size )
-{
-   // try allocating the whole block in the bounce buffer
-   GLuint id = gmmAlloc((CellGcmContextData*)&rglGcmState_i.fifo,
-         0, size);
-
-   memcpy( gmmIdToAddress(id), src, size );
-   rglGcmTransferData( dstId, dstOffset, size, id, 0, size, size, 1 );
-
-   gmmFree( id );
-}
-
 /*============================================================
   PLATFORM INITIALIZATION
   ============================================================ */
@@ -2897,10 +2884,10 @@ int rglPlatformCreateDevice (void *data)
       }
    }
 
-   rglGcmFifoGlIncFenceRef( &gcmDevice->swapFifoRef );
-
-   //swapFifoRef2 used for triple buffering
-   gcmDevice->swapFifoRef2 = gcmDevice->swapFifoRef;
+   // Add a reference marker to the command buffer to determine whether a location 
+   // in the command buffer has been passed
+   gcmDevice->swapFifoRef = rglGcmFifoPutReference(fifo);
+   gcmDevice->swapFifoRef2 = gcmDevice->swapFifoRef;  //used for triple buffering
 
    return 0;
 }

@@ -292,6 +292,12 @@ static inline GLuint rglPlatformGetBitsPerPixel (GLenum internalFormat)
  (thisContext->current)[1] = ((surface->height - (((surface->height) & 0x1000) >> 12)) | ((origin) << 12) | ((pixelCenter) << 16)); \
  (thisContext->current) += 2;
 
+#define rglGcmSend(dstId, dstOffset, pitch, src, size) \
+   GLuint id = gmmAlloc((CellGcmContextData*)&rglGcmState_i.fifo, 0, size); \
+   memcpy( gmmIdToAddress(id), (src), size ); \
+   rglGcmTransferData( dstId, dstOffset, size, id, 0, size, size, 1 ); \
+   gmmFree( id )
+
 static inline void rglGcmSetFragmentProgramLoad(struct CellGcmContextData *thisContext, const CellCgbFragmentProgramConfiguration *conf, const uint32_t location)
 {
    uint32_t rawData = ((conf->offset)&0x1fffffff);
@@ -558,6 +564,8 @@ static inline void rglGcmFifoGlViewport(void *data, GLclampf zNear, GLclampf zFa
 
 static inline void rglGcmSetTransferImage(struct CellGcmContextData *thisContext, uint8_t mode, uint32_t dstOffset, uint32_t dstPitch, uint32_t dstX, uint32_t dstY, uint32_t srcOffset, uint32_t srcPitch, uint32_t srcX, uint32_t srcY, uint32_t width, uint32_t height, uint32_t bytesPerPixel)
 {
+   uint32_t srcFormat, dstFormat, x, y, finalDstX, finalDstY;
+
    (thisContext->current)[0] = (((1) << (18)) | CELL_GCM_NV3062_SET_CONTEXT_DMA_IMAGE_DESTIN);
    (thisContext->current)[1] = CELL_GCM_CONTEXT_DMA_MEMORY_FRAME_BUFFER; /* CELL_GCM_TRANSFER_LOCAL_TO_LOCAL */
    (thisContext->current) += 2;
@@ -571,12 +579,8 @@ static inline void rglGcmSetTransferImage(struct CellGcmContextData *thisContext
    (thisContext->current)[1] = ((0x313371C3));
    (thisContext->current) += 2;
 
-   uint32_t srcFormat = 0;
-   uint32_t dstFormat = 0;
-   uint32_t x;
-   uint32_t y;
-   uint32_t finalDstX;
-   uint32_t finalDstY;
+   srcFormat = 0;
+   dstFormat = 0;
 
    switch (bytesPerPixel)
    {
@@ -719,7 +723,7 @@ static inline GLuint RGLGCM_QUICK_FLOAT2UINT (const GLfloat f)
 }
 
 // construct a packed unsigned int ARGB8 color
-inline static void RGLGCM_CALC_COLOR_LE_ARGB8( GLuint *color0, const GLfloat r, const GLfloat g, const GLfloat b, const GLfloat a )
+static inline void RGLGCM_CALC_COLOR_LE_ARGB8( GLuint *color0, const GLfloat r, const GLfloat g, const GLfloat b, const GLfloat a )
 {
    GLuint r2 = RGLGCM_QUICK_FLOAT2UINT( r * 255.0f );
    GLuint g2 = RGLGCM_QUICK_FLOAT2UINT( g * 255.0f );
@@ -783,22 +787,6 @@ static inline void rglPrintFifoFromGet( unsigned int numWords )
       rglPrintIt((( uint32_t* )rglGcmState_i.fifo.lastGetRead )[i] );
 }
 
-// Add a reference marker to the command buffer to determine whether a location 
-// in the command buffer has been passed
-static inline void rglGcmFifoGlIncFenceRef (GLuint *ref)
-{
-   rglGcmFifo *fifo = &rglGcmState_i.fifo;
-   *ref = rglGcmFifoPutReference( fifo );
-}
-
-// Look up the memory location of a buffer object (VBO, PBO)
-static inline GLuint rglGcmGetBufferObjectOrigin (GLuint buffer)
-{
-   rglBufferObject *bufferObject = (rglBufferObject*)_CurrentContext->bufferObjectNameSpace.data[buffer];
-   rglGcmBufferObject *gcmBuffer = (rglGcmBufferObject *)bufferObject->platformBufferObject;
-   return gcmBuffer->bufferId;
-}
-
 #define CL0039_MIN_PITCH -32768
 #define CL0039_MAX_PITCH 32767
 #define CL0039_MAX_LINES 0x3fffff
@@ -816,18 +804,17 @@ static inline void rglGcmTransferData
  GLint rowCount
  )
 {
+   uint32_t colCount, rows, cols;
+   GLuint dstOffset, srcOffset;
    struct CellGcmContextData *thisContext = gCellGcmCurrentContext;
-   GLuint dstOffset = gmmIdToOffset(dstId) + dstIdOffset;
-   GLuint srcOffset = gmmIdToOffset(srcId) + srcIdOffset;
+
+   dstOffset = gmmIdToOffset(dstId) + dstIdOffset;
+   srcOffset = gmmIdToOffset(srcId) + srcIdOffset;
 
    (thisContext->current)[0] = (((2) << (18)) | CELL_GCM_NV0039_SET_CONTEXT_DMA_BUFFER_IN);
    (thisContext->current)[1] = CELL_GCM_CONTEXT_DMA_MEMORY_FRAME_BUFFER; /* CELL_GCM_TRANSFER_LOCAL_TO_LOCAL */
    (thisContext->current)[2] = CELL_GCM_CONTEXT_DMA_MEMORY_FRAME_BUFFER; /* CELL_GCM_TRANSFER_LOCAL_TO_LOCAL */
    (thisContext->current) += 3;
-
-   uint32_t colCount;
-   uint32_t rows;
-   uint32_t cols;
 
    if ((srcPitch == bytesPerRow) && (dstPitch == bytesPerRow))
    {
@@ -837,56 +824,26 @@ static inline void rglGcmTransferData
       dstPitch = 0;
    }
 
-   if ((srcPitch < CL0039_MIN_PITCH) || (srcPitch > CL0039_MAX_PITCH) ||
-         (dstPitch < CL0039_MIN_PITCH) || (dstPitch > CL0039_MAX_PITCH))
+   while(--rowCount >= 0)
    {
-      while(--rowCount >= 0)
+      for(colCount = bytesPerRow; colCount>0; colCount -= cols)
       {
-         for(colCount = bytesPerRow; colCount>0; colCount -= cols)
-         {
-            cols = (colCount > CL0039_MAX_LINES) ? CL0039_MAX_LINES : colCount;
+         cols = (colCount > CL0039_MAX_LINES) ? CL0039_MAX_LINES : colCount;
 
-            (thisContext->current)[0] = (((8) << (18)) | CELL_GCM_NV0039_OFFSET_IN);
-            (thisContext->current)[1] = (srcOffset + (bytesPerRow - colCount));
-            (thisContext->current)[2] = (dstOffset + (bytesPerRow - colCount));
-            (thisContext->current)[3] = (0);
-            (thisContext->current)[4] = (0);
-            (thisContext->current)[5] = (cols);
-            (thisContext->current)[6] = (1);
-            (thisContext->current)[7] = (((1) << 8) | (1));
-            (thisContext->current)[8] = (0);
-            (thisContext->current) += 9;
-         }
-
-         dstOffset += dstPitch;
-         srcOffset += srcPitch;
+         (thisContext->current)[0] = (((8) << (18)) | CELL_GCM_NV0039_OFFSET_IN);
+         (thisContext->current)[1] = (srcOffset + (bytesPerRow - colCount));
+         (thisContext->current)[2] = (dstOffset + (bytesPerRow - colCount));
+         (thisContext->current)[3] = (0);
+         (thisContext->current)[4] = (0);
+         (thisContext->current)[5] = (cols);
+         (thisContext->current)[6] = (1);
+         (thisContext->current)[7] = (((1) << 8) | (1));
+         (thisContext->current)[8] = (0);
+         (thisContext->current) += 9;
       }
-   }
-   else
-   {
-      for(;rowCount>0; rowCount -= rows)
-      {
-         rows = (rowCount > CL0039_MAX_ROWS) ? CL0039_MAX_ROWS : rowCount;
 
-         for(colCount = bytesPerRow; colCount>0; colCount -= cols)
-         {
-            cols = (colCount > CL0039_MAX_LINES) ? CL0039_MAX_LINES : colCount;
-
-            (thisContext->current)[0] = (((8) << (18)) | CELL_GCM_NV0039_OFFSET_IN);
-            (thisContext->current)[1] = (srcOffset + (bytesPerRow - colCount));
-            (thisContext->current)[2] = (dstOffset + (bytesPerRow - colCount));
-            (thisContext->current)[3] = (srcPitch);
-            (thisContext->current)[4] = (dstPitch);
-            (thisContext->current)[5] = (cols);
-            (thisContext->current)[6] = (rows);
-            (thisContext->current)[7] = (((1) << 8) | (1));
-            (thisContext->current)[8] = (0);
-            (thisContext->current) += 9;
-         }
-
-         srcOffset += rows * srcPitch;
-         dstOffset += rows * dstPitch;
-      }
+      dstOffset += dstPitch;
+      srcOffset += srcPitch;
    }
 
    (thisContext->current)[0] = (((1) << (18)) | CELL_GCM_NV0039_OFFSET_OUT);

@@ -868,6 +868,7 @@ void rglPlatformBufferObjectSetData(void *buf_data, GLintptr offset, GLsizeiptr 
             // partial buffer write
             //  STREAM and DYNAMIC buffers get transfer via a bounce buffer.
             // copy via bounce buffer
+            // try allocating the whole block in the bounce buffer
             rglGcmSend( rglBuffer->bufferId, offset, rglBuffer->pitch, ( const char * )data, size );
          }
       }
@@ -1775,9 +1776,11 @@ beginning:
             else
             {
                // attribute data in VBO, clientData is offset.
-               VBOId = rglGcmGetBufferObjectOrigin( attrib->arrayBuffer );
-               gpuOffset = gmmIdToOffset(VBOId)
-                  + (( const GLubyte* )attrib->clientData - ( const GLubyte* )NULL );
+               // Look up the memory location of a buffer object (VBO, PBO)
+               rglBufferObject *bufferObject = (rglBufferObject*)_CurrentContext->bufferObjectNameSpace.data[attrib->arrayBuffer];
+               VBOId = ((rglGcmBufferObject *)bufferObject->platformBufferObject)->bufferId;
+
+               gpuOffset = gmmIdToOffset(VBOId) + (( const GLubyte* )attrib->clientData - ( const GLubyte* )NULL );
             }
 
             rglGcmEnum       type = (rglGcmEnum)attrib->clientType;
