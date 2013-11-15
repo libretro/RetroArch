@@ -130,11 +130,12 @@ static void process_image(void *data, const void *p)
 {
    video4linux_t *v4l = (video4linux_t*)data;
    const uint8_t *buffer_yuv = p;
+   uint8_t *buffer_dst = (uint8_t *) buffer_output;
    size_t x, y;
 
    for (y = 0; y < v4l->height; y++)
       for (x = 0; x < v4l->width; x += 2)
-         YUV422_to_RGB(buffer_output + (y * v4l->width + x) * 3,
+         YUV422_to_RGB((uint32_t *)(buffer_dst + (y * v4l->width + x) * 3),
                buffer_yuv + (y * v4l->width + x) * 2);
 }
 
@@ -508,4 +509,3 @@ const camera_driver_t camera_v4l2 = {
    v4l_poll,
    "video4linux2",
 };
-
