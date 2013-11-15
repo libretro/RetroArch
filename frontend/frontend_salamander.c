@@ -21,11 +21,8 @@
 
 #include "../file_ext.h"
 #include "frontend_salamander.h"
-
-#if defined(RARCH_CONSOLE)
 #include "frontend_context.h"
-frontend_ctx_driver_t *frontend_ctx;
-#endif
+
 
 #if defined(__CELLOS_LV2__)
 #include "platform/platform_ps3.c"
@@ -89,20 +86,12 @@ static void find_first_libretro_core(char *first_file,
    dir_list_free(list);
 }
 
-static int system_ctx_init(void)
-{
-#ifdef RARCH_CONSOLE
-   if ((frontend_ctx = (frontend_ctx_driver_t*)frontend_ctx_init_first()) == NULL)
-      return -1;
-#endif
-
-   return 0;
-}
-
 int main(int argc, char *argv[])
 {
    void *args = NULL;
-   if (system_ctx_init() != 0)
+   frontend_ctx_driver_t *frontend_ctx = (frontend_ctx_driver_t*)frontend_ctx_init_first();
+
+   if (!frontend_ctx)
       return 0;
 
    if (frontend_ctx && frontend_ctx->init)
