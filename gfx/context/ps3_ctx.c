@@ -211,9 +211,6 @@ static bool gfx_ctx_init(void)
       .maxSPUs = 1,
       .initializeSPUs = GL_FALSE,
    };
-#if CELL_SDK_VERSION < 0x340000
-   options.enable |=	PSGL_INIT_HOST_MEMORY_SIZE;
-#endif
 
    // Initialize 6 SPUs but reserve 1 SPU as a raw SPU for PSGL
    sys_spu_initialize(6, 1);
