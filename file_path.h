@@ -11,6 +11,10 @@
 extern "C" {
 #endif
 
+ssize_t read_file(const char *path, void **buf);
+bool read_file_string(const char *path, char **buf);
+bool write_file(const char *path, const void *buf, size_t size);
+
 // Yep, this is C alright ;)
 union string_list_elem_attr
 {

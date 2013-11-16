@@ -28,11 +28,7 @@
 extern "C" {
 #endif
 
-// Generic file, path and directory handling.
-
-ssize_t read_file(const char *path, void **buf);
-bool read_file_string(const char *path, char **buf);
-bool write_file(const char *path, const void *buf, size_t size);
+// Handles files related to libretro.
 
 bool load_state(const char *path);
 bool save_state(const char *path);

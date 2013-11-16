@@ -42,9 +42,9 @@ enum scaler_type
 struct scaler_filter
 {
    int16_t *filter;
-   size_t   filter_len;
-   size_t   filter_stride;
-   int     *filter_pos;
+   int filter_len;
+   int filter_stride;
+   int *filter_pos;
 };
 
 struct scaler_ctx

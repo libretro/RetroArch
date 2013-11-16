@@ -19,6 +19,10 @@
 #include "boolean.h"
 #include <stdint.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 // Implements the bare minimum needed for RetroArch. :)
 
 typedef struct sthread sthread_t;
@@ -50,6 +54,9 @@ int scond_broadcast(scond_t *cond);
 #endif
 void scond_signal(scond_t *cond);
 
+#ifdef __cplusplus
+}
+#endif
 
 #endif
 

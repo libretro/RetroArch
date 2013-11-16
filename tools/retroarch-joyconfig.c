@@ -131,7 +131,7 @@ static void get_binds(config_file_t *conf, config_file_t *auto_conf, int player,
    int last_axis   = -1;
    bool block_axis = false;
 
-   unsigned timeout_ticks = g_timeout * 100;
+   int timeout_ticks = g_timeout * 100;
 
    poll_joypad(driver, joypad, &old_poll);
    fprintf(stderr, "\nJoypads tend to have stale state after opened.\nPress some buttons and move some axes around to make sure joypad state is completely neutral before proceeding.\nWhen done, press Enter ... ");
