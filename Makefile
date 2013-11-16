@@ -455,6 +455,7 @@ clean:
 	rm -f frontend/*.o
 	rm -f audio/*.o
 	rm -f conf/*.o
+	rm -f camera/*.o
 	rm -f gfx/*.o
 	rm -f gfx/glsym/*.o
 	rm -f gfx/rpng/*.o
