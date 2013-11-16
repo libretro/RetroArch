@@ -1458,7 +1458,7 @@ GLAPI void APIENTRY glDrawArrays (GLenum mode, GLint first, GLsizei count)
          // Push a CG program onto the current command buffer
 
          // make sure there is space for the pushbuffer + any nops we need to add for alignment  
-         if ( fifo->current + spaceInWords + 1024 > fifo->end )
+         if ( fifo->ctx.current + spaceInWords + 1024 > fifo->ctx.end )
             rglOutOfSpaceCallback( fifo, spaceInWords );
 
          rglGcmSetVertexProgramLoad(thisContext, &conf, program->ucode );
@@ -1586,18 +1586,18 @@ GLAPI void APIENTRY glDrawArrays (GLenum mode, GLint first, GLsizei count)
          // Push a CG program onto the current command buffer
 
          // make sure there is space for the pushbuffer + any nops we need to add for alignment  
-         if ( fifo->current + spaceInWords + 1024 > fifo->end )
+         if ( fifo->ctx.current + spaceInWords + 1024 > fifo->ctx.end )
             rglOutOfSpaceCallback( fifo, spaceInWords );
 
          // first add nops to get us the next alligned position in the fifo 
          // [YLIN] Use VMX register to copy
-         uint32_t padding_in_word = ( ( 0x10-(((uint32_t)rglGcmState_i.fifo.current)&0xf))&0xf )>>2;
+         uint32_t padding_in_word = ( ( 0x10-(((uint32_t)rglGcmState_i.fifo.ctx.current)&0xf))&0xf )>>2;
          uint32_t padded_size = ( ((cgprog->constantPushBufferWordSize)<<2) + 0xf )&~0xf;
 
          unsigned i;
          rglGcmSetNopCommand(thisContext, i, padding_in_word );
-         memcpy16(rglGcmState_i.fifo.current, cgprog->constantPushBuffer, padded_size);
-         rglGcmState_i.fifo.current+=cgprog->constantPushBufferWordSize;
+         memcpy16(rglGcmState_i.fifo.ctx.current, cgprog->constantPushBuffer, padded_size);
+         rglGcmState_i.fifo.ctx.current+=cgprog->constantPushBufferWordSize;
       }
 
       if (RGL_UNLIKELY(needValidate & RGL_VALIDATE_FRAGMENT_PROGRAM))

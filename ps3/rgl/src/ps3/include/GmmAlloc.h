@@ -108,12 +108,6 @@ typedef struct GmmAllocator
    uint32_t    totalSize;		// == size + tileSize
 } GmmAllocator;
 
-uint32_t gmmInit(
-      const void *localMemoryBase,
-      const void *localStartAddress,
-      const uint32_t localSize
-      );
-
 uint32_t gmmDestroy(void);
 char *gmmIdToAddress(const uint32_t id);
 uint32_t gmmFree (const uint32_t freeId);

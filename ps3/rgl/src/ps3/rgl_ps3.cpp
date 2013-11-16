@@ -440,11 +440,8 @@ static void gmmDestroyFixedAllocator (void)
 
 #define GMM_ALLOC_FIXED_BLOCK() ((GmmBlock*)gmmAllocFixed(0))
 
-uint32_t gmmInit(
-      const void *localMemoryBase,
-      const void *localStartAddress,
-      const uint32_t localSize
-      )
+static uint32_t gmmInit(const void *localMemoryBase, const void *localStartAddress,
+      const uint32_t localSize)
 {
    GmmAllocator *pAllocator;
    uint32_t alignedLocalSize, alignedMainSize;
@@ -1528,12 +1525,12 @@ void rglGcmFifoInit (void *data, void *dmaControl, unsigned long dmaPushBufferOf
    fifo->fifoBlockSize = DEFAULT_FIFO_BLOCK_SIZE;
 
    // init fifo context pointers to first fifo block which will be set at the the dmaPushPuffer position
-   fifo->begin     = (uint32_t*) dmaPushBuffer;
-   fifo->end       = fifo->begin + ( fifo->fifoBlockSize / sizeof( uint32_t ) ) - 1;
+   fifo->ctx.begin     = (uint32_t*) dmaPushBuffer;
+   fifo->ctx.end       = fifo->ctx.begin + ( fifo->fifoBlockSize / sizeof( uint32_t ) ) - 1;
    // init rest of context
-   fifo->current        = fifo->begin;
-   fifo->lastGetRead    = fifo->current;
-   fifo->lastPutWritten = fifo->current;
+   fifo->ctx.current        = fifo->ctx.begin;
+   fifo->lastGetRead    = fifo->ctx.current;
+   fifo->lastPutWritten = fifo->ctx.current;
 
    // store fifo values
    fifo->dmaPushBufferBegin       = dmaPushBuffer;
@@ -1546,8 +1543,7 @@ void rglGcmFifoInit (void *data, void *dmaControl, unsigned long dmaPushBufferOf
    fifo->lastSWReferenceWritten = 0;
    fifo->lastSWReferenceFlushed = 0;
 
-   // note that rglGcmFifo is-a CellGcmContextData
-   gCellGcmCurrentContext = fifo;
+   gCellGcmCurrentContext = &fifo->ctx;
    // setting our own out of space callback here to handle our fifo
    gCellGcmCurrentContext->callback = ( CellGcmContextCallback )rglOutOfSpaceCallback;
 
@@ -1585,7 +1581,6 @@ GLboolean rglGcmInitFromRM( rglGcmResource *rmResource )
    rglGcmSt->hostMemoryBase = rmResource->hostMemoryBase;
    rglGcmSt->hostMemorySize = rmResource->hostMemorySize;
 
-   rglGcmSt->hostNotifierBuffer = NULL; //rmResource->hostNotifierBuffer;
    rglGcmSt->semaphores = rmResource->semaphores;
 
    rglGcmFifoInit( &rglGcmSt->fifo, rmResource->dmaControl, rmResource->dmaPushBufferOffset, (uint32_t*)rmResource->dmaPushBuffer, rmResource->dmaPushBufferSize );
@@ -1927,12 +1922,12 @@ int32_t rglOutOfSpaceCallback (void *data, uint32_t spaceInWords)
 
    uint32_t *nextbegin, *nextend, nextbeginoffset, nextendoffset;
 
-   fifo->updateLastGetRead(); 
+   fifoUpdateGetLastRead(fifo);
 
    // If the current end isn't the same as the full fifo end we 
    // aren't at the end.  Just go ahead and set the next begin and end 
-   if(fifo->end != fifo->dmaPushBufferEnd)
-      nextbegin = (uint32_t *)fifo->end + 1; 
+   if(fifo->ctx.end != fifo->dmaPushBufferEnd)
+      nextbegin = (uint32_t *)fifo->ctx.end + 1; 
    else
       nextbegin = (uint32_t *)fifo->dmaPushBufferBegin;
    nextend = nextbegin + (fifo->fifoBlockSize)/sizeof(uint32_t) - 1;
@@ -1943,11 +1938,10 @@ int32_t rglOutOfSpaceCallback (void *data, uint32_t spaceInWords)
    //use this version so as not to trigger another callback
    cellGcmSetJumpCommandUnsafeInline((CellGcmContextData*)fifo, nextbeginoffset);
 
-
    //set up new context
-   fifo->begin = nextbegin;
-   fifo->current = nextbegin;
-   fifo->end = nextend;
+   fifo->ctx.begin = nextbegin;
+   fifo->ctx.current = nextbegin;
+   fifo->ctx.end = nextend;
 
    //if Gpu busy with the new area, stall and flush
    uint32_t get = fifo->dmaControl->Get;
@@ -1974,8 +1968,8 @@ int32_t rglOutOfSpaceCallback (void *data, uint32_t spaceInWords)
    // same position when the fifo is in GPU memory. 
    for ( GLuint i = 0; i < 8; i++ )
    {
-      fifo->current[0] = 0;
-      fifo->current++;
+      fifo->ctx.current[0] = 0;
+      fifo->ctx.current++;
    }
 
    return CELL_OK;
@@ -1987,11 +1981,9 @@ void rglGcmDestroyRM( rglGcmResource* gcmResource )
       free( gcmResource->hostMemoryBase );
 
    memset(( void* )gcmResource, 0, sizeof( rglGcmResource ) );
-
-   return;
 }
 
-int rglGcmInitRM( rglGcmResource *gcmResource, unsigned int hostMemorySize, int inSysMem, unsigned int dmaPushBufferSize )
+static int rglGcmInitRM( rglGcmResource *gcmResource, int inSysMem, unsigned int dmaPushBufferSize )
 {
    memset( gcmResource, 0, sizeof( rglGcmResource ) );
 
@@ -2002,7 +1994,7 @@ int rglGcmInitRM( rglGcmResource *gcmResource, unsigned int hostMemorySize, int 
 
    // in case of host push buffer we need to add padding to avoid GPU push buffer prefetch to
    // cause a problem fetching invalid addresses at the end of the push buffer.
-   gcmResource->hostMemorySize = rglPad( RGLGCM_FIFO_SIZE + hostMemorySize + dmaPushBufferSize + RGLGCM_DMA_PUSH_BUFFER_PREFETCH_PADDING + (RGLGCM_LM_MAX_TOTAL_QUERIES * sizeof( GLuint )), 1 << 20 );
+   gcmResource->hostMemorySize = rglPad( RGLGCM_FIFO_SIZE + dmaPushBufferSize + RGLGCM_DMA_PUSH_BUFFER_PREFETCH_PADDING + (RGLGCM_LM_MAX_TOTAL_QUERIES * sizeof( GLuint )), 1 << 20 );
 
    if ( gcmResource->hostMemorySize > 0 )
       gcmResource->hostMemoryBase = (char *)memalign( 1 << 20, gcmResource->hostMemorySize  );
@@ -2026,32 +2018,19 @@ int rglGcmInitRM( rglGcmResource *gcmResource, unsigned int hostMemorySize, int 
 
    gcmResource->semaphores = ( rglGcmSemaphoreMemory * )cellGcmGetLabelAddress( 0 );
    gcmResource->dmaControl = ( char* ) cellGcmGetControlRegister() - (( char * ) & (( rglGcmControlDma* )0 )->Put - ( char * )0 );
-   int hostPushBuffer = 0;
-   hostPushBuffer = 1;
 
    // the IOIF mapping don't work. work-around here.
-   for ( GLuint i = 0;i < 32;++i ) gcmResource->ioifMappings[i] = ( unsigned long long )( unsigned long )( gcmResource->localAddress + ( 64 << 20 ) * ( i / 4 ) );
+   for (GLuint i = 0; i < 32; ++i)
+      gcmResource->ioifMappings[i] = ( unsigned long long )( unsigned long )( gcmResource->localAddress + ( 64 << 20 ) * ( i / 4 ) );
 
-   cellGcmFinish( 1 ); // added just a constant value for now to adjust to the inline libgcm interface change
+   cellGcmFinish(1); // added just a constant value for now to adjust to the inline libgcm interface change
 
-   if ( hostPushBuffer )
-   {
-      gcmResource->hostMemorySize -= dmaPushBufferSize + RGLGCM_DMA_PUSH_BUFFER_PREFETCH_PADDING;
-      gcmResource->dmaPushBuffer = gcmResource->hostMemoryBase + gcmResource->hostMemorySize;
-      gcmResource->dmaPushBufferOffset = ( char * )gcmResource->dmaPushBuffer - ( char * )gcmResource->hostMemoryBase;
-      gcmResource->linearMemory = ( char* )0x0;
-      gcmResource->persistentMemorySize = gcmResource->localSize;
-   }
-   else
-   {
-      // Allocate Fifo at begining of vmem map
-      gcmResource->dmaPushBuffer = gcmResource->localAddress;
-      gcmResource->dmaPushBufferOffset = ( char * )gcmResource->dmaPushBuffer - ( char * )gcmResource->localAddress;
-      gcmResource->linearMemory = ( char* )0x0 + dmaPushBufferSize;
-      gcmResource->persistentMemorySize = gcmResource->localSize - dmaPushBufferSize;
-   }
+   gcmResource->hostMemorySize -= dmaPushBufferSize + RGLGCM_DMA_PUSH_BUFFER_PREFETCH_PADDING;
+   gcmResource->dmaPushBuffer = gcmResource->hostMemoryBase + gcmResource->hostMemorySize;
+   gcmResource->dmaPushBufferOffset = ( char * )gcmResource->dmaPushBuffer - ( char * )gcmResource->hostMemoryBase;
+   gcmResource->linearMemory = ( char* )0x0;
+   gcmResource->persistentMemorySize = gcmResource->localSize;
    gcmResource->dmaPushBufferSize = dmaPushBufferSize;
-   gcmResource->hostMemoryReserved = RGLGCM_FIFO_SIZE;
 
    // Set Jump command to our fifo structure
    cellGcmSetJumpCommand(( char * )gcmResource->dmaPushBuffer - ( char * )gcmResource->hostMemoryBase );
@@ -2110,17 +2089,14 @@ GLboolean rglPlatformDeviceInit (void *data)
 {
    RGLinitOptions *options = (RGLinitOptions*)data;
    GLuint fifoSize = RGLGCM_FIFO_SIZE_DEFAULT;
-   GLuint hostSize = RGLGCM_HOST_SIZE_DEFAULT;
 
    if ( options != NULL )
    {
       if ( options->enable & RGL_INIT_FIFO_SIZE )
          fifoSize = options->fifoSize;
-      if ( options->enable & RGL_INIT_HOST_MEMORY_SIZE )
-         hostSize = options->hostMemorySize;
    }
 
-   if ( !rglGcmInitRM( &rglGcmResource, hostSize, 0, fifoSize ) )
+   if ( !rglGcmInitRM( &rglGcmResource, 0, fifoSize ) )
    {
       fprintf( stderr, "RM resource failed initialisation\n" );
       return GL_FALSE;

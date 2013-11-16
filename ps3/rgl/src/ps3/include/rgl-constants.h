@@ -253,7 +253,7 @@ typedef enum rglGcmEnum
 //  253     used in RGLGcmFifoUtils.h
 #define RGLGCM_SEMA_NEVENTS	128
 #define RGLGCM_SEMA_BASE	64	// libgcm uses 0-63
-#define RGLGCM_SEMA_FENCE	(RGLGCM_SEMA_BASE+RGLGCM_SEMA_NEVENTS+0)
+#define RGLGCM_SEMA_FENCE	192
 
 // synchronization
 //  rglGcmSync enables GPU waiting by sending nv_glAcquireSemaphore to the

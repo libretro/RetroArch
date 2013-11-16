@@ -215,9 +215,17 @@ typedef volatile struct
    GLuint Ignored03[0x7e4];
 } rglGcmControlDma;
 
+// _only_ update lastGetRead if the Get is in our pushbuffer
+
+#define fifoUpdateGetLastRead(fifo) \
+   uint32_t* tmp = (uint32_t*)(( char* )fifo->dmaPushBufferBegin - fifo->dmaPushBufferOffset + ( *(( volatile GLuint* )&fifo->dmaControl->Get))); \
+   if ((tmp >= fifo->ctx.begin) && (tmp <= fifo->ctx.end)) \
+      fifo->lastGetRead = tmp;
+
 // all fifo related data is kept here
-struct rglGcmFifo: public CellGcmContextData
+struct rglGcmFifo
 {
+   CellGcmContextData ctx;
    // dmaControl for allocated channel
    rglGcmControlDma *dmaControl;
 
@@ -251,50 +259,7 @@ struct rglGcmFifo: public CellGcmContextData
    GLuint lastHWReferenceRead;
    uint32_t *dmaPushBufferGPU;
    int spuid;
-
-   public:
-   inline void updateLastGetRead()
-   {
-      uint32_t* tmp = (uint32_t*)(( char* )dmaPushBufferBegin - dmaPushBufferOffset + ( *(( volatile GLuint* ) & dmaControl->Get ) ) );
-      // _only_ update lastGetRead if the Get is in our pushbuffer
-      if (( tmp >= begin ) && ( tmp <= end ) ) lastGetRead = tmp;
-   }
 };
-
-typedef volatile struct
-{
-   struct
-   {
-      GLuint nanoseconds[2];  /* nanoseconds since Jan. 1, 1970       0-   7*/
-   }
-   timeStamp;               /*                                       -0007*/
-   GLuint value;               /* info returned depends on method   0008-000b*/
-   GLuint zero;                /* always written to zero            000c-000f*/
-}
-rglGcmGetReport;
-
-/* memory data structures */
-typedef volatile struct
-{
-   struct
-   {                      /*                                   0000-    */
-      GLuint nanoseconds[2];        /* nanoseconds since Jan. 1, 1970       0-   7*/
-   }
-   timeStamp;                  /*                                       -0007*/
-   GLuint      info32;                 /* info returned depends on method   0008-000b*/
-   GLushort    info16;                 /* info returned depends on method   000c-000d*/
-   GLushort    status;                 /* user sets bit 15, NV sets status  000e-000f*/
-}
-rglGcmNotification;
-
-
-// notifiers in host memory
-struct rglGcmHostNotifierMemory
-{
-   // signals channel errors
-   rglGcmNotification channelDmaError[2];
-};
-
 
 // 16 byte aligned semaphores
 struct  rglGcmSemaphore
@@ -326,16 +291,12 @@ struct rglGcmResource
    // host memory window the gpu can access
    char *  hostMemoryBase;
    GLuint  hostMemorySize;
-   GLuint  hostMemoryReserved;
 
    // offset of dmaPushBuffer relative to its DMA CONTEXT
    unsigned long dmaPushBufferOffset;
    char *  dmaPushBuffer;
    GLuint  dmaPushBufferSize;
    void*   dmaControl;
-
-   // all kind of notifers
-   rglGcmHostNotifierMemory  *hostNotifierBuffer;
 
    // semaphores
    rglGcmSemaphoreMemory    *semaphores;
@@ -459,10 +420,6 @@ struct rglGcmState
    // host memory window the gpu can access
    void 						*hostMemoryBase;
    GLuint 						hostMemorySize;
-
-   // all kind of notifers
-   rglGcmHostNotifierMemory    *hostNotifierBuffer;
-
 
    // semaphores
    rglGcmSemaphoreMemory        *semaphores;

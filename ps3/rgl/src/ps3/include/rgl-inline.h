@@ -241,10 +241,10 @@ static inline GLuint rglPlatformGetBitsPerPixel (GLenum internalFormat)
 #define rglGcmFifoReadReference(fifo) (fifo->lastHWReferenceRead = *((volatile GLuint *)&fifo->dmaControl->Reference))
 
 #define rglGcmFifoFlush(fifo, offsetInBytes) \
- cellGcmAddressToOffset( fifo->current, ( uint32_t * )&offsetInBytes ); \
+ cellGcmAddressToOffset( fifo->ctx.current, ( uint32_t * )&offsetInBytes ); \
  cellGcmFlush(); \
  fifo->dmaControl->Put = offsetInBytes; \
- fifo->lastPutWritten = fifo->current; \
+ fifo->lastPutWritten = fifo->ctx.current; \
  fifo->lastSWReferenceFlushed = fifo->lastSWReferenceWritten;
 
 #define rglGcmSetSurface(thisContext, surface, origin, pixelCenter, log2Width, log2Height) \
@@ -777,7 +777,7 @@ static inline void rglPrintIt (unsigned int v)
 static inline void rglPrintFifoFromPut( unsigned int numWords ) 
 {
    for ( int i = -numWords; i <= -1; i++ )
-      rglPrintIt((( uint32_t* )rglGcmState_i.fifo.current )[i] );
+      rglPrintIt((( uint32_t* )rglGcmState_i.fifo.ctx.current )[i] );
 }
 
 // prints the last numWords of the command fifo
