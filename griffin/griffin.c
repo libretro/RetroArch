@@ -300,6 +300,12 @@ INPUT
 #include "../blackberry-qnx/qnx_input.c"
 #endif
 
+#ifdef HAVE_OSK
+#if defined(__CELLOS_LV2__)
+#include "../ps3/ps3_input_osk.c"
+#endif
+#endif
+
 #if defined(__linux__) && !defined(ANDROID) 
 #include "../input/linuxraw_input.c"
 #include "../input/linuxraw_joypad.c"
