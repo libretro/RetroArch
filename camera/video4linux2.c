@@ -32,7 +32,6 @@
 #include "../compat/strl.h"
 
 #include <asm/types.h>
-
 #include <linux/videodev2.h>
 
 struct buffer
@@ -43,13 +42,17 @@ struct buffer
 
 typedef struct video4linux
 {
-   char dev_name[256];
    int fd;
-   bool ready;
    struct buffer *buffers;
    unsigned n_buffers;
    size_t width;
    size_t height;
+
+   uint32_t *YCbCr_to_RGB;
+   uint32_t *buffer_output;
+   bool ready;
+
+   char dev_name[PATH_MAX];
 } video4linux_t;
 
 // FIXME: Shouldn't use LUTs for this.
@@ -65,18 +68,16 @@ typedef struct video4linux
  */
 #define YUV_SHIFT(y, cb, cr) ((y << 16) | (cb << 8) | (cr << 0))
 #define RGB_SHIFT(r, g, b) ((r << 16) | (g << 8) | (b << 0))
-static uint32_t *YCbCr_to_RGB;
-static uint32_t *buffer_output;
 
-static void generate_YCbCr_to_RGB_lookup(void)
+static uint32_t *generate_YCbCr_to_RGB_lookup(void)
 {
    int y;
    int cb;
    int cr;
 
-   YCbCr_to_RGB = (uint32_t*)realloc(YCbCr_to_RGB, 256 * 256 * 256 * sizeof(uint32_t));
-   if (!YCbCr_to_RGB)
-      return;
+   uint32_t *buffer = (uint32_t*)malloc(256 * 256 * 256 * sizeof(uint32_t));
+   if (!buffer)
+      return NULL;
 
    for (y = 0; y < 256; y++)
    {
@@ -96,10 +97,12 @@ static void generate_YCbCr_to_RGB_lookup(void)
             G = max(0, min(255, G));
             B = max(0, min(255, B));
 
-            YCbCr_to_RGB[YUV_SHIFT(y, cb, cr)] = RGB_SHIFT(R, G, B);
+            buffer[YUV_SHIFT(y, cb, cr)] = RGB_SHIFT(R, G, B);
          }
       }
    }
+
+   return buffer;
 }
 
 /**
@@ -115,28 +118,27 @@ static void generate_YCbCr_to_RGB_lookup(void)
 // eventually - GL binding to texture and color conversion through shaders,
 // and this approach
 
-static inline void YUV422_to_RGB(uint32_t *output, const uint8_t *input)
+static inline void YUV422_to_RGB(uint32_t *output, const uint8_t *input, const uint32_t *lut)
 {
    uint8_t y0 = input[0];
    uint8_t cb = input[1];
    uint8_t y1 = input[2];
    uint8_t cr = input[3];
 
-   output[0] = YCbCr_to_RGB[YUV_SHIFT(y0, cb, cr)];
-   output[1] = YCbCr_to_RGB[YUV_SHIFT(y1, cb, cr)];
+   output[0] = lut[YUV_SHIFT(y0, cb, cr)];
+   output[1] = lut[YUV_SHIFT(y1, cb, cr)];
 }
 
-static void process_image(void *data, const void *p)
+static void process_image(void *data, const uint8_t *buffer_yuv)
 {
    video4linux_t *v4l = (video4linux_t*)data;
-   const uint8_t *buffer_yuv = p;
-   uint8_t *buffer_dst = (uint8_t *) buffer_output;
+   const uint32_t *lut = v4l->YCbCr_to_RGB;
+   uint32_t *dst = v4l->buffer_output;
    size_t x, y;
 
-   for (y = 0; y < v4l->height; y++)
+   for (y = 0; y < v4l->height; y++, dst += v4l->width, buffer_yuv += v4l->width * 2)
       for (x = 0; x < v4l->width; x += 2)
-         YUV422_to_RGB((uint32_t *)(buffer_dst + (y * v4l->width + x) * 4),
-               buffer_yuv + (y * v4l->width + x) * 2);
+         YUV422_to_RGB(dst + x, buffer_yuv + x * 2, lut);
 }
 
 static int xioctl(int fd, int request, void *args)
@@ -151,7 +153,7 @@ static int xioctl(int fd, int request, void *args)
    return r;
 }
 
-static int init_mmap(void *data)
+static bool init_mmap(void *data)
 {
    struct v4l2_requestbuffers req;
    video4linux_t *v4l = (video4linux_t*)data;
@@ -167,19 +169,19 @@ static int init_mmap(void *data)
       if (errno == EINVAL)
       {
          RARCH_ERR("%s does not support memory mapping.\n", v4l->dev_name);
-         return -1;
+         return false;
       }
       else
       {
          RARCH_ERR("xioctl of VIDIOC_REQBUFS failed.\n");
-         return -1;
+         return false;
       }
    }
 
    if (req.count < 2)
    {
       RARCH_ERR("Insufficient buffer memory on %s.\n", v4l->dev_name);
-      return -1;
+      return false;
    }
 
    v4l->buffers = (struct buffer*)calloc(req.count, sizeof(*v4l->buffers));
@@ -187,7 +189,7 @@ static int init_mmap(void *data)
    if (!v4l->buffers)
    {
       RARCH_ERR("Out of memory allocating V4L2 buffers.\n");
-      return -1;
+      return false;
    }
 
    for (v4l->n_buffers = 0; v4l->n_buffers < req.count; v4l->n_buffers++)
@@ -203,7 +205,7 @@ static int init_mmap(void *data)
       if (xioctl(v4l->fd, VIDIOC_QUERYBUF, &buf) == -1)
       {
          RARCH_ERR("Error - xioctl VIDIOC_QUERYBUF.\n");
-         return -1;
+         return false;
       }
 
       v4l->buffers[v4l->n_buffers].length = buf.length;
@@ -215,14 +217,14 @@ static int init_mmap(void *data)
       if (v4l->buffers[v4l->n_buffers].start == MAP_FAILED)
       {
          RARCH_ERR("Error - mmap.\n");
-         return -1;
+         return false;
       }
    }
 
-   return 0;
+   return true;
 }
 
-static int init_device(void *data)
+static bool init_device(void *data)
 {
    struct v4l2_capability cap;
    struct v4l2_cropcap cropcap;
@@ -236,25 +238,25 @@ static int init_device(void *data)
       if (errno == EINVAL)
       {
          RARCH_ERR("%s is no V4L2 device.\n", v4l->dev_name);
-         return -1;
+         return false;
       }
       else
       {
          RARCH_ERR("Error - VIDIOC_QUERYCAP.\n");
-         return -1;
+         return false;
       }
    }
 
    if (!(cap.capabilities & V4L2_CAP_VIDEO_CAPTURE))
    {
       RARCH_ERR("%s is no video capture device.\n", v4l->dev_name);
-      return -1;
+      return false;
    }
 
    if (!(cap.capabilities & V4L2_CAP_STREAMING))
    {
       RARCH_ERR("%s does not support streaming I/O (V4L2_CAP_STREAMING).\n", v4l->dev_name);
-      return -1;
+      return false;
    }
 
    /* Select video input, video standard and tune here. */
@@ -282,7 +284,7 @@ static int init_device(void *data)
       }
    }
 
-   memset (&fmt, 0, sizeof(fmt));
+   memset(&fmt, 0, sizeof(fmt));
 
    fmt.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
    fmt.fmt.pix.width  = v4l->width;
@@ -294,7 +296,7 @@ static int init_device(void *data)
    if (xioctl(v4l->fd, VIDIOC_S_FMT, &fmt) == -1)
    {
       RARCH_ERR("Error - VIDIOC_S_FMT\n");
-      return -1;
+      return false;
    }
 
    /* Note VIDIOC_S_FMT may change width and height. */
@@ -360,10 +362,27 @@ static bool v4l_start(void *data)
       return false;
    }
 
-   generate_YCbCr_to_RGB_lookup();
    v4l->ready = true;
 
    return true;
+}
+
+static void v4l_free(void *data)
+{
+   video4linux_t *v4l = (video4linux_t*)data;
+
+   unsigned i;
+   for (i = 0; i < v4l->n_buffers; i++)
+      if (munmap(v4l->buffers[i].start, v4l->buffers[i].length) == -1)
+         RARCH_ERR("munmap failed.\n");
+
+   if (v4l->fd >= 0)
+      close(v4l->fd);
+
+   free(v4l->YCbCr_to_RGB);
+   free(v4l->buffer_output);
+
+   free(v4l);
 }
 
 static void *v4l_init(const char *device, uint64_t caps, unsigned width, unsigned height)
@@ -380,10 +399,7 @@ static void *v4l_init(const char *device, uint64_t caps, unsigned width, unsigne
    if (!v4l)
       return NULL;
 
-   if (device == NULL)
-      strlcpy(v4l->dev_name, "/dev/video0", sizeof(v4l->dev_name));
-   else
-      strlcpy(v4l->dev_name, device, sizeof(v4l->dev_name));
+   strlcpy(v4l->dev_name, device ? device : "/dev/video0", sizeof(v4l->dev_name));
 
    v4l->width    = width;
    v4l->height   = height;
@@ -409,39 +425,29 @@ static void *v4l_init(const char *device, uint64_t caps, unsigned width, unsigne
       goto error;
    }
 
-   if (init_device(v4l) == -1)
+   if (!init_device(v4l))
       goto error;
 
-   buffer_output = (uint32_t*)malloc( v4l->width * v4l->height * sizeof(uint32_t));
+   v4l->buffer_output = (uint32_t*)malloc(v4l->width * v4l->height * sizeof(uint32_t));
+   if (!v4l->buffer_output)
+   {
+      RARCH_ERR("Failed to allocate output buffer.\n");
+      goto error;
+   }
+
+   v4l->YCbCr_to_RGB = generate_YCbCr_to_RGB_lookup();
+   if (!v4l->YCbCr_to_RGB)
+   {
+      RARCH_ERR("Failed to create YUV->RGB LUT.\n");
+      goto error;
+   }
 
    return v4l;
 
 error:
    RARCH_ERR("V4L2: Failed to initialize camera.\n");
-   free(v4l);
+   v4l_free(v4l);
    return NULL;
-}
-
-static void v4l_free(void *data)
-{
-   video4linux_t *v4l = (video4linux_t*)data;
-
-   unsigned i;
-   for (i = 0; i < v4l->n_buffers; i++)
-      if (munmap(v4l->buffers[i].start, v4l->buffers[i].length) == -1)
-         RARCH_ERR("munmap failed.\n");
-
-   if (v4l->fd >= 0)
-      close(v4l->fd);
-   free(v4l);
-
-   // Assumes one instance. LUT will be gone at some point anyways.
-   free(YCbCr_to_RGB);
-   YCbCr_to_RGB = NULL;
-
-   if (buffer_output)
-      free(buffer_output);
-   buffer_output = NULL;
 }
 
 static bool preprocess_image(void *data)
@@ -472,9 +478,9 @@ static bool preprocess_image(void *data)
       }
    }
 
-   assert(buf.index < v4l->n_buffers);
+   rarch_assert(buf.index < v4l->n_buffers);
 
-   process_image(v4l, v4l->buffers[buf.index].start);
+   process_image(v4l, (const uint8_t*)v4l->buffers[buf.index].start);
 
    if (xioctl(v4l->fd, VIDIOC_QBUF, &buf) == -1)
       RARCH_ERR("VIDIOC_QBUF\n");
@@ -494,7 +500,7 @@ static bool v4l_poll(void *data, retro_camera_frame_raw_framebuffer_t frame_raw_
    if (preprocess_image(data))
    {
       if (frame_raw_cb != NULL)
-         frame_raw_cb(buffer_output, v4l->width, v4l->height, v4l->width * 4);
+         frame_raw_cb(v4l->buffer_output, v4l->width, v4l->height, v4l->width * 4);
       return true;
    }
    else
