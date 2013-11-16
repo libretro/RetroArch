@@ -1589,7 +1589,7 @@ GLboolean rglGcmInitFromRM( rglGcmResource *rmResource )
    // Set the GPU to a known state
 
    // initialize the default OpenGL state
-   GCM_FUNC( cellGcmSetBlendColor, 0, 0);
+   rglGcmSetBlendColor(gCellGcmCurrentContext, 0, 0);
    GCM_FUNC( cellGcmSetBlendEquation, RGLGCM_FUNC_ADD, RGLGCM_FUNC_ADD );
    GCM_FUNC( cellGcmSetBlendFunc, RGLGCM_ONE, RGLGCM_ZERO, RGLGCM_ONE, RGLGCM_ZERO );
    rglGcmSetClearColor(thisContext, 0 );

@@ -74,10 +74,10 @@ static inline GLuint rglPlatformGetBitsPerPixel (GLenum internalFormat)
  (thisContext->current) += 2;
 
 #define rglGcmSetWaitLabel(thisContext, index, value) \
- (thisContext->current)[0] = (((1) << (18)) | ((0x00000064))); \
+ (thisContext->current)[0] = (((1) << (18)) | ((CELL_GCM_NV406E_SEMAPHORE_OFFSET))); \
  (thisContext->current)[1] = 0x10 * index; \
  (thisContext->current) += 2; \
- (thisContext->current)[0] = (((1) << (18)) | ((0x00000068))); \
+ (thisContext->current)[0] = (((1) << (18)) | ((CELL_GCM_NV406E_SEMAPHORE_ACQUIRE))); \
  (thisContext->current)[1] = (value); \
  (thisContext->current) += 2;
 
@@ -298,6 +298,19 @@ static inline GLuint rglPlatformGetBitsPerPixel (GLenum internalFormat)
    rglGcmTransferData( dstId, dstOffset, size, id, 0, size, size, 1 ); \
    gmmFree( id )
 
+#define rglGcmSetUpdateFragmentProgramParameter(thisContext, offset, location) \
+ (thisContext->current)[0] = (((1) << (18)) | ((CELL_GCM_NV4097_SET_SHADER_PROGRAM))); \
+ (thisContext->current)[1] = ((location+1) | (offset)); \
+ (thisContext->current) += 2
+
+#define rglGcmSetBlendColor(thisContext, color, color2) \
+ (thisContext->current)[0] = (((1) << (18)) | ((CELL_GCM_NV4097_SET_BLEND_COLOR))); \
+ (thisContext->current)[1] = (color); \
+ (thisContext->current) += 2; \
+ (thisContext->current)[0] = (((1) << (18)) | ((CELL_GCM_NV4097_SET_BLEND_COLOR2))); \
+ (thisContext->current)[1] = (color2); \
+ (thisContext->current) += 2
+
 static inline void rglGcmSetFragmentProgramLoad(struct CellGcmContextData *thisContext, const CellCgbFragmentProgramConfiguration *conf, const uint32_t location)
 {
    uint32_t rawData = ((conf->offset)&0x1fffffff);
@@ -360,13 +373,14 @@ static void rglGcmSetDrawArraysSlow(struct CellGcmContextData *thisContext, uint
    count >>= 8;
 
    uint32_t loop, rest;
-   loop = count / (2047);
-   rest = count % (2047);
+   loop = count / CELL_GCM_MAX_METHOD_COUNT;
+   rest = count % CELL_GCM_MAX_METHOD_COUNT;
 
    (thisContext->current)[0] = (((3) << (18)) | CELL_GCM_NV4097_INVALIDATE_VERTEX_FILE | (0x40000000));
    (thisContext->current)[1] = 0;
    (thisContext->current)[2] = 0;
-   (thisContext->current)[3] = 0; ; (thisContext->current) += 4;
+   (thisContext->current)[3] = 0;
+   (thisContext->current) += 4;
 
    (thisContext->current)[0] = (((1) << (18)) | CELL_GCM_NV4097_SET_BEGIN_END);
    (thisContext->current)[1] = ((mode));

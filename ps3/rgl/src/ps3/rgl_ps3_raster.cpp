@@ -1680,7 +1680,7 @@ GLAPI void APIENTRY glDrawArrays (GLenum mode, GLint first, GLsizei count)
             if (rglGcmState_i.renderTarget.colorFormat == RGLGCM_ARGB8)
             {
                RGLGCM_CALC_COLOR_LE_ARGB8( &hwColor, blend->r, blend->g, blend->b, blend->a );
-               GCM_FUNC( cellGcmSetBlendColor, hwColor, hwColor );
+               rglGcmSetBlendColor(gCellGcmCurrentContext, hwColor, hwColor);
             }
 
             GCM_FUNC( cellGcmSetBlendEquation, (rglGcmEnum)LContext->BlendEquationRGB,
@@ -1851,8 +1851,9 @@ beginning:
       rglGcmSetInvalidateVertexCache(thisContext);
    }
 
-   GCM_FUNC( cellGcmSetUpdateFragmentProgramParameter, 
-         gmmIdToOffset( driver->fpLoadProgramId ) + driver->fpLoadProgramOffset );
+   rglGcmSetUpdateFragmentProgramParameter(gCellGcmCurrentContext,
+         gmmIdToOffset( driver->fpLoadProgramId ) + driver->fpLoadProgramOffset,
+         CELL_GCM_LOCATION_LOCAL);
 
    uint8_t gcmMode = 0;
 
@@ -2695,7 +2696,7 @@ void rglGcmFifoGlSetRenderTarget (const void *data)
       if (rglGcmState_i.renderTarget.colorFormat == RGLGCM_ARGB8)
       {
          RGLGCM_CALC_COLOR_LE_ARGB8( &hwColor, blend->r, blend->g, blend->b, blend->a );
-         GCM_FUNC( cellGcmSetBlendColor, hwColor, hwColor );
+         rglGcmSetBlendColor(gCellGcmCurrentContext, hwColor, hwColor);
       }
    }
 
