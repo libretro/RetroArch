@@ -590,7 +590,7 @@ void global_init_drivers(void)
    find_input_driver();
    init_video_input();
 
-   for(i = 0; i < MAX_PLAYERS; i++)
+   for (i = 0; i < MAX_PLAYERS; i++)
       if (driver.input->set_keybinds)
          driver.input->set_keybinds(driver.input_data, g_settings.input.device[i], i, 0,
                (1ULL << KEYBINDS_ACTION_SET_DEFAULT_BINDS));
@@ -613,6 +613,8 @@ void global_uninit_drivers(void)
 #ifdef HAVE_CAMERA
    if (driver.camera && driver.camera_data)
    {
+      if (g_extern.system.camera_callback.deinitialized)
+         g_extern.system.camera_callback.deinitialized();
       driver.camera->free(driver.camera_data);
       driver.camera_data = NULL;
    }
@@ -647,6 +649,9 @@ void init_camera(void)
       RARCH_ERR("Failed to initialize camera driver. Will continue without camera.\n");
       g_extern.camera_active = false;
    }
+
+   if (g_extern.system.camera_callback.initialized)
+      g_extern.system.camera_callback.initialized();
 }
 #endif
 
@@ -714,7 +719,11 @@ void init_drivers(void)
 void uninit_camera(void)
 {
    if (driver.camera_data && driver.camera)
+   {
+      if (g_extern.system.camera_callback.deinitialized)
+         g_extern.system.camera_callback.deinitialized();
       driver.camera->free(driver.camera_data);
+   }
 }
 #endif
 
