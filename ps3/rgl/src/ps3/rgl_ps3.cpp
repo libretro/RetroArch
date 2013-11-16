@@ -4321,16 +4321,6 @@ GLAPI void APIENTRY glTexParameteri( GLenum target, GLenum pname, GLint param )
       case GL_TEXTURE_COMPARE_FUNC_ARB:
          texture->compareFunc = param;
          break;
-      case GL_TEXTURE_GAMMA_REMAP_R_SCE:
-      case GL_TEXTURE_GAMMA_REMAP_G_SCE:
-      case GL_TEXTURE_GAMMA_REMAP_B_SCE:
-      case GL_TEXTURE_GAMMA_REMAP_A_SCE:
-         {
-            GLuint bit = 1 << ( pname - GL_TEXTURE_GAMMA_REMAP_R_SCE );
-            if ( param ) texture->gammaRemap |= bit;
-            else texture->gammaRemap &= ~bit;
-         }
-         break;
       default:
          rglSetError( GL_INVALID_ENUM );
          return;

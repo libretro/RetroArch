@@ -1689,14 +1689,6 @@ GLAPI void APIENTRY glDrawArrays (GLenum mode, GLint first, GLsizei count)
          }
       }
 
-#if 0
-      if ( RGL_UNLIKELY( needValidate & RGL_VALIDATE_SHADER_SRGB_REMAP ) )
-      {
-         GCM_FUNC( cellGcmSetFragmentProgramGammaEnable, LContext->ShaderSRGBRemap ? CELL_GCM_TRUE : CELL_GCM_FALSE); 
-         LContext->needValidate &= ~RGL_VALIDATE_SHADER_SRGB_REMAP;
-      }
-#endif
-
       LContext->needValidate = 0;
    }
 
@@ -2247,20 +2239,7 @@ source:		RGLGCM_SURFACE_SOURCE_TEXTURE,
    platformTexture->gcmMethods.address.wrapT = rglGcmMapWrapMode( texture->wrapT );
    platformTexture->gcmMethods.address.wrapR = rglGcmMapWrapMode( texture->wrapR );
    platformTexture->gcmMethods.address.unsignedRemap = CELL_GCM_TEXTURE_UNSIGNED_REMAP_NORMAL;
-
-#if 0
-   // now for gamma remap
-   GLuint gamma = 0;
-   GLuint remap = texture->gammaRemap;
-   gamma |= ( remap & RGLGCM_GAMMA_REMAP_RED_BIT ) 		? CELL_GCM_TEXTURE_GAMMA_R : 0;
-   gamma |= ( remap & RGLGCM_GAMMA_REMAP_GREEN_BIT )	? CELL_GCM_TEXTURE_GAMMA_G : 0;
-   gamma |= ( remap & RGLGCM_GAMMA_REMAP_BLUE_BIT ) 	? CELL_GCM_TEXTURE_GAMMA_B : 0;
-   gamma |= ( remap & RGLGCM_GAMMA_REMAP_ALPHA_BIT ) 	? CELL_GCM_TEXTURE_GAMMA_A : 0;
-
-   platformTexture->gcmMethods.address.gamma = gamma;
-#else
    platformTexture->gcmMethods.address.gamma = 0;
-#endif
 
    // set border colors
    RGLGCM_CALC_COLOR_LE_ARGB8(&(platformTexture->gcmMethods.borderColor), 
@@ -2787,13 +2766,7 @@ void rglGcmFifoGlSetRenderTarget (const void *data)
    grt->depthOffset = 0;
    grt->depthPitch = 64;
 
-   // Update rt's AA and Swizzling parameters with args
-
-   rglGcmSetAntiAliasingControl(thisContext,
-         CELL_GCM_FALSE, 
-         CELL_GCM_FALSE,
-         CELL_GCM_FALSE, 
-         0xFFFF);
+   // Update rt's Swizzling parameters with args
 
    grt->type = CELL_GCM_SURFACE_PITCH;
 
