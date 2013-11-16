@@ -194,9 +194,6 @@ struct settings
    struct
    {
       char driver[32];
-      uint64_t state;
-      bool (*cb_init)(void *data);
-      bool (*cb_callback)(void *data);
    } osk;
 #endif
 
@@ -510,6 +507,14 @@ struct global
       bool movie_start_playback;
       bool movie_end;
    } bsv;
+#endif
+
+#ifdef HAVE_OSK
+   struct
+   {
+      bool (*cb_init)(void *data);
+      bool (*cb_callback)(void *data);
+   } osk;
 #endif
 
    bool sram_load_disable;

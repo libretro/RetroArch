@@ -994,17 +994,17 @@ static int menu_iterate_func(void *data, unsigned action)
 
 #ifdef HAVE_OSK
    // process pending osk init callback
-   if (g_settings.osk.cb_init != NULL)
+   if (g_extern.osk.cb_init != NULL)
    {
-      if (g_settings.osk.cb_init(driver.osk_data))
-         g_settings.osk.cb_init = NULL;
+      if (g_extern.osk.cb_init(driver.osk_data))
+         g_extern.osk.cb_init = NULL;
    }
 
    // process pending osk callback
-   if (g_settings.osk.cb_callback != NULL)
+   if (g_extern.osk.cb_callback != NULL)
    {
-      if (g_settings.osk.cb_callback(driver.osk_data))
-         g_settings.osk.cb_callback = NULL;
+      if (g_extern.osk.cb_callback(driver.osk_data))
+         g_extern.osk.cb_callback = NULL;
    }
 #endif
 

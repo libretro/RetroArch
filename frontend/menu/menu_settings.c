@@ -1344,8 +1344,8 @@ int menu_set_settings(void *data, unsigned setting, unsigned action)
 #if defined(HAVE_RSOUND) && defined(HAVE_OSK)
          if (action == RGUI_ACTION_OK)
          {
-            g_settings.osk.cb_init = osk_callback_enter_rsound_init;
-            g_settings.osk.cb_callback = osk_callback_enter_rsound;
+            g_extern.osk.cb_init     = osk_callback_enter_rsound_init;
+            g_extern.osk.cb_callback = osk_callback_enter_rsound;
          }
 #endif
          break;
