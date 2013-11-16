@@ -43,7 +43,6 @@
 #include <cell/gcm.h>
 #include <cell/gcm/gcm_method_data.h>
 #include <cell/resc.h>
-using namespace cell::Gcm;
 
 static GLuint nvFenceCounter = 0;
 
