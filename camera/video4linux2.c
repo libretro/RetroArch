@@ -494,7 +494,7 @@ static bool v4l_poll(void *data, retro_camera_frame_raw_framebuffer_t frame_raw_
    if (preprocess_image(data))
    {
       if (frame_raw_cb != NULL)
-         frame_raw_cb(buffer_output, v4l->width, v4l->height, v4l->width);
+         frame_raw_cb(buffer_output, v4l->width, v4l->height, v4l->width * 4);
       return true;
    }
    else
