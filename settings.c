@@ -755,6 +755,10 @@ bool config_load_file(const char *path)
    CONFIG_GET_FLOAT(audio.rate_control_delta, "audio_rate_control_delta");
    CONFIG_GET_FLOAT(audio.volume, "audio_volume");
 
+#ifdef HAVE_CAMERA
+   CONFIG_GET_STRING(camera.device, "camera_device");
+#endif
+
    CONFIG_GET_STRING(video.driver, "video_driver");
    CONFIG_GET_STRING(video.gl_context, "video_gl_context");
    CONFIG_GET_STRING(audio.driver, "audio_driver");
@@ -1112,10 +1116,12 @@ bool config_save_file(const char *path)
    config_set_string(conf, "screenshot_directory", *g_settings.screenshot_directory ? g_settings.screenshot_directory : "default");
    config_set_int(conf, "aspect_ratio_index", g_settings.video.aspect_ratio_idx);
    config_set_string(conf, "audio_device", g_settings.audio.device);
+#ifdef HAVE_CAMERA
+   config_set_string(conf, "camera_device", g_settings.camera.device);
+#endif
    config_set_bool(conf, "audio_rate_control", g_settings.audio.rate_control);
    config_set_float(conf, "audio_rate_control_delta", g_settings.audio.rate_control_delta);
    config_set_string(conf, "audio_driver", g_settings.audio.driver);
-   config_set_string(conf, "audio_device", g_settings.audio.device);
    config_set_int(conf, "audio_out_rate", g_settings.audio.out_rate);
 
    config_set_string(conf, "system_directory", *g_settings.system_directory ? g_settings.system_directory : "default");
