@@ -135,7 +135,7 @@ static void process_image(void *data, const void *p)
 
    for (y = 0; y < v4l->height; y++)
       for (x = 0; x < v4l->width; x += 2)
-         YUV422_to_RGB((uint32_t *)(buffer_dst + (y * v4l->width + x) * 3),
+         YUV422_to_RGB((uint32_t *)(buffer_dst + (y * v4l->width + x) * 4),
                buffer_yuv + (y * v4l->width + x) * 2);
 }
 
