@@ -6,7 +6,7 @@
     <uses-feature android:name="android.hardware.touchscreen" android:required="false"/>
     <uses-sdk
         android:minSdkVersion="9"
-        android:targetSdkVersion="18" />
+        android:targetSdkVersion="19" />
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
     
@@ -15,10 +15,8 @@
         android:icon="@drawable/ic_launcher"
         android:label="@string/app_name"
         android:hasCode="true">
-        <activity android:name="com.retroarch.browser.CoreSelection"/>
-        <activity android:name="com.retroarch.browser.HistorySelection"/>
         <activity android:name="com.retroarch.browser.DisplayRefreshRateTest"/>
-        <activity android:name="com.retroarch.browser.MainMenuActivity" android:exported="true">
+        <activity android:name="com.retroarch.browser.mainmenu.MainMenuActivity" android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -28,15 +26,7 @@
         <activity android:name="com.retroarch.browser.FileWrapper"/>
         <activity android:name="com.retroarch.browser.RetroTVMode"/>
 
-        <activity android:name="com.retroarch.browser.diractivities.DirectoryActivity"/>
-        <activity android:name="com.retroarch.browser.diractivities.ROMActivity"/>
-        <activity android:name="com.retroarch.browser.diractivities.ROMDirActivity"/>
-        <activity android:name="com.retroarch.browser.diractivities.ShaderActivity"/>
-        <activity android:name="com.retroarch.browser.diractivities.OverlayActivity"/>
-        <activity android:name="com.retroarch.browser.diractivities.SRMDirActivity"/>
-        <activity android:name="com.retroarch.browser.diractivities.StateDirActivity"/>
-        <activity android:name="com.retroarch.browser.diractivities.SystemDirActivity"/>
-        <activity android:name="com.retroarch.browser.preferences.fragments.PreferenceActivity" android:theme="@style/Theme.AppCompat" />
+        <activity android:name="com.retroarch.browser.preferences.PreferenceActivity" android:theme="@style/Theme.AppCompat" />
         <activity android:name="com.retroarch.browser.coremanager.CoreManagerActivity" android:theme="@style/Theme.AppCompat"/>
 
         <activity android:name="com.retroarch.browser.RetroActivity" android:configChanges="mcc|mnc|locale|touchscreen|keyboard|keyboardHidden|navigation|orientation|screenLayout|uiMode|screenSize|smallestScreenSize|fontScale" android:theme="@android:style/Theme.NoTitleBar.Fullscreen" >

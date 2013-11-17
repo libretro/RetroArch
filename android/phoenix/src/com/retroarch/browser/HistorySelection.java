@@ -7,45 +7,62 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 
 import com.retroarch.R;
+import com.retroarch.browser.mainmenu.MainMenuActivity;
 import com.retroarch.browser.preferences.util.UserPreferences;
 
-import android.app.ListActivity;
 import android.content.Intent;
 import android.os.Bundle;
 import android.provider.Settings;
+import android.support.v4.app.DialogFragment;
+import android.support.v4.app.FragmentActivity;
+import android.support.v4.app.ListFragment;
+import android.view.LayoutInflater;
 import android.view.View;
+import android.view.ViewGroup;
+import android.widget.AdapterView;
+import android.widget.AdapterView.OnItemClickListener;
 import android.widget.ListView;
 import android.widget.Toast;
 
 /**
- * Represents the {@link ListActivity} responsible
+ * Represents the {@link ListFragment} responsible
  * for displaying the list of previously played games.
  */
-public final class HistorySelection extends ListActivity {
-	
+public final class HistorySelection extends DialogFragment
+{
+	private FragmentActivity ctx;
 	private IconAdapter<HistoryWrapper> adapter;
 
 	@Override
-	protected void onCreate(Bundle savedInstanceState) {
+	public void onCreate(Bundle savedInstanceState)
+	{
 		super.onCreate(savedInstanceState);
 
-		// Setup the layout.
-		setContentView(R.layout.line_list);
+		// Cache the context
+		this.ctx = getActivity();
+	}
 
-		// Setup the list
-		adapter = new IconAdapter<HistoryWrapper>(this, R.layout.line_list_item);
-		setListAdapter(adapter);
+	@Override
+	public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState)
+	{
+		ListView rootView = (ListView) inflater.inflate(R.layout.line_list, container, false);
+		rootView.setOnItemClickListener(onItemClickListener);
 
-		// Set activity title.
-		setTitle(R.string.recently_played_games);
+		// Set the title for this dialog.
+		getDialog().setTitle(R.string.load_game_history);
 
-		File history = new File(getApplicationInfo().dataDir, "retroarch-history.txt");
+		// Setup the list adapter
+		adapter = new IconAdapter<HistoryWrapper>(ctx, R.layout.line_list_item);
 
-		try {
+		// Populate the adapter
+		File history = new File(ctx.getApplicationInfo().dataDir, "retroarch-history.txt");
+		try
+		{
 			BufferedReader br = new BufferedReader(new InputStreamReader(
 					new FileInputStream(history)));
 
-			for (;;) {
+			for (;;)
+			{
 				String game = br.readLine();
 				String core = br.readLine();
 				String name = br.readLine();
@@ -55,30 +72,42 @@ public final class HistorySelection extends ListActivity {
 				adapter.add(new HistoryWrapper(game, core, name));
 			}
 			br.close();
-		} catch (IOException ex) {
 		}
+		catch (IOException ignored)
+		{
+		}
+
+		// Set the adapter
+		rootView.setAdapter(adapter);
+		return rootView;
 	}
 
-	@Override
-	public void onListItemClick(ListView listView, View view, int position, long id) {
-		final HistoryWrapper item = adapter.getItem(position);
-		final String gamePath = item.getGamePath();
-		final String corePath = item.getCorePath();
-		
-		MainMenuActivity.getInstance().setModule(corePath, item.getCoreName());
-
-		String current_ime = Settings.Secure.getString(getContentResolver(),
-				Settings.Secure.DEFAULT_INPUT_METHOD);
-
-		UserPreferences.updateConfigFile(this);
-
-		Toast.makeText(this, String.format(getString(R.string.loading_gamepath), gamePath), Toast.LENGTH_SHORT).show();
-		Intent myIntent = new Intent(this, RetroActivity.class);
-		myIntent.putExtra("ROM", gamePath);
-		myIntent.putExtra("LIBRETRO", corePath);
-		myIntent.putExtra("CONFIGFILE", UserPreferences.getDefaultConfigPath(this));
-		myIntent.putExtra("IME", current_ime);
-		startActivity(myIntent);
-		finish();
-	}
+	private final OnItemClickListener onItemClickListener = new OnItemClickListener()
+	{
+		@Override
+		public void onItemClick(AdapterView<?> listView, View view, int position, long id)
+		{
+			final HistoryWrapper item = adapter.getItem(position);
+			final String gamePath = item.getGamePath();
+			final String corePath = item.getCorePath();
+	
+			// Set the core the selected game uses.
+			((MainMenuActivity)getActivity()).setModule(corePath, item.getCoreName());
+	
+			// Update the config accordingly.
+			UserPreferences.updateConfigFile(ctx);
+	
+			// Launch the game.
+			String current_ime = Settings.Secure.getString(ctx.getContentResolver(),
+					Settings.Secure.DEFAULT_INPUT_METHOD);
+			Toast.makeText(ctx, String.format(getString(R.string.loading_gamepath), gamePath), Toast.LENGTH_SHORT).show();
+			Intent myIntent = new Intent(ctx, RetroActivity.class);
+			myIntent.putExtra("ROM", gamePath);
+			myIntent.putExtra("LIBRETRO", corePath);
+			myIntent.putExtra("CONFIGFILE", UserPreferences.getDefaultConfigPath(ctx));
+			myIntent.putExtra("IME", current_ime);
+			startActivity(myIntent);
+			dismiss();
+		}
+	};
 }
