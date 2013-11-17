@@ -30,6 +30,7 @@ public final class RetroTVMode extends Activity
 			myIntent.putExtra("CONFIGFILE", UserPreferences.getDefaultConfigPath(this));
 			myIntent.putExtra("IME", current_ime);
 			startActivity(myIntent);
+			finish();
 		}
 	}
 
