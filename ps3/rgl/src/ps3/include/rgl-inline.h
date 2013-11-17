@@ -76,6 +76,10 @@ static inline void rglGcmSetVertexProgramParameterBlock(struct CellGcmContextDat
  memcpy(&thisContext->current[1], v, sizeof(float)*4); \
  thisContext->current += 5;
 
+#define rglGcmSetJumpCommand(thisContext, offset) \
+ thisContext->current[0] = ((offset) | (0x20000000)); \
+ thisContext->current += 1
+
 #define rglGcmSetVertexDataArray(thisContext, index, frequency, stride, size, type, location, offset) \
  (thisContext->current)[0] = (((1) << (18)) | (CELL_GCM_NV4097_SET_VERTEX_DATA_ARRAY_FORMAT + ((index)) * 4)); \
  (thisContext->current)[1] = ((((frequency)) << 16) | (((stride)) << 8) | (((size)) << 4) | ((type))); \
@@ -314,10 +318,12 @@ static inline void rglGcmSetVertexProgramParameterBlock(struct CellGcmContextDat
 
 #define rglGcmFifoFlush(fifo, offsetInBytes) \
  cellGcmAddressToOffset( fifo->ctx.current, ( uint32_t * )&offsetInBytes ); \
- cellGcmFlush(); \
+ rglGcmFlush(gCellGcmCurrentContext); \
  fifo->dmaControl->Put = offsetInBytes; \
  fifo->lastPutWritten = fifo->ctx.current; \
  fifo->lastSWReferenceFlushed = fifo->lastSWReferenceWritten;
+
+#define rglGcmFlush(thisContext) cellGcmFlushUnsafe(thisContext) 
 
 #define rglGcmSetSurface(thisContext, surface, origin, pixelCenter, log2Width, log2Height) \
  (thisContext->current)[0] = (((1) << (18)) | CELL_GCM_NV4097_SET_CONTEXT_DMA_COLOR_A); \
@@ -836,7 +842,7 @@ static inline void rglGcmUtilWaitForIdle (void)
    // make sure the entire pipe in clear not just the front end 
    // Utility function that does GPU 'finish'.
    rglGcmSetWriteBackEndLabel(thisContext, RGLGCM_UTIL_LABEL_INDEX, rglGcmState_i.labelValue );
-   cellGcmFlush();
+   rglGcmFlush(gCellGcmCurrentContext);
 
    while( *(cellGcmGetLabelAddress( RGLGCM_UTIL_LABEL_INDEX)) != rglGcmState_i.labelValue);
 

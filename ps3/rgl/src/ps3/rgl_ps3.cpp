@@ -1313,7 +1313,7 @@ static void gmmAllocSweep(void *data)
       cachedLockValue = 1;
       rglGcmSetWriteBackEndLabel(thisContext, GMM_PPU_WAIT_INDEX, 0);
 
-      cellGcmFlush(thisContext);
+      rglGcmFlush(thisContext);
    }
 }
 
@@ -1877,13 +1877,12 @@ int32_t rglOutOfSpaceCallback (void *data, uint32_t spaceInWords)
    struct CellGcmContextData *fifoContext = (struct CellGcmContextData*)data;
    rglGcmFifo * fifo = &rglGcmState_i.fifo;
 
-   // make sure that the space requested will actually fit in to
-   // a single fifo block! 
-
-   // auto flush
-   cellGcmFlushUnsafeInline((CellGcmContextData*)fifo);
+   rglGcmFlush((CellGcmContextData*)fifo);
 
    uint32_t *nextbegin, *nextend, nextbeginoffset, nextendoffset;
+
+   // make sure that the space requested will actually fit in to
+   // a single fifo block! 
 
    fifoUpdateGetLastRead(fifo);
 
@@ -1898,8 +1897,10 @@ int32_t rglOutOfSpaceCallback (void *data, uint32_t spaceInWords)
    cellGcmAddressToOffset(nextbegin, &nextbeginoffset);
    cellGcmAddressToOffset(nextend, &nextendoffset);
 
+   struct CellGcmContextData *thisContext = (CellGcmContextData*)fifo;
+
    //use this version so as not to trigger another callback
-   cellGcmSetJumpCommandUnsafeInline((CellGcmContextData*)fifo, nextbeginoffset);
+   rglGcmSetJumpCommand(thisContext, nextbeginoffset);
 
    //set up new context
    fifo->ctx.begin = nextbegin;
