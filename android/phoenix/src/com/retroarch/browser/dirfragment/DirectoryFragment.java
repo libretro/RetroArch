@@ -105,24 +105,51 @@ public final class DirectoryFragment extends DialogFragment
 	
 	private String startDirectory;
 	private String pathSettingKey;
-	
+	private boolean isDirectoryTarget;
+	private OnDirectoryFragmentClosedListener onClosedListener;
+
+	/**
+	 * Sets the starting directory for this DirectoryFragment
+	 * when it is shown to the user.
+	 * 
+	 * @param path the initial directory to show to the user
+	 *             when this DirectoryFragment is shown.
+	 */
 	public void setStartDirectory(String path)
 	{
 		startDirectory = path;
 	}
-	
+
+	/**
+	 * Sets the key to save the selected item in the DialogFragment
+	 * into the application SharedPreferences at.
+	 * 
+	 * @param key the key to save the selected item's path to in
+	 *            the application's SharedPreferences.
+	 */
 	public void setPathSettingKey(String key)
 	{
 		pathSettingKey = key;
 	}
-	
-	private boolean isDirectoryTarget;
+
+	/**
+	 * Sets whether or not we are browsing for a specific
+	 * directory or not. If enabled, it will allow the user
+	 * to select a specific directory, rather than a file.
+	 * 
+	 * @param enable Whether or not to enable this.
+	 */
 	public void setIsDirectoryTarget(boolean enable)
 	{
 		isDirectoryTarget = enable;
 	}
 
-	private OnDirectoryFragmentClosedListener onClosedListener;
+	/**
+	 * Sets the listener for an action to perform upon the
+	 * closing of this DirectoryFragment.
+	 * 
+	 * @param onClosedListener the OnDirectoryFragmentClosedListener to set.
+	 */
 	public void setOnDirectoryFragmentClosedListener(OnDirectoryFragmentClosedListener onClosedListener)
 	{
 		this.onClosedListener = onClosedListener;
