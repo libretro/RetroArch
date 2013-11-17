@@ -23,6 +23,43 @@ static inline GLuint rglPlatformGetBitsPerPixel (GLenum internalFormat)
    }
 }
 
+static inline void rglGcmSetVertexProgramParameterBlock(struct CellGcmContextData *thisContext, uint32_t baseConst,
+      uint32_t constCount, const float * __restrict value)
+{
+   uint32_t blockCount, blockRemain, i;
+
+   blockCount  = (constCount * 4) >> 5;
+   blockRemain = (constCount * 4) & 0x1f;
+
+   for (i=0; i < blockCount; i++)
+   {
+      uint32_t loadAt = baseConst + i * 8;
+
+      thisContext->current[0] = (((33) << (18)) | ((0x00001efc)));
+      thisContext->current[1] = (loadAt);
+
+      memcpy(&thisContext->current[2], value, 16 * sizeof(float));
+      memcpy(&thisContext->current[18], &value[16], 16 * sizeof(float));
+      thisContext->current += 34;
+      value += 32;
+   }
+
+   if(blockRemain)
+   {
+      thisContext->current[0] = (((blockRemain+1) << (18)) | ((0x00001efc)));
+      thisContext->current[1] = (baseConst + blockCount * 8);
+      thisContext->current += 2;
+
+      blockRemain >>= 2;
+      for (i=0; i < blockRemain; ++i)
+      {
+         memcpy(thisContext->current, value, 4 * sizeof(float));
+         thisContext->current += 4;
+         value += 4;
+      }
+   }
+}
+
 #define SUBPIXEL_BITS 12
 #define SUBPIXEL_ADJUST (0.5/(1<<SUBPIXEL_BITS))
 
@@ -149,6 +186,10 @@ static inline GLuint rglPlatformGetBitsPerPixel (GLenum internalFormat)
  (thisContext->current)[0] = (((1) << (18)) | (CELL_GCM_NV4097_SET_TEXTURE_CONTROL1 + ((index)) * 32)); \
  (thisContext->current)[1] = (control1); \
  (thisContext->current) += 2;
+
+#define rglGcmSetJumpCommand(thisContext, offset) \
+ thisContext->current[0] = ((offset) | (0x20000000)); \
+ thisContext->current += 1
 
 #define rglGcmSetBlendEnable(thisContext, enable) \
 { \

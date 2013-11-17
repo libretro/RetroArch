@@ -562,7 +562,7 @@ void rglCreatePushBuffer(void *data)
                      memset( rglGcmCurrent, 0, 4*( 4*registerCount + 3 ) );
                      CellGcmContextData gcmContext;
                      gcmContext.current = (uint32_t*)rglGcmCurrent;
-                     cellGcmSetVertexProgramParameterBlockUnsafeInline(&gcmContext, parameterResource->resource, registerCount, ( float* )rglGcmCurrent );
+                     rglGcmSetVertexProgramParameterBlock(&gcmContext, parameterResource->resource, registerCount, ( float* )rglGcmCurrent );
                      rglGcmCurrent = (typeof(rglGcmCurrent))gcmContext.current;
 
                      rtParameter->pushBufferPointer = rglGcmCurrent - 4 * registerCount;
@@ -579,7 +579,7 @@ void rglCreatePushBuffer(void *data)
                            memset( rglGcmCurrent, 0, 4*( 4*registerStride + 3 ) );
                            CellGcmContextData gcmContext;
                            gcmContext.current = (uint32_t*)rglGcmCurrent;
-                           cellGcmSetVertexProgramParameterBlockUnsafeInline(&gcmContext, program->resources[resourceIndex], registerStride, ( float* )rglGcmCurrent );
+                           rglGcmSetVertexProgramParameterBlock(&gcmContext, program->resources[resourceIndex], registerStride, ( float* )rglGcmCurrent );
                            rglGcmCurrent = (typeof(rglGcmCurrent))gcmContext.current;
                            *( programPushBuffer++ ) = ( unsigned int* )( rglGcmCurrent - 4 * registerStride );
                         }
@@ -1379,7 +1379,6 @@ GLAPI void APIENTRY glDrawArrays (GLenum mode, GLint first, GLsizei count)
                rglGcmSetTextureBorder(thisContext, unit, texture, 0x1);
 
                CellGcmContextData *gcm_context = (CellGcmContextData*)&rglGcmState_i.fifo;
-               cellGcmReserveMethodSizeInline(gcm_context, 11);
                uint32_t *current = gcm_context->current;
                current[0] = CELL_GCM_METHOD_HEADER_TEXTURE_OFFSET(unit, 8);
                current[1] = CELL_GCM_METHOD_DATA_TEXTURE_OFFSET(platformTexture->gcmTexture.offset);
@@ -1517,7 +1516,7 @@ GLAPI void APIENTRY glDrawArrays (GLenum mode, GLint first, GLsizei count)
                case CG_FIXED2:
                case CG_FIXED3:
                case CG_FIXED4:
-                  GCM_FUNC( cellGcmSetVertexProgramParameterBlock, parameterResource->resource, 1, value ); // GCM_PORT_TESTED [Cedric]
+                  rglGcmSetVertexProgramParameterBlock(gCellGcmCurrentContext, parameterResource->resource, 1, value );
                   break;
                case CG_FLOAT4x4:
                case CG_HALF4x4:
@@ -1543,7 +1542,7 @@ GLAPI void APIENTRY glDrawArrays (GLenum mode, GLint first, GLsizei count)
                      v2[13] = value[7];
                      v2[14] = value[11];
                      v2[15] = value[15];
-                     GCM_FUNC( cellGcmSetVertexProgramParameterBlock, parameterResource->resource, 4, v2 ); // GCM_PORT_TESTED [Cedric]
+                     rglGcmSetVertexProgramParameterBlock(gCellGcmCurrentContext, parameterResource->resource, 4, v2 );
                   }
                   break;
                case CG_FLOAT3x3:
@@ -1566,7 +1565,7 @@ GLAPI void APIENTRY glDrawArrays (GLenum mode, GLint first, GLsizei count)
                      v2[9] = value[5];
                      v2[10] = value[8];
                      v2[11] = 0;
-                     GCM_FUNC( cellGcmSetVertexProgramParameterBlock, parameterResource->resource, 3, v2 );
+                     rglGcmSetVertexProgramParameterBlock(gCellGcmCurrentContext, parameterResource->resource, 3, v2 );
                   }
                   break;
             }
