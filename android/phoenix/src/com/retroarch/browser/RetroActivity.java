@@ -10,7 +10,9 @@ import android.os.Build;
 
 public final class RetroActivity extends NativeActivity
 {
-	Camera mCamera;
+	private Camera mCamera;
+	private long lastTimestamp = 0;
+	private SurfaceTexture texture;
 	
 	public void onCameraStart()
 	{
@@ -27,6 +29,29 @@ public final class RetroActivity extends NativeActivity
 		mCamera = Camera.open();
 	}
 	
+	@SuppressLint("NewApi")
+	public boolean onCameraPoll()
+	{
+		boolean ret;
+		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.ICE_CREAM_SANDWICH)
+		{
+			long newTimestamp = texture.getTimestamp();
+			if (newTimestamp != lastTimestamp)
+			{
+				lastTimestamp = newTimestamp;
+				ret = true;
+			}
+			else
+			{
+				ret = false;
+			}
+		}
+		else
+			ret = true;
+		
+		return ret;
+	}
+	
 	public void onCameraFree()
 	{
 		mCamera.release();
@@ -37,7 +62,10 @@ public final class RetroActivity extends NativeActivity
 	public void onCameraSetTexture(int gl_texid) throws IOException
 	{
 		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB)
-			mCamera.setPreviewTexture(new SurfaceTexture(gl_texid));
+		{
+			texture = new SurfaceTexture(gl_texid);
+			mCamera.setPreviewTexture(texture);
+		}
 		else
 			mCamera.setPreviewDisplay(null);
 	}
