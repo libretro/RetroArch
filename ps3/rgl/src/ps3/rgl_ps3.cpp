@@ -1587,15 +1587,13 @@ GLboolean rglGcmInitFromRM( rglGcmResource *rmResource )
    rglGcmFifoFinish(ref, offset_bytes);
 
    // Set the GPU to a known state
-
    // initialize the default OpenGL state
    rglGcmSetBlendColor(gCellGcmCurrentContext, 0, 0);
-   GCM_FUNC( cellGcmSetBlendEquation, RGLGCM_FUNC_ADD, RGLGCM_FUNC_ADD );
-   GCM_FUNC( cellGcmSetBlendFunc, RGLGCM_ONE, RGLGCM_ZERO, RGLGCM_ONE, RGLGCM_ZERO );
+   rglGcmSetBlendEquation(gCellGcmCurrentContext, RGLGCM_FUNC_ADD, RGLGCM_FUNC_ADD );
+   rglGcmSetBlendFunc(gCellGcmCurrentContext, RGLGCM_ONE, RGLGCM_ZERO, RGLGCM_ONE, RGLGCM_ZERO );
    rglGcmSetClearColor(thisContext, 0 );
-   GCM_FUNC( cellGcmSetBlendEnable, RGLGCM_FALSE );
-   GCM_FUNC( cellGcmSetBlendEnableMrt, RGLGCM_FALSE, RGLGCM_FALSE, RGLGCM_FALSE );
-   GCM_FUNC( cellGcmSetFragmentProgramGammaEnable, RGLGCM_FALSE );
+   rglGcmSetBlendEnable(gCellGcmCurrentContext, RGLGCM_FALSE );
+   rglGcmSetBlendEnableMrt(gCellGcmCurrentContext, RGLGCM_FALSE, RGLGCM_FALSE, RGLGCM_FALSE );
 
    for ( i = 0; i < RGLGCM_ATTRIB_COUNT; i++ )
    {

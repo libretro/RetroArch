@@ -150,6 +150,38 @@ static inline GLuint rglPlatformGetBitsPerPixel (GLenum internalFormat)
  (thisContext->current)[1] = (control1); \
  (thisContext->current) += 2;
 
+#define rglGcmSetBlendEnable(thisContext, enable) \
+{ \
+ bool continue_func = true; \
+ if(thisContext->current + (2) > thisContext->end) \
+ { \
+   if((*thisContext->callback)(thisContext, (2)) != 0) \
+    continue_func = false; \
+ } \
+ if (continue_func) \
+ { \
+    (thisContext->current)[0] = (((1) << (18)) | ((0x00000310))); \
+    (thisContext->current)[1] = (enable); \
+    (thisContext->current) += 2; \
+ } \
+}
+
+#define rglGcmSetBlendEnableMrt(thisContext, mrt1, mrt2, mrt3) \
+ (thisContext->current)[0] = (((1) << (18)) | ((0x0000036c))); \
+ (thisContext->current)[1] = (((mrt1) << 1)|((mrt2) << 2)|((mrt3) << 3)); \
+ (thisContext->current) += 2
+
+#define rglGcmSetBlendEquation(thisContext, color, alpha) \
+ (thisContext->current)[0] = (((1) << (18)) | ((0x00000320))); \
+ (thisContext->current)[1] = (((color)) | (((alpha)) << 16)); \
+ (thisContext->current) += 2
+
+#define rglGcmSetBlendFunc(thisContext, sfcolor, dfcolor, sfalpha, dfalpha) \
+ (thisContext->current)[0] = (((2) << (18)) | ((0x00000314))); \
+ (thisContext->current)[1] = (((sfcolor)) | (((sfalpha)) << 16)); \
+ (thisContext->current)[2] = (((dfcolor)) | (((dfalpha)) << 16)); \
+ (thisContext->current) += 3
+
 #define rglGcmSetUserClipPlaneControl(thisContext, plane0, plane1, plane2, plane3, plane4, plane5) \
  (thisContext->current)[0] = (((1) << (18)) | CELL_GCM_NV4097_SET_USER_CLIP_PLANE_CONTROL); \
  (thisContext->current)[1] = ((plane0) | ((plane1) << 4) | ((plane2) << 8) | ((plane3) << 12) | ((plane4) << 16) | ((plane5) << 20)); \

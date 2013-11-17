@@ -1667,7 +1667,7 @@ GLAPI void APIENTRY glDrawArrays (GLenum mode, GLint first, GLsizei count)
       {
          if ((LContext->Blending))
          {
-            GCM_FUNC( cellGcmSetBlendEnable, LContext->Blending );
+            rglGcmSetBlendEnable(gCellGcmCurrentContext, LContext->Blending );
 
             rglGcmBlendState *blend = &rglGcmState_i.state.blend;
             GLuint hwColor;
@@ -1683,9 +1683,9 @@ GLAPI void APIENTRY glDrawArrays (GLenum mode, GLint first, GLsizei count)
                rglGcmSetBlendColor(gCellGcmCurrentContext, hwColor, hwColor);
             }
 
-            GCM_FUNC( cellGcmSetBlendEquation, (rglGcmEnum)LContext->BlendEquationRGB,
-                  (rglGcmEnum)LContext->BlendEquationAlpha );
-            GCM_FUNC( cellGcmSetBlendFunc, (rglGcmEnum)LContext->BlendFactorSrcRGB,(rglGcmEnum)LContext->BlendFactorDestRGB,(rglGcmEnum)LContext->BlendFactorSrcAlpha,(rglGcmEnum)LContext->BlendFactorDestAlpha);
+            rglGcmSetBlendEquation(gCellGcmCurrentContext, LContext->BlendEquationRGB, LContext->BlendEquationAlpha);
+            rglGcmSetBlendFunc(gCellGcmCurrentContext, LContext->BlendFactorSrcRGB, LContext->BlendFactorDestRGB,
+                  LContext->BlendFactorSrcAlpha, LContext->BlendFactorDestAlpha);
          }
       }
 
