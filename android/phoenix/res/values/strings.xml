@@ -22,7 +22,7 @@
     <string name="about">About</string>
 
     <!-- Core Selection Class -->
-    <string name="select_libretro_core">Select Libretro core</string>
+    <string name="select_libretro_core">Select a libretro core</string>
 
     <!-- Core Manager -->
     <string name="installed_cores">Installed Cores</string>
