@@ -111,7 +111,8 @@ typedef struct GmmAllocator
 uint32_t gmmDestroy(void);
 char *gmmIdToAddress(const uint32_t id);
 uint32_t gmmFree (const uint32_t freeId);
-uint32_t gmmAlloc(const uint8_t isTile, const uint32_t size);
+uint32_t gmmAlloc(const uint32_t size);
+uint32_t gmmAllocTiled(const uint32_t size);
 
 extern GmmAllocator         *pGmmLocalAllocator;
 

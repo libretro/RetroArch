@@ -1317,28 +1317,6 @@ static void gmmAllocSweep(void *data)
    }
 }
 
-static uint32_t gmmInternalAlloc(
-      GmmAllocator *pAllocator,
-      const uint8_t isTile,
-      const uint32_t size
-      )
-{
-   uint32_t        retId;
-
-   if (isTile)
-   {
-      GmmTileBlock    *pBlock = gmmFindFreeTileBlock(pAllocator, size); 
-      retId = (uint32_t)gmmAllocTileBlock(pAllocator, size, pBlock);
-   }
-   else
-      retId = (uint32_t)gmmAllocBlock(pAllocator, size);
-
-   if (retId == 0)
-      return GMM_ERROR;
-
-   return retId;
-}
-
 static void gmmRemoveFree(
       GmmAllocator *pAllocator,
       GmmBlock *pBlock,
@@ -1415,47 +1393,43 @@ static uint32_t gmmFindFreeBlock(
    return retId;
 }
 
-uint32_t gmmAlloc(const uint8_t isTile, const uint32_t size)
+uint32_t gmmAlloc(const uint32_t size)
 {
-   GmmAllocator    *pAllocator;
-   uint32_t        retId;
-   uint32_t        newSize;
-
-   if (size == 0)
-      return GMM_ERROR;
-
-   pAllocator =  pGmmLocalAllocator;
-
-   if (!isTile)
-   {
-      newSize = PAD(size, GMM_ALIGNMENT);
-
-      retId = gmmFindFreeBlock(pAllocator, newSize);
-   }
-   else
-   {
-      newSize = PAD(size, GMM_TILE_ALIGNMENT);
-      retId = GMM_ERROR;
-   }
+   GmmAllocator    *pAllocator =  pGmmLocalAllocator;
+   uint32_t        newSize = PAD(size, GMM_ALIGNMENT);
+   uint32_t        retId = gmmFindFreeBlock(pAllocator, newSize);
 
    if (retId == GMM_ERROR)
    {
-      retId = gmmInternalAlloc(pAllocator,
-            isTile,
-            newSize);
+      retId = (uint32_t)gmmAllocBlock(pAllocator, newSize);
 
       if (retId == GMM_ERROR)
       {
          gmmAllocSweep((CellGcmContextData*)&rglGcmState_i.fifo);
+         retId = (uint32_t)gmmAllocBlock(pAllocator, newSize);
 
-         retId = gmmInternalAlloc(pAllocator,
-               isTile,
-               newSize);
-
-         if (!isTile &&
-               retId == GMM_ERROR)
+         if (retId == GMM_ERROR)
             retId = gmmFindFreeBlock(pAllocator, newSize);
       }
+   }
+
+   return retId;
+}
+
+uint32_t gmmAllocTiled(const uint32_t size)
+{
+   GmmAllocator    *pAllocator =  pGmmLocalAllocator;
+   uint32_t        newSize = PAD(size, GMM_TILE_ALIGNMENT);
+   uint32_t        retId = GMM_ERROR;
+   GmmTileBlock    *pBlock = gmmFindFreeTileBlock(pAllocator, newSize); 
+
+   retId = (uint32_t)gmmAllocTileBlock(pAllocator, newSize, pBlock);
+
+   if (retId == GMM_ERROR)
+   {
+      gmmAllocSweep((CellGcmContextData*)&rglGcmState_i.fifo);
+      pBlock = gmmFindFreeTileBlock(pAllocator, newSize);
+      retId = (uint32_t)gmmAllocTileBlock(pAllocator, newSize, pBlock);
    }
 
    return retId;
@@ -2227,7 +2201,7 @@ GLuint rglGcmAllocCreateRegion(
 {
    uint32_t id;
 
-   if ((id = gmmAlloc(1, size)) != GMM_ERROR)
+   if ((id = gmmAllocTiled(size)) != GMM_ERROR)
    {
       if ( rglGcmTryResizeTileRegion( (GLuint)gmmIdToOffset(id), gmmGetBlockSize(id), data ) )
       {
@@ -2510,8 +2484,8 @@ static void rescInit( const RGLdeviceParameters* params, rglGcmDevice *gcmDevice
    // allocate space for vertex array and fragment shader for drawing the rescaling texture-mapped quad
    int32_t colorBuffersSize, vertexArraySize, fragmentShaderSize;
    cellRescGetBufferSize( &colorBuffersSize, &vertexArraySize, &fragmentShaderSize );
-   gcmDevice->RescVertexArrayId    = gmmAlloc(0, vertexArraySize);
-   gcmDevice->RescFragmentShaderId = gmmAlloc(0, fragmentShaderSize);
+   gcmDevice->RescVertexArrayId    = gmmAlloc(vertexArraySize);
+   gcmDevice->RescFragmentShaderId = gmmAlloc(fragmentShaderSize);
 
 
    // tell resc how to access the destination (scanout) buffer
@@ -2528,7 +2502,7 @@ static void rescInit( const RGLdeviceParameters* params, rglGcmDevice *gcmDevice
    {
       const unsigned int tableLength = 32; // this was based on the guidelines in the resc reference guide
       unsigned int tableSize = sizeof(uint16_t) * 4 * tableLength; // 2 bytes per FLOAT16 * 4 values per entry * length of table
-      void *interlaceTable = gmmIdToAddress(gmmAlloc(0, tableSize));
+      void *interlaceTable = gmmIdToAddress(gmmAlloc(tableSize));
       int32_t errorCode = cellRescCreateInterlaceTable(interlaceTable,params->renderHeight,CELL_RESC_ELEMENT_HALF,tableLength);
       (void)errorCode;
    }

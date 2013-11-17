@@ -366,7 +366,7 @@ static inline void rglGcmSetVertexProgramParameterBlock(struct CellGcmContextDat
  (thisContext->current) += 2;
 
 #define rglGcmSend(dstId, dstOffset, pitch, src, size) \
-   GLuint id = gmmAlloc(0, size); \
+   GLuint id = gmmAlloc(size); \
    memcpy( gmmIdToAddress(id), (src), size ); \
    rglGcmTransferData( dstId, dstOffset, size, id, 0, size, size, 1 ); \
    gmmFree( id )

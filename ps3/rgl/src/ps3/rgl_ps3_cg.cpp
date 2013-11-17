@@ -181,7 +181,7 @@ static int rglGcmGenerateProgram (void *data, int profileIndex, const CgProgramH
 
       if ( program->loadProgramId == GMM_ERROR )
       {
-         program->loadProgramId = gmmAlloc(0, ucodeSize);
+         program->loadProgramId = gmmAlloc(ucodeSize);
          program->loadProgramOffset = 0;
       }
 
