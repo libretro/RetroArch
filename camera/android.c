@@ -1,5 +1,7 @@
 /*  RetroArch - A frontend for libretro.
- *  Copyright (C) 2010-2013 - Michael Lelli
+ *  Copyright (C) 2010-2013 - Hans-Kristian Arntzen
+ *  Copyright (C) 2011-2013 - Daniel De Matteis
+ *  Copyright (C) 2012-2013 - Michael Lelli
  * 
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -14,7 +16,6 @@
  */
 
 #include "../driver.h"
-#include "../emscripten/RWebCam.h"
 #include "../android/native/jni/jni_macros.h"
 
 static void *android_init(const char *device, uint64_t caps, unsigned width, unsigned height)
