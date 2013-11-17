@@ -240,6 +240,9 @@ static const camera_driver_t *camera_drivers[] = {
 #ifdef EMSCRIPTEN
    &camera_rwebcam,
 #endif
+#ifdef ANDROID
+   &camera_android,
+#endif
    NULL,
 };
 

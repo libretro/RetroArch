@@ -346,6 +346,22 @@ AUDIO RESAMPLER
 #include "../audio/sinc.c"
 
 /*============================================================
+CAMERA
+============================================================ */
+#ifdef HAVE_CAMERA
+#if defined(ANDROID)
+#include "../camera/android.c"
+#elif defined(EMSCRIPTEN)
+#include "../camera/rwebcam.c"
+#endif
+
+#ifdef HAVE_V4L2
+#include "../camera/video4linux2.c"
+#endif
+
+#endif
+
+/*============================================================
 RSOUND
 ============================================================ */
 #ifdef HAVE_RSOUND
