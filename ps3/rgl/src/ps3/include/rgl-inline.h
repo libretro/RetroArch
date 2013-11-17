@@ -308,8 +308,7 @@ static inline void rglGcmSetVertexProgramParameterBlock(struct CellGcmContextDat
 #define rglGcmFifoFinish(ref, offset_bytes) \
  ref = rglGcmFifoPutReference( fifo ); \
  rglGcmFifoFlush( fifo, offset_bytes ); \
- while (rglGcmFifoReferenceInUse(fifo, ref)) \
-    sys_timer_usleep(10);
+ while (rglGcmFifoReferenceInUse(fifo, ref))
 
 #define rglGcmFifoReadReference(fifo) (fifo->lastHWReferenceRead = *((volatile GLuint *)&fifo->dmaControl->Reference))
 
@@ -839,8 +838,7 @@ static inline void rglGcmUtilWaitForIdle (void)
    rglGcmSetWriteBackEndLabel(thisContext, RGLGCM_UTIL_LABEL_INDEX, rglGcmState_i.labelValue );
    cellGcmFlush();
 
-   while( *(cellGcmGetLabelAddress( RGLGCM_UTIL_LABEL_INDEX)) != rglGcmState_i.labelValue)
-      sys_timer_usleep(30);
+   while( *(cellGcmGetLabelAddress( RGLGCM_UTIL_LABEL_INDEX)) != rglGcmState_i.labelValue);
 
    rglGcmState_i.labelValue++;
 }
