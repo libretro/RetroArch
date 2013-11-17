@@ -520,12 +520,7 @@ uint32_t gmmDestroy (void)
 
 char *gmmIdToAddress (const uint32_t id)
 {
-   while (cachedLockValue != 0)
-   {
-      // wait for sweep
-      sys_timer_usleep(30);
-      cachedLockValue = *pLock;
-   }
+   while ((cachedLockValue = *pLock) != 0);
    return (char *)((GmmBaseBlock*)id)->address;
 }
 
@@ -1420,10 +1415,8 @@ static uint32_t gmmFindFreeBlock(
    return retId;
 }
 
-uint32_t gmmAlloc(void *data,
-      const uint8_t isTile, const uint32_t size)
+uint32_t gmmAlloc(const uint8_t isTile, const uint32_t size)
 {
-   CellGcmContextData *thisContext = (CellGcmContextData*)data;
    GmmAllocator    *pAllocator;
    uint32_t        retId;
    uint32_t        newSize;
@@ -1453,7 +1446,7 @@ uint32_t gmmAlloc(void *data,
 
       if (retId == GMM_ERROR)
       {
-         gmmAllocSweep(thisContext);
+         gmmAllocSweep((CellGcmContextData*)&rglGcmState_i.fifo);
 
          retId = gmmInternalAlloc(pAllocator,
                isTile,
@@ -1554,8 +1547,7 @@ void rglGcmFifoInit (void *data, void *dmaControl, unsigned long dmaPushBufferOf
       rglGcmFifoFlush(fifo, offset_bytes); // Here, we jump to this new buffer
 
       // a finish that waits for 0 specifically.
-      while (rglGcmFifoReadReference(fifo) != 0)
-         sys_timer_usleep(10);
+      while (rglGcmFifoReadReference(fifo) != 0);
    }
    fifo->dmaPushBufferGPU = dmaPushBuffer;
    fifo->spuid = 0;
@@ -2233,9 +2225,9 @@ GLuint rglGcmAllocCreateRegion(
       GLint tag,
       void* data )
 {
-   uint32_t id = gmmAlloc((CellGcmContextData*)&rglGcmState_i.fifo, 1, size);
+   uint32_t id;
 
-   if ( id != GMM_ERROR )
+   if ((id = gmmAlloc(1, size)) != GMM_ERROR)
    {
       if ( rglGcmTryResizeTileRegion( (GLuint)gmmIdToOffset(id), gmmGetBlockSize(id), data ) )
       {
@@ -2518,10 +2510,8 @@ static void rescInit( const RGLdeviceParameters* params, rglGcmDevice *gcmDevice
    // allocate space for vertex array and fragment shader for drawing the rescaling texture-mapped quad
    int32_t colorBuffersSize, vertexArraySize, fragmentShaderSize;
    cellRescGetBufferSize( &colorBuffersSize, &vertexArraySize, &fragmentShaderSize );
-   gcmDevice->RescVertexArrayId    = gmmAlloc((CellGcmContextData*)&rglGcmState_i.fifo,
-         0, vertexArraySize);
-   gcmDevice->RescFragmentShaderId = gmmAlloc((CellGcmContextData*)&rglGcmState_i.fifo,
-         0, fragmentShaderSize);
+   gcmDevice->RescVertexArrayId    = gmmAlloc(0, vertexArraySize);
+   gcmDevice->RescFragmentShaderId = gmmAlloc(0, fragmentShaderSize);
 
 
    // tell resc how to access the destination (scanout) buffer
@@ -2538,8 +2528,7 @@ static void rescInit( const RGLdeviceParameters* params, rglGcmDevice *gcmDevice
    {
       const unsigned int tableLength = 32; // this was based on the guidelines in the resc reference guide
       unsigned int tableSize = sizeof(uint16_t) * 4 * tableLength; // 2 bytes per FLOAT16 * 4 values per entry * length of table
-      void *interlaceTable = gmmIdToAddress(gmmAlloc((CellGcmContextData*)&rglGcmState_i.fifo,
-               0, tableSize));
+      void *interlaceTable = gmmIdToAddress(gmmAlloc(0, tableSize));
       int32_t errorCode = cellRescCreateInterlaceTable(interlaceTable,params->renderHeight,CELL_RESC_ELEMENT_HALF,tableLength);
       (void)errorCode;
    }

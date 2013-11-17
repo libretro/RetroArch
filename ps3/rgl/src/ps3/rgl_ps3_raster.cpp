@@ -792,8 +792,7 @@ static void rglpsAllocateBuffer (void *data)
 
    // allocate in GPU memory
    rglBuffer->pool = RGLGCM_SURFACE_POOL_LINEAR;
-   rglBuffer->bufferId = gmmAlloc((CellGcmContextData*)&rglGcmState_i.fifo,
-         0, rglBuffer->bufferSize);
+   rglBuffer->bufferId = gmmAlloc(0, rglBuffer->bufferSize);
    rglBuffer->pitch = 0;
 
    if ( rglBuffer->bufferId == GMM_ERROR )
@@ -1005,7 +1004,7 @@ static void rglPlatformBufferObjectSetDataTextureReference(void *buf_data, GLint
       // partial buffer write
       //  STREAM and DYNAMIC buffers get transfer via a bounce buffer.
       // copy via bounce buffer
-      GLuint id = gmmAlloc((CellGcmContextData*)&rglGcmState_i.fifo, 0, size);
+      GLuint id = gmmAlloc(0, size);
       memset(gmmIdToAddress(id), 0, size);
       rglGcmTransferData(rglBuffer->bufferId, offset, rglBuffer->pitch, id, 0, size, size, 1);
       gmmFree(id);
@@ -1724,8 +1723,7 @@ beginning:
    GLuint VBOId = GMM_ERROR;
    if ( RGL_UNLIKELY( dparams->xferTotalSize ) )
    {
-      xferId = gmmAlloc((CellGcmContextData*)&rglGcmState_i.fifo,
-            0, dparams->xferTotalSize);
+      xferId = gmmAlloc(0, dparams->xferTotalSize);
       xferBuffer = gmmIdToAddress(xferId);
    }
 
@@ -2084,8 +2082,7 @@ static void rglPlatformValidateTextureResources (void *data)
             rglPlatformDropTexture( texture );
 
             // allocate in the specified pool
-            id = gmmAlloc((CellGcmContextData*)&rglGcmState_i.fifo, 
-                  0, size);
+            id = gmmAlloc(0, size);
 
             // set new
             gcmTexture->pool = RGLGCM_SURFACE_POOL_LINEAR;
@@ -2140,8 +2137,7 @@ source:		RGLGCM_SURFACE_SOURCE_TEXTURE,
       {
          // lazy allocation of bounce buffer
          if ( bounceBufferId == GMM_ERROR && layout->baseDepth == 1 )
-            bounceBufferId = gmmAlloc((CellGcmContextData*)&rglGcmState_i.fifo,
-                  0, gcmTexture->gpuSize);
+            bounceBufferId = gmmAlloc(0, gcmTexture->gpuSize);
 
          if ( bounceBufferId != GMM_ERROR )
          {

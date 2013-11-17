@@ -181,8 +181,7 @@ static int rglGcmGenerateProgram (void *data, int profileIndex, const CgProgramH
 
       if ( program->loadProgramId == GMM_ERROR )
       {
-         program->loadProgramId = gmmAlloc((CellGcmContextData*)&rglGcmState_i.fifo,
-               0, ucodeSize);
+         program->loadProgramId = gmmAlloc(0, ucodeSize);
          program->loadProgramOffset = 0;
       }
 
