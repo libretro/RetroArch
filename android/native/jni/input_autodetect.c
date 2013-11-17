@@ -27,18 +27,18 @@ static void input_autodetect_get_device_name(void *data, char *buf, size_t size,
    JNIEnv *env = NULL;
    (*vm)->AttachCurrentThread(vm, &env, 0);
 
-   jclass input_device_class = NULL;
-   FIND_CLASS(env, input_device_class, "android/view/InputDevice");
-   if (!input_device_class)
+   jclass class = NULL;
+   FIND_CLASS(env, class, "android/view/InputDevice");
+   if (!class)
       goto end;
 
    jmethodID method = NULL;
-   GET_STATIC_METHOD_ID(env, method, input_device_class, "getDevice", "(I)Landroid/view/InputDevice;");
+   GET_STATIC_METHOD_ID(env, method, class, "getDevice", "(I)Landroid/view/InputDevice;");
    if (!method)
       goto end;
 
    jobject device = NULL;
-   CALL_OBJ_STATIC_METHOD_PARAM(env, device, input_device_class, method, (jint)id);
+   CALL_OBJ_STATIC_METHOD_PARAM(env, device, class, method, (jint)id);
    if (!device)
    {
       RARCH_ERR("Failed to find device for ID: %d\n", id);
@@ -46,7 +46,7 @@ static void input_autodetect_get_device_name(void *data, char *buf, size_t size,
    }
 
    jmethodID getName = NULL;
-   GET_METHOD_ID(env, getName, input_device_class, "getName", "()Ljava/lang/String;");
+   GET_METHOD_ID(env, getName, class, "getName", "()Ljava/lang/String;");
    if (!getName)
       goto end;
 
