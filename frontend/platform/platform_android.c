@@ -234,29 +234,29 @@ static void jni_get (void *data_in, void *data_out)
 {
    struct jni_params *in_params = (struct jni_params*)data_in;
    struct jni_out_params_char *out_args = (struct jni_out_params_char*)data_out;
-   char obj_method_name[128], obj_method_signature[128];
-   jclass class_ptr = NULL;
+   jclass class = NULL;
    jobject obj = NULL;
    jmethodID giid = NULL;
-   jstring ret_char;
+   jstring ret;
 
-   strlcpy(obj_method_name, "getStringExtra", sizeof(obj_method_name));
-   strlcpy(obj_method_signature, "(Ljava/lang/String;)Ljava/lang/String;", sizeof(obj_method_signature));
-
-   GET_OBJECT_CLASS(in_params->env, class_ptr, in_params->class_obj);
-   GET_METHOD_ID(in_params->env, giid, class_ptr, in_params->method_name, in_params->method_signature);
+   GET_OBJECT_CLASS(in_params->env, class, in_params->class_obj);
+   GET_METHOD_ID(in_params->env, giid, class, in_params->method_name, in_params->method_signature);
    CALL_OBJ_METHOD(in_params->env, obj, in_params->class_obj, giid);
 
-   GET_OBJECT_CLASS(in_params->env, class_ptr, obj);
-   GET_METHOD_ID(in_params->env, giid, class_ptr, obj_method_name, obj_method_signature);
-
-   CALL_OBJ_METHOD_PARAM(in_params->env, ret_char, obj, giid, (*in_params->env)->NewStringUTF(in_params->env, out_args->in));
-
-   if (giid != NULL && ret_char)
+   if (in_params->submethod_name &&
+         in_params->submethod_signature)
    {
-      const char *test_argv = (*in_params->env)->GetStringUTFChars(in_params->env, ret_char, 0);
-      strlcpy(out_args->out, test_argv, out_args->out_sizeof);
-      (*in_params->env)->ReleaseStringUTFChars(in_params->env, ret_char, test_argv);
+      GET_OBJECT_CLASS(in_params->env, class, obj);
+      GET_METHOD_ID(in_params->env, giid, class, in_params->submethod_name, in_params->submethod_signature);
+
+      CALL_OBJ_METHOD_PARAM(in_params->env, ret, obj, giid, (*in_params->env)->NewStringUTF(in_params->env, out_args->in));
+   }
+
+   if (giid && ret)
+   {
+      const char *argv = (*in_params->env)->GetStringUTFChars(in_params->env, ret, 0);
+      strlcpy(out_args->out, argv, out_args->out_sizeof);
+      (*in_params->env)->ReleaseStringUTFChars(in_params->env, ret, argv);
    }
 }
 
@@ -272,6 +272,8 @@ static void get_environment_settings(int argc, char *argv[], void *data)
 
    strlcpy(in_params.method_name, "getIntent", sizeof(in_params.method_name));
    strlcpy(in_params.method_signature, "()Landroid/content/Intent;", sizeof(in_params.method_signature));
+   strlcpy(in_params.submethod_name, "getStringExtra", sizeof(in_params.submethod_name));
+   strlcpy(in_params.submethod_signature, "(Ljava/lang/String;)Ljava/lang/String;", sizeof(in_params.submethod_signature));
 
    (*in_params.java_vm)->AttachCurrentThread(in_params.java_vm, &in_params.env, 0);
 

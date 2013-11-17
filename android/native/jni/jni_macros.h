@@ -27,6 +27,8 @@ struct jni_params
    char class_name[128];
    char method_name[128];
    char method_signature[128];
+   char submethod_name[128];
+   char submethod_signature[128];
 };
 
 struct jni_out_params_char
