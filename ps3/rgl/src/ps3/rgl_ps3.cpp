@@ -1517,7 +1517,7 @@ void rglGcmFifoInit (void *data, void *dmaControl, unsigned long dmaPushBufferOf
    if ( rglGcmFifoReadReference( fifo ) != 0 )
    {
       unsigned int offset_bytes = 0;
-      GCM_FUNC( cellGcmSetReferenceCommand, 0 );
+      rglGcmSetReferenceCommand(gCellGcmCurrentContext, 0 );
       rglGcmFifoFlush(fifo, offset_bytes); // Here, we jump to this new buffer
 
       // a finish that waits for 0 specifically.
@@ -1536,7 +1536,6 @@ GLboolean rglGcmInitFromRM( rglGcmResource *rmResource )
 {
    rglGcmState *rglGcmSt = &rglGcmState_i;
    rglGcmFifo *fifo = (rglGcmFifo*)&rglGcmSt->fifo;
-   CellGcmContextData *thisContext = (CellGcmContextData*)gCellGcmCurrentContext;
    GLuint i, ref;
    unsigned int offset_bytes = 0;
 
@@ -1557,33 +1556,33 @@ GLboolean rglGcmInitFromRM( rglGcmResource *rmResource )
    rglGcmSetBlendColor(gCellGcmCurrentContext, 0, 0);
    rglGcmSetBlendEquation(gCellGcmCurrentContext, RGLGCM_FUNC_ADD, RGLGCM_FUNC_ADD );
    rglGcmSetBlendFunc(gCellGcmCurrentContext, RGLGCM_ONE, RGLGCM_ZERO, RGLGCM_ONE, RGLGCM_ZERO );
-   rglGcmSetClearColor(thisContext, 0 );
+   rglGcmSetClearColor(gCellGcmCurrentContext, 0 );
    rglGcmSetBlendEnable(gCellGcmCurrentContext, RGLGCM_FALSE );
    rglGcmSetBlendEnableMrt(gCellGcmCurrentContext, RGLGCM_FALSE, RGLGCM_FALSE, RGLGCM_FALSE );
 
    for ( i = 0; i < RGLGCM_ATTRIB_COUNT; i++ )
    {
-      rglGcmSetVertexDataArray(thisContext, i, 0, 0, 0, CELL_GCM_VERTEX_F, CELL_GCM_LOCATION_LOCAL, 0);
+      rglGcmSetVertexDataArray(gCellGcmCurrentContext, i, 0, 0, 0, CELL_GCM_VERTEX_F, CELL_GCM_LOCATION_LOCAL, 0);
    }
 
-   rglGcmSetDitherEnable(thisContext, RGLGCM_TRUE );
+   rglGcmSetDitherEnable(gCellGcmCurrentContext, RGLGCM_TRUE );
 
    for ( i = 0; i < RGLGCM_MAX_TEXIMAGE_COUNT; i++ )
    {
       static const GLuint borderColor = 0;
 
       // update the setTextureAddress Portion
-      GCM_FUNC( cellGcmSetTextureAddress, i, CELL_GCM_TEXTURE_WRAP, CELL_GCM_TEXTURE_WRAP, CELL_GCM_TEXTURE_CLAMP_TO_EDGE, CELL_GCM_TEXTURE_UNSIGNED_REMAP_NORMAL, CELL_GCM_TEXTURE_ZFUNC_NEVER, 0 );
+      rglGcmSetTextureAddress(gCellGcmCurrentContext, i, CELL_GCM_TEXTURE_WRAP, CELL_GCM_TEXTURE_WRAP, CELL_GCM_TEXTURE_CLAMP_TO_EDGE, CELL_GCM_TEXTURE_UNSIGNED_REMAP_NORMAL, CELL_GCM_TEXTURE_ZFUNC_NEVER, 0 );
 
       // update the setTextureFilter Portion
-      GCM_FUNC( cellGcmSetTextureFilter, i, 0, CELL_GCM_TEXTURE_NEAREST_LINEAR, CELL_GCM_TEXTURE_LINEAR,
+      rglGcmSetTextureFilter(gCellGcmCurrentContext, i, 0, CELL_GCM_TEXTURE_NEAREST_LINEAR, CELL_GCM_TEXTURE_LINEAR,
             CELL_GCM_TEXTURE_CONVOLUTION_QUINCUNX );
 
       // update the texture control to setup anisotropic settings
-      rglGcmSetTextureControl(thisContext, i, CELL_GCM_TRUE, 0, 12 << 8, CELL_GCM_TEXTURE_MAX_ANISO_1 );
+      rglGcmSetTextureControl(gCellGcmCurrentContext, i, CELL_GCM_TRUE, 0, 12 << 8, CELL_GCM_TEXTURE_MAX_ANISO_1 );
 
       // update border color
-      GCM_FUNC( cellGcmSetTextureBorderColor, i, borderColor );
+      rglGcmSetTextureBorderColor(gCellGcmCurrentContext, i, borderColor );
    }
 
    // Set zNear and zFar to the default 0.0f and 1.0f here

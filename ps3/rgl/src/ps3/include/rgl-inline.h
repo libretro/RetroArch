@@ -63,6 +63,47 @@ static inline void rglGcmSetVertexProgramParameterBlock(struct CellGcmContextDat
 #define SUBPIXEL_BITS 12
 #define SUBPIXEL_ADJUST (0.5/(1<<SUBPIXEL_BITS))
 
+#define rglGcmSetTextureAddress(thisContext, index, wraps, wrapt, wrapr, unsignedRemap, zfunc, gamma) \
+ (thisContext->current)[0] = (((1) << (18)) | ((0x00001a08) + 0x20 * ((index)))); \
+ (thisContext->current)[1] = (((wraps)) | ((0) << 4) | (((wrapt)) << 8) | (((unsignedRemap)) << 12) | (((wrapr)) << 16) | (((gamma)) << 20) |((0) << 24) | (((zfunc)) << 28)); \
+ (thisContext->current) += 2
+
+#define rglGcmSetTextureFilter(thisContext, index, bias, min, mag, conv) \
+{ \
+ bool continue_func = true; \
+ if(thisContext->current + (2) > thisContext->end) \
+ { \
+    if((*thisContext->callback)(thisContext, (2)) != 0) \
+     continue_func = false; \
+ } \
+ if (continue_func) \
+ { \
+  (thisContext->current)[0] = (((1) << (18)) | ((0x00001a14) + 0x20 * ((index)))); \
+  (thisContext->current)[1] = (((bias)) | (((conv)) << 13) | (((min)) << 16) | (((mag)) << 24) | ((0) << 28) | ((0) << 29) | ((0) << 30) | ((0) << 31)); ; (thisContext->current) += 2; \
+ } \
+}
+
+#define rglGcmSetReferenceCommandInline(thisContext, ref) \
+{ \
+ bool continue_func = true; \
+ if(thisContext->current + (2) > thisContext->end) \
+ { \
+    if((*thisContext->callback)(thisContext, (2)) != 0) \
+     continue_func = false; \
+ } \
+ if (continue_func) \
+ { \
+    (thisContext->current)[0] = (((1) << (18)) | ((0x00000050))); \
+    (thisContext->current)[1] = (ref); \
+    (thisContext->current) += 2; \
+ } \
+}
+
+#define rglGcmSetTextureBorderColor(thisContext, index, color) \
+ (thisContext->current)[0] = (((1) << (18)) | ((0x00001a1c) + 0x20 * ((index)))); \
+ (thisContext->current)[1] = (color); \
+ (thisContext->current) += 2
+
 #define rglDisableVertexAttribArrayNVInline(context, index) \
  RGLBIT_FALSE(context->attribs->EnabledMask, index); \
  RGLBIT_TRUE(context->attribs->DirtyMask, index);
