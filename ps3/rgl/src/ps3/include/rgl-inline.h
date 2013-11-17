@@ -308,7 +308,7 @@ static inline void rglGcmSetVertexProgramParameterBlock(struct CellGcmContextDat
 #define rglGcmFifoFinish(ref, offset_bytes) \
  ref = rglGcmFifoPutReference( fifo ); \
  rglGcmFifoFlush( fifo, offset_bytes ); \
- while (rglGcmFifoReferenceInUse(fifo, ref))
+ do {} while (rglGcmFifoReferenceInUse(fifo, ref));
 
 #define rglGcmFifoReadReference(fifo) (fifo->lastHWReferenceRead = *((volatile GLuint *)&fifo->dmaControl->Reference))
 
