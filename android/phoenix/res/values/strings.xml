@@ -69,6 +69,13 @@
     <string name="no_optimal_settings">Device either not detected in list or doesn\'t have any optimal settings in our database.</string>
     <string name="load_a_core_first">Go to \'Load Core\' and select a core first.</string>
     <string name="loading_data">Loading [%1$s]…</string>
+
+    <!-- Asset extraction dialog -->
+    <string name="asset_extraction">Asset Extraction</string>
+
+    <!-- GPL cores AlertDialog -->
+    <string name="keep_cores">Keep cores</string>
+    <string name="remove_cores">Remove non-GPL cores</string>
     
     <!-- Refresh Rate Set OS Class -->
     <string name="using_os_reported_refresh_rate">Using OS-reported refresh rate of: %1$s Hz.</string>
@@ -118,6 +125,7 @@
     <string name="touchscreen_overlay_desc">Enable touchscreen overlays (WARNING: Lower-resolution overlays might be more suitable for less powerful devices).</string>
     <string name="input_overlay">Input overlay</string>
     <string name="input_overlay_desc">Sets touchscreen overlay config.</string>
+    <string name="input_overlay_select">Select an input overlay</string>
     <string name="overlay_opacity">Overlay opacity</string>
     <string name="overlay_opacity_desc">Set the opacity of the touch overlay.</string>
     <string name="custom_binds">Custom Binds</string>
@@ -151,19 +159,23 @@
     <string name="rom_paths">ROM paths</string>
     <string name="rom_directory">ROM directory</string>
     <string name="rom_directory_desc">Sets directory where ROM browser will first browse for ROM files.</string>
+    <string name="rom_directory_select">Select a ROM directory</string>
     <string name="save_files">Save files</string>
     <string name="enable_custom_dir">Enable custom directory</string>
     <string name="savefiles_custom_dir">Enables use of custom save file folder. (.srm) save files will be saved and loaded to configured directory. If not enabled, save files will reside in ROM folder.</string>
     <string name="savefile_directory">Savefile directory</string>
     <string name="savefile_directory_desc">Sets directory where to save and load game save files.</string>
+    <string name="savefile_directory_select">Select a savefile directory</string>
     <string name="save_states">Save states</string>
-    <string name="savestates_custom_dir">Enables use of custom save state folder. (.state) save states will be saved and loaded to configured directory. If not enabled, save states will reside in ROM folder.</string>
+    <string name="save_states_custom_dir">Enables use of custom save state folder. (.state) save states will be saved and loaded to configured directory. If not enabled, save states will reside in ROM folder.</string>
     <string name="save_state_directory">Save state directory</string>
     <string name="save_state_directory_desc">Sets directory where to save and load game save states.</string>
+    <string name="save_state_directory_select">Select a savestate directory</string>
     <string name="system">System</string>
     <string name="system_custom_dir">Enables use of custom system folder. Cores will look for system specific files, like BIOSes, in this folder. If not enabled, it will look in the ROM folder.</string>
     <string name="system_directory">System directory</string>
     <string name="system_directory_desc">Sets directory where system files are loaded from.</string>
+    <string name="system_directory_select">Select a system directory</string>
 
     <!-- General Settings -->
     <string name="general_options">General</string>
@@ -210,6 +222,7 @@
     <string name="first_pass_shader_desc">Enable first pass shader (WARNING: performance varies per device and per shader).</string>
     <string name="glsl_shader">GLSL shader</string>
     <string name="glsl_shader_desc">Sets GLES2 style shader.</string>
+    <string name="glsl_shader_select">Select a GLSL shader</string>
     <string name="fonts">Fonts</string>
     <string name="onscreen_fonts">On-screen fonts</string>
     <string name="onscreen_fonts_desc">Enable rendering of on-screen fonts for messages.</string>

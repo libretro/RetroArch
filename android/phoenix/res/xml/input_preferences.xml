@@ -72,13 +72,11 @@
             android:title="@string/enable" />
 
         <Preference
+            android:key="inputOverlayDirPref"
             android:summary="@string/input_overlay_desc"
             android:title="@string/input_overlay"
-            android:dependency="input_overlay_enable" >
-            <intent
-                android:targetClass="com.retroarch.browser.diractivities.OverlayActivity"
-                android:targetPackage="com.retroarch" />
-        </Preference>
+            android:dependency="input_overlay_enable"/>
+
         <com.retroarch.browser.preferences.util.SeekbarPreference
             android:summary="@string/overlay_opacity_desc"
             android:title="@string/overlay_opacity"
