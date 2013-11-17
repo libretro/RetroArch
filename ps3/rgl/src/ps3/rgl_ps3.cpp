@@ -450,12 +450,12 @@ static uint32_t gmmInit(const void *localMemoryBase, const void *localStartAddre
 
    alignedLocalSize = localEndAddress - (uint32_t)localStartAddress;
 
-   pAllocator = (GmmAllocator *)malloc(2*sizeof(GmmAllocator));
+   pAllocator = (GmmAllocator *)malloc(sizeof(GmmAllocator));
 
    if (pAllocator == NULL)
       return GMM_ERROR;
 
-   memset(pAllocator, 0, 1 * sizeof(GmmAllocator));
+   memset(pAllocator, 0, sizeof(GmmAllocator));
 
    if (pAllocator)
    {
