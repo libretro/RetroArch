@@ -27,11 +27,11 @@ import android.widget.Toast;
 import com.retroarch.R;
 import com.retroarch.browser.CoreSelection;
 import com.retroarch.browser.HistorySelection;
-import com.retroarch.browser.ModuleWrapper;
 import com.retroarch.browser.NativeInterface;
 import com.retroarch.browser.RetroActivity;
 import com.retroarch.browser.dirfragment.DirectoryFragment;
 import com.retroarch.browser.dirfragment.DirectoryFragment.OnDirectoryFragmentClosedListener;
+import com.retroarch.browser.mainmenu.gplwaiver.GPLWaiverDialogFragment;
 import com.retroarch.browser.preferences.fragments.util.PreferenceListFragment;
 import com.retroarch.browser.preferences.util.UserPreferences;
 
@@ -75,40 +75,10 @@ public final class MainMenuFragment extends PreferenceListFragment implements On
 						.setPositiveButton(R.string.ok, null);
 				alert.show();
 			}
-			
-			showGPLWaiver();
-		}
-	}
 
-	private void showGPLWaiver()
-	{
-		AlertDialog.Builder alert = new AlertDialog.Builder(getActivity())
-				.setTitle(R.string.gpl_waiver)
-				.setMessage(R.string.gpl_waiver_desc)
-				.setPositiveButton(R.string.keep_cores, null)
-				.setNegativeButton(R.string.remove_cores, new DialogInterface.OnClickListener()
-				{
-					@Override
-					public void onClick(DialogInterface dialog, int which)
-					{
-						final File[] libs = new File(getActivity().getApplicationInfo().dataDir, "/cores").listFiles();
-						for (final File lib : libs)
-						{
-							ModuleWrapper module = new ModuleWrapper(getActivity().getApplicationContext(), lib);
-							
-							boolean gplv3 = module.getCoreLicense().equals("GPLv3");
-							boolean gplv2 = module.getCoreLicense().equals("GPLv2");
-							
-							if (!gplv3 && !gplv2)
-							{
-								String libName = lib.getName();
-								Log.i("GPL WAIVER", "Deleting non-GPL core" + libName + "...");
-								lib.delete();
-							}
-						}
-					}
-				});
-		alert.show();
+			// First-run, so we show the GPL waiver agreement dialog.
+			GPLWaiverDialogFragment.newInstance().show(getFragmentManager(), "gplWaiver");
+		}
 	}
 
 	private void extractAssets()
