@@ -762,33 +762,13 @@ void rglCreatePushBuffer(void *data)
   PLATFORM BUFFER
   ============================================================ */
 
-static void rglDeallocateBuffer (void *data)
-{
-   rglBufferObject *bufferObject = (rglBufferObject*)data;
-   rglGcmBufferObject *rglBuffer = (rglGcmBufferObject*)bufferObject->platformBufferObject;
-
-   switch ( rglBuffer->pool )
-   {
-      case RGLGCM_SURFACE_POOL_LINEAR:
-         gmmFree( rglBuffer->bufferId );
-         break;
-      case RGLGCM_SURFACE_POOL_NONE:
-         break;
-      default:
-         break;
-   }
-
-   rglBuffer->pool = RGLGCM_SURFACE_POOL_NONE;
-   rglBuffer->bufferId = GMM_ERROR;
-}
-
 static void rglpsAllocateBuffer (void *data)
 {
    rglBufferObject *bufferObject = (rglBufferObject*)data;
    rglGcmBufferObject *rglBuffer = (rglGcmBufferObject*)bufferObject->platformBufferObject;
 
    // free current buffer (if any)
-   rglDeallocateBuffer( bufferObject );
+   rglDeallocateBuffer(bufferObject, rglBuffer);
 
    // allocate in GPU memory
    rglBuffer->pool = RGLGCM_SURFACE_POOL_LINEAR;
@@ -834,7 +814,8 @@ GLboolean rglpCreateBufferObject (void *data)
 void rglPlatformDestroyBufferObject (void *data)
 {
    rglBufferObject *bufferObject = (rglBufferObject*)data;
-   rglDeallocateBuffer( bufferObject );
+   rglGcmBufferObject *rglBuffer = (rglGcmBufferObject*)bufferObject->platformBufferObject;
+   rglDeallocateBuffer(bufferObject, rglBuffer);
 }
 
 void rglPlatformBufferObjectSetData(void *buf_data, GLintptr offset, GLsizeiptr size, const GLvoid *data, GLboolean tryImmediateCopy)

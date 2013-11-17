@@ -63,6 +63,12 @@ static inline void rglGcmSetVertexProgramParameterBlock(struct CellGcmContextDat
 #define SUBPIXEL_BITS 12
 #define SUBPIXEL_ADJUST (0.5/(1<<SUBPIXEL_BITS))
 
+#define rglDeallocateBuffer(bufferObject, rglBuffer) \
+   if (rglBuffer->pool == RGLGCM_SURFACE_POOL_LINEAR) \
+      gmmFree( rglBuffer->bufferId ); \
+   rglBuffer->pool = RGLGCM_SURFACE_POOL_NONE; \
+   rglBuffer->bufferId = GMM_ERROR
+
 #define rglGcmSetTextureAddress(thisContext, index, wraps, wrapt, wrapr, unsignedRemap, zfunc, gamma) \
  (thisContext->current)[0] = (((1) << (18)) | ((0x00001a08) + 0x20 * ((index)))); \
  (thisContext->current)[1] = (((wraps)) | ((0) << 4) | (((wrapt)) << 8) | (((unsignedRemap)) << 12) | (((wrapr)) << 16) | (((gamma)) << 20) |((0) << 24) | (((zfunc)) << 28)); \
