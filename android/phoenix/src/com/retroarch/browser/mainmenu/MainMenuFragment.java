@@ -41,11 +41,15 @@ import com.retroarch.browser.preferences.util.UserPreferences;
 public final class MainMenuFragment extends PreferenceListFragment implements OnPreferenceClickListener, OnDirectoryFragmentClosedListener
 {
 	private static final String TAG = "MainMenuFragment";
+	private Context ctx;
 
 	@Override
 	public void onCreate(Bundle savedInstanceState)
 	{
 		super.onCreate(savedInstanceState);
+
+		// Cache the context
+		this.ctx = getActivity();
 
 		// Add the layout through the XML.
 		addPreferencesFromResource(R.xml.main_menu);
@@ -58,14 +62,14 @@ public final class MainMenuFragment extends PreferenceListFragment implements On
 		// Extract assets. 
 		extractAssets();
 
-		final SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getActivity());
+		final SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(ctx);
 		if (!prefs.getBoolean("first_time_refreshrate_calculate", false))
 		{
 			prefs.edit().putBoolean("first_time_refreshrate_calculate", true).commit();
 
 			if (!detectDevice(false))
 			{
-				AlertDialog.Builder alert = new AlertDialog.Builder(getActivity())
+				AlertDialog.Builder alert = new AlertDialog.Builder(ctx)
 						.setTitle(R.string.welcome_to_retroarch)
 						.setMessage(R.string.welcome_to_retroarch_desc)
 						.setPositiveButton(R.string.ok, null);
@@ -112,7 +116,7 @@ public final class MainMenuFragment extends PreferenceListFragment implements On
 		if (areAssetsExtracted())
 			return;
 
-		final Dialog dialog = new Dialog(getActivity());
+		final Dialog dialog = new Dialog(ctx);
 		final Handler handler = new Handler();
 		dialog.setContentView(R.layout.assets);
 		dialog.setCancelable(false);
@@ -143,8 +147,8 @@ public final class MainMenuFragment extends PreferenceListFragment implements On
 	{
 		try
 		{
-			final String dataDir = getActivity().getApplicationInfo().dataDir;
-			final String apk = getActivity().getApplicationInfo().sourceDir;
+			final String dataDir = ctx.getApplicationInfo().dataDir;
+			final String apk = ctx.getApplicationInfo().sourceDir;
 
 			Log.i(TAG, "Extracting RetroArch assets from: " + apk + " ...");
 			boolean success = NativeInterface.extractArchiveTo(apk, "assets", dataDir);
@@ -170,7 +174,7 @@ public final class MainMenuFragment extends PreferenceListFragment implements On
 
 		try
 		{
-			String dataDir = getActivity().getApplicationInfo().dataDir;
+			String dataDir = ctx.getApplicationInfo().dataDir;
 			File cacheVersion = new File(dataDir, ".cacheversion");
 			if (cacheVersion.isFile() && cacheVersion.canRead() && cacheVersion.canWrite())
 			{
@@ -206,7 +210,6 @@ public final class MainMenuFragment extends PreferenceListFragment implements On
 		int version = 0;
 		try
 		{
-			final Context ctx = getActivity();
 			version = ctx.getPackageManager().getPackageInfo(ctx.getPackageName(), 0).versionCode;
 		}
 		catch (NameNotFoundException ignored)
@@ -220,7 +223,6 @@ public final class MainMenuFragment extends PreferenceListFragment implements On
 	{
 		boolean retval = false;
 
-		final Context ctx = getActivity();
 		final boolean mentionPlayStore = !Build.MODEL.equals("OUYA Console");
 		final int messageId = (mentionPlayStore ? R.string.detect_device_msg_general : R.string.detect_device_msg_ouya);
 
@@ -365,7 +367,6 @@ public final class MainMenuFragment extends PreferenceListFragment implements On
 		// Load ROM Preference
 		else if (prefKey.equals("loadRomPref"))
 		{
-			final Context ctx = getActivity();
 			final SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(ctx);
 			final String libretro_path = prefs.getString("libretro_path", ctx.getApplicationInfo().dataDir + "/cores");
 			
@@ -399,7 +400,6 @@ public final class MainMenuFragment extends PreferenceListFragment implements On
 	@Override
 	public void onDirectoryFragmentClosed(String path)
 	{
-		final Context ctx = getActivity();
 		final SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(ctx);
 		final String libretro_path = prefs.getString("libretro_path", "");
 
