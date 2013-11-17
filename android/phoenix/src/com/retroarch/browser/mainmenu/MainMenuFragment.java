@@ -222,14 +222,14 @@ public final class MainMenuFragment extends PreferenceListFragment implements On
 
 		final Context ctx = getActivity();
 		final boolean mentionPlayStore = !Build.MODEL.equals("OUYA Console");
-		final String message = (mentionPlayStore ? getString(R.string.detect_device_msg_general) : getString(R.string.detect_device_msg_ouya));
+		final int messageId = (mentionPlayStore ? R.string.detect_device_msg_general : R.string.detect_device_msg_ouya);
 
 		Log.i("Device MODEL", Build.MODEL);
 		if (Build.MODEL.equals("SHIELD"))
 		{
 			AlertDialog.Builder alert = new AlertDialog.Builder(ctx);
 			alert.setTitle(R.string.nvidia_shield_detected);
-			alert.setMessage(message);
+			alert.setMessage(messageId);
 			alert.setPositiveButton(R.string.ok, new DialogInterface.OnClickListener()
 			{
 				@Override
@@ -253,7 +253,7 @@ public final class MainMenuFragment extends PreferenceListFragment implements On
 		{
 			AlertDialog.Builder alert = new AlertDialog.Builder(ctx);
 			alert.setTitle(R.string.game_mid_detected);
-			alert.setMessage(message);
+			alert.setMessage(messageId);
 			alert.setPositiveButton(R.string.ok, new DialogInterface.OnClickListener()
 			{
 				@Override
@@ -276,7 +276,7 @@ public final class MainMenuFragment extends PreferenceListFragment implements On
 		{
 			AlertDialog.Builder alert = new AlertDialog.Builder(ctx);
 			alert.setTitle(R.string.ouya_detected);
-			alert.setMessage(message);
+			alert.setMessage(messageId);
 			alert.setPositiveButton(R.string.ok, new DialogInterface.OnClickListener()
 			{
 				@Override
@@ -299,7 +299,7 @@ public final class MainMenuFragment extends PreferenceListFragment implements On
 		{
 			AlertDialog.Builder alert = new AlertDialog.Builder(ctx);
 			alert.setTitle(R.string.xperia_play_detected);
-			alert.setMessage(message);
+			alert.setMessage(messageId);
 			alert.setPositiveButton(R.string.ok, new DialogInterface.OnClickListener()
 			{
 				@Override
@@ -324,7 +324,7 @@ public final class MainMenuFragment extends PreferenceListFragment implements On
 		{
 			AlertDialog.Builder alert = new AlertDialog.Builder(ctx);
 			alert.setTitle(R.string.nexus_7_2013_detected);
-			alert.setMessage(message);
+			alert.setMessage(messageId);
 			alert.setPositiveButton(R.string.ok, new DialogInterface.OnClickListener()
 			{
 				@Override
