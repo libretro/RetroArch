@@ -128,6 +128,9 @@ static void android_camera_stop(void *data)
       return;
 
    CALL_VOID_METHOD(androidcamera->env, androidcamera->class, onCameraStop);
+   
+   if (androidcamera->tex)
+      glDeleteTextures(1, &androidcamera->tex);
 }
 
 static bool android_camera_poll(void *data, retro_camera_frame_raw_framebuffer_t frame_raw_cb,
