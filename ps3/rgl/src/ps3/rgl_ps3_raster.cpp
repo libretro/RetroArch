@@ -750,10 +750,14 @@ void rglCreatePushBuffer(void *data)
    //add padding
    if ( bufferSize > 0 )
    {
-      int nopCount = ( program->constantPushBuffer + bufferSize ) - ( unsigned int * )rglGcmCurrent;
-      CellGcmContextData gcmContext;
+      CellGcmContextData gcmContext, *thisContext;
+      int i, nopCount;
+
+      nopCount = ( program->constantPushBuffer + bufferSize ) - ( unsigned int * )rglGcmCurrent;
       gcmContext.current = (uint32_t*)rglGcmCurrent;
-      cellGcmSetNopCommandUnsafeInline(&gcmContext, nopCount);
+      thisContext = &gcmContext;
+
+      rglGcmSetNopCommand(thisContext, i, nopCount);
       rglGcmCurrent = (typeof(rglGcmCurrent))gcmContext.current;
    }
 }
