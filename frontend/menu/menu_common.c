@@ -1838,7 +1838,7 @@ void menu_populate_entries(void *data, unsigned menu_type)
          file_list_push(rgui->selection_buf, "Gamma", RGUI_SETTINGS_VIDEO_GAMMA, 0);
 #endif
 #ifdef _XBOX1
-         file_list_push(rgui->selection_buf, "Soft filtering", RRGUI_SETTINGS_SOFT_DISPLAY_FILTER, 0);
+         file_list_push(rgui->selection_buf, "Soft filtering", RGUI_SETTINGS_SOFT_DISPLAY_FILTER, 0);
          file_list_push(rgui->selection_buf, "Flicker filtering", RGUI_SETTINGS_FLICKER_FILTER, 0);
 #endif
          file_list_push(rgui->selection_buf, "Integer Scale", RGUI_SETTINGS_VIDEO_INTEGER_SCALE, 0);
