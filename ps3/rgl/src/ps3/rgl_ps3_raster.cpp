@@ -91,8 +91,9 @@ template<int SIZE> inline static void swapandsetfp( int ucodeSize, unsigned int 
       float *src = (float*)v;
       for (uint32_t j=0; j<SIZE;j++)
       {
-         *fp = cellGcmSwap16Float32(*src);
-         fp++;src++;
+         rglGcmSwap16Float32(fp, src);
+         fp++;
+         src++;
       }
    }
 

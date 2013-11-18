@@ -63,6 +63,18 @@ static inline void rglGcmSetVertexProgramParameterBlock(struct CellGcmContextDat
 #define SUBPIXEL_BITS 12
 #define SUBPIXEL_ADJUST (0.5/(1<<SUBPIXEL_BITS))
 
+#define rglGcmSwap16Float32(fp, f) \
+{ \
+    union SwapF32_16 \
+    { \
+        uint32_t ui; \
+        float f; \
+    } v; \
+    v.f = *f; \
+    v.ui = (v.ui>>16) | (v.ui<<16); \
+    *fp = v.f; \
+}
+
 #define rglDeallocateBuffer(bufferObject, rglBuffer) \
    if (rglBuffer->pool == RGLGCM_SURFACE_POOL_LINEAR) \
       gmmFree( rglBuffer->bufferId ); \
