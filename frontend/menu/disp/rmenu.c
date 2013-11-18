@@ -64,6 +64,7 @@
 
 struct texture_image *menu_texture;
 static bool render_normal = true;
+static bool menu_texture_inited =false;
 
 static void render_background(rgui_handle_t *rgui)
 {
@@ -383,17 +384,16 @@ static void rmenu_render(void *data)
 
 void rmenu_set_texture(void *data, bool enable)
 {
-   static bool inited =false;
    rgui_handle_t *rgui = (rgui_handle_t*)data;
 
-   if (inited)
+   if (menu_texture_inited)
       return;
 
    if (driver.video_poke && driver.video_poke->set_texture_enable)
    {
       driver.video_poke->set_texture_frame(driver.video_data, menu_texture->pixels,
             enable, rgui->width, rgui->height, 1.0f);
-      inited = true;
+      menu_texture_inited = true;
    }
 }
 
@@ -437,6 +437,7 @@ static void rmenu_free_assets(void *data)
       free(menu_texture->pixels);
       menu_texture->pixels = NULL;
    }
+   menu_texture_inited = false;
 #endif
 }
 
