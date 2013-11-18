@@ -60,6 +60,50 @@ static inline void rglGcmSetVertexProgramParameterBlock(struct CellGcmContextDat
    }
 }
 
+static inline void rglGcmSetInlineTransfer(struct CellGcmContextData *thisContext,
+      const uint32_t dstOffset, const void *srcAdr, const uint32_t sizeInWords)
+{
+   uint32_t *src, *srcEnd;
+   uint32_t paddedSizeInWords, alignedVideoOffset, pixelShift;
+
+   alignedVideoOffset = dstOffset & ~63;
+   pixelShift = (dstOffset & 63) >> 2;
+   paddedSizeInWords = (sizeInWords + 1) & ~1;
+
+   (thisContext->current)[0] = (((1) << (18)) | ((0x0000630C)));
+   (thisContext->current)[1] = (alignedVideoOffset);
+   (thisContext->current) += 2;
+
+   (thisContext->current)[0] = (((2) << (18)) | ((0x00006300)));
+   (thisContext->current)[1] = (CELL_GCM_TRANSFER_SURFACE_FORMAT_Y32);
+   (thisContext->current)[2] = ((0x1000) | ((0x1000) << 16));
+   (thisContext->current) += 3;
+
+   (thisContext->current)[0] = (((3) << (18)) | ((0x0000A304)));
+   (thisContext->current)[1] = (((0) << 16) | (pixelShift));
+   (thisContext->current)[2] = (((1) << 16) | (sizeInWords));
+   (thisContext->current)[3] = (((1) << 16) | (sizeInWords));
+   (thisContext->current) += 4; 
+
+   thisContext->current[0] = (((paddedSizeInWords) << (18)) | ((0x0000A400)));
+   thisContext->current += 1;
+
+   src = (uint32_t*)srcAdr;
+   srcEnd = src + sizeInWords;
+
+   while(src<srcEnd)
+   {
+      thisContext->current[0] = (src[0]);
+      thisContext->current += 1;
+      src += 1;
+   }
+   if (paddedSizeInWords != sizeInWords)
+   {
+      thisContext->current[0] = 0;
+      thisContext->current += 1;
+   }
+}
+
 #define SUBPIXEL_BITS 12
 #define SUBPIXEL_ADJUST (0.5/(1<<SUBPIXEL_BITS))
 
@@ -222,7 +266,7 @@ static inline void rglGcmSetVertexProgramParameterBlock(struct CellGcmContextDat
  (thisContext->current)[0] = (((1) << (18)) | CELL_GCM_NV3062_SET_CONTEXT_DMA_IMAGE_DESTIN); \
  (thisContext->current)[1] = (CELL_GCM_CONTEXT_DMA_MEMORY_FRAME_BUFFER + location); \
  (thisContext->current) += 2; \
-  cellGcmSetInlineTransferUnsafeInline(thisContext, dstOffset, srcAdr, sizeInWords);
+  rglGcmSetInlineTransfer(thisContext, dstOffset, srcAdr, sizeInWords);
 
 #define rglGcmSetClearColor(thisContext, color) \
  (thisContext->current)[0] = (((1) << (18)) | CELL_GCM_NV4097_SET_COLOR_CLEAR_VALUE); \
