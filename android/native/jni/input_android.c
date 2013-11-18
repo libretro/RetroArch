@@ -1726,7 +1726,7 @@ static void android_input_poll(void *data)
          AInputEvent* event = NULL;
 
          // Read all pending events.
-         while (AInputQueue_hasEvents(android_app->inputQueue))
+         do
          {
             //int processed = 0;
             while (AInputQueue_getEvent(android_app->inputQueue, &event) >= 0)
@@ -1922,7 +1922,7 @@ static void android_input_poll(void *data)
             if (processed == 0)
                RARCH_WARN("Failure reading next input event: %s\n", strerror(errno));
 #endif
-         }
+         }while (AInputQueue_hasEvents(android_app->inputQueue));
       }
       else if (ident == LOOPER_ID_USER)
       {
