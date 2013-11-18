@@ -53,6 +53,8 @@ static void *android_camera_init(const char *device, uint64_t caps, unsigned wid
 
    GET_OBJECT_CLASS(androidcamera->env, androidcamera->class, android_app->activity->clazz);
 
+   // FIXME - do JNI shenanigans - call RetroActivity->onCameraInit
+
    return androidcamera;
 }
 
@@ -61,6 +63,8 @@ static void android_camera_free(void *data)
    struct android_app *android_app = (struct android_app*)g_android;
    androidcamera_t *androidcamera = (androidcamera_t*)data;
    (void)android_app;
+
+   // FIXME -do JNI shenanigans - call RetroActivity->onCameraFree
 
    (*androidcamera->java_vm)->DetachCurrentThread(androidcamera->java_vm);
 
@@ -74,6 +78,9 @@ static bool android_camera_start(void *data)
 
    (void)android_app;
    (void)androidcamera;
+
+   // FIXME - do JNI shenanigans - call RetroActivity->onCameraStart
+  
    return true;
 }
 
@@ -83,6 +90,8 @@ static void android_camera_stop(void *data)
    androidcamera_t *androidcamera = (androidcamera_t*)data;
    (void)android_app;
    (void)androidcamera;
+
+   // FIXME - do JNI shenanigans - call RetroActivity->onCameraStop
 }
 
 static bool android_camera_poll(void *data, retro_camera_frame_raw_framebuffer_t frame_raw_cb,
@@ -92,8 +101,22 @@ static bool android_camera_poll(void *data, retro_camera_frame_raw_framebuffer_t
    androidcamera_t *androidcamera = (androidcamera_t*)data;
    (void)android_app;
    (void)androidcamera;
+   (void)frame_raw_cb;
+   unsigned gl_texid = 0;
 
-   return true;
+   // FIXME - do JNI shenanigans - call RetroActivity->onCameraPoll
+
+   // if (preprocess image JNI function returns true)
+   {
+      // FIXME - call RetroActivity->onCameraSetTexture
+     
+      //if (frame_gl_cb)
+        //frame_gl_cb(gl_texid, ?, ?);
+      return true;
+   }
+
+   return false;
+
 }
 
 const camera_driver_t camera_android = {
