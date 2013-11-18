@@ -42,7 +42,7 @@
 #endif
 
 #if defined(_XBOX1)
-#define ENTRIES_HEIGHT 10
+#define ENTRIES_HEIGHT 9
 #define POSITION_EDGE_MAX (480)
 #define POSITION_EDGE_MIN 0
 #define POSITION_EDGE_CENTER (450)
@@ -51,7 +51,7 @@
 #define TERM_WIDTH 45
 #define FONT_SIZE_NORMAL 21
 #elif defined(__CELLOS_LV2__)
-#define ENTRIES_HEIGHT 25
+#define ENTRIES_HEIGHT 20
 #define POSITION_MIDDLE 0.50f
 #define POSITION_EDGE_MAX 1.00f
 #define POSITION_EDGE_MIN 0.00f
