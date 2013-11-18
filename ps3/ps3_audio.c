@@ -174,10 +174,10 @@ static bool ps3_audio_start(void *data)
    return true;
 }
 
-static void ps3_audio_set_nonblock_state(void *data, bool state)
+static void ps3_audio_set_nonblock_state(void *data, bool toggle)
 {
    ps3_audio_t *aud = data;
-   aud->nonblocking = state;
+   aud->nonblocking = toggle;
 }
 
 static void ps3_audio_free(void *data)
@@ -213,8 +213,8 @@ const audio_driver_t audio_ps3 = {
    ps3_audio_stop,
    ps3_audio_start,
    ps3_audio_set_nonblock_state,
-   ps3_audio_use_float,
    ps3_audio_free,
+   ps3_audio_use_float,
    "ps3"
 };
 
