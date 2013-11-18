@@ -1557,17 +1557,17 @@ GLboolean rglGcmInitFromRM( rglGcmResource *rmResource )
    rglGcmSetBlendEquation(gCellGcmCurrentContext, RGLGCM_FUNC_ADD, RGLGCM_FUNC_ADD );
    rglGcmSetBlendFunc(gCellGcmCurrentContext, RGLGCM_ONE, RGLGCM_ZERO, RGLGCM_ONE, RGLGCM_ZERO );
    rglGcmSetClearColor(gCellGcmCurrentContext, 0 );
-   rglGcmSetBlendEnable(gCellGcmCurrentContext, RGLGCM_FALSE );
-   rglGcmSetBlendEnableMrt(gCellGcmCurrentContext, RGLGCM_FALSE, RGLGCM_FALSE, RGLGCM_FALSE );
+   rglGcmSetBlendEnable(gCellGcmCurrentContext, false );
+   rglGcmSetBlendEnableMrt(gCellGcmCurrentContext, false, false, false );
 
    for ( i = 0; i < RGLGCM_ATTRIB_COUNT; i++ )
    {
       rglGcmSetVertexDataArray(gCellGcmCurrentContext, i, 0, 0, 0, CELL_GCM_VERTEX_F, CELL_GCM_LOCATION_LOCAL, 0);
    }
 
-   rglGcmSetDitherEnable(gCellGcmCurrentContext, RGLGCM_TRUE );
+   rglGcmSetDitherEnable(gCellGcmCurrentContext, true );
 
-   for ( i = 0; i < RGLGCM_MAX_TEXIMAGE_COUNT; i++ )
+   for ( i = 0; i < CELL_GCM_MAX_TEXIMAGE_COUNT; i++ )
    {
       static const GLuint borderColor = 0;
 
@@ -1589,8 +1589,8 @@ GLboolean rglGcmInitFromRM( rglGcmResource *rmResource )
    rglGcmViewportState *v = &rglGcmState_i.state.viewport;
    v->x = 0;
    v->y = 0;
-   v->w = RGLGCM_MAX_RT_DIMENSION;
-   v->h = RGLGCM_MAX_RT_DIMENSION;
+   v->w = CELL_GCM_MAX_RT_DIMENSION;
+   v->h = CELL_GCM_MAX_RT_DIMENSION;
    rglGcmFifoGlViewport(v, 0.0f, 1.0f );
 
    // wait for setup to complete
@@ -2473,7 +2473,7 @@ static void rescInit( const RGLdeviceParameters* params, rglGcmDevice *gcmDevice
    GLuint colorBuffersPitch;
    uint32_t numColorBuffers = cellRescGetNumColorBuffers( dstBufferMode, ( CellRescPalTemporalMode )conf.palTemporalMode, 0 );
    result = rglGcmAllocateColorSurface(params->width, params->height * numColorBuffers,
-         4*8, RGLGCM_TRUE, 1, &(gcmDevice->RescColorBuffersId), &colorBuffersPitch, &size );
+         4*8, true, 1, &(gcmDevice->RescColorBuffersId), &colorBuffersPitch, &size );
 
    // set the destination buffer format and pitch
    CellRescDsts dsts = { CELL_RESC_SURFACE_A8R8G8B8, colorBuffersPitch, 1 };
@@ -2670,7 +2670,7 @@ int rglPlatformCreateDevice (void *data)
       result = rglGcmAllocateColorSurface(
             width, height,           // dimensions
             gcmDevice->color[i].bpp*8,  // bits per sample
-            RGLGCM_TRUE,               // scan out enable
+            true,               // scan out enable
             antiAliasingMode,                // antiAliasing
             &gcmDevice->color[i].dataId,    // returned buffer
             &gcmDevice->color[i].pitch,
@@ -2963,7 +2963,7 @@ GLAPI void RGL_EXPORT psglSwap (void)
    thisContext->current[0] = (((33) << (18)) | CELL_GCM_NV4097_SET_TRANSFORM_CONSTANT_LOAD);
    thisContext->current[1] = 0;
 
-   rglGcmSetDitherEnable(thisContext, RGLGCM_TRUE );
+   rglGcmSetDitherEnable(thisContext, true );
 
    RGLcontext *context = (RGLcontext*)_CurrentContext;
    context->needValidate = RGL_VALIDATE_ALL;
@@ -3708,13 +3708,10 @@ GLAPI GLenum APIENTRY glGetError(void)
 {
    if (!_CurrentContext )
       return GL_INVALID_OPERATION;
-   else
-   {
-      GLenum error = _CurrentContext->error;
 
-      _CurrentContext->error = GL_NO_ERROR;
-      return error;
-   }
+   GLenum error = _CurrentContext->error;
+   _CurrentContext->error = GL_NO_ERROR;
+   return error;
 }
 
 GLAPI void APIENTRY glGetIntegerv(GLenum pname, GLint* params)

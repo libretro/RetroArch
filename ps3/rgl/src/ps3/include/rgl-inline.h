@@ -712,11 +712,11 @@ static inline void rglGcmFifoGlViewport(void *data, GLclampf zNear, GLclampf zFa
    if (clipY0 < 0)
       clipY0 = 0;
 
-   if (clipX1 >= RGLGCM_MAX_RT_DIMENSION)
-      clipX1 = RGLGCM_MAX_RT_DIMENSION;
+   if (clipX1 >= CELL_GCM_MAX_RT_DIMENSION)
+      clipX1 = CELL_GCM_MAX_RT_DIMENSION;
 
-   if (clipY1 >= RGLGCM_MAX_RT_DIMENSION)
-      clipY1 = RGLGCM_MAX_RT_DIMENSION;
+   if (clipY1 >= CELL_GCM_MAX_RT_DIMENSION)
+      clipY1 = CELL_GCM_MAX_RT_DIMENSION;
 
    if ((clipX1 <= clipX0) || (clipY1 <= clipY0))
       clipX0 = clipY0 = clipX1 = clipY1 = 0;

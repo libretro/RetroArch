@@ -1177,8 +1177,8 @@ void rglPlatformFramebuffer::validate (void *data)
    if (!complete)
       return;
 
-   GLuint width = RGLGCM_MAX_RT_DIMENSION;
-   GLuint height = RGLGCM_MAX_RT_DIMENSION;
+   GLuint width  = CELL_GCM_MAX_RT_DIMENSION;
+   GLuint height = CELL_GCM_MAX_RT_DIMENSION;
 
    // color
    rt.colorBufferCount = 0;
@@ -1239,7 +1239,7 @@ void rglPlatformFramebuffer::validate (void *data)
    rt.width = width;
    rt.height = height;
 
-   rt.yInverted = RGLGCM_FALSE;
+   rt.yInverted = false;
    rt.xOffset = 0;
    rt.yOffset = 0;
    needValidate = GL_FALSE;
@@ -1271,7 +1271,7 @@ void *rglPlatformRasterInit (void)
    rglGcmDriver *driver = (rglGcmDriver*)malloc(sizeof(rglGcmDriver));
    memset(driver, 0, sizeof(rglGcmDriver));
 
-   driver->rt.yInverted = RGLGCM_TRUE;
+   driver->rt.yInverted = true;
    driver->invalidateVertexCache = GL_FALSE;
    driver->flushBufferCount = 0;
 
@@ -1620,7 +1620,7 @@ GLAPI void APIENTRY glDrawArrays (GLenum mode, GLint first, GLsizei count)
 
          rglGcmSetFragmentProgramLoad(thisContext, &conf, CELL_GCM_LOCATION_LOCAL);
 
-         rglGcmSetZMinMaxControl(thisContext, ( program->header.fragmentProgram.flags & CGF_DEPTHREPLACE ) ? RGLGCM_FALSE : RGLGCM_TRUE, RGLGCM_FALSE, RGLGCM_FALSE );
+         rglGcmSetZMinMaxControl(thisContext, ( program->header.fragmentProgram.flags & CGF_DEPTHREPLACE ) ? false : true, false, false );
 
          driver->fpLoadProgramId = program->loadProgramId;
          driver->fpLoadProgramOffset = program->loadProgramOffset;
