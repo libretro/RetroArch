@@ -3705,8 +3705,6 @@ static void rglResetContext (void *data)
 
    LContext->DrawBuffer = LContext->ReadBuffer = GL_COLOR_ATTACHMENT0_EXT;
 
-   LContext->ShaderSRGBRemap = GL_FALSE;
-
    LContext->Blending = GL_FALSE;
    LContext->BlendColor.R = 0.0f;
    LContext->BlendColor.G = 0.0f;
@@ -3962,10 +3960,6 @@ GLAPI void APIENTRY glEnable( GLenum cap )
                LContext->CurrentImageUnit->fragmentTarget );
          LContext->needValidate |= RGL_VALIDATE_TEXTURES_USED;
          break;
-      case GL_SHADER_SRGB_REMAP_SCE:
-         LContext->ShaderSRGBRemap = GL_TRUE;
-         LContext->needValidate |= RGL_VALIDATE_SHADER_SRGB_REMAP;
-         break;
       case GL_BLEND:
          LContext->Blending = GL_TRUE;
          LContext->needValidate |= RGL_VALIDATE_BLENDING;
@@ -3993,10 +3987,6 @@ GLAPI void APIENTRY glDisable( GLenum cap )
          LContext->CurrentImageUnit->currentTexture = rglGetCurrentTexture( LContext->CurrentImageUnit,
                LContext->CurrentImageUnit->fragmentTarget );
          LContext->needValidate |= RGL_VALIDATE_TEXTURES_USED;
-         break;
-      case GL_SHADER_SRGB_REMAP_SCE:
-         LContext->ShaderSRGBRemap = GL_FALSE;
-         LContext->needValidate |= RGL_VALIDATE_SHADER_SRGB_REMAP;
          break;
       case GL_BLEND:
          LContext->Blending = GL_FALSE;

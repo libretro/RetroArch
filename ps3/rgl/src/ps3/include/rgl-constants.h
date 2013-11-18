@@ -113,7 +113,6 @@ typedef enum rglGcmEnum
    RGLGCM_BLEND                          = 0x0be0,
    RGLGCM_COLOR_LOGIC_OP                 = 0x0bf2,
    RGLGCM_DITHER                         = 0x0bd0,
-   RGLGCM_PSHADER_SRGB_REMAPPING         = 0xff06,
 
    // glVertexAttribPointer
    RGLGCM_VERTEX_ATTRIB_ARRAY0           = 0x8650,
