@@ -170,9 +170,9 @@ static void rarch_get_environment_console(void)
 #endif
 
 #if !defined(RARCH_CONSOLE) && !defined(HAVE_BB10) && !defined(ANDROID) && !defined(EMSCRIPTEN)
-#define attempt_load_game_push_history false
-#else
 #define attempt_load_game_push_history true
+#else
+#define attempt_load_game_push_history false
 #endif
 
 #ifndef RARCH_CONSOLE
