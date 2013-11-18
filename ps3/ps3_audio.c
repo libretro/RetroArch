@@ -208,13 +208,13 @@ static bool ps3_audio_use_float(void *data)
 }
 
 const audio_driver_t audio_ps3 = {
-   .init = ps3_audio_init,
-   .write = ps3_audio_write,
-   .stop = ps3_audio_stop,
-   .start = ps3_audio_start,
-   .set_nonblock_state = ps3_audio_set_nonblock_state,
-   .use_float = ps3_audio_use_float,
-   .free = ps3_audio_free,
-   .ident = "ps3"
+   ps3_audio_init,
+   ps3_audio_write,
+   ps3_audio_stop,
+   ps3_audio_start,
+   ps3_audio_set_nonblock_state,
+   ps3_audio_use_float,
+   ps3_audio_free,
+   "ps3"
 };
 
