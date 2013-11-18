@@ -1843,34 +1843,6 @@ RGL_EXPORT GLfloat rglPlatformGetDeviceAspectRatio (const void *data)
 #define RGLGCM_DMA_PUSH_BUFFER_PREFETCH_PADDING 0x1000 // 4KB
 #define RGLGCM_FIFO_SIZE (64<<10) // 64 kb
 
-// allocation handles
-#define RGLGCM_CHANNEL_HANDLE_ID                     0xFACE0001
-#define RGLGCM_FRAME_BUFFER_OBJECT_HANDLE_ID         0xFACE0002
-#define RGLGCM_HOST_BUFFER_OBJECT_HANDLE_ID          0xFACE0003
-
-#define RGLGCM_PUSHBUF_MEMORY_HANDLE_ID              0xBEEF1000
-#define RGLGCM_HOST_NOTIFIER_MEMORY_HANDLE_ID        0xBEEF1001
-#define RGLGCM_VID_NOTIFIER_MEMORY_HANDLE_ID         0xBEEF1002
-#define RGLGCM_SEMAPHORE_MEMORY_HANDLE_ID            0xBEEF1003
-
-// dma handles
-#define RGLGCM_CHANNEL_DMA_SCRATCH_NOTIFIER          0xBEEF2000
-#define RGLGCM_CHANNEL_DMA_ERROR_NOTIFIER            0xBEEF2001
-#define RGLGCM_CONTEXT_DMA_MEMORY_FRAME_BUFFER       0xBEEF2002
-#define RGLGCM_CONTEXT_DMA_FROM_MEMORY_PUSHBUF       0xBEEF2003
-#define RGLGCM_CONTEXT_DMA_TO_MEMORY_GET_REPORT      0xBEEF2004
-#define RGLGCM_CONTEXT_DMA_MEMORY_HOST_BUFFER        0xBEEF2005
-#define RGLGCM_CONTEXT_DMA_MEMORY_SEMAPHORE_RW       0xBEEF2006
-#define RGLGCM_CONTEXT_DMA_MEMORY_SEMAPHORE_RO       0xBEEF2007
-
-// clas contexts
-#define RGLGCM_CURIE_PRIMITIVE                       0xBEEF4097
-#define RGLGCM_MEM2MEM_HOST_TO_VIDEO                 0xBBBB0000
-#define RGLGCM_IMAGEFROMCPU                          0xBBBB1000
-#define RGLGCM_SCALEDIMAGE                           0xBBBB1001
-#define RGLGCM_CONTEXT_2D_SURFACE                    0xBBBB2000
-#define RGLGCM_CONTEXT_SWIZ_SURFACE                  0xBBBB2001
-
 int32_t rglOutOfSpaceCallback (void *data, uint32_t spaceInWords)
 {
    struct CellGcmContextData *fifoContext = (struct CellGcmContextData*)data;
@@ -2029,15 +2001,12 @@ typedef struct
 typedef struct
 {
    rglTiledRegion region[RGLGCM_MAX_TILED_REGIONS];
-}
-rglTiledMemoryManager;
+} rglTiledMemoryManager;
 
 
 // TODO: put in device state?
 static rglTiledMemoryManager rglGcmTiledMemoryManager;
-
 static rglGcmResource rglGcmResource;
-
 
 void rglGcmTiledMemoryInit( void )
 {
@@ -2294,10 +2263,6 @@ static void rglGcmAllocateTiledSurface(
       *bytesAllocated = 0;
       *pitchAllocated = 0;
    }
-   else
-   {
-      //RGL_REPORT_EXTRA( RGL_REPORT_GPU_MEMORY_ALLOC, "Allocating GPU memory (tiled): %d bytes allocated at id 0x%08x", *bytesAllocated, *id );
-   }
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -2315,13 +2280,8 @@ GLboolean rglGcmAllocateColorSurface(
 {
    rglTiledMemoryManager* mm = &rglGcmTiledMemoryManager;
 
-   rglGcmAllocateTiledSurface(
-         mm,
-         width, height, bitsPerPixel,
-         antiAliasing,
-         id,
-         pitchAllocated,
-         bytesAllocated );
+   rglGcmAllocateTiledSurface(mm, width, height, bitsPerPixel,
+         antiAliasing, id, pitchAllocated, bytesAllocated );
 
    return *bytesAllocated > 0;
 }
