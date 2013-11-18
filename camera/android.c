@@ -152,8 +152,17 @@ static bool android_camera_poll(void *data, retro_camera_frame_raw_framebuffer_t
 
    if (newFrame)
    {
+      // FIXME: Identity for now. Use proper texture matrix as returned by Android Camera.
+      static const float affine[] = {
+         1.0f, 0.0f, 0.0f,
+         0.0f, 1.0f, 0.0f,
+         0.0f, 0.0f, 1.0f
+      };
+
       if (frame_gl_cb)
-        frame_gl_cb(androidcamera->tex, GL_TEXTURE_2D, NULL);
+        frame_gl_cb(androidcamera->tex,
+              GL_TEXTURE_2D, // TODO: This is likely GL_TEXTURE_EXTERNAL_OES.
+              affine);
       return true;
    }
 
@@ -169,3 +178,4 @@ const camera_driver_t camera_android = {
    android_camera_poll,
    "android",
 };
+
