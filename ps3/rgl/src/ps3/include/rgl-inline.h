@@ -35,7 +35,7 @@ static inline void rglGcmSetVertexProgramParameterBlock(struct CellGcmContextDat
    {
       uint32_t loadAt = baseConst + i * 8;
 
-      thisContext->current[0] = (((33) << (18)) | ((0x00001efc)));
+      thisContext->current[0] = (((33) << (18)) | (CELL_GCM_NV4097_SET_TRANSFORM_CONSTANT_LOAD));
       thisContext->current[1] = (loadAt);
 
       memcpy(&thisContext->current[2], value, 16 * sizeof(float));
@@ -46,7 +46,7 @@ static inline void rglGcmSetVertexProgramParameterBlock(struct CellGcmContextDat
 
    if(blockRemain)
    {
-      thisContext->current[0] = (((blockRemain+1) << (18)) | ((0x00001efc)));
+      thisContext->current[0] = (((blockRemain+1) << (18)) | (CELL_GCM_NV4097_SET_TRANSFORM_CONSTANT_LOAD));
       thisContext->current[1] = (baseConst + blockCount * 8);
       thisContext->current += 2;
 
@@ -70,22 +70,22 @@ static inline void rglGcmSetInlineTransfer(struct CellGcmContextData *thisContex
    pixelShift = (dstOffset & 63) >> 2;
    paddedSizeInWords = (sizeInWords + 1) & ~1;
 
-   (thisContext->current)[0] = (((1) << (18)) | ((0x0000630C)));
+   (thisContext->current)[0] = (((1) << (18)) | (CELL_GCM_NV3062_SET_OFFSET_DESTIN));
    (thisContext->current)[1] = (alignedVideoOffset);
    (thisContext->current) += 2;
 
-   (thisContext->current)[0] = (((2) << (18)) | ((0x00006300)));
+   (thisContext->current)[0] = (((2) << (18)) | (CELL_GCM_NV3062_SET_COLOR_FORMAT));
    (thisContext->current)[1] = (CELL_GCM_TRANSFER_SURFACE_FORMAT_Y32);
    (thisContext->current)[2] = ((0x1000) | ((0x1000) << 16));
    (thisContext->current) += 3;
 
-   (thisContext->current)[0] = (((3) << (18)) | ((0x0000A304)));
+   (thisContext->current)[0] = (((3) << (18)) | (CELL_GCM_NV308A_POINT));
    (thisContext->current)[1] = (((0) << 16) | (pixelShift));
    (thisContext->current)[2] = (((1) << 16) | (sizeInWords));
    (thisContext->current)[3] = (((1) << 16) | (sizeInWords));
    (thisContext->current) += 4; 
 
-   thisContext->current[0] = (((paddedSizeInWords) << (18)) | ((0x0000A400)));
+   thisContext->current[0] = (((paddedSizeInWords) << (18)) | (CELL_GCM_NV308A_COLOR));
    thisContext->current += 1;
 
    src = (uint32_t*)srcAdr;
@@ -126,7 +126,7 @@ static inline void rglGcmSetInlineTransfer(struct CellGcmContextData *thisContex
    rglBuffer->bufferId = GMM_ERROR
 
 #define rglGcmSetTextureAddress(thisContext, index, wraps, wrapt, wrapr, unsignedRemap, zfunc, gamma) \
- (thisContext->current)[0] = (((1) << (18)) | ((0x00001a08) + 0x20 * ((index)))); \
+ (thisContext->current)[0] = (((1) << (18)) | (CELL_GCM_NV4097_SET_TEXTURE_ADDRESS + 0x20 * ((index)))); \
  (thisContext->current)[1] = (((wraps)) | ((0) << 4) | (((wrapt)) << 8) | (((unsignedRemap)) << 12) | (((wrapr)) << 16) | (((gamma)) << 20) |((0) << 24) | (((zfunc)) << 28)); \
  (thisContext->current) += 2
 
@@ -140,7 +140,7 @@ static inline void rglGcmSetInlineTransfer(struct CellGcmContextData *thisContex
  } \
  if (continue_func) \
  { \
-  (thisContext->current)[0] = (((1) << (18)) | ((0x00001a14) + 0x20 * ((index)))); \
+  (thisContext->current)[0] = (((1) << (18)) | (CELL_GCM_NV4097_SET_TEXTURE_FILTER + 0x20 * ((index)))); \
   (thisContext->current)[1] = (((bias)) | (((conv)) << 13) | (((min)) << 16) | (((mag)) << 24) | ((0) << 28) | ((0) << 29) | ((0) << 30) | ((0) << 31)); ; (thisContext->current) += 2; \
  } \
 }
@@ -155,14 +155,14 @@ static inline void rglGcmSetInlineTransfer(struct CellGcmContextData *thisContex
  } \
  if (continue_func) \
  { \
-    (thisContext->current)[0] = (((1) << (18)) | ((0x00000050))); \
+    (thisContext->current)[0] = (((1) << (18)) | (CELL_GCM_NV406E_SET_REFERENCE)); \
     (thisContext->current)[1] = (ref); \
     (thisContext->current) += 2; \
  } \
 }
 
 #define rglGcmSetTextureBorderColor(thisContext, index, color) \
- (thisContext->current)[0] = (((1) << (18)) | ((0x00001a1c) + 0x20 * ((index)))); \
+ (thisContext->current)[0] = (((1) << (18)) | (CELL_GCM_NV4097_SET_TEXTURE_BORDER_COLOR + 0x20 * ((index)))); \
  (thisContext->current)[1] = (color); \
  (thisContext->current) += 2
 
@@ -308,24 +308,24 @@ static inline void rglGcmSetInlineTransfer(struct CellGcmContextData *thisContex
  } \
  if (continue_func) \
  { \
-    (thisContext->current)[0] = (((1) << (18)) | ((0x00000310))); \
+    (thisContext->current)[0] = (((1) << (18)) | (CELL_GCM_NV4097_SET_BLEND_ENABLE)); \
     (thisContext->current)[1] = (enable); \
     (thisContext->current) += 2; \
  } \
 }
 
 #define rglGcmSetBlendEnableMrt(thisContext, mrt1, mrt2, mrt3) \
- (thisContext->current)[0] = (((1) << (18)) | ((0x0000036c))); \
+ (thisContext->current)[0] = (((1) << (18)) | (CELL_GCM_NV4097_SET_BLEND_ENABLE_MRT)); \
  (thisContext->current)[1] = (((mrt1) << 1)|((mrt2) << 2)|((mrt3) << 3)); \
  (thisContext->current) += 2
 
 #define rglGcmSetBlendEquation(thisContext, color, alpha) \
- (thisContext->current)[0] = (((1) << (18)) | ((0x00000320))); \
+ (thisContext->current)[0] = (((1) << (18)) | (CELL_GCM_NV4097_SET_BLEND_EQUATION)); \
  (thisContext->current)[1] = (((color)) | (((alpha)) << 16)); \
  (thisContext->current) += 2
 
 #define rglGcmSetBlendFunc(thisContext, sfcolor, dfcolor, sfalpha, dfalpha) \
- (thisContext->current)[0] = (((2) << (18)) | ((0x00000314))); \
+ (thisContext->current)[0] = (((2) << (18)) | (CELL_GCM_NV4097_SET_BLEND_FUNC_SFACTOR)); \
  (thisContext->current)[1] = (((sfcolor)) | (((sfalpha)) << 16)); \
  (thisContext->current)[2] = (((dfcolor)) | (((dfalpha)) << 16)); \
  (thisContext->current) += 3
@@ -579,7 +579,7 @@ static void rglGcmSetDrawArraysSlow(struct CellGcmContextData *thisContext, uint
       thisContext->current[0] = ((((2047)) << (18)) | CELL_GCM_NV4097_DRAW_ARRAYS | (0x40000000));
       thisContext->current++;
 
-      for(j=0;j<(2047);j++)
+      for(j = 0; j < CELL_GCM_MAX_METHOD_COUNT; j++)
       {
          thisContext->current[0] = ((first) | ((255U)<<24));
          thisContext->current++;
@@ -592,7 +592,7 @@ static void rglGcmSetDrawArraysSlow(struct CellGcmContextData *thisContext, uint
       thisContext->current[0] = (((rest) << (18)) | CELL_GCM_NV4097_DRAW_ARRAYS | (0x40000000));
       thisContext->current++;
 
-      for(j=0;j<rest;j++)
+      for(j = 0;j < rest; j++)
       {
          thisContext->current[0] = ((first) | ((255U)<<24));
          thisContext->current++;
