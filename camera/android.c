@@ -18,51 +18,84 @@
 #include "../driver.h"
 #include "../android/native/jni/jni_macros.h"
 
-static void *android_init(const char *device, uint64_t caps, unsigned width, unsigned height)
+/* FIXME - we need to seriously profile JNI overhead here - whether we can cache certain
+ * objects/variables */
+/* FIXME - check whether or not it is safe to attach the thread once at android_init and
+ * only detach it when calling android_free - might have to be done per-function but would
+ * introduce significant overhead */
+
+typedef struct android_camera
+{
+   JNIEnv *env;
+   JavaVM *java_vm;
+   jclass class;     // RetroActivity class
+} androidcamera_t;
+
+static void *android_camera_init(const char *device, uint64_t caps, unsigned width, unsigned height)
 {
    (void)device;
    (void)caps;
    (void)width;
    (void)height;
-   return (void*)0;
+
+   struct android_app *android_app = (struct android_app*)g_android;
+   androidcamera_t *androidcamera = (androidcamera_t*)calloc(1, sizeof(androidcamera_t));
+   if (!androidcamera)
+      return NULL;
+
+   androidcamera->java_vm = (JavaVM*)android_app->activity->vm;
+   (*androidcamera->java_vm)->AttachCurrentThread(androidcamera->java_vm, &androidcamera->env, 0);
+
+   GET_OBJECT_CLASS(androidcamera->env, androidcamera->class, android_app->activity->clazz);
+
+   return androidcamera;
 }
 
-static void android_free(void *data)
+static void android_camera_free(void *data)
 {
    struct android_app *android_app = (struct android_app*)g_android;
+   androidcamera_t *androidcamera = (androidcamera_t*)data;
    (void)android_app;
-   (void)data;
+
+   (*androidcamera->java_vm)->DetachCurrentThread(androidcamera->java_vm);
+
+   free(androidcamera);
 }
 
-static bool android_start(void *data)
+static bool android_camera_start(void *data)
 {
    struct android_app *android_app = (struct android_app*)g_android;
+   androidcamera_t *androidcamera = (androidcamera_t*)data;
+
    (void)android_app;
-   (void)data;
+   (void)androidcamera;
    return true;
 }
 
-static void android_stop(void *data)
+static void android_camera_stop(void *data)
 {
    struct android_app *android_app = (struct android_app*)g_android;
+   androidcamera_t *androidcamera = (androidcamera_t*)data;
    (void)android_app;
-   (void)data;
+   (void)androidcamera;
 }
 
-static bool android_poll(void *data, retro_camera_frame_raw_framebuffer_t frame_raw_cb,
+static bool android_camera_poll(void *data, retro_camera_frame_raw_framebuffer_t frame_raw_cb,
       retro_camera_frame_opengl_texture_t frame_gl_cb)
 {
    struct android_app *android_app = (struct android_app*)g_android;
+   androidcamera_t *androidcamera = (androidcamera_t*)data;
    (void)android_app;
-   (void)data;
+   (void)androidcamera;
+
    return true;
 }
 
 const camera_driver_t camera_android = {
-   android_init,
-   android_free,
-   android_start,
-   android_stop,
-   android_poll,
+   android_camera_init,
+   android_camera_free,
+   android_camera_start,
+   android_camera_stop,
+   android_camera_poll,
    "android",
 };
