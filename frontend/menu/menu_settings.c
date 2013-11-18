@@ -27,6 +27,14 @@
 #include "../../config.h"
 #endif
 
+#if defined(__CELLOS_LV2__)
+#include <sdk_version.h>
+
+#if (CELL_SDK_VERSION > 0x340000)
+#include <sysutil/sysutil_bgmplayback.h>
+#endif
+#endif
+
 #ifdef GEKKO
 #define MAX_GAMMA_SETTING 2
 
@@ -1521,6 +1529,29 @@ int menu_set_settings(void *data, unsigned setting, unsigned action)
 #endif
          }
          break;
+      case RGUI_SETTINGS_CUSTOM_BGM_CONTROL_ENABLE:
+         switch (action)
+         {
+            case RGUI_ACTION_OK:
+#if (CELL_SDK_VERSION > 0x340000)
+               if (g_extern.lifecycle_state & (1ULL << MODE_AUDIO_CUSTOM_BGM_ENABLE))
+                  g_extern.lifecycle_state &= ~(1ULL << MODE_AUDIO_CUSTOM_BGM_ENABLE);
+               else
+                  g_extern.lifecycle_state |= (1ULL << MODE_AUDIO_CUSTOM_BGM_ENABLE);
+               if (g_extern.lifecycle_state & (1ULL << MODE_AUDIO_CUSTOM_BGM_ENABLE))
+                  cellSysutilEnableBgmPlayback();
+               else
+                  cellSysutilDisableBgmPlayback();
+
+#endif
+               break;
+            case RGUI_ACTION_START:
+#if (CELL_SDK_VERSION > 0x340000)
+               g_extern.lifecycle_state |= (1ULL << MODE_AUDIO_CUSTOM_BGM_ENABLE);
+#endif
+               break;
+         }
+         break;
       default:
          break;
    }
@@ -1855,10 +1886,12 @@ void menu_set_settings_label(char *type_str, size_t type_str_size, unsigned *w, 
                (g_extern.lifecycle_state & (1ULL << MODE_VIDEO_SOFT_FILTER_ENABLE)) ? "ON" : "OFF");
          break;
 #endif
+      case RGUI_SETTINGS_CUSTOM_BGM_CONTROL_ENABLE:
+         strlcpy(type_str, (g_extern.lifecycle_state & (1ULL << MODE_AUDIO_CUSTOM_BGM_ENABLE)) ? "ON" : "OFF", sizeof(type_str));
+         break;
       default:
          type_str[0] = 0;
          *w = 0;
          break;
    }
 }
-

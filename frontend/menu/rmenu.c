@@ -1517,8 +1517,6 @@ static int set_setting_action(void *data, uint8_t menu_type, unsigned switchvalu
       case SETTING_ENABLE_CUSTOM_BGM:
          switch (action)
          {
-            case RGUI_ACTION_LEFT:
-            case RGUI_ACTION_RIGHT:
             case RGUI_ACTION_OK:
 #if (CELL_SDK_VERSION > 0x340000)
                if (g_extern.lifecycle_state & (1ULL << MODE_AUDIO_CUSTOM_BGM_ENABLE))

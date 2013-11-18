@@ -1951,6 +1951,9 @@ void menu_populate_entries(void *data, unsigned menu_type)
          file_list_clear(rgui->selection_buf);
          file_list_push(rgui->selection_buf, "Mute Audio", RGUI_SETTINGS_AUDIO_MUTE, 0);
          file_list_push(rgui->selection_buf, "Rate Control Delta", RGUI_SETTINGS_AUDIO_CONTROL_RATE_DELTA, 0);
+#ifdef __CELLOS_LV2__
+         file_list_push(rgui->selection_buf, "System BGM Control", RGUI_SETTINGS_CUSTOM_BGM_CONTROL_ENABLE, 0);
+#endif
 #ifdef _XBOX1
          file_list_push(rgui->selection_buf, "Volume Level", RGUI_SETTINGS_AUDIO_VOLUME_LEVEL, 0);
 #endif
