@@ -280,7 +280,7 @@ returntype main_entry(signature())
       }
       else if (g_extern.lifecycle_state & (1ULL << MODE_GAME))
       {
-         if (driver.video_poke->set_aspect_ratio)
+         if (driver.video_poke && driver.video_poke->set_aspect_ratio)
             driver.video_poke->set_aspect_ratio(driver.video_data, g_settings.video.aspect_ratio_idx);
 
          while_iter ((g_extern.is_paused && !g_extern.is_oneshot) ? rarch_main_idle_iterate() : rarch_main_iterate())
