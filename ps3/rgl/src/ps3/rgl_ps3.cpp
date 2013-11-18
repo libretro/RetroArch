@@ -1986,7 +1986,7 @@ static int rglGcmInitRM( rglGcmResource *gcmResource, int inSysMem, unsigned int
    for (GLuint i = 0; i < 32; ++i)
       gcmResource->ioifMappings[i] = ( unsigned long long )( unsigned long )( gcmResource->localAddress + ( 64 << 20 ) * ( i / 4 ) );
 
-   cellGcmFinish(1); // added just a constant value for now to adjust to the inline libgcm interface change
+   cellGcmFinish(gCellGcmCurrentContext, 1); // added just a constant value for now to adjust to the inline libgcm interface change
 
    gcmResource->hostMemorySize -= dmaPushBufferSize + RGLGCM_DMA_PUSH_BUFFER_PREFETCH_PADDING;
    gcmResource->dmaPushBuffer = gcmResource->hostMemoryBase + gcmResource->hostMemorySize;
@@ -1996,7 +1996,8 @@ static int rglGcmInitRM( rglGcmResource *gcmResource, int inSysMem, unsigned int
    gcmResource->dmaPushBufferSize = dmaPushBufferSize;
 
    // Set Jump command to our fifo structure
-   cellGcmSetJumpCommand(( char * )gcmResource->dmaPushBuffer - ( char * )gcmResource->hostMemoryBase );
+   const uint32_t offset = ( char * )gcmResource->dmaPushBuffer - ( char * )gcmResource->hostMemoryBase;
+   rglGcmSetJumpCommand(gCellGcmCurrentContext, offset);
 
    // Set our Fifo functions
    gCellGcmCurrentContext->callback = ( CellGcmContextCallback )rglOutOfSpaceCallback;
