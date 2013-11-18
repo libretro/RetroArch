@@ -81,4 +81,16 @@ struct jni_out_params_char
    var = (*env)->CallObjectMethod(env, clazz_obj, methodId, __VA_ARGS__); \
    JNI_EXCEPTION(env)
 
+#define CALL_VOID_METHOD(env, clazz_obj, methodId) \
+   (*env)->CallVoidMethod(env, clazz_obj, methodId); \
+   JNI_EXCEPTION(env)
+
+#define CALL_VOID_METHOD_PARAM(env, clazz_obj, methodId, ...) \
+   (*env)->CallVoidMethod(env, clazz_obj, methodId, __VA_ARGS__); \
+   JNI_EXCEPTION(env)
+
+#define CALL_BOOLEAN_METHOD(env, var, clazz_obj, methodId) \
+   var = (*env)->CallBooleanMethod(env, clazz_obj, methodId); \
+   JNI_EXCEPTION(env)
+
 #endif

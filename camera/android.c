@@ -15,6 +15,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <GLES2/gl2.h>
 #include "../driver.h"
 #include "../android/native/jni/jni_macros.h"
 
@@ -29,6 +30,7 @@ typedef struct android_camera
    JNIEnv *env;
    JavaVM *java_vm;
    jclass class;     // RetroActivity class
+   GLuint tex;
 } androidcamera_t;
 
 static void *android_camera_init(const char *device, uint64_t caps, unsigned width, unsigned height)
@@ -53,7 +55,13 @@ static void *android_camera_init(const char *device, uint64_t caps, unsigned wid
 
    GET_OBJECT_CLASS(androidcamera->env, androidcamera->class, android_app->activity->clazz);
 
-   // FIXME - do JNI shenanigans - call RetroActivity->onCameraInit
+
+   jmethodID onCameraInit = NULL;
+   GET_METHOD_ID(androidcamera->env, onCameraInit, androidcamera->class, "onCameraInit", "()V");
+   if (!onCameraInit)
+      return NULL;
+
+   CALL_VOID_METHOD(androidcamera->env, androidcamera->class, onCameraInit);
 
    return androidcamera;
 }
@@ -64,8 +72,14 @@ static void android_camera_free(void *data)
    androidcamera_t *androidcamera = (androidcamera_t*)data;
    (void)android_app;
 
-   // FIXME -do JNI shenanigans - call RetroActivity->onCameraFree
+   jmethodID onCameraFree = NULL;
+   GET_METHOD_ID(androidcamera->env, onCameraFree, androidcamera->class, "onCameraFree", "()V");
+   if (!onCameraFree)
+      goto end;
 
+   CALL_VOID_METHOD(androidcamera->env, androidcamera->class, onCameraFree);
+
+   end:
    (*androidcamera->java_vm)->DetachCurrentThread(androidcamera->java_vm);
 
    free(androidcamera);
@@ -79,9 +93,26 @@ static bool android_camera_start(void *data)
    (void)android_app;
    (void)androidcamera;
 
-   // FIXME - do JNI shenanigans - call RetroActivity->onCameraStart
-  
+   glGenTextures(1, &androidcamera->tex);
+
+   jmethodID onCameraSetTexture = NULL;
+   GET_METHOD_ID(androidcamera->env, onCameraSetTexture, androidcamera->class, "onCameraSetTexture", "(I)V");
+   if (!onCameraSetTexture)
+      goto end;
+
+   CALL_VOID_METHOD_PARAM(androidcamera->env, androidcamera->class, onCameraSetTexture, (int) androidcamera->tex);
+
+   jmethodID onCameraStart = NULL;
+   GET_METHOD_ID(androidcamera->env, onCameraSetTexture, androidcamera->class, "onCameraStart", "()V");
+   if (!onCameraStart)
+      goto end;
+
+   CALL_VOID_METHOD(androidcamera->env, androidcamera->class, onCameraStart);
+
    return true;
+
+   end:
+   return false;
 }
 
 static void android_camera_stop(void *data)
@@ -91,7 +122,12 @@ static void android_camera_stop(void *data)
    (void)android_app;
    (void)androidcamera;
 
-   // FIXME - do JNI shenanigans - call RetroActivity->onCameraStop
+   jmethodID onCameraStop = NULL;
+   GET_METHOD_ID(androidcamera->env, onCameraStop, androidcamera->class, "onCameraStop", "()V");
+   if (!onCameraStop)
+      return;
+
+   CALL_VOID_METHOD(androidcamera->env, androidcamera->class, onCameraStop);
 }
 
 static bool android_camera_poll(void *data, retro_camera_frame_raw_framebuffer_t frame_raw_cb,
@@ -102,21 +138,24 @@ static bool android_camera_poll(void *data, retro_camera_frame_raw_framebuffer_t
    (void)android_app;
    (void)androidcamera;
    (void)frame_raw_cb;
-   unsigned gl_texid = 0;
 
-   // FIXME - do JNI shenanigans - call RetroActivity->onCameraPoll
+   jmethodID onCameraPoll = NULL;
+   GET_METHOD_ID(androidcamera->env, onCameraPoll, androidcamera->class, "onCameraPoll", "()Z");
+   if (!onCameraPoll)
+      goto end;
 
-   // if (preprocess image JNI function returns true)
+   jboolean newFrame;
+   CALL_BOOLEAN_METHOD(androidcamera->env, newFrame, androidcamera->class, onCameraPoll);
+
+   if (newFrame)
    {
-      // FIXME - call RetroActivity->onCameraSetTexture
-     
-      //if (frame_gl_cb)
-        //frame_gl_cb(gl_texid, ?, ?);
+      if (frame_gl_cb)
+        frame_gl_cb(androidcamera->tex, GL_TEXTURE_2D, NULL);
       return true;
    }
 
+   end:
    return false;
-
 }
 
 const camera_driver_t camera_android = {
