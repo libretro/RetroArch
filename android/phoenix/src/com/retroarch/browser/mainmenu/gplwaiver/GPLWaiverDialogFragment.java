@@ -52,7 +52,7 @@ public final class GPLWaiverDialogFragment extends DialogFragment
 					if (!gplv3 && !gplv2)
 					{
 						String libName = lib.getName();
-						Log.i("GPL WAIVER", "Deleting non-GPL core" + libName + "...");
+						Log.i("GPL WAIVER", "Deleting non-GPL core " + libName + "...");
 						lib.delete();
 					}
 				}
