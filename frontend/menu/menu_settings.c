@@ -325,6 +325,56 @@ static bool osk_callback_enter_rsound_init(void *data)
 
    return true;
 }
+
+static bool osk_callback_enter_filename(void *data)
+{
+   if (!driver.osk)
+      return false;
+
+   if (g_extern.lifecycle_state & (1ULL << MODE_OSK_ENTRY_SUCCESS))
+   {
+      RARCH_LOG("OSK - Applying input data.\n");
+      char tmp_str[256];
+      char filepath[PATH_MAX];
+      int num = wcstombs(tmp_str, driver.osk->get_text_buf(driver.osk_data), sizeof(tmp_str));
+      tmp_str[num] = 0;
+
+      fill_pathname_join(filepath, g_settings.video.shader_dir, tmp_str, sizeof(filepath));
+      strlcat(filepath, ".cgp", sizeof(filepath));
+      RARCH_LOG("[osk_callback_enter_filename]: filepath is: %s.\n", filepath);
+      config_file_t *conf = config_file_new(NULL);
+      if (!conf)
+         return false;
+      gfx_shader_write_conf_cgp(conf, &rgui->shader);
+      config_file_write(conf, filepath);
+      config_file_free(conf);
+      goto do_exit;
+   }
+   else if (g_extern.lifecycle_state & (1ULL << MODE_OSK_ENTRY_FAIL))
+      goto do_exit;
+
+   return false;
+do_exit:
+   g_extern.lifecycle_state &= ~((1ULL << MODE_OSK_ENTRY_SUCCESS) |
+         (1ULL << MODE_OSK_ENTRY_FAIL));
+   return true;
+}
+
+static bool osk_callback_enter_filename_init(void *data)
+{
+   if (!driver.osk)
+      return false;
+
+   if (driver.osk->write_initial_msg)
+      driver.osk->write_initial_msg(driver.osk_data, L"Save Preset");
+   if (driver.osk->write_msg)
+      driver.osk->write_msg(driver.osk_data, L"Enter filename for preset.");
+   if (driver.osk->start)
+      driver.osk->start(driver.osk_data);
+
+   return true;
+}
+
 #endif
 
 int menu_set_settings(void *data, unsigned setting, unsigned action)
@@ -1419,6 +1469,49 @@ int menu_set_settings(void *data, unsigned setting, unsigned action)
          }
          break;
 #endif
+#ifdef _XBOX1
+      case RGUI_SETTINGS_FLICKER_FILTER:
+         switch (action)
+         {
+            case RGUI_ACTION_LEFT:
+               if (g_extern.console.screen.flicker_filter_index > 0)
+                  g_extern.console.screen.flicker_filter_index--;
+               break;
+            case RGUI_ACTION_RIGHT:
+               if (g_extern.console.screen.flicker_filter_index < 5)
+                  g_extern.console.screen.flicker_filter_index++;
+               break;
+            case RGUI_ACTION_START:
+               g_extern.console.screen.flicker_filter_index = 0;
+               break;
+         }
+         break;
+      case RGUI_SETTINGS_SOFT_DISPLAY_FILTER:
+         switch (action)
+         {
+            case RGUI_ACTION_LEFT:
+            case RGUI_ACTION_RIGHT:
+            case RGUI_ACTION_OK:
+               if (g_extern.lifecycle_state & (1ULL << MODE_VIDEO_SOFT_FILTER_ENABLE))
+                  g_extern.lifecycle_state &= ~(1ULL << MODE_VIDEO_SOFT_FILTER_ENABLE);
+               else
+                  g_extern.lifecycle_state |= (1ULL << MODE_VIDEO_SOFT_FILTER_ENABLE);
+               break;
+            case RGUI_ACTION_START:
+               g_extern.lifecycle_state |= (1ULL << MODE_VIDEO_SOFT_FILTER_ENABLE);
+               break;
+         }
+         break;
+#endif
+      case RGUI_SETTINGS_SHADER_PRESET_SAVE:
+         if (action == RGUI_ACTION_OK)
+         {
+#ifdef HAVE_OSK
+            g_extern.osk.cb_init = osk_callback_enter_filename_init;
+            g_extern.osk.cb_callback = osk_callback_enter_filename;
+#endif
+         }
+         break;
       default:
          break;
    }
@@ -1633,6 +1726,7 @@ void menu_set_settings_label(char *type_str, size_t type_str_size, unsigned *w, 
       case RGUI_SETTINGS_SHADER_OPTIONS:
       case RGUI_SETTINGS_SHADER_PRESET:
 #endif
+      case RGUI_SETTINGS_SHADER_PRESET_SAVE:
       case RGUI_SETTINGS_CORE:
       case RGUI_SETTINGS_DISK_APPEND:
       case RGUI_SETTINGS_INPUT_OPTIONS:
@@ -1743,6 +1837,15 @@ void menu_set_settings_label(char *type_str, size_t type_str_size, unsigned *w, 
       case RGUI_SETTINGS_RSOUND_SERVER_IP_ADDRESS:
          strlcpy(type_str, g_settings.audio.device, type_str_size);
          break;
+#ifdef _XBOX1
+      case RGUI_SETTINGS_FLICKER_FILTER:
+         snprintf(type_str, sizeof(type_str), "%d", g_extern.console.screen.flicker_filter_index);
+         break;
+      case RGUI_SETTINGS_SOFT_DISPLAY_FILTER:
+         snprintf(type_str, sizeof(type_str),
+               (g_extern.lifecycle_state & (1ULL << MODE_VIDEO_SOFT_FILTER_ENABLE)) ? "ON" : "OFF");
+         break;
+#endif
       default:
          type_str[0] = 0;
          *w = 0;

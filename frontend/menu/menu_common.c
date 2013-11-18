@@ -1794,6 +1794,10 @@ void menu_populate_entries(void *data, unsigned menu_type)
          file_list_push(rgui->selection_buf, "Default Filter", RGUI_SETTINGS_SHADER_FILTER, 0);
          file_list_push(rgui->selection_buf, "Load Shader Preset",
                RGUI_SETTINGS_SHADER_PRESET, 0);
+#ifdef HAVE_OSK
+         file_list_push(rgui->selection_buf, "Save Shader Preset",
+               RGUI_SETTINGS_SHADER_PRESET_SAVE, 0);
+#endif
          file_list_push(rgui->selection_buf, "Shader Passes",
                RGUI_SETTINGS_SHADER_PASSES, 0);
 
@@ -1832,6 +1836,10 @@ void menu_populate_entries(void *data, unsigned menu_type)
 #ifdef HW_RVL
          file_list_push(rgui->selection_buf, "VI Trap filtering", RGUI_SETTINGS_VIDEO_SOFT_FILTER, 0);
          file_list_push(rgui->selection_buf, "Gamma", RGUI_SETTINGS_VIDEO_GAMMA, 0);
+#endif
+#ifdef _XBOX1
+         file_list_push(rgui->selection_buf, "Soft filtering", RRGUI_SETTINGS_SOFT_DISPLAY_FILTER, 0);
+         file_list_push(rgui->selection_buf, "Flicker filtering", RGUI_SETTINGS_FLICKER_FILTER, 0);
 #endif
          file_list_push(rgui->selection_buf, "Integer Scale", RGUI_SETTINGS_VIDEO_INTEGER_SCALE, 0);
          file_list_push(rgui->selection_buf, "Aspect Ratio", RGUI_SETTINGS_VIDEO_ASPECT_RATIO, 0);
