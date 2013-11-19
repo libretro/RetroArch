@@ -157,13 +157,13 @@ static void rarch_get_environment_console(void)
 #define ra_preinited false
 #endif
 
-#if defined(HAVE_BB10) || defined(RARCH_CONSOLE) || defined(EMSCRIPTEN)
+#if defined(HAVE_BB10) || defined(RARCH_CONSOLE) || defined(EMSCRIPTEN) || defined(OSX)
 #define attempt_load_game false
 #else
 #define attempt_load_game true
 #endif
 
-#if defined(RARCH_CONSOLE) || defined(HAVE_BB10) || defined(ANDROID)
+#if defined(RARCH_CONSOLE) || defined(HAVE_BB10) || defined(ANDROID) || defined(OSX)
 #define initial_menu_lifecycle_state (1ULL << MODE_LOAD_GAME)
 #else
 #define initial_menu_lifecycle_state (1ULL << MODE_GAME)
