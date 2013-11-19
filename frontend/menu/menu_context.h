@@ -34,6 +34,7 @@ typedef struct menu_ctx_driver
    void  (*init_assets)(void*);
    void  (*free_assets)(void*);
    void  (*populate_entries)(void*, unsigned);
+   void  (*iterate)(void*, unsigned);
 
    // Human readable string.
    const char *ident;

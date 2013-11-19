@@ -37,10 +37,6 @@ const menu_ctx_driver_t *menu_ctx;
 //forward decl
 static int menu_iterate_func(void *data, unsigned action);
 
-#if defined(HAVE_RMENU_XUI)
-#define menu_iterate_func(a, b) rmenu_xui_iterate(a, b)
-#endif
-
 #ifdef HAVE_SHADER_MANAGER
 void shader_manager_init(void *data)
 {
@@ -1354,6 +1350,9 @@ static int menu_iterate_func(void *data, unsigned action)
       rgui->need_refresh = false;
       menu_parse_and_resolve(rgui, menu_type);
    }
+
+   if (menu_ctx && menu_ctx->iterate)
+      menu_ctx->iterate(rgui, action);
 
    if (menu_ctx && menu_ctx->render)
       menu_ctx->render(rgui);

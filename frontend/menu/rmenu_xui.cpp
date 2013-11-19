@@ -1431,5 +1431,6 @@ const menu_ctx_driver_t menu_ctx_rmenu_xui = {
    NULL,
    NULL,
    rmenu_xui_populate_entries,
+   rmenu_xui_iterate,
    "rmenu_xui",
 };
