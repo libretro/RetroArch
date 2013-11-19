@@ -3646,10 +3646,12 @@ static void rglSetImage(void *data, GLint internalFormat, GLsizei width, GLsizei
 static char* rglVendorString = "RetroArch";
 
 static char* rglRendererString = "RGL";
-static char* rglExtensionsString = "";
+static char* rglExtensionsString = "GL_ARB_texture_float";
 
 static char* rglVersionNumber = "2.00";
 char* rglVersion = "2.00";
+
+#define NUM_EXTENSIONS 1
 
 RGLcontext* _CurrentContext = NULL;
 
@@ -3677,6 +3679,11 @@ GLAPI void APIENTRY glGetIntegerv(GLenum pname, GLint* params)
       case GL_MAX_TEXTURE_SIZE:
          params[0] = RGLP_MAX_TEXTURE_SIZE;
          break;
+#if 0
+      case GL_NUM_EXTENSIONS:
+         params[0] = NUM_EXTENSIONS;
+         break;
+#endif
       default:
          fprintf(stderr, "glGetIntegerv: enum not supported.\n");
          break;

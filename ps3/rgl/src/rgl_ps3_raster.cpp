@@ -2386,6 +2386,7 @@ source:		RGLGCM_SURFACE_SOURCE_TEXTURE,
 
          }
          break;
+#endif
       case RGLGCM_FLOAT_R32:              // in_rgba = Rxxx, out_rgba = R001
          {
             *gcmFormat =  CELL_GCM_TEXTURE_X32_FLOAT;
@@ -2402,6 +2403,7 @@ source:		RGLGCM_SURFACE_SOURCE_TEXTURE,
 
          }
          break;
+#if 0
       case RGLGCM_RGB5_A1_SCE:          // in_rgba = RGBA, out_rgba = RGBA
          {
             *gcmFormat =  CELL_GCM_TEXTURE_A1R5G5B5;

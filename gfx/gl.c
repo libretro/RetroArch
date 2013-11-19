@@ -456,13 +456,6 @@ static void gl_compute_fbo_geometry(void *data, unsigned width, unsigned height,
    }
 }
 
-#ifdef __CELLOS_LV2__
-// TODO: Add float FBO support to PSGL
-#define FP_FBO_ENABLE_DEFAULT (false)
-#else
-#define FP_FBO_ENABLE_DEFAULT (gl->fbo_scale[i].valid && gl->fbo_scale[i].fp_fbo)
-#endif
-
 static void gl_create_fbo_textures(void *data)
 {
    int i;
@@ -488,7 +481,7 @@ static void gl_create_fbo_textures(void *data)
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, wrap_enum);
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, wrap_enum);
 
-      bool fp_fbo = FP_FBO_ENABLE_DEFAULT;
+      bool fp_fbo = gl->fbo_scale[i].valid && gl->fbo_scale[i].fp_fbo;
 
       if (fp_fbo)
       {
