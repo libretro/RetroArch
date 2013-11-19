@@ -88,4 +88,14 @@ public final class RetroActivity extends NativeActivity
 	{
 		UserPreferences.readbackConfigFile(this);
 	}
+
+	@Override
+	public void onLowMemory()
+	{
+	}
+
+	@Override
+	public void onTrimMemory(int level)
+	{
+	}
 }
