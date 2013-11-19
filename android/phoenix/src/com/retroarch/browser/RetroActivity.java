@@ -16,31 +16,29 @@ public final class RetroActivity extends NativeActivity
 	private Camera mCamera;
 	private long lastTimestamp = 0;
 	private SurfaceTexture texture;
-	
-	static {
+
+	// Static constructor
+	static
+	{
+		Log.i("RetroActivity", "Creating RetroActivity");
 		System.loadLibrary("retroarch-activity");  
 	}
-	
-	public RetroActivity() {
-		super();
-		Log.i("RetroActivity", "Creating MyNativeActivity");
-	}
-	
+
 	public void onCameraStart()
 	{
 		mCamera.startPreview();
 	}
-	
+
 	public void onCameraStop()
 	{
 		mCamera.stopPreview();
 	}
-	
+
 	public void onCameraInit()
 	{
 		mCamera = Camera.open();
 	}
-	
+
 	@SuppressLint("NewApi")
 	public boolean onCameraPoll()
 	{
@@ -59,17 +57,18 @@ public final class RetroActivity extends NativeActivity
 			}
 		}
 		else
+		{
 			ret = true;
-		
+		}
+
 		return ret;
 	}
-	
+
 	public void onCameraFree()
 	{
 		mCamera.release();
-		mCamera = null;
 	}
-	
+
 	@SuppressLint("NewApi")
 	public void onCameraSetTexture(int gl_texid) throws IOException
 	{
@@ -79,22 +78,14 @@ public final class RetroActivity extends NativeActivity
 			mCamera.setPreviewTexture(texture);
 		}
 		else
+		{
 			mCamera.setPreviewDisplay(null);
+		}
 	}
-	
+
 	@Override
 	public void onDestroy()
 	{
 		UserPreferences.readbackConfigFile(this);
-	}
-
-	@Override
-	public void onLowMemory()
-	{
-	}
-
-	@Override
-	public void onTrimMemory(int level)
-	{
 	}
 }
