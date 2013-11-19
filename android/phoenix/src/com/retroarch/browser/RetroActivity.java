@@ -43,7 +43,7 @@ public final class RetroActivity extends NativeActivity
 	public boolean onCameraPoll()
 	{
 		boolean ret;
-		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.ICE_CREAM_SANDWICH)
+		if (texture != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.ICE_CREAM_SANDWICH)
 		{
 			long newTimestamp = texture.getTimestamp();
 			if (newTimestamp != lastTimestamp)
