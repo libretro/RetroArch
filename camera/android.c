@@ -115,6 +115,11 @@ static bool android_camera_start(void *data)
    (void)androidcamera;
 
    glGenTextures(1, &androidcamera->tex);
+   glBindTexture(GL_TEXTURE_EXTERNAL_OES, androidcamera->tex);
+   glTexParameteri(GL_TEXTURE_EXTERNAL_OES, GL_TEXTURE_MIN_FILTER, GL_LINEAR);        
+   glTexParameteri(GL_TEXTURE_EXTERNAL_OES, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+   glTexParameteri(GL_TEXTURE_EXTERNAL_OES, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+   glTexParameteri(GL_TEXTURE_EXTERNAL_OES, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
    CALL_VOID_METHOD_PARAM(androidcamera->env, android_app->activity->clazz, androidcamera->onCameraSetTexture, (int) androidcamera->tex);
 
@@ -159,7 +164,7 @@ static bool android_camera_poll(void *data, retro_camera_frame_raw_framebuffer_t
 
       if (frame_gl_cb)
         frame_gl_cb(androidcamera->tex,
-              GL_TEXTURE_2D, // TODO: This is likely GL_TEXTURE_EXTERNAL_OES.
+              GL_TEXTURE_EXTERNAL_OES,
               affine);
       return true;
    }
