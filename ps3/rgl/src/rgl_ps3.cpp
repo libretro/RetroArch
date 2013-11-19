@@ -17,8 +17,8 @@
 
 #include <stdint.h>
 #include <stddef.h>
-#include "../rgl.h"
-#include "../rglp.h"
+#include "rgl.h"
+#include "rglp.h"
 
 #include <sdk_version.h>
 
@@ -1954,11 +1954,7 @@ static int rglGcmInitRM( rglGcmResource *gcmResource, int inSysMem, unsigned int
    gcmResource->semaphores = ( rglGcmSemaphoreMemory * )cellGcmGetLabelAddress( 0 );
    gcmResource->dmaControl = ( char* ) cellGcmGetControlRegister() - (( char * ) & (( rglGcmControlDma* )0 )->Put - ( char * )0 );
 
-   // the IOIF mapping don't work. work-around here.
-   for (GLuint i = 0; i < 32; ++i)
-      gcmResource->ioifMappings[i] = ( unsigned long long )( unsigned long )( gcmResource->localAddress + ( 64 << 20 ) * ( i / 4 ) );
-
-   cellGcmFinish(gCellGcmCurrentContext, 1); // added just a constant value for now to adjust to the inline libgcm interface change
+   cellGcmFinish(gCellGcmCurrentContext, 1);
 
    gcmResource->hostMemorySize -= dmaPushBufferSize + RGLGCM_DMA_PUSH_BUFFER_PREFETCH_PADDING;
    gcmResource->dmaPushBuffer = gcmResource->hostMemoryBase + gcmResource->hostMemorySize;

@@ -1,7 +1,5 @@
-#include "../../../include/export/RGL/rgl.h"
-#include "../../../include/RGL/Types.h"
-
-using namespace cell::Gcm;
+#include "../include/export/RGL/rgl.h"
+#include "../include/RGL/Types.h"
 
 typedef struct  _tagMODESTRUC
 {
@@ -283,8 +281,6 @@ struct rglGcmResource
    GLuint MemoryClock;
    GLuint GraphicsClock;
 
-   unsigned long long ioifMappings[32];
-
    char  * linearMemory;
    unsigned int persistentMemorySize;
 
@@ -304,20 +300,7 @@ struct rglGcmResource
 
 typedef struct
 {
-   GLuint fence;
-}
-rglGcmFenceObject;
-
-typedef struct
-{
-   GLint sema;	// NV semaphore index
-}
-rglGcmEventObject;
-
-
-typedef struct
-{
-   GLenum pool;		// LINEAR, SYSTEM, or NONE
+   GLenum pool;		// LINEAR, or NONE
    unsigned int bufferId;		// allocated Id
    unsigned int bufferSize;
    unsigned int pitch;
@@ -346,20 +329,6 @@ struct rglGcmRenderTarget
 
    // gcm render target structure [RSTENSON]
    CellGcmSurface  gcmRenderTarget;
-};
-
-// cached state: texture
-typedef struct rglGcmTextureState rglGcmTextureState;
-
-struct rglGcmTextureState
-{
-   // unforunately to many pieces of state have been put into single
-   // 32bit registers -- so we need to cache some of them...
-   GLuint hwTexAddress;
-   GLuint hwTexFilter;
-   GLuint hwTexControl0;
-   //GLuint hwTexCoordCtrl;
-
 };
 
 // cached state: viewport
@@ -398,10 +367,6 @@ struct rglGcmInterpolantState
 typedef struct rglGcmCachedState rglGcmCachedState;
 struct rglGcmCachedState
 {
-   // our hw<->ogl mapping is ...let's say strange...
-   //rglGcmTextureState tex[RGLGCM_MAX_TEXIMAGE_COUNT];
-   //[RSTENSON] Removing this above.  Texturing is all GCM now.
-
    // we need to track blending color, too
    rglGcmBlendState blend;
 

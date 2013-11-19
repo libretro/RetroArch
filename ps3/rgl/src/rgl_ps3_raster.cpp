@@ -15,8 +15,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../rgl.h"
-#include "../rglp.h"
+#include "rgl.h"
+#include "rglp.h"
 
 #include <sdk_version.h>
 
@@ -1990,21 +1990,9 @@ void rglPlatformFreeGcmTexture (void *data)
 {
    rglTexture *texture = (rglTexture*)data;
    rglGcmTexture *gcmTexture = ( rglGcmTexture * )texture->platformTexture;
-   switch ( gcmTexture->pool )
-   {
-      case RGLGCM_SURFACE_POOL_LINEAR:
-         gmmFree( gcmTexture->gpuAddressId );
-         break;
-      case RGLGCM_SURFACE_POOL_SYSTEM:
-         gmmFree( gcmTexture->gpuAddressId );
-         break;
-      case RGLGCM_SURFACE_POOL_TILED_COLOR:
-         rglGcmFreeTiledSurface( gcmTexture->gpuAddressId );
-         break;
-      case RGLGCM_SURFACE_POOL_NONE:
-         break;
-   }
 
+   if ( gcmTexture->pool == RGLGCM_SURFACE_POOL_LINEAR)
+      gmmFree( gcmTexture->gpuAddressId );
 
    gcmTexture->gpuAddressId = GMM_ERROR;
    gcmTexture->gpuAddressIdOffset = 0;
@@ -2036,48 +2024,41 @@ static void rglPlatformValidateTextureResources (void *data)
       GLuint size = 0;
       GLuint id = GMM_ERROR;
 
-      if (texture->usage == GL_TEXTURE_LINEAR_SYSTEM_SCE ||
-            texture->usage == GL_TEXTURE_SWIZZLED_SYSTEM_SCE)
-         done = GL_TRUE;
-
       const rglGcmTextureLayout currentLayout = gcmTexture->gpuLayout;
       const GLuint currentSize = gcmTexture->gpuSize;
 
-      if (!done)
+      rglGcmTextureLayout newLayout;
+
+      // get layout and size compatible with this pool
+      rglImage *image = texture->image;
+
+      newLayout.levels = 1;
+      newLayout.faces = 1;
+      newLayout.baseWidth = image->width;
+      newLayout.baseHeight = image->height;
+      newLayout.baseDepth = image->depth;
+      newLayout.internalFormat = ( rglGcmEnum )image->internalFormat;
+      newLayout.pixelBits = rglPlatformGetBitsPerPixel( newLayout.internalFormat );
+      newLayout.pitch = GET_TEXTURE_PITCH(texture);
+
+      size = rglGetGcmTextureSize( &newLayout );
+
+      if ( currentSize >= size && newLayout.pitch == currentLayout.pitch )
+         gcmTexture->gpuLayout = newLayout;
+      else
       {
-         rglGcmTextureLayout newLayout;
+         rglPlatformDropTexture( texture );
 
-         // get layout and size compatible with this pool
-         rglImage *image = texture->image;
+         // allocate in the specified pool
+         id = gmmAlloc(size);
 
-         newLayout.levels = 1;
-         newLayout.faces = 1;
-         newLayout.baseWidth = image->width;
-         newLayout.baseHeight = image->height;
-         newLayout.baseDepth = image->depth;
-         newLayout.internalFormat = ( rglGcmEnum )image->internalFormat;
-         newLayout.pixelBits = rglPlatformGetBitsPerPixel( newLayout.internalFormat );
-         newLayout.pitch = GET_TEXTURE_PITCH(texture);
+         // set new
+         gcmTexture->pool = RGLGCM_SURFACE_POOL_LINEAR;
+         gcmTexture->gpuAddressId = id;
+         gcmTexture->gpuAddressIdOffset = 0;
+         gcmTexture->gpuSize = size;
+         gcmTexture->gpuLayout = newLayout;
 
-         size = rglGetGcmTextureSize( &newLayout );
-
-         if ( currentSize >= size && newLayout.pitch == currentLayout.pitch )
-            gcmTexture->gpuLayout = newLayout;
-         else
-         {
-            rglPlatformDropTexture( texture );
-
-            // allocate in the specified pool
-            id = gmmAlloc(size);
-
-            // set new
-            gcmTexture->pool = RGLGCM_SURFACE_POOL_LINEAR;
-            gcmTexture->gpuAddressId = id;
-            gcmTexture->gpuAddressIdOffset = 0;
-            gcmTexture->gpuSize = size;
-            gcmTexture->gpuLayout = newLayout;
-
-         }
       }
       rglTextureTouchFBOs( texture );
 
@@ -2115,9 +2096,6 @@ source:		RGLGCM_SURFACE_SOURCE_TEXTURE,
 
       // use a bounce buffer to transfer to GPU
       GLuint bounceBufferId = GMM_ERROR;
-
-      // check if upload is needed for this image
-      rglImage *image = texture->image;
 
       if ( image->dataState == RGL_IMAGE_DATASTATE_HOST )
       {
@@ -2211,9 +2189,9 @@ source:		RGLGCM_SURFACE_SOURCE_TEXTURE,
    // set the SET_TEXTURE_CONTROL0 params
    platformTexture->gcmMethods.control0.maxAniso = CELL_GCM_TEXTURE_MAX_ANISO_1;
    const GLfloat minLOD = MAX( texture->minLod, 0);
-   const GLfloat maxLOD = MIN( texture->maxLod, texture->maxLevel );
+   const GLfloat maxLOD = MIN( texture->maxLod, 0 );
    platformTexture->gcmMethods.control0.minLOD = ( GLuint )( MAX( minLOD, 0 ) * 256.0f );
-   platformTexture->gcmMethods.control0.maxLOD = ( GLuint )( MIN( maxLOD, layout->levels ) * 256.0f );
+   platformTexture->gcmMethods.control0.maxLOD = ( GLuint )( MIN( maxLOD, 1 ) * 256.0f );
 
    // -----------------------------------------------------------------------
    // set the SET_TEXTURE_ADDRESS method params.
@@ -2467,7 +2445,7 @@ source:		RGLGCM_SURFACE_SOURCE_TEXTURE,
    platformTexture->gcmTexture.height = layout->baseHeight;
    platformTexture->gcmTexture.depth = layout->baseDepth;
    platformTexture->gcmTexture.pitch = layout->pitch;
-   platformTexture->gcmTexture.mipmap = layout->levels;
+   platformTexture->gcmTexture.mipmap = 1;
    platformTexture->gcmTexture.cubemap = CELL_GCM_FALSE;
    platformTexture->gcmTexture.dimension = CELL_GCM_TEXTURE_DIMENSION_2;
    platformTexture->gcmTexture.location = CELL_GCM_LOCATION_LOCAL;

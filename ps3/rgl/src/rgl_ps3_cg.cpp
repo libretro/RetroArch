@@ -15,7 +15,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../rgl_cg.h"
+#include "rgl_cg.h"
 
 static CGbool rglpSupportsVertexProgram( CGprofile p )
 {
