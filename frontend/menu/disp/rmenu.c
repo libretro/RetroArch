@@ -476,5 +476,6 @@ const menu_ctx_driver_t menu_ctx_rmenu = {
    rmenu_free,
    rmenu_init_assets,
    rmenu_free_assets,
+   NULL,
    "rmenu",
 };

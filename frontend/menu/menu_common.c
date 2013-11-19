@@ -2014,6 +2014,9 @@ void menu_populate_entries(void *data, unsigned menu_type)
          file_list_push(rgui->selection_buf, "Quit RetroArch", RGUI_SETTINGS_QUIT_RARCH, 0);
          break;
    }
+
+   if (menu_ctx && menu_ctx->populate_entries)
+      menu_ctx->populate_entries(rgui, menu_type);
 }
 
 void menu_parse_and_resolve(void *data, unsigned menu_type)
