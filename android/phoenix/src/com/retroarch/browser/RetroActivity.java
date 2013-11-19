@@ -1,18 +1,30 @@
 package com.retroarch.browser;
 
 import java.io.IOException;
+
 import com.retroarch.browser.preferences.util.UserPreferences;
+
 import android.annotation.SuppressLint;
 import android.app.NativeActivity;
 import android.graphics.SurfaceTexture;
 import android.hardware.Camera;
 import android.os.Build;
+import android.util.Log;
 
 public final class RetroActivity extends NativeActivity
 {
 	private Camera mCamera;
 	private long lastTimestamp = 0;
 	private SurfaceTexture texture;
+	
+	static {
+		System.loadLibrary("retroarch-activity");  
+	}
+	
+	public RetroActivity() {
+		super();
+		Log.i("RetroActivity", "Creating MyNativeActivity");
+	}
 	
 	public void onCameraStart()
 	{

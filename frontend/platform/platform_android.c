@@ -29,6 +29,7 @@
 #include "../../file.h"
 
 struct android_app *g_android;
+jclass globalMyNativeActivityClass;
 
 //forward decls
 static void system_deinit(void *data);
@@ -373,6 +374,18 @@ static void system_shutdown(bool unused)
    // pthread_exit(NULL) or return NULL; causes hanging ...
    // Should probably call ANativeActivity_finish(), but it's bugged, it will hang our app.
    exit(0);
+}
+
+jint JNI_OnLoad(JavaVM* vm, void* reserved)
+{
+   RARCH_LOG("JNI_OnLoad.\n");
+   JNIEnv* env;
+   if ((*vm)->GetEnv(vm, (void**) &env, JNI_VERSION_1_6) != JNI_OK)
+      return -1;
+
+   globalMyNativeActivityClass = (*env)->NewGlobalRef(env, (*env)->FindClass(env, "com/retroarch/browser/RetroActivity"));
+
+   return JNI_VERSION_1_6;
 }
 
 const frontend_ctx_driver_t frontend_ctx_android = {

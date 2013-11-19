@@ -29,7 +29,6 @@ typedef struct android_camera
 {
    JNIEnv *env;
    JavaVM *java_vm;
-   jclass class;     // RetroActivity class
    GLuint tex;
 } androidcamera_t;
 
@@ -53,15 +52,12 @@ static void *android_camera_init(const char *device, uint64_t caps, unsigned wid
    androidcamera->java_vm = (JavaVM*)android_app->activity->vm;
    (*androidcamera->java_vm)->AttachCurrentThread(androidcamera->java_vm, &androidcamera->env, 0);
 
-   GET_OBJECT_CLASS(androidcamera->env, androidcamera->class, android_app->activity->clazz);
-
-
    jmethodID onCameraInit = NULL;
-   GET_METHOD_ID(androidcamera->env, onCameraInit, androidcamera->class, "onCameraInit", "()V");
+   GET_METHOD_ID(androidcamera->env, onCameraInit, globalMyNativeActivityClass, "onCameraInit", "()V");
    if (!onCameraInit)
       return NULL;
 
-   CALL_VOID_METHOD(androidcamera->env, androidcamera->class, onCameraInit);
+   CALL_VOID_METHOD(androidcamera->env, globalMyNativeActivityClass, onCameraInit);
 
    return androidcamera;
 }
@@ -73,11 +69,11 @@ static void android_camera_free(void *data)
    (void)android_app;
 
    jmethodID onCameraFree = NULL;
-   GET_METHOD_ID(androidcamera->env, onCameraFree, androidcamera->class, "onCameraFree", "()V");
+   GET_METHOD_ID(androidcamera->env, onCameraFree, globalMyNativeActivityClass, "onCameraFree", "()V");
    if (!onCameraFree)
       goto end;
 
-   CALL_VOID_METHOD(androidcamera->env, androidcamera->class, onCameraFree);
+   CALL_VOID_METHOD(androidcamera->env, globalMyNativeActivityClass, onCameraFree);
 
    end:
    (*androidcamera->java_vm)->DetachCurrentThread(androidcamera->java_vm);
@@ -96,18 +92,18 @@ static bool android_camera_start(void *data)
    glGenTextures(1, &androidcamera->tex);
 
    jmethodID onCameraSetTexture = NULL;
-   GET_METHOD_ID(androidcamera->env, onCameraSetTexture, androidcamera->class, "onCameraSetTexture", "(I)V");
+   GET_METHOD_ID(androidcamera->env, onCameraSetTexture, globalMyNativeActivityClass, "onCameraSetTexture", "(I)V");
    if (!onCameraSetTexture)
       goto end;
 
-   CALL_VOID_METHOD_PARAM(androidcamera->env, androidcamera->class, onCameraSetTexture, (int) androidcamera->tex);
+   CALL_VOID_METHOD_PARAM(androidcamera->env, globalMyNativeActivityClass, onCameraSetTexture, (int) androidcamera->tex);
 
    jmethodID onCameraStart = NULL;
-   GET_METHOD_ID(androidcamera->env, onCameraSetTexture, androidcamera->class, "onCameraStart", "()V");
+   GET_METHOD_ID(androidcamera->env, onCameraSetTexture, globalMyNativeActivityClass, "onCameraStart", "()V");
    if (!onCameraStart)
       goto end;
 
-   CALL_VOID_METHOD(androidcamera->env, androidcamera->class, onCameraStart);
+   CALL_VOID_METHOD(androidcamera->env, globalMyNativeActivityClass, onCameraStart);
 
    return true;
 
@@ -123,11 +119,11 @@ static void android_camera_stop(void *data)
    (void)androidcamera;
 
    jmethodID onCameraStop = NULL;
-   GET_METHOD_ID(androidcamera->env, onCameraStop, androidcamera->class, "onCameraStop", "()V");
+   GET_METHOD_ID(androidcamera->env, onCameraStop, globalMyNativeActivityClass, "onCameraStop", "()V");
    if (!onCameraStop)
       return;
 
-   CALL_VOID_METHOD(androidcamera->env, androidcamera->class, onCameraStop);
+   CALL_VOID_METHOD(androidcamera->env, globalMyNativeActivityClass, onCameraStop);
    
    if (androidcamera->tex)
       glDeleteTextures(1, &androidcamera->tex);
@@ -143,12 +139,12 @@ static bool android_camera_poll(void *data, retro_camera_frame_raw_framebuffer_t
    (void)frame_raw_cb;
 
    jmethodID onCameraPoll = NULL;
-   GET_METHOD_ID(androidcamera->env, onCameraPoll, androidcamera->class, "onCameraPoll", "()Z");
+   GET_METHOD_ID(androidcamera->env, onCameraPoll, globalMyNativeActivityClass, "onCameraPoll", "()Z");
    if (!onCameraPoll)
       goto end;
 
    jboolean newFrame;
-   CALL_BOOLEAN_METHOD(androidcamera->env, newFrame, androidcamera->class, onCameraPoll);
+   CALL_BOOLEAN_METHOD(androidcamera->env, newFrame, globalMyNativeActivityClass, onCameraPoll);
 
    if (newFrame)
    {

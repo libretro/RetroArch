@@ -27,6 +27,8 @@
 
 #include "../../thread.h"
 
+extern jclass globalMyNativeActivityClass;
+
 struct android_app
 {
    ANativeActivity* activity;
