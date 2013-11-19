@@ -400,6 +400,11 @@ void rmenu_set_texture(void *data, bool enable)
 static void rmenu_init_assets(void *data)
 {
    rgui_handle_t *rgui = (rgui_handle_t*)data;
+
+   if (!rgui)
+      return;
+
+   menu_texture = (struct texture_image*)calloc(1, sizeof(*menu_texture));
    texture_image_load(g_extern.menu_texture_path, menu_texture);
    rgui->width = menu_texture->width;
    rgui->height = menu_texture->height;
@@ -410,8 +415,6 @@ static void rmenu_init_assets(void *data)
 static void *rmenu_init(void)
 {
    rgui_handle_t *rgui = (rgui_handle_t*)calloc(1, sizeof(*rgui));
-
-   menu_texture = (struct texture_image*)calloc(1, sizeof(*menu_texture));
 
    rmenu_init_assets(rgui);
 
@@ -432,13 +435,14 @@ static void rmenu_free_assets(void *data)
       menu_texture->pixels = NULL;
    }
 #else
-   if (menu_texture)
+   if (menu_texture->pixels)
    {
       free(menu_texture->pixels);
       menu_texture->pixels = NULL;
    }
-   menu_texture_inited = false;
 #endif
+
+   menu_texture_inited = false;
 }
 
 static void rmenu_free(void *data)
