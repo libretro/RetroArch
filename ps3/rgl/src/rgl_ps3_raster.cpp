@@ -2036,7 +2036,7 @@ static void rglPlatformValidateTextureResources (void *data)
       newLayout.faces = 1;
       newLayout.baseWidth = image->width;
       newLayout.baseHeight = image->height;
-      newLayout.baseDepth = image->depth;
+      newLayout.baseDepth = 1;
       newLayout.internalFormat = ( rglGcmEnum )image->internalFormat;
       newLayout.pixelBits = rglPlatformGetBitsPerPixel( newLayout.internalFormat );
       newLayout.pitch = GET_TEXTURE_PITCH(texture);
@@ -2099,9 +2099,7 @@ source:		RGLGCM_SURFACE_SOURCE_TEXTURE,
 
       if ( image->dataState == RGL_IMAGE_DATASTATE_HOST )
       {
-         // lazy allocation of bounce buffer
-         if ( bounceBufferId == GMM_ERROR && layout->baseDepth == 1 )
-            bounceBufferId = gmmAlloc(gcmTexture->gpuSize);
+         bounceBufferId = gmmAlloc(gcmTexture->gpuSize);
 
          if ( bounceBufferId != GMM_ERROR )
          {
@@ -2445,7 +2443,7 @@ source:		RGLGCM_SURFACE_SOURCE_TEXTURE,
 
    platformTexture->gcmTexture.width = layout->baseWidth;
    platformTexture->gcmTexture.height = layout->baseHeight;
-   platformTexture->gcmTexture.depth = layout->baseDepth;
+   platformTexture->gcmTexture.depth = 1;
    platformTexture->gcmTexture.pitch = layout->pitch;
    platformTexture->gcmTexture.mipmap = 1;
    platformTexture->gcmTexture.cubemap = CELL_GCM_FALSE;
@@ -2532,8 +2530,7 @@ GLenum rglPlatformChooseInternalStorage (void *data, GLenum internalFormat )
    // this member is used to configure texture loads and unloads.  If this
    // value is wrong (e.g. contains unnecessary padding) it will corrupt
    // the GPU memory layout.
-   image->storageSize = rglGetPixelSize(image->format, image->type) *
-      image->width * image->height * image->depth;
+   image->storageSize = rglGetPixelSize(image->format, image->type) * image->width * image->height;
 
    return GL_NO_ERROR;
 }
@@ -2547,13 +2544,13 @@ GLAPI void APIENTRY glTextureReferenceSCE( GLenum target, GLuint levels,
    rglTexture *texture = rglGetCurrentTexture( LContext->CurrentImageUnit, target );
    rglBufferObject *bufferObject = 
       (rglBufferObject*)LContext->bufferObjectNameSpace.data[LContext->TextureBuffer];
-   rglReallocateImages( texture, 0, MAX( baseWidth, MAX( baseHeight, baseDepth ) ) );
+   rglReallocateImages( texture, 0, MAX(baseWidth, baseHeight));
 
    image = texture->image;
 
    image->width = baseWidth;
    image->height = baseHeight;
-   image->depth = baseDepth;
+   image->depth = 1;
    image->alignment = LContext->unpackAlignment;
 
    image->xblk = 0;
@@ -2596,7 +2593,7 @@ GLAPI void APIENTRY glTextureReferenceSCE( GLenum target, GLuint levels,
    newLayout.faces = 1;
    newLayout.baseWidth = image->width;
    newLayout.baseHeight = image->height;
-   newLayout.baseDepth = image->depth;
+   newLayout.baseDepth = 1;
    newLayout.internalFormat = ( rglGcmEnum )image->internalFormat;
    newLayout.pixelBits = rglPlatformGetBitsPerPixel( newLayout.internalFormat );
    newLayout.pitch = pitch ? pitch : GET_TEXTURE_PITCH(texture);

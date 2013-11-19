@@ -3502,48 +3502,42 @@ static void rglRawRasterToImage(const void *in_data,
    {
       memcpy((char*)image->data +
             x*image->xstride + y*image->ystride + z*image->zstride,
-            raster->data, raster->depth*raster->zstride );
+            raster->data, raster->zstride );
 
       return;
    }
    else if ( raster->xstride == image->xstride )
    {
       const GLuint lineBytes = raster->width * raster->xstride;
-      for ( int i = 0; i < raster->depth; ++i )
+      for ( int j = 0; j < raster->height; ++j )
       {
-         for ( int j = 0; j < raster->height; ++j )
-         {
-            const char *src = ( const char * )raster->data +
-               i * raster->zstride + j * raster->ystride;
-            char *dst = ( char * )image->data +
-               ( i + z ) * image->zstride +
-               ( j + y ) * image->ystride +
-               x * image->xstride;
-            memcpy( dst, src, lineBytes );
-         }
+         const char *src = ( const char * )raster->data +
+            raster->zstride + j * raster->ystride;
+         char *dst = ( char * )image->data +
+            z * image->zstride +
+            ( j + y ) * image->ystride +
+            x * image->xstride;
+         memcpy( dst, src, lineBytes );
       }
 
       return;
    }
 
-   for ( int i = 0; i < raster->depth; ++i )
+   for ( int j = 0; j < raster->height; ++j )
    {
-      for ( int j = 0; j < raster->height; ++j )
+      const char *src = ( const char * )raster->data +
+         raster->zstride + j * raster->ystride;
+      char *dst = ( char * )image->data +
+         z * image->zstride +
+         ( j + y ) * image->ystride +
+         x * image->xstride;
+
+      for ( int k = 0; k < raster->width; ++k )
       {
-         const char *src = ( const char * )raster->data +
-            i * raster->zstride + j * raster->ystride;
-         char *dst = ( char * )image->data +
-            ( i + z ) * image->zstride +
-            ( j + y ) * image->ystride +
-            x * image->xstride;
+         memcpy( dst, src, size );
 
-         for ( int k = 0; k < raster->width; ++k )
-         {
-            memcpy( dst, src, size );
-
-            src += raster->xstride;
-            dst += image->xstride;
-         }
+         src += raster->xstride;
+         dst += image->xstride;
       }
    }
 }
