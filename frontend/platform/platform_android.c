@@ -29,7 +29,6 @@
 #include "../../file.h"
 
 struct android_app *g_android;
-jclass globalMyNativeActivityClass;
 
 //forward decls
 static void system_deinit(void *data);
@@ -382,8 +381,6 @@ jint JNI_OnLoad(JavaVM* vm, void* reserved)
    JNIEnv* env;
    if ((*vm)->GetEnv(vm, (void**) &env, JNI_VERSION_1_6) != JNI_OK)
       return -1;
-
-   //globalMyNativeActivityClass = (*env)->NewGlobalRef(env, (*env)->FindClass(env, "com/retroarch/browser/RetroActivity"));
 
    return JNI_VERSION_1_6;
 }
