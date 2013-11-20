@@ -261,7 +261,7 @@ static bool android_run_events (void *data)
    return true;
 }
 
-static void jni_get(void *data, void *data_in, void *data_out)
+static void jni_get_intent_variable(void *data, void *data_in, void *data_out)
 {
    JNIEnv *env;
    struct android_app* android_app = (struct android_app*)data;
@@ -316,19 +316,19 @@ static void get_environment_settings(int argc, char *argv[], void *data)
    out_args.out = g_extern.fullpath;
    out_args.out_sizeof = sizeof(g_extern.fullpath);
    strlcpy(out_args.in, "ROM", sizeof(out_args.in));
-   jni_get(android_app, &in_params, &out_args);
+   jni_get_intent_variable(android_app, &in_params, &out_args);
 
    // Config file
    out_args.out = g_extern.config_path;
    out_args.out_sizeof = sizeof(g_extern.config_path);
    strlcpy(out_args.in, "CONFIGFILE", sizeof(out_args.in));
-   jni_get(android_app, &in_params, &out_args);
+   jni_get_intent_variable(android_app, &in_params, &out_args);
 
    // Current IME
    out_args.out = android_app->current_ime;
    out_args.out_sizeof = sizeof(android_app->current_ime);
    strlcpy(out_args.in, "IME", sizeof(out_args.in));
-   jni_get(android_app, &in_params, &out_args);
+   jni_get_intent_variable(android_app, &in_params, &out_args);
 
    RARCH_LOG("Checking arguments passed ...\n");
    RARCH_LOG("ROM Filename: [%s].\n", g_extern.fullpath);
@@ -341,7 +341,7 @@ static void get_environment_settings(int argc, char *argv[], void *data)
    out_args.out = g_settings.libretro;
    out_args.out_sizeof = sizeof(g_settings.libretro);
    strlcpy(out_args.in, "LIBRETRO", sizeof(out_args.in));
-   jni_get(android_app, &in_params, &out_args);
+   jni_get_intent_variable(android_app, &in_params, &out_args);
 
    RARCH_LOG("Checking arguments passed ...\n");
    RARCH_LOG("Libretro path: [%s].\n", g_settings.libretro);
