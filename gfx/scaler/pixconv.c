@@ -672,16 +672,6 @@ void conv_argb8888_abgr8888(void *output_, const void *input_,
    }
 }
 
-static inline uint8_t clamp_8bit(int val)
-{
-   if (val > 255)
-      return 255;
-   else if (val < 0)
-      return 0;
-   else
-      return val;
-}
-
 #define YUV_SHIFT 6
 #define YUV_OFFSET (1 << (YUV_SHIFT - 1))
 #define YUV_MAT_Y (1 << 6)
