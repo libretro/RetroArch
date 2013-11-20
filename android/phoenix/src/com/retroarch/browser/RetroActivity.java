@@ -98,4 +98,10 @@ public final class RetroActivity extends NativeActivity
 	public void onTrimMemory(int level)
 	{
 	}
+	
+	@Override
+	public void onBackPressed()
+	{
+		Log.i("RetroActivity", "onBackKeyPressed");
+	}
 }
