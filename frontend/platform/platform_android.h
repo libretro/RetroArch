@@ -148,6 +148,7 @@ enum {
 };
 
 extern void engine_handle_cmd(void);
+extern JNIEnv *jni_thread_getenv(void);
 
 extern struct android_app *g_android;
 

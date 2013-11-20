@@ -21,8 +21,6 @@
 
 struct jni_params
 {
-   JavaVM *java_vm;
-   JNIEnv *env;
    jobject class_obj;
    char class_name[128];
    char method_name[128];
