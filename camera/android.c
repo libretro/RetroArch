@@ -19,12 +19,6 @@
 #include "../driver.h"
 #include "../android/native/jni/jni_macros.h"
 
-/* FIXME - we need to seriously profile JNI overhead here - whether we can cache certain
- * objects/variables */
-/* FIXME - check whether or not it is safe to attach the thread once at android_init and
- * only detach it when calling android_free - might have to be done per-function but would
- * introduce significant overhead */
-
 typedef struct android_camera
 {
    jclass class;
@@ -163,6 +157,7 @@ static bool android_camera_poll(void *data, retro_camera_frame_raw_framebuffer_t
          0.0f, 0.0f, 1.0f
       };
 
+      // FIXME: Still only gets a black picture back
       if (frame_gl_cb)
         frame_gl_cb(androidcamera->tex,
               GL_TEXTURE_EXTERNAL_OES,
