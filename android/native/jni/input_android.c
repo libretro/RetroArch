@@ -1824,8 +1824,8 @@ static void android_input_poll(void *data)
                      }
                   }
 
+#if 1
                   // FIXME: all of the below will probably all have to be refactored
-
                   if (g_extern.lifecycle_state & (1ULL << MODE_INPUT_XPERIA_PLAY_HACK))
                   {
                      int meta = AKeyEvent_getMetaState(event);
@@ -1857,6 +1857,7 @@ static void android_input_poll(void *data)
                      AInputQueue_finishEvent(android_app->inputQueue, event, handled);
                      break;
                   }
+#endif
                }
 
                if (type_event == AINPUT_EVENT_TYPE_MOTION)
