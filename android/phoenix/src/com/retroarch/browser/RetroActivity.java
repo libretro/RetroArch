@@ -97,9 +97,6 @@ public final class RetroActivity extends NativeActivity
 		Log.i("RetroActivity", "onCameraSetTexture: " + gl_texid);
 		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB)
 		{
-			Camera.Parameters params = mCamera.getParameters();
-			params.setSceneMode(Camera.Parameters.SCENE_MODE_PORTRAIT);
-			mCamera.setParameters(params);
 			if (texture == null)
 				onCameraTextureInit(gl_texid);
 			mCamera.setPreviewTexture(texture);
