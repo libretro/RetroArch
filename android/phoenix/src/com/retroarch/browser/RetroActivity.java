@@ -16,6 +16,7 @@ public final class RetroActivity extends NativeActivity
 	private Camera mCamera;
 	private long lastTimestamp = 0;
 	private SurfaceTexture texture;
+	private Boolean updateSurface = true;
 
 	public void onCameraStart()
 	{
@@ -44,6 +45,10 @@ public final class RetroActivity extends NativeActivity
 		}
 		else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.ICE_CREAM_SANDWICH)
 		{
+			if (updateSurface)
+			{
+				texture.updateTexImage();
+			}
 			long newTimestamp = texture.getTimestamp();
 			if (newTimestamp != lastTimestamp)
 			{
@@ -67,6 +72,22 @@ public final class RetroActivity extends NativeActivity
 	{
 		mCamera.release();
 	}
+	
+	@SuppressLint("NewApi")
+	public void onCameraTextureInit(int gl_texid)
+	{
+		texture = new SurfaceTexture(gl_texid);
+		texture.setOnFrameAvailableListener(onCameraFrameAvailableListener);
+	}
+	
+    @SuppressLint("NewApi")
+	private SurfaceTexture.OnFrameAvailableListener onCameraFrameAvailableListener =
+            new SurfaceTexture.OnFrameAvailableListener() {
+        @Override
+        public void onFrameAvailable(SurfaceTexture surfaceTexture) {
+			updateSurface = true;
+        }
+    };
 
 	@SuppressLint("NewApi")
 	public void onCameraSetTexture(int gl_texid) throws IOException
@@ -74,7 +95,11 @@ public final class RetroActivity extends NativeActivity
 		Log.i("RetroActivity", "onCameraSetTexture: " + gl_texid);
 		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB)
 		{
-			texture = new SurfaceTexture(gl_texid); 
+			Camera.Parameters params = mCamera.getParameters();
+			params.setSceneMode(Camera.Parameters.SCENE_MODE_PORTRAIT);
+			mCamera.setParameters(params);
+			if (texture == null)
+				onCameraTextureInit(gl_texid);
 			mCamera.setPreviewTexture(texture);
 		}
 		else
