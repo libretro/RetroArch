@@ -21,7 +21,6 @@
 
 typedef struct android_camera
 {
-   jclass class;
    jmethodID onCameraInit;
    jmethodID onCameraFree;
    jmethodID onCameraPoll;
@@ -34,6 +33,7 @@ typedef struct android_camera
 static void *android_camera_init(const char *device, uint64_t caps, unsigned width, unsigned height)
 {
    JNIEnv *env;
+   jclass class;
    (void)device;
    (void)width;
    (void)height;
@@ -53,31 +53,31 @@ static void *android_camera_init(const char *device, uint64_t caps, unsigned wid
    if (!env)
       return NULL;
 
-   GET_OBJECT_CLASS(env, androidcamera->class, android_app->activity->clazz);
-   if (androidcamera->class == NULL)
+   GET_OBJECT_CLASS(env, class, android_app->activity->clazz);
+   if (class == NULL)
       return NULL;
 
-   GET_METHOD_ID(env, androidcamera->onCameraInit, androidcamera->class, "onCameraInit", "()V");
+   GET_METHOD_ID(env, androidcamera->onCameraInit, class, "onCameraInit", "()V");
    if (!androidcamera->onCameraInit)
       return NULL;
 
-   GET_METHOD_ID(env, androidcamera->onCameraFree, androidcamera->class, "onCameraFree", "()V");
+   GET_METHOD_ID(env, androidcamera->onCameraFree, class, "onCameraFree", "()V");
    if (!androidcamera->onCameraFree)
       return NULL;
 
-   GET_METHOD_ID(env, androidcamera->onCameraSetTexture, androidcamera->class, "onCameraSetTexture", "(I)V");
+   GET_METHOD_ID(env, androidcamera->onCameraSetTexture, class, "onCameraSetTexture", "(I)V");
    if (!androidcamera->onCameraSetTexture)
       return NULL;
 
-   GET_METHOD_ID(env, androidcamera->onCameraStart, androidcamera->class, "onCameraStart", "()V");
+   GET_METHOD_ID(env, androidcamera->onCameraStart, class, "onCameraStart", "()V");
    if (!androidcamera->onCameraStart)
       return NULL;
 
-   GET_METHOD_ID(env, androidcamera->onCameraStop, androidcamera->class, "onCameraStop", "()V");
+   GET_METHOD_ID(env, androidcamera->onCameraStop, class, "onCameraStop", "()V");
    if (!androidcamera->onCameraStop)
       return NULL;
 
-   GET_METHOD_ID(env, androidcamera->onCameraPoll, androidcamera->class, "onCameraPoll", "()Z");
+   GET_METHOD_ID(env, androidcamera->onCameraPoll, class, "onCameraPoll", "()Z");
    if (!androidcamera->onCameraPoll)
       return NULL;
 
