@@ -1811,9 +1811,6 @@ static void android_input_poll(void *data)
 
                if (keycode == AKEYCODE_BACK)
                {
-                  uint8_t unpacked = (android->keycode_lut[AKEYCODE_BACK] >> ((state_id+1) << 3)) - 1;
-                  uint64_t input_state = (1ULL << unpacked);
-
                   if (android->onBackPressed)
                   {
                      RARCH_LOG("Invoke onBackPressed through JNI.\n");
@@ -1825,6 +1822,8 @@ static void android_input_poll(void *data)
                   }
 
 #if 1
+                  uint8_t unpacked = (android->keycode_lut[AKEYCODE_BACK] >> ((state_id+1) << 3)) - 1;
+                  uint64_t input_state = (1ULL << unpacked);
                   // FIXME: all of the below will probably all have to be refactored
                   if (g_extern.lifecycle_state & (1ULL << MODE_INPUT_XPERIA_PLAY_HACK))
                   {
