@@ -65,6 +65,7 @@ enum
 
 typedef struct android_input
 {
+   jmethodID onBackPressed;
    unsigned pads_connected;
    int state_device_ids[MAX_PADS];
    uint64_t state[MAX_PADS];
@@ -292,7 +293,10 @@ static void engine_handle_dpad_getaxisvalue(void *data, AInputEvent *event,
 
 static void *android_input_init(void)
 {
+   JNIEnv *env;
+   jclass class;
    unsigned i, j, k;
+   struct android_app *android_app = (struct android_app*)g_android;
    android_input_t *android = (android_input_t*)calloc(1, sizeof(*android));
    if (!android)
       return NULL;
@@ -369,6 +373,22 @@ static void *android_input_init(void)
       }
    }
 
+   env = jni_thread_getenv();
+   if (!env)
+      goto retobj;
+
+   GET_OBJECT_CLASS(env, class, android_app->activity->clazz);
+   if (!class)
+      goto retobj;
+
+   GET_METHOD_ID(env, android->onBackPressed, class, "onBackPressed", "()V");
+   if (!android->onBackPressed)
+   {
+      RARCH_ERR("Could not set onBackPressed JNI function pointer.\n");
+      goto retobj;
+   }
+
+retobj:
    return android;
 }
 
@@ -1794,12 +1814,24 @@ static void android_input_poll(void *data)
                   uint8_t unpacked = (android->keycode_lut[AKEYCODE_BACK] >> ((state_id+1) << 3)) - 1;
                   uint64_t input_state = (1ULL << unpacked);
 
+                  if (android->onBackPressed)
+                  {
+                     RARCH_LOG("Invoke onBackPressed through JNI.\n");
+                     JNIEnv *env = jni_thread_getenv();
+                     if (env)
+                     {
+                        CALL_VOID_METHOD(env, android_app->activity->clazz, android->onBackPressed);
+                     }
+                  }
+
+                  // FIXME: all of the below will probably all have to be refactored
+
                   if (g_extern.lifecycle_state & (1ULL << MODE_INPUT_XPERIA_PLAY_HACK))
                   {
                      int meta = AKeyEvent_getMetaState(event);
                      if (!(meta & AMETA_ALT_ON))
                      {
-                        *lifecycle_state |= (1ULL << RARCH_QUIT_KEY);
+                        *lifecycle_state |= (1ULL << RARCH_QUIT_KEY); 
                         AInputQueue_finishEvent(android_app->inputQueue, event, handled);
                         break;
                      }
