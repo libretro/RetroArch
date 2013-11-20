@@ -335,7 +335,7 @@ public final class MainMenuFragment extends PreferenceListFragment implements On
 			UserPreferences.updateConfigFile(ctx);
 
 			final SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(ctx);
-			final String libretro_path = prefs.getString("libretro_path", "");
+			final String libretro_path = prefs.getString("libretro_path", ctx.getApplicationInfo().dataDir + "/cores");
 			final Intent rgui = new Intent(ctx, RetroActivity.class);
 			final String current_ime = Settings.Secure.getString(ctx.getContentResolver(), Settings.Secure.DEFAULT_INPUT_METHOD);
 			rgui.putExtra("LIBRETRO", libretro_path);
