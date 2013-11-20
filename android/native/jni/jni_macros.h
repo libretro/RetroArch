@@ -21,7 +21,6 @@
 
 struct jni_params
 {
-   jobject class_obj;
    char class_name[128];
    char method_name[128];
    char method_signature[128];

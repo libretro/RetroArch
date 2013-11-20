@@ -279,9 +279,9 @@ static void jni_get(void *data, void *data_in, void *data_out)
    if (!env)
       return;
 
-   GET_OBJECT_CLASS(env, class, in_params->class_obj);
+   GET_OBJECT_CLASS(env, class, android_app->activity->clazz);
    GET_METHOD_ID(env, giid, class, in_params->method_name, in_params->method_signature);
-   CALL_OBJ_METHOD(env, obj, in_params->class_obj, giid);
+   CALL_OBJ_METHOD(env, obj, class, giid);
 
    if (in_params->submethod_name &&
          in_params->submethod_signature)
@@ -307,13 +307,10 @@ static void get_environment_settings(int argc, char *argv[], void *data)
    struct jni_params in_params;
    struct jni_out_params_char out_args;
 
-   in_params.class_obj = android_app->activity->clazz;
-
    strlcpy(in_params.method_name, "getIntent", sizeof(in_params.method_name));
    strlcpy(in_params.method_signature, "()Landroid/content/Intent;", sizeof(in_params.method_signature));
    strlcpy(in_params.submethod_name, "getStringExtra", sizeof(in_params.submethod_name));
    strlcpy(in_params.submethod_signature, "(Ljava/lang/String;)Ljava/lang/String;", sizeof(in_params.submethod_signature));
-
 
    // ROM
    out_args.out = g_extern.fullpath;
