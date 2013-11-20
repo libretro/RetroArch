@@ -20,6 +20,7 @@
 #include <string.h>
 #include <assert.h>
 #include "../driver.h"
+#include "../performance.h"
 #include "../miscellaneous.h"
 #include <stdlib.h>
 #include <fcntl.h>
@@ -132,6 +133,8 @@ static inline void YUV422_to_RGB(uint32_t *output, const uint8_t *input, const u
 
 static void process_image(void *data, const uint8_t *buffer_yuv)
 {
+   RARCH_PERFORMANCE_INIT(yuv_convert);
+   RARCH_PERFORMANCE_START(yuv_convert);
    video4linux_t *v4l = (video4linux_t*)data;
    const uint32_t *lut = v4l->YCbCr_to_RGB;
    uint32_t *dst = v4l->buffer_output;
@@ -140,6 +143,8 @@ static void process_image(void *data, const uint8_t *buffer_yuv)
    for (y = 0; y < v4l->height; y++, dst += v4l->width, buffer_yuv += v4l->width * 2)
       for (x = 0; x < v4l->width; x += 2)
          YUV422_to_RGB(dst + x, buffer_yuv + x * 2, lut);
+
+   RARCH_PERFORMANCE_STOP(yuv_convert);
 }
 
 static int xioctl(int fd, int request, void *args)
