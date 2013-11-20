@@ -55,6 +55,7 @@ public final class MainMenuFragment extends PreferenceListFragment implements On
 		addPreferencesFromResource(R.xml.main_menu);
 
 		// Set the listeners for the menu items
+		findPreference("retroTVMode").setOnPreferenceClickListener(this);
 		findPreference("loadCorePref").setOnPreferenceClickListener(this);
 		findPreference("loadRomPref").setOnPreferenceClickListener(this);
 		findPreference("loadRomHistoryPref").setOnPreferenceClickListener(this);
@@ -328,8 +329,22 @@ public final class MainMenuFragment extends PreferenceListFragment implements On
 	{
 		final String prefKey = preference.getKey();
 
+		// TV Mode
+		if (prefKey.equals("retroTVMode"))
+		{
+			UserPreferences.updateConfigFile(ctx);
+
+			final SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(ctx);
+			final String libretro_path = prefs.getString("libretro_path", "");
+			final Intent rgui = new Intent(ctx, RetroActivity.class);
+			final String current_ime = Settings.Secure.getString(ctx.getContentResolver(), Settings.Secure.DEFAULT_INPUT_METHOD);
+			rgui.putExtra("LIBRETRO", libretro_path);
+			rgui.putExtra("CONFIGFILE", UserPreferences.getDefaultConfigPath(ctx));
+			rgui.putExtra("IME", current_ime);
+			startActivity(rgui);
+		}
 		// Load Core Preference
-		if (prefKey.equals("loadCorePref"))
+		else if (prefKey.equals("loadCorePref"))
 		{
 			final CoreSelection coreSelection = new CoreSelection();
 			coreSelection.show(getFragmentManager(), "core_selection");
@@ -376,11 +391,11 @@ public final class MainMenuFragment extends PreferenceListFragment implements On
 		UserPreferences.updateConfigFile(ctx);
 		String current_ime = Settings.Secure.getString(ctx.getContentResolver(), Settings.Secure.DEFAULT_INPUT_METHOD);
 		Toast.makeText(ctx, String.format(getString(R.string.loading_data), path), Toast.LENGTH_SHORT).show();
-		Intent myIntent = new Intent(ctx, RetroActivity.class);
-		myIntent.putExtra("ROM", path);
-		myIntent.putExtra("LIBRETRO", libretro_path);
-		myIntent.putExtra("CONFIGFILE", UserPreferences.getDefaultConfigPath(ctx));
-		myIntent.putExtra("IME", current_ime);
-		startActivity(myIntent);
+		Intent retro = new Intent(ctx, RetroActivity.class);
+		retro.putExtra("ROM", path);
+		retro.putExtra("LIBRETRO", libretro_path);
+		retro.putExtra("CONFIGFILE", UserPreferences.getDefaultConfigPath(ctx));
+		retro.putExtra("IME", current_ime);
+		startActivity(retro);
 	}
 }
