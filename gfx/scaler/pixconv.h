@@ -60,6 +60,10 @@ void conv_rgb565_bgr24(void *output, const void *input,
       int width, int height,
       int out_stride, int in_stride);
 
+void conv_yuyv_argb8888(void *output, const void *input,
+      int width, int height,
+      int out_stride, int in_stride);
+
 void conv_copy(void *output, const void *input,
       int width, int height,
       int out_stride, int in_stride);

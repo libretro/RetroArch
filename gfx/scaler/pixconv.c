@@ -672,6 +672,50 @@ void conv_argb8888_abgr8888(void *output_, const void *input_,
    }
 }
 
+static inline uint8_t clamp_8bit(int val)
+{
+   if (val > 255)
+      return 255;
+   else if (val < 0)
+      return 0;
+   else
+      return val;
+}
+
+void conv_yuyv_argb8888(void *output_, const void *input_,
+      int width, int height,
+      int out_stride, int in_stride)
+{
+   int h, w;
+   const uint8_t *input = (const uint8_t*)input_;
+   uint32_t *output     = (uint32_t*)output_;
+
+   for (h = 0; h < height; h++, output += out_stride >> 2, input += in_stride)
+   {
+      const uint8_t *src = input;
+      uint32_t *dst = output;
+
+      for (w = 0; w < width; w += 2, src += 4, dst += 2)
+      {
+         int y0 = src[0] - 16;
+         int  u = src[1] - 128;
+         int y1 = src[2] - 16;
+         int  v = src[3] - 128;
+
+         uint8_t r0 = clamp_8bit((298 * y0 + 409 * v + 128) >> 8);
+         uint8_t g0 = clamp_8bit((298 * y0 - 100 * u - 208 * v + 128) >> 8);
+         uint8_t b0 = clamp_8bit((298 * y0 + 516 * u + 128) >> 8);
+
+         uint8_t r1 = clamp_8bit((298 * y1 + 409 * v + 128) >> 8);
+         uint8_t g1 = clamp_8bit((298 * y1 - 100 * u - 208 * v + 128) >> 8);
+         uint8_t b1 = clamp_8bit((298 * y1 + 516 * u + 128) >> 8);
+
+         dst[0] = 0xff000000u | (r0 << 16) | (g0 << 8) | (b0 << 0);
+         dst[1] = 0xff000000u | (r1 << 16) | (g1 << 8) | (b1 << 0);
+      }
+   }
+}
+
 void conv_copy(void *output_, const void *input_,
       int width, int height,
       int out_stride, int in_stride)
