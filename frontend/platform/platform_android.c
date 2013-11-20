@@ -375,16 +375,6 @@ static void system_shutdown(bool unused)
    exit(0);
 }
 
-jint JNI_OnLoad(JavaVM* vm, void* reserved)
-{
-   RARCH_LOG("JNI_OnLoad.\n");
-   JNIEnv* env;
-   if ((*vm)->GetEnv(vm, (void**) &env, JNI_VERSION_1_6) != JNI_OK)
-      return -1;
-
-   return JNI_VERSION_1_6;
-}
-
 const frontend_ctx_driver_t frontend_ctx_android = {
    get_environment_settings,     /* get_environment_settings */
    system_init,                  /* init */

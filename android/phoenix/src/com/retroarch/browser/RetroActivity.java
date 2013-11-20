@@ -17,13 +17,6 @@ public final class RetroActivity extends NativeActivity
 	private long lastTimestamp = 0;
 	private SurfaceTexture texture;
 
-	// Static constructor
-	static
-	{
-		Log.i("RetroActivity", "Creating RetroActivity");
-		System.loadLibrary("retroarch-activity");  
-	}
-
 	public void onCameraStart()
 	{
 		Log.i("RetroActivity", "onCameraStart");
