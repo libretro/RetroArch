@@ -270,7 +270,7 @@ static void jni_get_intent_variable(void *data, void *data_in, void *data_out)
    jclass class = NULL;
    jobject obj = NULL;
    jmethodID giid = NULL;
-   jstring ret;
+   jstring jstr = NULL;
 
    if (!android_app)
       return;
@@ -289,14 +289,14 @@ static void jni_get_intent_variable(void *data, void *data_in, void *data_out)
       GET_OBJECT_CLASS(env, class, obj);
       GET_METHOD_ID(env, giid, class, in_params->submethod_name, in_params->submethod_signature);
 
-      CALL_OBJ_METHOD_PARAM(env, ret, obj, giid, (*env)->NewStringUTF(env, out_args->in));
+      CALL_OBJ_METHOD_PARAM(env, jstr, obj, giid, (*env)->NewStringUTF(env, out_args->in));
    }
 
-   if (giid && ret)
+   if (giid && jstr)
    {
-      const char *argv = (*env)->GetStringUTFChars(env, ret, 0);
+      const char *argv = (*env)->GetStringUTFChars(env, jstr, 0);
       strlcpy(out_args->out, argv, out_args->out_sizeof);
-      (*env)->ReleaseStringUTFChars(env, ret, argv);
+      (*env)->ReleaseStringUTFChars(env, jstr, argv);
    }
 }
 
