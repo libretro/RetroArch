@@ -20,6 +20,7 @@
 #include <string.h>
 #include <assert.h>
 #include <stddef.h>
+#include "../general.h"
 #include "../driver.h"
 #include "../performance.h"
 #include "../miscellaneous.h"
@@ -49,8 +50,8 @@ typedef struct video4linux
    int fd;
    struct buffer *buffers;
    unsigned n_buffers;
-   size_t width;
-   size_t height;
+   unsigned width;
+   unsigned height;
    size_t pitch;
 
    struct scaler_ctx scaler;
@@ -231,6 +232,8 @@ static bool init_device(void *data)
       return false;
    }
 
+   RARCH_LOG("V4L2 device: %u x %u.\n", v4l->width, v4l->height);
+
    return init_mmap(v4l);
 }
 
@@ -314,9 +317,9 @@ static void *v4l_init(const char *device, uint64_t caps, unsigned width, unsigne
 
    strlcpy(v4l->dev_name, device ? device : "/dev/video0", sizeof(v4l->dev_name));
 
-   v4l->width    = width;
-   v4l->height   = height;
-   v4l->ready    = false;
+   v4l->width  = width;
+   v4l->height = height;
+   v4l->ready  = false;
 
    if (stat(v4l->dev_name, &st) == -1)
    {
