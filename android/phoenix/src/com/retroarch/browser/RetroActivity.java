@@ -20,7 +20,6 @@ public final class RetroActivity extends NativeActivity
 
 	public void onCameraStart()
 	{
-		Log.i("RetroActivity", "onCameraStart");
 		mCamera.startPreview();
 	}
 
@@ -76,7 +75,6 @@ public final class RetroActivity extends NativeActivity
 	@SuppressLint("NewApi")
 	public void onCameraTextureInit(int gl_texid)
 	{
-		Log.e("RetroActivity", "onCameraTextureInit" + gl_texid);
 		texture = new SurfaceTexture(gl_texid);
 		texture.setOnFrameAvailableListener(onCameraFrameAvailableListener);
 	}
@@ -86,7 +84,6 @@ public final class RetroActivity extends NativeActivity
             new SurfaceTexture.OnFrameAvailableListener() {
         @Override
         public void onFrameAvailable(SurfaceTexture surfaceTexture) {
-        	Log.e("RetroActivity", "onFrameAvailable");
 			updateSurface = true;
         }
     };
@@ -94,7 +91,6 @@ public final class RetroActivity extends NativeActivity
 	@SuppressLint("NewApi")
 	public void onCameraSetTexture(int gl_texid) throws IOException
 	{
-		Log.i("RetroActivity", "onCameraSetTexture: " + gl_texid);
 		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB)
 		{
 			if (texture == null)
