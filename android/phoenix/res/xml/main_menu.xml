@@ -3,11 +3,9 @@
     android:title="@string/mainmenu_title" >
 
     <!-- TV Mode -->
-    <Preference android:title="@string/tv_mode">
-       <intent
-          android:targetClass="com.retroarch.browser.RetroTVMode"
-          android:targetPackage="com.retroarch" />
-    </Preference>
+    <Preference
+        android:key="retroTVMode"
+        android:title="@string/tv_mode"/>
 
     <!-- Load Core -->
     <Preference
