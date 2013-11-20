@@ -17,6 +17,8 @@
 #ifndef SCALER_COMMON_H__
 #define SCALER_COMMON_H__
 
+#include <stdint.h>
+
 static inline uint8_t clamp_8bit(int val)
 {
    if (val > 255)
