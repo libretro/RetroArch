@@ -281,7 +281,7 @@ static void jni_get_intent_variable(void *data, void *data_in, void *data_out)
 
    GET_OBJECT_CLASS(env, class, android_app->activity->clazz);
    GET_METHOD_ID(env, giid, class, in_params->method_name, in_params->method_signature);
-   CALL_OBJ_METHOD(env, obj, class, giid);
+   CALL_OBJ_METHOD(env, obj, android_app->activity->clazz, giid);
 
    if (in_params->submethod_name &&
          in_params->submethod_signature)
