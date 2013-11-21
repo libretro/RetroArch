@@ -36,11 +36,10 @@ public final class RetroActivity extends NativeActivity
 	@SuppressLint("NewApi")
 	public boolean onCameraPoll()
 	{
-		boolean ret;
 		if (texture == null)
 		{
 			Log.i("RetroActivity", "no texture");
-			ret = false;
+			return true;
 		}
 		else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.ICE_CREAM_SANDWICH)
 		{
@@ -48,23 +47,19 @@ public final class RetroActivity extends NativeActivity
 			{
 				texture.updateTexImage();
 			}
+			
 			long newTimestamp = texture.getTimestamp();
+			
 			if (newTimestamp != lastTimestamp)
 			{
 				lastTimestamp = newTimestamp;
-				ret = true;
+				return true;
 			}
-			else
-			{
-				ret = false;
-			}
-		}
-		else
-		{
-			ret = true;
+			
+			return false;
 		}
 
-		return ret;
+		return true;
 	}
 
 	public void onCameraFree()

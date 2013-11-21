@@ -157,7 +157,6 @@ static bool android_camera_poll(void *data, retro_camera_frame_raw_framebuffer_t
          0.0f, 0.0f, 1.0f
       };
 
-      // FIXME: Still only gets a black picture back
       if (frame_gl_cb)
         frame_gl_cb(androidcamera->tex,
               GL_TEXTURE_EXTERNAL_OES,
