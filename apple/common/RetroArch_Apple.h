@@ -48,7 +48,12 @@ extern RAModuleInfo* apple_core;
 extern id<RetroArch_Platform> apple_platform;
 
 // main.m
-enum basic_event_t { RESET = 1, LOAD_STATE = 2, SAVE_STATE = 3, QUIT = 4 };
+enum basic_event_t {
+   RESET = 1,
+   LOAD_STATE = 2,
+   SAVE_STATE = 3,
+   QUIT = 4
+};
 extern void apple_event_basic_command(void* userdata);
 extern void apple_event_set_state_slot(void* userdata);
 extern void apple_event_show_rgui(void* userdata);
