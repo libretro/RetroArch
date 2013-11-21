@@ -26,12 +26,21 @@ extern "C" {
 
 typedef struct {
    char *path;
+   char *desc;
+   bool missing; // Set once to avoid opening the same file several times.
+} core_info_firmware_t;
+
+typedef struct {
+   char *path;
    config_file_t *data;
    char *display_name;
    char *supported_extensions;
    char *authors;
    struct string_list *supported_extensions_list;
    struct string_list *authors_list;
+
+   core_info_firmware_t *firmware;
+   size_t firmware_count;
 } core_info_t;
 
 typedef struct {
@@ -51,6 +60,11 @@ bool core_info_does_support_any_file(const core_info_t *core, const struct strin
 // Non-reentrant, does not allocate. Returns pointer to internal state.
 void core_info_list_get_supported_cores(core_info_list_t *core_info_list, const char *path,
       const core_info_t **infos, size_t *num_infos);
+
+// Non-reentrant, does not allocate. Returns pointer to internal state.
+void core_info_list_get_missing_firmware(core_info_list_t *core_info_list,
+      const char *core, const char *systemdir,
+      const core_info_firmware_t **firmware, size_t *num_firmware);
 
 const char *core_info_list_get_all_extensions(core_info_list_t *core_info_list);
 
