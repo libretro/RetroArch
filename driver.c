@@ -115,6 +115,9 @@ static const video_driver_t *video_drivers[] = {
 #ifdef HAVE_SDL
    &video_sdl,
 #endif
+#ifdef HAVE_LIMA
+   &video_lima,
+#endif
 #ifdef HAVE_XVIDEO
    &video_xvideo,
 #endif
