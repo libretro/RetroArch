@@ -11,6 +11,7 @@
  *
  *  You should have received a copy of the GNU General Public License along with RetroArch.
  *  If not, see <http://www.gnu.org/licenses/>.
+ *  This file is rewritten from sdl video by AreaScout
  */
 
 #include "SDL/SDL.h"
@@ -25,26 +26,10 @@
 #include "limare.h"
 #include <GLES2/gl2.h>
 
-#ifdef HAVE_X11
-#include "context/x11_common.h"
-#endif
-
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
-
 #include "SDL/SDL_syswm.h"
 
-#define LIMA_TEXEL_FORMAT_BGR_565		0x0E
-#define LIMA_TEXEL_FORMAT_RGBA_5551		0x0F
-#define LIMA_TEXEL_FORMAT_RGBA_4444		0x10
-#define LIMA_TEXEL_FORMAT_LA_88			0x11
-#define LIMA_TEXEL_FORMAT_RGB_888		0x15
-#define LIMA_TEXEL_FORMAT_RGBA_8888		0x16
-//#define LIMA_TEXEL_FORMAT_BGRA_8888             0x17 /* check ordering */
-#define LIMA_TEXEL_FORMAT_RGBA64		0x26
-#define LIMA_TEXEL_FORMAT_DEPTH_STENCIL_32	0x2C
-#define LIMA_TEXEL_FORMAT_INVALID		0x3F
+#define LIMA_TEXEL_FORMAT_BGR_565		    0x0E
+#define LIMA_TEXEL_FORMAT_RGBA_8888		    0x16
 
 
 static struct limare_state *state;
@@ -226,41 +211,8 @@ static void lima_render_msg(lima_video_t *vid, SDL_Surface *buffer,
    vid->font_driver->free_output(vid->font, &out);
 }
 
-static void lima_gfx_set_handles(void)
-{
-   // SysWMinfo headers are broken on OSX. :(
-#if defined(_WIN32)
-   SDL_SysWMinfo info;
-   SDL_VERSION(&info.version);
-
-   if (SDL_GetWMInfo(&info) == 1)
-   {
-      driver.display_type  = RARCH_DISPLAY_WIN32;
-      driver.video_display = 0;
-      driver.video_window  = (uintptr_t)info.window;
-   }
-#elif defined(HAVE_X11)
-   SDL_SysWMinfo info;
-   SDL_VERSION(&info.version);
-
-   if (SDL_GetWMInfo(&info) == 1)
-   {
-      driver.display_type  = RARCH_DISPLAY_X11;
-      driver.video_display = (uintptr_t)info.info.x11.display;
-      driver.video_window  = (uintptr_t)info.info.x11.window;
-   }
-#endif
-}
-
 static void *lima_gfx_init(const video_info_t *video, const input_driver_t **input, void **input_data)
 {
-#ifdef _WIN32
-   gfx_set_dwm();
-#endif
-
-#ifdef HAVE_X11
-   XInitThreads();
-#endif
 
    const char* vertex_shader_source =
 	"attribute vec4 in_vertex;\n"
@@ -331,7 +283,7 @@ static void *lima_gfx_init(const video_info_t *video, const input_driver_t **inp
    RARCH_LOG("New game texture size w = %d h = %d\n", g_extern.system.av_info.geometry.base_width, g_extern.system.av_info.geometry.base_height);
    // We assume that SDL chooses ARGB8888.
    // Assuming this simplifies the driver *a ton*.
-
+   // And use it also for limadriver is also good for now ;)
    if (!vid->screen)
    {
       RARCH_ERR("Failed to init SDL surface: %s\n", SDL_GetError());
@@ -339,8 +291,6 @@ static void *lima_gfx_init(const video_info_t *video, const input_driver_t **inp
    }
 
    SDL_ShowCursor(SDL_DISABLE);
-
-   lima_gfx_set_handles();
 
    if (input && input_data)
    {
@@ -599,8 +549,6 @@ static void lima_set_texture_frame(void *data, const void *frame, bool rgb32, un
       return;
 
    limare_buffer_swap(state);
-
-   //g_extern.frame_count++;
 
    state->textures[0] = 0;
    state->texture_handles = 0;
