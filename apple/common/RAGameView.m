@@ -16,7 +16,7 @@
 #import "RetroArch_Apple.h"
 #include "rarch_wrapper.h"
 
-#include "general.h"
+#include "../../general.h"
 #include "gfx/gfx_common.h"
 #include "gfx/gfx_context.h"
 
@@ -60,10 +60,10 @@
 
 #ifdef IOS
 
+#include <GLKit/GLKit.h>
 #import "views.h"
 static const float ALMOST_INVISIBLE = .021f;
 static GLKView* g_view;
-static UIView* g_pause_view;
 static UIView* g_pause_indicator_view;
 static UITextField* g_text_hide;
 
@@ -154,16 +154,12 @@ static bool g_is_syncing = true;
 {
    self = [super init];
 
-   UINib* xib = [UINib nibWithNibName:@"PauseView" bundle:nil];
-   g_pause_view = [[xib instantiateWithOwner:[RetroArch_iOS get] options:nil] lastObject];
-   
-   xib = [UINib nibWithNibName:@"PauseIndicatorView" bundle:nil];
+   UINib *xib = [UINib nibWithNibName:@"PauseIndicatorView" bundle:nil];
    g_pause_indicator_view = [[xib instantiateWithOwner:[RetroArch_iOS get] options:nil] lastObject];
 
    g_view = [GLKView new];
    g_view.multipleTouchEnabled = YES;
    g_view.enableSetNeedsDisplay = NO;
-   [g_view addSubview:g_pause_view];
    [g_view addSubview:g_pause_indicator_view];
 
    if (is_ios_7())
@@ -190,36 +186,11 @@ static bool g_is_syncing = true;
    float tenpctw = width / 10.0f;
    float tenpcth = height / 10.0f;
    
-   g_pause_view.frame = CGRectMake(width / 2.0f - 150.0f, height / 2.0f - 150.0f, 300.0f, 300.0f);
    g_pause_indicator_view.frame = CGRectMake(tenpctw * 4.0f, 0.0f, tenpctw * 2.0f, tenpcth);
    [g_pause_indicator_view viewWithTag:1].frame = CGRectMake(0, 0, tenpctw * 2.0f, tenpcth);
 
    if (is_ios_7())
       [g_text_hide becomeFirstResponder];
-}
-
-- (void)openPauseMenu
-{
-   // Setup save state selector
-   UISegmentedControl* stateSelect = (UISegmentedControl*)[g_pause_view viewWithTag:10];
-   stateSelect.selectedSegmentIndex = (g_extern.state_slot < 10) ? g_extern.state_slot : -1;
-
-   g_extern.is_paused = true;
-
-   //
-   [UIView animateWithDuration:0.2
-      animations:^{ g_pause_view.alpha = 1.0f; }
-      completion:^(BOOL finished) { }];
-}
-
-- (void)closePauseMenu
-{
-   [UIView animateWithDuration:0.2
-      animations:^{ g_pause_view.alpha = 0.0f; }
-      completion:^(BOOL finished) { }
-   ];
-   
-   g_extern.is_paused = false;
 }
 
 - (void)hidePauseButton
@@ -271,7 +242,7 @@ static RAScreen* get_chosen_screen()
 #endif
 }
 
-bool apple_gfx_ctx_init()
+bool apple_gfx_ctx_init(void)
 {
    dispatch_sync(dispatch_get_main_queue(),
    ^{
@@ -290,7 +261,7 @@ bool apple_gfx_ctx_init()
    return true;
 }
 
-void apple_gfx_ctx_destroy()
+void apple_gfx_ctx_destroy(void)
 {
    g_initialized = false;
 

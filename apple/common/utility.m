@@ -16,6 +16,7 @@
 #include <sys/stat.h>
 
 #include "RetroArch_Apple.h"
+#include "setting_data.h"
 
 #include "general.h"
 #include "file.h"
@@ -54,56 +55,81 @@ NSString* objc_get_value_from_config(config_file_t* config, NSString* name, NSSt
    return result;
 }
 
-#ifdef IOS
-#include "../iOS/views.h"
-
-// Simple class to reduce code duplication for fixed table views
-@implementation RATableViewController
-
-- (id)initWithStyle:(UITableViewStyle)style
+// Get a core ID as an NSString
+NSString *apple_get_core_id(const core_info_t *core)
 {
-   self = [super initWithStyle:style];
-   self.sections = [NSMutableArray array];
+   char buf[PATH_MAX];
+   return @(apple_core_info_get_id(core, buf, sizeof(buf)));
+}
+
+NSString *apple_get_core_display_name(NSString *core_id)
+{
+   const core_info_t *core = apple_core_info_list_get_by_id(core_id.UTF8String);
+   return core ? @(core->display_name) : core_id;
+}
+
+// Number formatter class for setting strings
+@implementation RANumberFormatter
+- (id)initWithSetting:(const rarch_setting_t*)setting
+{
+   if ((self = [super init]))
+   {
+      self.allowsFloats = (setting->type == ST_FLOAT);
+      
+      if (setting->min != setting->max)
+      {
+         self.minimum = @(setting->min);
+         self.maximum = @(setting->max);
+      }
+      else
+      {
+         if (setting->type == ST_INT)
+         {
+            self.minimum = @(INT_MIN);
+            self.maximum = @(INT_MAX);
+         }
+         else if (setting->type == ST_UINT)
+         {
+            self.minimum = @(0);
+            self.maximum = @(UINT_MAX);
+         }
+         else if (setting->type == ST_FLOAT)
+         {
+            self.minimum = @(FLT_MIN);
+            self.maximum = @(FLT_MAX);
+         }
+      }
+   }
+   
    return self;
 }
 
-- (bool)getCellFor:(NSString*)reuseID withStyle:(UITableViewCellStyle)style result:(UITableViewCell**)output
+- (BOOL)isPartialStringValid:(NSString*)partialString newEditingString:(NSString**)newString errorDescription:(NSString**)error
 {
-   UITableViewCell* result = [self.tableView dequeueReusableCellWithIdentifier:reuseID];
-   
-   if (result)
-      *output = result;
-   else
-      *output = [[UITableViewCell alloc] initWithStyle:style reuseIdentifier:reuseID];
-   
-   return !result;
+   bool hasDot = false;
+
+   if (partialString.length)
+      for (int i = 0; i != partialString.length; i ++)
+      {
+         unichar ch = [partialString characterAtIndex:i];
+         
+         if (i == 0 && (!self.minimum || self.minimum.intValue < 0) && ch == '-')
+            continue;
+         else if (self.allowsFloats && !hasDot && ch == '.')
+            hasDot = true;
+         else if (!isdigit(ch))
+            return NO;
+      }
+
+   return YES;
 }
 
-- (NSInteger)numberOfSectionsInTableView:(UITableView*)tableView
+#ifdef IOS
+- (BOOL)textField:(UITextField *)textField shouldChangeCharactersInRange:(NSRange)range replacementString:(NSString *)string
 {
-   return self.sections.count;
+   NSString* text = [textField.text stringByReplacingCharactersInRange:range withString:string];
+   return [self isPartialStringValid:text newEditingString:nil errorDescription:nil];
 }
-
-- (NSString*)tableView:(UITableView*)tableView titleForHeaderInSection:(NSInteger)section
-{
-   return self.hidesHeaders ? nil : self.sections[section][0];
-}
-
-- (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section
-{
-   return [self.sections[section] count] - 1;
-}
-
-- (id)itemForIndexPath:(NSIndexPath*)indexPath
-{
-   return self.sections[indexPath.section][indexPath.row + 1];
-}
-
-- (void)reset
-{
-   self.sections = [NSMutableArray array];
-   [self.tableView reloadData];
-}
-@end
-
 #endif
+
+@end

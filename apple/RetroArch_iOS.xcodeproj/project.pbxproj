@@ -7,7 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		9605EA9B170288EA001D47B0 /* RAModuleInfo.m in Sources */ = {isa = PBXBuildFile; fileRef = 9605EA9A170288EA001D47B0 /* RAModuleInfo.m */; };
+		509FC979183F9F18007A5A30 /* menu.m in Sources */ = {isa = PBXBuildFile; fileRef = 509FC978183F9F18007A5A30 /* menu.m */; };
 		962979F616C43B9500E6DCE0 /* ic_dir.png in Resources */ = {isa = PBXBuildFile; fileRef = 962979F416C43B9500E6DCE0 /* ic_dir.png */; };
 		962979F716C43B9500E6DCE0 /* ic_file.png in Resources */ = {isa = PBXBuildFile; fileRef = 962979F516C43B9500E6DCE0 /* ic_file.png */; };
 		96297A0F16C5AEA100E6DCE0 /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 96297A0E16C5AEA100E6DCE0 /* main.m */; };
@@ -22,13 +22,9 @@
 		966B9CC116E41E7A005B61E1 /* Default@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = 966B9CBA16E41E7A005B61E1 /* Default@2x.png */; };
 		966B9CC316E41E7A005B61E1 /* Icon-72.png in Resources */ = {isa = PBXBuildFile; fileRef = 966B9CBB16E41E7A005B61E1 /* Icon-72.png */; };
 		966B9CC516E41E7A005B61E1 /* Icon.png in Resources */ = {isa = PBXBuildFile; fileRef = 966B9CBC16E41E7A005B61E1 /* Icon.png */; };
-		966B9CC916E41EC1005B61E1 /* PauseView.xib in Resources */ = {isa = PBXBuildFile; fileRef = 966B9CC716E41EC1005B61E1 /* PauseView.xib */; };
 		966B9CCB16E41EC1005B61E1 /* PauseIndicatorView.xib in Resources */ = {isa = PBXBuildFile; fileRef = 966B9CC816E41EC1005B61E1 /* PauseIndicatorView.xib */; };
 		9678945B1788EAAE00D6CA69 /* browser.m in Sources */ = {isa = PBXBuildFile; fileRef = 967894571788EAAE00D6CA69 /* browser.m */; };
-		9678945C1788EAAE00D6CA69 /* RALogView.m in Sources */ = {isa = PBXBuildFile; fileRef = 967894581788EAAE00D6CA69 /* RALogView.m */; };
-		9678945D1788EAAE00D6CA69 /* settings.m in Sources */ = {isa = PBXBuildFile; fileRef = 967894591788EAAE00D6CA69 /* settings.m */; };
 		967894631788EBD800D6CA69 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 967894611788EBD800D6CA69 /* InfoPlist.strings */; };
-		967D646F16E45428006BA1F2 /* ic_pause.png in Resources */ = {isa = PBXBuildFile; fileRef = 967D646E16E45428006BA1F2 /* ic_pause.png */; };
 		967D647516E6EA04006BA1F2 /* modules in Resources */ = {isa = PBXBuildFile; fileRef = 967D647416E6EA04006BA1F2 /* modules */; };
 		96AFAE2A16C1D4EA009DE44C /* UIKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 96AFAE2916C1D4EA009DE44C /* UIKit.framework */; };
 		96AFAE2C16C1D4EA009DE44C /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 96AFAE2B16C1D4EA009DE44C /* Foundation.framework */; };
@@ -39,8 +35,7 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		9605EA99170288EA001D47B0 /* RAModuleInfo.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = RAModuleInfo.h; sourceTree = "<group>"; };
-		9605EA9A170288EA001D47B0 /* RAModuleInfo.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = RAModuleInfo.m; sourceTree = "<group>"; };
+		509FC978183F9F18007A5A30 /* menu.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = menu.m; path = iOS/menu.m; sourceTree = SOURCE_ROOT; };
 		962979F416C43B9500E6DCE0 /* ic_dir.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = ic_dir.png; path = "../../android/phoenix/res/drawable-xhdpi/ic_dir.png"; sourceTree = "<group>"; };
 		962979F516C43B9500E6DCE0 /* ic_file.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = ic_file.png; path = "../../android/phoenix/res/drawable-xhdpi/ic_file.png"; sourceTree = "<group>"; };
 		96297A0E16C5AEA100E6DCE0 /* main.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
@@ -56,15 +51,11 @@
 		966B9CBA16E41E7A005B61E1 /* Default@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "Default@2x.png"; sourceTree = "<group>"; };
 		966B9CBB16E41E7A005B61E1 /* Icon-72.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "Icon-72.png"; sourceTree = "<group>"; };
 		966B9CBC16E41E7A005B61E1 /* Icon.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = Icon.png; sourceTree = "<group>"; };
-		966B9CC716E41EC1005B61E1 /* PauseView.xib */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.xib; path = PauseView.xib; sourceTree = "<group>"; };
 		966B9CC816E41EC1005B61E1 /* PauseIndicatorView.xib */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.xib; path = PauseIndicatorView.xib; sourceTree = "<group>"; };
 		967894571788EAAE00D6CA69 /* browser.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = browser.m; path = iOS/browser.m; sourceTree = SOURCE_ROOT; };
-		967894581788EAAE00D6CA69 /* RALogView.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = RALogView.m; path = iOS/RALogView.m; sourceTree = SOURCE_ROOT; };
-		967894591788EAAE00D6CA69 /* settings.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = settings.m; path = iOS/settings.m; sourceTree = SOURCE_ROOT; };
 		9678945A1788EAAE00D6CA69 /* views.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = views.h; path = iOS/views.h; sourceTree = SOURCE_ROOT; };
 		9678945F1788EBD000D6CA69 /* RetroArch-Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = "RetroArch-Info.plist"; path = "iOS/RetroArch-Info.plist"; sourceTree = SOURCE_ROOT; };
 		967894621788EBD800D6CA69 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = iOS/en.lproj/InfoPlist.strings; sourceTree = SOURCE_ROOT; };
-		967D646E16E45428006BA1F2 /* ic_pause.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = ic_pause.png; sourceTree = "<group>"; };
 		967D647416E6EA04006BA1F2 /* modules */ = {isa = PBXFileReference; lastKnownFileType = folder; path = modules; sourceTree = SOURCE_ROOT; };
 		96AFAE2516C1D4EA009DE44C /* RetroArch.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RetroArch.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		96AFAE2916C1D4EA009DE44C /* UIKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = UIKit.framework; path = System/Library/Frameworks/UIKit.framework; sourceTree = SDKROOT; };
@@ -108,10 +99,8 @@
 				966B9CBA16E41E7A005B61E1 /* Default@2x.png */,
 				962979F416C43B9500E6DCE0 /* ic_dir.png */,
 				962979F516C43B9500E6DCE0 /* ic_file.png */,
-				967D646E16E45428006BA1F2 /* ic_pause.png */,
 				966B9CBB16E41E7A005B61E1 /* Icon-72.png */,
 				966B9CBC16E41E7A005B61E1 /* Icon.png */,
-				966B9CC716E41EC1005B61E1 /* PauseView.xib */,
 				966B9CC816E41EC1005B61E1 /* PauseIndicatorView.xib */,
 			);
 			path = Assets;
@@ -154,15 +143,12 @@
 		96AFAE3316C1D4EA009DE44C /* common */ = {
 			isa = PBXGroup;
 			children = (
+				509FC978183F9F18007A5A30 /* menu.m */,
 				9646869417BBBEAE00C5EA69 /* platform.m */,
 				967894571788EAAE00D6CA69 /* browser.m */,
-				967894581788EAAE00D6CA69 /* RALogView.m */,
-				967894591788EAAE00D6CA69 /* settings.m */,
 				9678945A1788EAAE00D6CA69 /* views.h */,
 				96297A0E16C5AEA100E6DCE0 /* main.m */,
 				963F5AC516CC523B009BBD19 /* RAGameView.m */,
-				9605EA9A170288EA001D47B0 /* RAModuleInfo.m */,
-				9605EA99170288EA001D47B0 /* RAModuleInfo.h */,
 				96C19C2616D455BE00FE8D5A /* rarch_wrapper.h */,
 				96355CD11788CF190010DBFA /* RetroArch_Apple.h */,
 				96337E81176AC6E5004685F3 /* utility.m */,
@@ -285,9 +271,7 @@
 				966B9CC116E41E7A005B61E1 /* Default@2x.png in Resources */,
 				966B9CC316E41E7A005B61E1 /* Icon-72.png in Resources */,
 				966B9CC516E41E7A005B61E1 /* Icon.png in Resources */,
-				966B9CC916E41EC1005B61E1 /* PauseView.xib in Resources */,
 				966B9CCB16E41EC1005B61E1 /* PauseIndicatorView.xib in Resources */,
-				967D646F16E45428006BA1F2 /* ic_pause.png in Resources */,
 				967D647516E6EA04006BA1F2 /* modules in Resources */,
 				967894631788EBD800D6CA69 /* InfoPlist.strings in Resources */,
 			);
@@ -303,11 +287,9 @@
 				96297A0F16C5AEA100E6DCE0 /* main.m in Sources */,
 				963F5AC816CC523B009BBD19 /* RAGameView.m in Sources */,
 				D48581DE16F823F9004BEB17 /* griffin.c in Sources */,
-				9605EA9B170288EA001D47B0 /* RAModuleInfo.m in Sources */,
 				96337E82176AC6E5004685F3 /* utility.m in Sources */,
+				509FC979183F9F18007A5A30 /* menu.m in Sources */,
 				9678945B1788EAAE00D6CA69 /* browser.m in Sources */,
-				9678945C1788EAAE00D6CA69 /* RALogView.m in Sources */,
-				9678945D1788EAAE00D6CA69 /* settings.m in Sources */,
 				9646869517BBBEAE00C5EA69 /* platform.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

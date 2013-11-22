@@ -22,6 +22,7 @@
 #include "../ps3/altivec_mem.c"
 #endif
 
+
 /*============================================================
 CONSOLE EXTENSIONS
 ============================================================ */
@@ -42,6 +43,8 @@ CONSOLE EXTENSIONS
 #ifdef HAVE_ZLIB
 #include "../file_extract.c"
 #endif
+
+
 
 /*============================================================
 RLAUNCH
@@ -579,6 +582,15 @@ XML
 ============================================================ */
 #define RXML_LIBXML2_COMPAT
 #include "../compat/rxml/rxml.c"
+    
+/*============================================================
+ APPLE EXTENSIONS
+============================================================ */
+    
+#if defined(IOS) || defined(OSX)
+#include "../apple/common/setting_data.c"
+#include "../apple/common/core_info_ext.c"
+#endif
 
 #ifdef __cplusplus
 }
