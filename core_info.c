@@ -55,7 +55,8 @@ static void core_info_list_resolve_all_extensions(core_info_list_t *core_info_li
 
 static void core_info_list_resolve_all_firmware(core_info_list_t *core_info_list)
 {
-   for (size_t i = 0; i < core_info_list->count; i++)
+   size_t i, c;
+   for (i = 0; i < core_info_list->count; i++)
    {
       core_info_t *info = &core_info_list->list[i];
 
@@ -70,10 +71,9 @@ static void core_info_list_resolve_all_firmware(core_info_list_t *core_info_list
       if (!info->firmware)
          continue;
 
-      for (unsigned c = 0; c < count; c++)
+      for (c = 0; c < count; c++)
       {
-         char path_key[64];
-         char desc_key[64];
+         char path_key[64], desc_key[64];
          snprintf(path_key, sizeof(path_key), "firmware%u_path", c);
          snprintf(desc_key, sizeof(desc_key), "firmware%u_desc", c);
 
@@ -160,7 +160,7 @@ error:
 
 void core_info_list_free(core_info_list_t *core_info_list)
 {
-   size_t i;
+   size_t i, j;
    if (!core_info_list)
       return;
 
@@ -176,7 +176,7 @@ void core_info_list_free(core_info_list_t *core_info_list)
       string_list_free(info->authors_list);
       config_file_free(info->data);
 
-      for (size_t j = 0; j < info->firmware_count; j++)
+      for (j = 0; j < info->firmware_count; j++)
       {
          free(info->firmware[j].path);
          free(info->firmware[j].desc);
@@ -298,7 +298,8 @@ void core_info_list_get_supported_cores(core_info_list_t *core_info_list, const 
 
 static core_info_t *find_core_info(core_info_list_t *list, const char *core)
 {
-   for (size_t i = 0; i < list->count; i++)
+   size_t i;
+   for (i = 0; i < list->count; i++)
    {
       core_info_t *info = &list->list[i];
       if (info->path && !strcmp(info->path, core))
@@ -323,6 +324,9 @@ void core_info_list_get_missing_firmware(core_info_list_t *core_info_list,
       const char *core, const char *systemdir,
       const core_info_firmware_t **firmware, size_t *num_firmware)
 {
+   size_t i;
+   char path[PATH_MAX];
+
    *firmware = NULL;
    *num_firmware = 0;
 
@@ -332,8 +336,7 @@ void core_info_list_get_missing_firmware(core_info_list_t *core_info_list,
 
    *firmware = info->firmware;
 
-   char path[PATH_MAX];
-   for (size_t i = 0; i < info->firmware_count; i++)
+   for (i = 0; i < info->firmware_count; i++)
    {
       fill_pathname_join(path, systemdir, info->firmware[i].path, sizeof(path));
       info->firmware[i].missing = !path_file_exists(path);
