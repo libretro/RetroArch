@@ -24,6 +24,7 @@
 #include <android/looper.h>
 #include <android/native_activity.h>
 #include <android/window.h>
+#include <android/sensor.h>
 
 #include "../../thread.h"
 
@@ -41,6 +42,9 @@ struct android_app
    int msgread;
    int msgwrite;
    int running;
+   unsigned accelerometer_event_rate;
+   const ASensor* accelerometerSensor;
+   uint64_t sensor_state_mask;
    sthread_t *thread;
    char current_ime[PATH_MAX];
 };
