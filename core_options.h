@@ -40,6 +40,10 @@ size_t core_option_size(core_option_manager_t *opt);
 const char *core_option_get_desc(core_option_manager_t *opt, size_t index);
 const char *core_option_get_val(core_option_manager_t *opt, size_t index);
 
+// Helpers to present a list of options
+struct string_list *core_option_get_vals(core_option_manager_t *opt, size_t index);
+void core_option_set_val(core_option_manager_t *opt, size_t index, size_t val_index);
+
 // Cycles through options for an option. Options wrap around.
 void core_option_next(core_option_manager_t *opt, size_t index);
 void core_option_prev(core_option_manager_t *opt, size_t index);

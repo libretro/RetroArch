@@ -16,76 +16,34 @@
 #ifndef _RARCH_APPLE_VIEWS_H
 #define _RARCH_APPLE_VIEWS_H
 
-#import "RAModuleInfo.h"
+#include <UIKit/UIKit.h>
+#include "core_info.h"
 
-// RALogView.m
-@interface RALogView : UITableViewController
-@end
-
-// utility.m
-@interface RATableViewController : UITableViewController
-@property (nonatomic) NSMutableArray* sections;
-@property (nonatomic) BOOL hidesHeaders;
-
-- (id)initWithStyle:(UITableViewStyle)style;
-- (bool)getCellFor:(NSString*)reuseID withStyle:(UITableViewCellStyle)style result:(UITableViewCell**)output;
-- (id)itemForIndexPath:(NSIndexPath*)indexPath;
-- (void)reset;
-@end
 
 // browser.m
-@interface RADirectoryItem : NSObject
-@property (nonatomic) NSString* path;
-@property (nonatomic) bool isDirectory;
-@end
-
-// browser.m
+@class RADirectoryItem;
 @protocol RADirectoryListDelegate
 - (bool)directoryList:(id)list itemWasSelected:(RADirectoryItem*)path;
 @end
 
-@interface RADirectoryList : RATableViewController <UIActionSheetDelegate>
+#include "menu.h"
+
+// browser.m
+@interface RADirectoryItem : NSObject<RAMenuItemBase>
+@property (nonatomic) NSString* path;
+@property (nonatomic) bool isDirectory;
+@end
+
+@interface RADirectoryList : RAMenuBase<UIActionSheetDelegate>
 @property (nonatomic, weak) id<RADirectoryListDelegate> directoryDelegate;
 @property (nonatomic, weak) RADirectoryItem* selectedItem;
 - (id)initWithPath:(NSString*)path delegate:(id<RADirectoryListDelegate>)delegate;
+- (void)browseTo:(NSString*)path;
 @end
 
 // browser.m
-@protocol RAModuleListDelegate
-- (bool)moduleList:(id)list itemWasSelected:(RAModuleInfo*)module;
-@end
-
-@interface RAModuleList : RATableViewController
-@property (nonatomic, weak) id<RAModuleListDelegate> moduleDelegate;
-- (id)initWithGame:(NSString*)path delegate:(id<RAModuleListDelegate>)delegate;
-@end
-
-// browser.m
-@interface RAFoldersList : RATableViewController
+@interface RAFoldersList : RAMenuBase
 - (id) initWithFilePath:(NSString*)path;
-@end
-
-// RAModuleInfo.m
-@interface RAModuleInfoList : RATableViewController
-- (id)initWithModuleInfo:(RAModuleInfo*)info;
-@end
-
-// settings.m
-@interface RASettingsSubList : RATableViewController
-- (id)initWithSettings:(NSArray*)values title:(NSString*)title;
-- (void)writeSettings:(NSArray*)settingList toConfig:(config_file_t*)config;
-
-- (bool)isSettingsView;
-@end
-
-// settings.m
-@interface RASettingsList : RASettingsSubList
-+ (void)refreshModuleConfig:(RAModuleInfo*)module;
-- (id)initWithModule:(RAModuleInfo*)module;
-@end
-
-// settings.m
-@interface RASystemSettingsList : RASettingsSubList<UIAlertViewDelegate>
 @end
 
 #endif

@@ -200,6 +200,18 @@ const char *core_option_get_val(core_option_manager_t *opt, size_t index)
    return option->vals->elems[option->index].data;
 }
 
+struct string_list *core_option_get_vals(core_option_manager_t *opt, size_t index)
+{
+   return opt->opts[index].vals;
+}
+
+void core_option_set_val(core_option_manager_t *opt, size_t index, size_t val_index)
+{
+   struct core_option *option= (struct core_option*)&opt->opts[index];
+   option->index = val_index % option->vals->size;
+   opt->updated = true;
+}
+
 void core_option_next(core_option_manager_t *opt, size_t index)
 {
    struct core_option *option = &opt->opts[index];

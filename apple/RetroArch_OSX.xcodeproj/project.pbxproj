@@ -17,7 +17,6 @@
 		967894941788ECDB00D6CA69 /* MainMenu.xib in Resources */ = {isa = PBXBuildFile; fileRef = 967894911788ECDB00D6CA69 /* MainMenu.xib */; };
 		967894961788ED1100D6CA69 /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 967894951788ED1100D6CA69 /* main.m */; };
 		9678949D1788F02600D6CA69 /* RAGameView.m in Sources */ = {isa = PBXBuildFile; fileRef = 967894971788F02600D6CA69 /* RAGameView.m */; };
-		9678949E1788F02600D6CA69 /* RAModuleInfo.m in Sources */ = {isa = PBXBuildFile; fileRef = 967894991788F02600D6CA69 /* RAModuleInfo.m */; };
 		9678949F1788F02600D6CA69 /* utility.m in Sources */ = {isa = PBXBuildFile; fileRef = 9678949C1788F02600D6CA69 /* utility.m */; };
 		967894A11788F07D00D6CA69 /* griffin.c in Sources */ = {isa = PBXBuildFile; fileRef = 967894A01788F07D00D6CA69 /* griffin.c */; };
 		967894A41788F0C200D6CA69 /* CoreAudio.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 967894A21788F0C200D6CA69 /* CoreAudio.framework */; };
@@ -45,8 +44,6 @@
 		967894921788ECDB00D6CA69 /* en */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = en; path = OSX/en.lproj/MainMenu.xib; sourceTree = SOURCE_ROOT; };
 		967894951788ED1100D6CA69 /* main.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
 		967894971788F02600D6CA69 /* RAGameView.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = RAGameView.m; sourceTree = "<group>"; };
-		967894981788F02600D6CA69 /* RAModuleInfo.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = RAModuleInfo.h; sourceTree = "<group>"; };
-		967894991788F02600D6CA69 /* RAModuleInfo.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = RAModuleInfo.m; sourceTree = "<group>"; };
 		9678949A1788F02600D6CA69 /* rarch_wrapper.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = rarch_wrapper.h; sourceTree = "<group>"; };
 		9678949B1788F02600D6CA69 /* RetroArch_Apple.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = RetroArch_Apple.h; sourceTree = "<group>"; };
 		9678949C1788F02600D6CA69 /* utility.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = utility.m; sourceTree = "<group>"; };
@@ -119,8 +116,6 @@
 				9620F662178FD4D3001B3B81 /* settings.m */,
 				967894A01788F07D00D6CA69 /* griffin.c */,
 				967894971788F02600D6CA69 /* RAGameView.m */,
-				967894981788F02600D6CA69 /* RAModuleInfo.h */,
-				967894991788F02600D6CA69 /* RAModuleInfo.m */,
 				9678949A1788F02600D6CA69 /* rarch_wrapper.h */,
 				9678949B1788F02600D6CA69 /* RetroArch_Apple.h */,
 				9678949C1788F02600D6CA69 /* utility.m */,
@@ -219,7 +214,6 @@
 			files = (
 				967894961788ED1100D6CA69 /* main.m in Sources */,
 				9678949D1788F02600D6CA69 /* RAGameView.m in Sources */,
-				9678949E1788F02600D6CA69 /* RAModuleInfo.m in Sources */,
 				9678949F1788F02600D6CA69 /* utility.m in Sources */,
 				967894A11788F07D00D6CA69 /* griffin.c in Sources */,
 				9620F663178FD4D3001B3B81 /* settings.m in Sources */,

@@ -21,20 +21,20 @@
 
 @interface RAGameView : UIViewController
 + (RAGameView*)get;
-- (void)openPauseMenu;
-- (void)closePauseMenu;
 - (void)iOS7SetiCadeMode:(bool)on;
 @end
 
-@interface RetroArch_iOS : UINavigationController<UIApplicationDelegate, UINavigationControllerDelegate, RetroArch_Platform,
-                                                   RADirectoryListDelegate, RAModuleListDelegate>
+@interface RetroArch_iOS : UINavigationController<UIApplicationDelegate, UINavigationControllerDelegate, RetroArch_Platform>
 
 + (RetroArch_iOS*)get;
 
-- (void)loadingCore:(RAModuleInfo*)core withFile:(const char*)file;
-- (void)unloadingCore:(RAModuleInfo*)core;
+- (void)loadingCore:(NSString*)core withFile:(const char*)file;
+- (void)unloadingCore:(NSString*)core;
 
 - (void)refreshSystemConfig;
+
+- (IBAction)showSettings;
+- (IBAction)showSystemSettings;
 
 @property (nonatomic) NSString* configDirectory;    // e.g. /var/mobile/Documents/.RetroArch
 @property (nonatomic) NSString* globalConfigFile;   // e.g. /var/mobile/Documents/.RetroArch/retroarch.cfg
@@ -43,6 +43,7 @@
 @property (nonatomic) NSString* documentsDirectory; // e.g. /var/mobile/Documents
 @property (nonatomic) NSString* systemDirectory;    // e.g. /var/mobile/Documents/.RetroArch
 @property (nonatomic) NSString* systemConfigPath;   // e.g. /var/mobile/Documents/.RetroArch/frontend.cfg
+@property (nonatomic) NSString* logPath;
 
 @end
 

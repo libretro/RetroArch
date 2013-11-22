@@ -34,8 +34,8 @@
 
 + (RetroArch_OSX*)get;
 
-- (void)loadingCore:(RAModuleInfo*)core withFile:(const char*)file;
-- (void)unloadingCore:(RAModuleInfo*)core;
+- (void)loadingCore:(NSString*)core withFile:(const char*)file;
+- (void)unloadingCore:(NSString*)core;
 
 @property (nonatomic) NSString* configDirectory;    // e.g. /var/mobile/Documents/.RetroArch
 @property (nonatomic) NSString* globalConfigFile;   // e.g. /var/mobile/Documents/.RetroArch/retroarch.cfg

@@ -16,11 +16,15 @@
 #include <pthread.h>
 #include <string.h>
 
+#include <objc/runtime.h>
+
 #import "RetroArch_Apple.h"
 #include "rarch_wrapper.h"
 #include "apple/common/apple_input.h"
 
 #include "file.h"
+
+static const void* const associated_core_key = &associated_core_key;
 
 @interface RApplication : NSApplication
 @end
@@ -45,7 +49,7 @@
    bool _loaded;
    bool _wantReload;
    NSString* _file;
-   RAModuleInfo* _core;
+   NSString* _core;
 }
 
 + (RetroArch_OSX*)get
@@ -72,15 +76,22 @@
    
    // Create core select list
    NSComboBox* cb = (NSComboBox*)[_coreSelectSheet.contentView viewWithTag:1];
-   
-   for (RAModuleInfo* i in apple_get_modules())
-      [cb addItemWithObjectValue:i];
+
+   apple_core_info_set_core_path(self.coreDirectory.UTF8String);
+   apple_core_info_set_config_path(self.configDirectory.UTF8String);
+   const core_info_list_t* cores = apple_core_info_list_get();
+   for (int i = 0; cores && i != cores->count; i ++)
+   {
+      NSString* desc = @(cores->list[i].display_name);
+      objc_setAssociatedObject(desc, associated_core_key, apple_get_core_id(&cores->list[i]), OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+      [cb addItemWithObjectValue:desc];
+   }
 
    if (cb.numberOfItems)
       [cb selectItemAtIndex:0];
    else
       apple_display_alert(@"No libretro cores were found.\nSelect \"Go->Cores Directory\" from the menu and place libretro dylib files there.", @"RetroArch");
-
+   
    // Run RGUI if needed
    if (!_wantReload || apple_argv)
       apple_run_core(nil, 0);
@@ -173,19 +184,19 @@
       return;
 
    NSComboBox* cb = (NSComboBox*)[_coreSelectSheet.contentView viewWithTag:1];
-   _core = (RAModuleInfo*)cb.objectValueOfSelectedItem;
+   _core = objc_getAssociatedObject(cb.objectValueOfSelectedItem, associated_core_key);
 
    [self runCore];
 }
 
 #pragma mark RetroArch_Platform
-- (void)loadingCore:(RAModuleInfo*)core withFile:(const char*)file
+- (void)loadingCore:(const NSString*)core withFile:(const char*)file
 {
    if (file)
       [NSDocumentController.sharedDocumentController noteNewRecentDocumentURL:[NSURL fileURLWithPath:@(file)]];
 }
 
-- (void)unloadingCore:(RAModuleInfo*)core
+- (void)unloadingCore:(const NSString*)core
 {
    if (_isTerminating)
       [NSApplication.sharedApplication terminate:nil];

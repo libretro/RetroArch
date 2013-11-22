@@ -86,12 +86,12 @@ void apple_input_enable_icade(bool on)
    icade_buttons = 0;
 }
 
-uint32_t apple_input_get_icade_buttons()
+uint32_t apple_input_get_icade_buttons(void)
 {
    return icade_enabled ? icade_buttons : 0;
 }
 
-void apple_input_reset_icade_buttons()
+void apple_input_reset_icade_buttons(void)
 {
    icade_buttons = 0;
 }
@@ -107,8 +107,10 @@ void apple_input_handle_key_event(unsigned keycode, bool down)
 }
 
 
-int32_t apple_input_find_any_key()
+int32_t apple_input_find_any_key(void)
 {
+   input_init_keyboard_lut(apple_key_map_hidusage);
+
    for (int i = 0; apple_key_name_map[i].hid_id; i++)
       if (g_current_input_data.keys[apple_key_name_map[i].hid_id])
          return apple_key_name_map[i].hid_id;
