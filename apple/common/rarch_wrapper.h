@@ -19,9 +19,6 @@
 
 #include "gfx/gfx_context.h"
 
-// The result needs to be free()'d
-char* ios_get_rarch_system_directory();
-
 // These functions should only be called as arguments to dispatch_sync
 void apple_rarch_exited (void* result);
 
