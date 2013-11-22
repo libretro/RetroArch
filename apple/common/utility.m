@@ -54,15 +54,6 @@ NSString* objc_get_value_from_config(config_file_t* config, NSString* name, NSSt
    return result;
 }
 
-// Ensures a directory exists and has correct permissions
-bool path_make_and_check_directory(const char* path, mode_t mode, int amode)
-{
-   if (!path_is_directory(path) && mkdir(path, mode) != 0)
-      return false;
-   
-   return access(path, amode) == 0;
-}
-
 #ifdef IOS
 
 char* ios_get_rarch_system_directory()

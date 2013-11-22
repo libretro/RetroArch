@@ -53,7 +53,6 @@ extern void apple_run_core(RAModuleInfo* core, const char* file);
 
 // utility.m
 extern void apple_display_alert(NSString* message, NSString* title);
-extern bool path_make_and_check_directory(const char* path, mode_t mode, int amode);
 extern NSString* objc_get_value_from_config(config_file_t* config, NSString* name, NSString* defaultValue);
 
 // frontend/platform/platform_apple.c

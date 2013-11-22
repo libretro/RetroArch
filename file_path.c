@@ -667,8 +667,10 @@ void path_resolve_realpath(char *buf, size_t size)
 
 static bool path_mkdir_norecurse(const char *dir)
 {
-#ifdef _WIN32
+#if defined(_WIN32)
    int ret = _mkdir(dir);
+#elif defined(IOS)
+   int ret = mkdir(dir, 0755);
 #else
    int ret = mkdir(dir, 0750);
 #endif

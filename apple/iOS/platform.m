@@ -159,14 +159,20 @@ static void handle_touch_event(NSArray* touches)
    self.configDirectory = self.systemDirectory;
    self.globalConfigFile = [NSString stringWithFormat:@"%@/retroarch.cfg", self.configDirectory];
    self.coreDirectory = [NSBundle.mainBundle.bundlePath stringByAppendingPathComponent:@"modules"];
-
-   if (!path_make_and_check_directory(self.documentsDirectory.UTF8String, 0755, R_OK | W_OK | X_OK))
+    
+    const char *path = self.documentsDirectory.UTF8String;
+    path_mkdir(path);
+    if (access(path, 0755) != 0)
       apple_display_alert([NSString stringWithFormat:@"Failed to create or access base directory: %@", self.documentsDirectory], 0);
-   else if (!path_make_and_check_directory(self.systemDirectory.UTF8String, 0755, R_OK | W_OK | X_OK))
-      apple_display_alert([NSString stringWithFormat:@"Failed to create or access system directory: %@", self.systemDirectory], 0);
-   else
-      [self beginBrowsingForFile];
-
+    else
+    {
+        path = self.systemDirectory.UTF8String;
+        path_mkdir(path);
+        if (access(path, 0755) != 0)
+            apple_display_alert([NSString stringWithFormat:@"Failed to create or access system directory: %@", self.systemDirectory], 0);
+        else
+            [self beginBrowsingForFile];
+    }
    
    // Warn if there are no cores present
    if (apple_get_modules().count == 0)
