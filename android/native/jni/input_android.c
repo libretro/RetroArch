@@ -92,10 +92,10 @@ static typeof(AMotionEvent_getAxisValue) *p_AMotionEvent_getAxisValue;
 
 #define AMotionEvent_getAxisValue (*p_AMotionEvent_getAxisValue)
 
-void engine_handle_cmd(void)
+void engine_handle_cmd(void *data)
 {
    struct android_app *android_app = (struct android_app*)g_android;
-   android_input_t *android = (android_input_t*)driver.input_data;
+   android_input_t *android = (android_input_t*)data;
    int8_t cmd;
 
    if (read(android_app->msgread, &cmd, sizeof(cmd)) != sizeof(cmd))
@@ -1970,7 +1970,7 @@ static void android_input_poll(void *data)
          }
       }
       else if (ident == LOOPER_ID_MAIN)
-         engine_handle_cmd();
+         engine_handle_cmd(driver.input_data);
    }
 }
 
