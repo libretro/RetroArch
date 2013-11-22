@@ -34,22 +34,6 @@ bool apple_is_running;
 bool apple_use_tv_mode;
 RAModuleInfo* apple_core;
 
-void* rarch_main_spring(void* args)
-{
-   char** argv = args;
-
-   uint32_t argc = 0;
-   while (argv && argv[argc]) argc++;
-   
-   if (rarch_main(argc, argv))
-   {
-      rarch_main_clear_state();
-      dispatch_async_f(dispatch_get_main_queue(), (void*)1, apple_rarch_exited);
-   }
-   
-   return 0;
-}
-
 void apple_run_core(RAModuleInfo* core, const char* file)
 {
    if (!apple_is_running)

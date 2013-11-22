@@ -161,6 +161,23 @@ static void system_shutdown(bool force)
       dispatch_async_f(dispatch_get_main_queue(), 0, apple_rarch_exited);
 }
 
+void *rarch_main_spring(void* args)
+{
+   char** argv = args;
+
+   uint32_t argc = 0;
+   while (argv && argv[argc])
+      argc++;
+   
+   if (rarch_main(argc, argv))
+   {
+      rarch_main_clear_state();
+      dispatch_async_f(dispatch_get_main_queue(), (void*)1, apple_rarch_exited);
+   }
+   
+   return 0;
+}
+
 const frontend_ctx_driver_t frontend_ctx_apple = {
    NULL,                         /* environment_get */
    NULL,                         /* init */
