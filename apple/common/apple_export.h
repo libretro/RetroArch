@@ -33,6 +33,7 @@ extern void apple_refresh_config(void);
 extern void apple_enter_stasis(void);
 extern void apple_exit_stasis(bool reload_config);
 extern void objc_clear_config_hack(void);
+extern void *rarch_main_spring(void* args);
 
 extern bool apple_is_running;
 
