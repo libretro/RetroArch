@@ -10,38 +10,7 @@
 #endif
 
 #define FRAGMENT_PROFILE_INDEX 1
-
 #define RGLP_MAX_TEXTURE_SIZE 4096
-
-// GCM RESERVE and no RGLGCM post fifo SKID Check
-#define GCM_RESERVE_NO_SKID
-
-#ifdef GCM_RESERVE_NO_SKID
-
-
-#define GCM_FUNC_RESERVE( count )\
-   CELL_GCM_RESERVE(count);
-
-#define GCM_FUNC_SAFE( GCM_FUNCTION, ...) \
-{ \
-   GCM_FUNCTION( (CellGcmContextData*)&rglGcmState_i.fifo, __VA_ARGS__ ); \
-}
-
-#define GCM_FUNC_SAFE_NO_ARGS( GCM_FUNCTION, ...) \
-{ \
-   GCM_FUNCTION( (CellGcmContextData*)&rglGcmState_i.fifo ); \
-}
-
-#define GCM_FUNC( GCM_FUNCTION, ...) \
-{ \
-   GCM_FUNCTION ## Inline( (CellGcmContextData*)&rglGcmState_i.fifo, __VA_ARGS__ ); \
-}
-
-#define GCM_FUNC_NO_ARGS( GCM_FUNCTION ) \
-{ \
-   GCM_FUNCTION ## Inline( (CellGcmContextData*)&rglGcmState_i.fifo ); \
-}
-#endif
 
 typedef enum rglGcmEnum
 {
@@ -144,7 +113,6 @@ typedef enum rglGcmEnum
    RGLGCM_BLEND                          = 0x0be0,
    RGLGCM_COLOR_LOGIC_OP                 = 0x0bf2,
    RGLGCM_DITHER                         = 0x0bd0,
-   RGLGCM_PSHADER_SRGB_REMAPPING         = 0xff06,
 
    // glVertexAttribPointer
    RGLGCM_VERTEX_ATTRIB_ARRAY0           = 0x8650,
@@ -253,7 +221,7 @@ typedef enum rglGcmEnum
 //  253     used in RGLGcmFifoUtils.h
 #define RGLGCM_SEMA_NEVENTS	128
 #define RGLGCM_SEMA_BASE	64	// libgcm uses 0-63
-#define RGLGCM_SEMA_FENCE	(RGLGCM_SEMA_BASE+RGLGCM_SEMA_NEVENTS+0)
+#define RGLGCM_SEMA_FENCE	192
 
 // synchronization
 //  rglGcmSync enables GPU waiting by sending nv_glAcquireSemaphore to the
@@ -264,11 +232,7 @@ typedef enum rglGcmEnum
 //  for the corresponding RGLGCM routines, using a semaphore instead of the
 //  fence mechanism (so IncFence uses the 3D class).
 
-#define RGLGCM_FALSE 0
-
 #define RGLGCM_MAX_COLOR_SURFACES 4
-
-#define RGLGCM_TRUE 1
 
 // allocation unit for buffer objects
 //  Each buffer object is allocated to a multiple of this block size.  This
@@ -336,15 +300,9 @@ enum
 };
 
 // For quick float->int conversions
-#define RGLGCM_F0_DOT_0                              12582912.0f
+#define RGLGCM_F0_DOT_0             12582912.0f
 
 // some other useful push buf defines/commands
-#define RGLGCM_NON_INCREMENT        (0x40000000)
-#define RGLGCM_NOP()                (0x00000000)
-#define RGLGCM_JUMP(addr)           (0x20000000 | (addr))
-#define RGLGCM_CALL(addr)           (0x00000002 | (addr))
-#define RGLGCM_RETURN()             (0x00020000)
-#define RGLGCM_MAX_METHOD_COUNT     (2047)
 #define RGLGCM_COUNT_SHIFT          (18)
 #define RGLGCM_SUBCHANNEL_SHIFT     (13)
 #define RGLGCM_METHOD_SHIFT         (0)
@@ -369,27 +327,12 @@ enum {
 
 enum {
    RGLGCM_SURFACE_POOL_NONE,
-   RGLGCM_SURFACE_POOL_TILED_COLOR,
-   RGLGCM_SURFACE_POOL_TILED_DEPTH,
    RGLGCM_SURFACE_POOL_LINEAR,
-   RGLGCM_SURFACE_POOL_SYSTEM,		// GPU accessible host memory
-   RGLGCM_SURFACE_POOL_PPU,		// generic EA
-   RGLGCM_SURFACE_POOL_SYSTEM_TILED_COLOR, // tiled color GPU accessible XDR 
-   RGLGCM_SURFACE_POOL_SYSTEM_TILED_DEPTH, // tiled depth GPU accessible XDR 
 };
 
 
 #define RGLGCM_DEVICE_SYNC_FENCE 1
 #define RGLGCM_DEVICE_SYNC_COND  2
-
-// max surface/scissor/viewport dimension
-#define RGLGCM_MAX_RT_DIMENSION                      (CELL_GCM_MAX_RT_DIMENSION)
-
-// a few texture consts
-#define RGLGCM_MAX_SHADER_TEXCOORD_COUNT             (CELL_GCM_MAX_SHADER_TEXCOORD_COUNT)
-#define RGLGCM_MAX_TEXIMAGE_COUNT                    (CELL_GCM_MAX_TEXIMAGE_COUNT)
-#define RGLGCM_MAX_LOD_COUNT                         (CELL_GCM_MAX_LOD_COUNT)
-#define RGLGCM_MAX_TEX_DIMENSION                     (CELL_GCM_MAX_TEX_DIMENSION)
 
 // max attrib count
 #define RGLGCM_ATTRIB_COUNT                          16
@@ -433,17 +376,10 @@ enum {
 #define RGLGCM_SUBPIXEL_ADJUST                       (0.5/(1<<12))
 #define RGLGCM_VIEWPORT_EPSILON                      0.0f
 
-// max vertex program constant slots
-#define RGLGCM_VTXPRG_MAX_CONST                      (CELL_GCM_VTXPRG_MAX_CONST)
-#define RGLGCM_VTXPRG_MAX_INST                       (CELL_GCM_VTXPRG_MAX_INST)
-
 #define RGLGCM_HAS_INVALIDATE_TILE
 
 #define RGLGCM_TILED_BUFFER_ALIGNMENT 0x10000 // 64KB
 #define RGLGCM_TILED_BUFFER_HEIGHT_ALIGNMENT 64
 
 #define RGLGCM_MAX_TILED_REGIONS 15
-
-#define RGLP_BUFFER_OBJECT_SIZE() (sizeof(rglGcmBufferObject))
-
 #endif

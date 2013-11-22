@@ -15,8 +15,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../rgl.h"
-#include "../rglp.h"
+#include "rgl.h"
+#include "rglp.h"
 
 #include <sdk_version.h>
 
@@ -91,8 +91,9 @@ template<int SIZE> inline static void swapandsetfp( int ucodeSize, unsigned int 
       float *src = (float*)v;
       for (uint32_t j=0; j<SIZE;j++)
       {
-         *fp = cellGcmSwap16Float32(*src);
-         fp++;src++;
+         rglGcmSwap16Float32(fp, src);
+         fp++;
+         src++;
       }
    }
 
@@ -562,7 +563,7 @@ void rglCreatePushBuffer(void *data)
                      memset( rglGcmCurrent, 0, 4*( 4*registerCount + 3 ) );
                      CellGcmContextData gcmContext;
                      gcmContext.current = (uint32_t*)rglGcmCurrent;
-                     cellGcmSetVertexProgramParameterBlockUnsafeInline(&gcmContext, parameterResource->resource, registerCount, ( float* )rglGcmCurrent );
+                     rglGcmSetVertexProgramParameterBlock(&gcmContext, parameterResource->resource, registerCount, ( float* )rglGcmCurrent );
                      rglGcmCurrent = (typeof(rglGcmCurrent))gcmContext.current;
 
                      rtParameter->pushBufferPointer = rglGcmCurrent - 4 * registerCount;
@@ -579,7 +580,7 @@ void rglCreatePushBuffer(void *data)
                            memset( rglGcmCurrent, 0, 4*( 4*registerStride + 3 ) );
                            CellGcmContextData gcmContext;
                            gcmContext.current = (uint32_t*)rglGcmCurrent;
-                           cellGcmSetVertexProgramParameterBlockUnsafeInline(&gcmContext, program->resources[resourceIndex], registerStride, ( float* )rglGcmCurrent );
+                           rglGcmSetVertexProgramParameterBlock(&gcmContext, program->resources[resourceIndex], registerStride, ( float* )rglGcmCurrent );
                            rglGcmCurrent = (typeof(rglGcmCurrent))gcmContext.current;
                            *( programPushBuffer++ ) = ( unsigned int* )( rglGcmCurrent - 4 * registerStride );
                         }
@@ -750,10 +751,14 @@ void rglCreatePushBuffer(void *data)
    //add padding
    if ( bufferSize > 0 )
    {
-      int nopCount = ( program->constantPushBuffer + bufferSize ) - ( unsigned int * )rglGcmCurrent;
-      CellGcmContextData gcmContext;
+      CellGcmContextData gcmContext, *thisContext;
+      int i, nopCount;
+
+      nopCount = ( program->constantPushBuffer + bufferSize ) - ( unsigned int * )rglGcmCurrent;
       gcmContext.current = (uint32_t*)rglGcmCurrent;
-      cellGcmSetNopCommandUnsafeInline(&gcmContext, nopCount);
+      thisContext = &gcmContext;
+
+      rglGcmSetNopCommand(thisContext, i, nopCount);
       rglGcmCurrent = (typeof(rglGcmCurrent))gcmContext.current;
    }
 }
@@ -762,38 +767,17 @@ void rglCreatePushBuffer(void *data)
   PLATFORM BUFFER
   ============================================================ */
 
-static void rglDeallocateBuffer (void *data)
-{
-   rglBufferObject *bufferObject = (rglBufferObject*)data;
-   rglGcmBufferObject *rglBuffer = (rglGcmBufferObject*)bufferObject->platformBufferObject;
-
-   switch ( rglBuffer->pool )
-   {
-      case RGLGCM_SURFACE_POOL_LINEAR:
-         gmmFree( rglBuffer->bufferId );
-         break;
-      case RGLGCM_SURFACE_POOL_NONE:
-         break;
-      default:
-         break;
-   }
-
-   rglBuffer->pool = RGLGCM_SURFACE_POOL_NONE;
-   rglBuffer->bufferId = GMM_ERROR;
-}
-
 static void rglpsAllocateBuffer (void *data)
 {
    rglBufferObject *bufferObject = (rglBufferObject*)data;
    rglGcmBufferObject *rglBuffer = (rglGcmBufferObject*)bufferObject->platformBufferObject;
 
    // free current buffer (if any)
-   rglDeallocateBuffer( bufferObject );
+   rglDeallocateBuffer(bufferObject, rglBuffer);
 
    // allocate in GPU memory
    rglBuffer->pool = RGLGCM_SURFACE_POOL_LINEAR;
-   rglBuffer->bufferId = gmmAlloc((CellGcmContextData*)&rglGcmState_i.fifo,
-         0, rglBuffer->bufferSize);
+   rglBuffer->bufferId = gmmAlloc(rglBuffer->bufferSize);
    rglBuffer->pitch = 0;
 
    if ( rglBuffer->bufferId == GMM_ERROR )
@@ -835,7 +819,8 @@ GLboolean rglpCreateBufferObject (void *data)
 void rglPlatformDestroyBufferObject (void *data)
 {
    rglBufferObject *bufferObject = (rglBufferObject*)data;
-   rglDeallocateBuffer( bufferObject );
+   rglGcmBufferObject *rglBuffer = (rglGcmBufferObject*)bufferObject->platformBufferObject;
+   rglDeallocateBuffer(bufferObject, rglBuffer);
 }
 
 void rglPlatformBufferObjectSetData(void *buf_data, GLintptr offset, GLsizeiptr size, const GLvoid *data, GLboolean tryImmediateCopy)
@@ -1005,7 +990,7 @@ static void rglPlatformBufferObjectSetDataTextureReference(void *buf_data, GLint
       // partial buffer write
       //  STREAM and DYNAMIC buffers get transfer via a bounce buffer.
       // copy via bounce buffer
-      GLuint id = gmmAlloc((CellGcmContextData*)&rglGcmState_i.fifo, 0, size);
+      GLuint id = gmmAlloc(size);
       memset(gmmIdToAddress(id), 0, size);
       rglGcmTransferData(rglBuffer->bufferId, offset, rglBuffer->pitch, id, 0, size, size, 1);
       gmmFree(id);
@@ -1192,8 +1177,8 @@ void rglPlatformFramebuffer::validate (void *data)
    if (!complete)
       return;
 
-   GLuint width = RGLGCM_MAX_RT_DIMENSION;
-   GLuint height = RGLGCM_MAX_RT_DIMENSION;
+   GLuint width  = CELL_GCM_MAX_RT_DIMENSION;
+   GLuint height = CELL_GCM_MAX_RT_DIMENSION;
 
    // color
    rt.colorBufferCount = 0;
@@ -1254,7 +1239,7 @@ void rglPlatformFramebuffer::validate (void *data)
    rt.width = width;
    rt.height = height;
 
-   rt.yInverted = RGLGCM_FALSE;
+   rt.yInverted = false;
    rt.xOffset = 0;
    rt.yOffset = 0;
    needValidate = GL_FALSE;
@@ -1286,7 +1271,7 @@ void *rglPlatformRasterInit (void)
    rglGcmDriver *driver = (rglGcmDriver*)malloc(sizeof(rglGcmDriver));
    memset(driver, 0, sizeof(rglGcmDriver));
 
-   driver->rt.yInverted = RGLGCM_TRUE;
+   driver->rt.yInverted = true;
    driver->invalidateVertexCache = GL_FALSE;
    driver->flushBufferCount = 0;
 
@@ -1379,7 +1364,6 @@ GLAPI void APIENTRY glDrawArrays (GLenum mode, GLint first, GLsizei count)
                rglGcmSetTextureBorder(thisContext, unit, texture, 0x1);
 
                CellGcmContextData *gcm_context = (CellGcmContextData*)&rglGcmState_i.fifo;
-               cellGcmReserveMethodSizeInline(gcm_context, 11);
                uint32_t *current = gcm_context->current;
                current[0] = CELL_GCM_METHOD_HEADER_TEXTURE_OFFSET(unit, 8);
                current[1] = CELL_GCM_METHOD_DATA_TEXTURE_OFFSET(platformTexture->gcmTexture.offset);
@@ -1458,7 +1442,7 @@ GLAPI void APIENTRY glDrawArrays (GLenum mode, GLint first, GLsizei count)
          // Push a CG program onto the current command buffer
 
          // make sure there is space for the pushbuffer + any nops we need to add for alignment  
-         if ( fifo->current + spaceInWords + 1024 > fifo->end )
+         if ( fifo->ctx.current + spaceInWords + 1024 > fifo->ctx.end )
             rglOutOfSpaceCallback( fifo, spaceInWords );
 
          rglGcmSetVertexProgramLoad(thisContext, &conf, program->ucode );
@@ -1517,7 +1501,7 @@ GLAPI void APIENTRY glDrawArrays (GLenum mode, GLint first, GLsizei count)
                case CG_FIXED2:
                case CG_FIXED3:
                case CG_FIXED4:
-                  GCM_FUNC( cellGcmSetVertexProgramParameterBlock, parameterResource->resource, 1, value ); // GCM_PORT_TESTED [Cedric]
+                  rglGcmSetVertexProgramParameterBlock(gCellGcmCurrentContext, parameterResource->resource, 1, value );
                   break;
                case CG_FLOAT4x4:
                case CG_HALF4x4:
@@ -1543,7 +1527,7 @@ GLAPI void APIENTRY glDrawArrays (GLenum mode, GLint first, GLsizei count)
                      v2[13] = value[7];
                      v2[14] = value[11];
                      v2[15] = value[15];
-                     GCM_FUNC( cellGcmSetVertexProgramParameterBlock, parameterResource->resource, 4, v2 ); // GCM_PORT_TESTED [Cedric]
+                     rglGcmSetVertexProgramParameterBlock(gCellGcmCurrentContext, parameterResource->resource, 4, v2 );
                   }
                   break;
                case CG_FLOAT3x3:
@@ -1566,7 +1550,7 @@ GLAPI void APIENTRY glDrawArrays (GLenum mode, GLint first, GLsizei count)
                      v2[9] = value[5];
                      v2[10] = value[8];
                      v2[11] = 0;
-                     GCM_FUNC( cellGcmSetVertexProgramParameterBlock, parameterResource->resource, 3, v2 );
+                     rglGcmSetVertexProgramParameterBlock(gCellGcmCurrentContext, parameterResource->resource, 3, v2 );
                   }
                   break;
             }
@@ -1586,18 +1570,18 @@ GLAPI void APIENTRY glDrawArrays (GLenum mode, GLint first, GLsizei count)
          // Push a CG program onto the current command buffer
 
          // make sure there is space for the pushbuffer + any nops we need to add for alignment  
-         if ( fifo->current + spaceInWords + 1024 > fifo->end )
+         if ( fifo->ctx.current + spaceInWords + 1024 > fifo->ctx.end )
             rglOutOfSpaceCallback( fifo, spaceInWords );
 
          // first add nops to get us the next alligned position in the fifo 
          // [YLIN] Use VMX register to copy
-         uint32_t padding_in_word = ( ( 0x10-(((uint32_t)rglGcmState_i.fifo.current)&0xf))&0xf )>>2;
+         uint32_t padding_in_word = ( ( 0x10-(((uint32_t)rglGcmState_i.fifo.ctx.current)&0xf))&0xf )>>2;
          uint32_t padded_size = ( ((cgprog->constantPushBufferWordSize)<<2) + 0xf )&~0xf;
 
          unsigned i;
          rglGcmSetNopCommand(thisContext, i, padding_in_word );
-         memcpy16(rglGcmState_i.fifo.current, cgprog->constantPushBuffer, padded_size);
-         rglGcmState_i.fifo.current+=cgprog->constantPushBufferWordSize;
+         memcpy16(rglGcmState_i.fifo.ctx.current, cgprog->constantPushBuffer, padded_size);
+         rglGcmState_i.fifo.ctx.current+=cgprog->constantPushBufferWordSize;
       }
 
       if (RGL_UNLIKELY(needValidate & RGL_VALIDATE_FRAGMENT_PROGRAM))
@@ -1636,7 +1620,7 @@ GLAPI void APIENTRY glDrawArrays (GLenum mode, GLint first, GLsizei count)
 
          rglGcmSetFragmentProgramLoad(thisContext, &conf, CELL_GCM_LOCATION_LOCAL);
 
-         rglGcmSetZMinMaxControl(thisContext, ( program->header.fragmentProgram.flags & CGF_DEPTHREPLACE ) ? RGLGCM_FALSE : RGLGCM_TRUE, RGLGCM_FALSE, RGLGCM_FALSE );
+         rglGcmSetZMinMaxControl(thisContext, ( program->header.fragmentProgram.flags & CGF_DEPTHREPLACE ) ? false : true, false, false );
 
          driver->fpLoadProgramId = program->loadProgramId;
          driver->fpLoadProgramOffset = program->loadProgramOffset;
@@ -1667,7 +1651,7 @@ GLAPI void APIENTRY glDrawArrays (GLenum mode, GLint first, GLsizei count)
       {
          if ((LContext->Blending))
          {
-            GCM_FUNC( cellGcmSetBlendEnable, LContext->Blending );
+            rglGcmSetBlendEnable(gCellGcmCurrentContext, LContext->Blending );
 
             rglGcmBlendState *blend = &rglGcmState_i.state.blend;
             GLuint hwColor;
@@ -1680,22 +1664,14 @@ GLAPI void APIENTRY glDrawArrays (GLenum mode, GLint first, GLsizei count)
             if (rglGcmState_i.renderTarget.colorFormat == RGLGCM_ARGB8)
             {
                RGLGCM_CALC_COLOR_LE_ARGB8( &hwColor, blend->r, blend->g, blend->b, blend->a );
-               GCM_FUNC( cellGcmSetBlendColor, hwColor, hwColor );
+               rglGcmSetBlendColor(gCellGcmCurrentContext, hwColor, hwColor);
             }
 
-            GCM_FUNC( cellGcmSetBlendEquation, (rglGcmEnum)LContext->BlendEquationRGB,
-                  (rglGcmEnum)LContext->BlendEquationAlpha );
-            GCM_FUNC( cellGcmSetBlendFunc, (rglGcmEnum)LContext->BlendFactorSrcRGB,(rglGcmEnum)LContext->BlendFactorDestRGB,(rglGcmEnum)LContext->BlendFactorSrcAlpha,(rglGcmEnum)LContext->BlendFactorDestAlpha);
+            rglGcmSetBlendEquation(gCellGcmCurrentContext, LContext->BlendEquationRGB, LContext->BlendEquationAlpha);
+            rglGcmSetBlendFunc(gCellGcmCurrentContext, LContext->BlendFactorSrcRGB, LContext->BlendFactorDestRGB,
+                  LContext->BlendFactorSrcAlpha, LContext->BlendFactorDestAlpha);
          }
       }
-
-#if 0
-      if ( RGL_UNLIKELY( needValidate & RGL_VALIDATE_SHADER_SRGB_REMAP ) )
-      {
-         GCM_FUNC( cellGcmSetFragmentProgramGammaEnable, LContext->ShaderSRGBRemap ? CELL_GCM_TRUE : CELL_GCM_FALSE); 
-         LContext->needValidate &= ~RGL_VALIDATE_SHADER_SRGB_REMAP;
-      }
-#endif
 
       LContext->needValidate = 0;
    }
@@ -1733,8 +1709,7 @@ beginning:
    GLuint VBOId = GMM_ERROR;
    if ( RGL_UNLIKELY( dparams->xferTotalSize ) )
    {
-      xferId = gmmAlloc((CellGcmContextData*)&rglGcmState_i.fifo,
-            0, dparams->xferTotalSize);
+      xferId = gmmAlloc(dparams->xferTotalSize);
       xferBuffer = gmmIdToAddress(xferId);
    }
 
@@ -1859,8 +1834,9 @@ beginning:
       rglGcmSetInvalidateVertexCache(thisContext);
    }
 
-   GCM_FUNC( cellGcmSetUpdateFragmentProgramParameter, 
-         gmmIdToOffset( driver->fpLoadProgramId ) + driver->fpLoadProgramOffset );
+   rglGcmSetUpdateFragmentProgramParameter(gCellGcmCurrentContext,
+         gmmIdToOffset( driver->fpLoadProgramId ) + driver->fpLoadProgramOffset,
+         CELL_GCM_LOCATION_LOCAL);
 
    uint8_t gcmMode = 0;
 
@@ -2014,21 +1990,9 @@ void rglPlatformFreeGcmTexture (void *data)
 {
    rglTexture *texture = (rglTexture*)data;
    rglGcmTexture *gcmTexture = ( rglGcmTexture * )texture->platformTexture;
-   switch ( gcmTexture->pool )
-   {
-      case RGLGCM_SURFACE_POOL_LINEAR:
-         gmmFree( gcmTexture->gpuAddressId );
-         break;
-      case RGLGCM_SURFACE_POOL_SYSTEM:
-         gmmFree( gcmTexture->gpuAddressId );
-         break;
-      case RGLGCM_SURFACE_POOL_TILED_COLOR:
-         rglGcmFreeTiledSurface( gcmTexture->gpuAddressId );
-         break;
-      case RGLGCM_SURFACE_POOL_NONE:
-         break;
-   }
 
+   if ( gcmTexture->pool == RGLGCM_SURFACE_POOL_LINEAR)
+      gmmFree( gcmTexture->gpuAddressId );
 
    gcmTexture->gpuAddressId = GMM_ERROR;
    gcmTexture->gpuAddressIdOffset = 0;
@@ -2060,49 +2024,41 @@ static void rglPlatformValidateTextureResources (void *data)
       GLuint size = 0;
       GLuint id = GMM_ERROR;
 
-      if (texture->usage == GL_TEXTURE_LINEAR_SYSTEM_SCE ||
-            texture->usage == GL_TEXTURE_SWIZZLED_SYSTEM_SCE)
-         done = GL_TRUE;
-
       const rglGcmTextureLayout currentLayout = gcmTexture->gpuLayout;
       const GLuint currentSize = gcmTexture->gpuSize;
 
-      if (!done)
+      rglGcmTextureLayout newLayout;
+
+      // get layout and size compatible with this pool
+      rglImage *image = texture->image;
+
+      newLayout.levels = 1;
+      newLayout.faces = 1;
+      newLayout.baseWidth = image->width;
+      newLayout.baseHeight = image->height;
+      newLayout.baseDepth = 1;
+      newLayout.internalFormat = ( rglGcmEnum )image->internalFormat;
+      newLayout.pixelBits = rglPlatformGetBitsPerPixel( newLayout.internalFormat );
+      newLayout.pitch = GET_TEXTURE_PITCH(texture);
+
+      size = rglGetGcmTextureSize( &newLayout );
+
+      if ( currentSize >= size && newLayout.pitch == currentLayout.pitch )
+         gcmTexture->gpuLayout = newLayout;
+      else
       {
-         rglGcmTextureLayout newLayout;
+         rglPlatformDropTexture( texture );
 
-         // get layout and size compatible with this pool
-         rglImage *image = texture->image;
+         // allocate in the specified pool
+         id = gmmAlloc(size);
 
-         newLayout.levels = 1;
-         newLayout.faces = 1;
-         newLayout.baseWidth = image->width;
-         newLayout.baseHeight = image->height;
-         newLayout.baseDepth = image->depth;
-         newLayout.internalFormat = ( rglGcmEnum )image->internalFormat;
-         newLayout.pixelBits = rglPlatformGetBitsPerPixel( newLayout.internalFormat );
-         newLayout.pitch = GET_TEXTURE_PITCH(texture);
+         // set new
+         gcmTexture->pool = RGLGCM_SURFACE_POOL_LINEAR;
+         gcmTexture->gpuAddressId = id;
+         gcmTexture->gpuAddressIdOffset = 0;
+         gcmTexture->gpuSize = size;
+         gcmTexture->gpuLayout = newLayout;
 
-         size = rglGetGcmTextureSize( &newLayout );
-
-         if ( currentSize >= size && newLayout.pitch == currentLayout.pitch )
-            gcmTexture->gpuLayout = newLayout;
-         else
-         {
-            rglPlatformDropTexture( texture );
-
-            // allocate in the specified pool
-            id = gmmAlloc((CellGcmContextData*)&rglGcmState_i.fifo, 
-                  0, size);
-
-            // set new
-            gcmTexture->pool = RGLGCM_SURFACE_POOL_LINEAR;
-            gcmTexture->gpuAddressId = id;
-            gcmTexture->gpuAddressIdOffset = 0;
-            gcmTexture->gpuSize = size;
-            gcmTexture->gpuLayout = newLayout;
-
-         }
       }
       rglTextureTouchFBOs( texture );
 
@@ -2141,15 +2097,9 @@ source:		RGLGCM_SURFACE_SOURCE_TEXTURE,
       // use a bounce buffer to transfer to GPU
       GLuint bounceBufferId = GMM_ERROR;
 
-      // check if upload is needed for this image
-      rglImage *image = texture->image;
-
       if ( image->dataState == RGL_IMAGE_DATASTATE_HOST )
       {
-         // lazy allocation of bounce buffer
-         if ( bounceBufferId == GMM_ERROR && layout->baseDepth == 1 )
-            bounceBufferId = gmmAlloc((CellGcmContextData*)&rglGcmState_i.fifo,
-                  0, gcmTexture->gpuSize);
+         bounceBufferId = gmmAlloc(gcmTexture->gpuSize);
 
          if ( bounceBufferId != GMM_ERROR )
          {
@@ -2237,9 +2187,9 @@ source:		RGLGCM_SURFACE_SOURCE_TEXTURE,
    // set the SET_TEXTURE_CONTROL0 params
    platformTexture->gcmMethods.control0.maxAniso = CELL_GCM_TEXTURE_MAX_ANISO_1;
    const GLfloat minLOD = MAX( texture->minLod, 0);
-   const GLfloat maxLOD = MIN( texture->maxLod, texture->maxLevel );
+   const GLfloat maxLOD = MIN( texture->maxLod, 0 );
    platformTexture->gcmMethods.control0.minLOD = ( GLuint )( MAX( minLOD, 0 ) * 256.0f );
-   platformTexture->gcmMethods.control0.maxLOD = ( GLuint )( MIN( maxLOD, layout->levels ) * 256.0f );
+   platformTexture->gcmMethods.control0.maxLOD = ( GLuint )( MIN( maxLOD, 1 ) * 256.0f );
 
    // -----------------------------------------------------------------------
    // set the SET_TEXTURE_ADDRESS method params.
@@ -2247,20 +2197,7 @@ source:		RGLGCM_SURFACE_SOURCE_TEXTURE,
    platformTexture->gcmMethods.address.wrapT = rglGcmMapWrapMode( texture->wrapT );
    platformTexture->gcmMethods.address.wrapR = rglGcmMapWrapMode( texture->wrapR );
    platformTexture->gcmMethods.address.unsignedRemap = CELL_GCM_TEXTURE_UNSIGNED_REMAP_NORMAL;
-
-#if 0
-   // now for gamma remap
-   GLuint gamma = 0;
-   GLuint remap = texture->gammaRemap;
-   gamma |= ( remap & RGLGCM_GAMMA_REMAP_RED_BIT ) 		? CELL_GCM_TEXTURE_GAMMA_R : 0;
-   gamma |= ( remap & RGLGCM_GAMMA_REMAP_GREEN_BIT )	? CELL_GCM_TEXTURE_GAMMA_G : 0;
-   gamma |= ( remap & RGLGCM_GAMMA_REMAP_BLUE_BIT ) 	? CELL_GCM_TEXTURE_GAMMA_B : 0;
-   gamma |= ( remap & RGLGCM_GAMMA_REMAP_ALPHA_BIT ) 	? CELL_GCM_TEXTURE_GAMMA_A : 0;
-
-   platformTexture->gcmMethods.address.gamma = gamma;
-#else
    platformTexture->gcmMethods.address.gamma = 0;
-#endif
 
    // set border colors
    RGLGCM_CALC_COLOR_LE_ARGB8(&(platformTexture->gcmMethods.borderColor), 
@@ -2447,6 +2384,7 @@ source:		RGLGCM_SURFACE_SOURCE_TEXTURE,
 
          }
          break;
+#endif
       case RGLGCM_FLOAT_R32:              // in_rgba = Rxxx, out_rgba = R001
          {
             *gcmFormat =  CELL_GCM_TEXTURE_X32_FLOAT;
@@ -2463,6 +2401,7 @@ source:		RGLGCM_SURFACE_SOURCE_TEXTURE,
 
          }
          break;
+#if 0
       case RGLGCM_RGB5_A1_SCE:          // in_rgba = RGBA, out_rgba = RGBA
          {
             *gcmFormat =  CELL_GCM_TEXTURE_A1R5G5B5;
@@ -2504,9 +2443,9 @@ source:		RGLGCM_SURFACE_SOURCE_TEXTURE,
 
    platformTexture->gcmTexture.width = layout->baseWidth;
    platformTexture->gcmTexture.height = layout->baseHeight;
-   platformTexture->gcmTexture.depth = layout->baseDepth;
+   platformTexture->gcmTexture.depth = 1;
    platformTexture->gcmTexture.pitch = layout->pitch;
-   platformTexture->gcmTexture.mipmap = layout->levels;
+   platformTexture->gcmTexture.mipmap = 1;
    platformTexture->gcmTexture.cubemap = CELL_GCM_FALSE;
    platformTexture->gcmTexture.dimension = CELL_GCM_TEXTURE_DIMENSION_2;
    platformTexture->gcmTexture.location = CELL_GCM_LOCATION_LOCAL;
@@ -2591,8 +2530,7 @@ GLenum rglPlatformChooseInternalStorage (void *data, GLenum internalFormat )
    // this member is used to configure texture loads and unloads.  If this
    // value is wrong (e.g. contains unnecessary padding) it will corrupt
    // the GPU memory layout.
-   image->storageSize = rglGetPixelSize(image->format, image->type) *
-      image->width * image->height * image->depth;
+   image->storageSize = rglGetPixelSize(image->format, image->type) * image->width * image->height;
 
    return GL_NO_ERROR;
 }
@@ -2606,13 +2544,13 @@ GLAPI void APIENTRY glTextureReferenceSCE( GLenum target, GLuint levels,
    rglTexture *texture = rglGetCurrentTexture( LContext->CurrentImageUnit, target );
    rglBufferObject *bufferObject = 
       (rglBufferObject*)LContext->bufferObjectNameSpace.data[LContext->TextureBuffer];
-   rglReallocateImages( texture, 0, MAX( baseWidth, MAX( baseHeight, baseDepth ) ) );
+   rglReallocateImages( texture, 0, MAX(baseWidth, baseHeight));
 
    image = texture->image;
 
    image->width = baseWidth;
    image->height = baseHeight;
-   image->depth = baseDepth;
+   image->depth = 1;
    image->alignment = LContext->unpackAlignment;
 
    image->xblk = 0;
@@ -2655,7 +2593,7 @@ GLAPI void APIENTRY glTextureReferenceSCE( GLenum target, GLuint levels,
    newLayout.faces = 1;
    newLayout.baseWidth = image->width;
    newLayout.baseHeight = image->height;
-   newLayout.baseDepth = image->depth;
+   newLayout.baseDepth = 1;
    newLayout.internalFormat = ( rglGcmEnum )image->internalFormat;
    newLayout.pixelBits = rglPlatformGetBitsPerPixel( newLayout.internalFormat );
    newLayout.pitch = pitch ? pitch : GET_TEXTURE_PITCH(texture);
@@ -2716,7 +2654,7 @@ void rglGcmFifoGlSetRenderTarget (const void *data)
       if (rglGcmState_i.renderTarget.colorFormat == RGLGCM_ARGB8)
       {
          RGLGCM_CALC_COLOR_LE_ARGB8( &hwColor, blend->r, blend->g, blend->b, blend->a );
-         GCM_FUNC( cellGcmSetBlendColor, hwColor, hwColor );
+         rglGcmSetBlendColor(gCellGcmCurrentContext, hwColor, hwColor);
       }
    }
 
@@ -2787,13 +2725,7 @@ void rglGcmFifoGlSetRenderTarget (const void *data)
    grt->depthOffset = 0;
    grt->depthPitch = 64;
 
-   // Update rt's AA and Swizzling parameters with args
-
-   rglGcmSetAntiAliasingControl(thisContext,
-         CELL_GCM_FALSE, 
-         CELL_GCM_FALSE,
-         CELL_GCM_FALSE, 
-         0xFFFF);
+   // Update rt's Swizzling parameters with args
 
    grt->type = CELL_GCM_SURFACE_PITCH;
 

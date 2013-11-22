@@ -19,10 +19,7 @@
 #include <xui.h>
 #include <xuiapp.h>
 
-#include "rmenu_xui.h"
-
-#include "file_browser.h"
-
+#include "menu_common.h"
 #include "../../console/rarch_console.h"
 
 #include "../../gfx/gfx_common.h"
@@ -30,6 +27,57 @@
 
 #include "../../message_queue.h"
 #include "../../general.h"
+
+enum
+{
+   SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_B = 0,
+   SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_Y,
+   SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_SELECT,
+   SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_START,
+   SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_UP,
+   SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_DOWN,
+   SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_LEFT,
+   SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_RIGHT,
+   SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_A,
+   SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_X,
+   SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_L,
+   SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_R,
+   SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_L2,
+   SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_R2,
+   SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_L3,
+   SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_R3,
+   SETTING_CONTROLS_DPAD_EMULATION,
+   SETTING_CONTROLS_DEFAULT_ALL
+};
+
+enum
+{
+   INPUT_LOOP_NONE = 0,
+   INPUT_LOOP_RESIZE_MODE,
+   INPUT_LOOP_FILEBROWSER
+};
+
+enum
+{
+    INGAME_MENU_CHANGE_LIBRETRO_CORE = 0,
+    INGAME_MENU_LOAD_GAME_HISTORY_MODE,
+    INGAME_MENU_CHANGE_GAME,
+    INGAME_MENU_CORE_OPTIONS_MODE,
+    INGAME_MENU_VIDEO_OPTIONS_MODE,
+    INGAME_MENU_AUDIO_OPTIONS_MODE,
+    INGAME_MENU_INPUT_OPTIONS_MODE,
+    INGAME_MENU_PATH_OPTIONS_MODE,
+    INGAME_MENU_SETTINGS_MODE,
+    INGAME_MENU_LOAD_STATE,
+    INGAME_MENU_SAVE_STATE,
+    INGAME_MENU_SCREENSHOT_MODE,
+    INGAME_MENU_RETURN_TO_GAME,
+    INGAME_MENU_RESET,
+    INGAME_MENU_QUIT_RETROARCH,
+    INGAME_MENU_MAIN_MODE,
+};
+
+#define XUI_CONTROL_NAVIGATE_OK (XUI_CONTROL_NAVIGATE_RIGHT + 1)
 
 enum {
    MENU_XUI_ITEM_HW_TEXTURE_FILTER = 0,
@@ -295,34 +343,34 @@ static void set_dpad_emulation_label(unsigned port, char *str, size_t sizeof_str
 {
 }
 
-static void init_menulist(unsigned menu_id)
+static void rmenu_xui_populate_entries(void *data, unsigned menu_type)
 {
    XuiListDeleteItems(m_menulist, 0, XuiListGetItemCount(m_menulist));
 
    switch (menu_id)
    {
       case INGAME_MENU_CORE_OPTIONS_MODE:
-   if (g_extern.system.core_options)
-   {
-      size_t opts = core_option_size(g_extern.system.core_options);
-      for (size_t i = 0; i < opts; i++)
-      {
-         char label[256];
-         strlcpy(label, core_option_get_desc(g_extern.system.core_options, i),
-            sizeof(label));
-         snprintf(label, sizeof(label), "%s : %s", label,
-            core_option_get_val(g_extern.system.core_options, i));
-         mbstowcs(strw_buffer, label,
-            sizeof(strw_buffer) / sizeof(wchar_t));
-         XuiListInsertItems(m_menulist, i, 1);
-         XuiListSetText(m_menulist, i, strw_buffer);
-      }
-   }
-   else
-   {
-      XuiListInsertItems(m_menulist, 0, 1);
-      XuiListSetText(m_menulist, 0, L"No options available.");
-   }
+         if (g_extern.system.core_options)
+         {
+            size_t opts = core_option_size(g_extern.system.core_options);
+            for (size_t i = 0; i < opts; i++)
+            {
+               char label[256];
+               strlcpy(label, core_option_get_desc(g_extern.system.core_options, i),
+                     sizeof(label));
+               snprintf(label, sizeof(label), "%s : %s", label,
+                     core_option_get_val(g_extern.system.core_options, i));
+               mbstowcs(strw_buffer, label,
+                     sizeof(strw_buffer) / sizeof(wchar_t));
+               XuiListInsertItems(m_menulist, i, 1);
+               XuiListSetText(m_menulist, i, strw_buffer);
+            }
+         }
+         else
+         {
+            XuiListInsertItems(m_menulist, 0, 1);
+            XuiListSetText(m_menulist, 0, L"No options available.");
+         }
          break;
       case INGAME_MENU_LOAD_GAME_HISTORY_MODE:
          {
@@ -453,7 +501,7 @@ static void init_menulist(unsigned menu_id)
    }
 }
 
-static unsigned xui_input_to_rgui_action(unsigned input)
+static unsigned xui_input_to_rmenu_xui_action(unsigned input)
 {
    switch (input)
    {
@@ -478,7 +526,7 @@ HRESULT CRetroArchLoadGameHistory::OnControlNavigate(
 
    unsigned current_index = XuiListGetCurSel(m_menulist, NULL);
    unsigned input = pControlNavigateData->nControlNavigate;
-   unsigned action = xui_input_to_rgui_action(input);
+   unsigned action = xui_input_to_rmenu_xui_action(input);
 
    if (action == RGUI_ACTION_OK)
    {
@@ -512,7 +560,7 @@ HRESULT CRetroArchControls::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
 
    XuiTextElementSetText(m_menutitle, L"Input options");
 
-   init_menulist(INGAME_MENU_INPUT_OPTIONS_MODE);
+   rmenu_xui_populate_entries(NULL, INGAME_MENU_INPUT_OPTIONS_MODE);
 
    return 0;
 }
@@ -522,7 +570,7 @@ HRESULT CRetroArchFileBrowser::OnControlNavigate(
 {
    bHandled = TRUE;
    unsigned input = pControlNavigateData->nControlNavigate;
-   unsigned action = xui_input_to_rgui_action(input);
+   unsigned action = xui_input_to_rmenu_xui_action(input);
 
    switch(action)
    {
@@ -543,7 +591,7 @@ HRESULT CRetroArchShaderBrowser::OnControlNavigate(
       XUIMessageControlNavigate *pControlNavigateData, BOOL& bHandled)
 {
    unsigned input = pControlNavigateData->nControlNavigate;
-   unsigned action = xui_input_to_rgui_action(input);
+   unsigned action = xui_input_to_rmenu_xui_action(input);
    bHandled = TRUE;
 
    switch(action)
@@ -565,7 +613,7 @@ HRESULT CRetroArchCoreBrowser::OnControlNavigate(
       XUIMessageControlNavigate *pControlNavigateData, BOOL& bHandled)
 {
    unsigned input = pControlNavigateData->nControlNavigate;
-   unsigned action = xui_input_to_rgui_action(input);
+   unsigned action = xui_input_to_rmenu_xui_action(input);
    bHandled = TRUE;
 
    switch(action)
@@ -610,7 +658,7 @@ HRESULT CRetroArchControls::OnControlNavigate(
    
    current_index = XuiListGetCurSel(m_menulist, NULL);
    unsigned input = pControlNavigateData->nControlNavigate;
-   unsigned action = xui_input_to_rgui_action(input);
+   unsigned action = xui_input_to_rmenu_xui_action(input);
 
    switch(current_index)
    {
@@ -666,7 +714,7 @@ HRESULT CRetroArchLoadGameHistory::OnInit(XUIMessageInit * pInitData, BOOL& bHan
 
    XuiTextElementSetText(m_menutitle, L"Load History");
 
-   init_menulist(INGAME_MENU_LOAD_GAME_HISTORY_MODE);
+   rmenu_xui_populate_entries(NULL, INGAME_MENU_LOAD_GAME_HISTORY_MODE);
 
    return 0;
 }
@@ -679,7 +727,7 @@ HRESULT CRetroArchSettings::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
 
    XuiTextElementSetText(m_menutitle, L"Settings");
 
-   init_menulist(INGAME_MENU_SETTINGS_MODE);
+   rmenu_xui_populate_entries(NULL, INGAME_MENU_SETTINGS_MODE);
 
    return 0;
 }
@@ -692,7 +740,7 @@ HRESULT CRetroArchSettings::OnControlNavigate(XUIMessageControlNavigate *pContro
    current_index = XuiListGetCurSel(m_menulist, NULL);
 
    unsigned input = pControlNavigateData->nControlNavigate;
-   unsigned action = xui_input_to_rgui_action(input);
+   unsigned action = xui_input_to_rmenu_xui_action(input);
 
    switch(current_index)
    {
@@ -756,7 +804,7 @@ HRESULT CRetroArchCoreOptions::OnInit(XUIMessageInit * pInitData, BOOL& bHandled
 
    XuiTextElementSetText(m_menutitle, L"Core Options");
 
-   init_menulist(INGAME_MENU_CORE_OPTIONS_MODE);
+   rmenu_xui_populate_entries(NULL, INGAME_MENU_CORE_OPTIONS_MODE);
 
    return 0;
 }
@@ -781,7 +829,7 @@ HRESULT CRetroArchCoreOptions::OnControlNavigate(XUIMessageControlNavigate *pCon
 {
    unsigned current_index = XuiListGetCurSel(m_menulist, NULL);
    unsigned input = pControlNavigateData->nControlNavigate;
-   unsigned action = xui_input_to_rgui_action(input);
+   unsigned action = xui_input_to_rmenu_xui_action(input);
 
    if (g_extern.system.core_options)
    {
@@ -849,7 +897,7 @@ HRESULT CRetroArchAudioOptions::OnControlNavigate(XUIMessageControlNavigate *pCo
 {
    int current_index = XuiListGetCurSel(m_menulist, NULL);
    unsigned input = pControlNavigateData->nControlNavigate;
-   unsigned action = xui_input_to_rgui_action(input);
+   unsigned action = xui_input_to_rmenu_xui_action(input);
 
    switch (current_index)
    {
@@ -934,7 +982,7 @@ HRESULT CRetroArchVideoOptions::OnControlNavigate(XUIMessageControlNavigate *pCo
    current_index = XuiListGetCurSel(m_menulist, NULL);
 
    unsigned input = pControlNavigateData->nControlNavigate;
-   unsigned action = xui_input_to_rgui_action(input);
+   unsigned action = xui_input_to_rmenu_xui_action(input);
 
    switch (current_index)
    {
@@ -1090,7 +1138,7 @@ HRESULT CRetroArchMain::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
    GetChildById(L"XuiTxtTitle", &m_menutitle);
    GetChildById(L"XuiTxtBottom", &m_menutitlebottom);
 
-   init_menulist(INGAME_MENU_MAIN_MODE);
+   rmenu_xui_populate_entries(NULL, INGAME_MENU_MAIN_MODE);
 
    mbstowcs(strw_buffer, g_extern.title_buf, sizeof(strw_buffer) / sizeof(wchar_t));
    XuiTextElementSetText(m_menutitlebottom, strw_buffer);
@@ -1110,7 +1158,7 @@ HRESULT CRetroArchMain::OnControlNavigate(XUIMessageControlNavigate *pControlNav
    current_index= XuiListGetCurSel(m_menulist, NULL);
 
    unsigned input = pControlNavigateData->nControlNavigate;
-   unsigned action = xui_input_to_rgui_action(input);
+   unsigned action = xui_input_to_rmenu_xui_action(input);
 
    HXUIOBJ current_obj = current_menu;
 
@@ -1263,7 +1311,7 @@ HRESULT CRetroArchMain::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled )
    return 0;
 }
 
-static void* rgui_init (void)
+static void* rmenu_xui_init (void)
 {
    HRESULT hr;
 
@@ -1348,7 +1396,7 @@ static void* rgui_init (void)
    return rgui;
 }
 
-static void rgui_free(void *data)
+static void rmenu_xui_free(void *data)
 {
    (void)data;
    app.Uninit();
@@ -1367,7 +1415,7 @@ int rmenu_xui_iterate(void *data, unsigned action)
       XuiSceneNavigateBack(current_menu, root_menu, XUSER_INDEX_ANY);
       current_menu = root_menu;
       XuiElementGetChildById(current_menu, L"XuiMenuList", &m_menulist);
-      init_menulist(INGAME_MENU_MAIN_MODE);
+      rmenu_xui_populate_entries(NULL, INGAME_MENU_MAIN_MODE);
    }
 
    return 0;
@@ -1397,7 +1445,7 @@ bool menu_iterate_xui(void)
    return true;
 }
 
-int rgui_input_postprocess(void *data, uint64_t old_state)
+int rmenu_xui_input_postprocess(void *data, uint64_t old_state)
 {
    rgui_handle_t *rgui = (rgui_handle_t*)data;
    bool quit = false;
@@ -1426,7 +1474,11 @@ const menu_ctx_driver_t menu_ctx_rmenu_xui = {
    NULL,
    NULL,
    NULL,
-   rgui_init,
-   rgui_free,
+   rmenu_xui_init,
+   rmenu_xui_free,
+   NULL,
+   NULL,
+   rmenu_xui_populate_entries,
+   rmenu_xui_iterate,
    "rmenu_xui",
 };

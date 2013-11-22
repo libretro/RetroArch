@@ -369,7 +369,8 @@ static void gl_shader_scale(void *data, unsigned index, struct gfx_fbo_scale *sc
 static void gl_compute_fbo_geometry(void *data, unsigned width, unsigned height,
       unsigned vp_width, unsigned vp_height)
 {
-   unsigned i, last_width, last_height, last_max_width, last_max_height;
+   int i;
+   unsigned last_width, last_height, last_max_width, last_max_height;
    gl_t *gl = (gl_t*)data;
    last_width = width;
    last_height = height;
@@ -455,13 +456,6 @@ static void gl_compute_fbo_geometry(void *data, unsigned width, unsigned height,
    }
 }
 
-#ifdef __CELLOS_LV2__
-// TODO: Add float FBO support to PSGL
-#define FP_FBO_ENABLE_DEFAULT (false)
-#else
-#define FP_FBO_ENABLE_DEFAULT (gl->fbo_scale[i].valid && gl->fbo_scale[i].fp_fbo)
-#endif
-
 static void gl_create_fbo_textures(void *data)
 {
    int i;
@@ -487,7 +481,7 @@ static void gl_create_fbo_textures(void *data)
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, wrap_enum);
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, wrap_enum);
 
-      bool fp_fbo = FP_FBO_ENABLE_DEFAULT;
+      bool fp_fbo = gl->fbo_scale[i].valid && gl->fbo_scale[i].fp_fbo;
 
       if (fp_fbo)
       {
@@ -907,7 +901,7 @@ static void gl_check_fbo_dimensions(void *data)
 
 static void gl_frame_fbo(void *data, const struct gl_tex_info *tex_info)
 {
-   size_t i;
+   int i;
    gl_t *gl = (gl_t*)data;
    GLfloat fbo_tex_coords[8] = {0.0f};
 

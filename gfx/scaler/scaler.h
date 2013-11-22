@@ -19,6 +19,7 @@
 #include <stdint.h>
 #include <stddef.h>
 #include "../../boolean.h"
+#include "scaler_common.h"
 
 #define FILTER_UNITY (1 << 14)
 
@@ -28,7 +29,8 @@ enum scaler_pix_fmt
    SCALER_FMT_ABGR8888,
    SCALER_FMT_0RGB1555,
    SCALER_FMT_RGB565,
-   SCALER_FMT_BGR24
+   SCALER_FMT_BGR24,
+   SCALER_FMT_YUYV
 };
 
 enum scaler_type
@@ -42,9 +44,9 @@ enum scaler_type
 struct scaler_filter
 {
    int16_t *filter;
-   size_t   filter_len;
-   size_t   filter_stride;
-   int     *filter_pos;
+   int filter_len;
+   int filter_stride;
+   int *filter_pos;
 };
 
 struct scaler_ctx

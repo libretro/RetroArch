@@ -132,9 +132,9 @@ static NSString* build_string_pair(NSString* stringA, NSString* stringB)
 
       for (int i = 0; i < firmwareCount; i ++)
       {
-         NSString* path = objc_get_value_from_config(_data.data, [NSString stringWithFormat:@"firmware%d_path", i + 1], @"Unspecified");
+         NSString* path = objc_get_value_from_config(_data.data, [NSString stringWithFormat:@"firmware%d_path", i], @"Unspecified");
          path = [path stringByReplacingOccurrencesOfString:@"%sysdir%" withString:[RetroArch_iOS get].systemDirectory];
-         [firmwareSection addObject:build_string_pair(objc_get_value_from_config(_data.data, [NSString stringWithFormat:@"firmware%d_desc", i + 1], @"Unspecified"), path)];
+         [firmwareSection addObject:build_string_pair(objc_get_value_from_config(_data.data, [NSString stringWithFormat:@"firmware%d_desc", i], @"Unspecified"), path)];
       }
 
       _firmwareSectionIndex = self.sections.count;

@@ -776,6 +776,10 @@ static bool texture_image_render(struct texture_image *out_img,
 
 #ifdef HAVE_MENU
 
+#ifdef HAVE_RMENU_XUI
+extern bool menu_iterate_xui(void);
+#endif
+
 static inline void xdk_d3d_draw_texture(void *data)
 {
    xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)data;

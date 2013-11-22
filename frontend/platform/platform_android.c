@@ -29,6 +29,7 @@
 #include "../../file.h"
 
 struct android_app *g_android;
+static pthread_key_t thread_key;
 
 //forward decls
 static void system_deinit(void *data);
@@ -161,6 +162,33 @@ static void onInputQueueDestroyed(ANativeActivity* activity, AInputQueue* queue)
    android_app_set_input((struct android_app*)activity->instance, NULL);
 }
 
+JNIEnv *jni_thread_getenv(void)
+{
+   struct android_app* android_app = (struct android_app*)g_android;
+   JNIEnv *env;
+   int status = (*android_app->activity->vm)->AttachCurrentThread(android_app->activity->vm, &env, 0);
+   if (status < 0)
+   {
+      RARCH_ERR("jni_thread_getenv: Failed to attach current thread.\n");
+      return NULL;
+   }
+   pthread_setspecific(thread_key, (void*)env);
+
+   return env;
+}
+
+static void jni_thread_destruct(void *value)
+{
+   struct android_app* android_app = (struct android_app*)g_android;
+   JNIEnv *env = (JNIEnv*)value;
+   if (env)
+   {
+      if (android_app)
+         (*android_app->activity->vm)->DetachCurrentThread(android_app->activity->vm);
+      pthread_setspecific(thread_key, NULL);
+   }
+}
+
 // --------------------------------------------------------------------
 // Native activity interaction (called from main thread)
 // --------------------------------------------------------------------
@@ -188,6 +216,9 @@ void ANativeActivity_onCreate(ANativeActivity* activity,
 
    // these are set only for the native activity, and are reset when it ends
    ANativeActivity_setWindowFlags(activity, AWINDOW_FLAG_KEEP_SCREEN_ON | AWINDOW_FLAG_FULLSCREEN, 0);
+
+   if (pthread_key_create(&thread_key, jni_thread_destruct))
+      RARCH_ERR("Error initializing pthread_key\n");
 
    struct android_app* android_app = (struct android_app*)malloc(sizeof(struct android_app));
    memset(android_app, 0, sizeof(struct android_app));
@@ -230,33 +261,42 @@ static bool android_run_events (void *data)
    return true;
 }
 
-static void jni_get (void *data_in, void *data_out)
+static void jni_get_intent_variable(void *data, void *data_in, void *data_out)
 {
+   JNIEnv *env;
+   struct android_app* android_app = (struct android_app*)data;
    struct jni_params *in_params = (struct jni_params*)data_in;
    struct jni_out_params_char *out_args = (struct jni_out_params_char*)data_out;
-   char obj_method_name[128], obj_method_signature[128];
-   jclass class_ptr = NULL;
+   jclass class = NULL;
    jobject obj = NULL;
    jmethodID giid = NULL;
-   jstring ret_char;
+   jstring jstr = NULL;
 
-   strlcpy(obj_method_name, "getStringExtra", sizeof(obj_method_name));
-   strlcpy(obj_method_signature, "(Ljava/lang/String;)Ljava/lang/String;", sizeof(obj_method_signature));
+   if (!android_app)
+      return;
 
-   GET_OBJECT_CLASS(in_params->env, class_ptr, in_params->class_obj);
-   GET_METHOD_ID(in_params->env, giid, class_ptr, in_params->method_name, in_params->method_signature);
-   CALL_OBJ_METHOD(in_params->env, obj, in_params->class_obj, giid);
+   env = jni_thread_getenv();
+   if (!env)
+      return;
 
-   GET_OBJECT_CLASS(in_params->env, class_ptr, obj);
-   GET_METHOD_ID(in_params->env, giid, class_ptr, obj_method_name, obj_method_signature);
+   GET_OBJECT_CLASS(env, class, android_app->activity->clazz);
+   GET_METHOD_ID(env, giid, class, in_params->method_name, in_params->method_signature);
+   CALL_OBJ_METHOD(env, obj, android_app->activity->clazz, giid);
 
-   CALL_OBJ_METHOD_PARAM(in_params->env, ret_char, obj, giid, (*in_params->env)->NewStringUTF(in_params->env, out_args->in));
-
-   if (giid != NULL && ret_char)
+   if (in_params->submethod_name &&
+         in_params->submethod_signature)
    {
-      const char *test_argv = (*in_params->env)->GetStringUTFChars(in_params->env, ret_char, 0);
-      strlcpy(out_args->out, test_argv, out_args->out_sizeof);
-      (*in_params->env)->ReleaseStringUTFChars(in_params->env, ret_char, test_argv);
+      GET_OBJECT_CLASS(env, class, obj);
+      GET_METHOD_ID(env, giid, class, in_params->submethod_name, in_params->submethod_signature);
+
+      CALL_OBJ_METHOD_PARAM(env, jstr, obj, giid, (*env)->NewStringUTF(env, out_args->in));
+   }
+
+   if (giid && jstr)
+   {
+      const char *argv = (*env)->GetStringUTFChars(env, jstr, 0);
+      strlcpy(out_args->out, argv, out_args->out_sizeof);
+      (*env)->ReleaseStringUTFChars(env, jstr, argv);
    }
 }
 
@@ -267,31 +307,28 @@ static void get_environment_settings(int argc, char *argv[], void *data)
    struct jni_params in_params;
    struct jni_out_params_char out_args;
 
-   in_params.java_vm = android_app->activity->vm;
-   in_params.class_obj = android_app->activity->clazz;
-
    strlcpy(in_params.method_name, "getIntent", sizeof(in_params.method_name));
    strlcpy(in_params.method_signature, "()Landroid/content/Intent;", sizeof(in_params.method_signature));
-
-   (*in_params.java_vm)->AttachCurrentThread(in_params.java_vm, &in_params.env, 0);
+   strlcpy(in_params.submethod_name, "getStringExtra", sizeof(in_params.submethod_name));
+   strlcpy(in_params.submethod_signature, "(Ljava/lang/String;)Ljava/lang/String;", sizeof(in_params.submethod_signature));
 
    // ROM
    out_args.out = g_extern.fullpath;
    out_args.out_sizeof = sizeof(g_extern.fullpath);
    strlcpy(out_args.in, "ROM", sizeof(out_args.in));
-   jni_get(&in_params, &out_args);
+   jni_get_intent_variable(android_app, &in_params, &out_args);
 
    // Config file
    out_args.out = g_extern.config_path;
    out_args.out_sizeof = sizeof(g_extern.config_path);
    strlcpy(out_args.in, "CONFIGFILE", sizeof(out_args.in));
-   jni_get(&in_params, &out_args);
+   jni_get_intent_variable(android_app, &in_params, &out_args);
 
    // Current IME
    out_args.out = android_app->current_ime;
    out_args.out_sizeof = sizeof(android_app->current_ime);
    strlcpy(out_args.in, "IME", sizeof(out_args.in));
-   jni_get(&in_params, &out_args);
+   jni_get_intent_variable(android_app, &in_params, &out_args);
 
    RARCH_LOG("Checking arguments passed ...\n");
    RARCH_LOG("ROM Filename: [%s].\n", g_extern.fullpath);
@@ -304,12 +341,10 @@ static void get_environment_settings(int argc, char *argv[], void *data)
    out_args.out = g_settings.libretro;
    out_args.out_sizeof = sizeof(g_settings.libretro);
    strlcpy(out_args.in, "LIBRETRO", sizeof(out_args.in));
-   jni_get(&in_params, &out_args);
+   jni_get_intent_variable(android_app, &in_params, &out_args);
 
    RARCH_LOG("Checking arguments passed ...\n");
    RARCH_LOG("Libretro path: [%s].\n", g_settings.libretro);
-
-   (*in_params.java_vm)->DetachCurrentThread(in_params.java_vm);
 }
 
 static int process_events(void *data)

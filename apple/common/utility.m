@@ -42,14 +42,6 @@ void apple_display_alert(NSString* message, NSString* title)
 #endif
 }
 
-// Little nudge to prevent stale values when reloading the confg file
-void objc_clear_config_hack()
-{
-   g_extern.block_config_read = false;
-   memset(g_settings.input.overlay, 0, sizeof(g_settings.input.overlay));
-   memset(g_settings.video.shader_path, 0, sizeof(g_settings.video.shader_path));
-}
-
 // Fetch a value from a config file, returning defaultValue if the value is not present
 NSString* objc_get_value_from_config(config_file_t* config, NSString* name, NSString* defaultValue)
 {
@@ -62,22 +54,7 @@ NSString* objc_get_value_from_config(config_file_t* config, NSString* name, NSSt
    return result;
 }
 
-// Ensures a directory exists and has correct permissions
-bool path_make_and_check_directory(const char* path, mode_t mode, int amode)
-{
-   if (!path_is_directory(path) && mkdir(path, mode) != 0)
-      return false;
-   
-   return access(path, amode) == 0;
-}
-
 #ifdef IOS
-
-char* ios_get_rarch_system_directory()
-{
-   return strdup([RetroArch_iOS.get.systemDirectory UTF8String]);
-}
-
 #include "../iOS/views.h"
 
 // Simple class to reduce code duplication for fixed table views

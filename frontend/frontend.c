@@ -157,22 +157,22 @@ static void rarch_get_environment_console(void)
 #define ra_preinited false
 #endif
 
-#if defined(HAVE_BB10) || defined(RARCH_CONSOLE) || defined(EMSCRIPTEN)
+#if defined(HAVE_BB10) || defined(RARCH_CONSOLE) || defined(EMSCRIPTEN) || defined(OSX)
 #define attempt_load_game false
 #else
 #define attempt_load_game true
 #endif
 
-#if defined(RARCH_CONSOLE) || defined(HAVE_BB10) || defined(ANDROID)
+#if defined(RARCH_CONSOLE) || defined(HAVE_BB10) || defined(ANDROID) || defined(OSX)
 #define initial_menu_lifecycle_state (1ULL << MODE_LOAD_GAME)
 #else
 #define initial_menu_lifecycle_state (1ULL << MODE_GAME)
 #endif
 
 #if !defined(RARCH_CONSOLE) && !defined(HAVE_BB10) && !defined(ANDROID) && !defined(EMSCRIPTEN)
-#define attempt_load_game_push_history false
-#else
 #define attempt_load_game_push_history true
+#else
+#define attempt_load_game_push_history false
 #endif
 
 #ifndef RARCH_CONSOLE
@@ -280,7 +280,7 @@ returntype main_entry(signature())
       }
       else if (g_extern.lifecycle_state & (1ULL << MODE_GAME))
       {
-         if (driver.video_poke->set_aspect_ratio)
+         if (driver.video_poke && driver.video_poke->set_aspect_ratio)
             driver.video_poke->set_aspect_ratio(driver.video_data, g_settings.video.aspect_ratio_idx);
 
          while_iter ((g_extern.is_paused && !g_extern.is_oneshot) ? rarch_main_idle_iterate() : rarch_main_iterate())

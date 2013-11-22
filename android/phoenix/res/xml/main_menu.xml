@@ -3,39 +3,31 @@
     android:title="@string/mainmenu_title" >
 
     <!-- TV Mode -->
-    <PreferenceScreen android:title="@string/tv_mode">
-       <intent
-          android:targetClass="com.retroarch.browser.RetroTVMode"
-          android:targetPackage="com.retroarch" />
-    </PreferenceScreen>
+    <Preference
+        android:key="retroTVMode"
+        android:title="@string/tv_mode"/>
 
     <!-- Load Core -->
-    <PreferenceScreen android:title="@string/load_core">
-       <intent
-          android:targetClass="com.retroarch.browser.CoreSelection"
-          android:targetPackage="com.retroarch" />
-    </PreferenceScreen>
+    <Preference
+        android:key="loadCorePref"
+        android:title="@string/load_core"/>
 
     <!-- Load Game -->
-    <PreferenceScreen android:title="@string/load_game">
-       <intent
-          android:targetClass="com.retroarch.browser.diractivities.ROMActivity"
-          android:targetPackage="com.retroarch" />
-    </PreferenceScreen>
+    <Preference
+        android:key="loadRomPref"
+        android:title="@string/load_game"/>
 
     <!-- Load Game (History) -->
-    <PreferenceScreen android:title="@string/load_game_history">
-       <intent
-          android:targetClass="com.retroarch.browser.HistorySelection"
-          android:targetPackage="com.retroarch" />
-    </PreferenceScreen>
+    <Preference
+        android:key="loadRomHistoryPref"
+        android:title="@string/load_game_history"/>
 
     <!-- Settings -->
-    <PreferenceScreen android:title="@string/settings">
+    <Preference android:title="@string/settings">
        <intent
-          android:targetClass="com.retroarch.browser.preferences.fragments.PreferenceActivity"
+          android:targetClass="com.retroarch.browser.preferences.PreferenceActivity"
           android:targetPackage="com.retroarch" />
-    </PreferenceScreen>
+    </Preference>
 
     <!-- About -->
     <PreferenceScreen android:title="@string/about">

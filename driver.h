@@ -112,7 +112,7 @@ enum // RetroArch specific bind IDs.
 struct retro_keybind
 {
    bool valid;
-   int id;
+   unsigned id;
    const char *desc;
    enum retro_key key;
 
@@ -618,6 +618,7 @@ extern const input_driver_t input_qnx;
 extern const input_driver_t input_rwebinput;
 extern const input_driver_t input_null;
 extern const camera_driver_t camera_v4l2;
+extern const camera_driver_t camera_android;
 extern const camera_driver_t camera_rwebcam;
 extern const input_osk_driver_t input_ps3_osk;
 

@@ -22,9 +22,6 @@
 #include <string.h>
 #include <stdlib.h>
 
-#include <algorithm>
-#include <iostream>
-
 #include <Cg/cg.h>
 #include <Cg/cgGL.h>
 #include <Cg/CgCommon.h>

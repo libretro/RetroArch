@@ -581,5 +581,7 @@ const menu_ctx_driver_t menu_ctx_rgui = {
    rgui_free,
    NULL,
    NULL,
+   NULL,
+   NULL,
    "rgui",
 };

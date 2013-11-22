@@ -27,6 +27,14 @@
 #include "../../config.h"
 #endif
 
+#if defined(__CELLOS_LV2__)
+#include <sdk_version.h>
+
+#if (CELL_SDK_VERSION > 0x340000)
+#include <sysutil/sysutil_bgmplayback.h>
+#endif
+#endif
+
 #ifdef GEKKO
 #define MAX_GAMMA_SETTING 2
 
@@ -325,6 +333,56 @@ static bool osk_callback_enter_rsound_init(void *data)
 
    return true;
 }
+
+static bool osk_callback_enter_filename(void *data)
+{
+   if (!driver.osk)
+      return false;
+
+   if (g_extern.lifecycle_state & (1ULL << MODE_OSK_ENTRY_SUCCESS))
+   {
+      RARCH_LOG("OSK - Applying input data.\n");
+      char tmp_str[256];
+      char filepath[PATH_MAX];
+      int num = wcstombs(tmp_str, driver.osk->get_text_buf(driver.osk_data), sizeof(tmp_str));
+      tmp_str[num] = 0;
+
+      fill_pathname_join(filepath, g_settings.video.shader_dir, tmp_str, sizeof(filepath));
+      strlcat(filepath, ".cgp", sizeof(filepath));
+      RARCH_LOG("[osk_callback_enter_filename]: filepath is: %s.\n", filepath);
+      config_file_t *conf = config_file_new(NULL);
+      if (!conf)
+         return false;
+      gfx_shader_write_conf_cgp(conf, &rgui->shader);
+      config_file_write(conf, filepath);
+      config_file_free(conf);
+      goto do_exit;
+   }
+   else if (g_extern.lifecycle_state & (1ULL << MODE_OSK_ENTRY_FAIL))
+      goto do_exit;
+
+   return false;
+do_exit:
+   g_extern.lifecycle_state &= ~((1ULL << MODE_OSK_ENTRY_SUCCESS) |
+         (1ULL << MODE_OSK_ENTRY_FAIL));
+   return true;
+}
+
+static bool osk_callback_enter_filename_init(void *data)
+{
+   if (!driver.osk)
+      return false;
+
+   if (driver.osk->write_initial_msg)
+      driver.osk->write_initial_msg(driver.osk_data, L"Save Preset");
+   if (driver.osk->write_msg)
+      driver.osk->write_msg(driver.osk_data, L"Enter filename for preset.");
+   if (driver.osk->start)
+      driver.osk->start(driver.osk_data);
+
+   return true;
+}
+
 #endif
 
 int menu_set_settings(void *data, unsigned setting, unsigned action)
@@ -1058,8 +1116,11 @@ int menu_set_settings(void *data, unsigned setting, unsigned action)
                g_extern.lifecycle_state &= ~(1ULL << MODE_VIDEO_PAL_ENABLE);
                g_extern.lifecycle_state &= ~(1ULL << MODE_VIDEO_PAL_TEMPORAL_ENABLE);
             }
-            driver.video->restart();
 
+            if (driver.video->restart)
+               driver.video->restart();
+            if (menu_ctx && menu_ctx->free_assets)
+               menu_ctx->free_assets(rgui);
             if (menu_ctx && menu_ctx->init_assets)
                menu_ctx->init_assets(rgui);
          }
@@ -1077,7 +1138,10 @@ int menu_set_settings(void *data, unsigned setting, unsigned action)
                   else
                      g_extern.lifecycle_state |= (1ULL << MODE_VIDEO_PAL_TEMPORAL_ENABLE);
 
-                  driver.video->restart();
+                  if (driver.video->restart)
+                     driver.video->restart();
+                  if (menu_ctx && menu_ctx->free_assets)
+                     menu_ctx->free_assets(rgui);
                   if (menu_ctx && menu_ctx->init_assets)
                      menu_ctx->init_assets(rgui);
                }
@@ -1087,7 +1151,10 @@ int menu_set_settings(void *data, unsigned setting, unsigned action)
                {
                   g_extern.lifecycle_state &= ~(1ULL << MODE_VIDEO_PAL_TEMPORAL_ENABLE);
 
-                  driver.video->restart();
+                  if (driver.video->restart)
+                     driver.video->restart();
+                  if (menu_ctx && menu_ctx->free_assets)
+                     menu_ctx->free_assets(rgui);
                   if (menu_ctx && menu_ctx->init_assets)
                      menu_ctx->init_assets(rgui);
                }
@@ -1344,8 +1411,8 @@ int menu_set_settings(void *data, unsigned setting, unsigned action)
 #if defined(HAVE_RSOUND) && defined(HAVE_OSK)
          if (action == RGUI_ACTION_OK)
          {
-            g_settings.osk.cb_init = osk_callback_enter_rsound_init;
-            g_settings.osk.cb_callback = osk_callback_enter_rsound;
+            g_extern.osk.cb_init     = osk_callback_enter_rsound_init;
+            g_extern.osk.cb_callback = osk_callback_enter_rsound;
          }
 #endif
          break;
@@ -1419,6 +1486,72 @@ int menu_set_settings(void *data, unsigned setting, unsigned action)
          }
          break;
 #endif
+#ifdef _XBOX1
+      case RGUI_SETTINGS_FLICKER_FILTER:
+         switch (action)
+         {
+            case RGUI_ACTION_LEFT:
+               if (g_extern.console.screen.flicker_filter_index > 0)
+                  g_extern.console.screen.flicker_filter_index--;
+               break;
+            case RGUI_ACTION_RIGHT:
+               if (g_extern.console.screen.flicker_filter_index < 5)
+                  g_extern.console.screen.flicker_filter_index++;
+               break;
+            case RGUI_ACTION_START:
+               g_extern.console.screen.flicker_filter_index = 0;
+               break;
+         }
+         break;
+      case RGUI_SETTINGS_SOFT_DISPLAY_FILTER:
+         switch (action)
+         {
+            case RGUI_ACTION_LEFT:
+            case RGUI_ACTION_RIGHT:
+            case RGUI_ACTION_OK:
+               if (g_extern.lifecycle_state & (1ULL << MODE_VIDEO_SOFT_FILTER_ENABLE))
+                  g_extern.lifecycle_state &= ~(1ULL << MODE_VIDEO_SOFT_FILTER_ENABLE);
+               else
+                  g_extern.lifecycle_state |= (1ULL << MODE_VIDEO_SOFT_FILTER_ENABLE);
+               break;
+            case RGUI_ACTION_START:
+               g_extern.lifecycle_state |= (1ULL << MODE_VIDEO_SOFT_FILTER_ENABLE);
+               break;
+         }
+         break;
+#endif
+      case RGUI_SETTINGS_SHADER_PRESET_SAVE:
+         if (action == RGUI_ACTION_OK)
+         {
+#ifdef HAVE_OSK
+            g_extern.osk.cb_init = osk_callback_enter_filename_init;
+            g_extern.osk.cb_callback = osk_callback_enter_filename;
+#endif
+         }
+         break;
+      case RGUI_SETTINGS_CUSTOM_BGM_CONTROL_ENABLE:
+         switch (action)
+         {
+            case RGUI_ACTION_OK:
+#if (CELL_SDK_VERSION > 0x340000)
+               if (g_extern.lifecycle_state & (1ULL << MODE_AUDIO_CUSTOM_BGM_ENABLE))
+                  g_extern.lifecycle_state &= ~(1ULL << MODE_AUDIO_CUSTOM_BGM_ENABLE);
+               else
+                  g_extern.lifecycle_state |= (1ULL << MODE_AUDIO_CUSTOM_BGM_ENABLE);
+               if (g_extern.lifecycle_state & (1ULL << MODE_AUDIO_CUSTOM_BGM_ENABLE))
+                  cellSysutilEnableBgmPlayback();
+               else
+                  cellSysutilDisableBgmPlayback();
+
+#endif
+               break;
+            case RGUI_ACTION_START:
+#if (CELL_SDK_VERSION > 0x340000)
+               g_extern.lifecycle_state |= (1ULL << MODE_AUDIO_CUSTOM_BGM_ENABLE);
+#endif
+               break;
+         }
+         break;
       default:
          break;
    }
@@ -1633,6 +1766,7 @@ void menu_set_settings_label(char *type_str, size_t type_str_size, unsigned *w, 
       case RGUI_SETTINGS_SHADER_OPTIONS:
       case RGUI_SETTINGS_SHADER_PRESET:
 #endif
+      case RGUI_SETTINGS_SHADER_PRESET_SAVE:
       case RGUI_SETTINGS_CORE:
       case RGUI_SETTINGS_DISK_APPEND:
       case RGUI_SETTINGS_INPUT_OPTIONS:
@@ -1743,10 +1877,21 @@ void menu_set_settings_label(char *type_str, size_t type_str_size, unsigned *w, 
       case RGUI_SETTINGS_RSOUND_SERVER_IP_ADDRESS:
          strlcpy(type_str, g_settings.audio.device, type_str_size);
          break;
+#ifdef _XBOX1
+      case RGUI_SETTINGS_FLICKER_FILTER:
+         snprintf(type_str, sizeof(type_str), "%d", g_extern.console.screen.flicker_filter_index);
+         break;
+      case RGUI_SETTINGS_SOFT_DISPLAY_FILTER:
+         snprintf(type_str, sizeof(type_str),
+               (g_extern.lifecycle_state & (1ULL << MODE_VIDEO_SOFT_FILTER_ENABLE)) ? "ON" : "OFF");
+         break;
+#endif
+      case RGUI_SETTINGS_CUSTOM_BGM_CONTROL_ENABLE:
+         strlcpy(type_str, (g_extern.lifecycle_state & (1ULL << MODE_AUDIO_CUSTOM_BGM_ENABLE)) ? "ON" : "OFF", sizeof(type_str));
+         break;
       default:
          type_str[0] = 0;
          *w = 0;
          break;
    }
 }
-

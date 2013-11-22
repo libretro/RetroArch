@@ -42,16 +42,16 @@
 #endif
 
 #if defined(_XBOX1)
-#define ENTRIES_HEIGHT 10
+#define ENTRIES_HEIGHT 9
 #define POSITION_EDGE_MAX (480)
 #define POSITION_EDGE_MIN 0
 #define POSITION_EDGE_CENTER (450)
 #define POSITION_OFFSET 30
-#define POSITION_RENDER_OFFSET 100
+#define POSITION_RENDER_OFFSET 128
 #define TERM_WIDTH 45
 #define FONT_SIZE_NORMAL 21
 #elif defined(__CELLOS_LV2__)
-#define ENTRIES_HEIGHT 25
+#define ENTRIES_HEIGHT 20
 #define POSITION_MIDDLE 0.50f
 #define POSITION_EDGE_MAX 1.00f
 #define POSITION_EDGE_MIN 0.00f
@@ -64,6 +64,7 @@
 
 struct texture_image *menu_texture;
 static bool render_normal = true;
+static bool menu_texture_inited =false;
 
 static void render_background(rgui_handle_t *rgui)
 {
@@ -383,23 +384,27 @@ static void rmenu_render(void *data)
 
 void rmenu_set_texture(void *data, bool enable)
 {
-   static bool inited =false;
    rgui_handle_t *rgui = (rgui_handle_t*)data;
 
-   if (inited)
+   if (menu_texture_inited)
       return;
 
    if (driver.video_poke && driver.video_poke->set_texture_enable)
    {
       driver.video_poke->set_texture_frame(driver.video_data, menu_texture->pixels,
             enable, rgui->width, rgui->height, 1.0f);
-      inited = true;
+      menu_texture_inited = true;
    }
 }
 
 static void rmenu_init_assets(void *data)
 {
    rgui_handle_t *rgui = (rgui_handle_t*)data;
+
+   if (!rgui)
+      return;
+
+   menu_texture = (struct texture_image*)calloc(1, sizeof(*menu_texture));
    texture_image_load(g_extern.menu_texture_path, menu_texture);
    rgui->width = menu_texture->width;
    rgui->height = menu_texture->height;
@@ -410,8 +415,6 @@ static void rmenu_init_assets(void *data)
 static void *rmenu_init(void)
 {
    rgui_handle_t *rgui = (rgui_handle_t*)calloc(1, sizeof(*rgui));
-
-   menu_texture = (struct texture_image*)calloc(1, sizeof(*menu_texture));
 
    rmenu_init_assets(rgui);
 
@@ -432,12 +435,14 @@ static void rmenu_free_assets(void *data)
       menu_texture->pixels = NULL;
    }
 #else
-   if (menu_texture)
+   if (menu_texture->pixels)
    {
       free(menu_texture->pixels);
       menu_texture->pixels = NULL;
    }
 #endif
+
+   menu_texture_inited = false;
 }
 
 static void rmenu_free(void *data)
@@ -471,5 +476,7 @@ const menu_ctx_driver_t menu_ctx_rmenu = {
    rmenu_free,
    rmenu_init_assets,
    rmenu_free_assets,
+   NULL,
+   NULL,
    "rmenu",
 };

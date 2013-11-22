@@ -105,6 +105,8 @@ VIDEO CONTEXT
 #include "../gfx/context/bbqnx_ctx.c"
 #elif defined(IOS) || defined(OSX)
 #include "../gfx/context/apple_gl_ctx.c"
+#elif defined(EMSCRIPTEN)
+#include "../gfx/context/emscriptenegl_ctx.c"
 #endif
 
 
@@ -298,6 +300,14 @@ INPUT
 #include "../apple/common/apple_joypad.c"
 #elif defined(__BLACKBERRY_QNX__)
 #include "../blackberry-qnx/qnx_input.c"
+#elif defined(EMSCRIPTEN)
+#include "../input/rwebinput_input.c"
+#endif
+
+#ifdef HAVE_OSK
+#if defined(__CELLOS_LV2__)
+#include "../ps3/ps3_input_osk.c"
+#endif
 #endif
 
 #if defined(__linux__) && !defined(ANDROID) 
@@ -340,6 +350,22 @@ AUDIO RESAMPLER
 #include "../audio/sinc.c"
 
 /*============================================================
+CAMERA
+============================================================ */
+#ifdef HAVE_CAMERA
+#if defined(ANDROID)
+#include "../camera/android.c"
+#elif defined(EMSCRIPTEN)
+#include "../camera/rwebcam.c"
+#endif
+
+#ifdef HAVE_V4L2
+#include "../camera/video4linux2.c"
+#endif
+
+#endif
+
+/*============================================================
 RSOUND
 ============================================================ */
 #ifdef HAVE_RSOUND
@@ -361,6 +387,8 @@ AUDIO
 #include "../xenon/xenon360_audio.c"
 #elif defined(GEKKO)
 #include "../gx/gx_audio.c"
+#elif defined(EMSCRIPTEN)
+#include "../audio/rwebaudio.c"
 #endif
 
 #ifdef HAVE_XAUDIO

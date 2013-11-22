@@ -27,99 +27,12 @@ char** apple_argv;
 
 id<RetroArch_Platform> apple_platform;
 
-void apple_event_basic_command(void* userdata)
-{
-   switch ((enum basic_event_t)userdata)
-   {
-      case RESET:      rarch_game_reset(); return;
-      case LOAD_STATE: rarch_load_state(); return;
-      case SAVE_STATE: rarch_save_state(); return;
-      case QUIT:       g_extern.system.shutdown = true; return;
-   }
-}
-
-void apple_event_set_state_slot(void* userdata)
-{
-   g_extern.state_slot = (uint32_t)userdata;
-}
-
-void apple_event_show_rgui(void* userdata)
-{
-   const bool in_menu = g_extern.lifecycle_state & (1 << MODE_MENU);
-   g_extern.lifecycle_state &= ~(1ULL << (in_menu ? MODE_MENU : MODE_GAME));
-   g_extern.lifecycle_state |=  (1ULL << (in_menu ? MODE_GAME : MODE_MENU));
-}
-
-static void event_reload_config(void* userdata)
-{
-   objc_clear_config_hack();
-
-   uninit_drivers();
-   config_load();
-   init_drivers();
-}
-
-void apple_refresh_config()
-{
-   if (apple_is_running)
-      apple_frontend_post_event(&event_reload_config, 0);
-   else
-      objc_clear_config_hack();
-}
-
-pthread_mutex_t stasis_mutex = PTHREAD_MUTEX_INITIALIZER;
-
-static void event_stasis(void* userdata)
-{
-   uninit_drivers();
-   pthread_mutex_lock(&stasis_mutex);
-   pthread_mutex_unlock(&stasis_mutex);
-   init_drivers();
-}
-
-void apple_enter_stasis()
-{
-   if (apple_is_running)
-   {
-      pthread_mutex_lock(&stasis_mutex);
-      apple_frontend_post_event(event_stasis, 0);
-   }
-}
-
-void apple_exit_stasis(bool reload_config)
-{
-   if (reload_config)
-   {
-      objc_clear_config_hack();
-      config_load();
-   }
-
-   if (apple_is_running)
-      pthread_mutex_unlock(&stasis_mutex);
-}
-
 #pragma mark EMULATION
 static pthread_t apple_retro_thread;
 bool apple_is_paused;
 bool apple_is_running;
 bool apple_use_tv_mode;
 RAModuleInfo* apple_core;
-
-void* rarch_main_spring(void* args)
-{
-   char** argv = args;
-
-   uint32_t argc = 0;
-   while (argv && argv[argc]) argc++;
-   
-   if (rarch_main(argc, argv))
-   {
-      rarch_main_clear_state();
-      dispatch_async_f(dispatch_get_main_queue(), (void*)1, apple_rarch_exited);
-   }
-   
-   return 0;
-}
 
 void apple_run_core(RAModuleInfo* core, const char* file)
 {

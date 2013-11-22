@@ -355,8 +355,6 @@ extern "C" {
       //
       GLenum			DrawBuffer, ReadBuffer;
 
-      GLboolean		ShaderSRGBRemap;
-
       GLboolean		Blending;       // enable for mrt color target 0
       GLenum			BlendEquationRGB;
       GLenum			BlendEquationAlpha;

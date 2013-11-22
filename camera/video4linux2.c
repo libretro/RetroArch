@@ -1,6 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2013 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2013 - Daniel De Matteis
+ *  Copyright (C) 2012-2013 - Michael Lelli
  * 
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -18,8 +19,12 @@
 #include <malloc.h>
 #include <string.h>
 #include <assert.h>
+#include <stddef.h>
+#include "../general.h"
 #include "../driver.h"
+#include "../performance.h"
 #include "../miscellaneous.h"
+#include "../gfx/scaler/scaler.h"
 #include <stdlib.h>
 #include <fcntl.h>
 #include <unistd.h>
@@ -32,7 +37,6 @@
 #include "../compat/strl.h"
 
 #include <asm/types.h>
-
 #include <linux/videodev2.h>
 
 struct buffer
@@ -43,100 +47,26 @@ struct buffer
 
 typedef struct video4linux
 {
-   char dev_name[256];
    int fd;
-   bool ready;
    struct buffer *buffers;
    unsigned n_buffers;
-   size_t width;
-   size_t height;
+   unsigned width;
+   unsigned height;
+   size_t pitch;
+
+   struct scaler_ctx scaler;
+   uint32_t *buffer_output;
+   bool ready;
+
+   char dev_name[PATH_MAX];
 } video4linux_t;
 
-// FIXME: Shouldn't use LUTs for this.
-// The LUT is simply too big, and the conversion can be done efficiently with fixed-point SIMD anyways.
-/* 
- * YCbCr to RGB lookup table
- * Y, Cb, Cr range is 0-255
- *
- * Stored value bits:
- *   24-16 Red
- *   15-8  Green
- *   7-0   Blue
- */
-#define YUV_SHIFT(y, cb, cr) ((y << 16) | (cb << 8) | (cr << 0))
-#define RGB_SHIFT(r, g, b) ((r << 16) | (g << 8) | (b << 0))
-static uint32_t *YCbCr_to_RGB;
-static uint32_t *buffer_output;
-
-static void generate_YCbCr_to_RGB_lookup(void)
+static void process_image(video4linux_t *v4l, const uint8_t *buffer_yuv)
 {
-   int y;
-   int cb;
-   int cr;
-
-   YCbCr_to_RGB = (uint32_t*)realloc(YCbCr_to_RGB, 256 * 256 * 256 * sizeof(uint32_t));
-   if (!YCbCr_to_RGB)
-      return;
-
-   for (y = 0; y < 256; y++)
-   {
-      for (cb = 0; cb < 256; cb++)
-      {
-         for (cr = 0; cr < 256; cr++)
-         {
-            double Y = (double)y;
-            double Cb = (double)cb;
-            double Cr = (double)cr;
-
-            int R = (int)(Y + 1.40200 * (Cr - 0x80));
-            int G = (int)(Y - 0.34414 * (Cb - 0x80) - 0.71414 * (Cr - 0x80));
-            int B = (int)(Y + 1.77200 * (Cb - 0x80));
-
-            R = max(0, min(255, R));
-            G = max(0, min(255, G));
-            B = max(0, min(255, B));
-
-            YCbCr_to_RGB[YUV_SHIFT(y, cb, cr)] = RGB_SHIFT(R, G, B);
-         }
-      }
-   }
-}
-
-/**
- *  Converts YUV422 to RGB
- *  Before first use call generate_YCbCr_to_RGB_lookup();
- *
- *  input is pointer to YUV422 encoded data in following order: Y0, Cb, Y1, Cr.
- *  output is pointer to 24 bit RGB buffer.
- *  Output data is written in following order: R1, G1, B1, R2, G2, B2.
- */
-
-// FIXME: Software CPU color conersion from YUV to RGB - we'll make two codepaths
-// eventually - GL binding to texture and color conversion through shaders,
-// and this approach
-
-static inline void YUV422_to_RGB(uint32_t *output, const uint8_t *input)
-{
-   uint8_t y0 = input[0];
-   uint8_t cb = input[1];
-   uint8_t y1 = input[2];
-   uint8_t cr = input[3];
-
-   output[0] = YCbCr_to_RGB[YUV_SHIFT(y0, cb, cr)];
-   output[1] = YCbCr_to_RGB[YUV_SHIFT(y1, cb, cr)];
-}
-
-static void process_image(void *data, const void *p)
-{
-   video4linux_t *v4l = (video4linux_t*)data;
-   const uint8_t *buffer_yuv = p;
-   uint8_t *buffer_dst = (uint8_t *) buffer_output;
-   size_t x, y;
-
-   for (y = 0; y < v4l->height; y++)
-      for (x = 0; x < v4l->width; x += 2)
-         YUV422_to_RGB((uint32_t *)(buffer_dst + (y * v4l->width + x) * 4),
-               buffer_yuv + (y * v4l->width + x) * 2);
+   RARCH_PERFORMANCE_INIT(yuv_convert_direct);
+   RARCH_PERFORMANCE_START(yuv_convert_direct);
+   scaler_ctx_scale(&v4l->scaler, v4l->buffer_output, buffer_yuv);
+   RARCH_PERFORMANCE_STOP(yuv_convert_direct);
 }
 
 static int xioctl(int fd, int request, void *args)
@@ -151,7 +81,7 @@ static int xioctl(int fd, int request, void *args)
    return r;
 }
 
-static int init_mmap(void *data)
+static bool init_mmap(void *data)
 {
    struct v4l2_requestbuffers req;
    video4linux_t *v4l = (video4linux_t*)data;
@@ -167,19 +97,19 @@ static int init_mmap(void *data)
       if (errno == EINVAL)
       {
          RARCH_ERR("%s does not support memory mapping.\n", v4l->dev_name);
-         return -1;
+         return false;
       }
       else
       {
          RARCH_ERR("xioctl of VIDIOC_REQBUFS failed.\n");
-         return -1;
+         return false;
       }
    }
 
    if (req.count < 2)
    {
       RARCH_ERR("Insufficient buffer memory on %s.\n", v4l->dev_name);
-      return -1;
+      return false;
    }
 
    v4l->buffers = (struct buffer*)calloc(req.count, sizeof(*v4l->buffers));
@@ -187,7 +117,7 @@ static int init_mmap(void *data)
    if (!v4l->buffers)
    {
       RARCH_ERR("Out of memory allocating V4L2 buffers.\n");
-      return -1;
+      return false;
    }
 
    for (v4l->n_buffers = 0; v4l->n_buffers < req.count; v4l->n_buffers++)
@@ -203,7 +133,7 @@ static int init_mmap(void *data)
       if (xioctl(v4l->fd, VIDIOC_QUERYBUF, &buf) == -1)
       {
          RARCH_ERR("Error - xioctl VIDIOC_QUERYBUF.\n");
-         return -1;
+         return false;
       }
 
       v4l->buffers[v4l->n_buffers].length = buf.length;
@@ -215,14 +145,14 @@ static int init_mmap(void *data)
       if (v4l->buffers[v4l->n_buffers].start == MAP_FAILED)
       {
          RARCH_ERR("Error - mmap.\n");
-         return -1;
+         return false;
       }
    }
 
-   return 0;
+   return true;
 }
 
-static int init_device(void *data)
+static bool init_device(void *data)
 {
    struct v4l2_capability cap;
    struct v4l2_cropcap cropcap;
@@ -231,97 +161,86 @@ static int init_device(void *data)
    unsigned min;
    video4linux_t *v4l = (video4linux_t*)data;
 
-   if (xioctl(v4l->fd, VIDIOC_QUERYCAP, &cap) == -1)
+   if (xioctl(v4l->fd, VIDIOC_QUERYCAP, &cap) < 0)
    {
       if (errno == EINVAL)
       {
          RARCH_ERR("%s is no V4L2 device.\n", v4l->dev_name);
-         return -1;
+         return false;
       }
       else
       {
          RARCH_ERR("Error - VIDIOC_QUERYCAP.\n");
-         return -1;
+         return false;
       }
    }
 
    if (!(cap.capabilities & V4L2_CAP_VIDEO_CAPTURE))
    {
       RARCH_ERR("%s is no video capture device.\n", v4l->dev_name);
-      return -1;
+      return false;
    }
 
    if (!(cap.capabilities & V4L2_CAP_STREAMING))
    {
       RARCH_ERR("%s does not support streaming I/O (V4L2_CAP_STREAMING).\n", v4l->dev_name);
-      return -1;
+      return false;
    }
 
-   /* Select video input, video standard and tune here. */
-
    memset(&cropcap, 0, sizeof(cropcap));
-
    cropcap.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
 
    if (xioctl(v4l->fd, VIDIOC_CROPCAP, &cropcap) == 0)
    {
       crop.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-      crop.c = cropcap.defrect;   /* reset to default */
-
-      if (xioctl(v4l->fd, VIDIOC_S_CROP, &crop) == -1)
-      {
-         switch (errno)
-         {
-            case EINVAL:
-               /* Cropping not supported. */
-               break;
-            default:
-               /* Errors ignored. */
-               break;
-         }
-      }
+      crop.c = cropcap.defrect;
+      // Ignore errors here.
+      xioctl(v4l->fd, VIDIOC_S_CROP, &crop);
    }
 
-   memset (&fmt, 0, sizeof(fmt));
+   memset(&fmt, 0, sizeof(fmt));
 
    fmt.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
    fmt.fmt.pix.width  = v4l->width;
    fmt.fmt.pix.height = v4l->height;
-   // TODO: See if we can use a saner format here.
    fmt.fmt.pix.pixelformat = V4L2_PIX_FMT_YUYV;
-   fmt.fmt.pix.field = V4L2_FIELD_INTERLACED;
+   fmt.fmt.pix.field = V4L2_FIELD_NONE;
 
-   if (xioctl(v4l->fd, VIDIOC_S_FMT, &fmt) == -1)
+   if (xioctl(v4l->fd, VIDIOC_S_FMT, &fmt) < 0)
    {
       RARCH_ERR("Error - VIDIOC_S_FMT\n");
-      return -1;
+      return false;
    }
 
-   /* Note VIDIOC_S_FMT may change width and height. */
+   // VIDIOC_S_FMT may change width, height and pitch.
+   v4l->width = fmt.fmt.pix.width;
+   v4l->height = fmt.fmt.pix.height;
+   v4l->pitch = max(fmt.fmt.pix.bytesperline, v4l->width * 2);
 
-   /* Buggy driver paranoia. */
-   min = fmt.fmt.pix.width * 2;
-   if (fmt.fmt.pix.bytesperline < min)
-      fmt.fmt.pix.bytesperline = min;
-   min = fmt.fmt.pix.bytesperline * fmt.fmt.pix.height;
-   if (fmt.fmt.pix.sizeimage < min)
-      fmt.fmt.pix.sizeimage = min;
+   // Sanity check to see if our assumptions are met.
+   // It is possible to support whatever the device gives us,
+   // but this dramatically increases complexity.
+   if (fmt.fmt.pix.pixelformat != V4L2_PIX_FMT_YUYV)
+   {
+      RARCH_ERR("The V4L2 device doesn't support YUYV.\n");
+      return false;
+   }
 
-   if (fmt.fmt.pix.width != v4l->width)
-      v4l->width = fmt.fmt.pix.width;
+   if (fmt.fmt.pix.field != V4L2_FIELD_NONE && fmt.fmt.pix.field != V4L2_FIELD_INTERLACED)
+   {
+      RARCH_ERR("The V4L2 device doesn't support progressive nor interlaced video.\n");
+      return false;
+   }
 
-   if (fmt.fmt.pix.height != v4l->height)
-      v4l->height = fmt.fmt.pix.height;
+   RARCH_LOG("V4L2 device: %u x %u.\n", v4l->width, v4l->height);
 
    return init_mmap(v4l);
 }
 
 static void v4l_stop(void *data)
 {
-   enum v4l2_buf_type type;
    video4linux_t *v4l = (video4linux_t*)data;
-
-   type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+   enum v4l2_buf_type type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
 
    if (xioctl(v4l->fd, VIDIOC_STREAMOFF, &type) == -1)
       RARCH_ERR("Error - VIDIOC_STREAMOFF.\n");
@@ -360,10 +279,26 @@ static bool v4l_start(void *data)
       return false;
    }
 
-   generate_YCbCr_to_RGB_lookup();
    v4l->ready = true;
 
    return true;
+}
+
+static void v4l_free(void *data)
+{
+   video4linux_t *v4l = (video4linux_t*)data;
+
+   unsigned i;
+   for (i = 0; i < v4l->n_buffers; i++)
+      if (munmap(v4l->buffers[i].start, v4l->buffers[i].length) == -1)
+         RARCH_ERR("munmap failed.\n");
+
+   if (v4l->fd >= 0)
+      close(v4l->fd);
+
+   free(v4l->buffer_output);
+   scaler_ctx_gen_reset(&v4l->scaler);
+   free(v4l);
 }
 
 static void *v4l_init(const char *device, uint64_t caps, unsigned width, unsigned height)
@@ -380,14 +315,11 @@ static void *v4l_init(const char *device, uint64_t caps, unsigned width, unsigne
    if (!v4l)
       return NULL;
 
-   if (device == NULL)
-      strlcpy(v4l->dev_name, "/dev/video0", sizeof(v4l->dev_name));
-   else
-      strlcpy(v4l->dev_name, device, sizeof(v4l->dev_name));
+   strlcpy(v4l->dev_name, device ? device : "/dev/video0", sizeof(v4l->dev_name));
 
-   v4l->width    = width;
-   v4l->height   = height;
-   v4l->ready    = false;
+   v4l->width  = width;
+   v4l->height = height;
+   v4l->ready  = false;
 
    if (stat(v4l->dev_name, &st) == -1)
    {
@@ -409,39 +341,35 @@ static void *v4l_init(const char *device, uint64_t caps, unsigned width, unsigne
       goto error;
    }
 
-   if (init_device(v4l) == -1)
+   if (!init_device(v4l))
       goto error;
 
-   buffer_output = (uint32_t*)malloc( v4l->width * v4l->height * sizeof(uint32_t));
+   v4l->buffer_output = (uint32_t*)malloc(v4l->width * v4l->height * sizeof(uint32_t));
+   if (!v4l->buffer_output)
+   {
+      RARCH_ERR("Failed to allocate output buffer.\n");
+      goto error;
+   }
+
+   v4l->scaler.in_width = v4l->scaler.out_width = v4l->width;
+   v4l->scaler.in_height = v4l->scaler.out_height = v4l->height;
+   v4l->scaler.in_fmt = SCALER_FMT_YUYV;
+   v4l->scaler.out_fmt = SCALER_FMT_ARGB8888;
+   v4l->scaler.in_stride = v4l->pitch;
+   v4l->scaler.out_stride = v4l->width * 4;
+
+   if (!scaler_ctx_gen_filter(&v4l->scaler))
+   {
+      RARCH_ERR("Failed to create scaler.\n");
+      goto error;
+   }
 
    return v4l;
 
 error:
    RARCH_ERR("V4L2: Failed to initialize camera.\n");
-   free(v4l);
+   v4l_free(v4l);
    return NULL;
-}
-
-static void v4l_free(void *data)
-{
-   video4linux_t *v4l = (video4linux_t*)data;
-
-   unsigned i;
-   for (i = 0; i < v4l->n_buffers; i++)
-      if (munmap(v4l->buffers[i].start, v4l->buffers[i].length) == -1)
-         RARCH_ERR("munmap failed.\n");
-
-   if (v4l->fd >= 0)
-      close(v4l->fd);
-   free(v4l);
-
-   // Assumes one instance. LUT will be gone at some point anyways.
-   free(YCbCr_to_RGB);
-   YCbCr_to_RGB = NULL;
-
-   if (buffer_output)
-      free(buffer_output);
-   buffer_output = NULL;
 }
 
 static bool preprocess_image(void *data)
@@ -461,20 +389,15 @@ static bool preprocess_image(void *data)
       {
          case EAGAIN:
             return false;
-         case EIO:
-            /* Could ignore EIO, see spec. */
-
-            /* fall through */
-
          default:
             RARCH_ERR("VIDIOC_DQBUF.\n");
             return false;
       }
    }
 
-   assert(buf.index < v4l->n_buffers);
+   rarch_assert(buf.index < v4l->n_buffers);
 
-   process_image(v4l, v4l->buffers[buf.index].start);
+   process_image(v4l, (const uint8_t*)v4l->buffers[buf.index].start);
 
    if (xioctl(v4l->fd, VIDIOC_QBUF, &buf) == -1)
       RARCH_ERR("VIDIOC_QBUF\n");
@@ -494,7 +417,7 @@ static bool v4l_poll(void *data, retro_camera_frame_raw_framebuffer_t frame_raw_
    if (preprocess_image(data))
    {
       if (frame_raw_cb != NULL)
-         frame_raw_cb(buffer_output, v4l->width, v4l->height, v4l->width * 4);
+         frame_raw_cb(v4l->buffer_output, v4l->width, v4l->height, v4l->width * 4);
       return true;
    }
    else
@@ -509,3 +432,4 @@ const camera_driver_t camera_v4l2 = {
    v4l_poll,
    "video4linux2",
 };
+

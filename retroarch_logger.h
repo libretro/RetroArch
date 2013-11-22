@@ -17,13 +17,15 @@
 #ifndef __RARCH_LOGGER_H
 #define __RARCH_LOGGER_H
 
+#define RARCH_INTERNAL
+
 #if defined(ANDROID) && defined(HAVE_LOGGER)
 #include <android/log.h>
 #endif
 
 #if defined(IS_SALAMANDER) || defined(RARCH_DUMMY_LOG)
 #define LOG_FILE (stderr)
-#elif defined(HAVE_FILE_LOGGER)
+#elif defined(HAVE_FILE_LOGGER) && defined(RARCH_INTERNAL)
 #define LOG_FILE (g_extern.log_file)
 #else
 #define LOG_FILE (stderr)
@@ -33,7 +35,7 @@
 #include <logger_override.h>
 #else
 
-#ifdef RARCH_DUMMY_LOG
+#if defined(RARCH_DUMMY_LOG) || !defined(RARCH_INTERNAL)
 #define RARCH_LOG_VERBOSE (true)
 #else
 #define RARCH_LOG_VERBOSE g_extern.verbose

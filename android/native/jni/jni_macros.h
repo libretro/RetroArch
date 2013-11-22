@@ -21,12 +21,11 @@
 
 struct jni_params
 {
-   JavaVM *java_vm;
-   JNIEnv *env;
-   jobject class_obj;
    char class_name[128];
    char method_name[128];
    char method_signature[128];
+   char submethod_name[128];
+   char submethod_signature[128];
 };
 
 struct jni_out_params_char
@@ -77,6 +76,18 @@ struct jni_out_params_char
 
 #define CALL_OBJ_METHOD_PARAM(env, var, clazz_obj, methodId, ...) \
    var = (*env)->CallObjectMethod(env, clazz_obj, methodId, __VA_ARGS__); \
+   JNI_EXCEPTION(env)
+
+#define CALL_VOID_METHOD(env, clazz_obj, methodId) \
+   (*env)->CallVoidMethod(env, clazz_obj, methodId); \
+   JNI_EXCEPTION(env)
+
+#define CALL_VOID_METHOD_PARAM(env, clazz_obj, methodId, ...) \
+   (*env)->CallVoidMethod(env, clazz_obj, methodId, __VA_ARGS__); \
+   JNI_EXCEPTION(env)
+
+#define CALL_BOOLEAN_METHOD(env, var, clazz_obj, methodId) \
+   var = (*env)->CallBooleanMethod(env, clazz_obj, methodId); \
    JNI_EXCEPTION(env)
 
 #endif

@@ -18,9 +18,7 @@
 #ifndef _RGLP_H_
 #define _RGLP_H_
 
-#if defined(__CELLOS_LV2__)
-#include "ps3/include/rgl-constants.h"
-#endif
+#include "include/rgl-constants.h"
 
 extern GLboolean rglpCreateBufferObject (void *data);
 

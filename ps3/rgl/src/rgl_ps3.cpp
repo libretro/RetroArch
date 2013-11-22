@@ -17,8 +17,8 @@
 
 #include <stdint.h>
 #include <stddef.h>
-#include "../rgl.h"
-#include "../rglp.h"
+#include "rgl.h"
+#include "rglp.h"
 
 #include <sdk_version.h>
 
@@ -43,7 +43,6 @@
 #include <cell/gcm.h>
 #include <cell/gcm/gcm_method_data.h>
 #include <cell/resc.h>
-using namespace cell::Gcm;
 
 static GLuint nvFenceCounter = 0;
 
@@ -440,11 +439,8 @@ static void gmmDestroyFixedAllocator (void)
 
 #define GMM_ALLOC_FIXED_BLOCK() ((GmmBlock*)gmmAllocFixed(0))
 
-uint32_t gmmInit(
-      const void *localMemoryBase,
-      const void *localStartAddress,
-      const uint32_t localSize
-      )
+static uint32_t gmmInit(const void *localMemoryBase, const void *localStartAddress,
+      const uint32_t localSize)
 {
    GmmAllocator *pAllocator;
    uint32_t alignedLocalSize, alignedMainSize;
@@ -454,12 +450,12 @@ uint32_t gmmInit(
 
    alignedLocalSize = localEndAddress - (uint32_t)localStartAddress;
 
-   pAllocator = (GmmAllocator *)malloc(2*sizeof(GmmAllocator));
+   pAllocator = (GmmAllocator *)malloc(sizeof(GmmAllocator));
 
    if (pAllocator == NULL)
       return GMM_ERROR;
 
-   memset(pAllocator, 0, 1 * sizeof(GmmAllocator));
+   memset(pAllocator, 0, sizeof(GmmAllocator));
 
    if (pAllocator)
    {
@@ -524,12 +520,7 @@ uint32_t gmmDestroy (void)
 
 char *gmmIdToAddress (const uint32_t id)
 {
-   while (cachedLockValue != 0)
-   {
-      // wait for sweep
-      sys_timer_usleep(30);
-      cachedLockValue = *pLock;
-   }
+   while ((cachedLockValue = *pLock) != 0);
    return (char *)((GmmBaseBlock*)id)->address;
 }
 
@@ -1322,30 +1313,8 @@ static void gmmAllocSweep(void *data)
       cachedLockValue = 1;
       rglGcmSetWriteBackEndLabel(thisContext, GMM_PPU_WAIT_INDEX, 0);
 
-      cellGcmFlush(thisContext);
+      rglGcmFlush(thisContext);
    }
-}
-
-static uint32_t gmmInternalAlloc(
-      GmmAllocator *pAllocator,
-      const uint8_t isTile,
-      const uint32_t size
-      )
-{
-   uint32_t        retId;
-
-   if (isTile)
-   {
-      GmmTileBlock    *pBlock = gmmFindFreeTileBlock(pAllocator, size); 
-      retId = (uint32_t)gmmAllocTileBlock(pAllocator, size, pBlock);
-   }
-   else
-      retId = (uint32_t)gmmAllocBlock(pAllocator, size);
-
-   if (retId == 0)
-      return GMM_ERROR;
-
-   return retId;
 }
 
 static void gmmRemoveFree(
@@ -1424,49 +1393,43 @@ static uint32_t gmmFindFreeBlock(
    return retId;
 }
 
-uint32_t gmmAlloc(void *data,
-      const uint8_t isTile, const uint32_t size)
+uint32_t gmmAlloc(const uint32_t size)
 {
-   CellGcmContextData *thisContext = (CellGcmContextData*)data;
-   GmmAllocator    *pAllocator;
-   uint32_t        retId;
-   uint32_t        newSize;
-
-   if (size == 0)
-      return GMM_ERROR;
-
-   pAllocator =  pGmmLocalAllocator;
-
-   if (!isTile)
-   {
-      newSize = PAD(size, GMM_ALIGNMENT);
-
-      retId = gmmFindFreeBlock(pAllocator, newSize);
-   }
-   else
-   {
-      newSize = PAD(size, GMM_TILE_ALIGNMENT);
-      retId = GMM_ERROR;
-   }
+   GmmAllocator    *pAllocator =  pGmmLocalAllocator;
+   uint32_t        newSize = PAD(size, GMM_ALIGNMENT);
+   uint32_t        retId = gmmFindFreeBlock(pAllocator, newSize);
 
    if (retId == GMM_ERROR)
    {
-      retId = gmmInternalAlloc(pAllocator,
-            isTile,
-            newSize);
+      retId = (uint32_t)gmmAllocBlock(pAllocator, newSize);
 
       if (retId == GMM_ERROR)
       {
-         gmmAllocSweep(thisContext);
+         gmmAllocSweep((CellGcmContextData*)&rglGcmState_i.fifo);
+         retId = (uint32_t)gmmAllocBlock(pAllocator, newSize);
 
-         retId = gmmInternalAlloc(pAllocator,
-               isTile,
-               newSize);
-
-         if (!isTile &&
-               retId == GMM_ERROR)
+         if (retId == GMM_ERROR)
             retId = gmmFindFreeBlock(pAllocator, newSize);
       }
+   }
+
+   return retId;
+}
+
+uint32_t gmmAllocTiled(const uint32_t size)
+{
+   GmmAllocator    *pAllocator =  pGmmLocalAllocator;
+   uint32_t        newSize = PAD(size, GMM_TILE_ALIGNMENT);
+   uint32_t        retId = GMM_ERROR;
+   GmmTileBlock    *pBlock = gmmFindFreeTileBlock(pAllocator, newSize); 
+
+   retId = (uint32_t)gmmAllocTileBlock(pAllocator, newSize, pBlock);
+
+   if (retId == GMM_ERROR)
+   {
+      gmmAllocSweep((CellGcmContextData*)&rglGcmState_i.fifo);
+      pBlock = gmmFindFreeTileBlock(pAllocator, newSize);
+      retId = (uint32_t)gmmAllocTileBlock(pAllocator, newSize, pBlock);
    }
 
    return retId;
@@ -1528,12 +1491,12 @@ void rglGcmFifoInit (void *data, void *dmaControl, unsigned long dmaPushBufferOf
    fifo->fifoBlockSize = DEFAULT_FIFO_BLOCK_SIZE;
 
    // init fifo context pointers to first fifo block which will be set at the the dmaPushPuffer position
-   fifo->begin     = (uint32_t*) dmaPushBuffer;
-   fifo->end       = fifo->begin + ( fifo->fifoBlockSize / sizeof( uint32_t ) ) - 1;
+   fifo->ctx.begin     = (uint32_t*) dmaPushBuffer;
+   fifo->ctx.end       = fifo->ctx.begin + ( fifo->fifoBlockSize / sizeof( uint32_t ) ) - 1;
    // init rest of context
-   fifo->current        = fifo->begin;
-   fifo->lastGetRead    = fifo->current;
-   fifo->lastPutWritten = fifo->current;
+   fifo->ctx.current        = fifo->ctx.begin;
+   fifo->lastGetRead    = fifo->ctx.current;
+   fifo->lastPutWritten = fifo->ctx.current;
 
    // store fifo values
    fifo->dmaPushBufferBegin       = dmaPushBuffer;
@@ -1546,8 +1509,7 @@ void rglGcmFifoInit (void *data, void *dmaControl, unsigned long dmaPushBufferOf
    fifo->lastSWReferenceWritten = 0;
    fifo->lastSWReferenceFlushed = 0;
 
-   // note that rglGcmFifo is-a CellGcmContextData
-   gCellGcmCurrentContext = fifo;
+   gCellGcmCurrentContext = &fifo->ctx;
    // setting our own out of space callback here to handle our fifo
    gCellGcmCurrentContext->callback = ( CellGcmContextCallback )rglOutOfSpaceCallback;
 
@@ -1555,12 +1517,11 @@ void rglGcmFifoInit (void *data, void *dmaControl, unsigned long dmaPushBufferOf
    if ( rglGcmFifoReadReference( fifo ) != 0 )
    {
       unsigned int offset_bytes = 0;
-      GCM_FUNC( cellGcmSetReferenceCommand, 0 );
+      rglGcmSetReferenceCommand(gCellGcmCurrentContext, 0 );
       rglGcmFifoFlush(fifo, offset_bytes); // Here, we jump to this new buffer
 
       // a finish that waits for 0 specifically.
-      while (rglGcmFifoReadReference(fifo) != 0)
-         sys_timer_usleep(10);
+      while (rglGcmFifoReadReference(fifo) != 0);
    }
    fifo->dmaPushBufferGPU = dmaPushBuffer;
    fifo->spuid = 0;
@@ -1575,7 +1536,6 @@ GLboolean rglGcmInitFromRM( rglGcmResource *rmResource )
 {
    rglGcmState *rglGcmSt = &rglGcmState_i;
    rglGcmFifo *fifo = (rglGcmFifo*)&rglGcmSt->fifo;
-   CellGcmContextData *thisContext = (CellGcmContextData*)gCellGcmCurrentContext;
    GLuint i, ref;
    unsigned int offset_bytes = 0;
 
@@ -1585,7 +1545,6 @@ GLboolean rglGcmInitFromRM( rglGcmResource *rmResource )
    rglGcmSt->hostMemoryBase = rmResource->hostMemoryBase;
    rglGcmSt->hostMemorySize = rmResource->hostMemorySize;
 
-   rglGcmSt->hostNotifierBuffer = NULL; //rmResource->hostNotifierBuffer;
    rglGcmSt->semaphores = rmResource->semaphores;
 
    rglGcmFifoInit( &rglGcmSt->fifo, rmResource->dmaControl, rmResource->dmaPushBufferOffset, (uint32_t*)rmResource->dmaPushBuffer, rmResource->dmaPushBufferSize );
@@ -1593,47 +1552,45 @@ GLboolean rglGcmInitFromRM( rglGcmResource *rmResource )
    rglGcmFifoFinish(ref, offset_bytes);
 
    // Set the GPU to a known state
-
    // initialize the default OpenGL state
-   GCM_FUNC( cellGcmSetBlendColor, 0, 0);
-   GCM_FUNC( cellGcmSetBlendEquation, RGLGCM_FUNC_ADD, RGLGCM_FUNC_ADD );
-   GCM_FUNC( cellGcmSetBlendFunc, RGLGCM_ONE, RGLGCM_ZERO, RGLGCM_ONE, RGLGCM_ZERO );
-   rglGcmSetClearColor(thisContext, 0 );
-   GCM_FUNC( cellGcmSetBlendEnable, RGLGCM_FALSE );
-   GCM_FUNC( cellGcmSetBlendEnableMrt, RGLGCM_FALSE, RGLGCM_FALSE, RGLGCM_FALSE );
-   GCM_FUNC( cellGcmSetFragmentProgramGammaEnable, RGLGCM_FALSE );
+   rglGcmSetBlendColor(gCellGcmCurrentContext, 0, 0);
+   rglGcmSetBlendEquation(gCellGcmCurrentContext, RGLGCM_FUNC_ADD, RGLGCM_FUNC_ADD );
+   rglGcmSetBlendFunc(gCellGcmCurrentContext, RGLGCM_ONE, RGLGCM_ZERO, RGLGCM_ONE, RGLGCM_ZERO );
+   rglGcmSetClearColor(gCellGcmCurrentContext, 0 );
+   rglGcmSetBlendEnable(gCellGcmCurrentContext, false );
+   rglGcmSetBlendEnableMrt(gCellGcmCurrentContext, false, false, false );
 
    for ( i = 0; i < RGLGCM_ATTRIB_COUNT; i++ )
    {
-      rglGcmSetVertexDataArray(thisContext, i, 0, 0, 0, CELL_GCM_VERTEX_F, CELL_GCM_LOCATION_LOCAL, 0);
+      rglGcmSetVertexDataArray(gCellGcmCurrentContext, i, 0, 0, 0, CELL_GCM_VERTEX_F, CELL_GCM_LOCATION_LOCAL, 0);
    }
 
-   rglGcmSetDitherEnable(thisContext, RGLGCM_TRUE );
+   rglGcmSetDitherEnable(gCellGcmCurrentContext, true );
 
-   for ( i = 0; i < RGLGCM_MAX_TEXIMAGE_COUNT; i++ )
+   for ( i = 0; i < CELL_GCM_MAX_TEXIMAGE_COUNT; i++ )
    {
       static const GLuint borderColor = 0;
 
       // update the setTextureAddress Portion
-      GCM_FUNC( cellGcmSetTextureAddress, i, CELL_GCM_TEXTURE_WRAP, CELL_GCM_TEXTURE_WRAP, CELL_GCM_TEXTURE_CLAMP_TO_EDGE, CELL_GCM_TEXTURE_UNSIGNED_REMAP_NORMAL, CELL_GCM_TEXTURE_ZFUNC_NEVER, 0 );
+      rglGcmSetTextureAddress(gCellGcmCurrentContext, i, CELL_GCM_TEXTURE_WRAP, CELL_GCM_TEXTURE_WRAP, CELL_GCM_TEXTURE_CLAMP_TO_EDGE, CELL_GCM_TEXTURE_UNSIGNED_REMAP_NORMAL, CELL_GCM_TEXTURE_ZFUNC_NEVER, 0 );
 
       // update the setTextureFilter Portion
-      GCM_FUNC( cellGcmSetTextureFilter, i, 0, CELL_GCM_TEXTURE_NEAREST_LINEAR, CELL_GCM_TEXTURE_LINEAR,
+      rglGcmSetTextureFilter(gCellGcmCurrentContext, i, 0, CELL_GCM_TEXTURE_NEAREST_LINEAR, CELL_GCM_TEXTURE_LINEAR,
             CELL_GCM_TEXTURE_CONVOLUTION_QUINCUNX );
 
       // update the texture control to setup anisotropic settings
-      rglGcmSetTextureControl(thisContext, i, CELL_GCM_TRUE, 0, 12 << 8, CELL_GCM_TEXTURE_MAX_ANISO_1 );
+      rglGcmSetTextureControl(gCellGcmCurrentContext, i, CELL_GCM_TRUE, 0, 12 << 8, CELL_GCM_TEXTURE_MAX_ANISO_1 );
 
       // update border color
-      GCM_FUNC( cellGcmSetTextureBorderColor, i, borderColor );
+      rglGcmSetTextureBorderColor(gCellGcmCurrentContext, i, borderColor );
    }
 
    // Set zNear and zFar to the default 0.0f and 1.0f here
    rglGcmViewportState *v = &rglGcmState_i.state.viewport;
    v->x = 0;
    v->y = 0;
-   v->w = RGLGCM_MAX_RT_DIMENSION;
-   v->h = RGLGCM_MAX_RT_DIMENSION;
+   v->w = CELL_GCM_MAX_RT_DIMENSION;
+   v->h = CELL_GCM_MAX_RT_DIMENSION;
    rglGcmFifoGlViewport(v, 0.0f, 1.0f );
 
    // wait for setup to complete
@@ -1886,53 +1843,24 @@ RGL_EXPORT GLfloat rglPlatformGetDeviceAspectRatio (const void *data)
 #define RGLGCM_DMA_PUSH_BUFFER_PREFETCH_PADDING 0x1000 // 4KB
 #define RGLGCM_FIFO_SIZE (64<<10) // 64 kb
 
-// allocation handles
-#define RGLGCM_CHANNEL_HANDLE_ID                     0xFACE0001
-#define RGLGCM_FRAME_BUFFER_OBJECT_HANDLE_ID         0xFACE0002
-#define RGLGCM_HOST_BUFFER_OBJECT_HANDLE_ID          0xFACE0003
-
-#define RGLGCM_PUSHBUF_MEMORY_HANDLE_ID              0xBEEF1000
-#define RGLGCM_HOST_NOTIFIER_MEMORY_HANDLE_ID        0xBEEF1001
-#define RGLGCM_VID_NOTIFIER_MEMORY_HANDLE_ID         0xBEEF1002
-#define RGLGCM_SEMAPHORE_MEMORY_HANDLE_ID            0xBEEF1003
-
-// dma handles
-#define RGLGCM_CHANNEL_DMA_SCRATCH_NOTIFIER          0xBEEF2000
-#define RGLGCM_CHANNEL_DMA_ERROR_NOTIFIER            0xBEEF2001
-#define RGLGCM_CONTEXT_DMA_MEMORY_FRAME_BUFFER       0xBEEF2002
-#define RGLGCM_CONTEXT_DMA_FROM_MEMORY_PUSHBUF       0xBEEF2003
-#define RGLGCM_CONTEXT_DMA_TO_MEMORY_GET_REPORT      0xBEEF2004
-#define RGLGCM_CONTEXT_DMA_MEMORY_HOST_BUFFER        0xBEEF2005
-#define RGLGCM_CONTEXT_DMA_MEMORY_SEMAPHORE_RW       0xBEEF2006
-#define RGLGCM_CONTEXT_DMA_MEMORY_SEMAPHORE_RO       0xBEEF2007
-
-// clas contexts
-#define RGLGCM_CURIE_PRIMITIVE                       0xBEEF4097
-#define RGLGCM_MEM2MEM_HOST_TO_VIDEO                 0xBBBB0000
-#define RGLGCM_IMAGEFROMCPU                          0xBBBB1000
-#define RGLGCM_SCALEDIMAGE                           0xBBBB1001
-#define RGLGCM_CONTEXT_2D_SURFACE                    0xBBBB2000
-#define RGLGCM_CONTEXT_SWIZ_SURFACE                  0xBBBB2001
-
 int32_t rglOutOfSpaceCallback (void *data, uint32_t spaceInWords)
 {
    struct CellGcmContextData *fifoContext = (struct CellGcmContextData*)data;
    rglGcmFifo * fifo = &rglGcmState_i.fifo;
 
-   // make sure that the space requested will actually fit in to
-   // a single fifo block! 
-
-   // auto flush
-   cellGcmFlushUnsafeInline((CellGcmContextData*)fifo);
+   rglGcmFlush((CellGcmContextData*)fifo);
 
    uint32_t *nextbegin, *nextend, nextbeginoffset, nextendoffset;
 
-   fifo->updateLastGetRead(); 
+   // make sure that the space requested will actually fit in to
+   // a single fifo block! 
+
+   fifoUpdateGetLastRead(fifo);
 
    // If the current end isn't the same as the full fifo end we 
    // aren't at the end.  Just go ahead and set the next begin and end 
-   if(fifo->end != fifo->dmaPushBufferEnd)
-      nextbegin = (uint32_t *)fifo->end + 1; 
+   if(fifo->ctx.end != fifo->dmaPushBufferEnd)
+      nextbegin = (uint32_t *)fifo->ctx.end + 1; 
    else
       nextbegin = (uint32_t *)fifo->dmaPushBufferBegin;
    nextend = nextbegin + (fifo->fifoBlockSize)/sizeof(uint32_t) - 1;
@@ -1940,14 +1868,15 @@ int32_t rglOutOfSpaceCallback (void *data, uint32_t spaceInWords)
    cellGcmAddressToOffset(nextbegin, &nextbeginoffset);
    cellGcmAddressToOffset(nextend, &nextendoffset);
 
-   //use this version so as not to trigger another callback
-   cellGcmSetJumpCommandUnsafeInline((CellGcmContextData*)fifo, nextbeginoffset);
+   struct CellGcmContextData *thisContext = (CellGcmContextData*)fifo;
 
+   //use this version so as not to trigger another callback
+   rglGcmSetJumpCommand(thisContext, nextbeginoffset);
 
    //set up new context
-   fifo->begin = nextbegin;
-   fifo->current = nextbegin;
-   fifo->end = nextend;
+   fifo->ctx.begin = nextbegin;
+   fifo->ctx.current = nextbegin;
+   fifo->ctx.end = nextend;
 
    //if Gpu busy with the new area, stall and flush
    uint32_t get = fifo->dmaControl->Get;
@@ -1974,8 +1903,8 @@ int32_t rglOutOfSpaceCallback (void *data, uint32_t spaceInWords)
    // same position when the fifo is in GPU memory. 
    for ( GLuint i = 0; i < 8; i++ )
    {
-      fifo->current[0] = 0;
-      fifo->current++;
+      fifo->ctx.current[0] = 0;
+      fifo->ctx.current++;
    }
 
    return CELL_OK;
@@ -1987,11 +1916,9 @@ void rglGcmDestroyRM( rglGcmResource* gcmResource )
       free( gcmResource->hostMemoryBase );
 
    memset(( void* )gcmResource, 0, sizeof( rglGcmResource ) );
-
-   return;
 }
 
-int rglGcmInitRM( rglGcmResource *gcmResource, unsigned int hostMemorySize, int inSysMem, unsigned int dmaPushBufferSize )
+static int rglGcmInitRM( rglGcmResource *gcmResource, int inSysMem, unsigned int dmaPushBufferSize )
 {
    memset( gcmResource, 0, sizeof( rglGcmResource ) );
 
@@ -2002,7 +1929,7 @@ int rglGcmInitRM( rglGcmResource *gcmResource, unsigned int hostMemorySize, int 
 
    // in case of host push buffer we need to add padding to avoid GPU push buffer prefetch to
    // cause a problem fetching invalid addresses at the end of the push buffer.
-   gcmResource->hostMemorySize = rglPad( RGLGCM_FIFO_SIZE + hostMemorySize + dmaPushBufferSize + RGLGCM_DMA_PUSH_BUFFER_PREFETCH_PADDING + (RGLGCM_LM_MAX_TOTAL_QUERIES * sizeof( GLuint )), 1 << 20 );
+   gcmResource->hostMemorySize = rglPad( RGLGCM_FIFO_SIZE + dmaPushBufferSize + RGLGCM_DMA_PUSH_BUFFER_PREFETCH_PADDING + (RGLGCM_LM_MAX_TOTAL_QUERIES * sizeof( GLuint )), 1 << 20 );
 
    if ( gcmResource->hostMemorySize > 0 )
       gcmResource->hostMemoryBase = (char *)memalign( 1 << 20, gcmResource->hostMemorySize  );
@@ -2026,35 +1953,19 @@ int rglGcmInitRM( rglGcmResource *gcmResource, unsigned int hostMemorySize, int 
 
    gcmResource->semaphores = ( rglGcmSemaphoreMemory * )cellGcmGetLabelAddress( 0 );
    gcmResource->dmaControl = ( char* ) cellGcmGetControlRegister() - (( char * ) & (( rglGcmControlDma* )0 )->Put - ( char * )0 );
-   int hostPushBuffer = 0;
-   hostPushBuffer = 1;
 
-   // the IOIF mapping don't work. work-around here.
-   for ( GLuint i = 0;i < 32;++i ) gcmResource->ioifMappings[i] = ( unsigned long long )( unsigned long )( gcmResource->localAddress + ( 64 << 20 ) * ( i / 4 ) );
+   cellGcmFinish(gCellGcmCurrentContext, 1);
 
-   cellGcmFinish( 1 ); // added just a constant value for now to adjust to the inline libgcm interface change
-
-   if ( hostPushBuffer )
-   {
-      gcmResource->hostMemorySize -= dmaPushBufferSize + RGLGCM_DMA_PUSH_BUFFER_PREFETCH_PADDING;
-      gcmResource->dmaPushBuffer = gcmResource->hostMemoryBase + gcmResource->hostMemorySize;
-      gcmResource->dmaPushBufferOffset = ( char * )gcmResource->dmaPushBuffer - ( char * )gcmResource->hostMemoryBase;
-      gcmResource->linearMemory = ( char* )0x0;
-      gcmResource->persistentMemorySize = gcmResource->localSize;
-   }
-   else
-   {
-      // Allocate Fifo at begining of vmem map
-      gcmResource->dmaPushBuffer = gcmResource->localAddress;
-      gcmResource->dmaPushBufferOffset = ( char * )gcmResource->dmaPushBuffer - ( char * )gcmResource->localAddress;
-      gcmResource->linearMemory = ( char* )0x0 + dmaPushBufferSize;
-      gcmResource->persistentMemorySize = gcmResource->localSize - dmaPushBufferSize;
-   }
+   gcmResource->hostMemorySize -= dmaPushBufferSize + RGLGCM_DMA_PUSH_BUFFER_PREFETCH_PADDING;
+   gcmResource->dmaPushBuffer = gcmResource->hostMemoryBase + gcmResource->hostMemorySize;
+   gcmResource->dmaPushBufferOffset = ( char * )gcmResource->dmaPushBuffer - ( char * )gcmResource->hostMemoryBase;
+   gcmResource->linearMemory = ( char* )0x0;
+   gcmResource->persistentMemorySize = gcmResource->localSize;
    gcmResource->dmaPushBufferSize = dmaPushBufferSize;
-   gcmResource->hostMemoryReserved = RGLGCM_FIFO_SIZE;
 
    // Set Jump command to our fifo structure
-   cellGcmSetJumpCommand(( char * )gcmResource->dmaPushBuffer - ( char * )gcmResource->hostMemoryBase );
+   const uint32_t offset = ( char * )gcmResource->dmaPushBuffer - ( char * )gcmResource->hostMemoryBase;
+   rglGcmSetJumpCommand(gCellGcmCurrentContext, offset);
 
    // Set our Fifo functions
    gCellGcmCurrentContext->callback = ( CellGcmContextCallback )rglOutOfSpaceCallback;
@@ -2086,15 +1997,12 @@ typedef struct
 typedef struct
 {
    rglTiledRegion region[RGLGCM_MAX_TILED_REGIONS];
-}
-rglTiledMemoryManager;
+} rglTiledMemoryManager;
 
 
 // TODO: put in device state?
 static rglTiledMemoryManager rglGcmTiledMemoryManager;
-
 static rglGcmResource rglGcmResource;
-
 
 void rglGcmTiledMemoryInit( void )
 {
@@ -2110,17 +2018,14 @@ GLboolean rglPlatformDeviceInit (void *data)
 {
    RGLinitOptions *options = (RGLinitOptions*)data;
    GLuint fifoSize = RGLGCM_FIFO_SIZE_DEFAULT;
-   GLuint hostSize = RGLGCM_HOST_SIZE_DEFAULT;
 
    if ( options != NULL )
    {
       if ( options->enable & RGL_INIT_FIFO_SIZE )
          fifoSize = options->fifoSize;
-      if ( options->enable & RGL_INIT_HOST_MEMORY_SIZE )
-         hostSize = options->hostMemorySize;
    }
 
-   if ( !rglGcmInitRM( &rglGcmResource, hostSize, 0, fifoSize ) )
+   if ( !rglGcmInitRM( &rglGcmResource, 0, fifoSize ) )
    {
       fprintf( stderr, "RM resource failed initialisation\n" );
       return GL_FALSE;
@@ -2260,9 +2165,9 @@ GLuint rglGcmAllocCreateRegion(
       GLint tag,
       void* data )
 {
-   uint32_t id = gmmAlloc((CellGcmContextData*)&rglGcmState_i.fifo, 1, size);
+   uint32_t id;
 
-   if ( id != GMM_ERROR )
+   if ((id = gmmAllocTiled(size)) != GMM_ERROR)
    {
       if ( rglGcmTryResizeTileRegion( (GLuint)gmmIdToOffset(id), gmmGetBlockSize(id), data ) )
       {
@@ -2354,10 +2259,6 @@ static void rglGcmAllocateTiledSurface(
       *bytesAllocated = 0;
       *pitchAllocated = 0;
    }
-   else
-   {
-      //RGL_REPORT_EXTRA( RGL_REPORT_GPU_MEMORY_ALLOC, "Allocating GPU memory (tiled): %d bytes allocated at id 0x%08x", *bytesAllocated, *id );
-   }
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -2375,13 +2276,8 @@ GLboolean rglGcmAllocateColorSurface(
 {
    rglTiledMemoryManager* mm = &rglGcmTiledMemoryManager;
 
-   rglGcmAllocateTiledSurface(
-         mm,
-         width, height, bitsPerPixel,
-         antiAliasing,
-         id,
-         pitchAllocated,
-         bytesAllocated );
+   rglGcmAllocateTiledSurface(mm, width, height, bitsPerPixel,
+         antiAliasing, id, pitchAllocated, bytesAllocated );
 
    return *bytesAllocated > 0;
 }
@@ -2533,7 +2429,7 @@ static void rescInit( const RGLdeviceParameters* params, rglGcmDevice *gcmDevice
    GLuint colorBuffersPitch;
    uint32_t numColorBuffers = cellRescGetNumColorBuffers( dstBufferMode, ( CellRescPalTemporalMode )conf.palTemporalMode, 0 );
    result = rglGcmAllocateColorSurface(params->width, params->height * numColorBuffers,
-         4*8, RGLGCM_TRUE, 1, &(gcmDevice->RescColorBuffersId), &colorBuffersPitch, &size );
+         4*8, true, 1, &(gcmDevice->RescColorBuffersId), &colorBuffersPitch, &size );
 
    // set the destination buffer format and pitch
    CellRescDsts dsts = { CELL_RESC_SURFACE_A8R8G8B8, colorBuffersPitch, 1 };
@@ -2545,10 +2441,8 @@ static void rescInit( const RGLdeviceParameters* params, rglGcmDevice *gcmDevice
    // allocate space for vertex array and fragment shader for drawing the rescaling texture-mapped quad
    int32_t colorBuffersSize, vertexArraySize, fragmentShaderSize;
    cellRescGetBufferSize( &colorBuffersSize, &vertexArraySize, &fragmentShaderSize );
-   gcmDevice->RescVertexArrayId    = gmmAlloc((CellGcmContextData*)&rglGcmState_i.fifo,
-         0, vertexArraySize);
-   gcmDevice->RescFragmentShaderId = gmmAlloc((CellGcmContextData*)&rglGcmState_i.fifo,
-         0, fragmentShaderSize);
+   gcmDevice->RescVertexArrayId    = gmmAlloc(vertexArraySize);
+   gcmDevice->RescFragmentShaderId = gmmAlloc(fragmentShaderSize);
 
 
    // tell resc how to access the destination (scanout) buffer
@@ -2565,8 +2459,7 @@ static void rescInit( const RGLdeviceParameters* params, rglGcmDevice *gcmDevice
    {
       const unsigned int tableLength = 32; // this was based on the guidelines in the resc reference guide
       unsigned int tableSize = sizeof(uint16_t) * 4 * tableLength; // 2 bytes per FLOAT16 * 4 values per entry * length of table
-      void *interlaceTable = gmmIdToAddress(gmmAlloc((CellGcmContextData*)&rglGcmState_i.fifo,
-               0, tableSize));
+      void *interlaceTable = gmmIdToAddress(gmmAlloc(tableSize));
       int32_t errorCode = cellRescCreateInterlaceTable(interlaceTable,params->renderHeight,CELL_RESC_ELEMENT_HALF,tableLength);
       (void)errorCode;
    }
@@ -2733,7 +2626,7 @@ int rglPlatformCreateDevice (void *data)
       result = rglGcmAllocateColorSurface(
             width, height,           // dimensions
             gcmDevice->color[i].bpp*8,  // bits per sample
-            RGLGCM_TRUE,               // scan out enable
+            true,               // scan out enable
             antiAliasingMode,                // antiAliasing
             &gcmDevice->color[i].dataId,    // returned buffer
             &gcmDevice->color[i].pitch,
@@ -3026,7 +2919,7 @@ GLAPI void RGL_EXPORT psglSwap (void)
    thisContext->current[0] = (((33) << (18)) | CELL_GCM_NV4097_SET_TRANSFORM_CONSTANT_LOAD);
    thisContext->current[1] = 0;
 
-   rglGcmSetDitherEnable(thisContext, RGLGCM_TRUE );
+   rglGcmSetDitherEnable(thisContext, true );
 
    RGLcontext *context = (RGLcontext*)_CurrentContext;
    context->needValidate = RGL_VALIDATE_ALL;
@@ -3609,48 +3502,42 @@ static void rglRawRasterToImage(const void *in_data,
    {
       memcpy((char*)image->data +
             x*image->xstride + y*image->ystride + z*image->zstride,
-            raster->data, raster->depth*raster->zstride );
+            raster->data, raster->zstride );
 
       return;
    }
    else if ( raster->xstride == image->xstride )
    {
       const GLuint lineBytes = raster->width * raster->xstride;
-      for ( int i = 0; i < raster->depth; ++i )
+      for ( int j = 0; j < raster->height; ++j )
       {
-         for ( int j = 0; j < raster->height; ++j )
-         {
-            const char *src = ( const char * )raster->data +
-               i * raster->zstride + j * raster->ystride;
-            char *dst = ( char * )image->data +
-               ( i + z ) * image->zstride +
-               ( j + y ) * image->ystride +
-               x * image->xstride;
-            memcpy( dst, src, lineBytes );
-         }
+         const char *src = ( const char * )raster->data +
+            raster->zstride + j * raster->ystride;
+         char *dst = ( char * )image->data +
+            z * image->zstride +
+            ( j + y ) * image->ystride +
+            x * image->xstride;
+         memcpy( dst, src, lineBytes );
       }
 
       return;
    }
 
-   for ( int i = 0; i < raster->depth; ++i )
+   for ( int j = 0; j < raster->height; ++j )
    {
-      for ( int j = 0; j < raster->height; ++j )
+      const char *src = ( const char * )raster->data +
+         raster->zstride + j * raster->ystride;
+      char *dst = ( char * )image->data +
+         z * image->zstride +
+         ( j + y ) * image->ystride +
+         x * image->xstride;
+
+      for ( int k = 0; k < raster->width; ++k )
       {
-         const char *src = ( const char * )raster->data +
-            i * raster->zstride + j * raster->ystride;
-         char *dst = ( char * )image->data +
-            ( i + z ) * image->zstride +
-            ( j + y ) * image->ystride +
-            x * image->xstride;
+         memcpy( dst, src, size );
 
-         for ( int k = 0; k < raster->width; ++k )
-         {
-            memcpy( dst, src, size );
-
-            src += raster->xstride;
-            dst += image->xstride;
-         }
+         src += raster->xstride;
+         dst += image->xstride;
       }
    }
 }
@@ -3753,10 +3640,12 @@ static void rglSetImage(void *data, GLint internalFormat, GLsizei width, GLsizei
 static char* rglVendorString = "RetroArch";
 
 static char* rglRendererString = "RGL";
-static char* rglExtensionsString = "";
+static char* rglExtensionsString = "GL_ARB_texture_float";
 
 static char* rglVersionNumber = "2.00";
 char* rglVersion = "2.00";
+
+#define NUM_EXTENSIONS 1
 
 RGLcontext* _CurrentContext = NULL;
 
@@ -3771,13 +3660,10 @@ GLAPI GLenum APIENTRY glGetError(void)
 {
    if (!_CurrentContext )
       return GL_INVALID_OPERATION;
-   else
-   {
-      GLenum error = _CurrentContext->error;
 
-      _CurrentContext->error = GL_NO_ERROR;
-      return error;
-   }
+   GLenum error = _CurrentContext->error;
+   _CurrentContext->error = GL_NO_ERROR;
+   return error;
 }
 
 GLAPI void APIENTRY glGetIntegerv(GLenum pname, GLint* params)
@@ -3787,6 +3673,11 @@ GLAPI void APIENTRY glGetIntegerv(GLenum pname, GLint* params)
       case GL_MAX_TEXTURE_SIZE:
          params[0] = RGLP_MAX_TEXTURE_SIZE;
          break;
+#if 0
+      case GL_NUM_EXTENSIONS:
+         params[0] = NUM_EXTENSIONS;
+         break;
+#endif
       default:
          fprintf(stderr, "glGetIntegerv: enum not supported.\n");
          break;
@@ -3810,8 +3701,6 @@ static void rglResetContext (void *data)
    LContext->DepthFar = 1.f;
 
    LContext->DrawBuffer = LContext->ReadBuffer = GL_COLOR_ATTACHMENT0_EXT;
-
-   LContext->ShaderSRGBRemap = GL_FALSE;
 
    LContext->Blending = GL_FALSE;
    LContext->BlendColor.R = 0.0f;
@@ -4068,10 +3957,6 @@ GLAPI void APIENTRY glEnable( GLenum cap )
                LContext->CurrentImageUnit->fragmentTarget );
          LContext->needValidate |= RGL_VALIDATE_TEXTURES_USED;
          break;
-      case GL_SHADER_SRGB_REMAP_SCE:
-         LContext->ShaderSRGBRemap = GL_TRUE;
-         LContext->needValidate |= RGL_VALIDATE_SHADER_SRGB_REMAP;
-         break;
       case GL_BLEND:
          LContext->Blending = GL_TRUE;
          LContext->needValidate |= RGL_VALIDATE_BLENDING;
@@ -4099,10 +3984,6 @@ GLAPI void APIENTRY glDisable( GLenum cap )
          LContext->CurrentImageUnit->currentTexture = rglGetCurrentTexture( LContext->CurrentImageUnit,
                LContext->CurrentImageUnit->fragmentTarget );
          LContext->needValidate |= RGL_VALIDATE_TEXTURES_USED;
-         break;
-      case GL_SHADER_SRGB_REMAP_SCE:
-         LContext->ShaderSRGBRemap = GL_FALSE;
-         LContext->needValidate |= RGL_VALIDATE_SHADER_SRGB_REMAP;
          break;
       case GL_BLEND:
          LContext->Blending = GL_FALSE;
@@ -4345,16 +4226,6 @@ GLAPI void APIENTRY glTexParameteri( GLenum target, GLenum pname, GLint param )
          break;
       case GL_TEXTURE_COMPARE_FUNC_ARB:
          texture->compareFunc = param;
-         break;
-      case GL_TEXTURE_GAMMA_REMAP_R_SCE:
-      case GL_TEXTURE_GAMMA_REMAP_G_SCE:
-      case GL_TEXTURE_GAMMA_REMAP_B_SCE:
-      case GL_TEXTURE_GAMMA_REMAP_A_SCE:
-         {
-            GLuint bit = 1 << ( pname - GL_TEXTURE_GAMMA_REMAP_R_SCE );
-            if ( param ) texture->gammaRemap |= bit;
-            else texture->gammaRemap &= ~bit;
-         }
          break;
       default:
          rglSetError( GL_INVALID_ENUM );

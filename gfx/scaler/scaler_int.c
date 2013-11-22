@@ -31,16 +31,6 @@ static inline uint64_t build_argb64(uint16_t a, uint16_t r, uint16_t g, uint16_t
    return ((uint64_t)a << 48) | ((uint64_t)r << 32) | ((uint64_t)g << 16) | ((uint64_t)b << 0);
 }
 
-static inline uint8_t clamp_8bit(int16_t col)
-{
-   if (col > 255)
-      return 255;
-   else if (col < 0)
-      return 0;
-   else
-      return (uint8_t)col;
-}
-
 // ARGB8888 scaler is split in two:
 //
 // First, horizontal scaler is applied.

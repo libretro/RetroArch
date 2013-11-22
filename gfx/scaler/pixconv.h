@@ -16,6 +16,8 @@
 #ifndef PIXCONV_H__
 #define PIXCONV_H__
 
+#include "scaler_common.h"
+
 void conv_0rgb1555_argb8888(void *output, const void *input,
       int width, int height,
       int out_stride, int in_stride);
@@ -57,6 +59,10 @@ void conv_0rgb1555_bgr24(void *output, const void *input,
       int out_stride, int in_stride);
 
 void conv_rgb565_bgr24(void *output, const void *input,
+      int width, int height,
+      int out_stride, int in_stride);
+
+void conv_yuyv_argb8888(void *output, const void *input,
       int width, int height,
       int out_stride, int in_stride);
 

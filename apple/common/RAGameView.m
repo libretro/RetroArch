@@ -406,6 +406,8 @@ void apple_gfx_ctx_update_window_title(void)
    bool fps_draw = g_settings.fps_show;
    bool got_text = gfx_get_fps(buf, sizeof(buf), fps_draw ? buf_fps : NULL, sizeof(buf_fps));
    static const char* const text = buf; // < Can't access buf directly in the block
+    (void)got_text;
+    (void)text;
 #ifdef OSX
    if (got_text)
    {

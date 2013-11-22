@@ -1209,7 +1209,7 @@ static void gl_glsl_shader_scale(unsigned index, struct gfx_fbo_scale *scale)
 
 static unsigned gl_glsl_get_prev_textures(void)
 {
-   int i, j;
+   unsigned i, j;
    if (!glsl_enable)
       return 0;
 

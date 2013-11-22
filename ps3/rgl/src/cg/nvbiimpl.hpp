@@ -1,9 +1,7 @@
 #ifndef CGC_CGBIO_NVBIIMPL_HPP
 #define CGC_CGBIO_NVBIIMPL_HPP
 
-#include <string>
 #include <vector>
-#include <cstddef>
 
 #include <Cg/cg.h>
 #include <Cg/cgBinary.h>

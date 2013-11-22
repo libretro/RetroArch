@@ -586,6 +586,9 @@ enum retro_camera_buffer
 typedef bool (*retro_camera_start_t)(void);
 // Stops the camera driver. Can only be called in retro_run().
 typedef void (*retro_camera_stop_t)(void);
+// Callback which signals when the camera driver is initialized and/or deinitialized.
+// retro_camera_start_t can be called in initialized callback.
+typedef void (*retro_camera_lifetime_status_t)(void);
 // A callback for raw framebuffer data. buffer points to an XRGB8888 buffer.
 // Width, height and pitch are similar to retro_video_refresh_t.
 // First pixel is top-left origin.
@@ -614,6 +617,14 @@ struct retro_camera_callback
 
    retro_camera_frame_raw_framebuffer_t frame_raw_framebuffer; // Set by libretro core if raw framebuffer callbacks will be used.
    retro_camera_frame_opengl_texture_t frame_opengl_texture; // Set by libretro core if OpenGL texture callbacks will be used.
+
+   // Set by libretro core. Called after camera driver is initialized and ready to be started.
+   // Can be NULL, in which this callback is not called.
+   retro_camera_lifetime_status_t initialized;
+
+   // Set by libretro core. Called right before camera driver is deinitialized.
+   // Can be NULL, in which this callback is not called.
+   retro_camera_lifetime_status_t deinitialized;
 };
 
 enum retro_rumble_effect

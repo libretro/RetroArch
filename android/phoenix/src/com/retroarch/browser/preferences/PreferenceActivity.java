@@ -1,4 +1,4 @@
-package com.retroarch.browser.preferences.fragments;
+package com.retroarch.browser.preferences;
 
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.OnSharedPreferenceChangeListener;
@@ -15,6 +15,11 @@ import android.support.v7.app.ActionBar.TabListener;
 import android.support.v7.app.ActionBarActivity;
 
 import com.retroarch.R;
+import com.retroarch.browser.preferences.fragments.AudioPreferenceFragment;
+import com.retroarch.browser.preferences.fragments.GeneralPreferenceFragment;
+import com.retroarch.browser.preferences.fragments.InputPreferenceFragment;
+import com.retroarch.browser.preferences.fragments.PathPreferenceFragment;
+import com.retroarch.browser.preferences.fragments.VideoPreferenceFragment;
 import com.retroarch.browser.preferences.fragments.util.PreferenceListFragment;
 import com.retroarch.browser.preferences.util.UserPreferences;
 

@@ -37,10 +37,6 @@ const menu_ctx_driver_t *menu_ctx;
 //forward decl
 static int menu_iterate_func(void *data, unsigned action);
 
-#if defined(HAVE_RMENU_XUI)
-#define menu_iterate_func(a, b) rmenu_xui_iterate(a, b)
-#endif
-
 #ifdef HAVE_SHADER_MANAGER
 void shader_manager_init(void *data)
 {
@@ -994,17 +990,17 @@ static int menu_iterate_func(void *data, unsigned action)
 
 #ifdef HAVE_OSK
    // process pending osk init callback
-   if (g_settings.osk.cb_init != NULL)
+   if (g_extern.osk.cb_init)
    {
-      if (g_settings.osk.cb_init(driver.osk_data))
-         g_settings.osk.cb_init = NULL;
+      if (g_extern.osk.cb_init(driver.osk_data))
+         g_extern.osk.cb_init = NULL;
    }
 
    // process pending osk callback
-   if (g_settings.osk.cb_callback != NULL)
+   if (g_extern.osk.cb_callback)
    {
-      if (g_settings.osk.cb_callback(driver.osk_data))
-         g_settings.osk.cb_callback = NULL;
+      if (g_extern.osk.cb_callback(driver.osk_data))
+         g_extern.osk.cb_callback = NULL;
    }
 #endif
 
@@ -1354,6 +1350,9 @@ static int menu_iterate_func(void *data, unsigned action)
       rgui->need_refresh = false;
       menu_parse_and_resolve(rgui, menu_type);
    }
+
+   if (menu_ctx && menu_ctx->iterate)
+      menu_ctx->iterate(rgui, action);
 
    if (menu_ctx && menu_ctx->render)
       menu_ctx->render(rgui);
@@ -1794,6 +1793,10 @@ void menu_populate_entries(void *data, unsigned menu_type)
          file_list_push(rgui->selection_buf, "Default Filter", RGUI_SETTINGS_SHADER_FILTER, 0);
          file_list_push(rgui->selection_buf, "Load Shader Preset",
                RGUI_SETTINGS_SHADER_PRESET, 0);
+#ifdef HAVE_OSK
+         file_list_push(rgui->selection_buf, "Save Shader Preset",
+               RGUI_SETTINGS_SHADER_PRESET_SAVE, 0);
+#endif
          file_list_push(rgui->selection_buf, "Shader Passes",
                RGUI_SETTINGS_SHADER_PASSES, 0);
 
@@ -1832,6 +1835,10 @@ void menu_populate_entries(void *data, unsigned menu_type)
 #ifdef HW_RVL
          file_list_push(rgui->selection_buf, "VI Trap filtering", RGUI_SETTINGS_VIDEO_SOFT_FILTER, 0);
          file_list_push(rgui->selection_buf, "Gamma", RGUI_SETTINGS_VIDEO_GAMMA, 0);
+#endif
+#ifdef _XBOX1
+         file_list_push(rgui->selection_buf, "Soft filtering", RGUI_SETTINGS_SOFT_DISPLAY_FILTER, 0);
+         file_list_push(rgui->selection_buf, "Flicker filtering", RGUI_SETTINGS_FLICKER_FILTER, 0);
 #endif
          file_list_push(rgui->selection_buf, "Integer Scale", RGUI_SETTINGS_VIDEO_INTEGER_SCALE, 0);
          file_list_push(rgui->selection_buf, "Aspect Ratio", RGUI_SETTINGS_VIDEO_ASPECT_RATIO, 0);
@@ -1943,6 +1950,9 @@ void menu_populate_entries(void *data, unsigned menu_type)
          file_list_clear(rgui->selection_buf);
          file_list_push(rgui->selection_buf, "Mute Audio", RGUI_SETTINGS_AUDIO_MUTE, 0);
          file_list_push(rgui->selection_buf, "Rate Control Delta", RGUI_SETTINGS_AUDIO_CONTROL_RATE_DELTA, 0);
+#ifdef __CELLOS_LV2__
+         file_list_push(rgui->selection_buf, "System BGM Control", RGUI_SETTINGS_CUSTOM_BGM_CONTROL_ENABLE, 0);
+#endif
 #ifdef _XBOX1
          file_list_push(rgui->selection_buf, "Volume Level", RGUI_SETTINGS_AUDIO_VOLUME_LEVEL, 0);
 #endif
@@ -2003,6 +2013,9 @@ void menu_populate_entries(void *data, unsigned menu_type)
          file_list_push(rgui->selection_buf, "Quit RetroArch", RGUI_SETTINGS_QUIT_RARCH, 0);
          break;
    }
+
+   if (menu_ctx && menu_ctx->populate_entries)
+      menu_ctx->populate_entries(rgui, menu_type);
 }
 
 void menu_parse_and_resolve(void *data, unsigned menu_type)

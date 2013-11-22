@@ -23,8 +23,148 @@ static inline GLuint rglPlatformGetBitsPerPixel (GLenum internalFormat)
    }
 }
 
+static inline void rglGcmSetVertexProgramParameterBlock(struct CellGcmContextData *thisContext, uint32_t baseConst,
+      uint32_t constCount, const float * __restrict value)
+{
+   uint32_t blockCount, blockRemain, i;
+
+   blockCount  = (constCount * 4) >> 5;
+   blockRemain = (constCount * 4) & 0x1f;
+
+   for (i=0; i < blockCount; i++)
+   {
+      uint32_t loadAt = baseConst + i * 8;
+
+      thisContext->current[0] = (((33) << (18)) | (CELL_GCM_NV4097_SET_TRANSFORM_CONSTANT_LOAD));
+      thisContext->current[1] = (loadAt);
+
+      memcpy(&thisContext->current[2], value, 16 * sizeof(float));
+      memcpy(&thisContext->current[18], &value[16], 16 * sizeof(float));
+      thisContext->current += 34;
+      value += 32;
+   }
+
+   if(blockRemain)
+   {
+      thisContext->current[0] = (((blockRemain+1) << (18)) | (CELL_GCM_NV4097_SET_TRANSFORM_CONSTANT_LOAD));
+      thisContext->current[1] = (baseConst + blockCount * 8);
+      thisContext->current += 2;
+
+      blockRemain >>= 2;
+      for (i=0; i < blockRemain; ++i)
+      {
+         memcpy(thisContext->current, value, 4 * sizeof(float));
+         thisContext->current += 4;
+         value += 4;
+      }
+   }
+}
+
+static inline void rglGcmSetInlineTransfer(struct CellGcmContextData *thisContext,
+      const uint32_t dstOffset, const void *srcAdr, const uint32_t sizeInWords)
+{
+   uint32_t *src, *srcEnd;
+   uint32_t paddedSizeInWords, alignedVideoOffset, pixelShift;
+
+   alignedVideoOffset = dstOffset & ~63;
+   pixelShift = (dstOffset & 63) >> 2;
+   paddedSizeInWords = (sizeInWords + 1) & ~1;
+
+   (thisContext->current)[0] = (((1) << (18)) | (CELL_GCM_NV3062_SET_OFFSET_DESTIN));
+   (thisContext->current)[1] = (alignedVideoOffset);
+   (thisContext->current) += 2;
+
+   (thisContext->current)[0] = (((2) << (18)) | (CELL_GCM_NV3062_SET_COLOR_FORMAT));
+   (thisContext->current)[1] = (CELL_GCM_TRANSFER_SURFACE_FORMAT_Y32);
+   (thisContext->current)[2] = ((0x1000) | ((0x1000) << 16));
+   (thisContext->current) += 3;
+
+   (thisContext->current)[0] = (((3) << (18)) | (CELL_GCM_NV308A_POINT));
+   (thisContext->current)[1] = (((0) << 16) | (pixelShift));
+   (thisContext->current)[2] = (((1) << 16) | (sizeInWords));
+   (thisContext->current)[3] = (((1) << 16) | (sizeInWords));
+   (thisContext->current) += 4; 
+
+   thisContext->current[0] = (((paddedSizeInWords) << (18)) | (CELL_GCM_NV308A_COLOR));
+   thisContext->current += 1;
+
+   src = (uint32_t*)srcAdr;
+   srcEnd = src + sizeInWords;
+
+   while(src<srcEnd)
+   {
+      thisContext->current[0] = (src[0]);
+      thisContext->current += 1;
+      src += 1;
+   }
+   if (paddedSizeInWords != sizeInWords)
+   {
+      thisContext->current[0] = 0;
+      thisContext->current += 1;
+   }
+}
+
 #define SUBPIXEL_BITS 12
 #define SUBPIXEL_ADJUST (0.5/(1<<SUBPIXEL_BITS))
+
+#define rglGcmSwap16Float32(fp, f) \
+{ \
+    union SwapF32_16 \
+    { \
+        uint32_t ui; \
+        float f; \
+    } v; \
+    v.f = *f; \
+    v.ui = (v.ui>>16) | (v.ui<<16); \
+    *fp = v.f; \
+}
+
+#define rglDeallocateBuffer(bufferObject, rglBuffer) \
+   if (rglBuffer->pool == RGLGCM_SURFACE_POOL_LINEAR) \
+      gmmFree( rglBuffer->bufferId ); \
+   rglBuffer->pool = RGLGCM_SURFACE_POOL_NONE; \
+   rglBuffer->bufferId = GMM_ERROR
+
+#define rglGcmSetTextureAddress(thisContext, index, wraps, wrapt, wrapr, unsignedRemap, zfunc, gamma) \
+ (thisContext->current)[0] = (((1) << (18)) | (CELL_GCM_NV4097_SET_TEXTURE_ADDRESS + 0x20 * ((index)))); \
+ (thisContext->current)[1] = (((wraps)) | ((0) << 4) | (((wrapt)) << 8) | (((unsignedRemap)) << 12) | (((wrapr)) << 16) | (((gamma)) << 20) |((0) << 24) | (((zfunc)) << 28)); \
+ (thisContext->current) += 2
+
+#define rglGcmSetTextureFilter(thisContext, index, bias, min, mag, conv) \
+{ \
+ bool continue_func = true; \
+ if(thisContext->current + (2) > thisContext->end) \
+ { \
+    if((*thisContext->callback)(thisContext, (2)) != 0) \
+     continue_func = false; \
+ } \
+ if (continue_func) \
+ { \
+  (thisContext->current)[0] = (((1) << (18)) | (CELL_GCM_NV4097_SET_TEXTURE_FILTER + 0x20 * ((index)))); \
+  (thisContext->current)[1] = (((bias)) | (((conv)) << 13) | (((min)) << 16) | (((mag)) << 24) | ((0) << 28) | ((0) << 29) | ((0) << 30) | ((0) << 31)); ; (thisContext->current) += 2; \
+ } \
+}
+
+#define rglGcmSetReferenceCommandInline(thisContext, ref) \
+{ \
+ bool continue_func = true; \
+ if(thisContext->current + (2) > thisContext->end) \
+ { \
+    if((*thisContext->callback)(thisContext, (2)) != 0) \
+     continue_func = false; \
+ } \
+ if (continue_func) \
+ { \
+    (thisContext->current)[0] = (((1) << (18)) | (CELL_GCM_NV406E_SET_REFERENCE)); \
+    (thisContext->current)[1] = (ref); \
+    (thisContext->current) += 2; \
+ } \
+}
+
+#define rglGcmSetTextureBorderColor(thisContext, index, color) \
+ (thisContext->current)[0] = (((1) << (18)) | (CELL_GCM_NV4097_SET_TEXTURE_BORDER_COLOR + 0x20 * ((index)))); \
+ (thisContext->current)[1] = (color); \
+ (thisContext->current) += 2
 
 #define rglDisableVertexAttribArrayNVInline(context, index) \
  RGLBIT_FALSE(context->attribs->EnabledMask, index); \
@@ -38,6 +178,10 @@ static inline GLuint rglPlatformGetBitsPerPixel (GLenum internalFormat)
  thisContext->current[0] = (((4) << (18)) | (CELL_GCM_NV4097_SET_VERTEX_DATA4F_M + (index) * 16)); \
  memcpy(&thisContext->current[1], v, sizeof(float)*4); \
  thisContext->current += 5;
+
+#define rglGcmSetJumpCommand(thisContext, offset) \
+ thisContext->current[0] = ((offset) | (0x20000000)); \
+ thisContext->current += 1
 
 #define rglGcmSetVertexDataArray(thisContext, index, frequency, stride, size, type, location, offset) \
  (thisContext->current)[0] = (((1) << (18)) | (CELL_GCM_NV4097_SET_VERTEX_DATA_ARRAY_FORMAT + ((index)) * 4)); \
@@ -74,10 +218,10 @@ static inline GLuint rglPlatformGetBitsPerPixel (GLenum internalFormat)
  (thisContext->current) += 2;
 
 #define rglGcmSetWaitLabel(thisContext, index, value) \
- (thisContext->current)[0] = (((1) << (18)) | ((0x00000064))); \
+ (thisContext->current)[0] = (((1) << (18)) | ((CELL_GCM_NV406E_SEMAPHORE_OFFSET))); \
  (thisContext->current)[1] = 0x10 * index; \
  (thisContext->current) += 2; \
- (thisContext->current)[0] = (((1) << (18)) | ((0x00000068))); \
+ (thisContext->current)[0] = (((1) << (18)) | ((CELL_GCM_NV406E_SEMAPHORE_ACQUIRE))); \
  (thisContext->current)[1] = (value); \
  (thisContext->current) += 2;
 
@@ -122,7 +266,7 @@ static inline GLuint rglPlatformGetBitsPerPixel (GLenum internalFormat)
  (thisContext->current)[0] = (((1) << (18)) | CELL_GCM_NV3062_SET_CONTEXT_DMA_IMAGE_DESTIN); \
  (thisContext->current)[1] = (CELL_GCM_CONTEXT_DMA_MEMORY_FRAME_BUFFER + location); \
  (thisContext->current) += 2; \
-  cellGcmSetInlineTransferUnsafeInline(thisContext, dstOffset, srcAdr, sizeInWords);
+  rglGcmSetInlineTransfer(thisContext, dstOffset, srcAdr, sizeInWords);
 
 #define rglGcmSetClearColor(thisContext, color) \
  (thisContext->current)[0] = (((1) << (18)) | CELL_GCM_NV4097_SET_COLOR_CLEAR_VALUE); \
@@ -149,6 +293,42 @@ static inline GLuint rglPlatformGetBitsPerPixel (GLenum internalFormat)
  (thisContext->current)[0] = (((1) << (18)) | (CELL_GCM_NV4097_SET_TEXTURE_CONTROL1 + ((index)) * 32)); \
  (thisContext->current)[1] = (control1); \
  (thisContext->current) += 2;
+
+#define rglGcmSetJumpCommand(thisContext, offset) \
+ thisContext->current[0] = ((offset) | (0x20000000)); \
+ thisContext->current += 1
+
+#define rglGcmSetBlendEnable(thisContext, enable) \
+{ \
+ bool continue_func = true; \
+ if(thisContext->current + (2) > thisContext->end) \
+ { \
+   if((*thisContext->callback)(thisContext, (2)) != 0) \
+    continue_func = false; \
+ } \
+ if (continue_func) \
+ { \
+    (thisContext->current)[0] = (((1) << (18)) | (CELL_GCM_NV4097_SET_BLEND_ENABLE)); \
+    (thisContext->current)[1] = (enable); \
+    (thisContext->current) += 2; \
+ } \
+}
+
+#define rglGcmSetBlendEnableMrt(thisContext, mrt1, mrt2, mrt3) \
+ (thisContext->current)[0] = (((1) << (18)) | (CELL_GCM_NV4097_SET_BLEND_ENABLE_MRT)); \
+ (thisContext->current)[1] = (((mrt1) << 1)|((mrt2) << 2)|((mrt3) << 3)); \
+ (thisContext->current) += 2
+
+#define rglGcmSetBlendEquation(thisContext, color, alpha) \
+ (thisContext->current)[0] = (((1) << (18)) | (CELL_GCM_NV4097_SET_BLEND_EQUATION)); \
+ (thisContext->current)[1] = (((color)) | (((alpha)) << 16)); \
+ (thisContext->current) += 2
+
+#define rglGcmSetBlendFunc(thisContext, sfcolor, dfcolor, sfalpha, dfalpha) \
+ (thisContext->current)[0] = (((2) << (18)) | (CELL_GCM_NV4097_SET_BLEND_FUNC_SFACTOR)); \
+ (thisContext->current)[1] = (((sfcolor)) | (((sfalpha)) << 16)); \
+ (thisContext->current)[2] = (((dfcolor)) | (((dfalpha)) << 16)); \
+ (thisContext->current) += 3
 
 #define rglGcmSetUserClipPlaneControl(thisContext, plane0, plane1, plane2, plane3, plane4, plane5) \
  (thisContext->current)[0] = (((1) << (18)) | CELL_GCM_NV4097_SET_USER_CLIP_PLANE_CONTROL); \
@@ -235,17 +415,18 @@ static inline GLuint rglPlatformGetBitsPerPixel (GLenum internalFormat)
 #define rglGcmFifoFinish(ref, offset_bytes) \
  ref = rglGcmFifoPutReference( fifo ); \
  rglGcmFifoFlush( fifo, offset_bytes ); \
- while (rglGcmFifoReferenceInUse(fifo, ref)) \
-    sys_timer_usleep(10);
+ do {} while (rglGcmFifoReferenceInUse(fifo, ref));
 
 #define rglGcmFifoReadReference(fifo) (fifo->lastHWReferenceRead = *((volatile GLuint *)&fifo->dmaControl->Reference))
 
 #define rglGcmFifoFlush(fifo, offsetInBytes) \
- cellGcmAddressToOffset( fifo->current, ( uint32_t * )&offsetInBytes ); \
- cellGcmFlush(); \
+ cellGcmAddressToOffset( fifo->ctx.current, ( uint32_t * )&offsetInBytes ); \
+ rglGcmFlush(gCellGcmCurrentContext); \
  fifo->dmaControl->Put = offsetInBytes; \
- fifo->lastPutWritten = fifo->current; \
+ fifo->lastPutWritten = fifo->ctx.current; \
  fifo->lastSWReferenceFlushed = fifo->lastSWReferenceWritten;
+
+#define rglGcmFlush(thisContext) cellGcmFlushUnsafe(thisContext) 
 
 #define rglGcmSetSurface(thisContext, surface, origin, pixelCenter, log2Width, log2Height) \
  (thisContext->current)[0] = (((1) << (18)) | CELL_GCM_NV4097_SET_CONTEXT_DMA_COLOR_A); \
@@ -293,10 +474,23 @@ static inline GLuint rglPlatformGetBitsPerPixel (GLenum internalFormat)
  (thisContext->current) += 2;
 
 #define rglGcmSend(dstId, dstOffset, pitch, src, size) \
-   GLuint id = gmmAlloc((CellGcmContextData*)&rglGcmState_i.fifo, 0, size); \
+   GLuint id = gmmAlloc(size); \
    memcpy( gmmIdToAddress(id), (src), size ); \
    rglGcmTransferData( dstId, dstOffset, size, id, 0, size, size, 1 ); \
    gmmFree( id )
+
+#define rglGcmSetUpdateFragmentProgramParameter(thisContext, offset, location) \
+ (thisContext->current)[0] = (((1) << (18)) | ((CELL_GCM_NV4097_SET_SHADER_PROGRAM))); \
+ (thisContext->current)[1] = ((location+1) | (offset)); \
+ (thisContext->current) += 2
+
+#define rglGcmSetBlendColor(thisContext, color, color2) \
+ (thisContext->current)[0] = (((1) << (18)) | ((CELL_GCM_NV4097_SET_BLEND_COLOR))); \
+ (thisContext->current)[1] = (color); \
+ (thisContext->current) += 2; \
+ (thisContext->current)[0] = (((1) << (18)) | ((CELL_GCM_NV4097_SET_BLEND_COLOR2))); \
+ (thisContext->current)[1] = (color2); \
+ (thisContext->current) += 2
 
 static inline void rglGcmSetFragmentProgramLoad(struct CellGcmContextData *thisContext, const CellCgbFragmentProgramConfiguration *conf, const uint32_t location)
 {
@@ -360,13 +554,14 @@ static void rglGcmSetDrawArraysSlow(struct CellGcmContextData *thisContext, uint
    count >>= 8;
 
    uint32_t loop, rest;
-   loop = count / (2047);
-   rest = count % (2047);
+   loop = count / CELL_GCM_MAX_METHOD_COUNT;
+   rest = count % CELL_GCM_MAX_METHOD_COUNT;
 
    (thisContext->current)[0] = (((3) << (18)) | CELL_GCM_NV4097_INVALIDATE_VERTEX_FILE | (0x40000000));
    (thisContext->current)[1] = 0;
    (thisContext->current)[2] = 0;
-   (thisContext->current)[3] = 0; ; (thisContext->current) += 4;
+   (thisContext->current)[3] = 0;
+   (thisContext->current) += 4;
 
    (thisContext->current)[0] = (((1) << (18)) | CELL_GCM_NV4097_SET_BEGIN_END);
    (thisContext->current)[1] = ((mode));
@@ -384,7 +579,7 @@ static void rglGcmSetDrawArraysSlow(struct CellGcmContextData *thisContext, uint
       thisContext->current[0] = ((((2047)) << (18)) | CELL_GCM_NV4097_DRAW_ARRAYS | (0x40000000));
       thisContext->current++;
 
-      for(j=0;j<(2047);j++)
+      for(j = 0; j < CELL_GCM_MAX_METHOD_COUNT; j++)
       {
          thisContext->current[0] = ((first) | ((255U)<<24));
          thisContext->current++;
@@ -397,7 +592,7 @@ static void rglGcmSetDrawArraysSlow(struct CellGcmContextData *thisContext, uint
       thisContext->current[0] = (((rest) << (18)) | CELL_GCM_NV4097_DRAW_ARRAYS | (0x40000000));
       thisContext->current++;
 
-      for(j=0;j<rest;j++)
+      for(j = 0;j < rest; j++)
       {
          thisContext->current[0] = ((first) | ((255U)<<24));
          thisContext->current++;
@@ -517,11 +712,11 @@ static inline void rglGcmFifoGlViewport(void *data, GLclampf zNear, GLclampf zFa
    if (clipY0 < 0)
       clipY0 = 0;
 
-   if (clipX1 >= RGLGCM_MAX_RT_DIMENSION)
-      clipX1 = RGLGCM_MAX_RT_DIMENSION;
+   if (clipX1 >= CELL_GCM_MAX_RT_DIMENSION)
+      clipX1 = CELL_GCM_MAX_RT_DIMENSION;
 
-   if (clipY1 >= RGLGCM_MAX_RT_DIMENSION)
-      clipY1 = RGLGCM_MAX_RT_DIMENSION;
+   if (clipY1 >= CELL_GCM_MAX_RT_DIMENSION)
+      clipY1 = CELL_GCM_MAX_RT_DIMENSION;
 
    if ((clipX1 <= clipX0) || (clipY1 <= clipY0))
       clipX0 = clipY0 = clipX1 = clipY1 = 0;
@@ -750,10 +945,9 @@ static inline void rglGcmUtilWaitForIdle (void)
    // make sure the entire pipe in clear not just the front end 
    // Utility function that does GPU 'finish'.
    rglGcmSetWriteBackEndLabel(thisContext, RGLGCM_UTIL_LABEL_INDEX, rglGcmState_i.labelValue );
-   cellGcmFlush();
+   rglGcmFlush(gCellGcmCurrentContext);
 
-   while( *(cellGcmGetLabelAddress( RGLGCM_UTIL_LABEL_INDEX)) != rglGcmState_i.labelValue)
-      sys_timer_usleep(30);
+   while( *(cellGcmGetLabelAddress( RGLGCM_UTIL_LABEL_INDEX)) != rglGcmState_i.labelValue);
 
    rglGcmState_i.labelValue++;
 }
@@ -777,7 +971,7 @@ static inline void rglPrintIt (unsigned int v)
 static inline void rglPrintFifoFromPut( unsigned int numWords ) 
 {
    for ( int i = -numWords; i <= -1; i++ )
-      rglPrintIt((( uint32_t* )rglGcmState_i.fifo.current )[i] );
+      rglPrintIt((( uint32_t* )rglGcmState_i.fifo.ctx.current )[i] );
 }
 
 // prints the last numWords of the command fifo

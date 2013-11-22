@@ -305,7 +305,11 @@ static bool sdl_gfx_frame(void *data, const void *frame, unsigned width, unsigne
    if (SDL_MUSTLOCK(vid->screen))
       SDL_LockSurface(vid->screen);
 
+   RARCH_PERFORMANCE_INIT(sdl_scale);
+   RARCH_PERFORMANCE_START(sdl_scale);
    scaler_ctx_scale(&vid->scaler, vid->screen->pixels, frame);
+   RARCH_PERFORMANCE_STOP(sdl_scale);
+
    if (msg)
       sdl_render_msg(vid, vid->screen, msg, vid->screen->w, vid->screen->h, vid->screen->format);
 
