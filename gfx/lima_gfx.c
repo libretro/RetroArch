@@ -14,23 +14,20 @@
  *  This file is rewritten from sdl video by AreaScout
  */
 
-#include "SDL/SDL.h"
-#include "../driver.h"
+#include <SDL/SDL.h>
+#include <GLES2/gl2.h>
+#include <limare.h>
 #include <stdlib.h>
 #include <string.h>
+#include "../driver.h"
 #include "../general.h"
 #include "scaler/scaler.h"
 #include "gfx_common.h"
 #include "gfx_context.h"
 #include "fonts/fonts.h"
-#include "limare.h"
-#include <GLES2/gl2.h>
-
-#include "SDL/SDL_syswm.h"
 
 #define LIMA_TEXEL_FORMAT_BGR_565		    0x0E
 #define LIMA_TEXEL_FORMAT_RGBA_8888		    0x16
-
 
 static struct limare_state *state;
 static void lima_gfx_set_rotation(void *data, unsigned rotation);
@@ -363,7 +360,7 @@ static bool lima_gfx_frame(void *data, const void *frame, unsigned width, unsign
       vid->scaler.out_width  = width;
       vid->scaler.out_height = height; // We do HW Scale so we use the same w and h, scaler is used only for color conversation
       vid->scaler.out_stride = vid->screen->pitch;
-      if(vid->scaler.in_fmt == SCALER_FMT_RGB565)
+      if(vid->scaler.in_fmt == SCALER_FMT_RGB565) // lima would support RGB565 but OSD Messages do render in RGBA8888
          vid->scaler.out_fmt = SCALER_FMT_ARGB8888;
 
       scaler_ctx_gen_filter(&vid->scaler);
