@@ -17,6 +17,7 @@
 #include <dispatch/dispatch.h>
 #include <pthread.h>
 #include "../../apple/common/rarch_wrapper.h"
+#include "../../apple/common/apple_export.h"
 
 #include "../frontend_context.h"
 
@@ -51,7 +52,8 @@ void apple_frontend_post_event(void (*fn)(void*), void* userdata)
 
 void apple_event_basic_command(void* userdata)
 {
-   switch ((enum basic_event_t)userdata)
+   int action = (int)userdata;
+   switch (action)
    {
       case RESET:
          rarch_game_reset();
@@ -78,6 +80,14 @@ void apple_event_show_rgui(void* userdata)
    const bool in_menu = g_extern.lifecycle_state & (1 << MODE_MENU);
    g_extern.lifecycle_state &= ~(1ULL << (in_menu ? MODE_MENU : MODE_GAME));
    g_extern.lifecycle_state |=  (1ULL << (in_menu ? MODE_GAME : MODE_MENU));
+}
+
+// Little nudge to prevent stale values when reloading the confg file
+void objc_clear_config_hack(void)
+{
+   g_extern.block_config_read = false;
+   memset(g_settings.input.overlay, 0, sizeof(g_settings.input.overlay));
+   memset(g_settings.video.shader_path, 0, sizeof(g_settings.video.shader_path));
 }
 
 static void event_reload_config(void* userdata)
