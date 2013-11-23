@@ -11,7 +11,6 @@ import android.app.AlertDialog;
 import android.app.Dialog;
 import android.content.Context;
 import android.content.DialogInterface;
-import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager.NameNotFoundException;
 import android.os.Build;
@@ -332,22 +331,16 @@ public final class MainMenuFragment extends PreferenceListFragment implements On
 		// TV Mode
 		if (prefKey.equals("retroTVMode"))
 		{
-			UserPreferences.updateConfigFile(ctx);
-
 			final SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(ctx);
-			final String libretro_path = prefs.getString("libretro_path", ctx.getApplicationInfo().dataDir + "/cores");
-			final Intent rgui = new Intent(ctx, RetroActivity.class);
-			final String current_ime = Settings.Secure.getString(ctx.getContentResolver(), Settings.Secure.DEFAULT_INPUT_METHOD);
-			rgui.putExtra("LIBRETRO", libretro_path);
-			rgui.putExtra("CONFIGFILE", UserPreferences.getDefaultConfigPath(ctx));
-			rgui.putExtra("IME", current_ime);
-			startActivity(rgui);
+			RetroActivity.onSetCorePath(prefs.getString("libretro_path", ctx.getApplicationInfo().dataDir + "/cores"));
+			RetroActivity.onSetIME(Settings.Secure.getString(ctx.getContentResolver(), Settings.Secure.DEFAULT_INPUT_METHOD));
+			RetroActivity.onSetPendingStateChanges();
+			getActivity().finish();
 		}
 		// Load Core Preference
 		else if (prefKey.equals("loadCorePref"))
 		{
-			final CoreSelection coreSelection = new CoreSelection();
-			coreSelection.show(getFragmentManager(), "core_selection");
+			CoreSelection.newInstance().show(getFragmentManager(), "core_selection");
 		}
 		// Load ROM Preference
 		else if (prefKey.equals("loadRomPref"))
@@ -375,8 +368,7 @@ public final class MainMenuFragment extends PreferenceListFragment implements On
 		// Load ROM (History) Preference
 		else if (prefKey.equals("loadRomHistoryPref"))
 		{
-			final HistorySelection historySelection = new HistorySelection();
-			historySelection.show(getFragmentManager(), "history_selection");
+			HistorySelection.newInstance().show(getFragmentManager(), "history_selection");
 		}
 
 		return true;
@@ -387,15 +379,11 @@ public final class MainMenuFragment extends PreferenceListFragment implements On
 	{
 		final SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(ctx);
 		final String libretro_path = prefs.getString("libretro_path", "");
-
-		UserPreferences.updateConfigFile(ctx);
-		String current_ime = Settings.Secure.getString(ctx.getContentResolver(), Settings.Secure.DEFAULT_INPUT_METHOD);
 		Toast.makeText(ctx, String.format(getString(R.string.loading_data), path), Toast.LENGTH_SHORT).show();
-		Intent retro = new Intent(ctx, RetroActivity.class);
-		retro.putExtra("ROM", path);
-		retro.putExtra("LIBRETRO", libretro_path);
-		retro.putExtra("CONFIGFILE", UserPreferences.getDefaultConfigPath(ctx));
-		retro.putExtra("IME", current_ime);
-		startActivity(retro);
+		RetroActivity.onSetFullPath(path);
+		RetroActivity.onSetCorePath(libretro_path);
+		RetroActivity.onSetIME(Settings.Secure.getString(ctx.getContentResolver(), Settings.Secure.DEFAULT_INPUT_METHOD));
+		RetroActivity.onSetPendingStateChanges();
+		getActivity().finish();
 	}
 }

@@ -2,10 +2,12 @@ package com.retroarch.browser;
 
 import java.io.IOException;
 
+import com.retroarch.browser.mainmenu.MainMenuActivity;
 import com.retroarch.browser.preferences.util.UserPreferences;
 
 import android.annotation.SuppressLint;
 import android.app.NativeActivity;
+import android.content.Intent;
 import android.graphics.SurfaceTexture;
 import android.hardware.Camera;
 import android.os.Build;
@@ -17,6 +19,56 @@ public final class RetroActivity extends NativeActivity
 	private long lastTimestamp = 0;
 	private SurfaceTexture texture;
 	private Boolean updateSurface = true;
+	private static Boolean onStateChanged = false;
+	private static String fullpath = null;
+	private static String libretro_path = null;
+	private static String ime = null;
+	
+	public static String getIME()
+	{
+		return ime;
+	}
+	
+	public static String getFullPath()
+	{
+		String tmp = fullpath;
+		fullpath = null;
+		return tmp;
+	}
+	
+	public static String getCorePath()
+	{
+		String tmp = libretro_path;
+		libretro_path = null;
+		return tmp;
+	}
+	
+	public static void onSetIME(String path)
+	{
+		ime = path;
+	}
+	
+	public static void onSetCorePath(String path)
+	{
+		libretro_path = path;
+	}
+	
+	public static void onSetFullPath(String path)
+	{
+		fullpath = path;
+	}
+	
+	public static void onSetPendingStateChanges()
+	{
+		onStateChanged = true;
+	}
+	
+	public boolean onPendingStateChanges()
+	{
+		Boolean state = onStateChanged;
+		onStateChanged = false;
+		return state;
+	}
 
 	public void onCameraStart()
 	{
@@ -118,5 +170,7 @@ public final class RetroActivity extends NativeActivity
 	public void onBackPressed()
 	{
 		Log.i("RetroActivity", "onBackKeyPressed");
+		Intent startNewActivityOpen = new Intent(this, MainMenuActivity.class);
+		startActivity(startNewActivityOpen);
 	}
 }

@@ -16,7 +16,6 @@ import android.widget.AdapterView.OnItemClickListener;
 import android.widget.ListView;
 
 import com.retroarch.R;
-import com.retroarch.browser.FileWrapper;
 import com.retroarch.browser.IconAdapter;
 import com.retroarch.browser.preferences.util.UserPreferences;
 

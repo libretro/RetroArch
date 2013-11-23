@@ -346,30 +346,28 @@ void shader_manager_set_preset(struct gfx_shader *shader,
       enum rarch_shader_type type, const char *path);
 #endif
 
-void menu_ticker_line(char *buf, size_t len, unsigned tick, const char *str, bool selected);
-
-void menu_parse_and_resolve(void *data, unsigned menu_type);
-
-void menu_init_core_info(void *data);
-
-void load_menu_game_prepare(void);
-bool load_menu_game(void);
-void load_menu_game_history(unsigned game_index);
-void menu_rom_history_push(const char *path, const char *core_path,
+extern void menu_ticker_line(char *buf, size_t len, unsigned tick, const char *str, bool selected);
+extern void menu_parse_and_resolve(void *data, unsigned menu_type);
+extern void menu_init_core_info(void *data);
+extern void load_menu_game_prepare(void);
+extern bool load_menu_game(void);
+extern void load_menu_game_history(unsigned game_index);
+extern void menu_rom_history_push(const char *path, const char *core_path,
       const char *core_name);
-void menu_rom_history_push_current(void);
+extern void menu_rom_history_push_current(void);
 
-bool menu_replace_config(const char *path);
+extern bool menu_replace_config(const char *path);
 
-bool menu_save_new_config(void);
+extern bool menu_save_new_config(void);
+extern void menu_core_initialize(void);
 
-int menu_settings_toggle_setting(void *data, unsigned setting, unsigned action, unsigned menu_type);
-int menu_set_settings(void *data, unsigned setting, unsigned action);
-void menu_set_settings_label(char *type_str, size_t type_str_size, unsigned *w, unsigned type);
+extern int menu_settings_toggle_setting(void *data, unsigned setting, unsigned action, unsigned menu_type);
+extern int menu_set_settings(void *data, unsigned setting, unsigned action);
+extern void menu_set_settings_label(char *type_str, size_t type_str_size, unsigned *w, unsigned type);
 
-void menu_key_event(bool down, unsigned keycode, uint32_t character, uint16_t key_modifiers);
-void menu_populate_entries(void *data, unsigned menu_type);
-unsigned menu_type_is(unsigned type);
+extern void menu_key_event(bool down, unsigned keycode, uint32_t character, uint16_t key_modifiers);
+extern void menu_populate_entries(void *data, unsigned menu_type);
+extern unsigned menu_type_is(unsigned type);
 
 extern const menu_ctx_driver_t *menu_ctx;
 

@@ -976,6 +976,17 @@ static void menu_flush_stack_type(void *data, unsigned final_type)
    }
 }
 
+void menu_core_initialize(void)
+{
+#ifdef HAVE_DYNAMIC
+   libretro_free_system_info(&rgui->info);
+   libretro_get_system_info(g_settings.libretro, &rgui->info,
+         &rgui->load_no_rom);
+#else
+   rarch_environment_cb(RETRO_ENVIRONMENT_SET_LIBRETRO_PATH, (void*)g_settings.libretro);
+#endif
+}
+
 static int menu_iterate_func(void *data, unsigned action)
 {
    rgui_handle_t *rgui = (rgui_handle_t*)data;
@@ -1115,17 +1126,12 @@ static int menu_iterate_func(void *data, unsigned action)
 #endif
             if (menu_type == RGUI_SETTINGS_DEFERRED_CORE)
             {
-               // FIXME: Add for consoles.
                strlcpy(g_settings.libretro, path, sizeof(g_settings.libretro));
                strlcpy(g_extern.fullpath, rgui->deferred_path, sizeof(g_extern.fullpath));
+               menu_core_initialize();
 #ifdef HAVE_DYNAMIC
-               libretro_free_system_info(&rgui->info);
-               libretro_get_system_info(g_settings.libretro, &rgui->info,
-                     &rgui->load_no_rom);
-
                g_extern.lifecycle_state |= (1ULL << MODE_LOAD_GAME);
 #else
-               rarch_environment_cb(RETRO_ENVIRONMENT_SET_LIBRETRO_PATH, (void*)g_settings.libretro);
                rarch_environment_cb(RETRO_ENVIRONMENT_EXEC, (void*)g_extern.fullpath);
 #endif
                rgui->msg_force = true;

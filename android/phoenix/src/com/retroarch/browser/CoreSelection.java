@@ -27,6 +27,16 @@ public final class CoreSelection extends DialogFragment
 {
 	private IconAdapter<ModuleWrapper> adapter;
 
+	/**
+	 * Creates a statically initialized instance of CoreSelection.
+	 * 
+	 * @return a statically initialized instance of CoreSelection.
+	 */
+	public static CoreSelection newInstance()
+	{
+		return new CoreSelection();
+	}
+
 	@Override
 	public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState)
 	{
@@ -43,7 +53,8 @@ public final class CoreSelection extends DialogFragment
 		// Populate the list
 		final List<ModuleWrapper> cores = new ArrayList<ModuleWrapper>();
 		final File[] libs = new File(getActivity().getApplicationInfo().dataDir, "/cores").listFiles();
-		for (final File lib : libs) {
+		for (final File lib : libs)
+		{
 			String libName = lib.getName();
 
 			// Never append a NEON lib if we don't have NEON.
