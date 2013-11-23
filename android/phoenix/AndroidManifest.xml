@@ -24,8 +24,6 @@
                 <category android:name="tv.ouya.intent.category.GAME" />
             </intent-filter>
         </activity>
-        <activity android:name="com.retroarch.browser.FileWrapper"/>
-        <activity android:name="com.retroarch.browser.RetroTVMode"/>
 
         <activity android:name="com.retroarch.browser.preferences.PreferenceActivity" android:theme="@style/Theme.AppCompat" />
         <activity android:name="com.retroarch.browser.coremanager.CoreManagerActivity" android:theme="@style/Theme.AppCompat"/>

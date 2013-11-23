@@ -340,7 +340,7 @@ public final class UserPreferences
 	}
 	*/
 
-	/**
+	/*
 	private static void readbackInt(ConfigFile cfg, SharedPreferences.Editor edit, String key)
 	{
 		if (cfg.keyExists(key))

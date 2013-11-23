@@ -255,7 +255,7 @@ class PreferenceManagerCompat
     /**
      * Sets the root of the preference hierarchy.
      * 
-     * @param preferenceScreen The root {@link PreferenceScreen} of the preference hierarchy.
+     * @param screen The root {@link PreferenceScreen} of the preference hierarchy.
      * @return Whether the {@link PreferenceScreen} given is different than the previous. 
      */
     static boolean setPreferences(PreferenceManager manager, PreferenceScreen screen)

@@ -49,7 +49,7 @@ public abstract class PreferenceListFragment extends Fragment implements Prefere
     private static final int FIRST_REQUEST_CODE = 100;
 
     private static final int MSG_BIND_PREFERENCES = 1;
-    private Handler mHandler = new Handler()
+    private final Handler mHandler = new Handler()
     {
         @Override
         public void handleMessage(Message msg)
@@ -63,7 +63,7 @@ public abstract class PreferenceListFragment extends Fragment implements Prefere
         }
     };
 
-    final private Runnable mRequestFocus = new Runnable()
+    private final Runnable mRequestFocus = new Runnable()
     {
         public void run()
         {
@@ -195,7 +195,7 @@ public abstract class PreferenceListFragment extends Fragment implements Prefere
      */
     public void setPreferenceScreen(PreferenceScreen preferenceScreen)
     {
-        if (PreferenceManagerCompat.setPreferences(mPreferenceManager, preferenceScreen) && preferenceScreen != null)
+        if (preferenceScreen != null && PreferenceManagerCompat.setPreferences(mPreferenceManager, preferenceScreen))
         {
             mHavePrefs = true;
             if (mInitDone)
@@ -330,7 +330,7 @@ public abstract class PreferenceListFragment extends Fragment implements Prefere
         mHandler.post(mRequestFocus);
     }
 
-    private OnKeyListener mListOnKeyListener = new OnKeyListener()
+    private final OnKeyListener mListOnKeyListener = new OnKeyListener()
     {
         @Override
         public boolean onKey(View v, int keyCode, KeyEvent event)
