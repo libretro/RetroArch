@@ -1,8 +1,9 @@
-package com.retroarch.browser;
+package com.retroarch.browser.dirfragment;
 
 import java.io.File;
 
 import com.retroarch.R;
+import com.retroarch.browser.IconAdapterItem;
 
 import android.graphics.drawable.Drawable;
 

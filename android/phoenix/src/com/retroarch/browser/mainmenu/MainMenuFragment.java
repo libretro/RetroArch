@@ -332,16 +332,15 @@ public final class MainMenuFragment extends PreferenceListFragment implements On
 		if (prefKey.equals("retroTVMode"))
 		{
 			final SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(ctx);
-		    RetroActivity.onSetCorePath(prefs.getString("libretro_path", ctx.getApplicationInfo().dataDir + "/cores"));
-		    RetroActivity.onSetIME(Settings.Secure.getString(ctx.getContentResolver(), Settings.Secure.DEFAULT_INPUT_METHOD));
-		    RetroActivity.onSetPendingStateChanges();
-		    getActivity().finish();
+			RetroActivity.onSetCorePath(prefs.getString("libretro_path", ctx.getApplicationInfo().dataDir + "/cores"));
+			RetroActivity.onSetIME(Settings.Secure.getString(ctx.getContentResolver(), Settings.Secure.DEFAULT_INPUT_METHOD));
+			RetroActivity.onSetPendingStateChanges();
+			getActivity().finish();
 		}
 		// Load Core Preference
 		else if (prefKey.equals("loadCorePref"))
 		{
-			final CoreSelection coreSelection = new CoreSelection();
-			coreSelection.show(getFragmentManager(), "core_selection");
+			CoreSelection.newInstance().show(getFragmentManager(), "core_selection");
 		}
 		// Load ROM Preference
 		else if (prefKey.equals("loadRomPref"))
@@ -369,8 +368,7 @@ public final class MainMenuFragment extends PreferenceListFragment implements On
 		// Load ROM (History) Preference
 		else if (prefKey.equals("loadRomHistoryPref"))
 		{
-			final HistorySelection historySelection = new HistorySelection();
-			historySelection.show(getFragmentManager(), "history_selection");
+			HistorySelection.newInstance().show(getFragmentManager(), "history_selection");
 		}
 
 		return true;
@@ -382,10 +380,10 @@ public final class MainMenuFragment extends PreferenceListFragment implements On
 		final SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(ctx);
 		final String libretro_path = prefs.getString("libretro_path", "");
 		Toast.makeText(ctx, String.format(getString(R.string.loading_data), path), Toast.LENGTH_SHORT).show();
-	    RetroActivity.onSetFullPath(path);
-	    RetroActivity.onSetCorePath(libretro_path);
-	    RetroActivity.onSetIME(Settings.Secure.getString(ctx.getContentResolver(), Settings.Secure.DEFAULT_INPUT_METHOD));
-	    RetroActivity.onSetPendingStateChanges();
-	    getActivity().finish();
+		RetroActivity.onSetFullPath(path);
+		RetroActivity.onSetCorePath(libretro_path);
+		RetroActivity.onSetIME(Settings.Secure.getString(ctx.getContentResolver(), Settings.Secure.DEFAULT_INPUT_METHOD));
+		RetroActivity.onSetPendingStateChanges();
+		getActivity().finish();
 	}
 }

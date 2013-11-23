@@ -17,10 +17,7 @@
         android:label="@string/app_name"
         android:hasCode="true">
         <activity android:name="com.retroarch.browser.DisplayRefreshRateTest"/>
-        <activity android:name="com.retroarch.browser.mainmenu.MainMenuActivity" android:exported="true">
-        </activity>
-        <activity android:name="com.retroarch.browser.FileWrapper"/>
-        <activity android:name="com.retroarch.browser.RetroTVMode"/>
+        <activity android:name="com.retroarch.browser.mainmenu.MainMenuActivity" android:exported="true"/>
 
         <activity android:name="com.retroarch.browser.preferences.PreferenceActivity" android:theme="@style/Theme.AppCompat" />
         <activity android:name="com.retroarch.browser.coremanager.CoreManagerActivity" android:theme="@style/Theme.AppCompat"/>
