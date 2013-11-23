@@ -330,6 +330,7 @@ public final class UserPreferences
 			edit.remove(key);
 	}
 
+	/*
 	private static void readbackFloat(ConfigFile cfg, SharedPreferences.Editor edit, String key)
 	{
 		if (cfg.keyExists(key))
@@ -337,7 +338,9 @@ public final class UserPreferences
 		else
 			edit.remove(key);
 	}
+	*/
 
+	/**
 	private static void readbackInt(ConfigFile cfg, SharedPreferences.Editor edit, String key)
 	{
 		if (cfg.keyExists(key))
@@ -345,6 +348,7 @@ public final class UserPreferences
 		else
 			edit.remove(key);
 	}
+	*/
 
 	/**
 	 * Sanitizes a libretro core path.

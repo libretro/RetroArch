@@ -39,7 +39,7 @@ void apple_display_alert(NSString* message, NSString* title)
           modalDelegate:apple_platform
           didEndSelector:@selector(alertDidEnd:returnCode:contextInfo:)
           contextInfo:nil];
-   [NSApplication.sharedApplication runModalForWindow:alert.window];
+   [[NSApplication sharedApplication] runModalForWindow:alert.window];
 #endif
 }
 

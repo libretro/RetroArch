@@ -24,6 +24,7 @@
 #include <android/looper.h>
 #include <android/native_activity.h>
 #include <android/window.h>
+#include <android/sensor.h>
 
 #include "../../thread.h"
 
@@ -41,6 +42,9 @@ struct android_app
    int msgread;
    int msgwrite;
    int running;
+   unsigned accelerometer_event_rate;
+   const ASensor* accelerometerSensor;
+   uint64_t sensor_state_mask;
    sthread_t *thread;
    char current_ime[PATH_MAX];
 };
@@ -49,6 +53,7 @@ enum {
    LOOPER_ID_MAIN = 1,
    LOOPER_ID_INPUT = 2,
    LOOPER_ID_USER = 3,
+   LOOPER_ID_INPUT_MSG = 4,
 };
 
 enum {
@@ -147,7 +152,7 @@ enum {
    APP_CMD_DEAD,
 };
 
-extern void engine_handle_cmd(void);
+extern void engine_handle_cmd(void*);
 extern JNIEnv *jni_thread_getenv(void);
 
 extern struct android_app *g_android;

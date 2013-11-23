@@ -36,6 +36,120 @@ static void system_deinit(void *data);
 static void system_shutdown(bool unused);
 extern void android_app_entry(void *args);
 
+void engine_handle_cmd(void *data)
+{
+   struct android_app *android_app = (struct android_app*)g_android;
+   int8_t cmd;
+
+   if (read(android_app->msgread, &cmd, sizeof(cmd)) != sizeof(cmd))
+      cmd = -1;
+
+   switch (cmd)
+   {
+      case APP_CMD_INPUT_CHANGED:
+         slock_lock(android_app->mutex);
+
+         if (android_app->inputQueue)
+            AInputQueue_detachLooper(android_app->inputQueue);
+
+         android_app->inputQueue = android_app->pendingInputQueue;
+
+         if (android_app->inputQueue)
+         {
+            RARCH_LOG("Attaching input queue to looper");
+            AInputQueue_attachLooper(android_app->inputQueue,
+                  android_app->looper, LOOPER_ID_INPUT, NULL,
+                  NULL);
+         }
+
+         scond_broadcast(android_app->cond);
+         slock_unlock(android_app->mutex);
+         
+         break;
+
+      case APP_CMD_INIT_WINDOW:
+         slock_lock(android_app->mutex);
+         android_app->window = android_app->pendingWindow;
+         scond_broadcast(android_app->cond);
+         slock_unlock(android_app->mutex);
+
+         if (g_extern.lifecycle_state & (1ULL << RARCH_PAUSE_TOGGLE))
+            init_drivers();
+         break;
+
+      case APP_CMD_RESUME:
+         slock_lock(android_app->mutex);
+         android_app->activityState = cmd;
+         scond_broadcast(android_app->cond);
+         slock_unlock(android_app->mutex);
+         break;
+
+      case APP_CMD_START:
+         slock_lock(android_app->mutex);
+         android_app->activityState = cmd;
+         scond_broadcast(android_app->cond);
+         slock_unlock(android_app->mutex);
+         break;
+
+      case APP_CMD_PAUSE:
+         slock_lock(android_app->mutex);
+         android_app->activityState = cmd;
+         scond_broadcast(android_app->cond);
+         slock_unlock(android_app->mutex);
+
+         if (!(g_extern.lifecycle_state & (1ULL << RARCH_QUIT_KEY)))
+         {
+            RARCH_LOG("Pausing RetroArch.\n");
+            g_extern.lifecycle_state |= (1ULL << RARCH_PAUSE_TOGGLE);
+         }
+         break;
+
+      case APP_CMD_STOP:
+         slock_lock(android_app->mutex);
+         android_app->activityState = cmd;
+         scond_broadcast(android_app->cond);
+         slock_unlock(android_app->mutex);
+         break;
+
+      case APP_CMD_CONFIG_CHANGED:
+         break;
+      case APP_CMD_TERM_WINDOW:
+         slock_lock(android_app->mutex);
+
+         /* The window is being hidden or closed, clean it up. */
+         /* terminate display/EGL context here */
+         if (g_extern.lifecycle_state & (1ULL << RARCH_PAUSE_TOGGLE))
+            uninit_drivers();
+         else
+            RARCH_WARN("Window is terminated outside PAUSED state.\n");
+
+         android_app->window = NULL;
+         scond_broadcast(android_app->cond);
+         slock_unlock(android_app->mutex);
+         break;
+
+      case APP_CMD_GAINED_FOCUS:
+         g_extern.lifecycle_state &= ~(1ULL << RARCH_PAUSE_TOGGLE);
+
+         if ((android_app->sensor_state_mask & (1ULL << RETRO_SENSOR_ACCELEROMETER_ENABLE))
+               && android_app->accelerometerSensor == NULL)
+            android_input_set_sensor_state(driver.input_data, 0, RETRO_SENSOR_ACCELEROMETER_ENABLE,
+                  android_app->accelerometer_event_rate);
+         break;
+      case APP_CMD_LOST_FOCUS:
+         // Avoid draining battery while app is not being used
+         if ((android_app->sensor_state_mask & (1ULL << RETRO_SENSOR_ACCELEROMETER_ENABLE))
+               && android_app->accelerometerSensor != NULL)
+            android_input_set_sensor_state(driver.input_data, 0, RETRO_SENSOR_ACCELEROMETER_DISABLE,
+                  android_app->accelerometer_event_rate);
+         break;
+
+      case APP_CMD_DESTROY:
+         g_extern.lifecycle_state |= (1ULL << RARCH_QUIT_KEY);
+         break;
+   }
+}
+
 static inline void android_app_write_cmd (void *data, int8_t cmd)
 {
    struct android_app *android_app = (struct android_app*)data;
@@ -252,7 +366,7 @@ static bool android_run_events (void *data)
    int id = ALooper_pollOnce(-1, NULL, NULL, NULL);
 
    if (id == LOOPER_ID_MAIN)
-      engine_handle_cmd();
+      engine_handle_cmd(driver.input_data);
 
    // Check if we are exiting.
    if (g_extern.lifecycle_state & (1ULL << RARCH_QUIT_KEY))

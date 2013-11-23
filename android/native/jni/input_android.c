@@ -16,7 +16,6 @@
  */
 
 #include <android/keycodes.h>
-#include <android/sensor.h>
 #include <unistd.h>
 #include <dlfcn.h>
 #include "input_autodetect.h"
@@ -72,14 +71,11 @@ typedef struct android_input
    uint64_t keycode_lut[LAST_KEYCODE];
    analog_t analog_state[MAX_PADS];
    sensor_t accelerometer_state;
-   unsigned accelerometer_event_rate;
    unsigned dpad_emulation[MAX_PLAYERS];
    struct input_pointer pointer[MAX_TOUCH];
    unsigned pointer_count;
    ASensorManager* sensorManager;
-   const ASensor* accelerometerSensor;
    ASensorEventQueue* sensorEventQueue;
-   uint64_t sensor_state_mask;
 } android_input_t;
 
 void (*engine_handle_dpad)(void *data, AInputEvent*, size_t, int, char*, size_t, int, bool, unsigned);
@@ -91,121 +87,6 @@ extern float AMotionEvent_getAxisValue(const AInputEvent* motion_event,
 static typeof(AMotionEvent_getAxisValue) *p_AMotionEvent_getAxisValue;
 
 #define AMotionEvent_getAxisValue (*p_AMotionEvent_getAxisValue)
-
-void engine_handle_cmd(void)
-{
-   struct android_app *android_app = (struct android_app*)g_android;
-   android_input_t *android = (android_input_t*)driver.input_data;
-   int8_t cmd;
-
-   if (read(android_app->msgread, &cmd, sizeof(cmd)) != sizeof(cmd))
-      cmd = -1;
-
-   switch (cmd)
-   {
-      case APP_CMD_INPUT_CHANGED:
-         slock_lock(android_app->mutex);
-
-         if (android_app->inputQueue != NULL)
-            AInputQueue_detachLooper(android_app->inputQueue);
-
-         android_app->inputQueue = android_app->pendingInputQueue;
-
-         if (android_app->inputQueue != NULL)
-         {
-            RARCH_LOG("Attaching input queue to looper");
-            AInputQueue_attachLooper(android_app->inputQueue,
-                  android_app->looper, LOOPER_ID_INPUT, NULL,
-                  NULL);
-         }
-
-         scond_broadcast(android_app->cond);
-         slock_unlock(android_app->mutex);
-         
-         break;
-
-      case APP_CMD_INIT_WINDOW:
-         slock_lock(android_app->mutex);
-         android_app->window = android_app->pendingWindow;
-         scond_broadcast(android_app->cond);
-         slock_unlock(android_app->mutex);
-
-         if (g_extern.lifecycle_state & (1ULL << RARCH_PAUSE_TOGGLE))
-            init_drivers();
-         break;
-
-      case APP_CMD_RESUME:
-         slock_lock(android_app->mutex);
-         android_app->activityState = cmd;
-         scond_broadcast(android_app->cond);
-         slock_unlock(android_app->mutex);
-         break;
-
-      case APP_CMD_START:
-         slock_lock(android_app->mutex);
-         android_app->activityState = cmd;
-         scond_broadcast(android_app->cond);
-         slock_unlock(android_app->mutex);
-         break;
-
-      case APP_CMD_PAUSE:
-         slock_lock(android_app->mutex);
-         android_app->activityState = cmd;
-         scond_broadcast(android_app->cond);
-         slock_unlock(android_app->mutex);
-
-         if (!(g_extern.lifecycle_state & (1ULL << RARCH_QUIT_KEY)))
-         {
-            RARCH_LOG("Pausing RetroArch.\n");
-            g_extern.lifecycle_state |= (1ULL << RARCH_PAUSE_TOGGLE);
-         }
-         break;
-
-      case APP_CMD_STOP:
-         slock_lock(android_app->mutex);
-         android_app->activityState = cmd;
-         scond_broadcast(android_app->cond);
-         slock_unlock(android_app->mutex);
-         break;
-
-      case APP_CMD_CONFIG_CHANGED:
-         break;
-      case APP_CMD_TERM_WINDOW:
-         slock_lock(android_app->mutex);
-
-         /* The window is being hidden or closed, clean it up. */
-         /* terminate display/EGL context here */
-         if (g_extern.lifecycle_state & (1ULL << RARCH_PAUSE_TOGGLE))
-            uninit_drivers();
-         else
-            RARCH_WARN("Window is terminated outside PAUSED state.\n");
-
-         android_app->window = NULL;
-         scond_broadcast(android_app->cond);
-         slock_unlock(android_app->mutex);
-         break;
-
-      case APP_CMD_GAINED_FOCUS:
-         g_extern.lifecycle_state &= ~(1ULL << RARCH_PAUSE_TOGGLE);
-
-         if ((android->sensor_state_mask & (1ULL << RETRO_SENSOR_ACCELEROMETER_ENABLE))
-               && android->accelerometerSensor == NULL)
-            android_input_set_sensor_state(android, 0, RETRO_SENSOR_ACCELEROMETER_ENABLE,
-                  android->accelerometer_event_rate);
-         break;
-      case APP_CMD_LOST_FOCUS:
-         // Avoid draining battery while app is not being used
-         if ((android->sensor_state_mask & (1ULL << RETRO_SENSOR_ACCELEROMETER_ENABLE))
-               && android->accelerometerSensor != NULL)
-            android_input_set_sensor_state(android, 0, RETRO_SENSOR_ACCELEROMETER_DISABLE,
-                  android->accelerometer_event_rate);
-         break;
-
-      case APP_CMD_DESTROY:
-         g_extern.lifecycle_state |= (1ULL << RARCH_QUIT_KEY);
-         break;
-   }
-}
 
 static void engine_handle_dpad_default(void *data, AInputEvent *event,
       size_t motion_pointer, int state_id, char *msg, size_t msg_sizeof,
@@ -1733,6 +1614,7 @@ static void android_input_poll(void *data)
    int ident;
    uint64_t lifecycle_mask = (1ULL << RARCH_RESET) | (1ULL << RARCH_REWIND) | (1ULL << RARCH_FAST_FORWARD_KEY) | (1ULL << RARCH_FAST_FORWARD_HOLD_KEY) | (1ULL << RARCH_MUTE) | (1ULL << RARCH_SAVE_STATE_KEY) | (1ULL << RARCH_LOAD_STATE_KEY) | (1ULL << RARCH_STATE_SLOT_PLUS) | (1ULL << RARCH_STATE_SLOT_MINUS) | (1ULL << RARCH_QUIT_KEY) | (1ULL << RARCH_MENU_TOGGLE);
    uint64_t *lifecycle_state = &g_extern.lifecycle_state;
+   struct android_app *android_app = (struct android_app*)g_android;
    android_input_t *android = (android_input_t*)data;
    *lifecycle_state &= ~lifecycle_mask;
 
@@ -1742,7 +1624,6 @@ static void android_input_poll(void *data)
       if (ident == LOOPER_ID_INPUT)
       {
          bool debug_enable = g_settings.input.debug_enable;
-         struct android_app *android_app = (struct android_app*)g_android;
          AInputEvent* event = NULL;
 
          // Read all pending events.
@@ -1958,7 +1839,7 @@ static void android_input_poll(void *data)
       }
       else if (ident == LOOPER_ID_USER)
       {
-         if (android->sensor_state_mask & (1ULL << RETRO_SENSOR_ACCELEROMETER_ENABLE))
+         if (android_app->sensor_state_mask & (1ULL << RETRO_SENSOR_ACCELEROMETER_ENABLE))
          {
             ASensorEvent event;
             while (ASensorEventQueue_getEvents(android->sensorEventQueue, &event, 1) > 0)
@@ -1970,7 +1851,7 @@ static void android_input_poll(void *data)
          }
       }
       else if (ident == LOOPER_ID_MAIN)
-         engine_handle_cmd();
+         engine_handle_cmd(driver.input_data);
    }
 }
 
@@ -2070,7 +1951,7 @@ static void android_input_enable_sensor_manager(void *data)
    struct android_app *android_app = (struct android_app*)g_android;
 
    android->sensorManager = ASensorManager_getInstance();
-   android->accelerometerSensor = ASensorManager_getDefaultSensor(android->sensorManager,
+   android_app->accelerometerSensor = ASensorManager_getDefaultSensor(android->sensorManager,
          ASENSOR_TYPE_ACCELEROMETER);
    android->sensorEventQueue = ASensorManager_createEventQueue(android->sensorManager,
          android_app->looper, LOOPER_ID_USER, NULL, NULL);
@@ -2079,6 +1960,7 @@ static void android_input_enable_sensor_manager(void *data)
 static bool android_input_set_sensor_state(void *data, unsigned port, enum retro_sensor_action action, unsigned event_rate)
 {
    android_input_t *android = (android_input_t*)data;
+   struct android_app *android_app = (struct android_app*)g_android;
 
    if (event_rate == 0)
       event_rate = 60;
@@ -2086,34 +1968,34 @@ static bool android_input_set_sensor_state(void *data, unsigned port, enum retro
    switch (action)
    {
       case RETRO_SENSOR_ACCELEROMETER_ENABLE:
-         if (android->sensor_state_mask &
+         if (android_app->sensor_state_mask &
                (1ULL << RETRO_SENSOR_ACCELEROMETER_ENABLE))
             return true;
 
-         if (android->accelerometerSensor == NULL)
+         if (android_app->accelerometerSensor == NULL)
             android_input_enable_sensor_manager(android);
 
          ASensorEventQueue_enableSensor(android->sensorEventQueue,
-               android->accelerometerSensor);
+               android_app->accelerometerSensor);
 
          // events per second (in us).
          ASensorEventQueue_setEventRate(android->sensorEventQueue,
-               android->accelerometerSensor, (1000L / event_rate) * 1000);
+               android_app->accelerometerSensor, (1000L / event_rate) * 1000);
 
-         android->sensor_state_mask &= ~(1ULL << RETRO_SENSOR_ACCELEROMETER_DISABLE);
-         android->sensor_state_mask |= (1ULL  << RETRO_SENSOR_ACCELEROMETER_ENABLE);
+         android_app->sensor_state_mask &= ~(1ULL << RETRO_SENSOR_ACCELEROMETER_DISABLE);
+         android_app->sensor_state_mask |= (1ULL  << RETRO_SENSOR_ACCELEROMETER_ENABLE);
          return true;
 
       case RETRO_SENSOR_ACCELEROMETER_DISABLE:
-         if (android->sensor_state_mask &
+         if (android_app->sensor_state_mask &
                (1ULL << RETRO_SENSOR_ACCELEROMETER_DISABLE))
             return true;
 
          ASensorEventQueue_disableSensor(android->sensorEventQueue,
-               android->accelerometerSensor);
+               android_app->accelerometerSensor);
          
-         android->sensor_state_mask &= ~(1ULL << RETRO_SENSOR_ACCELEROMETER_ENABLE);
-         android->sensor_state_mask |= (1ULL  << RETRO_SENSOR_ACCELEROMETER_DISABLE);
+         android_app->sensor_state_mask &= ~(1ULL << RETRO_SENSOR_ACCELEROMETER_ENABLE);
+         android_app->sensor_state_mask |= (1ULL  << RETRO_SENSOR_ACCELEROMETER_DISABLE);
          return true;
 
       default:
