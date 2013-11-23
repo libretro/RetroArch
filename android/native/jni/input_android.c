@@ -64,7 +64,6 @@ enum
 
 typedef struct android_input
 {
-   jmethodID onBackPressed;
    unsigned pads_connected;
    int state_device_ids[MAX_PADS];
    uint64_t state[MAX_PADS];
@@ -174,10 +173,7 @@ static void engine_handle_dpad_getaxisvalue(void *data, AInputEvent *event,
 
 static void *android_input_init(void)
 {
-   JNIEnv *env;
-   jclass class;
    unsigned i, j, k;
-   struct android_app *android_app = (struct android_app*)g_android;
    android_input_t *android = (android_input_t*)calloc(1, sizeof(*android));
    if (!android)
       return NULL;
@@ -254,22 +250,6 @@ static void *android_input_init(void)
       }
    }
 
-   env = jni_thread_getenv();
-   if (!env)
-      goto retobj;
-
-   GET_OBJECT_CLASS(env, class, android_app->activity->clazz);
-   if (!class)
-      goto retobj;
-
-   GET_METHOD_ID(env, android->onBackPressed, class, "onBackPressed", "()V");
-   if (!android->onBackPressed)
-   {
-      RARCH_ERR("Could not set onBackPressed JNI function pointer.\n");
-      goto retobj;
-   }
-
-retobj:
    return android;
 }
 
@@ -1611,16 +1591,28 @@ static void android_input_set_keybinds(void *data, unsigned device,
 
 static void android_input_poll(void *data)
 {
+   JNIEnv *env;
+   jboolean newPendingStateChange;
    int ident;
    uint64_t lifecycle_mask = (1ULL << RARCH_RESET) | (1ULL << RARCH_REWIND) | (1ULL << RARCH_FAST_FORWARD_KEY) | (1ULL << RARCH_FAST_FORWARD_HOLD_KEY) | (1ULL << RARCH_MUTE) | (1ULL << RARCH_SAVE_STATE_KEY) | (1ULL << RARCH_LOAD_STATE_KEY) | (1ULL << RARCH_STATE_SLOT_PLUS) | (1ULL << RARCH_STATE_SLOT_MINUS) | (1ULL << RARCH_QUIT_KEY) | (1ULL << RARCH_MENU_TOGGLE);
    uint64_t *lifecycle_state = &g_extern.lifecycle_state;
    struct android_app *android_app = (struct android_app*)g_android;
    android_input_t *android = (android_input_t*)data;
    *lifecycle_state &= ~lifecycle_mask;
+   
+   env = jni_thread_getenv();
+   if (!env)
+      return;
+
+   CALL_BOOLEAN_METHOD(env, newPendingStateChange, android_app->activity->clazz, android_app->onPendingStateChanges);
+
+   if (newPendingStateChange)
+      android_process_state_changes(android_app);
 
    while ((ident = ALooper_pollAll((input_key_pressed_func(RARCH_PAUSE_TOGGLE)) ? -1 : 0,
                NULL, NULL, NULL)) >= 0)
    {
+
       if (ident == LOOPER_ID_INPUT)
       {
          bool debug_enable = g_settings.input.debug_enable;
@@ -1692,52 +1684,13 @@ static void android_input_poll(void *data)
 
                if (keycode == AKEYCODE_BACK)
                {
-                  if (android->onBackPressed)
-                  {
-                     RARCH_LOG("Invoke onBackPressed through JNI.\n");
-                     JNIEnv *env = jni_thread_getenv();
-                     if (env)
-                     {
-                        CALL_VOID_METHOD(env, android_app->activity->clazz, android->onBackPressed);
-                     }
-                  }
-
-#if 1
                   uint8_t unpacked = (android->keycode_lut[AKEYCODE_BACK] >> ((state_id+1) << 3)) - 1;
                   uint64_t input_state = (1ULL << unpacked);
-                  // FIXME: all of the below will probably all have to be refactored
-                  if (g_extern.lifecycle_state & (1ULL << MODE_INPUT_XPERIA_PLAY_HACK))
-                  {
-                     int meta = AKeyEvent_getMetaState(event);
-                     if (!(meta & AMETA_ALT_ON))
-                     {
-                        *lifecycle_state |= (1ULL << RARCH_QUIT_KEY); 
-                        AInputQueue_finishEvent(android_app->inputQueue, event, handled);
-                        break;
-                     }
-                  }
-                  else if (type_event == AINPUT_EVENT_TYPE_KEY && input_state < (1ULL << RARCH_FIRST_META_KEY)
-                        && input_state > 0)
-                  {
-                  }
-                  else if (g_settings.input.back_behavior == BACK_BUTTON_MENU_TOGGLE)
-                  {
-                     int action = AKeyEvent_getAction(event);
-                     if (action == AKEY_EVENT_ACTION_DOWN)
-                        *lifecycle_state |= (1ULL << RARCH_MENU_TOGGLE);
-                     else if (action == AKEY_EVENT_ACTION_UP)
-                        *lifecycle_state &= ~(1ULL << RARCH_MENU_TOGGLE);
-                     AInputQueue_finishEvent(android_app->inputQueue, event, handled);
-                     break;
-                  }
-                  else
-                  {
-                     // exits the app, so no need to check for up/down action
-                     *lifecycle_state |= (1ULL << RARCH_QUIT_KEY);
-                     AInputQueue_finishEvent(android_app->inputQueue, event, handled);
-                     break;
-                  }
-#endif
+
+                  if (type_event == AINPUT_EVENT_TYPE_KEY && input_state < (1ULL << RARCH_FIRST_META_KEY)
+                        && input_state > 0) { }
+                  else if (android_app->onBackPressed)
+                     back_pressed_exec(android_app);
                }
 
                if (type_event == AINPUT_EVENT_TYPE_MOTION)

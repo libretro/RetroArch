@@ -24,6 +24,7 @@
 #include "platform_android.h"
 #include "../../android/native/jni/jni_macros.h"
 
+#include "../menu/menu_common.h"
 #include "../../conf/config_file.h"
 #include "../../general.h"
 #include "../../file.h"
@@ -361,7 +362,45 @@ void ANativeActivity_onCreate(ANativeActivity* activity,
    activity->instance = android_app;
 }
 
-static bool android_run_events (void *data)
+void android_process_state_changes(void *data)
+{
+   struct android_app* android_app = (struct android_app*)data;
+   JNIEnv *env = jni_thread_getenv();
+   jstring jstr;
+   if (!env)
+      return;
+
+   RARCH_LOG("android_process_state_changes.\n");
+
+   CALL_OBJ_STATIC_METHOD(env, jstr, android_app->activity->clazz, android_app->getCorePath);
+   if (jstr != NULL)
+   {
+      RARCH_LOG("android_process_state_changes - set libretro core.\n");
+      const char *media = (*env)->GetStringUTFChars(env, jstr, 0);
+      strlcpy(g_settings.libretro, media, sizeof(g_settings.libretro));
+      menu_core_initialize();
+      (*env)->ReleaseStringUTFChars(env, jstr, media);
+   }
+
+   CALL_OBJ_STATIC_METHOD(env, jstr, android_app->activity->clazz, android_app->getFullPath);
+   if (jstr != NULL)
+   {
+      RARCH_LOG("android_process_state_changes - attempt to load game...\n");
+      const char *media = (*env)->GetStringUTFChars(env, jstr, 0);
+      strlcpy(g_extern.fullpath, media, sizeof(g_extern.fullpath));
+      (*env)->ReleaseStringUTFChars(env, jstr, media);
+
+      g_extern.lifecycle_state &= ~(1ULL << MODE_GAME);
+      g_extern.lifecycle_state &= ~(1ULL << MODE_MENU);
+      g_extern.lifecycle_state |= (1ULL << MODE_LOAD_GAME);
+
+      // push to ROM history.
+      if (!g_extern.libretro_dummy)
+         menu_rom_history_push_current();
+   }
+}
+
+static bool android_run_events(void *data)
 {
    int id = ALooper_pollOnce(-1, NULL, NULL, NULL);
 
@@ -375,89 +414,16 @@ static bool android_run_events (void *data)
    return true;
 }
 
-static void jni_get_intent_variable(void *data, void *data_in, void *data_out)
-{
-   JNIEnv *env;
-   struct android_app* android_app = (struct android_app*)data;
-   struct jni_params *in_params = (struct jni_params*)data_in;
-   struct jni_out_params_char *out_args = (struct jni_out_params_char*)data_out;
-   jclass class = NULL;
-   jobject obj = NULL;
-   jmethodID giid = NULL;
-   jstring jstr = NULL;
-
-   if (!android_app)
-      return;
-
-   env = jni_thread_getenv();
-   if (!env)
-      return;
-
-   GET_OBJECT_CLASS(env, class, android_app->activity->clazz);
-   GET_METHOD_ID(env, giid, class, in_params->method_name, in_params->method_signature);
-   CALL_OBJ_METHOD(env, obj, android_app->activity->clazz, giid);
-
-   if (in_params->submethod_name &&
-         in_params->submethod_signature)
-   {
-      GET_OBJECT_CLASS(env, class, obj);
-      GET_METHOD_ID(env, giid, class, in_params->submethod_name, in_params->submethod_signature);
-
-      CALL_OBJ_METHOD_PARAM(env, jstr, obj, giid, (*env)->NewStringUTF(env, out_args->in));
-   }
-
-   if (giid && jstr)
-   {
-      const char *argv = (*env)->GetStringUTFChars(env, jstr, 0);
-      strlcpy(out_args->out, argv, out_args->out_sizeof);
-      (*env)->ReleaseStringUTFChars(env, jstr, argv);
-   }
-}
-
 static void get_environment_settings(int argc, char *argv[], void *data)
 {
    struct android_app* android_app = (struct android_app*)data;
 
-   struct jni_params in_params;
-   struct jni_out_params_char out_args;
-
-   strlcpy(in_params.method_name, "getIntent", sizeof(in_params.method_name));
-   strlcpy(in_params.method_signature, "()Landroid/content/Intent;", sizeof(in_params.method_signature));
-   strlcpy(in_params.submethod_name, "getStringExtra", sizeof(in_params.submethod_name));
-   strlcpy(in_params.submethod_signature, "(Ljava/lang/String;)Ljava/lang/String;", sizeof(in_params.submethod_signature));
-
-   // ROM
-   out_args.out = g_extern.fullpath;
-   out_args.out_sizeof = sizeof(g_extern.fullpath);
-   strlcpy(out_args.in, "ROM", sizeof(out_args.in));
-   jni_get_intent_variable(android_app, &in_params, &out_args);
-
-   // Config file
-   out_args.out = g_extern.config_path;
-   out_args.out_sizeof = sizeof(g_extern.config_path);
-   strlcpy(out_args.in, "CONFIGFILE", sizeof(out_args.in));
-   jni_get_intent_variable(android_app, &in_params, &out_args);
-
-   // Current IME
-   out_args.out = android_app->current_ime;
-   out_args.out_sizeof = sizeof(android_app->current_ime);
-   strlcpy(out_args.in, "IME", sizeof(out_args.in));
-   jni_get_intent_variable(android_app, &in_params, &out_args);
+   config_load();
 
    RARCH_LOG("Checking arguments passed ...\n");
    RARCH_LOG("ROM Filename: [%s].\n", g_extern.fullpath);
    RARCH_LOG("Config file: [%s].\n", g_extern.config_path);
    RARCH_LOG("Current IME: [%s].\n", android_app->current_ime);
-
-   config_load();
-
-   // libretro
-   out_args.out = g_settings.libretro;
-   out_args.out_sizeof = sizeof(g_settings.libretro);
-   strlcpy(out_args.in, "LIBRETRO", sizeof(out_args.in));
-   jni_get_intent_variable(android_app, &in_params, &out_args);
-
-   RARCH_LOG("Checking arguments passed ...\n");
    RARCH_LOG("Libretro path: [%s].\n", g_settings.libretro);
 }
 
@@ -471,8 +437,20 @@ static int process_events(void *data)
    return 0;
 }
 
+void back_pressed_exec(void *data)
+{
+   struct android_app* android_app = (struct android_app*)data;
+   JNIEnv *env = jni_thread_getenv();
+   if (!env)
+      return;
+
+   CALL_VOID_METHOD(env, android_app->activity->clazz, android_app->onBackPressed);
+}
+
 static void system_init(void *data)
 {
+   JNIEnv *env;
+   jclass class;
    struct android_app* android_app = (struct android_app*)data;
 
    ALooper* looper = ALooper_prepare(ALOOPER_PREPARE_ALLOW_NON_CALLBACKS);
@@ -499,6 +477,32 @@ static void system_init(void *data)
          system_shutdown(android_app);
       }
    }
+
+   env = jni_thread_getenv();
+   if (!env)
+      return;
+
+   GET_OBJECT_CLASS(env, class, android_app->activity->clazz);
+   if (class == NULL)
+      return;
+
+   GET_METHOD_ID(env, android_app->onBackPressed, class, "onBackPressed", "()V");
+   if (!android_app->onBackPressed)
+      return;
+
+   GET_METHOD_ID(env, android_app->onPendingStateChanges, class, "onPendingStateChanges", "()Z");
+   if (!android_app->onPendingStateChanges)
+      return;
+
+   GET_STATIC_METHOD_ID(env, android_app->getFullPath, class, "getFullPath", "()Ljava/lang/String;");
+   if (!android_app->getFullPath)
+      return;
+
+   GET_STATIC_METHOD_ID(env, android_app->getCorePath, class, "getCorePath", "()Ljava/lang/String;");
+   if (!android_app->getCorePath)
+      return;
+
+   back_pressed_exec(android_app);
 }
 
 static void system_deinit(void *data)

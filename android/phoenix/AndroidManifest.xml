@@ -18,11 +18,6 @@
         android:hasCode="true">
         <activity android:name="com.retroarch.browser.DisplayRefreshRateTest"/>
         <activity android:name="com.retroarch.browser.mainmenu.MainMenuActivity" android:exported="true">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-                <category android:name="tv.ouya.intent.category.GAME" />
-            </intent-filter>
         </activity>
         <activity android:name="com.retroarch.browser.FileWrapper"/>
         <activity android:name="com.retroarch.browser.RetroTVMode"/>
@@ -33,6 +28,11 @@
         <activity android:name="com.retroarch.browser.RetroActivity" android:configChanges="mcc|mnc|locale|touchscreen|keyboard|keyboardHidden|navigation|orientation|screenLayout|uiMode|screenSize|smallestScreenSize|fontScale" android:theme="@android:style/Theme.NoTitleBar.Fullscreen" >
             <meta-data android:name="android.app.lib_name" android:value="retroarch-activity" />
             <meta-data android:name="android.app.func_name" android:value="ANativeActivity_onCreate" />
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+                <category android:name="tv.ouya.intent.category.GAME" />
+            </intent-filter>
         </activity>
     </application>
 </manifest>

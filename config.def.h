@@ -318,6 +318,8 @@ static const char *default_shader_dir = NULL;
 
 #if defined(__QNX__)
 static const char *default_config_path = "app/native/retroarch.cfg";
+#elif defined(ANDROID)
+static const char *default_config_path = "/data/data/com.retroarch/retroarch.cfg";
 #else
 static const char *default_config_path = NULL;
 #endif

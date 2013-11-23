@@ -47,6 +47,14 @@ struct android_app
    uint64_t sensor_state_mask;
    sthread_t *thread;
    char current_ime[PATH_MAX];
+   jmethodID onBackPressed;
+   jmethodID getIME;
+   jmethodID getFullPath;
+   jmethodID getCorePath;
+   jmethodID onSetIME;
+   jmethodID onSetFullPath;
+   jmethodID onSetCorePath;
+   jmethodID onPendingStateChanges;
 };
 
 enum {
@@ -153,6 +161,8 @@ enum {
 };
 
 extern void engine_handle_cmd(void*);
+extern void back_pressed_exec(void*);
+extern void android_process_state_changes(void *data);
 extern JNIEnv *jni_thread_getenv(void);
 
 extern struct android_app *g_android;
