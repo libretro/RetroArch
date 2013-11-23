@@ -346,8 +346,7 @@ public final class MainMenuFragment extends PreferenceListFragment implements On
 		// Load Core Preference
 		else if (prefKey.equals("loadCorePref"))
 		{
-			final CoreSelection coreSelection = new CoreSelection();
-			coreSelection.show(getFragmentManager(), "core_selection");
+			CoreSelection.newInstance().show(getFragmentManager(), "core_selection");
 		}
 		// Load ROM Preference
 		else if (prefKey.equals("loadRomPref"))
@@ -375,8 +374,7 @@ public final class MainMenuFragment extends PreferenceListFragment implements On
 		// Load ROM (History) Preference
 		else if (prefKey.equals("loadRomHistoryPref"))
 		{
-			final HistorySelection historySelection = new HistorySelection();
-			historySelection.show(getFragmentManager(), "history_selection");
+			HistorySelection.newInstance().show(getFragmentManager(), "history_selection");
 		}
 
 		return true;
