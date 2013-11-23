@@ -284,7 +284,8 @@ static void *lima_gfx_init(const video_info_t *video, const input_driver_t **inp
    if (!vid->screen)
    {
       RARCH_ERR("Failed to init SDL surface: %s\n", SDL_GetError());
-      goto error;
+      lima_gfx_free(vid);
+      return NULL;
    }
 
    SDL_ShowCursor(SDL_DISABLE);
@@ -311,10 +312,6 @@ static void *lima_gfx_init(const video_info_t *video, const input_driver_t **inp
    vid->scaler.out_fmt = SCALER_FMT_ABGR8888;
 
    return vid;
-
-error:
-   lima_gfx_free(vid);
-   return NULL;
 }
 
 static void check_window(lima_video_t *vid)
