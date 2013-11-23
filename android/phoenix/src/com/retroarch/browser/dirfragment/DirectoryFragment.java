@@ -320,7 +320,7 @@ public final class DirectoryFragment extends DialogFragment
 	 * It is possible to specify more than one allowed extension by
 	 * simply calling this method with a different file extension specified.
 	 * 
-	 * @param ext The file extension(s) to allow being shown in this DirectoryFragment.
+	 * @param exts The file extension(s) to allow being shown in this DirectoryFragment.
 	 */
 	public void addAllowedExts(String... exts)
 	{
