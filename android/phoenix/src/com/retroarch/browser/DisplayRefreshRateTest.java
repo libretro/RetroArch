@@ -107,13 +107,11 @@ public final class DisplayRefreshRateTest extends Activity {
 		}
 	}
 
-	private GLSurfaceView surfaceView;
-	
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		Toast.makeText(this, R.string.touch_screen_with_fingers, Toast.LENGTH_LONG).show();
-		surfaceView = new GLSurfaceView(this);
+		final GLSurfaceView surfaceView = new GLSurfaceView(this);
 		surfaceView.setEGLContextClientVersion(2);
 		surfaceView.setRenderer(new Renderer(this));
 		getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
