@@ -25,21 +25,21 @@ interface IconAdapterItem {
 	 * 
 	 * @return true if this item is enabled; false otherwise.
 	 */
-	public boolean isEnabled();
+	boolean isEnabled();
 
 	/**
 	 * Gets the title text of this IconAdapterItem.
 	 * 
 	 * @return the title text of this IconAdapterItem.
 	 */
-	public String getText();
+	String getText();
 
 	/**
 	 * Gets the subtitle text of this IconAdapterItem.
 	 * 
 	 * @return the subtitle text of this IconAdapterItem.
 	 */
-	public String getSubText();
+	String getSubText();
 
 	/**
 	 * Gets the resource ID of the icon to display
@@ -49,7 +49,7 @@ interface IconAdapterItem {
 	 * 
 	 * @return the resource ID of this IconAdapterItem's icon.
 	 */
-	public int getIconResourceId();
+	int getIconResourceId();
 
 	/**
 	 * Gets the actual {@link Drawable} object that represents
@@ -59,7 +59,7 @@ interface IconAdapterItem {
 	 * 
 	 * @return the actual {@link Drawable} of this IconAdapterItem's icon.
 	 */
-	public Drawable getIconDrawable();
+	Drawable getIconDrawable();
 }
 
 
