@@ -379,10 +379,7 @@ static void get_environment_settings(int argc, char *argv[], void *data)
 {
    JNIEnv *env;
    struct android_app* android_app = (struct android_app*)data;
-   jclass class = NULL;
    jobject obj = NULL;
-   jmethodID getIntent = NULL;
-   jmethodID getStringExtra = NULL;
    jstring jstr = NULL;
    bool valschanged = false;
 
@@ -393,17 +390,12 @@ static void get_environment_settings(int argc, char *argv[], void *data)
    if (!env)
       return;
 
-   GET_OBJECT_CLASS(env, class, android_app->activity->clazz);
-   GET_METHOD_ID(env, getIntent, class, "getIntent", "()Landroid/content/Intent;");
-   CALL_OBJ_METHOD(env, obj, android_app->activity->clazz, getIntent);
-
-   GET_OBJECT_CLASS(env, class, obj);
-   GET_METHOD_ID(env, getStringExtra, class, "getStringExtra", "(Ljava/lang/String;)Ljava/lang/String;");
+   CALL_OBJ_METHOD(env, obj, android_app->activity->clazz, android_app->getIntent);
 
    // ROM
-   CALL_OBJ_METHOD_PARAM(env, jstr, obj, getStringExtra, (*env)->NewStringUTF(env, "ROM"));
+   CALL_OBJ_METHOD_PARAM(env, jstr, obj, android_app->getStringExtra, (*env)->NewStringUTF(env, "ROM"));
 
-   if (getStringExtra && jstr)
+   if (android_app->getStringExtra && jstr)
    {
       const char *argv = (*env)->GetStringUTFChars(env, jstr, 0);
       strlcpy(g_extern.fullpath, argv, sizeof(g_extern.fullpath));
@@ -413,9 +405,9 @@ static void get_environment_settings(int argc, char *argv[], void *data)
    }
 
    // Config file
-   CALL_OBJ_METHOD_PARAM(env, jstr, obj, getStringExtra, (*env)->NewStringUTF(env, "CONFIGFILE"));
+   CALL_OBJ_METHOD_PARAM(env, jstr, obj, android_app->getStringExtra, (*env)->NewStringUTF(env, "CONFIGFILE"));
 
-   if (getStringExtra && jstr)
+   if (android_app->getStringExtra && jstr)
    {
       const char *argv = (*env)->GetStringUTFChars(env, jstr, 0);
       strlcpy(g_extern.config_path, argv, sizeof(g_extern.config_path));
@@ -425,9 +417,9 @@ static void get_environment_settings(int argc, char *argv[], void *data)
    }
 
    // Current IME
-   CALL_OBJ_METHOD_PARAM(env, jstr, obj, getStringExtra, (*env)->NewStringUTF(env, "IME"));
+   CALL_OBJ_METHOD_PARAM(env, jstr, obj, android_app->getStringExtra, (*env)->NewStringUTF(env, "IME"));
 
-   if (getStringExtra && jstr)
+   if (android_app->getStringExtra && jstr)
    {
       const char *argv = (*env)->GetStringUTFChars(env, jstr, 0);
       strlcpy(android_app->current_ime, argv, sizeof(android_app->current_ime));
@@ -449,9 +441,9 @@ static void get_environment_settings(int argc, char *argv[], void *data)
    }
 
    //LIBRETRO
-   CALL_OBJ_METHOD_PARAM(env, jstr, obj, getStringExtra, (*env)->NewStringUTF(env, "LIBRETRO"));
+   CALL_OBJ_METHOD_PARAM(env, jstr, obj, android_app->getStringExtra, (*env)->NewStringUTF(env, "LIBRETRO"));
 
-   if (getStringExtra && jstr)
+   if (android_app->getStringExtra && jstr)
    {
       const char *argv = (*env)->GetStringUTFChars(env, jstr, 0);
       strlcpy(g_settings.libretro, argv, sizeof(g_settings.libretro));
@@ -474,6 +466,9 @@ static int process_events(void *data)
 
 static void system_init(void *data)
 {
+   JNIEnv *env;
+   jclass class = NULL;
+   jobject obj = NULL;
    struct android_app* android_app = (struct android_app*)data;
 
    ALooper* looper = ALooper_prepare(ALOOPER_PREPARE_ALLOW_NON_CALLBACKS);
@@ -500,6 +495,17 @@ static void system_init(void *data)
          system_shutdown(android_app);
       }
    }
+
+   env = jni_thread_getenv();
+   if (!env)
+      return;
+
+   GET_OBJECT_CLASS(env, class, android_app->activity->clazz);
+   GET_METHOD_ID(env, android_app->getIntent, class, "getIntent", "()Landroid/content/Intent;");
+   CALL_OBJ_METHOD(env, obj, android_app->activity->clazz, android_app->getIntent);
+
+   GET_OBJECT_CLASS(env, class, obj);
+   GET_METHOD_ID(env, android_app->getStringExtra, class, "getStringExtra", "(Ljava/lang/String;)Ljava/lang/String;");
 }
 
 static void system_deinit(void *data)

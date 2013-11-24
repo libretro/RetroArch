@@ -47,6 +47,8 @@ struct android_app
    uint64_t sensor_state_mask;
    sthread_t *thread;
    char current_ime[PATH_MAX];
+   jmethodID getIntent;
+   jmethodID getStringExtra;
 };
 
 enum {
