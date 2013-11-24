@@ -140,6 +140,9 @@ static const video_driver_t *video_drivers[] = {
 #ifdef HAVE_OMAP
    &video_omap,
 #endif
+#ifdef HAVE_EXYNOS
+   &video_exynos,
+#endif
    NULL,
 };
 

@@ -626,6 +626,7 @@ extern const video_driver_t video_vg;
 extern const video_driver_t video_null;
 extern const video_driver_t video_lima;
 extern const video_driver_t video_omap;
+extern const video_driver_t video_exynos;
 extern const input_driver_t input_android;
 extern const input_driver_t input_sdl;
 extern const input_driver_t input_dinput;

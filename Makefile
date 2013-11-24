@@ -220,6 +220,12 @@ ifeq ($(HAVE_OMAP), 1)
    OBJ += gfx/omap_gfx.o
 endif
 
+ifeq ($(HAVE_EXYNOS), 1)
+   OBJ += gfx/exynos_gfx.o memcpy-neon.o
+   LIBS += $(DRM_LIBS) $(EXYNOS_LIBS)
+   DEFINES += $(DRM_CFLAGS) $(EXYNOS_CFLAGS)
+endif
+
 ifeq ($(HAVE_OPENGL), 1)
    OBJ += gfx/gl.o \
 			 gfx/gfx_context.o \
