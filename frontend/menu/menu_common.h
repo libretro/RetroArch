@@ -355,6 +355,7 @@ void menu_init_core_info(void *data);
 void load_menu_game_prepare(void);
 bool load_menu_game(void);
 void load_menu_game_history(unsigned game_index);
+extern void load_menu_game_new_core(void);
 void menu_rom_history_push(const char *path, const char *core_path,
       const char *core_name);
 void menu_rom_history_push_current(void);

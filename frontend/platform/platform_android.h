@@ -49,6 +49,12 @@ struct android_app
    char current_ime[PATH_MAX];
    jmethodID getIntent;
    jmethodID getStringExtra;
+   jmethodID clearPendingIntent;
+   jmethodID hasPendingIntent;
+   jmethodID getPendingIntentConfigPath;
+   jmethodID getPendingIntentLibretroPath;
+   jmethodID getPendingIntentFullPath;
+   jmethodID getPendingIntentIME;
 };
 
 enum {

@@ -62,4 +62,9 @@
             </Preference>
         </PreferenceCategory>
     </PreferenceScreen>
+    
+    <!-- Quit RetroArch -->
+    <Preference
+        android:key="quitRetroArch"
+        android:title="@string/quit"/>
 </PreferenceScreen>

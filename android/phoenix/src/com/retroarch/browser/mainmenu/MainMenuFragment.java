@@ -59,6 +59,7 @@ public final class MainMenuFragment extends PreferenceListFragment implements On
 		findPreference("loadCorePref").setOnPreferenceClickListener(this);
 		findPreference("loadRomPref").setOnPreferenceClickListener(this);
 		findPreference("loadRomHistoryPref").setOnPreferenceClickListener(this);
+		findPreference("quitRetroArch").setOnPreferenceClickListener(this);
 
 		// Extract assets. 
 		extractAssets();
@@ -341,7 +342,6 @@ public final class MainMenuFragment extends PreferenceListFragment implements On
 			retro.putExtra("LIBRETRO", libretro_path);
 			retro.putExtra("CONFIGFILE", UserPreferences.getDefaultConfigPath(ctx));
 			retro.putExtra("IME", current_ime);
-			retro.putExtra("USED", "false");
 			startActivity(retro);
 		}
 		// Load Core Preference
@@ -349,6 +349,12 @@ public final class MainMenuFragment extends PreferenceListFragment implements On
 		{
 			final CoreSelection coreSelection = new CoreSelection();
 			coreSelection.show(getFragmentManager(), "core_selection");
+		}
+		// Quit RetroArch preference
+		else if (prefKey.equals("quitRetroArch"))
+		{
+			// TODO - needs to close entire app gracefully - including
+			// NativeActivity if possible
 		}
 		// Load ROM Preference
 		else if (prefKey.equals("loadRomPref"))
@@ -397,7 +403,6 @@ public final class MainMenuFragment extends PreferenceListFragment implements On
 		retro.putExtra("LIBRETRO", libretro_path);
 		retro.putExtra("CONFIGFILE", UserPreferences.getDefaultConfigPath(ctx));
 		retro.putExtra("IME", current_ime);
-		retro.putExtra("USED", "false");
 		startActivity(retro);
 	}
 }
