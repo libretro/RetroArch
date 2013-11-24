@@ -19,22 +19,6 @@
 
 #include <jni.h>
 
-struct jni_params
-{
-   char class_name[128];
-   char method_name[128];
-   char method_signature[128];
-   char submethod_name[128];
-   char submethod_signature[128];
-};
-
-struct jni_out_params_char
-{
-   char *out;
-   size_t out_sizeof;
-   char in[128];
-};
-
 #define JNI_EXCEPTION(env) \
    if ((*env)->ExceptionOccurred(env)) \
    { \
