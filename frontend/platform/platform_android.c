@@ -391,10 +391,10 @@ static void get_environment_settings(int argc, char *argv[], void *data)
       return;
 
    CALL_OBJ_METHOD(env, obj, android_app->activity->clazz, android_app->getIntent);
+   RARCH_LOG("Checking arguments passed from intent...\n");
 
    // ROM
    CALL_OBJ_METHOD_PARAM(env, jstr, obj, android_app->getStringExtra, (*env)->NewStringUTF(env, "ROM"));
-
    if (android_app->getStringExtra && jstr)
    {
       const char *argv = (*env)->GetStringUTFChars(env, jstr, 0);
@@ -402,11 +402,11 @@ static void get_environment_settings(int argc, char *argv[], void *data)
       (*env)->ReleaseStringUTFChars(env, jstr, argv);
 
       valschanged = true;
+      RARCH_LOG("ROM Filename: [%s].\n", g_extern.fullpath);
    }
 
    // Config file
    CALL_OBJ_METHOD_PARAM(env, jstr, obj, android_app->getStringExtra, (*env)->NewStringUTF(env, "CONFIGFILE"));
-
    if (android_app->getStringExtra && jstr)
    {
       const char *argv = (*env)->GetStringUTFChars(env, jstr, 0);
@@ -414,11 +414,11 @@ static void get_environment_settings(int argc, char *argv[], void *data)
       (*env)->ReleaseStringUTFChars(env, jstr, argv);
 
       valschanged = true;
+      RARCH_LOG("Config file: [%s].\n", g_extern.config_path);
    }
 
    // Current IME
    CALL_OBJ_METHOD_PARAM(env, jstr, obj, android_app->getStringExtra, (*env)->NewStringUTF(env, "IME"));
-
    if (android_app->getStringExtra && jstr)
    {
       const char *argv = (*env)->GetStringUTFChars(env, jstr, 0);
@@ -426,12 +426,18 @@ static void get_environment_settings(int argc, char *argv[], void *data)
       (*env)->ReleaseStringUTFChars(env, jstr, argv);
 
       valschanged = true;
+      RARCH_LOG("Current IME: [%s].\n", android_app->current_ime);
    }
 
-   RARCH_LOG("Checking arguments passed from intent...\n");
-   RARCH_LOG("ROM Filename: [%s].\n", g_extern.fullpath);
-   RARCH_LOG("Config file: [%s].\n", g_extern.config_path);
-   RARCH_LOG("Current IME: [%s].\n", android_app->current_ime);
+   CALL_OBJ_METHOD_PARAM(env, jstr, obj, android_app->getStringExtra, (*env)->NewStringUTF(env, "USED"));
+   if (android_app->getStringExtra && jstr)
+   {
+      const char *argv = (*env)->GetStringUTFChars(env, jstr, 0);
+      bool used = (strcmp(argv, "false") == 0) ? false : true;
+      RARCH_LOG("USED: [%s].\n", used ? "true" : "false");
+      (*env)->ReleaseStringUTFChars(env, jstr, argv);
+   }
+
 
    if (valschanged)
    {

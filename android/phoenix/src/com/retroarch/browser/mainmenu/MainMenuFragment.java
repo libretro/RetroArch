@@ -336,12 +336,13 @@ public final class MainMenuFragment extends PreferenceListFragment implements On
 
 			final SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(ctx);
 			final String libretro_path = prefs.getString("libretro_path", ctx.getApplicationInfo().dataDir + "/cores");
-			final Intent rgui = new Intent(ctx, RetroActivity.class);
+			final Intent retro = new Intent(ctx, RetroActivity.class);
 			final String current_ime = Settings.Secure.getString(ctx.getContentResolver(), Settings.Secure.DEFAULT_INPUT_METHOD);
-			rgui.putExtra("LIBRETRO", libretro_path);
-			rgui.putExtra("CONFIGFILE", UserPreferences.getDefaultConfigPath(ctx));
-			rgui.putExtra("IME", current_ime);
-			startActivity(rgui);
+			retro.putExtra("LIBRETRO", libretro_path);
+			retro.putExtra("CONFIGFILE", UserPreferences.getDefaultConfigPath(ctx));
+			retro.putExtra("IME", current_ime);
+			retro.putExtra("USED", "false");
+			startActivity(retro);
 		}
 		// Load Core Preference
 		else if (prefKey.equals("loadCorePref"))
@@ -396,6 +397,7 @@ public final class MainMenuFragment extends PreferenceListFragment implements On
 		retro.putExtra("LIBRETRO", libretro_path);
 		retro.putExtra("CONFIGFILE", UserPreferences.getDefaultConfigPath(ctx));
 		retro.putExtra("IME", current_ime);
+		retro.putExtra("USED", "false");
 		startActivity(retro);
 	}
 }
