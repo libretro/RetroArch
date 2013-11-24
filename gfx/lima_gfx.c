@@ -187,7 +187,7 @@ static void lima_render_msg(lima_video_t *vid, SDL_Surface *buffer,
 
       if (vid->scaler.in_fmt == SCALER_FMT_ARGB8888)
       {
-    	 uint32_t *out = (uint32_t*)buffer->pixels + base_y * (buffer->pitch >> 2) + base_x;
+         uint32_t *out = (uint32_t*)buffer->pixels + base_y * (buffer->pitch >> 2) + base_x;
 
          for (y = 0; y < glyph_height; y++, src += head->pitch, out += buffer->pitch >> 2)
          {
@@ -208,7 +208,7 @@ static void lima_render_msg(lima_video_t *vid, SDL_Surface *buffer,
       }
       else
       {
-    	 uint16_t *out = (uint16_t*)buffer->pixels + base_y * (buffer->pitch >> 1) + base_x;
+         uint16_t *out = (uint16_t*)buffer->pixels + base_y * (buffer->pitch >> 1) + base_x;
 
          for (y = 0; y < glyph_height; y++, src += head->pitch, out += buffer->pitch >> 1)
          {
