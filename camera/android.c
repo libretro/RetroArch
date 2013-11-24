@@ -158,7 +158,7 @@ static bool android_camera_poll(void *data, retro_camera_frame_raw_framebuffer_t
    (void)frame_raw_cb;
 
    jboolean newFrame;
-   RARCH_LOG("android_camera_poll - CALL_BOOLEAN_METHOD(env, newFrame, android_app->activity->clazz, androidcamera->onCameraPoll)\n");
+   //RARCH_LOG("android_camera_poll - CALL_BOOLEAN_METHOD(env, newFrame, android_app->activity->clazz, androidcamera->onCameraPoll)\n");
    CALL_BOOLEAN_METHOD(env, newFrame, android_app->activity->clazz, androidcamera->onCameraPoll);
 
    if (newFrame)
