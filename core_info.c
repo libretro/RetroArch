@@ -55,7 +55,8 @@ static void core_info_list_resolve_all_extensions(core_info_list_t *core_info_li
 
 static void core_info_list_resolve_all_firmware(core_info_list_t *core_info_list)
 {
-   size_t i, c;
+   size_t i;
+   unsigned c;
    for (i = 0; i < core_info_list->count; i++)
    {
       core_info_t *info = &core_info_list->list[i];
