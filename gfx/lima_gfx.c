@@ -185,22 +185,51 @@ static void lima_render_msg(lima_video_t *vid, SDL_Surface *buffer,
       if (glyph_height > max_height)
          glyph_height = max_height;
 
-      uint32_t *out = (uint32_t*)buffer->pixels + base_y * (buffer->pitch >> 2) + base_x;
-
-      for (y = 0; y < glyph_height; y++, src += head->pitch, out += buffer->pitch >> 2)
+      if (vid->scaler.in_fmt == SCALER_FMT_ARGB8888)
       {
-         for (x = 0; x < glyph_width; x++)
-         {
-            unsigned blend = src[x];
-            unsigned out_pix = out[x];
-            unsigned r = (out_pix >> rshift) & 0xff;
-            unsigned g = (out_pix >> gshift) & 0xff;
-            unsigned b = (out_pix >> bshift) & 0xff;
+    	 uint32_t *out = (uint32_t*)buffer->pixels + base_y * (buffer->pitch >> 2) + base_x;
 
-            unsigned out_r = (r * (256 - blend) + vid->font_b * blend) >> 8;
-            unsigned out_g = (g * (256 - blend) + vid->font_g * blend) >> 8;
-            unsigned out_b = (b * (256 - blend) + vid->font_r * blend) >> 8;
-            out[x] = (out_r << rshift) | (out_g << gshift) | (out_b << bshift);
+         for (y = 0; y < glyph_height; y++, src += head->pitch, out += buffer->pitch >> 2)
+         {
+            for (x = 0; x < glyph_width; x++)
+            {
+               unsigned blend = src[x];
+               unsigned out_pix = out[x];
+               unsigned r = (out_pix >> rshift) & 0xff;
+               unsigned g = (out_pix >> gshift) & 0xff;
+               unsigned b = (out_pix >> bshift) & 0xff;
+
+               unsigned out_r = (r * (256 - blend) + vid->font_b * blend) >> 8;
+               unsigned out_g = (g * (256 - blend) + vid->font_g * blend) >> 8;
+               unsigned out_b = (b * (256 - blend) + vid->font_r * blend) >> 8;
+               out[x] = (out_r << rshift) | (out_g << gshift) | (out_b << bshift);
+            }
+         }
+      }
+      else
+      {
+    	 uint16_t *out = (uint16_t*)buffer->pixels + base_y * (buffer->pitch >> 1) + base_x;
+
+         for (y = 0; y < glyph_height; y++, src += head->pitch, out += buffer->pitch >> 1)
+         {
+            for (x = 0; x < glyph_width; x++)
+            {
+               uint8_t blend = src[x];
+               uint16_t out_pix = out[x];
+
+               uint8_t b = (out_pix >>  0) & 0x1f;
+               uint8_t g = (out_pix >>  5) & 0x3f;
+               uint8_t r = (out_pix >> 11) & 0x1f;
+               b = (b << 3) | (b >> 2);
+               g = (g << 2) | (g >> 4);
+               r = (r << 3) | (r >> 2);
+
+               uint8_t out_r = (r * (256 - blend) + vid->font_r * blend) >> 8;
+               uint8_t out_g = (g * (256 - blend) + vid->font_g * blend) >> 8;
+               uint8_t out_b = (b * (256 - blend) + vid->font_b * blend) >> 8;
+
+               out[x] = (((out_r) << 8) & fmt->Rmask) | (((out_g) << 3) & fmt->Gmask) | (((out_b) >> 3) & fmt->Bmask);
+            }
          }
       }
    }
@@ -278,9 +307,7 @@ static void *lima_gfx_init(const video_info_t *video, const input_driver_t **inp
    vid->screen = SDL_CreateRGBSurface(SDL_HWSURFACE | SDL_HWACCEL | SDL_DOUBLEBUF, g_extern.system.av_info.geometry.base_width, g_extern.system.av_info.geometry.base_height, 32, 0, 0, 0, 0);
 
    RARCH_LOG("New game texture size w = %d h = %d\n", g_extern.system.av_info.geometry.base_width, g_extern.system.av_info.geometry.base_height);
-   // We assume that SDL chooses ARGB8888.
-   // Assuming this simplifies the driver *a ton*.
-   // And use it also for limadriver is also good for now ;)
+
    if (!vid->screen)
    {
       RARCH_ERR("Failed to init SDL surface: %s\n", SDL_GetError());
@@ -349,7 +376,10 @@ static bool lima_gfx_frame(void *data, const void *frame, unsigned width, unsign
    {
       RARCH_LOG("New game texture size w = %d h = %d\n", width, height);
       SDL_FreeSurface(vid->screen);
-      vid->screen = SDL_CreateRGBSurface(SDL_HWSURFACE | SDL_HWACCEL | SDL_DOUBLEBUF, width, height, 32, 0, 0, 0, 0);
+      if (vid->scaler.in_fmt == SCALER_FMT_RGB565)
+         vid->screen = SDL_CreateRGBSurface(SDL_HWSURFACE | SDL_HWACCEL | SDL_DOUBLEBUF, width, height, 16, 0, 0, 0, 0);
+      else
+    	 vid->screen = SDL_CreateRGBSurface(SDL_HWSURFACE | SDL_HWACCEL | SDL_DOUBLEBUF, width, height, 32, 0, 0, 0, 0);
 
       vid->scaler.in_width  = width;
       vid->scaler.in_height = height;
@@ -357,8 +387,8 @@ static bool lima_gfx_frame(void *data, const void *frame, unsigned width, unsign
       vid->scaler.out_width  = width;
       vid->scaler.out_height = height; // We do HW Scale so we use the same w and h, scaler is used only for color conversation
       vid->scaler.out_stride = vid->screen->pitch;
-      if(vid->scaler.in_fmt == SCALER_FMT_RGB565) // lima would support RGB565 but OSD Messages do render in RGBA8888
-         vid->scaler.out_fmt = SCALER_FMT_ARGB8888;
+      if(vid->scaler.in_fmt == SCALER_FMT_RGB565)
+         vid->scaler.out_fmt = SCALER_FMT_RGB565;
 
       scaler_ctx_gen_filter(&vid->scaler);
 
@@ -385,7 +415,10 @@ static bool lima_gfx_frame(void *data, const void *frame, unsigned width, unsign
 
    RARCH_PERFORMANCE_INIT(copy_frame);
    RARCH_PERFORMANCE_START(copy_frame);
-   texture = limare_texture_upload(state, vid->screen->pixels, width, height, LIMA_TEXEL_FORMAT_RGBA_8888, 0);
+   if (vid->scaler.in_fmt == SCALER_FMT_RGB565)
+      texture = limare_texture_upload(state, vid->screen->pixels, width, height, LIMA_TEXEL_FORMAT_BGR_565, 0);
+   else
+      texture = limare_texture_upload(state, vid->screen->pixels, width, height, LIMA_TEXEL_FORMAT_RGBA_8888, 0);
    RARCH_PERFORMANCE_STOP(copy_frame);
 
    limare_frame_new(state);
