@@ -409,10 +409,6 @@ static bool lima_gfx_frame(void *data, const void *frame, unsigned width, unsign
    if (SDL_MUSTLOCK(vid->screen))
       SDL_UnlockSurface(vid->screen);
 
-   char buf[128];
-   if (gfx_get_fps(buf, sizeof(buf), NULL, 0))
-      SDL_WM_SetCaption(buf, NULL);
-
    RARCH_PERFORMANCE_INIT(copy_frame);
    RARCH_PERFORMANCE_START(copy_frame);
    if (vid->scaler.in_fmt == SCALER_FMT_RGB565)
