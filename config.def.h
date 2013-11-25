@@ -333,7 +333,7 @@ static const char *default_libretro_info_path = "/data/data/com.retroarch/info/"
 #elif defined(__QNX__)
 static const char *default_libretro_info_path = "/app/native/info/";
 #elif defined(IOS)
-static const char *default_libretro_info_path = "/Applications/RetroArch.app/info/";
+static const char *default_libretro_info_path = "/Applications/RetroArch.app/modules/";
 #else
 static const char *default_libretro_info_path = NULL;
 #endif
