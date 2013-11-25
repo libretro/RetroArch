@@ -27,6 +27,16 @@ public final class CoreSelection extends DialogFragment
 {
 	private IconAdapter<ModuleWrapper> adapter;
 
+	/**
+	 * Creates a statically instantiated instance of CoreSelection.
+	 * 
+	 * @return a statically instantiated instance of CoreSelection.
+	 */
+	public static CoreSelection newInstance()
+	{
+		return new CoreSelection();
+	}
+
 	@Override
 	public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState)
 	{

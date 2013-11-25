@@ -34,13 +34,13 @@ public final class DisplayRefreshRateTest extends Activity {
 		private int mState = STATE_START;
 		private double mStartTime = 0.0;
 		private int mNumFrames = 0;
-		
+
 		private Activity activity;
-		
+
 		public Renderer(Activity activity) {
 			this.activity = activity;
 		}
-		
+
 		private void setFPSSetting(double fps) {
 			SharedPreferences prefs = UserPreferences.getPreferences(DisplayRefreshRateTest.this);
 			SharedPreferences.Editor edit = prefs.edit();
@@ -107,20 +107,18 @@ public final class DisplayRefreshRateTest extends Activity {
 		}
 	}
 
-	private GLSurfaceView surfaceView;
-	
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		Toast.makeText(this, R.string.touch_screen_with_fingers, Toast.LENGTH_LONG).show();
-		surfaceView = new GLSurfaceView(this);
+		final GLSurfaceView surfaceView = new GLSurfaceView(this);
 		surfaceView.setEGLContextClientVersion(2);
 		surfaceView.setRenderer(new Renderer(this));
 		getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 		setTitle(R.string.refresh_rate_calibration);
 		setContentView(surfaceView);
 	}
-	
+
 	@Override
 	protected void onDestroy() {
 		SharedPreferences prefs = UserPreferences.getPreferences(this);
