@@ -38,11 +38,13 @@ void apple_run_core(NSString* core, const char* file)
 {
    if (!apple_is_running)
    {
+#ifndef OSX
 	   char basedir[256];
 	   fill_pathname_basedir(basedir, file, sizeof(basedir));
 	   if (file && access(basedir, R_OK | W_OK | X_OK))
 		   apple_display_alert(@"The directory containing the selected file has limited permissions. This may "
 				   "prevent zipped games from loading, and will cause some cores to not function.", 0);
+#endif
 
       [apple_platform loadingCore:core withFile:file];
 
