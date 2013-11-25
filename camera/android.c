@@ -53,42 +53,34 @@ static void *android_camera_init(const char *device, uint64_t caps, unsigned wid
    if (!env)
       return NULL;
 
-   RARCH_LOG("android_camera_init - GET_OBJECT_CLASS(env, class, android_app->activity->clazz)\n");
    GET_OBJECT_CLASS(env, class, android_app->activity->clazz);
    if (class == NULL)
       return NULL;
 
-   RARCH_LOG("android_camera_init - GET_METHOD_ID(env, androidcamera->onCameraInit, class, \"onCameraInit\", \"()V\")\n");
    GET_METHOD_ID(env, androidcamera->onCameraInit, class, "onCameraInit", "()V");
    if (!androidcamera->onCameraInit)
       return NULL;
 
-   RARCH_LOG("android_camera_init - GET_METHOD_ID(env, androidcamera->onCameraFree, class, \"onCameraFree\", \"()V\")\n");
    GET_METHOD_ID(env, androidcamera->onCameraFree, class, "onCameraFree", "()V");
    if (!androidcamera->onCameraFree)
       return NULL;
 
-   RARCH_LOG("android_camera_init - GET_METHOD_ID(env, androidcamera->onCameraSetTexture, class, \"onCameraSetTexture\", \"(I)V\")\n");
    GET_METHOD_ID(env, androidcamera->onCameraSetTexture, class, "onCameraSetTexture", "(I)V");
    if (!androidcamera->onCameraSetTexture)
       return NULL;
 
-   RARCH_LOG("android_camera_init - GET_METHOD_ID(env, androidcamera->onCameraStart, class, \"onCameraStart\", \"()V\")\n");
    GET_METHOD_ID(env, androidcamera->onCameraStart, class, "onCameraStart", "()V");
    if (!androidcamera->onCameraStart)
       return NULL;
 
-   RARCH_LOG("android_camera_init - GET_METHOD_ID(env, androidcamera->onCameraStop, class, \"onCameraStop\", \"()V\")\n");
    GET_METHOD_ID(env, androidcamera->onCameraStop, class, "onCameraStop", "()V");
    if (!androidcamera->onCameraStop)
       return NULL;
 
-   RARCH_LOG("android_camera_init - GET_METHOD_ID(env, androidcamera->onCameraPoll, class, \"onCameraPoll\", \"()Z\")\n");
    GET_METHOD_ID(env, androidcamera->onCameraPoll, class, "onCameraPoll", "()Z");
    if (!androidcamera->onCameraPoll)
       return NULL;
 
-   RARCH_LOG("android_camera_init - CALL_VOID_METHOD(env, android_app->activity->clazz, androidcamera->onCameraInit)\n");
    CALL_VOID_METHOD(env, android_app->activity->clazz, androidcamera->onCameraInit);
 
    return androidcamera;
@@ -102,7 +94,6 @@ static void android_camera_free(void *data)
    if (!env)
       return;
 
-   RARCH_LOG("android_camera_free - CALL_VOID_METHOD(env, android_app->activity->clazz, androidcamera->onCameraFree)\n");
    CALL_VOID_METHOD(env, android_app->activity->clazz, androidcamera->onCameraFree);
 
    free(androidcamera);
@@ -123,9 +114,7 @@ static bool android_camera_start(void *data)
    glTexParameteri(GL_TEXTURE_EXTERNAL_OES, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
    glTexParameteri(GL_TEXTURE_EXTERNAL_OES, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
-   RARCH_LOG("android_camera_start - CALL_VOID_METHOD_PARAM(env, android_app->activity->clazz, androidcamera->onCameraSetTexture, (int) androidcamera->tex)\n");
    CALL_VOID_METHOD_PARAM(env, android_app->activity->clazz, androidcamera->onCameraSetTexture, (int) androidcamera->tex);
-   RARCH_LOG("android_camera_start - CALL_VOID_METHOD(env, android_app->activity->clazz, androidcamera->onCameraStart)\n");
    CALL_VOID_METHOD(env, android_app->activity->clazz, androidcamera->onCameraStart);
 
    return true;
@@ -139,7 +128,6 @@ static void android_camera_stop(void *data)
    if (!env)
       return;
 
-   RARCH_LOG("android_camera_stop - CALL_VOID_METHOD(env, android_app->activity->clazz, androidcamera->onCameraStop)\n");
    CALL_VOID_METHOD(env, android_app->activity->clazz, androidcamera->onCameraStop);
    
    if (androidcamera->tex)
@@ -158,7 +146,6 @@ static bool android_camera_poll(void *data, retro_camera_frame_raw_framebuffer_t
    (void)frame_raw_cb;
 
    jboolean newFrame;
-   //RARCH_LOG("android_camera_poll - CALL_BOOLEAN_METHOD(env, newFrame, android_app->activity->clazz, androidcamera->onCameraPoll)\n");
    CALL_BOOLEAN_METHOD(env, newFrame, android_app->activity->clazz, androidcamera->onCameraPoll);
 
    if (newFrame)
