@@ -33,6 +33,16 @@ public final class HistorySelection extends DialogFragment
 	private FragmentActivity ctx;
 	private IconAdapter<HistoryWrapper> adapter;
 
+	/**
+	 * Creates a statically instantiated instance of HistorySelection.
+	 * 
+	 * @return a statically instantiated instance of HistorySelection.
+	 */
+	public static HistorySelection newInstance()
+	{
+		return new HistorySelection();
+	}
+
 	@Override
 	public void onCreate(Bundle savedInstanceState)
 	{
