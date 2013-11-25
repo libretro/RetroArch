@@ -20,32 +20,48 @@
 #include <asl.h>
 #include <stdarg.h>
 
-static void INTERNAL_LOG(const char *fmt, ...)
-{
-   aslmsg msg = asl_new(ASL_TYPE_MSG);
-   asl_set(msg, ASL_KEY_READ_UID, "-1");
-   asl_log(NULL, msg, ASL_LEVEL_NOTICE, fmt);
-   asl_free(msg);
-}
-
 static inline void RARCH_LOG(const char *fmt, ...)
 {
-   INTERNAL_LOG(fmt);
+   va_list ap;
+   va_start(ap, fmt);
+   aslmsg msg = asl_new(ASL_TYPE_MSG);
+   asl_set(msg, ASL_KEY_READ_UID, "-1");
+   asl_vlog(NULL, msg, ASL_LEVEL_NOTICE, fmt, ap);
+   asl_free(msg);
+   va_end(ap);
 }
 
-static inline void RARCH_LOG_OUTPUT(const char *msg, ...)
+static inline void RARCH_LOG_OUTPUT(const char *fmt, ...)
 {
-   INTERNAL_LOG(msg);
+    va_list ap;
+    va_start(ap, fmt);
+    aslmsg msg = asl_new(ASL_TYPE_MSG);
+    asl_set(msg, ASL_KEY_READ_UID, "-1");
+    asl_vlog(NULL, msg, ASL_LEVEL_NOTICE, fmt, ap);
+    asl_free(msg);
+    va_end(ap);
 }
 
-static inline void RARCH_WARN(const char *msg, ...)
+static inline void RARCH_WARN(const char *fmt, ...)
 {
-   INTERNAL_LOG(msg);
+    va_list ap;
+    va_start(ap, fmt);
+    aslmsg msg = asl_new(ASL_TYPE_MSG);
+    asl_set(msg, ASL_KEY_READ_UID, "-1");
+    asl_vlog(NULL, msg, ASL_LEVEL_NOTICE, fmt, ap);
+    asl_free(msg);
+    va_end(ap);
 }
 
-static inline void RARCH_ERR(const char *msg, ...)
+static inline void RARCH_ERR(const char *fmt, ...)
 {
-   INTERNAL_LOG(msg);
+   va_list ap;
+   va_start(ap, fmt);
+   aslmsg msg = asl_new(ASL_TYPE_MSG);
+   asl_set(msg, ASL_KEY_READ_UID, "-1");
+   asl_vlog(NULL, msg, ASL_LEVEL_NOTICE, fmt, ap);
+   asl_free(msg);
+   va_end(ap);
 }
 
 #endif
