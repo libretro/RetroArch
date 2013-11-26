@@ -59,6 +59,7 @@ public final class MainMenuFragment extends PreferenceListFragment implements On
 		findPreference("loadCorePref").setOnPreferenceClickListener(this);
 		findPreference("loadRomPref").setOnPreferenceClickListener(this);
 		findPreference("loadRomHistoryPref").setOnPreferenceClickListener(this);
+		findPreference("quitRetroArch").setOnPreferenceClickListener(this);
 
 		// Extract assets. 
 		extractAssets();
@@ -336,18 +337,17 @@ public final class MainMenuFragment extends PreferenceListFragment implements On
 
 			final SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(ctx);
 			final String libretro_path = prefs.getString("libretro_path", ctx.getApplicationInfo().dataDir + "/cores");
-			final Intent rgui = new Intent(ctx, RetroActivity.class);
+			final Intent retro = new Intent(ctx, RetroActivity.class);
 			final String current_ime = Settings.Secure.getString(ctx.getContentResolver(), Settings.Secure.DEFAULT_INPUT_METHOD);
-			rgui.putExtra("LIBRETRO", libretro_path);
-			rgui.putExtra("CONFIGFILE", UserPreferences.getDefaultConfigPath(ctx));
-			rgui.putExtra("IME", current_ime);
-			startActivity(rgui);
+			retro.putExtra("LIBRETRO", libretro_path);
+			retro.putExtra("CONFIGFILE", UserPreferences.getDefaultConfigPath(ctx));
+			retro.putExtra("IME", current_ime);
+			startActivity(retro);
 		}
 		// Load Core Preference
 		else if (prefKey.equals("loadCorePref"))
 		{
-			final CoreSelection coreSelection = new CoreSelection();
-			coreSelection.show(getFragmentManager(), "core_selection");
+			CoreSelection.newInstance().show(getFragmentManager(), "core_selection");
 		}
 		// Load ROM Preference
 		else if (prefKey.equals("loadRomPref"))
@@ -375,8 +375,13 @@ public final class MainMenuFragment extends PreferenceListFragment implements On
 		// Load ROM (History) Preference
 		else if (prefKey.equals("loadRomHistoryPref"))
 		{
-			final HistorySelection historySelection = new HistorySelection();
-			historySelection.show(getFragmentManager(), "history_selection");
+			HistorySelection.newInstance().show(getFragmentManager(), "history_selection");
+		}
+		// Quit RetroArch preference
+		else if (prefKey.equals("quitRetroArch"))
+		{
+			// TODO - needs to close entire app gracefully - including
+			// NativeActivity if possible
 		}
 
 		return true;

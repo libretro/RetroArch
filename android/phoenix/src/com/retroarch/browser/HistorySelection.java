@@ -33,6 +33,16 @@ public final class HistorySelection extends DialogFragment
 	private FragmentActivity ctx;
 	private IconAdapter<HistoryWrapper> adapter;
 
+	/**
+	 * Creates a statically instantiated instance of HistorySelection.
+	 * 
+	 * @return a statically instantiated instance of HistorySelection.
+	 */
+	public static HistorySelection newInstance()
+	{
+		return new HistorySelection();
+	}
+
 	@Override
 	public void onCreate(Bundle savedInstanceState)
 	{
@@ -101,12 +111,12 @@ public final class HistorySelection extends DialogFragment
 			String current_ime = Settings.Secure.getString(ctx.getContentResolver(),
 					Settings.Secure.DEFAULT_INPUT_METHOD);
 			Toast.makeText(ctx, String.format(getString(R.string.loading_gamepath), gamePath), Toast.LENGTH_SHORT).show();
-			Intent myIntent = new Intent(ctx, RetroActivity.class);
-			myIntent.putExtra("ROM", gamePath);
-			myIntent.putExtra("LIBRETRO", corePath);
-			myIntent.putExtra("CONFIGFILE", UserPreferences.getDefaultConfigPath(ctx));
-			myIntent.putExtra("IME", current_ime);
-			startActivity(myIntent);
+			Intent retro = new Intent(ctx, RetroActivity.class);
+			retro.putExtra("ROM", gamePath);
+			retro.putExtra("LIBRETRO", corePath);
+			retro.putExtra("CONFIGFILE", UserPreferences.getDefaultConfigPath(ctx));
+			retro.putExtra("IME", current_ime);
+			startActivity(retro);
 			dismiss();
 		}
 	};

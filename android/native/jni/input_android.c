@@ -1692,7 +1692,13 @@ static void android_input_poll(void *data)
 
                if (keycode == AKEYCODE_BACK)
                {
-                  if (android->onBackPressed)
+                  uint8_t unpacked = (android->keycode_lut[AKEYCODE_BACK] >> ((state_id+1) << 3)) - 1;
+                  uint64_t input_state = (1ULL << unpacked);
+                  if (type_event == AINPUT_EVENT_TYPE_KEY && input_state < (1ULL << RARCH_FIRST_META_KEY)
+                        && input_state > 0)
+                  {
+                  }
+                  else if (android->onBackPressed)
                   {
                      RARCH_LOG("Invoke onBackPressed through JNI.\n");
                      JNIEnv *env = jni_thread_getenv();
@@ -1701,43 +1707,6 @@ static void android_input_poll(void *data)
                         CALL_VOID_METHOD(env, android_app->activity->clazz, android->onBackPressed);
                      }
                   }
-
-#if 1
-                  uint8_t unpacked = (android->keycode_lut[AKEYCODE_BACK] >> ((state_id+1) << 3)) - 1;
-                  uint64_t input_state = (1ULL << unpacked);
-                  // FIXME: all of the below will probably all have to be refactored
-                  if (g_extern.lifecycle_state & (1ULL << MODE_INPUT_XPERIA_PLAY_HACK))
-                  {
-                     int meta = AKeyEvent_getMetaState(event);
-                     if (!(meta & AMETA_ALT_ON))
-                     {
-                        *lifecycle_state |= (1ULL << RARCH_QUIT_KEY); 
-                        AInputQueue_finishEvent(android_app->inputQueue, event, handled);
-                        break;
-                     }
-                  }
-                  else if (type_event == AINPUT_EVENT_TYPE_KEY && input_state < (1ULL << RARCH_FIRST_META_KEY)
-                        && input_state > 0)
-                  {
-                  }
-                  else if (g_settings.input.back_behavior == BACK_BUTTON_MENU_TOGGLE)
-                  {
-                     int action = AKeyEvent_getAction(event);
-                     if (action == AKEY_EVENT_ACTION_DOWN)
-                        *lifecycle_state |= (1ULL << RARCH_MENU_TOGGLE);
-                     else if (action == AKEY_EVENT_ACTION_UP)
-                        *lifecycle_state &= ~(1ULL << RARCH_MENU_TOGGLE);
-                     AInputQueue_finishEvent(android_app->inputQueue, event, handled);
-                     break;
-                  }
-                  else
-                  {
-                     // exits the app, so no need to check for up/down action
-                     *lifecycle_state |= (1ULL << RARCH_QUIT_KEY);
-                     AInputQueue_finishEvent(android_app->inputQueue, event, handled);
-                     break;
-                  }
-#endif
                }
 
                if (type_event == AINPUT_EVENT_TYPE_MOTION)

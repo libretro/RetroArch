@@ -22,6 +22,7 @@
 #include <sys/resource.h>
 
 #include "platform_android.h"
+#include "../menu/menu_common.h"
 #include "../../android/native/jni/jni_macros.h"
 
 #include "../../conf/config_file.h"
@@ -375,16 +376,13 @@ static bool android_run_events (void *data)
    return true;
 }
 
-static void jni_get_intent_variable(void *data, void *data_in, void *data_out)
+static void get_environment_settings(int argc, char *argv[], void *data)
 {
    JNIEnv *env;
    struct android_app* android_app = (struct android_app*)data;
-   struct jni_params *in_params = (struct jni_params*)data_in;
-   struct jni_out_params_char *out_args = (struct jni_out_params_char*)data_out;
-   jclass class = NULL;
    jobject obj = NULL;
-   jmethodID giid = NULL;
    jstring jstr = NULL;
+   bool valschanged = false;
 
    if (!android_app)
       return;
@@ -393,86 +391,188 @@ static void jni_get_intent_variable(void *data, void *data_in, void *data_out)
    if (!env)
       return;
 
-   GET_OBJECT_CLASS(env, class, android_app->activity->clazz);
-   GET_METHOD_ID(env, giid, class, in_params->method_name, in_params->method_signature);
-   CALL_OBJ_METHOD(env, obj, android_app->activity->clazz, giid);
-
-   if (in_params->submethod_name &&
-         in_params->submethod_signature)
-   {
-      GET_OBJECT_CLASS(env, class, obj);
-      GET_METHOD_ID(env, giid, class, in_params->submethod_name, in_params->submethod_signature);
-
-      CALL_OBJ_METHOD_PARAM(env, jstr, obj, giid, (*env)->NewStringUTF(env, out_args->in));
-   }
-
-   if (giid && jstr)
-   {
-      const char *argv = (*env)->GetStringUTFChars(env, jstr, 0);
-      strlcpy(out_args->out, argv, out_args->out_sizeof);
-      (*env)->ReleaseStringUTFChars(env, jstr, argv);
-   }
-}
-
-static void get_environment_settings(int argc, char *argv[], void *data)
-{
-   struct android_app* android_app = (struct android_app*)data;
-
-   struct jni_params in_params;
-   struct jni_out_params_char out_args;
-
-   strlcpy(in_params.method_name, "getIntent", sizeof(in_params.method_name));
-   strlcpy(in_params.method_signature, "()Landroid/content/Intent;", sizeof(in_params.method_signature));
-   strlcpy(in_params.submethod_name, "getStringExtra", sizeof(in_params.submethod_name));
-   strlcpy(in_params.submethod_signature, "(Ljava/lang/String;)Ljava/lang/String;", sizeof(in_params.submethod_signature));
+   CALL_OBJ_METHOD(env, obj, android_app->activity->clazz, android_app->getIntent);
+   RARCH_LOG("Checking arguments passed from intent...\n");
 
    // ROM
-   out_args.out = g_extern.fullpath;
-   out_args.out_sizeof = sizeof(g_extern.fullpath);
-   strlcpy(out_args.in, "ROM", sizeof(out_args.in));
-   jni_get_intent_variable(android_app, &in_params, &out_args);
+   CALL_OBJ_METHOD_PARAM(env, jstr, obj, android_app->getStringExtra, (*env)->NewStringUTF(env, "ROM"));
+   if (android_app->getStringExtra && jstr)
+   {
+      const char *argv = (*env)->GetStringUTFChars(env, jstr, 0);
+      strlcpy(g_extern.fullpath, argv, sizeof(g_extern.fullpath));
+      (*env)->ReleaseStringUTFChars(env, jstr, argv);
+
+      valschanged = true;
+      RARCH_LOG("ROM Filename: [%s].\n", g_extern.fullpath);
+   }
 
    // Config file
-   out_args.out = g_extern.config_path;
-   out_args.out_sizeof = sizeof(g_extern.config_path);
-   strlcpy(out_args.in, "CONFIGFILE", sizeof(out_args.in));
-   jni_get_intent_variable(android_app, &in_params, &out_args);
+   CALL_OBJ_METHOD_PARAM(env, jstr, obj, android_app->getStringExtra, (*env)->NewStringUTF(env, "CONFIGFILE"));
+   if (android_app->getStringExtra && jstr)
+   {
+      const char *argv = (*env)->GetStringUTFChars(env, jstr, 0);
+      strlcpy(g_extern.config_path, argv, sizeof(g_extern.config_path));
+      (*env)->ReleaseStringUTFChars(env, jstr, argv);
+
+      valschanged = true;
+      RARCH_LOG("Config file: [%s].\n", g_extern.config_path);
+   }
 
    // Current IME
-   out_args.out = android_app->current_ime;
-   out_args.out_sizeof = sizeof(android_app->current_ime);
-   strlcpy(out_args.in, "IME", sizeof(out_args.in));
-   jni_get_intent_variable(android_app, &in_params, &out_args);
+   CALL_OBJ_METHOD_PARAM(env, jstr, obj, android_app->getStringExtra, (*env)->NewStringUTF(env, "IME"));
+   if (android_app->getStringExtra && jstr)
+   {
+      const char *argv = (*env)->GetStringUTFChars(env, jstr, 0);
+      strlcpy(android_app->current_ime, argv, sizeof(android_app->current_ime));
+      (*env)->ReleaseStringUTFChars(env, jstr, argv);
 
-   RARCH_LOG("Checking arguments passed ...\n");
-   RARCH_LOG("ROM Filename: [%s].\n", g_extern.fullpath);
-   RARCH_LOG("Config file: [%s].\n", g_extern.config_path);
-   RARCH_LOG("Current IME: [%s].\n", android_app->current_ime);
+      valschanged = true;
+      RARCH_LOG("Current IME: [%s].\n", android_app->current_ime);
+   }
 
-   config_load();
+   CALL_OBJ_METHOD_PARAM(env, jstr, obj, android_app->getStringExtra, (*env)->NewStringUTF(env, "USED"));
+   if (android_app->getStringExtra && jstr)
+   {
+      const char *argv = (*env)->GetStringUTFChars(env, jstr, 0);
+      bool used = (strcmp(argv, "false") == 0) ? false : true;
+      RARCH_LOG("USED: [%s].\n", used ? "true" : "false");
+      (*env)->ReleaseStringUTFChars(env, jstr, argv);
+   }
 
-   // libretro
-   out_args.out = g_settings.libretro;
-   out_args.out_sizeof = sizeof(g_settings.libretro);
-   strlcpy(out_args.in, "LIBRETRO", sizeof(out_args.in));
-   jni_get_intent_variable(android_app, &in_params, &out_args);
 
-   RARCH_LOG("Checking arguments passed ...\n");
+   if (valschanged)
+   {
+      g_extern.block_config_read = false;
+      config_load();
+      g_extern.block_config_read = true;
+   }
+
+   //LIBRETRO
+   CALL_OBJ_METHOD_PARAM(env, jstr, obj, android_app->getStringExtra, (*env)->NewStringUTF(env, "LIBRETRO"));
+
+   if (android_app->getStringExtra && jstr)
+   {
+      const char *argv = (*env)->GetStringUTFChars(env, jstr, 0);
+      strlcpy(g_settings.libretro, argv, sizeof(g_settings.libretro));
+      (*env)->ReleaseStringUTFChars(env, jstr, argv);
+   }
+
    RARCH_LOG("Libretro path: [%s].\n", g_settings.libretro);
+
+}
+
+static void process_pending_intent(void *data)
+{
+   RARCH_LOG("process_pending_intent.\n");
+   JNIEnv *env;
+   struct android_app* android_app = (struct android_app*)data;
+   jstring jstr = NULL;
+   bool valschanged = false;
+   bool startgame = false;
+
+   if (!android_app)
+      return;
+
+   env = jni_thread_getenv();
+   if (!env)
+      return;
+
+   // ROM
+   jstr = (*env)->CallObjectMethod(env, android_app->activity->clazz, android_app->getPendingIntentFullPath);
+   JNI_EXCEPTION(env);
+   RARCH_LOG("Checking arguments passed from intent...\n");
+   if (android_app->getPendingIntentFullPath && jstr)
+   {
+      const char *argv = (*env)->GetStringUTFChars(env, jstr, 0);
+      strlcpy(g_extern.fullpath, argv, sizeof(g_extern.fullpath));
+      (*env)->ReleaseStringUTFChars(env, jstr, argv);
+
+      valschanged = true;
+      startgame = true;
+      RARCH_LOG("ROM Filename: [%s].\n", g_extern.fullpath);
+   }
+
+   // Config file
+   jstr = (*env)->CallObjectMethod(env, android_app->activity->clazz, android_app->getPendingIntentConfigPath);
+   JNI_EXCEPTION(env);
+   if (android_app->getPendingIntentConfigPath && jstr)
+   {
+      const char *argv = (*env)->GetStringUTFChars(env, jstr, 0);
+      strlcpy(g_extern.config_path, argv, sizeof(g_extern.config_path));
+      (*env)->ReleaseStringUTFChars(env, jstr, argv);
+
+      valschanged = true;
+      RARCH_LOG("Config file: [%s].\n", g_extern.config_path);
+   }
+
+   // Current IME
+   jstr = (*env)->CallObjectMethod(env, android_app->activity->clazz, android_app->getPendingIntentIME);
+   JNI_EXCEPTION(env);
+   if (android_app->getPendingIntentIME && jstr)
+   {
+      const char *argv = (*env)->GetStringUTFChars(env, jstr, 0);
+      strlcpy(android_app->current_ime, argv, sizeof(android_app->current_ime));
+      (*env)->ReleaseStringUTFChars(env, jstr, argv);
+
+      valschanged = true;
+      RARCH_LOG("Current IME: [%s].\n", android_app->current_ime);
+   }
+
+   if (valschanged)
+   {
+      g_extern.block_config_read = false;
+      config_load();
+      g_extern.block_config_read = true;
+   }
+
+   //LIBRETRO
+   jstr = (*env)->CallObjectMethod(env, android_app->activity->clazz, android_app->getPendingIntentLibretroPath);
+   JNI_EXCEPTION(env);
+   if (android_app->getPendingIntentLibretroPath && jstr)
+   {
+      const char *argv = (*env)->GetStringUTFChars(env, jstr, 0);
+      strlcpy(g_settings.libretro, argv, sizeof(g_settings.libretro));
+      (*env)->ReleaseStringUTFChars(env, jstr, argv);
+   }
+
+   RARCH_LOG("Libretro path: [%s].\n", g_settings.libretro);
+
+   if (startgame)
+   {
+      RARCH_LOG("Starting new game %s...\n", g_extern.fullpath);
+      g_extern.lifecycle_state &= ~(1ULL << MODE_MENU);
+      g_extern.lifecycle_state &= ~(1ULL << MODE_GAME);
+      load_menu_game_new_core();
+   }
+
+   CALL_VOID_METHOD(env, android_app->activity->clazz, android_app->clearPendingIntent);
 }
 
 static int process_events(void *data)
 {
+   jboolean hasPendingIntent;
+   JNIEnv *env;
    struct android_app* android_app = (struct android_app*)data;
 
    if (input_key_pressed_func(RARCH_PAUSE_TOGGLE))
          android_run_events(android_app);
+
+   env = jni_thread_getenv();
+   if (!env)
+      return -1;
+
+   CALL_BOOLEAN_METHOD(env, hasPendingIntent, android_app->activity->clazz, android_app->hasPendingIntent);
+   if (hasPendingIntent)
+      process_pending_intent(android_app);
 
    return 0;
 }
 
 static void system_init(void *data)
 {
+   JNIEnv *env;
+   jclass class = NULL;
+   jobject obj = NULL;
    struct android_app* android_app = (struct android_app*)data;
 
    ALooper* looper = ALooper_prepare(ALOOPER_PREPARE_ALLOW_NON_CALLBACKS);
@@ -499,6 +599,27 @@ static void system_init(void *data)
          system_shutdown(android_app);
       }
    }
+
+   env = jni_thread_getenv();
+   if (!env)
+      return;
+
+   GET_OBJECT_CLASS(env, class, android_app->activity->clazz);
+   GET_METHOD_ID(env, android_app->getIntent, class, "getIntent", "()Landroid/content/Intent;");
+   CALL_OBJ_METHOD(env, obj, android_app->activity->clazz, android_app->getIntent);
+   GET_METHOD_ID(env, android_app->hasPendingIntent, class, "hasPendingIntent", "()Z");
+   GET_METHOD_ID(env, android_app->clearPendingIntent, class, "clearPendingIntent", "()V");
+   GET_METHOD_ID(env, android_app->getPendingIntentConfigPath, class, "getPendingIntentConfigPath",
+         "()Ljava/lang/String;");
+   GET_METHOD_ID(env, android_app->getPendingIntentLibretroPath, class, "getPendingIntentLibretroPath",
+         "()Ljava/lang/String;");
+   GET_METHOD_ID(env, android_app->getPendingIntentFullPath, class, "getPendingIntentFullPath",
+         "()Ljava/lang/String;");
+   GET_METHOD_ID(env, android_app->getPendingIntentIME, class, "getPendingIntentIME",
+         "()Ljava/lang/String;");
+
+   GET_OBJECT_CLASS(env, class, obj);
+   GET_METHOD_ID(env, android_app->getStringExtra, class, "getStringExtra", "(Ljava/lang/String;)Ljava/lang/String;");
 }
 
 static void system_deinit(void *data)

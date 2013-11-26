@@ -33,8 +33,9 @@
 
 #if defined(RARCH_CONSOLE) && (defined(HAVE_LOGGER) || defined(_XBOX1))
 #include <logger_override.h>
+#elif defined(IOS)
+#include "apple/logger_override.h"
 #else
-
 #if defined(RARCH_DUMMY_LOG) || !defined(RARCH_INTERNAL)
 #define RARCH_LOG_VERBOSE (true)
 #else
