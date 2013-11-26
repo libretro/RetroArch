@@ -31,7 +31,7 @@
 #define LOG_FILE (stderr)
 #endif
 
-#if defined(RARCH_CONSOLE) && (defined(HAVE_LOGGER)
+#if defined(RARCH_CONSOLE) && defined(HAVE_LOGGER)
 #include <logger_override.h>
 #elif defined(IOS)
 #include "logger/ios_logger_override.h"
