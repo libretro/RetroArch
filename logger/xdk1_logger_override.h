@@ -22,7 +22,7 @@
 #endif
 #include <stdarg.h>
 
-#include "../msvc_compat.h"
+#include "msvc/msvc_compat.h"
 
 static inline void RARCH_LOG(const char *msg, ...)
 {
