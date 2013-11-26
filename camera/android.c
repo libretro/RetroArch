@@ -51,39 +51,42 @@ static void *android_camera_init(const char *device, uint64_t caps, unsigned wid
 
    env = jni_thread_getenv();
    if (!env)
-      return NULL;
+      goto dealloc;
 
    GET_OBJECT_CLASS(env, class, android_app->activity->clazz);
    if (class == NULL)
-      return NULL;
+      goto dealloc;
 
    GET_METHOD_ID(env, androidcamera->onCameraInit, class, "onCameraInit", "()V");
    if (!androidcamera->onCameraInit)
-      return NULL;
+      goto dealloc;
 
    GET_METHOD_ID(env, androidcamera->onCameraFree, class, "onCameraFree", "()V");
    if (!androidcamera->onCameraFree)
-      return NULL;
+      goto dealloc;
 
    GET_METHOD_ID(env, androidcamera->onCameraSetTexture, class, "onCameraSetTexture", "(I)V");
    if (!androidcamera->onCameraSetTexture)
-      return NULL;
+      goto dealloc;
 
    GET_METHOD_ID(env, androidcamera->onCameraStart, class, "onCameraStart", "()V");
    if (!androidcamera->onCameraStart)
-      return NULL;
+      goto dealloc;
 
    GET_METHOD_ID(env, androidcamera->onCameraStop, class, "onCameraStop", "()V");
    if (!androidcamera->onCameraStop)
-      return NULL;
+      goto dealloc;
 
    GET_METHOD_ID(env, androidcamera->onCameraPoll, class, "onCameraPoll", "()Z");
    if (!androidcamera->onCameraPoll)
-      return NULL;
+      goto dealloc;
 
    CALL_VOID_METHOD(env, android_app->activity->clazz, androidcamera->onCameraInit);
 
    return androidcamera;
+dealloc:
+   free(androidcamera);
+   return NULL;
 }
 
 static void android_camera_free(void *data)
