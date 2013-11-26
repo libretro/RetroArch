@@ -215,7 +215,7 @@ static void rmenu_render(void *data)
    else
    {
       if (rgui->defer_core)
-         snprintf(title, sizeof(title), "GAME %s", dir);
+         snprintf(title, sizeof(title), "CONTENT %s", dir);
       else
       {
          const char *core_name = rgui->info.library_name;
@@ -223,7 +223,7 @@ static void rmenu_render(void *data)
             core_name = g_extern.system.info.library_name;
          if (!core_name)
             core_name = "No Core";
-         snprintf(title, sizeof(title), "GAME (%s) %s", core_name, dir);
+         snprintf(title, sizeof(title), "CONTENT (%s) %s", core_name, dir);
       }
    }
 
