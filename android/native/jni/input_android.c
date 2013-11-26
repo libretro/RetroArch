@@ -1698,7 +1698,23 @@ static void android_input_poll(void *data)
                         && input_state > 0)
                   {
                   }
-                  else if (android->onBackPressed)
+                  else if (g_settings.input.back_behavior == BACK_BUTTON_QUIT)
+                  {
+                     *lifecycle_state |= (1ULL << RARCH_QUIT_KEY); 
+                     AInputQueue_finishEvent(android_app->inputQueue, event, handled);
+                     break;
+                  }
+                  else if (g_settings.input.back_behavior == BACK_BUTTON_GUI_TOGGLE)
+                  {
+                     int action = AKeyEvent_getAction(event);
+                     if (action == AKEY_EVENT_ACTION_DOWN)
+                        *lifecycle_state |= (1ULL << RARCH_MENU_TOGGLE);
+                     else if (action == AKEY_EVENT_ACTION_UP)
+                        *lifecycle_state &= ~(1ULL << RARCH_MENU_TOGGLE);
+                     AInputQueue_finishEvent(android_app->inputQueue, event, handled);
+                     break;
+                  }
+                  else if (android->onBackPressed && g_settings.input.back_behavior == BACK_BUTTON_MENU_TOGGLE)
                   {
                      RARCH_LOG("Invoke onBackPressed through JNI.\n");
                      JNIEnv *env = jni_thread_getenv();

@@ -85,6 +85,7 @@
 
     <!-- Back Options -->
     <string name="quit">Quit</string>
+    <string name="gui_toggle">GUI toggle</string>
     <string name="menu_toggle">Menu toggle</string>
     
     <!-- Audio Settings -->

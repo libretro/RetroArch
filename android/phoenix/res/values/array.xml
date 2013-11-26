@@ -2,12 +2,14 @@
 <resources>
     <string-array name="back_options" translatable="false">
         <item>@string/quit</item>
+        <item>@string/gui_toggle</item>
         <item>@string/menu_toggle</item>
     </string-array>
 
     <string-array name="back_options_values" translatable="false">
         <item>0</item>
         <item>1</item>
+        <item>2</item>
     </string-array>
 
     <string-array name="audio_latency_options" translatable="false">
