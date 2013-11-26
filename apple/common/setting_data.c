@@ -368,8 +368,8 @@ const rarch_setting_t* setting_data_get_list()
          CONFIG_PATH(g_settings.screenshot_directory, "screenshot_directory", "Screenshot Directory", DEFAULT_ME_YO)
          CONFIG_PATH(g_settings.cheat_database, "cheat_database_path", "Cheat Database", DEFAULT_ME_YO)
          CONFIG_PATH(g_settings.cheat_settings_path, "cheat_settings_path", "Cheat Settings", DEFAULT_ME_YO)
-         CONFIG_PATH(g_settings.game_history_path, "game_history_path", "Game History Path", DEFAULT_ME_YO)
-         CONFIG_UINT(g_settings.game_history_size, "game_history_size", "Game History Size", game_history_size)
+         CONFIG_PATH(g_settings.game_history_path, "game_history_path", "Content History Path", DEFAULT_ME_YO)
+         CONFIG_UINT(g_settings.game_history_size, "game_history_size", "Content History Size", game_history_size)
 
          #ifdef HAVE_RGUI
             CONFIG_PATH(g_settings.rgui_browser_directory, "rgui_browser_directory", "Browser Directory", DEFAULT_ME_YO)
