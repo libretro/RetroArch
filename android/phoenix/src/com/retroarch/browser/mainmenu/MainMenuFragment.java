@@ -382,6 +382,7 @@ public final class MainMenuFragment extends PreferenceListFragment implements On
 		{
 			// TODO - needs to close entire app gracefully - including
 			// NativeActivity if possible
+			getActivity().finish();
 		}
 
 		return true;
