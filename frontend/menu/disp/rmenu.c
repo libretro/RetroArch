@@ -89,6 +89,7 @@ static void rmenu_render_messagebox(void *data, const char *message)
       return;
    }
 
+   j = 0;
    for (i = 0; i < list->size; i++, j++)
    {
       char *msg = list->elems[i].data;
