@@ -36,8 +36,8 @@
     <!-- Core Manager Info Fragment -->
     <string name="core_info_displayNameTitle">Display Name</string>
     <string name="core_info_internalNameTitle">Internal Name</string>
-    <string name="core_info_systemNameTitle">Emulated Systems</string>
-    <string name="core_info_emu_author">Emulator Authors</string>
+    <string name="core_info_systemNameTitle">Description</string>
+    <string name="core_info_emu_author">Author(s)</string>
     <string name="core_info_licenseTitle">Core License</string>
     <string name="core_info_manufacterer">Manufacturer</string>
 

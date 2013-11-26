@@ -366,8 +366,8 @@
             [RAMenuItemBasic itemWithDescription:@"Choose Core"
                action:^{ [weakSelf chooseCoreWithPath:nil]; }
                detail:^{ return weakSelf.core ? apple_get_core_display_name(weakSelf.core) : @"Auto Detect"; }],
-            [RAMenuItemBasic itemWithDescription:@"Load Game"                 action:^{ [weakSelf loadGame]; }],
-            [RAMenuItemBasic itemWithDescription:@"Load Game (History)"       action:^{ [weakSelf loadHistory]; }],
+            [RAMenuItemBasic itemWithDescription:@"Load Content"                 action:^{ [weakSelf loadGame]; }],
+            [RAMenuItemBasic itemWithDescription:@"Load Content (History)"       action:^{ [weakSelf loadHistory]; }],
             [RAMenuItemBasic itemWithDescription:@"Frontend Settings"         action:^{ [[RetroArch_iOS get] showSystemSettings]; }]
          ]
       ];
@@ -924,8 +924,8 @@ static const void* const associated_core_key = &associated_core_key;
       RAPauseMenu* __weak weakSelf = self;
 
       [self.sections addObject:@[@"Actions",
-         [RAMenuItemBasic itemWithDescription:@"Reset Game" action:^{ [weakSelf performBasicAction:RESET]; }],
-         [RAMenuItemBasic itemWithDescription:@"Close Game" action:^{ [weakSelf performBasicAction:QUIT]; }]
+         [RAMenuItemBasic itemWithDescription:@"Reset Content" action:^{ [weakSelf performBasicAction:RESET]; }],
+         [RAMenuItemBasic itemWithDescription:@"Close Content" action:^{ [weakSelf performBasicAction:QUIT]; }]
       ]];
 
       [self.sections addObject:@[@"States",
