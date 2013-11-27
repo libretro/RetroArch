@@ -50,7 +50,7 @@
 #include <machine/cpu-features.h>
 #endif
 #include <pthread.h>
-#include "cpufeatures.h"
+#include "performance_android.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <fcntl.h>
