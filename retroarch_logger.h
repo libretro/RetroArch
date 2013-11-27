@@ -130,7 +130,7 @@
 #endif
 #endif
 
-#ifndef RARCH_WARN
+#ifndef RARCH_WARN_OUTPUT
 #if defined(ANDROID) && defined(HAVE_LOGGER)
 #define  RARCH_WARN_OUTPUT(...)  __android_log_print(ANDROID_LOG_INFO, "stderr [WARN] :: ", __VA_ARGS__)
 #elif defined(IS_SALAMANDER)
