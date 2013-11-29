@@ -384,7 +384,7 @@
       action: ^(NSString* core)
       {
          if (path)
-            apple_run_core(weakSelf.core, path.UTF8String);
+            apple_run_core(core, path.UTF8String);
          else
          {
             weakSelf.core = core;
@@ -392,7 +392,10 @@
             [weakSelf.navigationController popViewControllerAnimated:YES];
          }
       }];
-   [self.navigationController pushViewController:list animated:YES];
+   
+   // Don't push view controller if it already launched a game
+   if (!list.actionRan)
+      [self.navigationController pushViewController:list animated:YES];
 }
 
 - (void)loadGame
@@ -767,8 +770,7 @@ static const void* const associated_core_key = &associated_core_key;
 
 - (void)wasSelectedOnTableView:(UITableView*)tableView ofController:(UIViewController*)controller
 {
-   if (self.parent.action)
-      self.parent.action(self.core);
+   [self.parent runAction:self.core];
 }
 
 @end
@@ -816,7 +818,7 @@ static const void* const associated_core_key = &associated_core_key;
             core_info_list_get_supported_cores(core_list, _path.UTF8String, &core_support, &core_count);
             
             if (core_count == 1 && _action)
-               _action(apple_get_core_id(&core_support[0]));
+               [self runAction:apple_get_core_id(&core_support[0])];
             else if (core_count > 1)
                [self load:core_count coresFromList:core_support toSection:core_section];
          }
@@ -824,6 +826,14 @@ static const void* const associated_core_key = &associated_core_key;
    }
 
    return self;
+}
+
+- (void)runAction:(NSString*)coreID
+{
+   self.actionRan = true;
+   
+   if (self.action)
+      _action(coreID);
 }
 
 - (void)load:(uint32_t)count coresFromList:(const core_info_t*)list toSection:(NSMutableArray*)array
