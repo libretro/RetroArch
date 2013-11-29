@@ -561,6 +561,8 @@ const rarch_setting_t* setting_data_get_list()
 
       for (int player = 0; player < MAX_PLAYERS; player ++)
       {
+         const struct retro_keybind* const defaults = (player == 0) ? retro_keybinds_1 : retro_keybinds_rest;
+      
          char buffer[32];
          snprintf(buffer, 32, "Player %d", player + 1);
          START_SUB_GROUP(strdup(buffer))
@@ -568,7 +570,7 @@ const rarch_setting_t* setting_data_get_list()
                if (!input_config_bind_map[i].meta)
                {
                   const struct input_bind_map* bind = &input_config_bind_map[i];
-                  CONFIG_BIND(g_settings.input.binds[0][i], player + 1, bind->base, bind->desc, &retro_keybinds_1[i])
+                  CONFIG_BIND(g_settings.input.binds[player][i], player + 1, bind->base, bind->desc, &defaults[i])
                }
          END_SUB_GROUP()
       }
