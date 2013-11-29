@@ -368,7 +368,7 @@
                detail:^{ return weakSelf.core ? apple_get_core_display_name(weakSelf.core) : @"Auto Detect"; }],
             [RAMenuItemBasic itemWithDescription:@"Load Content"                 action:^{ [weakSelf loadGame]; }],
             [RAMenuItemBasic itemWithDescription:@"Load Content (History)"       action:^{ [weakSelf loadHistory]; }],
-            [RAMenuItemBasic itemWithDescription:@"Frontend Settings"         action:^{ [[RetroArch_iOS get] showSystemSettings]; }]
+            [RAMenuItemBasic itemWithDescription:@"Settings"         action:^{ [[RetroArch_iOS get] showSystemSettings]; }]
          ]
       ];
    }

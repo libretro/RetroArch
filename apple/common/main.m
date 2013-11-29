@@ -43,7 +43,7 @@ void apple_run_core(NSString* core, const char* file)
 	   fill_pathname_basedir(basedir, file, sizeof(basedir));
 	   if (file && access(basedir, R_OK | W_OK | X_OK))
 		   apple_display_alert(@"The directory containing the selected file has limited permissions. This may "
-				   "prevent zipped games from loading, and will cause some cores to not function.", 0);
+				   "prevent zipped content from loading, and will cause some cores to not function.", 0);
 #endif
 
       [apple_platform loadingCore:core withFile:file];
@@ -91,7 +91,7 @@ void apple_run_core(NSString* core, const char* file)
 void apple_rarch_exited(void* result)
 {
    if (result)
-      apple_display_alert(@"Failed to load game.", 0);
+      apple_display_alert(@"Failed to load content.", 0);
 
    NSString* used_core = apple_core;
    apple_core = 0; 
