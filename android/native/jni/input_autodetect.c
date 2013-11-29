@@ -209,6 +209,8 @@ void input_autodetect_setup(void *data, char *msg, size_t sizeof_msg, unsigned p
       device = DEVICE_BROADCOM_BLUETOOTH_HID;
    else if (strstr(name_buf, "USB Gamepad"))
       device = DEVICE_THRUST_PREDATOR;
+   else if (strstr(name_buf, "ADC Joystick"))
+      device = DEVICE_JXD_S7800B;
    else if (strstr(name_buf, "DragonRise"))
       device = DEVICE_DRAGONRISE;
    else if (strstr(name_buf, "Thrustmaster T Mini"))
