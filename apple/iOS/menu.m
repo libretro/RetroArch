@@ -251,7 +251,7 @@
 
 - (void)wasSelectedOnTableView:(UITableView*)tableView ofController:(UIViewController*)controller
 {
-   RADirectoryList* list = [[RADirectoryList alloc] initWithPath:@"/" delegate:self];
+   RADirectoryList* list = [[RADirectoryList alloc] initWithPath:nil delegate:self];
    [controller.navigationController pushViewController:list animated:YES];
 }
 

@@ -97,18 +97,25 @@ static void file_action(enum file_action action, NSString* source, NSString* tar
 {
    if ((self = [super initWithStyle:UITableViewStylePlain]))
    {
-      _path = path;
+      _path = path ? path : NSHomeDirectory();
       _directoryDelegate = delegate;
 
       self = [super initWithStyle:UITableViewStylePlain];
       self.hidesHeaders = YES;
 
+      // NOTE: The "App" and "Root" buttons aren't really needed for non-jailbreak devices.
       self.toolbarItems =
       @[
-         [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemRefresh target:self
-                                  action:@selector(refresh)],
+         [[UIBarButtonItem alloc] initWithTitle:@"Home" style:UIBarButtonItemStyleBordered target:self
+                                  action:@selector(gotoHomeDir)],
+         [[UIBarButtonItem alloc] initWithTitle:@"App" style:UIBarButtonItemStyleBordered target:self
+                                  action:@selector(gotoAppDir)],
+         [[UIBarButtonItem alloc] initWithTitle:@"Root" style:UIBarButtonItemStyleBordered target:self
+                                  action:@selector(gotoRootDir)],
          [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemFlexibleSpace target:self
                                   action:nil],
+         [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemRefresh target:self
+                                  action:@selector(refresh)],
          [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemAdd target:self
                                   action:@selector(createNewFolder)]
       ];
@@ -121,6 +128,21 @@ static void file_action(enum file_action action, NSString* source, NSString* tar
    }
 
    return self;
+}
+
+- (void)gotoHomeDir
+{
+    [self browseTo:NSHomeDirectory()];
+}
+
+- (void)gotoAppDir
+{
+    [self browseTo:NSBundle.mainBundle.bundlePath];
+}
+
+- (void)gotoRootDir
+{
+    [self browseTo:@"/"];
 }
 
 - (void)browseTo:(NSString*)path
