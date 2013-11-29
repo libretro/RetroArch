@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		509FC979183F9F18007A5A30 /* menu.m in Sources */ = {isa = PBXBuildFile; fileRef = 509FC978183F9F18007A5A30 /* menu.m */; };
+		50F54A871848F9FC00E19EFD /* ic_pause.png in Resources */ = {isa = PBXBuildFile; fileRef = 50F54A861848F9FC00E19EFD /* ic_pause.png */; };
 		962979F616C43B9500E6DCE0 /* ic_dir.png in Resources */ = {isa = PBXBuildFile; fileRef = 962979F416C43B9500E6DCE0 /* ic_dir.png */; };
 		962979F716C43B9500E6DCE0 /* ic_file.png in Resources */ = {isa = PBXBuildFile; fileRef = 962979F516C43B9500E6DCE0 /* ic_file.png */; };
 		96297A0F16C5AEA100E6DCE0 /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 96297A0E16C5AEA100E6DCE0 /* main.m */; };
@@ -36,6 +37,7 @@
 
 /* Begin PBXFileReference section */
 		509FC978183F9F18007A5A30 /* menu.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = menu.m; path = iOS/menu.m; sourceTree = SOURCE_ROOT; };
+		50F54A861848F9FC00E19EFD /* ic_pause.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = ic_pause.png; sourceTree = "<group>"; };
 		962979F416C43B9500E6DCE0 /* ic_dir.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = ic_dir.png; path = "../../android/phoenix/res/drawable-xhdpi/ic_dir.png"; sourceTree = "<group>"; };
 		962979F516C43B9500E6DCE0 /* ic_file.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = ic_file.png; path = "../../android/phoenix/res/drawable-xhdpi/ic_file.png"; sourceTree = "<group>"; };
 		96297A0E16C5AEA100E6DCE0 /* main.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
@@ -92,6 +94,7 @@
 		966B9CB716E41E7A005B61E1 /* Assets */ = {
 			isa = PBXGroup;
 			children = (
+				50F54A861848F9FC00E19EFD /* ic_pause.png */,
 				967D647416E6EA04006BA1F2 /* modules */,
 				96297A2616C82FF100E6DCE0 /* overlays */,
 				966B9CB816E41E7A005B61E1 /* Default-568h@2x.png */,
@@ -271,6 +274,7 @@
 				966B9CC116E41E7A005B61E1 /* Default@2x.png in Resources */,
 				966B9CC316E41E7A005B61E1 /* Icon-72.png in Resources */,
 				966B9CC516E41E7A005B61E1 /* Icon.png in Resources */,
+				50F54A871848F9FC00E19EFD /* ic_pause.png in Resources */,
 				966B9CCB16E41EC1005B61E1 /* PauseIndicatorView.xib in Resources */,
 				967D647516E6EA04006BA1F2 /* modules in Resources */,
 				967894631788EBD800D6CA69 /* InfoPlist.strings in Resources */,
