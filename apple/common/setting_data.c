@@ -549,6 +549,7 @@ const rarch_setting_t* setting_data_get_list()
          END_SUB_GROUP()
       #endif
 
+      // The second argument to config bind is 1 based for players and 0 only for meta keys
       START_SUB_GROUP("Meta Keys")
          for (int i = 0; i != RARCH_BIND_LIST_END; i ++)
             if (input_config_bind_map[i].meta)
@@ -558,14 +559,19 @@ const rarch_setting_t* setting_data_get_list()
             }
       END_SUB_GROUP()
 
-      START_SUB_GROUP("Player 1")
-         for (int i = 0; i != RARCH_BIND_LIST_END; i ++)
-            if (!input_config_bind_map[i].meta)
-            {
-               const struct input_bind_map* bind = &input_config_bind_map[i];
-               CONFIG_BIND(g_settings.input.binds[0][i], 0, bind->base, bind->desc, &retro_keybinds_1[i])
-            }
-      END_SUB_GROUP()
+      for (int player = 0; player < MAX_PLAYERS; player ++)
+      {
+         char buffer[32];
+         snprintf(buffer, 32, "Player %d", player + 1);
+         START_SUB_GROUP(strdup(buffer))
+            for (int i = 0; i != RARCH_BIND_LIST_END; i ++)
+               if (!input_config_bind_map[i].meta)
+               {
+                  const struct input_bind_map* bind = &input_config_bind_map[i];
+                  CONFIG_BIND(g_settings.input.binds[0][i], player + 1, bind->base, bind->desc, &retro_keybinds_1[i])
+               }
+         END_SUB_GROUP()
+      }
    END_GROUP()
 
    /********/
