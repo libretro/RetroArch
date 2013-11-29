@@ -11,6 +11,7 @@ import com.retroarch.browser.mainmenu.MainMenuActivity;
 import com.retroarch.browser.preferences.util.UserPreferences;
 
 import android.content.Intent;
+import android.os.Build;
 import android.os.Bundle;
 import android.provider.Settings;
 import android.support.v4.app.DialogFragment;
@@ -32,6 +33,15 @@ public final class HistorySelection extends DialogFragment
 {
 	private FragmentActivity ctx;
 	private IconAdapter<HistoryWrapper> adapter;
+	
+	public Intent getRetroActivity()
+	{
+		if ((Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB))
+		{
+			return new Intent(ctx, RetroActivityFuture.class);
+		}
+		return new Intent(ctx, RetroActivityPast.class);
+	}
 
 	/**
 	 * Creates a statically instantiated instance of HistorySelection.
@@ -111,7 +121,7 @@ public final class HistorySelection extends DialogFragment
 			String current_ime = Settings.Secure.getString(ctx.getContentResolver(),
 					Settings.Secure.DEFAULT_INPUT_METHOD);
 			Toast.makeText(ctx, String.format(getString(R.string.loading_gamepath), gamePath), Toast.LENGTH_SHORT).show();
-			Intent retro = new Intent(ctx, RetroActivity.class);
+			Intent retro = getRetroActivity();
 			retro.putExtra("ROM", gamePath);
 			retro.putExtra("LIBRETRO", corePath);
 			retro.putExtra("CONFIGFILE", UserPreferences.getDefaultConfigPath(ctx));

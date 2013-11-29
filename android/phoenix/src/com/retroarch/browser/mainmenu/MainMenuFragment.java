@@ -28,7 +28,8 @@ import com.retroarch.R;
 import com.retroarch.browser.CoreSelection;
 import com.retroarch.browser.HistorySelection;
 import com.retroarch.browser.NativeInterface;
-import com.retroarch.browser.RetroActivity;
+import com.retroarch.browser.RetroActivityFuture;
+import com.retroarch.browser.RetroActivityPast;
 import com.retroarch.browser.dirfragment.DirectoryFragment;
 import com.retroarch.browser.dirfragment.DirectoryFragment.OnDirectoryFragmentClosedListener;
 import com.retroarch.browser.mainmenu.gplwaiver.GPLWaiverDialogFragment;
@@ -42,6 +43,15 @@ public final class MainMenuFragment extends PreferenceListFragment implements On
 {
 	private static final String TAG = "MainMenuFragment";
 	private Context ctx;
+	
+	public Intent getRetroActivity()
+	{
+		if ((Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB))
+		{
+			return new Intent(ctx, RetroActivityFuture.class);
+		}
+		return new Intent(ctx, RetroActivityPast.class);
+	}
 
 	@Override
 	public void onCreate(Bundle savedInstanceState)
@@ -337,8 +347,8 @@ public final class MainMenuFragment extends PreferenceListFragment implements On
 
 			final SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(ctx);
 			final String libretro_path = prefs.getString("libretro_path", ctx.getApplicationInfo().dataDir + "/cores");
-			final Intent retro = new Intent(ctx, RetroActivity.class);
 			final String current_ime = Settings.Secure.getString(ctx.getContentResolver(), Settings.Secure.DEFAULT_INPUT_METHOD);
+			final Intent retro = getRetroActivity();
 			retro.putExtra("LIBRETRO", libretro_path);
 			retro.putExtra("CONFIGFILE", UserPreferences.getDefaultConfigPath(ctx));
 			retro.putExtra("IME", current_ime);
@@ -397,7 +407,7 @@ public final class MainMenuFragment extends PreferenceListFragment implements On
 		UserPreferences.updateConfigFile(ctx);
 		String current_ime = Settings.Secure.getString(ctx.getContentResolver(), Settings.Secure.DEFAULT_INPUT_METHOD);
 		Toast.makeText(ctx, String.format(getString(R.string.loading_data), path), Toast.LENGTH_SHORT).show();
-		Intent retro = new Intent(ctx, RetroActivity.class);
+		Intent retro = getRetroActivity();
 		retro.putExtra("ROM", path);
 		retro.putExtra("LIBRETRO", libretro_path);
 		retro.putExtra("CONFIGFILE", UserPreferences.getDefaultConfigPath(ctx));
