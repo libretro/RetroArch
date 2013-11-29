@@ -943,6 +943,11 @@ static const void* const associated_core_key = &associated_core_key;
    return self;
 }
 
+- (void)dealloc
+{
+   apple_refresh_config();
+}
+
 - (void)performBasicAction:(enum basic_event_t)action
 {
    [self.navigationController popViewControllerAnimated:(action != QUIT)];
