@@ -76,19 +76,15 @@ unsigned int rglCreateName(void *data, void* object)
 {
    rglNameSpace *name = (rglNameSpace*)data;
    // NULL is reserved for the guard of the linked list.
-   if (name->firstFree == NULL)
+   if (!name->firstFree)
    {
       // need to allocate more pointer space
       int newCapacity = name->capacity + NAME_INCREMENT;
 
       // realloc the block of pointers
       void** newData = ( void** )malloc( newCapacity * sizeof( void* ) );
-      if ( newData == NULL )
-      {
-         // XXX what should we generally do here ?
-         rglCgRaiseError( CG_MEMORY_ALLOC_ERROR );
+      if (!newData)
          return 0;
-      }
       memcpy( newData, name->data, name->capacity * sizeof( void* ) );
 
       if (name->data != NULL)
@@ -292,7 +288,7 @@ static uint32_t gmmInitFixedAllocator(void)
 
    pGmmFixedAllocData = (GmmFixedAllocData *)malloc(sizeof(GmmFixedAllocData));
 
-   if (pGmmFixedAllocData == NULL)
+   if (!pGmmFixedAllocData)
       return GMM_ERROR;
 
    memset(pGmmFixedAllocData, 0, sizeof(GmmFixedAllocData));
@@ -303,23 +299,23 @@ static uint32_t gmmInitFixedAllocator(void)
       int blockSize  = (i==0) ? sizeof(GmmBlock): sizeof(GmmTileBlock);
 
       pGmmFixedAllocData->ppBlockList[i] = (char **)malloc(sizeof(char *));
-      if (pGmmFixedAllocData->ppBlockList[i] == NULL)
+      if (!pGmmFixedAllocData->ppBlockList[i])
          return GMM_ERROR;
 
       pGmmFixedAllocData->ppBlockList[i][0] = (char *)malloc(blockSize * blockCount);
-      if (pGmmFixedAllocData->ppBlockList[i][0] == NULL)
+      if (!pGmmFixedAllocData->ppBlockList[i][0])
          return GMM_ERROR;
 
       pGmmFixedAllocData->ppFreeBlockList[i] = (uint16_t **)malloc(sizeof(uint16_t *));
-      if (pGmmFixedAllocData->ppFreeBlockList[i] == NULL)
+      if (!pGmmFixedAllocData->ppFreeBlockList[i])
          return GMM_ERROR;
 
       pGmmFixedAllocData->ppFreeBlockList[i][0] = (uint16_t *)malloc(sizeof(uint16_t) * blockCount);
-      if (pGmmFixedAllocData->ppFreeBlockList[i][0] == NULL)
+      if (!pGmmFixedAllocData->ppFreeBlockList[i][0])
          return GMM_ERROR;
 
       pGmmFixedAllocData->pBlocksUsed[i] = (uint16_t *)malloc(sizeof(uint16_t));
-      if (pGmmFixedAllocData->pBlocksUsed[i] == NULL)
+      if (!pGmmFixedAllocData->pBlocksUsed[i])
          return GMM_ERROR;
 
       for (int j=0; j<blockCount; j++)
@@ -352,7 +348,7 @@ static void *gmmAllocFixed(uint8_t isTile)
       (char **)realloc(pGmmFixedAllocData->ppBlockList[isTile],
             (listCount + 1) * sizeof(char *));
 
-   if (ppBlockList == NULL)
+   if (!ppBlockList)
       return NULL;
 
    pGmmFixedAllocData->ppBlockList[isTile] = ppBlockList;
@@ -360,14 +356,14 @@ static void *gmmAllocFixed(uint8_t isTile)
    pGmmFixedAllocData->ppBlockList[isTile][listCount] = 
       (char *)malloc(blockSize * blockCount);
 
-   if (pGmmFixedAllocData->ppBlockList[isTile][listCount] == NULL)
+   if (!pGmmFixedAllocData->ppBlockList[isTile][listCount])
       return NULL;
 
    uint16_t **ppFreeBlockList = 
       (uint16_t **)realloc(pGmmFixedAllocData->ppFreeBlockList[isTile],
             (listCount + 1) * sizeof(uint16_t *));
 
-   if (ppFreeBlockList == NULL)
+   if (!ppFreeBlockList)
       return NULL;
 
    pGmmFixedAllocData->ppFreeBlockList[isTile] = ppFreeBlockList;
@@ -375,14 +371,14 @@ static void *gmmAllocFixed(uint8_t isTile)
    pGmmFixedAllocData->ppFreeBlockList[isTile][listCount] = 
       (uint16_t *)malloc(sizeof(uint16_t) * blockCount);
 
-   if (pGmmFixedAllocData->ppFreeBlockList[isTile][listCount] == NULL)
+   if (!pGmmFixedAllocData->ppFreeBlockList[isTile][listCount])
       return NULL;
 
    uint16_t *pBlocksUsed = 
       (uint16_t *)realloc(pGmmFixedAllocData->pBlocksUsed[isTile],
             (listCount + 1) * sizeof(uint16_t));
 
-   if (pBlocksUsed == NULL)
+   if (!pBlocksUsed)
       return NULL;
 
    pGmmFixedAllocData->pBlocksUsed[isTile] = pBlocksUsed;
@@ -452,7 +448,7 @@ static uint32_t gmmInit(const void *localMemoryBase, const void *localStartAddre
 
    pAllocator = (GmmAllocator *)malloc(sizeof(GmmAllocator));
 
-   if (pAllocator == NULL)
+   if (!pAllocator)
       return GMM_ERROR;
 
    memset(pAllocator, 0, sizeof(GmmAllocator));
@@ -539,7 +535,7 @@ static GmmBlock *gmmAllocBlock(
          address + size <= pAllocator->startAddress + pAllocator->size)
    {
       pNewBlock = GMM_ALLOC_FIXED_BLOCK();
-      if (pNewBlock == NULL)
+      if (!pNewBlock)
          return NULL;
 
       memset(pNewBlock, 0, sizeof(GmmBlock));
@@ -594,7 +590,7 @@ static GmmTileBlock *gmmFindFreeTileBlock(
    if (pBestAfterBlock)
    {
       pNewBlock = gmmAllocFixedTileBlock();
-      if (pNewBlock == NULL)
+      if (!pNewBlock)
          return NULL;
 
       memset(pNewBlock, 0, sizeof(GmmTileBlock));
@@ -636,7 +632,7 @@ static GmmTileBlock *gmmCreateTileBlock(
    pAllocator->tileStartAddress = address;
 
    pNewBlock = gmmAllocFixedTileBlock();
-   if (pNewBlock == NULL)
+   if (!pNewBlock)
       return NULL;
 
    memset(pNewBlock, 0, sizeof(GmmTileBlock));
@@ -728,7 +724,7 @@ static uint32_t gmmAllocExtendedTileBlock(const uint32_t size, const uint32_t ta
                (pBlock->pPrev && pBlock->base.address-pBlock->pPrev->base.address-pBlock->pPrev->base.size >= newSize))
          {
             GmmTileBlock *pNewBlock = gmmAllocFixedTileBlock();
-            if (pNewBlock == NULL)
+            if (!pNewBlock)
                break;
 
             retId = (uint32_t)pNewBlock;
@@ -820,7 +816,7 @@ static void gmmFreeBlock (void *data)
          pAllocator->pTail->pNext = NULL;
    }
 
-   if (pBlock->pPrev == NULL)
+   if (!pBlock->pPrev)
       pAllocator->pSweepHead = pAllocator->pHead;
    else if (pBlock->pPrev &&
          (pAllocator->pSweepHead == NULL || 
@@ -928,7 +924,7 @@ static void gmmAddFree(
       while (pInsertBefore && pInsertBefore->base.size < pBlock->base.size)
          pInsertBefore = pInsertBefore->pNextFree;
 
-      if (pInsertBefore == NULL)
+      if (!pInsertBefore)
       {
          pBlock->pNextFree = NULL;
          pBlock->pPrevFree = pAllocator->pFreeTail[freeIndex];
@@ -1166,7 +1162,7 @@ static uint8_t gmmInternalSweep(void *data)
          srcAddress = 0;
          dstAddress = 0;
 
-         if (pBlock->pPrev == NULL)
+         if (!pBlock->pPrev)
             availableSize = pBlock->base.address - pAllocator->startAddress;
          else
             availableSize = pBlock->base.address - (pBlock->pPrev->base.address + pBlock->pPrev->base.size);
@@ -1368,7 +1364,7 @@ static uint32_t gmmFindFreeBlock(
       if (pBlock->base.size != size)
       {
          GmmBlock *pNewBlock = GMM_ALLOC_FIXED_BLOCK();
-         if (pNewBlock == NULL)
+         if (!pNewBlock)
             return GMM_ERROR;
 
          memset(pNewBlock, 0, sizeof(GmmBlock));

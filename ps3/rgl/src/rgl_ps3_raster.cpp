@@ -76,28 +76,25 @@ static void setAttribConstantIndex (void *data, const void* __restrict v, const 
 }
 
 //here ec has been advanced and is already on top of the embedded constant count
-template<int SIZE> inline static void swapandsetfp( int ucodeSize, unsigned int loadProgramId, unsigned int loadProgramOffset, unsigned short *ec, const unsigned int   * __restrict v )
-{
-   CellGcmContextData *thisContext = (CellGcmContextData*)gCellGcmCurrentContext;
-   rglGcmSetTransferLocation(thisContext, CELL_GCM_LOCATION_LOCAL );
-   unsigned short count = *( ec++ );
-   for ( unsigned long offsetIndex = 0; offsetIndex < count; ++offsetIndex )
-   {
-      void *pointer=NULL;
-      const int paddedSIZE = (SIZE + 1) & ~1; // even width only	
-      uint32_t var = gmmIdToOffset( loadProgramId ) + loadProgramOffset + *( ec++ );
-      rglGcmSetInlineTransferPointer(thisContext, var, paddedSIZE, pointer);
-      float *fp = (float*)pointer;
-      float *src = (float*)v;
-      for (uint32_t j=0; j<SIZE;j++)
-      {
-         rglGcmSwap16Float32(fp, src);
-         fp++;
-         src++;
-      }
+#define swapandsetfp(SIZE, ucodeSize, loadProgramId, loadProgramOffset, ec, v) \
+   CellGcmContextData *thisContext = (CellGcmContextData*)gCellGcmCurrentContext; \
+   rglGcmSetTransferLocation(thisContext, CELL_GCM_LOCATION_LOCAL ); \
+   unsigned short count = *( ec++ ); \
+   for ( unsigned long offsetIndex = 0; offsetIndex < count; ++offsetIndex ) \
+   { \
+      void *pointer=NULL; \
+      const int paddedSIZE = (SIZE + 1) & ~1; /* even width only */ \
+      uint32_t var = gmmIdToOffset( loadProgramId ) + loadProgramOffset + *( ec++ ); \
+      rglGcmSetInlineTransferPointer(thisContext, var, paddedSIZE, pointer); \
+      float *fp = (float*)pointer; \
+      float *src = (float*)v; \
+      for (uint32_t j=0; j<SIZE;j++) \
+      { \
+         rglGcmSwap16Float32(fp, src); \
+         fp++; \
+         src++; \
+      } \
    }
-
-}
 
 template<int SIZE> static void setVectorTypefp( void *dat, const void* __restrict v )
 {
@@ -113,7 +110,7 @@ template<int SIZE> static void setVectorTypefp( void *dat, const void* __restric
    unsigned short *ec = ( unsigned short * )( ptr->program->resources ) + resource + 1;//+1 to skip the register
    if ( RGL_LIKELY( *ec ) )
    {
-      swapandsetfp<SIZE>( program->header.instructionCount*16, program->loadProgramId, program->loadProgramOffset, ec, ( unsigned int * )data );
+      swapandsetfp(SIZE, (program->header.instructionCount*16), program->loadProgramId, program->loadProgramOffset, ec, data);
    }
 }
 
@@ -164,7 +161,9 @@ template<int SIZE, bool isIndex> static void setVectorTypefpIndex (void *dat, co
       }
    }
    if ( RGL_LIKELY( *ec ) )
-      swapandsetfp<SIZE>( program->header.instructionCount*16, program->loadProgramId, program->loadProgramOffset, ec, ( unsigned int * )data );
+   {
+      swapandsetfp(SIZE, (program->header.instructionCount*16), program->loadProgramId, program->loadProgramOffset, ec, data);
+   }
 }
 
 //matrices
@@ -212,7 +211,8 @@ template <int ROWS, int COLS, int ORDER> static void setMatrixfpIndex (void *dat
       int count = *ec;
       if ( RGL_LIKELY( count ) )
       {
-         swapandsetfp<COLS>( program->header.instructionCount*16, program->loadProgramId, program->loadProgramOffset, ec, ( unsigned int * )dst + row * 4 );
+         const unsigned int   * __restrict v = ( unsigned int * )dst + row * 4;
+         swapandsetfp(COLS, (program->header.instructionCount*16), program->loadProgramId, program->loadProgramOffset, ec, v);
       }
       ec += count + 2; //+1 for the register, +1 for the count, + count for the number of embedded consts
    }
@@ -241,7 +241,8 @@ template <int ROWS, int COLS, int ORDER> static void setMatrixfpIndexArray (void
       int count = *ec;
       if ( RGL_LIKELY( count ) )
       {
-         swapandsetfp<COLS>( program->header.instructionCount*16, program->loadProgramId, program->loadProgramOffset, ec, ( unsigned int * )dst + row * 4 );
+         const unsigned int   * __restrict v = ( unsigned int * )dst + row * 4;
+         swapandsetfp(COLS, (program->header.instructionCount*16), program->loadProgramId, program->loadProgramOffset, ec, v);
       }
       ec += count + 2;//+1 for the register, +1 for the count, +count for the number of embedded consts
    }
@@ -473,7 +474,6 @@ void rglCreatePushBuffer(void *data)
    program->constantPushBufferWordSize = bufferSize;
    GLuint *currentStorage = ( GLuint * )( rglGcmCurrent + bufferSize );
 
-   int outOfMemory = 0;
    //second pass to fill the buffer
    arrayCount = 1;
    const CgParameterEntry *containerEntry = NULL;
@@ -494,10 +494,7 @@ void rglCreatePushBuffer(void *data)
 
       CGparameter id = ( CGparameter )rglCreateName( &_CurrentContext->cgParameterNameSpace, ( void* )rtParameter );
       if ( !id )
-      {
-         outOfMemory = 1;
          break;
-      }
 
       rtParameter->id = id;
       rtParameter->parameterEntry = parameterEntry;
@@ -749,7 +746,7 @@ void rglCreatePushBuffer(void *data)
    }
 
    //add padding
-   if ( bufferSize > 0 )
+   if (bufferSize)
    {
       CellGcmContextData gcmContext, *thisContext;
       int i, nopCount;
@@ -1955,7 +1952,19 @@ void rglPlatformCreateTexture (void *data)
 }
 
 
-void rglPlatformFreeGcmTexture (void *data);
+// Free memory pooled by a GCM texture
+static void rglPlatformFreeGcmTexture (void *data)
+{
+   rglTexture *texture = (rglTexture*)data;
+   rglGcmTexture *gcmTexture = ( rglGcmTexture * )texture->platformTexture;
+
+   if ( gcmTexture->pool == RGLGCM_SURFACE_POOL_LINEAR)
+      gmmFree( gcmTexture->gpuAddressId );
+
+   gcmTexture->gpuAddressId = GMM_ERROR;
+   gcmTexture->gpuAddressIdOffset = 0;
+   gcmTexture->gpuSize = 0;
+}
 
 // Destroy a texture by freeing a gcm texture and an associated PBO
 void rglPlatformDestroyTexture (void *data)
@@ -1983,20 +1992,6 @@ void rglPlatformDropTexture (void *data)
    gcmTexture->gpuSize = 0;
    texture->revalidate |= RGL_TEXTURE_REVALIDATE_IMAGES;
    rglTextureTouchFBOs( texture );
-}
-
-// Free memory pooled by a GCM texture
-void rglPlatformFreeGcmTexture (void *data)
-{
-   rglTexture *texture = (rglTexture*)data;
-   rglGcmTexture *gcmTexture = ( rglGcmTexture * )texture->platformTexture;
-
-   if ( gcmTexture->pool == RGLGCM_SURFACE_POOL_LINEAR)
-      gmmFree( gcmTexture->gpuAddressId );
-
-   gcmTexture->gpuAddressId = GMM_ERROR;
-   gcmTexture->gpuAddressIdOffset = 0;
-   gcmTexture->gpuSize = 0;
 }
 
 // Validate texture resources
