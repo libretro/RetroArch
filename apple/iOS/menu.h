@@ -54,16 +54,6 @@
 @end
 
 /*********************************************/
-/* RAMenuItemBooleanSetting                  */
-/* A simple menu item that displays the      */
-/* state, and allows editing, of a boolean   */
-/* setting.                                  */
-/*********************************************/
-@interface RAMenuItemBooleanSetting : NSObject<RAMenuItemBase>
-@property (nonatomic) const rarch_setting_t* setting;
-@end
-
-/*********************************************/
 /* RAMenuItemGeneralSetting                  */
 /* A simple menu item that displays the      */
 /* state, and allows editing, of a string or */
@@ -72,6 +62,19 @@
 @interface RAMenuItemGeneralSetting : NSObject<RAMenuItemBase>
 @property (nonatomic) const rarch_setting_t* setting;
 @property (nonatomic, weak) UITableView* parentTable;
++ (id)itemForSetting:(const rarch_setting_t*)setting;
+- (id)initWithSetting:(const rarch_setting_t*)setting;
+@end
+
+/*********************************************/
+/* RAMenuItemBooleanSetting                  */
+/* A simple menu item that displays the      */
+/* state, and allows editing, of a boolean   */
+/* setting.                                  */
+/*********************************************/
+@interface RAMenuItemBooleanSetting : NSObject<RAMenuItemBase>
+@property (nonatomic) const rarch_setting_t* setting;
+- (id)initWithSetting:(const rarch_setting_t*)setting;
 @end
 
 /*********************************************/

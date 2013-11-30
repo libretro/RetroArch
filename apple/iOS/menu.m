@@ -115,54 +115,6 @@
 @end
 
 /*********************************************/
-/* RAMenuItemBooleanSetting                  */
-/* A simple menu item that displays the      */
-/* state, and allows editing, of a boolean   */
-/* setting.                                  */
-/*********************************************/
-@implementation RAMenuItemBooleanSetting
-
-+ (RAMenuItemBooleanSetting*)itemForSetting:(const rarch_setting_t*)setting
-{
-   RAMenuItemBooleanSetting* item = [RAMenuItemBooleanSetting new];
-   item.setting = setting;
-   return item;
-}
-
-- (UITableViewCell*)cellForTableView:(UITableView*)tableView
-{
-   static NSString* const cell_id = @"boolean_setting";
-   
-   UITableViewCell* result = [tableView dequeueReusableCellWithIdentifier:cell_id];
-   if (!result)
-   {
-      result = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleValue1 reuseIdentifier:cell_id];
-      result.selectionStyle = UITableViewCellSelectionStyleNone;
-      result.accessoryView = [UISwitch new];
-   }
-
-   result.textLabel.text = @(self.setting->short_description);
-   [(id)result.accessoryView removeTarget:nil action:NULL forControlEvents:UIControlEventValueChanged];
-   [(id)result.accessoryView addTarget:self action:@selector(handleBooleanSwitch:) forControlEvents:UIControlEventValueChanged];
-   
-   if (self.setting)
-      [(id)result.accessoryView setOn:*self.setting->value.boolean];
-   return result;
-}
-
-- (void)handleBooleanSwitch:(UISwitch*)swt
-{
-   if (self.setting)
-      *self.setting->value.boolean = swt.on ? true : false;
-}
-
-- (void)wasSelectedOnTableView:(UITableView*)tableView ofController:(UIViewController*)controller
-{
-}
-
-@end
-
-/*********************************************/
 /* RAMenuItemGeneralSetting                  */
 /* A simple menu item that displays the      */
 /* state, and allows editing, of a string or */
@@ -174,15 +126,32 @@
 
 @implementation RAMenuItemGeneralSetting
 
-+ (RAMenuItemGeneralSetting*)itemForSetting:(const rarch_setting_t*)setting
++ (id)itemForSetting:(const rarch_setting_t*)setting
 {
-   RAMenuItemGeneralSetting* item = [RAMenuItemGeneralSetting new];
-   item.setting = setting;
+   switch (setting->type)
+   {
+      case ST_BOOL: return [[RAMenuItemBooleanSetting alloc] initWithSetting:setting];
+      case ST_PATH: return [[RAMenuItemPathSetting alloc] initWithSetting:setting];
+      case ST_BIND: return [[RAMenuItemBindSetting alloc] initWithSetting:setting];
+      default:      break;
+   }
+
+   RAMenuItemGeneralSetting* item = [[RAMenuItemGeneralSetting alloc] initWithSetting:setting];
    
    if (item.setting->type == ST_INT || item.setting->type == ST_UINT || item.setting->type == ST_FLOAT)
       item.formatter = [[RANumberFormatter alloc] initWithSetting:item.setting];
    
    return item;
+}
+
+- (id)initWithSetting:(const rarch_setting_t*)setting
+{
+   if ((self = [super init]))
+   {
+      self.setting = setting;
+   }
+   
+   return self;
 }
 
 - (UITableViewCell*)cellForTableView:(UITableView*)tableView
@@ -235,19 +204,63 @@
 @end
 
 /*********************************************/
+/* RAMenuItemBooleanSetting                  */
+/* A simple menu item that displays the      */
+/* state, and allows editing, of a boolean   */
+/* setting.                                  */
+/*********************************************/
+@implementation RAMenuItemBooleanSetting
+
+- (id)initWithSetting:(const rarch_setting_t*)setting
+{
+   if ((self = [super init]))
+   {
+      self.setting = setting;
+   }
+   
+   return self;
+}
+
+- (UITableViewCell*)cellForTableView:(UITableView*)tableView
+{
+   static NSString* const cell_id = @"boolean_setting";
+   
+   UITableViewCell* result = [tableView dequeueReusableCellWithIdentifier:cell_id];
+   if (!result)
+   {
+      result = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleValue1 reuseIdentifier:cell_id];
+      result.selectionStyle = UITableViewCellSelectionStyleNone;
+      result.accessoryView = [UISwitch new];
+   }
+   
+   result.textLabel.text = @(self.setting->short_description);
+   [(id)result.accessoryView removeTarget:nil action:NULL forControlEvents:UIControlEventValueChanged];
+   [(id)result.accessoryView addTarget:self action:@selector(handleBooleanSwitch:) forControlEvents:UIControlEventValueChanged];
+   
+   if (self.setting)
+      [(id)result.accessoryView setOn:*self.setting->value.boolean];
+   return result;
+}
+
+- (void)handleBooleanSwitch:(UISwitch*)swt
+{
+   if (self.setting)
+      *self.setting->value.boolean = swt.on ? true : false;
+}
+
+- (void)wasSelectedOnTableView:(UITableView*)tableView ofController:(UIViewController*)controller
+{
+}
+
+@end
+
+/*********************************************/
 /* RAMenuItemPathSetting                     */
 /* A menu item that displays and allows      */
 /* browsing for a path setting.              */
 /*********************************************/
 @interface RAMenuItemPathSetting() <RADirectoryListDelegate> @end
 @implementation RAMenuItemPathSetting
-
-+ (RAMenuItemPathSetting*)itemForSetting:(const rarch_setting_t*)setting
-{
-   RAMenuItemPathSetting* item = [RAMenuItemPathSetting new];
-   item.setting = setting;
-   return item;
-}
 
 - (void)wasSelectedOnTableView:(UITableView*)tableView ofController:(UIViewController*)controller
 {
@@ -278,13 +291,6 @@
 @end
 
 @implementation RAMenuItemBindSetting
-
-+ (RAMenuItemBindSetting*)itemForSetting:(const rarch_setting_t*)setting
-{
-   RAMenuItemBindSetting* item = [RAMenuItemBindSetting new];
-   item.setting = setting;
-   return item;
-}
 
 - (void)wasSelectedOnTableView:(UITableView *)tableView ofController:(UIViewController *)controller
 {
@@ -491,14 +497,8 @@
             if (settings.count)
                [self.sections addObject:settings];
          }
-         else if (i->type == ST_BOOL)
-            [settings addObject:[RAMenuItemBooleanSetting itemForSetting:i]];
-         else if (i->type == ST_INT || i->type == ST_UINT || i->type == ST_FLOAT || i->type == ST_STRING)
+         else
             [settings addObject:[RAMenuItemGeneralSetting itemForSetting:i]];
-         else if (i->type == ST_PATH)
-            [settings addObject:[RAMenuItemPathSetting itemForSetting:i]];
-         else if (i->type == ST_BIND)
-            [settings addObject:[RAMenuItemBindSetting itemForSetting:i]];
       }
    }
 
