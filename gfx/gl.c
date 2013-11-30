@@ -1192,8 +1192,6 @@ static void gl_init_textures(void *data, const video_info_t *video)
 
 static inline void gl_copy_frame(void *data, const void *frame, unsigned width, unsigned height, unsigned pitch)
 {
-   unsigned h;
-   (void)h;
    gl_t *gl = (gl_t*)data;
 #if defined(HAVE_OPENGLES2)
 #if defined(HAVE_EGL)
@@ -1245,6 +1243,7 @@ static inline void gl_copy_frame(void *data, const void *frame, unsigned width, 
          }
          else // Slower path.
          {
+            unsigned h;
             const unsigned line_bytes = width * gl->base_size;
 
             uint8_t *dst = (uint8_t*)gl->conv_buffer; // This buffer is preallocated for this purpose.
@@ -1260,6 +1259,7 @@ static inline void gl_copy_frame(void *data, const void *frame, unsigned width, 
       }
    }
 #elif defined(HAVE_PSGL)
+   unsigned h;
    size_t buffer_addr        = gl->tex_w * gl->tex_h * gl->tex_index * gl->base_size;
    size_t buffer_stride      = gl->tex_w * gl->base_size;
    const uint8_t *frame_copy = frame;

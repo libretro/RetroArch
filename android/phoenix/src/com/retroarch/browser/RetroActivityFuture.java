@@ -13,7 +13,9 @@ import android.hardware.Camera;
 import android.os.Build;
 import android.util.Log;
 
-public final class RetroActivity extends NativeActivity
+//For Android 3.0 and up
+
+public final class RetroActivityFuture extends NativeActivity
 {
 	private Camera mCamera;
 	private long lastTimestamp = 0;

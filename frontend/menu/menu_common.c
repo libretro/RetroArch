@@ -585,9 +585,9 @@ static int menu_start_screen_iterate(void *data, unsigned action)
          " Exit RetroArch: %-20s\n"
          " \n"
 
-         "To play a game:\n"
+         "To run content:\n"
          "Load a libretro core (Core).\n"
-         "Load a ROM (Load Game).     \n"
+         "Load a content file (Load Content).     \n"
          " \n"
 
          "See Path Options to set directories\n"
@@ -1981,15 +1981,15 @@ void menu_populate_entries(void *data, unsigned menu_type)
          file_list_push(rgui->selection_buf, "Core", RGUI_SETTINGS_CORE, 0);
 #endif
          if (rgui->history)
-            file_list_push(rgui->selection_buf, "Load Game (History)", RGUI_SETTINGS_OPEN_HISTORY, 0);
+            file_list_push(rgui->selection_buf, "Load Content (History)", RGUI_SETTINGS_OPEN_HISTORY, 0);
 
          if (rgui->core_info && core_info_list_num_info_files(rgui->core_info))
-            file_list_push(rgui->selection_buf, "Load Game (Detect Core)", RGUI_SETTINGS_OPEN_FILEBROWSER_DEFERRED_CORE, 0);
+            file_list_push(rgui->selection_buf, "Load Content (Detect Core)", RGUI_SETTINGS_OPEN_FILEBROWSER_DEFERRED_CORE, 0);
 
          if (rgui->info.library_name || g_extern.system.info.library_name)
          {
             char load_game_core_msg[64];
-            snprintf(load_game_core_msg, sizeof(load_game_core_msg), "Load Game (%s)",
+            snprintf(load_game_core_msg, sizeof(load_game_core_msg), "Load Content (%s)",
                   rgui->info.library_name ? rgui->info.library_name : g_extern.system.info.library_name);
             file_list_push(rgui->selection_buf, load_game_core_msg, RGUI_SETTINGS_OPEN_FILEBROWSER, 0);
          }
@@ -2005,8 +2005,8 @@ void menu_populate_entries(void *data, unsigned menu_type)
 #ifdef HAVE_SCREENSHOTS
             file_list_push(rgui->selection_buf, "Take Screenshot", RGUI_SETTINGS_SCREENSHOT, 0);
 #endif
-            file_list_push(rgui->selection_buf, "Resume Game", RGUI_SETTINGS_RESUME_GAME, 0);
-            file_list_push(rgui->selection_buf, "Restart Game", RGUI_SETTINGS_RESTART_GAME, 0);
+            file_list_push(rgui->selection_buf, "Resume Content", RGUI_SETTINGS_RESUME_GAME, 0);
+            file_list_push(rgui->selection_buf, "Restart Content", RGUI_SETTINGS_RESTART_GAME, 0);
 
          }
 #ifndef HAVE_DYNAMIC

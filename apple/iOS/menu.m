@@ -251,7 +251,7 @@
 
 - (void)wasSelectedOnTableView:(UITableView*)tableView ofController:(UIViewController*)controller
 {
-   RADirectoryList* list = [[RADirectoryList alloc] initWithPath:@"/" delegate:self];
+   RADirectoryList* list = [[RADirectoryList alloc] initWithPath:nil delegate:self];
    [controller.navigationController pushViewController:list animated:YES];
 }
 
@@ -366,9 +366,9 @@
             [RAMenuItemBasic itemWithDescription:@"Choose Core"
                action:^{ [weakSelf chooseCoreWithPath:nil]; }
                detail:^{ return weakSelf.core ? apple_get_core_display_name(weakSelf.core) : @"Auto Detect"; }],
-            [RAMenuItemBasic itemWithDescription:@"Load Game"                 action:^{ [weakSelf loadGame]; }],
-            [RAMenuItemBasic itemWithDescription:@"Load Game (History)"       action:^{ [weakSelf loadHistory]; }],
-            [RAMenuItemBasic itemWithDescription:@"Frontend Settings"         action:^{ [[RetroArch_iOS get] showSystemSettings]; }]
+            [RAMenuItemBasic itemWithDescription:@"Load Content"                 action:^{ [weakSelf loadGame]; }],
+            [RAMenuItemBasic itemWithDescription:@"Load Content (History)"       action:^{ [weakSelf loadHistory]; }],
+            [RAMenuItemBasic itemWithDescription:@"Settings"         action:^{ [[RetroArch_iOS get] showSystemSettings]; }]
          ]
       ];
    }
@@ -384,7 +384,7 @@
       action: ^(NSString* core)
       {
          if (path)
-            apple_run_core(weakSelf.core, path.UTF8String);
+            apple_run_core(core, path.UTF8String);
          else
          {
             weakSelf.core = core;
@@ -392,7 +392,10 @@
             [weakSelf.navigationController popViewControllerAnimated:YES];
          }
       }];
-   [self.navigationController pushViewController:list animated:YES];
+   
+   // Don't push view controller if it already launched a game
+   if (!list.actionRan)
+      [self.navigationController pushViewController:list animated:YES];
 }
 
 - (void)loadGame
@@ -767,8 +770,7 @@ static const void* const associated_core_key = &associated_core_key;
 
 - (void)wasSelectedOnTableView:(UITableView*)tableView ofController:(UIViewController*)controller
 {
-   if (self.parent.action)
-      self.parent.action(self.core);
+   [self.parent runAction:self.core];
 }
 
 @end
@@ -816,7 +818,7 @@ static const void* const associated_core_key = &associated_core_key;
             core_info_list_get_supported_cores(core_list, _path.UTF8String, &core_support, &core_count);
             
             if (core_count == 1 && _action)
-               _action(apple_get_core_id(&core_support[0]));
+               [self runAction:apple_get_core_id(&core_support[0])];
             else if (core_count > 1)
                [self load:core_count coresFromList:core_support toSection:core_section];
          }
@@ -824,6 +826,14 @@ static const void* const associated_core_key = &associated_core_key;
    }
 
    return self;
+}
+
+- (void)runAction:(NSString*)coreID
+{
+   self.actionRan = true;
+   
+   if (self.action)
+      _action(coreID);
 }
 
 - (void)load:(uint32_t)count coresFromList:(const core_info_t*)list toSection:(NSMutableArray*)array
@@ -924,8 +934,8 @@ static const void* const associated_core_key = &associated_core_key;
       RAPauseMenu* __weak weakSelf = self;
 
       [self.sections addObject:@[@"Actions",
-         [RAMenuItemBasic itemWithDescription:@"Reset Game" action:^{ [weakSelf performBasicAction:RESET]; }],
-         [RAMenuItemBasic itemWithDescription:@"Close Game" action:^{ [weakSelf performBasicAction:QUIT]; }]
+         [RAMenuItemBasic itemWithDescription:@"Reset Content" action:^{ [weakSelf performBasicAction:RESET]; }],
+         [RAMenuItemBasic itemWithDescription:@"Close Content" action:^{ [weakSelf performBasicAction:QUIT]; }]
       ]];
 
       [self.sections addObject:@[@"States",
@@ -941,6 +951,11 @@ static const void* const associated_core_key = &associated_core_key;
    }
    
    return self;
+}
+
+- (void)dealloc
+{
+   apple_refresh_config();
 }
 
 - (void)performBasicAction:(enum basic_event_t)action

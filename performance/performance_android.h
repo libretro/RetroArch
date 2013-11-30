@@ -30,6 +30,7 @@
 
 #include <sys/cdefs.h>
 #include <stdint.h>
+#include "../retroarch_logger.h"
 
 typedef enum {
     ANDROID_CPU_FAMILY_UNKNOWN = 0,

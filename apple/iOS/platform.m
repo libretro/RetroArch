@@ -16,6 +16,7 @@
 #include <pthread.h>
 #include <string.h>
 
+#include "../../frontend/platform/platform_ios.h"
 #import "RetroArch_Apple.h"
 #include "rarch_wrapper.h"
 
@@ -29,57 +30,6 @@
 #include "bluetooth/btpad.h"
 
 #include "file.h"
-
-static struct
-{
-    bool portrait;
-    bool portrait_upside_down;
-    bool landscape_left;
-    bool landscape_right;
-    
-    bool logging_enabled;
-    
-    char bluetooth_mode[64];
-    
-    struct
-    {
-        int stdout;
-        int stderr;
-        
-        FILE* file;
-    }  logging;
-} apple_frontend_settings;
-
-const rarch_setting_t* apple_get_frontend_settings()
-{
-    static rarch_setting_t settings[16];
-    
-    settings[0]  = setting_data_group_setting(ST_GROUP, "Frontend Settings");
-    settings[1]  = setting_data_group_setting(ST_SUB_GROUP, "Frontend");
-    settings[2]  = setting_data_bool_setting("ios_use_file_log", "Enable File Logging",
-                                             &apple_frontend_settings.logging_enabled, false);
-    settings[3]  = setting_data_bool_setting("ios_tv_mode", "TV Mode", &apple_use_tv_mode, false);
-    settings[4]  = setting_data_group_setting(ST_END_SUB_GROUP, 0);
-    
-    settings[5]  = setting_data_group_setting(ST_SUB_GROUP, "Bluetooth");
-    settings[6]  = setting_data_string_setting("ios_btmode", "Mode", apple_frontend_settings.bluetooth_mode,
-                                               sizeof(apple_frontend_settings.bluetooth_mode), "keyboard");
-    settings[7]  = setting_data_group_setting(ST_END_SUB_GROUP, 0);
-    
-    settings[8]  = setting_data_group_setting(ST_SUB_GROUP, "Orientations");
-    settings[9]  = setting_data_bool_setting("ios_allow_portrait", "Portrait",
-                                             &apple_frontend_settings.portrait, true);
-    settings[10]  = setting_data_bool_setting("ios_allow_portrait_upside_down", "Portrait Upside Down",
-                                              &apple_frontend_settings.portrait_upside_down, true);
-    settings[11]  = setting_data_bool_setting("ios_allow_landscape_left", "Landscape Left",
-                                              &apple_frontend_settings.landscape_left, true);
-    settings[12] = setting_data_bool_setting("ios_allow_landscape_right", "Landscape Right",
-                                             &apple_frontend_settings.landscape_right, true);
-    settings[13] = setting_data_group_setting(ST_END_SUB_GROUP, 0);
-    settings[14] = setting_data_group_setting(ST_END_GROUP, 0);
-    
-    return settings;
-}
 
 //#define HAVE_DEBUG_FILELOG
 bool is_ios_7()
@@ -102,29 +52,6 @@ void ios_set_bluetooth_mode(NSString* mode)
       [[RAGameView get] iOS7SetiCadeMode:enabled];
    }
 #endif
-}
-
-void ios_set_logging_state(bool on)
-{
-   fflush(stdout);
-   fflush(stderr);
-
-   if (on && !apple_frontend_settings.logging.file)
-   {
-      apple_frontend_settings.logging.file = fopen([RetroArch_iOS get].logPath.UTF8String, "a");
-      apple_frontend_settings.logging.stdout = dup(1);
-      apple_frontend_settings.logging.stderr = dup(2);
-      dup2(fileno(apple_frontend_settings.logging.file), 1);
-      dup2(fileno(apple_frontend_settings.logging.file), 2);
-   }
-   else if (!on && apple_frontend_settings.logging.file)
-   {
-      dup2(apple_frontend_settings.logging.stdout, 1);
-      dup2(apple_frontend_settings.logging.stderr, 2);
-      
-      fclose(apple_frontend_settings.logging.file);
-      apple_frontend_settings.logging.file = 0;
-   }
 }
 
 // Input helpers: This is kept here because it needs objective-c
@@ -256,7 +183,7 @@ static void handle_touch_event(NSArray* touches)
    const core_info_list_t* core_list = apple_core_info_list_get();
    
    if (!core_list || core_list->count == 0)
-      apple_display_alert(@"No libretro cores were found. You will not be able to play any games.", 0);
+      apple_display_alert(@"No libretro cores were found. You will not be able to run any content.", 0);
 }
 
 - (void)applicationDidBecomeActive:(UIApplication *)application
@@ -368,9 +295,7 @@ static void handle_touch_event(NSArray* touches)
 
    // Set bluetooth mode
    ios_set_bluetooth_mode(@(apple_frontend_settings.bluetooth_mode));
-   ios_set_logging_state(apple_frontend_settings.logging_enabled);
-   
-   
+   ios_set_logging_state([RetroArch_iOS get].logPath.UTF8String, apple_frontend_settings.logging_enabled);
 }
 
 #pragma mark PAUSE MENU
@@ -397,4 +322,3 @@ int main(int argc, char *argv[])
       return UIApplicationMain(argc, argv, NSStringFromClass([RApplication class]), NSStringFromClass([RetroArch_iOS class]));
    }
 }
-

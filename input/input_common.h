@@ -54,6 +54,7 @@ bool input_translate_coord_viewport(int mouse_x, int mouse_y,
 enum back_button_enums
 {
    BACK_BUTTON_QUIT = 0,
+   BACK_BUTTON_GUI_TOGGLE,
    BACK_BUTTON_MENU_TOGGLE,
 };
 #endif

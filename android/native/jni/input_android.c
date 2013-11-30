@@ -878,6 +878,30 @@ static void android_input_set_keybinds(void *data, unsigned device,
             //android->keycode_lut[AKEYCODE_VOLUME_UP]  |= ((RETRO_DEVICE_ID_JOYPAD_SELECT+1) << shift);
             //android->keycode_lut[AKEYCODE_VOLUME_DOWN]  |= ((RETRO_DEVICE_ID_JOYPAD_SELECT+1) << shift);
             break;
+         case DEVICE_JXD_S7800B:
+            g_settings.input.device[port] = device;
+            android->dpad_emulation[port] = ANALOG_DPAD_DUALANALOG;
+            strlcpy(g_settings.input.device_names[port], "JXD S7800B",
+                  sizeof(g_settings.input.device_names[port]));
+
+            android->keycode_lut[AKEYCODE_DPAD_UP] |=  ((RETRO_DEVICE_ID_JOYPAD_UP+1)      << shift);
+            android->keycode_lut[AKEYCODE_DPAD_DOWN] |=  ((RETRO_DEVICE_ID_JOYPAD_DOWN+1)      << shift);
+            android->keycode_lut[AKEYCODE_DPAD_LEFT] |=  ((RETRO_DEVICE_ID_JOYPAD_LEFT+1)      << shift);
+            android->keycode_lut[AKEYCODE_DPAD_RIGHT] |=  ((RETRO_DEVICE_ID_JOYPAD_RIGHT+1)      << shift);
+
+            android->keycode_lut[AKEYCODE_BUTTON_A]  |= ((RETRO_DEVICE_ID_JOYPAD_A+1) << shift);
+            android->keycode_lut[AKEYCODE_BUTTON_B]  |= ((RETRO_DEVICE_ID_JOYPAD_B+1) << shift);
+            android->keycode_lut[AKEYCODE_BUTTON_Y]  |= ((RETRO_DEVICE_ID_JOYPAD_Y+1) << shift);
+            android->keycode_lut[AKEYCODE_BUTTON_X]  |= ((RETRO_DEVICE_ID_JOYPAD_X+1) << shift);
+
+            android->keycode_lut[AKEYCODE_BUTTON_L1]  |= ((RETRO_DEVICE_ID_JOYPAD_L+1) << shift);
+            android->keycode_lut[AKEYCODE_BUTTON_R1]  |= ((RETRO_DEVICE_ID_JOYPAD_R+1) << shift);
+            android->keycode_lut[AKEYCODE_BUTTON_L2]  |= ((RETRO_DEVICE_ID_JOYPAD_L2+1) << shift);
+            android->keycode_lut[AKEYCODE_BUTTON_R2]  |= ((RETRO_DEVICE_ID_JOYPAD_R2+1) << shift);
+
+            android->keycode_lut[AKEYCODE_BUTTON_START]  |= ((RETRO_DEVICE_ID_JOYPAD_START+1) << shift);
+            android->keycode_lut[AKEYCODE_BUTTON_SELECT]  |= ((RETRO_DEVICE_ID_JOYPAD_SELECT+1) << shift);
+            break;
          case DEVICE_IDROID_CON:
             g_settings.input.device[port] = device;
             strlcpy(g_settings.input.device_names[port], "i.droid",
@@ -1698,7 +1722,23 @@ static void android_input_poll(void *data)
                         && input_state > 0)
                   {
                   }
-                  else if (android->onBackPressed)
+                  else if (g_settings.input.back_behavior == BACK_BUTTON_QUIT)
+                  {
+                     *lifecycle_state |= (1ULL << RARCH_QUIT_KEY); 
+                     AInputQueue_finishEvent(android_app->inputQueue, event, handled);
+                     break;
+                  }
+                  else if (g_settings.input.back_behavior == BACK_BUTTON_GUI_TOGGLE)
+                  {
+                     int action = AKeyEvent_getAction(event);
+                     if (action == AKEY_EVENT_ACTION_DOWN)
+                        *lifecycle_state |= (1ULL << RARCH_MENU_TOGGLE);
+                     else if (action == AKEY_EVENT_ACTION_UP)
+                        *lifecycle_state &= ~(1ULL << RARCH_MENU_TOGGLE);
+                     AInputQueue_finishEvent(android_app->inputQueue, event, handled);
+                     break;
+                  }
+                  else if (android->onBackPressed && g_settings.input.back_behavior == BACK_BUTTON_MENU_TOGGLE)
                   {
                      RARCH_LOG("Invoke onBackPressed through JNI.\n");
                      JNIEnv *env = jni_thread_getenv();

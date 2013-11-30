@@ -64,7 +64,7 @@ static void core_info_list_resolve_all_firmware(core_info_list_t *core_info_list
       if (!info->data)
          continue;
 
-      unsigned count;
+      unsigned count = 0;
       if (!config_get_uint(info->data, "firmware_count", &count))
          continue;
 

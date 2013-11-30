@@ -1,13 +1,13 @@
 # RetroArch
 
-RetroArch is the reference frontend for the libretro API, an API which attempts to generalize
-a retro gaming system, such as emulators and game engines.
-Popular examples include SNES, NES, GameBoy, Arcade machines, Quake, DOOM, etc.
-Emulator and game cores are instantiated as dynamic libraries.
+RetroArch is the reference frontend for the libretro API.
+Popular examples of implementations for this API includes videogame system emulators and game engines, but also
+more generalized 3D programs.
+These programs are instantiated as dynamic libraries. We refer to these as "libretro cores".
 
 ## libretro
 
-[libretro](http://libretro.com) is an API that exposes the core of a retro gaming system.
+[libretro](http://libretro.com) is an API that exposes generic audio/video/input callbacks.
 A frontend for libretro (such as RetroArch) handles video output, audio output, input and application lifecycle.
 A libretro core written in portable C or C++ can run seamlessly on many platforms with very little/no porting effort.
 

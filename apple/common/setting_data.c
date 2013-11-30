@@ -368,8 +368,8 @@ const rarch_setting_t* setting_data_get_list()
          CONFIG_PATH(g_settings.screenshot_directory, "screenshot_directory", "Screenshot Directory", DEFAULT_ME_YO)
          CONFIG_PATH(g_settings.cheat_database, "cheat_database_path", "Cheat Database", DEFAULT_ME_YO)
          CONFIG_PATH(g_settings.cheat_settings_path, "cheat_settings_path", "Cheat Settings", DEFAULT_ME_YO)
-         CONFIG_PATH(g_settings.game_history_path, "game_history_path", "Game History Path", DEFAULT_ME_YO)
-         CONFIG_UINT(g_settings.game_history_size, "game_history_size", "Game History Size", game_history_size)
+         CONFIG_PATH(g_settings.game_history_path, "game_history_path", "Content History Path", DEFAULT_ME_YO)
+         CONFIG_UINT(g_settings.game_history_size, "game_history_size", "Content History Size", game_history_size)
 
          #ifdef HAVE_RGUI
             CONFIG_PATH(g_settings.rgui_browser_directory, "rgui_browser_directory", "Browser Directory", DEFAULT_ME_YO)
@@ -549,6 +549,7 @@ const rarch_setting_t* setting_data_get_list()
          END_SUB_GROUP()
       #endif
 
+      // The second argument to config bind is 1 based for players and 0 only for meta keys
       START_SUB_GROUP("Meta Keys")
          for (int i = 0; i != RARCH_BIND_LIST_END; i ++)
             if (input_config_bind_map[i].meta)
@@ -558,14 +559,21 @@ const rarch_setting_t* setting_data_get_list()
             }
       END_SUB_GROUP()
 
-      START_SUB_GROUP("Player 1")
-         for (int i = 0; i != RARCH_BIND_LIST_END; i ++)
-            if (!input_config_bind_map[i].meta)
-            {
-               const struct input_bind_map* bind = &input_config_bind_map[i];
-               CONFIG_BIND(g_settings.input.binds[0][i], 0, bind->base, bind->desc, &retro_keybinds_1[i])
-            }
-      END_SUB_GROUP()
+      for (int player = 0; player < MAX_PLAYERS; player ++)
+      {
+         const struct retro_keybind* const defaults = (player == 0) ? retro_keybinds_1 : retro_keybinds_rest;
+      
+         char buffer[32];
+         snprintf(buffer, 32, "Player %d", player + 1);
+         START_SUB_GROUP(strdup(buffer))
+            for (int i = 0; i != RARCH_BIND_LIST_END; i ++)
+               if (!input_config_bind_map[i].meta)
+               {
+                  const struct input_bind_map* bind = &input_config_bind_map[i];
+                  CONFIG_BIND(g_settings.input.binds[player][i], player + 1, bind->base, bind->desc, &defaults[i])
+               }
+         END_SUB_GROUP()
+      }
    END_GROUP()
 
    /********/

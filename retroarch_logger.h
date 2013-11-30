@@ -31,10 +31,12 @@
 #define LOG_FILE (stderr)
 #endif
 
-#if defined(RARCH_CONSOLE) && (defined(HAVE_LOGGER) || defined(_XBOX1))
+#if defined(RARCH_CONSOLE) && defined(HAVE_LOGGER)
 #include <logger_override.h>
 #elif defined(IOS)
-#include "apple/logger_override.h"
+#include "logger/ios_logger_override.h"
+#elif defined(_XBOX1)
+#include "logger/xdk1_logger_override.h"
 #else
 #if defined(RARCH_DUMMY_LOG) || !defined(RARCH_INTERNAL)
 #define RARCH_LOG_VERBOSE (true)
@@ -128,7 +130,7 @@
 #endif
 #endif
 
-#ifndef RARCH_WARN
+#ifndef RARCH_WARN_OUTPUT
 #if defined(ANDROID) && defined(HAVE_LOGGER)
 #define  RARCH_WARN_OUTPUT(...)  __android_log_print(ANDROID_LOG_INFO, "stderr [WARN] :: ", __VA_ARGS__)
 #elif defined(IS_SALAMANDER)

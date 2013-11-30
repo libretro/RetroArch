@@ -63,7 +63,7 @@ PERFORMANCE
 ============================================================ */
 
 #ifdef ANDROID
-#include "../android/native/jni/cpufeatures.c"
+#include "../performance/performance_android.c"
 #endif
 
 #include "../performance.c"

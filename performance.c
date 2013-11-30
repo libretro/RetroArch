@@ -14,11 +14,12 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <stdio.h>
 #include "performance.h"
 #include "general.h"
 
 #ifdef ANDROID
-#include "android/native/jni/cpufeatures.h"
+#include "performance/performance_android.h"
 #endif
 
 #if !defined(_WIN32) && !defined(RARCH_CONSOLE)

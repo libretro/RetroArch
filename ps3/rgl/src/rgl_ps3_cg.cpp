@@ -103,7 +103,7 @@ static int rglGcmGenerateProgram (void *data, int profileIndex, const CgProgramH
    program->rtParametersCount = parameterHeader->entryCount;
    program->runtimeParameters = ( CgRuntimeParameter* )memoryBlock;
 
-   if ( parameterEntries == NULL ) // the param entry can be supplied if not right after parameterHeader in memory, it happens when there's a program copy
+   if (!parameterEntries) // the param entry can be supplied if not right after parameterHeader in memory, it happens when there's a program copy
       parameterEntries = ( CgParameterEntry* )( parameterHeader + 1 );
 
    program->parametersEntries = parameterEntries;
@@ -231,11 +231,8 @@ static CGprogramGroup rglCgCreateProgramGroupFromFile( CGcontext ctx, const char
    // check that file exists
    FILE* fp = fopen( group_file, "rb" );
 
-   if (fp == NULL)
-   {
-      rglCgRaiseError( CG_FILE_READ_ERROR );
+   if (!fp)
       return ( CGprogramGroup )NULL;
-   }
 
    // find the file length
    size_t file_size = 0;
@@ -844,7 +841,7 @@ static int rglGetSizeofSubArray( const short *dimensions, int count )
 
 static _CGparameter *_cgGetNamedParameter( _CGprogram* progPtr, const char* name, CGenum name_space, int *arrayIndex, const CgParameterEntry *_startEntry = NULL, int _entryCount = -1 )
 {
-   if ( name == NULL )
+   if (!name)
       return NULL;
 
    *arrayIndex = -1;
@@ -875,7 +872,7 @@ static _CGparameter *_cgGetNamedParameter( _CGprogram* progPtr, const char* name
    while (( !done ) && ( *structureStart ) && ( containerCount != -1 ) )
    {
       structureEnd = strpbrk( structureStart, ".[" );
-      if ( structureEnd == NULL )
+      if (!structureEnd)
       {
          structureEnd = structureStart + strlen( structureStart );
          done = 1;
@@ -1515,7 +1512,7 @@ _CGprogram* rglCgProgramFindPrev( _CGcontext* ctx, _CGprogram* prog )
 
    _CGprogram* ptr = ctx->programList;
 
-   while ( ptr != NULL && prog != ptr->next )
+   while (ptr && prog != ptr->next )
       ptr = ptr->next;
 
    return ptr;
@@ -1880,7 +1877,7 @@ void AccumulateSizeForParamResource( CgParameterEntry* paramEntry, CgParameterEn
          defaults = ( float* )consttab->data + defaultIndex->defaultValueIndex;
       }
    }
-   if ( defaults )
+   if (defaults)
    {
       // defaults are always padded to 4 floats per param
       unsigned int defaultsCount = ( rowCount ? rowCount : 1 ) * 4;
@@ -1890,7 +1887,7 @@ void AccumulateSizeForParamResource( CgParameterEntry* paramEntry, CgParameterEn
    // offsets
    // fragment programs
    // do we want this referenced param test???
-   if ( nvParamOffsetsSize != NULL && paramEntry->flags & CGPF_REFERENCED )
+   if (nvParamOffsetsSize && paramEntry->flags & CGPF_REFERENCED )
    {
       // non varying params
       if ( paramEntry->flags & CGPV_CONSTANT || paramEntry->flags & CGPV_UNIFORM )
@@ -2180,7 +2177,7 @@ void PopulateDataForParamResource( CgParameterEntry* paramEntry, CgParameterEntr
          }
 
          // vertex programs
-         if ( nvParamOffsets == NULL )
+         if (!nvParamOffsets)
          {
             // element of an array
             if ( elementResourceIndex >= 0 )
@@ -2500,7 +2497,7 @@ void PopulateDataForParamArray( CgParameterEntry* paramEntry, CgParameterEntry* 
          // rest of array name for array and index
          sprintf( *nvParamStrings, "%s[%d]", ( strtab->data + paramEntry->nameOffset ), element );
 
-         if ( prefix == NULL )
+         if (!prefix)
             prefix = *nvParamStrings;
 
          *nvParamStrings += strlen( *nvParamStrings );
@@ -2574,7 +2571,7 @@ void PopulateDataForParamStruct( CgParameterEntry* paramEntry, CgParameterEntry*
    CgParameterEntry* memberEntry = paramEntry + 1;
 
    // set the prefix pointer if it is not already set
-   if ( prefix == NULL )
+   if (!prefix)
       prefix = *nvParamStrings;
 
    // add prefix of struct name and .
@@ -2790,7 +2787,7 @@ static bool cgGetElfProgramByName( CGELFBinary *elfBinary, const char *name, CGE
 {
    //if no name try to return the first program
    int res;
-   if ( name == NULL || name[0] == '\0' )
+   if (!name || name[0] == '\0' )
       res = 0;
    else
       res = lookupSymbolValueInPlace( elfBinary->symtab, elfBinary->symbolSize, elfBinary->symbolCount, elfBinary->symbolstrtab, name );
@@ -3108,7 +3105,7 @@ CG_API CGprogram cgCreateProgramFromFile( CGcontext ctx,
          if ( groupName && !strcmp( groupName, program_file ) )
          {
             int index;
-            if ( entry == NULL )
+            if (!entry)
                index = 0;
             else
                index = rglCgGetProgramIndex( group, entry );
@@ -3135,11 +3132,8 @@ CG_API CGprogram cgCreateProgramFromFile( CGcontext ctx,
          // check that file exists
          fp = fopen( program_file, "rb" );
 
-         if (fp == NULL)
-         {
-            rglCgRaiseError( CG_FILE_READ_ERROR );
+         if (!fp)
             return ( CGprogram )NULL;
-         }
 
          unsigned int filetag = 0;
          int res = fread( &filetag, sizeof( filetag ), 1, fp );
@@ -3159,7 +3153,7 @@ CG_API CGprogram cgCreateProgramFromFile( CGcontext ctx,
             {
                _CGprogramGroup *_group = ( _CGprogramGroup * )group;
                _group->userCreated = false;
-               if ( entry == NULL )
+               if (!entry)
                {
                   if ( group->programCount == 1 )
                   {
@@ -3188,11 +3182,8 @@ CG_API CGprogram cgCreateProgramFromFile( CGcontext ctx,
    if ( !fp )
    {
       fp = fopen( program_file, "rb" );
-      if (fp  == NULL)
-      {
-         rglCgRaiseError( CG_FILE_READ_ERROR );
+      if (!fp)
          return ( CGprogram )NULL;
-      }
    }
 
    // find the file length
@@ -3203,11 +3194,10 @@ CG_API CGprogram cgCreateProgramFromFile( CGcontext ctx,
 
    // alloc memory for the file
    char* ptr = ( char* )malloc( file_size + 1 );
-   if (ptr == NULL)
+   if (!ptr)
    {
-      rglCgRaiseError( CG_MEMORY_ALLOC_ERROR );
-      fclose( fp );
-      return ( CGprogram )NULL;
+      fclose(fp);
+      return (CGprogram)NULL;
    }
 
    // read the entire file into memory then close the file
@@ -3234,16 +3224,11 @@ CG_API CGprogram cgCopyProgram( CGprogram program )
    // check input parameter
 
    if ( !CG_IS_PROGRAM( program ) )
-   {
-      rglCgRaiseError( CG_INVALID_PROGRAM_HANDLE_ERROR );
       return NULL;
-   }
+
    _CGprogram* prog = _cgGetProgPtr( program );
-   if (prog == NULL)
-   {
-      rglCgRaiseError( CG_INVALID_PROGRAM_HANDLE_ERROR );
+   if (!prog)
       return ( CGprogram )NULL;
-   }
 
    _CGprogram* newprog;
    size_t paddedProgramSize = 0;
@@ -3647,10 +3632,14 @@ CGGL_API void cgGLSetTextureParameter( CGparameter param, GLuint texobj )
 CGGL_API GLuint cgGLGetTextureParameter( CGparameter param )
 {
    CgRuntimeParameter* ptr = _cgGLTestTextureParameter( param );
-   if ( ptr == NULL ) return 0;
-   if ( !( ptr->parameterEntry->flags & CGPF_REFERENCED ) ) { rglCgRaiseError( CG_INVALID_PARAMETER_ERROR ); return 0; }
+   if (!ptr)
+      return 0;
+   if (!(ptr->parameterEntry->flags & CGPF_REFERENCED))
+   {
+      rglCgRaiseError( CG_INVALID_PARAMETER_ERROR );
+      return 0;
+   }
    return *( GLuint* )ptr->pushBufferPointer;
-   return 0;
 }
 
 CGGL_API void cgGLEnableTextureParameter( CGparameter param )
@@ -4044,7 +4033,7 @@ int convertNvToElfFromMemory(const void *sourceData, size_t size, int endianness
          }
 
          // test if we are done finding structural information
-         if (structureEnd == NULL)
+         if (!structureEnd)
          {
             //set structureEnd correctly so that the rest of the function performs correctly
             structureEnd = structureStart + strlen(structureStart);
