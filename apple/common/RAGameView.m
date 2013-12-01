@@ -254,6 +254,8 @@ static bool g_is_syncing = true;
     [[NSNotificationCenter defaultCenter] postNotificationName:@"NewCameraTextureReady" object:nil];
     newFrame = true;
     
+    glBindTexture(GL_TEXTURE_2D, 0);
+    
     CVOpenGLESTextureCacheFlush(textureCache, 0);
     CFRelease(renderTexture);
 }
