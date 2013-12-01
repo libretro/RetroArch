@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		509FC979183F9F18007A5A30 /* menu.m in Sources */ = {isa = PBXBuildFile; fileRef = 509FC978183F9F18007A5A30 /* menu.m */; };
+		50E7189F184B88AA001956CE /* CoreVideo.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 50E7189E184B88AA001956CE /* CoreVideo.framework */; };
 		50F54A871848F9FC00E19EFD /* ic_pause.png in Resources */ = {isa = PBXBuildFile; fileRef = 50F54A861848F9FC00E19EFD /* ic_pause.png */; };
 		962979F616C43B9500E6DCE0 /* ic_dir.png in Resources */ = {isa = PBXBuildFile; fileRef = 962979F416C43B9500E6DCE0 /* ic_dir.png */; };
 		962979F716C43B9500E6DCE0 /* ic_file.png in Resources */ = {isa = PBXBuildFile; fileRef = 962979F516C43B9500E6DCE0 /* ic_file.png */; };
@@ -37,6 +38,7 @@
 
 /* Begin PBXFileReference section */
 		509FC978183F9F18007A5A30 /* menu.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = menu.m; path = iOS/menu.m; sourceTree = SOURCE_ROOT; };
+		50E7189E184B88AA001956CE /* CoreVideo.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreVideo.framework; path = System/Library/Frameworks/CoreVideo.framework; sourceTree = SDKROOT; };
 		50F54A861848F9FC00E19EFD /* ic_pause.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = ic_pause.png; sourceTree = "<group>"; };
 		962979F416C43B9500E6DCE0 /* ic_dir.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = ic_dir.png; path = "../../android/phoenix/res/drawable-xhdpi/ic_dir.png"; sourceTree = "<group>"; };
 		962979F516C43B9500E6DCE0 /* ic_file.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = ic_file.png; path = "../../android/phoenix/res/drawable-xhdpi/ic_file.png"; sourceTree = "<group>"; };
@@ -78,6 +80,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				50E7189F184B88AA001956CE /* CoreVideo.framework in Frameworks */,
 				96366C5916C9ACF500D64A22 /* AudioToolbox.framework in Frameworks */,
 				96366C5516C9AC3300D64A22 /* CoreAudio.framework in Frameworks */,
 				96AFAE2A16C1D4EA009DE44C /* UIKit.framework in Frameworks */,
@@ -132,6 +135,7 @@
 		96AFAE2816C1D4EA009DE44C /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				50E7189E184B88AA001956CE /* CoreVideo.framework */,
 				96366C5816C9ACF500D64A22 /* AudioToolbox.framework */,
 				96366C5416C9AC3300D64A22 /* CoreAudio.framework */,
 				96AFAE2916C1D4EA009DE44C /* UIKit.framework */,
