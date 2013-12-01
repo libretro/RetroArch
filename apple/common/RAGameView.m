@@ -22,7 +22,12 @@
 
 // Define compatibility symbols and categories
 #ifdef IOS
-#include <COreVideo/CVOpenGLESTextureCache.h>
+#include <AVFoundation/AVCaptureSession.h>
+#include <AVFoundation/AVCaptureDevice.h>
+#include <AVFoundation/AVCaptureOutput.h>
+#include <AVFoundation/AVCaptureInput.h>
+#include <AVFoundation/AVMediaFormat.h>
+#include <CoreVideo/CVOpenGLESTextureCache.h>
 #define APP_HAS_FOCUS ([UIApplication sharedApplication].applicationState == UIApplicationStateActive)
 
 #define GLContextClass EAGLContext
@@ -66,6 +71,16 @@ static const float ALMOST_INVISIBLE = .021f;
 static GLKView* g_view;
 static UIView* g_pause_indicator_view;
 static UITextField* g_text_hide;
+
+// Camera
+static AVCaptureSession *_session;
+static NSString *_sessionPreset;
+CVOpenGLESTextureCacheRef textureCache;
+CFDictionaryRef empty;
+CFMutableDictionaryRef attrs;
+CVPixelBufferRef renderTarget;
+CVOpenGLESTextureRef renderTexture;
+GLuint renderFrameBuffer;
 
 #elif defined(OSX)
 
@@ -207,6 +222,131 @@ static bool g_is_syncing = true;
    [self viewWillLayoutSubviews];
 }
 
+- (void)captureOutput:(AVCaptureOutput *)captureOutput
+didOutputSampleBuffer:(CMSampleBufferRef)sampleBuffer
+       fromConnection:(AVCaptureConnection *)connection
+{
+    int width, height;
+    CVReturn ret;
+    
+    //FIXME - dehardcode
+    width = 640;
+    height = 480;
+    
+    CVImageBufferRef pixelBuffer = CMSampleBufferGetImageBuffer(sampleBuffer);
+    // Periodic texture cache flush every frame
+    CVOpenGLESTextureCacheFlush(textureCache, 0);
+    
+    //TODO - rewrite all this
+    // create a texture from our render target.
+    // textureCache will be what you previously made with CVOpenGLESTextureCacheCreate
+    ret = CVOpenGLESTextureCacheCreateTextureFromImage(kCFAllocatorDefault,
+                                                       textureCache, pixelBuffer, NULL, GL_TEXTURE_2D,
+                                                       GL_RGBA, width, height, GL_BGRA, GL_UNSIGNED_BYTE, 0, &renderTexture);
+    if (ret)
+    {
+        RARCH_ERR("ioscamera: CVOpenGLESTextureCacheCreateTextureFromImage failed.\n");
+    }
+     
+     glBindTexture(CVOpenGLESTextureGetTarget(renderTexture),
+     CVOpenGLESTextureGetName(renderTexture));
+     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+     
+     // bind the texture to teh fraembuffer you're going to render to
+     // (boilerplate code to make a framebuffer not shown)
+     glBindFramebuffer(GL_FRAMEBUFFER, renderFrameBuffer);
+     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+     GL_TEXTURE_2D, CVOpenGLESTextureGetName(renderTexture), 0);
+}
+
+- (void) onCameraInit
+{
+    CVReturn ret;
+    int width, height;
+    
+    //FIXME - dehardcode this
+    width = 640;
+    height = 480;
+    
+    empty = CFDictionaryCreate(kCFAllocatorDefault,
+                                          NULL, NULL, 0, &kCFTypeDictionaryKeyCallBacks, &kCFTypeDictionaryValueCallBacks);
+    attrs = CFDictionaryCreateMutable(kCFAllocatorDefault,
+                                                 1, &kCFTypeDictionaryKeyCallBacks, &kCFTypeDictionaryValueCallBacks);
+    
+    CFDictionarySetValue(attrs, kCVPixelBufferIOSurfacePropertiesKey,
+                         empty);
+    
+    ret = CVPixelBufferCreate(kCFAllocatorDefault, width, height,
+                              kCVPixelFormatType_32BGRA, attrs, &renderTarget);
+    if (ret)
+    {
+        RARCH_ERR("ioscamera: CVPixelBufferCreate failed.\n");
+    }
+    
+#if COREVIDEO_USE_EAGLCONTEXT_CLASS_IN_API
+    ret = CVOpenGLESTextureCacheCreate(kCFAllocatorDefault, NULL, g_context, NULL, &textureCache);
+    
+#else
+    ret = CVOpenGLESTextureCacheCreate(kCFAllocatorDefault, NULL, (__bridge void *)g_context, NULL, &textureCache);
+#endif
+    
+    //-- Setup Capture Session.
+    _session = [[AVCaptureSession alloc] init];
+    [_session beginConfiguration];
+    
+    // TODO: dehardcode this based on device capabilities
+    _sessionPreset = AVCaptureSessionPreset640x480;
+    
+    //-- Set preset session size.
+    [_session setSessionPreset:_sessionPreset];
+    
+    //-- Creata a video device and input from that Device.  Add the input to the capture session.
+    AVCaptureDevice * videoDevice = [AVCaptureDevice defaultDeviceWithMediaType:AVMediaTypeVideo];
+    if(videoDevice == nil)
+        assert(0);
+    
+    //-- Add the device to the session.
+    NSError *error;
+    AVCaptureDeviceInput *input = [AVCaptureDeviceInput deviceInputWithDevice:videoDevice error:&error];
+    if(error)
+        assert(0);
+    
+    [_session addInput:input];
+    
+    //-- Create the output for the capture session.
+    AVCaptureVideoDataOutput * dataOutput = [[AVCaptureVideoDataOutput alloc] init];
+    [dataOutput setAlwaysDiscardsLateVideoFrames:YES]; // Probably want to set this to NO when recording
+    
+    //-- Set to YUV420.
+    [dataOutput setVideoSettings:[NSDictionary dictionaryWithObject:[NSNumber numberWithInt:kCVPixelFormatType_420YpCbCr8BiPlanarFullRange]
+                                                             forKey:(id)kCVPixelBufferPixelFormatTypeKey]]; // Necessary for manual preview
+    
+    // Set dispatch to be on the main thread so OpenGL can do things with the data
+    [dataOutput setSampleBufferDelegate:self queue:dispatch_get_main_queue()];
+    
+    [_session addOutput:dataOutput];
+    [_session commitConfiguration];
+}
+
+- (void) onCameraStart
+{
+    [_session startRunning];
+}
+
+- (void) onCameraStop
+{
+    [_session stopRunning];
+}
+
+- (void) onCameraFree
+{
+    CVPixelBufferRelease(renderTarget);
+    CVOpenGLESTextureCacheFlush(textureCache, 0);
+    CFRelease(textureCache);
+}
 #endif
 
 @end
@@ -443,14 +583,5 @@ void apple_bind_game_view_fbo(void)
       if (g_context)
          [g_view bindDrawable];
    });
-}
-
-CVReturn texture_cache_create(CVOpenGLESTextureCacheRef *ref)
-{
-#if COREVIDEO_USE_EAGLCONTEXT_CLASS_IN_API
-    return CVOpenGLESTextureCacheCreate(kCFAllocatorDefault, NULL, g_context, NULL, ref);
-#else
-    return CVOpenGLESTextureCacheCreate(kCFAllocatorDefault, NULL, (__bridge void *)g_context, NULL, ref);
-#endif
 }
 #endif

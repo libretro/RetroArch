@@ -17,9 +17,10 @@
 #ifndef __RARCH_IOS_PLATFORM_H
 #define __RARCH_IOS_PLATFORM_H
 
+#import <AVFoundation/AVCaptureOutput.h>
 #include "views.h"
 
-@interface RAGameView : UIViewController
+@interface RAGameView : UIViewController<AVCaptureAudioDataOutputSampleBufferDelegate>
 + (RAGameView*)get;
 - (void)iOS7SetiCadeMode:(bool)on;
 @end

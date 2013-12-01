@@ -20,26 +20,15 @@
 
 #include <OpenGLES/ES2/gl.h>
 #include <OpenGLES/ES2/glext.h>
-#include <CoreVideo/CVPixelBuffer.h>
-#include <CoreVideo/CVOpenGLESTexture.h>
-#include <CoreVideo/CVOpenGLESTextureCache.h>
 #include "../driver.h"
-
-extern CVReturn texture_cache_create(CVOpenGLESTextureCacheRef *ref);
 
 typedef struct ios_camera
 {
-   CFDictionaryRef empty;
-   CFMutableDictionaryRef attrs;
-   CVPixelBufferRef renderTarget;
-   CVOpenGLESTextureRef renderTexture;
-   CVOpenGLESTextureCacheRef textureCache;
-    GLuint renderFrameBuffer;
+  void *empty;
 } ioscamera_t;
 
 static void *ios_camera_init(const char *device, uint64_t caps, unsigned width, unsigned height)
 {
-   CVReturn ret;
    if ((caps & (1ULL << RETRO_CAMERA_BUFFER_OPENGL_TEXTURE)) == 0)
    {
       RARCH_ERR("ioscamera returns OpenGL texture.\n");
@@ -50,45 +39,7 @@ static void *ios_camera_init(const char *device, uint64_t caps, unsigned width, 
    if (!ioscamera)
       return NULL;
 
-   ioscamera->empty = CFDictionaryCreate(kCFAllocatorDefault,
-      NULL, NULL, 0, &kCFTypeDictionaryKeyCallBacks, &kCFTypeDictionaryValueCallBacks);
-   ioscamera->attrs = CFDictionaryCreateMutable(kCFAllocatorDefault,
-      1, &kCFTypeDictionaryKeyCallBacks, &kCFTypeDictionaryValueCallBacks);
-
-   CFDictionarySetValue(ioscamera->attrs, kCVPixelBufferIOSurfacePropertiesKey,
-      ioscamera->empty);
-
-   // TODO: for testing, image is 640x480 for now
-   //if (width > 640)
-      width = 640;
-   //if (height > 480)
-      height = 480;
-
-   ret = CVPixelBufferCreate(kCFAllocatorDefault, width, height,
-      kCVPixelFormatType_32BGRA, ioscamera->attrs, &ioscamera->renderTarget);
-   if (ret)
-   {
-      RARCH_ERR("ioscamera: CVPixelBufferCreate failed.\n");
-      goto dealloc;
-   }
-    
-   ret = texture_cache_create(&ioscamera->textureCache);
-   if (ret)
-   {
-      RARCH_ERR("ioscamera: texture_cache_create failed.\n");
-      goto dealloc;
-   }
-
-   // create a texture from our render target.
-   // textureCache will be what you previously made with CVOpenGLESTextureCacheCreate
-   ret = CVOpenGLESTextureCacheCreateTextureFromImage(kCFAllocatorDefault,
-      ioscamera->textureCache, ioscamera->renderTarget, NULL, GL_TEXTURE_2D,
-      GL_RGBA, width, height, GL_BGRA, GL_UNSIGNED_BYTE, 0, &ioscamera->renderTexture);
-   if (ret)
-   {
-      RARCH_ERR("ioscamera: CVOpenGLESTextureCacheCreateTextureFromImage failed.\n");
-      goto dealloc;
-   }
+   // TODO - call onCameraInit from RAGameView
 
    return ioscamera;
 dealloc:
@@ -100,7 +51,7 @@ static void ios_camera_free(void *data)
 {
    ioscamera_t *ioscamera = (ioscamera_t*)data;
     
-   //TODO - anything to free here?
+   //TODO - call onCameraFree from RAGameView
 
    if (ioscamera)
       free(ioscamera);
@@ -109,20 +60,9 @@ static void ios_camera_free(void *data)
 
 static bool ios_camera_start(void *data)
 {
-   ioscamera_t *ioscamera = (ioscamera_t*)data;
+   (void)data;
 
-   glBindTexture(CVOpenGLESTextureGetTarget(ioscamera->renderTexture),
-      CVOpenGLESTextureGetName(ioscamera->renderTexture));
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-
-   // bind the texture to teh fraembuffer you're going to render to
-   // (boilerplate code to make a framebuffer not shown)
-   glBindFramebuffer(GL_FRAMEBUFFER, ioscamera->renderFrameBuffer);
-   glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
-      GL_TEXTURE_2D, CVOpenGLESTextureGetName(ioscamera->renderTexture), 0);
+   //TODO - call onCameraStart from RAGAmeView
 
    return true;
 }
@@ -132,27 +72,34 @@ static void ios_camera_stop(void *data)
    ioscamera_t *ioscamera = (ioscamera_t*)data;
    (void)ioscamera;
     
-   //TODO - anything to do here?
+   //TODO - call onCameraStop from RAGameView
 }
 
 static bool ios_camera_poll(void *data, retro_camera_frame_raw_framebuffer_t frame_raw_cb,
       retro_camera_frame_opengl_texture_t frame_gl_cb)
 {
-   ioscamera_t *ioscamera = (ioscamera_t*)data;
-
+   bool newFrame = false;
+   (void)data;
    (void)frame_raw_cb;
 
-   // FIXME: Identity for now. Use proper texture matrix as returned by iOS Camera (if at all?).
-   static const float affine[] = {
-      1.0f, 0.0f, 0.0f,
-      0.0f, 1.0f, 0.0f,
-      0.0f, 0.0f, 1.0f
-   };
+   // TODO - call onCameraPoll from RAGameView
 
-   if (frame_gl_cb)
-     frame_gl_cb(CVOpenGLESTextureGetName(ioscamera->renderTexture),
-           GL_TEXTURE_2D,
-           affine);
+   if (frame_gl_cb && newFrame)
+   {
+	   // FIXME: Identity for now. Use proper texture matrix as returned by iOS Camera (if at all?).
+	   static const float affine[] = {
+		   1.0f, 0.0f, 0.0f,
+		   0.0f, 1.0f, 0.0f,
+		   0.0f, 0.0f, 1.0f
+	   };
+       (void)affine;
+#if 0
+	   frame_gl_cb(CVOpenGLESTextureGetName(ioscamera->renderTexture),
+			   GL_TEXTURE_2D,
+			   affine);
+#endif
+   }
+
    return true;
 }
 
