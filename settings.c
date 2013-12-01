@@ -176,6 +176,8 @@ const char *config_get_default_camera(void)
          return "null";
       case CAMERA_ANDROID:
          return "android";
+      case CAMERA_IOS:
+         return "ios";
       default:
          return NULL;
    }

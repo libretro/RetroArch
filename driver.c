@@ -243,6 +243,9 @@ static const camera_driver_t *camera_drivers[] = {
 #ifdef ANDROID
    &camera_android,
 #endif
+#ifdef IOS
+   &camera_ios,
+#endif
    NULL,
 };
 
