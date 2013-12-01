@@ -76,11 +76,7 @@ static UITextField* g_text_hide;
 static AVCaptureSession *_session;
 static NSString *_sessionPreset;
 CVOpenGLESTextureCacheRef textureCache;
-CFDictionaryRef empty;
-CFMutableDictionaryRef attrs;
-CVPixelBufferRef renderTarget;
-CVOpenGLESTextureRef renderTexture;
-GLuint renderFrameBuffer;
+GLuint outputTexture;
 static bool newFrame = false;
 
 #elif defined(OSX)
@@ -223,20 +219,17 @@ static bool g_is_syncing = true;
    [self viewWillLayoutSubviews];
 }
 
-- (void)captureOutput:(AVCaptureOutput *)captureOutput
-didOutputSampleBuffer:(CMSampleBufferRef)sampleBuffer
-       fromConnection:(AVCaptureConnection *)connection
+-(void)processFrame:(CMSampleBufferRef)sampleBuffer
 {
     int width, height;
     CVReturn ret;
     
-    //FIXME - dehardcode
-    width = 640;
-    height = 480;
-    
     CVImageBufferRef pixelBuffer = CMSampleBufferGetImageBuffer(sampleBuffer);
-    // Periodic texture cache flush every frame
-    CVOpenGLESTextureCacheFlush(textureCache, 0);
+    width  = CVPixelBufferGetWidth(pixelBuffer);
+    height = CVPixelBufferGetHeight(pixelBuffer);
+    
+    CVPixelBufferLockBaseAddress(pixelBuffer, 0);
+    CVOpenGLESTextureRef renderTexture;
     
     //TODO - rewrite all this
     // create a texture from our render target.
@@ -244,24 +237,32 @@ didOutputSampleBuffer:(CMSampleBufferRef)sampleBuffer
     ret = CVOpenGLESTextureCacheCreateTextureFromImage(kCFAllocatorDefault,
                                                        textureCache, pixelBuffer, NULL, GL_TEXTURE_2D,
                                                        GL_RGBA, width, height, GL_BGRA, GL_UNSIGNED_BYTE, 0, &renderTexture);
-    if (ret)
+    if (!renderTexture || ret)
     {
         RARCH_ERR("ioscamera: CVOpenGLESTextureCacheCreateTextureFromImage failed.\n");
+        return;
     }
-     
-     glBindTexture(CVOpenGLESTextureGetTarget(renderTexture),
-     CVOpenGLESTextureGetName(renderTexture));
-     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-     
-     // bind the texture to teh fraembuffer you're going to render to
-     // (boilerplate code to make a framebuffer not shown)
-     glBindFramebuffer(GL_FRAMEBUFFER, renderFrameBuffer);
-     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
-     GL_TEXTURE_2D, CVOpenGLESTextureGetName(renderTexture), 0);
+    
+    outputTexture = CVOpenGLESTextureGetName(renderTexture);
+    glBindTexture(GL_TEXTURE_2D, outputTexture);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    
+    CVPixelBufferUnlockBaseAddress(pixelBuffer, 0);
+    [[NSNotificationCenter defaultCenter] postNotificationName:@"NewCameraTextureReady" object:nil];
     newFrame = true;
+    
+    CVOpenGLESTextureCacheFlush(textureCache, 0);
+    CFRelease(renderTexture);
+}
+
+- (void)captureOutput:(AVCaptureOutput *)captureOutput
+didOutputSampleBuffer:(CMSampleBufferRef)sampleBuffer
+       fromConnection:(AVCaptureConnection *)connection
+{
+    [self processFrame:sampleBuffer];
 }
 
 - (void) onCameraInit
@@ -272,21 +273,6 @@ didOutputSampleBuffer:(CMSampleBufferRef)sampleBuffer
     //FIXME - dehardcode this
     width = 640;
     height = 480;
-    
-    empty = CFDictionaryCreate(kCFAllocatorDefault,
-                                          NULL, NULL, 0, &kCFTypeDictionaryKeyCallBacks, &kCFTypeDictionaryValueCallBacks);
-    attrs = CFDictionaryCreateMutable(kCFAllocatorDefault,
-                                                 1, &kCFTypeDictionaryKeyCallBacks, &kCFTypeDictionaryValueCallBacks);
-    
-    CFDictionarySetValue(attrs, kCVPixelBufferIOSurfacePropertiesKey,
-                         empty);
-    
-    ret = CVPixelBufferCreate(kCFAllocatorDefault, width, height,
-                              kCVPixelFormatType_32BGRA, attrs, &renderTarget);
-    if (ret)
-    {
-        RARCH_ERR("ioscamera: CVPixelBufferCreate failed.\n");
-    }
     
 #if COREVIDEO_USE_EAGLCONTEXT_CLASS_IN_API
     ret = CVOpenGLESTextureCacheCreate(kCFAllocatorDefault, NULL, g_context, NULL, &textureCache);
@@ -314,17 +300,18 @@ didOutputSampleBuffer:(CMSampleBufferRef)sampleBuffer
     NSError *error;
     AVCaptureDeviceInput *input = [AVCaptureDeviceInput deviceInputWithDevice:videoDevice error:&error];
     if(error)
+    {
+        RARCH_ERR("video device input %s\n", error.localizedDescription.UTF8String);
         assert(0);
+    }
     
     [_session addInput:input];
     
     //-- Create the output for the capture session.
     AVCaptureVideoDataOutput * dataOutput = [[AVCaptureVideoDataOutput alloc] init];
-    [dataOutput setAlwaysDiscardsLateVideoFrames:YES]; // Probably want to set this to NO when recording
+    [dataOutput setAlwaysDiscardsLateVideoFrames:NO]; // Probably want to set this to NO when recording
     
-    //-- Set to YUV420.
-    [dataOutput setVideoSettings:[NSDictionary dictionaryWithObject:[NSNumber numberWithInt:kCVPixelFormatType_420YpCbCr8BiPlanarFullRange]
-                                                             forKey:(id)kCVPixelBufferPixelFormatTypeKey]]; // Necessary for manual preview
+	[dataOutput setVideoSettings:[NSDictionary dictionaryWithObject:[NSNumber numberWithInt:kCVPixelFormatType_32BGRA] forKey:(id)kCVPixelBufferPixelFormatTypeKey]];
     
     // Set dispatch to be on the main thread so OpenGL can do things with the data
     [dataOutput setSampleBufferDelegate:self queue:dispatch_get_main_queue()];
@@ -345,7 +332,6 @@ didOutputSampleBuffer:(CMSampleBufferRef)sampleBuffer
 
 - (void) onCameraFree
 {
-    CVPixelBufferRelease(renderTarget);
     CVOpenGLESTextureCacheFlush(textureCache, 0);
     CFRelease(textureCache);
 }
@@ -654,7 +640,7 @@ static bool ios_camera_poll(void *data, retro_camera_frame_raw_framebuffer_t fra
 		   0.0f, 0.0f, 1.0f
 	   };
        
-	   frame_gl_cb(CVOpenGLESTextureGetName(renderTexture), GL_TEXTURE_2D, affine);
+	   frame_gl_cb(outputTexture, GL_TEXTURE_2D, affine);
        newFrame = false;
    }
 
