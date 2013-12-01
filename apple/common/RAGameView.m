@@ -22,6 +22,7 @@
 
 // Define compatibility symbols and categories
 #ifdef IOS
+#include <COreVideo/CVOpenGLESTextureCache.h>
 #define APP_HAS_FOCUS ([UIApplication sharedApplication].applicationState == UIApplicationStateActive)
 
 #define GLContextClass EAGLContext
@@ -57,7 +58,6 @@
 
 #endif
 
-
 #ifdef IOS
 
 #include <GLKit/GLKit.h>
@@ -75,7 +75,6 @@ static bool g_has_went_fullscreen;
 static NSOpenGLPixelFormat* g_format;
 
 #endif
-
 
 static bool g_initialized;
 static RAGameView* g_instance;
@@ -149,7 +148,8 @@ static bool g_is_syncing = true;
    g_current_input_data.touches[0].screen_y = pos.y;
 }
 
-#elif defined(IOS) // < iOS Pause menu and lifecycle
+#elif defined(IOS)
+// < iOS Pause menu and lifecycle
 - (id)init
 {
    self = [super init];
@@ -443,5 +443,14 @@ void apple_bind_game_view_fbo(void)
       if (g_context)
          [g_view bindDrawable];
    });
+}
+
+CVReturn texture_cache_create(CVOpenGLESTextureCacheRef *ref)
+{
+#if COREVIDEO_USE_EAGLCONTEXT_CLASS_IN_API
+    return CVOpenGLESTextureCacheCreate(kCFAllocatorDefault, NULL, g_context, NULL, ref);
+#else
+    return CVOpenGLESTextureCacheCreate(kCFAllocatorDefault, NULL, (__bridge void *)g_context, NULL, ref);
+#endif
 }
 #endif

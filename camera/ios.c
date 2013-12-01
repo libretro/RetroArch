@@ -25,6 +25,8 @@
 #include <CoreVideo/CVOpenGLESTextureCache.h>
 #include "../driver.h"
 
+extern CVReturn texture_cache_create(CVOpenGLESTextureCacheRef *ref);
+
 typedef struct ios_camera
 {
    CFDictionaryRef empty;
@@ -37,7 +39,7 @@ typedef struct ios_camera
 
 static void *ios_camera_init(const char *device, uint64_t caps, unsigned width, unsigned height)
 {
-   int ret = 0;
+   CVReturn ret;
    if ((caps & (1ULL << RETRO_CAMERA_BUFFER_OPENGL_TEXTURE)) == 0)
    {
       RARCH_ERR("ioscamera returns OpenGL texture.\n");
@@ -64,16 +66,29 @@ static void *ios_camera_init(const char *device, uint64_t caps, unsigned width, 
 
    ret = CVPixelBufferCreate(kCFAllocatorDefault, width, height,
       kCVPixelFormatType_32BGRA, ioscamera->attrs, &ioscamera->renderTarget);
-   if (ret != 0)
+   if (ret)
+   {
+      RARCH_ERR("ioscamera: CVPixelBufferCreate failed.\n");
       goto dealloc;
+   }
+    
+   ret = texture_cache_create(&ioscamera->textureCache);
+   if (ret)
+   {
+      RARCH_ERR("ioscamera: texture_cache_create failed.\n");
+      goto dealloc;
+   }
 
    // create a texture from our render target.
    // textureCache will be what you previously made with CVOpenGLESTextureCacheCreate
    ret = CVOpenGLESTextureCacheCreateTextureFromImage(kCFAllocatorDefault,
       ioscamera->textureCache, ioscamera->renderTarget, NULL, GL_TEXTURE_2D,
       GL_RGBA, width, height, GL_BGRA, GL_UNSIGNED_BYTE, 0, &ioscamera->renderTexture);
-   if (ret != 0)
+   if (ret)
+   {
+      RARCH_ERR("ioscamera: CVOpenGLESTextureCacheCreateTextureFromImage failed.\n");
       goto dealloc;
+   }
 
    return ioscamera;
 dealloc:
