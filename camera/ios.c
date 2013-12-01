@@ -14,6 +14,10 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+// References:
+// http://allmybrain.com/2011/12/08/rendering-to-a-texture-with-ios-5-texture-cache-api/
+// https://developer.apple.com/library/iOS/samplecode/GLCameraRipple/
+
 #include <OpenGLES/ES2/gl.h>
 #include <OpenGLES/ES2/glext.h>
 #include <CoreVideo/CVPixelBuffer.h>
