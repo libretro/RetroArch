@@ -193,7 +193,7 @@ const void* apple_get_frontend_settings(void)
     settings[4]  = setting_data_group_setting(ST_END_SUB_GROUP, 0);
     
     settings[5]  = setting_data_group_setting(ST_SUB_GROUP, "Bluetooth");
-    settings[6]  = setting_data_string_setting("ios_btmode", "Mode", apple_frontend_settings.bluetooth_mode,
+    settings[6]  = setting_data_string_setting(ST_STRING, "ios_btmode", "Mode", apple_frontend_settings.bluetooth_mode,
                                                sizeof(apple_frontend_settings.bluetooth_mode), "keyboard");
     settings[7]  = setting_data_group_setting(ST_END_SUB_GROUP, 0);
     

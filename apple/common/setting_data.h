@@ -20,6 +20,25 @@
 
 enum setting_type { ST_NONE, ST_BOOL, ST_INT, ST_UINT, ST_FLOAT, ST_PATH, ST_STRING, ST_HEX, ST_BIND,
                     ST_GROUP, ST_SUB_GROUP, ST_END_GROUP, ST_END_SUB_GROUP };
+                    
+enum setting_features
+{
+   SD_FEATURE_ALWAYS = 0,
+   SD_FEATURE_MULTI_DRIVER = 1,
+   SD_FEATURE_VIDEO_MODE = 2,
+   SD_FEATURE_WINDOW_MANAGER = 4,
+   SD_FEATURE_SHADERS = 8,
+   SD_FEATURE_VSYNC = 16,
+   SD_FEATURE_AUDIO_DEVICE = 32
+};
+
+enum setting_flags
+{
+   SD_FLAG_PATH_DIR = 1,
+   SD_FLAG_PATH_FILE = 2,
+   SD_FLAG_ALLOW_EMPTY = 4,
+   SD_FLAG_VALUE_DESC = 8
+};
 
 typedef struct
 {
@@ -34,7 +53,8 @@ typedef struct
 
    double min;
    double max;
-   bool allow_blank;
+   
+   uint64_t flags;
    
    union
    {
@@ -78,8 +98,7 @@ rarch_setting_t setting_data_bool_setting(const char* name, const char* descript
 rarch_setting_t setting_data_int_setting(const char* name, const char* description, int* target, int default_value);
 rarch_setting_t setting_data_uint_setting(const char* name, const char* description, unsigned int* target, unsigned int default_value);
 rarch_setting_t setting_data_float_setting(const char* name, const char* description, float* target, float default_value);
-rarch_setting_t setting_data_path_setting(const char* name, const char* description, char* target, unsigned size, char* default_value);
-rarch_setting_t setting_data_string_setting(const char* name, const char* description, char* target, unsigned size, char* default_value);
+rarch_setting_t setting_data_string_setting(enum setting_type type, const char* name, const char* description, char* target, unsigned size, char* default_value);
 rarch_setting_t setting_data_bind_setting(const char* name, const char* description, struct retro_keybind* target, uint32_t index,
                                     const struct retro_keybind* default_value);
 

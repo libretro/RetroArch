@@ -374,7 +374,8 @@
                detail:^{ return weakSelf.core ? apple_get_core_display_name(weakSelf.core) : @"Auto Detect"; }],
             [RAMenuItemBasic itemWithDescription:@"Load Content"                 action:^{ [weakSelf loadGame]; }],
             [RAMenuItemBasic itemWithDescription:@"Load Content (History)"       action:^{ [weakSelf loadHistory]; }],
-            [RAMenuItemBasic itemWithDescription:@"Settings"         action:^{ [[RetroArch_iOS get] showSystemSettings]; }]
+            [RAMenuItemBasic itemWithDescription:@"Settings"
+               action:^{ [weakSelf.navigationController pushViewController:[RAFrontendSettingsMenu new] animated:YES]; }]
          ]
       ];
    }
@@ -932,6 +933,7 @@ static const void* const associated_core_key = &associated_core_key;
    if ((self = [super initWithStyle:UITableViewStyleGrouped]))
    {
       RAPauseMenu* __weak weakSelf = self;
+      self.title = @"RetroArch Paused";
 
       [self.sections addObject:@[@"Actions",
          [RAMenuItemBasic itemWithDescription:@"Reset Content" action:^{ [weakSelf performBasicAction:RESET]; }],
@@ -945,8 +947,10 @@ static const void* const associated_core_key = &associated_core_key;
       ]];
    
       [self.sections addObject:@[@"Settings",
-         [RAMenuItemBasic itemWithDescription:@"System Config" action:^{ [[RetroArch_iOS get] showSystemSettings]; }],
-         [RAMenuItemBasic itemWithDescription:@"Core Config"   action:^{ [[RetroArch_iOS get] showSettings]; }]
+         [RAMenuItemBasic itemWithDescription:@"Frontend"
+            action:^{ [weakSelf.navigationController pushViewController:[RAFrontendSettingsMenu new] animated:YES]; }],
+         [RAMenuItemBasic itemWithDescription:@"Core"
+            action:^{ [weakSelf.navigationController pushViewController:[[RACoreSettingsMenu alloc] initWithCore:apple_core] animated:YES]; }]
       ]];
    }
    

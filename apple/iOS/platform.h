@@ -34,9 +34,6 @@
 
 - (void)refreshSystemConfig;
 
-- (IBAction)showSettings;
-- (IBAction)showSystemSettings;
-
 @property (nonatomic) NSString* configDirectory;    // e.g. /var/mobile/Documents/.RetroArch
 @property (nonatomic) NSString* globalConfigFile;   // e.g. /var/mobile/Documents/.RetroArch/retroarch.cfg
 @property (nonatomic) NSString* coreDirectory;      // e.g. /Applications/RetroArch.app/modules

@@ -298,20 +298,9 @@ static void handle_touch_event(NSArray* touches)
    ios_set_logging_state([RetroArch_iOS get].logPath.UTF8String, apple_frontend_settings.logging_enabled);
 }
 
-#pragma mark PAUSE MENU
 - (IBAction)showPauseMenu:(id)sender
 {
    [self pushViewController:[RAPauseMenu new] animated:YES];
-}
-
-- (IBAction)showSettings
-{
-   [self pushViewController:[[RACoreSettingsMenu alloc] initWithCore:apple_core] animated:YES];
-}
-
-- (IBAction)showSystemSettings
-{
-   [self pushViewController:[RAFrontendSettingsMenu new] animated:YES];
 }
 
 @end

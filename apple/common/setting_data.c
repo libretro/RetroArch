@@ -243,49 +243,23 @@ rarch_setting_t setting_data_group_setting(enum setting_type type, const char* n
    return result;
 }
 
-rarch_setting_t setting_data_bool_setting(const char* name, const char* description, bool* target, bool default_value)
-{
-   rarch_setting_t result = { ST_BOOL, name, sizeof(bool), description };
-   result.value.boolean = target;
-   result.default_value.boolean = default_value;
-   return result;
+#define DEFINE_BASIC_SETTING_TYPE(TAG, TYPE, VALUE, SETTING_TYPE) \
+rarch_setting_t setting_data_##TAG##_setting(const char* name, const char* description, TYPE* target, TYPE default_value) \
+{ \
+   rarch_setting_t result = { SETTING_TYPE, name, sizeof(TYPE), description }; \
+   result.value.VALUE = target; \
+   result.default_value.VALUE = default_value; \
+   return result; \
 }
 
-rarch_setting_t setting_data_int_setting(const char* name, const char* description, int* target, int default_value)
-{
-   rarch_setting_t result = { ST_INT, name, sizeof(bool), description };
-   result.value.integer = target;
-   result.default_value.integer = default_value;
-   return result;
-}
+DEFINE_BASIC_SETTING_TYPE(bool, bool, boolean, ST_BOOL)
+DEFINE_BASIC_SETTING_TYPE(int, int, integer, ST_INT)
+DEFINE_BASIC_SETTING_TYPE(uint, unsigned int, unsigned_integer, ST_UINT)
+DEFINE_BASIC_SETTING_TYPE(float, float, fraction, ST_FLOAT)
 
-rarch_setting_t setting_data_uint_setting(const char* name, const char* description, unsigned int* target, unsigned int default_value)
+rarch_setting_t setting_data_string_setting(enum setting_type type, const char* name, const char* description, char* target, unsigned size, char* default_value)
 {
-   rarch_setting_t result = { ST_UINT, name, sizeof(bool), description };
-   result.value.unsigned_integer = target;
-   result.default_value.unsigned_integer = default_value;
-   return result;
-}
-
-rarch_setting_t setting_data_float_setting(const char* name, const char* description, float* target, float default_value)
-{
-   rarch_setting_t result = { ST_FLOAT, name, sizeof(bool), description };
-   result.value.fraction = target;
-   result.default_value.fraction = default_value;
-   return result;
-}
-
-rarch_setting_t setting_data_path_setting(const char* name, const char* description, char* target, unsigned size, char* default_value)
-{
-   rarch_setting_t result = { ST_PATH, name, size, description };
-   result.value.string = target;
-   result.default_value.string = default_value;
-   return result;
-}
-
-rarch_setting_t setting_data_string_setting(const char* name, const char* description, char* target, unsigned size, char* default_value)
-{
-   rarch_setting_t result = { ST_STRING, name, size, description };
+   rarch_setting_t result = { type, name, size, description };
    result.value.string = target;
    result.default_value.string = default_value;
    return result;
@@ -312,25 +286,35 @@ void setting_data_load_current()
    memcpy(&fake_extern, &g_extern, sizeof(struct global));
 }
 
+#ifdef IOS
+static const uint32_t features = SD_FEATURE_SHADERS;
+#elif defined(OSX)
+static const uint32_t features = SD_FEATURE_VIDEO_MODE | SD_FEATURE_SHADERS |
+                                 SD_FEATURE_VSYNC | SD_FEATURE_AUDIO_DEVICE;
+#endif
+
 #define g_settings fake_settings
 #define g_extern fake_extern
 
 
 #define DEFAULT_ME_YO 0
 #define NEXT (list[index++])
-#define START_GROUP(NAME)                       NEXT = setting_data_group_setting (ST_GROUP, NAME);
-#define END_GROUP()                             NEXT = setting_data_group_setting (ST_END_GROUP, 0);
-#define START_SUB_GROUP(NAME)                   NEXT = setting_data_group_setting (ST_SUB_GROUP, NAME);
-#define END_SUB_GROUP()                         NEXT = setting_data_group_setting (ST_END_SUB_GROUP, 0);
+#define WITH_FEATURE(FTS)                       if (!FTS || features & FTS)
+#define START_GROUP(NAME)                       { NEXT = setting_data_group_setting (ST_GROUP, NAME);
+#define END_GROUP()                             NEXT = setting_data_group_setting (ST_END_GROUP, 0); }
+#define START_SUB_GROUP(NAME)                   { NEXT = setting_data_group_setting (ST_SUB_GROUP, NAME);
+#define END_SUB_GROUP()                         NEXT = setting_data_group_setting (ST_END_SUB_GROUP, 0); }
 #define CONFIG_BOOL(TARGET, NAME, SHORT, DEF)   NEXT = setting_data_bool_setting  (NAME, SHORT, &TARGET, DEF);
 #define CONFIG_INT(TARGET, NAME, SHORT, DEF)    NEXT = setting_data_int_setting   (NAME, SHORT, &TARGET, DEF);
 #define CONFIG_UINT(TARGET, NAME, SHORT, DEF)   NEXT = setting_data_uint_setting  (NAME, SHORT, &TARGET, DEF);
 #define CONFIG_FLOAT(TARGET, NAME, SHORT, DEF)  NEXT = setting_data_float_setting (NAME, SHORT, &TARGET, DEF);
-#define CONFIG_PATH(TARGET, NAME, SHORT, DEF)   NEXT = setting_data_path_setting  (NAME, SHORT, TARGET, sizeof(TARGET), DEF);
-#define CONFIG_STRING(TARGET, NAME, SHORT, DEF) NEXT = setting_data_string_setting(NAME, SHORT, TARGET, sizeof(TARGET), DEF);
+#define CONFIG_PATH(TARGET, NAME, SHORT, DEF)   NEXT = setting_data_string_setting(ST_PATH, NAME, SHORT, TARGET, sizeof(TARGET), DEF);
+#define CONFIG_STRING(TARGET, NAME, SHORT, DEF) NEXT = setting_data_string_setting(ST_STRING, NAME, SHORT, TARGET, sizeof(TARGET), DEF);
 #define CONFIG_HEX(TARGET, NAME, SHORT)
 #define CONFIG_BIND(TARGET, PLAYER, NAME, SHORT, DEF) \
    NEXT = setting_data_bind_setting  (NAME, SHORT, &TARGET, PLAYER, DEF);
+
+#define FLAGS(FLAGS) (list[index - 1]).flags = FLAGS;
 
 // TODO: Add black_frame_insertion, swap_interval msg_color video.rotation audio.block_frames audio.in_rate fast_forward_ratio
 //       rgui_show_start_screen
@@ -346,8 +330,7 @@ const rarch_setting_t* setting_data_get_list()
    /***********/
    /* DRIVERS */
    /***********/
-#if 0
-   START_GROUP("Drivers")
+   WITH_FEATURE(SD_FEATURE_MULTI_DRIVER) START_GROUP("Drivers")
       START_SUB_GROUP("Drivers")
          CONFIG_STRING(g_settings.video.driver, "video_driver", "Video Driver", "")
          CONFIG_STRING(g_settings.video.gl_context, "video_gl_context", "OpenGL Driver", "")
@@ -356,7 +339,6 @@ const rarch_setting_t* setting_data_get_list()
          CONFIG_STRING(g_settings.input.joypad_driver, "input_joypad_driver", "Joypad Driver", "")
       END_SUB_GROUP()
    END_GROUP()
-#endif
 
    /*********/
    /* PATHS */
@@ -406,7 +388,7 @@ const rarch_setting_t* setting_data_get_list()
    /* VIDEO */
    /*********/
    START_GROUP("Video")
-      START_SUB_GROUP("Monitor")
+      WITH_FEATURE(SD_FEATURE_MULTI_DRIVER) START_SUB_GROUP("Monitor")
          CONFIG_UINT(g_settings.video.monitor_index, "video_monitor_index", "Monitor Index", monitor_index)
          CONFIG_BOOL(g_settings.video.fullscreen, "video_fullscreen", "Use Fullscreen mode", g_extern.force_fullscreen ? true : fullscreen) // if (!g_extern.force_fullscreen)
          CONFIG_BOOL(g_settings.video.windowed_fullscreen, "video_windowed_fullscreen", "Windowed Fullscreen Mode", windowed_fullscreen)
@@ -415,12 +397,10 @@ const rarch_setting_t* setting_data_get_list()
          CONFIG_FLOAT(g_settings.video.refresh_rate, "video_refresh_rate", "Refresh Rate", refresh_rate)
       END_SUB_GROUP()
 
-#if 0
       /* Video: Window Manager */
-      START_SUB_GROUP("Window Manager")
+      WITH_FEATURE(SD_FEATURE_WINDOW_MANAGER) START_SUB_GROUP("Window Manager")
          CONFIG_BOOL(g_settings.video.disable_composition, "video_disable_composition", "Disable WM Composition", disable_composition)
       END_SUB_GROUP()
-#endif
 
       START_SUB_GROUP("Aspect")
          CONFIG_BOOL(g_settings.video.force_aspect, "video_force_aspect", "Force aspect ratio", force_aspect)
@@ -442,13 +422,13 @@ const rarch_setting_t* setting_data_get_list()
          CONFIG_BOOL(g_settings.video.smooth, "video_smooth", "Use bilinear filtering", video_smooth)
       END_SUB_GROUP()
 
-      START_SUB_GROUP("Shader")
+      WITH_FEATURE(SD_FEATURE_SHADERS) START_SUB_GROUP("Shader")
          CONFIG_BOOL(g_settings.video.shader_enable, "video_shader_enable", "Enable Shaders", shader_enable)
          CONFIG_PATH(g_settings.video.shader_dir, "video_shader_dir", "Shader Directory", DEFAULT_ME_YO)
          CONFIG_PATH(g_settings.video.shader_path, "video_shader", "Shader", DEFAULT_ME_YO)
       END_SUB_GROUP()
 
-      START_SUB_GROUP("Sync")
+      WITH_FEATURE(SD_FEATURE_VSYNC) START_SUB_GROUP("Sync")
          CONFIG_BOOL(g_settings.video.threaded, "video_threaded", "Use threaded video", video_threaded)
          CONFIG_BOOL(g_settings.video.vsync, "video_vsync", "Use VSync", vsync)
          CONFIG_BOOL(g_settings.video.hard_sync, "video_hard_sync", "Use OpenGL Hard Sync", hard_sync)
@@ -494,7 +474,7 @@ const rarch_setting_t* setting_data_get_list()
          CONFIG_FLOAT(g_settings.audio.rate_control_delta, "audio_rate_control_delta", "Rate Control Delta", rate_control_delta)
       END_SUB_GROUP()
 
-      START_SUB_GROUP("Misc")
+      WITH_FEATURE(SD_FEATURE_AUDIO_DEVICE) START_SUB_GROUP("Misc")
          CONFIG_STRING(g_settings.audio.device, "audio_device", "Device", DEFAULT_ME_YO)
          CONFIG_UINT(g_settings.audio.out_rate, "audio_out_rate", "Ouput Rate", out_rate)
          CONFIG_PATH(g_settings.audio.dsp_plugin, "audio_dsp_plugin", "DSP Plugin", DEFAULT_ME_YO)
