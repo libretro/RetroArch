@@ -358,8 +358,6 @@ CAMERA
 #ifdef HAVE_CAMERA
 #if defined(ANDROID)
 #include "../camera/android.c"
-#elif defined(IOS)
-#include "../camera/ios.c"
 #elif defined(EMSCRIPTEN)
 #include "../camera/rwebcam.c"
 #endif
