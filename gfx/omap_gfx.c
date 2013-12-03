@@ -96,7 +96,6 @@ static omapfb_page_t *get_page(omapfb_data_t *pdata) {
     if (&pdata->pages[i] == pdata->old_page)
       continue;
     if (!pdata->pages[i].used) {
-      RARCH_LOG("video_omap: page %u is free\n", i);
       page = &pdata->pages[i];
       break;
     }
