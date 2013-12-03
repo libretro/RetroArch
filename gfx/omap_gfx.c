@@ -439,11 +439,12 @@ static int omapfb_setup_plane(omapfb_data_t *pdata, int width, int height) {
     return -1;
   }
 
+  /* Disable the plane during setup to avoid garbage on screen. */
   pi.pos_x = x;
   pi.pos_y = y;
   pi.out_width = w;
   pi.out_height = h;
-  pi.enabled = 0; /* TODO: do we need to disable the plane for setup? */
+  pi.enabled = 0;
 
   if (ioctl(pdata->fd, OMAPFB_SETUP_PLANE, &pi) != 0) {
     RARCH_ERR("video_omap: setup plane (param = %d %d %d %d) failed\n", x, y, w, h);
