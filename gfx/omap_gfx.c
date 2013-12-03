@@ -72,6 +72,8 @@ typedef struct omapfb_data {
 
   /* bytes per pixel */
   unsigned bpp;
+
+  bool sync;
 } omapfb_data_t;
 
 
@@ -105,7 +107,7 @@ static omapfb_page_t *get_page(omapfb_data_t *pdata) {
 }
 
 static void page_flip(omapfb_data_t *pdata) {
-  ioctl(pdata->fd, OMAPFB_WAITFORGO);
+  if (pdata->sync) ioctl(pdata->fd, OMAPFB_WAITFORGO);
 
   /* TODO: should we use the manual update feature of the OMAP here? */
 
@@ -499,10 +501,14 @@ static int omapfb_init(omapfb_data_t *pdata, unsigned bpp) {
   pdata->bpp = bpp;
   pdata->num_pages = 3;
 
+  pdata->sync = g_settings.video.vsync;
+
   return 0;
 }
 
 void omapfb_free(omapfb_data_t *pdata) {
+  if (pdata->sync) ioctl(pdata->fd, OMAPFB_WAITFORGO);
+
   /* unmap the framebuffer memory */
   if (pdata->fb_mem != NULL) {
     munmap(pdata->fb_mem, pdata->current_state->mi.size);
@@ -551,7 +557,7 @@ void omapfb_free(omapfb_data_t *pdata) {
 }
 
 static int omapfb_set_mode(omapfb_data_t *pdata, int width, int height) {
-  ioctl(pdata->fd, OMAPFB_WAITFORGO);
+  if (pdata->sync) ioctl(pdata->fd, OMAPFB_WAITFORGO);
 
   if (omapfb_setup_plane(pdata, width, height) != 0)
     return -1;
@@ -781,10 +787,12 @@ static bool omap_gfx_frame(void *data, const void *frame, unsigned width,
 }
 
 static void omap_gfx_set_nonblock_state(void *data, bool state) {
-  /* TODO: add sync flag to omapfb_data and only WAITFORGO when enabled */
+  omap_video_t *vid;
 
-  (void)data;
-  (void)state;
+  if (data == NULL) return;
+
+  vid = data;
+  vid->omap->sync = !state;
 }
 
 static bool omap_gfx_alive(void *data) {
