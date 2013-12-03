@@ -100,7 +100,7 @@ static void file_action(enum file_action action, NSString* source, NSString* tar
    {
       _path = path ? path : NSHomeDirectory();
       _directoryDelegate = delegate;
-      _extensions = @(extensions);
+      _extensions = extensions ? @(extensions) : 0;
 
       self = [super initWithStyle:UITableViewStylePlain];
       self.hidesHeaders = YES;
