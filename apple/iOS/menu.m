@@ -171,7 +171,12 @@
    result.textLabel.text = @(self.setting->short_description);
 
    if (self.setting)
+   {
       result.detailTextLabel.text = @(setting_data_get_string_representation(self.setting, buffer, sizeof(buffer)));
+      
+      if (self.setting->type == ST_PATH)
+         result.detailTextLabel.text = [result.detailTextLabel.text lastPathComponent];
+   }
    return result;
 }
 
@@ -264,7 +269,8 @@
 
 - (void)wasSelectedOnTableView:(UITableView*)tableView ofController:(UIViewController*)controller
 {
-   RADirectoryList* list = [[RADirectoryList alloc] initWithPath:nil delegate:self];
+   NSString* path = [@(self.setting->value.string) stringByDeletingLastPathComponent];
+   RADirectoryList* list = [[RADirectoryList alloc] initWithPath:path extensions:self.setting->values forDirectory:false delegate:self];
    [controller.navigationController pushViewController:list animated:YES];
 }
 
@@ -411,7 +417,7 @@
    NSString* ragPath = [rootPath stringByAppendingPathComponent:@"RetroArchGames"];
    NSString* target = path_is_directory(ragPath.UTF8String) ? ragPath : rootPath;
 
-   [self.navigationController pushViewController:[[RADirectoryList alloc] initWithPath:target delegate:self] animated:YES];
+   [self.navigationController pushViewController:[[RADirectoryList alloc] initWithPath:target extensions:NULL forDirectory:false delegate:self] animated:YES];
 }
 
 - (void)loadHistory

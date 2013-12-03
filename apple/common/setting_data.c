@@ -198,6 +198,8 @@ void setting_data_set_with_string_representation(const rarch_setting_t* setting,
 {
    if (!setting || !value)
       return;
+      
+   // TODO: Clamp to min/max
    
    switch (setting->type)
    {
@@ -314,7 +316,9 @@ static const uint32_t features = SD_FEATURE_VIDEO_MODE | SD_FEATURE_SHADERS |
 #define CONFIG_BIND(TARGET, PLAYER, NAME, SHORT, DEF) \
    NEXT = setting_data_bind_setting  (NAME, SHORT, &TARGET, PLAYER, DEF);
 
-#define FLAGS(FLAGS) (list[index - 1]).flags = FLAGS;
+#define WITH_FLAGS(FLAGS) (list[index - 1]).flags = FLAGS;
+#define WITH_RANGE(MIN, MAX) (list[index - 1]).min = MIN; (list[index - 1]).max = MAX;
+#define WITH_VALUES(VALUES) (list[index -1]).values = VALUES;
 
 // TODO: Add black_frame_insertion, swap_interval msg_color video.rotation audio.block_frames audio.in_rate fast_forward_ratio
 //       rgui_show_start_screen
@@ -512,8 +516,8 @@ const rarch_setting_t* setting_data_get_list()
 
       #ifdef HAVE_OVERLAY
          START_SUB_GROUP("Overlay")
-            CONFIG_PATH(g_settings.input.overlay, "input_overlay", "Input Overlay", DEFAULT_ME_YO)
-            CONFIG_FLOAT(g_settings.input.overlay_opacity, "input_overlay_opacity", "Overlay Opacity", 1.0f)
+            CONFIG_PATH(g_settings.input.overlay, "input_overlay", "Input Overlay", DEFAULT_ME_YO) WITH_FLAGS(SD_FLAG_PATH_FILE) WITH_VALUES("cfg")
+            CONFIG_FLOAT(g_settings.input.overlay_opacity, "input_overlay_opacity", "Overlay Opacity", 1.0f) WITH_RANGE(0, 1)
             CONFIG_FLOAT(g_settings.input.overlay_scale, "input_overlay_scale", "Overlay Scale", 1.0f)
          END_SUB_GROUP()
       #endif

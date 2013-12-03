@@ -54,6 +54,7 @@ typedef struct
    double min;
    double max;
    
+   const char* values;
    uint64_t flags;
    
    union
