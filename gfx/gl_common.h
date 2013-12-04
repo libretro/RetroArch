@@ -176,6 +176,7 @@ typedef struct gl
    GLuint hw_render_depth[MAX_TEXTURES];
    bool hw_render_fbo_init;
    bool hw_render_depth_init;
+   bool has_fp_fbo;
 #endif
    bool hw_render_use;
 
