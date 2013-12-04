@@ -22,22 +22,18 @@
 
 typedef struct
 {
-    bool portrait;
-    bool portrait_upside_down;
-    bool landscape_left;
-    bool landscape_right;
+   char orientations[32];    
+   bool logging_enabled;
     
-    bool logging_enabled;
+   char bluetooth_mode[64];
     
-    char bluetooth_mode[64];
-    
-    struct
-    {
-        int stdout;
-        int stderr;
+   struct
+   {
+      int stdout;
+      int stderr;
         
-        FILE* file;
-    }  logging;
+      FILE* file;
+   }  logging;
 } apple_frontend_settings_t;
 extern apple_frontend_settings_t apple_frontend_settings;
 

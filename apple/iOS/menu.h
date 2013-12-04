@@ -85,6 +85,14 @@
 @interface RAMenuItemPathSetting : RAMenuItemGeneralSetting<RAMenuItemBase> @end
 
 /*********************************************/
+/* RAMenuItemEnumSetting                     */
+/* A menu item that displays and allows      */
+/* a setting to be set from a list of        */
+/* allowed choices.                          */
+/*********************************************/
+@interface RAMenuItemEnumSetting : RAMenuItemGeneralSetting<RAMenuItemBase> @end
+
+/*********************************************/
 /* RAMenuItemBindSetting                     */
 /* A menu item that displays and allows      */
 /* mapping of a keybinding.                  */

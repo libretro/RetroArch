@@ -136,6 +136,9 @@
       default:      break;
    }
 
+   if (setting->type == ST_STRING && setting->values)
+      return [[RAMenuItemEnumSetting alloc] initWithSetting:setting];
+   
    RAMenuItemGeneralSetting* item = [[RAMenuItemGeneralSetting alloc] initWithSetting:setting];
    
    if (item.setting->type == ST_INT || item.setting->type == ST_UINT || item.setting->type == ST_FLOAT)
@@ -285,6 +288,51 @@
 }
 
 @end
+
+/*********************************************/
+/* RAMenuItemEnumSetting                     */
+/* A menu item that displays and allows      */
+/* a setting to be set from a list of        */
+/* allowed choices.                          */
+/*********************************************/
+@interface RAMenuItemEnumSetting() <UIActionSheetDelegate>
+@property (nonatomic) UIActionSheet* actionSheet;
+@end
+
+@implementation RAMenuItemEnumSetting
+
+- (void)wasSelectedOnTableView:(UITableView*)tableView ofController:(UIViewController*)controller
+{
+   struct string_list* options = string_split(self.setting->values, "|");
+      
+   self.actionSheet = [UIActionSheet new];
+   self.actionSheet.title = @(self.setting->short_description);
+   self.actionSheet.delegate = self;
+      
+   for (int i = 0; i < options->size; i ++)
+   {
+      [self.actionSheet addButtonWithTitle:@(options->elems[i].data)];
+   }
+      
+   self.actionSheet.cancelButtonIndex = [self.actionSheet addButtonWithTitle:@"Cancel"];
+   [self.actionSheet showInView:self.parentTable];
+      
+   string_list_free(options);
+}
+
+- (void)actionSheet:(UIActionSheet *)actionSheet clickedButtonAtIndex:(NSInteger)buttonIndex
+{
+   if (buttonIndex != actionSheet.cancelButtonIndex)
+   {
+      setting_data_set_with_string_representation(self.setting, [actionSheet buttonTitleAtIndex:buttonIndex].UTF8String);
+      [self.parentTable reloadData];
+   }
+   
+   self.actionSheet = nil;
+}
+
+@end
+
 
 /*********************************************/
 /* RAMenuItemBindSetting                     */
@@ -604,6 +652,8 @@ static const void* const associated_core_key = &associated_core_key;
 
    if ((self = [super initWithGroup:frontend_setting_data]))
    {
+      [[RetroArch_iOS get] refreshSystemConfig];
+      
       RAFrontendSettingsMenu* __weak weakSelf = self;
 
       self.title = @"Frontend Settings";
