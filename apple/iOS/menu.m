@@ -600,7 +600,6 @@ static const void* const associated_core_key = &associated_core_key;
 
 - (id)init
 {
-   const rarch_setting_t* apple_get_frontend_settings();
    const rarch_setting_t* frontend_setting_data = apple_get_frontend_settings();
 
    if ((self = [super initWithGroup:frontend_setting_data]))
@@ -633,7 +632,6 @@ static const void* const associated_core_key = &associated_core_key;
 
 - (void)dealloc
 {
-   const rarch_setting_t* apple_get_frontend_settings();
    setting_data_save_config_path(apple_get_frontend_settings(), [RetroArch_iOS get].systemConfigPath.UTF8String);
    [[RetroArch_iOS get] refreshSystemConfig];
 }

@@ -16,7 +16,6 @@
 #include <pthread.h>
 #include <string.h>
 
-#include "../../frontend/platform/platform_ios.h"
 #import "RetroArch_Apple.h"
 #include "rarch_wrapper.h"
 
@@ -30,6 +29,8 @@
 #include "bluetooth/btpad.h"
 
 #include "file.h"
+
+apple_frontend_settings_t apple_frontend_settings;
 
 //#define HAVE_DEBUG_FILELOG
 bool is_ios_7()
@@ -53,6 +54,64 @@ void ios_set_bluetooth_mode(NSString* mode)
    }
 #endif
 }
+
+const void* apple_get_frontend_settings(void)
+{
+   static rarch_setting_t settings[16];
+   
+   if (settings[0].type == ST_NONE)
+   {
+      settings[0]  = setting_data_group_setting(ST_GROUP, "Frontend Settings");
+      settings[1]  = setting_data_group_setting(ST_SUB_GROUP, "Frontend");
+      settings[2]  = setting_data_bool_setting("ios_use_file_log", "Enable File Logging",
+                                               &apple_frontend_settings.logging_enabled, false);
+      settings[3]  = setting_data_bool_setting("ios_tv_mode", "TV Mode", &apple_use_tv_mode, false);
+      settings[4]  = setting_data_group_setting(ST_END_SUB_GROUP, 0);
+      
+      settings[5]  = setting_data_group_setting(ST_SUB_GROUP, "Bluetooth");
+      settings[6]  = setting_data_string_setting(ST_STRING, "ios_btmode", "Mode", apple_frontend_settings.bluetooth_mode,
+                                                 sizeof(apple_frontend_settings.bluetooth_mode), "keyboard");
+      settings[7]  = setting_data_group_setting(ST_END_SUB_GROUP, 0);
+      
+      settings[8]  = setting_data_group_setting(ST_SUB_GROUP, "Orientations");
+      settings[9]  = setting_data_bool_setting("ios_allow_portrait", "Portrait",
+                                               &apple_frontend_settings.portrait, true);
+      settings[10]  = setting_data_bool_setting("ios_allow_portrait_upside_down", "Portrait Upside Down",
+                                                &apple_frontend_settings.portrait_upside_down, true);
+      settings[11]  = setting_data_bool_setting("ios_allow_landscape_left", "Landscape Left",
+                                                &apple_frontend_settings.landscape_left, true);
+      settings[12] = setting_data_bool_setting("ios_allow_landscape_right", "Landscape Right",
+                                               &apple_frontend_settings.landscape_right, true);
+      settings[13] = setting_data_group_setting(ST_END_SUB_GROUP, 0);
+      settings[14] = setting_data_group_setting(ST_END_GROUP, 0);
+   }
+   
+   return settings;
+}
+
+void ios_set_logging_state(const char *log_path, bool on)
+{
+   fflush(stdout);
+   fflush(stderr);
+   
+   if (on && !apple_frontend_settings.logging.file)
+   {
+      apple_frontend_settings.logging.file = fopen(log_path, "a");
+      apple_frontend_settings.logging.stdout = dup(1);
+      apple_frontend_settings.logging.stderr = dup(2);
+      dup2(fileno(apple_frontend_settings.logging.file), 1);
+      dup2(fileno(apple_frontend_settings.logging.file), 2);
+   }
+   else if (!on && apple_frontend_settings.logging.file)
+   {
+      dup2(apple_frontend_settings.logging.stdout, 1);
+      dup2(apple_frontend_settings.logging.stderr, 2);
+      
+      fclose(apple_frontend_settings.logging.file);
+      apple_frontend_settings.logging.file = 0;
+   }
+}
+
 
 // Input helpers: This is kept here because it needs objective-c
 static void handle_touch_event(NSArray* touches)

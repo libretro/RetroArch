@@ -20,6 +20,30 @@
 #import <AVFoundation/AVCaptureOutput.h>
 #include "views.h"
 
+typedef struct
+{
+    bool portrait;
+    bool portrait_upside_down;
+    bool landscape_left;
+    bool landscape_right;
+    
+    bool logging_enabled;
+    
+    char bluetooth_mode[64];
+    
+    struct
+    {
+        int stdout;
+        int stderr;
+        
+        FILE* file;
+    }  logging;
+} apple_frontend_settings_t;
+extern apple_frontend_settings_t apple_frontend_settings;
+
+const void* apple_get_frontend_settings(void);
+
+
 @interface RAGameView : UIViewController<AVCaptureAudioDataOutputSampleBufferDelegate>
 + (RAGameView*)get;
 - (void)iOS7SetiCadeMode:(bool)on;
