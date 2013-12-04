@@ -136,6 +136,14 @@ static int read_sysfs(const char *fname, char *buff, size_t size) {
   return 0;
 }
 
+static inline void put_pixel_rgb565(uint16_t *p, unsigned r, unsigned g, unsigned b) {
+  *p = (((r  >> 3) & 0x1f) << 11) | (((g >> 2) & 0x3f) << 5) | ((b  >> 3) & 0x1f);
+}
+
+static inline void put_pixel_argb8888(uint32_t *p, unsigned r, unsigned g, unsigned b) {
+  // TODO: implement!
+}
+
 static int omapfb_detect_screen(omapfb_data_t *pdata) {
   int fb_id, overlay_id = -1, display_id = -1;
   char buff[64], manager_name[64], display_name[64];
@@ -586,6 +594,48 @@ static void omapfb_prepare(omapfb_data_t *pdata) {
   pdata->cur_page->used = true;
 }
 
+static void omapfb_blend_glyph_rgb565(omapfb_data_t *pdata, const uint8_t *src, uint8_t *f_rgb,
+                                      unsigned g_width, unsigned g_height, unsigned g_pitch,
+                                      unsigned dst_x, unsigned dst_y) {
+  unsigned x, y;
+  unsigned dst_pitch;
+  uint16_t *dst;
+
+  dst_pitch = (pdata->current_state->si.xres * pdata->bpp) >> 1;
+  dst = (uint16_t*)pdata->cur_page->buf + dst_y * dst_pitch + dst_x;
+
+  for (y = 0; y < g_height; ++y, src += g_pitch, dst += dst_pitch) {
+    for (x = 0; x < g_width; ++x) {
+      const uint8_t blend = src[x];
+      const uint16_t out = dst[x];
+
+      unsigned r = (out & 0xf800) >> 11;
+      unsigned g = (out & 0x07e0) >> 5;
+      unsigned b = (out & 0x001f) >> 0;
+
+      if (blend == 0) continue;
+      if (blend == 255) {
+        put_pixel_rgb565(&dst[x], f_rgb[0], f_rgb[1], f_rgb[2]);
+        continue;
+      }
+
+      r = (r << 3) | (r >> 2);
+      g = (g << 2) | (g >> 4);
+      b = (b << 3) | (b >> 2);
+
+      put_pixel_rgb565(&dst[x], (r * (256 - blend) + f_rgb[0] * blend) >> 8,
+                                (g * (256 - blend) + f_rgb[1] * blend) >> 8,
+                                (b * (256 - blend) + f_rgb[2] * blend) >> 8);
+    }
+  }
+}
+
+static void omapfb_blend_glyph_argb8888(omapfb_data_t *pdata, const uint8_t *src, uint8_t *f_rgb,
+                                        unsigned g_width, unsigned g_height, unsigned g_pitch,
+                                        unsigned dst_x, unsigned dst_y) {
+  // TODO: implement!
+}
+
 static void omapfb_blit_frame(omapfb_data_t *pdata, const void *src,
                               unsigned height, unsigned src_pitch) {
   unsigned i, dst_pitch;
@@ -605,9 +655,7 @@ typedef struct omap_video {
 
   void *font;
   const font_renderer_driver_t *font_driver;
-  uint8_t font_r;
-  uint8_t font_g;
-  uint8_t font_b;
+  uint8_t font_rgb[4];
 
   unsigned bytes_per_pixel;
 
@@ -640,33 +688,30 @@ static void omap_init_font(omap_video_t *vid, const char *font_path, unsigned fo
     g = g < 0 ? 0 : (g > 255 ? 255 : g);
     b = b < 0 ? 0 : (b > 255 ? 255 : b);
 
-    vid->font_r = r;
-    vid->font_g = g;
-    vid->font_b = b;
+    vid->font_rgb[0] = r;
+    vid->font_rgb[1] = g;
+    vid->font_rgb[2] = b;
   } else {
     RARCH_LOG("video_omap: font init failed\n");
   }
 }
 
 static void omap_render_msg(omap_video_t *vid, const char *msg) {
-  if (!vid->font) return;
-
   struct font_output_list out;
+  struct font_output *head;
+
+  const int msg_base_x = g_settings.video.msg_pos_x * vid->width;
+  const int msg_base_y = (1.0 - g_settings.video.msg_pos_y) * vid->height;
+
+  if (vid->font == NULL) return;
   vid->font_driver->render_msg(vid->font, msg, &out);
-  struct font_output *head = out.head;
 
-  return; /* TODO: implement */
-
-  /*int msg_base_x = g_settings.video.msg_pos_x * width;
-  int msg_base_y = (1.0 - g_settings.video.msg_pos_y) * height;
-
-  unsigned rshift = fmt->Rshift;
-  unsigned gshift = fmt->Gshift;
-  unsigned bshift = fmt->Bshift;
-
-  for (; head; head = head->next) {
+  for (head = out.head; head; head = head->next) {
     int base_x = msg_base_x + head->off_x;
     int base_y = msg_base_y - head->off_y - head->height;
+
+    const int max_width  = vid->width - base_x;
+    const int max_height = vid->height - base_y;
 
     int glyph_width  = head->width;
     int glyph_height = head->height;
@@ -685,34 +730,21 @@ static void omap_render_msg(omap_video_t *vid, const char *msg) {
        base_y = 0;
     }
 
-    int max_width  = width - base_x;
-    int max_height = height - base_y;
+    if (max_width <= 0 || max_height <= 0) continue;
 
-    if (max_width <= 0 || max_height <= 0)
-      continue;
+    if (glyph_width > max_width) glyph_width = max_width;
+    if (glyph_height > max_height) glyph_height = max_height;
 
-    if (glyph_width > max_width)
-      glyph_width = max_width;
-    if (glyph_height > max_height)
-      glyph_height = max_height;
-
-    uint32_t *out = (uint32_t*)buffer->pixels + base_y * (buffer->pitch >> 2) + base_x;
-
-    for (int y = 0; y < glyph_height; y++, src += head->pitch, out += buffer->pitch >> 2) {
-      for (int x = 0; x < glyph_width; x++) {
-        unsigned blend = src[x];
-        unsigned out_pix = out[x];
-        unsigned r = (out_pix >> rshift) & 0xff;
-        unsigned g = (out_pix >> gshift) & 0xff;
-        unsigned b = (out_pix >> bshift) & 0xff;
-
-        unsigned out_r = (r * (256 - blend) + vid->font_r * blend) >> 8;
-        unsigned out_g = (g * (256 - blend) + vid->font_g * blend) >> 8;
-        unsigned out_b = (b * (256 - blend) + vid->font_b * blend) >> 8;
-        out[x] = (out_r << rshift) | (out_g << gshift) | (out_b << bshift);
-      }
+    if (vid->bytes_per_pixel == 2) {
+      omapfb_blend_glyph_rgb565(vid->omap, src, vid->font_rgb,
+                                glyph_width, glyph_height,
+                                head->pitch, base_x, base_y);
+    } else {
+      omapfb_blend_glyph_argb8888(vid->omap, src, vid->font_rgb,
+                                  glyph_width, glyph_height,
+                                  head->pitch, base_x, base_y);
     }
-  }*/
+  }
 
   vid->font_driver->free_output(vid->font, &out);
 }
