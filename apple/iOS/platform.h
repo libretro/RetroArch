@@ -17,9 +17,30 @@
 #ifndef __RARCH_IOS_PLATFORM_H
 #define __RARCH_IOS_PLATFORM_H
 
+#import <AVFoundation/AVCaptureOutput.h>
 #include "views.h"
 
-@interface RAGameView : UIViewController
+typedef struct
+{
+   char orientations[32];    
+   bool logging_enabled;
+    
+   char bluetooth_mode[64];
+    
+   struct
+   {
+      int stdout;
+      int stderr;
+        
+      FILE* file;
+   }  logging;
+} apple_frontend_settings_t;
+extern apple_frontend_settings_t apple_frontend_settings;
+
+const void* apple_get_frontend_settings(void);
+
+
+@interface RAGameView : UIViewController<AVCaptureAudioDataOutputSampleBufferDelegate>
 + (RAGameView*)get;
 - (void)iOS7SetiCadeMode:(bool)on;
 @end
@@ -32,9 +53,6 @@
 - (void)unloadingCore:(NSString*)core;
 
 - (void)refreshSystemConfig;
-
-- (IBAction)showSettings;
-- (IBAction)showSystemSettings;
 
 @property (nonatomic) NSString* configDirectory;    // e.g. /var/mobile/Documents/.RetroArch
 @property (nonatomic) NSString* globalConfigFile;   // e.g. /var/mobile/Documents/.RetroArch/retroarch.cfg

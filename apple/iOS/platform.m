@@ -16,7 +16,6 @@
 #include <pthread.h>
 #include <string.h>
 
-#include "../../frontend/platform/platform_ios.h"
 #import "RetroArch_Apple.h"
 #include "rarch_wrapper.h"
 
@@ -30,6 +29,8 @@
 #include "bluetooth/btpad.h"
 
 #include "file.h"
+
+apple_frontend_settings_t apple_frontend_settings;
 
 //#define HAVE_DEBUG_FILELOG
 bool is_ios_7()
@@ -53,6 +54,55 @@ void ios_set_bluetooth_mode(NSString* mode)
    }
 #endif
 }
+
+const void* apple_get_frontend_settings(void)
+{
+   static rarch_setting_t settings[8];
+   
+   if (settings[0].type == ST_NONE)
+   {
+      settings[0] = setting_data_group_setting(ST_GROUP, "Frontend Settings");
+      settings[1] = setting_data_group_setting(ST_SUB_GROUP, "Frontend");
+      settings[2] = setting_data_bool_setting("ios_use_file_log", "Enable File Logging",
+                                               &apple_frontend_settings.logging_enabled, false);
+      settings[3] = setting_data_bool_setting("ios_tv_mode", "TV Mode", &apple_use_tv_mode, false);
+      settings[4] = setting_data_string_setting(ST_STRING, "ios_btmode", "Bluetooth Input Type", apple_frontend_settings.bluetooth_mode,
+                                                 sizeof(apple_frontend_settings.bluetooth_mode), "keyboard");
+      settings[4].values = "icade|keyboard|btstack";
+      settings[5] = setting_data_string_setting(ST_STRING, "ios_orientations", "Screen Orientations", apple_frontend_settings.orientations,
+                                                 sizeof(apple_frontend_settings.orientations), "both");
+      settings[5].values = "both|landscape|portrait";
+      settings[6] = setting_data_group_setting(ST_END_SUB_GROUP, 0);
+      
+      settings[7] = setting_data_group_setting(ST_END_GROUP, 0);
+   }
+   
+   return settings;
+}
+
+void ios_set_logging_state(const char *log_path, bool on)
+{
+   fflush(stdout);
+   fflush(stderr);
+   
+   if (on && !apple_frontend_settings.logging.file)
+   {
+      apple_frontend_settings.logging.file = fopen(log_path, "a");
+      apple_frontend_settings.logging.stdout = dup(1);
+      apple_frontend_settings.logging.stderr = dup(2);
+      dup2(fileno(apple_frontend_settings.logging.file), 1);
+      dup2(fileno(apple_frontend_settings.logging.file), 2);
+   }
+   else if (!on && apple_frontend_settings.logging.file)
+   {
+      dup2(apple_frontend_settings.logging.stdout, 1);
+      dup2(apple_frontend_settings.logging.stderr, 2);
+      
+      fclose(apple_frontend_settings.logging.file);
+      apple_frontend_settings.logging.file = 0;
+   }
+}
+
 
 // Input helpers: This is kept here because it needs objective-c
 static void handle_touch_event(NSArray* touches)
@@ -280,38 +330,21 @@ static void handle_touch_event(NSArray* touches)
    setting_data_load_config_path(frontend_settings, self.systemConfigPath.UTF8String);
 
    // Get enabled orientations
-   static const struct { const bool* value; uint32_t orientation; } orientationSettings[4] =
-   {
-      { &apple_frontend_settings.portrait, UIInterfaceOrientationMaskPortrait },
-      { &apple_frontend_settings.portrait_upside_down, UIInterfaceOrientationMaskPortraitUpsideDown },
-      { &apple_frontend_settings.landscape_left, UIInterfaceOrientationMaskLandscapeLeft },
-      { &apple_frontend_settings.landscape_right, UIInterfaceOrientationMaskLandscapeRight }
-   };
+   _enabledOrientations = UIInterfaceOrientationMaskAll;
    
-   _enabledOrientations = 0;
-   
-   for (int i = 0; i < 4; i ++)
-      _enabledOrientations |= (*orientationSettings[i].value) ? orientationSettings[i].orientation : 0;
+   if (strcmp(apple_frontend_settings.orientations, "landscape") == 0)
+      _enabledOrientations = UIInterfaceOrientationMaskLandscape;
+   else if (strcmp(apple_frontend_settings.orientations, "portrait") == 0)
+      _enabledOrientations = UIInterfaceOrientationMaskPortrait | UIInterfaceOrientationMaskPortraitUpsideDown;
 
    // Set bluetooth mode
    ios_set_bluetooth_mode(@(apple_frontend_settings.bluetooth_mode));
    ios_set_logging_state([RetroArch_iOS get].logPath.UTF8String, apple_frontend_settings.logging_enabled);
 }
 
-#pragma mark PAUSE MENU
 - (IBAction)showPauseMenu:(id)sender
 {
    [self pushViewController:[RAPauseMenu new] animated:YES];
-}
-
-- (IBAction)showSettings
-{
-   [self pushViewController:[[RACoreSettingsMenu alloc] initWithCore:apple_core] animated:YES];
-}
-
-- (IBAction)showSystemSettings
-{
-   [self pushViewController:[RAFrontendSettingsMenu new] animated:YES];
 }
 
 @end

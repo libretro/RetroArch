@@ -621,6 +621,7 @@ extern const input_driver_t input_null;
 extern const camera_driver_t camera_v4l2;
 extern const camera_driver_t camera_android;
 extern const camera_driver_t camera_rwebcam;
+extern const camera_driver_t camera_ios;
 extern const input_osk_driver_t input_ps3_osk;
 
 #include "driver_funcs.h"

@@ -200,7 +200,7 @@ ifeq ($(HAVE_LIMA), 1)
 endif
 
 ifeq ($(HAVE_OMAP), 1)
-	OBJ += gfx/omap_gfx.o gfx/fbdev.o
+	OBJ += gfx/omap_gfx.o
 endif
 
 ifeq ($(HAVE_OPENGL), 1)

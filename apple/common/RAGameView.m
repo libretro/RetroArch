@@ -22,6 +22,12 @@
 
 // Define compatibility symbols and categories
 #ifdef IOS
+#include <AVFoundation/AVCaptureSession.h>
+#include <AVFoundation/AVCaptureDevice.h>
+#include <AVFoundation/AVCaptureOutput.h>
+#include <AVFoundation/AVCaptureInput.h>
+#include <AVFoundation/AVMediaFormat.h>
+#include <CoreVideo/CVOpenGLESTextureCache.h>
 #define APP_HAS_FOCUS ([UIApplication sharedApplication].applicationState == UIApplicationStateActive)
 
 #define GLContextClass EAGLContext
@@ -57,7 +63,6 @@
 
 #endif
 
-
 #ifdef IOS
 
 #include <GLKit/GLKit.h>
@@ -67,6 +72,13 @@ static GLKView* g_view;
 static UIView* g_pause_indicator_view;
 static UITextField* g_text_hide;
 
+// Camera
+static AVCaptureSession *_session;
+static NSString *_sessionPreset;
+CVOpenGLESTextureCacheRef textureCache;
+GLuint outputTexture;
+static bool newFrame = false;
+
 #elif defined(OSX)
 
 #include "apple_input.h"
@@ -75,7 +87,6 @@ static bool g_has_went_fullscreen;
 static NSOpenGLPixelFormat* g_format;
 
 #endif
-
 
 static bool g_initialized;
 static RAGameView* g_instance;
@@ -149,7 +160,8 @@ static bool g_is_syncing = true;
    g_current_input_data.touches[0].screen_y = pos.y;
 }
 
-#elif defined(IOS) // < iOS Pause menu and lifecycle
+#elif defined(IOS)
+// < iOS Pause menu and lifecycle
 - (id)init
 {
    self = [super init];
@@ -207,6 +219,124 @@ static bool g_is_syncing = true;
    [self viewWillLayoutSubviews];
 }
 
+-(void)processFrame:(CMSampleBufferRef)sampleBuffer
+{
+    int width, height;
+    CVReturn ret;
+    
+    CVImageBufferRef pixelBuffer = CMSampleBufferGetImageBuffer(sampleBuffer);
+    width  = CVPixelBufferGetWidth(pixelBuffer);
+    height = CVPixelBufferGetHeight(pixelBuffer);
+    
+    CVPixelBufferLockBaseAddress(pixelBuffer, 0);
+    CVOpenGLESTextureRef renderTexture;
+    
+    //TODO - rewrite all this
+    // create a texture from our render target.
+    // textureCache will be what you previously made with CVOpenGLESTextureCacheCreate
+    ret = CVOpenGLESTextureCacheCreateTextureFromImage(kCFAllocatorDefault,
+                                                       textureCache, pixelBuffer, NULL, GL_TEXTURE_2D,
+                                                       GL_RGBA, width, height, GL_BGRA, GL_UNSIGNED_BYTE, 0, &renderTexture);
+    if (!renderTexture || ret)
+    {
+        RARCH_ERR("ioscamera: CVOpenGLESTextureCacheCreateTextureFromImage failed.\n");
+        return;
+    }
+    
+    outputTexture = CVOpenGLESTextureGetName(renderTexture);
+    glBindTexture(GL_TEXTURE_2D, outputTexture);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    
+    CVPixelBufferUnlockBaseAddress(pixelBuffer, 0);
+    [[NSNotificationCenter defaultCenter] postNotificationName:@"NewCameraTextureReady" object:nil];
+    newFrame = true;
+    
+    glBindTexture(GL_TEXTURE_2D, 0);
+    
+    CVOpenGLESTextureCacheFlush(textureCache, 0);
+    CFRelease(renderTexture);
+}
+
+- (void)captureOutput:(AVCaptureOutput *)captureOutput
+didOutputSampleBuffer:(CMSampleBufferRef)sampleBuffer
+       fromConnection:(AVCaptureConnection *)connection
+{
+    [self processFrame:sampleBuffer];
+}
+
+- (void) onCameraInit
+{
+    CVReturn ret;
+    int width, height;
+    
+    //FIXME - dehardcode this
+    width = 640;
+    height = 480;
+    
+#if COREVIDEO_USE_EAGLCONTEXT_CLASS_IN_API
+    ret = CVOpenGLESTextureCacheCreate(kCFAllocatorDefault, NULL, g_context, NULL, &textureCache);
+    
+#else
+    ret = CVOpenGLESTextureCacheCreate(kCFAllocatorDefault, NULL, (__bridge void *)g_context, NULL, &textureCache);
+#endif
+    
+    //-- Setup Capture Session.
+    _session = [[AVCaptureSession alloc] init];
+    [_session beginConfiguration];
+    
+    // TODO: dehardcode this based on device capabilities
+    _sessionPreset = AVCaptureSessionPreset640x480;
+    
+    //-- Set preset session size.
+    [_session setSessionPreset:_sessionPreset];
+    
+    //-- Creata a video device and input from that Device.  Add the input to the capture session.
+    AVCaptureDevice * videoDevice = [AVCaptureDevice defaultDeviceWithMediaType:AVMediaTypeVideo];
+    if(videoDevice == nil)
+        assert(0);
+    
+    //-- Add the device to the session.
+    NSError *error;
+    AVCaptureDeviceInput *input = [AVCaptureDeviceInput deviceInputWithDevice:videoDevice error:&error];
+    if(error)
+    {
+        RARCH_ERR("video device input %s\n", error.localizedDescription.UTF8String);
+        assert(0);
+    }
+    
+    [_session addInput:input];
+    
+    //-- Create the output for the capture session.
+    AVCaptureVideoDataOutput * dataOutput = [[AVCaptureVideoDataOutput alloc] init];
+    [dataOutput setAlwaysDiscardsLateVideoFrames:NO]; // Probably want to set this to NO when recording
+    
+	[dataOutput setVideoSettings:[NSDictionary dictionaryWithObject:[NSNumber numberWithInt:kCVPixelFormatType_32BGRA] forKey:(id)kCVPixelBufferPixelFormatTypeKey]];
+    
+    // Set dispatch to be on the main thread so OpenGL can do things with the data
+    [dataOutput setSampleBufferDelegate:self queue:dispatch_get_main_queue()];
+    
+    [_session addOutput:dataOutput];
+    [_session commitConfiguration];
+}
+
+- (void) onCameraStart
+{
+    [_session startRunning];
+}
+
+- (void) onCameraStop
+{
+    [_session stopRunning];
+}
+
+- (void) onCameraFree
+{
+    CVOpenGLESTextureCacheFlush(textureCache, 0);
+    CFRelease(textureCache);
+}
 #endif
 
 @end
@@ -444,4 +574,87 @@ void apple_bind_game_view_fbo(void)
          [g_view bindDrawable];
    });
 }
+
+// References:
+// http://allmybrain.com/2011/12/08/rendering-to-a-texture-with-ios-5-texture-cache-api/
+// https://developer.apple.com/library/iOS/samplecode/GLCameraRipple/
+
+typedef struct ios_camera
+{
+  void *empty;
+} ioscamera_t;
+
+static void *ios_camera_init(const char *device, uint64_t caps, unsigned width, unsigned height)
+{
+   if ((caps & (1ULL << RETRO_CAMERA_BUFFER_OPENGL_TEXTURE)) == 0)
+   {
+      RARCH_ERR("ioscamera returns OpenGL texture.\n");
+      return NULL;
+   }
+
+   ioscamera_t *ioscamera = (ioscamera_t*)calloc(1, sizeof(ioscamera_t));
+   if (!ioscamera)
+      return NULL;
+
+   [[RAGameView get] onCameraInit];
+
+   return ioscamera;
+}
+
+static void ios_camera_free(void *data)
+{
+   ioscamera_t *ioscamera = (ioscamera_t*)data;
+    
+   [[RAGameView get] onCameraFree];
+
+   if (ioscamera)
+      free(ioscamera);
+   ioscamera = NULL;
+}
+
+static bool ios_camera_start(void *data)
+{
+   (void)data;
+
+   [[RAGameView get] onCameraStart];
+
+   return true;
+}
+
+static void ios_camera_stop(void *data)
+{
+   [[RAGameView get] onCameraStop];
+}
+
+static bool ios_camera_poll(void *data, retro_camera_frame_raw_framebuffer_t frame_raw_cb,
+      retro_camera_frame_opengl_texture_t frame_gl_cb)
+{
+
+   (void)data;
+   (void)frame_raw_cb;
+
+   if (frame_gl_cb && newFrame)
+   {
+	   // FIXME: Identity for now. Use proper texture matrix as returned by iOS Camera (if at all?).
+	   static const float affine[] = {
+		   1.0f, 0.0f, 0.0f,
+		   0.0f, 1.0f, 0.0f,
+		   0.0f, 0.0f, 1.0f
+	   };
+       
+	   frame_gl_cb(outputTexture, GL_TEXTURE_2D, affine);
+       newFrame = false;
+   }
+
+   return true;
+}
+
+const camera_driver_t camera_ios = {
+   ios_camera_init,
+   ios_camera_free,
+   ios_camera_start,
+   ios_camera_stop,
+   ios_camera_poll,
+   "ios",
+};
 #endif

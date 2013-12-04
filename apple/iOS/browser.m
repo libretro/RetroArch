@@ -91,14 +91,16 @@ static void file_action(enum file_action action, NSString* source, NSString* tar
 @implementation RADirectoryList
 {
    NSString* _path;
+   NSString* _extensions;
 }
 
-- (id)initWithPath:(NSString*)path delegate:(id<RADirectoryListDelegate>)delegate
+- (id)initWithPath:(NSString*)path extensions:(const char*)extensions forDirectory:(bool)forDirectory delegate:(id<RADirectoryListDelegate>)delegate
 {
    if ((self = [super initWithStyle:UITableViewStylePlain]))
    {
       _path = path ? path : NSHomeDirectory();
       _directoryDelegate = delegate;
+      _extensions = extensions ? @(extensions) : 0;
 
       self = [super initWithStyle:UITableViewStylePlain];
       self.hidesHeaders = YES;
@@ -157,7 +159,7 @@ static void file_action(enum file_action action, NSString* source, NSString* tar
       [self.sections addObject:[NSMutableArray arrayWithObject:i]];
    
    // List contents
-   struct string_list* contents = dir_list_new(_path.UTF8String, 0, true);
+   struct string_list* contents = dir_list_new(_path.UTF8String, _extensions.UTF8String, true);
    
    if (contents)
    {
