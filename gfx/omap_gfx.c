@@ -141,7 +141,7 @@ static inline void put_pixel_rgb565(uint16_t *p, unsigned r, unsigned g, unsigne
 }
 
 static inline void put_pixel_argb8888(uint32_t *p, unsigned r, unsigned g, unsigned b) {
-  // TODO: implement!
+  *p = ((r << 16) & 0xff0000) | ((g << 8) & 0x00ff00) | ((b << 0) & 0x0000ff);
 }
 
 static int omapfb_detect_screen(omapfb_data_t *pdata) {
@@ -600,6 +600,7 @@ static void omapfb_blend_glyph_rgb565(omapfb_data_t *pdata, const uint8_t *src, 
   unsigned x, y;
   unsigned dst_pitch;
   uint16_t *dst;
+  unsigned r, g, b;
 
   dst_pitch = (pdata->current_state->si.xres * pdata->bpp) >> 1;
   dst = (uint16_t*)pdata->cur_page->buf + dst_y * dst_pitch + dst_x;
@@ -609,15 +610,15 @@ static void omapfb_blend_glyph_rgb565(omapfb_data_t *pdata, const uint8_t *src, 
       const uint8_t blend = src[x];
       const uint16_t out = dst[x];
 
-      unsigned r = (out & 0xf800) >> 11;
-      unsigned g = (out & 0x07e0) >> 5;
-      unsigned b = (out & 0x001f) >> 0;
-
       if (blend == 0) continue;
       if (blend == 255) {
         put_pixel_rgb565(&dst[x], f_rgb[0], f_rgb[1], f_rgb[2]);
         continue;
       }
+
+      r = (out & 0xf800) >> 11;
+      g = (out & 0x07e0) >> 5;
+      b = (out & 0x001f) >> 0;
 
       r = (r << 3) | (r >> 2);
       g = (g << 2) | (g >> 4);
@@ -633,7 +634,34 @@ static void omapfb_blend_glyph_rgb565(omapfb_data_t *pdata, const uint8_t *src, 
 static void omapfb_blend_glyph_argb8888(omapfb_data_t *pdata, const uint8_t *src, uint8_t *f_rgb,
                                         unsigned g_width, unsigned g_height, unsigned g_pitch,
                                         unsigned dst_x, unsigned dst_y) {
-  // TODO: implement!
+  unsigned x, y;
+  unsigned dst_pitch;
+  uint32_t *dst;
+  unsigned r, g, b;
+
+  dst_pitch = (pdata->current_state->si.xres * pdata->bpp) >> 2;
+  dst = (uint32_t*)pdata->cur_page->buf + dst_y * dst_pitch + dst_x;
+
+  for (y = 0; y < g_height; ++y, src += g_pitch, dst += dst_pitch) {
+    for (x = 0; x < g_width; ++x) {
+      const uint8_t blend = src[x];
+      const uint32_t out = dst[x];
+
+      if (blend == 0) continue;
+      if (blend == 255) {
+        put_pixel_argb8888(&dst[x], f_rgb[0], f_rgb[1], f_rgb[2]);
+        continue;
+      }
+
+      r = (out & 0xff0000) >> 16;
+      g = (out & 0x00ff00) >> 8;
+      b = (out & 0x0000ff) >> 0;
+
+      put_pixel_argb8888(&dst[x], (r * (256 - blend) + f_rgb[0] * blend) >> 8,
+                                  (g * (256 - blend) + f_rgb[1] * blend) >> 8,
+                                  (b * (256 - blend) + f_rgb[2] * blend) >> 8);
+    }
+  }
 }
 
 static void omapfb_blit_frame(omapfb_data_t *pdata, const void *src,
