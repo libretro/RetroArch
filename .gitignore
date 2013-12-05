@@ -48,7 +48,9 @@ DerivedData
 *.hmap
 apple/tmp
 apple/modules/*.dylib
+apple/modules/*.info
 apple/*.mobileprovision
+apple/RetroArch_iOS.xcodeproj/project.xcworkspace/*
 /Cg/
 /GL/
 /SDL/
