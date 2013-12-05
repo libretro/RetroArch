@@ -219,12 +219,13 @@ static bool g_is_syncing = true;
    [self viewWillLayoutSubviews];
 }
 
--(void)processFrame:(CMSampleBufferRef)sampleBuffer
+void event_process_camera_frame(void* pixelBufferPtr)
 {
+    CVPixelBufferRef pixelBuffer = (CVPixelBufferRef)pixelBufferPtr;
+    
     int width, height;
     CVReturn ret;
     
-    CVImageBufferRef pixelBuffer = CMSampleBufferGetImageBuffer(sampleBuffer);
     width  = CVPixelBufferGetWidth(pixelBuffer);
     height = CVPixelBufferGetHeight(pixelBuffer);
     
@@ -258,14 +259,18 @@ static bool g_is_syncing = true;
     
     CVOpenGLESTextureCacheFlush(textureCache, 0);
     CFRelease(renderTexture);
+    
+    CFRelease(pixelBuffer);
+    pixelBuffer = 0;
 }
 
 - (void)captureOutput:(AVCaptureOutput *)captureOutput
 didOutputSampleBuffer:(CMSampleBufferRef)sampleBuffer
        fromConnection:(AVCaptureConnection *)connection
 {
-    [self processFrame:sampleBuffer];
-}
+    // TODO: Don't post if event queue is full
+    CVPixelBufferRef pixelBuffer = CVPixelBufferRetain(CMSampleBufferGetImageBuffer(sampleBuffer));
+    apple_frontend_post_event(event_process_camera_frame, pixelBuffer);}
 
 - (void) onCameraInit
 {
