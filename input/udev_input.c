@@ -29,6 +29,16 @@
 #include <linux/types.h>
 #include <linux/input.h>
 
+#ifdef HAVE_CONFIG_H
+#include "../config.h"
+#endif
+
+// Need libxkbcommon to translate raw evdev events to characters
+// which can be passed to keyboard callback in a sensible way.
+#ifdef HAVE_XKBCOMMON
+#include <xkbcommon/xkbcommon.h>
+#endif
+
 typedef struct udev_input udev_input_t;
 struct input_device;
 
@@ -62,6 +72,17 @@ struct udev_input
    struct udev *udev;
    struct udev_monitor *monitor;
 
+#ifdef HAVE_XKBCOMMON
+   struct xkb_context *xkb_ctx;
+   struct xkb_keymap *xkb_map;
+   struct xkb_state *xkb_state;
+   struct
+   {
+      xkb_mod_index_t index;
+      uint16_t bit;
+   } mod_map[5];
+#endif
+
    const rarch_joypad_driver_t *joypad;
    uint8_t key_state[(KEY_MAX + 7) / 8];
 
@@ -89,6 +110,35 @@ static inline void set_bit(uint8_t *buf, unsigned bit)
    buf[bit >> 3] |= 1 << (bit & 7);
 }
 
+#ifdef HAVE_XKBCOMMON
+static void handle_xkb(udev_input_t *udev, int code, int value)
+{
+   int xk_code = code + 8; // Convert Linux evdev to X11 (xkbcommon docs say so at least ...)
+
+   if (value == 2) // Repeat, release first explicitly.
+      xkb_state_update_key(udev->xkb_state, xk_code, XKB_KEY_UP);
+
+   uint32_t utf32 = 0;
+   if (value)
+   {
+      xkb_keysym_t sym = xkb_state_key_get_one_sym(udev->xkb_state, xk_code);
+      utf32 = xkb_keysym_to_utf32(sym);
+   }
+
+   xkb_state_update_key(udev->xkb_state, xk_code, value ? XKB_KEY_DOWN : XKB_KEY_UP);
+
+   // Build mod state.
+   uint16_t mod = 0;
+   unsigned i;
+   for (i = 0; i < ARRAY_SIZE(udev->mod_map); i++)
+      if (udev->mod_map[i].index != XKB_MOD_INVALID)
+         mod |= xkb_state_mod_index_is_active(udev->xkb_state, udev->mod_map[i].index, XKB_STATE_MODS_EFFECTIVE) > 0 ? udev->mod_map[i].bit : 0;
+
+   if (g_extern.system.key_event)
+      g_extern.system.key_event(value, input_translate_keysym_to_rk(code), utf32, mod);
+}
+#endif
+
 static void udev_handle_keyboard(udev_input_t *udev, const struct input_event *event, struct input_device *dev)
 {
    switch (event->type)
@@ -98,6 +148,11 @@ static void udev_handle_keyboard(udev_input_t *udev, const struct input_event *e
             set_bit(udev->key_state, event->code);
          else
             clear_bit(udev->key_state, event->code);
+
+#ifdef HAVE_XKBCOMMON
+         if (udev->xkb_state)
+            handle_xkb(udev, event->code, event->value);
+#endif
          break;
 
       default:
@@ -507,6 +562,15 @@ static void udev_input_free(void *data)
    if (udev->udev)
       udev_unref(udev->udev);
 
+#ifdef HAVE_XKBCOMMON
+   if (udev->xkb_map)
+      xkb_keymap_unref(udev->xkb_map);
+   if (udev->xkb_ctx)
+      xkb_context_unref(udev->xkb_ctx);
+   if (udev->xkb_state)
+      xkb_state_unref(udev->xkb_state);
+#endif
+
    free(udev);
 }
 
@@ -563,6 +627,26 @@ static void *udev_input_init(void)
       udev_monitor_filter_add_match_subsystem_devtype(udev->monitor, "input", NULL);
       udev_monitor_enable_receiving(udev->monitor);
    }
+
+#ifdef HAVE_XKBCOMMON
+   udev->xkb_ctx = xkb_context_new(XKB_CONTEXT_NO_FLAGS);
+   // Uses "default" layout, which seems to be US layout.
+   if (udev->xkb_ctx)
+      udev->xkb_map = xkb_keymap_new_from_names(udev->xkb_ctx, NULL, XKB_MAP_COMPILE_NO_FLAGS);
+   if (udev->xkb_map)
+      udev->xkb_state = xkb_state_new(udev->xkb_map);
+
+   udev->mod_map[0].index = xkb_keymap_mod_get_index(udev->xkb_map, XKB_MOD_NAME_CAPS);
+   udev->mod_map[0].bit = RETROKMOD_CAPSLOCK;
+   udev->mod_map[1].index = xkb_keymap_mod_get_index(udev->xkb_map, XKB_MOD_NAME_SHIFT);
+   udev->mod_map[1].bit = RETROKMOD_SHIFT;
+   udev->mod_map[2].index = xkb_keymap_mod_get_index(udev->xkb_map, XKB_MOD_NAME_CTRL);
+   udev->mod_map[2].bit = RETROKMOD_CTRL;
+   udev->mod_map[3].index = xkb_keymap_mod_get_index(udev->xkb_map, XKB_MOD_NAME_ALT);
+   udev->mod_map[3].bit = RETROKMOD_ALT;
+   udev->mod_map[4].index = xkb_keymap_mod_get_index(udev->xkb_map, XKB_MOD_NAME_LOGO);
+   udev->mod_map[4].bit = RETROKMOD_META;
+#endif
 
    udev->epfd = epoll_create(32);
    if (udev->epfd < 0)

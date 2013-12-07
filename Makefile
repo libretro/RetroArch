@@ -332,6 +332,11 @@ ifeq ($(HAVE_UDEV), 1)
    JOYCONFIG_OBJ += tools/udev_joypad.o
 endif
 
+ifeq ($(HAVE_XKBCOMMON), 1)
+   DEFINES += $(XKBCOMMON_CFLAGS)
+   LIBS += $(XKBCOMMON_LIBS)
+endif
+
 ifeq ($(HAVE_NEON),1)
    OBJ += audio/sinc_neon.o
 	# When compiled without this, tries to attempt to compile sinc lerp,
