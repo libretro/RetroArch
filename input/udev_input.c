@@ -49,10 +49,10 @@ struct input_device
       struct
       {
          float x, y;
+         float mod_x, mod_y;
          struct input_absinfo info_x;
          struct input_absinfo info_y;
          bool touch;
-         bool first;
       } touchpad;
    } state;
 };
@@ -118,17 +118,14 @@ static void udev_handle_touchpad(udev_input_t *udev, const struct input_event *e
                int range = dev->state.touchpad.info_x.maximum - dev->state.touchpad.info_x.minimum;
                float x_norm = (float)x / range;
 
+               float rel_x = x_norm - dev->state.touchpad.x;
+
                if (dev->state.touchpad.touch)
-               {
-                  float rel_x = x_norm - dev->state.touchpad.x;
+                  udev->mouse_x += (int16_t)roundf(dev->state.touchpad.mod_x * rel_x);
 
-                  // Some factor, not sure what's good to do here ...
-                  if (!dev->state.touchpad.first)
-                     udev->mouse_x += (int16_t)roundf(rel_x * 500.0f);
-
-                  dev->state.touchpad.x = x_norm;
-               }
-               dev->state.touchpad.first = false;
+               dev->state.touchpad.x = x_norm;
+               // Some factor, not sure what's good to do here ...
+               dev->state.touchpad.mod_x = 500.0f;
                break;
             }
 
@@ -138,17 +135,14 @@ static void udev_handle_touchpad(udev_input_t *udev, const struct input_event *e
                int range = dev->state.touchpad.info_y.maximum - dev->state.touchpad.info_y.minimum;
                float y_norm = (float)y / range;
 
+               float rel_y = y_norm - dev->state.touchpad.y;
+
                if (dev->state.touchpad.touch)
-               {
-                  float rel_y = y_norm - dev->state.touchpad.y;
+                  udev->mouse_y += (int16_t)roundf(dev->state.touchpad.mod_y * rel_y);
 
-                  // Some factor, not sure what's good to do here ...
-                  if (!dev->state.touchpad.first)
-                     udev->mouse_y += (int16_t)roundf(rel_y * 500.0f);
-
-                  dev->state.touchpad.y = y_norm;
-               }
-               dev->state.touchpad.first = false;
+               dev->state.touchpad.y = y_norm;
+               // Some factor, not sure what's good to do here ...
+               dev->state.touchpad.mod_y = 500.0f;
                break;
             }
 
@@ -162,7 +156,8 @@ static void udev_handle_touchpad(udev_input_t *udev, const struct input_event *e
          {
             case BTN_TOUCH:
                dev->state.touchpad.touch = event->value;
-               dev->state.touchpad.first = true;
+               dev->state.touchpad.mod_x = 0.0f; // First ABS event is not a relative one.
+               dev->state.touchpad.mod_y = 0.0f;
                break;
 
             default:
