@@ -379,7 +379,7 @@ static bool lima_gfx_frame(void *data, const void *frame, unsigned width, unsign
       if (vid->scaler.in_fmt == SCALER_FMT_RGB565)
          vid->screen = SDL_CreateRGBSurface(SDL_HWSURFACE | SDL_HWACCEL | SDL_DOUBLEBUF, width, height, 16, 0, 0, 0, 0);
       else
-    	 vid->screen = SDL_CreateRGBSurface(SDL_HWSURFACE | SDL_HWACCEL | SDL_DOUBLEBUF, width, height, 32, 0, 0, 0, 0);
+         vid->screen = SDL_CreateRGBSurface(SDL_HWSURFACE | SDL_HWACCEL | SDL_DOUBLEBUF, width, height, 32, 0, 0, 0, 0);
 
       vid->scaler.in_width  = width;
       vid->scaler.in_height = height;
@@ -503,15 +503,15 @@ static void lima_set_aspect_ratio(void *data, unsigned aspect_ratio_idx)
       break;
 
       case ASPECT_RATIO_CONFIG:
-    	  if(val == 0.0f)
-             break;
-    	  else
-    	  {
-             vertices[0][0] = 1/(val/-1);
-             vertices[1][0] = 1/val;
-             vertices[2][0] = 1/(val/-1);
-             vertices[3][0] = 1/val;
-    	  }
+         if(val == 0.0f)
+    		break;
+         else
+         {
+            vertices[0][0] = 1/(val/-1);
+            vertices[1][0] = 1/val;
+            vertices[2][0] = 1/(val/-1);
+            vertices[3][0] = 1/val;
+         }
       break;
 
       default:
