@@ -477,7 +477,7 @@ public final class UserPreferences
 	private static boolean hasLowLatencyAudio(Context ctx)
 	{
 		PackageManager pm = ctx.getPackageManager();
-		return pm.hasSystemFeature(PackageManager.FEATURE_AUDIO_LOW_LATENCY);
+		return true;//pm.hasSystemFeature(PackageManager.FEATURE_AUDIO_LOW_LATENCY);
 	}
 
 	/**

@@ -353,6 +353,10 @@
                                      delegate:self
                                      cancelButtonTitle:@"Cancel"
                                      otherButtonTitles:@"Clear Keyboard", @"Clear Joystick", @"Clear Axis", nil];
+   
+   if (is_ios_7())
+      self.alert.alertViewStyle = UIAlertViewStylePlainTextInput;
+
    [self.alert show];
    
    [self.parentTable reloadData];
@@ -367,11 +371,12 @@
       [self.alert dismissWithClickedButtonIndex:self.alert.cancelButtonIndex animated:YES];
    self.alert = nil;
 
-
    [self.parentTable reloadData];
 
    [self.bindTimer invalidate];
    self.bindTimer = nil;
+   
+   apple_input_reset_icade_buttons();
 }
 
 - (void)alertView:(UIAlertView*)alertView clickedButtonAtIndex:(NSInteger)buttonIndex
