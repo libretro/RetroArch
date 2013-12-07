@@ -35,129 +35,6 @@ typedef struct linuxraw_input
 } linuxraw_input_t;
 
 
-struct key_bind
-{
-   uint8_t x;
-   enum retro_key sk;
-};
-
-static unsigned keysym_lut[RETROK_LAST];
-static const struct key_bind lut_binds[] = {
-   { KEY_ESC, RETROK_ESCAPE },
-   { KEY_1, RETROK_1 },
-   { KEY_2, RETROK_2 },
-   { KEY_3, RETROK_3},
-   { KEY_4, RETROK_4 },
-   { KEY_5, RETROK_5 },
-   { KEY_6, RETROK_6 },
-   { KEY_7, RETROK_7 },
-   { KEY_8, RETROK_8 },
-   { KEY_9, RETROK_9 },
-   { KEY_0, RETROK_0 },
-   { KEY_MINUS, RETROK_MINUS },
-   { KEY_EQUAL, RETROK_EQUALS },
-   { KEY_BACKSPACE, RETROK_BACKSPACE },
-   { KEY_TAB, RETROK_TAB },
-   { KEY_Q, RETROK_q },
-   { KEY_W, RETROK_w },
-   { KEY_E, RETROK_e },
-   { KEY_R, RETROK_r },
-   { KEY_T, RETROK_t },
-   { KEY_Y, RETROK_y },
-   { KEY_U, RETROK_u },
-   { KEY_I, RETROK_i },
-   { KEY_O, RETROK_o },
-   { KEY_P, RETROK_p },
-   { KEY_LEFTBRACE, RETROK_LEFTBRACKET },
-   { KEY_RIGHTBRACE, RETROK_RIGHTBRACKET },
-   { KEY_ENTER, RETROK_RETURN },
-   { KEY_LEFTCTRL, RETROK_LCTRL },
-   { KEY_A, RETROK_a },
-   { KEY_S, RETROK_s },
-   { KEY_D, RETROK_d },
-   { KEY_F, RETROK_f },
-   { KEY_G, RETROK_g },
-   { KEY_H, RETROK_h },
-   { KEY_J, RETROK_j },
-   { KEY_K, RETROK_k },
-   { KEY_L, RETROK_l },
-   { KEY_SEMICOLON, RETROK_SEMICOLON },
-   { KEY_APOSTROPHE, RETROK_QUOTE },
-   { KEY_GRAVE, RETROK_BACKQUOTE },
-   { KEY_LEFTSHIFT, RETROK_LSHIFT },
-   { KEY_BACKSLASH, RETROK_BACKSLASH },
-   { KEY_Z, RETROK_z },
-   { KEY_X, RETROK_x },
-   { KEY_C, RETROK_c },
-   { KEY_V, RETROK_v },
-   { KEY_B, RETROK_b },
-   { KEY_N, RETROK_n },
-   { KEY_M, RETROK_m },
-   { KEY_COMMA, RETROK_COMMA },
-   { KEY_DOT, RETROK_PERIOD },
-   { KEY_SLASH, RETROK_SLASH },
-   { KEY_RIGHTSHIFT, RETROK_RSHIFT },
-   { KEY_KPASTERISK, RETROK_KP_MULTIPLY },
-   { KEY_LEFTALT, RETROK_LALT },
-   { KEY_SPACE, RETROK_SPACE },
-   { KEY_CAPSLOCK, RETROK_CAPSLOCK },
-   { KEY_F1, RETROK_F1 },
-   { KEY_F2, RETROK_F2 },
-   { KEY_F3, RETROK_F3 },
-   { KEY_F4, RETROK_F4 },
-   { KEY_F5, RETROK_F5 },
-   { KEY_F6, RETROK_F6 },
-   { KEY_F7, RETROK_F7 },
-   { KEY_F8, RETROK_F8 },
-   { KEY_F9, RETROK_F9 },
-   { KEY_F10, RETROK_F10 },
-   { KEY_NUMLOCK, RETROK_NUMLOCK },
-   { KEY_SCROLLLOCK, RETROK_SCROLLOCK },
-   { KEY_KP7, RETROK_KP7 },
-   { KEY_KP8, RETROK_KP8 },
-   { KEY_KP9, RETROK_KP9 },
-   { KEY_KPMINUS, RETROK_KP_MINUS },
-   { KEY_KP4, RETROK_KP4 },
-   { KEY_KP5, RETROK_KP5 },
-   { KEY_KP6, RETROK_KP6 },
-   { KEY_KPPLUS, RETROK_KP_PLUS },
-   { KEY_KP1, RETROK_KP1 },
-   { KEY_KP2, RETROK_KP2 },
-   { KEY_KP3, RETROK_KP3 },
-   { KEY_KP0, RETROK_KP0 },
-   { KEY_KPDOT, RETROK_KP_PERIOD },
-
-   { KEY_F11, RETROK_F11 },
-   { KEY_F12, RETROK_F12 },
-
-   { KEY_KPENTER, RETROK_KP_ENTER },
-   { KEY_RIGHTCTRL, RETROK_RCTRL },
-   { KEY_KPSLASH, RETROK_KP_DIVIDE },
-   { KEY_SYSRQ, RETROK_PRINT },
-   { KEY_RIGHTALT, RETROK_RALT },
-
-   { KEY_HOME, RETROK_HOME },
-   { KEY_UP, RETROK_UP },
-   { KEY_PAGEUP, RETROK_PAGEUP },
-   { KEY_LEFT, RETROK_LEFT },
-   { KEY_RIGHT, RETROK_RIGHT },
-   { KEY_END, RETROK_END },
-   { KEY_DOWN, RETROK_DOWN },
-   { KEY_PAGEDOWN, RETROK_PAGEDOWN },
-   { KEY_INSERT, RETROK_INSERT },
-   { KEY_DELETE, RETROK_DELETE },
-
-   { KEY_PAUSE, RETROK_PAUSE },
-};
-
-static void init_lut(void)
-{
-   unsigned i;
-   memset(keysym_lut, 0, sizeof(keysym_lut));
-   for (i = 0; i < ARRAY_SIZE(lut_binds); i++)
-      keysym_lut[lut_binds[i].sk] = lut_binds[i].x;
-}
-
 static void linuxraw_resetKbmd(void)
 {
    if (oldKbmd != 0xffff)
@@ -232,7 +109,7 @@ static void *linuxraw_input_init(void)
    atexit(linuxraw_resetKbmd);
 
    linuxraw->joypad = input_joypad_init_driver(g_settings.input.joypad_driver);
-   init_lut();
+   input_init_keyboard_lut(rarch_key_map_linux);
 
    driver.stdin_claimed = true; // We need to disable use of stdin command interface if stdin is supposed to be used for input.
    return linuxraw;
@@ -240,7 +117,8 @@ static void *linuxraw_input_init(void)
 
 static bool linuxraw_key_pressed(linuxraw_input_t *linuxraw, int key)
 {
-   return linuxraw->state[keysym_lut[key]];
+   unsigned sym = input_translate_rk_to_keysym((enum retro_key)key);
+   return linuxraw->state[sym];
 }
 
 static bool linuxraw_is_pressed(linuxraw_input_t *linuxraw, const struct retro_keybind *binds, unsigned id)
@@ -346,6 +224,7 @@ static void linuxraw_input_poll(void *data)
 
 static uint64_t linuxraw_get_capabilities(void *data)
 {
+   (void)data;
    uint64_t caps = 0;
 
    caps |= (1 << RETRO_DEVICE_JOYPAD);
