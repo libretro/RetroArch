@@ -419,10 +419,6 @@ static void check_device(const char *path, bool hotplugged)
 #else
       (void)hotplugged;
 #endif
-
-#if 0
-      test_initial_rumble(fd, path);
-#endif
    }
    else
    {
