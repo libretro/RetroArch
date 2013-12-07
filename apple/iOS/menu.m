@@ -656,9 +656,7 @@ static const void* const associated_core_key = &associated_core_key;
    const rarch_setting_t* frontend_setting_data = apple_get_frontend_settings();
 
    if ((self = [super initWithGroup:frontend_setting_data]))
-   {
-      [[RetroArch_iOS get] refreshSystemConfig];
-      
+   {      
       RAFrontendSettingsMenu* __weak weakSelf = self;
 
       self.title = @"Frontend Settings";
@@ -688,7 +686,6 @@ static const void* const associated_core_key = &associated_core_key;
 - (void)dealloc
 {
    setting_data_save_config_path(apple_get_frontend_settings(), [RetroArch_iOS get].systemConfigPath.UTF8String);
-   [[RetroArch_iOS get] refreshSystemConfig];
 }
 
 - (void)showCoreConfigFor:(NSString*)core
