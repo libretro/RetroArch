@@ -30,14 +30,31 @@
 #include <linux/input.h>
 
 typedef struct udev_input udev_input_t;
-typedef void (*device_poll_cb)(udev_input_t *udev, int fd);
+struct input_device;
+
+typedef void (*device_handle_cb)(udev_input_t *udev,
+      const struct input_event *event, struct input_device *dev);
 
 struct input_device
 {
    int fd;
    dev_t dev;
-   device_poll_cb poll_cb;
+   device_handle_cb handle_cb;
    char devnode[PATH_MAX];
+
+   union
+   {
+      // keyboard
+      // mouse
+      struct
+      {
+         float x, y;
+         struct input_absinfo info_x;
+         struct input_absinfo info_y;
+         bool touch;
+         bool first;
+      } touchpad;
+   } state;
 };
 
 struct udev_input
@@ -72,82 +89,130 @@ static inline void set_bit(uint8_t *buf, unsigned bit)
    buf[bit >> 3] |= 1 << (bit & 7);
 }
 
-static void udev_poll_keyboard(udev_input_t *udev, int fd)
+static void udev_handle_keyboard(udev_input_t *udev, const struct input_event *event, struct input_device *dev)
 {
-   int i, len;
-   struct input_event events[32];
-   while ((len = read(fd, events, sizeof(events))) > 0)
+   switch (event->type)
    {
-      len /= sizeof(*events);
-      for (i = 0; i < len; i++)
-      {
-         switch (events[i].type)
-         {
-            case EV_KEY:
-               if (events[i].value)
-                  set_bit(udev->key_state, events[i].code);
-               else
-                  clear_bit(udev->key_state, events[i].code);
-               break;
+      case EV_KEY:
+         if (event->value)
+            set_bit(udev->key_state, event->code);
+         else
+            clear_bit(udev->key_state, event->code);
+         break;
 
-            default:
-               break;
-         }
-      }
+      default:
+         break;
    }
 }
 
-static void udev_poll_mouse(udev_input_t *udev, int fd)
+static void udev_handle_touchpad(udev_input_t *udev, const struct input_event *event, struct input_device *dev)
 {
-   int i, len;
-   struct input_event events[32];
-   while ((len = read(fd, events, sizeof(events))) > 0)
+   switch (event->type)
    {
-      len /= sizeof(*events);
-      for (i = 0; i < len; i++)
-      {
-         switch (events[i].type)
+      case EV_ABS:
+         switch (event->code)
          {
-            case EV_KEY:
-               switch (events[i].code)
+            case ABS_X:
+            {
+               int x = event->value - dev->state.touchpad.info_x.minimum;
+               int range = dev->state.touchpad.info_x.maximum - dev->state.touchpad.info_x.minimum;
+               float x_norm = (float)x / range;
+
+               if (dev->state.touchpad.touch)
                {
-                  case BTN_LEFT:
-                     udev->mouse_l = events[i].value;
-                     break;
+                  float rel_x = x_norm - dev->state.touchpad.x;
 
-                  case BTN_RIGHT:
-                     udev->mouse_r = events[i].value;
-                     break;
+                  // Some factor, not sure what's good to do here ...
+                  if (!dev->state.touchpad.first)
+                     udev->mouse_x += (int16_t)roundf(rel_x * 500.0f);
 
-                  case BTN_MIDDLE:
-                     udev->mouse_m = events[i].value;
-                     break;
-
-                  default:
-                     break;
+                  dev->state.touchpad.x = x_norm;
                }
+               dev->state.touchpad.first = false;
                break;
+            }
 
-            case EV_REL:
-               switch (events[i].code)
+            case ABS_Y:
+            {
+               int y = event->value - dev->state.touchpad.info_y.minimum;
+               int range = dev->state.touchpad.info_y.maximum - dev->state.touchpad.info_y.minimum;
+               float y_norm = (float)y / range;
+
+               if (dev->state.touchpad.touch)
                {
-                  case REL_X:
-                     udev->mouse_x += events[i].value;
-                     break;
+                  float rel_y = y_norm - dev->state.touchpad.y;
 
-                  case REL_Y:
-                     udev->mouse_y += events[i].value;
-                     break;
+                  // Some factor, not sure what's good to do here ...
+                  if (!dev->state.touchpad.first)
+                     udev->mouse_y += (int16_t)roundf(rel_y * 500.0f);
 
-                  default:
-                     break;
+                  dev->state.touchpad.y = y_norm;
                }
+               dev->state.touchpad.first = false;
+               break;
+            }
+
+            default:
+               break;
+         }
+         break;
+
+      case EV_KEY:
+         switch (event->code)
+         {
+            case BTN_TOUCH:
+               dev->state.touchpad.touch = event->value;
+               dev->state.touchpad.first = true;
                break;
 
             default:
                break;
          }
-      }
+   }
+}
+
+static void udev_handle_mouse(udev_input_t *udev, const struct input_event *event, struct input_device *dev)
+{
+   switch (event->type)
+   {
+      case EV_KEY:
+         switch (event->code)
+         {
+            case BTN_LEFT:
+               udev->mouse_l = event->value;
+               break;
+
+            case BTN_RIGHT:
+               udev->mouse_r = event->value;
+               break;
+
+            case BTN_MIDDLE:
+               udev->mouse_m = event->value;
+               break;
+
+            default:
+               break;
+         }
+         break;
+
+      case EV_REL:
+         switch (event->code)
+         {
+            case REL_X:
+               udev->mouse_x += event->value;
+               break;
+
+            case REL_Y:
+               udev->mouse_y += event->value;
+               break;
+
+            default:
+               break;
+         }
+         break;
+
+      default:
+         break;
    }
 }
 
@@ -162,19 +227,11 @@ static bool hotplug_available(udev_input_t *udev)
    return (poll(&fds, 1, 0) == 1) && (fds.revents & POLLIN);
 }
 
-static bool add_device(udev_input_t *udev, const char *devnode, device_poll_cb cb)
+static bool add_device(udev_input_t *udev, const char *devnode, device_handle_cb cb)
 {
    struct stat st;
    if (stat(devnode, &st) < 0)
       return false;
-
-#if 0
-   // If we have added this device already, skip it (could have aliases in /dev/input).
-   unsigned i;
-   for (i = 0; i < udev->num_devices; i++)
-      if (st.st_dev == udev->devices[i]->dev)
-         return true;
-#endif
 
    int fd = open(devnode, O_RDONLY | O_NONBLOCK);
    if (fd < 0)
@@ -189,9 +246,19 @@ static bool add_device(udev_input_t *udev, const char *devnode, device_poll_cb c
 
    device->fd = fd;
    device->dev = st.st_dev;
-   device->poll_cb = cb;
+   device->handle_cb = cb;
 
    strlcpy(device->devnode, devnode, sizeof(device->devnode));
+
+   // Touchpads report in absolute coords.
+   if (cb == udev_handle_touchpad &&
+         (ioctl(fd, EVIOCGABS(ABS_X), &device->state.touchpad.info_x) < 0 ||
+          ioctl(fd, EVIOCGABS(ABS_Y), &device->state.touchpad.info_y) < 0))
+   {
+      free(device);
+      close(fd);
+      return false;
+   }
 
    struct input_device **tmp = (struct input_device**)realloc(udev->devices,
          (udev->num_devices + 1) * sizeof(*udev->devices));
@@ -239,24 +306,44 @@ static void handle_hotplug(udev_input_t *udev)
 
    const char *val_keyboard = udev_device_get_property_value(dev, "ID_INPUT_KEYBOARD");
    const char *val_mouse = udev_device_get_property_value(dev, "ID_INPUT_MOUSE");
+   const char *val_touchpad = udev_device_get_property_value(dev, "ID_INPUT_TOUCHPAD");
    const char *action = udev_device_get_action(dev);
    const char *devnode = udev_device_get_devnode(dev);
 
    bool is_keyboard = val_keyboard && !strcmp(val_keyboard, "1") && devnode;
    bool is_mouse = val_mouse && !strcmp(val_mouse, "1") && devnode;
+   bool is_touchpad = val_touchpad && !strcmp(val_touchpad, "1") && devnode;
 
-   if (!is_keyboard && !is_mouse)
+   if (!is_keyboard && !is_mouse && !is_touchpad)
       goto end;
+
+   device_handle_cb cb = NULL;
+   const char *devtype = NULL;
+
+   if (is_keyboard)
+   {
+      cb = udev_handle_keyboard;
+      devtype = "keyboard";
+   }
+   else if (is_touchpad)
+   {
+      cb = udev_handle_touchpad;
+      devtype = "touchpad";
+   }
+   else if (is_mouse)
+   {
+      cb = udev_handle_mouse;
+      devtype = "mouse";
+   }
 
    if (!strcmp(action, "add"))
    {
-      RARCH_LOG("[udev]: Hotplug add %s: %s.\n", is_keyboard ? "keyboard" : "mouse", devnode);
-      device_poll_cb cb = is_keyboard ? udev_poll_keyboard : udev_poll_mouse;
+      RARCH_LOG("[udev]: Hotplug add %s: %s.\n", devtype, devnode);
       add_device(udev, devnode, cb);
    }
    else if (!strcmp(action, "remove"))
    {
-      RARCH_LOG("[udev]: Hotplug remove %s: %s.\n", is_keyboard ? "keyboard" : "mouse", devnode);
+      RARCH_LOG("[udev]: Hotplug remove %s: %s.\n", devtype, devnode);
       remove_device(udev, devnode);
    }
 
@@ -281,7 +368,15 @@ static void udev_input_poll(void *data)
       if (events[i].events & EPOLLIN)
       {
          struct input_device *device = (struct input_device*)events[i].data.ptr;
-         device->poll_cb(udev, device->fd);
+         struct input_event events[32];
+         int j, len;
+
+         while ((len = read(device->fd, events, sizeof(events))) > 0)
+         {
+            len /= sizeof(*events);
+            for (j = 0; j < len; j++)
+               device->handle_cb(udev, &events[j], device);
+         }
       }
    }
 
@@ -420,7 +515,7 @@ static void udev_input_free(void *data)
    free(udev);
 }
 
-static bool open_devices(udev_input_t *udev, const char *type, device_poll_cb cb)
+static bool open_devices(udev_input_t *udev, const char *type, device_handle_cb cb)
 {
    struct udev_list_entry *devs;
    struct udev_list_entry *item;
@@ -481,15 +576,29 @@ static void *udev_input_init(void)
       goto error;
    }
 
-   if (!open_devices(udev, "ID_INPUT_KEYBOARD", udev_poll_keyboard))
+   if (!open_devices(udev, "ID_INPUT_KEYBOARD", udev_handle_keyboard))
    {
       RARCH_ERR("Failed to open keyboard.\n");
       goto error;
    }
 
-   if (!open_devices(udev, "ID_INPUT_MOUSE", udev_poll_mouse))
+   if (!open_devices(udev, "ID_INPUT_MOUSE", udev_handle_mouse))
    {
       RARCH_ERR("Failed to open mouse.\n");
+      goto error;
+   }
+
+   if (!open_devices(udev, "ID_INPUT_TOUCHPAD", udev_handle_touchpad))
+   {
+      RARCH_ERR("Failed to open touchpads.\n");
+      goto error;
+   }
+
+   // If using KMS and we forgot this, we could lock ourselves out completely.
+   // Include this as a safety guard.
+   if (!udev->num_devices)
+   {
+      RARCH_ERR("[udev]: Couldn't open any devices. Are permissions set correctly for /dev/input/event*?\n");
       goto error;
    }
 
