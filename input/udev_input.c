@@ -22,24 +22,35 @@
 #include <errno.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <sys/poll.h>
+#include <sys/epoll.h>
 #include <fcntl.h>
 #include <libudev.h>
 #include <linux/types.h>
 #include <linux/input.h>
 
-typedef struct udev_input
+typedef struct udev_input udev_input_t;
+typedef void (*device_poll_cb)(udev_input_t *udev, int fd);
+
+struct input_device
+{
+   int fd;
+   dev_t dev;
+   device_poll_cb poll_cb;
+};
+
+struct udev_input
 {
    const rarch_joypad_driver_t *joypad;
    uint8_t key_state[(KEY_MAX + 7) / 8];
 
-   int keyboard_fd;
-   int mouse_fd;
+   int epfd;
+   struct input_device **devices;
+   unsigned num_devices;
 
    int16_t mouse_x;
    int16_t mouse_y;
    bool mouse_l, mouse_r, mouse_m;
-} udev_input_t;
+};
 
 static inline bool get_bit(const uint8_t *buf, unsigned bit)
 {
@@ -56,88 +67,100 @@ static inline void set_bit(uint8_t *buf, unsigned bit)
    buf[bit >> 3] |= 1 << (bit & 7);
 }
 
-static void udev_input_poll(void *data)
+static void udev_poll_keyboard(udev_input_t *udev, int fd)
 {
-   udev_input_t *udev = (udev_input_t*)data;
-
-   if (udev->keyboard_fd >= 0)
+   int i, len;
+   struct input_event events[32];
+   while ((len = read(fd, events, sizeof(events))) > 0)
    {
-      int i, len;
-      struct input_event events[32];
-      while ((len = read(udev->keyboard_fd, events, sizeof(events))) > 0)
+      len /= sizeof(*events);
+      for (i = 0; i < len; i++)
       {
-         len /= sizeof(*events);
-         for (i = 0; i < len; i++)
+         switch (events[i].type)
          {
-            switch (events[i].type)
-            {
-               case EV_KEY:
-                  if (events[i].value)
-                     set_bit(udev->key_state, events[i].code);
-                  else
-                     clear_bit(udev->key_state, events[i].code);
-                  break;
+            case EV_KEY:
+               if (events[i].value)
+                  set_bit(udev->key_state, events[i].code);
+               else
+                  clear_bit(udev->key_state, events[i].code);
+               break;
 
-               default:
-                  break;
-            }
+            default:
+               break;
          }
       }
    }
+}
 
-   if (udev->mouse_fd >= 0)
+static void udev_poll_mouse(udev_input_t *udev, int fd)
+{
+   int i, len;
+   struct input_event events[32];
+   while ((len = read(fd, events, sizeof(events))) > 0)
    {
-      udev->mouse_x = udev->mouse_y = 0;
-
-      int i, len;
-      struct input_event events[32];
-      while ((len = read(udev->mouse_fd, events, sizeof(events))) > 0)
+      len /= sizeof(*events);
+      for (i = 0; i < len; i++)
       {
-         len /= sizeof(*events);
-         for (i = 0; i < len; i++)
+         switch (events[i].type)
          {
-            switch (events[i].type)
-            {
-               case EV_KEY:
-                  switch (events[i].code)
-                  {
-                     case BTN_LEFT:
-                        udev->mouse_l = events[i].value;
-                        break;
-
-                     case BTN_RIGHT:
-                        udev->mouse_r = events[i].value;
-                        break;
-
-                     case BTN_MIDDLE:
-                        udev->mouse_m = events[i].value;
-                        break;
-
-                     default:
-                        break;
-                  }
-                  break;
-
-               case EV_REL:
-                  switch (events[i].code)
-                  {
-                     case REL_X:
-                        udev->mouse_x += events[i].value;
-                        break;
-
-                     case REL_Y:
-                        udev->mouse_y += events[i].value;
-                        break;
-
-                     default:
-                        break;
-                  }
-                  break;
-
-               default:
+            case EV_KEY:
+               switch (events[i].code)
+               {
+                  case BTN_LEFT:
+                     udev->mouse_l = events[i].value;
                      break;
-            }
+
+                  case BTN_RIGHT:
+                     udev->mouse_r = events[i].value;
+                     break;
+
+                  case BTN_MIDDLE:
+                     udev->mouse_m = events[i].value;
+                     break;
+
+                  default:
+                     break;
+               }
+               break;
+
+            case EV_REL:
+               switch (events[i].code)
+               {
+                  case REL_X:
+                     udev->mouse_x += events[i].value;
+                     break;
+
+                  case REL_Y:
+                     udev->mouse_y += events[i].value;
+                     break;
+
+                  default:
+                     break;
+               }
+               break;
+
+            default:
+               break;
          }
+      }
+   }
+}
+
+static void udev_input_poll(void *data)
+{
+   udev_input_t *udev = (udev_input_t*)data;
+   udev->mouse_x = udev->mouse_y = 0;
+
+   int i;
+   struct epoll_event events[32];
+   int ret = epoll_wait(udev->epfd, events, ARRAY_SIZE(events), 0);
+
+   for (i = 0; i < ret; i++)
+   {
+      if (events[i].events & EPOLLIN)
+      {
+         struct input_device *device = (struct input_device*)events[i].data.ptr;
+         device->poll_cb(udev, device->fd);
       }
    }
 
@@ -250,33 +273,81 @@ static bool udev_bind_button_pressed(void *data, int key)
 
 static void udev_input_free(void *data)
 {
+   if (!data)
+      return;
+
+   unsigned i;
    udev_input_t *udev = (udev_input_t*)data;
    if (udev->joypad)
       udev->joypad->destroy();
 
-   if (udev->keyboard_fd >= 0)
-      close(udev->keyboard_fd);
-   if (udev->mouse_fd >= 0)
-      close(udev->mouse_fd);
+   if (udev->epfd >= 0)
+      close(udev->epfd);
+
+   for (i = 0; i < udev->num_devices; i++)
+   {
+      close(udev->devices[i]->fd);
+      free(udev->devices[i]);
+   }
+   free(udev->devices);
 
    free(udev);
 }
 
-static int open_device(const char *type)
+static void add_device(udev_input_t *udev, int fd, device_poll_cb cb)
 {
-   int ret = -1;
+   struct stat st;
+   if (fstat(fd, &st) < 0)
+   {
+      close(fd);
+      return;
+   }
+
+   struct input_device *device = (struct input_device*)calloc(1, sizeof(*device));
+   if (!device)
+   {
+      close(fd);
+      return;
+   }
+
+   device->fd = fd;
+   device->dev = st.st_dev;
+   device->poll_cb = cb;
+
+   struct input_device **tmp = (struct input_device**)realloc(udev->devices,
+         (udev->num_devices + 1) * sizeof(*udev->devices));
+
+   if (!tmp)
+   {
+      close(fd);
+      free(device);
+      return;
+   }
+
+   tmp[udev->num_devices++] = device;
+   udev->devices = tmp;
+
+   struct epoll_event event = {0};
+   event.events = EPOLLIN;
+   event.data.ptr = device;
+   if (epoll_ctl(udev->epfd, EPOLL_CTL_ADD, fd, &event) < 0)
+      RARCH_ERR("Failed to add FD (%d) to epoll list (%s).\n", fd, strerror(errno));
+}
+
+static bool open_devices(udev_input_t *udev_handle, const char *type, device_poll_cb cb)
+{
    struct udev_list_entry *devs = NULL;
    struct udev_list_entry *item = NULL;
 
    struct udev *udev = udev_new();
    if (!udev)
-      return ret;
+      return false;
 
    struct udev_enumerate *enumerate = udev_enumerate_new(udev);
    if (!enumerate)
    {
       udev_unref(udev);
-      return ret;
+      return false;
    }
 
    udev_enumerate_add_match_property(enumerate, type, "1");
@@ -289,19 +360,22 @@ static int open_device(const char *type)
       const char *devnode = udev_device_get_devnode(dev);
 
       int fd = devnode ? open(devnode, O_RDONLY | O_NONBLOCK) : -1;
-      udev_device_unref(dev);
 
       if (fd >= 0)
       {
-         ret = fd;
-         break;
+         RARCH_LOG("[udev] Adding device %s as type %s.\n", devnode, type);
+         add_device(udev_handle, fd, cb);
       }
+      else if (devnode)
+         RARCH_ERR("[udev] Failed to open device: %s (%s).\n", devnode, strerror(errno));
+
+      udev_device_unref(dev);
    }
 
    udev_enumerate_unref(enumerate);
    udev_unref(udev);
 
-   return ret;
+   return true;
 }
 
 static void *udev_input_init(void)
@@ -310,17 +384,27 @@ static void *udev_input_init(void)
    if (!udev)
       return NULL;
 
-   udev->keyboard_fd = open_device("ID_INPUT_KEYBOARD");
-   udev->mouse_fd = open_device("ID_INPUT_MOUSE");
+   udev->epfd = epoll_create(32);
 
-   if (udev->keyboard_fd < 0)
-      RARCH_WARN("Failed to find a keyboard.\n");
-   if (udev->mouse_fd < 0)
-      RARCH_WARN("Failed to find a mouse.\n");
+   if (!open_devices(udev, "ID_INPUT_KEYBOARD", udev_poll_keyboard))
+   {
+      RARCH_ERR("Failed to open keyboard.\n");
+      goto error;
+   }
+
+   if (!open_devices(udev, "ID_INPUT_MOUSE", udev_poll_mouse))
+   {
+      RARCH_ERR("Failed to open mouse.\n");
+      goto error;
+   }
 
    udev->joypad = input_joypad_init_driver(g_settings.input.joypad_driver);
    input_init_keyboard_lut(rarch_key_map_linux);
    return udev;
+
+error:
+   udev_input_free(udev);
+   return NULL;
 }
 
 static uint64_t udev_input_get_capabilities(void *data)
@@ -333,6 +417,13 @@ static uint64_t udev_input_get_capabilities(void *data)
       (1 << RETRO_DEVICE_KEYBOARD) |
       (1 << RETRO_DEVICE_MOUSE) |
       (1 << RETRO_DEVICE_LIGHTGUN);
+}
+
+static void udev_input_grab_mouse(void *data, bool state)
+{
+   // Dummy for now. Might be useful in the future.
+   (void)data;
+   (void)state;
 }
 
 static bool udev_input_set_rumble(void *data, unsigned port, enum retro_rumble_effect effect, uint16_t strength)
@@ -357,7 +448,7 @@ const input_driver_t input_udev = {
    NULL,
    udev_input_get_capabilities,
    "udev",
-   NULL,
+   udev_input_grab_mouse,
    udev_input_set_rumble,
    udev_input_get_joypad_driver,
 };
