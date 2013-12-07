@@ -504,7 +504,7 @@ static void lima_set_aspect_ratio(void *data, unsigned aspect_ratio_idx)
 
       case ASPECT_RATIO_CONFIG:
          if(val == 0.0f)
-    		break;
+            break;
          else
          {
             vertices[0][0] = 1/(val/-1);
