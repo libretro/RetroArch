@@ -91,7 +91,7 @@ static void udev_input_poll(void *data)
 
       int i, len;
       struct input_event events[32];
-      while ((len = read(udev->keyboard_fd, events, sizeof(events))) > 0)
+      while ((len = read(udev->mouse_fd, events, sizeof(events))) > 0)
       {
          len /= sizeof(*events);
          for (i = 0; i < len; i++)

@@ -736,9 +736,8 @@ const struct rarch_key_map rarch_key_map_linux[] = {
    { KEY_DELETE, RETROK_DELETE },
 
    { KEY_PAUSE, RETROK_PAUSE },
+   { 0, RETROK_UNKNOWN },
 };
-
-
 #endif
 
 static enum retro_key rarch_keysym_lut[RETROK_LAST];
