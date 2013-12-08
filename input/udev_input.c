@@ -15,6 +15,8 @@
 
 #include "input_common.h"
 #include "../general.h"
+#include "../conf/config_file.h"
+#include "../file_path.h"
 #include <unistd.h>
 #include <stdint.h>
 #include <string.h>
@@ -111,31 +113,31 @@ static inline void set_bit(uint8_t *buf, unsigned bit)
 }
 
 #ifdef HAVE_XKBCOMMON
+// FIXME: Don't handle composed and dead-keys properly. Waiting for support in libxkbcommon ...
 static void handle_xkb(udev_input_t *udev, int code, int value)
 {
+   unsigned i;
    int xk_code = code + 8; // Convert Linux evdev to X11 (xkbcommon docs say so at least ...)
 
    if (value == 2) // Repeat, release first explicitly.
       xkb_state_update_key(udev->xkb_state, xk_code, XKB_KEY_UP);
 
-   uint32_t utf32 = 0;
+   const xkb_keysym_t *syms = NULL;
+   unsigned num_syms = 0;
    if (value)
-   {
-      xkb_keysym_t sym = xkb_state_key_get_one_sym(udev->xkb_state, xk_code);
-      utf32 = xkb_keysym_to_utf32(sym);
-   }
+      num_syms = xkb_state_key_get_syms(udev->xkb_state, xk_code, &syms);
 
    xkb_state_update_key(udev->xkb_state, xk_code, value ? XKB_KEY_DOWN : XKB_KEY_UP);
 
    // Build mod state.
    uint16_t mod = 0;
-   unsigned i;
    for (i = 0; i < ARRAY_SIZE(udev->mod_map); i++)
       if (udev->mod_map[i].index != XKB_MOD_INVALID)
          mod |= xkb_state_mod_index_is_active(udev->xkb_state, udev->mod_map[i].index, XKB_STATE_MODS_EFFECTIVE) > 0 ? udev->mod_map[i].bit : 0;
 
-   if (g_extern.system.key_event)
-      g_extern.system.key_event(value, input_translate_keysym_to_rk(code), utf32, mod);
+   g_extern.system.key_event(value, input_translate_keysym_to_rk(code), num_syms ? xkb_keysym_to_utf32(syms[0]) : 0, mod);
+   for (i = 1; i < num_syms; i++)
+      g_extern.system.key_event(value, RETROK_UNKNOWN, xkb_keysym_to_utf32(syms[i]), mod);
 }
 #endif
 
@@ -150,7 +152,7 @@ static void udev_handle_keyboard(udev_input_t *udev, const struct input_event *e
             clear_bit(udev->key_state, event->code);
 
 #ifdef HAVE_XKBCOMMON
-         if (udev->xkb_state)
+         if (udev->xkb_state && g_extern.system.key_event)
             handle_xkb(udev, event->code, event->value);
 #endif
          break;
@@ -630,22 +632,41 @@ static void *udev_input_init(void)
 
 #ifdef HAVE_XKBCOMMON
    udev->xkb_ctx = xkb_context_new(XKB_CONTEXT_NO_FLAGS);
-   // Uses "default" layout, which seems to be US layout.
    if (udev->xkb_ctx)
-      udev->xkb_map = xkb_keymap_new_from_names(udev->xkb_ctx, NULL, XKB_MAP_COMPILE_NO_FLAGS);
+   {
+      struct xkb_rule_names rule = {0};
+      rule.rules = "evdev";
+
+      struct string_list *list = NULL;
+
+      if (*g_settings.input.keyboard_layout)
+      {
+         list = string_split(g_settings.input.keyboard_layout, ":");
+         if (list && list->size >= 2)
+            rule.variant = list->elems[1].data;
+         if (list && list->size >= 1)
+            rule.layout = list->elems[0].data;
+      }
+
+      udev->xkb_map = xkb_keymap_new_from_names(udev->xkb_ctx, &rule, XKB_MAP_COMPILE_NO_FLAGS);
+      if (list)
+         string_list_free(list);
+   }
    if (udev->xkb_map)
+   {
       udev->xkb_state = xkb_state_new(udev->xkb_map);
 
-   udev->mod_map[0].index = xkb_keymap_mod_get_index(udev->xkb_map, XKB_MOD_NAME_CAPS);
-   udev->mod_map[0].bit = RETROKMOD_CAPSLOCK;
-   udev->mod_map[1].index = xkb_keymap_mod_get_index(udev->xkb_map, XKB_MOD_NAME_SHIFT);
-   udev->mod_map[1].bit = RETROKMOD_SHIFT;
-   udev->mod_map[2].index = xkb_keymap_mod_get_index(udev->xkb_map, XKB_MOD_NAME_CTRL);
-   udev->mod_map[2].bit = RETROKMOD_CTRL;
-   udev->mod_map[3].index = xkb_keymap_mod_get_index(udev->xkb_map, XKB_MOD_NAME_ALT);
-   udev->mod_map[3].bit = RETROKMOD_ALT;
-   udev->mod_map[4].index = xkb_keymap_mod_get_index(udev->xkb_map, XKB_MOD_NAME_LOGO);
-   udev->mod_map[4].bit = RETROKMOD_META;
+      udev->mod_map[0].index = xkb_keymap_mod_get_index(udev->xkb_map, XKB_MOD_NAME_CAPS);
+      udev->mod_map[0].bit = RETROKMOD_CAPSLOCK;
+      udev->mod_map[1].index = xkb_keymap_mod_get_index(udev->xkb_map, XKB_MOD_NAME_SHIFT);
+      udev->mod_map[1].bit = RETROKMOD_SHIFT;
+      udev->mod_map[2].index = xkb_keymap_mod_get_index(udev->xkb_map, XKB_MOD_NAME_CTRL);
+      udev->mod_map[2].bit = RETROKMOD_CTRL;
+      udev->mod_map[3].index = xkb_keymap_mod_get_index(udev->xkb_map, XKB_MOD_NAME_ALT);
+      udev->mod_map[3].bit = RETROKMOD_ALT;
+      udev->mod_map[4].index = xkb_keymap_mod_get_index(udev->xkb_map, XKB_MOD_NAME_LOGO);
+      udev->mod_map[4].bit = RETROKMOD_META;
+   }
 #endif
 
    udev->epfd = epoll_create(32);
