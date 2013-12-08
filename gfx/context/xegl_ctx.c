@@ -158,7 +158,7 @@ static void gfx_ctx_check_window(bool *quit,
 
          case KeyPress:
          case KeyRelease:
-            x11_handle_key_event(&event);
+            x11_handle_key_event(&event, NULL, false);
             break;
       }
    }

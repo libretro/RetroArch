@@ -743,7 +743,7 @@ static bool xv_alive(void *data)
 
          case KeyPress:
          case KeyRelease:
-            x11_handle_key_event(&event);
+            x11_handle_key_event(&event, NULL, false);
             break;
 
          default:

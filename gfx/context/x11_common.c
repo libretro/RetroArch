@@ -261,32 +261,142 @@ unsigned x11_get_xinerama_monitor(Display *dpy, int x, int y,
 }
 #endif
 
-void x11_handle_key_event(XEvent *event)
+bool x11_create_input_context(Display *dpy, Window win, XIM *xim, XIC *xic)
+{
+   *xim = XOpenIM(dpy, NULL, NULL, NULL);
+   if (!*xim)
+   {
+      RARCH_ERR("[X11]: Failed to open input method.\n");
+      return false;
+   }
+
+   *xic = XCreateIC(*xim, XNInputStyle,
+         XIMPreeditNothing | XIMStatusNothing, XNClientWindow, win, NULL);
+   if (!*xic)
+   {
+      RARCH_ERR("[X11]: Failed to create input context.\n");
+      return false;
+   }
+
+   XSetICFocus(*xic);
+   return true;
+}
+
+void x11_destroy_input_context(XIM *xim, XIC *xic)
+{
+   if (*xic)
+   {
+      XDestroyIC(*xic);
+      *xic = NULL;
+   }
+
+   if (*xim)
+   {
+      XCloseIM(*xim);
+      *xim = NULL;
+   }
+}
+
+static inline unsigned leading_ones(uint8_t c)
+{
+   unsigned ones = 0;
+   while (c & 0x80)
+   {
+      ones++;
+      c <<= 1;
+   }
+
+   return ones;
+}
+
+// Simple implementation. Assumes the sequence is properly synchronized and terminated.
+static size_t conv_utf8_utf32(uint32_t *out, size_t out_chars, const char *in, size_t in_size)
+{
+   unsigned i;
+   size_t ret = 0;
+   while (in_size && out_chars)
+   {
+      uint8_t first = *in++;
+
+      unsigned ones = leading_ones(first);
+      if (ones > 6 || ones == 1) // Invalid or desync
+         break;
+
+      unsigned extra = ones ? ones - 1 : ones;
+      if (1 + extra > in_size) // Overflow
+         break;
+
+      unsigned shift = (extra - 1) * 6;
+      uint32_t c = (first & ((1 << (7 - ones)) - 1)) << (6 * extra);
+
+      for (i = 0; i < extra; i++, in++, shift -= 6)
+         c |= (*in & 0x3f) << shift;
+
+      *out++ = c;
+      in_size -= 1 + extra;
+      out_chars--;
+      ret++;
+   }
+
+   return ret;
+}
+
+void x11_handle_key_event(XEvent *event, XIC ic, bool filter)
 {
    if (!g_extern.system.key_event)
       return;
 
-   char keybuf[32];
+   int i;
+   char keybuf[32] = {0};
+   uint32_t chars[32] = {0};
 
-   bool down          = event->type == KeyPress;
-   uint32_t character = 0;
-   unsigned key       = input_translate_keysym_to_rk(XLookupKeysym(&event->xkey, 0));
+   bool down    = event->type == KeyPress;
+   unsigned key = input_translate_keysym_to_rk(XLookupKeysym(&event->xkey, 0));
+   int num      = 0;
 
-   // FIXME: UTF.
-   if (down && XLookupString(&event->xkey, keybuf, sizeof(keybuf), 0, NULL))
-      character = keybuf[0];
+   fprintf(stderr, "Key: %u\n", key);
 
-   if (character == -1u)
-      character = 0;
+   if (down && !filter)
+   {
+      KeySym keysym = 0;
+
+#ifdef X_HAVE_UTF8_STRING
+      Status status = 0;
+
+      // XwcLookupString doesn't seem to work.
+      num = Xutf8LookupString(ic, &event->xkey, keybuf, ARRAY_SIZE(keybuf), &keysym, &status);
+      fprintf(stderr, "Status: %d\n", status);
+
+      for (i = 0; i < num; i++)
+         fprintf(stderr, "Char: 0x%x\n", (uint8_t)keybuf[i]);
+
+      // libc functions need UTF-8 locale to work properly, which makes mbrtowc a bit impractical.
+      // Use custom utf8 -> UTF-32 conversion.
+      num = conv_utf8_utf32(chars, ARRAY_SIZE(chars), keybuf, num);
+      for (i = 0; i < num; i++)
+         fprintf(stderr, "UTF32: 0x%u\n", chars[i]);
+#else
+      (void)ic;
+      num = XLookupString(&event->xkey, keybuf, sizeof(keybuf), &keysym, NULL); // ASCII only.
+      for (i = 0; i < num; i++)
+         chars[i] = keybuf[i] & 0x7f;
+#endif
+
+      fprintf(stderr, "KeySym: %u\n", (unsigned)keysym);
+   }
+
+   fprintf(stderr, "Xwc*: %d\n", num);
 
    unsigned state = event->xkey.state;
    uint16_t mod = 0;
    mod |= (state & ShiftMask) ? RETROKMOD_SHIFT : 0;
-   mod |= (state & LockMask) ? RETROKMOD_SCROLLOCK : 0;
+   mod |= (state & LockMask) ? RETROKMOD_CAPSLOCK : 0;
    mod |= (state & ControlMask) ? RETROKMOD_CTRL : 0;
    mod |= (state & Mod1Mask) ? RETROKMOD_ALT : 0;
    mod |= (state & Mod4Mask) ? RETROKMOD_META : 0;
 
-   g_extern.system.key_event(down, key, character, mod);
+   g_extern.system.key_event(down, key, keybuf[0] == -1u ? 0 : keybuf[0], mod);
+   for (i = 1; i < num; i++)
+      g_extern.system.key_event(down, RETROK_UNKNOWN, keybuf[i] == -1u ? 0 : keybuf[i], mod);
 }
 
