@@ -38,6 +38,9 @@ static bool g_has_focus;
 static bool g_true_full;
 static unsigned g_screen;
 
+static XIM g_xim;
+static XIC g_xic;
+
 static EGLContext g_egl_ctx;
 static EGLSurface g_egl_surf;
 static EGLDisplay g_egl_dpy;
@@ -137,6 +140,8 @@ static void gfx_ctx_check_window(bool *quit,
    while (XPending(g_dpy))
    {
       XNextEvent(g_dpy, &event);
+      bool filter = XFilterEvent(&event, g_win);
+
       switch (event.type)
       {
          case ClientMessage:
@@ -158,7 +163,7 @@ static void gfx_ctx_check_window(bool *quit,
 
          case KeyPress:
          case KeyRelease:
-            x11_handle_key_event(&event, NULL, false);
+            x11_handle_key_event(&event, g_xic, filter);
             break;
       }
    }
@@ -456,6 +461,9 @@ static bool gfx_ctx_set_video_mode(
    g_has_focus = true;
    g_inited    = true;
 
+   if (!x11_create_input_context(g_dpy, g_win, &g_xim, &g_xic))
+      goto error;
+
    driver.display_type  = RARCH_DISPLAY_X11;
    driver.video_display = (uintptr_t)g_dpy;
    driver.video_window  = (uintptr_t)g_win;
@@ -473,6 +481,7 @@ error:
 
 static void gfx_ctx_destroy(void)
 {
+   x11_destroy_input_context(&g_xim, &g_xic);
    if (g_egl_dpy)
    {
       if (g_egl_ctx)

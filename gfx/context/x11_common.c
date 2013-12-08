@@ -354,8 +354,6 @@ void x11_handle_key_event(XEvent *event, XIC ic, bool filter)
    unsigned key = input_translate_keysym_to_rk(XLookupKeysym(&event->xkey, 0));
    int num      = 0;
 
-   fprintf(stderr, "Key: %u\n", key);
-
    if (down && !filter)
    {
       KeySym keysym = 0;
@@ -365,27 +363,17 @@ void x11_handle_key_event(XEvent *event, XIC ic, bool filter)
 
       // XwcLookupString doesn't seem to work.
       num = Xutf8LookupString(ic, &event->xkey, keybuf, ARRAY_SIZE(keybuf), &keysym, &status);
-      fprintf(stderr, "Status: %d\n", status);
-
-      for (i = 0; i < num; i++)
-         fprintf(stderr, "Char: 0x%x\n", (uint8_t)keybuf[i]);
 
       // libc functions need UTF-8 locale to work properly, which makes mbrtowc a bit impractical.
       // Use custom utf8 -> UTF-32 conversion.
       num = conv_utf8_utf32(chars, ARRAY_SIZE(chars), keybuf, num);
-      for (i = 0; i < num; i++)
-         fprintf(stderr, "UTF32: 0x%u\n", chars[i]);
 #else
       (void)ic;
       num = XLookupString(&event->xkey, keybuf, sizeof(keybuf), &keysym, NULL); // ASCII only.
       for (i = 0; i < num; i++)
          chars[i] = keybuf[i] & 0x7f;
 #endif
-
-      fprintf(stderr, "KeySym: %u\n", (unsigned)keysym);
    }
-
-   fprintf(stderr, "Xwc*: %d\n", num);
 
    unsigned state = event->xkey.state;
    uint16_t mod = 0;
@@ -395,8 +383,8 @@ void x11_handle_key_event(XEvent *event, XIC ic, bool filter)
    mod |= (state & Mod1Mask) ? RETROKMOD_ALT : 0;
    mod |= (state & Mod4Mask) ? RETROKMOD_META : 0;
 
-   g_extern.system.key_event(down, key, keybuf[0] == -1u ? 0 : keybuf[0], mod);
+   g_extern.system.key_event(down, key, chars[0], mod);
    for (i = 1; i < num; i++)
-      g_extern.system.key_event(down, RETROK_UNKNOWN, keybuf[i] == -1u ? 0 : keybuf[i], mod);
+      g_extern.system.key_event(down, RETROK_UNKNOWN, chars[i], mod);
 }
 
