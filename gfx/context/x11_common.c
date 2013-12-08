@@ -266,18 +266,27 @@ void x11_handle_key_event(XEvent *event)
    if (!g_extern.system.key_event)
       return;
 
-   static XComposeStatus state;
    char keybuf[32];
 
    bool down          = event->type == KeyPress;
    uint32_t character = 0;
    unsigned key       = input_translate_keysym_to_rk(XLookupKeysym(&event->xkey, 0));
 
-   // FIXME: UTF-8.
-   if (down && XLookupString(&event->xkey, keybuf, sizeof(keybuf), 0, &state))
+   // FIXME: UTF.
+   if (down && XLookupString(&event->xkey, keybuf, sizeof(keybuf), 0, NULL))
       character = keybuf[0];
 
-   // FIXME: Mod handling.
-   g_extern.system.key_event(down, key, character, 0);
+   if (character == -1u)
+      character = 0;
+
+   unsigned state = event->xkey.state;
+   uint16_t mod = 0;
+   mod |= (state & ShiftMask) ? RETROKMOD_SHIFT : 0;
+   mod |= (state & LockMask) ? RETROKMOD_SCROLLOCK : 0;
+   mod |= (state & ControlMask) ? RETROKMOD_CTRL : 0;
+   mod |= (state & Mod1Mask) ? RETROKMOD_ALT : 0;
+   mod |= (state & Mod4Mask) ? RETROKMOD_META : 0;
+
+   g_extern.system.key_event(down, key, character, mod);
 }
 
