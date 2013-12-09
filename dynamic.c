@@ -17,6 +17,7 @@
 #include "general.h"
 #include "compat/strl.h"
 #include "compat/posix_string.h"
+#include "retroarch_logger.h"
 #include "file.h"
 #include <string.h>
 #include <ctype.h>
@@ -471,6 +472,36 @@ void dylib_close(dylib_t lib)
 }
 #endif
 
+static void rarch_log_libretro(enum retro_log_level level, const char *fmt, ...)
+{
+   va_list vp;
+   va_start(vp, fmt);
+
+   switch (level)
+   {
+      case RETRO_LOG_DEBUG:
+         RARCH_LOG_V("[libretro DEBUG] :: ", fmt, vp);
+         break;
+
+      case RETRO_LOG_INFO:
+         RARCH_LOG_OUTPUT_V("[libretro INFO] :: ", fmt, vp);
+         break;
+
+      case RETRO_LOG_WARN:
+         RARCH_WARN_V("[libretro WARN] :: ", fmt, vp);
+         break;
+
+      case RETRO_LOG_ERROR:
+         RARCH_ERR_V("[libretro ERROR] :: ", fmt, vp);
+         break;
+
+      default:
+         break;
+   }
+
+   va_end(vp);
+}
+
 bool rarch_environment_cb(unsigned cmd, void *data)
 {
    unsigned p, id;
@@ -794,6 +825,14 @@ bool rarch_environment_cb(unsigned cmd, void *data)
          break;
       }
 #endif
+
+      case RETRO_ENVIRONMENT_GET_LOG_INTERFACE:
+      {
+         RARCH_LOG("Environ GET_LOG_INTERFACE.\n");
+         struct retro_log_callback *cb = (struct retro_log_callback*)data;
+         cb->log = rarch_log_libretro;
+         break;
+      }
 
       // Private extensions for internal use, not part of libretro API.
       case RETRO_ENVIRONMENT_SET_LIBRETRO_PATH:
