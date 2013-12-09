@@ -24,63 +24,77 @@
 
 #include "msvc/msvc_compat.h"
 
-static inline void RARCH_LOG(const char *msg, ...)
+// FIXME: Using arbitrary string as fmt argument is unsafe.
+static inline void RARCH_LOG_V(const char *tag, const char *fmt, va_list ap)
 {
    char msg_new[1024], buffer[1024];
 #ifdef IS_SALAMANDER
-   snprintf(msg_new, sizeof(msg_new), "RetroArch Salamander: %s", msg);
+   snprintf(msg_new, sizeof(msg_new), "RetroArch Salamander: %s%s", tag ? tag : "", fmt);
 #else
-   snprintf(msg_new, sizeof(msg_new), "RetroArch: %s", msg);
+   snprintf(msg_new, sizeof(msg_new), "RetroArch: %s%s", tag ? tag : "", fmt);
 #endif
-   va_list ap;
-   va_start(ap, msg);
    wvsprintf(buffer, msg_new, ap);
    OutputDebugStringA(buffer);
+}
+
+static inline void RARCH_LOG(const char *msg, ...)
+{
+   va_list ap;
+   va_start(ap, msg);
+   RARCH_LOG_V(NULL, msg, ap);
    va_end(ap);
+}
+
+static inline void RARCH_LOG_OUTPUT_V(const char *tag, const char *msg, va_list ap)
+{
+   RARCH_LOG_V(tag, msg, ap);
 }
 
 static inline void RARCH_LOG_OUTPUT(const char *msg, ...)
 {
-   char msg_new[1024], buffer[1024];
-#ifdef IS_SALAMANDER
-   snprintf(msg_new, sizeof(msg_new), "RetroArch Salamander: %s", msg);
-#else
-   snprintf(msg_new, sizeof(msg_new), "RetroArch: %s", msg);
-#endif
    va_list ap;
    va_start(ap, msg);
+   RARCH_LOG_V(NULL, msg, ap);
+   va_end(ap);
+}
+
+static inline void RARCH_WARN_V(const char *tag, const char *fmt, va_list ap)
+{
+   char msg_new[1024], buffer[1024];
+#ifdef IS_SALAMANDER
+   snprintf(msg_new, sizeof(msg_new), "RetroArch Salamander [WARN] :: %s%s", tag ? tag : "", fmt);
+#else
+   snprintf(msg_new, sizeof(msg_new), "RetroArch [WARN] :: %s%s", tag ? tag : "", fmt);
+#endif
    wvsprintf(buffer, msg_new, ap);
    OutputDebugStringA(buffer);
-   va_end(ap);
 }
 
 static inline void RARCH_WARN(const char *msg, ...)
 {
-   char msg_new[1024], buffer[1024];
-#ifdef IS_SALAMANDER
-   snprintf(msg_new, sizeof(msg_new), "RetroArch Salamander [WARN] :: %s", msg);
-#else
-   snprintf(msg_new, sizeof(msg_new), "RetroArch [WARN] :: %s", msg);
-#endif
    va_list ap;
    va_start(ap, msg);
+   RARCH_WARN_V(NULL, msg, ap);
+   va_end(ap);
+}
+
+static inline void RARCH_ERR_V(const char *tag, const char *fmt, ...)
+{
+   char msg_new[1024], buffer[1024];
+#ifdef IS_SALAMANDER
+   snprintf(msg_new, sizeof(msg_new), "RetroArch Salamander [ERR] :: %s%s", tag ? tag : "", fmt);
+#else
+   snprintf(msg_new, sizeof(msg_new), "RetroArch [ERR] :: %s%s", tag ? tag : "", fmt);
+#endif
    wvsprintf(buffer, msg_new, ap);
    OutputDebugStringA(buffer);
-   va_end(ap);
 }
 
 static inline void RARCH_ERR(const char *msg, ...)
 {
-   char msg_new[1024], buffer[1024];
-#ifdef IS_SALAMANDER
-   snprintf(msg_new, sizeof(msg_new), "RetroArch Salamander [ERR] :: %s", msg);
-#else
-   snprintf(msg_new, sizeof(msg_new), "RetroArch [ERR] :: %s", msg);
-#endif
    va_list ap;
    va_start(ap, msg);
-   wvsprintf(buffer, msg_new, ap);
-   OutputDebugStringA(buffer);
+   RARCH_ERR_V(NULL, msg, ap);
    va_end(ap);
 }
 
