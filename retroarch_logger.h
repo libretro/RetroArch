@@ -88,19 +88,13 @@
 #define RARCH_LOG_OUTPUT_V(tag, fmt, vp) RARCH_LOG_V(tag, fmt, vp)
 #else
 #define RARCH_LOG_OUTPUT(...) do { \
-      if (RARCH_LOG_VERBOSE) \
-      { \
          fprintf(LOG_FILE, __VA_ARGS__); \
          fflush(LOG_FILE); \
-      } \
    } while (0)
 #define RARCH_LOG_OUTPUT_V(tag, fmt, vp) do { \
-      if (RARCH_LOG_VERBOSE) \
-      { \
          fprintf(LOG_FILE, "RetroArch: " tag); \
          vfprintf(LOG_FILE, fmt, vp); \
          fflush(LOG_FILE); \
-      } \
    } while (0)
 #endif
 #endif
