@@ -9,7 +9,6 @@
     <string name="key_bind_detect">Detect</string>
     <string name="optimal_settings_device">Optimal device settings</string>
     <string name="extracting_assets_please_wait_">Extracting assets, please wait …</string>
-    <string name="asset_extraction">Asset Extraction</string>
 
     <!-- Main Menu Strings -->
     <string name="mainmenu_title">RetroArch - Main Menu</string>
@@ -20,7 +19,7 @@
     <string name="settings">Settings</string>
     <string name="help">Help</string>
     <string name="about">About</string>
-    <string name="quit">Quit RetroArch</string>
+    <string name="quit_retroarch">Quit RetroArch</string>
 
     <!-- Core Selection Class -->
     <string name="select_libretro_core">Select a libretro core</string>
