@@ -750,6 +750,10 @@ struct retro_hw_render_callback
 // keycode is the RETROK value of the char.
 // character is the text character of the pressed key. (UTF-32).
 // key_modifiers is a set of RETROKMOD values or'ed together.
+// The pressed/keycode state can be indepedent of the character.
+// It is also possible that multiple characters are generated from a single keypress.
+// The events should be treated separately, however, when possible, the frontend should
+// try to synchronize these.
 typedef void (*retro_keyboard_event_t)(bool down, unsigned keycode, uint32_t character, uint16_t key_modifiers);
 
 struct retro_keyboard_callback

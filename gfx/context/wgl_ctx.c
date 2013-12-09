@@ -25,6 +25,7 @@
 #include "../gfx_context.h"
 #include "../gl_common.h"
 #include "../gfx_common.h"
+#include "win32_common.h"
 #include <windows.h>
 #include <commdlg.h>
 #include <string.h>
@@ -197,15 +198,12 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT message,
          }
          break;
 
+      case WM_CHAR:
+      case WM_KEYDOWN:
+      case WM_KEYUP:
+      case WM_SYSKEYUP:
       case WM_SYSKEYDOWN:
-         switch (wparam)
-         {
-            case VK_F10:
-            case VK_MENU:
-            case VK_RSHIFT:
-               return 0;
-         }
-         break;
+         return win32_handle_keyboard_event(hwnd, message, wparam, lparam);
 
       case WM_CREATE:
          create_gl_context(hwnd);
