@@ -426,6 +426,8 @@ void menu_free(void)
    rom_history_free(rgui->history);
    core_info_list_free(rgui->core_info);
 
+   menu_keyboard_state_clear(&rgui->keyboard);
+
    free(rgui);
 }
 
@@ -1382,6 +1384,7 @@ bool menu_iterate(void)
       rgui->old_input_state |= 1ULL << RARCH_MENU_TOGGLE;
    }
 
+   rarch_check_block_hotkey();
    rarch_input_poll();
 #ifdef HAVE_OVERLAY
    rarch_check_overlay();
@@ -1422,6 +1425,9 @@ bool menu_iterate(void)
 
    rgui->delay_count++;
    rgui->old_input_state = input_state;
+
+   if (driver.block_input)
+      rgui->trigger_state = 0;
 
    action = RGUI_ACTION_NOOP;
 
@@ -1718,13 +1724,69 @@ bool menu_poll_find_trigger(struct rgui_bind_state *state, struct rgui_bind_stat
    return false;
 }
 
+bool menu_keyboard_state_event(struct rgui_keyboard_state *state,
+      bool down, enum retro_key key, uint32_t character)
+{
+   // Treat extended chars as ? as we cannot support printable characters for unicode stuff.
+   char c = character >= 128 ? '?' : character;
+   if (c == '\r' || c == '\n')
+      return true;
+
+   if (c == '\b')
+   {
+      if (state->ptr)
+      {
+         memmove(state->buffer + state->ptr - 1, state->buffer + state->ptr,
+               state->size - state->ptr + 1);
+         state->ptr--;
+         state->size--;
+      }
+   }
+   // Handle left/right here when suitable
+   else if (isprint(c))
+   {
+      char *newbuf = (char*)realloc(state->buffer, state->size + 2);
+      if (!newbuf)
+         return false;
+
+      memmove(newbuf + state->ptr + 1, newbuf + state->ptr, state->size - state->ptr + 1);
+      newbuf[state->ptr] = c;
+      state->ptr++;
+      state->size++;
+      newbuf[state->size] = '\0';
+
+      state->buffer = newbuf;
+   }
+
+   return false;
+}
+
+void menu_keyboard_state_clear(struct rgui_keyboard_state *state)
+{
+   free(state->buffer);
+   memset(state, 0, sizeof(*state));
+}
+
 void menu_key_event(bool down, unsigned keycode, uint32_t character, uint16_t key_modifiers)
 {
-   // TODO: Do something with this. Stub for now.
-   (void)down;
-   (void)keycode;
-   (void)character;
    (void)key_modifiers;
+
+   if (!driver.block_input && character == '/')
+   {
+      driver.block_input = true;
+      rgui->display_keyboard = true;
+      menu_keyboard_state_clear(&rgui->keyboard);
+      return;
+   }
+
+   if (driver.block_input && menu_keyboard_state_event(&rgui->keyboard, down, keycode, character) && rgui->keyboard.buffer)
+   {
+      file_list_search(rgui->selection_buf, rgui->keyboard.buffer, &rgui->selection_ptr);
+      menu_keyboard_state_clear(&rgui->keyboard);
+      driver.block_input = false;
+      rgui->display_keyboard = false;
+      rgui->old_input_state = -1ull; // Avoid triggering states on pressing return.
+   }
 }
 
 static inline int menu_list_get_first_char(file_list_t *buf, unsigned offset)

@@ -242,6 +242,17 @@ void menu_poll_bind_get_rested_axes(struct rgui_bind_state *state);
 void menu_poll_bind_state(struct rgui_bind_state *state);
 bool menu_poll_find_trigger(struct rgui_bind_state *state, struct rgui_bind_state *new_state);
 
+struct rgui_keyboard_state
+{
+   char *buffer;
+   size_t ptr;
+   size_t size;
+};
+
+void menu_keyboard_state_clear(struct rgui_keyboard_state *state);
+bool menu_keyboard_state_event(struct rgui_keyboard_state *state,
+      bool down, enum retro_key key, uint32_t character);
+
 #ifdef GEKKO
 enum
 {
@@ -324,6 +335,8 @@ typedef struct
    rarch_time_t last_time; // Used to throttle RGUI in case VSync is broken.
 
    struct rgui_bind_state binds;
+   struct rgui_keyboard_state keyboard;
+   bool display_keyboard;
 } rgui_handle_t;
 
 extern rgui_handle_t *rgui;

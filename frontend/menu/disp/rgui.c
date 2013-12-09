@@ -510,6 +510,13 @@ static void rgui_render(void *data)
 
    rgui_render_messagebox(rgui, message_queue);
 #endif
+
+   if (rgui->display_keyboard)
+   {
+      char msg[1024];
+      snprintf(msg, sizeof(msg), "Search: %s", rgui->keyboard.buffer ? rgui->keyboard.buffer : "");
+      rgui_render_messagebox(rgui, msg);
+   }
 }
 
 static void *rgui_init(void)
