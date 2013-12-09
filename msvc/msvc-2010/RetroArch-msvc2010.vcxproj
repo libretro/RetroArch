@@ -227,6 +227,8 @@
     </ClCompile>
     <ClCompile Include="..\..\gfx\context\wgl_ctx.c">
     </ClCompile>
+    <ClCompile Include="..\..\gfx\context\win32_common.c">
+    </ClCompile>
     <ClCompile Include="..\..\gfx\gfx_common.c">
     </ClCompile>
     <ClCompile Include="..\..\gfx\gfx_context.c">
