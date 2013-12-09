@@ -32,6 +32,12 @@ static const bool _kms_supp = true;
 static const bool _kms_supp = false;
 #endif
 
+#ifdef HAVE_UDEV
+static const bool _udev_supp = true;
+#else
+static const bool _udev_supp = false;
+#endif
+
 #ifdef HAVE_VG
 static const bool _vg_supp = true;
 #else

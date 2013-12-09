@@ -42,6 +42,8 @@ typedef struct xv
    Window window;
    Colormap colormap;
    XShmSegmentInfo shminfo;
+   XIM xim;
+   XIC xic;
 
    Atom quit_atom;
    bool focus;
@@ -331,6 +333,53 @@ static bool adaptor_set_format(xv_t *xv, Display *dpy, XvPortID port, const vide
    return false;
 }
 
+static void calc_out_rect(bool keep_aspect, struct rarch_viewport *vp, unsigned vp_width, unsigned vp_height)
+{
+   vp->full_width  = vp_width;
+   vp->full_height = vp_height;
+
+   if (g_settings.video.scale_integer)
+   {
+      gfx_scale_integer(vp, vp_width, vp_height, g_extern.system.aspect_ratio, keep_aspect);
+   }
+   else if (!keep_aspect)
+   {
+      vp->x = 0; vp->y = 0;
+      vp->width = vp_width;
+      vp->height = vp_height;
+   }
+   else
+   {
+      float desired_aspect = g_extern.system.aspect_ratio;
+      float device_aspect = (float)vp_width / vp_height;
+
+      // If the aspect ratios of screen and desired aspect ratio are sufficiently equal (floating point stuff),
+      // assume they are actually equal.
+      if (fabs(device_aspect - desired_aspect) < 0.0001)
+      {
+         vp->x = 0; vp->y = 0;
+         vp->width = vp_width;
+         vp->height = vp_height;
+      }
+      else if (device_aspect > desired_aspect)
+      {
+         float delta = (desired_aspect / device_aspect - 1.0) / 2.0 + 0.5;
+         vp->x = vp_width * (0.5 - delta);
+         vp->y = 0;
+         vp->width = 2.0 * vp_width * delta;
+         vp->height = vp_height;
+      }
+      else
+      {
+         float delta = (device_aspect / desired_aspect - 1.0) / 2.0 + 0.5;
+         vp->x = 0;
+         vp->y = vp_height * (0.5 - delta);
+         vp->width = vp_width;
+         vp->height = 2.0 * vp_height * delta;
+      }
+   }
+}
+
 static void *xv_init(const video_info_t *video, const input_driver_t **input, void **input_data)
 {
    xv_t *xv = (xv_t*)calloc(1, sizeof(*xv));
@@ -489,6 +538,15 @@ static void *xv_init(const video_info_t *video, const input_driver_t **input, vo
    init_yuv_tables(xv);
    xv_init_font(xv, g_settings.video.font_path, g_settings.video.font_size);
 
+   if (!x11_create_input_context(xv->display, xv->window, &xv->xim, &xv->xic))
+      goto error;
+
+   XWindowAttributes target;
+   XGetWindowAttributes(xv->display, xv->window, &target);
+   calc_out_rect(xv->keep_aspect, &xv->vp, target.width, target.height);
+   xv->vp.full_width = target.width;
+   xv->vp.full_height = target.height;
+
    return xv;
 
 error:
@@ -539,53 +597,6 @@ static bool check_resize(xv_t *xv, unsigned width, unsigned height)
       memset(xv->image->data, 128, xv->image->data_size);
    }
    return true;
-}
-
-static void calc_out_rect(bool keep_aspect, struct rarch_viewport *vp, unsigned vp_width, unsigned vp_height)
-{
-   vp->full_width  = vp_width;
-   vp->full_height = vp_height;
-
-   if (g_settings.video.scale_integer)
-   {
-      gfx_scale_integer(vp, vp_width, vp_height, g_extern.system.aspect_ratio, keep_aspect);
-   }
-   else if (!keep_aspect)
-   {
-      vp->x = 0; vp->y = 0;
-      vp->width = vp_width;
-      vp->height = vp_height;
-   }
-   else
-   {
-      float desired_aspect = g_extern.system.aspect_ratio;
-      float device_aspect = (float)vp_width / vp_height;
-
-      // If the aspect ratios of screen and desired aspect ratio are sufficiently equal (floating point stuff),
-      // assume they are actually equal.
-      if (fabs(device_aspect - desired_aspect) < 0.0001)
-      {
-         vp->x = 0; vp->y = 0;
-         vp->width = vp_width;
-         vp->height = vp_height;
-      }
-      else if (device_aspect > desired_aspect)
-      {
-         float delta = (desired_aspect / device_aspect - 1.0) / 2.0 + 0.5;
-         vp->x = vp_width * (0.5 - delta);
-         vp->y = 0;
-         vp->width = 2.0 * vp_width * delta;
-         vp->height = vp_height;
-      }
-      else
-      {
-         float delta = (device_aspect / desired_aspect - 1.0) / 2.0 + 0.5;
-         vp->x = 0;
-         vp->y = vp_height * (0.5 - delta);
-         vp->width = vp_width;
-         vp->height = 2.0 * vp_height * delta;
-      }
-   }
 }
 
 // TODO: Is there some way to render directly like GL? :(
@@ -699,7 +710,7 @@ static bool xv_frame(void *data, const void *frame, unsigned width, unsigned hei
 
    calc_out_rect(xv->keep_aspect, &xv->vp, target.width, target.height);
    xv->vp.full_width = target.width;
-   xv->vp.full_height = target.width;
+   xv->vp.full_height = target.height;
 
    if (msg)
       xv_render_msg(xv, msg, width << 1, height << 1);
@@ -726,6 +737,8 @@ static bool xv_alive(void *data)
    while (XPending(xv->display))
    {
       XNextEvent(xv->display, &event);
+      bool filter = XFilterEvent(&event, xv->window);
+
       switch (event.type)
       {
          case ClientMessage:
@@ -743,7 +756,7 @@ static bool xv_alive(void *data)
 
          case KeyPress:
          case KeyRelease:
-            x11_handle_key_event(&event);
+            x11_handle_key_event(&event, xv->xic, filter);
             break;
 
          default:
@@ -760,10 +773,10 @@ static bool xv_focus(void *data)
    return xv->focus;
 }
 
-
 static void xv_free(void *data)
 {
    xv_t *xv = (xv_t*)data;
+   x11_destroy_input_context(&xv->xim, &xv->xic);
    XShmDetach(xv->display, &xv->shminfo);
    shmdt(xv->shminfo.shmaddr);
    shmctl(xv->shminfo.shmid, IPC_RMID, NULL);

@@ -626,6 +626,7 @@ static void print_features(void)
    _PSUPP(thread, "Threads", "Threading support");
    _PSUPP(opengl, "OpenGL", "OpenGL driver");
    _PSUPP(kms, "KMS", "KMS/EGL context support");
+   _PSUPP(udev, "UDEV", "UDEV/EVDEV input driver support");
    _PSUPP(egl, "EGL", "EGL context support");
    _PSUPP(vg, "OpenVG", "OpenVG output support");
    _PSUPP(xvideo, "XVideo", "XVideo output");

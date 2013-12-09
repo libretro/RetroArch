@@ -310,6 +310,7 @@ void config_set_defaults(void)
    g_settings.input.overlay_scale = 1.0f;
    g_settings.input.debug_enable = input_debug_enable;
    g_settings.input.autodetect_enable = input_autodetect_enable;
+   *g_settings.input.keyboard_layout = '\0';
 #ifdef ANDROID
    g_settings.input.back_behavior = BACK_BUTTON_QUIT;
 #endif
@@ -769,6 +770,7 @@ bool config_load_file(const char *path)
    CONFIG_GET_PATH(audio.dsp_plugin, "audio_dsp_plugin");
    CONFIG_GET_STRING(input.driver, "input_driver");
    CONFIG_GET_STRING(input.joypad_driver, "input_joypad_driver");
+   CONFIG_GET_STRING(input.keyboard_layout, "input_keyboard_layout");
 
    if (!*g_settings.libretro)
       CONFIG_GET_PATH(libretro, "libretro_path");
@@ -1193,6 +1195,7 @@ bool config_save_file(const char *path)
 
    config_set_string(conf, "input_driver", g_settings.input.driver);
    config_set_string(conf, "input_joypad_driver", g_settings.input.joypad_driver);
+   config_set_string(conf, "input_keyboard_layout", g_settings.input.keyboard_layout);
    for (i = 0; i < MAX_PLAYERS; i++)
    {
       char cfg[64];

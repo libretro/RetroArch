@@ -9,18 +9,20 @@ import android.annotation.SuppressLint;
 import android.app.NativeActivity;
 import android.content.Intent;
 import android.graphics.SurfaceTexture;
+import android.graphics.SurfaceTexture.OnFrameAvailableListener;
 import android.hardware.Camera;
 import android.os.Build;
 import android.util.Log;
 
 //For Android 3.0 and up
 
+@SuppressLint("NewApi")
 public final class RetroActivityFuture extends NativeActivity
 {
 	private Camera mCamera;
 	private long lastTimestamp = 0;
 	private SurfaceTexture texture;
-	private Boolean updateSurface = true;
+	private boolean updateSurface = true;
 	private Intent pendingIntent = null;
 
 	public void onCameraStart()
@@ -38,12 +40,11 @@ public final class RetroActivityFuture extends NativeActivity
 		mCamera = Camera.open();
 	}
 
-	@SuppressLint("NewApi")
 	public boolean onCameraPoll()
 	{
 		if (texture == null)
 		{
-			Log.i("RetroActivity", "no texture");
+			Log.i("RetroActivity", "No texture");
 			return true;
 		}
 		else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.ICE_CREAM_SANDWICH)
@@ -71,36 +72,28 @@ public final class RetroActivityFuture extends NativeActivity
 	{
 		mCamera.release();
 	}
-	
-	@SuppressLint("NewApi")
+
 	public void onCameraTextureInit(int gl_texid)
 	{
 		texture = new SurfaceTexture(gl_texid);
 		texture.setOnFrameAvailableListener(onCameraFrameAvailableListener);
 	}
-	
-    @SuppressLint("NewApi")
-	private SurfaceTexture.OnFrameAvailableListener onCameraFrameAvailableListener =
-            new SurfaceTexture.OnFrameAvailableListener() {
-        @Override
-        public void onFrameAvailable(SurfaceTexture surfaceTexture) {
-			updateSurface = true;
-        }
-    };
 
-	@SuppressLint("NewApi")
+	private final OnFrameAvailableListener onCameraFrameAvailableListener = new OnFrameAvailableListener()
+	{
+		@Override
+		public void onFrameAvailable(SurfaceTexture surfaceTexture)
+		{
+			updateSurface = true;
+		}
+	};
+
 	public void onCameraSetTexture(int gl_texid) throws IOException
 	{
-		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB)
-		{
-			if (texture == null)
-				onCameraTextureInit(gl_texid);
-			mCamera.setPreviewTexture(texture);
-		}
-		else
-		{
-			mCamera.setPreviewDisplay(null);
-		}
+		if (texture == null)
+			onCameraTextureInit(gl_texid);
+
+		mCamera.setPreviewTexture(texture);
 	}
 
 	@Override
@@ -118,48 +111,48 @@ public final class RetroActivityFuture extends NativeActivity
 	public void onTrimMemory(int level)
 	{
 	}
-	
+
 	@Override
 	public void onNewIntent(Intent intent)
 	{
 		Log.i("RetroActivity", "onNewIntent invoked.");
-	    super.onNewIntent(intent);
-	    setIntent(intent);
-	    pendingIntent = intent;
+		super.onNewIntent(intent);
+		setIntent(intent);
+		pendingIntent = intent;
 	}
-	
+
 	public String getPendingIntentFullPath()
 	{
 		return pendingIntent.getStringExtra("ROM");
 	}
-	
+
 	public String getPendingIntentLibretroPath()
 	{
 		return pendingIntent.getStringExtra("LIBRETRO");
 	}
-	
+
 	public String getPendingIntentConfigPath()
 	{
 		return pendingIntent.getStringExtra("CONFIGFILE");
 	}
-	
+
 	public String getPendingIntentIME()
 	{
 		return pendingIntent.getStringExtra("IME");
 	}
-	
+
 	public boolean hasPendingIntent()
 	{
 		if (pendingIntent == null)
 			return false;
 		return true;
 	}
-	
+
 	public void clearPendingIntent()
 	{
 		pendingIntent = null;
 	}
-	
+
 	@Override
 	public void onBackPressed()
 	{

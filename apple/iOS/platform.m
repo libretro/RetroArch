@@ -234,6 +234,11 @@ static void handle_touch_event(NSArray* touches)
    
    if (!core_list || core_list->count == 0)
       apple_display_alert(@"No libretro cores were found. You will not be able to run any content.", 0);
+      
+   // Load system config
+   const rarch_setting_t* frontend_settings = apple_get_frontend_settings();   
+   setting_data_reset(frontend_settings);
+   setting_data_load_config_path(frontend_settings, self.systemConfigPath.UTF8String);
 }
 
 - (void)applicationDidBecomeActive:(UIApplication *)application
@@ -273,6 +278,9 @@ static void handle_touch_event(NSArray* touches)
 
    [self setNavigationBarHidden:_isGameTop animated:!_isGameTop];
    [self setToolbarHidden:!viewController.toolbarItems.count animated:YES];
+   
+   // Workaround to keep frontend settings fresh
+   [self refreshSystemConfig];
 }
 
 // NOTE: This version only runs on iOS6
@@ -324,11 +332,6 @@ static void handle_touch_event(NSArray* touches)
 #pragma mark FRONTEND CONFIG
 - (void)refreshSystemConfig
 {
-   const rarch_setting_t* frontend_settings = apple_get_frontend_settings();
-   
-   setting_data_reset(frontend_settings);
-   setting_data_load_config_path(frontend_settings, self.systemConfigPath.UTF8String);
-
    // Get enabled orientations
    _enabledOrientations = UIInterfaceOrientationMaskAll;
    

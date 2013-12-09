@@ -545,9 +545,15 @@ void gfx_ctx_destroy(void)
 
 static void gfx_ctx_input_driver(const input_driver_t **input, void **input_data)
 {
+#ifdef HAVE_UDEV
+   void *udev  = input_udev.init();
+   *input      = udev ? &input_udev : NULL;
+   *input_data = udev;
+#else
    void *linuxinput = input_linuxraw.init();
    *input           = linuxinput ? &input_linuxraw : NULL;
    *input_data      = linuxinput;
+#endif
 }
 
 static bool gfx_ctx_has_focus(void)

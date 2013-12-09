@@ -164,6 +164,9 @@ static const input_driver_t *input_drivers[] = {
 #ifdef ANDROID
    &input_android,
 #endif
+#ifdef HAVE_UDEV
+   &input_udev,
+#endif
 #if defined(__linux__) && !defined(ANDROID)
    &input_linuxraw,
 #endif

@@ -333,8 +333,13 @@ ifeq ($(HAVE_UDEV), 1)
    DEFINES += $(UDEV_CFLAGS)
    LIBS += $(UDEV_LIBS)
    JOYCONFIG_LIBS += $(UDEV_LIBS)
-   OBJ += input/udev_joypad.o
+   OBJ += input/udev_input.o input/udev_joypad.o
    JOYCONFIG_OBJ += tools/udev_joypad.o
+endif
+
+ifeq ($(HAVE_XKBCOMMON), 1)
+   DEFINES += $(XKBCOMMON_CFLAGS)
+   LIBS += $(XKBCOMMON_LIBS)
 endif
 
 ifeq ($(HAVE_NEON),1)
