@@ -19,13 +19,21 @@
 
 LRESULT win32_handle_keyboard_event(HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam)
 {
+   uint16_t mod = 0;
+   mod |= (GetKeyState(VK_SHIFT)   & 0x80) ? RETROKMOD_SHIFT : 0;
+   mod |= (GetKeyState(VK_CONTROL) & 0x80) ? RETROKMOD_CTRL : 0;
+   mod |= (GetKeyState(VK_MENU)    & 0x80) ? RETROKMOD_ALT : 0;
+   mod |= (GetKeyState(VK_CAPITAL) & 0x81) ? RETROKMOD_CAPSLOCK : 0;
+   mod |= (GetKeyState(VK_SCROLL)  & 0x81) ? RETROKMOD_SCROLLOCK : 0;
+   mod |= ((GetKeyState(VK_LWIN) | GetKeyState(VK_RWIN)) & 0x80) ? RETROKMOD_META : 0;
+
    switch (message)
    {
       // Seems to be hard to synchronize WM_CHAR and WM_KEYDOWN properly.
       case WM_CHAR:
       {
          if (g_extern.system.key_event)
-            g_extern.system.key_event(true, RETROK_UNKNOWN, wparam, 0); // TODO: Mod state
+            g_extern.system.key_event(true, RETROK_UNKNOWN, wparam, mod);
          return TRUE;
       }
 
@@ -35,7 +43,7 @@ LRESULT win32_handle_keyboard_event(HWND hwnd, UINT message, WPARAM wparam, LPAR
          unsigned scancode = (lparam >> 16) & 0xff;
          unsigned keycode = input_translate_keysym_to_rk(scancode);
          if (g_extern.system.key_event)
-            g_extern.system.key_event(true, keycode, 0, 0); // TODO: Mod state
+            g_extern.system.key_event(true, keycode, 0, mod);
          return 0;
       }
 
@@ -45,7 +53,7 @@ LRESULT win32_handle_keyboard_event(HWND hwnd, UINT message, WPARAM wparam, LPAR
          unsigned scancode = (lparam >> 16) & 0xff;
          unsigned keycode = input_translate_keysym_to_rk(scancode);
          if (g_extern.system.key_event)
-            g_extern.system.key_event(false, keycode, 0, 0); // TODO: Mod state
+            g_extern.system.key_event(false, keycode, 0, mod);
          return 0;
       }
 
@@ -54,7 +62,7 @@ LRESULT win32_handle_keyboard_event(HWND hwnd, UINT message, WPARAM wparam, LPAR
          unsigned scancode = (lparam >> 16) & 0xff;
          unsigned keycode = input_translate_keysym_to_rk(scancode);
          if (g_extern.system.key_event)
-            g_extern.system.key_event(false, keycode, 0, 0); // TODO: Mod state
+            g_extern.system.key_event(false, keycode, 0, mod);
          return 0;
       }
 
@@ -63,7 +71,7 @@ LRESULT win32_handle_keyboard_event(HWND hwnd, UINT message, WPARAM wparam, LPAR
          unsigned scancode = (lparam >> 16) & 0xff;
          unsigned keycode = input_translate_keysym_to_rk(scancode);
          if (g_extern.system.key_event)
-            g_extern.system.key_event(true, keycode, 0, 0); // TODO: Mod state
+            g_extern.system.key_event(true, keycode, 0, mod);
 
          switch (wparam)
          {
