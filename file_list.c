@@ -17,6 +17,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "file_list.h"
+#include "compat/strcasestr.h"
 
 struct item_file
 {
@@ -26,11 +27,9 @@ struct item_file
    size_t directory_ptr;
 };
 
-void file_list_push(void *userdata,
+void file_list_push(file_list_t *list,
       const char *path, unsigned type, size_t directory_ptr)
 {
-   file_list_t *list = (file_list_t*)userdata;
-
    if (!list)
       return;
 
@@ -120,3 +119,32 @@ void file_list_get_last(const file_list_t *list,
    if (list->size)
       file_list_get_at_offset(list, list->size - 1, path, file_type);
 }
+
+bool file_list_search(const file_list_t *list, const char *needle, size_t *index)
+{
+   size_t i;
+   const char *alt;
+   bool ret = false;
+   for (i = 0; i < list->size; i++)
+   {
+      file_list_get_alt_at_offset(list, i, &alt);
+      if (!alt)
+         continue;
+
+      const char *str = strcasestr(alt, needle);
+      if (str == alt) // Found match with first chars, best possible match.
+      {
+         *index = i;
+         ret = true;
+         break;
+      }
+      else if (str) // Found mid-string match, but try to find a match with first chars before we settle.
+      {
+         *index = i;
+         ret = true;
+      }
+   }
+
+   return ret;
+}
+

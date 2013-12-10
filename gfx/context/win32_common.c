@@ -14,7 +14,7 @@
  */
 
 #include "../../general.h"
-#include "../../input/input_common.h"
+#include "../../input/keyboard_line.h"
 #include "win32_common.h"
 
 LRESULT win32_handle_keyboard_event(HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam)
@@ -32,8 +32,7 @@ LRESULT win32_handle_keyboard_event(HWND hwnd, UINT message, WPARAM wparam, LPAR
       // Seems to be hard to synchronize WM_CHAR and WM_KEYDOWN properly.
       case WM_CHAR:
       {
-         if (g_extern.system.key_event)
-            g_extern.system.key_event(true, RETROK_UNKNOWN, wparam, mod);
+         input_keyboard_event(true, RETROK_UNKNOWN, wparam, mod);
          return TRUE;
       }
 
@@ -42,8 +41,7 @@ LRESULT win32_handle_keyboard_event(HWND hwnd, UINT message, WPARAM wparam, LPAR
          // DirectInput uses scancodes directly.
          unsigned scancode = (lparam >> 16) & 0xff;
          unsigned keycode = input_translate_keysym_to_rk(scancode);
-         if (g_extern.system.key_event)
-            g_extern.system.key_event(true, keycode, 0, mod);
+         input_keyboard_event(true, keycode, 0, mod);
          return 0;
       }
 
@@ -52,8 +50,7 @@ LRESULT win32_handle_keyboard_event(HWND hwnd, UINT message, WPARAM wparam, LPAR
          // DirectInput uses scancodes directly.
          unsigned scancode = (lparam >> 16) & 0xff;
          unsigned keycode = input_translate_keysym_to_rk(scancode);
-         if (g_extern.system.key_event)
-            g_extern.system.key_event(false, keycode, 0, mod);
+         input_keyboard_event(false, keycode, 0, mod);
          return 0;
       }
 
@@ -61,8 +58,7 @@ LRESULT win32_handle_keyboard_event(HWND hwnd, UINT message, WPARAM wparam, LPAR
       {
          unsigned scancode = (lparam >> 16) & 0xff;
          unsigned keycode = input_translate_keysym_to_rk(scancode);
-         if (g_extern.system.key_event)
-            g_extern.system.key_event(false, keycode, 0, mod);
+         input_keyboard_event(false, keycode, 0, mod);
          return 0;
       }
 
@@ -70,8 +66,7 @@ LRESULT win32_handle_keyboard_event(HWND hwnd, UINT message, WPARAM wparam, LPAR
       {
          unsigned scancode = (lparam >> 16) & 0xff;
          unsigned keycode = input_translate_keysym_to_rk(scancode);
-         if (g_extern.system.key_event)
-            g_extern.system.key_event(true, keycode, 0, mod);
+         input_keyboard_event(true, keycode, 0, mod);
 
          switch (wparam)
          {

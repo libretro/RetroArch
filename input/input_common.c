@@ -1209,3 +1209,4 @@ void input_config_autoconfigure_joypad(unsigned index, const char *name, const c
 }
 #endif
 
+

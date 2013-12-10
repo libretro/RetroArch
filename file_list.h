@@ -21,6 +21,8 @@
 extern "C" {
 #endif
 
+#include "boolean.h"
+
 struct item_file;
 typedef struct file_list
 {
@@ -32,7 +34,7 @@ typedef struct file_list
 
 void file_list_free(file_list_t *list);
 
-void file_list_push(void *userdata, const char *path,
+void file_list_push(file_list_t *userdata, const char *path,
       unsigned type, size_t current_directory_ptr);
 void file_list_pop(file_list_t *list, size_t *directory_ptr);
 void file_list_clear(file_list_t *list);
@@ -49,6 +51,8 @@ void file_list_get_alt_at_offset(const file_list_t *list, size_t index,
       const char **alt);
 
 void file_list_sort_on_alt(file_list_t *list);
+
+bool file_list_search(const file_list_t *list, const char *needle, size_t *index);
 
 #ifdef __cplusplus
 }
