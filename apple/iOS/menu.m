@@ -400,13 +400,14 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
 - (void)checkBind:(NSTimer*)send
 {
    int32_t value = 0;
+   int32_t index = self.setting->index ? self.setting->index - 1 : 0;
 
    if ((value = apple_input_find_any_key()))
       BINDFOR(*self.setting).key = input_translate_keysym_to_rk(value);
-   else if ((value = apple_input_find_any_button(0)) >= 0)
+   else if ((value = apple_input_find_any_button(index)) >= 0)
       BINDFOR(*self.setting).joykey = value;
-   else if ((value = apple_input_find_any_axis(0)))
-      BINDFOR(*self.setting).joyaxis = (value > 0) ? AXIS_POS(value - 1) : AXIS_NEG(value - 1);
+   else if ((value = apple_input_find_any_axis(index)))
+      BINDFOR(*self.setting).joyaxis = (value > 0) ? AXIS_POS(value - 1) : AXIS_NEG(abs(value) - 1);
    else
       return;
 
