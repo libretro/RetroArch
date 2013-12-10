@@ -61,14 +61,29 @@ const void* apple_get_frontend_settings(void)
    
    if (settings[0].type == ST_NONE)
    {
+      const char* btoptions = "none|icade|keyboard";
+      
+      if (is_ios_7())
+         btoptions = "none|icade";
+      else if (btstack_try_load())
+         btoptions = "none|icade|keyboard|btstack";
+   
       settings[0] = setting_data_group_setting(ST_GROUP, "Frontend Settings");
       settings[1] = setting_data_group_setting(ST_SUB_GROUP, "Frontend");
       settings[2] = setting_data_bool_setting("ios_use_file_log", "Enable File Logging",
                                                &apple_frontend_settings.logging_enabled, false);
       settings[3] = setting_data_bool_setting("ios_tv_mode", "TV Mode", &apple_use_tv_mode, false);
       settings[4] = setting_data_string_setting(ST_STRING, "ios_btmode", "Bluetooth Input Type", apple_frontend_settings.bluetooth_mode,
-                                                 sizeof(apple_frontend_settings.bluetooth_mode), "keyboard");
-      settings[4].values = "icade|keyboard|btstack";
+                                                 sizeof(apple_frontend_settings.bluetooth_mode), "none");                                                 
+
+      // Set ios_btmode options based on runtime environment
+      if (is_ios_7())
+         settings[4].values = "none|icade";
+      else if (btstack_try_load())
+         settings[4].values = "none|icade|keyboard|btstack";
+      else
+         settings[4].values = "none|icade|keyboard";
+
       settings[5] = setting_data_string_setting(ST_STRING, "ios_orientations", "Screen Orientations", apple_frontend_settings.orientations,
                                                  sizeof(apple_frontend_settings.orientations), "both");
       settings[5].values = "both|landscape|portrait";
@@ -271,7 +286,6 @@ static void handle_touch_event(NSArray* touches)
    apple_input_reset_icade_buttons();
    _isGameTop = [viewController isKindOfClass:[RAGameView class]];
    g_extern.is_paused = !_isGameTop;
-
 
    [[UIApplication sharedApplication] setStatusBarHidden:_isGameTop withAnimation:UIStatusBarAnimationNone];
    [[UIApplication sharedApplication] setIdleTimerDisabled:_isGameTop];
