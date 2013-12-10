@@ -30,6 +30,9 @@
 #include <libudev.h>
 #include <linux/types.h>
 #include <linux/input.h>
+#include <linux/kd.h>
+#include <termios.h>
+#include <signal.h>
 
 #ifdef HAVE_CONFIG_H
 #include "../config.h"
@@ -610,6 +613,68 @@ static bool open_devices(udev_input_t *udev, const char *type, device_handle_cb 
    return true;
 }
 
+static long oldkbmd = 0xffff;
+static struct termios oldterm, newterm;
+
+static void restore_terminal_input(void)
+{
+   if (oldkbmd != 0xffff)
+   {
+      ioctl(0, KDSKBMODE, oldkbmd);
+      tcsetattr(0, TCSAFLUSH, &oldterm);
+      oldkbmd = 0xffff;
+   }
+}
+
+static void restore_terminal_signal(int sig)
+{
+   restore_terminal_input();
+   kill(getpid(), sig);
+}
+
+static void disable_terminal_input(void)
+{
+   struct sigaction sa;
+
+   // Avoid accidentally typing stuff
+   if (!isatty(0) || oldkbmd != 0xffff)
+      return;
+
+   if (tcgetattr(0, &oldterm) < 0)
+      return;
+   newterm = oldterm;
+   newterm.c_lflag &= ~(ECHO | ICANON | ISIG);
+   newterm.c_iflag &= ~(ISTRIP | IGNCR | ICRNL | INLCR | IXOFF | IXON);
+   newterm.c_cc[VMIN] = 0;
+   newterm.c_cc[VTIME] = 0;
+
+   // Be careful about recovering the terminal ...
+   if (ioctl(0, KDGKBMODE, &oldkbmd) < 0)
+      return;
+   if (tcsetattr(0, TCSAFLUSH, &newterm) < 0)
+      return;
+   if (ioctl(0, KDSKBMODE, K_MEDIUMRAW) < 0)
+   {
+      tcsetattr(0, TCSAFLUSH, &oldterm);
+      return;
+   }
+
+   memset(&sa, 0, sizeof(sa));
+   sa.sa_handler = restore_terminal_signal;
+   sa.sa_flags = SA_RESTART | SA_RESETHAND;
+   sigemptyset(&sa.sa_mask);
+
+   // Trap some fatal signals.
+   sigaction(SIGABRT, &sa, NULL);
+   sigaction(SIGBUS, &sa, NULL);
+   sigaction(SIGFPE, &sa, NULL);
+   sigaction(SIGILL, &sa, NULL);
+   sigaction(SIGQUIT, &sa, NULL);
+   sigaction(SIGSEGV, &sa, NULL);
+
+   atexit(restore_terminal_input);
+}
+
 static void *udev_input_init(void)
 {
    udev_input_t *udev = (udev_input_t*)calloc(1, sizeof(*udev));
@@ -704,6 +769,8 @@ static void *udev_input_init(void)
 
    udev->joypad = input_joypad_init_driver(g_settings.input.joypad_driver);
    input_init_keyboard_lut(rarch_key_map_linux);
+
+   disable_terminal_input();
    return udev;
 
 error:
