@@ -124,18 +124,27 @@ bool file_list_search(const file_list_t *list, const char *needle, size_t *index
 {
    size_t i;
    const char *alt;
+   bool ret = false;
    for (i = 0; i < list->size; i++)
    {
       file_list_get_alt_at_offset(list, i, &alt);
       if (!alt)
          continue;
-      if (strcasestr(alt, needle)) // GNU, but compat version in posix_string.h.
+
+      const char *str = strcasestr(alt, needle);
+      if (str == alt) // Found match with first chars, best possible match.
       {
          *index = i;
-         return true;
+         ret = true;
+         break;
+      }
+      else if (str) // Found mid-string match, but try to find a match with first chars before we settle.
+      {
+         *index = i;
+         ret = true;
       }
    }
 
-   return false;
+   return ret;
 }
 
