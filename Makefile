@@ -16,6 +16,7 @@ OBJ = frontend/frontend.o \
 		rewind.o \
 		gfx/gfx_common.o \
 		input/input_common.o \
+		input/keyboard_line.o \
 		input/overlay.o \
 		patch.o \
 		fifo_buffer.o \

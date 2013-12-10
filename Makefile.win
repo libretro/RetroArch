@@ -17,6 +17,7 @@ OBJ = frontend/frontend.o \
 		movie.o \
 		gfx/gfx_common.o \
 		input/input_common.o \
+		input/keyboard_line.o \
 		input/autoconf/builtin_win.o \
 		core_options.o \
 		patch.o \

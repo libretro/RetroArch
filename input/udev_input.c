@@ -14,6 +14,7 @@
  */
 
 #include "input_common.h"
+#include "keyboard_line.h"
 #include "../general.h"
 #include "../conf/config_file.h"
 #include "../file_path.h"
@@ -138,9 +139,9 @@ static void handle_xkb(udev_input_t *udev, int code, int value)
       if (udev->mod_map[i].index != XKB_MOD_INVALID)
          mod |= xkb_state_mod_index_is_active(udev->xkb_state, udev->mod_map[i].index, XKB_STATE_MODS_EFFECTIVE) > 0 ? udev->mod_map[i].bit : 0;
 
-   g_extern.system.key_event(value, input_translate_keysym_to_rk(code), num_syms ? xkb_keysym_to_utf32(syms[0]) : 0, mod);
+   input_keyboard_event(value, input_translate_keysym_to_rk(code), num_syms ? xkb_keysym_to_utf32(syms[0]) : 0, mod);
    for (i = 1; i < num_syms; i++)
-      g_extern.system.key_event(value, RETROK_UNKNOWN, xkb_keysym_to_utf32(syms[i]), mod);
+      input_keyboard_event(value, RETROK_UNKNOWN, xkb_keysym_to_utf32(syms[i]), mod);
 }
 #endif
 
@@ -155,7 +156,7 @@ static void udev_handle_keyboard(udev_input_t *udev, const struct input_event *e
             clear_bit(udev->key_state, event->code);
 
 #ifdef HAVE_XKBCOMMON
-         if (udev->xkb_state && g_extern.system.key_event)
+         if (udev->xkb_state)
             handle_xkb(udev, event->code, event->value);
 #endif
          break;

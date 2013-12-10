@@ -28,6 +28,7 @@
 #include "../../file.h"
 #include "../../file_ext.h"
 #include "../../input/input_common.h"
+#include "../../input/keyboard_line.h"
 
 #include "../../compat/posix_string.h"
 
@@ -425,8 +426,6 @@ void menu_free(void)
 
    rom_history_free(rgui->history);
    core_info_list_free(rgui->core_info);
-
-   menu_keyboard_state_clear(&rgui->keyboard);
 
    free(rgui);
 }
@@ -1724,68 +1723,28 @@ bool menu_poll_find_trigger(struct rgui_bind_state *state, struct rgui_bind_stat
    return false;
 }
 
-bool menu_keyboard_state_event(struct rgui_keyboard_state *state,
-      bool down, enum retro_key key, uint32_t character)
+static void menu_search_callback(void *userdata, const char *str)
 {
-   // Treat extended chars as ? as we cannot support printable characters for unicode stuff.
-   char c = character >= 128 ? '?' : character;
-   if (c == '\r' || c == '\n')
-      return true;
+   rgui_handle_t *rgui = (rgui_handle_t*)userdata;
 
-   if (c == '\b')
-   {
-      if (state->ptr)
-      {
-         memmove(state->buffer + state->ptr - 1, state->buffer + state->ptr,
-               state->size - state->ptr + 1);
-         state->ptr--;
-         state->size--;
-      }
-   }
-   // Handle left/right here when suitable
-   else if (isprint(c))
-   {
-      char *newbuf = (char*)realloc(state->buffer, state->size + 2);
-      if (!newbuf)
-         return false;
-
-      memmove(newbuf + state->ptr + 1, newbuf + state->ptr, state->size - state->ptr + 1);
-      newbuf[state->ptr] = c;
-      state->ptr++;
-      state->size++;
-      newbuf[state->size] = '\0';
-
-      state->buffer = newbuf;
-   }
-
-   return false;
+   if (str)
+      file_list_search(rgui->selection_buf, str, &rgui->selection_ptr);
+   rgui->keyboard.display = false;
+   rgui->keyboard.label = NULL;
+   rgui->old_input_state = -1ULL; // Avoid triggering states on pressing return.
 }
 
-void menu_keyboard_state_clear(struct rgui_keyboard_state *state)
+void menu_key_event(bool down, unsigned keycode, uint32_t character, uint16_t mod)
 {
-   free(state->buffer);
-   memset(state, 0, sizeof(*state));
-}
+   (void)down;
+   (void)keycode;
+   (void)mod;
 
-void menu_key_event(bool down, unsigned keycode, uint32_t character, uint16_t key_modifiers)
-{
-   (void)key_modifiers;
-
-   if (!driver.block_input && character == '/')
+   if (character == '/')
    {
-      driver.block_input = true;
-      rgui->display_keyboard = true;
-      menu_keyboard_state_clear(&rgui->keyboard);
-      return;
-   }
-
-   if (driver.block_input && menu_keyboard_state_event(&rgui->keyboard, down, keycode, character) && rgui->keyboard.buffer)
-   {
-      file_list_search(rgui->selection_buf, rgui->keyboard.buffer, &rgui->selection_ptr);
-      menu_keyboard_state_clear(&rgui->keyboard);
-      driver.block_input = false;
-      rgui->display_keyboard = false;
-      rgui->old_input_state = -1ull; // Avoid triggering states on pressing return.
+      rgui->keyboard.display = true;
+      rgui->keyboard.label = "Search:";
+      rgui->keyboard.buffer = input_keyboard_start_line(rgui, menu_search_callback);
    }
 }
 

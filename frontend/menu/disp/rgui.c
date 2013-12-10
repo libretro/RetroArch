@@ -511,10 +511,13 @@ static void rgui_render(void *data)
    rgui_render_messagebox(rgui, message_queue);
 #endif
 
-   if (rgui->display_keyboard)
+   if (rgui->keyboard.display)
    {
       char msg[1024];
-      snprintf(msg, sizeof(msg), "Search: %s", rgui->keyboard.buffer ? rgui->keyboard.buffer : "");
+      const char *str = *rgui->keyboard.buffer;
+      if (!str)
+         str = "";
+      snprintf(msg, sizeof(msg), "%s\n%s", rgui->keyboard.label, str);
       rgui_render_messagebox(rgui, msg);
    }
 }
