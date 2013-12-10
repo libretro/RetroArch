@@ -370,11 +370,11 @@ static void handle_hotplug(udev_input_t *udev)
    bool is_mouse = val_mouse && !strcmp(val_mouse, "1") && devnode;
    bool is_touchpad = val_touchpad && !strcmp(val_touchpad, "1") && devnode;
 
-   if (!is_keyboard && !is_mouse && !is_touchpad)
-      goto end;
-
    device_handle_cb cb = NULL;
    const char *devtype = NULL;
+
+   if (!is_keyboard && !is_mouse && !is_touchpad)
+      goto end;
 
    if (is_keyboard)
    {
@@ -523,7 +523,7 @@ static int16_t udev_input_state(void *data, const struct retro_keybind **binds,
          return ret;
 
       case RETRO_DEVICE_KEYBOARD:
-         return id < RETROK_LAST && get_bit(udev->key_state, input_translate_rk_to_keysym(id));
+         return id < RETROK_LAST && get_bit(udev->key_state, input_translate_rk_to_keysym((enum retro_key)id));
 
       case RETRO_DEVICE_MOUSE:
          return udev_mouse_state(udev, id);
