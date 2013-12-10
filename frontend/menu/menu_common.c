@@ -1727,7 +1727,7 @@ static void menu_search_callback(void *userdata, const char *str)
 {
    rgui_handle_t *rgui = (rgui_handle_t*)userdata;
 
-   if (str)
+   if (str && *str)
       file_list_search(rgui->selection_buf, str, &rgui->selection_ptr);
    rgui->keyboard.display = false;
    rgui->keyboard.label = NULL;
