@@ -61,13 +61,6 @@ const void* apple_get_frontend_settings(void)
    
    if (settings[0].type == ST_NONE)
    {
-      const char* btoptions = "none|icade|keyboard";
-      
-      if (is_ios_7())
-         btoptions = "none|icade";
-      else if (btstack_try_load())
-         btoptions = "none|icade|keyboard|btstack";
-   
       settings[0] = setting_data_group_setting(ST_GROUP, "Frontend Settings");
       settings[1] = setting_data_group_setting(ST_SUB_GROUP, "Frontend");
       settings[2] = setting_data_bool_setting("ios_use_file_log", "Enable File Logging",
