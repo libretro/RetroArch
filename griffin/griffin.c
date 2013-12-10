@@ -280,6 +280,7 @@ FONTS
 INPUT
 ============================================================ */
 #include "../input/input_common.c"
+#include "../input/keyboard_line.c"
 
 #ifdef HAVE_OVERLAY
 #include "../input/overlay.c"
