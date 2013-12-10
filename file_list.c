@@ -17,6 +17,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "file_list.h"
+#include "compat/strcasestr.h"
 
 struct item_file
 {
@@ -128,7 +129,7 @@ bool file_list_search(const file_list_t *list, const char *needle, size_t *index
       file_list_get_alt_at_offset(list, i, &alt);
       if (!alt)
          continue;
-      if (strstr(alt, needle))
+      if (strcasestr(alt, needle)) // GNU, but compat version in posix_string.h.
       {
          *index = i;
          return true;
