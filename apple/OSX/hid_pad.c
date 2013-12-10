@@ -130,10 +130,15 @@ static void hid_manager_device_attached(void* context, IOReturn result, void* se
       CFStringGetCString(device_name, buffer, 1024, kCFStringEncodingUTF8);
 
       connection->slot = apple_joypad_connect(buffer, connection);
-      IOHIDDeviceRegisterInputReportCallback(device, connection->data + 1, sizeof(connection->data) - 1, hid_device_report, connection);
+      
+      if (apple_joypad_has_interface(connection->slot))
+      {
+         IOHIDDeviceRegisterInputReportCallback(device, connection->data + 1, sizeof(connection->data) - 1, hid_device_report, connection);
+         return;
+      }
    }
-   else
-      IOHIDDeviceRegisterInputValueCallback(device, hid_device_input_callback, connection);
+   
+   IOHIDDeviceRegisterInputValueCallback(device, hid_device_input_callback, connection);
 }
 
 static void append_matching_dictionary(CFMutableArrayRef array, uint32_t page, uint32_t use)

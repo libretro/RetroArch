@@ -58,6 +58,9 @@ int32_t apple_joypad_connect(const char* name, struct apple_pad_connection* conn
 void apple_joypad_disconnect(uint32_t slot);
 void apple_joypad_packet(uint32_t slot, uint8_t* data, uint32_t length);
 
+// Determine if connected joypad is a hidpad backed device; if false apple_joypad_packet cannot be used
+bool apple_joypad_has_interface(uint32_t slot);
+
 // This is implemented in the platform specific portions of the input code
 void apple_joypad_send_hid_control(struct apple_pad_connection* connection, uint8_t* data, size_t size);
 
