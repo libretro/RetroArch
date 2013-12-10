@@ -28,6 +28,7 @@ OBJ = frontend/frontend.o \
 		input/overlay.o \
 		fifo_buffer.o \
 		media/rarch.o \
+		gfx/context/win32_common.o \
 		gfx/scaler/scaler.o \
 		gfx/scaler/pixconv.o \
 		gfx/scaler/scaler_int.o \

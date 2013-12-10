@@ -32,6 +32,7 @@
 #include "../gfx_common.h"
 #include "../../compat/posix_string.h"
 #include "../../performance.h"
+#include "../context/win32_common.h"
 
 #include <iostream>
 #include <exception>
@@ -83,14 +84,12 @@ namespace Callback
             curD3D = (D3DVideo*)p_cs->lpCreateParams;
             break;
 
+         case WM_CHAR:
+         case WM_KEYDOWN:
+         case WM_KEYUP:
+         case WM_SYSKEYUP:
          case WM_SYSKEYDOWN:
-            switch (wParam)
-            {
-               case VK_F10:
-               case VK_RSHIFT:
-                  return 0;
-            }
-            break;
+            return win32_handle_keyboard_event(hWnd, message, wParam, lParam);
 
          case WM_DESTROY:
             quit = true;

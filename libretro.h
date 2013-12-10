@@ -539,6 +539,7 @@ enum retro_mod
                                            // The purpose of this interface is to allow
                                            // setting state related to sensors such as polling rate, enabling/disable it entirely, etc.
                                            // Reading sensor state is done via the normal input_state_callback API.
+                                           //
 #define RETRO_ENVIRONMENT_GET_CAMERA_INTERFACE (26 | RETRO_ENVIRONMENT_EXPERIMENTAL)
                                            // struct retro_camera_callback * --
                                            // Gets an interface to a video camera driver.
@@ -556,6 +557,31 @@ enum retro_mod
                                            //
                                            // The camera is not started automatically. The retrieved start/stop functions must be used to explicitly
                                            // start and stop the camera driver.
+                                           //
+#define RETRO_ENVIRONMENT_GET_LOG_INTERFACE 27
+                                           // struct retro_log_callback * --
+                                           // Gets an interface for logging. This is useful for logging in a cross-platform way
+                                           // as certain platforms cannot use use stderr for logging. It also allows the frontend to
+                                           // show logging information in a more suitable way.
+                                           // If this interface is not used, libretro cores should log to stderr as desired.
+
+enum retro_log_level
+{
+   RETRO_LOG_DEBUG = 0,
+   RETRO_LOG_INFO,
+   RETRO_LOG_WARN,
+   RETRO_LOG_ERROR,
+
+   RETRO_LOG_DUMMY = INT_MAX
+};
+
+// Logging function. Takes log level argument as well.
+typedef void (*retro_log_printf_t)(enum retro_log_level level, const char *fmt, ...);
+
+struct retro_log_callback
+{
+   retro_log_printf_t log;
+};
 
 // FIXME: Document the sensor API and work out behavior.
 // It will be marked as experimental until then.
@@ -724,6 +750,13 @@ struct retro_hw_render_callback
 // keycode is the RETROK value of the char.
 // character is the text character of the pressed key. (UTF-32).
 // key_modifiers is a set of RETROKMOD values or'ed together.
+//
+// The pressed/keycode state can be indepedent of the character.
+// It is also possible that multiple characters are generated from a single keypress.
+// Keycode events should be treated separately from character events.
+// However, when possible, the frontend should try to synchronize these.
+// If only a character is posted, keycode should be RETROK_UNKNOWN.
+// Similarily if only a keycode event is generated with no corresponding character, character should be 0.
 typedef void (*retro_keyboard_event_t)(bool down, unsigned keycode, uint32_t character, uint16_t key_modifiers);
 
 struct retro_keyboard_callback

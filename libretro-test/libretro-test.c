@@ -4,8 +4,19 @@
 #include <math.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <stdarg.h>
 
 static uint16_t *frame_buf;
+static struct retro_log_callback logging;
+
+static void fallback_log(enum retro_log_level level, const char *fmt, ...)
+{
+   (void)level;
+   va_list va;
+   va_start(va, fmt);
+   vfprintf(stderr, fmt, va);
+   va_end(va);
+}
 
 void retro_init(void)
 {
@@ -78,6 +89,9 @@ void retro_set_environment(retro_environment_t cb)
 
    bool no_rom = true;
    cb(RETRO_ENVIRONMENT_SET_SUPPORT_NO_GAME, &no_rom);
+
+   if (!cb(RETRO_ENVIRONMENT_GET_LOG_INTERFACE, &logging))
+      logging.log = fallback_log;
 }
 
 void retro_set_audio_sample(retro_audio_sample_t cb)
@@ -133,23 +147,23 @@ static void update_input(void)
       dir_x++;
 
    if (input_state_cb(0, RETRO_DEVICE_KEYBOARD, 0, RETROK_RETURN))
-      fprintf(stderr, "Return key is pressed!\n");
+      logging.log(RETRO_LOG_INFO, "Return key is pressed!\n");
 
    if (input_state_cb(0, RETRO_DEVICE_KEYBOARD, 0, RETROK_x))
-      fprintf(stderr, "x key is pressed!\n");
+      logging.log(RETRO_LOG_INFO, "x key is pressed!\n");
 
    int16_t mouse_x = input_state_cb(0, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_X);
    int16_t mouse_y = input_state_cb(0, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_Y);
    bool mouse_l    = input_state_cb(0, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_LEFT);
    bool mouse_r    = input_state_cb(0, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_RIGHT);
    if (mouse_x)
-      fprintf(stderr, "Mouse X: %d\n", mouse_x);
+      logging.log(RETRO_LOG_INFO, "Mouse X: %d\n", mouse_x);
    if (mouse_y)
-      fprintf(stderr, "Mouse Y: %d\n", mouse_y);
+      logging.log(RETRO_LOG_INFO, "Mouse Y: %d\n", mouse_y);
    if (mouse_l)
-      fprintf(stderr, "Mouse L pressed.\n");
+      logging.log(RETRO_LOG_INFO, "Mouse L pressed.\n");
    if (mouse_r)
-      fprintf(stderr, "Mouse R pressed.\n");
+      logging.log(RETRO_LOG_INFO, "Mouse R pressed.\n");
 
    mouse_rel_x += mouse_x;
    mouse_rel_y += mouse_y;
@@ -166,7 +180,7 @@ static void update_input(void)
    int16_t pointer_x = input_state_cb(0, RETRO_DEVICE_POINTER, 0, RETRO_DEVICE_ID_POINTER_X);
    int16_t pointer_y = input_state_cb(0, RETRO_DEVICE_POINTER, 0, RETRO_DEVICE_ID_POINTER_Y);
    if (pointer_pressed)
-      fprintf(stderr, "Pointer: (%6d, %6d).\n", pointer_x, pointer_y); 
+      logging.log(RETRO_LOG_INFO, "Pointer: (%6d, %6d).\n", pointer_x, pointer_y);
 
    dir_x += input_state_cb(0, RETRO_DEVICE_ANALOG, RETRO_DEVICE_INDEX_ANALOG_LEFT, RETRO_DEVICE_ID_ANALOG_X) / 5000;
    dir_y += input_state_cb(0, RETRO_DEVICE_ANALOG, RETRO_DEVICE_INDEX_ANALOG_LEFT, RETRO_DEVICE_ID_ANALOG_Y) / 5000;
@@ -185,11 +199,11 @@ static void update_input(void)
       bool start = input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_START);
       bool select = input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_SELECT);
       if (old_start != start)
-         fprintf(stderr, "Strong rumble: %s.\n", start ? "ON": "OFF");
+         logging.log(RETRO_LOG_INFO, "Strong rumble: %s.\n", start ? "ON": "OFF");
       rumble.set_rumble_state(0, RETRO_RUMBLE_STRONG, start * strength_strong);
 
       if (old_select != select)
-         fprintf(stderr, "Weak rumble: %s.\n", select ? "ON": "OFF");
+         logging.log(RETRO_LOG_INFO, "Weak rumble: %s.\n", select ? "ON": "OFF");
       rumble.set_rumble_state(0, RETRO_RUMBLE_WEAK, select * strength_weak);
 
       old_start = start;
@@ -236,13 +250,13 @@ static void check_variables(void)
    struct retro_variable var = {0};
    var.key = "test_opt0";
    if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
-      fprintf(stderr, "Key -> Val: %s -> %s.\n", var.key, var.value);
+      logging.log(RETRO_LOG_INFO, "Key -> Val: %s -> %s.\n", var.key, var.value);
    var.key = "test_opt1";
    if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
-      fprintf(stderr, "Key -> Val: %s -> %s.\n", var.key, var.value);
+      logging.log(RETRO_LOG_INFO, "Key -> Val: %s -> %s.\n", var.key, var.value);
    var.key = "test_opt2";
    if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
-      fprintf(stderr, "Key -> Val: %s -> %s.\n", var.key, var.value);
+      logging.log(RETRO_LOG_INFO, "Key -> Val: %s -> %s.\n", var.key, var.value);
 }
 
 void retro_run(void)
@@ -259,7 +273,7 @@ void retro_run(void)
 static void keyboard_cb(bool down, unsigned keycode,
       uint32_t character, uint16_t mod)
 {
-   fprintf(stderr, "Down: %s, Code: %d, Char: %u, Mod: %u.\n",
+   logging.log(RETRO_LOG_INFO, "Down: %s, Code: %d, Char: %u, Mod: %u.\n",
          down ? "yes" : "no", keycode, character, mod);
 }
 
@@ -278,16 +292,16 @@ bool retro_load_game(const struct retro_game_info *info)
    enum retro_pixel_format fmt = RETRO_PIXEL_FORMAT_RGB565;
    if (!environ_cb(RETRO_ENVIRONMENT_SET_PIXEL_FORMAT, &fmt))
    {
-      fprintf(stderr, "RGB565 is not supported.\n");
+      logging.log(RETRO_LOG_INFO, "RGB565 is not supported.\n");
       return false;
    }
 
    struct retro_keyboard_callback cb = { keyboard_cb };
    environ_cb(RETRO_ENVIRONMENT_SET_KEYBOARD_CALLBACK, &cb);
    if (environ_cb(RETRO_ENVIRONMENT_GET_RUMBLE_INTERFACE, &rumble))
-      fprintf(stderr, "Rumble environment supported.\n");
+      logging.log(RETRO_LOG_INFO, "Rumble environment supported.\n");
    else
-      fprintf(stderr, "Rumble environment not supported.\n");
+      logging.log(RETRO_LOG_INFO, "Rumble environment not supported.\n");
 
    check_variables();
 
