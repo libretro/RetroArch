@@ -34,9 +34,18 @@ static const void* const associated_core_key = &associated_core_key;
 - (void)sendEvent:(NSEvent *)event
 {
    [super sendEvent:event];
-
+   
    if (event.type == NSKeyDown || event.type == NSKeyUp)
       apple_input_handle_key_event(event.keyCode, event.type == GSEVENT_TYPE_KEYDOWN);
+   else if (event.type == NSFlagsChanged)
+   {
+      static uint32_t old_flags = 0;
+      uint32_t new_flags = event.modifierFlags;
+      bool down = (new_flags & old_flags) == old_flags;
+      old_flags = new_flags;
+      
+      apple_input_handle_key_event(event.keyCode, down);
+   }
    else if (event.type == NSMouseMoved || event.type == NSLeftMouseDragged ||
             event.type == NSRightMouseDragged || event.type == NSOtherMouseDragged)
    {
