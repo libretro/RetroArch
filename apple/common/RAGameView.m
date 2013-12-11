@@ -142,24 +142,6 @@ static bool g_is_syncing = true;
 {
 }
 
-- (void)mouseDown:(NSEvent*)theEvent
-{
-   g_current_input_data.touch_count = 1;
-   [self mouseDragged:theEvent];
-}
-
-- (void)mouseUp:(NSEvent*)theEvent
-{
-   g_current_input_data.touch_count = 0;
-}
-
-- (void)mouseDragged:(NSEvent*)theEvent
-{
-   NSPoint pos = [self convertPoint:[theEvent locationInWindow] fromView:nil];
-   g_current_input_data.touches[0].screen_x = pos.x;
-   g_current_input_data.touches[0].screen_y = pos.y;
-}
-
 #elif defined(IOS)
 // < iOS Pause menu and lifecycle
 - (id)init
