@@ -32,27 +32,10 @@
 
 apple_frontend_settings_t apple_frontend_settings;
 
-//#define HAVE_DEBUG_FILELOG
-bool is_ios_7()
-{
-   return [[UIDevice currentDevice].systemVersion compare:@"7.0" options:NSNumericSearch] != NSOrderedAscending;
-}
-
 void ios_set_bluetooth_mode(NSString* mode)
 {
-   if (!is_ios_7())
-   {
-      apple_input_enable_icade([mode isEqualToString:@"icade"]);
-      btstack_set_poweron([mode isEqualToString:@"btstack"]);
-   }
-#ifdef __IPHONE_7_0 // iOS7 iCade Support
-   else
-   {
-      bool enabled = [mode isEqualToString:@"icade"];
-      apple_input_enable_icade(enabled);
-      [[RAGameView get] iOS7SetiCadeMode:enabled];
-   }
-#endif
+   apple_input_enable_icade([mode isEqualToString:@"icade"]);
+   btstack_set_poweron([mode isEqualToString:@"btstack"]);
 }
 
 const void* apple_get_frontend_settings(void)
@@ -70,9 +53,7 @@ const void* apple_get_frontend_settings(void)
                                                  sizeof(apple_frontend_settings.bluetooth_mode), "none");                                                 
 
       // Set ios_btmode options based on runtime environment
-      if (is_ios_7())
-         settings[4].values = "none|icade";
-      else if (btstack_try_load())
+      if (btstack_try_load())
          settings[4].values = "none|icade|keyboard|btstack";
       else
          settings[4].values = "none|icade|keyboard";
@@ -138,51 +119,32 @@ static void handle_touch_event(NSArray* touches)
 
 @implementation RApplication
 
+// iOS7: This method is called instead of sendEvent for key events; do not try to merge it
+//       with the sendEvent method.
+- (void)handleKeyUIEvent:(UIEvent*)event
+{
+   if ([event respondsToSelector:@selector(_gsEvent)])
+   {
+      // Stolen from: http://nacho4d-nacho4d.blogspot.com/2012/01/catching-keyboard-events-in-ios.html
+      uint8_t* eventMem = (uint8_t*)(void*)CFBridgingRetain([event performSelector:@selector(_gsEvent)]);
+      int eventType = eventMem ? *(int*)&eventMem[8] : 0;
+      
+      if (eventType == GSEVENT_TYPE_KEYDOWN || eventType == GSEVENT_TYPE_KEYUP)
+         apple_input_handle_key_event(*(uint16_t*)&eventMem[0x3C], eventType == GSEVENT_TYPE_KEYDOWN);
+      
+      CFBridgingRelease(eventMem);
+   }
+}
+
 - (void)sendEvent:(UIEvent *)event
 {
    [super sendEvent:event];
    
    if ([[event allTouches] count])
       handle_touch_event(event.allTouches.allObjects);
-   else if ([event respondsToSelector:@selector(_gsEvent)])
-   {   
-      // Stolen from: http://nacho4d-nacho4d.blogspot.com/2012/01/catching-keyboard-events-in-ios.html
-      uint8_t* eventMem = (uint8_t*)(void*)CFBridgingRetain([event performSelector:@selector(_gsEvent)]);
-      int eventType = eventMem ? *(int*)&eventMem[8] : 0;
 
-      if (eventType == GSEVENT_TYPE_KEYDOWN || eventType == GSEVENT_TYPE_KEYUP)
-         apple_input_handle_key_event(*(uint16_t*)&eventMem[0x3C], eventType == GSEVENT_TYPE_KEYDOWN);
-
-      CFBridgingRelease(eventMem);
-   }
+   [self handleKeyUIEvent:event];
 }
-
-#ifdef __IPHONE_7_0 // iOS7 iCade Support
-
-- (NSArray*)keyCommands
-{
-   static NSMutableArray* key_commands;
-
-   if (!key_commands)
-   {
-      key_commands = [NSMutableArray array];
-   
-      for (int i = 0; i < 26; i ++)
-      {
-         [key_commands addObject:[UIKeyCommand keyCommandWithInput:[NSString stringWithFormat:@"%c", 'a' + i]
-                                               modifierFlags:0 action:@selector(keyGotten:)]];
-      }
-   }
-
-   return key_commands;
-}
-
-- (void)keyGotten:(UIKeyCommand *)keyCommand
-{
-   apple_input_handle_key_event([keyCommand.input characterAtIndex:0] - 'a' + 4, true);
-}
-
-#endif
 
 @end
 

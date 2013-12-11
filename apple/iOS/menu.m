@@ -359,9 +359,6 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
                                      delegate:self
                                      cancelButtonTitle:@"Cancel"
                                      otherButtonTitles:@"Clear Keyboard", @"Clear Joystick", @"Clear Axis", nil];
-   
-   if (is_ios_7())
-      self.alert.alertViewStyle = UIAlertViewStylePlainTextInput;
 
    [self.alert show];
    
