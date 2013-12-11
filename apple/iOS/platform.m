@@ -57,7 +57,7 @@ void ios_set_bluetooth_mode(NSString* mode)
 
 const void* apple_get_frontend_settings(void)
 {
-   static rarch_setting_t settings[8];
+   static rarch_setting_t settings[9];
    
    if (settings[0].type == ST_NONE)
    {
