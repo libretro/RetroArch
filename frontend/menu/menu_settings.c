@@ -1831,7 +1831,7 @@ void menu_set_settings_label(char *type_str, size_t type_str_size, unsigned *w, 
             break;
          }
       case RGUI_SETTINGS_DEVICE_AUTODETECT_ENABLE:
-         strlcpy(type_str, "Autodetect Enable", type_str_size);
+         strlcpy(type_str, g_settings.input.autodetect_enable ? "ON" : "OFF", sizeof(type_str));
          break;
       case RGUI_SETTINGS_BIND_UP:
       case RGUI_SETTINGS_BIND_DOWN:
