@@ -42,7 +42,6 @@ const void* apple_get_frontend_settings(void);
 
 @interface RAGameView : UIViewController<AVCaptureAudioDataOutputSampleBufferDelegate>
 + (RAGameView*)get;
-- (void)iOS7SetiCadeMode:(bool)on;
 @end
 
 @interface RetroArch_iOS : UINavigationController<UIApplicationDelegate, UINavigationControllerDelegate, RetroArch_Platform>
@@ -67,6 +66,5 @@ const void* apple_get_frontend_settings(void);
 
 // modes are: keyboard, icade and btstack
 void ios_set_bluetooth_mode(NSString* mode);
-bool is_ios_7();
 
 #endif

@@ -678,6 +678,7 @@ void rarch_init_msg_queue(void);
 void rarch_deinit_msg_queue(void);
 void rarch_input_poll(void);
 void rarch_check_overlay(void);
+void rarch_check_block_hotkey(void);
 void rarch_init_rewind(void);
 void rarch_deinit_rewind(void);
 void rarch_set_fullscreen(bool fullscreen);

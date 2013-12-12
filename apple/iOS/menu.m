@@ -19,6 +19,28 @@
 #include "menu.h"
 
 /*********************************************/
+/* RunActionSheet                            */
+/* Creates and displays a UIActionSheet with */
+/* buttons pulled from a RetroArch           */
+/* string_list structure.                    */
+/*********************************************/
+static void RunActionSheet(const char* title, const struct string_list* items, UIView* parent, id<UIActionSheetDelegate> delegate)
+{
+   UIActionSheet* actionSheet = [UIActionSheet new];
+   actionSheet.title = @(title);
+   actionSheet.delegate = delegate;
+   
+   for (int i = 0; i < items->size; i ++)
+   {
+      [actionSheet addButtonWithTitle:@(items->elems[i].data)];
+   }
+   
+   actionSheet.cancelButtonIndex = [actionSheet addButtonWithTitle:@"Cancel"];
+   [actionSheet showInView:parent];
+}
+
+
+/*********************************************/
 /* RAMenuBase                                */
 /* A menu class that displays RAMenuItemBase */
 /* objects.                                  */
@@ -295,29 +317,15 @@
 /* a setting to be set from a list of        */
 /* allowed choices.                          */
 /*********************************************/
-@interface RAMenuItemEnumSetting() <UIActionSheetDelegate>
-@property (nonatomic) UIActionSheet* actionSheet;
-@end
+@interface RAMenuItemEnumSetting() <UIActionSheetDelegate> @end
 
 @implementation RAMenuItemEnumSetting
 
 - (void)wasSelectedOnTableView:(UITableView*)tableView ofController:(UIViewController*)controller
 {
-   struct string_list* options = string_split(self.setting->values, "|");
-      
-   self.actionSheet = [UIActionSheet new];
-   self.actionSheet.title = @(self.setting->short_description);
-   self.actionSheet.delegate = self;
-      
-   for (int i = 0; i < options->size; i ++)
-   {
-      [self.actionSheet addButtonWithTitle:@(options->elems[i].data)];
-   }
-      
-   self.actionSheet.cancelButtonIndex = [self.actionSheet addButtonWithTitle:@"Cancel"];
-   [self.actionSheet showInView:self.parentTable];
-      
-   string_list_free(options);
+   struct string_list* items = string_split(self.setting->values, "|");
+   RunActionSheet(self.setting->short_description, items, self.parentTable, self);
+   string_list_free(items);
 }
 
 - (void)actionSheet:(UIActionSheet *)actionSheet clickedButtonAtIndex:(NSInteger)buttonIndex
@@ -327,8 +335,6 @@
       setting_data_set_with_string_representation(self.setting, [actionSheet buttonTitleAtIndex:buttonIndex].UTF8String);
       [self.parentTable reloadData];
    }
-   
-   self.actionSheet = nil;
 }
 
 @end
@@ -353,9 +359,6 @@
                                      delegate:self
                                      cancelButtonTitle:@"Cancel"
                                      otherButtonTitles:@"Clear Keyboard", @"Clear Joystick", @"Clear Axis", nil];
-   
-   if (is_ios_7())
-      self.alert.alertViewStyle = UIAlertViewStylePlainTextInput;
 
    [self.alert show];
    
@@ -394,13 +397,14 @@
 - (void)checkBind:(NSTimer*)send
 {
    int32_t value = 0;
+   int32_t index = self.setting->index ? self.setting->index - 1 : 0;
 
    if ((value = apple_input_find_any_key()))
       BINDFOR(*self.setting).key = input_translate_keysym_to_rk(value);
-   else if ((value = apple_input_find_any_button(0)) >= 0)
+   else if ((value = apple_input_find_any_button(index)) >= 0)
       BINDFOR(*self.setting).joykey = value;
-   else if ((value = apple_input_find_any_axis(0)))
-      BINDFOR(*self.setting).joyaxis = (value > 0) ? AXIS_POS(value - 1) : AXIS_NEG(value - 1);
+   else if ((value = apple_input_find_any_axis(index)))
+      BINDFOR(*self.setting).joyaxis = (value > 0) ? AXIS_POS(value - 1) : AXIS_NEG(abs(value) - 1);
    else
       return;
 
@@ -762,20 +766,7 @@ static const void* const associated_core_key = &associated_core_key;
 - (void)editValue:(uint32_t)index
 {
    self.currentIndex = index;
-
-   UIActionSheet* sheet = [UIActionSheet new];
-   sheet.title = @(core_option_get_desc(g_extern.system.core_options, index));
-   sheet.delegate = self;
-  
-   struct string_list* values = core_option_get_vals(g_extern.system.core_options, index);
-   
-   for (int i = 0; i != values->size; i ++)
-      [sheet addButtonWithTitle:@(values->elems[i].data)];
-   
-   [sheet addButtonWithTitle:@"Cancel"];
-   sheet.cancelButtonIndex = sheet.numberOfButtons - 1;
-   
-   [sheet showInView:self.tableView];
+   RunActionSheet(core_option_get_desc(g_extern.system.core_options, index), core_option_get_vals(g_extern.system.core_options, index), self.tableView, self);
 }
 
 - (void)actionSheet:(UIActionSheet*)actionSheet clickedButtonAtIndex:(NSInteger)buttonIndex

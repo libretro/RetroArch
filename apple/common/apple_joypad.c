@@ -41,7 +41,10 @@ static int32_t find_empty_slot()
 {
    for (int i = 0; i != MAX_PLAYERS; i ++)
       if (!slots[i].used)
+      {
+         memset(&slots[i], 0, sizeof(slots[0]));
          return i;
+      }
    return -1;
 }
 
@@ -94,6 +97,12 @@ void apple_joypad_packet(uint32_t slot, uint8_t* data, uint32_t length)
    }
 }
 
+bool apple_joypad_has_interface(uint32_t slot)
+{
+   if (slot < MAX_PLAYERS && slots[slot].used)
+      return slots[slot].iface ? true : false;
+   return false;
+}
 
 // RetroArch joypad driver:
 static bool apple_joypad_init(void)

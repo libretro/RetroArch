@@ -21,6 +21,7 @@
 #include "../image.h"
 #include "../../general.h"
 #include "../../input/input_common.h"
+#include "../../input/keyboard_line.h"
 
 static void x11_hide_mouse(Display *dpy, Window win)
 {
@@ -343,9 +344,6 @@ static size_t conv_utf8_utf32(uint32_t *out, size_t out_chars, const char *in, s
 
 void x11_handle_key_event(XEvent *event, XIC ic, bool filter)
 {
-   if (!g_extern.system.key_event)
-      return;
-
    int i;
    char keybuf[32] = {0};
    uint32_t chars[32] = {0};
@@ -383,8 +381,8 @@ void x11_handle_key_event(XEvent *event, XIC ic, bool filter)
    mod |= (state & Mod1Mask) ? RETROKMOD_ALT : 0;
    mod |= (state & Mod4Mask) ? RETROKMOD_META : 0;
 
-   g_extern.system.key_event(down, key, chars[0], mod);
+   input_keyboard_event(down, key, chars[0], mod);
    for (i = 1; i < num; i++)
-      g_extern.system.key_event(down, RETROK_UNKNOWN, chars[i], mod);
+      input_keyboard_event(down, RETROK_UNKNOWN, chars[i], mod);
 }
 

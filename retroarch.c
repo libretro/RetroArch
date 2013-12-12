@@ -2690,17 +2690,17 @@ static void check_netplay_flip(void)
 }
 #endif
 
-static void check_block_hotkey(void)
+void rarch_check_block_hotkey(void)
 {
-   driver.block_hotkey = false;
+   driver.block_hotkey = driver.block_input;
 
    // If we haven't bound anything to this, 
    // always allow hotkeys.
    static const struct retro_keybind *bind = &g_settings.input.binds[0][RARCH_ENABLE_HOTKEY];
-   if (bind->key == RETROK_UNKNOWN && bind->joykey == NO_BTN && bind->joyaxis == AXIS_NONE)
+   if (!driver.block_hotkey && bind->key == RETROK_UNKNOWN && bind->joykey == NO_BTN && bind->joyaxis == AXIS_NONE)
       return;
 
-   driver.block_hotkey = !input_key_pressed_func(RARCH_ENABLE_HOTKEY);
+   driver.block_hotkey = driver.block_input || !input_key_pressed_func(RARCH_ENABLE_HOTKEY);
 }
 
 #ifdef HAVE_OVERLAY
@@ -2743,7 +2743,7 @@ static void check_grab_mouse_toggle(void)
 
 static void do_state_checks(void)
 {
-   check_block_hotkey();
+   rarch_check_block_hotkey();
 
 #if defined(HAVE_SCREENSHOTS) && !defined(_XBOX)
    check_screenshot();

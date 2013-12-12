@@ -28,6 +28,7 @@
 #include "../../file.h"
 #include "../../file_ext.h"
 #include "../../input/input_common.h"
+#include "../../input/keyboard_line.h"
 
 #include "../../compat/posix_string.h"
 
@@ -1382,6 +1383,7 @@ bool menu_iterate(void)
       rgui->old_input_state |= 1ULL << RARCH_MENU_TOGGLE;
    }
 
+   rarch_check_block_hotkey();
    rarch_input_poll();
 #ifdef HAVE_OVERLAY
    rarch_check_overlay();
@@ -1422,6 +1424,9 @@ bool menu_iterate(void)
 
    rgui->delay_count++;
    rgui->old_input_state = input_state;
+
+   if (driver.block_input)
+      rgui->trigger_state = 0;
 
    action = RGUI_ACTION_NOOP;
 
@@ -1718,13 +1723,29 @@ bool menu_poll_find_trigger(struct rgui_bind_state *state, struct rgui_bind_stat
    return false;
 }
 
-void menu_key_event(bool down, unsigned keycode, uint32_t character, uint16_t key_modifiers)
+static void menu_search_callback(void *userdata, const char *str)
 {
-   // TODO: Do something with this. Stub for now.
+   rgui_handle_t *rgui = (rgui_handle_t*)userdata;
+
+   if (str && *str)
+      file_list_search(rgui->selection_buf, str, &rgui->selection_ptr);
+   rgui->keyboard.display = false;
+   rgui->keyboard.label = NULL;
+   rgui->old_input_state = -1ULL; // Avoid triggering states on pressing return.
+}
+
+void menu_key_event(bool down, unsigned keycode, uint32_t character, uint16_t mod)
+{
    (void)down;
    (void)keycode;
-   (void)character;
-   (void)key_modifiers;
+   (void)mod;
+
+   if (character == '/')
+   {
+      rgui->keyboard.display = true;
+      rgui->keyboard.label = "Search:";
+      rgui->keyboard.buffer = input_keyboard_start_line(rgui, menu_search_callback);
+   }
 }
 
 static inline int menu_list_get_first_char(file_list_t *buf, unsigned offset)

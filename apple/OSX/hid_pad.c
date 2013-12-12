@@ -40,49 +40,27 @@ static void hid_device_input_callback(void* context, IOReturn result, void* send
    uint32_t page = IOHIDElementGetUsagePage(element);
    uint32_t use = IOHIDElementGetUsage(element);
 
-   // Mouse handler
-   if (!connection)
-   {
-      if (type == kIOHIDElementTypeInput_Button && page == kHIDPage_Button)
-      {
-         CFIndex state = IOHIDValueGetIntegerValue(value);
-      
-         if (state)  g_current_input_data.mouse_buttons |= (1 << (use - 1));
-         else        g_current_input_data.mouse_buttons &= ~(1 << (use - 1));
-      }
-      else if (type == kIOHIDElementTypeInput_Misc && page == kHIDPage_GenericDesktop)
-      {
-         static const uint32_t axis_use_ids[2] = { 48, 49 };
-
-         for (int i = 0; i < 2; i ++)
-            if (use == axis_use_ids[i])
-               g_current_input_data.mouse_delta[i] += IOHIDValueGetIntegerValue(value);
-      }
-   }
    // Joystick handler: TODO: Can GamePad work the same?
-   else if (IOHIDDeviceConformsTo(connection->device, kHIDPage_GenericDesktop, kHIDUsage_GD_Joystick))
+   if (type == kIOHIDElementTypeInput_Button && page == kHIDPage_Button)
    {
-      if (type == kIOHIDElementTypeInput_Button && page == kHIDPage_Button)
-      {
-         CFIndex state = IOHIDValueGetIntegerValue(value);
+      CFIndex state = IOHIDValueGetIntegerValue(value);
 
-         if (state)  g_current_input_data.pad_buttons[connection->slot] |= (1 << (use - 1));
-         else        g_current_input_data.pad_buttons[connection->slot] &= ~(1 << (use - 1));
-      }
-      else if (type == kIOHIDElementTypeInput_Misc && page == kHIDPage_GenericDesktop)
+      if (state)  g_current_input_data.pad_buttons[connection->slot] |= (1 << (use - 1));
+      else        g_current_input_data.pad_buttons[connection->slot] &= ~(1 << (use - 1));
+   }
+   else if (type == kIOHIDElementTypeInput_Misc && page == kHIDPage_GenericDesktop)
+   {
+      static const uint32_t axis_use_ids[4] = { 48, 49, 50, 53 };
+      for (int i = 0; i < 4; i ++)
       {
-         static const uint32_t axis_use_ids[4] = { 48, 49, 50, 53 };
-         for (int i = 0; i < 4; i ++)
+         if (use == axis_use_ids[i])
          {
-            if (use == axis_use_ids[i])
-            {
-               CFIndex min = IOHIDElementGetPhysicalMin(element);
-               CFIndex max = IOHIDElementGetPhysicalMax(element) - min;
-               CFIndex state = IOHIDValueGetIntegerValue(value) - min;
-            
-               float val = (float)state / (float)max;
-               g_current_input_data.pad_axis[connection->slot][i] = ((val * 2.0f) - 1.0f) * 32767.0f;
-            }
+            CFIndex min = IOHIDElementGetPhysicalMin(element);
+            CFIndex max = IOHIDElementGetPhysicalMax(element) - min;
+            CFIndex state = IOHIDValueGetIntegerValue(value) - min;
+         
+            float val = (float)state / (float)max;
+            g_current_input_data.pad_axis[connection->slot][i] = ((val * 2.0f) - 1.0f) * 32767.0f;
          }
       }
    }
@@ -112,9 +90,6 @@ static void hid_device_report(void* context, IOReturn result, void *sender, IOHI
 
 static void hid_manager_device_attached(void* context, IOReturn result, void* sender, IOHIDDeviceRef device)
 {
-   bool is_pad = (IOHIDDeviceConformsTo(device, kHIDPage_GenericDesktop, kHIDUsage_GD_Joystick) ||
-                  IOHIDDeviceConformsTo(device, kHIDPage_GenericDesktop, kHIDUsage_GD_GamePad));
-
    struct apple_pad_connection* connection = calloc(1, sizeof(struct apple_pad_connection));
    connection->device = device;
    connection->slot = MAX_PLAYERS;
@@ -123,15 +98,14 @@ static void hid_manager_device_attached(void* context, IOReturn result, void* se
    IOHIDDeviceScheduleWithRunLoop(device, CFRunLoopGetCurrent(), kCFRunLoopCommonModes);
    IOHIDDeviceRegisterRemovalCallback(device, hid_device_removed, connection);
 
-   CFStringRef device_name = IOHIDDeviceGetProperty(device, CFSTR(kIOHIDProductKey));
-   if (is_pad && device_name)
-   {
-      char buffer[1024];
-      CFStringGetCString(device_name, buffer, 1024, kCFStringEncodingUTF8);
+   CFStringRef device_name_ref = IOHIDDeviceGetProperty(device, CFSTR(kIOHIDProductKey));
+   char device_name[1024];
+   CFStringGetCString(device_name_ref, device_name, sizeof(device_name), kCFStringEncodingUTF8);
 
-      connection->slot = apple_joypad_connect(buffer, connection);
+   connection->slot = apple_joypad_connect(device_name, connection);
+      
+   if (apple_joypad_has_interface(connection->slot))
       IOHIDDeviceRegisterInputReportCallback(device, connection->data + 1, sizeof(connection->data) - 1, hid_device_report, connection);
-   }
    else
       IOHIDDeviceRegisterInputValueCallback(device, hid_device_input_callback, connection);
 }
@@ -159,7 +133,6 @@ void osx_pad_init()
       g_hid_manager = IOHIDManagerCreate(kCFAllocatorDefault, kIOHIDOptionsTypeNone);
 
       CFMutableArrayRef matcher = CFArrayCreateMutable(kCFAllocatorDefault, 0, &kCFTypeArrayCallBacks);
-      append_matching_dictionary(matcher, kHIDPage_GenericDesktop, kHIDUsage_GD_Mouse);
       append_matching_dictionary(matcher, kHIDPage_GenericDesktop, kHIDUsage_GD_Joystick);
       append_matching_dictionary(matcher, kHIDPage_GenericDesktop, kHIDUsage_GD_GamePad);
 

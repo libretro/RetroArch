@@ -34,9 +34,40 @@ static const void* const associated_core_key = &associated_core_key;
 - (void)sendEvent:(NSEvent *)event
 {
    [super sendEvent:event];
-
-   if (event.type == GSEVENT_TYPE_KEYDOWN || event.type == GSEVENT_TYPE_KEYUP)
+   
+   if (event.type == NSKeyDown || event.type == NSKeyUp)
       apple_input_handle_key_event(event.keyCode, event.type == GSEVENT_TYPE_KEYDOWN);
+   else if (event.type == NSFlagsChanged)
+   {
+      static uint32_t old_flags = 0;
+      uint32_t new_flags = event.modifierFlags;
+      bool down = (new_flags & old_flags) == old_flags;
+      old_flags = new_flags;
+      
+      apple_input_handle_key_event(event.keyCode, down);
+   }
+   else if (event.type == NSMouseMoved || event.type == NSLeftMouseDragged ||
+            event.type == NSRightMouseDragged || event.type == NSOtherMouseDragged)
+   {
+      // Relative
+      g_current_input_data.mouse_delta[0] += event.deltaX;
+      g_current_input_data.mouse_delta[1] += event.deltaY;
+
+      // Absolute
+      NSPoint pos = [[RAGameView get] convertPoint:[event locationInWindow] fromView:nil];
+      g_current_input_data.touches[0].screen_x = pos.x;
+      g_current_input_data.touches[0].screen_y = pos.y;
+   }
+   else if (event.type == NSLeftMouseDown || event.type == NSRightMouseDown || event.type == NSOtherMouseDown)
+   {
+      g_current_input_data.mouse_buttons |= 1 << event.buttonNumber;
+      g_current_input_data.touch_count = 1;
+   }
+   else if (event.type == NSLeftMouseUp || event.type == NSRightMouseUp || event.type == NSOtherMouseUp)
+   {
+      g_current_input_data.mouse_buttons &= ~(1 << event.buttonNumber);
+      g_current_input_data.touch_count = 0;
+   }
 }
 
 @end
@@ -68,6 +99,7 @@ static const void* const associated_core_key = &associated_core_key;
    self.coreDirectory = [NSBundle.mainBundle.bundlePath stringByAppendingPathComponent:@"Contents/Resources/modules"];
 
    [window setCollectionBehavior:NSWindowCollectionBehaviorFullScreenPrimary];
+   window.acceptsMouseMovedEvents = YES;
    
    RAGameView.get.frame = [window.contentView bounds];
    [window.contentView setAutoresizesSubviews:YES];
@@ -99,7 +131,7 @@ static const void* const associated_core_key = &associated_core_key;
       [self chooseCore];
 
    _wantReload = false;
-   
+
    extern void osx_pad_init();
    osx_pad_init();
 }

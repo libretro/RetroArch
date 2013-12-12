@@ -324,6 +324,12 @@ typedef struct
    rarch_time_t last_time; // Used to throttle RGUI in case VSync is broken.
 
    struct rgui_bind_state binds;
+   struct
+   {
+      const char **buffer;
+      const char *label;
+      bool display;
+   } keyboard;
 } rgui_handle_t;
 
 extern rgui_handle_t *rgui;
@@ -368,9 +374,10 @@ int menu_settings_toggle_setting(void *data, unsigned setting, unsigned action, 
 int menu_set_settings(void *data, unsigned setting, unsigned action);
 void menu_set_settings_label(char *type_str, size_t type_str_size, unsigned *w, unsigned type);
 
-void menu_key_event(bool down, unsigned keycode, uint32_t character, uint16_t key_modifiers);
 void menu_populate_entries(void *data, unsigned menu_type);
 unsigned menu_type_is(unsigned type);
+
+void menu_key_event(bool down, unsigned keycode, uint32_t character, uint16_t key_modifiers);
 
 extern const menu_ctx_driver_t *menu_ctx;
 
