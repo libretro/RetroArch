@@ -72,4 +72,10 @@ extern NSString *apple_get_core_display_name(NSString *core_id);
 // frontend/platform/platform_apple.c
 extern void apple_frontend_post_event(void (*fn)(void*), void* userdata);
 
+//
+#define BOXSTRING(x) [NSString stringWithUTF8String:x]
+#define BOXINT(x)    [NSNumber numberWithInt:x]
+#define BOXUINT(x)   [NSNumber numberWithUnsignedInt:x]
+#define BOXFLOAT(x)  [NSNumber numberWithDouble:x]
+
 #endif

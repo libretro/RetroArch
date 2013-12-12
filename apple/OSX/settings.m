@@ -69,12 +69,12 @@ static const void* associated_name_tag = (void*)&associated_name_tag;
    // Set value
    switch (aSetting->type)
    {
-      case ST_INT:    self.numericValue = @(*aSetting->value.integer); break;
-      case ST_UINT:   self.numericValue = @(*aSetting->value.unsigned_integer); break;
-      case ST_FLOAT:  self.numericValue = @(*aSetting->value.fraction); break;
-      case ST_STRING: self.stringValue =  @( aSetting->value.string); break;
-      case ST_PATH:   self.stringValue =  @( aSetting->value.string); break;
-      case ST_BOOL:   self.booleanValue =   *aSetting->value.boolean; break;
+      case ST_INT:    self.numericValue = BOXINT   (*aSetting->value.integer); break;
+      case ST_UINT:   self.numericValue = BOXUINT  (*aSetting->value.unsigned_integer); break;
+      case ST_FLOAT:  self.numericValue = BOXFLOAT (*aSetting->value.fraction); break;
+      case ST_STRING: self.stringValue =  BOXSTRING( aSetting->value.string); break;
+      case ST_PATH:   self.stringValue =  BOXSTRING( aSetting->value.string); break;
+      case ST_BOOL:   self.booleanValue =  *aSetting->value.boolean; break;
       case ST_BIND:   [self updateInputString]; break;
       default:        break;
    }
@@ -121,7 +121,7 @@ static const void* associated_name_tag = (void*)&associated_name_tag;
 - (void)updateInputString
 {
    char buffer[256];
-   self.stringValue = @(setting_data_get_string_representation(_setting, buffer, sizeof(buffer)));
+   self.stringValue = BOXSTRING(setting_data_get_string_representation(_setting, buffer, sizeof(buffer)));
 }
 
 - (void)dismissBinder
@@ -304,7 +304,7 @@ static const void* associated_name_tag = (void*)&associated_name_tag;
       const rarch_setting_t* setting = &setting_data[[item intValue]];
 
       if ([tableColumn.identifier isEqualToString:@"title"])
-         return [self labelAccessoryFor:@(setting->short_description) onTable:outlineView];
+         return [self labelAccessoryFor:BOXSTRING(setting->short_description) onTable:outlineView];
       else if([tableColumn.identifier isEqualToString:@"accessory"])
       {
          RASettingCell* s = nil;
