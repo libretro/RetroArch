@@ -184,6 +184,7 @@ const char *config_get_default_camera(void)
 }
 #endif
 
+
 void config_set_defaults(void)
 {
    unsigned i, j;
@@ -283,6 +284,11 @@ void config_set_defaults(void)
    rarch_assert(sizeof(g_settings.input.binds[0]) >= sizeof(retro_keybinds_1));
    rarch_assert(sizeof(g_settings.input.binds[1]) >= sizeof(retro_keybinds_rest));
    memcpy(g_settings.input.binds[0], retro_keybinds_1, sizeof(retro_keybinds_1));
+#ifdef HW_RVL
+   memcpy(g_settings.input.menu_binds, retro_keybinds_menu, sizeof(retro_keybinds_menu));
+#else
+   memcpy(g_settings.input.menu_binds, retro_keybinds_1, sizeof(retro_keybinds_1));
+#endif
    for (i = 1; i < MAX_PLAYERS; i++)
       memcpy(g_settings.input.binds[i], retro_keybinds_rest, sizeof(retro_keybinds_rest));
 

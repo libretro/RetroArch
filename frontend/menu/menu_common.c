@@ -475,7 +475,7 @@ static uint64_t menu_input(void)
    unsigned i;
    uint64_t input_state = 0;
 
-   static const struct retro_keybind *binds[] = { g_settings.input.binds[0] };
+   static const struct retro_keybind *binds[] = { g_settings.input.menu_binds };
 
    for (i = 0; i < RETRO_DEVICE_ID_JOYPAD_R2; i++)
    {

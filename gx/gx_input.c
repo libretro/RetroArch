@@ -40,9 +40,6 @@
 
 typedef struct gx_input
 {
-   uint32_t pad_connect[MAX_PADS];
-   uint32_t pad_type[MAX_PADS];
-   uint32_t pad_detect_pending[MAX_PADS];
    uint64_t pad_state[MAX_PADS];
    int16_t analog_state[MAX_PADS][2][2];
 } gx_input_t;
@@ -146,7 +143,6 @@ static void power_callback(void)
 static void gx_input_set_keybinds(void *data, unsigned device, unsigned port,
       unsigned id, unsigned keybind_action)
 {
-   gx_input_t *gx = (gx_input_t*)data;
    uint64_t *key = &g_settings.input.binds[port][id].joykey;
    size_t arr_size = sizeof(platform_keys) / sizeof(platform_keys[0]);
 
@@ -270,8 +266,6 @@ static void gx_input_set_keybinds(void *data, unsigned device, unsigned port,
          strlcpy(ret->desc, "Unknown", sizeof(ret->desc));
       }
    }
-
-   gx->pad_detect_pending[port] = 1;
 }
 
 static void *gx_input_init(void)
@@ -279,13 +273,6 @@ static void *gx_input_init(void)
    gx_input_t *gx = (gx_input_t*)calloc(1, sizeof(*gx));
    if (!gx)
       return NULL;
-
-   for (unsigned i = 0; i < MAX_PADS; i++)
-   {
-      gx->pad_connect[i] = 0;
-      gx->pad_type[i] = 0;
-      gx->pad_detect_pending[i] = 1;
-   }
 
    PAD_Init();
 #ifdef HW_RVL
@@ -324,15 +311,8 @@ static void gx_input_poll(void *data)
       uint64_t *state_cur = &gx->pad_state[port];
 
 #ifdef HW_RVL
-      if (gx->pad_detect_pending[port])
-      {
-         uint32_t *ptype = &gx->pad_type[port];
-         gx->pad_connect[port] = WPAD_Probe(port, ptype);
-         gx->pad_detect_pending[port] = 0;
-      }
-
-      uint32_t connected = gx->pad_connect[port];
-      uint32_t type = gx->pad_type[port];
+      uint32_t ptype = 0;
+      uint32_t connected = WPAD_Probe(port, &ptype);
       
       if (connected == WPAD_ERR_NONE)
       {
@@ -355,7 +335,7 @@ static void gx_input_poll(void *data)
 
          expansion_t *exp = &wpaddata->exp;
 
-         if (type == WPAD_EXP_CLASSIC)
+         if (ptype == WPAD_EXP_CLASSIC)
          {
             *state_cur |= (down & WPAD_CLASSIC_BUTTON_A) ? GX_CLASSIC_A : 0;
             *state_cur |= (down & WPAD_CLASSIC_BUTTON_B) ? GX_CLASSIC_B : 0;
@@ -406,7 +386,7 @@ static void gx_input_poll(void *data)
             gx->analog_state[port][RETRO_DEVICE_INDEX_ANALOG_RIGHT][RETRO_DEVICE_ID_ANALOG_X] = rs_x;
             gx->analog_state[port][RETRO_DEVICE_INDEX_ANALOG_RIGHT][RETRO_DEVICE_ID_ANALOG_Y] = rs_y;
          }
-         else if (type == WPAD_EXP_NUNCHUK)
+         else if (ptype == WPAD_EXP_NUNCHUK)
          {
             // wiimote is held upright with nunchuk, do not change d-pad orientation
             *state_cur |= (down & WPAD_BUTTON_UP) ? GX_WIIMOTE_UP : 0;
