@@ -475,7 +475,11 @@ static uint64_t menu_input(void)
    unsigned i;
    uint64_t input_state = 0;
 
+#ifdef HW_RVL
+   static const struct retro_keybind *binds[] = { g_settings.input.menu_binds };
+#else
    static const struct retro_keybind *binds[] = { g_settings.input.binds[0] };
+#endif
 
    for (i = 0; i < RETRO_DEVICE_ID_JOYPAD_R2; i++)
    {
@@ -1961,6 +1965,7 @@ void menu_populate_entries(void *data, unsigned menu_type)
          file_list_push(rgui->selection_buf, "Player", RGUI_SETTINGS_BIND_PLAYER, 0);
          file_list_push(rgui->selection_buf, "Device", RGUI_SETTINGS_BIND_DEVICE, 0);
          file_list_push(rgui->selection_buf, "Device Type", RGUI_SETTINGS_BIND_DEVICE_TYPE, 0);
+         file_list_push(rgui->selection_buf, "Autodetect enable", RGUI_SETTINGS_DEVICE_AUTODETECT_ENABLE, 0);
 
          file_list_push(rgui->selection_buf, "Configure All (RetroPad)", RGUI_SETTINGS_CUSTOM_BIND_ALL, 0);
          file_list_push(rgui->selection_buf, "Default All (RetroPad)", RGUI_SETTINGS_CUSTOM_BIND_DEFAULT_ALL, 0);

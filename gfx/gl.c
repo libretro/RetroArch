@@ -1834,11 +1834,20 @@ static void gl_init_pbo_readback(void *data)
 
 static const gfx_ctx_driver_t *gl_get_context(void)
 {
-   unsigned major = g_extern.system.hw_render_callback.version_major;
-   unsigned minor = g_extern.system.hw_render_callback.version_minor;
+   const struct retro_hw_render_callback *cb = &g_extern.system.hw_render_callback;
+   unsigned major = cb->version_major;
+   unsigned minor = cb->version_minor;
 #ifdef HAVE_OPENGLES
    enum gfx_ctx_api api = GFX_CTX_OPENGL_ES_API;
-   const char *api_name = "OpenGL ES";
+   const char *api_name = "OpenGL ES 2.0";
+#ifdef HAVE_OPENGLES3
+   if (cb->context_type == RETRO_HW_CONTEXT_OPENGLES3)
+   {
+      major = 3;
+      minor = 0;
+      api_name = "OpenGL ES 3.0";
+   }
+#endif
 #else
    enum gfx_ctx_api api = GFX_CTX_OPENGL_API;
    const char *api_name = "OpenGL";
@@ -2047,7 +2056,9 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    // but still need multiple textures with PREV.
    gl->textures = 4;
 #ifdef HAVE_FBO
-#ifdef HAVE_OPENGLES2
+#if defined(HAVE_OPENGLES3)
+   gl->hw_render_use = hw_render->context_type == RETRO_HW_CONTEXT_OPENGLES2 || hw_render->context_type == RETRO_HW_CONTEXT_OPENGLES3;
+#elif defined(HAVE_OPENGLES2)
    gl->hw_render_use = hw_render->context_type == RETRO_HW_CONTEXT_OPENGLES2;
 #else
    gl->hw_render_use = hw_render->context_type == RETRO_HW_CONTEXT_OPENGL ||

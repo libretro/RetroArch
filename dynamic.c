@@ -698,7 +698,11 @@ bool rarch_environment_cb(unsigned cmd, void *data)
 
 #if defined(HAVE_OPENGLES2)
             case RETRO_HW_CONTEXT_OPENGLES2:
-               RARCH_LOG("Requesting OpenGLES2 context.\n");
+#if defined(HAVE_OPENGLES3)
+            case RETRO_HW_CONTEXT_OPENGLES3:
+#endif
+               RARCH_LOG("Requesting OpenGLES%u context.\n",
+                     cb->context_type == RETRO_HW_CONTEXT_OPENGLES2 ? 2 : 3);
                break;
 
             case RETRO_HW_CONTEXT_OPENGL:
@@ -707,7 +711,9 @@ bool rarch_environment_cb(unsigned cmd, void *data)
                return false;
 #elif defined(HAVE_OPENGL)
             case RETRO_HW_CONTEXT_OPENGLES2:
-               RARCH_ERR("Requesting OpenGLES2 context, but RetroArch is compiled against OpenGL. Cannot use HW context.\n");
+            case RETRO_HW_CONTEXT_OPENGLES3:
+               RARCH_ERR("Requesting OpenGLES%u context, but RetroArch is compiled against OpenGL. Cannot use HW context.\n",
+                     cb->context_type == RETRO_HW_CONTEXT_OPENGLES2 ? 2 : 3);
                return false;
 
             case RETRO_HW_CONTEXT_OPENGL:

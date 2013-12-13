@@ -42,9 +42,9 @@
 #ifndef PACKAGE_VERSION
 #ifdef __QNX__
 /* FIXME - avoid too many decimal points in number error */
-#define PACKAGE_VERSION "0996"
+#define PACKAGE_VERSION "0997"
 #else
-#define PACKAGE_VERSION "0.9.9.6"
+#define PACKAGE_VERSION "0.9.9.7"
 #endif
 #endif
 
@@ -222,6 +222,9 @@ struct settings
       char joypad_driver[32];
       char keyboard_layout[64];
       struct retro_keybind binds[MAX_PLAYERS][RARCH_BIND_LIST_END];
+#ifdef HW_RVL
+      struct retro_keybind menu_binds[RARCH_BIND_LIST_END];
+#endif
 
       // Set by autoconfiguration in joypad_autoconfig_dir. Does not override main binds.
       struct retro_keybind autoconf_binds[MAX_PLAYERS][RARCH_BIND_LIST_END];

@@ -27,12 +27,12 @@
 static void RunActionSheet(const char* title, const struct string_list* items, UIView* parent, id<UIActionSheetDelegate> delegate)
 {
    UIActionSheet* actionSheet = [UIActionSheet new];
-   actionSheet.title = @(title);
+   actionSheet.title = BOXSTRING(title);
    actionSheet.delegate = delegate;
    
    for (int i = 0; i < items->size; i ++)
    {
-      [actionSheet addButtonWithTitle:@(items->elems[i].data)];
+      [actionSheet addButtonWithTitle:BOXSTRING(items->elems[i].data)];
    }
    
    actionSheet.cancelButtonIndex = [actionSheet addButtonWithTitle:@"Cancel"];
@@ -193,11 +193,11 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
    }
 
    char buffer[256];
-   result.textLabel.text = @(self.setting->short_description);
+   result.textLabel.text = BOXSTRING(self.setting->short_description);
 
    if (self.setting)
    {
-      result.detailTextLabel.text = @(setting_data_get_string_representation(self.setting, buffer, sizeof(buffer)));
+      result.detailTextLabel.text = BOXSTRING(setting_data_get_string_representation(self.setting, buffer, sizeof(buffer)));
       
       if (self.setting->type == ST_PATH)
          result.detailTextLabel.text = [result.detailTextLabel.text lastPathComponent];
@@ -207,7 +207,7 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
 
 - (void)wasSelectedOnTableView:(UITableView*)tableView ofController:(UIViewController*)controller
 {
-   UIAlertView* alertView = [[UIAlertView alloc] initWithTitle:@"Enter new value" message:@(self.setting->short_description) delegate:self
+   UIAlertView* alertView = [[UIAlertView alloc] initWithTitle:@"Enter new value" message:BOXSTRING(self.setting->short_description) delegate:self
                                                   cancelButtonTitle:@"Cancel" otherButtonTitles:@"OK", nil];
    alertView.alertViewStyle = UIAlertViewStylePlainTextInput;
 
@@ -215,7 +215,7 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
    char buffer[256];
    
    field.delegate = self.formatter;
-   field.placeholder = @(setting_data_get_string_representation(self.setting, buffer, sizeof(buffer)));
+   field.placeholder = BOXSTRING(setting_data_get_string_representation(self.setting, buffer, sizeof(buffer)));
 
    [alertView show];
 }
@@ -263,7 +263,7 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
       result.accessoryView = [UISwitch new];
    }
    
-   result.textLabel.text = @(self.setting->short_description);
+   result.textLabel.text = BOXSTRING(self.setting->short_description);
    [(id)result.accessoryView removeTarget:nil action:NULL forControlEvents:UIControlEventValueChanged];
    [(id)result.accessoryView addTarget:self action:@selector(handleBooleanSwitch:) forControlEvents:UIControlEventValueChanged];
    
@@ -294,7 +294,7 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
 
 - (void)wasSelectedOnTableView:(UITableView*)tableView ofController:(UIViewController*)controller
 {
-   NSString* path = [@(self.setting->value.string) stringByDeletingLastPathComponent];
+   NSString* path = [BOXSTRING(self.setting->value.string) stringByDeletingLastPathComponent];
    RADirectoryList* list = [[RADirectoryList alloc] initWithPath:path extensions:self.setting->values forDirectory:false delegate:self];
    [controller.navigationController pushViewController:list animated:YES];
 }
@@ -355,7 +355,7 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
 - (void)wasSelectedOnTableView:(UITableView *)tableView ofController:(UIViewController *)controller
 {
    self.alert = [[UIAlertView alloc] initWithTitle:@"RetroArch"
-                                     message:@(self.setting->short_description)
+                                     message:BOXSTRING(self.setting->short_description)
                                      delegate:self
                                      cancelButtonTitle:@"Cancel"
                                      otherButtonTitles:@"Clear Keyboard", @"Clear Joystick", @"Clear Axis", nil];
@@ -518,10 +518,10 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
       
       for (int i = 0; _history && i != rom_history_size(_history); i ++)
       {
-         RAMenuItemBasic* item = [RAMenuItemBasic itemWithDescription:@(path_basename(apple_rom_history_get_path(weakSelf.history, i)))
-                                                  action:^{ apple_run_core(@(apple_rom_history_get_core_path(weakSelf.history, i)),
-                                                                             apple_rom_history_get_path(weakSelf.history, i)); }
-                                                  detail:^{ return @(apple_rom_history_get_core_name(weakSelf.history, i)); }];
+         RAMenuItemBasic* item = [RAMenuItemBasic itemWithDescription:BOXSTRING(path_basename(apple_rom_history_get_path(weakSelf.history, i)))
+                                                  action:^{ apple_run_core(BOXSTRING(apple_rom_history_get_core_path(weakSelf.history, i)),
+                                                                           apple_rom_history_get_path(weakSelf.history, i)); }
+                                                  detail:^{ return BOXSTRING(apple_rom_history_get_core_name(weakSelf.history, i)); }];
          [section addObject:item];
       }
    }
@@ -548,14 +548,14 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
 {
    if ((self = [super initWithStyle:UITableViewStyleGrouped]))
    {
-      self.title = @(group->name);
+      self.title = BOXSTRING(group->name);
    
       NSMutableArray* settings = nil;
 
       for (const rarch_setting_t* i = group + 1; i->type != ST_END_GROUP; i ++)
       {
          if (i->type == ST_SUB_GROUP)
-            settings = [NSMutableArray arrayWithObjects:@(i->name), nil];
+            settings = [NSMutableArray arrayWithObjects:BOXSTRING(i->name), nil];
          else if (i->type == ST_END_SUB_GROUP)
          {
             if (settings.count)
@@ -592,7 +592,7 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
    if ((self = [super initWithStyle:UITableViewStyleGrouped]))
    {
       if (apple_core_info_has_custom_config(core.UTF8String))
-         _pathToSave = @(apple_core_info_get_custom_config(core.UTF8String, buffer, sizeof(buffer)));
+         _pathToSave = BOXSTRING(apple_core_info_get_custom_config(core.UTF8String, buffer, sizeof(buffer)));
       else
          _pathToSave = apple_platform.globalConfigFile;
       
@@ -612,7 +612,7 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
 
       for (const rarch_setting_t* i = setting_data; i->type != ST_NONE; i ++)
          if (i->type == ST_GROUP)
-            [settings addObject:[RAMenuItemBasic itemWithDescription:@(i->name) action:
+            [settings addObject:[RAMenuItemBasic itemWithDescription:BOXSTRING(i->name) action:
             ^{
                [weakSelf.navigationController pushViewController:[[RASettingsGroupMenu alloc] initWithGroup:i] animated:YES];
             }]];
@@ -677,7 +677,7 @@ static const void* const associated_core_key = &associated_core_key;
 
       const core_info_list_t* core_list = apple_core_info_list_get();
       for (int i = 0; i < core_list->count; i ++)
-         [cores addObject:[RAMenuItemBasic itemWithDescription:@(core_list->list[i].display_name)
+         [cores addObject:[RAMenuItemBasic itemWithDescription:BOXSTRING(core_list->list[i].display_name)
             association:apple_get_core_id(&core_list->list[i])
             action: ^(id userdata) { [weakSelf showCoreConfigFor:userdata]; }
             detail: ^(id userdata) { return apple_core_info_has_custom_config([userdata UTF8String]) ? @"[Custom]" : @"[Global]"; }]];
@@ -718,7 +718,7 @@ static const void* const associated_core_key = &associated_core_key;
       char path[PATH_MAX];
       apple_core_info_get_custom_config(core_id.UTF8String, path, sizeof(path));
    
-      if (![[NSFileManager defaultManager] copyItemAtPath:apple_platform.globalConfigFile toPath:@(path) error:nil])
+      if (![[NSFileManager defaultManager] copyItemAtPath:apple_platform.globalConfigFile toPath:BOXSTRING(path) error:nil])
          RARCH_WARN("Could not create custom config at %s", path);
       [self.tableView reloadData];
    }
@@ -752,9 +752,9 @@ static const void* const associated_core_key = &associated_core_key;
       if (options)
       {
          for (int i = 0; i != core_option_size(options); i ++)
-            [section addObject:[RAMenuItemBasic itemWithDescription:@(core_option_get_desc(options, i)) association:nil
+            [section addObject:[RAMenuItemBasic itemWithDescription:BOXSTRING(core_option_get_desc(options, i)) association:nil
                action:^{ [weakSelf editValue:i]; }
-               detail:^{ return @(core_option_get_val(options, i)); }]];
+               detail:^{ return BOXSTRING(core_option_get_val(options, i)); }]];
       }
       else
          [section addObject:[RAMenuItemBasic itemWithDescription:@"The running core has no options." action:NULL]];
@@ -911,7 +911,7 @@ static const void* const associated_core_key = &associated_core_key;
       {
          char buffer[1024];
          while (fgets(buffer, 1024, file))
-            [data addObject:[RAMenuItemBasic itemWithDescription:@(buffer) action:NULL]];
+            [data addObject:[RAMenuItemBasic itemWithDescription:BOXSTRING(buffer) action:NULL]];
          fclose(file);
       }
       else

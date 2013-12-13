@@ -11,7 +11,6 @@
 		962EE0E2178B3DF6004224FF /* IOKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 962EE0E1178B3DF6004224FF /* IOKit.framework */; };
 		96355CE31788E72A0010DBFA /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 96355CE21788E72A0010DBFA /* Cocoa.framework */; };
 		9646869817BBC14E00C5EA69 /* platform.m in Sources */ = {isa = PBXBuildFile; fileRef = 9646869617BBC14E00C5EA69 /* platform.m */; };
-		964DE7C117D84B34001CBB6C /* InputBinder.xib in Resources */ = {isa = PBXBuildFile; fileRef = 964DE7C317D84B34001CBB6C /* InputBinder.xib */; };
 		964DE7C417D84B57001CBB6C /* Settings.xib in Resources */ = {isa = PBXBuildFile; fileRef = 964DE7C617D84B57001CBB6C /* Settings.xib */; };
 		967894931788ECDB00D6CA69 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 9678948F1788ECDB00D6CA69 /* InfoPlist.strings */; };
 		967894941788ECDB00D6CA69 /* MainMenu.xib in Resources */ = {isa = PBXBuildFile; fileRef = 967894911788ECDB00D6CA69 /* MainMenu.xib */; };
@@ -37,7 +36,6 @@
 		96355CE71788E72A0010DBFA /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = System/Library/Frameworks/Foundation.framework; sourceTree = SDKROOT; };
 		9646869617BBC14E00C5EA69 /* platform.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = platform.m; path = OSX/platform.m; sourceTree = SOURCE_ROOT; };
 		9646869717BBC14E00C5EA69 /* platform.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = platform.h; path = OSX/platform.h; sourceTree = SOURCE_ROOT; };
-		964DE7C217D84B34001CBB6C /* en */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = en; path = en.lproj/InputBinder.xib; sourceTree = "<group>"; };
 		964DE7C517D84B57001CBB6C /* en */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = en; path = en.lproj/Settings.xib; sourceTree = "<group>"; };
 		9678948D1788ECCA00D6CA69 /* RetroArch-Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = "RetroArch-Info.plist"; path = "OSX/RetroArch-Info.plist"; sourceTree = SOURCE_ROOT; };
 		967894901788ECDB00D6CA69 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = OSX/en.lproj/InfoPlist.strings; sourceTree = SOURCE_ROOT; };
@@ -141,7 +139,6 @@
 				967894911788ECDB00D6CA69 /* MainMenu.xib */,
 				C15874EE178F2094001171D4 /* RetroArch.icns */,
 				964DE7C617D84B57001CBB6C /* Settings.xib */,
-				964DE7C317D84B34001CBB6C /* InputBinder.xib */,
 			);
 			name = Assets;
 			sourceTree = "<group>";
@@ -201,7 +198,6 @@
 				967894E9178A2EB400D6CA69 /* modules in Resources */,
 				C15874EF178F2094001171D4 /* RetroArch.icns in Resources */,
 				964DE7C417D84B57001CBB6C /* Settings.xib in Resources */,
-				964DE7C117D84B34001CBB6C /* InputBinder.xib in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -224,15 +220,6 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXVariantGroup section */
-		964DE7C317D84B34001CBB6C /* InputBinder.xib */ = {
-			isa = PBXVariantGroup;
-			children = (
-				964DE7C217D84B34001CBB6C /* en */,
-			);
-			name = InputBinder.xib;
-			path = OSX;
-			sourceTree = "<group>";
-		};
 		964DE7C617D84B57001CBB6C /* Settings.xib */ = {
 			isa = PBXVariantGroup;
 			children = (
@@ -304,7 +291,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				INFOPLIST_FILE = "$(SRCROOT)/OSX/RetroArch-Info.plist";
-				MACOSX_DEPLOYMENT_TARGET = "";
+				MACOSX_DEPLOYMENT_TARGET = 10.6;
 				ONLY_ACTIVE_ARCH = YES;
 				OTHER_CFLAGS = (
 					"-DHAVE_RARCH_MAIN_WRAP",
@@ -355,7 +342,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				INFOPLIST_FILE = "$(SRCROOT)/OSX/RetroArch-Info.plist";
-				MACOSX_DEPLOYMENT_TARGET = "";
+				MACOSX_DEPLOYMENT_TARGET = 10.6;
 				ONLY_ACTIVE_ARCH = YES;
 				OTHER_CFLAGS = (
 					"-DNS_BLOCK_ASSERTIONS=1",

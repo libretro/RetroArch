@@ -310,7 +310,7 @@ static void handle_touch_event(NSArray* touches)
       _enabledOrientations = UIInterfaceOrientationMaskPortrait | UIInterfaceOrientationMaskPortraitUpsideDown;
 
    // Set bluetooth mode
-   ios_set_bluetooth_mode(@(apple_frontend_settings.bluetooth_mode));
+   ios_set_bluetooth_mode(BOXSTRING(apple_frontend_settings.bluetooth_mode));
    ios_set_logging_state([RetroArch_iOS get].logPath.UTF8String, apple_frontend_settings.logging_enabled);
 }
 

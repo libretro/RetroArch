@@ -23,6 +23,7 @@
 #include "../boolean.h"
 #include <stddef.h>
 #include <stdlib.h>
+#include <ctype.h>
 #ifdef _MSC_VER
 #include "../msvc/msvc_compat.h"
 #endif

@@ -114,7 +114,7 @@ static const void* const associated_core_key = &associated_core_key;
    const core_info_list_t* cores = apple_core_info_list_get();
    for (int i = 0; cores && i != cores->count; i ++)
    {
-      NSString* desc = @(cores->list[i].display_name);
+      NSString* desc = BOXSTRING(cores->list[i].display_name);
       objc_setAssociatedObject(desc, associated_core_key, apple_get_core_id(&cores->list[i]), OBJC_ASSOCIATION_RETAIN_NONATOMIC);
       [cb addItemWithObjectValue:desc];
    }
@@ -225,7 +225,7 @@ static const void* const associated_core_key = &associated_core_key;
 - (void)loadingCore:(const NSString*)core withFile:(const char*)file
 {
    if (file)
-      [NSDocumentController.sharedDocumentController noteNewRecentDocumentURL:[NSURL fileURLWithPath:@(file)]];
+      [NSDocumentController.sharedDocumentController noteNewRecentDocumentURL:[NSURL fileURLWithPath:BOXSTRING(file)]];
 }
 
 - (void)unloadingCore:(const NSString*)core

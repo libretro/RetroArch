@@ -50,7 +50,7 @@ NSString* objc_get_value_from_config(config_file_t* config, NSString* name, NSSt
    if (config)
       config_get_string(config, [name UTF8String], &data);
    
-   NSString* result = data ? @(data) : defaultValue;
+   NSString* result = data ? BOXSTRING(data) : defaultValue;
    free(data);
    return result;
 }
@@ -59,13 +59,13 @@ NSString* objc_get_value_from_config(config_file_t* config, NSString* name, NSSt
 NSString *apple_get_core_id(const core_info_t *core)
 {
    char buf[PATH_MAX];
-   return @(apple_core_info_get_id(core, buf, sizeof(buf)));
+   return BOXSTRING(apple_core_info_get_id(core, buf, sizeof(buf)));
 }
 
 NSString *apple_get_core_display_name(NSString *core_id)
 {
    const core_info_t *core = apple_core_info_list_get_by_id(core_id.UTF8String);
-   return core ? @(core->display_name) : core_id;
+   return core ? BOXSTRING(core->display_name) : core_id;
 }
 
 // Number formatter class for setting strings
@@ -78,25 +78,25 @@ NSString *apple_get_core_display_name(NSString *core_id)
       
       if (setting->min != setting->max)
       {
-         self.minimum = @(setting->min);
-         self.maximum = @(setting->max);
+         self.minimum = BOXFLOAT(setting->min);
+         self.maximum = BOXFLOAT(setting->max);
       }
       else
       {
          if (setting->type == ST_INT)
          {
-            self.minimum = @(INT_MIN);
-            self.maximum = @(INT_MAX);
+            self.minimum = BOXINT(INT_MIN);
+            self.maximum = BOXINT(INT_MAX);
          }
          else if (setting->type == ST_UINT)
          {
-            self.minimum = @(0);
-            self.maximum = @(UINT_MAX);
+            self.minimum = BOXUINT(0);
+            self.maximum = BOXUINT(UINT_MAX);
          }
          else if (setting->type == ST_FLOAT)
          {
-            self.minimum = @(FLT_MIN);
-            self.maximum = @(FLT_MAX);
+            self.minimum = BOXFLOAT(FLT_MIN);
+            self.maximum = BOXFLOAT(FLT_MAX);
          }
       }
    }

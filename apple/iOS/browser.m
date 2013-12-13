@@ -56,7 +56,7 @@ static void file_action(enum file_action action, NSString* source, NSString* tar
 + (RADirectoryItem*)directoryItemFromElement:(struct string_list_elem*)element
 {
    RADirectoryItem* item = [RADirectoryItem new];
-   item.path = @(element->data);
+   item.path = BOXSTRING(element->data);
    item.isDirectory = element->attr.b;
    return item;
 }
@@ -100,7 +100,7 @@ static void file_action(enum file_action action, NSString* source, NSString* tar
    {
       _path = path ? path : NSHomeDirectory();
       _directoryDelegate = delegate;
-      _extensions = extensions ? @(extensions) : 0;
+      _extensions = extensions ? BOXSTRING(extensions) : 0;
 
       self = [super initWithStyle:UITableViewStylePlain];
       self.hidesHeaders = YES;
@@ -327,7 +327,7 @@ static void file_action(enum file_action action, NSString* source, NSString* tar
             {
                const char* basename = path_basename(contents->elems[i].data);
                
-               RAMenuItemBasic* item = [RAMenuItemBasic itemWithDescription:@(basename) association:@(contents->elems[i].data)
+               RAMenuItemBasic* item = [RAMenuItemBasic itemWithDescription:BOXSTRING(basename) association:BOXSTRING(contents->elems[i].data)
                   action:^(id userdata){ [weakSelf moveInto:userdata]; } detail:NULL];
                [items addObject:item];
             }

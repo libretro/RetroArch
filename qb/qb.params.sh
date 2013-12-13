@@ -1,4 +1,3 @@
-## lvl. 43 regex dragon awaits thee.
 print_help()
 {	cat << EOF
 ====================

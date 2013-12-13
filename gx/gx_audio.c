@@ -94,11 +94,11 @@ static void *gx_audio_init(const char *device, unsigned rate, unsigned latency)
 // Wii uses silly R, L, R, L interleaving ...
 static inline void copy_swapped(uint32_t * restrict dst, const uint32_t * restrict src, size_t size)
 {
-   for (size_t i = 0; i < size; i++)
+   do
    {
-      uint32_t s = src[i];
-      dst[i] = (s >> 16) | (s << 16);
-   }
+      uint32_t s = *src++;
+      *dst++ = (s >> 16) | (s << 16);
+   }while(--size);
 }
 
 static ssize_t gx_audio_write(void *data, const void *buf_, size_t size)

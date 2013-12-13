@@ -40,9 +40,6 @@
 
 typedef struct gx_input
 {
-   uint32_t pad_connect[MAX_PADS];
-   uint32_t pad_type[MAX_PADS];
-   uint32_t pad_detect_pending[MAX_PADS];
    uint64_t pad_state[MAX_PADS];
    int16_t analog_state[MAX_PADS][2][2];
 } gx_input_t;
@@ -146,11 +143,11 @@ static void power_callback(void)
 static void gx_input_set_keybinds(void *data, unsigned device, unsigned port,
       unsigned id, unsigned keybind_action)
 {
-   gx_input_t *gx = (gx_input_t*)data;
    uint64_t *key = &g_settings.input.binds[port][id].joykey;
    size_t arr_size = sizeof(platform_keys) / sizeof(platform_keys[0]);
 
    (void)device;
+   (void)data;
 
    if (keybind_action & (1ULL << KEYBINDS_ACTION_SET_DEFAULT_BIND))
       *key = g_settings.input.binds[port][id].def_joykey;
@@ -270,8 +267,6 @@ static void gx_input_set_keybinds(void *data, unsigned device, unsigned port,
          strlcpy(ret->desc, "Unknown", sizeof(ret->desc));
       }
    }
-
-   gx->pad_detect_pending[port] = 1;
 }
 
 static void *gx_input_init(void)
@@ -279,13 +274,6 @@ static void *gx_input_init(void)
    gx_input_t *gx = (gx_input_t*)calloc(1, sizeof(*gx));
    if (!gx)
       return NULL;
-
-   for (unsigned i = 0; i < MAX_PADS; i++)
-   {
-      gx->pad_connect[i] = 0;
-      gx->pad_type[i] = 0;
-      gx->pad_detect_pending[i] = 1;
-   }
 
    PAD_Init();
 #ifdef HW_RVL
@@ -323,16 +311,46 @@ static void gx_input_poll(void *data)
       uint32_t down = 0;
       uint64_t *state_cur = &gx->pad_state[port];
 
-#ifdef HW_RVL
-      if (gx->pad_detect_pending[port])
+      if (SI_GetType(port) & SI_TYPE_GC)
       {
-         uint32_t *ptype = &gx->pad_type[port];
-         gx->pad_connect[port] = WPAD_Probe(port, ptype);
-         gx->pad_detect_pending[port] = 0;
+         down = PAD_ButtonsHeld(port);
+
+         *state_cur |= (down & PAD_BUTTON_A) ? GX_GC_A : 0;
+         *state_cur |= (down & PAD_BUTTON_B) ? GX_GC_B : 0;
+         *state_cur |= (down & PAD_BUTTON_X) ? GX_GC_X : 0;
+         *state_cur |= (down & PAD_BUTTON_Y) ? GX_GC_Y : 0;
+         *state_cur |= (down & PAD_BUTTON_UP) ? GX_GC_UP : 0;
+         *state_cur |= (down & PAD_BUTTON_DOWN) ? GX_GC_DOWN : 0;
+         *state_cur |= (down & PAD_BUTTON_LEFT) ? GX_GC_LEFT : 0;
+         *state_cur |= (down & PAD_BUTTON_RIGHT) ? GX_GC_RIGHT : 0;
+         *state_cur |= (down & PAD_BUTTON_START) ? GX_GC_START : 0;
+         *state_cur |= (down & PAD_TRIGGER_Z) ? GX_GC_Z_TRIGGER : 0;
+         *state_cur |= ((down & PAD_TRIGGER_L) || PAD_TriggerL(port) > 127) ? GX_GC_L_TRIGGER : 0;
+         *state_cur |= ((down & PAD_TRIGGER_R) || PAD_TriggerR(port) > 127) ? GX_GC_R_TRIGGER : 0;
+
+         int16_t ls_x = (int16_t)PAD_StickX(port) * 256;
+         int16_t ls_y = (int16_t)PAD_StickY(port) * -256;
+         int16_t rs_x = (int16_t)PAD_SubStickX(port) * 256;
+         int16_t rs_y = (int16_t)PAD_SubStickY(port) * -256;
+
+         gx->analog_state[port][RETRO_DEVICE_INDEX_ANALOG_LEFT][RETRO_DEVICE_ID_ANALOG_X] = ls_x;
+         gx->analog_state[port][RETRO_DEVICE_INDEX_ANALOG_LEFT][RETRO_DEVICE_ID_ANALOG_Y] = ls_y;
+         gx->analog_state[port][RETRO_DEVICE_INDEX_ANALOG_RIGHT][RETRO_DEVICE_ID_ANALOG_X] = rs_x;
+         gx->analog_state[port][RETRO_DEVICE_INDEX_ANALOG_RIGHT][RETRO_DEVICE_ID_ANALOG_Y] = rs_y;
+
+         if ((*state_cur & (GX_GC_START | GX_GC_Z_TRIGGER | GX_GC_L_TRIGGER | GX_GC_R_TRIGGER)) == (GX_GC_START | GX_GC_Z_TRIGGER | GX_GC_L_TRIGGER | GX_GC_R_TRIGGER))
+            *state_cur |= GX_WIIMOTE_HOME;
+
+         if (g_settings.input.autodetect_enable)
+         {
+            if (strcmp(g_settings.input.device_names[port], "Gamecube Controller") != 0)
+               gx_input_set_keybinds(NULL, DEVICE_GAMECUBE, port, 0, (1ULL << KEYBINDS_ACTION_SET_DEFAULT_BINDS));
+         }
       }
 
-      uint32_t connected = gx->pad_connect[port];
-      uint32_t type = gx->pad_type[port];
+#ifdef HW_RVL
+      uint32_t ptype = 0;
+      uint32_t connected = WPAD_Probe(port, &ptype);
       
       if (connected == WPAD_ERR_NONE)
       {
@@ -355,7 +373,7 @@ static void gx_input_poll(void *data)
 
          expansion_t *exp = &wpaddata->exp;
 
-         if (type == WPAD_EXP_CLASSIC)
+         if (ptype == WPAD_EXP_CLASSIC)
          {
             *state_cur |= (down & WPAD_CLASSIC_BUTTON_A) ? GX_CLASSIC_A : 0;
             *state_cur |= (down & WPAD_CLASSIC_BUTTON_B) ? GX_CLASSIC_B : 0;
@@ -405,8 +423,14 @@ static void gx_input_poll(void *data)
             gx->analog_state[port][RETRO_DEVICE_INDEX_ANALOG_LEFT][RETRO_DEVICE_ID_ANALOG_Y] = ls_y;
             gx->analog_state[port][RETRO_DEVICE_INDEX_ANALOG_RIGHT][RETRO_DEVICE_ID_ANALOG_X] = rs_x;
             gx->analog_state[port][RETRO_DEVICE_INDEX_ANALOG_RIGHT][RETRO_DEVICE_ID_ANALOG_Y] = rs_y;
+
+            if (g_settings.input.autodetect_enable)
+            {
+               if (strcmp(g_settings.input.device_names[port], "Classic Controller") != 0)
+                  gx_input_set_keybinds(NULL, DEVICE_CLASSIC, port, 0, (1ULL << KEYBINDS_ACTION_SET_DEFAULT_BINDS));
+            }
          }
-         else if (type == WPAD_EXP_NUNCHUK)
+         else if (ptype == WPAD_EXP_NUNCHUK)
          {
             // wiimote is held upright with nunchuk, do not change d-pad orientation
             *state_cur |= (down & WPAD_BUTTON_UP) ? GX_WIIMOTE_UP : 0;
@@ -433,40 +457,24 @@ static void gx_input_poll(void *data)
 
             gx->analog_state[port][RETRO_DEVICE_INDEX_ANALOG_LEFT][RETRO_DEVICE_ID_ANALOG_X] = x;
             gx->analog_state[port][RETRO_DEVICE_INDEX_ANALOG_LEFT][RETRO_DEVICE_ID_ANALOG_Y] = y;
+
+            if (g_settings.input.autodetect_enable)
+            {
+               if (strcmp(g_settings.input.device_names[port], "Wiimote + Nunchuk") != 0)
+                  gx_input_set_keybinds(NULL, DEVICE_NUNCHUK, port, 0, (1ULL << KEYBINDS_ACTION_SET_DEFAULT_BINDS));
+            }
+         }
+         else
+         {
+            //no attachment, assume standalone Wiimote
+            if (g_settings.input.autodetect_enable)
+            {
+               if (strcmp(g_settings.input.device_names[port], "Wiimote") != 0)
+                  gx_input_set_keybinds(NULL, DEVICE_WIIMOTE, port, 0, (1ULL << KEYBINDS_ACTION_SET_DEFAULT_BINDS));
+            }
          }
       }
 #endif
-
-      if (SI_GetType(port) & SI_TYPE_GC)
-      {
-         down = PAD_ButtonsHeld(port);
-
-         *state_cur |= (down & PAD_BUTTON_A) ? GX_GC_A : 0;
-         *state_cur |= (down & PAD_BUTTON_B) ? GX_GC_B : 0;
-         *state_cur |= (down & PAD_BUTTON_X) ? GX_GC_X : 0;
-         *state_cur |= (down & PAD_BUTTON_Y) ? GX_GC_Y : 0;
-         *state_cur |= (down & PAD_BUTTON_UP) ? GX_GC_UP : 0;
-         *state_cur |= (down & PAD_BUTTON_DOWN) ? GX_GC_DOWN : 0;
-         *state_cur |= (down & PAD_BUTTON_LEFT) ? GX_GC_LEFT : 0;
-         *state_cur |= (down & PAD_BUTTON_RIGHT) ? GX_GC_RIGHT : 0;
-         *state_cur |= (down & PAD_BUTTON_START) ? GX_GC_START : 0;
-         *state_cur |= (down & PAD_TRIGGER_Z) ? GX_GC_Z_TRIGGER : 0;
-         *state_cur |= ((down & PAD_TRIGGER_L) || PAD_TriggerL(port) > 127) ? GX_GC_L_TRIGGER : 0;
-         *state_cur |= ((down & PAD_TRIGGER_R) || PAD_TriggerR(port) > 127) ? GX_GC_R_TRIGGER : 0;
-
-         int16_t ls_x = (int16_t)PAD_StickX(port) * 256;
-         int16_t ls_y = (int16_t)PAD_StickY(port) * -256;
-         int16_t rs_x = (int16_t)PAD_SubStickX(port) * 256;
-         int16_t rs_y = (int16_t)PAD_SubStickY(port) * -256;
-
-         gx->analog_state[port][RETRO_DEVICE_INDEX_ANALOG_LEFT][RETRO_DEVICE_ID_ANALOG_X] = ls_x;
-         gx->analog_state[port][RETRO_DEVICE_INDEX_ANALOG_LEFT][RETRO_DEVICE_ID_ANALOG_Y] = ls_y;
-         gx->analog_state[port][RETRO_DEVICE_INDEX_ANALOG_RIGHT][RETRO_DEVICE_ID_ANALOG_X] = rs_x;
-         gx->analog_state[port][RETRO_DEVICE_INDEX_ANALOG_RIGHT][RETRO_DEVICE_ID_ANALOG_Y] = rs_y;
-
-         if ((*state_cur & (GX_GC_START | GX_GC_Z_TRIGGER | GX_GC_L_TRIGGER | GX_GC_R_TRIGGER)) == (GX_GC_START | GX_GC_Z_TRIGGER | GX_GC_L_TRIGGER | GX_GC_R_TRIGGER))
-            *state_cur |= GX_WIIMOTE_HOME;
-      }
    }
 
    uint64_t *state_p1 = &gx->pad_state[0];
