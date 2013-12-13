@@ -26,6 +26,10 @@
 #include <unistd.h>
 #endif
 
+#if defined(_WIN32) && !defined(_XBOX)
+#include <windows.h>
+#endif
+
 #if defined(__CELLOS_LV2__) || defined(GEKKO)
 #ifndef _PPU_INTRINSICS_H
 #include <ppu_intrinsics.h>
