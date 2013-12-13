@@ -205,8 +205,14 @@ check_pkgconf LIBXML2 libxml-2.0
 
 if [ "$HAVE_EGL" = "yes" ]; then
    if [ "$HAVE_GLES" != "no" ]; then
-      HAVE_GLES=auto check_pkgconf GLES glesv2
-      [ "$HAVE_GLES" = "no" ] && HAVE_GLES=auto check_lib GLES "-lGLESv2 $EXTRA_GL_LIBS"
+      if [ "$GLES_LIBS" ] || [ "$GLES_CFLAGS" ]; then
+         echo "Using custom OpenGLES CFLAGS ($GLES_CFLAGS) and LDFLAGS ($GLES_LIBS)."
+         add_define_make GLES_LIBS "$GLES_LIBS"
+         add_define_make GLES_CFLAGS "$GLES_CFLAGS"
+      else
+         HAVE_GLES=auto check_pkgconf GLES glesv2
+         [ "$HAVE_GLES" = "no" ] && HAVE_GLES=auto check_lib GLES "-lGLESv2 $EXTRA_GL_LIBS" && add_define_make GLES_LIBS "-lGLESv2 $EXTRA_GL_LIBS"
+      fi
    fi
    if [ "$HAVE_VG" != "no" ]; then
       check_pkgconf VG vg
