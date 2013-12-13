@@ -58,6 +58,7 @@ struct rarch_cpu_features
 #define RARCH_SIMD_AVX      (1 << 4)
 #define RARCH_SIMD_NEON     (1 << 5)
 #define RARCH_SIMD_SSE3     (1 << 6)
+#define RARCH_SIMD_SSSE3    (1 << 7)
 
 void rarch_get_cpu_features(struct rarch_cpu_features *cpu);
 

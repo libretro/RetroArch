@@ -53,6 +53,8 @@ static volatile sig_atomic_t g_quit;
 static bool g_inited;
 static unsigned g_interval;
 static enum gfx_ctx_api g_api;
+static unsigned g_major;
+static unsigned g_minor;
 
 static void sighandler(int sig)
 {
@@ -248,6 +250,14 @@ static bool gfx_ctx_init(void)
       EGL_NONE,
    };
 
+#ifdef EGL_OPENGL_ES3_BIT_KHR
+   static const EGLint egl_attribs_gles3[] = {
+      EGL_ATTRIBS_BASE,
+      EGL_RENDERABLE_TYPE, EGL_OPENGL_ES3_BIT_KHR,
+      EGL_NONE,
+   };
+#endif
+
    static const EGLint egl_attribs_vg[] = {
       EGL_ATTRIBS_BASE,
       EGL_RENDERABLE_TYPE, EGL_OPENVG_BIT,
@@ -261,7 +271,12 @@ static bool gfx_ctx_init(void)
          attrib_ptr = egl_attribs_gl;
          break;
       case GFX_CTX_OPENGL_ES_API:
-         attrib_ptr = egl_attribs_gles;
+#ifdef EGL_OPENGL_ES3_BIT_KHR
+         if (g_major >= 3)
+            attrib_ptr = egl_attribs_gles3;
+         else
+#endif
+            attrib_ptr = egl_attribs_gles;
          break;
       case GFX_CTX_OPENVG_API:
          attrib_ptr = egl_attribs_vg;
@@ -390,9 +405,9 @@ static bool gfx_ctx_set_video_mode(
          CWBorderPixel | CWColormap | CWEventMask | (true_full ? CWOverrideRedirect : 0), &swa);
    XSetWindowBackground(g_dpy, g_win, 0);
 
-   // GLES 2.0. Don't use for any other API.
-   static const EGLint egl_ctx_gles_attribs[] = {
-      EGL_CONTEXT_CLIENT_VERSION, 2,
+   // GLES 2.0+. Don't use for any other API.
+   const EGLint egl_ctx_gles_attribs[] = {
+      EGL_CONTEXT_CLIENT_VERSION, g_major ? g_major : 2,
       EGL_NONE,
    };
 
@@ -570,14 +585,18 @@ static gfx_ctx_proc_t gfx_ctx_get_proc_address(const char *symbol)
 
 static bool gfx_ctx_bind_api(enum gfx_ctx_api api, unsigned major, unsigned minor)
 {
-   (void)major;
-   (void)minor;
+   g_major = major;
+   g_minor = minor;
    g_api = api;
    switch (api)
    {
       case GFX_CTX_OPENGL_API:
          return eglBindAPI(EGL_OPENGL_API);
       case GFX_CTX_OPENGL_ES_API:
+#ifndef EGL_OPENGL_ES3_BIT_KHR
+         if (major >= 3)
+            return false;
+#endif
          return eglBindAPI(EGL_OPENGL_ES_API);
       case GFX_CTX_OPENVG_API:
          return eglBindAPI(EGL_OPENVG_API);

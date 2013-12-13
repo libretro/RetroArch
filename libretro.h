@@ -718,9 +718,10 @@ typedef retro_proc_address_t (*retro_hw_get_proc_address_t)(const char *sym);
 enum retro_hw_context_type
 {
    RETRO_HW_CONTEXT_NONE = 0,
-   RETRO_HW_CONTEXT_OPENGL, // OpenGL 2.x. Latest version available before 3.x+.
+   RETRO_HW_CONTEXT_OPENGL, // OpenGL 2.x. Latest version available before 3.x+. Driver can choose to use latest compatibility context.
    RETRO_HW_CONTEXT_OPENGLES2, // GLES 2.0
    RETRO_HW_CONTEXT_OPENGL_CORE, // Modern desktop core GL context. Use major/minor fields to set GL version.
+   RETRO_HW_CONTEXT_OPENGLES3, // GLES 3.0
 
    RETRO_HW_CONTEXT_DUMMY = INT_MAX
 };

@@ -138,7 +138,7 @@ bool file_list_search(const file_list_t *list, const char *needle, size_t *index
          ret = true;
          break;
       }
-      else if (str) // Found mid-string match, but try to find a match with first chars before we settle.
+      else if (str && !ret) // Found mid-string match, but try to find a match with first chars before we settle.
       {
          *index = i;
          ret = true;

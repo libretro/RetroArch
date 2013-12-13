@@ -26,6 +26,10 @@
 #include <unistd.h>
 #endif
 
+#if defined(_WIN32) && !defined(_XBOX)
+#include <windows.h>
+#endif
+
 #if defined(__CELLOS_LV2__) || defined(GEKKO)
 #ifndef _PPU_INTRINSICS_H
 #include <ppu_intrinsics.h>
@@ -62,6 +66,8 @@
 #ifdef EMSCRIPTEN
 #include <emscripten.h>
 #endif
+
+#include <string.h>
 
 #ifdef PERF_TEST
 #define MAX_COUNTERS 64
@@ -222,14 +228,18 @@ void rarch_get_cpu_features(struct rarch_cpu_features *cpu)
    if (flags[2] & (1 << 0))
       cpu->simd |= RARCH_SIMD_SSE3;
 
+   if (flags[2] & (1 << 9))
+      cpu->simd |= RARCH_SIMD_SSSE3;
+
    const int avx_flags = (1 << 27) | (1 << 28);
    if ((flags[2] & avx_flags) == avx_flags)
       cpu->simd |= RARCH_SIMD_AVX;
 
-   RARCH_LOG("[CPUID]: SSE:  %u\n", !!(cpu->simd & RARCH_SIMD_SSE));
-   RARCH_LOG("[CPUID]: SSE2: %u\n", !!(cpu->simd & RARCH_SIMD_SSE2));
-   RARCH_LOG("[CPUID]: SSE3: %u\n", !!(cpu->simd & RARCH_SIMD_SSE3));
-   RARCH_LOG("[CPUID]: AVX:  %u\n", !!(cpu->simd & RARCH_SIMD_AVX));
+   RARCH_LOG("[CPUID]: SSE:   %u\n", !!(cpu->simd & RARCH_SIMD_SSE));
+   RARCH_LOG("[CPUID]: SSE2:  %u\n", !!(cpu->simd & RARCH_SIMD_SSE2));
+   RARCH_LOG("[CPUID]: SSE3:  %u\n", !!(cpu->simd & RARCH_SIMD_SSE3));
+   RARCH_LOG("[CPUID]: SSSE3: %u\n", !!(cpu->simd & RARCH_SIMD_SSSE3));
+   RARCH_LOG("[CPUID]: AVX:   %u\n", !!(cpu->simd & RARCH_SIMD_AVX));
 #elif defined(ANDROID) && defined(ANDROID_ARM)
    uint64_t cpu_flags = android_getCpuFeatures();
 

@@ -184,6 +184,7 @@ const char *config_get_default_camera(void)
 }
 #endif
 
+
 void config_set_defaults(void)
 {
    unsigned i, j;
@@ -283,6 +284,9 @@ void config_set_defaults(void)
    rarch_assert(sizeof(g_settings.input.binds[0]) >= sizeof(retro_keybinds_1));
    rarch_assert(sizeof(g_settings.input.binds[1]) >= sizeof(retro_keybinds_rest));
    memcpy(g_settings.input.binds[0], retro_keybinds_1, sizeof(retro_keybinds_1));
+#ifdef HW_RVL
+   memcpy(g_settings.input.menu_binds, retro_keybinds_menu, sizeof(retro_keybinds_menu));
+#endif
    for (i = 1; i < MAX_PLAYERS; i++)
       memcpy(g_settings.input.binds[i], retro_keybinds_rest, sizeof(retro_keybinds_rest));
 
@@ -1144,6 +1148,7 @@ bool config_save_file(const char *path)
    config_set_string(conf, "game_history_path", g_settings.game_history_path);
    config_set_int(conf, "game_history_size", g_settings.game_history_size);
    config_set_string(conf, "joypad_autoconfig_dir", g_settings.input.autoconfig_dir);
+   config_set_bool(conf, "input_autodetect_enable", g_settings.input.autodetect_enable);
 
 #ifdef HAVE_OVERLAY
    config_set_string(conf, "overlay_directory", *g_extern.overlay_dir ? g_extern.overlay_dir : "default");

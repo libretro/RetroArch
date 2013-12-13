@@ -802,6 +802,10 @@ int menu_set_settings(void *data, unsigned setting, unsigned action)
 
             break;
          }
+      case RGUI_SETTINGS_DEVICE_AUTODETECT_ENABLE:
+         if (action == RGUI_ACTION_OK)
+            g_settings.input.autodetect_enable = !g_settings.input.autodetect_enable;
+         break;
       case RGUI_SETTINGS_CUSTOM_BIND_ALL:
          if (action == RGUI_ACTION_OK)
          {
@@ -1826,6 +1830,9 @@ void menu_set_settings_label(char *type_str, size_t type_str_size, unsigned *w, 
             strlcpy(type_str, name, type_str_size);
             break;
          }
+      case RGUI_SETTINGS_DEVICE_AUTODETECT_ENABLE:
+         strlcpy(type_str, g_settings.input.autodetect_enable ? "ON" : "OFF", sizeof(type_str));
+         break;
       case RGUI_SETTINGS_BIND_UP:
       case RGUI_SETTINGS_BIND_DOWN:
       case RGUI_SETTINGS_BIND_LEFT:
