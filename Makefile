@@ -237,7 +237,10 @@ ifeq ($(HAVE_OPENGL), 1)
 	
    ifeq ($(HAVE_GLES), 1)
       LIBS += $(GLES_LIBS)
-      DEFINES += $(GLES_CFLAGS) -DHAVE_OPENGLES -DHAVE_OPENGLES2 -DHAVE_OPENGLES3
+      DEFINES += $(GLES_CFLAGS) -DHAVE_OPENGLES -DHAVE_OPENGLES2
+      ifeq ($(HAVE_GLES3), 1)
+         DEFINES += -DHAVE_OPENGLES3
+      endif
       OBJ += gfx/glsym/glsym_es2.o
    else
       DEFINES += -DHAVE_GL_SYNC
