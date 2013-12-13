@@ -67,6 +67,8 @@
 #include <emscripten.h>
 #endif
 
+#include <string.h>
+
 #ifdef PERF_TEST
 #define MAX_COUNTERS 64
 static struct rarch_perf_counter *perf_counters[MAX_COUNTERS];
