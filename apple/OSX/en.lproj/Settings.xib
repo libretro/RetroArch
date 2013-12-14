@@ -240,7 +240,7 @@
 											<string key="NSFrameSize">{559, 539}</string>
 											<reference key="NSSuperview" ref="119087162"/>
 											<reference key="NSWindow"/>
-											<reference key="NSNextKeyView" ref="899143711"/>
+											<reference key="NSNextKeyView" ref="176799935"/>
 											<string key="NSReuseIdentifierKey">_NS:13</string>
 											<bool key="NSEnabled">YES</bool>
 											<bool key="NSAllowsLogicalLayoutDirection">NO</bool>
@@ -366,7 +366,6 @@
 									<string key="NSFrame">{{1, 541}, {486, 15}}</string>
 									<reference key="NSSuperview" ref="46895506"/>
 									<reference key="NSWindow"/>
-									<reference key="NSNextKeyView"/>
 									<string key="NSReuseIdentifierKey">_NS:60</string>
 									<bool key="NSAllowsLogicalLayoutDirection">NO</bool>
 									<int key="NSsFlags">1</int>
@@ -392,7 +391,7 @@
 							<string key="NSFrame">{{178, 20}, {561, 557}}</string>
 							<reference key="NSSuperview" ref="1006"/>
 							<reference key="NSWindow"/>
-							<reference key="NSNextKeyView" ref="176799935"/>
+							<reference key="NSNextKeyView" ref="119087162"/>
 							<string key="NSReuseIdentifierKey">_NS:9</string>
 							<int key="NSsFlags">133682</int>
 							<reference key="NSVScroller" ref="899143711"/>
@@ -483,7 +482,6 @@
 							<string key="NSFrame">{{384, 13}, {82, 32}}</string>
 							<reference key="NSSuperview" ref="729831377"/>
 							<reference key="NSWindow"/>
-							<reference key="NSNextKeyView"/>
 							<string key="NSReuseIdentifierKey">_NS:9</string>
 							<bool key="NSEnabled">YES</bool>
 							<object class="NSButtonCell" key="NSCell" id="637914132">
@@ -559,30 +557,6 @@
 				</object>
 				<object class="IBConnectionRecord">
 					<object class="IBOutletConnection" key="connection">
-						<string key="label">_window</string>
-						<reference key="source" ref="897541637"/>
-						<reference key="destination" ref="1005"/>
-					</object>
-					<int key="connectionID">100</int>
-				</object>
-				<object class="IBConnectionRecord">
-					<object class="IBOutletConnection" key="connection">
-						<string key="label">_table</string>
-						<reference key="source" ref="897541637"/>
-						<reference key="destination" ref="223530966"/>
-					</object>
-					<int key="connectionID">104</int>
-				</object>
-				<object class="IBConnectionRecord">
-					<object class="IBOutletConnection" key="connection">
-						<string key="label">_outline</string>
-						<reference key="source" ref="897541637"/>
-						<reference key="destination" ref="962679450"/>
-					</object>
-					<int key="connectionID">180</int>
-				</object>
-				<object class="IBConnectionRecord">
-					<object class="IBOutletConnection" key="connection">
 						<string key="label">booleanCell</string>
 						<reference key="source" ref="897541637"/>
 						<reference key="destination" ref="650936754"/>
@@ -612,6 +586,22 @@
 						<reference key="destination" ref="962679450"/>
 					</object>
 					<int key="connectionID">603</int>
+				</object>
+				<object class="IBConnectionRecord">
+					<object class="IBOutletConnection" key="connection">
+						<string key="label">outline</string>
+						<reference key="source" ref="897541637"/>
+						<reference key="destination" ref="962679450"/>
+					</object>
+					<int key="connectionID">604</int>
+				</object>
+				<object class="IBConnectionRecord">
+					<object class="IBOutletConnection" key="connection">
+						<string key="label">table</string>
+						<reference key="source" ref="897541637"/>
+						<reference key="destination" ref="223530966"/>
+					</object>
+					<int key="connectionID">605</int>
 				</object>
 				<object class="IBConnectionRecord">
 					<object class="IBOutletConnection" key="connection">
@@ -882,7 +872,7 @@
 			<nil key="activeLocalization"/>
 			<dictionary class="NSMutableDictionary" key="localizations"/>
 			<nil key="sourceID"/>
-			<int key="maxID">603</int>
+			<int key="maxID">605</int>
 		</object>
 		<object class="IBClassDescriber" key="IBDocument.Classes">
 			<array class="NSMutableArray" key="referencedPartialClassDescriptions">
@@ -920,26 +910,13 @@
 						</object>
 					</object>
 					<dictionary class="NSMutableDictionary" key="outlets">
-						<string key="_inputWindow">NSWindow</string>
-						<string key="_outline">NSOutlineView</string>
-						<string key="_table">NSTableView</string>
 						<string key="binderCell">NSTextFieldCell</string>
 						<string key="binderWindow">RAInputBinder</string>
 						<string key="booleanCell">NSButtonCell</string>
+						<string key="outline">NSOutlineView</string>
+						<string key="table">NSTableView</string>
 					</dictionary>
 					<dictionary class="NSMutableDictionary" key="toOneOutletInfosByName">
-						<object class="IBToOneOutletInfo" key="_inputWindow">
-							<string key="name">_inputWindow</string>
-							<string key="candidateClassName">NSWindow</string>
-						</object>
-						<object class="IBToOneOutletInfo" key="_outline">
-							<string key="name">_outline</string>
-							<string key="candidateClassName">NSOutlineView</string>
-						</object>
-						<object class="IBToOneOutletInfo" key="_table">
-							<string key="name">_table</string>
-							<string key="candidateClassName">NSTableView</string>
-						</object>
 						<object class="IBToOneOutletInfo" key="binderCell">
 							<string key="name">binderCell</string>
 							<string key="candidateClassName">NSTextFieldCell</string>
@@ -951,6 +928,14 @@
 						<object class="IBToOneOutletInfo" key="booleanCell">
 							<string key="name">booleanCell</string>
 							<string key="candidateClassName">NSButtonCell</string>
+						</object>
+						<object class="IBToOneOutletInfo" key="outline">
+							<string key="name">outline</string>
+							<string key="candidateClassName">NSOutlineView</string>
+						</object>
+						<object class="IBToOneOutletInfo" key="table">
+							<string key="name">table</string>
+							<string key="candidateClassName">NSTableView</string>
 						</object>
 					</dictionary>
 					<object class="IBClassDescriptionSource" key="sourceIdentifier">
