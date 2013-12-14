@@ -24,6 +24,7 @@ public final class ModuleWrapper implements IconAdapterItem, Comparable<ModuleWr
 	private final String license;
 	private final List<String> authors;
 	private final List<String> supportedExtensions;
+	private final List<String> permissions;
 
 	/**
 	 * Constructor
@@ -89,6 +90,17 @@ public final class ModuleWrapper implements IconAdapterItem, Comparable<ModuleWr
 				this.authors = new ArrayList<String>();
 				this.authors.add(emuAuthors);
 			}
+			
+			final String permissions = infoFile.getString("permissions");
+			if (permissions != null && permissions.contains("|"))
+			{
+				this.permissions = new ArrayList<String>(Arrays.asList(permissions.split("\\|")));
+			}
+			else
+			{
+				this.permissions = new ArrayList<String>();
+				this.permissions.add(permissions);
+			}
 		}
 		else // No info file.
 		{
@@ -99,6 +111,7 @@ public final class ModuleWrapper implements IconAdapterItem, Comparable<ModuleWr
 			this.authors = new ArrayList<String>();
 			this.supportedExtensions = new ArrayList<String>();
 			this.coreName = coreName;
+			this.permissions = new ArrayList<String>();
 		}
 	}
 
@@ -134,6 +147,7 @@ public final class ModuleWrapper implements IconAdapterItem, Comparable<ModuleWr
 
 	/**
 	 * Gets the name of the system that is emulated by this wrapped core.
+	 * (optional - in case core is an emulator)
 	 * 
 	 * @return the name of the system that is emulated by this wrapped core.
 	 */
@@ -154,10 +168,11 @@ public final class ModuleWrapper implements IconAdapterItem, Comparable<ModuleWr
 
 	/**
 	 * Gets the name of the manufacturer of the console that
-	 * this core emulates.
+	 * this core emulates. (optional - in case core is an
+	 * emulator)
 	 * 
 	 * @return the name of the manufacturer of the console that
-	 *         this core emulates.
+	 *         this core emulates. (optional)
 	 */
 	public String getManufacturer()
 	{
@@ -165,13 +180,23 @@ public final class ModuleWrapper implements IconAdapterItem, Comparable<ModuleWr
 	}
 
 	/**
-	 * Gets the list of authors of this emulator core.
+	 * Gets the list of authors of this core.
 	 * 
-	 * @return the list of authors of this emulator core.
+	 * @return the list of authors of this core.
 	 */
-	public List<String> getEmulatorAuthors()
+	public List<String> getAuthors()
 	{
 		return authors;
+	}
+
+	/**
+	 * Gets the list of permissions of this core.
+	 * 
+	 * @return the list of authors of this core.
+	 */
+	public List<String> getPermissions()
+	{
+		return permissions;
 	}
 
 	/**

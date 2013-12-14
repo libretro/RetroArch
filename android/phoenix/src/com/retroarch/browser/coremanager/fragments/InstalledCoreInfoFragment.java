@@ -56,9 +56,10 @@ public final class InstalledCoreInfoFragment extends ListFragment
 		adapter.add(new InstalledCoreInfoItem(getString(R.string.core_info_displayNameTitle),  core.getDisplayName()));
 		adapter.add(new InstalledCoreInfoItem(getString(R.string.core_info_internalNameTitle), core.getInternalName()));
 		adapter.add(new InstalledCoreInfoItem(getString(R.string.core_info_systemNameTitle),   core.getEmulatedSystemName()));
-		adapter.add(new InstalledCoreInfoItem(getString(R.string.core_info_manufacterer),      core.getManufacturer()));
-		adapter.add(new InstalledCoreInfoItem(getString(R.string.core_info_emu_author),        core.getEmulatorAuthors()));
+		adapter.add(new InstalledCoreInfoItem(getString(R.string.core_info_manufacturer),      core.getManufacturer()));
+		adapter.add(new InstalledCoreInfoItem(getString(R.string.core_info_author),            core.getAuthors()));
 		adapter.add(new InstalledCoreInfoItem(getString(R.string.core_info_licenseTitle),      core.getCoreLicense()));
+		adapter.add(new InstalledCoreInfoItem(getString(R.string.core_info_permissions),       core.getPermissions()));
 
 		// Set the list adapter.
 		infoView.setAdapter(adapter);

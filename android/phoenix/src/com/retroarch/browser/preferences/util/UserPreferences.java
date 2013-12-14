@@ -9,7 +9,7 @@ import java.io.InputStreamReader;
 import android.annotation.TargetApi;
 import android.content.Context;
 import android.content.SharedPreferences;
-import android.content.pm.PackageManager;
+//import android.content.pm.PackageManager;
 import android.media.AudioManager;
 import android.media.AudioTrack;
 import android.os.Build;
@@ -476,7 +476,7 @@ public final class UserPreferences
 	@TargetApi(17)
 	private static boolean hasLowLatencyAudio(Context ctx)
 	{
-		PackageManager pm = ctx.getPackageManager();
+		//PackageManager pm = ctx.getPackageManager();
 		return true;//pm.hasSystemFeature(PackageManager.FEATURE_AUDIO_LOW_LATENCY);
 	}
 
