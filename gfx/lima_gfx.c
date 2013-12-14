@@ -406,6 +406,14 @@ static bool lima_gfx_frame(void *data, const void *frame, unsigned width, unsign
    if (msg)
       lima_render_msg(vid, vid->screen, msg, vid->screen->w, vid->screen->h, vid->screen->format);
 
+   char buffer[128], buffer_fps[128];
+   bool fps_draw = g_settings.fps_show;
+   if (fps_draw)
+   {
+      gfx_get_fps(buffer, sizeof(buffer), fps_draw ? buffer_fps : NULL, sizeof(buffer_fps));
+      msg_queue_push(g_extern.msg_queue, buffer_fps, 1, 1);
+   }
+   
    if (SDL_MUSTLOCK(vid->screen))
       SDL_UnlockSurface(vid->screen);
 
