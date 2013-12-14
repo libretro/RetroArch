@@ -140,6 +140,10 @@ core_info_list_t *core_info_list_new(const char *modules_path)
          if (config_get_string(core_info[i].data, "authors", &core_info[i].authors) &&
                core_info[i].authors)
             core_info[i].authors_list = string_split(core_info[i].authors, "|");
+
+         if (config_get_string(core_info[i].data, "permissions", &core_info[i].permissions) &&
+               core_info[i].permissions)
+            core_info[i].permissions_list = string_split(core_info[i].permissions, "|");
       }
 
       if (!core_info[i].display_name)
@@ -173,8 +177,10 @@ void core_info_list_free(core_info_list_t *core_info_list)
       free(info->display_name);
       free(info->supported_extensions);
       free(info->authors);
+      free(info->permissions);
       string_list_free(info->supported_extensions_list);
       string_list_free(info->authors_list);
+      string_list_free(info->permissions_list);
       config_file_free(info->data);
 
       for (j = 0; j < info->firmware_count; j++)
