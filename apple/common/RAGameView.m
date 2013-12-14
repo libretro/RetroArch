@@ -312,32 +312,30 @@ didOutputSampleBuffer:(CMSampleBufferRef)sampleBuffer
 
 static RAScreen* get_chosen_screen()
 {
-#ifdef MAC_OS_X_VERSION_10_7
-    @autoreleasepool {
-        if (g_settings.video.monitor_index >= RAScreen.screens.count)
-        {
-            RARCH_WARN("video_monitor_index is greater than the number of connected monitors; using main screen instead.\n");
-            return RAScreen.mainScreen;
-        }
-        
-        NSArray *screens = [RAScreen screens];
-        RAScreen *s = (RAScreen*)[screens objectAtIndex:g_settings.video.monitor_index];
-        return s;
-    }
-#else
+#ifdef OSX
    NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
-	
+#else
+   @autoreleasepool {
+#endif
+      
    if (g_settings.video.monitor_index >= RAScreen.screens.count)
    {
       RARCH_WARN("video_monitor_index is greater than the number of connected monitors; using main screen instead.\n");
+#ifdef OSX
       [pool drain];
+#endif
       return RAScreen.mainScreen;
    }
 	
    NSArray *screens = [RAScreen screens];
    RAScreen *s = (RAScreen*)[screens objectAtIndex:g_settings.video.monitor_index];
+#ifdef OSX
    [pool drain];
+   [pool release];
+#endif
    return s;
+#ifdef IOS
+   }
 #endif
 }
 
@@ -390,19 +388,22 @@ bool apple_gfx_ctx_bind_api(enum gfx_ctx_api api, unsigned major, unsigned minor
    
 #ifdef OSX
       [g_context clearDrawable];
-      g_context = nil;
-      g_format = nil;
+      [g_context release], g_context = nil;
+      [g_format release], g_format = nil;
    
       NSOpenGLPixelFormatAttribute attributes [] = {
          NSOpenGLPFADoubleBuffer,	// double buffered
          NSOpenGLPFADepthSize,
 		  (NSOpenGLPixelFormatAttribute)16, // 16 bit depth buffer
 #ifdef MAC_OS_X_VERSION_10_7
-         (major || minor) ? NSOpenGLPFAOpenGLProfile : 0,
+        (major || minor) ? NSOpenGLPFAOpenGLProfile : 0,
 		  (major << 12) | (minor << 8),
 #endif
          (NSOpenGLPixelFormatAttribute)nil
       };
+
+      [g_format release];
+      [g_context release];
 
       g_format = [[NSOpenGLPixelFormat alloc] initWithAttributes:attributes];
       g_context = [[NSOpenGLContext alloc] initWithFormat:g_format shareContext:nil];

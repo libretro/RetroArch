@@ -27,19 +27,15 @@
 @end
 
 @interface RetroArch_OSX : NSObject<RetroArch_Platform, NSApplicationDelegate>
-{
-@public
-   NSWindow IBOutlet *window;
-}
+@property (nonatomic, retain) NSWindow IBOutlet* window;
+@property (nonatomic, copy) NSString* configDirectory;    // e.g. /var/mobile/Documents/.RetroArch
+@property (nonatomic, copy) NSString* globalConfigFile;   // e.g. /var/mobile/Documents/.RetroArch/retroarch.cfg
+@property (nonatomic, copy) NSString* coreDirectory;      // e.g. /Applications/RetroArch.app/modules
 
 + (RetroArch_OSX*)get;
 
 - (void)loadingCore:(NSString*)core withFile:(const char*)file;
 - (void)unloadingCore:(NSString*)core;
-
-@property (nonatomic) NSString* configDirectory;    // e.g. /var/mobile/Documents/.RetroArch
-@property (nonatomic) NSString* globalConfigFile;   // e.g. /var/mobile/Documents/.RetroArch/retroarch.cfg
-@property (nonatomic) NSString* coreDirectory;      // e.g. /Applications/RetroArch.app/modules
 
 @end
 

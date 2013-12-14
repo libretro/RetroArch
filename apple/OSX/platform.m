@@ -24,7 +24,7 @@
 
 #include "file.h"
 
-static const void* const associated_core_key = &associated_core_key;
+static void* const associated_core_key = (void*)&associated_core_key;
 
 @interface RApplication : NSApplication
 @end
@@ -72,15 +72,40 @@ static const void* const associated_core_key = &associated_core_key;
 
 @end
 
+@interface RetroArch_OSX()
+@property (nonatomic, retain) NSWindowController* settingsWindow;
+@property (nonatomic, retain) NSWindow IBOutlet* coreSelectSheet;
+@property (nonatomic, copy) NSString* file;
+@property (nonatomic, copy) NSString* core;
+@end
+
 @implementation RetroArch_OSX
 {
-   NSWindow IBOutlet* _coreSelectSheet;
-
    bool _isTerminating;
    bool _loaded;
    bool _wantReload;
-   NSString* _file;
-   NSString* _core;
+}
+
+@synthesize window = _window;
+@synthesize configDirectory = _configDirectory;
+@synthesize globalConfigFile = _globalConfigFile;
+@synthesize coreDirectory = _coreDirectory;
+@synthesize settingsWindow = _settingsWindow;
+@synthesize coreSelectSheet = _coreSelectSheet;
+@synthesize file = _file;
+@synthesize core = _core;
+
+- (void)dealloc
+{
+   [_window release];
+   [_configDirectory release];
+   [_globalConfigFile release];
+   [_coreDirectory release];
+   [_coreSelectSheet release];
+   [_settingsWindow release];
+   [_file release];
+   [_core release];
+   [super dealloc];
 }
 
 + (RetroArch_OSX*)get
@@ -94,20 +119,21 @@ static const void* const associated_core_key = &associated_core_key;
    _loaded = true;
 
    NSArray* paths = NSSearchPathForDirectoriesInDomains(NSApplicationSupportDirectory, NSUserDomainMask, YES);
-   self.configDirectory = [paths[0] stringByAppendingPathComponent:@"RetroArch"];
+   self.configDirectory = [[paths objectAtIndex:0] stringByAppendingPathComponent:@"RetroArch"];
    self.globalConfigFile = [NSString stringWithFormat:@"%@/retroarch.cfg", self.configDirectory];
    self.coreDirectory = [NSBundle.mainBundle.bundlePath stringByAppendingPathComponent:@"Contents/Resources/modules"];
 
-   [window setCollectionBehavior:NSWindowCollectionBehaviorFullScreenPrimary];
-   window.acceptsMouseMovedEvents = YES;
+   self.window.acceptsMouseMovedEvents = YES;
    
-   RAGameView.get.frame = [window.contentView bounds];
-   [window.contentView setAutoresizesSubviews:YES];
-   [window.contentView addSubview:RAGameView.get];   
-   [window makeFirstResponder:RAGameView.get];
+   RAGameView.get.frame = [self.window.contentView bounds];
+   [self.window.contentView setAutoresizesSubviews:YES];
+   [self.window.contentView addSubview:RAGameView.get];
+   [self.window makeFirstResponder:RAGameView.get];
+   
+   self.settingsWindow = [[[NSWindowController alloc] initWithWindowNibName:@"Settings"] autorelease];
    
    // Create core select list
-   NSComboBox* cb = (NSComboBox*)[_coreSelectSheet.contentView viewWithTag:1];
+   NSComboBox* cb = (NSComboBox*)[self.coreSelectSheet.contentView viewWithTag:1];
 
    apple_core_info_set_core_path(self.coreDirectory.UTF8String);
    apple_core_info_set_config_path(self.configDirectory.UTF8String);
@@ -154,9 +180,9 @@ static const void* const associated_core_key = &associated_core_key;
 
 - (void)application:(NSApplication *)sender openFiles:(NSArray *)filenames
 {
-   if (filenames.count == 1 && filenames[0])
+   if (filenames.count == 1 && [filenames objectAtIndex:0])
    {
-      _file = filenames[0];
+      self.file = [filenames objectAtIndex:0];
       
       if (!_loaded)
          _wantReload = true;
@@ -175,48 +201,48 @@ static const void* const associated_core_key = &associated_core_key;
 - (void)openDocument:(id)sender
 {
    NSOpenPanel* panel = [NSOpenPanel openPanel];
-   [panel beginSheetModalForWindow:window completionHandler:^(NSInteger result)
+   [panel beginSheetModalForWindow:self.window completionHandler:^(NSInteger result)
    {
       [NSApplication.sharedApplication stopModal];
    
       if (result == NSOKButton && panel.URL)
       {
-         _file = panel.URL.path;
+         self.file = panel.URL.path;
          [self performSelector:@selector(chooseCore) withObject:nil afterDelay:.5f];
       }
    }];
    [NSApplication.sharedApplication runModalForWindow:panel];
 }
 
-// This utility function will queue the _core and _file instance values for running.
+// This utility function will queue the self.core and self.file instance values for running.
 // If the emulator thread is already running it will tell it to quit.
 - (void)runCore
 {
    _wantReload = apple_is_running;
 
    if (!apple_is_running)
-      apple_run_core(_core, _file.UTF8String);
+      apple_run_core(self.core, self.file.UTF8String);
    else
       apple_frontend_post_event(apple_event_basic_command, (void*)QUIT);
 }
 
 - (void)chooseCore
 {
-   [NSApplication.sharedApplication beginSheet:_coreSelectSheet modalForWindow:window modalDelegate:nil didEndSelector:nil contextInfo:nil];
-   [NSApplication.sharedApplication runModalForWindow:_coreSelectSheet];
+   [NSApplication.sharedApplication beginSheet:self.coreSelectSheet modalForWindow:self.window modalDelegate:nil didEndSelector:nil contextInfo:nil];
+   [NSApplication.sharedApplication runModalForWindow:self.coreSelectSheet];
 }
 
 - (IBAction)coreWasChosen:(id)sender
 {
    [NSApplication.sharedApplication stopModal];
-   [NSApplication.sharedApplication endSheet:_coreSelectSheet returnCode:0];
-   [_coreSelectSheet orderOut:self];
+   [NSApplication.sharedApplication endSheet:self.coreSelectSheet returnCode:0];
+   [self.coreSelectSheet orderOut:self];
 
    if (_isTerminating)
       return;
 
-   NSComboBox* cb = (NSComboBox*)[_coreSelectSheet.contentView viewWithTag:1];
-   _core = objc_getAssociatedObject(cb.objectValueOfSelectedItem, associated_core_key);
+   NSComboBox* cb = (NSComboBox*)[self.coreSelectSheet.contentView viewWithTag:1];
+   self.core = objc_getAssociatedObject(cb.objectValueOfSelectedItem, associated_core_key);
 
    [self runCore];
 }
@@ -234,7 +260,7 @@ static const void* const associated_core_key = &associated_core_key;
       [NSApplication.sharedApplication terminate:nil];
 
    if (_wantReload)
-      apple_run_core(_core, _file.UTF8String);
+      apple_run_core(self.core, self.file.UTF8String);
    else if(apple_use_tv_mode)
       apple_run_core(nil, 0);
    else
@@ -251,8 +277,7 @@ static const void* const associated_core_key = &associated_core_key;
 
 - (IBAction)showPreferences:(id)sender
 {
-   NSWindowController* wc = [[NSWindowController alloc] initWithWindowNibName:@"Settings"];
-   [NSApp runModalForWindow:wc.window];
+   [NSApp runModalForWindow:self.settingsWindow.window];
 }
 
 - (IBAction)basicEvent:(id)sender

@@ -31,11 +31,12 @@ void apple_display_alert(NSString* message, NSString* title)
                                              otherButtonTitles:nil];
    [alert show];
 #else
-   NSAlert* alert = [NSAlert new];
+   NSAlert* alert = [[NSAlert new] autorelease];
+   
    alert.messageText = title ? title : @"RetroArch";
    alert.informativeText = message;
    alert.alertStyle = NSInformationalAlertStyle;
-   [alert beginSheetModalForWindow:RetroArch_OSX.get->window
+   [alert beginSheetModalForWindow:RetroArch_OSX.get.window
           modalDelegate:apple_platform
           didEndSelector:@selector(alertDidEnd:returnCode:contextInfo:)
           contextInfo:nil];

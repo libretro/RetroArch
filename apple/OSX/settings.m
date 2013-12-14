@@ -21,7 +21,7 @@
 #include "driver.h"
 #include "input/input_common.h"
 
-static const void* associated_name_tag = (void*)&associated_name_tag;
+static void* const associated_name_tag = (void*)&associated_name_tag;
 
 @interface RAInputBinder : NSWindow
 @property (nonatomic, retain) NSTimer* timer;
@@ -29,14 +29,14 @@ static const void* associated_name_tag = (void*)&associated_name_tag;
 @end
 
 @implementation RAInputBinder
+@synthesize timer = _timer;
+@synthesize setting = _setting;
 
-#if 0
 - (void)dealloc
 {
    [_timer release];
    [super dealloc];
 }
-#endif
 
 - (void)runForSetting:(const rarch_setting_t*)setting onWindow:(NSWindow*)window
 {
@@ -95,8 +95,14 @@ static const void* associated_name_tag = (void*)&associated_name_tag;
 @end
 
 @implementation RASettingsDelegate
+@synthesize binderWindow = _binderWindow;
+@synthesize booleanCell = _booleanCell;
+@synthesize binderCell = _binderCell;
+@synthesize table = _table;
+@synthesize outline = _outline;
+@synthesize settings = _settings;
+@synthesize currentGroup = _currentGroup;
 
-#if 0
 - (void)dealloc
 {
    [_binderWindow release];
@@ -109,7 +115,6 @@ static const void* associated_name_tag = (void*)&associated_name_tag;
    
    [super dealloc];
 }
-#endif
 
 - (void)awakeFromNib
 {
@@ -136,7 +141,8 @@ static const void* associated_name_tag = (void*)&associated_name_tag;
          
          case ST_END_GROUP:
          {
-            [self.settings addObject:thisGroup];
+            if (thisGroup)
+               [self.settings addObject:thisGroup];
             thisGroup = nil;
             break;
          }
@@ -150,7 +156,8 @@ static const void* associated_name_tag = (void*)&associated_name_tag;
          
          case ST_END_SUB_GROUP:
          {
-            [thisGroup addObject:thisSubGroup];
+            if (thisSubGroup)
+               [thisGroup addObject:thisSubGroup];
             thisSubGroup = nil;
             break;
          }
@@ -183,12 +190,12 @@ static const void* associated_name_tag = (void*)&associated_name_tag;
 
 - (id)tableView:(NSTableView *)tableView objectValueForTableColumn:(NSTableColumn *)tableColumn row:(NSInteger)row
 {
-   return objc_getAssociatedObject(self.settings[row], associated_name_tag);
+   return objc_getAssociatedObject([self.settings objectAtIndex:row], associated_name_tag);
 }
 
 - (void)tableViewSelectionDidChange:(NSNotification *)aNotification
 {
-   self.currentGroup = self.settings[self.table.selectedRow];
+   self.currentGroup = [self.settings objectAtIndex:self.table.selectedRow];
    [self.outline reloadData];
 }
 
@@ -200,7 +207,7 @@ static const void* associated_name_tag = (void*)&associated_name_tag;
 
 - (id)outlineView:(NSOutlineView *)outlineView child:(NSInteger)index ofItem:(id)item
 {
-   return (item == nil) ? self.currentGroup[index] : [item objectAtIndex:index];
+   return (item == nil) ? [self.currentGroup objectAtIndex:index] : [item objectAtIndex:index];
 }
 
 - (BOOL)outlineView:(NSOutlineView *)outlineView isItemExpandable:(id)item

@@ -51,7 +51,10 @@ void apple_run_core(NSString* core, const char* file)
 
       [apple_platform loadingCore:core withFile:file];
 
-      apple_core = core;
+#ifdef OSX
+      [apple_core release];
+#endif
+      apple_core = [core copy];
       apple_is_running = true;
 
       static char config_path[PATH_MAX];
@@ -97,13 +100,17 @@ void apple_rarch_exited(void* result)
       apple_display_alert(@"Failed to load content.", 0);
 
    NSString* used_core = apple_core;
-   apple_core = 0; 
+   apple_core = 0;
 
    if (apple_is_running)
    {
       apple_is_running = false;
       [apple_platform unloadingCore:used_core];
    }
+
+#ifdef OSX
+   [used_core release];
+#endif
 
    if (apple_use_tv_mode)
       apple_run_core(nil, 0);
