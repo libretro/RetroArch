@@ -29,6 +29,11 @@ static void* const associated_name_tag = (void*)&associated_name_tag;
 @end
 
 @implementation RAInputBinder
+{
+   NSTimer* _timer;
+   const rarch_setting_t* _setting;
+}
+
 @synthesize timer = _timer;
 @synthesize setting = _setting;
 
@@ -95,6 +100,16 @@ static void* const associated_name_tag = (void*)&associated_name_tag;
 @end
 
 @implementation RASettingsDelegate
+{
+   RAInputBinder* _binderWindow;
+   NSButtonCell* _booleanCell;
+   NSTextFieldCell* _binderCell;
+   NSTableView* _table;
+   NSOutlineView* _outline;
+   NSMutableArray* _settings;
+   NSMutableArray* _currentGroup;
+}
+
 @synthesize binderWindow = _binderWindow;
 @synthesize booleanCell = _booleanCell;
 @synthesize binderCell = _binderCell;

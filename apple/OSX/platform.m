@@ -81,6 +81,15 @@ static void* const associated_core_key = (void*)&associated_core_key;
 
 @implementation RetroArch_OSX
 {
+   NSWindow* _window;
+   NSString* _configDirectory;
+   NSString* _globalConfigFile;
+   NSString* _coreDirectory;
+   NSWindowController* _settingsWindow;
+   NSWindow* _coreSelectSheet;
+   NSString* _file;
+   NSString* _core;
+   
    bool _isTerminating;
    bool _loaded;
    bool _wantReload;

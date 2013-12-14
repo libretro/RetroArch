@@ -331,7 +331,6 @@ static RAScreen* get_chosen_screen()
    RAScreen *s = (RAScreen*)[screens objectAtIndex:g_settings.video.monitor_index];
 #ifdef OSX
    [pool drain];
-   [pool release];
 #endif
    return s;
 #ifdef IOS
