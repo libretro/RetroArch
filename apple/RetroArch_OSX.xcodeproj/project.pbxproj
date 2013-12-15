@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		50535530185E0F4000926C26 /* CoreLocation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 5053552F185E0F4000926C26 /* CoreLocation.framework */; };
 		9620F663178FD4D3001B3B81 /* settings.m in Sources */ = {isa = PBXBuildFile; fileRef = 9620F662178FD4D3001B3B81 /* settings.m */; };
 		962EE0E2178B3DF6004224FF /* IOKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 962EE0E1178B3DF6004224FF /* IOKit.framework */; };
 		96355CE31788E72A0010DBFA /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 96355CE21788E72A0010DBFA /* Cocoa.framework */; };
@@ -27,6 +28,7 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		5053552F185E0F4000926C26 /* CoreLocation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreLocation.framework; path = System/Library/Frameworks/CoreLocation.framework; sourceTree = SDKROOT; };
 		9620F662178FD4D3001B3B81 /* settings.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = settings.m; path = OSX/settings.m; sourceTree = SOURCE_ROOT; };
 		962EE0E1178B3DF6004224FF /* IOKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = IOKit.framework; path = ../../../../../../../System/Library/Frameworks/IOKit.framework; sourceTree = "<group>"; };
 		96355CDF1788E72A0010DBFA /* RetroArch.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RetroArch.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -59,6 +61,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				50535530185E0F4000926C26 /* CoreLocation.framework in Frameworks */,
 				962EE0E2178B3DF6004224FF /* IOKit.framework in Frameworks */,
 				967894A91788F0E500D6CA69 /* AudioUnit.framework in Frameworks */,
 				967894A71788F0D900D6CA69 /* OpenGL.framework in Frameworks */,
@@ -94,6 +97,7 @@
 		96355CE11788E72A0010DBFA /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				5053552F185E0F4000926C26 /* CoreLocation.framework */,
 				967894A81788F0E500D6CA69 /* AudioUnit.framework */,
 				967894A61788F0D900D6CA69 /* OpenGL.framework */,
 				967894A21788F0C200D6CA69 /* CoreAudio.framework */,
