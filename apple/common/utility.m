@@ -33,14 +33,14 @@ void apple_display_alert(NSString* message, NSString* title)
 #else
    NSAlert* alert = [[NSAlert new] autorelease];
    
-   alert.messageText = title ? title : @"RetroArch";
-   alert.informativeText = message;
-   alert.alertStyle = NSInformationalAlertStyle;
-   [alert beginSheetModalForWindow:RetroArch_OSX.get.window
+   [alert setMessageText:title ? title : @"RetroArch"];
+   [alert setInformativeText:message];
+   [alert setAlertStyle:NSInformationalAlertStyle];
+   [alert beginSheetModalForWindow:[RetroArch_OSX get].window
           modalDelegate:apple_platform
           didEndSelector:@selector(alertDidEnd:returnCode:contextInfo:)
           contextInfo:nil];
-   [[NSApplication sharedApplication] runModalForWindow:alert.window];
+   [[NSApplication sharedApplication] runModalForWindow:[alert window]];
 #endif
 }
 
@@ -65,7 +65,7 @@ NSString *apple_get_core_id(const core_info_t *core)
 
 NSString *apple_get_core_display_name(NSString *core_id)
 {
-   const core_info_t *core = apple_core_info_list_get_by_id(core_id.UTF8String);
+   const core_info_t *core = apple_core_info_list_get_by_id([core_id UTF8String]);
    return core ? BOXSTRING(core->display_name) : core_id;
 }
 
@@ -75,29 +75,29 @@ NSString *apple_get_core_display_name(NSString *core_id)
 {
    if ((self = [super init]))
    {
-      self.allowsFloats = (setting->type == ST_FLOAT);
+      [self setAllowsFloats:(setting->type == ST_FLOAT)];
       
       if (setting->min != setting->max)
       {
-         self.minimum = BOXFLOAT(setting->min);
-         self.maximum = BOXFLOAT(setting->max);
+         [self setMinimum:BOXFLOAT(setting->min)];
+         [self setMaximum:BOXFLOAT(setting->max)];
       }
       else
       {
          if (setting->type == ST_INT)
          {
-            self.minimum = BOXINT(INT_MIN);
-            self.maximum = BOXINT(INT_MAX);
+            [self setMinimum:BOXINT(INT_MIN)];
+            [self setMaximum:BOXINT(INT_MAX)];
          }
          else if (setting->type == ST_UINT)
          {
-            self.minimum = BOXUINT(0);
-            self.maximum = BOXUINT(UINT_MAX);
+            [self setMinimum:BOXUINT(0)];
+            [self setMaximum:BOXUINT(UINT_MAX)];
          }
          else if (setting->type == ST_FLOAT)
          {
-            self.minimum = BOXFLOAT(FLT_MIN);
-            self.maximum = BOXFLOAT(FLT_MAX);
+            [self setMinimum:BOXFLOAT(FLT_MIN)];
+            [self setMaximum:BOXFLOAT(FLT_MAX)];
          }
       }
    }
@@ -109,14 +109,14 @@ NSString *apple_get_core_display_name(NSString *core_id)
 {
    bool hasDot = false;
 
-   if (partialString.length)
-      for (int i = 0; i != partialString.length; i ++)
+   if ([partialString length])
+      for (int i = 0; i != [partialString length]; i ++)
       {
          unichar ch = [partialString characterAtIndex:i];
          
-         if (i == 0 && (!self.minimum || self.minimum.intValue < 0) && ch == '-')
+         if (i == 0 && (![self minimum] || [[self minimum] intValue] < 0) && ch == '-')
             continue;
-         else if (self.allowsFloats && !hasDot && ch == '.')
+         else if ([self allowsFloats] && !hasDot && ch == '.')
             hasDot = true;
          else if (!isdigit(ch))
             return NO;
@@ -128,7 +128,7 @@ NSString *apple_get_core_display_name(NSString *core_id)
 #ifdef IOS
 - (BOOL)textField:(UITextField *)textField shouldChangeCharactersInRange:(NSRange)range replacementString:(NSString *)string
 {
-   NSString* text = [textField.text stringByReplacingCharactersInRange:range withString:string];
+   NSString* text = [[textField text] stringByReplacingCharactersInRange:range withString:string];
    return [self isPartialStringValid:text newEditingString:nil errorDescription:nil];
 }
 #endif

@@ -187,12 +187,12 @@ static void* const associated_name_tag = (void*)&associated_name_tag;
       }
    }
    
-   setting_data_load_config_path(setting_data_get_list(), apple_platform.globalConfigFile.UTF8String);
+   setting_data_load_config_path(setting_data_get_list(), [apple_platform.globalConfigFile UTF8String]);
 }
 
 - (void)windowWillClose:(NSNotification *)notification
 {
-   setting_data_save_config_path(setting_data_get_list(), apple_platform.globalConfigFile.UTF8String);
+   setting_data_save_config_path(setting_data_get_list(), [apple_platform.globalConfigFile UTF8String]);
 
    apple_exit_stasis(true);
 
@@ -202,7 +202,7 @@ static void* const associated_name_tag = (void*)&associated_name_tag;
 #pragma mark Section Table
 - (NSInteger)numberOfRowsInTableView:(NSTableView*)view
 {
-   return self.settings.count;
+   return [self.settings count];
 }
 
 - (id)tableView:(NSTableView *)tableView objectValueForTableColumn:(NSTableColumn *)tableColumn row:(NSInteger)row
@@ -212,14 +212,14 @@ static void* const associated_name_tag = (void*)&associated_name_tag;
 
 - (void)tableViewSelectionDidChange:(NSNotification *)aNotification
 {
-   self.currentGroup = [self.settings objectAtIndex:self.table.selectedRow];
+   self.currentGroup = [self.settings objectAtIndex:[self.table selectedRow]];
    [self.outline reloadData];
 }
 
 #pragma mark Setting Outline
 - (NSInteger)outlineView:(NSOutlineView *)outlineView numberOfChildrenOfItem:(id)item
 {
-   return (item == nil) ? self.currentGroup.count : [item count];
+   return (item == nil) ? [self.currentGroup count] : [item count];
 }
 
 - (id)outlineView:(NSOutlineView *)outlineView child:(NSInteger)index ofItem:(id)item
@@ -244,7 +244,7 @@ static void* const associated_name_tag = (void*)&associated_name_tag;
 
    if ([item isKindOfClass:[NSArray class]])
    {
-      if ([tableColumn.identifier isEqualToString:@"left"])
+      if ([[tableColumn identifier] isEqualToString:@"left"])
          return objc_getAssociatedObject(item, associated_name_tag);
       else
          return @"";
@@ -255,7 +255,7 @@ static void* const associated_name_tag = (void*)&associated_name_tag;
       const rarch_setting_t* setting = &setting_data[[item intValue]];
       char buffer[PATH_MAX];
       
-      if ([tableColumn.identifier isEqualToString:@"left"])
+      if ([[tableColumn identifier] isEqualToString:@"left"])
          return BOXSTRING(setting->short_description);
       else
       {
@@ -274,10 +274,10 @@ static void* const associated_name_tag = (void*)&associated_name_tag;
       return nil;
    
    if ([item isKindOfClass:[NSArray class]])
-      return tableColumn.dataCell;
+      return [tableColumn dataCell];
    
-   if ([tableColumn.identifier isEqualToString:@"left"])
-      return tableColumn.dataCell;
+   if ([[tableColumn identifier] isEqualToString:@"left"])
+      return [tableColumn dataCell];
 
    const rarch_setting_t* setting_data = setting_data_get_list();
    const rarch_setting_t* setting = &setting_data[[item intValue]];
@@ -286,15 +286,15 @@ static void* const associated_name_tag = (void*)&associated_name_tag;
    {
       case ST_BOOL: return self.booleanCell;
       case ST_BIND: return self.binderCell;
-      default:      return tableColumn.dataCell;
+      default:      return [tableColumn dataCell];
    }
 }
 
 - (IBAction)outlineViewClicked:(id)sender
 {
-   if (self.outline.clickedColumn == 1)
+   if ([self.outline clickedColumn] == 1)
    {
-      id item = [self.outline itemAtRow:self.outline.clickedRow];
+      id item = [self.outline itemAtRow:[self.outline clickedRow]];
       
       if ([item isKindOfClass:[NSNumber class]])
       {
@@ -304,7 +304,7 @@ static void* const associated_name_tag = (void*)&associated_name_tag;
          switch (setting->type)
          {
             case ST_BOOL: *setting->value.boolean = !*setting->value.boolean; return;
-            case ST_BIND: [self.binderWindow runForSetting:setting onWindow:self.outline.window]; return;
+            case ST_BIND: [self.binderWindow runForSetting:setting onWindow:[self.outline window]]; return;
             default: return;
          }
       }
@@ -313,18 +313,18 @@ static void* const associated_name_tag = (void*)&associated_name_tag;
 
 - (void)controlTextDidEndEditing:(NSNotification*)notification
 {
-   if (notification.object == self.outline)
+   if ([notification object] == self.outline)
    {
       NSText* editor = [[notification userInfo] objectForKey:@"NSFieldEditor"];
       
-      id item = [self.outline itemAtRow:self.outline.selectedRow];
+      id item = [self.outline itemAtRow:[self.outline selectedRow]];
 
       if ([item isKindOfClass:[NSNumber class]])
       {
          const rarch_setting_t* setting_data = setting_data_get_list();
          const rarch_setting_t* setting = &setting_data[[item intValue]];
          
-         setting_data_set_with_string_representation(setting, editor.string.UTF8String);
+         setting_data_set_with_string_representation(setting, [editor.string UTF8String]);
       }
    }
 }
