@@ -8,13 +8,8 @@ import android.util.Log;
 
 public class RetroActivityCommon extends RetroActivityLocation
  {
-	/* PENDING INTENT VARIABLES */
 	private Intent pendingIntent = null;
-
-	/* INTENT
-	 * TODO: Refactor to some class that RetroActivityCommon will implement
-	 * TODO: Make sure after refactoring to class that JNI will still work */
-
+	
 	@Override
 	public void onNewIntent(Intent intent)
 	{
@@ -83,5 +78,10 @@ public class RetroActivityCommon extends RetroActivityLocation
 		Intent retro = new Intent(this, MainMenuActivity.class);
 		retro.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
 		startActivity(retro);
+	}
+	
+	public int getAndroidOSVersion()
+	{
+		return android.os.Build.VERSION.SDK_INT;
 	}
 }
