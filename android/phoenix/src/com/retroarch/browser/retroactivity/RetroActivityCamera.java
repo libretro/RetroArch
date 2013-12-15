@@ -1,4 +1,4 @@
-package com.retroarch.browser;
+package com.retroarch.browser.retroactivity;
 
 import java.io.IOException;
 
@@ -15,14 +15,23 @@ import android.util.Log;
 
 //For Android 3.0 and up
 
+/**
+ * Class which provides {@link Camera} functionality
+ * to {@link RetroActivityFuture}.
+ */
 @SuppressLint("NewApi")
-public class RetroActivityCamera extends RetroActivityCommon {
+public class RetroActivityCamera extends RetroActivityCommon
+{
 	private Camera mCamera = null;
 	private long lastTimestamp = 0;
 	private SurfaceTexture texture;
 	private boolean updateSurface = true;
 	private boolean camera_service_running = false;
 
+	/**
+	 * Executed when the {@link Camera}
+	 * is staring to capture.
+	 */
 	public void onCameraStart()
 	{
 		if (camera_service_running)
@@ -32,6 +41,13 @@ public class RetroActivityCamera extends RetroActivityCommon {
 		camera_service_running = true;
 	}
 
+	/**
+	 * Executed when the {@link Camera} is done capturing.
+	 * <p>
+	 * Note that this does not release the currently held 
+	 * {@link Camera} instance and must be freed by calling
+	 * {@link #onCameraFree}
+	 */
 	public void onCameraStop()
 	{
 		if (!camera_service_running)
@@ -40,13 +56,19 @@ public class RetroActivityCamera extends RetroActivityCommon {
 		mCamera.stopPreview();
 		camera_service_running = false;
 	}
-	
+
+	/**
+	 * Releases the currently held {@link Camera} instance.
+	 */
 	public void onCameraFree()
 	{
 		onCameraStop();
 		mCamera.release();
 	}
 
+	/**
+	 * Initializes the camera for use.
+	 */
 	public void onCameraInit()
 	{
 		if (mCamera != null)
@@ -55,6 +77,11 @@ public class RetroActivityCamera extends RetroActivityCommon {
 		mCamera = Camera.open();
 	}
 
+	/**
+	 * Polls the camera for updates to the {@link SurfaceTexture}.
+	 * 
+	 * @return true if polling was successful, false otherwise.
+	 */
 	public boolean onCameraPoll()
 	{
 		if (!camera_service_running)
@@ -85,80 +112,33 @@ public class RetroActivityCamera extends RetroActivityCommon {
 
 		return true;
 	}
-	
-	@Override
-	public void onCreate(Bundle savedInstanceState)
-	{
-        // Save the current setting for updates
-		SharedPreferences prefs = UserPreferences.getPreferences(this);
-		SharedPreferences.Editor edit = prefs.edit();
-		edit.putBoolean("CAMERA_UPDATES_ON", false);
-		edit.commit();
-		
-		camera_service_running = false;
-		
-		super.onCreate(savedInstanceState);
-	}
-	
-	@Override
-	public void onPause()
-	{
-        // Save the current setting for updates
-		SharedPreferences prefs = UserPreferences.getPreferences(this);
-		SharedPreferences.Editor edit = prefs.edit();
-		edit.putBoolean("CAMERA_UPDATES_ON", camera_service_running);
-		edit.commit();
-		
-		onCameraStop();
-		super.onPause();
-	}
-	
-	@Override
-	public void onResume()
-	{
-		SharedPreferences prefs = UserPreferences.getPreferences(this);
-		SharedPreferences.Editor edit = prefs.edit();
-		
-        /*
-         * Get any previous setting for camera updates
-         * Gets "false" if an error occurs
-         */
-        if (prefs.contains("CAMERA_UPDATES_ON"))
-        {
-            camera_service_running = prefs.getBoolean("CAMERA_UPDATES_ON", false);
-            if (camera_service_running)
-            {
-            	onCameraStart();
-            }
-        // Otherwise, turn off camera updates
-        }
-        else
-        {
-            edit.putBoolean("CAMERA_UPDATES_ON", false);
-            edit.commit();
-            camera_service_running = false;
-        }
-		super.onResume();
-	}
-	
-	@Override
-	public void onDestroy()
-	{
-		onCameraFree();
-		super.onDestroy();
-	}
-	
-	@Override
-	public void onStop()
-	{
-		onCameraStop();
-		super.onStop();
-	}
 
+	/**
+	 * Initializes the {@link SurfaceTexture} used by the
+	 * {@link Camera} with a given OpenGL texure ID.
+	 * 
+	 * @param gl_texid texture ID to initialize the 
+	 *        {@link SurfaceTexture} with.
+	 */
 	public void onCameraTextureInit(int gl_texid)
 	{
 		texture = new SurfaceTexture(gl_texid);
 		texture.setOnFrameAvailableListener(onCameraFrameAvailableListener);
+	}
+
+	/**
+	 * Sets the {@link Camera} texture with the texture represented
+	 * by the given OpenGL texture ID.
+	 * 
+	 * @param gl_texid     The texture ID representing the texture to set the camera to.
+	 * @throws IOException If setting the texture fails.
+	 */
+	public void onCameraSetTexture(int gl_texid) throws IOException
+	{
+		if (texture == null)
+			onCameraTextureInit(gl_texid);
+
+		mCamera.setPreviewTexture(texture);
 	}
 
 	private final OnFrameAvailableListener onCameraFrameAvailableListener = new OnFrameAvailableListener()
@@ -170,11 +150,71 @@ public class RetroActivityCamera extends RetroActivityCommon {
 		}
 	};
 
-	public void onCameraSetTexture(int gl_texid) throws IOException
+	@Override
+	public void onCreate(Bundle savedInstanceState)
 	{
-		if (texture == null)
-			onCameraTextureInit(gl_texid);
+		// Save the current setting for updates
+		SharedPreferences prefs = UserPreferences.getPreferences(this);
+		SharedPreferences.Editor edit = prefs.edit();
+		edit.putBoolean("CAMERA_UPDATES_ON", false);
+		edit.commit();
 
-		mCamera.setPreviewTexture(texture);
+		camera_service_running = false;
+
+		super.onCreate(savedInstanceState);
+	}
+
+	@Override
+	public void onPause()
+	{
+		// Save the current setting for updates
+		SharedPreferences prefs = UserPreferences.getPreferences(this);
+		SharedPreferences.Editor edit = prefs.edit();
+		edit.putBoolean("CAMERA_UPDATES_ON", camera_service_running);
+		edit.commit();
+		
+		onCameraStop();
+		super.onPause();
+	}
+
+	@Override
+	public void onResume()
+	{
+		SharedPreferences prefs = UserPreferences.getPreferences(this);
+		SharedPreferences.Editor edit = prefs.edit();
+
+		/*
+		 * Get any previous setting for camera updates
+		 * Gets "false" if an error occurs
+		 */
+		if (prefs.contains("CAMERA_UPDATES_ON"))
+		{
+			camera_service_running = prefs.getBoolean("CAMERA_UPDATES_ON", false);
+			if (camera_service_running)
+			{
+				onCameraStart();
+			}
+		}
+		else // Otherwise, turn off camera updates
+		{
+			edit.putBoolean("CAMERA_UPDATES_ON", false);
+			edit.commit();
+			camera_service_running = false;
+		}
+		super.onResume();
+	}
+
+	@Override
+	public void onDestroy()
+	{
+		onCameraFree();
+		super.onDestroy();
+	}
+
+	@Override
+	public void onStop()
+	{
+		onCameraStop();
+		super.onStop();
 	}
 }

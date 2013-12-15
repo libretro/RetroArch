@@ -1,4 +1,4 @@
-package com.retroarch.browser;
+package com.retroarch.browser.retroactivity;
 
 // For Android 2.3.x
 

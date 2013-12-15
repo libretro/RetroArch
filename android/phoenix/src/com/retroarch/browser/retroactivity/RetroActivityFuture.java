@@ -1,4 +1,4 @@
-package com.retroarch.browser;
+package com.retroarch.browser.retroactivity;
 
 public final class RetroActivityFuture extends RetroActivityCamera
 {
