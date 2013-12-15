@@ -114,14 +114,16 @@ static void handle_touch_event(NSArray* touches)
    }
 }
 
+@interface UIApplication(Superclass)
+- (void)handleKeyUIEvent:(UIEvent*)event;
+@end
+
 @interface RApplication : UIApplication
 @end
 
 @implementation RApplication
 
-// iOS7: This method is called instead of sendEvent for key events; do not try to merge it
-//       with the sendEvent method.
-- (void)handleKeyUIEvent:(UIEvent*)event
+- (void)processKeyEvent:(UIEvent*)event
 {
    if ([event respondsToSelector:@selector(_gsEvent)])
    {
@@ -136,6 +138,13 @@ static void handle_touch_event(NSArray* touches)
    }
 }
 
+// iOS7: This method is called instead of sendEvent for key events
+- (void)handleKeyUIEvent:(UIEvent*)event
+{
+   [super handleKeyUIEvent:event];
+   [self processKeyEvent:event];
+}
+
 - (void)sendEvent:(UIEvent *)event
 {
    [super sendEvent:event];
@@ -143,7 +152,7 @@ static void handle_touch_event(NSArray* touches)
    if ([[event allTouches] count])
       handle_touch_event(event.allTouches.allObjects);
 
-   [self handleKeyUIEvent:event];
+   [self processKeyEvent:event];
 }
 
 @end
