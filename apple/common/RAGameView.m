@@ -320,7 +320,7 @@ didOutputSampleBuffer:(CMSampleBufferRef)sampleBuffer
         locationManager = [[CLLocationManager alloc] init];
     
     locationManager.delegate = self;
-    locationManager.desiredAccuracy = kCLLocationAccuracyKilometer;
+    locationManager.desiredAccuracy = kCLLocationAccuracyBest;
     
     // Set a movement threshold for new events.
     locationManager.distanceFilter = 500; // meters - TODO - make configurable
@@ -338,6 +338,17 @@ didOutputSampleBuffer:(CMSampleBufferRef)sampleBuffer
 
 - (void)onLocationFree
 {
+}
+
+
+- (void)locationManager:(CLLocationManager *)manager didUpdateToLocation:(CLLocation *)newLocation fromLocation:(CLLocation *)oldLocation
+{
+   NSLog(@"====latitude %f, longitude %f", newLocation.coordinate.latitude, newLocation.coordinate.longitude);
+}
+
+- (void)locationManager:(CLLocationManager *)manager didUpdateLocations:(NSArray *)locations
+{
+   NSLog(@"==latitude %f, longitude %f", [[locations objectAtIndex:([locations     count]-1)] coordinate].latitude , [[locations objectAtIndex:([locations count]-1)]     coordinate].longitude);
 }
 
 @end
