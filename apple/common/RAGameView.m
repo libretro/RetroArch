@@ -23,6 +23,8 @@
 #include <CoreLocation/CoreLocation.h>
 
 static CLLocationManager *locationManager;
+static CLLocationDegrees currentLatitude;
+static CLLocationDegrees currentLongitude;
 
 // Define compatibility symbols and categories
 #ifdef IOS
@@ -338,17 +340,33 @@ didOutputSampleBuffer:(CMSampleBufferRef)sampleBuffer
 
 - (void)onLocationFree
 {
+    /* TODO - free location manager? */
+}
+
+- (float)onLocationGetLatitude
+{
+    return (float)currentLatitude;
+}
+
+- (float)onLocationGetLongitude
+{
+    return (float)currentLongitude;
 }
 
 
 - (void)locationManager:(CLLocationManager *)manager didUpdateToLocation:(CLLocation *)newLocation fromLocation:(CLLocation *)oldLocation
 {
-   NSLog(@"====latitude %f, longitude %f", newLocation.coordinate.latitude, newLocation.coordinate.longitude);
+    currentLatitude = newLocation.coordinate.latitude;
+    currentLongitude = newLocation.coordinate.longitude;
+    RARCH_LOG("didUpdateToLocation - latitude %f, longitude %f\n", (float)currentLatitude, (float)currentLongitude);
 }
 
 - (void)locationManager:(CLLocationManager *)manager didUpdateLocations:(NSArray *)locations
 {
-   NSLog(@"==latitude %f, longitude %f", [[locations objectAtIndex:([locations     count]-1)] coordinate].latitude , [[locations objectAtIndex:([locations count]-1)]     coordinate].longitude);
+
+    currentLatitude  = [[locations objectAtIndex:([locations     count]-1)] coordinate].latitude;
+    currentLongitude = [[locations objectAtIndex:([locations     count]-1)] coordinate].longitude;
+    RARCH_LOG("didUpdateLocations - latitude %f, longitude %f\n", (float)currentLatitude, (float)currentLongitude);
 }
 
 @end
