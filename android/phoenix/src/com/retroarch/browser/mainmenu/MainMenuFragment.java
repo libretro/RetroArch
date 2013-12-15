@@ -28,13 +28,13 @@ import com.retroarch.R;
 import com.retroarch.browser.CoreSelection;
 import com.retroarch.browser.HistorySelection;
 import com.retroarch.browser.NativeInterface;
-import com.retroarch.browser.RetroActivityFuture;
-import com.retroarch.browser.RetroActivityPast;
 import com.retroarch.browser.dirfragment.DirectoryFragment;
 import com.retroarch.browser.dirfragment.DirectoryFragment.OnDirectoryFragmentClosedListener;
 import com.retroarch.browser.mainmenu.gplwaiver.GPLWaiverDialogFragment;
 import com.retroarch.browser.preferences.fragments.util.PreferenceListFragment;
 import com.retroarch.browser.preferences.util.UserPreferences;
+import com.retroarch.browser.retroactivity.RetroActivityFuture;
+import com.retroarch.browser.retroactivity.RetroActivityPast;
 
 /**
  * Represents the fragment that handles the layout of the main menu.
