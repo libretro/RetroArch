@@ -20,6 +20,10 @@
 #include "gfx/gfx_common.h"
 #include "gfx/gfx_context.h"
 
+#include <CoreLocation/CoreLocation.h>
+
+static CLLocationManager *locationManager;
+
 // Define compatibility symbols and categories
 #ifdef IOS
 #include <AVFoundation/AVCaptureSession.h>
@@ -307,6 +311,34 @@ didOutputSampleBuffer:(CMSampleBufferRef)sampleBuffer
     CFRelease(textureCache);
 }
 #endif
+
+- (void)onLocationInit
+{
+    // Create the location manager if this object does not
+    // already have one.
+    if (nil == locationManager)
+        locationManager = [[CLLocationManager alloc] init];
+    
+    locationManager.delegate = self;
+    locationManager.desiredAccuracy = kCLLocationAccuracyKilometer;
+    
+    // Set a movement threshold for new events.
+    locationManager.distanceFilter = 500; // meters - TODO - make configurable
+}
+
+- (void)onLocationStart
+{
+    [locationManager startUpdatingLocation];
+}
+
+- (void)onLocationStop
+{
+    [locationManager stopUpdatingLocation];
+}
+
+- (void)onLocationFree
+{
+}
 
 @end
 
