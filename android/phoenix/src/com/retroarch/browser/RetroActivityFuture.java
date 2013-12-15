@@ -27,9 +27,7 @@ public final class RetroActivityFuture extends RetroActivityCommon
 	public void onCameraStart()
 	{
 		if (camera_service_running)
-		{
 			return;
-		}
 		
 		mCamera.startPreview();
 		camera_service_running = true;
@@ -37,11 +35,10 @@ public final class RetroActivityFuture extends RetroActivityCommon
 
 	public void onCameraStop()
 	{
-		if (camera_service_running)
-		{
-			mCamera.stopPreview();
-		}
+		if (!camera_service_running)
+			return;
 		
+		mCamera.stopPreview();
 		camera_service_running = false;
 	}
 	
@@ -53,10 +50,10 @@ public final class RetroActivityFuture extends RetroActivityCommon
 
 	public void onCameraInit()
 	{
-		if (mCamera == null)
-		{
-			mCamera = Camera.open();
-		}
+		if (mCamera != null)
+			return;
+		
+		mCamera = Camera.open();
 	}
 
 	public boolean onCameraPoll()
