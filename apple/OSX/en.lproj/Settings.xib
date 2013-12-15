@@ -240,7 +240,7 @@
 											<string key="NSFrameSize">{559, 539}</string>
 											<reference key="NSSuperview" ref="119087162"/>
 											<reference key="NSWindow"/>
-											<reference key="NSNextKeyView" ref="176799935"/>
+											<reference key="NSNextKeyView" ref="899143711"/>
 											<string key="NSReuseIdentifierKey">_NS:13</string>
 											<bool key="NSEnabled">YES</bool>
 											<bool key="NSAllowsLogicalLayoutDirection">NO</bool>
@@ -366,6 +366,7 @@
 									<string key="NSFrame">{{1, 541}, {486, 15}}</string>
 									<reference key="NSSuperview" ref="46895506"/>
 									<reference key="NSWindow"/>
+									<reference key="NSNextKeyView"/>
 									<string key="NSReuseIdentifierKey">_NS:60</string>
 									<bool key="NSAllowsLogicalLayoutDirection">NO</bool>
 									<int key="NSsFlags">1</int>
@@ -391,7 +392,7 @@
 							<string key="NSFrame">{{178, 20}, {561, 557}}</string>
 							<reference key="NSSuperview" ref="1006"/>
 							<reference key="NSWindow"/>
-							<reference key="NSNextKeyView" ref="119087162"/>
+							<reference key="NSNextKeyView" ref="176799935"/>
 							<string key="NSReuseIdentifierKey">_NS:9</string>
 							<int key="NSsFlags">133682</int>
 							<reference key="NSVScroller" ref="899143711"/>
@@ -482,6 +483,7 @@
 							<string key="NSFrame">{{384, 13}, {82, 32}}</string>
 							<reference key="NSSuperview" ref="729831377"/>
 							<reference key="NSWindow"/>
+							<reference key="NSNextKeyView"/>
 							<string key="NSReuseIdentifierKey">_NS:9</string>
 							<bool key="NSEnabled">YES</bool>
 							<object class="NSButtonCell" key="NSCell" id="637914132">
