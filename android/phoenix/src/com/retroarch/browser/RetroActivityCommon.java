@@ -305,7 +305,7 @@ LocationListener {
         {
             edit.putBoolean("LOCATION_UPDATES_ON", false);
             edit.commit();
-            location_service_running = true;
+            location_service_running = false;
         }
 
 		super.onResume();
