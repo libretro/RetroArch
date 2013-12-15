@@ -17,6 +17,7 @@
 #ifndef __RARCH_IOS_PLATFORM_H
 #define __RARCH_IOS_PLATFORM_H
 
+#include <CoreLocation/CoreLocation.h>
 #import <AVFoundation/AVCaptureOutput.h>
 #include "views.h"
 
@@ -39,8 +40,7 @@ extern apple_frontend_settings_t apple_frontend_settings;
 
 const void* apple_get_frontend_settings(void);
 
-
-@interface RAGameView : UIViewController<AVCaptureAudioDataOutputSampleBufferDelegate>
+@interface RAGameView : UIViewController<CLLocationManagerDelegate, AVCaptureAudioDataOutputSampleBufferDelegate>
 + (RAGameView*)get;
 @end
 

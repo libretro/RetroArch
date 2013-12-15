@@ -17,9 +17,10 @@
 #ifndef __RARCH_OSX_PLATFORM_H
 #define __RARCH_OSX_PLATFORM_H
 
-#import <AppKit/AppKit.h>
+#include <AppKit/AppKit.h>
+#include <CoreLocation/CoreLocation.h>
 
-@interface RAGameView : NSView
+@interface RAGameView : NSView<CLLocationManagerDelegate>
 
 + (RAGameView*)get;
 - (void)display;
