@@ -203,6 +203,8 @@ void input_autodetect_setup(void *data, char *msg, size_t sizeof_msg, unsigned p
       device = DEVICE_ARCHOS_GAMEPAD;
    else if (strstr(name_buf, "matrix_keyboard"))
       device = DEVICE_JXD_S5110;
+   else if (strstr(name_buf, "tincore_adc_joystick"))
+      device = DEVICE_JXD_S5110_SKELROM;
    else if (strstr(name_buf, "keypad-zeus") || (strstr(name_buf, "keypad-game-zeus")))
       device = DEVICE_XPERIA_PLAY;
    else if (strstr(name_buf, "Broadcom Bluetooth HID"))
