@@ -27,6 +27,8 @@ typedef struct rom_history rom_history_t;
 rom_history_t *rom_history_init(const char *path, size_t size);
 void rom_history_free(rom_history_t *hist);
 
+void rom_history_clear(rom_history_t *hist);
+
 size_t rom_history_size(rom_history_t *hist);
 
 void rom_history_get_index(rom_history_t *hist,

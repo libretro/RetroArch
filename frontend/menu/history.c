@@ -134,6 +134,14 @@ void rom_history_free(rom_history_t *hist)
    free(hist);
 }
 
+void rom_history_clear(rom_history_t *hist)
+{
+   size_t i;
+   for (i = 0; i < hist->cap; i++)
+      rom_history_free_entry(&hist->entries[i]);
+   hist->size = 0;
+}
+
 size_t rom_history_size(rom_history_t *hist)
 {
    return hist->size;

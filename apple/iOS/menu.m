@@ -84,6 +84,17 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
    [[self itemForIndexPath:indexPath] wasSelectedOnTableView:tableView ofController:self];
 }
 
+- (void)willReloadData
+{
+   
+}
+
+- (void)reloadData
+{
+   [self willReloadData];
+   [[self tableView] reloadData];
+}
+
 @end
 
 /*********************************************/
@@ -505,33 +516,49 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
 /*********************************************/
 @implementation RAHistoryMenu
 
+- (void)dealloc
+{
+   if (_history)
+      rom_history_free(_history);
+}
+
 - (id)initWithHistoryPath:(NSString *)historyPath
 {
    if ((self = [super initWithStyle:UITableViewStylePlain]))
    {
-      RAHistoryMenu* __weak weakSelf = self;
-   
       _history = rom_history_init(historyPath.UTF8String, 100);
-
-      NSMutableArray* section = [NSMutableArray arrayWithObject:@""];
-      [self.sections addObject:section];
-      
-      for (int i = 0; _history && i != rom_history_size(_history); i ++)
-      {
-         RAMenuItemBasic* item = [RAMenuItemBasic itemWithDescription:BOXSTRING(path_basename(apple_rom_history_get_path(weakSelf.history, i)))
-                                                  action:^{ apple_run_core(BOXSTRING(apple_rom_history_get_core_path(weakSelf.history, i)),
-                                                                           apple_rom_history_get_path(weakSelf.history, i)); }
-                                                  detail:^{ return BOXSTRING(apple_rom_history_get_core_name(weakSelf.history, i)); }];
-         [section addObject:item];
-      }
+      [self reloadData];
+      self.navigationItem.rightBarButtonItem = [[UIBarButtonItem alloc] initWithTitle:@"Clear History"
+                                                style:UIBarButtonItemStyleBordered target:self action:@selector(clearHistory)];
    }
    
    return self;
 }
 
-- (void)dealloc
+- (void)clearHistory
 {
-   rom_history_free(self.history);
+   if (_history)
+      rom_history_clear(_history);
+   [self reloadData];
+}
+
+- (void)willReloadData
+{
+   printf("DOING\n");
+   
+   RAHistoryMenu* __weak weakSelf = self;
+   NSMutableArray* section = [NSMutableArray arrayWithObject:@""];
+   
+   for (int i = 0; _history && i != rom_history_size(_history); i ++)
+   {
+      RAMenuItemBasic* item = [RAMenuItemBasic itemWithDescription:BOXSTRING(path_basename(apple_rom_history_get_path(weakSelf.history, i)))
+                                                            action:^{ apple_run_core(BOXSTRING(apple_rom_history_get_core_path(weakSelf.history, i)),
+                                                                                     apple_rom_history_get_path(weakSelf.history, i)); }
+                                                            detail:^{ return BOXSTRING(apple_rom_history_get_core_name(weakSelf.history, i)); }];
+      [section addObject:item];
+   }
+   
+   self.sections = [NSMutableArray arrayWithObject:section];
 }
 
 @end
