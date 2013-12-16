@@ -1,6 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2013 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2013 - Daniel De Matteis
+ *  Copyright (C) 2013-2013 - Steven Crowe
  * 
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -27,6 +28,7 @@ enum {
    ICADE_PROFILE_IPEGA_PG9017_MODE2,
    ICADE_PROFILE_GAMESTOP_WIRELESS,
    ICADE_PROFILE_G910,
+   ICADE_PROFILE_MOGA_HERO_POWER,
 } icade_profile_enums;
 
 enum {

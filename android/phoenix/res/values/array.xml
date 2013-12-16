@@ -52,6 +52,7 @@
         <item>iPega PG-9017 (Mode 2)</item>
         <item>Gamestop Wireless</item>
         <item>G910</item>
+        <item >Moga Hero Power</item>
     </string-array>
 
     <string-array name="icade_profiles_values" translatable="false">
@@ -60,6 +61,7 @@
         <item>2</item>
         <item>3</item>
         <item>4</item>
+        <item >5</item>
     </string-array>
     
     <string-array name="key_bind_values" translatable="false">
