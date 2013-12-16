@@ -1362,6 +1362,19 @@ static void android_input_set_keybinds(void *data, unsigned device,
                      android->keycode_lut[AKEYCODE_9] |=  ((RETRO_DEVICE_ID_JOYPAD_L3+1)      << shift);
                      android->keycode_lut[AKEYCODE_0] |=  ((RETRO_DEVICE_ID_JOYPAD_R3+1)      << shift);
                      break;
+                  case ICADE_PROFILE_MOGA_HERO_POWER:
+                	 strlcpy(g_settings.input.device_names[port], "Moga Hero Power",
+                	    sizeof(g_settings.input.device_names[port]));
+                	 android->keycode_lut[AKEYCODE_NUMPAD_LCK_0] |= ((RETRO_DEVICE_ID_JOYPAD_B+1)      << shift);
+                	 android->keycode_lut[AKEYCODE_NUMPAD_LCK_1] |= ((RETRO_DEVICE_ID_JOYPAD_A+1)      << shift);
+                	 android->keycode_lut[AKEYCODE_NUMPAD_LCK_3] |= ((RETRO_DEVICE_ID_JOYPAD_Y+1)      << shift);
+                	 android->keycode_lut[AKEYCODE_NUMPAD_LCK_4] |= ((RETRO_DEVICE_ID_JOYPAD_X+1)      << shift);
+                	 android->keycode_lut[AKEYCODE_NUMPAD_LCK_6] |= ((RETRO_DEVICE_ID_JOYPAD_L+1)      << shift);
+                	 android->keycode_lut[AKEYCODE_NUMPAD_LCK_7] |= ((RETRO_DEVICE_ID_JOYPAD_R+1)      << shift);
+                	 android->keycode_lut[AKEYCODE_BACK] |= ((RETRO_DEVICE_ID_JOYPAD_SELECT+1)      << shift);
+                	 android->keycode_lut[AKEYCODE_OTHR_108] |= ((RETRO_DEVICE_ID_JOYPAD_START+1)      << shift);
+                	 android->keycode_lut[AKEYCODE_BUTTON_THUMBL] |= ((RETRO_DEVICE_ID_JOYPAD_L3+1)     << shift);
+                	 android->keycode_lut[AKEYCODE_BUTTON_THUMBR] |= ((RETRO_DEVICE_ID_JOYPAD_R3+1)     << shift);
                }
             }
             break;
