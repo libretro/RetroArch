@@ -147,6 +147,11 @@ static void file_action(enum file_action action, NSString* source, NSString* tar
     [self browseTo:@"/"];
 }
 
+- (void)refresh
+{
+   [self browseTo:_path];
+}
+
 - (void)browseTo:(NSString*)path
 {
    _path = path;
