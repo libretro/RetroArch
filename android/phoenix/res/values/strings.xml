@@ -36,9 +36,10 @@
     <string name="core_info_displayNameTitle">Display Name</string>
     <string name="core_info_internalNameTitle">Internal Name</string>
     <string name="core_info_systemNameTitle">Description</string>
-    <string name="core_info_emu_author">Author(s)</string>
+    <string name="core_info_author">Author(s)</string>
     <string name="core_info_licenseTitle">Core License</string>
-    <string name="core_info_manufacterer">Manufacturer</string>
+    <string name="core_info_manufacturer">Manufacturer</string>
+    <string name="core_info_permissions">Permissions</string>
 
     <!-- Display Refresh Rate Test Class -->
     <string name="refresh_rate_calibration">Refresh rate calibration</string>

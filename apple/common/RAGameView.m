@@ -20,6 +20,12 @@
 #include "gfx/gfx_common.h"
 #include "gfx/gfx_context.h"
 
+#include <CoreLocation/CoreLocation.h>
+
+static CLLocationManager *locationManager;
+static CLLocationDegrees currentLatitude;
+static CLLocationDegrees currentLongitude;
+
 // Define compatibility symbols and categories
 #ifdef IOS
 #include <AVFoundation/AVCaptureSession.h>
@@ -28,7 +34,7 @@
 #include <AVFoundation/AVCaptureInput.h>
 #include <AVFoundation/AVMediaFormat.h>
 #include <CoreVideo/CVOpenGLESTextureCache.h>
-#define APP_HAS_FOCUS ([UIApplication sharedApplication].applicationState == UIApplicationStateActive)
+#define APP_HAS_FOCUS ([[UIApplication sharedApplication] applicationState] == UIApplicationStateActive)
 
 #define GLContextClass EAGLContext
 #define GLAPIType GFX_CTX_OPENGL_ES_API
@@ -37,8 +43,8 @@
 
 @interface EAGLContext (OSXCompat) @end
 @implementation EAGLContext (OSXCompat)
-+ (void)clearCurrentContext { EAGLContext.currentContext = nil;  }
-- (void)makeCurrentContext  { EAGLContext.currentContext = self; }
++ (void)clearCurrentContext { [EAGLContext setCurrentContext:nil];  }
+- (void)makeCurrentContext  { [EAGLContext setCurrentContext:self]; }
 @end
 
 #elif defined(OSX)
@@ -55,7 +61,7 @@
 @implementation NSScreen (IOSCompat)
 - (CGRect)bounds
 {
-	CGRect cgrect  = NSRectToCGRect(self.frame);
+	CGRect cgrect  = NSRectToCGRect([self frame]);
 	return CGRectMake(0, 0, CGRectGetWidth(cgrect), CGRectGetHeight(cgrect));
 }
 - (float) scale  { return 1.0f; }
@@ -109,7 +115,7 @@ static bool g_is_syncing = true;
 - (id)init
 {
    self = [super init];
-   self.autoresizingMask = NSViewWidthSizable | NSViewHeightSizable;
+   [self setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];
    return self;
 }
 
@@ -308,6 +314,61 @@ didOutputSampleBuffer:(CMSampleBufferRef)sampleBuffer
 }
 #endif
 
+- (void)onLocationInit
+{
+    // Create the location manager if this object does not
+    // already have one.
+    if (nil == locationManager)
+        locationManager = [[CLLocationManager alloc] init];
+    
+    locationManager.delegate = self;
+    locationManager.desiredAccuracy = kCLLocationAccuracyBest;
+    
+    // Set a movement threshold for new events.
+    locationManager.distanceFilter = 500; // meters - TODO - make configurable
+}
+
+- (void)onLocationStart
+{
+    [locationManager startUpdatingLocation];
+}
+
+- (void)onLocationStop
+{
+    [locationManager stopUpdatingLocation];
+}
+
+- (void)onLocationFree
+{
+    /* TODO - free location manager? */
+}
+
+- (float)onLocationGetLatitude
+{
+    return (float)currentLatitude;
+}
+
+- (float)onLocationGetLongitude
+{
+    return (float)currentLongitude;
+}
+
+
+- (void)locationManager:(CLLocationManager *)manager didUpdateToLocation:(CLLocation *)newLocation fromLocation:(CLLocation *)oldLocation
+{
+    currentLatitude = newLocation.coordinate.latitude;
+    currentLongitude = newLocation.coordinate.longitude;
+    RARCH_LOG("didUpdateToLocation - latitude %f, longitude %f\n", (float)currentLatitude, (float)currentLongitude);
+}
+
+- (void)locationManager:(CLLocationManager *)manager didUpdateLocations:(NSArray *)locations
+{
+
+    currentLatitude  = [[locations objectAtIndex:([locations     count]-1)] coordinate].latitude;
+    currentLongitude = [[locations objectAtIndex:([locations     count]-1)] coordinate].longitude;
+    RARCH_LOG("didUpdateLocations - latitude %f, longitude %f\n", (float)currentLatitude, (float)currentLongitude);
+}
+
 @end
 
 static RAScreen* get_chosen_screen()
@@ -324,7 +385,7 @@ static RAScreen* get_chosen_screen()
 #ifdef OSX
       [pool drain];
 #endif
-      return RAScreen.mainScreen;
+      return [RAScreen mainScreen];
    }
 	
    NSArray *screens = [RAScreen screens];
@@ -406,7 +467,7 @@ bool apple_gfx_ctx_bind_api(enum gfx_ctx_api api, unsigned major, unsigned minor
 
       g_format = [[NSOpenGLPixelFormat alloc] initWithAttributes:attributes];
       g_context = [[NSOpenGLContext alloc] initWithFormat:g_format shareContext:nil];
-      g_context.view = g_view;
+      [g_context setView:g_view];
 #else
       g_context = [[EAGLContext alloc] initWithAPI:kEAGLRenderingAPIOpenGLES2];
       g_view.context = g_context;
@@ -446,13 +507,13 @@ bool apple_gfx_ctx_set_video_mode(unsigned width, unsigned height, bool fullscre
       else if (!fullscreen && g_has_went_fullscreen)
       {
          [g_view exitFullScreenModeWithOptions:nil];
-         [g_view.window makeFirstResponder:g_view];
+         [[g_view window] makeFirstResponder:g_view];
          [NSCursor unhide];
       }
       
       g_has_went_fullscreen = fullscreen;
       if (!g_has_went_fullscreen)
-         [g_view.window setContentSize:NSMakeSize(width, height)];
+         [[g_view window] setContentSize:NSMakeSize(width, height)];
    });
 #endif
 
@@ -469,18 +530,18 @@ void apple_gfx_ctx_get_video_size(unsigned* width, unsigned* height)
    if (g_initialized)
    {
 #if defined(OSX) && !defined(MAC_OS_X_VERSION_10_7)
-      CGRect cgrect = NSRectToCGRect(g_view.frame);
+      CGRect cgrect = NSRectToCGRect([g_view frame]);
       size = CGRectMake(0, 0, CGRectGetWidth(cgrect), CGRectGetHeight(cgrect));
 #else
-      size = g_view.bounds;
+      size = [g_view bounds];
 #endif
    }
    else
-      size = screen.bounds;
+      size = [screen bounds];
 
 
-   *width  = CGRectGetWidth(size)  * screen.scale;
-   *height = CGRectGetHeight(size) * screen.scale;
+   *width  = CGRectGetWidth(size)  * [screen scale];
+   *height = CGRectGetHeight(size) * [screen scale];
 }
 
 void apple_gfx_ctx_update_window_title(void)
@@ -498,7 +559,7 @@ void apple_gfx_ctx_update_window_title(void)
       //       If it poses a problem it should be changed to dispatch_sync.
       dispatch_async(dispatch_get_main_queue(),
       ^{
-		  g_view.window.title = [NSString stringWithCString:text encoding:NSUTF8StringEncoding];
+		  [[g_view window] setTitle:[NSString stringWithCString:text encoding:NSUTF8StringEncoding]];
       });
    }
 #endif

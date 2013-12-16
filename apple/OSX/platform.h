@@ -17,9 +17,10 @@
 #ifndef __RARCH_OSX_PLATFORM_H
 #define __RARCH_OSX_PLATFORM_H
 
-#import <AppKit/AppKit.h>
+#include <AppKit/AppKit.h>
+#include <CoreLocation/CoreLocation.h>
 
-@interface RAGameView : NSView
+@interface RAGameView : NSView<CLLocationManagerDelegate>
 
 + (RAGameView*)get;
 - (void)display;
@@ -27,6 +28,21 @@
 @end
 
 @interface RetroArch_OSX : NSObject<RetroArch_Platform, NSApplicationDelegate>
+{
+   NSWindow* _window;
+   NSString* _configDirectory;
+   NSString* _globalConfigFile;
+   NSString* _coreDirectory;
+   NSWindowController* _settingsWindow;
+   NSWindow* _coreSelectSheet;
+   NSString* _file;
+   NSString* _core;
+   
+   bool _isTerminating;
+   bool _loaded;
+   bool _wantReload;
+}
+
 @property (nonatomic, retain) NSWindow IBOutlet* window;
 @property (nonatomic, copy) NSString* configDirectory;    // e.g. /var/mobile/Documents/.RetroArch
 @property (nonatomic, copy) NSString* globalConfigFile;   // e.g. /var/mobile/Documents/.RetroArch/retroarch.cfg

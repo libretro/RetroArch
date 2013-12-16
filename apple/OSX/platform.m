@@ -35,37 +35,39 @@ static void* const associated_core_key = (void*)&associated_core_key;
 {
    [super sendEvent:event];
    
-   if (event.type == NSKeyDown || event.type == NSKeyUp)
-      apple_input_handle_key_event(event.keyCode, event.type == GSEVENT_TYPE_KEYDOWN);
-   else if (event.type == NSFlagsChanged)
+   NSEventType event_type = [event type];
+   
+   if (event_type == NSKeyDown || event_type == NSKeyUp)
+      apple_input_handle_key_event([event keyCode], event_type == GSEVENT_TYPE_KEYDOWN);
+   else if (event_type == NSFlagsChanged)
    {
       static uint32_t old_flags = 0;
-      uint32_t new_flags = event.modifierFlags;
+      uint32_t new_flags = [event modifierFlags];
       bool down = (new_flags & old_flags) == old_flags;
       old_flags = new_flags;
       
-      apple_input_handle_key_event(event.keyCode, down);
+      apple_input_handle_key_event([event keyCode], down);
    }
-   else if (event.type == NSMouseMoved || event.type == NSLeftMouseDragged ||
-            event.type == NSRightMouseDragged || event.type == NSOtherMouseDragged)
+   else if (event_type == NSMouseMoved || event_type == NSLeftMouseDragged ||
+            event_type == NSRightMouseDragged || event_type == NSOtherMouseDragged)
    {
       // Relative
-      g_current_input_data.mouse_delta[0] += event.deltaX;
-      g_current_input_data.mouse_delta[1] += event.deltaY;
+      g_current_input_data.mouse_delta[0] += [event deltaX];
+      g_current_input_data.mouse_delta[1] += [event deltaY];
 
       // Absolute
       NSPoint pos = [[RAGameView get] convertPoint:[event locationInWindow] fromView:nil];
       g_current_input_data.touches[0].screen_x = pos.x;
       g_current_input_data.touches[0].screen_y = pos.y;
    }
-   else if (event.type == NSLeftMouseDown || event.type == NSRightMouseDown || event.type == NSOtherMouseDown)
+   else if (event_type == NSLeftMouseDown || event_type == NSRightMouseDown || event_type == NSOtherMouseDown)
    {
-      g_current_input_data.mouse_buttons |= 1 << event.buttonNumber;
+      g_current_input_data.mouse_buttons |= 1 << [event buttonNumber];
       g_current_input_data.touch_count = 1;
    }
-   else if (event.type == NSLeftMouseUp || event.type == NSRightMouseUp || event.type == NSOtherMouseUp)
+   else if (event_type == NSLeftMouseUp || event_type == NSRightMouseUp || event_type == NSOtherMouseUp)
    {
-      g_current_input_data.mouse_buttons &= ~(1 << event.buttonNumber);
+      g_current_input_data.mouse_buttons &= ~(1 << [event buttonNumber]);
       g_current_input_data.touch_count = 0;
    }
 }
@@ -80,20 +82,6 @@ static void* const associated_core_key = (void*)&associated_core_key;
 @end
 
 @implementation RetroArch_OSX
-{
-   NSWindow* _window;
-   NSString* _configDirectory;
-   NSString* _globalConfigFile;
-   NSString* _coreDirectory;
-   NSWindowController* _settingsWindow;
-   NSWindow* _coreSelectSheet;
-   NSString* _file;
-   NSString* _core;
-   
-   bool _isTerminating;
-   bool _loaded;
-   bool _wantReload;
-}
 
 @synthesize window = _window;
 @synthesize configDirectory = _configDirectory;
@@ -130,22 +118,22 @@ static void* const associated_core_key = (void*)&associated_core_key;
    NSArray* paths = NSSearchPathForDirectoriesInDomains(NSApplicationSupportDirectory, NSUserDomainMask, YES);
    self.configDirectory = [[paths objectAtIndex:0] stringByAppendingPathComponent:@"RetroArch"];
    self.globalConfigFile = [NSString stringWithFormat:@"%@/retroarch.cfg", self.configDirectory];
-   self.coreDirectory = [NSBundle.mainBundle.bundlePath stringByAppendingPathComponent:@"Contents/Resources/modules"];
+   self.coreDirectory = [[[NSBundle mainBundle] bundlePath] stringByAppendingPathComponent:@"Contents/Resources/modules"];
 
-   self.window.acceptsMouseMovedEvents = YES;
+   [self.window setAcceptsMouseMovedEvents: YES];
    
-   RAGameView.get.frame = [self.window.contentView bounds];
-   [self.window.contentView setAutoresizesSubviews:YES];
-   [self.window.contentView addSubview:RAGameView.get];
-   [self.window makeFirstResponder:RAGameView.get];
+   [[RAGameView get] setFrame: [[self.window contentView] bounds]];
+   [[self.window contentView] setAutoresizesSubviews:YES];
+   [[self.window contentView] addSubview:RAGameView.get];
+   [self.window makeFirstResponder:[RAGameView get]];
    
    self.settingsWindow = [[[NSWindowController alloc] initWithWindowNibName:@"Settings"] autorelease];
    
    // Create core select list
-   NSComboBox* cb = (NSComboBox*)[self.coreSelectSheet.contentView viewWithTag:1];
+   NSComboBox* cb = (NSComboBox*)[[self.coreSelectSheet contentView] viewWithTag:1];
 
-   apple_core_info_set_core_path(self.coreDirectory.UTF8String);
-   apple_core_info_set_config_path(self.configDirectory.UTF8String);
+   apple_core_info_set_core_path([self.coreDirectory UTF8String]);
+   apple_core_info_set_config_path([self.configDirectory UTF8String]);
    const core_info_list_t* cores = apple_core_info_list_get();
    for (int i = 0; cores && i != cores->count; i ++)
    {
@@ -154,7 +142,7 @@ static void* const associated_core_key = (void*)&associated_core_key;
       [cb addItemWithObjectValue:desc];
    }
 
-   if (cb.numberOfItems)
+   if ([cb numberOfItems])
       [cb selectItemAtIndex:0];
    else
       apple_display_alert(@"No libretro cores were found.\nSelect \"Go->Cores Directory\" from the menu and place libretro dylib files there.", @"RetroArch");
@@ -189,7 +177,7 @@ static void* const associated_core_key = (void*)&associated_core_key;
 
 - (void)application:(NSApplication *)sender openFiles:(NSArray *)filenames
 {
-   if (filenames.count == 1 && [filenames objectAtIndex:0])
+   if ([filenames count] == 1 && [filenames objectAtIndex:0])
    {
       self.file = [filenames objectAtIndex:0];
       
@@ -212,15 +200,15 @@ static void* const associated_core_key = (void*)&associated_core_key;
    NSOpenPanel* panel = [NSOpenPanel openPanel];
    [panel beginSheetModalForWindow:self.window completionHandler:^(NSInteger result)
    {
-      [NSApplication.sharedApplication stopModal];
+      [[NSApplication sharedApplication] stopModal];
    
-      if (result == NSOKButton && panel.URL)
+      if (result == NSOKButton && [panel URL])
       {
-         self.file = panel.URL.path;
+         self.file = [[panel URL] path];
          [self performSelector:@selector(chooseCore) withObject:nil afterDelay:.5f];
       }
    }];
-   [NSApplication.sharedApplication runModalForWindow:panel];
+   [[NSApplication sharedApplication] runModalForWindow:panel];
 }
 
 // This utility function will queue the self.core and self.file instance values for running.
@@ -230,28 +218,28 @@ static void* const associated_core_key = (void*)&associated_core_key;
    _wantReload = apple_is_running;
 
    if (!apple_is_running)
-      apple_run_core(self.core, self.file.UTF8String);
+      apple_run_core(self.core, [self.file UTF8String]);
    else
       apple_frontend_post_event(apple_event_basic_command, (void*)QUIT);
 }
 
 - (void)chooseCore
 {
-   [NSApplication.sharedApplication beginSheet:self.coreSelectSheet modalForWindow:self.window modalDelegate:nil didEndSelector:nil contextInfo:nil];
-   [NSApplication.sharedApplication runModalForWindow:self.coreSelectSheet];
+   [[NSApplication sharedApplication] beginSheet:self.coreSelectSheet modalForWindow:self.window modalDelegate:nil didEndSelector:nil contextInfo:nil];
+   [[NSApplication sharedApplication] runModalForWindow:self.coreSelectSheet];
 }
 
 - (IBAction)coreWasChosen:(id)sender
 {
-   [NSApplication.sharedApplication stopModal];
-   [NSApplication.sharedApplication endSheet:self.coreSelectSheet returnCode:0];
+   [[NSApplication sharedApplication] stopModal];
+   [[NSApplication sharedApplication] endSheet:self.coreSelectSheet returnCode:0];
    [self.coreSelectSheet orderOut:self];
 
    if (_isTerminating)
       return;
 
-   NSComboBox* cb = (NSComboBox*)[self.coreSelectSheet.contentView viewWithTag:1];
-   self.core = objc_getAssociatedObject(cb.objectValueOfSelectedItem, associated_core_key);
+   NSComboBox* cb = (NSComboBox*)[[self.coreSelectSheet contentView] viewWithTag:1];
+   self.core = objc_getAssociatedObject([cb objectValueOfSelectedItem], associated_core_key);
 
    [self runCore];
 }
@@ -260,20 +248,20 @@ static void* const associated_core_key = (void*)&associated_core_key;
 - (void)loadingCore:(const NSString*)core withFile:(const char*)file
 {
    if (file)
-      [NSDocumentController.sharedDocumentController noteNewRecentDocumentURL:[NSURL fileURLWithPath:BOXSTRING(file)]];
+      [[NSDocumentController sharedDocumentController] noteNewRecentDocumentURL:[NSURL fileURLWithPath:BOXSTRING(file)]];
 }
 
 - (void)unloadingCore:(const NSString*)core
 {
    if (_isTerminating)
-      [NSApplication.sharedApplication terminate:nil];
+      [[NSApplication sharedApplication] terminate:nil];
 
    if (_wantReload)
-      apple_run_core(self.core, self.file.UTF8String);
+      apple_run_core(self.core, [self.file UTF8String]);
    else if(apple_use_tv_mode)
       apple_run_core(nil, 0);
    else
-      [NSApplication.sharedApplication terminate:nil];
+      [[NSApplication sharedApplication] terminate:nil];
    
    _wantReload = false;
 }
@@ -286,18 +274,18 @@ static void* const associated_core_key = (void*)&associated_core_key;
 
 - (IBAction)showPreferences:(id)sender
 {
-   [NSApp runModalForWindow:self.settingsWindow.window];
+   [NSApp runModalForWindow:[self.settingsWindow window]];
 }
 
 - (IBAction)basicEvent:(id)sender
 {
    if (apple_is_running)
-      apple_frontend_post_event(&apple_event_basic_command, (void*)((NSMenuItem*)sender).tag);
+      apple_frontend_post_event(&apple_event_basic_command, (void*)[sender tag]);
 }
 
 - (void)alertDidEnd:(NSAlert *)alert returnCode:(NSInteger)returnCode contextInfo:(void *)contextInfo
 {
-   [NSApplication.sharedApplication stopModal];
+   [[NSApplication sharedApplication] stopModal];
 }
 
 @end

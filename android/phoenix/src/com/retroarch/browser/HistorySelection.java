@@ -9,6 +9,8 @@ import java.io.InputStreamReader;
 import com.retroarch.R;
 import com.retroarch.browser.mainmenu.MainMenuActivity;
 import com.retroarch.browser.preferences.util.UserPreferences;
+import com.retroarch.browser.retroactivity.RetroActivityFuture;
+import com.retroarch.browser.retroactivity.RetroActivityPast;
 
 import android.content.Intent;
 import android.os.Build;

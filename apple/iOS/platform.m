@@ -114,15 +114,39 @@ static void handle_touch_event(NSArray* touches)
    }
 }
 
+// iO7 Keyboard support
+@interface UIEvent(iOS7Keyboard)
+@property(readonly, nonatomic) long long _keyCode;
+@property(readonly, nonatomic) _Bool _isKeyDown;
+- (struct __IOHIDEvent { }*)_hidEvent;
+@end
+
+@interface UIApplication(iOS7Keyboard)
+- (id)_keyCommandForEvent:(id)event;
+@end
+
 @interface RApplication : UIApplication
 @end
 
 @implementation RApplication
 
-// iOS7: This method is called instead of sendEvent for key events; do not try to merge it
-//       with the sendEvent method.
-- (void)handleKeyUIEvent:(UIEvent*)event
+// Keyboard handler for iOS 7
+- (id)_keyCommandForEvent:(UIEvent*)event
 {
+   // If the _hidEvent is null, [event _keyCode] will crash.
+   if ([event _hidEvent])
+      apple_input_handle_key_event([event _keyCode], [event _isKeyDown]);
+
+   return [super _keyCommandForEvent:event];
+}
+
+- (void)sendEvent:(UIEvent *)event
+{
+   [super sendEvent:event];
+   
+   if ([[event allTouches] count])
+      handle_touch_event(event.allTouches.allObjects);
+
    if ([event respondsToSelector:@selector(_gsEvent)])
    {
       // Stolen from: http://nacho4d-nacho4d.blogspot.com/2012/01/catching-keyboard-events-in-ios.html
@@ -134,16 +158,6 @@ static void handle_touch_event(NSArray* touches)
       
       CFBridgingRelease(eventMem);
    }
-}
-
-- (void)sendEvent:(UIEvent *)event
-{
-   [super sendEvent:event];
-   
-   if ([[event allTouches] count])
-      handle_touch_event(event.allTouches.allObjects);
-
-   [self handleKeyUIEvent:event];
 }
 
 @end

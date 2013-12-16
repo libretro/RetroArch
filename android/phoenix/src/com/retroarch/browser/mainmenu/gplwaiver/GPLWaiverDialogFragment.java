@@ -44,7 +44,7 @@ public final class GPLWaiverDialogFragment extends DialogFragment
 				final File[] libs = new File(getActivity().getApplicationInfo().dataDir, "/cores").listFiles();
 				for (final File lib : libs)
 				{
-					ModuleWrapper module = new ModuleWrapper(getActivity().getApplicationContext(), lib);
+					ModuleWrapper module = new ModuleWrapper(getActivity(), lib);
 					
 					boolean gplv3 = module.getCoreLicense().equals("GPLv3");
 					boolean gplv2 = module.getCoreLicense().equals("GPLv2");

@@ -36,8 +36,10 @@ typedef struct {
    char *display_name;
    char *supported_extensions;
    char *authors;
+   char *permissions;
    struct string_list *supported_extensions_list;
    struct string_list *authors_list;
+   struct string_list *permissions_list;
 
    core_info_firmware_t *firmware;
    size_t firmware_count;
