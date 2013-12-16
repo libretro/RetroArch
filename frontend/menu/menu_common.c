@@ -1937,8 +1937,8 @@ void menu_populate_entries(void *data, unsigned menu_type)
       case RGUI_SETTINGS_PATH_OPTIONS:
          file_list_clear(rgui->selection_buf);
          file_list_push(rgui->selection_buf, "Browser Directory", RGUI_BROWSER_DIR_PATH, 0);
-         file_list_push(rgui->selection_buf, "Config Directory", RGUI_CONFIG_DIR_PATH, 0);
 #ifdef HAVE_DYNAMIC
+         file_list_push(rgui->selection_buf, "Config Directory", RGUI_CONFIG_DIR_PATH, 0);
          file_list_push(rgui->selection_buf, "Core Directory", RGUI_LIBRETRO_DIR_PATH, 0);
 #endif
          file_list_push(rgui->selection_buf, "Core Info Directory", RGUI_LIBRETRO_INFO_DIR_PATH, 0);
