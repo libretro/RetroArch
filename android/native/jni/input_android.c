@@ -60,6 +60,8 @@ enum
    AXIS_HAT_Y = 16,
    AXIS_LTRIGGER = 17,
    AXIS_RTRIGGER = 18,
+   AXIS_GAS = 22,
+   AXIS_BRAKE = 23,
 };
 
 typedef struct android_input
@@ -132,6 +134,12 @@ static void engine_handle_dpad_getaxisvalue(void *data, AInputEvent *event,
    float haty = AMotionEvent_getAxisValue(event, AXIS_HAT_Y, motion_pointer);
    float ltrig = AMotionEvent_getAxisValue(event, AXIS_LTRIGGER, motion_pointer);
    float rtrig = AMotionEvent_getAxisValue(event, AXIS_RTRIGGER, motion_pointer);
+   
+   /* On some devices, the left and right triggers send AXIS_BRAKE / AXIS_GAS events, use those if AXIS_LTRIGGER / AXIS_RTRIGGER return zero */
+   if (ltrig == 0.0f)
+	   ltrig = AMotionEvent_getAxisValue(event, AXIS_BRAKE, motion_pointer);
+   if (rtrig == 0.0f)
+	   rtrig = AMotionEvent_getAxisValue(event, AXIS_GAS, motion_pointer);
 
    *state_cur &= ~((1ULL << RETRO_DEVICE_ID_JOYPAD_LEFT) | 
          (1ULL << RETRO_DEVICE_ID_JOYPAD_L2) | (1ULL << RETRO_DEVICE_ID_JOYPAD_R2) |
@@ -168,7 +176,7 @@ static void engine_handle_dpad_getaxisvalue(void *data, AInputEvent *event,
    }
 
    if (debug_enable)
-      snprintf(msg, msg_sizeof, "Pad %d : x %.2f, y %.2f, z %.2f, rz %.2f, src %d.\n", 
+      snprintf(msg, msg_sizeof, "Pad %d : x %.2f, y %.2f, z %.2f, rz %.2f, src %d.\n",
             state_id, x, y, z, rz, source);
 }
 
