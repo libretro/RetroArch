@@ -37,18 +37,18 @@ void rarch_get_cpu_features(unsigned *cpu);
 
 #if defined(PERF_TEST) || !defined(RARCH_INTERNAL)
 #ifdef _WIN32
-#define RARCH_PERFORMANCE_LOG(functionname, X) RARCH_LOG("[PERF]: Avg (%s): %I64u ticks, %I64u runs.\n", \
+#define RETRO_PERFORMANCE_LOG(functionname, X) RARCH_LOG("[PERF]: Avg (%s): %I64u ticks, %I64u runs.\n", \
       functionname, \
       (X).total / (X).call_cnt, \
       (X).call_cnt)
 #else
-#define RARCH_PERFORMANCE_LOG(functionname, X) RARCH_LOG("[PERF]: Avg (%s): %llu ticks, %llu runs.\n", \
+#define RETRO_PERFORMANCE_LOG(functionname, X) RARCH_LOG("[PERF]: Avg (%s): %llu ticks, %llu runs.\n", \
       functionname, \
       (X).total / (X).call_cnt, \
       (X).call_cnt)
 #endif
 #else
-#define RARCH_PERFORMANCE_LOG(functionname, X)
+#define RETRO_PERFORMANCE_LOG(functionname, X)
 #endif
 
 #ifdef __cplusplus

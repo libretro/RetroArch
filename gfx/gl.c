@@ -1315,13 +1315,13 @@ static void gl_pbo_async_readback(void *data)
    glPixelStorei(GL_PACK_ALIGNMENT, get_alignment(gl->vp.width * sizeof(uint32_t)));
 
    // Read asynchronously into PBO buffer.
-   RARCH_PERFORMANCE_INIT(async_readback);
-   RARCH_PERFORMANCE_START(async_readback);
+   RETRO_PERFORMANCE_INIT(async_readback);
+   RETRO_PERFORMANCE_START(async_readback);
    glReadBuffer(GL_BACK);
    glReadPixels(gl->vp.x, gl->vp.y,
          gl->vp.width, gl->vp.height,
          GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
-   RARCH_PERFORMANCE_STOP(async_readback);
+   RETRO_PERFORMANCE_STOP(async_readback);
 
    glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
 }
@@ -1372,8 +1372,8 @@ static inline void gl_draw_texture(void *data)
 
 static bool gl_frame(void *data, const void *frame, unsigned width, unsigned height, unsigned pitch, const char *msg)
 {
-   RARCH_PERFORMANCE_INIT(frame_run);
-   RARCH_PERFORMANCE_START(frame_run);
+   RETRO_PERFORMANCE_INIT(frame_run);
+   RETRO_PERFORMANCE_START(frame_run);
 
    gl_t *gl = (gl_t*)data;
 
@@ -1419,10 +1419,10 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
 #endif
       {
          gl_update_input_size(gl, width, height, pitch, true);
-         RARCH_PERFORMANCE_INIT(copy_frame);
-         RARCH_PERFORMANCE_START(copy_frame);
+         RETRO_PERFORMANCE_INIT(copy_frame);
+         RETRO_PERFORMANCE_START(copy_frame);
          gl_copy_frame(gl, frame, width, height, pitch);
-         RARCH_PERFORMANCE_STOP(copy_frame);
+         RETRO_PERFORMANCE_STOP(copy_frame);
       }
    }
    else
@@ -1501,7 +1501,7 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
 
    context_update_window_title_func();
 
-   RARCH_PERFORMANCE_STOP(frame_run);
+   RETRO_PERFORMANCE_STOP(frame_run);
 
 #ifdef HAVE_FBO
    // Reset state which could easily mess up libretro core.
@@ -1527,8 +1527,8 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
 #ifdef HAVE_GL_SYNC
    if (g_settings.video.hard_sync && gl->have_sync)
    {
-      RARCH_PERFORMANCE_INIT(gl_fence);
-      RARCH_PERFORMANCE_START(gl_fence);
+      RETRO_PERFORMANCE_INIT(gl_fence);
+      RETRO_PERFORMANCE_START(gl_fence);
       glClear(GL_COLOR_BUFFER_BIT);
       gl->fences[gl->fence_count++] = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
 
@@ -1541,7 +1541,7 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
          memmove(gl->fences, gl->fences + 1, gl->fence_count * sizeof(GLsync));
       }
 
-      RARCH_PERFORMANCE_STOP(gl_fence);
+      RETRO_PERFORMANCE_STOP(gl_fence);
    }
 #endif
 
@@ -2341,8 +2341,8 @@ static bool gl_read_viewport(void *data, uint8_t *buffer)
    gl_t *gl = (gl_t*)data;
    (void)i;
 
-   RARCH_PERFORMANCE_INIT(read_viewport);
-   RARCH_PERFORMANCE_START(read_viewport);
+   RETRO_PERFORMANCE_INIT(read_viewport);
+   RETRO_PERFORMANCE_START(read_viewport);
 
 #ifdef HAVE_FBO
    // Make sure we're reading from backbuffer incase some state has been overridden.
@@ -2398,7 +2398,7 @@ static bool gl_read_viewport(void *data, uint8_t *buffer)
    }
 #endif
 
-   RARCH_PERFORMANCE_STOP(read_viewport);
+   RETRO_PERFORMANCE_STOP(read_viewport);
    return true;
 }
 #endif

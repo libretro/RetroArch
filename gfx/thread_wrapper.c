@@ -394,8 +394,8 @@ static bool thread_focus(void *data)
 static bool thread_frame(void *data, const void *frame_,
       unsigned width, unsigned height, unsigned pitch, const char *msg)
 {
-   RARCH_PERFORMANCE_INIT(thread_frame);
-   RARCH_PERFORMANCE_START(thread_frame);
+   RETRO_PERFORMANCE_INIT(thread_frame);
+   RETRO_PERFORMANCE_START(thread_frame);
 
    thread_video_t *thr = (thread_video_t*)data;
    unsigned copy_stride = width * (thr->info.rgb32 ? sizeof(uint32_t) : sizeof(uint16_t));
@@ -461,7 +461,7 @@ static bool thread_frame(void *data, const void *frame_,
 
    slock_unlock(thr->lock);
 
-   RARCH_PERFORMANCE_STOP(thread_frame);
+   RETRO_PERFORMANCE_STOP(thread_frame);
 
    thr->last_time = rarch_get_time_usec();
    return true;

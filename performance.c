@@ -88,7 +88,7 @@ void rarch_perf_log(void)
    unsigned i;
    RARCH_LOG("[PERF]: Performance counters:\n");
    for (i = 0; i < perf_ptr; i++)
-      RARCH_PERFORMANCE_LOG(perf_counters[i]->ident, *perf_counters[i]);
+      RETRO_PERFORMANCE_LOG(perf_counters[i]->ident, *perf_counters[i]);
 }
 
 retro_perf_tick_t rarch_get_perf_counter(void)

@@ -276,8 +276,8 @@ static void video_frame(const void *data, unsigned width, unsigned height, size_
 
    if (g_extern.system.pix_fmt == RETRO_PIXEL_FORMAT_0RGB1555 && data && data != RETRO_HW_FRAME_BUFFER_VALID)
    {
-      RARCH_PERFORMANCE_INIT(video_frame_conv);
-      RARCH_PERFORMANCE_START(video_frame_conv);
+      RETRO_PERFORMANCE_INIT(video_frame_conv);
+      RETRO_PERFORMANCE_START(video_frame_conv);
       driver.scaler.in_width = width;
       driver.scaler.in_height = height;
       driver.scaler.out_width = width;
@@ -288,7 +288,7 @@ static void video_frame(const void *data, unsigned width, unsigned height, size_
       scaler_ctx_scale(&driver.scaler, driver.scaler_out, data);
       data = driver.scaler_out;
       pitch = driver.scaler.out_stride;
-      RARCH_PERFORMANCE_STOP(video_frame_conv);
+      RETRO_PERFORMANCE_STOP(video_frame_conv);
    }
 
    // Slightly messy code,
@@ -381,11 +381,11 @@ static bool audio_flush(const int16_t *data, size_t samples)
    unsigned output_frames      = 0;
 
    struct resampler_data src_data = {0};
-   RARCH_PERFORMANCE_INIT(audio_convert_s16);
-   RARCH_PERFORMANCE_START(audio_convert_s16);
+   RETRO_PERFORMANCE_INIT(audio_convert_s16);
+   RETRO_PERFORMANCE_START(audio_convert_s16);
    audio_convert_s16_to_float(g_extern.audio_data.data, data, samples,
          g_extern.audio_data.volume_gain);
-   RARCH_PERFORMANCE_STOP(audio_convert_s16);
+   RETRO_PERFORMANCE_STOP(audio_convert_s16);
 
 #if defined(HAVE_DYLIB)
    rarch_dsp_output_t dsp_output = {0};
@@ -412,11 +412,11 @@ static bool audio_flush(const int16_t *data, size_t samples)
    if (g_extern.is_slowmotion)
       src_data.ratio *= g_settings.slowmotion_ratio;
 
-   RARCH_PERFORMANCE_INIT(resampler_proc);
-   RARCH_PERFORMANCE_START(resampler_proc);
+   RETRO_PERFORMANCE_INIT(resampler_proc);
+   RETRO_PERFORMANCE_START(resampler_proc);
    rarch_resampler_process(g_extern.audio_data.resampler,
          g_extern.audio_data.resampler_data, &src_data);
-   RARCH_PERFORMANCE_STOP(resampler_proc);
+   RETRO_PERFORMANCE_STOP(resampler_proc);
 
    output_data   = g_extern.audio_data.outsamples;
    output_frames = src_data.output_frames;
@@ -431,11 +431,11 @@ static bool audio_flush(const int16_t *data, size_t samples)
    }
    else
    {
-      RARCH_PERFORMANCE_INIT(audio_convert_float);
-      RARCH_PERFORMANCE_START(audio_convert_float);
+      RETRO_PERFORMANCE_INIT(audio_convert_float);
+      RETRO_PERFORMANCE_START(audio_convert_float);
       audio_convert_float_to_s16(g_extern.audio_data.conv_outsamples,
             output_data, output_frames * 2);
-      RARCH_PERFORMANCE_STOP(audio_convert_float);
+      RETRO_PERFORMANCE_STOP(audio_convert_float);
 
       if (audio_write_func(g_extern.audio_data.conv_outsamples, output_frames * sizeof(int16_t) * 2) < 0)
       {

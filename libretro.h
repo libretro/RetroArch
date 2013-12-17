@@ -626,42 +626,42 @@ struct retro_perf_callback
 
 #if defined(PERF_TEST)
 
-#define RARCH_PERFORMANCE_INIT(X) \
+#define RETRO_PERFORMANCE_INIT(X) \
    static retro_perf_counter_t X = {#X}; \
    do { \
       if (!(X).registered) \
          rarch_perf_register(&(X)); \
    } while(0)
 
-#define RARCH_PERFORMANCE_START(X) do { \
+#define RETRO_PERFORMANCE_START(X) do { \
    (X).call_cnt++; \
    (X).start  = rarch_get_perf_counter(); \
 } while(0)
 
-#define RARCH_PERFORMANCE_STOP(X) do { \
+#define RETRO_PERFORMANCE_STOP(X) do { \
    (X).total += rarch_get_perf_counter() - (X).start; \
 } while(0)
 
 #elif !defined(RARCH_INTERNAL)
 
-#define RARCH_PERFORMANCE_INIT(X, perf_register_cb)  static retro_perf_counter_t X = {#X}; \
+#define RETRO_PERFORMANCE_INIT(X, perf_register_cb)  static retro_perf_counter_t X = {#X}; \
    do { \
       if (!(X).registered) \
          perf_register_cb(&(X)); \
    } while(0)
 
-#define RARCH_PERFORMANCE_START(X, get_perf_counter_cb) do { \
+#define RETRO_PERFORMANCE_START(X, get_perf_counter_cb) do { \
    (X).call_cnt++; \
    (X).start  = get_perf_counter_cb(); \
 } while(0)
 
-#define RARCH_PERFORMANCE_STOP(X, get_perf_counter_cb) do { \
+#define RETRO_PERFORMANCE_STOP(X, get_perf_counter_cb) do { \
    (X).total += get_perf_counter_cb() - (X).start; \
 } while(0)
 #else
-#define RARCH_PERFORMANCE_INIT(X)
-#define RARCH_PERFORMANCE_START(X)
-#define RARCH_PERFORMANCE_STOP(X)
+#define RETRO_PERFORMANCE_INIT(X)
+#define RETRO_PERFORMANCE_START(X)
+#define RETRO_PERFORMANCE_STOP(X)
 #endif
 
 // FIXME: Document the sensor API and work out behavior.
