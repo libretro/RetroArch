@@ -319,6 +319,7 @@
 					"-DWANT_MINIZ",
 					"-DSINC_LOWER_QUALITY",
 					"-DHAVE_NETPLAY",
+					"-DRARCH_INTERNAL",
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = macosx;
@@ -373,6 +374,7 @@
 					"-DWANT_MINIZ",
 					"-DSINC_LOWER_QUALITY",
 					"-DHAVE_NETPLAY",
+					"-DRARCH_INTERNAL",
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = macosx;
