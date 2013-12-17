@@ -633,7 +633,7 @@ struct retro_perf_callback
 #define retro_get_perf_counter_func rarch_get_perf_counter
 #elif !defined(RARCH_INTERNAL)
 #define retro_perf_register_func perf_register_cb
-#define retro_get_perf_counter_func get_perf_counter_cb
+#define retro_get_perf_counter_func perf_get_counter_cb
 #endif
 
 #if defined(PERF_TEST) || !defined(RARCH_INTERNAL)
