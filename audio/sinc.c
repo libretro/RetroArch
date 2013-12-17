@@ -17,6 +17,7 @@
 // Only suitable as an upsampler, as cutoff frequency isn't dynamically configurable (yet).
 
 #include "resampler.h"
+#include "../libretro.h"
 #include "../performance.h"
 #include <math.h>
 #include <stdint.h>

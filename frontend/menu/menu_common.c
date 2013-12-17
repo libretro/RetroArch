@@ -1372,7 +1372,7 @@ static int menu_iterate_func(void *data, unsigned action)
 
 bool menu_iterate(void)
 {
-   rarch_time_t time, delta, target_msec, sleep_msec;
+   retro_time_t time, delta, target_msec, sleep_msec;
    unsigned action;
    static bool initial_held = true;
    static bool first_held = false;

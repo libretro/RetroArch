@@ -322,7 +322,7 @@ typedef struct
    unsigned current_pad;
 
    rom_history_t *history;
-   rarch_time_t last_time; // Used to throttle RGUI in case VSync is broken.
+   retro_time_t last_time; // Used to throttle RGUI in case VSync is broken.
 
    struct rgui_bind_state binds;
    struct

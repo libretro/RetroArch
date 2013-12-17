@@ -18,7 +18,7 @@
 #include "../general.h"
 #include "../performance.h"
 
-static inline float time_to_fps(rarch_time_t last_time, rarch_time_t new_time, int frames)
+static inline float time_to_fps(retro_time_t last_time, retro_time_t new_time, int frames)
 {
    return (1000000.0f * frames) / (new_time - last_time);
 }
@@ -26,13 +26,13 @@ static inline float time_to_fps(rarch_time_t last_time, rarch_time_t new_time, i
 #define FPS_UPDATE_INTERVAL 256
 bool gfx_get_fps(char *buf, size_t size, char *buf_fps, size_t size_fps)
 {
-   static rarch_time_t time;
-   static rarch_time_t fps_time;
+   static retro_time_t time;
+   static retro_time_t fps_time;
    static float last_fps;
    bool ret = false;
    *buf = '\0';
 
-   rarch_time_t new_time = rarch_get_time_usec();
+   retro_time_t new_time = rarch_get_time_usec();
    if (g_extern.frame_count)
    {
       unsigned write_index = g_extern.measure_data.frame_time_samples_count++ &

@@ -564,6 +564,10 @@ enum retro_mod
                                            // as certain platforms cannot use use stderr for logging. It also allows the frontend to
                                            // show logging information in a more suitable way.
                                            // If this interface is not used, libretro cores should log to stderr as desired.
+#define RETRO_ENVIRONMENT_GET_PERF_INTERFACE 28
+                                           // struct retro_perf_callback * --
+                                           // Gets an interface for performance counters. This is useful for performance logging in a 
+                                           // cross-platform way and for detecting architecture-specific features, such as SIMD support.
 
 enum retro_log_level
 {
@@ -582,6 +586,83 @@ struct retro_log_callback
 {
    retro_log_printf_t log;
 };
+
+// Performance functions
+//
+// Id values for SIMD CPU features
+#define RETRO_SIMD_SSE      (1 << 0)
+#define RETRO_SIMD_SSE2     (1 << 1)
+#define RETRO_SIMD_VMX      (1 << 2)
+#define RETRO_SIMD_VMX128   (1 << 3)
+#define RETRO_SIMD_AVX      (1 << 4)
+#define RETRO_SIMD_NEON     (1 << 5)
+#define RETRO_SIMD_SSE3     (1 << 6)
+#define RETRO_SIMD_SSSE3    (1 << 7)
+
+typedef unsigned long long retro_perf_tick_t;
+typedef int64_t retro_time_t;
+
+typedef struct retro_perf_counter
+{
+   const char *ident;
+   retro_perf_tick_t start;
+   retro_perf_tick_t total;
+   retro_perf_tick_t call_cnt;
+
+   bool registered;
+} retro_perf_counter_t;
+
+
+typedef retro_time_t (*retro_perf_get_time_usec_t)(void);
+typedef retro_perf_tick_t (*retro_perf_get_counter_t)(void);
+typedef void (*retro_get_cpu_features_t)(unsigned*);
+
+struct retro_perf_callback
+{
+   retro_perf_get_time_usec_t    get_time_usec;
+   retro_perf_get_counter_t      get_perf_counter; 
+   retro_get_cpu_features_t      get_cpu_features;
+};
+
+#if defined(PERF_TEST)
+
+#define RARCH_PERFORMANCE_INIT(X) \
+   static retro_perf_counter_t X = {#X}; \
+   do { \
+      if (!(X).registered) \
+         rarch_perf_register(&(X)); \
+   } while(0)
+
+#define RARCH_PERFORMANCE_START(X) do { \
+   (X).call_cnt++; \
+   (X).start  = rarch_get_perf_counter(); \
+} while(0)
+
+#define RARCH_PERFORMANCE_STOP(X) do { \
+   (X).total += rarch_get_perf_counter() - (X).start; \
+} while(0)
+
+#elif !defined(RARCH_INTERNAL)
+
+#define RARCH_PERFORMANCE_INIT(X, perf_register_cb)  static retro_perf_counter_t X = {#X}; \
+   do { \
+      if (!(X).registered) \
+         perf_register_cb(&(X)); \
+   } while(0)
+
+#define RARCH_PERFORMANCE_START(X, get_perf_counter_cb) do { \
+   (X).call_cnt++; \
+   (X).start  = get_perf_counter_cb(); \
+} while(0)
+
+#define RARCH_PERFORMANCE_STOP(X, get_perf_counter_cb) do { \
+   (X).total += get_perf_counter_cb() - (X).start; \
+} while(0)
+#else
+#define RARCH_PERFORMANCE_INIT(X)
+#define RARCH_PERFORMANCE_START(X)
+#define RARCH_PERFORMANCE_STOP(X)
+#endif
 
 // FIXME: Document the sensor API and work out behavior.
 // It will be marked as experimental until then.

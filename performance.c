@@ -15,6 +15,7 @@
  */
 
 #include <stdio.h>
+#include "libretro.h"
 #include "performance.h"
 #include "general.h"
 
@@ -69,12 +70,11 @@
 
 #include <string.h>
 
-#ifdef PERF_TEST
 #define MAX_COUNTERS 64
-static struct rarch_perf_counter *perf_counters[MAX_COUNTERS];
+static struct retro_perf_counter *perf_counters[MAX_COUNTERS];
 static unsigned perf_ptr;
 
-void rarch_perf_register(struct rarch_perf_counter *perf)
+void rarch_perf_register(struct retro_perf_counter *perf)
 {
    if (perf_ptr >= MAX_COUNTERS)
       return;
@@ -91,9 +91,9 @@ void rarch_perf_log(void)
       RARCH_PERFORMANCE_LOG(perf_counters[i]->ident, *perf_counters[i]);
 }
 
-rarch_perf_tick_t rarch_get_perf_counter(void)
+retro_perf_tick_t rarch_get_perf_counter(void)
 {
-   rarch_perf_tick_t time = 0;
+   retro_perf_tick_t time = 0;
 #ifdef _XBOX1
 
 #define rdtsc	__asm __emit 0fh __asm __emit 031h
@@ -106,7 +106,7 @@ rarch_perf_tick_t rarch_get_perf_counter(void)
 #elif defined(__linux__) || defined(__QNX__)
    struct timespec tv;
    if (clock_gettime(CLOCK_MONOTONIC, &tv) == 0)
-      time = (rarch_perf_tick_t)tv.tv_sec * 1000000000 + (rarch_perf_tick_t)tv.tv_nsec;
+      time = (retro_perf_tick_t)tv.tv_sec * 1000000000 + (retro_perf_tick_t)tv.tv_nsec;
    else
       time = 0;
 
@@ -117,7 +117,7 @@ rarch_perf_tick_t rarch_get_perf_counter(void)
 #elif defined(__x86_64__)
    unsigned a, d;
    asm volatile ("rdtsc" : "=a" (a), "=d" (d));
-   time = (rarch_perf_tick_t)a | ((rarch_perf_tick_t)d << 32);
+   time = (retro_perf_tick_t)a | ((retro_perf_tick_t)d << 32);
 #endif
 
 #elif defined(__ARM_ARCH_6__)
@@ -128,9 +128,8 @@ rarch_perf_tick_t rarch_get_perf_counter(void)
 
    return time;
 }
-#endif
 
-rarch_time_t rarch_get_time_usec(void)
+retro_time_t rarch_get_time_usec(void)
 {
 #if defined(_WIN32)
    static LARGE_INTEGER freq;
@@ -201,9 +200,9 @@ static void x86_cpuid(int func, int flags[4])
 }
 #endif
 
-void rarch_get_cpu_features(struct rarch_cpu_features *cpu)
+void rarch_get_cpu_features(unsigned *cpu)
 {
-   memset(cpu, 0, sizeof(*cpu));
+   *cpu = 0;
 
 #if defined(CPU_X86)
    int flags[4];
@@ -220,41 +219,41 @@ void rarch_get_cpu_features(struct rarch_cpu_features *cpu)
    x86_cpuid(1, flags);
 
    if (flags[3] & (1 << 25))
-      cpu->simd |= RARCH_SIMD_SSE;
+      *cpu |= RETRO_SIMD_SSE;
 
    if (flags[3] & (1 << 26))
-      cpu->simd |= RARCH_SIMD_SSE2;
+      *cpu |= RETRO_SIMD_SSE2;
 
    if (flags[2] & (1 << 0))
-      cpu->simd |= RARCH_SIMD_SSE3;
+      *cpu |= RETRO_SIMD_SSE3;
 
    if (flags[2] & (1 << 9))
-      cpu->simd |= RARCH_SIMD_SSSE3;
+      *cpu |= RETRO_SIMD_SSSE3;
 
    const int avx_flags = (1 << 27) | (1 << 28);
    if ((flags[2] & avx_flags) == avx_flags)
-      cpu->simd |= RARCH_SIMD_AVX;
+      *cpu |= RETRO_SIMD_AVX;
 
-   RARCH_LOG("[CPUID]: SSE:   %u\n", !!(cpu->simd & RARCH_SIMD_SSE));
-   RARCH_LOG("[CPUID]: SSE2:  %u\n", !!(cpu->simd & RARCH_SIMD_SSE2));
-   RARCH_LOG("[CPUID]: SSE3:  %u\n", !!(cpu->simd & RARCH_SIMD_SSE3));
-   RARCH_LOG("[CPUID]: SSSE3: %u\n", !!(cpu->simd & RARCH_SIMD_SSSE3));
-   RARCH_LOG("[CPUID]: AVX:   %u\n", !!(cpu->simd & RARCH_SIMD_AVX));
+   RARCH_LOG("[CPUID]: SSE:   %u\n", !!(*cpu & RETRO_SIMD_SSE));
+   RARCH_LOG("[CPUID]: SSE2:  %u\n", !!(*cpu & RETRO_SIMD_SSE2));
+   RARCH_LOG("[CPUID]: SSE3:  %u\n", !!(*cpu & RETRO_SIMD_SSE3));
+   RARCH_LOG("[CPUID]: SSSE3: %u\n", !!(*cpu & RETRO_SIMD_SSSE3));
+   RARCH_LOG("[CPUID]: AVX:   %u\n", !!(*cpu & RETRO_SIMD_AVX));
 #elif defined(ANDROID) && defined(ANDROID_ARM)
    uint64_t cpu_flags = android_getCpuFeatures();
 
    if (cpu_flags & ANDROID_CPU_ARM_FEATURE_NEON)
-      cpu->simd |= RARCH_SIMD_NEON;
+      *cpu |= RETRO_SIMD_NEON;
 
-   RARCH_LOG("[CPUID]: NEON: %u\n", !!(cpu->simd & RARCH_SIMD_NEON));
+   RARCH_LOG("[CPUID]: NEON: %u\n", !!(*cpu & RETRO_SIMD_NEON));
 #elif defined(HAVE_NEON)
-   cpu->simd |= RARCH_SIMD_NEON;
-   RARCH_LOG("[CPUID]: NEON: %u\n", !!(cpu->simd & RARCH_SIMD_NEON));
+   *cpu |= RETRO_SIMD_NEON;
+   RARCH_LOG("[CPUID]: NEON: %u\n", !!(*cpu & RETRO_SIMD_NEON));
 #elif defined(__CELLOS_LV2__)
-   cpu->simd |= RARCH_SIMD_VMX;
-   RARCH_LOG("[CPUID]: VMX: %u\n", !!(cpu->simd & RARCH_SIMD_VMX));
+   *cpu |= RETRO_SIMD_VMX;
+   RARCH_LOG("[CPUID]: VMX: %u\n", !!(*cpu & RETRO_SIMD_VMX));
 #elif defined(XBOX360)
-   cpu->simd |= RARCH_SIMD_VMX128;
-   RARCH_LOG("[CPUID]: VMX128: %u\n", !!(cpu->simd & RARCH_SIMD_VMX128));
+   *cpu |= RETRO_SIMD_VMX128;
+   RARCH_LOG("[CPUID]: VMX128: %u\n", !!(*cpu & RETRO_SIMD_VMX128));
 #endif
 }

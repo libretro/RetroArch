@@ -366,9 +366,7 @@ returntype main_entry(signature())
    rarch_deinit_msg_queue();
    global_uninit_drivers();
 
-#ifdef PERF_TEST
    rarch_perf_log();
-#endif
 
 #if defined(HAVE_LOGGER) && !defined(ANDROID)
    logger_shutdown();

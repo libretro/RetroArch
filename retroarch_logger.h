@@ -19,8 +19,6 @@
 
 #include <stdarg.h>
 
-#define RARCH_INTERNAL
-
 #if defined(ANDROID) && defined(HAVE_LOGGER)
 #include <android/log.h>
 #endif

@@ -840,6 +840,16 @@ bool rarch_environment_cb(unsigned cmd, void *data)
          break;
       }
 
+      case RETRO_ENVIRONMENT_GET_PERF_INTERFACE:
+      {
+         RARCH_LOG("Environ GET_PERF_INTERFACE.\n");
+         struct retro_perf_callback *cb = (struct retro_perf_callback*)data;
+         cb->get_perf_counter = rarch_get_perf_counter;
+         cb->get_time_usec    = rarch_get_time_usec;
+         cb->get_cpu_features = rarch_get_cpu_features;
+         break;
+      }
+
       // Private extensions for internal use, not part of libretro API.
       case RETRO_ENVIRONMENT_SET_LIBRETRO_PATH:
          RARCH_LOG("Environ (Private) SET_LIBRETRO_PATH.\n");

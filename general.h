@@ -386,8 +386,8 @@ struct global
 
    struct
    {
-      rarch_time_t minimum_frame_time;
-      rarch_time_t last_frame_time;
+      retro_time_t minimum_frame_time;
+      retro_time_t last_frame_time;
    } frame_limit;
 
    struct
@@ -465,7 +465,7 @@ struct global
       uint64_t buffer_free_samples_count;
 
 #define MEASURE_FRAME_TIME_SAMPLES_COUNT (2 * 1024)
-      rarch_time_t frame_time_samples[MEASURE_FRAME_TIME_SAMPLES_COUNT];
+      retro_time_t frame_time_samples[MEASURE_FRAME_TIME_SAMPLES_COUNT];
       uint64_t frame_time_samples_count;
    } measure_data;
 

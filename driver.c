@@ -17,6 +17,7 @@
 #include "driver.h"
 #include "general.h"
 #include "file.h"
+#include "libretro.h"
 #include <stdio.h>
 #include <string.h>
 #include <math.h>
@@ -1017,7 +1018,7 @@ bool driver_monitor_fps_statistics(double *refresh_rate, double *deviation, unsi
       return false;
 
    // Measure statistics on frame time (microsecs), *not* FPS.
-   rarch_time_t accum = 0;
+   retro_time_t accum = 0;
    for (i = 0; i < samples; i++)
       accum += g_extern.measure_data.frame_time_samples[i];
 
@@ -1027,13 +1028,13 @@ bool driver_monitor_fps_statistics(double *refresh_rate, double *deviation, unsi
             i, (int)g_extern.measure_data.frame_time_samples[i]);
 #endif
 
-   rarch_time_t avg = accum / samples;
-   rarch_time_t accum_var = 0;
+   retro_time_t avg = accum / samples;
+   retro_time_t accum_var = 0;
 
    // Drop first measurement. It is likely to be bad.
    for (i = 0; i < samples; i++)
    {
-      rarch_time_t diff = g_extern.measure_data.frame_time_samples[i] - avg;
+      retro_time_t diff = g_extern.measure_data.frame_time_samples[i] - avg;
       accum_var += diff * diff;
    }
 

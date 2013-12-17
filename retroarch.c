@@ -2868,7 +2868,7 @@ static void init_system_av_info(void)
 {
    pretro_get_system_av_info(&g_extern.system.av_info);
    g_extern.frame_limit.last_frame_time = rarch_get_time_usec();
-   g_extern.frame_limit.minimum_frame_time = (rarch_time_t)roundf(1000000.0f / (g_extern.system.av_info.timing.fps * g_settings.fastforward_ratio));
+   g_extern.frame_limit.minimum_frame_time = (retro_time_t)roundf(1000000.0f / (g_extern.system.av_info.timing.fps * g_settings.fastforward_ratio));
 }
 
 static void verify_api_version(void)
@@ -2883,7 +2883,7 @@ static void verify_api_version(void)
 // Ideally, code would get swapped out depending on CPU support, but this will do for now.
 static void validate_cpu_features(void)
 {
-   struct rarch_cpu_features cpu;
+   unsigned cpu;
    rarch_get_cpu_features(&cpu);
 
 #define FAIL_CPU(simd_type) do { \
@@ -2892,15 +2892,15 @@ static void validate_cpu_features(void)
 } while(0)
 
 #ifdef __SSE__
-   if (!(cpu.simd & RARCH_SIMD_SSE))
+   if (!(cpu & RETRO_SIMD_SSE))
       FAIL_CPU("SSE");
 #endif
 #ifdef __SSE2__
-   if (!(cpu.simd & RARCH_SIMD_SSE2))
+   if (!(cpu & RETRO_SIMD_SSE2))
       FAIL_CPU("SSE2");
 #endif
 #ifdef __AVX__
-   if (!(cpu.simd & RARCH_SIMD_AVX))
+   if (!(cpu & RETRO_SIMD_AVX))
       FAIL_CPU("AVX");
 #endif
 }
@@ -3051,8 +3051,8 @@ static inline void update_frame_time(void)
    if (!g_extern.system.frame_time.callback)
       return;
 
-   rarch_time_t time = rarch_get_time_usec();
-   rarch_time_t delta = 0;
+   retro_time_t time = rarch_get_time_usec();
+   retro_time_t delta = 0;
 
    bool is_locked_fps = g_extern.is_paused || driver.nonblock_state;
 #ifdef HAVE_FFMPEG
@@ -3076,9 +3076,9 @@ static inline void limit_frame_time(void)
    if (g_settings.fastforward_ratio < 0.0f)
       return;
 
-   rarch_time_t current = rarch_get_time_usec();
-   rarch_time_t target = g_extern.frame_limit.last_frame_time + g_extern.frame_limit.minimum_frame_time;
-   rarch_time_t to_sleep_ms = (target - current) / 1000;
+   retro_time_t current = rarch_get_time_usec();
+   retro_time_t target = g_extern.frame_limit.last_frame_time + g_extern.frame_limit.minimum_frame_time;
+   retro_time_t to_sleep_ms = (target - current) / 1000;
    if (to_sleep_ms > 0)
    {
       rarch_sleep((unsigned int)to_sleep_ms);
