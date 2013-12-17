@@ -629,38 +629,28 @@ struct retro_perf_callback
 };
 
 #if defined(PERF_TEST)
+#define retro_perf_register_func rarch_perf_register
+#define retro_get_perf_counter_func rarch_get_perf_counter
+#elif !defined(RARCH_INTERNAL)
+#define retro_perf_register_func perf_register_cb
+#define retro_get_perf_counter_func get_perf_counter_cb
+#endif
 
+#if defined(PERF_TEST) || !defined(RARCH_INTERNAL)
 #define RETRO_PERFORMANCE_INIT(X) \
    static retro_perf_counter_t X = {#X}; \
    do { \
       if (!(X).registered) \
-         rarch_perf_register(&(X)); \
+         retro_perf_register_func(&(X)); \
    } while(0)
 
 #define RETRO_PERFORMANCE_START(X) do { \
    (X).call_cnt++; \
-   (X).start  = rarch_get_perf_counter(); \
+   (X).start  = retro_get_perf_counter_func(); \
 } while(0)
 
 #define RETRO_PERFORMANCE_STOP(X) do { \
-   (X).total += rarch_get_perf_counter() - (X).start; \
-} while(0)
-
-#elif !defined(RARCH_INTERNAL)
-
-#define RETRO_PERFORMANCE_INIT(X, perf_register_cb)  static retro_perf_counter_t X = {#X}; \
-   do { \
-      if (!(X).registered) \
-         perf_register_cb(&(X)); \
-   } while(0)
-
-#define RETRO_PERFORMANCE_START(X, get_perf_counter_cb) do { \
-   (X).call_cnt++; \
-   (X).start  = get_perf_counter_cb(); \
-} while(0)
-
-#define RETRO_PERFORMANCE_STOP(X, get_perf_counter_cb) do { \
-   (X).total += get_perf_counter_cb() - (X).start; \
+   (X).total += retro_get_perf_counter_func() - (X).start; \
 } while(0)
 #else
 #define RETRO_PERFORMANCE_INIT(X)
