@@ -635,6 +635,7 @@ struct retro_perf_callback
 #define retro_get_perf_counter_func_exists 1
 #else
 #define retro_perf_register_func perf_register_cb
+#define retro_perf_register_func_exists retro_perf_register_func
 #define retro_get_perf_counter_func perf_get_counter_cb
 #define retro_get_perf_counter_func_exists retro_get_perf_counter_func
 #endif
