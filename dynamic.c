@@ -848,6 +848,7 @@ bool rarch_environment_cb(unsigned cmd, void *data)
          cb->get_time_usec    = rarch_get_time_usec;
          cb->get_cpu_features = rarch_get_cpu_features;
          cb->perf_log         = rarch_perf_log;
+         cb->perf_register    = rarch_perf_register;
          break;
       }
 
