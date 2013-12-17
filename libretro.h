@@ -616,12 +616,14 @@ typedef struct retro_perf_counter
 typedef retro_time_t (*retro_perf_get_time_usec_t)(void);
 typedef retro_perf_tick_t (*retro_perf_get_counter_t)(void);
 typedef void (*retro_get_cpu_features_t)(unsigned*);
+typedef void (*retro_perf_log_t)(void);
 
 struct retro_perf_callback
 {
    retro_perf_get_time_usec_t    get_time_usec;
    retro_perf_get_counter_t      get_perf_counter; 
    retro_get_cpu_features_t      get_cpu_features;
+   retro_perf_log_t              perf_log;
 };
 
 #if defined(PERF_TEST)
