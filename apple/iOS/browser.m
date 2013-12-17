@@ -32,9 +32,9 @@ static bool zlib_extract_callback(const char *name,
 {
    char path[PATH_MAX];   
    
-   if (cmode != 0 || cmode != 8)
+   if (cmode != 0 && cmode != 8)
    {
-      RARCH_WARN("Could not unzip %s (unknown mode %d)\n", name, cmode);
+      apple_display_alert([NSString stringWithFormat:@"Could not unzip %s (unknown mode %d)", name, cmode], @"Action Failed");
       return false;
    }
 
