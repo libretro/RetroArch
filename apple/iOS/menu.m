@@ -882,9 +882,7 @@ static const void* const associated_core_key = &associated_core_key;
       core_info_list_t* core_list = apple_core_info_list_get();
       if (core_list)
       {
-         if (!_path)
-            [self load:core_list->count coresFromList:core_list->list toSection:core_section];
-         else
+         if (_path)
          {
             const core_info_t* core_support = 0;
             size_t core_count = 0;
@@ -895,6 +893,9 @@ static const void* const associated_core_key = &associated_core_key;
             else if (core_count > 1)
                [self load:core_count coresFromList:core_support toSection:core_section];
          }
+         
+         if (!_path || [core_section count] == 1)
+            [self load:core_list->count coresFromList:core_list->list toSection:core_section];
       }
    }
 
