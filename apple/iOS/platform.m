@@ -161,13 +161,11 @@ static void handle_touch_event(NSArray* touches)
    if (get_ios_version_major() < 7 && [event respondsToSelector:@selector(_gsEvent)])
    {
       // Stolen from: http://nacho4d-nacho4d.blogspot.com/2012/01/catching-keyboard-events-in-ios.html
-      uint8_t* eventMem = (uint8_t*)(void*)CFBridgingRetain([event performSelector:@selector(_gsEvent)]);
+      const uint8_t* eventMem = objc_unretainedPointer([event performSelector:@selector(_gsEvent)]);
       int eventType = eventMem ? *(int*)&eventMem[8] : 0;
       
       if (eventType == GSEVENT_TYPE_KEYDOWN || eventType == GSEVENT_TYPE_KEYUP)
          apple_input_handle_key_event(*(uint16_t*)&eventMem[0x3C], eventType == GSEVENT_TYPE_KEYDOWN);
-      
-      CFBridgingRelease(eventMem);
    }
 }
 
