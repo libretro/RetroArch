@@ -200,11 +200,4 @@
 /*********************************************/
 @interface RAMenuItemStateSelect : NSObject<RAMenuItemBase> @end
 
-/*********************************************/
-/* RAPauseMenu                               */
-/* Menu which provides options for the       */
-/* currently running game.                   */
-/*********************************************/
-@interface RAPauseMenu : RAMenuBase @end
-
 #endif

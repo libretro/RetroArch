@@ -178,7 +178,6 @@ static void handle_touch_event(NSArray* touches)
    UIWindow* _window;
    NSString* _path;
 
-   bool _isGameTop;
    uint32_t _enabledOrientations;
 }
 
@@ -195,7 +194,7 @@ static void handle_touch_event(NSArray* touches)
 
    // Setup window
    _window = [[UIWindow alloc] initWithFrame:[[UIScreen mainScreen] bounds]];
-   _window.rootViewController = self;
+   [self showPauseMenu:self];
    [_window makeKeyAndVisible];
 
    // Build system paths and test permissions
@@ -264,13 +263,7 @@ static void handle_touch_event(NSArray* touches)
 - (void)navigationController:(UINavigationController *)navigationController willShowViewController:(UIViewController *)viewController animated:(BOOL)animated
 {
    apple_input_reset_icade_buttons();
-   _isGameTop = [viewController isKindOfClass:[RAGameView class]];
-   g_extern.is_paused = !_isGameTop;
 
-   [[UIApplication sharedApplication] setStatusBarHidden:_isGameTop withAnimation:UIStatusBarAnimationNone];
-   [[UIApplication sharedApplication] setIdleTimerDisabled:_isGameTop];
-
-   [self setNavigationBarHidden:_isGameTop animated:!_isGameTop];
    [self setToolbarHidden:!viewController.toolbarItems.count animated:YES];
    
    // Workaround to keep frontend settings fresh
@@ -280,14 +273,14 @@ static void handle_touch_event(NSArray* touches)
 // NOTE: This version only runs on iOS6
 - (NSUInteger)supportedInterfaceOrientations
 {
-   return _isGameTop ? _enabledOrientations
-                     : UIInterfaceOrientationMaskAll;
+   return g_extern.is_paused ? _enabledOrientations
+                             : UIInterfaceOrientationMaskAll;
 }
 
 // NOTE: This version runs on iOS2-iOS5, but not iOS6
 - (BOOL)shouldAutorotateToInterfaceOrientation:(UIInterfaceOrientation)interfaceOrientation
 {
-   if (_isGameTop)
+   if (!g_extern.is_paused)
       switch (interfaceOrientation)
       {
          case UIInterfaceOrientationPortrait:
@@ -303,23 +296,42 @@ static void handle_touch_event(NSArray* touches)
    return YES;
 }
 
+- (void)showGameView
+{
+   [self popToRootViewControllerAnimated:NO];
+   [_window setRootViewController:[RAGameView get]];
+   
+   g_extern.is_paused = false;
+   
+   [[UIApplication sharedApplication] setStatusBarHidden:true withAnimation:UIStatusBarAnimationNone];
+   [[UIApplication sharedApplication] setIdleTimerDisabled:true];
+}
+
+- (IBAction)showPauseMenu:(id)sender
+{
+   [_window setRootViewController:self];
+
+   g_extern.is_paused = true;
+   
+   [[UIApplication sharedApplication] setStatusBarHidden:false withAnimation:UIStatusBarAnimationNone];
+   [[UIApplication sharedApplication] setIdleTimerDisabled:false];
+}
 
 #pragma mark RetroArch_Platform
 - (void)loadingCore:(NSString*)core withFile:(const char*)file
 {
-   [self pushViewController:RAGameView.get animated:NO];
    (void)[[RACoreSettingsMenu alloc] initWithCore:core];
 
    btpad_set_inquiry_state(false);
 
    [self refreshSystemConfig];
+   [self showGameView];
 }
 
 - (void)unloadingCore:(NSString*)core
 {
-   [self popToViewController:[RAGameView get] animated:NO];
-   [self popViewControllerAnimated:NO];
-      
+   [self showPauseMenu:self];
+   
    btpad_set_inquiry_state(true);
 }
 
@@ -337,11 +349,6 @@ static void handle_touch_event(NSArray* touches)
    // Set bluetooth mode
    ios_set_bluetooth_mode(BOXSTRING(apple_frontend_settings.bluetooth_mode));
    ios_set_logging_state([RetroArch_iOS get].logPath.UTF8String, apple_frontend_settings.logging_enabled);
-}
-
-- (IBAction)showPauseMenu:(id)sender
-{
-   [self pushViewController:[RAPauseMenu new] animated:YES];
 }
 
 @end

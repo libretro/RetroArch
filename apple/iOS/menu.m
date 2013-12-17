@@ -436,25 +436,66 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
 {
    if ((self = [super initWithStyle:UITableViewStylePlain]))
    {
-      RAMainMenu* __weak weakSelf = self;
-   
       self.title = @"RetroArch";
-   
-      self.sections =
-      (id)@[
-         @[ @"",
-            [RAMenuItemBasic itemWithDescription:@"Choose Core"
-               action:^{ [weakSelf chooseCoreWithPath:nil]; }
-               detail:^{ return weakSelf.core ? apple_get_core_display_name(weakSelf.core) : @"Auto Detect"; }],
-            [RAMenuItemBasic itemWithDescription:@"Load Content"                 action:^{ [weakSelf loadGame]; }],
-            [RAMenuItemBasic itemWithDescription:@"Load Content (History)"       action:^{ [weakSelf loadHistory]; }],
-            [RAMenuItemBasic itemWithDescription:@"Settings"
-               action:^{ [weakSelf.navigationController pushViewController:[RAFrontendSettingsMenu new] animated:YES]; }]
-         ]
-      ];
    }
    
    return self;
+}
+
+- (void)viewWillAppear:(BOOL)animated
+{
+   [self reloadData];
+}
+
+- (void)willReloadData
+{
+   RAMainMenu* __weak weakSelf = self;
+   self.sections = [NSMutableArray array];
+   
+   [self.sections addObject:[NSArray arrayWithObjects:@"Content",
+                              [RAMenuItemBasic itemWithDescription:@"Choose Core"
+                                 action:^{ [weakSelf chooseCoreWithPath:nil]; }
+                                 detail:^{ return weakSelf.core ? apple_get_core_display_name(weakSelf.core) : @"Auto Detect"; }],
+                              [RAMenuItemBasic itemWithDescription:@"Load Content"                 action:^{ [weakSelf loadGame]; }],
+                              [RAMenuItemBasic itemWithDescription:@"Load Content (History)"       action:^{ [weakSelf loadHistory]; }],
+                              nil]];
+
+   NSMutableArray* settings = [NSMutableArray arrayWithObjects:@"Settings",
+                                 [RAMenuItemBasic itemWithDescription:@"Frontend"
+                                    action:^{ [weakSelf.navigationController pushViewController:[RAFrontendSettingsMenu new] animated:YES]; }],
+                                 nil];
+   
+   if (apple_is_running)
+   {
+      [self.sections addObject:[NSArray arrayWithObjects:@"Actions",
+                                 [RAMenuItemBasic itemWithDescription:@"Reset Content" action:^{ [weakSelf performBasicAction:RESET]; }],
+                                 [RAMenuItemBasic itemWithDescription:@"Close Content" action:^{ [weakSelf performBasicAction:QUIT]; }],
+                                 nil]];
+      
+      [self.sections addObject:[NSArray arrayWithObjects:@"States",
+                                 [RAMenuItemStateSelect new],
+                                 [RAMenuItemBasic itemWithDescription:@"Load State" action:^{ [weakSelf performBasicAction:LOAD_STATE]; }],
+                                 [RAMenuItemBasic itemWithDescription:@"Save State" action:^{ [weakSelf performBasicAction:SAVE_STATE]; }],
+                                 nil]];
+      
+      [settings addObject:[RAMenuItemBasic itemWithDescription:@"Core"
+                              action:^{ [weakSelf.navigationController pushViewController:[[RACoreSettingsMenu alloc] initWithCore:apple_core] animated:YES]; }]];
+      [settings addObject:[RAMenuItemBasic itemWithDescription:@"Core Options"
+                              action:^{ [weakSelf.navigationController pushViewController:[RACoreOptionsMenu new] animated:YES]; }]];
+   }
+   
+   [self.sections addObject:settings];
+   
+   if (apple_is_running)
+      self.navigationItem.leftBarButtonItem = [[UIBarButtonItem alloc] initWithTitle:@"Resume" style:UIBarButtonItemStyleBordered target:[RetroArch_iOS get] action:@selector(showGameView)];
+   else
+      self.navigationItem.leftBarButtonItem = nil;
+}
+
+- (void)performBasicAction:(enum basic_event_t)action
+{
+   [[RetroArch_iOS get] showGameView];
+   apple_frontend_post_event(apple_event_basic_command, action);
 }
 
 - (void)chooseCoreWithPath:(NSString*)path
@@ -641,9 +682,6 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
             ^{
                [weakSelf.navigationController pushViewController:[[RASettingsGroupMenu alloc] initWithGroup:i] animated:YES];
             }]];
-      
-      [settings addObject:[RAMenuItemBasic itemWithDescription:@"Core Options"
-         action:^{ [weakSelf.navigationController pushViewController:[RACoreOptionsMenu new] animated:YES]; }]];
    }
    
    return self;
@@ -990,55 +1028,6 @@ static const void* const associated_core_key = &associated_core_key;
 - (void)wasSelectedOnTableView:(UITableView *)tableView ofController:(UIViewController *)controller
 {
 
-}
-
-@end
-
-/*********************************************/
-/* RAPauseMenu                               */
-/* Menu which provides options for the       */
-/* currently running game.                   */
-/*********************************************/
-@implementation RAPauseMenu
-
-- (id)init
-{
-   if ((self = [super initWithStyle:UITableViewStyleGrouped]))
-   {
-      RAPauseMenu* __weak weakSelf = self;
-      self.title = @"RetroArch Paused";
-
-      [self.sections addObject:@[@"Actions",
-         [RAMenuItemBasic itemWithDescription:@"Reset Content" action:^{ [weakSelf performBasicAction:RESET]; }],
-         [RAMenuItemBasic itemWithDescription:@"Close Content" action:^{ [weakSelf performBasicAction:QUIT]; }]
-      ]];
-
-      [self.sections addObject:@[@"States",
-         [RAMenuItemStateSelect new],
-         [RAMenuItemBasic itemWithDescription:@"Load State" action:^{ [weakSelf performBasicAction:LOAD_STATE]; }],
-         [RAMenuItemBasic itemWithDescription:@"Save State" action:^{ [weakSelf performBasicAction:SAVE_STATE]; }]
-      ]];
-   
-      [self.sections addObject:@[@"Settings",
-         [RAMenuItemBasic itemWithDescription:@"Frontend"
-            action:^{ [weakSelf.navigationController pushViewController:[RAFrontendSettingsMenu new] animated:YES]; }],
-         [RAMenuItemBasic itemWithDescription:@"Core"
-            action:^{ [weakSelf.navigationController pushViewController:[[RACoreSettingsMenu alloc] initWithCore:apple_core] animated:YES]; }]
-      ]];
-   }
-   
-   return self;
-}
-
-- (void)dealloc
-{
-   apple_refresh_config();
-}
-
-- (void)performBasicAction:(enum basic_event_t)action
-{
-   [self.navigationController popViewControllerAnimated:(action != QUIT)];
-   apple_frontend_post_event(apple_event_basic_command, action);
 }
 
 @end
