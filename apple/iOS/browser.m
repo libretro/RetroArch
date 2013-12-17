@@ -290,10 +290,12 @@ static void file_action(enum file_action action, NSString* source, NSString* tar
          self.selectedItem = [self itemForIndexPath:indexPath];
          bool is_zip = [[self.selectedItem.path pathExtension] isEqualToString:@"zip"];
 
+         NSString* button4_name = (get_ios_version_major() >= 7) ? @"AirDrop" : @"Delete";
+         NSString* button5_name = (get_ios_version_major() >= 7) ? @"Delete" : nil;
+         
          UIActionSheet* menu = [[UIActionSheet alloc] initWithTitle:self.selectedItem.path.lastPathComponent delegate:self
                                                       cancelButtonTitle:@"Cancel" destructiveButtonTitle:nil
-                                                      otherButtonTitles:is_zip ? @"Unzip" : @"Zip", @"Move", @"Rename", @"Delete", nil];
-         menu.destructiveButtonIndex = 3;
+                                                      otherButtonTitles:is_zip ? @"Unzip" : @"Zip", @"Move", @"Rename", button4_name, button5_name, nil];
          [menu showFromToolbar:self.navigationController.toolbar];
          
       }
@@ -304,27 +306,20 @@ static void file_action(enum file_action action, NSString* source, NSString* tar
 - (void)actionSheet:(UIActionSheet*)actionSheet clickedButtonAtIndex:(NSInteger)buttonIndex
 {
    NSString* target = self.selectedItem.path;
-
-   // Zip/Unzip
-   if (buttonIndex == actionSheet.firstOtherButtonIndex + 0)
+   NSString* action = [actionSheet buttonTitleAtIndex:buttonIndex];
+   
+   if ([action isEqualToString:@"Unzip"])
    {
-      if ([[self.selectedItem.path pathExtension] isEqualToString:@"zip"])
-      {
-         UIAlertView* alertView = [[UIAlertView alloc] initWithTitle:@"Enter target directory" message:@"" delegate:self
+      UIAlertView* alertView = [[UIAlertView alloc] initWithTitle:@"Enter target directory" message:@"" delegate:self
                                                    cancelButtonTitle:@"Cancel" otherButtonTitles:@"OK", nil];
-         alertView.alertViewStyle = UIAlertViewStylePlainTextInput;
-         alertView.tag = FA_UNZIP;
-         [alertView textFieldAtIndex:0].text = [[target lastPathComponent] stringByDeletingPathExtension];
-         [alertView show];
-      }
-      else
-         apple_display_alert(@"Action not supported.", @"Action Failed");
+      alertView.alertViewStyle = UIAlertViewStylePlainTextInput;
+      alertView.tag = FA_UNZIP;
+      [alertView textFieldAtIndex:0].text = [[target lastPathComponent] stringByDeletingPathExtension];
+      [alertView show];
    }
-   // Move
-   if (buttonIndex == actionSheet.firstOtherButtonIndex + 1)
+   else if ([action isEqualToString:@"Move"])
       [self.navigationController pushViewController:[[RAFoldersList alloc] initWithFilePath:target] animated:YES];
-   // Rename
-   else if (buttonIndex == actionSheet.firstOtherButtonIndex + 2)
+   else if ([action isEqualToString:@"Rename"])
    {
       UIAlertView* alertView = [[UIAlertView alloc] initWithTitle:@"Enter new name" message:@"" delegate:self
                                                     cancelButtonTitle:@"Cancel" otherButtonTitles:@"OK", nil];
@@ -333,14 +328,27 @@ static void file_action(enum file_action action, NSString* source, NSString* tar
       [alertView textFieldAtIndex:0].text = target.lastPathComponent;
       [alertView show];
    }
-   // Delete
-   else if (buttonIndex == actionSheet.destructiveButtonIndex)
+#ifdef __IPHONE_7_0
+   else if ([action isEqualToString:@"AirDrop"] && get_ios_version_major() >= 7)
+   {
+      // TODO: Zip if not already zipped
+      
+      NSURL* url = [NSURL fileURLWithPath:self.selectedItem.path isDirectory:self.selectedItem.isDirectory];
+      NSArray* items = [NSArray arrayWithObject:url];
+      UIActivityViewController* avc = [[UIActivityViewController alloc] initWithActivityItems:items applicationActivities:nil];
+      
+      [self presentViewController:avc animated:YES completion:nil];
+   }
+#endif
+   else if ([action isEqualToString:@"Delete"])
    {
       UIAlertView* alertView = [[UIAlertView alloc] initWithTitle:@"Really delete?" message:@"" delegate:self
                                                     cancelButtonTitle:@"Cancel" otherButtonTitles:@"OK", nil];
       alertView.tag = FA_DELETE;
       [alertView show];
    }
+   else if (![action isEqualToString:@"Cancel"])// Zip
+      apple_display_alert(@"Action not supported.", @"Action Failed");
 }
 
 // Called by various alert views created in this class, the alertView.tag value is the action to take.

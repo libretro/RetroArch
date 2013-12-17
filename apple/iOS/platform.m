@@ -32,6 +32,17 @@
 
 apple_frontend_settings_t apple_frontend_settings;
 
+int get_ios_version_major()
+{
+   static int version = -1;
+   
+   if (version < 0)
+      version = (int)[[[UIDevice currentDevice] systemVersion] floatValue];
+   
+   return version;
+}
+
+
 void ios_set_bluetooth_mode(NSString* mode)
 {
    apple_input_enable_icade([mode isEqualToString:@"icade"]);
