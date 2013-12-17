@@ -543,9 +543,7 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
 }
 
 - (void)willReloadData
-{
-   printf("DOING\n");
-   
+{  
    RAHistoryMenu* __weak weakSelf = self;
    NSMutableArray* section = [NSMutableArray arrayWithObject:@""];
    
