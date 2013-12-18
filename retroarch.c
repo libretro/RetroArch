@@ -276,9 +276,8 @@ static void video_frame(const void *data, unsigned width, unsigned height, size_
 
    if (g_extern.system.pix_fmt == RETRO_PIXEL_FORMAT_0RGB1555 && data && data != RETRO_HW_FRAME_BUFFER_VALID)
    {
-      static retro_perf_counter_t video_frame_conv = { "video_frame_conv", 0, 0, 0, false };
-      rarch_perf_init(&video_frame_conv, g_settings.perfcounter_enable);
-      rarch_perf_start(&video_frame_conv, g_settings.perfcounter_enable);
+      RARCH_PERFORMANCE_INIT(video_frame_conv);
+      RARCH_PERFORMANCE_START(video_frame_conv);
       driver.scaler.in_width = width;
       driver.scaler.in_height = height;
       driver.scaler.out_width = width;
@@ -289,7 +288,7 @@ static void video_frame(const void *data, unsigned width, unsigned height, size_
       scaler_ctx_scale(&driver.scaler, driver.scaler_out, data);
       data = driver.scaler_out;
       pitch = driver.scaler.out_stride;
-      rarch_perf_stop(&video_frame_conv, g_settings.perfcounter_enable);
+      RARCH_PERFORMANCE_STOP(video_frame_conv);
    }
 
    // Slightly messy code,
@@ -382,13 +381,11 @@ static bool audio_flush(const int16_t *data, size_t samples)
    unsigned output_frames      = 0;
 
    struct resampler_data src_data = {0};
-   static retro_perf_counter_t audio_convert_s16 = { "audio_convert_s16", 0, 0, 0, false };
-
-   rarch_perf_init(&audio_convert_s16, g_settings.perfcounter_enable);
-   rarch_perf_start(&audio_convert_s16, g_settings.perfcounter_enable);
+   RARCH_PERFORMANCE_INIT(audio_convert_s16);
+   RARCH_PERFORMANCE_START(audio_convert_s16);
    audio_convert_s16_to_float(g_extern.audio_data.data, data, samples,
          g_extern.audio_data.volume_gain);
-   rarch_perf_stop(&audio_convert_s16, g_settings.perfcounter_enable);
+   RARCH_PERFORMANCE_STOP(audio_convert_s16);
 
 #if defined(HAVE_DYLIB)
    rarch_dsp_output_t dsp_output = {0};
@@ -415,13 +412,11 @@ static bool audio_flush(const int16_t *data, size_t samples)
    if (g_extern.is_slowmotion)
       src_data.ratio *= g_settings.slowmotion_ratio;
 
-   static retro_perf_counter_t resampler_proc = { "resampler_proc", 0, 0, 0, false };
-
-   rarch_perf_init(&resampler_proc, g_settings.perfcounter_enable);
-   rarch_perf_start(&resampler_proc, g_settings.perfcounter_enable);
+   RARCH_PERFORMANCE_INIT(resampler_proc);
+   RARCH_PERFORMANCE_START(resampler_proc);
    rarch_resampler_process(g_extern.audio_data.resampler,
          g_extern.audio_data.resampler_data, &src_data);
-   rarch_perf_stop(&resampler_proc, g_settings.perfcounter_enable);
+   RARCH_PERFORMANCE_STOP(resampler_proc);
 
    output_data   = g_extern.audio_data.outsamples;
    output_frames = src_data.output_frames;
@@ -436,12 +431,11 @@ static bool audio_flush(const int16_t *data, size_t samples)
    }
    else
    {
-      static retro_perf_counter_t audio_convert_float = { "audio_convert_float", 0, 0, 0, false };
-      rarch_perf_init(&audio_convert_float, g_settings.perfcounter_enable);
-      rarch_perf_start(&audio_convert_float, g_settings.perfcounter_enable);
+      RARCH_PERFORMANCE_INIT(audio_convert_float);
+      RARCH_PERFORMANCE_START(audio_convert_float);
       audio_convert_float_to_s16(g_extern.audio_data.conv_outsamples,
             output_data, output_frames * 2);
-      rarch_perf_stop(&audio_convert_float, g_settings.perfcounter_enable);
+      RARCH_PERFORMANCE_STOP(audio_convert_float);
 
       if (audio_write_func(g_extern.audio_data.conv_outsamples, output_frames * sizeof(int16_t) * 2) < 0)
       {
@@ -2889,8 +2883,7 @@ static void verify_api_version(void)
 // Ideally, code would get swapped out depending on CPU support, but this will do for now.
 static void validate_cpu_features(void)
 {
-   unsigned cpu;
-   rarch_get_cpu_features(&cpu);
+   uint64_t cpu = rarch_get_cpu_features();
 
 #define FAIL_CPU(simd_type) do { \
    RARCH_ERR(simd_type " code is compiled in, but CPU does not support this feature. Cannot continue.\n"); \

@@ -353,9 +353,8 @@ static void vg_copy_frame(void *data, const void *frame, unsigned width, unsigne
 
 static bool vg_frame(void *data, const void *frame, unsigned width, unsigned height, unsigned pitch, const char *msg)
 {
-   static retro_perf_counter_t vg_fr = { "vg_fr", 0, 0, 0, false };
-   rarch_perf_init(&vg_fr, g_settings.perfcounter_enable);
-   rarch_perf_start(&vg_fr, g_settings.perfcounter_enable);
+   RARCH_PERFORMANCE_INIT(vg_fr);
+   RARCH_PERFORMANCE_START(vg_fr);
    vg_t *vg = (vg_t*)data;
 
    if (width != vg->mRenderWidth || height != vg->mRenderHeight || vg->should_resize)
@@ -377,11 +376,10 @@ static bool vg_frame(void *data, const void *frame, unsigned width, unsigned hei
    vgClear(0, 0, vg->mScreenWidth, vg->mScreenHeight);
    vgSeti(VG_SCISSORING, VG_TRUE);
 
-   static retro_perf_counter_t vg_image = { "vg_image", 0, 0, 0, false };
-   rarch_perf_init(&vg_image, g_settings.perfcounter_enable);
-   rarch_perf_start(&vg_image, g_settings.perfcounter_enable);
+   RARCH_PERFORMANCE_INIT(vg_image);
+   RARCH_PERFORMANCE_START(vg_image);
    vg_copy_frame(vg, frame, width, height, pitch);
-   rarch_perf_stop(&vg_image, g_settings.perfcounter_enable);
+   RARCH_PERFORMANCE_STOP(vg_image);
 
    vgDrawImage(vg->mImage);
 
@@ -390,7 +388,7 @@ static bool vg_frame(void *data, const void *frame, unsigned width, unsigned hei
 
    vg->driver->update_window_title();
 
-   rarch_perf_stop(&vg_fr, g_settings.perfcounter_enable);
+   RARCH_PERFORMANCE_STOP(vg_fr);
    vg->driver->swap_buffers();
 
    return true;

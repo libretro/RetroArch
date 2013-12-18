@@ -18,6 +18,7 @@
 #include "compat/strl.h"
 #include "compat/posix_string.h"
 #include "retroarch_logger.h"
+#include "performance.h"
 #include "file.h"
 #include <string.h>
 #include <ctype.h>
@@ -417,6 +418,9 @@ void uninit_libretro_sym(void)
 
    // No longer valid.
    memset(&g_extern.system, 0, sizeof(g_extern.system));
+
+   // Performance counters no longer valid.
+   retro_perf_clear();
 }
 
 #ifdef NEED_DYNAMIC
@@ -844,15 +848,13 @@ bool rarch_environment_cb(unsigned cmd, void *data)
       {
          RARCH_LOG("Environ GET_PERF_INTERFACE.\n");
          struct retro_perf_callback *cb = (struct retro_perf_callback*)data;
-         cb->get_perf_counter  = rarch_get_perf_counter;
-         cb->get_time_usec     = rarch_get_time_usec;
-         cb->get_cpu_features  = rarch_get_cpu_features;
-         cb->perf_init         = rarch_perf_init;
-         cb->perf_start        = rarch_perf_start;
-         cb->perf_stop         = rarch_perf_stop;
-         cb->perf_log          = rarch_perf_log;
-         cb->perf_logs         = rarch_perf_logs;
-         cb->perf_register     = rarch_perf_register;
+         cb->get_time_usec    = rarch_get_time_usec;
+         cb->get_cpu_features = rarch_get_cpu_features;
+         cb->get_perf_counter = rarch_get_perf_counter;
+         cb->perf_register    = retro_perf_register; // libretro specific path.
+         cb->perf_start       = rarch_perf_start;
+         cb->perf_stop        = rarch_perf_stop;
+         cb->perf_log         = retro_perf_log; // libretro specific path.
          break;
       }
 
