@@ -587,9 +587,9 @@ struct retro_log_callback
    retro_log_printf_t log;
 };
 
-// Performance functions
+// Performance related functions
 //
-// Id values for SIMD CPU features
+// ID values for SIMD CPU features
 #define RETRO_SIMD_SSE      (1 << 0)
 #define RETRO_SIMD_SSE2     (1 << 1)
 #define RETRO_SIMD_VMX      (1 << 2)
@@ -599,10 +599,10 @@ struct retro_log_callback
 #define RETRO_SIMD_SSE3     (1 << 6)
 #define RETRO_SIMD_SSSE3    (1 << 7)
 
-typedef unsigned long long retro_perf_tick_t;
+typedef uint64_t retro_perf_tick_t;
 typedef int64_t retro_time_t;
 
-typedef struct retro_perf_counter
+struct retro_perf_counter
 {
    const char *ident;
    retro_perf_tick_t start;
@@ -610,30 +610,67 @@ typedef struct retro_perf_counter
    retro_perf_tick_t call_cnt;
 
    bool registered;
-} retro_perf_counter_t;
+};
 
-
+// Returns current time in microsec sec. Tries to use the most accurate timer available.
 typedef retro_time_t (*retro_perf_get_time_usec_t)(void);
+// A simple counter. Usually nanoseconds, but can also be CPU cycles.
+// Can be used directly if desired (when creating a more sophisticated performance counter system).
 typedef retro_perf_tick_t (*retro_perf_get_counter_t)(void);
-typedef void (*retro_get_cpu_features_t)(unsigned*);
-typedef void (*retro_perf_init_t)(void*, bool);
-typedef void (*retro_perf_start_t)(void*, bool);
-typedef void (*retro_perf_stop_t)(void*, bool);
-typedef void (*retro_perf_log_t)(void*, const char*, bool);
-typedef void (*retro_perf_logs_t)(void);
-typedef void (*retro_perf_register_t)(retro_perf_counter_t*);
+// Returns a bit-mask of detected CPU features (RETRO_SIMD_*).
+typedef uint64_t (*retro_get_cpu_features_t)(void);
+// Asks frontend to log and/or display the state of performance counters.
+// Performance counters can always be poked into manually as well.
+typedef void (*retro_perf_log_t)(void);
+// Register a performance counter.
+// ident field must be set with a discrete value and other values in retro_perf_counter must be 0.
+// Registering can be called multiple times. To avoid calling to frontend redundantly, you can check registered field first.
+typedef void (*retro_perf_register_t)(struct retro_perf_counter *counter);
+// Starts and stops a registered counter.
+typedef void (*retro_perf_start_t)(struct retro_perf_counter *counter);
+typedef void (*retro_perf_stop_t)(struct retro_perf_counter *counter);
+
+// For convenience it can be useful to wrap register, start and stop in macros.
+// E.g.:
+// #ifdef LOG_PERFORMANCE
+// #define RETRO_PERFORMANCE_INIT(perf_cb, name) static struct retro_perf_counter name = {#name}; if (!perf_cb.registered) perf_cb.perf_register(&(name))
+// #define RETRO_PERFORMANCE_START(perf_cb, name) perf_cb.start(&(name))
+// #define RETRO_PERFORMANCE_STOP(perf_cb, name) perf_cb.stop(&(name))
+// #else
+// ... Blank macros ...
+// #endif
+// These can then be used mid-functions around code snippets.
+//
+// extern struct retro_perf_callback perf_cb; // Somewhere in the core.
+//
+// void do_some_heavy_work(void)
+// {
+//    RETRO_PERFORMANCE_INIT(cb, work_1);
+//    RETRO_PERFORMANCE_START(cb, work_1);
+//    heavy_work_1();
+//    RETRO_PERFORMANCE_STOP(cb, work_1);
+//
+//    RETRO_PERFORMANCE_INIT(cb, work_2);
+//    RETRO_PERFORMANCE_START(cb, work_2);
+//    heavy_work_2();
+//    RETRO_PERFORMANCE_STOP(cb, work_2);
+// }
+//
+// void retro_deinit(void)
+// {
+//    perf_cb.perf_log(); // Log all perf counters here for example.
+// }
 
 struct retro_perf_callback
 {
    retro_perf_get_time_usec_t    get_time_usec;
-   retro_perf_get_counter_t      get_perf_counter; 
    retro_get_cpu_features_t      get_cpu_features;
-   retro_perf_init_t             perf_init;
+
+   retro_perf_get_counter_t      get_perf_counter;
+   retro_perf_register_t         perf_register;
    retro_perf_start_t            perf_start;
    retro_perf_stop_t             perf_stop;
    retro_perf_log_t              perf_log;
-   retro_perf_logs_t             perf_logs;
-   retro_perf_register_t         perf_register;
 };
 
 // FIXME: Document the sensor API and work out behavior.

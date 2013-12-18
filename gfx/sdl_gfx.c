@@ -305,11 +305,10 @@ static bool sdl_gfx_frame(void *data, const void *frame, unsigned width, unsigne
    if (SDL_MUSTLOCK(vid->screen))
       SDL_LockSurface(vid->screen);
 
-   static retro_perf_counter_t sdl_scale = { "sdl_scale", 0, 0, 0, false };
-   rarch_perf_init(&sdl_scale, g_settings.perfcounter_enable);
-   rarch_perf_start(&sdl_scale,  g_settings.perfcounter_enable);
+   RARCH_PERFORMANCE_INIT(sdl_scale);
+   RARCH_PERFORMANCE_START(sdl_scale);
    scaler_ctx_scale(&vid->scaler, vid->screen->pixels, frame);
-   rarch_perf_stop(&sdl_scale,  g_settings.perfcounter_enable);
+   RARCH_PERFORMANCE_STOP(sdl_scale);
 
    if (msg)
       sdl_render_msg(vid, vid->screen, msg, vid->screen->w, vid->screen->h, vid->screen->format);

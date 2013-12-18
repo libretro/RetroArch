@@ -292,7 +292,6 @@ struct settings
    bool rgui_show_start_screen;
 #endif
    bool fps_show;
-   bool perfcounter_enable;
 };
 
 enum rarch_game_type
