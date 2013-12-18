@@ -612,7 +612,7 @@ struct retro_perf_counter
    bool registered;
 };
 
-// Returns current time in microsec sec. Tries to use the most accurate timer available.
+// Returns current time in microseconds. Tries to use the most accurate timer available.
 typedef retro_time_t (*retro_perf_get_time_usec_t)(void);
 // A simple counter. Usually nanoseconds, but can also be CPU cycles.
 // Can be used directly if desired (when creating a more sophisticated performance counter system).
