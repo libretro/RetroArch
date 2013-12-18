@@ -633,9 +633,9 @@ typedef void (*retro_perf_stop_t)(struct retro_perf_counter *counter);
 // For convenience it can be useful to wrap register, start and stop in macros.
 // E.g.:
 // #ifdef LOG_PERFORMANCE
-// #define RETRO_PERFORMANCE_INIT(perf_cb, name) static struct retro_perf_counter name = {#name}; if (!perf_cb.registered) perf_cb.perf_register(&(name))
-// #define RETRO_PERFORMANCE_START(perf_cb, name) perf_cb.start(&(name))
-// #define RETRO_PERFORMANCE_STOP(perf_cb, name) perf_cb.stop(&(name))
+// #define RETRO_PERFORMANCE_INIT(perf_cb, name) static struct retro_perf_counter name = {#name}; if (!name.registered) perf_cb.perf_register(&(name))
+// #define RETRO_PERFORMANCE_START(perf_cb, name) perf_cb.perf_start(&(name))
+// #define RETRO_PERFORMANCE_STOP(perf_cb, name) perf_cb.perf_stop(&(name))
 // #else
 // ... Blank macros ...
 // #endif
