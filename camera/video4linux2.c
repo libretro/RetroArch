@@ -63,10 +63,11 @@ typedef struct video4linux
 
 static void process_image(video4linux_t *v4l, const uint8_t *buffer_yuv)
 {
-   RETRO_PERFORMANCE_INIT(yuv_convert_direct);
-   RETRO_PERFORMANCE_START(yuv_convert_direct);
+   static retro_perf_counter_t yuv_convert_direct = { "yuv_convert_direct", 0, 0, 0, false };
+   rarch_perf_init(&yuv_convert_direct, g_settings.perfcounter_enable);
+   rarch_perf_start(&yuv_convert_direct, g_settings.perfcounter_enable);
    scaler_ctx_scale(&v4l->scaler, v4l->buffer_output, buffer_yuv);
-   RETRO_PERFORMANCE_STOP(yuv_convert_direct);
+   rarch_perf_stop(&yuv_convert_direct, g_settings.perfcounter_enable);
 }
 
 static int xioctl(int fd, int request, void *args)

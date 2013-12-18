@@ -350,6 +350,10 @@ void config_set_defaults(void)
    *g_settings.rgui_config_directory = '\0';
 #endif
 
+#ifdef PERF_TEST
+   g_settings.perfcounter_enable = true;
+#endif
+
 #ifdef RARCH_CONSOLE
    g_extern.lifecycle_state |= (1ULL << MODE_MENU);
 

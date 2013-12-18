@@ -367,7 +367,7 @@ returntype main_entry(signature())
    global_uninit_drivers();
 
 #ifdef PERF_TEST
-   rarch_perf_log();
+   rarch_perf_logs();
 #endif
 
 #if defined(HAVE_LOGGER) && !defined(ANDROID)

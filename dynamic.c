@@ -844,11 +844,15 @@ bool rarch_environment_cb(unsigned cmd, void *data)
       {
          RARCH_LOG("Environ GET_PERF_INTERFACE.\n");
          struct retro_perf_callback *cb = (struct retro_perf_callback*)data;
-         cb->get_perf_counter = rarch_get_perf_counter;
-         cb->get_time_usec    = rarch_get_time_usec;
-         cb->get_cpu_features = rarch_get_cpu_features;
-         cb->perf_log         = rarch_perf_log;
-         cb->perf_register    = rarch_perf_register;
+         cb->get_perf_counter  = rarch_get_perf_counter;
+         cb->get_time_usec     = rarch_get_time_usec;
+         cb->get_cpu_features  = rarch_get_cpu_features;
+         cb->perf_init         = rarch_perf_init;
+         cb->perf_start        = rarch_perf_start;
+         cb->perf_stop         = rarch_perf_stop;
+         cb->perf_log          = rarch_perf_log;
+         cb->perf_logs         = rarch_perf_logs;
+         cb->perf_register     = rarch_perf_register;
          break;
       }
 

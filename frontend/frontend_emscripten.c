@@ -41,7 +41,7 @@ static void endloop(void)
    rarch_deinit_msg_queue();
 
 #ifdef PERF_TEST
-   rarch_perf_log();
+   rarch_perf_logs();
 #endif
 
    rarch_main_clear_state();

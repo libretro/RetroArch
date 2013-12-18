@@ -31,25 +31,14 @@ extern "C" {
 retro_perf_tick_t rarch_get_perf_counter(void);
 retro_time_t rarch_get_time_usec(void);
 void rarch_perf_register(struct retro_perf_counter *perf);
-void rarch_perf_log(void);
+void rarch_perf_logs(void);
 
 void rarch_get_cpu_features(unsigned *cpu);
 
-#if defined(PERF_TEST) || !defined(RARCH_INTERNAL)
-#ifdef _WIN32
-#define RETRO_PERFORMANCE_LOG(functionname, X) RARCH_LOG("[PERF]: Avg (%s): %I64u ticks, %I64u runs.\n", \
-      functionname, \
-      (X).total / (X).call_cnt, \
-      (X).call_cnt)
-#else
-#define RETRO_PERFORMANCE_LOG(functionname, X) RARCH_LOG("[PERF]: Avg (%s): %llu ticks, %llu runs.\n", \
-      functionname, \
-      (X).total / (X).call_cnt, \
-      (X).call_cnt)
-#endif
-#else
-#define RETRO_PERFORMANCE_LOG(functionname, X)
-#endif
+void rarch_perf_init(void *data, bool enable);
+void rarch_perf_start(void *data, bool enable);
+void rarch_perf_stop(void *data, bool enable);
+void rarch_perf_log(void *data, const char *funcname, bool enable);
 
 #ifdef __cplusplus
 }

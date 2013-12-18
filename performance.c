@@ -76,19 +76,20 @@ static unsigned perf_ptr;
 
 void rarch_perf_register(struct retro_perf_counter *perf)
 {
-   if (perf_ptr >= MAX_COUNTERS)
+   if (!perf && perf_ptr >= MAX_COUNTERS)
       return;
 
    perf_counters[perf_ptr++] = perf;
    perf->registered = true;
 }
 
-void rarch_perf_log(void)
+
+void rarch_perf_logs(void)
 {
    unsigned i;
    RARCH_LOG("[PERF]: Performance counters:\n");
    for (i = 0; i < perf_ptr; i++)
-      RETRO_PERFORMANCE_LOG(perf_counters[i]->ident, *perf_counters[i]);
+      rarch_perf_log(perf_counters[i], perf_counters[i]->ident, true);
 }
 
 retro_perf_tick_t rarch_get_perf_counter(void)
@@ -127,6 +128,49 @@ retro_perf_tick_t rarch_get_perf_counter(void)
 #endif
 
    return time;
+}
+
+void rarch_perf_init(void *data, bool enable)
+{
+   struct retro_perf_counter *perf = (struct retro_perf_counter*)data;
+   if (!enable || !perf)
+      return;
+
+   if (!perf->registered)
+      rarch_perf_register(perf);
+}
+
+void rarch_perf_start(void *data, bool enable)
+{
+   struct retro_perf_counter *perf = (struct retro_perf_counter*)data;
+   if (!enable || !perf)
+      return;
+
+   perf->call_cnt++;
+   perf->start = rarch_get_perf_counter();
+}
+
+void rarch_perf_stop(void *data, bool enable)
+{
+   struct retro_perf_counter *perf = (struct retro_perf_counter*)data;
+   if (!enable || !perf)
+      return;
+
+   perf->total += rarch_get_perf_counter() - perf->start;
+}
+
+void rarch_perf_log(void *data, const char *funcname, bool enable)
+{
+   struct retro_perf_counter *perf = (struct retro_perf_counter*)data;
+   if (!enable || !perf)
+      return;
+#ifdef _WIN32
+   RARCH_LOG("[PERF]: Avg (%s): %I64u ticks, %I64u runs.\n",
+         funcname, perf->total / perf->call_cnt, perf->call_cnt);
+#else
+   RARCH_LOG("[PERF]: Avg (%s): %llu ticks, %llu runs.\n",
+         funcname, perf->total / perf->call_cnt, perf->call_cnt);
+#endif
 }
 
 retro_time_t rarch_get_time_usec(void)

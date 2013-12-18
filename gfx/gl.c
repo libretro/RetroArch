@@ -1315,13 +1315,14 @@ static void gl_pbo_async_readback(void *data)
    glPixelStorei(GL_PACK_ALIGNMENT, get_alignment(gl->vp.width * sizeof(uint32_t)));
 
    // Read asynchronously into PBO buffer.
-   RETRO_PERFORMANCE_INIT(async_readback);
-   RETRO_PERFORMANCE_START(async_readback);
+   static retro_perf_counter_t async_readback = { "async_readback", 0, 0, 0, false };
+   rarch_perf_init(&async_readback, g_settings.perfcounter_enable);
+   rarch_perf_start(&async_readback, g_settings.perfcounter_enable);
    glReadBuffer(GL_BACK);
    glReadPixels(gl->vp.x, gl->vp.y,
          gl->vp.width, gl->vp.height,
          GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
-   RETRO_PERFORMANCE_STOP(async_readback);
+   rarch_perf_stop(&async_readback, g_settings.perfcounter_enable);
 
    glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
 }
@@ -1372,8 +1373,9 @@ static inline void gl_draw_texture(void *data)
 
 static bool gl_frame(void *data, const void *frame, unsigned width, unsigned height, unsigned pitch, const char *msg)
 {
-   RETRO_PERFORMANCE_INIT(frame_run);
-   RETRO_PERFORMANCE_START(frame_run);
+   static retro_perf_counter_t frame_run = { "frame_run", 0, 0, 0, false };
+   rarch_perf_init(&frame_run, g_settings.perfcounter_enable);
+   rarch_perf_start(&frame_run, g_settings.perfcounter_enable);
 
    gl_t *gl = (gl_t*)data;
 
@@ -1418,11 +1420,12 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
       if (!gl->hw_render_fbo_init)
 #endif
       {
+         static retro_perf_counter_t copy_frame = { "copy_frame", 0, 0, 0, false };
          gl_update_input_size(gl, width, height, pitch, true);
-         RETRO_PERFORMANCE_INIT(copy_frame);
-         RETRO_PERFORMANCE_START(copy_frame);
+         rarch_perf_init(&copy_frame, g_settings.perfcounter_enable);
+         rarch_perf_start(&copy_frame, g_settings.perfcounter_enable);
          gl_copy_frame(gl, frame, width, height, pitch);
-         RETRO_PERFORMANCE_STOP(copy_frame);
+         rarch_perf_stop(&copy_frame, g_settings.perfcounter_enable);
       }
    }
    else
@@ -1501,7 +1504,7 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
 
    context_update_window_title_func();
 
-   RETRO_PERFORMANCE_STOP(frame_run);
+   rarch_perf_stop(&frame_run, g_settings.perfcounter_enable);
 
 #ifdef HAVE_FBO
    // Reset state which could easily mess up libretro core.
@@ -1527,8 +1530,9 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
 #ifdef HAVE_GL_SYNC
    if (g_settings.video.hard_sync && gl->have_sync)
    {
-      RETRO_PERFORMANCE_INIT(gl_fence);
-      RETRO_PERFORMANCE_START(gl_fence);
+      static retro_perf_counter_t gl_fence = {"gl_fence", 0, 0, 0, false};
+      rarch_perf_init(&gl_fence, g_settings.perfcounter_enable);
+      rarch_perf_start(&gl_fence, g_settings.perfcounter_enable);
       glClear(GL_COLOR_BUFFER_BIT);
       gl->fences[gl->fence_count++] = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
 
@@ -1541,7 +1545,7 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
          memmove(gl->fences, gl->fences + 1, gl->fence_count * sizeof(GLsync));
       }
 
-      RETRO_PERFORMANCE_STOP(gl_fence);
+      rarch_perf_stop(&gl_fence, g_settings.perfcounter_enable);
    }
 #endif
 
@@ -2337,12 +2341,13 @@ static void gl_viewport_info(void *data, struct rarch_viewport *vp)
 
 static bool gl_read_viewport(void *data, uint8_t *buffer)
 {
+   static retro_perf_counter_t read_viewport = { "read_viewport", 0, 0, 0, false };
    unsigned i;
    gl_t *gl = (gl_t*)data;
    (void)i;
 
-   RETRO_PERFORMANCE_INIT(read_viewport);
-   RETRO_PERFORMANCE_START(read_viewport);
+   rarch_perf_init(&read_viewport, g_settings.perfcounter_enable);
+   rarch_perf_start(&read_viewport, g_settings.perfcounter_enable);
 
 #ifdef HAVE_FBO
    // Make sure we're reading from backbuffer incase some state has been overridden.
@@ -2398,7 +2403,7 @@ static bool gl_read_viewport(void *data, uint8_t *buffer)
    }
 #endif
 
-   RETRO_PERFORMANCE_STOP(read_viewport);
+   rarch_perf_stop(&read_viewport, g_settings.perfcounter_enable);
    return true;
 }
 #endif

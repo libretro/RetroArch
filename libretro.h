@@ -616,7 +616,11 @@ typedef struct retro_perf_counter
 typedef retro_time_t (*retro_perf_get_time_usec_t)(void);
 typedef retro_perf_tick_t (*retro_perf_get_counter_t)(void);
 typedef void (*retro_get_cpu_features_t)(unsigned*);
-typedef void (*retro_perf_log_t)(void);
+typedef void (*retro_perf_init_t)(void*, bool);
+typedef void (*retro_perf_start_t)(void*, bool);
+typedef void (*retro_perf_stop_t)(void*, bool);
+typedef void (*retro_perf_log_t)(void*, const char*, bool);
+typedef void (*retro_perf_logs_t)(void);
 typedef void (*retro_perf_register_t)(retro_perf_counter_t*);
 
 struct retro_perf_callback
@@ -624,46 +628,13 @@ struct retro_perf_callback
    retro_perf_get_time_usec_t    get_time_usec;
    retro_perf_get_counter_t      get_perf_counter; 
    retro_get_cpu_features_t      get_cpu_features;
+   retro_perf_init_t             perf_init;
+   retro_perf_start_t            perf_start;
+   retro_perf_stop_t             perf_stop;
    retro_perf_log_t              perf_log;
+   retro_perf_logs_t             perf_logs;
    retro_perf_register_t         perf_register;
 };
-
-#ifdef RARCH_INTERNAL
-#define retro_perf_register_func rarch_perf_register
-#define retro_perf_register_func_exists 1
-#define retro_get_perf_counter_func rarch_get_perf_counter
-#define retro_get_perf_counter_func_exists 1
-#else
-#define retro_perf_register_func perf_register_cb
-#define retro_perf_register_func_exists retro_perf_register_func
-#define retro_get_perf_counter_func perf_get_counter_cb
-#define retro_get_perf_counter_func_exists retro_get_perf_counter_func
-#endif
-
-#if defined(PERF_TEST) || !defined(RARCH_INTERNAL)
-#define RETRO_PERFORMANCE_INIT(X) \
-   static retro_perf_counter_t X = {#X}; \
-   do { \
-      if (!(X).registered && retro_perf_register_func_exists) \
-         retro_perf_register_func(&(X)); \
-   } while(0)
-
-#define RETRO_PERFORMANCE_START(X) do { \
-   (X).call_cnt++; \
-   if (retro_get_perf_counter_func_exists) \
-      (X).start  = retro_get_perf_counter_func(); \
-} while(0)
-
-#define RETRO_PERFORMANCE_STOP(X) do { \
-   if (retro_get_perf_counter_func_exists) \
-      (X).total += retro_get_perf_counter_func() - (X).start; \
-} while(0)
-
-#else
-#define RETRO_PERFORMANCE_INIT(X)
-#define RETRO_PERFORMANCE_START(X)
-#define RETRO_PERFORMANCE_STOP(X)
-#endif
 
 // FIXME: Document the sensor API and work out behavior.
 // It will be marked as experimental until then.
