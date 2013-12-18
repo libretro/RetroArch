@@ -394,9 +394,8 @@ static bool thread_focus(void *data)
 static bool thread_frame(void *data, const void *frame_,
       unsigned width, unsigned height, unsigned pitch, const char *msg)
 {
-   static retro_perf_counter_t thread_frame = { "thread_frame", 0, 0, 0, false};
-   rarch_perf_init(&thread_frame, g_settings.perfcounter_enable);
-   rarch_perf_start(&thread_frame, g_settings.perfcounter_enable);
+   RARCH_PERFORMANCE_INIT(thread_frame);
+   RARCH_PERFORMANCE_START(thread_frame);
 
    thread_video_t *thr = (thread_video_t*)data;
    unsigned copy_stride = width * (thr->info.rgb32 ? sizeof(uint32_t) : sizeof(uint16_t));
@@ -462,7 +461,7 @@ static bool thread_frame(void *data, const void *frame_,
 
    slock_unlock(thr->lock);
 
-   rarch_perf_stop(&thread_frame, g_settings.perfcounter_enable);
+   RARCH_PERFORMANCE_STOP(thread_frame);
 
    thr->last_time = rarch_get_time_usec();
    return true;
