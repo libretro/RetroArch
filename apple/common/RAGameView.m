@@ -26,8 +26,8 @@ static CLLocationManager *locationManager;
 static bool locationChanged;
 static CLLocationDegrees currentLatitude;
 static CLLocationDegrees currentLongitude;
-sttaic CLLocationAccuracy currentHorizontalAccuracy;
-sttaic CLLocationAccuracy currentVerticalAccuracy;
+static CLLocationAccuracy currentHorizontalAccuracy;
+static CLLocationAccuracy currentVerticalAccuracy;
 
 // Define compatibility symbols and categories
 #ifdef IOS
