@@ -26,8 +26,8 @@
 #include "gfx_context.h"
 #include "fonts/fonts.h"
 
-#define LIMA_TEXEL_FORMAT_BGR_565		    0x0E
-#define LIMA_TEXEL_FORMAT_RGBA_8888		    0x16
+#define LIMA_TEXEL_FORMAT_BGR_565           0x0E
+#define LIMA_TEXEL_FORMAT_RGBA_8888         0x16
 
 static struct limare_state *state;
 static void lima_gfx_set_rotation(void *data, unsigned rotation);
