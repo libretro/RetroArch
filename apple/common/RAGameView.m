@@ -26,6 +26,8 @@ static CLLocationManager *locationManager;
 static bool locationChanged;
 static CLLocationDegrees currentLatitude;
 static CLLocationDegrees currentLongitude;
+sttaic CLLocationAccuracy currentHorizontalAccuracy;
+sttaic CLLocationAccuracy currentVerticalAccuracy;
 
 // Define compatibility symbols and categories
 #ifdef IOS
@@ -364,10 +366,14 @@ didOutputSampleBuffer:(CMSampleBufferRef)sampleBuffer
     return currentLongitude;
 }
 
-- (double)onLocationGetAccuracy
+- (double)onLocationGetHorizontalAccuracy
 {
-   /* TODO/FIXME - implement */
-   return 0.0;
+   return currentHorizontalAccuracy;
+}
+
+- (double)onLocationGetVerticalAccuracy
+{
+   return currentVerticalAccuracy;
 }
 
 - (bool)onLocationHasChanged
@@ -383,14 +389,19 @@ didOutputSampleBuffer:(CMSampleBufferRef)sampleBuffer
     locationChanged = true;
     currentLatitude = newLocation.coordinate.latitude;
     currentLongitude = newLocation.coordinate.longitude;
+    currentHorizontalAccuracy = newLocation.horizontalAccuracy;
+    currentVerticalAccuracy = newLocation.verticalAccuracy;
     RARCH_LOG("didUpdateToLocation - latitude %f, longitude %f\n", (float)currentLatitude, (float)currentLongitude);
 }
 
 - (void)locationManager:(CLLocationManager *)manager didUpdateLocations:(NSArray *)locations
 {
     locationChanged = true;
-    currentLatitude  = [[locations objectAtIndex:([locations     count]-1)] coordinate].latitude;
-    currentLongitude = [[locations objectAtIndex:([locations     count]-1)] coordinate].longitude;
+    CLLocation *location = [locations objectAtIndex:([locations     count]-1)];
+    currentLatitude  = [location coordinate].latitude;
+    currentLongitude = [location coordinate].longitude;
+    currentHorizontalAccuracy = [location horizontalAccuracy];
+    currentVerticalAccuracy = [location verticalAccuracy];
     RARCH_LOG("didUpdateLocations - latitude %f, longitude %f\n", (float)currentLatitude, (float)currentLongitude);
 }
 
@@ -761,7 +772,8 @@ static void apple_location_stop(void *data)
 	[[RAGameView get] onLocationStop];
 }
 
-static bool apple_location_get_position(void *data, double *lat, double *lon, double *accuracy)
+static bool apple_location_get_position(void *data, double *lat, double *lon, double *horiz_accuracy,
+      double *vert_accuracy)
 {
 	(void)data;
 
@@ -772,13 +784,15 @@ static bool apple_location_get_position(void *data, double *lat, double *lon, do
 	
 	*lat      = [[RAGameView get] onLocationGetLatitude];
    *lon      = [[RAGameView get] onLocationGetLongitude];
-   *accuracy = [[RAGameView get] onLocationGetAccuracy];
+   *horiz_accuracy = [[RAGameView get] onLocationGetHorizontalAccuracy];
+   *vert_accuracy = [[RAGameView get] onLocationGetVerticalAccuracy];
    return true;
 
 fail:
-   *lat      = 0.0;
-   *lon      = 0.0;
-   *accuracy = 0.0;
+   *lat            = 0.0;
+   *lon            = 0.0;
+   *horiz_accuracy = 0.0;
+   *vert_accuracy  = 0.0;
    return false;
 }
 

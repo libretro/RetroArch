@@ -648,14 +648,16 @@ void driver_location_set_interval(unsigned interval_msecs, unsigned interval_dis
       driver.location->set_interval(driver.location_data, interval_msecs, interval_distance);
 }
 
-bool driver_location_get_position(double *lat, double *lon, double *accuracy)
+bool driver_location_get_position(double *lat, double *lon, double *horiz_accuracy,
+      double *vert_accuracy)
 {
    if (driver.location && driver.location_data)
-      return driver.location->get_position(driver.location_data, lat, lon, accuracy);
+      return driver.location->get_position(driver.location_data, lat, lon, horiz_accuracy, vert_accuracy);
 
    *lat = 0.0;
    *lon = 0.0;
-   *accuracy = 0.0;
+   *horiz_accuracy = 0.0;
+   *vert_accuracy = 0.0;
    return false;
 }
 #endif

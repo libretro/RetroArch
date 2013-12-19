@@ -26,7 +26,7 @@ typedef struct android_location
    jmethodID onLocationSetInterval;
    jmethodID onLocationGetLongitude;
    jmethodID onLocationGetLatitude;
-   jmethodID onLocationGetAccuracy;
+   jmethodID onLocationGetHorizontalAccuracy;
    jmethodID onLocationHasChanged;
 } androidlocation_t;
 
@@ -72,8 +72,8 @@ static void *android_location_init(void)
    if (!androidlocation->onLocationGetLongitude)
       goto dealloc;
 
-   GET_METHOD_ID(env, androidlocation->onLocationGetAccuracy, class, "onLocationGetAccuracy", "()F");
-   if (!androidlocation->onLocationGetAccuracy)
+   GET_METHOD_ID(env, androidlocation->onLocationGetHorizontalAccuracy, class, "onLocationGetHorizontalAccuracy", "()F");
+   if (!androidlocation->onLocationGetHorizontalAccuracy)
       goto dealloc;
 
    GET_METHOD_ID(env, androidlocation->onLocationGetLongitude, class, "onLocationSetInterval", "(II)V");
@@ -129,7 +129,8 @@ static void android_location_stop(void *data)
    CALL_VOID_METHOD(env, android_app->activity->clazz, androidlocation->onLocationStop);
 }
 
-static bool android_location_get_position(void *data, double *latitude, double *longitude, double *accuracy)
+static bool android_location_get_position(void *data, double *latitude, double *longitude, double *horiz_accuracy,
+      double *vert_accuracy)
 {
    struct android_app *android_app = (struct android_app*)g_android;
    androidlocation_t *androidlocation = (androidlocation_t*)data;
@@ -137,7 +138,7 @@ static bool android_location_get_position(void *data, double *latitude, double *
    if (!env)
       goto fail;
 
-   jdouble lat, lon, accuhurtz;
+   jdouble lat, lon, horiz_accu;
    jboolean newLocation;
 
    CALL_BOOLEAN_METHOD(env, newLocation, android_app->activity->clazz, androidlocation->onLocationHasChanged);
@@ -147,21 +148,25 @@ static bool android_location_get_position(void *data, double *latitude, double *
 
    CALL_DOUBLE_METHOD(env, lat,        android_app->activity->clazz, androidlocation->onLocationGetLatitude);
    CALL_DOUBLE_METHOD(env, lon,        android_app->activity->clazz, androidlocation->onLocationGetLongitude);
-   CALL_DOUBLE_METHOD(env, accuhurtz,  android_app->activity->clazz, androidlocation->onLocationGetAccuracy);
+   CALL_DOUBLE_METHOD(env, horiz_accu, android_app->activity->clazz, androidlocation->onLocationGetHorizontalAccuracy);
 
    if (lat != 0.0)
       *latitude = lat;
    if (lon != 0.0)
       *longitude = lon;
-   if (accuhurtz != 0.0)
-      *accuracy = accuhurtz;
+   if (horiz_accu != 0.0)
+      *horiz_accuracy = horiz_accu;
+
+   /* TODO/FIXME - custom implement vertical accuracy since Android location API does not have it? */
+   *vert_accuracy = 0.0;
 
    return true;
 
 fail:
    *latitude  = 0.0;
    *longitude = 0.0;
-   *accuracy  = 0.0;
+   *horiz_accuracy  = 0.0;
+   *vert_accuracy  = 0.0;
    return false;
 }
 

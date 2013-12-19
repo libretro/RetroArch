@@ -215,11 +215,13 @@ LocationListener
 	}
 	
 	/*
-	 * Gets the accuracy of the current location in meters.
+	 * Gets the horizontal accuracy of the current location 
+	 * in meters. (NOTE: There seems to be no vertical accuracy
+	 * for a given location with the Android location API)
 	 * 
-	 * @return the accuracy of the current position.
+	 * @return the horizontal accuracy of the current position.
 	 */
-	public float onLocationGetAccuracy()
+	public float onLocationGetHorizontalAccuracy()
 	{
 		return mCurrentLocation.getAccuracy();
 	}

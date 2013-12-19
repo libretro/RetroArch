@@ -766,7 +766,8 @@ typedef void (*retro_location_stop_t)(void);
 
 // Get the position of the current location. Will set parameters to 0 if no new
 // location update has happened since the last time.
-typedef bool (*retro_location_get_position_t)(double *lat, double *lon, double *accuracy);
+typedef bool (*retro_location_get_position_t)(double *lat, double *lon, double *horiz_accuracy,
+      double *vert_accuracy);
 
 struct retro_location_callback
 {

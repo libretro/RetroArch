@@ -375,7 +375,7 @@ typedef struct location_driver
    bool (*start)(void *data);
    void (*stop)(void *data);
 
-   bool (*get_position)(void *data, double *lat, double *lon, double *accuracy);
+   bool (*get_position)(void *data, double *lat, double *lon, double *horiz_accuracy, double *vert_accuracy);
    void (*set_interval)(void *data, unsigned interval_msecs, unsigned interval_distance);
    const char *ident;
 } location_driver_t;
@@ -603,7 +603,7 @@ void driver_camera_poll(void);
 #ifdef HAVE_LOCATION
 bool driver_location_start(void);
 void driver_location_stop(void);
-bool driver_location_get_position(double *lat, double *lon, double *accuracy);
+bool driver_location_get_position(double *lat, double *lon, double *horiz_accuracy, double *vert_accuracy);
 void driver_location_set_interval(unsigned interval_msecs, unsigned interval_distance);
 #endif
 
