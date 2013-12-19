@@ -758,7 +758,7 @@ typedef void (*retro_location_set_interval_t)(int interval_ms, int interval_dist
 
 //Start location services. The device will start listening for changes to the
 //current location at regular intervals (which are defined with retro_location_set_interval_t).
-typedef void (*retro_location_start_t)(void);
+typedef bool (*retro_location_start_t)(void);
 
 //Stop location services. The device will stop listening for changes to the current
 //location.

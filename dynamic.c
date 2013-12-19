@@ -840,6 +840,11 @@ bool rarch_environment_cb(unsigned cmd, void *data)
       {
          RARCH_LOG("Environ GET_LOCATION_INTERFACE.\n");
          struct retro_location_callback *cb = (struct retro_location_callback*)data;
+         cb->start = driver_location_start;
+         cb->stop = driver_location_stop;
+         cb->get_latitude = driver_location_get_latitude;
+         cb->get_longitude = driver_location_get_longitude;
+         cb->set_interval = driver_location_set_interval;
          g_extern.system.location_callback = *cb;
          break;
       }

@@ -604,6 +604,9 @@ void driver_camera_poll(void);
 #ifdef HAVE_LOCATION
 bool driver_location_start(void);
 void driver_location_stop(void);
+double driver_location_get_latitude(void);
+double driver_location_get_longitude(void);
+void driver_location_set_interval(int, int);
 #endif
 
 extern driver_t driver;

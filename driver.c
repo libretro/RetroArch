@@ -641,6 +641,28 @@ void driver_location_stop(void)
    if (driver.location && driver.location_data)
       driver.location->stop(driver.location_data);
 }
+
+void driver_location_set_interval(int interval_msecs, int interval_distance)
+{
+   if (driver.location && driver.location_data)
+      driver.location->set_interval(driver.location_data, interval_msecs, interval_distance);
+}
+
+double driver_location_get_latitude(void)
+{
+   if (driver.location && driver.location_data)
+      return driver.location->get_latitude(driver.location_data);
+   else
+      return 0.0;
+}
+
+double driver_location_get_longitude(void)
+{
+   if (driver.location && driver.location_data)
+      return driver.location->get_longitude(driver.location_data);
+   else
+      return 0.0;
+}
 #endif
 
 uintptr_t driver_get_current_framebuffer(void)
