@@ -64,11 +64,11 @@ static void *android_location_init(void)
    if (!androidlocation->onLocationStop)
       goto dealloc;
 
-   GET_METHOD_ID(env, androidlocation->onLocationGetLatitude, class, "onLocationGetLatitude", "()J");
+   GET_METHOD_ID(env, androidlocation->onLocationGetLatitude, class, "onLocationGetLatitude", "()D");
    if (!androidlocation->onLocationGetLatitude)
       goto dealloc;
 
-   GET_METHOD_ID(env, androidlocation->onLocationGetLongitude, class, "onLocationGetLongitude", "()J");
+   GET_METHOD_ID(env, androidlocation->onLocationGetLongitude, class, "onLocationGetLongitude", "()D");
    if (!androidlocation->onLocationGetLongitude)
       goto dealloc;
 

@@ -166,6 +166,14 @@ LocationListener
 	}
 
 	/**
+	 * Free up location services resources.
+	 */
+	public void onLocationFree()
+	{
+		/* TODO/FIXME */
+	}
+
+	/**
 	 * Executed upon stopping the location client.
 	 * Does nothing if called when the client is not started.
 	 */
