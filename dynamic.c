@@ -839,7 +839,7 @@ bool rarch_environment_cb(unsigned cmd, void *data)
       case RETRO_ENVIRONMENT_GET_LOCATION_INTERFACE:
       {
          RARCH_LOG("Environ GET_LOCATION_INTERFACE.\n");
-         struct retro_location_interface *cb = (struct retro_location_interface*)data;
+		 struct retro_location_callback *cb = (struct retro_location_callback*)data;
          g_extern.system.location_callback = *cb;
          break;
       }

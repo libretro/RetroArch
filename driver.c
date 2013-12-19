@@ -821,8 +821,8 @@ void init_drivers(void)
 #ifdef HAVE_LOCATION
    // FIXME
    // Only init location driver if we're ever going to use it.
-   if (g_extern.system.location_callback)
-   init_location();
+   if (g_extern.system.location_callback.enable)
+      init_location();
 #endif
 
 #ifdef HAVE_OSK

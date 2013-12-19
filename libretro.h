@@ -568,6 +568,12 @@ enum retro_mod
                                            // struct retro_perf_callback * --
                                            // Gets an interface for performance counters. This is useful for performance logging in a 
                                            // cross-platform way and for detecting architecture-specific features, such as SIMD support.
+#define RETRO_ENVIRONMENT_GET_LOCATION_INTERFACE 29
+                                           // struct retro_location_callback * --
+                                           // Gets access to the location interface.
+                                           // The purpose of this interface is to be able to retrieve location-based information from the host device, 
+                                           // such as current latitude / longitude.
+                                           //
 
 enum retro_log_level
 {
@@ -741,6 +747,39 @@ struct retro_camera_callback
    // Set by libretro core. Called right before camera driver is deinitialized.
    // Can be NULL, in which this callback is not called.
    retro_camera_lifetime_status_t deinitialized;
+};
+
+//Sets the interval of time and/or distance at which to update/poll location-based data.
+//To ensure compatibility with all location-based implementations, values for both 
+//interval_ms and interval_distance should be provided.
+//interval_ms is the interval expressed in milliseconds
+//interval_distance is the distance interval expressed in meters.
+typedef void (*retro_location_set_interval_t)(int interval_ms, int interval_distance);
+
+//Start location services. The device will start listening for changes to the
+//current location at regular intervals (which are defined with retro_location_set_interval_t).
+typedef void (*retro_location_start_t)(void);
+
+//Stop location services. The device will stop listening for changes to the current
+//location.
+typedef void (*retro_location_stop_t)(void);
+
+//Get the latitude of the current location.
+typedef double (*retro_location_get_latitude_t)(void);
+
+//Get the longitude of the current location.
+typedef double (*retro_location_get_longitude_t)(void);
+
+struct retro_location_callback
+{
+   bool enable;
+   int interval_in_ms;
+   int interval_distance_in_meters;
+   retro_location_start_t         start;
+   retro_location_stop_t          stop;
+   retro_location_get_latitude_t  get_latitude;
+   retro_location_get_longitude_t get_longitude;
+   retro_location_set_interval_t  set_interval; 
 };
 
 enum retro_rumble_effect

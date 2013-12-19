@@ -40,44 +40,7 @@
                                            // Requests that this core is deinitialized, and a new core is loaded. It also escapes the main loop the core is currently
                                            // bound to.
                                            // The libretro core used is set with SET_LIBRETRO_PATH, and path to game is passed in _EXEC. NULL means no game.
-#define RETRO_ENVIRONMENT_GET_LOCATION_INTERFACE (RETRO_ENVIRONMENT_PRIVATE | 3)
-                                           // struct retro_location_callback * --
-                                           // Gets access to the location interface.
-                                           // The purpose of this interface is to be able to retrieve location-based information from the host device, 
-                                           // such as current latitude / longitude.
-                                           //
 
-//Sets the interval of time and/or distance at which to update/poll location-based data.
-//To ensure compatibility with all location-based implementations, values for both 
-//interval_ms and interval_distance should be provided.
-//interval_ms is the interval expressed in milliseconds
-//interval_distance is the distance interval expressed in meters.
-typedef void (*retro_location_set_interval_t)(int interval_ms, int interval_distance);
-
-//Start location services. The device will start listening for changes to the
-//current location at regular intervals (which are defined with retro_location_set_interval_t).
-typedef void (*retro_location_start_t)(void);
-
-//Stop location services. The device will stop listening for changes to the current
-//location.
-typedef void (*retro_location_stop_t)(void);
-
-//Get the latitude of the current location.
-typedef double (*retro_location_get_latitude_t)(void);
-
-//Get the longitude of the current location.
-typedef double (*retro_location_get_longitude_t)(void);
-
-struct retro_location_callback
-{
-   int interval_in_ms;
-   int interval_distance_in_meters;
-   retro_location_start_t         start;
-   retro_location_stop_t          stop;
-   retro_location_get_latitude_t  get_latitude;
-   retro_location_get_longitude_t get_longitude;
-   retro_location_set_interval_t  set_interval; 
-};
 
 #endif
 
