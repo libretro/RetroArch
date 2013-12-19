@@ -706,7 +706,7 @@ void global_uninit_drivers(void)
 #ifdef HAVE_LOCATION
    if (driver.location && driver.location_data)
    {
-      driver.location->free(driver.camera_data);
+      driver.location->free(driver.location_data);
       driver.location_data = NULL;
    }
 #endif
@@ -750,7 +750,7 @@ void init_camera(void)
 void init_location(void)
 {
    // Resource leaks will follow if location interface is initialized twice.
-   if (driver.camera_data)
+   if (driver.location_data)
       return;
 
    find_location_driver();

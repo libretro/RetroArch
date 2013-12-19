@@ -301,6 +301,7 @@
 				OTHER_CFLAGS = (
 					"-DHAVE_RARCH_MAIN_WRAP",
 					"-DHAVE_GRIFFIN",
+					"-DHAVE_LOCATION",
 					"-DHAVE_RGUI",
 					"-DHAVE_MENU",
 					"-DOSX",
@@ -356,6 +357,7 @@
 					"-DNDEBUG",
 					"-DHAVE_RARCH_MAIN_WRAP",
 					"-DHAVE_GRIFFIN",
+					"-DHAVE_LOCATION",
 					"-DHAVE_RGUI",
 					"-DHAVE_MENU",
 					"-DOSX",

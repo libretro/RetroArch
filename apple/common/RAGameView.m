@@ -314,7 +314,7 @@ didOutputSampleBuffer:(CMSampleBufferRef)sampleBuffer
 }
 #endif
 
-- (void)onLocationInit
+- (void)onLocationInit:(int)interval_update_ms interval_update_distance:(int)interval_distance
 {
     // Create the location manager if this object does not
     // already have one.
@@ -343,16 +343,15 @@ didOutputSampleBuffer:(CMSampleBufferRef)sampleBuffer
     /* TODO - free location manager? */
 }
 
-- (float)onLocationGetLatitude
+- (double)onLocationGetLatitude
 {
-    return (float)currentLatitude;
+    return currentLatitude;
 }
 
-- (float)onLocationGetLongitude
+- (double)onLocationGetLongitude
 {
-    return (float)currentLongitude;
+    return currentLongitude;
 }
-
 
 - (void)locationManager:(CLLocationManager *)manager didUpdateToLocation:(CLLocation *)newLocation fromLocation:(CLLocation *)oldLocation
 {
@@ -605,10 +604,6 @@ void apple_bind_game_view_fbo(void)
    });
 }
 
-// References:
-// http://allmybrain.com/2011/12/08/rendering-to-a-texture-with-ios-5-texture-cache-api/
-// https://developer.apple.com/library/iOS/samplecode/GLCameraRipple/
-
 typedef struct ios_camera
 {
   void *empty;
@@ -686,5 +681,74 @@ const camera_driver_t camera_ios = {
    ios_camera_stop,
    ios_camera_poll,
    "ios",
+};
+#endif
+
+#ifdef HAVE_LOCATION
+typedef struct apple_location
+{
+	void *empty;
+} applelocation_t;
+
+static void *apple_location_init(int interval_update_ms, int interval_distance)
+{
+	applelocation_t *applelocation = (applelocation_t*)calloc(1, sizeof(applelocation_t));
+	if (!applelocation)
+		return NULL;
+	
+	[[RAGameView get] onLocationInit:interval_update_ms interval_update_distance:interval_distance];
+	
+	return applelocation;
+}
+
+static void apple_location_free(void *data)
+{
+	applelocation_t *applelocation = (applelocation_t*)data;
+	
+	[[RAGameView get] onLocationFree];
+	
+	if (applelocation)
+		free(applelocation);
+	applelocation = NULL;
+}
+
+static bool apple_location_start(void *data)
+{
+	(void)data;
+	
+	[[RAGameView get] onLocationStart];
+	
+	return true;
+}
+
+static void apple_location_stop(void *data)
+{
+	(void)data;
+	
+	[[RAGameView get] onLocationStop];
+}
+
+static double apple_location_get_latitude(void *data)
+{
+	(void)data;
+	
+	return [[RAGameView get] onLocationGetLatitude];
+}
+
+static double apple_location_get_longitude(void *data)
+{
+	(void)data;
+	
+	return [[RAGameView get] onLocationGetLongitude];
+}
+
+const location_driver_t location_apple = {
+	apple_location_init,
+	apple_location_free,
+	apple_location_start,
+	apple_location_stop,
+	apple_location_get_longitude,
+	apple_location_get_latitude,
+	"apple",
 };
 #endif
