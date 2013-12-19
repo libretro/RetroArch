@@ -4,23 +4,28 @@
 
     <!-- TV Mode -->
     <Preference
-        android:key="retroTVMode"
-        android:title="@string/tv_mode"/>
+        android:key="resumeContentPref"
+        android:title="@string/resume_content"/>
 
     <!-- Load Core -->
     <Preference
         android:key="loadCorePref"
         android:title="@string/load_core"/>
 
-    <!-- Load Game -->
+    <!-- Load Content -->
     <Preference
-        android:key="loadRomPref"
-        android:title="@string/load_game"/>
+        android:key="loadContentPref"
+        android:title="@string/load_content"/>
 
-    <!-- Load Game (History) -->
+    <!-- Load Content (Auto) -->
     <Preference
-        android:key="loadRomHistoryPref"
-        android:title="@string/load_game_history"/>
+        android:key="loadContentAutoPref"
+        android:title="@string/load_content_auto"/>
+
+    <!-- Load Content (History) -->
+    <Preference
+        android:key="loadContentHistoryPref"
+        android:title="@string/load_content_history"/>
 
     <!-- Settings -->
     <Preference android:title="@string/settings">
