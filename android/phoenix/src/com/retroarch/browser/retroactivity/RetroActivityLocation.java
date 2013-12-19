@@ -141,7 +141,7 @@ LocationListener
 		if (mLocationRequest == null)
 			mLocationRequest = LocationRequest.create();
       
-      onLocationSetInterval(update_interval_in_ms);
+      onLocationSetInterval(update_interval_in_ms, distance_interval);
 	}
 
 
