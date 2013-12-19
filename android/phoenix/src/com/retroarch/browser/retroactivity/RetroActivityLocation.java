@@ -201,7 +201,7 @@ LocationListener
 	}
 
 	/**
-	 * Gets the longtude at the current location in degrees.
+	 * Gets the longitude at the current location in degrees.
 	 * 
 	 * @return the longitude at the current location.
 	 */
