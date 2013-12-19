@@ -48,12 +48,9 @@ static void *android_location_init(unsigned interval_ms, unsigned interval_dista
    if (class == NULL)
       goto dealloc;
 
-#if 0
-   /* TODO */
-   GET_METHOD_ID(env, androidcamera->onCameraInit, class, "onCameraInit", "()V");
-   if (!androidcamera->onCameraInit)
+   GET_METHOD_ID(env, androidlocation->onLocationInit, class, "onLocationInit", "(II)V");
+   if (!androidlocation->onLocationInit)
       goto dealloc;
-#endif
 
    GET_METHOD_ID(env, androidlocation->onLocationFree, class, "onLocationFree", "()V");
    if (!androidlocation->onLocationFree)
@@ -67,11 +64,17 @@ static void *android_location_init(unsigned interval_ms, unsigned interval_dista
    if (!androidlocation->onLocationStop)
       goto dealloc;
 
-   /* TODO - grab method IDs for:
-    * onLocationGetLatitude
-    * onLocationGetLongitude
-    * onLocationSetInterval
-    */
+   GET_METHOD_ID(env, androidlocation->onLocationGetLatitude, class, "onLocationGetLatitude", "()J");
+   if (!androidlocation->onLocationGetLatitude)
+      goto dealloc;
+
+   GET_METHOD_ID(env, androidlocation->onLocationGetLongitude, class, "onLocationGetLongitude", "()J");
+   if (!androidlocation->onLocationGetLongitude)
+      goto dealloc;
+
+   GET_METHOD_ID(env, androidlocation->onLocationGetLongitude, class, "onLocationSetInterval", "(II)V");
+   if (!androidlocation->onLocationSetInterval)
+      goto dealloc;
 
    CALL_VOID_METHOD(env, android_app->activity->clazz, androidlocation->onLocationInit);
 
@@ -126,8 +129,9 @@ static double android_location_get_latitude(void *data)
    if (!env)
       return;
 
-   // TODO - CALL_DOUBLE_METHOD - onLocationGetLatitude
-   return 0.0f;
+   jdouble latitude;
+   CALL_BOOLEAN_METHOD(env, longitude, android_app->activity->clazz, androidlocation->onLocationGetLatitude);
+   return latitude;
 }
 
 static double android_location_get_longitude(void *data)
@@ -138,8 +142,9 @@ static double android_location_get_longitude(void *data)
    if (!env)
       return;
 
-   // TODO - CALL_DOUBLE_METHOD - onLocationGetLongitude
-   return 0.0f;
+   jdouble longitude;
+   CALL_BOOLEAN_METHOD(env, longitude, android_app->activity->clazz, androidlocation->onLocationGetLongitude);
+   return longitude;
 }
 
 static void android_location_set_interval(void *data, int interval_ms, int interval_distance)
@@ -150,7 +155,7 @@ static void android_location_set_interval(void *data, int interval_ms, int inter
    if (!env)
       return;
 
-   // TODO - CALL_VOID_METHOD - onLocationSetInterval (with params)
+   CALL_VOID_METHOD_PARAM(env, android_app->activity->clazz, androidlocation->onLocationSetInterval, interval_ms, interval_distance);
 }
 
 const location_driver_t location_android = {

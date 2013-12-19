@@ -74,4 +74,8 @@
    var = (*env)->CallBooleanMethod(env, clazz_obj, methodId); \
    JNI_EXCEPTION(env)
 
+#define CALL_DOUBLE_METHOD(env, var, clazz_obj, methodId) \
+   var = (*env)->CallDoubleMethod(env, clazz_obj, methodId); \
+   JNI_EXCEPTION(env)
+
 #endif
