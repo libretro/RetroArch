@@ -427,6 +427,9 @@ struct global
       struct retro_disk_control_callback disk_control; 
       struct retro_hw_render_callback hw_render_callback;
       struct retro_camera_callback camera_callback;
+#ifdef HAVE_LOCATION
+      struct retro_location_callback location_callback;
+#endif
 
       struct retro_frame_time_callback frame_time;
       retro_usec_t frame_time_last;

@@ -756,7 +756,7 @@ void init_location(void)
 
    find_location_driver();
 
-   driver.location_data = location_init_func(g_settings.location.update_interval_ms, g_settings.location.update_interval_distance);
+   driver.location_data = location_init_func(g_extern.system.location_callback.interval_in_ms, g_extern.system.location_callback.interval_distance_in_meters);
 
    if (!driver.location_data)
    {
@@ -821,7 +821,7 @@ void init_drivers(void)
 #ifdef HAVE_LOCATION
    // FIXME
    // Only init location driver if we're ever going to use it.
-   //if (g_extern.system.camera_callback.caps)
+   if (g_extern.system.location_callback)
    init_location();
 #endif
 

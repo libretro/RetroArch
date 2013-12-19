@@ -41,7 +41,7 @@
                                            // bound to.
                                            // The libretro core used is set with SET_LIBRETRO_PATH, and path to game is passed in _EXEC. NULL means no game.
 #define RETRO_ENVIRONMENT_GET_LOCATION_INTERFACE (RETRO_ENVIRONMENT_PRIVATE | 3)
-                                           // struct retro_location_interface * --
+                                           // struct retro_location_callback * --
                                            // Gets access to the location interface.
                                            // The purpose of this interface is to be able to retrieve location-based information from the host device, 
                                            // such as current latitude / longitude.
@@ -68,7 +68,7 @@ typedef double (*retro_location_get_latitude_t)(void);
 //Get the longitude of the current location.
 typedef double (*retro_location_get_longitude_t)(void);
 
-struct retro_location_interface
+struct retro_location_callback
 {
    int interval_in_ms;
    int interval_distance_in_meters;
