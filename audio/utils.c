@@ -170,8 +170,7 @@ static void audio_convert_float_to_s16_neon(int16_t *out, const float *in, size_
 void audio_convert_init_simd(void)
 {
 #ifdef HAVE_NEON
-   unsigned cpu;
-   rarch_get_cpu_features(&cpu);
+   unsigned cpu = rarch_get_cpu_features();
    audio_convert_s16_to_float_arm = cpu & RETRO_SIMD_NEON ?
       audio_convert_s16_to_float_neon : audio_convert_s16_to_float_C;
    audio_convert_float_to_s16_arm = cpu & RETRO_SIMD_NEON ?

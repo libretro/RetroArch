@@ -2884,6 +2884,7 @@ static void verify_api_version(void)
 static void validate_cpu_features(void)
 {
    uint64_t cpu = rarch_get_cpu_features();
+   (void)cpu;
 
 #define FAIL_CPU(simd_type) do { \
    RARCH_ERR(simd_type " code is compiled in, but CPU does not support this feature. Cannot continue.\n"); \
