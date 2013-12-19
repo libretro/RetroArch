@@ -373,6 +373,11 @@ CAMERA
 LOCATION
 ============================================================ */
 #ifdef HAVE_LOCATION
+
+#if defined(ANDROID)
+#include "../location/android.c"
+#endif
+
 #endif
 
 /*============================================================

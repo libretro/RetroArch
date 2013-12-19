@@ -301,6 +301,7 @@ void find_next_camera_driver(void)
 #ifdef HAVE_LOCATION
 static const location_driver_t *location_drivers[] = {
 #ifdef ANDROID
+   &location_android,
 #endif
 #ifdef IOS
    &location_apple,

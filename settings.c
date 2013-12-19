@@ -189,12 +189,10 @@ const char *config_get_default_location(void)
 {
    switch (LOCATION_DEFAULT_DRIVER)
    {
-#if 0
       case LOCATION_ANDROID:
          return "android";
       case LOCATION_APPLE:
          return "apple";
-#endif
       default:
          return NULL;
    }

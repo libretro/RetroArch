@@ -377,6 +377,7 @@ typedef struct location_driver
 
    double (*get_longitude)(void *data);
    double (*get_latitude)(void *data);
+   void (*set_interval)(int interval_msecs, int interval_distance);
    const char *ident;
 } location_driver_t;
 

@@ -314,6 +314,17 @@ didOutputSampleBuffer:(CMSampleBufferRef)sampleBuffer
 }
 #endif
 
+- (void)onLocationSetInterval:(int)interval_update_ms interval_update_distance:(int)interval_distance
+{
+   (void)interval_update_ms;
+
+    // Set a movement threshold for new events (in meters).
+    if (interval_distance == 0)
+       locationManager.distanceFilter = 500;
+    else
+       locationManager.distanceFilter = interval_distance;
+}
+
 - (void)onLocationInit:(int)interval_update_ms interval_update_distance:(int)interval_distance
 {
     // Create the location manager if this object does not
@@ -323,9 +334,8 @@ didOutputSampleBuffer:(CMSampleBufferRef)sampleBuffer
     
     locationManager.delegate = self;
     locationManager.desiredAccuracy = kCLLocationAccuracyBest;
-    
-    // Set a movement threshold for new events.
-    locationManager.distanceFilter = 500; // meters - TODO - make configurable
+
+	[[RAGameView get] onLocationSetInterval:interval_update_ms interval_update_distance:interval_distance];
 }
 
 - (void)onLocationStart
@@ -701,6 +711,13 @@ static void *apple_location_init(int interval_update_ms, int interval_distance)
 	return applelocation;
 }
 
+static void *apple_location_set_interval(void *data, int interval_update_ms, int interval_distance)
+{
+   (void)data;
+	
+	[[RAGameView get] onLocationSetInterval:interval_update_ms interval_update_distance:interval_distance];
+}
+
 static void apple_location_free(void *data)
 {
 	applelocation_t *applelocation = (applelocation_t*)data;
@@ -749,6 +766,7 @@ const location_driver_t location_apple = {
 	apple_location_stop,
 	apple_location_get_longitude,
 	apple_location_get_latitude,
+   apple_location_set_interval,
 	"apple",
 };
 #endif
