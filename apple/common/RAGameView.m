@@ -716,13 +716,13 @@ typedef struct apple_location
 	void *empty;
 } applelocation_t;
 
-static void *apple_location_init(int interval_update_ms, int interval_distance)
+static void *apple_location_init()
 {
 	applelocation_t *applelocation = (applelocation_t*)calloc(1, sizeof(applelocation_t));
 	if (!applelocation)
 		return NULL;
 	
-	[[RAGameView get] onLocationInit:interval_update_ms interval_update_distance:interval_distance];
+	[[RAGameView get] onLocationInit];
 	
 	return applelocation;
 }
