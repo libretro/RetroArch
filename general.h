@@ -190,6 +190,15 @@ struct settings
    } camera;
 #endif
 
+#ifdef HAVE_LOCATION
+   struct
+   {
+      char driver[32];
+      int update_interval_ms;
+      int update_interval_distance;
+   } location;
+#endif
+
 #ifdef HAVE_OSK
    struct
    {
@@ -328,6 +337,9 @@ struct global
 #ifdef HAVE_CAMERA
    bool camera_active;
 #endif
+#ifdef HAVE_LOCATION
+   bool location_active;
+#endif
 #ifdef HAVE_OSK
    bool osk_active;
 #endif
@@ -386,8 +398,8 @@ struct global
 
    struct
    {
-      rarch_time_t minimum_frame_time;
-      rarch_time_t last_frame_time;
+      retro_time_t minimum_frame_time;
+      retro_time_t last_frame_time;
    } frame_limit;
 
    struct
@@ -415,6 +427,7 @@ struct global
       struct retro_disk_control_callback disk_control; 
       struct retro_hw_render_callback hw_render_callback;
       struct retro_camera_callback camera_callback;
+      struct retro_location_callback location_callback;
 
       struct retro_frame_time_callback frame_time;
       retro_usec_t frame_time_last;
@@ -465,7 +478,7 @@ struct global
       uint64_t buffer_free_samples_count;
 
 #define MEASURE_FRAME_TIME_SAMPLES_COUNT (2 * 1024)
-      rarch_time_t frame_time_samples[MEASURE_FRAME_TIME_SAMPLES_COUNT];
+      retro_time_t frame_time_samples[MEASURE_FRAME_TIME_SAMPLES_COUNT];
       uint64_t frame_time_samples_count;
    } measure_data;
 
@@ -654,6 +667,9 @@ void config_load(void);
 void config_set_defaults(void);
 #ifdef HAVE_CAMERA
 const char *config_get_default_camera(void);
+#endif
+#ifdef HAVE_LOCATION
+const char *config_get_default_location(void);
 #endif
 #ifdef HAVE_OSK
 const char *config_get_default_osk(void);

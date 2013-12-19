@@ -32,6 +32,17 @@
 
 apple_frontend_settings_t apple_frontend_settings;
 
+int get_ios_version_major()
+{
+   static int version = -1;
+   
+   if (version < 0)
+      version = (int)[[[UIDevice currentDevice] systemVersion] floatValue];
+   
+   return version;
+}
+
+
 void ios_set_bluetooth_mode(NSString* mode)
 {
    apple_input_enable_icade([mode isEqualToString:@"icade"]);
@@ -104,9 +115,9 @@ static void handle_touch_event(NSArray* touches)
    for(int i = 0; i != numTouches && g_current_input_data.touch_count < MAX_TOUCHES; i ++)
    {
       UITouch* touch = [touches objectAtIndex:i];
-      const CGPoint coord = [touch locationInView:touch.view];
+      const CGPoint coord = [touch locationInView:[touch view]];
 
-      if (touch.phase != UITouchPhaseEnded && touch.phase != UITouchPhaseCancelled)
+      if ([touch phase] != UITouchPhaseEnded && [touch phase] != UITouchPhaseCancelled)
       {
          g_current_input_data.touches[g_current_input_data.touch_count   ].screen_x = coord.x * scale;
          g_current_input_data.touches[g_current_input_data.touch_count ++].screen_y = coord.y * scale;
@@ -145,18 +156,16 @@ static void handle_touch_event(NSArray* touches)
    [super sendEvent:event];
    
    if ([[event allTouches] count])
-      handle_touch_event(event.allTouches.allObjects);
+      handle_touch_event([[event allTouches] allObjects]);
 
-   if ([event respondsToSelector:@selector(_gsEvent)])
+   if (get_ios_version_major() < 7 && [event respondsToSelector:@selector(_gsEvent)])
    {
       // Stolen from: http://nacho4d-nacho4d.blogspot.com/2012/01/catching-keyboard-events-in-ios.html
-      uint8_t* eventMem = (uint8_t*)(void*)CFBridgingRetain([event performSelector:@selector(_gsEvent)]);
+      const uint8_t* eventMem = objc_unretainedPointer([event performSelector:@selector(_gsEvent)]);
       int eventType = eventMem ? *(int*)&eventMem[8] : 0;
       
       if (eventType == GSEVENT_TYPE_KEYDOWN || eventType == GSEVENT_TYPE_KEYUP)
          apple_input_handle_key_event(*(uint16_t*)&eventMem[0x3C], eventType == GSEVENT_TYPE_KEYDOWN);
-      
-      CFBridgingRelease(eventMem);
    }
 }
 
@@ -167,7 +176,6 @@ static void handle_touch_event(NSArray* touches)
    UIWindow* _window;
    NSString* _path;
 
-   bool _isGameTop;
    uint32_t _enabledOrientations;
 }
 
@@ -176,15 +184,14 @@ static void handle_touch_event(NSArray* touches)
    return (RetroArch_iOS*)[[UIApplication sharedApplication] delegate];
 }
 
-#pragma mark LIFECYCLE (UIApplicationDelegate)
 - (void)applicationDidFinishLaunching:(UIApplication *)application
 {
    apple_platform = self;
-   self.delegate = self;
+   [self setDelegate:self];
 
    // Setup window
    _window = [[UIWindow alloc] initWithFrame:[[UIScreen mainScreen] bounds]];
-   _window.rootViewController = self;
+   [self showPauseMenu:self];
    [_window makeKeyAndVisible];
 
    // Build system paths and test permissions
@@ -197,13 +204,13 @@ static void handle_touch_event(NSArray* touches)
    self.coreDirectory = [NSBundle.mainBundle.bundlePath stringByAppendingPathComponent:@"modules"];
    self.logPath = [self.systemDirectory stringByAppendingPathComponent:@"stdout.log"];
     
-    const char *path = self.documentsDirectory.UTF8String;
+    const char *path = [self.documentsDirectory UTF8String];
     path_mkdir(path);
     if (access(path, 0755) != 0)
       apple_display_alert([NSString stringWithFormat:@"Failed to create or access base directory: %@", self.documentsDirectory], 0);
     else
     {
-        path = self.systemDirectory.UTF8String;
+        path = [self.systemDirectory UTF8String];
         path_mkdir(path);
         if (access(path, 0755) != 0)
             apple_display_alert([NSString stringWithFormat:@"Failed to create or access system directory: %@", self.systemDirectory], 0);
@@ -212,8 +219,8 @@ static void handle_touch_event(NSArray* touches)
     }
    
    // Warn if there are no cores present
-   apple_core_info_set_core_path(self.coreDirectory.UTF8String);
-   apple_core_info_set_config_path(self.configDirectory.UTF8String);
+   apple_core_info_set_core_path([self.coreDirectory UTF8String]);
+   apple_core_info_set_config_path([self.configDirectory UTF8String]);
    const core_info_list_t* core_list = apple_core_info_list_get();
    
    if (!core_list || core_list->count == 0)
@@ -222,7 +229,7 @@ static void handle_touch_event(NSArray* touches)
    // Load system config
    const rarch_setting_t* frontend_settings = apple_get_frontend_settings();   
    setting_data_reset(frontend_settings);
-   setting_data_load_config_path(frontend_settings, self.systemConfigPath.UTF8String);
+   setting_data_load_config_path(frontend_settings, [self.systemConfigPath UTF8String]);
 }
 
 - (void)applicationDidBecomeActive:(UIApplication *)application
@@ -235,16 +242,15 @@ static void handle_touch_event(NSArray* touches)
    apple_enter_stasis();
 }
 
-#pragma mark Frontend Browsing Logic
 -(BOOL)application:(UIApplication *)application openURL:(NSURL *)url sourceApplication:(NSString *)sourceApplication annotation:(id)annotation
 {
-   NSString* filename = url.path.lastPathComponent;
+   NSString* filename = [[url path] lastPathComponent];
 
    NSError* error = nil;
-   [NSFileManager.defaultManager moveItemAtPath:url.path toPath:[self.documentsDirectory stringByAppendingPathComponent:filename] error:&error];
+   [[NSFileManager defaultManager] moveItemAtPath:[url path] toPath:[self.documentsDirectory stringByAppendingPathComponent:filename] error:&error];
    
    if (error)
-      printf("%s\n", error.description.UTF8String);
+      printf("%s\n", [[error description] UTF8String]);
    
    return true;
 }
@@ -253,14 +259,7 @@ static void handle_touch_event(NSArray* touches)
 - (void)navigationController:(UINavigationController *)navigationController willShowViewController:(UIViewController *)viewController animated:(BOOL)animated
 {
    apple_input_reset_icade_buttons();
-   _isGameTop = [viewController isKindOfClass:[RAGameView class]];
-   g_extern.is_paused = !_isGameTop;
-
-   [[UIApplication sharedApplication] setStatusBarHidden:_isGameTop withAnimation:UIStatusBarAnimationNone];
-   [[UIApplication sharedApplication] setIdleTimerDisabled:_isGameTop];
-
-   [self setNavigationBarHidden:_isGameTop animated:!_isGameTop];
-   [self setToolbarHidden:!viewController.toolbarItems.count animated:YES];
+   [self setToolbarHidden:![[viewController toolbarItems] count] animated:YES];
    
    // Workaround to keep frontend settings fresh
    [self refreshSystemConfig];
@@ -269,14 +268,14 @@ static void handle_touch_event(NSArray* touches)
 // NOTE: This version only runs on iOS6
 - (NSUInteger)supportedInterfaceOrientations
 {
-   return _isGameTop ? _enabledOrientations
-                     : UIInterfaceOrientationMaskAll;
+   return g_extern.is_paused ? _enabledOrientations
+                             : UIInterfaceOrientationMaskAll;
 }
 
 // NOTE: This version runs on iOS2-iOS5, but not iOS6
 - (BOOL)shouldAutorotateToInterfaceOrientation:(UIInterfaceOrientation)interfaceOrientation
 {
-   if (_isGameTop)
+   if (!g_extern.is_paused)
       switch (interfaceOrientation)
       {
          case UIInterfaceOrientationPortrait:
@@ -292,27 +291,41 @@ static void handle_touch_event(NSArray* touches)
    return YES;
 }
 
+- (void)showGameView
+{
+   [self popToRootViewControllerAnimated:NO];
+   [self setToolbarHidden:true animated:NO];
+   [[UIApplication sharedApplication] setStatusBarHidden:true withAnimation:UIStatusBarAnimationNone];
+   [[UIApplication sharedApplication] setIdleTimerDisabled:true];
+   [_window setRootViewController:[RAGameView get]];
+   g_extern.is_paused = false;
+}
 
-#pragma mark RetroArch_Platform
+- (IBAction)showPauseMenu:(id)sender
+{
+   g_extern.is_paused = true;
+   [[UIApplication sharedApplication] setStatusBarHidden:false withAnimation:UIStatusBarAnimationNone];
+   [[UIApplication sharedApplication] setIdleTimerDisabled:false];
+   [_window setRootViewController:self];
+}
+
 - (void)loadingCore:(NSString*)core withFile:(const char*)file
 {
-   [self pushViewController:RAGameView.get animated:NO];
    (void)[[RACoreSettingsMenu alloc] initWithCore:core];
 
    btpad_set_inquiry_state(false);
 
    [self refreshSystemConfig];
+   [self showGameView];
 }
 
 - (void)unloadingCore:(NSString*)core
 {
-   [self popToViewController:[RAGameView get] animated:NO];
-   [self popViewControllerAnimated:NO];
-      
+   [self showPauseMenu:self];
+   
    btpad_set_inquiry_state(true);
 }
 
-#pragma mark FRONTEND CONFIG
 - (void)refreshSystemConfig
 {
    // Get enabled orientations
@@ -325,12 +338,7 @@ static void handle_touch_event(NSArray* touches)
 
    // Set bluetooth mode
    ios_set_bluetooth_mode(BOXSTRING(apple_frontend_settings.bluetooth_mode));
-   ios_set_logging_state([RetroArch_iOS get].logPath.UTF8String, apple_frontend_settings.logging_enabled);
-}
-
-- (IBAction)showPauseMenu:(id)sender
-{
-   [self pushViewController:[RAPauseMenu new] animated:YES];
+   ios_set_logging_state([[RetroArch_iOS get].logPath UTF8String], apple_frontend_settings.logging_enabled);
 }
 
 @end

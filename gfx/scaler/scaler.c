@@ -21,6 +21,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <math.h>
+#include "../../libretro.h"
 #include "../../performance.h"
 
 // In case aligned allocs are needed later ...

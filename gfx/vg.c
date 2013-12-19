@@ -353,7 +353,6 @@ static void vg_copy_frame(void *data, const void *frame, unsigned width, unsigne
 
 static bool vg_frame(void *data, const void *frame, unsigned width, unsigned height, unsigned pitch, const char *msg)
 {
-
    RARCH_PERFORMANCE_INIT(vg_fr);
    RARCH_PERFORMANCE_START(vg_fr);
    vg_t *vg = (vg_t*)data;

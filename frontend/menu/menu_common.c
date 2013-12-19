@@ -1372,7 +1372,7 @@ static int menu_iterate_func(void *data, unsigned action)
 
 bool menu_iterate(void)
 {
-   rarch_time_t time, delta, target_msec, sleep_msec;
+   retro_time_t time, delta, target_msec, sleep_msec;
    unsigned action;
    static bool initial_held = true;
    static bool first_held = false;
@@ -1937,8 +1937,8 @@ void menu_populate_entries(void *data, unsigned menu_type)
       case RGUI_SETTINGS_PATH_OPTIONS:
          file_list_clear(rgui->selection_buf);
          file_list_push(rgui->selection_buf, "Browser Directory", RGUI_BROWSER_DIR_PATH, 0);
-         file_list_push(rgui->selection_buf, "Config Directory", RGUI_CONFIG_DIR_PATH, 0);
 #ifdef HAVE_DYNAMIC
+         file_list_push(rgui->selection_buf, "Config Directory", RGUI_CONFIG_DIR_PATH, 0);
          file_list_push(rgui->selection_buf, "Core Directory", RGUI_LIBRETRO_DIR_PATH, 0);
 #endif
          file_list_push(rgui->selection_buf, "Core Info Directory", RGUI_LIBRETRO_INFO_DIR_PATH, 0);
@@ -1998,6 +1998,9 @@ void menu_populate_entries(void *data, unsigned menu_type)
          file_list_push(rgui->selection_buf, "Input driver", RGUI_SETTINGS_DRIVER_INPUT, 0);
 #ifdef HAVE_CAMERA
          file_list_push(rgui->selection_buf, "Camera driver", RGUI_SETTINGS_DRIVER_CAMERA, 0);
+#endif
+#ifdef HAVE_LOCATION
+         file_list_push(rgui->selection_buf, "Location driver", RGUI_SETTINGS_DRIVER_LOCATION, 0);
 #endif
          break;
       case RGUI_SETTINGS:

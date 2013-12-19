@@ -18,6 +18,7 @@
 #include "compat/strl.h"
 #include "compat/posix_string.h"
 #include "retroarch_logger.h"
+#include "performance.h"
 #include "file.h"
 #include <string.h>
 #include <ctype.h>
@@ -417,6 +418,15 @@ void uninit_libretro_sym(void)
 
    // No longer valid.
    memset(&g_extern.system, 0, sizeof(g_extern.system));
+#ifdef HAVE_CAMERA
+   g_extern.camera_active = false;
+#endif
+#ifdef HAVE_LOCATION
+   g_extern.location_active = false;
+#endif
+
+   // Performance counters no longer valid.
+   retro_perf_clear();
 }
 
 #ifdef NEED_DYNAMIC
@@ -828,6 +838,22 @@ bool rarch_environment_cb(unsigned cmd, void *data)
          cb->start = driver_camera_start;
          cb->stop = driver_camera_stop;
          g_extern.system.camera_callback = *cb;
+         g_extern.camera_active = cb->caps != 0;
+         break;
+      }
+#endif
+#ifdef HAVE_LOCATION
+      case RETRO_ENVIRONMENT_GET_LOCATION_INTERFACE:
+      {
+         RARCH_LOG("Environ GET_LOCATION_INTERFACE.\n");
+         struct retro_location_callback *cb = (struct retro_location_callback*)data;
+         cb->start = driver_location_start;
+         cb->stop = driver_location_stop;
+         cb->get_latitude = driver_location_get_latitude;
+         cb->get_longitude = driver_location_get_longitude;
+         cb->set_interval = driver_location_set_interval;
+         g_extern.system.location_callback = *cb;
+         g_extern.location_active = true;
          break;
       }
 #endif
@@ -837,6 +863,20 @@ bool rarch_environment_cb(unsigned cmd, void *data)
          RARCH_LOG("Environ GET_LOG_INTERFACE.\n");
          struct retro_log_callback *cb = (struct retro_log_callback*)data;
          cb->log = rarch_log_libretro;
+         break;
+      }
+
+      case RETRO_ENVIRONMENT_GET_PERF_INTERFACE:
+      {
+         RARCH_LOG("Environ GET_PERF_INTERFACE.\n");
+         struct retro_perf_callback *cb = (struct retro_perf_callback*)data;
+         cb->get_time_usec    = rarch_get_time_usec;
+         cb->get_cpu_features = rarch_get_cpu_features;
+         cb->get_perf_counter = rarch_get_perf_counter;
+         cb->perf_register    = retro_perf_register; // libretro specific path.
+         cb->perf_start       = rarch_perf_start;
+         cb->perf_stop        = rarch_perf_stop;
+         cb->perf_log         = retro_perf_log; // libretro specific path.
          break;
       }
 

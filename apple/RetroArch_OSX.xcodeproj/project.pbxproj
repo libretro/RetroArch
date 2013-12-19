@@ -301,6 +301,7 @@
 				OTHER_CFLAGS = (
 					"-DHAVE_RARCH_MAIN_WRAP",
 					"-DHAVE_GRIFFIN",
+					"-DHAVE_LOCATION",
 					"-DHAVE_RGUI",
 					"-DHAVE_MENU",
 					"-DOSX",
@@ -319,6 +320,7 @@
 					"-DWANT_MINIZ",
 					"-DSINC_LOWER_QUALITY",
 					"-DHAVE_NETPLAY",
+					"-DRARCH_INTERNAL",
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = macosx;
@@ -355,6 +357,7 @@
 					"-DNDEBUG",
 					"-DHAVE_RARCH_MAIN_WRAP",
 					"-DHAVE_GRIFFIN",
+					"-DHAVE_LOCATION",
 					"-DHAVE_RGUI",
 					"-DHAVE_MENU",
 					"-DOSX",
@@ -373,6 +376,7 @@
 					"-DWANT_MINIZ",
 					"-DSINC_LOWER_QUALITY",
 					"-DHAVE_NETPLAY",
+					"-DRARCH_INTERNAL",
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = macosx;

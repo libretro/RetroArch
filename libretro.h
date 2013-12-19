@@ -564,6 +564,16 @@ enum retro_mod
                                            // as certain platforms cannot use use stderr for logging. It also allows the frontend to
                                            // show logging information in a more suitable way.
                                            // If this interface is not used, libretro cores should log to stderr as desired.
+#define RETRO_ENVIRONMENT_GET_PERF_INTERFACE 28
+                                           // struct retro_perf_callback * --
+                                           // Gets an interface for performance counters. This is useful for performance logging in a 
+                                           // cross-platform way and for detecting architecture-specific features, such as SIMD support.
+#define RETRO_ENVIRONMENT_GET_LOCATION_INTERFACE 29
+                                           // struct retro_location_callback * --
+                                           // Gets access to the location interface.
+                                           // The purpose of this interface is to be able to retrieve location-based information from the host device, 
+                                           // such as current latitude / longitude.
+                                           //
 
 enum retro_log_level
 {
@@ -581,6 +591,92 @@ typedef void (*retro_log_printf_t)(enum retro_log_level level, const char *fmt, 
 struct retro_log_callback
 {
    retro_log_printf_t log;
+};
+
+// Performance related functions
+//
+// ID values for SIMD CPU features
+#define RETRO_SIMD_SSE      (1 << 0)
+#define RETRO_SIMD_SSE2     (1 << 1)
+#define RETRO_SIMD_VMX      (1 << 2)
+#define RETRO_SIMD_VMX128   (1 << 3)
+#define RETRO_SIMD_AVX      (1 << 4)
+#define RETRO_SIMD_NEON     (1 << 5)
+#define RETRO_SIMD_SSE3     (1 << 6)
+#define RETRO_SIMD_SSSE3    (1 << 7)
+
+typedef uint64_t retro_perf_tick_t;
+typedef int64_t retro_time_t;
+
+struct retro_perf_counter
+{
+   const char *ident;
+   retro_perf_tick_t start;
+   retro_perf_tick_t total;
+   retro_perf_tick_t call_cnt;
+
+   bool registered;
+};
+
+// Returns current time in microseconds. Tries to use the most accurate timer available.
+typedef retro_time_t (*retro_perf_get_time_usec_t)(void);
+// A simple counter. Usually nanoseconds, but can also be CPU cycles.
+// Can be used directly if desired (when creating a more sophisticated performance counter system).
+typedef retro_perf_tick_t (*retro_perf_get_counter_t)(void);
+// Returns a bit-mask of detected CPU features (RETRO_SIMD_*).
+typedef uint64_t (*retro_get_cpu_features_t)(void);
+// Asks frontend to log and/or display the state of performance counters.
+// Performance counters can always be poked into manually as well.
+typedef void (*retro_perf_log_t)(void);
+// Register a performance counter.
+// ident field must be set with a discrete value and other values in retro_perf_counter must be 0.
+// Registering can be called multiple times. To avoid calling to frontend redundantly, you can check registered field first.
+typedef void (*retro_perf_register_t)(struct retro_perf_counter *counter);
+// Starts and stops a registered counter.
+typedef void (*retro_perf_start_t)(struct retro_perf_counter *counter);
+typedef void (*retro_perf_stop_t)(struct retro_perf_counter *counter);
+
+// For convenience it can be useful to wrap register, start and stop in macros.
+// E.g.:
+// #ifdef LOG_PERFORMANCE
+// #define RETRO_PERFORMANCE_INIT(perf_cb, name) static struct retro_perf_counter name = {#name}; if (!name.registered) perf_cb.perf_register(&(name))
+// #define RETRO_PERFORMANCE_START(perf_cb, name) perf_cb.perf_start(&(name))
+// #define RETRO_PERFORMANCE_STOP(perf_cb, name) perf_cb.perf_stop(&(name))
+// #else
+// ... Blank macros ...
+// #endif
+// These can then be used mid-functions around code snippets.
+//
+// extern struct retro_perf_callback perf_cb; // Somewhere in the core.
+//
+// void do_some_heavy_work(void)
+// {
+//    RETRO_PERFORMANCE_INIT(cb, work_1);
+//    RETRO_PERFORMANCE_START(cb, work_1);
+//    heavy_work_1();
+//    RETRO_PERFORMANCE_STOP(cb, work_1);
+//
+//    RETRO_PERFORMANCE_INIT(cb, work_2);
+//    RETRO_PERFORMANCE_START(cb, work_2);
+//    heavy_work_2();
+//    RETRO_PERFORMANCE_STOP(cb, work_2);
+// }
+//
+// void retro_deinit(void)
+// {
+//    perf_cb.perf_log(); // Log all perf counters here for example.
+// }
+
+struct retro_perf_callback
+{
+   retro_perf_get_time_usec_t    get_time_usec;
+   retro_get_cpu_features_t      get_cpu_features;
+
+   retro_perf_get_counter_t      get_perf_counter;
+   retro_perf_register_t         perf_register;
+   retro_perf_start_t            perf_start;
+   retro_perf_stop_t             perf_stop;
+   retro_perf_log_t              perf_log;
 };
 
 // FIXME: Document the sensor API and work out behavior.
@@ -651,6 +747,36 @@ struct retro_camera_callback
    // Set by libretro core. Called right before camera driver is deinitialized.
    // Can be NULL, in which this callback is not called.
    retro_camera_lifetime_status_t deinitialized;
+};
+
+// Sets the interval of time and/or distance at which to update/poll location-based data.
+// To ensure compatibility with all location-based implementations, values for both 
+// interval_ms and interval_distance should be provided.
+// interval_ms is the interval expressed in milliseconds.
+// interval_distance is the distance interval expressed in meters.
+typedef void (*retro_location_set_interval_t)(unsigned interval_ms, unsigned interval_distance);
+
+// Start location services. The device will start listening for changes to the
+// current location at regular intervals (which are defined with retro_location_set_interval_t).
+typedef bool (*retro_location_start_t)(void);
+
+// Stop location services. The device will stop listening for changes to the current
+// location.
+typedef void (*retro_location_stop_t)(void);
+
+// Get the latitude of the current location.
+typedef double (*retro_location_get_latitude_t)(void);
+
+// Get the longitude of the current location.
+typedef double (*retro_location_get_longitude_t)(void);
+
+struct retro_location_callback
+{
+   retro_location_start_t         start;
+   retro_location_stop_t          stop;
+   retro_location_get_latitude_t  get_latitude;
+   retro_location_get_longitude_t get_longitude;
+   retro_location_set_interval_t  set_interval; 
 };
 
 enum retro_rumble_effect

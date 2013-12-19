@@ -5,19 +5,18 @@
     <string name="file_type_icon">File type icon</string>
     <string name="key_bind_title">Select the button to use</string>
     <string name="key_bind_clear">Unbind</string>
-    <string name="report_refreshrate">Report Refresh Rate</string>
     <string name="key_bind_detect">Detect</string>
     <string name="optimal_settings_device">Optimal device settings</string>
     <string name="extracting_assets_please_wait_">Extracting assets, please wait …</string>
 
     <!-- Main Menu Strings -->
     <string name="mainmenu_title">RetroArch - Main Menu</string>
-    <string name="tv_mode">Resume Content</string>
+    <string name="resume_content">Resume Content</string>
     <string name="load_core">Load Core</string>
-    <string name="load_game">Load Content</string>
-    <string name="load_game_history">Load Content (History)</string>
+    <string name="load_content">Load Content</string>
+    <string name="load_content_auto">Load Content (Detect Core)</string>
+    <string name="load_content_history">Load Content (History)</string>
     <string name="settings">Settings</string>
-    <string name="help">Help</string>
     <string name="about">About</string>
     <string name="quit_retroarch">Quit RetroArch</string>
 
@@ -47,15 +46,16 @@
     <string name="refresh_rate_measured_to">Refresh rate measured to: %1$s Hz.</string>
 
     <!-- History Selection Class -->
-    <string name="recently_played_games">Recently run content</string>
     <string name="loading_gamepath">Loading [%1$s]…</string>
     
     <!-- Key Bind Preference Class -->
     <string name="current_binding">Current: %1$s</string>
     <string name="press_key_to_use">Press key to use</string>
 
+    <!-- Core Autodetect strings -->
+    <string name="multiple_cores_detected">Multiple cores detected</string>
+
     <!-- Main Menu Class -->
-    <string name="no_core">No core</string>
     <string name="welcome_to_retroarch">Welcome to RetroArch</string>
     <string name="welcome_to_retroarch_desc">This is your first time starting up RetroArch. RetroArch will now be preconfigured for the best possible user experience.</string>
     <string name="gpl_waiver">GPL waiver</string>

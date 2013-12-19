@@ -48,10 +48,13 @@ const void* apple_get_frontend_settings(void);
 
 + (RetroArch_iOS*)get;
 
+- (void)showGameView;
+
 - (void)loadingCore:(NSString*)core withFile:(const char*)file;
 - (void)unloadingCore:(NSString*)core;
 
 - (void)refreshSystemConfig;
+
 
 @property (nonatomic) NSString* configDirectory;    // e.g. /var/mobile/Documents/.RetroArch
 @property (nonatomic) NSString* globalConfigFile;   // e.g. /var/mobile/Documents/.RetroArch/retroarch.cfg
@@ -66,5 +69,6 @@ const void* apple_get_frontend_settings(void);
 
 // modes are: keyboard, icade and btstack
 void ios_set_bluetooth_mode(NSString* mode);
+int get_ios_version_major();
 
 #endif

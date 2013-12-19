@@ -124,6 +124,7 @@ typedef enum
    RGUI_SETTINGS_DRIVER_AUDIO,
    RGUI_SETTINGS_DRIVER_INPUT,
    RGUI_SETTINGS_DRIVER_CAMERA,
+   RGUI_SETTINGS_DRIVER_LOCATION,
    RGUI_SETTINGS_SCREENSHOT,
    RGUI_SETTINGS_GPU_SCREENSHOT,
    RGUI_SCREENSHOT_DIR_PATH,
@@ -322,7 +323,7 @@ typedef struct
    unsigned current_pad;
 
    rom_history_t *history;
-   rarch_time_t last_time; // Used to throttle RGUI in case VSync is broken.
+   retro_time_t last_time; // Used to throttle RGUI in case VSync is broken.
 
    struct rgui_bind_state binds;
    struct

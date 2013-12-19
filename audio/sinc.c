@@ -17,6 +17,7 @@
 // Only suitable as an upsampler, as cutoff frequency isn't dynamically configurable (yet).
 
 #include "resampler.h"
+#include "../libretro.h"
 #include "../performance.h"
 #include <math.h>
 #include <stdint.h>
@@ -497,10 +498,9 @@ static void *resampler_sinc_new(double bandwidth_mod)
 #elif defined(__SSE__)
    RARCH_LOG("Sinc resampler [SSE]\n");
 #elif defined(HAVE_NEON)
-   struct rarch_cpu_features cpu;
-   rarch_get_cpu_features(&cpu);
-   process_sinc_func = cpu.simd & RARCH_SIMD_NEON ? process_sinc_neon : process_sinc_C;
-   RARCH_LOG("Sinc resampler [%s]\n", cpu.simd & RARCH_SIMD_NEON ? "NEON" : "C");
+   unsigned cpu = rarch_get_cpu_features();
+   process_sinc_func = cpu & RETRO_SIMD_NEON ? process_sinc_neon : process_sinc_C;
+   RARCH_LOG("Sinc resampler [%s]\n", cpu & RETRO_SIMD_NEON ? "NEON" : "C");
 #else
    RARCH_LOG("Sinc resampler [C]\n");
 #endif

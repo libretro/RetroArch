@@ -6,7 +6,6 @@ import android.os.Environment;
 import android.os.Parcel;
 import android.os.Parcelable;
 import android.support.v4.app.DialogFragment;
-import android.support.v4.app.ListFragment;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -25,7 +24,7 @@ import java.io.*;
 
 
 /**
- * {@link ListFragment} subclass that provides a file-browser
+ * {@link DialogFragment} subclass that provides a file-browser
  * like UI for browsing for specific files.
  * <p>
  * This file browser also allows for custom filtering
@@ -38,15 +37,15 @@ import java.io.*;
  * To instantiate a new instance of this class
  * you must use the {@code newInstance} method.
  */
-public final class DirectoryFragment extends DialogFragment
+public class DirectoryFragment extends DialogFragment
 {
-	private IconAdapter<FileWrapper> adapter;
-	private File listedDirectory;
+	protected IconAdapter<FileWrapper> adapter;
+	protected File listedDirectory;
 
 	public static final class BackStackItem implements Parcelable
 	{
-		private final String path;
-		private final boolean parentIsBack;
+		protected final String path;
+		protected boolean parentIsBack;
 
 		public BackStackItem(String path, boolean parentIsBack)
 		{
@@ -101,12 +100,11 @@ public final class DirectoryFragment extends DialogFragment
 	}
 
 
-	private ArrayList<BackStackItem> backStack;
-	
-	private String startDirectory;
-	private String pathSettingKey;
-	private boolean isDirectoryTarget;
-	private OnDirectoryFragmentClosedListener onClosedListener;
+	protected ArrayList<BackStackItem> backStack;
+	protected String startDirectory;
+	protected String pathSettingKey;
+	protected boolean isDirectoryTarget;
+	protected OnDirectoryFragmentClosedListener onClosedListener;
 
 	/**
 	 * Sets the starting directory for this DirectoryFragment
@@ -349,7 +347,7 @@ public final class DirectoryFragment extends DialogFragment
 		disallowedExt.addAll(Arrays.asList(exts));
 	}
 
-	private void wrapFiles()
+	protected void wrapFiles()
 	{
 		listedDirectory = new File(backStack.get(backStack.size() - 1).path);
 

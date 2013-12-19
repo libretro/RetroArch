@@ -2,6 +2,7 @@
  *  Copyright (C) 2010-2013 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2013 - Daniel De Matteis
  *  Copyright (C) 2012-2013 - Michael Lelli
+ *  Copyright (C) 2013-2013 - Steven Crowe
  * 
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -60,6 +61,8 @@ enum
    AXIS_HAT_Y = 16,
    AXIS_LTRIGGER = 17,
    AXIS_RTRIGGER = 18,
+   AXIS_GAS = 22,
+   AXIS_BRAKE = 23,
 };
 
 typedef struct android_input
@@ -132,6 +135,12 @@ static void engine_handle_dpad_getaxisvalue(void *data, AInputEvent *event,
    float haty = AMotionEvent_getAxisValue(event, AXIS_HAT_Y, motion_pointer);
    float ltrig = AMotionEvent_getAxisValue(event, AXIS_LTRIGGER, motion_pointer);
    float rtrig = AMotionEvent_getAxisValue(event, AXIS_RTRIGGER, motion_pointer);
+   
+   /* On some devices, the left and right triggers send AXIS_BRAKE / AXIS_GAS events, use those if AXIS_LTRIGGER / AXIS_RTRIGGER return zero */
+   if (ltrig == 0.0f)
+	   ltrig = AMotionEvent_getAxisValue(event, AXIS_BRAKE, motion_pointer);
+   if (rtrig == 0.0f)
+	   rtrig = AMotionEvent_getAxisValue(event, AXIS_GAS, motion_pointer);
 
    *state_cur &= ~((1ULL << RETRO_DEVICE_ID_JOYPAD_LEFT) | 
          (1ULL << RETRO_DEVICE_ID_JOYPAD_L2) | (1ULL << RETRO_DEVICE_ID_JOYPAD_R2) |
@@ -168,7 +177,7 @@ static void engine_handle_dpad_getaxisvalue(void *data, AInputEvent *event,
    }
 
    if (debug_enable)
-      snprintf(msg, msg_sizeof, "Pad %d : x %.2f, y %.2f, z %.2f, rz %.2f, src %d.\n", 
+      snprintf(msg, msg_sizeof, "Pad %d : x %.2f, y %.2f, z %.2f, rz %.2f, src %d.\n",
             state_id, x, y, z, rz, source);
 }
 
@@ -1354,6 +1363,19 @@ static void android_input_set_keybinds(void *data, unsigned device,
                      android->keycode_lut[AKEYCODE_9] |=  ((RETRO_DEVICE_ID_JOYPAD_L3+1)      << shift);
                      android->keycode_lut[AKEYCODE_0] |=  ((RETRO_DEVICE_ID_JOYPAD_R3+1)      << shift);
                      break;
+                  case ICADE_PROFILE_MOGA_HERO_POWER:
+                	 strlcpy(g_settings.input.device_names[port], "Moga Hero Power",
+                	    sizeof(g_settings.input.device_names[port]));
+                	 android->keycode_lut[AKEYCODE_NUMPAD_LCK_0] |= ((RETRO_DEVICE_ID_JOYPAD_B+1)      << shift);
+                	 android->keycode_lut[AKEYCODE_NUMPAD_LCK_1] |= ((RETRO_DEVICE_ID_JOYPAD_A+1)      << shift);
+                	 android->keycode_lut[AKEYCODE_NUMPAD_LCK_3] |= ((RETRO_DEVICE_ID_JOYPAD_Y+1)      << shift);
+                	 android->keycode_lut[AKEYCODE_NUMPAD_LCK_4] |= ((RETRO_DEVICE_ID_JOYPAD_X+1)      << shift);
+                	 android->keycode_lut[AKEYCODE_NUMPAD_LCK_6] |= ((RETRO_DEVICE_ID_JOYPAD_L+1)      << shift);
+                	 android->keycode_lut[AKEYCODE_NUMPAD_LCK_7] |= ((RETRO_DEVICE_ID_JOYPAD_R+1)      << shift);
+                	 android->keycode_lut[AKEYCODE_BACK] |= ((RETRO_DEVICE_ID_JOYPAD_SELECT+1)      << shift);
+                	 android->keycode_lut[AKEYCODE_OTHR_108] |= ((RETRO_DEVICE_ID_JOYPAD_START+1)      << shift);
+                	 android->keycode_lut[AKEYCODE_BUTTON_THUMBL] |= ((RETRO_DEVICE_ID_JOYPAD_L3+1)     << shift);
+                	 android->keycode_lut[AKEYCODE_BUTTON_THUMBR] |= ((RETRO_DEVICE_ID_JOYPAD_R3+1)     << shift);
                }
             }
             break;

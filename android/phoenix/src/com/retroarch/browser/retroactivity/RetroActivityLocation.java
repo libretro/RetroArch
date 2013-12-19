@@ -29,17 +29,6 @@ LocationListener
 	private LocationClient mLocationClient = null;
 	private Location mCurrentLocation;
 
-	//TODO - FIXME: We will want to make most of this configurable
-	// Milliseconds per second
-	private static final int MILLISECONDS_PER_SECOND = 1000;
-	// Update frequency in seconds */
-	private static final int UPDATE_INTERVAL_IN_SECONDS = 5;
-	// Update frequency in milliseconds
-	private static final long UPDATE_INTERVAL = (MILLISECONDS_PER_SECOND * UPDATE_INTERVAL_IN_SECONDS);
-	// The fastest update frequency, in seconds
-	private static final int FASTEST_INTERVAL_IN_SECONDS = 1;
-	// A fast frequency ceiling in milliseconds
-	private static final long FASTEST_INTERVAL = (MILLISECONDS_PER_SECOND * FASTEST_INTERVAL_IN_SECONDS);
 	// Define an object that holds accuracy and frequency parameters
 	LocationRequest mLocationRequest = null;
 	boolean mUpdatesRequested = false;
@@ -117,10 +106,27 @@ LocationListener
 		}
 	}
 
+   /**
+    * Sets the update interval at which location-based updates 
+    * should occur
+    */
+   public void onLocationSetInterval(int update_interval_in_ms, int distance_interval)
+   {
+      // Use high accuracy
+      mLocationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
+      if (update_interval_in_ms == 0)
+         mLocationRequest.setInterval(1000 * 5);
+      else
+         mLocationRequest.setInterval(update_interval_in_ms);
+
+      // Set the fastest update interval to 1 second
+      mLocationRequest.setFastestInterval(1000 * 1);
+   }
+
 	/**
 	 * Initializing methods for location based functionality.
 	 */
-	public void onLocationInit()
+	public void onLocationInit(int update_interval_in_ms, int distance_interval)
 	{
 		/*
 		 * Create a new location client, using the enclosing class to
@@ -131,24 +137,13 @@ LocationListener
 		// Start with updates turned off
 		mUpdatesRequested = false;
 
-		//TODO - FIXME
-		/* Split this logic up into a separate function
-		 * and make it configurable - callback parameters
-		 * should be configurable
-		 */
-
 		// Create the LocationRequest object
 		if (mLocationRequest == null)
 			mLocationRequest = LocationRequest.create();
-
-		// Use high accuracy
-		mLocationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
-		// Set the update interval to 5 seconds
-		mLocationRequest.setInterval(UPDATE_INTERVAL);
-		// Set the fastest update interval to 1 second
-		mLocationRequest.setFastestInterval(FASTEST_INTERVAL);
-
+      
+      onLocationSetInterval(update_interval_in_ms, distance_interval);
 	}
+
 
 	/**
 	 * Executed upon starting the {@link LocationClient}.
@@ -206,7 +201,7 @@ LocationListener
 	}
 
 	/**
-	 * Gets the longtude at the current location in degrees.
+	 * Gets the longitude at the current location in degrees.
 	 * 
 	 * @return the longitude at the current location.
 	 */

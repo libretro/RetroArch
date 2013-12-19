@@ -17,6 +17,7 @@
 #include "driver.h"
 #include "general.h"
 #include "file.h"
+#include "libretro.h"
 #include <stdio.h>
 #include <string.h>
 #include <math.h>
@@ -300,6 +301,62 @@ void find_next_camera_driver(void)
 }
 #endif
 
+#ifdef HAVE_LOCATION
+static const location_driver_t *location_drivers[] = {
+#ifdef ANDROID
+   &location_android,
+#endif
+#ifdef IOS
+   &location_apple,
+#endif
+   NULL,
+};
+
+static int find_location_driver_index(const char *driver)
+{
+   unsigned i;
+   for (i = 0; location_drivers[i]; i++)
+      if (strcasecmp(driver, location_drivers[i]->ident) == 0)
+         return i;
+   return -1;
+}
+
+static void find_location_driver(void)
+{
+   int i = find_location_driver_index(g_settings.location.driver);
+   if (i >= 0)
+      driver.location = location_drivers[i];
+   else
+   {
+      unsigned d;
+      RARCH_ERR("Couldn't find any location driver named \"%s\"\n", g_settings.location.driver);
+      RARCH_LOG_OUTPUT("Available location drivers are:\n");
+      for (d = 0; location_drivers[d]; d++)
+         RARCH_LOG_OUTPUT("\t%s\n", location_drivers[d]->ident);
+
+      rarch_fail(1, "find_location_driver()");
+   }
+}
+
+void find_prev_location_driver(void)
+{
+   int i = find_location_driver_index(g_settings.location.driver);
+   if (i > 0)
+      strlcpy(g_settings.location.driver, location_drivers[i - 1]->ident, sizeof(g_settings.location.driver));
+   else
+      RARCH_WARN("Couldn't find any previous location driver (current one: \"%s\").\n", g_settings.location.driver);
+}
+
+void find_next_location_driver(void)
+{
+   int i = find_location_driver_index(g_settings.location.driver);
+   if (i >= 0 && location_drivers[i + 1])
+      strlcpy(g_settings.location.driver, location_drivers[i + 1]->ident, sizeof(g_settings.location.driver));
+   else
+      RARCH_WARN("Couldn't find any next location driver (current one: \"%s\").\n", g_settings.location.driver);
+}
+#endif
+
 static int find_audio_driver_index(const char *driver)
 {
    unsigned i;
@@ -451,6 +508,9 @@ void init_drivers_pre(void)
 #ifdef HAVE_CAMERA
    find_camera_driver();
 #endif
+#ifdef HAVE_LOCATION
+   find_location_driver();
+#endif
 #ifdef HAVE_OSK
    find_osk_driver();
 #endif
@@ -570,6 +630,44 @@ void driver_camera_poll(void)
 }
 #endif
 
+#ifdef HAVE_LOCATION
+bool driver_location_start(void)
+{
+   if (driver.location && driver.location_data)
+      return driver.location->start(driver.location_data);
+   else
+      return false;
+}
+
+void driver_location_stop(void)
+{
+   if (driver.location && driver.location_data)
+      driver.location->stop(driver.location_data);
+}
+
+void driver_location_set_interval(unsigned interval_msecs, unsigned interval_distance)
+{
+   if (driver.location && driver.location_data)
+      driver.location->set_interval(driver.location_data, interval_msecs, interval_distance);
+}
+
+double driver_location_get_latitude(void)
+{
+   if (driver.location && driver.location_data)
+      return driver.location->get_latitude(driver.location_data);
+   else
+      return 0.0;
+}
+
+double driver_location_get_longitude(void)
+{
+   if (driver.location && driver.location_data)
+      return driver.location->get_longitude(driver.location_data);
+   else
+      return 0.0;
+}
+#endif
+
 uintptr_t driver_get_current_framebuffer(void)
 {
 #ifdef HAVE_FBO
@@ -632,6 +730,14 @@ void global_uninit_drivers(void)
    }
 #endif
 
+#ifdef HAVE_LOCATION
+   if (driver.location && driver.location_data)
+   {
+      driver.location->free(driver.location_data);
+      driver.location_data = NULL;
+   }
+#endif
+
 #ifdef HAVE_OSK
    if (driver.osk && driver.osk_data)
    {
@@ -667,6 +773,25 @@ void init_camera(void)
 }
 #endif
 
+#ifdef HAVE_LOCATION
+void init_location(void)
+{
+   // Resource leaks will follow if location interface is initialized twice.
+   if (driver.location_data)
+      return;
+
+   find_location_driver();
+
+   driver.location_data = location_init_func();
+
+   if (!driver.location_data)
+   {
+      RARCH_ERR("Failed to initialize location driver. Will continue without location.\n");
+      g_extern.location_active = false;
+   }
+}
+#endif
+
 #ifdef HAVE_OSK
 void init_osk(void)
 {
@@ -695,6 +820,9 @@ void init_drivers(void)
 #ifdef HAVE_CAMERA
    driver.camera_data_own = !driver.camera_data;
 #endif
+#ifdef HAVE_LOCATION
+   driver.location_data_own = !driver.location_data;
+#endif
 #ifdef HAVE_OSK
    driver.osk_data_own = !driver.osk_data;
 #endif
@@ -712,8 +840,14 @@ void init_drivers(void)
 
 #ifdef HAVE_CAMERA
    // Only init camera driver if we're ever going to use it.
-   if (g_extern.system.camera_callback.caps)
+   if (g_extern.camera_active)
       init_camera();
+#endif
+
+#ifdef HAVE_LOCATION
+   // Only init location driver if we're ever going to use it.
+   if (g_extern.location_active)
+      init_location();
 #endif
 
 #ifdef HAVE_OSK
@@ -736,6 +870,14 @@ void uninit_camera(void)
          g_extern.system.camera_callback.deinitialized();
       driver.camera->free(driver.camera_data);
    }
+}
+#endif
+
+#ifdef HAVE_LOCATION
+void uninit_location(void)
+{
+   if (driver.location_data && driver.location)
+      driver.location->free(driver.location_data);
 }
 #endif
 
@@ -762,6 +904,14 @@ void uninit_drivers(void)
    if (driver.camera_data_own)
       driver.camera_data = NULL;
 #endif
+
+#ifdef HAVE_LOCATION
+   uninit_location();
+
+   if (driver.location_data_own)
+      driver.location_data = NULL;
+#endif
+   
 #ifdef HAVE_OSK
    uninit_osk();
 
@@ -777,6 +927,9 @@ void uninit_drivers(void)
 
 #ifdef HAVE_CAMERA
    driver.camera_data_own = false;
+#endif
+#ifdef HAVE_LOCATION
+   driver.location_data_own = false;
 #endif
 #ifdef HAVE_OSK
    driver.osk_data_own    = false;
@@ -1020,7 +1173,7 @@ bool driver_monitor_fps_statistics(double *refresh_rate, double *deviation, unsi
       return false;
 
    // Measure statistics on frame time (microsecs), *not* FPS.
-   rarch_time_t accum = 0;
+   retro_time_t accum = 0;
    for (i = 0; i < samples; i++)
       accum += g_extern.measure_data.frame_time_samples[i];
 
@@ -1030,13 +1183,13 @@ bool driver_monitor_fps_statistics(double *refresh_rate, double *deviation, unsi
             i, (int)g_extern.measure_data.frame_time_samples[i]);
 #endif
 
-   rarch_time_t avg = accum / samples;
-   rarch_time_t accum_var = 0;
+   retro_time_t avg = accum / samples;
+   retro_time_t accum_var = 0;
 
    // Drop first measurement. It is likely to be bad.
    for (i = 0; i < samples; i++)
    {
-      rarch_time_t diff = g_extern.measure_data.frame_time_samples[i] - avg;
+      retro_time_t diff = g_extern.measure_data.frame_time_samples[i] - avg;
       accum_var += diff * diff;
    }
 

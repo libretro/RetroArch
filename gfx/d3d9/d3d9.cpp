@@ -284,8 +284,9 @@ void D3DVideo::viewport_info(rarch_viewport &vp)
 
 bool D3DVideo::read_viewport(uint8_t *buffer)
 {
-   RARCH_PERFORMANCE_INIT(d3d_read_viewport);
-   RARCH_PERFORMANCE_START(d3d_read_viewport);
+   static retro_perf_counter_t d3d_read_viewport = { "d3d_read_viewport", 0, 0, 0, false };
+   rarch_perf_init(&d3d_read_viewport, g_settings.perfcounter_enable);
+   rarch_perf_start(&d3d_read_viewport, g_settings.perfcounter_enable);
    bool ret = true;
    IDirect3DSurface9 *target = nullptr;
    IDirect3DSurface9 *dest   = nullptr;
@@ -338,7 +339,7 @@ bool D3DVideo::read_viewport(uint8_t *buffer)
    }
 
 end:
-   RARCH_PERFORMANCE_STOP(d3d_read_viewport);
+   rarch_perf_stop(&d3d_read_viewport, g_settings.perfcounter_enable);
    if (target)
       target->Release();
    if (dest)
@@ -606,8 +607,9 @@ bool D3DVideo::frame(const void *frame,
    if (!frame)
       return true;
 
-   RARCH_PERFORMANCE_INIT(d3d_frame);
-   RARCH_PERFORMANCE_START(d3d_frame);
+   static retro_perf_counter_t d3d_frame = { "d3d_frame", 0, 0, 0, false };
+   rarch_perf_init(&d3d_frame, g_settings.perfcounter_enable);
+   rarch_perf_start(&d3d_frame, g_settings.perfcounter_enable);
    // We cannot recover in fullscreen.
    if (needs_restore && IsIconic(hWnd))
       return true;
@@ -670,7 +672,7 @@ bool D3DVideo::frame(const void *frame,
    }
 #endif
 
-   RARCH_PERFORMANCE_STOP(d3d_frame);
+   rarch_perf_stop(&d3d_frame, g_settings.perfcounter_enable);
 
    if (dev->Present(nullptr, nullptr, nullptr, nullptr) != D3D_OK)
    {

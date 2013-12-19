@@ -71,7 +71,7 @@ public final class HistorySelection extends DialogFragment
 		rootView.setOnItemClickListener(onItemClickListener);
 
 		// Set the title for this dialog.
-		getDialog().setTitle(R.string.load_game_history);
+		getDialog().setTitle(R.string.load_content_history);
 
 		// Setup the list adapter
 		adapter = new IconAdapter<HistoryWrapper>(ctx, R.layout.line_list_item);
