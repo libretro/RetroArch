@@ -23,6 +23,7 @@
 #include <CoreLocation/CoreLocation.h>
 
 static CLLocationManager *locationManager;
+static bool locationChanged;
 static CLLocationDegrees currentLatitude;
 static CLLocationDegrees currentLongitude;
 
@@ -314,7 +315,7 @@ didOutputSampleBuffer:(CMSampleBufferRef)sampleBuffer
 }
 #endif
 
-- (void)onLocationSetInterval:(int)interval_update_ms interval_update_distance:(int)interval_distance
+- (void)onLocationSetInterval:(unsigned)interval_update_ms interval_update_distance:(unsigned)interval_distance
 {
    (void)interval_update_ms;
 
@@ -325,7 +326,7 @@ didOutputSampleBuffer:(CMSampleBufferRef)sampleBuffer
        locationManager.distanceFilter = interval_distance;
 }
 
-- (void)onLocationInit:(int)interval_update_ms interval_update_distance:(int)interval_distance
+- (void)onLocationInit
 {
     // Create the location manager if this object does not
     // already have one.
@@ -335,7 +336,7 @@ didOutputSampleBuffer:(CMSampleBufferRef)sampleBuffer
     locationManager.delegate = self;
     locationManager.desiredAccuracy = kCLLocationAccuracyBest;
 
-	[[RAGameView get] onLocationSetInterval:interval_update_ms interval_update_distance:interval_distance];
+	[[RAGameView get] onLocationSetInterval:0 interval_update_distance:0];
 }
 
 - (void)onLocationStart
@@ -363,8 +364,23 @@ didOutputSampleBuffer:(CMSampleBufferRef)sampleBuffer
     return currentLongitude;
 }
 
+- (double)onLocationGetAccuracy
+{
+   /* TODO/FIXME - implement */
+   return 0.0;
+}
+
+- (bool)onLocationHasChanged
+{
+   bool ret = locationChanged;
+   if (ret)
+      locationChanged = false;
+   return ret;
+}
+
 - (void)locationManager:(CLLocationManager *)manager didUpdateToLocation:(CLLocation *)newLocation fromLocation:(CLLocation *)oldLocation
 {
+    locationChanged = true;
     currentLatitude = newLocation.coordinate.latitude;
     currentLongitude = newLocation.coordinate.longitude;
     RARCH_LOG("didUpdateToLocation - latitude %f, longitude %f\n", (float)currentLatitude, (float)currentLongitude);
@@ -372,7 +388,7 @@ didOutputSampleBuffer:(CMSampleBufferRef)sampleBuffer
 
 - (void)locationManager:(CLLocationManager *)manager didUpdateLocations:(NSArray *)locations
 {
-
+    locationChanged = true;
     currentLatitude  = [[locations objectAtIndex:([locations     count]-1)] coordinate].latitude;
     currentLongitude = [[locations objectAtIndex:([locations     count]-1)] coordinate].longitude;
     RARCH_LOG("didUpdateLocations - latitude %f, longitude %f\n", (float)currentLatitude, (float)currentLongitude);
@@ -711,7 +727,7 @@ static void *apple_location_init(int interval_update_ms, int interval_distance)
 	return applelocation;
 }
 
-static void apple_location_set_interval(void *data, int interval_update_ms, int interval_distance)
+static void apple_location_set_interval(void *data, unsigned interval_update_ms, unsigned interval_distance)
 {
    (void)data;
 	
@@ -745,18 +761,25 @@ static void apple_location_stop(void *data)
 	[[RAGameView get] onLocationStop];
 }
 
-static double apple_location_get_latitude(void *data)
+static bool apple_location_get_position(void *data, double *lat, double *lon, double *accuracy)
 {
 	(void)data;
-	
-	return [[RAGameView get] onLocationGetLatitude];
-}
 
-static double apple_location_get_longitude(void *data)
-{
-	(void)data;
+   bool ret = [[RAGameView get] onLocationHasChanged];
+
+   if (!ret)
+      goto fail;
 	
-	return [[RAGameView get] onLocationGetLongitude];
+	*lat      = [[RAGameView get] onLocationGetLatitude];
+   *lon      = [[RAGameView get] onLocationGetLongitude];
+   *accuracy = [[RAGameView get] onLocationGetAccuracy];
+   return true;
+
+fail:
+   *lat      = 0.0;
+   *lon      = 0.0;
+   *accuracy = 0.0;
+   return false;
 }
 
 const location_driver_t location_apple = {
@@ -764,8 +787,7 @@ const location_driver_t location_apple = {
 	apple_location_free,
 	apple_location_start,
 	apple_location_stop,
-	apple_location_get_longitude,
-	apple_location_get_latitude,
+	apple_location_get_position,
 	apple_location_set_interval,
 	"apple",
 };

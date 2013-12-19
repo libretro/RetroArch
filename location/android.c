@@ -26,6 +26,8 @@ typedef struct android_location
    jmethodID onLocationSetInterval;
    jmethodID onLocationGetLongitude;
    jmethodID onLocationGetLatitude;
+   jmethodID onLocationGetAccuracy;
+   jmethodID onLocationHasChanged;
 } androidlocation_t;
 
 static void *android_location_init(void)
@@ -46,7 +48,7 @@ static void *android_location_init(void)
    if (class == NULL)
       goto dealloc;
 
-   GET_METHOD_ID(env, androidlocation->onLocationInit, class, "onLocationInit", "(II)V");
+   GET_METHOD_ID(env, androidlocation->onLocationInit, class, "onLocationInit", "()V");
    if (!androidlocation->onLocationInit)
       goto dealloc;
 
@@ -70,14 +72,21 @@ static void *android_location_init(void)
    if (!androidlocation->onLocationGetLongitude)
       goto dealloc;
 
+   GET_METHOD_ID(env, androidlocation->onLocationGetAccuracy, class, "onLocationGetAccuracy", "()F");
+   if (!androidlocation->onLocationGetAccuracy)
+      goto dealloc;
+
    GET_METHOD_ID(env, androidlocation->onLocationGetLongitude, class, "onLocationSetInterval", "(II)V");
    if (!androidlocation->onLocationSetInterval)
+      goto dealloc;
+
+   GET_METHOD_ID(env, androidlocation->onLocationHasChanged, class, "onLocationHasChanged", "()Z");
+   if (!androidlocation->onLocationHasChanged)
       goto dealloc;
 
    CALL_VOID_METHOD(env, android_app->activity->clazz, androidlocation->onLocationInit);
 
    return androidlocation;
-
 dealloc:
    free(androidlocation);
    return NULL;
@@ -120,30 +129,40 @@ static void android_location_stop(void *data)
    CALL_VOID_METHOD(env, android_app->activity->clazz, androidlocation->onLocationStop);
 }
 
-static double android_location_get_latitude(void *data)
+static bool android_location_get_position(void *data, double *latitude, double *longitude, double *accuracy)
 {
    struct android_app *android_app = (struct android_app*)g_android;
    androidlocation_t *androidlocation = (androidlocation_t*)data;
    JNIEnv *env = jni_thread_getenv();
    if (!env)
-      return 0.0;
+      goto fail;
 
-   jdouble latitude;
-   CALL_BOOLEAN_METHOD(env, latitude, android_app->activity->clazz, androidlocation->onLocationGetLatitude);
-   return latitude;
-}
+   jdouble lat, lon, accuhurtz;
+   jboolean newLocation;
 
-static double android_location_get_longitude(void *data)
-{
-   struct android_app *android_app = (struct android_app*)g_android;
-   androidlocation_t *androidlocation = (androidlocation_t*)data;
-   JNIEnv *env = jni_thread_getenv();
-   if (!env)
-      return 0.0;
+   CALL_BOOLEAN_METHOD(env, newLocation, android_app->activity->clazz, androidlocation->onLocationHasChanged);
 
-   jdouble longitude;
-   CALL_BOOLEAN_METHOD(env, longitude, android_app->activity->clazz, androidlocation->onLocationGetLongitude);
-   return longitude;
+   if (!newLocation)
+      goto fail;
+
+   CALL_DOUBLE_METHOD(env, lat,        android_app->activity->clazz, androidlocation->onLocationGetLatitude);
+   CALL_DOUBLE_METHOD(env, lon,        android_app->activity->clazz, androidlocation->onLocationGetLongitude);
+   CALL_DOUBLE_METHOD(env, accuhurtz,  android_app->activity->clazz, androidlocation->onLocationGetAccuracy);
+
+   if (lat != 0.0)
+      *latitude = lat;
+   if (lon != 0.0)
+      *longitude = lon;
+   if (accuhurtz != 0.0)
+      *accuracy = accuhurtz;
+
+   return true;
+
+fail:
+   *latitude  = 0.0;
+   *longitude = 0.0;
+   *accuracy  = 0.0;
+   return false;
 }
 
 static void android_location_set_interval(void *data, unsigned interval_ms, unsigned interval_distance)
@@ -154,7 +173,7 @@ static void android_location_set_interval(void *data, unsigned interval_ms, unsi
    if (!env)
       return;
 
-   CALL_VOID_METHOD_PARAM(env, android_app->activity->clazz, androidlocation->onLocationSetInterval, interval_ms, interval_distance);
+   CALL_VOID_METHOD_PARAM(env, android_app->activity->clazz, androidlocation->onLocationSetInterval, (int)interval_ms, (int)interval_distance);
 }
 
 const location_driver_t location_android = {
@@ -162,8 +181,7 @@ const location_driver_t location_android = {
    android_location_free,
    android_location_start,
    android_location_stop,
-   android_location_get_longitude,
-   android_location_get_latitude,
+   android_location_get_position,
    android_location_set_interval,
    "android",
 };
