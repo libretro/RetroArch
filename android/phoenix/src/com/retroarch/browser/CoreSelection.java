@@ -52,7 +52,7 @@ public final class CoreSelection extends DialogFragment
 
 		// Populate the list
 		final List<ModuleWrapper> cores = new ArrayList<ModuleWrapper>();
-		final File[] libs = new File(getActivity().getApplicationInfo().dataDir, "/cores").listFiles();
+		final File[] libs = new File(getActivity().getApplicationInfo().dataDir, "cores").listFiles();
 		for (final File lib : libs) {
 			String libName = lib.getName();
 

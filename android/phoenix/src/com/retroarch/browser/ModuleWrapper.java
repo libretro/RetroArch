@@ -116,6 +116,17 @@ public final class ModuleWrapper implements IconAdapterItem, Comparable<ModuleWr
 	}
 
 	/**
+	 * Same as the original constructor, but allows for string paths.
+	 * 
+	 * @param context The current {@link Context}.
+	 * @param path    Path to the file to encapsulate.
+	 */
+	public ModuleWrapper(Context context, String path)
+	{
+		this(context, new File(path));
+	}
+
+	/**
 	 * Gets the underlying {@link File} instance for this ModuleWrapper.
 	 * 
 	 * @return the underlying {@link File} instance for this ModuleWrapper.

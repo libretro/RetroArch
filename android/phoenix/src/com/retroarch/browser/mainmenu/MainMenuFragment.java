@@ -28,6 +28,7 @@ import com.retroarch.R;
 import com.retroarch.browser.CoreSelection;
 import com.retroarch.browser.HistorySelection;
 import com.retroarch.browser.NativeInterface;
+import com.retroarch.browser.dirfragment.DetectCoreDirectoryFragment;
 import com.retroarch.browser.dirfragment.DirectoryFragment;
 import com.retroarch.browser.dirfragment.DirectoryFragment.OnDirectoryFragmentClosedListener;
 import com.retroarch.browser.mainmenu.gplwaiver.GPLWaiverDialogFragment;
@@ -65,10 +66,11 @@ public final class MainMenuFragment extends PreferenceListFragment implements On
 		addPreferencesFromResource(R.xml.main_menu);
 
 		// Set the listeners for the menu items
-		findPreference("retroTVMode").setOnPreferenceClickListener(this);
+		findPreference("resumeContentPref").setOnPreferenceClickListener(this);
 		findPreference("loadCorePref").setOnPreferenceClickListener(this);
-		findPreference("loadRomPref").setOnPreferenceClickListener(this);
-		findPreference("loadRomHistoryPref").setOnPreferenceClickListener(this);
+		findPreference("loadContentAutoPref").setOnPreferenceClickListener(this);
+		findPreference("loadContentPref").setOnPreferenceClickListener(this);
+		findPreference("loadContentHistoryPref").setOnPreferenceClickListener(this);
 		findPreference("quitRetroArch").setOnPreferenceClickListener(this);
 
 		// Extract assets. 
@@ -340,8 +342,8 @@ public final class MainMenuFragment extends PreferenceListFragment implements On
 	{
 		final String prefKey = preference.getKey();
 
-		// TV Mode
-		if (prefKey.equals("retroTVMode"))
+		// Resume Content
+		if (prefKey.equals("resumeContentPref"))
 		{
 			UserPreferences.updateConfigFile(ctx);
 
@@ -360,30 +362,43 @@ public final class MainMenuFragment extends PreferenceListFragment implements On
 			CoreSelection.newInstance().show(getFragmentManager(), "core_selection");
 		}
 		// Load ROM Preference
-		else if (prefKey.equals("loadRomPref"))
+		else if (prefKey.equals("loadContentPref"))
 		{
 			final SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(ctx);
 			final String libretro_path = prefs.getString("libretro_path", ctx.getApplicationInfo().dataDir + "/cores");
-			
+
 			if (!new File(libretro_path).isDirectory())
 			{
-				final DirectoryFragment romBrowser = DirectoryFragment.newInstance(R.string.load_game);
-				romBrowser.addDisallowedExts(".state", ".srm", ".state.auto", ".rtc");
-				romBrowser.setOnDirectoryFragmentClosedListener(this);
+				final DirectoryFragment contentBrowser = DirectoryFragment.newInstance(R.string.load_content);
+				contentBrowser.addDisallowedExts(".state", ".srm", ".state.auto", ".rtc");
+				contentBrowser.setOnDirectoryFragmentClosedListener(this);
 	
 				final String startPath = prefs.getString("rgui_browser_directory", "");
 				if (!startPath.isEmpty() && new File(startPath).exists())
-					romBrowser.setStartDirectory(startPath);
+					contentBrowser.setStartDirectory(startPath);
 	
-				romBrowser.show(getFragmentManager(), "romBrowser");
+				contentBrowser.show(getFragmentManager(), "contentBrowser");
 			}
 			else
 			{
 				Toast.makeText(ctx, R.string.load_a_core_first, Toast.LENGTH_SHORT).show();
 			}
 		}
-		// Load ROM (History) Preference
-		else if (prefKey.equals("loadRomHistoryPref"))
+		else if (prefKey.equals("loadContentAutoPref"))
+		{
+			final SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(ctx);
+			final DetectCoreDirectoryFragment contentBrowser = DetectCoreDirectoryFragment.newInstance(R.string.load_content_auto);
+			contentBrowser.addDisallowedExts(".state", ".srm", ".state.auto", ".rtc");
+			contentBrowser.setOnDirectoryFragmentClosedListener(this);
+
+			final String startPath = prefs.getString("rgui_browser_directory", "");
+			if (!startPath.isEmpty() && new File(startPath).exists())
+				contentBrowser.setStartDirectory(startPath);
+
+			contentBrowser.show(getFragmentManager(), "contentBrowser");
+		}
+		// Load Content (History) Preference
+		else if (prefKey.equals("loadContentHistoryPref"))
 		{
 			HistorySelection.newInstance().show(getFragmentManager(), "history_selection");
 		}
