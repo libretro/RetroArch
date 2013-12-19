@@ -28,7 +28,7 @@ typedef struct android_location
    jmethodID onLocationGetLatitude;
 } androidlocation_t;
 
-static void *android_location_init(unsigned interval_ms, unsigned interval_distance)
+static void *android_location_init(int interval_ms, int interval_distance)
 {
    JNIEnv *env;
    jclass class;
@@ -97,7 +97,7 @@ static void android_location_free(void *data)
    free(androidlocation);
 }
 
-static bool android_camera_start(void *data)
+static bool android_location_start(void *data)
 {
    struct android_app *android_app = (struct android_app*)g_android;
    androidlocation_t *androidlocation = (androidlocation_t*)data;
@@ -127,10 +127,10 @@ static double android_location_get_latitude(void *data)
    androidlocation_t *androidlocation = (androidlocation_t*)data;
    JNIEnv *env = jni_thread_getenv();
    if (!env)
-      return;
+      return 0.0;
 
    jdouble latitude;
-   CALL_BOOLEAN_METHOD(env, longitude, android_app->activity->clazz, androidlocation->onLocationGetLatitude);
+   CALL_BOOLEAN_METHOD(env, latitude, android_app->activity->clazz, androidlocation->onLocationGetLatitude);
    return latitude;
 }
 
@@ -140,7 +140,7 @@ static double android_location_get_longitude(void *data)
    androidlocation_t *androidlocation = (androidlocation_t*)data;
    JNIEnv *env = jni_thread_getenv();
    if (!env)
-      return;
+      return 0.0;
 
    jdouble longitude;
    CALL_BOOLEAN_METHOD(env, longitude, android_app->activity->clazz, androidlocation->onLocationGetLongitude);
