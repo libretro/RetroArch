@@ -711,7 +711,7 @@ static void *apple_location_init(int interval_update_ms, int interval_distance)
 	return applelocation;
 }
 
-static void *apple_location_set_interval(void *data, int interval_update_ms, int interval_distance)
+static void apple_location_set_interval(void *data, int interval_update_ms, int interval_distance)
 {
    (void)data;
 	
@@ -766,7 +766,7 @@ const location_driver_t location_apple = {
 	apple_location_stop,
 	apple_location_get_longitude,
 	apple_location_get_latitude,
-   apple_location_set_interval,
+	apple_location_set_interval,
 	"apple",
 };
 #endif
