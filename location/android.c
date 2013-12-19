@@ -28,12 +28,10 @@ typedef struct android_location
    jmethodID onLocationGetLatitude;
 } androidlocation_t;
 
-static void *android_location_init(int interval_ms, int interval_distance)
+static void *android_location_init(void)
 {
    JNIEnv *env;
    jclass class;
-   (void)interval_ms;
-   (void)interval_distance;
 
    struct android_app *android_app = (struct android_app*)g_android;
    androidlocation_t *androidlocation = (androidlocation_t*)calloc(1, sizeof(androidlocation_t));
@@ -79,6 +77,7 @@ static void *android_location_init(int interval_ms, int interval_distance)
    CALL_VOID_METHOD(env, android_app->activity->clazz, androidlocation->onLocationInit);
 
    return androidlocation;
+
 dealloc:
    free(androidlocation);
    return NULL;
@@ -147,7 +146,7 @@ static double android_location_get_longitude(void *data)
    return longitude;
 }
 
-static void android_location_set_interval(void *data, int interval_ms, int interval_distance)
+static void android_location_set_interval(void *data, unsigned interval_ms, unsigned interval_distance)
 {
    struct android_app *android_app = (struct android_app*)g_android;
    androidlocation_t *androidlocation = (androidlocation_t*)data;

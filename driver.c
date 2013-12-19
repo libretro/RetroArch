@@ -642,7 +642,7 @@ void driver_location_stop(void)
       driver.location->stop(driver.location_data);
 }
 
-void driver_location_set_interval(int interval_msecs, int interval_distance)
+void driver_location_set_interval(unsigned interval_msecs, unsigned interval_distance)
 {
    if (driver.location && driver.location_data)
       driver.location->set_interval(driver.location_data, interval_msecs, interval_distance);
@@ -779,7 +779,7 @@ void init_location(void)
 
    find_location_driver();
 
-   driver.location_data = location_init_func(g_extern.system.location_callback.interval_in_ms, g_extern.system.location_callback.interval_distance_in_meters);
+   driver.location_data = location_init_func();
 
    if (!driver.location_data)
    {
@@ -837,14 +837,13 @@ void init_drivers(void)
 
 #ifdef HAVE_CAMERA
    // Only init camera driver if we're ever going to use it.
-   if (g_extern.system.camera_callback.caps)
+   if (g_extern.camera_active)
       init_camera();
 #endif
 
 #ifdef HAVE_LOCATION
-   // FIXME
    // Only init location driver if we're ever going to use it.
-   if (g_extern.system.location_callback.enable)
+   if (g_extern.location_active)
       init_location();
 #endif
 

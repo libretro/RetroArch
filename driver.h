@@ -369,7 +369,7 @@ typedef struct camera_driver
 
 typedef struct location_driver
 {
-   void *(*init)(int interval_msecs, int interval_distance);
+   void *(*init)(void);
    void (*free)(void *data);
 
    bool (*start)(void *data);
@@ -377,7 +377,7 @@ typedef struct location_driver
 
    double (*get_longitude)(void *data);
    double (*get_latitude)(void *data);
-   void (*set_interval)(void *data, int interval_msecs, int interval_distance);
+   void (*set_interval)(void *data, unsigned interval_msecs, unsigned interval_distance);
    const char *ident;
 } location_driver_t;
 
@@ -606,7 +606,7 @@ bool driver_location_start(void);
 void driver_location_stop(void);
 double driver_location_get_latitude(void);
 double driver_location_get_longitude(void);
-void driver_location_set_interval(int, int);
+void driver_location_set_interval(unsigned interval_msecs, unsigned interval_distance);
 #endif
 
 extern driver_t driver;
