@@ -20,6 +20,8 @@
 
 #define camera_init_func(device, caps, width, height) driver.camera->init(device, caps, width, height)
 
+#define location_init_func(interval_msecs, interval_distance) driver.location->init(interval_msecs, interval_distance)
+
 #define osk_init_func(unknown) driver.osk->init(unknown)
 
 #define audio_init_func(device, rate, latency)  driver.audio->init(device, rate, latency)

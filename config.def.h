@@ -92,6 +92,9 @@ enum
    CAMERA_IOS,
    CAMERA_NULL,
 
+   LOCATION_ANDROID,
+   LOCATION_APPLE,
+
    OSK_PS3,
    OSK_NULL,
 };
@@ -204,6 +207,12 @@ enum
 #define CAMERA_DEFAULT_DRIVER CAMERA_IOS
 #else
 #define CAMERA_DEFAULT_DRIVER CAMERA_NULL
+#endif
+
+#if defined(ANDROID)
+#define LOCATION_DEFAULT_DRIVER LOCATION_ANDROID
+#elif defined(IOS) || defined(OSX)
+#define LOCATION_DEFAULT_DRIVER LOCATION_APPLE
 #endif
 
 #if defined(__CELLOS_LV2__)

@@ -1999,6 +1999,9 @@ void menu_populate_entries(void *data, unsigned menu_type)
 #ifdef HAVE_CAMERA
          file_list_push(rgui->selection_buf, "Camera driver", RGUI_SETTINGS_DRIVER_CAMERA, 0);
 #endif
+#ifdef HAVE_LOCATION
+         file_list_push(rgui->selection_buf, "Location driver", RGUI_SETTINGS_DRIVER_LOCATION, 0);
+#endif
          break;
       case RGUI_SETTINGS:
          file_list_clear(rgui->selection_buf);

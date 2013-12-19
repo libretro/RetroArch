@@ -190,6 +190,15 @@ struct settings
    } camera;
 #endif
 
+#ifdef HAVE_LOCATION
+   struct
+   {
+      char driver[32];
+      int update_interval_ms;
+      int update_interval_distance;
+   } location;
+#endif
+
 #ifdef HAVE_OSK
    struct
    {
@@ -327,6 +336,9 @@ struct global
    bool video_active;
 #ifdef HAVE_CAMERA
    bool camera_active;
+#endif
+#ifdef HAVE_LOCATION
+   bool location_active;
 #endif
 #ifdef HAVE_OSK
    bool osk_active;
@@ -654,6 +666,9 @@ void config_load(void);
 void config_set_defaults(void);
 #ifdef HAVE_CAMERA
 const char *config_get_default_camera(void);
+#endif
+#ifdef HAVE_LOCATION
+const char *config_get_default_location(void);
 #endif
 #ifdef HAVE_OSK
 const char *config_get_default_osk(void);

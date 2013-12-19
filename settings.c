@@ -184,6 +184,23 @@ const char *config_get_default_camera(void)
 }
 #endif
 
+#ifdef HAVE_LOCATION
+const char *config_get_default_location(void)
+{
+   switch (LOCATION_DEFAULT_DRIVER)
+   {
+#if 0
+      case LOCATION_ANDROID:
+         return "android";
+      case LOCATION_APPLE:
+         return "apple";
+#endif
+      default:
+         return NULL;
+   }
+}
+#endif
+
 
 void config_set_defaults(void)
 {
@@ -197,6 +214,14 @@ void config_set_defaults(void)
    if (def_camera)
       strlcpy(g_settings.camera.driver, def_camera, sizeof(g_settings.camera.driver));
 #endif
+
+#ifdef HAVE_LOCATION
+   const char *def_location = config_get_default_location();
+
+   if (def_location)
+      strlcpy(g_settings.location.driver, def_location, sizeof(g_settings.location.driver));
+#endif
+
 #ifdef HAVE_OSK
    const char *def_osk = config_get_default_osk();
 
