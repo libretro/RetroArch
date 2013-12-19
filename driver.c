@@ -303,6 +303,7 @@ static const location_driver_t *location_drivers[] = {
 #ifdef ANDROID
 #endif
 #ifdef IOS
+   &location_apple,
 #endif
    NULL,
 };
