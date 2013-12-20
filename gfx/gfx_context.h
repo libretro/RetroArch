@@ -101,6 +101,7 @@ extern const gfx_ctx_driver_t gfx_ctx_sdl_gl;
 extern const gfx_ctx_driver_t gfx_ctx_x_egl;
 extern const gfx_ctx_driver_t gfx_ctx_glx;
 extern const gfx_ctx_driver_t gfx_ctx_drm_egl;
+extern const gfx_ctx_driver_t gfx_ctx_gles_egl;
 extern const gfx_ctx_driver_t gfx_ctx_android;
 extern const gfx_ctx_driver_t gfx_ctx_ps3;
 extern const gfx_ctx_driver_t gfx_ctx_xdk;
