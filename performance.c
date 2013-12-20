@@ -286,13 +286,13 @@ uint64_t rarch_get_cpu_features(void)
 
    RARCH_LOG("[CPUID]: NEON: %u\n", !!(cpu & RETRO_SIMD_NEON));
 #elif defined(HAVE_NEON)
-   *cpu |= RETRO_SIMD_NEON;
+   cpu |= RETRO_SIMD_NEON;
    RARCH_LOG("[CPUID]: NEON: %u\n", !!(cpu & RETRO_SIMD_NEON));
 #elif defined(__CELLOS_LV2__)
-   *cpu |= RETRO_SIMD_VMX;
+   cpu |= RETRO_SIMD_VMX;
    RARCH_LOG("[CPUID]: VMX: %u\n", !!(cpu & RETRO_SIMD_VMX));
 #elif defined(XBOX360)
-   *cpu |= RETRO_SIMD_VMX128;
+   cpu |= RETRO_SIMD_VMX128;
    RARCH_LOG("[CPUID]: VMX128: %u\n", !!(cpu & RETRO_SIMD_VMX128));
 #endif
 
