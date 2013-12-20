@@ -54,6 +54,7 @@
 
     <!-- Core Autodetect strings -->
     <string name="multiple_cores_detected">Multiple cores detected</string>
+    <string name="no_cores_detected">No supported cores detected</string>
 
     <!-- Main Menu Class -->
     <string name="welcome_to_retroarch">Welcome to RetroArch</string>
