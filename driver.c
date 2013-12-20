@@ -783,6 +783,9 @@ void init_location(void)
       RARCH_ERR("Failed to initialize location driver. Will continue without location.\n");
       g_extern.location_active = false;
    }
+
+   if (g_extern.system.location_callback.initialized)
+      g_extern.system.location_callback.initialized();
 }
 #endif
 
@@ -871,7 +874,11 @@ void uninit_camera(void)
 void uninit_location(void)
 {
    if (driver.location_data && driver.location)
+   {
+      if (g_extern.system.location_callback.deinitialized)
+         g_extern.system.location_callback.deinitialized();
       driver.location->free(driver.location_data);
+   }
 }
 #endif
 

@@ -769,12 +769,19 @@ typedef void (*retro_location_stop_t)(void);
 typedef bool (*retro_location_get_position_t)(double *lat, double *lon, double *horiz_accuracy,
       double *vert_accuracy);
 
+// Callback which signals when the camera driver is initialized and/or deinitialized.
+// retro_location_start_t can be called in initialized callback.
+typedef void (*retro_location_lifetime_status_t)(void);
+
 struct retro_location_callback
 {
    retro_location_start_t         start;
    retro_location_stop_t          stop;
    retro_location_get_position_t  get_position;
    retro_location_set_interval_t  set_interval; 
+
+   retro_location_lifetime_status_t initialized;
+   retro_location_lifetime_status_t deinitialized;
 };
 
 enum retro_rumble_effect
