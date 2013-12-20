@@ -12,6 +12,7 @@ import android.content.SharedPreferences;
 import android.location.Location;
 import android.location.LocationListener;
 import android.os.Bundle;
+import android.util.Log;
 import android.widget.Toast;
 
 /**
@@ -256,7 +257,8 @@ LocationListener
 
 		// Report to the UI that the location was updated
 		String msg = "Updated Location: " + location.getLatitude() + ", " + location.getLongitude();
-		Toast.makeText(this, msg, Toast.LENGTH_SHORT).show();
+		Log.i("RetroArch GPS", msg);
+		//Toast.makeText(this, msg, Toast.LENGTH_SHORT).show();
 	}
 
 	@Override
