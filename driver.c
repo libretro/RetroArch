@@ -306,7 +306,7 @@ static const location_driver_t *location_drivers[] = {
 #ifdef ANDROID
    &location_android,
 #endif
-#ifdef IOS
+#if defined(IOS) || defined(OSX)
    &location_apple,
 #endif
    NULL,
@@ -651,20 +651,17 @@ void driver_location_set_interval(unsigned interval_msecs, unsigned interval_dis
       driver.location->set_interval(driver.location_data, interval_msecs, interval_distance);
 }
 
-double driver_location_get_latitude(void)
+bool driver_location_get_position(double *lat, double *lon, double *horiz_accuracy,
+      double *vert_accuracy)
 {
    if (driver.location && driver.location_data)
-      return driver.location->get_latitude(driver.location_data);
-   else
-      return 0.0;
-}
+      return driver.location->get_position(driver.location_data, lat, lon, horiz_accuracy, vert_accuracy);
 
-double driver_location_get_longitude(void)
-{
-   if (driver.location && driver.location_data)
-      return driver.location->get_longitude(driver.location_data);
-   else
-      return 0.0;
+   *lat = 0.0;
+   *lon = 0.0;
+   *horiz_accuracy = 0.0;
+   *vert_accuracy = 0.0;
+   return false;
 }
 #endif
 
@@ -789,6 +786,9 @@ void init_location(void)
       RARCH_ERR("Failed to initialize location driver. Will continue without location.\n");
       g_extern.location_active = false;
    }
+
+   if (g_extern.system.location_callback.initialized)
+      g_extern.system.location_callback.initialized();
 }
 #endif
 
@@ -877,7 +877,11 @@ void uninit_camera(void)
 void uninit_location(void)
 {
    if (driver.location_data && driver.location)
+   {
+      if (g_extern.system.location_callback.deinitialized)
+         g_extern.system.location_callback.deinitialized();
       driver.location->free(driver.location_data);
+   }
 }
 #endif
 

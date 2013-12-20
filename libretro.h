@@ -764,19 +764,24 @@ typedef bool (*retro_location_start_t)(void);
 // location.
 typedef void (*retro_location_stop_t)(void);
 
-// Get the latitude of the current location.
-typedef double (*retro_location_get_latitude_t)(void);
+// Get the position of the current location. Will set parameters to 0 if no new
+// location update has happened since the last time.
+typedef bool (*retro_location_get_position_t)(double *lat, double *lon, double *horiz_accuracy,
+      double *vert_accuracy);
 
-// Get the longitude of the current location.
-typedef double (*retro_location_get_longitude_t)(void);
+// Callback which signals when the location driver is initialized and/or deinitialized.
+// retro_location_start_t can be called in initialized callback.
+typedef void (*retro_location_lifetime_status_t)(void);
 
 struct retro_location_callback
 {
    retro_location_start_t         start;
    retro_location_stop_t          stop;
-   retro_location_get_latitude_t  get_latitude;
-   retro_location_get_longitude_t get_longitude;
+   retro_location_get_position_t  get_position;
    retro_location_set_interval_t  set_interval; 
+
+   retro_location_lifetime_status_t initialized;
+   retro_location_lifetime_status_t deinitialized;
 };
 
 enum retro_rumble_effect

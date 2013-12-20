@@ -12,6 +12,7 @@ import android.content.SharedPreferences;
 import android.location.Location;
 import android.location.LocationListener;
 import android.os.Bundle;
+import android.util.Log;
 import android.widget.Toast;
 
 /**
@@ -32,7 +33,11 @@ LocationListener
 	// Define an object that holds accuracy and frequency parameters
 	LocationRequest mLocationRequest = null;
 	boolean mUpdatesRequested = false;
+	boolean locationChanged = false;
 	boolean location_service_running = false;
+	double current_latitude  = 0.0;
+	double current_longitude = 0.0;
+	double current_accuracy  = 0.0;
 
 	/*
 	 * Called by Location Services when the request to connect the
@@ -126,7 +131,7 @@ LocationListener
 	/**
 	 * Initializing methods for location based functionality.
 	 */
-	public void onLocationInit(int update_interval_in_ms, int distance_interval)
+	public void onLocationInit()
 	{
 		/*
 		 * Create a new location client, using the enclosing class to
@@ -141,7 +146,7 @@ LocationListener
 		if (mLocationRequest == null)
 			mLocationRequest = LocationRequest.create();
       
-      onLocationSetInterval(update_interval_in_ms, distance_interval);
+      onLocationSetInterval(0, 0);
 	}
 
 
@@ -159,6 +164,14 @@ LocationListener
 		// Get last known location
 		mCurrentLocation = mLocationClient.getLastLocation();
 		location_service_running = true;
+	}
+
+	/**
+	 * Free up location services resources.
+	 */
+	public void onLocationFree()
+	{
+		/* TODO/FIXME */
 	}
 
 	/**
@@ -209,16 +222,43 @@ LocationListener
 	{
 		return mCurrentLocation.getLongitude();
 	}
+	
+	/*
+	 * Gets the horizontal accuracy of the current location 
+	 * in meters. (NOTE: There seems to be no vertical accuracy
+	 * for a given location with the Android location API)
+	 * 
+	 * @return the horizontal accuracy of the current position.
+	 */
+	public float onLocationGetHorizontalAccuracy()
+	{
+		return mCurrentLocation.getAccuracy();
+	}
+	
+	/*
+	 * Tells us whether the location listener callback has
+	 * updated the current location since the last time
+	 * we polled.
+	 */
+	public boolean onLocationHasChanged()
+	{
+		boolean ret = locationChanged;
+		if (ret)
+			locationChanged = false;
+		return ret;
+	}
 
 	// Define the callback method that receives location updates
 	@Override
 	public void onLocationChanged(Location location)
 	{
+		locationChanged = true;
 		mCurrentLocation = location;
 
 		// Report to the UI that the location was updated
 		String msg = "Updated Location: " + location.getLatitude() + ", " + location.getLongitude();
-		Toast.makeText(this, msg, Toast.LENGTH_SHORT).show();
+		Log.i("RetroArch GPS", msg);
+		//Toast.makeText(this, msg, Toast.LENGTH_SHORT).show();
 	}
 
 	@Override

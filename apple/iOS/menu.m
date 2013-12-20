@@ -702,6 +702,8 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
       config_set_string(config, "savestate_directory", [[RetroArch_iOS get].systemDirectory UTF8String]);
       config_file_write(config, self.pathToSave.UTF8String);
       config_file_free(config);
+      
+      apple_refresh_config();
    }
 }
 
