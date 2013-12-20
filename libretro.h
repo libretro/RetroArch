@@ -769,7 +769,7 @@ typedef void (*retro_location_stop_t)(void);
 typedef bool (*retro_location_get_position_t)(double *lat, double *lon, double *horiz_accuracy,
       double *vert_accuracy);
 
-// Callback which signals when the camera driver is initialized and/or deinitialized.
+// Callback which signals when the location driver is initialized and/or deinitialized.
 // retro_location_start_t can be called in initialized callback.
 typedef void (*retro_location_lifetime_status_t)(void);
 
