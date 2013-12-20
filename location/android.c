@@ -76,7 +76,7 @@ static void *android_location_init(void)
    if (!androidlocation->onLocationGetHorizontalAccuracy)
       goto dealloc;
 
-   GET_METHOD_ID(env, androidlocation->onLocationGetLongitude, class, "onLocationSetInterval", "(II)V");
+   GET_METHOD_ID(env, androidlocation->onLocationSetInterval, class, "onLocationSetInterval", "(II)V");
    if (!androidlocation->onLocationSetInterval)
       goto dealloc;
 
