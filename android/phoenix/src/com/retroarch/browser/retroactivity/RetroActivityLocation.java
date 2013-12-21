@@ -34,11 +34,8 @@ implements ConnectionCallbacks, OnConnectionFailedListener, LocationListener
 	boolean mUpdatesRequested = false;
 	boolean locationChanged = false;
 	boolean location_service_running = false;
-	double current_latitude  = 0.0;
-	double current_longitude = 0.0;
-	double current_accuracy  = 0.0;
 
-	/*
+	/**
 	 * Called by Location Services when the request to connect the
 	 * client finishes successfully. At this point, you can
 	 * request the current location or start periodic updates
@@ -63,7 +60,7 @@ implements ConnectionCallbacks, OnConnectionFailedListener, LocationListener
         }
 	}
 
-	/*
+	/**
 	 * Called by Location Services if the connection to the
 	 * location client drops because of an error.
 	 */
@@ -87,7 +84,7 @@ implements ConnectionCallbacks, OnConnectionFailedListener, LocationListener
         location_service_running = false;
 	}
 
-	/*
+	/**
 	 * Called by Location Services if the attempt to
 	 * Location Services fails.
 	 */
@@ -115,11 +112,11 @@ implements ConnectionCallbacks, OnConnectionFailedListener, LocationListener
         }
         else
         {
-                /*
-                 * If no resolution is available, display a dialog to the
-                 * user with the error.
-                 */
-                //showErrorDialog(connectionResult.getErrorCode());
+            /*
+             * If no resolution is available, display a dialog to the
+             * user with the error.
+             */
+        	Log.e("Connection failed", "error code: " + connectionResult.getErrorCode());
         }
 	}
 
@@ -217,7 +214,7 @@ implements ConnectionCallbacks, OnConnectionFailedListener, LocationListener
 		return mCurrentLocation.getLongitude();
 	}
 	
-	/*
+	/**
 	 * Gets the horizontal accuracy of the current location 
 	 * in meters. (NOTE: There seems to be no vertical accuracy
 	 * for a given location with the Android location API)
@@ -229,10 +226,12 @@ implements ConnectionCallbacks, OnConnectionFailedListener, LocationListener
 		return mCurrentLocation.getAccuracy();
 	}
 	
-	/*
+	/**
 	 * Tells us whether the location listener callback has
 	 * updated the current location since the last time
 	 * we polled.
+	 * 
+	 * @return true if location has changed, false if location has not changed.
 	 */
 	public boolean onLocationHasChanged()
 	{
