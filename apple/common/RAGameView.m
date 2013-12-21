@@ -347,7 +347,7 @@ didOutputSampleBuffer:(CMSampleBufferRef)sampleBuffer
 
     // Set a movement threshold for new events (in meters).
     if (interval_distance == 0)
-       locationManager.distanceFilter = 500;
+       locationManager.distanceFilter = kCLDistanceFilterNone;
     else
        locationManager.distanceFilter = interval_distance;
 }
@@ -361,6 +361,7 @@ didOutputSampleBuffer:(CMSampleBufferRef)sampleBuffer
     
     locationManager.delegate = self;
     locationManager.desiredAccuracy = kCLLocationAccuracyBest;
+    locationManager.distanceFilter = kCLDistanceFilterNone;
 
 	[[RAGameView get] onLocationSetInterval:0 interval_update_distance:0];
 }
@@ -402,10 +403,12 @@ didOutputSampleBuffer:(CMSampleBufferRef)sampleBuffer
 
 - (bool)onLocationHasChanged
 {
-   bool ret = locationChanged;
-   if (ret)
+   bool hasChanged = locationChanged;
+    
+   if (hasChanged)
       locationChanged = false;
-   return ret;
+    
+   return hasChanged;
 }
 
 - (void)locationManager:(CLLocationManager *)manager didUpdateToLocation:(CLLocation *)newLocation fromLocation:(CLLocation *)oldLocation
