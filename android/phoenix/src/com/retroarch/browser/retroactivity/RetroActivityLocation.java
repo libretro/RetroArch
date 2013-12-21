@@ -166,8 +166,7 @@ implements ConnectionCallbacks, OnConnectionFailedListener, LocationListener
 	 */
 	public void onLocationStart()
 	{
-		if (location_service_running)
-			return;
+        mUpdatesRequested = true;
 
 		// Connect the client.
 		mLocationClient.connect();
@@ -187,9 +186,6 @@ implements ConnectionCallbacks, OnConnectionFailedListener, LocationListener
 	 */
 	public void onLocationStop()
 	{
-		if (!location_service_running)
-			return;
-
 		// Disconnecting the client invalidates it.
 		mLocationClient.disconnect();
 	}
