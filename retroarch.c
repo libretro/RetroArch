@@ -1320,6 +1320,7 @@ static void init_recording(void)
    if (!g_settings.video.gpu_record && g_extern.system.hw_render_callback.context_type)
    {
       RARCH_WARN("Libretro core is hardware rendered. Must use post-shaded FFmpeg recording as well.\n");
+      g_extern.recording = false;
       return;
    }
 
