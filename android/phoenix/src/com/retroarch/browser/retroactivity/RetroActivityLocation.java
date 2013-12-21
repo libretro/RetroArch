@@ -23,7 +23,7 @@ import android.widget.Toast;
 public class RetroActivityLocation extends NativeActivity
 implements GooglePlayServicesClient.ConnectionCallbacks,
 GooglePlayServicesClient.OnConnectionFailedListener,
-LocationListener
+LocationListener, com.google.android.gms.location.LocationListener
 {
 	/* LOCATION VARIABLES */
 	private static int CONNECTION_FAILURE_RESOLUTION_REQUEST = 0;
@@ -49,12 +49,9 @@ LocationListener
 	{
 		// Display the connection status
 		Toast.makeText(this, "Connected", Toast.LENGTH_SHORT).show();
+		location_service_running = true;
 		// If already requested, start periodic updates
-		if (mUpdatesRequested)
-		{
-			mLocationClient.requestLocationUpdates(mLocationRequest,
-					(com.google.android.gms.location.LocationListener) this);
-		}
+		mLocationClient.requestLocationUpdates(mLocationRequest, this);
 	}
 
 	/*
@@ -67,6 +64,19 @@ LocationListener
 		// Display the connection status
 		Toast.makeText(this, "Disconnected. Please re-connect.",
 				Toast.LENGTH_SHORT).show();
+		
+		// If the client is connected
+		if (mLocationClient.isConnected())
+		{
+			/*
+			 * Remove location updates for a listener.
+			 * The current Activity is the listener, so
+			 * the argument is "this".
+			 */
+			mLocationClient.removeLocationUpdates((com.google.android.gms.location.LocationListener) this);
+		}
+		
+		location_service_running = false;
 	}
 
 	/*
@@ -160,10 +170,6 @@ LocationListener
 
 		// Connect the client.
 		mLocationClient.connect();
-
-		// Get last known location
-		mCurrentLocation = mLocationClient.getLastLocation();
-		location_service_running = true;
 	}
 
 	/**
@@ -183,24 +189,8 @@ LocationListener
 		if (!location_service_running)
 			return;
 
-		// If the client is connected
-		if (mLocationClient.isConnected())
-		{
-			/*
-			 * Remove location updates for a listener.
-			 * The current Activity is the listener, so
-			 * the argument is "this".
-			 */
-			mLocationClient.removeLocationUpdates((com.google.android.gms.location.LocationListener) this);
-		}
-
-		if (location_service_running)
-		{
-			// Disconnecting the client invalidates it.
-			mLocationClient.disconnect();
-		}
-
-		location_service_running = false;
+		// Disconnecting the client invalidates it.
+		mLocationClient.disconnect();
 	}
 
 	/**
@@ -252,6 +242,9 @@ LocationListener
 	@Override
 	public void onLocationChanged(Location location)
 	{
+		if (!location_service_running)
+			return;
+		
 		locationChanged = true;
 		mCurrentLocation = location;
 

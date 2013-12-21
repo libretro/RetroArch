@@ -451,21 +451,23 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
 {
    RAMainMenu* __weak weakSelf = self;
    self.sections = [NSMutableArray array];
-   
-   [self.sections addObject:[NSArray arrayWithObjects:@"Content",
-                              [RAMenuItemBasic itemWithDescription:@"Choose Core"
-                                 action:^{ [weakSelf chooseCoreWithPath:nil]; }
-                                 detail:^{ return weakSelf.core ? apple_get_core_display_name(weakSelf.core) : @"Auto Detect"; }],
-                              [RAMenuItemBasic itemWithDescription:@"Load Content"                 action:^{ [weakSelf loadGame]; }],
-                              [RAMenuItemBasic itemWithDescription:@"Load Content (History)"       action:^{ [weakSelf loadHistory]; }],
-                              nil]];
 
    NSMutableArray* settings = [NSMutableArray arrayWithObjects:@"Settings",
-                                 [RAMenuItemBasic itemWithDescription:@"Frontend"
-                                    action:^{ [weakSelf.navigationController pushViewController:[RAFrontendSettingsMenu new] animated:YES]; }],
-                                 nil];
+                               [RAMenuItemBasic itemWithDescription:@"Frontend"
+                                  action:^{ [weakSelf.navigationController pushViewController:[RAFrontendSettingsMenu new] animated:YES]; }],
+                               nil];
    
-   if (apple_is_running)
+   if (!apple_is_running)
+   {
+      [self.sections addObject:[NSArray arrayWithObjects:@"Content",
+                                 [RAMenuItemBasic itemWithDescription:@"Choose Core"
+                                    action:^{ [weakSelf chooseCoreWithPath:nil]; }
+                                    detail:^{ return weakSelf.core ? apple_get_core_display_name(weakSelf.core) : @"Auto Detect"; }],
+                                 [RAMenuItemBasic itemWithDescription:@"Load Content"                 action:^{ [weakSelf loadGame]; }],
+                                 [RAMenuItemBasic itemWithDescription:@"Load Content (History)"       action:^{ [weakSelf loadHistory]; }],
+                                 nil]];
+   }
+   else
    {
       [self.sections addObject:[NSArray arrayWithObjects:@"Actions",
                                  [RAMenuItemBasic itemWithDescription:@"Reset Content" action:^{ [weakSelf performBasicAction:RESET]; }],

@@ -19,6 +19,7 @@ import android.widget.AdapterView.OnItemClickListener;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.retroarch.R;
 import com.retroarch.browser.FileWrapper;
@@ -186,14 +187,22 @@ public final class DetectCoreDirectoryFragment extends DirectoryFragment
 					}
 				}
 
-				// If only one core is supported, 
-				if (supportedCores.size() == 1)
+				// Display a toast if no cores are detected.
+				if (supportedCores.isEmpty())
+				{
+					Toast.makeText(getActivity(), R.string.no_cores_detected, Toast.LENGTH_SHORT).show();
+				}
+				// If only one core is supported, launch the content directly.
+				else if (supportedCores.size() == 1)
 				{
 					launchCore(selected.getPath(), supportedCores.get(0).getUnderlyingFile().getPath());
 				}
 				// Otherwise build the list for the user to choose from.
 				else if (supportedCores.size() > 1)
 				{
+					// Not in the file browser any more.
+					inFileBrowser = false;
+
 					// Modify the title to notify of multiple cores.
 					getDialog().setTitle(R.string.multiple_cores_detected);
 
@@ -212,9 +221,6 @@ public final class DetectCoreDirectoryFragment extends DirectoryFragment
 			{
 				launchCore(chosenFile.getPath(), DetectCoreDirectoryFragment.this.supportedCorePaths.get(position));
 			}
-
-			// Not in the file browser any more.
-			inFileBrowser = false;
 		}
 	};
 

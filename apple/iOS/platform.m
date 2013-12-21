@@ -175,8 +175,6 @@ static void handle_touch_event(NSArray* touches)
 {
    UIWindow* _window;
    NSString* _path;
-
-   uint32_t _enabledOrientations;
 }
 
 + (RetroArch_iOS*)get
@@ -265,32 +263,6 @@ static void handle_touch_event(NSArray* touches)
    [self refreshSystemConfig];
 }
 
-// NOTE: This version only runs on iOS6
-- (NSUInteger)supportedInterfaceOrientations
-{
-   return g_extern.is_paused ? _enabledOrientations
-                             : UIInterfaceOrientationMaskAll;
-}
-
-// NOTE: This version runs on iOS2-iOS5, but not iOS6
-- (BOOL)shouldAutorotateToInterfaceOrientation:(UIInterfaceOrientation)interfaceOrientation
-{
-   if (!g_extern.is_paused)
-      switch (interfaceOrientation)
-      {
-         case UIInterfaceOrientationPortrait:
-            return (_enabledOrientations & UIInterfaceOrientationMaskPortrait);
-         case UIInterfaceOrientationPortraitUpsideDown:
-            return (_enabledOrientations & UIInterfaceOrientationMaskPortraitUpsideDown);
-         case UIInterfaceOrientationLandscapeLeft:
-            return (_enabledOrientations & UIInterfaceOrientationMaskLandscapeLeft);
-         case UIInterfaceOrientationLandscapeRight:
-            return (_enabledOrientations & UIInterfaceOrientationMaskLandscapeRight);
-      }
-   
-   return YES;
-}
-
 - (void)showGameView
 {
    [self popToRootViewControllerAnimated:NO];
@@ -329,12 +301,12 @@ static void handle_touch_event(NSArray* touches)
 - (void)refreshSystemConfig
 {
    // Get enabled orientations
-   _enabledOrientations = UIInterfaceOrientationMaskAll;
+   apple_frontend_settings.orientation_flags = UIInterfaceOrientationMaskAll;
    
    if (strcmp(apple_frontend_settings.orientations, "landscape") == 0)
-      _enabledOrientations = UIInterfaceOrientationMaskLandscape;
+      apple_frontend_settings.orientation_flags = UIInterfaceOrientationMaskLandscape;
    else if (strcmp(apple_frontend_settings.orientations, "portrait") == 0)
-      _enabledOrientations = UIInterfaceOrientationMaskPortrait | UIInterfaceOrientationMaskPortraitUpsideDown;
+      apple_frontend_settings.orientation_flags = UIInterfaceOrientationMaskPortrait | UIInterfaceOrientationMaskPortraitUpsideDown;
 
    // Set bluetooth mode
    ios_set_bluetooth_mode(BOXSTRING(apple_frontend_settings.bluetooth_mode));
