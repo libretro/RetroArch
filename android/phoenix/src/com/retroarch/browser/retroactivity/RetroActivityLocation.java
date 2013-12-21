@@ -23,7 +23,7 @@ import android.widget.Toast;
 public class RetroActivityLocation extends NativeActivity
 implements GooglePlayServicesClient.ConnectionCallbacks,
 GooglePlayServicesClient.OnConnectionFailedListener,
-LocationListener
+LocationListener, com.google.android.gms.location.LocationListener
 {
 	/* LOCATION VARIABLES */
 	private static int CONNECTION_FAILURE_RESOLUTION_REQUEST = 0;
@@ -51,14 +51,7 @@ LocationListener
 		Toast.makeText(this, "Connected", Toast.LENGTH_SHORT).show();
 		location_service_running = true;
 		// If already requested, start periodic updates
-		if (mUpdatesRequested)
-		{
-			mLocationClient.requestLocationUpdates(mLocationRequest,
-					(com.google.android.gms.location.LocationListener) this);
-		}
-		else
-			// Get last known location
-			mCurrentLocation = mLocationClient.getLastLocation();
+		mLocationClient.requestLocationUpdates(mLocationRequest, this);
 	}
 
 	/*
