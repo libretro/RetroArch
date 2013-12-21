@@ -224,7 +224,7 @@ implements ConnectionCallbacks, OnConnectionFailedListener, LocationListener
 	 * 
 	 * @return the horizontal accuracy of the current position.
 	 */
-	public float onLocationGetHorizontalAccuracy()
+	public double onLocationGetHorizontalAccuracy()
 	{
 		return mCurrentLocation.getAccuracy();
 	}
