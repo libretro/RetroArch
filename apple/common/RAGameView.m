@@ -341,66 +341,6 @@ didOutputSampleBuffer:(CMSampleBufferRef)sampleBuffer
 }
 #endif
 
-- (void)onLocationSetInterval:(unsigned)interval_update_ms interval_update_distance:(unsigned)interval_distance
-{
-   (void)interval_update_ms;
-
-    // Set a movement threshold for new events (in meters).
-    if (interval_distance == 0)
-       locationManager.distanceFilter = kCLDistanceFilterNone;
-    else
-       locationManager.distanceFilter = interval_distance;
-}
-
-- (void)onLocationInit
-{
-    // Create the location manager if this object does not
-    // already have one.
-    if (nil == locationManager)
-        locationManager = [[CLLocationManager alloc] init];
-    
-    locationManager.delegate = self;
-    locationManager.desiredAccuracy = kCLLocationAccuracyBest;
-    locationManager.distanceFilter = kCLDistanceFilterNone;
-
-	[[RAGameView get] onLocationSetInterval:0 interval_update_distance:0];
-}
-
-- (void)onLocationStart
-{
-    [locationManager startUpdatingLocation];
-}
-
-- (void)onLocationStop
-{
-    [locationManager stopUpdatingLocation];
-}
-
-- (void)onLocationFree
-{
-    /* TODO - free location manager? */
-}
-
-- (double)onLocationGetLatitude
-{
-    return currentLatitude;
-}
-
-- (double)onLocationGetLongitude
-{
-    return currentLongitude;
-}
-
-- (double)onLocationGetHorizontalAccuracy
-{
-   return currentHorizontalAccuracy;
-}
-
-- (double)onLocationGetVerticalAccuracy
-{
-   return currentVerticalAccuracy;
-}
-
 - (bool)onLocationHasChanged
 {
    bool hasChanged = locationChanged;
@@ -760,7 +700,17 @@ static void *apple_location_init()
 	if (!applelocation)
 		return NULL;
 	
-	[[RAGameView get] onLocationInit];
+   dispatch_async(dispatch_get_main_queue(),
+   ^{
+      // Create the location manager if this object does not
+      // already have one.
+      if (nil == locationManager)
+         locationManager = [[CLLocationManager alloc] init];
+                     
+      locationManager.delegate = [RAGameView get];
+      locationManager.desiredAccuracy = kCLLocationAccuracyBest;
+      locationManager.distanceFilter = kCLDistanceFilterNone;
+   });
 	
 	return applelocation;
 }
@@ -769,14 +719,17 @@ static void apple_location_set_interval(void *data, unsigned interval_update_ms,
 {
    (void)data;
 	
-	[[RAGameView get] onLocationSetInterval:interval_update_ms interval_update_distance:interval_distance];
+   dispatch_async(dispatch_get_main_queue(),
+   ^{
+      locationManager.distanceFilter = interval_distance ? interval_distance : kCLDistanceFilterNone;
+   });
 }
 
 static void apple_location_free(void *data)
 {
 	applelocation_t *applelocation = (applelocation_t*)data;
 	
-	[[RAGameView get] onLocationFree];
+   /* TODO - free location manager? */
 	
 	if (applelocation)
 		free(applelocation);
@@ -787,7 +740,10 @@ static bool apple_location_start(void *data)
 {
 	(void)data;
 	
-	[[RAGameView get] onLocationStart];
+   dispatch_async(dispatch_get_main_queue(),
+   ^{
+      [locationManager startUpdatingLocation];
+   });
 	
 	return true;
 }
@@ -796,7 +752,10 @@ static void apple_location_stop(void *data)
 {
 	(void)data;
 	
-	[[RAGameView get] onLocationStop];
+   dispatch_async(dispatch_get_main_queue(),
+   ^{
+      [locationManager stopUpdatingLocation];
+   });
 }
 
 static bool apple_location_get_position(void *data, double *lat, double *lon, double *horiz_accuracy,
@@ -809,10 +768,10 @@ static bool apple_location_get_position(void *data, double *lat, double *lon, do
    if (!ret)
       goto fail;
 	
-	*lat      = [[RAGameView get] onLocationGetLatitude];
-   *lon      = [[RAGameView get] onLocationGetLongitude];
-   *horiz_accuracy = [[RAGameView get] onLocationGetHorizontalAccuracy];
-   *vert_accuracy = [[RAGameView get] onLocationGetVerticalAccuracy];
+	*lat      = currentLatitude;
+   *lon      = currentLongitude;
+   *horiz_accuracy = currentHorizontalAccuracy;
+   *vert_accuracy = currentVerticalAccuracy;
    return true;
 
 fail:
