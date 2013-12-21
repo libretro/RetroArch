@@ -72,7 +72,7 @@ static void *android_location_init(void)
    if (!androidlocation->onLocationGetLongitude)
       goto dealloc;
 
-   GET_METHOD_ID(env, androidlocation->onLocationGetHorizontalAccuracy, class, "onLocationGetHorizontalAccuracy", "()F");
+   GET_METHOD_ID(env, androidlocation->onLocationGetHorizontalAccuracy, class, "onLocationGetHorizontalAccuracy", "()D");
    if (!androidlocation->onLocationGetHorizontalAccuracy)
       goto dealloc;
 
