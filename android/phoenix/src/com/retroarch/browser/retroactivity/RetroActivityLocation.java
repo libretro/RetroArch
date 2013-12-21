@@ -43,21 +43,21 @@ implements ConnectionCallbacks, OnConnectionFailedListener, LocationListener
 	@Override
 	public void onConnected(Bundle dataBundle)
 	{
-        // Display the connection status
-        Toast.makeText(this, "Connected", Toast.LENGTH_SHORT).show();
-        location_service_running = true;
+		// Display the connection status
+		Toast.makeText(this, "Connected", Toast.LENGTH_SHORT).show();
+		location_service_running = true;
 
-        // If already requested, start periodic updates
-        if (mUpdatesRequested)
-        {
-                mLocationClient.requestLocationUpdates(mLocationRequest, this, null);
-        }
-        else
-        {
-                // Get last known location
-                mCurrentLocation = mLocationClient.getLastLocation();
-                locationChanged = true;
-        }
+		// If already requested, start periodic updates
+		if (mUpdatesRequested)
+		{
+			mLocationClient.requestLocationUpdates(mLocationRequest, this, null);
+		}
+		else
+		{
+			// Get last known location
+			mCurrentLocation = mLocationClient.getLastLocation();
+			locationChanged = true;
+		}
 	}
 
 	/**
@@ -67,21 +67,21 @@ implements ConnectionCallbacks, OnConnectionFailedListener, LocationListener
 	@Override
 	public void onDisconnected()
 	{
-        // Display the connection status
-        Toast.makeText(this, "Disconnected. Please re-connect.", Toast.LENGTH_SHORT).show();
-       
-        // If the client is connected
-        if (mLocationClient.isConnected())
-        {
-                /*
-                 * Remove location updates for a listener.
-                 * The current Activity is the listener, so
-                 * the argument is "this".
-                 */
-                mLocationClient.removeLocationUpdates(this);
-        }
-       
-        location_service_running = false;
+		// Display the connection status
+		Toast.makeText(this, "Disconnected. Please re-connect.", Toast.LENGTH_SHORT).show();
+
+		// If the client is connected
+		if (mLocationClient.isConnected())
+		{
+			/*
+			 * Remove location updates for a listener.
+			 * The current Activity is the listener, so
+			 * the argument is "this".
+			 */
+			mLocationClient.removeLocationUpdates(this);
+		}
+
+		location_service_running = false;
 	}
 
 	/**
@@ -91,73 +91,73 @@ implements ConnectionCallbacks, OnConnectionFailedListener, LocationListener
 	@Override
 	public void onConnectionFailed(ConnectionResult connectionResult)
 	{
-        /*
-         * Google Play services can resolve some errors it detects.
-         * If the error has a resolution, try sending an Intent to
-         * start a Google Play services activity that can resolve
-         * error.
-         */
-        if (connectionResult.hasResolution())
-        {
-                try
-                {
-                        // Start an Activity that tries to resolve the error
-                        connectionResult.startResolutionForResult(this, CONNECTION_FAILURE_RESOLUTION_REQUEST);
-                }
-                catch (IntentSender.SendIntentException e)
-                {
-                        // Thrown if Google Play services cancelled the original PendingIntent
-                        e.printStackTrace();
-                }
-        }
-        else
-        {
-            /*
-             * If no resolution is available, display a dialog to the
-             * user with the error.
-             */
-        	Log.e("Connection failed", "error code: " + connectionResult.getErrorCode());
-        }
+		/*
+		 * Google Play services can resolve some errors it detects.
+		 * If the error has a resolution, try sending an Intent to
+		 * start a Google Play services activity that can resolve
+		 * error.
+		 */
+		if (connectionResult.hasResolution())
+		{
+			try
+			{
+				// Start an Activity that tries to resolve the error
+				connectionResult.startResolutionForResult(this, CONNECTION_FAILURE_RESOLUTION_REQUEST);
+			}
+			catch (IntentSender.SendIntentException e)
+			{
+				// Thrown if Google Play services cancelled the original PendingIntent
+				e.printStackTrace();
+			}
+		}
+		else
+		{
+			/*
+			 * If no resolution is available, display a dialog to the
+			 * user with the error.
+			 */
+			Log.e("Connection failed", "error code: " + connectionResult.getErrorCode());
+		}
 	}
 
-   /**
-    * Sets the update interval at which location-based updates 
-    * should occur
-    */
-   public void onLocationSetInterval(int update_interval_in_ms, int distance_interval)
-   {
-       // Use high accuracy
-       mLocationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
+	/**
+	 * Sets the update interval at which location-based updates 
+	 * should occur
+	 */
+	public void onLocationSetInterval(int update_interval_in_ms, int distance_interval)
+	{
+		// Use high accuracy
+		mLocationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
 
-       if (update_interval_in_ms == 0)
-               mLocationRequest.setInterval(5 * 1000); // 5 seconds
-       else
-               mLocationRequest.setInterval(update_interval_in_ms);
+		if (update_interval_in_ms == 0)
+			mLocationRequest.setInterval(5 * 1000); // 5 seconds
+		else
+			mLocationRequest.setInterval(update_interval_in_ms);
 
-       // Set the fastest update interval to 1 second
-       mLocationRequest.setFastestInterval(1000);
-   }
+		// Set the fastest update interval to 1 second
+		mLocationRequest.setFastestInterval(1000);
+	}
 
 	/**
 	 * Initializing methods for location based functionality.
 	 */
 	public void onLocationInit()
 	{
-        /*
-         * Create a new location client, using the enclosing class to
-         * handle callbacks.
-         */
-        if (mLocationClient == null)
-                mLocationClient = new LocationClient(this, this, this);
+		/*
+		 * Create a new location client, using the enclosing class to
+		 * handle callbacks.
+		 */
+		if (mLocationClient == null)
+			mLocationClient = new LocationClient(this, this, this);
 
-        // Start with updates turned off
-        mUpdatesRequested = false;
+		// Start with updates turned off
+		mUpdatesRequested = false;
 
-        // Create the LocationRequest object
-        if (mLocationRequest == null)
-                mLocationRequest = LocationRequest.create();
+		// Create the LocationRequest object
+		if (mLocationRequest == null)
+			mLocationRequest = LocationRequest.create();
 
-        onLocationSetInterval(0, 0);
+		onLocationSetInterval(0, 0);
 	}
 
 
@@ -166,7 +166,7 @@ implements ConnectionCallbacks, OnConnectionFailedListener, LocationListener
 	 */
 	public void onLocationStart()
 	{
-        mUpdatesRequested = true;
+		mUpdatesRequested = true;
 
 		// Connect the client.
 		mLocationClient.connect();
