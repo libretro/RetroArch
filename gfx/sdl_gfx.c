@@ -303,10 +303,15 @@ static bool sdl_gfx_frame(void *data, const void *frame, unsigned width, unsigne
    {
       vid->scaler.in_width  = width;
       vid->scaler.in_height = height;
+      if (vid->scaler.in_stride == width * sizeof(uint16_t))
+         vid->scaler.in_fmt = SCALER_FMT_RGB565;
+      else
+         vid->scaler.in_fmt = SCALER_FMT_ARGB8888;
 
       vid->scaler.out_width  = vid->screen->w;
       vid->scaler.out_height = vid->screen->h;
       vid->scaler.out_stride = vid->screen->pitch;
+      vid->scaler.out_fmt = SCALER_FMT_ARGB8888;
 
       scaler_ctx_gen_filter(&vid->scaler);
 
@@ -398,9 +403,6 @@ static void sdl_set_texture_frame(void *data, const void *frame, bool rgb32, uns
    vid->last_width  = width;
    vid->last_height = height;
 
-   if (SDL_MUSTLOCK(vid->screen))
-      SDL_LockSurface(vid->screen);
-
    uint32_t *dst = (uint32_t*)rgui_buffer;
    const uint16_t *src = (const uint16_t*)frame;
    for (unsigned h = 0; h < height; h++, dst += width * sizeof(uint32_t) >> 2, src += width)
@@ -420,10 +422,10 @@ static void sdl_set_texture_frame(void *data, const void *frame, bool rgb32, uns
       }
    }
 
-   RARCH_PERFORMANCE_INIT(sdl_scale);
-   RARCH_PERFORMANCE_START(sdl_scale);
+   if (SDL_MUSTLOCK(vid->screen))
+      SDL_LockSurface(vid->screen);
+
    scaler_ctx_scale(&vid->scaler, vid->screen->pixels, rgui_buffer);
-   RARCH_PERFORMANCE_STOP(sdl_scale);
 
    if (SDL_MUSTLOCK(vid->screen))
       SDL_UnlockSurface(vid->screen);
