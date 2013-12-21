@@ -192,6 +192,30 @@ static bool g_is_syncing = true;
    ];
 }
 
+// NOTE: This version only runs on iOS6
+- (NSUInteger)supportedInterfaceOrientations
+{
+   return apple_frontend_settings.orientation_flags;
+}
+
+// NOTE: This version runs on iOS2-iOS5, but not iOS6
+- (BOOL)shouldAutorotateToInterfaceOrientation:(UIInterfaceOrientation)interfaceOrientation
+{
+   switch (interfaceOrientation)
+   {
+      case UIInterfaceOrientationPortrait:
+         return (apple_frontend_settings.orientation_flags & UIInterfaceOrientationMaskPortrait);
+      case UIInterfaceOrientationPortraitUpsideDown:
+         return (apple_frontend_settings.orientation_flags & UIInterfaceOrientationMaskPortraitUpsideDown);
+      case UIInterfaceOrientationLandscapeLeft:
+         return (apple_frontend_settings.orientation_flags & UIInterfaceOrientationMaskLandscapeLeft);
+      case UIInterfaceOrientationLandscapeRight:
+         return (apple_frontend_settings.orientation_flags & UIInterfaceOrientationMaskLandscapeRight);
+   }
+   
+   return YES;
+}
+
 void event_process_camera_frame(void* pixelBufferPtr)
 {
     CVPixelBufferRef pixelBuffer = (CVPixelBufferRef)pixelBufferPtr;

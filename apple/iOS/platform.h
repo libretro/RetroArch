@@ -23,7 +23,9 @@
 
 typedef struct
 {
-   char orientations[32];    
+   char orientations[32];
+   unsigned orientation_flags;
+   
    bool logging_enabled;
     
    char bluetooth_mode[64];
