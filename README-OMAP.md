@@ -34,5 +34,5 @@ Last but not least enable the overlay and the HDMI display:
 
 The video driver name is 'omap'. It honors the following video settings:
 
-   - video_monitor_index (selects the fb device used, index = 1 -> fb0, index = 2 -> fb1, etc.)
-   - video_vsync (use to disable vsync, however this is not recommended)
+   - video\_monitor\_index (selects the fb device used, index = 1 -> fb0, index = 2 -> fb1, etc.)
+   - video\_vsync (use to disable vsync, however this is not recommended)
