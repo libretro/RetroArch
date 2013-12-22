@@ -371,7 +371,7 @@ static void *lima_gfx_init(const video_info_t *video, const input_driver_t **inp
       {
          *input = &input_sdl;
          *input_data = lima_input;
-	  }
+      }
 #else
 #ifdef HAVE_UDEV
       lima_input  = input_udev.init();
@@ -432,7 +432,7 @@ static bool lima_gfx_frame(void *data, const void *frame, unsigned width, unsign
    RARCH_PERFORMANCE_START(frame_run);
    if (!frame || _rgui)
    {
-	  RARCH_PERFORMANCE_STOP(frame_run);
+      RARCH_PERFORMANCE_STOP(frame_run);
       return true;
    }
    int texture = 0;
