@@ -14,8 +14,6 @@
  * If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <CoreFoundation/CoreFoundation.h>
-
 #include "../menu/menu_common.h"
 #include "../../apple/common/rarch_wrapper.h"
 #include "../../apple/common/apple_export.h"
@@ -28,7 +26,7 @@
 #include <stddef.h>
 #include <string.h>
 
-static CFRunLoopObserverRef iterate_observer;
+extern bool apple_is_running;
 
 void apple_event_basic_command(enum basic_event_t action)
 {
@@ -56,7 +54,7 @@ void apple_refresh_config()
    memset(g_settings.input.overlay, 0, sizeof(g_settings.input.overlay));
    memset(g_settings.video.shader_path, 0, sizeof(g_settings.video.shader_path));
 
-   if (iterate_observer)
+   if (apple_is_running)
    {
       uninit_drivers();
       config_load();
@@ -64,31 +62,8 @@ void apple_refresh_config()
    }
 }
 
-static void do_iteration()
-{
-   if (iterate_observer)
-   {
-      if (apple_rarch_iterate_once())
-      {
-         CFRunLoopObserverInvalidate(iterate_observer);
-         CFRelease(iterate_observer);
-         iterate_observer = 0;
-         
-         apple_rarch_exited(false);
-      }
-      else
-         CFRunLoopWakeUp(CFRunLoopGetMain());
-   }
-}
-
 int apple_rarch_load_content(int argc, char* argv[])
 {
-   if (iterate_observer)
-   {
-      RARCH_ERR("apple_rarch_load_content called while content is still running.");
-      return 1;
-   }
-   
    rarch_main_clear_state();
    rarch_init_msg_queue();
    
@@ -98,9 +73,6 @@ int apple_rarch_load_content(int argc, char* argv[])
    menu_init();
    g_extern.lifecycle_state |= 1ULL << MODE_GAME;
    g_extern.lifecycle_state |= 1ULL << MODE_GAME_ONESHOT;
-
-   iterate_observer = CFRunLoopObserverCreate(0, kCFRunLoopBeforeWaiting, true, 0, do_iteration, 0);
-   CFRunLoopAddObserver(CFRunLoopGetMain(), iterate_observer, kCFRunLoopCommonModes);
    
    return 0;
 }

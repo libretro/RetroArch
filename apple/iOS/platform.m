@@ -268,10 +268,12 @@ static void handle_touch_event(NSArray* touches)
    [[UIApplication sharedApplication] setIdleTimerDisabled:true];
    [_window setRootViewController:[RAGameView get]];
    g_extern.is_paused = false;
+   apple_start_iteration();
 }
 
 - (IBAction)showPauseMenu:(id)sender
 {
+   apple_stop_iteration();
    g_extern.is_paused = true;
    [[UIApplication sharedApplication] setStatusBarHidden:false withAnimation:UIStatusBarAnimationNone];
    [[UIApplication sharedApplication] setIdleTimerDisabled:false];

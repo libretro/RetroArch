@@ -186,12 +186,15 @@ static void* const associated_name_tag = (void*)&associated_name_tag;
    }
    
    setting_data_load_config_path(setting_data_get_list(), [apple_platform.globalConfigFile UTF8String]);
+   apple_stop_iteration();
 }
 
 - (void)windowWillClose:(NSNotification *)notification
 {
    setting_data_save_config_path(setting_data_get_list(), [apple_platform.globalConfigFile UTF8String]);
    [NSApp stopModal];
+
+   apple_start_iteration();
 }
 
 #pragma mark Section Table

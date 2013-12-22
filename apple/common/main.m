@@ -30,6 +30,44 @@ bool apple_is_running;
 bool apple_use_tv_mode;
 NSString* apple_core;
 
+static CFRunLoopObserverRef iterate_observer;
+
+static void do_iteration()
+{
+   if (iterate_observer)
+   {   
+      if (apple_rarch_iterate_once())
+      {
+         CFRunLoopObserverInvalidate(iterate_observer);
+         CFRelease(iterate_observer);
+         iterate_observer = 0;
+         
+         apple_rarch_exited(false);
+      }
+      else
+         CFRunLoopWakeUp(CFRunLoopGetMain());
+   }
+}
+
+void apple_start_iteration()
+{
+   if (!iterate_observer)
+   {
+      iterate_observer = CFRunLoopObserverCreate(0, kCFRunLoopBeforeWaiting, true, 0, do_iteration, 0);
+      CFRunLoopAddObserver(CFRunLoopGetMain(), iterate_observer, kCFRunLoopCommonModes);
+   }
+}
+
+void apple_stop_iteration()
+{
+   if (iterate_observer)
+   {
+      CFRunLoopObserverInvalidate(iterate_observer);
+      CFRelease(iterate_observer);
+      iterate_observer = 0;
+   }
+}
+
 void apple_run_core(NSString* core, const char* file)
 {
    if (!apple_is_running)

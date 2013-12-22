@@ -247,10 +247,14 @@ static void* const associated_core_key = (void*)&associated_core_key;
 {
    if (file)
       [[NSDocumentController sharedDocumentController] noteNewRecentDocumentURL:[NSURL fileURLWithPath:BOXSTRING(file)]];
+
+   apple_start_iteration();
 }
 
 - (void)unloadingCore:(const NSString*)core
 {
+   apple_stop_iteration();
+
    if (_isTerminating)
       [[NSApplication sharedApplication] terminate:nil];
 
