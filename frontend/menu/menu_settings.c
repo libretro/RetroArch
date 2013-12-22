@@ -640,7 +640,7 @@ int menu_set_settings(void *data, unsigned setting, unsigned action)
                   break;
 
                case RGUI_ACTION_START:
-                  g_settings.input.overlay_opacity = 1.0f;
+                  g_settings.input.overlay_opacity = 0.7f;
                   break;
 
                default:
