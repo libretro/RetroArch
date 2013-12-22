@@ -214,7 +214,7 @@ static void lima_render_msg(lima_video_t *vid, LIMA_Surface *buffer,
 #ifdef HAVE_SDL
       if (vid->scaler.in_fmt == SCALER_FMT_ARGB8888)
 #else
-      if(vid->screen->pitch == vid->screen->w * sizeof(uint32_t))
+      if (vid->screen->pitch == vid->screen->w * sizeof(uint32_t))
 #endif
       {
          uint32_t *out = (uint32_t*)buffer->pixels + base_y * (buffer->pitch >> 2) + base_x;

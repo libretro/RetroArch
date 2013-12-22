@@ -176,7 +176,6 @@ error:
 
 static void gfx_ctx_swap_buffers(void)
 {
-   	ioctl(fb, FBIO_WAITFORVSYNC, 0);
 	eglSwapBuffers(g_egl_dpy, g_egl_surf);
 }
 
