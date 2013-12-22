@@ -350,7 +350,7 @@ static void *lima_gfx_init(const video_info_t *video, const input_driver_t **inp
    vid->screen = (LIMA_Surface*)calloc(1, sizeof(LIMA_Surface));
    vid->screen->w = g_extern.system.av_info.geometry.base_width;
    vid->screen->h = g_extern.system.av_info.geometry.base_height;
-   vid->screen->pitch = vid->screen->w * video->rgb32 ? sizeof(uint32_t) : sizeof(uint16_t);
+   vid->screen->pitch = vid->screen->w * (video->rgb32 ? sizeof(uint32_t) : sizeof(uint16_t));
    vid->screen->pixels = NULL;
 #endif
 
@@ -471,6 +471,7 @@ static bool lima_gfx_frame(void *data, const void *frame, unsigned width, unsign
    scaler_ctx_scale(&vid->scaler, vid->screen->pixels, frame);
 #else
    vid->screen->pixels = (void*)frame;
+   vid->screen->pitch = pitch;
 #endif
 
    if (msg)
