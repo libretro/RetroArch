@@ -14,7 +14,6 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <pthread.h>
 #include <string.h>
 
 #import "RetroArch_Apple.h"
@@ -24,12 +23,9 @@
 
 #include "file.h"
 
-char** apple_argv;
-
 id<RetroArch_Platform> apple_platform;
 
 #pragma mark EMULATION
-static pthread_t apple_retro_thread;
 bool apple_is_running;
 bool apple_use_tv_mode;
 NSString* apple_core;
@@ -39,68 +35,51 @@ void apple_run_core(NSString* core, const char* file)
    if (!apple_is_running)
    {
 #ifndef OSX
-      if (core && file)
-      {
-         char basedir[256];
-         fill_pathname_basedir(basedir, file, sizeof(basedir));
-         if (access(basedir, R_OK | W_OK | X_OK))
-            apple_display_alert(@"The directory containing the selected file has limited permissions. This may "
-                                 "prevent zipped content from loading, and will cause some cores to not function.", 0);
-      }
+	   char basedir[256];
+	   fill_pathname_basedir(basedir, file, sizeof(basedir));
+	   if (file && access(basedir, R_OK | W_OK | X_OK))
+		   apple_display_alert(@"The directory containing the selected file has limited permissions. This may "
+				                  "prevent zipped content from loading, and will cause some cores to not function.", 0);
 #endif
 
       [apple_platform loadingCore:core withFile:file];
 
-#ifdef OSX
-      [apple_core release];
-#endif
-      apple_core = [core copy];
+      apple_core = core;
       apple_is_running = true;
 
       static char config_path[PATH_MAX];
       static char core_path[PATH_MAX];
       static char file_path[PATH_MAX];
 
-      if (!apple_argv)
-      {
-         if (apple_core_info_has_custom_config([apple_core UTF8String]))
-            apple_core_info_get_custom_config([apple_core UTF8String], config_path, sizeof(config_path));
-         else
-            strlcpy(config_path, [apple_platform.globalConfigFile UTF8String], sizeof(config_path));
+      if (apple_core_info_has_custom_config(apple_core.UTF8String))
+         apple_core_info_get_custom_config(apple_core.UTF8String, config_path, sizeof(config_path));
+      else
+         strlcpy(config_path, apple_platform.globalConfigFile.UTF8String, sizeof(config_path));
 
-         static const char* const argv_game[] = { "retroarch", "-c", config_path, "-L", core_path, file_path, 0 };
-         static const char* const argv_menu[] = { "retroarch", "-c", config_path, "--menu", 0 };
+      static const char* const argv_game[] = { "retroarch", "-c", config_path, "-L", core_path, file_path, 0 };
+      static const char* const argv_menu[] = { "retroarch", "-c", config_path, "--menu", 0 };
    
-         if (file && core)
-         {
-            strlcpy(core_path, [apple_core UTF8String], sizeof(core_path));
-            strlcpy(file_path, file, sizeof(file_path));
-         }
-         
-         apple_argv = (char**)((file && core) ? argv_game : argv_menu);
-      }
-      
-      if (pthread_create(&apple_retro_thread, 0, rarch_main_spring, apple_argv))
+      if (file && core)
       {
-         apple_argv = 0;      
-      
-         apple_rarch_exited((void*)1);
-         return;
+         strlcpy(core_path, apple_core.UTF8String, sizeof(core_path));
+         strlcpy(file_path, file, sizeof(file_path));
       }
       
-      apple_argv = 0;
+      int argc = (file && core) ? 6 : 4;
+      char** argv = (char**)((file && core) ? argv_game : argv_menu);
       
-      pthread_detach(apple_retro_thread);
+      if (apple_rarch_load_content(argc, argv))
+         apple_rarch_exited(true);
    }
 }
 
-void apple_rarch_exited(void* result)
+void apple_rarch_exited(bool on_error)
 {
-   if (result)
+   if (on_error)
       apple_display_alert(@"Failed to load content.", 0);
 
    NSString* used_core = apple_core;
-   apple_core = 0;
+   apple_core = 0; 
 
    if (apple_is_running)
    {

@@ -497,7 +497,7 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
 - (void)performBasicAction:(enum basic_event_t)action
 {
    [[RetroArch_iOS get] showGameView];
-   apple_frontend_post_event(apple_event_basic_command, action);
+   apple_event_basic_command(action);
 }
 
 - (void)chooseCoreWithPath:(NSString*)path

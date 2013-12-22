@@ -19,8 +19,7 @@
 
 #include "gfx/gfx_context.h"
 
-// These functions should only be called as arguments to dispatch_sync
-void apple_rarch_exited (void* result);
+void apple_rarch_exited (bool on_error);
 
 // These functions must only be called in gfx/context/apple_gl_context.c
 bool apple_gfx_ctx_init(void);

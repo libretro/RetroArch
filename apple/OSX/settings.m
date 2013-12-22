@@ -135,8 +135,6 @@ static void* const associated_name_tag = (void*)&associated_name_tag;
 
 - (void)awakeFromNib
 {
-   apple_enter_stasis();
-
    NSMutableArray* thisGroup = nil;
    NSMutableArray* thisSubGroup = nil;
    self.settings = [NSMutableArray array];
@@ -193,9 +191,6 @@ static void* const associated_name_tag = (void*)&associated_name_tag;
 - (void)windowWillClose:(NSNotification *)notification
 {
    setting_data_save_config_path(setting_data_get_list(), [apple_platform.globalConfigFile UTF8String]);
-
-   apple_exit_stasis(true);
-
    [NSApp stopModal];
 }
 

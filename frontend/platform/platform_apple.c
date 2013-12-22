@@ -14,8 +14,9 @@
  * If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <dispatch/dispatch.h>
-#include <pthread.h>
+#include <CoreFoundation/CoreFoundation.h>
+
+#include "../menu/menu_common.h"
 #include "../../apple/common/rarch_wrapper.h"
 #include "../../apple/common/apple_export.h"
 #include "../../apple/common/setting_data.h"
@@ -27,33 +28,10 @@
 #include <stddef.h>
 #include <string.h>
 
-static pthread_mutex_t apple_event_queue_lock = PTHREAD_MUTEX_INITIALIZER;
+static CFRunLoopObserverRef iterate_observer;
 
-static struct
+void apple_event_basic_command(enum basic_event_t action)
 {
-   void (*function)(void*);
-   void* userdata;
-} apple_event_queue[16];
-
-static uint32_t apple_event_queue_size;
-
-void apple_frontend_post_event(void (*fn)(void*), void* userdata)
-{
-   pthread_mutex_lock(&apple_event_queue_lock);
-
-   if (apple_event_queue_size < 16)
-   {
-      apple_event_queue[apple_event_queue_size].function = fn;
-      apple_event_queue[apple_event_queue_size].userdata = userdata;
-      apple_event_queue_size ++;
-   }
-
-   pthread_mutex_unlock(&apple_event_queue_lock);
-}
-
-void apple_event_basic_command(void* userdata)
-{
-   int action = (int)userdata;
    switch (action)
    {
       case RESET:
@@ -71,110 +49,58 @@ void apple_event_basic_command(void* userdata)
    }
 }
 
-void apple_event_set_state_slot(void* userdata)
+void apple_refresh_config()
 {
-   g_extern.state_slot = (uint32_t)userdata;
-}
-
-void apple_event_show_rgui(void* userdata)
-{
-   const bool in_menu = g_extern.lifecycle_state & (1 << MODE_MENU);
-   g_extern.lifecycle_state &= ~(1ULL << (in_menu ? MODE_MENU : MODE_GAME));
-   g_extern.lifecycle_state |=  (1ULL << (in_menu ? MODE_GAME : MODE_MENU));
-}
-
-// Little nudge to prevent stale values when reloading the confg file
-void objc_clear_config_hack(void)
-{
+   // Little nudge to prevent stale values when reloading the confg file
    g_extern.block_config_read = false;
    memset(g_settings.input.overlay, 0, sizeof(g_settings.input.overlay));
    memset(g_settings.video.shader_path, 0, sizeof(g_settings.video.shader_path));
-}
 
-static void event_reload_config(void* userdata)
-{
-   objc_clear_config_hack();
-
-   uninit_drivers();
-   config_load();
-   init_drivers();
-}
-
-void apple_refresh_config()
-{
-   if (apple_is_running)
-      apple_frontend_post_event(&event_reload_config, 0);
-   else
-      objc_clear_config_hack();
-}
-
-pthread_mutex_t stasis_mutex = PTHREAD_MUTEX_INITIALIZER;
-
-static void event_stasis(void* userdata)
-{
-   uninit_drivers();
-   pthread_mutex_lock(&stasis_mutex);
-   pthread_mutex_unlock(&stasis_mutex);
-   init_drivers();
-}
-
-void apple_enter_stasis()
-{
-   if (apple_is_running)
+   if (iterate_observer)
    {
-      pthread_mutex_lock(&stasis_mutex);
-      apple_frontend_post_event(event_stasis, 0);
-   }
-}
-
-void apple_exit_stasis(bool reload_config)
-{
-   if (reload_config)
-   {
-      objc_clear_config_hack();
+      uninit_drivers();
       config_load();
+      init_drivers();
    }
-
-   if (apple_is_running)
-      pthread_mutex_unlock(&stasis_mutex);
 }
 
-static int process_events(void *data)
+static void do_iteration()
 {
-   (void)data;
-   pthread_mutex_lock(&apple_event_queue_lock);
-
-   for (int i = 0; i < apple_event_queue_size; i ++)
-      apple_event_queue[i].function(apple_event_queue[i].userdata);
-
-   apple_event_queue_size = 0;
-
-   pthread_mutex_unlock(&apple_event_queue_lock);
-   return 0;
-}
-
-static void system_shutdown(bool force)
-{
-   /* force set to true makes it display the 'Failed to load game' message. */
-   if (force)
-      dispatch_async_f(dispatch_get_main_queue(), (void*)1, apple_rarch_exited);
-   else
-      dispatch_async_f(dispatch_get_main_queue(), 0, apple_rarch_exited);
-}
-
-void *rarch_main_spring(void* args)
-{
-   char** argv = args;
-
-   uint32_t argc = 0;
-   while (argv && argv[argc])
-      argc++;
-   
-   if (rarch_main(argc, argv))
+   if (iterate_observer)
    {
-      rarch_main_clear_state();
-      dispatch_async_f(dispatch_get_main_queue(), (void*)1, apple_rarch_exited);
+      if (apple_rarch_iterate_once())
+      {
+         CFRunLoopObserverInvalidate(iterate_observer);
+         CFRelease(iterate_observer);
+         iterate_observer = 0;
+         
+         apple_rarch_exited(false);
+      }
+      else
+         CFRunLoopWakeUp(CFRunLoopGetMain());
    }
+}
+
+int apple_rarch_load_content(int argc, char* argv[])
+{
+   if (iterate_observer)
+   {
+      RARCH_ERR("apple_rarch_load_content called while content is still running.");
+      return 1;
+   }
+   
+   rarch_main_clear_state();
+   rarch_init_msg_queue();
+   
+   if (rarch_main_init(argc, argv))
+      return 1;
+   
+   menu_init();
+   g_extern.lifecycle_state |= 1ULL << MODE_GAME;
+   g_extern.lifecycle_state |= 1ULL << MODE_GAME_ONESHOT;
+
+   iterate_observer = CFRunLoopObserverCreate(0, kCFRunLoopBeforeWaiting, true, 0, do_iteration, 0);
+   CFRunLoopAddObserver(CFRunLoopGetMain(), iterate_observer, kCFRunLoopCommonModes);
    
    return 0;
 }
@@ -185,8 +111,8 @@ const frontend_ctx_driver_t frontend_ctx_apple = {
    NULL,                         /* deinit */
    NULL,                         /* exitspawn */
    NULL,                         /* process_args */
-   process_events,               /* process_events */
+   NULL,                         /* process_events */
    NULL,                         /* exec */
-   system_shutdown,              /* shutdown */
+   NULL,                         /* shutdown */
    "apple",
 };

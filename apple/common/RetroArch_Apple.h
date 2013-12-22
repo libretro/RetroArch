@@ -69,9 +69,6 @@ extern NSString *apple_get_core_display_name(NSString *core_id);
 - (id)initWithSetting:(const rarch_setting_t*)setting;
 @end
 
-// frontend/platform/platform_apple.c
-extern void apple_frontend_post_event(void (*fn)(void*), void* userdata);
-
 //
 #define BOXSTRING(x) [NSString stringWithUTF8String:x]
 #define BOXINT(x)    [NSNumber numberWithInt:x]
