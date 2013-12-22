@@ -366,11 +366,11 @@ static void *lima_gfx_init(const video_info_t *video, const input_driver_t **inp
    if (input && input_data)
    {
 #ifdef HAVE_SDL
-	  lima_input = input_sdl.init();
-	  if (lima_input)
-	  {
-	     *input = &input_sdl;
-	     *input_data = lima_input;
+      lima_input = input_sdl.init();
+      if (lima_input)
+      {
+         *input = &input_sdl;
+         *input_data = lima_input;
 	  }
 #else
 #ifdef HAVE_UDEV
