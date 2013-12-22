@@ -33,6 +33,7 @@
 #include <linux/fb.h>
 #include <sys/ioctl.h>
 #include <fcntl.h>
+#include <unistd.h>
 
 #ifndef GLOBAL_FBDEV
 #define GLOBAL_FBDEV "/dev/fb0"
@@ -147,6 +148,7 @@ static bool gfx_ctx_init(void)
    }
    native_window.width = vinfo.xres;
    native_window.height = vinfo.yres;
+   close (fb);
 
    if (!(g_egl_surf = eglCreateWindowSurface(g_egl_dpy, g_config, &native_window, 0)))
    {
@@ -163,6 +165,12 @@ static bool gfx_ctx_init(void)
    if (!eglMakeCurrent(g_egl_dpy, g_egl_surf, g_egl_surf, g_egl_ctx))
    {
       RARCH_ERR("eglMakeCurrent failed.\n");
+      goto error;
+   }
+
+
+   if ( eglSwapInterval(g_egl_dpy,1) != EGL_TRUE ){
+      printf("\neglSwapInterval failed.\n");
       goto error;
    }
 
@@ -240,13 +248,13 @@ static void gfx_ctx_input_driver(const input_driver_t **input, void **input_data
 #endif
 }
 
-static unsigned gfx_ctx_get_resolution_width(unsigned resolution_id)
+/*static unsigned gfx_ctx_get_resolution_width(unsigned resolution_id)
 {
    int gl_width;
    eglQuerySurface(g_egl_dpy, g_egl_surf, EGL_WIDTH, &gl_width);
 
    return gl_width;
-}
+}*/
 
 static gfx_ctx_proc_t gfx_ctx_get_proc_address(const char *symbol)
 {
