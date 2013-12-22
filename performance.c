@@ -237,6 +237,13 @@ static void x86_cpuid(int func, int flags[4])
    memset(flags, 0, 4 * sizeof(int));
 #endif
 }
+
+static uint64_t _xgetbv(uint32_t index)
+{
+   uint32_t eax, edx;
+   __asm__ __volatile__("xgetbv" : "=a"(eax), "=d"(edx) : "c"(index));
+   return ((uint64_t)edx << 32) | eax;
+}
 #endif
 
 uint64_t rarch_get_cpu_features(void)
@@ -270,7 +277,8 @@ uint64_t rarch_get_cpu_features(void)
       cpu |= RETRO_SIMD_SSSE3;
 
    const int avx_flags = (1 << 27) | (1 << 28);
-   if ((flags[2] & avx_flags) == avx_flags)
+   const bool xcr_bit_set = ((_xgetbv(0) & 0x6) == 0x6);
+   if ((flags[2] & avx_flags) == avx_flags && xcr_bit_set)
       cpu |= RETRO_SIMD_AVX;
 
    RARCH_LOG("[CPUID]: SSE:   %u\n", !!(cpu & RETRO_SIMD_SSE));
