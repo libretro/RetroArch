@@ -175,7 +175,6 @@ check_pkgconf ZLIB zlib
 
 if [ "$HAVE_LIMA" = "yes" ];then
    check_lib LIMA -llimare limare_init 
-   HAVE_SDL=yes
    LIMA_LIBS=-llimare
 fi
 

@@ -14,17 +14,20 @@
  *  This file is rewritten from sdl video by AreaScout
  */
 
-#include <SDL/SDL.h>
-#include <GLES2/gl2.h>
-#include <limare.h>
 #include <stdlib.h>
 #include <string.h>
+#include <limare.h>
+#include <GLES2/gl2.h>
 #include "../driver.h"
 #include "../general.h"
 #include "scaler/scaler.h"
 #include "gfx_common.h"
 #include "gfx_context.h"
 #include "fonts/fonts.h"
+
+#ifdef HAVE_SDL
+#include <SDL/SDL.h>
+#endif
 
 #define LIMA_TEXEL_FORMAT_BGR_565           0x0E
 #define LIMA_TEXEL_FORMAT_RGBA_8888         0x16
@@ -34,9 +37,21 @@ static void lima_gfx_set_rotation(void *data, unsigned rotation);
 static void lima_gfx_get_poke_interface(void *data, const video_poke_interface_t **iface);
 static void lima_set_texture_frame(void *data, const void *frame, bool rgb32, unsigned width, unsigned height, float alpha);
 
+#ifndef HAVE_SDL
+typedef struct LIMA_Surface {
+	int w, h;
+	void *pixels;
+	int pitch;
+} LIMA_Surface;
+#endif
+
 typedef struct lima_video
 {
+#ifdef HAVE_SDL
    SDL_Surface *screen;
+#else
+   LIMA_Surface *screen;
+#endif
    bool quitting;
 
    void *font;
@@ -44,8 +59,9 @@ typedef struct lima_video
    uint8_t font_r;
    uint8_t font_g;
    uint8_t font_b;
-
+#ifdef HAVE_SDL
    struct scaler_ctx scaler;
+#endif
    unsigned last_width;
    unsigned last_height;
 } lima_video_t;
@@ -92,16 +108,16 @@ static void lima_gfx_free(void *data)
    lima_video_t *vid = (lima_video_t*)data;
    if (!vid)
       return;
-
+#ifdef HAVE_SDL
    SDL_QuitSubSystem(SDL_INIT_VIDEO);
-
+   scaler_ctx_gen_reset(&vid->scaler);
+#endif
    if (vid->font)
       vid->font_driver->free(vid->font);
 
-   scaler_ctx_gen_reset(&vid->scaler);
-
    free(vid);
-   if(rgui_buffer)
+
+   if (rgui_buffer)
    {
       free(rgui_buffer);
       rgui_buffer = NULL;
@@ -131,9 +147,13 @@ static void lima_init_font(lima_video_t *vid, const char *font_path, unsigned fo
    else
       RARCH_LOG("Could not initialize fonts.\n");
 }
-
+#ifdef HAVE_SDL
 static void lima_render_msg(lima_video_t *vid, SDL_Surface *buffer,
       const char *msg, unsigned width, unsigned height, const SDL_PixelFormat *fmt)
+#else
+static void lima_render_msg(lima_video_t *vid, LIMA_Surface *buffer,
+      const char *msg, unsigned width, unsigned height)
+#endif
 {
    int x, y;
    if (!vid->font)
@@ -146,9 +166,15 @@ static void lima_render_msg(lima_video_t *vid, SDL_Surface *buffer,
    int msg_base_x = g_settings.video.msg_pos_x * width;
    int msg_base_y = (1.0 - g_settings.video.msg_pos_y) * height;
 
+#ifdef HAVE_SDL
    unsigned rshift = fmt->Rshift;
    unsigned gshift = fmt->Gshift;
    unsigned bshift = fmt->Bshift;
+#else
+   unsigned rshift = 16;
+   unsigned gshift =  8;
+   unsigned bshift =  0;
+#endif
 
    for (; head; head = head->next)
    {
@@ -185,7 +211,11 @@ static void lima_render_msg(lima_video_t *vid, SDL_Surface *buffer,
       if (glyph_height > max_height)
          glyph_height = max_height;
 
+#ifdef HAVE_SDL
       if (vid->scaler.in_fmt == SCALER_FMT_ARGB8888)
+#else
+      if(vid->screen->pitch == vid->screen->w * sizeof(uint32_t))
+#endif
       {
          uint32_t *out = (uint32_t*)buffer->pixels + base_y * (buffer->pitch >> 2) + base_x;
 
@@ -228,7 +258,11 @@ static void lima_render_msg(lima_video_t *vid, SDL_Surface *buffer,
                uint8_t out_g = (g * (256 - blend) + vid->font_g * blend) >> 8;
                uint8_t out_b = (b * (256 - blend) + vid->font_b * blend) >> 8;
 
+#ifdef HAVE_SDL
                out[x] = (((out_r) << 8) & fmt->Rmask) | (((out_g) << 3) & fmt->Gmask) | (((out_b) >> 3) & fmt->Bmask);
+#else
+               out[x] = (((out_r) << 8) & 0xf800) | (((out_g) << 3) & 0x7e0) | (((out_b) >> 3) & 0x1f);
+#endif
             }
          }
       }
@@ -285,46 +319,76 @@ static void *lima_gfx_init(const video_info_t *video, const input_driver_t **inp
       limare_link(state);
    }
 
+#ifdef HAVE_SDL
    SDL_InitSubSystem(SDL_INIT_VIDEO);
-
-   lima_video_t *vid = (lima_video_t*)calloc(1, sizeof(*vid));
-   if (!vid)
-      return NULL;
 
    const SDL_VideoInfo *video_info = SDL_GetVideoInfo();
    rarch_assert(video_info);
    unsigned full_x = video_info->current_w;
    unsigned full_y = video_info->current_h;
    RARCH_LOG("Detecting desktop resolution %ux%u.\n", full_x, full_y);
+#endif
+
+   lima_video_t *vid = (lima_video_t*)calloc(1, sizeof(*vid));
+   if (!vid)
+      return NULL;
 
    void *lima_input = NULL;
 
    if (!video->fullscreen)
       RARCH_LOG("Creating window @ %ux%u\n", video->width, video->height);
 
+#ifdef HAVE_SDL
    SDL_Surface *dummy = SDL_SetVideoMode(1, 1, 0, SDL_ANYFORMAT | SDL_FULLSCREEN);
 
    vid->screen = SDL_CreateRGBSurface(SDL_HWSURFACE | SDL_HWACCEL | SDL_DOUBLEBUF, g_extern.system.av_info.geometry.base_width, g_extern.system.av_info.geometry.base_height, 32, 0, 0, 0, 0);
 
    RARCH_LOG("New game texture size w = %d h = %d\n", g_extern.system.av_info.geometry.base_width, g_extern.system.av_info.geometry.base_height);
 
+   SDL_ShowCursor(SDL_DISABLE);
+#else
+   vid->screen = (LIMA_Surface*)calloc(1, sizeof(LIMA_Surface));
+   vid->screen->w = g_extern.system.av_info.geometry.base_width;
+   vid->screen->h = g_extern.system.av_info.geometry.base_height;
+   vid->screen->pitch = vid->screen->w * video->rgb32 ? sizeof(uint32_t) : sizeof(uint16_t);
+   vid->screen->pixels = NULL;
+#endif
+
    if (!vid->screen)
    {
+#ifdef HAVE_SDL
       RARCH_ERR("Failed to init SDL surface: %s\n", SDL_GetError());
+#endif
       lima_gfx_free(vid);
       return NULL;
    }
 
-   SDL_ShowCursor(SDL_DISABLE);
-
    if (input && input_data)
    {
-      lima_input = input_sdl.init();
+#ifdef HAVE_SDL
+	  lima_input = input_sdl.init();
+	  if (lima_input)
+	  {
+	     *input = &input_sdl;
+	     *input_data = lima_input;
+	  }
+#else
+#ifdef HAVE_UDEV
+      lima_input  = input_udev.init();
       if (lima_input)
       {
-         *input = &input_sdl;
+    	 *input      = lima_input ? &input_udev : NULL;
          *input_data = lima_input;
       }
+#else
+      lima_input  = input_linuxraw.init();
+      if (lima_input)
+      {
+         *input      = lima_input ? &input_linuxraw : NULL;
+         *input_data = lima_input;
+      }
+#endif
+#endif
       else
       {
          *input = NULL;
@@ -334,15 +398,18 @@ static void *lima_gfx_init(const video_info_t *video, const input_driver_t **inp
 
    lima_init_font(vid, g_settings.video.font_path, g_settings.video.font_size);
 
+#ifdef HAVE_SDL
    vid->scaler.scaler_type = video->smooth ? SCALER_TYPE_BILINEAR : SCALER_TYPE_POINT;
    vid->scaler.in_fmt  = video->rgb32 ? SCALER_FMT_ARGB8888 : SCALER_FMT_RGB565;
    vid->scaler.out_fmt = SCALER_FMT_ABGR8888;
+#endif
 
    return vid;
 }
 
 static void check_window(lima_video_t *vid)
 {
+#ifdef HAVE_SDL
    SDL_Event event;
    while (SDL_PollEvent(&event))
    {
@@ -356,19 +423,21 @@ static void check_window(lima_video_t *vid)
             break;
       }
    }
+#endif
 }
 
 static bool lima_gfx_frame(void *data, const void *frame, unsigned width, unsigned height, unsigned pitch, const char *msg)
 {
    RARCH_PERFORMANCE_INIT(frame_run);
    RARCH_PERFORMANCE_START(frame_run);
-   if (!frame)
+   if (!frame || _rgui)
    {
 	  RARCH_PERFORMANCE_STOP(frame_run);
       return true;
    }
    int texture = 0;
    lima_video_t *vid = (lima_video_t*)data;
+#ifdef HAVE_SDL
 
    vid->scaler.in_stride = pitch;
 
@@ -396,16 +465,20 @@ static bool lima_gfx_frame(void *data, const void *frame, unsigned width, unsign
       vid->last_height = height;
    }
 
-   if(_rgui)
-      return true;
-
    if (SDL_MUSTLOCK(vid->screen))
       SDL_LockSurface(vid->screen);
 
    scaler_ctx_scale(&vid->scaler, vid->screen->pixels, frame);
-   if (msg)
-      lima_render_msg(vid, vid->screen, msg, vid->screen->w, vid->screen->h, vid->screen->format);
+#else
+   vid->screen->pixels = (void*)frame;
+#endif
 
+   if (msg)
+#ifdef HAVE_SDL
+      lima_render_msg(vid, vid->screen, msg, vid->screen->w, vid->screen->h, vid->screen->format);
+#else
+      lima_render_msg(vid, vid->screen, msg, vid->screen->w, vid->screen->h);
+#endif
    char buffer[128], buffer_fps[128];
    bool fps_draw = g_settings.fps_show;
    if (fps_draw)
@@ -413,13 +486,19 @@ static bool lima_gfx_frame(void *data, const void *frame, unsigned width, unsign
       gfx_get_fps(buffer, sizeof(buffer), fps_draw ? buffer_fps : NULL, sizeof(buffer_fps));
       msg_queue_push(g_extern.msg_queue, buffer_fps, 1, 1);
    }
-   
+
+#ifdef HAVE_SDL
    if (SDL_MUSTLOCK(vid->screen))
       SDL_UnlockSurface(vid->screen);
+#endif
 
    RARCH_PERFORMANCE_INIT(copy_frame);
    RARCH_PERFORMANCE_START(copy_frame);
+#ifdef HAVE_SDL
    if (vid->scaler.in_fmt == SCALER_FMT_RGB565)
+#else
+   if (pitch == width * sizeof(uint16_t))
+#endif
       texture = limare_texture_upload(state, vid->screen->pixels, width, height, LIMA_TEXEL_FORMAT_BGR_565, 0);
    else
       texture = limare_texture_upload(state, vid->screen->pixels, width, height, LIMA_TEXEL_FORMAT_RGBA_8888, 0);
@@ -469,7 +548,11 @@ static bool lima_gfx_alive(void *data)
 static bool lima_gfx_focus(void *data)
 {
    (void)data;
+#ifdef HAVE_SDL
    return (SDL_GetAppState() & (SDL_APPINPUTFOCUS | SDL_APPACTIVE)) == (SDL_APPINPUTFOCUS | SDL_APPACTIVE);
+#else
+   return true;
+#endif
 }
 
 static void lima_gfx_set_rotation(void *data, unsigned rotation)
