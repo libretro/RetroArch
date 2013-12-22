@@ -147,8 +147,13 @@ void logger_send(const char *__format,...)
    va_list args;
 
    va_start(args,__format);
-   vsnprintf(sendbuf,4000,__format, args);
+   logger_send_v(__format, args);
    va_end(args);
+}
+
+void logger_send_v(const char *__format, va_list args)
+{
+   vsnprintf(sendbuf,4000,__format, args);
 
    int len=strlen(sendbuf);
    sendto(sock,sendbuf,len,MSG_DONTWAIT,(struct sockaddr*)&target,sizeof(target));
