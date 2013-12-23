@@ -231,10 +231,12 @@ static void handle_touch_event(NSArray* touches)
 
 - (void)applicationDidBecomeActive:(UIApplication *)application
 {
+   apple_start_iteration();
 }
 
 - (void)applicationWillResignActive:(UIApplication *)application
 {
+   apple_stop_iteration();
 }
 
 -(BOOL)application:(UIApplication *)application openURL:(NSURL *)url sourceApplication:(NSString *)sourceApplication annotation:(id)annotation
@@ -268,12 +270,10 @@ static void handle_touch_event(NSArray* touches)
    [[UIApplication sharedApplication] setIdleTimerDisabled:true];
    [_window setRootViewController:[RAGameView get]];
    g_extern.is_paused = false;
-   apple_start_iteration();
 }
 
 - (IBAction)showPauseMenu:(id)sender
 {
-   apple_stop_iteration();
    g_extern.is_paused = true;
    [[UIApplication sharedApplication] setStatusBarHidden:false withAnimation:UIStatusBarAnimationNone];
    [[UIApplication sharedApplication] setIdleTimerDisabled:false];

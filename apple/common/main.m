@@ -34,7 +34,7 @@ static CFRunLoopObserverRef iterate_observer;
 
 static void do_iteration()
 {
-   if (iterate_observer)
+   if (iterate_observer && apple_is_running && !g_extern.is_paused)
    {   
       if (apple_rarch_iterate_once())
       {
