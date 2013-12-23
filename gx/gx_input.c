@@ -97,6 +97,8 @@ const struct platform_bind platform_keys[] = {
 #endif
 };
 
+extern const rarch_joypad_driver_t gx_joypad;
+
 static bool g_menu;
 
 #ifdef HW_RVL
@@ -147,9 +149,9 @@ static int16_t gx_input_state(void *data, const struct retro_keybind **binds,
          if (binds[port][id].joykey >= GX_MENU_FIRST && binds[port][id].joykey <= GX_MENU_LAST)
             return gx_menu_input_state(binds[port][id].joykey, gx->pad_state[port]) ? 1 : 0;
          else
-            return (1ULL << (binds[port][id].joykey) & gx->pad_state[port]) ? 1 : 0;
+            return input_joypad_pressed(&gx_joypad, port, binds[port], id);;
       case RETRO_DEVICE_ANALOG:
-         return gx->analog_state[port][index][id];
+         return input_joypad_analog(&gx_joypad, port, index, id, binds[port]);
       default:
          return 0;
    }
@@ -507,6 +509,11 @@ static void gx_input_poll(void *data)
             }
          }
       }
+
+      for (int i = 0; i < 2; i++)
+         for (int j = 0; j < 2; j++)
+            if (gx->analog_state[port][i][j] == -0x8000)
+               gx->analog_state[port][i][j] = -0x7fff;
 #endif
    }
 
@@ -544,8 +551,6 @@ static uint64_t gx_input_get_capabilities(void *data)
    return caps;
 }
 
-extern const rarch_joypad_driver_t gx_joypad;
-
 static const rarch_joypad_driver_t *gx_input_get_joypad_driver(void *data)
 {
    return &gx_joypad;
@@ -576,13 +581,17 @@ static bool gx_joypad_init(void)
 static bool gx_joypad_button(unsigned port_num, uint16_t joykey)
 {
    gx_input_t *gx = (gx_input_t*)driver.input_data;
+
+   if (port_num >= MAX_PADS)
+      return false;
+
    return gx->pad_state[port_num] & (1ULL << joykey);
 }
 
 static int16_t gx_joypad_axis(unsigned port_num, uint32_t joyaxis)
 {
    gx_input_t *gx = (gx_input_t*)driver.input_data;
-   if (joyaxis == AXIS_NONE)
+   if (joyaxis == AXIS_NONE || port_num >= MAX_PADS)
       return 0;
 
    int val = 0;
@@ -591,12 +600,12 @@ static int16_t gx_joypad_axis(unsigned port_num, uint32_t joyaxis)
    bool is_neg = false;
    bool is_pos = false;
 
-   if (AXIS_NEG_GET(joyaxis) <= 5)
+   if (AXIS_NEG_GET(joyaxis) < 4)
    {
       axis = AXIS_NEG_GET(joyaxis);
       is_neg = true;
    }
-   else if (AXIS_POS_GET(joyaxis) <= 5)
+   else if (AXIS_POS_GET(joyaxis) < 4)
    {
       axis = AXIS_POS_GET(joyaxis);
       is_pos = true;
