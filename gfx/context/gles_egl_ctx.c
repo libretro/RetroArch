@@ -30,8 +30,9 @@
 #include "../shader_glsl.h"
 #endif
 
-#include <linux/fb.h>
 #include <sys/ioctl.h>
+#include <linux/fb.h>
+#include <linux/vt.h>
 #include <fcntl.h>
 #include <unistd.h>
 
@@ -58,6 +59,34 @@ static void gfx_ctx_set_swap_interval(unsigned interval)
    eglSwapInterval(g_egl_dpy, interval);
 }
 
+static void gfx_ctx_clearfb(void){
+/*	
+	char *pixels;
+        char *mapped_mem;
+	struct fb_fix_screeninfo finfo;
+	int mapped_memlen;
+        int mapped_offset;      
+	 
+        ioctl(fb, FBIOGET_FSCREENINFO, &finfo);
+
+	mapped_offset = (((long)finfo.smem_start) -
+                        (((long)finfo.smem_start)&~(getpagesize()-1)));
+        mapped_memlen = finfo.smem_len+mapped_offset;
+
+	mapped_mem = mmap(NULL, mapped_memlen,
+                          PROT_READ|PROT_WRITE, MAP_SHARED, fb, 0);
+	pixels = mapped_mem+mapped_offset;
+
+	//TODO: fix to actual bytes per pixel (assumes 4Bpp = 32bpp)
+	memset(pixels,0,native_window.height * native_window.width * 4); 
+	*/
+	int fd = open("/dev/tty", O_RDWR);
+	ioctl(fd,VT_ACTIVATE,5);
+	ioctl(fd,VT_ACTIVATE,1);
+	close (fd);
+	system("setterm -cursor on");
+}
+
 static void gfx_ctx_destroy(void)
 {
    RARCH_LOG("gfx_ctx_destroy().\n");
@@ -71,6 +100,10 @@ static void gfx_ctx_destroy(void)
    g_egl_ctx = EGL_NO_CONTEXT;
    g_config   = 0;
    g_resize   = false;
+   
+   gfx_ctx_clearfb();
+
+   close (fb);
 }
 
 static void gfx_ctx_get_video_size(unsigned *width, unsigned *height)
@@ -92,6 +125,7 @@ static void gfx_ctx_get_video_size(unsigned *width, unsigned *height)
 
 static bool gfx_ctx_init(void)
 {
+   system("setterm -cursor off");
    const EGLint attribs[] = {
       EGL_RENDERABLE_TYPE, EGL_OPENGL_ES2_BIT,
       EGL_SURFACE_TYPE, EGL_WINDOW_BIT,
@@ -148,7 +182,6 @@ static bool gfx_ctx_init(void)
    }
    native_window.width = vinfo.xres;
    native_window.height = vinfo.yres;
-   close (fb);
 
    if (!(g_egl_surf = eglCreateWindowSurface(g_egl_dpy, g_config, &native_window, 0)))
    {
