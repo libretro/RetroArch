@@ -103,6 +103,35 @@ static bool g_menu;
 static bool g_quit;
 #endif
 
+static bool gx_menu_input_state(uint64_t joykey, uint64_t state)
+{
+   switch (joykey)
+   {
+      case GX_MENU_A:
+         return state & ((1ULL << GX_GC_A) | (1ULL << GX_WIIMOTE_A) | (1ULL << GX_CLASSIC_A) | (1ULL << GX_WIIMOTE_2));
+      case GX_MENU_B:
+         return state & ((1ULL << GX_GC_B) | (1ULL << GX_WIIMOTE_B) | (1ULL << GX_CLASSIC_B) | (1ULL << GX_WIIMOTE_1));
+      case GX_MENU_X:
+         return state & ((1ULL << GX_GC_X) | (1ULL << GX_CLASSIC_X));
+      case GX_MENU_Y:
+         return state & ((1ULL << GX_GC_Y) | (1ULL << GX_CLASSIC_Y));
+      case GX_MENU_UP:
+         return state & ((1ULL << GX_GC_UP) | (1ULL << GX_WIIMOTE_UP) | (1ULL << GX_CLASSIC_UP) | (1ULL << GX_NUNCHUK_UP));
+      case GX_MENU_DOWN:
+         return state & ((1ULL << GX_GC_DOWN) | (1ULL << GX_WIIMOTE_DOWN) | (1ULL << GX_CLASSIC_DOWN) | (1ULL << GX_NUNCHUK_DOWN));
+      case GX_MENU_LEFT:
+         return state & ((1ULL << GX_GC_LEFT) | (1ULL << GX_WIIMOTE_LEFT) | (1ULL << GX_CLASSIC_LEFT) | (1ULL << GX_NUNCHUK_LEFT));
+      case GX_MENU_RIGHT:
+         return state & ((1ULL << GX_GC_RIGHT) | (1ULL << GX_WIIMOTE_RIGHT) | (1ULL << GX_CLASSIC_RIGHT) | (1ULL << GX_NUNCHUK_RIGHT));
+      case GX_MENU_L:
+         return state & ((1ULL << GX_GC_L_TRIGGER) | (1ULL << GX_CLASSIC_L_TRIGGER));
+      case GX_MENU_R:
+         return state & ((1ULL << GX_GC_R_TRIGGER) | (1ULL << GX_CLASSIC_R_TRIGGER));
+      default:
+         return false;
+   }
+}
+
 static int16_t gx_input_state(void *data, const struct retro_keybind **binds,
       unsigned port, unsigned device,
       unsigned index, unsigned id)
@@ -115,7 +144,10 @@ static int16_t gx_input_state(void *data, const struct retro_keybind **binds,
    switch (device)
    {
       case RETRO_DEVICE_JOYPAD:
-         return (binds[port][id].joykey & gx->pad_state[port]) ? 1 : 0;
+         if (binds[port][id].joykey >= GX_MENU_FIRST && binds[port][id].joykey <= GX_MENU_LAST)
+            return gx_menu_input_state(binds[port][id].joykey, gx->pad_state[port]) ? 1 : 0;
+         else
+            return (1ULL << (binds[port][id].joykey) & gx->pad_state[port]) ? 1 : 0;
       case RETRO_DEVICE_ANALOG:
          return gx->analog_state[port][index][id];
       default:
@@ -315,18 +347,18 @@ static void gx_input_poll(void *data)
       {
          down = PAD_ButtonsHeld(port);
 
-         *state_cur |= (down & PAD_BUTTON_A) ? GX_GC_A : 0;
-         *state_cur |= (down & PAD_BUTTON_B) ? GX_GC_B : 0;
-         *state_cur |= (down & PAD_BUTTON_X) ? GX_GC_X : 0;
-         *state_cur |= (down & PAD_BUTTON_Y) ? GX_GC_Y : 0;
-         *state_cur |= (down & PAD_BUTTON_UP) ? GX_GC_UP : 0;
-         *state_cur |= (down & PAD_BUTTON_DOWN) ? GX_GC_DOWN : 0;
-         *state_cur |= (down & PAD_BUTTON_LEFT) ? GX_GC_LEFT : 0;
-         *state_cur |= (down & PAD_BUTTON_RIGHT) ? GX_GC_RIGHT : 0;
-         *state_cur |= (down & PAD_BUTTON_START) ? GX_GC_START : 0;
-         *state_cur |= (down & PAD_TRIGGER_Z) ? GX_GC_Z_TRIGGER : 0;
-         *state_cur |= ((down & PAD_TRIGGER_L) || PAD_TriggerL(port) > 127) ? GX_GC_L_TRIGGER : 0;
-         *state_cur |= ((down & PAD_TRIGGER_R) || PAD_TriggerR(port) > 127) ? GX_GC_R_TRIGGER : 0;
+         *state_cur |= (down & PAD_BUTTON_A) ? (1ULL << GX_GC_A) : 0;
+         *state_cur |= (down & PAD_BUTTON_B) ? (1ULL << GX_GC_B) : 0;
+         *state_cur |= (down & PAD_BUTTON_X) ? (1ULL << GX_GC_X) : 0;
+         *state_cur |= (down & PAD_BUTTON_Y) ? (1ULL << GX_GC_Y) : 0;
+         *state_cur |= (down & PAD_BUTTON_UP) ? (1ULL << GX_GC_UP) : 0;
+         *state_cur |= (down & PAD_BUTTON_DOWN) ? (1ULL << GX_GC_DOWN) : 0;
+         *state_cur |= (down & PAD_BUTTON_LEFT) ? (1ULL << GX_GC_LEFT) : 0;
+         *state_cur |= (down & PAD_BUTTON_RIGHT) ? (1ULL << GX_GC_RIGHT) : 0;
+         *state_cur |= (down & PAD_BUTTON_START) ? (1ULL << GX_GC_START) : 0;
+         *state_cur |= (down & PAD_TRIGGER_Z) ? (1ULL << GX_GC_Z_TRIGGER) : 0;
+         *state_cur |= ((down & PAD_TRIGGER_L) || PAD_TriggerL(port) > 127) ? (1ULL << GX_GC_L_TRIGGER) : 0;
+         *state_cur |= ((down & PAD_TRIGGER_R) || PAD_TriggerR(port) > 127) ? (1ULL << GX_GC_R_TRIGGER) : 0;
 
          int16_t ls_x = (int16_t)PAD_StickX(port) * 256;
          int16_t ls_y = (int16_t)PAD_StickY(port) * -256;
@@ -338,8 +370,9 @@ static void gx_input_poll(void *data)
          gx->analog_state[port][RETRO_DEVICE_INDEX_ANALOG_RIGHT][RETRO_DEVICE_ID_ANALOG_X] = rs_x;
          gx->analog_state[port][RETRO_DEVICE_INDEX_ANALOG_RIGHT][RETRO_DEVICE_ID_ANALOG_Y] = rs_y;
 
-         if ((*state_cur & (GX_GC_START | GX_GC_Z_TRIGGER | GX_GC_L_TRIGGER | GX_GC_R_TRIGGER)) == (GX_GC_START | GX_GC_Z_TRIGGER | GX_GC_L_TRIGGER | GX_GC_R_TRIGGER))
-            *state_cur |= GX_WIIMOTE_HOME;
+         const uint64_t menu_combo = (1ULL << GX_GC_START) | (1ULL << GX_GC_Z_TRIGGER) | (1ULL << GX_GC_L_TRIGGER) | (1ULL << GX_GC_R_TRIGGER);
+         if ((*state_cur & menu_combo) == menu_combo)
+            *state_cur |= (1ULL << GX_WIIMOTE_HOME);
 
          if (g_settings.input.autodetect_enable)
          {
@@ -358,38 +391,38 @@ static void gx_input_poll(void *data)
 
          down = wpaddata->btns_h;
 
-         *state_cur |= (down & WPAD_BUTTON_A) ? GX_WIIMOTE_A : 0;
-         *state_cur |= (down & WPAD_BUTTON_B) ? GX_WIIMOTE_B : 0;
-         *state_cur |= (down & WPAD_BUTTON_1) ? GX_WIIMOTE_1 : 0;
-         *state_cur |= (down & WPAD_BUTTON_2) ? GX_WIIMOTE_2 : 0;
-         *state_cur |= (down & WPAD_BUTTON_PLUS) ? GX_WIIMOTE_PLUS : 0;
-         *state_cur |= (down & WPAD_BUTTON_MINUS) ? GX_WIIMOTE_MINUS : 0;
-         *state_cur |= (down & WPAD_BUTTON_HOME) ? GX_WIIMOTE_HOME : 0;
+         *state_cur |= (down & WPAD_BUTTON_A) ? (1ULL << GX_WIIMOTE_A) : 0;
+         *state_cur |= (down & WPAD_BUTTON_B) ? (1ULL << GX_WIIMOTE_B) : 0;
+         *state_cur |= (down & WPAD_BUTTON_1) ? (1ULL << GX_WIIMOTE_1) : 0;
+         *state_cur |= (down & WPAD_BUTTON_2) ? (1ULL << GX_WIIMOTE_2) : 0;
+         *state_cur |= (down & WPAD_BUTTON_PLUS) ? (1ULL << GX_WIIMOTE_PLUS) : 0;
+         *state_cur |= (down & WPAD_BUTTON_MINUS) ? (1ULL << GX_WIIMOTE_MINUS) : 0;
+         *state_cur |= (down & WPAD_BUTTON_HOME) ? (1ULL << GX_WIIMOTE_HOME) : 0;
          // rotated d-pad on Wiimote
-         *state_cur |= (down & WPAD_BUTTON_UP) ? GX_WIIMOTE_LEFT : 0;
-         *state_cur |= (down & WPAD_BUTTON_DOWN) ? GX_WIIMOTE_RIGHT : 0;
-         *state_cur |= (down & WPAD_BUTTON_LEFT) ? GX_WIIMOTE_DOWN : 0;
-         *state_cur |= (down & WPAD_BUTTON_RIGHT) ? GX_WIIMOTE_UP : 0;
+         *state_cur |= (down & WPAD_BUTTON_UP) ? (1ULL << GX_WIIMOTE_LEFT) : 0;
+         *state_cur |= (down & WPAD_BUTTON_DOWN) ? (1ULL << GX_WIIMOTE_RIGHT) : 0;
+         *state_cur |= (down & WPAD_BUTTON_LEFT) ? (1ULL << GX_WIIMOTE_DOWN) : 0;
+         *state_cur |= (down & WPAD_BUTTON_RIGHT) ? (1ULL << GX_WIIMOTE_UP) : 0;
 
          expansion_t *exp = &wpaddata->exp;
 
          if (ptype == WPAD_EXP_CLASSIC)
          {
-            *state_cur |= (down & WPAD_CLASSIC_BUTTON_A) ? GX_CLASSIC_A : 0;
-            *state_cur |= (down & WPAD_CLASSIC_BUTTON_B) ? GX_CLASSIC_B : 0;
-            *state_cur |= (down & WPAD_CLASSIC_BUTTON_X) ? GX_CLASSIC_X : 0;
-            *state_cur |= (down & WPAD_CLASSIC_BUTTON_Y) ? GX_CLASSIC_Y : 0;
-            *state_cur |= (down & WPAD_CLASSIC_BUTTON_UP) ? GX_CLASSIC_UP : 0;
-            *state_cur |= (down & WPAD_CLASSIC_BUTTON_DOWN) ? GX_CLASSIC_DOWN : 0;
-            *state_cur |= (down & WPAD_CLASSIC_BUTTON_LEFT) ? GX_CLASSIC_LEFT : 0;
-            *state_cur |= (down & WPAD_CLASSIC_BUTTON_RIGHT) ? GX_CLASSIC_RIGHT : 0;
-            *state_cur |= (down & WPAD_CLASSIC_BUTTON_PLUS) ? GX_CLASSIC_PLUS : 0;
-            *state_cur |= (down & WPAD_CLASSIC_BUTTON_MINUS) ? GX_CLASSIC_MINUS : 0;
-            *state_cur |= (down & WPAD_CLASSIC_BUTTON_HOME) ? GX_CLASSIC_HOME : 0;
-            *state_cur |= (down & WPAD_CLASSIC_BUTTON_FULL_L) ? GX_CLASSIC_L_TRIGGER : 0;
-            *state_cur |= (down & WPAD_CLASSIC_BUTTON_FULL_R) ? GX_CLASSIC_R_TRIGGER : 0;
-            *state_cur |= (down & WPAD_CLASSIC_BUTTON_ZL) ? GX_CLASSIC_ZL_TRIGGER : 0;
-            *state_cur |= (down & WPAD_CLASSIC_BUTTON_ZR) ? GX_CLASSIC_ZR_TRIGGER : 0;
+            *state_cur |= (down & WPAD_CLASSIC_BUTTON_A) ? (1ULL << GX_CLASSIC_A) : 0;
+            *state_cur |= (down & WPAD_CLASSIC_BUTTON_B) ? (1ULL << GX_CLASSIC_B) : 0;
+            *state_cur |= (down & WPAD_CLASSIC_BUTTON_X) ? (1ULL << GX_CLASSIC_X) : 0;
+            *state_cur |= (down & WPAD_CLASSIC_BUTTON_Y) ? (1ULL << GX_CLASSIC_Y) : 0;
+            *state_cur |= (down & WPAD_CLASSIC_BUTTON_UP) ? (1ULL << GX_CLASSIC_UP) : 0;
+            *state_cur |= (down & WPAD_CLASSIC_BUTTON_DOWN) ? (1ULL << GX_CLASSIC_DOWN) : 0;
+            *state_cur |= (down & WPAD_CLASSIC_BUTTON_LEFT) ? (1ULL << GX_CLASSIC_LEFT) : 0;
+            *state_cur |= (down & WPAD_CLASSIC_BUTTON_RIGHT) ? (1ULL << GX_CLASSIC_RIGHT) : 0;
+            *state_cur |= (down & WPAD_CLASSIC_BUTTON_PLUS) ? (1ULL << GX_CLASSIC_PLUS) : 0;
+            *state_cur |= (down & WPAD_CLASSIC_BUTTON_MINUS) ? (1ULL << GX_CLASSIC_MINUS) : 0;
+            *state_cur |= (down & WPAD_CLASSIC_BUTTON_HOME) ? (1ULL << GX_CLASSIC_HOME) : 0;
+            *state_cur |= (down & WPAD_CLASSIC_BUTTON_FULL_L) ? (1ULL << GX_CLASSIC_L_TRIGGER) : 0;
+            *state_cur |= (down & WPAD_CLASSIC_BUTTON_FULL_R) ? (1ULL << GX_CLASSIC_R_TRIGGER) : 0;
+            *state_cur |= (down & WPAD_CLASSIC_BUTTON_ZL) ? (1ULL << GX_CLASSIC_ZL_TRIGGER) : 0;
+            *state_cur |= (down & WPAD_CLASSIC_BUTTON_ZR) ? (1ULL << GX_CLASSIC_ZR_TRIGGER) : 0;
 
             float ljs_mag = exp->classic.ljs.mag;
             float ljs_ang = exp->classic.ljs.ang;
@@ -433,13 +466,13 @@ static void gx_input_poll(void *data)
          else if (ptype == WPAD_EXP_NUNCHUK)
          {
             // wiimote is held upright with nunchuk, do not change d-pad orientation
-            *state_cur |= (down & WPAD_BUTTON_UP) ? GX_WIIMOTE_UP : 0;
-            *state_cur |= (down & WPAD_BUTTON_DOWN) ? GX_WIIMOTE_DOWN : 0;
-            *state_cur |= (down & WPAD_BUTTON_LEFT) ? GX_WIIMOTE_LEFT : 0;
-            *state_cur |= (down & WPAD_BUTTON_RIGHT) ? GX_WIIMOTE_RIGHT : 0;
+            *state_cur |= (down & WPAD_BUTTON_UP) ? (1ULL << GX_WIIMOTE_UP) : 0;
+            *state_cur |= (down & WPAD_BUTTON_DOWN) ? (1ULL << GX_WIIMOTE_DOWN) : 0;
+            *state_cur |= (down & WPAD_BUTTON_LEFT) ? (1ULL << GX_WIIMOTE_LEFT) : 0;
+            *state_cur |= (down & WPAD_BUTTON_RIGHT) ? (1ULL << GX_WIIMOTE_RIGHT) : 0;
 
-            *state_cur |= (down & WPAD_NUNCHUK_BUTTON_Z) ? GX_NUNCHUK_Z : 0;
-            *state_cur |= (down & WPAD_NUNCHUK_BUTTON_C) ? GX_NUNCHUK_C : 0;
+            *state_cur |= (down & WPAD_NUNCHUK_BUTTON_Z) ? (1ULL << GX_NUNCHUK_Z) : 0;
+            *state_cur |= (down & WPAD_NUNCHUK_BUTTON_C) ? (1ULL << GX_NUNCHUK_C) : 0;
 
             float js_mag = exp->nunchuk.js.mag;
             float js_ang = exp->nunchuk.js.ang;
@@ -484,13 +517,13 @@ static void gx_input_poll(void *data)
 
    if (g_menu)
    {
-      *state_p1 |= GX_WIIMOTE_HOME;
+      *state_p1 |= (1ULL << GX_WIIMOTE_HOME);
       g_menu = false;
    }
 
-   if (*state_p1 & (GX_WIIMOTE_HOME
+   if (*state_p1 & ((1ULL << GX_WIIMOTE_HOME)
 #ifdef HW_RVL
-            | GX_CLASSIC_HOME
+            | (1ULL << GX_CLASSIC_HOME)
 #endif
             ))
       *lifecycle_state |= (1ULL << RARCH_MENU_TOGGLE);
@@ -511,6 +544,12 @@ static uint64_t gx_input_get_capabilities(void *data)
    return caps;
 }
 
+extern const rarch_joypad_driver_t gx_joypad;
+
+static const rarch_joypad_driver_t *gx_input_get_joypad_driver(void *data)
+{
+   return &gx_joypad;
+}
 
 const input_driver_t input_gx = {
    gx_input_init,
@@ -521,5 +560,91 @@ const input_driver_t input_gx = {
    gx_input_set_keybinds,
    NULL,
    gx_input_get_capabilities,
+   "gx",
+
+   NULL,
+   NULL,
+   gx_input_get_joypad_driver,
+};
+
+
+static bool gx_joypad_init(void)
+{
+   return true;
+}
+
+static bool gx_joypad_button(unsigned port_num, uint16_t joykey)
+{
+   gx_input_t *gx = (gx_input_t*)driver.input_data;
+   return gx->pad_state[port_num] & (1ULL << joykey);
+}
+
+static int16_t gx_joypad_axis(unsigned port_num, uint32_t joyaxis)
+{
+   gx_input_t *gx = (gx_input_t*)driver.input_data;
+   if (joyaxis == AXIS_NONE)
+      return 0;
+
+   int val = 0;
+
+   int axis    = -1;
+   bool is_neg = false;
+   bool is_pos = false;
+
+   if (AXIS_NEG_GET(joyaxis) <= 5)
+   {
+      axis = AXIS_NEG_GET(joyaxis);
+      is_neg = true;
+   }
+   else if (AXIS_POS_GET(joyaxis) <= 5)
+   {
+      axis = AXIS_POS_GET(joyaxis);
+      is_pos = true;
+   }
+
+   switch (axis)
+   {
+      case 0: val = gx->analog_state[port_num][0][0]; break;
+      case 1: val = gx->analog_state[port_num][0][1]; break;
+      case 2: val = gx->analog_state[port_num][1][0]; break;
+      case 3: val = gx->analog_state[port_num][1][1]; break;
+   }
+
+   if (is_neg && val > 0)
+      val = 0;
+   else if (is_pos && val < 0)
+      val = 0;
+
+   return val;
+}
+
+static void gx_joypad_poll(void)
+{
+}
+
+static bool gx_joypad_query_pad(unsigned pad)
+{
+   gx_input_t *gx = (gx_input_t*)driver.input_data;
+   return pad < MAX_PLAYERS && gx->pad_state[pad];
+}
+
+static const char *gx_joypad_name(unsigned pad)
+{
+   return NULL;
+}
+
+static void gx_joypad_destroy(void)
+{
+}
+
+const rarch_joypad_driver_t gx_joypad = {
+   gx_joypad_init,
+   gx_joypad_query_pad,
+   gx_joypad_destroy,
+   gx_joypad_button,
+   gx_joypad_axis,
+   gx_joypad_poll,
+   NULL,
+   gx_joypad_name,
    "gx",
 };

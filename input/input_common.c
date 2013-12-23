@@ -943,7 +943,15 @@ void input_get_bind_string(char *buf, const struct retro_keybind *bind, size_t s
    *buf = '\0';
    if (bind->joykey != NO_BTN)
    {
-      if (GET_HAT_DIR(bind->joykey))
+      if (driver.input->set_keybinds)
+      {
+         struct platform_bind key_label;
+         strlcpy(key_label.desc, "Unknown", sizeof(key_label.desc));
+         key_label.joykey = bind->joykey;
+         driver.input->set_keybinds(&key_label, 0, 0, 0, (1ULL << KEYBINDS_ACTION_GET_BIND_LABEL));
+         snprintf(buf, size, "%s (btn) ", key_label.desc);
+      }
+      else if (GET_HAT_DIR(bind->joykey))
       {
          const char *dir;
          switch (GET_HAT_DIR(bind->joykey))
@@ -976,6 +984,7 @@ void input_get_bind_string(char *buf, const struct retro_keybind *bind, size_t s
       snprintf(buf, size, "%c%u (axis) ", dir, axis);
    }
 
+#ifndef RARCH_CONSOLE
    char key[64];
    input_translate_rk_to_str(bind->key, key, sizeof(key));
    if (!strcmp(key, "nul"))
@@ -984,6 +993,7 @@ void input_get_bind_string(char *buf, const struct retro_keybind *bind, size_t s
    char keybuf[64];
    snprintf(keybuf, sizeof(keybuf), "(Key: %s)", key);
    strlcat(buf, keybuf, size);
+#endif
 }
 
 static enum retro_key find_sk_bind(const char *str)
