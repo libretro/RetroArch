@@ -745,7 +745,7 @@ static const struct retro_keybind retro_keybinds_menu[] = {
    { true, RARCH_DISK_EJECT_TOGGLE,        RETRO_LBL_DISK_EJECT_TOGGLE,    RETROK_UNKNOWN, NO_BTN, 0, AXIS_NONE },
    { true, RARCH_DISK_NEXT,                RETRO_LBL_DISK_NEXT,            RETROK_UNKNOWN, NO_BTN, 0, AXIS_NONE },
    { true, RARCH_GRAB_MOUSE_TOGGLE,        RETRO_LBL_GRAB_MOUSE_TOGGLE,    RETROK_F11,     NO_BTN, 0, AXIS_NONE },
-   { true, RARCH_MENU_TOGGLE, NULL, 0, GX_WIIMOTE_HOME, 0 },
+   { true, RARCH_MENU_TOGGLE, NULL, 0, GX_MENU_HOME, 0 },
 };
 #endif
 

@@ -129,6 +129,8 @@ static bool gx_menu_input_state(uint64_t joykey, uint64_t state)
          return state & ((1ULL << GX_GC_L_TRIGGER) | (1ULL << GX_CLASSIC_L_TRIGGER));
       case GX_MENU_R:
          return state & ((1ULL << GX_GC_R_TRIGGER) | (1ULL << GX_CLASSIC_R_TRIGGER));
+      case GX_MENU_HOME:
+         return state & ((1ULL << GX_WIIMOTE_HOME) | (1ULL << GX_CLASSIC_HOME));
       default:
          return false;
    }

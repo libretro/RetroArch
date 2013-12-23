@@ -82,9 +82,10 @@ enum
    GX_MENU_RIGHT           = 70,
    GX_MENU_L               = 71,
    GX_MENU_R               = 72,
+   GX_MENU_HOME            = 73,
 
    GX_MENU_FIRST           = GX_MENU_A,
-   GX_MENU_LAST             = GX_MENU_R
+   GX_MENU_LAST            = GX_MENU_HOME
 };
 
 enum gx_device_id
