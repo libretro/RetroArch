@@ -80,6 +80,7 @@ static void gfx_ctx_clearfb(void){
 	//TODO: fix to actual bytes per pixel (assumes 4Bpp = 32bpp)
 	memset(pixels,0,native_window.height * native_window.width * 4); 
 	*/
+	
 	int fd = open("/dev/tty", O_RDWR);
 	ioctl(fd,VT_ACTIVATE,5);
 	ioctl(fd,VT_ACTIVATE,1);
