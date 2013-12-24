@@ -38,6 +38,4 @@ gfx_ctx_proc_t apple_gfx_ctx_get_proc_address(const char *symbol_name);
 void apple_bind_game_view_fbo(void);
 #endif
 
-#define ios_add_log_message(...) printf(__VA_ARGS__)
-
 #endif

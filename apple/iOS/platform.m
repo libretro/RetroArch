@@ -42,7 +42,6 @@ int get_ios_version_major()
    return version;
 }
 
-
 void ios_set_bluetooth_mode(NSString* mode)
 {
    apple_input_enable_icade([mode isEqualToString:@"icade"]);

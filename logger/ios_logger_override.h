@@ -17,17 +17,28 @@
 #ifndef __APPLE_IOS_LOGGER_H
 #define __APPLE_IOS_LOGGER_H
 
+#include <TargetConditionals.h>
+
+#if TARGET_IPHONE_SIMULATOR
+#include <stdio.h>
+#else
 #include <asl.h>
+#endif
+
 #include <stdarg.h>
 
 static inline void RARCH_LOG_V(const char *tag, const char *fmt, va_list ap)
 {
+#if TARGET_IPHONE_SIMULATOR
+   vprintf(fmt, ap);
+#else
    aslmsg msg = asl_new(ASL_TYPE_MSG);
    asl_set(msg, ASL_KEY_READ_UID, "-1");
    if (tag)
       asl_log(NULL, msg, ASL_LEVEL_NOTICE, "%s", tag);
    asl_vlog(NULL, msg, ASL_LEVEL_NOTICE, fmt, ap);
    asl_free(msg);
+#endif
 }
 
 static inline void RARCH_LOG(const char *fmt, ...)
