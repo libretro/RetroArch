@@ -722,6 +722,8 @@ void global_uninit_drivers(void)
 #ifdef HAVE_LOCATION
    if (driver.location && driver.location_data)
    {
+      if (g_extern.system.location_callback.deinitialized)
+         g_extern.system.location_callback.deinitialized();
       driver.location->free(driver.location_data);
       driver.location_data = NULL;
    }
