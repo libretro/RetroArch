@@ -689,7 +689,6 @@ retro_proc_address_t driver_get_proc_address(const char *sym)
 
 void global_init_drivers(void)
 {
-   unsigned i;
    find_audio_driver();
    find_input_driver();
    init_video_input();
