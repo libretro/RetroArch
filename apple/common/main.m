@@ -32,18 +32,31 @@ NSString* apple_core;
 
 static CFRunLoopObserverRef iterate_observer;
 
+static void apple_rarch_exited()
+{
+   NSString* used_core = apple_core;
+   apple_core = 0;
+   
+   if (apple_is_running)
+   {
+      apple_is_running = false;
+      [apple_platform unloadingCore:used_core];
+   }
+   
+#ifdef OSX
+   [used_core release];
+#endif
+   
+   if (apple_use_tv_mode)
+      apple_run_core(nil, 0);
+}
+
 static void do_iteration()
 {
    if (iterate_observer && apple_is_running && !g_extern.is_paused)
    {   
       if (apple_rarch_iterate_once())
-      {
-         CFRunLoopObserverInvalidate(iterate_observer);
-         CFRelease(iterate_observer);
-         iterate_observer = 0;
-         
-         apple_rarch_exited(false);
-      }
+         apple_rarch_exited();
       else
          CFRunLoopWakeUp(CFRunLoopGetMain());
    }
@@ -72,14 +85,6 @@ void apple_run_core(NSString* core, const char* file)
 {
    if (!apple_is_running)
    {
-#ifndef OSX
-	   char basedir[256];
-	   fill_pathname_basedir(basedir, file, sizeof(basedir));
-	   if (file && access(basedir, R_OK | W_OK | X_OK))
-		   apple_display_alert(@"The directory containing the selected file has limited permissions. This may "
-				                  "prevent zipped content from loading, and will cause some cores to not function.", 0);
-#endif
-
       [apple_platform loadingCore:core withFile:file];
 
       apple_core = core;
@@ -107,28 +112,16 @@ void apple_run_core(NSString* core, const char* file)
       char** argv = (char**)((file && core) ? argv_game : argv_menu);
       
       if (apple_rarch_load_content(argc, argv))
-         apple_rarch_exited(true);
+      {
+         char basedir[256];
+         fill_pathname_basedir(basedir, file ? file : "", sizeof(basedir));
+         if (file && access(basedir, R_OK | W_OK | X_OK))
+            apple_display_alert(@"The directory containing the selected file must have write premissions. This will "
+                                "prevent zipped content from loading, and will cause some cores to not function.", 0);
+         else
+            apple_display_alert(@"Failed to load content.", 0);
+         
+         apple_rarch_exited();
+      }
    }
-}
-
-void apple_rarch_exited(bool on_error)
-{
-   if (on_error)
-      apple_display_alert(@"Failed to load content.", 0);
-
-   NSString* used_core = apple_core;
-   apple_core = 0; 
-
-   if (apple_is_running)
-   {
-      apple_is_running = false;
-      [apple_platform unloadingCore:used_core];
-   }
-
-#ifdef OSX
-   [used_core release];
-#endif
-
-   if (apple_use_tv_mode)
-      apple_run_core(nil, 0);
 }

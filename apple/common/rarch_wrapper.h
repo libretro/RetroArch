@@ -19,8 +19,6 @@
 
 #include "gfx/gfx_context.h"
 
-void apple_rarch_exited (bool on_error);
-
 // These functions must only be called in gfx/context/apple_gl_context.c
 bool apple_gfx_ctx_init(void);
 void apple_gfx_ctx_destroy(void);
