@@ -100,7 +100,7 @@ static void file_action(enum file_action action, NSString* source, NSString* tar
 {
    RADirectoryItem* item = [RADirectoryItem new];
    item.path = path;
-   item.isDirectory = path_is_absolute(path.UTF8String);
+   item.isDirectory = path_is_directory(path.UTF8String);
    return item;
 }
 
@@ -145,7 +145,7 @@ static void file_action(enum file_action action, NSString* source, NSString* tar
    NSString* _extensions;
 }
 
-- (id)initWithPath:(NSString*)path extensions:(const char*)extensions forDirectory:(bool)forDirectory delegate:(id<RADirectoryListDelegate>)delegate
+- (id)initWithPath:(NSString*)path extensions:(const char*)extensions delegate:(id<RADirectoryListDelegate>)delegate
 {
    if ((self = [super initWithStyle:UITableViewStylePlain]))
    {
@@ -155,10 +155,17 @@ static void file_action(enum file_action action, NSString* source, NSString* tar
 
       self = [super initWithStyle:UITableViewStylePlain];
       self.hidesHeaders = YES;
+      
+      self.navigationItem.leftBarButtonItem = [[UIBarButtonItem alloc] initWithTitle:@"Up" style:UIBarButtonItemStyleBordered target:self
+                                                                       action:@selector(gotoParent)];
 
+
+      self.navigationItem.rightBarButtonItem = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemCancel target:self
+                                                                        action:@selector(cancelBrowser)];
+
+      
       // NOTE: The "App" and "Root" buttons aren't really needed for non-jailbreak devices.
-      self.toolbarItems =
-      @[
+      NSMutableArray* toolbarButtons = [NSMutableArray arrayWithObjects:
          [[UIBarButtonItem alloc] initWithTitle:@"Home" style:UIBarButtonItemStyleBordered target:self
                                   action:@selector(gotoHomeDir)],
          [[UIBarButtonItem alloc] initWithTitle:@"App" style:UIBarButtonItemStyleBordered target:self
@@ -170,17 +177,28 @@ static void file_action(enum file_action action, NSString* source, NSString* tar
          [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemRefresh target:self
                                   action:@selector(refresh)],
          [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemAdd target:self
-                                  action:@selector(createNewFolder)]
+                                  action:@selector(createNewFolder)],
+         nil
       ];
       
+      self.toolbarItems = toolbarButtons;
+
       [self.tableView addGestureRecognizer:[[UILongPressGestureRecognizer alloc] initWithTarget:self
                       action:@selector(fileAction:)]];
       
-      self.navigationItem.rightBarButtonItem = [[UIBarButtonItem alloc] initWithTitle:@"Up"
-                                                style:UIBarButtonItemStyleBordered target:self action:@selector(gotoParent)];
    }
 
    return self;
+}
+
+- (void)cancelBrowser
+{
+   [self.navigationController popViewControllerAnimated:YES];
+}
+
+- (void)gotoParent
+{
+   [self browseTo:[_path stringByDeletingLastPathComponent]];
 }
 
 - (void)gotoHomeDir
@@ -219,6 +237,15 @@ static void file_action(enum file_action action, NSString* source, NSString* tar
    
    if (contents)
    {
+      RADirectoryList __weak* weakSelf = self;
+      
+      if (self.allowBlank)
+         [self.sections[0] addObject:[RAMenuItemBasic itemWithDescription:@"[ Use Empty Path ]"
+                                                                   action:^{ [weakSelf.directoryDelegate directoryList:weakSelf itemWasSelected:nil]; }]];
+      if (self.forDirectory)
+         [self.sections[0] addObject:[RAMenuItemBasic itemWithDescription:@"[ Use This Folder ]"
+                                                                   action:^{ [weakSelf.directoryDelegate directoryList:weakSelf itemWasSelected:[RADirectoryItem directoryItemFromPath:path]]; }]];
+
       dir_list_sort(contents, true);
    
       for (int i = 0; i < contents->size; i ++)
@@ -234,7 +261,10 @@ static void file_action(enum file_action action, NSString* source, NSString* tar
       dir_list_free(contents);
    }
    else
-      apple_display_alert([NSString stringWithFormat:@"Browsed path is not a directory: %@", _path], 0);
+   {
+      [self gotoHomeDir];
+      return;
+   }
 
    [self.tableView scrollRectToVisible:CGRectMake(0, 0, 1, 1) animated:NO];
    [UIView transitionWithView:self.tableView duration:.25f options:UIViewAnimationOptionTransitionCrossDissolve
@@ -242,11 +272,6 @@ static void file_action(enum file_action action, NSString* source, NSString* tar
       ^{
          [self.tableView reloadData];
       } completion:nil];
-}
-
-- (void)gotoParent
-{
-   [self browseTo:[_path stringByDeletingLastPathComponent]];
 }
 
 - (void)viewWillAppear:(BOOL)animated

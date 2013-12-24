@@ -306,13 +306,23 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
 - (void)wasSelectedOnTableView:(UITableView*)tableView ofController:(UIViewController*)controller
 {
    NSString* path = [BOXSTRING(self.setting->value.string) stringByDeletingLastPathComponent];
-   RADirectoryList* list = [[RADirectoryList alloc] initWithPath:path extensions:self.setting->values forDirectory:false delegate:self];
+   RADirectoryList* list = [[RADirectoryList alloc] initWithPath:path extensions:self.setting->values delegate:self];
+   
+   list.allowBlank = (self.setting->flags & SD_FLAG_ALLOW_EMPTY);
+   list.forDirectory = (self.setting->flags & SD_FLAG_PATH_DIR);
+   
    [controller.navigationController pushViewController:list animated:YES];
 }
 
-- (bool)directoryList:(id)list itemWasSelected:(RADirectoryItem *)path
+- (bool)directoryList:(RADirectoryList*)list itemWasSelected:(RADirectoryItem *)path
 {
-   setting_data_set_with_string_representation(self.setting, path.path.UTF8String);
+   if (!list.allowBlank && !path)
+      return false;
+   
+   if (list.forDirectory && !path.isDirectory)
+      return false;
+   
+   setting_data_set_with_string_representation(self.setting, path ? path.path.UTF8String : "");
    [[list navigationController] popViewControllerAnimated:YES];
       
    [self.parentTable reloadData];
@@ -528,7 +538,7 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
    NSString* ragPath = [rootPath stringByAppendingPathComponent:@"RetroArchGames"];
    NSString* target = path_is_directory(ragPath.UTF8String) ? ragPath : rootPath;
 
-   [self.navigationController pushViewController:[[RADirectoryList alloc] initWithPath:target extensions:NULL forDirectory:false delegate:self] animated:YES];
+   [self.navigationController pushViewController:[[RADirectoryList alloc] initWithPath:target extensions:NULL delegate:self] animated:YES];
 }
 
 - (void)loadHistory
@@ -539,7 +549,7 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
 
 - (bool)directoryList:(id)list itemWasSelected:(RADirectoryItem*)path
 {
-   if (!path.isDirectory)
+   if (path && !path.isDirectory)
    {
       if (self.core)
          apple_run_core(self.core, path.path.UTF8String);

@@ -36,6 +36,7 @@
 
 - (id)initWithStyle:(UITableViewStyle)style;
 - (id)itemForIndexPath:(NSIndexPath*)indexPath;
+
 @end
 
 /*********************************************/
@@ -50,7 +51,10 @@
 @property (copy) void (^action)(id userdata);
 @property (copy) NSString* (^detail)(id userdata);
 
++ (RAMenuItemBasic*)itemWithDescription:(NSString*)description action:(void (^)())action;
++ (RAMenuItemBasic*)itemWithDescription:(NSString*)description action:(void (^)())action detail:(NSString* (^)())detail;
 + (RAMenuItemBasic*)itemWithDescription:(NSString*)description association:(id)userdata action:(void (^)())action detail:(NSString* (^)())detail;
+
 @end
 
 /*********************************************/
