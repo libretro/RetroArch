@@ -17,6 +17,8 @@
 #ifndef _LOGGER_H_
 #define _LOGGER_H_
 
+#include <stdarg.h>
+
 #define BUFSIZE	(64 * 1024)
 #define TCPDUMP_STACKSIZE	(16 * 1024)
 #define TCPDUMP_PRIO	(2048)
@@ -24,5 +26,6 @@
 void logger_init (void);
 void logger_shutdown (void);
 void logger_send (const char *__format,...);
+void logger_send_v(const char *__format, va_list args);
 
 #endif

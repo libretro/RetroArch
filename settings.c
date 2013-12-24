@@ -333,7 +333,7 @@ void config_set_defaults(void)
    g_settings.input.netplay_client_swap_input = netplay_client_swap_input;
    g_settings.input.turbo_period = turbo_period;
    g_settings.input.turbo_duty_cycle = turbo_duty_cycle;
-   g_settings.input.overlay_opacity = 1.0f;
+   g_settings.input.overlay_opacity = 0.7f;
    g_settings.input.overlay_scale = 1.0f;
    g_settings.input.debug_enable = input_debug_enable;
    g_settings.input.autodetect_enable = input_autodetect_enable;

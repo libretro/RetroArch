@@ -554,7 +554,7 @@ gfx_ctx_proc_t apple_gfx_ctx_get_proc_address(const char *symbol_name)
                                                             (__bridge CFStringRef)BOXSTRING(symbol_name));
 #else
 	return (gfx_ctx_proc_t)CFBundleGetFunctionPointerForName(CFBundleGetBundleWithIdentifier(GLFrameworkID),
-															 (CFStringRef)symbol_name);
+															 (CFStringRef)BOXSTRING(symbol_name));
 #endif
 }
 

@@ -640,7 +640,7 @@ int menu_set_settings(void *data, unsigned setting, unsigned action)
                   break;
 
                case RGUI_ACTION_START:
-                  g_settings.input.overlay_opacity = 1.0f;
+                  g_settings.input.overlay_opacity = 0.7f;
                   break;
 
                default:
@@ -723,6 +723,9 @@ int menu_set_settings(void *data, unsigned setting, unsigned action)
                g_settings.input.device[port]++;
 
             // DEVICE_LAST can be 0, avoid modulo.
+            if (g_settings.input.device[port] >= DEVICE_LAST)
+               g_settings.input.device[port] -= DEVICE_LAST;
+            // needs to be checked twice, in case we go right past the end of the list
             if (g_settings.input.device[port] >= DEVICE_LAST)
                g_settings.input.device[port] -= DEVICE_LAST;
 
@@ -856,7 +859,7 @@ int menu_set_settings(void *data, unsigned setting, unsigned action)
       case RGUI_SETTINGS_BIND_ANALOG_RIGHT_Y_PLUS:
       case RGUI_SETTINGS_BIND_ANALOG_RIGHT_Y_MINUS:
       case RGUI_SETTINGS_BIND_MENU_TOGGLE:
-         if (driver.input->set_keybinds)
+         if (driver.input->set_keybinds && !driver.input->get_joypad_driver)
          {
             unsigned keybind_action = KEYBINDS_ACTION_NONE;
 
@@ -1871,24 +1874,8 @@ void menu_set_settings_label(char *type_str, size_t type_str_size, unsigned *w, 
       case RGUI_SETTINGS_BIND_ANALOG_RIGHT_Y_PLUS:
       case RGUI_SETTINGS_BIND_ANALOG_RIGHT_Y_MINUS:
       case RGUI_SETTINGS_BIND_MENU_TOGGLE:
-         {
-            unsigned id = type - RGUI_SETTINGS_BIND_B;
-            struct platform_bind key_label;
-            strlcpy(key_label.desc, "Unknown", sizeof(key_label.desc));
-            key_label.joykey = g_settings.input.binds[rgui->current_pad][id].joykey;
-
-            if (driver.input->set_keybinds)
-            {
-               driver.input->set_keybinds(&key_label, 0, 0, 0, (1ULL << KEYBINDS_ACTION_GET_BIND_LABEL));
-               strlcpy(type_str, key_label.desc, type_str_size);
-            }
-            else
-            {
-               const struct retro_keybind *bind = &g_settings.input.binds[rgui->current_pad][type - RGUI_SETTINGS_BIND_BEGIN];
-               input_get_bind_string(type_str, bind, type_str_size);
-            }
-            break;
-         }
+         input_get_bind_string(type_str, &g_settings.input.binds[rgui->current_pad][type - RGUI_SETTINGS_BIND_BEGIN], type_str_size);
+         break;
       case RGUI_SETTINGS_AUDIO_VOLUME_LEVEL:
 #ifdef RARCH_CONSOLE
          strlcpy(type_str, (g_extern.console.sound.volume_level) ? "Loud" : "Normal", type_str_size);
