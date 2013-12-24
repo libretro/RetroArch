@@ -814,7 +814,9 @@ void fill_pathname_abbreviate_special(char *out_path, const char *in_path, size_
             rarch_assert(strlcpy(out_path, path_default_slash(), size) < size);
             out_path++;
             size--;
-         }            
+         }
+
+         break; // Don't allow more abbrevs to take place.
       }
    }
 #endif
