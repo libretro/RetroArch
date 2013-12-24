@@ -791,6 +791,8 @@ void fill_pathname_abbreviate_special(char *out_path, const char *in_path, size_
    fill_pathname_application_path(application_dir, sizeof(application_dir));
    path_basedir(application_dir);
 
+   // application_dir could be zero-string. Safeguard against this.
+
    // Keep application dir in front of home, moving app dir to a new location inside
    // home would break otherwise.
    const char *candidates[3] = { application_dir, home, NULL };
@@ -798,7 +800,7 @@ void fill_pathname_abbreviate_special(char *out_path, const char *in_path, size_
    
    for (i = 0; candidates[i]; i++)
    {
-      if (strstr(in_path, candidates[i]) == in_path)
+      if (*candidates[i] && strstr(in_path, candidates[i]) == in_path)
       {
          size_t src_size = strlcpy(out_path, notations[i], size);
          rarch_assert(src_size < size);
