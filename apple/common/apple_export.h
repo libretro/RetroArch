@@ -25,16 +25,10 @@ enum basic_event_t {
    SAVE_STATE = 3,
    QUIT = 4
 };
-extern void apple_event_basic_command(void* userdata);
-extern void apple_event_set_state_slot(void* userdata);
-extern void apple_event_show_rgui(void* userdata);
+extern void apple_event_basic_command(enum basic_event_t action);
 
 extern void apple_refresh_config(void);
-extern void apple_enter_stasis(void);
-extern void apple_exit_stasis(bool reload_config);
-extern void objc_clear_config_hack(void);
-extern void *rarch_main_spring(void* args);
-
-extern bool apple_is_running;
+extern int apple_rarch_load_content(int argc, char* argv[]);
+extern int apple_rarch_iterate_once();
 
 #endif

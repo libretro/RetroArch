@@ -13,7 +13,6 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <pthread.h>
 #include <string.h>
 
 #import "RetroArch_Apple.h"
@@ -231,12 +230,12 @@ static void handle_touch_event(NSArray* touches)
 
 - (void)applicationDidBecomeActive:(UIApplication *)application
 {
-   apple_exit_stasis(false);
+   apple_start_iteration();
 }
 
 - (void)applicationWillResignActive:(UIApplication *)application
 {
-   apple_enter_stasis();
+   apple_stop_iteration();
 }
 
 -(BOOL)application:(UIApplication *)application openURL:(NSURL *)url sourceApplication:(NSString *)sourceApplication annotation:(id)annotation

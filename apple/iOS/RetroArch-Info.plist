@@ -9,16 +9,13 @@
 	<key>CFBundleDocumentTypes</key>
 	<array>
 		<dict>
-			<key>CFBundleTypeIconFiles</key>
-			<array/>
 			<key>CFBundleTypeName</key>
-			<string>File</string>
+			<string>All Files</string>
 			<key>LSItemContentTypes</key>
 			<array>
-				<string>com.pkware.zip-archive</string>
+				<string>public.data</string>
+				<string>public.content</string>
 			</array>
-			<key>abc</key>
-			<string>xyz</string>
 		</dict>
 	</array>
 	<key>CFBundleExecutable</key>

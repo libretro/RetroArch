@@ -267,7 +267,8 @@ didOutputSampleBuffer:(CMSampleBufferRef)sampleBuffer
 {
     // TODO: Don't post if event queue is full
     CVPixelBufferRef pixelBuffer = CVPixelBufferRetain(CMSampleBufferGetImageBuffer(sampleBuffer));
-    apple_frontend_post_event(event_process_camera_frame, pixelBuffer);}
+    event_process_camera_frame(pixelBuffer);
+}
 
 - (void) onCameraInit
 {
@@ -375,46 +376,27 @@ didOutputSampleBuffer:(CMSampleBufferRef)sampleBuffer
 @end
 
 static RAScreen* get_chosen_screen()
-{
-#ifdef OSX
-   NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
-#else
-   @autoreleasepool {
-#endif
-      
+{      
    if (g_settings.video.monitor_index >= RAScreen.screens.count)
    {
       RARCH_WARN("video_monitor_index is greater than the number of connected monitors; using main screen instead.\n");
-#ifdef OSX
-      [pool drain];
-#endif
       return [RAScreen mainScreen];
    }
 	
    NSArray *screens = [RAScreen screens];
-   RAScreen *s = (RAScreen*)[screens objectAtIndex:g_settings.video.monitor_index];
-#ifdef OSX
-   [pool drain];
-#endif
-   return s;
-#ifdef IOS
-   }
-#endif
+   return (RAScreen*)[screens objectAtIndex:g_settings.video.monitor_index];
 }
 
 bool apple_gfx_ctx_init(void)
 {
-   dispatch_sync(dispatch_get_main_queue(),
-   ^{
-      // Make sure the view was created
-      [RAGameView get];      
-      
+   // Make sure the view was created
+   [RAGameView get];      
+   
 #ifdef IOS // Show pause button for a few seconds, so people know it's there
-      g_pause_indicator_view.alpha = 1.0f;
-      [NSObject cancelPreviousPerformRequestsWithTarget:g_instance];
-      [g_instance performSelector:@selector(hidePauseButton) withObject:g_instance afterDelay:3.0f];
+   g_pause_indicator_view.alpha = 1.0f;
+   [NSObject cancelPreviousPerformRequestsWithTarget:g_instance];
+   [g_instance performSelector:@selector(hidePauseButton) withObject:g_instance afterDelay:3.0f];
 #endif
-   });
 
    g_initialized = true;
 
@@ -427,14 +409,11 @@ void apple_gfx_ctx_destroy(void)
 
    [GLContextClass clearCurrentContext];
 
-   dispatch_sync(dispatch_get_main_queue(),
-   ^{
 #ifdef IOS
-      g_view.context = nil;
+   g_view.context = nil;
 #endif
-      [GLContextClass clearCurrentContext];
-      g_context = nil;
-   });
+   [GLContextClass clearCurrentContext];
+   g_context = nil;
 }
 
 bool apple_gfx_ctx_bind_api(enum gfx_ctx_api api, unsigned major, unsigned minor)
@@ -442,43 +421,35 @@ bool apple_gfx_ctx_bind_api(enum gfx_ctx_api api, unsigned major, unsigned minor
    if (api != GLAPIType)
       return false;
 
-
    [GLContextClass clearCurrentContext];
 
-   dispatch_sync(dispatch_get_main_queue(),
-   ^{
-      [GLContextClass clearCurrentContext];
-   
 #ifdef OSX
-      [g_context clearDrawable];
-      [g_context release], g_context = nil;
-      [g_format release], g_format = nil;
-   
-      NSOpenGLPixelFormatAttribute attributes [] = {
-         NSOpenGLPFADoubleBuffer,	// double buffered
-         NSOpenGLPFADepthSize,
-		  (NSOpenGLPixelFormatAttribute)16, // 16 bit depth buffer
+   [g_context clearDrawable];
+   [g_context release], g_context = nil;
+   [g_format release], g_format = nil;
+
+   NSOpenGLPixelFormatAttribute attributes [] = {
+      NSOpenGLPFADoubleBuffer,	// double buffered
+      NSOpenGLPFADepthSize,
+     (NSOpenGLPixelFormatAttribute)16, // 16 bit depth buffer
 #ifdef MAC_OS_X_VERSION_10_7
-        (major || minor) ? NSOpenGLPFAOpenGLProfile : 0,
-		  (major << 12) | (minor << 8),
+     (major || minor) ? NSOpenGLPFAOpenGLProfile : 0,
+     (major << 12) | (minor << 8),
 #endif
-         (NSOpenGLPixelFormatAttribute)nil
-      };
+      (NSOpenGLPixelFormatAttribute)nil
+   };
 
-      [g_format release];
-      [g_context release];
+   [g_format release];
+   [g_context release];
 
-      g_format = [[NSOpenGLPixelFormat alloc] initWithAttributes:attributes];
-      g_context = [[NSOpenGLContext alloc] initWithFormat:g_format shareContext:nil];
-      [g_context setView:g_view];
+   g_format = [[NSOpenGLPixelFormat alloc] initWithAttributes:attributes];
+   g_context = [[NSOpenGLContext alloc] initWithFormat:g_format shareContext:nil];
+   [g_context setView:g_view];
 #else
-      g_context = [[EAGLContext alloc] initWithAPI:kEAGLRenderingAPIOpenGLES2];
-      g_view.context = g_context;
+   g_context = [[EAGLContext alloc] initWithAPI:kEAGLRenderingAPIOpenGLES2];
+   g_view.context = g_context;
 #endif
 
-      [g_context makeCurrentContext];
-   });
-   
    [g_context makeCurrentContext];
    return true;
 }
@@ -498,26 +469,23 @@ void apple_gfx_ctx_swap_interval(unsigned interval)
 bool apple_gfx_ctx_set_video_mode(unsigned width, unsigned height, bool fullscreen)
 {
 #ifdef OSX
-   dispatch_sync(dispatch_get_main_queue(),
-   ^{
-      // TODO: Sceen mode support
-      
-      if (fullscreen && !g_has_went_fullscreen)
-      {
-         [g_view enterFullScreenMode:get_chosen_screen() withOptions:nil];
-         [NSCursor hide];
-      }
-      else if (!fullscreen && g_has_went_fullscreen)
-      {
-         [g_view exitFullScreenModeWithOptions:nil];
-         [[g_view window] makeFirstResponder:g_view];
-         [NSCursor unhide];
-      }
-      
-      g_has_went_fullscreen = fullscreen;
-      if (!g_has_went_fullscreen)
-         [[g_view window] setContentSize:NSMakeSize(width, height)];
-   });
+   // TODO: Sceen mode support
+   
+   if (fullscreen && !g_has_went_fullscreen)
+   {
+      [g_view enterFullScreenMode:get_chosen_screen() withOptions:nil];
+      [NSCursor hide];
+   }
+   else if (!fullscreen && g_has_went_fullscreen)
+   {
+      [g_view exitFullScreenModeWithOptions:nil];
+      [[g_view window] makeFirstResponder:g_view];
+      [NSCursor unhide];
+   }
+   
+   g_has_went_fullscreen = fullscreen;
+   if (!g_has_went_fullscreen)
+      [[g_view window] setContentSize:NSMakeSize(width, height)];
 #endif
 
    // TODO: Maybe iOS users should be apple to show/hide the status bar here?
@@ -558,12 +526,7 @@ void apple_gfx_ctx_update_window_title(void)
 #ifdef OSX
    if (got_text)
    {
-      // NOTE: This could go bad if buf is updated again before this completes.
-      //       If it poses a problem it should be changed to dispatch_sync.
-      dispatch_async(dispatch_get_main_queue(),
-      ^{
-		  [[g_view window] setTitle:[NSString stringWithCString:text encoding:NSUTF8StringEncoding]];
-      });
+		[[g_view window] setTitle:[NSString stringWithCString:text encoding:NSUTF8StringEncoding]];
    }
 #endif
    if (fps_draw)
@@ -579,11 +542,7 @@ void apple_gfx_ctx_swap_buffers()
 {
    if (--g_fast_forward_skips < 0)
    {
-      dispatch_sync(dispatch_get_main_queue(),
-      ^{
-         [g_view display];
-      });
-
+      [g_view display];
       g_fast_forward_skips = g_is_syncing ? 0 : 3;
    }
 }
@@ -602,10 +561,8 @@ gfx_ctx_proc_t apple_gfx_ctx_get_proc_address(const char *symbol_name)
 #ifdef IOS
 void apple_bind_game_view_fbo(void)
 {
-   dispatch_sync(dispatch_get_main_queue(), ^{
-      if (g_context)
-         [g_view bindDrawable];
-   });
+   if (g_context)
+      [g_view bindDrawable];
 }
 
 typedef struct ios_camera
@@ -700,17 +657,14 @@ static void *apple_location_init()
 	if (!applelocation)
 		return NULL;
 	
-   dispatch_async(dispatch_get_main_queue(),
-   ^{
-      // Create the location manager if this object does not
-      // already have one.
-      if (nil == locationManager)
-         locationManager = [[CLLocationManager alloc] init];
-                     
-      locationManager.delegate = [RAGameView get];
-      locationManager.desiredAccuracy = kCLLocationAccuracyBest;
-      locationManager.distanceFilter = kCLDistanceFilterNone;
-   });
+   // Create the location manager if this object does not
+   // already have one.
+   if (nil == locationManager)
+      locationManager = [[CLLocationManager alloc] init];
+                  
+   locationManager.delegate = [RAGameView get];
+   locationManager.desiredAccuracy = kCLLocationAccuracyBest;
+   locationManager.distanceFilter = kCLDistanceFilterNone;
 	
 	return applelocation;
 }
@@ -719,10 +673,7 @@ static void apple_location_set_interval(void *data, unsigned interval_update_ms,
 {
    (void)data;
 	
-   dispatch_async(dispatch_get_main_queue(),
-   ^{
-      locationManager.distanceFilter = interval_distance ? interval_distance : kCLDistanceFilterNone;
-   });
+   locationManager.distanceFilter = interval_distance ? interval_distance : kCLDistanceFilterNone;
 }
 
 static void apple_location_free(void *data)
@@ -740,11 +691,7 @@ static bool apple_location_start(void *data)
 {
 	(void)data;
 	
-   dispatch_async(dispatch_get_main_queue(),
-   ^{
-      [locationManager startUpdatingLocation];
-   });
-	
+   [locationManager startUpdatingLocation];
 	return true;
 }
 
@@ -752,10 +699,7 @@ static void apple_location_stop(void *data)
 {
 	(void)data;
 	
-   dispatch_async(dispatch_get_main_queue(),
-   ^{
-      [locationManager stopUpdatingLocation];
-   });
+   [locationManager stopUpdatingLocation];
 }
 
 static bool apple_location_get_position(void *data, double *lat, double *lon, double *horiz_accuracy,

@@ -15,7 +15,6 @@
 
 
 #include <unistd.h>
-#include <dispatch/dispatch.h>
 
 #include "input/input_common.h"
 #include "apple_input.h"
@@ -168,22 +167,20 @@ static void *apple_input_init(void)
 
 static void apple_input_poll(void *data)
 {
-   dispatch_sync(dispatch_get_main_queue(), ^{
-      memcpy(&g_polled_input_data, &g_current_input_data, sizeof(apple_input_data_t));
+   memcpy(&g_polled_input_data, &g_current_input_data, sizeof(apple_input_data_t));
 
-      for (int i = 0; i != g_polled_input_data.touch_count; i ++)
-      {
-         input_translate_coord_viewport(g_polled_input_data.touches[i].screen_x, g_polled_input_data.touches[i].screen_y,
-            &g_polled_input_data.touches[i].fixed_x, &g_polled_input_data.touches[i].fixed_y,
-            &g_polled_input_data.touches[i].full_x, &g_polled_input_data.touches[i].full_y);
-      }
+   for (int i = 0; i != g_polled_input_data.touch_count; i ++)
+   {
+      input_translate_coord_viewport(g_polled_input_data.touches[i].screen_x, g_polled_input_data.touches[i].screen_y,
+         &g_polled_input_data.touches[i].fixed_x, &g_polled_input_data.touches[i].fixed_y,
+         &g_polled_input_data.touches[i].full_x, &g_polled_input_data.touches[i].full_y);
+   }
 
-      input_joypad_poll(g_joydriver);
-      g_polled_input_data.pad_buttons[0] |= apple_input_get_icade_buttons();
+   input_joypad_poll(g_joydriver);
+   g_polled_input_data.pad_buttons[0] |= apple_input_get_icade_buttons();
 
-      g_current_input_data.mouse_delta[0] = 0;
-      g_current_input_data.mouse_delta[1] = 0;
-   });
+   g_current_input_data.mouse_delta[0] = 0;
+   g_current_input_data.mouse_delta[1] = 0;
 }
 
 static int16_t apple_input_state(void *data, const struct retro_keybind **binds, unsigned port, unsigned device, unsigned index, unsigned id)
