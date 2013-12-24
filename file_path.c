@@ -758,7 +758,7 @@ void fill_pathname_expand_special(char *out_path, const char *in_path, size_t si
          in_path++;
       }
    }
-   else if ((*in_path == ':') &&
+   else if ((in_path[0] == ':') &&
 #ifdef _WIN32
          ((in_path[1] == '/') || (in_path[1] == '\\')))
 #else
@@ -784,19 +784,19 @@ void fill_pathname_expand_special(char *out_path, const char *in_path, size_t si
 void fill_pathname_abbreviate_special(char *out_path, const char *in_path, size_t size)
 {
 #if !defined(RARCH_CONSOLE)
-   int i;
+   unsigned i;
 
-   const char* home = getenv("HOME");
+   const char *home = getenv("HOME");
    char application_dir[PATH_MAX];
    fill_pathname_application_path(application_dir, sizeof(application_dir));
    path_basedir(application_dir);
 
    // Keep application dir in front of home, moving app dir to a new location inside
    // home would break otherwise.
-   const char *candidates[3] = { application_dir, home, 0 };
-   const char *notations[3] = { ":", "~", 0 };
+   const char *candidates[3] = { application_dir, home, NULL };
+   const char *notations[3] = { ":", "~", NULL };
    
-   for (i = 0; candidates[i]; i ++)
+   for (i = 0; candidates[i]; i++)
    {
       if (strstr(in_path, candidates[i]) == in_path)
       {
@@ -810,8 +810,8 @@ void fill_pathname_abbreviate_special(char *out_path, const char *in_path, size_
          if (!path_char_is_slash(*in_path))
          {
             rarch_assert(strlcpy(out_path, path_default_slash(), size) < size);
-            out_path ++;
-            size --;
+            out_path++;
+            size--;
          }            
       }
    }
@@ -841,11 +841,9 @@ void fill_pathname_application_path(char *buf, size_t size)
       CFRelease(bundle_url);
       
       rarch_assert(strlcat(buf, "nobin", size) < size);
-      
       return;
    }
 #else
-
    *buf = '\0';
    pid_t pid = getpid(); 
    char link_path[PATH_MAX];
