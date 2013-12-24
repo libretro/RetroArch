@@ -693,11 +693,6 @@ void global_init_drivers(void)
    find_audio_driver();
    find_input_driver();
    init_video_input();
-
-   for (i = 0; i < MAX_PLAYERS; i++)
-      if (driver.input->set_keybinds)
-         driver.input->set_keybinds(driver.input_data, g_settings.input.device[i], i, 0,
-               (1ULL << KEYBINDS_ACTION_SET_DEFAULT_BINDS));
 }
 
 void global_uninit_drivers(void)
