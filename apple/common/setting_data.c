@@ -16,6 +16,16 @@
 #include "setting_data.h"
 #include "config.def.h"
 
+// HACK
+struct settings fake_settings;
+struct global fake_extern;
+
+void setting_data_load_current()
+{
+   memcpy(&fake_settings, &g_settings, sizeof(struct settings));
+   memcpy(&fake_extern, &g_extern, sizeof(struct global));
+}
+
 // Input
 static const char* get_input_config_prefix(const rarch_setting_t* setting)
 {
@@ -76,6 +86,9 @@ static const char* get_axis_name(const rarch_setting_t* setting)
 //
 void setting_data_reset(const rarch_setting_t* settings)
 {
+   memset(&fake_settings, 0, sizeof(fake_settings));
+   memset(&fake_extern, 0, sizeof(fake_extern));
+   
    for (const rarch_setting_t* i = settings; i->type != ST_NONE; i ++)
    {
       switch (i->type)
@@ -85,6 +98,20 @@ void setting_data_reset(const rarch_setting_t* settings)
          case ST_UINT:   *i->value.unsigned_integer = i->default_value.unsigned_integer; break;
          case ST_FLOAT:  *i->value.fraction         = i->default_value.fraction;         break;
          case ST_BIND:   *i->value.keybind          = *i->default_value.keybind;         break;
+         
+         case ST_STRING:
+         case ST_PATH:
+         {  
+            if (i->default_value.string)
+               // if (i->type == ST_STRING)
+                  strlcpy(i->value.string, i->default_value.string, i->size);
+               // else
+               // fill_pathname_expand_special(i->value.string, i->default_value.string, i->size);
+            else
+               *i->value.string = 0;
+            break;
+         }
+         
          default: break;
       }
    }
@@ -116,7 +143,7 @@ bool setting_data_load_config(const rarch_setting_t* settings, config_file_t* co
          case ST_INT:    config_get_int   (config, i->name, i->value.integer); break;
          case ST_UINT:   config_get_uint  (config, i->name, i->value.unsigned_integer); break;
          case ST_FLOAT:  config_get_float (config, i->name, i->value.fraction); break;
-         case ST_PATH:   config_get_array (config, i->name, i->value.string, i->size); break;
+         case ST_PATH:   config_get_path  (config, i->name, i->value.string, i->size); break;
          case ST_STRING: config_get_array (config, i->name, i->value.string, i->size); break;
          
          case ST_BIND:
@@ -164,6 +191,7 @@ bool setting_data_save_config(const rarch_setting_t* settings, config_file_t* co
          case ST_UINT:   config_set_uint64(config, i->name, *i->value.unsigned_integer); break;
          case ST_FLOAT:  config_set_float (config, i->name, *i->value.fraction); break;
          case ST_PATH:   config_set_string(config, i->name,  i->value.string); break;
+         // case ST_PATH:   config_set_path(config, i->name,  i->value.string); break;
          case ST_STRING: config_set_string(config, i->name,  i->value.string); break;
          
          case ST_BIND:
@@ -278,16 +306,6 @@ rarch_setting_t setting_data_bind_setting(const char* name, const char* descript
 }
 
 
-// HACK
-struct settings fake_settings;
-struct global fake_extern;
-
-void setting_data_load_current()
-{
-   memcpy(&fake_settings, &g_settings, sizeof(struct settings));
-   memcpy(&fake_extern, &g_extern, sizeof(struct global));
-}
-
 #ifdef IOS
 static const uint32_t features = SD_FEATURE_SHADERS;
 #elif defined(OSX)
@@ -349,20 +367,20 @@ const rarch_setting_t* setting_data_get_list()
    /*********/
    START_GROUP("Paths")
       START_SUB_GROUP("Paths")
-         CONFIG_PATH(g_settings.libretro, "libretro_path", "libretro Path", "")
-         CONFIG_PATH(g_settings.core_options_path, "core_options_path", "Core Options Path", DEFAULT_ME_YO)
-         CONFIG_PATH(g_settings.screenshot_directory, "screenshot_directory", "Screenshot Directory", DEFAULT_ME_YO)
-         CONFIG_PATH(g_settings.cheat_database, "cheat_database_path", "Cheat Database", DEFAULT_ME_YO)
-         CONFIG_PATH(g_settings.cheat_settings_path, "cheat_settings_path", "Cheat Settings", DEFAULT_ME_YO)
-         CONFIG_PATH(g_settings.game_history_path, "game_history_path", "Content History Path", DEFAULT_ME_YO)
+         CONFIG_PATH(g_settings.libretro, "libretro_path", "libretro Path", "") WITH_FLAGS(SD_FLAG_ALLOW_EMPTY)
+         CONFIG_PATH(g_settings.core_options_path, "core_options_path", "Core Options Path", DEFAULT_ME_YO) WITH_FLAGS(SD_FLAG_ALLOW_EMPTY)
+         CONFIG_PATH(g_settings.screenshot_directory, "screenshot_directory", "Screenshot Directory", DEFAULT_ME_YO) WITH_FLAGS(SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR)
+         CONFIG_PATH(g_settings.cheat_database, "cheat_database_path", "Cheat Database", DEFAULT_ME_YO) WITH_FLAGS(SD_FLAG_ALLOW_EMPTY)
+         CONFIG_PATH(g_settings.cheat_settings_path, "cheat_settings_path", "Cheat Settings", DEFAULT_ME_YO) WITH_FLAGS(SD_FLAG_ALLOW_EMPTY)
+         CONFIG_PATH(g_settings.game_history_path, "game_history_path", "Content History Path", DEFAULT_ME_YO) WITH_FLAGS(SD_FLAG_ALLOW_EMPTY)
          CONFIG_UINT(g_settings.game_history_size, "game_history_size", "Content History Size", game_history_size)
 
          #ifdef HAVE_RGUI
-            CONFIG_PATH(g_settings.rgui_browser_directory, "rgui_browser_directory", "Browser Directory", DEFAULT_ME_YO)
+            CONFIG_PATH(g_settings.rgui_browser_directory, "rgui_browser_directory", "Browser Directory", DEFAULT_ME_YO) WITH_FLAGS(SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR)
          #endif
 
          #ifdef HAVE_OVERLAY
-            CONFIG_PATH(g_extern.overlay_dir, "overlay_directory", "Overlay Directory", DEFAULT_ME_YO)
+            CONFIG_PATH(g_extern.overlay_dir, "overlay_directory", "Overlay Directory", DEFAULT_ME_YO) WITH_FLAGS(SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR)
          #endif
       END_SUB_GROUP()
    END_GROUP()
@@ -428,8 +446,8 @@ const rarch_setting_t* setting_data_get_list()
 
       WITH_FEATURE(SD_FEATURE_SHADERS) START_SUB_GROUP("Shader")
          CONFIG_BOOL(g_settings.video.shader_enable, "video_shader_enable", "Enable Shaders", shader_enable)
-         CONFIG_PATH(g_settings.video.shader_dir, "video_shader_dir", "Shader Directory", DEFAULT_ME_YO)
-         CONFIG_PATH(g_settings.video.shader_path, "video_shader", "Shader", DEFAULT_ME_YO)
+         CONFIG_PATH(g_settings.video.shader_dir, "video_shader_dir", "Shader Directory", DEFAULT_ME_YO) WITH_FLAGS(SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR)
+         CONFIG_PATH(g_settings.video.shader_path, "video_shader", "Shader", DEFAULT_ME_YO) WITH_FLAGS(SD_FLAG_ALLOW_EMPTY)
       END_SUB_GROUP()
 
       WITH_FEATURE(SD_FEATURE_VSYNC) START_SUB_GROUP("Sync")
@@ -447,12 +465,12 @@ const rarch_setting_t* setting_data_get_list()
          CONFIG_BOOL(g_settings.video.crop_overscan, "video_crop_overscan", "Crop Overscan", crop_overscan)
 
          #ifdef HAVE_DYLIB
-            CONFIG_PATH(g_settings.video.filter_path, "video_filter", "Software filter"),
+            CONFIG_PATH(g_settings.video.filter_path, "video_filter", "Software filter") WITH_FLAGS(SD_FLAG_ALLOW_EMPTY)
          #endif
       END_SUB_GROUP()
 
       START_SUB_GROUP("Messages")
-         CONFIG_PATH(g_settings.video.font_path, "video_font_path", "Font Path", DEFAULT_ME_YO)
+         CONFIG_PATH(g_settings.video.font_path, "video_font_path", "Font Path", DEFAULT_ME_YO) WITH_FLAGS(SD_FLAG_ALLOW_EMPTY)
          CONFIG_FLOAT(g_settings.video.font_size, "video_font_size", "Font Size", font_size)
          CONFIG_BOOL(g_settings.video.font_enable, "video_font_enable", "Font Enable", font_enable)
          CONFIG_BOOL(g_settings.video.font_scale, "video_font_scale", "Font Scale", font_scale)
@@ -481,7 +499,7 @@ const rarch_setting_t* setting_data_get_list()
       WITH_FEATURE(SD_FEATURE_AUDIO_DEVICE) START_SUB_GROUP("Misc")
          CONFIG_STRING(g_settings.audio.device, "audio_device", "Device", DEFAULT_ME_YO)
          CONFIG_UINT(g_settings.audio.out_rate, "audio_out_rate", "Ouput Rate", out_rate)
-         CONFIG_PATH(g_settings.audio.dsp_plugin, "audio_dsp_plugin", "DSP Plugin", DEFAULT_ME_YO)
+         CONFIG_PATH(g_settings.audio.dsp_plugin, "audio_dsp_plugin", "DSP Plugin", DEFAULT_ME_YO) WITH_FLAGS(SD_FLAG_ALLOW_EMPTY)
       END_SUB_GROUP()
    END_GROUP()
 
@@ -492,7 +510,7 @@ const rarch_setting_t* setting_data_get_list()
       START_SUB_GROUP("Input")
          /* Input: Autoconfig */
          CONFIG_BOOL(g_settings.input.autodetect_enable, "input_autodetect_enable", "Use joypad autodetection", input_autodetect_enable)
-         CONFIG_PATH(g_settings.input.autoconfig_dir, "joypad_autoconfig_dir", "Joypad Autoconfig Directory", DEFAULT_ME_YO)
+         CONFIG_PATH(g_settings.input.autoconfig_dir, "joypad_autoconfig_dir", "Joypad Autoconfig Directory", DEFAULT_ME_YO) WITH_FLAGS(SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR)
       END_SUB_GROUP()
 
       START_SUB_GROUP("Joypad Mapping")
@@ -516,7 +534,7 @@ const rarch_setting_t* setting_data_get_list()
 
       #ifdef HAVE_OVERLAY
          START_SUB_GROUP("Overlay")
-            CONFIG_PATH(g_settings.input.overlay, "input_overlay", "Input Overlay", DEFAULT_ME_YO) WITH_FLAGS(SD_FLAG_PATH_FILE) WITH_VALUES("cfg")
+            CONFIG_PATH(g_settings.input.overlay, "input_overlay", "Input Overlay", DEFAULT_ME_YO) WITH_FLAGS(SD_FLAG_ALLOW_EMPTY) WITH_VALUES("cfg")
             CONFIG_FLOAT(g_settings.input.overlay_opacity, "input_overlay_opacity", "Overlay Opacity", 1.0f) WITH_RANGE(0, 1)
             CONFIG_FLOAT(g_settings.input.overlay_scale, "input_overlay_scale", "Overlay Scale", 1.0f)
          END_SUB_GROUP()
