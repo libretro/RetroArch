@@ -2192,15 +2192,15 @@ void menu_parse_and_resolve(void *data, unsigned menu_type)
                if ((menu_type_is(menu_type) == RGUI_FILE_DIRECTORY) && !is_dir)
                   continue;
 
-#ifdef HAVE_LIBRETRO_MANAGEMENT
-               if (menu_type == RGUI_SETTINGS_CORE && (is_dir || strcasecmp(list->elems[i].data, SALAMANDER_FILE) == 0))
-                  continue;
-#endif
-
                // Need to preserve slash first time.
                const char *path = list->elems[i].data;
                if (*dir)
                   path = path_basename(path);
+
+#ifdef HAVE_LIBRETRO_MANAGEMENT
+               if (menu_type == RGUI_SETTINGS_CORE && (is_dir || strcasecmp(path, SALAMANDER_FILE) == 0))
+                  continue;
+#endif
 
                // Push menu_type further down in the chain.
                // Needed for shader manager currently.
