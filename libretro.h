@@ -613,6 +613,7 @@ struct retro_log_callback
 #define RETRO_SIMD_NEON     (1 << 5)
 #define RETRO_SIMD_SSE3     (1 << 6)
 #define RETRO_SIMD_SSSE3    (1 << 7)
+#define RETRO_SIMD_MMX      (1 << 8)
 
 typedef uint64_t retro_perf_tick_t;
 typedef int64_t retro_time_t;
