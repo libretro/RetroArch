@@ -407,7 +407,7 @@ void config_set_defaults(void)
    if (default_overlay_dir)
    {
       fill_pathname_expand_special(g_extern.overlay_dir, default_overlay_dir, sizeof(g_extern.overlay_dir));
-#if defined(__QNX__)
+#if defined(__QNX__) || defined(IOS)
       fill_pathname_join(g_settings.input.overlay, g_extern.overlay_dir, "snes-landscape/snes-landscape.cfg", sizeof(g_settings.input.overlay));
 #endif
    }

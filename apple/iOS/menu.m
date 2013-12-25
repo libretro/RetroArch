@@ -685,6 +685,22 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
       self.core = core;
       self.title = self.core ? apple_get_core_display_name(core) : @"Global Core Config";
    
+      // Add common options
+      const char* emula[] = { "Emulation", "rewind_enable", "fps_show", 0 };
+      const char* video[] = { "Video", "video_scale_integer", "video_smooth", 0 };
+      const char* audio[] = { "Audio", "audio_mute", "audio_rate_control", "audio_rate_control_delta", 0 };
+      const char* input[] = { "Input", "input_overlay", "input_overlay_opacity", 0 };
+      const char** groups[] = { emula, video, audio, input, 0 };
+      
+      for (int i = 0; groups[i]; i ++)
+      {
+         NSMutableArray* section = [NSMutableArray arrayWithObject:BOXSTRING(groups[i][0])];
+         [self.sections addObject:section];
+         
+         for (int j = 1; groups[i][j]; j ++)
+            [section addObject:[RAMenuItemGeneralSetting itemForSetting:setting_data_find_setting(setting_data, groups[i][j])]];
+      }
+
       NSMutableArray* settings = [NSMutableArray arrayWithObjects:@"", nil];
       [self.sections addObject:settings];
 

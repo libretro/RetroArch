@@ -318,6 +318,8 @@ static bool config_save_on_exit = false;
 static const char *default_overlay_dir = "app/native/overlays/";
 #elif defined(ANDROID)
 static const char *default_overlay_dir = "/data/data/com.retroarch/overlays/";
+#elif defined(IOS)
+static const char *default_overlay_dir = ":/overlays";
 #else
 static const char *default_overlay_dir = NULL;
 #endif
@@ -327,6 +329,8 @@ static const char *default_overlay_dir = NULL;
 static const char *default_shader_dir = "/app/native/shaders_glsl/";
 #elif defined(ANDROID)
 static const char *default_shader_dir = "/data/data/com.retroarch/shaders_glsl/";
+#elif defined(IOS)
+static const char *default_shader_dir = ":/shaders_glsl/";
 #else
 static const char *default_shader_dir = NULL;
 #endif
@@ -347,6 +351,8 @@ static bool default_block_config_read = false;
 static const char *default_libretro_info_path = "/data/data/com.retroarch/info/";
 #elif defined(__QNX__)
 static const char *default_libretro_info_path = "/app/native/info/";
+#elif defined(IOS)
+static const char *default_libretro_info_path = ":/modules/";
 #else
 static const char *default_libretro_info_path = NULL;
 #endif
@@ -355,6 +361,8 @@ static const char *default_libretro_info_path = NULL;
 static const char *default_libretro_path = "/data/data/com.retroarch/cores/";
 #elif defined(__QNX__)
 static const char *default_libretro_path = "/app/native/lib/";
+#elif defined(IOS)
+static const char *default_libretro_path = ":/modules/";
 #else
 static const char *default_libretro_path = NULL;
 #endif
