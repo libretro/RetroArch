@@ -378,13 +378,9 @@ const rarch_setting_t* setting_data_get_list()
          CONFIG_UINT(g_settings.game_history_size,          "game_history_size",          "Content History Size",       game_history_size)
 
          #ifdef HAVE_RGUI
-<<<<<<< HEAD
-            CONFIG_PATH(g_settings.content_directory, "rgui_browser_directory", "Content Directory", DEFAULT_ME_YO) WITH_FLAGS(SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR)
-=======
-         CONFIG_PATH(g_settings.rgui_browser_directory,     "rgui_browser_directory",     "Browser Directory",          DEFAULT_ME_YO)                WITH_FLAGS(SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR)
+         CONFIG_PATH(g_settings.content_directory,          "rgui_browser_directory",     "Content Directory",          DEFAULT_ME_YO)                WITH_FLAGS(SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR)
          CONFIG_PATH(g_settings.rgui_config_directory,      "rgui_config_directory",      "Config Directory",           DEFAULT_ME_YO)                WITH_FLAGS(SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR)
          CONFIG_BOOL(g_settings.rgui_show_start_screen,     "rgui_show_start_screen",     "Show Start Screen",          rgui_show_start_screen)
->>>>>>> (iOS) Add some common settings to the root of the core settings menu; Add some default paths; Add a default overlay
          #endif
 
          #ifdef HAVE_OVERLAY
