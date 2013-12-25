@@ -30,6 +30,7 @@
 #endif
 
 #define LIMA_TEXEL_FORMAT_BGR_565           0x0E
+#define LIMA_TEXEL_FORMAT_RGBA_5551         0x0F
 #define LIMA_TEXEL_FORMAT_RGBA_8888         0x16
 
 static struct limare_state *state;
@@ -506,7 +507,9 @@ static bool lima_gfx_frame(void *data, const void *frame, unsigned width, unsign
 #ifdef HAVE_SDL
    if (vid->scaler.in_fmt == SCALER_FMT_RGB565)
 #else
-   if (pitch == width * sizeof(uint16_t))
+   if (pitch == width * sizeof(uint64_t))
+	  texture = limare_texture_upload(state, vid->screen->pixels, width, height, LIMA_TEXEL_FORMAT_RGBA_5551, 0);
+   else if (pitch == width * sizeof(uint16_t))
 #endif
       texture = limare_texture_upload(state, vid->screen->pixels, width, height, LIMA_TEXEL_FORMAT_BGR_565, 0);
    else
