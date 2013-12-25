@@ -535,7 +535,7 @@ const rarch_setting_t* setting_data_get_list()
       #ifdef HAVE_OVERLAY
          START_SUB_GROUP("Overlay")
             CONFIG_PATH(g_settings.input.overlay, "input_overlay", "Input Overlay", DEFAULT_ME_YO) WITH_FLAGS(SD_FLAG_ALLOW_EMPTY) WITH_VALUES("cfg")
-            CONFIG_FLOAT(g_settings.input.overlay_opacity, "input_overlay_opacity", "Overlay Opacity", 1.0f) WITH_RANGE(0, 1)
+            CONFIG_FLOAT(g_settings.input.overlay_opacity, "input_overlay_opacity", "Overlay Opacity", 0.7f) WITH_RANGE(0, 1)
             CONFIG_FLOAT(g_settings.input.overlay_scale, "input_overlay_scale", "Overlay Scale", 1.0f)
          END_SUB_GROUP()
       #endif

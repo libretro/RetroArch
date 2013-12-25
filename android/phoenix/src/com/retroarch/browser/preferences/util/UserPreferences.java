@@ -262,7 +262,7 @@ public final class UserPreferences
 		{
 			String overlayPath = prefs.getString("input_overlay", dataDir + "/overlays/snes-landscape.cfg");
 			config.setString("input_overlay", overlayPath);
-			config.setDouble("input_overlay_opacity", prefs.getFloat("input_overlay_opacity", 1.0f));
+			config.setDouble("input_overlay_opacity", prefs.getFloat("input_overlay_opacity", 0.7f));
 		}
 		else
 		{
