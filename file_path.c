@@ -828,6 +828,7 @@ void fill_pathname_abbreviate_special(char *out_path, const char *in_path, size_
 void fill_pathname_application_path(char *buf, size_t size)
 {
    size_t i;
+   (void)i;
    if (!size)
       return;
 
