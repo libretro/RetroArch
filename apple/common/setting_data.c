@@ -376,7 +376,7 @@ const rarch_setting_t* setting_data_get_list()
          CONFIG_UINT(g_settings.game_history_size, "game_history_size", "Content History Size", game_history_size)
 
          #ifdef HAVE_RGUI
-            CONFIG_PATH(g_settings.rgui_browser_directory, "rgui_browser_directory", "Browser Directory", DEFAULT_ME_YO) WITH_FLAGS(SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR)
+            CONFIG_PATH(g_settings.content_directory, "rgui_browser_directory", "Content Directory", DEFAULT_ME_YO) WITH_FLAGS(SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR)
          #endif
 
          #ifdef HAVE_OVERLAY

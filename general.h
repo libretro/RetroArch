@@ -295,8 +295,8 @@ struct settings
    uint16_t network_cmd_port;
    bool stdin_cmd_enable;
 
+   char content_directory[PATH_MAX];
 #if defined(HAVE_MENU)
-   char rgui_browser_directory[PATH_MAX];
    char rgui_config_directory[PATH_MAX];
    bool rgui_show_start_screen;
 #endif

@@ -368,8 +368,8 @@ void config_set_defaults(void)
    *g_settings.system_directory = '\0';
    *g_settings.input.autoconfig_dir = '\0';
    *g_settings.input.overlay = '\0';
+   *g_settings.content_directory = '\0';
 #ifdef HAVE_MENU
-   *g_settings.rgui_browser_directory = '\0';
    *g_settings.rgui_config_directory = '\0';
 #endif
 
@@ -819,10 +819,10 @@ bool config_load_file(const char *path)
       }
    }
 
+   CONFIG_GET_PATH(content_directory, "rgui_browser_directory");
+   if (!strcmp(g_settings.content_directory, "default"))
+      *g_settings.content_directory = '\0';
 #ifdef HAVE_MENU
-   CONFIG_GET_PATH(rgui_browser_directory, "rgui_browser_directory");
-   if (!strcmp(g_settings.rgui_browser_directory, "default"))
-      *g_settings.rgui_browser_directory = '\0';
    CONFIG_GET_PATH(rgui_config_directory, "rgui_config_directory");
    if (!strcmp(g_settings.rgui_config_directory, "default"))
       *g_settings.rgui_config_directory = '\0';
@@ -1163,7 +1163,7 @@ bool config_save_file(const char *path)
    config_set_path(conf, "video_shader_dir", *g_settings.video.shader_dir ? g_settings.video.shader_dir : "default");
 
 #ifdef HAVE_MENU
-   config_set_path(conf, "rgui_browser_directory", *g_settings.rgui_browser_directory ? g_settings.rgui_browser_directory : "default");
+   config_set_path(conf, "rgui_browser_directory", *g_settings.content_directory ? g_settings.content_directory : "default");
    config_set_path(conf, "rgui_config_directory", *g_settings.rgui_config_directory ? g_settings.rgui_config_directory : "default");
    config_set_bool(conf, "rgui_show_start_screen", g_settings.rgui_show_start_screen);
 #endif
