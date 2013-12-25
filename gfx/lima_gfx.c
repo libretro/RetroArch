@@ -377,7 +377,7 @@ static void *lima_gfx_init(const video_info_t *video, const input_driver_t **inp
       lima_input  = input_udev.init();
       if (lima_input)
       {
-    	 *input      = lima_input ? &input_udev : NULL;
+         *input      = lima_input ? &input_udev : NULL;
          *input_data = lima_input;
       }
 #else
@@ -472,6 +472,14 @@ static bool lima_gfx_frame(void *data, const void *frame, unsigned width, unsign
 #else
    vid->screen->pixels = (void*)frame;
    vid->screen->pitch = pitch;
+   uint8_t *dst = (uint8_t*)frame;
+   if (pitch == width * sizeof(uint32_t))
+      for (int i = 0;i < (width * height * sizeof(uint32_t)); i+=4)
+      {
+          uint8_t temp = dst[i];
+          dst[i] = dst[i+2];
+          dst[i+2] = temp;
+      }
 #endif
 
    if (msg)
