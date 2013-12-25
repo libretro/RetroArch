@@ -373,6 +373,19 @@ didOutputSampleBuffer:(CMSampleBufferRef)sampleBuffer
     RARCH_LOG("didUpdateLocations - latitude %f, longitude %f\n", (float)currentLatitude, (float)currentLongitude);
 }
 
+- (void)onLocationInit
+{
+    // Create the location manager if this object does not
+    // already have one.
+    
+    if (locationManager == nil)
+        locationManager = [[CLLocationManager alloc] init];
+    locationManager.delegate = self;
+    locationManager.desiredAccuracy = kCLLocationAccuracyBest;
+    locationManager.distanceFilter = kCLDistanceFilterNone;
+    [locationManager startUpdatingLocation];
+}
+
 @end
 
 static RAScreen* get_chosen_screen()
@@ -656,15 +669,8 @@ static void *apple_location_init()
 	applelocation_t *applelocation = (applelocation_t*)calloc(1, sizeof(applelocation_t));
 	if (!applelocation)
 		return NULL;
-	
-   // Create the location manager if this object does not
-   // already have one.
-   if (nil == locationManager)
-      locationManager = [[CLLocationManager alloc] init];
-                  
-   locationManager.delegate = [RAGameView get];
-   locationManager.desiredAccuracy = kCLLocationAccuracyBest;
-   locationManager.distanceFilter = kCLDistanceFilterNone;
+    
+   [[RAGameView get] onLocationInit];
 	
 	return applelocation;
 }
