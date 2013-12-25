@@ -13,7 +13,6 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <pthread.h>
 #include <string.h>
 
 #include <objc/runtime.h>
@@ -148,7 +147,7 @@ static void* const associated_core_key = (void*)&associated_core_key;
       apple_display_alert(@"No libretro cores were found.\nSelect \"Go->Cores Directory\" from the menu and place libretro dylib files there.", @"RetroArch");
    
    // Run RGUI if needed
-   if (!_wantReload || apple_argv)
+   if (!_wantReload)//TODO || apple_argv)
       apple_run_core(nil, 0);
    else
       [self chooseCore];
@@ -169,7 +168,7 @@ static void* const associated_core_key = (void*)&associated_core_key;
    _isTerminating = true;
 
    if (apple_is_running)
-      apple_frontend_post_event(apple_event_basic_command, (void*)QUIT);
+      apple_event_basic_command(QUIT);
 
    return apple_is_running ? NSTerminateCancel : NSTerminateNow;
 }
@@ -212,7 +211,6 @@ static void* const associated_core_key = (void*)&associated_core_key;
 }
 
 // This utility function will queue the self.core and self.file instance values for running.
-// If the emulator thread is already running it will tell it to quit.
 - (void)runCore
 {
    _wantReload = apple_is_running;
@@ -220,7 +218,7 @@ static void* const associated_core_key = (void*)&associated_core_key;
    if (!apple_is_running)
       apple_run_core(self.core, [self.file UTF8String]);
    else
-      apple_frontend_post_event(apple_event_basic_command, (void*)QUIT);
+      apple_event_basic_command(QUIT);
 }
 
 - (void)chooseCore
@@ -249,10 +247,14 @@ static void* const associated_core_key = (void*)&associated_core_key;
 {
    if (file)
       [[NSDocumentController sharedDocumentController] noteNewRecentDocumentURL:[NSURL fileURLWithPath:BOXSTRING(file)]];
+
+   apple_start_iteration();
 }
 
 - (void)unloadingCore:(const NSString*)core
 {
+   apple_stop_iteration();
+
    if (_isTerminating)
       [[NSApplication sharedApplication] terminate:nil];
 
@@ -280,7 +282,7 @@ static void* const associated_core_key = (void*)&associated_core_key;
 - (IBAction)basicEvent:(id)sender
 {
    if (apple_is_running)
-      apple_frontend_post_event(&apple_event_basic_command, (void*)[sender tag]);
+      apple_event_basic_command([sender tag]);
 }
 
 - (void)alertDidEnd:(NSAlert *)alert returnCode:(NSInteger)returnCode contextInfo:(void *)contextInfo
@@ -292,6 +294,7 @@ static void* const associated_core_key = (void*)&associated_core_key;
 
 int main(int argc, char *argv[])
 {
+/* TODO
    uint32_t current_argc = 0;
 
    for (int i = 0; i != argc; i ++)
@@ -308,6 +311,7 @@ int main(int argc, char *argv[])
          apple_argv[current_argc ++] = argv[i];
       }
    }
+*/
 
    return NSApplicationMain(argc, (const char **) argv);
 }

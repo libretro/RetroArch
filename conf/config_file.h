@@ -98,6 +98,7 @@ void config_set_hex(config_file_t *conf, const char *entry, unsigned val);
 void config_set_uint64(config_file_t *conf, const char *entry, uint64_t val);
 void config_set_char(config_file_t *conf, const char *entry, char val);
 void config_set_string(config_file_t *conf, const char *entry, const char *val);
+void config_set_path(config_file_t *conf, const char *entry, const char *val);
 void config_set_bool(config_file_t *conf, const char *entry, bool val);
 
 // Write the current config to a file.

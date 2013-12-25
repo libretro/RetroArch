@@ -692,15 +692,9 @@ retro_proc_address_t driver_get_proc_address(const char *sym)
 
 void global_init_drivers(void)
 {
-   unsigned i;
    find_audio_driver();
    find_input_driver();
    init_video_input();
-
-   for (i = 0; i < MAX_PLAYERS; i++)
-      if (driver.input->set_keybinds)
-         driver.input->set_keybinds(driver.input_data, g_settings.input.device[i], i, 0,
-               (1ULL << KEYBINDS_ACTION_SET_DEFAULT_BINDS));
 }
 
 void global_uninit_drivers(void)
@@ -730,6 +724,8 @@ void global_uninit_drivers(void)
 #ifdef HAVE_LOCATION
    if (driver.location && driver.location_data)
    {
+      if (g_extern.system.location_callback.deinitialized)
+         g_extern.system.location_callback.deinitialized();
       driver.location->free(driver.location_data);
       driver.location_data = NULL;
    }

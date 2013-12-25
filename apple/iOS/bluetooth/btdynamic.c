@@ -71,7 +71,7 @@ bool btstack_try_load()
    if (btstack_tested)
       return btstack_loaded;
 
-   ios_add_log_message("BTstack: Attempting to load");
+   RARCH_LOG("BTstack: Attempting to load\n");
    
    btstack_tested = true;
    btstack_loaded = false;
@@ -80,8 +80,8 @@ bool btstack_try_load()
 
    if (!btstack)
    {
-      ios_add_log_message("BTstack: /usr/lib/libBTstack.dylib not loadable");
-      ios_add_log_message("BTstack: Not loaded");
+      RARCH_LOG("BTstack: /usr/lib/libBTstack.dylib not loadable\n");
+      RARCH_LOG("BTstack: Not loaded\n");
       return false;
    }
 
@@ -91,8 +91,8 @@ bool btstack_try_load()
 
       if (!*grabbers[i].target)
       {
-         ios_add_log_message("BTstack: Symbol %s not found in /usr/lib/libBTstack.dylib", grabbers[i].name);
-         ios_add_log_message("BTstack: Not loaded");
+         RARCH_LOG("BTstack: Symbol %s not found in /usr/lib/libBTstack.dylib\n", grabbers[i].name);
+         RARCH_LOG("BTstack: Not loaded\n");
       
          dlclose(btstack);
          return false;
@@ -102,7 +102,7 @@ bool btstack_try_load()
    run_loop_init_ptr(RUN_LOOP_COCOA);
    bt_register_packet_handler_ptr(btpad_packet_handler);
 
-   ios_add_log_message("BTstack: Loaded");
+   RARCH_LOG("BTstack: Loaded\n");
    btstack_loaded = true;
 
    return true;
@@ -115,7 +115,7 @@ void btstack_set_poweron(bool on)
 
    if (!btstack_open && bt_open_ptr())
    {
-      ios_add_log_message("BTstack: bt_open failed");
+      RARCH_LOG("BTstack: bt_open failed\n");
       btstack_loaded = false;
       return;
    }
@@ -124,7 +124,7 @@ void btstack_set_poweron(bool on)
    if (on != btstack_poweron)
    {
       btstack_poweron = on;
-      ios_add_log_message("BTstack: Turning %s", on ? "on" : "off");
+      RARCH_LOG("BTstack: Turning %s\n", on ? "on" : "off");
       bt_send_cmd_ptr(btstack_set_power_mode_ptr, on ? HCI_POWER_ON : HCI_POWER_OFF);
    }  
 }

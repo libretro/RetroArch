@@ -387,7 +387,7 @@ void menu_init(void)
       rarch_fail(1, "menu_init()");
    }
 
-   strlcpy(rgui->base_path, g_settings.rgui_browser_directory, sizeof(rgui->base_path));
+   strlcpy(rgui->base_path, g_settings.content_directory, sizeof(rgui->base_path));
    rgui->menu_stack = (file_list_t*)calloc(1, sizeof(file_list_t));
    rgui->selection_buf = (file_list_t*)calloc(1, sizeof(file_list_t));
    file_list_push(rgui->menu_stack, "", RGUI_SETTINGS, 0);
@@ -1222,7 +1222,7 @@ static int menu_iterate_func(void *data, unsigned action)
             }
             else if (menu_type == RGUI_BROWSER_DIR_PATH)
             {
-               strlcpy(g_settings.rgui_browser_directory, dir, sizeof(g_settings.rgui_browser_directory));
+               strlcpy(g_settings.content_directory, dir, sizeof(g_settings.content_directory));
                strlcpy(rgui->base_path, dir, sizeof(rgui->base_path));
                menu_flush_stack_type(rgui, RGUI_SETTINGS_PATH_OPTIONS);
             }
@@ -1936,7 +1936,7 @@ void menu_populate_entries(void *data, unsigned menu_type)
          break;
       case RGUI_SETTINGS_PATH_OPTIONS:
          file_list_clear(rgui->selection_buf);
-         file_list_push(rgui->selection_buf, "Browser Directory", RGUI_BROWSER_DIR_PATH, 0);
+         file_list_push(rgui->selection_buf, "Content Directory", RGUI_BROWSER_DIR_PATH, 0);
 #ifdef HAVE_DYNAMIC
          file_list_push(rgui->selection_buf, "Config Directory", RGUI_CONFIG_DIR_PATH, 0);
          file_list_push(rgui->selection_buf, "Core Directory", RGUI_LIBRETRO_DIR_PATH, 0);
@@ -1973,7 +1973,7 @@ void menu_populate_entries(void *data, unsigned menu_type)
          if (rgui->current_pad == 0)
             file_list_push(rgui->selection_buf, "RGUI Menu Toggle", RGUI_SETTINGS_BIND_MENU_TOGGLE, 0);
 
-         last = (driver.input && driver.input->set_keybinds) ? RGUI_SETTINGS_BIND_R3 : RGUI_SETTINGS_BIND_LAST;
+         last = (driver.input && driver.input->set_keybinds && !driver.input->get_joypad_driver) ? RGUI_SETTINGS_BIND_R3 : RGUI_SETTINGS_BIND_LAST;
          for (i = RGUI_SETTINGS_BIND_BEGIN; i <= last; i++)
             file_list_push(rgui->selection_buf, input_config_bind_map[i - RGUI_SETTINGS_BIND_BEGIN].desc, i, 0);
          break;
@@ -2192,15 +2192,15 @@ void menu_parse_and_resolve(void *data, unsigned menu_type)
                if ((menu_type_is(menu_type) == RGUI_FILE_DIRECTORY) && !is_dir)
                   continue;
 
-#ifdef HAVE_LIBRETRO_MANAGEMENT
-               if (menu_type == RGUI_SETTINGS_CORE && (is_dir || strcasecmp(list->elems[i].data, SALAMANDER_FILE) == 0))
-                  continue;
-#endif
-
                // Need to preserve slash first time.
                const char *path = list->elems[i].data;
                if (*dir)
                   path = path_basename(path);
+
+#ifdef HAVE_LIBRETRO_MANAGEMENT
+               if (menu_type == RGUI_SETTINGS_CORE && (is_dir || strcasecmp(path, SALAMANDER_FILE) == 0))
+                  continue;
+#endif
 
                // Push menu_type further down in the chain.
                // Needed for shader manager currently.

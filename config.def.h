@@ -318,6 +318,8 @@ static bool config_save_on_exit = false;
 static const char *default_overlay_dir = "app/native/overlays/";
 #elif defined(ANDROID)
 static const char *default_overlay_dir = "/data/data/com.retroarch/overlays/";
+#elif defined(IOS)
+static const char *default_overlay_dir = ":/overlays";
 #else
 static const char *default_overlay_dir = NULL;
 #endif
@@ -327,6 +329,8 @@ static const char *default_overlay_dir = NULL;
 static const char *default_shader_dir = "/app/native/shaders_glsl/";
 #elif defined(ANDROID)
 static const char *default_shader_dir = "/data/data/com.retroarch/shaders_glsl/";
+#elif defined(IOS)
+static const char *default_shader_dir = ":/shaders_glsl/";
 #else
 static const char *default_shader_dir = NULL;
 #endif
@@ -347,6 +351,8 @@ static bool default_block_config_read = false;
 static const char *default_libretro_info_path = "/data/data/com.retroarch/info/";
 #elif defined(__QNX__)
 static const char *default_libretro_info_path = "/app/native/info/";
+#elif defined(IOS)
+static const char *default_libretro_info_path = ":/modules/";
 #else
 static const char *default_libretro_info_path = NULL;
 #endif
@@ -355,6 +361,8 @@ static const char *default_libretro_info_path = NULL;
 static const char *default_libretro_path = "/data/data/com.retroarch/cores/";
 #elif defined(__QNX__)
 static const char *default_libretro_path = "/app/native/lib/";
+#elif defined(IOS)
+static const char *default_libretro_path = ":/modules/";
 #else
 static const char *default_libretro_path = NULL;
 #endif
@@ -689,18 +697,18 @@ static const struct retro_keybind retro_keybinds_1[] = {
 
 #ifdef HW_RVL
 static const struct retro_keybind retro_keybinds_menu[] = {
-   { true, RETRO_DEVICE_ID_JOYPAD_B, NULL, 0, GX_GC_B         | GX_CLASSIC_B     | GX_WIIMOTE_B     | GX_WIIMOTE_1, 0 },
-   { true, RETRO_DEVICE_ID_JOYPAD_Y, NULL, 0, GX_GC_Y | GX_CLASSIC_Y, 0 },
-   { true, RETRO_DEVICE_ID_JOYPAD_SELECT, NULL, 0, GX_GC_Z_TRIGGER | GX_CLASSIC_MINUS | GX_WIIMOTE_MINUS, 0 },
-   { true, RETRO_DEVICE_ID_JOYPAD_START, NULL, 0, GX_GC_START     | GX_CLASSIC_PLUS  | GX_WIIMOTE_PLUS, 0 },
-   { true, RETRO_DEVICE_ID_JOYPAD_UP, NULL, 0, GX_GC_UP        | GX_CLASSIC_UP    | GX_WIIMOTE_UP    | GX_NUNCHUK_UP, 0 },
-   { true, RETRO_DEVICE_ID_JOYPAD_DOWN, NULL, 0, GX_GC_DOWN      | GX_CLASSIC_DOWN  | GX_WIIMOTE_DOWN  | GX_NUNCHUK_DOWN, 0 },
-   { true, RETRO_DEVICE_ID_JOYPAD_LEFT, NULL, 0, GX_GC_LEFT      | GX_CLASSIC_LEFT  | GX_WIIMOTE_LEFT  | GX_NUNCHUK_LEFT, 0 },
-   { true, RETRO_DEVICE_ID_JOYPAD_RIGHT, NULL, 0, GX_GC_RIGHT     | GX_CLASSIC_RIGHT | GX_WIIMOTE_RIGHT | GX_NUNCHUK_RIGHT, 0 },
-   { true, RETRO_DEVICE_ID_JOYPAD_A, NULL, 0, GX_GC_A         | GX_CLASSIC_A     | GX_WIIMOTE_A     | GX_WIIMOTE_2, 0 },
-   { true, RETRO_DEVICE_ID_JOYPAD_X, NULL, 0, GX_GC_X | GX_CLASSIC_X, 0 },
-   { true, RETRO_DEVICE_ID_JOYPAD_L, NULL, 0, GX_GC_L_TRIGGER | GX_CLASSIC_L_TRIGGER, 0 },
-   { true, RETRO_DEVICE_ID_JOYPAD_R, NULL, 0, GX_GC_R_TRIGGER | GX_CLASSIC_R_TRIGGER, 0 },
+   { true, RETRO_DEVICE_ID_JOYPAD_B, NULL, 0, GX_MENU_B, 0 },
+   { true, RETRO_DEVICE_ID_JOYPAD_Y, NULL, 0, GX_MENU_Y, 0 },
+   { true, RETRO_DEVICE_ID_JOYPAD_SELECT, NULL, 0, GX_MENU_SELECT, 0 },
+   { true, RETRO_DEVICE_ID_JOYPAD_START, NULL, 0, GX_MENU_START, 0 },
+   { true, RETRO_DEVICE_ID_JOYPAD_UP, NULL, 0, GX_MENU_UP, 0 },
+   { true, RETRO_DEVICE_ID_JOYPAD_DOWN, NULL, 0, GX_MENU_DOWN, 0 },
+   { true, RETRO_DEVICE_ID_JOYPAD_LEFT, NULL, 0, GX_MENU_LEFT, 0 },
+   { true, RETRO_DEVICE_ID_JOYPAD_RIGHT, NULL, 0, GX_MENU_RIGHT, 0 },
+   { true, RETRO_DEVICE_ID_JOYPAD_A, NULL, 0, GX_MENU_A, 0 },
+   { true, RETRO_DEVICE_ID_JOYPAD_X, NULL, 0, GX_MENU_X, 0 },
+   { true, RETRO_DEVICE_ID_JOYPAD_L, NULL, 0, GX_MENU_L, 0 },
+   { true, RETRO_DEVICE_ID_JOYPAD_R, NULL, 0, GX_MENU_R, 0 },
    { true, RETRO_DEVICE_ID_JOYPAD_L2, NULL, 0, GX_CLASSIC_ZL_TRIGGER, 0 },
    { true, RETRO_DEVICE_ID_JOYPAD_R2, NULL, 0, GX_CLASSIC_ZR_TRIGGER, 0 },
    { true, RETRO_DEVICE_ID_JOYPAD_L3,     RETRO_LBL_JOYPAD_L3,             RETROK_UNKNOWN, RETRO_DEF_JOYPAD_L3,     0, AXIS_NONE },
@@ -745,7 +753,7 @@ static const struct retro_keybind retro_keybinds_menu[] = {
    { true, RARCH_DISK_EJECT_TOGGLE,        RETRO_LBL_DISK_EJECT_TOGGLE,    RETROK_UNKNOWN, NO_BTN, 0, AXIS_NONE },
    { true, RARCH_DISK_NEXT,                RETRO_LBL_DISK_NEXT,            RETROK_UNKNOWN, NO_BTN, 0, AXIS_NONE },
    { true, RARCH_GRAB_MOUSE_TOGGLE,        RETRO_LBL_GRAB_MOUSE_TOGGLE,    RETROK_F11,     NO_BTN, 0, AXIS_NONE },
-   { true, RARCH_MENU_TOGGLE, NULL, 0, GX_WIIMOTE_HOME | GX_CLASSIC_HOME, 0 },
+   { true, RARCH_MENU_TOGGLE, NULL, 0, GX_MENU_HOME, 0 },
 };
 #endif
 

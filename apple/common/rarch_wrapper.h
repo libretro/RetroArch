@@ -19,9 +19,6 @@
 
 #include "gfx/gfx_context.h"
 
-// These functions should only be called as arguments to dispatch_sync
-void apple_rarch_exited (void* result);
-
 // These functions must only be called in gfx/context/apple_gl_context.c
 bool apple_gfx_ctx_init(void);
 void apple_gfx_ctx_destroy(void);
@@ -37,7 +34,5 @@ gfx_ctx_proc_t apple_gfx_ctx_get_proc_address(const char *symbol_name);
 #ifdef IOS
 void apple_bind_game_view_fbo(void);
 #endif
-
-#define ios_add_log_message(...) printf(__VA_ARGS__)
 
 #endif

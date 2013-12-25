@@ -1,8 +1,10 @@
 package com.retroarch.browser.retroactivity;
 
 import com.google.android.gms.common.ConnectionResult;
-import com.google.android.gms.common.GooglePlayServicesClient;
+import com.google.android.gms.common.GooglePlayServicesClient.ConnectionCallbacks;
+import com.google.android.gms.common.GooglePlayServicesClient.OnConnectionFailedListener;
 import com.google.android.gms.location.LocationClient;
+import com.google.android.gms.location.LocationListener;
 import com.google.android.gms.location.LocationRequest;
 import com.retroarch.browser.preferences.util.UserPreferences;
 
@@ -10,7 +12,6 @@ import android.app.NativeActivity;
 import android.content.IntentSender;
 import android.content.SharedPreferences;
 import android.location.Location;
-import android.location.LocationListener;
 import android.os.Bundle;
 import android.util.Log;
 import android.widget.Toast;
@@ -21,9 +22,7 @@ import android.widget.Toast;
  * activities.
  */
 public class RetroActivityLocation extends NativeActivity
-implements GooglePlayServicesClient.ConnectionCallbacks,
-GooglePlayServicesClient.OnConnectionFailedListener,
-LocationListener, com.google.android.gms.location.LocationListener
+implements ConnectionCallbacks, OnConnectionFailedListener, LocationListener
 {
 	/* LOCATION VARIABLES */
 	private static int CONNECTION_FAILURE_RESOLUTION_REQUEST = 0;
@@ -35,11 +34,8 @@ LocationListener, com.google.android.gms.location.LocationListener
 	boolean mUpdatesRequested = false;
 	boolean locationChanged = false;
 	boolean location_service_running = false;
-	double current_latitude  = 0.0;
-	double current_longitude = 0.0;
-	double current_accuracy  = 0.0;
 
-	/*
+	/**
 	 * Called by Location Services when the request to connect the
 	 * client finishes successfully. At this point, you can
 	 * request the current location or start periodic updates
@@ -50,11 +46,21 @@ LocationListener, com.google.android.gms.location.LocationListener
 		// Display the connection status
 		Toast.makeText(this, "Connected", Toast.LENGTH_SHORT).show();
 		location_service_running = true;
+
 		// If already requested, start periodic updates
-		mLocationClient.requestLocationUpdates(mLocationRequest, this);
+		if (mUpdatesRequested)
+		{
+			mLocationClient.requestLocationUpdates(mLocationRequest, this, null);
+		}
+		else
+		{
+			// Get last known location
+			mCurrentLocation = mLocationClient.getLastLocation();
+			locationChanged = true;
+		}
 	}
 
-	/*
+	/**
 	 * Called by Location Services if the connection to the
 	 * location client drops because of an error.
 	 */
@@ -62,9 +68,8 @@ LocationListener, com.google.android.gms.location.LocationListener
 	public void onDisconnected()
 	{
 		// Display the connection status
-		Toast.makeText(this, "Disconnected. Please re-connect.",
-				Toast.LENGTH_SHORT).show();
-		
+		Toast.makeText(this, "Disconnected. Please re-connect.", Toast.LENGTH_SHORT).show();
+
 		// If the client is connected
 		if (mLocationClient.isConnected())
 		{
@@ -73,13 +78,13 @@ LocationListener, com.google.android.gms.location.LocationListener
 			 * The current Activity is the listener, so
 			 * the argument is "this".
 			 */
-			mLocationClient.removeLocationUpdates((com.google.android.gms.location.LocationListener) this);
+			mLocationClient.removeLocationUpdates(this);
 		}
-		
+
 		location_service_running = false;
 	}
 
-	/*
+	/**
 	 * Called by Location Services if the attempt to
 	 * Location Services fails.
 	 */
@@ -97,17 +102,11 @@ LocationListener, com.google.android.gms.location.LocationListener
 			try
 			{
 				// Start an Activity that tries to resolve the error
-				connectionResult.startResolutionForResult(
-						this,
-						CONNECTION_FAILURE_RESOLUTION_REQUEST);
-				/*
-				 * Thrown if Google Play services cancelled the original
-				 * PendingIntent
-				 */
+				connectionResult.startResolutionForResult(this, CONNECTION_FAILURE_RESOLUTION_REQUEST);
 			}
 			catch (IntentSender.SendIntentException e)
 			{
-				// Log the error
+				// Thrown if Google Play services cancelled the original PendingIntent
 				e.printStackTrace();
 			}
 		}
@@ -117,26 +116,27 @@ LocationListener, com.google.android.gms.location.LocationListener
 			 * If no resolution is available, display a dialog to the
 			 * user with the error.
 			 */
-			//showErrorDialog(connectionResult.getErrorCode());
+			Log.e("Connection failed", "error code: " + connectionResult.getErrorCode());
 		}
 	}
 
-   /**
-    * Sets the update interval at which location-based updates 
-    * should occur
-    */
-   public void onLocationSetInterval(int update_interval_in_ms, int distance_interval)
-   {
-      // Use high accuracy
-      mLocationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
-      if (update_interval_in_ms == 0)
-         mLocationRequest.setInterval(1000 * 5);
-      else
-         mLocationRequest.setInterval(update_interval_in_ms);
+	/**
+	 * Sets the update interval at which location-based updates 
+	 * should occur
+	 */
+	public void onLocationSetInterval(int update_interval_in_ms, int distance_interval)
+	{
+		// Use high accuracy
+		mLocationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
 
-      // Set the fastest update interval to 1 second
-      mLocationRequest.setFastestInterval(1000 * 1);
-   }
+		if (update_interval_in_ms == 0)
+			mLocationRequest.setInterval(5 * 1000); // 5 seconds
+		else
+			mLocationRequest.setInterval(update_interval_in_ms);
+
+		// Set the fastest update interval to 1 second
+		mLocationRequest.setFastestInterval(1000);
+	}
 
 	/**
 	 * Initializing methods for location based functionality.
@@ -149,14 +149,15 @@ LocationListener, com.google.android.gms.location.LocationListener
 		 */
 		if (mLocationClient == null)
 			mLocationClient = new LocationClient(this, this, this);
+
 		// Start with updates turned off
 		mUpdatesRequested = false;
 
 		// Create the LocationRequest object
 		if (mLocationRequest == null)
 			mLocationRequest = LocationRequest.create();
-      
-      onLocationSetInterval(0, 0);
+
+		onLocationSetInterval(0, 0);
 	}
 
 
@@ -165,8 +166,7 @@ LocationListener, com.google.android.gms.location.LocationListener
 	 */
 	public void onLocationStart()
 	{
-		if (location_service_running)
-			return;
+		mUpdatesRequested = true;
 
 		// Connect the client.
 		mLocationClient.connect();
@@ -186,9 +186,6 @@ LocationListener, com.google.android.gms.location.LocationListener
 	 */
 	public void onLocationStop()
 	{
-		if (!location_service_running)
-			return;
-
 		// Disconnecting the client invalidates it.
 		mLocationClient.disconnect();
 	}
@@ -213,29 +210,34 @@ LocationListener, com.google.android.gms.location.LocationListener
 		return mCurrentLocation.getLongitude();
 	}
 	
-	/*
+	/**
 	 * Gets the horizontal accuracy of the current location 
 	 * in meters. (NOTE: There seems to be no vertical accuracy
 	 * for a given location with the Android location API)
 	 * 
 	 * @return the horizontal accuracy of the current position.
 	 */
-	public float onLocationGetHorizontalAccuracy()
+	public double onLocationGetHorizontalAccuracy()
 	{
 		return mCurrentLocation.getAccuracy();
 	}
 	
-	/*
+	/**
 	 * Tells us whether the location listener callback has
 	 * updated the current location since the last time
 	 * we polled.
+	 * 
+	 * @return true if location has changed, false if location has not changed.
 	 */
 	public boolean onLocationHasChanged()
 	{
-		boolean ret = locationChanged;
-		if (ret)
+		boolean hasChanged = locationChanged;
+		
+		// Reset flag
+		if (hasChanged)
 			locationChanged = false;
-		return ret;
+		
+		return hasChanged;
 	}
 
 	// Define the callback method that receives location updates
@@ -252,21 +254,6 @@ LocationListener, com.google.android.gms.location.LocationListener
 		String msg = "Updated Location: " + location.getLatitude() + ", " + location.getLongitude();
 		Log.i("RetroArch GPS", msg);
 		//Toast.makeText(this, msg, Toast.LENGTH_SHORT).show();
-	}
-
-	@Override
-	public void onStatusChanged(String provider, int status, Bundle extras)
-	{
-	}
-
-	@Override
-	public void onProviderEnabled(String provider)
-	{
-	}
-
-	@Override
-	public void onProviderDisabled(String provider)
-	{
 	}
 
 	@Override

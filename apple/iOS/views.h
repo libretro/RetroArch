@@ -37,7 +37,9 @@
 @interface RADirectoryList : RAMenuBase<UIActionSheetDelegate>
 @property (nonatomic, weak) id<RADirectoryListDelegate> directoryDelegate;
 @property (nonatomic, weak) RADirectoryItem* selectedItem;
-- (id)initWithPath:(NSString*)path extensions:(const char*)extensions forDirectory:(bool)forDirectory delegate:(id<RADirectoryListDelegate>)delegate;
+@property (nonatomic) bool allowBlank;
+@property (nonatomic) bool forDirectory;
+- (id)initWithPath:(NSString*)path extensions:(const char*)extensions delegate:(id<RADirectoryListDelegate>)delegate;
 - (void)browseTo:(NSString*)path;
 @end
 

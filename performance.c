@@ -257,6 +257,9 @@ uint64_t rarch_get_cpu_features(void)
 
    x86_cpuid(1, flags);
 
+   if (flags[3] & (1 << 23))
+      cpu |= RETRO_SIMD_MMX;
+
    if (flags[3] & (1 << 25))
       cpu |= RETRO_SIMD_SSE;
 
@@ -273,6 +276,7 @@ uint64_t rarch_get_cpu_features(void)
    if ((flags[2] & avx_flags) == avx_flags)
       cpu |= RETRO_SIMD_AVX;
 
+   RARCH_LOG("[CPUID]: MMX:   %u\n", !!(cpu & RETRO_SIMD_MMX));
    RARCH_LOG("[CPUID]: SSE:   %u\n", !!(cpu & RETRO_SIMD_SSE));
    RARCH_LOG("[CPUID]: SSE2:  %u\n", !!(cpu & RETRO_SIMD_SSE2));
    RARCH_LOG("[CPUID]: SSE3:  %u\n", !!(cpu & RETRO_SIMD_SSE3));

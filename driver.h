@@ -124,6 +124,7 @@ struct retro_keybind
    uint64_t def_joykey;
 
    uint32_t joyaxis;
+   uint32_t def_joyaxis;
 };
 
 struct platform_bind

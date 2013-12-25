@@ -306,13 +306,23 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
 - (void)wasSelectedOnTableView:(UITableView*)tableView ofController:(UIViewController*)controller
 {
    NSString* path = [BOXSTRING(self.setting->value.string) stringByDeletingLastPathComponent];
-   RADirectoryList* list = [[RADirectoryList alloc] initWithPath:path extensions:self.setting->values forDirectory:false delegate:self];
+   RADirectoryList* list = [[RADirectoryList alloc] initWithPath:path extensions:self.setting->values delegate:self];
+   
+   list.allowBlank = (self.setting->flags & SD_FLAG_ALLOW_EMPTY);
+   list.forDirectory = (self.setting->flags & SD_FLAG_PATH_DIR);
+   
    [controller.navigationController pushViewController:list animated:YES];
 }
 
-- (bool)directoryList:(id)list itemWasSelected:(RADirectoryItem *)path
+- (bool)directoryList:(RADirectoryList*)list itemWasSelected:(RADirectoryItem *)path
 {
-   setting_data_set_with_string_representation(self.setting, path.path.UTF8String);
+   if (!list.allowBlank && !path)
+      return false;
+   
+   if (list.forDirectory && !path.isDirectory)
+      return false;
+   
+   setting_data_set_with_string_representation(self.setting, path ? path.path.UTF8String : "");
    [[list navigationController] popViewControllerAnimated:YES];
       
    [self.parentTable reloadData];
@@ -497,7 +507,7 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
 - (void)performBasicAction:(enum basic_event_t)action
 {
    [[RetroArch_iOS get] showGameView];
-   apple_frontend_post_event(apple_event_basic_command, action);
+   apple_event_basic_command(action);
 }
 
 - (void)chooseCoreWithPath:(NSString*)path
@@ -528,7 +538,7 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
    NSString* ragPath = [rootPath stringByAppendingPathComponent:@"RetroArchGames"];
    NSString* target = path_is_directory(ragPath.UTF8String) ? ragPath : rootPath;
 
-   [self.navigationController pushViewController:[[RADirectoryList alloc] initWithPath:target extensions:NULL forDirectory:false delegate:self] animated:YES];
+   [self.navigationController pushViewController:[[RADirectoryList alloc] initWithPath:target extensions:NULL delegate:self] animated:YES];
 }
 
 - (void)loadHistory
@@ -539,7 +549,7 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
 
 - (bool)directoryList:(id)list itemWasSelected:(RADirectoryItem*)path
 {
-   if (!path.isDirectory)
+   if (path && !path.isDirectory)
    {
       if (self.core)
          apple_run_core(self.core, path.path.UTF8String);
@@ -675,6 +685,22 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
       self.core = core;
       self.title = self.core ? apple_get_core_display_name(core) : @"Global Core Config";
    
+      // Add common options
+      const char* emula[] = { "Emulation", "rewind_enable", "fps_show", 0 };
+      const char* video[] = { "Video", "video_scale_integer", "video_smooth", 0 };
+      const char* audio[] = { "Audio", "audio_mute", "audio_rate_control", "audio_rate_control_delta", 0 };
+      const char* input[] = { "Input", "input_overlay", "input_overlay_opacity", 0 };
+      const char** groups[] = { emula, video, audio, input, 0 };
+      
+      for (int i = 0; groups[i]; i ++)
+      {
+         NSMutableArray* section = [NSMutableArray arrayWithObject:BOXSTRING(groups[i][0])];
+         [self.sections addObject:section];
+         
+         for (int j = 1; groups[i][j]; j ++)
+            [section addObject:[RAMenuItemGeneralSetting itemForSetting:setting_data_find_setting(setting_data, groups[i][j])]];
+      }
+
       NSMutableArray* settings = [NSMutableArray arrayWithObjects:@"", nil];
       [self.sections addObject:settings];
 

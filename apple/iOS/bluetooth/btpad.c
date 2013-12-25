@@ -145,8 +145,8 @@ void btpad_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet
             if (COMMAND_COMPLETE_EVENT(packet, (*hci_read_bd_addr_ptr)))
             {
                bt_flip_addr_ptr(event_addr, &packet[6]);
-               if (!packet[5]) ios_add_log_message("BTpad: Local address is %s", bd_addr_to_str_ptr(event_addr));
-               else            ios_add_log_message("BTpad: Failed to get local address (Status: %02X)", packet[5]);               
+               if (!packet[5]) RARCH_LOG("BTpad: Local address is %s\n", bd_addr_to_str_ptr(event_addr));
+               else            RARCH_LOG("BTpad: Failed to get local address (Status: %02X)\n", packet[5]);               
             }
          }
          break;
@@ -160,7 +160,7 @@ void btpad_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet
                struct apple_pad_connection* connection = btpad_find_empty_connection();
                if (connection)
                {
-                  ios_add_log_message("BTpad: Inquiry found device");
+                  RARCH_LOG("BTpad: Inquiry found device\n");
                   memset(connection, 0, sizeof(struct apple_pad_connection));
 
                   memcpy(connection->address, event_addr, sizeof(bd_addr_t));
@@ -197,11 +197,11 @@ void btpad_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet
             {
                if (!connection)
                {
-                  ios_add_log_message("BTpad: Got L2CAP 'Channel Opened' event for unrecognized device");
+                  RARCH_LOG("BTpad: Got L2CAP 'Channel Opened' event for unrecognized device\n");
                   break;
                }
 
-               ios_add_log_message("BTpad: L2CAP channel opened: (PSM: %02X)", psm);
+               RARCH_LOG("BTpad: L2CAP channel opened: (PSM: %02X)\n", psm);
                connection->handle = handle;
             
                if (psm == PSM_HID_CONTROL)
@@ -209,16 +209,16 @@ void btpad_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet
                else if (psm == PSM_HID_INTERRUPT)
                   connection->channels[1] = channel_id;
                else
-                  ios_add_log_message("BTpad: Got unknown L2CAP PSM, ignoring (PSM: %02X)", psm);
+                  RARCH_LOG("BTpad: Got unknown L2CAP PSM, ignoring (PSM: %02X)\n", psm);
 
                if (connection->channels[0] && connection->channels[1])
                {
-                  ios_add_log_message("BTpad: Got both L2CAP channels, requesting name");
+                  RARCH_LOG("BTpad: Got both L2CAP channels, requesting name\n");
                   btpad_queue_hci_remote_name_request(connection->address, 0, 0, 0);
                }
             }
             else
-               ios_add_log_message("BTpad: Got failed L2CAP 'Channel Opened' event (PSM: %02X, Status: %02X)", psm, packet[2]);
+               RARCH_LOG("BTpad: Got failed L2CAP 'Channel Opened' event (PSM: %02X, Status: %02X)\n", psm, packet[2]);
          }
          break;
 
@@ -236,7 +236,7 @@ void btpad_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet
                connection = btpad_find_empty_connection();
                if (connection)
                {
-                  ios_add_log_message("BTpad: Got new incoming connection");
+                  RARCH_LOG("BTpad: Got new incoming connection\n");
 
                   memset(connection, 0, sizeof(struct apple_pad_connection));
 
@@ -248,7 +248,7 @@ void btpad_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet
                else break;
             }
 
-            ios_add_log_message("BTpad: Incoming L2CAP connection (PSM: %02X)", psm);
+            RARCH_LOG("BTpad: Incoming L2CAP connection (PSM: %02X)\n", psm);
             bt_send_cmd_ptr(l2cap_accept_connection_ptr, channel_id);
          }
          break;
@@ -261,11 +261,11 @@ void btpad_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet
 
             if (!connection)
             {
-               ios_add_log_message("BTpad: Got unexpected remote name, ignoring");
+               RARCH_LOG("BTpad: Got unexpected remote name, ignoring\n");
                break;
             }
 
-            ios_add_log_message("BTpad: Got %.200s", (char*)&packet[9]);
+            RARCH_LOG("BTpad: Got %.200s\n", (char*)&packet[9]);
             
             connection->slot = apple_joypad_connect((char*)packet + 9, connection);
             connection->state = BTPAD_CONNECTED;
@@ -274,7 +274,7 @@ void btpad_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet
 
          case HCI_EVENT_PIN_CODE_REQUEST:
          {
-            ios_add_log_message("BTpad: Sending WiiMote PIN");
+            RARCH_LOG("BTpad: Sending WiiMote PIN\n");
 
             bt_flip_addr_ptr(event_addr, &packet[2]);
             btpad_queue_hci_pin_code_request_reply(event_addr, &packet[2]);
@@ -297,14 +297,14 @@ void btpad_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet
                }
             }
             else
-               ios_add_log_message("BTpad: Got failed 'Disconnection Complete' event (Status: %02X)", packet[2]);
+               RARCH_LOG("BTpad: Got failed 'Disconnection Complete' event (Status: %02X)\n", packet[2]);
          }
          break;
 
          case L2CAP_EVENT_SERVICE_REGISTERED:
          {
             if (!packet[2])
-               ios_add_log_message("BTpad: Got failed 'Service Registered' event (PSM: %02X, Status: %02X)", READ_BT_16(packet, 3), packet[2]);
+               RARCH_LOG("BTpad: Got failed 'Service Registered' event (PSM: %02X, Status: %02X)\n", READ_BT_16(packet, 3), packet[2]);
          }
          break;
       }

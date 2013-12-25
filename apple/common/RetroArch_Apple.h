@@ -54,6 +54,8 @@ extern id<RetroArch_Platform> apple_platform;
 
 // main.m
 extern void apple_run_core(NSString* core, const char* file);
+extern void apple_start_iteration();
+extern void apple_stop_iteration();
 
 // utility.m
 extern void apple_display_alert(NSString* message, NSString* title);
@@ -68,9 +70,6 @@ extern NSString *apple_get_core_display_name(NSString *core_id);
 
 - (id)initWithSetting:(const rarch_setting_t*)setting;
 @end
-
-// frontend/platform/platform_apple.c
-extern void apple_frontend_post_event(void (*fn)(void*), void* userdata);
 
 //
 #define BOXSTRING(x) [NSString stringWithUTF8String:x]

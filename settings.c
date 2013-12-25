@@ -333,7 +333,7 @@ void config_set_defaults(void)
    g_settings.input.netplay_client_swap_input = netplay_client_swap_input;
    g_settings.input.turbo_period = turbo_period;
    g_settings.input.turbo_duty_cycle = turbo_duty_cycle;
-   g_settings.input.overlay_opacity = 1.0f;
+   g_settings.input.overlay_opacity = 0.7f;
    g_settings.input.overlay_scale = 1.0f;
    g_settings.input.debug_enable = input_debug_enable;
    g_settings.input.autodetect_enable = input_autodetect_enable;
@@ -368,8 +368,8 @@ void config_set_defaults(void)
    *g_settings.system_directory = '\0';
    *g_settings.input.autoconfig_dir = '\0';
    *g_settings.input.overlay = '\0';
+   *g_settings.content_directory = '\0';
 #ifdef HAVE_MENU
-   *g_settings.rgui_browser_directory = '\0';
    *g_settings.rgui_config_directory = '\0';
 #endif
 
@@ -406,24 +406,24 @@ void config_set_defaults(void)
 #ifdef HAVE_OVERLAY
    if (default_overlay_dir)
    {
-      strlcpy(g_extern.overlay_dir, default_overlay_dir, sizeof(g_extern.overlay_dir));
-#if defined(__QNX__)
-      fill_pathname_join(g_settings.input.overlay, default_overlay_dir, "snes-landscape.cfg", sizeof(g_settings.input.overlay));
+      fill_pathname_expand_special(g_extern.overlay_dir, default_overlay_dir, sizeof(g_extern.overlay_dir));
+#if defined(__QNX__) || defined(IOS)
+      fill_pathname_join(g_settings.input.overlay, g_extern.overlay_dir, "snes-landscape/snes-landscape.cfg", sizeof(g_settings.input.overlay));
 #endif
    }
 #endif
 
    if (default_shader_dir)
-      strlcpy(g_settings.video.shader_dir, default_shader_dir, sizeof(g_settings.video.shader_dir));
+      fill_pathname_expand_special(g_settings.video.shader_dir, default_shader_dir, sizeof(g_settings.video.shader_dir));
 
    if (default_libretro_path)
-      strlcpy(g_settings.libretro, default_libretro_path, sizeof(g_settings.libretro));
+      fill_pathname_expand_special(g_settings.libretro, default_libretro_path, sizeof(g_settings.libretro));
 
    if (default_libretro_info_path)
-      strlcpy(g_settings.libretro_info_path, default_libretro_info_path, sizeof(g_settings.libretro_info_path));
+      fill_pathname_expand_special(g_settings.libretro_info_path, default_libretro_info_path, sizeof(g_settings.libretro_info_path));
 
    if (default_config_path)
-      strlcpy(g_extern.config_path, default_config_path, sizeof(g_extern.config_path));
+      fill_pathname_expand_special(g_extern.config_path, default_config_path, sizeof(g_extern.config_path));
 
    g_extern.config_save_on_exit = config_save_on_exit;
 
@@ -819,10 +819,10 @@ bool config_load_file(const char *path)
       }
    }
 
+   CONFIG_GET_PATH(content_directory, "rgui_browser_directory");
+   if (!strcmp(g_settings.content_directory, "default"))
+      *g_settings.content_directory = '\0';
 #ifdef HAVE_MENU
-   CONFIG_GET_PATH(rgui_browser_directory, "rgui_browser_directory");
-   if (!strcmp(g_settings.rgui_browser_directory, "default"))
-      *g_settings.rgui_browser_directory = '\0';
    CONFIG_GET_PATH(rgui_config_directory, "rgui_config_directory");
    if (!strcmp(g_settings.rgui_config_directory, "default"))
       *g_settings.rgui_config_directory = '\0';
@@ -1121,12 +1121,12 @@ bool config_save_file(const char *path)
    RARCH_LOG("Saving config at path: \"%s\"\n", path);
 
    config_set_bool(conf, "fps_show", g_settings.fps_show);
-   config_set_string(conf, "libretro_path", g_settings.libretro);
-   config_set_string(conf, "libretro_info_path", g_settings.libretro_info_path);
-   config_set_string(conf, "cheat_database_path", g_settings.cheat_database);
+   config_set_path(conf, "libretro_path", g_settings.libretro);
+   config_set_path(conf, "libretro_info_path", g_settings.libretro_info_path);
+   config_set_path(conf, "cheat_database_path", g_settings.cheat_database);
    config_set_bool(conf, "rewind_enable", g_settings.rewind_enable);
    config_set_int(conf, "rewind_granularity", g_settings.rewind_granularity);
-   config_set_string(conf, "video_shader", g_settings.video.shader_path);
+   config_set_path(conf, "video_shader", g_settings.video.shader_path);
    config_set_bool(conf, "video_shader_enable", g_settings.video.shader_enable);
    config_set_float(conf, "video_aspect_ratio", g_settings.video.aspect_ratio);
    config_set_float(conf, "video_xscale", g_settings.video.xscale);
@@ -1146,7 +1146,7 @@ bool config_save_file(const char *path)
    config_set_int(conf, "video_swap_interval", g_settings.video.swap_interval);
    config_set_bool(conf, "video_gpu_screenshot", g_settings.video.gpu_screenshot);
    config_set_int(conf, "video_rotation", g_settings.video.rotation);
-   config_set_string(conf, "screenshot_directory", *g_settings.screenshot_directory ? g_settings.screenshot_directory : "default");
+   config_set_path(conf, "screenshot_directory", *g_settings.screenshot_directory ? g_settings.screenshot_directory : "default");
    config_set_int(conf, "aspect_ratio_index", g_settings.video.aspect_ratio_idx);
    config_set_string(conf, "audio_device", g_settings.audio.device);
 #ifdef HAVE_CAMERA
@@ -1157,25 +1157,25 @@ bool config_save_file(const char *path)
    config_set_string(conf, "audio_driver", g_settings.audio.driver);
    config_set_int(conf, "audio_out_rate", g_settings.audio.out_rate);
 
-   config_set_string(conf, "system_directory", *g_settings.system_directory ? g_settings.system_directory : "default");
-   config_set_string(conf, "savefile_directory", *g_extern.savefile_dir ? g_extern.savefile_dir : "default");
-   config_set_string(conf, "savestate_directory", *g_extern.savestate_dir ? g_extern.savestate_dir : "default");
-   config_set_string(conf, "video_shader_dir", *g_settings.video.shader_dir ? g_settings.video.shader_dir : "default");
+   config_set_path(conf, "system_directory", *g_settings.system_directory ? g_settings.system_directory : "default");
+   config_set_path(conf, "savefile_directory", *g_extern.savefile_dir ? g_extern.savefile_dir : "default");
+   config_set_path(conf, "savestate_directory", *g_extern.savestate_dir ? g_extern.savestate_dir : "default");
+   config_set_path(conf, "video_shader_dir", *g_settings.video.shader_dir ? g_settings.video.shader_dir : "default");
 
 #ifdef HAVE_MENU
-   config_set_string(conf, "rgui_browser_directory", *g_settings.rgui_browser_directory ? g_settings.rgui_browser_directory : "default");
-   config_set_string(conf, "rgui_config_directory", *g_settings.rgui_config_directory ? g_settings.rgui_config_directory : "default");
+   config_set_path(conf, "rgui_browser_directory", *g_settings.content_directory ? g_settings.content_directory : "default");
+   config_set_path(conf, "rgui_config_directory", *g_settings.rgui_config_directory ? g_settings.rgui_config_directory : "default");
    config_set_bool(conf, "rgui_show_start_screen", g_settings.rgui_show_start_screen);
 #endif
 
-   config_set_string(conf, "game_history_path", g_settings.game_history_path);
+   config_set_path(conf, "game_history_path", g_settings.game_history_path);
    config_set_int(conf, "game_history_size", g_settings.game_history_size);
-   config_set_string(conf, "joypad_autoconfig_dir", g_settings.input.autoconfig_dir);
+   config_set_path(conf, "joypad_autoconfig_dir", g_settings.input.autoconfig_dir);
    config_set_bool(conf, "input_autodetect_enable", g_settings.input.autodetect_enable);
 
 #ifdef HAVE_OVERLAY
-   config_set_string(conf, "overlay_directory", *g_extern.overlay_dir ? g_extern.overlay_dir : "default");
-   config_set_string(conf, "input_overlay", g_settings.input.overlay);
+   config_set_path(conf, "overlay_directory", *g_extern.overlay_dir ? g_extern.overlay_dir : "default");
+   config_set_path(conf, "input_overlay", g_settings.input.overlay);
    config_set_float(conf, "input_overlay_opacity", g_settings.input.overlay_opacity);
    config_set_float(conf, "input_overlay_scale", g_settings.input.overlay_scale);
 #endif
@@ -1208,7 +1208,7 @@ bool config_save_file(const char *path)
    config_set_int(conf, "custom_viewport_x", g_extern.console.screen.viewports.custom_vp.x);
    config_set_int(conf, "custom_viewport_y", g_extern.console.screen.viewports.custom_vp.y);
 #ifdef HAVE_RMENU
-   config_set_string(conf, "menu_texture_path", g_extern.menu_texture_path);
+   config_set_path(conf, "menu_texture_path", g_extern.menu_texture_path);
 #endif
    config_set_float(conf, "video_font_size", g_settings.video.font_size);
 
