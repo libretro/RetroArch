@@ -116,6 +116,7 @@ static void lima_gfx_free(void *data)
    if (vid->font)
       vid->font_driver->free(vid->font);
 
+   free(vid->screen);
    free(vid);
 
    if (rgui_buffer)
