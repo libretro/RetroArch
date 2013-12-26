@@ -134,23 +134,19 @@ static void file_action(enum file_action action, NSString* source, NSString* tar
    if (self.isDirectory)
       [(id)controller browseTo:self.path];
    else
-      [[(id)controller directoryDelegate] directoryList:controller itemWasSelected:self];
+      [(id)controller chooseAction]((id)controller, self);
 }
 
 @end
 
 @implementation RADirectoryList
-{
-   NSString* _path;
-   NSString* _extensions;
-}
 
-- (id)initWithPath:(NSString*)path extensions:(const char*)extensions delegate:(id<RADirectoryListDelegate>)delegate
+- (id)initWithPath:(NSString*)path extensions:(const char*)extensions action:(void (^)(RADirectoryList* list, RADirectoryItem* item))action
 {
    if ((self = [super initWithStyle:UITableViewStylePlain]))
    {
       _path = path ? path : NSHomeDirectory();
-      _directoryDelegate = delegate;
+      _chooseAction = action;
       _extensions = extensions ? BOXSTRING(extensions) : 0;
 
       self = [super initWithStyle:UITableViewStylePlain];
@@ -241,10 +237,10 @@ static void file_action(enum file_action action, NSString* source, NSString* tar
       
       if (self.allowBlank)
          [self.sections[0] addObject:[RAMenuItemBasic itemWithDescription:@"[ Use Empty Path ]"
-                                                                   action:^{ [weakSelf.directoryDelegate directoryList:weakSelf itemWasSelected:nil]; }]];
+                                                                   action:^{ weakSelf.chooseAction(weakSelf, nil); }]];
       if (self.forDirectory)
          [self.sections[0] addObject:[RAMenuItemBasic itemWithDescription:@"[ Use This Folder ]"
-                                                                   action:^{ [weakSelf.directoryDelegate directoryList:weakSelf itemWasSelected:[RADirectoryItem directoryItemFromPath:path]]; }]];
+                                                                   action:^{ weakSelf.chooseAction(weakSelf, [RADirectoryItem directoryItemFromPath:path]); }]];
 
       dir_list_sort(contents, true);
    

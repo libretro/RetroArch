@@ -300,34 +300,33 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
 /* A menu item that displays and allows      */
 /* browsing for a path setting.              */
 /*********************************************/
-@interface RAMenuItemPathSetting() <RADirectoryListDelegate> @end
+@interface RAMenuItemPathSetting() @end
 @implementation RAMenuItemPathSetting
 
 - (void)wasSelectedOnTableView:(UITableView*)tableView ofController:(UIViewController*)controller
 {
+   RAMenuItemPathSetting __weak* weakSelf = self;
+   
    NSString* path = [BOXSTRING(self.setting->value.string) stringByDeletingLastPathComponent];
-   RADirectoryList* list = [[RADirectoryList alloc] initWithPath:path extensions:self.setting->values delegate:self];
+   RADirectoryList* list = [[RADirectoryList alloc] initWithPath:path extensions:self.setting->values action:
+      ^(RADirectoryList* list, RADirectoryItem* item)
+      {
+         if (!list.allowBlank && !item)
+            return;
+         
+         if (list.forDirectory && !item.isDirectory)
+            return;
+         
+         setting_data_set_with_string_representation(weakSelf.setting, item ? item.path.UTF8String : "");
+         [[list navigationController] popViewControllerAnimated:YES];
+         
+         [weakSelf.parentTable reloadData];
+      }];
    
    list.allowBlank = (self.setting->flags & SD_FLAG_ALLOW_EMPTY);
    list.forDirectory = (self.setting->flags & SD_FLAG_PATH_DIR);
    
    [controller.navigationController pushViewController:list animated:YES];
-}
-
-- (bool)directoryList:(RADirectoryList*)list itemWasSelected:(RADirectoryItem *)path
-{
-   if (!list.allowBlank && !path)
-      return false;
-   
-   if (list.forDirectory && !path.isDirectory)
-      return false;
-   
-   setting_data_set_with_string_representation(self.setting, path ? path.path.UTF8String : "");
-   [[list navigationController] popViewControllerAnimated:YES];
-      
-   [self.parentTable reloadData];
-
-   return true;
 }
 
 @end
@@ -535,29 +534,28 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
 - (void)loadGame
 {
    NSString* rootPath = RetroArch_iOS.get.documentsDirectory;
-   NSString* ragPath = [rootPath stringByAppendingPathComponent:@"RetroArchGames"];
-   NSString* target = path_is_directory(ragPath.UTF8String) ? ragPath : rootPath;
-
-   [self.navigationController pushViewController:[[RADirectoryList alloc] initWithPath:target extensions:NULL delegate:self] animated:YES];
+   
+   RAMainMenu __weak* weakSelf = self;
+   
+   RADirectoryList* list = [[RADirectoryList alloc] initWithPath:RetroArch_iOS.get.documentsDirectory extensions:NULL action:
+      ^(RADirectoryList *list, RADirectoryItem *item)
+      {
+         if (item && !item.isDirectory)
+         {
+            if (weakSelf.core)
+               apple_run_core(weakSelf.core, item.path.UTF8String);
+            else
+               [weakSelf chooseCoreWithPath:item.path];
+         }
+      }];
+   
+   [self.navigationController pushViewController:list animated:YES];
 }
 
 - (void)loadHistory
 {
    NSString* history_path = [NSString stringWithFormat:@"%@/%s", RetroArch_iOS.get.systemDirectory, ".retroarch-game-history.txt"];
    [self.navigationController pushViewController:[[RAHistoryMenu alloc] initWithHistoryPath:history_path] animated:YES];
-}
-
-- (bool)directoryList:(id)list itemWasSelected:(RADirectoryItem*)path
-{
-   if (path && !path.isDirectory)
-   {
-      if (self.core)
-         apple_run_core(self.core, path.path.UTF8String);
-      else
-         [self chooseCoreWithPath:path.path];
-   }
-
-   return true;
 }
 
 @end
