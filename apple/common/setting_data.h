@@ -81,6 +81,7 @@ typedef struct
 #define BINDFOR(s) (*(&s)->value.keybind)
 
 
+void setting_data_reset_setting(const rarch_setting_t* setting);
 void setting_data_reset(const rarch_setting_t* settings);
 
 bool setting_data_load_config_path(const rarch_setting_t* settings, const char* path);

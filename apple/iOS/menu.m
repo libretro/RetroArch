@@ -230,6 +230,8 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
       result = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleValue1 reuseIdentifier:cell_id];
       result.selectionStyle = UITableViewCellSelectionStyleNone;
    }
+   
+   [self attachDefaultingGestureTo:result];
 
    char buffer[256];
    result.textLabel.text = BOXSTRING(self.setting->short_description);
@@ -267,6 +269,32 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
    {
       setting_data_set_with_string_representation(self.setting, text.UTF8String);
       [self.parentTable reloadData];
+   }
+}
+
+- (void)attachDefaultingGestureTo:(UIView*)view
+{
+   for (UIGestureRecognizer* i in view.gestureRecognizers)
+      [view removeGestureRecognizer:i];
+   [view addGestureRecognizer:[[UILongPressGestureRecognizer alloc] initWithTarget:self
+                                                                    action:@selector(resetValue:)]];
+}
+
+- (void)resetValue:(UIGestureRecognizer*)gesture
+{
+   if (gesture.state == UIGestureRecognizerStateBegan)
+   {
+      RAMenuItemGeneralSetting __weak* weakSelf = self;
+
+      struct string_list* items = string_split("OK", "|");
+      RunActionSheet("Really Reset Value?", items, self.parentTable,
+         ^(UIActionSheet* actionSheet, NSInteger buttonIndex)
+         {
+            if (buttonIndex != actionSheet.cancelButtonIndex)
+               setting_data_reset_setting(self.setting);
+            [weakSelf.parentTable reloadData];
+         });
+      string_list_free(items);
    }
 }
 
