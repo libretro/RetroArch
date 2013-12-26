@@ -2522,9 +2522,6 @@ static void gl_render_overlay(void *data)
       1.0f, 1.0f, 1.0f, 1.0f,
    };
 
-   if (gl->shader)
-      gl->shader->use(GL_SHADER_STOCK_BLEND);
-
    glEnable(GL_BLEND);
 
    if (gl->overlay_full_screen)
@@ -2532,6 +2529,10 @@ static void gl_render_overlay(void *data)
 
    for (i = 0; i < gl->overlays; i++)
    {
+      // Ensure that we reset the attrib array.
+      if (gl->shader)
+         gl->shader->use(GL_SHADER_STOCK_BLEND);
+
       glBindTexture(GL_TEXTURE_2D, gl->overlay[i].tex);
       for (j = 0; j < 4; j++)
          white_color_mod[3 + j * 4] = gl->overlay[i].alpha_mod;

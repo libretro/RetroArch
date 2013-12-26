@@ -552,11 +552,16 @@ static void gl_glsl_set_attribs(GLuint vbo, GLfloat *buffer, size_t *buffer_elem
    for (i = 0; i < num_attrs; i++)
    {
       GLint loc = attrs[i].loc;
-      glEnableVertexAttribArray(loc);
-      gl_attribs[gl_attrib_index++] = loc;
 
-      glVertexAttribPointer(loc, attrs[i].size, GL_FLOAT, GL_FALSE, 0,
-            (const GLvoid*)(uintptr_t)attrs[i].offset);
+      if (gl_attrib_index < ARRAY_SIZE(gl_attribs))
+      {
+         glEnableVertexAttribArray(loc);
+         glVertexAttribPointer(loc, attrs[i].size, GL_FLOAT, GL_FALSE, 0,
+               (const GLvoid*)(uintptr_t)attrs[i].offset);
+         gl_attribs[gl_attrib_index++] = loc;
+      }
+      else
+         RARCH_WARN("Attrib array buffer was overflown!\n");
    }
 
    glBindBuffer(GL_ARRAY_BUFFER, 0);
