@@ -27,10 +27,12 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+extern char *strcasestr(const char *haystack, const char *needle);
+
 // Avoid possible naming collisions during link since we prefer to use the actual name.
 #define strcasestr(haystack, needle) strcasestr_rarch__(haystack, needle)
 
-char *strcasestr(const char *haystack, const char *needle);
 #ifdef __cplusplus
 }
 #endif

@@ -80,14 +80,13 @@ static inline void RARCH_WARN(const char *msg, ...)
 
 static inline void RARCH_ERR_V(const char *tag, const char *fmt, ...)
 {
-   char msg_new[1024], buffer[1024];
+   char msg_new[1024];
 #ifdef IS_SALAMANDER
    snprintf(msg_new, sizeof(msg_new), "RetroArch Salamander [ERR] :: %s%s", tag ? tag : "", fmt);
 #else
    snprintf(msg_new, sizeof(msg_new), "RetroArch [ERR] :: %s%s", tag ? tag : "", fmt);
 #endif
-   wvsprintf(buffer, msg_new, ap);
-   OutputDebugStringA(buffer);
+   OutputDebugStringA(fmt);
 }
 
 static inline void RARCH_ERR(const char *msg, ...)
