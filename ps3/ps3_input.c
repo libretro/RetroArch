@@ -180,6 +180,11 @@ static void ps3_input_poll(void *data)
    CellPadInfo2 pad_info;
    ps3_input_t *ps3 = (ps3_input_t*)data;
 
+   ps3->analog_state[0][0][0] = ps3->analog_state[0][0][1] = ps3->analog_state[0][1][0] = ps3->analog_state[0][1][1] = 0;
+   ps3->analog_state[1][0][0] = ps3->analog_state[1][0][1] = ps3->analog_state[1][1][0] = ps3->analog_state[1][1][1] = 0;
+   ps3->analog_state[2][0][0] = ps3->analog_state[2][0][1] = ps3->analog_state[2][1][0] = ps3->analog_state[2][1][1] = 0;
+   ps3->analog_state[3][0][0] = ps3->analog_state[3][0][1] = ps3->analog_state[3][1][0] = ps3->analog_state[3][1][1] = 0;
+
    for (unsigned port = 0; port < MAX_PADS; port++)
    {
       static CellPadData state_tmp;
@@ -189,10 +194,6 @@ static void ps3_input_poll(void *data)
       {
          uint64_t *state_cur = &ps3->pad_state[port];
          *state_cur = 0;
-         ps3->analog_state[0][0][0] = ps3->analog_state[0][0][1] = ps3->analog_state[0][1][0] = ps3->analog_state[0][1][1] = 0;
-         ps3->analog_state[1][0][0] = ps3->analog_state[1][0][1] = ps3->analog_state[1][1][0] = ps3->analog_state[1][1][1] = 0;
-         ps3->analog_state[2][0][0] = ps3->analog_state[2][0][1] = ps3->analog_state[2][1][0] = ps3->analog_state[2][1][1] = 0;
-         ps3->analog_state[3][0][0] = ps3->analog_state[3][0][1] = ps3->analog_state[3][1][0] = ps3->analog_state[3][1][1] = 0;
 #ifdef __PSL1GHT__
          *state_cur |= (state_tmp.BTN_LEFT)     ? (1ULL << RETRO_DEVICE_ID_JOYPAD_LEFT) : 0;
          *state_cur |= (state_tmp.BTN_DOWN)     ? (1ULL << RETRO_DEVICE_ID_JOYPAD_DOWN) : 0;
