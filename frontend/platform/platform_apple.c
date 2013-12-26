@@ -71,6 +71,10 @@ int apple_rarch_load_content(int argc, char* argv[])
       return 1;
    
    menu_init();
+   
+   if (!g_extern.libretro_dummy)
+      menu_rom_history_push_current();   
+   
    g_extern.lifecycle_state |= 1ULL << MODE_GAME;
    g_extern.lifecycle_state |= 1ULL << MODE_GAME_ONESHOT;
    
