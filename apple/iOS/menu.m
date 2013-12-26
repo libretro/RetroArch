@@ -532,9 +532,7 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
 }
 
 - (void)loadGame
-{
-   NSString* rootPath = RetroArch_iOS.get.documentsDirectory;
-   
+{   
    RAMainMenu __weak* weakSelf = self;
    
    RADirectoryList* list = [[RADirectoryList alloc] initWithPath:RetroArch_iOS.get.documentsDirectory extensions:NULL action:
