@@ -228,10 +228,14 @@ static void ps3_input_poll(void *data)
          *state_cur |= (state_tmp.button[CELL_PAD_BTN_OFFSET_DIGITAL2] & CELL_PAD_CTRL_R2) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_R2) : 0;
          *state_cur |= (state_tmp.button[CELL_PAD_BTN_OFFSET_DIGITAL2] & CELL_PAD_CTRL_L2) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_L2) : 0;
          *state_cur |= (state_tmp.button[CELL_PAD_BTN_OFFSET_DIGITAL2] & CELL_PAD_CTRL_L2) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_L2) : 0;
-         ps3->analog_state[port][RETRO_DEVICE_INDEX_ANALOG_LEFT ][RETRO_DEVICE_ID_ANALOG_X] = state_tmp.button[CELL_PAD_BTN_OFFSET_ANALOG_LEFT_X];
-         ps3->analog_state[port][RETRO_DEVICE_INDEX_ANALOG_LEFT ][RETRO_DEVICE_ID_ANALOG_Y] = state_tmp.button[CELL_PAD_BTN_OFFSET_ANALOG_LEFT_Y];
-         ps3->analog_state[port][RETRO_DEVICE_INDEX_ANALOG_RIGHT][RETRO_DEVICE_ID_ANALOG_X] = state_tmp.button[CELL_PAD_BTN_OFFSET_ANALOG_RIGHT_X];
-         ps3->analog_state[port][RETRO_DEVICE_INDEX_ANALOG_RIGHT][RETRO_DEVICE_ID_ANALOG_Y] = state_tmp.button[CELL_PAD_BTN_OFFSET_ANALOG_RIGHT_Y];
+         int16_t ls_x = (int16_t)state_tmp.button[CELL_PAD_BTN_OFFSET_ANALOG_LEFT_X] * 256;
+         int16_t ls_y = (int16_t)state_tmp.button[CELL_PAD_BTN_OFFSET_ANALOG_LEFT_Y] * -256;
+         int16_t rs_x = (int16_t)state_tmp.button[CELL_PAD_BTN_OFFSET_ANALOG_RIGHT_X] * 256;
+         int16_t rs_y = (int16_t)state_tmp.button[CELL_PAD_BTN_OFFSET_ANALOG_RIGHT_Y] * -256;
+         ps3->analog_state[port][RETRO_DEVICE_INDEX_ANALOG_LEFT ][RETRO_DEVICE_ID_ANALOG_X] = ls_x;
+         ps3->analog_state[port][RETRO_DEVICE_INDEX_ANALOG_LEFT ][RETRO_DEVICE_ID_ANALOG_Y] = ls_y;
+         ps3->analog_state[port][RETRO_DEVICE_INDEX_ANALOG_RIGHT][RETRO_DEVICE_ID_ANALOG_X] = rs_x;
+         ps3->analog_state[port][RETRO_DEVICE_INDEX_ANALOG_RIGHT][RETRO_DEVICE_ID_ANALOG_Y] = rs_y;
          ps3->accelerometer_state[port].x = state_tmp.button[CELL_PAD_BTN_OFFSET_SENSOR_X];
          ps3->accelerometer_state[port].y = state_tmp.button[CELL_PAD_BTN_OFFSET_SENSOR_Y];
          ps3->accelerometer_state[port].z = state_tmp.button[CELL_PAD_BTN_OFFSET_SENSOR_Z];
@@ -242,6 +246,11 @@ static void ps3_input_poll(void *data)
                ps3_input_set_keybinds(NULL, DEVICE_SIXAXIS, port, 0, (1ULL << KEYBINDS_ACTION_SET_DEFAULT_BINDS));
          }
       }
+
+      for (int i = 0; i < 2; i++)
+         for (int j = 0; j < 2; j++)
+            if (ps3->analog_state[port][i][j] == -0x8000)
+               ps3->analog_state[port][i][j] = -0x7fff;
    }
 
    uint64_t *state_p1 = &ps3->pad_state[0];
