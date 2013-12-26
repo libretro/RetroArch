@@ -427,30 +427,33 @@ static GLuint compile_program(const char *vertex, const char *fragment, unsigned
    if (!prog)
       return 0;
 
+   GLuint vert = 0;
+   GLuint frag = 0;
+
    if (vertex)
    {
       RARCH_LOG("Found GLSL vertex shader.\n");
-      GLuint shader = glCreateShader(GL_VERTEX_SHADER);
-      if (!compile_shader(shader, "#define VERTEX\n", vertex))
+      vert = glCreateShader(GL_VERTEX_SHADER);
+      if (!compile_shader(vert, "#define VERTEX\n", vertex))
       {
          RARCH_ERR("Failed to compile vertex shader #%u\n", i);
          return false;
       }
 
-      glAttachShader(prog, shader);
+      glAttachShader(prog, vert);
    }
 
    if (fragment)
    {
       RARCH_LOG("Found GLSL fragment shader.\n");
-      GLuint shader = glCreateShader(GL_FRAGMENT_SHADER);
-      if (!compile_shader(shader, "#define FRAGMENT\n", fragment))
+      frag = glCreateShader(GL_FRAGMENT_SHADER);
+      if (!compile_shader(frag, "#define FRAGMENT\n", fragment))
       {
          RARCH_ERR("Failed to compile fragment shader #%u\n", i);
          return false;
       }
 
-      glAttachShader(prog, shader);
+      glAttachShader(prog, frag);
    }
 
    if (vertex || fragment)
@@ -460,6 +463,19 @@ static GLuint compile_program(const char *vertex, const char *fragment, unsigned
       {
          RARCH_ERR("Failed to link program #%u.\n", i);
          return 0;
+      }
+
+      // Clean up dead memory. We're not going to relink the program.
+      if (vert)
+      {
+         glDetachShader(prog, vert);
+         glDeleteShader(vert);
+      }
+
+      if (frag)
+      {
+         glDetachShader(prog, frag);
+         glDeleteShader(frag);
       }
 
       glUseProgram(prog);
@@ -636,21 +652,6 @@ static void find_uniforms(unsigned pass, GLuint prog, struct shader_uniforms *un
    glUseProgram(0);
 }
 
-static void gl_glsl_delete_shader(GLuint prog)
-{
-   GLsizei count, i;
-   GLuint shaders[2] = {0};
-
-   glGetAttachedShaders(prog, 2, &count, shaders);
-   for (i = 0; i < count; i++)
-   {
-      glDetachShader(prog, shaders[i]);
-      glDeleteShader(shaders[i]);
-   }
-
-   glDeleteProgram(prog);
-}
-
 static void gl_glsl_free_shader(void)
 {
    unsigned i;
@@ -677,7 +678,7 @@ static void gl_glsl_deinit(void)
       if (gl_program[i] == 0 || (i && gl_program[i] == gl_program[0]))
          continue;
 
-      gl_glsl_delete_shader(gl_program[i]);
+      glDeleteProgram(gl_program[i]);
    }
 
    if (glsl_shader && glsl_shader->luts)
