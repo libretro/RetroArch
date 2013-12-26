@@ -652,7 +652,8 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
 /* editing of the setting_data list.         */
 /*********************************************/
 @interface RACoreSettingsMenu()
-@property (nonatomic) NSString* pathToSave; // < Leave nil to not save
+@property (nonatomic, copy) NSString* pathToSave; // < Leave nil to not save
+@property (nonatomic, assign) bool isCustom;
 @end
 
 @implementation RACoreSettingsMenu
@@ -665,10 +666,19 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
 
    if ((self = [super initWithStyle:UITableViewStyleGrouped]))
    {
-      if (apple_core_info_has_custom_config(core.UTF8String))
+      _isCustom = apple_core_info_has_custom_config([core UTF8String]);
+      if (_isCustom)
+      {
+         self.title = apple_get_core_display_name(core);
+         
          _pathToSave = BOXSTRING(apple_core_info_get_custom_config(core.UTF8String, buffer, sizeof(buffer)));
+         self.navigationItem.rightBarButtonItem = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemTrash target:self action:@selector(deleteCustom)];
+      }
       else
+      {
+         self.title = @"Global Core Config";
          _pathToSave = apple_platform.globalConfigFile;
+      }
       
       const rarch_setting_t* setting_data = setting_data_get_list();
       
@@ -679,7 +689,6 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
       apple_input_find_any_key();
       
       self.core = core;
-      self.title = self.core ? apple_get_core_display_name(core) : @"Global Core Config";
    
       // Add common options
       const char* emula[] = { "Emulation", "rewind_enable", "fps_show", 0 };
@@ -731,6 +740,17 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
    }
 }
 
+- (void)deleteCustom
+{
+   if (self.isCustom && self.pathToSave)
+   {
+      [[NSFileManager defaultManager] removeItemAtPath:self.pathToSave error:nil];
+      self.pathToSave = false;
+      
+      [self.navigationController popViewControllerAnimated:YES];
+   }
+}
+
 @end
 
 /*********************************************/
@@ -779,6 +799,11 @@ static const void* const associated_core_key = &associated_core_key;
 - (void)dealloc
 {
    setting_data_save_config_path(apple_get_frontend_settings(), [RetroArch_iOS get].systemConfigPath.UTF8String);
+}
+
+- (void)viewWillAppear:(BOOL)animated
+{
+   [self reloadData];
 }
 
 - (void)showCoreConfigFor:(NSString*)core
