@@ -70,7 +70,7 @@ bool write_file(const char *path, const void *data, size_t size)
 }
 
 // Generic file loader.
-ssize_t read_file(const char *path, void **buf)
+size_t read_file(const char *path, void **buf)
 {
    void *rom_buf = NULL;
    FILE *file = fopen(path, "rb");
