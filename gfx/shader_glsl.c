@@ -466,17 +466,11 @@ static GLuint compile_program(const char *vertex, const char *fragment, unsigned
       }
 
       // Clean up dead memory. We're not going to relink the program.
+      // Detaching first seems to kill some mobile drivers (according to the intertubes anyways).
       if (vert)
-      {
-         glDetachShader(prog, vert);
          glDeleteShader(vert);
-      }
-
       if (frag)
-      {
-         glDetachShader(prog, frag);
          glDeleteShader(frag);
-      }
 
       glUseProgram(prog);
       GLint location = get_uniform(prog, "Texture");
