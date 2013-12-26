@@ -297,6 +297,7 @@ struct settings
 
    char content_directory[PATH_MAX];
 #if defined(HAVE_MENU)
+   char rgui_content_directory[PATH_MAX];
    char rgui_config_directory[PATH_MAX];
    bool rgui_show_start_screen;
 #endif
