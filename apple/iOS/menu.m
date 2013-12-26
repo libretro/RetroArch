@@ -24,11 +24,39 @@
 /* buttons pulled from a RetroArch           */
 /* string_list structure.                    */
 /*********************************************/
-static void RunActionSheet(const char* title, const struct string_list* items, UIView* parent, id<UIActionSheetDelegate> delegate)
+typedef void (^RAActionSheetCallback)(UIActionSheet*, NSInteger);
+
+@interface RARunActionSheetDelegate : NSObject<UIActionSheetDelegate>
+@property (nonatomic, retain) RARunActionSheetDelegate* me;
+@property (nonatomic, copy) RAActionSheetCallback callbackBlock;
+@end
+
+@implementation RARunActionSheetDelegate
+
+- (id)initWithCallbackBlock:(RAActionSheetCallback)callback
+{
+   if ((self = [super init]))
+   {
+      _me = self;
+      _callbackBlock = callback;
+   }
+   return self;
+}
+
+- (void)actionSheet:(UIActionSheet *)actionSheet willDismissWithButtonIndex:(NSInteger)buttonIndex
+{
+   if (self.callbackBlock)
+      self.callbackBlock(actionSheet, buttonIndex);
+   self.me = nil;
+}
+
+@end
+
+static void RunActionSheet(const char* title, const struct string_list* items, UIView* parent, RAActionSheetCallback callback)
 {
    UIActionSheet* actionSheet = [UIActionSheet new];
    actionSheet.title = BOXSTRING(title);
-   actionSheet.delegate = delegate;
+   actionSheet.delegate = (id)[[RARunActionSheetDelegate alloc] initWithCallbackBlock:callback];
    
    for (int i = 0; i < items->size; i ++)
    {
@@ -337,24 +365,21 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
 /* a setting to be set from a list of        */
 /* allowed choices.                          */
 /*********************************************/
-@interface RAMenuItemEnumSetting() <UIActionSheetDelegate> @end
-
 @implementation RAMenuItemEnumSetting
 
 - (void)wasSelectedOnTableView:(UITableView*)tableView ofController:(UIViewController*)controller
 {
    struct string_list* items = string_split(self.setting->values, "|");
-   RunActionSheet(self.setting->short_description, items, self.parentTable, self);
+   RunActionSheet(self.setting->short_description, items, self.parentTable,
+      ^(UIActionSheet* actionSheet, NSInteger buttonIndex)
+      {
+         if (buttonIndex != actionSheet.cancelButtonIndex)
+         {
+            setting_data_set_with_string_representation(self.setting, [actionSheet buttonTitleAtIndex:buttonIndex].UTF8String);
+            [self.parentTable reloadData];
+         }
+      });
    string_list_free(items);
-}
-
-- (void)actionSheet:(UIActionSheet *)actionSheet clickedButtonAtIndex:(NSInteger)buttonIndex
-{
-   if (buttonIndex != actionSheet.cancelButtonIndex)
-   {
-      setting_data_set_with_string_representation(self.setting, [actionSheet buttonTitleAtIndex:buttonIndex].UTF8String);
-      [self.parentTable reloadData];
-   }
 }
 
 @end
@@ -847,7 +872,7 @@ static const void* const associated_core_key = &associated_core_key;
 /* Menu object that allows editing of        */
 /* options specific to the running core.     */
 /*********************************************/
-@interface RACoreOptionsMenu() <UIActionSheetDelegate>
+@interface RACoreOptionsMenu()
 @property (nonatomic) uint32_t currentIndex;
 @end
 
@@ -879,16 +904,17 @@ static const void* const associated_core_key = &associated_core_key;
 
 - (void)editValue:(uint32_t)index
 {
+   RACoreOptionsMenu __weak* weakSelf = self;
    self.currentIndex = index;
-   RunActionSheet(core_option_get_desc(g_extern.system.core_options, index), core_option_get_vals(g_extern.system.core_options, index), self.tableView, self);
-}
 
-- (void)actionSheet:(UIActionSheet*)actionSheet clickedButtonAtIndex:(NSInteger)buttonIndex
-{
-   if (buttonIndex != actionSheet.cancelButtonIndex)
-      core_option_set_val(g_extern.system.core_options, self.currentIndex, buttonIndex);
-   
-   [self.tableView reloadData];
+   RunActionSheet(core_option_get_desc(g_extern.system.core_options, index), core_option_get_vals(g_extern.system.core_options, index), self.tableView,
+   ^(UIActionSheet* actionSheet, NSInteger buttonIndex)
+   {
+      if (buttonIndex != actionSheet.cancelButtonIndex)
+         core_option_set_val(g_extern.system.core_options, self.currentIndex, buttonIndex);
+      
+      [weakSelf.tableView reloadData];
+   });
 }
 
 @end
