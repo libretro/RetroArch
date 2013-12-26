@@ -68,24 +68,6 @@ enum
 #endif
    GX_WIIMOTE_HOME         = 49, // needed on GameCube as "fake" menu button
    GX_QUIT_KEY             = 60,
-
-   // special binds for the menu
-   GX_MENU_A               = 61,
-   GX_MENU_B               = 62,
-   GX_MENU_X               = 63,
-   GX_MENU_Y               = 64,
-   GX_MENU_START           = 65,
-   GX_MENU_SELECT          = 66,
-   GX_MENU_UP              = 67,
-   GX_MENU_DOWN            = 68,
-   GX_MENU_LEFT            = 69,
-   GX_MENU_RIGHT           = 70,
-   GX_MENU_L               = 71,
-   GX_MENU_R               = 72,
-   GX_MENU_HOME            = 73,
-
-   GX_MENU_FIRST           = GX_MENU_A,
-   GX_MENU_LAST            = GX_MENU_HOME
 };
 
 enum gx_device_id

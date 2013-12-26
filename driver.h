@@ -109,6 +109,31 @@ enum // RetroArch specific bind IDs.
    RARCH_BIND_LIST_END_NULL
 };
 
+#ifdef RARCH_CONSOLE
+enum // Console specific menu bind IDs.
+{
+   CONSOLE_MENU_FIRST      = 61,
+   CONSOLE_MENU_A          = CONSOLE_MENU_FIRST,
+   CONSOLE_MENU_B          = 62,
+   CONSOLE_MENU_X          = 63,
+   CONSOLE_MENU_Y          = 64,
+   CONSOLE_MENU_START      = 65,
+   CONSOLE_MENU_SELECT     = 66,
+   CONSOLE_MENU_UP         = 67,
+   CONSOLE_MENU_DOWN       = 68,
+   CONSOLE_MENU_LEFT       = 69,
+   CONSOLE_MENU_RIGHT      = 70,
+   CONSOLE_MENU_L          = 71,
+   CONSOLE_MENU_R          = 72,
+   CONSOLE_MENU_L2         = 73,
+   CONSOLE_MENU_R2         = 74,
+   CONSOLE_MENU_L3         = 75,
+   CONSOLE_MENU_R3         = 76,
+   CONSOLE_MENU_HOME       = 77,
+   CONSOLE_MENU_LAST       = CONSOLE_MENU_HOME,
+};
+#endif
+
 struct retro_keybind
 {
    bool valid;

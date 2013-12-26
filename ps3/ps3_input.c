@@ -190,6 +190,49 @@ static int16_t ps3_mouse_device_state(void *data, unsigned player, unsigned id)
 
 #endif
 
+static bool ps3_menu_input_state(uint64_t joykey, uint64_t state)
+{
+   switch (joykey)
+   {
+      case CONSOLE_MENU_A:
+         return state & (1ULL << RETRO_DEVICE_ID_JOYPAD_A);
+      case CONSOLE_MENU_B:
+         return state & (1ULL << RETRO_DEVICE_ID_JOYPAD_B);
+      case CONSOLE_MENU_X:
+         return state & (1ULL << RETRO_DEVICE_ID_JOYPAD_X);
+      case CONSOLE_MENU_Y:
+         return state & (1ULL << RETRO_DEVICE_ID_JOYPAD_Y);
+      case CONSOLE_MENU_START:
+         return state & (1ULL << RETRO_DEVICE_ID_JOYPAD_START);
+      case CONSOLE_MENU_SELECT:
+         return state & (1ULL << RETRO_DEVICE_ID_JOYPAD_SELECT);
+      case CONSOLE_MENU_UP:
+         return state & (1ULL << RETRO_DEVICE_ID_JOYPAD_UP);
+      case CONSOLE_MENU_DOWN:
+         return state & (1ULL << RETRO_DEVICE_ID_JOYPAD_DOWN);
+      case CONSOLE_MENU_LEFT:
+         return state & (1ULL << RETRO_DEVICE_ID_JOYPAD_LEFT);
+      case CONSOLE_MENU_RIGHT:
+         return state & (1ULL << RETRO_DEVICE_ID_JOYPAD_RIGHT);
+      case CONSOLE_MENU_L:
+         return state & (1ULL << RETRO_DEVICE_ID_JOYPAD_L);
+      case CONSOLE_MENU_R:
+         return state & (1ULL << RETRO_DEVICE_ID_JOYPAD_R);
+      case CONSOLE_MENU_HOME:
+         return (state & (1ULL << RETRO_DEVICE_ID_JOYPAD_L3)) && (state & (1ULL << RETRO_DEVICE_ID_JOYPAD_R3));
+      case CONSOLE_MENU_L2:
+         return state & (1ULL << RETRO_DEVICE_ID_JOYPAD_L2);
+      case CONSOLE_MENU_R2:
+         return state & (1ULL << RETRO_DEVICE_ID_JOYPAD_R2);
+      case CONSOLE_MENU_L3:
+         return state & (1ULL << RETRO_DEVICE_ID_JOYPAD_L3);
+      case CONSOLE_MENU_R3:
+         return state & (1ULL << RETRO_DEVICE_ID_JOYPAD_R3);
+      default:
+         return false;
+   }
+}
+
 static int16_t ps3_input_state(void *data, const struct retro_keybind **binds,
       unsigned port, unsigned device,
       unsigned index, unsigned id)
@@ -202,7 +245,10 @@ static int16_t ps3_input_state(void *data, const struct retro_keybind **binds,
       switch (device)
       {
          case RETRO_DEVICE_JOYPAD:
-            return input_joypad_pressed(&ps3_joypad, port, binds[port], id);
+            if (binds[port][id].joykey >= CONSOLE_MENU_FIRST && binds[port][id].joykey <= CONSOLE_MENU_LAST)
+               return ps3_menu_input_state(binds[port][id].joykey, ps3->pad_state[port]) ? 1 : 0;
+            else
+               return input_joypad_pressed(&ps3_joypad, port, binds[port], id);
          case RETRO_DEVICE_ANALOG:
             return input_joypad_analog(&ps3_joypad, port, index, id, binds[port]);
          case RETRO_DEVICE_SENSOR_ACCELEROMETER:

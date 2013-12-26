@@ -109,32 +109,36 @@ static bool gx_menu_input_state(uint64_t joykey, uint64_t state)
 {
    switch (joykey)
    {
-      case GX_MENU_A:
+      case CONSOLE_MENU_A:
          return state & ((1ULL << GX_GC_A) | (1ULL << GX_WIIMOTE_A) | (1ULL << GX_CLASSIC_A) | (1ULL << GX_WIIMOTE_2));
-      case GX_MENU_B:
+      case CONSOLE_MENU_B:
          return state & ((1ULL << GX_GC_B) | (1ULL << GX_WIIMOTE_B) | (1ULL << GX_CLASSIC_B) | (1ULL << GX_WIIMOTE_1));
-      case GX_MENU_X:
+      case CONSOLE_MENU_X:
          return state & ((1ULL << GX_GC_X) | (1ULL << GX_CLASSIC_X));
-      case GX_MENU_Y:
+      case CONSOLE_MENU_Y:
          return state & ((1ULL << GX_GC_Y) | (1ULL << GX_CLASSIC_Y));
-      case GX_MENU_START:
+      case CONSOLE_MENU_START:
          return state & ((1ULL << GX_GC_START) | (1ULL << GX_WIIMOTE_PLUS) | (1ULL << GX_CLASSIC_PLUS));
-      case GX_MENU_SELECT:
+      case CONSOLE_MENU_SELECT:
          return state & ((1ULL << GX_GC_Z_TRIGGER) | (1ULL << GX_WIIMOTE_MINUS) | (1ULL << GX_CLASSIC_MINUS));
-      case GX_MENU_UP:
+      case CONSOLE_MENU_UP:
          return state & ((1ULL << GX_GC_UP) | (1ULL << GX_WIIMOTE_UP) | (1ULL << GX_CLASSIC_UP) | (1ULL << GX_NUNCHUK_UP));
-      case GX_MENU_DOWN:
+      case CONSOLE_MENU_DOWN:
          return state & ((1ULL << GX_GC_DOWN) | (1ULL << GX_WIIMOTE_DOWN) | (1ULL << GX_CLASSIC_DOWN) | (1ULL << GX_NUNCHUK_DOWN));
-      case GX_MENU_LEFT:
+      case CONSOLE_MENU_LEFT:
          return state & ((1ULL << GX_GC_LEFT) | (1ULL << GX_WIIMOTE_LEFT) | (1ULL << GX_CLASSIC_LEFT) | (1ULL << GX_NUNCHUK_LEFT));
-      case GX_MENU_RIGHT:
+      case CONSOLE_MENU_RIGHT:
          return state & ((1ULL << GX_GC_RIGHT) | (1ULL << GX_WIIMOTE_RIGHT) | (1ULL << GX_CLASSIC_RIGHT) | (1ULL << GX_NUNCHUK_RIGHT));
-      case GX_MENU_L:
+      case CONSOLE_MENU_L:
          return state & ((1ULL << GX_GC_L_TRIGGER) | (1ULL << GX_CLASSIC_L_TRIGGER));
-      case GX_MENU_R:
+      case CONSOLE_MENU_R:
          return state & ((1ULL << GX_GC_R_TRIGGER) | (1ULL << GX_CLASSIC_R_TRIGGER));
-      case GX_MENU_HOME:
+      case CONSOLE_MENU_HOME:
          return state & ((1ULL << GX_WIIMOTE_HOME) | (1ULL << GX_CLASSIC_HOME));
+      case CONSOLE_MENU_L2:
+         return state & (1ULL << GX_CLASSIC_ZL_TRIGGER);
+      case CONSOLE_MENU_R2:
+         return state & (1ULL << GX_CLASSIC_ZR_TRIGGER);
       default:
          return false;
    }
@@ -152,7 +156,7 @@ static int16_t gx_input_state(void *data, const struct retro_keybind **binds,
    switch (device)
    {
       case RETRO_DEVICE_JOYPAD:
-         if (binds[port][id].joykey >= GX_MENU_FIRST && binds[port][id].joykey <= GX_MENU_LAST)
+         if (binds[port][id].joykey >= CONSOLE_MENU_FIRST && binds[port][id].joykey <= CONSOLE_MENU_LAST)
             return gx_menu_input_state(binds[port][id].joykey, gx->pad_state[port]) ? 1 : 0;
          else
             return input_joypad_pressed(&gx_joypad, port, binds[port], id);;
