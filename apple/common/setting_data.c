@@ -84,37 +84,40 @@ static const char* get_axis_name(const rarch_setting_t* setting)
 }
 
 //
+void setting_data_reset_setting(const rarch_setting_t* setting)
+{
+   switch (setting->type)
+   {
+      case ST_BOOL:   *setting->value.boolean          = setting->default_value.boolean;          break;
+      case ST_INT:    *setting->value.integer          = setting->default_value.integer;          break;
+      case ST_UINT:   *setting->value.unsigned_integer = setting->default_value.unsigned_integer; break;
+      case ST_FLOAT:  *setting->value.fraction         = setting->default_value.fraction;         break;
+      case ST_BIND:   *setting->value.keybind          = *setting->default_value.keybind;         break;
+      
+      case ST_STRING:
+      case ST_PATH:
+      {  
+         if (setting->default_value.string)
+         {
+            if (setting->type == ST_STRING)
+               strlcpy(setting->value.string, setting->default_value.string, setting->size);
+            else
+               fill_pathname_expand_special(setting->value.string, setting->default_value.string, setting->size);
+         }
+         break;
+      }
+      
+      default: break;
+   }
+}
+
 void setting_data_reset(const rarch_setting_t* settings)
 {
    memset(&fake_settings, 0, sizeof(fake_settings));
    memset(&fake_extern, 0, sizeof(fake_extern));
    
    for (const rarch_setting_t* i = settings; i->type != ST_NONE; i ++)
-   {
-      switch (i->type)
-      {
-         case ST_BOOL:   *i->value.boolean          = i->default_value.boolean;          break;
-         case ST_INT:    *i->value.integer          = i->default_value.integer;          break;
-         case ST_UINT:   *i->value.unsigned_integer = i->default_value.unsigned_integer; break;
-         case ST_FLOAT:  *i->value.fraction         = i->default_value.fraction;         break;
-         case ST_BIND:   *i->value.keybind          = *i->default_value.keybind;         break;
-         
-         case ST_STRING:
-         case ST_PATH:
-         {  
-            if (i->default_value.string)
-            {
-               if (i->type == ST_STRING)
-                  strlcpy(i->value.string, i->default_value.string, i->size);
-               else
-                  fill_pathname_expand_special(i->value.string, i->default_value.string, i->size);
-            }
-            break;
-         }
-         
-         default: break;
-      }
-   }
+      setting_data_reset_setting(i);
 }
 
 bool setting_data_load_config_path(const rarch_setting_t* settings, const char* path)
@@ -378,7 +381,7 @@ const rarch_setting_t* setting_data_get_list()
          CONFIG_UINT(g_settings.game_history_size,          "game_history_size",          "Content History Size",       game_history_size)
 
          #ifdef HAVE_RGUI
-         CONFIG_PATH(g_settings.content_directory,          "rgui_browser_directory",     "Content Directory",          DEFAULT_ME_YO)                WITH_FLAGS(SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR)
+         CONFIG_PATH(g_settings.rgui_content_directory,     "rgui_browser_directory",     "Content Directory",          DEFAULT_ME_YO)                WITH_FLAGS(SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR)
          CONFIG_PATH(g_settings.rgui_config_directory,      "rgui_config_directory",      "Config Directory",           DEFAULT_ME_YO)                WITH_FLAGS(SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR)
          CONFIG_BOOL(g_settings.rgui_show_start_screen,     "rgui_show_start_screen",     "Show Start Screen",          rgui_show_start_screen)
          #endif

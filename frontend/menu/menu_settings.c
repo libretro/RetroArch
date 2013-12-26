@@ -894,7 +894,7 @@ int menu_set_settings(void *data, unsigned setting, unsigned action)
       case RGUI_BROWSER_DIR_PATH:
          if (action == RGUI_ACTION_START)
          {
-            *g_settings.content_directory = '\0';
+            *g_settings.rgui_content_directory = '\0';
             *rgui->base_path = '\0';
          }
          break;
@@ -1720,7 +1720,7 @@ void menu_set_settings_label(char *type_str, size_t type_str_size, unsigned *w, 
          snprintf(type_str, type_str_size, (g_settings.fps_show) ? "ON" : "OFF");
          break;
       case RGUI_BROWSER_DIR_PATH:
-         strlcpy(type_str, *g_settings.content_directory ? g_settings.content_directory : "<default>", type_str_size);
+         strlcpy(type_str, *g_settings.rgui_content_directory ? g_settings.rgui_content_directory : "<default>", type_str_size);
          break;
 #ifdef HAVE_SCREENSHOTS
       case RGUI_SCREENSHOT_DIR_PATH:

@@ -365,12 +365,27 @@ didOutputSampleBuffer:(CMSampleBufferRef)sampleBuffer
 - (void)locationManager:(CLLocationManager *)manager didUpdateLocations:(NSArray *)locations
 {
     locationChanged = true;
-    CLLocation *location = [locations objectAtIndex:([locations     count]-1)];
+    CLLocation *location = [locations objectAtIndex:([locations count] - 1)];
     currentLatitude  = [location coordinate].latitude;
     currentLongitude = [location coordinate].longitude;
     currentHorizontalAccuracy = [location horizontalAccuracy];
     currentVerticalAccuracy = [location verticalAccuracy];
     RARCH_LOG("didUpdateLocations - latitude %f, longitude %f\n", (float)currentLatitude, (float)currentLongitude);
+}
+
+- (void)locationManager:(CLLocationManager *)manager didFailWithError:(NSError *)error
+{
+   RARCH_LOG("didFailWithError - %s\n", [[error localizedDescription] UTF8String]);
+}
+
+- (void)locationManagerDidPauseLocationUpdates:(CLLocationManager *)manager
+{
+   RARCH_LOG("didPauseLocationUpdates\n");
+}
+
+- (void)locationManagerDidResumeLocationUpdates:(CLLocationManager *)manager
+{
+   RARCH_LOG("didResumeLocationUpdates\n");
 }
 
 - (void)onLocationInit

@@ -20,12 +20,6 @@
 #include "core_info.h"
 
 
-// browser.m
-@class RADirectoryItem;
-@protocol RADirectoryListDelegate
-- (bool)directoryList:(id)list itemWasSelected:(RADirectoryItem*)path;
-@end
-
 #include "menu.h"
 
 // browser.m
@@ -35,11 +29,16 @@
 @end
 
 @interface RADirectoryList : RAMenuBase<UIActionSheetDelegate>
-@property (nonatomic, weak) id<RADirectoryListDelegate> directoryDelegate;
 @property (nonatomic, weak) RADirectoryItem* selectedItem;
+
+@property (nonatomic, copy) void (^chooseAction)(RADirectoryList* list, RADirectoryItem* item);
+@property (nonatomic, copy) NSString* path;
+@property (nonatomic, copy) NSString* extensions;
+
 @property (nonatomic) bool allowBlank;
 @property (nonatomic) bool forDirectory;
-- (id)initWithPath:(NSString*)path extensions:(const char*)extensions delegate:(id<RADirectoryListDelegate>)delegate;
+
+- (id)initWithPath:(NSString*)path extensions:(const char*)extensions action:(void (^)(RADirectoryList* list, RADirectoryItem* item))action;
 - (void)browseTo:(NSString*)path;
 @end
 

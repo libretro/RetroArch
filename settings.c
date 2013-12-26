@@ -307,7 +307,7 @@ void config_set_defaults(void)
    rarch_assert(sizeof(g_settings.input.binds[0]) >= sizeof(retro_keybinds_1));
    rarch_assert(sizeof(g_settings.input.binds[1]) >= sizeof(retro_keybinds_rest));
    memcpy(g_settings.input.binds[0], retro_keybinds_1, sizeof(retro_keybinds_1));
-#ifdef HW_RVL
+#ifdef RARCH_CONSOLE
    memcpy(g_settings.input.menu_binds, retro_keybinds_menu, sizeof(retro_keybinds_menu));
 #endif
    for (i = 1; i < MAX_PLAYERS; i++)
@@ -370,6 +370,7 @@ void config_set_defaults(void)
    *g_settings.input.overlay = '\0';
    *g_settings.content_directory = '\0';
 #ifdef HAVE_MENU
+   *g_settings.rgui_content_directory = '\0';
    *g_settings.rgui_config_directory = '\0';
 #endif
 
@@ -819,10 +820,13 @@ bool config_load_file(const char *path)
       }
    }
 
-   CONFIG_GET_PATH(content_directory, "rgui_browser_directory");
+   CONFIG_GET_PATH(content_directory, "content_directory");
    if (!strcmp(g_settings.content_directory, "default"))
       *g_settings.content_directory = '\0';
 #ifdef HAVE_MENU
+   CONFIG_GET_PATH(rgui_content_directory, "rgui_browser_directory");
+   if (!strcmp(g_settings.rgui_content_directory, "default"))
+      *g_settings.rgui_content_directory = '\0';
    CONFIG_GET_PATH(rgui_config_directory, "rgui_config_directory");
    if (!strcmp(g_settings.rgui_config_directory, "default"))
       *g_settings.rgui_config_directory = '\0';
@@ -1162,8 +1166,9 @@ bool config_save_file(const char *path)
    config_set_path(conf, "savestate_directory", *g_extern.savestate_dir ? g_extern.savestate_dir : "default");
    config_set_path(conf, "video_shader_dir", *g_settings.video.shader_dir ? g_settings.video.shader_dir : "default");
 
+   config_set_path(conf, "content_directory", *g_settings.content_directory ? g_settings.content_directory : "default");
 #ifdef HAVE_MENU
-   config_set_path(conf, "rgui_browser_directory", *g_settings.content_directory ? g_settings.content_directory : "default");
+   config_set_path(conf, "rgui_browser_directory", *g_settings.rgui_content_directory ? g_settings.rgui_content_directory : "default");
    config_set_path(conf, "rgui_config_directory", *g_settings.rgui_config_directory ? g_settings.rgui_config_directory : "default");
    config_set_bool(conf, "rgui_show_start_screen", g_settings.rgui_show_start_screen);
 #endif

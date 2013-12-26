@@ -231,7 +231,7 @@ struct settings
       char joypad_driver[32];
       char keyboard_layout[64];
       struct retro_keybind binds[MAX_PLAYERS][RARCH_BIND_LIST_END];
-#ifdef HW_RVL
+#ifdef RARCH_CONSOLE
       struct retro_keybind menu_binds[RARCH_BIND_LIST_END];
 #endif
 
@@ -297,6 +297,7 @@ struct settings
 
    char content_directory[PATH_MAX];
 #if defined(HAVE_MENU)
+   char rgui_content_directory[PATH_MAX];
    char rgui_config_directory[PATH_MAX];
    bool rgui_show_start_screen;
 #endif

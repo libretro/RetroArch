@@ -24,11 +24,39 @@
 /* buttons pulled from a RetroArch           */
 /* string_list structure.                    */
 /*********************************************/
-static void RunActionSheet(const char* title, const struct string_list* items, UIView* parent, id<UIActionSheetDelegate> delegate)
+typedef void (^RAActionSheetCallback)(UIActionSheet*, NSInteger);
+
+@interface RARunActionSheetDelegate : NSObject<UIActionSheetDelegate>
+@property (nonatomic, retain) RARunActionSheetDelegate* me;
+@property (nonatomic, copy) RAActionSheetCallback callbackBlock;
+@end
+
+@implementation RARunActionSheetDelegate
+
+- (id)initWithCallbackBlock:(RAActionSheetCallback)callback
+{
+   if ((self = [super init]))
+   {
+      _me = self;
+      _callbackBlock = callback;
+   }
+   return self;
+}
+
+- (void)actionSheet:(UIActionSheet *)actionSheet willDismissWithButtonIndex:(NSInteger)buttonIndex
+{
+   if (self.callbackBlock)
+      self.callbackBlock(actionSheet, buttonIndex);
+   self.me = nil;
+}
+
+@end
+
+static void RunActionSheet(const char* title, const struct string_list* items, UIView* parent, RAActionSheetCallback callback)
 {
    UIActionSheet* actionSheet = [UIActionSheet new];
    actionSheet.title = BOXSTRING(title);
-   actionSheet.delegate = delegate;
+   actionSheet.delegate = (id)[[RARunActionSheetDelegate alloc] initWithCallbackBlock:callback];
    
    for (int i = 0; i < items->size; i ++)
    {
@@ -202,6 +230,8 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
       result = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleValue1 reuseIdentifier:cell_id];
       result.selectionStyle = UITableViewCellSelectionStyleNone;
    }
+   
+   [self attachDefaultingGestureTo:result];
 
    char buffer[256];
    result.textLabel.text = BOXSTRING(self.setting->short_description);
@@ -239,6 +269,32 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
    {
       setting_data_set_with_string_representation(self.setting, text.UTF8String);
       [self.parentTable reloadData];
+   }
+}
+
+- (void)attachDefaultingGestureTo:(UIView*)view
+{
+   for (UIGestureRecognizer* i in view.gestureRecognizers)
+      [view removeGestureRecognizer:i];
+   [view addGestureRecognizer:[[UILongPressGestureRecognizer alloc] initWithTarget:self
+                                                                    action:@selector(resetValue:)]];
+}
+
+- (void)resetValue:(UIGestureRecognizer*)gesture
+{
+   if (gesture.state == UIGestureRecognizerStateBegan)
+   {
+      RAMenuItemGeneralSetting __weak* weakSelf = self;
+
+      struct string_list* items = string_split("OK", "|");
+      RunActionSheet("Really Reset Value?", items, self.parentTable,
+         ^(UIActionSheet* actionSheet, NSInteger buttonIndex)
+         {
+            if (buttonIndex != actionSheet.cancelButtonIndex)
+               setting_data_reset_setting(self.setting);
+            [weakSelf.parentTable reloadData];
+         });
+      string_list_free(items);
    }
 }
 
@@ -300,34 +356,33 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
 /* A menu item that displays and allows      */
 /* browsing for a path setting.              */
 /*********************************************/
-@interface RAMenuItemPathSetting() <RADirectoryListDelegate> @end
+@interface RAMenuItemPathSetting() @end
 @implementation RAMenuItemPathSetting
 
 - (void)wasSelectedOnTableView:(UITableView*)tableView ofController:(UIViewController*)controller
 {
+   RAMenuItemPathSetting __weak* weakSelf = self;
+   
    NSString* path = [BOXSTRING(self.setting->value.string) stringByDeletingLastPathComponent];
-   RADirectoryList* list = [[RADirectoryList alloc] initWithPath:path extensions:self.setting->values delegate:self];
+   RADirectoryList* list = [[RADirectoryList alloc] initWithPath:path extensions:self.setting->values action:
+      ^(RADirectoryList* list, RADirectoryItem* item)
+      {
+         if (!list.allowBlank && !item)
+            return;
+         
+         if (list.forDirectory && !item.isDirectory)
+            return;
+         
+         setting_data_set_with_string_representation(weakSelf.setting, item ? item.path.UTF8String : "");
+         [[list navigationController] popViewControllerAnimated:YES];
+         
+         [weakSelf.parentTable reloadData];
+      }];
    
    list.allowBlank = (self.setting->flags & SD_FLAG_ALLOW_EMPTY);
    list.forDirectory = (self.setting->flags & SD_FLAG_PATH_DIR);
    
    [controller.navigationController pushViewController:list animated:YES];
-}
-
-- (bool)directoryList:(RADirectoryList*)list itemWasSelected:(RADirectoryItem *)path
-{
-   if (!list.allowBlank && !path)
-      return false;
-   
-   if (list.forDirectory && !path.isDirectory)
-      return false;
-   
-   setting_data_set_with_string_representation(self.setting, path ? path.path.UTF8String : "");
-   [[list navigationController] popViewControllerAnimated:YES];
-      
-   [self.parentTable reloadData];
-
-   return true;
 }
 
 @end
@@ -338,24 +393,21 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
 /* a setting to be set from a list of        */
 /* allowed choices.                          */
 /*********************************************/
-@interface RAMenuItemEnumSetting() <UIActionSheetDelegate> @end
-
 @implementation RAMenuItemEnumSetting
 
 - (void)wasSelectedOnTableView:(UITableView*)tableView ofController:(UIViewController*)controller
 {
    struct string_list* items = string_split(self.setting->values, "|");
-   RunActionSheet(self.setting->short_description, items, self.parentTable, self);
+   RunActionSheet(self.setting->short_description, items, self.parentTable,
+      ^(UIActionSheet* actionSheet, NSInteger buttonIndex)
+      {
+         if (buttonIndex != actionSheet.cancelButtonIndex)
+         {
+            setting_data_set_with_string_representation(self.setting, [actionSheet buttonTitleAtIndex:buttonIndex].UTF8String);
+            [self.parentTable reloadData];
+         }
+      });
    string_list_free(items);
-}
-
-- (void)actionSheet:(UIActionSheet *)actionSheet clickedButtonAtIndex:(NSInteger)buttonIndex
-{
-   if (buttonIndex != actionSheet.cancelButtonIndex)
-   {
-      setting_data_set_with_string_representation(self.setting, [actionSheet buttonTitleAtIndex:buttonIndex].UTF8String);
-      [self.parentTable reloadData];
-   }
 }
 
 @end
@@ -533,31 +585,28 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
 }
 
 - (void)loadGame
-{
-   NSString* rootPath = RetroArch_iOS.get.documentsDirectory;
-   NSString* ragPath = [rootPath stringByAppendingPathComponent:@"RetroArchGames"];
-   NSString* target = path_is_directory(ragPath.UTF8String) ? ragPath : rootPath;
-
-   [self.navigationController pushViewController:[[RADirectoryList alloc] initWithPath:target extensions:NULL delegate:self] animated:YES];
+{   
+   RAMainMenu __weak* weakSelf = self;
+   
+   RADirectoryList* list = [[RADirectoryList alloc] initWithPath:RetroArch_iOS.get.documentsDirectory extensions:NULL action:
+      ^(RADirectoryList *list, RADirectoryItem *item)
+      {
+         if (item && !item.isDirectory)
+         {
+            if (weakSelf.core)
+               apple_run_core(weakSelf.core, item.path.UTF8String);
+            else
+               [weakSelf chooseCoreWithPath:item.path];
+         }
+      }];
+   
+   [self.navigationController pushViewController:list animated:YES];
 }
 
 - (void)loadHistory
 {
    NSString* history_path = [NSString stringWithFormat:@"%@/%s", RetroArch_iOS.get.systemDirectory, ".retroarch-game-history.txt"];
    [self.navigationController pushViewController:[[RAHistoryMenu alloc] initWithHistoryPath:history_path] animated:YES];
-}
-
-- (bool)directoryList:(id)list itemWasSelected:(RADirectoryItem*)path
-{
-   if (path && !path.isDirectory)
-   {
-      if (self.core)
-         apple_run_core(self.core, path.path.UTF8String);
-      else
-         [self chooseCoreWithPath:path.path];
-   }
-
-   return true;
 }
 
 @end
@@ -656,7 +705,8 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
 /* editing of the setting_data list.         */
 /*********************************************/
 @interface RACoreSettingsMenu()
-@property (nonatomic) NSString* pathToSave; // < Leave nil to not save
+@property (nonatomic, copy) NSString* pathToSave; // < Leave nil to not save
+@property (nonatomic, assign) bool isCustom;
 @end
 
 @implementation RACoreSettingsMenu
@@ -669,10 +719,19 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
 
    if ((self = [super initWithStyle:UITableViewStyleGrouped]))
    {
-      if (apple_core_info_has_custom_config(core.UTF8String))
+      _isCustom = apple_core_info_has_custom_config([core UTF8String]);
+      if (_isCustom)
+      {
+         self.title = apple_get_core_display_name(core);
+         
          _pathToSave = BOXSTRING(apple_core_info_get_custom_config(core.UTF8String, buffer, sizeof(buffer)));
+         self.navigationItem.rightBarButtonItem = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemTrash target:self action:@selector(deleteCustom)];
+      }
       else
+      {
+         self.title = @"Global Core Config";
          _pathToSave = apple_platform.globalConfigFile;
+      }
       
       const rarch_setting_t* setting_data = setting_data_get_list();
       
@@ -683,7 +742,6 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
       apple_input_find_any_key();
       
       self.core = core;
-      self.title = self.core ? apple_get_core_display_name(core) : @"Global Core Config";
    
       // Add common options
       const char* emula[] = { "Emulation", "rewind_enable", "fps_show", 0 };
@@ -732,6 +790,17 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
       config_file_free(config);
       
       apple_refresh_config();
+   }
+}
+
+- (void)deleteCustom
+{
+   if (self.isCustom && self.pathToSave)
+   {
+      [[NSFileManager defaultManager] removeItemAtPath:self.pathToSave error:nil];
+      self.pathToSave = false;
+      
+      [self.navigationController popViewControllerAnimated:YES];
    }
 }
 
@@ -785,6 +854,11 @@ static const void* const associated_core_key = &associated_core_key;
    setting_data_save_config_path(apple_get_frontend_settings(), [RetroArch_iOS get].systemConfigPath.UTF8String);
 }
 
+- (void)viewWillAppear:(BOOL)animated
+{
+   [self reloadData];
+}
+
 - (void)showCoreConfigFor:(NSString*)core
 {
    if (core && !apple_core_info_has_custom_config(core.UTF8String))
@@ -826,7 +900,7 @@ static const void* const associated_core_key = &associated_core_key;
 /* Menu object that allows editing of        */
 /* options specific to the running core.     */
 /*********************************************/
-@interface RACoreOptionsMenu() <UIActionSheetDelegate>
+@interface RACoreOptionsMenu()
 @property (nonatomic) uint32_t currentIndex;
 @end
 
@@ -858,16 +932,17 @@ static const void* const associated_core_key = &associated_core_key;
 
 - (void)editValue:(uint32_t)index
 {
+   RACoreOptionsMenu __weak* weakSelf = self;
    self.currentIndex = index;
-   RunActionSheet(core_option_get_desc(g_extern.system.core_options, index), core_option_get_vals(g_extern.system.core_options, index), self.tableView, self);
-}
 
-- (void)actionSheet:(UIActionSheet*)actionSheet clickedButtonAtIndex:(NSInteger)buttonIndex
-{
-   if (buttonIndex != actionSheet.cancelButtonIndex)
-      core_option_set_val(g_extern.system.core_options, self.currentIndex, buttonIndex);
-   
-   [self.tableView reloadData];
+   RunActionSheet(core_option_get_desc(g_extern.system.core_options, index), core_option_get_vals(g_extern.system.core_options, index), self.tableView,
+   ^(UIActionSheet* actionSheet, NSInteger buttonIndex)
+   {
+      if (buttonIndex != actionSheet.cancelButtonIndex)
+         core_option_set_val(g_extern.system.core_options, self.currentIndex, buttonIndex);
+      
+      [weakSelf.tableView reloadData];
+   });
 }
 
 @end
