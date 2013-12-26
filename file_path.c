@@ -39,6 +39,7 @@
 #ifdef _MSC_VER
 #define setmode _setmode
 #endif
+#include "msvc/msvc_compat.h"
 #ifdef _XBOX
 #include <xtl.h>
 #define INVALID_FILE_ATTRIBUTES -1
@@ -70,7 +71,7 @@ bool write_file(const char *path, const void *data, size_t size)
 }
 
 // Generic file loader.
-size_t read_file(const char *path, void **buf)
+ssize_t read_file(const char *path, void **buf)
 {
    void *rom_buf = NULL;
    FILE *file = fopen(path, "rb");
