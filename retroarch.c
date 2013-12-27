@@ -519,7 +519,7 @@ static inline void input_poll_overlay(void)
    }
 
    if (polled)
-      input_overlay_update_range_mod(driver.overlay);
+      input_overlay_post_poll(driver.overlay);
    else
       input_overlay_poll_clear(driver.overlay);
 }

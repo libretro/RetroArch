@@ -744,8 +744,6 @@ void input_overlay_poll(input_overlay_t *ol, input_overlay_state_t *out, int16_t
    x /= ol->active->mod_w;
    y /= ol->active->mod_h;
 
-   input_overlay_set_alpha_mod(ol, g_settings.input.overlay_opacity);
-
    for (i = 0; i < ol->active->size; i++)
    {
       struct overlay_desc *desc = &ol->active->descs[i];
@@ -753,10 +751,6 @@ void input_overlay_poll(input_overlay_t *ol, input_overlay_state_t *out, int16_t
          continue;
 
       desc->updated = true;
-
-      if (desc->image.image)
-         ol->iface->set_alpha(ol->iface_data, desc->image_index,
-               desc->alpha_mod * g_settings.input.overlay_opacity);
 
       if (desc->type == OVERLAY_TYPE_BUTTONS)
       {
@@ -783,9 +777,11 @@ void input_overlay_poll(input_overlay_t *ol, input_overlay_state_t *out, int16_t
       memset(out, 0, sizeof(*out));
 }
 
-void input_overlay_update_range_mod(input_overlay_t *ol)
+void input_overlay_post_poll(input_overlay_t *ol)
 {
    size_t i;
+
+   input_overlay_set_alpha_mod(ol, g_settings.input.overlay_opacity);
 
    for (i = 0; i < ol->active->size; i++)
    {
@@ -796,6 +792,10 @@ void input_overlay_update_range_mod(input_overlay_t *ol)
          // If pressed this frame, change the hitbox.
          desc->range_x_mod = desc->range_x * desc->range_mod;
          desc->range_y_mod = desc->range_y * desc->range_mod;
+
+         if (desc->image.image)
+            ol->iface->set_alpha(ol->iface_data, desc->image_index,
+                  desc->alpha_mod * g_settings.input.overlay_opacity);
       }
       else
       {
