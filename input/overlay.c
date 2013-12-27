@@ -60,6 +60,8 @@ struct overlay_desc
 
    float alpha_mod;
    float range_mod;
+
+   bool updated;
 };
 
 struct overlay
@@ -748,15 +750,9 @@ void input_overlay_poll(input_overlay_t *ol, input_overlay_state_t *out, int16_t
    {
       struct overlay_desc *desc = &ol->active->descs[i];
       if (!inside_hitbox(desc, x, y))
-      {
-         desc->range_x_mod = desc->range_x;
-         desc->range_y_mod = desc->range_y;
          continue;
-      }
 
-      // If pressed, change the hitbox.
-      desc->range_x_mod = desc->range_x * desc->range_mod;
-      desc->range_y_mod = desc->range_y * desc->range_mod;
+      desc->updated = true;
 
       if (desc->image.image)
          ol->iface->set_alpha(ol->iface_data, desc->image_index,
@@ -787,6 +783,30 @@ void input_overlay_poll(input_overlay_t *ol, input_overlay_state_t *out, int16_t
       memset(out, 0, sizeof(*out));
 }
 
+void input_overlay_update_range_mod(input_overlay_t *ol)
+{
+   size_t i;
+
+   for (i = 0; i < ol->active->size; i++)
+   {
+      struct overlay_desc *desc = &ol->active->descs[i];
+
+      if (desc->updated)
+      {
+         // If pressed this frame, change the hitbox.
+         desc->range_x_mod = desc->range_x * desc->range_mod;
+         desc->range_y_mod = desc->range_y * desc->range_mod;
+      }
+      else
+      {
+         desc->range_x_mod = desc->range_x;
+         desc->range_y_mod = desc->range_y;
+      }
+
+      desc->updated = false;
+   }
+}
+
 void input_overlay_poll_clear(input_overlay_t *ol)
 {
    size_t i;
@@ -798,6 +818,7 @@ void input_overlay_poll_clear(input_overlay_t *ol)
       struct overlay_desc *desc = &ol->active->descs[i];
       desc->range_x_mod = desc->range_x;
       desc->range_y_mod = desc->range_y;
+      desc->updated = false;
    }
 }
 

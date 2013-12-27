@@ -46,6 +46,9 @@ bool input_overlay_full_screen(input_overlay_t *ol);
 // norm_x and norm_y are the result of input_translate_coord_viewport().
 void input_overlay_poll(input_overlay_t *ol, input_overlay_state_t *out, int16_t norm_x, int16_t norm_y);
 
+// called after all the input_overlay_poll calls to update the range modifiers for pressed/unpressed regions
+void input_overlay_update_range_mod(input_overlay_t *ol);
+
 // Call when there is nothing to poll. Allows overlay to clear certain state.
 void input_overlay_poll_clear(input_overlay_t *ol);
 
