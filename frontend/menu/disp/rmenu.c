@@ -44,8 +44,8 @@
 #if defined(_XBOX1)
 #define ENTRIES_HEIGHT 9
 #define POSITION_EDGE_MAX (480)
-#define POSITION_EDGE_MIN 0
-#define POSITION_EDGE_CENTER (450)
+#define POSITION_EDGE_MIN 6
+#define POSITION_EDGE_CENTER (425)
 #define POSITION_OFFSET 30
 #define POSITION_RENDER_OFFSET 128
 #define TERM_WIDTH 45
@@ -72,7 +72,6 @@ static void render_background(rgui_handle_t *rgui)
 
 static void rmenu_render_messagebox(void *data, const char *message)
 {
-#ifndef _XBOX1
    font_params_t font_parms;
 
    size_t i, j;
@@ -113,7 +112,7 @@ static void rmenu_render_messagebox(void *data, const char *message)
    }
 
    render_normal = false;
-#endif
+
 }
 
 
