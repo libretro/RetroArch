@@ -55,6 +55,7 @@ struct apple_pad_interface
 
 // Joypad data
 int32_t apple_joypad_connect(const char* name, struct apple_pad_connection* connection);
+int32_t apple_joypad_connect_gcapi();
 void apple_joypad_disconnect(uint32_t slot);
 void apple_joypad_packet(uint32_t slot, uint8_t* data, uint32_t length);
 

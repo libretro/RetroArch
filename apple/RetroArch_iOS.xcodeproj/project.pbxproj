@@ -20,6 +20,8 @@
 		96337E82176AC6E5004685F3 /* utility.m in Sources */ = {isa = PBXBuildFile; fileRef = 96337E81176AC6E5004685F3 /* utility.m */; };
 		96366C5516C9AC3300D64A22 /* CoreAudio.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 96366C5416C9AC3300D64A22 /* CoreAudio.framework */; };
 		96366C5916C9ACF500D64A22 /* AudioToolbox.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 96366C5816C9ACF500D64A22 /* AudioToolbox.framework */; };
+		963C3C32186E3D2600A6EB1E /* apple_gamecontroller.m in Sources */ = {isa = PBXBuildFile; fileRef = 963C3C31186E3D2600A6EB1E /* apple_gamecontroller.m */; };
+		963C3C34186E3DED00A6EB1E /* GameController.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 963C3C33186E3DED00A6EB1E /* GameController.framework */; settings = {ATTRIBUTES = (Required, ); }; };
 		963F5AC816CC523B009BBD19 /* RAGameView.m in Sources */ = {isa = PBXBuildFile; fileRef = 963F5AC516CC523B009BBD19 /* RAGameView.m */; };
 		9646869517BBBEAE00C5EA69 /* platform.m in Sources */ = {isa = PBXBuildFile; fileRef = 9646869417BBBEAE00C5EA69 /* platform.m */; };
 		966B9CBD16E41E7A005B61E1 /* Default-568h@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = 966B9CB816E41E7A005B61E1 /* Default-568h@2x.png */; };
@@ -54,6 +56,9 @@
 		96355CD11788CF190010DBFA /* RetroArch_Apple.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = RetroArch_Apple.h; sourceTree = "<group>"; };
 		96366C5416C9AC3300D64A22 /* CoreAudio.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreAudio.framework; path = System/Library/Frameworks/CoreAudio.framework; sourceTree = SDKROOT; };
 		96366C5816C9ACF500D64A22 /* AudioToolbox.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AudioToolbox.framework; path = System/Library/Frameworks/AudioToolbox.framework; sourceTree = SDKROOT; };
+		963C3C30186E3D2600A6EB1E /* apple_gamecontroller.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = apple_gamecontroller.h; sourceTree = "<group>"; };
+		963C3C31186E3D2600A6EB1E /* apple_gamecontroller.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = apple_gamecontroller.m; sourceTree = "<group>"; };
+		963C3C33186E3DED00A6EB1E /* GameController.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = GameController.framework; path = System/Library/Frameworks/GameController.framework; sourceTree = SDKROOT; };
 		963F5AC516CC523B009BBD19 /* RAGameView.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = RAGameView.m; sourceTree = "<group>"; };
 		9646869417BBBEAE00C5EA69 /* platform.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = platform.m; path = iOS/platform.m; sourceTree = SOURCE_ROOT; };
 		966B9CB816E41E7A005B61E1 /* Default-568h@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "Default-568h@2x.png"; sourceTree = "<group>"; };
@@ -86,6 +91,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				963C3C34186E3DED00A6EB1E /* GameController.framework in Frameworks */,
 				50CCC828185E0E7D001F5BC8 /* CoreLocation.framework in Frameworks */,
 				501881EE184BB54C006F665D /* CoreMedia.framework in Frameworks */,
 				501881EC184BAD6D006F665D /* AVFoundation.framework in Frameworks */,
@@ -144,6 +150,7 @@
 		96AFAE2816C1D4EA009DE44C /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				963C3C33186E3DED00A6EB1E /* GameController.framework */,
 				50CCC827185E0E7D001F5BC8 /* CoreLocation.framework */,
 				501881ED184BB54C006F665D /* CoreMedia.framework */,
 				501881EB184BAD6D006F665D /* AVFoundation.framework */,
@@ -162,6 +169,8 @@
 		96AFAE3316C1D4EA009DE44C /* common */ = {
 			isa = PBXGroup;
 			children = (
+				963C3C30186E3D2600A6EB1E /* apple_gamecontroller.h */,
+				963C3C31186E3D2600A6EB1E /* apple_gamecontroller.m */,
 				509FC978183F9F18007A5A30 /* menu.m */,
 				9646869417BBBEAE00C5EA69 /* platform.m */,
 				967894571788EAAE00D6CA69 /* browser.m */,
@@ -304,6 +313,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				963C3C32186E3D2600A6EB1E /* apple_gamecontroller.m in Sources */,
 				96297A0F16C5AEA100E6DCE0 /* main.m in Sources */,
 				963F5AC816CC523B009BBD19 /* RAGameView.m in Sources */,
 				D48581DE16F823F9004BEB17 /* griffin.c in Sources */,

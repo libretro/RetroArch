@@ -16,6 +16,7 @@
 
 #include <unistd.h>
 
+#include "apple_gamecontroller.h"
 #include "input/input_common.h"
 #include "apple_input.h"
 #include "general.h"
@@ -108,6 +109,7 @@ void apple_input_handle_key_event(unsigned keycode, bool down)
 
 int32_t apple_input_find_any_key(void)
 {
+   apple_gamecontroller_poll_all();
    input_init_keyboard_lut(apple_key_map_hidusage);
 
    for (int i = 0; apple_key_name_map[i].hid_id; i++)
@@ -119,6 +121,8 @@ int32_t apple_input_find_any_key(void)
 
 int32_t apple_input_find_any_button(uint32_t port)
 {
+   apple_gamecontroller_poll_all();
+
    uint32_t buttons = g_current_input_data.pad_buttons[port] |
                       ((port == 0) ? apple_input_get_icade_buttons() : 0);
 
@@ -132,6 +136,8 @@ int32_t apple_input_find_any_button(uint32_t port)
 
 int32_t apple_input_find_any_axis(uint32_t port)
 {
+   apple_gamecontroller_poll_all();
+
    for (int i = 0; i < 4; i++)
    {
       int16_t value = g_current_input_data.pad_axis[port][i];
@@ -167,6 +173,7 @@ static void *apple_input_init(void)
 
 static void apple_input_poll(void *data)
 {
+   apple_gamecontroller_poll_all();
    memcpy(&g_polled_input_data, &g_current_input_data, sizeof(apple_input_data_t));
 
    for (int i = 0; i != g_polled_input_data.touch_count; i ++)

@@ -20,6 +20,7 @@
 
 #include "apple/common/apple_input.h"
 #include "apple/common/setting_data.h"
+#include "apple/common/apple_gamecontroller.h"
 #include "menu.h"
 
 #import "views.h"
@@ -221,7 +222,9 @@ static void handle_touch_event(NSArray* touches)
    
    if (!core_list || core_list->count == 0)
       apple_display_alert(@"No libretro cores were found. You will not be able to run any content.", 0);
-      
+   
+   apple_gamecontroller_init();
+   
    // Load system config
    const rarch_setting_t* frontend_settings = apple_get_frontend_settings();   
    setting_data_reset(frontend_settings);
