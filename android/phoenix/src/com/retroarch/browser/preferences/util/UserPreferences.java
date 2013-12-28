@@ -260,7 +260,7 @@ public final class UserPreferences
 		config.setBoolean("input_overlay_enable", useOverlay); // Not used by RetroArch directly.
 		if (useOverlay)
 		{
-			String overlayPath = prefs.getString("input_overlay", dataDir + "/overlays/snes-landscape.cfg");
+			String overlayPath = prefs.getString("input_overlay", dataDir + "/overlays/snes/snes.cfg");
 			config.setString("input_overlay", overlayPath);
 			config.setDouble("input_overlay_opacity", prefs.getFloat("input_overlay_opacity", 0.7f));
 		}
