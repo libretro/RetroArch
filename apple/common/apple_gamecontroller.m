@@ -15,7 +15,7 @@
 
 #include <Availability.h>
 
-#if __IPHONE_7_0
+#if defined(__IPHONE_7_0) && !defined(OSX)
 
 #define IS_PRESSED(x) (x.value > .01f)
 
