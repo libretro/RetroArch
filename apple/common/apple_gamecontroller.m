@@ -14,6 +14,10 @@
  */
 
 #include <Availability.h>
+#ifdef IOS
+#include <UIKit/UIDevice.h>
+static NSArray *versionCompatibility;
+#endif
 
 #if defined(__IPHONE_7_0) && !defined(OSX)
 
@@ -24,6 +28,10 @@
 
 static void apple_gamecontroller_poll(GCController* controller)
 {
+#ifdef IOS
+    if ( [[versionCompatibility objectAtIndex:0] intValue] < 7 )
+        return;
+#endif
    if (!controller || controller.playerIndex == MAX_PLAYERS)
       return;
  
@@ -68,8 +76,12 @@ static void apple_gamecontroller_poll(GCController* controller)
    }
 }
 
-void apple_gamecontroller_poll_all()
+void apple_gamecontroller_poll_all(void)
 {
+#ifdef IOS
+    if ( [[versionCompatibility objectAtIndex:0] intValue] < 7 )
+        return;
+#endif
    NSArray* controllers = [GCController controllers];
    
    for (int i = 0; i != [controllers count]; i ++)
@@ -78,6 +90,10 @@ void apple_gamecontroller_poll_all()
 
 void apple_gamecontroller_connect(GCController* controller)
 {
+#ifdef IOS
+    if ( [[versionCompatibility objectAtIndex:0] intValue] < 7 )
+        return;
+#endif
    int32_t slot = apple_joypad_connect_gcapi();
    controller.playerIndex = (slot >= 0 && slot < MAX_PLAYERS) ? slot : GCControllerPlayerIndexUnset;
    
@@ -95,15 +111,26 @@ void apple_gamecontroller_connect(GCController* controller)
 
 void apple_gamecontroller_disconnect(GCController* controller)
 {
+#ifdef IOS
+    if ( [[versionCompatibility objectAtIndex:0] intValue] < 7 )
+        return;
+#endif
    if (controller.playerIndex == GCControllerPlayerIndexUnset)
       return;
    
    apple_joypad_disconnect(controller.playerIndex);
 }
 
-void apple_gamecontroller_init()
+void apple_gamecontroller_init(void)
 {
-   [[NSNotificationCenter defaultCenter] addObserverForName:GCControllerDidConnectNotification object:nil queue:[NSOperationQueue mainQueue]
+#ifdef IOS
+    versionCompatibility = [[UIDevice currentDevice].systemVersion componentsSeparatedByString:@"."];
+    
+    if ( [[versionCompatibility objectAtIndex:0] intValue] < 7 )
+        return;
+#endif
+    
+    [[NSNotificationCenter defaultCenter] addObserverForName:GCControllerDidConnectNotification object:nil queue:[NSOperationQueue mainQueue]
       usingBlock:^(NSNotification *note) { apple_gamecontroller_connect([note object]); } ];
 
    [[NSNotificationCenter defaultCenter] addObserverForName:GCControllerDidDisconnectNotification object:nil queue:[NSOperationQueue mainQueue]
@@ -112,12 +139,12 @@ void apple_gamecontroller_init()
 
 #else
 
-void apple_gamecontroller_init()
+void apple_gamecontroller_init(void)
 {
    
 }
 
-void apple_gamecontroller_poll_all()
+void apple_gamecontroller_poll_all(void)
 {
    
 }
