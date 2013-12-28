@@ -89,22 +89,7 @@ static void rarch_get_environment_console(void)
 }
 #endif
 
-#if defined(EMSCRIPTEN)
-#define main_entry emscripten_app_entry
-#define returntype void
-#define signature() void
-#define returnfunc() exit(0)
-#define returnfunc_oneshot() return
-#define return_negative() return
-#define return_var(var) return
-#define declare_argc() int argc = 0;
-#define declare_argv() char *argv[1]
-#define args_type() void*
-#define args_initial_ptr() NULL
-#define while_iter if
-#define while_cond false
-#define break_loop g_extern.lifecycle_state &= ~(1ULL << MODE_GAME_ONESHOT); break
-#elif defined(ANDROID)
+#if defined(ANDROID)
 #define main_entry android_app_entry
 #define returntype void
 #define signature() void* data
@@ -116,10 +101,7 @@ static void rarch_get_environment_console(void)
 #define declare_argv() char *argv[1]
 #define args_type() struct android_app*
 #define args_initial_ptr() data
-#define while_iter while
-#define while_cond true
-#define break_loop break
-#elif defined(IOS) || defined(OSX) || defined(HAVE_BB10)
+#elif defined(__APPLE__) || defined(HAVE_BB10)
 #define main_entry rarch_main
 #define returntype int
 #define signature() int argc, char *argv[]
@@ -131,9 +113,6 @@ static void rarch_get_environment_console(void)
 #define declare_argv()
 #define args_type() void*
 #define args_initial_ptr() NULL
-#define while_iter while
-#define while_cond true
-#define break_loop break
 #else
 #define main_entry main
 #define returntype int
@@ -146,18 +125,15 @@ static void rarch_get_environment_console(void)
 #define declare_argv()
 #define args_type() void*
 #define args_initial_ptr() NULL
-#define while_iter while
-#define while_cond true
-#define break_loop break
 #endif
 
-#if defined(HAVE_BB10) || defined(ANDROID) || defined(EMSCRIPTEN)
+#if defined(HAVE_BB10) || defined(ANDROID)
 #define ra_preinited true
 #else
 #define ra_preinited false
 #endif
 
-#if defined(HAVE_BB10) || defined(RARCH_CONSOLE) || defined(EMSCRIPTEN)
+#if defined(HAVE_BB10) || defined(RARCH_CONSOLE)
 #define attempt_load_game false
 #else
 #define attempt_load_game true
@@ -169,7 +145,7 @@ static void rarch_get_environment_console(void)
 #define initial_menu_lifecycle_state (1ULL << MODE_GAME)
 #endif
 
-#if !defined(RARCH_CONSOLE) && !defined(HAVE_BB10) && !defined(ANDROID) && !defined(EMSCRIPTEN)
+#if !defined(RARCH_CONSOLE) && !defined(HAVE_BB10) && !defined(ANDROID)
 #define attempt_load_game_push_history true
 #else
 #define attempt_load_game_push_history false
@@ -185,19 +161,9 @@ static void rarch_get_environment_console(void)
 #define attempt_load_game_fails (1ULL << MODE_EXIT)
 #endif
 
-#if defined(EMSCRIPTEN)
-#define frontend_init_enable false
-#define menu_init_enable false
-#else
 #define frontend_init_enable true
 #define menu_init_enable true
-#endif
-
-#if defined(EMSCRIPTEN)
-#define initial_lifecycle_state_preinit true
-#else
 #define initial_lifecycle_state_preinit false
-#endif
 
 returntype main_entry(signature())
 {
@@ -253,9 +219,7 @@ returntype main_entry(signature())
    do
    {
       if (g_extern.system.shutdown)
-      {
-         break_loop;
-      }
+         break;
       else if (g_extern.lifecycle_state & (1ULL << MODE_LOAD_GAME))
       {
          load_menu_game_prepare();
@@ -283,15 +247,13 @@ returntype main_entry(signature())
          if (driver.video_poke && driver.video_poke->set_aspect_ratio)
             driver.video_poke->set_aspect_ratio(driver.video_data, g_settings.video.aspect_ratio_idx);
 
-         while_iter ((g_extern.is_paused && !g_extern.is_oneshot) ? rarch_main_idle_iterate() : rarch_main_iterate())
+         while ((g_extern.is_paused && !g_extern.is_oneshot) ? rarch_main_idle_iterate() : rarch_main_iterate())
          {
             if (frontend_ctx && frontend_ctx->process_events)
                frontend_ctx->process_events(args);
 
             if (!(g_extern.lifecycle_state & (1ULL << MODE_GAME)))
-            {
-               break_loop;
-            }
+               break;
          }
          g_extern.lifecycle_state &= ~(1ULL << MODE_GAME);
       }
@@ -316,15 +278,13 @@ returntype main_entry(signature())
          if (driver.audio_data)
             audio_stop_func();
 
-         while_iter (!g_extern.system.shutdown && menu_iterate())
+         while (!g_extern.system.shutdown && menu_iterate())
          {
             if (frontend_ctx && frontend_ctx->process_events)
                frontend_ctx->process_events(args);
 
             if (!(g_extern.lifecycle_state & (1ULL << MODE_MENU)))
-            {
-               break_loop;
-            }
+               break;
          }
 
          driver_set_nonblock_state(driver.nonblock_state);
@@ -341,10 +301,8 @@ returntype main_entry(signature())
          g_extern.system.key_event = key_event;
       }
       else
-      {
-         break_loop;
-      }
-   }while(while_cond);
+         break;
+   }while(true);
 
    if (g_extern.lifecycle_state & (1ULL << MODE_GAME_ONESHOT))
          returnfunc_oneshot();
@@ -356,7 +314,7 @@ returntype main_entry(signature())
    if (g_extern.config_save_on_exit && *g_extern.config_path)
       config_save_file(g_extern.config_path);
 #else
-   while_iter ((g_extern.is_paused && !g_extern.is_oneshot) ? rarch_main_idle_iterate() : rarch_main_iterate());
+   while ((g_extern.is_paused && !g_extern.is_oneshot) ? rarch_main_idle_iterate() : rarch_main_iterate());
 #endif
 
    if (g_extern.lifecycle_state & (1ULL << MODE_GAME_ONESHOT))
