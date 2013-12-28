@@ -793,6 +793,7 @@ static void parse_input(int argc, char *argv[])
    g_extern.libretro_dummy = false;
    g_extern.has_set_save_path = false;
    g_extern.has_set_state_path = false;
+   g_extern.has_set_libretro = false;
 
    if (argc < 2)
    {
@@ -1015,6 +1016,7 @@ static void parse_input(int argc, char *argv[])
 #ifdef HAVE_DYNAMIC
          case 'L':
             strlcpy(g_settings.libretro, optarg, sizeof(g_settings.libretro));
+            g_extern.has_set_libretro = true;
             break;
 #endif
 

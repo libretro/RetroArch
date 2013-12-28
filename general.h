@@ -356,6 +356,7 @@ struct global
    bool has_set_save_path;
    bool has_set_state_path;
    bool has_set_libretro_device[MAX_PLAYERS];
+   bool has_set_libretro;
 
 #ifdef HAVE_RMENU
    char menu_texture_path[PATH_MAX];
