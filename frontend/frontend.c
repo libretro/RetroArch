@@ -15,6 +15,7 @@
  * If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "frontend.h"
 #include "../general.h"
 #include "../conf/config_file.h"
 #include "../file.h"
@@ -92,38 +93,32 @@ static void rarch_get_environment_console(void)
 #if defined(ANDROID)
 #define main_entry android_app_entry
 #define returntype void
-#define signature() void* data
+#define signature_expand() data
 #define returnfunc() exit(0)
-#define returnfunc_oneshot() return
 #define return_negative() return
 #define return_var(var) return
 #define declare_argc() int argc = 0;
 #define declare_argv() char *argv[1]
-#define args_type() struct android_app*
 #define args_initial_ptr() data
 #elif defined(__APPLE__) || defined(HAVE_BB10)
 #define main_entry rarch_main
 #define returntype int
-#define signature() int argc, char *argv[]
+#define signature_expand() argc, argv
 #define returnfunc() return 0
-#define returnfunc_oneshot() return 0
 #define return_negative() return 1
 #define return_var(var) return var
 #define declare_argc()
 #define declare_argv()
-#define args_type() void*
 #define args_initial_ptr() NULL
 #else
 #define main_entry main
 #define returntype int
-#define signature() int argc, char *argv[]
+#define signature_expand() argc, argv
 #define returnfunc() return 0
-#define returnfunc_oneshot() return 0
 #define return_negative() return 1
 #define return_var(var) return var
 #define declare_argc()
 #define declare_argv()
-#define args_type() void*
 #define args_initial_ptr() NULL
 #endif
 
@@ -156,7 +151,7 @@ static void rarch_get_environment_console(void)
 #endif
 
 #if defined(RARCH_CONSOLE) || defined(__QNX__) || defined(ANDROID)
-#define attempt_load_game_fails (1ULL << MODE_MENU)
+#define attempt_load_game_fails (1ULL << MODE_MENU_PREINIT)
 #else
 #define attempt_load_game_fails (1ULL << MODE_EXIT)
 #endif
@@ -165,12 +160,157 @@ static void rarch_get_environment_console(void)
 #define menu_init_enable true
 #define initial_lifecycle_state_preinit false
 
+int main_entry_iterate(signature(), args_type() args)
+{
+   int i;
+   static retro_keyboard_event_t key_event;
+
+   if (g_extern.system.shutdown)
+      return 1;
+   else if (g_extern.lifecycle_state & (1ULL << MODE_LOAD_GAME))
+   {
+      load_menu_game_prepare();
+
+      if (load_menu_game())
+      {
+         g_extern.lifecycle_state |= (1ULL << MODE_GAME);
+         if (driver.video_poke && driver.video_poke->set_aspect_ratio)
+            driver.video_poke->set_aspect_ratio(driver.video_data, g_settings.video.aspect_ratio_idx);
+      }
+      else
+      {
+         // If ROM load fails, we exit RetroArch. On console it might make more sense to go back to menu though ...
+         g_extern.lifecycle_state = attempt_load_game_fails;
+
+         if (g_extern.lifecycle_state & (1ULL << MODE_EXIT))
+         {
+            if (frontend_ctx && frontend_ctx->shutdown)
+               frontend_ctx->shutdown(true);
+
+            return 1;
+         }
+      }
+
+      g_extern.lifecycle_state &= ~(1ULL << MODE_LOAD_GAME);
+
+   }
+   else if (g_extern.lifecycle_state & (1ULL << MODE_GAME))
+   {
+      bool r;
+      if (g_extern.is_paused && !g_extern.is_oneshot)
+         r = rarch_main_idle_iterate();
+      else
+         r = rarch_main_iterate();
+
+      if (r)
+      {
+         if (frontend_ctx && frontend_ctx->process_events)
+            frontend_ctx->process_events(args);
+      }
+      else
+         g_extern.lifecycle_state &= ~(1ULL << MODE_GAME);
+   }
+#ifdef HAVE_MENU
+   else if (g_extern.lifecycle_state & (1ULL << MODE_MENU_PREINIT))
+   {
+      // Menu should always run with vsync on.
+      video_set_nonblock_state_func(false);
+      // Stop all rumbling when entering RGUI.
+      for (i = 0; i < MAX_PLAYERS; i++)
+      {
+         driver_set_rumble_state(i, RETRO_RUMBLE_STRONG, 0);
+         driver_set_rumble_state(i, RETRO_RUMBLE_WEAK, 0);
+      }
+
+      // Override keyboard callback to redirect to menu instead.
+      // We'll use this later for something ...
+      // FIXME: This should probably be moved to menu_common somehow.
+      key_event = g_extern.system.key_event;
+      g_extern.system.key_event = menu_key_event;
+
+      if (driver.audio_data)
+         audio_stop_func();
+
+      rgui->need_refresh= true;
+      rgui->old_input_state |= 1ULL << RARCH_MENU_TOGGLE;
+
+      g_extern.lifecycle_state &= ~(1ULL << MODE_MENU_PREINIT);
+      g_extern.lifecycle_state |= (1ULL << MODE_MENU);
+   }
+   else if (g_extern.lifecycle_state & (1ULL << MODE_MENU))
+   {
+      if (menu_iterate())
+      {
+         if (frontend_ctx && frontend_ctx->process_events)
+            frontend_ctx->process_events(args);
+      }
+      else
+      {
+         g_extern.lifecycle_state &= ~(1ULL << MODE_MENU);
+         driver_set_nonblock_state(driver.nonblock_state);
+
+         if (driver.audio_data && !g_extern.audio_data.mute && !audio_start_func())
+         {
+            RARCH_ERR("Failed to resume audio driver. Will continue without audio.\n");
+            g_extern.audio_active = false;
+         }
+
+         // Restore libretro keyboard callback.
+         g_extern.system.key_event = key_event;
+      }
+   }
+#endif
+   else
+      return 1;
+
+   return 0;
+}
+
+void main_exit(args_type() args)
+{
+#ifdef HAVE_MENU
+   g_extern.system.shutdown = false;
+
+   menu_free();
+
+   if (g_extern.config_save_on_exit && *g_extern.config_path)
+      config_save_file(g_extern.config_path);
+#endif
+
+   rarch_main_deinit();
+   rarch_deinit_msg_queue();
+   global_uninit_drivers();
+
+#ifdef PERF_TEST
+   rarch_perf_log();
+#endif
+
+#if defined(HAVE_LOGGER) && !defined(ANDROID)
+   logger_shutdown();
+#elif defined(HAVE_FILE_LOGGER)
+   if (g_extern.log_file)
+      fclose(g_extern.log_file);
+   g_extern.log_file = NULL;
+#endif
+
+   if (frontend_ctx && frontend_ctx->deinit)
+      frontend_ctx->deinit(args);
+
+   if (g_extern.lifecycle_state & (1ULL << MODE_EXITSPAWN) && frontend_ctx
+         && frontend_ctx->exitspawn)
+      frontend_ctx->exitspawn();
+
+   rarch_main_clear_state();
+
+   if (frontend_ctx && frontend_ctx->shutdown)
+      frontend_ctx->shutdown(false);
+}
+
 returntype main_entry(signature())
 {
    declare_argc();
    declare_argv();
    args_type() args = (args_type())args_initial_ptr();
-   unsigned i;
 
    if (frontend_init_enable)
    {
@@ -216,137 +356,12 @@ returntype main_entry(signature())
          menu_rom_history_push_current();
    }
 
-   do
-   {
-      if (g_extern.system.shutdown)
-         break;
-      else if (g_extern.lifecycle_state & (1ULL << MODE_LOAD_GAME))
-      {
-         load_menu_game_prepare();
-
-         // If ROM load fails, we exit RetroArch. On console it might make more sense to go back to menu though ...
-         if (load_menu_game())
-            g_extern.lifecycle_state |= (1ULL << MODE_GAME);
-         else
-         {
-            g_extern.lifecycle_state = attempt_load_game_fails;
-
-            if (g_extern.lifecycle_state & (1ULL << MODE_EXIT))
-            {
-               if (frontend_ctx && frontend_ctx->shutdown)
-                  frontend_ctx->shutdown(true);
-
-               return_negative();
-            }
-         }
-
-         g_extern.lifecycle_state &= ~(1ULL << MODE_LOAD_GAME);
-      }
-      else if (g_extern.lifecycle_state & (1ULL << MODE_GAME))
-      {
-         if (driver.video_poke && driver.video_poke->set_aspect_ratio)
-            driver.video_poke->set_aspect_ratio(driver.video_data, g_settings.video.aspect_ratio_idx);
-
-         while ((g_extern.is_paused && !g_extern.is_oneshot) ? rarch_main_idle_iterate() : rarch_main_iterate())
-         {
-            if (frontend_ctx && frontend_ctx->process_events)
-               frontend_ctx->process_events(args);
-
-            if (!(g_extern.lifecycle_state & (1ULL << MODE_GAME)))
-               break;
-         }
-         g_extern.lifecycle_state &= ~(1ULL << MODE_GAME);
-      }
-      else if (g_extern.lifecycle_state & (1ULL << MODE_MENU))
-      {
-         g_extern.lifecycle_state |= 1ULL << MODE_MENU_PREINIT;
-         // Menu should always run with vsync on.
-         video_set_nonblock_state_func(false);
-         // Stop all rumbling when entering RGUI.
-         for (i = 0; i < MAX_PLAYERS; i++)
-         {
-            driver_set_rumble_state(i, RETRO_RUMBLE_STRONG, 0);
-            driver_set_rumble_state(i, RETRO_RUMBLE_WEAK, 0);
-         }
-
-         // Override keyboard callback to redirect to menu instead.
-         // We'll use this later for something ...
-         // FIXME: This should probably be moved to menu_common somehow.
-         retro_keyboard_event_t key_event = g_extern.system.key_event;
-         g_extern.system.key_event = menu_key_event;
-
-         if (driver.audio_data)
-            audio_stop_func();
-
-         while (!g_extern.system.shutdown && menu_iterate())
-         {
-            if (frontend_ctx && frontend_ctx->process_events)
-               frontend_ctx->process_events(args);
-
-            if (!(g_extern.lifecycle_state & (1ULL << MODE_MENU)))
-               break;
-         }
-
-         driver_set_nonblock_state(driver.nonblock_state);
-
-         if (driver.audio_data && !g_extern.audio_data.mute && !audio_start_func())
-         {
-            RARCH_ERR("Failed to resume audio driver. Will continue without audio.\n");
-            g_extern.audio_active = false;
-         }
-
-         g_extern.lifecycle_state &= ~(1ULL << MODE_MENU);
-
-         // Restore libretro keyboard callback.
-         g_extern.system.key_event = key_event;
-      }
-      else
-         break;
-   }while(true);
-
-   if (g_extern.lifecycle_state & (1ULL << MODE_GAME_ONESHOT))
-         returnfunc_oneshot();
-
-   g_extern.system.shutdown = false;
-
-   menu_free();
-
-   if (g_extern.config_save_on_exit && *g_extern.config_path)
-      config_save_file(g_extern.config_path);
+   while(!main_entry_iterate(signature_expand(), args));
 #else
    while ((g_extern.is_paused && !g_extern.is_oneshot) ? rarch_main_idle_iterate() : rarch_main_iterate());
 #endif
 
-   if (g_extern.lifecycle_state & (1ULL << MODE_GAME_ONESHOT))
-         returnfunc_oneshot();
-
-   rarch_main_deinit();
-   rarch_deinit_msg_queue();
-   global_uninit_drivers();
-
-#ifdef PERF_TEST
-   rarch_perf_log();
-#endif
-
-#if defined(HAVE_LOGGER) && !defined(ANDROID)
-   logger_shutdown();
-#elif defined(HAVE_FILE_LOGGER)
-   if (g_extern.log_file)
-      fclose(g_extern.log_file);
-   g_extern.log_file = NULL;
-#endif
-
-   if (frontend_ctx && frontend_ctx->deinit)
-      frontend_ctx->deinit(args);
-
-   if (g_extern.lifecycle_state & (1ULL << MODE_EXITSPAWN) && frontend_ctx
-         && frontend_ctx->exitspawn)
-      frontend_ctx->exitspawn();
-
-   rarch_main_clear_state();
-
-   if (frontend_ctx && frontend_ctx->shutdown)
-      frontend_ctx->shutdown(false);
+   main_exit(args);
 
    returnfunc();
 }

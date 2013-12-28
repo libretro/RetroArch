@@ -29,6 +29,5 @@ extern void apple_event_basic_command(enum basic_event_t action);
 
 extern void apple_refresh_config(void);
 extern int apple_rarch_load_content(int argc, char* argv[]);
-extern int apple_rarch_iterate_once();
 
 #endif

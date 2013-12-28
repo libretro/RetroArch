@@ -519,8 +519,6 @@ MAIN
 ============================================================ */
 #if defined(XENON)
 #include "../frontend/frontend_xenon.c"
-#elif defined(IOS) || defined(OSX)
-#include "../frontend/frontend_apple.c"
 #else
 #include "../frontend/frontend.c"
 #endif

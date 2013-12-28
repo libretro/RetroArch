@@ -47,7 +47,7 @@ void apple_event_basic_command(enum basic_event_t action)
    }
 }
 
-void apple_refresh_config()
+void apple_refresh_config(void)
 {
    // Little nudge to prevent stale values when reloading the confg file
    g_extern.block_config_read = false;
@@ -76,7 +76,6 @@ int apple_rarch_load_content(int argc, char* argv[])
       menu_rom_history_push_current();   
    
    g_extern.lifecycle_state |= 1ULL << MODE_GAME;
-   g_extern.lifecycle_state |= 1ULL << MODE_GAME_ONESHOT;
    
    return 0;
 }

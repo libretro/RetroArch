@@ -20,100 +20,19 @@
 #include "../conf/config_file.h"
 #include "../file.h"
 #include "../emscripten/RWebAudio.h"
+#include "frontend.h"
 
 #ifdef HAVE_MENU
 #include "../frontend/menu/menu_common.h"
 #endif
 
-static bool menuloop;
-
-static void endloop(void)
+static void emscripten_mainloop(void)
 {
-   g_extern.system.shutdown = false;
-   menu_free();
+   if (!main_entry_iterate(0, NULL, NULL))
+      return;
 
-   if (g_extern.config_save_on_exit && *g_extern.config_path)
-      config_save_file(g_extern.config_path);
-
-   if (g_extern.main_is_init)
-      rarch_main_deinit();
-
-   rarch_deinit_msg_queue();
-
-#ifdef PERF_TEST
-   rarch_perf_log();
-#endif
-
-   rarch_main_clear_state();
-
+   main_exit(NULL);
    exit(0);
-}
-
-static void mainloop(void)
-{
-   if (g_extern.system.shutdown)
-   {
-      endloop();
-   }
-   else if (menuloop)
-   {
-      if (!menu_iterate())
-      {
-         menuloop = false;
-         driver_set_nonblock_state(driver.nonblock_state);
-
-         if (driver.audio_data && !audio_start_func())
-         {
-            RARCH_ERR("Failed to resume audio driver. Will continue without audio.\n");
-            g_extern.audio_active = false;
-         }
-
-         g_extern.lifecycle_state &= ~(1ULL << MODE_MENU);
-      }
-   }
-   else if (g_extern.lifecycle_state & (1ULL << MODE_LOAD_GAME))
-   {
-      load_menu_game_prepare();
-
-      // If ROM load fails, we exit RetroArch. On console it might make more sense to go back to menu though ...
-      if (load_menu_game())
-         g_extern.lifecycle_state |= (1ULL << MODE_GAME);
-      else
-      {
-#ifdef RARCH_CONSOLE
-         g_extern.lifecycle_state |= (1ULL << MODE_MENU);
-#else
-         return;
-#endif
-      }
-
-      g_extern.lifecycle_state &= ~(1ULL << MODE_LOAD_GAME);
-   }
-   else if (g_extern.lifecycle_state & (1ULL << MODE_GAME))
-   {
-      bool r;
-      if (g_extern.is_paused && !g_extern.is_oneshot)
-         r = rarch_main_idle_iterate();
-      else
-         r = rarch_main_iterate();
-      if (!r)
-         g_extern.lifecycle_state &= ~(1ULL << MODE_GAME);
-   }
-   else if (g_extern.lifecycle_state & (1ULL << MODE_MENU))
-   {
-      g_extern.lifecycle_state |= 1ULL << MODE_MENU_PREINIT;
-      // Menu should always run with vsync on.
-      video_set_nonblock_state_func(false);
-
-      if (driver.audio_data)
-         audio_stop_func();
-
-      menuloop = true;
-   }
-   else
-   {
-      g_extern.system.shutdown = true;
-   }
 }
 
 int main(int argc, char *argv[])
@@ -129,7 +48,6 @@ int main(int argc, char *argv[])
 #ifdef HAVE_MENU
    menu_init();
    g_extern.lifecycle_state |= 1ULL << MODE_GAME;
-   g_extern.lifecycle_state |= 1ULL << MODE_GAME_ONESHOT;
 
    // If we started a ROM directly from command line,
    // push it to ROM history.
@@ -137,7 +55,7 @@ int main(int argc, char *argv[])
       menu_rom_history_push_current();
 #endif
 
-   emscripten_set_main_loop(mainloop, g_settings.video.vsync ? 0 : INT_MAX, 1);
+   emscripten_set_main_loop(emscripten_mainloop, g_settings.video.vsync ? 0 : INT_MAX, 1);
 
    return 0;
 }

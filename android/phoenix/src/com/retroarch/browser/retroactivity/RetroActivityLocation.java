@@ -43,6 +43,9 @@ implements ConnectionCallbacks, OnConnectionFailedListener, LocationListener
 	@Override
 	public void onConnected(Bundle dataBundle)
 	{
+		if (mLocationClient == null)
+			return;
+		
 		// Display the connection status
 		Toast.makeText(this, "Connected", Toast.LENGTH_SHORT).show();
 		location_service_running = true;
@@ -67,6 +70,9 @@ implements ConnectionCallbacks, OnConnectionFailedListener, LocationListener
 	@Override
 	public void onDisconnected()
 	{
+		if (mLocationClient == null)
+			return;
+		
 		// Display the connection status
 		Toast.makeText(this, "Disconnected. Please re-connect.", Toast.LENGTH_SHORT).show();
 
@@ -127,7 +133,10 @@ implements ConnectionCallbacks, OnConnectionFailedListener, LocationListener
 	public void onLocationSetInterval(int update_interval_in_ms, int distance_interval)
 	{
 		// Use high accuracy
-		mLocationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
+        if (mLocationRequest == null)
+        	return;
+        
+        mLocationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
 
 		if (update_interval_in_ms == 0)
 			mLocationRequest.setInterval(5 * 1000); // 5 seconds
@@ -166,10 +175,13 @@ implements ConnectionCallbacks, OnConnectionFailedListener, LocationListener
 	 */
 	public void onLocationStart()
 	{
+		if (mLocationClient == null)
+			return;
+		
 		mUpdatesRequested = true;
 
 		// Connect the client.
-		mLocationClient.connect();
+        mLocationClient.connect();
 	}
 
 	/**
@@ -187,7 +199,8 @@ implements ConnectionCallbacks, OnConnectionFailedListener, LocationListener
 	public void onLocationStop()
 	{
 		// Disconnecting the client invalidates it.
-		mLocationClient.disconnect();
+		if (mLocationClient != null && mUpdatesRequested)
+			mLocationClient.disconnect();
 	}
 
 	/**
