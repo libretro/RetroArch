@@ -511,8 +511,8 @@ static inline void input_poll_overlay(void)
 
       driver.overlay_state.buttons |= polled_data.buttons;
 
-      for (j = 0; j < 4; j ++)
-         if (driver.overlay_state.analog[j] == 0)
+      for (j = 0; j < 4; j++)
+         if (!driver.overlay_state.analog[j])
             driver.overlay_state.analog[j] = polled_data.analog[j];
 
       polled = true;
