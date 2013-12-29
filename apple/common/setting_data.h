@@ -37,7 +37,8 @@ enum setting_flags
    SD_FLAG_PATH_DIR = 1,
    SD_FLAG_PATH_FILE = 2,
    SD_FLAG_ALLOW_EMPTY = 4,
-   SD_FLAG_VALUE_DESC = 8
+   SD_FLAG_VALUE_DESC = 8,
+   SD_FLAG_HAS_RANGE = 16
 };
 
 typedef struct

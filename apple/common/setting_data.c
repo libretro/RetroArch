@@ -26,6 +26,17 @@ void setting_data_load_current()
    memcpy(&fake_extern, &g_extern, sizeof(struct global));
 }
 
+#define ENFORCE_RANGE(setting, type)                  \
+{                                                     \
+   if (setting->flags & SD_FLAG_HAS_RANGE)            \
+   {                                                  \
+      if (*setting->value.type < setting->min)        \
+         *setting->value.type = setting->min;         \
+      if (*setting->value.type > setting->max)        \
+         *setting->value.type = setting->max;         \
+   }                                                  \
+}
+
 // Input
 static const char* get_input_config_prefix(const rarch_setting_t* setting)
 {
@@ -142,12 +153,24 @@ bool setting_data_load_config(const rarch_setting_t* settings, config_file_t* co
    {
       switch (i->type)
       {
-         case ST_BOOL:   config_get_bool  (config, i->name, i->value.boolean); break;
-         case ST_INT:    config_get_int   (config, i->name, i->value.integer); break;
-         case ST_UINT:   config_get_uint  (config, i->name, i->value.unsigned_integer); break;
-         case ST_FLOAT:  config_get_float (config, i->name, i->value.fraction); break;
+         case ST_BOOL:   config_get_bool  (config, i->name, i->value.boolean); break;            
          case ST_PATH:   config_get_path  (config, i->name, i->value.string, i->size); break;
          case ST_STRING: config_get_array (config, i->name, i->value.string, i->size); break;
+         
+         case ST_INT:
+            config_get_int(config, i->name, i->value.integer);
+            ENFORCE_RANGE(i, integer);
+            break;
+
+         case ST_UINT:
+            config_get_uint(config, i->name, i->value.unsigned_integer);
+            ENFORCE_RANGE(i, unsigned_integer);
+            break;
+
+         case ST_FLOAT:
+            config_get_float(config, i->name, i->value.fraction);
+            ENFORCE_RANGE(i, fraction);
+            break;         
          
          case ST_BIND:
          {
@@ -190,12 +213,24 @@ bool setting_data_save_config(const rarch_setting_t* settings, config_file_t* co
       switch (i->type)
       {
          case ST_BOOL:   config_set_bool  (config, i->name, *i->value.boolean); break;
-         case ST_INT:    config_set_int   (config, i->name, *i->value.integer); break;
-         case ST_UINT:   config_set_uint64(config, i->name, *i->value.unsigned_integer); break;
-         case ST_FLOAT:  config_set_float (config, i->name, *i->value.fraction); break;
          case ST_PATH:   config_set_path(config, i->name,  i->value.string); break;
          case ST_STRING: config_set_string(config, i->name,  i->value.string); break;
          
+         case ST_INT:
+            ENFORCE_RANGE(i, integer);         
+            config_set_int(config, i->name, *i->value.integer);
+            break;
+
+         case ST_UINT:
+            ENFORCE_RANGE(i, unsigned_integer);         
+            config_set_uint64(config, i->name, *i->value.unsigned_integer);
+            break;
+
+         case ST_FLOAT:
+            ENFORCE_RANGE(i, fraction);         
+            config_set_float(config, i->name, *i->value.fraction);
+            break;
+
          case ST_BIND:
          {
             config_set_string(config, get_input_config_key(i, 0     ), get_key_name(i));
@@ -228,14 +263,22 @@ void setting_data_set_with_string_representation(const rarch_setting_t* setting,
 {
    if (!setting || !value)
       return;
-      
-   // TODO: Clamp to min/max
    
    switch (setting->type)
    {
-      case ST_INT:    sscanf(value, "%d", setting->value.integer); break;
-      case ST_UINT:   sscanf(value, "%u", setting->value.unsigned_integer); break;
-      case ST_FLOAT:  sscanf(value, "%f", setting->value.fraction); break;
+      case ST_INT:
+         sscanf(value, "%d", setting->value.integer);
+         ENFORCE_RANGE(setting, integer);
+         break;
+      case ST_UINT:
+         sscanf(value, "%u", setting->value.unsigned_integer);
+         ENFORCE_RANGE(setting, unsigned_integer);
+         break;      
+      case ST_FLOAT:
+         sscanf(value, "%f", setting->value.fraction);
+         ENFORCE_RANGE(setting, fraction);         
+         break;
+
       case ST_PATH:   strlcpy(setting->value.string, value, setting->size); break;
       case ST_STRING: strlcpy(setting->value.string, value, setting->size); break;
       
@@ -336,8 +379,13 @@ static const uint32_t features = SD_FEATURE_VIDEO_MODE | SD_FEATURE_SHADERS |
 #define CONFIG_BIND(TARGET, PLAYER, NAME, SHORT, DEF) \
    NEXT = setting_data_bind_setting  (NAME, SHORT, &TARGET, PLAYER, DEF);
 
-#define WITH_FLAGS(FLAGS) (list[index - 1]).flags = FLAGS;
-#define WITH_RANGE(MIN, MAX) (list[index - 1]).min = MIN; (list[index - 1]).max = MAX;
+#define WITH_FLAGS(FLAGS) (list[index - 1]).flags |= FLAGS;
+
+#define WITH_RANGE(MIN, MAX)    \
+   (list[index - 1]).min = MIN; \
+   (list[index - 1]).max = MAX; \
+   WITH_FLAGS(SD_FLAG_HAS_RANGE)
+
 #define WITH_VALUES(VALUES) (list[index -1]).values = VALUES;
 
 const rarch_setting_t* setting_data_get_list()
