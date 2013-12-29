@@ -19,14 +19,13 @@
 #include <xui.h>
 #include <xuiapp.h>
 
-#include "menu_common.h"
-#include "../../console/rarch_console.h"
+#include "../menu_common.h"
 
-#include "../../gfx/gfx_common.h"
-#include "../../gfx/gfx_context.h"
+#include "../../../gfx/gfx_common.h"
+#include "../../../gfx/gfx_context.h"
 
-#include "../../message_queue.h"
-#include "../../general.h"
+#include "../../../message_queue.h"
+#include "../../../general.h"
 
 enum
 {
