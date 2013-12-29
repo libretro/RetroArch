@@ -29,6 +29,7 @@
 
 #if defined(_WIN32) && !defined(_XBOX)
 #include <windows.h>
+#include <intrin.h>
 #endif
 
 #if defined(__CELLOS_LV2__) || defined(GEKKO)
@@ -238,11 +239,23 @@ static void x86_cpuid(int func, int flags[4])
 #endif
 }
 
-static uint64_t _xgetbv(uint32_t index)
+// Only runs on i686 and above. Needs to be conditionally run.
+static uint64_t xgetbv_x86(uint32_t index)
 {
+#if defined(__GNUC__)
    uint32_t eax, edx;
-   __asm__ __volatile__("xgetbv" : "=a"(eax), "=d"(edx) : "c"(index));
+   asm volatile (
+         // Older GCC versions (Apple's GCC for example) do not understand xgetbv instruction.
+         // Stamp out the machine code directly.
+         ".byte 0x0f, 0x01, 0xd0\n"
+         : "=a"(eax), "=d"(edx) : "c"(index));
    return ((uint64_t)edx << 32) | eax;
+#elif _MSC_FULL_VER >= 160040219 // Intrinsic only works on 2010 SP1 and above.
+   return _xgetbv(index);
+#else
+   RARCH_WARN("Unknown compiler. Cannot check xgetbv bits.\n");
+   return 0;
+#endif
 }
 #endif
 
@@ -280,8 +293,8 @@ uint64_t rarch_get_cpu_features(void)
       cpu |= RETRO_SIMD_SSSE3;
 
    const int avx_flags = (1 << 27) | (1 << 28);
-   const bool xcr_bit_set = ((_xgetbv(0) & 0x6) == 0x6);
-   if ((flags[2] & avx_flags) == avx_flags && xcr_bit_set)
+   // Must only perform xgetbv check if we have AVX CPU support (guaranteed to have at least i686).
+   if (((flags[2] & avx_flags) == avx_flags) && ((xgetbv_x86(0) & 0x6) == 0x6))
       cpu |= RETRO_SIMD_AVX;
 
    RARCH_LOG("[CPUID]: MMX:   %u\n", !!(cpu & RETRO_SIMD_MMX));
