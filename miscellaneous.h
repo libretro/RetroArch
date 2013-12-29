@@ -30,6 +30,8 @@
 #if defined(_WIN32) && !defined(_XBOX)
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
+#elif defined(_WIN32) && defined(_XBOX)
+#include <Xtl.h>
 #endif
 
 #include "retroarch_logger.h"

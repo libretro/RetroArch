@@ -39,7 +39,7 @@
 #if defined(_XBOX1)
 unsigned font_x, font_y;
 #elif defined(_XBOX360)
-#include "../frontend/menu/rmenu_xui.h"
+
 const DWORD g_MapLinearToSrgbGpuFormat[] = 
 {
    GPUTEXTUREFORMAT_1_REVERSE,
