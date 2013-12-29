@@ -1986,6 +1986,8 @@ void menu_populate_entries(void *data, unsigned menu_type)
 #endif
 #ifdef _XBOX1
          file_list_push(rgui->selection_buf, "Volume Level", RGUI_SETTINGS_AUDIO_VOLUME_LEVEL, 0);
+#else
+         file_list_push(rgui->selection_buf, "Volume Level", RGUI_SETTINGS_AUDIO_VOLUME, 0);
 #endif
 #ifdef HAVE_RSOUND
          file_list_push(rgui->selection_buf, "RSound Server IP Address", RGUI_SETTINGS_RSOUND_SERVER_IP_ADDRESS, 0);

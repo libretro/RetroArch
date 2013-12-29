@@ -2669,10 +2669,8 @@ static void check_volume(void)
       db_change -= 0.5f;
 
    g_extern.audio_data.volume_db += db_change;
-   if (g_extern.audio_data.volume_db > 12.0f)
-      g_extern.audio_data.volume_db = 12.0f;
-   else if (g_extern.audio_data.volume_db < -80.0f)
-      g_extern.audio_data.volume_db = -80.0f;
+   g_extern.audio_data.volume_db = max(g_extern.audio_data.volume_db, -80.0f);
+   g_extern.audio_data.volume_db = min(g_extern.audio_data.volume_db, 12.0f);
 
    char msg[256];
    snprintf(msg, sizeof(msg), "Volume: %.1f dB", g_extern.audio_data.volume_db);
