@@ -340,10 +340,6 @@ void menu_init(void);
 bool menu_iterate(void);
 void menu_free(void);
 
-#if defined(HAVE_RMENU_XUI)
-int rmenu_xui_iterate(void *data, unsigned action);
-#endif
-
 int rgui_input_postprocess(void *data, uint64_t old_state);
 
 #ifdef HAVE_SHADER_MANAGER

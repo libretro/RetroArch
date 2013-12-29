@@ -275,9 +275,12 @@ static void menu_settings_create_menu_item_label_w(wchar_t *strwbuf, unsigned se
 
 static void filebrowser_fetch_directory_entries(const char *path, uint64_t action)
 {
+#if 1
+   return;
+#else
    //filebrowser_iterate(rgui->browser, action); 
 
-   mbstowcs(strw_buffer, rgui->browser->current_dir.directory_path, sizeof(strw_buffer) / sizeof(wchar_t));
+   mbstowcs(strw_buffer, path, sizeof(strw_buffer) / sizeof(wchar_t));
    XuiTextElementSetText(m_menutitle, strw_buffer);
 
    XuiListDeleteItems(m_menulist, 0, XuiListGetItemCount(m_menulist));
@@ -290,6 +293,7 @@ static void filebrowser_fetch_directory_entries(const char *path, uint64_t actio
       mbstowcs(strw_buffer, fname_tmp, sizeof(strw_buffer) / sizeof(wchar_t));
       XuiListSetText(m_menulist, i, strw_buffer);
    }
+#endif
 }
 
 HRESULT CRetroArchFileBrowser::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
@@ -310,6 +314,8 @@ HRESULT CRetroArchFileBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHandle
    char path[PATH_MAX];
    process_input_ret = 0;
 
+#if 0
+
    if(hObjPressed == m_menulist)
    {
       int index = XuiListGetCurSel(m_menulist, NULL);
@@ -323,11 +329,10 @@ HRESULT CRetroArchFileBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHandle
       else if(rgui->browser->list->elems[index].attr.b)
       {
          fill_pathname_join(path, rgui->browser->current_dir.directory_path, str_buffer, sizeof(path));
-#if 0
          filebrowser_fetch_directory_entries(path, RGUI_ACTION_OK);
-#endif
       }
    }
+#endif
 
    bHandled = TRUE;
 
@@ -1061,6 +1066,7 @@ HRESULT CRetroArchShaderBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHand
 
    if(hObjPressed == m_menulist)
    {
+#if 0
       int index = XuiListGetCurSel(m_menulist, NULL);
       if (path_file_exists(rgui->browser->list->elems[index].data))
          wcstombs(str_buffer, (const wchar_t *)XuiListGetText(m_menulist, index), sizeof(str_buffer));
@@ -1068,10 +1074,9 @@ HRESULT CRetroArchShaderBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHand
       {
          wcstombs(str_buffer, (const wchar_t *)XuiListGetText(m_menulist, index), sizeof(str_buffer));
          fill_pathname_join(path, rgui->browser->current_dir.directory_path, str_buffer, sizeof(path));
-#if 0
          filebrowser_fetch_directory_entries(path, RGUI_ACTION_OK);
-#endif
       }
+#endif
    }
 
    bHandled = TRUE;
@@ -1100,6 +1105,7 @@ HRESULT CRetroArchCoreBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHandle
 
    if(hObjPressed == m_menulist)
    {
+#if 0
       int index = XuiListGetCurSel(m_menulist, NULL);
       wcstombs(str_buffer, (const wchar_t *)XuiListGetText(m_menulist, index), sizeof(str_buffer));
       if(path_file_exists(rgui->browser->list->elems[index].data))
@@ -1113,10 +1119,9 @@ HRESULT CRetroArchCoreBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHandle
       else if (rgui->browser->list->elems[index].attr.b)
       {
          fill_pathname_join(path, rgui->browser->current_dir.directory_path, str_buffer, sizeof(path));
-#if 0
          filebrowser_fetch_directory_entries(path, RGUI_ACTION_OK);
-#endif
       }
+#endif
    }
 
    bHandled = TRUE;
@@ -1397,7 +1402,7 @@ static void ingame_menu_resize (void)
 {
 }
 
-int rmenu_xui_iterate(void *data, unsigned action)
+void rmenu_xui_iterate(void *data, unsigned action)
 {
    (void)data;
 
@@ -1408,8 +1413,6 @@ int rmenu_xui_iterate(void *data, unsigned action)
       XuiElementGetChildById(current_menu, L"XuiMenuList", &m_menulist);
       rmenu_xui_populate_entries(NULL, INGAME_MENU_MAIN_MODE);
    }
-
-   return 0;
 }
 
 bool menu_iterate_xui(void)
@@ -1436,7 +1439,7 @@ bool menu_iterate_xui(void)
    return true;
 }
 
-int rmenu_xui_input_postprocess(void *data, uint64_t old_state)
+int rgui_input_postprocess(void *data, uint64_t old_state)
 {
    rgui_handle_t *rgui = (rgui_handle_t*)data;
    bool quit = false;
