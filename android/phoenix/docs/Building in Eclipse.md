@@ -35,6 +35,10 @@
 Simply place all built libretro cores within the directory [phoenix root]/assets/cores. Create this directory if it doesn't exist already.
 After placing your cores there, they should show up within the core selection screen of the front-end.
 
+## Where do I place overlays, shaders and core info files?
+
+Core info files go in [phoenix root]/assets/info, GLSL shaders go in [phoenix root]/assets/shaders_glsl and overlays go in [phoenix root]/assets/overlays. If the folders don't exist, create them first.
+
 ## Notes
 
 1. If you’re running into an issue where adding an existing Android project results in “Invalid project description”, please select a workspace location that doesn’t contain the Android projects.
