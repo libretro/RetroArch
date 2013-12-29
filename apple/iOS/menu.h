@@ -185,7 +185,7 @@
 @property (nonatomic) NSString* path;
 @property (copy) void (^action)(NSString* coreID);
 @property (nonatomic) bool actionRan;
-- (id)initWithPath:(NSString*)path action:(void (^)(NSString*))action;
+- (id)initWithPath:(NSString*)path allowAutoDetect:(bool)autoDetect action:(void (^)(NSString*))action;
 - (void)runAction:(NSString*)coreID;
 @end
 

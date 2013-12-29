@@ -557,7 +557,7 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
 {
    RAMainMenu* __weak weakSelf = self;
 
-   RAMenuCoreList* list = [[RAMenuCoreList alloc] initWithPath:path
+   RAMenuCoreList* list = [[RAMenuCoreList alloc] initWithPath:path allowAutoDetect:!path
       action: ^(NSString* core)
       {
          if (path)
@@ -877,14 +877,17 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
 - (void)createNewConfig
 {
    RAFrontendSettingsMenu* __weak weakSelf = self;
-   RAMenuCoreList* list = [[RAMenuCoreList alloc] initWithPath:nil action:
-      ^(NSString* core)
+   RAMenuCoreList* list = [[RAMenuCoreList alloc] initWithPath:nil allowAutoDetect:false
+      action:^(NSString* core)
       {
-         char path[PATH_MAX];
-         apple_core_info_get_custom_config([core UTF8String], path, sizeof(path));
+         if (!apple_core_info_has_custom_config([core UTF8String]))
+         {
+            char path[PATH_MAX];
+            apple_core_info_get_custom_config([core UTF8String], path, sizeof(path));
          
-         if (![[NSFileManager defaultManager] copyItemAtPath:apple_platform.globalConfigFile toPath:BOXSTRING(path) error:nil])
-            RARCH_WARN("Could not create custom config at %s", path);
+            if (![[NSFileManager defaultManager] copyItemAtPath:apple_platform.globalConfigFile toPath:BOXSTRING(path) error:nil])
+               RARCH_WARN("Could not create custom config at %s", path);
+         }
          
          [weakSelf.navigationController popViewControllerAnimated:YES];
       }];
@@ -1002,7 +1005,7 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
 /*********************************************/
 @implementation RAMenuCoreList
 
-- (id)initWithPath:(NSString*)path action:(void (^)(NSString *))action
+- (id)initWithPath:(NSString*)path allowAutoDetect:(bool)autoDetect action:(void (^)(NSString *))action
 {
    if ((self = [super initWithStyle:UITableViewStyleGrouped]))
    {
@@ -1010,7 +1013,7 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
       _action = action;
       _path = path;
 
-      if (!_path)
+      if (autoDetect)
       {
          RAMenuCoreList* __weak weakSelf = self;
          [self.sections addObject: @[@"", [RAMenuItemBasic itemWithDescription:@"Auto Detect"
