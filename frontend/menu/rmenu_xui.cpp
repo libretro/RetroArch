@@ -347,7 +347,7 @@ static void rmenu_xui_populate_entries(void *data, unsigned menu_type)
 {
    XuiListDeleteItems(m_menulist, 0, XuiListGetItemCount(m_menulist));
 
-   switch (menu_id)
+   switch (menu_type)
    {
       case INGAME_MENU_CORE_OPTIONS_MODE:
          if (g_extern.system.core_options)
@@ -745,16 +745,16 @@ HRESULT CRetroArchSettings::OnControlNavigate(XUIMessageControlNavigate *pContro
    switch(current_index)
    {
       case INGAME_MENU_REWIND_ENABLED:
-         menu_set_settings(RGUI_SETTINGS_REWIND_ENABLE, action);
+         menu_set_settings(rgui, RGUI_SETTINGS_REWIND_ENABLE, action);
          XuiListSetText(m_menulist, INGAME_MENU_REWIND_ENABLED, g_settings.rewind_enable ? L"Rewind: ON" : L"Rewind: OFF");
          break;
       case INGAME_MENU_REWIND_GRANULARITY:
-         menu_set_settings(RGUI_SETTINGS_REWIND_GRANULARITY, action);
+         menu_set_settings(rgui, RGUI_SETTINGS_REWIND_GRANULARITY, action);
          menu_settings_create_menu_item_label_w(strw_buffer, S_LBL_REWIND_GRANULARITY, sizeof(strw_buffer));
          XuiListSetText(m_menulist, INGAME_MENU_REWIND_GRANULARITY, strw_buffer);
          break;
       case SETTING_EMU_SHOW_DEBUG_INFO_MSG:
-         menu_set_settings(RGUI_SETTINGS_DEBUG_TEXT, action);
+         menu_set_settings(rgui, RGUI_SETTINGS_DEBUG_TEXT, action);
          XuiListSetText(m_menulist, SETTING_EMU_SHOW_DEBUG_INFO_MSG, g_settings.fps_show ? L"Show Framerate: ON" : L"Show Framerate: OFF");
          break;
       default:
@@ -902,7 +902,7 @@ HRESULT CRetroArchAudioOptions::OnControlNavigate(XUIMessageControlNavigate *pCo
    switch (current_index)
    {
       case MENU_XUI_ITEM_AUDIO_MUTE_AUDIO:
-         menu_set_settings(RGUI_SETTINGS_AUDIO_MUTE, action);
+         menu_set_settings(rgui, RGUI_SETTINGS_AUDIO_MUTE, action);
          XuiListSetText(m_menulist, MENU_XUI_ITEM_AUDIO_MUTE_AUDIO, g_extern.audio_data.mute ? L"Mute Audio : ON" : L"Mute Audio : OFF");
          break;
    }
@@ -987,7 +987,7 @@ HRESULT CRetroArchVideoOptions::OnControlNavigate(XUIMessageControlNavigate *pCo
    switch (current_index)
    {
       case MENU_XUI_ITEM_HW_TEXTURE_FILTER:
-         menu_set_settings(RGUI_SETTINGS_VIDEO_FILTER, action);
+         menu_set_settings(rgui, RGUI_SETTINGS_VIDEO_FILTER, action);
          XuiListSetText(m_menulist, MENU_XUI_ITEM_HW_TEXTURE_FILTER, g_settings.video.smooth ? L"Default Filter: Linear" : L"Default Filter: Nearest");
          break;
       case MENU_XUI_ITEM_GAMMA_CORRECTION_ENABLED:
@@ -1001,12 +1001,12 @@ HRESULT CRetroArchVideoOptions::OnControlNavigate(XUIMessageControlNavigate *pCo
          }
          break;
       case MENU_XUI_ITEM_ASPECT_RATIO:
-         menu_set_settings(RGUI_SETTINGS_VIDEO_ASPECT_RATIO, action);
+         menu_set_settings(rgui, RGUI_SETTINGS_VIDEO_ASPECT_RATIO, action);
          menu_settings_create_menu_item_label_w(strw_buffer, S_LBL_ASPECT_RATIO, sizeof(strw_buffer));
          XuiListSetText(m_menulist, MENU_XUI_ITEM_ASPECT_RATIO, strw_buffer);
          break;
       case MENU_XUI_ITEM_ORIENTATION:
-         menu_set_settings(RGUI_SETTINGS_VIDEO_ROTATION, action);
+         menu_set_settings(rgui, RGUI_SETTINGS_VIDEO_ROTATION, action);
          menu_settings_create_menu_item_label_w(strw_buffer, S_LBL_ROTATION, sizeof(strw_buffer));
          XuiListSetText(m_menulist, MENU_XUI_ITEM_ORIENTATION, strw_buffer);
          driver.video->set_rotation(driver.video_data, g_settings.video.rotation);
@@ -1255,14 +1255,14 @@ HRESULT CRetroArchMain::OnControlNavigate(XUIMessageControlNavigate *pControlNav
          }
          break;
       case INGAME_MENU_LOAD_STATE:
-         process_input_ret = menu_set_settings(RGUI_SETTINGS_SAVESTATE_LOAD, action);
+         process_input_ret = menu_set_settings(rgui, RGUI_SETTINGS_SAVESTATE_LOAD, action);
          menu_settings_create_menu_item_label_w(strw_buffer, S_LBL_LOAD_STATE_SLOT, sizeof(strw_buffer));
          XuiListSetText(m_menulist, INGAME_MENU_LOAD_STATE, strw_buffer);
          menu_settings_create_menu_item_label_w(strw_buffer, S_LBL_SAVE_STATE_SLOT, sizeof(strw_buffer));
          XuiListSetText(m_menulist, INGAME_MENU_SAVE_STATE, strw_buffer);
          break;
       case INGAME_MENU_SAVE_STATE:
-         process_input_ret = menu_set_settings(RGUI_SETTINGS_SAVESTATE_SAVE, action);
+         process_input_ret = menu_set_settings(rgui, RGUI_SETTINGS_SAVESTATE_SAVE, action);
          menu_settings_create_menu_item_label_w(strw_buffer, S_LBL_LOAD_STATE_SLOT, sizeof(strw_buffer));
          XuiListSetText(m_menulist, INGAME_MENU_LOAD_STATE, strw_buffer);
          menu_settings_create_menu_item_label_w(strw_buffer, S_LBL_SAVE_STATE_SLOT, sizeof(strw_buffer));
@@ -1271,13 +1271,13 @@ HRESULT CRetroArchMain::OnControlNavigate(XUIMessageControlNavigate *pControlNav
       case INGAME_MENU_SCREENSHOT_MODE:
          break;
       case INGAME_MENU_RETURN_TO_GAME:
-         process_input_ret = menu_set_settings(RGUI_SETTINGS_RESUME_GAME, action);
+         process_input_ret = menu_set_settings(rgui, RGUI_SETTINGS_RESUME_GAME, action);
          break;
       case INGAME_MENU_RESET:
-         process_input_ret = menu_set_settings(RGUI_SETTINGS_RESTART_GAME, action);
+         process_input_ret = menu_set_settings(rgui, RGUI_SETTINGS_RESTART_GAME, action);
          break;
       case INGAME_MENU_QUIT_RETROARCH:
-         process_input_ret = menu_set_settings(RGUI_SETTINGS_QUIT_RARCH, action);
+         process_input_ret = menu_set_settings(rgui, RGUI_SETTINGS_QUIT_RARCH, action);
          break;
    }
 
