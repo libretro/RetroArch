@@ -110,6 +110,16 @@ static void rarch_get_environment_console(void)
 #define declare_argc()
 #define declare_argv()
 #define args_initial_ptr() NULL
+#elif defined(EMSCRIPTEN)
+#define main_entry _fakemain
+#define returntype int
+#define signature_expand() argc, argv
+#define returnfunc() return 0
+#define return_negative() return 1
+#define return_var(var) return var
+#define declare_argc()
+#define declare_argv()
+#define args_initial_ptr() NULL
 #else
 #define main_entry main
 #define returntype int

@@ -1,6 +1,7 @@
 TARGET = retroarch.js
 
 OBJ = frontend/frontend_emscripten.o \
+		frontend/frontend.o \
 		retroarch.o \
 		file.o \
 		file_path.o \
@@ -50,7 +51,8 @@ HAVE_FBO = 1
 WANT_MINIZ = 1
 MEMORY = 67108864
 LTO = 0
-FAST_DOUBLES = 1
+# XXX: setting this to 1/2 currently crashes Firefox nightly
+PRECISE_F32 = 0
 
 ifneq ($(NATIVE_ZLIB),)
    WANT_MINIZ = 0
@@ -58,7 +60,7 @@ endif
 
 libretro = libretro_emscripten.bc
 
-LIBS = -lm
+LIBS =
 DEFINES = -DHAVE_SCREENSHOTS -DHAVE_CAMERA -DHAVE_NULLAUDIO -DHAVE_BSV_MOVIE -DRARCH_INTERNAL
 LDFLAGS = -L. -s TOTAL_MEMORY=$(MEMORY) -s OUTLINING_LIMIT=50000 --js-library emscripten/library_rwebaudio.js --js-library emscripten/library_rwebinput.js --js-library emscripten/library_rwebcam.js --no-heap-copy
 
@@ -108,9 +110,7 @@ ifeq ($(DEBUG), 1)
 else
    LDFLAGS += -O2
    # WARNING: some optimizations can break some cores (ex: LTO breaks tyrquake)
-   ifeq ($(FAST_DOUBLES), 1)
-      LDFLAGS += -s DOUBLE_MODE=0
-   endif
+   LDFLAGS += -s PRECISE_F32=$(PRECISE_F32)
    ifeq ($(LTO), 1)
       LDFLAGS += --llvm-lto 3
    endif
@@ -138,6 +138,7 @@ clean:
 	rm -f deps/miniz/*.o
 	rm -f frontend/*.o
 	rm -f frontend/menu/*.o
+	rm -f frontend/menu/disp/*.o
 	rm -f audio/*.o
 	rm -f audio/xaudio-c/*.o
 	rm -f compat/*.o
