@@ -17,8 +17,10 @@
 
 .align 4
 .globl audio_convert_s16_float_asm
+.globl _audio_convert_s16_float_asm
 # audio_convert_s16_float_asm(float *out, const int16_t *in, size_t samples, const float *gain)
 audio_convert_s16_float_asm:
+_audio_convert_s16_float_asm:
    # Hacky way to get a constant of 2^-15.
    # Might be faster to just load a constant from memory.
    # It's just done once however ...
@@ -57,8 +59,10 @@ audio_convert_s16_float_asm:
 
 .align 4
 .globl audio_convert_float_s16_asm
+.globl _audio_convert_float_s16_asm
 # audio_convert_float_s16_asm(int16_t *out, const float *in, size_t samples)
 audio_convert_float_s16_asm:
+_audio_convert_float_s16_asm:
    # Hacky way to get a constant of 2^15.
    # ((2^4)^2)^2 * 0.5 = 2^15
    vmov.f32 q8, #16.0

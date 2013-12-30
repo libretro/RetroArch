@@ -16,9 +16,11 @@
 .arm
 .align 4
 .globl process_sinc_neon_asm
+.globl _process_sinc_neon_asm
 # void process_sinc_neon(float *out, const float *left, const float *right, const float *coeff, unsigned taps)
 # Assumes taps is >= 8, and a multiple of 8.
 process_sinc_neon_asm:
+_process_sinc_neon_asm:
 
    push {r4, lr}   
    vmov.f32 q0, #0.0
