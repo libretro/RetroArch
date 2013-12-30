@@ -26,14 +26,10 @@
 #import <GameController/GameController.h>
 #include "apple_input.h"
 
-#ifdef IOS
-
-#endif
-
 static void apple_gamecontroller_poll(GCController* controller)
 {
 #ifdef IOS
-    if (!(IOS_IS_VERSION_7_OR_HIGHER()))
+    if (IOS_IS_VERSION_6_OR_LOWER())
         return;
 #endif
    if (!controller || controller.playerIndex == MAX_PLAYERS)
@@ -83,7 +79,7 @@ static void apple_gamecontroller_poll(GCController* controller)
 void apple_gamecontroller_poll_all(void)
 {
 #ifdef IOS
-    if (!(IOS_IS_VERSION_7_OR_HIGHER()))
+    if (IOS_IS_VERSION_6_OR_LOWER())
         return;
 #endif
    NSArray* controllers = [GCController controllers];
@@ -95,7 +91,7 @@ void apple_gamecontroller_poll_all(void)
 void apple_gamecontroller_connect(GCController* controller)
 {
 #ifdef IOS
-    if (!(IOS_IS_VERSION_7_OR_HIGHER()))
+    if (IOS_IS_VERSION_6_OR_LOWER())
         return;
 #endif
    int32_t slot = apple_joypad_connect_gcapi();
@@ -116,7 +112,7 @@ void apple_gamecontroller_connect(GCController* controller)
 void apple_gamecontroller_disconnect(GCController* controller)
 {
 #ifdef IOS
-    if (!(IOS_IS_VERSION_7_OR_HIGHER()))
+    if (IOS_IS_VERSION_6_OR_LOWER())
         return;
 #endif
    if (controller.playerIndex == GCControllerPlayerIndexUnset)
@@ -128,7 +124,7 @@ void apple_gamecontroller_disconnect(GCController* controller)
 void apple_gamecontroller_init(void)
 {
 #ifdef IOS
-    if (!(IOS_IS_VERSION_7_OR_HIGHER()))
+    if (IOS_IS_VERSION_6_OR_LOWER())
         return;
 #endif
     

@@ -74,5 +74,6 @@ void ios_set_bluetooth_mode(NSString* mode);
 int get_ios_version_major(void);
 
 #define IOS_IS_VERSION_7_OR_HIGHER() ((get_ios_version_major() >= 7))
+#define IOS_IS_VERSION_6_OR_LOWER() ((get_ios_version_major() <= 6))
 
 #endif
