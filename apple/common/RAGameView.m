@@ -553,9 +553,7 @@ void apple_gfx_ctx_update_window_title(void)
     (void)text;
 #ifdef OSX
    if (got_text)
-   {
-		[[g_view window] setTitle:[NSString stringWithCString:text encoding:NSUTF8StringEncoding]];
-   }
+       [[g_view window] setTitle:[NSString stringWithCString:text encoding:NSUTF8StringEncoding]];
 #endif
    if (fps_draw)
       msg_queue_push(g_extern.msg_queue, buf_fps, 1, 1);
@@ -568,11 +566,13 @@ bool apple_gfx_ctx_has_focus(void)
 
 void apple_gfx_ctx_swap_buffers()
 {
-   if (--g_fast_forward_skips < 0)
-   {
-      [g_view display];
-      g_fast_forward_skips = g_is_syncing ? 0 : 3;
-   }
+    bool swap = --g_fast_forward_skips < 0;
+    
+    if (!swap)
+        return;
+    
+    [g_view display];
+    g_fast_forward_skips = g_is_syncing ? 0 : 3;
 }
 
 gfx_ctx_proc_t apple_gfx_ctx_get_proc_address(const char *symbol_name)

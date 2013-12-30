@@ -54,78 +54,79 @@ static void apple_rarch_exited()
 
 static void do_iteration()
 {
-   if (iterate_observer && apple_is_running && !g_extern.is_paused)
-   {   
-      if (main_entry_iterate(0, NULL, NULL))
-      {
-         main_exit(NULL);
-         apple_rarch_exited();
-      }
-      else
-         CFRunLoopWakeUp(CFRunLoopGetMain());
-   }
+    bool iterate = iterate_observer && apple_is_running && !g_extern.is_paused;
+    
+    if (!iterate)
+        return;
+    
+    if (main_entry_iterate(0, NULL, NULL))
+    {
+        main_exit(NULL);
+        apple_rarch_exited();
+    }
+    else
+        CFRunLoopWakeUp(CFRunLoopGetMain());
 }
 
 void apple_start_iteration()
 {
-   if (!iterate_observer)
-   {
-      iterate_observer = CFRunLoopObserverCreate(0, kCFRunLoopBeforeWaiting, true, 0, do_iteration, 0);
-      CFRunLoopAddObserver(CFRunLoopGetMain(), iterate_observer, kCFRunLoopCommonModes);
-   }
+   if (iterate_observer)
+       return;
+    
+    iterate_observer = CFRunLoopObserverCreate(0, kCFRunLoopBeforeWaiting, true, 0, do_iteration, 0);
+    CFRunLoopAddObserver(CFRunLoopGetMain(), iterate_observer, kCFRunLoopCommonModes);
 }
 
 void apple_stop_iteration()
 {
-   if (iterate_observer)
-   {
-      CFRunLoopObserverInvalidate(iterate_observer);
-      CFRelease(iterate_observer);
-      iterate_observer = 0;
-   }
+   if (!iterate_observer)
+       return;
+    
+    CFRunLoopObserverInvalidate(iterate_observer);
+    CFRelease(iterate_observer);
+    iterate_observer = 0;
 }
 
 void apple_run_core(NSString* core, const char* file)
 {
-   if (!apple_is_running)
-   {
-      [apple_platform loadingCore:core withFile:file];
-
-      apple_core = core;
-      apple_is_running = true;
-
-      static char config_path[PATH_MAX];
-      static char core_path[PATH_MAX];
-      static char file_path[PATH_MAX];
-
-      if (apple_core_info_has_custom_config(apple_core.UTF8String))
-         apple_core_info_get_custom_config(apple_core.UTF8String, config_path, sizeof(config_path));
-      else
-         strlcpy(config_path, apple_platform.globalConfigFile.UTF8String, sizeof(config_path));
-
-      static const char* const argv_game[] = { "retroarch", "-c", config_path, "-L", core_path, file_path, 0 };
-      static const char* const argv_menu[] = { "retroarch", "-c", config_path, "--menu", 0 };
-   
-      if (file && core)
-      {
-         strlcpy(core_path, apple_core.UTF8String, sizeof(core_path));
-         strlcpy(file_path, file, sizeof(file_path));
-      }
-      
-      int argc = (file && core) ? 6 : 4;
-      char** argv = (char**)((file && core) ? argv_game : argv_menu);
-      
-      if (apple_rarch_load_content(argc, argv))
-      {
-         char basedir[256];
-         fill_pathname_basedir(basedir, file ? file : "", sizeof(basedir));
-         if (file && access(basedir, R_OK | W_OK | X_OK))
-            apple_display_alert(@"The directory containing the selected file must have write premissions. This will "
-                                "prevent zipped content from loading, and will cause some cores to not function.", 0);
-         else
-            apple_display_alert(@"Failed to load content.", 0);
-         
-         apple_rarch_exited();
-      }
-   }
+   if (apple_is_running)
+       return;
+    
+    [apple_platform loadingCore:core withFile:file];
+    
+    apple_core = core;
+    apple_is_running = true;
+    
+    static char config_path[PATH_MAX];
+    static char core_path[PATH_MAX];
+    static char file_path[PATH_MAX];
+    
+    if (apple_core_info_has_custom_config(apple_core.UTF8String))
+        apple_core_info_get_custom_config(apple_core.UTF8String, config_path, sizeof(config_path));
+    else
+        strlcpy(config_path, apple_platform.globalConfigFile.UTF8String, sizeof(config_path));
+    
+    static const char* const argv_game[] = { "retroarch", "-c", config_path, "-L", core_path, file_path, 0 };
+    static const char* const argv_menu[] = { "retroarch", "-c", config_path, "--menu", 0 };
+    
+    if (file && core)
+    {
+        strlcpy(core_path, apple_core.UTF8String, sizeof(core_path));
+        strlcpy(file_path, file, sizeof(file_path));
+    }
+    
+    int argc = (file && core) ? 6 : 4;
+    char** argv = (char**)((file && core) ? argv_game : argv_menu);
+    
+    if (apple_rarch_load_content(argc, argv))
+    {
+        char basedir[256];
+        fill_pathname_basedir(basedir, file ? file : "", sizeof(basedir));
+        if (file && access(basedir, R_OK | W_OK | X_OK))
+            apple_display_alert(BOXSTRING("The directory containing the selected file must have write premissions. This will prevent zipped content from loading, and will cause some cores to not function."), 0);
+        else
+            apple_display_alert(BOXSTRING("Failed to load content."), 0);
+        
+        apple_rarch_exited();
+    }
 }
