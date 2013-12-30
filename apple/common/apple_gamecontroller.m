@@ -30,7 +30,7 @@ bool apple_rarch_is_ios7_or_higher(void)
 {
     NSArray *versionCompatibility = [[UIDevice currentDevice].systemVersion
                                      componentsSeparatedByString:@(".")];
-    bool ret = [[versionCompatibility objectAtIndex:0] intValue] < 7;
+    bool ret = [[versionCompatibility objectAtIndex:0] intValue] >= 7;
     return ret;
 }
 #endif
@@ -38,7 +38,7 @@ bool apple_rarch_is_ios7_or_higher(void)
 static void apple_gamecontroller_poll(GCController* controller)
 {
 #ifdef IOS
-    if (apple_rarch_is_ios7_or_higher())
+    if (!apple_rarch_is_ios7_or_higher())
         return;
 #endif
    if (!controller || controller.playerIndex == MAX_PLAYERS)
@@ -88,7 +88,7 @@ static void apple_gamecontroller_poll(GCController* controller)
 void apple_gamecontroller_poll_all(void)
 {
 #ifdef IOS
-    if (apple_rarch_is_ios7_or_higher())
+    if (!apple_rarch_is_ios7_or_higher())
         return;
 #endif
    NSArray* controllers = [GCController controllers];
@@ -100,7 +100,7 @@ void apple_gamecontroller_poll_all(void)
 void apple_gamecontroller_connect(GCController* controller)
 {
 #ifdef IOS
-    if (apple_rarch_is_ios7_or_higher())
+    if (!apple_rarch_is_ios7_or_higher())
         return;
 #endif
    int32_t slot = apple_joypad_connect_gcapi();
@@ -121,7 +121,7 @@ void apple_gamecontroller_connect(GCController* controller)
 void apple_gamecontroller_disconnect(GCController* controller)
 {
 #ifdef IOS
-    if (apple_rarch_is_ios7_or_higher())
+    if (!apple_rarch_is_ios7_or_higher())
         return;
 #endif
    if (controller.playerIndex == GCControllerPlayerIndexUnset)
@@ -133,7 +133,7 @@ void apple_gamecontroller_disconnect(GCController* controller)
 void apple_gamecontroller_init(void)
 {
 #ifdef IOS
-    if (apple_rarch_is_ios7_or_higher())
+    if (!apple_rarch_is_ios7_or_higher())
         return;
 #endif
     
