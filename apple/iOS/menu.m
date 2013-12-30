@@ -78,7 +78,7 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
 - (id)initWithStyle:(UITableViewStyle)style
 {
    if ((self = [super initWithStyle:style]))
-      self.sections = [NSMutableArray array];
+      _sections = [NSMutableArray array];
    return self;
 }
 
@@ -211,10 +211,7 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
 - (id)initWithSetting:(const rarch_setting_t*)setting
 {
    if ((self = [super init]))
-   {
-      self.setting = setting;
-   }
-   
+      _setting = setting;
    return self;
 }
 
@@ -267,7 +264,7 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
 
    if (buttonIndex == alertView.firstOtherButtonIndex && text.length)
    {
-      setting_data_set_with_string_representation(self.setting, text.UTF8String);
+      setting_data_set_with_string_representation(self.setting, [text UTF8String]);
       [self.parentTable reloadData];
    }
 }
@@ -311,10 +308,7 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
 - (id)initWithSetting:(const rarch_setting_t*)setting
 {
    if ((self = [super init]))
-   {
-      self.setting = setting;
-   }
-   
+      _setting = setting;
    return self;
 }
 
@@ -373,7 +367,7 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
          if (list.forDirectory && !item.isDirectory)
             return;
          
-         setting_data_set_with_string_representation(weakSelf.setting, item ? item.path.UTF8String : "");
+         setting_data_set_with_string_representation(weakSelf.setting, item ? [item.path UTF8String] : "");
          [[list navigationController] popViewControllerAnimated:YES];
          
          [weakSelf.parentTable reloadData];
@@ -403,7 +397,7 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
       {
          if (buttonIndex != actionSheet.cancelButtonIndex)
          {
-            setting_data_set_with_string_representation(self.setting, [actionSheet buttonTitleAtIndex:buttonIndex].UTF8String);
+            setting_data_set_with_string_representation(self.setting, [[actionSheet buttonTitleAtIndex:buttonIndex] UTF8String]);
             [self.parentTable reloadData];
          }
       });
@@ -497,10 +491,7 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
 - (id)init
 {
    if ((self = [super initWithStyle:UITableViewStylePlain]))
-   {
       self.title = @"RetroArch";
-   }
-   
    return self;
 }
 
@@ -566,11 +557,11 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
 {
    RAMainMenu* __weak weakSelf = self;
 
-   RAMenuCoreList* list = [[RAMenuCoreList alloc] initWithPath:path
+   RAMenuCoreList* list = [[RAMenuCoreList alloc] initWithPath:path allowAutoDetect:!path
       action: ^(NSString* core)
       {
          if (path)
-            apple_run_core(core, path.UTF8String);
+            apple_run_core(core, [path UTF8String]);
          else
          {
             weakSelf.core = core;
@@ -588,13 +579,13 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
 {   
    RAMainMenu __weak* weakSelf = self;
    
-   RADirectoryList* list = [[RADirectoryList alloc] initWithPath:RetroArch_iOS.get.documentsDirectory extensions:NULL action:
+   RADirectoryList* list = [[RADirectoryList alloc] initWithPath:[RetroArch_iOS get].documentsDirectory extensions:NULL action:
       ^(RADirectoryList *list, RADirectoryItem *item)
       {
          if (item && !item.isDirectory)
          {
             if (weakSelf.core)
-               apple_run_core(weakSelf.core, item.path.UTF8String);
+               apple_run_core(weakSelf.core, [item.path UTF8String]);
             else
                [weakSelf chooseCoreWithPath:item.path];
          }
@@ -605,7 +596,7 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
 
 - (void)loadHistory
 {
-   NSString* history_path = [NSString stringWithFormat:@"%@/%s", RetroArch_iOS.get.systemDirectory, ".retroarch-game-history.txt"];
+   NSString* history_path = [NSString stringWithFormat:@"%@/%s", [RetroArch_iOS get].systemDirectory, ".retroarch-game-history.txt"];
    [self.navigationController pushViewController:[[RAHistoryMenu alloc] initWithHistoryPath:history_path] animated:YES];
 }
 
@@ -628,7 +619,7 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
 {
    if ((self = [super initWithStyle:UITableViewStylePlain]))
    {
-      _history = rom_history_init(historyPath.UTF8String, 100);
+      _history = rom_history_init([historyPath UTF8String], 100);
       [self reloadData];
       self.navigationItem.rightBarButtonItem = [[UIBarButtonItem alloc] initWithTitle:@"Clear History"
                                                 style:UIBarButtonItemStyleBordered target:self action:@selector(clearHistory)];
@@ -724,7 +715,7 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
       {
          self.title = apple_get_core_display_name(core);
          
-         _pathToSave = BOXSTRING(apple_core_info_get_custom_config(core.UTF8String, buffer, sizeof(buffer)));
+         _pathToSave = BOXSTRING(apple_core_info_get_custom_config([core UTF8String], buffer, sizeof(buffer)));
          self.navigationItem.rightBarButtonItem = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemTrash target:self action:@selector(deleteCustom)];
       }
       else
@@ -736,7 +727,7 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
       const rarch_setting_t* setting_data = setting_data_get_list();
       
       setting_data_reset(setting_data);
-      setting_data_load_config_path(setting_data, _pathToSave.UTF8String);
+      setting_data_load_config_path(setting_data, [_pathToSave UTF8String]);
       
       // HACK: Load the key mapping table
       apple_input_find_any_key();
@@ -777,7 +768,7 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
 {
    if (self.pathToSave)
    {
-      config_file_t* config = config_file_new(self.pathToSave.UTF8String);
+      config_file_t* config = config_file_new([self.pathToSave UTF8String]);
       if (!config)
          config = config_file_new(0);
       
@@ -786,7 +777,7 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
       config_set_string(config, "system_directory", [[RetroArch_iOS get].systemDirectory UTF8String]);
       config_set_string(config, "savefile_directory", [[RetroArch_iOS get].systemDirectory UTF8String]);
       config_set_string(config, "savestate_directory", [[RetroArch_iOS get].systemDirectory UTF8String]);
-      config_file_write(config, self.pathToSave.UTF8String);
+      config_file_write(config, [self.pathToSave UTF8String]);
       config_file_free(config);
       
       apple_refresh_config();
@@ -812,9 +803,10 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
 /* editing of cocoa frontend related         */
 /* settings.                                 */
 /*********************************************/
-static const void* const associated_core_key = &associated_core_key;
+@interface RAFrontendSettingsMenu()
+@property (nonatomic, retain) NSMutableArray* coreConfigOptions;
+@end
 
-@interface RAFrontendSettingsMenu() <UIAlertViewDelegate> @end
 @implementation RAFrontendSettingsMenu
 
 - (id)init
@@ -828,22 +820,11 @@ static const void* const associated_core_key = &associated_core_key;
       self.title = @"Frontend Settings";
       
       RAMenuItemBasic* diagnostic_item = [RAMenuItemBasic itemWithDescription:@"Diagnostic Log"
-         action:^{ [weakSelf.navigationController pushViewController:[[RALogMenu alloc] initWithFile:RetroArch_iOS.get.logPath.UTF8String] animated:YES]; }];
+         action:^{ [weakSelf.navigationController pushViewController:[[RALogMenu alloc] initWithFile:[[RetroArch_iOS get].logPath UTF8String]] animated:YES]; }];
       [self.sections insertObject:@[@"", diagnostic_item] atIndex:0];
   
-      // Core items to load core settings
-      NSMutableArray* cores = [NSMutableArray arrayWithObject:@"Cores"];
-      
-      [cores addObject:[RAMenuItemBasic itemWithDescription:@"Global Core Config"
-         action: ^{ [weakSelf showCoreConfigFor:nil]; }]];
-
-      const core_info_list_t* core_list = apple_core_info_list_get();
-      for (int i = 0; i < core_list->count; i ++)
-         [cores addObject:[RAMenuItemBasic itemWithDescription:BOXSTRING(core_list->list[i].display_name)
-            association:apple_get_core_id(&core_list->list[i])
-            action: ^(id userdata) { [weakSelf showCoreConfigFor:userdata]; }
-            detail: ^(id userdata) { return apple_core_info_has_custom_config([userdata UTF8String]) ? @"[Custom]" : @"[Global]"; }]];
-      [self.sections addObject:cores];
+      _coreConfigOptions = [NSMutableArray array];
+      [self.sections addObject:_coreConfigOptions];
    }
    
    return self;
@@ -851,46 +832,66 @@ static const void* const associated_core_key = &associated_core_key;
 
 - (void)dealloc
 {
-   setting_data_save_config_path(apple_get_frontend_settings(), [RetroArch_iOS get].systemConfigPath.UTF8String);
+   setting_data_save_config_path(apple_get_frontend_settings(), [[RetroArch_iOS get].systemConfigPath UTF8String]);
+}
+
+- (void)willReloadData
+{
+   RAFrontendSettingsMenu* __weak weakSelf = self;
+   NSMutableArray* cores = self.coreConfigOptions;
+   
+   [cores removeAllObjects];
+   
+   [cores addObject:@"Configurations"];
+   [cores addObject:[RAMenuItemBasic itemWithDescription:@"Global Core Config"
+                                                  action: ^{ [weakSelf showCoreConfigFor:nil]; }]];
+   
+   [cores addObject:[RAMenuItemBasic itemWithDescription:@"New Config for Core"
+                                                  action: ^{ [weakSelf createNewConfig]; }]];
+   
+   const core_info_list_t* core_list = apple_core_info_list_get();
+   for (int i = 0; i < core_list->count; i ++)
+   {
+      NSString* core_id = apple_get_core_id(&core_list->list[i]);
+      if (apple_core_info_has_custom_config([core_id UTF8String]))
+      {
+         [cores addObject:[RAMenuItemBasic itemWithDescription:BOXSTRING(core_list->list[i].display_name)
+                                                   association:core_id
+                                                        action: ^(id userdata) { [weakSelf showCoreConfigFor:userdata]; }
+                                                        detail: ^(id userdata) { return @""; }]];
+      }
+   }
 }
 
 - (void)viewWillAppear:(BOOL)animated
 {
+   [super viewWillAppear:animated];
    [self reloadData];
 }
 
 - (void)showCoreConfigFor:(NSString*)core
 {
-   if (core && !apple_core_info_has_custom_config(core.UTF8String))
-   {
-      UIAlertView* alert = [[UIAlertView alloc] initWithTitle:@"RetroArch"
-                                                      message:@"No custom configuration for this core exists, "
-                                                               "would you like to create one?"
-                                                     delegate:self
-                                            cancelButtonTitle:@"No"
-                                            otherButtonTitles:@"Yes", nil];
-      objc_setAssociatedObject(alert, associated_core_key, core, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
-      [alert show];
-   }
-   else
-      [self.navigationController pushViewController:[[RACoreSettingsMenu alloc] initWithCore:core] animated:YES];
+   [self.navigationController pushViewController:[[RACoreSettingsMenu alloc] initWithCore:core] animated:YES];
 }
 
-- (void)alertView:(UIAlertView *)alertView clickedButtonAtIndex:(NSInteger)buttonIndex
+- (void)createNewConfig
 {
-   NSString* core_id = objc_getAssociatedObject(alertView, associated_core_key);
-   
-   if (buttonIndex == alertView.firstOtherButtonIndex && core_id)
-   {
-      char path[PATH_MAX];
-      apple_core_info_get_custom_config(core_id.UTF8String, path, sizeof(path));
-   
-      if (![[NSFileManager defaultManager] copyItemAtPath:apple_platform.globalConfigFile toPath:BOXSTRING(path) error:nil])
-         RARCH_WARN("Could not create custom config at %s", path);
-      [self.tableView reloadData];
-   }
-
-   [self.navigationController pushViewController:[[RACoreSettingsMenu alloc] initWithCore:core_id] animated:YES];
+   RAFrontendSettingsMenu* __weak weakSelf = self;
+   RAMenuCoreList* list = [[RAMenuCoreList alloc] initWithPath:nil allowAutoDetect:false
+      action:^(NSString* core)
+      {
+         if (!apple_core_info_has_custom_config([core UTF8String]))
+         {
+            char path[PATH_MAX];
+            apple_core_info_get_custom_config([core UTF8String], path, sizeof(path));
+         
+            if (![[NSFileManager defaultManager] copyItemAtPath:apple_platform.globalConfigFile toPath:BOXSTRING(path) error:nil])
+               RARCH_WARN("Could not create custom config at %s", path);
+         }
+         
+         [weakSelf.navigationController popViewControllerAnimated:YES];
+      }];
+   [self.navigationController pushViewController:list animated:YES];
 }
 
 @end
@@ -1004,7 +1005,7 @@ static const void* const associated_core_key = &associated_core_key;
 /*********************************************/
 @implementation RAMenuCoreList
 
-- (id)initWithPath:(NSString*)path action:(void (^)(NSString *))action
+- (id)initWithPath:(NSString*)path allowAutoDetect:(bool)autoDetect action:(void (^)(NSString *))action
 {
    if ((self = [super initWithStyle:UITableViewStyleGrouped]))
    {
@@ -1012,7 +1013,7 @@ static const void* const associated_core_key = &associated_core_key;
       _action = action;
       _path = path;
 
-      if (!_path)
+      if (autoDetect)
       {
          RAMenuCoreList* __weak weakSelf = self;
          [self.sections addObject: @[@"", [RAMenuItemBasic itemWithDescription:@"Auto Detect"
@@ -1029,7 +1030,7 @@ static const void* const associated_core_key = &associated_core_key;
          {
             const core_info_t* core_support = 0;
             size_t core_count = 0;
-            core_info_list_get_supported_cores(core_list, _path.UTF8String, &core_support, &core_count);
+            core_info_list_get_supported_cores(core_list, [_path UTF8String], &core_support, &core_count);
             
             if (core_count == 1 && _action)
                [self runAction:apple_get_core_id(&core_support[0])];

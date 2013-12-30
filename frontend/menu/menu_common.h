@@ -140,7 +140,8 @@ typedef enum
    RGUI_SETTINGS_RESTART_GAME,
    RGUI_SETTINGS_AUDIO_MUTE,
    RGUI_SETTINGS_AUDIO_CONTROL_RATE_DELTA,
-   RGUI_SETTINGS_AUDIO_VOLUME_LEVEL,
+   RGUI_SETTINGS_AUDIO_VOLUME_LEVEL, // XBOX1 only it seems. FIXME: Refactor this?
+   RGUI_SETTINGS_AUDIO_VOLUME,
    RGUI_SETTINGS_CUSTOM_BGM_CONTROL_ENABLE,
    RGUI_SETTINGS_RSOUND_SERVER_IP_ADDRESS,
    RGUI_SETTINGS_ZIP_EXTRACT,
@@ -339,10 +340,6 @@ extern rgui_handle_t *rgui;
 void menu_init(void);
 bool menu_iterate(void);
 void menu_free(void);
-
-#if defined(HAVE_RMENU_XUI)
-int rmenu_xui_iterate(void *data, unsigned action);
-#endif
 
 int rgui_input_postprocess(void *data, uint64_t old_state);
 

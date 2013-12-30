@@ -34,12 +34,6 @@
 
 typedef struct
 {
-   int16_t lx, ly;
-   int16_t rx, ry;
-} analog_t;
-
-typedef struct
-{
    float x;
    float y;
    float z;
@@ -70,9 +64,9 @@ typedef struct android_input
    jmethodID onBackPressed;
    unsigned pads_connected;
    int state_device_ids[MAX_PADS];
-   uint64_t state[MAX_PADS];
+   uint64_t pad_state[MAX_PADS];
    uint64_t keycode_lut[LAST_KEYCODE];
-   analog_t analog_state[MAX_PADS];
+   int16_t analog_state[MAX_PADS][2][2];
    sensor_t accelerometer_state;
    unsigned dpad_emulation[MAX_PLAYERS];
    struct input_pointer pointer[MAX_TOUCH];
@@ -96,7 +90,7 @@ static void engine_handle_dpad_default(void *data, AInputEvent *event,
       int source, bool debug_enable, unsigned emulation)
 {
    android_input_t *android = (android_input_t*)data;
-   uint64_t *state_cur = &android->state[state_id];
+   uint64_t *state_cur = &android->pad_state[state_id];
    float dzone_min = -g_settings.input.axis_threshold;
    float dzone_max = g_settings.input.axis_threshold;
    float x = AMotionEvent_getX(event, motion_pointer);
@@ -124,7 +118,7 @@ static void engine_handle_dpad_getaxisvalue(void *data, AInputEvent *event,
       bool debug_enable, unsigned emulation)
 {
    android_input_t *android = (android_input_t*)data;
-   uint64_t *state_cur = &android->state[state_id];
+   uint64_t *state_cur = &android->pad_state[state_id];
    float dzone_min = -g_settings.input.axis_threshold;
    float dzone_max = g_settings.input.axis_threshold;
    float x = AMotionEvent_getAxisValue(event, AXIS_X, motion_pointer);
@@ -170,10 +164,10 @@ static void engine_handle_dpad_getaxisvalue(void *data, AInputEvent *event,
 
    if (emulation == ANALOG_DPAD_DUALANALOG)
    {
-      android->analog_state[state_id].lx = x * 0x7fff;
-      android->analog_state[state_id].ly = y * 0x7fff;
-      android->analog_state[state_id].rx = z * 0x7fff;
-      android->analog_state[state_id].ry = rz * 0x7fff;
+      android->analog_state[state_id][0][0] = x * 0x7fff;
+      android->analog_state[state_id][0][1] = y * 0x7fff;
+      android->analog_state[state_id][1][0] = z * 0x7fff;
+      android->analog_state[state_id][1][1] = rz * 0x7fff;
    }
 
    if (debug_enable)
@@ -1853,7 +1847,7 @@ static void android_input_poll(void *data)
                      snprintf(msg, sizeof(msg), "Pad %d : %d, ac = %d, src = %d.\n", state_id, keycode, action, source);
 
                   if (input_state < (1ULL << RARCH_FIRST_META_KEY))
-                     key = &android->state[state_id];
+                     key = &android->pad_state[state_id];
                   else if (input_state/* && action == AKEY_EVENT_ACTION_DOWN*/)
                      key = &g_extern.lifecycle_state;
 
@@ -1912,20 +1906,20 @@ static int16_t android_input_state(void *data, const struct retro_keybind **bind
    switch (device)
    {
       case RETRO_DEVICE_JOYPAD:
-         return ((android->state[port] & binds[port][id].joykey) && (port < android->pads_connected));
+         return ((android->pad_state[port] & binds[port][id].joykey) && (port < android->pads_connected));
       case RETRO_DEVICE_ANALOG:
          if (port >= android->pads_connected)
             return 0;
          switch ((index << 1) | id)
          {
             case (RETRO_DEVICE_INDEX_ANALOG_LEFT << 1) | RETRO_DEVICE_ID_ANALOG_X:
-               return android->analog_state[port].lx;
+               return android->analog_state[port][0][0];
             case (RETRO_DEVICE_INDEX_ANALOG_LEFT << 1) | RETRO_DEVICE_ID_ANALOG_Y:
-               return android->analog_state[port].ly;
+               return android->analog_state[port][0][1];
             case (RETRO_DEVICE_INDEX_ANALOG_RIGHT << 1) | RETRO_DEVICE_ID_ANALOG_X:
-               return android->analog_state[port].rx;
+               return android->analog_state[port][1][0];
             case (RETRO_DEVICE_INDEX_ANALOG_RIGHT << 1) | RETRO_DEVICE_ID_ANALOG_Y:
-               return android->analog_state[port].ry;
+               return android->analog_state[port][1][1];
          }
       case RETRO_DEVICE_POINTER:
          switch (id)

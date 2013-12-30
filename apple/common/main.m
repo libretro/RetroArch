@@ -18,6 +18,7 @@
 
 #import "RetroArch_Apple.h"
 #include "rarch_wrapper.h"
+#include "../../frontend/frontend.h"
 
 #include "apple_input.h"
 
@@ -55,8 +56,11 @@ static void do_iteration()
 {
    if (iterate_observer && apple_is_running && !g_extern.is_paused)
    {   
-      if (apple_rarch_iterate_once())
+      if (main_entry_iterate(0, NULL, NULL))
+      {
+         main_exit(NULL);
          apple_rarch_exited();
+      }
       else
          CFRunLoopWakeUp(CFRunLoopGetMain());
    }

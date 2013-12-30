@@ -77,28 +77,10 @@ NSString *apple_get_core_display_name(NSString *core_id)
    {
       [self setAllowsFloats:(setting->type == ST_FLOAT)];
       
-      if (setting->min != setting->max)
+      if (setting->flags & SD_FLAG_HAS_RANGE)
       {
          [self setMinimum:BOXFLOAT(setting->min)];
-         [self setMaximum:BOXFLOAT(setting->max)];
-      }
-      else
-      {
-         if (setting->type == ST_INT)
-         {
-            [self setMinimum:BOXINT(INT_MIN)];
-            [self setMaximum:BOXINT(INT_MAX)];
-         }
-         else if (setting->type == ST_UINT)
-         {
-            [self setMinimum:BOXUINT(0)];
-            [self setMaximum:BOXUINT(UINT_MAX)];
-         }
-         else if (setting->type == ST_FLOAT)
-         {
-            [self setMinimum:BOXFLOAT(FLT_MIN)];
-            [self setMaximum:BOXFLOAT(FLT_MAX)];
-         }
+         [self setMaximum:BOXFLOAT(setting->max)];      
       }
    }
    

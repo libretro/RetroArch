@@ -33,6 +33,8 @@ typedef struct
    bool used;
    struct apple_pad_interface* iface;
    void* data;
+   
+   bool is_gcapi;
 } joypad_slot_t;
 
 static joypad_slot_t slots[MAX_PLAYERS];
@@ -73,6 +75,20 @@ int32_t apple_joypad_connect(const char* name, struct apple_pad_connection* conn
    return slot;
 }
 
+int32_t apple_joypad_connect_gcapi()
+{
+   int32_t slot = find_empty_slot();
+
+   if (slot >= 0 && slot < MAX_PLAYERS)
+   {
+      joypad_slot_t* s = &slots[slot];
+      s->used = true;
+      s->is_gcapi = true;
+   }
+
+   return slot;
+}
+
 void apple_joypad_disconnect(uint32_t slot)
 {
    if (slot < MAX_PLAYERS && slots[slot].used)
@@ -82,7 +98,7 @@ void apple_joypad_disconnect(uint32_t slot)
       if (s->iface && s->data)
          s->iface->disconnect(s->data);
 
-      s->used = false;
+      memset(s, 0, sizeof(joypad_slot_t));
    }
 }
 

@@ -536,6 +536,28 @@ int menu_set_settings(void *data, unsigned setting, unsigned action)
             g_settings.audio.rate_control = true;
          }
          break;
+      case RGUI_SETTINGS_AUDIO_VOLUME:
+      {
+         float db_delta = 0.0f;
+         if (action == RGUI_ACTION_START)
+         {
+            g_extern.audio_data.volume_db = 0.0f;
+            g_extern.audio_data.volume_gain = 1.0f;
+         }
+         else if (action == RGUI_ACTION_LEFT)
+            db_delta -= 1.0f;
+         else if (action == RGUI_ACTION_RIGHT)
+            db_delta += 1.0f;
+
+         if (db_delta != 0.0f)
+         {
+            g_extern.audio_data.volume_db += db_delta;
+            g_extern.audio_data.volume_db = max(g_extern.audio_data.volume_db, -80.0f);
+            g_extern.audio_data.volume_db = min(g_extern.audio_data.volume_db, 12.0f);
+            g_extern.audio_data.volume_gain = db_to_gain(g_extern.audio_data.volume_db);
+         }
+         break;
+      }
       case RGUI_SETTINGS_DEBUG_TEXT:
          if (action == RGUI_ACTION_START)
             g_settings.fps_show = false;
@@ -1881,6 +1903,9 @@ void menu_set_settings_label(char *type_str, size_t type_str_size, unsigned *w, 
          strlcpy(type_str, (g_extern.console.sound.volume_level) ? "Loud" : "Normal", type_str_size);
          break;
 #endif
+      case RGUI_SETTINGS_AUDIO_VOLUME:
+         snprintf(type_str, type_str_size, "%.1f dB", g_extern.audio_data.volume_db);
+         break;
       case RGUI_SETTINGS_RSOUND_SERVER_IP_ADDRESS:
          strlcpy(type_str, g_settings.audio.device, type_str_size);
          break;

@@ -519,8 +519,6 @@ MAIN
 ============================================================ */
 #if defined(XENON)
 #include "../frontend/frontend_xenon.c"
-#elif defined(IOS) || defined(OSX)
-#include "../frontend/frontend_apple.c"
 #else
 #include "../frontend/frontend.c"
 #endif
@@ -575,7 +573,7 @@ MENU
 #elif defined(HAVE_RGUI)
 #include "../frontend/menu/disp/rgui.c"
 #elif defined(HAVE_RMENU_XUI)
-#include "../frontend/menu/rmenu_xui.cpp"
+#include "../frontend/menu/disp/rmenu_xui.cpp"
 #endif
 #endif
 

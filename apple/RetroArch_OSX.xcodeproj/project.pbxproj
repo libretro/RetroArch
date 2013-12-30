@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		50535530185E0F4000926C26 /* CoreLocation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 5053552F185E0F4000926C26 /* CoreLocation.framework */; };
+		50DC494B186F2DCE003AEF87 /* apple_gamecontroller.m in Sources */ = {isa = PBXBuildFile; fileRef = 50DC494A186F2DCE003AEF87 /* apple_gamecontroller.m */; };
 		9620F663178FD4D3001B3B81 /* settings.m in Sources */ = {isa = PBXBuildFile; fileRef = 9620F662178FD4D3001B3B81 /* settings.m */; };
 		962EE0E2178B3DF6004224FF /* IOKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 962EE0E1178B3DF6004224FF /* IOKit.framework */; };
 		96355CE31788E72A0010DBFA /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 96355CE21788E72A0010DBFA /* Cocoa.framework */; };
@@ -29,6 +30,7 @@
 
 /* Begin PBXFileReference section */
 		5053552F185E0F4000926C26 /* CoreLocation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreLocation.framework; path = System/Library/Frameworks/CoreLocation.framework; sourceTree = SDKROOT; };
+		50DC494A186F2DCE003AEF87 /* apple_gamecontroller.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = apple_gamecontroller.m; sourceTree = "<group>"; };
 		9620F662178FD4D3001B3B81 /* settings.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = settings.m; path = OSX/settings.m; sourceTree = SOURCE_ROOT; };
 		962EE0E1178B3DF6004224FF /* IOKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = IOKit.framework; path = ../../../../../../../System/Library/Frameworks/IOKit.framework; sourceTree = "<group>"; };
 		96355CDF1788E72A0010DBFA /* RetroArch.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RetroArch.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -113,6 +115,7 @@
 		96355CE81788E72A0010DBFA /* common */ = {
 			isa = PBXGroup;
 			children = (
+				50DC494A186F2DCE003AEF87 /* apple_gamecontroller.m */,
 				9646869617BBC14E00C5EA69 /* platform.m */,
 				9646869717BBC14E00C5EA69 /* platform.h */,
 				9620F662178FD4D3001B3B81 /* settings.m */,
@@ -213,6 +216,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				967894961788ED1100D6CA69 /* main.m in Sources */,
+				50DC494B186F2DCE003AEF87 /* apple_gamecontroller.m in Sources */,
 				9678949D1788F02600D6CA69 /* RAGameView.m in Sources */,
 				9678949F1788F02600D6CA69 /* utility.m in Sources */,
 				967894A11788F07D00D6CA69 /* griffin.c in Sources */,

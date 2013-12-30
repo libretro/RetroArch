@@ -36,8 +36,9 @@ public class RetroActivityCamera extends RetroActivityCommon
 	{
 		if (camera_service_running)
 			return;
-		
-		mCamera.startPreview();
+
+		if (mCamera != null)
+			mCamera.startPreview();
 		camera_service_running = true;
 	}
 
@@ -52,8 +53,9 @@ public class RetroActivityCamera extends RetroActivityCommon
 	{
 		if (!camera_service_running)
 			return;
-		
-		mCamera.stopPreview();
+
+		if (mCamera != null)
+			mCamera.stopPreview();
 		camera_service_running = false;
 	}
 
@@ -63,7 +65,9 @@ public class RetroActivityCamera extends RetroActivityCommon
 	public void onCameraFree()
 	{
 		onCameraStop();
-		mCamera.release();
+		
+		if (mCamera != null)
+			mCamera.release();
 	}
 
 	/**
@@ -138,7 +142,8 @@ public class RetroActivityCamera extends RetroActivityCommon
 		if (texture == null)
 			onCameraTextureInit(gl_texid);
 
-		mCamera.setPreviewTexture(texture);
+		if (mCamera != null)
+			mCamera.setPreviewTexture(texture);
 	}
 
 	private final OnFrameAvailableListener onCameraFrameAvailableListener = new OnFrameAvailableListener()

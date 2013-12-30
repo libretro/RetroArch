@@ -375,7 +375,7 @@ void config_set_defaults(void)
 #endif
 
 #ifdef RARCH_CONSOLE
-   g_extern.lifecycle_state |= (1ULL << MODE_MENU);
+   g_extern.lifecycle_state |= (1ULL << MODE_MENU_PREINIT);
 
    strlcpy(g_settings.system_directory, default_paths.system_dir, sizeof(g_settings.system_directory));
 
@@ -409,7 +409,7 @@ void config_set_defaults(void)
    {
       fill_pathname_expand_special(g_extern.overlay_dir, default_overlay_dir, sizeof(g_extern.overlay_dir));
 #if defined(__QNX__) || defined(IOS)
-      fill_pathname_join(g_settings.input.overlay, g_extern.overlay_dir, "snes-landscape/snes-landscape.cfg", sizeof(g_settings.input.overlay));
+      fill_pathname_join(g_settings.input.overlay, g_extern.overlay_dir, "snes/snes.cfg", sizeof(g_settings.input.overlay));
 #endif
    }
 #endif
@@ -417,7 +417,7 @@ void config_set_defaults(void)
    if (default_shader_dir)
       fill_pathname_expand_special(g_settings.video.shader_dir, default_shader_dir, sizeof(g_settings.video.shader_dir));
 
-   if (default_libretro_path)
+   if (default_libretro_path && !g_extern.has_set_libretro)
       fill_pathname_expand_special(g_settings.libretro, default_libretro_path, sizeof(g_settings.libretro));
 
    if (default_libretro_info_path)
@@ -800,7 +800,7 @@ bool config_load_file(const char *path)
    CONFIG_GET_STRING(input.joypad_driver, "input_joypad_driver");
    CONFIG_GET_STRING(input.keyboard_layout, "input_keyboard_layout");
 
-   if (!*g_settings.libretro)
+   if (!g_extern.has_set_libretro)
       CONFIG_GET_PATH(libretro, "libretro_path");
 
    CONFIG_GET_BOOL(fps_show, "fps_show");

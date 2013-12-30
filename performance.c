@@ -29,6 +29,7 @@
 
 #if defined(_WIN32) && !defined(_XBOX)
 #include <windows.h>
+#include <intrin.h>
 #endif
 
 #if defined(__CELLOS_LV2__) || defined(GEKKO)
@@ -237,6 +238,43 @@ static void x86_cpuid(int func, int flags[4])
    memset(flags, 0, 4 * sizeof(int));
 #endif
 }
+
+// Only runs on i686 and above. Needs to be conditionally run.
+static uint64_t xgetbv_x86(uint32_t index)
+{
+#if defined(__GNUC__)
+   uint32_t eax, edx;
+   asm volatile (
+         // Older GCC versions (Apple's GCC for example) do not understand xgetbv instruction.
+         // Stamp out the machine code directly.
+         ".byte 0x0f, 0x01, 0xd0\n"
+         : "=a"(eax), "=d"(edx) : "c"(index));
+   return ((uint64_t)edx << 32) | eax;
+#elif _MSC_FULL_VER >= 160040219 // Intrinsic only works on 2010 SP1 and above.
+   return _xgetbv(index);
+#else
+   RARCH_WARN("Unknown compiler. Cannot check xgetbv bits.\n");
+   return 0;
+#endif
+}
+#endif
+
+#ifdef HAVE_NEON
+static void arm_enable_runfast_mode(void)
+{
+   // RunFast mode. Enables flush-to-zero and some floating point optimizations.
+   static const unsigned x = 0x04086060;
+   static const unsigned y = 0x03000000;
+   int r;
+   asm volatile(
+         "fmrx	%0, fpscr   \n\t" // r0 = FPSCR
+         "and	%0, %0, %1  \n\t" // r0 = r0 & 0x04086060
+         "orr	%0, %0, %2  \n\t" // r0 = r0 | 0x03000000
+         "fmxr	fpscr, %0   \n\t" // FPSCR = r0
+         : "=r"(r)
+         : "r"(x), "r"(y)
+        );
+}
 #endif
 
 uint64_t rarch_get_cpu_features(void)
@@ -273,7 +311,8 @@ uint64_t rarch_get_cpu_features(void)
       cpu |= RETRO_SIMD_SSSE3;
 
    const int avx_flags = (1 << 27) | (1 << 28);
-   if ((flags[2] & avx_flags) == avx_flags)
+   // Must only perform xgetbv check if we have AVX CPU support (guaranteed to have at least i686).
+   if (((flags[2] & avx_flags) == avx_flags) && ((xgetbv_x86(0) & 0x6) == 0x6))
       cpu |= RETRO_SIMD_AVX;
 
    RARCH_LOG("[CPUID]: MMX:   %u\n", !!(cpu & RETRO_SIMD_MMX));
@@ -284,13 +323,20 @@ uint64_t rarch_get_cpu_features(void)
    RARCH_LOG("[CPUID]: AVX:   %u\n", !!(cpu & RETRO_SIMD_AVX));
 #elif defined(ANDROID) && defined(ANDROID_ARM)
    uint64_t cpu_flags = android_getCpuFeatures();
+   (void)cpu_flags;
 
+#ifdef HAVE_NEON
    if (cpu_flags & ANDROID_CPU_ARM_FEATURE_NEON)
+   {
       cpu |= RETRO_SIMD_NEON;
+      arm_enable_runfast_mode();
+   }
+#endif
 
    RARCH_LOG("[CPUID]: NEON: %u\n", !!(cpu & RETRO_SIMD_NEON));
 #elif defined(HAVE_NEON)
    cpu |= RETRO_SIMD_NEON;
+   arm_enable_runfast_mode();
    RARCH_LOG("[CPUID]: NEON: %u\n", !!(cpu & RETRO_SIMD_NEON));
 #elif defined(__CELLOS_LV2__)
    cpu |= RETRO_SIMD_VMX;

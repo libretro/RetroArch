@@ -235,7 +235,7 @@ static void xdk_input_poll(void *data)
       *state_cur |= ((state_tmp.Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_DOWN) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_DOWN) : 0);
       *state_cur |= ((state_tmp.Gamepad.wButtons & XINPUT_GAMEPAD_START) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_START) : 0);
       *state_cur |= ((state_tmp.Gamepad.wButtons & XINPUT_GAMEPAD_BACK) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_SELECT) : 0);
-
+      
 #if defined(_XBOX1)
       *state_cur |= ((state_tmp.Gamepad.bAnalogButtons[XINPUT_GAMEPAD_B]) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_A) : 0);
       *state_cur |= ((state_tmp.Gamepad.bAnalogButtons[XINPUT_GAMEPAD_A]) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_B) : 0);
@@ -258,11 +258,21 @@ static void xdk_input_poll(void *data)
       *state_cur |= ((state_tmp.Gamepad.wButtons & XINPUT_GAMEPAD_LEFT_THUMB) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_L3) : 0);
       *state_cur |= ((state_tmp.Gamepad.wButtons & XINPUT_GAMEPAD_RIGHT_THUMB) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_R3) : 0);
 
+      xdk->analog_state[port][RETRO_DEVICE_INDEX_ANALOG_LEFT][RETRO_DEVICE_ID_ANALOG_X] = state_tmp.Gamepad.sThumbLX;
+      xdk->analog_state[port][RETRO_DEVICE_INDEX_ANALOG_LEFT][RETRO_DEVICE_ID_ANALOG_Y] = state_tmp.Gamepad.sThumbLY;
+      xdk->analog_state[port][RETRO_DEVICE_INDEX_ANALOG_RIGHT][RETRO_DEVICE_ID_ANALOG_X] = state_tmp.Gamepad.sThumbRX;
+      xdk->analog_state[port][RETRO_DEVICE_INDEX_ANALOG_RIGHT][RETRO_DEVICE_ID_ANALOG_Y] = state_tmp.Gamepad.sThumbRY;
+
       if (g_settings.input.autodetect_enable)
       {
          if (strcmp(g_settings.input.device_names[port], "Xbox") != 0)
             xdk_input_set_keybinds(NULL, DEVICE_XBOX_PAD, port, 0, (1ULL << KEYBINDS_ACTION_SET_DEFAULT_BINDS));
       }
+
+      for (int i = 0; i < 2; i++)
+         for (int j = 0; j < 2; j++)
+            if (xdk->analog_state[port][i][j] == -0x8000)
+               xdk->analog_state[port][i][j] = -0x7fff;
    }
 
    uint64_t *state_p1 = &xdk->pad_state[0];
@@ -333,6 +343,8 @@ static int16_t xdk_input_state(void *data, const struct retro_keybind **binds,
             return xdk_menu_input_state(binds[port][id].joykey, xdk->pad_state[port]) ? 1 : 0;
          else
             return input_joypad_pressed(&xdk_joypad, port, binds[port], id);
+      case RETRO_DEVICE_ANALOG:
+         return input_joypad_analog(&xdk_joypad, port, index, id, binds[port]);
       default:
          return 0;
    }
@@ -381,6 +393,7 @@ static uint64_t xdk_input_get_capabilities(void *data)
    uint64_t caps = 0;
 
    caps |= (1 << RETRO_DEVICE_JOYPAD);
+   caps |= (1 << RETRO_DEVICE_ANALOG);
 
    return caps;
 }

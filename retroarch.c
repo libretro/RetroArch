@@ -511,14 +511,16 @@ static inline void input_poll_overlay(void)
 
       driver.overlay_state.buttons |= polled_data.buttons;
 
-      for (j = 0; j < 4; j ++)
-         if (driver.overlay_state.analog[j] == 0)
+      for (j = 0; j < 4; j++)
+         if (!driver.overlay_state.analog[j])
             driver.overlay_state.analog[j] = polled_data.analog[j];
 
       polled = true;
    }
 
-   if (!polled)
+   if (polled)
+      input_overlay_post_poll(driver.overlay);
+   else
       input_overlay_poll_clear(driver.overlay);
 }
 #endif
@@ -791,6 +793,7 @@ static void parse_input(int argc, char *argv[])
    g_extern.libretro_dummy = false;
    g_extern.has_set_save_path = false;
    g_extern.has_set_state_path = false;
+   g_extern.has_set_libretro = false;
 
    if (argc < 2)
    {
@@ -1013,6 +1016,7 @@ static void parse_input(int argc, char *argv[])
 #ifdef HAVE_DYNAMIC
          case 'L':
             strlcpy(g_settings.libretro, optarg, sizeof(g_settings.libretro));
+            g_extern.has_set_libretro = true;
             break;
 #endif
 
@@ -2665,10 +2669,8 @@ static void check_volume(void)
       db_change -= 0.5f;
 
    g_extern.audio_data.volume_db += db_change;
-   if (g_extern.audio_data.volume_db > 12.0f)
-      g_extern.audio_data.volume_db = 12.0f;
-   else if (g_extern.audio_data.volume_db < -80.0f)
-      g_extern.audio_data.volume_db = -80.0f;
+   g_extern.audio_data.volume_db = max(g_extern.audio_data.volume_db, -80.0f);
+   g_extern.audio_data.volume_db = min(g_extern.audio_data.volume_db, 12.0f);
 
    char msg[256];
    snprintf(msg, sizeof(msg), "Volume: %.1f dB", g_extern.audio_data.volume_db);
@@ -3035,7 +3037,7 @@ static inline bool check_enter_rgui(void)
    bool rmenu_toggle = input_key_pressed_func(RARCH_MENU_TOGGLE) || (g_extern.libretro_dummy && !old_rmenu_toggle);
    if (rmenu_toggle && !old_rmenu_toggle)
    {
-      g_extern.lifecycle_state |= (1ULL << MODE_MENU);
+      g_extern.lifecycle_state |= (1ULL << MODE_MENU_PREINIT);
       old_rmenu_toggle = true;
       g_extern.system.frame_time_last = 0;
       return true;
