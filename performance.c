@@ -259,6 +259,23 @@ static uint64_t xgetbv_x86(uint32_t index)
 }
 #endif
 
+#ifdef HAVE_NEON
+static void arm_enable_runfast_mode(void)
+{
+   static const unsigned int x = 0x04086060;
+   static const unsigned int y = 0x03000000;
+   int r;
+   asm volatile(
+         "fmrx	%0, fpscr			\n\t"	//r0 = FPSCR
+         "and	%0, %0, %1			\n\t"	//r0 = r0 & 0x04086060
+         "orr	%0, %0, %2			\n\t"	//r0 = r0 | 0x03000000
+         "fmxr	fpscr, %0			\n\t"	//FPSCR = r0
+         : "=r"(r)
+         : "r"(x), "r"(y)
+        );
+}
+#endif
+
 uint64_t rarch_get_cpu_features(void)
 {
    uint64_t cpu = 0;
@@ -305,13 +322,20 @@ uint64_t rarch_get_cpu_features(void)
    RARCH_LOG("[CPUID]: AVX:   %u\n", !!(cpu & RETRO_SIMD_AVX));
 #elif defined(ANDROID) && defined(ANDROID_ARM)
    uint64_t cpu_flags = android_getCpuFeatures();
+   (void)cpu_flags;
 
+#ifdef HAVE_NEON
    if (cpu_flags & ANDROID_CPU_ARM_FEATURE_NEON)
+   {
       cpu |= RETRO_SIMD_NEON;
+      arm_enable_runfast_mode();
+   }
+#endif
 
    RARCH_LOG("[CPUID]: NEON: %u\n", !!(cpu & RETRO_SIMD_NEON));
 #elif defined(HAVE_NEON)
    cpu |= RETRO_SIMD_NEON;
+   arm_enable_runfast_mode();
    RARCH_LOG("[CPUID]: NEON: %u\n", !!(cpu & RETRO_SIMD_NEON));
 #elif defined(__CELLOS_LV2__)
    cpu |= RETRO_SIMD_VMX;
