@@ -27,6 +27,12 @@
 
 #ifdef HAVE_SDL
 #include <SDL/SDL.h>
+#else
+#include <sys/ioctl.h>
+#include <linux/fb.h>
+#include <linux/vt.h>
+#include <fcntl.h>
+#include <unistd.h>
 #endif
 
 #define LIMA_TEXEL_FORMAT_BGR_565           0x0E
@@ -125,6 +131,13 @@ static void lima_gfx_free(void *data)
       rgui_buffer = NULL;
    }
    rotate = 0;
+#ifndef HAVE_SDL
+   int fd = open("/dev/tty", O_RDWR);
+   ioctl(fd,VT_ACTIVATE,5);
+   ioctl(fd,VT_ACTIVATE,1);
+   close (fd);
+   system("setterm -cursor on");
+#endif
 }
 
 static void lima_init_font(lima_video_t *vid, const char *font_path, unsigned font_size)
@@ -298,6 +311,10 @@ static void *lima_gfx_init(const video_info_t *video, const input_driver_t **inp
 	"{\n"
 	"    gl_FragColor = texture2D(in_texture, coord);\n"
 	"}\n";
+
+#ifndef HAVE_SDL
+   system("setterm -cursor off");
+#endif
 
    if(!state)
    {
