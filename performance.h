@@ -25,6 +25,10 @@
 extern "C" {
 #endif
 
+#ifdef __ARM_NEON__
+#define HAVE_NEON
+#endif
+
 #include "boolean.h"
 #include "libretro.h"
 #include <stdint.h>
