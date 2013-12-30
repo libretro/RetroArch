@@ -24,10 +24,11 @@
 /* buttons pulled from a RetroArch           */
 /* string_list structure.                    */
 /*********************************************/
+static const void* const associated_delegate_key = &associated_delegate_key;
+
 typedef void (^RAActionSheetCallback)(UIActionSheet*, NSInteger);
 
 @interface RARunActionSheetDelegate : NSObject<UIActionSheetDelegate>
-@property (nonatomic, retain) RARunActionSheetDelegate* me;
 @property (nonatomic, copy) RAActionSheetCallback callbackBlock;
 @end
 
@@ -36,10 +37,7 @@ typedef void (^RAActionSheetCallback)(UIActionSheet*, NSInteger);
 - (id)initWithCallbackBlock:(RAActionSheetCallback)callback
 {
    if ((self = [super init]))
-   {
-      _me = self;
       _callbackBlock = callback;
-   }
    return self;
 }
 
@@ -47,23 +45,25 @@ typedef void (^RAActionSheetCallback)(UIActionSheet*, NSInteger);
 {
    if (self.callbackBlock)
       self.callbackBlock(actionSheet, buttonIndex);
-   self.me = nil;
 }
 
 @end
 
 static void RunActionSheet(const char* title, const struct string_list* items, UIView* parent, RAActionSheetCallback callback)
 {
+   RARunActionSheetDelegate* delegate = [[RARunActionSheetDelegate alloc] initWithCallbackBlock:callback];
+   
    UIActionSheet* actionSheet = [UIActionSheet new];
    actionSheet.title = BOXSTRING(title);
-   actionSheet.delegate = (id)[[RARunActionSheetDelegate alloc] initWithCallbackBlock:callback];
+   actionSheet.delegate = delegate;
    
    for (int i = 0; i < items->size; i ++)
-   {
       [actionSheet addButtonWithTitle:BOXSTRING(items->elems[i].data)];
-   }
    
    actionSheet.cancelButtonIndex = [actionSheet addButtonWithTitle:@"Cancel"];
+   
+   objc_setAssociatedObject(actionSheet, associated_delegate_key, delegate, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+   
    [actionSheet showInView:parent];
 }
 
