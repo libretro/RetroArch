@@ -12,6 +12,7 @@
  *  You should have received a copy of the GNU General Public License along with RetroArch.
  *  If not, see <http://www.gnu.org/licenses/>.
  */
+#if defined(__ARM_NEON__) || defined(HAVE_NEON)
 
 .arm
 
@@ -92,3 +93,4 @@ _audio_convert_float_s16_asm:
 
    bx lr
 
+#endif
