@@ -126,7 +126,7 @@ void RenderChain::set_pass_size(unsigned pass_index, unsigned width, unsigned he
          D3DUSAGE_RENDERTARGET,
          passes.back().info.pass->fbo.fp_fbo ? D3DFMT_A32B32G32R32F : D3DFMT_A8R8G8B8,
          D3DPOOL_DEFAULT,
-         &pass.tex, nullptr)))
+         &pass.tex, NULL)))
       {
          throw std::runtime_error("Failed to create texture ...");
       }
@@ -134,7 +134,7 @@ void RenderChain::set_pass_size(unsigned pass_index, unsigned width, unsigned he
       dev->SetTexture(0, pass.tex);
       dev->SetSamplerState(0, D3DSAMP_ADDRESSU, D3DTADDRESS_BORDER);
       dev->SetSamplerState(0, D3DSAMP_ADDRESSV, D3DTADDRESS_BORDER);
-      dev->SetTexture(0, nullptr);
+      dev->SetTexture(0, NULL);
    }
 }
 
@@ -154,7 +154,7 @@ void RenderChain::add_pass(const LinkInfo &info)
                FVF,
                D3DPOOL_DEFAULT,
                &pass.vertex_buf,
-               nullptr)))
+               NULL)))
    {
       throw std::runtime_error("Failed to create Vertex buf ...");
    }
@@ -163,7 +163,7 @@ void RenderChain::add_pass(const LinkInfo &info)
                D3DUSAGE_RENDERTARGET,
                passes.back().info.pass->fbo.fp_fbo ? D3DFMT_A32B32G32R32F : D3DFMT_A8R8G8B8,
                D3DPOOL_DEFAULT,
-               &pass.tex, nullptr)))
+               &pass.tex, NULL)))
    {
       throw std::runtime_error("Failed to create texture ...");
    }
@@ -171,7 +171,7 @@ void RenderChain::add_pass(const LinkInfo &info)
    dev->SetTexture(0, pass.tex);
    dev->SetSamplerState(0, D3DSAMP_ADDRESSU, D3DTADDRESS_BORDER);
    dev->SetSamplerState(0, D3DSAMP_ADDRESSV, D3DTADDRESS_BORDER);
-   dev->SetTexture(0, nullptr);
+   dev->SetTexture(0, NULL);
 
    passes.push_back(pass);
 
@@ -198,8 +198,8 @@ void RenderChain::add_lut(const std::string &id,
                smooth ? D3DX_FILTER_LINEAR : D3DX_FILTER_POINT,
                0,
                0,
-               nullptr,
-               nullptr,
+               NULL,
+               NULL,
                &lut)))
    {
       throw std::runtime_error("Failed to load LUT!");
@@ -208,7 +208,7 @@ void RenderChain::add_lut(const std::string &id,
    dev->SetTexture(0, lut);
    dev->SetSamplerState(0, D3DSAMP_ADDRESSU, D3DTADDRESS_BORDER);
    dev->SetSamplerState(0, D3DSAMP_ADDRESSV, D3DTADDRESS_BORDER);
-   dev->SetTexture(0, nullptr);
+   dev->SetTexture(0, NULL);
 
    lut_info info = { lut, id, smooth };
    luts.push_back(info);
@@ -351,7 +351,7 @@ void RenderChain::create_first_pass(const LinkInfo &info, PixelFormat fmt)
                   FVF,
                   D3DPOOL_DEFAULT,
                   &prev.vertex_buf[i],
-                  nullptr)))
+                  NULL)))
       {
          throw std::runtime_error("Failed to create Vertex buf ...");
       }
@@ -359,7 +359,7 @@ void RenderChain::create_first_pass(const LinkInfo &info, PixelFormat fmt)
       if (FAILED(dev->CreateTexture(info.tex_w, info.tex_h, 1, 0,
                   fmt == RGB565 ? D3DFMT_R5G6B5 : D3DFMT_X8R8G8B8,
                   D3DPOOL_MANAGED,
-                  &prev.tex[i], nullptr)))
+                  &prev.tex[i], NULL)))
       {
          throw std::runtime_error("Failed to create texture ...");
       }
@@ -371,7 +371,7 @@ void RenderChain::create_first_pass(const LinkInfo &info, PixelFormat fmt)
             translate_filter(info.pass->filter));
       dev->SetSamplerState(0, D3DSAMP_ADDRESSU, D3DTADDRESS_BORDER);
       dev->SetSamplerState(0, D3DSAMP_ADDRESSV, D3DTADDRESS_BORDER);
-      dev->SetTexture(0, nullptr);
+      dev->SetTexture(0, NULL);
    }
 
    compile_shaders(pass.fPrg, pass.vPrg, info.pass->source.cg);
@@ -570,7 +570,7 @@ void RenderChain::set_cg_params(Pass &pass,
 void RenderChain::clear_texture(Pass &pass)
 {
    D3DLOCKED_RECT d3dlr;
-   if (SUCCEEDED(pass.tex->LockRect(0, &d3dlr, nullptr, D3DLOCK_NOSYSLOCK)))
+   if (SUCCEEDED(pass.tex->LockRect(0, &d3dlr, NULL, D3DLOCK_NOSYSLOCK)))
    {
       std::memset(d3dlr.pBits, 0, pass.info.tex_h * d3dlr.Pitch);
       pass.tex->UnlockRect(0);
@@ -622,7 +622,7 @@ void RenderChain::blit_to_texture(const void *frame,
       clear_texture(first);
 
    D3DLOCKED_RECT d3dlr;
-   if (SUCCEEDED(first.tex->LockRect(0, &d3dlr, nullptr, D3DLOCK_NOSYSLOCK)))
+   if (SUCCEEDED(first.tex->LockRect(0, &d3dlr, NULL, D3DLOCK_NOSYSLOCK)))
    {
       for (unsigned y = 0; y < height; y++)
       {
@@ -922,7 +922,7 @@ void RenderChain::unbind_all()
             D3DTEXF_POINT);
       dev->SetSamplerState(bound_tex[i], D3DSAMP_MINFILTER,
             D3DTEXF_POINT);
-      dev->SetTexture(bound_tex[i], nullptr);
+      dev->SetTexture(bound_tex[i], NULL);
    }
 
    for (unsigned i = 0; i < bound_vert.size(); i++)
@@ -978,7 +978,7 @@ static inline CGparameter find_param_from_semantic(CGparameter param, const std:
       param = cgGetNextParameter(param);
    }
 
-   return nullptr;
+   return NULL;
 }
 
 static inline CGparameter find_param_from_semantic(CGprogram prog, const std::string &sem)

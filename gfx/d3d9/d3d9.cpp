@@ -19,7 +19,7 @@
 // It is written in C++11 (should be compat with MSVC 2010).
 // Might get rewritten in C99 if I have lots of time to burn.
 
-#ifdef _MSC_VER
+#if defined(_MSC_VER) && !defined(_XBOX)
 #pragma comment( lib, "d3d9" )
 #pragma comment( lib, "d3dx9" )
 #pragma comment( lib, "cgd3d9" )
@@ -64,12 +64,14 @@ namespace Monitor
 #ifdef __cplusplus
 extern "C"
 #endif
+
+#ifndef _XBOX
 bool dinput_handle_message(void *dinput, UINT message, WPARAM wParam, LPARAM lParam);
 
 namespace Callback
 {
    static bool quit = false;
-   static D3DVideo *curD3D = nullptr;
+   static D3DVideo *curD3D = NULL;
    static HRESULT d3d_err;
    static void *dinput;
 
@@ -109,6 +111,7 @@ namespace Callback
       return DefWindowProc(hWnd, message, wParam, lParam);
    }
 }
+#endif
 
 void D3DVideo::init_base(const video_info_t &info)
 {
@@ -145,7 +148,7 @@ void D3DVideo::init_base(const video_info_t &info)
 
 void D3DVideo::make_d3dpp(const video_info_t &info, D3DPRESENT_PARAMETERS &d3dpp)
 {
-   std::memset(&d3dpp, 0, sizeof(d3dpp));
+   memset(&d3dpp, 0, sizeof(d3dpp));
 
    d3dpp.Windowed = g_settings.video.windowed_fullscreen || !info.fullscreen;
 
@@ -208,7 +211,7 @@ void D3DVideo::init(const video_info_t &info)
          RARCH_WARN("[D3D9]: Attempting to recover from dead state (%s).\n", err);
          deinit(); 
          g_pD3D->Release();
-         g_pD3D = nullptr;
+         g_pD3D = NULL;
          init_base(info);
          RARCH_LOG("[D3D9]: Recovered from dead state.\n");
       }
@@ -238,7 +241,7 @@ void D3DVideo::set_viewport(int x, int y, unsigned width, unsigned height)
 
    final_viewport = viewport;
 
-   set_font_rect(nullptr);
+   set_font_rect(NULL);
 }
 
 void D3DVideo::set_font_rect(font_params_t *params)
@@ -287,8 +290,8 @@ bool D3DVideo::read_viewport(uint8_t *buffer)
    RARCH_PERFORMANCE_INIT(d3d_read_viewport);
    RARCH_PERFORMANCE_START(d3d_read_viewport);
    bool ret = true;
-   IDirect3DSurface9 *target = nullptr;
-   IDirect3DSurface9 *dest   = nullptr;
+   IDirect3DSurface9 *target = NULL;
+   IDirect3DSurface9 *dest   = NULL;
 
    if (FAILED(Callback::d3d_err = dev->GetRenderTarget(0, &target)))
    {
@@ -298,7 +301,7 @@ bool D3DVideo::read_viewport(uint8_t *buffer)
 
    if (FAILED(Callback::d3d_err = dev->CreateOffscreenPlainSurface(screen_width, screen_height,
         D3DFMT_X8R8G8B8, D3DPOOL_SYSTEMMEM,
-        &dest, nullptr)))
+        &dest, NULL)))
    {
       ret = false;
       goto end;
@@ -311,7 +314,7 @@ bool D3DVideo::read_viewport(uint8_t *buffer)
    }
 
    D3DLOCKED_RECT rect;
-   if (SUCCEEDED(dest->LockRect(&rect, nullptr, D3DLOCK_READONLY)))
+   if (SUCCEEDED(dest->LockRect(&rect, NULL, D3DLOCK_READONLY)))
    {
       unsigned pitchpix = rect.Pitch / 4;
       const uint32_t *pixels = (const uint32_t*)rect.pBits;
@@ -383,6 +386,7 @@ void D3DVideo::calculate_rect(unsigned width, unsigned height,
    }
 }
 
+#ifndef _XBOX
 static void show_cursor(bool show)
 {
    if (show)
@@ -390,6 +394,7 @@ static void show_cursor(bool show)
    else
       while (ShowCursor(FALSE) >= 0);
 }
+#endif
 
 static BOOL CALLBACK monitor_enum_proc(HMONITOR hMonitor, HDC hdcMonitor, LPRECT lprcMonitor, LPARAM dwData)
 {
@@ -401,7 +406,7 @@ static BOOL CALLBACK monitor_enum_proc(HMONITOR hMonitor, HDC hdcMonitor, LPRECT
 RECT D3DVideo::monitor_rect()
 {
    Monitor::num_mons = 0;
-   EnumDisplayMonitors(nullptr, nullptr, monitor_enum_proc, 0);
+   EnumDisplayMonitors(NULL, NULL, monitor_enum_proc, 0);
 
    if (!Monitor::last_hm)
       Monitor::last_hm = MonitorFromWindow(GetDesktopWindow(), MONITOR_DEFAULTTONEAREST);
@@ -426,7 +431,7 @@ RECT D3DVideo::monitor_rect()
    }
 
    MONITORINFOEX current_mon;
-   std::memset(&current_mon, 0, sizeof(current_mon));
+   memset(&current_mon, 0, sizeof(current_mon));
    current_mon.cbSize = sizeof(MONITORINFOEX);
    GetMonitorInfo(hm_to_use, (MONITORINFO*)&current_mon);
 
@@ -434,14 +439,14 @@ RECT D3DVideo::monitor_rect()
 }
 
 D3DVideo::D3DVideo(const video_info_t *info) :
-   g_pD3D(nullptr), dev(nullptr), font(nullptr),
-   rotation(0), needs_restore(false), cgCtx(nullptr), overlays_enabled(false)
+   g_pD3D(NULL), dev(NULL), font(NULL),
+   rotation(0), needs_restore(false), cgCtx(NULL), overlays_enabled(false)
 {
    should_resize = false;
    gfx_set_dwm();
 
 #ifdef HAVE_MENU
-   std::memset(&rgui, 0, sizeof(rgui));
+   memset(&rgui, 0, sizeof(rgui));
    rgui.tex_coords.x = 0;
    rgui.tex_coords.y = 0;
    rgui.tex_coords.w = 1;
@@ -452,12 +457,12 @@ D3DVideo::D3DVideo(const video_info_t *info) :
    rgui.vert_coords.h = -1;
 #endif
 
-   std::memset(&windowClass, 0, sizeof(windowClass));
+   memset(&windowClass, 0, sizeof(windowClass));
    windowClass.cbSize        = sizeof(windowClass);
    windowClass.style         = CS_HREDRAW | CS_VREDRAW;
    windowClass.lpfnWndProc   = Callback::WindowProc;
-   windowClass.hInstance     = nullptr;
-   windowClass.hCursor       = LoadCursor(nullptr, IDC_ARROW);
+   windowClass.hInstance     = NULL;
+   windowClass.hCursor       = LoadCursor(NULL, IDC_ARROW);
    windowClass.lpszClassName = "RetroArch";
    windowClass.hIcon = LoadIcon(GetModuleHandle(NULL), MAKEINTRESOURCE(IDI_ICON));
    windowClass.hIconSm = (HICON)LoadImage(GetModuleHandle(NULL), MAKEINTRESOURCE(IDI_ICON), IMAGE_ICON, 16, 16, 0);
@@ -490,7 +495,7 @@ D3DVideo::D3DVideo(const video_info_t *info) :
    }
 
    char buffer[128];
-   gfx_get_fps(buffer, sizeof(buffer), nullptr, 0);
+   gfx_get_fps(buffer, sizeof(buffer), NULL, 0);
    std::string title = buffer;
    title += " || Direct3D9";
 
@@ -500,7 +505,7 @@ D3DVideo::D3DVideo(const video_info_t *info) :
          info->fullscreen ? mon_rect.left : CW_USEDEFAULT,
          info->fullscreen ? mon_rect.top  : CW_USEDEFAULT,
          win_width, win_height,
-         nullptr, nullptr, nullptr, this);
+         NULL, NULL, NULL, this);
 
    driver.display_type  = RARCH_DISPLAY_WIN32;
    driver.video_display = 0;
@@ -566,9 +571,9 @@ D3DVideo::~D3DVideo()
    deinit();
 #ifdef HAVE_OVERLAY
    free_overlays();
-#endif
 #ifdef HAVE_MENU
    free_overlay(rgui);
+#endif
 #endif
    if (dev)
       dev->Release();
@@ -578,7 +583,7 @@ D3DVideo::~D3DVideo()
    Monitor::last_hm = MonitorFromWindow(hWnd, MONITOR_DEFAULTTONEAREST);
    DestroyWindow(hWnd);
 
-   UnregisterClass("RetroArch", GetModuleHandle(nullptr));
+   UnregisterClass("RetroArch", GetModuleHandle(NULL));
 }
 
 bool D3DVideo::restore()
@@ -641,7 +646,7 @@ bool D3DVideo::frame(const void *frame,
    // Insert black frame first, so we can screenshot, etc.
    if (g_settings.video.black_frame_insertion)
    {
-      if (dev->Present(nullptr, nullptr, nullptr, nullptr) != D3D_OK)
+      if (dev->Present(NULL, NULL, NULL, NULL) != D3D_OK)
       {
          needs_restore = true;
          return true;
@@ -672,7 +677,7 @@ bool D3DVideo::frame(const void *frame,
 
    RARCH_PERFORMANCE_STOP(d3d_frame);
 
-   if (dev->Present(nullptr, nullptr, nullptr, nullptr) != D3D_OK)
+   if (dev->Present(NULL, NULL, NULL, NULL) != D3D_OK)
    {
       needs_restore = true;
       return true;
@@ -689,14 +694,14 @@ void D3DVideo::render_msg(const char *msg, font_params_t *params)
 
    if (msg && SUCCEEDED(dev->BeginScene()))
    {
-      font->DrawTextA(nullptr,
+      font->DrawTextA(NULL,
             msg,
             -1,
             &font_rect_shifted,
             DT_LEFT,
             ((font_color >> 2) & 0x3f3f3f) | 0xff000000);
 
-      font->DrawTextA(nullptr,
+      font->DrawTextA(NULL,
             msg,
             -1,
             &font_rect,
@@ -729,8 +734,9 @@ bool D3DVideo::focus() const
 
 void D3DVideo::process()
 {
+#if !defined(_XBOX)
    MSG msg;
-   while (PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE))
+   while (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE))
    {
       TranslateMessage(&msg);
       DispatchMessage(&msg);
@@ -741,7 +747,7 @@ void D3DVideo::process()
 bool D3DVideo::init_cg()
 {
    cgCtx = cgCreateContext();
-   if (cgCtx == nullptr)
+   if (cgCtx == NULL)
       return false;
 
    RARCH_LOG("[D3D9 Cg]: Created context.\n");
@@ -758,16 +764,16 @@ void D3DVideo::deinit_cg()
    if (cgCtx)
    {
       cgD3D9UnloadAllPrograms();
-      cgD3D9SetDevice(nullptr);
+      cgD3D9SetDevice(NULL);
       cgDestroyContext(cgCtx);
-      cgCtx = nullptr;
+      cgCtx = NULL;
    }
 }
 #endif
 
 void D3DVideo::init_singlepass()
 {
-   std::memset(&shader, 0, sizeof(shader));
+   memset(&shader, 0, sizeof(shader));
    shader.passes = 1;
    gfx_shader_pass &pass = shader.pass[0];
    pass.fbo.valid = true;
@@ -794,7 +800,7 @@ void D3DVideo::init_imports()
       tracker_info.script_is_file = true;
    }
 
-   tracker_info.script_class = *shader.script_class ? shader.script_class : nullptr;
+   tracker_info.script_class = *shader.script_class ? shader.script_class : NULL;
 #endif
 
    state_tracker_t *state_tracker = state_tracker_init(&tracker_info);
@@ -825,7 +831,7 @@ void D3DVideo::init_multipass()
    if (!conf)
       throw std::runtime_error("Failed to load preset");
 
-   std::memset(&shader, 0, sizeof(shader));
+   memset(&shader, 0, sizeof(shader));
 
    if (!gfx_shader_read_conf_cgp(conf, &shader))
    {
@@ -1015,7 +1021,7 @@ void D3DVideo::deinit_font()
 {
    if (font)
       font->Release();
-   font = nullptr;
+   font = NULL;
 }
 
 void D3DVideo::update_title()
@@ -1065,20 +1071,20 @@ bool D3DVideo::overlay_load(const texture_image *images, unsigned num_images)
                   0,
                   D3DFMT_A8R8G8B8,
                   D3DPOOL_MANAGED,
-                  &overlay.tex, nullptr)))
+                  &overlay.tex, NULL)))
       {
          RARCH_ERR("[D3D9]: Failed to create overlay texture\n");
          return false;
       }
 
       D3DLOCKED_RECT d3dlr;
-      if (SUCCEEDED(overlay.tex->LockRect(0, &d3dlr, nullptr, D3DLOCK_NOSYSLOCK)))
+      if (SUCCEEDED(overlay.tex->LockRect(0, &d3dlr, NULL, D3DLOCK_NOSYSLOCK)))
       {
          uint32_t *dst = static_cast<uint32_t*>(d3dlr.pBits);
          const uint32_t *src = images[i].pixels;
          unsigned pitch = d3dlr.Pitch >> 2;
          for (unsigned y = 0; y < height; y++, dst += pitch, src += width)
-            std::memcpy(dst, src, width << 2);
+            memcpy(dst, src, width << 2);
          overlay.tex->UnlockRect(0);
       }
 
@@ -1148,7 +1154,7 @@ void D3DVideo::overlay_render(overlay_t &overlay)
             0,
             D3DPOOL_MANAGED,
             &overlay.vert_buf,
-            nullptr);
+            NULL);
    }
 
    for (unsigned i = 0; i < 4; i++)
@@ -1188,7 +1194,7 @@ void D3DVideo::overlay_render(overlay_t &overlay)
 
    void *verts;
    overlay.vert_buf->Lock(0, sizeof(vert), &verts, 0);
-   std::memcpy(verts, vert, sizeof(vert));
+   memcpy(verts, vert, sizeof(vert));
    overlay.vert_buf->Unlock();
 
    // enable alpha
@@ -1252,7 +1258,7 @@ void D3DVideo::set_rgui_texture_frame(const void *frame,
       if (FAILED(dev->CreateTexture(width, height, 1,
                   0, D3DFMT_A8R8G8B8,
                   D3DPOOL_MANAGED,
-                  &rgui.tex, nullptr)))
+                  &rgui.tex, NULL)))
       {
          RARCH_ERR("[D3D9]: Failed to create rgui texture\n");
          return;
@@ -1265,7 +1271,7 @@ void D3DVideo::set_rgui_texture_frame(const void *frame,
 
 
    D3DLOCKED_RECT d3dlr;
-   if (SUCCEEDED(rgui.tex->LockRect(0, &d3dlr, nullptr, D3DLOCK_NOSYSLOCK)))
+   if (SUCCEEDED(rgui.tex->LockRect(0, &d3dlr, NULL, D3DLOCK_NOSYSLOCK)))
    {
       if (rgb32)
       {
@@ -1273,8 +1279,8 @@ void D3DVideo::set_rgui_texture_frame(const void *frame,
          const uint32_t *src = (const uint32_t*)frame;
          for (unsigned h = 0; h < height; h++, dst += d3dlr.Pitch, src += width)
          {
-            std::memcpy(dst, src, width * sizeof(uint32_t));
-            std::memset(dst + width * sizeof(uint32_t), 0, d3dlr.Pitch - width * sizeof(uint32_t));
+            memcpy(dst, src, width * sizeof(uint32_t));
+            memset(dst + width * sizeof(uint32_t), 0, d3dlr.Pitch - width * sizeof(uint32_t));
          }
       }
       else
@@ -1317,12 +1323,12 @@ static void *d3d9_init(const video_info_t *info, const input_driver_t **input,
    {
      D3DVideo *vid = new D3DVideo(info);
      if (!vid)
-        return nullptr;
+        return NULL;
 
      if (input && input_data)
      {
         Callback::dinput = input_dinput.init();
-        *input = Callback::dinput ? &input_dinput : nullptr;
+        *input = Callback::dinput ? &input_dinput : NULL;
         *input_data = Callback::dinput;
      }
 
@@ -1331,7 +1337,7 @@ static void *d3d9_init(const video_info_t *info, const input_driver_t **input,
    catch (const std::exception &e)
    {
       RARCH_ERR("[D3D9]: Failed to init D3D9 (%s, code: 0x%x).\n", e.what(), (unsigned)Callback::d3d_err);
-      return nullptr;
+      return NULL;
    }
 }
 
@@ -1536,7 +1542,7 @@ const video_driver_t video_d3d9 = {
    d3d9_free,
    "d3d9",
 #ifdef HAVE_MENU
-   nullptr,
+   NULL,
 #endif
    d3d9_set_rotation,
    d3d9_viewport_info,
