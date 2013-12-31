@@ -3,21 +3,13 @@
   <ItemGroup>
     <ClCompile Include="..\..\autosave.c" />
     <ClCompile Include="..\..\cheats.c" />
-    <ClCompile Include="..\..\compat\rxml\rxml.c" />
     <ClCompile Include="..\..\core_info.c" />
     <ClCompile Include="..\..\core_options.c" />
-    <ClCompile Include="..\..\deps\miniz\miniz.c" />
     <ClCompile Include="..\..\file_extract.c" />
     <ClCompile Include="..\..\frontend\menu\history.c" />
     <ClCompile Include="..\..\file_list.c" />
-    <ClCompile Include="..\..\gfx\d3d9\render_chain.cpp" />
-    <ClCompile Include="..\..\gfx\fonts\bitmapfont.c" />
-    <ClCompile Include="..\..\gfx\fonts\fonts.c" />
-    <ClCompile Include="..\..\gfx\rpng\rpng.c" />
-    <ClCompile Include="..\..\input\overlay.c" />
     <ClCompile Include="..\..\performance.c" />
     <ClCompile Include="..\..\command.c" />
-    <ClCompile Include="..\..\compat\compat.c" />
     <ClCompile Include="..\..\conf\config_file.c" />
     <ClCompile Include="..\..\driver.c" />
     <ClCompile Include="..\..\dynamic.c" />
@@ -25,21 +17,11 @@
     <ClCompile Include="..\..\fifo_buffer.c" />
     <ClCompile Include="..\..\file.c" />
     <ClCompile Include="..\..\file_path.c" />
-    <ClCompile Include="..\..\gfx\context\win32_common.c" />
-    <ClCompile Include="..\..\gfx\image.c" />
-    <ClCompile Include="..\..\gfx\scaler\filter.c" />
-    <ClCompile Include="..\..\gfx\scaler\pixconv.c" />
-    <ClCompile Include="..\..\gfx\scaler\scaler.c" />
-    <ClCompile Include="..\..\gfx\scaler\scaler_int.c" />
     <ClCompile Include="..\..\hash.c" />
-    <ClCompile Include="..\..\input\input_common.c" />
-    <ClCompile Include="..\..\input\autoconf\builtin_win.c" />
     <ClCompile Include="..\..\message_queue.c" />
     <ClCompile Include="..\..\movie.c" />
     <ClCompile Include="..\..\netplay.c" />
     <ClCompile Include="..\..\patch.c" />
-    <ClCompile Include="..\..\frontend\frontend.c" />
-    <ClCompile Include="..\..\frontend\frontend_context.c" />
     <ClCompile Include="..\..\retroarch.c" />
     <ClCompile Include="..\..\rewind.c" />
     <ClCompile Include="..\..\screenshot.c" />
@@ -135,6 +117,60 @@
     <ClCompile Include="..\..\gfx\video_thread_wrapper.c">
       <Filter>gfx</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\gfx\rpng\rpng.c">
+      <Filter>gfx\rpng</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\gfx\image.c">
+      <Filter>gfx</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\input\input_common.c">
+      <Filter>input</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\compat\compat.c">
+      <Filter>compat</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\frontend\frontend.c">
+      <Filter>frontend</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\frontend\frontend_context.c">
+      <Filter>frontend</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\gfx\context\win32_common.c">
+      <Filter>input</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\gfx\fonts\fonts.c">
+      <Filter>gfx\fonts</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\gfx\scaler\pixconv.c">
+      <Filter>gfx\scaler</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\gfx\scaler\scaler.c">
+      <Filter>gfx\scaler</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\gfx\scaler\scaler_int.c">
+      <Filter>gfx\scaler</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\gfx\scaler\filter.c">
+      <Filter>gfx\scaler</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\gfx\fonts\bitmapfont.c">
+      <Filter>gfx\fonts</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\gfx\d3d9\render_chain.cpp">
+      <Filter>gfx\d3d9</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\compat\rxml\rxml.c">
+      <Filter>compat\rxml</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\input\autoconf\builtin_win.c">
+      <Filter>input\autoconf</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\input\overlay.c">
+      <Filter>gfx</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\deps\miniz\miniz.c">
+      <Filter>deps\miniz</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="resource.h" />
@@ -172,6 +208,30 @@
     </Filter>
     <Filter Include="input">
       <UniqueIdentifier>{c7cbb180-c629-4897-89f0-a4298eaf5f27}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="gfx\rpng">
+      <UniqueIdentifier>{a6b082bc-7b37-4715-8d02-701cc9acae5c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="compat">
+      <UniqueIdentifier>{6489e28b-b1bf-45a3-ab30-4d9a3e68c57b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="gfx\fonts">
+      <UniqueIdentifier>{21c771b7-6971-4953-83d7-d1f83239d490}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="gfx\scaler">
+      <UniqueIdentifier>{8cc14084-f5b9-4166-81ac-3f66afd6527d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="compat\rxml">
+      <UniqueIdentifier>{c2ea7f2b-5a09-4f28-8bbe-a628bd3a0bdd}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="input\autoconf">
+      <UniqueIdentifier>{a923ed53-ddfb-47d1-a5e7-ec6105c4bd79}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="deps">
+      <UniqueIdentifier>{d1a36d53-e5e6-46a5-b5b4-b43794342cd1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="deps\miniz">
+      <UniqueIdentifier>{cf7c2fb9-ca3c-468e-af4f-74c652b3e5fe}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
 </Project>
