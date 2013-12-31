@@ -836,7 +836,7 @@ void D3DVideo::init_luts(void)
    }
 }
 
-void D3DVideo::init_multipass(void)
+int D3DVideo::init_multipass(void)
 {
    config_file_t *conf = config_file_new(cg_shader.c_str());
    if (!conf)
