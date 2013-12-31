@@ -19,11 +19,13 @@
 // It is written in C++11 (should be compat with MSVC 2010).
 // Might get rewritten in C99 if I have lots of time to burn.
 
-#if defined(_MSC_VER) && !defined(_XBOX)
+#ifdef _MSC_VER
+#ifndef _XBOX
 #pragma comment( lib, "d3d9" )
 #pragma comment( lib, "d3dx9" )
 #pragma comment( lib, "cgd3d9" )
 #pragma comment( lib, "dxguid" )
+#endif
 #endif
 
 #include "d3d9.hpp"
@@ -571,9 +573,9 @@ D3DVideo::~D3DVideo()
    deinit();
 #ifdef HAVE_OVERLAY
    free_overlays();
+#endif
 #ifdef HAVE_MENU
    free_overlay(rgui);
-#endif
 #endif
    if (dev)
       dev->Release();
@@ -734,13 +736,14 @@ bool D3DVideo::focus() const
 
 void D3DVideo::process()
 {
-#if !defined(_XBOX)
+#ifndef _XBOX
    MSG msg;
    while (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE))
    {
       TranslateMessage(&msg);
       DispatchMessage(&msg);
    }
+#endif
 }
 
 #ifdef HAVE_CG
