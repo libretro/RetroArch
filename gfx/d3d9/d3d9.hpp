@@ -55,7 +55,8 @@ typedef struct
 class D3DVideo
 {
    public:
-      D3DVideo(const video_info_t* info);
+      D3DVideo(const video_info_t* info, const input_driver_t **input,
+      void **input_data);
       bool frame(const void* frame,
             unsigned width, unsigned height, unsigned pitch,
             const char *msg);
@@ -75,6 +76,8 @@ class D3DVideo
       void set_font_rect(font_params_t *params);
 
       void overlay_render(overlay_t &overlay);
+
+      void show_cursor(bool show);
 
 #ifdef HAVE_OVERLAY
       bool overlay_load(const texture_image *images, unsigned num_images);
@@ -118,13 +121,13 @@ class D3DVideo
 
       struct gfx_shader shader;
 
-      void process();
+      void process(void);
 
-      void init(const video_info_t &info);
-      void init_base(const video_info_t &info);
-      void make_d3dpp(const video_info_t &info, D3DPRESENT_PARAMETERS &d3dpp);
-      void deinit();
-      RECT monitor_rect();
+      void init(const video_info_t *info);
+      void init_base(const video_info_t *info);
+      void make_d3dpp(const video_info_t *info, D3DPRESENT_PARAMETERS *d3dpp);
+      void deinit(void);
+      RECT monitor_rect(void);
 
       video_info_t video_info;
 
@@ -136,21 +139,21 @@ class D3DVideo
       void deinit_cg();
 #endif
 
-      void init_imports();
-      void init_luts();
-      void init_singlepass();
-      void init_multipass();
-      bool init_chain(const video_info_t &video_info);
+      void init_imports(void);
+      void init_luts(void);
+      void init_singlepass(void);
+      void init_multipass(void);
+      bool init_chain(const video_info_t *video_info);
       std::unique_ptr<RenderChain> chain;
-      void deinit_chain();
+      void deinit_chain(void);
 
-      bool init_font();
-      void deinit_font();
+      bool init_font(void);
+      void deinit_font(void);
       RECT font_rect;
       RECT font_rect_shifted;
       uint32_t font_color;
 
-      void update_title();
+      void update_title(void);
 
 #ifdef HAVE_OVERLAY
       bool overlays_enabled;

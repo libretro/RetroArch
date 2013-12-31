@@ -208,6 +208,7 @@
     <ClCompile Include="..\..\frontend\menu\menu_settings.c" />
     <ClCompile Include="..\..\frontend\menu\menu_context.c" />
     <ClCompile Include="..\..\gfx\d3d9\d3d9.cpp" />
+    <ClCompile Include="..\..\gfx\d3d9\d3d9_pc.cpp" />
     <ClCompile Include="..\..\gfx\d3d9\render_chain.cpp" />
     <ClCompile Include="..\..\gfx\fonts\bitmapfont.c" />
     <ClCompile Include="..\..\gfx\fonts\fonts.c" />

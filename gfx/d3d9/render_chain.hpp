@@ -42,7 +42,7 @@ class RenderChain
    public:
       enum PixelFormat { RGB565, ARGB };
 
-      RenderChain(const video_info_t &video_info,
+      RenderChain(const video_info_t *video_info,
             IDirect3DDevice9 *dev,
 #ifdef HAVE_CG
             CGcontext cgCtx,

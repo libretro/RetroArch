@@ -171,6 +171,9 @@
     <ClCompile Include="..\..\deps\miniz\miniz.c">
       <Filter>deps\miniz</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\gfx\d3d9\d3d9_pc.cpp">
+      <Filter>gfx\d3d9</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="resource.h" />

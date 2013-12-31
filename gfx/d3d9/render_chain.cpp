@@ -59,12 +59,12 @@ RenderChain::~RenderChain()
       cgDestroyProgram(vStock);
 }
 
-RenderChain::RenderChain(const video_info_t &video_info,
+RenderChain::RenderChain(const video_info_t *video_info,
       IDirect3DDevice9 *dev_,
       CGcontext cgCtx_,
       const LinkInfo &info, PixelFormat fmt,
       const D3DVIEWPORT9 &final_viewport_)
-   : dev(dev_), cgCtx(cgCtx_), video_info(video_info), final_viewport(final_viewport_), frame_count(0)
+   : dev(dev_), cgCtx(cgCtx_), video_info(*video_info), final_viewport(final_viewport_), frame_count(0)
 {
    pixel_size = fmt == RGB565 ? 2 : 4;
    create_first_pass(info, fmt);
