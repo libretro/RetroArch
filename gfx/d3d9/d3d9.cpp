@@ -21,19 +21,6 @@
 #include "../../compat/posix_string.h"
 #include "../../performance.h"
 
-#include <iostream>
-#include <exception>
-#include <stdexcept>
-#include <cstring>
-#include <stdio.h>
-#include <stdint.h>
-#include <iostream>
-#include <cmath>
-#include <algorithm>
-
-#undef min
-#undef max
-
 #ifdef __cplusplus
 extern "C"
 #endif
