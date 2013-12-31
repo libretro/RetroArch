@@ -71,12 +71,12 @@ bool write_file(const char *path, const void *data, size_t size)
 }
 
 // Generic file loader.
-int read_file(const char *path, void **buf)
+long read_file(const char *path, void **buf)
 {
+   long rc = 0, len = 0;
    void *rom_buf = NULL;
    FILE *file = fopen(path, "rb");
-   ssize_t rc = 0;
-   size_t len = 0;
+
    if (!file)
       goto error;
 
@@ -90,13 +90,13 @@ int read_file(const char *path, void **buf)
       goto error;
    }
 
-   if ((rc = fread(rom_buf, 1, len, file)) < (ssize_t)len)
+   if ((rc = fread(rom_buf, 1, len, file)) < len)
       RARCH_WARN("Didn't read whole file.\n");
 
    *buf = rom_buf;
    // Allow for easy reading of strings to be safe.
    // Will only work with sane character formatting (Unix).
-   ((char*)rom_buf)[len] = '\0'; 
+   ((char*)rom_buf)[len] = '\0';
    fclose(file);
    return rc;
 
@@ -113,12 +113,14 @@ bool read_file_string(const char *path, char **buf)
 {
    *buf = NULL;
    FILE *file = fopen(path, "r");
-   size_t len = 0;
+   long len = 0;
    char *ptr = NULL;
 
    if (!file)
       goto error;
 
+   // ftell with "r" can be troublesome ...
+   // Haven't run into issues yet though.
    fseek(file, 0, SEEK_END);
    len = ftell(file) + 2; // Takes account of being able to read in EOF and '\0' at end.
    rewind(file);

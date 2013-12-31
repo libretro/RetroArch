@@ -18,9 +18,7 @@
 #include <string.h>
 #include "file_list.h"
 #include "compat/strcasestr.h"
-#ifdef _MSC_VER
 #include "msvc/msvc_compat.h"
-#endif
 
 struct item_file
 {
