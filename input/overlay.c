@@ -772,8 +772,8 @@ void input_overlay_poll(input_overlay_t *ol, input_overlay_state_t *out, int16_t
       {
          float x_dist = x - desc->x;
          float y_dist = y - desc->y;
-         float x_val = x_dist / desc->range_x_mod;
-         float y_val = y_dist / desc->range_y_mod;
+         float x_val = x_dist / desc->range_x;
+         float y_val = y_dist / desc->range_y;
          float x_val_sat = x_val / desc->analog_saturate_pct;
          float y_val_sat = y_val / desc->analog_saturate_pct;
 
