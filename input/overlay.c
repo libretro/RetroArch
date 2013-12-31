@@ -514,7 +514,7 @@ static bool input_overlay_load_overlay(input_overlay_t *ol, config_file_t *conf,
    }
 
    // Precache load image array for simplicity.
-   overlay->load_images = (struct video_overlay_image*)calloc(1 + overlay->size, sizeof(struct overlay_desc));
+   overlay->load_images = (struct video_overlay_image*)calloc(1 + overlay->size, sizeof(struct video_overlay_image));
    if (!overlay->load_images)
    {
       RARCH_ERR("[Overlay]: Failed to allocate load_images.\n");
