@@ -47,6 +47,7 @@ struct overlay_desc
    float range_x, range_y;
    float range_x_mod, range_y_mod;
    float mod_x, mod_y, mod_w, mod_h;
+   float delta_x, delta_y;
 
    enum overlay_type type;
    uint64_t key_mask;
@@ -62,6 +63,7 @@ struct overlay_desc
    float range_mod;
 
    bool updated;
+   bool movable;
 };
 
 struct overlay
@@ -390,6 +392,12 @@ static bool input_overlay_load_desc(input_overlay_t *ol, config_file_t *conf, st
    snprintf(conf_key, sizeof(conf_key), "overlay%u_desc%u_range_mod", ol_index, desc_index);
    desc->range_mod = range_mod;
    config_get_float(conf, conf_key, &desc->range_mod);
+
+   snprintf(conf_key, sizeof(conf_key), "overlay%u_desc%u_movable", ol_index, desc_index);
+   desc->movable = false;
+   desc->delta_x = 0.0f;
+   desc->delta_y = 0.0f;
+   config_get_bool(conf, conf_key, &desc->movable);
 
    desc->range_x_mod = desc->range_x;
    desc->range_y_mod = desc->range_y;
@@ -762,12 +770,24 @@ void input_overlay_poll(input_overlay_t *ol, input_overlay_state_t *out, int16_t
       }
       else
       {
-         float x_val = (x - desc->x) / desc->range_x_mod / desc->analog_saturate_pct;
-         float y_val = (y - desc->y) / desc->range_y_mod / desc->analog_saturate_pct;
+         float x_dist = x - desc->x;
+         float y_dist = y - desc->y;
+         float x_val = x_dist / desc->range_x_mod;
+         float y_val = y_dist / desc->range_y_mod;
+         float x_val_sat = x_val / desc->analog_saturate_pct;
+         float y_val_sat = y_val / desc->analog_saturate_pct;
 
          unsigned int base = (desc->type == OVERLAY_TYPE_ANALOG_RIGHT) ? 2 : 0;
-         out->analog[base + 0] = clamp(x_val, -1.0f, 1.0f) * 32767.0f;
-         out->analog[base + 1] = clamp(y_val, -1.0f, 1.0f) * 32767.0f;
+         out->analog[base + 0] = clamp(x_val_sat, -1.0f, 1.0f) * 32767.0f;
+         out->analog[base + 1] = clamp(y_val_sat, -1.0f, 1.0f) * 32767.0f;
+      }
+
+      if (desc->movable)
+      {
+         float x_dist = x - desc->x;
+         float y_dist = y - desc->y;
+         desc->delta_x = clamp(x_dist, -desc->range_x, desc->range_x) * ol->active->mod_w;
+         desc->delta_y = clamp(y_dist, -desc->range_y, desc->range_y) * ol->active->mod_h;
       }
    }
 
@@ -775,6 +795,19 @@ void input_overlay_poll(input_overlay_t *ol, input_overlay_state_t *out, int16_t
       ol->blocked = false;
    else if (ol->blocked)
       memset(out, 0, sizeof(*out));
+}
+
+static void input_overlay_update_desc_geom(input_overlay_t *ol, struct overlay_desc *desc)
+{
+   if (desc->image.image && desc->movable)
+   {
+      ol->iface->vertex_geom(ol->iface_data, desc->image_index,
+            desc->mod_x + desc->delta_x, desc->mod_y + desc->delta_y,
+            desc->mod_w, desc->mod_h);
+
+      desc->delta_x = 0.0f;
+      desc->delta_y = 0.0f;
+   }
 }
 
 void input_overlay_post_poll(input_overlay_t *ol)
@@ -803,6 +836,7 @@ void input_overlay_post_poll(input_overlay_t *ol)
          desc->range_y_mod = desc->range_y;
       }
 
+      input_overlay_update_desc_geom(ol, desc);
       desc->updated = false;
    }
 }
@@ -819,6 +853,10 @@ void input_overlay_poll_clear(input_overlay_t *ol)
       desc->range_x_mod = desc->range_x;
       desc->range_y_mod = desc->range_y;
       desc->updated = false;
+
+      desc->delta_x = 0.0f;
+      desc->delta_y = 0.0f;
+      input_overlay_update_desc_geom(ol, desc);
    }
 }
 

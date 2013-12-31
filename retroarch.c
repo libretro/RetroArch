@@ -511,8 +511,9 @@ static inline void input_poll_overlay(void)
 
       driver.overlay_state.buttons |= polled_data.buttons;
 
+      // Fingers pressed later take prio and matched up with overlay poll priorities.
       for (j = 0; j < 4; j++)
-         if (!driver.overlay_state.analog[j])
+         if (polled_data.analog[j])
             driver.overlay_state.analog[j] = polled_data.analog[j];
 
       polled = true;
