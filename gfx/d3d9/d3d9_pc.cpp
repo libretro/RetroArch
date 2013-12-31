@@ -343,8 +343,8 @@ bool D3DVideo::read_viewport(uint8_t *buffer)
    RARCH_PERFORMANCE_INIT(d3d_read_viewport);
    RARCH_PERFORMANCE_START(d3d_read_viewport);
    bool ret = true;
-   IDirect3DSurface9 *target = NULL;
-   IDirect3DSurface9 *dest   = NULL;
+   LPDIRECT3DSURFACE target = NULL;
+   LPDIRECT3DSURFACE dest   = NULL;
 
    if (FAILED(Callback::d3d_err = dev->GetRenderTarget(0, &target)))
    {
@@ -916,14 +916,10 @@ bool D3DVideo::set_shader(const std::string &path)
 
 int D3DVideo::process_shader(void)
 {
-   int ret = 0;
    if (strcmp(path_get_extension(cg_shader.c_str()), "cgp") == 0)
-      ret = init_multipass();
-   else
-      ret = init_singlepass();
+      return init_multipass();
 
-   if (ret)
-      return ret;
+   return init_singlepass();
 }
 
 void D3DVideo::recompute_pass_sizes(void)
@@ -1229,7 +1225,7 @@ void D3DVideo::overlay_render(overlay_t &overlay)
       {0, 20, D3DDECLTYPE_FLOAT4, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_COLOR, 0},
       D3DDECL_END()
    };
-   IDirect3DVertexDeclaration9 *vertex_decl;
+   LPDIRECT3DVERTEXDECLARATION vertex_decl;
    dev->CreateVertexDeclaration(vElems, &vertex_decl);
    dev->SetVertexDeclaration(vertex_decl);
    vertex_decl->Release();

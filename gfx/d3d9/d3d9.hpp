@@ -34,6 +34,14 @@
 #include <string>
 #include <vector>
 
+#define LPDIRECT3D					LPDIRECT3D9
+#define LPDIRECT3DDEVICE			LPDIRECT3DDEVICE9
+#define LPDIRECT3DTEXTURE			LPDIRECT3DTEXTURE9
+#define LPDIRECT3DVERTEXBUFFER		LPDIRECT3DVERTEXBUFFER9
+#define LPDIRECT3DSURFACE			LPDIRECT3DSURFACE9
+#define LPDIRECT3DVERTEXDECLARATION	LPDIRECT3DVERTEXDECLARATION9
+#define D3DVIEWPORT					D3DVIEWPORT9
+
 class RenderChain;
 
 typedef struct
@@ -48,8 +56,8 @@ typedef struct
    bool fullscreen;
    bool enabled;
    float alpha_mod;
-   IDirect3DTexture9 *tex;
-   IDirect3DVertexBuffer9 *vert_buf;
+   LPDIRECT3DTEXTURE tex;
+   LPDIRECT3DVERTEXBUFFER vert_buf;
 } overlay_t;
 
 class D3DVideo
@@ -105,8 +113,8 @@ class D3DVideo
 
       WNDCLASSEX windowClass;
       HWND hWnd;
-      IDirect3D9 *g_pD3D;
-      IDirect3DDevice9 *dev;
+      LPDIRECT3D g_pD3D;
+      LPDIRECT3DDEVICE dev;
       LPD3DXFONT font;
 
       void recompute_pass_sizes();
@@ -115,7 +123,7 @@ class D3DVideo
       unsigned screen_width;
       unsigned screen_height;
       unsigned rotation;
-      D3DVIEWPORT9 final_viewport;
+      D3DVIEWPORT final_viewport;
 
       std::string cg_shader;
 
