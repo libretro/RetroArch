@@ -123,8 +123,8 @@ class D3DVideo
 
       void process(void);
 
-      void init(const video_info_t *info);
-      void init_base(const video_info_t *info);
+      int init(const video_info_t *info);
+      int init_base(const video_info_t *info);
       void make_d3dpp(const video_info_t *info, D3DPRESENT_PARAMETERS *d3dpp);
       void deinit(void);
       RECT monitor_rect(void);

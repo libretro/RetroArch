@@ -142,14 +142,17 @@ RECT D3DVideo::monitor_rect(void)
 }
 #endif
 
-void D3DVideo::init_base(const video_info_t *info)
+int D3DVideo::init_base(const video_info_t *info)
 {
    D3DPRESENT_PARAMETERS d3dpp;
    make_d3dpp(info, &d3dpp);
 
    g_pD3D = Direct3DCreate9(D3D_SDK_VERSION);
    if (!g_pD3D)
-      throw std::runtime_error("Failed to create D3D9 interface!");
+   {
+      RARCH_ERR("Failed to create D3D9 interface!\n");
+      return 1;
+   }
 
    if (FAILED(Callback::d3d_err = g_pD3D->CreateDevice(
                Monitor::cur_mon_id,
@@ -170,14 +173,17 @@ void D3DVideo::init_base(const video_info_t *info)
                   &d3dpp,
                   &dev)))
       {
-         throw std::runtime_error("Failed to init device");
+         RARCH_ERR("Failed to initialize device.\n");
+         return 1;
       }
    }
+
+   return 0;
 }
 
 void D3DVideo::make_d3dpp(const video_info_t *info, D3DPRESENT_PARAMETERS *d3dpp)
 {
-   memset(&d3dpp, 0, sizeof(d3dpp));
+   memset(d3dpp, 0, sizeof(*d3dpp));
 
    d3dpp->Windowed = g_settings.video.windowed_fullscreen || !info->fullscreen;
 
@@ -207,10 +213,11 @@ void D3DVideo::make_d3dpp(const video_info_t *info, D3DPRESENT_PARAMETERS *d3dpp
    }
 }
 
-void D3DVideo::init(const video_info_t *info)
+int D3DVideo::init(const video_info_t *info)
 {
+   int ret = 0;
    if (!g_pD3D)
-      init_base(info);
+      ret = init_base(info);
    else if (needs_restore)
    {
       D3DPRESENT_PARAMETERS d3dpp;
@@ -241,21 +248,38 @@ void D3DVideo::init(const video_info_t *info)
          deinit(); 
          g_pD3D->Release();
          g_pD3D = NULL;
-         init_base(info);
-         RARCH_LOG("[D3D9]: Recovered from dead state.\n");
+         ret = init_base(info);
+         if (!ret)
+            RARCH_LOG("[D3D9]: Recovered from dead state.\n");
+         else
+            return ret;
       }
    }
+
+   if (ret)
+      return ret;
 
    calculate_rect(screen_width, screen_height, info->force_aspect, g_extern.system.aspect_ratio);
 
 #ifdef HAVE_CG
    if (!init_cg())
-      throw std::runtime_error("Failed to init Cg");
+   {
+      RARCH_ERR("Failed to initialize Cg.\n");
+      return 1;
+   }
 #endif
    if (!init_chain(info))
-      throw std::runtime_error("Failed to init render chain");
+   {
+      RARCH_ERR("Failed to initialize render chain.\n");
+      return 1;
+   }
    if (!init_font())
-      throw std::runtime_error("Failed to init Font");
+   {
+      RARCH_ERR("Failed to initialize font.\n");
+      return 1;
+   }
+
+   return 0;
 }
 
 void D3DVideo::set_viewport(int x, int y, unsigned width, unsigned height)
@@ -420,6 +444,7 @@ D3DVideo::D3DVideo(const video_info_t *info, const input_driver_t **input,
    g_pD3D(NULL), dev(NULL), font(NULL),
    rotation(0), needs_restore(false), cgCtx(NULL), overlays_enabled(false)
 {
+   int ret = 0;
    should_resize = false;
    gfx_set_dwm();
 
@@ -513,7 +538,7 @@ D3DVideo::D3DVideo(const video_info_t *info, const input_driver_t **input,
    process_shader();
 
    video_info = *info;
-   init(&video_info);
+   ret = init(&video_info);
 
    if (input && input_data)
    {
@@ -574,17 +599,10 @@ D3DVideo::~D3DVideo()
 bool D3DVideo::restore()
 {
    deinit();
-   try
-   {
-      needs_restore = true;
-      init(&video_info);
-      needs_restore = false;
-   }
-   catch (const std::exception &e)
-   {
-      RARCH_ERR("[D3D9]: Restore error: (%s).\n", e.what());
-      needs_restore = true;
-   }
+   needs_restore = init(&video_info);
+
+   if (needs_restore)
+      RARCH_ERR("[D3D9]: Restore error.\n");
 
    return !needs_restore;
 }
@@ -757,7 +775,7 @@ void D3DVideo::deinit_cg()
 }
 #endif
 
-void D3DVideo::init_singlepass()
+void D3DVideo::init_singlepass(void)
 {
    memset(&shader, 0, sizeof(shader));
    shader.passes = 1;
@@ -768,7 +786,7 @@ void D3DVideo::init_singlepass()
    strlcpy(pass.source.cg, cg_shader.c_str(), sizeof(pass.source.cg));
 }
 
-void D3DVideo::init_imports()
+void D3DVideo::init_imports(void)
 {
    if (!shader.variables)
       return;
