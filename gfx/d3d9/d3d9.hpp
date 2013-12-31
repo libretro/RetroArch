@@ -70,7 +70,7 @@ class D3DVideo
       bool read_viewport(uint8_t *buffer);
       void resize(unsigned new_width, unsigned new_height);
       bool set_shader(const std::string &path);
-      void process_shader();
+      int process_shader(void);
 
       void set_filtering(unsigned index, bool smooth);
       void set_font_rect(font_params_t *params);
@@ -139,10 +139,10 @@ class D3DVideo
       void deinit_cg();
 #endif
 
-      void init_imports(void);
+      int init_imports(void);
       void init_luts(void);
-      void init_singlepass(void);
-      void init_multipass(void);
+      int init_singlepass(void);
+      int init_multipass(void);
       bool init_chain(const video_info_t *video_info);
       std::unique_ptr<RenderChain> chain;
       void deinit_chain(void);

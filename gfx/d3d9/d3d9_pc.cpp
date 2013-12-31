@@ -550,7 +550,7 @@ D3DVideo::D3DVideo(const video_info_t *info, const input_driver_t **input,
    RARCH_LOG("[D3D9]: Init complete.\n");
 }
 
-void D3DVideo::deinit()
+void D3DVideo::deinit(void)
 {
    deinit_font();
    deinit_chain();
@@ -560,7 +560,7 @@ void D3DVideo::deinit()
 }
 
 #ifdef HAVE_OVERLAY
-void D3DVideo::free_overlays()
+void D3DVideo::free_overlays(void)
 {
    for (unsigned i = 0; i < overlays.size(); i++)
       free_overlay(overlays[i]);
@@ -576,7 +576,7 @@ void D3DVideo::free_overlay(overlay_t &overlay)
       overlay.vert_buf->Release();
 }
 
-D3DVideo::~D3DVideo()
+D3DVideo::~D3DVideo(void)
 {
    deinit();
 #ifdef HAVE_OVERLAY
@@ -596,7 +596,7 @@ D3DVideo::~D3DVideo()
    UnregisterClass("RetroArch", GetModuleHandle(NULL));
 }
 
-bool D3DVideo::restore()
+bool D3DVideo::restore(void)
 {
    deinit();
    needs_restore = init(&video_info);
@@ -724,18 +724,18 @@ void D3DVideo::set_nonblock_state(bool state)
    restore();
 }
 
-bool D3DVideo::alive()
+bool D3DVideo::alive(void)
 {
    process();
    return !Callback::quit;
 }
 
-bool D3DVideo::focus() const
+bool D3DVideo::focus(void) const
 {
    return GetFocus() == hWnd;
 }
 
-void D3DVideo::process()
+void D3DVideo::process(void)
 {
 #ifndef _XBOX
    MSG msg;
@@ -748,7 +748,7 @@ void D3DVideo::process()
 }
 
 #ifdef HAVE_CG
-bool D3DVideo::init_cg()
+bool D3DVideo::init_cg(void)
 {
    cgCtx = cgCreateContext();
    if (cgCtx == NULL)
@@ -763,7 +763,7 @@ bool D3DVideo::init_cg()
    return true;
 }
 
-void D3DVideo::deinit_cg()
+void D3DVideo::deinit_cg(void)
 {
    if (cgCtx)
    {
@@ -775,7 +775,7 @@ void D3DVideo::deinit_cg()
 }
 #endif
 
-void D3DVideo::init_singlepass(void)
+int D3DVideo::init_singlepass(void)
 {
    memset(&shader, 0, sizeof(shader));
    shader.passes = 1;
@@ -784,12 +784,14 @@ void D3DVideo::init_singlepass(void)
    pass.fbo.scale_x = pass.fbo.scale_y = 1.0;
    pass.fbo.type_x = pass.fbo.type_y = RARCH_SCALE_VIEWPORT;
    strlcpy(pass.source.cg, cg_shader.c_str(), sizeof(pass.source.cg));
+
+   return 0;
 }
 
-void D3DVideo::init_imports(void)
+int D3DVideo::init_imports(void)
 {
    if (!shader.variables)
-      return;
+      return 0;
 
    state_tracker_info tracker_info = {0};
 
@@ -809,16 +811,21 @@ void D3DVideo::init_imports(void)
 
    state_tracker_t *state_tracker = state_tracker_init(&tracker_info);
    if (!state_tracker)
-      throw std::runtime_error("Failed to initialize state tracker.");
+   {
+      RARCH_ERR("Failed to initialize state tracker.\n");
+      return 1;
+   }
 
    std::shared_ptr<state_tracker_t> tracker(state_tracker, [](state_tracker_t *tracker) {
             state_tracker_free(tracker);
          });
 
    chain->add_state_tracker(tracker);
+
+   return 0;
 }
 
-void D3DVideo::init_luts()
+void D3DVideo::init_luts(void)
 {
    for (unsigned i = 0; i < shader.luts; i++)
    {
@@ -829,18 +836,22 @@ void D3DVideo::init_luts()
    }
 }
 
-void D3DVideo::init_multipass()
+void D3DVideo::init_multipass(void)
 {
    config_file_t *conf = config_file_new(cg_shader.c_str());
    if (!conf)
-      throw std::runtime_error("Failed to load preset");
+   {
+      RARCH_ERR("Failed to load preset.\n");
+      return 1;
+   }
 
    memset(&shader, 0, sizeof(shader));
 
    if (!gfx_shader_read_conf_cgp(conf, &shader))
    {
       config_file_free(conf);
-      throw std::runtime_error("Failed to parse CGP file.");
+      RARCH_ERR("Failed to parse CGP file.\n");
+      return 1;
    }
 
    config_file_free(conf);
@@ -873,6 +884,8 @@ void D3DVideo::init_multipass()
       pass.fbo.scale_x = pass.fbo.scale_y = 1.0f;
       pass.fbo.type_x = pass.fbo.type_y = RARCH_SCALE_VIEWPORT;
    }
+
+   return 0;
 }
 
 bool D3DVideo::set_shader(const std::string &path)
@@ -901,15 +914,19 @@ bool D3DVideo::set_shader(const std::string &path)
    return !restore_old;
 }
 
-void D3DVideo::process_shader()
+int D3DVideo::process_shader(void)
 {
+   int ret = 0;
    if (strcmp(path_get_extension(cg_shader.c_str()), "cgp") == 0)
-      init_multipass();
+      ret = init_multipass();
    else
-      init_singlepass();
+      ret = init_singlepass();
+
+   if (ret)
+      return ret;
 }
 
-void D3DVideo::recompute_pass_sizes()
+void D3DVideo::recompute_pass_sizes(void)
 {
    try
    {
@@ -948,61 +965,60 @@ void D3DVideo::recompute_pass_sizes()
 
 bool D3DVideo::init_chain(const video_info_t *video_info)
 {
-   try
+   int ret = 0;
+   // Setup information for first pass.
+   LinkInfo link_info = {0};
+
+   link_info.pass = &shader.pass[0];
+   link_info.tex_w = link_info.tex_h = video_info->input_scale * RARCH_SCALE_BASE;
+
+   chain = std::unique_ptr<RenderChain>(
+         new RenderChain(
+            video_info,
+            dev, cgCtx,
+            link_info,
+            video_info->rgb32 ? RenderChain::ARGB : RenderChain::RGB565,
+            final_viewport));
+
+   unsigned current_width = link_info.tex_w;
+   unsigned current_height = link_info.tex_h;
+   unsigned out_width = 0;
+   unsigned out_height = 0;
+
+   for (unsigned i = 1; i < shader.passes; i++)
    {
-      // Setup information for first pass.
-      LinkInfo link_info = {0};
+      RenderChain::convert_geometry(link_info,
+            out_width, out_height,
+            current_width, current_height, final_viewport);
 
-      link_info.pass = &shader.pass[0];
-      link_info.tex_w = link_info.tex_h = video_info->input_scale * RARCH_SCALE_BASE;
+      link_info.pass = &shader.pass[i];
+      link_info.tex_w = next_pow2(out_width);
+      link_info.tex_h = next_pow2(out_height);
 
-      chain = std::unique_ptr<RenderChain>(
-            new RenderChain(
-               video_info,
-               dev, cgCtx,
-               link_info,
-               video_info->rgb32 ? RenderChain::ARGB : RenderChain::RGB565,
-               final_viewport));
+      current_width = out_width;
+      current_height = out_height;
 
-      unsigned current_width = link_info.tex_w;
-      unsigned current_height = link_info.tex_h;
-      unsigned out_width = 0;
-      unsigned out_height = 0;
-
-      for (unsigned i = 1; i < shader.passes; i++)
-      {
-         RenderChain::convert_geometry(link_info,
-               out_width, out_height,
-               current_width, current_height, final_viewport);
-
-         link_info.pass = &shader.pass[i];
-         link_info.tex_w = next_pow2(out_width);
-         link_info.tex_h = next_pow2(out_height);
-
-         current_width = out_width;
-         current_height = out_height;
-
-         chain->add_pass(link_info);
-      }
-
-      init_luts();
-      init_imports();
+      chain->add_pass(link_info);
    }
-   catch (const std::exception &e)
+
+   init_luts();
+   ret = init_imports();
+
+   if (ret)
    {
-      RARCH_ERR("[D3D9]: Render chain error: (%s).\n", e.what());
+      RARCH_ERR("[D3D9]: Render chain error.\n");
       return false;
    }
 
    return true;
 }
 
-void D3DVideo::deinit_chain()
+void D3DVideo::deinit_chain(void)
 {
    chain.reset();
 }
 
-bool D3DVideo::init_font()
+bool D3DVideo::init_font(void)
 {
    D3DXFONT_DESC desc = {
       static_cast<int>(g_settings.video.font_size), 0, 400, 0,
@@ -1021,14 +1037,14 @@ bool D3DVideo::init_font()
    return SUCCEEDED(D3DXCreateFontIndirect(dev, &desc, &font));
 }
 
-void D3DVideo::deinit_font()
+void D3DVideo::deinit_font(void)
 {
    if (font)
       font->Release();
    font = NULL;
 }
 
-void D3DVideo::update_title()
+void D3DVideo::update_title(void)
 {
    char buffer[128], buffer_fps[128];
    bool fps_draw = g_settings.fps_show;
