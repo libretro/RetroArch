@@ -187,6 +187,7 @@
     </ClCompile>
     <ClCompile Include="..\..\audio\resampler.c" />
     <ClCompile Include="..\..\audio\sinc.c" />
+    <ClCompile Include="..\..\audio\thread_wrapper.c" />
     <ClCompile Include="..\..\audio\utils.c">
     </ClCompile>
     <ClCompile Include="..\..\audio\xaudio-c\xaudio-c.cpp" />
@@ -196,6 +197,7 @@
     </ClCompile>
     <ClCompile Include="..\..\cheats.c" />
     <ClCompile Include="..\..\compat\rxml\rxml.c" />
+    <ClCompile Include="..\..\core_info.c" />
     <ClCompile Include="..\..\core_options.c" />
     <ClCompile Include="..\..\deps\miniz\miniz.c" />
     <ClCompile Include="..\..\file_extract.c" />
@@ -211,11 +213,17 @@
     <ClCompile Include="..\..\gfx\fonts\fonts.c" />
     <ClCompile Include="..\..\gfx\fonts\gl_font.c" />
     <ClCompile Include="..\..\gfx\fonts\gl_raster_font.c" />
+    <ClCompile Include="..\..\gfx\glsym\glsym_gl.c" />
+    <ClCompile Include="..\..\gfx\glsym\rglgen.c">
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">CompileAsC</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsC</CompileAs>
+    </ClCompile>
     <ClCompile Include="..\..\gfx\rpng\rpng.c" />
     <ClCompile Include="..\..\gfx\shader_cg.c" />
     <ClCompile Include="..\..\gfx\shader_glsl.c" />
     <ClCompile Include="..\..\gfx\shader_parse.c" />
-    <ClCompile Include="..\..\gfx\thread_wrapper.c" />
+    <ClCompile Include="..\..\gfx\video_thread_wrapper.c" />
+    <ClCompile Include="..\..\input\keyboard_line.c" />
     <ClCompile Include="..\..\input\overlay.c" />
     <ClCompile Include="..\..\performance.c">
     </ClCompile>
