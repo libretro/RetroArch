@@ -56,7 +56,7 @@ struct overlay_desc
    unsigned next_index;
    char next_index_name[64];
 
-   struct video_overlay_image image;
+   struct texture_image image;
    unsigned image_index;
 
    float alpha_mod;
@@ -71,7 +71,7 @@ struct overlay
    struct overlay_desc *descs;
    size_t size;
 
-   struct video_overlay_image image;
+   struct texture_image image;
 
    bool block_scale;
    float mod_x, mod_y, mod_w, mod_h;
@@ -83,7 +83,7 @@ struct overlay
 
    char name[64];
 
-   struct video_overlay_image *load_images;
+   struct texture_image *load_images;
    unsigned load_images_size;
 };
 
@@ -213,14 +213,14 @@ static void input_overlay_scale(struct overlay *overlay, float scale)
 static void input_overlay_set_vertex_geom(input_overlay_t *ol)
 {
    size_t i;
-   if (ol->active->image.image)
+   if (ol->active->image.pixels)
       ol->iface->vertex_geom(ol->iface_data, 0,
             ol->active->mod_x, ol->active->mod_y, ol->active->mod_w, ol->active->mod_h);
 
    for (i = 0; i < ol->active->size; i++)
    {
       struct overlay_desc *desc = &ol->active->descs[i];
-      if (desc->image.image)
+      if (desc->image.pixels)
          ol->iface->vertex_geom(ol->iface_data, desc->image_index,
                desc->mod_x, desc->mod_y, desc->mod_w, desc->mod_h);
    }
@@ -239,10 +239,10 @@ static void input_overlay_free_overlay(struct overlay *overlay)
 {
    size_t i;
    for (i = 0; i < overlay->size; i++)
-      free((void*)overlay->descs[i].image.image);
+      free(overlay->descs[i].image.pixels);
    free(overlay->load_images);
    free(overlay->descs);
-   free((void*)overlay->image.image);
+   free(overlay->image.pixels);
 }
 
 static void input_overlay_free_overlays(input_overlay_t *ol)
@@ -274,11 +274,7 @@ static bool input_overlay_load_desc(input_overlay_t *ol, config_file_t *conf, st
 
       struct texture_image img = {0};
       if (texture_image_load(path, &img))
-      {
-         desc->image.image = img.pixels;
-         desc->image.width = img.width;
-         desc->image.height = img.height;
-      }
+         desc->image = img;
    }
 
    char overlay_desc_normalized_key[64];
@@ -425,11 +421,7 @@ static bool input_overlay_load_overlay(input_overlay_t *ol, config_file_t *conf,
 
       struct texture_image img = {0};
       if (texture_image_load(overlay_resolved_path, &img))
-      {
-         overlay->image.image  = img.pixels;
-         overlay->image.width  = img.width;
-         overlay->image.height = img.height;
-      }
+         overlay->image = img;
       else
       {
          RARCH_ERR("[Overlay]: Failed to load image: %s.\n", overlay_resolved_path);
@@ -514,19 +506,19 @@ static bool input_overlay_load_overlay(input_overlay_t *ol, config_file_t *conf,
    }
 
    // Precache load image array for simplicity.
-   overlay->load_images = (struct video_overlay_image*)calloc(1 + overlay->size, sizeof(struct video_overlay_image));
+   overlay->load_images = (struct texture_image*)calloc(1 + overlay->size, sizeof(struct texture_image));
    if (!overlay->load_images)
    {
       RARCH_ERR("[Overlay]: Failed to allocate load_images.\n");
       return false;
    }
 
-   if (overlay->image.image)
+   if (overlay->image.pixels)
       overlay->load_images[overlay->load_images_size++] = overlay->image;
 
    for (i = 0; i < overlay->size; i++)
    {
-      if (overlay->descs[i].image.image)
+      if (overlay->descs[i].image.pixels)
       {
          overlay->descs[i].image_index = overlay->load_images_size;
          overlay->load_images[overlay->load_images_size++] = overlay->descs[i].image;
@@ -799,7 +791,7 @@ void input_overlay_poll(input_overlay_t *ol, input_overlay_state_t *out, int16_t
 
 static void input_overlay_update_desc_geom(input_overlay_t *ol, struct overlay_desc *desc)
 {
-   if (desc->image.image && desc->movable)
+   if (desc->image.pixels && desc->movable)
    {
       ol->iface->vertex_geom(ol->iface_data, desc->image_index,
             desc->mod_x + desc->delta_x, desc->mod_y + desc->delta_y,
@@ -826,7 +818,7 @@ void input_overlay_post_poll(input_overlay_t *ol)
          desc->range_x_mod = desc->range_x * desc->range_mod;
          desc->range_y_mod = desc->range_y * desc->range_mod;
 
-         if (desc->image.image)
+         if (desc->image.pixels)
             ol->iface->set_alpha(ol->iface_data, desc->image_index,
                   desc->alpha_mod * g_settings.input.overlay_opacity);
       }

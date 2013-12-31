@@ -124,7 +124,7 @@ typedef struct thread_video
 
       struct
       {
-         const struct video_overlay_image *data;
+         const struct texture_image *data;
          unsigned num;
       } image;
 
@@ -581,7 +581,7 @@ static void thread_overlay_enable(void *data, bool state)
    thread_wait_reply(thr, CMD_OVERLAY_ENABLE);
 }
 
-static bool thread_overlay_load(void *data, const struct video_overlay_image *images, unsigned num_images)
+static bool thread_overlay_load(void *data, const struct texture_image *images, unsigned num_images)
 {
    thread_video_t *thr = (thread_video_t*)data;
    thr->cmd_data.image.data = images;

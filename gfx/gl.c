@@ -2423,7 +2423,7 @@ static void gl_restart(void)
 
 #ifdef HAVE_OVERLAY
 static void gl_free_overlay(gl_t *gl);
-static bool gl_overlay_load(void *data, const struct video_overlay_image *images, unsigned num_images)
+static bool gl_overlay_load(void *data, const struct texture_image *images, unsigned num_images)
 {
    unsigned i;
    gl_t *gl = (gl_t*)data;
@@ -2448,7 +2448,7 @@ static bool gl_overlay_load(void *data, const struct video_overlay_image *images
       glPixelStorei(GL_UNPACK_ALIGNMENT, get_alignment(images[i].width * sizeof(uint32_t)));
       glTexImage2D(GL_TEXTURE_2D, 0, driver.gfx_use_rgba ? GL_RGBA : RARCH_GL_INTERNAL_FORMAT32,
             images[i].width, images[i].height, 0, driver.gfx_use_rgba ? GL_RGBA : RARCH_GL_TEXTURE_TYPE32,
-            RARCH_GL_FORMAT32, images[i].image);
+            RARCH_GL_FORMAT32, images[i].pixels);
 
       gl_overlay_tex_geom(gl, i, 0, 0, 1, 1); // Default. Stretch to whole screen.
       gl_overlay_vertex_geom(gl, i, 0, 0, 1, 1);

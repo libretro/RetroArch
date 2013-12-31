@@ -77,7 +77,7 @@ class D3DVideo
       void overlay_render(overlay_t &overlay);
 
 #ifdef HAVE_OVERLAY
-      bool overlay_load(const video_overlay_image *images, unsigned num_images);
+      bool overlay_load(const texture_image *images, unsigned num_images);
       void overlay_tex_geom(unsigned index, float x, float y, float w, float h);
       void overlay_vertex_geom(unsigned index, float x, float y, float w, float h);
       void overlay_enable(bool state);

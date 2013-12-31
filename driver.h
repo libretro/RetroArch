@@ -24,6 +24,7 @@
 #include <stdint.h>
 #include "msvc/msvc_compat.h"
 #include "gfx/scaler/scaler.h"
+#include "gfx/image.h"
 #include "input/overlay.h"
 
 #ifdef HAVE_CONFIG_H
@@ -409,17 +410,10 @@ typedef struct location_driver
 struct rarch_viewport;
 
 #ifdef HAVE_OVERLAY
-struct video_overlay_image
-{
-   const uint32_t *image;
-   unsigned width;
-   unsigned height;
-};
-
 typedef struct video_overlay_interface
 {
    void (*enable)(void *data, bool state);
-   bool (*load)(void *data, const struct video_overlay_image *images, unsigned num_images);
+   bool (*load)(void *data, const struct texture_image *images, unsigned num_images);
    void (*tex_geom)(void *data, unsigned image, float x, float y, float w, float h);
    void (*vertex_geom)(void *data, unsigned image, float x, float y, float w, float h);
    void (*full_screen)(void *data, bool enable);

@@ -1051,7 +1051,7 @@ void D3DVideo::resize(unsigned new_width, unsigned new_height)
 }
 
 #ifdef HAVE_OVERLAY
-bool D3DVideo::overlay_load(const video_overlay_image *images, unsigned num_images)
+bool D3DVideo::overlay_load(const texture_image *images, unsigned num_images)
 {
    free_overlays();
    overlays.resize(num_images);
@@ -1075,7 +1075,7 @@ bool D3DVideo::overlay_load(const video_overlay_image *images, unsigned num_imag
       if (SUCCEEDED(overlay.tex->LockRect(0, &d3dlr, nullptr, D3DLOCK_NOSYSLOCK)))
       {
          uint32_t *dst = static_cast<uint32_t*>(d3dlr.pBits);
-         const uint32_t *src = images[i].image;
+         const uint32_t *src = images[i].pixels;
          unsigned pitch = d3dlr.Pitch >> 2;
          for (unsigned y = 0; y < height; y++, dst += pitch, src += width)
             std::memcpy(dst, src, width << 2);
@@ -1392,7 +1392,7 @@ static void d3d9_get_poke_interface(void *data, const video_poke_interface_t **i
 #endif
 
 #ifdef HAVE_OVERLAY
-static bool d3d9_overlay_load(void *data, const video_overlay_image *images, unsigned num_images)
+static bool d3d9_overlay_load(void *data, const texture_image *images, unsigned num_images)
 {
    return reinterpret_cast<D3DVideo*>(data)->overlay_load(images, num_images);
 }
