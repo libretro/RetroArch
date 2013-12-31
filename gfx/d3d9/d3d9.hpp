@@ -31,17 +31,9 @@
 #include <Cg/cg.h>
 #include <Cg/cgD3D9.h>
 #endif
+#include "d3d_defines.h"
 #include <string>
 #include <vector>
-
-#define LPDIRECT3D                     LPDIRECT3D9
-#define LPDIRECT3DDEVICE               LPDIRECT3DDEVICE9
-#define LPDIRECT3DTEXTURE              LPDIRECT3DTEXTURE9
-#define LPDIRECT3DVERTEXBUFFER         LPDIRECT3DVERTEXBUFFER9
-#define LPDIRECT3DSURFACE              LPDIRECT3DSURFACE9
-#define LPDIRECT3DVERTEXDECLARATION    LPDIRECT3DVERTEXDECLARATION9
-#define D3DVERTEXELEMENT               D3DVERTEXELEMENT9
-#define D3DVIEWPORT                    D3DVIEWPORT9
 
 class RenderChain;
 

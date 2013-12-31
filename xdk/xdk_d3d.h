@@ -63,9 +63,9 @@ typedef struct xdk_d3d_video
    LPDIRECT3DVERTEXBUFFER vertex_buf;
    LPDIRECT3DTEXTURE lpTexture;
 #ifdef HAVE_D3D9
-   D3DTexture lpTexture_ot_as16srgb;
+   LPDIRECT3DTEXTURE lpTexture_ot_as16srgb;
    LPDIRECT3DTEXTURE lpTexture_ot;
-   IDirect3DVertexDeclaration9* v_decl;
+   LPDIRECT3DVERTEXDECLARATION v_decl;
 #endif
 #ifdef HAVE_MENU
    bool rgui_texture_enable;
