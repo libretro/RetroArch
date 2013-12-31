@@ -1011,7 +1011,7 @@ void RenderChain::init_fvf(Pass &pass)
    unsigned count;
    for (count = 0; count < MAXD3DDECLLENGTH; count++)
    {
-      if (std::memcmp(&decl_end, &decl[count], sizeof(decl_end)) == 0)
+      if (memcmp(&decl_end, &decl[count], sizeof(decl_end)) == 0)
          break;
    }
 
