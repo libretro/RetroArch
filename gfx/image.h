@@ -39,6 +39,7 @@ struct texture_image
 };
 
 bool texture_image_load(const char *path, struct texture_image* img);
+void texture_image_free(struct texture_image *img);
 
 #endif
 

@@ -423,25 +423,7 @@ static void *rmenu_init(void)
 
 static void rmenu_free_assets(void *data)
 {
-#ifdef _XBOX1
-   if (menu_texture->vertex_buf)
-   {
-      menu_texture->vertex_buf->Release();
-      menu_texture->vertex_buf = NULL;
-   }
-   if (menu_texture->pixels)
-   {
-      menu_texture->pixels->Release();
-      menu_texture->pixels = NULL;
-   }
-#else
-   if (menu_texture->pixels)
-   {
-      free(menu_texture->pixels);
-      menu_texture->pixels = NULL;
-   }
-#endif
-
+   texture_image_free(&menu_texture);
    menu_texture_inited = false;
 }
 

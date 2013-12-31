@@ -239,10 +239,10 @@ static void input_overlay_free_overlay(struct overlay *overlay)
 {
    size_t i;
    for (i = 0; i < overlay->size; i++)
-      free(overlay->descs[i].image.pixels);
+      texture_image_free(&overlay->descs[i].image);
    free(overlay->load_images);
    free(overlay->descs);
-   free(overlay->image.pixels);
+   texture_image_free(&overlay->image);
 }
 
 static void input_overlay_free_overlays(input_overlay_t *ol)

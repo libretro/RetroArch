@@ -233,3 +233,9 @@ bool texture_image_load(const char *path, struct texture_image *out_img)
       return texture_image_load_argb_shift(path, out_img, 24, 16, 8, 0);
 }
 
+void texture_image_free(struct texture_image *img)
+{
+   free(img->pixels);
+   memset(img, 0, sizeof(*img));
+}
+

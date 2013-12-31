@@ -314,3 +314,10 @@ bool texture_image_load(const char *path, struct texture_image *out_img)
 
    return true;
 }
+
+void texture_image_free(struct texture_image *img)
+{
+   free(img->pixels);
+   memset(img, 0, sizeof(*img));
+}
+

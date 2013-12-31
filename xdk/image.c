@@ -53,3 +53,13 @@ bool texture_image_load(const char *path, struct texture_image *out_img)
 
    return true;
 }
+
+void texture_image_free(struct texture_image *img)
+{
+   if (img->vertex_buf)
+      img->vertex_buf->Release();
+   if (img->pixels)
+      img->pixels->Release();
+   memset(img, 0, sizeof(*img));
+}
+

@@ -324,7 +324,7 @@ static bool load_luts(void)
             RARCH_GL_FORMAT32, img.pixels);
 
       glBindTexture(GL_TEXTURE_2D, 0);
-      free(img.pixels);
+      texture_image_free(&img);
    }
 
    return true;
