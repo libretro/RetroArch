@@ -423,7 +423,7 @@ static void *rmenu_init(void)
 
 static void rmenu_free_assets(void *data)
 {
-   texture_image_free(&menu_texture);
+   texture_image_free(menu_texture);
    menu_texture_inited = false;
 }
 
