@@ -43,13 +43,13 @@ class RenderChain
       enum PixelFormat { RGB565, ARGB };
 
       RenderChain(const video_info_t *video_info,
-            IDirect3DDevice9 *dev,
+            LPDIRECT3DDEVICE dev,
 #ifdef HAVE_CG
             CGcontext cgCtx,
 #endif
             const LinkInfo &info,
             PixelFormat fmt,
-            const D3DVIEWPORT9 &final_viewport);
+            const D3DVIEWPORT &final_viewport);
 
       void set_pass_size(unsigned pass, unsigned width, unsigned height);
       void set_final_viewport(const D3DVIEWPORT9 &final_viewport);
@@ -63,14 +63,14 @@ class RenderChain
       static void convert_geometry(const LinkInfo &info,
             unsigned &out_width, unsigned &out_height,
             unsigned width, unsigned height,
-            const D3DVIEWPORT9 &final_viewport);
+            const D3DVIEWPORT &final_viewport);
 
       void clear();
       ~RenderChain();
 
    private:
 
-      IDirect3DDevice9 *dev;
+     LPDIRECT3DDEVICE dev;
 #ifdef HAVE_CG
       CGcontext cgCtx;
 #endif
@@ -86,8 +86,8 @@ class RenderChain
       enum { Textures = 8, TexturesMask = Textures - 1 };
       struct
       {
-         IDirect3DTexture9 *tex[Textures];
-         IDirect3DVertexBuffer9 *vertex_buf[Textures];
+         LPDIRECT3DTEXTURE tex[Textures];
+         LPDIRECT3DVERTEXBUFFER vertex_buf[Textures];
          unsigned ptr;
          unsigned last_width[Textures];
          unsigned last_height[Textures];
@@ -96,8 +96,8 @@ class RenderChain
       struct Pass
       {
          LinkInfo info;
-         IDirect3DTexture9 *tex;
-         IDirect3DVertexBuffer9 *vertex_buf;
+         LPDIRECT3DTEXTURE tex;
+         LPDIRECT3DVERTEXBUFFER vertex_buf;
 #ifdef HAVE_CG
          CGprogram vPrg, fPrg;
 #endif
@@ -112,13 +112,13 @@ class RenderChain
 
       struct lut_info
       {
-         IDirect3DTexture9 *tex;
+         LPDIRECT3DTEXTURE tex;
          std::string id;
          bool smooth;
       };
       std::vector<lut_info> luts;
 
-      D3DVIEWPORT9 final_viewport;
+      D3DVIEWPORT final_viewport;
       unsigned frame_count;
 
       void create_first_pass(const LinkInfo &info, PixelFormat fmt);
@@ -129,7 +129,7 @@ class RenderChain
             unsigned out_width, unsigned out_height,
             unsigned vp_width, unsigned vp_height,
             unsigned rotation);
-      void set_viewport(const D3DVIEWPORT9 &vp);
+      void set_viewport(const D3DVIEWPORT &vp);
 
       void set_shaders(CGprogram &fPrg, CGprogram &vPrg);
       void set_cg_mvp(CGprogram &vPrg,

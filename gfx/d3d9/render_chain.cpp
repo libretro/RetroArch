@@ -60,10 +60,10 @@ RenderChain::~RenderChain()
 }
 
 RenderChain::RenderChain(const video_info_t *video_info,
-      IDirect3DDevice9 *dev_,
+      LPDIRECT3DDEVICE dev_,
       CGcontext cgCtx_,
       const LinkInfo &info, PixelFormat fmt,
-      const D3DVIEWPORT9 &final_viewport_)
+      const D3DVIEWPORT &final_viewport_)
    : dev(dev_), cgCtx(cgCtx_), video_info(*video_info), final_viewport(final_viewport_), frame_count(0)
 {
    pixel_size = fmt == RGB565 ? 2 : 4;
@@ -182,7 +182,7 @@ void RenderChain::add_lut(const std::string &id,
       const std::string &path,
       bool smooth)
 {
-   IDirect3DTexture9 *lut;
+   LPDIRECT3DTEXTURE lut;
 
    RARCH_LOG("[D3D9]: Loading LUT texture: %s.\n", path.c_str());
 
@@ -247,7 +247,7 @@ bool RenderChain::render(const void *data,
    blit_to_texture(data, width, height, pitch);
 
    // Grab back buffer.
-   IDirect3DSurface9 *back_buffer;
+   LPDIRECT3DSURFACE back_buffer;
    dev->GetRenderTarget(0, &back_buffer);
 
    // In-between render target passes.
@@ -256,7 +256,7 @@ bool RenderChain::render(const void *data,
       Pass &from_pass = passes[i];
       Pass &to_pass = passes[i + 1];
 
-      IDirect3DSurface9 *target;
+      LPDIRECT3DSURFACE target;
       to_pass.tex->GetSurfaceLevel(0, &target);
       dev->SetRenderTarget(0, target);
 
@@ -265,7 +265,7 @@ bool RenderChain::render(const void *data,
             current_width, current_height, final_viewport);
 
       // Clear out whole FBO.
-      D3DVIEWPORT9 viewport = {0};
+      D3DVIEWPORT viewport = {0};
       viewport.Width = to_pass.info.tex_w;
       viewport.Height = to_pass.info.tex_h;
       viewport.MinZ = 0.0f;
@@ -503,7 +503,7 @@ void RenderChain::set_vertices(Pass &pass,
          vp_width, vp_height);
 }
 
-void RenderChain::set_viewport(const D3DVIEWPORT9 &vp)
+void RenderChain::set_viewport(const D3DVIEWPORT &vp)
 {
    dev->SetViewport(&vp);
 }
@@ -572,7 +572,7 @@ void RenderChain::clear_texture(Pass &pass)
    D3DLOCKED_RECT d3dlr;
    if (SUCCEEDED(pass.tex->LockRect(0, &d3dlr, NULL, D3DLOCK_NOSYSLOCK)))
    {
-      std::memset(d3dlr.pBits, 0, pass.info.tex_h * d3dlr.Pitch);
+      memset(d3dlr.pBits, 0, pass.info.tex_h * d3dlr.Pitch);
       pass.tex->UnlockRect(0);
    }
 }
@@ -580,7 +580,7 @@ void RenderChain::clear_texture(Pass &pass)
 void RenderChain::convert_geometry(const LinkInfo &info,
       unsigned &out_width, unsigned &out_height,
       unsigned width, unsigned height,
-      const D3DVIEWPORT9 &final_viewport)
+      const D3DVIEWPORT &final_viewport)
 {
    switch (info.pass->fbo.type_x)
    {
@@ -628,7 +628,7 @@ void RenderChain::blit_to_texture(const void *frame,
       {
          const uint8_t *in = reinterpret_cast<const uint8_t*>(frame) + y * pitch;
          uint8_t *out = reinterpret_cast<uint8_t*>(d3dlr.pBits) + y * d3dlr.Pitch;
-         std::memcpy(out, in, width * pixel_size);
+         memcpy(out, in, width * pixel_size);
       }
 
       first.tex->UnlockRect(0);
@@ -791,7 +791,7 @@ void RenderChain::bind_prev(Pass &pass)
       {
          unsigned index = cgGetParameterResourceIndex(param);
 
-         IDirect3DTexture9 *tex = prev.tex[(prev.ptr - (i + 1)) & TexturesMask];
+         LPDIRECT3DTEXTURE tex = prev.tex[(prev.ptr - (i + 1)) & TexturesMask];
          dev->SetTexture(index, tex);
          bound_tex.push_back(index);
 
@@ -807,7 +807,7 @@ void RenderChain::bind_prev(Pass &pass)
       if (param)
       {
          unsigned index = pass.attrib_map[cgGetParameterResourceIndex(param)];
-         IDirect3DVertexBuffer9 *vert_buf = prev.vertex_buf[(prev.ptr - (i + 1)) & TexturesMask];
+         LPDIRECT3DVERTEXBUFFER vert_buf = prev.vertex_buf[(prev.ptr - (i + 1)) & TexturesMask];
          bound_vert.push_back(index);
 
          dev->SetStreamSource(index, vert_buf, 0, sizeof(Vertex));
@@ -998,13 +998,13 @@ static inline CGparameter find_param_from_semantic(CGprogram prog, const std::st
 
 void RenderChain::init_fvf(Pass &pass)
 {
-   static const D3DVERTEXELEMENT9 decl_end = D3DDECL_END();
-   static const D3DVERTEXELEMENT9 position_decl = DECL_FVF_POSITION(0);
-   static const D3DVERTEXELEMENT9 tex_coord0 = DECL_FVF_TEXCOORD(1, 3, 0);
-   static const D3DVERTEXELEMENT9 tex_coord1 = DECL_FVF_TEXCOORD(2, 5, 1);
-   static const D3DVERTEXELEMENT9 color = DECL_FVF_COLOR(3, 7, 0);
+   static const D3DVERTEXELEMENT decl_end = D3DDECL_END();
+   static const D3DVERTEXELEMENT position_decl = DECL_FVF_POSITION(0);
+   static const D3DVERTEXELEMENT tex_coord0 = DECL_FVF_TEXCOORD(1, 3, 0);
+   static const D3DVERTEXELEMENT tex_coord1 = DECL_FVF_TEXCOORD(2, 5, 1);
+   static const D3DVERTEXELEMENT color = DECL_FVF_COLOR(3, 7, 0);
 
-   D3DVERTEXELEMENT9 decl[MAXD3DDECLLENGTH] = {{0}};
+   D3DVERTEXELEMENT decl[MAXD3DDECLLENGTH] = {{0}};
    if (cgD3D9GetVertexDeclaration(pass.vPrg, decl) == CG_FALSE)
       throw std::runtime_error("Failed to get VertexDeclaration!");
 
@@ -1097,7 +1097,7 @@ void RenderChain::init_fvf(Pass &pass)
       else
       {
          pass.attrib_map.push_back(index);
-         D3DVERTEXELEMENT9 elem = DECL_FVF_TEXCOORD(index, 3, tex_index);
+         D3DVERTEXELEMENT elem = DECL_FVF_TEXCOORD(index, 3, tex_index);
          decl[i] = elem;
 
          // Find next vacant stream.
