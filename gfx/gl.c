@@ -1685,7 +1685,7 @@ static bool resolve_extensions(gl_t *gl)
 
    driver.gfx_use_rgba = false;
 #ifdef HAVE_OPENGLES2
-   if (gl_query_extension(gl, "BGRA8888"))
+   if (gl_query_extension(gl, "BGRA8888")) // There are both APPLE and EXT variants.
       RARCH_LOG("[GL]: BGRA8888 extension found for GLES.\n");
    else
    {
