@@ -1277,6 +1277,8 @@ bool config_save_file(const char *path)
    for (i = 0; i < MAX_PLAYERS; i++)
       save_keybinds_player(conf, i);
 
+   config_set_bool(conf, "core_specific_config", g_settings.core_specific_config);
+
    bool ret = config_file_write(conf, path);
    config_file_free(conf);
    return ret;
