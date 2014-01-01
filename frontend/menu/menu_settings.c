@@ -450,9 +450,9 @@ int menu_set_settings(void *data, unsigned setting, unsigned action)
          else if (action == RGUI_ACTION_START)
             g_settings.core_specific_config = default_core_specific_config;
 
-         if (g_settings.core_specific_config)
+         if (g_settings.core_specific_config && *g_extern.core_specific_config_path)
             strlcpy(g_extern.config_path, g_extern.core_specific_config_path, sizeof(g_extern.config_path));
-         else
+         else if (!g_settings.core_specific_config && *g_extern.original_config_path)
             strlcpy(g_extern.config_path, g_extern.original_config_path, sizeof(g_extern.config_path));
          break;
 #if defined(HAVE_THREADS)

@@ -446,11 +446,14 @@ void config_load(void)
       parse_config_file();
    }
 
-   if (!*g_extern.original_config_path && *g_settings.libretro)
+   if (!*g_extern.original_config_path)
    {
       path_resolve_realpath(g_extern.config_path, sizeof(g_extern.config_path));
       strlcpy(g_extern.original_config_path, g_extern.config_path, sizeof(g_extern.original_config_path));
-
+   }
+   
+   if (*g_settings.libretro)
+   {
       if (*g_settings.rgui_config_directory)
       {
          path_resolve_realpath(g_settings.rgui_config_directory, sizeof(g_settings.rgui_config_directory));
@@ -458,7 +461,7 @@ void config_load(void)
       }
       else
       {
-         strlcpy(g_extern.core_specific_config_path, g_extern.config_path, sizeof(g_extern.core_specific_config_path));
+         strlcpy(g_extern.core_specific_config_path, g_extern.original_config_path, sizeof(g_extern.core_specific_config_path));
          path_basedir(g_extern.core_specific_config_path);
       }
 
@@ -466,11 +469,16 @@ void config_load(void)
 
       if (g_settings.core_specific_config)
       {
+         char tmp[PATH_MAX];
+         strlcpy(tmp, g_settings.libretro, sizeof(tmp));
          strlcpy(g_extern.config_path, g_extern.core_specific_config_path, sizeof(g_extern.config_path));
          RARCH_LOG("Loading core-specific config from: %s.\n", g_extern.config_path);
 
          if (!config_load_file(g_extern.config_path))
             RARCH_WARN("Core-specific config not found, reusing last config.\n");
+
+         // make sure we don't accidentally switch this
+         strlcpy(g_settings.libretro, tmp, sizeof(g_settings.libretro));
       }
    }
 }
