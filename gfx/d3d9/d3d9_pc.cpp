@@ -680,12 +680,6 @@ bool D3DVideo::frame(const void *frame,
       dev->Clear(0, 0, D3DCLEAR_TARGET, 0, 1, 0);
    }
 
-   if (!chain)
-   {
-      RARCH_ERR("[D3D]: Render chain is missing!.\n");
-      return false;
-   }
-
    if (!chain->render(frame, width, height, pitch, rotation))
    {
       RARCH_ERR("[D3D]: Failed to render scene.\n");
