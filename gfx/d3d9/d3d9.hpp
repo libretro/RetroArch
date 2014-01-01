@@ -34,6 +34,7 @@
 #include "d3d_defines.h"
 #include <string>
 #include <vector>
+#include <memory> //Needed for mingw
 
 class RenderChain;
 
