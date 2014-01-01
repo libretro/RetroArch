@@ -23,10 +23,6 @@
 
 #include "../gfx_common.h"
 
-#include <d3d9.h>
-#include <d3dx9.h>
-#include <d3dx9core.h>
-
 #ifdef HAVE_CG
 #include <Cg/cg.h>
 #include <Cg/cgD3D9.h>

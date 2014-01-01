@@ -147,7 +147,7 @@ int D3DVideo::init_base(const video_info_t *info)
    D3DPRESENT_PARAMETERS d3dpp;
    make_d3dpp(info, &d3dpp);
 
-   g_pD3D = Direct3DCreate9(D3D_SDK_VERSION);
+   g_pD3D = D3DCREATE_CTX(D3D_SDK_VERSION);
    if (!g_pD3D)
    {
       RARCH_ERR("Failed to create D3D9 interface!\n");
