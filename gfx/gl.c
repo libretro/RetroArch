@@ -1268,11 +1268,17 @@ static inline void gl_copy_frame(void *data, const void *frame, unsigned width, 
    glPixelStorei(GL_UNPACK_ALIGNMENT, get_alignment(pitch));
    if (gl->base_size == 2)
    {
-      // Always use 32-bit textures on desktop GL.
-      gl_convert_frame_rgb16_32(gl, gl->conv_buffer, frame, width, height, pitch);
+      const void *buf = frame;
+      if (!gl->have_es2_compat)
+      {
+         // Convert to 32-bit textures on desktop GL.
+         gl_convert_frame_rgb16_32(gl, gl->conv_buffer, frame, width, height, pitch);
+         buf = gl->conv_buffer;
+      }
+
       glTexSubImage2D(GL_TEXTURE_2D,
             0, 0, 0, width, height, gl->texture_type,
-            gl->texture_fmt, gl->conv_buffer);
+            gl->texture_fmt, buf);
    }
    else
    {
@@ -1666,6 +1672,9 @@ static bool resolve_extensions(gl_t *gl)
       RARCH_ERR("[GL]: Failed to init VAOs.\n");
       return false;
    }
+
+   // GL_RGB565 internal format support.
+   gl->have_es2_compat = gl_query_extension(gl, "ARB_ES2_compatibility");
 #endif
 
 #ifdef HAVE_GL_SYNC
@@ -1743,6 +1752,16 @@ static inline void gl_set_texture_fmts(void *data, bool rgb32)
       gl->internal_fmt = GL_RGBA;
       gl->texture_type = GL_RGBA;
    }
+
+#ifndef HAVE_OPENGLES
+   if (!rgb32 && gl->have_es2_compat) // Use GL_RGB565 instead.
+   {
+      RARCH_LOG("[GL]: Using GL_RGB565 for texture uploads.\n");
+      gl->internal_fmt = RARCH_GL_INTERNAL_FORMAT16_565;
+      gl->texture_type = RARCH_GL_TEXTURE_TYPE16_565;
+      gl->texture_fmt = RARCH_GL_FORMAT16_565;
+   }
+#endif
 }
 
 static inline void gl_reinit_textures(void *data, const video_info_t *video)
