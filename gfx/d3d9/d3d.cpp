@@ -25,7 +25,7 @@
 extern "C"
 #endif
 
-static bool d3d9_frame(void *data, const void *frame,
+static bool d3d_frame(void *data, const void *frame,
       unsigned width, unsigned height, unsigned pitch,
       const char *msg)
 {
@@ -33,42 +33,42 @@ static bool d3d9_frame(void *data, const void *frame,
          width, height, pitch, msg);
 }
 
-static void d3d9_set_nonblock_state(void *data, bool state)
+static void d3d_set_nonblock_state(void *data, bool state)
 {
    reinterpret_cast<D3DVideo*>(data)->set_nonblock_state(state);
 }
 
-static bool d3d9_alive(void *data)
+static bool d3d_alive(void *data)
 {
    return reinterpret_cast<D3DVideo*>(data)->alive();
 }
 
-static bool d3d9_focus(void *data)
+static bool d3d_focus(void *data)
 {
    return reinterpret_cast<D3DVideo*>(data)->focus();
 }
 
-static void d3d9_set_rotation(void *data, unsigned rot)
+static void d3d_set_rotation(void *data, unsigned rot)
 {
    reinterpret_cast<D3DVideo*>(data)->set_rotation(rot);
 }
 
-static void d3d9_free(void *data)
+static void d3d_free(void *data)
 {
    delete reinterpret_cast<D3DVideo*>(data);
 }
 
-static void d3d9_viewport_info(void *data, struct rarch_viewport *vp)
+static void d3d_viewport_info(void *data, struct rarch_viewport *vp)
 {
    reinterpret_cast<D3DVideo*>(data)->viewport_info(*vp);
 }
 
-static bool d3d9_read_viewport(void *data, uint8_t *buffer)
+static bool d3d_read_viewport(void *data, uint8_t *buffer)
 {
    return reinterpret_cast<D3DVideo*>(data)->read_viewport(buffer);
 }
 
-static bool d3d9_set_shader(void *data, enum rarch_shader_type type, const char *path)
+static bool d3d_set_shader(void *data, enum rarch_shader_type type, const char *path)
 {
    std::string shader = "";
    if (path && type == RARCH_SHADER_CG)
@@ -78,16 +78,16 @@ static bool d3d9_set_shader(void *data, enum rarch_shader_type type, const char 
 }
 
 #ifdef HAVE_MENU
-static void d3d9_get_poke_interface(void *data, const video_poke_interface_t **iface);
+static void d3d_get_poke_interface(void *data, const video_poke_interface_t **iface);
 #endif
 
 #ifdef HAVE_OVERLAY
-static bool d3d9_overlay_load(void *data, const texture_image *images, unsigned num_images)
+static bool d3d_overlay_load(void *data, const texture_image *images, unsigned num_images)
 {
    return reinterpret_cast<D3DVideo*>(data)->overlay_load(images, num_images);
 }
 
-static void d3d9_overlay_tex_geom(void *data,
+static void d3d_overlay_tex_geom(void *data,
       unsigned index,
       float x, float y,
       float w, float h)
@@ -95,7 +95,7 @@ static void d3d9_overlay_tex_geom(void *data,
    return reinterpret_cast<D3DVideo*>(data)->overlay_tex_geom(index, x, y, w, h);
 }
 
-static void d3d9_overlay_vertex_geom(void *data,
+static void d3d_overlay_vertex_geom(void *data,
       unsigned index,
       float x, float y,
       float w, float h)
@@ -103,38 +103,38 @@ static void d3d9_overlay_vertex_geom(void *data,
    return reinterpret_cast<D3DVideo*>(data)->overlay_vertex_geom(index, x, y, w, h);
 }
 
-static void d3d9_overlay_enable(void *data, bool state)
+static void d3d_overlay_enable(void *data, bool state)
 {
    return reinterpret_cast<D3DVideo*>(data)->overlay_enable(state);
 }
 
-static void d3d9_overlay_full_screen(void *data, bool enable)
+static void d3d_overlay_full_screen(void *data, bool enable)
 {
    return reinterpret_cast<D3DVideo*>(data)->overlay_full_screen(enable);
 }
 
-static void d3d9_overlay_set_alpha(void *data, unsigned index, float mod)
+static void d3d_overlay_set_alpha(void *data, unsigned index, float mod)
 {
    return reinterpret_cast<D3DVideo*>(data)->overlay_set_alpha(index, mod);
 }
 
-static const video_overlay_interface_t d3d9_overlay_interface = {
-   d3d9_overlay_enable,
-   d3d9_overlay_load,
-   d3d9_overlay_tex_geom,
-   d3d9_overlay_vertex_geom,
-   d3d9_overlay_full_screen,
-   d3d9_overlay_set_alpha,
+static const video_overlay_interface_t d3d_overlay_interface = {
+   d3d_overlay_enable,
+   d3d_overlay_load,
+   d3d_overlay_tex_geom,
+   d3d_overlay_vertex_geom,
+   d3d_overlay_full_screen,
+   d3d_overlay_set_alpha,
 };
 
-static void d3d9_get_overlay_interface(void *data, const video_overlay_interface_t **iface)
+static void d3d_get_overlay_interface(void *data, const video_overlay_interface_t **iface)
 {
    (void)data;
-   *iface = &d3d9_overlay_interface;
+   *iface = &d3d_overlay_interface;
 }
 #endif
 
-static void d3d9_set_aspect_ratio(void *data, unsigned aspect_ratio_idx)
+static void d3d_set_aspect_ratio(void *data, unsigned aspect_ratio_idx)
 {
    D3DVideo *d3d = reinterpret_cast<D3DVideo*>(data);
 
@@ -162,61 +162,61 @@ static void d3d9_set_aspect_ratio(void *data, unsigned aspect_ratio_idx)
    return;
 }
 
-static void d3d9_apply_state_changes(void *data)
+static void d3d_apply_state_changes(void *data)
 {
    D3DVideo *d3d = reinterpret_cast<D3DVideo*>(data);
    d3d->should_resize = true;
 }
 
-static void d3d9_set_osd_msg(void *data, const char *msg, void *userdata)
+static void d3d_set_osd_msg(void *data, const char *msg, void *userdata)
 {
    font_params_t *params = (font_params_t*)userdata;
    reinterpret_cast<D3DVideo*>(data)->render_msg(msg, params);
 }
 
-static void d3d9_show_mouse(void *data, bool state)
+static void d3d_show_mouse(void *data, bool state)
 {
    reinterpret_cast<D3DVideo*>(data)->show_cursor(state);
 }
 
 #ifdef HAVE_MENU
-static void d3d9_set_rgui_texture_frame(void *data,
+static void d3d_set_rgui_texture_frame(void *data,
       const void *frame, bool rgb32, unsigned width, unsigned height,
       float alpha)
 {
    reinterpret_cast<D3DVideo*>(data)->set_rgui_texture_frame(frame, rgb32, width, height, alpha);
 }
 
-static void d3d9_set_rgui_texture_enable(void *data, bool state, bool full_screen)
+static void d3d_set_rgui_texture_enable(void *data, bool state, bool full_screen)
 {
    reinterpret_cast<D3DVideo*>(data)->set_rgui_texture_enable(state, full_screen);
 }
 #endif
 
-static const video_poke_interface_t d3d9_poke_interface = {
+static const video_poke_interface_t d3d_poke_interface = {
    NULL,
 #ifdef HAVE_FBO
    NULL,
    NULL,
 #endif
-   d3d9_set_aspect_ratio,
-   d3d9_apply_state_changes,
+   d3d_set_aspect_ratio,
+   d3d_apply_state_changes,
 #ifdef HAVE_MENU
-   d3d9_set_rgui_texture_frame,
-   d3d9_set_rgui_texture_enable,
+   d3d_set_rgui_texture_frame,
+   d3d_set_rgui_texture_enable,
 #endif
-   d3d9_set_osd_msg,
+   d3d_set_osd_msg,
 
-   d3d9_show_mouse,
+   d3d_show_mouse,
 };
 
-static void d3d9_get_poke_interface(void *data, const video_poke_interface_t **iface)
+static void d3d_get_poke_interface(void *data, const video_poke_interface_t **iface)
 {
    (void)data;
-   *iface = &d3d9_poke_interface;
+   *iface = &d3d_poke_interface;
 }
 
-static void *d3d9_init(const video_info_t *info, const input_driver_t **input,
+static void *d3d_init(const video_info_t *info, const input_driver_t **input,
       void **input_data)
 {
    D3DVideo *vid = new D3DVideo(info, input, input_data);
@@ -230,23 +230,23 @@ static void *d3d9_init(const video_info_t *info, const input_driver_t **input,
    return vid;
 }
 
-const video_driver_t video_d3d9 = {
-   d3d9_init,
-   d3d9_frame,
-   d3d9_set_nonblock_state,
-   d3d9_alive,
-   d3d9_focus,
-   d3d9_set_shader,
-   d3d9_free,
+const video_driver_t video_d3d = {
+   d3d_init,
+   d3d_frame,
+   d3d_set_nonblock_state,
+   d3d_alive,
+   d3d_focus,
+   d3d_set_shader,
+   d3d_free,
    "d3d9",
 #ifdef HAVE_MENU
    NULL,
 #endif
-   d3d9_set_rotation,
-   d3d9_viewport_info,
-   d3d9_read_viewport,
+   d3d_set_rotation,
+   d3d_viewport_info,
+   d3d_read_viewport,
 #ifdef HAVE_OVERLAY
-   d3d9_get_overlay_interface,
+   d3d_get_overlay_interface,
 #endif
-   d3d9_get_poke_interface
+   d3d_get_poke_interface
 };

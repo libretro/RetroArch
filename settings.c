@@ -89,7 +89,7 @@ const char *config_get_default_video(void)
       case VIDEO_XDK_D3D:
          return "xdk_d3d";
       case VIDEO_D3D9:
-         return "d3d9";
+         return "d3d";
       case VIDEO_PSP1:
          return "psp1";
       case VIDEO_VITA:
