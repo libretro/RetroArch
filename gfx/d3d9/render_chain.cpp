@@ -57,13 +57,16 @@ RenderChain::~RenderChain()
       cgDestroyProgram(fStock);
    if (vStock)
       cgDestroyProgram(vStock);
+   if (tracker)
+      state_tracker_free(tracker);
 }
 
 RenderChain::RenderChain(const video_info_t *video_info,
       LPDIRECT3DDEVICE dev_,
       CGcontext cgCtx_,
       const D3DVIEWPORT &final_viewport_)
-   : dev(dev_), cgCtx(cgCtx_), video_info(*video_info), final_viewport(final_viewport_), frame_count(0)
+   : dev(dev_), cgCtx(cgCtx_), video_info(*video_info), tracker(NULL),
+   final_viewport(final_viewport_), frame_count(0)
 {}
 
 bool RenderChain::init(const LinkInfo &info, PixelFormat fmt)
@@ -225,8 +228,10 @@ bool RenderChain::add_lut(const std::string &id,
    return true;
 }
 
-void RenderChain::add_state_tracker(std::shared_ptr<state_tracker_t> tracker)
+void RenderChain::add_state_tracker(state_tracker_t *tracker)
 {
+   if (this->tracker)
+      state_tracker_free(this->tracker);
    this->tracker = tracker;
 }
 
@@ -1137,7 +1142,7 @@ void RenderChain::bind_tracker(Pass &pass, unsigned pass_index)
       return;
 
    if (pass_index == 1)
-      uniform_cnt = state_get_uniform(tracker.get(), uniform_info, MAX_VARIABLES, frame_count);
+      uniform_cnt = state_get_uniform(tracker, uniform_info, MAX_VARIABLES, frame_count);
 
    for (unsigned i = 0; i < uniform_cnt; i++)
    {

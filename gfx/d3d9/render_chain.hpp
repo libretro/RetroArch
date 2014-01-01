@@ -21,7 +21,6 @@
 #include "../shader_parse.h"
 #include <map>
 #include <utility>
-#include <memory>
 
 struct Vertex
 {
@@ -56,7 +55,7 @@ class RenderChain
       void set_final_viewport(const D3DVIEWPORT9 &final_viewport);
       bool add_pass(const LinkInfo &info);
       bool add_lut(const std::string &id, const std::string &path, bool smooth);
-      void add_state_tracker(std::shared_ptr<state_tracker_t> tracker);
+      void add_state_tracker(state_tracker_t *tracker);
 
       bool render(const void *data,
             unsigned width, unsigned height, unsigned pitch, unsigned rotation);
@@ -79,7 +78,7 @@ class RenderChain
       const video_info_t &video_info;
 
 #define MAX_VARIABLES 64
-      std::shared_ptr<state_tracker_t> tracker;
+      state_tracker_t *tracker;
       struct state_tracker_uniform uniform_info[MAX_VARIABLES];
       unsigned uniform_cnt;
 

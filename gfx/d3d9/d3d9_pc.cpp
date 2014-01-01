@@ -846,12 +846,7 @@ bool D3DVideo::init_imports(void)
       return false;
    }
 
-   std::shared_ptr<state_tracker_t> tracker(state_tracker, [](state_tracker_t *tracker) {
-            state_tracker_free(tracker);
-         });
-
-   chain->add_state_tracker(tracker);
-
+   chain->add_state_tracker(state_tracker);
    return true;
 }
 
