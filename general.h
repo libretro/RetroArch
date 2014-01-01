@@ -654,6 +654,7 @@ struct global
    bool libretro_dummy;
 
    char original_config_path[PATH_MAX];
+   char core_specific_config_path[PATH_MAX];
 };
 
 struct rarch_main_wrap

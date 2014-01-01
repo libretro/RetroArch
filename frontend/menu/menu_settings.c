@@ -443,6 +443,18 @@ int menu_set_settings(void *data, unsigned setting, unsigned action)
          else if (action == RGUI_ACTION_START)
             g_extern.config_save_on_exit = true;
          break;
+      case RGUI_SETTINGS_PER_CORE_CONFIG:
+         if (action == RGUI_ACTION_OK || action == RGUI_ACTION_RIGHT 
+               || action == RGUI_ACTION_LEFT)
+            g_settings.core_specific_config = !g_settings.core_specific_config;
+         else if (action == RGUI_ACTION_START)
+            g_settings.core_specific_config = default_core_specific_config;
+
+         if (g_settings.core_specific_config)
+            strlcpy(g_extern.config_path, g_extern.core_specific_config_path, sizeof(g_extern.config_path));
+         else
+            strlcpy(g_extern.config_path, g_extern.original_config_path, sizeof(g_extern.config_path));
+         break;
 #if defined(HAVE_THREADS)
       case RGUI_SETTINGS_SRAM_AUTOSAVE:
          if (action == RGUI_ACTION_OK || action == RGUI_ACTION_RIGHT)
@@ -1721,6 +1733,9 @@ void menu_set_settings_label(char *type_str, size_t type_str_size, unsigned *w, 
          break;
       case RGUI_SETTINGS_CONFIG_SAVE_ON_EXIT:
          strlcpy(type_str, g_extern.config_save_on_exit ? "ON" : "OFF", type_str_size);
+         break;
+      case RGUI_SETTINGS_PER_CORE_CONFIG:
+         strlcpy(type_str, g_settings.core_specific_config ? "ON" : "OFF", type_str_size);
          break;
       case RGUI_SETTINGS_SRAM_AUTOSAVE:
          if (g_settings.autosave_interval)
