@@ -69,9 +69,6 @@
     <ClCompile Include="..\..\audio\resampler.c">
       <Filter>audio</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\gfx\d3d9\d3d9.cpp">
-      <Filter>gfx\d3d9</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\gfx\math\matrix.c">
       <Filter>gfx\math</Filter>
     </ClCompile>
@@ -172,6 +169,9 @@
       <Filter>deps\miniz</Filter>
     </ClCompile>
     <ClCompile Include="..\..\gfx\d3d9\d3d9_pc.cpp">
+      <Filter>gfx\d3d9</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\gfx\d3d9\d3d.cpp">
       <Filter>gfx\d3d9</Filter>
     </ClCompile>
   </ItemGroup>

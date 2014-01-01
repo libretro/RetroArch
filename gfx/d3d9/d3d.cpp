@@ -21,10 +21,6 @@
 #include "../../compat/posix_string.h"
 #include "../../performance.h"
 
-#ifdef __cplusplus
-extern "C"
-#endif
-
 static bool d3d_frame(void *data, const void *frame,
       unsigned width, unsigned height, unsigned pitch,
       const char *msg)
