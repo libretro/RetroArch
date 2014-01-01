@@ -17,6 +17,10 @@
 #ifndef D3DVIDEO_HPP__
 #define D3DVIDEO_HPP__
 
+#ifdef HAVE_CONFIG_H
+#include "../../config.h"
+#endif
+
 #include "../../general.h"
 #include "../../driver.h"
 #include "../shader_parse.h"
@@ -30,7 +34,6 @@
 #include "d3d_defines.h"
 #include <string>
 #include <vector>
-#include <memory> //Needed for mingw
 
 class RenderChain;
 
@@ -53,12 +56,16 @@ typedef struct
 class D3DVideo
 {
    public:
-      D3DVideo(const video_info_t* info, const input_driver_t **input,
-      void **input_data);
+      D3DVideo();
+      ~D3DVideo();
+
+      // Delay constructor due to lack of exceptions.
+      bool construct(const video_info_t *info,
+            const input_driver_t **input, void **input_data);
+
       bool frame(const void* frame,
             unsigned width, unsigned height, unsigned pitch,
             const char *msg);
-      ~D3DVideo();
 
       bool alive();
       bool focus() const;
@@ -68,7 +75,7 @@ class D3DVideo
       bool read_viewport(uint8_t *buffer);
       void resize(unsigned new_width, unsigned new_height);
       bool set_shader(const std::string &path);
-      int process_shader(void);
+      bool process_shader(void);
 
       void set_filtering(unsigned index, bool smooth);
       void set_font_rect(font_params_t *params);
@@ -121,8 +128,8 @@ class D3DVideo
 
       void process(void);
 
-      int init(const video_info_t *info);
-      int init_base(const video_info_t *info);
+      bool init(const video_info_t *info);
+      bool init_base(const video_info_t *info);
       void make_d3dpp(const video_info_t *info, D3DPRESENT_PARAMETERS *d3dpp);
       void deinit(void);
       RECT monitor_rect(void);
@@ -137,12 +144,11 @@ class D3DVideo
       void deinit_cg();
 #endif
 
-      int init_imports(void);
-      void init_luts(void);
-      int init_singlepass(void);
-      int init_multipass(void);
+      bool init_imports(void);
+      bool init_luts(void);
+      bool init_singlepass(void);
+      bool init_multipass(void);
       bool init_chain(const video_info_t *video_info);
-      std::unique_ptr<RenderChain> chain;
       void deinit_chain(void);
 
       bool init_font(void);
@@ -164,6 +170,8 @@ class D3DVideo
 #ifdef HAVE_MENU
       overlay_t rgui;
 #endif
+
+      RenderChain *chain;
 };
 
 #endif

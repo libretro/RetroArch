@@ -47,14 +47,15 @@ class RenderChain
 #ifdef HAVE_CG
             CGcontext cgCtx,
 #endif
-            const LinkInfo &info,
-            PixelFormat fmt,
             const D3DVIEWPORT &final_viewport);
+      ~RenderChain();
 
-      void set_pass_size(unsigned pass, unsigned width, unsigned height);
+      bool init(const LinkInfo &info, PixelFormat fmt);
+
+      bool set_pass_size(unsigned pass, unsigned width, unsigned height);
       void set_final_viewport(const D3DVIEWPORT9 &final_viewport);
-      void add_pass(const LinkInfo &info);
-      void add_lut(const std::string &id, const std::string &path, bool smooth);
+      bool add_pass(const LinkInfo &info);
+      bool add_lut(const std::string &id, const std::string &path, bool smooth);
       void add_state_tracker(std::shared_ptr<state_tracker_t> tracker);
 
       bool render(const void *data,
@@ -66,11 +67,10 @@ class RenderChain
             const D3DVIEWPORT &final_viewport);
 
       void clear();
-      ~RenderChain();
 
    private:
 
-     LPDIRECT3DDEVICE dev;
+      LPDIRECT3DDEVICE dev;
 #ifdef HAVE_CG
       CGcontext cgCtx;
 #endif
@@ -121,8 +121,8 @@ class RenderChain
       D3DVIEWPORT final_viewport;
       unsigned frame_count;
 
-      void create_first_pass(const LinkInfo &info, PixelFormat fmt);
-      void compile_shaders(CGprogram &fPrg, CGprogram &vPrg, const std::string &shader);
+      bool create_first_pass(const LinkInfo &info, PixelFormat fmt);
+      bool compile_shaders(CGprogram &fPrg, CGprogram &vPrg, const std::string &shader);
 
       void set_vertices(Pass &pass,
             unsigned width, unsigned height,
@@ -164,7 +164,7 @@ class RenderChain
       void bind_tracker(Pass &pass, unsigned pass_index);
       void unbind_all();
 
-      void init_fvf(Pass &pass);
+      bool init_fvf(Pass &pass);
 };
 
 #endif

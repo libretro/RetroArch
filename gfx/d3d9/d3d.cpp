@@ -215,11 +215,11 @@ static void d3d_get_poke_interface(void *data, const video_poke_interface_t **if
 static void *d3d_init(const video_info_t *info, const input_driver_t **input,
       void **input_data)
 {
-   D3DVideo *vid = new D3DVideo(info, input, input_data);
-
-   if (!vid)
+   D3DVideo *vid = new D3DVideo;
+   if (!vid->construct(info, input, input_data))
    {
       RARCH_ERR("[D3D]: Failed to init D3D.\n");
+      delete vid;
       return NULL;
    }
 

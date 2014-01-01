@@ -62,14 +62,20 @@ RenderChain::~RenderChain()
 RenderChain::RenderChain(const video_info_t *video_info,
       LPDIRECT3DDEVICE dev_,
       CGcontext cgCtx_,
-      const LinkInfo &info, PixelFormat fmt,
       const D3DVIEWPORT &final_viewport_)
    : dev(dev_), cgCtx(cgCtx_), video_info(*video_info), final_viewport(final_viewport_), frame_count(0)
+{}
+
+bool RenderChain::init(const LinkInfo &info, PixelFormat fmt)
 {
    pixel_size = fmt == RGB565 ? 2 : 4;
-   create_first_pass(info, fmt);
+   if (!create_first_pass(info, fmt))
+      return false;
    log_info(info);
-   compile_shaders(fStock, vStock, "");
+   if (!compile_shaders(fStock, vStock, ""))
+      return false;
+
+   return true;
 }
 
 void RenderChain::clear()
@@ -113,7 +119,7 @@ void RenderChain::set_final_viewport(const D3DVIEWPORT9& final_viewport)
    this->final_viewport = final_viewport;
 }
 
-void RenderChain::set_pass_size(unsigned pass_index, unsigned width, unsigned height)
+bool RenderChain::set_pass_size(unsigned pass_index, unsigned width, unsigned height)
 {
    Pass &pass = passes[pass_index];
    if (width != pass.info.tex_w || height != pass.info.tex_h)
@@ -128,7 +134,7 @@ void RenderChain::set_pass_size(unsigned pass_index, unsigned width, unsigned he
          D3DPOOL_DEFAULT,
          &pass.tex, NULL)))
       {
-         throw std::runtime_error("Failed to create texture ...");
+         return false;
       }
 
       dev->SetTexture(0, pass.tex);
@@ -136,9 +142,11 @@ void RenderChain::set_pass_size(unsigned pass_index, unsigned width, unsigned he
       dev->SetSamplerState(0, D3DSAMP_ADDRESSV, D3DTADDRESS_BORDER);
       dev->SetTexture(0, NULL);
    }
+
+   return true;
 }
 
-void RenderChain::add_pass(const LinkInfo &info)
+bool RenderChain::add_pass(const LinkInfo &info)
 {
    Pass pass;
    pass.info = info;
@@ -146,7 +154,8 @@ void RenderChain::add_pass(const LinkInfo &info)
    pass.last_height = 0;
 
    compile_shaders(pass.fPrg, pass.vPrg, info.pass->source.cg);
-   init_fvf(pass);
+   if (!init_fvf(pass))
+      return false;
 
    if (FAILED(dev->CreateVertexBuffer(
                4 * sizeof(Vertex),
@@ -156,7 +165,7 @@ void RenderChain::add_pass(const LinkInfo &info)
                &pass.vertex_buf,
                NULL)))
    {
-      throw std::runtime_error("Failed to create Vertex buf ...");
+      return false;
    }
 
    if (FAILED(dev->CreateTexture(info.tex_w, info.tex_h, 1,
@@ -165,7 +174,7 @@ void RenderChain::add_pass(const LinkInfo &info)
                D3DPOOL_DEFAULT,
                &pass.tex, NULL)))
    {
-      throw std::runtime_error("Failed to create texture ...");
+      return false;
    }
 
    dev->SetTexture(0, pass.tex);
@@ -176,9 +185,10 @@ void RenderChain::add_pass(const LinkInfo &info)
    passes.push_back(pass);
 
    log_info(info);
+   return true;
 }
 
-void RenderChain::add_lut(const std::string &id,
+bool RenderChain::add_lut(const std::string &id,
       const std::string &path,
       bool smooth)
 {
@@ -202,7 +212,7 @@ void RenderChain::add_lut(const std::string &id,
                NULL,
                &lut)))
    {
-      throw std::runtime_error("Failed to load LUT!");
+      return false;
    }
 
    dev->SetTexture(0, lut);
@@ -212,6 +222,7 @@ void RenderChain::add_lut(const std::string &id,
 
    lut_info info = { lut, id, smooth };
    luts.push_back(info);
+   return true;
 }
 
 void RenderChain::add_state_tracker(std::shared_ptr<state_tracker_t> tracker)
@@ -327,7 +338,7 @@ D3DTEXTUREFILTERTYPE RenderChain::translate_filter(bool smooth)
    return smooth ? D3DTEXF_LINEAR : D3DTEXF_POINT;
 }
 
-void RenderChain::create_first_pass(const LinkInfo &info, PixelFormat fmt)
+bool RenderChain::create_first_pass(const LinkInfo &info, PixelFormat fmt)
 {
    D3DXMATRIX ident;
    D3DXMatrixIdentity(&ident);
@@ -353,7 +364,7 @@ void RenderChain::create_first_pass(const LinkInfo &info, PixelFormat fmt)
                   &prev.vertex_buf[i],
                   NULL)))
       {
-         throw std::runtime_error("Failed to create Vertex buf ...");
+         return false;
       }
 
       if (FAILED(dev->CreateTexture(info.tex_w, info.tex_h, 1, 0,
@@ -361,7 +372,7 @@ void RenderChain::create_first_pass(const LinkInfo &info, PixelFormat fmt)
                   D3DPOOL_MANAGED,
                   &prev.tex[i], NULL)))
       {
-         throw std::runtime_error("Failed to create texture ...");
+         return false;
       }
 
       dev->SetTexture(0, prev.tex[i]);
@@ -375,11 +386,13 @@ void RenderChain::create_first_pass(const LinkInfo &info, PixelFormat fmt)
    }
 
    compile_shaders(pass.fPrg, pass.vPrg, info.pass->source.cg);
-   init_fvf(pass);
+   if (!init_fvf(pass))
+      return false;
    passes.push_back(pass);
+   return true;
 }
 
-void RenderChain::compile_shaders(CGprogram &fPrg, CGprogram &vPrg, const std::string &shader)
+bool RenderChain::compile_shaders(CGprogram &fPrg, CGprogram &vPrg, const std::string &shader)
 {
    CGprofile vertex_profile = cgD3D9GetLatestVertexProfile();
    CGprofile fragment_profile = cgD3D9GetLatestPixelProfile();
@@ -421,10 +434,11 @@ void RenderChain::compile_shaders(CGprogram &fPrg, CGprogram &vPrg, const std::s
    }
 
    if (!fPrg || !vPrg)
-      throw std::runtime_error("Failed to compile shaders!");
+      return false;
 
    cgD3D9LoadProgram(fPrg, true, 0);
    cgD3D9LoadProgram(vPrg, true, 0);
+   return true;
 }
 
 void RenderChain::set_shaders(CGprogram &fPrg, CGprogram &vPrg)
@@ -996,7 +1010,7 @@ static inline CGparameter find_param_from_semantic(CGprogram prog, const std::st
    { (WORD)(stream), (WORD)(offset * sizeof(float)), D3DDECLTYPE_FLOAT4, D3DDECLMETHOD_DEFAULT, \
       D3DDECLUSAGE_COLOR, (BYTE)(index) } \
 
-void RenderChain::init_fvf(Pass &pass)
+bool RenderChain::init_fvf(Pass &pass)
 {
    static const D3DVERTEXELEMENT decl_end = D3DDECL_END();
    static const D3DVERTEXELEMENT position_decl = DECL_FVF_POSITION(0);
@@ -1006,7 +1020,7 @@ void RenderChain::init_fvf(Pass &pass)
 
    D3DVERTEXELEMENT decl[MAXD3DDECLLENGTH] = {{0}};
    if (cgD3D9GetVertexDeclaration(pass.vPrg, decl) == CG_FALSE)
-      throw std::runtime_error("Failed to get VertexDeclaration!");
+      return false;
 
    unsigned count;
    for (count = 0; count < MAXD3DDECLLENGTH; count++)
@@ -1112,7 +1126,9 @@ void RenderChain::init_fvf(Pass &pass)
    }
 
    if (FAILED(dev->CreateVertexDeclaration(decl, &pass.vertex_decl)))
-      throw std::runtime_error("Failed to set up FVF!");
+      return false;
+
+   return true;
 }
 
 void RenderChain::bind_tracker(Pass &pass, unsigned pass_index)

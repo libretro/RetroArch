@@ -143,7 +143,7 @@ RECT D3DVideo::monitor_rect(void)
 }
 #endif
 
-int D3DVideo::init_base(const video_info_t *info)
+bool D3DVideo::init_base(const video_info_t *info)
 {
    D3DPRESENT_PARAMETERS d3dpp;
    make_d3dpp(info, &d3dpp);
@@ -152,7 +152,7 @@ int D3DVideo::init_base(const video_info_t *info)
    if (!g_pD3D)
    {
       RARCH_ERR("Failed to create D3D interface!\n");
-      return 1;
+      return false;
    }
 
    if (FAILED(Callback::d3d_err = g_pD3D->CreateDevice(
@@ -175,11 +175,11 @@ int D3DVideo::init_base(const video_info_t *info)
                   &dev)))
       {
          RARCH_ERR("Failed to initialize device.\n");
-         return 1;
+         return false;
       }
    }
 
-   return 0;
+   return true;
 }
 
 void D3DVideo::make_d3dpp(const video_info_t *info, D3DPRESENT_PARAMETERS *d3dpp)
@@ -214,9 +214,9 @@ void D3DVideo::make_d3dpp(const video_info_t *info, D3DPRESENT_PARAMETERS *d3dpp
    }
 }
 
-int D3DVideo::init(const video_info_t *info)
+bool D3DVideo::init(const video_info_t *info)
 {
-   int ret = 0;
+   bool ret = true;
    if (!g_pD3D)
       ret = init_base(info);
    else if (needs_restore)
@@ -250,14 +250,14 @@ int D3DVideo::init(const video_info_t *info)
          g_pD3D->Release();
          g_pD3D = NULL;
          ret = init_base(info);
-         if (!ret)
+         if (ret)
             RARCH_LOG("[D3D]: Recovered from dead state.\n");
          else
             return ret;
       }
    }
 
-   if (ret)
+   if (!ret)
       return ret;
 
    calculate_rect(screen_width, screen_height, info->force_aspect, g_extern.system.aspect_ratio);
@@ -266,28 +266,37 @@ int D3DVideo::init(const video_info_t *info)
    if (!init_cg())
    {
       RARCH_ERR("Failed to initialize Cg.\n");
-      return 1;
+      return false;
    }
 #endif
+
    if (!init_chain(info))
    {
       RARCH_ERR("Failed to initialize render chain.\n");
-      return 1;
+      return false;
    }
+
    if (!init_font())
    {
       RARCH_ERR("Failed to initialize font.\n");
-      return 1;
+      return false;
    }
 
-   return 0;
+   return true;
 }
 
 void D3DVideo::set_viewport(int x, int y, unsigned width, unsigned height)
 {
    D3DVIEWPORT viewport;
-   viewport.X = max(x, 0); // D3D9 doesn't support negative X/Y viewports ...
-   viewport.Y = max(y, 0);
+
+   // D3D9 doesn't support negative X/Y viewports ...
+   if (x < 0)
+      x = 0;
+   if (y < 0)
+      y = 0;
+
+   viewport.X = x;
+   viewport.Y = y;
    viewport.Width = width;
    viewport.Height = height;
    viewport.MinZ = 0.0f;
@@ -440,12 +449,21 @@ void D3DVideo::calculate_rect(unsigned width, unsigned height,
    }
 }
 
-D3DVideo::D3DVideo(const video_info_t *info, const input_driver_t **input,
-      void **input_data) :
+D3DVideo::D3DVideo() :
    g_pD3D(NULL), dev(NULL), font(NULL),
-   rotation(0), needs_restore(false), cgCtx(NULL), overlays_enabled(false)
+   rotation(0), needs_restore(false),
+#ifdef HAVE_CG
+   cgCtx(NULL),
+#endif
+#ifdef HAVE_OVERLAY
+   overlays_enabled(false),
+#endif
+   chain(NULL)
+{}
+
+bool D3DVideo::construct(const video_info_t *info, const input_driver_t **input,
+      void **input_data)
 {
-   int ret = 0;
    should_resize = false;
    gfx_set_dwm();
 
@@ -536,10 +554,12 @@ D3DVideo::D3DVideo(const video_info_t *info, const input_driver_t **input,
       cg_shader = g_settings.video.shader_path;
 #endif
 
-   process_shader();
+   if (!process_shader())
+      return false;
 
    video_info = *info;
-   ret = init(&video_info);
+   if (!init(&video_info))
+      return false;
 
    if (input && input_data)
    {
@@ -549,6 +569,7 @@ D3DVideo::D3DVideo(const video_info_t *info, const input_driver_t **input,
    }
 
    RARCH_LOG("[D3D]: Init complete.\n");
+   return true;
 }
 
 void D3DVideo::deinit(void)
@@ -600,7 +621,7 @@ D3DVideo::~D3DVideo(void)
 bool D3DVideo::restore(void)
 {
    deinit();
-   needs_restore = init(&video_info);
+   needs_restore = !init(&video_info);
 
    if (needs_restore)
       RARCH_ERR("[D3D]: Restore error.\n");
@@ -652,10 +673,17 @@ bool D3DVideo::frame(const void *frame,
    {
       if (dev->Present(NULL, NULL, NULL, NULL) != D3D_OK)
       {
+         RARCH_ERR("[D3D]: Present() failed.\n");
          needs_restore = true;
          return true;
       }
       dev->Clear(0, 0, D3DCLEAR_TARGET, 0, 1, 0);
+   }
+
+   if (!chain)
+   {
+      RARCH_ERR("[D3D]: Render chain is missing!.\n");
+      return false;
    }
 
    if (!chain->render(frame, width, height, pitch, rotation))
@@ -684,6 +712,7 @@ bool D3DVideo::frame(const void *frame,
    if (dev->Present(NULL, NULL, NULL, NULL) != D3D_OK)
    {
       needs_restore = true;
+      RARCH_ERR("[D3D]: Present() failed.\n");
       return true;
    }
 
@@ -776,7 +805,7 @@ void D3DVideo::deinit_cg(void)
 }
 #endif
 
-int D3DVideo::init_singlepass(void)
+bool D3DVideo::init_singlepass(void)
 {
    memset(&shader, 0, sizeof(shader));
    shader.passes = 1;
@@ -786,13 +815,13 @@ int D3DVideo::init_singlepass(void)
    pass.fbo.type_x = pass.fbo.type_y = RARCH_SCALE_VIEWPORT;
    strlcpy(pass.source.cg, cg_shader.c_str(), sizeof(pass.source.cg));
 
-   return 0;
+   return true;
 }
 
-int D3DVideo::init_imports(void)
+bool D3DVideo::init_imports(void)
 {
    if (!shader.variables)
-      return 0;
+      return true;
 
    state_tracker_info tracker_info = {0};
 
@@ -814,7 +843,7 @@ int D3DVideo::init_imports(void)
    if (!state_tracker)
    {
       RARCH_ERR("Failed to initialize state tracker.\n");
-      return 1;
+      return false;
    }
 
    std::shared_ptr<state_tracker_t> tracker(state_tracker, [](state_tracker_t *tracker) {
@@ -823,27 +852,32 @@ int D3DVideo::init_imports(void)
 
    chain->add_state_tracker(tracker);
 
-   return 0;
+   return true;
 }
 
-void D3DVideo::init_luts(void)
+bool D3DVideo::init_luts(void)
 {
    for (unsigned i = 0; i < shader.luts; i++)
    {
-      chain->add_lut(shader.lut[i].id, shader.lut[i].path,
+      bool ret = chain->add_lut(shader.lut[i].id, shader.lut[i].path,
          shader.lut[i].filter == RARCH_FILTER_UNSPEC ?
             g_settings.video.smooth :
             (shader.lut[i].filter == RARCH_FILTER_LINEAR));
+
+      if (!ret)
+         return ret;
    }
+
+   return true;
 }
 
-int D3DVideo::init_multipass(void)
+bool D3DVideo::init_multipass(void)
 {
    config_file_t *conf = config_file_new(cg_shader.c_str());
    if (!conf)
    {
       RARCH_ERR("Failed to load preset.\n");
-      return 1;
+      return false;
    }
 
    memset(&shader, 0, sizeof(shader));
@@ -852,7 +886,7 @@ int D3DVideo::init_multipass(void)
    {
       config_file_free(conf);
       RARCH_ERR("Failed to parse CGP file.\n");
-      return 1;
+      return false;
    }
 
    config_file_free(conf);
@@ -886,22 +920,18 @@ int D3DVideo::init_multipass(void)
       pass.fbo.type_x = pass.fbo.type_y = RARCH_SCALE_VIEWPORT;
    }
 
-   return 0;
+   return true;
 }
 
 bool D3DVideo::set_shader(const std::string &path)
 {
    auto old_shader = cg_shader;
    bool restore_old = false;
-   try
+   cg_shader = path;
+
+   if (!process_shader() || !restore())
    {
-      cg_shader = path;
-      process_shader();
-      restore();
-   }
-   catch (const std::exception &e)
-   {
-      RARCH_ERR("[D3D9]: Setting shader failed: (%s).\n", e.what());
+      RARCH_ERR("[D3D9]: Setting shader failed.\n");
       restore_old = true;
    }
 
@@ -915,7 +945,7 @@ bool D3DVideo::set_shader(const std::string &path)
    return !restore_old;
 }
 
-int D3DVideo::process_shader(void)
+bool D3DVideo::process_shader(void)
 {
    if (strcmp(path_get_extension(cg_shader.c_str()), "cgp") == 0)
       return init_multipass();
@@ -925,57 +955,63 @@ int D3DVideo::process_shader(void)
 
 void D3DVideo::recompute_pass_sizes(void)
 {
-   try
+   LinkInfo link_info = {0};
+   link_info.pass = &shader.pass[0];
+   link_info.tex_w = link_info.tex_h = video_info.input_scale * RARCH_SCALE_BASE;
+
+   unsigned current_width = link_info.tex_w;
+   unsigned current_height = link_info.tex_h;
+   unsigned out_width = 0;
+   unsigned out_height = 0;
+
+   if (!chain->set_pass_size(0, current_width, current_height))
    {
-      LinkInfo link_info = {0};
-      link_info.pass = &shader.pass[0];
-      link_info.tex_w = link_info.tex_h = video_info.input_scale * RARCH_SCALE_BASE;
-
-      unsigned current_width = link_info.tex_w;
-      unsigned current_height = link_info.tex_h;
-      unsigned out_width = 0;
-      unsigned out_height = 0;
-
-      chain->set_pass_size(0, current_width, current_height);
-      for (unsigned i = 1; i < shader.passes; i++)
-      {
-         RenderChain::convert_geometry(link_info,
-               out_width, out_height,
-               current_width, current_height, final_viewport);
-
-         link_info.tex_w = next_pow2(out_width);
-         link_info.tex_h = next_pow2(out_height);
-
-         chain->set_pass_size(i, link_info.tex_w, link_info.tex_h);
-
-         current_width = out_width;
-         current_height = out_height;
-
-         link_info.pass = &shader.pass[i];
-      }
+      RARCH_ERR("[D3D]: Failed to set pass size.\n");
+      return;
    }
-   catch (const std::exception& e)
+
+   for (unsigned i = 1; i < shader.passes; i++)
    {
-      RARCH_ERR("[D3D9]: Render chain error: (%s).\n", e.what());
+      RenderChain::convert_geometry(link_info,
+            out_width, out_height,
+            current_width, current_height, final_viewport);
+
+      link_info.tex_w = next_pow2(out_width);
+      link_info.tex_h = next_pow2(out_height);
+
+      if (!chain->set_pass_size(i, link_info.tex_w, link_info.tex_h))
+      {
+         RARCH_ERR("[D3D]: Failed to set pass size.\n");
+         return;
+      }
+
+      current_width = out_width;
+      current_height = out_height;
+
+      link_info.pass = &shader.pass[i];
    }
 }
 
 bool D3DVideo::init_chain(const video_info_t *video_info)
 {
-   int ret = 0;
    // Setup information for first pass.
    LinkInfo link_info = {0};
 
    link_info.pass = &shader.pass[0];
    link_info.tex_w = link_info.tex_h = video_info->input_scale * RARCH_SCALE_BASE;
 
-   chain = std::unique_ptr<RenderChain>(
-         new RenderChain(
-            video_info,
-            dev, cgCtx,
-            link_info,
-            video_info->rgb32 ? RenderChain::ARGB : RenderChain::RGB565,
-            final_viewport));
+   delete chain;
+   chain = new RenderChain(
+         video_info,
+         dev, cgCtx,
+         final_viewport);
+
+   if (!chain->init(link_info,
+            video_info->rgb32 ? RenderChain::ARGB : RenderChain::RGB565))
+   {
+      RARCH_ERR("[D3D9]: Failed to init render chain.\n");
+      return false;
+   }
 
    unsigned current_width = link_info.tex_w;
    unsigned current_height = link_info.tex_h;
@@ -995,15 +1031,22 @@ bool D3DVideo::init_chain(const video_info_t *video_info)
       current_width = out_width;
       current_height = out_height;
 
-      chain->add_pass(link_info);
+      if (!chain->add_pass(link_info))
+      {
+         RARCH_ERR("[D3D9]: Failed to add pass.\n");
+         return false;
+      }
    }
 
-   init_luts();
-   ret = init_imports();
-
-   if (ret)
+   if (!init_luts())
    {
-      RARCH_ERR("[D3D9]: Render chain error.\n");
+      RARCH_ERR("[D3D9]: Failed to init LUTs.\n");
+      return false;
+   }
+
+   if (!init_imports())
+   {
+      RARCH_ERR("[D3D9]: Failed to init imports.\n");
       return false;
    }
 
@@ -1012,7 +1055,8 @@ bool D3DVideo::init_chain(const video_info_t *video_info)
 
 void D3DVideo::deinit_chain(void)
 {
-   chain.reset();
+   delete chain;
+   chain = NULL;
 }
 
 bool D3DVideo::init_font(void)
