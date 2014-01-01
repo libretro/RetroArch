@@ -150,7 +150,7 @@ int D3DVideo::init_base(const video_info_t *info)
    g_pD3D = D3DCREATE_CTX(D3D_SDK_VERSION);
    if (!g_pD3D)
    {
-      RARCH_ERR("Failed to create D3D9 interface!\n");
+      RARCH_ERR("Failed to create D3D interface!\n");
       return 1;
    }
 
@@ -162,7 +162,7 @@ int D3DVideo::init_base(const video_info_t *info)
                &d3dpp,
                &dev)))
    {
-      RARCH_WARN("[D3D9]: Failed to init device with hardware vertex processing (code: 0x%x). Trying to fall back to software vertex processing.\n",
+      RARCH_WARN("[D3D]: Failed to init device with hardware vertex processing (code: 0x%x). Trying to fall back to software vertex processing.\n",
                  (unsigned)Callback::d3d_err);
 
       if (FAILED(Callback::d3d_err = g_pD3D->CreateDevice(
@@ -244,13 +244,13 @@ int D3DVideo::init(const video_info_t *info)
                err = "Unknown";
          }
          // Try to recreate the device completely ...
-         RARCH_WARN("[D3D9]: Attempting to recover from dead state (%s).\n", err);
+         RARCH_WARN("[D3D]: Attempting to recover from dead state (%s).\n", err);
          deinit(); 
          g_pD3D->Release();
          g_pD3D = NULL;
          ret = init_base(info);
          if (!ret)
-            RARCH_LOG("[D3D9]: Recovered from dead state.\n");
+            RARCH_LOG("[D3D]: Recovered from dead state.\n");
          else
             return ret;
       }
@@ -284,7 +284,7 @@ int D3DVideo::init(const video_info_t *info)
 
 void D3DVideo::set_viewport(int x, int y, unsigned width, unsigned height)
 {
-   D3DVIEWPORT9 viewport;
+   D3DVIEWPORT viewport;
    viewport.X = max(x, 0); // D3D9 doesn't support negative X/Y viewports ...
    viewport.Y = max(y, 0);
    viewport.Width = width;
@@ -479,7 +479,7 @@ D3DVideo::D3DVideo(const video_info_t *info, const input_driver_t **input,
 
    unsigned full_x = (windowed_full || info->width  == 0) ? (mon_rect.right  - mon_rect.left) : info->width;
    unsigned full_y = (windowed_full || info->height == 0) ? (mon_rect.bottom - mon_rect.top)  : info->height;
-   RARCH_LOG("[D3D9]: Monitor size: %dx%d.\n", (int)(mon_rect.right  - mon_rect.left), (int)(mon_rect.bottom - mon_rect.top));
+   RARCH_LOG("[D3D]: Monitor size: %dx%d.\n", (int)(mon_rect.right  - mon_rect.left), (int)(mon_rect.bottom - mon_rect.top));
 
    screen_width  = info->fullscreen ? full_x : info->width;
    screen_height = info->fullscreen ? full_y : info->height;
@@ -547,7 +547,7 @@ D3DVideo::D3DVideo(const video_info_t *info, const input_driver_t **input,
       *input_data = Callback::dinput;
    }
 
-   RARCH_LOG("[D3D9]: Init complete.\n");
+   RARCH_LOG("[D3D]: Init complete.\n");
 }
 
 void D3DVideo::deinit(void)
@@ -602,7 +602,7 @@ bool D3DVideo::restore(void)
    needs_restore = init(&video_info);
 
    if (needs_restore)
-      RARCH_ERR("[D3D9]: Restore error.\n");
+      RARCH_ERR("[D3D]: Restore error.\n");
 
    return !needs_restore;
 }
@@ -622,7 +622,7 @@ bool D3DVideo::frame(const void *frame,
 
    if (needs_restore && !restore())
    {
-      RARCH_ERR("[D3D9]: Failed to restore.\n");
+      RARCH_ERR("[D3D]: Failed to restore.\n");
       return false;
    }
 
@@ -659,7 +659,7 @@ bool D3DVideo::frame(const void *frame,
 
    if (!chain->render(frame, width, height, pitch, rotation))
    {
-      RARCH_ERR("[D3D9]: Failed to render scene.\n");
+      RARCH_ERR("[D3D]: Failed to render scene.\n");
       return false;
    }
 
@@ -1062,7 +1062,7 @@ void D3DVideo::resize(unsigned new_width, unsigned new_height)
    if (!dev)
       return;
 
-   RARCH_LOG("[D3D9]: Resize %ux%u.\n", new_width, new_height);
+   RARCH_LOG("[D3D]: Resize %ux%u.\n", new_width, new_height);
 
    if (new_width != video_info.width || new_height != video_info.height)
    {
@@ -1089,7 +1089,7 @@ bool D3DVideo::overlay_load(const texture_image *images, unsigned num_images)
                   D3DPOOL_MANAGED,
                   &overlay.tex, NULL)))
       {
-         RARCH_ERR("[D3D9]: Failed to create overlay texture\n");
+         RARCH_ERR("[D3D]: Failed to create overlay texture\n");
          return false;
       }
 
@@ -1276,7 +1276,7 @@ void D3DVideo::set_rgui_texture_frame(const void *frame,
                   D3DPOOL_MANAGED,
                   &rgui.tex, NULL)))
       {
-         RARCH_ERR("[D3D9]: Failed to create rgui texture\n");
+         RARCH_ERR("[D3D]: Failed to create rgui texture\n");
          return;
       }
       rgui.tex_w = width;
