@@ -347,6 +347,12 @@ static bool default_block_config_read = true;
 static bool default_block_config_read = false;
 #endif
 
+#ifdef RARCH_CONSOLE
+static bool default_core_specific_config = true;
+#else
+static bool default_core_specific_config = false;
+#endif
+
 #if defined(ANDROID)
 static const char *default_libretro_info_path = "/data/data/com.retroarch/info/";
 #elif defined(__QNX__)

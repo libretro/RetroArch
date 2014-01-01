@@ -383,6 +383,8 @@ void config_set_defaults(void)
    g_settings.video.msg_pos_y = 0.90f;
    g_settings.video.aspect_ratio = -1.0f;
 
+   g_settings.core_specific_config = default_core_specific_config;
+
    // g_extern
    strlcpy(g_extern.savefile_dir, default_paths.sram_dir, sizeof(g_extern.savefile_dir));
    g_extern.console.screen.gamma_correction = DEFAULT_GAMMA;
@@ -442,6 +444,36 @@ void config_load(void)
    {
       config_set_defaults();
       parse_config_file();
+   }
+
+   if (!*g_extern.original_config_path)
+   {
+      path_resolve_realpath(g_extern.config_path, sizeof(g_extern.config_path));
+      strlcpy(g_extern.original_config_path, g_extern.config_path, sizeof(g_extern.original_config_path));
+
+      if (g_settings.core_specific_config && *g_settings.libretro)
+      {
+         char new_path[PATH_MAX];
+
+         if (*g_settings.rgui_config_directory)
+         {
+            path_resolve_realpath(g_settings.rgui_config_directory, sizeof(g_settings.rgui_config_directory));
+            strlcpy(new_path, g_settings.rgui_config_directory, sizeof(new_path));
+         }
+         else
+         {
+            strlcpy(new_path, g_extern.config_path, sizeof(new_path));
+            path_basedir(new_path);
+         }
+
+         fill_pathname_dir(new_path, g_settings.libretro, ".cfg", sizeof(new_path));
+         strlcpy(g_extern.config_path, new_path, sizeof(g_extern.config_path));
+
+         RARCH_LOG("Loading core-specific config from: %s.\n", g_extern.config_path);
+
+         if (!config_load_file(g_extern.config_path))
+            RARCH_WARN("Core-specific config not found, reusing last config.\n");
+      }
    }
 }
 
@@ -930,6 +962,8 @@ bool config_load_file(const char *path)
       *g_settings.system_directory = '\0';
 
    config_read_keybinds_conf(conf);
+
+   CONFIG_GET_BOOL(core_specific_config, "core_specific_config");
 
    config_file_free(conf);
    return true;

@@ -301,6 +301,8 @@ struct settings
    bool rgui_show_start_screen;
 #endif
    bool fps_show;
+
+   bool core_specific_config;
 };
 
 enum rarch_game_type
@@ -650,6 +652,8 @@ struct global
 
    bool libretro_no_rom;
    bool libretro_dummy;
+
+   char original_config_path[PATH_MAX];
 };
 
 struct rarch_main_wrap
