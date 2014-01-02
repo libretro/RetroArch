@@ -49,21 +49,21 @@
               android:summary="@string/retroarch_guide_desc">
                 <intent
                     android:action="android.intent.action.VIEW"
-                    android:data="http://www.libretro.com/documents/retroarch-manual.pdf" />
-            </Preference>
-           <Preference android:title="@string/cores_guide"
-              android:summary="@string/cores_guide_desc">
-                <intent
-                    android:action="android.intent.action.VIEW"
-                    android:data="http://www.libretro.com/documents/retroarch-cores-manual.pdf" />
+                    android:data="https://github.com/libretro/libretro.github.com/blob/master/tex/retroarch-enduserguide.pdf" />
             </Preference>
         </PreferenceCategory>
         <PreferenceCategory android:title="@string/development">
+           <Preference android:title="@string/libretro_guide"
+              android:summary="@string/libretro_guide_desc">
+                <intent
+                    android:action="android.intent.action.VIEW"
+                    android:data="https://github.com/libretro/libretro.github.com/blob/master/tex/retroarch-enduserguide.pdf" />
+            </Preference>
            <Preference android:title="@string/overlay_guide"
               android:summary="@string/overlay_guide_desc">
                 <intent
                     android:action="android.intent.action.VIEW"
-                    android:data="http://www.libretro.com/documents/overlay.pdf" />
+                    android:data="https://github.com/libretro/libretro.github.com/blob/master/documents/overlay.pdf" />
             </Preference>
         </PreferenceCategory>
     </PreferenceScreen>
