@@ -290,7 +290,7 @@ void main_exit(args_type() args)
       config_save_file(g_extern.config_path);
 
       // Flush out the core specific config.
-      if (*g_extern.core_specific_config_path)
+      if (*g_extern.core_specific_config_path && g_settings.core_specific_config)
          config_save_file(g_extern.core_specific_config_path);
    }
 #endif

@@ -467,15 +467,19 @@ static void config_load_core_specific(void)
       if (!config_load_file(g_extern.core_specific_config_path, true))
          RARCH_WARN("Core-specific config not found, reusing last config.\n");
 
-      // don't have the core config file overwrite the libretro path
+      // Force some parameters which are implied when using core specific configs.
+
+      // Don't have the core config file overwrite the libretro path.
       strlcpy(g_settings.libretro, tmp, sizeof(g_settings.libretro));
+      // This must be true for core specific configs.
+      g_settings.core_specific_config = true;
    }
 }
 
 void config_load(void)
 {
    // Flush out per-core configs before loading a new config.
-   if (*g_extern.core_specific_config_path && g_extern.config_save_on_exit)
+   if (*g_extern.core_specific_config_path && g_extern.config_save_on_exit && g_settings.core_specific_config)
       config_save_file(g_extern.core_specific_config_path);
 
    if (!g_extern.block_config_read)
