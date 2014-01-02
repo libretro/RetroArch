@@ -383,6 +383,8 @@ void config_set_defaults(void)
    g_settings.video.msg_pos_y = 0.90f;
    g_settings.video.aspect_ratio = -1.0f;
 
+   g_settings.core_specific_config = default_core_specific_config;
+
    // g_extern
    strlcpy(g_extern.savefile_dir, default_paths.sram_dir, sizeof(g_extern.savefile_dir));
    g_extern.console.screen.gamma_correction = DEFAULT_GAMMA;
@@ -442,6 +444,44 @@ void config_load(void)
    {
       config_set_defaults();
       parse_config_file();
+   }
+
+   if (!*g_extern.original_config_path)
+   {
+      // save the original path for saving. a copy of the last core's settings is always saved to the original config file path for future launches
+      path_resolve_realpath(g_extern.config_path, sizeof(g_extern.config_path));
+      strlcpy(g_extern.original_config_path, g_extern.config_path, sizeof(g_extern.original_config_path));
+   }
+   
+   if (*g_settings.libretro)
+   {
+      if (*g_settings.rgui_config_directory)
+      {
+         path_resolve_realpath(g_settings.rgui_config_directory, sizeof(g_settings.rgui_config_directory));
+         strlcpy(g_extern.core_specific_config_path, g_settings.rgui_config_directory, sizeof(g_extern.core_specific_config_path));
+      }
+      else
+      {
+         // use original config file's directory
+         strlcpy(g_extern.core_specific_config_path, g_extern.original_config_path, sizeof(g_extern.core_specific_config_path));
+         path_basedir(g_extern.core_specific_config_path);
+      }
+
+      fill_pathname_dir(g_extern.core_specific_config_path, g_settings.libretro, ".cfg", sizeof(g_extern.core_specific_config_path));
+
+      if (g_settings.core_specific_config)
+      {
+         char tmp[PATH_MAX];
+         strlcpy(tmp, g_settings.libretro, sizeof(tmp));
+         strlcpy(g_extern.config_path, g_extern.core_specific_config_path, sizeof(g_extern.config_path));
+         RARCH_LOG("Loading core-specific config from: %s.\n", g_extern.config_path);
+
+         if (!config_load_file(g_extern.config_path))
+            RARCH_WARN("Core-specific config not found, reusing last config.\n");
+
+         // don't have the core config file overwrite the libretro path
+         strlcpy(g_settings.libretro, tmp, sizeof(g_settings.libretro));
+      }
    }
 }
 
@@ -931,6 +971,8 @@ bool config_load_file(const char *path)
 
    config_read_keybinds_conf(conf);
 
+   CONFIG_GET_BOOL(core_specific_config, "core_specific_config");
+
    config_file_free(conf);
    return true;
 }
@@ -1242,6 +1284,8 @@ bool config_save_file(const char *path)
 
    for (i = 0; i < MAX_PLAYERS; i++)
       save_keybinds_player(conf, i);
+
+   config_set_bool(conf, "core_specific_config", g_settings.core_specific_config);
 
    bool ret = config_file_write(conf, path);
    config_file_free(conf);
