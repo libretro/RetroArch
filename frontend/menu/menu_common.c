@@ -1515,6 +1515,7 @@ bool menu_replace_config(const char *path)
 
    // Load dummy core.
    *g_extern.fullpath = '\0';
+   *g_extern.original_config_path = '\0';
    *g_settings.libretro = '\0'; // Load core in new config.
    g_extern.lifecycle_state |= (1ULL << MODE_LOAD_GAME);
    rgui->load_no_rom = false;

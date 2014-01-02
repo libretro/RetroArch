@@ -448,6 +448,7 @@ void config_load(void)
 
    if (!*g_extern.original_config_path)
    {
+      // save the original path for saving. a copy of the last core's settings is always saved to the original config file path for future launches
       path_resolve_realpath(g_extern.config_path, sizeof(g_extern.config_path));
       strlcpy(g_extern.original_config_path, g_extern.config_path, sizeof(g_extern.original_config_path));
    }
@@ -461,6 +462,7 @@ void config_load(void)
       }
       else
       {
+         // use original config file's directory
          strlcpy(g_extern.core_specific_config_path, g_extern.original_config_path, sizeof(g_extern.core_specific_config_path));
          path_basedir(g_extern.core_specific_config_path);
       }
@@ -477,7 +479,7 @@ void config_load(void)
          if (!config_load_file(g_extern.config_path))
             RARCH_WARN("Core-specific config not found, reusing last config.\n");
 
-         // make sure we don't accidentally switch this
+         // don't have the core config file overwrite the libretro path
          strlcpy(g_settings.libretro, tmp, sizeof(g_settings.libretro));
       }
    }

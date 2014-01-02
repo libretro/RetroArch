@@ -444,6 +444,7 @@ int menu_set_settings(void *data, unsigned setting, unsigned action)
             g_extern.config_save_on_exit = true;
          break;
       case RGUI_SETTINGS_PER_CORE_CONFIG:
+         g_extern.block_config_read = false;
          if (action == RGUI_ACTION_OK || action == RGUI_ACTION_RIGHT 
                || action == RGUI_ACTION_LEFT)
             g_settings.core_specific_config = !g_settings.core_specific_config;
