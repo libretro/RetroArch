@@ -379,7 +379,6 @@ struct global
    char savefile_name_asrm[PATH_MAX];
    char savefile_name_bsrm[PATH_MAX];
    char savestate_name[PATH_MAX];
-   char xml_name[PATH_MAX];
 
    // Used on reentrancy to use a savestate dir.
    char savefile_dir[PATH_MAX];
