@@ -34,6 +34,7 @@ typedef struct input_overlay_state
 {
    uint64_t buttons;   // This is a bitmask of (1 << key_bind_id).
    int16_t analog[4];  // Left X, Left Y, Right X, Right Y
+   bool keys[RETROK_LAST];
 } input_overlay_state_t;
 
 input_overlay_t *input_overlay_new(const char *overlay);

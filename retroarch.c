@@ -512,6 +512,9 @@ static inline void input_poll_overlay(void)
       input_overlay_poll(driver.overlay, &polled_data, x, y);
 
       driver.overlay_state.buttons |= polled_data.buttons;
+      
+      for (j = 0; j < RETROK_LAST; j ++)
+         driver.overlay_state.keys[j] |= polled_data.keys[j];
 
       // Fingers pressed later take prio and matched up with overlay poll priorities.
       for (j = 0; j < 4; j++)
@@ -589,6 +592,8 @@ static int16_t input_state(unsigned port, unsigned device, unsigned index, unsig
 #ifdef HAVE_OVERLAY
    if (device == RETRO_DEVICE_JOYPAD && port == 0)
       res |= driver.overlay_state.buttons & (UINT64_C(1) << id) ? 1 : 0;
+   else if (device == RETRO_DEVICE_KEYBOARD && port == 0)
+      res |= driver.overlay_state.keys[(id < RETROK_LAST) ? id : 0];
    else if (device == RETRO_DEVICE_ANALOG && port == 0)
    {
       unsigned base = (index == RETRO_DEVICE_INDEX_ANALOG_RIGHT) ? 2 : 0;
