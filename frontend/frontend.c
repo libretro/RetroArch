@@ -285,12 +285,13 @@ void main_exit(args_type() args)
 
    if (g_extern.config_save_on_exit && *g_extern.config_path)
    {
+      // save last core-specific config to the default config location, needed on
+      // consoles for core switching and reusing last good config for new cores.
       config_save_file(g_extern.config_path);
 
-      // save last core-specific config to the default config location, needed on
-      // consoles for core switching and reusing last good config for new cores
-      if (*g_extern.original_config_path && strcmp(g_extern.config_path, g_extern.original_config_path) != 0)
-         config_save_file(g_extern.original_config_path);
+      // Flush out the core specific config.
+      if (*g_extern.core_specific_config_path && g_settings.core_specific_config)
+         config_save_file(g_extern.core_specific_config_path);
    }
 #endif
 
@@ -373,7 +374,7 @@ returntype main_entry(signature())
          menu_rom_history_push_current();
    }
 
-   while(!main_entry_iterate(signature_expand(), args));
+   while (!main_entry_iterate(signature_expand(), args));
 #else
    while ((g_extern.is_paused && !g_extern.is_oneshot) ? rarch_main_idle_iterate() : rarch_main_iterate());
 #endif

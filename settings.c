@@ -438,51 +438,58 @@ void config_set_defaults(void)
 
 static void parse_config_file(void);
 
+static void config_load_core_specific(void)
+{
+   *g_extern.core_specific_config_path = '\0';
+
+   if (!*g_settings.libretro || g_extern.libretro_dummy)
+      return;
+
+   if (*g_settings.rgui_config_directory)
+   {
+      path_resolve_realpath(g_settings.rgui_config_directory, sizeof(g_settings.rgui_config_directory));
+      strlcpy(g_extern.core_specific_config_path, g_settings.rgui_config_directory, sizeof(g_extern.core_specific_config_path));
+   }
+   else
+   {
+      // Use original config file's directory as a fallback.
+      fill_pathname_basedir(g_extern.core_specific_config_path, g_extern.config_path, sizeof(g_extern.core_specific_config_path));
+   }
+
+   fill_pathname_dir(g_extern.core_specific_config_path, g_settings.libretro, ".cfg", sizeof(g_extern.core_specific_config_path));
+
+   if (g_settings.core_specific_config)
+   {
+      char tmp[PATH_MAX];
+      strlcpy(tmp, g_settings.libretro, sizeof(tmp));
+      RARCH_LOG("Loading core-specific config from: %s.\n", g_extern.core_specific_config_path);
+
+      if (!config_load_file(g_extern.core_specific_config_path, true))
+         RARCH_WARN("Core-specific config not found, reusing last config.\n");
+
+      // Force some parameters which are implied when using core specific configs.
+
+      // Don't have the core config file overwrite the libretro path.
+      strlcpy(g_settings.libretro, tmp, sizeof(g_settings.libretro));
+      // This must be true for core specific configs.
+      g_settings.core_specific_config = true;
+   }
+}
+
 void config_load(void)
 {
+   // Flush out per-core configs before loading a new config.
+   if (*g_extern.core_specific_config_path && g_extern.config_save_on_exit && g_settings.core_specific_config)
+      config_save_file(g_extern.core_specific_config_path);
+
    if (!g_extern.block_config_read)
    {
       config_set_defaults();
       parse_config_file();
    }
 
-   if (!*g_extern.original_config_path)
-   {
-      // save the original path for saving. a copy of the last core's settings is always saved to the original config file path for future launches
-      path_resolve_realpath(g_extern.config_path, sizeof(g_extern.config_path));
-      strlcpy(g_extern.original_config_path, g_extern.config_path, sizeof(g_extern.original_config_path));
-   }
-   
-   if (*g_settings.libretro)
-   {
-      if (*g_settings.rgui_config_directory)
-      {
-         path_resolve_realpath(g_settings.rgui_config_directory, sizeof(g_settings.rgui_config_directory));
-         strlcpy(g_extern.core_specific_config_path, g_settings.rgui_config_directory, sizeof(g_extern.core_specific_config_path));
-      }
-      else
-      {
-         // use original config file's directory
-         strlcpy(g_extern.core_specific_config_path, g_extern.original_config_path, sizeof(g_extern.core_specific_config_path));
-         path_basedir(g_extern.core_specific_config_path);
-      }
-
-      fill_pathname_dir(g_extern.core_specific_config_path, g_settings.libretro, ".cfg", sizeof(g_extern.core_specific_config_path));
-
-      if (g_settings.core_specific_config)
-      {
-         char tmp[PATH_MAX];
-         strlcpy(tmp, g_settings.libretro, sizeof(tmp));
-         strlcpy(g_extern.config_path, g_extern.core_specific_config_path, sizeof(g_extern.config_path));
-         RARCH_LOG("Loading core-specific config from: %s.\n", g_extern.config_path);
-
-         if (!config_load_file(g_extern.config_path))
-            RARCH_WARN("Core-specific config not found, reusing last config.\n");
-
-         // don't have the core config file overwrite the libretro path
-         strlcpy(g_settings.libretro, tmp, sizeof(g_settings.libretro));
-      }
-   }
+   // Per-core config handling.
+   config_load_core_specific();
 }
 
 static config_file_t *open_default_config_file(void)
@@ -614,12 +621,12 @@ static void parse_config_file(void)
    if (*g_extern.config_path)
    {
       RARCH_LOG("Loading config from: %s.\n", g_extern.config_path);
-      ret = config_load_file(g_extern.config_path);
+      ret = config_load_file(g_extern.config_path, false);
    }
    else
    {
       RARCH_LOG("Loading default config.\n");
-      ret = config_load_file(NULL);
+      ret = config_load_file(NULL, false);
       if (*g_extern.config_path)
          RARCH_LOG("Found default config: %s.\n", g_extern.config_path);
    }
@@ -633,7 +640,7 @@ static void parse_config_file(void)
    }
 }
 
-bool config_load_file(const char *path)
+bool config_load_file(const char *path, bool set_defaults)
 {
    unsigned i;
    config_file_t *conf = NULL;
@@ -649,6 +656,9 @@ bool config_load_file(const char *path)
 
    if (conf == NULL)
       return true;
+
+   if (set_defaults)
+      config_set_defaults();
 
    char *save;
    char tmp_append_path[PATH_MAX]; // Don't destroy append_config_path.

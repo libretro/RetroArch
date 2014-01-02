@@ -444,17 +444,11 @@ int menu_set_settings(void *data, unsigned setting, unsigned action)
             g_extern.config_save_on_exit = true;
          break;
       case RGUI_SETTINGS_PER_CORE_CONFIG:
-         g_extern.block_config_read = false;
          if (action == RGUI_ACTION_OK || action == RGUI_ACTION_RIGHT 
                || action == RGUI_ACTION_LEFT)
             g_settings.core_specific_config = !g_settings.core_specific_config;
          else if (action == RGUI_ACTION_START)
             g_settings.core_specific_config = default_core_specific_config;
-
-         if (g_settings.core_specific_config && *g_extern.core_specific_config_path)
-            strlcpy(g_extern.config_path, g_extern.core_specific_config_path, sizeof(g_extern.config_path));
-         else if (!g_settings.core_specific_config && *g_extern.original_config_path)
-            strlcpy(g_extern.config_path, g_extern.original_config_path, sizeof(g_extern.config_path));
          break;
 #if defined(HAVE_THREADS)
       case RGUI_SETTINGS_SRAM_AUTOSAVE:
