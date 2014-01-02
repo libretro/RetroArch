@@ -363,6 +363,8 @@ struct global
 #ifdef HAVE_RMENU
    char menu_texture_path[PATH_MAX];
 #endif
+
+   // Config associated with global "default" config.
    char config_path[PATH_MAX];
    char append_config_path[PATH_MAX];
    char input_config_path[PATH_MAX];
@@ -652,7 +654,7 @@ struct global
    bool libretro_no_rom;
    bool libretro_dummy;
 
-   char original_config_path[PATH_MAX];
+   // Config file associated with per-core configs.
    char core_specific_config_path[PATH_MAX];
 };
 
@@ -684,7 +686,7 @@ const char *config_get_default_audio(void);
 const char *config_get_default_input(void);
 
 #include "conf/config_file.h"
-bool config_load_file(const char *path);
+bool config_load_file(const char *path, bool set_defaults);
 bool config_save_file(const char *path);
 bool config_read_keybinds(const char *path);
 
