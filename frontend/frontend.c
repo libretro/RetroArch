@@ -284,7 +284,14 @@ void main_exit(args_type() args)
    menu_free();
 
    if (g_extern.config_save_on_exit && *g_extern.config_path)
+   {
       config_save_file(g_extern.config_path);
+
+      // save last core-specific config to the default config location, needed on
+      // consoles for core switching and reusing last good config for new cores
+      if (*g_extern.original_config_path && strcmp(g_extern.config_path, g_extern.original_config_path) != 0)
+         config_save_file(g_extern.original_config_path);
+   }
 #endif
 
    rarch_main_deinit();

@@ -1515,6 +1515,7 @@ bool menu_replace_config(const char *path)
 
    // Load dummy core.
    *g_extern.fullpath = '\0';
+   *g_extern.original_config_path = '\0';
    *g_settings.libretro = '\0'; // Load core in new config.
    g_extern.lifecycle_state |= (1ULL << MODE_LOAD_GAME);
    rgui->load_no_rom = false;
@@ -1924,6 +1925,7 @@ void menu_populate_entries(void *data, unsigned menu_type)
          file_list_push(rgui->selection_buf, "GPU Screenshots", RGUI_SETTINGS_GPU_SCREENSHOT, 0);
 #endif
          file_list_push(rgui->selection_buf, "Config Save On Exit", RGUI_SETTINGS_CONFIG_SAVE_ON_EXIT, 0);
+         file_list_push(rgui->selection_buf, "Per-Core Configs", RGUI_SETTINGS_PER_CORE_CONFIG, 0);
 #if defined(HAVE_THREADS)
          file_list_push(rgui->selection_buf, "SRAM Autosave", RGUI_SETTINGS_SRAM_AUTOSAVE, 0);
 #endif
