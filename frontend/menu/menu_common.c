@@ -2048,7 +2048,7 @@ void menu_populate_entries(void *data, unsigned menu_type)
 
          }
 #ifndef HAVE_DYNAMIC
-         file_list_push(rgui->selection_buf, "Restart Retroarch", RGUI_SETTINGS_RESTART_EMULATOR, 0);
+         file_list_push(rgui->selection_buf, "Restart RetroArch", RGUI_SETTINGS_RESTART_EMULATOR, 0);
 #endif
          file_list_push(rgui->selection_buf, "RetroArch Config", RGUI_SETTINGS_CONFIG, 0);
          file_list_push(rgui->selection_buf, "Save New Config", RGUI_SETTINGS_SAVE_CONFIG, 0);
