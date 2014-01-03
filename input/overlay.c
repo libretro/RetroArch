@@ -925,7 +925,7 @@ void input_overlay_poll(input_overlay_t *ol, input_overlay_state_t *out, int16_t
       else if (desc->type == OVERLAY_TYPE_KEYBOARD)
       {
          if (desc->key_mask < RETROK_LAST)
-            out->keys[desc->key_mask] = 1;
+            OVERLAY_SET_KEY(out, desc->key_mask);
       }
       else
       {
