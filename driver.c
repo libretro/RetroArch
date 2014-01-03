@@ -1,5 +1,5 @@
 /*  RetroArch - A frontend for libretro.
- *  Copyright (C) 2010-2013 - Hans-Kristian Arntzen
+ *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  * 
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -105,7 +105,7 @@ static const video_driver_t *video_drivers[] = {
    &video_xdk_d3d,
 #endif
 #if defined(HAVE_WIN32_D3D9)
-   &video_d3d9,
+   &video_d3d,
 #endif
 #ifdef SN_TARGET_PSP2
    &video_vita,

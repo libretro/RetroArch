@@ -1,5 +1,5 @@
 /*  RetroArch - A frontend for libretro.
- *  Copyright (C) 2010-2013 - Hans-Kristian Arntzen
+ *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  * 
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -362,18 +362,6 @@ void save_ram_file(const char *path, int type)
    }
 }
 
-static char *load_xml_map(const char *path)
-{
-   char *xml_buf = NULL;
-   if (*path)
-   {
-      if (read_file_string(path, &xml_buf))
-         RARCH_LOG("Found XML memory map in \"%s\"\n", path);
-   }
-
-   return xml_buf;
-}
-
 #define MAX_ROMS 4
 
 static bool load_roms(unsigned rom_type, const char **rom_paths, size_t roms)
@@ -388,9 +376,8 @@ static bool load_roms(unsigned rom_type, const char **rom_paths, size_t roms)
       return false;
 
    void *rom_buf[MAX_ROMS] = {NULL};
-   ssize_t rom_len[MAX_ROMS] = {0};
+   long rom_len[MAX_ROMS] = {0};
    struct retro_game_info info[MAX_ROMS] = {{NULL}};
-   char *xml_buf = load_xml_map(g_extern.xml_name);
 
    if (!g_extern.system.info.need_fullpath)
    {
@@ -410,7 +397,7 @@ static bool load_roms(unsigned rom_type, const char **rom_paths, size_t roms)
    info[0].path = rom_paths[0];
    info[0].data = rom_buf[0];
    info[0].size = rom_len[0];
-   info[0].meta = xml_buf;
+   info[0].meta = NULL; // Not relevant at this moment.
 
    for (i = 1; i < roms; i++)
    {
@@ -426,6 +413,7 @@ static bool load_roms(unsigned rom_type, const char **rom_paths, size_t roms)
       info[i].path = rom_paths[i];
       info[i].data = rom_buf[i];
       info[i].size = rom_len[i];
+      info[i].meta = NULL;
    }
 
    if (rom_type == 0)
@@ -439,8 +427,6 @@ static bool load_roms(unsigned rom_type, const char **rom_paths, size_t roms)
 end:
    for (i = 0; i < MAX_ROMS; i++)
       free(rom_buf[i]);
-   free(xml_buf);
-
    return ret;
 }
 

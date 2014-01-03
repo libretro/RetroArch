@@ -1,6 +1,6 @@
 /*  RetroArch - A frontend for libretro.
- *  Copyright (C) 2010-2013 - Hans-Kristian Arntzen
- *  Copyright (C) 2011-2013 - Daniel De Matteis
+ *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
+ *  Copyright (C) 2011-2014 - Daniel De Matteis
  * 
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -114,6 +114,7 @@ typedef enum
    RGUI_SETTINGS_REWIND_ENABLE,
    RGUI_SETTINGS_REWIND_GRANULARITY,
    RGUI_SETTINGS_CONFIG_SAVE_ON_EXIT,
+   RGUI_SETTINGS_PER_CORE_CONFIG,
    RGUI_SETTINGS_SRAM_AUTOSAVE,
    RGUI_SETTINGS_SAVESTATE_SAVE,
    RGUI_SETTINGS_SAVESTATE_LOAD,

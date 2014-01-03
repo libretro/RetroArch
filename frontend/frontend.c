@@ -1,7 +1,7 @@
 /* RetroArch - A frontend for libretro.
- * Copyright (C) 2010-2013 - Hans-Kristian Arntzen
- * Copyright (C) 2011-2013 - Daniel De Matteis
- * Copyright (C) 2012-2013 - Michael Lelli
+ * Copyright (C) 2010-2014 - Hans-Kristian Arntzen
+ * Copyright (C) 2011-2014 - Daniel De Matteis
+ * Copyright (C) 2012-2014 - Michael Lelli
  *
  * RetroArch is free software: you can redistribute it and/or modify it under the terms
  * of the GNU General Public License as published by the Free Software Found-
@@ -284,7 +284,15 @@ void main_exit(args_type() args)
    menu_free();
 
    if (g_extern.config_save_on_exit && *g_extern.config_path)
+   {
+      // save last core-specific config to the default config location, needed on
+      // consoles for core switching and reusing last good config for new cores.
       config_save_file(g_extern.config_path);
+
+      // Flush out the core specific config.
+      if (*g_extern.core_specific_config_path && g_settings.core_specific_config)
+         config_save_file(g_extern.core_specific_config_path);
+   }
 #endif
 
    rarch_main_deinit();
@@ -366,7 +374,7 @@ returntype main_entry(signature())
          menu_rom_history_push_current();
    }
 
-   while(!main_entry_iterate(signature_expand(), args));
+   while (!main_entry_iterate(signature_expand(), args));
 #else
    while ((g_extern.is_paused && !g_extern.is_oneshot) ? rarch_main_idle_iterate() : rarch_main_iterate());
 #endif

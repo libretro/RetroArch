@@ -1,5 +1,5 @@
 /*  RetroArch - A frontend for libretro.
- *  Copyright (C) 2010-2013 - Hans-Kristian Arntzen
+ *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  * 
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -231,5 +231,11 @@ bool texture_image_load(const char *path, struct texture_image *out_img)
       return texture_image_load_argb_shift(path, out_img, 24, 0, 8, 16);
    else
       return texture_image_load_argb_shift(path, out_img, 24, 16, 8, 0);
+}
+
+void texture_image_free(struct texture_image *img)
+{
+   free(img->pixels);
+   memset(img, 0, sizeof(*img));
 }
 

@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
- *  Copyright (C) 2010-2013 - Hans-Kristian Arntzen
- *  Copyright (C) 2011-2013 - Daniel De Matteis
- *  Copyright (C) 2012      - OV2
+ *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
+ *  Copyright (C) 2011-2014 - Daniel De Matteis
+ *  Copyright (C) 2012-2014 - OV2
  * 
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -19,39 +19,24 @@
 // It is written in C++11 (should be compat with MSVC 2010).
 // Might get rewritten in C99 if I have lots of time to burn.
 
+#include "d3d9.hpp"
+#include "render_chain.hpp"
+#include "../../file.h"
+#include "../context/win32_common.h"
+#include <algorithm>
+
 #ifdef _MSC_VER
+#ifndef _XBOX
 #pragma comment( lib, "d3d9" )
 #pragma comment( lib, "d3dx9" )
 #pragma comment( lib, "cgd3d9" )
 #pragma comment( lib, "dxguid" )
 #endif
+#endif
 
-#include "d3d9.hpp"
-#include "render_chain.hpp"
-#include "../../file.h"
-#include "../gfx_common.h"
-#include "../../compat/posix_string.h"
-#include "../../performance.h"
-#include "../context/win32_common.h"
-
-#include <iostream>
-#include <exception>
-#include <stdexcept>
-#include <cstring>
-#include <stdio.h>
-#include <stdint.h>
-#include <iostream>
-#include <cmath>
-#include <algorithm>
-
-#undef min
-#undef max
-
+#ifndef _XBOX
 #define IDI_ICON 1
 #define MAX_MONITORS 9
-
-/* TODO: Make Cg optional - same as in the GL driver where we can either bake in
- * Cg or HLSL shader support */
 
 namespace Monitor
 {
@@ -61,15 +46,18 @@ namespace Monitor
    static unsigned cur_mon_id;
 }
 
-#ifdef __cplusplus
-extern "C"
-#endif
-bool dinput_handle_message(void *dinput, UINT message, WPARAM wParam, LPARAM lParam);
+static BOOL CALLBACK monitor_enum_proc(HMONITOR hMonitor, HDC hdcMonitor, LPRECT lprcMonitor, LPARAM dwData)
+{
+   Monitor::all_hms[Monitor::num_mons++] = hMonitor;
+   return TRUE;
+}
+
+extern "C" bool dinput_handle_message(void *dinput, UINT message, WPARAM wParam, LPARAM lParam);
 
 namespace Callback
 {
    static bool quit = false;
-   static D3DVideo *curD3D = nullptr;
+   static D3DVideo *curD3D = NULL;
    static HRESULT d3d_err;
    static void *dinput;
 
@@ -110,14 +98,62 @@ namespace Callback
    }
 }
 
-void D3DVideo::init_base(const video_info_t &info)
+void D3DVideo::show_cursor(bool show)
+{
+   if (show)
+      while (ShowCursor(TRUE) < 0);
+   else
+      while (ShowCursor(FALSE) >= 0);
+}
+
+// Multi-monitor support.
+RECT D3DVideo::monitor_rect(void)
+{
+   Monitor::num_mons = 0;
+   EnumDisplayMonitors(NULL, NULL, monitor_enum_proc, 0);
+
+   if (!Monitor::last_hm)
+      Monitor::last_hm = MonitorFromWindow(GetDesktopWindow(), MONITOR_DEFAULTTONEAREST);
+   HMONITOR hm_to_use = Monitor::last_hm;
+
+   unsigned fs_monitor = g_settings.video.monitor_index;
+   if (fs_monitor && fs_monitor <= Monitor::num_mons && Monitor::all_hms[fs_monitor - 1])
+   {
+      hm_to_use = Monitor::all_hms[fs_monitor - 1];
+      Monitor::cur_mon_id = fs_monitor - 1;
+   }
+   else
+   {
+      for (unsigned i = 0; i < Monitor::num_mons; i++)
+      {
+         if (Monitor::all_hms[i] == hm_to_use)
+         {
+            Monitor::cur_mon_id = i;
+            break;
+         }
+      }
+   }
+
+   MONITORINFOEX current_mon;
+   memset(&current_mon, 0, sizeof(current_mon));
+   current_mon.cbSize = sizeof(MONITORINFOEX);
+   GetMonitorInfo(hm_to_use, (MONITORINFO*)&current_mon);
+
+   return current_mon.rcMonitor;
+}
+#endif
+
+bool D3DVideo::init_base(const video_info_t *info)
 {
    D3DPRESENT_PARAMETERS d3dpp;
-   make_d3dpp(info, d3dpp);
+   make_d3dpp(info, &d3dpp);
 
-   g_pD3D = Direct3DCreate9(D3D_SDK_VERSION);
+   g_pD3D = D3DCREATE_CTX(D3D_SDK_VERSION);
    if (!g_pD3D)
-      throw std::runtime_error("Failed to create D3D9 interface!");
+   {
+      RARCH_ERR("Failed to create D3D interface!\n");
+      return false;
+   }
 
    if (FAILED(Callback::d3d_err = g_pD3D->CreateDevice(
                Monitor::cur_mon_id,
@@ -127,7 +163,7 @@ void D3DVideo::init_base(const video_info_t &info)
                &d3dpp,
                &dev)))
    {
-      RARCH_WARN("[D3D9]: Failed to init device with hardware vertex processing (code: 0x%x). Trying to fall back to software vertex processing.\n",
+      RARCH_WARN("[D3D]: Failed to init device with hardware vertex processing (code: 0x%x). Trying to fall back to software vertex processing.\n",
                  (unsigned)Callback::d3d_err);
 
       if (FAILED(Callback::d3d_err = g_pD3D->CreateDevice(
@@ -138,51 +174,55 @@ void D3DVideo::init_base(const video_info_t &info)
                   &d3dpp,
                   &dev)))
       {
-         throw std::runtime_error("Failed to init device");
+         RARCH_ERR("Failed to initialize device.\n");
+         return false;
       }
    }
+
+   return true;
 }
 
-void D3DVideo::make_d3dpp(const video_info_t &info, D3DPRESENT_PARAMETERS &d3dpp)
+void D3DVideo::make_d3dpp(const video_info_t *info, D3DPRESENT_PARAMETERS *d3dpp)
 {
-   std::memset(&d3dpp, 0, sizeof(d3dpp));
+   memset(d3dpp, 0, sizeof(*d3dpp));
 
-   d3dpp.Windowed = g_settings.video.windowed_fullscreen || !info.fullscreen;
+   d3dpp->Windowed = g_settings.video.windowed_fullscreen || !info->fullscreen;
 
-   if (info.vsync)
+   if (info->vsync)
    {
       switch (g_settings.video.swap_interval)
       {
          default:
-         case 1: d3dpp.PresentationInterval = D3DPRESENT_INTERVAL_ONE; break;
-         case 2: d3dpp.PresentationInterval = D3DPRESENT_INTERVAL_TWO; break;
-         case 3: d3dpp.PresentationInterval = D3DPRESENT_INTERVAL_THREE; break;
-         case 4: d3dpp.PresentationInterval = D3DPRESENT_INTERVAL_FOUR; break;
+         case 1: d3dpp->PresentationInterval = D3DPRESENT_INTERVAL_ONE; break;
+         case 2: d3dpp->PresentationInterval = D3DPRESENT_INTERVAL_TWO; break;
+         case 3: d3dpp->PresentationInterval = D3DPRESENT_INTERVAL_THREE; break;
+         case 4: d3dpp->PresentationInterval = D3DPRESENT_INTERVAL_FOUR; break;
       }
    }
    else
-      d3dpp.PresentationInterval = D3DPRESENT_INTERVAL_IMMEDIATE;
+      d3dpp->PresentationInterval = D3DPRESENT_INTERVAL_IMMEDIATE;
 
-   d3dpp.SwapEffect = D3DSWAPEFFECT_DISCARD;
-   d3dpp.hDeviceWindow = hWnd;
-   d3dpp.BackBufferCount = 2;
-   d3dpp.BackBufferFormat = !d3dpp.Windowed ? D3DFMT_X8R8G8B8 : D3DFMT_UNKNOWN;
+   d3dpp->SwapEffect = D3DSWAPEFFECT_DISCARD;
+   d3dpp->hDeviceWindow = hWnd;
+   d3dpp->BackBufferCount = 2;
+   d3dpp->BackBufferFormat = !d3dpp->Windowed ? D3DFMT_X8R8G8B8 : D3DFMT_UNKNOWN;
 
-   if (!d3dpp.Windowed)
+   if (!d3dpp->Windowed)
    {
-      d3dpp.BackBufferWidth = screen_width;
-      d3dpp.BackBufferHeight = screen_height;
+      d3dpp->BackBufferWidth = screen_width;
+      d3dpp->BackBufferHeight = screen_height;
    }
 }
 
-void D3DVideo::init(const video_info_t &info)
+bool D3DVideo::init(const video_info_t *info)
 {
+   bool ret = true;
    if (!g_pD3D)
-      init_base(info);
+      ret = init_base(info);
    else if (needs_restore)
    {
       D3DPRESENT_PARAMETERS d3dpp;
-      make_d3dpp(info, d3dpp);
+      make_d3dpp(info, &d3dpp);
       if (dev->Reset(&d3dpp) != D3D_OK)
       {
          HRESULT res = dev->TestCooperativeLevel();
@@ -205,32 +245,58 @@ void D3DVideo::init(const video_info_t &info)
                err = "Unknown";
          }
          // Try to recreate the device completely ...
-         RARCH_WARN("[D3D9]: Attempting to recover from dead state (%s).\n", err);
+         RARCH_WARN("[D3D]: Attempting to recover from dead state (%s).\n", err);
          deinit(); 
          g_pD3D->Release();
-         g_pD3D = nullptr;
-         init_base(info);
-         RARCH_LOG("[D3D9]: Recovered from dead state.\n");
+         g_pD3D = NULL;
+         ret = init_base(info);
+         if (ret)
+            RARCH_LOG("[D3D]: Recovered from dead state.\n");
+         else
+            return ret;
       }
    }
 
-   calculate_rect(screen_width, screen_height, info.force_aspect, g_extern.system.aspect_ratio);
+   if (!ret)
+      return ret;
+
+   calculate_rect(screen_width, screen_height, info->force_aspect, g_extern.system.aspect_ratio);
 
 #ifdef HAVE_CG
    if (!init_cg())
-      throw std::runtime_error("Failed to init Cg");
+   {
+      RARCH_ERR("Failed to initialize Cg.\n");
+      return false;
+   }
 #endif
+
    if (!init_chain(info))
-      throw std::runtime_error("Failed to init render chain");
+   {
+      RARCH_ERR("Failed to initialize render chain.\n");
+      return false;
+   }
+
    if (!init_font())
-      throw std::runtime_error("Failed to init Font");
+   {
+      RARCH_ERR("Failed to initialize font.\n");
+      return false;
+   }
+
+   return true;
 }
 
 void D3DVideo::set_viewport(int x, int y, unsigned width, unsigned height)
 {
-   D3DVIEWPORT9 viewport;
-   viewport.X = std::max(x, 0); // D3D9 doesn't support negative X/Y viewports ...
-   viewport.Y = std::max(y, 0);
+   D3DVIEWPORT viewport;
+
+   // D3D9 doesn't support negative X/Y viewports ...
+   if (x < 0)
+      x = 0;
+   if (y < 0)
+      y = 0;
+
+   viewport.X = x;
+   viewport.Y = y;
    viewport.Width = width;
    viewport.Height = height;
    viewport.MinZ = 0.0f;
@@ -238,7 +304,7 @@ void D3DVideo::set_viewport(int x, int y, unsigned width, unsigned height)
 
    final_viewport = viewport;
 
-   set_font_rect(nullptr);
+   set_font_rect(NULL);
 }
 
 void D3DVideo::set_font_rect(font_params_t *params)
@@ -287,8 +353,8 @@ bool D3DVideo::read_viewport(uint8_t *buffer)
    RARCH_PERFORMANCE_INIT(d3d_read_viewport);
    RARCH_PERFORMANCE_START(d3d_read_viewport);
    bool ret = true;
-   IDirect3DSurface9 *target = nullptr;
-   IDirect3DSurface9 *dest   = nullptr;
+   LPDIRECT3DSURFACE target = NULL;
+   LPDIRECT3DSURFACE dest   = NULL;
 
    if (FAILED(Callback::d3d_err = dev->GetRenderTarget(0, &target)))
    {
@@ -298,7 +364,7 @@ bool D3DVideo::read_viewport(uint8_t *buffer)
 
    if (FAILED(Callback::d3d_err = dev->CreateOffscreenPlainSurface(screen_width, screen_height,
         D3DFMT_X8R8G8B8, D3DPOOL_SYSTEMMEM,
-        &dest, nullptr)))
+        &dest, NULL)))
    {
       ret = false;
       goto end;
@@ -311,7 +377,7 @@ bool D3DVideo::read_viewport(uint8_t *buffer)
    }
 
    D3DLOCKED_RECT rect;
-   if (SUCCEEDED(dest->LockRect(&rect, nullptr, D3DLOCK_READONLY)))
+   if (SUCCEEDED(dest->LockRect(&rect, NULL, D3DLOCK_READONLY)))
    {
       unsigned pitchpix = rect.Pitch / 4;
       const uint32_t *pixels = (const uint32_t*)rect.pBits;
@@ -383,65 +449,26 @@ void D3DVideo::calculate_rect(unsigned width, unsigned height,
    }
 }
 
-static void show_cursor(bool show)
-{
-   if (show)
-      while (ShowCursor(TRUE) < 0);
-   else
-      while (ShowCursor(FALSE) >= 0);
-}
+D3DVideo::D3DVideo() :
+   g_pD3D(NULL), dev(NULL), font(NULL),
+   rotation(0), needs_restore(false),
+#ifdef HAVE_CG
+   cgCtx(NULL),
+#endif
+#ifdef HAVE_OVERLAY
+   overlays_enabled(false),
+#endif
+   chain(NULL)
+{}
 
-static BOOL CALLBACK monitor_enum_proc(HMONITOR hMonitor, HDC hdcMonitor, LPRECT lprcMonitor, LPARAM dwData)
-{
-   Monitor::all_hms[Monitor::num_mons++] = hMonitor;
-   return TRUE;
-}
-
-// Multi-monitor support.
-RECT D3DVideo::monitor_rect()
-{
-   Monitor::num_mons = 0;
-   EnumDisplayMonitors(nullptr, nullptr, monitor_enum_proc, 0);
-
-   if (!Monitor::last_hm)
-      Monitor::last_hm = MonitorFromWindow(GetDesktopWindow(), MONITOR_DEFAULTTONEAREST);
-   HMONITOR hm_to_use = Monitor::last_hm;
-
-   unsigned fs_monitor = g_settings.video.monitor_index;
-   if (fs_monitor && fs_monitor <= Monitor::num_mons && Monitor::all_hms[fs_monitor - 1])
-   {
-      hm_to_use = Monitor::all_hms[fs_monitor - 1];
-      Monitor::cur_mon_id = fs_monitor - 1;
-   }
-   else
-   {
-      for (unsigned i = 0; i < Monitor::num_mons; i++)
-      {
-         if (Monitor::all_hms[i] == hm_to_use)
-         {
-            Monitor::cur_mon_id = i;
-            break;
-         }
-      }
-   }
-
-   MONITORINFOEX current_mon;
-   std::memset(&current_mon, 0, sizeof(current_mon));
-   current_mon.cbSize = sizeof(MONITORINFOEX);
-   GetMonitorInfo(hm_to_use, (MONITORINFO*)&current_mon);
-
-   return current_mon.rcMonitor;
-}
-
-D3DVideo::D3DVideo(const video_info_t *info) :
-   g_pD3D(nullptr), dev(nullptr), font(nullptr),
-   rotation(0), needs_restore(false), cgCtx(nullptr), overlays_enabled(false)
+bool D3DVideo::construct(const video_info_t *info, const input_driver_t **input,
+      void **input_data)
 {
    should_resize = false;
    gfx_set_dwm();
 
 #ifdef HAVE_MENU
-   std::memset(&rgui, 0, sizeof(rgui));
+   memset(&rgui, 0, sizeof(rgui));
    rgui.tex_coords.x = 0;
    rgui.tex_coords.y = 0;
    rgui.tex_coords.w = 1;
@@ -452,12 +479,12 @@ D3DVideo::D3DVideo(const video_info_t *info) :
    rgui.vert_coords.h = -1;
 #endif
 
-   std::memset(&windowClass, 0, sizeof(windowClass));
+   memset(&windowClass, 0, sizeof(windowClass));
    windowClass.cbSize        = sizeof(windowClass);
    windowClass.style         = CS_HREDRAW | CS_VREDRAW;
    windowClass.lpfnWndProc   = Callback::WindowProc;
-   windowClass.hInstance     = nullptr;
-   windowClass.hCursor       = LoadCursor(nullptr, IDC_ARROW);
+   windowClass.hInstance     = NULL;
+   windowClass.hCursor       = LoadCursor(NULL, IDC_ARROW);
    windowClass.lpszClassName = "RetroArch";
    windowClass.hIcon = LoadIcon(GetModuleHandle(NULL), MAKEINTRESOURCE(IDI_ICON));
    windowClass.hIconSm = (HICON)LoadImage(GetModuleHandle(NULL), MAKEINTRESOURCE(IDI_ICON), IMAGE_ICON, 16, 16, 0);
@@ -471,7 +498,7 @@ D3DVideo::D3DVideo(const video_info_t *info) :
 
    unsigned full_x = (windowed_full || info->width  == 0) ? (mon_rect.right  - mon_rect.left) : info->width;
    unsigned full_y = (windowed_full || info->height == 0) ? (mon_rect.bottom - mon_rect.top)  : info->height;
-   RARCH_LOG("[D3D9]: Monitor size: %dx%d.\n", (int)(mon_rect.right  - mon_rect.left), (int)(mon_rect.bottom - mon_rect.top));
+   RARCH_LOG("[D3D]: Monitor size: %dx%d.\n", (int)(mon_rect.right  - mon_rect.left), (int)(mon_rect.bottom - mon_rect.top));
 
    screen_width  = info->fullscreen ? full_x : info->width;
    screen_height = info->fullscreen ? full_y : info->height;
@@ -490,7 +517,7 @@ D3DVideo::D3DVideo(const video_info_t *info) :
    }
 
    char buffer[128];
-   gfx_get_fps(buffer, sizeof(buffer), nullptr, 0);
+   gfx_get_fps(buffer, sizeof(buffer), NULL, 0);
    std::string title = buffer;
    title += " || Direct3D9";
 
@@ -500,7 +527,7 @@ D3DVideo::D3DVideo(const video_info_t *info) :
          info->fullscreen ? mon_rect.left : CW_USEDEFAULT,
          info->fullscreen ? mon_rect.top  : CW_USEDEFAULT,
          win_width, win_height,
-         nullptr, nullptr, nullptr, this);
+         NULL, NULL, NULL, this);
 
    driver.display_type  = RARCH_DISPLAY_WIN32;
    driver.video_display = 0;
@@ -527,15 +554,25 @@ D3DVideo::D3DVideo(const video_info_t *info) :
       cg_shader = g_settings.video.shader_path;
 #endif
 
-   process_shader();
+   if (!process_shader())
+      return false;
 
    video_info = *info;
-   init(video_info);
+   if (!init(&video_info))
+      return false;
 
-   RARCH_LOG("[D3D9]: Init complete.\n");
+   if (input && input_data)
+   {
+      Callback::dinput = input_dinput.init();
+      *input = Callback::dinput ? &input_dinput : NULL;
+      *input_data = Callback::dinput;
+   }
+
+   RARCH_LOG("[D3D]: Init complete.\n");
+   return true;
 }
 
-void D3DVideo::deinit()
+void D3DVideo::deinit(void)
 {
    deinit_font();
    deinit_chain();
@@ -545,7 +582,7 @@ void D3DVideo::deinit()
 }
 
 #ifdef HAVE_OVERLAY
-void D3DVideo::free_overlays()
+void D3DVideo::free_overlays(void)
 {
    for (unsigned i = 0; i < overlays.size(); i++)
       free_overlay(overlays[i]);
@@ -561,7 +598,7 @@ void D3DVideo::free_overlay(overlay_t &overlay)
       overlay.vert_buf->Release();
 }
 
-D3DVideo::~D3DVideo()
+D3DVideo::~D3DVideo(void)
 {
    deinit();
 #ifdef HAVE_OVERLAY
@@ -578,23 +615,16 @@ D3DVideo::~D3DVideo()
    Monitor::last_hm = MonitorFromWindow(hWnd, MONITOR_DEFAULTTONEAREST);
    DestroyWindow(hWnd);
 
-   UnregisterClass("RetroArch", GetModuleHandle(nullptr));
+   UnregisterClass("RetroArch", GetModuleHandle(NULL));
 }
 
-bool D3DVideo::restore()
+bool D3DVideo::restore(void)
 {
    deinit();
-   try
-   {
-      needs_restore = true;
-      init(video_info);
-      needs_restore = false;
-   }
-   catch (const std::exception &e)
-   {
-      RARCH_ERR("[D3D9]: Restore error: (%s).\n", e.what());
-      needs_restore = true;
-   }
+   needs_restore = !init(&video_info);
+
+   if (needs_restore)
+      RARCH_ERR("[D3D]: Restore error.\n");
 
    return !needs_restore;
 }
@@ -614,7 +644,7 @@ bool D3DVideo::frame(const void *frame,
 
    if (needs_restore && !restore())
    {
-      RARCH_ERR("[D3D9]: Failed to restore.\n");
+      RARCH_ERR("[D3D]: Failed to restore.\n");
       return false;
    }
 
@@ -641,8 +671,9 @@ bool D3DVideo::frame(const void *frame,
    // Insert black frame first, so we can screenshot, etc.
    if (g_settings.video.black_frame_insertion)
    {
-      if (dev->Present(nullptr, nullptr, nullptr, nullptr) != D3D_OK)
+      if (dev->Present(NULL, NULL, NULL, NULL) != D3D_OK)
       {
+         RARCH_ERR("[D3D]: Present() failed.\n");
          needs_restore = true;
          return true;
       }
@@ -651,7 +682,7 @@ bool D3DVideo::frame(const void *frame,
 
    if (!chain->render(frame, width, height, pitch, rotation))
    {
-      RARCH_ERR("[D3D9]: Failed to render scene.\n");
+      RARCH_ERR("[D3D]: Failed to render scene.\n");
       return false;
    }
 
@@ -672,9 +703,10 @@ bool D3DVideo::frame(const void *frame,
 
    RARCH_PERFORMANCE_STOP(d3d_frame);
 
-   if (dev->Present(nullptr, nullptr, nullptr, nullptr) != D3D_OK)
+   if (dev->Present(NULL, NULL, NULL, NULL) != D3D_OK)
    {
       needs_restore = true;
+      RARCH_ERR("[D3D]: Present() failed.\n");
       return true;
    }
 
@@ -689,14 +721,14 @@ void D3DVideo::render_msg(const char *msg, font_params_t *params)
 
    if (msg && SUCCEEDED(dev->BeginScene()))
    {
-      font->DrawTextA(nullptr,
+      font->DrawTextA(NULL,
             msg,
             -1,
             &font_rect_shifted,
             DT_LEFT,
             ((font_color >> 2) & 0x3f3f3f) | 0xff000000);
 
-      font->DrawTextA(nullptr,
+      font->DrawTextA(NULL,
             msg,
             -1,
             &font_rect,
@@ -716,32 +748,34 @@ void D3DVideo::set_nonblock_state(bool state)
    restore();
 }
 
-bool D3DVideo::alive()
+bool D3DVideo::alive(void)
 {
    process();
    return !Callback::quit;
 }
 
-bool D3DVideo::focus() const
+bool D3DVideo::focus(void) const
 {
    return GetFocus() == hWnd;
 }
 
-void D3DVideo::process()
+void D3DVideo::process(void)
 {
+#ifndef _XBOX
    MSG msg;
-   while (PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE))
+   while (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE))
    {
       TranslateMessage(&msg);
       DispatchMessage(&msg);
    }
+#endif
 }
 
 #ifdef HAVE_CG
-bool D3DVideo::init_cg()
+bool D3DVideo::init_cg(void)
 {
    cgCtx = cgCreateContext();
-   if (cgCtx == nullptr)
+   if (cgCtx == NULL)
       return false;
 
    RARCH_LOG("[D3D9 Cg]: Created context.\n");
@@ -753,33 +787,35 @@ bool D3DVideo::init_cg()
    return true;
 }
 
-void D3DVideo::deinit_cg()
+void D3DVideo::deinit_cg(void)
 {
    if (cgCtx)
    {
       cgD3D9UnloadAllPrograms();
-      cgD3D9SetDevice(nullptr);
+      cgD3D9SetDevice(NULL);
       cgDestroyContext(cgCtx);
-      cgCtx = nullptr;
+      cgCtx = NULL;
    }
 }
 #endif
 
-void D3DVideo::init_singlepass()
+bool D3DVideo::init_singlepass(void)
 {
-   std::memset(&shader, 0, sizeof(shader));
+   memset(&shader, 0, sizeof(shader));
    shader.passes = 1;
    gfx_shader_pass &pass = shader.pass[0];
    pass.fbo.valid = true;
    pass.fbo.scale_x = pass.fbo.scale_y = 1.0;
    pass.fbo.type_x = pass.fbo.type_y = RARCH_SCALE_VIEWPORT;
    strlcpy(pass.source.cg, cg_shader.c_str(), sizeof(pass.source.cg));
+
+   return true;
 }
 
-void D3DVideo::init_imports()
+bool D3DVideo::init_imports(void)
 {
    if (!shader.variables)
-      return;
+      return true;
 
    state_tracker_info tracker_info = {0};
 
@@ -794,43 +830,52 @@ void D3DVideo::init_imports()
       tracker_info.script_is_file = true;
    }
 
-   tracker_info.script_class = *shader.script_class ? shader.script_class : nullptr;
+   tracker_info.script_class = *shader.script_class ? shader.script_class : NULL;
 #endif
 
    state_tracker_t *state_tracker = state_tracker_init(&tracker_info);
    if (!state_tracker)
-      throw std::runtime_error("Failed to initialize state tracker.");
+   {
+      RARCH_ERR("Failed to initialize state tracker.\n");
+      return false;
+   }
 
-   std::shared_ptr<state_tracker_t> tracker(state_tracker, [](state_tracker_t *tracker) {
-            state_tracker_free(tracker);
-         });
-
-   chain->add_state_tracker(tracker);
+   chain->add_state_tracker(state_tracker);
+   return true;
 }
 
-void D3DVideo::init_luts()
+bool D3DVideo::init_luts(void)
 {
    for (unsigned i = 0; i < shader.luts; i++)
    {
-      chain->add_lut(shader.lut[i].id, shader.lut[i].path,
+      bool ret = chain->add_lut(shader.lut[i].id, shader.lut[i].path,
          shader.lut[i].filter == RARCH_FILTER_UNSPEC ?
             g_settings.video.smooth :
             (shader.lut[i].filter == RARCH_FILTER_LINEAR));
+
+      if (!ret)
+         return ret;
    }
+
+   return true;
 }
 
-void D3DVideo::init_multipass()
+bool D3DVideo::init_multipass(void)
 {
    config_file_t *conf = config_file_new(cg_shader.c_str());
    if (!conf)
-      throw std::runtime_error("Failed to load preset");
+   {
+      RARCH_ERR("Failed to load preset.\n");
+      return false;
+   }
 
-   std::memset(&shader, 0, sizeof(shader));
+   memset(&shader, 0, sizeof(shader));
 
    if (!gfx_shader_read_conf_cgp(conf, &shader))
    {
       config_file_free(conf);
-      throw std::runtime_error("Failed to parse CGP file.");
+      RARCH_ERR("Failed to parse CGP file.\n");
+      return false;
    }
 
    config_file_free(conf);
@@ -863,21 +908,19 @@ void D3DVideo::init_multipass()
       pass.fbo.scale_x = pass.fbo.scale_y = 1.0f;
       pass.fbo.type_x = pass.fbo.type_y = RARCH_SCALE_VIEWPORT;
    }
+
+   return true;
 }
 
 bool D3DVideo::set_shader(const std::string &path)
 {
    auto old_shader = cg_shader;
    bool restore_old = false;
-   try
+   cg_shader = path;
+
+   if (!process_shader() || !restore())
    {
-      cg_shader = path;
-      process_shader();
-      restore();
-   }
-   catch (const std::exception &e)
-   {
-      RARCH_ERR("[D3D9]: Setting shader failed: (%s).\n", e.what());
+      RARCH_ERR("[D3D9]: Setting shader failed.\n");
       restore_old = true;
    }
 
@@ -891,108 +934,121 @@ bool D3DVideo::set_shader(const std::string &path)
    return !restore_old;
 }
 
-void D3DVideo::process_shader()
+bool D3DVideo::process_shader(void)
 {
    if (strcmp(path_get_extension(cg_shader.c_str()), "cgp") == 0)
-      init_multipass();
-   else
-      init_singlepass();
+      return init_multipass();
+
+   return init_singlepass();
 }
 
-void D3DVideo::recompute_pass_sizes()
+void D3DVideo::recompute_pass_sizes(void)
 {
-   try
+   LinkInfo link_info = {0};
+   link_info.pass = &shader.pass[0];
+   link_info.tex_w = link_info.tex_h = video_info.input_scale * RARCH_SCALE_BASE;
+
+   unsigned current_width = link_info.tex_w;
+   unsigned current_height = link_info.tex_h;
+   unsigned out_width = 0;
+   unsigned out_height = 0;
+
+   if (!chain->set_pass_size(0, current_width, current_height))
    {
-      LinkInfo link_info = {0};
-      link_info.pass = &shader.pass[0];
-      link_info.tex_w = link_info.tex_h = video_info.input_scale * RARCH_SCALE_BASE;
-
-      unsigned current_width = link_info.tex_w;
-      unsigned current_height = link_info.tex_h;
-      unsigned out_width = 0;
-      unsigned out_height = 0;
-
-      chain->set_pass_size(0, current_width, current_height);
-      for (unsigned i = 1; i < shader.passes; i++)
-      {
-         RenderChain::convert_geometry(link_info,
-               out_width, out_height,
-               current_width, current_height, final_viewport);
-
-         link_info.tex_w = next_pow2(out_width);
-         link_info.tex_h = next_pow2(out_height);
-
-         chain->set_pass_size(i, link_info.tex_w, link_info.tex_h);
-
-         current_width = out_width;
-         current_height = out_height;
-
-         link_info.pass = &shader.pass[i];
-      }
+      RARCH_ERR("[D3D]: Failed to set pass size.\n");
+      return;
    }
-   catch (const std::exception& e)
+
+   for (unsigned i = 1; i < shader.passes; i++)
    {
-      RARCH_ERR("[D3D9]: Render chain error: (%s).\n", e.what());
+      RenderChain::convert_geometry(link_info,
+            out_width, out_height,
+            current_width, current_height, final_viewport);
+
+      link_info.tex_w = next_pow2(out_width);
+      link_info.tex_h = next_pow2(out_height);
+
+      if (!chain->set_pass_size(i, link_info.tex_w, link_info.tex_h))
+      {
+         RARCH_ERR("[D3D]: Failed to set pass size.\n");
+         return;
+      }
+
+      current_width = out_width;
+      current_height = out_height;
+
+      link_info.pass = &shader.pass[i];
    }
 }
 
-bool D3DVideo::init_chain(const video_info_t &video_info)
+bool D3DVideo::init_chain(const video_info_t *video_info)
 {
-   try
+   // Setup information for first pass.
+   LinkInfo link_info = {0};
+
+   link_info.pass = &shader.pass[0];
+   link_info.tex_w = link_info.tex_h = video_info->input_scale * RARCH_SCALE_BASE;
+
+   delete chain;
+   chain = new RenderChain(
+         video_info,
+         dev, cgCtx,
+         final_viewport);
+
+   if (!chain->init(link_info,
+            video_info->rgb32 ? RenderChain::ARGB : RenderChain::RGB565))
    {
-      // Setup information for first pass.
-      LinkInfo link_info = {0};
-
-      link_info.pass = &shader.pass[0];
-      link_info.tex_w = link_info.tex_h = video_info.input_scale * RARCH_SCALE_BASE;
-
-      chain = std::unique_ptr<RenderChain>(
-            new RenderChain(
-               video_info,
-               dev, cgCtx,
-               link_info,
-               video_info.rgb32 ? RenderChain::ARGB : RenderChain::RGB565,
-               final_viewport));
-
-      unsigned current_width = link_info.tex_w;
-      unsigned current_height = link_info.tex_h;
-      unsigned out_width = 0;
-      unsigned out_height = 0;
-
-      for (unsigned i = 1; i < shader.passes; i++)
-      {
-         RenderChain::convert_geometry(link_info,
-               out_width, out_height,
-               current_width, current_height, final_viewport);
-
-         link_info.pass = &shader.pass[i];
-         link_info.tex_w = next_pow2(out_width);
-         link_info.tex_h = next_pow2(out_height);
-
-         current_width = out_width;
-         current_height = out_height;
-
-         chain->add_pass(link_info);
-      }
-
-      init_luts();
-      init_imports();
+      RARCH_ERR("[D3D9]: Failed to init render chain.\n");
+      return false;
    }
-   catch (const std::exception &e)
+
+   unsigned current_width = link_info.tex_w;
+   unsigned current_height = link_info.tex_h;
+   unsigned out_width = 0;
+   unsigned out_height = 0;
+
+   for (unsigned i = 1; i < shader.passes; i++)
    {
-      RARCH_ERR("[D3D9]: Render chain error: (%s).\n", e.what());
+      RenderChain::convert_geometry(link_info,
+            out_width, out_height,
+            current_width, current_height, final_viewport);
+
+      link_info.pass = &shader.pass[i];
+      link_info.tex_w = next_pow2(out_width);
+      link_info.tex_h = next_pow2(out_height);
+
+      current_width = out_width;
+      current_height = out_height;
+
+      if (!chain->add_pass(link_info))
+      {
+         RARCH_ERR("[D3D9]: Failed to add pass.\n");
+         return false;
+      }
+   }
+
+   if (!init_luts())
+   {
+      RARCH_ERR("[D3D9]: Failed to init LUTs.\n");
+      return false;
+   }
+
+   if (!init_imports())
+   {
+      RARCH_ERR("[D3D9]: Failed to init imports.\n");
       return false;
    }
 
    return true;
 }
 
-void D3DVideo::deinit_chain()
+void D3DVideo::deinit_chain(void)
 {
-   chain.reset();
+   delete chain;
+   chain = NULL;
 }
 
-bool D3DVideo::init_font()
+bool D3DVideo::init_font(void)
 {
    D3DXFONT_DESC desc = {
       static_cast<int>(g_settings.video.font_size), 0, 400, 0,
@@ -1011,14 +1067,14 @@ bool D3DVideo::init_font()
    return SUCCEEDED(D3DXCreateFontIndirect(dev, &desc, &font));
 }
 
-void D3DVideo::deinit_font()
+void D3DVideo::deinit_font(void)
 {
    if (font)
       font->Release();
-   font = nullptr;
+   font = NULL;
 }
 
-void D3DVideo::update_title()
+void D3DVideo::update_title(void)
 {
    char buffer[128], buffer_fps[128];
    bool fps_draw = g_settings.fps_show;
@@ -1040,7 +1096,7 @@ void D3DVideo::resize(unsigned new_width, unsigned new_height)
    if (!dev)
       return;
 
-   RARCH_LOG("[D3D9]: Resize %ux%u.\n", new_width, new_height);
+   RARCH_LOG("[D3D]: Resize %ux%u.\n", new_width, new_height);
 
    if (new_width != video_info.width || new_height != video_info.height)
    {
@@ -1051,7 +1107,7 @@ void D3DVideo::resize(unsigned new_width, unsigned new_height)
 }
 
 #ifdef HAVE_OVERLAY
-bool D3DVideo::overlay_load(const video_overlay_image *images, unsigned num_images)
+bool D3DVideo::overlay_load(const texture_image *images, unsigned num_images)
 {
    free_overlays();
    overlays.resize(num_images);
@@ -1065,20 +1121,20 @@ bool D3DVideo::overlay_load(const video_overlay_image *images, unsigned num_imag
                   0,
                   D3DFMT_A8R8G8B8,
                   D3DPOOL_MANAGED,
-                  &overlay.tex, nullptr)))
+                  &overlay.tex, NULL)))
       {
-         RARCH_ERR("[D3D9]: Failed to create overlay texture\n");
+         RARCH_ERR("[D3D]: Failed to create overlay texture\n");
          return false;
       }
 
       D3DLOCKED_RECT d3dlr;
-      if (SUCCEEDED(overlay.tex->LockRect(0, &d3dlr, nullptr, D3DLOCK_NOSYSLOCK)))
+      if (SUCCEEDED(overlay.tex->LockRect(0, &d3dlr, NULL, D3DLOCK_NOSYSLOCK)))
       {
          uint32_t *dst = static_cast<uint32_t*>(d3dlr.pBits);
-         const uint32_t *src = images[i].image;
+         const uint32_t *src = images[i].pixels;
          unsigned pitch = d3dlr.Pitch >> 2;
          for (unsigned y = 0; y < height; y++, dst += pitch, src += width)
-            std::memcpy(dst, src, width << 2);
+            memcpy(dst, src, width << 2);
          overlay.tex->UnlockRect(0);
       }
 
@@ -1148,7 +1204,7 @@ void D3DVideo::overlay_render(overlay_t &overlay)
             0,
             D3DPOOL_MANAGED,
             &overlay.vert_buf,
-            nullptr);
+            NULL);
    }
 
    for (unsigned i = 0; i < 4; i++)
@@ -1188,7 +1244,7 @@ void D3DVideo::overlay_render(overlay_t &overlay)
 
    void *verts;
    overlay.vert_buf->Lock(0, sizeof(vert), &verts, 0);
-   std::memcpy(verts, vert, sizeof(vert));
+   memcpy(verts, vert, sizeof(vert));
    overlay.vert_buf->Unlock();
 
    // enable alpha
@@ -1203,7 +1259,7 @@ void D3DVideo::overlay_render(overlay_t &overlay)
       {0, 20, D3DDECLTYPE_FLOAT4, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_COLOR, 0},
       D3DDECL_END()
    };
-   IDirect3DVertexDeclaration9 *vertex_decl;
+   LPDIRECT3DVERTEXDECLARATION vertex_decl;
    dev->CreateVertexDeclaration(vElems, &vertex_decl);
    dev->SetVertexDeclaration(vertex_decl);
    vertex_decl->Release();
@@ -1252,9 +1308,9 @@ void D3DVideo::set_rgui_texture_frame(const void *frame,
       if (FAILED(dev->CreateTexture(width, height, 1,
                   0, D3DFMT_A8R8G8B8,
                   D3DPOOL_MANAGED,
-                  &rgui.tex, nullptr)))
+                  &rgui.tex, NULL)))
       {
-         RARCH_ERR("[D3D9]: Failed to create rgui texture\n");
+         RARCH_ERR("[D3D]: Failed to create rgui texture\n");
          return;
       }
       rgui.tex_w = width;
@@ -1265,7 +1321,7 @@ void D3DVideo::set_rgui_texture_frame(const void *frame,
 
 
    D3DLOCKED_RECT d3dlr;
-   if (SUCCEEDED(rgui.tex->LockRect(0, &d3dlr, nullptr, D3DLOCK_NOSYSLOCK)))
+   if (SUCCEEDED(rgui.tex->LockRect(0, &d3dlr, NULL, D3DLOCK_NOSYSLOCK)))
    {
       if (rgb32)
       {
@@ -1273,8 +1329,8 @@ void D3DVideo::set_rgui_texture_frame(const void *frame,
          const uint32_t *src = (const uint32_t*)frame;
          for (unsigned h = 0; h < height; h++, dst += d3dlr.Pitch, src += width)
          {
-            std::memcpy(dst, src, width * sizeof(uint32_t));
-            std::memset(dst + width * sizeof(uint32_t), 0, d3dlr.Pitch - width * sizeof(uint32_t));
+            memcpy(dst, src, width * sizeof(uint32_t));
+            memset(dst + width * sizeof(uint32_t), 0, d3dlr.Pitch - width * sizeof(uint32_t));
          }
       }
       else
@@ -1309,240 +1365,3 @@ void D3DVideo::set_rgui_texture_enable(bool state, bool fullscreen)
    rgui.fullscreen = fullscreen;
 }
 #endif
-
-static void *d3d9_init(const video_info_t *info, const input_driver_t **input,
-      void **input_data)
-{
-   try
-   {
-     D3DVideo *vid = new D3DVideo(info);
-     if (!vid)
-        return nullptr;
-
-     if (input && input_data)
-     {
-        Callback::dinput = input_dinput.init();
-        *input = Callback::dinput ? &input_dinput : nullptr;
-        *input_data = Callback::dinput;
-     }
-
-     return vid;
-   }
-   catch (const std::exception &e)
-   {
-      RARCH_ERR("[D3D9]: Failed to init D3D9 (%s, code: 0x%x).\n", e.what(), (unsigned)Callback::d3d_err);
-      return nullptr;
-   }
-}
-
-static bool d3d9_frame(void *data, const void *frame,
-      unsigned width, unsigned height, unsigned pitch,
-      const char *msg)
-{
-   return reinterpret_cast<D3DVideo*>(data)->frame(frame,
-         width, height, pitch, msg);
-}
-
-static void d3d9_set_nonblock_state(void *data, bool state)
-{
-   reinterpret_cast<D3DVideo*>(data)->set_nonblock_state(state);
-}
-
-static bool d3d9_alive(void *data)
-{
-   return reinterpret_cast<D3DVideo*>(data)->alive();
-}
-
-static bool d3d9_focus(void *data)
-{
-   return reinterpret_cast<D3DVideo*>(data)->focus();
-}
-
-static void d3d9_set_rotation(void *data, unsigned rot)
-{
-   reinterpret_cast<D3DVideo*>(data)->set_rotation(rot);
-}
-
-static void d3d9_free(void *data)
-{
-   delete reinterpret_cast<D3DVideo*>(data);
-}
-
-static void d3d9_viewport_info(void *data, struct rarch_viewport *vp)
-{
-   reinterpret_cast<D3DVideo*>(data)->viewport_info(*vp);
-}
-
-static bool d3d9_read_viewport(void *data, uint8_t *buffer)
-{
-   return reinterpret_cast<D3DVideo*>(data)->read_viewport(buffer);
-}
-
-static bool d3d9_set_shader(void *data, enum rarch_shader_type type, const char *path)
-{
-   std::string shader = "";
-   if (path && type == RARCH_SHADER_CG)
-      shader = path;
-
-   return reinterpret_cast<D3DVideo*>(data)->set_shader(shader);
-}
-
-#ifdef HAVE_MENU
-static void d3d9_get_poke_interface(void *data, const video_poke_interface_t **iface);
-#endif
-
-#ifdef HAVE_OVERLAY
-static bool d3d9_overlay_load(void *data, const video_overlay_image *images, unsigned num_images)
-{
-   return reinterpret_cast<D3DVideo*>(data)->overlay_load(images, num_images);
-}
-
-static void d3d9_overlay_tex_geom(void *data,
-      unsigned index,
-      float x, float y,
-      float w, float h)
-{
-   return reinterpret_cast<D3DVideo*>(data)->overlay_tex_geom(index, x, y, w, h);
-}
-
-static void d3d9_overlay_vertex_geom(void *data,
-      unsigned index,
-      float x, float y,
-      float w, float h)
-{
-   return reinterpret_cast<D3DVideo*>(data)->overlay_vertex_geom(index, x, y, w, h);
-}
-
-static void d3d9_overlay_enable(void *data, bool state)
-{
-   return reinterpret_cast<D3DVideo*>(data)->overlay_enable(state);
-}
-
-static void d3d9_overlay_full_screen(void *data, bool enable)
-{
-   return reinterpret_cast<D3DVideo*>(data)->overlay_full_screen(enable);
-}
-
-static void d3d9_overlay_set_alpha(void *data, unsigned index, float mod)
-{
-   return reinterpret_cast<D3DVideo*>(data)->overlay_set_alpha(index, mod);
-}
-
-static const video_overlay_interface_t d3d9_overlay_interface = {
-   d3d9_overlay_enable,
-   d3d9_overlay_load,
-   d3d9_overlay_tex_geom,
-   d3d9_overlay_vertex_geom,
-   d3d9_overlay_full_screen,
-   d3d9_overlay_set_alpha,
-};
-
-static void d3d9_get_overlay_interface(void *data, const video_overlay_interface_t **iface)
-{
-   (void)data;
-   *iface = &d3d9_overlay_interface;
-}
-#endif
-
-static void d3d9_set_aspect_ratio(void *data, unsigned aspect_ratio_idx)
-{
-   D3DVideo *d3d = reinterpret_cast<D3DVideo*>(data);
-
-   switch (aspect_ratio_idx)
-   {
-      case ASPECT_RATIO_SQUARE:
-         gfx_set_square_pixel_viewport(g_extern.system.av_info.geometry.base_width, g_extern.system.av_info.geometry.base_height);
-         break;
-
-      case ASPECT_RATIO_CORE:
-         gfx_set_core_viewport();
-         break;
-
-      case ASPECT_RATIO_CONFIG:
-         gfx_set_config_viewport();
-         break;
-
-      default:
-         break;
-   }
-
-   g_extern.system.aspect_ratio = aspectratio_lut[aspect_ratio_idx].value;
-   d3d->info().force_aspect = true;
-   d3d->should_resize = true;
-   return;
-}
-
-static void d3d9_apply_state_changes(void *data)
-{
-   D3DVideo *d3d = reinterpret_cast<D3DVideo*>(data);
-   d3d->should_resize = true;
-}
-
-static void d3d9_set_osd_msg(void *data, const char *msg, void *userdata)
-{
-   font_params_t *params = (font_params_t*)userdata;
-   reinterpret_cast<D3DVideo*>(data)->render_msg(msg, params);
-}
-
-static void d3d9_show_mouse(void *data, bool state)
-{
-   show_cursor(state);
-}
-
-#ifdef HAVE_MENU
-static void d3d9_set_rgui_texture_frame(void *data,
-      const void *frame, bool rgb32, unsigned width, unsigned height,
-      float alpha)
-{
-   reinterpret_cast<D3DVideo*>(data)->set_rgui_texture_frame(frame, rgb32, width, height, alpha);
-}
-
-static void d3d9_set_rgui_texture_enable(void *data, bool state, bool full_screen)
-{
-   reinterpret_cast<D3DVideo*>(data)->set_rgui_texture_enable(state, full_screen);
-}
-#endif
-
-static const video_poke_interface_t d3d9_poke_interface = {
-   NULL,
-#ifdef HAVE_FBO
-   NULL,
-   NULL,
-#endif
-   d3d9_set_aspect_ratio,
-   d3d9_apply_state_changes,
-#ifdef HAVE_MENU
-   d3d9_set_rgui_texture_frame,
-   d3d9_set_rgui_texture_enable,
-#endif
-   d3d9_set_osd_msg,
-
-   d3d9_show_mouse,
-};
-
-static void d3d9_get_poke_interface(void *data, const video_poke_interface_t **iface)
-{
-   (void)data;
-   *iface = &d3d9_poke_interface;
-}
-
-const video_driver_t video_d3d9 = {
-   d3d9_init,
-   d3d9_frame,
-   d3d9_set_nonblock_state,
-   d3d9_alive,
-   d3d9_focus,
-   d3d9_set_shader,
-   d3d9_free,
-   "d3d9",
-#ifdef HAVE_MENU
-   nullptr,
-#endif
-   d3d9_set_rotation,
-   d3d9_viewport_info,
-   d3d9_read_viewport,
-#ifdef HAVE_OVERLAY
-   d3d9_get_overlay_interface,
-#endif
-   d3d9_get_poke_interface
-};

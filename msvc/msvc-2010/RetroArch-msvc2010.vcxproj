@@ -66,21 +66,33 @@
     <LinkIncremental>true</LinkIncremental>
     <IncludePath>$(DXSDK_DIR)Include;$(CG_INC_PATH);$(IncludePath)</IncludePath>
     <LibraryPath>$(DXSDK_DIR)Lib\x86;$(CG_LIB_PATH);$(LibraryPath)</LibraryPath>
+    <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
+    <CodeAnalysisRules />
+    <CodeAnalysisRuleAssemblies />
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
     <IncludePath>$(DXSDK_DIR)Include;$(CG_INC_PATH);$(IncludePath)</IncludePath>
     <LibraryPath>$(DXSDK_DIR)Lib\x64;$(CG_LIB64_PATH);$(LibraryPath)</LibraryPath>
+    <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
+    <CodeAnalysisRules />
+    <CodeAnalysisRuleAssemblies />
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
     <IncludePath>$(DXSDK_DIR)Include;$(CG_INC_PATH);$(IncludePath)</IncludePath>
     <LibraryPath>$(DXSDK_DIR)Lib\x86;$(CG_LIB_PATH);$(LibraryPath)</LibraryPath>
+    <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
+    <CodeAnalysisRules />
+    <CodeAnalysisRuleAssemblies />
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
     <IncludePath>$(DXSDK_DIR)Include;$(CG_INC_PATH);$(IncludePath)</IncludePath>
     <LibraryPath>$(DXSDK_DIR)Lib\x64;$(CG_LIB64_PATH);$(LibraryPath)</LibraryPath>
+    <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
+    <CodeAnalysisRules />
+    <CodeAnalysisRuleAssemblies />
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -130,7 +142,7 @@
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>WIN32;RARCH_INTERNAL;HAVE_WIN32_D3D9;HAVE_CG;HAVE_GLSL;HAVE_FBO;HAVE_ZLIB;WANT_MINIZ;NDEBUG;_WINDOWS;%(PreprocessorDefinitions);HAVE_SCREENSHOTS;HAVE_BSV_MOVIE;HAVE_BUILTIN_AUTOCONFIG;HAVE_DINPUT;HAVE_WINXINPUT;HAVE_XAUDIO;HAVE_DSOUND;HAVE_OPENGL;HAVE_DYLIB;HAVE_NETPLAY;HAVE_NETWORK_CMD;HAVE_COMMAND;HAVE_STDIN_CMD;HAVE_THREADS;HAVE_DYNAMIC;_CRT_SECURE_NO_WARNINGS;__SSE__;__i686__;HAVE_OVERLAY;HAVE_RGUI;HAVE_GL_SYNC</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;RARCH_INTERNAL;HAVE_WIN32_D3D9;HAVE_CG;HAVE_GLSL;HAVE_FBO;HAVE_ZLIB;WANT_MINIZ;NDEBUG;_WINDOWS;%(PreprocessorDefinitions);HAVE_SCREENSHOTS;HAVE_BSV_MOVIE;HAVE_BUILTIN_AUTOCONFIG;HAVE_DINPUT;HAVE_WINXINPUT;HAVE_XAUDIO;HAVE_DSOUND;HAVE_OPENGL;HAVE_DYLIB;HAVE_NETPLAY;HAVE_NETWORK_CMD;HAVE_COMMAND;HAVE_STDIN_CMD;HAVE_THREADS;HAVE_DYNAMIC;_CRT_SECURE_NO_WARNINGS;__SSE__;__i686__;HAVE_OVERLAY;HAVE_MENU;HAVE_RGUI;HAVE_GL_SYNC</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>$(MSBuildProjectDirectory);$(MSBuildProjectDirectory)\..\..\;$(CG_INC_PATH);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <CompileAs>CompileAsCpp</CompileAs>
@@ -175,6 +187,7 @@
     </ClCompile>
     <ClCompile Include="..\..\audio\resampler.c" />
     <ClCompile Include="..\..\audio\sinc.c" />
+    <ClCompile Include="..\..\audio\thread_wrapper.c" />
     <ClCompile Include="..\..\audio\utils.c">
     </ClCompile>
     <ClCompile Include="..\..\audio\xaudio-c\xaudio-c.cpp" />
@@ -184,6 +197,7 @@
     </ClCompile>
     <ClCompile Include="..\..\cheats.c" />
     <ClCompile Include="..\..\compat\rxml\rxml.c" />
+    <ClCompile Include="..\..\core_info.c" />
     <ClCompile Include="..\..\core_options.c" />
     <ClCompile Include="..\..\deps\miniz\miniz.c" />
     <ClCompile Include="..\..\file_extract.c" />
@@ -193,17 +207,24 @@
     <ClCompile Include="..\..\frontend\menu\menu_common.c" />
     <ClCompile Include="..\..\frontend\menu\menu_settings.c" />
     <ClCompile Include="..\..\frontend\menu\menu_context.c" />
-    <ClCompile Include="..\..\gfx\d3d9\d3d9.cpp" />
+    <ClCompile Include="..\..\gfx\d3d9\d3d.cpp" />
+    <ClCompile Include="..\..\gfx\d3d9\d3d9_pc.cpp" />
     <ClCompile Include="..\..\gfx\d3d9\render_chain.cpp" />
     <ClCompile Include="..\..\gfx\fonts\bitmapfont.c" />
     <ClCompile Include="..\..\gfx\fonts\fonts.c" />
     <ClCompile Include="..\..\gfx\fonts\gl_font.c" />
     <ClCompile Include="..\..\gfx\fonts\gl_raster_font.c" />
+    <ClCompile Include="..\..\gfx\glsym\glsym_gl.c" />
+    <ClCompile Include="..\..\gfx\glsym\rglgen.c">
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">CompileAsC</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsC</CompileAs>
+    </ClCompile>
     <ClCompile Include="..\..\gfx\rpng\rpng.c" />
     <ClCompile Include="..\..\gfx\shader_cg.c" />
     <ClCompile Include="..\..\gfx\shader_glsl.c" />
     <ClCompile Include="..\..\gfx\shader_parse.c" />
-    <ClCompile Include="..\..\gfx\thread_wrapper.c" />
+    <ClCompile Include="..\..\gfx\video_thread_wrapper.c" />
+    <ClCompile Include="..\..\input\keyboard_line.c" />
     <ClCompile Include="..\..\input\overlay.c" />
     <ClCompile Include="..\..\performance.c">
     </ClCompile>

@@ -1,6 +1,6 @@
 /*  RetroArch - A frontend for libretro.
- *  Copyright (C) 2010-2013 - Hans-Kristian Arntzen
- *  Copyright (C) 2011-2013 - Daniel De Matteis
+ *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
+ *  Copyright (C) 2011-2014 - Daniel De Matteis
  * 
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -345,6 +345,12 @@ static const char *default_config_path = NULL;
 static bool default_block_config_read = true;
 #else
 static bool default_block_config_read = false;
+#endif
+
+#ifdef RARCH_CONSOLE
+static bool default_core_specific_config = true;
+#else
+static bool default_core_specific_config = false;
 #endif
 
 #if defined(ANDROID)

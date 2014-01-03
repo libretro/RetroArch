@@ -1,6 +1,6 @@
 /*  RetroArch - A frontend for libretro.
- *  Copyright (C) 2013 - Jason Fetters
- *  Copyright (C) 2011-2013 - Daniel De Matteis
+ *  Copyright (C) 2013-2014 - Jason Fetters
+ *  Copyright (C) 2011-2014 - Daniel De Matteis
  * 
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -71,6 +71,9 @@ const void* apple_get_frontend_settings(void);
 
 // modes are: keyboard, icade and btstack
 void ios_set_bluetooth_mode(NSString* mode);
-int get_ios_version_major();
+int get_ios_version_major(void);
+
+#define IOS_IS_VERSION_7_OR_HIGHER() ((get_ios_version_major() >= 7))
+#define IOS_IS_VERSION_6_OR_LOWER() ((get_ios_version_major() <= 6))
 
 #endif

@@ -1,5 +1,5 @@
 /*  RetroArch - A frontend for libretro.
- *  Copyright (C) 2010-2013 - Hans-Kristian Arntzen
+ *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  * 
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -12,13 +12,16 @@
  *  You should have received a copy of the GNU General Public License along with RetroArch.
  *  If not, see <http://www.gnu.org/licenses/>.
  */
+#if defined(__ARM_NEON__) || defined(HAVE_NEON)
 
 .arm
 .align 4
 .globl process_sinc_neon_asm
+.globl _process_sinc_neon_asm
 # void process_sinc_neon(float *out, const float *left, const float *right, const float *coeff, unsigned taps)
 # Assumes taps is >= 8, and a multiple of 8.
 process_sinc_neon_asm:
+_process_sinc_neon_asm:
 
    push {r4, lr}   
    vmov.f32 q0, #0.0
@@ -52,3 +55,4 @@ process_sinc_neon_asm:
    
    pop {r4, pc}
 
+#endif

@@ -1,5 +1,5 @@
 /*  RetroArch - A frontend for libretro.
- *  Copyright (C) 2010-2013 - Hans-Kristian Arntzen
+ *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  * 
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -89,7 +89,7 @@ const char *config_get_default_video(void)
       case VIDEO_XDK_D3D:
          return "xdk_d3d";
       case VIDEO_D3D9:
-         return "d3d9";
+         return "d3d";
       case VIDEO_PSP1:
          return "psp1";
       case VIDEO_VITA:
@@ -383,6 +383,8 @@ void config_set_defaults(void)
    g_settings.video.msg_pos_y = 0.90f;
    g_settings.video.aspect_ratio = -1.0f;
 
+   g_settings.core_specific_config = default_core_specific_config;
+
    // g_extern
    strlcpy(g_extern.savefile_dir, default_paths.sram_dir, sizeof(g_extern.savefile_dir));
    g_extern.console.screen.gamma_correction = DEFAULT_GAMMA;
@@ -436,13 +438,58 @@ void config_set_defaults(void)
 
 static void parse_config_file(void);
 
+static void config_load_core_specific(void)
+{
+   *g_extern.core_specific_config_path = '\0';
+
+   if (!*g_settings.libretro || g_extern.libretro_dummy)
+      return;
+
+   if (*g_settings.rgui_config_directory)
+   {
+      path_resolve_realpath(g_settings.rgui_config_directory, sizeof(g_settings.rgui_config_directory));
+      strlcpy(g_extern.core_specific_config_path, g_settings.rgui_config_directory, sizeof(g_extern.core_specific_config_path));
+   }
+   else
+   {
+      // Use original config file's directory as a fallback.
+      fill_pathname_basedir(g_extern.core_specific_config_path, g_extern.config_path, sizeof(g_extern.core_specific_config_path));
+   }
+
+   fill_pathname_dir(g_extern.core_specific_config_path, g_settings.libretro, ".cfg", sizeof(g_extern.core_specific_config_path));
+
+   if (g_settings.core_specific_config)
+   {
+      char tmp[PATH_MAX];
+      strlcpy(tmp, g_settings.libretro, sizeof(tmp));
+      RARCH_LOG("Loading core-specific config from: %s.\n", g_extern.core_specific_config_path);
+
+      if (!config_load_file(g_extern.core_specific_config_path, true))
+         RARCH_WARN("Core-specific config not found, reusing last config.\n");
+
+      // Force some parameters which are implied when using core specific configs.
+
+      // Don't have the core config file overwrite the libretro path.
+      strlcpy(g_settings.libretro, tmp, sizeof(g_settings.libretro));
+      // This must be true for core specific configs.
+      g_settings.core_specific_config = true;
+   }
+}
+
 void config_load(void)
 {
+   // Flush out per-core configs before loading a new config.
+   if (*g_extern.core_specific_config_path && g_extern.config_save_on_exit && g_settings.core_specific_config)
+      config_save_file(g_extern.core_specific_config_path);
+
    if (!g_extern.block_config_read)
    {
       config_set_defaults();
       parse_config_file();
    }
+
+   // Per-core config handling.
+   config_load_core_specific();
 }
 
 static config_file_t *open_default_config_file(void)
@@ -574,12 +621,12 @@ static void parse_config_file(void)
    if (*g_extern.config_path)
    {
       RARCH_LOG("Loading config from: %s.\n", g_extern.config_path);
-      ret = config_load_file(g_extern.config_path);
+      ret = config_load_file(g_extern.config_path, false);
    }
    else
    {
       RARCH_LOG("Loading default config.\n");
-      ret = config_load_file(NULL);
+      ret = config_load_file(NULL, false);
       if (*g_extern.config_path)
          RARCH_LOG("Found default config: %s.\n", g_extern.config_path);
    }
@@ -593,7 +640,7 @@ static void parse_config_file(void)
    }
 }
 
-bool config_load_file(const char *path)
+bool config_load_file(const char *path, bool set_defaults)
 {
    unsigned i;
    config_file_t *conf = NULL;
@@ -609,6 +656,9 @@ bool config_load_file(const char *path)
 
    if (conf == NULL)
       return true;
+
+   if (set_defaults)
+      config_set_defaults();
 
    char *save;
    char tmp_append_path[PATH_MAX]; // Don't destroy append_config_path.
@@ -931,6 +981,8 @@ bool config_load_file(const char *path)
 
    config_read_keybinds_conf(conf);
 
+   CONFIG_GET_BOOL(core_specific_config, "core_specific_config");
+
    config_file_free(conf);
    return true;
 }
@@ -1242,6 +1294,8 @@ bool config_save_file(const char *path)
 
    for (i = 0; i < MAX_PLAYERS; i++)
       save_keybinds_player(conf, i);
+
+   config_set_bool(conf, "core_specific_config", g_settings.core_specific_config);
 
    bool ret = config_file_write(conf, path);
    config_file_free(conf);

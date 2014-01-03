@@ -1,6 +1,6 @@
 /*  RetroArch - A frontend for libretro.
- *  Copyright (C) 2010-2013 - Hans-Kristian Arntzen
- *  Copyright (C) 2011-2013 - Daniel De Matteis
+ *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
+ *  Copyright (C) 2011-2014 - Daniel De Matteis
  * 
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -64,8 +64,8 @@ static const char *stock_hlsl_program =
 
 struct hlsl_program
 {
-   IDirect3DVertexShader9 *vprg;
-   IDirect3DPixelShader9 *fprg;
+   LPDIRECT3DVERTEXSHADER vprg;
+   LPDIRECT3DPIXELSHADER fprg;
    D3DXHANDLE	vid_size_f;
    D3DXHANDLE	tex_size_f;
    D3DXHANDLE	out_size_f;
@@ -82,7 +82,7 @@ struct hlsl_program
    XMMATRIX mvp_val;   /* TODO: Move to D3DXMATRIX here */
 };
 
-static IDirect3DDevice9 *d3d_device_ptr;
+static LPDIRECT3DDEVICE d3d_device_ptr;
 static struct hlsl_program prg[RARCH_HLSL_MAX_SHADERS] = {0};
 static bool hlsl_active = false;
 static unsigned active_index = 0;

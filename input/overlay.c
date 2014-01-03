@@ -1,5 +1,5 @@
 /*  RetroArch - A frontend for libretro.
- *  Copyright (C) 2010-2013 - Hans-Kristian Arntzen
+ *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  * 
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -47,6 +47,7 @@ struct overlay_desc
    float range_x, range_y;
    float range_x_mod, range_y_mod;
    float mod_x, mod_y, mod_w, mod_h;
+   float delta_x, delta_y;
 
    enum overlay_type type;
    uint64_t key_mask;
@@ -55,13 +56,14 @@ struct overlay_desc
    unsigned next_index;
    char next_index_name[64];
 
-   struct video_overlay_image image;
+   struct texture_image image;
    unsigned image_index;
 
    float alpha_mod;
    float range_mod;
 
    bool updated;
+   bool movable;
 };
 
 struct overlay
@@ -69,7 +71,7 @@ struct overlay
    struct overlay_desc *descs;
    size_t size;
 
-   struct video_overlay_image image;
+   struct texture_image image;
 
    bool block_scale;
    float mod_x, mod_y, mod_w, mod_h;
@@ -81,7 +83,7 @@ struct overlay
 
    char name[64];
 
-   struct video_overlay_image *load_images;
+   struct texture_image *load_images;
    unsigned load_images_size;
 };
 
@@ -211,14 +213,14 @@ static void input_overlay_scale(struct overlay *overlay, float scale)
 static void input_overlay_set_vertex_geom(input_overlay_t *ol)
 {
    size_t i;
-   if (ol->active->image.image)
+   if (ol->active->image.pixels)
       ol->iface->vertex_geom(ol->iface_data, 0,
             ol->active->mod_x, ol->active->mod_y, ol->active->mod_w, ol->active->mod_h);
 
    for (i = 0; i < ol->active->size; i++)
    {
       struct overlay_desc *desc = &ol->active->descs[i];
-      if (desc->image.image)
+      if (desc->image.pixels)
          ol->iface->vertex_geom(ol->iface_data, desc->image_index,
                desc->mod_x, desc->mod_y, desc->mod_w, desc->mod_h);
    }
@@ -237,10 +239,10 @@ static void input_overlay_free_overlay(struct overlay *overlay)
 {
    size_t i;
    for (i = 0; i < overlay->size; i++)
-      free((void*)overlay->descs[i].image.image);
+      texture_image_free(&overlay->descs[i].image);
    free(overlay->load_images);
    free(overlay->descs);
-   free((void*)overlay->image.image);
+   texture_image_free(&overlay->image);
 }
 
 static void input_overlay_free_overlays(input_overlay_t *ol)
@@ -272,11 +274,7 @@ static bool input_overlay_load_desc(input_overlay_t *ol, config_file_t *conf, st
 
       struct texture_image img = {0};
       if (texture_image_load(path, &img))
-      {
-         desc->image.image = img.pixels;
-         desc->image.width = img.width;
-         desc->image.height = img.height;
-      }
+         desc->image = img;
    }
 
    char overlay_desc_normalized_key[64];
@@ -391,6 +389,12 @@ static bool input_overlay_load_desc(input_overlay_t *ol, config_file_t *conf, st
    desc->range_mod = range_mod;
    config_get_float(conf, conf_key, &desc->range_mod);
 
+   snprintf(conf_key, sizeof(conf_key), "overlay%u_desc%u_movable", ol_index, desc_index);
+   desc->movable = false;
+   desc->delta_x = 0.0f;
+   desc->delta_y = 0.0f;
+   config_get_bool(conf, conf_key, &desc->movable);
+
    desc->range_x_mod = desc->range_x;
    desc->range_y_mod = desc->range_y;
 
@@ -417,11 +421,7 @@ static bool input_overlay_load_overlay(input_overlay_t *ol, config_file_t *conf,
 
       struct texture_image img = {0};
       if (texture_image_load(overlay_resolved_path, &img))
-      {
-         overlay->image.image  = img.pixels;
-         overlay->image.width  = img.width;
-         overlay->image.height = img.height;
-      }
+         overlay->image = img;
       else
       {
          RARCH_ERR("[Overlay]: Failed to load image: %s.\n", overlay_resolved_path);
@@ -506,19 +506,19 @@ static bool input_overlay_load_overlay(input_overlay_t *ol, config_file_t *conf,
    }
 
    // Precache load image array for simplicity.
-   overlay->load_images = (struct video_overlay_image*)calloc(1 + overlay->size, sizeof(struct overlay_desc));
+   overlay->load_images = (struct texture_image*)calloc(1 + overlay->size, sizeof(struct texture_image));
    if (!overlay->load_images)
    {
       RARCH_ERR("[Overlay]: Failed to allocate load_images.\n");
       return false;
    }
 
-   if (overlay->image.image)
+   if (overlay->image.pixels)
       overlay->load_images[overlay->load_images_size++] = overlay->image;
 
    for (i = 0; i < overlay->size; i++)
    {
-      if (overlay->descs[i].image.image)
+      if (overlay->descs[i].image.pixels)
       {
          overlay->descs[i].image_index = overlay->load_images_size;
          overlay->load_images[overlay->load_images_size++] = overlay->descs[i].image;
@@ -762,12 +762,24 @@ void input_overlay_poll(input_overlay_t *ol, input_overlay_state_t *out, int16_t
       }
       else
       {
-         float x_val = (x - desc->x) / desc->range_x_mod / desc->analog_saturate_pct;
-         float y_val = (y - desc->y) / desc->range_y_mod / desc->analog_saturate_pct;
+         float x_dist = x - desc->x;
+         float y_dist = y - desc->y;
+         float x_val = x_dist / desc->range_x;
+         float y_val = y_dist / desc->range_y;
+         float x_val_sat = x_val / desc->analog_saturate_pct;
+         float y_val_sat = y_val / desc->analog_saturate_pct;
 
          unsigned int base = (desc->type == OVERLAY_TYPE_ANALOG_RIGHT) ? 2 : 0;
-         out->analog[base + 0] = clamp(x_val, -1.0f, 1.0f) * 32767.0f;
-         out->analog[base + 1] = clamp(y_val, -1.0f, 1.0f) * 32767.0f;
+         out->analog[base + 0] = clamp(x_val_sat, -1.0f, 1.0f) * 32767.0f;
+         out->analog[base + 1] = clamp(y_val_sat, -1.0f, 1.0f) * 32767.0f;
+      }
+
+      if (desc->movable)
+      {
+         float x_dist = x - desc->x;
+         float y_dist = y - desc->y;
+         desc->delta_x = clamp(x_dist, -desc->range_x, desc->range_x) * ol->active->mod_w;
+         desc->delta_y = clamp(y_dist, -desc->range_y, desc->range_y) * ol->active->mod_h;
       }
    }
 
@@ -775,6 +787,19 @@ void input_overlay_poll(input_overlay_t *ol, input_overlay_state_t *out, int16_t
       ol->blocked = false;
    else if (ol->blocked)
       memset(out, 0, sizeof(*out));
+}
+
+static void input_overlay_update_desc_geom(input_overlay_t *ol, struct overlay_desc *desc)
+{
+   if (desc->image.pixels && desc->movable)
+   {
+      ol->iface->vertex_geom(ol->iface_data, desc->image_index,
+            desc->mod_x + desc->delta_x, desc->mod_y + desc->delta_y,
+            desc->mod_w, desc->mod_h);
+
+      desc->delta_x = 0.0f;
+      desc->delta_y = 0.0f;
+   }
 }
 
 void input_overlay_post_poll(input_overlay_t *ol)
@@ -793,7 +818,7 @@ void input_overlay_post_poll(input_overlay_t *ol)
          desc->range_x_mod = desc->range_x * desc->range_mod;
          desc->range_y_mod = desc->range_y * desc->range_mod;
 
-         if (desc->image.image)
+         if (desc->image.pixels)
             ol->iface->set_alpha(ol->iface_data, desc->image_index,
                   desc->alpha_mod * g_settings.input.overlay_opacity);
       }
@@ -803,6 +828,7 @@ void input_overlay_post_poll(input_overlay_t *ol)
          desc->range_y_mod = desc->range_y;
       }
 
+      input_overlay_update_desc_geom(ol, desc);
       desc->updated = false;
    }
 }
@@ -819,6 +845,10 @@ void input_overlay_poll_clear(input_overlay_t *ol)
       desc->range_x_mod = desc->range_x;
       desc->range_y_mod = desc->range_y;
       desc->updated = false;
+
+      desc->delta_x = 0.0f;
+      desc->delta_y = 0.0f;
+      input_overlay_update_desc_geom(ol, desc);
    }
 }
 

@@ -1,5 +1,5 @@
 /*  RetroArch - A frontend for libretro.
- *  Copyright (C) 2010-2013 - Hans-Kristian Arntzen
+ *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  * 
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -24,6 +24,7 @@
 #include <stdint.h>
 #include "msvc/msvc_compat.h"
 #include "gfx/scaler/scaler.h"
+#include "gfx/image.h"
 #include "input/overlay.h"
 
 #ifdef HAVE_CONFIG_H
@@ -409,17 +410,10 @@ typedef struct location_driver
 struct rarch_viewport;
 
 #ifdef HAVE_OVERLAY
-struct video_overlay_image
-{
-   const uint32_t *image;
-   unsigned width;
-   unsigned height;
-};
-
 typedef struct video_overlay_interface
 {
    void (*enable)(void *data, bool state);
-   bool (*load)(void *data, const struct video_overlay_image *images, unsigned num_images);
+   bool (*load)(void *data, const struct texture_image *images, unsigned num_images);
    void (*tex_geom)(void *data, unsigned image, float x, float y, float w, float h);
    void (*vertex_geom)(void *data, unsigned image, float x, float y, float w, float h);
    void (*full_screen)(void *data, bool enable);
@@ -657,7 +651,7 @@ extern const audio_driver_t audio_null;
 extern const video_driver_t video_gl;
 extern const video_driver_t video_psp1;
 extern const video_driver_t video_vita;
-extern const video_driver_t video_d3d9;
+extern const video_driver_t video_d3d;
 extern const video_driver_t video_gx;
 extern const video_driver_t video_xenon360;
 extern const video_driver_t video_xvideo;

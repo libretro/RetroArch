@@ -1,6 +1,6 @@
 /*  RetroArch - A frontend for libretro.
- *  Copyright (C) 2010-2013 - Hans-Kristian Arntzen
- *  Copyright (C) 2011-2013 - Daniel De Matteis
+ *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
+ *  Copyright (C) 2011-2014 - Daniel De Matteis
  * 
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -63,9 +63,9 @@ typedef struct xdk_d3d_video
    LPDIRECT3DVERTEXBUFFER vertex_buf;
    LPDIRECT3DTEXTURE lpTexture;
 #ifdef HAVE_D3D9
-   D3DTexture lpTexture_ot_as16srgb;
+   LPDIRECT3DTEXTURE lpTexture_ot_as16srgb;
    LPDIRECT3DTEXTURE lpTexture_ot;
-   IDirect3DVertexDeclaration9* v_decl;
+   LPDIRECT3DVERTEXDECLARATION v_decl;
 #endif
 #ifdef HAVE_MENU
    bool rgui_texture_enable;

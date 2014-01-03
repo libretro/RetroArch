@@ -1,3 +1,4 @@
+#include <stdint.h>
 #include "rglgen.h"
 #include "glsym.h"
 #include <string.h>

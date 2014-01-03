@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
- *  Copyright (C) 2010-2013 - Hans-Kristian Arntzen
- *  Copyright (C) 2011-2013 - Daniel De Matteis
- *  Copyright (C) 2012-2013 - Michael Lelli
+ *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
+ *  Copyright (C) 2011-2014 - Daniel De Matteis
+ *  Copyright (C) 2012-2014 - Michael Lelli
  * 
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -442,6 +442,13 @@ int menu_set_settings(void *data, unsigned setting, unsigned action)
          }
          else if (action == RGUI_ACTION_START)
             g_extern.config_save_on_exit = true;
+         break;
+      case RGUI_SETTINGS_PER_CORE_CONFIG:
+         if (action == RGUI_ACTION_OK || action == RGUI_ACTION_RIGHT 
+               || action == RGUI_ACTION_LEFT)
+            g_settings.core_specific_config = !g_settings.core_specific_config;
+         else if (action == RGUI_ACTION_START)
+            g_settings.core_specific_config = default_core_specific_config;
          break;
 #if defined(HAVE_THREADS)
       case RGUI_SETTINGS_SRAM_AUTOSAVE:
@@ -1721,6 +1728,9 @@ void menu_set_settings_label(char *type_str, size_t type_str_size, unsigned *w, 
          break;
       case RGUI_SETTINGS_CONFIG_SAVE_ON_EXIT:
          strlcpy(type_str, g_extern.config_save_on_exit ? "ON" : "OFF", type_str_size);
+         break;
+      case RGUI_SETTINGS_PER_CORE_CONFIG:
+         strlcpy(type_str, g_settings.core_specific_config ? "ON" : "OFF", type_str_size);
          break;
       case RGUI_SETTINGS_SRAM_AUTOSAVE:
          if (g_settings.autosave_interval)

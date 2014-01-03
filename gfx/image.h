@@ -1,5 +1,5 @@
 /*  RetroArch - A frontend for libretro.
- *  Copyright (C) 2010-2013 - Hans-Kristian Arntzen
+ *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  * 
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -39,6 +39,7 @@ struct texture_image
 };
 
 bool texture_image_load(const char *path, struct texture_image* img);
+void texture_image_free(struct texture_image *img);
 
 #endif
 

@@ -1,5 +1,5 @@
 /*  RetroArch - A frontend for libretro.
- *  Copyright (C) 2013 - Jason Fetters
+ *  Copyright (C) 2013-2014 - Jason Fetters
  * 
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -311,8 +311,8 @@ static void file_action(enum file_action action, NSString* source, NSString* tar
          self.selectedItem = [self itemForIndexPath:indexPath];
          bool is_zip = [[self.selectedItem.path pathExtension] isEqualToString:@"zip"];
 
-         NSString* button4_name = (get_ios_version_major() >= 7) ? @"AirDrop" : @"Delete";
-         NSString* button5_name = (get_ios_version_major() >= 7) ? @"Delete" : nil;
+         NSString* button4_name = (IOS_IS_VERSION_7_OR_HIGHER()) ? @"AirDrop" : @"Delete";
+         NSString* button5_name = (IOS_IS_VERSION_7_OR_HIGHER()) ? @"Delete" : nil;
          
          UIActionSheet* menu = [[UIActionSheet alloc] initWithTitle:self.selectedItem.path.lastPathComponent delegate:self
                                                       cancelButtonTitle:@"Cancel" destructiveButtonTitle:nil
@@ -350,7 +350,7 @@ static void file_action(enum file_action action, NSString* source, NSString* tar
       [alertView show];
    }
 #ifdef __IPHONE_7_0
-   else if ([action isEqualToString:@"AirDrop"] && get_ios_version_major() >= 7)
+   else if ([action isEqualToString:@"AirDrop"] && IOS_IS_VERSION_7_OR_HIGHER())
    {
       // TODO: Zip if not already zipped
       

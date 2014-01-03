@@ -1,6 +1,6 @@
 /*  RetroArch - A frontend for libretro.
- *  Copyright (C) 2010-2013 - Hans-Kristian Arntzen
- *  Copyright (C) 2011-2013 - Daniel De Matteis
+ *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
+ *  Copyright (C) 2011-2014 - Daniel De Matteis
  * 
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -42,9 +42,9 @@
 #ifndef PACKAGE_VERSION
 #ifdef __QNX__
 /* FIXME - avoid too many decimal points in number error */
-#define PACKAGE_VERSION "0997"
+#define PACKAGE_VERSION "1000"
 #else
-#define PACKAGE_VERSION "0.9.9.7"
+#define PACKAGE_VERSION "1.0.0.0"
 #endif
 #endif
 
@@ -301,6 +301,8 @@ struct settings
    bool rgui_show_start_screen;
 #endif
    bool fps_show;
+
+   bool core_specific_config;
 };
 
 enum rarch_game_type
@@ -361,6 +363,8 @@ struct global
 #ifdef HAVE_RMENU
    char menu_texture_path[PATH_MAX];
 #endif
+
+   // Config associated with global "default" config.
    char config_path[PATH_MAX];
    char append_config_path[PATH_MAX];
    char input_config_path[PATH_MAX];
@@ -377,7 +381,6 @@ struct global
    char savefile_name_asrm[PATH_MAX];
    char savefile_name_bsrm[PATH_MAX];
    char savestate_name[PATH_MAX];
-   char xml_name[PATH_MAX];
 
    // Used on reentrancy to use a savestate dir.
    char savefile_dir[PATH_MAX];
@@ -650,6 +653,9 @@ struct global
 
    bool libretro_no_rom;
    bool libretro_dummy;
+
+   // Config file associated with per-core configs.
+   char core_specific_config_path[PATH_MAX];
 };
 
 struct rarch_main_wrap
@@ -680,7 +686,7 @@ const char *config_get_default_audio(void);
 const char *config_get_default_input(void);
 
 #include "conf/config_file.h"
-bool config_load_file(const char *path);
+bool config_load_file(const char *path, bool set_defaults);
 bool config_save_file(const char *path);
 bool config_read_keybinds(const char *path);
 

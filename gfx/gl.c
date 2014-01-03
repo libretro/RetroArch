@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
- *  Copyright (C) 2010-2013 - Hans-Kristian Arntzen
- *  Copyright (C) 2011-2013 - Daniel De Matteis
- *  Copyright (C) 2012-2013 - Michael Lelli
+ *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
+ *  Copyright (C) 2011-2014 - Daniel De Matteis
+ *  Copyright (C) 2012-2014 - Michael Lelli
  * 
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -1268,11 +1268,17 @@ static inline void gl_copy_frame(void *data, const void *frame, unsigned width, 
    glPixelStorei(GL_UNPACK_ALIGNMENT, get_alignment(pitch));
    if (gl->base_size == 2)
    {
-      // Always use 32-bit textures on desktop GL.
-      gl_convert_frame_rgb16_32(gl, gl->conv_buffer, frame, width, height, pitch);
+      const void *buf = frame;
+      if (!gl->have_es2_compat)
+      {
+         // Convert to 32-bit textures on desktop GL.
+         gl_convert_frame_rgb16_32(gl, gl->conv_buffer, frame, width, height, pitch);
+         buf = gl->conv_buffer;
+      }
+
       glTexSubImage2D(GL_TEXTURE_2D,
             0, 0, 0, width, height, gl->texture_type,
-            gl->texture_fmt, gl->conv_buffer);
+            gl->texture_fmt, buf);
    }
    else
    {
@@ -1666,6 +1672,9 @@ static bool resolve_extensions(gl_t *gl)
       RARCH_ERR("[GL]: Failed to init VAOs.\n");
       return false;
    }
+
+   // GL_RGB565 internal format support.
+   gl->have_es2_compat = gl_query_extension(gl, "ARB_ES2_compatibility");
 #endif
 
 #ifdef HAVE_GL_SYNC
@@ -1676,7 +1685,7 @@ static bool resolve_extensions(gl_t *gl)
 
    driver.gfx_use_rgba = false;
 #ifdef HAVE_OPENGLES2
-   if (gl_query_extension(gl, "BGRA8888"))
+   if (gl_query_extension(gl, "BGRA8888")) // There are both APPLE and EXT variants.
       RARCH_LOG("[GL]: BGRA8888 extension found for GLES.\n");
    else
    {
@@ -1743,6 +1752,16 @@ static inline void gl_set_texture_fmts(void *data, bool rgb32)
       gl->internal_fmt = GL_RGBA;
       gl->texture_type = GL_RGBA;
    }
+
+#ifndef HAVE_OPENGLES
+   if (!rgb32 && gl->have_es2_compat) // Use GL_RGB565 instead.
+   {
+      RARCH_LOG("[GL]: Using GL_RGB565 for texture uploads.\n");
+      gl->internal_fmt = RARCH_GL_INTERNAL_FORMAT16_565;
+      gl->texture_type = RARCH_GL_TEXTURE_TYPE16_565;
+      gl->texture_fmt = RARCH_GL_FORMAT16_565;
+   }
+#endif
 }
 
 static inline void gl_reinit_textures(void *data, const video_info_t *video)
@@ -2423,7 +2442,7 @@ static void gl_restart(void)
 
 #ifdef HAVE_OVERLAY
 static void gl_free_overlay(gl_t *gl);
-static bool gl_overlay_load(void *data, const struct video_overlay_image *images, unsigned num_images)
+static bool gl_overlay_load(void *data, const struct texture_image *images, unsigned num_images)
 {
    unsigned i;
    gl_t *gl = (gl_t*)data;
@@ -2448,7 +2467,7 @@ static bool gl_overlay_load(void *data, const struct video_overlay_image *images
       glPixelStorei(GL_UNPACK_ALIGNMENT, get_alignment(images[i].width * sizeof(uint32_t)));
       glTexImage2D(GL_TEXTURE_2D, 0, driver.gfx_use_rgba ? GL_RGBA : RARCH_GL_INTERNAL_FORMAT32,
             images[i].width, images[i].height, 0, driver.gfx_use_rgba ? GL_RGBA : RARCH_GL_TEXTURE_TYPE32,
-            RARCH_GL_FORMAT32, images[i].image);
+            RARCH_GL_FORMAT32, images[i].pixels);
 
       gl_overlay_tex_geom(gl, i, 0, 0, 1, 1); // Default. Stretch to whole screen.
       gl_overlay_vertex_geom(gl, i, 0, 0, 1, 1);

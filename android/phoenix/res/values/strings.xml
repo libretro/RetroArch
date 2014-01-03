@@ -235,13 +235,13 @@
     <string name="retro_website">RetroArch/libretro homepage</string>
     <string name="retro_website_desc">The official homepage of the RetroArch/libretro project.</string>
     <string name="manuals">Manuals</string>
-    <string name="retroarch_guide">RetroArch Guide (PDF)</string>
-    <string name="retroarch_guide_desc">The manual to RetroArch Android in PDF format.</string>
-    <string name="cores_guide">Cores Guide (PDF)</string>
-    <string name="cores_guide_desc">The manual to most libretro cores in PDF format.</string>
+    <string name="retroarch_guide">RetroArch Enduser Guide (PDF)</string>
+    <string name="retroarch_guide_desc">The enduser guide to RetroArch in PDF format.</string>
     <string name="development">Development</string>
     <string name="overlay_guide">Overlay Guide (PDF)</string>
     <string name="overlay_guide_desc">Explains howto make your own overlays.</string>
+    <string name="libretro_guide">Libretro Guide (PDF)</string>
+    <string name="libretro_guide_desc">Guide to using libretro for developers.</string>
     
     <!-- Miscellaneous -->
     <string name="ok">OK</string>

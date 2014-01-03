@@ -1,5 +1,7 @@
 /*  RetroArch - A frontend for libretro.
- *  Copyright (C) 2010-2013 - Hans-Kristian Arntzen
+ *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
+ *  Copyright (C) 2011-2014 - Daniel De Matteis
+ *  Copyright (C) 2012-2014 - Michael Lelli
  * 
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -511,8 +513,9 @@ static inline void input_poll_overlay(void)
 
       driver.overlay_state.buttons |= polled_data.buttons;
 
+      // Fingers pressed later take prio and matched up with overlay poll priorities.
       for (j = 0; j < 4; j++)
-         if (!driver.overlay_state.analog[j])
+         if (polled_data.analog[j])
             driver.overlay_state.analog[j] = polled_data.analog[j];
 
       polled = true;
@@ -747,7 +750,6 @@ static void print_help(void)
    puts("\t--bps: Specifies path for BPS patch that will be applied to ROM.");
    puts("\t--ips: Specifies path for IPS patch that will be applied to ROM.");
    puts("\t--no-patch: Disables all forms of rom patching.");
-   puts("\t-X/--xml: Specifies path to XML memory map.");
    puts("\t-D/--detach: Detach RetroArch from the running console. Not relevant for all platforms.\n");
 }
 
@@ -855,7 +857,6 @@ static void parse_input(int argc, char *argv[])
       { "bps", 1, &val, 'B' },
       { "ips", 1, &val, 'I' },
       { "no-patch", 0, &val, 'n' },
-      { "xml", 1, NULL, 'X' },
       { "detach", 0, NULL, 'D' },
       { "features", 0, &val, 'f' },
       { NULL, 0, NULL, 0 }
@@ -885,7 +886,7 @@ static void parse_input(int argc, char *argv[])
 #define BSV_MOVIE_ARG
 #endif
 
-   const char *optstring = "hs:fvS:m:p4jJA:g:b:c:B:Y:Z:U:DN:X:" BSV_MOVIE_ARG NETPLAY_ARG DYNAMIC_ARG FFMPEG_RECORD_ARG;
+   const char *optstring = "hs:fvS:m:p4jJA:g:b:c:B:Y:Z:U:DN:" BSV_MOVIE_ARG NETPLAY_ARG DYNAMIC_ARG FFMPEG_RECORD_ARG;
 
    for (;;)
    {
@@ -1066,10 +1067,6 @@ static void parse_input(int argc, char *argv[])
          case 'U':
             strlcpy(g_extern.ups_name, optarg, sizeof(g_extern.ups_name));
             g_extern.ups_pref = true;
-            break;
-
-         case 'X':
-            strlcpy(g_extern.xml_name, optarg, sizeof(g_extern.xml_name));
             break;
 
          case 'D':
@@ -1876,9 +1873,6 @@ static void fill_pathnames(void)
 
       if (!(*g_extern.ips_name))
          fill_pathname_noext(g_extern.ips_name, g_extern.basename, ".ips", sizeof(g_extern.ips_name));
-
-      if (!(*g_extern.xml_name))
-         fill_pathname_noext(g_extern.xml_name, g_extern.basename, ".xml", sizeof(g_extern.xml_name));
    }
 }
 

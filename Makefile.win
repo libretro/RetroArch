@@ -116,7 +116,7 @@ ifeq ($(HAVE_SDL), 1)
 endif
 
 ifeq ($(HAVE_THREADS), 1)
-   OBJ += autosave.o thread.o gfx/thread_wrapper.o audio/thread_wrapper.o
+   OBJ += autosave.o thread.o gfx/video_thread_wrapper.o audio/thread_wrapper.o
    DEFINES += -DHAVE_THREADS
 endif
 
@@ -140,7 +140,7 @@ else
 endif
 
 ifeq ($(HAVE_D3D9), 1)
-   OBJ += gfx/d3d9/d3d9.o gfx/d3d9/render_chain.o
+   OBJ += gfx/d3d9/d3d.o gfx/d3d9/d3d9_pc.o gfx/d3d9/render_chain.o
    DEFINES += -DHAVE_WIN32_D3D9
    LIBS += -ld3d9 -lcg -lcgD3D9 -ld3dx9 -ldxguid
 endif
@@ -323,10 +323,10 @@ clean:
 	rm -f tools/*.o
 
 dist_x86: all
-	zip -r retroarch-win32-0.9.9.6.zip $(TARGET) $(JTARGET) retroarch.cfg
+	zip -r retroarch-win32-1.0.zip $(TARGET) $(JTARGET) retroarch.cfg
 
 dist_x86_64: all
-	zip -r retroarch-win64-0.9.9.6.zip $(TARGET) $(JTARGET) retroarch.cfg
+	zip -r retroarch-win64-1.0.zip $(TARGET) $(JTARGET) retroarch.cfg
 
 libs_x86:
 	wget http://themaister.net/retroarch-dl/RetroArch-win32-libs.zip

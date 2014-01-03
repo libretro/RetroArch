@@ -1,5 +1,6 @@
 /*  RetroArch - A frontend for libretro.
- *  Copyright (C) 2010-2012 - Hans-Kristian Arntzen
+ *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
+ *  Copyright (C) 2011-2014 - Daniel De Matteis
  * 
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -16,23 +17,23 @@
 #ifndef D3DVIDEO_HPP__
 #define D3DVIDEO_HPP__
 
+#ifdef HAVE_CONFIG_H
+#include "../../config.h"
+#endif
+
 #include "../../general.h"
 #include "../../driver.h"
 #include "../shader_parse.h"
 
 #include "../gfx_common.h"
 
-#include <d3d9.h>
-#include <d3dx9.h>
-#include <d3dx9core.h>
-
 #ifdef HAVE_CG
 #include <Cg/cg.h>
 #include <Cg/cgD3D9.h>
 #endif
+#include "d3d_defines.h"
 #include <string>
 #include <vector>
-#include <memory>
 
 class RenderChain;
 
@@ -48,18 +49,23 @@ typedef struct
    bool fullscreen;
    bool enabled;
    float alpha_mod;
-   IDirect3DTexture9 *tex;
-   IDirect3DVertexBuffer9 *vert_buf;
+   LPDIRECT3DTEXTURE tex;
+   LPDIRECT3DVERTEXBUFFER vert_buf;
 } overlay_t;
 
 class D3DVideo
 {
    public:
-      D3DVideo(const video_info_t* info);
+      D3DVideo();
+      ~D3DVideo();
+
+      // Delay constructor due to lack of exceptions.
+      bool construct(const video_info_t *info,
+            const input_driver_t **input, void **input_data);
+
       bool frame(const void* frame,
             unsigned width, unsigned height, unsigned pitch,
             const char *msg);
-      ~D3DVideo();
 
       bool alive();
       bool focus() const;
@@ -69,15 +75,17 @@ class D3DVideo
       bool read_viewport(uint8_t *buffer);
       void resize(unsigned new_width, unsigned new_height);
       bool set_shader(const std::string &path);
-      void process_shader();
+      bool process_shader(void);
 
       void set_filtering(unsigned index, bool smooth);
       void set_font_rect(font_params_t *params);
 
       void overlay_render(overlay_t &overlay);
 
+      void show_cursor(bool show);
+
 #ifdef HAVE_OVERLAY
-      bool overlay_load(const video_overlay_image *images, unsigned num_images);
+      bool overlay_load(const texture_image *images, unsigned num_images);
       void overlay_tex_geom(unsigned index, float x, float y, float w, float h);
       void overlay_vertex_geom(unsigned index, float x, float y, float w, float h);
       void overlay_enable(bool state);
@@ -102,8 +110,8 @@ class D3DVideo
 
       WNDCLASSEX windowClass;
       HWND hWnd;
-      IDirect3D9 *g_pD3D;
-      IDirect3DDevice9 *dev;
+      LPDIRECT3D g_pD3D;
+      LPDIRECT3DDEVICE dev;
       LPD3DXFONT font;
 
       void recompute_pass_sizes();
@@ -112,19 +120,19 @@ class D3DVideo
       unsigned screen_width;
       unsigned screen_height;
       unsigned rotation;
-      D3DVIEWPORT9 final_viewport;
+      D3DVIEWPORT final_viewport;
 
       std::string cg_shader;
 
       struct gfx_shader shader;
 
-      void process();
+      void process(void);
 
-      void init(const video_info_t &info);
-      void init_base(const video_info_t &info);
-      void make_d3dpp(const video_info_t &info, D3DPRESENT_PARAMETERS &d3dpp);
-      void deinit();
-      RECT monitor_rect();
+      bool init(const video_info_t *info);
+      bool init_base(const video_info_t *info);
+      void make_d3dpp(const video_info_t *info, D3DPRESENT_PARAMETERS *d3dpp);
+      void deinit(void);
+      RECT monitor_rect(void);
 
       video_info_t video_info;
 
@@ -136,21 +144,20 @@ class D3DVideo
       void deinit_cg();
 #endif
 
-      void init_imports();
-      void init_luts();
-      void init_singlepass();
-      void init_multipass();
-      bool init_chain(const video_info_t &video_info);
-      std::unique_ptr<RenderChain> chain;
-      void deinit_chain();
+      bool init_imports(void);
+      bool init_luts(void);
+      bool init_singlepass(void);
+      bool init_multipass(void);
+      bool init_chain(const video_info_t *video_info);
+      void deinit_chain(void);
 
-      bool init_font();
-      void deinit_font();
+      bool init_font(void);
+      void deinit_font(void);
       RECT font_rect;
       RECT font_rect_shifted;
       uint32_t font_color;
 
-      void update_title();
+      void update_title(void);
 
 #ifdef HAVE_OVERLAY
       bool overlays_enabled;
@@ -163,6 +170,8 @@ class D3DVideo
 #ifdef HAVE_MENU
       overlay_t rgui;
 #endif
+
+      RenderChain *chain;
 };
 
 #endif

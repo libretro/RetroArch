@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
- *  Copyright (C) 2010-2013 - Hans-Kristian Arntzen
- *  Copyright (C) 2011-2013 - Daniel De Matteis
- *  Copyright (C) 2012-2013 - Michael Lelli
+ *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
+ *  Copyright (C) 2011-2014 - Daniel De Matteis
+ *  Copyright (C) 2012-2014 - Michael Lelli
  * 
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -423,25 +423,7 @@ static void *rmenu_init(void)
 
 static void rmenu_free_assets(void *data)
 {
-#ifdef _XBOX1
-   if (menu_texture->vertex_buf)
-   {
-      menu_texture->vertex_buf->Release();
-      menu_texture->vertex_buf = NULL;
-   }
-   if (menu_texture->pixels)
-   {
-      menu_texture->pixels->Release();
-      menu_texture->pixels = NULL;
-   }
-#else
-   if (menu_texture->pixels)
-   {
-      free(menu_texture->pixels);
-      menu_texture->pixels = NULL;
-   }
-#endif
-
+   texture_image_free(menu_texture);
    menu_texture_inited = false;
 }
 

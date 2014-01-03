@@ -1,5 +1,5 @@
 /*  RetroArch - A frontend for libretro.
- *  Copyright (C) 2013 - Jason Fetters
+ *  Copyright (C) 2013-2014 - Jason Fetters
  * 
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -32,7 +32,8 @@
 
 apple_frontend_settings_t apple_frontend_settings;
 
-int get_ios_version_major()
+#ifdef IOS
+int get_ios_version_major(void)
 {
    static int version = -1;
    
@@ -47,6 +48,7 @@ void ios_set_bluetooth_mode(NSString* mode)
    apple_input_enable_icade([mode isEqualToString:@"icade"]);
    btstack_set_poweron([mode isEqualToString:@"btstack"]);
 }
+#endif
 
 const void* apple_get_frontend_settings(void)
 {
@@ -157,7 +159,7 @@ static void handle_touch_event(NSArray* touches)
    if ([[event allTouches] count])
       handle_touch_event([[event allTouches] allObjects]);
 
-   if (get_ios_version_major() < 7 && [event respondsToSelector:@selector(_gsEvent)])
+   if (!(IOS_IS_VERSION_7_OR_HIGHER()) && [event respondsToSelector:@selector(_gsEvent)])
    {
       // Stolen from: http://nacho4d-nacho4d.blogspot.com/2012/01/catching-keyboard-events-in-ios.html
       const uint8_t* eventMem = objc_unretainedPointer([event performSelector:@selector(_gsEvent)]);

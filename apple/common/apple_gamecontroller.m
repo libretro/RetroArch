@@ -1,5 +1,5 @@
 /*  RetroArch - A frontend for libretro.
- *  Copyright (C) 2013 - Jason Fetters
+ *  Copyright (C) 2013-2014 - Jason Fetters
  * 
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -14,9 +14,9 @@
  */
 
 #include <Availability.h>
+#include "RetroArch_Apple.h"
 #ifdef IOS
 #include <UIKit/UIDevice.h>
-static NSArray *versionCompatibility;
 #endif
 
 #if defined(__IPHONE_7_0) && !defined(OSX)
@@ -29,7 +29,7 @@ static NSArray *versionCompatibility;
 static void apple_gamecontroller_poll(GCController* controller)
 {
 #ifdef IOS
-    if ( [[versionCompatibility objectAtIndex:0] intValue] < 7 )
+    if (IOS_IS_VERSION_6_OR_LOWER())
         return;
 #endif
    if (!controller || controller.playerIndex == MAX_PLAYERS)
@@ -79,7 +79,7 @@ static void apple_gamecontroller_poll(GCController* controller)
 void apple_gamecontroller_poll_all(void)
 {
 #ifdef IOS
-    if ( [[versionCompatibility objectAtIndex:0] intValue] < 7 )
+    if (IOS_IS_VERSION_6_OR_LOWER())
         return;
 #endif
    NSArray* controllers = [GCController controllers];
@@ -91,7 +91,7 @@ void apple_gamecontroller_poll_all(void)
 void apple_gamecontroller_connect(GCController* controller)
 {
 #ifdef IOS
-    if ( [[versionCompatibility objectAtIndex:0] intValue] < 7 )
+    if (IOS_IS_VERSION_6_OR_LOWER())
         return;
 #endif
    int32_t slot = apple_joypad_connect_gcapi();
@@ -112,7 +112,7 @@ void apple_gamecontroller_connect(GCController* controller)
 void apple_gamecontroller_disconnect(GCController* controller)
 {
 #ifdef IOS
-    if ( [[versionCompatibility objectAtIndex:0] intValue] < 7 )
+    if (IOS_IS_VERSION_6_OR_LOWER())
         return;
 #endif
    if (controller.playerIndex == GCControllerPlayerIndexUnset)
@@ -124,9 +124,7 @@ void apple_gamecontroller_disconnect(GCController* controller)
 void apple_gamecontroller_init(void)
 {
 #ifdef IOS
-    versionCompatibility = [[UIDevice currentDevice].systemVersion componentsSeparatedByString:@"."];
-    
-    if ( [[versionCompatibility objectAtIndex:0] intValue] < 7 )
+    if (IOS_IS_VERSION_6_OR_LOWER())
         return;
 #endif
     

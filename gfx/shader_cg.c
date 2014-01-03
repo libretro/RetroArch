@@ -1,5 +1,5 @@
 /*  RetroArch - A frontend for libretro.
- *  Copyright (C) 2010-2013 - Hans-Kristian Arntzen
+ *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  * 
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -511,8 +511,6 @@ static void load_texture_data(GLuint obj, const struct texture_image *img, bool 
    glTexImage2D(GL_TEXTURE_2D,
          0, driver.gfx_use_rgba ? GL_RGBA : RARCH_GL_INTERNAL_FORMAT32, img->width, img->height,
          0, driver.gfx_use_rgba ? GL_RGBA : RARCH_GL_TEXTURE_TYPE32, RARCH_GL_FORMAT32, img->pixels);
-
-   free(img->pixels);
 }
 
 static bool load_textures(void)
@@ -528,7 +526,7 @@ static bool load_textures(void)
       RARCH_LOG("Loading image from: \"%s\".\n",
             cg_shader->lut[i].path);
 
-      struct texture_image img;
+      struct texture_image img = {0};
       if (!texture_image_load(cg_shader->lut[i].path, &img))
       {
          RARCH_ERR("Failed to load picture ...\n");
@@ -538,6 +536,7 @@ static bool load_textures(void)
       load_texture_data(lut_textures[i], &img,
             cg_shader->lut[i].filter != RARCH_FILTER_NEAREST,
             gl_wrap_type_to_enum(cg_shader->lut[i].wrap));
+      texture_image_free(&img);
    }
 
    glBindTexture(GL_TEXTURE_2D, 0);
