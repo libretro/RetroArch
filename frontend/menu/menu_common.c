@@ -279,7 +279,9 @@ void load_menu_game_history(unsigned game_index)
    rom_history_get_index(rgui->history,
          game_index, &path, &core_path, &core_name);
 
-   rarch_environment_cb(RETRO_ENVIRONMENT_SET_LIBRETRO_PATH, (void*)core_path);
+   // SET_LIBRETRO_PATH is unsafe here.
+   // Risks booting different and wrong core if core doesn't exist anymore.
+   strlcpy(g_settings.libretro, core_path, sizeof(g_settings.libretro));
 
    if (path)
       rgui->load_no_rom = false;
