@@ -1857,7 +1857,7 @@ void menu_populate_entries(void *data, unsigned menu_type)
       case RGUI_SETTINGS_VIDEO_OPTIONS:
          file_list_clear(rgui->selection_buf);
 #ifdef HAVE_SHADER_MANAGER
-         file_list_push(rgui->selection_buf, "Shader Options", RGUI_SETTINGS_SHADER_OPTIONS, 0);
+         file_list_push(rgui->selection_buf, "Shader", RGUI_SETTINGS_SHADER_OPTIONS, 0);
 #endif
 #if defined(GEKKO) || defined(__CELLOS_LV2__)
          file_list_push(rgui->selection_buf, "Screen Resolution", RGUI_SETTINGS_VIDEO_RESOLUTION, 0);
@@ -1915,10 +1915,10 @@ void menu_populate_entries(void *data, unsigned menu_type)
          break;
       case RGUI_SETTINGS_OPTIONS:
          file_list_clear(rgui->selection_buf);
-         file_list_push(rgui->selection_buf, "Video Options", RGUI_SETTINGS_VIDEO_OPTIONS, 0);
-         file_list_push(rgui->selection_buf, "Audio Options", RGUI_SETTINGS_AUDIO_OPTIONS, 0);
-         file_list_push(rgui->selection_buf, "Input Options", RGUI_SETTINGS_INPUT_OPTIONS, 0);
-         file_list_push(rgui->selection_buf, "Path Options", RGUI_SETTINGS_PATH_OPTIONS, 0);
+         file_list_push(rgui->selection_buf, "Video", RGUI_SETTINGS_VIDEO_OPTIONS, 0);
+         file_list_push(rgui->selection_buf, "Audio", RGUI_SETTINGS_AUDIO_OPTIONS, 0);
+         file_list_push(rgui->selection_buf, "Input", RGUI_SETTINGS_INPUT_OPTIONS, 0);
+         file_list_push(rgui->selection_buf, "Path", RGUI_SETTINGS_PATH_OPTIONS, 0);
          if (g_extern.main_is_init && !g_extern.libretro_dummy)
          {
             if (g_extern.system.disk_control.get_num_images)
@@ -2041,19 +2041,19 @@ void menu_populate_entries(void *data, unsigned menu_type)
             file_list_push(rgui->selection_buf, "Save State", RGUI_SETTINGS_SAVESTATE_SAVE, 0);
             file_list_push(rgui->selection_buf, "Load State", RGUI_SETTINGS_SAVESTATE_LOAD, 0);
 #ifdef HAVE_SCREENSHOTS
-            file_list_push(rgui->selection_buf, "Take Screenshot", RGUI_SETTINGS_SCREENSHOT, 0);
+            file_list_push(rgui->selection_buf, "Screenshot", RGUI_SETTINGS_SCREENSHOT, 0);
 #endif
-            file_list_push(rgui->selection_buf, "Resume Content", RGUI_SETTINGS_RESUME_GAME, 0);
-            file_list_push(rgui->selection_buf, "Restart Content", RGUI_SETTINGS_RESTART_GAME, 0);
+            file_list_push(rgui->selection_buf, "Resume", RGUI_SETTINGS_RESUME_GAME, 0);
+            file_list_push(rgui->selection_buf, "Restart", RGUI_SETTINGS_RESTART_GAME, 0);
 
          }
 #ifndef HAVE_DYNAMIC
-         file_list_push(rgui->selection_buf, "Restart RetroArch", RGUI_SETTINGS_RESTART_EMULATOR, 0);
+         file_list_push(rgui->selection_buf, "Restart", RGUI_SETTINGS_RESTART_EMULATOR, 0);
 #endif
          file_list_push(rgui->selection_buf, "RetroArch Config", RGUI_SETTINGS_CONFIG, 0);
          file_list_push(rgui->selection_buf, "Save New Config", RGUI_SETTINGS_SAVE_CONFIG, 0);
          file_list_push(rgui->selection_buf, "Help", RGUI_START_SCREEN, 0);
-         file_list_push(rgui->selection_buf, "Quit RetroArch", RGUI_SETTINGS_QUIT_RARCH, 0);
+         file_list_push(rgui->selection_buf, "Quit", RGUI_SETTINGS_QUIT_RARCH, 0);
          break;
    }
 
