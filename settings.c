@@ -540,6 +540,42 @@ static config_file_t *open_default_config_file(void)
 
    if (conf)
       strlcpy(g_extern.config_path, conf_path, sizeof(g_extern.config_path));
+#elif defined(OSX)
+   char conf_path[PATH_MAX];
+   const char *home = getenv("HOME");
+
+   if (!home)
+      return NULL;
+
+   fill_pathname_join(conf_path, home, "Library/Application Support/RetroArch", sizeof(conf_path));
+   path_mkdir(conf_path);
+      
+   fill_pathname_join(conf_path, conf_path, "retroarch.cfg", sizeof(conf_path));
+   conf = config_file_new(conf_path);
+
+   if (!conf)
+   {
+      conf = config_file_new(NULL);
+      bool saved = false;
+      if (conf)
+      {
+         config_set_bool(conf, "config_save_on_exit", true);
+         saved = config_file_write(conf, conf_path);
+      }
+      
+      if (saved)
+         RARCH_WARN("Created new config file in: \"%s\".\n", conf_path); // WARN here to make sure user has a good chance of seeing it.
+      else
+      {
+         RARCH_ERR("Failed to create new config file in: \"%s\".\n", conf_path);
+         config_file_free(conf);
+         conf = NULL;
+      }
+   }
+
+   if (conf)
+      strlcpy(g_extern.config_path, conf_path, sizeof(g_extern.config_path));
+
 #elif !defined(__CELLOS_LV2__) && !defined(_XBOX)
    char conf_path[PATH_MAX];
    const char *xdg  = getenv("XDG_CONFIG_HOME");
