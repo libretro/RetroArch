@@ -492,6 +492,8 @@ size_t audio_sample_batch(const int16_t *data, size_t frames)
 #ifdef HAVE_OVERLAY
 static inline void input_poll_overlay(void)
 {
+   input_overlay_state_t old_key_state;
+   memcpy(old_key_state.keys, driver.overlay_state.keys, sizeof(driver.overlay_state.keys));
    memset(&driver.overlay_state, 0, sizeof(driver.overlay_state));
 
    unsigned device = input_overlay_full_screen(driver.overlay) ?
@@ -513,7 +515,7 @@ static inline void input_poll_overlay(void)
 
       driver.overlay_state.buttons |= polled_data.buttons;
       
-      for (j = 0; j < ARRAY_SIZE(driver.overlay_state.keys); j ++)
+      for (j = 0; j < ARRAY_SIZE(driver.overlay_state.keys); j++)
          driver.overlay_state.keys[j] |= polled_data.keys[j];
 
       // Fingers pressed later take prio and matched up with overlay poll priorities.
@@ -523,6 +525,29 @@ static inline void input_poll_overlay(void)
 
       polled = true;
    }
+
+   for (i = 0; i < ARRAY_SIZE(driver.overlay_state.keys); i++)
+      if (driver.overlay_state.keys[i] != old_key_state.keys[i])
+      {
+         uint32_t orig = old_key_state.keys[i];
+         uint32_t new = driver.overlay_state.keys[i];
+         
+         uint16_t mod = 0;
+         mod |= (OVERLAY_GET_KEY(&driver.overlay_state, RETROK_LSHIFT) ||
+                 OVERLAY_GET_KEY(&driver.overlay_state, RETROK_RSHIFT)) ? RETROKMOD_SHIFT : 0;
+         mod |= (OVERLAY_GET_KEY(&driver.overlay_state, RETROK_LCTRL) ||
+                 OVERLAY_GET_KEY(&driver.overlay_state, RETROK_RCTRL)) ? RETROKMOD_CTRL : 0;
+         mod |= (OVERLAY_GET_KEY(&driver.overlay_state, RETROK_LALT) ||
+                 OVERLAY_GET_KEY(&driver.overlay_state, RETROK_RALT)) ? RETROKMOD_ALT : 0;
+         mod |= (OVERLAY_GET_KEY(&driver.overlay_state, RETROK_LMETA) ||
+                 OVERLAY_GET_KEY(&driver.overlay_state, RETROK_RMETA)) ? RETROKMOD_META : 0;
+//       CAPSLOCK SCROLLOCK NUMLOCK
+
+         for (j = 0; j < 32; j++)
+            if ((orig & (1 << j)) != (new & (1 << j)))
+               input_keyboard_event(new & (1 << j), i * 32 + j, 0, mod);
+      }
+
 
    if (polled)
       input_overlay_post_poll(driver.overlay);
