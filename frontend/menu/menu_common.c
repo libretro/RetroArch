@@ -45,13 +45,19 @@ void shader_manager_init(void *data)
    memset(&rgui->shader, 0, sizeof(rgui->shader));
    config_file_t *conf = NULL;
 
+   const char *config_path = NULL;
+   if (*g_extern.core_specific_config_path && g_settings.core_specific_config)
+      config_path = g_extern.core_specific_config_path;
+   else if (*g_extern.config_path)
+      config_path = g_extern.config_path;
+
    // In a multi-config setting, we can't have conflicts on rgui.cgp/rgui.glslp.
-   if (*g_extern.config_path)
+   if (config_path)
    {
-      fill_pathname_base(rgui->default_glslp, g_extern.config_path, sizeof(rgui->default_glslp));
+      fill_pathname_base(rgui->default_glslp, config_path, sizeof(rgui->default_glslp));
       path_remove_extension(rgui->default_glslp);
       strlcat(rgui->default_glslp, ".glslp", sizeof(rgui->default_glslp));
-      fill_pathname_base(rgui->default_cgp, g_extern.config_path, sizeof(rgui->default_cgp));
+      fill_pathname_base(rgui->default_cgp, config_path, sizeof(rgui->default_cgp));
       path_remove_extension(rgui->default_cgp);
       strlcat(rgui->default_cgp, ".cgp", sizeof(rgui->default_cgp));
    }
