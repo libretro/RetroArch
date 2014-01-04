@@ -32,7 +32,9 @@
 #include <stdlib.h>
 #include <string.h>
 
+#ifdef HW_RVL
 #define GX_OPTS
+#endif
 
 #ifdef GX_OPTS
 #include "gx_video_inl.h"
@@ -98,10 +100,11 @@ void gx_set_video_mode(void *data, unsigned fbWidth, unsigned lines)
             max_width, max_height, i;
    bool progressive;
    gx_video_t *gx = (gx_video_t*)data;
+   (void)level;
 #ifdef GX_OPTS
    struct __gx_regdef *__gx = (struct __gx_regdef*)__gxregs;
-#endif
    _CPU_ISR_Disable(level);
+#endif
    VIDEO_SetBlack(true);
    VIDEO_Flush();
    viHeightMultiplier = 1;
@@ -246,7 +249,9 @@ void gx_set_video_mode(void *data, unsigned fbWidth, unsigned lines)
    GX_SetPixelFmt(GX_PF_RGB8_Z24, GX_ZC_LINEAR);
    GX_InvalidateTexAll();
    GX_Flush();
+#ifdef GX_OPTS
    _CPU_ISR_Restore(level);
+#endif
 
    RARCH_LOG("GX Resolution: %dx%d (%s)\n", gx_mode.fbWidth, gx_mode.efbHeight, (gx_mode.viTVMode & 3) == VI_INTERLACE ? "interlaced" : "progressive");
 
