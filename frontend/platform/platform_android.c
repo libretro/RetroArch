@@ -463,6 +463,7 @@ static void get_environment_settings(int argc, char *argv[], void *data)
 
 static void process_pending_intent(void *data)
 {
+#if 0
    RARCH_LOG("process_pending_intent.\n");
    JNIEnv *env;
    struct android_app* android_app = (struct android_app*)data;
@@ -546,17 +547,19 @@ static void process_pending_intent(void *data)
    }
 
    CALL_VOID_METHOD(env, android_app->activity->clazz, android_app->clearPendingIntent);
+#endif
 }
 
 static int process_events(void *data)
 {
-   jboolean hasPendingIntent;
-   JNIEnv *env;
+   //jboolean hasPendingIntent;
+   //JNIEnv *env;
    struct android_app* android_app = (struct android_app*)data;
 
    if (input_key_pressed_func(RARCH_PAUSE_TOGGLE))
          android_run_events(android_app);
 
+#if 0
    env = jni_thread_getenv();
    if (!env)
       return -1;
@@ -564,6 +567,7 @@ static int process_events(void *data)
    CALL_BOOLEAN_METHOD(env, hasPendingIntent, android_app->activity->clazz, android_app->hasPendingIntent);
    if (hasPendingIntent)
       process_pending_intent(android_app);
+#endif
 
    return 0;
 }
@@ -607,6 +611,7 @@ static void system_init(void *data)
    GET_OBJECT_CLASS(env, class, android_app->activity->clazz);
    GET_METHOD_ID(env, android_app->getIntent, class, "getIntent", "()Landroid/content/Intent;");
    CALL_OBJ_METHOD(env, obj, android_app->activity->clazz, android_app->getIntent);
+#if 0
    GET_METHOD_ID(env, android_app->hasPendingIntent, class, "hasPendingIntent", "()Z");
    GET_METHOD_ID(env, android_app->clearPendingIntent, class, "clearPendingIntent", "()V");
    GET_METHOD_ID(env, android_app->getPendingIntentConfigPath, class, "getPendingIntentConfigPath",
@@ -617,6 +622,7 @@ static void system_init(void *data)
          "()Ljava/lang/String;");
    GET_METHOD_ID(env, android_app->getPendingIntentIME, class, "getPendingIntentIME",
          "()Ljava/lang/String;");
+#endif
 
    GET_OBJECT_CLASS(env, class, obj);
    GET_METHOD_ID(env, android_app->getStringExtra, class, "getStringExtra", "(Ljava/lang/String;)Ljava/lang/String;");
