@@ -68,9 +68,9 @@ void rom_history_push(rom_history_t *hist,
       bool equal_path = (!path && !hist->entries[i].path) ||
          (path && hist->entries[i].path && !strcmp(path, hist->entries[i].path));
 
-      if (equal_path &&
-            !strcmp(hist->entries[i].core_path, core_path) &&
-            !strcmp(hist->entries[i].core_name, core_name))
+      // Core name can have changed while still being the same core.
+      // Differentiate based on the core path only.
+      if (equal_path && !strcmp(hist->entries[i].core_path, core_path))
       {
          if (i == 0)
             return;
@@ -158,7 +158,7 @@ static bool rom_history_read_file(rom_history_t *hist, const char *path)
    char *last = NULL;
    unsigned i;
 
-   for (hist->size = 0; hist->size < hist->cap; hist->size++)
+   for (hist->size = 0; hist->size < hist->cap; )
    {
       for (i = 0; i < 3; i++)
       {
@@ -174,13 +174,13 @@ static bool rom_history_read_file(rom_history_t *hist, const char *path)
       entry = &hist->entries[hist->size];
 
       if (!*buf[1] || !*buf[2])
-         goto end;
-
+         continue;
 
       if (*buf[0])
          entry->path = strdup(buf[0]);
       entry->core_path = strdup(buf[1]);
       entry->core_name = strdup(buf[2]);
+      hist->size++;
    }
 
 end:
