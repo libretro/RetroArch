@@ -28,6 +28,11 @@
             android:summary="@string/config_autodetect_desc"
             android:title="@string/enable"
             android:disableDependentsState="true" />
+        <CheckBoxPreference
+            android:defaultValue="false"
+            android:key="input_autodetect_ignore_special_keys"
+            android:summary="@string/config_autodetect_ignore_special_keys_desc"
+            android:title="@string/config_autodetect_ignore_special_keys" />
         <ListPreference
             android:entries="@array/icade_profiles"
             android:entryValues="@array/icade_profiles_values"

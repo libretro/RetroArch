@@ -342,6 +342,7 @@ void config_set_defaults(void)
    *g_settings.input.keyboard_layout = '\0';
 #ifdef ANDROID
    g_settings.input.back_behavior = BACK_BUTTON_QUIT;
+   g_settings.input.autodetect_ignore_special_keys = false;
 #endif
 
    for (i = 0; i < MAX_PLAYERS; i++)
@@ -976,6 +977,7 @@ bool config_load_file(const char *path, bool set_defaults)
    CONFIG_GET_INT(input.icade_profile[1], "input_autodetect_icade_profile_pad2");
    CONFIG_GET_INT(input.icade_profile[2], "input_autodetect_icade_profile_pad3");
    CONFIG_GET_INT(input.icade_profile[3], "input_autodetect_icade_profile_pad4");
+   CONFIG_GET_BOOL(input.autodetect_ignore_special_keys, "input_autodetect_ignore_special_keys");
 #endif
 
    CONFIG_GET_BOOL_EXTERN(config_save_on_exit, "config_save_on_exit");
@@ -1281,6 +1283,7 @@ bool config_save_file(const char *path)
    config_set_int(conf, "input_autodetect_icade_profile_pad2", g_settings.input.icade_profile[1]);
    config_set_int(conf, "input_autodetect_icade_profile_pad3", g_settings.input.icade_profile[2]);
    config_set_int(conf, "input_autodetect_icade_profile_pad4", g_settings.input.icade_profile[3]);
+   config_set_bool(conf, "input_autodetect_ignore_special_keys", g_settings.input.autodetect_ignore_special_keys);
 #endif
 
    config_set_bool(conf, "gamma_correction", g_extern.console.screen.gamma_correction);
