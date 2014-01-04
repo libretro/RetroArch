@@ -121,7 +121,11 @@ static char** waiting_argv;
    self.configDirectory = [[paths objectAtIndex:0] stringByAppendingPathComponent:@"RetroArch"];
    self.globalConfigFile = [NSString stringWithFormat:@"%@/retroarch.cfg", self.configDirectory];
    self.coreDirectory = [[[NSBundle mainBundle] bundlePath] stringByAppendingPathComponent:@"Contents/Resources/modules"];
-
+   
+#if __MAC_OS_X_VERSION_MAX_ALLOWED >= 1070
+   [self.window setCollectionBehavior:[self.window collectionBehavior] | NSWindowCollectionBehaviorFullScreenPrimary];
+#endif
+   
    [self.window setAcceptsMouseMovedEvents: YES];
    
    [[RAGameView get] setFrame: [[self.window contentView] bounds]];
