@@ -35,7 +35,8 @@ enum overlay_type
 {
    OVERLAY_TYPE_BUTTONS = 0,
    OVERLAY_TYPE_ANALOG_LEFT,
-   OVERLAY_TYPE_ANALOG_RIGHT
+   OVERLAY_TYPE_ANALOG_RIGHT,
+   OVERLAY_TYPE_KEYBOARD
 };
 
 struct overlay_desc
@@ -181,6 +182,162 @@ static unsigned input_str_to_bind(const char *str)
    return RARCH_BIND_LIST_END;
 }
 
+static const struct str_to_bind_map str_to_keyboard[] = {
+   { "retrok_backspace",      RETROK_BACKSPACE },
+   { "retrok_tab",            RETROK_TAB },
+   { "retrok_clear",          RETROK_CLEAR },
+   { "retrok_return",         RETROK_RETURN },
+   { "retrok_pause",          RETROK_PAUSE },
+   { "retrok_escape",         RETROK_ESCAPE },
+   { "retrok_space",          RETROK_SPACE },
+   { "retrok_exclaim",        RETROK_EXCLAIM },
+   { "retrok_quotedbl",       RETROK_QUOTEDBL },
+   { "retrok_hash",           RETROK_HASH },
+   { "retrok_dollar",         RETROK_DOLLAR },
+   { "retrok_ampersand",      RETROK_AMPERSAND },
+   { "retrok_quote",          RETROK_QUOTE },
+   { "retrok_leftparen",      RETROK_LEFTPAREN },
+   { "retrok_rightparen",     RETROK_RIGHTPAREN },
+   { "retrok_asterisk",       RETROK_ASTERISK },
+   { "retrok_plus",           RETROK_PLUS },
+   { "retrok_comma",          RETROK_COMMA },
+   { "retrok_minus",          RETROK_MINUS },
+   { "retrok_period",         RETROK_PERIOD },
+   { "retrok_slash",          RETROK_SLASH },
+   { "retrok_0",              RETROK_0 },
+   { "retrok_1",              RETROK_1 },
+   { "retrok_2",              RETROK_2 },
+   { "retrok_3",              RETROK_3 },
+   { "retrok_4",              RETROK_4 },
+   { "retrok_5",              RETROK_5 },
+   { "retrok_6",              RETROK_6 },
+   { "retrok_7",              RETROK_7 },
+   { "retrok_8",              RETROK_8 },
+   { "retrok_9",              RETROK_9 },
+   { "retrok_colon",          RETROK_COLON },
+   { "retrok_semicolon",      RETROK_SEMICOLON },
+   { "retrok_less",           RETROK_LESS },
+   { "retrok_equals",         RETROK_EQUALS },
+   { "retrok_greater",        RETROK_GREATER },
+   { "retrok_question",       RETROK_QUESTION },
+   { "retrok_at",             RETROK_AT },
+   { "retrok_leftbracket",    RETROK_LEFTBRACKET },
+   { "retrok_backslash",      RETROK_BACKSLASH },
+   { "retrok_rightbracket",   RETROK_RIGHTBRACKET },
+   { "retrok_caret",          RETROK_CARET },
+   { "retrok_underscore",     RETROK_UNDERSCORE },
+   { "retrok_backquote",      RETROK_BACKQUOTE },
+   { "retrok_a",              RETROK_a },
+   { "retrok_b",              RETROK_b },
+   { "retrok_c",              RETROK_c },
+   { "retrok_d",              RETROK_d },
+   { "retrok_e",              RETROK_e },
+   { "retrok_f",              RETROK_f },
+   { "retrok_g",              RETROK_g },
+   { "retrok_h",              RETROK_h },
+   { "retrok_i",              RETROK_i },
+   { "retrok_j",              RETROK_j },
+   { "retrok_k",              RETROK_k },
+   { "retrok_l",              RETROK_l },
+   { "retrok_m",              RETROK_m },
+   { "retrok_n",              RETROK_n },
+   { "retrok_o",              RETROK_o },
+   { "retrok_p",              RETROK_p },
+   { "retrok_q",              RETROK_q },
+   { "retrok_r",              RETROK_r },
+   { "retrok_s",              RETROK_s },
+   { "retrok_t",              RETROK_t },
+   { "retrok_u",              RETROK_u },
+   { "retrok_v",              RETROK_v },
+   { "retrok_w",              RETROK_w },
+   { "retrok_x",              RETROK_x },
+   { "retrok_y",              RETROK_y },
+   { "retrok_z",              RETROK_z },
+   { "retrok_delete",         RETROK_DELETE },
+
+   { "retrok_kp0",            RETROK_KP0 },
+   { "retrok_kp1",            RETROK_KP1 },
+   { "retrok_kp2",            RETROK_KP2 },
+   { "retrok_kp3",            RETROK_KP3 },
+   { "retrok_kp4",            RETROK_KP4 },
+   { "retrok_kp5",            RETROK_KP5 },
+   { "retrok_kp6",            RETROK_KP6 },
+   { "retrok_kp7",            RETROK_KP7 },
+   { "retrok_kp8",            RETROK_KP8 },
+   { "retrok_kp9",            RETROK_KP9 },
+   { "retrok_kp_period",      RETROK_KP_PERIOD },
+   { "retrok_kp_divide",      RETROK_KP_DIVIDE },
+   { "retrok_kp_multiply",    RETROK_KP_MULTIPLY },
+   { "retrok_kp_minus",       RETROK_KP_MINUS },
+   { "retrok_kp_plus",        RETROK_KP_PLUS },
+   { "retrok_kp_enter",       RETROK_KP_ENTER },
+   { "retrok_kp_equals",      RETROK_KP_EQUALS },
+
+   { "retrok_up",             RETROK_UP },
+   { "retrok_down",           RETROK_DOWN },
+   { "retrok_right",          RETROK_RIGHT },
+   { "retrok_left",           RETROK_LEFT },
+   { "retrok_insert",         RETROK_INSERT },
+   { "retrok_home",           RETROK_HOME },
+   { "retrok_end",            RETROK_END },
+   { "retrok_pageup",         RETROK_PAGEUP },
+   { "retrok_pagedown",       RETROK_PAGEDOWN },
+
+   { "retrok_f1",             RETROK_F1 },
+   { "retrok_f2",             RETROK_F2 },
+   { "retrok_f3",             RETROK_F3 },
+   { "retrok_f4",             RETROK_F4 },
+   { "retrok_f5",             RETROK_F5 },
+   { "retrok_f6",             RETROK_F6 },
+   { "retrok_f7",             RETROK_F7 },
+   { "retrok_f8",             RETROK_F8 },
+   { "retrok_f9",             RETROK_F9 },
+   { "retrok_f10",            RETROK_F10 },
+   { "retrok_f11",            RETROK_F11 },
+   { "retrok_f12",            RETROK_F12 },
+   { "retrok_f13",            RETROK_F13 },
+   { "retrok_f14",            RETROK_F14 },
+   { "retrok_f15",            RETROK_F15 },
+
+   { "retrok_numlock",        RETROK_NUMLOCK },
+   { "retrok_capslock",       RETROK_CAPSLOCK },
+   { "retrok_scrollock",      RETROK_SCROLLOCK },
+   { "retrok_rshift",         RETROK_RSHIFT },
+   { "retrok_lshift",         RETROK_LSHIFT },
+   { "retrok_rctrl",          RETROK_RCTRL },
+   { "retrok_lctrl",          RETROK_LCTRL },
+   { "retrok_ralt",           RETROK_RALT },
+   { "retrok_lalt",           RETROK_LALT },
+   { "retrok_rmeta",          RETROK_RMETA },
+   { "retrok_lmeta",          RETROK_LMETA },
+   { "retrok_lsuper",         RETROK_LSUPER },
+   { "retrok_rsuper",         RETROK_RSUPER },
+   { "retrok_mode",           RETROK_MODE },
+   { "retrok_compose",        RETROK_COMPOSE },
+
+   { "retrok_help",           RETROK_HELP },
+   { "retrok_print",          RETROK_PRINT },
+   { "retrok_sysreq",         RETROK_SYSREQ },
+   { "retrok_break",          RETROK_BREAK },
+   { "retrok_menu",           RETROK_MENU },
+   { "retrok_power",          RETROK_POWER },
+   { "retrok_euro",           RETROK_EURO },
+   { "retrok_undo",           RETROK_UNDO },
+};
+
+static unsigned input_str_to_keyboard(const char *str)
+{
+   unsigned i;
+   for (i = 0; i < ARRAY_SIZE(str_to_keyboard); i++)
+   {
+      if (!strcmp(str_to_keyboard[i].str, str))
+         return str_to_keyboard[i].bind;
+   }
+
+   RARCH_ERR("[Overlay] Unknown keyboard key: %s.\n", str);
+   return RETROK_UNKNOWN;
+}
+
 static void input_overlay_scale(struct overlay *overlay, float scale)
 {
    size_t i;
@@ -322,6 +479,11 @@ static bool input_overlay_load_desc(input_overlay_t *ol, config_file_t *conf, st
       desc->type = OVERLAY_TYPE_ANALOG_LEFT;
    else if (strcmp(key, "analog_right") == 0)
       desc->type = OVERLAY_TYPE_ANALOG_RIGHT;
+   else if (strstr(key, "retrok_") == key)
+   {
+      desc->type = OVERLAY_TYPE_KEYBOARD;
+      desc->key_mask = input_str_to_keyboard(key);
+   }
    else
    {
       const char *tmp;
@@ -357,7 +519,7 @@ static bool input_overlay_load_desc(input_overlay_t *ol, config_file_t *conf, st
       goto end;
    }
 
-   if (desc->type != OVERLAY_TYPE_BUTTONS)
+   if (desc->type == OVERLAY_TYPE_ANALOG_LEFT || desc->type == OVERLAY_TYPE_ANALOG_RIGHT)
    {
       if (desc->hitbox != OVERLAY_HITBOX_RADIAL)
       {
@@ -759,6 +921,11 @@ void input_overlay_poll(input_overlay_t *ol, input_overlay_state_t *out, int16_t
 
          if (mask & (UINT64_C(1) << RARCH_OVERLAY_NEXT))
             ol->next_index = desc->next_index;
+      }
+      else if (desc->type == OVERLAY_TYPE_KEYBOARD)
+      {
+         if (desc->key_mask < RETROK_LAST)
+            OVERLAY_SET_KEY(out, desc->key_mask);
       }
       else
       {
