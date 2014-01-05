@@ -1676,7 +1676,13 @@ static bool resolve_extensions(gl_t *gl)
    }
 
    // GL_RGB565 internal format support.
-   gl->have_es2_compat = gl_query_extension(gl, "ARB_ES2_compatibility");
+   // Even though es2 support is claimed, the format is not supported on older ATI catalyst drivers.
+   // The speed gain from using GL_RGB565 is worth adding some workarounds for.
+   const char *vendor = (const char*)glGetString(GL_VENDOR);
+   if (!vendor || !strstr(vendor, "ATI"))
+      gl->have_es2_compat = gl_query_extension(gl, "ARB_ES2_compatibility");
+   else
+      RARCH_LOG("[GL]: ATI card detected, skipping check for GL_RGB565 support.\n");
 #endif
 
 #ifdef HAVE_GL_SYNC
