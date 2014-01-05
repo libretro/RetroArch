@@ -2360,7 +2360,6 @@ static bool gl_read_viewport(void *data, uint8_t *buffer)
 {
    unsigned i;
    gl_t *gl = (gl_t*)data;
-   (void)i;
 
    RARCH_PERFORMANCE_INIT(read_viewport);
    RARCH_PERFORMANCE_START(read_viewport);
@@ -2371,6 +2370,7 @@ static bool gl_read_viewport(void *data, uint8_t *buffer)
       gl_bind_backbuffer();
 #endif
 
+#ifndef NO_GL_READ_PIXELS
 #ifdef HAVE_OPENGLES
    glPixelStorei(GL_PACK_ALIGNMENT, get_alignment(gl->vp.width * 3));
    // GLES doesn't support glReadBuffer ... Take a chance that it'll work out right.
@@ -2417,6 +2417,7 @@ static bool gl_read_viewport(void *data, uint8_t *buffer)
             gl->vp.width, gl->vp.height,
             GL_BGR, GL_UNSIGNED_BYTE, buffer);
    }
+#endif
 #endif
 
    RARCH_PERFORMANCE_STOP(read_viewport);
