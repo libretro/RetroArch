@@ -1730,6 +1730,21 @@ static void android_input_poll(void *data)
                   state_id = android->pads_connected;
                   if (g_settings.input.autodetect_enable)
                   {
+                     if (g_settings.input.autodetect_ignore_special_keys && (keycode == AKEYCODE_MENU || keycode == AKEYCODE_BACK || keycode == AKEYCODE_VOLUME_UP || keycode == AKEYCODE_VOLUME_DOWN))
+                     {
+                        if (keycode == AKEYCODE_MENU)
+                        {
+                           int action = AKeyEvent_getAction(event);
+                           if (action == AKEY_EVENT_ACTION_DOWN)
+                              *lifecycle_state |= (1ULL << RARCH_MENU_TOGGLE);
+                           else if (action == AKEY_EVENT_ACTION_UP)
+                              *lifecycle_state &= ~(1ULL << RARCH_MENU_TOGGLE);
+                        }
+                        AInputQueue_finishEvent(android_app->inputQueue, event, handled);
+                        break;
+
+                     }
+
                      bool primary = false;
                      input_autodetect_setup(android_app, msg, sizeof(msg), state_id, id, source, &primary);
 

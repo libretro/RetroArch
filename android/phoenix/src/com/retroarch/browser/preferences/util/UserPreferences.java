@@ -215,6 +215,9 @@ public final class UserPreferences
 		config.setInt("input_autodetect_icade_profile_pad3", Integer.parseInt(prefs.getString("input_autodetect_icade_profile_pad3", "0")));
 		config.setInt("input_autodetect_icade_profile_pad4", Integer.parseInt(prefs.getString("input_autodetect_icade_profile_pad4", "0")));
 
+		// Set autodetect special key ignore option
+		config.setBoolean("input_autodetect_ignore_special_keys", prefs.getBoolean("input_autodetect_ignore_special_keys", false));
+		
 		// Set the video refresh rate.
 		config.setDouble("video_refresh_rate", getRefreshRate(ctx));
 
