@@ -1668,6 +1668,42 @@ static void android_input_set_keybinds(void *data, unsigned device,
    }
 }
 
+static bool android_back_button_event(android_input_t *android, AInputEvent *event, int state_id, int type_event, uint64_t *lifecycle_state)
+{
+   uint8_t unpacked = (android->keycode_lut[AKEYCODE_BACK] >> ((state_id+1) << 3)) - 1;
+   uint64_t input_state = (1ULL << unpacked);
+   if (type_event == AINPUT_EVENT_TYPE_KEY && input_state < (1ULL << RARCH_FIRST_META_KEY)
+         && input_state > 0)
+   {
+   }
+   else if (g_settings.input.back_behavior == BACK_BUTTON_QUIT)
+   {
+      *lifecycle_state |= (1ULL << RARCH_QUIT_KEY); 
+      return true;
+   }
+   else if (g_settings.input.back_behavior == BACK_BUTTON_GUI_TOGGLE)
+   {
+      int action = AKeyEvent_getAction(event);
+      if (action == AKEY_EVENT_ACTION_DOWN)
+         *lifecycle_state |= (1ULL << RARCH_MENU_TOGGLE);
+      else if (action == AKEY_EVENT_ACTION_UP)
+         *lifecycle_state &= ~(1ULL << RARCH_MENU_TOGGLE);
+      return true;
+   }
+#if 0
+   else if (android->onBackPressed && g_settings.input.back_behavior == BACK_BUTTON_MENU_TOGGLE)
+   {
+      RARCH_LOG("Invoke onBackPressed through JNI.\n");
+      JNIEnv *env = jni_thread_getenv();
+      if (env)
+      {
+         CALL_VOID_METHOD(env, android_app->activity->clazz, android->onBackPressed);
+   }
+#endif
+   return false;
+}
+
+
 // Handle all events. If our activity is in pause state, block until we're unpaused.
 
 static void android_input_poll(void *data)
@@ -1730,19 +1766,37 @@ static void android_input_poll(void *data)
                   state_id = android->pads_connected;
                   if (g_settings.input.autodetect_enable)
                   {
-                     if (g_settings.input.autodetect_ignore_special_keys && (keycode == AKEYCODE_MENU || keycode == AKEYCODE_BACK || keycode == AKEYCODE_VOLUME_UP || keycode == AKEYCODE_VOLUME_DOWN))
+
+                     if (g_settings.input.autodetect_ignore_special_keys)
                      {
                         if (keycode == AKEYCODE_MENU)
                         {
+                           //Do menu button behavior even it's not connected.
                            int action = AKeyEvent_getAction(event);
                            if (action == AKEY_EVENT_ACTION_DOWN)
                               *lifecycle_state |= (1ULL << RARCH_MENU_TOGGLE);
                            else if (action == AKEY_EVENT_ACTION_UP)
                               *lifecycle_state &= ~(1ULL << RARCH_MENU_TOGGLE);
-                        }
-                        AInputQueue_finishEvent(android_app->inputQueue, event, handled);
-                        break;
 
+                           AInputQueue_finishEvent(android_app->inputQueue, event, handled);
+                           break;
+                        }
+                        else if (keycode == AKEYCODE_BACK)
+                        {
+                           //Do back button behavior even it's not connected.
+                           if (android_back_button_event(android, event, state_id, type_event, lifecycle_state))
+                           {
+                              AInputQueue_finishEvent(android_app->inputQueue, event, handled);
+                              break;
+                           }
+                        }
+                        else if (keycode == AKEYCODE_VOLUME_UP || keycode == AKEYCODE_VOLUME_DOWN)
+                        {
+                           //Just finish event.
+                           handled = 0;
+                           AInputQueue_finishEvent(android_app->inputQueue, event, handled);
+                           break;
+                        }
                      }
 
                      bool primary = false;
@@ -1768,39 +1822,11 @@ static void android_input_poll(void *data)
 
                if (keycode == AKEYCODE_BACK)
                {
-                  uint8_t unpacked = (android->keycode_lut[AKEYCODE_BACK] >> ((state_id+1) << 3)) - 1;
-                  uint64_t input_state = (1ULL << unpacked);
-                  if (type_event == AINPUT_EVENT_TYPE_KEY && input_state < (1ULL << RARCH_FIRST_META_KEY)
-                        && input_state > 0)
+                  if (android_back_button_event(android, event, state_id, type_event, lifecycle_state))
                   {
-                  }
-                  else if (g_settings.input.back_behavior == BACK_BUTTON_QUIT)
-                  {
-                     *lifecycle_state |= (1ULL << RARCH_QUIT_KEY); 
                      AInputQueue_finishEvent(android_app->inputQueue, event, handled);
                      break;
                   }
-                  else if (g_settings.input.back_behavior == BACK_BUTTON_GUI_TOGGLE)
-                  {
-                     int action = AKeyEvent_getAction(event);
-                     if (action == AKEY_EVENT_ACTION_DOWN)
-                        *lifecycle_state |= (1ULL << RARCH_MENU_TOGGLE);
-                     else if (action == AKEY_EVENT_ACTION_UP)
-                        *lifecycle_state &= ~(1ULL << RARCH_MENU_TOGGLE);
-                     AInputQueue_finishEvent(android_app->inputQueue, event, handled);
-                     break;
-                  }
-#if 0
-                  else if (android->onBackPressed && g_settings.input.back_behavior == BACK_BUTTON_MENU_TOGGLE)
-                  {
-                     RARCH_LOG("Invoke onBackPressed through JNI.\n");
-                     JNIEnv *env = jni_thread_getenv();
-                     if (env)
-                     {
-                        CALL_VOID_METHOD(env, android_app->activity->clazz, android->onBackPressed);
-                     }
-                  }
-#endif
                }
 
                if (type_event == AINPUT_EVENT_TYPE_MOTION)
