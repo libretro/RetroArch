@@ -2,7 +2,10 @@ package com.retroarch.browser.dirfragment;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Enumeration;
 import java.util.List;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipFile;
 
 import android.content.Context;
 import android.content.Intent;
@@ -67,6 +70,17 @@ public final class DetectCoreDirectoryFragment extends DirectoryFragment
 		dFrag.setArguments(bundle);
 
 		return dFrag;
+	}
+
+	/**
+	 * Returns everything after the last ‘.’ of the given file name or path.
+	 */
+	public static String getFileExt(String filePath)
+	{
+        	int i = filePath.lastIndexOf('.');
+        	if (i >= 0)
+                	return filePath.substring(i+1).toLowerCase();
+        	return ""; // No extension
 	}
 	
 	@Override
@@ -163,13 +177,29 @@ public final class DetectCoreDirectoryFragment extends DirectoryFragment
 			else if (inFileBrowser && selected.isFile())
 			{
 				String filePath = selected.getAbsolutePath();
-				String fileExt = "";
 				chosenFile = selected;
 
 				// Attempt to get the file extension.
-				int i = filePath.lastIndexOf('.');
-				if (i >= 0)
-					fileExt = filePath.substring(i+1);
+				String fileExt = getFileExt(filePath);
+
+				if (fileExt.equals(“zip”))
+				{
+        				ZipFile zipFile = new ZipFile(chosenFile);
+        				Enumeration<? extends ZipEntry> entries = zipFile.entries();
+
+        				// Try to handle the case of small text files bundles with ROMs.
+        				long largestEntry = Long.MIN_VALUE;
+
+        				while (entries.hasMoreElements())
+        				{
+                				ZipEntry zipEntry = entries.nextElement();
+                				if (zipEntry.getCompressedSize()) >= largestEntry)
+                				{
+                        				largestEntry = zipEntry.getCompressedSize();
+                        				fileExt = getFileExt(zipEntry.getName());
+                				}
+        				}
+				}
 
 				// Enumerate the cores and check for the extension
 				File coreDir = new File(getActivity().getApplicationInfo().dataDir + File.separator + "cores");
