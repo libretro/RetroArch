@@ -491,6 +491,8 @@ static bool lima_gfx_frame(void *data, const void *frame, unsigned width, unsign
 #else
    vid->screen->pixels = (void*)frame;
    vid->screen->pitch = pitch;
+   vid->screen->w = width;
+   vid->screen->h = height;
    uint8_t *dst = (uint8_t*)frame;
    if (pitch == width * sizeof(uint32_t))
       for (int i = 0;i < (width * height * sizeof(uint32_t)); i+=4)
