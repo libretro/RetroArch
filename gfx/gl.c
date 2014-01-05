@@ -1275,6 +1275,8 @@ static inline void gl_copy_frame(void *data, const void *frame, unsigned width, 
          gl_convert_frame_rgb16_32(gl, gl->conv_buffer, frame, width, height, pitch);
          buf = gl->conv_buffer;
       }
+      else
+         glPixelStorei(GL_UNPACK_ROW_LENGTH, pitch / gl->base_size);
 
       glTexSubImage2D(GL_TEXTURE_2D,
             0, 0, 0, width, height, gl->texture_type,
@@ -1286,9 +1288,9 @@ static inline void gl_copy_frame(void *data, const void *frame, unsigned width, 
       glTexSubImage2D(GL_TEXTURE_2D,
             0, 0, 0, width, height, gl->texture_type,
             gl->texture_fmt, frame);
-
-      glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
    }
+
+   glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
 #endif
 }
 

@@ -45,13 +45,19 @@ void shader_manager_init(void *data)
    memset(&rgui->shader, 0, sizeof(rgui->shader));
    config_file_t *conf = NULL;
 
+   const char *config_path = NULL;
+   if (*g_extern.core_specific_config_path && g_settings.core_specific_config)
+      config_path = g_extern.core_specific_config_path;
+   else if (*g_extern.config_path)
+      config_path = g_extern.config_path;
+
    // In a multi-config setting, we can't have conflicts on rgui.cgp/rgui.glslp.
-   if (*g_extern.config_path)
+   if (config_path)
    {
-      fill_pathname_base(rgui->default_glslp, g_extern.config_path, sizeof(rgui->default_glslp));
+      fill_pathname_base(rgui->default_glslp, config_path, sizeof(rgui->default_glslp));
       path_remove_extension(rgui->default_glslp);
       strlcat(rgui->default_glslp, ".glslp", sizeof(rgui->default_glslp));
-      fill_pathname_base(rgui->default_cgp, g_extern.config_path, sizeof(rgui->default_cgp));
+      fill_pathname_base(rgui->default_cgp, config_path, sizeof(rgui->default_cgp));
       path_remove_extension(rgui->default_cgp);
       strlcat(rgui->default_cgp, ".cgp", sizeof(rgui->default_cgp));
    }
@@ -273,7 +279,9 @@ void load_menu_game_history(unsigned game_index)
    rom_history_get_index(rgui->history,
          game_index, &path, &core_path, &core_name);
 
-   rarch_environment_cb(RETRO_ENVIRONMENT_SET_LIBRETRO_PATH, (void*)core_path);
+   // SET_LIBRETRO_PATH is unsafe here.
+   // Risks booting different and wrong core if core doesn't exist anymore.
+   strlcpy(g_settings.libretro, core_path, sizeof(g_settings.libretro));
 
    if (path)
       rgui->load_no_rom = false;
@@ -2139,6 +2147,13 @@ void menu_parse_and_resolve(void *data, unsigned menu_type)
                file_list_push(rgui->selection_buf, "/dev_hdd0/", menu_type, 0);
                file_list_push(rgui->selection_buf, "/dev_hdd1/", menu_type, 0);
                file_list_push(rgui->selection_buf, "/host_root/", menu_type, 0);
+               file_list_push(rgui->selection_buf, "/dev_usb000/", menu_type, 0);
+               file_list_push(rgui->selection_buf, "/dev_usb001/", menu_type, 0);
+               file_list_push(rgui->selection_buf, "/dev_usb002/", menu_type, 0);
+               file_list_push(rgui->selection_buf, "/dev_usb003/", menu_type, 0);
+               file_list_push(rgui->selection_buf, "/dev_usb004/", menu_type, 0);
+               file_list_push(rgui->selection_buf, "/dev_usb005/", menu_type, 0);
+               file_list_push(rgui->selection_buf, "/dev_usb006/", menu_type, 0);
 #else
                file_list_push(rgui->selection_buf, "/", menu_type, 0);
 #endif
