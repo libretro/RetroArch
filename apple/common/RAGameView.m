@@ -529,7 +529,7 @@ void apple_gfx_ctx_get_video_size(unsigned* width, unsigned* height)
 	
    if (g_initialized)
    {
-#if defined(OSX) && !defined(MAC_OS_X_VERSION_10_7)
+#if defined(OSX)
       CGRect cgrect = NSRectToCGRect([g_view frame]);
       size = CGRectMake(0, 0, CGRectGetWidth(cgrect), CGRectGetHeight(cgrect));
 #else
