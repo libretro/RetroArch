@@ -295,7 +295,8 @@ void main_exit(args_type() args)
    }
 #endif
 
-   rarch_main_deinit();
+   if (g_extern.main_is_init)
+      rarch_main_deinit();
    rarch_deinit_msg_queue();
    global_uninit_drivers();
 

@@ -175,8 +175,6 @@ enum
 #define INPUT_DEFAULT_DRIVER INPUT_DINPUT
 #elif defined(EMSCRIPTEN)
 #define INPUT_DEFAULT_DRIVER INPUT_RWEBINPUT
-#elif defined(HAVE_SDL)
-#define INPUT_DEFAULT_DRIVER INPUT_SDL
 #elif defined(__CELLOS_LV2__)
 #define INPUT_DEFAULT_DRIVER INPUT_PS3
 #elif defined(SN_TARGET_PSP2) || defined(PSP)
@@ -185,7 +183,7 @@ enum
 #define INPUT_DEFAULT_DRIVER INPUT_WII
 #elif defined(HAVE_UDEV)
 #define INPUT_DEFAULT_DRIVER INPUT_UDEV
-#elif defined(PANDORA) || defined(HAVE_VIDEOCORE)
+#elif defined(__linux__) && !defined(ANDROID)
 #define INPUT_DEFAULT_DRIVER INPUT_LINUXRAW
 #elif defined(HAVE_X11)
 #define INPUT_DEFAULT_DRIVER INPUT_X
@@ -193,6 +191,8 @@ enum
 #define INPUT_DEFAULT_DRIVER INPUT_APPLE
 #elif defined(__BLACKBERRY_QNX__)
 #define INPUT_DEFAULT_DRIVER INPUT_QNX
+#elif defined(HAVE_SDL)
+#define INPUT_DEFAULT_DRIVER INPUT_SDL
 #else
 #define INPUT_DEFAULT_DRIVER INPUT_NULL
 #endif

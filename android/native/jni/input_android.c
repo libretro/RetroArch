@@ -265,12 +265,14 @@ static void *android_input_init(void)
    if (!class)
       goto retobj;
 
+#if 0
    GET_METHOD_ID(env, android->onBackPressed, class, "onBackPressed", "()V");
    if (!android->onBackPressed)
    {
       RARCH_ERR("Could not set onBackPressed JNI function pointer.\n");
       goto retobj;
    }
+#endif
 
 retobj:
    return android;
@@ -1773,6 +1775,7 @@ static void android_input_poll(void *data)
                      AInputQueue_finishEvent(android_app->inputQueue, event, handled);
                      break;
                   }
+#if 0
                   else if (android->onBackPressed && g_settings.input.back_behavior == BACK_BUTTON_MENU_TOGGLE)
                   {
                      RARCH_LOG("Invoke onBackPressed through JNI.\n");
@@ -1782,6 +1785,7 @@ static void android_input_poll(void *data)
                         CALL_VOID_METHOD(env, android_app->activity->clazz, android->onBackPressed);
                      }
                   }
+#endif
                }
 
                if (type_event == AINPUT_EVENT_TYPE_MOTION)

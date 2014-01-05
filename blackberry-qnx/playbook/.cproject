@@ -37,7 +37,6 @@
 									<listOptionValue builtIn="false" value="RARCH_INTERNAL"/>
 									<listOptionValue builtIn="false" value="RARCH_MOBILE"/>
 									<listOptionValue builtIn="false" value="SINC_LOWER_QUALITY"/>
-									<listOptionValue builtIn="false" value="HAVE_RARCH_MAIN_IMPLEMENTATION"/>
 									<listOptionValue builtIn="false" value="HAVE_VID_CONTEXT"/>
 									<listOptionValue builtIn="false" value="HAVE_FBO"/>
 									<listOptionValue builtIn="false" value="HAVE_GRIFFIN"/>
@@ -160,7 +159,6 @@
 									<listOptionValue builtIn="false" value="HAVE_NEON"/>
 									<listOptionValue builtIn="false" value="RARCH_MOBILE"/>
 									<listOptionValue builtIn="false" value="SINC_LOWER_QUALITY"/>
-									<listOptionValue builtIn="false" value="HAVE_RARCH_MAIN_IMPLEMENTATION"/>
 									<listOptionValue builtIn="false" value="HAVE_VID_CONTEXT"/>
 									<listOptionValue builtIn="false" value="HAVE_FBO"/>
 									<listOptionValue builtIn="false" value="HAVE_GRIFFIN"/>
@@ -278,7 +276,6 @@
 									<listOptionValue builtIn="false" value="HAVE_NEON"/>
 									<listOptionValue builtIn="false" value="RARCH_MOBILE"/>
 									<listOptionValue builtIn="false" value="SINC_LOWER_QUALITY"/>
-									<listOptionValue builtIn="false" value="HAVE_RARCH_MAIN_IMPLEMENTATION"/>
 									<listOptionValue builtIn="false" value="HAVE_VID_CONTEXT"/>
 									<listOptionValue builtIn="false" value="HAVE_FBO"/>
 									<listOptionValue builtIn="false" value="HAVE_GRIFFIN"/>
@@ -397,7 +394,6 @@
 									<listOptionValue builtIn="false" value="HAVE_NEON"/>
 									<listOptionValue builtIn="false" value="RARCH_MOBILE"/>
 									<listOptionValue builtIn="false" value="SINC_LOWER_QUALITY"/>
-									<listOptionValue builtIn="false" value="HAVE_RARCH_MAIN_IMPLEMENTATION"/>
 									<listOptionValue builtIn="false" value="HAVE_VID_CONTEXT"/>
 									<listOptionValue builtIn="false" value="HAVE_FBO"/>
 									<listOptionValue builtIn="false" value="HAVE_GRIFFIN"/>

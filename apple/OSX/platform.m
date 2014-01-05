@@ -73,6 +73,9 @@ static void* const associated_core_key = (void*)&associated_core_key;
 
 @end
 
+static int waiting_argc;
+static char** waiting_argv;
+
 @interface RetroArch_OSX()
 @property (nonatomic, retain) NSWindowController* settingsWindow;
 @property (nonatomic, retain) NSWindow IBOutlet* coreSelectSheet;
@@ -118,7 +121,11 @@ static void* const associated_core_key = (void*)&associated_core_key;
    self.configDirectory = [[paths objectAtIndex:0] stringByAppendingPathComponent:@"RetroArch"];
    self.globalConfigFile = [NSString stringWithFormat:@"%@/retroarch.cfg", self.configDirectory];
    self.coreDirectory = [[[NSBundle mainBundle] bundlePath] stringByAppendingPathComponent:@"Contents/Resources/modules"];
-
+   
+#if __MAC_OS_X_VERSION_MAX_ALLOWED >= 1070
+   [self.window setCollectionBehavior:[self.window collectionBehavior] | NSWindowCollectionBehaviorFullScreenPrimary];
+#endif
+   
    [self.window setAcceptsMouseMovedEvents: YES];
    
    [[RAGameView get] setFrame: [[self.window contentView] bounds]];
@@ -146,14 +153,21 @@ static void* const associated_core_key = (void*)&associated_core_key;
    else
       apple_display_alert(@"No libretro cores were found.\nSelect \"Go->Cores Directory\" from the menu and place libretro dylib files there.", @"RetroArch");
    
-   // Run RGUI if needed
-   if (!_wantReload)//TODO || apple_argv)
+   if (waiting_argc)
+   {
+      apple_is_running = true;
+      apple_rarch_load_content(waiting_argc, waiting_argv);
+   }
+   else if (!_wantReload)
       apple_run_core(nil, 0);
    else
       [self chooseCore];
 
+   waiting_argc = 0;
    _wantReload = false;
 
+   apple_start_iteration();
+   
    extern void osx_pad_init();
    osx_pad_init();
 }
@@ -247,14 +261,10 @@ static void* const associated_core_key = (void*)&associated_core_key;
 {
    if (file)
       [[NSDocumentController sharedDocumentController] noteNewRecentDocumentURL:[NSURL fileURLWithPath:BOXSTRING(file)]];
-
-   apple_start_iteration();
 }
 
 - (void)unloadingCore:(const NSString*)core
 {
-   apple_stop_iteration();
-
    if (_isTerminating)
       [[NSApplication sharedApplication] terminate:nil];
 
@@ -294,24 +304,13 @@ static void* const associated_core_key = (void*)&associated_core_key;
 
 int main(int argc, char *argv[])
 {
-/* TODO
-   uint32_t current_argc = 0;
-
    for (int i = 0; i != argc; i ++)
-   {
       if (strcmp(argv[i], "--") == 0)
       {
-         current_argc = 1;
-         apple_argv = malloc(sizeof(char*) * (argc + 1));
-         memset(apple_argv, 0, sizeof(char*) * (argc + 1));
-         apple_argv[0] = argv[0];
+         waiting_argc = argc - i;
+         waiting_argv = argv + i;
+         break;
       }
-      else if (current_argc)
-      {
-         apple_argv[current_argc ++] = argv[i];
-      }
-   }
-*/
 
    return NSApplicationMain(argc, (const char **) argv);
 }

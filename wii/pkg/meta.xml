@@ -2,8 +2,8 @@
 <app version="1">
   <name>RetroArch GX</name>
   <coder>Maister, Squarepusher, ToadKing</coder>
-  <version>0.9.9.7</version>
-  <release_date>2012-2013</release_date>
+  <version>1.0.0.0</version>
+  <release_date>2012-2014</release_date>
   <short_description>Multi-system game/emulator system</short_description> 
   <long_description>A port of RetroArch to the GameCube/Wii.</long_description> 
   <no_ios_reload/>
