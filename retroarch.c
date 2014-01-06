@@ -36,6 +36,7 @@
 #include "cheats.h"
 #include "compat/getopt_rarch.h"
 #include "compat/posix_string.h"
+#include "input/keyboard_line.h"
 
 #ifdef _WIN32
 #ifdef _XBOX
@@ -526,28 +527,28 @@ static inline void input_poll_overlay(void)
       polled = true;
    }
 
+   uint16_t key_mod = 0;
+   key_mod |= (OVERLAY_GET_KEY(&driver.overlay_state, RETROK_LSHIFT) ||
+         OVERLAY_GET_KEY(&driver.overlay_state, RETROK_RSHIFT)) ? RETROKMOD_SHIFT : 0;
+   key_mod |= (OVERLAY_GET_KEY(&driver.overlay_state, RETROK_LCTRL) ||
+         OVERLAY_GET_KEY(&driver.overlay_state, RETROK_RCTRL)) ? RETROKMOD_CTRL : 0;
+   key_mod |= (OVERLAY_GET_KEY(&driver.overlay_state, RETROK_LALT) ||
+         OVERLAY_GET_KEY(&driver.overlay_state, RETROK_RALT)) ? RETROKMOD_ALT : 0;
+   key_mod |= (OVERLAY_GET_KEY(&driver.overlay_state, RETROK_LMETA) ||
+         OVERLAY_GET_KEY(&driver.overlay_state, RETROK_RMETA)) ? RETROKMOD_META : 0;
+   // CAPSLOCK SCROLLOCK NUMLOCK
    for (i = 0; i < ARRAY_SIZE(driver.overlay_state.keys); i++)
+   {
       if (driver.overlay_state.keys[i] != old_key_state.keys[i])
       {
-         uint32_t orig = old_key_state.keys[i];
-         uint32_t new = driver.overlay_state.keys[i];
+         uint32_t orig_bits = old_key_state.keys[i];
+         uint32_t new_bits = driver.overlay_state.keys[i];
          
-         uint16_t mod = 0;
-         mod |= (OVERLAY_GET_KEY(&driver.overlay_state, RETROK_LSHIFT) ||
-                 OVERLAY_GET_KEY(&driver.overlay_state, RETROK_RSHIFT)) ? RETROKMOD_SHIFT : 0;
-         mod |= (OVERLAY_GET_KEY(&driver.overlay_state, RETROK_LCTRL) ||
-                 OVERLAY_GET_KEY(&driver.overlay_state, RETROK_RCTRL)) ? RETROKMOD_CTRL : 0;
-         mod |= (OVERLAY_GET_KEY(&driver.overlay_state, RETROK_LALT) ||
-                 OVERLAY_GET_KEY(&driver.overlay_state, RETROK_RALT)) ? RETROKMOD_ALT : 0;
-         mod |= (OVERLAY_GET_KEY(&driver.overlay_state, RETROK_LMETA) ||
-                 OVERLAY_GET_KEY(&driver.overlay_state, RETROK_RMETA)) ? RETROKMOD_META : 0;
-//       CAPSLOCK SCROLLOCK NUMLOCK
-
          for (j = 0; j < 32; j++)
-            if ((orig & (1 << j)) != (new & (1 << j)))
-               input_keyboard_event(new & (1 << j), i * 32 + j, 0, mod);
+            if ((orig_bits & (1 << j)) != (new_bits & (1 << j)))
+               input_keyboard_event(new_bits & (1 << j), i * 32 + j, 0, key_mod);
       }
-
+   }
 
    if (polled)
       input_overlay_post_poll(driver.overlay);
