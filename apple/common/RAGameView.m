@@ -21,6 +21,7 @@
 #include "gfx/gfx_common.h"
 #include "gfx/gfx_context.h"
 
+#ifdef HAVE_LOCATION
 #include <CoreLocation/CoreLocation.h>
 
 static CLLocationManager *locationManager;
@@ -29,15 +30,20 @@ static CLLocationDegrees currentLatitude;
 static CLLocationDegrees currentLongitude;
 static CLLocationAccuracy currentHorizontalAccuracy;
 static CLLocationAccuracy currentVerticalAccuracy;
+#endif
 
 // Define compatibility symbols and categories
 #ifdef IOS
+
+#ifdef HAVE_CAMERA
 #include <AVFoundation/AVCaptureSession.h>
 #include <AVFoundation/AVCaptureDevice.h>
 #include <AVFoundation/AVCaptureOutput.h>
 #include <AVFoundation/AVCaptureInput.h>
 #include <AVFoundation/AVMediaFormat.h>
 #include <CoreVideo/CVOpenGLESTextureCache.h>
+#endif
+
 #define APP_HAS_FOCUS ([[UIApplication sharedApplication] applicationState] == UIApplicationStateActive)
 
 #define GLContextClass EAGLContext
@@ -81,12 +87,13 @@ static const float ALMOST_INVISIBLE = .021f;
 static GLKView* g_view;
 static UIView* g_pause_indicator_view;
 
-// Camera
+#ifdef HAVE_CAMERA
 static AVCaptureSession *_session;
 static NSString *_sessionPreset;
 CVOpenGLESTextureCacheRef textureCache;
 GLuint outputTexture;
 static bool newFrame = false;
+#endif
 
 #elif defined(OSX)
 
@@ -231,6 +238,7 @@ static bool g_is_syncing = true;
    return YES;
 }
 
+#ifdef HAVE_CAMERA
 void event_process_camera_frame(void* pixelBufferPtr)
 {
     CVPixelBufferRef pixelBuffer = (CVPixelBufferRef)pixelBufferPtr;
@@ -357,6 +365,9 @@ didOutputSampleBuffer:(CMSampleBufferRef)sampleBuffer
 }
 #endif
 
+#endif
+
+#ifdef HAVE_LOCATION
 - (bool)onLocationHasChanged
 {
    bool hasChanged = locationChanged;
@@ -415,10 +426,11 @@ didOutputSampleBuffer:(CMSampleBufferRef)sampleBuffer
     locationManager.distanceFilter = kCLDistanceFilterNone;
     [locationManager startUpdatingLocation];
 }
+#endif
 
 @end
 
-static RAScreen* get_chosen_screen()
+static RAScreen* get_chosen_screen(void)
 {      
    if (g_settings.video.monitor_index >= RAScreen.screens.count)
    {
@@ -600,6 +612,7 @@ void apple_bind_game_view_fbo(void)
       [g_view bindDrawable];
 }
 
+#ifdef HAVE_CAMERA
 typedef struct ios_camera
 {
   void *empty;
@@ -678,6 +691,8 @@ const camera_driver_t camera_ios = {
    ios_camera_poll,
    "ios",
 };
+#endif
+
 #endif
 
 #ifdef HAVE_LOCATION
