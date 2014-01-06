@@ -166,10 +166,24 @@ static bool g_is_syncing = true;
    [g_view addSubview:g_pause_indicator_view];
 
    self.view = g_view;
+   
+   [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(showPauseIndicator) name:UIApplicationWillEnterForegroundNotification object:nil];
    return self;
 }
 
 // Pause Menus
+- (void)viewDidAppear:(BOOL)animated
+{
+   [self showPauseIndicator];
+}
+
+- (void)showPauseIndicator
+{
+   g_pause_indicator_view.alpha = 1.0f;
+   [NSObject cancelPreviousPerformRequestsWithTarget:g_instance];
+   [g_instance performSelector:@selector(hidePauseButton) withObject:g_instance afterDelay:3.0f];
+}
+
 - (void)viewWillLayoutSubviews
 {
    UIInterfaceOrientation orientation = self.interfaceOrientation;
@@ -419,16 +433,8 @@ static RAScreen* get_chosen_screen()
 bool apple_gfx_ctx_init(void)
 {
    // Make sure the view was created
-   [RAGameView get];      
-   
-#ifdef IOS // Show pause button for a few seconds, so people know it's there
-   g_pause_indicator_view.alpha = 1.0f;
-   [NSObject cancelPreviousPerformRequestsWithTarget:g_instance];
-   [g_instance performSelector:@selector(hidePauseButton) withObject:g_instance afterDelay:3.0f];
-#endif
-
+   [RAGameView get];
    g_initialized = true;
-
    return true;
 }
 
