@@ -1,0 +1,199 @@
+RARCH_VERSION		= "0.9.9.3"
+
+#which compiler to build  with - GCC or SNC
+#set to GCC for debug builds for use with debugger
+CELL_BUILD_TOOLS	= SNC
+CELL_GPU_TYPE	   	= RSX
+CELL_PSGL_VERSION	= ultra-opt
+
+RMENU_IMG_DIR  := media/rmenu
+
+# options
+DOWNLOAD_SHADERS	= 1
+STRIPPING_ENABLE	= 0
+DEBUG			      = 0
+HAVE_RGL		      = 1
+HAVE_LOGGER		   = 0
+HAVE_FREETYPE	   = 0
+HAVE_RLAUNCH      = 0
+PERF_TEST		   = 0
+WHOLE_ARCHIVE_LINK = 0
+
+CONTENT_ID_FULL		= UP0001-SSNE10000_00-0000000000000001
+CONTENT_ID		= SSNE10000
+
+PC_DEVELOPMENT_IP_ADDRESS	= "192.168.1.7"
+PC_DEVELOPMENT_UDP_PORT		= 3490
+
+CELL_MK_DIR		?= $(CELL_SDK)/samples/mk
+include $(CELL_MK_DIR)/sdk.makedef.mk
+
+PPU_TARGET		= retroarch_ps3.elf
+SALAMANDER_TARGET	= retroarch-salamander_ps3.elf
+
+EBOOT_PATH		= ps3/pkg/USRDIR/EBOOT.BIN
+CORE_PATH		= ps3/pkg/USRDIR/cores/CORE.SELF
+
+LDDIRS = -L. -L$(CELL_SDK)/target/ppu/lib/PSGL/RSX/ultra-opt
+INCDIRS = -I. -Ips3 -Icommon
+
+# system platform
+system_platform = unix
+ifeq ($(shell uname -a),)
+EXE_EXT = .exe
+   system_platform = win
+else ifneq ($(findstring Darwin,$(shell uname -a)),)
+   system_platform = osx
+else ifneq ($(findstring MINGW,$(shell uname -a)),)
+   system_platform = win
+endif
+
+PKG_SCRIPT		= ps3/ps3py/pkg.py
+ifeq ($(shell uname), Linux)
+PKG_FINALIZE         	= package_finalize
+MAKE_SELF_WC		= make_self_wc
+MAKE_SELF		= make_self_npdrm
+PYTHON2			= python2
+GIT			= git
+else
+PKG_FINALIZE         	= package_finalize.exe
+MAKE_SELF_WC		= make_self_wc.exe
+MAKE_SELF		= make_self_npdrm.exe
+PYTHON2			= python2.exe
+GIT			= git.exe
+endif
+
+PPU_SRCS		= griffin/griffin.c
+
+ifeq ($(PERF_TEST), 1)
+   DEFINES += -DPERF_TEST
+endif
+
+ifeq ($(HAVE_RLAUNCH), 1)
+	DEFINES += -DHAVE_RLAUNCH
+endif
+
+DEFINES += -DHAVE_RMENU -DHAVE_MENU -DRARCH_INTERNAL
+
+ifeq ($(HAVE_RGL), 1)
+DEFINES			+= -DHAVE_RGL
+GL_LIBS			:= -L. -lrgl_ps3
+else
+GL_LIBS			:= -L$(CELL_SDK)/target/ppu/lib/PSGL/RSX/ultra-opt -lPSGL -lPSGLcgc
+endif
+
+ifeq ($(HAVE_FREETYPE), 1)
+DEFINES			+= -DHAVE_FREETYPE
+FONT_LIBS		:= -lfontFT_stub -lfreetype_stub
+else
+DEFINES			+= -DHAVE_LIBDBGFONT
+FONT_LIBS		:= -ldbgfont
+endif
+
+ifeq ($(CELL_BUILD_TOOLS), SNC)
+	PPU_CXXLD = $(CELL_SDK)/host-win32/sn/bin/ps3ppuld.exe
+	PPU_CXX	= $(CELL_SDK)/host-win32/sn/bin/ps3ppusnc.exe
+	PPU_CC = $(CELL_SDK)/host-win32/sn/bin/ps3ppusnc.exe
+else
+ifneq($(system_platform), win)
+	PPU_CXX	= $(CELL_SDK)/host-win32/ppu/bin/ppu-lv2-g++.exe
+	PPU_CC = $(CELL_SDK)/host-win32/ppu/bin/ppu-lv2-gcc.exe
+	PPU_CXXLD = $(CELL_SDK)/host-win32/ppu/bin/ppu-lv2-ld.exe
+	PPU_CCLD = $(CELL_SDK)/host-win32/ppu/bin/ppu-lv2-ld.exe
+endif
+
+ifeq ($(WHOLE_ARCHIVE_LINK), 1)
+WHOLE_START := -Wl, --whole-archive
+WHOLE_END := -Wl, --no-whole-archive
+endif
+
+PPU_LDLIBS =  $(FONT_LIBS) $(GL_LIBS) $(WHOLE_START) -lretro_ps3 $(WHOLE_END) -lcgc -lgcm_cmdasm -lgcm_sys_stub -lresc_stub -lm -lio_stub -lfs_stub -lsysutil_stub -lsysutil_game_stub -lsysutil_screenshot_stub -lsysutil_np_stub -lpngdec_stub -ljpgdec_stub -lsysmodule_stub -laudio_stub -lnet_stub -lnetctl_stub -lpthread
+
+PPU_RANLIB = $(CELL_SDK)/host-win32/ppu/bin/ppu-lv2-ranlib.exe
+
+DEFINES += -DHAVE_THREADS -DRARCH_CONSOLE -DHAVE_OPENGL -DHAVE_OVERLAY -DHAVE_HEADSET -DHAVE_VID_CONTEXT -DHAVE_OPENGLES -DHAVE_OPENGLES1 -DHAVE_PSGL -DHAVE_CG -DHAVE_CG_RUNTIME_COMPILER -DHAVE_FBO -DHAVE_SYSMODULES -DHAVE_SYSUTILS -DHAVE_RARCH_EXEC -DHAVE_LIBRETRO_MANAGEMENT -DHAVE_RSOUND -DHAVE_ZLIB -DWANT_MINIZ -DSINC_LOWER_QUALITY -D__CELLOS_LV2__ -DHAVE_NETPLAY=1 -DHAVE_SOCKET_LEGACY=1 -DHAVE_OSK -DHAVE_MOUSE -DHAVE_GRIFFIN=1 -DHAVE_MULTIMAN=0 -DPC_DEVELOPMENT_IP_ADDRESS=\"$(PC_DEVELOPMENT_IP_ADDRESS)\" -DPC_DEVELOPMENT_UDP_PORT=$(PC_DEVELOPMENT_UDP_PORT)
+
+ifeq ($(DEBUG), 1)
+   PPU_OPTIMIZE_LV	:= -O0 -g
+else
+   PPU_OPTIMIZE_LV	:= -O3 -g
+endif
+
+ifeq ($(HAVE_LOGGER), 1)
+DEFINES			+= -DHAVE_LOGGER
+INCDIRS        +=  -Iconsole/logger
+endif
+
+PPU_CFLAGS := $(PPU_OPTIMIZE_LV) $(INCDIRS) $(DEFINES)
+PPU_CXXFLAGS := $(PPU_OPTIMIZE_LV) $(INCDIRS) $(DEFINES)
+
+EXIST_EBOOT_WILDCARD := $(wildcard $(EBOOT_PATH))
+EXIST_CORE_WILDCARD := $(wildcard $(CORE_PATH))
+
+EBOOT_EXISTS		= 1
+CORE_EXISTS		= 1
+
+ifneq ($(strip $(EXIST_EBOOT_WILDCARD)),)
+EBOOT_EXISTS		= 0
+endif
+
+ifneq ($(strip $(EXIST_CORE_WILDCARD)),)
+CORE_EXISTS		= 0
+endif
+
+include $(CELL_MK_DIR)/sdk.target.mk
+
+MAKE_FSELF = $(CELL_SDK)/host-win32/bin/make_fself.exe
+MAKE_FSELF_NPDRM = $(CELL_SDK)/host-win32/bin/make_fself_npdrm.exe
+MAKE_PACKAGE_NPDRM = $(CELL_SDK)/host-win32/bin/make_package_npdrm.exe
+
+.PHONY: create-npdrm-core create-core create-npdrm-salamander create-shaders clean-selfs create-salamander
+
+create-npdrm-core:
+	$(MAKE_FSELF_NPDRM) $(PPU_TARGET) $(CORE_PATH)
+
+create-core:
+	$(MAKE_SELF_WC) $(PPU_TARGET) $(CORE_PATH)
+
+create-npdrm-salamander:
+	$(MAKE_FSELF_NPDRM) $(SALAMANDER_TARGET) $(EBOOT_PATH)
+	
+create-salamander:
+	$(MAKE_SELF) $(SALAMANDER_TARGET) $(EBOOT_PATH) $(CONTENT_ID_FULL)
+
+copy-media-files:
+	@cp -r $(RMENU_IMG_DIR)/*.png ps3/pkg/USRDIR/cores/borders/Menu/
+
+create-shaders:
+	make -f Makefile.shaders deploy-ps3
+
+pkg: $(PPU_TARGET)  create-shaders copy-media-files create-npdrm-salamander create-npdrm-core
+	$(MAKE_PACKAGE_NPDRM) ps3/pkg/package.conf ps3/pkg
+
+pkg-signed: $(PPU_TARGET)  create-shaders copy-media-files create-salamander create-core
+	$(PYTHON2) $(PKG_SCRIPT) --contentid $(CONTENT_ID_FULL) ps3/pkg/ retroarch-ps3-cfw-$(RARCH_VERSION).pkg
+
+pkg-signed-standalone: $(PPU_TARGET)  create-shaders copy-media-files create-core
+	$(MAKE_SELF) $(PPU_TARGET) $(EBOOT_PATH) $(CONTENT_ID)
+	$(PYTHON2) $(PKG_SCRIPT) --contentid $(CONTENT_ID_FULL) ps3/pkg/ retroarch-ps3-cfw-$(RARCH_VERSION).pkg
+
+pkg-signed-cfw: $(PPU_TARGET)  create-shaders copy-media-files create-salamander create-core
+	$(PYTHON2) $(PKG_SCRIPT) --contentid $(CONTENT_ID_FULL) ps3/pkg/ retroarch-ps3-cfw-$(RARCH_VERSION)-kmeaw.pkg
+	$(PKG_FINALIZE) retroarch-ps3-cfw-$(RARCH_VERSION)-kmeaw.pkg
+
+pkg-signed-cfw-standalone: $(PPU_TARGET)  create-shaders copy-media-files create-core
+	$(MAKE_SELF) $(PPU_TARGET) $(EBOOT_PATH) $(CONTENT_ID)
+	$(PYTHON2) $(PKG_SCRIPT) --contentid $(CONTENT_ID_FULL) ps3/pkg/ retroarch-ps3-cfw-$(RARCH_VERSION).pkg
+	$(PKG_FINALIZE) retroarch-ps3-cfw-$(RARCH_VERSION)-kmeaw.pkg
+
+clean-selfs:
+ifeq ($(EBOOT_EXISTS),1)
+	@echo "WARNING: Couldn't find file to delete: [$(EBOOT_PATH)], skipping this step."
+else
+	rm $(EBOOT_PATH)
+endif
+ifeq ($(CORE_EXISTS),1)
+	@echo "WARNING: Couldn't find file to delete: [$(CORE_PATH)], skipping this step."
+else
+	rm $(CORE_PATH)
+endif
