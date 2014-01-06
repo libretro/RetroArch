@@ -29,7 +29,15 @@
 #define signature() int argc, char *argv[]
 #endif
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 int main_entry_iterate(signature(), args_type() args);
 void main_exit(args_type() args);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
