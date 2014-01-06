@@ -528,7 +528,7 @@ static void gx_input_poll(void *data)
    gx->analog_state[2][0][0] = gx->analog_state[2][0][1] = gx->analog_state[2][1][0] = gx->analog_state[2][1][1] = 0;
    gx->analog_state[3][0][0] = gx->analog_state[3][0][1] = gx->analog_state[3][1][0] = gx->analog_state[3][1][1] = 0;
 
-   PAD_ScanPads();
+   uint8_t gcpad = PAD_ScanPads();
 
 #ifdef HW_RVL
    WPAD_ReadPending(WPAD_CHAN_ALL, NULL);
@@ -539,7 +539,7 @@ static void gx_input_poll(void *data)
       uint32_t down = 0;
       uint64_t *state_cur = &gx->pad_state[port];
 
-      if (SI_GetType(port) & SI_TYPE_GC)
+      if (gcpad & (1 << port))
       {
          down = PAD_ButtonsHeld(port);
 
@@ -587,6 +587,8 @@ static void gx_input_poll(void *data)
 
          down = wpaddata->btns_h;
 
+         expansion_t *exp = &wpaddata->exp;
+
          *state_cur |= (down & WPAD_BUTTON_A) ? (1ULL << GX_WIIMOTE_A) : 0;
          *state_cur |= (down & WPAD_BUTTON_B) ? (1ULL << GX_WIIMOTE_B) : 0;
          *state_cur |= (down & WPAD_BUTTON_1) ? (1ULL << GX_WIIMOTE_1) : 0;
@@ -594,13 +596,16 @@ static void gx_input_poll(void *data)
          *state_cur |= (down & WPAD_BUTTON_PLUS) ? (1ULL << GX_WIIMOTE_PLUS) : 0;
          *state_cur |= (down & WPAD_BUTTON_MINUS) ? (1ULL << GX_WIIMOTE_MINUS) : 0;
          *state_cur |= (down & WPAD_BUTTON_HOME) ? (1ULL << GX_WIIMOTE_HOME) : 0;
-         // rotated d-pad on Wiimote
-         *state_cur |= (down & WPAD_BUTTON_UP) ? (1ULL << GX_WIIMOTE_LEFT) : 0;
-         *state_cur |= (down & WPAD_BUTTON_DOWN) ? (1ULL << GX_WIIMOTE_RIGHT) : 0;
-         *state_cur |= (down & WPAD_BUTTON_LEFT) ? (1ULL << GX_WIIMOTE_DOWN) : 0;
-         *state_cur |= (down & WPAD_BUTTON_RIGHT) ? (1ULL << GX_WIIMOTE_UP) : 0;
 
-         expansion_t *exp = &wpaddata->exp;
+          if (ptype != WPAD_EXP_NUNCHUK)
+          {
+             // rotated d-pad on Wiimote
+             *state_cur |= (down & WPAD_BUTTON_UP) ? (1ULL << GX_WIIMOTE_LEFT) : 0;
+             *state_cur |= (down & WPAD_BUTTON_DOWN) ? (1ULL << GX_WIIMOTE_RIGHT) : 0;
+             *state_cur |= (down & WPAD_BUTTON_LEFT) ? (1ULL << GX_WIIMOTE_DOWN) : 0;
+             *state_cur |= (down & WPAD_BUTTON_RIGHT) ? (1ULL << GX_WIIMOTE_UP) : 0;
+          }
+
 
          if (ptype == WPAD_EXP_CLASSIC)
          {
