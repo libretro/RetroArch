@@ -12,6 +12,7 @@
  *  You should have received a copy of the GNU General Public License along with RetroArch.
  *  If not, see <http://www.gnu.org/licenses/>.
  */
+#include <pthread.h>
 #include <stdio.h>
 #include <assert.h>
 #include <dlfcn.h>
@@ -30,6 +31,7 @@ static struct
 }  grabbers[] =
 {
    GRAB(bt_open),
+   GRAB(bt_close),
    GRAB(bt_flip_addr),
    GRAB(bd_addr_to_str),
    GRAB(bt_register_packet_handler),
@@ -61,8 +63,9 @@ extern void btpad_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t 
 
 static bool btstack_tested;
 static bool btstack_loaded;
-static bool btstack_open;
-static bool btstack_poweron;
+
+static pthread_t btstack_thread;
+static CFRunLoopSourceRef btstack_quit_source;
 
 bool btstack_try_load()
 {
@@ -108,28 +111,54 @@ bool btstack_try_load()
    return true;
 }
 
+void btstack_thread_stop()
+{
+   bt_send_cmd_ptr(btstack_set_power_mode_ptr, HCI_POWER_OFF);
+}
+
+static void* btstack_thread_func(void* data)
+{
+   RARCH_LOG("BTstack: Thread started");
+
+   if (bt_open_ptr())
+   {
+      RARCH_LOG("BTstack: bt_open() failed\n");
+      return 0;
+   }
+
+   CFRunLoopSourceContext ctx = { 0, 0, 0, 0, 0, 0, 0, 0, 0, btstack_thread_stop };
+   btstack_quit_source = CFRunLoopSourceCreate(0, 0, &ctx);
+   CFRunLoopAddSource(CFRunLoopGetCurrent(), btstack_quit_source, kCFRunLoopCommonModes);
+
+   RARCH_LOG("BTstack: Turning on\n");
+   bt_send_cmd_ptr(btstack_set_power_mode_ptr, HCI_POWER_ON);
+
+   RARCH_LOG("BTstack: Running\n");
+   CFRunLoopRun();
+   
+   RARCH_LOG("BTstack: Done\n");
+
+   CFRunLoopSourceInvalidate(btstack_quit_source);
+   CFRelease(btstack_quit_source);
+   return 0;
+}
+
 void btstack_set_poweron(bool on)
 {
    if (!btstack_try_load())
       return;
 
-   if (!btstack_open && bt_open_ptr())
+   if (on && !btstack_thread)
+      pthread_create(&btstack_thread, 0, btstack_thread_func, 0);
+   else if (!on && btstack_thread && btstack_quit_source)
    {
-      RARCH_LOG("BTstack: bt_open failed\n");
-      btstack_loaded = false;
-      return;
+      CFRunLoopSourceSignal(btstack_quit_source);
+      pthread_join(btstack_thread, 0);
+      btstack_thread = 0;
    }
-  
-   btstack_open = true;
-   if (on != btstack_poweron)
-   {
-      btstack_poweron = on;
-      RARCH_LOG("BTstack: Turning %s\n", on ? "on" : "off");
-      bt_send_cmd_ptr(btstack_set_power_mode_ptr, on ? HCI_POWER_ON : HCI_POWER_OFF);
-   }  
 }
 
 bool btstack_is_running()
 {
-   return btstack_poweron;
+   return btstack_thread;
 }

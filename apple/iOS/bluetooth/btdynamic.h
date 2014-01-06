@@ -31,6 +31,7 @@ bool btstack_is_running();
 #endif
 
 BTDIMPORT int (*bt_open_ptr)(void);
+BTDIMPORT void (*bt_close_ptr)(void);
 BTDIMPORT void (*bt_flip_addr_ptr)(bd_addr_t dest, bd_addr_t src);
 BTDIMPORT char* (*bd_addr_to_str_ptr)(bd_addr_t addr);
 BTDIMPORT btstack_packet_handler_t (*bt_register_packet_handler_ptr)(btstack_packet_handler_t handler);

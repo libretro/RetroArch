@@ -120,6 +120,9 @@ void setting_data_reset_setting(const rarch_setting_t* setting)
       
       default: break;
    }
+   
+   if (setting->change_handler)
+      setting->change_handler(setting);
 }
 
 void setting_data_reset(const rarch_setting_t* settings)
@@ -284,6 +287,9 @@ void setting_data_set_with_string_representation(const rarch_setting_t* setting,
       
       default: return;
    }
+   
+   if (setting->change_handler)
+      setting->change_handler(setting);
 }
 
 const char* setting_data_get_string_representation(const rarch_setting_t* setting, char* buffer, size_t length)

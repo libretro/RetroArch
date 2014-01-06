@@ -391,6 +391,8 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
 
 - (void)wasSelectedOnTableView:(UITableView*)tableView ofController:(UIViewController*)controller
 {
+   RAMenuItemEnumSetting __weak* weakSelf = self;
+   
    struct string_list* items = string_split(self.setting->values, "|");
    RunActionSheet(self.setting->short_description, items, self.parentTable,
       ^(UIActionSheet* actionSheet, NSInteger buttonIndex)
@@ -398,7 +400,7 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
          if (buttonIndex != actionSheet.cancelButtonIndex)
          {
             setting_data_set_with_string_representation(self.setting, [[actionSheet buttonTitleAtIndex:buttonIndex] UTF8String]);
-            [self.parentTable reloadData];
+            [weakSelf.parentTable reloadData];
          }
       });
    string_list_free(items);
