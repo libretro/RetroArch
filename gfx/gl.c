@@ -2366,6 +2366,9 @@ static bool gl_read_viewport(void *data, uint8_t *buffer)
 {
    unsigned i;
    gl_t *gl = (gl_t*)data;
+    
+   i = 0;
+   (void)i;
 
    RARCH_PERFORMANCE_INIT(read_viewport);
    RARCH_PERFORMANCE_START(read_viewport);
