@@ -1790,7 +1790,7 @@ static void android_input_poll(void *data)
                               break;
                            }
                         }
-                        else if (keycode == AKEYCODE_VOLUME_UP || keycode == AKEYCODE_VOLUME_DOWN)
+                        else if (keycode == AKEYCODE_VOLUME_UP || keycode == AKEYCODE_VOLUME_DOWN || keycode == AKEYCODE_POWER)
                         {
                            //Just finish event.
                            handled = 0;
