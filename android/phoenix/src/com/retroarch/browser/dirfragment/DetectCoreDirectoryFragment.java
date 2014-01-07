@@ -203,6 +203,8 @@ public final class DetectCoreDirectoryFragment extends DirectoryFragment
                         				fileExt = getFileExt(zipEntry.getName());
                 				}
         				}
+        				
+        				zipFile.close();
 					}
 					catch(IOException e)
 					{
