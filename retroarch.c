@@ -550,6 +550,18 @@ static inline void input_poll_overlay(void)
       }
    }
 
+   // Map "analog" buttons to analog axes like regular input drivers do.
+   for (j = 0; j < 4; j++)
+   {
+      if (!driver.overlay_state.analog[j])
+      {
+         unsigned bind_plus  = RARCH_ANALOG_LEFT_X_PLUS + 2 * j;
+         unsigned bind_minus = bind_plus + 1;
+         driver.overlay_state.analog[j] += (driver.overlay_state.buttons & (1ULL << bind_plus)) ? 0x7fff : 0;
+         driver.overlay_state.analog[j] -= (driver.overlay_state.buttons & (1ULL << bind_minus)) ? 0x7fff : 0;
+      }
+   }
+
    if (polled)
       input_overlay_post_poll(driver.overlay);
    else
