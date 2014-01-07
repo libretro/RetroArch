@@ -636,7 +636,15 @@ static int16_t input_state(unsigned port, unsigned device, unsigned index, unsig
    {
       unsigned base = (index == RETRO_DEVICE_INDEX_ANALOG_RIGHT) ? 2 : 0;
       base += (id == RETRO_DEVICE_ID_ANALOG_Y) ? 1 : 0;
-      res += driver.overlay_state.analog[base];
+
+      // Simply adding here could overflow the int16_t.
+      int sum = res + driver.overlay_state.analog[base];
+      if (sum > 0x7fff)
+         res = 0x7fff;
+      else if (sum < -0x7fff)
+         res = -0x7fff;
+      else
+         res = sum;
    }
 #endif
 
