@@ -1,6 +1,7 @@
 package com.retroarch.browser.dirfragment;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.List;
@@ -182,10 +183,13 @@ public final class DetectCoreDirectoryFragment extends DirectoryFragment
 				// Attempt to get the file extension.
 				String fileExt = getFileExt(filePath);
 
-				if (fileExt.equals(“zip”))
+				if (fileExt.equals("zip"))
 				{
-        				ZipFile zipFile = new ZipFile(chosenFile);
-        				Enumeration<? extends ZipEntry> entries = zipFile.entries();
+					try
+					{
+	       				ZipFile zipFile = new ZipFile(chosenFile);
+	       				
+	       				Enumeration<? extends ZipEntry> entries = zipFile.entries();
 
         				// Try to handle the case of small text files bundles with ROMs.
         				long largestEntry = Long.MIN_VALUE;
@@ -193,12 +197,18 @@ public final class DetectCoreDirectoryFragment extends DirectoryFragment
         				while (entries.hasMoreElements())
         				{
                 				ZipEntry zipEntry = entries.nextElement();
-                				if (zipEntry.getCompressedSize()) >= largestEntry)
+                				if (zipEntry.getCompressedSize() >= largestEntry)
                 				{
                         				largestEntry = zipEntry.getCompressedSize();
                         				fileExt = getFileExt(zipEntry.getName());
                 				}
         				}
+					}
+					catch(IOException e)
+					{
+						e.printStackTrace();
+					}
+        			
 				}
 
 				// Enumerate the cores and check for the extension
