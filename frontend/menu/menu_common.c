@@ -643,7 +643,7 @@ static int menu_viewport_iterate(void *data, unsigned action)
          else if (custom->height >= (unsigned)stride_y)
             custom->height -= stride_y;
 
-         if (driver.video_poke->apply_state_changes)
+         if (driver.video_poke && driver.video_poke->apply_state_changes)
             driver.video_poke->apply_state_changes(driver.video_data);
          break;
 
@@ -657,7 +657,7 @@ static int menu_viewport_iterate(void *data, unsigned action)
          else
             custom->height += stride_y;
 
-         if (driver.video_poke->apply_state_changes)
+         if (driver.video_poke && driver.video_poke->apply_state_changes)
             driver.video_poke->apply_state_changes(driver.video_data);
          break;
 
@@ -670,7 +670,7 @@ static int menu_viewport_iterate(void *data, unsigned action)
          else if (custom->width >= (unsigned)stride_x)
             custom->width -= stride_x;
 
-         if (driver.video_poke->apply_state_changes)
+         if (driver.video_poke && driver.video_poke->apply_state_changes)
             driver.video_poke->apply_state_changes(driver.video_data);
          break;
 
@@ -684,7 +684,7 @@ static int menu_viewport_iterate(void *data, unsigned action)
          else
             custom->width += stride_x;
 
-         if (driver.video_poke->apply_state_changes)
+         if (driver.video_poke && driver.video_poke->apply_state_changes)
             driver.video_poke->apply_state_changes(driver.video_data);
          break;
 
@@ -728,7 +728,7 @@ static int menu_viewport_iterate(void *data, unsigned action)
                custom->height = vp.full_height - custom->y;
             }
 
-            if (driver.video_poke->apply_state_changes)
+            if (driver.video_poke && driver.video_poke->apply_state_changes)
                driver.video_poke->apply_state_changes(driver.video_data);
          }
          break;
@@ -785,7 +785,7 @@ static int menu_viewport_iterate(void *data, unsigned action)
    aspectratio_lut[ASPECT_RATIO_CUSTOM].value =
       (float)custom->width / custom->height;
 
-   if (driver.video_poke->apply_state_changes)
+   if (driver.video_poke && driver.video_poke->apply_state_changes)
       driver.video_poke->apply_state_changes(driver.video_data);
 
    return 0;
@@ -881,7 +881,7 @@ static int menu_settings_iterate(void *data, unsigned action)
                (float)custom->width / custom->height;
 
             g_settings.video.aspect_ratio_idx = ASPECT_RATIO_CUSTOM;
-            if (driver.video_poke->set_aspect_ratio)
+            if (driver.video_poke && driver.video_poke->set_aspect_ratio)
                driver.video_poke->set_aspect_ratio(driver.video_data,
                      g_settings.video.aspect_ratio_idx);
          }
