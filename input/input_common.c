@@ -992,7 +992,7 @@ const struct input_key_map input_config_key_map[] = {
    { NULL, RETROK_UNKNOWN },
 };
 
-static enum retro_key find_sk_bind(const char *str)
+static enum retro_key find_rk_bind(const char *str)
 {
    size_t i;
    for (i = 0; input_config_key_map[i].str; i++)
@@ -1005,12 +1005,12 @@ static enum retro_key find_sk_bind(const char *str)
    return RETROK_UNKNOWN;
 }
 
-enum retro_key input_find_sk_key(const char *str)
+enum retro_key input_translate_str_to_rk(const char *str)
 {
    if (strlen(str) == 1 && isalpha(*str))
       return (enum retro_key)(RETROK_a + (tolower(*str) - (int)'a'));
    else
-      return find_sk_bind(str);
+      return find_rk_bind(str);
 }
 
 void input_config_parse_key(config_file_t *conf, const char *prefix, const char *btn,
@@ -1021,7 +1021,7 @@ void input_config_parse_key(config_file_t *conf, const char *prefix, const char 
    snprintf(key, sizeof(key), "%s_%s", prefix, btn);
 
    if (config_get_array(conf, key, tmp, sizeof(tmp)))
-      bind->key = input_find_sk_key(tmp);
+      bind->key = input_translate_str_to_rk(tmp);
 }
 
 const char *input_config_get_prefix(unsigned player, bool meta)

@@ -150,12 +150,12 @@ struct input_key_map
 };
 extern const struct input_key_map input_config_key_map[];
 void input_translate_rk_to_str(enum retro_key key, char *buf, size_t size);
+enum retro_key input_translate_str_to_rk(const char *str);
 
 extern const char* const input_builtin_autoconfs[];
 
 const char *input_config_get_prefix(unsigned player, bool meta);
 unsigned input_translate_str_to_bind_id(const char *str); // Returns RARCH_BIND_LIST_END on not found.
-enum retro_key input_find_sk_key(const char *str);
 
 
 void input_config_parse_key(config_file_t *conf, const char *prefix, const char *btn,

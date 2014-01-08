@@ -249,7 +249,7 @@ static bool input_overlay_load_desc(input_overlay_t *ol, config_file_t *conf, st
    else if (strstr(key, "retrok_") == key)
    {
       desc->type = OVERLAY_TYPE_KEYBOARD;
-      desc->key_mask = input_find_sk_key(key + 7);
+      desc->key_mask = input_translate_str_to_rk(key + 7);
    }
    else
    {
