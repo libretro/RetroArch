@@ -1,6 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2013-2014 - Jason Fetters
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -32,7 +32,7 @@ static void* hidpad_wii_connect(struct apple_pad_connection* connection, uint32_
    device->exp.type = EXP_NONE;
 
    wiimote_handshake(device, -1, NULL, -1);
-   
+
    return device;
 }
 
@@ -43,20 +43,18 @@ static void hidpad_wii_disconnect(struct wiimote_t* device)
 
 static int16_t hidpad_wii_get_axis(struct wiimote_t* device, unsigned axis)
 {
-/* TODO
-   if (device->.exp.type == EXP_CLASSIC)
+   if (device->exp.type == EXP_CLASSIC)
    {
       switch (axis)
       {
-         case 0: return device->wiimote.exp.classic.ljs.rx * 0x7FFF;
-         case 1: return device->wiimote.exp.classic.ljs.ry * 0x7FFF;
-         case 2: return device->wiimote.exp.classic.rjs.rx * 0x7FFF;
-         case 3: return device->wiimote.exp.classic.rjs.ry * 0x7FFF;
+         case 0: return device->exp.classic.ljs.x.value * 0x7FFF;
+         case 1: return device->exp.classic.ljs.y.value * 0x7FFF;
+         case 2: return device->exp.classic.rjs.x.value * 0x7FFF;
+         case 3: return device->exp.classic.rjs.y.value * 0x7FFF;
          default: return 0;
       }
    }
-*/
-   
+
    return 0;
 }
 
