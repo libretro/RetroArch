@@ -175,6 +175,9 @@ static void engine_handle_dpad_getaxisvalue(void *data, AInputEvent *event,
             state_id, x, y, z, rz, source);
 }
 
+static bool android_input_use_keycode_lut;
+static uint64_t android_input_keycode_lut[LAST_KEYCODE];
+
 static void *android_input_init(void)
 {
    JNIEnv *env;
@@ -187,24 +190,32 @@ static void *android_input_init(void)
 
    android->pads_connected = 0;
 
-   for (j = 0; j < LAST_KEYCODE; j++)
-      android->keycode_lut[j] = 0;
-
-   if (!g_settings.input.autodetect_enable)
+   // TODO: rewrite code to not change input binds
+   if (!android_input_use_keycode_lut)
    {
-      for (j = 0; j < MAX_PADS; j++)
+      for (j = 0; j < LAST_KEYCODE; j++)
+         android_input_keycode_lut[j] = 0;
+
+      if (!g_settings.input.autodetect_enable)
       {
-         uint8_t shift = 8 + (j * 8);
-         for (k = 0; k < RARCH_FIRST_CUSTOM_BIND; k++)
+         for (j = 0; j < MAX_PADS; j++)
          {
-            if (g_settings.input.binds[j][k].valid && g_settings.input.binds[j][k].joykey && g_settings.input.binds[j][k].joykey < LAST_KEYCODE)
+            uint8_t shift = 8 + (j * 8);
+            for (k = 0; k < RARCH_FIRST_CUSTOM_BIND; k++)
             {
-               RARCH_LOG("binding %llu to %d (p%d)\n", g_settings.input.binds[j][k].joykey, k, j);
-               android->keycode_lut[g_settings.input.binds[j][k].joykey] |= ((k + 1) << shift);
+               if (g_settings.input.binds[j][k].valid && g_settings.input.binds[j][k].joykey && g_settings.input.binds[j][k].joykey < LAST_KEYCODE)
+               {
+                  RARCH_LOG("binding %llu to %d (p%d)\n", g_settings.input.binds[j][k].joykey, k, j);
+                  android_input_keycode_lut[g_settings.input.binds[j][k].joykey] |= ((k + 1) << shift);
+               }
             }
          }
       }
+
+      android_input_use_keycode_lut = true;
    }
+
+   memcpy(android->keycode_lut, android_input_keycode_lut, sizeof(android_input_keycode_lut));
 
    for (i = 0; i < MAX_PADS; i++)
    {
