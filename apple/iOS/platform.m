@@ -59,25 +59,25 @@ const void* apple_get_frontend_settings(void)
    
    if (settings[0].type == ST_NONE)
    {
-      settings[0] = setting_data_group_setting(ST_GROUP, "Frontend Settings");
-      settings[1] = setting_data_group_setting(ST_SUB_GROUP, "Frontend");
-      settings[2] = setting_data_bool_setting("ios_use_file_log", "Enable File Logging",
+      settings[0] = setting_data_group_setting(ST_GROUP, "前端设置");
+      settings[1] = setting_data_group_setting(ST_SUB_GROUP, "前端");
+      settings[2] = setting_data_bool_setting("ios_use_file_log", "启用Logging",
                                                &apple_frontend_settings.logging_enabled, false);
       settings[2].change_handler = apple_refresh_frontend_config;
-      settings[3] = setting_data_bool_setting("ios_tv_mode", "TV Mode", &apple_use_tv_mode, false);
-      settings[4] = setting_data_string_setting(ST_STRING, "ios_btmode", "Bluetooth Input Type", apple_frontend_settings.bluetooth_mode,
+      settings[3] = setting_data_bool_setting("ios_tv_mode", "TV模式", &apple_use_tv_mode, false);
+      settings[4] = setting_data_string_setting(ST_STRING, "ios_btmode", "蓝牙输入类型", apple_frontend_settings.bluetooth_mode,
                                                  sizeof(apple_frontend_settings.bluetooth_mode), "none");                                                 
       settings[4].change_handler = apple_refresh_frontend_config;
 
       // Set ios_btmode options based on runtime environment
       if (btstack_try_load())
-         settings[4].values = "none|icade|keyboard|btstack";
+         settings[4].values = "无|icade|键盘|btstack";
       else
-         settings[4].values = "none|icade|keyboard";
+         settings[4].values = "无|icade|键盘";
 
-      settings[5] = setting_data_string_setting(ST_STRING, "ios_orientations", "Screen Orientations", apple_frontend_settings.orientations,
-                                                 sizeof(apple_frontend_settings.orientations), "both");
-      settings[5].values = "both|landscape|portrait";
+      settings[5] = setting_data_string_setting(ST_STRING, "ios_orientations", "屏幕方向", apple_frontend_settings.orientations,
+                                                 sizeof(apple_frontend_settings.orientations), "同时");
+      settings[5].values = "同时|横向|纵向";
       settings[6] = setting_data_group_setting(ST_END_SUB_GROUP, 0);
       
       settings[7] = setting_data_group_setting(ST_END_GROUP, 0);
@@ -211,13 +211,13 @@ static void handle_touch_event(NSArray* touches)
     const char *path = [self.documentsDirectory UTF8String];
     path_mkdir(path);
     if (access(path, 0755) != 0)
-      apple_display_alert([NSString stringWithFormat:@"Failed to create or access base directory: %@", self.documentsDirectory], 0);
+      apple_display_alert([NSString stringWithFormat:@"无法加载目录（可能是权限不足）: %@", self.documentsDirectory], 0);
     else
     {
         path = [self.systemDirectory UTF8String];
         path_mkdir(path);
         if (access(path, 0755) != 0)
-            apple_display_alert([NSString stringWithFormat:@"Failed to create or access system directory: %@", self.systemDirectory], 0);
+            apple_display_alert([NSString stringWithFormat:@"无法访问系统目录: %@", self.systemDirectory], 0);
         else
            [self pushViewController:[RAMainMenu new] animated:YES];
     }
@@ -228,7 +228,7 @@ static void handle_touch_event(NSArray* touches)
    const core_info_list_t* core_list = apple_core_info_list_get();
    
    if (!core_list || core_list->count == 0)
-      apple_display_alert(@"No libretro cores were found. You will not be able to run any content.", 0);
+      apple_display_alert(@"libretro核心没找到，你将暂时无法运行游戏", 0);
    
    apple_gamecontroller_init();
    
@@ -311,9 +311,9 @@ static void handle_touch_event(NSArray* touches)
    // Get enabled orientations
    apple_frontend_settings.orientation_flags = UIInterfaceOrientationMaskAll;
    
-   if (strcmp(apple_frontend_settings.orientations, "landscape") == 0)
+   if (strcmp(apple_frontend_settings.orientations, "横屏") == 0)
       apple_frontend_settings.orientation_flags = UIInterfaceOrientationMaskLandscape;
-   else if (strcmp(apple_frontend_settings.orientations, "portrait") == 0)
+   else if (strcmp(apple_frontend_settings.orientations, "竖屏") == 0)
       apple_frontend_settings.orientation_flags = UIInterfaceOrientationMaskPortrait | UIInterfaceOrientationMaskPortraitUpsideDown;
 
    // Set bluetooth mode
