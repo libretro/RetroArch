@@ -37,6 +37,7 @@
 #include "compat/getopt_rarch.h"
 #include "compat/posix_string.h"
 #include "input/keyboard_line.h"
+#include "input/input_common.h"
 
 #ifdef _WIN32
 #ifdef _XBOX
@@ -560,6 +561,27 @@ static inline void input_poll_overlay(void)
          driver.overlay_state.analog[j] += (driver.overlay_state.buttons & (1ULL << bind_plus)) ? 0x7fff : 0;
          driver.overlay_state.analog[j] -= (driver.overlay_state.buttons & (1ULL << bind_minus)) ? 0x7fff : 0;
       }
+   }
+
+   // Check for analog_dpad_mode. Map analogs to d-pad buttons when configured.
+   switch (g_settings.input.analog_dpad_mode[0])
+   {
+      case ANALOG_DPAD_LSTICK:
+      case ANALOG_DPAD_RSTICK:
+      {
+         unsigned analog_base = g_settings.input.analog_dpad_mode[0] == ANALOG_DPAD_LSTICK ?
+            0 : 2;
+         float analog_x = (float)driver.overlay_state.analog[analog_base + 0] / 0x7fff;
+         float analog_y = (float)driver.overlay_state.analog[analog_base + 1] / 0x7fff;
+         driver.overlay_state.buttons |= (analog_x <= -g_settings.input.axis_threshold) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_LEFT) : 0;
+         driver.overlay_state.buttons |= (analog_x >=  g_settings.input.axis_threshold) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_RIGHT) : 0;
+         driver.overlay_state.buttons |= (analog_y <= -g_settings.input.axis_threshold) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_UP) : 0;
+         driver.overlay_state.buttons |= (analog_y >=  g_settings.input.axis_threshold) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_DOWN) : 0;
+         break;
+      }
+
+      default:
+         break;
    }
 
    if (polled)
@@ -3131,6 +3153,8 @@ static inline void limit_frame_time(void)
 
 bool rarch_main_iterate(void)
 {
+   unsigned i;
+
 #ifdef HAVE_DYLIB
    // DSP plugin GUI events.
    if (g_extern.audio_data.dsp_handle && g_extern.audio_data.dsp_plugin->events)
@@ -3182,9 +3206,22 @@ bool rarch_main_iterate(void)
       driver_camera_poll();
 #endif
 
+   // Update binds for analog dpad modes.
+   for (i = 0; i < MAX_PLAYERS; i++)
+   {
+      input_push_analog_dpad(g_settings.input.binds[i], g_settings.input.analog_dpad_mode[i]);
+      input_push_analog_dpad(g_settings.input.autoconf_binds[i], g_settings.input.analog_dpad_mode[i]);
+   }
+
    update_frame_time();
    pretro_run();
    limit_frame_time();
+
+   for (i = 0; i < MAX_PLAYERS; i++)
+   {
+      input_pop_analog_dpad(g_settings.input.binds[i]);
+      input_pop_analog_dpad(g_settings.input.autoconf_binds[i]);
+   }
 
 #ifdef HAVE_BSV_MOVIE
    if (g_extern.bsv.movie)

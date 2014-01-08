@@ -781,6 +781,26 @@ int menu_set_settings(void *data, unsigned setting, unsigned action)
                *p = MAX_PLAYERS - 1;
          }
          break;
+      case RGUI_SETTINGS_BIND_ANALOG_MODE:
+         switch (action)
+         {
+            case RGUI_ACTION_START:
+               g_settings.input.analog_dpad_mode[port] = 0;
+               break;
+
+            case RGUI_ACTION_OK:
+            case RGUI_ACTION_RIGHT:
+               g_settings.input.analog_dpad_mode[port] = (g_settings.input.analog_dpad_mode[port] + 1) % ANALOG_DPAD_LAST;
+               break;
+
+            case RGUI_ACTION_LEFT:
+               g_settings.input.analog_dpad_mode[port] = (g_settings.input.analog_dpad_mode[port] + ANALOG_DPAD_LAST - 1) % ANALOG_DPAD_LAST;
+               break;
+
+            default:
+               break;
+         }
+         break;
       case RGUI_SETTINGS_BIND_DEVICE_TYPE:
          {
             static const unsigned device_types[] = {
@@ -1702,9 +1722,9 @@ void menu_set_settings_label(char *type_str, size_t type_str_size, unsigned *w, 
          break;
       case RGUI_SETTINGS_VIDEO_PAL60:
          if (g_extern.lifecycle_state & (1ULL << MODE_VIDEO_PAL_TEMPORAL_ENABLE))
-            strlcpy(type_str, "ON", sizeof(type_str));
+            strlcpy(type_str, "ON", type_str_size);
          else
-            strlcpy(type_str, "OFF", sizeof(type_str));
+            strlcpy(type_str, "OFF", type_str_size);
          break;
 #endif
       case RGUI_FILE_PLAIN:
@@ -1845,41 +1865,53 @@ void menu_set_settings_label(char *type_str, size_t type_str_size, unsigned *w, 
          snprintf(type_str, type_str_size, "#%d", rgui->current_pad + 1);
          break;
       case RGUI_SETTINGS_BIND_DEVICE:
+      {
+         int map = g_settings.input.joypad_map[rgui->current_pad];
+         if (map >= 0 && map < MAX_PLAYERS)
          {
-            int map = g_settings.input.joypad_map[rgui->current_pad];
-            if (map >= 0 && map < MAX_PLAYERS)
-            {
-               const char *device_name = g_settings.input.device_names[map];
-               if (*device_name)
-                  strlcpy(type_str, device_name, type_str_size);
-               else
-                  snprintf(type_str, type_str_size, "N/A (port #%u)", map);
-            }
+            const char *device_name = g_settings.input.device_names[map];
+            if (*device_name)
+               strlcpy(type_str, device_name, type_str_size);
             else
-               strlcpy(type_str, "Disabled", type_str_size);
-            break;
+               snprintf(type_str, type_str_size, "N/A (port #%u)", map);
          }
-      case RGUI_SETTINGS_BIND_DEVICE_TYPE:
-         {
-            const char *name;
-            switch (g_settings.input.libretro_device[rgui->current_pad])
-            {
-               case RETRO_DEVICE_NONE: name = "None"; break;
-               case RETRO_DEVICE_JOYPAD: name = "Joypad"; break;
-               case RETRO_DEVICE_ANALOG: name = "Joypad w/ Analog"; break;
-               case RETRO_DEVICE_JOYPAD_MULTITAP: name = "Multitap"; break;
-               case RETRO_DEVICE_MOUSE: name = "Mouse"; break;
-               case RETRO_DEVICE_LIGHTGUN_JUSTIFIER: name = "Justifier"; break;
-               case RETRO_DEVICE_LIGHTGUN_JUSTIFIERS: name = "Justifiers"; break;
-               case RETRO_DEVICE_LIGHTGUN_SUPER_SCOPE: name = "SuperScope"; break;
-               default: name = "Unknown"; break;
-            }
+         else
+            strlcpy(type_str, "Disabled", type_str_size);
+         break;
+      }
+      case RGUI_SETTINGS_BIND_ANALOG_MODE:
+      {
+         static const char *modes[] = {
+            "None",
+            "Left Analog",
+            "Right Analog",
+            "Dual Analog",
+         };
 
-            strlcpy(type_str, name, type_str_size);
-            break;
+         strlcpy(type_str, modes[g_settings.input.analog_dpad_mode[rgui->current_pad] % ANALOG_DPAD_LAST], type_str_size);
+         break;
+      }
+      case RGUI_SETTINGS_BIND_DEVICE_TYPE:
+      {
+         const char *name;
+         switch (g_settings.input.libretro_device[rgui->current_pad])
+         {
+            case RETRO_DEVICE_NONE: name = "None"; break;
+            case RETRO_DEVICE_JOYPAD: name = "Joypad"; break;
+            case RETRO_DEVICE_ANALOG: name = "Joypad w/ Analog"; break;
+            case RETRO_DEVICE_JOYPAD_MULTITAP: name = "Multitap"; break;
+            case RETRO_DEVICE_MOUSE: name = "Mouse"; break;
+            case RETRO_DEVICE_LIGHTGUN_JUSTIFIER: name = "Justifier"; break;
+            case RETRO_DEVICE_LIGHTGUN_JUSTIFIERS: name = "Justifiers"; break;
+            case RETRO_DEVICE_LIGHTGUN_SUPER_SCOPE: name = "SuperScope"; break;
+            default: name = "Unknown"; break;
          }
+
+         strlcpy(type_str, name, type_str_size);
+         break;
+      }
       case RGUI_SETTINGS_DEVICE_AUTODETECT_ENABLE:
-         strlcpy(type_str, g_settings.input.autodetect_enable ? "ON" : "OFF", sizeof(type_str));
+         strlcpy(type_str, g_settings.input.autodetect_enable ? "ON" : "OFF", type_str_size);
          break;
       case RGUI_SETTINGS_BIND_UP:
       case RGUI_SETTINGS_BIND_DOWN:
@@ -1921,15 +1953,15 @@ void menu_set_settings_label(char *type_str, size_t type_str_size, unsigned *w, 
          break;
 #ifdef _XBOX1
       case RGUI_SETTINGS_FLICKER_FILTER:
-         snprintf(type_str, sizeof(type_str), "%d", g_extern.console.screen.flicker_filter_index);
+         snprintf(type_str, type_str_size, "%d", g_extern.console.screen.flicker_filter_index);
          break;
       case RGUI_SETTINGS_SOFT_DISPLAY_FILTER:
-         snprintf(type_str, sizeof(type_str),
+         snprintf(type_str, type_str_size,
                (g_extern.lifecycle_state & (1ULL << MODE_VIDEO_SOFT_FILTER_ENABLE)) ? "ON" : "OFF");
          break;
 #endif
       case RGUI_SETTINGS_CUSTOM_BGM_CONTROL_ENABLE:
-         strlcpy(type_str, (g_extern.lifecycle_state & (1ULL << MODE_AUDIO_CUSTOM_BGM_ENABLE)) ? "ON" : "OFF", sizeof(type_str));
+         strlcpy(type_str, (g_extern.lifecycle_state & (1ULL << MODE_AUDIO_CUSTOM_BGM_ENABLE)) ? "ON" : "OFF", type_str_size);
          break;
       default:
          type_str[0] = 0;
