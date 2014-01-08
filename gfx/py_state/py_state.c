@@ -25,6 +25,7 @@
 #include "../../general.h"
 #include "../../compat/strl.h"
 #include "../../compat/posix_string.h"
+#include "../../input/input_common.h"
 #include "../../file.h"
 
 static PyObject* py_read_wram(PyObject *self, PyObject *args)
@@ -336,7 +337,21 @@ void py_state_free(py_state_t *handle)
 float py_state_get(py_state_t *handle, const char *id,
       unsigned frame_count)
 {
+   unsigned i;
+   for (i = 0; i < MAX_PLAYERS; i++)
+   {
+      input_push_analog_dpad(g_settings.input.binds[i], g_settings.input.analog_dpad_mode[i]);
+      input_push_analog_dpad(g_settings.input.autoconf_binds[i], g_settings.input.analog_dpad_mode[i]);
+   }
+
    PyObject *ret = PyObject_CallMethod(handle->inst, (char*)id, (char*)"I", frame_count);
+
+   for (i = 0; i < MAX_PLAYERS; i++)
+   {
+      input_pop_analog_dpad(g_settings.input.binds[i]);
+      input_pop_analog_dpad(g_settings.input.autoconf_binds[i]);
+   }
+
    if (!ret)
    {
       if (!handle->warned_ret)

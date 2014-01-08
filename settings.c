@@ -347,6 +347,7 @@ void config_set_defaults(void)
    for (i = 0; i < MAX_PLAYERS; i++)
    {
       g_settings.input.joypad_map[i] = i;
+      g_settings.input.analog_dpad_mode[i] = ANALOG_DPAD_NONE;
       if (!g_extern.has_set_libretro_device[i])
          g_settings.input.libretro_device[i] = RETRO_DEVICE_JOYPAD;
    }
@@ -858,6 +859,9 @@ bool config_load_file(const char *path, bool set_defaults)
       snprintf(buf, sizeof(buf), "input_player%u_joypad_index", i + 1);
       CONFIG_GET_INT(input.joypad_map[i], buf);
 
+      snprintf(buf, sizeof(buf), "input_player%u_analog_dpad_mode", i + 1);
+      CONFIG_GET_INT(input.analog_dpad_mode[i], buf);
+
       if (!g_extern.has_set_libretro_device[i])
       {
          snprintf(buf, sizeof(buf), "input_libretro_device_p%u", i + 1);
@@ -1328,6 +1332,8 @@ bool config_save_file(const char *path)
       config_set_int(conf, cfg, g_settings.input.joypad_map[i]);
       snprintf(cfg, sizeof(cfg), "input_libretro_device_p%u", i + 1);
       config_set_int(conf, cfg, g_settings.input.libretro_device[i]);
+      snprintf(cfg, sizeof(cfg), "input_player%u_analog_dpad_mode", i + 1);
+      config_set_int(conf, cfg, g_settings.input.analog_dpad_mode[i]);
    }
 
    for (i = 0; i < MAX_PLAYERS; i++)

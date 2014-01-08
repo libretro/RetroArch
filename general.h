@@ -239,6 +239,7 @@ struct settings
       bool autoconfigured[MAX_PLAYERS];
 
       unsigned libretro_device[MAX_PLAYERS];
+      unsigned analog_dpad_mode[MAX_PLAYERS];
 
       float axis_threshold;
       int joypad_map[MAX_PLAYERS];
