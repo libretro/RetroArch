@@ -79,6 +79,7 @@ static int img_free(void *ptr, void *a)
 
 static bool ps3graphics_load_jpeg(const char *path, struct texture_image *out_img)
 {
+   size_t img_size;
 #ifndef __PSL1GHT__
    CtrlMallocArg              MallocArg;
    CtrlFreeArg                FreeArg;
@@ -153,6 +154,10 @@ static bool ps3graphics_load_jpeg(const char *path, struct texture_image *out_im
    if (ret != CELL_OK)
       goto error;
 
+   img_size = outParam.output_width * outParam.output_height * sizeof(uint32_t);
+   out_img->pixels = (uint32_t*)malloc(img_size);
+   memset(out_img->pixels, 0, img_size);
+
 #ifdef __PSL1GHT__
    uint64_t output_bytes_per_line = outParam.output_width * 4;
    ret = cellJpgDecDecodeData(mHandle, sHandle, (uint8_t*)out_img->pixels, &output_bytes_per_line, &dOutInfo);
@@ -174,6 +179,9 @@ static bool ps3graphics_load_jpeg(const char *path, struct texture_image *out_im
 
 error:
    RARCH_ERR("ps3graphics_load_jpeg(): error.\n");
+   if (out_img->pixels)
+      free(out_img->pixels);
+   out_img->pixels = 0;
    if (mHandle && sHandle)
 	   cellJpgDecClose(mHandle, sHandle);
    if (mHandle)
@@ -187,6 +195,7 @@ error:
 
 static bool ps3graphics_load_png(const char *path, struct texture_image *out_img)
 {
+   size_t img_size;
 #ifndef __PSL1GHT__
    CtrlMallocArg              MallocArg;
    CtrlFreeArg                FreeArg;
@@ -261,6 +270,10 @@ static bool ps3graphics_load_png(const char *path, struct texture_image *out_img
    if (ret != CELL_OK)
       goto error;
 
+   img_size = outParam.output_width * outParam.output_height * sizeof(uint32_t);
+   out_img->pixels = (uint32_t*)malloc(img_size);
+   memset(out_img->pixels, 0, img_size);
+
 #ifdef __PSL1GHT__
    uint64_t output_bytes_per_line = outParam.output_width * 4;
    ret = cellPngDecDecodeData(mHandle, sHandle, (uint8_t*)out_img->pixels, &output_bytes_per_line, &dOutInfo);
@@ -283,6 +296,9 @@ static bool ps3graphics_load_png(const char *path, struct texture_image *out_img
 error:
    RARCH_ERR("ps3graphics_load_png(): error.\n");
 
+   if (out_img->pixels)
+      free(out_img->pixels);
+   out_img->pixels = 0;
    if (mHandle && sHandle)
       cellPngDecClose(mHandle, sHandle);
    if (mHandle)
@@ -293,23 +309,15 @@ error:
 
 bool texture_image_load(const char *path, struct texture_image *out_img)
 {
-   out_img->pixels = malloc(2048 * 2048 * 4);
-   memset(out_img->pixels, 0, (2048 * 2048 * 4));
    if(strstr(path, ".PNG") != NULL || strstr(path, ".png") != NULL)
    {
       if (!ps3graphics_load_png(path, out_img))
-      {
-         free(out_img->pixels);
          return false;
-      }
    }
    else
    {
       if (!ps3graphics_load_jpeg(path, out_img))
-      {
-         free(out_img->pixels);
          return false;
-      }
    }
 
    return true;
@@ -317,7 +325,7 @@ bool texture_image_load(const char *path, struct texture_image *out_img)
 
 void texture_image_free(struct texture_image *img)
 {
-   free(img->pixels);
+   if (img->pixels)
+      free(img->pixels);
    memset(img, 0, sizeof(*img));
 }
-

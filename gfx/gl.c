@@ -1676,7 +1676,13 @@ static bool resolve_extensions(gl_t *gl)
    }
 
    // GL_RGB565 internal format support.
-   gl->have_es2_compat = gl_query_extension(gl, "ARB_ES2_compatibility");
+   // Even though es2 support is claimed, the format is not supported on older ATI catalyst drivers.
+   // The speed gain from using GL_RGB565 is worth adding some workarounds for.
+   const char *vendor = (const char*)glGetString(GL_VENDOR);
+   if (!vendor || !strstr(vendor, "ATI"))
+      gl->have_es2_compat = gl_query_extension(gl, "ARB_ES2_compatibility");
+   else
+      RARCH_LOG("[GL]: ATI card detected, skipping check for GL_RGB565 support.\n");
 #endif
 
 #ifdef HAVE_GL_SYNC
@@ -2342,7 +2348,6 @@ static bool gl_set_shader(void *data, enum rarch_shader_type type, const char *p
 }
 #endif
 
-#ifndef NO_GL_READ_VIEWPORT
 static void gl_viewport_info(void *data, struct rarch_viewport *vp)
 {
    gl_t *gl = (gl_t*)data;
@@ -2356,10 +2361,13 @@ static void gl_viewport_info(void *data, struct rarch_viewport *vp)
    vp->y = top_dist;
 }
 
+#ifndef NO_GL_READ_PIXELS
 static bool gl_read_viewport(void *data, uint8_t *buffer)
 {
    unsigned i;
    gl_t *gl = (gl_t*)data;
+    
+   i = 0;
    (void)i;
 
    RARCH_PERFORMANCE_INIT(read_viewport);
@@ -2745,11 +2753,11 @@ const video_driver_t video_gl = {
 #endif
    gl_set_rotation,
 
-#ifndef NO_GL_READ_VIEWPORT
    gl_viewport_info,
+
+#ifndef NO_GL_READ_PIXELS
    gl_read_viewport,
 #else
-   NULL,
    NULL,
 #endif
 

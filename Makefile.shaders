@@ -3,6 +3,7 @@ SHADER_DIR     := media/shaders
 SHADER_GLSL_DIR := media/shaders_glsl
 
 SHADER_DEST_PS3_DIR := ps3/pkg/USRDIR/cores/shaders
+SHADER_DEST_PS3_COBRA_DIR := ps3/iso/PS3_GAME/USRDIR/cores/shaders
 
 # system platform
 system_platform = unix
@@ -51,5 +52,14 @@ deploy-ps3: checkout-shaders
 	else \
 	echo "[DEPLOY PS3::] Creating PS3 shader directory first..."; \
 		mkdir -p $(SHADER_DEST_PS3_DIR) || bin/true; \
+	fi
+	@echo "[DEPLOY PS3::] Copied shaders to PS3 shaders directory."
+	
+deploy-ps3-cobra: checkout-shaders
+	@if test -d $(SHADER_DEST_PS3_COBRA_DIR); then \
+		cp -r $(SHADER_DIR)/* $(SHADER_DEST_PS3_COBRA_DIR); \
+	else \
+	echo "[DEPLOY PS3::] Creating PS3 shader directory first..."; \
+		mkdir -p $(SHADER_DEST_PS3_COBRA_DIR) || bin/true; \
 	fi
 	@echo "[DEPLOY PS3::] Copied shaders to PS3 shaders directory."

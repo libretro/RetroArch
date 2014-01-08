@@ -32,7 +32,6 @@
 
 apple_frontend_settings_t apple_frontend_settings;
 
-#ifdef IOS
 int get_ios_version_major(void)
 {
    static int version = -1;
@@ -48,7 +47,11 @@ void ios_set_bluetooth_mode(NSString* mode)
    apple_input_enable_icade([mode isEqualToString:@"icade"]);
    btstack_set_poweron([mode isEqualToString:@"btstack"]);
 }
-#endif
+
+static void apple_refresh_frontend_config(const rarch_setting_t* setting)
+{
+   [[RetroArch_iOS get] refreshSystemConfig];
+}
 
 const void* apple_get_frontend_settings(void)
 {
@@ -60,9 +63,11 @@ const void* apple_get_frontend_settings(void)
       settings[1] = setting_data_group_setting(ST_SUB_GROUP, "Frontend");
       settings[2] = setting_data_bool_setting("ios_use_file_log", "Enable File Logging",
                                                &apple_frontend_settings.logging_enabled, false);
+      settings[2].change_handler = apple_refresh_frontend_config;
       settings[3] = setting_data_bool_setting("ios_tv_mode", "TV Mode", &apple_use_tv_mode, false);
       settings[4] = setting_data_string_setting(ST_STRING, "ios_btmode", "Bluetooth Input Type", apple_frontend_settings.bluetooth_mode,
                                                  sizeof(apple_frontend_settings.bluetooth_mode), "none");                                                 
+      settings[4].change_handler = apple_refresh_frontend_config;
 
       // Set ios_btmode options based on runtime environment
       if (btstack_try_load())

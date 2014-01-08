@@ -20,6 +20,10 @@
 #include "../conf/config_file.h"
 #include <stdint.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 static inline void input_conv_analog_id_to_bind_id(unsigned index, unsigned id,
       unsigned *id_minus, unsigned *id_plus)
 {
@@ -150,6 +154,7 @@ void input_translate_rk_to_str(enum retro_key key, char *buf, size_t size);
 extern const char* const input_builtin_autoconfs[];
 
 const char *input_config_get_prefix(unsigned player, bool meta);
+unsigned input_translate_str_to_bind_id(const char *str); // Returns RARCH_BIND_LIST_END on not found.
 
 void input_config_parse_key(config_file_t *conf, const char *prefix, const char *btn,
       struct retro_keybind *bind);
@@ -159,6 +164,10 @@ void input_config_parse_joy_axis(config_file_t *conf, const char *prefix,
       const char *axis, struct retro_keybind *bind);
 
 void input_config_autoconfigure_joypad(unsigned index, const char *name, const char *driver);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
 

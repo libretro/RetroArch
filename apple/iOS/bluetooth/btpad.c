@@ -114,20 +114,25 @@ void btpad_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet
       {
          case BTSTACK_EVENT_STATE:
          {
-            if (packet[2] == HCI_STATE_WORKING)
-            {
-               btpad_queue_reset();
+            RARCH_LOG("BTstack: HCI State %d\n", packet[2]);
+         
+            switch (packet[2])
+            {                  
+               case HCI_STATE_WORKING:
+                  btpad_queue_reset();
 
-               btpad_queue_hci_read_bd_addr();
-               bt_send_cmd_ptr(l2cap_register_service_ptr, PSM_HID_CONTROL, 672);  // TODO: Where did I get 672 for mtu?
-               bt_send_cmd_ptr(l2cap_register_service_ptr, PSM_HID_INTERRUPT, 672);
-               btpad_queue_hci_inquiry(HCI_INQUIRY_LAP, 3, 1);
+                  btpad_queue_hci_read_bd_addr();
+                  bt_send_cmd_ptr(l2cap_register_service_ptr, PSM_HID_CONTROL, 672);  // TODO: Where did I get 672 for mtu?
+                  bt_send_cmd_ptr(l2cap_register_service_ptr, PSM_HID_INTERRUPT, 672);
+                  btpad_queue_hci_inquiry(HCI_INQUIRY_LAP, 3, 1);
                
-               btpad_queue_run(1);
-            }
-            else if(packet[2] > HCI_STATE_WORKING)
-            {
-               btpad_close_all_connections();
+                  btpad_queue_run(1);
+                  break;
+                  
+               case HCI_STATE_HALTING:
+                  btpad_close_all_connections();
+                  CFRunLoopStop(CFRunLoopGetCurrent());
+                  break;                  
             }
          }
          break;
@@ -303,7 +308,7 @@ void btpad_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet
 
          case L2CAP_EVENT_SERVICE_REGISTERED:
          {
-            if (!packet[2])
+            if (packet[2])
                RARCH_LOG("BTpad: Got failed 'Service Registered' event (PSM: %02X, Status: %02X)\n", READ_BT_16(packet, 3), packet[2]);
          }
          break;

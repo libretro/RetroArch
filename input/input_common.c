@@ -979,6 +979,15 @@ const char *input_config_get_prefix(unsigned player, bool meta)
       return NULL; // Don't bother with meta bind for anyone else than first player.
 }
 
+unsigned input_translate_str_to_bind_id(const char *str)
+{
+   unsigned i;
+   for (i = 0; input_config_bind_map[i].valid; i++)
+      if (!strcmp(str, input_config_bind_map[i].base))
+         return i;
+   return RARCH_BIND_LIST_END;
+}
+
 static void parse_hat(struct retro_keybind *bind, const char *str)
 {
    if (!isdigit(*str))

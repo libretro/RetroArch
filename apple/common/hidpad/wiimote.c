@@ -442,171 +442,45 @@ int wiimote_write_data(struct wiimote_t* wm, unsigned int addr, byte* data, byte
 
 /////////////////////// CLASSIC  /////////////////
 
-static void classic_ctrl_pressed_buttons(struct classic_ctrl_t* cc, short now);
-void calc_joystick_state(struct joystick_t* js, float x, float y);
-
-/**
- *	@brief Handle the handshake data from the classic controller.
- *
- *	@param cc		A pointer to a classic_ctrl_t structure.
- *	@param data		The data read in from the device.
- *	@param len		The length of the data block, in bytes.
- *
- *	@return	Returns 1 if handshake was successful, 0 if not.
- */
 int classic_ctrl_handshake(struct wiimote_t* wm, struct classic_ctrl_t* cc, byte* data, unsigned short len)
 {
-	int offset = 0;
-
-	cc->btns = 0;
-	cc->r_shoulder = 0;
-	cc->l_shoulder = 0;
-
-	/* decrypt data */
-	/*
-	for (i = 0; i < len; ++i)
-		data[i] = (data[i] ^ 0x17) + 0x17;
-	*/
- 
-#ifdef WIIMOTE_DBG
-   int x = 0;
-   printf("[DECRIPTED]");
-   for (; x < len; x++)
-      printf("%.2x ", data[x]);
-   printf("\n");
-#endif
-
-/*
-	if (data[offset] == 0xFF)
-	{
-		return 0;//ERROR!
-	}
-*/
-	/* joystick stuff */
-	if (data[offset] != 0xFF && data[offset] != 0x00)
-	{
-		cc->ljs.max.x = data[0 + offset] / 4;
-		cc->ljs.min.x = data[1 + offset] / 4;
-		cc->ljs.center.x = data[2 + offset] / 4;
-		cc->ljs.max.y = data[3 + offset] / 4;
-		cc->ljs.min.y = data[4 + offset] / 4;
-		cc->ljs.center.y = data[5 + offset] / 4;
-
-		cc->rjs.max.x = data[6 + offset] / 8;
-		cc->rjs.min.x = data[7 + offset] / 8;
-		cc->rjs.center.x = data[8 + offset] / 8;
-		cc->rjs.max.y = data[9 + offset] / 8;
-		cc->rjs.min.y = data[10 + offset] / 8;
-		cc->rjs.center.y = data[11 + offset] / 8;
-	}
-	else
-	{
-		cc->ljs.max.x = 55;
-		cc->ljs.min.x = 5;
-		cc->ljs.center.x = 30;
-		cc->ljs.max.y = 55;
-		cc->ljs.min.y = 5;
-		cc->ljs.center.y = 30;
-
-		cc->rjs.max.x = 30;
-		cc->rjs.min.x = 0;
-		cc->rjs.center.x = 15;
-		cc->rjs.max.y = 30;
-		cc->rjs.min.y = 0;
-		cc->rjs.center.y = 15;
-	}
-
-	/* handshake done */
+   memset(cc, 0, sizeof(*cc));
 	wm->exp.type = EXP_CLASSIC;
-
 	return 1;
 }
 
-/**
- *	@brief Handle classic controller event.
- *
- *	@param cc		A pointer to a classic_ctrl_t structure.
- *	@param msg		The message specified in the event packet.
- */
-void classic_ctrl_event(struct classic_ctrl_t* cc, byte* msg) {
-	int lx, ly, rx, ry;
-	byte l, r;
-
-	/* decrypt data */
-	/*
-	for (i = 0; i < 6; ++i)
-		msg[i] = (msg[i] ^ 0x17) + 0x17;
-    */
-
-	classic_ctrl_pressed_buttons(cc, BIG_ENDIAN_SHORT(*(short*)(msg + 4)));
-
-	/* left/right buttons */
-	l = (((msg[2] & 0x60) >> 2) | ((msg[3] & 0xE0) >> 5));
-	r = (msg[3] & 0x1F);
-
-	/*
-	 *	TODO - LR range hardcoded from 0x00 to 0x1F.
-	 *	This is probably in the calibration somewhere.
-	 */
-	cc->r_shoulder = ((float)r / 0x1F);
-	cc->l_shoulder = ((float)l / 0x1F);
-
-	/* calculate joystick orientation */
-	lx = (msg[0] & 0x3F);
-	ly = (msg[1] & 0x3F);
-	rx = ((msg[0] & 0xC0) >> 3) | ((msg[1] & 0xC0) >> 5) | ((msg[2] & 0x80) >> 7);
-	ry = (msg[2] & 0x1F);
-
-#ifdef WIIMOTE_DBG
-   printf("lx ly rx ry %d %d %d %d\n",lx,ly,rx,ry);
-#endif
-
-//	calc_joystick_state(&cc->ljs, lx, ly);
-//	calc_joystick_state(&cc->rjs, rx, ry);
-
-	/*
-	printf("classic L button pressed:         %f\n", cc->l_shoulder);
-	printf("classic R button pressed:         %f\n", cc->r_shoulder);
-	printf("classic left joystick angle:      %f\n", cc->ljs.ang);
-	printf("classic left joystick magnitude:  %f\n", cc->ljs.mag);
-	printf("classic right joystick angle:     %f\n", cc->rjs.ang);
-	printf("classic right joystick magnitude: %f\n", cc->rjs.mag);
-	*/
+static float normalize_and_interpolate(float min, float max, float t)
+{
+   return (min == max) ? 0.0f : (t - min) / (max - min);
 }
 
+static void process_axis(struct axis_t* axis, byte raw)
+{
+   if (!axis->has_center)
+   {
+      axis->has_center = true;
+      axis->min = raw - 2;
+      axis->center = raw;
+      axis->max = raw + 2;
+   }
 
-/**
- *	@brief Find what buttons are pressed.
- *
- *	@param cc		A pointer to a classic_ctrl_t structure.
- *	@param msg		The message byte specified in the event packet.
- */
-static void classic_ctrl_pressed_buttons(struct classic_ctrl_t* cc, short now) {
-	/* message is inverted (0 is active, 1 is inactive) */
-	now = ~now & CLASSIC_CTRL_BUTTON_ALL;
+   if (raw < axis->min) axis->min = raw;
+   if (raw > axis->max) axis->max = raw;
+   axis->raw_value = raw;
 
-	/* buttons pressed now */
-	cc->btns = now;
+   if (raw < axis->center)
+      axis->value = -normalize_and_interpolate(axis->center, axis->min, raw);
+   else if (raw > axis->center)
+      axis->value =  normalize_and_interpolate(axis->center, axis->max, raw);
+   else
+      axis->value = 0;
 }
 
-/**
- *	@brief Calculate the angle and magnitude of a joystick.
- *
- *	@param js	[out] Pointer to a joystick_t structure.
- *	@param x	The raw x-axis value.
- *	@param y	The raw y-axis value.
- */
-void calc_joystick_state(struct joystick_t* js, float x, float y) {
-   js->rx = 0;
-   js->ry = 0;
-
-	if (x > js->center.x)
-		js->rx = ((float)(x - js->center.x) / (float)(js->max.x - js->center.x));
-	else if (x < js->center.x)
-		js->rx = ((float)(x - js->min.x) / (float)(js->center.x - js->min.x)) - 1.0f;
-
-	if (y > js->center.y)
-		js->ry = ((float)(y - js->center.y) / (float)(js->max.y - js->center.y));
-	else if (js->ry < js->center.y)
-		js->ry = ((float)(y - js->min.y) / (float)(js->center.y - js->min.y)) - 1.0f;
+void classic_ctrl_event(struct classic_ctrl_t* cc, byte* msg)
+{
+   cc->btns = ~BIG_ENDIAN_SHORT(*(short*)(msg + 4)) & CLASSIC_CTRL_BUTTON_ALL;
+	process_axis(&cc->ljs.x, (msg[0] & 0x3F));
+   process_axis(&cc->ljs.y, (msg[1] & 0x3F));
+   process_axis(&cc->rjs.x, ((msg[0] & 0xC0) >> 3) | ((msg[1] & 0xC0) >> 5) | ((msg[2] & 0x80) >> 7));
+   process_axis(&cc->rjs.y, (msg[2] & 0x1F));
 }

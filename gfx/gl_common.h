@@ -309,7 +309,7 @@ typedef struct gl
 
 // Platform specific workarounds/hacks.
 #if defined(__CELLOS_LV2__)
-#define NO_GL_READ_VIEWPORT
+#define NO_GL_READ_PIXELS
 
 // Performance hacks
 #ifdef HAVE_RGL
