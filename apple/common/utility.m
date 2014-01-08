@@ -27,7 +27,7 @@ void apple_display_alert(NSString* message, NSString* title)
    UIAlertView* alert = [[UIAlertView alloc] initWithTitle:title ? title : @"RetroArch"
                                              message:message
                                              delegate:nil
-                                             cancelButtonTitle:@"OK"
+                                             cancelButtonTitle:@"确认"
                                              otherButtonTitles:nil];
    [alert show];
 #else

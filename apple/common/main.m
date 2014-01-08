@@ -132,9 +132,9 @@ void apple_run_core(NSString* core, const char* file)
         char basedir[256];
         fill_pathname_basedir(basedir, file ? file : "", sizeof(basedir));
         if (file && access(basedir, R_OK | W_OK | X_OK))
-            apple_display_alert(BOXSTRING("The directory containing the selected file must have write premissions. This will prevent zipped content from loading, and will cause some cores to not function."), 0);
+            apple_display_alert(BOXSTRING("此文件所在的目录必须有写权限，不然将阻止加载压缩内容， 导致模拟器核心无法使用."), 0);
         else
-            apple_display_alert(BOXSTRING("Failed to load content."), 0);
+            apple_display_alert(BOXSTRING("加载内容失败."), 0);
         
         apple_rarch_exited();
     }

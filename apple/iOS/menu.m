@@ -60,7 +60,7 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
    for (int i = 0; i < items->size; i ++)
       [actionSheet addButtonWithTitle:BOXSTRING(items->elems[i].data)];
    
-   actionSheet.cancelButtonIndex = [actionSheet addButtonWithTitle:@"Cancel"];
+   actionSheet.cancelButtonIndex = [actionSheet addButtonWithTitle:@"取消"];
    
    objc_setAssociatedObject(actionSheet, associated_delegate_key, delegate, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
    
@@ -155,7 +155,7 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
 
 - (UITableViewCell*)cellForTableView:(UITableView*)tableView
 {
-   static NSString* const cell_id = @"text";
+   static NSString* const cell_id = @"文本";
    
    UITableViewCell* result = [tableView dequeueReusableCellWithIdentifier:cell_id];
    if (!result)
@@ -245,8 +245,8 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
 
 - (void)wasSelectedOnTableView:(UITableView*)tableView ofController:(UIViewController*)controller
 {
-   UIAlertView* alertView = [[UIAlertView alloc] initWithTitle:@"Enter new value" message:BOXSTRING(self.setting->short_description) delegate:self
-                                                  cancelButtonTitle:@"Cancel" otherButtonTitles:@"OK", nil];
+   UIAlertView* alertView = [[UIAlertView alloc] initWithTitle:@"输入新值" message:BOXSTRING(self.setting->short_description) delegate:self
+                                                  cancelButtonTitle:@"取消" otherButtonTitles:@"确认", nil];
    alertView.alertViewStyle = UIAlertViewStylePlainTextInput;
 
    UITextField* field = [alertView textFieldAtIndex:0];
@@ -283,8 +283,8 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
    {
       RAMenuItemGeneralSetting __weak* weakSelf = self;
 
-      struct string_list* items = string_split("OK", "|");
-      RunActionSheet("Really Reset Value?", items, self.parentTable,
+      struct string_list* items = string_split("确认", "|");
+      RunActionSheet("确认重置?", items, self.parentTable,
          ^(UIActionSheet* actionSheet, NSInteger buttonIndex)
          {
             if (buttonIndex != actionSheet.cancelButtonIndex)
@@ -426,8 +426,8 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
    self.alert = [[UIAlertView alloc] initWithTitle:@"RetroArch"
                                      message:BOXSTRING(self.setting->short_description)
                                      delegate:self
-                                     cancelButtonTitle:@"Cancel"
-                                     otherButtonTitles:@"Clear Keyboard", @"Clear Joystick", @"Clear Axis", nil];
+                                     cancelButtonTitle:@"取消"
+                                     otherButtonTitles:@"清空键盘", @"清空Joystick", @"清空Axis", nil];
 
    [self.alert show];
    
@@ -504,47 +504,48 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
 
 - (void)willReloadData
 {
-   RAMainMenu* __weak weakSelf = self;
-   self.sections = [NSMutableArray array];
+    RAMainMenu* __weak weakSelf = self;
+    self.sections = [NSMutableArray array];
+    
+    NSMutableArray* settings = [NSMutableArray arrayWithObjects:@"设置",
+                                [RAMenuItemBasic itemWithDescription:@"前端设置"
+                                                              action:^{ [weakSelf.navigationController pushViewController:[RAFrontendSettingsMenu new] animated:YES]; }],
+                                nil];
+    
+    if (!apple_is_running)
+    {
 
-   NSMutableArray* settings = [NSMutableArray arrayWithObjects:@"Settings",
-                               [RAMenuItemBasic itemWithDescription:@"Frontend"
-                                  action:^{ [weakSelf.navigationController pushViewController:[RAFrontendSettingsMenu new] animated:YES]; }],
-                               nil];
-   
-   if (!apple_is_running)
-   {
-      [self.sections addObject:[NSArray arrayWithObjects:@"Content",
-                                 [RAMenuItemBasic itemWithDescription:@"Choose Core"
+      [self.sections addObject:[NSArray arrayWithObjects:@"内容",
+                                 [RAMenuItemBasic itemWithDescription:@"选择模拟器核心"
                                     action:^{ [weakSelf chooseCoreWithPath:nil]; }
-                                    detail:^{ return weakSelf.core ? apple_get_core_display_name(weakSelf.core) : @"Auto Detect"; }],
-                                 [RAMenuItemBasic itemWithDescription:@"Load Content"                 action:^{ [weakSelf loadGame]; }],
-                                 [RAMenuItemBasic itemWithDescription:@"Load Content (History)"       action:^{ [weakSelf loadHistory]; }],
+                                    detail:^{ return weakSelf.core ? apple_get_core_display_name(weakSelf.core) : @"自动检测"; }],
+                                 [RAMenuItemBasic itemWithDescription:@"加载游戏"                 action:^{ [weakSelf loadGame]; }],
+                                 [RAMenuItemBasic itemWithDescription:@"加载游戏(历史记录)"       action:^{ [weakSelf loadHistory]; }],
                                  nil]];
    }
    else
    {
-      [self.sections addObject:[NSArray arrayWithObjects:@"Actions",
-                                 [RAMenuItemBasic itemWithDescription:@"Reset Content" action:^{ [weakSelf performBasicAction:RESET]; }],
-                                 [RAMenuItemBasic itemWithDescription:@"Close Content" action:^{ [weakSelf performBasicAction:QUIT]; }],
+      [self.sections addObject:[NSArray arrayWithObjects:@"动作",
+                                 [RAMenuItemBasic itemWithDescription:@"重置内容" action:^{ [weakSelf performBasicAction:RESET]; }],
+                                 [RAMenuItemBasic itemWithDescription:@"关闭内容" action:^{ [weakSelf performBasicAction:QUIT]; }],
                                  nil]];
       
-      [self.sections addObject:[NSArray arrayWithObjects:@"States",
+      [self.sections addObject:[NSArray arrayWithObjects:@"存档",
                                  [RAMenuItemStateSelect new],
-                                 [RAMenuItemBasic itemWithDescription:@"Load State" action:^{ [weakSelf performBasicAction:LOAD_STATE]; }],
-                                 [RAMenuItemBasic itemWithDescription:@"Save State" action:^{ [weakSelf performBasicAction:SAVE_STATE]; }],
+                                 [RAMenuItemBasic itemWithDescription:@"加载存档" action:^{ [weakSelf performBasicAction:LOAD_STATE]; }],
+                                 [RAMenuItemBasic itemWithDescription:@"保存存档" action:^{ [weakSelf performBasicAction:SAVE_STATE]; }],
                                  nil]];
       
-      [settings addObject:[RAMenuItemBasic itemWithDescription:@"Core"
+      [settings addObject:[RAMenuItemBasic itemWithDescription:@"模拟器核心"
                               action:^{ [weakSelf.navigationController pushViewController:[[RACoreSettingsMenu alloc] initWithCore:apple_core] animated:YES]; }]];
-      [settings addObject:[RAMenuItemBasic itemWithDescription:@"Core Options"
+      [settings addObject:[RAMenuItemBasic itemWithDescription:@"模拟器核心设置"
                               action:^{ [weakSelf.navigationController pushViewController:[RACoreOptionsMenu new] animated:YES]; }]];
    }
    
    [self.sections addObject:settings];
    
    if (apple_is_running)
-      self.navigationItem.leftBarButtonItem = [[UIBarButtonItem alloc] initWithTitle:@"Resume" style:UIBarButtonItemStyleBordered target:[RetroArch_iOS get] action:@selector(showGameView)];
+      self.navigationItem.leftBarButtonItem = [[UIBarButtonItem alloc] initWithTitle:@"继续" style:UIBarButtonItemStyleBordered target:[RetroArch_iOS get] action:@selector(showGameView)];
    else
       self.navigationItem.leftBarButtonItem = nil;
 }
@@ -623,7 +624,7 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
    {
       _history = rom_history_init([historyPath UTF8String], 100);
       [self reloadData];
-      self.navigationItem.rightBarButtonItem = [[UIBarButtonItem alloc] initWithTitle:@"Clear History"
+      self.navigationItem.rightBarButtonItem = [[UIBarButtonItem alloc] initWithTitle:@"清空历史记录"
                                                 style:UIBarButtonItemStyleBordered target:self action:@selector(clearHistory)];
    }
    
@@ -722,7 +723,7 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
       }
       else
       {
-         self.title = @"Global Core Config";
+         self.title = @"模拟器内核全局设置";
          _pathToSave = apple_platform.globalConfigFile;
       }
       
@@ -737,10 +738,10 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
       self.core = core;
    
       // Add common options
-      const char* emula[] = { "Emulation", "rewind_enable", "fps_show", 0 };
-      const char* video[] = { "Video", "video_scale_integer", "video_smooth", 0 };
-      const char* audio[] = { "Audio", "audio_mute", "audio_rate_control", "audio_rate_control_delta", 0 };
-      const char* input[] = { "Input", "input_overlay", "input_overlay_opacity", 0 };
+      const char* emula[] = { "模拟器设置", "rewind_enable", "fps_show", 0 };
+      const char* video[] = { "图像", "video_scale_integer", "video_smooth", 0 };
+      const char* audio[] = { "声音", "audio_mute", "audio_rate_control", "audio_rate_control_delta", 0 };
+      const char* input[] = { "输入", "input_overlay", "input_overlay_opacity", 0 };
       const char** groups[] = { emula, video, audio, input, 0 };
       
       for (int i = 0; groups[i]; i ++)
@@ -819,9 +820,9 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
    {      
       RAFrontendSettingsMenu* __weak weakSelf = self;
 
-      self.title = @"Frontend Settings";
+      self.title = @"前端设置";
       
-      RAMenuItemBasic* diagnostic_item = [RAMenuItemBasic itemWithDescription:@"Diagnostic Log"
+      RAMenuItemBasic* diagnostic_item = [RAMenuItemBasic itemWithDescription:@"日志记录（开发者）"
          action:^{ [weakSelf.navigationController pushViewController:[[RALogMenu alloc] initWithFile:[[RetroArch_iOS get].logPath UTF8String]] animated:YES]; }];
       [self.sections insertObject:@[@"", diagnostic_item] atIndex:0];
   
@@ -844,11 +845,11 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
    
    [cores removeAllObjects];
    
-   [cores addObject:@"Configurations"];
-   [cores addObject:[RAMenuItemBasic itemWithDescription:@"Global Core Config"
+   [cores addObject:@"设置"];
+   [cores addObject:[RAMenuItemBasic itemWithDescription:@"模拟器内核全局设置"
                                                   action: ^{ [weakSelf showCoreConfigFor:nil]; }]];
    
-   [cores addObject:[RAMenuItemBasic itemWithDescription:@"New Config for Core"
+   [cores addObject:[RAMenuItemBasic itemWithDescription:@"新的内核设定"
                                                   action: ^{ [weakSelf createNewConfig]; }]];
    
    const core_info_list_t* core_list = apple_core_info_list_get();
@@ -888,7 +889,7 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
             apple_core_info_get_custom_config([core UTF8String], path, sizeof(path));
          
             if (![[NSFileManager defaultManager] copyItemAtPath:apple_platform.globalConfigFile toPath:BOXSTRING(path) error:nil])
-               RARCH_WARN("Could not create custom config at %s", path);
+               RARCH_WARN("无法在此处创建配置： %s", path);
          }
          
          [weakSelf.navigationController popViewControllerAnimated:YES];
@@ -927,7 +928,7 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
                detail:^{ return BOXSTRING(core_option_get_val(options, i)); }]];
       }
       else
-         [section addObject:[RAMenuItemBasic itemWithDescription:@"The running core has no options." action:NULL]];
+         [section addObject:[RAMenuItemBasic itemWithDescription:@"正在运行的存档核心没有设置项." action:NULL]];
    }
    
    return self;
@@ -1011,18 +1012,18 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
 {
    if ((self = [super initWithStyle:UITableViewStyleGrouped]))
    {
-      self.title = @"Choose Core";
+      self.title = @"选择模拟器核心";
       _action = action;
       _path = path;
 
       if (autoDetect)
       {
          RAMenuCoreList* __weak weakSelf = self;
-         [self.sections addObject: @[@"", [RAMenuItemBasic itemWithDescription:@"Auto Detect"
+         [self.sections addObject: @[@"", [RAMenuItemBasic itemWithDescription:@"自动检测"
                action: ^{ if(weakSelf.action) weakSelf.action(nil); }]]];
       }
 
-      NSMutableArray* core_section = [NSMutableArray arrayWithObject:@"Cores"];
+      NSMutableArray* core_section = [NSMutableArray arrayWithObject:@"模拟核心"];
       [self.sections addObject:core_section];
 
       core_info_list_t* core_list = apple_core_info_list_get();
@@ -1087,7 +1088,7 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
          fclose(file);
       }
       else
-         [data addObject:[RAMenuItemBasic itemWithDescription:@"Logging not enabled" action:NULL]];
+         [data addObject:[RAMenuItemBasic itemWithDescription:@"记录未开启" action:NULL]];
       
       [self.sections addObject:data];
       
@@ -1115,7 +1116,7 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
       result = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleValue1 reuseIdentifier:cell_id];
       result.selectionStyle = UITableViewCellSelectionStyleNone;
 
-      result.textLabel.text = @"Slot";
+      result.textLabel.text = @"存档槽";
       
       UISegmentedControl* accessory = [[UISegmentedControl alloc] initWithItems:@[@"0", @"1", @"2", @"3", @"4", @"5", @"6", @"7", @"8", @"9"]];
       [accessory addTarget:self action:@selector(changed:) forControlEvents:UIControlEventValueChanged];
