@@ -293,13 +293,13 @@ error:
 
 bool texture_image_load(const char *path, struct texture_image *out_img)
 {
-   out_img->pixels = malloc(2048 * 2048 * 4);
-   memset(out_img->pixels, 0, (2048 * 2048 * 4));
+   size_t size = out_img->width * out_img->height * sizeof(uint32_t);
+   out_img->pixels = (uint32_t*)malloc(size);
    if(strstr(path, ".PNG") != NULL || strstr(path, ".png") != NULL)
    {
       if (!ps3graphics_load_png(path, out_img))
       {
-         free(out_img->pixels);
+         texture_image_free(out_img);
          return false;
       }
    }
@@ -307,7 +307,7 @@ bool texture_image_load(const char *path, struct texture_image *out_img)
    {
       if (!ps3graphics_load_jpeg(path, out_img))
       {
-         free(out_img->pixels);
+         texture_image_free(out_img);
          return false;
       }
    }
@@ -320,4 +320,3 @@ void texture_image_free(struct texture_image *img)
    free(img->pixels);
    memset(img, 0, sizeof(*img));
 }
-
