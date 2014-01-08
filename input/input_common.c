@@ -1228,3 +1228,40 @@ void input_config_autoconfigure_joypad(unsigned index, const char *name, const c
 }
 #endif
 
+void input_push_analog_dpad(struct retro_keybind *binds, unsigned mode)
+{
+   unsigned i;
+   unsigned analog_base;
+   switch (mode)
+   {
+      case ANALOG_DPAD_LSTICK:
+      case ANALOG_DPAD_RSTICK:
+         analog_base = mode == ANALOG_DPAD_LSTICK ? RARCH_ANALOG_LEFT_X_PLUS : RARCH_ANALOG_RIGHT_X_PLUS;
+
+         binds[RETRO_DEVICE_ID_JOYPAD_RIGHT].orig_joyaxis = binds[RETRO_DEVICE_ID_JOYPAD_RIGHT].joyaxis;
+         binds[RETRO_DEVICE_ID_JOYPAD_LEFT].orig_joyaxis  = binds[RETRO_DEVICE_ID_JOYPAD_LEFT].joyaxis;
+         binds[RETRO_DEVICE_ID_JOYPAD_DOWN].orig_joyaxis  = binds[RETRO_DEVICE_ID_JOYPAD_DOWN].joyaxis;
+         binds[RETRO_DEVICE_ID_JOYPAD_UP].orig_joyaxis    = binds[RETRO_DEVICE_ID_JOYPAD_UP].joyaxis;
+
+         // Inherit joyaxis from analogs.
+         binds[RETRO_DEVICE_ID_JOYPAD_RIGHT].joyaxis = binds[analog_base + 0].joyaxis;
+         binds[RETRO_DEVICE_ID_JOYPAD_LEFT].joyaxis  = binds[analog_base + 1].joyaxis;
+         binds[RETRO_DEVICE_ID_JOYPAD_DOWN].joyaxis  = binds[analog_base + 2].joyaxis;
+         binds[RETRO_DEVICE_ID_JOYPAD_UP].joyaxis    = binds[analog_base + 3].joyaxis;
+         break;
+
+      default:
+         for (i = RETRO_DEVICE_ID_JOYPAD_UP; i <= RETRO_DEVICE_ID_JOYPAD_RIGHT; i++)
+            binds[i].orig_joyaxis = binds[i].joyaxis;
+         break;
+   }
+}
+
+// Restore binds temporarily overridden by input_push_analog_dpad.
+void input_pop_analog_dpad(struct retro_keybind *binds)
+{
+   unsigned i;
+   for (i = RETRO_DEVICE_ID_JOYPAD_UP; i <= RETRO_DEVICE_ID_JOYPAD_RIGHT; i++)
+      binds[i].joyaxis = binds[i].orig_joyaxis;
+}
+
