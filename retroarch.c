@@ -3208,14 +3208,20 @@ bool rarch_main_iterate(void)
 
    // Update binds for analog dpad modes.
    for (i = 0; i < MAX_PLAYERS; i++)
+   {
       input_push_analog_dpad(g_settings.input.binds[i], g_settings.input.analog_dpad_mode[i]);
+      input_push_analog_dpad(g_settings.input.autoconf_binds[i], g_settings.input.analog_dpad_mode[i]);
+   }
 
    update_frame_time();
    pretro_run();
    limit_frame_time();
 
    for (i = 0; i < MAX_PLAYERS; i++)
+   {
       input_pop_analog_dpad(g_settings.input.binds[i]);
+      input_pop_analog_dpad(g_settings.input.autoconf_binds[i]);
+   }
 
 #ifdef HAVE_BSV_MOVIE
    if (g_extern.bsv.movie)

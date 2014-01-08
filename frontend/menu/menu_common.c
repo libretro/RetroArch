@@ -490,6 +490,8 @@ static uint64_t menu_input(void)
 #endif
 
    input_push_analog_dpad((struct retro_keybind*)binds[0], g_settings.input.analog_dpad_mode[0]);
+   for (i = 0; i < MAX_PLAYERS; i++)
+      input_push_analog_dpad(g_settings.input.autoconf_binds[i], g_settings.input.analog_dpad_mode[i]);
 
    for (i = 0; i < RETRO_DEVICE_ID_JOYPAD_R2; i++)
    {
@@ -503,6 +505,8 @@ static uint64_t menu_input(void)
    input_state |= input_key_pressed_func(RARCH_MENU_TOGGLE) ? (1ULL << RARCH_MENU_TOGGLE) : 0;
 
    input_pop_analog_dpad((struct retro_keybind*)binds[0]);
+   for (i = 0; i < MAX_PLAYERS; i++)
+      input_pop_analog_dpad(g_settings.input.autoconf_binds[i]);
 
    rgui->trigger_state = input_state & ~rgui->old_input_state;
 
