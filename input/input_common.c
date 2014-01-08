@@ -1,6 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -934,6 +934,60 @@ const struct input_key_map input_config_key_map[] = {
    { "tilde", RETROK_BACKQUOTE },
    { "backquote", RETROK_BACKQUOTE },
    { "pause", RETROK_PAUSE },
+
+   /* Keys that weren't mappable before */
+   { "quote", RETROK_QUOTE },
+   { "comma", RETROK_COMMA },
+   { "minus", RETROK_MINUS },
+   { "slash", RETROK_SLASH },
+   { "semicolon", RETROK_SEMICOLON },
+   { "equals", RETROK_EQUALS },
+   { "leftbracket", RETROK_LEFTBRACKET },
+   { "backslash", RETROK_BACKSLASH },
+   { "rightbracket", RETROK_RIGHTBRACKET },
+   { "kp_period", RETROK_KP_PERIOD },
+   { "kp_equals", RETROK_KP_EQUALS },
+   { "rctrl", RETROK_RCTRL },
+   { "ralt", RETROK_RALT },
+
+   /* Keys not referenced in any keyboard mapping (except perhaps apple_key_map_hidusage) */
+   { "caret", RETROK_CARET },
+   { "underscore", RETROK_UNDERSCORE },
+   { "exclaim", RETROK_EXCLAIM },
+   { "quotedbl", RETROK_QUOTEDBL },
+   { "hash", RETROK_HASH },
+   { "dollar", RETROK_DOLLAR },
+   { "ampersand", RETROK_AMPERSAND },
+   { "leftparen", RETROK_LEFTPAREN },
+   { "rightparen", RETROK_RIGHTPAREN },
+   { "asterisk", RETROK_ASTERISK },
+   { "plus", RETROK_PLUS },
+   { "colon", RETROK_COLON },
+   { "less", RETROK_LESS },
+   { "greater", RETROK_GREATER },
+   { "question", RETROK_QUESTION },
+   { "at", RETROK_AT },
+
+   { "f13", RETROK_F13 },
+   { "f14", RETROK_F14 },
+   { "f15", RETROK_F15 },
+
+   { "rmeta", RETROK_RMETA },
+   { "lmeta", RETROK_LMETA },
+   { "lsuper", RETROK_LSUPER },
+   { "rsuper", RETROK_RSUPER },
+   { "mode", RETROK_MODE },
+   { "compose", RETROK_COMPOSE },
+
+   { "help", RETROK_HELP },
+   { "sysreq", RETROK_SYSREQ },
+   { "break", RETROK_BREAK },
+   { "menu", RETROK_MENU },
+   { "power", RETROK_POWER },
+   { "euro", RETROK_EURO },
+   { "undo", RETROK_UNDO },
+   { "clear", RETROK_CLEAR },
+
    { "nul", RETROK_UNKNOWN },
    { NULL, RETROK_UNKNOWN },
 };
@@ -947,10 +1001,11 @@ static enum retro_key find_sk_bind(const char *str)
          return input_config_key_map[i].key;
    }
 
+   RARCH_WARN("Key name %s not found.\n", str);
    return RETROK_UNKNOWN;
 }
 
-static enum retro_key find_sk_key(const char *str)
+enum retro_key input_find_sk_key(const char *str)
 {
    if (strlen(str) == 1 && isalpha(*str))
       return (enum retro_key)(RETROK_a + (tolower(*str) - (int)'a'));
@@ -966,7 +1021,7 @@ void input_config_parse_key(config_file_t *conf, const char *prefix, const char 
    snprintf(key, sizeof(key), "%s_%s", prefix, btn);
 
    if (config_get_array(conf, key, tmp, sizeof(tmp)))
-      bind->key = find_sk_key(tmp);
+      bind->key = input_find_sk_key(tmp);
 }
 
 const char *input_config_get_prefix(unsigned player, bool meta)
@@ -1076,12 +1131,12 @@ static bool input_try_autoconfigure_joypad_from_conf(config_file_t *conf, unsign
 {
    if (!conf)
       return false;
-         
+
    char ident[1024];
    char input_driver[1024];
-   
+
    *ident = *input_driver = '\0';
-   
+
    config_get_array(conf, "input_device", ident, sizeof(ident));
    config_get_array(conf, "input_driver", input_driver, sizeof(input_driver));
 
@@ -1139,14 +1194,14 @@ void input_config_autoconfigure_joypad(unsigned index, const char *name, const c
          break;
    }
 #endif
-   
+
    // Now try files
    if (!internal_only)
    {
       struct string_list *list = dir_list_new(g_settings.input.autoconfig_dir, "cfg", false);
       if (!list)
          return;
-   
+
       for (i = 0; i < list->size; i++)
       {
          config_file_t *conf = config_file_new(list->elems[i].data);
@@ -1157,7 +1212,7 @@ void input_config_autoconfigure_joypad(unsigned index, const char *name, const c
          if (success)
             break;
       }
-      
+
       string_list_free(list);
    }
 }
