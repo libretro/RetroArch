@@ -1021,7 +1021,7 @@ int menu_set_settings(void *data, unsigned setting, unsigned action)
          else
             g_settings.video.smooth = !g_settings.video.smooth;
 
-         if (driver.video_poke->set_filtering)
+         if (driver.video_poke && driver.video_poke->set_filtering)
             driver.video_poke->set_filtering(driver.video_data, 1, g_settings.video.smooth);
          break;
 
@@ -1063,7 +1063,7 @@ int menu_set_settings(void *data, unsigned setting, unsigned action)
          if (action == RGUI_ACTION_START)
          {
             g_extern.console.screen.gamma_correction = 0;
-            if (driver.video_poke->apply_state_changes)
+            if (driver.video_poke && driver.video_poke->apply_state_changes)
                driver.video_poke->apply_state_changes(driver.video_data);
          }
          else if (action == RGUI_ACTION_LEFT)
@@ -1071,7 +1071,7 @@ int menu_set_settings(void *data, unsigned setting, unsigned action)
             if(g_extern.console.screen.gamma_correction > 0)
             {
                g_extern.console.screen.gamma_correction--;
-               if (driver.video_poke->apply_state_changes)
+               if (driver.video_poke && driver.video_poke->apply_state_changes)
                   driver.video_poke->apply_state_changes(driver.video_data);
             }
          }
@@ -1080,7 +1080,7 @@ int menu_set_settings(void *data, unsigned setting, unsigned action)
             if(g_extern.console.screen.gamma_correction < MAX_GAMMA_SETTING)
             {
                g_extern.console.screen.gamma_correction++;
-               if (driver.video_poke->apply_state_changes)
+               if (driver.video_poke && driver.video_poke->apply_state_changes)
                   driver.video_poke->apply_state_changes(driver.video_data);
             }
          }
@@ -1094,7 +1094,7 @@ int menu_set_settings(void *data, unsigned setting, unsigned action)
                action == RGUI_ACTION_OK)
             g_settings.video.scale_integer = !g_settings.video.scale_integer;
 
-         if (driver.video_poke->apply_state_changes)
+         if (driver.video_poke && driver.video_poke->apply_state_changes)
             driver.video_poke->apply_state_changes(driver.video_data);
          break;
 
@@ -1112,7 +1112,7 @@ int menu_set_settings(void *data, unsigned setting, unsigned action)
                g_settings.video.aspect_ratio_idx++;
          }
 
-         if (driver.video_poke->set_aspect_ratio)
+         if (driver.video_poke && driver.video_poke->set_aspect_ratio)
             driver.video_poke->set_aspect_ratio(driver.video_data, g_settings.video.aspect_ratio_idx);
          break;
 
@@ -1233,7 +1233,7 @@ int menu_set_settings(void *data, unsigned setting, unsigned action)
          else
             g_extern.lifecycle_state |= (1ULL << MODE_VIDEO_SOFT_FILTER_ENABLE);
 
-         if (driver.video_poke->apply_state_changes)
+         if (driver.video_poke && driver.video_poke->apply_state_changes)
             driver.video_poke->apply_state_changes(driver.video_data);
          break;
 #endif
