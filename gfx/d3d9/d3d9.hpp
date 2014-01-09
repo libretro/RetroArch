@@ -60,10 +60,17 @@ void d3d_recompute_pass_sizes(void *data);
 RECT d3d_monitor_rect(void *data);
 bool d3d_init_shader(void *data);
 void d3d_deinit_shader(void *data);
+bool d3d_init_imports(void *data);
+bool d3d_init_luts(void *data);
+bool d3d_init_singlepass(void *data);
+bool d3d_init_multipass(void *data);
+bool d3d_init_chain(void *data, const video_info_t *video_info);
+void d3d_deinit_chain(void *data);
+bool d3d_init_font(void *data);
+void d3d_deinit_font(void *data);
 
-class D3DVideo
+struct D3DVideo
 {
-public:
       bool should_resize;
 
       WNDCLASSEX windowClass;
@@ -88,16 +95,6 @@ public:
 #ifdef HAVE_CG
       CGcontext cgCtx;
 #endif
-
-      bool init_imports(void);
-      bool init_luts(void);
-      bool init_singlepass(void);
-      bool init_multipass(void);
-      bool init_chain(const video_info_t *video_info);
-      void deinit_chain(void);
-
-      bool init_font(void);
-      void deinit_font(void);
       RECT font_rect;
       RECT font_rect_shifted;
       uint32_t font_color;

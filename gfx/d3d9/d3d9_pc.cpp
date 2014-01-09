@@ -38,9 +38,9 @@ bool d3d_process_shader(void *data)
 {
    D3DVideo *d3d = reinterpret_cast<D3DVideo*>(data);
    if (strcmp(path_get_extension(d3d->cg_shader.c_str()), "cgp") == 0)
-      return d3d->init_multipass();
+      return d3d_init_multipass(d3d);
 
-   return d3d->init_singlepass();
+   return d3d_init_singlepass(d3d);
 }
 
 void d3d_update_title(void *data)
@@ -157,38 +157,40 @@ void d3d_deinit_shader(void *data)
 }
 #endif
 
-bool D3DVideo::init_singlepass(void)
+bool d3d_init_singlepass(void *data)
 {
-   memset(&shader, 0, sizeof(shader));
-   shader.passes = 1;
-   gfx_shader_pass &pass = shader.pass[0];
+   D3DVideo *d3d = reinterpret_cast<D3DVideo*>(data);
+   memset(&d3d->shader, 0, sizeof(d3d->shader));
+   d3d->shader.passes = 1;
+   gfx_shader_pass &pass = d3d->shader.pass[0];
    pass.fbo.valid = true;
    pass.fbo.scale_x = pass.fbo.scale_y = 1.0;
    pass.fbo.type_x = pass.fbo.type_y = RARCH_SCALE_VIEWPORT;
-   strlcpy(pass.source.cg, cg_shader.c_str(), sizeof(pass.source.cg));
+   strlcpy(pass.source.cg, d3d->cg_shader.c_str(), sizeof(pass.source.cg));
 
    return true;
 }
 
-bool D3DVideo::init_imports(void)
+bool d3d_init_imports(void *data)
 {
-   if (!shader.variables)
+   D3DVideo *d3d = reinterpret_cast<D3DVideo*>(data);
+   if (!d3d->shader.variables)
       return true;
 
    state_tracker_info tracker_info = {0};
 
    tracker_info.wram = (uint8_t*)pretro_get_memory_data(RETRO_MEMORY_SYSTEM_RAM);
-   tracker_info.info = shader.variable;
-   tracker_info.info_elem = shader.variables;
+   tracker_info.info = d3d->shader.variable;
+   tracker_info.info_elem = d3d->shader.variables;
 
 #ifdef HAVE_PYTHON
    if (*shader.script_path)
    {
-      tracker_info.script = shader.script_path;
+      tracker_info.script = d3d->shader.script_path;
       tracker_info.script_is_file = true;
    }
 
-   tracker_info.script_class = *shader.script_class ? shader.script_class : NULL;
+   tracker_info.script_class = *d3d->shader.script_class ? d3d->shader.script_class : NULL;
 #endif
 
    state_tracker_t *state_tracker = state_tracker_init(&tracker_info);
@@ -198,18 +200,19 @@ bool D3DVideo::init_imports(void)
       return false;
    }
 
-   chain->add_state_tracker(state_tracker);
+   d3d->chain->add_state_tracker(state_tracker);
    return true;
 }
 
-bool D3DVideo::init_luts(void)
+bool d3d_init_luts(void *data)
 {
-   for (unsigned i = 0; i < shader.luts; i++)
+   D3DVideo *d3d = reinterpret_cast<D3DVideo*>(data);
+   for (unsigned i = 0; i < d3d->shader.luts; i++)
    {
-      bool ret = chain->add_lut(shader.lut[i].id, shader.lut[i].path,
-         shader.lut[i].filter == RARCH_FILTER_UNSPEC ?
+      bool ret = d3d->chain->add_lut(d3d->shader.lut[i].id, d3d->shader.lut[i].path,
+         d3d->shader.lut[i].filter == RARCH_FILTER_UNSPEC ?
             g_settings.video.smooth :
-            (shader.lut[i].filter == RARCH_FILTER_LINEAR));
+            (d3d->shader.lut[i].filter == RARCH_FILTER_LINEAR));
 
       if (!ret)
          return ret;
@@ -218,18 +221,19 @@ bool D3DVideo::init_luts(void)
    return true;
 }
 
-bool D3DVideo::init_multipass(void)
+bool d3d_init_multipass(void *data)
 {
-   config_file_t *conf = config_file_new(cg_shader.c_str());
+   D3DVideo *d3d = reinterpret_cast<D3DVideo*>(data);
+   config_file_t *conf = config_file_new(d3d->cg_shader.c_str());
    if (!conf)
    {
       RARCH_ERR("Failed to load preset.\n");
       return false;
    }
 
-   memset(&shader, 0, sizeof(shader));
+   memset(&d3d->shader, 0, sizeof(d3d->shader));
 
-   if (!gfx_shader_read_conf_cgp(conf, &shader))
+   if (!gfx_shader_read_conf_cgp(conf, &d3d->shader))
    {
       config_file_free(conf);
       RARCH_ERR("Failed to parse CGP file.\n");
@@ -238,31 +242,31 @@ bool D3DVideo::init_multipass(void)
 
    config_file_free(conf);
 
-   gfx_shader_resolve_relative(&shader, cg_shader.c_str());
+   gfx_shader_resolve_relative(&d3d->shader, d3d->cg_shader.c_str());
 
-   RARCH_LOG("[D3D9 Meta-Cg] Found %d shaders.\n", shader.passes);
+   RARCH_LOG("[D3D9 Meta-Cg] Found %d shaders.\n", d3d->shader.passes);
 
-   for (unsigned i = 0; i < shader.passes; i++)
+   for (unsigned i = 0; i < d3d->shader.passes; i++)
    {
-      if (!shader.pass[i].fbo.valid)
+      if (!d3d->shader.pass[i].fbo.valid)
       {
-         shader.pass[i].fbo.scale_x = shader.pass[i].fbo.scale_y = 1.0f;
-         shader.pass[i].fbo.type_x = shader.pass[i].fbo.type_y = RARCH_SCALE_INPUT;
+         d3d->shader.pass[i].fbo.scale_x = d3d->shader.pass[i].fbo.scale_y = 1.0f;
+         d3d->shader.pass[i].fbo.type_x = d3d->shader.pass[i].fbo.type_y = RARCH_SCALE_INPUT;
       }
    }
 
-   bool use_extra_pass = shader.passes < GFX_MAX_SHADERS && shader.pass[shader.passes - 1].fbo.valid;
+   bool use_extra_pass = d3d->shader.passes < GFX_MAX_SHADERS && d3d->shader.pass[d3d->shader.passes - 1].fbo.valid;
    if (use_extra_pass)
    {
-      shader.passes++;
-      gfx_shader_pass &dummy_pass = shader.pass[shader.passes - 1];
+      d3d->shader.passes++;
+      gfx_shader_pass &dummy_pass = d3d->shader.pass[d3d->shader.passes - 1];
       dummy_pass.fbo.scale_x = dummy_pass.fbo.scale_y = 1.0f;
       dummy_pass.fbo.type_x = dummy_pass.fbo.type_y = RARCH_SCALE_VIEWPORT;
       dummy_pass.filter = RARCH_FILTER_UNSPEC;
    }
    else
    {
-      gfx_shader_pass &pass = shader.pass[shader.passes - 1];
+      gfx_shader_pass &pass = d3d->shader.pass[d3d->shader.passes - 1];
       pass.fbo.scale_x = pass.fbo.scale_y = 1.0f;
       pass.fbo.type_x = pass.fbo.type_y = RARCH_SCALE_VIEWPORT;
    }
@@ -270,22 +274,23 @@ bool D3DVideo::init_multipass(void)
    return true;
 }
 
-bool D3DVideo::init_chain(const video_info_t *video_info)
+bool d3d_init_chain(void *data, const video_info_t *video_info)
 {
+   D3DVideo *d3d = reinterpret_cast<D3DVideo*>(data);
    // Setup information for first pass.
    LinkInfo link_info = {0};
 
-   link_info.pass = &shader.pass[0];
+   link_info.pass = &d3d->shader.pass[0];
    link_info.tex_w = link_info.tex_h = video_info->input_scale * RARCH_SCALE_BASE;
 
-   delete chain;
-   chain = new RenderChain(
-         video_info,
-         dev, cgCtx,
-         final_viewport);
+   delete d3d->chain;
+   d3d->chain = new RenderChain(
+         &d3d->video_info,
+         d3d->dev, d3d->cgCtx,
+         d3d->final_viewport);
 
-   if (!chain->init(link_info,
-            video_info->rgb32 ? RenderChain::ARGB : RenderChain::RGB565))
+   if (!d3d->chain->init(link_info,
+            d3d->video_info.rgb32 ? RenderChain::ARGB : RenderChain::RGB565))
    {
       RARCH_ERR("[D3D9]: Failed to init render chain.\n");
       return false;
@@ -296,33 +301,33 @@ bool D3DVideo::init_chain(const video_info_t *video_info)
    unsigned out_width = 0;
    unsigned out_height = 0;
 
-   for (unsigned i = 1; i < shader.passes; i++)
+   for (unsigned i = 1; i < d3d->shader.passes; i++)
    {
       RenderChain::convert_geometry(link_info,
             out_width, out_height,
-            current_width, current_height, final_viewport);
+            current_width, current_height, d3d->final_viewport);
 
-      link_info.pass = &shader.pass[i];
+      link_info.pass = &d3d->shader.pass[i];
       link_info.tex_w = next_pow2(out_width);
       link_info.tex_h = next_pow2(out_height);
 
       current_width = out_width;
       current_height = out_height;
 
-      if (!chain->add_pass(link_info))
+      if (!d3d->chain->add_pass(link_info))
       {
          RARCH_ERR("[D3D9]: Failed to add pass.\n");
          return false;
       }
    }
 
-   if (!init_luts())
+   if (!d3d_init_luts(d3d))
    {
       RARCH_ERR("[D3D9]: Failed to init LUTs.\n");
       return false;
    }
 
-   if (!init_imports())
+   if (!d3d_init_imports(d3d))
    {
       RARCH_ERR("[D3D9]: Failed to init imports.\n");
       return false;
@@ -331,14 +336,16 @@ bool D3DVideo::init_chain(const video_info_t *video_info)
    return true;
 }
 
-void D3DVideo::deinit_chain(void)
+void d3d_deinit_chain(void *data)
 {
-   delete chain;
-   chain = NULL;
+   D3DVideo *d3d = reinterpret_cast<D3DVideo*>(data);
+   delete d3d->chain;
+   d3d->chain = NULL;
 }
 
-bool D3DVideo::init_font(void)
+bool d3d_init_font(void *data)
 {
+   D3DVideo *d3d = reinterpret_cast<D3DVideo*>(data);
    D3DXFONT_DESC desc = {
       static_cast<int>(g_settings.video.font_size), 0, 400, 0,
       false, DEFAULT_CHARSET,
@@ -351,14 +358,15 @@ bool D3DVideo::init_font(void)
    uint32_t r = static_cast<uint32_t>(g_settings.video.msg_color_r * 255) & 0xff;
    uint32_t g = static_cast<uint32_t>(g_settings.video.msg_color_g * 255) & 0xff;
    uint32_t b = static_cast<uint32_t>(g_settings.video.msg_color_b * 255) & 0xff;
-   font_color = D3DCOLOR_XRGB(r, g, b);
+   d3d->font_color = D3DCOLOR_XRGB(r, g, b);
 
-   return SUCCEEDED(D3DXCreateFontIndirect(dev, &desc, &font));
+   return SUCCEEDED(D3DXCreateFontIndirect(d3d->dev, &desc, &d3d->font));
 }
 
-void D3DVideo::deinit_font(void)
+void d3d_deinit_font(void *data)
 {
-   if (font)
-      font->Release();
-   font = NULL;
+   D3DVideo *d3d = reinterpret_cast<D3DVideo*>(data);
+   if (d3d->font)
+      d3d->font->Release();
+   d3d->font = NULL;
 }

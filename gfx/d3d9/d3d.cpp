@@ -92,8 +92,8 @@ RECT d3d_monitor_rect(void *data)
 static void d3d_deinitialize(void *data)
 {
    D3DVideo *d3d = reinterpret_cast<D3DVideo*>(data);
-   d3d->deinit_font();
-   d3d->deinit_chain();
+   d3d_deinit_font(d3d);
+   d3d_deinit_chain(d3d);
 #ifdef HAVE_CG
    d3d_deinit_shader(d3d);
 #endif
@@ -282,13 +282,13 @@ static bool d3d_initialize(void *data, const video_info_t *info)
    }
 #endif
 
-   if (!d3d->init_chain(info))
+   if (!d3d_init_chain(d3d, info))
    {
       RARCH_ERR("Failed to initialize render chain.\n");
       return false;
    }
 
-   if (!d3d->init_font())
+   if (!d3d_init_font(d3d))
    {
       RARCH_ERR("Failed to initialize font.\n");
       return false;
