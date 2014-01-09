@@ -251,6 +251,7 @@ struct settings
       unsigned back_behavior;
       unsigned icade_profile[MAX_PLAYERS];
       unsigned icade_count;
+      bool autodetect_ignore_special_keys;
 #endif
       bool netplay_client_swap_input;
 
