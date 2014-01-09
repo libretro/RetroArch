@@ -245,10 +245,10 @@ static void ps3_input_poll(void *data)
          *state_cur |= (state_tmp.button[CELL_PAD_BTN_OFFSET_DIGITAL2] & CELL_PAD_CTRL_R2) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_R2) : 0;
          *state_cur |= (state_tmp.button[CELL_PAD_BTN_OFFSET_DIGITAL2] & CELL_PAD_CTRL_L2) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_L2) : 0;
          *state_cur |= (state_tmp.button[CELL_PAD_BTN_OFFSET_DIGITAL2] & CELL_PAD_CTRL_L2) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_L2) : 0;
-         int16_t ls_x = (int16_t)state_tmp.button[CELL_PAD_BTN_OFFSET_ANALOG_LEFT_X] * 256;
-         int16_t ls_y = (int16_t)state_tmp.button[CELL_PAD_BTN_OFFSET_ANALOG_LEFT_Y] * -256;
-         int16_t rs_x = (int16_t)state_tmp.button[CELL_PAD_BTN_OFFSET_ANALOG_RIGHT_X] * 256;
-         int16_t rs_y = (int16_t)state_tmp.button[CELL_PAD_BTN_OFFSET_ANALOG_RIGHT_Y] * -256;
+         int16_t ls_x = (((int16_t)state_tmp.button[CELL_PAD_BTN_OFFSET_ANALOG_LEFT_X] * 256) - 32767);
+         int16_t ls_y = (((int16_t)state_tmp.button[CELL_PAD_BTN_OFFSET_ANALOG_LEFT_Y] * -256) - 32767);
+         int16_t rs_x = (((int16_t)state_tmp.button[CELL_PAD_BTN_OFFSET_ANALOG_RIGHT_X] * 256) - 32767);
+         int16_t rs_y = (((int16_t)state_tmp.button[CELL_PAD_BTN_OFFSET_ANALOG_RIGHT_Y] * -256) - 32767);
          ps3->analog_state[port][RETRO_DEVICE_INDEX_ANALOG_LEFT ][RETRO_DEVICE_ID_ANALOG_X] = ls_x;
          ps3->analog_state[port][RETRO_DEVICE_INDEX_ANALOG_LEFT ][RETRO_DEVICE_ID_ANALOG_Y] = ls_y;
          ps3->analog_state[port][RETRO_DEVICE_INDEX_ANALOG_RIGHT][RETRO_DEVICE_ID_ANALOG_X] = rs_x;
