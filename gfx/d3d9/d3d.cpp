@@ -446,7 +446,7 @@ static void d3d_set_viewport(void *data, int x, int y, unsigned width, unsigned 
    D3DVideo *d3d = reinterpret_cast<D3DVideo*>(data);
    D3DVIEWPORT viewport;
 
-   // D3D9 doesn't support negative X/Y viewports ...
+   // D3D doesn't support negative X/Y viewports ...
    if (x < 0)
       x = 0;
    if (y < 0)
@@ -608,8 +608,8 @@ static bool d3d_alive(void *data)
       TranslateMessage(&msg);
       DispatchMessage(&msg);
    }
-#endif
    return !Callback::quit;
+#endif
 }
 
 static bool d3d_focus(void *data)
@@ -763,7 +763,7 @@ static bool d3d_set_shader(void *data, enum rarch_shader_type type, const char *
 
    if (!d3d_process_shader(d3d) || !d3d_restore(d3d))
    {
-      RARCH_ERR("[D3D9]: Setting shader failed.\n");
+      RARCH_ERR("[D3D]: Setting shader failed.\n");
       restore_old = true;
    }
 
@@ -1126,6 +1126,7 @@ bool d3d_construct(void *data, const video_info_t *info, const input_driver_t **
    unsigned win_width  = d3d->screen_width;
    unsigned win_height = d3d->screen_height;
 
+#ifdef HAVE_WINDOW
    if (!info->fullscreen)
    {
       RECT rect   = {0};
@@ -1136,7 +1137,6 @@ bool d3d_construct(void *data, const video_info_t *info, const input_driver_t **
       win_height = rect.bottom - rect.top;
    }
 
-#ifdef HAVE_WINDOW
    char buffer[128];
    gfx_get_fps(buffer, sizeof(buffer), NULL, 0);
    std::string title = buffer;
@@ -1176,10 +1176,10 @@ bool d3d_construct(void *data, const video_info_t *info, const input_driver_t **
    enum rarch_shader_type type = gfx_shader_parse_type(g_settings.video.shader_path, RARCH_SHADER_NONE);
    if (g_settings.video.shader_enable && type == RARCH_SHADER_CG)
       d3d->cg_shader = g_settings.video.shader_path;
-#endif
 
    if (!d3d_process_shader(d3d))
       return false;
+#endif
 
    d3d->video_info = *info;
    if (!d3d_initialize(d3d, &d3d->video_info))
