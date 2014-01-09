@@ -15,10 +15,6 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-// This driver is merged from the external RetroArch-D3D9 driver.
-// It is written in C++11 (should be compat with MSVC 2010).
-// Might get rewritten in C99 if I have lots of time to burn.
-
 #include "d3d9.hpp"
 #include "render_chain.hpp"
 #include "../../file.h"
@@ -155,7 +151,6 @@ void d3d_deinit_shader(void *data)
    cgDestroyContext(d3d->cgCtx);
    d3d->cgCtx = NULL;
 }
-#endif
 
 bool d3d_init_singlepass(void *data)
 {
@@ -170,6 +165,7 @@ bool d3d_init_singlepass(void *data)
 
    return true;
 }
+#endif
 
 bool d3d_init_imports(void *data)
 {
@@ -221,6 +217,7 @@ bool d3d_init_luts(void *data)
    return true;
 }
 
+#ifdef HAVE_CG
 bool d3d_init_multipass(void *data)
 {
    D3DVideo *d3d = reinterpret_cast<D3DVideo*>(data);
@@ -273,6 +270,7 @@ bool d3d_init_multipass(void *data)
 
    return true;
 }
+#endif
 
 bool d3d_init_chain(void *data, const video_info_t *video_info)
 {
@@ -369,4 +367,85 @@ void d3d_deinit_font(void *data)
    if (d3d->font)
       d3d->font->Release();
    d3d->font = NULL;
+}
+
+void d3d_show_cursor(void *data, bool state)
+{
+#ifdef HAVE_WINDOW
+   if (state)
+      while (ShowCursor(TRUE) < 0);
+   else
+      while (ShowCursor(FALSE) >= 0);
+#endif
+}
+
+void d3d_font_msg(void *data, const char *msg, void *userdata)
+{
+   D3DVideo *d3d = reinterpret_cast<D3DVideo*>(data);
+   font_params_t *params = (font_params_t*)userdata;
+
+   if (msg && SUCCEEDED(d3d->dev->BeginScene()))
+   {
+      d3d->font->DrawTextA(NULL,
+            msg,
+            -1,
+            &d3d->font_rect_shifted,
+            DT_LEFT,
+            ((d3d->font_color >> 2) & 0x3f3f3f) | 0xff000000);
+
+      d3d->font->DrawTextA(NULL,
+            msg,
+            -1,
+            &d3d->font_rect,
+            DT_LEFT,
+            d3d->font_color | 0xff000000);
+
+      d3d->dev->EndScene();
+   }
+}
+
+void d3d_make_d3dpp(void *data, const video_info_t *info, D3DPRESENT_PARAMETERS *d3dpp)
+{
+   D3DVideo *d3d = reinterpret_cast<D3DVideo*>(data);
+   memset(d3dpp, 0, sizeof(*d3dpp));
+
+   d3dpp->Windowed = g_settings.video.windowed_fullscreen || !info->fullscreen;
+
+   if (info->vsync)
+   {
+      switch (g_settings.video.swap_interval)
+      {
+         default:
+         case 1: d3dpp->PresentationInterval = D3DPRESENT_INTERVAL_ONE; break;
+         case 2: d3dpp->PresentationInterval = D3DPRESENT_INTERVAL_TWO; break;
+         case 3: d3dpp->PresentationInterval = D3DPRESENT_INTERVAL_THREE; break;
+         case 4: d3dpp->PresentationInterval = D3DPRESENT_INTERVAL_FOUR; break;
+      }
+   }
+   else
+      d3dpp->PresentationInterval = D3DPRESENT_INTERVAL_IMMEDIATE;
+
+   d3dpp->SwapEffect = D3DSWAPEFFECT_DISCARD;
+   d3dpp->hDeviceWindow = d3d->hWnd;
+   d3dpp->BackBufferCount = 2;
+   d3dpp->BackBufferFormat = !d3dpp->Windowed ? D3DFMT_X8R8G8B8 : D3DFMT_UNKNOWN;
+
+   if (!d3dpp->Windowed)
+   {
+      d3dpp->BackBufferWidth = d3d->screen_width;
+      d3dpp->BackBufferHeight = d3d->screen_height;
+   }
+}
+
+bool d3d_alive_func(void *data)
+{
+   D3DVideo *d3d = reinterpret_cast<D3DVideo*>(data);
+   MSG msg;
+
+   while (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE))
+   {
+      TranslateMessage(&msg);
+      DispatchMessage(&msg);
+   }
+   return !d3d->quit;
 }

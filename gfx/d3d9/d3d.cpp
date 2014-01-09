@@ -100,45 +100,11 @@ static void d3d_deinitialize(void *data)
    d3d->needs_restore = false;
 }
 
-static void d3d_make_d3dpp(void *data, const video_info_t *info, D3DPRESENT_PARAMETERS *d3dpp)
-{
-   D3DVideo *d3d = reinterpret_cast<D3DVideo*>(data);
-   memset(d3dpp, 0, sizeof(*d3dpp));
-
-   d3dpp->Windowed = g_settings.video.windowed_fullscreen || !info->fullscreen;
-
-   if (info->vsync)
-   {
-      switch (g_settings.video.swap_interval)
-      {
-         default:
-         case 1: d3dpp->PresentationInterval = D3DPRESENT_INTERVAL_ONE; break;
-         case 2: d3dpp->PresentationInterval = D3DPRESENT_INTERVAL_TWO; break;
-         case 3: d3dpp->PresentationInterval = D3DPRESENT_INTERVAL_THREE; break;
-         case 4: d3dpp->PresentationInterval = D3DPRESENT_INTERVAL_FOUR; break;
-      }
-   }
-   else
-      d3dpp->PresentationInterval = D3DPRESENT_INTERVAL_IMMEDIATE;
-
-   d3dpp->SwapEffect = D3DSWAPEFFECT_DISCARD;
-   d3dpp->hDeviceWindow = d3d->hWnd;
-   d3dpp->BackBufferCount = 2;
-   d3dpp->BackBufferFormat = !d3dpp->Windowed ? D3DFMT_X8R8G8B8 : D3DFMT_UNKNOWN;
-
-   if (!d3dpp->Windowed)
-   {
-      d3dpp->BackBufferWidth = d3d->screen_width;
-      d3dpp->BackBufferHeight = d3d->screen_height;
-   }
-}
-
 static void d3d_resize(void *data, unsigned new_width, unsigned new_height);
 
 #ifdef HAVE_WINDOW
 namespace Callback
 {
-   static bool quit = false;
    static D3DVideo *curD3D = NULL;
    static void *dinput;
 
@@ -161,9 +127,11 @@ namespace Callback
             return win32_handle_keyboard_event(hWnd, message, wParam, lParam);
 
          case WM_DESTROY:
-            quit = true;
+            {
+            D3DVideo *d3d = reinterpret_cast<D3DVideo*>(driver.video_data);
+            d3d->quit = true;
             return 0;
-
+            }
          case WM_SIZE:
             unsigned new_width, new_height;
             new_width = LOWORD(lParam);
@@ -602,16 +570,7 @@ static void d3d_set_nonblock_state(void *data, bool state)
 static bool d3d_alive(void *data)
 {
    D3DVideo *d3d = reinterpret_cast<D3DVideo*>(data);
-
-#ifndef _XBOX
-   MSG msg;
-   while (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE))
-   {
-      TranslateMessage(&msg);
-      DispatchMessage(&msg);
-   }
-   return !Callback::quit;
-#endif
+   return d3d_alive_func(d3d);
 }
 
 static bool d3d_focus(void *data)
@@ -930,29 +889,10 @@ static void d3d_apply_state_changes(void *data)
 
 static void d3d_render_msg(void *data, const char *msg, void *userdata)
 {
-   font_params_t *params = (font_params_t*)userdata;
    D3DVideo *d3d = reinterpret_cast<D3DVideo*>(data);
+   d3d_font_msg(d3d, msg, userdata);
 
-   if (msg && SUCCEEDED(d3d->dev->BeginScene()))
-   {
-      d3d->font->DrawTextA(NULL,
-            msg,
-            -1,
-            &d3d->font_rect_shifted,
-            DT_LEFT,
-            ((d3d->font_color >> 2) & 0x3f3f3f) | 0xff000000);
-
-      d3d->font->DrawTextA(NULL,
-            msg,
-            -1,
-            &d3d->font_rect,
-            DT_LEFT,
-            d3d->font_color | 0xff000000);
-
-      d3d->dev->EndScene();
-   }
-
-   if (params)
+   if (userdata)
       d3d_set_font_rect(d3d, NULL);
 }
 
@@ -969,15 +909,8 @@ static void d3d_set_osd_msg(void *data, const char *msg, void *userdata)
 
 static void d3d_show_mouse(void *data, bool state)
 {
-   (void)data;
-   (void)state;
-
-#ifdef HAVE_WINDOW
-   if (state)
-      while (ShowCursor(TRUE) < 0);
-   else
-      while (ShowCursor(FALSE) >= 0);
-#endif
+   D3DVideo *d3d = reinterpret_cast<D3DVideo*>(data);
+   d3d_show_cursor(d3d, state);
 }
 
 #ifdef HAVE_MENU
@@ -1163,7 +1096,7 @@ bool d3d_construct(void *data, const video_info_t *info, const input_driver_t **
       || d3d->overlays_enabled
 #endif
    );
-   Callback::quit = false;
+   d3d->quit = false;
 
    ShowWindow(d3d->hWnd, SW_RESTORE);
    UpdateWindow(d3d->hWnd);
