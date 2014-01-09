@@ -97,7 +97,7 @@ struct D3DVideo
       LPD3DXFONT font;
 #endif
       HRESULT d3d_err;
-      static unsigned cur_mon_id;
+      unsigned cur_mon_id;
 
       unsigned screen_width;
       unsigned screen_height;
