@@ -96,14 +96,41 @@ void apple_input_reset_icade_buttons(void)
    icade_buttons = 0;
 }
 
-void apple_input_handle_key_event(unsigned keycode, bool down)
+void apple_input_keyboard_event(bool down, unsigned code, uint32_t character, uint32_t mod)
 {
-   keycode = HIDKEY(keycode);
+   code = HIDKEY(code);
 
    if (icade_enabled)
-      handle_icade_event(keycode);
-   else if (keycode < MAX_KEYS)
-      g_current_input_data.keys[keycode] = down;
+   {
+      handle_icade_event(code);
+      return;
+   }
+
+   if (code < MAX_KEYS)
+      g_current_input_data.keys[code] = down;
+
+   enum
+   {
+      NSAlphaShiftKeyMask = 1 << 16,
+      NSShiftKeyMask      = 1 << 17,
+      NSControlKeyMask    = 1 << 18,
+      NSAlternateKeyMask  = 1 << 19,
+      NSCommandKeyMask    = 1 << 20,
+      NSNumericPadKeyMask = 1 << 21,
+      NSHelpKeyMask       = 1 << 22,
+      NSFunctionKeyMask   = 1 << 23,
+      NSDeviceIndependentModifierFlagsMask = 0xffff0000U
+   };
+
+   enum retro_mod mods = RETROKMOD_NONE;
+   mods |= (mod & NSAlphaShiftKeyMask) ? RETROKMOD_CAPSLOCK : 0;
+   mods |= (mod & NSShiftKeyMask)      ? RETROKMOD_SHIFT : 0;
+   mods |= (mod & NSControlKeyMask)    ? RETROKMOD_CTRL : 0;
+   mods |= (mod & NSAlternateKeyMask)  ? RETROKMOD_ALT : 0;
+   mods |= (mod & NSCommandKeyMask)    ? RETROKMOD_META : 0;
+   mods |= (mod & NSNumericPadKeyMask) ? RETROKMOD_NUMLOCK : 0;
+
+   input_keyboard_event(down, input_translate_keysym_to_rk(code), character, mods);
 }
 
 
