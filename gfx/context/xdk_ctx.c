@@ -30,6 +30,7 @@
 
 #if defined(_XBOX1)
 #define XBOX_PRESENTATIONINTERVAL D3DRS_PRESENTATIONINTERVAL
+#define PresentationInterval FullScreen_PresentationInterval
 #elif defined(_XBOX360)
 #define XBOX_PRESENTATIONINTERVAL D3DRS_PRESENTINTERVAL
 #endif
@@ -39,6 +40,20 @@ void xdk_d3d_generate_pp(D3DPRESENT_PARAMETERS *d3dpp, const video_info_t *video
    xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
 
    memset(d3dpp, 0, sizeof(*d3dpp));
+
+   if (video->vsync)
+   {
+      switch (g_settings.video.swap_interval)
+      {
+         default:
+         case 1: d3dpp->PresentationInterval = D3DPRESENT_INTERVAL_ONE; break;
+         case 2: d3dpp->PresentationInterval = D3DPRESENT_INTERVAL_TWO; break;
+         case 3: d3dpp->PresentationInterval = D3DPRESENT_INTERVAL_THREE; break;
+         case 4: d3dpp->PresentationInterval = D3DPRESENT_INTERVAL_FOUR; break;
+      }
+   }
+   else
+      d3dpp->PresentationInterval = D3DPRESENT_INTERVAL_IMMEDIATE;
 
    d3d->texture_fmt = video->rgb32 ? D3DFMT_X8R8G8B8 : D3DFMT_LIN_R5G6B5;
    d3d->base_size   = video->rgb32 ? sizeof(uint32_t) : sizeof(uint16_t);
@@ -86,7 +101,6 @@ void xdk_d3d_generate_pp(D3DPRESENT_PARAMETERS *d3dpp, const video_info_t *video
       d3dpp->Flags |= D3DPRESENTFLAG_WIDESCREEN;
 
    d3dpp->BackBufferFormat                     = D3DFMT_X8R8G8B8;
-   d3dpp->FullScreen_PresentationInterval	   = d3d->vsync ? D3DPRESENT_INTERVAL_ONE : D3DPRESENT_INTERVAL_IMMEDIATE;
 #elif defined(_XBOX360)
    if (!(g_extern.lifecycle_state & (1ULL << MODE_MENU_WIDESCREEN)))
       d3dpp->Flags |= D3DPRESENTFLAG_NO_LETTERBOX;
@@ -102,7 +116,6 @@ void xdk_d3d_generate_pp(D3DPRESENT_PARAMETERS *d3dpp, const video_info_t *video
       d3dpp->FrontBufferFormat       = D3DFMT_LE_X8R8G8B8;
    }
    d3dpp->MultiSampleQuality      = 0;
-   d3dpp->PresentationInterval    = d3d->vsync ? D3DPRESENT_INTERVAL_ONE : D3DPRESENT_INTERVAL_IMMEDIATE;
 #endif
    d3dpp->SwapEffect              = D3DSWAPEFFECT_DISCARD;
    d3dpp->BackBufferCount         = 2;
