@@ -154,6 +154,7 @@ static void gfx_ctx_xdk_set_swap_interval(unsigned interval)
 static void gfx_ctx_xdk_check_window(bool *quit,
       bool *resize, unsigned *width, unsigned *height, unsigned frame_count)
 {
+#ifdef _XBOX
    xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
    *quit = false;
    *resize = false;
@@ -163,37 +164,106 @@ static void gfx_ctx_xdk_check_window(bool *quit,
 
    if (d3d->should_resize)
       *resize = true;
+#else
+   MSG msg;
+   while (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE))
+   {
+      TranslateMessage(&msg);
+      DispatchMessage(&msg);
+   }
+   return !Callback::quit;
+#endif
 }
 
-static void gfx_ctx_xdk_set_resize(unsigned width, unsigned height) { }
+static void d3d_restore(void)
+{
+#ifndef _XBOX
+   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
+
+   d3d_deinit();
+   d3d->needs_restore = !d3d_init(&d3d->video_info);
+
+   if (d3d->needs_restore)
+      RARCH_ERR("[D3D]: Restore error.\n");
+
+   return !d3d->needs_restore;
+#endif
+}
+
+static void gfx_ctx_xdk_set_resize(unsigned width, unsigned height)
+{
+#ifndef _XBOX
+   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
+   LPDIRECT3DDEVICE d3dr = d3d->d3d_render_device;
+
+   if (!d3dr)
+      return;
+
+   RARCH_LOG("[D3D]: Resize %ux%u.\n", new_width, new_height);
+
+   if (d3d->new_width != d3d->video_info.width || d3d->new_height != d3d->video_info.height)
+   {
+      d3d->video_info.width = d3d->screen_width = d3d->new_width;
+      d3d->video_info.height = d3d->screen_height = d3d->new_height;
+      d3d_restore();
+   }
+#endif
+}
 
 static void gfx_ctx_xdk_swap_buffers(void)
 {
    xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
    LPDIRECT3DDEVICE d3dr = d3d->d3d_render_device;
+
+#ifdef _XBOX
    RD3DDevice_Present(d3dr);
+#else
+   if (d3dr->Present(NULL, NULL, NULL, NULL) != D3D_OK)
+   {
+      d3dr->needs_restore = true;
+      RARCH_ERR("[D3D]: Present() failed.\n");
+   }
+#endif
 }
 
 static bool gfx_ctx_xdk_window_has_focus(void)
 {
+#ifdef _XBOX
    return true;
+#else
+   return GetFocus() == hWnd;
+#endif
 }
 
 static void gfx_ctx_xdk_update_window_title(void)
 {
-   char buf[128], buf_fps[128];
+   char buffer[128], buffer_fps[128];
    bool fps_draw = g_settings.fps_show;
-   gfx_get_fps(buf, sizeof(buf), fps_draw ? buf_fps : NULL, sizeof(buf_fps));
+
+   if (gfx_get_fps(buffer, sizeof(buffer), fps_draw ? buffer_fps : NULL, sizeof(buffer_fps)))
+   {
+#ifndef _XBOX
+      std::string title = buffer;
+      title += " || Direct3D9";
+      SetWindowText(hWnd, title.c_str());
+#endif
+   }
 
    if (fps_draw)
    {
+#ifdef _XBOX
       char mem[128];
       MEMORYSTATUS stat;
       GlobalMemoryStatus(&stat);
       snprintf(mem, sizeof(mem), "|| MEM: %.2f/%.2fMB", stat.dwAvailPhys/(1024.0f*1024.0f), stat.dwTotalPhys/(1024.0f*1024.0f));
-      strlcat(buf_fps, mem, sizeof(buf_fps));
-      msg_queue_push(g_extern.msg_queue, buf_fps, 1, 1);
+      strlcat(buffer_fps, mem, sizeof(buffer_fps));
+#endif
+      msg_queue_push(g_extern.msg_queue, buffer_fps, 1, 1);
    }
+
+#ifndef _XBOX
+   g_extern.frame_count++;
+#endif
 }
 
 static void gfx_ctx_xdk_get_video_size(unsigned *width, unsigned *height)
