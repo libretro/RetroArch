@@ -20,10 +20,6 @@
 #include "../../xdk/xdk_d3d.h"
 #endif
 
-#include "../../console/rarch_console.h"
-
-#include "../image.h"
-
 #include <stdint.h>
 
 #ifdef HAVE_CONFIG_H
@@ -40,6 +36,7 @@
 
 static void gfx_ctx_xdk_set_swap_interval(unsigned interval)
 {
+#ifdef _XBOX
    xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
    LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)d3d->d3d_render_device;
 
@@ -47,6 +44,7 @@ static void gfx_ctx_xdk_set_swap_interval(unsigned interval)
       d3dr->SetRenderState(XBOX_PRESENTATIONINTERVAL, D3DPRESENT_INTERVAL_ONE);
    else
       d3dr->SetRenderState(XBOX_PRESENTATIONINTERVAL, D3DPRESENT_INTERVAL_IMMEDIATE);
+#endif
 }
 
 static void gfx_ctx_xdk_check_window(bool *quit,
@@ -100,6 +98,8 @@ static void gfx_ctx_xdk_update_window_title(void)
 
 static void gfx_ctx_xdk_get_video_size(unsigned *width, unsigned *height)
 {
+   (void)width;
+   (void)height;
 #if defined(_XBOX360)
    XVIDEO_MODE video_mode;
    XGetVideoMode(&video_mode);
@@ -188,10 +188,6 @@ static void gfx_ctx_xdk_get_video_size(unsigned *width, unsigned *height)
          g_extern.lifecycle_state |= (1ULL << MODE_MENU_HD);
       }
    }
-#else
-   /* TODO: implement */
-   (void)width;
-   (void)height;
 #endif
 }
 
@@ -204,7 +200,7 @@ static bool gfx_ctx_xdk_init(void)
    {
       RARCH_ERR("Could not create Direct3D context.\n");
       free(d3d);
-      return NULL;
+      return false;
    }
 
    return true;
@@ -213,6 +209,9 @@ static bool gfx_ctx_xdk_init(void)
 static bool gfx_ctx_xdk_set_video_mode(
       unsigned width, unsigned height, bool fullscreen)
 {
+   (void)width;
+   (void)height;
+   (void)fullscreen;
    return true;
 }
 
@@ -221,32 +220,31 @@ static void gfx_ctx_xdk_destroy(void)
    xdk_d3d_video_t * d3d = (xdk_d3d_video_t*)driver.video_data;
 
    if (d3d->d3d_render_device)
-   {
       d3d->d3d_render_device->Release();
-      d3d->d3d_render_device = 0;
-   }
+   d3d->d3d_render_device = 0;
 
    if (d3d->d3d_device)
-   {
       d3d->d3d_device->Release();
-      d3d->d3d_device = 0;
-   }
+   d3d->d3d_device = 0;
 }
 
 static void gfx_ctx_xdk_input_driver(const input_driver_t **input, void **input_data)
 {
+#ifdef _XBOX
    void *xinput = input_xinput.init();
    *input = xinput ? (const input_driver_t*)&input_xinput : NULL;
    *input_data = xinput;
+#endif
 }
 
 static bool gfx_ctx_xdk_bind_api(enum gfx_ctx_api api, unsigned major, unsigned minor)
 {
    (void)major;
    (void)minor;
+   (void)api;
 #if defined(_XBOX1)
    return api == GFX_CTX_DIRECT3D8_API;
-#elif defined(_XBOX360)
+#else /* As long as we don't have a D3D11 implementation, we default to this */
    return api == GFX_CTX_DIRECT3D9_API;
 #endif
 }
