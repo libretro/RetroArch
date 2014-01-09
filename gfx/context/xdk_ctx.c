@@ -87,7 +87,6 @@ void xdk_d3d_generate_pp(D3DPRESENT_PARAMETERS *d3dpp, const video_info_t *video
 
    d3dpp->BackBufferFormat                     = D3DFMT_X8R8G8B8;
    d3dpp->FullScreen_PresentationInterval	   = d3d->vsync ? D3DPRESENT_INTERVAL_ONE : D3DPRESENT_INTERVAL_IMMEDIATE;
-   d3dpp->SwapEffect                           = D3DSWAPEFFECT_COPY;
 #elif defined(_XBOX360)
    if (!(g_extern.lifecycle_state & (1ULL << MODE_MENU_WIDESCREEN)))
       d3dpp->Flags |= D3DPRESENTFLAG_NO_LETTERBOX;
@@ -104,8 +103,8 @@ void xdk_d3d_generate_pp(D3DPRESENT_PARAMETERS *d3dpp, const video_info_t *video
    }
    d3dpp->MultiSampleQuality      = 0;
    d3dpp->PresentationInterval    = d3d->vsync ? D3DPRESENT_INTERVAL_ONE : D3DPRESENT_INTERVAL_IMMEDIATE;
-   d3dpp->SwapEffect              = D3DSWAPEFFECT_DISCARD;
 #endif
+   d3dpp->SwapEffect              = D3DSWAPEFFECT_DISCARD;
    d3dpp->BackBufferCount         = 2;
    d3dpp->MultiSampleType         = D3DMULTISAMPLE_NONE;
    d3dpp->EnableAutoDepthStencil  = FALSE;
