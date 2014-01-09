@@ -41,6 +41,12 @@ void xdk_d3d_generate_pp(D3DPRESENT_PARAMETERS *d3dpp, const video_info_t *video
 
    memset(d3dpp, 0, sizeof(*d3dpp));
 
+#ifdef _XBOX
+   d3dpp->Windowed = false;
+#else
+   d3dpp->Windowed = g_settings.video.windowed_fullscreen || !video->fullscreen;
+#endif
+
    if (video->vsync)
    {
       switch (g_settings.video.swap_interval)
@@ -55,18 +61,38 @@ void xdk_d3d_generate_pp(D3DPRESENT_PARAMETERS *d3dpp, const video_info_t *video
    else
       d3dpp->PresentationInterval = D3DPRESENT_INTERVAL_IMMEDIATE;
 
+   d3dpp->SwapEffect              = D3DSWAPEFFECT_DISCARD;
+#ifdef _XBOX
+   d3dpp->hDeviceWindow = 0;
+#else
+   d3dpp->hDeviceWindow = hWnd;
+#endif
+   d3dpp->BackBufferCount = 2;
+#ifdef _XBOX360
+   d3dpp->BackBufferFormat = g_extern.console.screen.gamma_correction ? (D3DFORMAT)MAKESRGBFMT(d3d->texture_fmt)
+      : d3d->texture_fmt;
+#else
+   d3dpp->BackBufferFormat = !d3dpp->Windowed ? D3DFMT_X8R8G8B8 : D3DFMT_UNKNOWN;
+#endif
+
+   if (!d3dpp->Windowed)
+   {
+      unsigned width, height;
+      width = 0;
+      height = 0;
+
+      if (d3d->ctx_driver && d3d->ctx_driver->get_video_size)
+         d3d->ctx_driver->get_video_size(&width, &height);
+
+      d3dpp->BackBufferWidth  = d3d->win_width = width;
+      d3dpp->BackBufferHeight = d3d->win_height = height;
+   }
+
+   d3dpp->MultiSampleType         = D3DMULTISAMPLE_NONE;
+   d3dpp->EnableAutoDepthStencil  = FALSE;
+
    d3d->texture_fmt = video->rgb32 ? D3DFMT_X8R8G8B8 : D3DFMT_LIN_R5G6B5;
    d3d->base_size   = video->rgb32 ? sizeof(uint32_t) : sizeof(uint16_t);
-
-   unsigned width, height;
-   width = 0;
-   height = 0;
-
-   if (d3d->ctx_driver)
-      d3d->ctx_driver->get_video_size(&width, &height);
-
-   d3dpp->BackBufferWidth  = d3d->win_width = width;
-   d3dpp->BackBufferHeight = d3d->win_height = height;
 
 #if defined(_XBOX1)
    // Get the "video mode"
@@ -99,28 +125,16 @@ void xdk_d3d_generate_pp(D3DPRESENT_PARAMETERS *d3dpp, const video_info_t *video
 
    if (g_extern.lifecycle_state & MODE_MENU_WIDESCREEN)
       d3dpp->Flags |= D3DPRESENTFLAG_WIDESCREEN;
-
-   d3dpp->BackBufferFormat                     = D3DFMT_X8R8G8B8;
 #elif defined(_XBOX360)
    if (!(g_extern.lifecycle_state & (1ULL << MODE_MENU_WIDESCREEN)))
       d3dpp->Flags |= D3DPRESENTFLAG_NO_LETTERBOX;
 
    if (g_extern.console.screen.gamma_correction)
-   {
-      d3dpp->BackBufferFormat        = (D3DFORMAT)MAKESRGBFMT(d3d->texture_fmt);
       d3dpp->FrontBufferFormat       = (D3DFORMAT)MAKESRGBFMT(D3DFMT_LE_X8R8G8B8);
-   }
    else
-   {
-      d3dpp->BackBufferFormat        = d3d->texture_fmt;
       d3dpp->FrontBufferFormat       = D3DFMT_LE_X8R8G8B8;
-   }
    d3dpp->MultiSampleQuality      = 0;
 #endif
-   d3dpp->SwapEffect              = D3DSWAPEFFECT_DISCARD;
-   d3dpp->BackBufferCount         = 2;
-   d3dpp->MultiSampleType         = D3DMULTISAMPLE_NONE;
-   d3dpp->EnableAutoDepthStencil  = FALSE;
 }
 
 
