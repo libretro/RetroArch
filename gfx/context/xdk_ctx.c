@@ -153,10 +153,6 @@ static bool gfx_ctx_xdk_window_has_focus(void)
    return true;
 }
 
-#ifdef _XBOX1
-extern unsigned font_x, font_y;
-#endif
-
 static void gfx_ctx_xdk_update_window_title(void)
 {
    char buf[128], buf_fps[128];
