@@ -42,7 +42,6 @@ namespace Monitor
    static HMONITOR last_hm;
    static HMONITOR all_hms[MAX_MONITORS];
    static unsigned num_mons;
-   static unsigned cur_mon_id;
 }
 
 static BOOL CALLBACK monitor_enum_proc(HMONITOR hMonitor, HDC hdcMonitor, LPRECT lprcMonitor, LPARAM dwData)
@@ -66,7 +65,7 @@ RECT d3d_monitor_rect(void *data)
    if (fs_monitor && fs_monitor <= Monitor::num_mons && Monitor::all_hms[fs_monitor - 1])
    {
       hm_to_use = Monitor::all_hms[fs_monitor - 1];
-      Monitor::cur_mon_id = fs_monitor - 1;
+      d3d->cur_mon_id = fs_monitor - 1;
    }
    else
    {
@@ -74,7 +73,7 @@ RECT d3d_monitor_rect(void *data)
       {
          if (Monitor::all_hms[i] == hm_to_use)
          {
-            Monitor::cur_mon_id = i;
+            d3d->cur_mon_id = i;
             break;
          }
       }
@@ -141,7 +140,6 @@ namespace Callback
 {
    static bool quit = false;
    static D3DVideo *curD3D = NULL;
-   static HRESULT d3d_err;
    static void *dinput;
 
    LRESULT CALLBACK WindowProc(HWND hWnd, UINT message,
@@ -195,8 +193,8 @@ static bool d3d_init_base(void *data, const video_info_t *info)
       return false;
    }
 
-   if (FAILED(Callback::d3d_err = d3d->g_pD3D->CreateDevice(
-               Monitor::cur_mon_id,
+   if (FAILED(d3d->d3d_err = d3d->g_pD3D->CreateDevice(
+               d3d->cur_mon_id,
                D3DDEVTYPE_HAL,
                d3d->hWnd,
                D3DCREATE_HARDWARE_VERTEXPROCESSING,
@@ -204,10 +202,10 @@ static bool d3d_init_base(void *data, const video_info_t *info)
                &d3d->dev)))
    {
       RARCH_WARN("[D3D]: Failed to init device with hardware vertex processing (code: 0x%x). Trying to fall back to software vertex processing.\n",
-                 (unsigned)Callback::d3d_err);
+                 (unsigned)d3d->d3d_err);
 
-      if (FAILED(Callback::d3d_err = d3d->g_pD3D->CreateDevice(
-                  Monitor::cur_mon_id,
+      if (FAILED(d3d->d3d_err = d3d->g_pD3D->CreateDevice(
+                  d3d->cur_mon_id,
                   D3DDEVTYPE_HAL,
                   d3d->hWnd,
                   D3DCREATE_SOFTWARE_VERTEXPROCESSING,
@@ -344,7 +342,11 @@ static void d3d_overlay_render(void *data, overlay_t &overlay)
    {
       d3d->dev->CreateVertexBuffer(
             sizeof(vert),
+#ifdef _XBOX
+            0,
+#else
             d3d->dev->GetSoftwareVertexProcessing() ? D3DUSAGE_SOFTWAREPROCESSING : 0,
+#endif
             0,
             D3DPOOL_MANAGED,
             &overlay.vert_buf,
@@ -693,13 +695,13 @@ static bool d3d_read_viewport(void *data, uint8_t *buffer)
    LPDIRECT3DSURFACE target = NULL;
    LPDIRECT3DSURFACE dest   = NULL;
 
-   if (FAILED(Callback::d3d_err = d3d->dev->GetRenderTarget(0, &target)))
+   if (FAILED(d3d->d3d_err = d3d->dev->GetRenderTarget(0, &target)))
    {
       ret = false;
       goto end;
    }
 
-   if (FAILED(Callback::d3d_err = d3d->dev->CreateOffscreenPlainSurface(d3d->screen_width,
+   if (FAILED(d3d->d3d_err = d3d->dev->CreateOffscreenPlainSurface(d3d->screen_width,
         d3d->screen_height,
         D3DFMT_X8R8G8B8, D3DPOOL_SYSTEMMEM,
         &dest, NULL)))
@@ -708,7 +710,7 @@ static bool d3d_read_viewport(void *data, uint8_t *buffer)
       goto end;
    }
 
-   if (FAILED(Callback::d3d_err = d3d->dev->GetRenderTargetData(target, dest)))
+   if (FAILED(d3d->d3d_err = d3d->dev->GetRenderTargetData(target, dest)))
    {
       ret = false;
       goto end;

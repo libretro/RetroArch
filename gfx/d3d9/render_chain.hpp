@@ -52,7 +52,7 @@ class RenderChain
       bool init(const LinkInfo &info, PixelFormat fmt);
 
       bool set_pass_size(unsigned pass, unsigned width, unsigned height);
-      void set_final_viewport(const D3DVIEWPORT9 &final_viewport);
+      void set_final_viewport(const D3DVIEWPORT &final_viewport);
       bool add_pass(const LinkInfo &info);
       bool add_lut(const std::string &id, const std::string &path, bool smooth);
       void add_state_tracker(state_tracker_t *tracker);
@@ -102,12 +102,16 @@ class RenderChain
 #endif
          unsigned last_width, last_height;
 
+#ifdef HAVE_D3D9
          LPDIRECT3DVERTEXDECLARATION vertex_decl;
+#endif
          std::vector<unsigned> attrib_map;
       };
       std::vector<Pass> passes;
 
+#ifdef HAVE_CG
       CGprogram vStock, fStock;
+#endif
 
       struct lut_info
       {
@@ -121,7 +125,13 @@ class RenderChain
       unsigned frame_count;
 
       bool create_first_pass(const LinkInfo &info, PixelFormat fmt);
+#if defined(HAVE_CG)
       bool compile_shaders(CGprogram &fPrg, CGprogram &vPrg, const std::string &shader);
+      void set_shaders(CGprogram &fPrg, CGprogram &vPrg);
+      void set_cg_mvp(CGprogram &vPrg,
+            unsigned vp_width, unsigned vp_height,
+            unsigned rotation);
+#endif
 
       void set_vertices(Pass &pass,
             unsigned width, unsigned height,
@@ -130,10 +140,6 @@ class RenderChain
             unsigned rotation);
       void set_viewport(const D3DVIEWPORT &vp);
 
-      void set_shaders(CGprogram &fPrg, CGprogram &vPrg);
-      void set_cg_mvp(CGprogram &vPrg,
-            unsigned vp_width, unsigned vp_height,
-            unsigned rotation);
       void set_cg_params(Pass &pass,
             unsigned input_w, unsigned input_h,
             unsigned tex_w, unsigned tex_h,

@@ -21,6 +21,20 @@
 #include "../../config.h"
 #endif
 
+#ifndef _XBOX
+#define HAVE_WINDOW
+#endif
+
+#if defined(_XBOX1)
+#ifndef HAVE_D3D8
+#define HAVE_D3D8
+#endif
+#else
+#ifndef HAVE_D3D9
+#define HAVE_D3D9
+#endif
+#endif
+
 #include "../../general.h"
 #include "../../driver.h"
 #include "../shader_parse.h"
@@ -73,11 +87,17 @@ struct D3DVideo
 {
       bool should_resize;
 
+#ifdef HAVE_WINDOW
       WNDCLASSEX windowClass;
+#endif
       HWND hWnd;
       LPDIRECT3D g_pD3D;
       LPDIRECT3DDEVICE dev;
+#ifndef _XBOX
       LPD3DXFONT font;
+#endif
+      HRESULT d3d_err;
+      static unsigned cur_mon_id;
 
       unsigned screen_width;
       unsigned screen_height;
