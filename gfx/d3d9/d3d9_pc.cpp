@@ -447,5 +447,5 @@ bool d3d_alive_func(void *data)
       TranslateMessage(&msg);
       DispatchMessage(&msg);
    }
-   return !d3d->quit;
+   return true;
 }

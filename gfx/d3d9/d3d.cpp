@@ -26,6 +26,8 @@
 #include "../../compat/posix_string.h"
 #include "../../performance.h"
 
+static bool d3d_quit = false;
+
 static void d3d_render_msg(void *data, const char *msg, void *userdata);
 
 #ifndef _XBOX
@@ -127,11 +129,8 @@ namespace Callback
             return win32_handle_keyboard_event(hWnd, message, wParam, lParam);
 
          case WM_DESTROY:
-            {
-            D3DVideo *d3d = reinterpret_cast<D3DVideo*>(driver.video_data);
-            d3d->quit = true;
+            d3d_quit = true;
             return 0;
-            }
          case WM_SIZE:
             unsigned new_width, new_height;
             new_width = LOWORD(lParam);
@@ -570,7 +569,8 @@ static void d3d_set_nonblock_state(void *data, bool state)
 static bool d3d_alive(void *data)
 {
    D3DVideo *d3d = reinterpret_cast<D3DVideo*>(data);
-   return d3d_alive_func(d3d);
+   bool ret = d3d_alive_func(d3d);
+   return !d3d_quit && ret;
 }
 
 static bool d3d_focus(void *data)
@@ -1096,7 +1096,7 @@ bool d3d_construct(void *data, const video_info_t *info, const input_driver_t **
       || d3d->overlays_enabled
 #endif
    );
-   d3d->quit = false;
+   d3d_quit = false;
 
    ShowWindow(d3d->hWnd, SW_RESTORE);
    UpdateWindow(d3d->hWnd);

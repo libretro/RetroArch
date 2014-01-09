@@ -89,7 +89,6 @@ bool d3d_alive_func(void *data);
 
 struct D3DVideo
 {
-      bool quit;
       bool should_resize;
 
 #ifdef HAVE_WINDOW
