@@ -34,8 +34,36 @@
 #endif
 #endif
 
-void D3DVideo::set_font_rect(font_params_t *params)
+bool d3d_process_shader(void *data)
 {
+   D3DVideo *d3d = reinterpret_cast<D3DVideo*>(data);
+   if (strcmp(path_get_extension(d3d->cg_shader.c_str()), "cgp") == 0)
+      return d3d->init_multipass();
+
+   return d3d->init_singlepass();
+}
+
+void d3d_update_title(void *data)
+{
+   D3DVideo *d3d = reinterpret_cast<D3DVideo*>(data);
+   char buffer[128], buffer_fps[128];
+   bool fps_draw = g_settings.fps_show;
+   if (gfx_get_fps(buffer, sizeof(buffer), fps_draw ? buffer_fps : NULL, sizeof(buffer_fps)))
+   {
+      std::string title = buffer;
+      title += " || Direct3D9";
+      SetWindowText(d3d->hWnd, title.c_str());
+   }
+
+   if (fps_draw)
+      msg_queue_push(g_extern.msg_queue, buffer_fps, 1, 1);
+
+   g_extern.frame_count++;
+}
+
+void d3d_set_font_rect(void *data, font_params_t *params)
+{
+   D3DVideo *d3d = reinterpret_cast<D3DVideo*>(data);
    float pos_x = g_settings.video.msg_pos_x;
    float pos_y = g_settings.video.msg_pos_y;
    float font_size = g_settings.video.font_size;
@@ -47,43 +75,85 @@ void D3DVideo::set_font_rect(font_params_t *params)
       font_size *= params->scale;
    }
 
-   font_rect.left = final_viewport.X + final_viewport.Width * pos_x;
-   font_rect.right = final_viewport.X + final_viewport.Width;
-   font_rect.top = final_viewport.Y + (1.0f - pos_y) * final_viewport.Height - font_size; 
-   font_rect.bottom = final_viewport.Height;
+   d3d->font_rect.left = d3d->final_viewport.X + d3d->final_viewport.Width * pos_x;
+   d3d->font_rect.right = d3d->final_viewport.X + d3d->final_viewport.Width;
+   d3d->font_rect.top = d3d->final_viewport.Y + (1.0f - pos_y) * d3d->final_viewport.Height - font_size; 
+   d3d->font_rect.bottom = d3d->final_viewport.Height;
 
-   font_rect_shifted = font_rect;
-   font_rect_shifted.left -= 2;
-   font_rect_shifted.right -= 2;
-   font_rect_shifted.top += 2;
-   font_rect_shifted.bottom += 2;
+   d3d->font_rect_shifted = d3d->font_rect;
+   d3d->font_rect_shifted.left -= 2;
+   d3d->font_rect_shifted.right -= 2;
+   d3d->font_rect_shifted.top += 2;
+   d3d->font_rect_shifted.bottom += 2;
+}
+
+void d3d_recompute_pass_sizes(void *data)
+{
+   D3DVideo *d3d = reinterpret_cast<D3DVideo*>(data);
+   LinkInfo link_info = {0};
+   link_info.pass = &d3d->shader.pass[0];
+   link_info.tex_w = link_info.tex_h = d3d->video_info.input_scale * RARCH_SCALE_BASE;
+
+   unsigned current_width = link_info.tex_w;
+   unsigned current_height = link_info.tex_h;
+   unsigned out_width = 0;
+   unsigned out_height = 0;
+
+   if (!d3d->chain->set_pass_size(0, current_width, current_height))
+   {
+      RARCH_ERR("[D3D]: Failed to set pass size.\n");
+      return;
+   }
+
+   for (unsigned i = 1; i < d3d->shader.passes; i++)
+   {
+      RenderChain::convert_geometry(link_info,
+            out_width, out_height,
+            current_width, current_height, d3d->final_viewport);
+
+      link_info.tex_w = next_pow2(out_width);
+      link_info.tex_h = next_pow2(out_height);
+
+      if (!d3d->chain->set_pass_size(i, link_info.tex_w, link_info.tex_h))
+      {
+         RARCH_ERR("[D3D]: Failed to set pass size.\n");
+         return;
+      }
+
+      current_width = out_width;
+      current_height = out_height;
+
+      link_info.pass = &d3d->shader.pass[i];
+   }
 }
 
 #ifdef HAVE_CG
-bool D3DVideo::init_cg(void)
+bool d3d_init_shader(void *data)
 {
-   cgCtx = cgCreateContext();
-   if (cgCtx == NULL)
+   D3DVideo *d3d = reinterpret_cast<D3DVideo*>(data);
+   d3d->cgCtx = cgCreateContext();
+   if (d3d->cgCtx == NULL)
       return false;
 
    RARCH_LOG("[D3D9 Cg]: Created context.\n");
 
-   HRESULT ret = cgD3D9SetDevice(dev);
+   HRESULT ret = cgD3D9SetDevice(d3d->dev);
    if (FAILED(ret))
       return false;
 
    return true;
 }
 
-void D3DVideo::deinit_cg(void)
+void d3d_deinit_shader(void *data)
 {
-   if (!cgCtx)
+   D3DVideo *d3d = reinterpret_cast<D3DVideo*>(data);
+   if (!d3d->cgCtx)
       return;
 
    cgD3D9UnloadAllPrograms();
    cgD3D9SetDevice(NULL);
-   cgDestroyContext(cgCtx);
-   cgCtx = NULL;
+   cgDestroyContext(d3d->cgCtx);
+   d3d->cgCtx = NULL;
 }
 #endif
 
@@ -200,53 +270,6 @@ bool D3DVideo::init_multipass(void)
    return true;
 }
 
-bool D3DVideo::process_shader(void)
-{
-   if (strcmp(path_get_extension(cg_shader.c_str()), "cgp") == 0)
-      return init_multipass();
-
-   return init_singlepass();
-}
-
-void D3DVideo::recompute_pass_sizes(void)
-{
-   LinkInfo link_info = {0};
-   link_info.pass = &shader.pass[0];
-   link_info.tex_w = link_info.tex_h = video_info.input_scale * RARCH_SCALE_BASE;
-
-   unsigned current_width = link_info.tex_w;
-   unsigned current_height = link_info.tex_h;
-   unsigned out_width = 0;
-   unsigned out_height = 0;
-
-   if (!chain->set_pass_size(0, current_width, current_height))
-   {
-      RARCH_ERR("[D3D]: Failed to set pass size.\n");
-      return;
-   }
-
-   for (unsigned i = 1; i < shader.passes; i++)
-   {
-      RenderChain::convert_geometry(link_info,
-            out_width, out_height,
-            current_width, current_height, final_viewport);
-
-      link_info.tex_w = next_pow2(out_width);
-      link_info.tex_h = next_pow2(out_height);
-
-      if (!chain->set_pass_size(i, link_info.tex_w, link_info.tex_h))
-      {
-         RARCH_ERR("[D3D]: Failed to set pass size.\n");
-         return;
-      }
-
-      current_width = out_width;
-      current_height = out_height;
-
-      link_info.pass = &shader.pass[i];
-   }
-}
-
 bool D3DVideo::init_chain(const video_info_t *video_info)
 {
    // Setup information for first pass.
@@ -338,21 +361,4 @@ void D3DVideo::deinit_font(void)
    if (font)
       font->Release();
    font = NULL;
-}
-
-void D3DVideo::update_title(void)
-{
-   char buffer[128], buffer_fps[128];
-   bool fps_draw = g_settings.fps_show;
-   if (gfx_get_fps(buffer, sizeof(buffer), fps_draw ? buffer_fps : NULL, sizeof(buffer_fps)))
-   {
-      std::string title = buffer;
-      title += " || Direct3D9";
-      SetWindowText(hWnd, title.c_str());
-   }
-
-   if (fps_draw)
-      msg_queue_push(g_extern.msg_queue, buffer_fps, 1, 1);
-
-   g_extern.frame_count++;
 }

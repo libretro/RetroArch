@@ -52,8 +52,9 @@ static BOOL CALLBACK monitor_enum_proc(HMONITOR hMonitor, HDC hdcMonitor, LPRECT
 }
 
 // Multi-monitor support.
-RECT D3DVideo::monitor_rect(void)
+RECT d3d_monitor_rect(void *data)
 {
+   D3DVideo *d3d = reinterpret_cast<D3DVideo*>(data);
    Monitor::num_mons = 0;
    EnumDisplayMonitors(NULL, NULL, monitor_enum_proc, 0);
 
@@ -94,7 +95,7 @@ static void d3d_deinitialize(void *data)
    d3d->deinit_font();
    d3d->deinit_chain();
 #ifdef HAVE_CG
-   d3d->deinit_cg();
+   d3d_deinit_shader(d3d);
 #endif
 
    d3d->needs_restore = false;
@@ -274,7 +275,7 @@ static bool d3d_initialize(void *data, const video_info_t *info)
    d3d_calculate_rect(d3d, d3d->screen_width, d3d->screen_height, info->force_aspect, g_extern.system.aspect_ratio);
 
 #ifdef HAVE_CG
-   if (!d3d->init_cg())
+   if (!d3d_init_shader(d3d))
    {
       RARCH_ERR("Failed to initialize Cg.\n");
       return false;
@@ -460,7 +461,7 @@ static void d3d_set_viewport(void *data, int x, int y, unsigned width, unsigned 
 
    d3d->final_viewport = viewport;
 
-   d3d->set_font_rect(NULL);
+   d3d_set_font_rect(d3d, NULL);
 }
 
 static void d3d_calculate_rect(void *data, unsigned width, unsigned height,
@@ -527,7 +528,7 @@ static bool d3d_frame(void *data, const void *frame,
    {
       d3d_calculate_rect(d3d, d3d->screen_width, d3d->screen_height, d3d->video_info.force_aspect, g_extern.system.aspect_ratio);
       d3d->chain->set_final_viewport(d3d->final_viewport);
-      d3d->recompute_pass_sizes();
+      d3d_recompute_pass_sizes(d3d);
 
       d3d->should_resize = false;
    }
@@ -585,7 +586,7 @@ static bool d3d_frame(void *data, const void *frame,
       return true;
    }
 
-   d3d->update_title();
+   d3d_update_title(d3d);
    return true;
 }
 
@@ -760,7 +761,7 @@ static bool d3d_set_shader(void *data, enum rarch_shader_type type, const char *
    bool restore_old = false;
    d3d->cg_shader = path;
 
-   if (!d3d->process_shader() || !d3d_restore(d3d))
+   if (!d3d_process_shader(d3d) || !d3d_restore(d3d))
    {
       RARCH_ERR("[D3D9]: Setting shader failed.\n");
       restore_old = true;
@@ -769,7 +770,7 @@ static bool d3d_set_shader(void *data, enum rarch_shader_type type, const char *
    if (restore_old)
    {
       d3d->cg_shader = old_shader;
-      d3d->process_shader();
+      d3d_process_shader(d3d);
       d3d_restore(d3d);
    }
 
@@ -950,7 +951,7 @@ static void d3d_render_msg(void *data, const char *msg, void *userdata)
    }
 
    if (params)
-      d3d->set_font_rect(NULL);
+      d3d_set_font_rect(d3d, NULL);
 }
 
 static void d3d_set_osd_msg(void *data, const char *msg, void *userdata)
@@ -959,7 +960,7 @@ static void d3d_set_osd_msg(void *data, const char *msg, void *userdata)
    D3DVideo *d3d = reinterpret_cast<D3DVideo*>(data);
 
    if (params)
-      d3d->set_font_rect(params);
+      d3d_set_font_rect(d3d, params);
 
    d3d_render_msg(d3d, msg, params);
 }
@@ -1110,7 +1111,7 @@ bool d3d_construct(void *data, const video_info_t *info, const input_driver_t **
 #endif
 
 #ifdef HAVE_MONITOR
-   RECT mon_rect = d3d->monitor_rect();
+   RECT mon_rect = d3d_monitor_rect(d3d);
 #endif
 
    bool windowed_full = g_settings.video.windowed_fullscreen;
@@ -1177,7 +1178,7 @@ bool d3d_construct(void *data, const video_info_t *info, const input_driver_t **
       d3d->cg_shader = g_settings.video.shader_path;
 #endif
 
-   if (!d3d->process_shader())
+   if (!d3d_process_shader(d3d))
       return false;
 
    d3d->video_info = *info;

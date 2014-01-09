@@ -53,14 +53,17 @@ typedef struct
    LPDIRECT3DVERTEXBUFFER vert_buf;
 } overlay_t;
 
+void d3d_set_font_rect(void *data, font_params_t *params);
+bool d3d_process_shader(void *data);
+void d3d_update_title(void *data);
+void d3d_recompute_pass_sizes(void *data);
+RECT d3d_monitor_rect(void *data);
+bool d3d_init_shader(void *data);
+void d3d_deinit_shader(void *data);
+
 class D3DVideo
 {
 public:
-      bool process_shader(void);
-
-      void set_filtering(unsigned index, bool smooth);
-      void set_font_rect(font_params_t *params);
-
       bool should_resize;
 
       WNDCLASSEX windowClass;
@@ -69,7 +72,6 @@ public:
       LPDIRECT3DDEVICE dev;
       LPD3DXFONT font;
 
-      void recompute_pass_sizes();
       unsigned screen_width;
       unsigned screen_height;
       unsigned dev_rotation;
@@ -79,16 +81,12 @@ public:
 
       struct gfx_shader shader;
 
-      RECT monitor_rect(void);
-
       video_info_t video_info;
 
       bool needs_restore;
 
 #ifdef HAVE_CG
       CGcontext cgCtx;
-      bool init_cg();
-      void deinit_cg();
 #endif
 
       bool init_imports(void);
@@ -103,8 +101,6 @@ public:
       RECT font_rect;
       RECT font_rect_shifted;
       uint32_t font_color;
-
-      void update_title(void);
 
 #ifdef HAVE_OVERLAY
       bool overlays_enabled;
