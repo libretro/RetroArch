@@ -576,7 +576,9 @@ void D3DVideo::deinit(void)
 {
    deinit_font();
    deinit_chain();
+#ifdef HAVE_CG
    deinit_cg();
+#endif
 
    needs_restore = false;
 }
@@ -789,13 +791,13 @@ bool D3DVideo::init_cg(void)
 
 void D3DVideo::deinit_cg(void)
 {
-   if (cgCtx)
-   {
-      cgD3D9UnloadAllPrograms();
-      cgD3D9SetDevice(NULL);
-      cgDestroyContext(cgCtx);
-      cgCtx = NULL;
-   }
+   if (!cgCtx)
+      return;
+
+   cgD3D9UnloadAllPrograms();
+   cgD3D9SetDevice(NULL);
+   cgDestroyContext(cgCtx);
+   cgCtx = NULL;
 }
 #endif
 
