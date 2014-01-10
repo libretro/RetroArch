@@ -585,7 +585,22 @@ extern "C" {
 RZLIB
 ============================================================ */
 #ifdef WANT_MINIZ
-#include "../deps/rzlib/rzlib.c"
+#include "../deps/rzlib/adler32.c"
+#include "../deps/rzlib/compress.c"
+#include "../deps/rzlib/crc32.c"
+#include "../deps/rzlib/deflate.c"
+#include "../deps/rzlib/gzclose.c"
+#include "../deps/rzlib/gzlib.c"
+#include "../deps/rzlib/gzread.c"
+#include "../deps/rzlib/gzwrite.c"
+#include "../deps/rzlib/inffast.c"
+#include "../deps/rzlib/inflate.c"
+#include "../deps/rzlib/inftrees.c"
+#include "../deps/rzlib/trees.c"
+#include "../deps/rzlib/uncompr.c"
+#include "../deps/rzlib/zutil.c"
+#include "../deps/rzlib/ioapi.c"
+#include "../deps/rzlib/unzip.c"
 #endif
 
 /*============================================================
