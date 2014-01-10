@@ -16,7 +16,7 @@
 #include "rpng.h"
 
 #ifdef WANT_MINIZ
-#include "../../deps/miniz/zlib.h"
+#include "../../deps/rzlib/zlib.h"
 #else
 #include <zlib.h>
 #endif
