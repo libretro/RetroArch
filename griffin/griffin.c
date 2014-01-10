@@ -585,8 +585,7 @@ extern "C" {
 RZLIB
 ============================================================ */
 #ifdef WANT_MINIZ
-#include "../deps/miniz/miniz.c"
-#include "../deps/minizip/unzip.c"
+#include "../deps/rzlib/rzlib.c"
 #endif
 
 /*============================================================

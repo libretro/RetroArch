@@ -29,7 +29,7 @@ void sha256_hash(char *out, const uint8_t *in, size_t size);
 
 #ifdef HAVE_ZLIB
 #ifdef WANT_MINIZ
-#include "deps/miniz/zlib.h"
+#include "deps/rzlib/zlib.h"
 #else
 #include <zlib.h>
 #endif
