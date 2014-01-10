@@ -1764,9 +1764,9 @@ static voidp gz_open (const char * path, const char *mode, int fd)
 	s = (gz_stream *)malloc(sizeof(gz_stream));
 	if (!s) return 0;
 
-	s->stream.zalloc = (alloc_func)0;
-	s->stream.zfree = (free_func)0;
-	s->stream.opaque = (voidpf)0;
+	s->stream.zalloc = NULL;
+	s->stream.zfree = NULL; 
+	s->stream.opaque = NULL;
 	s->stream.next_in = s->inbuf = 0;
 	s->stream.next_out = s->outbuf = 0;
 	s->stream.avail_in = s->stream.avail_out = 0;
@@ -3039,8 +3039,8 @@ extern int  unzOpenCurrentFile3 (unzFile file, int *method, int *level, int raw,
 	if ((s->cur_file_info.compression_method==Z_DEFLATED) &&
 			(!raw))
 	{
-		pfile_in_zip_read_info->stream.zalloc = (alloc_func)0;
-		pfile_in_zip_read_info->stream.zfree = (free_func)0;
+		pfile_in_zip_read_info->stream.zalloc = NULL; 
+		pfile_in_zip_read_info->stream.zfree = NULL;
 		pfile_in_zip_read_info->stream.opaque = 0;
 		pfile_in_zip_read_info->stream.next_in = 0;
 		pfile_in_zip_read_info->stream.avail_in = 0;
@@ -3413,8 +3413,8 @@ int uncompress (unsigned char *dest, unsigned int *destLen, const unsigned char 
     stream.avail_out = (unsigned int)*destLen;
     if ((unsigned int)stream.avail_out != *destLen) return Z_BUF_ERROR;
 
-    stream.zalloc = (alloc_func)0;
-    stream.zfree = (free_func)0;
+    stream.zalloc = NULL;
+    stream.zfree = NULL;
 
     err = inflateInit(&stream);
     if (err != Z_OK) return err;
