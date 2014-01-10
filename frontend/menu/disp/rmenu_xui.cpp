@@ -314,6 +314,8 @@ HRESULT CRetroArchFileBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHandle
    char path[PATH_MAX];
    process_input_ret = 0;
 
+   (void)path;
+
 #if 0
 
    if(hObjPressed == m_menulist)
@@ -639,6 +641,8 @@ HRESULT CRetroArchControls::OnControlNavigate(
    char button[128];
    char buttons[RARCH_FIRST_META_KEY][128];
    int i, current_index;
+
+   (void)button;
 
    for(i = 0; i < RARCH_FIRST_META_KEY; i++)
    {
@@ -1064,6 +1068,8 @@ HRESULT CRetroArchShaderBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHand
    char path[PATH_MAX];
    process_input_ret = 0;
 
+   (void)path;
+
    if(hObjPressed == m_menulist)
    {
 #if 0
@@ -1102,6 +1108,8 @@ HRESULT CRetroArchCoreBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHandle
    char path[PATH_MAX];
 
    process_input_ret = 0;
+
+   (void)path;
 
    if(hObjPressed == m_menulist)
    {
@@ -1447,6 +1455,10 @@ int rgui_input_postprocess(void *data, uint64_t old_state)
    unsigned width;
    unsigned height;
    unsigned frame_count;
+
+   (void)width;
+   (void)height;
+   (void)frame_count;
 
    if ((rgui->trigger_state & (1ULL << RARCH_MENU_TOGGLE)) &&
       g_extern.main_is_init)
