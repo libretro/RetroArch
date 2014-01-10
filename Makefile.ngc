@@ -29,7 +29,7 @@ ELF2DOL = $(DEVKITPPC)/bin/elf2dol$(EXE_EXT)
 DOL_TARGET := retroarch_ngc.dol
 ELF_TARGET := retroarch_ngc.elf
 
-INCLUDE := -I. -I$(DEVKITPRO)/libogc/include
+INCLUDE := -I. -I$(DEVKITPRO)/libogc/include -Ideps/rzlib
 LIBDIRS := -L$(DEVKITPRO)/libogc/lib/cube -L.
 
 MACHDEP := -DGEKKO -DHW_DOL -mogc -mcpu=750 -meabi -mhard-float

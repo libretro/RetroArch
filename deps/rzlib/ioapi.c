@@ -14,12 +14,6 @@
         #define _CRT_SECURE_NO_WARNINGS
 #endif
 
-#if defined(__APPLE__) || defined(__CELLOS_LV2__)
-#define fopen64 fopen
-#define ftello64 ftell
-#define fseeko64 fseek
-#endif
-
 #include "ioapi.h"
 
 voidpf call_zopen64 (const zlib_filefunc64_32_def* pfilefunc,const void*filename,int mode)
@@ -194,7 +188,7 @@ static long ZCALLBACK fseek64_file_func (voidpf  opaque, voidpf stream, ZPOS64_T
     }
     ret = 0;
 
-    if(fseeko64((FILE *)stream, offset, fseek_origin) != 0)
+    if(fseek((FILE *)stream, offset, fseek_origin) != 0)
                         ret = -1;
 
     return ret;
