@@ -38,7 +38,7 @@ typedef enum {
 inflate_mode;
 
 /* inflate private state */
-struct internal_state
+struct internal_state_inflate
 {
 	/* mode */
 	inflate_mode  mode;   /* current inflate mode */
@@ -1367,21 +1367,27 @@ unsigned long  crc32(unsigned long crc, const Bytef *buf, unsigned int len)
 
 int  inflateReset(z_streamp z)
 {
+   struct internal_state_inflate *state = (struct internal_state_inflate*)z->state;
+
 	if (z == 0 || z->state == 0)
 		return Z_STREAM_ERROR;
+
 	z->total_in = z->total_out = 0;
 	z->msg = 0;
-	z->state->mode = z->state->nowrap ? BLOCKS_INFLATE : METHOD_INFLATE;
-	inflate_blocks_reset(z->state->blocks, z, 0);
+	state->mode = state->nowrap ? BLOCKS_INFLATE : METHOD_INFLATE;
+	inflate_blocks_reset(state->blocks, z, 0);
 	return Z_OK;
 }
 
 int  inflateEnd(z_streamp z)
 {
+   struct internal_state_inflate *state = (struct internal_state_inflate*)z->state;
+
 	if (z == 0 || z->state == 0 || z->zfree == 0)
 		return Z_STREAM_ERROR;
-	if (z->state->blocks != 0)
-		inflate_blocks_free(z->state->blocks, z);
+
+	if (state->blocks != 0)
+		inflate_blocks_free(state->blocks, z);
 	ZFREE(z, z->state);
 	z->state = 0;
 	return Z_OK;
@@ -1430,17 +1436,20 @@ int  inflateInit2_(z_streamp z, int w, const char * version, int stream_size)
 		z->opaque = (voidpf)0;
 	}
 	if (z->zfree == 0) z->zfree = zcfree;
-	if ((z->state = (struct internal_state *)
-				ZALLOC(z,1,sizeof(struct internal_state))) == 0)
+	if ((z->state = (struct internal_state_inflate *)
+				ZALLOC(z,1,sizeof(struct internal_state_inflate))) == 0)
 		return Z_MEM_ERROR;
-	z->state->blocks = 0;
+
+   struct internal_state_inflate *state = (struct internal_state_inflate*)z->state;
+
+	state->blocks = 0;
 
 	/* handle undocumented nowrap option (no zlib header or check) */
-	z->state->nowrap = 0;
+	state->nowrap = 0;
 	if (w < 0)
 	{
 		w = - w;
-		z->state->nowrap = 1;
+		state->nowrap = 1;
 	}
 
 	/* set window size */
@@ -1449,11 +1458,11 @@ int  inflateInit2_(z_streamp z, int w, const char * version, int stream_size)
 		inflateEnd(z);
 		return Z_STREAM_ERROR;
 	}
-	z->state->wbits = (unsigned int)w;
+	state->wbits = (unsigned int)w;
 
 	/* create inflate_blocks state */
-	if ((z->state->blocks =
-				inflate_blocks_new(z, z->state->nowrap ? 0 : adler32, (unsigned int)1 << w))
+	if ((state->blocks =
+				inflate_blocks_new(z, state->nowrap ? 0 : adler32, (unsigned int)1 << w))
 			== 0)
 	{
 		inflateEnd(z);
@@ -1478,75 +1487,76 @@ int  inflate(z_streamp z, int f)
 {
 	int r;
 	unsigned int b;
+   struct internal_state_inflate *state = (struct internal_state_inflate*)z->state;
 
 	if (z == 0 || z->state == 0 || z->next_in == 0)
 		return Z_STREAM_ERROR;
 	f = f == Z_FINISH ? Z_BUF_ERROR : Z_OK;
 	r = Z_BUF_ERROR;
-	while (1) switch (z->state->mode)
+	while (1) switch (state->mode)
 	{
 		case METHOD_INFLATE:
 			NEEDBYTE_INFLATE
-				if (((z->state->sub.method = NEXTBYTE_INFLATE) & 0xf) != Z_DEFLATED)
+				if (((state->sub.method = NEXTBYTE_INFLATE) & 0xf) != Z_DEFLATED)
 				{
-					z->state->mode = BAD_INFLATE;
+					state->mode = BAD_INFLATE;
 					z->msg = (char*)"unknown compression method";
-					z->state->sub.marker = 5;       /* can't try inflateSync */
+					state->sub.marker = 5;       /* can't try inflateSync */
 					break;
 				}
-			if ((z->state->sub.method >> 4) + 8 > z->state->wbits)
+			if ((state->sub.method >> 4) + 8 > state->wbits)
 			{
-				z->state->mode = BAD_INFLATE;
+				state->mode = BAD_INFLATE;
 				z->msg = (char*)"invalid window size";
-				z->state->sub.marker = 5;       /* can't try inflateSync */
+				state->sub.marker = 5;       /* can't try inflateSync */
 				break;
 			}
-			z->state->mode = FLAG_INFLATE;
+			state->mode = FLAG_INFLATE;
 		case FLAG_INFLATE:
 			NEEDBYTE_INFLATE
 				b = NEXTBYTE_INFLATE;
-			if (((z->state->sub.method << 8) + b) % 31)
+			if (((state->sub.method << 8) + b) % 31)
 			{
-				z->state->mode = BAD_INFLATE;
+				state->mode = BAD_INFLATE;
 				z->msg = (char*)"incorrect header check";
-				z->state->sub.marker = 5;       /* can't try inflateSync */
+				state->sub.marker = 5;       /* can't try inflateSync */
 				break;
 			}
 			if (!(b & PRESET_DICT))
 			{
-				z->state->mode = BLOCKS_INFLATE;
+				state->mode = BLOCKS_INFLATE;
 				break;
 			}
-			z->state->mode = DICT4_INFLATE;
+			state->mode = DICT4_INFLATE;
 		case DICT4_INFLATE:
 			NEEDBYTE_INFLATE
-				z->state->sub.check.need = (unsigned long)NEXTBYTE_INFLATE << 24;
-			z->state->mode = DICT3_INFLATE;
+				state->sub.check.need = (unsigned long)NEXTBYTE_INFLATE << 24;
+			state->mode = DICT3_INFLATE;
 		case DICT3_INFLATE:
 			NEEDBYTE_INFLATE
-				z->state->sub.check.need += (unsigned long)NEXTBYTE_INFLATE << 16;
-			z->state->mode = DICT2_INFLATE;
+				state->sub.check.need += (unsigned long)NEXTBYTE_INFLATE << 16;
+			state->mode = DICT2_INFLATE;
 		case DICT2_INFLATE:
 			NEEDBYTE_INFLATE
-				z->state->sub.check.need += (unsigned long)NEXTBYTE_INFLATE << 8;
-			z->state->mode = DICT1_INFLATE;
+				state->sub.check.need += (unsigned long)NEXTBYTE_INFLATE << 8;
+			state->mode = DICT1_INFLATE;
 		case DICT1_INFLATE:
 			NEEDBYTE_INFLATE
-				z->state->sub.check.need += (unsigned long)NEXTBYTE_INFLATE;
-			z->adler = z->state->sub.check.need;
-			z->state->mode = DICT0_INFLATE;
+				state->sub.check.need += (unsigned long)NEXTBYTE_INFLATE;
+			z->adler = state->sub.check.need;
+			state->mode = DICT0_INFLATE;
 			return Z_NEED_DICT;
 		case DICT0_INFLATE:
-			z->state->mode = BAD_INFLATE;
+			state->mode = BAD_INFLATE;
 			z->msg = (char*)"need dictionary";
-			z->state->sub.marker = 0;       /* can try inflateSync */
+			state->sub.marker = 0;       /* can try inflateSync */
 			return Z_STREAM_ERROR;
 		case BLOCKS_INFLATE:
-			r = inflate_blocks(z->state->blocks, z, r);
+			r = inflate_blocks(state->blocks, z, r);
 			if (r == Z_DATA_ERROR)
 			{
-				z->state->mode = BAD_INFLATE;
-				z->state->sub.marker = 0;       /* can try inflateSync */
+				state->mode = BAD_INFLATE;
+				state->sub.marker = 0;       /* can try inflateSync */
 				break;
 			}
 			if (r == Z_OK)
@@ -1554,37 +1564,37 @@ int  inflate(z_streamp z, int f)
 			if (r != Z_STREAM_END)
 				return r;
 			r = f;
-			inflate_blocks_reset(z->state->blocks, z, &z->state->sub.check.was);
-			if (z->state->nowrap)
+			inflate_blocks_reset(state->blocks, z, &state->sub.check.was);
+			if (state->nowrap)
 			{
-				z->state->mode = DONE_INFLATE;
+				state->mode = DONE_INFLATE;
 				break;
 			}
-			z->state->mode = CHECK4_INFLATE;
+			state->mode = CHECK4_INFLATE;
 		case CHECK4_INFLATE:
 			NEEDBYTE_INFLATE
-				z->state->sub.check.need = (unsigned long)NEXTBYTE_INFLATE << 24;
-			z->state->mode = CHECK3_INFLATE;
+				state->sub.check.need = (unsigned long)NEXTBYTE_INFLATE << 24;
+			state->mode = CHECK3_INFLATE;
 		case CHECK3_INFLATE:
 			NEEDBYTE_INFLATE
-				z->state->sub.check.need += (unsigned long)NEXTBYTE_INFLATE << 16;
-			z->state->mode = CHECK2_INFLATE;
+				state->sub.check.need += (unsigned long)NEXTBYTE_INFLATE << 16;
+			state->mode = CHECK2_INFLATE;
 		case CHECK2_INFLATE:
 			NEEDBYTE_INFLATE
-				z->state->sub.check.need += (unsigned long)NEXTBYTE_INFLATE << 8;
-			z->state->mode = CHECK1_INFLATE;
+				state->sub.check.need += (unsigned long)NEXTBYTE_INFLATE << 8;
+			state->mode = CHECK1_INFLATE;
 		case CHECK1_INFLATE:
 			NEEDBYTE_INFLATE
-				z->state->sub.check.need += (unsigned long)NEXTBYTE_INFLATE;
+				state->sub.check.need += (unsigned long)NEXTBYTE_INFLATE;
 
-			if (z->state->sub.check.was != z->state->sub.check.need)
+			if (state->sub.check.was != state->sub.check.need)
 			{
-				z->state->mode = BAD_INFLATE;
+				state->mode = BAD_INFLATE;
 				z->msg = (char*)"incorrect data check";
-				z->state->sub.marker = 5;       /* can't try inflateSync */
+				state->sub.marker = 5;       /* can't try inflateSync */
 				break;
 			}
-			z->state->mode = DONE_INFLATE;
+			state->mode = DONE_INFLATE;
 		case DONE_INFLATE:
 			return Z_STREAM_END;
 		case BAD_INFLATE:

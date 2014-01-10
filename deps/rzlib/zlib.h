@@ -76,7 +76,7 @@ typedef struct z_stream_s {
     unsigned long    total_out; /* total nb of bytes output so far */
 
     char     *msg;      /* last error message, NULL if no error */
-    struct internal_state *state; /* not visible by applications */
+    void *state; /* not visible by applications */
 
     alloc_func zalloc;  /* used to allocate the internal state */
     free_func  zfree;   /* used to free the internal state */
