@@ -489,6 +489,10 @@ static uint64_t menu_input(void)
    static const struct retro_keybind *binds[] = { g_settings.input.binds[0] };
 #endif
 
+   input_push_analog_dpad((struct retro_keybind*)binds[0], g_settings.input.analog_dpad_mode[0]);
+   for (i = 0; i < MAX_PLAYERS; i++)
+      input_push_analog_dpad(g_settings.input.autoconf_binds[i], g_settings.input.analog_dpad_mode[i]);
+
    for (i = 0; i < RETRO_DEVICE_ID_JOYPAD_R2; i++)
    {
       input_state |= input_input_state_func(binds,
@@ -499,6 +503,10 @@ static uint64_t menu_input(void)
    }
 
    input_state |= input_key_pressed_func(RARCH_MENU_TOGGLE) ? (1ULL << RARCH_MENU_TOGGLE) : 0;
+
+   input_pop_analog_dpad((struct retro_keybind*)binds[0]);
+   for (i = 0; i < MAX_PLAYERS; i++)
+      input_pop_analog_dpad(g_settings.input.autoconf_binds[i]);
 
    rgui->trigger_state = input_state & ~rgui->old_input_state;
 
@@ -643,7 +651,7 @@ static int menu_viewport_iterate(void *data, unsigned action)
          else if (custom->height >= (unsigned)stride_y)
             custom->height -= stride_y;
 
-         if (driver.video_poke->apply_state_changes)
+         if (driver.video_poke && driver.video_poke->apply_state_changes)
             driver.video_poke->apply_state_changes(driver.video_data);
          break;
 
@@ -657,7 +665,7 @@ static int menu_viewport_iterate(void *data, unsigned action)
          else
             custom->height += stride_y;
 
-         if (driver.video_poke->apply_state_changes)
+         if (driver.video_poke && driver.video_poke->apply_state_changes)
             driver.video_poke->apply_state_changes(driver.video_data);
          break;
 
@@ -670,7 +678,7 @@ static int menu_viewport_iterate(void *data, unsigned action)
          else if (custom->width >= (unsigned)stride_x)
             custom->width -= stride_x;
 
-         if (driver.video_poke->apply_state_changes)
+         if (driver.video_poke && driver.video_poke->apply_state_changes)
             driver.video_poke->apply_state_changes(driver.video_data);
          break;
 
@@ -684,7 +692,7 @@ static int menu_viewport_iterate(void *data, unsigned action)
          else
             custom->width += stride_x;
 
-         if (driver.video_poke->apply_state_changes)
+         if (driver.video_poke && driver.video_poke->apply_state_changes)
             driver.video_poke->apply_state_changes(driver.video_data);
          break;
 
@@ -728,7 +736,7 @@ static int menu_viewport_iterate(void *data, unsigned action)
                custom->height = vp.full_height - custom->y;
             }
 
-            if (driver.video_poke->apply_state_changes)
+            if (driver.video_poke && driver.video_poke->apply_state_changes)
                driver.video_poke->apply_state_changes(driver.video_data);
          }
          break;
@@ -785,7 +793,7 @@ static int menu_viewport_iterate(void *data, unsigned action)
    aspectratio_lut[ASPECT_RATIO_CUSTOM].value =
       (float)custom->width / custom->height;
 
-   if (driver.video_poke->apply_state_changes)
+   if (driver.video_poke && driver.video_poke->apply_state_changes)
       driver.video_poke->apply_state_changes(driver.video_data);
 
    return 0;
@@ -881,7 +889,7 @@ static int menu_settings_iterate(void *data, unsigned action)
                (float)custom->width / custom->height;
 
             g_settings.video.aspect_ratio_idx = ASPECT_RATIO_CUSTOM;
-            if (driver.video_poke->set_aspect_ratio)
+            if (driver.video_poke && driver.video_poke->set_aspect_ratio)
                driver.video_poke->set_aspect_ratio(driver.video_data,
                      g_settings.video.aspect_ratio_idx);
          }
@@ -1974,6 +1982,7 @@ void menu_populate_entries(void *data, unsigned menu_type)
          file_list_push(rgui->selection_buf, "Player", RGUI_SETTINGS_BIND_PLAYER, 0);
          file_list_push(rgui->selection_buf, "Device", RGUI_SETTINGS_BIND_DEVICE, 0);
          file_list_push(rgui->selection_buf, "Device Type", RGUI_SETTINGS_BIND_DEVICE_TYPE, 0);
+         file_list_push(rgui->selection_buf, "Analog D-pad Mode", RGUI_SETTINGS_BIND_ANALOG_MODE, 0);
          file_list_push(rgui->selection_buf, "Autodetect enable", RGUI_SETTINGS_DEVICE_AUTODETECT_ENABLE, 0);
 
          file_list_push(rgui->selection_buf, "Configure All (RetroPad)", RGUI_SETTINGS_CUSTOM_BIND_ALL, 0);

@@ -151,6 +151,8 @@ struct retro_keybind
 
    uint32_t joyaxis;
    uint32_t def_joyaxis;
+
+   uint32_t orig_joyaxis; // Used by input_{push,pop}_analog_dpad().
 };
 
 struct platform_bind
@@ -319,7 +321,7 @@ enum input_devices
    DEVICE_LAST
 };
 
-enum analog_dpad_bind_enums
+enum analog_dpad_mode
 {
    ANALOG_DPAD_NONE = 0,
    ANALOG_DPAD_LSTICK,

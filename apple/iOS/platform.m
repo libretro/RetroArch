@@ -152,7 +152,7 @@ static void handle_touch_event(NSArray* touches)
 {
    // If the _hidEvent is null, [event _keyCode] will crash.
    if ([event _hidEvent])
-      apple_input_handle_key_event([event _keyCode], [event _isKeyDown]);
+      apple_input_keyboard_event([event _isKeyDown], [event _keyCode], 0, 0);
 
    return [super _keyCommandForEvent:event];
 }
@@ -171,7 +171,7 @@ static void handle_touch_event(NSArray* touches)
       int eventType = eventMem ? *(int*)&eventMem[8] : 0;
       
       if (eventType == GSEVENT_TYPE_KEYDOWN || eventType == GSEVENT_TYPE_KEYUP)
-         apple_input_handle_key_event(*(uint16_t*)&eventMem[0x3C], eventType == GSEVENT_TYPE_KEYDOWN);
+         apple_input_keyboard_event(eventType == GSEVENT_TYPE_KEYDOWN, *(uint16_t*)&eventMem[0x3C], 0, 0);
    }
 }
 

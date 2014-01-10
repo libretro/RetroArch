@@ -1679,10 +1679,11 @@ static bool resolve_extensions(gl_t *gl)
    // Even though es2 support is claimed, the format is not supported on older ATI catalyst drivers.
    // The speed gain from using GL_RGB565 is worth adding some workarounds for.
    const char *vendor = (const char*)glGetString(GL_VENDOR);
-   if (!vendor || !strstr(vendor, "ATI"))
-      gl->have_es2_compat = gl_query_extension(gl, "ARB_ES2_compatibility");
-   else
+   const char *renderer = (const char*)glGetString(GL_RENDERER);
+   if (vendor && renderer && (strstr(vendor, "ATI") || strstr(renderer, "ATI")))
       RARCH_LOG("[GL]: ATI card detected, skipping check for GL_RGB565 support.\n");
+   else
+      gl->have_es2_compat = gl_query_extension(gl, "ARB_ES2_compatibility");
 #endif
 
 #ifdef HAVE_GL_SYNC
@@ -2184,7 +2185,9 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    if (input && input_data)
       context_input_driver_func(input, input_data);
    
+#ifndef RARCH_CONSOLE
    if (g_settings.video.font_enable)
+#endif
    {
       gl->font_ctx = gl_font_init_first(gl, g_settings.video.font_path, g_settings.video.font_size,
             gl->win_width, gl->win_height);

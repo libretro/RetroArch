@@ -347,6 +347,7 @@ void config_set_defaults(void)
    for (i = 0; i < MAX_PLAYERS; i++)
    {
       g_settings.input.joypad_map[i] = i;
+      g_settings.input.analog_dpad_mode[i] = ANALOG_DPAD_NONE;
       if (!g_extern.has_set_libretro_device[i])
          g_settings.input.libretro_device[i] = RETRO_DEVICE_JOYPAD;
    }
@@ -822,7 +823,6 @@ bool config_load_file(const char *path, bool set_defaults)
    CONFIG_GET_INT_EXTERN(console.sound.mode, "sound_mode");
 #endif
    CONFIG_GET_INT_EXTERN(state_slot, "state_slot");
-   CONFIG_GET_INT_EXTERN(audio_data.mute, "audio_mute");
 
    CONFIG_GET_INT_EXTERN(console.screen.viewports.custom_vp.x, "custom_viewport_x");
    CONFIG_GET_INT_EXTERN(console.screen.viewports.custom_vp.y, "custom_viewport_y");
@@ -857,6 +857,9 @@ bool config_load_file(const char *path, bool set_defaults)
       char buf[64];
       snprintf(buf, sizeof(buf), "input_player%u_joypad_index", i + 1);
       CONFIG_GET_INT(input.joypad_map[i], buf);
+
+      snprintf(buf, sizeof(buf), "input_player%u_analog_dpad_mode", i + 1);
+      CONFIG_GET_INT(input.analog_dpad_mode[i], buf);
 
       if (!g_extern.has_set_libretro_device[i])
       {
@@ -1311,7 +1314,6 @@ bool config_save_file(const char *path)
    config_set_bool(conf, "config_save_on_exit", g_extern.config_save_on_exit);
    config_set_int(conf, "sound_mode", g_extern.console.sound.mode);
    config_set_int(conf, "state_slot", g_extern.state_slot);
-   config_set_int(conf, "audio_mute", g_extern.audio_data.mute);
 
    bool custom_bgm_enable_val = g_extern.lifecycle_state & (1ULL << MODE_AUDIO_CUSTOM_BGM_ENABLE);
    config_set_bool(conf, "custom_bgm_enable", custom_bgm_enable_val);
@@ -1328,6 +1330,8 @@ bool config_save_file(const char *path)
       config_set_int(conf, cfg, g_settings.input.joypad_map[i]);
       snprintf(cfg, sizeof(cfg), "input_libretro_device_p%u", i + 1);
       config_set_int(conf, cfg, g_settings.input.libretro_device[i]);
+      snprintf(cfg, sizeof(cfg), "input_player%u_analog_dpad_mode", i + 1);
+      config_set_int(conf, cfg, g_settings.input.analog_dpad_mode[i]);
    }
 
    for (i = 0; i < MAX_PLAYERS; i++)

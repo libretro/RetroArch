@@ -21,6 +21,20 @@
 #include "../../config.h"
 #endif
 
+#ifndef _XBOX
+#define HAVE_WINDOW
+#endif
+
+#if defined(_XBOX1)
+#ifndef HAVE_D3D8
+#define HAVE_D3D8
+#endif
+#else
+#ifndef HAVE_D3D9
+#define HAVE_D3D9
+#endif
+#endif
+
 #include "../../general.h"
 #include "../../driver.h"
 #include "../shader_parse.h"
@@ -53,86 +67,50 @@ typedef struct
    LPDIRECT3DVERTEXBUFFER vert_buf;
 } overlay_t;
 
-class D3DVideo
+void d3d_set_font_rect(void *data, font_params_t *params);
+bool d3d_process_shader(void *data);
+void d3d_update_title(void *data);
+void d3d_recompute_pass_sizes(void *data);
+RECT d3d_monitor_rect(void *data);
+bool d3d_init_shader(void *data);
+void d3d_deinit_shader(void *data);
+bool d3d_init_imports(void *data);
+bool d3d_init_luts(void *data);
+bool d3d_init_singlepass(void *data);
+bool d3d_init_multipass(void *data);
+bool d3d_init_chain(void *data, const video_info_t *video_info);
+void d3d_deinit_chain(void *data);
+bool d3d_init_font(void *data);
+void d3d_deinit_font(void *data);
+void d3d_font_msg(void *data, const char *msg, void *userdata);
+void d3d_show_cursor(void *data, bool state);
+void d3d_make_d3dpp(void *data, const video_info_t *info, D3DPRESENT_PARAMETERS *d3dpp);
+bool d3d_alive_func(void *data);
+
+struct D3DVideo
 {
-   public:
-      D3DVideo();
-      ~D3DVideo();
-
-      // Delay constructor due to lack of exceptions.
-      bool construct(const video_info_t *info,
-            const input_driver_t **input, void **input_data);
-
-      bool frame(const void* frame,
-            unsigned width, unsigned height, unsigned pitch,
-            const char *msg);
-
-      bool alive();
-      bool focus() const;
-      void set_nonblock_state(bool state);
-      void set_rotation(unsigned rot);
-      void viewport_info(rarch_viewport &vp);
-      bool read_viewport(uint8_t *buffer);
-      void resize(unsigned new_width, unsigned new_height);
-      bool set_shader(const std::string &path);
-      bool process_shader(void);
-
-      void set_filtering(unsigned index, bool smooth);
-      void set_font_rect(font_params_t *params);
-
-      void overlay_render(overlay_t &overlay);
-
-      void show_cursor(bool show);
-
-#ifdef HAVE_OVERLAY
-      bool overlay_load(const texture_image *images, unsigned num_images);
-      void overlay_tex_geom(unsigned index, float x, float y, float w, float h);
-      void overlay_vertex_geom(unsigned index, float x, float y, float w, float h);
-      void overlay_enable(bool state);
-      void overlay_full_screen(bool enable);
-      void overlay_set_alpha(unsigned index, float mod);
-#endif
-
-#ifdef HAVE_MENU
-      void set_rgui_texture_frame(const void *frame,
-            bool rgb32, unsigned width, unsigned height,
-            float alpha);
-      void set_rgui_texture_enable(bool state, bool fullscreen);
-#endif
-
-      bool restore();
-      void render_msg(const char *msg, font_params_t *params = nullptr);
-
       bool should_resize;
-      inline video_info_t& info() { return video_info; }
 
-   private:
-
+#ifdef HAVE_WINDOW
       WNDCLASSEX windowClass;
+#endif
       HWND hWnd;
       LPDIRECT3D g_pD3D;
       LPDIRECT3DDEVICE dev;
+#ifndef _XBOX
       LPD3DXFONT font;
+#endif
+      HRESULT d3d_err;
+      unsigned cur_mon_id;
 
-      void recompute_pass_sizes();
-      void calculate_rect(unsigned width, unsigned height, bool keep, float aspect);
-      void set_viewport(int x, int y, unsigned width, unsigned height);
       unsigned screen_width;
       unsigned screen_height;
-      unsigned rotation;
+      unsigned dev_rotation;
       D3DVIEWPORT final_viewport;
 
       std::string cg_shader;
 
       struct gfx_shader shader;
-
-      void process(void);
-
-      bool init(const video_info_t *info);
-      bool init_base(const video_info_t *info);
-      void make_d3dpp(const video_info_t *info, D3DPRESENT_PARAMETERS *d3dpp);
-      void deinit(void);
-      RECT monitor_rect(void);
 
       video_info_t video_info;
 
@@ -140,32 +118,15 @@ class D3DVideo
 
 #ifdef HAVE_CG
       CGcontext cgCtx;
-      bool init_cg();
-      void deinit_cg();
 #endif
-
-      bool init_imports(void);
-      bool init_luts(void);
-      bool init_singlepass(void);
-      bool init_multipass(void);
-      bool init_chain(const video_info_t *video_info);
-      void deinit_chain(void);
-
-      bool init_font(void);
-      void deinit_font(void);
       RECT font_rect;
       RECT font_rect_shifted;
       uint32_t font_color;
 
-      void update_title(void);
-
 #ifdef HAVE_OVERLAY
       bool overlays_enabled;
       std::vector<overlay_t> overlays;
-      void free_overlays();
 #endif
-
-      void free_overlay(overlay_t &overlay);
 
 #ifdef HAVE_MENU
       overlay_t rgui;
@@ -173,6 +134,10 @@ class D3DVideo
 
       RenderChain *chain;
 };
+
+#ifndef _XBOX
+extern "C" bool dinput_handle_message(void *dinput, UINT message, WPARAM wParam, LPARAM lParam);
+#endif
 
 #endif
 

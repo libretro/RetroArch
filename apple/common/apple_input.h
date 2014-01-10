@@ -73,7 +73,7 @@ extern apple_input_data_t g_polled_input_data;
 void apple_input_enable_icade(bool on);
 uint32_t apple_input_get_icade_buttons(void);
 void apple_input_reset_icade_buttons(void);
-void apple_input_handle_key_event(unsigned keycode, bool down);
+void apple_input_keyboard_event(bool down, unsigned code, uint32_t character, uint32_t mod);
 
 extern int32_t apple_input_find_any_key(void);
 extern int32_t apple_input_find_any_button(uint32_t port);

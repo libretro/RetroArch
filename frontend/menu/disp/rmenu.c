@@ -107,7 +107,7 @@ static void rmenu_render_messagebox(void *data, const char *message)
       font_parms.scale = FONT_SIZE_NORMAL;
       font_parms.color = WHITE;
 
-      if (driver.video_poke->set_osd_msg)
+      if (driver.video_poke && driver.video_poke->set_osd_msg)
          driver.video_poke->set_osd_msg(driver.video_data, msg, &font_parms);
    }
 
@@ -234,7 +234,7 @@ static void rmenu_render(void *data)
    font_parms.scale = FONT_SIZE_NORMAL;
    font_parms.color = WHITE;
 
-   if (driver.video_poke->set_osd_msg)
+   if (driver.video_poke && driver.video_poke->set_osd_msg)
       driver.video_poke->set_osd_msg(driver.video_data, title_buf, &font_parms);
 
    char title_msg[64];
@@ -257,7 +257,7 @@ static void rmenu_render(void *data)
 
    snprintf(title_msg, sizeof(title_msg), "%s - %s %s", PACKAGE_VERSION, core_name, core_version);
 
-   if (driver.video_poke->set_osd_msg)
+   if (driver.video_poke && driver.video_poke->set_osd_msg)
       driver.video_poke->set_osd_msg(driver.video_data, title_msg, &font_parms);
 
    size_t i, j;
@@ -372,12 +372,12 @@ static void rmenu_render(void *data)
       font_parms.scale = FONT_SIZE_NORMAL;
       font_parms.color = WHITE;
 
-      if (driver.video_poke->set_osd_msg)
+      if (driver.video_poke && driver.video_poke->set_osd_msg)
          driver.video_poke->set_osd_msg(driver.video_data, message, &font_parms);
 
       font_parms.x = POSITION_EDGE_CENTER + POSITION_OFFSET;
 
-      if (driver.video_poke->set_osd_msg)
+      if (driver.video_poke && driver.video_poke->set_osd_msg)
          driver.video_poke->set_osd_msg(driver.video_data, type_str_buf, &font_parms);
    }
 }
