@@ -17,11 +17,7 @@ local int gz_skip OF((gz_statep, z_off64_t));
    state->fd, and update state->eof, state->err, and state->msg as appropriate.
    This function needs to loop on read(), since read() is not guaranteed to
    read the number of bytes requested, depending on the type of descriptor. */
-local int gz_load(state, buf, len, have)
-    gz_statep state;
-    unsigned char *buf;
-    unsigned len;
-    unsigned *have;
+local int gz_load(gz_statep state, unsigned char *buf, unsigned len, unsigned *have)
 {
     int ret;
 
@@ -48,8 +44,7 @@ local int gz_load(state, buf, len, have)
    If strm->avail_in != 0, then the current data is moved to the beginning of
    the input buffer, and then the remainder of the buffer is loaded with the
    available data from the input file. */
-local int gz_avail(state)
-    gz_statep state;
+local int gz_avail(gz_statep state)
 {
     unsigned got;
     z_streamp strm = &(state->strm);
@@ -83,8 +78,7 @@ local int gz_avail(state)
    case, all further file reads will be directly to either the output buffer or
    a user buffer.  If decompressing, the inflate state will be initialized.
    gz_look() will return 0 on success or -1 on failure. */
-local int gz_look(state)
-    gz_statep state;
+local int gz_look(gz_statep state)
 {
     z_streamp strm = &(state->strm);
 
@@ -169,8 +163,7 @@ local int gz_look(state)
    data.  If the gzip stream completes, state->how is reset to LOOK to look for
    the next gzip stream or raw data, once state->x.have is depleted.  Returns 0
    on success, -1 on failure. */
-local int gz_decomp(state)
-    gz_statep state;
+local int gz_decomp(gz_statep state)
 {
     int ret = Z_OK;
     unsigned had;
@@ -223,8 +216,7 @@ local int gz_decomp(state)
    looked for to determine whether to copy or decompress.  Returns -1 on error,
    otherwise 0.  gz_fetch() will leave state->how as COPY or GZIP unless the
    end of the input file has been reached and all data has been processed.  */
-local int gz_fetch(state)
-    gz_statep state;
+local int gz_fetch(gz_statep state)
 {
     z_streamp strm = &(state->strm);
 
@@ -253,9 +245,7 @@ local int gz_fetch(state)
 }
 
 /* Skip len uncompressed bytes of output.  Return -1 on error, 0 on success. */
-local int gz_skip(state, len)
-    gz_statep state;
-    z_off64_t len;
+local int gz_skip(gz_statep state, z_off64_t len)
 {
     unsigned n;
 
