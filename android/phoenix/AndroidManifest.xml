@@ -1,7 +1,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.retroarch"
-    android:versionCode="26"
-    android:versionName="1.0.0.0" >
+    android:versionCode="29"
+    android:versionName="1.0.0.1" >
     <uses-feature android:glEsVersion="0x00020000" />
     <uses-feature android:name="android.hardware.touchscreen" android:required="false"/>
     <uses-sdk
