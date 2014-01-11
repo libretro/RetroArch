@@ -223,7 +223,7 @@ int ZEXPORT gzwrite(gzFile file, voidpc buf, unsigned len)
 
         /* directly compress user buffer to file */
         strm->avail_in = len;
-        strm->next_in = (z_const Bytef *)buf;
+        strm->next_in = (Bytef *)buf;
         state->x.pos += len;
         if (gz_comp(state, Z_NO_FLUSH) == -1)
             return 0;

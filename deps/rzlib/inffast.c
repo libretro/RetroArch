@@ -67,8 +67,8 @@
 void ZLIB_INTERNAL inflate_fast(z_streamp strm, unsigned start)
 {
     struct inflate_state FAR *state;
-    z_const unsigned char FAR *in;      /* local strm->next_in */
-    z_const unsigned char FAR *last;    /* have enough input while in < last */
+    unsigned char FAR *in;      /* local strm->next_in */
+    unsigned char FAR *last;    /* have enough input while in < last */
     unsigned char FAR *out;     /* local strm->next_out */
     unsigned char FAR *beg;     /* inflate()'s initial strm->next_out */
     unsigned char FAR *end;     /* while out < end, enough space available */

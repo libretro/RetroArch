@@ -587,7 +587,7 @@ local int updatewindow(z_streamp strm, const Bytef *end, unsigned copy)
 int ZEXPORT inflate(z_streamp strm, int flush)
 {
     struct inflate_state FAR *state;
-    z_const unsigned char FAR *next;    /* next input */
+    unsigned char FAR *next;    /* next input */
     unsigned char FAR *put;     /* next output */
     unsigned have, left;        /* available input and output */
     unsigned long hold;         /* bit buffer */

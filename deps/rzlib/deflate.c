@@ -310,7 +310,7 @@ int ZEXPORT deflateSetDictionary (z_streamp strm, const Bytef *dictionary, uInt 
     uInt str, n;
     int wrap;
     unsigned avail;
-    z_const unsigned char *next;
+    unsigned char *next;
 
     if (strm == Z_NULL || strm->state == Z_NULL || dictionary == Z_NULL)
         return Z_STREAM_ERROR;
@@ -340,7 +340,7 @@ int ZEXPORT deflateSetDictionary (z_streamp strm, const Bytef *dictionary, uInt 
     avail = strm->avail_in;
     next = strm->next_in;
     strm->avail_in = dictLength;
-    strm->next_in = (z_const Bytef *)dictionary;
+    strm->next_in = (Bytef *)dictionary;
     fill_window(s);
     while (s->lookahead >= MIN_MATCH) {
         str = s->strstart;
