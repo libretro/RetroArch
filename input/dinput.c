@@ -110,14 +110,27 @@ static void *dinput_init(void)
 
 #ifdef __cplusplus
    if (FAILED(IDirectInput8_CreateDevice(g_ctx, GUID_SysKeyboard, &di->keyboard, NULL)))
+   {
+      RARCH_ERR("Failed to create keyboard device.\n");
       goto error;
+   }
+
    if (FAILED(IDirectInput8_CreateDevice(g_ctx, GUID_SysMouse, &di->mouse, NULL)))
+   {
+      RARCH_ERR("Failed to create mouse device.\n");
       goto error;
+   }
 #else
    if (FAILED(IDirectInput8_CreateDevice(g_ctx, &GUID_SysKeyboard, &di->keyboard, NULL)))
+   {
+      RARCH_ERR("Failed to create keyboard device.\n");
       goto error;
+   }
    if (FAILED(IDirectInput8_CreateDevice(g_ctx, &GUID_SysMouse, &di->mouse, NULL)))
+   {
+      RARCH_ERR("Failed to create mouse device.\n");
       goto error;
+   }
 #endif
 
    IDirectInputDevice8_SetDataFormat(di->keyboard, &c_dfDIKeyboard);
@@ -136,6 +149,7 @@ static void *dinput_init(void)
    return di;
 
 error:
+   RARCH_ERR("Failed to start DirectInput driver.\n");
    dinput_destroy_context();
    free(di);
    return NULL;
