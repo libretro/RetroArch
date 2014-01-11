@@ -51,7 +51,7 @@ JOBJ := conf/config_file.o \
 	input/dinput.o \
 	input/winxinput_joypad.o
 
-HEADERS = $(wildcard */*.h) $(wildcard *.h)
+HEADERS = $(wildcard */*/*.h) $(wildcard */*.h) $(wildcard *.h)
 
 CC = gcc
 CXX = g++

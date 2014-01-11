@@ -55,7 +55,7 @@ RETROLAUNCH_OBJ = tools/retrolaunch/main.o \
 	conf/config_file.o \
 	settings.o
 
-HEADERS = $(wildcard */*.h) $(wildcard *.h)
+HEADERS = $(wildcard */*/*.h) $(wildcard */*.h) $(wildcard *.h)
 
 ifeq ($(findstring Haiku,$(OS)),)
    LIBS = -lm
