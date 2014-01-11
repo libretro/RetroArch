@@ -445,7 +445,11 @@ static void config_load_core_specific(void)
 {
    *g_extern.core_specific_config_path = '\0';
 
-   if (!*g_settings.libretro || g_extern.libretro_dummy)
+   if (!*g_settings.libretro
+#ifdef HAVE_DYNAMIC
+      || g_extern.libretro_dummy
+#endif
+      )
       return;
 
    if (*g_settings.rgui_config_directory)
