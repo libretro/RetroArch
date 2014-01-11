@@ -160,6 +160,13 @@
 #define MODE_COPY 1      /* copy input directly */
 #define MODE_GZIP 2      /* decompress a gzip stream */
 
+struct gzFile_s
+{
+    unsigned have;
+    unsigned char *next;
+    z_off64_t pos;
+};
+
 /* internal gzip file state data structure */
 typedef struct {
         /* exposed contents for gzgetc() macro */
