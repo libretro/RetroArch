@@ -515,7 +515,7 @@ int ZEXPORT gzsetparams(gzFile file, int level, int strategy)
 }
 
 /* -- see zlib.h -- */
-int ZEXPORT gzclose_w(gzFile file)
+int gzclose_w(gzFile file)
 {
     int ret = Z_OK;
     gz_statep state;

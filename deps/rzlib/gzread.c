@@ -544,7 +544,7 @@ int ZEXPORT gzdirect(gzFile file)
 }
 
 /* -- see zlib.h -- */
-int ZEXPORT gzclose_r(gzFile file)
+int gzclose_r(gzFile file)
 {
     int ret, err;
     gz_statep state;
