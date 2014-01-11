@@ -55,10 +55,10 @@ RETROLAUNCH_OBJ = tools/retrolaunch/main.o \
 	conf/config_file.o \
 	settings.o
 
-HEADERS = $(wildcard */*.h) $(wildcard *.h)
+HEADERS = $(wildcard */*/*.h) $(wildcard */*.h) $(wildcard *.h)
 
 ifeq ($(findstring Haiku,$(OS)),)
-	LIBS = -lm
+   LIBS = -lm
 endif
 
 DEFINES = -DHAVE_CONFIG_H -DHAVE_SCREENSHOTS -DRARCH_INTERNAL
@@ -92,7 +92,7 @@ endif
 
 ifeq ($(HAVE_RGUI), 1)
    OBJ += frontend/menu/menu_common.o frontend/menu/menu_settings.o frontend/menu/menu_context.o file_list.o frontend/menu/disp/rgui.o frontend/menu/history.o
-	DEFINES += -DHAVE_MENU
+   DEFINES += -DHAVE_MENU
 endif
 
 ifeq ($(HAVE_THREADS), 1)
@@ -158,8 +158,8 @@ ifeq ($(HAVE_AL), 1)
 endif
 
 ifeq ($(HAVE_V4L2),1)
-	OBJ += camera/video4linux2.o
-	DEFINES += -DHAVE_CAMERA -DHAVE_V4L2
+   OBJ += camera/video4linux2.o
+   DEFINES += -DHAVE_CAMERA -DHAVE_V4L2
 endif
 
 ifeq ($(HAVE_JACK),1)
@@ -196,7 +196,7 @@ ifeq ($(HAVE_SDL), 1)
 endif
 
 ifeq ($(HAVE_OMAP), 1)
-	OBJ += gfx/omap_gfx.o
+   OBJ += gfx/omap_gfx.o
 endif
 
 ifeq ($(HAVE_OPENGL), 1)
@@ -343,8 +343,8 @@ endif
 
 ifeq ($(HAVE_NEON),1)
    OBJ += audio/sinc_neon.o
-	# When compiled without this, tries to attempt to compile sinc lerp,
-	# which will error out
+   # When compiled without this, tries to attempt to compile sinc lerp,
+   # which will error out
    DEFINES += -DSINC_LOWER_QUALITY -DHAVE_NEON
 endif
 
@@ -389,6 +389,12 @@ ifeq ($(NOUNUSED_VARIABLE), yes)
    CFLAGS += -Wno-unused-variable
 endif
 
+GIT_VERSION := $(shell git rev-parse --short HEAD 2>/dev/null)
+ifneq ($(GIT_VERSION),)
+   DEFINES += -DHAVE_GIT_VERSION -DGIT_VERSION=\"$(GIT_VERSION)\"
+   OBJ += git_version.o
+endif
+
 
 all: $(TARGET) config.mk
 
@@ -416,19 +422,25 @@ tools/retrolaunch/retrolaunch: $(RETROLAUNCH_OBJ)
 	@$(if $(Q), $(shell echo echo CC $<),)
 	$(Q)$(CC) $(CFLAGS) $(DEFINES) -c -o $@ $<
 
-tools/linuxraw_joypad.o: input/linuxraw_joypad.c
+.FORCE:
+
+git_version.o: git_version.c .FORCE
+	@$(if $(Q), $(shell echo echo CC $<),)
+	$(Q)$(CC) $(CFLAGS) $(DEFINES) -c -o $@ $<
+
+tools/linuxraw_joypad.o: input/linuxraw_joypad.c $(HEADERS)
 	@$(if $(Q), $(shell echo echo CC $<),)
 	$(Q)$(CC) $(CFLAGS) $(DEFINES) -DIS_JOYCONFIG -c -o $@ $<
 
-tools/udev_joypad.o: input/udev_joypad.c
+tools/udev_joypad.o: input/udev_joypad.c $(HEADERS)
 	@$(if $(Q), $(shell echo echo CC $<),)
 	$(Q)$(CC) $(CFLAGS) $(DEFINES) -DIS_JOYCONFIG -c -o $@ $<
 
-tools/input_common_launch.o: input/input_common.c
+tools/input_common_launch.o: input/input_common.c $(HEADERS)
 	@$(if $(Q), $(shell echo echo CC $<),)
 	$(Q)$(CC) $(CFLAGS) $(DEFINES) -DIS_RETROLAUNCH -c -o $@ $<
 
-tools/input_common_joyconfig.o: input/input_common.c
+tools/input_common_joyconfig.o: input/input_common.c $(HEADERS)
 	@$(if $(Q), $(shell echo echo CC $<),)
 	$(Q)$(CC) $(CFLAGS) $(DEFINES) -DIS_JOYCONFIG -c -o $@ $<
 

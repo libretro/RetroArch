@@ -38,6 +38,7 @@
 #include "compat/posix_string.h"
 #include "input/keyboard_line.h"
 #include "input/input_common.h"
+#include "git_version.h"
 
 #ifdef _WIN32
 #ifdef _XBOX
@@ -751,8 +752,11 @@ static void print_compiler(FILE *file)
 static void print_help(void)
 {
    puts("===================================================================");
-   /* To get around error 'too many decimal points in number - expected ')' before numeric constant */
+#ifdef HAVE_GIT_VERSION
+   printf("RetroArch: Frontend for libretro -- v" PACKAGE_VERSION " -- %s --\n", rarch_git_version);
+#else
    puts("RetroArch: Frontend for libretro -- v" PACKAGE_VERSION " --");
+#endif
    print_compiler(stdout);
    puts("===================================================================");
    puts("Usage: retroarch [rom file] [options...]");
@@ -2985,6 +2989,10 @@ int rarch_main_init(int argc, char *argv[])
    {
       RARCH_LOG_OUTPUT("=== Build =======================================");
       print_compiler(stderr);
+      RARCH_LOG_OUTPUT("Version: %s\n", PACKAGE_VERSION);
+#ifdef HAVE_GIT_VERSION
+      RARCH_LOG_OUTPUT("Git: %s\n", rarch_git_version);
+#endif
       RARCH_LOG_OUTPUT("=================================================\n");
    }
 

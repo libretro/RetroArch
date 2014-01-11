@@ -51,6 +51,8 @@ JOBJ := conf/config_file.o \
 	input/dinput.o \
 	input/winxinput_joypad.o
 
+HEADERS = $(wildcard */*/*.h) $(wildcard */*.h) $(wildcard *.h)
+
 CC = gcc
 CXX = g++
 WINDRES = windres
@@ -264,25 +266,37 @@ else
    endif
 endif
 
+GIT_VERSION := $(shell git rev-parse --short HEAD 2>/dev/null)
+ifneq ($(GIT_VERSION),)
+   DEFINES += -DHAVE_GIT_VERSION -DGIT_VERSION=\"$(GIT_VERSION)\"
+   OBJ += git_version.o
+endif
+
 all: $(TARGET) $(JTARGET)
 
 $(TARGET): $(OBJ)
 	@$(if $(Q), $(shell echo echo LD $@),)
 	$(Q)$(CXX) -o $@ $(OBJ) $(LIBS) $(LDFLAGS) $(LDCXXFLAGS)
 
-%.o: %.c
+%.o: %.c $(HEADERS)
 	@$(if $(Q), $(shell echo echo CC $<),)
 	$(Q)$(CC) $(CFLAGS) $(DEFINES) -c -o $@ $<
 
-tools/input_common_joyconfig.o: input/input_common.c
+.FORCE:
+
+git_version.o: git_version.c .FORCE
+	@$(if $(Q), $(shell echo echo CC $<),)
+	$(Q)$(CC) $(CFLAGS) $(DEFINES) -c -o $@ $<
+
+tools/input_common_joyconfig.o: input/input_common.c $(HEADERS)
 	@$(if $(Q), $(shell echo echo CC $<),)
 	$(Q)$(CC) $(CFLAGS) $(DEFINES) -DIS_JOYCONFIG -c -o $@ $<
 
-%.o: %.cpp
+%.o: %.cpp $(HEADERS)
 	@$(if $(Q), $(shell echo echo CXX $<),)
 	$(Q)$(CXX) $(CXXFLAGS) $(DEFINES) -c -o $@ $<
 
-%.o: %.rc
+%.o: %.rc $(HEADERS)
 	@$(if $(Q), $(shell echo echo WINDRES $<),)
 	$(Q)$(WINDRES) -o $@ $<
 
