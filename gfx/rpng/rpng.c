@@ -30,11 +30,6 @@ static inline uint32_t crc32_calculate(const uint8_t *data, size_t length)
 }
 #endif
 
-// Decodes a subset of PNG standard.
-// Does not handle much outside 24/32-bit RGB(A) images.
-//
-// Missing: Adam7 interlace, 16 bpp, various color formats.
-
 #undef GOTO_END_ERROR
 #define GOTO_END_ERROR() do { \
    fprintf(stderr, "[RPNG]: Error in line %d.\n", __LINE__); \
