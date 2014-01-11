@@ -20,7 +20,15 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+#ifdef RARCH_INTERNAL
 #include "../../hash.h"
+#else
+static inline uint32_t crc32_calculate(const uint8_t *data, size_t length)
+{
+   return crc32(0, data, length);
+}
+#endif
 
 // Decodes a subset of PNG standard.
 // Does not handle much outside 24/32-bit RGB(A) images.
