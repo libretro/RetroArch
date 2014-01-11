@@ -389,7 +389,7 @@ ifeq ($(NOUNUSED_VARIABLE), yes)
    CFLAGS += -Wno-unused-variable
 endif
 
-GIT_VERSION := $(shell git rev-parse --short HEAD)
+GIT_VERSION := $(shell git rev-parse --short HEAD 2>/dev/null)
 ifneq ($(GIT_VERSION),)
    DEFINES += -DHAVE_GIT_VERSION -DGIT_VERSION=\"$(GIT_VERSION)\"
    OBJ += git_version.o
