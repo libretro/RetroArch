@@ -180,7 +180,7 @@ bool d3d_init_imports(void *data)
    tracker_info.info_elem = d3d->shader.variables;
 
 #ifdef HAVE_PYTHON
-   if (*shader.script_path)
+   if (*d3d->shader.script_path)
    {
       tracker_info.script = d3d->shader.script_path;
       tracker_info.script_is_file = true;
