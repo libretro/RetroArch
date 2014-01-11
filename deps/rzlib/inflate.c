@@ -91,6 +91,10 @@
 #  endif
 #endif
 
+#ifndef Z_TREES
+#define Z_TREES 6
+#endif
+
 /* function prototypes */
 local void fixedtables OF((struct inflate_state FAR *state));
 local int updatewindow OF((z_streamp strm, const unsigned char FAR *end,
