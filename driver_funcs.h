@@ -66,8 +66,8 @@ static inline bool input_key_pressed_func(int key)
 #endif
 
 #ifdef HAVE_COMMAND
-   if (!ret && driver.command)
-      ret = rarch_cmd_get(driver.command, key);
+   if (driver.command)
+      ret = ret || rarch_cmd_get(driver.command, key);
 #endif
 
    return ret;
