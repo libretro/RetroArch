@@ -37,11 +37,13 @@ static inline void RARCH_LOG_V(const char *tag, const char *fmt, va_list ap)
    OutputDebugStringA(buffer);
 }
 
-static inline void RARCH_LOG(const char *msg, ...)
+static inline void RARCH_LOG(const char *fmt, ...)
 {
+   char buffer[1024];
    va_list ap;
-   va_start(ap, msg);
-   RARCH_LOG_V(NULL, msg, ap);
+   va_start(ap, fmt);
+   wvsprintf(buffer, fmt, ap);
+   OutputDebugStringA(buffer);
    va_end(ap);
 }
 
@@ -70,11 +72,13 @@ static inline void RARCH_WARN_V(const char *tag, const char *fmt, va_list ap)
    OutputDebugStringA(buffer);
 }
 
-static inline void RARCH_WARN(const char *msg, ...)
+static inline void RARCH_WARN(const char *fmt, ...)
 {
+   char buffer[1024];
    va_list ap;
-   va_start(ap, msg);
-   RARCH_WARN_V(NULL, msg, ap);
+   va_start(ap, fmt);
+   wvsprintf(buffer, fmt, ap);
+   OutputDebugStringA(buffer);
    va_end(ap);
 }
 
@@ -89,11 +93,13 @@ static inline void RARCH_ERR_V(const char *tag, const char *fmt, ...)
    OutputDebugStringA(fmt);
 }
 
-static inline void RARCH_ERR(const char *msg, ...)
+static inline void RARCH_ERR(const char *fmt, ...)
 {
+   char buffer[1024];
    va_list ap;
-   va_start(ap, msg);
-   RARCH_ERR_V(NULL, msg, ap);
+   va_start(ap, fmt);
+   wvsprintf(buffer, fmt, ap);
+   OutputDebugStringA(buffer);
    va_end(ap);
 }
 
