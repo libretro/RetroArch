@@ -546,7 +546,7 @@ static void android_input_set_keybinds(void *data, unsigned device,
             strlcpy(g_settings.input.device_names[port], "iDroid x360",
                   sizeof(g_settings.input.device_names[port]));
 
-            android->dpad_emulation[port] = ANALOG_DPAD_NONE;
+            android->dpad_emulation[port] = ANALOG_DPAD_DUALANALOG;
             android->keycode_lut[AKEYCODE_DPAD_UP] |=  ((RETRO_DEVICE_ID_JOYPAD_UP+1)      << shift);
             android->keycode_lut[AKEYCODE_DPAD_DOWN] |=  ((RETRO_DEVICE_ID_JOYPAD_DOWN+1)      << shift);
             android->keycode_lut[AKEYCODE_DPAD_LEFT] |=  ((RETRO_DEVICE_ID_JOYPAD_LEFT+1)      << shift);
@@ -659,7 +659,7 @@ static void android_input_set_keybinds(void *data, unsigned device,
             strlcpy(g_settings.input.device_names[port], "MS Sidewinder",
                   sizeof(g_settings.input.device_names[port]));
 
-            android->dpad_emulation[port] = ANALOG_DPAD_DUALANALOG;
+            android->dpad_emulation[port] = ANALOG_DPAD_LSTICK;
             android->keycode_lut[AKEYCODE_BUTTON_R2] |= ((RETRO_DEVICE_ID_JOYPAD_SELECT+1) << shift);
             android->keycode_lut[AKEYCODE_BUTTON_L2] |= ((RETRO_DEVICE_ID_JOYPAD_START+1) << shift);
             android->keycode_lut[AKEYCODE_BUTTON_11] |= ((RETRO_DEVICE_ID_JOYPAD_L3+1) << shift);
