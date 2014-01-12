@@ -942,10 +942,7 @@ int menu_set_settings(void *data, unsigned setting, unsigned action)
          break;
       case RGUI_BROWSER_DIR_PATH:
          if (action == RGUI_ACTION_START)
-         {
             *g_settings.rgui_content_directory = '\0';
-            *rgui->base_path = '\0';
-         }
          break;
 #ifdef HAVE_SCREENSHOTS
       case RGUI_SCREENSHOT_DIR_PATH:

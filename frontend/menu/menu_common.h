@@ -309,7 +309,6 @@ typedef struct
    unsigned scroll_indices_size;
    unsigned scroll_accel;
 
-   char base_path[PATH_MAX];
    char default_glslp[PATH_MAX];
    char default_cgp[PATH_MAX];
 
