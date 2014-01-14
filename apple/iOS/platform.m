@@ -121,6 +121,10 @@ static void handle_touch_event(NSArray* touches)
    for(int i = 0; i != numTouches && g_current_input_data.touch_count < MAX_TOUCHES; i ++)
    {
       UITouch* touch = [touches objectAtIndex:i];
+      
+      if ([touch view] != [RAGameView get].view)
+         continue;
+
       const CGPoint coord = [touch locationInView:[touch view]];
 
       if ([touch phase] != UITouchPhaseEnded && [touch phase] != UITouchPhaseCancelled)
