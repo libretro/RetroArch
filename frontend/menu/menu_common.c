@@ -395,7 +395,6 @@ void menu_init(void)
       rarch_fail(1, "menu_init()");
    }
 
-   strlcpy(rgui->base_path, g_settings.rgui_content_directory, sizeof(rgui->base_path));
    rgui->menu_stack = (file_list_t*)calloc(1, sizeof(file_list_t));
    rgui->selection_buf = (file_list_t*)calloc(1, sizeof(file_list_t));
    file_list_push(rgui->menu_stack, "", RGUI_SETTINGS, 0);
@@ -821,7 +820,7 @@ static int menu_settings_iterate(void *data, unsigned action)
    else if (type == RGUI_SETTINGS_CONFIG)
       label = g_settings.rgui_config_directory;
    else if (type == RGUI_SETTINGS_DISK_APPEND)
-      label = rgui->base_path;
+      label = g_settings.rgui_content_directory;
 
    const char *dir = NULL;
    unsigned menu_type = 0;
@@ -862,7 +861,7 @@ static int menu_settings_iterate(void *data, unsigned action)
                && action == RGUI_ACTION_OK)
          {
             rgui->defer_core = type == RGUI_SETTINGS_OPEN_FILEBROWSER_DEFERRED_CORE;
-            file_list_push(rgui->menu_stack, rgui->base_path, RGUI_FILE_DIRECTORY, rgui->selection_ptr);
+            file_list_push(rgui->menu_stack, g_settings.rgui_content_directory, RGUI_FILE_DIRECTORY, rgui->selection_ptr);
             rgui->selection_ptr = 0;
             rgui->need_refresh = true;
          }
@@ -1239,7 +1238,6 @@ static int menu_iterate_func(void *data, unsigned action)
             else if (menu_type == RGUI_BROWSER_DIR_PATH)
             {
                strlcpy(g_settings.rgui_content_directory, dir, sizeof(g_settings.rgui_content_directory));
-               strlcpy(rgui->base_path, dir, sizeof(rgui->base_path));
                menu_flush_stack_type(rgui, RGUI_SETTINGS_PATH_OPTIONS);
             }
 #ifdef HAVE_SCREENSHOTS

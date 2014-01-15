@@ -29,7 +29,7 @@ ELF2DOL = $(DEVKITPPC)/bin/elf2dol$(EXE_EXT)
 DOL_TARGET := retroarch_wii.dol
 ELF_TARGET := retroarch_wii.elf
 
-INCLUDE := -I. -I$(DEVKITPRO)/libogc/include -I$(DEVKITPRO)/libogc/include/ogc
+INCLUDE := -I. -I$(DEVKITPRO)/libogc/include -I$(DEVKITPRO)/libogc/include/ogc -Ideps/rzlib
 LIBDIRS := -L$(DEVKITPRO)/libogc/lib/wii -L.
 
 MACHDEP := -DGEKKO -DHW_RVL -mrvl -mcpu=750 -meabi -mhard-float

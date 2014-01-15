@@ -2,7 +2,7 @@
 <app version="1">
   <name>RetroArch</name>
   <coder>Maister, Squarepusher, ToadKing</coder>
-  <version>1.0.0.0</version>
+  <version>1.0.0.1</version>
   <release_date>2012-2014</release_date>
   <short_description>Official Libretro client</short_description> 
   <long_description>A port of RetroArch to the GameCube/Wii.</long_description> 

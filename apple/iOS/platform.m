@@ -121,6 +121,10 @@ static void handle_touch_event(NSArray* touches)
    for(int i = 0; i != numTouches && g_current_input_data.touch_count < MAX_TOUCHES; i ++)
    {
       UITouch* touch = [touches objectAtIndex:i];
+      
+      if ([touch view] != [RAGameView get].view)
+         continue;
+
       const CGPoint coord = [touch locationInView:[touch view]];
 
       if ([touch phase] != UITouchPhaseEnded && [touch phase] != UITouchPhaseCancelled)
@@ -135,6 +139,8 @@ static void handle_touch_event(NSArray* touches)
 @interface UIEvent(iOS7Keyboard)
 @property(readonly, nonatomic) long long _keyCode;
 @property(readonly, nonatomic) _Bool _isKeyDown;
+@property(retain, nonatomic) NSString *_privateInput;
+@property(nonatomic) long long _modifierFlags;
 - (struct __IOHIDEvent { }*)_hidEvent;
 @end
 
@@ -150,9 +156,29 @@ static void handle_touch_event(NSArray* touches)
 // Keyboard handler for iOS 7
 - (id)_keyCommandForEvent:(UIEvent*)event
 {
-   // If the _hidEvent is null, [event _keyCode] will crash.
+   // This gets called twice with the same timestamp for each keypress, that's fine for polling
+   // but is bad for business with events.
+   static double last_time_stamp;
+   
+   if (last_time_stamp == [event timestamp])
+      return [super _keyCommandForEvent:event];
+   last_time_stamp = [event timestamp];
+   
+   // If the _hidEvent is null, [event _keyCode] will crash. (This happens with the on screen keyboard.)
    if ([event _hidEvent])
-      apple_input_keyboard_event([event _isKeyDown], [event _keyCode], 0, 0);
+   {
+      NSString* ch = [event _privateInput];
+      
+      if (!ch || [ch length] == 0)
+         apple_input_keyboard_event([event _isKeyDown], [event _keyCode], 0, [event _modifierFlags]);
+      else
+      {
+         apple_input_keyboard_event([event _isKeyDown], [event _keyCode], [ch characterAtIndex:0], [event _modifierFlags]);
+         
+         for (unsigned i = 1; i != [ch length]; i ++)
+            apple_input_keyboard_event([event _isKeyDown], 0, [ch characterAtIndex:i], [event _modifierFlags]);
+      }
+   }
 
    return [super _keyCommandForEvent:event];
 }

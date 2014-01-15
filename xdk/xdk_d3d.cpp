@@ -703,7 +703,7 @@ static bool texture_image_render(struct texture_image *out_img,
 extern bool menu_iterate_xui(void);
 #endif
 
-static inline void xdk_d3d_draw_texture(void *data)
+static void xdk_d3d_draw_texture(void *data)
 {
    xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)data;
 
@@ -908,12 +908,12 @@ NULL, NULL, NULL, 0);
 #endif
 
 #ifdef HAVE_MENU
-
-   if (d3d->rgui_texture_enable)
+   if (d3d && d3d->rgui_texture_enable)
       xdk_d3d_draw_texture(d3d);
 #endif
 
-   d3d->ctx_driver->update_window_title();
+   if (d3d && d3d->ctx_driver && d3d->ctx_driver->update_window_title)
+      d3d->ctx_driver->update_window_title();
 
    if (msg)
    {

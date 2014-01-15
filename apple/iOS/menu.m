@@ -1118,7 +1118,7 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
       result.textLabel.text = @"Slot";
       
       UISegmentedControl* accessory = [[UISegmentedControl alloc] initWithItems:@[@"0", @"1", @"2", @"3", @"4", @"5", @"6", @"7", @"8", @"9"]];
-      [accessory addTarget:self action:@selector(changed:) forControlEvents:UIControlEventValueChanged];
+      [accessory addTarget:[self class] action:@selector(changed:) forControlEvents:UIControlEventValueChanged];
       accessory.segmentedControlStyle = UISegmentedControlStyleBar;
       result.accessoryView = accessory;
    }
@@ -1128,7 +1128,7 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
    return result;
 }
 
-- (void)changed:(UISegmentedControl*)sender
++ (void)changed:(UISegmentedControl*)sender
 {
    g_extern.state_slot = sender.selectedSegmentIndex;
 }

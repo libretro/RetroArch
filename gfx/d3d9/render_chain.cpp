@@ -14,12 +14,7 @@
  */
 
 #include "render_chain.hpp"
-#include <utility>
-
-#include <stdexcept>
-#include <cstring>
-#include <iostream>
-#include <cstdio>
+#include <string.h>
 
 namespace Global
 {
@@ -136,9 +131,7 @@ bool RenderChain::set_pass_size(unsigned pass_index, unsigned width, unsigned he
          passes.back().info.pass->fbo.fp_fbo ? D3DFMT_A32B32G32R32F : D3DFMT_A8R8G8B8,
          D3DPOOL_DEFAULT,
          &pass.tex, NULL)))
-      {
          return false;
-      }
 
       dev->SetTexture(0, pass.tex);
       dev->SetSamplerState(0, D3DSAMP_ADDRESSU, D3DTADDRESS_BORDER);
@@ -167,18 +160,14 @@ bool RenderChain::add_pass(const LinkInfo &info)
                D3DPOOL_DEFAULT,
                &pass.vertex_buf,
                NULL)))
-   {
       return false;
-   }
 
    if (FAILED(dev->CreateTexture(info.tex_w, info.tex_h, 1,
                D3DUSAGE_RENDERTARGET,
                passes.back().info.pass->fbo.fp_fbo ? D3DFMT_A32B32G32R32F : D3DFMT_A8R8G8B8,
                D3DPOOL_DEFAULT,
                &pass.tex, NULL)))
-   {
       return false;
-   }
 
    dev->SetTexture(0, pass.tex);
    dev->SetSamplerState(0, D3DSAMP_ADDRESSU, D3DTADDRESS_BORDER);
@@ -214,9 +203,7 @@ bool RenderChain::add_lut(const std::string &id,
                NULL,
                NULL,
                &lut)))
-   {
       return false;
-   }
 
    dev->SetTexture(0, lut);
    dev->SetSamplerState(0, D3DSAMP_ADDRESSU, D3DTADDRESS_BORDER);
@@ -401,41 +388,41 @@ bool RenderChain::compile_shaders(CGprogram &fPrg, CGprogram &vPrg, const std::s
 {
    CGprofile vertex_profile = cgD3D9GetLatestVertexProfile();
    CGprofile fragment_profile = cgD3D9GetLatestPixelProfile();
-   RARCH_LOG("[D3D9 Cg]: Vertex profile: %s\n", cgGetProfileString(vertex_profile));
-   RARCH_LOG("[D3D9 Cg]: Fragment profile: %s\n", cgGetProfileString(fragment_profile));
+   RARCH_LOG("[D3D Cg]: Vertex profile: %s\n", cgGetProfileString(vertex_profile));
+   RARCH_LOG("[D3D Cg]: Fragment profile: %s\n", cgGetProfileString(fragment_profile));
    const char **fragment_opts = cgD3D9GetOptimalOptions(fragment_profile);
    const char **vertex_opts = cgD3D9GetOptimalOptions(vertex_profile);
 
    if (shader.length() > 0)
    {
-      RARCH_LOG("[D3D9 Cg]: Compiling shader: %s.\n", shader.c_str());
+      RARCH_LOG("[D3D Cg]: Compiling shader: %s.\n", shader.c_str());
       fPrg = cgCreateProgramFromFile(cgCtx, CG_SOURCE,
             shader.c_str(), fragment_profile, "main_fragment", fragment_opts);
 
       if (cgGetLastListing(cgCtx))
-         RARCH_ERR("[D3D9 Cg]: Fragment error:\n%s\n", cgGetLastListing(cgCtx));
+         RARCH_ERR("[D3D Cg]: Fragment error:\n%s\n", cgGetLastListing(cgCtx));
 
       vPrg = cgCreateProgramFromFile(cgCtx, CG_SOURCE,
             shader.c_str(), vertex_profile, "main_vertex", vertex_opts);
 
       if (cgGetLastListing(cgCtx))
-         RARCH_ERR("[D3D9 Cg]: Vertex error:\n%s\n", cgGetLastListing(cgCtx));
+         RARCH_ERR("[D3D Cg]: Vertex error:\n%s\n", cgGetLastListing(cgCtx));
    }
    else
    {
-      RARCH_LOG("[D3D9 Cg]: Compiling stock shader.\n");
+      RARCH_LOG("[D3D Cg]: Compiling stock shader.\n");
 
       fPrg = cgCreateProgram(cgCtx, CG_SOURCE, Global::stock_program,
             fragment_profile, "main_fragment", fragment_opts);
 
       if (cgGetLastListing(cgCtx))
-         RARCH_ERR("[D3D9 Cg]: Fragment error:\n%s\n", cgGetLastListing(cgCtx));
+         RARCH_ERR("[D3D Cg]: Fragment error:\n%s\n", cgGetLastListing(cgCtx));
 
       vPrg = cgCreateProgram(cgCtx, CG_SOURCE, Global::stock_program,
             vertex_profile, "main_vertex", vertex_opts);
 
       if (cgGetLastListing(cgCtx))
-         RARCH_ERR("[D3D9 Cg]: Vertex error:\n%s\n", cgGetLastListing(cgCtx));
+         RARCH_ERR("[D3D Cg]: Vertex error:\n%s\n", cgGetLastListing(cgCtx));
    }
 
    if (!fPrg || !vPrg)
@@ -448,8 +435,10 @@ bool RenderChain::compile_shaders(CGprogram &fPrg, CGprogram &vPrg, const std::s
 
 void RenderChain::set_shaders(CGprogram &fPrg, CGprogram &vPrg)
 {
+#ifdef HAVE_CG
    cgD3D9BindProgram(fPrg);
    cgD3D9BindProgram(vPrg);
+#endif
 }
 
 void RenderChain::set_vertices(Pass &pass,
@@ -510,7 +499,7 @@ void RenderChain::set_vertices(Pass &pass,
 
       void *verts;
       pass.vertex_buf->Lock(0, sizeof(vert), &verts, 0);
-      std::memcpy(verts, vert, sizeof(vert));
+      memcpy(verts, vert, sizeof(vert));
       pass.vertex_buf->Unlock();
    }
 
@@ -548,14 +537,11 @@ void RenderChain::set_cg_mvp(CGprogram &vPrg,
       cgD3D9SetUniformMatrix(cgpModelViewProj, &tmp);
 }
 
-template <class T>
-static void set_cg_param(CGprogram prog, const char *param,
-      const T& val)
-{
-   CGparameter cgp = cgGetNamedParameter(prog, param);
-   if (cgp)
-      cgD3D9SetUniform(cgp, &val);
-}
+#define set_cg_param(prog, param, val) do { \
+   CGparameter cgp = cgGetNamedParameter(prog, param); \
+   if (cgp) \
+      cgD3D9SetUniform(cgp, &val); \
+} while(0)
 
 void RenderChain::set_cg_params(Pass &pass,
             unsigned video_w, unsigned video_h,
@@ -967,7 +953,7 @@ static inline bool validate_param_name(const char *name)
    };
 
    for (unsigned i = 0; i < sizeof(illegal) / sizeof(illegal[0]); i++)
-      if (std::strstr(name, illegal[i]) == name)
+      if (strstr(name, illegal[i]) == name)
          return false;
 
    return true;

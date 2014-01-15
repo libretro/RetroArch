@@ -20,11 +20,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#ifdef WANT_MINIZ
-#include "deps/miniz/zlib.h"
-#else
 #include <zlib.h>
-#endif
 
 #include "hash.h"
 

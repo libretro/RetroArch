@@ -335,6 +335,16 @@ static void apple_input_set_keybinds(void *data, unsigned device, unsigned port,
       }
    }
 #endif
+
+   if (keybind_action & (1ULL << KEYBINDS_ACTION_GET_BIND_LABEL))
+   {
+      struct platform_bind *ret = (struct platform_bind*)data;
+
+      if (ret->joykey == NO_BTN)
+         strlcpy(ret->desc, "No button", sizeof(ret->desc));
+      else
+         snprintf(ret->desc, sizeof(ret->desc), "Button %llu", ret->joykey);
+   }
 }
 
 static bool apple_input_set_rumble(void *data, unsigned port, enum retro_rumble_effect effect, uint16_t strength)
@@ -355,6 +365,11 @@ static uint64_t apple_input_get_capabilities(void *data)
    return caps;
 }
 
+const rarch_joypad_driver_t *apple_get_joypad_driver(void *data)
+{
+    return g_joydriver;
+}
+
 const input_driver_t input_apple = {
    apple_input_init,
    apple_input_poll,
@@ -367,5 +382,5 @@ const input_driver_t input_apple = {
    "apple_input",
    NULL,
    apple_input_set_rumble,
-   NULL
+   apple_get_joypad_driver
 };

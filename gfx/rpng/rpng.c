@@ -15,21 +15,20 @@
 
 #include "rpng.h"
 
-#ifdef WANT_MINIZ
-#include "../../deps/miniz/zlib.h"
-#else
 #include <zlib.h>
-#endif
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "../../hash.h"
 
-// Decodes a subset of PNG standard.
-// Does not handle much outside 24/32-bit RGB(A) images.
-//
-// Missing: Adam7 interlace, 16 bpp, various color formats.
+#ifdef RARCH_INTERNAL
+#include "../../hash.h"
+#else
+static inline uint32_t crc32_calculate(const uint8_t *data, size_t length)
+{
+   return crc32(0, data, length);
+}
+#endif
 
 #undef GOTO_END_ERROR
 #define GOTO_END_ERROR() do { \

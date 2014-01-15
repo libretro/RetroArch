@@ -102,7 +102,10 @@ static bool dinput_init_context(void)
 static void *dinput_init(void)
 {
    if (!dinput_init_context())
+   {
+      RARCH_ERR("Failed to start DirectInput driver.\n");
       return NULL;
+   }
 
    struct dinput_input *di = (struct dinput_input*)calloc(1, sizeof(*di));
    if (!di)
@@ -110,35 +113,49 @@ static void *dinput_init(void)
 
 #ifdef __cplusplus
    if (FAILED(IDirectInput8_CreateDevice(g_ctx, GUID_SysKeyboard, &di->keyboard, NULL)))
-      goto error;
+   {
+      RARCH_ERR("Failed to create keyboard device.\n");
+      di->keyboard = NULL;
+   }
+
    if (FAILED(IDirectInput8_CreateDevice(g_ctx, GUID_SysMouse, &di->mouse, NULL)))
-      goto error;
+   {
+      RARCH_ERR("Failed to create mouse device.\n");
+      di->mouse = NULL;
+   }
 #else
    if (FAILED(IDirectInput8_CreateDevice(g_ctx, &GUID_SysKeyboard, &di->keyboard, NULL)))
-      goto error;
+   {
+      RARCH_ERR("Failed to create keyboard device.\n");
+      di->keyboard = NULL;
+   }
    if (FAILED(IDirectInput8_CreateDevice(g_ctx, &GUID_SysMouse, &di->mouse, NULL)))
-      goto error;
+   {
+      RARCH_ERR("Failed to create mouse device.\n");
+      di->mouse = NULL;
+   }
 #endif
 
-   IDirectInputDevice8_SetDataFormat(di->keyboard, &c_dfDIKeyboard);
-   IDirectInputDevice8_SetCooperativeLevel(di->keyboard,
-         (HWND)driver.video_window, DISCL_NONEXCLUSIVE | DISCL_FOREGROUND);
-   IDirectInputDevice8_Acquire(di->keyboard);
+   if (di->keyboard)
+   {
+      IDirectInputDevice8_SetDataFormat(di->keyboard, &c_dfDIKeyboard);
+      IDirectInputDevice8_SetCooperativeLevel(di->keyboard,
+            (HWND)driver.video_window, DISCL_NONEXCLUSIVE | DISCL_FOREGROUND);
+      IDirectInputDevice8_Acquire(di->keyboard);
+   }
 
-   IDirectInputDevice8_SetDataFormat(di->mouse, &c_dfDIMouse2);
-   IDirectInputDevice8_SetCooperativeLevel(di->mouse, (HWND)driver.video_window,
-         DISCL_NONEXCLUSIVE | DISCL_FOREGROUND);
-   IDirectInputDevice8_Acquire(di->mouse);
+   if (di->mouse)
+   {
+      IDirectInputDevice8_SetDataFormat(di->mouse, &c_dfDIMouse2);
+      IDirectInputDevice8_SetCooperativeLevel(di->mouse, (HWND)driver.video_window,
+            DISCL_NONEXCLUSIVE | DISCL_FOREGROUND);
+      IDirectInputDevice8_Acquire(di->mouse);
+   }
 
    input_init_keyboard_lut(rarch_key_map_dinput);
    di->joypad = input_joypad_init_driver(g_settings.input.joypad_driver);
 
    return di;
-
-error:
-   dinput_destroy_context();
-   free(di);
-   return NULL;
 }
 
 static void dinput_poll(void *data)
@@ -146,34 +163,41 @@ static void dinput_poll(void *data)
    struct dinput_input *di = (struct dinput_input*)data;
 
    memset(di->state, 0, sizeof(di->state));
-   if (FAILED(IDirectInputDevice8_GetDeviceState(di->keyboard, sizeof(di->state), di->state)))
+   if (di->keyboard)
    {
-      IDirectInputDevice8_Acquire(di->keyboard);
       if (FAILED(IDirectInputDevice8_GetDeviceState(di->keyboard, sizeof(di->state), di->state)))
-         memset(di->state, 0, sizeof(di->state));
+      {
+         IDirectInputDevice8_Acquire(di->keyboard);
+         if (FAILED(IDirectInputDevice8_GetDeviceState(di->keyboard, sizeof(di->state), di->state)))
+            memset(di->state, 0, sizeof(di->state));
+      }
    }
 
-   DIMOUSESTATE2 mouse_state;
-   memset(&mouse_state, 0, sizeof(mouse_state));
-   if (FAILED(IDirectInputDevice8_GetDeviceState(di->mouse, sizeof(mouse_state), &mouse_state)))
+   if (di->mouse)
    {
-      IDirectInputDevice8_Acquire(di->mouse);
+      DIMOUSESTATE2 mouse_state;
+      memset(&mouse_state, 0, sizeof(mouse_state));
+
       if (FAILED(IDirectInputDevice8_GetDeviceState(di->mouse, sizeof(mouse_state), &mouse_state)))
-         memset(&mouse_state, 0, sizeof(mouse_state));
+      {
+         IDirectInputDevice8_Acquire(di->mouse);
+         if (FAILED(IDirectInputDevice8_GetDeviceState(di->mouse, sizeof(mouse_state), &mouse_state)))
+            memset(&mouse_state, 0, sizeof(mouse_state));
+      }
+
+      di->mouse_rel_x = mouse_state.lX;
+      di->mouse_rel_y = mouse_state.lY;
+      di->mouse_l = mouse_state.rgbButtons[0];
+      di->mouse_r = mouse_state.rgbButtons[1];
+      di->mouse_m = mouse_state.rgbButtons[2];
+
+      // No simple way to get absolute coordinates for RETRO_DEVICE_POINTER. Just use Win32 APIs.
+      POINT point = {0};
+      GetCursorPos(&point);
+      ScreenToClient((HWND)driver.video_window, &point);
+      di->mouse_x = point.x;
+      di->mouse_y = point.y;
    }
-
-   di->mouse_rel_x = mouse_state.lX;
-   di->mouse_rel_y = mouse_state.lY;
-   di->mouse_l = mouse_state.rgbButtons[0];
-   di->mouse_r = mouse_state.rgbButtons[1];
-   di->mouse_m = mouse_state.rgbButtons[2];
-
-   // No simple way to get absolute coordinates for RETRO_DEVICE_POINTER. Just use Win32 APIs.
-   POINT point = {0};
-   GetCursorPos(&point);
-   ScreenToClient((HWND)driver.video_window, &point);
-   di->mouse_x = point.x;
-   di->mouse_y = point.y;
 
    input_joypad_poll(di->joypad);
 }

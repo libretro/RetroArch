@@ -9,26 +9,30 @@ The OMAP display hardware provides free scaling to native screen dimensions, usi
 The DSS is the underlying layer, which manages the OMAP display hardware. Through DSS we can setup which framebuffer device outputs to which display device. For example there are three framebuffer devices (fb0, fb1 and fb2) on the Pandaboard, each one connected to a 'overlay' device. The DSS controls are exported in '/sys/devices/platform/omapdss'. Here we configure fb1 to connect to our HDMI display connected to the board.
 
 First we disable the overlay we want to use and the two displays:
-<tt>echo -n 0 > overlay1/enabled
-echo -n 0 > display0/enabled
-echo -n 0 > display1/enabled</tt>
+
+    echo -n 0 > overlay1/enabled
+    echo -n 0 > display0/enabled
+    echo -n 0 > display1/enabled
 
 Check that 'manager1' (name = tv) is connected to HDMI:
-<tt>cat manager1/display:
-hdmi</tt>
+
+    cat manager1/display:
+    hdmi
 
 The free scaling property mentioned above is not available on all overlays. Here 'overlay1' supports zero-cost scaling.
 
 Now we connect 'overlay1' to 'manager1':
-<tt>echo -n tv > overlay1/manager</tt>
+
+    echo -n tv > overlay1/manager
 
 Last but not least enable the overlay and the HDMI display:
-<tt>echo -n 1 > overlay1/enabled
-echo -n 1 > display0/enabled</tt>
+
+    echo -n 1 > overlay1/enabled
+    echo -n 1 > display0/enabled
 
 ## Configuration
 
 The video driver name is 'omap'. It honors the following video settings:
 
-   - video_monitor_index (selects the fb device used, index = 1 -> fb0, index = 2 -> fb1, etc.)
-   - video_vsync (use to disable vsync, however this is not recommended)
+   - video\_monitor\_index (selects the fb device used, index = 1 -> fb0, index = 2 -> fb1, etc.)
+   - video\_vsync (use to disable vsync, however this is not recommended)

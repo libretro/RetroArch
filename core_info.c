@@ -211,7 +211,7 @@ bool core_info_list_get_display_name(core_info_list_t *core_info_list, const cha
    for (i = 0; i < core_info_list->count; i++)
    {
       const core_info_t *info = &core_info_list->list[i];
-      if (!strcmp(info->path, path) && info->display_name)
+      if (!strcmp(path_basename(info->path), path_basename(path)) && info->display_name)
       {
          strlcpy(buf, info->display_name, size);
          return true;

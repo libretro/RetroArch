@@ -372,6 +372,8 @@ void config_set_defaults(void)
    *g_settings.input.autoconfig_dir = '\0';
    *g_settings.input.overlay = '\0';
    *g_settings.content_directory = '\0';
+   *g_settings.video.shader_path = '\0';
+   *g_settings.video.shader_dir = '\0';
 #ifdef HAVE_MENU
    *g_settings.rgui_content_directory = '\0';
    *g_settings.rgui_config_directory = '\0';
@@ -445,7 +447,11 @@ static void config_load_core_specific(void)
 {
    *g_extern.core_specific_config_path = '\0';
 
-   if (!*g_settings.libretro || g_extern.libretro_dummy)
+   if (!*g_settings.libretro
+#ifdef HAVE_DYNAMIC
+      || g_extern.libretro_dummy
+#endif
+      )
       return;
 
    if (*g_settings.rgui_config_directory)

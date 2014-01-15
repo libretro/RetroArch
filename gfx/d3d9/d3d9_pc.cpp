@@ -19,7 +19,6 @@
 #include "render_chain.hpp"
 #include "../../file.h"
 #include "../context/win32_common.h"
-#include <algorithm>
 
 #ifdef _MSC_VER
 #ifndef _XBOX
@@ -123,19 +122,23 @@ void d3d_recompute_pass_sizes(void *data)
    }
 }
 
-#ifdef HAVE_CG
 bool d3d_init_shader(void *data)
 {
    D3DVideo *d3d = reinterpret_cast<D3DVideo*>(data);
+   (void)d3d;
+#ifdef HAVE_CG
    d3d->cgCtx = cgCreateContext();
    if (d3d->cgCtx == NULL)
       return false;
+#endif
 
-   RARCH_LOG("[D3D9 Cg]: Created context.\n");
+   RARCH_LOG("[D3D]: Created shader context.\n");
 
+#ifdef HAVE_CG
    HRESULT ret = cgD3D9SetDevice(d3d->dev);
    if (FAILED(ret))
       return false;
+#endif
 
    return true;
 }
@@ -143,6 +146,8 @@ bool d3d_init_shader(void *data)
 void d3d_deinit_shader(void *data)
 {
    D3DVideo *d3d = reinterpret_cast<D3DVideo*>(data);
+   (void)d3d;
+#ifdef HAVE_CG
    if (!d3d->cgCtx)
       return;
 
@@ -150,6 +155,7 @@ void d3d_deinit_shader(void *data)
    cgD3D9SetDevice(NULL);
    cgDestroyContext(d3d->cgCtx);
    d3d->cgCtx = NULL;
+#endif
 }
 
 bool d3d_init_singlepass(void *data)
@@ -165,7 +171,6 @@ bool d3d_init_singlepass(void *data)
 
    return true;
 }
-#endif
 
 bool d3d_init_imports(void *data)
 {
@@ -180,7 +185,7 @@ bool d3d_init_imports(void *data)
    tracker_info.info_elem = d3d->shader.variables;
 
 #ifdef HAVE_PYTHON
-   if (*shader.script_path)
+   if (*d3d->shader.script_path)
    {
       tracker_info.script = d3d->shader.script_path;
       tracker_info.script_is_file = true;
@@ -440,6 +445,7 @@ void d3d_make_d3dpp(void *data, const video_info_t *info, D3DPRESENT_PARAMETERS 
 bool d3d_alive_func(void *data)
 {
    D3DVideo *d3d = reinterpret_cast<D3DVideo*>(data);
+#ifndef _XBOX
    MSG msg;
 
    while (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE))
@@ -447,5 +453,6 @@ bool d3d_alive_func(void *data)
       TranslateMessage(&msg);
       DispatchMessage(&msg);
    }
+#endif
    return true;
 }

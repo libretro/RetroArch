@@ -165,14 +165,59 @@
     <ClCompile Include="..\..\input\overlay.c">
       <Filter>gfx</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\deps\miniz\miniz.c">
-      <Filter>deps\miniz</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\gfx\d3d9\d3d9_pc.cpp">
       <Filter>gfx\d3d9</Filter>
     </ClCompile>
     <ClCompile Include="..\..\gfx\d3d9\d3d.cpp">
       <Filter>gfx\d3d9</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\deps\rzlib\zutil.c">
+      <Filter>deps\zlib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\deps\rzlib\adler32.c">
+      <Filter>deps\zlib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\deps\rzlib\compress.c">
+      <Filter>deps\zlib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\deps\rzlib\crc32.c">
+      <Filter>deps\zlib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\deps\rzlib\deflate.c">
+      <Filter>deps\zlib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\deps\rzlib\gzclose.c">
+      <Filter>deps\zlib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\deps\rzlib\gzlib.c">
+      <Filter>deps\zlib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\deps\rzlib\gzread.c">
+      <Filter>deps\zlib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\deps\rzlib\gzwrite.c">
+      <Filter>deps\zlib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\deps\rzlib\inffast.c">
+      <Filter>deps\zlib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\deps\rzlib\inflate.c">
+      <Filter>deps\zlib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\deps\rzlib\inftrees.c">
+      <Filter>deps\zlib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\deps\rzlib\ioapi.c">
+      <Filter>deps\zlib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\deps\rzlib\trees.c">
+      <Filter>deps\zlib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\deps\rzlib\uncompr.c">
+      <Filter>deps\zlib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\deps\rzlib\unzip.c">
+      <Filter>deps\zlib</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -233,7 +278,7 @@
     <Filter Include="deps">
       <UniqueIdentifier>{d1a36d53-e5e6-46a5-b5b4-b43794342cd1}</UniqueIdentifier>
     </Filter>
-    <Filter Include="deps\miniz">
+    <Filter Include="deps\zlib">
       <UniqueIdentifier>{cf7c2fb9-ca3c-468e-af4f-74c652b3e5fe}</UniqueIdentifier>
     </Filter>
   </ItemGroup>

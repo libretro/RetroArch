@@ -44,11 +44,10 @@ static void* const associated_core_key = (void*)&associated_core_key;
          apple_input_keyboard_event(event_type == NSKeyDown, [event keyCode], 0, 0);
       else
       {
-         if ([ch length] >= 1)
-            apple_input_keyboard_event(event_type == NSKeyDown, [event keyCode], [ch characterAtIndex:0], [event modifierFlags]);
+         apple_input_keyboard_event(event_type == NSKeyDown, [event keyCode], [ch characterAtIndex:0], [event modifierFlags]);
          
          for (unsigned i = 1; i != [ch length]; i ++)
-            apple_input_keyboard_event(event_type == NSKeyDown, 0, [ch characterAtIndex:0], [event modifierFlags]);
+            apple_input_keyboard_event(event_type == NSKeyDown, 0, [ch characterAtIndex:i], [event modifierFlags]);
       }
    }
    else if (event_type == NSFlagsChanged)
