@@ -14,6 +14,7 @@
  */
 
 #include "render_chain.hpp"
+#include <string.h>
 
 namespace Global
 {
@@ -498,7 +499,7 @@ void RenderChain::set_vertices(Pass &pass,
 
       void *verts;
       pass.vertex_buf->Lock(0, sizeof(vert), &verts, 0);
-      std::memcpy(verts, vert, sizeof(vert));
+      memcpy(verts, vert, sizeof(vert));
       pass.vertex_buf->Unlock();
    }
 
@@ -536,17 +537,17 @@ void RenderChain::set_cg_mvp(CGprogram &vPrg,
       cgD3D9SetUniformMatrix(cgpModelViewProj, &tmp);
 }
 
-#define set_cg_param(prog, param, val) \
-   cgp = cgGetNamedParameter(prog, param); \
+#define set_cg_param(prog, param, val) do { \
+   CGparameter cgp = cgGetNamedParameter(prog, param); \
    if (cgp) \
-      cgD3D9SetUniform(cgp, &val);
+      cgD3D9SetUniform(cgp, &val); \
+} while(0)
 
 void RenderChain::set_cg_params(Pass &pass,
             unsigned video_w, unsigned video_h,
             unsigned tex_w, unsigned tex_h,
             unsigned viewport_w, unsigned viewport_h)
 {
-   CGparameter cgp;
    D3DXVECTOR2 video_size;
    video_size.x = video_w;
    video_size.y = video_h;
@@ -717,7 +718,6 @@ void RenderChain::log_info(const LinkInfo &info)
 
 void RenderChain::bind_orig(Pass &pass)
 {
-   CGparameter cgp;
    D3DXVECTOR2 video_size;
    video_size.x = passes[0].last_width;
    video_size.y = passes[0].last_height;
@@ -782,7 +782,6 @@ void RenderChain::bind_prev(Pass &pass)
       snprintf(attr_tex_size,   sizeof(attr_tex_size),   "%s.texture_size", prev_names[i]);
       snprintf(attr_coord,      sizeof(attr_coord),      "%s.tex_coord",    prev_names[i]);
 
-      CGparameter cgp;
       D3DXVECTOR2 video_size;
       video_size.x = prev.last_width[(prev.ptr - (i + 1)) & TexturesMask];
       video_size.y = prev.last_height[(prev.ptr - (i + 1)) & TexturesMask];
@@ -829,7 +828,6 @@ void RenderChain::bind_pass(Pass &pass, unsigned pass_index)
 
    for (unsigned i = 1; i < pass_index - 1; i++)
    {
-      CGparameter cgp;
       char pass_base[64];
       snprintf(pass_base, sizeof(pass_base), "PASS%u.", i);
 
@@ -955,7 +953,7 @@ static inline bool validate_param_name(const char *name)
    };
 
    for (unsigned i = 0; i < sizeof(illegal) / sizeof(illegal[0]); i++)
-      if (std::strstr(name, illegal[i]) == name)
+      if (strstr(name, illegal[i]) == name)
          return false;
 
    return true;
@@ -1134,7 +1132,6 @@ void RenderChain::bind_tracker(Pass &pass, unsigned pass_index)
 
    for (unsigned i = 0; i < uniform_cnt; i++)
    {
-      CGparameter cgp;
       set_cg_param(pass.fPrg, uniform_info[i].id, uniform_info[i].value);
       set_cg_param(pass.vPrg, uniform_info[i].id, uniform_info[i].value);
    }
