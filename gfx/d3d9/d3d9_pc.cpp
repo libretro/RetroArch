@@ -123,19 +123,23 @@ void d3d_recompute_pass_sizes(void *data)
    }
 }
 
-#ifdef HAVE_CG
 bool d3d_init_shader(void *data)
 {
    D3DVideo *d3d = reinterpret_cast<D3DVideo*>(data);
+   (void)d3d;
+#ifdef HAVE_CG
    d3d->cgCtx = cgCreateContext();
    if (d3d->cgCtx == NULL)
       return false;
+#endif
 
-   RARCH_LOG("[D3D9 Cg]: Created context.\n");
+   RARCH_LOG("[D3D]: Created shader context.\n");
 
+#ifdef HAVE_CG
    HRESULT ret = cgD3D9SetDevice(d3d->dev);
    if (FAILED(ret))
       return false;
+#endif
 
    return true;
 }
@@ -143,6 +147,8 @@ bool d3d_init_shader(void *data)
 void d3d_deinit_shader(void *data)
 {
    D3DVideo *d3d = reinterpret_cast<D3DVideo*>(data);
+   (void)d3d;
+#ifdef HAVE_CG
    if (!d3d->cgCtx)
       return;
 
@@ -150,6 +156,7 @@ void d3d_deinit_shader(void *data)
    cgD3D9SetDevice(NULL);
    cgDestroyContext(d3d->cgCtx);
    d3d->cgCtx = NULL;
+#endif
 }
 
 bool d3d_init_singlepass(void *data)
@@ -165,7 +172,6 @@ bool d3d_init_singlepass(void *data)
 
    return true;
 }
-#endif
 
 bool d3d_init_imports(void *data)
 {
@@ -440,6 +446,7 @@ void d3d_make_d3dpp(void *data, const video_info_t *info, D3DPRESENT_PARAMETERS 
 bool d3d_alive_func(void *data)
 {
    D3DVideo *d3d = reinterpret_cast<D3DVideo*>(data);
+#ifndef _XBOX
    MSG msg;
 
    while (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE))
@@ -447,5 +454,6 @@ bool d3d_alive_func(void *data)
       TranslateMessage(&msg);
       DispatchMessage(&msg);
    }
+#endif
    return true;
 }
