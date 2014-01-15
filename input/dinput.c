@@ -473,6 +473,12 @@ bool dinput_handle_message(void *dinput, UINT message, WPARAM wParam, LPARAM lPa
          dinput_pointer_store_pos(pointer, lParam);
       return true;
    }
+   case WM_DEVICECHANGE:
+   {
+      di->joypad->destroy();
+      di->joypad = input_joypad_init_driver(g_settings.input.joypad_driver);
+      break;
+   }
    }
    return false;
 }
@@ -575,7 +581,7 @@ static void dinput_joypad_destroy(void)
       
       free(g_pads[i].joy_name);
       g_pads[i].joy_name = NULL;
-
+      *g_settings.input.device_names[i] = '\0';
    }
 
    g_joypad_cnt = 0;
