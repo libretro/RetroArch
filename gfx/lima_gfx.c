@@ -1,5 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2013 - Hans-Kristian Arntzen
+ *  Copyright (C) 2013-2014 - Daniel Mehrwald
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -11,7 +12,6 @@
  *
  *  You should have received a copy of the GNU General Public License along with RetroArch.
  *  If not, see <http://www.gnu.org/licenses/>.
- *  This file is rewritten from sdl video by AreaScout
  */
 
 #include <stdlib.h>
