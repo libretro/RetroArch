@@ -14,12 +14,6 @@
  */
 
 #include "render_chain.hpp"
-#include <utility>
-
-#include <stdexcept>
-#include <cstring>
-#include <iostream>
-#include <cstdio>
 
 namespace Global
 {
@@ -136,9 +130,7 @@ bool RenderChain::set_pass_size(unsigned pass_index, unsigned width, unsigned he
          passes.back().info.pass->fbo.fp_fbo ? D3DFMT_A32B32G32R32F : D3DFMT_A8R8G8B8,
          D3DPOOL_DEFAULT,
          &pass.tex, NULL)))
-      {
          return false;
-      }
 
       dev->SetTexture(0, pass.tex);
       dev->SetSamplerState(0, D3DSAMP_ADDRESSU, D3DTADDRESS_BORDER);
@@ -167,18 +159,14 @@ bool RenderChain::add_pass(const LinkInfo &info)
                D3DPOOL_DEFAULT,
                &pass.vertex_buf,
                NULL)))
-   {
       return false;
-   }
 
    if (FAILED(dev->CreateTexture(info.tex_w, info.tex_h, 1,
                D3DUSAGE_RENDERTARGET,
                passes.back().info.pass->fbo.fp_fbo ? D3DFMT_A32B32G32R32F : D3DFMT_A8R8G8B8,
                D3DPOOL_DEFAULT,
                &pass.tex, NULL)))
-   {
       return false;
-   }
 
    dev->SetTexture(0, pass.tex);
    dev->SetSamplerState(0, D3DSAMP_ADDRESSU, D3DTADDRESS_BORDER);
@@ -214,9 +202,7 @@ bool RenderChain::add_lut(const std::string &id,
                NULL,
                NULL,
                &lut)))
-   {
       return false;
-   }
 
    dev->SetTexture(0, lut);
    dev->SetSamplerState(0, D3DSAMP_ADDRESSU, D3DTADDRESS_BORDER);
@@ -401,41 +387,41 @@ bool RenderChain::compile_shaders(CGprogram &fPrg, CGprogram &vPrg, const std::s
 {
    CGprofile vertex_profile = cgD3D9GetLatestVertexProfile();
    CGprofile fragment_profile = cgD3D9GetLatestPixelProfile();
-   RARCH_LOG("[D3D9 Cg]: Vertex profile: %s\n", cgGetProfileString(vertex_profile));
-   RARCH_LOG("[D3D9 Cg]: Fragment profile: %s\n", cgGetProfileString(fragment_profile));
+   RARCH_LOG("[D3D Cg]: Vertex profile: %s\n", cgGetProfileString(vertex_profile));
+   RARCH_LOG("[D3D Cg]: Fragment profile: %s\n", cgGetProfileString(fragment_profile));
    const char **fragment_opts = cgD3D9GetOptimalOptions(fragment_profile);
    const char **vertex_opts = cgD3D9GetOptimalOptions(vertex_profile);
 
    if (shader.length() > 0)
    {
-      RARCH_LOG("[D3D9 Cg]: Compiling shader: %s.\n", shader.c_str());
+      RARCH_LOG("[D3D Cg]: Compiling shader: %s.\n", shader.c_str());
       fPrg = cgCreateProgramFromFile(cgCtx, CG_SOURCE,
             shader.c_str(), fragment_profile, "main_fragment", fragment_opts);
 
       if (cgGetLastListing(cgCtx))
-         RARCH_ERR("[D3D9 Cg]: Fragment error:\n%s\n", cgGetLastListing(cgCtx));
+         RARCH_ERR("[D3D Cg]: Fragment error:\n%s\n", cgGetLastListing(cgCtx));
 
       vPrg = cgCreateProgramFromFile(cgCtx, CG_SOURCE,
             shader.c_str(), vertex_profile, "main_vertex", vertex_opts);
 
       if (cgGetLastListing(cgCtx))
-         RARCH_ERR("[D3D9 Cg]: Vertex error:\n%s\n", cgGetLastListing(cgCtx));
+         RARCH_ERR("[D3D Cg]: Vertex error:\n%s\n", cgGetLastListing(cgCtx));
    }
    else
    {
-      RARCH_LOG("[D3D9 Cg]: Compiling stock shader.\n");
+      RARCH_LOG("[D3D Cg]: Compiling stock shader.\n");
 
       fPrg = cgCreateProgram(cgCtx, CG_SOURCE, Global::stock_program,
             fragment_profile, "main_fragment", fragment_opts);
 
       if (cgGetLastListing(cgCtx))
-         RARCH_ERR("[D3D9 Cg]: Fragment error:\n%s\n", cgGetLastListing(cgCtx));
+         RARCH_ERR("[D3D Cg]: Fragment error:\n%s\n", cgGetLastListing(cgCtx));
 
       vPrg = cgCreateProgram(cgCtx, CG_SOURCE, Global::stock_program,
             vertex_profile, "main_vertex", vertex_opts);
 
       if (cgGetLastListing(cgCtx))
-         RARCH_ERR("[D3D9 Cg]: Vertex error:\n%s\n", cgGetLastListing(cgCtx));
+         RARCH_ERR("[D3D Cg]: Vertex error:\n%s\n", cgGetLastListing(cgCtx));
    }
 
    if (!fPrg || !vPrg)
@@ -448,8 +434,10 @@ bool RenderChain::compile_shaders(CGprogram &fPrg, CGprogram &vPrg, const std::s
 
 void RenderChain::set_shaders(CGprogram &fPrg, CGprogram &vPrg)
 {
+#ifdef HAVE_CG
    cgD3D9BindProgram(fPrg);
    cgD3D9BindProgram(vPrg);
+#endif
 }
 
 void RenderChain::set_vertices(Pass &pass,
@@ -548,20 +536,17 @@ void RenderChain::set_cg_mvp(CGprogram &vPrg,
       cgD3D9SetUniformMatrix(cgpModelViewProj, &tmp);
 }
 
-template <class T>
-static void set_cg_param(CGprogram prog, const char *param,
-      const T& val)
-{
-   CGparameter cgp = cgGetNamedParameter(prog, param);
-   if (cgp)
+#define set_cg_param(prog, param, val) \
+   cgp = cgGetNamedParameter(prog, param); \
+   if (cgp) \
       cgD3D9SetUniform(cgp, &val);
-}
 
 void RenderChain::set_cg_params(Pass &pass,
             unsigned video_w, unsigned video_h,
             unsigned tex_w, unsigned tex_h,
             unsigned viewport_w, unsigned viewport_h)
 {
+   CGparameter cgp;
    D3DXVECTOR2 video_size;
    video_size.x = video_w;
    video_size.y = video_h;
@@ -732,6 +717,7 @@ void RenderChain::log_info(const LinkInfo &info)
 
 void RenderChain::bind_orig(Pass &pass)
 {
+   CGparameter cgp;
    D3DXVECTOR2 video_size;
    video_size.x = passes[0].last_width;
    video_size.y = passes[0].last_height;
@@ -796,6 +782,7 @@ void RenderChain::bind_prev(Pass &pass)
       snprintf(attr_tex_size,   sizeof(attr_tex_size),   "%s.texture_size", prev_names[i]);
       snprintf(attr_coord,      sizeof(attr_coord),      "%s.tex_coord",    prev_names[i]);
 
+      CGparameter cgp;
       D3DXVECTOR2 video_size;
       video_size.x = prev.last_width[(prev.ptr - (i + 1)) & TexturesMask];
       video_size.y = prev.last_height[(prev.ptr - (i + 1)) & TexturesMask];
@@ -842,6 +829,7 @@ void RenderChain::bind_pass(Pass &pass, unsigned pass_index)
 
    for (unsigned i = 1; i < pass_index - 1; i++)
    {
+      CGparameter cgp;
       char pass_base[64];
       snprintf(pass_base, sizeof(pass_base), "PASS%u.", i);
 
@@ -1146,6 +1134,7 @@ void RenderChain::bind_tracker(Pass &pass, unsigned pass_index)
 
    for (unsigned i = 0; i < uniform_cnt; i++)
    {
+      CGparameter cgp;
       set_cg_param(pass.fPrg, uniform_info[i].id, uniform_info[i].value);
       set_cg_param(pass.vPrg, uniform_info[i].id, uniform_info[i].value);
    }

@@ -19,7 +19,6 @@
 #include "render_chain.hpp"
 #include "../../file.h"
 #include "../context/win32_common.h"
-#include <algorithm>
 
 #ifdef _MSC_VER
 #ifndef _XBOX

@@ -165,7 +165,7 @@ bool scond_wait_timeout(scond_t *cond, slock_t *lock, int64_t timeout_us)
    WaitForSingleObject(cond->event, 0);
    slock_unlock(lock);
 
-   DWORD res = WaitForSingleObject(cond->event, timeout_us / 1000);
+   DWORD res = WaitForSingleObject(cond->event, (DWORD)(timeout_us) / 1000);
 
    slock_lock(lock);
    return res == WAIT_OBJECT_0;
