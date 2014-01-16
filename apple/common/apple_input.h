@@ -71,6 +71,7 @@ extern apple_input_data_t g_polled_input_data;
 
 // Main thread only
 void apple_input_enable_icade(bool on);
+void apple_input_enable_small_keyboard(bool on);
 uint32_t apple_input_get_icade_buttons(void);
 void apple_input_reset_icade_buttons(void);
 void apple_input_keyboard_event(bool down, unsigned code, uint32_t character, uint32_t mod);
