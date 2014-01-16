@@ -47,7 +47,6 @@ const unsigned char MAC_NATIVE_TO_HID[128] = {
 #define HIDKEY(X) X
 #endif
 
-// Main thread interface
 static bool icade_enabled;
 static bool small_keyboard_enabled;
 static bool small_keyboard_active;
@@ -106,6 +105,11 @@ static bool handle_small_keyboard(unsigned* code, bool down)
    return false;
 }
 
+void apple_input_enable_small_keyboard(bool on)
+{
+   small_keyboard_enabled = on;
+}
+
 static void handle_icade_event(unsigned keycode)
 {
    static const struct
@@ -141,11 +145,6 @@ void apple_input_enable_icade(bool on)
    icade_buttons = 0;
 }
 
-void apple_input_enable_small_keyboard(bool on)
-{
-   small_keyboard_enabled = on;
-}
-
 uint32_t apple_input_get_icade_buttons(void)
 {
    return icade_enabled ? icade_buttons : 0;
@@ -174,6 +173,7 @@ void apple_input_keyboard_event(bool down, unsigned code, uint32_t character, ui
 
    g_current_input_data.keys[code] = down;
    
+   /* This is copied here as it isn't defined in any standard iOS header */
    enum
    {
       NSAlphaShiftKeyMask = 1 << 16,
@@ -287,7 +287,7 @@ static int16_t apple_input_state(void *data, const struct retro_keybind **binds,
    switch (device)
    {
       case RETRO_DEVICE_JOYPAD:
-         return (id < RARCH_BIND_LIST_END) ? apple_is_pressed(port, binds[port], id) : false;
+         return (id < RARCH_BIND_LIST_END) ? apple_is_pressed(port, binds[port], id) : 0;
          
       case RETRO_DEVICE_ANALOG:
          return input_joypad_analog(g_joydriver, port, index, id, binds[port]);
@@ -314,12 +314,14 @@ static int16_t apple_input_state(void *data, const struct retro_keybind **binds,
          if (index < g_polled_input_data.touch_count && index < MAX_TOUCHES)
          {
             const apple_touch_data_t* touch = &g_polled_input_data.touches[index];
+            int16_t x = want_full ? touch->full_x : touch->fixed_x;
+            int16_t y = want_full ? touch->full_y : touch->fixed_y;
 
             switch (id)
             {
-               case RETRO_DEVICE_ID_POINTER_PRESSED: return 1;
-               case RETRO_DEVICE_ID_POINTER_X: return want_full ? touch->full_x : touch->fixed_x;
-               case RETRO_DEVICE_ID_POINTER_Y: return want_full ? touch->full_y : touch->fixed_y;
+               case RETRO_DEVICE_ID_POINTER_PRESSED: return (x != -0x8000) && (y != -0x8000);
+               case RETRO_DEVICE_ID_POINTER_X: return x;
+               case RETRO_DEVICE_ID_POINTER_Y: return y;
             }
          }
          
