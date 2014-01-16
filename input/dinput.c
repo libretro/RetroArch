@@ -451,34 +451,35 @@ bool dinput_handle_message(void *dinput, UINT message, WPARAM wParam, LPARAM lPa
    */
    switch (message)
    {
-   case WM_POINTERDOWN:
-   {
-      struct pointer_status *new_pointer = (struct pointer_status *)malloc(sizeof(struct pointer_status));
-      new_pointer->pointer_id = GET_POINTERID_WPARAM(wParam);
-      dinput_pointer_store_pos(new_pointer, lParam);
-      dinput_add_pointer(di, new_pointer);
-      return true;
-   }
-   case WM_POINTERUP:
-   {
-      int pointer_id = GET_POINTERID_WPARAM(wParam);
-      dinput_delete_pointer(di, pointer_id);
-      return true;
-   }
-   case WM_POINTERUPDATE:
-   {
-      int pointer_id = GET_POINTERID_WPARAM(wParam);
-      struct pointer_status *pointer = dinput_find_pointer(di, pointer_id);
-      if (pointer)
-         dinput_pointer_store_pos(pointer, lParam);
-      return true;
-   }
-   case WM_DEVICECHANGE:
-   {
-      di->joypad->destroy();
-      di->joypad = input_joypad_init_driver(g_settings.input.joypad_driver);
-      break;
-   }
+      case WM_POINTERDOWN:
+      {
+         struct pointer_status *new_pointer = (struct pointer_status *)malloc(sizeof(struct pointer_status));
+         new_pointer->pointer_id = GET_POINTERID_WPARAM(wParam);
+         dinput_pointer_store_pos(new_pointer, lParam);
+         dinput_add_pointer(di, new_pointer);
+         return true;
+      }
+      case WM_POINTERUP:
+      {
+         int pointer_id = GET_POINTERID_WPARAM(wParam);
+         dinput_delete_pointer(di, pointer_id);
+         return true;
+      }
+      case WM_POINTERUPDATE:
+      {
+         int pointer_id = GET_POINTERID_WPARAM(wParam);
+         struct pointer_status *pointer = dinput_find_pointer(di, pointer_id);
+         if (pointer)
+            dinput_pointer_store_pos(pointer, lParam);
+         return true;
+      }
+      case WM_DEVICECHANGE:
+      {
+         if (di->joypad)
+            di->joypad->destroy();
+         di->joypad = input_joypad_init_driver(g_settings.input.joypad_driver);
+         break;
+      }
    }
    return false;
 }
@@ -491,7 +492,8 @@ static void dinput_free(void *data)
    if (di)
    {
       g_ctx = NULL; // Prevent a joypad driver to kill our context prematurely.
-      di->joypad->destroy();
+      if (di->joypad)
+         di->joypad->destroy();
       g_ctx = hold_ctx;
 
       dinput_clear_pointers(di); // clear any leftover pointers
