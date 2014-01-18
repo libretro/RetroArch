@@ -254,23 +254,16 @@ static void xdk_deinit_font(void *data)
    font->m_cMaxGlyph = 0;
    font->m_TranslatorTable = NULL;
 
-   if (s_FontLocals.m_pFontPixelShader != NULL)
-   {
+   if (s_FontLocals.m_pFontPixelShader)
       s_FontLocals.m_pFontPixelShader->Release();
-      s_FontLocals.m_pFontPixelShader = NULL;
-   }
-
-   if (s_FontLocals.m_pFontVertexShader != NULL)
-   {
+   if (s_FontLocals.m_pFontVertexShader)
       s_FontLocals.m_pFontVertexShader->Release();
-      s_FontLocals.m_pFontVertexShader = NULL;
-   }
-
-   if (s_FontLocals.m_pFontVertexDecl != NULL)
-   {
+   if (s_FontLocals.m_pFontVertexDecl)
       s_FontLocals.m_pFontVertexDecl->Release();
-      s_FontLocals.m_pFontVertexDecl = NULL;
-   }
+
+   s_FontLocals.m_pFontPixelShader = NULL;
+   s_FontLocals.m_pFontVertexShader = NULL;
+   s_FontLocals.m_pFontVertexDecl = NULL;
 
    if (m_xprResource.Initialized())
       m_xprResource.Destroy();
@@ -463,7 +456,7 @@ static void xdk_render_msg(void *driver, const char *str_msg, void *parms)
 
    mbstowcs(msg, str_msg, sizeof(msg) / sizeof(wchar_t));
 
-   if (msg != NULL || msg[0] != L'\0')
+   if (msg || msg[0] != L'\0')
    {
       xdk_render_msg_pre(font);
       xdk_video_font_draw_text(font, x, y, msg);
