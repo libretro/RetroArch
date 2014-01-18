@@ -29,6 +29,65 @@
 #endif
 #endif
 
+static D3DVideo *curD3D = NULL;
+static bool d3d_quit = false;
+static void *dinput;
+
+extern bool d3d_restore(void *data);
+
+static void d3d_resize(void *data, unsigned new_width, unsigned new_height)
+{
+   D3DVideo *d3d = reinterpret_cast<D3DVideo*>(data);
+   if (!d3d->dev)
+      return;
+
+   RARCH_LOG("[D3D]: Resize %ux%u.\n", new_width, new_height);
+
+   if (new_width != d3d->video_info.width || new_height != d3d->video_info.height)
+   {
+      d3d->video_info.width = d3d->screen_width = new_width;
+      d3d->video_info.height = d3d->screen_height = new_height;
+      d3d_restore(d3d);
+   }
+}
+
+#ifdef HAVE_WINDOW
+LRESULT CALLBACK WindowProc(HWND hWnd, UINT message,
+        WPARAM wParam, LPARAM lParam)
+{
+    switch (message)
+    {
+        case WM_CREATE:
+			LPCREATESTRUCT p_cs;
+			p_cs = (LPCREATESTRUCT)lParam;
+			curD3D = (D3DVideo*)p_cs->lpCreateParams;
+			break;
+
+        case WM_CHAR:
+        case WM_KEYDOWN:
+        case WM_KEYUP:
+        case WM_SYSKEYUP:
+        case WM_SYSKEYDOWN:
+			return win32_handle_keyboard_event(hWnd, message, wParam, lParam);
+
+        case WM_DESTROY:
+			d3d_quit = true;
+			return 0;
+        case WM_SIZE:
+			unsigned new_width, new_height;
+			new_width = LOWORD(lParam);
+			new_height = HIWORD(lParam);
+
+			if (new_width && new_height)
+				d3d_resize(curD3D, new_width, new_height);
+			return 0;
+    }
+    if (dinput_handle_message(dinput, message, wParam, lParam))
+        return 0;
+    return DefWindowProc(hWnd, message, wParam, lParam);
+}
+#endif
+
 bool d3d_process_shader(void *data)
 {
    D3DVideo *d3d = reinterpret_cast<D3DVideo*>(data);
@@ -496,21 +555,28 @@ static bool gfx_ctx_d3d_init(void)
    return true;
 }
 
+static void gfx_ctx_d3d_input_driver(const input_driver_t **input, void **input_data)
+{
+   dinput = input_dinput.init();
+   *input = dinput ? &input_dinput : NULL;
+   *input_data = dinput;
+}
+
 const gfx_ctx_driver_t gfx_ctx_d3d9 = {
-   gfx_ctx_d3d_init,				// gfx_ctx_init
+   gfx_ctx_d3d_init,
    NULL,							// gfx_ctx_destroy
-   gfx_ctx_d3d_bind_api,			// gfx_ctx_bind_api
+   gfx_ctx_d3d_bind_api,
    NULL,							// gfx_ctx_swap_interval
    NULL,							// gfx_ctx_set_video_mode
    NULL,							// gfx_ctx_get_video_size
    NULL,							
-   gfx_ctx_d3d_update_title,		// gfx_ctx_update_window_title
-   gfx_ctx_d3d_check_window,		// gfx_ctx_check_window
+   gfx_ctx_d3d_update_title,
+   gfx_ctx_d3d_check_window,
    NULL,							// gfx_ctx_set_resize
-   gfx_ctx_d3d_has_focus,			// gfx_ctx_has_focus
-   gfx_ctx_d3d_swap_buffers,		// gfx_ctx_swap_buffers
-   NULL,							// gfx_ctx_input_driver
-   NULL,							// gfx_ctx_get_proc_address
-   gfx_ctx_d3d_show_mouse,			// gfx_ctx_show_mouse
+   gfx_ctx_d3d_has_focus,
+   gfx_ctx_d3d_swap_buffers,
+   gfx_ctx_d3d_input_driver,
+   NULL,
+   gfx_ctx_d3d_show_mouse,
    "d3d9",
 };

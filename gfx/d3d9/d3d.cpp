@@ -26,8 +26,6 @@
 #include "../../compat/posix_string.h"
 #include "../../performance.h"
 
-static bool d3d_quit = false;
-
 static void d3d_render_msg(void *data, const char *msg, void *userdata);
 
 #ifndef _XBOX
@@ -102,49 +100,11 @@ static void d3d_deinitialize(void *data)
    d3d->needs_restore = false;
 }
 
-static void d3d_resize(void *data, unsigned new_width, unsigned new_height);
 
 #ifdef HAVE_WINDOW
-namespace Callback
-{
-   static D3DVideo *curD3D = NULL;
-   static void *dinput;
 
-   LRESULT CALLBACK WindowProc(HWND hWnd, UINT message,
-         WPARAM wParam, LPARAM lParam)
-   {
-      switch (message)
-      {
-         case WM_CREATE:
-            LPCREATESTRUCT p_cs;
-            p_cs = (LPCREATESTRUCT)lParam;
-            curD3D = (D3DVideo*)p_cs->lpCreateParams;
-            break;
-
-         case WM_CHAR:
-         case WM_KEYDOWN:
-         case WM_KEYUP:
-         case WM_SYSKEYUP:
-         case WM_SYSKEYDOWN:
-            return win32_handle_keyboard_event(hWnd, message, wParam, lParam);
-
-         case WM_DESTROY:
-            d3d_quit = true;
-            return 0;
-         case WM_SIZE:
-            unsigned new_width, new_height;
-            new_width = LOWORD(lParam);
-            new_height = HIWORD(lParam);
-
-            if (new_width && new_height)
-               d3d_resize(curD3D, new_width, new_height);
-            return 0;
-      }
-      if (dinput_handle_message(dinput, message, wParam, lParam))
-         return 0;
-      return DefWindowProc(hWnd, message, wParam, lParam);
-   }
-}
+extern LRESULT CALLBACK WindowProc(HWND hWnd, UINT message,
+        WPARAM wParam, LPARAM lParam);
 #endif
 
 static bool d3d_init_base(void *data, const video_info_t *info)
@@ -262,7 +222,7 @@ static bool d3d_initialize(void *data, const video_info_t *info)
    return true;
 }
 
-static bool d3d_restore(void *data)
+bool d3d_restore(void *data)
 {
    D3DVideo *d3d = reinterpret_cast<D3DVideo*>(data);
    d3d_deinitialize(d3d);
@@ -272,22 +232,6 @@ static bool d3d_restore(void *data)
       RARCH_ERR("[D3D]: Restore error.\n");
 
    return !d3d->needs_restore;
-}
-
-static void d3d_resize(void *data, unsigned new_width, unsigned new_height)
-{
-   D3DVideo *d3d = reinterpret_cast<D3DVideo*>(data);
-   if (!d3d->dev)
-      return;
-
-   RARCH_LOG("[D3D]: Resize %ux%u.\n", new_width, new_height);
-
-   if (new_width != d3d->video_info.width || new_height != d3d->video_info.height)
-   {
-      d3d->video_info.width = d3d->screen_width = new_width;
-      d3d->video_info.height = d3d->screen_height = new_height;
-      d3d_restore(d3d);
-   }
 }
 
 #ifdef HAVE_OVERLAY
@@ -573,12 +517,10 @@ static bool d3d_alive(void *data)
       d3d->ctx_driver->check_window(&quit, &resize, &d3d->screen_width,
       &d3d->screen_height, g_extern.frame_count);
 
-   if (quit)
-      d3d_quit = true;
    else if (resize)
       d3d->should_resize = true;
 
-   return !d3d_quit;
+   return !quit;
 }
 
 static bool d3d_focus(void *data)
@@ -1017,7 +959,7 @@ static void d3d_get_poke_interface(void *data, const video_poke_interface_t **if
 }
 
 // Delay constructor due to lack of exceptions.
-bool d3d_construct(void *data, const video_info_t *info, const input_driver_t **input,
+static bool d3d_construct(void *data, const video_info_t *info, const input_driver_t **input,
       void **input_data)
 {
    D3DVideo *d3d = reinterpret_cast<D3DVideo*>(data);
@@ -1042,7 +984,7 @@ bool d3d_construct(void *data, const video_info_t *info, const input_driver_t **
    memset(&d3d->windowClass, 0, sizeof(d3d->windowClass));
    d3d->windowClass.cbSize        = sizeof(d3d->windowClass);
    d3d->windowClass.style         = CS_HREDRAW | CS_VREDRAW;
-   d3d->windowClass.lpfnWndProc   = Callback::WindowProc;
+   d3d->windowClass.lpfnWndProc   = WindowProc;
    d3d->windowClass.hInstance     = NULL;
    d3d->windowClass.hCursor       = LoadCursor(NULL, IDC_ARROW);
    d3d->windowClass.lpszClassName = "RetroArch";
@@ -1106,7 +1048,6 @@ bool d3d_construct(void *data, const video_info_t *info, const input_driver_t **
       || d3d->overlays_enabled
 #endif
    );
-   d3d_quit = false;
 
    ShowWindow(d3d->hWnd, SW_RESTORE);
    UpdateWindow(d3d->hWnd);
@@ -1130,14 +1071,9 @@ bool d3d_construct(void *data, const video_info_t *info, const input_driver_t **
    if (!d3d_initialize(d3d, &d3d->video_info))
       return false;
 
-#ifndef _XBOX
-   if (input && input_data)
-   {
-      Callback::dinput = input_dinput.init();
-      *input = Callback::dinput ? &input_dinput : NULL;
-      *input_data = Callback::dinput;
-   }
-#endif
+   if (input && input_data &&
+      d3d->ctx_driver && d3d->ctx_driver->input_driver)
+      d3d->ctx_driver->input_driver(input, input_data);
 
    RARCH_LOG("[D3D]: Init complete.\n");
    return true;
