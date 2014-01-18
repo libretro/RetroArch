@@ -91,7 +91,9 @@ RECT d3d_monitor_rect(void *data)
 static void d3d_deinitialize(void *data)
 {
    D3DVideo *d3d = reinterpret_cast<D3DVideo*>(data);
-   d3d_deinit_font(d3d);
+
+   if (d3d->font_ctx && d3d->font_ctx->deinit)
+      d3d->font_ctx->deinit(d3d);
    d3d_deinit_chain(d3d);
 #ifdef HAVE_CG
    d3d_deinit_shader(d3d);
@@ -211,7 +213,8 @@ static bool d3d_initialize(void *data, const video_info_t *info)
       return false;
    }
 
-   if (!d3d_init_font(d3d))
+   d3d->font_ctx = d3d_font_init_first(d3d, g_settings.video.font_path, g_settings.video.font_size);
+   if (!d3d->font_ctx)
    {
       RARCH_ERR("Failed to initialize font.\n");
       return false;
@@ -473,7 +476,8 @@ static bool d3d_frame(void *data, const void *frame,
       return false;
    }
 
-   d3d_render_msg(d3d, msg, NULL);
+   if (d3d->font_ctx && d3d->font_ctx->render_msg)
+      d3d->font_ctx->render_msg(d3d, msg, NULL);
 
 #ifdef HAVE_MENU
    if (d3d->rgui.enabled)
@@ -832,15 +836,6 @@ static void d3d_apply_state_changes(void *data)
    d3d->should_resize = true;
 }
 
-static void d3d_render_msg(void *data, const char *msg, void *userdata)
-{
-   D3DVideo *d3d = reinterpret_cast<D3DVideo*>(data);
-   d3d_font_msg(d3d, msg, userdata);
-
-   if (userdata)
-      d3d_set_font_rect(d3d, NULL);
-}
-
 static void d3d_set_osd_msg(void *data, const char *msg, void *userdata)
 {
    font_params_t *params = (font_params_t*)userdata;
@@ -849,7 +844,8 @@ static void d3d_set_osd_msg(void *data, const char *msg, void *userdata)
    if (params)
       d3d_set_font_rect(d3d, params);
 
-   d3d_render_msg(d3d, msg, params);
+   if (d3d->font_ctx && d3d->font_ctx->render_msg)
+      d3d->font_ctx->render_msg(d3d, msg, params);
 }
 
 static void d3d_show_mouse(void *data, bool state)

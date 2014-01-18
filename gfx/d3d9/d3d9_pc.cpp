@@ -419,34 +419,6 @@ void d3d_deinit_chain(void *data)
    d3d->chain = NULL;
 }
 
-bool d3d_init_font(void *data)
-{
-   D3DVideo *d3d = reinterpret_cast<D3DVideo*>(data);
-   D3DXFONT_DESC desc = {
-      static_cast<int>(g_settings.video.font_size), 0, 400, 0,
-      false, DEFAULT_CHARSET,
-      OUT_TT_PRECIS,
-      CLIP_DEFAULT_PRECIS,
-      DEFAULT_PITCH,
-      "Verdana" // Hardcode ftl :(
-   };
-
-   uint32_t r = static_cast<uint32_t>(g_settings.video.msg_color_r * 255) & 0xff;
-   uint32_t g = static_cast<uint32_t>(g_settings.video.msg_color_g * 255) & 0xff;
-   uint32_t b = static_cast<uint32_t>(g_settings.video.msg_color_b * 255) & 0xff;
-   d3d->font_color = D3DCOLOR_XRGB(r, g, b);
-
-   return SUCCEEDED(D3DXCreateFontIndirect(d3d->dev, &desc, &d3d->font));
-}
-
-void d3d_deinit_font(void *data)
-{
-   D3DVideo *d3d = reinterpret_cast<D3DVideo*>(data);
-   if (d3d->font)
-      d3d->font->Release();
-   d3d->font = NULL;
-}
-
 static void gfx_ctx_d3d_show_mouse(bool state)
 {
 #ifdef HAVE_WINDOW

@@ -14,6 +14,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "../d3d9/d3d9.hpp"
 #include "d3d_font.h"
 #include "../gfx_common.h"
 #include "../../general.h"
@@ -48,7 +49,7 @@ static void d3dfonts_w32_deinit_font(void *data)
    d3d->font = NULL;
 }
 
-static void d3dfonts_w32_render_msg(void *data, const char *msg, void *parms)
+static void d3dfonts_w32_render_msg(void *data, const char *msg, void *userdata)
 {
    D3DVideo *d3d = reinterpret_cast<D3DVideo*>(data);
    font_params_t *params = (font_params_t*)userdata;
@@ -73,7 +74,7 @@ static void d3dfonts_w32_render_msg(void *data, const char *msg, void *parms)
    }
 }
 
-const d3d_font_renderer_t d3d_xdk1_font = {
+const d3d_font_renderer_t d3d_win32_font = {
    d3dfonts_w32_init_font,
    d3dfonts_w32_deinit_font,
    d3dfonts_w32_render_msg,
