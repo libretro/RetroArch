@@ -628,7 +628,9 @@ static void d3d_free(void *data)
 #endif
    DestroyWindow(d3d->hWnd);
 
+#ifndef _XBOX
    UnregisterClass("RetroArch", GetModuleHandle(NULL));
+#endif
 }
 
 static void d3d_viewport_info(void *data, struct rarch_viewport *vp)
@@ -697,10 +699,7 @@ static bool d3d_read_viewport(void *data, uint8_t *buffer)
       dest->UnlockRect();
    }
    else
-   {
       ret = false;
-      goto end;
-   }
 
 end:
    RARCH_PERFORMANCE_STOP(d3d_read_viewport);
@@ -1015,7 +1014,9 @@ bool d3d_construct(void *data, const video_info_t *info, const input_driver_t **
 {
    D3DVideo *d3d = reinterpret_cast<D3DVideo*>(data);
    d3d->should_resize = false;
+#ifndef _XBOX
    gfx_set_dwm();
+#endif
 
 #ifdef HAVE_MENU
    memset(&d3d->rgui, 0, sizeof(d3d->rgui));
@@ -1120,12 +1121,14 @@ bool d3d_construct(void *data, const video_info_t *info, const input_driver_t **
    if (!d3d_initialize(d3d, &d3d->video_info))
       return false;
 
+#ifndef _XBOX
    if (input && input_data)
    {
       Callback::dinput = input_dinput.init();
       *input = Callback::dinput ? &input_dinput : NULL;
       *input_data = Callback::dinput;
    }
+#endif
 
    RARCH_LOG("[D3D]: Init complete.\n");
    return true;

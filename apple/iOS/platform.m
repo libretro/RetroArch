@@ -44,6 +44,7 @@ int get_ios_version_major(void)
 
 void ios_set_bluetooth_mode(NSString* mode)
 {
+   apple_input_enable_small_keyboard([mode isEqualToString:@"small_keyboard"]);
    apple_input_enable_icade([mode isEqualToString:@"icade"]);
    btstack_set_poweron([mode isEqualToString:@"btstack"]);
 }
@@ -71,9 +72,9 @@ const void* apple_get_frontend_settings(void)
 
       // Set ios_btmode options based on runtime environment
       if (btstack_try_load())
-         settings[4].values = "none|icade|keyboard|btstack";
+         settings[4].values = "icade|keyboard|small_keyboard|btstack";
       else
-         settings[4].values = "none|icade|keyboard";
+         settings[4].values = "icade|keyboard|small_keyboard";
 
       settings[5] = setting_data_string_setting(ST_STRING, "ios_orientations", "Screen Orientations", apple_frontend_settings.orientations,
                                                  sizeof(apple_frontend_settings.orientations), "both");

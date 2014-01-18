@@ -16,42 +16,39 @@
 #include "render_chain.hpp"
 #include <string.h>
 
-namespace Global
-{
-   static const char *stock_program =
-      "void main_vertex"
-      "("
-      "	float4 position : POSITION,"
-      "	float2 texCoord : TEXCOORD0,"
-      "  float4 color : COLOR,"
-      ""
-      "  uniform float4x4 modelViewProj,"
-      ""
-      "	out float4 oPosition : POSITION,"
-      "	out float2 otexCoord : TEXCOORD0,"
-      "  out float4 oColor : COLOR"
-      ")"
-      "{"
-      "	oPosition = mul(modelViewProj, position);"
-      "	otexCoord = texCoord;"
-      "  oColor = color;"
-      "}"
-      ""
-      "float4 main_fragment(in float4 color : COLOR, float2 tex : TEXCOORD0, uniform sampler2D s0 : TEXUNIT0) : COLOR"
-      "{"
-      "   return color * tex2D(s0, tex);"
-      "}";
-}
-
-#define FVF 0
+static const char *stock_program =
+    "void main_vertex"
+    "("
+    "	float4 position : POSITION,"
+    "	float2 texCoord : TEXCOORD0,"
+    "  float4 color : COLOR,"
+    ""
+    "  uniform float4x4 modelViewProj,"
+    ""
+    "	out float4 oPosition : POSITION,"
+    "	out float2 otexCoord : TEXCOORD0,"
+    "  out float4 oColor : COLOR"
+    ")"
+    "{"
+    "	oPosition = mul(modelViewProj, position);"
+    "	otexCoord = texCoord;"
+    "  oColor = color;"
+    "}"
+    ""
+    "float4 main_fragment(in float4 color : COLOR, float2 tex : TEXCOORD0, uniform sampler2D s0 : TEXUNIT0) : COLOR"
+    "{"
+    "   return color * tex2D(s0, tex);"
+    "}";
 
 RenderChain::~RenderChain()
 {
    clear();
+#ifdef HAVE_CG
    if (fStock)
       cgDestroyProgram(fStock);
    if (vStock)
       cgDestroyProgram(vStock);
+#endif
    if (tracker)
       state_tracker_free(tracker);
 }
@@ -156,7 +153,7 @@ bool RenderChain::add_pass(const LinkInfo &info)
    if (FAILED(dev->CreateVertexBuffer(
                4 * sizeof(Vertex),
                dev->GetSoftwareVertexProcessing() ? D3DUSAGE_SOFTWAREPROCESSING : 0,
-               FVF,
+               0,
                D3DPOOL_DEFAULT,
                &pass.vertex_buf,
                NULL)))
@@ -186,7 +183,7 @@ bool RenderChain::add_lut(const std::string &id,
 {
    LPDIRECT3DTEXTURE lut;
 
-   RARCH_LOG("[D3D9]: Loading LUT texture: %s.\n", path.c_str());
+   RARCH_LOG("[D3D]: Loading LUT texture: %s.\n", path.c_str());
 
    if (FAILED(D3DXCreateTextureFromFileExA(
                dev,
@@ -351,7 +348,7 @@ bool RenderChain::create_first_pass(const LinkInfo &info, PixelFormat fmt)
       if (FAILED(dev->CreateVertexBuffer(
                   4 * sizeof(Vertex),
                   dev->GetSoftwareVertexProcessing() ? D3DUSAGE_SOFTWAREPROCESSING : 0,
-                  FVF,
+                  0,
                   D3DPOOL_DEFAULT,
                   &prev.vertex_buf[i],
                   NULL)))
@@ -386,6 +383,7 @@ bool RenderChain::create_first_pass(const LinkInfo &info, PixelFormat fmt)
 
 bool RenderChain::compile_shaders(CGprogram &fPrg, CGprogram &vPrg, const std::string &shader)
 {
+#ifdef HAVE_CG
    CGprofile vertex_profile = cgD3D9GetLatestVertexProfile();
    CGprofile fragment_profile = cgD3D9GetLatestPixelProfile();
    RARCH_LOG("[D3D Cg]: Vertex profile: %s\n", cgGetProfileString(vertex_profile));
@@ -412,13 +410,13 @@ bool RenderChain::compile_shaders(CGprogram &fPrg, CGprogram &vPrg, const std::s
    {
       RARCH_LOG("[D3D Cg]: Compiling stock shader.\n");
 
-      fPrg = cgCreateProgram(cgCtx, CG_SOURCE, Global::stock_program,
+      fPrg = cgCreateProgram(cgCtx, CG_SOURCE, stock_program,
             fragment_profile, "main_fragment", fragment_opts);
 
       if (cgGetLastListing(cgCtx))
          RARCH_ERR("[D3D Cg]: Fragment error:\n%s\n", cgGetLastListing(cgCtx));
 
-      vPrg = cgCreateProgram(cgCtx, CG_SOURCE, Global::stock_program,
+      vPrg = cgCreateProgram(cgCtx, CG_SOURCE, stock_program,
             vertex_profile, "main_vertex", vertex_opts);
 
       if (cgGetLastListing(cgCtx))
@@ -430,6 +428,7 @@ bool RenderChain::compile_shaders(CGprogram &fPrg, CGprogram &vPrg, const std::s
 
    cgD3D9LoadProgram(fPrg, true, 0);
    cgD3D9LoadProgram(vPrg, true, 0);
+#endif
    return true;
 }
 
@@ -503,12 +502,14 @@ void RenderChain::set_vertices(Pass &pass,
       pass.vertex_buf->Unlock();
    }
 
+#ifdef HAVE_CG
    set_cg_mvp(pass.vPrg, vp_width, vp_height, rotation);
 
    set_cg_params(pass,
          width, height,
          info.tex_w, info.tex_h,
          vp_width, vp_height);
+#endif
 }
 
 void RenderChain::set_viewport(const D3DVIEWPORT &vp)
@@ -520,7 +521,7 @@ void RenderChain::set_cg_mvp(CGprogram &vPrg,
       unsigned vp_width, unsigned vp_height,
       unsigned rotation)
 {
-   D3DXMATRIX proj, ortho, rot;
+   D3DXMATRIX proj, ortho, rot, tmp;
    D3DXMatrixOrthoOffCenterLH(&ortho, 0, vp_width, 0, vp_height, 0, 1);
 
    if (rotation)
@@ -529,12 +530,13 @@ void RenderChain::set_cg_mvp(CGprogram &vPrg,
       D3DXMatrixIdentity(&rot);
 
    D3DXMatrixMultiply(&proj, &ortho, &rot);
-
-   D3DXMATRIX tmp;
    D3DXMatrixTranspose(&tmp, &proj);
+
+#ifdef HAVE_CG
    CGparameter cgpModelViewProj = cgGetNamedParameter(vPrg, "modelViewProj");
    if (cgpModelViewProj)
       cgD3D9SetUniformMatrix(cgpModelViewProj, &tmp);
+#endif
 }
 
 #define set_cg_param(prog, param, val) do { \
@@ -548,13 +550,11 @@ void RenderChain::set_cg_params(Pass &pass,
             unsigned tex_w, unsigned tex_h,
             unsigned viewport_w, unsigned viewport_h)
 {
-   D3DXVECTOR2 video_size;
+   D3DXVECTOR2 video_size, texture_size, output_size;
    video_size.x = video_w;
    video_size.y = video_h;
-   D3DXVECTOR2 texture_size;
    texture_size.x = tex_w;
    texture_size.y = tex_h;
-   D3DXVECTOR2 output_size;
    output_size.x = viewport_w;
    output_size.y = viewport_h;
 
@@ -718,11 +718,9 @@ void RenderChain::log_info(const LinkInfo &info)
 
 void RenderChain::bind_orig(Pass &pass)
 {
-   D3DXVECTOR2 video_size;
+   D3DXVECTOR2 video_size, texture_size;
    video_size.x = passes[0].last_width;
    video_size.y = passes[0].last_height;
-
-   D3DXVECTOR2 texture_size;
    texture_size.x = passes[0].info.tex_w;
    texture_size.y = passes[0].info.tex_h;
 
@@ -766,12 +764,9 @@ void RenderChain::bind_prev(Pass &pass)
       "PREV6",
    };
 
-   char attr_texture[64];
-   char attr_input_size[64];
-   char attr_tex_size[64];
-   char attr_coord[64];
-
+   char attr_texture[64], attr_input_size[64], attr_tex_size[64], attr_coord[64];
    D3DXVECTOR2 texture_size;
+
    texture_size.x = passes[0].info.tex_w;
    texture_size.y = passes[0].info.tex_h;
 
@@ -840,11 +835,9 @@ void RenderChain::bind_pass(Pass &pass, unsigned pass_index)
       std::string attr_tex_coord = pass_base;
       attr_tex_coord += "tex_coord";
 
-      D3DXVECTOR2 video_size;
+      D3DXVECTOR2 video_size, texture_size;
       video_size.x = passes[i].last_width;
       video_size.y = passes[i].last_height;
-
-      D3DXVECTOR2 texture_size;
       texture_size.x = passes[i].info.tex_w;
       texture_size.y = passes[i].info.tex_h;
 
@@ -976,9 +969,7 @@ static inline CGparameter find_param_from_semantic(CGparameter param, const std:
                cgGetParameterDirection(param) == CG_IN &&
                cgGetParameterVariability(param) == CG_VARYING &&
                validate_param_name(cgGetParameterName(param)))
-         {
             return param;
-         }
       }
       param = cgGetNextParameter(param);
    }
