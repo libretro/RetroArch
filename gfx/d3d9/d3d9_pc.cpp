@@ -429,31 +429,6 @@ static void gfx_ctx_d3d_show_mouse(bool state)
 #endif
 }
 
-void d3d_font_msg(void *data, const char *msg, void *userdata)
-{
-   D3DVideo *d3d = reinterpret_cast<D3DVideo*>(data);
-   font_params_t *params = (font_params_t*)userdata;
-
-   if (msg && SUCCEEDED(d3d->dev->BeginScene()))
-   {
-      d3d->font->DrawTextA(NULL,
-            msg,
-            -1,
-            &d3d->font_rect_shifted,
-            DT_LEFT,
-            ((d3d->font_color >> 2) & 0x3f3f3f) | 0xff000000);
-
-      d3d->font->DrawTextA(NULL,
-            msg,
-            -1,
-            &d3d->font_rect,
-            DT_LEFT,
-            d3d->font_color | 0xff000000);
-
-      d3d->dev->EndScene();
-   }
-}
-
 void d3d_make_d3dpp(void *data, const video_info_t *info, D3DPRESENT_PARAMETERS *d3dpp)
 {
    D3DVideo *d3d = reinterpret_cast<D3DVideo*>(data);
