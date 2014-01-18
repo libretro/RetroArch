@@ -517,6 +517,9 @@ static void gfx_ctx_d3d_check_window(bool *quit,
    D3DVideo *d3d = reinterpret_cast<D3DVideo*>(driver.video_data);
    *quit = false;
    *resize = false;
+
+   if (d3d_quit)
+      *quit = true;
 #ifndef _XBOX
    MSG msg;
 

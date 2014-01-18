@@ -100,9 +100,7 @@ static void d3d_deinitialize(void *data)
    d3d->needs_restore = false;
 }
 
-
 #ifdef HAVE_WINDOW
-
 extern LRESULT CALLBACK WindowProc(HWND hWnd, UINT message,
         WPARAM wParam, LPARAM lParam);
 #endif
