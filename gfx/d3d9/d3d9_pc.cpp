@@ -35,9 +35,13 @@ static void *dinput;
 
 extern bool d3d_restore(void *data);
 
-static void d3d_resize(void *data, unsigned new_width, unsigned new_height)
+static void d3d_resize(unsigned new_width, unsigned new_height)
 {
-   D3DVideo *d3d = reinterpret_cast<D3DVideo*>(data);
+#ifdef _XBOX
+   D3DVideo *d3d = reinterpret_cast<D3DVideo*>(driver.video_data);
+#else
+   D3DVideo *d3d = reinterpret_cast<D3DVideo*>(curD3D);
+#endif
    if (!d3d->dev)
       return;
 
@@ -79,7 +83,7 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT message,
 			new_height = HIWORD(lParam);
 
 			if (new_width && new_height)
-				d3d_resize(curD3D, new_width, new_height);
+				d3d_resize(new_width, new_height);
 			return 0;
     }
     if (dinput_handle_message(dinput, message, wParam, lParam))
@@ -575,7 +579,7 @@ const gfx_ctx_driver_t gfx_ctx_d3d9 = {
    NULL,							
    gfx_ctx_d3d_update_title,
    gfx_ctx_d3d_check_window,
-   NULL,							// gfx_ctx_set_resize
+   d3d_resize,
    gfx_ctx_d3d_has_focus,
    gfx_ctx_d3d_swap_buffers,
    gfx_ctx_d3d_input_driver,
