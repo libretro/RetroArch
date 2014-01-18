@@ -38,9 +38,19 @@ bool d3d_process_shader(void *data)
    return d3d_init_singlepass(d3d);
 }
 
-void d3d_update_title(void *data)
+static void gfx_ctx_d3d_swap_buffers(void)
 {
-   D3DVideo *d3d = reinterpret_cast<D3DVideo*>(data);
+   D3DVideo *d3d = reinterpret_cast<D3DVideo*>(driver.video_data);
+   if (d3d->dev->Present(NULL, NULL, NULL, NULL) != D3D_OK)
+   {
+      d3d->needs_restore = true;
+      RARCH_ERR("[D3D]: Present() failed.\n");
+   }
+}
+
+static void gfx_ctx_d3d_update_title(void)
+{
+   D3DVideo *d3d = reinterpret_cast<D3DVideo*>(driver.video_data);
    char buffer[128], buffer_fps[128];
    bool fps_draw = g_settings.fps_show;
    if (gfx_get_fps(buffer, sizeof(buffer), fps_draw ? buffer_fps : NULL, sizeof(buffer_fps)))
@@ -374,7 +384,7 @@ void d3d_deinit_font(void *data)
    d3d->font = NULL;
 }
 
-void d3d_show_cursor(void *data, bool state)
+static void gfx_ctx_d3d_show_mouse(bool state)
 {
 #ifdef HAVE_WINDOW
    if (state)
@@ -442,9 +452,12 @@ void d3d_make_d3dpp(void *data, const video_info_t *info, D3DPRESENT_PARAMETERS 
    }
 }
 
-bool d3d_alive_func(void *data)
+static void gfx_ctx_d3d_check_window(bool *quit,
+   bool *resize, unsigned *width, unsigned *height, unsigned frame_count)
 {
-   D3DVideo *d3d = reinterpret_cast<D3DVideo*>(data);
+   D3DVideo *d3d = reinterpret_cast<D3DVideo*>(driver.video_data);
+   *quit = false;
+   *resize = false;
 #ifndef _XBOX
    MSG msg;
 
@@ -454,5 +467,50 @@ bool d3d_alive_func(void *data)
       DispatchMessage(&msg);
    }
 #endif
+}
+
+static bool gfx_ctx_d3d_has_focus(void)
+{
+#ifdef _XBOX
+   return true;
+#else
+   D3DVideo *d3d = reinterpret_cast<D3DVideo*>(driver.video_data);
+   return GetFocus() == d3d->hWnd;
+#endif
+}
+
+static bool gfx_ctx_d3d_bind_api(enum gfx_ctx_api api, unsigned major, unsigned minor)
+{
+   (void)major;
+   (void)minor;
+   (void)api;
+#if defined(_XBOX1)
+   return api == GFX_CTX_DIRECT3D8_API;
+#else
+   return api == GFX_CTX_DIRECT3D9_API;
+#endif
+}
+
+static bool gfx_ctx_d3d_init(void)
+{
    return true;
 }
+
+const gfx_ctx_driver_t gfx_ctx_d3d9 = {
+   gfx_ctx_d3d_init,				// gfx_ctx_init
+   NULL,							// gfx_ctx_destroy
+   gfx_ctx_d3d_bind_api,			// gfx_ctx_bind_api
+   NULL,							// gfx_ctx_swap_interval
+   NULL,							// gfx_ctx_set_video_mode
+   NULL,							// gfx_ctx_get_video_size
+   NULL,							
+   gfx_ctx_d3d_update_title,		// gfx_ctx_update_window_title
+   gfx_ctx_d3d_check_window,		// gfx_ctx_check_window
+   NULL,							// gfx_ctx_set_resize
+   gfx_ctx_d3d_has_focus,			// gfx_ctx_has_focus
+   gfx_ctx_d3d_swap_buffers,		// gfx_ctx_swap_buffers
+   NULL,							// gfx_ctx_input_driver
+   NULL,							// gfx_ctx_get_proc_address
+   gfx_ctx_d3d_show_mouse,			// gfx_ctx_show_mouse
+   "d3d9",
+};

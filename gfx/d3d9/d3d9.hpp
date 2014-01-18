@@ -39,6 +39,7 @@
 #include "../../driver.h"
 #include "../shader_parse.h"
 
+#include "../gfx_context.h"
 #include "../gfx_common.h"
 
 #ifdef HAVE_CG
@@ -89,6 +90,7 @@ bool d3d_alive_func(void *data);
 
 struct D3DVideo
 {
+      const gfx_ctx_driver_t *ctx_driver;
       bool should_resize;
 
 #ifdef HAVE_WINDOW

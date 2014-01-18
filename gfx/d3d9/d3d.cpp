@@ -548,14 +548,12 @@ static bool d3d_frame(void *data, const void *frame,
 
    RARCH_PERFORMANCE_STOP(d3d_frame);
 
-   if (d3d->dev->Present(NULL, NULL, NULL, NULL) != D3D_OK)
-   {
-      d3d->needs_restore = true;
-      RARCH_ERR("[D3D]: Present() failed.\n");
-      return true;
-   }
+   if (d3d && d3d->ctx_driver && d3d->ctx_driver->update_window_title)
+      d3d->ctx_driver->update_window_title();
 
-   d3d_update_title(d3d);
+   if (d3d && d3d->ctx_driver && d3d->ctx_driver->swap_buffers)
+      d3d->ctx_driver->swap_buffers();
+
    return true;
 }
 
@@ -569,18 +567,26 @@ static void d3d_set_nonblock_state(void *data, bool state)
 static bool d3d_alive(void *data)
 {
    D3DVideo *d3d = reinterpret_cast<D3DVideo*>(data);
-   bool ret = d3d_alive_func(d3d);
-   return !d3d_quit && ret;
+   bool quit = false, resize = false;
+
+   if (d3d->ctx_driver && d3d->ctx_driver->check_window)
+      d3d->ctx_driver->check_window(&quit, &resize, &d3d->screen_width,
+      &d3d->screen_height, g_extern.frame_count);
+
+   if (quit)
+      d3d_quit = true;
+   else if (resize)
+      d3d->should_resize = true;
+
+   return !d3d_quit;
 }
 
 static bool d3d_focus(void *data)
 {
-#ifdef _XBOX
-   return true;
-#else
    D3DVideo *d3d = reinterpret_cast<D3DVideo*>(data);
-   return GetFocus() == d3d->hWnd;
-#endif
+   if (d3d && d3d->ctx_driver && d3d->ctx_driver->has_focus)
+      return d3d->ctx_driver->has_focus();
+   return false;
 }
 
 static void d3d_set_rotation(void *data, unsigned rot)
@@ -811,15 +817,15 @@ static bool d3d_overlay_load(void *data, const texture_image *images, unsigned n
    return true;
 }
 
-static void d3d_show_mouse(void *data, bool state);
-
 static void d3d_overlay_enable(void *data, bool state)
 {
    D3DVideo *d3d = reinterpret_cast<D3DVideo*>(data);
 
    for (unsigned i = 0; i < d3d->overlays.size(); i++)
       d3d->overlays_enabled = state;
-   d3d_show_mouse(d3d, state);
+
+   if (d3d && d3d->ctx_driver && d3d->ctx_driver->show_mouse)
+      d3d->ctx_driver->show_mouse(state);
 }
 
 static void d3d_overlay_full_screen(void *data, bool enable)
@@ -909,7 +915,9 @@ static void d3d_set_osd_msg(void *data, const char *msg, void *userdata)
 static void d3d_show_mouse(void *data, bool state)
 {
    D3DVideo *d3d = reinterpret_cast<D3DVideo*>(data);
-   d3d_show_cursor(d3d, state);
+
+   if (d3d && d3d->ctx_driver && d3d->ctx_driver->show_mouse)
+      d3d->ctx_driver->show_mouse(state);
 }
 
 #ifdef HAVE_MENU
@@ -1092,7 +1100,8 @@ bool d3d_construct(void *data, const video_info_t *info, const input_driver_t **
    driver.video_window  = (uintptr_t)d3d->hWnd;
 
 #ifdef HAVE_WINDOW
-   d3d_show_mouse(d3d, !info->fullscreen
+   if (d3d && d3d->ctx_driver && d3d->ctx_driver->show_mouse)
+      d3d->ctx_driver->show_mouse(!info->fullscreen
 #ifdef HAVE_OVERLAY
       || d3d->overlays_enabled
 #endif
@@ -1134,12 +1143,28 @@ bool d3d_construct(void *data, const video_info_t *info, const input_driver_t **
    return true;
 }
 
+static const gfx_ctx_driver_t *d3d_get_context(void)
+{
+   // TODO: GL core contexts through ANGLE?
+   enum gfx_ctx_api api = GFX_CTX_DIRECT3D9_API;
+   unsigned major = 0;
+   unsigned minor = 0;
+   return gfx_ctx_init_first(api, major, minor);
+}
+
 static void *d3d_init(const video_info_t *info, const input_driver_t **input,
       void **input_data)
 {
    D3DVideo *vid = (D3DVideo*)calloc(1, sizeof(D3DVideo));
    if (!vid)
       return NULL;
+
+   vid->ctx_driver = d3d_get_context();
+   if (!vid->ctx_driver)
+   {
+      free(vid);
+      return NULL;
+   }
 
    //default values
    vid->g_pD3D           = NULL;
