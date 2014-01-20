@@ -256,7 +256,7 @@ static void *android_input_init(void)
    {
       p_AMotionEvent_getAxisValue = dlsym(RTLD_DEFAULT, "AMotionEvent_getAxisValue");
 
-      if (p_AMotionEvent_getAxisValue != NULL)
+      if (p_AMotionEvent_getAxisValue)
       {
          RARCH_LOG("Setting engine_handle_dpad to 'Get Axis Value' (for reading extra analog sticks)");
          engine_handle_dpad = engine_handle_dpad_getaxisvalue;
@@ -1921,7 +1921,8 @@ static void android_input_poll(void *data)
       }
       else if (ident == LOOPER_ID_USER)
       {
-         if (android_app->sensor_state_mask & (1ULL << RETRO_SENSOR_ACCELEROMETER_ENABLE))
+         if ((android_app->sensor_state_mask & (1ULL << RETRO_SENSOR_ACCELEROMETER_ENABLE))
+               && android_app->accelerometerSensor)
          {
             ASensorEvent event;
             while (ASensorEventQueue_getEvents(android->sensorEventQueue, &event, 1) > 0)
@@ -2033,31 +2034,26 @@ static bool android_input_set_sensor_state(void *data, unsigned port, enum retro
    switch (action)
    {
       case RETRO_SENSOR_ACCELEROMETER_ENABLE:
-         if (android_app->sensor_state_mask &
-               (1ULL << RETRO_SENSOR_ACCELEROMETER_ENABLE))
-            return true;
-
-         if (android_app->accelerometerSensor == NULL)
+         if (!android_app->accelerometerSensor)
             android_input_enable_sensor_manager(android);
 
-         ASensorEventQueue_enableSensor(android->sensorEventQueue,
-               android_app->accelerometerSensor);
+         if (android_app->accelerometerSensor)
+            ASensorEventQueue_enableSensor(android->sensorEventQueue,
+                  android_app->accelerometerSensor);
 
          // events per second (in us).
-         ASensorEventQueue_setEventRate(android->sensorEventQueue,
-               android_app->accelerometerSensor, (1000L / event_rate) * 1000);
+         if (android_app->accelerometerSensor)
+            ASensorEventQueue_setEventRate(android->sensorEventQueue,
+                  android_app->accelerometerSensor, (1000L / event_rate) * 1000);
 
          android_app->sensor_state_mask &= ~(1ULL << RETRO_SENSOR_ACCELEROMETER_DISABLE);
          android_app->sensor_state_mask |= (1ULL  << RETRO_SENSOR_ACCELEROMETER_ENABLE);
          return true;
 
       case RETRO_SENSOR_ACCELEROMETER_DISABLE:
-         if (android_app->sensor_state_mask &
-               (1ULL << RETRO_SENSOR_ACCELEROMETER_DISABLE))
-            return true;
-
-         ASensorEventQueue_disableSensor(android->sensorEventQueue,
-               android_app->accelerometerSensor);
+         if (android_app->accelerometerSensor)
+            ASensorEventQueue_disableSensor(android->sensorEventQueue,
+                  android_app->accelerometerSensor);
          
          android_app->sensor_state_mask &= ~(1ULL << RETRO_SENSOR_ACCELEROMETER_ENABLE);
          android_app->sensor_state_mask |= (1ULL  << RETRO_SENSOR_ACCELEROMETER_DISABLE);
