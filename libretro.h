@@ -94,9 +94,6 @@ extern "C" {
 // Eventually _PRESSED will return false for an index. No further presses are registered at this point.
 #define RETRO_DEVICE_POINTER      6
 
-// FIXME: Document this.
-#define RETRO_DEVICE_SENSOR_ACCELEROMETER 7
-
 // These device types are specializations of the base types above.
 // They should only be used in retro_set_controller_type() to inform libretro implementations
 // about use of a very specific device type.
