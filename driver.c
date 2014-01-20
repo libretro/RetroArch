@@ -601,10 +601,10 @@ bool driver_set_sensor_state(unsigned port, enum retro_sensor_action action, uns
       return false;
 }
 
-float driver_sensor_get_input(unsigned port, enum retro_sensor_action action)
+float driver_sensor_get_input(unsigned port, unsigned id)
 {
    if (driver.input && driver.input_data && driver.input->get_sensor_input)
-      return driver.input->get_sensor_input(driver.input_data, port, action);
+      return driver.input->get_sensor_input(driver.input_data, port, id);
    else
       return 0.0f;
 }

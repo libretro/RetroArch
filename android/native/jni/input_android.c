@@ -2067,12 +2067,12 @@ static bool android_input_set_sensor_state(void *data, unsigned port, enum retro
    return false;
 }
 
-static float android_input_get_sensor_input(void *data, unsigned port, enum retro_sensor_action action)
+static float android_input_get_sensor_input(void *data, unsigned port, unsigned id)
 {
    android_input_t *android = (android_input_t*)data;
    struct android_app *android_app = (struct android_app*)g_android;
 
-   switch (action)
+   switch (id)
    {
       case RETRO_DEVICE_ID_SENSOR_ACCELEROMETER_X:
          return android->accelerometer_state.x;

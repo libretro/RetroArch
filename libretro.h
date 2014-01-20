@@ -700,7 +700,7 @@ enum retro_sensor_action
 };
 
 typedef bool (*retro_set_sensor_state_t)(unsigned port, enum retro_sensor_action action, unsigned rate);
-typedef float (*retro_sensor_get_input_t)(unsigned port, enum retro_sensor_action action);
+typedef float (*retro_sensor_get_input_t)(unsigned port, unsigned id);
 struct retro_sensor_interface
 {
    retro_set_sensor_state_t set_sensor_state;
