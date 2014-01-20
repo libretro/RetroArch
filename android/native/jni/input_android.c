@@ -2006,7 +2006,6 @@ static uint64_t android_input_get_capabilities(void *data)
    caps |= (1 << RETRO_DEVICE_JOYPAD);
    caps |= (1 << RETRO_DEVICE_POINTER);
    caps |= (1 << RETRO_DEVICE_ANALOG);
-   caps |= (1 << RETRO_DEVICE_SENSOR_ACCELEROMETER);
 
    return caps;
 }

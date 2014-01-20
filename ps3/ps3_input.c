@@ -378,6 +378,7 @@ static int16_t ps3_input_state(void *data, const struct retro_keybind **binds,
                return input_joypad_pressed(&ps3_joypad, port, binds[port], id);
          case RETRO_DEVICE_ANALOG:
             return input_joypad_analog(&ps3_joypad, port, index, id, binds[port]);
+#if 0
          case RETRO_DEVICE_SENSOR_ACCELEROMETER:
             switch (id)
             {
@@ -395,6 +396,7 @@ static int16_t ps3_input_state(void *data, const struct retro_keybind **binds,
                   retval = 0;
             }
             break;
+#endif
 #ifdef HAVE_MOUSE
          case RETRO_DEVICE_MOUSE:
             retval = ps3_mouse_device_state(data, port, id);
@@ -450,7 +452,6 @@ static uint64_t ps3_input_get_capabilities(void *data)
    caps |= (1 << RETRO_DEVICE_MOUSE);
 #endif
    caps |= (1 << RETRO_DEVICE_ANALOG);
-   caps |= (1 << RETRO_DEVICE_SENSOR_ACCELEROMETER);
 
    return caps;
 }
