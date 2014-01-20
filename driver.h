@@ -354,6 +354,7 @@ typedef struct input_driver
    void (*free)(void *data);
    void (*set_keybinds)(void *data, unsigned device, unsigned port, unsigned id, unsigned keybind_action);
    bool (*set_sensor_state)(void *data, unsigned port, enum retro_sensor_action action, unsigned rate);
+   float (*get_sensor_input)(void *data, unsigned port, enum retro_sensor_action action);
    uint64_t (*get_capabilities)(void *data);
    const char *ident;
 
@@ -613,6 +614,7 @@ retro_proc_address_t driver_get_proc_address(const char *sym);
 bool driver_set_rumble_state(unsigned port, enum retro_rumble_effect effect, uint16_t strength);
 // Used by RETRO_ENVIRONMENT_GET_SENSOR_INTERFACE
 bool driver_set_sensor_state(unsigned port, enum retro_sensor_action action, unsigned rate);
+float driver_sensor_get_input(unsigned port, enum retro_sensor_action action);
 
 // Used by RETRO_ENVIRONMENT_GET_CAMERA_INTERFACE
 #ifdef HAVE_CAMERA

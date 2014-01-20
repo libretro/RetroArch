@@ -443,6 +443,7 @@ const input_driver_t input_xinput =
    xdk_input_free_input,
    xdk_input_set_keybinds,
    NULL,
+   NULL,
    xdk_input_get_capabilities,
    "xinput",
 

@@ -818,6 +818,7 @@ const input_driver_t input_udev = {
    udev_input_free,
    NULL,
    NULL,
+   NULL,
    udev_input_get_capabilities,
    "udev",
    udev_input_grab_mouse,

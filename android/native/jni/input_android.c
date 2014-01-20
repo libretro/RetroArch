@@ -1983,26 +1983,9 @@ static int16_t android_input_state(void *data, const struct retro_keybind **bind
             default:
                return 0;
          }
-      case RETRO_DEVICE_SENSOR_ACCELEROMETER:
-         switch (id)
-         {
-            // FIXME: These are float values.
-            // If they have a fixed range, e.g. (-1, 1), they can
-            // be converted to fixed point easily. If they have unbound range, this should be
-            // queried from a function in retro_sensor_interface.
-            case RETRO_DEVICE_ID_SENSOR_ACCELEROMETER_X:
-               return android->accelerometer_state.x;
-            case RETRO_DEVICE_ID_SENSOR_ACCELEROMETER_Y:
-               return android->accelerometer_state.y;
-            case RETRO_DEVICE_ID_SENSOR_ACCELEROMETER_Z:
-               return android->accelerometer_state.z;
-            default:
-               return 0;
-         }
-         break;
-      default:
-         return 0;
    }
+
+   return 0;
 }
 
 static bool android_input_key_pressed(void *data, int key)
@@ -2079,10 +2062,27 @@ static bool android_input_set_sensor_state(void *data, unsigned port, enum retro
          android_app->sensor_state_mask &= ~(1ULL << RETRO_SENSOR_ACCELEROMETER_ENABLE);
          android_app->sensor_state_mask |= (1ULL  << RETRO_SENSOR_ACCELEROMETER_DISABLE);
          return true;
-
-      default:
-         return false;
    }
+
+   return false;
+}
+
+static float android_input_get_sensor_input(void *data, unsigned port, enum retro_sensor_action action)
+{
+   android_input_t *android = (android_input_t*)data;
+   struct android_app *android_app = (struct android_app*)g_android;
+
+   switch (action)
+   {
+      case RETRO_DEVICE_ID_SENSOR_ACCELEROMETER_X:
+         return android->accelerometer_state.x;
+      case RETRO_DEVICE_ID_SENSOR_ACCELEROMETER_Y:
+         return android->accelerometer_state.y;
+      case RETRO_DEVICE_ID_SENSOR_ACCELEROMETER_Z:
+         return android->accelerometer_state.z;
+   }
+
+   return 0;
 }
 
 const input_driver_t input_android = {
@@ -2093,6 +2093,7 @@ const input_driver_t input_android = {
    android_input_free_input,
    android_input_set_keybinds,
    android_input_set_sensor_state,
+   android_input_get_sensor_input,
    android_input_get_capabilities,
    "android_input",
 };

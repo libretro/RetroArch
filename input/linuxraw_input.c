@@ -241,6 +241,7 @@ const input_driver_t input_linuxraw = {
    linuxraw_input_free,
    NULL,
    NULL,
+   NULL,
    linuxraw_get_capabilities,
    "linuxraw",
    NULL,
