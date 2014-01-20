@@ -2070,11 +2070,11 @@ static float android_input_get_sensor_input(void *data, unsigned port, unsigned 
 
    switch (id)
    {
-      case RETRO_DEVICE_ID_SENSOR_ACCELEROMETER_X:
+      case RETRO_SENSOR_ACCELEROMETER_X:
          return android->accelerometer_state.x;
-      case RETRO_DEVICE_ID_SENSOR_ACCELEROMETER_Y:
+      case RETRO_SENSOR_ACCELEROMETER_Y:
          return android->accelerometer_state.y;
-      case RETRO_DEVICE_ID_SENSOR_ACCELEROMETER_Z:
+      case RETRO_SENSOR_ACCELEROMETER_Z:
          return android->accelerometer_state.z;
    }
 

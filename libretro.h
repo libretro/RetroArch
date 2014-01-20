@@ -150,11 +150,6 @@ extern "C" {
 #define RETRO_DEVICE_ID_POINTER_Y         1
 #define RETRO_DEVICE_ID_POINTER_PRESSED   2
 
-// Id values for SENSOR types.
-#define RETRO_DEVICE_ID_SENSOR_ACCELEROMETER_X      0
-#define RETRO_DEVICE_ID_SENSOR_ACCELEROMETER_Y      1
-#define RETRO_DEVICE_ID_SENSOR_ACCELEROMETER_Z      2
-
 // Returned from retro_get_region().
 #define RETRO_REGION_NTSC  0
 #define RETRO_REGION_PAL   1
@@ -695,6 +690,11 @@ enum retro_sensor_action
 
    RETRO_SENSOR_DUMMY = INT_MAX
 };
+
+// Id values for SENSOR types.
+#define RETRO_SENSOR_ACCELEROMETER_X 0
+#define RETRO_SENSOR_ACCELEROMETER_Y 1
+#define RETRO_SENSOR_ACCELEROMETER_Z 2
 
 typedef bool (*retro_set_sensor_state_t)(unsigned port, enum retro_sensor_action action, unsigned rate);
 typedef float (*retro_sensor_get_input_t)(unsigned port, unsigned id);
