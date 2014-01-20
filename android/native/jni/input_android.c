@@ -2062,6 +2062,8 @@ static bool android_input_set_sensor_state(void *data, unsigned port, enum retro
          android_app->sensor_state_mask &= ~(1ULL << RETRO_SENSOR_ACCELEROMETER_ENABLE);
          android_app->sensor_state_mask |= (1ULL  << RETRO_SENSOR_ACCELEROMETER_DISABLE);
          return true;
+      default:
+         return false;
    }
 
    return false;
@@ -2070,7 +2072,6 @@ static bool android_input_set_sensor_state(void *data, unsigned port, enum retro
 static float android_input_get_sensor_input(void *data, unsigned port, unsigned id)
 {
    android_input_t *android = (android_input_t*)data;
-   struct android_app *android_app = (struct android_app*)g_android;
 
    switch (id)
    {
