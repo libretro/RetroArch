@@ -354,7 +354,7 @@ typedef struct input_driver
    void (*free)(void *data);
    void (*set_keybinds)(void *data, unsigned device, unsigned port, unsigned id, unsigned keybind_action);
    bool (*set_sensor_state)(void *data, unsigned port, enum retro_sensor_action action, unsigned rate);
-   float (*get_sensor_input)(void *data, unsigned port, enum retro_sensor_action action);
+   float (*get_sensor_input)(void *data, unsigned port, unsigned id);
    uint64_t (*get_capabilities)(void *data);
    const char *ident;
 
