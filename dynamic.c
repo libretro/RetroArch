@@ -768,7 +768,9 @@ bool rarch_environment_cb(unsigned cmd, void *data)
          break;
       }
 
-#ifdef HAVE_THREADS
+      //FIXME - PS3 audio driver needs to be fixed so that threaded audio works correctly 
+      //(audio is already on a thread for PS3 audio driver so that's probably the problem)
+#if defined(HAVE_THREADS) && !defined(__CELLOS_LV2__)
       case RETRO_ENVIRONMENT_SET_AUDIO_CALLBACK:
       {
          RARCH_LOG("Environ SET_AUDIO_CALLBACK.\n");
