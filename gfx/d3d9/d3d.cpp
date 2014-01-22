@@ -26,8 +26,6 @@
 #include "../../compat/posix_string.h"
 #include "../../performance.h"
 
-static void d3d_render_msg(void *data, const char *msg, void *userdata);
-
 #ifndef _XBOX
 #define HAVE_MONITOR
 #define HAVE_WINDOW

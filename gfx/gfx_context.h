@@ -23,6 +23,10 @@
 #include "../config.h"
 #endif
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #define MAX_EGLIMAGE_TEXTURES 32
 
 enum gfx_ctx_api
@@ -114,6 +118,10 @@ extern const gfx_ctx_driver_t gfx_ctx_null;
 
 const gfx_ctx_driver_t *gfx_ctx_find_driver(const char *ident); // Finds driver with ident. Does not initialize.
 const gfx_ctx_driver_t *gfx_ctx_init_first(enum gfx_ctx_api api, unsigned major, unsigned minor); // Finds first suitable driver and initializes.
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
 
