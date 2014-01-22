@@ -1773,6 +1773,7 @@ static inline void gl_set_texture_fmts(void *data, bool rgb32)
 #endif
 }
 
+#ifdef RARCH_CONSOLE
 static inline void gl_reinit_textures(void *data, const video_info_t *video)
 {
    gl_t *gl = (gl_t*)data;
@@ -1818,6 +1819,7 @@ static inline void gl_reinit_textures(void *data, const video_info_t *video)
    if (!gl_check_error())
       RARCH_ERR("GL error reported while reinitializing textures. This should not happen ...\n");
 }
+#endif
 
 #if !defined(HAVE_OPENGLES) && defined(HAVE_FFMPEG)
 static void gl_init_pbo_readback(void *data)
