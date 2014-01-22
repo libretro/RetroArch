@@ -29,6 +29,7 @@ typedef struct d3d_font_renderer
 
 extern const d3d_font_renderer_t d3d_xbox360_font;
 extern const d3d_font_renderer_t d3d_xdk1_font;
+extern const d3d_font_renderer_t d3d_win32_font;
 
 const d3d_font_renderer_t *d3d_font_init_first(void *data,
       const char *font_path, unsigned font_size);

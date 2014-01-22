@@ -109,7 +109,7 @@ void RenderChain::clear()
    luts.clear();
 }
 
-void RenderChain::set_final_viewport(const D3DVIEWPORT9& final_viewport)
+void RenderChain::set_final_viewport(const D3DVIEWPORT& final_viewport)
 {
    this->final_viewport = final_viewport;
 }

@@ -26,8 +26,6 @@
 #include "../../compat/posix_string.h"
 #include "../../performance.h"
 
-static bool d3d_quit = false;
-
 static void d3d_render_msg(void *data, const char *msg, void *userdata);
 
 #ifndef _XBOX
@@ -93,7 +91,9 @@ RECT d3d_monitor_rect(void *data)
 static void d3d_deinitialize(void *data)
 {
    D3DVideo *d3d = reinterpret_cast<D3DVideo*>(data);
-   d3d_deinit_font(d3d);
+
+   if (d3d->font_ctx && d3d->font_ctx->deinit)
+      d3d->font_ctx->deinit(d3d);
    d3d_deinit_chain(d3d);
 #ifdef HAVE_CG
    d3d_deinit_shader(d3d);
@@ -102,49 +102,9 @@ static void d3d_deinitialize(void *data)
    d3d->needs_restore = false;
 }
 
-static void d3d_resize(void *data, unsigned new_width, unsigned new_height);
-
 #ifdef HAVE_WINDOW
-namespace Callback
-{
-   static D3DVideo *curD3D = NULL;
-   static void *dinput;
-
-   LRESULT CALLBACK WindowProc(HWND hWnd, UINT message,
-         WPARAM wParam, LPARAM lParam)
-   {
-      switch (message)
-      {
-         case WM_CREATE:
-            LPCREATESTRUCT p_cs;
-            p_cs = (LPCREATESTRUCT)lParam;
-            curD3D = (D3DVideo*)p_cs->lpCreateParams;
-            break;
-
-         case WM_CHAR:
-         case WM_KEYDOWN:
-         case WM_KEYUP:
-         case WM_SYSKEYUP:
-         case WM_SYSKEYDOWN:
-            return win32_handle_keyboard_event(hWnd, message, wParam, lParam);
-
-         case WM_DESTROY:
-            d3d_quit = true;
-            return 0;
-         case WM_SIZE:
-            unsigned new_width, new_height;
-            new_width = LOWORD(lParam);
-            new_height = HIWORD(lParam);
-
-            if (new_width && new_height)
-               d3d_resize(curD3D, new_width, new_height);
-            return 0;
-      }
-      if (dinput_handle_message(dinput, message, wParam, lParam))
-         return 0;
-      return DefWindowProc(hWnd, message, wParam, lParam);
-   }
-}
+extern LRESULT CALLBACK WindowProc(HWND hWnd, UINT message,
+        WPARAM wParam, LPARAM lParam);
 #endif
 
 static bool d3d_init_base(void *data, const video_info_t *info)
@@ -253,7 +213,8 @@ static bool d3d_initialize(void *data, const video_info_t *info)
       return false;
    }
 
-   if (!d3d_init_font(d3d))
+   d3d->font_ctx = d3d_font_init_first(d3d, g_settings.video.font_path, g_settings.video.font_size);
+   if (!d3d->font_ctx)
    {
       RARCH_ERR("Failed to initialize font.\n");
       return false;
@@ -262,7 +223,7 @@ static bool d3d_initialize(void *data, const video_info_t *info)
    return true;
 }
 
-static bool d3d_restore(void *data)
+bool d3d_restore(void *data)
 {
    D3DVideo *d3d = reinterpret_cast<D3DVideo*>(data);
    d3d_deinitialize(d3d);
@@ -272,22 +233,6 @@ static bool d3d_restore(void *data)
       RARCH_ERR("[D3D]: Restore error.\n");
 
    return !d3d->needs_restore;
-}
-
-static void d3d_resize(void *data, unsigned new_width, unsigned new_height)
-{
-   D3DVideo *d3d = reinterpret_cast<D3DVideo*>(data);
-   if (!d3d->dev)
-      return;
-
-   RARCH_LOG("[D3D]: Resize %ux%u.\n", new_width, new_height);
-
-   if (new_width != d3d->video_info.width || new_height != d3d->video_info.height)
-   {
-      d3d->video_info.width = d3d->screen_width = new_width;
-      d3d->video_info.height = d3d->screen_height = new_height;
-      d3d_restore(d3d);
-   }
 }
 
 #ifdef HAVE_OVERLAY
@@ -531,7 +476,8 @@ static bool d3d_frame(void *data, const void *frame,
       return false;
    }
 
-   d3d_render_msg(d3d, msg, NULL);
+   if (d3d->font_ctx && d3d->font_ctx->render_msg)
+      d3d->font_ctx->render_msg(d3d, msg, NULL);
 
 #ifdef HAVE_MENU
    if (d3d->rgui.enabled)
@@ -548,14 +494,12 @@ static bool d3d_frame(void *data, const void *frame,
 
    RARCH_PERFORMANCE_STOP(d3d_frame);
 
-   if (d3d->dev->Present(NULL, NULL, NULL, NULL) != D3D_OK)
-   {
-      d3d->needs_restore = true;
-      RARCH_ERR("[D3D]: Present() failed.\n");
-      return true;
-   }
+   if (d3d && d3d->ctx_driver && d3d->ctx_driver->update_window_title)
+      d3d->ctx_driver->update_window_title();
 
-   d3d_update_title(d3d);
+   if (d3d && d3d->ctx_driver && d3d->ctx_driver->swap_buffers)
+      d3d->ctx_driver->swap_buffers();
+
    return true;
 }
 
@@ -569,18 +513,24 @@ static void d3d_set_nonblock_state(void *data, bool state)
 static bool d3d_alive(void *data)
 {
    D3DVideo *d3d = reinterpret_cast<D3DVideo*>(data);
-   bool ret = d3d_alive_func(d3d);
-   return !d3d_quit && ret;
+   bool quit = false, resize = false;
+
+   if (d3d->ctx_driver && d3d->ctx_driver->check_window)
+      d3d->ctx_driver->check_window(&quit, &resize, &d3d->screen_width,
+      &d3d->screen_height, g_extern.frame_count);
+
+   else if (resize)
+      d3d->should_resize = true;
+
+   return !quit;
 }
 
 static bool d3d_focus(void *data)
 {
-#ifdef _XBOX
-   return true;
-#else
    D3DVideo *d3d = reinterpret_cast<D3DVideo*>(data);
-   return GetFocus() == d3d->hWnd;
-#endif
+   if (d3d && d3d->ctx_driver && d3d->ctx_driver->has_focus)
+      return d3d->ctx_driver->has_focus();
+   return false;
 }
 
 static void d3d_set_rotation(void *data, unsigned rot)
@@ -811,15 +761,15 @@ static bool d3d_overlay_load(void *data, const texture_image *images, unsigned n
    return true;
 }
 
-static void d3d_show_mouse(void *data, bool state);
-
 static void d3d_overlay_enable(void *data, bool state)
 {
    D3DVideo *d3d = reinterpret_cast<D3DVideo*>(data);
 
    for (unsigned i = 0; i < d3d->overlays.size(); i++)
       d3d->overlays_enabled = state;
-   d3d_show_mouse(d3d, state);
+
+   if (d3d && d3d->ctx_driver && d3d->ctx_driver->show_mouse)
+      d3d->ctx_driver->show_mouse(state);
 }
 
 static void d3d_overlay_full_screen(void *data, bool enable)
@@ -886,15 +836,6 @@ static void d3d_apply_state_changes(void *data)
    d3d->should_resize = true;
 }
 
-static void d3d_render_msg(void *data, const char *msg, void *userdata)
-{
-   D3DVideo *d3d = reinterpret_cast<D3DVideo*>(data);
-   d3d_font_msg(d3d, msg, userdata);
-
-   if (userdata)
-      d3d_set_font_rect(d3d, NULL);
-}
-
 static void d3d_set_osd_msg(void *data, const char *msg, void *userdata)
 {
    font_params_t *params = (font_params_t*)userdata;
@@ -903,13 +844,16 @@ static void d3d_set_osd_msg(void *data, const char *msg, void *userdata)
    if (params)
       d3d_set_font_rect(d3d, params);
 
-   d3d_render_msg(d3d, msg, params);
+   if (d3d->font_ctx && d3d->font_ctx->render_msg)
+      d3d->font_ctx->render_msg(d3d, msg, params);
 }
 
 static void d3d_show_mouse(void *data, bool state)
 {
    D3DVideo *d3d = reinterpret_cast<D3DVideo*>(data);
-   d3d_show_cursor(d3d, state);
+
+   if (d3d && d3d->ctx_driver && d3d->ctx_driver->show_mouse)
+      d3d->ctx_driver->show_mouse(state);
 }
 
 #ifdef HAVE_MENU
@@ -1009,7 +953,7 @@ static void d3d_get_poke_interface(void *data, const video_poke_interface_t **if
 }
 
 // Delay constructor due to lack of exceptions.
-bool d3d_construct(void *data, const video_info_t *info, const input_driver_t **input,
+static bool d3d_construct(void *data, const video_info_t *info, const input_driver_t **input,
       void **input_data)
 {
    D3DVideo *d3d = reinterpret_cast<D3DVideo*>(data);
@@ -1034,7 +978,7 @@ bool d3d_construct(void *data, const video_info_t *info, const input_driver_t **
    memset(&d3d->windowClass, 0, sizeof(d3d->windowClass));
    d3d->windowClass.cbSize        = sizeof(d3d->windowClass);
    d3d->windowClass.style         = CS_HREDRAW | CS_VREDRAW;
-   d3d->windowClass.lpfnWndProc   = Callback::WindowProc;
+   d3d->windowClass.lpfnWndProc   = WindowProc;
    d3d->windowClass.hInstance     = NULL;
    d3d->windowClass.hCursor       = LoadCursor(NULL, IDC_ARROW);
    d3d->windowClass.lpszClassName = "RetroArch";
@@ -1092,12 +1036,12 @@ bool d3d_construct(void *data, const video_info_t *info, const input_driver_t **
    driver.video_window  = (uintptr_t)d3d->hWnd;
 
 #ifdef HAVE_WINDOW
-   d3d_show_mouse(d3d, !info->fullscreen
+   if (d3d && d3d->ctx_driver && d3d->ctx_driver->show_mouse)
+      d3d->ctx_driver->show_mouse(!info->fullscreen
 #ifdef HAVE_OVERLAY
       || d3d->overlays_enabled
 #endif
    );
-   d3d_quit = false;
 
    ShowWindow(d3d->hWnd, SW_RESTORE);
    UpdateWindow(d3d->hWnd);
@@ -1121,17 +1065,21 @@ bool d3d_construct(void *data, const video_info_t *info, const input_driver_t **
    if (!d3d_initialize(d3d, &d3d->video_info))
       return false;
 
-#ifndef _XBOX
-   if (input && input_data)
-   {
-      Callback::dinput = input_dinput.init();
-      *input = Callback::dinput ? &input_dinput : NULL;
-      *input_data = Callback::dinput;
-   }
-#endif
+   if (input && input_data &&
+      d3d->ctx_driver && d3d->ctx_driver->input_driver)
+      d3d->ctx_driver->input_driver(input, input_data);
 
    RARCH_LOG("[D3D]: Init complete.\n");
    return true;
+}
+
+static const gfx_ctx_driver_t *d3d_get_context(void)
+{
+   // TODO: GL core contexts through ANGLE?
+   enum gfx_ctx_api api = GFX_CTX_DIRECT3D9_API;
+   unsigned major = 0;
+   unsigned minor = 0;
+   return gfx_ctx_init_first(api, major, minor);
 }
 
 static void *d3d_init(const video_info_t *info, const input_driver_t **input,
@@ -1140,6 +1088,13 @@ static void *d3d_init(const video_info_t *info, const input_driver_t **input,
    D3DVideo *vid = (D3DVideo*)calloc(1, sizeof(D3DVideo));
    if (!vid)
       return NULL;
+
+   vid->ctx_driver = d3d_get_context();
+   if (!vid->ctx_driver)
+   {
+      free(vid);
+      return NULL;
+   }
 
    //default values
    vid->g_pD3D           = NULL;

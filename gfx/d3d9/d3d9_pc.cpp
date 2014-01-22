@@ -29,6 +29,69 @@
 #endif
 #endif
 
+static D3DVideo *curD3D = NULL;
+static bool d3d_quit = false;
+static void *dinput;
+
+extern bool d3d_restore(void *data);
+
+static void d3d_resize(unsigned new_width, unsigned new_height)
+{
+#ifdef _XBOX
+   D3DVideo *d3d = reinterpret_cast<D3DVideo*>(driver.video_data);
+#else
+   D3DVideo *d3d = reinterpret_cast<D3DVideo*>(curD3D);
+#endif
+   if (!d3d->dev)
+      return;
+
+   RARCH_LOG("[D3D]: Resize %ux%u.\n", new_width, new_height);
+
+   if (new_width != d3d->video_info.width || new_height != d3d->video_info.height)
+   {
+      d3d->video_info.width = d3d->screen_width = new_width;
+      d3d->video_info.height = d3d->screen_height = new_height;
+      d3d_restore(d3d);
+   }
+}
+
+#ifdef HAVE_WINDOW
+LRESULT CALLBACK WindowProc(HWND hWnd, UINT message,
+        WPARAM wParam, LPARAM lParam)
+{
+    switch (message)
+    {
+        case WM_CREATE:
+			LPCREATESTRUCT p_cs;
+			p_cs = (LPCREATESTRUCT)lParam;
+			curD3D = (D3DVideo*)p_cs->lpCreateParams;
+			break;
+
+        case WM_CHAR:
+        case WM_KEYDOWN:
+        case WM_KEYUP:
+        case WM_SYSKEYUP:
+        case WM_SYSKEYDOWN:
+			return win32_handle_keyboard_event(hWnd, message, wParam, lParam);
+
+        case WM_DESTROY:
+			d3d_quit = true;
+			return 0;
+        case WM_SIZE:
+			unsigned new_width, new_height;
+			new_width = LOWORD(lParam);
+			new_height = HIWORD(lParam);
+
+			if (new_width && new_height)
+				d3d_resize(new_width, new_height);
+			return 0;
+    }
+    if (dinput_handle_message(dinput, message, wParam, lParam))
+        return 0;
+    return DefWindowProc(hWnd, message, wParam, lParam);
+}
+#endif
+
 bool d3d_process_shader(void *data)
 {
    D3DVideo *d3d = reinterpret_cast<D3DVideo*>(data);
@@ -38,9 +101,19 @@ bool d3d_process_shader(void *data)
    return d3d_init_singlepass(d3d);
 }
 
-void d3d_update_title(void *data)
+static void gfx_ctx_d3d_swap_buffers(void)
 {
-   D3DVideo *d3d = reinterpret_cast<D3DVideo*>(data);
+   D3DVideo *d3d = reinterpret_cast<D3DVideo*>(driver.video_data);
+   if (d3d->dev->Present(NULL, NULL, NULL, NULL) != D3D_OK)
+   {
+      d3d->needs_restore = true;
+      RARCH_ERR("[D3D]: Present() failed.\n");
+   }
+}
+
+static void gfx_ctx_d3d_update_title(void)
+{
+   D3DVideo *d3d = reinterpret_cast<D3DVideo*>(driver.video_data);
    char buffer[128], buffer_fps[128];
    bool fps_draw = g_settings.fps_show;
    if (gfx_get_fps(buffer, sizeof(buffer), fps_draw ? buffer_fps : NULL, sizeof(buffer_fps)))
@@ -346,35 +419,7 @@ void d3d_deinit_chain(void *data)
    d3d->chain = NULL;
 }
 
-bool d3d_init_font(void *data)
-{
-   D3DVideo *d3d = reinterpret_cast<D3DVideo*>(data);
-   D3DXFONT_DESC desc = {
-      static_cast<int>(g_settings.video.font_size), 0, 400, 0,
-      false, DEFAULT_CHARSET,
-      OUT_TT_PRECIS,
-      CLIP_DEFAULT_PRECIS,
-      DEFAULT_PITCH,
-      "Verdana" // Hardcode ftl :(
-   };
-
-   uint32_t r = static_cast<uint32_t>(g_settings.video.msg_color_r * 255) & 0xff;
-   uint32_t g = static_cast<uint32_t>(g_settings.video.msg_color_g * 255) & 0xff;
-   uint32_t b = static_cast<uint32_t>(g_settings.video.msg_color_b * 255) & 0xff;
-   d3d->font_color = D3DCOLOR_XRGB(r, g, b);
-
-   return SUCCEEDED(D3DXCreateFontIndirect(d3d->dev, &desc, &d3d->font));
-}
-
-void d3d_deinit_font(void *data)
-{
-   D3DVideo *d3d = reinterpret_cast<D3DVideo*>(data);
-   if (d3d->font)
-      d3d->font->Release();
-   d3d->font = NULL;
-}
-
-void d3d_show_cursor(void *data, bool state)
+static void gfx_ctx_d3d_show_mouse(bool state)
 {
 #ifdef HAVE_WINDOW
    if (state)
@@ -382,31 +427,6 @@ void d3d_show_cursor(void *data, bool state)
    else
       while (ShowCursor(FALSE) >= 0);
 #endif
-}
-
-void d3d_font_msg(void *data, const char *msg, void *userdata)
-{
-   D3DVideo *d3d = reinterpret_cast<D3DVideo*>(data);
-   font_params_t *params = (font_params_t*)userdata;
-
-   if (msg && SUCCEEDED(d3d->dev->BeginScene()))
-   {
-      d3d->font->DrawTextA(NULL,
-            msg,
-            -1,
-            &d3d->font_rect_shifted,
-            DT_LEFT,
-            ((d3d->font_color >> 2) & 0x3f3f3f) | 0xff000000);
-
-      d3d->font->DrawTextA(NULL,
-            msg,
-            -1,
-            &d3d->font_rect,
-            DT_LEFT,
-            d3d->font_color | 0xff000000);
-
-      d3d->dev->EndScene();
-   }
 }
 
 void d3d_make_d3dpp(void *data, const video_info_t *info, D3DPRESENT_PARAMETERS *d3dpp)
@@ -442,9 +462,15 @@ void d3d_make_d3dpp(void *data, const video_info_t *info, D3DPRESENT_PARAMETERS 
    }
 }
 
-bool d3d_alive_func(void *data)
+static void gfx_ctx_d3d_check_window(bool *quit,
+   bool *resize, unsigned *width, unsigned *height, unsigned frame_count)
 {
-   D3DVideo *d3d = reinterpret_cast<D3DVideo*>(data);
+   D3DVideo *d3d = reinterpret_cast<D3DVideo*>(driver.video_data);
+   *quit = false;
+   *resize = false;
+
+   if (d3d_quit)
+      *quit = true;
 #ifndef _XBOX
    MSG msg;
 
@@ -454,5 +480,57 @@ bool d3d_alive_func(void *data)
       DispatchMessage(&msg);
    }
 #endif
+}
+
+static bool gfx_ctx_d3d_has_focus(void)
+{
+#ifdef _XBOX
+   return true;
+#else
+   D3DVideo *d3d = reinterpret_cast<D3DVideo*>(driver.video_data);
+   return GetFocus() == d3d->hWnd;
+#endif
+}
+
+static bool gfx_ctx_d3d_bind_api(enum gfx_ctx_api api, unsigned major, unsigned minor)
+{
+   (void)major;
+   (void)minor;
+   (void)api;
+#if defined(_XBOX1)
+   return api == GFX_CTX_DIRECT3D8_API;
+#else
+   return api == GFX_CTX_DIRECT3D9_API;
+#endif
+}
+
+static bool gfx_ctx_d3d_init(void)
+{
    return true;
 }
+
+static void gfx_ctx_d3d_input_driver(const input_driver_t **input, void **input_data)
+{
+   dinput = input_dinput.init();
+   *input = dinput ? &input_dinput : NULL;
+   *input_data = dinput;
+}
+
+const gfx_ctx_driver_t gfx_ctx_d3d9 = {
+   gfx_ctx_d3d_init,
+   NULL,							// gfx_ctx_destroy
+   gfx_ctx_d3d_bind_api,
+   NULL,							// gfx_ctx_swap_interval
+   NULL,							// gfx_ctx_set_video_mode
+   NULL,							// gfx_ctx_get_video_size
+   NULL,							
+   gfx_ctx_d3d_update_title,
+   gfx_ctx_d3d_check_window,
+   d3d_resize,
+   gfx_ctx_d3d_has_focus,
+   gfx_ctx_d3d_swap_buffers,
+   gfx_ctx_d3d_input_driver,
+   NULL,
+   gfx_ctx_d3d_show_mouse,
+   "d3d9",
+};

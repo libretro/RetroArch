@@ -194,6 +194,7 @@ const input_driver_t input_psp = {
    psp_input_free_input,
    psp_input_set_keybinds,
    NULL,
+   NULL,
    psp_input_get_capabilities,
    "psp",
 };

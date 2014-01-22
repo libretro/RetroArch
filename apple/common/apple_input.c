@@ -445,6 +445,7 @@ const input_driver_t input_apple = {
    apple_input_free_input,
    apple_input_set_keybinds,
    NULL,
+   NULL,
    apple_input_get_capabilities,
    "apple_input",
    NULL,

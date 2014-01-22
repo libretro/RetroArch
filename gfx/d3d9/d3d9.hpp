@@ -39,6 +39,8 @@
 #include "../../driver.h"
 #include "../shader_parse.h"
 
+#include "../fonts/d3d_font.h"
+#include "../gfx_context.h"
 #include "../gfx_common.h"
 
 #ifdef HAVE_CG
@@ -80,15 +82,14 @@ bool d3d_init_singlepass(void *data);
 bool d3d_init_multipass(void *data);
 bool d3d_init_chain(void *data, const video_info_t *video_info);
 void d3d_deinit_chain(void *data);
-bool d3d_init_font(void *data);
-void d3d_deinit_font(void *data);
-void d3d_font_msg(void *data, const char *msg, void *userdata);
 void d3d_show_cursor(void *data, bool state);
 void d3d_make_d3dpp(void *data, const video_info_t *info, D3DPRESENT_PARAMETERS *d3dpp);
 bool d3d_alive_func(void *data);
 
 struct D3DVideo
 {
+      const d3d_font_renderer_t *font_ctx;
+      const gfx_ctx_driver_t *ctx_driver;
       bool should_resize;
 
 #ifdef HAVE_WINDOW
