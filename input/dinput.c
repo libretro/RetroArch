@@ -641,6 +641,7 @@ static const char* const XINPUT_PAD_NAMES[] =
    "MadCatz GamePad",
    "MadCatz GamePad (Controller)",
    "Controller (MadCatz GamePad)",
+   "Controller (GPX Gamepad)",
    NULL
 };
 
