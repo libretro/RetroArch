@@ -92,7 +92,7 @@ typedef struct
 extern int g_xinput_pad_indexes[MAX_PLAYERS];
 extern bool g_xinput_block_pads;
 
-// For xinput1_3.dll
+// For xinput1_n.dll
 static HINSTANCE g_winxinput_dll;
 
 // Function pointer, to be assigned with GetProcAddress
@@ -140,8 +140,6 @@ const char* winxinput_joypad_name (unsigned pad)
       // TODO: Different name if disconnected?
       return XBOX_CONTROLLER_NAMES[xplayer];
 }
-
-
 
 static bool winxinput_joypad_init(void)
 {
@@ -240,7 +238,6 @@ static bool winxinput_joypad_init(void)
    }
 
    return true;
-
 }
 
 static bool winxinput_joypad_query_pad(unsigned pad)
@@ -261,6 +258,7 @@ static void winxinput_joypad_destroy(void)
    FreeLibrary(g_winxinput_dll);
    g_winxinput_dll    = NULL;
    g_XInputGetStateEx = NULL;
+   g_XInputSetState   = NULL;
 
    dinput_joypad.destroy();
    g_xinput_block_pads = false;
