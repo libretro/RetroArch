@@ -165,10 +165,10 @@ static ssize_t ps3_audio_write(void *data, const void *buf, size_t size)
 static bool ps3_audio_stop(void *data)
 {
    ps3_audio_t *aud = data;
-   if (data->started)
+   if (aud->started)
    {
       cellAudioPortStop(aud->audio_port);
-      data->started = false;
+      aud->started = false;
    }
    return true;
 }
@@ -176,10 +176,10 @@ static bool ps3_audio_stop(void *data)
 static bool ps3_audio_start(void *data)
 {
    ps3_audio_t *aud = data;
-   if (!data->started)
+   if (!aud->started)
    {
       cellAudioPortStart(aud->audio_port);
-      data->started = true;
+      aud->started = true;
    }
    return true;
 }
