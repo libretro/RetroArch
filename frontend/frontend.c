@@ -166,6 +166,12 @@ static void rarch_get_environment_console(void)
 #define attempt_load_game_fails (1ULL << MODE_EXIT)
 #endif
 
+#if defined(RARCH_CONSOLE)
+#define load_dummy_on_core_shutdown false
+#else
+#define load_dummy_on_core_shutdown true
+#endif
+
 #define frontend_init_enable true
 #define menu_init_enable true
 #define initial_lifecycle_state_preinit false
@@ -176,7 +182,15 @@ int main_entry_iterate(signature(), args_type() args)
    static retro_keyboard_event_t key_event;
 
    if (g_extern.system.shutdown)
-      return 1;
+   {
+#ifdef HAVE_MENU
+      // Load dummy core instead of exiting RetroArch completely.
+      if (load_dummy_on_core_shutdown)
+         load_menu_game_prepare_dummy();
+      else
+#endif
+         return 1;
+   }
    else if (g_extern.lifecycle_state & (1ULL << MODE_LOAD_GAME))
    {
       load_menu_game_prepare();
