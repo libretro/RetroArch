@@ -761,12 +761,8 @@ static void *udev_input_init(void)
    }
 
    // If using KMS and we forgot this, we could lock ourselves out completely.
-   // Include this as a safety guard.
    if (!udev->num_devices)
-   {
-      RARCH_ERR("[udev]: Couldn't open any devices. Are permissions set correctly for /dev/input/event*?\n");
-      goto error;
-   }
+      RARCH_WARN("[udev]: Couldn't open any keyboard, mouse or touchpad. Are permissions set correctly for /dev/input/event*?\n");
 
    udev->joypad = input_joypad_init_driver(g_settings.input.joypad_driver);
    input_init_keyboard_lut(rarch_key_map_linux);
