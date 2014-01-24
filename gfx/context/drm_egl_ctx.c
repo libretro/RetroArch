@@ -560,16 +560,8 @@ void gfx_ctx_destroy(void)
 
 static void gfx_ctx_input_driver(const input_driver_t **input, void **input_data)
 {
-   // FIXME: Rather than hardcode, the user should be able to set the input driver here.
-#ifdef HAVE_UDEV
-   void *udev  = input_udev.init();
-   *input      = udev ? &input_udev : NULL;
-   *input_data = udev;
-#else
-   void *linuxinput = input_linuxraw.init();
-   *input           = linuxinput ? &input_linuxraw : NULL;
-   *input_data      = linuxinput;
-#endif
+   *input = NULL;
+   *input_data = NULL;
 }
 
 static bool gfx_ctx_has_focus(void)

@@ -738,7 +738,7 @@ static void print_compiler(FILE *file)
       __GNUC__, __GNUC_MINOR__, __GNUC_PATCHLEVEL__, (unsigned)(CHAR_BIT * sizeof(size_t)));
 #elif defined(__clang__)
    fprintf(file, "Clang/LLVM (%s) %u-bit\n",
-      __VERSION__, (unsigned)(CHAR_BIT * sizeof(size_t)));
+      __clang_version__, (unsigned)(CHAR_BIT * sizeof(size_t)));
 #elif defined(__GNUC__)
    fprintf(file, "GCC (%d.%d.%d) %u-bit\n",
       __GNUC__, __GNUC_MINOR__, __GNUC_PATCHLEVEL__, (unsigned)(CHAR_BIT * sizeof(size_t)));

@@ -611,46 +611,61 @@ static BOOL CALLBACK enum_axes_cb(const DIDEVICEOBJECTINSTANCE *inst, void *p)
    return DIENUM_CONTINUE;
 }
 
-// TODO: Use a better way of detecting dual XInput/DInput pads. This current method
-// will not work correctly for third-party controllers or future MS pads (Xbox One?).
-// An example of this is provided in the DX SDK, which advises "Enum each PNP device
-// using WMI and check each device ID to see if it contains "IG_"". Unfortunately the
-// example code is a horrible unsightly mess.
-static const char* const XINPUT_PAD_NAMES[] = 
-{
-   "XBOX 360 For Windows",
-   "Controller (Gamepad for Xbox 360)",
-   "Controller (XBOX 360 For Windows)",
-   "Controller (Xbox 360 Wireless Receiver for Windows)",
-   "Controller (Xbox wireless receiver for windows)",
-   "XBOX 360 For Windows (Controller)",
-   "Xbox 360 Wireless Receiver",
-   "Xbox 360 Wireless Controller",
-   "Xbox Receiver for Windows (Wireless Controller)",
-   "Xbox wireless receiver for windows (Controller)",
-   "Gamepad F310 (Controller)",
-   "Controller (Gamepad F310)",
-   "Wireless Gamepad F710 (Controller)",
-   "Controller (Batarang wired controller (XBOX))",
-   "Afterglow Gamepad for Xbox 360 (Controller)"
-   "Controller (Rumble Gamepad F510)",
-   "Controller (Wireless Gamepad F710)",
-   "Controller (Xbox 360 Wireless Receiver for Windows)",
-   "Controller (Xbox wireless receiver for windows)",
-   "Controller (XBOX360 GAMEPAD)",
-   "MadCatz GamePad",
-   "MadCatz GamePad (Controller)",
-   "Controller (MadCatz GamePad)",
-   NULL
+static const GUID common_xinput_guids[] = {
+   {MAKELONG(0x28DE, 0x11FF),0x0000,0x0000,{0x00,0x00,0x50,0x49,0x44,0x56,0x49,0x44}}, // valve streaming pad
+   {MAKELONG(0x045E, 0x02A1),0x0000,0x0000,{0x00,0x00,0x50,0x49,0x44,0x56,0x49,0x44}}, // wired 360 pad
+   {MAKELONG(0x045E, 0x028E),0x0000,0x0000,{0x00,0x00,0x50,0x49,0x44,0x56,0x49,0x44}}  // wireless 360 pad
 };
 
-static bool name_is_xinput_pad(const char* name)
+// Based on SDL2's implementation
+static bool guid_is_xinput_device(const GUID* product_guid)
 {
+   PRAWINPUTDEVICELIST raw_devs = NULL;
+   unsigned num_raw_devs = 0;
    unsigned i;
-   for (i = 0; XINPUT_PAD_NAMES[i]; i++)
+
+   // Check for well known XInput device GUIDs, thereby removing the need for the IG_ check.
+   // This lets us skip RAWINPUT for popular devices. Also, we need to do this for the Valve Streaming Gamepad because it's virtualized and doesn't show up in the device list. 
+   for (i = 0; i < ARRAY_SIZE(common_xinput_guids); ++i)
    {
-      if (strcasecmp(name, XINPUT_PAD_NAMES[i]) == 0)
+      if (memcmp(product_guid, &common_xinput_guids[i], sizeof(GUID)) == 0)
          return true;
+   }
+
+   /* Go through RAWINPUT (WinXP and later) to find HID devices. */
+   if (!raw_devs)
+   {
+      if ((GetRawInputDeviceList(NULL, &num_raw_devs, sizeof (RAWINPUTDEVICELIST)) == -1) || (!num_raw_devs))
+         return false;
+
+      raw_devs = (PRAWINPUTDEVICELIST) malloc(sizeof(RAWINPUTDEVICELIST) * num_raw_devs);
+      if (!raw_devs)
+         return false;
+
+      if (GetRawInputDeviceList(raw_devs, &num_raw_devs, sizeof (RAWINPUTDEVICELIST)) == -1)
+      {
+         free(raw_devs);
+         raw_devs = NULL;
+         return false;
+      }
+   }
+
+   for (i = 0; i < num_raw_devs; i++)
+   {
+      RID_DEVICE_INFO rdi;
+      char devName[128];
+      UINT rdiSize = sizeof(rdi);
+      UINT nameSize = sizeof(devName);
+
+      rdi.cbSize = sizeof (rdi);
+      if ((raw_devs[i].dwType == RIM_TYPEHID) &&
+          (GetRawInputDeviceInfoA(raw_devs[i].hDevice, RIDI_DEVICEINFO, &rdi, &rdiSize) != ((UINT)-1)) &&
+          (MAKELONG(rdi.hid.dwVendorId, rdi.hid.dwProductId) == ((LONG)product_guid->Data1)) &&
+          (GetRawInputDeviceInfoA(raw_devs[i].hDevice, RIDI_DEVICENAME, devName, &nameSize) != ((UINT)-1)) &&
+          (strstr(devName, "IG_") != NULL) )
+      {
+         return true;
+      }
    }
 
    return false;
@@ -678,7 +693,8 @@ static BOOL CALLBACK enum_joypad_cb(const DIDEVICEINSTANCE *inst, void *p)
    g_pads[g_joypad_cnt].joy_name = strdup(inst->tszProductName);
    
 #ifdef HAVE_WINXINPUT
-   bool is_xinput_pad = g_xinput_block_pads && name_is_xinput_pad(inst->tszProductName);
+   //bool is_xinput_pad = g_xinput_block_pads && name_is_xinput_pad(inst->tszProductName);
+   bool is_xinput_pad = g_xinput_block_pads && guid_is_xinput_device(&inst->guidProduct);
    
    if (is_xinput_pad)
    {

@@ -347,6 +347,17 @@ static void menu_update_libretro_info(void)
       rgui->core_info = core_info_list_new(rgui->libretro_dir);
 }
 
+void load_menu_game_prepare_dummy(void)
+{
+   // Starts dummy core.
+   *g_extern.fullpath = '\0';
+   rgui->load_no_rom = false;
+
+   g_extern.lifecycle_state |= (1ULL << MODE_LOAD_GAME);
+   g_extern.lifecycle_state &= ~(1ULL << MODE_GAME);
+   g_extern.system.shutdown = false;
+}
+
 bool load_menu_game(void)
 {
    if (g_extern.main_is_init)

@@ -28,19 +28,9 @@
          (((uint32_t)(x) & 0xff000000) >> 24)   \
          ))
 
-static inline void store32le(uint32_t *addr, uint32_t data)
-{
-   *addr = is_little_endian() ? data : SWAP32(data);
-}
-
 static inline void store32be(uint32_t *addr, uint32_t data)
 {
    *addr = is_little_endian() ? SWAP32(data) : data;
-}
-
-static inline uint32_t load32le(const uint32_t *addr)
-{
-   return is_little_endian() ? *addr : SWAP32(*addr);
 }
 
 static inline uint32_t load32be(const uint32_t *addr)

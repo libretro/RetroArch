@@ -30,6 +30,7 @@ typedef struct
 {
    uint32_t audio_port;
    bool nonblocking;
+   bool started;
    volatile bool quit_thread;
    fifo_buffer_t *buffer;
 
@@ -128,6 +129,7 @@ static void *ps3_audio_init(const char *device, unsigned rate, unsigned latency)
    sys_lwcond_create(&data->cond, &data->cond_lock, &cond_attr);
 
    cellAudioPortStart(data->audio_port);
+   data->started = true;
    sys_ppu_thread_create(&data->thread, event_loop,
 #ifdef __PSL1GHT__
    data,
@@ -163,14 +165,22 @@ static ssize_t ps3_audio_write(void *data, const void *buf, size_t size)
 static bool ps3_audio_stop(void *data)
 {
    ps3_audio_t *aud = data;
-   cellAudioPortStop(aud->audio_port);
+   if (aud->started)
+   {
+      cellAudioPortStop(aud->audio_port);
+      aud->started = false;
+   }
    return true;
 }
 
 static bool ps3_audio_start(void *data)
 {
    ps3_audio_t *aud = data;
-   cellAudioPortStart(aud->audio_port);
+   if (!aud->started)
+   {
+      cellAudioPortStart(aud->audio_port);
+      aud->started = true;
+   }
    return true;
 }
 
@@ -186,10 +196,10 @@ static void ps3_audio_free(void *data)
    ps3_audio_t *aud = data;
 
    aud->quit_thread = true;
-   cellAudioPortStart(aud->audio_port);
+   ps3_audio_start(aud);
    sys_ppu_thread_join(aud->thread, &val);
 
-   cellAudioPortStop(aud->audio_port);
+   ps3_audio_stop(aud);
    cellAudioPortClose(aud->audio_port);
    cellAudioQuit();
    fifo_free(aud->buffer);

@@ -238,6 +238,7 @@ static void aligned_free__(void *ptr)
    free(p[-1]);
 }
 
+#if !(defined(__AVX__) && ENABLE_AVX) && !defined(__SSE__)
 static inline void process_sinc_C(rarch_sinc_resampler_t *resamp, float *out_buffer)
 {
    unsigned i;
@@ -270,6 +271,7 @@ static inline void process_sinc_C(rarch_sinc_resampler_t *resamp, float *out_buf
    out_buffer[0] = sum_l;
    out_buffer[1] = sum_r;
 }
+#endif
 
 #if defined(__AVX__) && ENABLE_AVX
 #define process_sinc_func process_sinc

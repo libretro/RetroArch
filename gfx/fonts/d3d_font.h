@@ -19,6 +19,10 @@
 #include <stdint.h>
 #include "../../boolean.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef struct d3d_font_renderer
 {
    bool (*init)(void *data, const char *font_path, unsigned font_size);
@@ -33,6 +37,10 @@ extern const d3d_font_renderer_t d3d_win32_font;
 
 const d3d_font_renderer_t *d3d_font_init_first(void *data,
       const char *font_path, unsigned font_size);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
 
