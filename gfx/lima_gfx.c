@@ -90,8 +90,13 @@ typedef struct limare_data {
 
   limare_texture_t **textures;
   unsigned texture_slots;
+
   limare_texture_t *cur_texture;
   limare_texture_t *cur_texture_rgui;
+
+  unsigned font_width;
+  unsigned font_height;
+  limare_texture_t *font_texture;
 } limare_data_t;
 
 /* Header for simple vertex shader. */
@@ -142,6 +147,14 @@ static const char *fshader_rgui_main_src =
   "    vec4 pixel = texture2D(in_texture, coord)%s;\n"
   "    gl_FragColor = pixel * uColor;\n"
   "}\n";
+
+static inline void put_pixel_rgba4444(uint16_t *p, unsigned r, unsigned g, unsigned b, unsigned a) {
+  *p = (a >> 4) | ((b >> 4) << 4) | ((g >> 4) << 8) | ((r >> 4) << 12);
+}
+
+static inline unsigned align4(unsigned i) {
+  return (i + 3) & ~0x3;
+}
 
 static float get_screen_aspect(limare_state_t *state) {
   unsigned w = 0, h = 0;
@@ -278,6 +291,8 @@ static const void *make_contiguous(limare_data_t *pdata,
       RARCH_ERR("video_lima: failed to allocate buffer to make pixel data contiguous\n");
       return NULL;
     }
+
+    pdata->buffer_size = full_pitch * height;
   }
 
   for (i = 0; i < height; ++i) {
@@ -399,6 +414,24 @@ fail:
   return -1;
 }
 
+static void put_glyph_rgba4444(limare_data_t *pdata, const uint8_t *src, uint8_t *f_rgb,
+                               unsigned g_width, unsigned g_height, unsigned g_pitch,
+                               unsigned dst_x, unsigned dst_y) {
+  unsigned x, y;
+  uint16_t *dst;
+  unsigned r, g, b;
+
+  dst = (uint16_t*)pdata->buffer + dst_y * pdata->font_width + dst_x;
+
+  for (y = 0; y < g_height; ++y, src += g_pitch, dst += pdata->font_width) {
+    for (x = 0; x < g_width; ++x) {
+      const uint8_t blend = src[x];
+
+      if (blend != 0) put_pixel_rgba4444(&dst[x], f_rgb[0], f_rgb[1], f_rgb[2], blend);
+    }
+  }
+}
+
 typedef struct lima_video {
   limare_data_t *lima;
 
@@ -439,6 +472,91 @@ static void lima_gfx_free(void *data) {
   free(vid);
 }
 
+static void lima_init_font(lima_video_t *vid, const char *font_path, unsigned font_size) {
+  if (!g_settings.video.font_enable) return;
+
+  if (font_renderer_create_default(&vid->font_driver, &vid->font)) {
+    int r = g_settings.video.msg_color_r * 255;
+    int g = g_settings.video.msg_color_g * 255;
+    int b = g_settings.video.msg_color_b * 255;
+
+    vid->font_rgb[0] = r < 0 ? 0 : (r > 255 ? 255 : r);
+    vid->font_rgb[1] = g < 0 ? 0 : (g > 255 ? 255 : g);
+    vid->font_rgb[2] = b < 0 ? 0 : (b > 255 ? 255 : b);
+  } else {
+    RARCH_LOG("video_lima: font init failed\n");
+  }
+}
+
+static void lima_render_msg(lima_video_t *vid, const char *msg) {
+  struct font_output_list out;
+  struct font_output *head;
+
+  unsigned req_size;
+  limare_data_t *lima = vid->lima;
+
+  const int msg_base_x = g_settings.video.msg_pos_x * lima->font_width;
+  const int msg_base_y = (1.0 - g_settings.video.msg_pos_y) * lima->font_height;
+
+  if (vid->font == NULL) return;
+
+  /* Font texture uses RGBA4444 pixel data (2 bytes per pixel). */
+  req_size = lima->font_width * lima->font_height * 2;
+
+  if (lima->buffer_size < req_size) {
+    free(lima->buffer);
+    lima->buffer = NULL;
+
+    lima->buffer = malloc(req_size);
+    if (lima->buffer == NULL) {
+      RARCH_ERR("video_lima: failed to allocate buffer to render fonts\n");
+      return;
+    }
+
+    lima->buffer_size = req_size;
+  }
+
+  memset(lima->buffer, 0, req_size);
+
+  vid->font_driver->render_msg(vid->font, msg, &out);
+
+  for (head = out.head; head; head = head->next) {
+    int base_x = msg_base_x + head->off_x;
+    int base_y = msg_base_y - head->off_y - head->height;
+
+    const int max_width  = lima->font_width - base_x;
+    const int max_height = lima->font_height - base_y;
+
+    int glyph_width  = head->width;
+    int glyph_height = head->height;
+
+    const uint8_t *src = head->output;
+
+    if (base_x < 0) {
+       src -= base_x;
+       glyph_width += base_x;
+       base_x = 0;
+    }
+
+    if (base_y < 0) {
+       src -= base_y * (int)head->pitch;
+       glyph_height += base_y;
+       base_y = 0;
+    }
+
+    if (max_width <= 0 || max_height <= 0) continue;
+
+    if (glyph_width > max_width) glyph_width = max_width;
+    if (glyph_height > max_height) glyph_height = max_height;
+
+    put_glyph_rgba4444(lima, src, vid->font_rgb,
+                       glyph_width, glyph_height,
+                       head->pitch, base_x, base_y);
+  }
+
+  vid->font_driver->free_output(vid->font, &out);
+}
+
 static void *lima_gfx_init(const video_info_t *video, const input_driver_t **input, void **input_data) {
   lima_video_t *vid = NULL;
   limare_data_t *lima = NULL;
@@ -476,6 +594,9 @@ static void *lima_gfx_init(const video_info_t *video, const input_driver_t **inp
 
   lima->screen_aspect = get_screen_aspect(lima->state);
 
+  lima->font_height = 480;
+  lima->font_width = align4((unsigned)(lima->screen_aspect * (float)lima->font_height));
+
   lima->upload_format = (vid->bytes_per_pixel == 4) ?
     LIMA_TEXEL_FORMAT_RGBA_8888 : LIMA_TEXEL_FORMAT_BGR_565;
   lima->upload_bpp = vid->bytes_per_pixel;
@@ -507,7 +628,7 @@ static void *lima_gfx_init(const video_info_t *video, const input_driver_t **inp
 
   vid->lima = lima;
 
-  /*lima_init_font(vid, g_settings.video.font_path, g_settings.video.font_size);*/
+  lima_init_font(vid, g_settings.video.font_path, g_settings.video.font_size);
 
   return vid;
 
@@ -575,15 +696,12 @@ static bool lima_gfx_frame(void *data, const void *frame,
     }
   }
 
-  /*if (msg) lima_render_msg(vid, vid->screen, msg, vid->screen->w, vid->screen->h);
+  if (g_settings.fps_show) {
+    char buffer[128], buffer_fps[128];
 
-   char buffer[128], buffer_fps[128];
-   bool fps_draw = g_settings.fps_show;
-   if (fps_draw)
-   {
-      gfx_get_fps(buffer, sizeof(buffer), fps_draw ? buffer_fps : NULL, sizeof(buffer_fps));
-      msg_queue_push(g_extern.msg_queue, buffer_fps, 1, 1);
-   }*/
+    gfx_get_fps(buffer, sizeof(buffer), g_settings.fps_show ? buffer_fps : NULL, sizeof(buffer_fps));
+    msg_queue_push(g_extern.msg_queue, buffer_fps, 1, 1);
+  }
 
   if (vid->aspect_changed) {
     apply_aspect(lima, g_extern.system.aspect_ratio);
@@ -603,6 +721,47 @@ static bool lima_gfx_frame(void *data, const void *frame,
     limare_texture_attach(lima->state, "in_texture", lima->cur_texture->handle);
 
     if (limare_draw_arrays(lima->state, GL_TRIANGLE_STRIP, 0, 4)) return false;
+  }
+
+  /* Handle font rendering. */
+  if (msg) {
+    bool upload_font = true;
+
+    /* Both font_vertices and font_color are constant, but we can't make them   *
+     * const, since limare_attribute_pointer expects (non-const) void pointers. */
+    static vec3f_t font_vertices[4] = {
+      {-1.0f, -1.0f,  0.0f},
+      { 1.0f, -1.0f,  0.0f},
+      {-1.0f,  1.0f,  0.0f},
+      { 1.0f,  1.0f,  0.0f}
+    };
+    static float font_color[4] = {1.0f, 1.0f, 1.0f, 1.0f};
+
+    lima_render_msg(vid, msg);
+
+    if (lima->font_texture == NULL) {
+      lima->font_texture = add_texture(lima, lima->font_width, lima->font_height,
+                                       lima->buffer, LIMA_TEXEL_FORMAT_RGBA_4444);
+      upload_font = false;
+    }
+
+    if (upload_font)
+      limare_texture_mipmap_upload(lima->state, lima->font_texture->handle, 0, lima->buffer);
+
+    /* We re-use the RGBA16 RGUI program here. */
+    limare_program_current(lima->state, lima->program_rgui_rgba16);
+
+    limare_attribute_pointer(lima->state, "in_vertex", LIMARE_ATTRIB_FLOAT,
+				 3, 0, 4, font_vertices);
+    limare_attribute_pointer(lima->state, "in_coord", LIMARE_ATTRIB_FLOAT,
+				 2, 0, 4, lima->coords + vid->rgui_rotation * 4);
+
+    limare_texture_attach(lima->state, "in_texture", lima->font_texture->handle);
+    limare_uniform_attach(lima->state, "uColor", 4, font_color);
+
+    limare_enable(lima->state, GL_BLEND);
+      if (limare_draw_arrays(lima->state, GL_TRIANGLE_STRIP, 0, 4)) return false;
+    limare_disable(lima->state, GL_BLEND);
   }
 
   if (vid->rgui_active && lima->cur_texture_rgui != NULL) {
