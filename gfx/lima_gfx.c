@@ -23,7 +23,7 @@
 #include "gfx_common.h"
 #include "fonts/fonts.h"
 
-/* Rename to LIMA_GFX_DEBUG to enable debugging code.*/
+/* Rename to LIMA_GFX_DEBUG to enable debugging code. */
 #define NO_LIMA_GFX_DEBUG 1
 
 /* Current limare only natively supports a limited amount of formats for texture  *
@@ -54,7 +54,7 @@ typedef struct limare_texture {
 } limare_texture_t;
 
 typedef struct vec2f {
-  float x,y;
+  float x, y;
 } vec2f_t;
 
 typedef struct vec3f {
@@ -143,7 +143,7 @@ static const char *fshader_rgui_main_src =
   "    gl_FragColor = pixel * uColor;\n"
   "}\n";
 
-float get_screen_aspect(limare_state_t *state) {
+static float get_screen_aspect(limare_state_t *state) {
   unsigned w = 0, h = 0;
 
   limare_buffer_size(state, &w, &h);
@@ -155,7 +155,7 @@ float get_screen_aspect(limare_state_t *state) {
   return 0.0f;
 }
 
-void apply_aspect(limare_data_t *pdata, float ratio) {
+static void apply_aspect(limare_data_t *pdata, float ratio) {
   vec3f_t *vertices = pdata->vertices;
   float x, y;
 
@@ -181,7 +181,7 @@ void apply_aspect(limare_data_t *pdata, float ratio) {
   vertices[2].y = vertices[3].y =  y;
 }
 
-int destroy_textures(limare_data_t *pdata) {
+static int destroy_textures(limare_data_t *pdata) {
   unsigned i;
   int ret;
 
@@ -235,7 +235,7 @@ static limare_texture_t *add_texture(limare_data_t *pdata,
     texture = limare_texture_upload(pdata->state, pixels, width, height, format, 0);
 
     if (texture != -1) break;
-    
+
     destroy_textures(pdata);
     retries--;
   }
@@ -288,7 +288,7 @@ static const void *make_contiguous(limare_data_t *pdata,
 }
 
 #ifdef LIMA_GFX_DEBUG
-void print_status(limare_data_t *pdata) {
+static void print_status(limare_data_t *pdata) {
   unsigned i;
 
   RARCH_LOG("video_lima: upload format = 0x%x, upload bpp = %u\n", pdata->upload_format, pdata->upload_bpp);
@@ -303,7 +303,7 @@ void print_status(limare_data_t *pdata) {
 }
 #endif
 
-void destroy_data(limare_data_t *pdata) {
+static void destroy_data(limare_data_t *pdata) {
   free(pdata->vertices);
   free(pdata->coords);
 }
@@ -340,7 +340,7 @@ static int setup_data(limare_data_t *pdata) {
   for (i = 0; i < num_verts; ++i) {
     pdata->vertices[i] = vertices[i];
   }
-  
+
   for (i = 0; i < num_coords; ++i) {
     pdata->coords[i] = coords[i];
   }
@@ -501,23 +501,8 @@ static void *lima_gfx_init(const video_info_t *video, const input_driver_t **inp
   lima->textures = calloc(num_max_textures, sizeof(limare_texture_t*));
 
   if (input && input_data) {
-#ifdef HAVE_UDEV
-    lima_input  = input_udev.init();
-    if (lima_input) {
-      *input      = lima_input ? &input_udev : NULL;
-      *input_data = lima_input;
-    }
-#else
-    lima_input  = input_linuxraw.init();
-    if (lima_input) {
-      *input      = lima_input ? &input_linuxraw : NULL;
-      *input_data = lima_input;
-    }
-#endif
-    else {
-      *input = NULL;
-      *input_data = NULL;
-    }
+    *input = NULL;
+    *input_data = NULL;
   }
 
   vid->lima = lima;
@@ -554,7 +539,7 @@ static bool lima_gfx_frame(void *data, const void *frame,
 
     /* Handle resolution changes from the emulation core. */
     if (width != vid->width || height != vid->height) {
-      limare_texture_t* tex;
+      limare_texture_t *tex;
 
       if (width == 0 || height == 0) return true;
 
@@ -664,7 +649,7 @@ static bool lima_gfx_alive(void *data) {
   return true; /* always alive */
 }
 
-static bool lima_gfx_focus(void *data){
+static bool lima_gfx_focus(void *data) {
   (void)data;
   return true; /* limare doesn't use windowing, so we always have focus */
 }
@@ -675,7 +660,7 @@ static void lima_gfx_set_rotation(void *data, unsigned rotation) {
   vid->rgui_rotation = rotation;
 }
 
-static void lima_gfx_viewport_info(void *data, struct rarch_viewport *vp){
+static void lima_gfx_viewport_info(void *data, struct rarch_viewport *vp) {
   lima_video_t *vid = data;
   vp->x = vp->y = 0;
 
