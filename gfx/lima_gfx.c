@@ -355,7 +355,7 @@ static int create_programs(limare_data_t *pdata) {
   char tmpbufm[1024]; /* temp buffer for main function */
   char tmpbuf[1024]; /* temp buffer for whole program */
 
-  const char* swz = (pdata->upload_bpp == 4) ? ".rgb" : ".rgb"; /* TODO / XRGB8888 */
+  const char* swz = (pdata->upload_bpp == 4) ? ".bgr" : ".rgb";
 
   /* Create shader program for regular operation first. */
   pdata->program = limare_program_new(pdata->state);
@@ -385,7 +385,7 @@ static int create_programs(limare_data_t *pdata) {
   pdata->program_rgui_rgba32 = limare_program_new(pdata->state);
   if (pdata->program_rgui_rgba32 < 0) goto fail;
 
-  snprintf(tmpbufm, 1024, fshader_rgui_main_src, ".rgba");
+  snprintf(tmpbufm, 1024, fshader_rgui_main_src, ".abgr");
   strncpy(tmpbuf, fshader_rgui_header_src, 1024);
   strcat(tmpbuf, tmpbufm);
 
