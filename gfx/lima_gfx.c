@@ -75,6 +75,7 @@ typedef struct limare_data {
   int program_rgui_rgba32;
 
   float screen_aspect;
+  float frame_aspect;
 
   unsigned upload_format;
   unsigned upload_bpp; /* bytes per pixel */
@@ -156,13 +157,28 @@ float get_screen_aspect(limare_state_t *state) {
 
 void apply_aspect(limare_data_t *pdata, float ratio) {
   vec3f_t *vertices = pdata->vertices;
-  float value;
+  float x, y;
 
-  if (ratio == 0.0f) return;
-  value = 1.0f / ratio;
+  if (fabsf(pdata->screen_aspect - pdata->frame_aspect) < 0.0001f) {
+    x = 1.0f;
+    y = 1.0f;
+  } else {
+    if (pdata->screen_aspect > pdata->frame_aspect) {
+      x = pdata->frame_aspect / pdata->screen_aspect;
+      y = 1.0f;
+    } else {
+      x = 1.0f;
+      y = pdata->screen_aspect / pdata->frame_aspect;
+    }
+  }
 
-  vertices[0].x = vertices[2].x = -value;
-  vertices[1].x = vertices[3].x =  value;
+  /* TODO: use ratio parameter */
+
+  vertices[0].x = vertices[2].x = -x;
+  vertices[1].x = vertices[3].x =  x;
+
+  vertices[0].y = vertices[1].y = -y;
+  vertices[2].y = vertices[3].y =  y;
 }
 
 int destroy_textures(limare_data_t *pdata) {
@@ -560,8 +576,12 @@ static bool lima_gfx_frame(void *data, const void *frame,
       }
 
       lima->cur_texture = tex;
+
       vid->width = width;
       vid->height = height;
+
+      lima->frame_aspect = (float)width / (float)height;
+      vid->aspect_changed = true;
     }
 
     if (upload_frame) {
@@ -665,8 +685,6 @@ static void lima_gfx_viewport_info(void *data, struct rarch_viewport *vp){
 
 static void lima_set_aspect_ratio(void *data, unsigned aspect_ratio_idx) {
   lima_video_t *vid = data;
-
-  printf("debug: lima_set_aspect_ratio = %u\n", aspect_ratio_idx);
 
   switch (aspect_ratio_idx) {
     case ASPECT_RATIO_SQUARE:
