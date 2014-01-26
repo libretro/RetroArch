@@ -16,7 +16,7 @@ Users with similar experiences on a Exynos4-based hardware (coupled with a Mali 
 
 The original Lima driver suffers from a similar problem as the blob, since it can only render into a framebuffer provided by a fbdev device. In the repository mentioned below you can find a modified Lima version, which can utilize the Exynos DRM directly.
 
-[lima-drm repository](https://gitorious.org/lima-drm/lima-drm)
+[lima-drm repository](https://github.com/tobiasjakobi/lima-drm)
 
 The Lima video driver for RetroArch only works with this version. Proceed with the usual steps to install limare from the repository onto your system. After that compile RetroArch against the resulting limare library.
 
