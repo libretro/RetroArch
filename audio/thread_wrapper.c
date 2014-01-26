@@ -31,11 +31,39 @@ typedef struct audio_thread
    scond_t *cond;
    bool alive;
    bool stopped;
+   bool use_float;
+
+   int inited;
+
+   // Init options.
+   const char *device;
+   unsigned out_rate;
+   unsigned latency;
 } audio_thread_t;
 
 static void audio_thread_loop(void *data)
 {
    audio_thread_t *thr = (audio_thread_t*)data;
+
+   RARCH_LOG("[Audio Thread]: Initializing audio driver.\n");
+   thr->driver_data = thr->driver->init(thr->device, thr->out_rate, thr->latency);
+   slock_lock(thr->lock);
+   thr->inited = thr->driver_data ? 1 : -1;
+   if (thr->inited > 0 && thr->driver->use_float)
+      thr->use_float = thr->driver->use_float(thr->driver_data);
+   scond_signal(thr->cond);
+   slock_unlock(thr->lock);
+
+   if (thr->inited < 0)
+      return;
+
+   // Wait until we start to avoid calling stop immediately after init.
+   slock_lock(thr->lock);
+   while (thr->stopped)
+      scond_wait(thr->cond, thr->lock);
+   slock_unlock(thr->lock);
+
+   RARCH_LOG("[Audio Thread]: Starting audio.\n");
 
    for (;;)
    {
@@ -59,6 +87,9 @@ static void audio_thread_loop(void *data)
       slock_unlock(thr->lock);
       g_extern.system.audio_callback.callback();
    }
+
+   RARCH_LOG("[Audio Thread]: Tearing down driver.\n");
+   thr->driver->free(thr->driver_data);
 }
 
 static void audio_thread_block(audio_thread_t *thr)
@@ -80,17 +111,24 @@ static void audio_thread_unblock(audio_thread_t *thr)
 static void audio_thread_free(void *data)
 {
    audio_thread_t *thr = (audio_thread_t*)data;
-   slock_lock(thr->lock);
-   thr->stopped = false;
-   thr->alive = false;
-   scond_signal(thr->cond);
-   slock_unlock(thr->lock);
+   if (!thr)
+      return;
 
-   sthread_join(thr->thread);
+   if (thr->thread)
+   {
+      slock_lock(thr->lock);
+      thr->stopped = false;
+      thr->alive = false;
+      scond_signal(thr->cond);
+      slock_unlock(thr->lock);
 
-   thr->driver->free(thr->driver_data);
-   slock_free(thr->lock);
-   scond_free(thr->cond);
+      sthread_join(thr->thread);
+   }
+
+   if (thr->lock)
+      slock_free(thr->lock);
+   if (thr->cond)
+      scond_free(thr->cond);
    free(thr);
 }
 
@@ -119,7 +157,7 @@ static void audio_thread_set_nonblock_state(void *data, bool state)
 static bool audio_thread_use_float(void *data)
 {
    audio_thread_t *thr = (audio_thread_t*)data;
-   return thr->driver->use_float && thr->driver->use_float(thr->driver_data);
+   return thr->use_float;
 }
 
 static ssize_t audio_thread_write(void *data, const void *buf, size_t size)
@@ -155,29 +193,43 @@ bool rarch_threaded_audio_init(const audio_driver_t **out_driver, void **out_dat
       const char *device, unsigned out_rate, unsigned latency,
       const audio_driver_t *driver)
 {
-   void *audio_handle = driver->init(device, out_rate, latency);
-   if (!audio_handle)
-      return false;
-
    audio_thread_t *thr = (audio_thread_t*)calloc(1, sizeof(*thr));
    if (!thr)
-   {
-      driver->free(audio_handle);
       return false;
-   }
 
    thr->driver = driver;
-   thr->driver_data = audio_handle;
+   thr->device = device;
+   thr->out_rate = out_rate;
+   thr->latency = latency;
 
-   thr->cond  = scond_new();
-   thr->lock  = slock_new();
+   if (!(thr->cond = scond_new()))
+      goto error;
+   if (!(thr->lock = slock_new()))
+      goto error;
+
    thr->alive = true;
    thr->stopped = true;
 
-   thr->thread = sthread_create(audio_thread_loop, thr);
+   if (!(thr->thread = sthread_create(audio_thread_loop, thr)))
+      goto error;
+
+   // Wait until thread has initialized (or failed) the driver.
+   slock_lock(thr->lock);
+   while (!thr->inited)
+      scond_wait(thr->cond, thr->lock);
+   slock_unlock(thr->lock);
+
+   if (thr->inited < 0) // Thread failed.
+      goto error;
 
    *out_driver = &audio_thread;
    *out_data   = thr;
    return true;
+
+error:
+   *out_driver = NULL;
+   *out_data = NULL;
+   audio_thread_free(thr);
+   return false;
 }
 
