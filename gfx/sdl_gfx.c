@@ -13,7 +13,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "SDL.h"
+#include <SDL/SDL.h>
 #include "../driver.h"
 #include <stdlib.h>
 #include <string.h>
@@ -32,6 +32,12 @@
 #endif
 
 #include "SDL/SDL_syswm.h"
+
+static void sdl_gfx_get_poke_interface(void *data, const video_poke_interface_t **iface);
+static void sdl_set_texture_frame(void *data, const void *frame, bool rgb32, unsigned width, unsigned height, float alpha);
+static int rotate = 0;
+static bool _rgui = false;
+static void *rgui_buffer = NULL;
 
 typedef struct sdl_video
 {
@@ -63,6 +69,12 @@ static void sdl_gfx_free(void *data)
    scaler_ctx_gen_reset(&vid->scaler);
 
    free(vid);
+
+   if (rgui_buffer)
+   {
+      free(rgui_buffer);
+      rgui_buffer = NULL;
+   }
 }
 
 static void sdl_init_font(sdl_video_t *vid, const char *font_path, unsigned font_size)
@@ -281,7 +293,7 @@ static void check_window(sdl_video_t *vid)
 
 static bool sdl_gfx_frame(void *data, const void *frame, unsigned width, unsigned height, unsigned pitch, const char *msg)
 {
-   if (!frame)
+   if (!frame || _rgui)
       return true;
 
    sdl_video_t *vid = (sdl_video_t*)data;
@@ -291,10 +303,15 @@ static bool sdl_gfx_frame(void *data, const void *frame, unsigned width, unsigne
    {
       vid->scaler.in_width  = width;
       vid->scaler.in_height = height;
+      if (vid->scaler.in_stride == width * sizeof(uint16_t))
+         vid->scaler.in_fmt = SCALER_FMT_RGB565;
+      else
+         vid->scaler.in_fmt = SCALER_FMT_ARGB8888;
 
       vid->scaler.out_width  = vid->screen->w;
       vid->scaler.out_height = vid->screen->h;
       vid->scaler.out_stride = vid->screen->pitch;
+      vid->scaler.out_fmt = SCALER_FMT_ARGB8888;
 
       scaler_ctx_gen_filter(&vid->scaler);
 
@@ -353,6 +370,114 @@ static void sdl_gfx_viewport_info(void *data, struct rarch_viewport *vp)
    vp->height = vp->full_height = vid->screen->h;
 }
 
+static void sdl_set_aspect_ratio(void *data, unsigned aspect_ratio_idx)
+{
+   (void)data;
+   g_extern.system.aspect_ratio = aspectratio_lut[aspect_ratio_idx].value;
+}
+
+static void sdl_apply_state_changes(void *data)
+{
+   (void)data;
+}
+
+static void sdl_set_texture_frame(void *data, const void *frame, bool rgb32, unsigned width, unsigned height, float alpha)
+{
+   if (!rgui_buffer)
+	  rgui_buffer = (uint32_t*)malloc(width * height * sizeof(uint32_t));
+
+   sdl_video_t *vid = (sdl_video_t*)data;
+
+   vid->scaler.in_stride = width * sizeof(uint32_t);
+   vid->scaler.in_width  = width;
+   vid->scaler.in_height = height;
+   vid->scaler.in_fmt = SCALER_FMT_ARGB8888;
+
+   vid->scaler.out_width  = vid->screen->w;
+   vid->scaler.out_height = vid->screen->h;
+   vid->scaler.out_stride = vid->screen->pitch;
+   vid->scaler.out_fmt = SCALER_FMT_ARGB8888;
+
+   scaler_ctx_gen_filter(&vid->scaler);
+
+   vid->last_width  = width;
+   vid->last_height = height;
+
+   uint32_t *dst = (uint32_t*)rgui_buffer;
+   const uint16_t *src = (const uint16_t*)frame;
+   for (unsigned h = 0; h < height; h++, dst += width * sizeof(uint32_t) >> 2, src += width)
+   {
+      for (unsigned w = 0; w < width; w++)
+      {
+         uint16_t c = src[w];
+         uint32_t r = (c >> 12) & 0xf;
+         uint32_t g = (c >>  8) & 0xf;
+         uint32_t b = (c >>  4) & 0xf;
+         uint32_t a = (c >>  0) & 0xf;
+         r = ((r << 4) | r) << 16;
+         g = ((g << 4) | g) <<  8;
+         b = ((b << 4) | b) <<  0;
+         a = ((a << 4) | a) << 24;
+         dst[w] = r | g | b | a;
+      }
+   }
+
+   if (SDL_MUSTLOCK(vid->screen))
+      SDL_LockSurface(vid->screen);
+
+   scaler_ctx_scale(&vid->scaler, vid->screen->pixels, rgui_buffer);
+
+   if (SDL_MUSTLOCK(vid->screen))
+      SDL_UnlockSurface(vid->screen);
+
+   char buf[128];
+   if (gfx_get_fps(buf, sizeof(buf), NULL, 0))
+      SDL_WM_SetCaption(buf, NULL);
+
+   SDL_Flip(vid->screen);
+   g_extern.frame_count++;
+}
+
+static void sdl_set_texture_enable(void *data, bool state, bool full_screen)
+{
+   (void)data;
+   _rgui = state;
+}
+
+static void sdl_set_osd_msg(void *data, const char *msg, void *userdata)
+{
+   (void)data;
+   (void)userdata;
+}
+
+static void sdl_show_mouse(void *data, bool state)
+{
+   (void)data;
+}
+
+static const video_poke_interface_t sdl_poke_interface = {
+   NULL,
+#ifdef HAVE_FBO
+   NULL,
+   NULL,
+#endif
+   sdl_set_aspect_ratio,
+   sdl_apply_state_changes,
+#if defined(HAVE_RGUI) || defined(HAVE_RMENU)
+   sdl_set_texture_frame,
+   sdl_set_texture_enable,
+#endif
+   sdl_set_osd_msg,
+
+   sdl_show_mouse,
+};
+
+static void sdl_gfx_get_poke_interface(void *data, const video_poke_interface_t **iface)
+{
+   (void)data;
+   *iface = &sdl_poke_interface;
+}
+
 const video_driver_t video_sdl = {
    sdl_gfx_init,
    sdl_gfx_frame,
@@ -369,5 +494,11 @@ const video_driver_t video_sdl = {
 
    NULL,
    sdl_gfx_viewport_info,
+   NULL,
+
+#ifdef HAVE_OVERLAY
+   NULL,
+#endif
+   sdl_gfx_get_poke_interface,
 };
 

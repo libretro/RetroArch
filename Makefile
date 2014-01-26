@@ -61,7 +61,7 @@ ifeq ($(findstring Haiku,$(OS)),)
    LIBS = -lm
 endif
 
-DEFINES = -DHAVE_CONFIG_H -DHAVE_SCREENSHOTS -DRARCH_INTERNAL
+DEFINES = -DHAVE_CONFIG_H -DHAVE_SCREENSHOTS -DRARCH_INTERNAL 
 
 ifeq ($(GLOBAL_CONFIG_DIR),)
    GLOBAL_CONFIG_DIR = /etc
@@ -195,6 +195,11 @@ ifeq ($(HAVE_SDL), 1)
    LIBS += $(SDL_LIBS)
 endif
 
+ifeq ($(HAVE_LIMA), 1)
+   OBJ += gfx/lima_gfx.o
+   LIBS += -llimare
+endif
+
 ifeq ($(HAVE_OMAP), 1)
    OBJ += gfx/omap_gfx.o
 endif
@@ -234,6 +239,14 @@ ifeq ($(HAVE_OPENGL), 1)
       DEFINES += $(GLES_CFLAGS) -DHAVE_OPENGLES -DHAVE_OPENGLES2
       ifeq ($(HAVE_GLES3), 1)
          DEFINES += -DHAVE_OPENGLES3
+      endif
+      ifeq ($(HAVE_EGL)$(HAVE_X11)$(HAVE_KMS), 100)
+         OBJ += gfx/context/gles_egl_ctx.o
+         DEFINES += $(EGL_CFLAGS)
+         LIBS += $(EGL_LIBS)
+         ifneq ($(strip $(GLOBAL_FBDEV)),)
+            DEFINES += -DGLOBAL_FBDEV='"$(GLOBAL_FBDEV)"'         
+         endif
       endif
       OBJ += gfx/glsym/glsym_es2.o
    else

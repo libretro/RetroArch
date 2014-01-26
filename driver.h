@@ -661,6 +661,7 @@ extern const video_driver_t video_xenon360;
 extern const video_driver_t video_xvideo;
 extern const video_driver_t video_xdk_d3d;
 extern const video_driver_t video_sdl;
+extern const video_driver_t video_lima;
 extern const video_driver_t video_vg;
 extern const video_driver_t video_null;
 extern const video_driver_t video_omap;
