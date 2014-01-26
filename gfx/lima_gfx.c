@@ -283,16 +283,18 @@ static const void *make_contiguous(limare_data_t *pdata,
 
   /* Enlarge our buffer, if it is currently too small. */
   if (pdata->buffer_size < full_pitch * height) {
+    const aligned_size = align4(full_pitch * height);
+
     free(pdata->buffer);
     pdata->buffer = NULL;
 
-    pdata->buffer = malloc(full_pitch * height);
+    pdata->buffer = aligned_alloc(4, aligned_size);
     if (pdata->buffer == NULL) {
       RARCH_ERR("video_lima: failed to allocate buffer to make pixel data contiguous\n");
       return NULL;
     }
 
-    pdata->buffer_size = full_pitch * height;
+    pdata->buffer_size = aligned_size;
   }
 
   for (i = 0; i < height; ++i) {
@@ -504,16 +506,18 @@ static void lima_render_msg(lima_video_t *vid, const char *msg) {
   req_size = lima->font_width * lima->font_height * 2;
 
   if (lima->buffer_size < req_size) {
+    const aligned_size = align4(req_size);
+
     free(lima->buffer);
     lima->buffer = NULL;
 
-    lima->buffer = malloc(req_size);
+    lima->buffer = aligned_alloc(4, aligned_size);
     if (lima->buffer == NULL) {
       RARCH_ERR("video_lima: failed to allocate buffer to render fonts\n");
       return;
     }
 
-    lima->buffer_size = req_size;
+    lima->buffer_size = aligned_size;
   }
 
   memset(lima->buffer, 0, req_size);
