@@ -216,7 +216,6 @@ ifeq ($(HAVE_OPENGL), 1)
 
    ifeq ($(HAVE_VIDEOCORE), 1)
       OBJ += gfx/context/vc_egl_ctx.o
-		# videocore's libs set later
    endif
 
    ifeq ($(HAVE_X11), 1)
@@ -255,10 +254,6 @@ ifeq ($(HAVE_VG), 1)
    OBJ += gfx/vg.o gfx/math/matrix_3x3.o
    DEFINES += $(VG_CFLAGS)
    LIBS += $(VG_LIBS)
-endif
-
-ifeq ($(HAVE_VIDEOCORE), 1)
-   LIBS += -lbcm_host -lvcos -lvchiq_arm -lEGL
 endif
 
 ifeq ($(HAVE_XVIDEO), 1)

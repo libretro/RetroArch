@@ -40,6 +40,8 @@ check_lib()	#$1 = HAVE_$1	$2 = lib	$3 = function in lib	$4 = extralibs
 		echo "Forced to build with library $2, but cannot locate. Exiting ..."
 		exit 1
 	}
+
+	/bin/true
 }
 
 check_lib_cxx()	#$1 = HAVE_$1	$2 = lib	$3 = function in lib	$4 = extralibs	$5 = critical error message [checked only if non-empty]
@@ -66,6 +68,8 @@ check_lib_cxx()	#$1 = HAVE_$1	$2 = lib	$3 = function in lib	$4 = extralibs	$5 = 
 		}
 	
 	}
+
+	/bin/true
 }
 
 check_code_c()
