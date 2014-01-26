@@ -34,5 +34,4 @@ The two fullscreen parameters select the mode the DRM should select. If zero, th
 The driver still suffers from some issues.
 
    - The aspect ratio is wrong. The dimensions of the emulator framebuffer on the screen are not computed correctly at the moment.
-   - Sometimes opening RGUI the second time results in broken rendering (flickering artifacts, blending not done properly). I don't know where these artifacts come from and they also don't appear again when closing RGUI and opening it again. This needs further investigation (silent memory corruption?).
    - Limare should be able to handle a custom pitch, when uploading texture pixel data. This would save some memcpy for emulator cores which don't provide the framebuffer with full pitch (snes9x-next for example).
