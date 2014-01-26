@@ -8,6 +8,7 @@
 
 static uint16_t *frame_buf;
 static struct retro_log_callback logging;
+static bool use_audio_cb;
 
 static void fallback_log(enum retro_log_level level, const char *fmt, ...)
 {
@@ -234,16 +235,6 @@ static void render_checkered(void)
    video_cb(frame_buf, 320, 240, 320 << 1);
 }
 
-static void render_audio(void)
-{
-   for (unsigned i = 0; i < 30000 / 60; i++, phase++)
-   {
-      int16_t val = 0x800 * sinf(2.0f * M_PI * phase * 300.0f / 30000.0f);
-      audio_cb(val, val);
-   }
-
-   phase %= 100;
-}
 
 static void check_variables(void)
 {
@@ -259,11 +250,28 @@ static void check_variables(void)
       logging.log(RETRO_LOG_INFO, "Key -> Val: %s -> %s.\n", var.key, var.value);
 }
 
+static void audio_callback(void)
+{
+   for (unsigned i = 0; i < 30000 / 60; i++, phase++)
+   {
+      int16_t val = 0x800 * sinf(2.0f * M_PI * phase * 300.0f / 30000.0f);
+      audio_cb(val, val);
+   }
+
+   phase %= 100;
+}
+
+static void audio_set_state(bool enable)
+{
+   (void)enable;
+}
+
 void retro_run(void)
 {
    update_input();
    render_checkered();
-   render_audio();
+   if (!use_audio_cb)
+      audio_callback();
 
    bool updated = false;
    if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE_UPDATE, &updated) && updated)
@@ -276,6 +284,7 @@ static void keyboard_cb(bool down, unsigned keycode,
    logging.log(RETRO_LOG_INFO, "Down: %s, Code: %d, Char: %u, Mod: %u.\n",
          down ? "yes" : "no", keycode, character, mod);
 }
+
 
 bool retro_load_game(const struct retro_game_info *info)
 {
@@ -303,6 +312,9 @@ bool retro_load_game(const struct retro_game_info *info)
    else
       logging.log(RETRO_LOG_INFO, "Rumble environment not supported.\n");
 
+   struct retro_audio_callback audio_cb = { audio_callback, audio_set_state };
+   use_audio_cb = environ_cb(RETRO_ENVIRONMENT_SET_AUDIO_CALLBACK, &audio_cb);
+
    check_variables();
 
    (void)info;
@@ -310,7 +322,8 @@ bool retro_load_game(const struct retro_game_info *info)
 }
 
 void retro_unload_game(void)
-{}
+{
+}
 
 unsigned retro_get_region(void)
 {
