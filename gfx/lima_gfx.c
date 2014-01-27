@@ -338,14 +338,14 @@ static int setup_data(limare_data_t *pdata) {
   };
 
   static const vec2f_t coords[16] = {
-	  {0.0f, 1.0f}, {1.0f, 1.0f}, /*  0 degrees */
-	  {0.0f, 0.0f}, {1.0f, 0.0f},
-	  {0.0f, 0.0f}, {0.0f, 1.0f}, /* 90 degrees */
-	  {1.0f, 0.0f}, {1.0f, 1.0f},
-	  {1.0f, 0.0f}, {0.0f, 0.0f}, /* 180 degrees */
-	  {1.0f, 1.0f}, {0.0f, 1.0f},
-	  {1.0f, 1.0f}, {1.0f, 0.0f}, /* 270 degrees */
-	  {0.0f, 1.0f}, {0.0f, 0.0f}
+    {0.0f, 1.0f}, {1.0f, 1.0f}, /*  0 degrees */
+    {0.0f, 0.0f}, {1.0f, 0.0f},
+    {0.0f, 0.0f}, {0.0f, 1.0f}, /* 90 degrees */
+    {1.0f, 0.0f}, {1.0f, 1.0f},
+    {1.0f, 0.0f}, {0.0f, 0.0f}, /* 180 degrees */
+    {1.0f, 1.0f}, {0.0f, 1.0f},
+    {1.0f, 1.0f}, {1.0f, 0.0f}, /* 270 degrees */
+    {0.0f, 1.0f}, {0.0f, 0.0f}
   };
 
   pdata->vertices = calloc(num_verts, sizeof(vec3f_t));
