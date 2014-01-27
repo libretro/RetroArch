@@ -2031,6 +2031,9 @@ void menu_populate_entries(void *data, unsigned menu_type)
 #ifdef HAVE_LOCATION
          file_list_push(rgui->selection_buf, "Location driver", RGUI_SETTINGS_DRIVER_LOCATION, 0);
 #endif
+#ifdef HAVE_MENU
+         file_list_push(rgui->selection_buf, "Menu driver", RGUI_SETTINGS_DRIVER_MENU, 0);
+#endif
          break;
       case RGUI_SETTINGS:
          file_list_clear(rgui->selection_buf);

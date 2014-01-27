@@ -179,6 +179,13 @@ struct settings
       bool allow_rotate;
    } video;
 
+#ifdef HAVE_MENU
+   struct 
+   {
+      char driver[32];
+   } menu;
+#endif
+
 #ifdef HAVE_CAMERA
    struct
    {

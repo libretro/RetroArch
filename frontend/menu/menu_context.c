@@ -47,6 +47,39 @@ const menu_ctx_driver_t *menu_ctx_find_driver(const char *ident)
    return NULL;
 }
 
+static int find_menu_driver_index(const char *driver)
+{
+   unsigned i;
+   for (i = 0; menu_ctx_drivers[i]; i++)
+      if (strcasecmp(driver, menu_ctx_drivers[i]->ident) == 0)
+         return i;
+   return -1;
+}
+
+void find_prev_menu_driver(void)
+{
+   int i = find_menu_driver_index(g_settings.menu.driver);
+   if (i > 0)
+   {
+      strlcpy(g_settings.menu.driver, menu_ctx_drivers[i - 1]->ident, sizeof(g_settings.menu.driver));
+      menu_ctx = menu_ctx_drivers[i - 1];
+   }
+   else
+      RARCH_WARN("Couldn't find any previous menu driver (current one: \"%s\").\n", g_settings.menu.driver);
+}
+
+void find_next_menu_driver(void)
+{
+   int i = find_menu_driver_index(g_settings.menu.driver);
+   if (i >= 0 && menu_ctx_drivers[i + 1])
+   {
+      strlcpy(g_settings.menu.driver, menu_ctx_drivers[i + 1]->ident, sizeof(g_settings.menu.driver));
+      menu_ctx = menu_ctx_drivers[i + 1];
+   }
+   else
+      RARCH_WARN("Couldn't find any next menu driver (current one: \"%s\").\n", g_settings.menu.driver);
+}
+
 bool menu_ctx_init_first(const menu_ctx_driver_t **driver, void **data)
 {
    unsigned i;
@@ -62,10 +95,10 @@ bool menu_ctx_init_first(const menu_ctx_driver_t **driver, void **data)
       {
          *driver = menu_ctx_drivers[i];
          *handle = (rgui_handle_t*)h;
+         strlcpy(g_settings.menu.driver, menu_ctx_drivers[i]->ident, sizeof(g_settings.menu.driver));
          return true;
       }
    }
 
    return false;
 }
-

@@ -1056,6 +1056,14 @@ int menu_set_settings(void *data, unsigned setting, unsigned action)
             find_next_location_driver();
          break;
 #endif
+#ifdef HAVE_MENU
+      case RGUI_SETTINGS_DRIVER_MENU:
+         if (action == RGUI_ACTION_LEFT)
+            find_prev_menu_driver();
+         else if (action == RGUI_ACTION_RIGHT)
+            find_next_menu_driver();
+         break;
+#endif
       case RGUI_SETTINGS_VIDEO_GAMMA:
          if (action == RGUI_ACTION_START)
          {
@@ -1686,6 +1694,11 @@ void menu_set_settings_label(char *type_str, size_t type_str_size, unsigned *w, 
 #ifdef HAVE_LOCATION
       case RGUI_SETTINGS_DRIVER_LOCATION:
          strlcpy(type_str, g_settings.location.driver, type_str_size);
+         break;
+#endif
+#ifdef HAVE_MENU
+      case RGUI_SETTINGS_DRIVER_MENU:
+         strlcpy(type_str, g_settings.menu.driver, type_str_size);
          break;
 #endif
       case RGUI_SETTINGS_VIDEO_REFRESH_RATE_AUTO:
