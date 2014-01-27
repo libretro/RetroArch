@@ -1,6 +1,6 @@
 TARGET = retroarch.js
 
-OBJ = frontend/frontend_emscripten.o \
+OBJ = frontend/platform/platform_emscripten.o \
 		frontend/frontend.o \
 		retroarch.o \
 		file.o \

@@ -16,14 +16,13 @@
  */
 
 #include <emscripten/emscripten.h>
-#include "../general.h"
-#include "../conf/config_file.h"
-#include "../file.h"
-#include "../emscripten/RWebAudio.h"
-#include "frontend.h"
+#include "../../general.h"
+#include "../../conf/config_file.h"
+#include "../../file.h"
+#include "../frontend.h"
 
 #ifdef HAVE_MENU
-#include "../frontend/menu/menu_common.h"
+#include "../../frontend/menu/menu_common.h"
 #endif
 
 static void emscripten_mainloop(void)
