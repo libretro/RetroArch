@@ -255,6 +255,12 @@ static limare_texture_t *add_texture(limare_data_t *pdata,
 
   if (texture == -1) return NULL;
 
+  /* Set magnification to linear and minification to nearest, since we will     *
+   * probably only ever scale the image to larger dimensions. Also set          *
+   * wrap mode for both coords to clamp, which should eliminate some artifacts. */
+  limare_texture_parameters(pdata->state, texture, GL_LINEAR, GL_NEAREST,
+                            GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE);
+
   pdata->textures[i] = calloc(1, sizeof(limare_texture_t));
 
   pdata->textures[i]->width = width;
