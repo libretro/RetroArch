@@ -614,7 +614,7 @@ retro_proc_address_t driver_get_proc_address(const char *sym);
 bool driver_set_rumble_state(unsigned port, enum retro_rumble_effect effect, uint16_t strength);
 // Used by RETRO_ENVIRONMENT_GET_SENSOR_INTERFACE
 bool driver_set_sensor_state(unsigned port, enum retro_sensor_action action, unsigned rate);
-float driver_sensor_get_input(unsigned port, enum retro_sensor_action action);
+float driver_sensor_get_input(unsigned port, unsigned action);
 
 // Used by RETRO_ENVIRONMENT_GET_CAMERA_INTERFACE
 #ifdef HAVE_CAMERA
