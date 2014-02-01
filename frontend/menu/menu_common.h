@@ -381,6 +381,8 @@ unsigned menu_type_is(unsigned type);
 
 void menu_key_event(bool down, unsigned keycode, uint32_t character, uint16_t key_modifiers);
 
+uint64_t menu_input(void);
+
 extern const menu_ctx_driver_t *menu_ctx;
 
 #ifdef __cplusplus

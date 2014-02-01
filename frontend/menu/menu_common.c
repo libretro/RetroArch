@@ -488,7 +488,7 @@ void menu_ticker_line(char *buf, size_t len, unsigned index, const char *str, bo
 }
 
 #ifdef HAVE_MENU
-static uint64_t menu_input(void)
+uint64_t menu_input(void)
 {
    unsigned i;
    uint64_t input_state = 0;

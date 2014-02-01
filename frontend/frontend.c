@@ -279,6 +279,9 @@ int main_entry_iterate(signature(), args_type() args)
             g_extern.audio_active = false;
          }
 
+         while (menu_input())
+            rarch_input_poll();
+
          // Restore libretro keyboard callback.
          g_extern.system.key_event = key_event;
       }
