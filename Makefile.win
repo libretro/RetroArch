@@ -1,6 +1,8 @@
 TARGET = retroarch.exe
 JTARGET = tools/retroarch-joyconfig.exe
 
+OBJDIR := obj-w32
+
 OBJ = frontend/frontend.o \
 		frontend/frontend_context.o \
 		retroarch.o \
@@ -272,69 +274,54 @@ ifneq ($(GIT_VERSION),)
    OBJ += git_version.o
 endif
 
+RARCH_OBJ := $(addprefix $(OBJDIR)/,$(OBJ))
+RARCH_JOBJ := $(addprefix $(OBJDIR)/,$(JOBJ))
+
 all: $(TARGET) $(JTARGET)
 
-$(TARGET): $(OBJ)
+$(TARGET): $(RARCH_OBJ)
 	@$(if $(Q), $(shell echo echo LD $@),)
-	$(Q)$(CXX) -o $@ $(OBJ) $(LIBS) $(LDFLAGS) $(LDCXXFLAGS)
+	$(Q)$(CXX) -o $@ $(RARCH_OBJ) $(LIBS) $(LDFLAGS) $(LDCXXFLAGS)
 
-%.o: %.c $(HEADERS)
+$(OBJDIR)/%.o: %.c $(HEADERS)
+	@mkdir -p $(dir $@)
 	@$(if $(Q), $(shell echo echo CC $<),)
 	$(Q)$(CC) $(CFLAGS) $(DEFINES) -c -o $@ $<
 
 .FORCE:
 
-git_version.o: git_version.c .FORCE
+$(OBJDIR)/git_version.o: git_version.c .FORCE
+	@mkdir -p $(dir $@)
 	@$(if $(Q), $(shell echo echo CC $<),)
 	$(Q)$(CC) $(CFLAGS) $(DEFINES) -c -o $@ $<
 
-tools/input_common_joyconfig.o: input/input_common.c $(HEADERS)
+$(OBJDIR)/tools/input_common_joyconfig.o: input/input_common.c $(HEADERS)
+	@mkdir -p $(dir $@)
 	@$(if $(Q), $(shell echo echo CC $<),)
 	$(Q)$(CC) $(CFLAGS) $(DEFINES) -DIS_JOYCONFIG -c -o $@ $<
 
-%.o: %.cpp $(HEADERS)
+$(OBJDIR)/%.o: %.cpp $(HEADERS)
+	@mkdir -p $(dir $@)
 	@$(if $(Q), $(shell echo echo CXX $<),)
 	$(Q)$(CXX) $(CXXFLAGS) $(DEFINES) -c -o $@ $<
 
-%.o: %.rc $(HEADERS)
+$(OBJDIR)/%.o: %.rc $(HEADERS)
+	@mkdir -p $(dir $@)
 	@$(if $(Q), $(shell echo echo WINDRES $<),)
 	$(Q)$(WINDRES) -o $@ $<
 
-$(JTARGET): $(JOBJ)
+$(JTARGET): $(RARCH_JOBJ)
 	@$(if $(Q), $(shell echo echo LD $@),)
 ifeq ($(CXX_BUILD), 1)
-	$(Q)$(CXX) -o $@ $(JOBJ) -ldxguid -ldinput8 -lole32 $(LDFLAGS) $(JLIBS)
+	$(Q)$(CXX) -o $@ $(RARCH_JOBJ) -ldxguid -ldinput8 -lole32 $(LDFLAGS) $(JLIBS)
 else
-	$(Q)$(CC) -o $@ $(JOBJ) -ldxguid -ldinput8 -lole32 $(LDFLAGS) $(JLIBS)
+	$(Q)$(CC) -o $@ $(RARCH_JOBJ) -ldxguid -ldinput8 -lole32 $(LDFLAGS) $(JLIBS)
 endif
 
 clean:
-	rm -f *.o
-	rm -f deps/miniz/*.o
-	rm -f frontend/*.o
-	rm -f frontend/menu/*.o
-	rm -f frontend/menu/disp/*.o
-	rm -f audio/*.o
-	rm -f audio/xaudio-c/*.o
-	rm -f compat/*.o
-	rm -f compat/rxml/*.o
-	rm -f conf/*.o
-	rm -f gfx/scaler/*.o
-	rm -f gfx/*.o
-	rm -f gfx/glsym/*.o
-	rm -f gfx/d3d9/*.o
-	rm -f gfx/context/*.o
-	rm -f gfx/math/*.o
-	rm -f gfx/fonts/*.o
-	rm -f gfx/py_state/*.o
-	rm -f gfx/rpng/*.o
-	rm -f record/*.o
-	rm -f input/*.o
-	rm -f input/autoconf/*.o
-	rm -f media/*.o
+	rm -rf $(OBJDIR)
 	rm -f $(TARGET)
-	rm -f retroarch-joyconfig.exe
-	rm -f tools/*.o
+	rm -f tools/retroarch-joyconfig.exe
 
 dist_x86: all
 	zip -r retroarch-win32-1.0.zip $(TARGET) $(JTARGET) retroarch.cfg

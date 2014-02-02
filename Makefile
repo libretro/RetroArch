@@ -2,6 +2,8 @@ include config.mk
 
 TARGET = retroarch tools/retroarch-joyconfig tools/retrolaunch/retrolaunch
 
+OBJDIR := obj-unix
+
 OBJ = frontend/frontend.o \
 		frontend/frontend_context.o \
 		retroarch.o \
@@ -395,6 +397,9 @@ ifneq ($(GIT_VERSION),)
    OBJ += git_version.o
 endif
 
+RARCH_OBJ := $(addprefix $(OBJDIR)/,$(OBJ))
+RARCH_JOYCONFIG_OBJ := $(addprefix $(OBJDIR)/,$(JOYCONFIG_OBJ))
+RARCH_RETROLAUNCH_OBJ := $(addprefix $(OBJDIR)/,$(RETROLAUNCH_OBJ))
 
 all: $(TARGET) config.mk
 
@@ -402,54 +407,61 @@ config.mk: configure qb/*
 	@echo "config.mk is outdated or non-existing. Run ./configure again."
 	@exit 1
 
-retroarch: $(OBJ)
+retroarch: $(RARCH_OBJ)
 	@$(if $(Q), $(shell echo echo LD $@),)
-	$(Q)$(LD) -o $@ $(OBJ) $(LIBS) $(LDFLAGS) $(LIBRARY_DIRS)
+	$(Q)$(LD) -o $@ $(RARCH_OBJ) $(LIBS) $(LDFLAGS) $(LIBRARY_DIRS)
 
-tools/retroarch-joyconfig: $(JOYCONFIG_OBJ)
+tools/retroarch-joyconfig: $(RARCH_JOYCONFIG_OBJ)
 	@$(if $(Q), $(shell echo echo LD $@),)
 ifeq ($(CXX_BUILD), 1)
-	$(Q)$(CXX) -o $@ $(JOYCONFIG_OBJ) $(JOYCONFIG_LIBS) $(LDFLAGS) $(LIBRARY_DIRS)
+	$(Q)$(CXX) -o $@ $(RARCH_JOYCONFIG_OBJ) $(JOYCONFIG_LIBS) $(LDFLAGS) $(LIBRARY_DIRS)
 else
-	$(Q)$(CC) -o $@ $(JOYCONFIG_OBJ) $(JOYCONFIG_LIBS) $(LDFLAGS) $(LIBRARY_DIRS)
+	$(Q)$(CC) -o $@ $(RARCH_JOYCONFIG_OBJ) $(JOYCONFIG_LIBS) $(LDFLAGS) $(LIBRARY_DIRS)
 endif
 
-tools/retrolaunch/retrolaunch: $(RETROLAUNCH_OBJ)
+tools/retrolaunch/retrolaunch: $(RARCH_RETROLAUNCH_OBJ)
 	@$(if $(Q), $(shell echo echo LD $@),)
-	$(Q)$(LD) -o $@ $(RETROLAUNCH_OBJ) $(LIBS) $(LDFLAGS) $(LIBRARY_DIRS)
+	$(Q)$(LD) -o $@ $(RARCH_RETROLAUNCH_OBJ) $(LIBS) $(LDFLAGS) $(LIBRARY_DIRS)
 
-%.o: %.c config.h config.mk $(HEADERS)
+$(OBJDIR)/%.o: %.c config.h config.mk $(HEADERS)
+	@mkdir -p $(dir $@)
 	@$(if $(Q), $(shell echo echo CC $<),)
 	$(Q)$(CC) $(CFLAGS) $(DEFINES) -c -o $@ $<
 
 .FORCE:
 
-git_version.o: git_version.c .FORCE
+$(OBJDIR)/git_version.o: git_version.c .FORCE
+	@mkdir -p $(dir $@)
 	@$(if $(Q), $(shell echo echo CC $<),)
 	$(Q)$(CC) $(CFLAGS) $(DEFINES) -c -o $@ $<
 
-tools/linuxraw_joypad.o: input/linuxraw_joypad.c $(HEADERS)
+$(OBJDIR)/tools/linuxraw_joypad.o: input/linuxraw_joypad.c $(HEADERS)
+	@mkdir -p $(dir $@)
 	@$(if $(Q), $(shell echo echo CC $<),)
 	$(Q)$(CC) $(CFLAGS) $(DEFINES) -DIS_JOYCONFIG -c -o $@ $<
 
-tools/udev_joypad.o: input/udev_joypad.c $(HEADERS)
+$(OBJDIR)/tools/udev_joypad.o: input/udev_joypad.c $(HEADERS)
+	@mkdir -p $(dir $@)
 	@$(if $(Q), $(shell echo echo CC $<),)
 	$(Q)$(CC) $(CFLAGS) $(DEFINES) -DIS_JOYCONFIG -c -o $@ $<
 
-tools/input_common_launch.o: input/input_common.c $(HEADERS)
+$(OBJDIR)/tools/input_common_launch.o: input/input_common.c $(HEADERS)
+	@mkdir -p $(dir $@)
 	@$(if $(Q), $(shell echo echo CC $<),)
 	$(Q)$(CC) $(CFLAGS) $(DEFINES) -DIS_RETROLAUNCH -c -o $@ $<
 
-tools/input_common_joyconfig.o: input/input_common.c $(HEADERS)
+$(OBJDIR)/tools/input_common_joyconfig.o: input/input_common.c $(HEADERS)
+	@mkdir -p $(dir $@)
 	@$(if $(Q), $(shell echo echo CC $<),)
 	$(Q)$(CC) $(CFLAGS) $(DEFINES) -DIS_JOYCONFIG -c -o $@ $<
 
-%.o: %.S config.h config.mk $(HEADERS)
+$(OBJDIR)/%.o: %.S config.h config.mk $(HEADERS)
+	@mkdir -p $(dir $@)
 	@$(if $(Q), $(shell echo echo AS $<),)
 	$(Q)$(CC) $(CFLAGS) $(ASFLAGS) $(DEFINES) -c -o $@ $<
 
 install: $(TARGET)
-	rm -f git_version.o
+	rm -f $(OBJDIR)/git_version.o
 	mkdir -p $(DESTDIR)$(PREFIX)/bin 2>/dev/null || /bin/true
 	mkdir -p $(DESTDIR)$(GLOBAL_CONFIG_DIR) 2>/dev/null || /bin/true
 	mkdir -p $(DESTDIR)$(PREFIX)/share/man/man1 2>/dev/null || /bin/true
@@ -472,27 +484,9 @@ uninstall:
 	rm -f $(DESTDIR)$(PREFIX)/share/pixmaps/retroarch.png
 
 clean:
-	rm -f *.o 
-	rm -f frontend/menu/*.o
-	rm -f frontend/menu/disp/*.o
-	rm -f frontend/*.o
-	rm -f audio/*.o
-	rm -f conf/*.o
-	rm -f camera/*.o
-	rm -f gfx/*.o
-	rm -f gfx/glsym/*.o
-	rm -f gfx/rpng/*.o
-	rm -f gfx/fonts/*.o
-	rm -f gfx/math/*.o
-	rm -f gfx/context/*.o
-	rm -f gfx/py_state/*.o
-	rm -f gfx/scaler/*.o
-	rm -f compat/*.o
-	rm -f compat/rxml/*.o
-	rm -f record/*.o
-	rm -f input/*.o
-	rm -f tools/*.o
-	rm -f tools/retrolaunch/*.o
+	rm -rf $(OBJDIR)
 	rm -f $(TARGET)
+	rm -f tools/retrolaunch/retrolaunch
+	rm -f tools/retroarch-joyconfig
 
 .PHONY: all install uninstall clean
