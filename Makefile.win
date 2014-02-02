@@ -55,9 +55,15 @@ JOBJ := conf/config_file.o \
 
 HEADERS = $(wildcard */*/*.h) $(wildcard */*.h) $(wildcard *.h)
 
-CC = gcc
-CXX = g++
-WINDRES = windres
+ifneq ($(HOST_PREFIX),)
+   CC = $(HOST_PREFIX)gcc
+   CXX = $(HOST_PREFIX)g++
+   WINDRES = $(HOST_PREFIX)windres
+else
+   CC = gcc
+   CXX = g++
+   WINDRES = windres
+endif
 
 HAVE_DINPUT = 1
 HAVE_XAUDIO = 1
