@@ -255,6 +255,12 @@ static limare_texture_t *add_texture(limare_data_t *pdata,
 
   if (texture == -1) return NULL;
 
+  /* Set magnification to linear and minification to nearest, since we will     *
+   * probably only ever scale the image to larger dimensions. Also set          *
+   * wrap mode for both coords to clamp, which should eliminate some artifacts. */
+  limare_texture_parameters(pdata->state, texture, GL_LINEAR, GL_NEAREST,
+                            GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE);
+
   pdata->textures[i] = calloc(1, sizeof(limare_texture_t));
 
   pdata->textures[i]->width = width;
@@ -338,14 +344,14 @@ static int setup_data(limare_data_t *pdata) {
   };
 
   static const vec2f_t coords[16] = {
-	  {0.0f, 1.0f}, {1.0f, 1.0f}, /*  0 degrees */
-	  {0.0f, 0.0f}, {1.0f, 0.0f},
-	  {0.0f, 0.0f}, {0.0f, 1.0f}, /* 90 degrees */
-	  {1.0f, 0.0f}, {1.0f, 1.0f},
-	  {1.0f, 0.0f}, {0.0f, 0.0f}, /* 180 degrees */
-	  {1.0f, 1.0f}, {0.0f, 1.0f},
-	  {1.0f, 1.0f}, {1.0f, 0.0f}, /* 270 degrees */
-	  {0.0f, 1.0f}, {0.0f, 0.0f}
+    {0.0f, 1.0f}, {1.0f, 1.0f}, /*  0 degrees */
+    {0.0f, 0.0f}, {1.0f, 0.0f},
+    {0.0f, 0.0f}, {0.0f, 1.0f}, /* 90 degrees */
+    {1.0f, 0.0f}, {1.0f, 1.0f},
+    {1.0f, 0.0f}, {0.0f, 0.0f}, /* 180 degrees */
+    {1.0f, 1.0f}, {0.0f, 1.0f},
+    {1.0f, 1.0f}, {1.0f, 0.0f}, /* 270 degrees */
+    {0.0f, 1.0f}, {0.0f, 0.0f}
   };
 
   pdata->vertices = calloc(num_verts, sizeof(vec3f_t));
@@ -421,7 +427,6 @@ static void put_glyph_rgba4444(limare_data_t *pdata, const uint8_t *src, uint8_t
                                unsigned dst_x, unsigned dst_y) {
   unsigned x, y;
   uint16_t *dst;
-  unsigned r, g, b;
 
   dst = (uint16_t*)pdata->buffer + dst_y * pdata->font_width + dst_x;
 
@@ -441,14 +446,11 @@ typedef struct lima_video {
   const font_renderer_driver_t *font_driver;
   uint8_t font_rgb[4];
 
-  unsigned bytes_per_pixel;
-
   /* current dimensions */
   unsigned width;
   unsigned height;
 
   /* RGUI data */
-  void *rgui_buffer;
   int rgui_rotation;
   float rgui_alpha;
   bool rgui_active;
@@ -469,7 +471,6 @@ static void lima_gfx_free(void *data) {
   destroy_textures(vid->lima);
   free(vid->lima->textures);
 
-  free(vid->rgui_buffer);
   free(vid->lima);
   free(vid);
 }
@@ -575,8 +576,6 @@ static void *lima_gfx_init(const video_info_t *video, const input_driver_t **inp
   lima = calloc(1, sizeof(limare_data_t));
   if (!lima) return NULL;
 
-  vid->bytes_per_pixel = video->rgb32 ? 4 : 2;
-
   /* Request the Exynos DRM backend for rendering. */
   limare_config.type = LIMARE_WINDOWSYS_DRM;
   limare_config.connector_index = g_settings.video.monitor_index;
@@ -601,9 +600,9 @@ static void *lima_gfx_init(const video_info_t *video, const input_driver_t **inp
   lima->font_height = 480;
   lima->font_width = align4((unsigned)(lima->screen_aspect * (float)lima->font_height));
 
-  lima->upload_format = (vid->bytes_per_pixel == 4) ?
+  lima->upload_format = video->rgb32 ?
     LIMA_TEXEL_FORMAT_RGBA_8888 : LIMA_TEXEL_FORMAT_BGR_565;
-  lima->upload_bpp = vid->bytes_per_pixel;
+  lima->upload_bpp = video->rgb32 ? 4 : 2;
 
   limare_enable(lima->state, GL_DEPTH_TEST);
   limare_depth_func(lima->state, GL_ALWAYS);
