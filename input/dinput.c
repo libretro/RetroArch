@@ -664,10 +664,14 @@ static bool guid_is_xinput_device(const GUID* product_guid)
           (GetRawInputDeviceInfoA(raw_devs[i].hDevice, RIDI_DEVICENAME, devName, &nameSize) != ((UINT)-1)) &&
           (strstr(devName, "IG_") != NULL) )
       {
+         free(raw_devs);
+         raw_devs = NULL;
          return true;
       }
    }
-
+   
+   free(raw_devs);
+   raw_devs = NULL;
    return false;
 }
 
