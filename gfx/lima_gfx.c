@@ -152,8 +152,8 @@ static inline void put_pixel_rgba4444(uint16_t *p, unsigned r, unsigned g, unsig
   *p = (a >> 4) | ((b >> 4) << 4) | ((g >> 4) << 8) | ((r >> 4) << 12);
 }
 
-static inline unsigned align4(unsigned i) {
-  return (i + 3) & ~0x3;
+static inline unsigned align_common(unsigned i, unsigned j) {
+  return (i + j - 1) & ~(j - 1);
 }
 
 static float get_screen_aspect(limare_state_t *state) {
@@ -289,7 +289,7 @@ static const void *make_contiguous(limare_data_t *pdata,
 
   /* Enlarge our buffer, if it is currently too small. */
   if (pdata->buffer_size < full_pitch * height) {
-    const aligned_size = align4(full_pitch * height);
+    const aligned_size = align_common(full_pitch * height, 4);
 
     free(pdata->buffer);
     pdata->buffer = NULL;
@@ -507,7 +507,7 @@ static void lima_render_msg(lima_video_t *vid, const char *msg) {
   req_size = lima->font_width * lima->font_height * 2;
 
   if (lima->buffer_size < req_size) {
-    const aligned_size = align4(req_size);
+    const aligned_size = align_common(req_size, 4);
 
     free(lima->buffer);
     lima->buffer = NULL;
@@ -598,7 +598,7 @@ static void *lima_gfx_init(const video_info_t *video, const input_driver_t **inp
   lima->screen_aspect = get_screen_aspect(lima->state);
 
   lima->font_height = 480;
-  lima->font_width = align4((unsigned)(lima->screen_aspect * (float)lima->font_height));
+  lima->font_width = align_common((unsigned)(lima->screen_aspect * (float)lima->font_height), 4);
 
   lima->upload_format = video->rgb32 ?
     LIMA_TEXEL_FORMAT_RGBA_8888 : LIMA_TEXEL_FORMAT_BGR_565;
