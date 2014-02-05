@@ -289,7 +289,7 @@ static const void *make_contiguous(limare_data_t *pdata,
 
   /* Enlarge our buffer, if it is currently too small. */
   if (pdata->buffer_size < full_pitch * height) {
-    const aligned_size = align_common(full_pitch * height, 4);
+    const unsigned aligned_size = align_common(full_pitch * height, 4);
 
     free(pdata->buffer);
     pdata->buffer = NULL;
@@ -507,7 +507,7 @@ static void lima_render_msg(lima_video_t *vid, const char *msg) {
   req_size = lima->font_width * lima->font_height * 2;
 
   if (lima->buffer_size < req_size) {
-    const aligned_size = align_common(req_size, 4);
+    const unsigned aligned_size = align_common(req_size, 4);
 
     free(lima->buffer);
     lima->buffer = NULL;
