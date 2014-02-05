@@ -24,13 +24,16 @@ static const font_renderer_driver_t *font_backends[] = {
 #ifdef HAVE_FREETYPE
    &ft_font_renderer,
 #endif
+#if !defined(DONT_HAVE_BITMAPFONTS)
    &bitmap_font_renderer,
+#endif
+   NULL
 };
 
 bool font_renderer_create_default(const font_renderer_driver_t **driver, void **handle)
 {
    unsigned i;
-   for (i = 0; i < ARRAY_SIZE(font_backends); i++)
+   for (i = 0; font_backends[i]; i++)
    {
       const char *font_path = *g_settings.video.font_path ? g_settings.video.font_path : NULL;
       if (!font_path)

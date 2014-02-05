@@ -247,13 +247,17 @@ FONTS
 
 #if defined(HAVE_OPENGL) || defined(HAVE_D3D8) || defined(HAVE_D3D9)
 
+#if defined(HAVE_FREETYPE) || !defined(DONT_HAVE_BITMAPFONTS)
+#include "../gfx/fonts/fonts.c"
+
 #if defined(HAVE_FREETYPE)
 #include "../gfx/fonts/freetype.c"
 #endif
 
 #if !defined(DONT_HAVE_BITMAPFONTS)
-#include "../gfx/fonts/fonts.c"
 #include "../gfx/fonts/bitmapfont.c"
+#endif
+
 #endif
 
 #ifdef HAVE_OPENGL
