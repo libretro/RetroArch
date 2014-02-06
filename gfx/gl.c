@@ -2423,7 +2423,7 @@ static bool gl_read_viewport(void *data, uint8_t *buffer)
          return false;
       }
 
-      gl_frame(gl, NULL, 0, 0, 0, NULL);
+      rarch_render_cached_frame();
 
       uint8_t *dst = buffer;
       const uint8_t *src = (const uint8_t*)gl->readback_buffer_screenshot;
