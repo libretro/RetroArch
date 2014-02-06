@@ -1524,9 +1524,23 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
    }
 #endif
 
+#ifndef NO_GL_READ_PIXELS
+   // Screenshots.
+   if (gl->readback_buffer_screenshot)
+   {
+      glPixelStorei(GL_PACK_ALIGNMENT, 4);
+#ifndef HAVE_OPENGLES
+      glPixelStorei(GL_PACK_ROW_LENGTH, 0);
+      glReadBuffer(GL_BACK);
+#endif
+      glReadPixels(gl->vp.x, gl->vp.y,
+            gl->vp.width, gl->vp.height,
+            GL_RGBA, GL_UNSIGNED_BYTE, gl->readback_buffer_screenshot);
+   }
 #if !defined(HAVE_OPENGLES) && defined(HAVE_FFMPEG)
-   if (gl->pbo_readback_enable)
+   else if (gl->pbo_readback_enable)
       gl_pbo_async_readback(gl);
+#endif
 #endif
 
    context_swap_buffers_func();
@@ -2369,39 +2383,12 @@ static void gl_viewport_info(void *data, struct rarch_viewport *vp)
 #ifndef NO_GL_READ_PIXELS
 static bool gl_read_viewport(void *data, uint8_t *buffer)
 {
-   unsigned i;
    gl_t *gl = (gl_t*)data;
     
-   i = 0;
-   (void)i;
-
    RARCH_PERFORMANCE_INIT(read_viewport);
    RARCH_PERFORMANCE_START(read_viewport);
 
-#ifdef HAVE_FBO
-   // Make sure we're reading from backbuffer incase some state has been overridden.
-   if (gl->hw_render_fbo_init || gl->fbo_inited)
-      gl_bind_backbuffer();
-#endif
-
-#ifdef HAVE_OPENGLES
-   glPixelStorei(GL_PACK_ALIGNMENT, get_alignment(gl->vp.width * 3));
-   // GLES doesn't support glReadBuffer ... Take a chance that it'll work out right.
-   glReadPixels(gl->vp.x, gl->vp.y,
-         gl->vp.width, gl->vp.height,
-         GL_RGB, GL_UNSIGNED_BYTE, buffer);
-
-   uint8_t *pixels = (uint8_t*)buffer;
-   unsigned num_pixels = gl->vp.width * gl->vp.height;
-   // Convert RGB to BGR. Formats are byte ordered, so just swap 1st and 3rd byte.
-   for (i = 0; i <= num_pixels; pixels += 3, i++)
-   {
-      uint8_t tmp = pixels[2];
-      pixels[2] = pixels[0];
-      pixels[0] = tmp;
-   }
-#else
-#ifdef HAVE_FFMPEG
+#if defined(HAVE_FFMPEG) && !defined(HAVE_OPENGLES)
    if (gl->pbo_readback_enable)
    {
       if (!gl->pbo_readback_valid) // We haven't buffered up enough frames yet, come back later.
@@ -2422,15 +2409,35 @@ static bool gl_read_viewport(void *data, uint8_t *buffer)
    else // Use slow synchronous readbacks. Use this with plain screenshots as we don't really care about performance in this case.
 #endif
    {
-      glPixelStorei(GL_PACK_ROW_LENGTH, gl->vp.width);
-      glPixelStorei(GL_PACK_ALIGNMENT, get_alignment(gl->vp.width * 3));
+      // GLES2 only guarantees GL_RGBA/GL_UNSIGNED_BYTE readbacks so do just that ...
+      // GLES2 also doesn't support reading back data from front buffer, so render
+      // a cached frame and have gl_frame() do the readback while it's in the back buffer.
+      // Keep codepath similar for GLES and desktop GL.
 
-      glReadBuffer(GL_FRONT);
-      glReadPixels(gl->vp.x, gl->vp.y,
-            gl->vp.width, gl->vp.height,
-            GL_BGR, GL_UNSIGNED_BYTE, buffer);
+      unsigned num_pixels = gl->vp.width * gl->vp.height;
+
+      gl->readback_buffer_screenshot = malloc(num_pixels * sizeof(uint32_t));
+      if (!gl->readback_buffer_screenshot)
+      {
+         RARCH_PERFORMANCE_STOP(read_viewport);
+         return false;
+      }
+
+      gl_frame(gl, NULL, 0, 0, 0, NULL);
+
+      uint8_t *dst = buffer;
+      const uint8_t *src = gl->readback_buffer_screenshot;
+      unsigned i;
+      for (i = 0; i < num_pixels; i++, dst += 3, src += 4)
+      {
+         dst[0] = src[2]; // RGBA -> BGR.
+         dst[1] = src[1];
+         dst[2] = src[0];
+      }
+
+      free(gl->readback_buffer_screenshot);
+      gl->readback_buffer_screenshot = NULL;
    }
-#endif
 
    RARCH_PERFORMANCE_STOP(read_viewport);
    return true;

@@ -247,6 +247,7 @@ typedef struct gl
    unsigned pbo_readback_index;
    struct scaler_ctx pbo_readback_scaler;
 #endif
+   void *readback_buffer_screenshot;
 
 #if defined(HAVE_MENU)
    GLuint rgui_texture;
