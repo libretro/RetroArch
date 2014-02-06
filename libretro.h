@@ -377,7 +377,7 @@ enum retro_mod
 // Environ 4, 5 are no longer supported (GET_VARIABLE / SET_VARIABLES), and reserved to avoid possible ABI clash.
 #define RETRO_ENVIRONMENT_SET_MESSAGE   6  // const struct retro_message * --
                                            // Sets a message to be displayed in implementation-specific manner for a certain amount of 'frames'.
-                                           // Should not be used for trivial messages, which should simply be logged to stderr.
+                                           // Should not be used for trivial messages, which should simply be logged via RETRO_ENVIRONMENT_GET_LOG_INTERFACE (or as a fallback, stderr).
 #define RETRO_ENVIRONMENT_SHUTDOWN      7  // N/A (NULL) --
                                            // Requests the frontend to shutdown.
                                            // Should only be used if game has a specific
