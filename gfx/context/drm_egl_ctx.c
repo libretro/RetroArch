@@ -411,7 +411,7 @@ static bool gfx_ctx_set_video_mode(
 
    // GLES 2.0+. Don't use for any other API.
    const EGLint gles_context_attribs[] = {
-      EGL_CONTEXT_CLIENT_VERSION, g_major ? g_major : 2,
+      EGL_CONTEXT_CLIENT_VERSION, g_major ? (EGLint)g_major : 2,
       EGL_NONE
    };
 

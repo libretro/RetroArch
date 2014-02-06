@@ -2426,7 +2426,7 @@ static bool gl_read_viewport(void *data, uint8_t *buffer)
       gl_frame(gl, NULL, 0, 0, 0, NULL);
 
       uint8_t *dst = buffer;
-      const uint8_t *src = gl->readback_buffer_screenshot;
+      const uint8_t *src = (const uint8_t*)gl->readback_buffer_screenshot;
       unsigned i;
       for (i = 0; i < num_pixels; i++, dst += 3, src += 4)
       {

@@ -348,6 +348,12 @@ static bool gfx_ctx_set_video_mode(
 
    int (*old_handler)(Display*, XErrorEvent*) = NULL;
 
+   // GLES 2.0+. Don't use for any other API.
+   const EGLint egl_ctx_gles_attribs[] = {
+      EGL_CONTEXT_CLIENT_VERSION, g_major ? (EGLint)g_major : 2,
+      EGL_NONE,
+   };
+
    EGLint vid;
    if (!eglGetConfigAttrib(g_egl_dpy, g_config, EGL_NATIVE_VISUAL_ID, &vid))
       goto error;
@@ -404,12 +410,6 @@ static bool gfx_ctx_set_video_mode(
          vi->depth, InputOutput, vi->visual, 
          CWBorderPixel | CWColormap | CWEventMask | (true_full ? CWOverrideRedirect : 0), &swa);
    XSetWindowBackground(g_dpy, g_win, 0);
-
-   // GLES 2.0+. Don't use for any other API.
-   const EGLint egl_ctx_gles_attribs[] = {
-      EGL_CONTEXT_CLIENT_VERSION, g_major ? g_major : 2,
-      EGL_NONE,
-   };
 
    g_egl_ctx = eglCreateContext(g_egl_dpy, g_config, EGL_NO_CONTEXT,
          (g_api == GFX_CTX_OPENGL_ES_API) ? egl_ctx_gles_attribs : NULL);

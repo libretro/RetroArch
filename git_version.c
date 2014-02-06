@@ -13,5 +13,6 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "git_version.h"
 const char rarch_git_version[] = GIT_VERSION;
 
