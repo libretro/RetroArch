@@ -1,4 +1,4 @@
-	/*  RetroArch - A frontend for libretro.
+/*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  * 
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
@@ -616,7 +616,7 @@ bool rarch_environment_cb(unsigned cmd, void *data)
          RARCH_LOG("Environ SYSTEM_DIRECTORY: \"%s\".\n", g_settings.system_directory);
          break;
 
-      case RETRO_ENVIRONMENT_GET_SRAM_DIRECTORY:
+      case RETRO_ENVIRONMENT_GET_SAVE_DIRECTORY:
          *(const char **)data = g_extern.savefile_dir ? g_extern.savefile_dir : NULL;
          RARCH_LOG("Environ SAVE_DIRECTORY: \"%s\".\n", g_extern.savefile_dir);
          break;		 		 
