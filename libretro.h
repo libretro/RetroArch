@@ -575,6 +575,10 @@ enum retro_mod
                                            // If so, no such directory is defined,
                                            // and it's up to the implementation to find a suitable directory.
                                            //
+#define RETRO_ENVIRONMENT_GET_SAVE_DIRECTORY 31
+                                           // const char ** --
+                                           // Returns the "save" directory of the frontend.
+                                           // This directory can be used to store SRAM, memory cards, high scores, etc										   
 
 enum retro_log_level
 {
