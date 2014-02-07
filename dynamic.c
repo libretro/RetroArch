@@ -616,6 +616,11 @@ bool rarch_environment_cb(unsigned cmd, void *data)
          RARCH_LOG("Environ SYSTEM_DIRECTORY: \"%s\".\n", g_settings.system_directory);
          break;
 
+      case RETRO_ENVIRONMENT_GET_SAVE_DIRECTORY:
+         *(const char **)data = g_extern.savefile_dir ? g_extern.savefile_dir : NULL;
+         RARCH_LOG("Environ SAVE_DIRECTORY: \"%s\".\n", g_extern.savefile_dir);
+         break;		 		 
+
       case RETRO_ENVIRONMENT_SET_PIXEL_FORMAT:
       {
          enum retro_pixel_format pix_fmt = *(const enum retro_pixel_format*)data;
