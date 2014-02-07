@@ -413,6 +413,9 @@ enum retro_mod
                                            // If so, no such directory is defined,
                                            // and it's up to the implementation to find a suitable directory.
                                            //
+                                           // NOTE: Some cores used this folder also for "save" data such as memory cards, etc, for lack of a better place to put it.
+                                           // This is now discouraged, and if possible, cores should try to use the new GET_SAVE_DIRECTORY.
+                                           //
 #define RETRO_ENVIRONMENT_SET_PIXEL_FORMAT 10
                                            // const enum retro_pixel_format * --
                                            // Sets the internal pixel format used by the implementation.
@@ -578,7 +581,12 @@ enum retro_mod
 #define RETRO_ENVIRONMENT_GET_SAVE_DIRECTORY 31
                                            // const char ** --
                                            // Returns the "save" directory of the frontend.
-                                           // This directory can be used to store SRAM, memory cards, high scores, etc										   
+                                           // This directory can be used to store SRAM, memory cards, high scores, etc, if the libretro core
+                                           // cannot use the regular memory interface (retro_get_memory_data()).
+                                           //
+                                           // NOTE: libretro cores used to check GET_SYSTEM_DIRECTORY for similar things before.
+                                           // They should still check GET_SYSTEM_DIRECTORY if they want to be backwards compatible.
+                                           // The path here can be NULL. It should only be non-NULL if the frontend user has set a specific save path.
 
 enum retro_log_level
 {
