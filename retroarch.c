@@ -1196,19 +1196,7 @@ static void parse_input(int argc, char *argv[])
 #ifdef HAVE_FFMPEG
                case 's':
                {
-                  errno = 0;
-                  char *ptr;
-                  g_extern.record_width = strtoul(optarg, &ptr, 0);
-                  if ((*ptr != 'x') || errno)
-                  {
-                     RARCH_ERR("Wrong format for --size.\n");
-                     print_help();
-                     rarch_fail(1, "parse_input()");
-                  }
-
-                  ptr++;
-                  g_extern.record_height = strtoul(ptr, &ptr, 0);
-                  if ((*ptr != '\0') || errno)
+                  if (sscanf(optarg, "%ux%u", &g_extern.record_width, &g_extern.record_height) != 2)
                   {
                      RARCH_ERR("Wrong format for --size.\n");
                      print_help();
