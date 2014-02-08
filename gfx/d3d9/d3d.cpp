@@ -576,6 +576,8 @@ static void d3d_free(void *data)
 #endif
    DestroyWindow(d3d->hWnd);
 
+   delete d3d;
+
 #ifndef _XBOX
    UnregisterClass("RetroArch", GetModuleHandle(NULL));
 #endif
@@ -1083,7 +1085,7 @@ static const gfx_ctx_driver_t *d3d_get_context(void)
 static void *d3d_init(const video_info_t *info, const input_driver_t **input,
       void **input_data)
 {
-   D3DVideo *vid = (D3DVideo*)calloc(1, sizeof(D3DVideo));
+   D3DVideo *vid = new D3DVideo;
    if (!vid)
       return NULL;
 
