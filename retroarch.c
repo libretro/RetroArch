@@ -2065,7 +2065,7 @@ void rarch_set_fullscreen(bool fullscreen)
       input_poll_func();
 }
 
-static bool check_fullscreen(void)
+bool rarch_check_fullscreen(void)
 {
    // If we go fullscreen we drop all drivers and reinit to be safe.
    static bool was_pressed = false;
@@ -2823,7 +2823,7 @@ static void do_state_checks(void)
       check_pause();
       check_oneshot();
 
-      if (check_fullscreen() && g_extern.is_paused)
+      if (rarch_check_fullscreen() && g_extern.is_paused)
          rarch_render_cached_frame();
 
       if (g_extern.is_paused && !g_extern.is_oneshot)
@@ -2858,7 +2858,7 @@ static void do_state_checks(void)
    else
    {
       check_netplay_flip();
-      check_fullscreen();
+      rarch_check_fullscreen();
    }
 #endif
 }

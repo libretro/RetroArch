@@ -716,6 +716,7 @@ void rarch_check_block_hotkey(void);
 void rarch_init_rewind(void);
 void rarch_deinit_rewind(void);
 void rarch_set_fullscreen(bool fullscreen);
+bool rarch_check_fullscreen(void);
 void rarch_disk_control_set_eject(bool state, bool log);
 void rarch_disk_control_set_index(unsigned index);
 void rarch_disk_control_append_image(const char *path);

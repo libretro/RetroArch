@@ -1417,6 +1417,7 @@ bool menu_iterate(void)
 #ifdef HAVE_OVERLAY
    rarch_check_overlay();
 #endif
+   rarch_check_fullscreen();
 
    if (input_key_pressed_func(RARCH_QUIT_KEY) || !video_alive_func())
    {
