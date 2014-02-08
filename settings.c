@@ -286,6 +286,8 @@ void config_set_defaults(void)
    g_settings.audio.rate_control = rate_control;
    g_settings.audio.rate_control_delta = rate_control_delta;
    g_settings.audio.volume = audio_volume;
+   g_extern.audio_data.volume_db   = g_settings.audio.volume;
+   g_extern.audio_data.volume_gain = db_to_gain(g_settings.audio.volume);
 
    g_settings.rewind_enable = rewind_enable;
    g_settings.rewind_buffer_size = rewind_buffer_size;
@@ -884,6 +886,8 @@ bool config_load_file(const char *path, bool set_defaults)
    CONFIG_GET_BOOL(audio.rate_control, "audio_rate_control");
    CONFIG_GET_FLOAT(audio.rate_control_delta, "audio_rate_control_delta");
    CONFIG_GET_FLOAT(audio.volume, "audio_volume");
+   g_extern.audio_data.volume_db   = g_settings.audio.volume;
+   g_extern.audio_data.volume_gain = db_to_gain(g_settings.audio.volume);
 
 #ifdef HAVE_CAMERA
    CONFIG_GET_STRING(camera.device, "camera_device");

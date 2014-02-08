@@ -1111,9 +1111,6 @@ void init_audio(void)
          RARCH_WARN("Audio rate control was desired, but driver does not support needed features.\n");
    }
 
-   g_extern.audio_data.volume_db   = g_settings.audio.volume;
-   g_extern.audio_data.volume_gain = db_to_gain(g_settings.audio.volume);
-
 #ifdef HAVE_DYLIB
    init_dsp_plugin();
 #endif
