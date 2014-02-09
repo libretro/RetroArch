@@ -20,7 +20,7 @@
 #ifdef HAVE_DYNAMIC
 #ifdef _WIN32
 #define EXT_EXECUTABLES "dll"
-#elif defined(__APPLE__)
+#elif defined(__APPLE__) || defined(__MACH__)
 #define EXT_EXECUTABLES "dylib"
 #else
 #define EXT_EXECUTABLES "so"
