@@ -162,7 +162,7 @@ retro_perf_tick_t rarch_get_perf_counter(void)
 
 #elif defined(__ARM_ARCH_6__)
    asm volatile( "mrc p15, 0, %0, c9, c13, 0" : "=r"(time) );
-#elif defined(__CELLOS_LV2__) || defined(GEKKO) || defined(_XBOX360)
+#elif defined(__CELLOS_LV2__) || defined(GEKKO) || defined(_XBOX360) || defined(__powerpc__) || defined(__ppc__) || defined(__POWERPC__)
    time = __mftb();
 #endif
 
@@ -338,7 +338,7 @@ uint64_t rarch_get_cpu_features(void)
    cpu |= RETRO_SIMD_NEON;
    arm_enable_runfast_mode();
    RARCH_LOG("[CPUID]: NEON: %u\n", !!(cpu & RETRO_SIMD_NEON));
-#elif defined(__CELLOS_LV2__)
+#elif defined(__CELLOS_LV2__) || defined(__ALTIVEC__)
    cpu |= RETRO_SIMD_VMX;
    RARCH_LOG("[CPUID]: VMX: %u\n", !!(cpu & RETRO_SIMD_VMX));
 #elif defined(XBOX360)
