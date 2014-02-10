@@ -245,7 +245,9 @@
 				ONLY_ACTIVE_ARCH = YES;
 				OTHER_CFLAGS = (
 					"-DHAVE_DYNAMIC,",
-					"-DHAVE_MENU",
+					"-DHAVE_MENU,",
+					"-DWANT_RPNG,",
+					"-DHAVE_OPENGL",
 				);
 				PREBINDING = NO;
 				SDKROOT = macosx10.5;
@@ -262,7 +264,9 @@
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				OTHER_CFLAGS = (
 					"-DHAVE_DYNAMIC,",
-					"-DHAVE_MENU",
+					"-DHAVE_MENU,",
+					"-DWANT_RPNG,",
+					"-DHAVE_OPENGL",
 				);
 				PREBINDING = NO;
 				SDKROOT = macosx10.5;
