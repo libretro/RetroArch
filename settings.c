@@ -306,7 +306,9 @@ void config_set_defaults(void)
    g_settings.stdin_cmd_enable     = stdin_cmd_enable;
    g_settings.game_history_size    = game_history_size;
 
+#ifdef HAVE_MENU
    g_settings.rgui_show_start_screen = rgui_show_start_screen;
+#endif
 
    rarch_assert(sizeof(g_settings.input.binds[0]) >= sizeof(retro_keybinds_1));
    rarch_assert(sizeof(g_settings.input.binds[1]) >= sizeof(retro_keybinds_rest));
@@ -456,12 +458,14 @@ static void config_load_core_specific(void)
       )
       return;
 
+#ifdef HAVE_MENU
    if (*g_settings.rgui_config_directory)
    {
       path_resolve_realpath(g_settings.rgui_config_directory, sizeof(g_settings.rgui_config_directory));
       strlcpy(g_extern.core_specific_config_path, g_settings.rgui_config_directory, sizeof(g_extern.core_specific_config_path));
    }
    else
+#endif
    {
       // Use original config file's directory as a fallback.
       fill_pathname_basedir(g_extern.core_specific_config_path, g_extern.config_path, sizeof(g_extern.core_specific_config_path));
