@@ -294,7 +294,7 @@ static const void *make_contiguous(limare_data_t *pdata,
     free(pdata->buffer);
     pdata->buffer = NULL;
 
-    pdata->buffer = aligned_alloc(4, aligned_size);
+    posix_memalign(&pdata->buffer, 4, aligned_size);
     if (pdata->buffer == NULL) {
       RARCH_ERR("video_lima: failed to allocate buffer to make pixel data contiguous\n");
       return NULL;
@@ -512,7 +512,7 @@ static void lima_render_msg(lima_video_t *vid, const char *msg) {
     free(lima->buffer);
     lima->buffer = NULL;
 
-    lima->buffer = aligned_alloc(4, aligned_size);
+    posix_memalign(&lima->buffer, 4, aligned_size);
     if (lima->buffer == NULL) {
       RARCH_ERR("video_lima: failed to allocate buffer to render fonts\n");
       return;
