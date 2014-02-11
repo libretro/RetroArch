@@ -27,11 +27,14 @@
 #include <stddef.h>
 #include <limits.h>
 
-// Hack applied for MSVC when compiling in C89 mode as it isn't C99 compliant.
 #ifdef __cplusplus
 extern "C" {
-#else
+#endif
+
+#ifndef __cplusplus
+
 #if defined(_MSC_VER) && !defined(SN_TARGET_PS3) && !defined(__cplusplus)
+/* Hack applied for MSVC when compiling in C89 mode as it isn't C99 compliant. */
 #define bool unsigned char
 #define true 1
 #define false 0
