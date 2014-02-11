@@ -14,7 +14,7 @@
  */
 
 #include "setting_data.h"
-#include "config.def.h"
+#include "../../config.def.h"
 
 // HACK
 struct settings fake_settings;

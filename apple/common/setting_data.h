@@ -16,7 +16,7 @@
 #ifndef __APPLE_RARCH_SETTING_DATA_H__
 #define __APPLE_RARCH_SETTING_DATA_H__
 
-#include "general.h"
+#include "../../general.h"
 
 enum setting_type { ST_NONE, ST_BOOL, ST_INT, ST_UINT, ST_FLOAT, ST_PATH, ST_STRING, ST_HEX, ST_BIND,
                     ST_GROUP, ST_SUB_GROUP, ST_END_GROUP, ST_END_SUB_GROUP };
