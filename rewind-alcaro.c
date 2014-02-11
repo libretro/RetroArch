@@ -95,11 +95,25 @@ static void reset(struct rewindstack * this_, size_t blocksize, size_t capacity)
 {
 	struct rewindstack_impl * this=(struct rewindstack_impl*)this_;
 	
-	this->blocksize=((blocksize-1)|(sizeof(uint16_t)-1))+1;
-	
-	const int maxcblkcover=UINT16_MAX*sizeof(uint16_t);
-	const int maxcblks=(this->blocksize+maxcblkcover-1)/maxcblkcover;
-	this->maxcompsize=this->blocksize + maxcblks*sizeof(uint16_t)*2 + sizeof(uint16_t)+sizeof(uint32_t) + sizeof(size_t)*2;
+	int newblocksize=((blocksize-1)|(sizeof(uint16_t)-1))+1;
+	if (this->blocksize!=newblocksize)
+	{
+		this->blocksize=newblocksize;
+		
+		const int maxcblkcover=UINT16_MAX*sizeof(uint16_t);
+		const int maxcblks=(this->blocksize+maxcblkcover-1)/maxcblkcover;
+		this->maxcompsize=this->blocksize + maxcblks*sizeof(uint16_t)*2 + sizeof(uint16_t)+sizeof(uint32_t) + sizeof(size_t)*2;
+		
+		free(this->thisblock);
+		free(this->nextblock);
+		this->thisblock=calloc(this->blocksize+sizeof(uint16_t)*8, 1);
+		this->nextblock=calloc(this->blocksize+sizeof(uint16_t)*8, 1);
+		//force in a different byte at the end, so we don't need to look for the buffer end in the innermost loop
+		//there is also a large amount of data that's the same, to stop the other scan
+		//and finally some padding so we don't read outside the buffer end if we're reading in large blocks
+		*(uint16_t*)(this->thisblock+this->blocksize+sizeof(uint16_t)*3)=0xFFFF;
+		*(uint16_t*)(this->nextblock+this->blocksize+sizeof(uint16_t)*3)=0x0000;
+	}
 	
 	if (capacity!=this->capacity)
 	{
@@ -110,16 +124,6 @@ static void reset(struct rewindstack * this_, size_t blocksize, size_t capacity)
 	
 	this->head=this->data+sizeof(size_t);
 	this->tail=this->data+sizeof(size_t);
-	
-	free(this->thisblock);
-	free(this->nextblock);
-	this->thisblock=calloc(this->blocksize+sizeof(uint16_t)*8, 1);
-	this->nextblock=calloc(this->blocksize+sizeof(uint16_t)*8, 1);
-	//force in a different byte at the end, so we don't need to look for the buffer end in the innermost loop
-	//there is also a large amount of data that's the same, to stop the other scan
-	//and finally some padding so we don't read outside the buffer end if we're reading in large blocks
-	*(uint16_t*)(this->thisblock+this->blocksize+sizeof(uint16_t)*3)=0xFFFF;
-	*(uint16_t*)(this->nextblock+this->blocksize+sizeof(uint16_t)*3)=0x0000;
 	
 	this->thisblock_valid=false;
 	
@@ -132,17 +136,13 @@ static void * push_begin(struct rewindstack * this_)
 	return this->nextblock;
 }
 
-//#include <stdio.h>
 static void push_end(struct rewindstack * this_)
 {
 	struct rewindstack_impl * this=(struct rewindstack_impl*)this_;
-//printf("in:");
-//for (int i=0;i<16;i++)printf("%x",this->nextblock[i]);puts("");
 	if (this->thisblock_valid)
 	{
-//printf("cmp:\n");
-//for (int i=0;i<16;i++)printf("%x",this->thisblock[i]);puts("");
-//for (int i=0;i<16;i++)printf("%x",this->nextblock[i]);puts("");
+		if (this->capacity<sizeof(size_t)+this->maxcompsize) return;
+		
 	recheckcapacity:;
 		size_t headpos=(this->head-this->data);
 		size_t tailpos=(this->tail-this->data);
@@ -179,9 +179,6 @@ static void push_end(struct rewindstack * this_)
 			{
 				const size_t* olds=(const size_t*)old16;
 				const size_t* news=(const size_t*)new16;
-				//size_t diff=(news-olds);
-				//while (olds[0]==olds[diff]) olds++;
-				//news+=(olds-(size_t*)oldprev);
 				
 				while (*olds==*news)
 				{
@@ -200,8 +197,6 @@ static void push_end(struct rewindstack * this_)
 			size_t skip=(old16-oldprev);
 			
 			if (skip>=num16s) break;
-			//old16+=skip;
-			//new16+=skip;
 			num16s-=skip;
 			
 			if (skip>UINT16_MAX)
@@ -225,8 +220,8 @@ static void push_end(struct rewindstack * this_)
 			size_t changed;
 			const uint16_t * old16prev=old16;
 			//comparing two or three words makes no real difference
-			//with three, we get larger blocks which should be a minuscle bit faster
 			//with two, the smaller blocks are less likely to be chopped up elsewhere due to 64KB
+			//with three, we get larger blocks which should be a minuscle bit faster to decompress, but probably a little slower to compress
 			while (old16[0]!=new16[0] || old16[1]!=new16[1])
 			{
 				old16++;
@@ -293,8 +288,6 @@ static const void * pull(struct rewindstack * this_)
 	
 	if (this->thisblock_valid)
 	{
-//printf("out:");
-//for (int i=0;i<16;i++)printf("%x",this->thisblock[i]);puts("");
 		this->thisblock_valid=false;
 		this->entries--;
 		return this->thisblock;
@@ -306,13 +299,10 @@ static const void * pull(struct rewindstack * this_)
 	this->head=this->data+start;
 	
 	const char * compressed=this->data+start+sizeof(size_t);
-//const char * in=this->thisblock;
 	char * out=this->thisblock;
 	//begin decompression code
 	//out is the previously returned state
-//char * outend=out+this->blocksize;
 	const uint16_t * compressed16=(const uint16_t*)compressed;
-//const uint16_t * in16=(const uint16_t*)in;
 	uint16_t * out16=(uint16_t*)out;
 	while (true)
 	{
@@ -320,38 +310,23 @@ static const void * pull(struct rewindstack * this_)
 		if (numchanged)
 		{
 			uint16_t numunchanged=*(compressed16++);
-//memcpy(out16, in16, numunchanged*sizeof(uint16_t));
-//in16+=numunchanged;
 			out16+=numunchanged;
 			memcpy(out16, compressed16, numchanged*sizeof(uint16_t));
 			compressed16+=numchanged;
-//in16+=numchanged;
 			out16+=numchanged;
 		}
 		else
 		{
 			uint32_t numunchanged=compressed16[0] | compressed16[1]<<16;
-			if (!numunchanged)
-			{
-//memcpy(out16, in16, outend-(char*)out16);
-				break;
-			}
+			if (!numunchanged) break;
 			compressed16+=2;
-//memcpy(out16, in16, numunchanged*sizeof(uint16_t));
-//in16+=numunchanged;
 			out16+=numunchanged;
 		}
 	}
 	//end decompression code
 	
-	//char * swap=this->thisblock;
-	//this->thisblock=this->nextblock;
-	//this->nextblock=swap;
-	
 	this->entries--;
 	
-//printf("out:");
-//for (int i=0;i<16;i++)printf("%x",this->thisblock[i]);puts("");
 	return this->thisblock;
 }
 
