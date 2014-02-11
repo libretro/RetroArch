@@ -17,10 +17,10 @@
 #include <unistd.h>
 
 #include "apple_gamecontroller.h"
-#include "input/input_common.h"
+#include "../../input/input_common.h"
 #include "apple_input.h"
-#include "general.h"
-#include "driver.h"
+#include "../../general.h"
+#include "../../driver.h"
 
 #include "keycode.inc"
 

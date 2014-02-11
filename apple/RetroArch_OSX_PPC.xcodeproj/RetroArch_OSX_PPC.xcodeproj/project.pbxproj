@@ -247,7 +247,11 @@
 					"-DHAVE_DYNAMIC,",
 					"-DHAVE_MENU,",
 					"-DWANT_RPNG,",
-					"-DHAVE_OPENGL",
+					"-DHAVE_OPENGL,",
+					"-DWANT_MINIZ,",
+					"-DHAVE_ZLIB,",
+					"-DRARCH_INTERNAL,",
+					"-DOSX",
 				);
 				PREBINDING = NO;
 				SDKROOT = macosx10.5;
@@ -266,7 +270,11 @@
 					"-DHAVE_DYNAMIC,",
 					"-DHAVE_MENU,",
 					"-DWANT_RPNG,",
-					"-DHAVE_OPENGL",
+					"-DHAVE_OPENGL,",
+					"-DWANT_MINIZ,",
+					"-DHAVE_ZLIB,",
+					"-DRARCH_INTERNAL,",
+					"-DOSX",
 				);
 				PREBINDING = NO;
 				SDKROOT = macosx10.5;

@@ -159,7 +159,7 @@ extern "C" {
 
       union {
          struct classic_ctrl_t classic;
-      };
+      } cc;
    } expansion_t;
 
    /**

@@ -13,8 +13,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "input/input_common.h"
-#include "general.h"
+#include "../../input/input_common.h"
+#include "../../general.h"
 
 #ifdef IOS
 #include "apple/iOS/bluetooth/btdynamic.c"
@@ -24,9 +24,9 @@
 #include "../OSX/hid_pad.c"
 #endif
 
-#include "apple/common/hidpad/wiimote.c"
-#include "apple/common/hidpad/apple_ps3_pad.c"
-#include "apple/common/hidpad/apple_wii_pad.c"
+#include "hidpad/wiimote.c"
+#include "hidpad/apple_ps3_pad.c"
+#include "hidpad/apple_wii_pad.c"
 
 typedef struct
 {

@@ -22,7 +22,9 @@ typedef void *GLeglImageOES;
 typedef GLint GLfixed;
 #endif
 #if defined(OSX) && !defined(MAC_OS_X_VERSION_10_7)
-#define OSX_10_6_SNOW_LEOPARD 1
+typedef long long int GLint64;
+typedef unsigned long long int GLuint64;
+typedef struct __GLsync *GLsync;
 #endif
 typedef void (APIENTRYP RGLSYMGLBLENDCOLORPROC) (GLfloat red, GLfloat green, GLfloat blue, GLfloat alpha);
 typedef void (APIENTRYP RGLSYMGLBLENDEQUATIONPROC) (GLenum mode);
@@ -333,10 +335,8 @@ typedef void (APIENTRYP RGLSYMGLDRAWARRAYSINSTANCEDPROC) (GLenum mode, GLint fir
 typedef void (APIENTRYP RGLSYMGLDRAWELEMENTSINSTANCEDPROC) (GLenum mode, GLsizei count, GLenum type, const GLvoid *indices, GLsizei instancecount);
 typedef void (APIENTRYP RGLSYMGLTEXBUFFERPROC) (GLenum target, GLenum internalformat, GLuint buffer);
 typedef void (APIENTRYP RGLSYMGLPRIMITIVERESTARTINDEXPROC) (GLuint index);
-#ifndef OSX_10_6_SNOW_LEOPARD
 typedef void (APIENTRYP RGLSYMGLGETINTEGER64I_VPROC) (GLenum target, GLuint index, GLint64 *data);
 typedef void (APIENTRYP RGLSYMGLGETBUFFERPARAMETERI64VPROC) (GLenum target, GLenum pname, GLint64 *params);
-#endif
 typedef void (APIENTRYP RGLSYMGLFRAMEBUFFERTEXTUREPROC) (GLenum target, GLenum attachment, GLuint texture, GLint level);
 typedef void (APIENTRYP RGLSYMGLVERTEXATTRIBDIVISORPROC) (GLuint index, GLuint divisor);
 typedef void (APIENTRYP RGLSYMGLMINSAMPLESHADINGPROC) (GLfloat value);
@@ -595,7 +595,6 @@ typedef void (APIENTRYP RGLSYMGLDRAWRANGEELEMENTSBASEVERTEXPROC) (GLenum mode, G
 typedef void (APIENTRYP RGLSYMGLDRAWELEMENTSINSTANCEDBASEVERTEXPROC) (GLenum mode, GLsizei count, GLenum type, const GLvoid *indices, GLsizei instancecount, GLint basevertex);
 typedef void (APIENTRYP RGLSYMGLMULTIDRAWELEMENTSBASEVERTEXPROC) (GLenum mode, const GLsizei *count, GLenum type, const GLvoid* const *indices, GLsizei drawcount, const GLint *basevertex);
 typedef void (APIENTRYP RGLSYMGLPROVOKINGVERTEXPROC) (GLenum mode);
-#ifndef OSX_10_6_SNOW_LEOPARD
 typedef GLsync (APIENTRYP RGLSYMGLFENCESYNCPROC) (GLenum condition, GLbitfield flags);
 typedef GLboolean (APIENTRYP RGLSYMGLISSYNCPROC) (GLsync sync);
 typedef void (APIENTRYP RGLSYMGLDELETESYNCPROC) (GLsync sync);
@@ -603,7 +602,6 @@ typedef GLenum (APIENTRYP RGLSYMGLCLIENTWAITSYNCPROC) (GLsync sync, GLbitfield f
 typedef void (APIENTRYP RGLSYMGLWAITSYNCPROC) (GLsync sync, GLbitfield flags, GLuint64 timeout);
 typedef void (APIENTRYP RGLSYMGLGETINTEGER64VPROC) (GLenum pname, GLint64 *params);
 typedef void (APIENTRYP RGLSYMGLGETSYNCIVPROC) (GLsync sync, GLenum pname, GLsizei bufSize, GLsizei *length, GLint *values);
-#endif
 
 typedef void (APIENTRYP RGLSYMGLTEXIMAGE2DMULTISAMPLEPROC) (GLenum target, GLsizei samples, GLint internalformat, GLsizei width, GLsizei height, GLboolean fixedsamplelocations);
 typedef void (APIENTRYP RGLSYMGLTEXIMAGE3DMULTISAMPLEPROC) (GLenum target, GLsizei samples, GLint internalformat, GLsizei width, GLsizei height, GLsizei depth, GLboolean fixedsamplelocations);

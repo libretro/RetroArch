@@ -1725,8 +1725,10 @@ static bool resolve_extensions(gl_t *gl)
    }
    gl->has_fp_fbo = gl_query_extension(gl, "OES_texture_float_linear");
 #else
+#ifdef HAVE_FBO
    // Float FBO is core in 3.2.
    gl->has_fp_fbo = gl->core_context || gl_query_extension(gl, "ARB_texture_float");
+#endif
 #endif
 
 #ifdef GL_DEBUG

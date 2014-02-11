@@ -156,7 +156,7 @@ enum {
 
 //
 
-#include "input/input_common.h" // < For rarch_key_map
+#include "../../input/input_common.h" // < For rarch_key_map
 
 struct apple_key_name_map_entry
 {

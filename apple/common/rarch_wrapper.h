@@ -17,7 +17,7 @@
 #ifndef __APPLE_RARCH_WRAPPER_H__
 #define __APPLE_RARCH_WRAPPER_H__
 
-#include "gfx/gfx_context.h"
+#include "../../gfx/gfx_context.h"
 
 // These functions must only be called in gfx/context/apple_gl_context.c
 bool apple_gfx_ctx_init(void);

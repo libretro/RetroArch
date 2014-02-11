@@ -17,8 +17,8 @@
 #include <string.h>
 #include <stdlib.h>
 
-#include "boolean.h"
-#include "apple/common/rarch_wrapper.h"
+#include "../../../boolean.h"
+#include "../rarch_wrapper.h"
 
 #include "wiimote.h"
 
@@ -47,10 +47,10 @@ static int16_t hidpad_wii_get_axis(struct wiimote_t* device, unsigned axis)
    {
       switch (axis)
       {
-         case 0: return device->exp.classic.ljs.x.value * 0x7FFF;
-         case 1: return device->exp.classic.ljs.y.value * 0x7FFF;
-         case 2: return device->exp.classic.rjs.x.value * 0x7FFF;
-         case 3: return device->exp.classic.rjs.y.value * 0x7FFF;
+         case 0: return device->exp.cc.classic.ljs.x.value * 0x7FFF;
+         case 1: return device->exp.cc.classic.ljs.y.value * 0x7FFF;
+         case 2: return device->exp.cc.classic.rjs.x.value * 0x7FFF;
+         case 3: return device->exp.cc.classic.rjs.y.value * 0x7FFF;
          default: return 0;
       }
    }
@@ -91,7 +91,7 @@ static void hidpad_wii_packet_handler(struct wiimote_t* device, uint8_t *packet,
       }
    }
 
-   g_current_input_data.pad_buttons[device->unid] = device->btns | (device->exp.classic.btns << 16);
+   g_current_input_data.pad_buttons[device->unid] = device->btns | (device->exp.cc.classic.btns << 16);
    for (int i = 0; i < 4; i ++)
       g_current_input_data.pad_axis[device->unid][i] = hidpad_wii_get_axis(device, i);
 }

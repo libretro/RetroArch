@@ -14,7 +14,7 @@
  */
 
 #include <IOKit/hid/IOHIDManager.h>
-#include "apple/common/apple_input.h"
+#include "../common/apple_input.h"
 
 struct apple_pad_connection
 {

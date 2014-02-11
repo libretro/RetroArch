@@ -16,7 +16,7 @@
 #ifndef __APPLE_RARCH_INPUT_H__
 #define __APPLE_RARCH_INPUT_H__
 
-#include "general.h"
+#include "../../general.h"
 
 // Input responder
 #define MAX_TOUCHES 16

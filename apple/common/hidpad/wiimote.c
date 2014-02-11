@@ -43,7 +43,7 @@
 #include <string.h>
 #include <math.h>
 #include <unistd.h>
-#include "boolean.h"
+#include "../../../boolean.h"
 
 #include "wiimote.h"
 
@@ -134,7 +134,7 @@ void wiimote_pressed_buttons(struct wiimote_t* wm, byte* msg) {
 void wiimote_handle_expansion(struct wiimote_t* wm, byte* msg) {
 	switch (wm->exp.type) {
 		case EXP_CLASSIC:
-			classic_ctrl_event(&wm->exp.classic, msg);
+			classic_ctrl_event(&wm->exp.cc.classic, msg);
 			break;
 		default:
 			break;
@@ -302,7 +302,7 @@ int wiimote_handshake(struct wiimote_t* wm,  byte event, byte* data, unsigned sh
                if(event !=  WM_RPT_READ)
                   return 0;
 
-               classic_ctrl_handshake(wm, &wm->exp.classic, data,len);
+               classic_ctrl_handshake(wm, &wm->exp.cc.classic, data,len);
                wm->handshake_state = 3;
                continue;
 
