@@ -18,9 +18,7 @@
 
 #include <stdint.h>
 
-#ifndef __cplusplus
-#include <stdbool.h>
-#endif
+#include "../../boolean.h"
 
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"

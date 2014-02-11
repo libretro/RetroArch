@@ -21,7 +21,7 @@
 #include <sdk_version.h>
 #endif
 
-#include <stdbool.h>
+#include "../boolean.h"
 
 #include "sdk_defines.h"
 

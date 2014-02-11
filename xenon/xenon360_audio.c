@@ -16,7 +16,7 @@
 
 #include "../driver.h"
 #include <stdlib.h>
-#include <stdbool.h>
+#include "../boolean.h"
 #include "../general.h"
 
 #include <xenon_sound/sound.h>

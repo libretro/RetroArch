@@ -14,7 +14,7 @@
  */
 
 #include <stdint.h>
-#include <stdbool.h>
+#include "../boolean.h"
 #include "../driver.h"
 
 void *RWebCamInit(uint64_t caps, unsigned width, unsigned height);

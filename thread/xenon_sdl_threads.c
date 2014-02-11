@@ -19,7 +19,7 @@
 #include "SDL_thread.h"
 #include "SDL_mutex.h"
 #include <stdlib.h>
-#include <stdbool.h>
+#include "../boolean.h"
 
 SDL_cond *SDL_CreateCond(void)
 {

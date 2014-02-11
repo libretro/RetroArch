@@ -33,9 +33,9 @@
 #define MENU_TEXTURE_FULLSCREEN true
 #endif
 
-#ifndef __cplusplus
-#include <stdbool.h>
-#else
+#include "../../boolean.h"
+
+#ifdef __cplusplus
 extern "C" {
 #endif
 
