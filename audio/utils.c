@@ -94,8 +94,8 @@ void audio_convert_float_to_s16_SSE2(int16_t *out,
 void audio_convert_s16_to_float_altivec(float *out,
       const int16_t *in, size_t samples, float gain)
 {
-   const vector float gain_vec = vec_splats(gain);
-   const vector float zero_vec = vec_splats(0.0f);
+   const vector float gain_vec = vec_splat((vector float)gain, 0);
+   const vector float zero_vec = vec_splat((vector float)0.0f, 0);
    // Unaligned loads/store is a bit expensive, so we optimize for the good path (very likely).
    if (((uintptr_t)out & 15) + ((uintptr_t)in & 15) == 0)
    {
