@@ -198,6 +198,9 @@ retro_time_t rarch_get_time_usec(void)
    return tv.tv_sec * INT64_C(1000000) + (tv.tv_nsec + 500) / 1000;
 #elif defined(EMSCRIPTEN)
    return emscripten_get_now() * 1000;
+#elif defined(PSP)
+   SceKernelSysClock clock;
+   return sceKernelGetSystemTime(&clock);
 #else
 #error "Your platform does not have a timer function implemented in rarch_get_time_usec(). Cannot continue."
 #endif

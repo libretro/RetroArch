@@ -23,6 +23,8 @@
 #include <time/time.h>
 #elif defined(GEKKO) || defined(__PSL1GHT__) || defined(__QNX__)
 #include <unistd.h>
+#elif defined(PSP)
+#include <pspthreadman.h>
 #else
 #include <time.h>
 #endif

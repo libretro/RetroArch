@@ -192,10 +192,8 @@ const video_driver_t video_psp1 = {
    psp_free,
    "psp1",
 
-#ifdef RARCH_CONSOLE
+#if defined(HAVE_MENU)
    psp_restart,
-   NULL,
-   NULL,
 #endif
 
    psp_set_rotation,

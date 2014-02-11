@@ -42,8 +42,9 @@ static int exit_callback(int arg1, int arg2, void *common)
    return 0;
 }
 
-static void get_environment_settings(int argc, char *argv[])
+static void get_environment_settings(int argc, char *argv[], void *args)
 {
+   (void)args;
 #ifndef IS_SALAMANDER
    g_extern.verbose = true;
 

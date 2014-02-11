@@ -77,8 +77,7 @@ const video_driver_t video_null = {
    null_gfx_free,
    "null",
 
-#ifdef RARCH_CONSOLE
-   null_gfx_start,
+#ifdef HAVE_MENU
    null_gfx_restart,
 #endif
 };
