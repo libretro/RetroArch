@@ -21,7 +21,7 @@
 #include "../common/rarch_wrapper.h"
 #include "../common/apple_input.h"
 
-#include "file.h"
+#include "../../file.h"
 
 static void* const associated_core_key = (void*)&associated_core_key;
 
