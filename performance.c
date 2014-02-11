@@ -338,7 +338,7 @@ uint64_t rarch_get_cpu_features(void)
    cpu |= RETRO_SIMD_NEON;
    arm_enable_runfast_mode();
    RARCH_LOG("[CPUID]: NEON: %u\n", !!(cpu & RETRO_SIMD_NEON));
-#elif defined(__CELLOS_LV2__) || defined(__ALTIVEC__)
+#elif defined(__ALTIVEC__)
    cpu |= RETRO_SIMD_VMX;
    RARCH_LOG("[CPUID]: VMX: %u\n", !!(cpu & RETRO_SIMD_VMX));
 #elif defined(XBOX360)
