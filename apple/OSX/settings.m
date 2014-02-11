@@ -14,12 +14,12 @@
  */
 
 #import <objc/runtime.h>
-#import "apple/common/RetroArch_Apple.h"
-#include "apple/common/setting_data.h"
-#include "apple/common/apple_input.h"
+#import "../common/RetroArch_Apple.h"
+#include "../common/setting_data.h"
+#include "../common/apple_input.h"
 
-#include "driver.h"
-#include "input/input_common.h"
+#include "../../driver.h"
+#include "../../input/input_common.h"
 
 static void* const associated_name_tag = (void*)&associated_name_tag;
 
