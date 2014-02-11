@@ -1,6 +1,8 @@
 //#define NO_UNALIGNED_MEM
 //Uncomment the above if alignment is enforced.
 
+#include "boolean.h"
+
 //A compressing, lossy stack. Optimized for large, mostly similar, blocks of data; optimized for
 // writing, less so for reading. Will discard old data if its capacity is exhausted.
 struct rewindstack {
