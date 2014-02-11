@@ -83,33 +83,33 @@ static void psp_input_poll(void *data)
 
    SceCtrlData state_tmp;
    int ret = CtrlReadBufferPositive(0, &state_tmp, 1);
+   state = 0;
 
-   if (ret == SCE_OK)
-   {
-      state = 0;
-      state |= (STATE_BUTTON(state_tmp) & PSP_CTRL_LEFT) ? PSP_GAMEPAD_DPAD_LEFT : 0;
-      state |= (STATE_BUTTON(state_tmp) & PSP_CTRL_DOWN) ? PSP_GAMEPAD_DPAD_DOWN : 0;
-      state |= (STATE_BUTTON(state_tmp) & PSP_CTRL_RIGHT) ? PSP_GAMEPAD_DPAD_RIGHT : 0;
-      state |= (STATE_BUTTON(state_tmp) & PSP_CTRL_UP) ? PSP_GAMEPAD_DPAD_UP : 0;
-      state |= (STATE_BUTTON(state_tmp) & PSP_CTRL_START) ? PSP_GAMEPAD_START : 0;
-      state |= (STATE_BUTTON(state_tmp) & PSP_CTRL_SELECT) ? PSP_GAMEPAD_SELECT : 0;
-      state |= (STATE_BUTTON(state_tmp) & PSP_CTRL_TRIANGLE) ? PSP_GAMEPAD_TRIANGLE : 0;
-      state |= (STATE_BUTTON(state_tmp) & PSP_CTRL_SQUARE) ? PSP_GAMEPAD_SQUARE : 0;
-      state |= (STATE_BUTTON(state_tmp) & PSP_CTRL_CROSS) ? PSP_GAMEPAD_CROSS : 0;
-      state |= (STATE_BUTTON(state_tmp) & PSP_CTRL_CIRCLE) ? PSP_GAMEPAD_CIRCLE : 0;
-      state |= (STATE_BUTTON(state_tmp) & PSP_CTRL_R) ? PSP_GAMEPAD_R : 0;
-      state |= (STATE_BUTTON(state_tmp) & PSP_CTRL_L) ? PSP_GAMEPAD_L : 0;
-      state |= (STATE_ANALOGLX(state_tmp) < ANALOGSTICK_DEADZONE_LOW) ? PSP_GAMEPAD_LSTICK_LEFT_MASK : 0;
-      state |= (STATE_ANALOGLX(state_tmp) > ANALOGSTICK_DEADZONE_HIGH) ? PSP_GAMEPAD_LSTICK_RIGHT_MASK : 0;
-      state |= (STATE_ANALOGLY(state_tmp) < ANALOGSTICK_DEADZONE_LOW) ? PSP_GAMEPAD_LSTICK_UP_MASK : 0;
-      state |= (STATE_ANALOGLY(state_tmp) > ANALOGSTICK_DEADZONE_HIGH) ? PSP_GAMEPAD_LSTICK_DOWN_MASK : 0;
+   if (ret != SCE_OK)
+      return;
+
+   state |= (STATE_BUTTON(state_tmp) & PSP_CTRL_LEFT) ? PSP_GAMEPAD_DPAD_LEFT : 0;
+   state |= (STATE_BUTTON(state_tmp) & PSP_CTRL_DOWN) ? PSP_GAMEPAD_DPAD_DOWN : 0;
+   state |= (STATE_BUTTON(state_tmp) & PSP_CTRL_RIGHT) ? PSP_GAMEPAD_DPAD_RIGHT : 0;
+   state |= (STATE_BUTTON(state_tmp) & PSP_CTRL_UP) ? PSP_GAMEPAD_DPAD_UP : 0;
+   state |= (STATE_BUTTON(state_tmp) & PSP_CTRL_START) ? PSP_GAMEPAD_START : 0;
+   state |= (STATE_BUTTON(state_tmp) & PSP_CTRL_SELECT) ? PSP_GAMEPAD_SELECT : 0;
+   state |= (STATE_BUTTON(state_tmp) & PSP_CTRL_TRIANGLE) ? PSP_GAMEPAD_TRIANGLE : 0;
+   state |= (STATE_BUTTON(state_tmp) & PSP_CTRL_SQUARE) ? PSP_GAMEPAD_SQUARE : 0;
+   state |= (STATE_BUTTON(state_tmp) & PSP_CTRL_CROSS) ? PSP_GAMEPAD_CROSS : 0;
+   state |= (STATE_BUTTON(state_tmp) & PSP_CTRL_CIRCLE) ? PSP_GAMEPAD_CIRCLE : 0;
+   state |= (STATE_BUTTON(state_tmp) & PSP_CTRL_R) ? PSP_GAMEPAD_R : 0;
+   state |= (STATE_BUTTON(state_tmp) & PSP_CTRL_L) ? PSP_GAMEPAD_L : 0;
+   state |= (STATE_ANALOGLX(state_tmp) < ANALOGSTICK_DEADZONE_LOW) ? PSP_GAMEPAD_LSTICK_LEFT_MASK : 0;
+   state |= (STATE_ANALOGLX(state_tmp) > ANALOGSTICK_DEADZONE_HIGH) ? PSP_GAMEPAD_LSTICK_RIGHT_MASK : 0;
+   state |= (STATE_ANALOGLY(state_tmp) < ANALOGSTICK_DEADZONE_LOW) ? PSP_GAMEPAD_LSTICK_UP_MASK : 0;
+   state |= (STATE_ANALOGLY(state_tmp) > ANALOGSTICK_DEADZONE_HIGH) ? PSP_GAMEPAD_LSTICK_DOWN_MASK : 0;
 #ifdef SN_TARGET_PSP2
-      state |= (STATE_ANALOGRX(state_tmp) < ANALOGSTICK_DEADZONE_LOW) ? PSP_GAMEPAD_RSTICK_LEFT_MASK : 0;
-      state |= (STATE_ANALOGRX(state_tmp) > ANALOGSTICK_DEADZONE_HIGH) ? PSP_GAMEPAD_RSTICK_RIGHT_MASK : 0;
-      state |= (STATE_ANALOGRY(state_tmp) < ANALOGSTICK_DEADZONE_LOW) ? PSP_GAMEPAD_RSTICK_UP_MASK : 0;
-      state |= (STATE_ANALOGRY(state_tmp) > ANALOGSTICK_DEADZONE_HIGH) ? PSP_GAMEPAD_RSTICK_DOWN_MASK : 0;
+   state |= (STATE_ANALOGRX(state_tmp) < ANALOGSTICK_DEADZONE_LOW) ? PSP_GAMEPAD_RSTICK_LEFT_MASK : 0;
+   state |= (STATE_ANALOGRX(state_tmp) > ANALOGSTICK_DEADZONE_HIGH) ? PSP_GAMEPAD_RSTICK_RIGHT_MASK : 0;
+   state |= (STATE_ANALOGRY(state_tmp) < ANALOGSTICK_DEADZONE_LOW) ? PSP_GAMEPAD_RSTICK_UP_MASK : 0;
+   state |= (STATE_ANALOGRY(state_tmp) > ANALOGSTICK_DEADZONE_HIGH) ? PSP_GAMEPAD_RSTICK_DOWN_MASK : 0;
 #endif
-   }
 }
 
 static int16_t psp_input_state(void *data, const struct retro_keybind **binds,

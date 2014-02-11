@@ -47,22 +47,21 @@ static unsigned int __attribute__((aligned(16))) list[262144];
 
 static void init_texture(void *data, const video_info_t *video)
 {
-   psp1_video_t *vid = (psp1_video_t*)data;
+   psp1_video_t *psp = (psp1_video_t*)data;
 
    sceGuInit();
    sceGuStart(GU_DIRECT, list);
 
-   sceGuDrawBuffer(vid->rgb32 ? GU_PSM_8888 : GU_PSM_5650, (void*)0, SCEGU_VRAM_WIDTH);
+   sceGuDrawBuffer(psp->rgb32 ? GU_PSM_8888 : GU_PSM_5650, (void*)0, SCEGU_VRAM_WIDTH);
    sceGuDispBuffer(SCEGU_SCR_WIDTH, SCEGU_SCR_HEIGHT, (void*)0x88000, SCEGU_VRAM_WIDTH);
    sceGuClear(GU_COLOR_BUFFER_BIT);
 
    sceGuOffset(2048 - (SCEGU_SCR_WIDTH / 2), 2048 - (SCEGU_SCR_HEIGHT / 2));
    sceGuViewport(2048, 2048, SCEGU_SCR_WIDTH, SCEGU_SCR_HEIGHT);
 
-   /* FIXME - we will want to disable all this */
    sceGuScissor(0, 0, SCEGU_SCR_WIDTH, SCEGU_SCR_HEIGHT);
    sceGuEnable(GU_SCISSOR_TEST);
-   sceGuTexMode(vid->rgb32 ? GU_PSM_8888 : GU_PSM_5650, 0, 0, GU_FALSE);
+   sceGuTexMode(psp->rgb32 ? GU_PSM_8888 : GU_PSM_5650, 0, 0, GU_FALSE);
    sceGuTexFunc(GU_TFX_REPLACE, GU_TCC_RGBA);
    sceGuTexFilter(GU_LINEAR, GU_LINEAR);
    sceGuEnable(GU_TEXTURE_2D);
@@ -76,7 +75,7 @@ static void init_texture(void *data, const video_info_t *video)
    sceDisplayWaitVblankStart();
    sceGuDisplay(GU_TRUE);
 
-   vid->rgb32 = video->rgb32;
+   psp->rgb32 = video->rgb32;
 }
 
 static void *psp_init(const video_info_t *video,
@@ -88,7 +87,7 @@ static void *psp_init(const video_info_t *video,
 
    if (driver.video_data)
    {
-      psp1_video_t *vid = (psp1_video_t*)driver.video_data;
+      psp1_video_t *psp = (psp1_video_t*)driver.video_data;
 
       /* Reinitialize textures here */
       //init_texture(vid, video);
@@ -96,17 +95,17 @@ static void *psp_init(const video_info_t *video,
       return driver.video_data;
    }
 
-   psp1_video_t *vid = (psp1_video_t*)calloc(1, sizeof(psp1_video_t));
+   psp1_video_t *psp = (psp1_video_t*)calloc(1, sizeof(psp1_video_t));
 
-   if (!vid)
+   if (!psp)
       goto error;
 
-   init_texture(vid, video);
+   init_texture(psp, video);
 
-   vid->tex_w = 512;
-   vid->tex_h = 512;
+   psp->tex_w = 512;
+   psp->tex_h = 512;
 
-   return vid;
+   return psp;
 error:
    RARCH_ERR("PSP1 video could not be initialized.\n");
    return (void*)-1;
@@ -119,12 +118,10 @@ static bool psp_frame(void *data, const void *frame,
    (void)height;
    (void)pitch;
    (void)msg;
+   psp1_video_t *psp = (psp1_video_t*)data;
 
    if(!frame)
       return true;
-
-#if 0
-   psp1_video_t *vid = (psp1_video_t*)data;
 
    sceKernelDcacheWritebackInvalidateAll(); 
 
@@ -146,9 +143,8 @@ static bool psp_frame(void *data, const void *frame,
 
    void *frame_ptr = &frame;
    DisplaySetFrameBuf(frame_ptr, pitch, 
-         vid->rgb32 ? PSP_DISPLAY_PIXEL_FORMAT_8888 : PSP_DISPLAY_PIXEL_FORMAT_565,
+         psp->rgb32 ? PSP_DISPLAY_PIXEL_FORMAT_8888 : PSP_DISPLAY_PIXEL_FORMAT_565,
          PSP_DISPLAY_SETBUF_IMMEDIATE);
-#endif
 
    return true;
 }
