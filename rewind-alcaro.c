@@ -1,4 +1,4 @@
-#include "rewind-alcaro.h"
+#include "minir.h"
 #include <stdlib.h>
 #include <string.h>
 
@@ -83,6 +83,7 @@ struct rewindstack_impl {
 	
 	char * thisblock;
 	char * nextblock;
+	bool thisblock_valid;
 	
 	size_t blocksize;//rounded up from reset::blocksize
 	size_t maxcompsize;//size_t+(blocksize+131071)/131072*(blocksize+u16+u16)+u16+u32+size_t
@@ -111,11 +112,16 @@ static void reset(struct rewindstack * this_, size_t blocksize, size_t capacity)
 	this->tail=this->data+sizeof(size_t);
 	
 	free(this->thisblock);
-	this->thisblock=NULL;
-	
 	free(this->nextblock);
+	this->thisblock=calloc(this->blocksize+sizeof(uint16_t)*8, 1);
 	this->nextblock=calloc(this->blocksize+sizeof(uint16_t)*8, 1);
+	//force in a different byte at the end, so we don't need to look for the buffer end in the innermost loop
+	//there is also a large amount of data that's the same, to stop the other scan
+	//and finally some padding so we don't read outside the buffer end if we're reading in large blocks
+	*(uint16_t*)(this->thisblock+this->blocksize+sizeof(uint16_t)*3)=0xFFFF;
 	*(uint16_t*)(this->nextblock+this->blocksize+sizeof(uint16_t)*3)=0x0000;
+	
+	this->thisblock_valid=false;
 	
 	this->entries=0;
 }
@@ -126,11 +132,17 @@ static void * push_begin(struct rewindstack * this_)
 	return this->nextblock;
 }
 
+//#include <stdio.h>
 static void push_end(struct rewindstack * this_)
 {
 	struct rewindstack_impl * this=(struct rewindstack_impl*)this_;
-	if (this->thisblock)
+//printf("in:");
+//for (int i=0;i<16;i++)printf("%x",this->nextblock[i]);puts("");
+	if (this->thisblock_valid)
 	{
+//printf("cmp:\n");
+//for (int i=0;i<16;i++)printf("%x",this->thisblock[i]);puts("");
+//for (int i=0;i<16;i++)printf("%x",this->nextblock[i]);puts("");
 	recheckcapacity:;
 		size_t headpos=(this->head-this->data);
 		size_t tailpos=(this->tail-this->data);
@@ -259,9 +271,7 @@ static void push_end(struct rewindstack * this_)
 	}
 	else
 	{
-		if (this->capacity<sizeof(size_t)+this->maxcompsize) return;//refuse to cooperate if we can't fit anything
-		this->thisblock=calloc(this->blocksize+sizeof(uint16_t)*8, 1);
-		*(uint16_t*)(this->thisblock+this->blocksize+sizeof(uint16_t)*3)=0xFFFF;
+		this->thisblock_valid=true;
 	}
 	
 	char * swap=this->thisblock;
@@ -281,33 +291,28 @@ static const void * pull(struct rewindstack * this_)
 {
 	struct rewindstack_impl * this=(struct rewindstack_impl*)this_;
 	
-	if (this->head==this->tail)
+	if (this->thisblock_valid)
 	{
-		if (this->thisblock)
-		{
-			char * swap=this->thisblock;
-			this->thisblock=this->nextblock;
-			this->nextblock=swap;
-			
-			free(this->thisblock);
-			this->thisblock=NULL;
-			this->entries--;
-			return this->nextblock;
-		}
-		return NULL;
+//printf("out:");
+//for (int i=0;i<16;i++)printf("%x",this->thisblock[i]);puts("");
+		this->thisblock_valid=false;
+		this->entries--;
+		return this->thisblock;
 	}
+	
+	if (this->head==this->tail) return NULL;
 	
 	size_t start=read_size_t((uint16_t*)(this->head - sizeof(size_t)));
 	this->head=this->data+start;
 	
 	const char * compressed=this->data+start+sizeof(size_t);
-	const char * in=this->thisblock;
-	char * out=this->nextblock;
+//const char * in=this->thisblock;
+	char * out=this->thisblock;
 	//begin decompression code
-	//out is completely uninitialized
-	char * outend=out+this->blocksize;
+	//out is the previously returned state
+//char * outend=out+this->blocksize;
 	const uint16_t * compressed16=(const uint16_t*)compressed;
-	const uint16_t * in16=(const uint16_t*)in;
+//const uint16_t * in16=(const uint16_t*)in;
 	uint16_t * out16=(uint16_t*)out;
 	while (true)
 	{
@@ -315,12 +320,12 @@ static const void * pull(struct rewindstack * this_)
 		if (numchanged)
 		{
 			uint16_t numunchanged=*(compressed16++);
-			memcpy(out16, in16, numunchanged*sizeof(uint16_t));
-			in16+=numunchanged;
+//memcpy(out16, in16, numunchanged*sizeof(uint16_t));
+//in16+=numunchanged;
 			out16+=numunchanged;
 			memcpy(out16, compressed16, numchanged*sizeof(uint16_t));
 			compressed16+=numchanged;
-			in16+=numchanged;
+//in16+=numchanged;
 			out16+=numchanged;
 		}
 		else
@@ -328,24 +333,26 @@ static const void * pull(struct rewindstack * this_)
 			uint32_t numunchanged=compressed16[0] | compressed16[1]<<16;
 			if (!numunchanged)
 			{
-				memcpy(out16, in16, outend-(char*)out16);
+//memcpy(out16, in16, outend-(char*)out16);
 				break;
 			}
 			compressed16+=2;
-			memcpy(out16, in16, numunchanged*sizeof(uint16_t));
-			in16+=numunchanged;
+//memcpy(out16, in16, numunchanged*sizeof(uint16_t));
+//in16+=numunchanged;
 			out16+=numunchanged;
 		}
 	}
 	//end decompression code
 	
-	char * swap=this->thisblock;
-	this->thisblock=this->nextblock;
-	this->nextblock=swap;
+	//char * swap=this->thisblock;
+	//this->thisblock=this->nextblock;
+	//this->nextblock=swap;
 	
 	this->entries--;
 	
-	return this->nextblock;
+//printf("out:");
+//for (int i=0;i<16;i++)printf("%x",this->thisblock[i]);puts("");
+	return this->thisblock;
 }
 
 static void capacity_f(struct rewindstack * this_, unsigned int * entries, size_t * bytes, bool * full)
