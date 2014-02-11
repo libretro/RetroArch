@@ -15,11 +15,11 @@
  */
 
 #import "RetroArch_Apple.h"
-#include "rarch_wrapper.h"
+#include "../common/rarch_wrapper.h"
 
 #include "../../general.h"
-#include "gfx/gfx_common.h"
-#include "gfx/gfx_context.h"
+#include "../../gfx/gfx_common.h"
+#include "../../gfx/gfx_context.h"
 
 #ifdef HAVE_LOCATION
 #include <CoreLocation/CoreLocation.h>

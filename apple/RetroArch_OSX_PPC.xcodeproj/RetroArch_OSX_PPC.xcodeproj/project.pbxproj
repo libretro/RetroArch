@@ -11,6 +11,10 @@
 		7AA19E9618AA09D000D16488 /* OpenGL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 7AA19E9518AA09D000D16488 /* OpenGL.framework */; };
 		7AA19E9E18AA0C9900D16488 /* platform.m in Sources */ = {isa = PBXBuildFile; fileRef = 7AA19E9D18AA0C9900D16488 /* platform.m */; };
 		7AA19EA018AA0CA600D16488 /* settings.m in Sources */ = {isa = PBXBuildFile; fileRef = 7AA19E9F18AA0CA600D16488 /* settings.m */; };
+		7AA19ECD18AA0F6900D16488 /* apple_gamecontroller.m in Sources */ = {isa = PBXBuildFile; fileRef = 7AA19ECC18AA0F6900D16488 /* apple_gamecontroller.m */; };
+		7AA19ED518AA0F9D00D16488 /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 7AA19ED418AA0F9D00D16488 /* main.m */; };
+		7AA19ED718AA0FA900D16488 /* RAGameView.m in Sources */ = {isa = PBXBuildFile; fileRef = 7AA19ED618AA0FA900D16488 /* RAGameView.m */; };
+		7AA19EE418AA107A00D16488 /* utility.m in Sources */ = {isa = PBXBuildFile; fileRef = 7AA19EE318AA107A00D16488 /* utility.m */; };
 		7AD7B1E718A83D0100A1C0C1 /* griffin.c in Sources */ = {isa = PBXBuildFile; fileRef = 7AD7B1E618A83D0100A1C0C1 /* griffin.c */; };
 		8D11072B0486CEB800E47090 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 089C165CFE840E0CC02AAC07 /* InfoPlist.strings */; };
 		8D11072F0486CEB800E47090 /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1058C7A1FEA54F0111CA2CBB /* Cocoa.framework */; };
@@ -26,6 +30,10 @@
 		7AA19E9518AA09D000D16488 /* OpenGL.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = OpenGL.framework; path = /System/Library/Frameworks/OpenGL.framework; sourceTree = "<absolute>"; };
 		7AA19E9D18AA0C9900D16488 /* platform.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = platform.m; path = ../OSX/platform.m; sourceTree = SOURCE_ROOT; };
 		7AA19E9F18AA0CA600D16488 /* settings.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = settings.m; path = ../OSX/settings.m; sourceTree = SOURCE_ROOT; };
+		7AA19ECC18AA0F6900D16488 /* apple_gamecontroller.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = apple_gamecontroller.m; path = ../common/apple_gamecontroller.m; sourceTree = SOURCE_ROOT; };
+		7AA19ED418AA0F9D00D16488 /* main.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = main.m; path = ../common/main.m; sourceTree = SOURCE_ROOT; };
+		7AA19ED618AA0FA900D16488 /* RAGameView.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = RAGameView.m; path = ../common/RAGameView.m; sourceTree = SOURCE_ROOT; };
+		7AA19EE318AA107A00D16488 /* utility.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = utility.m; path = ../common/utility.m; sourceTree = SOURCE_ROOT; };
 		7AD7B1E618A83D0100A1C0C1 /* griffin.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = griffin.c; path = ../../griffin/griffin.c; sourceTree = SOURCE_ROOT; };
 		8D1107310486CEB800E47090 /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		8D1107320486CEB800E47090 /* RetroArch_OSX_PPC.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RetroArch_OSX_PPC.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -93,8 +101,8 @@
 		29B97315FDCFA39411CA2CEA /* Other Sources */ = {
 			isa = PBXGroup;
 			children = (
-				7AA19E9F18AA0CA600D16488 /* settings.m */,
-				7AA19E9D18AA0C9900D16488 /* platform.m */,
+				7AA19ECB18AA0F4B00D16488 /* common */,
+				7AA19ECA18AA0F4000D16488 /* OSX */,
 				7AD7B1E818A83D0600A1C0C1 /* griffin */,
 			);
 			name = "Other Sources";
@@ -117,6 +125,26 @@
 				1058C7A2FEA54F0111CA2CBB /* Other Frameworks */,
 			);
 			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		7AA19ECA18AA0F4000D16488 /* OSX */ = {
+			isa = PBXGroup;
+			children = (
+				7AA19E9F18AA0CA600D16488 /* settings.m */,
+				7AA19E9D18AA0C9900D16488 /* platform.m */,
+			);
+			name = OSX;
+			sourceTree = "<group>";
+		};
+		7AA19ECB18AA0F4B00D16488 /* common */ = {
+			isa = PBXGroup;
+			children = (
+				7AA19EE318AA107A00D16488 /* utility.m */,
+				7AA19ED618AA0FA900D16488 /* RAGameView.m */,
+				7AA19ED418AA0F9D00D16488 /* main.m */,
+				7AA19ECC18AA0F6900D16488 /* apple_gamecontroller.m */,
+			);
+			name = common;
 			sourceTree = "<group>";
 		};
 		7AD7B1E818A83D0600A1C0C1 /* griffin */ = {
@@ -185,6 +213,10 @@
 				7AD7B1E718A83D0100A1C0C1 /* griffin.c in Sources */,
 				7AA19E9E18AA0C9900D16488 /* platform.m in Sources */,
 				7AA19EA018AA0CA600D16488 /* settings.m in Sources */,
+				7AA19ECD18AA0F6900D16488 /* apple_gamecontroller.m in Sources */,
+				7AA19ED518AA0F9D00D16488 /* main.m in Sources */,
+				7AA19ED718AA0FA900D16488 /* RAGameView.m in Sources */,
+				7AA19EE418AA107A00D16488 /* utility.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

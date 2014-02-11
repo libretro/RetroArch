@@ -22,7 +22,7 @@
 
 #include "apple_input.h"
 
-#include "file.h"
+#include "../../file.h"
 
 id<RetroArch_Platform> apple_platform;
 

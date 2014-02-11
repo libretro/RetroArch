@@ -18,8 +18,8 @@
 #include "RetroArch_Apple.h"
 #include "setting_data.h"
 
-#include "general.h"
-#include "file.h"
+#include "../../general.h"
+#include "../../file.h"
 
 void apple_display_alert(NSString* message, NSString* title)
 {
