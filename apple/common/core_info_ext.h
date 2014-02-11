@@ -16,8 +16,8 @@
 #ifndef __APPLE_RARCH_CORE_INFO_EXT_H__
 #define __APPLE_RARCH_CORE_INFO_EXT_H__
 
-#include "core_info.h"
-#include "frontend/menu/history.h"
+#include "../../core_info.h"
+#include "../../frontend/menu/history.h"
 
 void apple_core_info_set_core_path(const char* core_path);
 void apple_core_info_set_config_path(const char* config_path);
