@@ -2,6 +2,22 @@
 #include <stdlib.h>
 #include <string.h>
 
+#error Do not merge this anywhere. It is still unfinished, and could change quickly, possibly in ways that would be painful to keep up with.
+#error Do not merge this anywhere. It is still unfinished, and could change quickly, possibly in ways that would be painful to keep up with.
+#error Do not merge this anywhere. It is still unfinished, and could change quickly, possibly in ways that would be painful to keep up with.
+#error Do not merge this anywhere. It is still unfinished, and could change quickly, possibly in ways that would be painful to keep up with.
+#error Do not merge this anywhere. It is still unfinished, and could change quickly, possibly in ways that would be painful to keep up with.
+#error Do not merge this anywhere. It is still unfinished, and could change quickly, possibly in ways that would be painful to keep up with.
+#error Do not merge this anywhere. It is still unfinished, and could change quickly, possibly in ways that would be painful to keep up with.
+#error Do not merge this anywhere. It is still unfinished, and could change quickly, possibly in ways that would be painful to keep up with.
+#error Do not merge this anywhere. It is still unfinished, and could change quickly, possibly in ways that would be painful to keep up with.
+#error Do not merge this anywhere. It is still unfinished, and could change quickly, possibly in ways that would be painful to keep up with.
+#error Do not merge this anywhere. It is still unfinished, and could change quickly, possibly in ways that would be painful to keep up with.
+#error Do not merge this anywhere. It is still unfinished, and could change quickly, possibly in ways that would be painful to keep up with.
+A pull request will be submitted once the author is reasonably sure that there are no further things to optimize, and the style guide is upheld.
+Due to a vacation, this pull request will be deferred until at least Monday; possibly another few days on top of that, depending on how much the RetroArch style guides differ from the preferences of the author.
+It is, of course, fine to copy this somewhere to see whether the improvement is measurable. Just delete this block of text and copy the four rewind-* files.
+
 //format per frame:
 //size nextstart;
 //repeat {
