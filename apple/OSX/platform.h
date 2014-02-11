@@ -32,7 +32,11 @@
 
 @end
 
-@interface RetroArch_OSX : NSObject<RetroArch_Platform, NSApplicationDelegate>
+@interface RetroArch_OSX : NSObject<RetroArch_Platform
+#ifdef MAC_OS_X_VERSION_10_6
+, NSApplicationDelegate
+#endif
+>
 {
    NSWindow* _window;
    NSString* _configDirectory;
