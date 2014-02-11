@@ -309,9 +309,10 @@ static const void * pull(struct rewindstack * this_)
 		uint16_t numchanged=*(compressed16++);
 		if (numchanged)
 		{
-			uint16_t numunchanged=*(compressed16++);
-			out16+=numunchanged;
-			memcpy(out16, compressed16, numchanged*sizeof(uint16_t));
+			out16+=*(compressed16++);
+			//we could do memcpy, but it seems that function call overhead is high
+			// enough that memcpy's higher speed for large blocks won't matter
+			for (int i=0;i<numchanged;i++) out16[i]=compressed16[i];
 			compressed16+=numchanged;
 			out16+=numchanged;
 		}
@@ -366,7 +367,9 @@ struct rewindstack * rewindstack_create(size_t blocksize, size_t capacity)
 	this->data=NULL;
 	this->thisblock=NULL;
 	this->nextblock=NULL;
+	
 	this->capacity=0;
+	this->blocksize=0;
 	
 	reset((struct rewindstack*)this, blocksize, capacity);
 	
