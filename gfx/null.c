@@ -62,8 +62,7 @@ static void null_gfx_free(void *data)
    (void)data;
 }
 
-#ifdef RARCH_CONSOLE
-static void null_gfx_start(void) {}
+#ifdef HAVE_MENU
 static void null_gfx_restart(void) {}
 #endif
 
