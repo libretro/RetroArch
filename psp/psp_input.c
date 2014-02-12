@@ -90,10 +90,6 @@ static void psp_input_poll(void *data)
    int ret = CtrlReadBufferPositive(0, &state_tmp, 1);
 
    psp->pad_state[0] = 0;
-
-   if (ret != SCE_OK)
-      return;
-
    psp->pad_state[0] |= (STATE_BUTTON(state_tmp) & PSP_CTRL_LEFT) ? PSP_GAMEPAD_DPAD_LEFT : 0;
    psp->pad_state[0] |= (STATE_BUTTON(state_tmp) & PSP_CTRL_DOWN) ? PSP_GAMEPAD_DPAD_DOWN : 0;
    psp->pad_state[0] |= (STATE_BUTTON(state_tmp) & PSP_CTRL_RIGHT) ? PSP_GAMEPAD_DPAD_RIGHT : 0;
@@ -250,12 +246,16 @@ static void psp_input_set_keybinds(void *data, unsigned device, unsigned port,
 
 static void* psp_input_initialize(void)
 {
+   psp_input_t *psp = (psp_input_t*)calloc(1, sizeof(*psp));
+   if (!psp)
+      return NULL;
+
 #ifdef PSP
    sceCtrlSetSamplingCycle(0);
 #endif
    sceCtrlSetSamplingMode(DEFAULT_SAMPLING_MODE);
 
-   return (void*)-1;
+   return psp;
 }
 
 static bool psp_input_key_pressed(void *data, int key)
