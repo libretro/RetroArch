@@ -173,6 +173,7 @@ static void thread_reply(thread_video_t *thr, enum thread_cmd cmd)
 static void thread_loop(void *data)
 {
    thread_video_t *thr = (thread_video_t*)data;
+   unsigned i;
 
    for (;;)
    {
@@ -250,6 +251,8 @@ static void thread_loop(void *data)
                   thr->cmd_data.image.num);
             thr->alpha_mods = thr->cmd_data.image.num;
             thr->alpha_mod = (float*)realloc(thr->alpha_mod, thr->alpha_mods * sizeof(float));
+            for (i = 0; i < thr->alpha_mods; i++) // Avoid temporary garbage data.
+               thr->alpha_mod[i] = 1.0f;
             thread_reply(thr, CMD_OVERLAY_LOAD);
             break;
 
