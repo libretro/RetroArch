@@ -102,8 +102,11 @@ static void system_deinit(void *data)
    sceKernelExitGame();
 }
 
-static void system_exec(const char *path, bool should_load_game)
+static int psp_process_args(int argc, char *argv[], void *args)
 {
+   (void)argc;
+   (void)argv;
+   (void)args;
 #if 0
    char path[256];
    snprintf(path, sizeof(path), "%s%s", default_paths.port_dir, "dkc.sfc");
@@ -118,9 +121,9 @@ const frontend_ctx_driver_t frontend_ctx_psp = {
    system_init,                  /* init */
    system_deinit,                /* deinit */
    NULL,                         /* exitspawn */
-   NULL,                         /* process_args */
+   psp_process_args,             /* process_args */
    NULL,                         /* process_events */
-   system_exec,                  /* exec */
+   NULL,                  	 /* exec */
    NULL,                         /* shutdown */
    "psp",
 };
