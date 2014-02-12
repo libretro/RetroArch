@@ -102,6 +102,17 @@ static void system_deinit(void *data)
    sceKernelExitGame();
 }
 
+static void system_exec(const char *path, bool should_load_game)
+{
+#if 0
+   char path[256];
+   snprintf(path, sizeof(path), "%s%s", default_paths.port_dir, "dkc.sfc");
+   
+   strlcpy(g_extern.fullpath, path, sizeof(g_extern.fullpath));
+   g_extern.lifecycle_state |= (1ULL << MODE_LOAD_GAME);
+#endif
+}
+
 const frontend_ctx_driver_t frontend_ctx_psp = {
    get_environment_settings,     /* get_environment_settings */
    system_init,                  /* init */
@@ -109,7 +120,7 @@ const frontend_ctx_driver_t frontend_ctx_psp = {
    NULL,                         /* exitspawn */
    NULL,                         /* process_args */
    NULL,                         /* process_events */
-   NULL,                         /* exec */
+   system_exec,                  /* exec */
    NULL,                         /* shutdown */
    "psp",
 };
