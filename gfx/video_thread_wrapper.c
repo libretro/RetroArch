@@ -37,7 +37,6 @@ enum thread_cmd
    CMD_OVERLAY_TEX_GEOM,
    CMD_OVERLAY_VERTEX_GEOM,
    CMD_OVERLAY_FULL_SCREEN,
-   CMD_OVERLAY_SET_ALPHA,
 #endif
 
    CMD_POKE_SET_FILTERING,
@@ -94,6 +93,11 @@ typedef struct thread_video
    unsigned hit_count;
    unsigned miss_count;
 
+   float *alpha_mod;
+   unsigned alpha_mods;
+   bool alpha_update;
+   slock_t *alpha_lock;
+
    enum thread_cmd send_cmd;
    enum thread_cmd reply_cmd;
    union
@@ -115,12 +119,6 @@ typedef struct thread_video
          unsigned index;
          float x, y, w, h;
       } rect;
-
-      struct
-      {
-         unsigned index;
-         float mod;
-      } alpha;
 
       struct
       {
@@ -184,9 +182,10 @@ static void thread_loop(void *data)
          scond_wait(thr->cond_thread, thr->lock);
       if (thr->frame.updated)
          updated = true;
+      enum thread_cmd send_cmd = thr->send_cmd; // To avoid race condition where send_cmd is updated right after the switch is checked.
       slock_unlock(thr->lock);
 
-      switch (thr->send_cmd)
+      switch (send_cmd)
       {
          case CMD_INIT:
             thr->driver_data = thr->driver->init(&thr->info, thr->input, thr->input_data);
@@ -249,6 +248,8 @@ static void thread_loop(void *data)
             thr->cmd_data.b = thr->overlay->load(thr->driver_data,
                   thr->cmd_data.image.data,
                   thr->cmd_data.image.num);
+            thr->alpha_mods = thr->cmd_data.image.num;
+            thr->alpha_mod = (float*)realloc(thr->alpha_mod, thr->alpha_mods * sizeof(float));
             thread_reply(thr, CMD_OVERLAY_LOAD);
             break;
 
@@ -276,11 +277,6 @@ static void thread_loop(void *data)
             thr->overlay->full_screen(thr->driver_data, thr->cmd_data.b);
             thread_reply(thr, CMD_OVERLAY_FULL_SCREEN);
             break;
-
-         case CMD_OVERLAY_SET_ALPHA:
-            thr->overlay->set_alpha(thr->driver_data, thr->cmd_data.alpha.index, thr->cmd_data.alpha.mod);
-            thread_reply(thr, CMD_OVERLAY_SET_ALPHA);
-            break;
 #endif
 
          case CMD_POKE_SET_FILTERING:
@@ -297,7 +293,7 @@ static void thread_loop(void *data)
             break;
 
          default:
-            thread_reply(thr, thr->send_cmd);
+            thread_reply(thr, send_cmd);
             break;
       }
 
@@ -317,6 +313,18 @@ static void thread_loop(void *data)
 
          if (thr->poke && thr->poke->set_texture_enable)
             thr->poke->set_texture_enable(thr->driver_data, thr->texture.enable, thr->texture.full_screen);
+#endif
+
+#if defined(HAVE_OVERLAY)
+         slock_lock(thr->alpha_lock);
+         if (thr->alpha_update)
+         {
+            unsigned i;
+            for (i = 0; i < thr->alpha_mods; i++)
+               thr->overlay->set_alpha(thr->driver_data, i, thr->alpha_mod[i]);
+            thr->alpha_update = false;
+         }
+         slock_unlock(thr->alpha_lock);
 #endif
 
          if (thr->apply_state_changes)
@@ -477,6 +485,7 @@ static bool thread_init(thread_video_t *thr, const video_info_t *info, const inp
       void **input_data)
 {
    thr->lock = slock_new();
+   thr->alpha_lock = slock_new();
    thr->frame.lock = slock_new();
    thr->cond_cmd = scond_new();
    thr->cond_thread = scond_new();
@@ -566,6 +575,9 @@ static void thread_free(void *data)
    scond_free(thr->cond_cmd);
    scond_free(thr->cond_thread);
 
+   free(thr->alpha_mod);
+   slock_free(thr->alpha_lock);
+
    RARCH_LOG("Threaded video stats: Frames pushed: %u, Frames dropped: %u.\n",
          thr->hit_count, thr->miss_count);
 
@@ -623,13 +635,14 @@ static void thread_overlay_full_screen(void *data, bool enable)
    thread_wait_reply(thr, CMD_OVERLAY_FULL_SCREEN);
 }
 
+// We cannot wait for this to complete. Totally blocks the main thread.
 static void thread_overlay_set_alpha(void *data, unsigned index, float mod)
 {
    thread_video_t *thr = (thread_video_t*)data;
-   thr->cmd_data.alpha.index = index;
-   thr->cmd_data.alpha.mod = mod;
-   thread_send_cmd(thr, CMD_OVERLAY_SET_ALPHA);
-   thread_wait_reply(thr, CMD_OVERLAY_SET_ALPHA);
+   slock_lock(thr->alpha_lock);
+   thr->alpha_mod[index] = mod;
+   thr->alpha_update = true;
+   slock_unlock(thr->alpha_lock);
 }
 
 static const video_overlay_interface_t thread_overlay = {
