@@ -89,19 +89,21 @@ static void psp_input_poll(void *data)
    psp_input_t *psp = (psp_input_t*)data;
    int ret = CtrlReadBufferPositive(0, &state_tmp, 1);
 
+   psp->analog_state[0][0][0] = psp->analog_state[0][0][1] = psp->analog_state[0][1][0] = psp->analog_state[0][1][1] = 0;
    psp->pad_state[0] = 0;
-   psp->pad_state[0] |= (STATE_BUTTON(state_tmp) & PSP_CTRL_LEFT) ? PSP_GAMEPAD_DPAD_LEFT : 0;
-   psp->pad_state[0] |= (STATE_BUTTON(state_tmp) & PSP_CTRL_DOWN) ? PSP_GAMEPAD_DPAD_DOWN : 0;
-   psp->pad_state[0] |= (STATE_BUTTON(state_tmp) & PSP_CTRL_RIGHT) ? PSP_GAMEPAD_DPAD_RIGHT : 0;
-   psp->pad_state[0] |= (STATE_BUTTON(state_tmp) & PSP_CTRL_UP) ? PSP_GAMEPAD_DPAD_UP : 0;
-   psp->pad_state[0] |= (STATE_BUTTON(state_tmp) & PSP_CTRL_START) ? PSP_GAMEPAD_START : 0;
-   psp->pad_state[0] |= (STATE_BUTTON(state_tmp) & PSP_CTRL_SELECT) ? PSP_GAMEPAD_SELECT : 0;
-   psp->pad_state[0] |= (STATE_BUTTON(state_tmp) & PSP_CTRL_TRIANGLE) ? PSP_GAMEPAD_TRIANGLE : 0;
-   psp->pad_state[0] |= (STATE_BUTTON(state_tmp) & PSP_CTRL_SQUARE) ? PSP_GAMEPAD_SQUARE : 0;
-   psp->pad_state[0] |= (STATE_BUTTON(state_tmp) & PSP_CTRL_CROSS) ? PSP_GAMEPAD_CROSS : 0;
-   psp->pad_state[0] |= (STATE_BUTTON(state_tmp) & PSP_CTRL_CIRCLE) ? PSP_GAMEPAD_CIRCLE : 0;
-   psp->pad_state[0] |= (STATE_BUTTON(state_tmp) & PSP_CTRL_R) ? PSP_GAMEPAD_R : 0;
-   psp->pad_state[0] |= (STATE_BUTTON(state_tmp) & PSP_CTRL_L) ? PSP_GAMEPAD_L : 0;
+   psp->pad_state[0] |= (STATE_BUTTON(state_tmp) & PSP_CTRL_LEFT) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_LEFT) : 0;
+   psp->pad_state[0] |= (STATE_BUTTON(state_tmp) & PSP_CTRL_DOWN) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_DOWN) : 0;
+   psp->pad_state[0] |= (STATE_BUTTON(state_tmp) & PSP_CTRL_RIGHT) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_RIGHT) : 0;
+   psp->pad_state[0] |= (STATE_BUTTON(state_tmp) & PSP_CTRL_UP) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_UP) : 0;
+   psp->pad_state[0] |= (STATE_BUTTON(state_tmp) & PSP_CTRL_START) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_START) : 0;
+   psp->pad_state[0] |= (STATE_BUTTON(state_tmp) & PSP_CTRL_SELECT) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_SELECT) : 0;
+   psp->pad_state[0] |= (STATE_BUTTON(state_tmp) & PSP_CTRL_TRIANGLE) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_X) : 0;
+   psp->pad_state[0] |= (STATE_BUTTON(state_tmp) & PSP_CTRL_SQUARE) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_Y) : 0;
+   psp->pad_state[0] |= (STATE_BUTTON(state_tmp) & PSP_CTRL_CROSS) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_B) : 0;
+   psp->pad_state[0] |= (STATE_BUTTON(state_tmp) & PSP_CTRL_CIRCLE) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_A) : 0;
+   psp->pad_state[0] |= (STATE_BUTTON(state_tmp) & PSP_CTRL_R) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_R) : 0;
+   psp->pad_state[0] |= (STATE_BUTTON(state_tmp) & PSP_CTRL_L) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_L) : 0;
+#if 0
    psp->pad_state[0] |= (STATE_ANALOGLX(state_tmp) < ANALOGSTICK_DEADZONE_LOW) ? PSP_GAMEPAD_LSTICK_LEFT_MASK : 0;
    psp->pad_state[0] |= (STATE_ANALOGLX(state_tmp) > ANALOGSTICK_DEADZONE_HIGH) ? PSP_GAMEPAD_LSTICK_RIGHT_MASK : 0;
    psp->pad_state[0] |= (STATE_ANALOGLY(state_tmp) < ANALOGSTICK_DEADZONE_LOW) ? PSP_GAMEPAD_LSTICK_UP_MASK : 0;
@@ -111,6 +113,7 @@ static void psp_input_poll(void *data)
    psp->pad_state[0] |= (STATE_ANALOGRX(state_tmp) > ANALOGSTICK_DEADZONE_HIGH) ? PSP_GAMEPAD_RSTICK_RIGHT_MASK : 0;
    psp->pad_state[0] |= (STATE_ANALOGRY(state_tmp) < ANALOGSTICK_DEADZONE_LOW) ? PSP_GAMEPAD_RSTICK_UP_MASK : 0;
    psp->pad_state[0] |= (STATE_ANALOGRY(state_tmp) > ANALOGSTICK_DEADZONE_HIGH) ? PSP_GAMEPAD_RSTICK_DOWN_MASK : 0;
+#endif
 #endif
 }
 
@@ -305,7 +308,7 @@ static bool psp_joypad_button(unsigned port_num, uint16_t joykey)
    if (port_num >= MAX_PADS)
       return false;
 
-   return psp->pad_state[port_num] & (1ULL << joykey);
+   return (psp->pad_state[port_num] & (1ULL << joykey));
 }
 
 static int16_t psp_joypad_axis(unsigned port_num, uint32_t joyaxis)
