@@ -136,7 +136,7 @@ static bool psp_frame(void *data, const void *frame,
 
    sceGuClearColor(GU_COLOR(0.0f,0.0f,0.0f,1.0f));
    sceGuClearDepth(0);
-   sceGuCopyImage(psp->rgb32 ?GU_PSM_8888:GU_PSM_5650,0,0,width,height,pitch/2,frame,0,0,512,(void*)0x44088000);
+   sceGuCopyImage(psp->rgb32 ?GU_PSM_8888:GU_PSM_5650,0,0,width,height,pitch / (psp->rgb32 ? 4 : 2),frame,0,0,512,(void*)0x44088000);
    sceGuFinish(); 
    sceDisplayWaitVblankStart();
    void *frame_ptr = &frame;
