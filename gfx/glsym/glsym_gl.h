@@ -24,6 +24,7 @@ typedef GLint GLfixed;
 #if defined(OSX) && !defined(MAC_OS_X_VERSION_10_7)
 typedef long long int GLint64;
 typedef unsigned long long int GLuint64;
+typedef unsigned long long int GLuint64EXT;
 typedef struct __GLsync *GLsync;
 #endif
 typedef void (APIENTRYP RGLSYMGLDRAWRANGEELEMENTSPROC) (GLenum mode, GLuint start, GLuint end, GLsizei count, GLenum type, const void *indices);
