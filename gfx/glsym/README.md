@@ -4,9 +4,9 @@
 
 Use Khronos recent [header](www.opengl.org/registry/api/glext.h).
 
-    ./glgen.py /usr/include/GL/glext.h glsym\_gl.h glsym\_gl.c
+    ./glgen.py /usr/include/GL/glext.h glsym_gl.h glsym_gl.c
 
 ## OpenGL ES
 
-    ./glgen.py /usr/include/GLES/gl2ext.h glsym\_es2.h glsym\_es2.c
+    ./glgen.py /usr/include/GLES/gl2ext.h glsym_es2.h glsym_es2.c
 
