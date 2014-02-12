@@ -244,6 +244,13 @@ static void psp_input_set_keybinds(void *data, unsigned device, unsigned port,
       g_settings.input.binds[port][RARCH_ANALOG_RIGHT_X_MINUS].def_joyaxis    = AXIS_NEG(2);
       g_settings.input.binds[port][RARCH_ANALOG_RIGHT_Y_PLUS].def_joyaxis     = AXIS_POS(3);
       g_settings.input.binds[port][RARCH_ANALOG_RIGHT_Y_MINUS].def_joyaxis    = AXIS_NEG(3);
+
+      for (int i = 0; i < RARCH_CUSTOM_BIND_LIST_END; i++)
+      {
+         g_settings.input.binds[port][i].id = i;
+         g_settings.input.binds[port][i].joykey = g_settings.input.binds[port][i].def_joykey;
+         g_settings.input.binds[port][i].joyaxis = g_settings.input.binds[port][i].def_joyaxis;
+      }
    }
 }
 
