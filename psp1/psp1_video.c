@@ -168,7 +168,7 @@ static void psp_free(void *data)
    sceGuTerm();
 }
 
-#ifdef RARCH_CONSOLE
+#ifdef HAVE_MENU
 static void psp_restart(void) {}
 #endif
 
