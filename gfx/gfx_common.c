@@ -252,12 +252,16 @@ void gfx_set_config_viewport(void)
          aspectratio_lut[ASPECT_RATIO_CONFIG].value = geom->aspect_ratio;
       else
       {
+         unsigned base_width, base_height;
+         base_width  = geom->base_width;
+         base_height = geom->base_height;
+
          // Get around division by zero errors
-         if (geom->base_width == 0)
-            geom->base_width = 1;
-         if (geom->base_height == 0)
-            geom->base_height = 1;
-         aspectratio_lut[ASPECT_RATIO_CONFIG].value = (float)geom->base_width / geom->base_height; // 1:1 PAR.
+         if (base_width == 0)
+            base_width = 1;
+         if (base_height == 0)
+            base_height = 1;
+         aspectratio_lut[ASPECT_RATIO_CONFIG].value = (float)base_width / base_height; // 1:1 PAR.
       }
    }
    else
