@@ -90,7 +90,7 @@ static void *psp_init(const video_info_t *video,
       psp1_video_t *psp = (psp1_video_t*)driver.video_data;
 
       /* Reinitialize textures here */
-      //init_texture(vid, video);
+      init_texture(psp, video);
 
       return driver.video_data;
    }
