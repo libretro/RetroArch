@@ -8,7 +8,7 @@ TARGET = retroarchpsp
 ifeq ($(DEBUG), 1)
    OPTIMIZE_LV	:= -O0 -g
 else
-   OPTIMIZE_LV	:= -O3 -g
+   OPTIMIZE_LV	:= -O3
 endif
 
 INCDIR = 
