@@ -107,9 +107,9 @@ static int psp_process_args(int argc, char *argv[], void *args)
    (void)argc;
    (void)argv;
    (void)args;
-#if 0
+#if 1
    char path[256];
-   snprintf(path, sizeof(path), "%s%s", default_paths.port_dir, "dkc.sfc");
+   snprintf(path, sizeof(path), "%s%s", default_paths.port_dir, "zelda.gb");
    
    strlcpy(g_extern.fullpath, path, sizeof(g_extern.fullpath));
    g_extern.lifecycle_state |= (1ULL << MODE_LOAD_GAME);
