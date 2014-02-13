@@ -1,7 +1,7 @@
 RARCH_VERSION		= "0.9.9.3"
 BUILD_PRX = 1
 
-HAVE_FILE_LOGGER	= 1
+HAVE_FILE_LOGGER	= 0
 
 TARGET = retroarchpsp
 
