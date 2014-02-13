@@ -251,12 +251,14 @@ void gfx_set_config_viewport(void)
       if (geom->aspect_ratio > 0.0f && g_settings.video.aspect_ratio_auto)
          aspectratio_lut[ASPECT_RATIO_CONFIG].value = geom->aspect_ratio;
       else
-#ifdef PSP
-         // Get around division by zero error
-         aspectratio_lut[ASPECT_RATIO_CONFIG].value = 1.0f; // 1:1 PAR.
-#else
+      {
+         // Get around division by zero errors
+         if (geom->base_width == 0)
+            geom->base_width = 1;
+         if (geom->base_height == 0)
+            geom->base_height = 1;
          aspectratio_lut[ASPECT_RATIO_CONFIG].value = (float)geom->base_width / geom->base_height; // 1:1 PAR.
-#endif
+      }
    }
    else
       aspectratio_lut[ASPECT_RATIO_CONFIG].value = g_settings.video.aspect_ratio;
