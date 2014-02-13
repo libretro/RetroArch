@@ -177,7 +177,7 @@ enum
 #define INPUT_DEFAULT_DRIVER INPUT_RWEBINPUT
 #elif defined(__CELLOS_LV2__)
 #define INPUT_DEFAULT_DRIVER INPUT_PS3
-#elif defined(SN_TARGET_PSP2) || defined(PSP)
+#elif (defined(SN_TARGET_PSP2) || defined(PSP))
 #define INPUT_DEFAULT_DRIVER INPUT_PSP
 #elif defined(GEKKO)
 #define INPUT_DEFAULT_DRIVER INPUT_WII
