@@ -81,9 +81,9 @@ static void init_texture(void *data, const video_info_t *video)
 static void *psp_init(const video_info_t *video,
       const input_driver_t **input, void **input_data)
 {
-   *input = NULL;
-   *input_data = NULL;
+   void *pspinput;
    (void)video;
+
 
    if (driver.video_data)
    {
@@ -99,6 +99,10 @@ static void *psp_init(const video_info_t *video,
 
    if (!psp)
       goto error;
+
+   pspinput = input_psp.init();
+   *input = pspinput ? &input_psp : NULL;
+   *input_data = pspinput;
 
    init_texture(psp, video);
 
@@ -136,10 +140,10 @@ static bool psp_frame(void *data, const void *frame,
 
    sceGuClearColor(GU_COLOR(0.0f,0.0f,0.0f,1.0f));
    sceGuClearDepth(0);
-   sceGuCopyImage(psp->rgb32 ?GU_PSM_8888:GU_PSM_5650,0,0,width,height,pitch / (psp->rgb32 ? 4 : 2),frame,0,0,512,(void*)0x44088000);
+   sceGuCopyImage(psp->rgb32 ?GU_PSM_8888:GU_PSM_5650,0,0,width,height,pitch / (psp->rgb32 ? 4 : 2),(void*)frame,0,0,512,(void*)0x44088000);
    sceGuFinish(); 
    sceDisplayWaitVblankStart();
-   void *frame_ptr = &frame;
+   void *frame_ptr = (void*)&frame;
    return true;
 }
 
