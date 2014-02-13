@@ -294,6 +294,10 @@ static void thread_loop(void *data)
                   thr->cmd_data.i);
             thread_reply(thr, CMD_POKE_SET_ASPECT_RATIO);
             break;
+            
+         case CMD_NONE:
+            // Never reply on no command. Possible deadlock if thread sends command right after frame update.
+            break;
 
          default:
             thread_reply(thr, send_cmd);
