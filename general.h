@@ -406,7 +406,7 @@ struct global
    char bps_name[PATH_MAX];
    char ips_name[PATH_MAX];
 
-   unsigned state_slot;
+   int state_slot;
 
    struct
    {

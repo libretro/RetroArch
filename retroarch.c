@@ -1978,7 +1978,9 @@ void rarch_load_state(void)
    char load_path[PATH_MAX];
 
    if (g_extern.state_slot > 0)
-      snprintf(load_path, sizeof(load_path), "%s%u", g_extern.savestate_name, g_extern.state_slot);
+      snprintf(load_path, sizeof(load_path), "%s%d", g_extern.savestate_name, g_extern.state_slot);
+   else if (g_extern.state_slot < 0)
+      snprintf(load_path, sizeof(load_path), "%s.auto", g_extern.savestate_name);
    else
       snprintf(load_path, sizeof(load_path), "%s", g_extern.savestate_name);
 
@@ -1988,7 +1990,12 @@ void rarch_load_state(void)
    if (size)
    {
       if (load_state(load_path))
-         snprintf(msg, sizeof(msg), "Loaded state from slot #%u.", g_extern.state_slot);
+      {
+         if (g_extern.state_slot < 0)
+            snprintf(msg, sizeof(msg), "Loaded state from slot #-1 (auto).");
+         else
+            snprintf(msg, sizeof(msg), "Loaded state from slot #%d.", g_extern.state_slot);
+      }
       else
          snprintf(msg, sizeof(msg), "Failed to load state from \"%s\".", load_path);
    }
@@ -2008,7 +2015,9 @@ void rarch_save_state(void)
    char save_path[PATH_MAX];
 
    if (g_extern.state_slot > 0)
-      snprintf(save_path, sizeof(save_path), "%s%u", g_extern.savestate_name, g_extern.state_slot);
+      snprintf(save_path, sizeof(save_path), "%s%d", g_extern.savestate_name, g_extern.state_slot);
+   else if (g_extern.state_slot < 0)
+      snprintf(save_path, sizeof(save_path), "%s.auto", g_extern.savestate_name);
    else
       snprintf(save_path, sizeof(save_path), "%s", g_extern.savestate_name);
 
@@ -2018,7 +2027,12 @@ void rarch_save_state(void)
    if (size)
    {
       if (save_state(save_path))
-         snprintf(msg, sizeof(msg), "Saved state to slot #%u.", g_extern.state_slot);
+      {
+         if (g_extern.state_slot < 0)
+            snprintf(msg, sizeof(msg), "Saved state to slot #-1 (auto).");
+         else
+            snprintf(msg, sizeof(msg), "Saved state to slot #%u.", g_extern.state_slot);
+      }
       else
          snprintf(msg, sizeof(msg), "Failed to save state to \"%s\".", save_path);
    }

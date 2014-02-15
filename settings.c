@@ -1324,6 +1324,11 @@ bool config_save_file(const char *path)
 #endif
    config_set_float(conf, "video_font_size", g_settings.video.font_size);
 
+   config_set_bool(conf, "block_sram_overwrite", g_settings.block_sram_overwrite);
+   config_set_bool(conf, "savestate_auto_index", g_settings.savestate_auto_index);
+   config_set_bool(conf, "savestate_auto_save", g_settings.savestate_auto_save);
+   config_set_bool(conf, "savestate_auto_load", g_settings.savestate_auto_load);
+
    // g_extern
    config_set_bool(conf, "config_save_on_exit", g_extern.config_save_on_exit);
    config_set_int(conf, "sound_mode", g_extern.console.sound.mode);

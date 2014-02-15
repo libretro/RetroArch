@@ -435,13 +435,32 @@ int menu_set_settings(void *data, unsigned setting, unsigned action)
             g_settings.rewind_granularity = 1;
          break;
       case RGUI_SETTINGS_CONFIG_SAVE_ON_EXIT:
-         if (action == RGUI_ACTION_OK || action == RGUI_ACTION_RIGHT 
+         if (action == RGUI_ACTION_OK || action == RGUI_ACTION_RIGHT
                || action == RGUI_ACTION_LEFT)
-         {
             g_extern.config_save_on_exit = !g_extern.config_save_on_exit;
-         }
          else if (action == RGUI_ACTION_START)
             g_extern.config_save_on_exit = true;
+         break;
+      case RGUI_SETTINGS_SAVESTATE_AUTO_SAVE:
+         if (action == RGUI_ACTION_OK || action == RGUI_ACTION_RIGHT
+               || action == RGUI_ACTION_LEFT)
+            g_settings.savestate_auto_save = !g_settings.savestate_auto_save;
+         else if (action == RGUI_ACTION_START)
+            g_settings.savestate_auto_save = false;
+         break;
+      case RGUI_SETTINGS_SAVESTATE_AUTO_LOAD:
+         if (action == RGUI_ACTION_OK || action == RGUI_ACTION_RIGHT
+               || action == RGUI_ACTION_LEFT)
+            g_settings.savestate_auto_load = !g_settings.savestate_auto_load;
+         else if (action == RGUI_ACTION_START)
+            g_settings.savestate_auto_load = true;
+         break;
+      case RGUI_SETTINGS_BLOCK_SRAM_OVERWRITE:
+         if (action == RGUI_ACTION_OK || action == RGUI_ACTION_RIGHT
+               || action == RGUI_ACTION_LEFT)
+            g_settings.block_sram_overwrite = !g_settings.block_sram_overwrite;
+         else if (action == RGUI_ACTION_START)
+            g_settings.block_sram_overwrite = false;
          break;
       case RGUI_SETTINGS_PER_CORE_CONFIG:
          if (action == RGUI_ACTION_OK || action == RGUI_ACTION_RIGHT 
@@ -491,7 +510,8 @@ int menu_set_settings(void *data, unsigned setting, unsigned action)
             g_extern.state_slot = 0;
          else if (action == RGUI_ACTION_LEFT)
          {
-            if (g_extern.state_slot != 0)
+            // Slot -1 is (auto) slot.
+            if (g_extern.state_slot >= 0)
                g_extern.state_slot--;
          }
          else if (action == RGUI_ACTION_RIGHT)
@@ -1073,7 +1093,7 @@ int menu_set_settings(void *data, unsigned setting, unsigned action)
          }
          else if (action == RGUI_ACTION_LEFT)
          {
-            if(g_extern.console.screen.gamma_correction > 0)
+            if (g_extern.console.screen.gamma_correction > 0)
             {
                g_extern.console.screen.gamma_correction--;
                if (driver.video_poke && driver.video_poke->apply_state_changes)
@@ -1082,7 +1102,7 @@ int menu_set_settings(void *data, unsigned setting, unsigned action)
          }
          else if (action == RGUI_ACTION_RIGHT)
          {
-            if(g_extern.console.screen.gamma_correction < MAX_GAMMA_SETTING)
+            if (g_extern.console.screen.gamma_correction < MAX_GAMMA_SETTING)
             {
                g_extern.console.screen.gamma_correction++;
                if (driver.video_poke && driver.video_poke->apply_state_changes)
@@ -1759,6 +1779,15 @@ void menu_set_settings_label(char *type_str, size_t type_str_size, unsigned *w, 
       case RGUI_SETTINGS_CONFIG_SAVE_ON_EXIT:
          strlcpy(type_str, g_extern.config_save_on_exit ? "ON" : "OFF", type_str_size);
          break;
+      case RGUI_SETTINGS_SAVESTATE_AUTO_SAVE:
+         strlcpy(type_str, g_settings.savestate_auto_save ? "ON" : "OFF", type_str_size);
+         break;
+      case RGUI_SETTINGS_SAVESTATE_AUTO_LOAD:
+         strlcpy(type_str, g_settings.savestate_auto_load ? "ON" : "OFF", type_str_size);
+         break;
+      case RGUI_SETTINGS_BLOCK_SRAM_OVERWRITE:
+         strlcpy(type_str, g_settings.block_sram_overwrite ? "ON" : "OFF", type_str_size);
+         break;
       case RGUI_SETTINGS_PER_CORE_CONFIG:
          strlcpy(type_str, g_settings.core_specific_config ? "ON" : "OFF", type_str_size);
          break;
@@ -1770,7 +1799,10 @@ void menu_set_settings_label(char *type_str, size_t type_str_size, unsigned *w, 
          break;
       case RGUI_SETTINGS_SAVESTATE_SAVE:
       case RGUI_SETTINGS_SAVESTATE_LOAD:
-         snprintf(type_str, type_str_size, "%d", g_extern.state_slot);
+         if (g_extern.state_slot < 0)
+            strlcpy(type_str, "-1 (auto)", type_str_size);
+         else
+            snprintf(type_str, type_str_size, "%d", g_extern.state_slot);
          break;
       case RGUI_SETTINGS_AUDIO_MUTE:
          strlcpy(type_str, g_extern.audio_data.mute ? "ON" : "OFF", type_str_size);
@@ -1843,7 +1875,6 @@ void menu_set_settings_label(char *type_str, size_t type_str_size, unsigned *w, 
       case RGUI_SETTINGS_VIDEO_OPTIONS:
       case RGUI_SETTINGS_AUDIO_OPTIONS:
       case RGUI_SETTINGS_DISK_OPTIONS:
-      case RGUI_SETTINGS_SAVE_CONFIG:
 #ifdef HAVE_SHADER_MANAGER
       case RGUI_SETTINGS_SHADER_OPTIONS:
       case RGUI_SETTINGS_SHADER_PRESET:
@@ -1857,7 +1888,6 @@ void menu_set_settings_label(char *type_str, size_t type_str_size, unsigned *w, 
       case RGUI_SETTINGS_DRIVERS:
       case RGUI_SETTINGS_CUSTOM_BIND_ALL:
       case RGUI_SETTINGS_CUSTOM_BIND_DEFAULT_ALL:
-      case RGUI_START_SCREEN:
          strlcpy(type_str, "...", type_str_size);
          break;
 #ifdef HAVE_OVERLAY
@@ -1974,7 +2004,7 @@ void menu_set_settings_label(char *type_str, size_t type_str_size, unsigned *w, 
          strlcpy(type_str, (g_extern.lifecycle_state & (1ULL << MODE_AUDIO_CUSTOM_BGM_ENABLE)) ? "ON" : "OFF", type_str_size);
          break;
       default:
-         type_str[0] = 0;
+         *type_str = '\0';
          *w = 0;
          break;
    }

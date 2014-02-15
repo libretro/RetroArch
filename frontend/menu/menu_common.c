@@ -1949,6 +1949,10 @@ void menu_populate_entries(void *data, unsigned menu_type)
 #ifdef HAVE_SCREENSHOTS
          file_list_push(rgui->selection_buf, "GPU Screenshots", RGUI_SETTINGS_GPU_SCREENSHOT, 0);
 #endif
+         file_list_push(rgui->selection_buf, "Savestate Autosave On Exit", RGUI_SETTINGS_SAVESTATE_AUTO_SAVE, 0);
+         file_list_push(rgui->selection_buf, "Savestate Autoload", RGUI_SETTINGS_SAVESTATE_AUTO_LOAD, 0);
+         file_list_push(rgui->selection_buf, "Block SRAM Overwrite", RGUI_SETTINGS_BLOCK_SRAM_OVERWRITE, 0);
+
          file_list_push(rgui->selection_buf, "Config Save On Exit", RGUI_SETTINGS_CONFIG_SAVE_ON_EXIT, 0);
          file_list_push(rgui->selection_buf, "Per-Core Configs", RGUI_SETTINGS_PER_CORE_CONFIG, 0);
 #if defined(HAVE_THREADS)
