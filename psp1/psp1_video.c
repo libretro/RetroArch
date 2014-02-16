@@ -54,21 +54,18 @@ static unsigned int __attribute__((aligned(16))) list[262144];
 
 
 
-static void init_texture(void *data, const video_info_t *video)
+static void init_texture(void *data, unsigned width, unsigned height, bool rgb32)
 {
    psp1_video_t *psp = (psp1_video_t*)data;
    
-   psp->rgb32 = video->rgb32;
-   
-   sceGuInit();
    sceGuStart(GU_DIRECT, list);
 
-   sceGuDrawBuffer(psp->rgb32 ? GU_PSM_8888 : GU_PSM_5650, (void*)0, SCEGU_VRAM_WIDTH);
-   sceGuDispBuffer(SCEGU_SCR_WIDTH, SCEGU_SCR_HEIGHT, (void*)0x88000, SCEGU_VRAM_WIDTH);
+   sceGuDrawBuffer(rgb32 ? GU_PSM_8888 : GU_PSM_5650, (void*)0, SCEGU_VRAM_WIDTH);
+   sceGuDispBuffer(width, height, (void*)0x88000, SCEGU_VRAM_WIDTH);
    sceGuClearColor(GU_COLOR(0.0f,0.0f,1.0f,1.0f));
-   sceGuScissor(0, 0, SCEGU_SCR_WIDTH, SCEGU_SCR_HEIGHT);
+   sceGuScissor(0, 0, width, height);
    sceGuEnable(GU_SCISSOR_TEST);
-   sceGuTexMode(psp->rgb32 ? GU_PSM_8888 : GU_PSM_5650, 0, 0, GU_FALSE);
+   sceGuTexMode(rgb32 ? GU_PSM_8888 : GU_PSM_5650, 0, 0, GU_FALSE);
    sceGuTexFunc(GU_TFX_REPLACE, GU_TCC_RGBA);
    sceGuTexFilter(GU_LINEAR, GU_LINEAR);      
    sceGuTexWrap ( GU_CLAMP,GU_CLAMP );
@@ -96,7 +93,8 @@ static void *psp_init(const video_info_t *video,
       psp1_video_t *psp = (psp1_video_t*)driver.video_data;
 
       /* Reinitialize textures here */
-      init_texture(psp, video);
+      psp->rgb32 = video->rgb32;
+      init_texture(psp, SCEGU_SCR_WIDTH, SCEGU_SCR_HEIGHT, psp->rgb32);
 
       return driver.video_data;
    }
@@ -106,6 +104,8 @@ static void *psp_init(const video_info_t *video,
    if (!psp)
       goto error;
 
+   sceGuInit();
+
    if (input && input_data)
    {
       pspinput = input_psp.init();
@@ -113,7 +113,8 @@ static void *psp_init(const video_info_t *video,
       *input_data = pspinput;
    }
 
-   init_texture(psp, video);
+   psp->rgb32 = video->rgb32;
+   init_texture(psp, SCEGU_SCR_WIDTH, SCEGU_SCR_HEIGHT, psp->rgb32);
 
    psp->tex_w = 512;
    psp->tex_h = 512;
@@ -166,7 +167,6 @@ static bool psp_frame(void *data, const void *frame,
      }
       
    }
-   
    
    sceGuStart(GU_DIRECT, list);
    sceGuClear(GU_COLOR_BUFFER_BIT);
