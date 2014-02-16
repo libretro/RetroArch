@@ -2180,6 +2180,10 @@ void menu_parse_and_resolve(void *data, unsigned menu_type)
                file_list_push(rgui->selection_buf, "/dev_usb004/", menu_type, 0);
                file_list_push(rgui->selection_buf, "/dev_usb005/", menu_type, 0);
                file_list_push(rgui->selection_buf, "/dev_usb006/", menu_type, 0);
+#elif defined(PSP)
+               file_list_push(rgui->selection_buf, "ms0:/", menu_type, 0);
+               file_list_push(rgui->selection_buf, "ef0:/", menu_type, 0);
+               file_list_push(rgui->selection_buf, "host0:/", menu_type, 0);
 #else
                file_list_push(rgui->selection_buf, "/", menu_type, 0);
 #endif
