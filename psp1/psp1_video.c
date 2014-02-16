@@ -53,6 +53,7 @@ typedef struct psp1_vertex
 static unsigned int __attribute__((aligned(16))) list[262144];
 
 
+
 static void init_texture(void *data, const video_info_t *video)
 {
    psp1_video_t *psp = (psp1_video_t*)data;
@@ -130,30 +131,58 @@ static bool psp_frame(void *data, const void *frame,
    (void)height;
    (void)pitch;
    (void)msg;
+	int x,y;
 	
    psp1_video_t *psp = (psp1_video_t*)data;
-   pitch= pitch/(psp->rgb32 ? 4 : 2);
+  
 
    if(!frame)
       return true;
-
+   
+   void* g_texture = (void*) (0x44110000); // video memory after draw+display buffers
+   if (psp->rgb32){
+      pitch/=4;
+      u32* out_p=(u32*)g_texture ; 
+      u32* in_p=(u32*)frame; 
+      for ( y=0;y<height;y++ ){
+         for ( x=0;x<width;x++ ){
+            *out_p=((*in_p)&0xFF00FF00)|(((*in_p)&0xFF)<<16)|(((*in_p)&0xFF0000)>>16);
+            in_p++;
+            out_p++;
+         }
+         in_p+=pitch-width;
+     }
+   }else{
+      pitch/=2;
+      u16* out_p=(u16*)g_texture;
+      u16* in_p=(u16*)frame; 
+      for ( y=0;y<height;y++ ){
+         for ( x=0;x<width;x++ ){
+            *out_p=((*in_p)&0x7E0)|(((*in_p)&0x1F)<<11)|((*in_p)>>11);
+            in_p++;
+            out_p++;
+         }
+         in_p+=pitch-width;
+     }
+      
+   }
+   
+   
    sceGuStart(GU_DIRECT, list);
    sceGuClear(GU_COLOR_BUFFER_BIT);
    psp1_vertex_t* v = sceGuGetMemory(2*sizeof(psp1_vertex_t));
    
    v[0].x=(SCEGU_SCR_WIDTH-width*SCEGU_SCR_HEIGHT/height)/2;
    v[0].y=0;   
-   v[0].u=2;
+   v[0].u=0;
    v[0].v=0;   
    
    v[1].x=(SCEGU_SCR_WIDTH+width*SCEGU_SCR_HEIGHT/height)/2;
    v[1].y=(SCEGU_SCR_HEIGHT);
-   v[1].u=width+2;
+   v[1].u=width;
    v[1].v=height;
    
-   sceKernelDcacheWritebackInvalidateAll(); 
-   //could be unsafe , TODO: replace with sceGuTexImage(0,next_POT(width),next_POT(height),pitch,frame);       
-   sceGuTexImage(0,pitch,pitch,pitch,frame);
+   sceGuTexImage(0,256,256,width,g_texture);
    
    sceGuDrawArray(GU_SPRITES,GU_TEXTURE_16BIT|GU_COLOR_5650|GU_VERTEX_16BIT|GU_TRANSFORM_2D,2,NULL,v);
    sceGuFinish(); 
