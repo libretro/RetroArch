@@ -53,6 +53,12 @@ typedef struct psp1_video
    bool rgb32;
    unsigned tex_w;
    unsigned tex_h;
+
+   /* RGUI data */
+   int rgui_rotation;
+   float rgui_alpha;
+   bool rgui_active;
+   bool rgui_rgb32;
 } psp1_video_t;
 
 typedef struct psp1_vertex
@@ -151,7 +157,8 @@ static bool psp_frame(void *data, const void *frame,
 	
    psp1_video_t *psp = (psp1_video_t*)data;
   
-   if(!frame)
+   /* Check if neither RGUI nor emulator framebuffer is to be displayed. */
+   if (frame == NULL)
       return true;
    
    g_texture = (void*)0x44110000; // video memory after draw+display buffers
@@ -241,6 +248,46 @@ static void psp_restart(void) {}
 
 static void psp_set_rotation(void *data, unsigned rotation)
 {
+   /* stub */
+}
+
+static void psp_set_texture_frame(void *data, const void *frame, bool rgb32,
+                               unsigned width, unsigned height, float alpha)
+{
+   psp1_video_t *psp = (psp1_video_t*)data;
+
+   psp->rgui_rgb32 = rgb32;
+   psp->rgui_alpha = alpha;
+
+   /* TODO */
+}
+
+static void psp_set_texture_enable(void *data, bool state, bool full_screen)
+{
+   psp1_video_t *psp = (psp1_video_t*)data;
+   psp->rgui_active = state;
+}
+
+static const video_poke_interface_t psp_poke_interface = {
+   NULL, /* set_filtering */
+#ifdef HAVE_FBO
+   NULL, /* get_current_framebuffer */
+   NULL, /* get_proc_address */
+#endif
+   NULL,
+   NULL,
+#ifdef HAVE_MENU
+   psp_set_texture_frame,
+   psp_set_texture_enable,
+#endif
+   NULL,
+   NULL
+};
+
+static void psp_get_poke_interface(void *data, const video_poke_interface_t **iface)
+{
+   (void)data;
+   *iface = &psp_poke_interface;
 }
 
 const video_driver_t video_psp1 = {
@@ -258,5 +305,10 @@ const video_driver_t video_psp1 = {
 #endif
 
    psp_set_rotation,
+   NULL,
+   NULL,
+#ifdef HAVE_OVERLAY
+   NULL,
+#endif
+   psp_get_poke_interface
 };
-
