@@ -86,9 +86,7 @@ static void ps3_input_set_keybinds(void *data, unsigned device,
       unsigned port, unsigned id, unsigned keybind_action)
 {
    uint64_t *key = &g_settings.input.binds[port][id].joykey;
-   //uint64_t joykey = *key;
    size_t arr_size = sizeof(platform_keys) / sizeof(platform_keys[0]);
-
    (void)device;
 
    if (keybind_action & (1ULL << KEYBINDS_ACTION_SET_DEFAULT_BIND))

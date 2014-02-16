@@ -198,6 +198,8 @@ static void psp_input_set_keybinds(void *data, unsigned device, unsigned port,
 {
    (void)device;
    uint64_t *key = &g_settings.input.binds[port][id].joykey;
+   size_t arr_size = sizeof(platform_keys) / sizeof(platform_keys[0]);
+   (void)device;
 
    if (keybind_action & (1ULL << KEYBINDS_ACTION_SET_DEFAULT_BIND))
       *key = g_settings.input.binds[port][id].def_joykey;
@@ -217,6 +219,10 @@ static void psp_input_set_keybinds(void *data, unsigned device, unsigned port,
       g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_X].def_joykey       = (RETRO_DEVICE_ID_JOYPAD_X);
       g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_L].def_joykey       = (RETRO_DEVICE_ID_JOYPAD_L);
       g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_R].def_joykey       = (RETRO_DEVICE_ID_JOYPAD_R);
+      g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_L2].def_joykey      = NO_BTN;
+      g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_R2].def_joykey      = NO_BTN;
+      g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_L3].def_joykey      = NO_BTN;
+      g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_R3].def_joykey      = NO_BTN;
       g_settings.input.binds[port][RARCH_ANALOG_LEFT_X_PLUS].def_joykey       = NO_BTN;
       g_settings.input.binds[port][RARCH_ANALOG_LEFT_X_MINUS].def_joykey      = NO_BTN;
       g_settings.input.binds[port][RARCH_ANALOG_LEFT_Y_PLUS].def_joykey       = NO_BTN;
@@ -255,6 +261,26 @@ static void psp_input_set_keybinds(void *data, unsigned device, unsigned port,
          g_settings.input.binds[port][i].id = i;
          g_settings.input.binds[port][i].joykey = g_settings.input.binds[port][i].def_joykey;
          g_settings.input.binds[port][i].joyaxis = g_settings.input.binds[port][i].def_joyaxis;
+      }
+   }
+
+   if (keybind_action & (1ULL << KEYBINDS_ACTION_GET_BIND_LABEL))
+   {
+      struct platform_bind *ret = (struct platform_bind*)data;
+
+      if (ret->joykey == NO_BTN)
+         strlcpy(ret->desc, "No button", sizeof(ret->desc));
+      else
+      {
+         for (size_t i = 0; i < arr_size; i++)
+         {
+            if (platform_keys[i].joykey == ret->joykey)
+            {
+               strlcpy(ret->desc, platform_keys[i].desc, sizeof(ret->desc));
+               return;
+            }
+         }
+         strlcpy(ret->desc, "Unknown", sizeof(ret->desc));
       }
    }
 }
