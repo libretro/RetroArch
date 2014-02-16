@@ -293,7 +293,8 @@ uint64_t rarch_get_cpu_features(void)
    memcpy(vendor, vendor_shuffle, sizeof(vendor_shuffle));
    RARCH_LOG("[CPUID]: Vendor: %s\n", vendor);
 
-   if (flags[0] < 1) // Does CPUID not support func = 1? (unlikely ...)
+   unsigned max_flag = flags[0];
+   if (max_flag < 1) // Does CPUID not support func = 1? (unlikely ...)
       return 0;
 
    x86_cpuid(1, flags);
@@ -302,7 +303,11 @@ uint64_t rarch_get_cpu_features(void)
       cpu |= RETRO_SIMD_MMX;
 
    if (flags[3] & (1 << 25))
+   {
+      // SSE also implies MMXEXT (according to FFmpeg source).
       cpu |= RETRO_SIMD_SSE;
+      cpu |= RETRO_SIMD_MMXEXT;
+   }
 
    if (flags[3] & (1 << 26))
       cpu |= RETRO_SIMD_SSE2;
@@ -313,17 +318,45 @@ uint64_t rarch_get_cpu_features(void)
    if (flags[2] & (1 << 9))
       cpu |= RETRO_SIMD_SSSE3;
 
+   if (flags[2] & (1 << 19))
+      cpu |= RETRO_SIMD_SSE4;
+
+   if (flags[2] & (1 << 20))
+      cpu |= RETRO_SIMD_SSE42;
+
    const int avx_flags = (1 << 27) | (1 << 28);
    // Must only perform xgetbv check if we have AVX CPU support (guaranteed to have at least i686).
    if (((flags[2] & avx_flags) == avx_flags) && ((xgetbv_x86(0) & 0x6) == 0x6))
       cpu |= RETRO_SIMD_AVX;
 
-   RARCH_LOG("[CPUID]: MMX:   %u\n", !!(cpu & RETRO_SIMD_MMX));
-   RARCH_LOG("[CPUID]: SSE:   %u\n", !!(cpu & RETRO_SIMD_SSE));
-   RARCH_LOG("[CPUID]: SSE2:  %u\n", !!(cpu & RETRO_SIMD_SSE2));
-   RARCH_LOG("[CPUID]: SSE3:  %u\n", !!(cpu & RETRO_SIMD_SSE3));
-   RARCH_LOG("[CPUID]: SSSE3: %u\n", !!(cpu & RETRO_SIMD_SSSE3));
-   RARCH_LOG("[CPUID]: AVX:   %u\n", !!(cpu & RETRO_SIMD_AVX));
+   if (max_flag >= 7)
+   {
+      x86_cpuid(7, flags);
+      if (flags[1] & (1 << 5))
+         cpu |= RETRO_SIMD_AVX2;
+   }
+
+   x86_cpuid(0x80000000, flags);
+   max_flag = flags[0];
+   if (max_flag >= 0x80000001u)
+   {
+      x86_cpuid(0x80000001, flags);
+      if (flags[3] & (1 << 23))
+         cpu |= RETRO_SIMD_MMX;
+      if (flags[3] & (1 << 22))
+         cpu |= RETRO_SIMD_MMXEXT;
+   }
+
+   RARCH_LOG("[CPUID]: MMX:    %u\n", !!(cpu & RETRO_SIMD_MMX));
+   RARCH_LOG("[CPUID]: MMXEXT: %u\n", !!(cpu & RETRO_SIMD_MMXEXT));
+   RARCH_LOG("[CPUID]: SSE:    %u\n", !!(cpu & RETRO_SIMD_SSE));
+   RARCH_LOG("[CPUID]: SSE2:   %u\n", !!(cpu & RETRO_SIMD_SSE2));
+   RARCH_LOG("[CPUID]: SSE3:   %u\n", !!(cpu & RETRO_SIMD_SSE3));
+   RARCH_LOG("[CPUID]: SSSE3:  %u\n", !!(cpu & RETRO_SIMD_SSSE3));
+   RARCH_LOG("[CPUID]: SSE4:   %u\n", !!(cpu & RETRO_SIMD_SSE4));
+   RARCH_LOG("[CPUID]: SSE4.2: %u\n", !!(cpu & RETRO_SIMD_SSE42));
+   RARCH_LOG("[CPUID]: AVX:    %u\n", !!(cpu & RETRO_SIMD_AVX));
+   RARCH_LOG("[CPUID]: AVX2:   %u\n", !!(cpu & RETRO_SIMD_AVX2));
 #elif defined(ANDROID) && defined(ANDROID_ARM)
    uint64_t cpu_flags = android_getCpuFeatures();
    (void)cpu_flags;
