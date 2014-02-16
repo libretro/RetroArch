@@ -83,6 +83,9 @@ typedef struct psp_input
    int16_t analog_state[1][2][2];
 } psp_input_t;
 
+static void psp_input_set_keybinds(void *data, unsigned device, unsigned port,
+      unsigned id, unsigned keybind_action);
+
 static void psp_input_poll(void *data)
 {
    SceCtrlData state_tmp;
@@ -122,8 +125,8 @@ static void psp_input_poll(void *data)
 #endif
    if (g_settings.input.autodetect_enable)
    {
-      if (strcmp(g_settings.input.device_names[port], "PSP") != 0)
-         psp_input_set_keybinds(NULL, DEVICE_PSP, port, 0, (1ULL << KEYBINDS_ACTION_SET_DEFAULT_BINDS));
+      if (strcmp(g_settings.input.device_names[0], "PSP") != 0)
+         psp_input_set_keybinds(NULL, DEVICE_PSP, 0, 0, (1ULL << KEYBINDS_ACTION_SET_DEFAULT_BINDS));
    }
 }
 
