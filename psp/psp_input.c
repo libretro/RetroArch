@@ -88,6 +88,7 @@ static void psp_input_set_keybinds(void *data, unsigned device, unsigned port,
 
 static void psp_input_poll(void *data)
 {
+   uint64_t *lifecycle_state = (uint64_t*)&g_extern.lifecycle_state;
    SceCtrlData state_tmp;
    psp_input_t *psp = (psp_input_t*)data;
 
@@ -97,6 +98,7 @@ static void psp_input_poll(void *data)
    sceCtrlSetSamplingMode(DEFAULT_SAMPLING_MODE);
    int ret = CtrlReadBufferPositive(0, &state_tmp, 1);
 
+   *lifecycle_state &= ~((1ULL << RARCH_MENU_TOGGLE));
    psp->analog_state[0][0][0] = psp->analog_state[0][0][1] = psp->analog_state[0][1][0] = psp->analog_state[0][1][1] = 0;
    psp->pad_state = 0;
    psp->pad_state |= (STATE_BUTTON(state_tmp) & PSP_CTRL_LEFT) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_LEFT) : 0;
@@ -111,6 +113,7 @@ static void psp_input_poll(void *data)
    psp->pad_state |= (STATE_BUTTON(state_tmp) & PSP_CTRL_CIRCLE) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_A) : 0;
    psp->pad_state |= (STATE_BUTTON(state_tmp) & PSP_CTRL_R) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_R) : 0;
    psp->pad_state |= (STATE_BUTTON(state_tmp) & PSP_CTRL_L) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_L) : 0;
+   *lifecycle_state |= (STATE_BUTTON(state_tmp) & PSP_CTRL_NOTE) ? (1ULL << RARCH_MENU_TOGGLE) : 0;
 #if 0
    psp->pad_state |= (STATE_ANALOGLX(state_tmp) < ANALOGSTICK_DEADZONE_LOW) ? PSP_GAMEPAD_LSTICK_LEFT_MASK : 0;
    psp->pad_state |= (STATE_ANALOGLX(state_tmp) > ANALOGSTICK_DEADZONE_HIGH) ? PSP_GAMEPAD_LSTICK_RIGHT_MASK : 0;
