@@ -100,9 +100,12 @@ static void *psp_init(const video_info_t *video,
    if (!psp)
       goto error;
 
-   pspinput = input_psp.init();
-   *input = pspinput ? &input_psp : NULL;
-   *input_data = pspinput;
+   if (input && input_data)
+   {
+      pspinput = input_psp.init();
+      *input = pspinput ? &input_psp : NULL;
+      *input_data = pspinput;
+   }
 
    init_texture(psp, video);
 
