@@ -120,6 +120,11 @@ static void psp_input_poll(void *data)
    psp->analog_state[0][RETRO_DEVICE_INDEX_ANALOG_RIGHT][RETRO_DEVICE_ID_ANALOG_Y] = (int16_t)(STATE_ANALOGRY(state_tmp)) * -256;
 #endif
 
+   for (int i = 0; i < 2; i++)
+      for (int j = 0; j < 2; j++)
+         if (psp->analog_state[0][i][j] == -0x8000)
+            psp->analog_state[0][i][j] = -0x7fff;
+
    *lifecycle_state &= ~((1ULL << RARCH_MENU_TOGGLE));
 
    if (
