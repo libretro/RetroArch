@@ -35,6 +35,19 @@
 #define SCEGU_VRAM_WIDTH 512
 #endif
 
+/* Frame buffer */
+#define SCEGU_VRAM_TOP        0x00000000
+/* 16bit mode */
+#define SCEGU_VRAM_BUFSIZE    (SCEGU_VRAM_WIDTH*SCEGU_SCR_HEIGHT*2)
+#define SCEGU_VRAM_BP_0       (void *)(SCEGU_VRAM_TOP)
+#define SCEGU_VRAM_BP_1       (void *)(SCEGU_VRAM_TOP+SCEGU_VRAM_BUFSIZE)
+#define SCEGU_VRAM_BP_2       (void *)(SCEGU_VRAM_TOP+(SCEGU_VRAM_BUFSIZE*2))
+/* 32bit mode */
+#define SCEGU_VRAM_BUFSIZE32  (SCEGU_VRAM_WIDTH*SCEGU_SCR_HEIGHT*4)
+#define SCEGU_VRAM_BP32_0     (void *)(SCEGU_VRAM_TOP)
+#define SCEGU_VRAM_BP32_1     (void *)(SCEGU_VRAM_TOP+SCEGU_VRAM_BUFSIZE32)
+#define SCEGU_VRAM_BP32_2     (void *)(SCEGU_VRAM_TOP+(SCEGU_VRAM_BUFSIZE32*2))
+
 typedef struct psp1_video
 {
    bool rgb32;
@@ -54,14 +67,14 @@ static unsigned int __attribute__((aligned(16))) list[262144];
 
 
 
-static void init_texture(void *data, unsigned width, unsigned height, bool rgb32)
+static void init_texture(void *data, void *frame, unsigned width, unsigned height, bool rgb32)
 {
    psp1_video_t *psp = (psp1_video_t*)data;
    
    sceGuStart(GU_DIRECT, list);
 
    sceGuDrawBuffer(rgb32 ? GU_PSM_8888 : GU_PSM_5650, (void*)0, SCEGU_VRAM_WIDTH);
-   sceGuDispBuffer(width, height, (void*)0x88000, SCEGU_VRAM_WIDTH);
+   sceGuDispBuffer(width, height, frame, SCEGU_VRAM_WIDTH);
    sceGuClearColor(GU_COLOR(0.0f,0.0f,1.0f,1.0f));
    sceGuScissor(0, 0, width, height);
    sceGuEnable(GU_SCISSOR_TEST);
@@ -94,7 +107,7 @@ static void *psp_init(const video_info_t *video,
 
       /* Reinitialize textures here */
       psp->rgb32 = video->rgb32;
-      init_texture(psp, SCEGU_SCR_WIDTH, SCEGU_SCR_HEIGHT, psp->rgb32);
+      init_texture(psp, SCEGU_VRAM_BP_2, SCEGU_SCR_WIDTH, SCEGU_SCR_HEIGHT, psp->rgb32);
 
       return driver.video_data;
    }
@@ -114,7 +127,7 @@ static void *psp_init(const video_info_t *video,
    }
 
    psp->rgb32 = video->rgb32;
-   init_texture(psp, SCEGU_SCR_WIDTH, SCEGU_SCR_HEIGHT, psp->rgb32);
+   init_texture(psp, SCEGU_VRAM_BP_2, SCEGU_SCR_WIDTH, SCEGU_SCR_HEIGHT, psp->rgb32);
 
    psp->tex_w = 512;
    psp->tex_h = 512;
