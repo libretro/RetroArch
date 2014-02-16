@@ -42,40 +42,45 @@ typedef struct psp1_video
    unsigned tex_h;
 } psp1_video_t;
 
+typedef struct psp1_vertex
+{
+   u16 u,v;
+   u16 color;
+   u16 x,y,z;
+}psp1_vertex_t;
+
+
 static unsigned int __attribute__((aligned(16))) list[262144];
 
 
 static void init_texture(void *data, const video_info_t *video)
 {
    psp1_video_t *psp = (psp1_video_t*)data;
-
+   
+   psp->rgb32 = video->rgb32;
+   
    sceGuInit();
    sceGuStart(GU_DIRECT, list);
 
    sceGuDrawBuffer(psp->rgb32 ? GU_PSM_8888 : GU_PSM_5650, (void*)0, SCEGU_VRAM_WIDTH);
    sceGuDispBuffer(SCEGU_SCR_WIDTH, SCEGU_SCR_HEIGHT, (void*)0x88000, SCEGU_VRAM_WIDTH);
-   sceGuClear(GU_COLOR_BUFFER_BIT);
-
-   sceGuOffset(2048 - (SCEGU_SCR_WIDTH / 2), 2048 - (SCEGU_SCR_HEIGHT / 2));
-   sceGuViewport(2048, 2048, SCEGU_SCR_WIDTH, SCEGU_SCR_HEIGHT);
-
+   sceGuClearColor(GU_COLOR(0.0f,0.0f,1.0f,1.0f));
    sceGuScissor(0, 0, SCEGU_SCR_WIDTH, SCEGU_SCR_HEIGHT);
    sceGuEnable(GU_SCISSOR_TEST);
    sceGuTexMode(psp->rgb32 ? GU_PSM_8888 : GU_PSM_5650, 0, 0, GU_FALSE);
    sceGuTexFunc(GU_TFX_REPLACE, GU_TCC_RGBA);
-   sceGuTexFilter(GU_LINEAR, GU_LINEAR);
+   sceGuTexFilter(GU_LINEAR, GU_LINEAR);      
+   sceGuTexWrap ( GU_CLAMP,GU_CLAMP );
    sceGuEnable(GU_TEXTURE_2D);
-
-   sceGuFrontFace(GU_CW);
    sceGuDisable(GU_BLEND);
-
+   sceGuDisable (GU_DEPTH_TEST); 
    sceGuFinish();
    sceGuSync(0, 0);
-
+    
    sceDisplayWaitVblankStart();
+   
    sceGuDisplay(GU_TRUE);
 
-   psp->rgb32 = video->rgb32;
 }
 
 static void *psp_init(const video_info_t *video,
@@ -125,28 +130,36 @@ static bool psp_frame(void *data, const void *frame,
    (void)height;
    (void)pitch;
    (void)msg;
+	
    psp1_video_t *psp = (psp1_video_t*)data;
+   pitch= pitch/(psp->rgb32 ? 4 : 2);
 
    if(!frame)
       return true;
 
-   sceKernelDcacheWritebackInvalidateAll(); 
-
    sceGuStart(GU_DIRECT, list);
-
-   sceGumMatrixMode(GU_PROJECTION);
-   sceGumLoadIdentity();
-   sceGumPerspective(75.0f,16.0f/9.0f,0.5f,1000.0f);
-
-   sceGumMatrixMode(GU_VIEW);
-   sceGumLoadIdentity();
-
-   sceGuClearColor(GU_COLOR(0.0f,0.0f,0.0f,1.0f));
-   sceGuClearDepth(0);
-   sceGuCopyImage(psp->rgb32 ?GU_PSM_8888:GU_PSM_5650,0,0,width,height,pitch / (psp->rgb32 ? 4 : 2),(void*)frame,0,0,512,(void*)0x44088000);
+   sceGuClear(GU_COLOR_BUFFER_BIT);
+   psp1_vertex_t* v = sceGuGetMemory(2*sizeof(psp1_vertex_t));
+   
+   v[0].x=(SCEGU_SCR_WIDTH-width*SCEGU_SCR_HEIGHT/height)/2;
+   v[0].y=0;   
+   v[0].u=2;
+   v[0].v=0;   
+   
+   v[1].x=(SCEGU_SCR_WIDTH+width*SCEGU_SCR_HEIGHT/height)/2;
+   v[1].y=(SCEGU_SCR_HEIGHT);
+   v[1].u=width+2;
+   v[1].v=height;
+   
+   sceKernelDcacheWritebackInvalidateAll(); 
+   //could be unsafe , TODO: replace with sceGuTexImage(0,next_POT(width),next_POT(height),pitch,frame);       
+   sceGuTexImage(0,pitch,pitch,pitch,frame);
+   
+   sceGuDrawArray(GU_SPRITES,GU_TEXTURE_16BIT|GU_COLOR_5650|GU_VERTEX_16BIT|GU_TRANSFORM_2D,2,NULL,v);
    sceGuFinish(); 
+   sceGuSync(0,0);
    sceDisplayWaitVblankStart();
-   void *frame_ptr = (void*)&frame;
+   sceGuSwapBuffers();
    return true;
 }
 
