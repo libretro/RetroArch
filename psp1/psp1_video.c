@@ -138,68 +138,73 @@ error:
    return (void*)-1;
 }
 
+#define RGB565_GREEN_MASK 0x7E0
+#define RGB565_BLUE_MASK  0x1F
+
 static bool psp_frame(void *data, const void *frame,
       unsigned width, unsigned height, unsigned pitch, const char *msg)
 {
-   (void)width;
-   (void)height;
-   (void)pitch;
-   (void)msg;
+   void *g_texture;
+   psp1_vertex_t *v;
 	int x,y;
+   (void)msg;
 	
    psp1_video_t *psp = (psp1_video_t*)data;
   
-
    if(!frame)
       return true;
    
-   void* g_texture = (void*) (0x44110000); // video memory after draw+display buffers
-   if (psp->rgb32){
-      pitch/=4;
-      u32* out_p=(u32*)g_texture ; 
-      u32* in_p=(u32*)frame; 
-      for ( y=0;y<height;y++ ){
-         for ( x=0;x<width;x++ ){
-            *out_p=((*in_p)&0xFF00FF00)|(((*in_p)&0xFF)<<16)|(((*in_p)&0xFF0000)>>16);
+   g_texture = (void*)0x44110000; // video memory after draw+display buffers
+   if (psp->rgb32)
+   {
+      pitch /= 4;
+      u32 *out_p = (u32*)g_texture; 
+      u32 *in_p  = (u32*)frame; 
+      for(y = 0; y < height; y++)
+      {
+         for (x = 0; x < width; x++)
+         {
+            *out_p++ =((*in_p)&0xFF00FF00)|(((*in_p)&0xFF)<<16)|(((*in_p)&0xFF0000)>>16);
             in_p++;
-            out_p++;
          }
-         in_p+=pitch-width;
-     }
-   }else{
-      pitch/=2;
-      u16* out_p=(u16*)g_texture;
-      u16* in_p=(u16*)frame; 
-      for ( y=0;y<height;y++ ){
-         for ( x=0;x<width;x++ ){
-            *out_p=((*in_p)&0x7E0)|(((*in_p)&0x1F)<<11)|((*in_p)>>11);
+         in_p += pitch-width;
+      }
+   }
+   else
+   {
+      pitch /= 2;
+      u16 *out_p = (u16*)g_texture;
+      u16 *in_p  = (u16*)frame; 
+      for (y = 0; y < height; y++)
+      {
+         for (x = 0;x < width; x++)
+         {
+            *out_p++ =((*in_p) & RGB565_GREEN_MASK)|(((*in_p) & RGB565_BLUE_MASK) << 11) | ((*in_p)>>11);
             in_p++;
-            out_p++;
          }
-         in_p+=pitch-width;
+         in_p += pitch-width;
      }
-      
    }
    
    sceGuStart(GU_DIRECT, list);
    sceGuClear(GU_COLOR_BUFFER_BIT);
-   psp1_vertex_t* v = sceGuGetMemory(2*sizeof(psp1_vertex_t));
+   v = (psp1_vertex_t*)sceGuGetMemory(2*sizeof(psp1_vertex_t));
    
-   v[0].x=(SCEGU_SCR_WIDTH-width*SCEGU_SCR_HEIGHT/height)/2;
-   v[0].y=0;   
-   v[0].u=0;
-   v[0].v=0;   
+   v[0].x = (SCEGU_SCR_WIDTH - width * SCEGU_SCR_HEIGHT / height) / 2;
+   v[0].y = 0;   
+   v[0].u = 0;
+   v[0].v = 0;   
    
-   v[1].x=(SCEGU_SCR_WIDTH+width*SCEGU_SCR_HEIGHT/height)/2;
-   v[1].y=(SCEGU_SCR_HEIGHT);
-   v[1].u=width;
-   v[1].v=height;
+   v[1].x = (SCEGU_SCR_WIDTH + width * SCEGU_SCR_HEIGHT / height) / 2;
+   v[1].y = SCEGU_SCR_HEIGHT;
+   v[1].u = width;
+   v[1].v = height;
    
-   sceGuTexImage(0,256,256,width,g_texture);
+   sceGuTexImage(0, 256, 256, width, g_texture);
    
-   sceGuDrawArray(GU_SPRITES,GU_TEXTURE_16BIT|GU_COLOR_5650|GU_VERTEX_16BIT|GU_TRANSFORM_2D,2,NULL,v);
+   sceGuDrawArray(GU_SPRITES, GU_TEXTURE_16BIT | GU_COLOR_5650 | GU_VERTEX_16BIT | GU_TRANSFORM_2D, 2, NULL, v);
    sceGuFinish(); 
-   sceGuSync(0,0);
+   sceGuSync(0, 0);
    sceDisplayWaitVblankStart();
    sceGuSwapBuffers();
    return true;
