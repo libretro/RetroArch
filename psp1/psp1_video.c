@@ -61,6 +61,13 @@ typedef struct psp1_video
    bool rgui_rgb32;
 } psp1_video_t;
 
+static struct
+{
+   const void *frame;
+   unsigned width;
+   unsigned height;
+} rgui_texture;
+
 typedef struct psp1_vertex
 {
    u16 u,v;
@@ -81,7 +88,7 @@ static void init_texture(void *data, void *frame, unsigned width, unsigned heigh
 
    sceGuDrawBuffer(rgb32 ? GU_PSM_8888 : GU_PSM_5650, (void*)0, SCEGU_VRAM_WIDTH);
    sceGuDispBuffer(width, height, frame, SCEGU_VRAM_WIDTH);
-   sceGuClearColor(GU_COLOR(0.0f,0.0f,1.0f,1.0f));
+   sceGuClearColor(GU_COLOR(0.0f,0.0f,0.0f,1.0f));
    sceGuScissor(0, 0, width, height);
    sceGuEnable(GU_SCISSOR_TEST);
    sceGuTexMode(rgb32 ? GU_PSM_8888 : GU_PSM_5650, 0, 0, GU_FALSE);
@@ -98,6 +105,7 @@ static void init_texture(void *data, void *frame, unsigned width, unsigned heigh
    
    sceGuDisplay(GU_TRUE);
 
+   rgui_texture.frame = NULL;
 }
 
 static void *psp_init(const video_info_t *video,
@@ -158,6 +166,21 @@ static bool psp_frame(void *data, const void *frame,
    psp1_video_t *psp = (psp1_video_t*)data;
   
    /* Check if neither RGUI nor emulator framebuffer is to be displayed. */
+   if(psp->rgui_active)
+   {
+      sceKernelDcacheWritebackInvalidateAll();
+      void* frameBuffer;
+      int bufferWidth,pixelFormat;
+      sceDisplayGetFrameBuf(&frameBuffer, &bufferWidth, &pixelFormat, 0);
+      sceGuStart(GU_DIRECT, list);
+      sceGuClear(GU_COLOR_BUFFER_BIT);
+      sceGuCopyImage(GU_PSM_5650,0,0,rgui_texture.width, rgui_texture.width,rgui_texture.width, rgui_texture.frame,
+            (SCEGU_SCR_WIDTH-rgui_texture.width)/2,(SCEGU_SCR_HEIGHT-rgui_texture.height)/2,SCEGU_VRAM_WIDTH,frameBuffer);
+      sceGuFinish();
+      sceDisplayWaitVblankStart();
+      return true;
+   }
+   
    if (frame == NULL)
       return true;
    
@@ -259,7 +282,9 @@ static void psp_set_texture_frame(void *data, const void *frame, bool rgb32,
    psp->rgui_rgb32 = rgb32;
    psp->rgui_alpha = alpha;
 
-   /* TODO */
+   rgui_texture.width  = width;
+   rgui_texture.height = height;
+   rgui_texture.frame  = frame;
 }
 
 static void psp_set_texture_enable(void *data, bool state, bool full_screen)
