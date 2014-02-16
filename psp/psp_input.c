@@ -120,6 +120,11 @@ static void psp_input_poll(void *data)
    psp->pad_state |= (STATE_ANALOGRY(state_tmp) > ANALOGSTICK_DEADZONE_HIGH) ? PSP_GAMEPAD_RSTICK_DOWN_MASK : 0;
 #endif
 #endif
+   if (g_settings.input.autodetect_enable)
+   {
+      if (strcmp(g_settings.input.device_names[port], "PSP") != 0)
+         psp_input_set_keybinds(NULL, DEVICE_PSP, port, 0, (1ULL << KEYBINDS_ACTION_SET_DEFAULT_BINDS));
+   }
 }
 
 static bool psp_menu_input_state(uint64_t joykey, uint64_t state)
