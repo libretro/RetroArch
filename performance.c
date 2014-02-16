@@ -380,6 +380,9 @@ uint64_t rarch_get_cpu_features(void)
 #elif defined(XBOX360)
    cpu |= RETRO_SIMD_VMX128;
    RARCH_LOG("[CPUID]: VMX128: %u\n", !!(cpu & RETRO_SIMD_VMX128));
+#elif defined(PSP)
+   cpu |= RETRO_SIMD_VFPU;
+   RARCH_LOG("[CPUID]: VFPU: %u\n", !!(cpu & RETRO_SIMD_VFPU));
 #endif
 
    return cpu;
