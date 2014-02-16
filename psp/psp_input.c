@@ -128,10 +128,7 @@ static void psp_input_poll(void *data)
          && (psp->pad_state & (1ULL << RETRO_DEVICE_ID_JOYPAD_SELECT))
          && (psp->pad_state & (1ULL << RETRO_DEVICE_ID_JOYPAD_START))
          )
-   {
       *lifecycle_state |= (1ULL << RARCH_MENU_TOGGLE);
-      RARCH_LOG("Pressed note.\n");
-   }
 
    if (g_settings.input.autodetect_enable)
    {
