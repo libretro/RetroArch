@@ -107,7 +107,7 @@ static int psp_process_args(int argc, char *argv[], void *args)
    (void)argc;
    (void)argv;
    (void)args;
-#if 1
+#if 0
    char path[256];
    snprintf(path, sizeof(path), "%s%s", default_paths.port_dir, "zelda.gb");
    
