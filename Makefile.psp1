@@ -34,7 +34,5 @@ PSP_OBJECTS = griffin/griffin.o
 
 OBJS = $(PSP_OBJECTS)
 
-griffin/griffin.o: psp1/psp1_video.c psp1/psp1_audio.c frontend/platform/platform_psp.c
-
 PSPSDK=$(shell psp-config --pspsdk-path)
 include $(PSPSDK)/lib/build.mak
