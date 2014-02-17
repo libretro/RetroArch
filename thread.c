@@ -331,6 +331,11 @@ bool scond_wait_timeout(scond_t *cond, slock_t *lock, int64_t timeout_us)
    sys_time_get_current_time(&s, &n);
    now.tv_sec  = s;
    now.tv_nsec = n;
+#elif defined(__mips__)
+   struct timeval tm;
+   gettimeofday(&tm, NULL);
+   now.tv_sec = tm.tv_sec;
+   now.tv_nsec = tm.tv_usec * 1000;
 #elif !defined(GEKKO) // timeout on libogc is duration, not end time
    clock_gettime(CLOCK_REALTIME, &now);
 #endif

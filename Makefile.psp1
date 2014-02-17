@@ -1,7 +1,7 @@
-RARCH_VERSION		= "0.9.9.3"
 BUILD_PRX			= 1
 DEBUG			      = 0
 HAVE_FILE_LOGGER	= 0
+HAVE_THREADS 		= 1
 
 TARGET = retroarchpsp
 
@@ -11,11 +11,20 @@ else
    OPTIMIZE_LV	:= -O2 -g
 endif
 
-INCDIR = 
+INCDIR = $(PSPPATH)/include
 CFLAGS = $(OPTIMIZE_LV) -G0 -std=gnu99 -ffast-math
 ASFLAGS = $(CFLAGS)
 
 RARCH_DEFINES = -DPSP -DHAVE_LIBRETRO_MANAGEMENT -DHAVE_ZLIB -DWANT_MINIZ -DHAVE_GRIFFIN=1 -DRARCH_INTERNAL -DRARCH_CONSOLE -DHAVE_MENU -DHAVE_RGUI -DWANT_RPNG -DSINC_LOWEST_QUALITY
+
+LIBDIR =
+LDFLAGS =
+LIBS = -lretro_psp1 -lstdc++ -lpspgu -lpspgum -lm -lpspaudio -lpspfpu 
+
+ifeq ($(HAVE_THREADS), 1)
+RARCH_DEFINES += -DHAVE_THREADS
+LIBS += -lpthread-psp
+endif
 
 ifeq ($(HAVE_FILE_LOGGER), 1)
 CFLAGS		+= -DHAVE_FILE_LOGGER
@@ -23,9 +32,6 @@ endif
 
 CFLAGS += $(RARCH_DEFINES)
 
-LIBDIR =
-LDFLAGS =
-LIBS = -lretro_psp1 -lstdc++ -lpspgu -lpspgum -lm -lpspaudio -lpspfpu
 
 EXTRA_TARGETS = EBOOT.PBP
 PSP_EBOOT_TITLE = RetroArch PSP1
