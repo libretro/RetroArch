@@ -494,14 +494,8 @@ static inline void rglGcmSetInlineTransfer(struct CellGcmContextData *thisContex
 
 static inline void rglGcmSetFragmentProgramLoad(struct CellGcmContextData *thisContext, const CellCgbFragmentProgramConfiguration *conf, const uint32_t location)
 {
-   uint32_t rawData = ((conf->offset)&0x1fffffff);
-   uint32_t shCtrl0;
-   uint32_t registerCount;
-   uint32_t texMask;
-   uint32_t inMask;
-   uint32_t texMask2D;
-   uint32_t texMaskCentroid;
-   uint32_t i;
+   uint32_t rawData, shCtrl0, registerCount, texMask, inMask, texMask2D, texMaskCentroid, i;
+   rawData = ((conf->offset) & 0x1fffffff);
 
    (thisContext->current)[0] = (((1) << (18)) | CELL_GCM_NV4097_SET_SHADER_PROGRAM);
    (thisContext->current)[1] = ((location+1) | (rawData));
@@ -512,7 +506,6 @@ static inline void rglGcmSetFragmentProgramLoad(struct CellGcmContextData *thisC
    (thisContext->current)[0] = (((1) << (18)) | CELL_GCM_NV4097_SET_VERTEX_ATTRIB_OUTPUT_MASK);
    (thisContext->current)[1] = (inMask);
    (thisContext->current) += 2;
-
 
    texMask = conf->texCoordsInputMask;
    texMask2D = conf->texCoords2D;
@@ -532,7 +525,6 @@ static inline void rglGcmSetFragmentProgramLoad(struct CellGcmContextData *thisC
       texMaskCentroid >>= 1;
    }
 
-
    registerCount = conf->registerCount;
 
    if (registerCount < 2)
@@ -547,13 +539,12 @@ static inline void rglGcmSetFragmentProgramLoad(struct CellGcmContextData *thisC
 static void rglGcmSetDrawArraysSlow(struct CellGcmContextData *thisContext, uint8_t mode,
       uint32_t first, uint32_t count)
 {
-   uint32_t lcount;
+   uint32_t lcount, i,j, loop, rest;
 
    --count;
    lcount = count & 0xff;
    count >>= 8;
 
-   uint32_t loop, rest;
    loop = count / CELL_GCM_MAX_METHOD_COUNT;
    rest = count % CELL_GCM_MAX_METHOD_COUNT;
 
@@ -571,8 +562,6 @@ static void rglGcmSetDrawArraysSlow(struct CellGcmContextData *thisContext, uint
    (thisContext->current)[1] = ((first) | ((lcount)<<24));
    (thisContext->current) += 2;
    first += lcount + 1;
-
-   uint32_t i,j;
 
    for(i=0;i<loop;i++)
    {
@@ -635,15 +624,12 @@ static inline void rglGcmSetDrawArrays(struct CellGcmContextData *thisContext, u
 
 static inline void rglGcmSetVertexProgramLoad(struct CellGcmContextData *thisContext, const CellCgbVertexProgramConfiguration *conf, const void *ucode)
 {
-   const uint32_t *rawData;
-   uint32_t instCount;
-   uint32_t instIndex;
+   uint32_t *rawData, instCount, instIndex, loop, rest, i, j;
 
-   rawData = (const uint32_t*)ucode;
+   rawData = (uint32_t*)ucode;
    instCount = conf->instructionCount;
    instIndex = conf->instructionSlot;
 
-   uint32_t loop, rest;
    loop = instCount / 8;
    rest = (instCount % 8) * 4;
 
@@ -651,8 +637,6 @@ static inline void rglGcmSetVertexProgramLoad(struct CellGcmContextData *thisCon
    (thisContext->current)[1] = (instIndex);
    (thisContext->current)[2] = (instIndex);
    (thisContext->current) += 3;
-
-   uint32_t i, j;
 
    for (i = 0; i < loop; i++)
    {
@@ -672,7 +656,6 @@ static inline void rglGcmSetVertexProgramLoad(struct CellGcmContextData *thisCon
       thisContext->current += (1 + rest);
    }
 
-
    (thisContext->current)[0] = (((1) << (18)) | CELL_GCM_NV4097_SET_VERTEX_ATTRIB_INPUT_MASK);
    (thisContext->current)[1] = ((conf->attributeInputMask));
    (thisContext->current) += 2;
@@ -688,13 +671,18 @@ static inline void rglGcmSetVertexProgramLoad(struct CellGcmContextData *thisCon
 
 static inline void rglGcmFifoGlViewport(void *data, GLclampf zNear, GLclampf zFar)
 {
-   CellGcmContextData *thisContext = (CellGcmContextData*)gCellGcmCurrentContext;
-   rglGcmViewportState *vp = (rglGcmViewportState*)data;
-   rglGcmRenderTarget *rt = &rglGcmState_i.renderTarget;
+   GLint clipY0, clipY1, clipX0, clipX1;
+   GLfloat z_scale, z_center;
+   rglGcmViewportState *vp;
+   rglGcmRenderTarget *rt;
+   CellGcmContextData *thisContext;
 
-   GLint clipY0, clipY1;
-   GLint clipX0 = vp->x;
-   GLint clipX1 = vp->x + vp->w;
+   thisContext = (CellGcmContextData*)gCellGcmCurrentContext;
+   vp = (rglGcmViewportState*)data;
+   rt = (rglGcmRenderTarget*)&rglGcmState_i.renderTarget;
+
+   clipX0 = vp->x;
+   clipX1 = vp->x + vp->w;
 
    if (rt->yInverted)
    {
@@ -737,8 +725,8 @@ static inline void rglGcmFifoGlViewport(void *data, GLclampf zNear, GLclampf zFa
    }
 
    // compute viewport values for hw [no doubles, so we might loose a few lsb]
-   GLfloat z_scale = ( GLfloat )( 0.5f * ( zFar - zNear ) );
-   GLfloat z_center = ( GLfloat )( 0.5f * ( zFar + zNear ) );
+   z_scale = (GLfloat)( 0.5f * ( zFar - zNear ) );
+   z_center = (GLfloat)( 0.5f * ( zFar + zNear ) );
 
    // hw zNear/zFar clipper
    if (zNear > zFar)
@@ -795,18 +783,19 @@ static inline void rglGcmSetTransferImage(struct CellGcmContextData *thisContext
 
    for (y = dstY; y < finalDstY;)
    {
-      uint32_t dstTop = y & ~(BLOCKSIZE_MAX_DIMENSIONS - 1);
-      uint32_t dstBltHeight = (( (dstTop + BLOCKSIZE_MAX_DIMENSIONS) < finalDstY)
-            ? (dstTop + BLOCKSIZE_MAX_DIMENSIONS) : finalDstY) - y;
+      uint32_t dstTop, dstBltHeight;
+      dstTop = y & ~(BLOCKSIZE_MAX_DIMENSIONS - 1);
+      dstBltHeight = (( (dstTop + BLOCKSIZE_MAX_DIMENSIONS) < finalDstY) ? (dstTop + BLOCKSIZE_MAX_DIMENSIONS) : finalDstY) - y;
 
       for (x = dstX; x < finalDstX;)
       {
-         uint32_t dstLeft = x & ~(BLOCKSIZE_MAX_DIMENSIONS - 1);
-         uint32_t dstRight = dstLeft + BLOCKSIZE_MAX_DIMENSIONS;
-         uint32_t dstBltWidth = ((dstRight < finalDstX) ? dstRight : finalDstX) - x;
-         uint32_t dstBlockOffset = bytesPerPixel * (dstLeft & ~(BLOCKSIZE_MAX_DIMENSIONS - 1)) + dstPitch * dstTop;
-         uint32_t srcBlockOffset = bytesPerPixel * (srcX + x-dstX) + srcPitch * (srcY + y-dstY);
-         uint32_t safeDstBltWidth = (dstBltWidth < 16) ? 16 : (dstBltWidth + 1) & ~1;
+         uint32_t dstLeft, dstRight, dstBltWidth, dstBlockOffset, srcBlockOffset, safeDstBltWidth;
+         dstLeft = x & ~(BLOCKSIZE_MAX_DIMENSIONS - 1);
+         dstRight = dstLeft + BLOCKSIZE_MAX_DIMENSIONS;
+         dstBltWidth = ((dstRight < finalDstX) ? dstRight : finalDstX) - x;
+         dstBlockOffset = bytesPerPixel * (dstLeft & ~(BLOCKSIZE_MAX_DIMENSIONS - 1)) + dstPitch * dstTop;
+         srcBlockOffset = bytesPerPixel * (srcX + x-dstX) + srcPitch * (srcY + y-dstY);
+         safeDstBltWidth = (dstBltWidth < 16) ? 16 : (dstBltWidth + 1) & ~1;
 
          (thisContext->current)[0] = (((1) << (18)) | CELL_GCM_NV3062_SET_OFFSET_DESTIN);
          (thisContext->current)[1] = dstOffset + dstBlockOffset;
@@ -918,12 +907,14 @@ static inline GLuint RGLGCM_QUICK_FLOAT2UINT (const GLfloat f)
 }
 
 // construct a packed unsigned int ARGB8 color
-static inline void RGLGCM_CALC_COLOR_LE_ARGB8( GLuint *color0, const GLfloat r, const GLfloat g, const GLfloat b, const GLfloat a )
+static inline void RGLGCM_CALC_COLOR_LE_ARGB8( GLuint *color0, const GLfloat r,
+      const GLfloat g, const GLfloat b, const GLfloat a )
 {
-   GLuint r2 = RGLGCM_QUICK_FLOAT2UINT( r * 255.0f );
-   GLuint g2 = RGLGCM_QUICK_FLOAT2UINT( g * 255.0f );
-   GLuint b2 = RGLGCM_QUICK_FLOAT2UINT( b * 255.0f );
-   GLuint a2 = RGLGCM_QUICK_FLOAT2UINT( a * 255.0f );
+   GLuint r2, g2, b2, a2;
+   r2 = RGLGCM_QUICK_FLOAT2UINT( r * 255.0f );
+   g2 = RGLGCM_QUICK_FLOAT2UINT( g * 255.0f );
+   b2 = RGLGCM_QUICK_FLOAT2UINT( b * 255.0f );
+   a2 = RGLGCM_QUICK_FLOAT2UINT( a * 255.0f );
    *color0 = ( a2 << 24 ) | ( r2 << 16 ) | ( g2 << 8 ) | ( b2 << 0 );
 }
 
@@ -1000,7 +991,7 @@ static inline void rglGcmTransferData
 {
    uint32_t colCount, rows, cols;
    GLuint dstOffset, srcOffset;
-   struct CellGcmContextData *thisContext = gCellGcmCurrentContext;
+   struct CellGcmContextData *thisContext = (struct CellGcmContextData*)gCellGcmCurrentContext;
 
    dstOffset = gmmIdToOffset(dstId) + dstIdOffset;
    srcOffset = gmmIdToOffset(srcId) + srcIdOffset;

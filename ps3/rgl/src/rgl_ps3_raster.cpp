@@ -22,8 +22,6 @@
 #include <string.h>
 #include <math.h>
 
-using namespace cell::Gcm;
-
 /*============================================================
   MEMORY MANAGER
   ============================================================ */
@@ -37,20 +35,20 @@ using namespace cell::Gcm;
 int _parameterAlloc = 0;
 int _ucodeAlloc = 0;
 
-int rglGetTypeResource( _CGprogram* program, unsigned short typeIndex, short *resourceIndex );
-int rglGetTypeResourceID( _CGprogram* program, unsigned short typeIndex );
-int rglGetTypeResourceRegisterCountVP( _CGprogram* program, short resourceIndex, int resourceCount, unsigned short *resource );
+int rglGetTypeResource( _CGprogram* program, uint16_t typeIndex, int16_t *resourceIndex );
+int rglGetTypeResourceID( _CGprogram* program, uint16_t typeIndex );
+int rglGetTypeResourceRegisterCountVP( _CGprogram* program, int16_t resourceIndex, int resourceCount, uint16_t *resource );
 
-static void setAttribConstantIndex (void *data, const void* __restrict v, const int ) // index
+static void setAttribConstantIndex (void *data, const void* v, const int ) // index
 {
    CgRuntimeParameter *ptr = (CgRuntimeParameter*)data;
-   _CGprogram *program = ptr->program;
+   _CGprogram *program = (_CGprogram*)ptr->program;
    const CgParameterResource *parameterResource = rglGetParameterResource( program, ptr->parameterEntry );
    GLuint index = parameterResource->resource - CG_ATTR0;
    float * f = ( float* ) v;
-   RGLcontext*	LContext = _CurrentContext;
+   RGLcontext*	LContext = (RGLcontext*)_CurrentContext;
 
-   rglAttribute* attrib = LContext->attribs->attrib + index;
+   rglAttribute* attrib = (rglAttribute*)LContext->attribs->attrib + index;
    attrib->value[0] = f[0];
    attrib->value[1] = f[1];
    attrib->value[2] = f[2];
@@ -62,8 +60,8 @@ static void setAttribConstantIndex (void *data, const void* __restrict v, const 
 #define swapandsetfp(SIZE, ucodeSize, loadProgramId, loadProgramOffset, ec, v) \
    CellGcmContextData *thisContext = (CellGcmContextData*)gCellGcmCurrentContext; \
    rglGcmSetTransferLocation(thisContext, CELL_GCM_LOCATION_LOCAL ); \
-   unsigned short count = *( ec++ ); \
-   for ( unsigned long offsetIndex = 0; offsetIndex < count; ++offsetIndex ) \
+   uint16_t count = *( ec++ ); \
+   for ( uint32_t offsetIndex = 0; offsetIndex < count; ++offsetIndex ) \
    { \
       void *pointer=NULL; \
       const int paddedSIZE = (SIZE + 1) & ~1; /* even width only */ \
@@ -79,18 +77,18 @@ static void setAttribConstantIndex (void *data, const void* __restrict v, const 
       } \
    }
 
-template<int SIZE> static void setVectorTypefp( void *dat, const void* __restrict v )
+template<int SIZE> static void setVectorTypefp( void *dat, const void* v)
 {
    CgRuntimeParameter *ptr = (CgRuntimeParameter*)dat;
-   float * __restrict  f = ( float* )v;
-   float * __restrict  data = ( float* )ptr->pushBufferPointer;/*(float*)ptr->offset*;*/
-   for ( long i = 0; i < SIZE; ++i ) //TODO: ced: find out if this loop for the get or for the reset in a future use of the same shader or just for the alignment???
+   float *f = ( float* )v;
+   float *data = ( float* )ptr->pushBufferPointer;/*(float*)ptr->offset*;*/
+   for (int i = 0; i < SIZE; ++i ) //TODO: ced: find out if this loop for the get or for the reset in a future use of the same shader or just for the alignment???
       data[i] = f[i];
    _CGprogram *program = ptr->program;
 
    CgParameterResource *parameterResource = rglGetParameterResource( ptr->program, ptr->parameterEntry );
-   unsigned short resource = parameterResource->resource;
-   unsigned short *ec = ( unsigned short * )( ptr->program->resources ) + resource + 1;//+1 to skip the register
+   uint16_t resource = parameterResource->resource;
+   uint16_t *ec = ( uint16_t * )( ptr->program->resources ) + resource + 1;//+1 to skip the register
    if ( RGL_LIKELY( *ec ) )
    {
       swapandsetfp(SIZE, (program->header.instructionCount*16), program->loadProgramId, program->loadProgramOffset, ec, data);
@@ -106,18 +104,18 @@ template<int SIZE> static void setVectorTypefp( void *dat, const void* __restric
 #define ROW_MAJOR 0
 #define COL_MAJOR 1
 
-template <int SIZE, bool isIndex> static void setVectorTypevpIndex (void *data, const void* __restrict v, const int index )
+template <int SIZE, bool isIndex> static void setVectorTypevpIndex (void *data, const void*v, const int index )
 {
    CgRuntimeParameter *ptr = (CgRuntimeParameter*)data;
    RGLcontext * LContext = _CurrentContext;
-   const float * __restrict f = ( const float* )v;
-   float * __restrict dst;
+   const float *f = ( const float* )v;
+   float *dst;
    if (isIndex)
       dst = ( float* )( *(( unsigned int ** )ptr->pushBufferPointer + index ) );
    else
       dst = ( float* )ptr->pushBufferPointer;
 
-   for ( long i = 0; i < SIZE; ++ i )
+   for ( int i = 0; i < SIZE; ++ i )
       dst[i] = f[i];
    LContext->needValidate |= RGL_VALIDATE_VERTEX_CONSTANTS;
 }
@@ -125,15 +123,15 @@ template <int SIZE, bool isIndex> static void setVectorTypevpIndex (void *data, 
 template<int SIZE, bool isIndex> static void setVectorTypefpIndex (void *dat, const void *v, const int index)
 {
    CgRuntimeParameter *ptr = (CgRuntimeParameter*)dat;
-   float * __restrict  f = (float*)v;
-   float * __restrict  data = (float*)ptr->pushBufferPointer;/*(float*)ptr->offset*;*/
-   for ( long i = 0; i < SIZE; ++i ) //TODO: ced: find out if this loop for the get or for the reset in a future use of the same shader or just for the alignment???
+   float * f = (float*)v;
+   float * data = (float*)ptr->pushBufferPointer;/*(float*)ptr->offset*;*/
+   for ( int i = 0; i < SIZE; ++i ) //TODO: ced: find out if this loop for the get or for the reset in a future use of the same shader or just for the alignment???
       data[i] = f[i];
    _CGprogram *program = ptr->program;
 
    const CgParameterResource *parameterResource = rglGetParameterResource( program, ptr->parameterEntry );
-   unsigned short resource = parameterResource->resource;
-   unsigned short *ec = ( unsigned short * )( ptr->program->resources ) + resource + 1;
+   uint16_t resource = parameterResource->resource;
+   uint16_t *ec = ( uint16_t * )( ptr->program->resources ) + resource + 1;
    if (isIndex)
    {
       int arrayIndex = index;
@@ -150,43 +148,43 @@ template<int SIZE, bool isIndex> static void setVectorTypefpIndex (void *dat, co
 }
 
 //matrices
-template <int ROWS, int COLS, int ORDER> static void setMatrixvpIndex (void *data, const void* __restrict v, const int index )
+template <int ROWS, int COLS, int ORDER> static void setMatrixvpIndex (void *data, const void* v, const int index )
 {
    CgRuntimeParameter *ptr = (CgRuntimeParameter*)data;
    RGLcontext * LContext = _CurrentContext;
-   float *  __restrict f = ( float* )v;
-   float *  __restrict dst = ( float* )ptr->pushBufferPointer;
-   for ( long row = 0; row < ROWS; ++row )
+   float *f = ( float* )v;
+   float *dst = ( float* )ptr->pushBufferPointer;
+   for ( int row = 0; row < ROWS; ++row )
    {
-      for ( long col = 0; col < COLS; ++col )
+      for ( int col = 0; col < COLS; ++col )
          dst[row * 4 + col] = ( ORDER == ROW_MAJOR ) ? f[row * COLS + col] : f[col * ROWS + row];
    }
    LContext->needValidate |= RGL_VALIDATE_VERTEX_CONSTANTS;
 }
 
-template <int ROWS, int COLS, int ORDER> static void setMatrixvpIndexArray (void *data, const void* __restrict v, const int index )
+template <int ROWS, int COLS, int ORDER> static void setMatrixvpIndexArray (void *data, const void* v, const int index )
 {
    CgRuntimeParameter *ptr = (CgRuntimeParameter*)data;
-   RGLcontext * LContext = _CurrentContext;
-   float *  __restrict f = ( float* )v;
-   float *  __restrict dst = ( float* )( *(( unsigned int ** )ptr->pushBufferPointer + index ) );
-   for ( long row = 0; row < ROWS; ++row )
+   RGLcontext *LContext = (RGLcontext*)_CurrentContext;
+   float *f = (float*)v;
+   float *dst = (float*)( *(( unsigned int ** )ptr->pushBufferPointer + index ) );
+   for ( int row = 0; row < ROWS; ++row )
    {
-      for ( long col = 0; col < COLS; ++col )
+      for ( int col = 0; col < COLS; ++col )
          dst[row * 4 + col] = ( ORDER == ROW_MAJOR ) ? f[row * COLS + col] : f[col * ROWS + row];
    }
    LContext->needValidate |= RGL_VALIDATE_VERTEX_CONSTANTS;
 }
 
-template <int ROWS, int COLS, int ORDER> static void setMatrixfpIndex (void *data, const void* __restrict v, const int /*index*/ )
+template <int ROWS, int COLS, int ORDER> static void setMatrixfpIndex (void *data, const void* v, const int /*index*/ )
 {
    CgRuntimeParameter *ptr = (CgRuntimeParameter*)data;
-   float *  __restrict f = ( float* )v;
-   float *  __restrict dst = ( float* )ptr->pushBufferPointer;
+   float *f = (float*)v;
+   float *dst = (float*)ptr->pushBufferPointer;
    _CGprogram *program = (( CgRuntimeParameter* )ptr )->program;
    const CgParameterResource *parameterResource = rglGetParameterResource( program, ptr->parameterEntry );
-   unsigned short resource = parameterResource->resource;
-   unsigned short *ec = ( unsigned short * )program->resources + resource + 1; //+1 to skip the register
+   uint16_t resource = parameterResource->resource;
+   uint16_t *ec = ( uint16_t * )program->resources + resource + 1; //+1 to skip the register
    for ( long row = 0; row < ROWS; ++row )
    {
       for ( long col = 0; col < COLS; ++col )
@@ -194,26 +192,26 @@ template <int ROWS, int COLS, int ORDER> static void setMatrixfpIndex (void *dat
       int count = *ec;
       if ( RGL_LIKELY( count ) )
       {
-         const unsigned int   * __restrict v = ( unsigned int * )dst + row * 4;
+         const unsigned int *v = (unsigned int*)dst + row * 4;
          swapandsetfp(COLS, (program->header.instructionCount*16), program->loadProgramId, program->loadProgramOffset, ec, v);
       }
       ec += count + 2; //+1 for the register, +1 for the count, + count for the number of embedded consts
    }
 }
 
-template <int ROWS, int COLS, int ORDER> static void setMatrixfpIndexArray (void *data, const void* __restrict v, const int index )
+template <int ROWS, int COLS, int ORDER> static void setMatrixfpIndexArray (void *data, const void* v, const int index )
 {
    CgRuntimeParameter *ptr = (CgRuntimeParameter*)data;
-   float *  __restrict f = ( float* )v;
-   float *  __restrict dst = ( float* )ptr->pushBufferPointer;
+   float *f = (float*)v;
+   float *dst = (float*)ptr->pushBufferPointer;
    _CGprogram *program = ptr->program;
    const CgParameterResource *parameterResource = rglGetParameterResource( program, ptr->parameterEntry );
-   unsigned short resource = parameterResource->resource;
-   unsigned short *ec = ( unsigned short * )program->resources + resource + 1;//+1 to skip the register
+   uint16_t resource = parameterResource->resource;
+   uint16_t *ec = (uint16_t*)program->resources + resource + 1;//+1 to skip the register
    int arrayIndex = index * ROWS;
    while ( arrayIndex ) //jump to the right index... this is slow
    {
-      unsigned short count = ( *ec );
+      uint16_t count = ( *ec );
       ec += ( count + 2 ); //+1 for the register, +1 for the count, +count for the number of embedded consts
       arrayIndex--;
    }
@@ -224,7 +222,7 @@ template <int ROWS, int COLS, int ORDER> static void setMatrixfpIndexArray (void
       int count = *ec;
       if ( RGL_LIKELY( count ) )
       {
-         const unsigned int   * __restrict v = ( unsigned int * )dst + row * 4;
+         const unsigned int *v = ( unsigned int * )dst + row * 4;
          swapandsetfp(COLS, (program->header.instructionCount*16), program->loadProgramId, program->loadProgramOffset, ec, v);
       }
       ec += count + 2;//+1 for the register, +1 for the count, +count for the number of embedded consts
@@ -307,7 +305,7 @@ static void setSamplerfp (void *data, const void*v, int /* index */)
 {
    CgRuntimeParameter *ptr = (CgRuntimeParameter*)data;
    _CGprogram *program = (( CgRuntimeParameter* )ptr )->program;
-   const CgParameterResource *parameterResource = rglGetParameterResource( program, (( CgRuntimeParameter* )ptr )->parameterEntry );
+   const CgParameterResource *parameterResource = (const CgParameterResource*)rglGetParameterResource( program, (( CgRuntimeParameter* )ptr )->parameterEntry );
 
    // the value of v == NULL when it is called from cgGLEnableTextureParameter
    // the value of v == NULL when it is called from  cgGLSetTextureParameter
@@ -318,7 +316,7 @@ static void setSamplerfp (void *data, const void*v, int /* index */)
       *(GLuint*)ptr->pushBufferPointer = *(GLuint*)v;
    else
    {
-      rglTextureImageUnit *unit = _CurrentContext->TextureImageUnits + ( parameterResource->resource - CG_TEXUNIT0 );
+      rglTextureImageUnit *unit = (rglTextureImageUnit*)(_CurrentContext->TextureImageUnits + ( parameterResource->resource - CG_TEXUNIT0 ));
       rglBindTextureInternal( unit, *(GLuint*)ptr->pushBufferPointer, ptr->glType );
    }
 }
@@ -330,9 +328,11 @@ static void setSamplervp (void *data, const void*v, int /* index */)
    // this may be called by a connected param to propagate its value
    // the spec says that the set should not cause the bind
    // so only do the bind when the call comes from cgGLEnableTextureParameter
-   CgRuntimeParameter *ptr = (CgRuntimeParameter*)data;
    if (v)
+   {
+      CgRuntimeParameter *ptr = (CgRuntimeParameter*)data;
       *(GLuint*)ptr->pushBufferPointer = *( GLuint* )v;
+   }
 }
 
 
@@ -782,7 +782,7 @@ static void rglpsAllocateBuffer (void *data)
 GLboolean rglpCreateBufferObject (void *data)
 {
    rglBufferObject *bufferObject = (rglBufferObject*)data;
-   rglGcmBufferObject *rglBuffer = ( rglGcmBufferObject * )bufferObject->platformBufferObject;
+   rglGcmBufferObject *rglBuffer = (rglGcmBufferObject*)bufferObject->platformBufferObject;
 
    rglBuffer->pool = RGLGCM_SURFACE_POOL_NONE;
    rglBuffer->bufferId = GMM_ERROR;
@@ -917,7 +917,7 @@ char *rglPlatformBufferObjectMap (void *data, GLenum access)
 GLboolean rglPlatformBufferObjectUnmap (void *data)
 {
    rglBufferObject *bufferObject = (rglBufferObject*)data;
-   rglGcmBufferObject *rglBuffer = ( rglGcmBufferObject * )bufferObject->platformBufferObject;
+   rglGcmBufferObject *rglBuffer = (rglGcmBufferObject*)bufferObject->platformBufferObject;
    // can't unmap if not mapped
 
    if ( --rglBuffer->mapCount == 0 )
@@ -1023,7 +1023,7 @@ GLAPI void APIENTRY glClear( GLbitfield mask )
    RGLcontext*	LContext = _CurrentContext;
    rglGcmDriver *driver = (rglGcmDriver*)_CurrentDevice->rasterDriver;
    CellGcmContextData *thisContext = (CellGcmContextData*)gCellGcmCurrentContext;
-   rglGcmFifo * fifo = &rglGcmState_i.fifo;
+   rglGcmFifo * fifo = (rglGcmFifo*)&rglGcmState_i.fifo;
 
    if ( LContext->needValidate & RGL_VALIDATE_FRAMEBUFFER )
    {
@@ -1449,7 +1449,7 @@ GLAPI void APIENTRY glDrawArrays (GLenum mode, GLint first, GLsizei count)
 
             const CgParameterResource *parameterResource = rglGetParameterResource( program, parameterEntry );
 
-            GLboolean cond2 = parameterResource->resource != (unsigned short) - 1;
+            GLboolean cond2 = parameterResource->resource != (uint16_t) - 1;
 
             if (!cond2)
                continue;
@@ -1667,7 +1667,7 @@ beginning:
       return;
 
    // check for any writable mapped buffers
-   if ( driver->flushBufferCount != 0 )
+   if (driver->flushBufferCount)
       driver->invalidateVertexCache = GL_TRUE;
 
    GLuint gpuOffset = GMM_ERROR;
@@ -1720,7 +1720,7 @@ beginning:
                // don't transfer data that is not going to be used, from 0 to first*stride
                GLuint offset = ( dparams->firstVertex / freq ) * stride;
 
-               char * b = (char*)xferBuffer + dparams->attribXferOffset[i];
+               char *b = (char*)xferBuffer + dparams->attribXferOffset[i];
                memcpy(b + offset, (char*)attrib->clientData + offset,
                      dparams->attribXferSize[i] - offset);
 
@@ -1861,17 +1861,18 @@ beginning:
 GLboolean rglPlatformRequiresSlowPath (void *data, const GLenum indexType, uint32_t indexCount)
 {
    rglDrawParams *dparams = (rglDrawParams*)data;
-   RGLcontext* LContext = _CurrentContext;
-   rglAttributeState* as = LContext->attribs;
+   RGLcontext* LContext = (RGLcontext*)_CurrentContext;
+   rglAttributeState* as = (rglAttributeState*)LContext->attribs;
 
    // are any enabled attributes on the client-side?
    const GLuint clientSideMask = as->EnabledMask & ~as->HasVBOMask;
-   if ( RGL_UNLIKELY( clientSideMask ) )
+
+   if (RGL_UNLIKELY(clientSideMask))
    {
       // determine transfer buffer requirements for client-side attributes
       for ( int i = 0; i < RGL_MAX_VERTEX_ATTRIBS; ++i )
       {
-         if ( clientSideMask & ( 1 << i ) )
+         if (clientSideMask & (1 << i))
          {
             rglAttribute* attrib = as->attrib + i;
             const GLuint freq = attrib->frequency;
@@ -1903,15 +1904,14 @@ GLboolean rglPlatformRequiresSlowPath (void *data, const GLenum indexType, uint3
 // Calculate required size in bytes for given texture layout
 static GLuint rglGetGcmTextureSize (void *data)
 {
+   GLuint bytesNeeded, faceAlign, width, height;
    rglGcmTextureLayout *layout = (rglGcmTextureLayout*)data;
-   GLuint bytesNeeded = 0;
-   GLuint faceAlign = layout->pitch ? 1 : 128;
 
-   GLuint width = layout->baseWidth;
-   GLuint height = layout->baseHeight;
+   bytesNeeded = 0;
+   faceAlign = layout->pitch ? 1 : 128;
 
-   width = MAX(1U, width );
-   height = MAX(1U, height );
+   width = MAX(1U, layout->baseWidth );
+   height = MAX(1U, layout->baseHeight );
 
    if ( !layout->pitch )
       bytesNeeded += layout->pixelBits * width * height / 8;
@@ -2008,7 +2008,7 @@ static void rglPlatformValidateTextureResources (void *data)
       rglGcmTextureLayout newLayout;
 
       // get layout and size compatible with this pool
-      rglImage *image = texture->image;
+      rglImage *image = (rglImage*)texture->image;
 
       newLayout.levels = 1;
       newLayout.faces = 1;
@@ -2193,8 +2193,8 @@ source:		RGLGCM_SURFACE_SOURCE_TEXTURE,
    GLuint internalFormat = layout->internalFormat;
 
    // set the format and remap( control 1)
-   uint8_t *gcmFormat = &platformTexture->gcmTexture.format;
-   uint32_t *remap = &platformTexture->gcmTexture.remap;
+   uint8_t *gcmFormat = (uint8_t*)&platformTexture->gcmTexture.format;
+   uint32_t *remap = (uint32_t*)&platformTexture->gcmTexture.remap;
 
    *gcmFormat = 0;
 
@@ -2434,13 +2434,14 @@ source:		RGLGCM_SURFACE_SOURCE_TEXTURE,
 // Choose internal storage type and size, and set it to image, based on given format
 GLenum rglPlatformChooseInternalStorage (void *data, GLenum internalFormat )
 {
+   GLenum *format, *type;
    rglImage *image = (rglImage*)data;
 
    // see note at bottom concerning storageSize
    image->storageSize = 0;
 
-   GLenum *format = &image->format;
-   GLenum *type = &image->type;
+   format = (GLenum*)&image->format;
+   type = (GLenum*)&image->type;
 
    // Choose internal format closest to given format
    // and extract right format, type
@@ -2516,12 +2517,11 @@ GLenum rglPlatformChooseInternalStorage (void *data, GLenum internalFormat )
 GLAPI void APIENTRY glTextureReferenceSCE( GLenum target, GLuint levels,
       GLuint baseWidth, GLuint baseHeight, GLuint baseDepth, GLenum internalFormat, GLuint pitch, GLintptr offset )
 {
-   RGLcontext*	LContext = _CurrentContext;
+   RGLcontext*	LContext = (RGLcontext*)_CurrentContext;
    rglImage *image;
 
-   rglTexture *texture = rglGetCurrentTexture( LContext->CurrentImageUnit, target );
-   rglBufferObject *bufferObject = 
-      (rglBufferObject*)LContext->bufferObjectNameSpace.data[LContext->TextureBuffer];
+   rglTexture *texture = (rglTexture*)rglGetCurrentTexture( LContext->CurrentImageUnit, target );
+   rglBufferObject *bufferObject = (rglBufferObject*)LContext->bufferObjectNameSpace.data[LContext->TextureBuffer];
    rglReallocateImages( texture, 0, MAX(baseWidth, baseHeight));
 
    image = texture->image;
@@ -2604,8 +2604,8 @@ GLAPI void APIENTRY glTextureReferenceSCE( GLenum target, GLuint levels,
 void rglGcmFifoGlSetRenderTarget (const void *data)
 {
    CellGcmContextData *thisContext = (CellGcmContextData*)gCellGcmCurrentContext;
-   rglGcmRenderTarget *rt = &rglGcmState_i.renderTarget;
-   CellGcmSurface *grt = &rglGcmState_i.renderTarget.gcmRenderTarget;
+   rglGcmRenderTarget *rt = (rglGcmRenderTarget*)&rglGcmState_i.renderTarget;
+   CellGcmSurface *grt = (CellGcmSurface*)&rglGcmState_i.renderTarget.gcmRenderTarget;
    const rglGcmRenderTargetEx *args = (const rglGcmRenderTargetEx*)data;
 
    // GlSetRenderTarget implementation starts here
@@ -2740,15 +2740,15 @@ void rglGcmFifoGlSetRenderTarget (const void *data)
 
 GLAPI void APIENTRY glPixelStorei( GLenum pname, GLint param )
 {
-   RGLcontext*	LContext = _CurrentContext;
+   RGLcontext*	LContext = (RGLcontext*)_CurrentContext;
 
-    switch ( pname )
-    {
-        case GL_PACK_ALIGNMENT:
-            LContext->packAlignment = param;
-            break;
-        case GL_UNPACK_ALIGNMENT:
-            LContext->unpackAlignment = param;
-            break;
-    }
+   switch (pname)
+   {
+      case GL_PACK_ALIGNMENT:
+         LContext->packAlignment = param;
+         break;
+      case GL_UNPACK_ALIGNMENT:
+         LContext->unpackAlignment = param;
+         break;
+   }
 }

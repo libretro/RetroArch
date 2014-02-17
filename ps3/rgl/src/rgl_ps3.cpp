@@ -70,7 +70,7 @@ unsigned int rglCreateName(void *data, void* object)
          return 0;
       memcpy( newData, name->data, name->capacity * sizeof( void* ) );
 
-      if (name->data != NULL)
+      if (name->data)
          free (name->data);
 
       name->data = newData;
@@ -614,7 +614,7 @@ static GmmTileBlock *gmmCreateTileBlock(
    pAllocator->tileSize = pAllocator->tileStartAddress + pAllocator->tileSize - address;
    pAllocator->tileStartAddress = address;
 
-   pNewBlock = gmmAllocFixedTileBlock();
+   pNewBlock = (GmmTileBlock*)gmmAllocFixedTileBlock();
    if (!pNewBlock)
       return NULL;
 
@@ -1093,7 +1093,7 @@ static uint8_t gmmInternalSweep(void *data)
    uint8_t         ret = 0;
    uint32_t        totalMoveSize = 0;
 
-   while (pBlock != NULL)
+   while (pBlock)
    {
       if (pBlock->isPinned == 0)
       {
@@ -1461,7 +1461,7 @@ GLboolean rglGcmFifoReferenceInUse (void *data, GLuint reference)
    return GL_TRUE;
 }
 
-void rglGcmFifoInit (void *data, void *dmaControl, unsigned long dmaPushBufferOffset, uint32_t*dmaPushBuffer,
+void rglGcmFifoInit (void *data, void *dmaControl, uint32_t dmaPushBufferOffset, uint32_t*dmaPushBuffer,
       GLuint dmaPushBufferSize )
 {
    rglGcmFifo *fifo = (rglGcmFifo*)data;
@@ -1998,7 +1998,7 @@ GLboolean rglPlatformDeviceInit (void *data)
    RGLinitOptions *options = (RGLinitOptions*)data;
    GLuint fifoSize = RGLGCM_FIFO_SIZE_DEFAULT;
 
-   if ( options != NULL )
+   if (options)
    {
       if ( options->enable & RGL_INIT_FIFO_SIZE )
          fifoSize = options->fifoSize;
@@ -2814,10 +2814,9 @@ GLAPI void RGL_EXPORT psglSwap (void)
 {
    CellGcmContextData *thisContext = (CellGcmContextData*)gCellGcmCurrentContext;
    const uint32_t  fence = rglGcmState_i.semaphores->userSemaphores[RGLGCM_SEMA_FENCE].val;
-   GmmBlock        *pBlock = NULL;
-   GmmBlock        *pTemp = NULL;
+   GmmBlock        *pBlock, *pTemp;
    GmmAllocator *pAllocator =  pGmmLocalAllocator;
-   rglGcmFifo * fifo = &rglGcmState_i.fifo;
+   rglGcmFifo * fifo = (rglGcmFifo*)&rglGcmState_i.fifo;
    unsigned int offset_bytes = 0;
 
    pBlock = pAllocator->pPendingFreeHead;
