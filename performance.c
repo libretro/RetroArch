@@ -170,8 +170,8 @@ retro_perf_tick_t rarch_get_perf_counter(void)
    time = __mftb();
 #elif defined(__mips__)
    struct timeval tv;
-   gettimeofday(&tv, NULL);
-   return (uint64_t)((tv.tv_sec) * 1000000 + tv.tv_usec);
+   gettimeofday(&tv,NULL);
+   time = (1000000 * tv.tv_sec + tv.tv_usec);
 #endif
 
    return time;
@@ -206,9 +206,10 @@ retro_time_t rarch_get_time_usec(void)
    return tv.tv_sec * INT64_C(1000000) + (tv.tv_nsec + 500) / 1000;
 #elif defined(EMSCRIPTEN)
    return emscripten_get_now() * 1000;
-#elif defined(PSP)
-   SceKernelSysClock clock;
-   return sceKernelGetSystemTime(&clock);
+#elif defined(__mips__)
+   struct timeval tv;
+   gettimeofday(&tv,NULL);
+   return (1000000 * tv.tv_sec + tv.tv_usec);
 #else
 #error "Your platform does not have a timer function implemented in rarch_get_time_usec(). Cannot continue."
 #endif
