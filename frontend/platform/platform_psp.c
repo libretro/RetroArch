@@ -108,20 +108,13 @@ static void system_deinit(void *data)
 static int psp_process_args(int argc, char *argv[], void *args)
 {
    (void)argc;
-   (void)argv;
    (void)args;
-#if 0
-   char path[256];
-   snprintf(path, sizeof(path), "%s%s", default_paths.port_dir, "zelda.gb");
-   
-   strlcpy(g_extern.fullpath, path, sizeof(g_extern.fullpath));
-   g_extern.lifecycle_state |= (1ULL << MODE_LOAD_GAME);
-#else
-   if (argv[1]&&(argv[1][0])){
+
+   if (argv[1] && (argv[1][0]))
+   {
       strlcpy(g_extern.fullpath, argv[1], sizeof(g_extern.fullpath));
       g_extern.lifecycle_state |= (1ULL << MODE_LOAD_GAME);
    }
-#endif
 }
 
 const frontend_ctx_driver_t frontend_ctx_psp = {
@@ -131,7 +124,7 @@ const frontend_ctx_driver_t frontend_ctx_psp = {
    NULL,                         /* exitspawn */
    psp_process_args,             /* process_args */
    NULL,                         /* process_events */
-   NULL,                  	 /* exec */
+   NULL,                  	      /* exec */
    NULL,                         /* shutdown */
    "psp",
 };
