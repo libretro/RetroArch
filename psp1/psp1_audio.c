@@ -24,7 +24,8 @@
 typedef struct
 {
    bool nonblocking;
-   bool running;
+   bool started;
+   bool quit_thread;
    uint32_t* buffer;
    uint32_t* zeroBuffer;
    SceUID thread;
@@ -38,8 +39,6 @@ typedef struct
 #define AUDIO_BUFFER_SIZE (1u<<12u)
 #define AUDIO_BUFFER_SIZE_MASK (AUDIO_BUFFER_SIZE-1)
 
-
- 
 int audioMainLoop(SceSize args, void* argp)
 {
    psp1_audio_t* psp = (psp1_audio_t*)driver.audio_data;
@@ -47,7 +46,7 @@ int audioMainLoop(SceSize args, void* argp)
 
 	sceAudioSRCChReserve(AUDIO_OUT_COUNT, psp->rate, 2);
 
-	while (psp->running)
+	while (!psp->quit_thread)
    {
       if (((uint16_t)(psp->writePos - psp->readPos) & AUDIO_BUFFER_SIZE_MASK) < (uint16_t)AUDIO_OUT_COUNT * 2)
          sceAudioSRCOutputBlocking(PSP_AUDIO_VOLUME_MAX, psp->zeroBuffer);
@@ -80,10 +79,9 @@ static void *psp_audio_init(const char *device, unsigned rate, unsigned latency)
    psp->readPos     = 0;
    psp->writePos    = 0;
    psp->zeroBuffer  = (uint32_t*)calloc(AUDIO_OUT_COUNT, sizeof(uint32_t));
-   psp->nonblocking = true;
    psp->rate        = rate;
-   psp->running     = false;
    psp->thread      = sceKernelCreateThread ("audioMainLoop", audioMainLoop, 0x12, 0x10000, 0, NULL);
+   psp->nonblocking = true;
 
    return psp;
 }
@@ -91,6 +89,8 @@ static void *psp_audio_init(const char *device, unsigned rate, unsigned latency)
 static void psp_audio_free(void *data)
 {
    psp1_audio_t* psp = (psp1_audio_t*)data;
+
+   psp->quit_thread     = true;
 
    sceKernelDeleteThread(psp->thread);
 }
@@ -103,16 +103,24 @@ static ssize_t psp_audio_write(void *data, const void *buf, size_t size)
    
    sampleCount= size / sizeof(uint32_t);
    
-   if((psp->writePos+sampleCount)>AUDIO_BUFFER_SIZE)
+   if (psp->nonblocking)
    {
-      memcpy(psp->buffer + psp->writePos, buf, (AUDIO_BUFFER_SIZE - psp->writePos) * sizeof(uint32_t));
-      memcpy(psp->buffer, buf, (psp->writePos + sampleCount - AUDIO_BUFFER_SIZE) * sizeof(uint32_t));
+      /* TODO */
    }
    else
-      memcpy(psp->buffer + psp->writePos, buf, size);
+   {
+      if((psp->writePos + sampleCount) > AUDIO_BUFFER_SIZE)
+      {
+         memcpy(psp->buffer + psp->writePos, buf, (AUDIO_BUFFER_SIZE - psp->writePos) * sizeof(uint32_t));
+         memcpy(psp->buffer, buf, (psp->writePos + sampleCount - AUDIO_BUFFER_SIZE) * sizeof(uint32_t));
+      }
+      else
+         memcpy(psp->buffer + psp->writePos, buf, size);
+   }
    
    psp->writePos  += sampleCount;
    psp->writePos  &= AUDIO_BUFFER_SIZE_MASK;
+
    return sampleCount;
 }
 
@@ -120,28 +128,32 @@ static bool psp_audio_stop(void *data)
 {
    psp1_audio_t* psp = (psp1_audio_t*)data;
    
-   if(psp->thread <= 0) // ToDO: verify that this is the correct way to check a thread ID for validity
-      return false;
-   
-   psp->running = false;
-   return (sceKernelWaitThreadEnd(psp->thread, NULL) >= 0);
+   if (psp->started)
+   {
+      sceKernelWaitThreadEnd(psp->thread, NULL);
+      psp->started = false;
+   }
+
+   return true;
 }
 
 static bool psp_audio_start(void *data)
 {
    psp1_audio_t* psp = (psp1_audio_t*)data;
-   if (psp->thread <= 0)
-      return false;
-   
-   psp->running=true;
-   return (sceKernelStartThread(psp->thread, sizeof(psp1_audio_t*), &data) >= 0);
+
+   if (!psp->started)
+   {
+      sceKernelStartThread(psp->thread, sizeof(psp1_audio_t*), &data);
+      psp->started     = true;
+   }
+
+   return true;
 }
 
-static void psp_audio_set_nonblock_state(void *data, bool state)
+static void psp_audio_set_nonblock_state(void *data, bool toggle)
 {
    psp1_audio_t* psp = (psp1_audio_t*)data;
-
-   psp->nonblocking = state;
+   psp->nonblocking = toggle;
 }
 
 static bool psp_audio_use_float(void *data)
