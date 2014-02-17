@@ -93,7 +93,7 @@ static void system_init(void *data)
    //initialize debug screen
    pspDebugScreenInit(); 
    pspDebugScreenClear();
-
+   
    setup_callback();
    
    pspFpuSetEnable(0);//disable FPU exceptions
@@ -117,8 +117,10 @@ static int psp_process_args(int argc, char *argv[], void *args)
    strlcpy(g_extern.fullpath, path, sizeof(g_extern.fullpath));
    g_extern.lifecycle_state |= (1ULL << MODE_LOAD_GAME);
 #else
-   strlcpy(g_extern.fullpath, argv[1], sizeof(g_extern.fullpath));
-   g_extern.lifecycle_state |= (1ULL << MODE_LOAD_GAME);
+   if (argv[1]&&(argv[1][0])){
+      strlcpy(g_extern.fullpath, argv[1], sizeof(g_extern.fullpath));
+      g_extern.lifecycle_state |= (1ULL << MODE_LOAD_GAME);
+   }
 #endif
 }
 
