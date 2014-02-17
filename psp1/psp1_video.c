@@ -164,6 +164,10 @@ static bool psp_frame(void *data, const void *frame,
    (void)msg;
 	
    psp1_video_t *psp = (psp1_video_t*)data;
+
+   sceGuSync(0, 0);
+   sceDisplayWaitVblankStart();
+   sceGuSwapBuffers();
   
    /* Check if neither RGUI nor emulator framebuffer is to be displayed. */
    if(psp->rgui_active)
@@ -234,9 +238,6 @@ static bool psp_frame(void *data, const void *frame,
    
    sceGuDrawArray(GU_SPRITES, GU_TEXTURE_16BIT | GU_COLOR_5650 | GU_VERTEX_16BIT | GU_TRANSFORM_2D, 2, NULL, v);
    sceGuFinish(); 
-   sceGuSync(0, 0);
-   sceDisplayWaitVblankStart();
-   sceGuSwapBuffers();
    return true;
 }
 
