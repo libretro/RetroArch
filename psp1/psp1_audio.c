@@ -16,43 +16,41 @@
 #include "../general.h"
 #include "../driver.h"
 
-
+#include <pspkernel.h>
 #include <pspaudio.h>
+#include <stdint.h>
 
 //ToDO
 typedef struct
 {
    bool nonblocking;
-   bool started;   
+   bool running;
+   uint32_t* buffer;
+   uint32_t* zeroBuffer;
+   SceUID thread;
+   int rate;     
+   uint16_t readPos;
+   uint16_t writePos;
 } psp1_audio_t;
-
-psp1_audio_t audioData;
 
 #define AUDIO_OUT_COUNT 128
 
 #define AUDIO_BUFFER_SIZE (1u<<12u)
 #define AUDIO_BUFFER_SIZE_MASK (AUDIO_BUFFER_SIZE-1)
 
-static u32 __attribute__ ( ( aligned ( 64 ) ) ) audioBuffer[AUDIO_BUFFER_SIZE];
-static u32 __attribute__ ( ( aligned ( 64 ) ) ) zeroBuffer[AUDIO_OUT_COUNT]= {0};
 
-static bool audioRunning=false;
-static SceUID audioThread=0;
-static int audioOutputRate;
-
-static u16 readPos=0;
-static u16 writePos=0;
-
+ 
 int audioMainLoop ( SceSize args, void* argp ) {
-
-	sceAudioSRCChReserve ( AUDIO_OUT_COUNT,audioOutputRate,2 );
-	while ( audioRunning ) {		
-		if ( ( (u16)(readPos-writePos)& AUDIO_BUFFER_SIZE_MASK ) < (u16)AUDIO_OUT_COUNT*2 ) {
-			sceAudioSRCOutputBlocking ( PSP_AUDIO_VOLUME_MAX,zeroBuffer );
+   psp1_audio_t* aud=*((psp1_audio_t**)argp);
+   
+	sceAudioSRCChReserve ( AUDIO_OUT_COUNT,aud->rate,2 );
+	while ( aud->running ) {		
+		if ( ( (uint16_t)(aud->writePos-aud->readPos)& AUDIO_BUFFER_SIZE_MASK ) < (uint16_t)AUDIO_OUT_COUNT*2 ) {
+			sceAudioSRCOutputBlocking ( PSP_AUDIO_VOLUME_MAX,aud->zeroBuffer );
 		} else {
-			sceAudioSRCOutputBlocking ( PSP_AUDIO_VOLUME_MAX,audioBuffer+readPos );
-			readPos+=AUDIO_OUT_COUNT;
-			readPos&=AUDIO_BUFFER_SIZE_MASK;
+			sceAudioSRCOutputBlocking ( PSP_AUDIO_VOLUME_MAX,aud->buffer+aud->readPos );
+			aud->readPos+=AUDIO_OUT_COUNT;
+			aud->readPos&=AUDIO_BUFFER_SIZE_MASK;
 		}
 
 
@@ -66,63 +64,71 @@ static void *psp_audio_init(const char *device, unsigned rate, unsigned latency)
 {
    (void)device;
    (void)latency;
-   audioOutputRate=rate;
-   audioThread= sceKernelCreateThread ( "audioMainLoop",audioMainLoop,0x12,0x10000,0,NULL );
-   psp_audio_start(NULL);
-   return (void*)&audioData;
+   psp1_audio_t* data=calloc(1,sizeof(psp1_audio_t));
+   data->buffer=calloc(AUDIO_BUFFER_SIZE,sizeof(uint32_t));
+   data->readPos=0;
+   data->writePos=0;
+   data->zeroBuffer=calloc(AUDIO_OUT_COUNT,sizeof(uint32_t));
+   data->nonblocking=true;
+   data->rate=rate;
+   data->running=false;
+   data->thread = sceKernelCreateThread ( "audioMainLoop",audioMainLoop,0x12,0x10000,0,NULL );
+      
+   psp_audio_start(data);
+   return (void*)data;
 }
 
 static void psp_audio_free(void *data)
 {
-   (void)data;
-   if(audioThread)
-      sceKernelDeleteThread(audioThread);
+   psp1_audio_t* aud=(psp1_audio_t*)data;
+   sceKernelDeleteThread(aud->thread);
 }
 
 static ssize_t psp_audio_write(void *data, const void *buf, size_t size)
 {
-   size/=4;
-   (void)data;
-   (void)buf;
-   size_t size1,size2;
+   psp1_audio_t* aud;
+   uint16_t sampleCount;
+   // ToDo : add support for blocking audio
    
-   size1=size;
-   if((writePos+size)>AUDIO_BUFFER_SIZE){
-      memcpy(audioBuffer+writePos,buf,(AUDIO_BUFFER_SIZE-writePos)*sizeof(u32));
-      memcpy(audioBuffer,buf,(writePos+size-AUDIO_BUFFER_SIZE)*sizeof(u32));
+   aud=(psp1_audio_t*)data;      
+   sampleCount=size/sizeof(uint32_t);
+   
+   if((aud->writePos+sampleCount)>AUDIO_BUFFER_SIZE){
+      memcpy(aud->buffer+aud->writePos,buf,(AUDIO_BUFFER_SIZE-aud->writePos)*sizeof(uint32_t));
+      memcpy(aud->buffer,buf,(aud->writePos+sampleCount-AUDIO_BUFFER_SIZE)*sizeof(uint32_t));
    }else{
-      memcpy(audioBuffer+writePos,buf,size*sizeof(u32));
+      memcpy(aud->buffer+aud->writePos,buf,size);
    }
    
-   writePos+=size;
-   writePos&=AUDIO_BUFFER_SIZE_MASK;
-   return size;
+   aud->writePos+=sampleCount;
+   aud->writePos&=AUDIO_BUFFER_SIZE_MASK;
+   return sampleCount;
 }
 
 static bool psp_audio_stop(void *data)
 {
-   (void)data;
-   if(!audioThread)
+   psp1_audio_t* aud=(psp1_audio_t*)data;
+   if(aud->thread <= 0) // ToDO: verify that this is the correct way to check a thread ID for validity
       return false;
    
-   audioRunning=false;
-   return (sceKernelWaitThreadEnd(audioThread,NULL) >= 0);
+   aud->running=false;
+   return (sceKernelWaitThreadEnd(aud->thread,NULL) >= 0);
 }
 
 static bool psp_audio_start(void *data)
 {
-   (void)data;
-   if(!audioThread)
+   psp1_audio_t* aud=(psp1_audio_t*)data;
+   if(aud->thread <= 0)
       return false;
    
-   audioRunning=true;
-   return (sceKernelStartThread ( audioThread,0,NULL ) >= 0);
+   aud->running=true;
+   return (sceKernelStartThread ( aud->thread,sizeof(psp1_audio_t*),&data ) >= 0);
 }
 
 static void psp_audio_set_nonblock_state(void *data, bool state)
 {
-   (void)data;
-   (void)state;
+   psp1_audio_t* aud=(psp1_audio_t*)data;
+   aud->nonblocking=state;
 }
 
 static bool psp_audio_use_float(void *data)
