@@ -72,7 +72,7 @@ static inline void rglTextureTouchFBOs (void *data)
       rglFramebuffer *contextFramebuffer = LContext->framebuffer ? rglGetFramebuffer( LContext, LContext->framebuffer ) : NULL;
       for ( GLuint i = 0;i < fbCount;++i )
       {
-         rglFramebuffer* framebuffer = texture->framebuffers[i];
+         rglFramebuffer* framebuffer = texture->framebuffers.array[i];
          framebuffer->needValidate = GL_TRUE;
          if (RGL_UNLIKELY( framebuffer == contextFramebuffer))
             LContext->needValidate |= PSGL_VALIDATE_FRAMEBUFFER;

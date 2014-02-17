@@ -9,10 +9,10 @@ namespace RGL
 
    template<class T> class Vector
    {
+      public:
       T* array;
       unsigned int capacity;
       unsigned int increment;
-      public:
       unsigned int count;
       void * operator new( size_t size ) { return malloc( size ); }
       void * operator new( size_t /*size*/, void *p ) { return p; }
@@ -27,28 +27,24 @@ namespace RGL
             count = 0;
          }
 
-         reallocArray( 0 );
-      }
-
-      inline void reallocArray( unsigned int newCapacity )
-      {
-         if ( newCapacity == capacity )
-            return;
-         if ( newCapacity > capacity )
-            newCapacity = ( newCapacity > capacity + increment ) ? newCapacity : ( capacity + increment );
-         if ( newCapacity == 0 )
-         {
-            free( array );
-            array = 0;
-         }
-         else array = static_cast<T*>( realloc( static_cast<void *>( array ), sizeof( T ) * newCapacity ) );
-         capacity = newCapacity;
+         if (array)
+            free(array);
+         array = 0;
       }
 
       inline unsigned int pushBack( const T &element )
       {
-         if ( count + 1 > capacity ) reallocArray( count + 1 );
-         new(( void * )( array + count ) ) T( element );
+         uint32_t newCapacity = count + 1;
+
+         if (newCapacity > capacity)
+         {
+            if ( newCapacity > capacity )
+               newCapacity = ( newCapacity > capacity + increment ) ? newCapacity : ( capacity + increment );
+
+            array = (T*)realloc((void *)(array), sizeof(T) * newCapacity);
+            capacity = newCapacity;
+         }
+         new((void *)(array + count))T( element );
          return ++count;
       }
 
@@ -66,9 +62,6 @@ namespace RGL
             }
          }
       }
-
-      inline T *getArray() const { return array; }
-      inline T& operator []( int i ) const { return array[i]; }
    };
 
 }

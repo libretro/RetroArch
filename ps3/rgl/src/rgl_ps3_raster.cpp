@@ -769,7 +769,7 @@ static void rglpsAllocateBuffer (void *data)
    {
       for ( GLuint i = 0;i < referenceCount;++i )
       {
-         rglTexture *texture = bufferObject->textureReferences[i];
+         rglTexture *texture = (rglTexture*)bufferObject->textureReferences.array[i];
          rglGcmTexture *gcmTexture = ( rglGcmTexture * )texture->platformTexture;
          gcmTexture->gpuAddressId = rglBuffer->bufferId;
          gcmTexture->gpuAddressIdOffset = texture->offset;

@@ -3814,7 +3814,7 @@ static void rglFreeTexture (void *data)
       rglImageFreeCPUStorage( image );
       free( texture->image );
    }
-   if ( texture->referenceBuffer )
+   if (texture->referenceBuffer)
       texture->referenceBuffer->textureReferences.removeElement( texture );
    rglPlatformDestroyTexture( texture );
    free( texture );
