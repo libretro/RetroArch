@@ -411,7 +411,7 @@ static const bool font_enable = true;
 #if defined(__QNX__)
 static const float refresh_rate = 59.98;
 #elif defined(RARCH_CONSOLE)
-static const float refresh_rate = 59.94; 
+static const float refresh_rate = 60/1.001; 
 #else
 static const float refresh_rate = 59.95; 
 #endif
