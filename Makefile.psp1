@@ -1,7 +1,7 @@
 BUILD_PRX			= 1
 DEBUG			      = 0
 HAVE_FILE_LOGGER	= 0
-HAVE_THREADS 		= 1
+HAVE_THREADS 		= 0
 
 TARGET = retroarchpsp
 
