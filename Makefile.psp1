@@ -15,7 +15,7 @@ INCDIR =
 CFLAGS = $(OPTIMIZE_LV) -G0 -std=gnu99 -ffast-math
 ASFLAGS = $(CFLAGS)
 
-RARCH_DEFINES = -DPSP -DHAVE_LIBRETRO_MANAGEMENT -DHAVE_ZLIB -DWANT_MINIZ -DHAVE_GRIFFIN=1 -DHAVE_NULLAUDIO -DRARCH_INTERNAL -DRARCH_CONSOLE -DHAVE_MENU -DHAVE_RGUI -DWANT_RPNG -DSINC_LOWEST_QUALITY
+RARCH_DEFINES = -DPSP -DHAVE_LIBRETRO_MANAGEMENT -DHAVE_ZLIB -DWANT_MINIZ -DHAVE_GRIFFIN=1 -DRARCH_INTERNAL -DRARCH_CONSOLE -DHAVE_MENU -DHAVE_RGUI -DWANT_RPNG -DSINC_LOWEST_QUALITY
 
 ifeq ($(HAVE_FILE_LOGGER), 1)
 CFLAGS		+= -DHAVE_FILE_LOGGER
@@ -25,7 +25,7 @@ CFLAGS += $(RARCH_DEFINES)
 
 LIBDIR =
 LDFLAGS =
-LIBS = -lretro_psp1 -lstdc++ -lpspgu -lpspgum -lm
+LIBS = -lretro_psp1 -lstdc++ -lpspgu -lpspgum -lm -lpspaudio -lpspfpu
 
 EXTRA_TARGETS = EBOOT.PBP
 PSP_EBOOT_TITLE = RetroArch PSP1
@@ -33,6 +33,8 @@ PSP_EBOOT_TITLE = RetroArch PSP1
 PSP_OBJECTS = griffin/griffin.o
 
 OBJS = $(PSP_OBJECTS)
+
+griffin/griffin.o: psp1/psp1_video.c psp1/psp1_audio.c frontend/platform/platform_psp.c
 
 PSPSDK=$(shell psp-config --pspsdk-path)
 include $(PSPSDK)/lib/build.mak

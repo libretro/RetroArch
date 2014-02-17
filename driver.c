@@ -88,6 +88,9 @@ static const audio_driver_t *audio_drivers[] = {
 #ifdef EMSCRIPTEN
    &audio_rwebaudio,
 #endif
+#ifdef PSP
+   &audio_psp1,
+#endif   
 #ifdef HAVE_NULLAUDIO
    &audio_null,
 #endif
