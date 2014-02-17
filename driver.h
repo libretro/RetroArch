@@ -652,6 +652,7 @@ extern const audio_driver_t audio_coreaudio;
 extern const audio_driver_t audio_xenon360;
 extern const audio_driver_t audio_ps3;
 extern const audio_driver_t audio_gx;
+extern const audio_driver_t audio_psp1;
 extern const audio_driver_t audio_rwebaudio;
 extern const audio_driver_t audio_null;
 extern const video_driver_t video_gl;

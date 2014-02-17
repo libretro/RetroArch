@@ -408,6 +408,8 @@ AUDIO
 #include "../gx/gx_audio.c"
 #elif defined(EMSCRIPTEN)
 #include "../audio/rwebaudio.c"
+#elif defined(PSP)
+#include "../psp1/psp1_audio.c"
 #endif
 
 #ifdef HAVE_XAUDIO
