@@ -763,7 +763,8 @@ static void rglpsAllocateBuffer (void *data)
    if ( rglBuffer->bufferId == GMM_ERROR )
       rglBuffer->pool = RGLGCM_SURFACE_POOL_NONE;
 
-   GLuint referenceCount = bufferObject->textureReferences.getCount();
+   GLuint referenceCount = bufferObject->textureReferences.count;
+
    if ( referenceCount > 0 )
    {
       for ( GLuint i = 0;i < referenceCount;++i )

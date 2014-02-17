@@ -3568,8 +3568,8 @@ static void rglSetImage(void *data, GLint internalFormat, GLsizei width, GLsizei
    image->format = 0;
    image->type = 0;
    image->internalFormat = 0;
-   const GLenum status = rglPlatformChooseInternalStorage( image, internalFormat );
-   (( void )status );
+
+   rglPlatformChooseInternalStorage( image, internalFormat);
 
    image->data = NULL;
    image->mallocData = NULL;

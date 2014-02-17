@@ -33,7 +33,7 @@ typedef void( * RGLcontextHookFunction )( RGLcontext *context );
 extern RGL_EXPORT RGLcontextHookFunction rglContextCreateHook;
 extern RGL_EXPORT RGLcontextHookFunction rglContextDestroyHook;
 
-extern RGLcontext*	rglContextCreate();
+extern RGLcontext*	rglContextCreate(void);
 extern void		rglContextFree( RGLcontext* LContext );
 extern void		rglSetError( GLenum error );
 void rglDetachContext( RGLdevice *device, RGLcontext* context );
@@ -59,13 +59,14 @@ static inline rglFramebuffer *rglGetFramebuffer( RGLcontext *LContext, GLuint na
 static inline void rglTextureTouchFBOs (void *data)
 {
    rglTexture *texture = (rglTexture*)data;
-   RGLcontext *LContext = _CurrentContext;
+   RGLcontext *LContext = (RGLcontext*)_CurrentContext;
 
    if (!LContext )
       return; // may be called in psglDestroyContext
 
    // check if bound to any framebuffer
-   GLuint fbCount = texture->framebuffers.getCount();
+   GLuint fbCount = texture->framebuffers.count;
+
    if ( fbCount > 0 )
    {
       rglFramebuffer *contextFramebuffer = LContext->framebuffer ? rglGetFramebuffer( LContext, LContext->framebuffer ) : NULL;

@@ -56,21 +56,29 @@ static inline GLhalfARB rglFloatToHalf( float v )
 
 static inline float rglHalfToFloat( GLhalfARB v )
 {
-   unsigned int S = v >> 15;
-   unsigned int E = ( v & 0x7C00 ) >> 10;
-   unsigned int M = v & 0x03ff;
+   unsigned int S, E, M;
    float f;
+
+   S = v >> 15;
+   E = ( v & 0x7C00 ) >> 10;
+   M = v & 0x03ff;
+
    if ( E == 31 )
    {
-      if ( M == 0 ) f = RGL_INFINITY;
-      else f = RGL_NAN;
+      if ( M == 0 )
+         f = RGL_INFINITY;
+      else
+         f = RGL_NAN;
    }
    else if ( E == 0 )
    {
-      if ( M == 0 ) f = 0.f;
-      else f = M * 1.f / ( 1 << 24 );
+      if ( M == 0 )
+         f = 0.f;
+      else
+         f = M * 1.f / ( 1 << 24 );
    }
-   else f = ( 0x400 + M ) * 1.f / ( 1 << 25 ) * ( 1 << E );
+   else
+      f = ( 0x400 + M ) * 1.f / ( 1 << 25 ) * ( 1 << E );
    return S ? -f : f;
 }
 
@@ -79,10 +87,7 @@ static inline float rglHalfToFloat( GLhalfARB v )
 // FixedPoint.c
 //----------------------------------------
 
-#define rglFixedToFloat 	1.f/65536.f
-#define rglFloatToFixed 	65536.f
-
-#define X2F(X) (((float)(X))*rglFixedToFloat)
-#define F2X(A) ((int)((A)*rglFloatToFixed))
+#define X2F(X) (((float)(X))* 1.f/65536.f)
+#define F2X(A) ((int)((A)* 65536.f))
 
 #endif // _TYPE_UTILS_H

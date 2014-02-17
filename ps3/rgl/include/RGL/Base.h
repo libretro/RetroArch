@@ -10,23 +10,32 @@ namespace RGL
    template<class T> class Vector
    {
       T* array;
-      unsigned int count;
       unsigned int capacity;
       unsigned int increment;
       public:
+      unsigned int count;
       void * operator new( size_t size ) { return malloc( size ); }
       void * operator new( size_t /*size*/, void *p ) { return p; }
       void operator delete( void * /*ptr*/, void * /*p*/ ) { }
       Vector(): array( 0 ), count( 0 ), capacity( 0 ), increment( 4 ) {}
-      ~Vector() { clear(); reallocArray( 0 ); }
+      ~Vector()
+      {
+         if (array)
+         {
+            for ( unsigned int i = 0;i < count;++i )
+               ( array + i )->~T();
+            count = 0;
+         }
 
-      inline void setIncrement( unsigned int i ) { increment = i; }
-      inline unsigned int getCount() { return count; }
+         reallocArray( 0 );
+      }
 
       inline void reallocArray( unsigned int newCapacity )
       {
-         if ( newCapacity == capacity ) return;
-         if ( newCapacity > capacity ) newCapacity = ( newCapacity > capacity + increment ) ? newCapacity : ( capacity + increment );
+         if ( newCapacity == capacity )
+            return;
+         if ( newCapacity > capacity )
+            newCapacity = ( newCapacity > capacity + increment ) ? newCapacity : ( capacity + increment );
          if ( newCapacity == 0 )
          {
             free( array );
@@ -34,13 +43,6 @@ namespace RGL
          }
          else array = static_cast<T*>( realloc( static_cast<void *>( array ), sizeof( T ) * newCapacity ) );
          capacity = newCapacity;
-      }
-
-      inline void clear()
-      {
-         if ( !array ) return;
-         for ( unsigned int i = 0;i < count;++i )( array + i )->~T();
-         count = 0;
       }
 
       inline unsigned int pushBack( const T &element )
@@ -56,17 +58,13 @@ namespace RGL
          {
             if ( array[i-1] == element )
             {
-               remove( i - 1 );
+               unsigned int index = i - 1;
+               ( array + index )->~T();
+               --count;
+               if ( count > index ) memmove( array + index, array + index + 1, ( count - index )*sizeof( T ) );
                return;
             }
          }
-      }
-
-      inline void remove( unsigned int index )
-      {
-         ( array + index )->~T();
-         --count;
-         if ( count > index ) memmove( array + index, array + index + 1, ( count - index )*sizeof( T ) );
       }
 
       inline T *getArray() const { return array; }
