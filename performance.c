@@ -47,6 +47,10 @@
 #define CLOCK_MONOTONIC 2
 #endif
 
+#if defined(__mips__)
+#include <sys/time.h>
+#endif
+
 #if defined(__PSL1GHT__)
 #include <sys/time.h>
 #elif defined(__CELLOS_LV2__)
@@ -164,6 +168,10 @@ retro_perf_tick_t rarch_get_perf_counter(void)
    asm volatile( "mrc p15, 0, %0, c9, c13, 0" : "=r"(time) );
 #elif defined(__CELLOS_LV2__) || defined(GEKKO) || defined(_XBOX360) || defined(__powerpc__) || defined(__ppc__) || defined(__POWERPC__)
    time = __mftb();
+#elif defined(__mips__)
+   struct timeval tv;
+   gettimeofday(&tv, NULL);
+   return (uint64_t)((tv.tv_sec) * 1000000 + tv.tv_usec);
 #endif
 
    return time;
