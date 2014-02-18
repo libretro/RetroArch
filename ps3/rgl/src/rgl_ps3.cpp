@@ -8,7 +8,6 @@
 #include "../../altivec_mem.h"
 
 #include "include/GmmAlloc.h"
-#include "include/rgl-constants.h"
 #include "include/rgl-typedefs.h"
 #include "include/rgl-externs.h"
 #include "include/rgl-inline.h"
@@ -3274,7 +3273,7 @@ GLAPI GLenum APIENTRY glCheckFramebufferStatusOES( GLenum target )
    RGLcontext* LContext = _CurrentContext;
 
    if (LContext->framebuffer)
-      return rglPlatformFramebufferCheckStatus( rglGetFramebuffer( LContext, LContext->framebuffer ) );
+      return rglPlatformFramebufferCheckStatus(rglGetFramebuffer(LContext, LContext->framebuffer));
 
    return GL_FRAMEBUFFER_COMPLETE_OES;
 }

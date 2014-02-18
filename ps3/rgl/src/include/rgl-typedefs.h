@@ -1,6 +1,8 @@
 #include "../include/export/RGL/rgl.h"
 #include "../include/RGL/Types.h"
 
+typedef struct rglGcmRenderTargetEx rglGcmRenderTargetEx;
+
 typedef struct  _tagMODESTRUC
 {
    GLushort  wHorizVisible;
@@ -37,30 +39,6 @@ typedef struct
    GLuint dataId;		// id to get address and offset
    GLuint dataIdOffset;
 } rglGcmSurface;
-
-// gleSetRenderTarget has enough arguments to define its own struct
-typedef struct rglGcmRenderTargetEx rglGcmRenderTargetEx;
-struct rglGcmRenderTargetEx
-{
-   // color buffers
-   rglGcmEnum   colorFormat;
-   GLuint      colorBufferCount;
-
-   GLuint      colorId[RGLGCM_SETRENDERTARGET_MAXCOUNT];
-   GLuint      colorIdOffset[RGLGCM_SETRENDERTARGET_MAXCOUNT];
-   GLuint      colorPitch[RGLGCM_SETRENDERTARGET_MAXCOUNT];
-
-   // (0,0) is in the lower left
-   GLboolean   yInverted;
-
-   // window offset
-   GLuint      xOffset;
-   GLuint      yOffset;
-
-   // render dimensions
-   GLuint      width;
-   GLuint      height;
-};
 
 typedef struct
 {
@@ -105,18 +83,6 @@ typedef struct rglGcmDriver_
    GLuint sharedFPConstantsId;
    char *sharedVPConstants;
 } rglGcmDriver;
-
-struct rglPlatformFramebuffer: public rglFramebuffer
-{
-   rglGcmRenderTargetEx rt;
-   GLboolean complete;
-   rglPlatformFramebuffer(): rglFramebuffer()
-   {
-      memset( &rt, 0, sizeof( rt ) );
-   };
-   virtual ~rglPlatformFramebuffer() {};
-   void validate (void *data);
-};
 
 typedef struct
 {

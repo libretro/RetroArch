@@ -6,7 +6,6 @@
 #include "../../altivec_mem.h"
 
 #include "include/GmmAlloc.h"
-#include "include/rgl-constants.h"
 #include "include/rgl-typedefs.h"
 #include "include/rgl-externs.h"
 #include "include/rgl-inline.h"
@@ -1017,6 +1016,84 @@ GLboolean rglPlatformBufferObjectUnmapTextureReference (void *data)
 /*============================================================
   PLATFORM FRAMEBUFFER
   ============================================================ */
+static void rglPlatformValidateTextureResources (void *data);
+
+void rglFramebuffer_validate (void *fb_data, void *data)
+{
+   rglFramebuffer *fb = (rglFramebuffer*)fb_data;
+   RGLcontext *LContext = (RGLcontext*)data;
+   fb->complete = (rglPlatformFramebufferCheckStatus(fb) == GL_FRAMEBUFFER_COMPLETE_OES);
+
+   if (!fb->complete)
+      return;
+
+   GLuint width  = CELL_GCM_MAX_RT_DIMENSION;
+   GLuint height = CELL_GCM_MAX_RT_DIMENSION;
+
+   // color
+   fb->rt.colorBufferCount = 0;
+   fb->rt.colorFormat = RGLGCM_NONE;
+   GLuint defaultPitch = 0;
+   GLuint defaultId = GMM_ERROR;
+   GLuint defaultIdOffset = 0;
+
+   for ( int i = 0; i < RGLGCM_SETRENDERTARGET_MAXCOUNT; ++i )
+   {
+      // get the texture and face
+      rglTexture* colorTexture = NULL;
+      GLuint face = 0;
+      rglFramebufferGetAttachmentTexture( LContext, &fb->color[i], &colorTexture, &face );
+
+      if (colorTexture == NULL)
+         continue;
+
+      rglGcmTexture* nvTexture = ( rglGcmTexture * )colorTexture->platformTexture;
+
+      // make sure texture is resident in a supported layout
+      //  Some restrictions are added if a texture is used as a
+      //  render target:
+      //
+      //  - no swizzled semifat or fat formats
+      //  - no swizzled smaller than 16x16
+      //  - no mipmapped cube maps in tiled memory
+      //  - no cube maps with height not a multiple of 16 in tiled
+      //    memory
+      //
+      //  We may need to reallocate the texture if any of these
+      //  are true.
+      //
+      //  TODO: Measure time spent here and optimize if indicated.
+      if ( !colorTexture->isRenderTarget )
+      {
+         colorTexture->isRenderTarget = GL_TRUE;
+         colorTexture->revalidate |= RGL_TEXTURE_REVALIDATE_LAYOUT;
+      }
+      rglPlatformValidateTextureResources( colorTexture );
+      colorTexture->image->dataState = RGL_IMAGE_DATASTATE_GPU;
+
+      // set the render target
+      fb->rt.colorId[i] = nvTexture->gpuAddressId;
+      fb->rt.colorIdOffset[i] = nvTexture->gpuAddressIdOffset;
+      fb->rt.colorPitch[i] = nvTexture->gpuLayout.pitch ? nvTexture->gpuLayout.pitch : nvTexture->gpuLayout.pixelBits * nvTexture->gpuLayout.baseWidth / 8;
+
+      width = MIN( width, nvTexture->gpuLayout.baseWidth );
+      height = MIN( height, nvTexture->gpuLayout.baseHeight );
+      fb->rt.colorFormat = nvTexture->gpuLayout.internalFormat;
+      fb->rt.colorBufferCount = i + 1;
+      defaultId               = fb->rt.colorId[i];
+      defaultIdOffset         = fb->rt.colorIdOffset[i];
+      defaultPitch            = fb->rt.colorPitch[i];
+   }
+
+   // framebuffer dimensions are the intersection of attachments
+   fb->rt.width = width;
+   fb->rt.height = height;
+
+   fb->rt.yInverted = false;
+   fb->rt.xOffset = 0;
+   fb->rt.yOffset = 0;
+   fb->needValidate = GL_FALSE;
+}
 
 GLAPI void APIENTRY glClear( GLbitfield mask )
 {
@@ -1042,10 +1119,10 @@ GLAPI void APIENTRY glClear( GLbitfield mask )
 
       if (LContext->framebuffer)
       {
-         rglPlatformFramebuffer* framebuffer = (rglPlatformFramebuffer *)rglGetFramebuffer(LContext, LContext->framebuffer);
+         rglFramebuffer* framebuffer = (rglFramebuffer *)rglGetFramebuffer(LContext, LContext->framebuffer);
 
          if (framebuffer->needValidate)
-            framebuffer->validate( LContext );
+            rglFramebuffer_validate(framebuffer, LContext);
 
          driver->rt = framebuffer->rt;
       }
@@ -1071,7 +1148,7 @@ GLAPI void APIENTRY glClear( GLbitfield mask )
 
 rglFramebuffer* rglCreateFramebuffer (void)
 {
-   return new rglPlatformFramebuffer();
+   return new rglFramebuffer();
 }
 
 void rglDestroyFramebuffer (void *data)
@@ -1148,83 +1225,7 @@ GLenum rglPlatformFramebufferCheckStatus (void *data)
    return GL_FRAMEBUFFER_COMPLETE_OES;
 }
 
-static void rglPlatformValidateTextureResources (void *data);
 
-void rglPlatformFramebuffer::validate (void *data)
-{
-   RGLcontext *LContext = (RGLcontext*)data;
-   complete = (rglPlatformFramebufferCheckStatus(this) == GL_FRAMEBUFFER_COMPLETE_OES);
-
-   if (!complete)
-      return;
-
-   GLuint width  = CELL_GCM_MAX_RT_DIMENSION;
-   GLuint height = CELL_GCM_MAX_RT_DIMENSION;
-
-   // color
-   rt.colorBufferCount = 0;
-   rt.colorFormat = RGLGCM_NONE;
-   GLuint defaultPitch = 0;
-   GLuint defaultId = GMM_ERROR;
-   GLuint defaultIdOffset = 0;
-
-   for ( int i = 0; i < RGLGCM_SETRENDERTARGET_MAXCOUNT; ++i )
-   {
-      // get the texture and face
-      rglTexture* colorTexture = NULL;
-      GLuint face = 0;
-      rglFramebufferGetAttachmentTexture( LContext, &color[i], &colorTexture, &face );
-
-      if (colorTexture == NULL)
-         continue;
-
-      rglGcmTexture* nvTexture = ( rglGcmTexture * )colorTexture->platformTexture;
-
-      // make sure texture is resident in a supported layout
-      //  Some restrictions are added if a texture is used as a
-      //  render target:
-      //
-      //  - no swizzled semifat or fat formats
-      //  - no swizzled smaller than 16x16
-      //  - no mipmapped cube maps in tiled memory
-      //  - no cube maps with height not a multiple of 16 in tiled
-      //    memory
-      //
-      //  We may need to reallocate the texture if any of these
-      //  are true.
-      //
-      //  TODO: Measure time spent here and optimize if indicated.
-      if ( !colorTexture->isRenderTarget )
-      {
-         colorTexture->isRenderTarget = GL_TRUE;
-         colorTexture->revalidate |= RGL_TEXTURE_REVALIDATE_LAYOUT;
-      }
-      rglPlatformValidateTextureResources( colorTexture );
-      colorTexture->image->dataState = RGL_IMAGE_DATASTATE_GPU;
-
-      // set the render target
-      rt.colorId[i] = nvTexture->gpuAddressId;
-      rt.colorIdOffset[i] = nvTexture->gpuAddressIdOffset;
-      rt.colorPitch[i] = nvTexture->gpuLayout.pitch ? nvTexture->gpuLayout.pitch : nvTexture->gpuLayout.pixelBits * nvTexture->gpuLayout.baseWidth / 8;
-
-      width = MIN( width, nvTexture->gpuLayout.baseWidth );
-      height = MIN( height, nvTexture->gpuLayout.baseHeight );
-      rt.colorFormat = nvTexture->gpuLayout.internalFormat;
-      rt.colorBufferCount = i + 1;
-      defaultId = rt.colorId[i];
-      defaultIdOffset = rt.colorIdOffset[i];
-      defaultPitch = rt.colorPitch[i];
-   }
-
-   // framebuffer dimensions are the intersection of attachments
-   rt.width = width;
-   rt.height = height;
-
-   rt.yInverted = false;
-   rt.xOffset = 0;
-   rt.yOffset = 0;
-   needValidate = GL_FALSE;
-}
 
 
 /*============================================================
