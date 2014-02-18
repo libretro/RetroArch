@@ -72,22 +72,12 @@ extern "C" {
    }
    CgParameterEntry;
 
-#ifdef MSVC
-#pragma warning( push )
-#pragma warning ( disable : 4200 )
-#endif
-
    typedef struct _CgParameterArray
    {
       unsigned short arrayType;
       unsigned short dimensionCount;
       unsigned short dimensions[];
-   }
-   CgParameterArray; //padded to 4 bytes
-
-#ifdef MSVC
-#pragma warning( pop )
-#endif
+   } CgParameterArray; //padded to 4 bytes
 
    typedef struct _CgParameterStructure
    {
