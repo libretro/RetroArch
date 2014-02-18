@@ -1882,8 +1882,8 @@ int32_t rglOutOfSpaceCallback (void *data, uint32_t spaceInWords)
    // same position when the fifo is in GPU memory. 
    for ( GLuint i = 0; i < 8; i++ )
    {
-      fifo->ctx.current[0] = 0;
-      fifo->ctx.current++;
+      gcm_emit_at(fifo->ctx.current, 0, 0);
+      gcm_finish_n_commands(fifo->ctx.current, 1);
    }
 
    return CELL_OK;
@@ -2894,8 +2894,8 @@ GLAPI void RGL_EXPORT psglSwap (void)
       }
    }
 
-   thisContext->current[0] = (((33) << (18)) | CELL_GCM_NV4097_SET_TRANSFORM_CONSTANT_LOAD);
-   thisContext->current[1] = 0;
+   gcm_emit_method_at(thisContext->current, 0, CELL_GCM_NV4097_SET_TRANSFORM_CONSTANT_LOAD, 33);
+   gcm_emit_at(thisContext->current, 1, 0);
 
    rglGcmSetDitherEnable(thisContext, true );
 

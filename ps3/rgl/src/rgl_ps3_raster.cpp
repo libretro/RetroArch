@@ -1345,41 +1345,39 @@ GLAPI void APIENTRY glDrawArrays (GLenum mode, GLint first, GLsizei count)
                rglGcmSetTextureBorder(thisContext, unit, texture, 0x1);
 
                CellGcmContextData *gcm_context = (CellGcmContextData*)&rglGcmState_i.fifo;
-               uint32_t *current = gcm_context->current;
-               current[0] = CELL_GCM_METHOD_HEADER_TEXTURE_OFFSET(unit, 8);
-               current[1] = CELL_GCM_METHOD_DATA_TEXTURE_OFFSET(platformTexture->gcmTexture.offset);
-               current[2] = CELL_GCM_METHOD_DATA_TEXTURE_FORMAT(platformTexture->gcmTexture.location,
+               gcm_emit_at(gcm_context->current, 0, CELL_GCM_METHOD_HEADER_TEXTURE_OFFSET(unit, 8));
+               gcm_emit_at(gcm_context->current, 1, CELL_GCM_METHOD_DATA_TEXTURE_OFFSET(platformTexture->gcmTexture.offset));
+               gcm_emit_at(gcm_context->current, 2, CELL_GCM_METHOD_DATA_TEXTURE_FORMAT(platformTexture->gcmTexture.location,
                      platformTexture->gcmTexture.cubemap, 
                      platformTexture->gcmTexture.dimension,
                      platformTexture->gcmTexture.format,
-                     platformTexture->gcmTexture.mipmap);
-               current[3] = CELL_GCM_METHOD_DATA_TEXTURE_ADDRESS( platformTexture->gcmMethods.address.wrapS,
+                     platformTexture->gcmTexture.mipmap));
+               gcm_emit_at(gcm_context->current, 3, CELL_GCM_METHOD_DATA_TEXTURE_ADDRESS( platformTexture->gcmMethods.address.wrapS,
                      platformTexture->gcmMethods.address.wrapT,
                      platformTexture->gcmMethods.address.wrapR,
                      platformTexture->gcmMethods.address.unsignedRemap,
                      platformTexture->gcmMethods.address.zfunc,
                      platformTexture->gcmMethods.address.gamma,
-                     0);
-               current[4] = CELL_GCM_METHOD_DATA_TEXTURE_CONTROL0(CELL_GCM_TRUE,
-                     platformTexture->gcmMethods.control0.minLOD,
-                     platformTexture->gcmMethods.control0.maxLOD,
-                     platformTexture->gcmMethods.control0.maxAniso);
-               current[5] = platformTexture->gcmTexture.remap;
-               current[6] = CELL_GCM_METHOD_DATA_TEXTURE_FILTER(
+                     0));
+               gcm_emit_at(gcm_context->current, 4, CELL_GCM_METHOD_DATA_TEXTURE_CONTROL0(CELL_GCM_TRUE,
+                        platformTexture->gcmMethods.control0.minLOD,
+                        platformTexture->gcmMethods.control0.maxLOD,
+                        platformTexture->gcmMethods.control0.maxAniso));
+               gcm_emit_at(gcm_context->current, 5, platformTexture->gcmTexture.remap);
+               gcm_emit_at(gcm_context->current, 6, CELL_GCM_METHOD_DATA_TEXTURE_FILTER(
                      (platformTexture->gcmMethods.filter.bias & 0x1fff),
                      platformTexture->gcmMethods.filter.min,
                      platformTexture->gcmMethods.filter.mag,
-                     platformTexture->gcmMethods.filter.conv);
-               current[7] = CELL_GCM_METHOD_DATA_TEXTURE_IMAGE_RECT(
+                     platformTexture->gcmMethods.filter.conv));
+               gcm_emit_at(gcm_context->current, 7, CELL_GCM_METHOD_DATA_TEXTURE_IMAGE_RECT(
                      platformTexture->gcmTexture.height,
-                     platformTexture->gcmTexture.width);
-               current[8] = CELL_GCM_METHOD_DATA_TEXTURE_BORDER_COLOR(
-                     platformTexture->gcmMethods.borderColor);
-               current[9] = CELL_GCM_METHOD_HEADER_TEXTURE_CONTROL3(unit,1);
-               current[10] = CELL_GCM_METHOD_DATA_TEXTURE_CONTROL3(
-                     platformTexture->gcmTexture.pitch,
-                     platformTexture->gcmTexture.depth);
-               gcm_context->current = &current[11];
+                     platformTexture->gcmTexture.width));
+               gcm_emit_at(gcm_context->current, 8, CELL_GCM_METHOD_DATA_TEXTURE_BORDER_COLOR(
+                     platformTexture->gcmMethods.borderColor));
+               gcm_emit_at(gcm_context->current, 9, CELL_GCM_METHOD_HEADER_TEXTURE_CONTROL3(unit,1));
+               gcm_emit_at(gcm_context->current, 10, CELL_GCM_METHOD_DATA_TEXTURE_CONTROL3(platformTexture->gcmTexture.pitch,
+                        platformTexture->gcmTexture.depth));
+               gcm_finish_n_commands(gcm_context->current, 11);
             }
             else
             {
