@@ -1,8 +1,5 @@
-#define gcm_emit_at(buffer, location, word) (buffer)[(location)] = (word)
-
-#define gcm_emit_method_at(buffer, location, method, n) \
-gcm_emit_at((buffer),(location), (method) |((n) << 18))
-
+#define gcm_emit_at(buffer, location, word) ((buffer)[(location)] = (word))
+#define gcm_emit_method_at(buffer, location, method, n) gcm_emit_at((buffer),(location), (method) |((n) << 18))
 #define gcm_finish_n_commands(buffer, n) (buffer) += n
 
 static inline GLuint rglPlatformGetBitsPerPixel (GLenum internalFormat)
@@ -171,7 +168,7 @@ static inline void rglGcmSetInlineTransfer(struct CellGcmContextData *thisContex
 #define rglGcmSetTextureBorderColor(thisContext, index, color) \
  gcm_emit_method_at(thisContext->current, 0, (CELL_GCM_NV4097_SET_TEXTURE_BORDER_COLOR + 0x20 * ((index))), 1); \
  gcm_emit_at(thisContext->current, 1, color); \
- gcm_finish_n_commands(thisContext>current, 2);
+ gcm_finish_n_commands(thisContext->current, 2);
 
 #define rglDisableVertexAttribArrayNVInline(context, index) \
  RGLBIT_FALSE(context->attribs->EnabledMask, index); \
@@ -182,7 +179,7 @@ static inline void rglGcmSetInlineTransfer(struct CellGcmContextData *thisContex
  RGLBIT_TRUE(context->attribs->DirtyMask, index);
 
 #define rglGcmSetVertexData4f(thisContext, index, v) \
- gcm_emit_method_at(thisContext->current, 0, (CELL_GCM_NV4097_SET_VERTEX_DATA4F_M + (index) * 16), 4) \
+ gcm_emit_method_at(thisContext->current, 0, (CELL_GCM_NV4097_SET_VERTEX_DATA4F_M + (index) * 16), 4); \
  memcpy(&thisContext->current[1], v, sizeof(float)*4); \
  gcm_finish_n_commands(thisContext->current, 5);
 
@@ -396,7 +393,7 @@ static inline void rglGcmSetInlineTransfer(struct CellGcmContextData *thisContex
 
 #define rglGcmSetZMinMaxControl(thisContext, cullNearFarEnable, zclampEnable, cullIgnoreW) \
  gcm_emit_method_at(thisContext->current, 0, CELL_GCM_NV4097_SET_ZMIN_MAX_CONTROL, 1); \
- gcm_emit_at(thisContext->current, 1, ((cullNearFarEnable) | ((zclampEnable) << 4) | ((cullIgnoreW)<<8)); \
+ gcm_emit_at(thisContext->current, 1, ((cullNearFarEnable) | ((zclampEnable) << 4) | ((cullIgnoreW)<<8))); \
  gcm_finish_n_commands(thisContext->current, 2);
 
 #define rglGcmSetVertexAttribOutputMask(thisContext, mask) \
@@ -568,7 +565,7 @@ static void rglGcmSetDrawArraysSlow(struct CellGcmContextData *thisContext, uint
       for(j = 0; j < CELL_GCM_MAX_METHOD_COUNT; j++)
       {
          thisContext->current[0] = ((first) | ((255U)<<24));
-	 gcm_finish_n_commands(thisContext->current, 1);
+         gcm_finish_n_commands(thisContext->current, 1);
          first += 256;
       }
    }
@@ -581,7 +578,7 @@ static void rglGcmSetDrawArraysSlow(struct CellGcmContextData *thisContext, uint
       for(j = 0;j < rest; j++)
       {
          thisContext->current[0] = ((first) | ((255U)<<24));
-	 gcm_finish_n_commands(thisContext->current, 1);
+         gcm_finish_n_commands(thisContext->current, 1);
          first += 256;
       }
    }

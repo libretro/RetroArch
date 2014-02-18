@@ -1601,7 +1601,8 @@ GLAPI void APIENTRY glDrawArrays (GLenum mode, GLint first, GLsizei count)
 
          rglGcmSetFragmentProgramLoad(thisContext, &conf, CELL_GCM_LOCATION_LOCAL);
 
-         rglGcmSetZMinMaxControl(thisContext, ( program->header.fragmentProgram.flags & CGF_DEPTHREPLACE ) ? false : true, false, false );
+         bool cullNearFarEnable = (program->header.fragmentProgram.flags & CGF_DEPTHREPLACE ) ? false : true;
+         rglGcmSetZMinMaxControl(thisContext, cullNearFarEnable, false, false );
 
          driver->fpLoadProgramId = program->loadProgramId;
          driver->fpLoadProgramOffset = program->loadProgramOffset;
