@@ -411,10 +411,6 @@ extern "C" {
    };
 
 
-#if defined(MSVC)
-#pragma warning ( pop )
-#endif
-
 #ifdef __cplusplus
 }
 #endif

@@ -9,13 +9,8 @@
 extern "C" {
 #endif
 
-#ifdef MSVC
-#define RGL_LIKELY(COND) (COND)
-#define RGL_UNLIKELY(COND) (COND)
-#else
 #define RGL_LIKELY(COND) __builtin_expect((COND),1)
 #define RGL_UNLIKELY(COND) __builtin_expect((COND),0)
-#endif
 
 #define MAX(A,B) ((A)>(B)?(A):(B))
 #define MIN(A,B) ((A)<(B)?(A):(B))
@@ -41,14 +36,8 @@ extern "C" {
 #define rglIsPow2(i) (((i) & ((i) - 1 )) == 0)
 // Pad argument x to the next multiple of argument pad.
 #define rglPad(x, pad) (((x) + (pad) - 1 ) / (pad) * (pad))
-
 // Pad pointer x to the next multiple of argument pad.
-static inline char* rglPadPtr( const char* p, unsigned int pad )
-{
-   intptr_t x = (intptr_t)p;
-   x = ( x + pad - 1 ) / pad * pad;
-   return ( char* )x;
-}
+#define rglPadPtr(p, pad) ((char*)(((intptr_t)(p) + (pad) - 1 ) / (pad) * (pad)))
 
 // names API
 
@@ -56,10 +45,7 @@ RGL_EXPORT unsigned int rglCreateName (void *data, void* object);
 RGL_EXPORT unsigned int rglIsName( void *data, unsigned int name);
 RGL_EXPORT void rglEraseName (void *data, unsigned int name);
 
-static inline void *rglGetNamedValue(void *data, unsigned int name )
-{
-   return ((struct rglNameSpace*)data)->data[name - 1];
-}
+#define rglGetNamedValue(x, name) (((struct rglNameSpace*)(x))->data[(name) - 1])
 
 void rglTexNameSpaceResetNames(void *data);
 GLboolean rglTexNameSpaceCreateNameLazy(void *data, GLuint name );
