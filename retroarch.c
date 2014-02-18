@@ -1542,26 +1542,8 @@ void rarch_init_rewind(void)
       return;
    }
 
-   // Make sure we allocate at least 4-byte multiple.
-   size_t aligned_state_size = (g_extern.state_size + 3) & ~3;
-   g_extern.state_buf = calloc(1, aligned_state_size);
-
-   if (!g_extern.state_buf)
-   {
-      RARCH_ERR("Failed to allocate memory for rewind buffer.\n");
-      return;
-   }
-
-   if (!pretro_serialize(g_extern.state_buf, g_extern.state_size))
-   {
-      RARCH_ERR("Failed to perform initial serialization for rewind.\n");
-      free(g_extern.state_buf);
-      g_extern.state_buf = NULL;
-      return;
-   }
-
    RARCH_LOG("Initing rewind buffer with size: %u MB\n", (unsigned)(g_settings.rewind_buffer_size / 1000000));
-   g_extern.state_manager = state_manager_new(aligned_state_size, g_settings.rewind_buffer_size, g_extern.state_buf);
+   g_extern.state_manager = state_manager_new(g_extern.state_size, g_settings.rewind_buffer_size);
 
    if (!g_extern.state_manager)
       RARCH_WARN("Failed to init rewind buffer. Rewinding will be disabled.\n");

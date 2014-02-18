@@ -109,10 +109,6 @@ bool state_manager_push(state_manager_t *state, const void *data)
 	return true;
 }
 
-#include "rewind-alcaro.h"
-#include <stdlib.h>
-#include <string.h>
-
 //format per frame:
 //size nextstart;
 //repeat {
