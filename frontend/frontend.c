@@ -166,7 +166,7 @@ static void rarch_get_environment_console(void)
 #define attempt_load_game_fails (1ULL << MODE_EXIT)
 #endif
 
-#if defined(RARCH_CONSOLE)
+#if defined(RARCH_CONSOLE) || defined(__APPLE__)
 #define load_dummy_on_core_shutdown false
 #else
 #define load_dummy_on_core_shutdown true
