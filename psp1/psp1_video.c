@@ -52,9 +52,9 @@
 #define TO_UNCACHED_PTR(ptr)  ((void *)((uint32_t)ptr|0x40000000))
 #define TO_CACHED_PTR(ptr)    ((void *)((uint32_t)ptr&~0x40000000))
 
-typedef void (*psp1_RGB_to_BGR_func) (const void *in_frame, unsigned in_buffer_width,
-                                 void *out_frame, unsigned out_buffer_width,
-                                 unsigned width, unsigned height);
+typedef void (*psp1_copy_frame_func) (const void *in_frame, unsigned in_buffer_width,
+                                      void *out_frame, unsigned out_buffer_width,
+                                      unsigned width, unsigned height);
 
 
 typedef struct psp1_rgui_frame
@@ -76,7 +76,7 @@ typedef struct psp1_rgui_frame
    
    bool active;
       
-   psp1_RGB_to_BGR_func RGB_to_BGR;      
+   psp1_copy_frame_func copy_frame;      
    
 } psp1_rgui_frame_t;
 
@@ -85,6 +85,7 @@ typedef struct psp1_video
    void* displayList;   
    void* frameBuffers[2];
    unsigned int drawBuffer_ID;
+   bool vsync;
    
    bool rgb32;
    int pixel_format;
@@ -93,14 +94,13 @@ typedef struct psp1_video
    unsigned buffer_Height;
    void* buffer;
    
-   psp1_RGB_to_BGR_func RGB_to_BGR;   
+   psp1_copy_frame_func copy_frame;   
    
    psp1_rgui_frame_t rgui;
    
    // not implemented
    unsigned width;
    unsigned height;
-   bool vsync;
    bool force_aspect;
    bool smooth;
    unsigned input_scale; // Maximum input size: RARCH_SCALE_BASE * input_scale
@@ -117,7 +117,7 @@ typedef struct psp1_vertex
 } psp1_vertex_t;
 
 
-static void ARGB8888_to_ABGR8888(const void *in_frame, unsigned in_buffer_width,
+static void copy_frame_ARGB8888_to_ABGR8888(const void *in_frame, unsigned in_buffer_width,
                                  void *out_frame, unsigned out_buffer_width,
                                  unsigned width, unsigned height)
 {   
@@ -139,9 +139,9 @@ static void ARGB8888_to_ABGR8888(const void *in_frame, unsigned in_buffer_width,
 
 #define RGB565_GREEN_MASK 0x7E0
 #define RGB565_BLUE_MASK  0x1F
-static void RGB5650_to_BGR5650(const void *in_frame, unsigned in_buffer_width,
-                                    void *out_frame, unsigned out_buffer_width,
-                                    unsigned width, unsigned height)
+static void copy_frame_RGB5650_to_BGR5650(const void *in_frame, unsigned in_buffer_width,
+                                          void *out_frame, unsigned out_buffer_width,
+                                          unsigned width, unsigned height)
 {   
    int x,y;
    const uint16_t *in_p  = (const uint16_t*)in_frame; 
@@ -153,6 +153,25 @@ static void RGB5650_to_BGR5650(const void *in_frame, unsigned in_buffer_width,
       {
          *out_p++ =((*in_p) & RGB565_GREEN_MASK) | (((*in_p) & RGB565_BLUE_MASK) << 11) | ((*in_p)>>11);
          in_p++;
+      }
+      in_p += in_buffer_width - width;
+      out_p += out_buffer_width - width;
+   }
+}
+
+static void copy_frame_XBGR16(const void *in_frame, unsigned in_buffer_width,
+                              void *out_frame, unsigned out_buffer_width,
+                              unsigned width, unsigned height)
+{   
+   int x,y;
+   const uint16_t *in_p  = (const uint16_t*)in_frame; 
+   uint16_t *out_p = (uint16_t*)out_frame; 
+   
+   for(y = 0; y < height; y++)
+   {
+      for (x = 0; x < width; x++)
+      {
+         *out_p++ =*in_p++;
       }
       in_p += in_buffer_width - width;
       out_p += out_buffer_width - width;
@@ -197,18 +216,18 @@ static void *psp_init(const video_info_t *video,
    psp->rgb32 = video->rgb32;
    psp->pixel_format = psp->rgb32 ? GU_PSM_8888 : GU_PSM_5650;
    psp->pixel_size = psp->rgb32 ? 4 : 2;   
-   psp->RGB_to_BGR = psp->rgb32 ? ARGB8888_to_ABGR8888 : RGB5650_to_BGR5650;
+   psp->copy_frame = psp->rgb32 ? copy_frame_ARGB8888_to_ABGR8888 : copy_frame_RGB5650_to_BGR5650;
    
    if (psp->buffer)
       free(TO_CACHED_PTR(psp->buffer));
    psp->buffer = memalign(16, psp->buffer_width * psp->buffer_Height * psp->pixel_size);   
    psp->buffer = TO_UNCACHED_PTR(psp->buffer);
 
-   //init rgui to video->rgb32 too since it can't be empty when psp_set_texture_frame is called
+   //init rgui to 16-bit pixel format since it can't be empty when psp_set_texture_frame is called
    psp->rgui.rgb32 = video->rgb32;
-   psp->rgui.pixel_format = psp->rgui.rgb32 ? GU_PSM_8888 : GU_PSM_5650;
+   psp->rgui.pixel_format = psp->rgui.rgb32 ? GU_PSM_8888 : GU_PSM_4444;
    psp->rgui.pixel_size = psp->rgui.rgb32 ? 4 : 2;   
-   psp->rgui.RGB_to_BGR = psp->rgui.rgb32 ? ARGB8888_to_ABGR8888 : RGB5650_to_BGR5650;
+   psp->rgui.copy_frame = psp->rgui.rgb32 ? copy_frame_ARGB8888_to_ABGR8888 : copy_frame_XBGR16;
    psp->frameBuffers[0]=psp->rgui.rgb32 ? SCEGU_VRAM_BP32_0 : SCEGU_VRAM_BP_0;
    psp->frameBuffers[1]=psp->rgui.rgb32 ? SCEGU_VRAM_BP32_1 : SCEGU_VRAM_BP_1;
    psp->drawBuffer_ID=0;
@@ -295,7 +314,7 @@ static bool psp_frame(void *data, const void *frame,
    if (frame == NULL)
       return true;
    
-   psp->RGB_to_BGR(frame, pitch / psp->pixel_size, psp->buffer, psp->buffer_width, width, height);
+   psp->copy_frame(frame, pitch / psp->pixel_size, psp->buffer, psp->buffer_width, width, height);
    
    sceGuStart(GU_DIRECT, psp->displayList);
    sceGuClear(GU_COLOR_BUFFER_BIT);
@@ -347,7 +366,7 @@ static bool psp_frame(void *data, const void *frame,
 static void psp_set_nonblock_state(void *data, bool toggle)
 {
    psp1_video_t *psp = (psp1_video_t*)data;
-   psp->vsync = toggle;
+   psp->vsync = !toggle;
 }
 
 static bool psp_alive(void *data)
@@ -396,9 +415,9 @@ static void psp_set_texture_frame(void *data, const void *frame, bool rgb32,
    if (psp->rgui.rgb32 != rgb32)
    {
       psp->rgui.rgb32 = rgb32;
-      psp->rgui.pixel_format = psp->rgui.rgb32 ? GU_PSM_8888 : GU_PSM_5650;
+      psp->rgui.pixel_format = psp->rgui.rgb32 ? GU_PSM_8888 : GU_PSM_4444;
       psp->rgui.pixel_size = psp->rgui.rgb32 ? 4 : 2;   
-      psp->rgui.RGB_to_BGR = psp->rgui.rgb32 ? ARGB8888_to_ABGR8888 : RGB5650_to_BGR5650;
+      psp->rgui.copy_frame = psp->rgui.rgb32 ? copy_frame_ARGB8888_to_ABGR8888 : copy_frame_XBGR16;
       
       if (psp->rgui.buffer)
          free(TO_CACHED_PTR(psp->rgui.buffer));
@@ -409,9 +428,9 @@ static void psp_set_texture_frame(void *data, const void *frame, bool rgb32,
    
    psp->rgui.width = width;
    psp->rgui.height = height;
-   psp->rgui.RGB_to_BGR(frame, width, psp->rgui.buffer, psp->rgui.buffer_width, width, height);   
+   psp->rgui.copy_frame(frame, width, psp->rgui.buffer, psp->rgui.buffer_width, width, height);   
    
-   psp->rgui.alpha = alpha;   
+   psp->rgui.alpha = alpha; 
    uint32_t mask;
    mask = alpha*255.0;
    mask &= 0xFF;
