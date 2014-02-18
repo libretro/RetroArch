@@ -25,10 +25,8 @@ namespace RGL
             for ( unsigned int i = 0;i < count;++i )
                ( array + i )->~T();
             count = 0;
-         }
-
-         if (array)
             free(array);
+         }
          array = 0;
       }
 

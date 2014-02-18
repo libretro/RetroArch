@@ -2515,6 +2515,26 @@ GLenum rglPlatformChooseInternalStorage (void *data, GLenum internalFormat )
    return GL_NO_ERROR;
 }
 
+static inline void textureReferences_pushBack(rglTexture *element)
+{
+   RGLcontext*	LContext = (RGLcontext*)_CurrentContext;
+   rglTexture *texture = (rglTexture*)rglGetCurrentTexture( LContext->CurrentImageUnit, GL_TEXTURE_2D );
+   rglBufferObject *bufferObject = (rglBufferObject*)LContext->bufferObjectNameSpace.data[LContext->TextureBuffer];
+   
+   uint32_t newCapacity = bufferObject->textureReferences.count + 1;
+
+   if (newCapacity > bufferObject->textureReferences.capacity)
+   {
+      if ( newCapacity > bufferObject->textureReferences.capacity )
+         newCapacity = ( newCapacity > bufferObject->textureReferences.capacity + bufferObject->textureReferences.increment ) ? newCapacity : ( bufferObject->textureReferences.capacity + bufferObject->textureReferences.increment );
+
+      bufferObject->textureReferences.array = (rglTexture**)realloc((void *)(bufferObject->textureReferences.array), sizeof(rglTexture) * newCapacity);
+      bufferObject->textureReferences.capacity = newCapacity;
+   }
+   new((void *)(bufferObject->textureReferences.array + bufferObject->textureReferences.count))rglTexture((const rglTexture&)element);
+   ++bufferObject->textureReferences.count;
+}
+
 GLAPI void APIENTRY glTextureReferenceSCE( GLenum target, GLuint levels,
       GLuint baseWidth, GLuint baseHeight, GLuint baseDepth, GLenum internalFormat, GLuint pitch, GLintptr offset )
 {
@@ -2594,7 +2614,8 @@ GLAPI void APIENTRY glTextureReferenceSCE( GLenum target, GLuint levels,
    texture->revalidate |= RGL_TEXTURE_REVALIDATE_PARAMETERS;
    rglTextureTouchFBOs( texture );
    
-   bufferObject->textureReferences.pushBack( texture );
+   textureReferences_pushBack(texture);
+
    texture->referenceBuffer = bufferObject;
    texture->offset = offset;
    rglTextureTouchFBOs( texture );
