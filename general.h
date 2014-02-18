@@ -109,6 +109,7 @@ enum menu_enums
    MODE_AUDIO_CUSTOM_BGM_ENABLE,
    MODE_OSK_ENTRY_SUCCESS,
    MODE_OSK_ENTRY_FAIL,
+   MODE_CLEAR_INPUT,
 };
 
 enum sound_mode_enums
