@@ -292,7 +292,6 @@ bool state_manager_push_do(state_manager_t *state)
             *(compressed16++)=0;
             *(compressed16++)=skip;
             *(compressed16++)=skip>>16;
-            compressed16+=2;
             skip=0;
             continue;
          }
