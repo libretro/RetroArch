@@ -1554,9 +1554,6 @@ void rarch_deinit_rewind(void)
    if (g_extern.state_manager)
       state_manager_free(g_extern.state_manager);
    g_extern.state_manager = NULL;
-
-   free(g_extern.state_buf);
-   g_extern.state_buf = NULL;
 }
 
 #ifdef HAVE_BSV_MOVIE
