@@ -17,6 +17,7 @@
 #include <pspkernel.h>
 #include <pspdebug.h>
 #include <pspfpu.h>
+#include <psppower.h>
 
 #include <stdint.h>
 #include "../../boolean.h"
@@ -97,6 +98,7 @@ static void system_init(void *data)
    setup_callback();
    
    pspFpuSetEnable(0);//disable FPU exceptions
+   scePowerSetClockFrequency(333,333,166);
 }
 
 static void system_deinit(void *data)

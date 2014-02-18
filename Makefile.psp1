@@ -19,7 +19,7 @@ RARCH_DEFINES = -DPSP -DHAVE_LIBRETRO_MANAGEMENT -DHAVE_ZLIB -DWANT_MINIZ -DHAVE
 
 LIBDIR =
 LDFLAGS =
-LIBS = -lretro_psp1 -lstdc++ -lpspgu -lpspgum -lm -lpspaudio -lpspfpu 
+LIBS = -lretro_psp1 -lstdc++ -lpspgu -lpspgum -lm -lpspaudio -lpspfpu -lpsppower
 
 ifeq ($(HAVE_THREADS), 1)
 RARCH_DEFINES += -DHAVE_THREADS
