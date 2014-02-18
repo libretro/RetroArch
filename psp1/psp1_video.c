@@ -16,6 +16,7 @@
 
 #include <pspkernel.h>
 #include <pspdisplay.h>
+#include <malloc.h>
 #include <pspgu.h>
 #include <pspgum.h>
 
@@ -36,7 +37,7 @@
 #endif
 
 /* Frame buffer */
-#define SCEGU_VRAM_TOP        0x00000000
+#define SCEGU_VRAM_TOP        0x04000000
 /* 16bit mode */
 #define SCEGU_VRAM_BUFSIZE    (SCEGU_VRAM_WIDTH*SCEGU_SCR_HEIGHT*2)
 #define SCEGU_VRAM_BP_0       (void *)(SCEGU_VRAM_TOP)
@@ -48,91 +49,210 @@
 #define SCEGU_VRAM_BP32_1     (void *)(SCEGU_VRAM_TOP+SCEGU_VRAM_BUFSIZE32)
 #define SCEGU_VRAM_BP32_2     (void *)(SCEGU_VRAM_TOP+(SCEGU_VRAM_BUFSIZE32*2))
 
-typedef struct psp1_video
+#define TO_UNCACHED_PTR(ptr)  ((void *)((uint32_t)ptr|0x40000000))
+#define TO_CACHED_PTR(ptr)    ((void *)((uint32_t)ptr&~0x40000000))
+
+typedef void (*psp1_RGB_to_BGR_func) (const void *in_frame, unsigned in_buffer_width,
+                                 void *out_frame, unsigned out_buffer_width,
+                                 unsigned width, unsigned height);
+
+
+typedef struct psp1_rgui_frame
 {
    bool rgb32;
-   unsigned tex_w;
-   unsigned tex_h;
+   int pixel_format;
+   int pixel_size;
 
-   /* RGUI data */
-   int rgui_rotation;
-   float rgui_alpha;
-   bool rgui_active;
-   bool rgui_rgb32;
-} psp1_video_t;
+   unsigned width;
+   unsigned height;   
+   
+   unsigned buffer_width;
+   unsigned buffer_Height;
+   void* buffer;
+   
+   float alpha;
+   uint32_t alpha_source;
+   uint32_t alpha_dest;
+   
+   bool active;
+      
+   psp1_RGB_to_BGR_func RGB_to_BGR;      
+   
+} psp1_rgui_frame_t;
 
-static struct
+typedef struct psp1_video
 {
-   const void *frame;
+   void* displayList;   
+   void* frameBuffers[2];
+   unsigned int drawBuffer_ID;
+   
+   bool rgb32;
+   int pixel_format;
+   int pixel_size;
+   unsigned buffer_width;
+   unsigned buffer_Height;
+   void* buffer;
+   
+   psp1_RGB_to_BGR_func RGB_to_BGR;   
+   
+   psp1_rgui_frame_t rgui;
+   
+   // not implemented
    unsigned width;
    unsigned height;
-} rgui_texture;
+   bool vsync;
+   bool force_aspect;
+   bool smooth;
+   unsigned input_scale; // Maximum input size: RARCH_SCALE_BASE * input_scale
+   int rotation; 
+   
+} psp1_video_t;
+
 
 typedef struct psp1_vertex
 {
-   u16 u,v;
-   u16 color;
-   u16 x,y,z;
-}psp1_vertex_t;
+   int16_t u,v;
+   uint16_t color; // not used
+   int16_t x,y,z;
+} psp1_vertex_t;
 
 
-static unsigned int __attribute__((aligned(16))) list[262144];
+static void ARGB8888_to_ABGR8888(const void *in_frame, unsigned in_buffer_width,
+                                 void *out_frame, unsigned out_buffer_width,
+                                 unsigned width, unsigned height)
+{   
+   int x,y;
+   const uint32_t *in_p  = (const uint32_t*)in_frame; 
+   uint32_t *out_p = (uint32_t*)out_frame; 
+  
+   for(y = 0; y < height; y++)
+   {
+      for (x = 0; x < width; x++)
+      {
+         *out_p++ =((*in_p) & 0xFF00FF00) | (((*in_p) & 0xFF) << 16) | (((*in_p) & 0xFF0000) >> 16);
+         in_p++;
+      }
+      in_p += in_buffer_width - width;
+      out_p += out_buffer_width - width;
+   }
+}
 
-
-
-static void init_texture(void *data, void *frame, unsigned width, unsigned height, bool rgb32)
-{
-   psp1_video_t *psp = (psp1_video_t*)data;
+#define RGB565_GREEN_MASK 0x7E0
+#define RGB565_BLUE_MASK  0x1F
+static void RGB5650_to_BGR5650(const void *in_frame, unsigned in_buffer_width,
+                                    void *out_frame, unsigned out_buffer_width,
+                                    unsigned width, unsigned height)
+{   
+   int x,y;
+   const uint16_t *in_p  = (const uint16_t*)in_frame; 
+   uint16_t *out_p = (uint16_t*)out_frame; 
    
-   sceGuStart(GU_DIRECT, list);
-
-   sceGuDrawBuffer(rgb32 ? GU_PSM_8888 : GU_PSM_5650, (void*)0, SCEGU_VRAM_WIDTH);
-   sceGuDispBuffer(width, height, frame, SCEGU_VRAM_WIDTH);
-   sceGuClearColor(GU_COLOR(0.0f,0.0f,0.0f,1.0f));
-   sceGuScissor(0, 0, width, height);
-   sceGuEnable(GU_SCISSOR_TEST);
-   sceGuTexMode(rgb32 ? GU_PSM_8888 : GU_PSM_5650, 0, 0, GU_FALSE);
-   sceGuTexFunc(GU_TFX_REPLACE, GU_TCC_RGBA);
-   sceGuTexFilter(GU_LINEAR, GU_LINEAR);      
-   sceGuTexWrap ( GU_CLAMP,GU_CLAMP );
-   sceGuEnable(GU_TEXTURE_2D);
-   sceGuDisable(GU_BLEND);
-   sceGuDisable (GU_DEPTH_TEST); 
-   sceGuFinish();
-   sceGuSync(0, 0);
-    
-   sceDisplayWaitVblankStart();
-   
-   sceGuDisplay(GU_TRUE);
-
-   rgui_texture.frame = NULL;
+   for(y = 0; y < height; y++)
+   {
+      for (x = 0; x < width; x++)
+      {
+         *out_p++ =((*in_p) & RGB565_GREEN_MASK) | (((*in_p) & RGB565_BLUE_MASK) << 11) | ((*in_p)>>11);
+         in_p++;
+      }
+      in_p += in_buffer_width - width;
+      out_p += out_buffer_width - width;
+   }
 }
 
 static void *psp_init(const video_info_t *video,
       const input_driver_t **input, void **input_data)
 {
    void *pspinput;
-   (void)video;
-
-
-   if (driver.video_data)
-   {
-      psp1_video_t *psp = (psp1_video_t*)driver.video_data;
-
-      /* Reinitialize textures here */
-      psp->rgb32 = video->rgb32;
-      init_texture(psp, SCEGU_VRAM_BP_2, SCEGU_SCR_WIDTH, SCEGU_SCR_HEIGHT, psp->rgb32);
-
-      return driver.video_data;
-   }
-
-   psp1_video_t *psp = (psp1_video_t*)calloc(1, sizeof(psp1_video_t));
+   psp1_video_t *psp=driver.video_data;
 
    if (!psp)
-      goto error;
+   {
+      // first time init
+      psp = (psp1_video_t*)calloc(1, sizeof(psp1_video_t));
+   
+      if (!psp)
+         goto error;
+      
+   }
+   
+   if(!psp->displayList) // either first time init or psp_free was called
+   {
+      sceGuInit();
 
-   sceGuInit();
+      psp->displayList = memalign(16,1024*1024);   // TODO: use a better approximation of maximum display list size, 1MB is probably too much
+      psp->buffer_width = 512;
+      psp->buffer_Height = 512;
+      psp->rgui.buffer_width = 512;
+      psp->rgui.buffer_Height = 256;    
+   }
+   
+   psp->width = video->width;
+   psp->height = video->height;
+   psp->vsync = video->vsync;
+   psp->force_aspect = video->force_aspect;
+   psp->smooth = video->smooth;
+   psp->input_scale = video->input_scale;
+   
 
+   psp->rgb32 = video->rgb32;
+   psp->pixel_format = psp->rgb32 ? GU_PSM_8888 : GU_PSM_5650;
+   psp->pixel_size = psp->rgb32 ? 4 : 2;   
+   psp->RGB_to_BGR = psp->rgb32 ? ARGB8888_to_ABGR8888 : RGB5650_to_BGR5650;
+   
+   if (psp->buffer)
+      free(TO_CACHED_PTR(psp->buffer));
+   psp->buffer = memalign(16, psp->buffer_width * psp->buffer_Height * psp->pixel_size);   
+   psp->buffer = TO_UNCACHED_PTR(psp->buffer);
+
+   //init rgui to video->rgb32 too since it can't be empty when psp_set_texture_frame is called
+   psp->rgui.rgb32 = video->rgb32;
+   psp->rgui.pixel_format = psp->rgui.rgb32 ? GU_PSM_8888 : GU_PSM_5650;
+   psp->rgui.pixel_size = psp->rgui.rgb32 ? 4 : 2;   
+   psp->rgui.RGB_to_BGR = psp->rgui.rgb32 ? ARGB8888_to_ABGR8888 : RGB5650_to_BGR5650;
+   psp->frameBuffers[0]=psp->rgui.rgb32 ? SCEGU_VRAM_BP32_0 : SCEGU_VRAM_BP_0;
+   psp->frameBuffers[1]=psp->rgui.rgb32 ? SCEGU_VRAM_BP32_1 : SCEGU_VRAM_BP_1;
+   psp->drawBuffer_ID=0;
+   
+   if (psp->rgui.buffer)
+      free(TO_CACHED_PTR(psp->rgui.buffer));
+   psp->rgui.buffer = memalign(16, psp->rgui.buffer_width * psp->rgui.buffer_Height * psp->rgui.pixel_size);     
+   psp->rgui.buffer = TO_UNCACHED_PTR(psp->rgui.buffer);
+   
+   psp->rgui.active = false;
+   psp->rgui.alpha = 0.0;
+   psp->rgui.alpha_source = 0x00000000;
+   psp->rgui.alpha_dest = 0xFFFFFFFF;
+   
+   // need to invalidate cache before using uncached pointers, to avoid unwanted cache writebacks. TODO: check up/downsides of using sceKernelDcacheInvalidateRange here instead
+   sceKernelDcacheWritebackInvalidateAll();
+   
+   sceDisplayWaitVblankStart();   // TODO : check if necessary  
+   sceGuDisplay(GU_FALSE);
+
+   sceGuStart(GU_DIRECT, psp->displayList);
+
+   sceGuDrawBuffer(psp->pixel_format, (void*)0, SCEGU_VRAM_WIDTH);
+   sceGuDispBuffer(SCEGU_SCR_WIDTH, SCEGU_SCR_HEIGHT, psp->rgb32 ? (void*) SCEGU_VRAM_BUFSIZE32 : (void*) SCEGU_VRAM_BUFSIZE, SCEGU_VRAM_WIDTH);
+   sceGuClearColor(GU_COLOR(0.0f, 0.0f, 0.0f, 1.0f));
+   sceGuScissor(0, 0, SCEGU_SCR_WIDTH, SCEGU_SCR_HEIGHT);
+   sceGuEnable(GU_SCISSOR_TEST);
+   sceGuTexMode(psp->pixel_format, 0, 0, GU_FALSE);
+   sceGuTexFunc(GU_TFX_REPLACE, GU_TCC_RGBA);
+   sceGuTexFilter(GU_LINEAR, GU_LINEAR);  // TODO , move this to display list   
+   sceGuTexWrap (GU_CLAMP, GU_CLAMP);
+   
+   sceGuEnable(GU_TEXTURE_2D);   
+   sceGuDisable(GU_BLEND);
+   sceGuDisable(GU_DEPTH_TEST); 
+   sceGuFinish();
+   sceGuSync(0, 0);
+    
+   sceDisplayWaitVblankStart();   // TODO : check if necessary     
+   sceGuDisplay(GU_TRUE);
+   
+   pspDebugScreenSetColorMode(psp->pixel_format);
+   pspDebugScreenSetBase(psp->frameBuffers[psp->drawBuffer_ID]);
+   
    if (input && input_data)
    {
       pspinput = input_psp.init();
@@ -140,89 +260,47 @@ static void *psp_init(const video_info_t *video,
       *input_data = pspinput;
    }
 
-   psp->rgb32 = video->rgb32;
-   init_texture(psp, SCEGU_VRAM_BP_2, SCEGU_SCR_WIDTH, SCEGU_SCR_HEIGHT, psp->rgb32);
-
-   psp->tex_w = 512;
-   psp->tex_h = 512;
-
+   
    return psp;
 error:
    RARCH_ERR("PSP1 video could not be initialized.\n");
    return (void*)-1;
 }
 
-#define RGB565_GREEN_MASK 0x7E0
-#define RGB565_BLUE_MASK  0x1F
+
 
 static bool psp_frame(void *data, const void *frame,
       unsigned width, unsigned height, unsigned pitch, const char *msg)
 {
-   void *g_texture;
    psp1_vertex_t *v;
-	int x,y;
-   (void)msg;
 	
    psp1_video_t *psp = (psp1_video_t*)data;
 
    sceGuSync(0, 0);
-   sceDisplayWaitVblankStart();
-   sceGuSwapBuffers();
-  
-   /* Check if neither RGUI nor emulator framebuffer is to be displayed. */
-   if(psp->rgui_active)
+   
+   if (msg)  // TODO: fix flickering text
    {
-      sceKernelDcacheWritebackInvalidateAll();
-      void* frameBuffer;
-      int bufferWidth,pixelFormat;
-      sceDisplayGetFrameBuf(&frameBuffer, &bufferWidth, &pixelFormat, 0);
-      sceGuStart(GU_DIRECT, list);
-      sceGuClear(GU_COLOR_BUFFER_BIT);
-      sceGuCopyImage(GU_PSM_5650,0,0,rgui_texture.width, rgui_texture.width,rgui_texture.width, rgui_texture.frame,
-            (SCEGU_SCR_WIDTH-rgui_texture.width)/2,(SCEGU_SCR_HEIGHT-rgui_texture.height)/2,SCEGU_VRAM_WIDTH,frameBuffer);
-      sceGuFinish();
-      sceDisplayWaitVblankStart();
-      return true;
+      pspDebugScreenSetBase(psp->frameBuffers[psp->drawBuffer_ID]);
+      pspDebugScreenSetXY(0,0);
+      pspDebugScreenPuts(msg);
    }
    
+   if (psp->vsync)
+      sceDisplayWaitVblankStart();
+   
+   sceGuSwapBuffers();
+   psp->drawBuffer_ID^=1;
+   
+   /* frame dupes. */   
    if (frame == NULL)
       return true;
    
-   g_texture = (void*)0x44110000; // video memory after draw+display buffers
-   if (psp->rgb32)
-   {
-      pitch /= 4;
-      u32 *out_p = (u32*)g_texture; 
-      u32 *in_p  = (u32*)frame; 
-      for(y = 0; y < height; y++)
-      {
-         for (x = 0; x < width; x++)
-         {
-            *out_p++ =((*in_p)&0xFF00FF00)|(((*in_p)&0xFF)<<16)|(((*in_p)&0xFF0000)>>16);
-            in_p++;
-         }
-         in_p += pitch-width;
-      }
-   }
-   else
-   {
-      pitch /= 2;
-      u16 *out_p = (u16*)g_texture;
-      u16 *in_p  = (u16*)frame; 
-      for (y = 0; y < height; y++)
-      {
-         for (x = 0;x < width; x++)
-         {
-            *out_p++ =((*in_p) & RGB565_GREEN_MASK)|(((*in_p) & RGB565_BLUE_MASK) << 11) | ((*in_p)>>11);
-            in_p++;
-         }
-         in_p += pitch-width;
-     }
-   }
+   psp->RGB_to_BGR(frame, pitch / psp->pixel_size, psp->buffer, psp->buffer_width, width, height);
    
-   sceGuStart(GU_DIRECT, list);
+   sceGuStart(GU_DIRECT, psp->displayList);
    sceGuClear(GU_COLOR_BUFFER_BIT);
-   v = (psp1_vertex_t*)sceGuGetMemory(2*sizeof(psp1_vertex_t));
+   
+   v = (psp1_vertex_t*)sceGuGetMemory(4 * sizeof(psp1_vertex_t));
    
    v[0].x = (SCEGU_SCR_WIDTH - width * SCEGU_SCR_HEIGHT / height) / 2;
    v[0].y = 0;   
@@ -234,17 +312,42 @@ static bool psp_frame(void *data, const void *frame,
    v[1].u = width;
    v[1].v = height;
    
-   sceGuTexImage(0, 256, 256, width, g_texture);
+   sceGuTexMode(psp->pixel_format, 0, 0, GU_FALSE);
+   sceGuTexImage(0, psp->buffer_width, psp->buffer_Height, psp->buffer_width, psp->buffer);   
+//      sceGuTexFilter(GU_LINEAR, GU_LINEAR);
    
+   sceGuDisable(GU_BLEND);
    sceGuDrawArray(GU_SPRITES, GU_TEXTURE_16BIT | GU_COLOR_5650 | GU_VERTEX_16BIT | GU_TRANSFORM_2D, 2, NULL, v);
+   
+   if (psp->rgui.active)
+   {
+      v[2].x = 0;
+      v[2].y = 0;   
+      v[2].u = 0;
+      v[2].v = 0;   
+      
+      v[3].x = SCEGU_SCR_WIDTH;
+      v[3].y = SCEGU_SCR_HEIGHT;
+      v[3].u = psp->rgui.width; 
+      v[3].v = psp->rgui.height;
+      
+      sceGuTexMode(psp->rgui.pixel_format, 0, 0, GU_FALSE);
+      sceGuTexImage(0, psp->rgui.buffer_width, psp->rgui.buffer_Height, psp->rgui.buffer_width, psp->rgui.buffer);   
+//      sceGuTexFilter(GU_LINEAR, GU_LINEAR);
+      
+      sceGuEnable(GU_BLEND);
+      sceGuBlendFunc(GU_ADD, GU_FIX, GU_FIX, psp->rgui.alpha_source, psp->rgui.alpha_dest);
+      sceGuDrawArray(GU_SPRITES, GU_TEXTURE_16BIT | GU_COLOR_5650 | GU_VERTEX_16BIT | GU_TRANSFORM_2D, 2, NULL, v + 2);
+   }
    sceGuFinish(); 
+   
    return true;
 }
 
 static void psp_set_nonblock_state(void *data, bool toggle)
 {
-   (void)data;
-   (void)toggle;
+   psp1_video_t *psp = (psp1_video_t*)data;
+   psp->vsync = toggle;
 }
 
 static bool psp_alive(void *data)
@@ -261,8 +364,17 @@ static bool psp_focus(void *data)
 
 static void psp_free(void *data)
 {
-   (void)data;
-
+   psp1_video_t *psp = (psp1_video_t*)data;
+   
+   if (psp->displayList)
+      free(psp->displayList);
+   if (psp->buffer)
+      free(TO_CACHED_PTR(psp->buffer));
+   if (psp->rgui.buffer)
+      free(TO_CACHED_PTR(psp->rgui.buffer));
+   
+   memset(psp, 0, sizeof(psp1_video_t));
+   
    sceGuTerm();
 }
 
@@ -272,26 +384,50 @@ static void psp_restart(void) {}
 
 static void psp_set_rotation(void *data, unsigned rotation)
 {
-   /* stub */
+   psp1_video_t *psp = (psp1_video_t*)data;
+   psp->rotation = rotation;
 }
 
 static void psp_set_texture_frame(void *data, const void *frame, bool rgb32,
                                unsigned width, unsigned height, float alpha)
 {
    psp1_video_t *psp = (psp1_video_t*)data;
+   
+   if (psp->rgui.rgb32 != rgb32)
+   {
+      psp->rgui.rgb32 = rgb32;
+      psp->rgui.pixel_format = psp->rgui.rgb32 ? GU_PSM_8888 : GU_PSM_5650;
+      psp->rgui.pixel_size = psp->rgui.rgb32 ? 4 : 2;   
+      psp->rgui.RGB_to_BGR = psp->rgui.rgb32 ? ARGB8888_to_ABGR8888 : RGB5650_to_BGR5650;
+      
+      if (psp->rgui.buffer)
+         free(TO_CACHED_PTR(psp->rgui.buffer));
+      psp->rgui.buffer = memalign(16, psp->rgui.buffer_width * psp->rgui.buffer_Height * psp->rgui.pixel_size);        
+      psp->rgui.buffer = TO_UNCACHED_PTR(psp->rgui.buffer);
+      sceKernelDcacheWritebackInvalidateAll();
+   }
+   
+   psp->rgui.width = width;
+   psp->rgui.height = height;
+   psp->rgui.RGB_to_BGR(frame, width, psp->rgui.buffer, psp->rgui.buffer_width, width, height);   
+   
+   psp->rgui.alpha = alpha;   
+   uint32_t mask;
+   mask = alpha*255.0;
+   mask &= 0xFF;
+   psp->rgui.alpha_source = (mask << 24) | (mask << 16) | (mask << 8) | mask;
+   mask = 0xFF - mask;
+   psp->rgui.alpha_dest = (mask << 24) | (mask << 16) | (mask << 8) | mask;
 
-   psp->rgui_rgb32 = rgb32;
-   psp->rgui_alpha = alpha;
-
-   rgui_texture.width  = width;
-   rgui_texture.height = height;
-   rgui_texture.frame  = frame;
 }
 
 static void psp_set_texture_enable(void *data, bool state, bool full_screen)
 {
+   (void) full_screen;
+   
    psp1_video_t *psp = (psp1_video_t*)data;
-   psp->rgui_active = state;
+   psp->rgui.active = state;
+
 }
 
 static const video_poke_interface_t psp_poke_interface = {
