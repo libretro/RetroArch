@@ -48,9 +48,9 @@
 //if unaligned memory access is illegal, define NO_UNALIGNED_MEM
 
 #if SIZE_MAX == 0xFFFFFFFF
-extern char test[(sizeof(size_t)==4)?1:-1];
+extern char double_check_sizeof_size_t[(sizeof(size_t)==4)?1:-1];
 #elif SIZE_MAX == 0xFFFFFFFFFFFFFFFF
-extern char test[(sizeof(size_t)==8)?1:-1];
+extern char double_check_sizeof_size_t[(sizeof(size_t)==8)?1:-1];
 #define USE_64BIT
 #else
 #error your compiler is insane.
