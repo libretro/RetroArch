@@ -184,12 +184,12 @@ static inline void rglGcmSetInlineTransfer(struct CellGcmContextData *thisContex
  gcm_finish_n_commands(thisContext->current, 5);
 
 #define rglGcmSetJumpCommand(thisContext, offset) \
- thisContext->current[0] = ((offset) | (0x20000000)); \
+ gcm_emit_at(thisContext->current, 0, ((offset) | (0x20000000))); \
  gcm_finish_n_commands(thisContext->current, 1);
 
 #define rglGcmSetVertexDataArray(thisContext, index, frequency, stride, size, type, location, offset) \
  gcm_emit_method_at(thisContext->current, 0, (CELL_GCM_NV4097_SET_VERTEX_DATA_ARRAY_FORMAT + ((index)) * 4), 1); \
- (thisContext->current)[1] = ((((frequency)) << 16) | (((stride)) << 8) | (((size)) << 4) | ((type))); \
+ gcm_emit_at(thisContext->current, 1, ((((frequency)) << 16) | (((stride)) << 8) | (((size)) << 4) | ((type)))); \
  gcm_finish_n_commands(thisContext->current, 2); \
  gcm_emit_method_at(thisContext->current, 0, (CELL_GCM_NV4097_SET_VERTEX_DATA_ARRAY_OFFSET + ((index)) * 4), 1); \
  (thisContext->current)[1] = ((((location)) << 31) | (offset)); \
@@ -293,9 +293,6 @@ static inline void rglGcmSetInlineTransfer(struct CellGcmContextData *thisContex
  (thisContext->current)[1] = texture->remap; \
  gcm_finish_n_commands(thisContext->current, 2);
 
-#define rglGcmSetJumpCommand(thisContext, offset) \
- thisContext->current[0] = ((offset) | (0x20000000)); \
- gcm_finish_n_commands(thisContext->current, 1);
 
 #define rglGcmSetBlendEnable(thisContext, enable) \
 { \
@@ -549,11 +546,11 @@ static void rglGcmSetDrawArraysSlow(struct CellGcmContextData *thisContext, uint
    gcm_finish_n_commands(thisContext->current, 4);
 
    gcm_emit_method_at(thisContext->current, 0, CELL_GCM_NV4097_SET_BEGIN_END, 1);
-   (thisContext->current)[1] = ((mode));
+   gcm_emit_at(thisContext->current, 1, mode);
    gcm_finish_n_commands(thisContext->current, 2);
    
    gcm_emit_method_at(thisContext->current, 0, CELL_GCM_NV4097_DRAW_ARRAYS, 1);
-   (thisContext->current)[1] = ((first) | ((lcount)<<24));
+   gcm_emit_at(thisContext->current, 1, ((first) | ((lcount)<<24)));
    gcm_finish_n_commands(thisContext->current, 2);
    first += lcount + 1;
 
@@ -564,7 +561,7 @@ static void rglGcmSetDrawArraysSlow(struct CellGcmContextData *thisContext, uint
 
       for(j = 0; j < CELL_GCM_MAX_METHOD_COUNT; j++)
       {
-         thisContext->current[0] = ((first) | ((255U)<<24));
+         gcm_emit_at(thisContext->current, 0, ((first) | ((255U)<<24)));
          gcm_finish_n_commands(thisContext->current, 1);
          first += 256;
       }
@@ -573,11 +570,11 @@ static void rglGcmSetDrawArraysSlow(struct CellGcmContextData *thisContext, uint
    if(rest)
    {
       thisContext->current[0] = (((rest) << (18)) | CELL_GCM_NV4097_DRAW_ARRAYS | (0x40000000));
-      thisContext->current++;
+      gcm_finish_n_commands(thisContext->current, 1);
 
       for(j = 0;j < rest; j++)
       {
-         thisContext->current[0] = ((first) | ((255U)<<24));
+         gcm_emit_at(thisContext->current, 0, ((first) | ((255U)<<24)));
          gcm_finish_n_commands(thisContext->current, 1);
          first += 256;
       }
@@ -593,7 +590,7 @@ static inline void rglGcmSetDrawArrays(struct CellGcmContextData *thisContext, u
 {
    if (mode == GL_TRIANGLE_STRIP && first == 0 && count == 4)
    {
-      (thisContext->current)[0] = (((3) << (18)) | CELL_GCM_NV4097_INVALIDATE_VERTEX_FILE | (0x40000000));
+      gcm_emit_at(thisContext->current, 0, (((3) << (18)) | CELL_GCM_NV4097_INVALIDATE_VERTEX_FILE | (0x40000000)));
       gcm_emit_at(thisContext->current, 1, 0);
       gcm_emit_at(thisContext->current, 2, 0);
       gcm_emit_at(thisContext->current, 3, 0);
@@ -604,7 +601,7 @@ static inline void rglGcmSetDrawArrays(struct CellGcmContextData *thisContext, u
       gcm_finish_n_commands(thisContext->current, 2);
 
       gcm_emit_method_at(thisContext->current, 0, CELL_GCM_NV4097_DRAW_ARRAYS, 1);
-      (thisContext->current)[1] = ((first) | (3 <<24));
+      gcm_emit_at(thisContext->current, 1, ((first) | (3 <<24)));
       gcm_finish_n_commands(thisContext->current, 2);
       first += 4;
 
@@ -646,7 +643,7 @@ static inline void rglGcmSetVertexProgramLoad(struct CellGcmContextData *thisCon
    {
       gcm_emit_method_at(thisContext->current, 0, CELL_GCM_NV4097_SET_TRANSFORM_PROGRAM, rest);
       for (j = 0; j < rest; j++)
-         thisContext->current[j+1] = rawData[j];
+         gcm_emit_at(thisContext->current, j + 1, rawData[j]);
       gcm_finish_n_commands(thisContext->current, (1 + rest));
    }
 
@@ -790,33 +787,33 @@ static inline void rglGcmSetTransferImage(struct CellGcmContextData *thisContext
          srcBlockOffset = bytesPerPixel * (srcX + x-dstX) + srcPitch * (srcY + y-dstY);
          safeDstBltWidth = (dstBltWidth < 16) ? 16 : (dstBltWidth + 1) & ~1;
 
-	 gcm_emit_method_at(thisContext->current, 0, CELL_GCM_NV3062_SET_OFFSET_DESTIN, 1);
+         gcm_emit_method_at(thisContext->current, 0, CELL_GCM_NV3062_SET_OFFSET_DESTIN, 1);
          gcm_emit_at(thisContext->current, 1, dstOffset + dstBlockOffset);
-	 gcm_finish_n_commands(thisContext->current, 2);
+         gcm_finish_n_commands(thisContext->current, 2);
 
-	 gcm_emit_method_at(thisContext->current, 0, CELL_GCM_NV3062_SET_COLOR_FORMAT, 2);
-	 gcm_emit_at(thisContext->current, 1, dstFormat);
-	 gcm_emit_at(thisContext->current, 2, ((dstPitch) | ((dstPitch) << 16)));
-	 gcm_finish_n_commands(thisContext->current, 3);
+         gcm_emit_method_at(thisContext->current, 0, CELL_GCM_NV3062_SET_COLOR_FORMAT, 2);
+         gcm_emit_at(thisContext->current, 1, dstFormat);
+         gcm_emit_at(thisContext->current, 2, ((dstPitch) | ((dstPitch) << 16)));
+         gcm_finish_n_commands(thisContext->current, 3);
 
-	 gcm_emit_method_at(thisContext->current, 0, CELL_GCM_NV3089_SET_COLOR_CONVERSION, 9);
-	 gcm_emit_at(thisContext->current, 1, CELL_GCM_TRANSFER_CONVERSION_TRUNCATE);
-	 gcm_emit_at(thisContext->current, 2, srcFormat);
-	 gcm_emit_at(thisContext->current, 3, CELL_GCM_TRANSFER_OPERATION_SRCCOPY);
-	 gcm_emit_at(thisContext->current, 4, (((y - dstTop) << 16) | (x - dstLeft)));
-	 gcm_emit_at(thisContext->current, 5, (((dstBltHeight) << 16) | (dstBltWidth)));
-	 gcm_emit_at(thisContext->current, 6, (((y - dstTop) << 16) | (x - dstLeft)));
-	 gcm_emit_at(thisContext->current, 7, (((dstBltHeight) << 16) | (dstBltWidth)));
-	 gcm_emit_at(thisContext->current, 8, 1048576);
-	 gcm_emit_at(thisContext->current, 9, 1048576);
-	 gcm_finish_n_commands(thisContext->current, 10);
+         gcm_emit_method_at(thisContext->current, 0, CELL_GCM_NV3089_SET_COLOR_CONVERSION, 9);
+         gcm_emit_at(thisContext->current, 1, CELL_GCM_TRANSFER_CONVERSION_TRUNCATE);
+         gcm_emit_at(thisContext->current, 2, srcFormat);
+         gcm_emit_at(thisContext->current, 3, CELL_GCM_TRANSFER_OPERATION_SRCCOPY);
+         gcm_emit_at(thisContext->current, 4, (((y - dstTop) << 16) | (x - dstLeft)));
+         gcm_emit_at(thisContext->current, 5, (((dstBltHeight) << 16) | (dstBltWidth)));
+         gcm_emit_at(thisContext->current, 6, (((y - dstTop) << 16) | (x - dstLeft)));
+         gcm_emit_at(thisContext->current, 7, (((dstBltHeight) << 16) | (dstBltWidth)));
+         gcm_emit_at(thisContext->current, 8, 1048576);
+         gcm_emit_at(thisContext->current, 9, 1048576);
+         gcm_finish_n_commands(thisContext->current, 10);
 
-	 gcm_emit_method_at(thisContext->current, 0, CELL_GCM_NV3089_IMAGE_IN_SIZE, 4);
-	 gcm_emit_at(thisContext->current, 1, (((dstBltHeight) << 16) | (safeDstBltWidth)));
-	 gcm_emit_at(thisContext->current, 2, ((srcPitch) | ((CELL_GCM_TRANSFER_ORIGIN_CORNER) << 16) | ((CELL_GCM_TRANSFER_INTERPOLATOR_ZOH) << 24)));
-	 gcm_emit_at(thisContext->current, 3, (srcOffset + srcBlockOffset));
-	 gcm_emit_at(thisContext->current, 4, 0);
-	 gcm_finish_n_commands(thisContext->current, 5);
+         gcm_emit_method_at(thisContext->current, 0, CELL_GCM_NV3089_IMAGE_IN_SIZE, 4);
+         gcm_emit_at(thisContext->current, 1, (((dstBltHeight) << 16) | (safeDstBltWidth)));
+         gcm_emit_at(thisContext->current, 2, ((srcPitch) | ((CELL_GCM_TRANSFER_ORIGIN_CORNER) << 16) | ((CELL_GCM_TRANSFER_INTERPOLATOR_ZOH) << 24)));
+         gcm_emit_at(thisContext->current, 3, (srcOffset + srcBlockOffset));
+         gcm_emit_at(thisContext->current, 4, 0);
+         gcm_finish_n_commands(thisContext->current, 5);
 
          x += dstBltWidth;
       }
@@ -1008,16 +1005,16 @@ static inline void rglGcmTransferData
       {
          cols = (colCount > CL0039_MAX_LINES) ? CL0039_MAX_LINES : colCount;
 
-	 gcm_emit_method_at(thisContext->current, 0, CELL_GCM_NV0039_OFFSET_IN, 8);
-	 gcm_emit_at(thisContext->current, 1, (srcOffset + (bytesPerRow - colCount)));
-	 gcm_emit_at(thisContext->current, 2, (dstOffset + (bytesPerRow - colCount)));
-	 gcm_emit_at(thisContext->current, 3, 0);
-	 gcm_emit_at(thisContext->current, 4, 0);
-	 gcm_emit_at(thisContext->current, 5, cols);
-	 gcm_emit_at(thisContext->current, 6, 1);
-	 gcm_emit_at(thisContext->current, 7, (((1) << 8) | (1)));
-	 gcm_emit_at(thisContext->current, 8, 0);
-	 gcm_finish_n_commands(thisContext->current, 9);
+         gcm_emit_method_at(thisContext->current, 0, CELL_GCM_NV0039_OFFSET_IN, 8);
+         gcm_emit_at(thisContext->current, 1, (srcOffset + (bytesPerRow - colCount)));
+         gcm_emit_at(thisContext->current, 2, (dstOffset + (bytesPerRow - colCount)));
+         gcm_emit_at(thisContext->current, 3, 0);
+         gcm_emit_at(thisContext->current, 4, 0);
+         gcm_emit_at(thisContext->current, 5, cols);
+         gcm_emit_at(thisContext->current, 6, 1);
+         gcm_emit_at(thisContext->current, 7, (((1) << 8) | (1)));
+         gcm_emit_at(thisContext->current, 8, 0);
+         gcm_finish_n_commands(thisContext->current, 9);
       }
 
       dstOffset += dstPitch;
