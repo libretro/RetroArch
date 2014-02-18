@@ -674,16 +674,13 @@ static inline void rglGcmFifoGlViewport(void *data, GLclampf zNear, GLclampf zFa
 
    clipX0 = vp->x;
    clipX1 = vp->x + vp->w;
+   clipY0 = vp->y;
+   clipY1 = vp->y + vp->h;
 
    if (rt->yInverted)
    {
       clipY0 = rt->gcmRenderTarget.height - (vp->y + vp->h);
       clipY1 = rt->gcmRenderTarget.height - vp->y;
-   }
-   else
-   {
-      clipY0 = vp->y;
-      clipY1 = vp->y + vp->h;
    }
 
    if (clipX0 < 0)
@@ -703,16 +700,13 @@ static inline void rglGcmFifoGlViewport(void *data, GLclampf zNear, GLclampf zFa
    // update viewport info
    vp->xScale = vp->w * 0.5f;
    vp->xCenter = (GLfloat)(vp->x + vp->xScale + RGLGCM_SUBPIXEL_ADJUST);
+   vp->yScale = vp->h * 0.5f;
+   vp->yCenter = (GLfloat)(vp->y + vp->yScale + RGLGCM_SUBPIXEL_ADJUST);
 
    if (rt->yInverted)
    {
       vp->yScale = vp->h * -0.5f;
       vp->yCenter = (GLfloat)(rt->gcmRenderTarget.height - RGLGCM_VIEWPORT_EPSILON - vp->y +  vp->yScale + RGLGCM_SUBPIXEL_ADJUST);
-   }
-   else
-   {
-      vp->yScale = vp->h * 0.5f;
-      vp->yCenter = (GLfloat)(vp->y + vp->yScale + RGLGCM_SUBPIXEL_ADJUST);
    }
 
    // compute viewport values for hw [no doubles, so we might loose a few lsb]
