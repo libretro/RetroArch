@@ -2185,8 +2185,9 @@ static void check_rewind(void)
       if (cnt == 0)
 #endif
       {
-         pretro_serialize(g_extern.state_buf, g_extern.state_size);
-         state_manager_push(g_extern.state_manager, g_extern.state_buf);
+         void* state=state_manager_push_where(g_extern.state_manager);
+         pretro_serialize(state, g_extern.state_size);
+         state_manager_push_do(g_extern.state_manager);
       }
    }
 
