@@ -212,7 +212,7 @@ bool state_manager_pop(state_manager_t *state, void **data)
    return true;
 }
 
-void* state_manager_push_where(state_manager_t *state)
+void *state_manager_push_where(state_manager_t *state)
 {
    return state->nextblock;
 }
