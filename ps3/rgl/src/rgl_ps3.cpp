@@ -3279,6 +3279,25 @@ GLAPI GLenum APIENTRY glCheckFramebufferStatusOES( GLenum target )
    return GL_FRAMEBUFFER_COMPLETE_OES;
 }
 
+static inline void frameBuffer_pushBack(GLuint texture, rglFramebuffer *element)
+{
+   RGLcontext*	LContext = (RGLcontext*)_CurrentContext;
+   rglTexture *textureObject = (rglTexture*)LContext->textureNameSpace.data[texture];
+   
+   uint32_t newCapacity = textureObject->framebuffers.count + 1;
+
+   if (newCapacity > textureObject->framebuffers.capacity)
+   {
+      if ( newCapacity > textureObject->framebuffers.capacity )
+         newCapacity = ( newCapacity > textureObject->framebuffers.capacity + textureObject->framebuffers.increment ) ? newCapacity : ( textureObject->framebuffers.capacity + textureObject->framebuffers.increment );
+
+      textureObject->framebuffers.array = (rglFramebuffer**)realloc((void *)(textureObject->framebuffers.array), sizeof(rglFramebuffer) * newCapacity);
+      textureObject->framebuffers.capacity = newCapacity;
+   }
+   new((void *)(textureObject->framebuffers.array + textureObject->framebuffers.count))rglFramebuffer((const rglFramebuffer&)element);
+   ++textureObject->framebuffers.count;
+}
+
 GLAPI void APIENTRY glFramebufferTexture2DOES( GLenum target, GLenum attachment, GLenum textarget, GLuint texture, GLint level )
 {
    RGLcontext* LContext = _CurrentContext;
@@ -3299,8 +3318,7 @@ GLAPI void APIENTRY glFramebufferTexture2DOES( GLenum target, GLenum attachment,
    if (texture)
    {
       attach->type = RGL_FRAMEBUFFER_ATTACHMENT_TEXTURE;
-      textureObject = (rglTexture*)LContext->textureNameSpace.data[texture];
-      textureObject->framebuffers.pushBack( framebuffer );
+      frameBuffer_pushBack(texture, framebuffer);
    }
    else
       attach->type = RGL_FRAMEBUFFER_ATTACHMENT_NONE;
