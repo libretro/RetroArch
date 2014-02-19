@@ -934,14 +934,14 @@ static bool gx_frame(void *data, const void *frame,
 
    __GX_SetCurrentMtx(__gx, GX_PNMTX0);
    GX_LoadTexObj(&g_tex.obj, GX_TEXMAP0);
-   GX_CallDispList(display_list, display_list_size);
+   __GX_CallDispList(__gx, display_list, display_list_size);
    GX_DrawDone();
 
    if (gx->rgui_texture_enable)
    {
       __GX_SetCurrentMtx(__gx, GX_PNMTX1);
       GX_LoadTexObj(&menu_tex.obj, GX_TEXMAP0);
-      GX_CallDispList(display_list, display_list_size);
+      __GX_CallDispList(__gx, display_list, display_list_size);
       GX_DrawDone();
    }
 
