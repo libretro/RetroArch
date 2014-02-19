@@ -272,7 +272,7 @@ static bool gx_convert_texture32(struct texture_image *image)
 {
    // memory allocation in libogc is extremely primitive so try to avoid gaps in memory when converting
    // by copying over to temp buffer first then converting over into main buffer again
-   void *tmp = malloc(width * height * sizeof(uint32_t));
+   void *tmp = malloc(image->width * image->height * sizeof(uint32_t));
 
    if (!tmp)
    {
