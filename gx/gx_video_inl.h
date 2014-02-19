@@ -1,5 +1,23 @@
 #define STRUCT_REGDEF_SIZE		1440
 
+#define GX_LOAD_BP_REG(x) \
+ wgPipe->U8 = 0x61;				\
+ asm volatile ("" ::: "memory" ); \
+ wgPipe->U32 = (u32)(x);		\
+ asm volatile ("" ::: "memory" )
+
+#define WGPIPE (0xCC008000)
+
+#define FIFO_PUTU8(x) *(vu8*)WGPIPE = (u8)(x)
+#define FIFO_PUTS8(x) *(vs8*)WGPIPE = (s8)(x)
+#define FIFO_PUTU16(x) *(vu16*)WGPIPE = (u16)(x)
+#define FIFO_PUTS16(x) *(vs16*)WGPIPE = (s16)(x)
+#define FIFO_PUTU32(x) *(vu32*)WGPIPE = (u32)(x)
+#define FIFO_PUTS32(x) *(vs32*)WGPIPE = (s32)(x)
+#define FIFO_PUTF32(x) *(vf32*)WGPIPE = (f32)(x)
+
+#define XY(x, y)   (((y) << 10) | (x))
+
 extern u8 __gxregs[];
 
 struct __gx_regdef
@@ -117,54 +135,75 @@ static GXTexRegion* __GXDefTexRegionCallback(GXTexObj *obj,u8 mapid)
 }
 #endif
 
-#define GX_LOAD_BP_REG(x) \
- wgPipe->U8 = 0x61;				\
- asm volatile ("" ::: "memory" ); \
- wgPipe->U32 = (u32)(x);		\
- asm volatile ("" ::: "memory" )
+#define __GX_SetDispCopySrc(__gx, left, top, wd, ht) \
+__gx->dispCopyTL = (__gx->dispCopyTL&~0x00ffffff)|XY(left,top); \
+__gx->dispCopyTL = (__gx->dispCopyTL&~0xff000000)|(_SHIFTL(0x49,24,8)); \
+__gx->dispCopyWH = (__gx->dispCopyWH&~0x00ffffff)|XY((wd-1),(ht-1)); \
+__gx->dispCopyWH = (__gx->dispCopyWH&~0xff000000)|(_SHIFTL(0x4a,24,8))
 
-#define GX_InvalidateTexAll() \
+#define __GX_SetDispCopyDst(__gx, wd, ht) \
+__gx->dispCopyDst = (__gx->dispCopyDst&~0x3ff)|(_SHIFTR(wd,4,10)); \
+__gx->dispCopyDst = (__gx->dispCopyDst&~0xff000000)|(_SHIFTL(0x4d,24,8))
+
+static inline void __GX_CopyDisp(struct __gx_regdef *__gx, void *dest,u8 clear)
+{
+   u8 clflag;
+   u32 val;
+
+   if(clear)
+   {
+      val= (__gx->peZMode&~0xf)|0xf;
+      GX_LOAD_BP_REG(val);
+      val = (__gx->peCMode0&~0x3);
+      GX_LOAD_BP_REG(val);
+   }
+
+   clflag = 0;
+   if(clear || (__gx->peCntrl&0x7)==0x0003)
+   {
+      if(__gx->peCntrl&0x40)
+      {
+         clflag = 1;
+         val = (__gx->peCntrl&~0x40);
+         GX_LOAD_BP_REG(val);
+      }
+   }
+
+   GX_LOAD_BP_REG(__gx->dispCopyTL); // set source top
+   GX_LOAD_BP_REG(__gx->dispCopyWH);
+
+   GX_LOAD_BP_REG(__gx->dispCopyDst);
+
+   val = 0x4b000000|(_SHIFTR(MEM_VIRTUAL_TO_PHYSICAL(dest),5,24));
+   GX_LOAD_BP_REG(val);
+
+   __gx->dispCopyCntrl = (__gx->dispCopyCntrl&~0x800)|(_SHIFTL(clear,11,1));
+   __gx->dispCopyCntrl = (__gx->dispCopyCntrl&~0x4000)|0x4000;
+   __gx->dispCopyCntrl = (__gx->dispCopyCntrl&~0xff000000)|(_SHIFTL(0x52,24,8));
+
+   GX_LOAD_BP_REG(__gx->dispCopyCntrl);
+
+   if(clear)
+   {
+      GX_LOAD_BP_REG(__gx->peZMode);
+      GX_LOAD_BP_REG(__gx->peCMode0);
+   }
+
+   if(clflag)
+   {
+      GX_LOAD_BP_REG(__gx->peCntrl);
+   }
+}
+
+
+#define __GX_InvalidateTexAll(__gx) \
 	GX_LOAD_BP_REG(__gx->tevIndMask); \
 	GX_LOAD_BP_REG(0x66001000); \
 	GX_LOAD_BP_REG(0x66001100); \
 	GX_LOAD_BP_REG(__gx->tevIndMask)
 
-#define GX_SetCurrentMtx(mtx) \
+#define __GX_SetCurrentMtx(__gx, mtx) \
 	__gx->mtxIdxLo = (__gx->mtxIdxLo&~0x3f)|(mtx&0x3f); \
 	__gx->dirtyState |= 0x04000000
-
-#if defined(HW_RVL)
-#define GX_CopyDisp(dest,clear) \
-	u8 clflag; \
-	u32 val; \
-	if(clear) { \
-		val= (__gx->peZMode&~0xf)|0xf; \
-		GX_LOAD_BP_REG(val); \
-		val = (__gx->peCMode0&~0x3); \
-		GX_LOAD_BP_REG(val); \
-	} \
-	clflag = 0; \
-	if(clear || (__gx->peCntrl&0x7)==0x0003) { \
-		if(__gx->peCntrl&0x40) { \
-			clflag = 1; \
-			val = (__gx->peCntrl&~0x40); \
-			GX_LOAD_BP_REG(val); \
-		} \
-	} \
-	GX_LOAD_BP_REG(__gx->dispCopyTL); \
-	GX_LOAD_BP_REG(__gx->dispCopyWH); \
-	GX_LOAD_BP_REG(__gx->dispCopyDst); \
-	val = 0x4b000000|(_SHIFTR(MEM_VIRTUAL_TO_PHYSICAL(dest),5,24)); \
-	GX_LOAD_BP_REG(val); \
-	__gx->dispCopyCntrl = (__gx->dispCopyCntrl&~0x800)|(_SHIFTL(clear,11,1)); \
-	__gx->dispCopyCntrl = (__gx->dispCopyCntrl&~0x4000)|0x4000; \
-	__gx->dispCopyCntrl = (__gx->dispCopyCntrl&~0xff000000)|(_SHIFTL(0x52,24,8)); \
-	GX_LOAD_BP_REG(__gx->dispCopyCntrl); \
-	if(clear) { \
-		GX_LOAD_BP_REG(__gx->peZMode); \
-		GX_LOAD_BP_REG(__gx->peCMode0); \
-	} \
-	if(clflag) GX_LOAD_BP_REG(__gx->peCntrl)
-#endif
 
 #define GX_LoadTexObj(obj,mapid) GX_LoadTexObjPreloaded(obj,(__GXDefTexRegionCallback(obj,mapid)),mapid)

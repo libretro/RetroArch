@@ -32,14 +32,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#ifdef HW_RVL
-#define GX_OPTS
-#endif
-
-#ifdef GX_OPTS
 #include "gx_video_inl.h"
-
-#endif
 
 #define SYSMEM1_SIZE 0x01800000
 
@@ -101,10 +94,8 @@ void gx_set_video_mode(void *data, unsigned fbWidth, unsigned lines)
    bool progressive;
    gx_video_t *gx = (gx_video_t*)data;
    (void)level;
-#ifdef GX_OPTS
    struct __gx_regdef *__gx = (struct __gx_regdef*)__gxregs;
    _CPU_ISR_Disable(level);
-#endif
    VIDEO_SetBlack(true);
    VIDEO_Flush();
    viHeightMultiplier = 1;
@@ -235,23 +226,22 @@ void gx_set_video_mode(void *data, unsigned fbWidth, unsigned lines)
    VIDEO_Flush();
 
    GX_SetViewport(0, 0, gx_mode.fbWidth, gx_mode.efbHeight, 0, 1);
-   GX_SetDispCopySrc(0, 0, gx_mode.fbWidth, gx_mode.efbHeight);
+   __GX_SetDispCopySrc(__gx, 0, 0, gx_mode.fbWidth, gx_mode.efbHeight);
 
    f32 y_scale = GX_GetYScaleFactor(gx_mode.efbHeight, gx_mode.xfbHeight);
    u16 xfbWidth = VIDEO_PadFramebufferWidth(gx_mode.fbWidth);
    u16 xfbHeight = GX_SetDispCopyYScale(y_scale);
-   GX_SetDispCopyDst(xfbWidth, xfbHeight);
+   (void)xfbHeight;
+   __GX_SetDispCopyDst(__gx, xfbWidth, xfbHeight);
 
    GX_SetCopyFilter(gx_mode.aa, gx_mode.sample_pattern, (gx_mode.xfbMode == VI_XFBMODE_SF) ? GX_FALSE : GX_TRUE,
          gx_mode.vfilter);
    GX_SetCopyClear((GXColor) { 0, 0, 0, 0xff }, GX_MAX_Z24);
    GX_SetFieldMode(gx_mode.field_rendering, (gx_mode.viHeight == 2 * gx_mode.xfbHeight) ? GX_ENABLE : GX_DISABLE);
    GX_SetPixelFmt(GX_PF_RGB8_Z24, GX_ZC_LINEAR);
-   GX_InvalidateTexAll();
+   __GX_InvalidateTexAll(__gx);
    GX_Flush();
-#ifdef GX_OPTS
    _CPU_ISR_Restore(level);
-#endif
 
    RARCH_LOG("GX Resolution: %dx%d (%s)\n", gx_mode.fbWidth, gx_mode.efbHeight, (gx_mode.viTVMode & 3) == VI_INTERLACE ? "interlaced" : "progressive");
 
@@ -328,9 +318,7 @@ static void setup_video_mode(void *data)
 
 static void init_texture(void *data, unsigned width, unsigned height)
 {
-#ifdef GX_OPTS
    struct __gx_regdef *__gx = (struct __gx_regdef*)__gxregs;
-#endif
    width &= ~3;
    height &= ~3;
    gx_video_t *gx = (gx_video_t*)data;
@@ -352,7 +340,7 @@ static void init_texture(void *data, unsigned width, unsigned height)
    GX_InitTexObjFilterMode(&g_tex.obj, g_filter, g_filter);
    GX_InitTexObj(&menu_tex.obj, menu_tex.data, rgui_w, rgui_h, GX_TF_RGB5A3, GX_CLAMP, GX_CLAMP, GX_FALSE);
    GX_InitTexObjFilterMode(&menu_tex.obj, g_filter, g_filter);
-   GX_InvalidateTexAll();
+   __GX_InvalidateTexAll(__gx);
 }
 
 static void init_vtx(void *data)
@@ -889,9 +877,7 @@ static bool gx_frame(void *data, const void *frame,
       const char *msg)
 {
    gx_video_t *gx = (gx_video_t*)driver.video_data;
-#ifdef GX_OPTS
    struct __gx_regdef *__gx = (struct __gx_regdef*)__gxregs;
-#endif
    u8 clear_efb = GX_FALSE;
 
    (void)data;
@@ -941,16 +927,16 @@ static bool gx_frame(void *data, const void *frame,
       DCFlushRange(menu_tex.data, rgui->width * rgui->height * 2);
    }
 
-   GX_InvalidateTexAll();
+   __GX_InvalidateTexAll(__gx);
 
-   GX_SetCurrentMtx(GX_PNMTX0);
+   __GX_SetCurrentMtx(__gx, GX_PNMTX0);
    GX_LoadTexObj(&g_tex.obj, GX_TEXMAP0);
    GX_CallDispList(display_list, display_list_size);
    GX_DrawDone();
 
    if (gx->rgui_texture_enable)
    {
-      GX_SetCurrentMtx(GX_PNMTX1);
+      __GX_SetCurrentMtx(__gx, GX_PNMTX1);
       GX_LoadTexObj(&menu_tex.obj, GX_TEXMAP0);
       GX_CallDispList(display_list, display_list_size);
       GX_DrawDone();
@@ -986,7 +972,7 @@ static bool gx_frame(void *data, const void *frame,
       clear_efb = GX_TRUE;
    }
 
-   GX_CopyDisp(g_framebuf[g_current_framebuf], clear_efb);
+   __GX_CopyDisp(__gx, g_framebuf[g_current_framebuf], clear_efb);
    GX_Flush();
    VIDEO_SetNextFramebuffer(g_framebuf[g_current_framebuf]);
    VIDEO_Flush();
