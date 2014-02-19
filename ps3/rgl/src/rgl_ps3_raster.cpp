@@ -1310,9 +1310,7 @@ static void update_state_validation(void)
             // Set a texture to a gcm texture unit
 
             rglGcmTexture *platformTexture = ( rglGcmTexture * )texture->platformTexture;
-            const GLuint imageOffset = gmmIdToOffset(platformTexture->gpuAddressId) +
-               platformTexture->gpuAddressIdOffset;
-            platformTexture->gcmTexture.offset = imageOffset; 
+            platformTexture->gcmTexture.offset = gmmIdToOffset(platformTexture->gpuAddressId) + platformTexture->gpuAddressIdOffset; 
 
             // set up the texture unit with the info for the current texture
             // bind texture , control 1,3,format and remap
@@ -1321,17 +1319,17 @@ static void update_state_validation(void)
             rglGcmSetTextureBorder(thisContext, unit, texture, 0x1);
 
             CellGcmContextData *gcm_context = (CellGcmContextData*)&rglGcmState_i.fifo;
-            ((gcm_context->current)[(0)] = ((((8) << (18)) | ((CELL_GCM_NV4097_SET_TEXTURE_OFFSET) + (unit) * 0x20))));
-            ((gcm_context->current)[(1)] = ((platformTexture->gcmTexture.offset)));
-            ((gcm_context->current)[(2)] = (((((platformTexture->gcmTexture.location)) + 1) | (((platformTexture->gcmTexture.cubemap)) << 2) | (((0x01)) << 3) | (((platformTexture->gcmTexture.dimension)) << 4) | (((platformTexture->gcmTexture.format)) << 8) | (((platformTexture->gcmTexture.mipmap)) << 16))));
-            ((gcm_context->current)[(3)] = (((platformTexture->gcmMethods.address.wrapS) | ((0) << 4) | ((platformTexture->gcmMethods.address.wrapT) << 8) | ((platformTexture->gcmMethods.address.unsignedRemap) << 12) | ((platformTexture->gcmMethods.address.wrapR) << 16) | ((platformTexture->gcmMethods.address.gamma) << 20) | ((platformTexture->gcmMethods.address.zfunc) << 28))));
-            ((gcm_context->current)[(4)] = ((((0 << 2) | (platformTexture->gcmMethods.control0.maxAniso) << 4) | ((platformTexture->gcmMethods.control0.maxLOD) << 7) | ((platformTexture->gcmMethods.control0.minLOD) << 19) | ((CELL_GCM_TRUE) << 31))));
-            ((gcm_context->current)[(5)] = (platformTexture->gcmTexture.remap));
-            ((gcm_context->current)[(6)] = ((((platformTexture->gcmMethods.filter.bias & 0x1fff)) | ((platformTexture->gcmMethods.filter.conv) << 13) | ((platformTexture->gcmMethods.filter.min) << 16) | ((platformTexture->gcmMethods.filter.mag) << 24))));
-            ((gcm_context->current)[(7)] = (((platformTexture->gcmTexture.height) | ((platformTexture->gcmTexture.width) << 16))));
-            ((gcm_context->current)[(8)] = ((platformTexture->gcmMethods.borderColor)));
-            ((gcm_context->current)[(9)] = ((((1) << (18)) | ((CELL_GCM_NV4097_SET_TEXTURE_CONTROL3) + (unit) * 0x04))));
-            ((gcm_context->current)[(10)] = (((platformTexture->gcmTexture.pitch) | ((platformTexture->gcmTexture.depth) << 20))));;
+            gcm_emit_at(gcm_context->current, 0, ((((8) << (18)) | ((CELL_GCM_NV4097_SET_TEXTURE_OFFSET) + (unit) * 0x20))));
+            gcm_emit_at(gcm_context->current, 1, ((platformTexture->gcmTexture.offset)));
+            gcm_emit_at(gcm_context->current, 2, (((((platformTexture->gcmTexture.location)) + 1) | (((platformTexture->gcmTexture.cubemap)) << 2) | (((0x01)) << 3) | (((platformTexture->gcmTexture.dimension)) << 4) | (((platformTexture->gcmTexture.format)) << 8) | (((platformTexture->gcmTexture.mipmap)) << 16))));
+            gcm_emit_at(gcm_context->current, 3, (((platformTexture->gcmMethods.address.wrapS) | ((0) << 4) | ((platformTexture->gcmMethods.address.wrapT) << 8) | ((platformTexture->gcmMethods.address.unsignedRemap) << 12) | ((platformTexture->gcmMethods.address.wrapR) << 16) | ((platformTexture->gcmMethods.address.gamma) << 20) | ((platformTexture->gcmMethods.address.zfunc) << 28))));
+            gcm_emit_at(gcm_context->current, 4, ((((0 << 2) | (platformTexture->gcmMethods.control0.maxAniso) << 4) | ((platformTexture->gcmMethods.control0.maxLOD) << 7) | ((platformTexture->gcmMethods.control0.minLOD) << 19) | ((CELL_GCM_TRUE) << 31))));
+            gcm_emit_at(gcm_context->current, 5, (platformTexture->gcmTexture.remap));
+            gcm_emit_at(gcm_context->current, 6, ((((platformTexture->gcmMethods.filter.bias & 0x1fff)) | ((platformTexture->gcmMethods.filter.conv) << 13) | ((platformTexture->gcmMethods.filter.min) << 16) | ((platformTexture->gcmMethods.filter.mag) << 24))));
+            gcm_emit_at(gcm_context->current, 7, (((platformTexture->gcmTexture.height) | ((platformTexture->gcmTexture.width) << 16))));
+            gcm_emit_at(gcm_context->current, 8, ((platformTexture->gcmMethods.borderColor)));
+            gcm_emit_at(gcm_context->current, 9, ((((1) << (18)) | ((CELL_GCM_NV4097_SET_TEXTURE_CONTROL3) + (unit) * 0x04))));
+            gcm_emit_at(gcm_context->current, 10, (((platformTexture->gcmTexture.pitch) | ((platformTexture->gcmTexture.depth) << 20))));;
             gcm_finish_n_commands(gcm_context->current, 11);
          }
          else
