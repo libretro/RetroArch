@@ -88,6 +88,7 @@ static void psp_input_set_keybinds(void *data, unsigned device, unsigned port,
 
 static void psp_input_poll(void *data)
 {
+   int32_t ret;
    uint64_t *lifecycle_state = (uint64_t*)&g_extern.lifecycle_state;
    SceCtrlData state_tmp;
    psp_input_t *psp = (psp_input_t*)data;
@@ -96,7 +97,8 @@ static void psp_input_poll(void *data)
    sceCtrlSetSamplingCycle(0);
 #endif
    sceCtrlSetSamplingMode(DEFAULT_SAMPLING_MODE);
-   int ret = CtrlReadBufferPositive(0, &state_tmp, 1);
+   ret = CtrlReadBufferPositive(0, &state_tmp, 1);
+   (void)ret;
 
    psp->analog_state[0][0][0] = psp->analog_state[0][0][1] = psp->analog_state[0][1][0] = psp->analog_state[0][1][1] = 0;
    psp->pad_state = 0;

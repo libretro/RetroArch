@@ -189,6 +189,7 @@ bool texture_image_load_argb_shift(const char *path, struct texture_image *out_i
       unsigned a_shift, unsigned r_shift, unsigned g_shift, unsigned b_shift)
 {
    unsigned i;
+   (void)i;
    if (strstr(path, ".tga"))
       return texture_image_load_tga_shift(path, out_img, a_shift, r_shift, g_shift, b_shift);
 #ifdef HAVE_ZLIB
