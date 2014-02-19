@@ -1143,7 +1143,11 @@ GLAPI void APIENTRY glClear( GLbitfield mask )
 
 rglFramebuffer* rglCreateFramebuffer (void)
 {
-   return new rglFramebuffer();
+   rglFramebuffer *fb = (rglFramebuffer*)calloc(1, sizeof(rglFramebuffer));
+   fb->needValidate = GL_TRUE;
+   memset(&fb->rt, 0, sizeof(fb->rt));
+
+   return fb;
 }
 
 void rglDestroyFramebuffer (void *data)
@@ -1151,7 +1155,7 @@ void rglDestroyFramebuffer (void *data)
    rglFramebuffer *framebuffer = (rglFramebuffer*)data;
 
    if(framebuffer)
-      delete framebuffer;
+      free(framebuffer);
 }
 
 GLenum rglPlatformFramebufferCheckStatus (void *data)

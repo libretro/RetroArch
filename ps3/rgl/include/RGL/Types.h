@@ -439,12 +439,6 @@ struct rglFramebuffer
    rglGcmRenderTargetEx rt;
    GLboolean complete;
    GLboolean needValidate;
-   rglFramebuffer(): needValidate( GL_TRUE )
-   {
-      memset( &rt, 0, sizeof( rt ) );
-   };
-   virtual ~rglFramebuffer()
-   {};
 };
 
 #ifdef __cplusplus
