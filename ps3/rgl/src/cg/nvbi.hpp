@@ -3,7 +3,6 @@
 
 #include "cgbdefs.hpp"
 
-#include <iostream>
 #include <string>
 #include <vector>
 #include <cstddef>

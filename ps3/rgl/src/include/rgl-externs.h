@@ -1,3 +1,6 @@
+#ifndef _RGL_EXTERNS_H
+#define _RGL_EXTERNS_H
+
 GLboolean rglGcmFifoReferenceInUse (void *data, GLuint reference);
 GLuint rglGcmFifoPutReference (void *data);
 void rglGcmGetTileRegionInfo (void *data, GLuint *address, GLuint *size);
@@ -7,3 +10,5 @@ int32_t rglOutOfSpaceCallback (void *data, uint32_t spaceInWords);
 void rglGcmFifoGlSetRenderTarget (const void *args);
 void rglCreatePushBuffer (void *data);
 void rglGcmFreeTiledSurface (GLuint bufferId);
+
+#endif

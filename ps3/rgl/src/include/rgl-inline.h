@@ -1,3 +1,6 @@
+#ifndef _RGL_INLINE_H
+#define _RGL_INLINE_H
+
 #define gcm_emit_at(buffer, location, word) ((buffer)[(location)] = (word))
 #define gcm_emit_method_at(buffer, location, method, n) gcm_emit_at((buffer),(location), (method) |((n) << 18))
 #define gcm_finish_n_commands(buffer, n) (buffer) += n
@@ -664,3 +667,5 @@ static inline void rglGcmTransferData
    gcm_emit_at(thisContext->current, 1, 0);
    gcm_finish_n_commands(thisContext->current, 2);
 }
+
+#endif

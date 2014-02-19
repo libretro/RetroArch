@@ -1,3 +1,6 @@
+#ifndef _RGL_TYPEDEFS_H
+#define _RGL_TYPEDEFS_H
+
 #include "../include/export/RGL/rgl.h"
 #include "../include/RGL/Types.h"
 
@@ -349,28 +352,20 @@ struct rglGcmState
    char *localAddress;
 
    // host memory window the gpu can access
-   void 						*hostMemoryBase;
-   GLuint 						hostMemorySize;
+   void 						    *hostMemoryBase;
+   GLuint 						 hostMemorySize;
 
    // semaphores
-   rglGcmSemaphoreMemory        *semaphores;
+   rglGcmSemaphoreMemory    *semaphores;
 
    // -- context state --
-
-   // fifo
    rglGcmFifo               fifo;
-
-   // rendering target
    rglGcmRenderTarget       renderTarget;
-
-   // state
    rglGcmCachedState        state;
-
-   // Cell Gcm Config
-   CellGcmConfig config;
-
-   // to use as the back end label value when syncing before cellGcmSetTile, SetZCull, and SetInvalidateTile. 
-   GLuint			labelValue; 
+   CellGcmConfig            config;
+   GLuint			          labelValue; 
 };
 
 extern rglGcmState rglGcmState_i;
+
+#endif

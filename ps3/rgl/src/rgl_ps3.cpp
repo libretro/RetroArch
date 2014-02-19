@@ -1909,7 +1909,7 @@ static int rglGcmInitRM( rglGcmResource *gcmResource, int inSysMem, unsigned int
    // cause a problem fetching invalid addresses at the end of the push buffer.
    gcmResource->hostMemorySize = rglPad( RGLGCM_FIFO_SIZE + dmaPushBufferSize + RGLGCM_DMA_PUSH_BUFFER_PREFETCH_PADDING + (RGLGCM_LM_MAX_TOTAL_QUERIES * sizeof( GLuint )), 1 << 20 );
 
-   if ( gcmResource->hostMemorySize > 0 )
+   if (gcmResource->hostMemorySize)
       gcmResource->hostMemoryBase = (char *)memalign( 1 << 20, gcmResource->hostMemorySize  );
 
    // Initialize RSXIF
