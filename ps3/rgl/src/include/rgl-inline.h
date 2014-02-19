@@ -2,6 +2,17 @@
 #define gcm_emit_method_at(buffer, location, method, n) gcm_emit_at((buffer),(location), (method) |((n) << 18))
 #define gcm_finish_n_commands(buffer, n) (buffer) += n
 
+#define SUBPIXEL_BITS 12
+#define SUBPIXEL_ADJUST (0.5/(1<<SUBPIXEL_BITS))
+#define BLOCKSIZE_MAX_DIMENSIONS 1024
+
+#define CL0039_MIN_PITCH -32768
+#define CL0039_MAX_PITCH 32767
+#define CL0039_MAX_LINES 0x3fffff
+#define CL0039_MAX_ROWS 0x7ff
+
+#define RGLGCM_UTIL_LABEL_INDEX 253
+
 static inline GLuint rglPlatformGetBitsPerPixel (GLenum internalFormat)
 {
    switch (internalFormat)
@@ -27,7 +38,8 @@ static inline GLuint rglPlatformGetBitsPerPixel (GLenum internalFormat)
    }
 }
 
-static inline void rglGcmSetVertexProgramParameterBlock(struct CellGcmContextData *thisContext, uint32_t baseConst, uint32_t constCount, const float * __restrict value)
+static inline void rglGcmSetVertexProgramParameterBlock(struct CellGcmContextData *thisContext,
+      uint32_t baseConst, uint32_t constCount, const float * __restrict value)
 {
    uint32_t blockCount, blockRemain, i;
 
@@ -106,9 +118,6 @@ static inline void rglGcmSetInlineTransfer(struct CellGcmContextData *thisContex
       gcm_finish_n_commands(thisContext->current, 1);
    }
 }
-
-#define SUBPIXEL_BITS 12
-#define SUBPIXEL_ADJUST (0.5/(1<<SUBPIXEL_BITS))
 
 #define rglGcmSwap16Float32(fp, f) \
 { \
@@ -728,7 +737,6 @@ static inline void rglGcmFifoGlViewport(void *data, GLclampf zNear, GLclampf zFa
          clipY1 - clipY0, zNear, zFar, scale, offset );
 }
 
-#define BLOCKSIZE_MAX_DIMENSIONS 1024
 
 static inline void rglGcmSetTransferImage(struct CellGcmContextData *thisContext, uint8_t mode, uint32_t dstOffset, uint32_t dstPitch, uint32_t dstX, uint32_t dstY, uint32_t srcOffset, uint32_t srcPitch, uint32_t srcX, uint32_t srcY, uint32_t width, uint32_t height, uint32_t bytesPerPixel)
 {
@@ -902,7 +910,6 @@ static inline void RGLGCM_CALC_COLOR_LE_ARGB8( GLuint *color0, const GLfloat r,
    *color0 = ( a2 << 24 ) | ( r2 << 16 ) | ( g2 << 8 ) | ( b2 << 0 );
 }
 
-#define RGLGCM_UTIL_LABEL_INDEX 253
 
 // Utility to let RSX wait for complete RSX pipeline idle
 static inline void rglGcmUtilWaitForIdle (void)
@@ -955,11 +962,6 @@ static inline void rglPrintFifoFromGet( unsigned int numWords )
    for ( int i = -numWords; i <= -1; i++ )
       rglPrintIt((( uint32_t* )rglGcmState_i.fifo.lastGetRead )[i] );
 }
-
-#define CL0039_MIN_PITCH -32768
-#define CL0039_MAX_PITCH 32767
-#define CL0039_MAX_LINES 0x3fffff
-#define CL0039_MAX_ROWS 0x7ff
 
 static inline void rglGcmTransferData
 (

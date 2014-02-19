@@ -20,7 +20,7 @@ extern "C" {
 #define RGL_BOOLEAN_REGISTERS_COUNT 32
 
 // parameter setter, prototype of functions called when a uniform is set.
-typedef void(*_cgSetFunction) (void *, const void* _RGL_RESTRICT);
+typedef void(*_cgSetFunction) (void *, const void*);
 typedef void(*_cgSetArrayIndexFunction) (void *, const void*, const int index);
 
 typedef struct _CgUniform

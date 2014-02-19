@@ -16,7 +16,6 @@
 
 #include <ppu_intrinsics.h>
 
-#include <RGL/platform.h>
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
@@ -25,11 +24,7 @@
   MEMORY MANAGER
   ============================================================ */
 
-#if RGL_ENDIAN == RGL_BIG_ENDIAN
 #define ENDIAN_32(X, F) ((F) ? endianSwapWord(X) : (X))
-#else
-#define ENDIAN_32(X, F) (X)
-#endif
 
 int _parameterAlloc = 0;
 int _ucodeAlloc = 0;

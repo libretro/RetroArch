@@ -3,7 +3,6 @@
 
 #include "Types.h"
 #include "../export/RGL/export.h"
-#include "platform.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -22,16 +21,16 @@ extern "C" {
 #define endianSwapWord(v) (((v) & 0xff ) << 24 | ((v) & 0xff00 ) << 8 | ((v) & 0xff0000 ) >> 8 | ((v) & 0xff000000 ) >> 24)
 #define endianSwapWordByHalf(v) (((v) & 0xffff ) << 16 | (v) >> 16)
 
-   static inline int rglLog2( unsigned int i )
+static inline int rglLog2( unsigned int i )
+{
+   int l = 0;
+   while ( i )
    {
-      int l = 0;
-      while ( i )
-      {
-         ++l;
-         i >>= 1;
-      }
-      return l -1;
+      ++l;
+      i >>= 1;
    }
+   return l -1;
+}
 
 #define rglIsPow2(i) (((i) & ((i) - 1 )) == 0)
 // Pad argument x to the next multiple of argument pad.
@@ -52,7 +51,6 @@ GLboolean rglTexNameSpaceCreateNameLazy(void *data, GLuint name );
 GLboolean rglTexNameSpaceIsName(void *data, GLuint name );
 void rglTexNameSpaceDeleteNames(void *data, GLsizei n, const GLuint *names );
 void rglTexNameSpaceReinit(void *saved, void *active);
-
 
 #ifdef __cplusplus
 }
