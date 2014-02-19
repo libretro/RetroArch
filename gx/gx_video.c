@@ -318,27 +318,27 @@ static void setup_video_mode(void *data)
 
 static void init_texture(void *data, unsigned width, unsigned height)
 {
+   unsigned g_filter, rgui_w, rgui_h;
    struct __gx_regdef *__gx = (struct __gx_regdef*)__gxregs;
+   gx_video_t *gx = (gx_video_t*)data;
+
    width &= ~3;
    height &= ~3;
-   gx_video_t *gx = (gx_video_t*)data;
-   unsigned g_filter = g_settings.video.smooth ? GX_LINEAR : GX_NEAR;
-   unsigned rgui_w, rgui_h;
+   g_filter = g_settings.video.smooth ? GX_LINEAR : GX_NEAR;
+   rgui_w = 320;
+   rgui_h = 240;
 
    if (rgui)
    {
       rgui_w = rgui->width;
       rgui_h = rgui->height;
    }
-   else
-   {
-      rgui_w = 320;
-      rgui_h = 240;
-   }
 
-   GX_InitTexObj(&g_tex.obj, g_tex.data, width, height, (gx->rgb32) ? GX_TF_RGBA8 : gx->rgui_texture_enable ? GX_TF_RGB5A3 : GX_TF_RGB565, GX_CLAMP, GX_CLAMP, GX_FALSE);
+   struct __gx_texobj *fb_ptr = (struct __gx_texobj*)&g_tex.obj;
+   struct __gx_texobj *menu_ptr = (struct __gx_texobj*)&menu_tex.obj;
+   __GX_InitTexObj(fb_ptr, g_tex.data, width, height, (gx->rgb32) ? GX_TF_RGBA8 : gx->rgui_texture_enable ? GX_TF_RGB5A3 : GX_TF_RGB565, GX_CLAMP, GX_CLAMP, GX_FALSE);
    GX_InitTexObjFilterMode(&g_tex.obj, g_filter, g_filter);
-   GX_InitTexObj(&menu_tex.obj, menu_tex.data, rgui_w, rgui_h, GX_TF_RGB5A3, GX_CLAMP, GX_CLAMP, GX_FALSE);
+   __GX_InitTexObj(menu_ptr, menu_tex.data, rgui_w, rgui_h, GX_TF_RGB5A3, GX_CLAMP, GX_CLAMP, GX_FALSE);
    GX_InitTexObjFilterMode(&menu_tex.obj, g_filter, g_filter);
    __GX_InvalidateTexAll(__gx);
 }
@@ -375,6 +375,9 @@ static void init_vtx(void *data)
 
    g_tex.data = memalign(32, 4 * 4 * 4);
    memset(g_tex.data, 0, 4 * 4 * 4);
+   memset(&g_tex.obj, 0, sizeof(GXTexObj));
+   memset(&menu_tex.obj, 0, sizeof(GXTexObj));
+
    DCFlushRange(g_tex.data, 4 * 4 * 4);
    init_texture(data, 4, 4); // for menu texture
    GX_Flush();

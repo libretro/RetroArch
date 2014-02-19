@@ -195,6 +195,24 @@ static inline void __GX_CopyDisp(struct __gx_regdef *__gx, void *dest,u8 clear)
    }
 }
 
+#define XSHIFT 2
+#define YSHIFT 2
+
+#define __GX_InitTexObj(ptr, img_ptr, wd, ht, fmt, wrap_s, wrap_t, mipmap) \
+   ptr->tex_filt = (ptr->tex_filt&~0x03)|(wrap_s&3); \
+   ptr->tex_filt = (ptr->tex_filt&~0x0c)|(_SHIFTL(wrap_t,2,2)); \
+   ptr->tex_filt = (ptr->tex_filt&~0x10)|0x10; \
+   /* no mip-mapping */ \
+   ptr->tex_filt= (ptr->tex_filt&~0xE0)|0x0080; \
+   ptr->tex_fmt = fmt; \
+   ptr->tex_size = (ptr->tex_size&~0x3ff)|((wd-1)&0x3ff); \
+   ptr->tex_size = (ptr->tex_size&~0xFFC00)|(_SHIFTL((ht-1),10,10)); \
+   ptr->tex_size = (ptr->tex_size&~0xF00000)|(_SHIFTL(fmt,20,4)); \
+   ptr->tex_maddr = (ptr->tex_maddr&~0x01ffffff)|(_SHIFTR(MEM_VIRTUAL_TO_PHYSICAL(img_ptr),5,24)); \
+   ptr->tex_tile_type = 2; \
+   ptr->tex_tile_cnt = ((((wd+(1 << XSHIFT))-1) >> XSHIFT) * (((ht+(1 << YSHIFT))-1) >> YSHIFT)) & 0x7fff; \
+   ptr->tex_flag |= 0x0002
+
 
 #define __GX_InvalidateTexAll(__gx) \
 	GX_LOAD_BP_REG(__gx->tevIndMask); \
