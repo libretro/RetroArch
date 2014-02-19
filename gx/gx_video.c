@@ -1073,6 +1073,133 @@ static void gx_get_poke_interface(void *data, const video_poke_interface_t **ifa
    *iface = &gx_poke_interface;
 }
 
+#ifdef HAVE_OVERLAY
+static void gx_free_overlay(gx_t *gx);
+static bool gx_overlay_load(void *data, const struct texture_image *images, unsigned num_images)
+{
+   unsigned i;
+   gx_video_t *gx = (gx_video_t*)data;
+
+   gx_free_overlay(gx);
+   gx->overlay = (struct gx_overlay_data*)calloc(num_images, sizeof(*gx->overlay));
+   if (!gx->overlay)
+      return false;
+
+   gx->overlays = num_images;
+
+   for (i = 0; i < num_images; i++)
+   {
+      struct gx_overlay_data *data = &gx->overlay[i];
+      GX_InitTexObj(&data->tex, images[i].pixels, images[i].width, images[i].height, GX_TF_RGBA8, GX_CLAMP, GX_CLAMP, GX_FALSE);
+      GX_InitTexObjFilterMode(&g_tex.obj, GX_LINEAR, GX_LINEAR);
+      DCFlushRange(images[i].pixels, images[i].width * images[i].height * sizeof(uint32_t));
+      gx_overlay_tex_geom(gx, i, 0, 0, 1, 1); // Default. Stretch to whole screen.
+      gx_overlay_vertex_geom(gx, i, 0, 0, 1, 1);
+      gx->overlay[i].alpha_mod = 1.0f;
+   }
+
+   GX_InvalidateTexAll();
+   return true;
+}
+
+static void gx_overlay_tex_geom(void *data,
+      unsigned image,
+      GLfloat x, GLfloat y,
+      GLfloat w, GLfloat h)
+{
+   gx_video_t *gx = (gx_video_t*)data;
+   struct gx_overlay_data *o = &gx->overlay[image];
+
+   o->tex_coord[0] = x;     o->tex_coord[1] = y;
+   o->tex_coord[2] = x + w; o->tex_coord[3] = y;
+   o->tex_coord[4] = x;     o->tex_coord[5] = y + h;
+   o->tex_coord[6] = x + w; o->tex_coord[7] = y + h;
+}
+
+static void gx_overlay_vertex_geom(void *data,
+      unsigned image,
+      float x, float y,
+      float w, float h)
+{
+   gx_video_t *gx = (gx_video_t*)data;
+   struct gx_overlay_data *o = &gx->overlay[image];
+
+   o->vertex_coord[0] = x;     o->vertex_coord[1] = y;
+   o->vertex_coord[2] = x + w; o->vertex_coord[3] = y;
+   o->vertex_coord[4] = x;     o->vertex_coord[5] = y + h;
+   o->vertex_coord[6] = x + w; o->vertex_coord[7] = y + h;
+}
+
+static void gx_overlay_enable(void *data, bool state)
+{
+   gx_video_t *gx = (gx_video_t*)data;
+   gx->overlay_enable = state;
+}
+
+static void gx_overlay_full_screen(void *data, bool enable)
+{
+   gx_video_t *gx = (gx_video_t*)data;
+   gx->overlay_full_screen = enable;
+}
+
+static void gx_overlay_set_alpha(void *data, unsigned image, float mod)
+{
+   gx_video_t *gx = (gx_video_t*)data;
+   gx->overlay[image].alpha_mod = mod;
+}
+
+static void gx_render_overlay(void *data)
+{
+   unsigned i, j;
+   gx_t *gx = (gx_t*)data;
+
+   /*if (gx->overlay_full_screen)
+      glViewport(0, 0, gx->win_width, gx->win_height);*/
+
+   GX_SetVtxDesc(GX_VA_POS, GX_DIRECT);
+   GX_SetVtxDesc(GX_VA_TEX0, GX_DIRECT);
+   for (i = 0; i < gx->overlays; i++)
+   {
+      GX_LoadTexObj(&gx->overlay[i].tex, GX_TEXMAP0);
+
+      GX_Begin(GX_QUADS, GX_VTXFMT0, 4);
+        GX_Position3f32(gx->overlay[i].vertex_coord[0], gx->overlay[i].vertex_coord[1],  0);
+        GX_TexCoord2f32(gx->overlay[i].tex_coord[0], gx->overlay[i].tex_coord[1]);
+
+        GX_Position3f32(gx->overlay[i].vertex_coord[2], gx->overlay[i].vertex_coord[3],  0);
+        GX_TexCoord2f32(gx->overlay[i].tex_coord[2], gx->overlay[i].tex_coord[3]);
+
+        GX_Position3f32(gx->overlay[i].vertex_coord[4], gx->overlay[i].vertex_coord[5],  0);
+        GX_TexCoord2f32(gx->overlay[i].tex_coord[4], gx->overlay[i].tex_coord[5]);
+
+        GX_Position3f32(gx->overlay[i].vertex_coord[6], gx->overlay[i].vertex_coord[7],  0);
+        GX_TexCoord2f32(gx->overlay[i].tex_coord[6], gx->overlay[i].tex_coord[7]);
+     GX_End();
+   }
+
+   GX_SetVtxDesc(GX_VA_POS, GX_INDEX8);
+   GX_SetVtxDesc(GX_VA_TEX0, GX_INDEX8);
+
+   /*if (gx->overlay_full_screen)
+      glViewport(gx->vp.x, gx->vp.y, gx->vp.width, gx->vp.height);*/
+}
+
+static const video_overlay_interface_t gx_overlay_interface = {
+   gx_overlay_enable,
+   gx_overlay_load,
+   gx_overlay_tex_geom,
+   gx_overlay_vertex_geom,
+   gx_overlay_full_screen,
+   gx_overlay_set_alpha,
+};
+
+static void gx_get_overlay_interface(void *data, const video_overlay_interface_t **iface)
+{
+   (void)data;
+   *iface = &gx_overlay_interface;
+}
+#endif
+
 const video_driver_t video_gx = {
    .init = gx_init,
    .frame = gx_frame,
@@ -1084,5 +1211,8 @@ const video_driver_t video_gx = {
    .set_rotation = gx_set_rotation,
    .viewport_info = gx_viewport_info,
    .restart = gx_restart,
+#ifdef HAVE_OVERLAY
+   .overlay_interface = gx_get_overlay_interface,
+#endif
    .poke_interface = gx_get_poke_interface,
 };

@@ -18,6 +18,14 @@
 #ifndef _GX_VIDEO_H__
 #define _GX_VIDEO_H__
 
+struct gx_overlay_data
+{
+   unsigned tex;
+   float tex_coord[8];
+   float vertex_coord[8];
+   float alpha_mod;
+};
+
 typedef struct gx_video
 {
    bool should_resize;
@@ -28,6 +36,12 @@ typedef struct gx_video
    bool rgui_texture_enable;
    rarch_viewport_t vp;
    unsigned scale;
+#ifdef HAVE_OVERLAY
+   struct gx_overlay_data *overlay;
+   unsigned overlays;
+   bool overlay_enable;
+   bool overlay_full_screen;
+#endif
 } gx_video_t;
 
 void gx_set_video_mode(void *data, unsigned fbWidth, unsigned lines);
