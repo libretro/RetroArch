@@ -174,6 +174,7 @@ static void thread_loop(void *data)
 {
    thread_video_t *thr = (thread_video_t*)data;
    unsigned i;
+   (void)i;
 
    for (;;)
    {
