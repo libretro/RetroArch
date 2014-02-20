@@ -355,6 +355,7 @@ bool retro_load_game(const struct retro_game_info *info)
 void retro_unload_game(void)
 {
    last_aspect = 0.0f;
+   last_sample_rate = 0.0f;
 }
 
 unsigned retro_get_region(void)
