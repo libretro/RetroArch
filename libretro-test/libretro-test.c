@@ -9,6 +9,8 @@
 static uint16_t *frame_buf;
 static struct retro_log_callback logging;
 static bool use_audio_cb;
+static float last_aspect;
+static float last_sample_rate;
 
 static void fallback_log(enum retro_log_level level, const char *fmt, ...)
 {
@@ -50,11 +52,33 @@ void retro_get_system_info(struct retro_system_info *info)
    info->valid_extensions = NULL; // Anything is fine, we don't care.
 }
 
+static retro_video_refresh_t video_cb;
+static retro_audio_sample_t audio_cb;
+static retro_audio_sample_batch_t audio_batch_cb;
+static retro_environment_t environ_cb;
+static retro_input_poll_t input_poll_cb;
+static retro_input_state_t input_state_cb;
+
 void retro_get_system_av_info(struct retro_system_av_info *info)
 {
+   float aspect = 4.0f / 3.0f;
+   struct retro_variable var = { .key = "test_aspect" };
+   if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
+   {
+      if (!strcmp(var.value, "4:3"))
+         aspect = 4.0f / 3.0f;
+      else if (!strcmp(var.value, "16:9"))
+         aspect = 16.0f / 9.0f;
+   }
+
+   float sampling_rate = 30000.0f;
+   var.key = "test_samplerate";
+   if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
+      sampling_rate = strtof(var.value, NULL);
+
    info->timing = (struct retro_system_timing) {
       .fps = 60.0,
-      .sample_rate = 30000.0,
+      .sample_rate = sampling_rate,
    };
 
    info->geometry = (struct retro_game_geometry) {
@@ -62,16 +86,12 @@ void retro_get_system_av_info(struct retro_system_av_info *info)
       .base_height  = 240,
       .max_width    = 320,
       .max_height   = 240,
-      .aspect_ratio = 4.0 / 3.0,
+      .aspect_ratio = aspect,
    };
-}
 
-static retro_video_refresh_t video_cb;
-static retro_audio_sample_t audio_cb;
-static retro_audio_sample_batch_t audio_batch_cb;
-static retro_environment_t environ_cb;
-static retro_input_poll_t input_poll_cb;
-static retro_input_state_t input_state_cb;
+   last_aspect = aspect;
+   last_sample_rate = sampling_rate;
+}
 
 static struct retro_rumble_interface rumble;
 
@@ -80,6 +100,8 @@ void retro_set_environment(retro_environment_t cb)
    environ_cb = cb;
 
    static const struct retro_variable vars[] = {
+      { "test_aspect", "Aspect Ratio; 4:3|16:9" },
+      { "test_samplerate", "Sample Rate; 30000|20000" },
       { "test_opt0", "Test option #0; false|true" },
       { "test_opt1", "Test option #1; 0" },
       { "test_opt2", "Test option #2; 0|1|foo|3" },
@@ -235,7 +257,6 @@ static void render_checkered(void)
    video_cb(frame_buf, 320, 240, 320 << 1);
 }
 
-
 static void check_variables(void)
 {
    struct retro_variable var = {0};
@@ -248,6 +269,16 @@ static void check_variables(void)
    var.key = "test_opt2";
    if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
       logging.log(RETRO_LOG_INFO, "Key -> Val: %s -> %s.\n", var.key, var.value);
+
+   float last = last_aspect;
+   float last_rate = last_sample_rate;
+   struct retro_system_av_info info;
+   retro_get_system_av_info(&info);
+   if ((last != last_aspect && last != 0.0f) || (last_rate != last_sample_rate && last_rate != 0.0f))
+   {
+      bool ret = environ_cb(RETRO_ENVIRONMENT_SET_SYSTEM_AV_INFO, &info);
+      logging.log(RETRO_LOG_INFO, "SET_SYSTEM_AV_INFO = %u.\n", ret);
+   }
 }
 
 static void audio_callback(void)
@@ -323,6 +354,7 @@ bool retro_load_game(const struct retro_game_info *info)
 
 void retro_unload_game(void)
 {
+   last_aspect = 0.0f;
 }
 
 unsigned retro_get_region(void)

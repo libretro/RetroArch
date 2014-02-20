@@ -593,7 +593,7 @@ enum retro_mod
 #define RETRO_ENVIRONMENT_SET_SYSTEM_AV_INFO 32
                                            // const struct retro_system_av_info * --
                                            // Sets a new av_info structure. This can only be called from within retro_run().
-                                           // This should *only* be used if the core is completely altering the internal resolutions, aspect ratios, timings, etc.
+                                           // This should *only* be used if the core is completely altering the internal resolutions, aspect ratios, timings, sampling rate, etc.
                                            // Calling this can require a full reinitialization of video/audio drivers in the frontend,
                                            // so it is important to call it very sparingly, and usually only with the users explicit consent.
                                            // An eventual driver reinit will happen so that video and audio callbacks

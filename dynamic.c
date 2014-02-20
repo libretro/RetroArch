@@ -907,6 +907,7 @@ bool rarch_environment_cb(unsigned cmd, void *data)
 
       case RETRO_ENVIRONMENT_SET_SYSTEM_AV_INFO:
       {
+         RARCH_LOG("Environ SET_SYSTEM_AV_INFO.\n");
          return driver_update_system_av_info((const struct retro_system_av_info*)data);
       }
 
