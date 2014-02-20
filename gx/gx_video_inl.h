@@ -109,6 +109,8 @@ struct __gx_texobj
 	u8 tex_flag;
 } __attribute__((packed));
 
+#define __GX_FlushTextureState(__gx) GX_LOAD_BP_REG(__gx->tevIndMask)
+
 #define __GX_SetDispCopySrc(__gx, left, top, wd, ht) \
 __gx->dispCopyTL = (__gx->dispCopyTL&~0x00ffffff)|XY(left,top); \
 __gx->dispCopyTL = (__gx->dispCopyTL&~0xff000000)|(_SHIFTL(0x49,24,8)); \
@@ -168,6 +170,81 @@ static inline void __GX_CopyDisp(struct __gx_regdef *__gx, void *dest,u8 clear)
    if(clflag)
    {
       GX_LOAD_BP_REG(__gx->peCntrl);
+   }
+}
+
+static void __SETVCDATTR(struct __gx_regdef *__gx, u8 attr,u8 type)
+{
+   switch(attr)
+   {
+      case GX_VA_PTNMTXIDX:
+         __gx->vcdLo = (__gx->vcdLo&~0x1)|(type&0x1);
+         break;
+      case GX_VA_TEX0MTXIDX:
+         __gx->vcdLo = (__gx->vcdLo&~0x2)|(_SHIFTL(type,1,1));
+         break;
+      case GX_VA_TEX1MTXIDX:
+         __gx->vcdLo = (__gx->vcdLo&~0x4)|(_SHIFTL(type,2,1));
+         break;
+      case GX_VA_TEX2MTXIDX:
+         __gx->vcdLo = (__gx->vcdLo&~0x8)|(_SHIFTL(type,3,1));
+         break;
+      case GX_VA_TEX3MTXIDX:
+         __gx->vcdLo = (__gx->vcdLo&~0x10)|(_SHIFTL(type,4,1));
+         break;
+      case GX_VA_TEX4MTXIDX:
+         __gx->vcdLo = (__gx->vcdLo&~0x20)|(_SHIFTL(type,5,1));
+         break;
+      case GX_VA_TEX5MTXIDX:
+         __gx->vcdLo = (__gx->vcdLo&~0x40)|(_SHIFTL(type,6,1));
+         break;
+      case GX_VA_TEX6MTXIDX:
+         __gx->vcdLo = (__gx->vcdLo&~0x80)|(_SHIFTL(type,7,1));
+         break;
+      case GX_VA_TEX7MTXIDX:
+         __gx->vcdLo = (__gx->vcdLo&~0x100)|(_SHIFTL(type,8,1));
+         break;
+      case GX_VA_POS:
+         __gx->vcdLo = (__gx->vcdLo&~0x600)|(_SHIFTL(type,9,2));
+         break;
+      case GX_VA_NRM:
+         __gx->vcdLo = (__gx->vcdLo&~0x1800)|(_SHIFTL(type,11,2));
+         __gx->vcdNrms = 1;
+         break;
+      case GX_VA_NBT:
+         __gx->vcdLo = (__gx->vcdLo&~0x1800)|(_SHIFTL(type,11,2));
+         __gx->vcdNrms = 2;
+         break;
+      case GX_VA_CLR0:
+         __gx->vcdLo = (__gx->vcdLo&~0x6000)|(_SHIFTL(type,13,2));
+         break;
+      case GX_VA_CLR1:
+         __gx->vcdLo = (__gx->vcdLo&~0x18000)|(_SHIFTL(type,15,2));
+         break;
+      case GX_VA_TEX0:
+         __gx->vcdHi = (__gx->vcdHi&~0x3)|(type&0x3);
+         break;
+      case GX_VA_TEX1:
+         __gx->vcdHi = (__gx->vcdHi&~0xc)|(_SHIFTL(type,2,2));
+         break;
+      case GX_VA_TEX2:
+         __gx->vcdHi = (__gx->vcdHi&~0x30)|(_SHIFTL(type,4,2));
+         break;
+      case GX_VA_TEX3:
+         __gx->vcdHi = (__gx->vcdHi&~0xc0)|(_SHIFTL(type,6,2));
+         break;
+      case GX_VA_TEX4:
+         __gx->vcdHi = (__gx->vcdHi&~0x300)|(_SHIFTL(type,8,2));
+         break;
+      case GX_VA_TEX5:
+         __gx->vcdHi = (__gx->vcdHi&~0xc00)|(_SHIFTL(type,10,2));
+         break;
+      case GX_VA_TEX6:
+         __gx->vcdHi = (__gx->vcdHi&~0x3000)|(_SHIFTL(type,12,2));
+         break;
+      case GX_VA_TEX7:
+         __gx->vcdHi = (__gx->vcdHi&~0xc000)|(_SHIFTL(type,14,2));
+         break;
    }
 }
 
@@ -558,3 +635,149 @@ static void __GX_SendFlushPrim(struct __gx_regdef *__gx)
    wgPipe->U32 = 0; \
    wgPipe->U32 = 0; \
    ppcsync()
+
+#define __GX_ClearVtxDesc(__gx) \
+   __gx->vcdNrms = 0; \
+   __gx->vcdClear = ((__gx->vcdClear&~0x0600)|0x0200); \
+   __gx->vcdLo = __gx->vcdHi = 0; \
+   __gx->dirtyState |= 0x0008
+
+#define __GX_SetVtxDesc(__gx, attr, type) \
+   __SETVCDATTR(__gx, attr,type); \
+   __gx->dirtyState |= 0x0008
+
+#define __GX_SetBlendMode(__gx, type, src_fact, dst_fact, op) \
+   __gx->peCMode0 = (__gx->peCMode0&~0x1); \
+   if(type==GX_BM_BLEND || type==GX_BM_SUBTRACT) __gx->peCMode0 |= 0x1; \
+   __gx->peCMode0 = (__gx->peCMode0&~0x800); \
+   if(type==GX_BM_SUBTRACT) __gx->peCMode0 |= 0x800; \
+   __gx->peCMode0 = (__gx->peCMode0&~0x2); \
+   if(type==GX_BM_LOGIC) __gx->peCMode0 |= 0x2; \
+   __gx->peCMode0 = (__gx->peCMode0&~0xF000)|(_SHIFTL(op,12,4)); \
+   __gx->peCMode0 = (__gx->peCMode0&~0xE0)|(_SHIFTL(dst_fact,5,3)); \
+   __gx->peCMode0 = (__gx->peCMode0&~0x700)|(_SHIFTL(src_fact,8,3)); \
+   GX_LOAD_BP_REG(__gx->peCMode0)
+
+#define __GX_InvVtxCache() wgPipe->U8 = 0x48
+
+#define __GX_SetDispCopyGamma(__gx, gamma) __gx->dispCopyCntrl = (__gx->dispCopyCntrl&~0x180)|(_SHIFTL(gamma,7,2))
+
+#define __GX_SetColorUpdate(__gx, enable) \
+   __gx->peCMode0 = (__gx->peCMode0&~0x8)|(_SHIFTL(enable,3,1)); \
+   GX_LOAD_BP_REG(__gx->peCMode0)
+
+#define __GX_SetAlphaUpdate(__gx, enable) \
+   __gx->peCMode0 = (__gx->peCMode0&~0x10)|(_SHIFTL(enable,4,1)); \
+   GX_LOAD_BP_REG(__gx->peCMode0)
+
+#define __GX_SetNumChans(__gx, num) \
+   __gx->genMode = (__gx->genMode&~0x70)|(_SHIFTL(num,4,3)); \
+   __gx->dirtyState |= 0x01000004
+
+#define __GX_SetNumTexGens(__gx, nr) \
+   __gx->genMode = (__gx->genMode&~0xf)|(nr&0xf); \
+   __gx->dirtyState |= 0x02000004
+
+#define __GX_Begin(__gx, primitve, vtxfmt, vtxcnt) \
+{ \
+   u8 reg = primitve|(vtxfmt&7); \
+   if(__gx->dirtyState) \
+      __GX_SetDirtyState(__gx); \
+   wgPipe->U8 = reg; \
+   wgPipe->U16 = vtxcnt; \
+}
+
+#define __GX_PokeARGB(x, y, color) \
+{ \
+   u32 regval; \
+   regval = 0xc8000000|(_SHIFTL(x,2,10)); \
+   regval = (regval&~0x3FF000)|(_SHIFTL(y,12,10)); \
+   *(u32*)regval = _SHIFTL(color.a,24,8)|_SHIFTL(color.r,16,8)|_SHIFTL(color.g,8,8)|(color.b&0xff); \
+}
+
+#define __GX_SetFieldMode(__gx, field_mode, half_aspect_ratio) \
+   __gx->lpWidth = (__gx->lpWidth&~0x400000)|(_SHIFTL(half_aspect_ratio,22,1)); \
+   GX_LOAD_BP_REG(__gx->lpWidth); \
+   __GX_FlushTextureState(__gx); \
+   GX_LOAD_BP_REG(0x68000000|(field_mode&1)); \
+   __GX_FlushTextureState(__gx)
+
+#define __GX_SetCopyClear(color, zvalue) \
+{ \
+   u32 val; \
+   val = (_SHIFTL(color.a,8,8))|(color.r&0xff); \
+   GX_LOAD_BP_REG(0x4f000000|val); \
+   val = (_SHIFTL(color.g,8,8))|(color.b&0xff); \
+   GX_LOAD_BP_REG(0x50000000|val); \
+   val = zvalue&0x00ffffff; \
+   GX_LOAD_BP_REG(0x51000000|val); \
+}
+
+#define __GX_SetZMode(__gx, enable, func, update_enable) \
+   __gx->peZMode = (__gx->peZMode&~0x1)|(enable&1); \
+   __gx->peZMode = (__gx->peZMode&~0xe)|(_SHIFTL(func,1,3)); \
+   __gx->peZMode = (__gx->peZMode&~0x10)|(_SHIFTL(update_enable,4,1)); \
+   GX_LOAD_BP_REG(__gx->peZMode)
+
+static void __GX_SetCopyFilter(u8 aa,u8 sample_pattern[12][2],u8 vf,u8 vfilter[7])
+{
+   u32 reg01=0,reg02=0,reg03=0,reg04=0,reg53=0,reg54=0;
+   if(aa)
+   {
+      reg01 = sample_pattern[0][0]&0xf;
+      reg01 = (reg01&~0xf0)|(_SHIFTL(sample_pattern[0][1],4,4));
+      reg01 = (reg01&~0xf00)|(_SHIFTL(sample_pattern[1][0],8,4));
+      reg01 = (reg01&~0xf000)|(_SHIFTL(sample_pattern[1][1],12,4));
+      reg01 = (reg01&~0xf0000)|(_SHIFTL(sample_pattern[2][0],16,4));
+      reg01 = (reg01&~0xf00000)|(_SHIFTL(sample_pattern[2][1],20,4));
+      reg01 = (reg01&~0xff000000)|(_SHIFTL(0x01,24,8));
+      reg02 = sample_pattern[3][0]&0xf;
+      reg02 = (reg02&~0xf0)|(_SHIFTL(sample_pattern[3][1],4,4));
+      reg02 = (reg02&~0xf00)|(_SHIFTL(sample_pattern[4][0],8,4));
+      reg02 = (reg02&~0xf000)|(_SHIFTL(sample_pattern[4][1],12,4));
+      reg02 = (reg02&~0xf0000)|(_SHIFTL(sample_pattern[5][0],16,4));
+      reg02 = (reg02&~0xf00000)|(_SHIFTL(sample_pattern[5][1],20,4));
+      reg02 = (reg02&~0xff000000)|(_SHIFTL(0x02,24,8));
+      reg03 = sample_pattern[6][0]&0xf;
+      reg03 = (reg03&~0xf0)|(_SHIFTL(sample_pattern[6][1],4,4));
+      reg03 = (reg03&~0xf00)|(_SHIFTL(sample_pattern[7][0],8,4));
+      reg03 = (reg03&~0xf000)|(_SHIFTL(sample_pattern[7][1],12,4));
+      reg03 = (reg03&~0xf0000)|(_SHIFTL(sample_pattern[8][0],16,4));
+      reg03 = (reg03&~0xf00000)|(_SHIFTL(sample_pattern[8][1],20,4));
+      reg03 = (reg03&~0xff000000)|(_SHIFTL(0x03,24,8));
+      reg04 = sample_pattern[9][0]&0xf;
+      reg04 = (reg04&~0xf0)|(_SHIFTL(sample_pattern[9][1],4,4));
+      reg04 = (reg04&~0xf00)|(_SHIFTL(sample_pattern[10][0],8,4));
+      reg04 = (reg04&~0xf000)|(_SHIFTL(sample_pattern[10][1],12,4));
+      reg04 = (reg04&~0xf0000)|(_SHIFTL(sample_pattern[11][0],16,4));
+      reg04 = (reg04&~0xf00000)|(_SHIFTL(sample_pattern[11][1],20,4));
+      reg04 = (reg04&~0xff000000)|(_SHIFTL(0x04,24,8));
+   }
+   else
+   {
+      reg01 = 0x01666666;
+      reg02 = 0x02666666;
+      reg03 = 0x03666666;
+      reg04 = 0x04666666;
+   }
+   GX_LOAD_BP_REG(reg01);
+   GX_LOAD_BP_REG(reg02);
+   GX_LOAD_BP_REG(reg03);
+   GX_LOAD_BP_REG(reg04);
+   reg53 = 0x53595000;
+   reg54 = 0x54000015;
+   if(vf) {
+      reg53 = 0x53000000|(vfilter[0]&0x3f);
+      reg53 = (reg53&~0xfc0)|(_SHIFTL(vfilter[1],6,6));
+      reg53 = (reg53&~0x3f000)|(_SHIFTL(vfilter[2],12,6));
+      reg53 = (reg53&~0xfc0000)|(_SHIFTL(vfilter[3],18,6));
+      reg54 = 0x54000000|(vfilter[4]&0x3f);
+      reg54 = (reg54&~0xfc0)|(_SHIFTL(vfilter[5],6,6));
+      reg54 = (reg54&~0x3f000)|(_SHIFTL(vfilter[6],12,6));
+   }
+   GX_LOAD_BP_REG(reg53);
+   GX_LOAD_BP_REG(reg54);
+}
+
+#define __GX_Position1x8(index) FIFO_PUTU8(index)
+#define __GX_TexCoord1x8(index) FIFO_PUTU8(index)

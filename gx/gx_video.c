@@ -234,10 +234,11 @@ void gx_set_video_mode(void *data, unsigned fbWidth, unsigned lines)
    (void)xfbHeight;
    __GX_SetDispCopyDst(__gx, xfbWidth, xfbHeight);
 
-   GX_SetCopyFilter(gx_mode.aa, gx_mode.sample_pattern, (gx_mode.xfbMode == VI_XFBMODE_SF) ? GX_FALSE : GX_TRUE,
+   __GX_SetCopyFilter(gx_mode.aa, gx_mode.sample_pattern, (gx_mode.xfbMode == VI_XFBMODE_SF) ? GX_FALSE : GX_TRUE,
          gx_mode.vfilter);
-   GX_SetCopyClear((GXColor) { 0, 0, 0, 0xff }, GX_MAX_Z24);
-   GX_SetFieldMode(gx_mode.field_rendering, (gx_mode.viHeight == 2 * gx_mode.xfbHeight) ? GX_ENABLE : GX_DISABLE);
+   GXColor color = { 0, 0, 0, 0xff };
+   __GX_SetCopyClear(color, GX_MAX_Z24);
+   __GX_SetFieldMode(__gx, gx_mode.field_rendering, (gx_mode.viHeight == 2 * gx_mode.xfbHeight) ? GX_ENABLE : GX_DISABLE);
    GX_SetPixelFmt(GX_PF_RGB8_Z24, GX_ZC_LINEAR);
    __GX_InvalidateTexAll(__gx);
    __GX_Flush(__gx);
@@ -348,30 +349,30 @@ static void init_vtx(struct __gx_regdef *__gx, void *data)
    __GX_SetCullMode(__gx, GX_CULL_NONE);
    __GX_SetClipMode(GX_CLIP_DISABLE);
    GX_SetPixelFmt(GX_PF_RGB8_Z24, GX_ZC_LINEAR);
-   GX_SetZMode(GX_ENABLE, GX_ALWAYS, GX_ENABLE);
-   GX_SetColorUpdate(GX_TRUE);
-   GX_SetAlphaUpdate(GX_FALSE);
+   __GX_SetZMode(__gx, GX_ENABLE, GX_ALWAYS, GX_ENABLE);
+   __GX_SetColorUpdate(__gx, GX_TRUE);
+   __GX_SetAlphaUpdate(__gx, GX_FALSE);
 
    Mtx44 m;
    guOrtho(m, 1, -1, -1, 1, 0.4, 0.6);
    GX_LoadProjectionMtx(m, GX_ORTHOGRAPHIC);
 
-   GX_ClearVtxDesc();
-   GX_SetVtxDesc(GX_VA_POS, GX_INDEX8);
-   GX_SetVtxDesc(GX_VA_TEX0, GX_INDEX8);
+   __GX_ClearVtxDesc(__gx);
+   __GX_SetVtxDesc(__gx, GX_VA_POS, GX_INDEX8);
+   __GX_SetVtxDesc(__gx, GX_VA_TEX0, GX_INDEX8);
 
    GX_SetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_F32, 0);
    GX_SetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_F32, 0);
    GX_SetArray(GX_VA_POS, verts, 3 * sizeof(float));
    GX_SetArray(GX_VA_TEX0, vertex_ptr, 2 * sizeof(float));
 
-   GX_SetNumTexGens(1);
-   GX_SetNumChans(0);
+   __GX_SetNumTexGens(__gx, 1);
+   __GX_SetNumChans(__gx, 0);
    GX_SetTevOp(GX_TEVSTAGE0, GX_REPLACE);
    GX_SetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLORNULL);
-   GX_InvVtxCache();
+   __GX_InvVtxCache();
 
-   GX_SetBlendMode(GX_BM_BLEND, GX_BL_ONE, GX_BL_INVSRCALPHA, 0);
+   __GX_SetBlendMode(__gx, GX_BM_BLEND, GX_BL_ONE, GX_BL_INVSRCALPHA, 0);
 
    g_tex.data = memalign(32, 4 * 4 * 4);
    memset(g_tex.data, 0, 4 * 4 * 4);
@@ -380,18 +381,18 @@ static void init_vtx(struct __gx_regdef *__gx, void *data)
 
    DCFlushRange(g_tex.data, 4 * 4 * 4);
    init_texture(data, 4, 4); // for menu texture
-   GX_Flush(__gx);
+   __GX_Flush(__gx);
 }
 
-static void build_disp_list(void)
+static void build_disp_list(struct __gx_regdef *__gx)
 {
    DCInvalidateRange(display_list, sizeof(display_list));
    GX_BeginDispList(display_list, sizeof(display_list));
-   GX_Begin(GX_QUADS, GX_VTXFMT0, 4);
+   __GX_Begin(__gx, GX_QUADS, GX_VTXFMT0, 4);
    for (unsigned i = 0; i < 4; i++)
    {
-      GX_Position1x8(i);
-      GX_TexCoord1x8(i);
+      __GX_Position1x8(i);
+      __GX_TexCoord1x8(i);
    }
    GX_End();
    display_list_size = GX_EndDispList();
@@ -478,7 +479,7 @@ static void *gx_init(const video_info_t *video,
 
    setup_video_mode(gx);
    init_vtx(__gx, gx);
-   build_disp_list();
+   build_disp_list(__gx);
 
    gx->vp.full_width = gx_mode.fbWidth;
    gx->vp.full_height = gx_mode.xfbHeight;
@@ -691,7 +692,7 @@ static void convert_texture32(const uint32_t *_src, uint32_t *_dst,
    }
 }
 
-static void gx_resize(void *data)
+static void gx_resize(struct __gx_regdef *__gx, void *data)
 {
    gx_video_t *gx = (gx_video_t*)data;
 
@@ -701,7 +702,7 @@ static void gx_resize(void *data)
 #ifdef HW_RVL
    VIDEO_SetTrapFilter(g_extern.lifecycle_state & (1ULL << MODE_VIDEO_SOFT_FILTER_ENABLE));
 #endif
-   GX_SetDispCopyGamma(g_extern.console.screen.gamma_correction);
+   __GX_SetDispCopyGamma(__gx, g_extern.console.screen.gamma_correction);
 
    if (gx->keep_aspect && gx_mode.efbHeight >= 480) // ingore this for custom resolutions
    {
@@ -822,9 +823,11 @@ static void gx_blit_line(unsigned x, unsigned y, const char *message)
    unsigned height = FONT_HEIGHT * (gx->double_strike ? 1 : 2);
    for (h = 0; h < height; h++)
    {
-      GX_PokeARGB(x, y + h, b);
+      __GX_PokeARGB(x, y + h, b);
       if (double_width)
-         GX_PokeARGB(x + 1, y + h, b);
+      {
+         __GX_PokeARGB(x + 1, y + h, b);
+      }
    }
 
    x += (double_width ? 2 : 1);
@@ -847,28 +850,32 @@ static void gx_blit_line(unsigned x, unsigned y, const char *message)
 
             if (!gx->double_strike)
             {
-               GX_PokeARGB(x + (i * width),     y + (j * 2),     c);
+               __GX_PokeARGB(x + (i * width),     y + (j * 2),     c);
                if (double_width)
                {
-                  GX_PokeARGB(x + (i * width) + 1, y + (j * 2),     c);
-                  GX_PokeARGB(x + (i * width) + 1, y + (j * 2) + 1, c);
+                  __GX_PokeARGB(x + (i * width) + 1, y + (j * 2),     c);
+                  __GX_PokeARGB(x + (i * width) + 1, y + (j * 2) + 1, c);
                }
-               GX_PokeARGB(x + (i * width),     y + (j * 2) + 1, c);
+               __GX_PokeARGB(x + (i * width),     y + (j * 2) + 1, c);
             }
             else
             {
-               GX_PokeARGB(x + (i * width),     y + j, c);
+               __GX_PokeARGB(x + (i * width),     y + j, c);
                if (double_width)
-                  GX_PokeARGB(x + (i * width) + 1, y + j, c);
+               {
+                  __GX_PokeARGB(x + (i * width) + 1, y + j, c);
+               }
             }
          }
       }
 
       for (unsigned h = 0; h < height; h++)
       {
-         GX_PokeARGB(x + (FONT_WIDTH * width), y + h, b);
+         __GX_PokeARGB(x + (FONT_WIDTH * width), y + h, b);
          if (double_width)
-            GX_PokeARGB(x + (FONT_WIDTH * width) + 1, y + h, b);
+         {
+            __GX_PokeARGB(x + (FONT_WIDTH * width) + 1, y + h, b);
+         }
       }
 
       x += FONT_WIDTH_STRIDE * (double_width ? 2 : 1);
@@ -894,7 +901,7 @@ static bool gx_frame(void *data, const void *frame,
 
    if(gx->should_resize)
    {
-      gx_resize(gx);
+      gx_resize(__gx, gx);
       clear_efb = GX_TRUE;
    }
 
