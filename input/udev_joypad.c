@@ -98,7 +98,7 @@ static void poll_pad(unsigned p)
          switch (events[i].type)
          {
             case EV_KEY:
-               if (code >= BTN_MISC)
+               if (code >= BTN_MISC || (code >= KEY_UP && code <= KEY_DOWN))
                   pad->buttons[pad->button_bind[code]] = events[i].value;
                break;
 
@@ -333,10 +333,10 @@ static bool add_pad(unsigned p, int fd, const char *path)
    // and map them to button/axes/hat indices.
    unsigned buttons = 0;
    unsigned axes = 0;
-   for (i = BTN_JOYSTICK; i < KEY_MAX && buttons < NUM_BUTTONS; i++)
+   for (i = KEY_UP; i <= KEY_DOWN && buttons < NUM_BUTTONS; i++)
       if (test_bit(i, keybit))
          pad->button_bind[i] = buttons++;
-   for (i = BTN_MISC; i < BTN_JOYSTICK; i++)
+   for (i = BTN_MISC; i < KEY_MAX && buttons < NUM_BUTTONS; i++)
       if (test_bit(i, keybit))
          pad->button_bind[i] = buttons++;
    for (i = 0; i < ABS_MISC && axes < NUM_AXES; i++)
