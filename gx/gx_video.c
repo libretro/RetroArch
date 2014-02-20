@@ -1173,6 +1173,9 @@ static void gx_overlay_set_alpha(void *data, unsigned image, float mod)
 static void gx_render_overlay(void *data)
 {
    gx_video_t *gx = (gx_video_t*)data;
+#ifdef GX_OPTS
+   struct __gx_regdef *__gx = (struct __gx_regdef*)__gxregs;
+#endif
 
    /*if (gx->overlay_full_screen)
       glViewport(0, 0, gx->win_width, gx->win_height);*/
