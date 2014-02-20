@@ -20,7 +20,7 @@
 
 struct gx_overlay_data
 {
-   unsigned tex;
+   GXTexObj tex;
    float tex_coord[8];
    float vertex_coord[8];
    float alpha_mod;

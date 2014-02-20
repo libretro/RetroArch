@@ -94,6 +94,21 @@ static void retrace_callback(u32 retrace_count)
 
 extern rgui_handle_t *rgui;
 
+
+#ifdef HAVE_OVERLAY
+static void gx_render_overlay(void *data);
+static void gx_free_overlay(gx_video_t *gx)
+{
+#ifdef GX_OPTS
+   struct __gx_regdef *__gx = (struct __gx_regdef*)__gxregs;
+#endif
+   free(gx->overlay);
+   gx->overlay = NULL;
+   gx->overlays = 0;
+   GX_InvalidateTexAll();
+}
+#endif
+
 void gx_set_video_mode(void *data, unsigned fbWidth, unsigned lines)
 {
    unsigned modetype, level, viHeightMultiplier, viWidth, tvmode,
@@ -956,6 +971,11 @@ static bool gx_frame(void *data, const void *frame,
       GX_DrawDone();
    }
 
+#ifdef HAVE_OVERLAY
+   if (gx->overlay_enable)
+      gx_render_overlay(gx);
+#endif
+
    char fps_txt[128], fps_text_buf[128];
    bool fps_draw = g_settings.fps_show;
    gfx_get_fps(fps_txt, sizeof(fps_txt), fps_draw ? fps_text_buf : NULL, sizeof(fps_text_buf));
@@ -1017,6 +1037,10 @@ static bool gx_focus(void *data)
 static void gx_free(void *data)
 {
    (void)data;
+#ifdef HAVE_OVERLAY
+   gx_video_t *gx = (gx_video_t*)driver.video_data;
+   gx_free_overlay(gx);
+#endif
 }
 
 static void gx_set_rotation(void *data, unsigned orientation)
@@ -1074,11 +1098,15 @@ static void gx_get_poke_interface(void *data, const video_poke_interface_t **ifa
 }
 
 #ifdef HAVE_OVERLAY
-static void gx_free_overlay(gx_t *gx);
+static void gx_overlay_tex_geom(void *data, unsigned image, float x, float y, float w, float h);
+static void gx_overlay_vertex_geom(void *data, unsigned image, float x, float y, float w, float h);
 static bool gx_overlay_load(void *data, const struct texture_image *images, unsigned num_images)
 {
    unsigned i;
    gx_video_t *gx = (gx_video_t*)data;
+#ifdef GX_OPTS
+   struct __gx_regdef *__gx = (struct __gx_regdef*)__gxregs;
+#endif
 
    gx_free_overlay(gx);
    gx->overlay = (struct gx_overlay_data*)calloc(num_images, sizeof(*gx->overlay));
@@ -1102,10 +1130,7 @@ static bool gx_overlay_load(void *data, const struct texture_image *images, unsi
    return true;
 }
 
-static void gx_overlay_tex_geom(void *data,
-      unsigned image,
-      GLfloat x, GLfloat y,
-      GLfloat w, GLfloat h)
+static void gx_overlay_tex_geom(void *data, unsigned image, float x, float y, float w, float h)
 {
    gx_video_t *gx = (gx_video_t*)data;
    struct gx_overlay_data *o = &gx->overlay[image];
@@ -1116,10 +1141,7 @@ static void gx_overlay_tex_geom(void *data,
    o->tex_coord[6] = x + w; o->tex_coord[7] = y + h;
 }
 
-static void gx_overlay_vertex_geom(void *data,
-      unsigned image,
-      float x, float y,
-      float w, float h)
+static void gx_overlay_vertex_geom(void *data, unsigned image, float x, float y, float w, float h)
 {
    gx_video_t *gx = (gx_video_t*)data;
    struct gx_overlay_data *o = &gx->overlay[image];
@@ -1150,15 +1172,15 @@ static void gx_overlay_set_alpha(void *data, unsigned image, float mod)
 
 static void gx_render_overlay(void *data)
 {
-   unsigned i, j;
-   gx_t *gx = (gx_t*)data;
+   gx_video_t *gx = (gx_video_t*)data;
 
    /*if (gx->overlay_full_screen)
       glViewport(0, 0, gx->win_width, gx->win_height);*/
 
+   GX_SetCurrentMtx(GX_PNMTX1);
    GX_SetVtxDesc(GX_VA_POS, GX_DIRECT);
    GX_SetVtxDesc(GX_VA_TEX0, GX_DIRECT);
-   for (i = 0; i < gx->overlays; i++)
+   for (unsigned i = 0; i < gx->overlays; i++)
    {
       GX_LoadTexObj(&gx->overlay[i].tex, GX_TEXMAP0);
 
