@@ -65,7 +65,7 @@
  gcm_emit_at(thisContext->current, 1, ((((frequency)) << 16) | (((stride)) << 8) | (((size)) << 4) | ((type)))); \
  gcm_finish_n_commands(thisContext->current, 2); \
  gcm_emit_method_at(thisContext->current, 0, (CELL_GCM_NV4097_SET_VERTEX_DATA_ARRAY_OFFSET + ((index)) * 4), 1); \
- (thisContext->current)[1] = ((((location)) << 31) | (offset)); \
+ gcm_emit_at(thisContext->current, 1, ((((location)) << 31) | (offset))); \
  gcm_finish_n_commands(thisContext->current, 2);
 
 #define rglGcmSetInlineTransferPointer(thisContext, offset, count, pointer) \
@@ -74,12 +74,12 @@
  gcm_finish_n_commands(thisContext->current, 2); \
  gcm_emit_method_at(thisContext->current, 0, CELL_GCM_NV3062_SET_COLOR_FORMAT, 2); \
  gcm_emit_at(thisContext->current, 1, CELL_GCM_TRANSFER_SURFACE_FORMAT_Y32); \
- (thisContext->current)[2] = ((0x1000) | ((0x1000) << 16)); \
+ gcm_emit_at(thisContext->current, 2, ((0x1000) | ((0x1000) << 16))); \
  gcm_finish_n_commands(thisContext->current, 3); \
  gcm_emit_method_at(thisContext->current, 0, CELL_GCM_NV308A_POINT, 3); \
- (thisContext->current)[1] = (((0) << 16) | ((offset & 63) >> 2)); \
- (thisContext->current)[2] = (((1) << 16) | (count)); \
- (thisContext->current)[3] = (((1) << 16) | (count)); \
+ gcm_emit_at(thisContext->current, 1, (((0) << 16) | ((offset & 63) >> 2))); \
+ gcm_emit_at(thisContext->current, 2, (((1) << 16) | (count))); \
+ gcm_emit_at(thisContext->current, 3, (((1) << 16) | (count))); \
  gcm_finish_n_commands(thisContext->current, 4); \
  gcm_emit_method_at(thisContext->current, 0, CELL_GCM_NV308A_COLOR, ((count + 1) & ~1)); \
  gcm_finish_n_commands(thisContext->current, 1); \
@@ -126,8 +126,8 @@
  gcm_finish_n_commands(thisContext->current, 2);
 
 #define rglGcmSetTextureControl(thisContext, index, enable, minlod, maxlod, maxaniso) \
- (thisContext->current)[0] = (((1) << (18)) | (CELL_GCM_NV4097_SET_TEXTURE_CONTROL0 + 0x20 * ((index)))); \
- (thisContext->current)[1] = ((((0) << 2) | ((maxaniso)) << 4) | (((maxlod)) << 7) | (((minlod)) << 19) | ((enable) << 31)); \
+ gcm_emit_at(thisContext->current, 0, (((1) << (18)) | (CELL_GCM_NV4097_SET_TEXTURE_CONTROL0 + 0x20 * ((index))))); \
+ gcm_emit_at(thisContext->current, 1, ((((0) << 2) | ((maxaniso)) << 4) | (((maxlod)) << 7) | (((minlod)) << 19) | ((enable) << 31))); \
  gcm_finish_n_commands(thisContext->current, 2);
 
 #define rglGcmSetTextureRemap(thisContext, index, remap) \
@@ -152,18 +152,18 @@
  gcm_finish_n_commands(thisContext->current, 2);
 
 #define rglGcmSetTextureBorder(thisContext, index, texture, border) \
- (thisContext->current)[0] = (((2) << (18)) | (CELL_GCM_NV4097_SET_TEXTURE_OFFSET + ((index)) * 32)); \
- (thisContext->current)[1] = texture->offset; \
- (thisContext->current)[2] = (texture->location + 1) | (texture->cubemap << 2) | (border << 3) | (texture->dimension << 4) | (texture->format << 8) | (texture->mipmap << 16); \
+ gcm_emit_at(thisContext->current, 0, (((2) << (18)) | (CELL_GCM_NV4097_SET_TEXTURE_OFFSET + ((index)) * 32))); \
+ gcm_emit_at(thisContext->current, 1, texture->offset); \
+ gcm_emit_at(thisContext->current, 2, (texture->location + 1) | (texture->cubemap << 2) | (border << 3) | (texture->dimension << 4) | (texture->format << 8) | (texture->mipmap << 16)); \
  gcm_finish_n_commands(thisContext->current, 3); \
- (thisContext->current)[0] = (((1) << (18)) | (CELL_GCM_NV4097_SET_TEXTURE_IMAGE_RECT + ((index)) * 32)); \
- (thisContext->current)[1] = texture->height | (texture->width << 16); \
+ gcm_emit_at(thisContext->current, 0, (((1) << (18)) | (CELL_GCM_NV4097_SET_TEXTURE_IMAGE_RECT + ((index)) * 32))); \
+ gcm_emit_at(thisContext->current, 1, texture->height | (texture->width << 16)); \
  gcm_finish_n_commands(thisContext->current, 2); \
- (thisContext->current)[0] = (((1) << (18)) | (CELL_GCM_NV4097_SET_TEXTURE_CONTROL3 + ((index)) * 4)); \
- (thisContext->current)[1] = texture->pitch | (texture->depth << 20); \
+ gcm_emit_at(thisContext->current, 0, (((1) << (18)) | (CELL_GCM_NV4097_SET_TEXTURE_CONTROL3 + ((index)) * 4))); \
+ gcm_emit_at(thisContext->current, 1, texture->pitch | (texture->depth << 20)); \
  gcm_finish_n_commands(thisContext->current, 2); \
- (thisContext->current)[0] = (((1) << (18)) | (CELL_GCM_NV4097_SET_TEXTURE_CONTROL1 + ((index)) * 32)); \
- (thisContext->current)[1] = texture->remap; \
+ gcm_emit_at(thisContext->current, 0, (((1) << (18)) | (CELL_GCM_NV4097_SET_TEXTURE_CONTROL1 + ((index)) * 32))); \
+ gcm_emit_at(thisContext->current, 1, texture->remap); \
  gcm_finish_n_commands(thisContext->current, 2);
 
 
@@ -185,7 +185,7 @@
 
 #define rglGcmSetBlendEnableMrt(thisContext, mrt1, mrt2, mrt3) \
  gcm_emit_method_at(thisContext->current, 0, CELL_GCM_NV4097_SET_BLEND_ENABLE_MRT, 1); \
- (thisContext->current)[1] = (((mrt1) << 1)|((mrt2) << 2)|((mrt3) << 3)); \
+ gcm_emit_at(thisContext->current, 1, (((mrt1) << 1)|((mrt2) << 2)|((mrt3) << 3))); \
  gcm_finish_n_commands(thisContext->current, 2);
 
 #define rglGcmSetBlendEquation(thisContext, color, alpha) \
@@ -195,13 +195,13 @@
 
 #define rglGcmSetBlendFunc(thisContext, sfcolor, dfcolor, sfalpha, dfalpha) \
  gcm_emit_method_at(thisContext->current, 0, CELL_GCM_NV4097_SET_BLEND_FUNC_SFACTOR, 2); \
- (thisContext->current)[1] = (((sfcolor)) | (((sfalpha)) << 16)); \
- (thisContext->current)[2] = (((dfcolor)) | (((dfalpha)) << 16)); \
+ gcm_emit_at(thisContext->current, 1, (((sfcolor)) | (((sfalpha)) << 16))); \
+ gcm_emit_at(thisContext->current, 2, (((dfcolor)) | (((dfalpha)) << 16))); \
  gcm_finish_n_commands(thisContext->current, 3);
 
 #define rglGcmSetUserClipPlaneControl(thisContext, plane0, plane1, plane2, plane3, plane4, plane5) \
  gcm_emit_method_at(thisContext->current, 0, CELL_GCM_NV4097_SET_USER_CLIP_PLANE_CONTROL, 1); \
- (thisContext->current)[1] = ((plane0) | ((plane1) << 4) | ((plane2) << 8) | ((plane3) << 12) | ((plane4) << 16) | ((plane5) << 20)); \
+ gcm_emit_at(thisContext->current, 1, ((plane0) | ((plane1) << 4) | ((plane2) << 8) | ((plane3) << 12) | ((plane4) << 16) | ((plane5) << 20))); \
  gcm_finish_n_commands(thisContext->current, 2);
 
 #define rglGcmSetInvalidateTextureCache(thisContext, value) \
@@ -223,32 +223,32 @@
  s[2].f = scale[2]; \
  s[3].f = scale[3]; \
  gcm_emit_method_at(thisContext->current, 0, CELL_GCM_NV4097_SET_VIEWPORT_HORIZONTAL, 2); \
- (thisContext->current)[1] = (((x)) | (((w)) << 16)); \
- (thisContext->current)[2] = (((y)) | (((h)) << 16)); \
+ gcm_emit_at(thisContext->current, 1, (((x)) | (((w)) << 16))); \
+ gcm_emit_at(thisContext->current, 2, (((y)) | (((h)) << 16))); \
  gcm_finish_n_commands(thisContext->current, 3); \
  gcm_emit_method_at(thisContext->current, 0, CELL_GCM_NV4097_SET_CLIP_MIN, 2); \
- (thisContext->current)[1] = (d0.u); \
- (thisContext->current)[2] = (d1.u); \
+ gcm_emit_at(thisContext->current, 1, (d0.u)); \
+ gcm_emit_at(thisContext->current, 2, (d1.u)); \
  gcm_finish_n_commands(thisContext->current, 3); \
  gcm_emit_method_at(thisContext->current, 0, CELL_GCM_NV4097_SET_VIEWPORT_OFFSET, 8); \
- (thisContext->current)[1] = (o[0].u); \
- (thisContext->current)[2] = (o[1].u); \
- (thisContext->current)[3] = (o[2].u); \
- (thisContext->current)[4] = (o[3].u); \
- (thisContext->current)[5] = (s[0].u); \
- (thisContext->current)[6] = (s[1].u); \
- (thisContext->current)[7] = (s[2].u); \
- (thisContext->current)[8] = (s[3].u); \
+ gcm_emit_at(thisContext->current, 1, (o[0].u)); \
+ gcm_emit_at(thisContext->current, 2, (o[1].u)); \
+ gcm_emit_at(thisContext->current, 3, (o[2].u)); \
+ gcm_emit_at(thisContext->current, 4, (o[3].u)); \
+ gcm_emit_at(thisContext->current, 5, (s[0].u)); \
+ gcm_emit_at(thisContext->current, 6, (s[1].u)); \
+ gcm_emit_at(thisContext->current, 7, (s[2].u)); \
+ gcm_emit_at(thisContext->current, 8, (s[3].u)); \
  gcm_finish_n_commands(thisContext->current, 9); \
  gcm_emit_method_at(thisContext->current, 0, CELL_GCM_NV4097_SET_VIEWPORT_OFFSET, 8); \
- (thisContext->current)[1] = (o[0].u); \
- (thisContext->current)[2] = (o[1].u); \
- (thisContext->current)[3] = (o[2].u); \
- (thisContext->current)[4] = (o[3].u); \
- (thisContext->current)[5] = (s[0].u); \
- (thisContext->current)[6] = (s[1].u); \
- (thisContext->current)[7] = (s[2].u); \
- (thisContext->current)[8] = (s[3].u); \
+ gcm_emit_at(thisContext->current, 1, (o[0].u)); \
+ gcm_emit_at(thisContext->current, 2, (o[1].u)); \
+ gcm_emit_at(thisContext->current, 3, (o[2].u)); \
+ gcm_emit_at(thisContext->current, 4, (o[3].u)); \
+ gcm_emit_at(thisContext->current, 5, (s[0].u)); \
+ gcm_emit_at(thisContext->current, 6, (s[1].u)); \
+ gcm_emit_at(thisContext->current, 7, (s[2].u)); \
+ gcm_emit_at(thisContext->current, 8, (s[3].u)); \
  gcm_finish_n_commands(thisContext->current, 9);
 
 #define rglGcmSetDitherEnable(thisContext, enable) \
@@ -278,7 +278,7 @@
 
 #define rglGcmSetAntiAliasingControl(thisContext, enable, alphaToCoverage, alphaToOne, sampleMask) \
  gcm_emit_method_at(thisContext->current, 0, CELL_GCM_NV4097_SET_ANTI_ALIASING_CONTROL, 1); \
- (thisContext->current)[1] = ((enable) | ((alphaToCoverage) << 4) | ((alphaToOne) << 8) | ((sampleMask) << 16)); \
+ gcm_emit_at(thisContext->current, 1, ((enable) | ((alphaToCoverage) << 4) | ((alphaToOne) << 8) | ((sampleMask) << 16))); \
  gcm_finish_n_commands(thisContext->current, 2);
 
 #define rglGcmFifoFinish(ref, offset_bytes) \
@@ -299,47 +299,47 @@
 
 #define rglGcmSetSurface(thisContext, surface, origin, pixelCenter, log2Width, log2Height) \
  gcm_emit_method_at(thisContext->current, 0, CELL_GCM_NV4097_SET_CONTEXT_DMA_COLOR_A, 1); \
- (thisContext->current)[1] = (CELL_GCM_CONTEXT_DMA_MEMORY_FRAME_BUFFER + surface->colorLocation[0]); \
+ gcm_emit_at(thisContext->current, 1, (CELL_GCM_CONTEXT_DMA_MEMORY_FRAME_BUFFER + surface->colorLocation[0])); \
  gcm_finish_n_commands(thisContext->current, 2); \
  gcm_emit_method_at(thisContext->current, 0, CELL_GCM_NV4097_SET_CONTEXT_DMA_COLOR_B, 1); \
- (thisContext->current)[1] = (CELL_GCM_CONTEXT_DMA_MEMORY_FRAME_BUFFER + surface->colorLocation[1]); \
+ gcm_emit_at(thisContext->current, 1, (CELL_GCM_CONTEXT_DMA_MEMORY_FRAME_BUFFER + surface->colorLocation[1])); \
  gcm_finish_n_commands(thisContext->current, 2); \
  gcm_emit_method_at(thisContext->current, 0, CELL_GCM_NV4097_SET_CONTEXT_DMA_COLOR_C, 2); \
- (thisContext->current)[1] = (CELL_GCM_CONTEXT_DMA_MEMORY_FRAME_BUFFER + surface->colorLocation[2]); \
- (thisContext->current)[2] = (CELL_GCM_CONTEXT_DMA_MEMORY_FRAME_BUFFER + surface->colorLocation[3]); \
+ gcm_emit_at(thisContext->current, 1, (CELL_GCM_CONTEXT_DMA_MEMORY_FRAME_BUFFER + surface->colorLocation[2])); \
+ gcm_emit_at(thisContext->current, 2, (CELL_GCM_CONTEXT_DMA_MEMORY_FRAME_BUFFER + surface->colorLocation[3])); \
  gcm_finish_n_commands(thisContext->current, 3); \
  gcm_emit_method_at(thisContext->current, 0, CELL_GCM_NV4097_SET_CONTEXT_DMA_ZETA, 1); \
- (thisContext->current)[1] = (CELL_GCM_CONTEXT_DMA_MEMORY_FRAME_BUFFER + surface->depthLocation); \
+ gcm_emit_at(thisContext->current, 1, (CELL_GCM_CONTEXT_DMA_MEMORY_FRAME_BUFFER + surface->depthLocation)); \
  gcm_finish_n_commands(thisContext->current, 2); \
  gcm_emit_method_at(thisContext->current, 0, CELL_GCM_NV4097_SET_SURFACE_FORMAT, 6); \
- (thisContext->current)[1] = ((surface->colorFormat) | ((surface->depthFormat) << 5) | ((surface->type) << 8) | ((surface->antialias) << 12) | ((log2Width) << 16) | ((log2Height) << 24)); \
- (thisContext->current)[2] = (surface->colorPitch[0]); \
- (thisContext->current)[3] = (surface->colorOffset[0]); \
- (thisContext->current)[4] = (surface->depthOffset); \
- (thisContext->current)[5] = (surface->colorOffset[1]); \
- (thisContext->current)[6] = (surface->colorPitch[1]); \
+ gcm_emit_at(thisContext->current, 1, ((surface->colorFormat) | ((surface->depthFormat) << 5) | ((surface->type) << 8) | ((surface->antialias) << 12) | ((log2Width) << 16) | ((log2Height) << 24))); \
+ gcm_emit_at(thisContext->current, 2, (surface->colorPitch[0])); \
+ gcm_emit_at(thisContext->current, 3, (surface->colorOffset[0])); \
+ gcm_emit_at(thisContext->current, 4, (surface->depthOffset)); \
+ gcm_emit_at(thisContext->current, 5, (surface->colorOffset[1])); \
+ gcm_emit_at(thisContext->current, 6, (surface->colorPitch[1])); \
  gcm_finish_n_commands(thisContext->current, 7); \
  gcm_emit_method_at(thisContext->current, 0, CELL_GCM_NV4097_SET_SURFACE_PITCH_Z, 1); \
- (thisContext->current)[1] = (surface->depthPitch); \
+ gcm_emit_at(thisContext->current, 1, (surface->depthPitch)); \
  gcm_finish_n_commands(thisContext->current, 2); \
  gcm_emit_method_at(thisContext->current, 0, CELL_GCM_NV4097_SET_SURFACE_PITCH_C, 4); \
- (thisContext->current)[1] = (surface->colorPitch[2]); \
- (thisContext->current)[2] = (surface->colorPitch[3]); \
- (thisContext->current)[3] = (surface->colorOffset[2]); \
- (thisContext->current)[4] = (surface->colorOffset[3]); \
+ gcm_emit_at(thisContext->current, 1, (surface->colorPitch[2])); \
+ gcm_emit_at(thisContext->current, 2, (surface->colorPitch[3])); \
+ gcm_emit_at(thisContext->current, 3, (surface->colorOffset[2])); \
+ gcm_emit_at(thisContext->current, 4, (surface->colorOffset[3])); \
  gcm_finish_n_commands(thisContext->current, 5); \
  gcm_emit_method_at(thisContext->current, 0, CELL_GCM_NV4097_SET_SURFACE_COLOR_TARGET, 1); \
  gcm_emit_at(thisContext->current, 1, surface->colorTarget); \
  gcm_finish_n_commands(thisContext->current, 2); \
  gcm_emit_method_at(thisContext->current, 0, CELL_GCM_NV4097_SET_WINDOW_OFFSET, 1); \
- (thisContext->current)[1] = ((surface->x) | ((surface->y) << 16)); \
+ gcm_emit_at(thisContext->current, 1, ((surface->x) | ((surface->y) << 16))); \
  gcm_finish_n_commands(thisContext->current, 2); \
  gcm_emit_method_at(thisContext->current, 0, CELL_GCM_NV4097_SET_SURFACE_CLIP_HORIZONTAL, 2); \
- (thisContext->current)[1] = ((surface->x) | ((surface->width) << 16)); \
- (thisContext->current)[2] = ((surface->y) | ((surface->height) << 16));  \
+ gcm_emit_at(thisContext->current, 1, ((surface->x) | ((surface->width) << 16))); \
+ gcm_emit_at(thisContext->current, 2, ((surface->y) | ((surface->height) << 16)));  \
  gcm_finish_n_commands(thisContext->current, 3); \
  gcm_emit_method_at(thisContext->current, 0, CELL_GCM_NV4097_SET_SHADER_WINDOW, 1); \
- (thisContext->current)[1] = ((surface->height - (((surface->height) & 0x1000) >> 12)) | ((origin) << 12) | ((pixelCenter) << 16)); \
+ gcm_emit_at(thisContext->current, 1, ((surface->height - (((surface->height) & 0x1000) >> 12)) | ((origin) << 12) | ((pixelCenter) << 16))); \
  gcm_finish_n_commands(thisContext->current, 2);
 
 #define rglGcmSend(dstId, dstOffset, pitch, src, size) \
