@@ -21,6 +21,10 @@
 #include <stdlib.h>
 #include <string.h>
 
+#ifdef GEKKO
+#include <malloc.h>
+#endif
+
 #ifdef RARCH_INTERNAL
 #include "../../hash.h"
 #else
@@ -709,7 +713,12 @@ bool rpng_load_image_argb(const char *path, uint32_t **data, unsigned *width, un
 
    *width  = ihdr.width;
    *height = ihdr.height;
+#ifdef GEKKO
+   // we often use these in textures, make sure they're 32-byte aligned
+   *data = (uint32_t*)memalign(32, ihdr.width * ihdr.height * sizeof(uint32_t));
+#else
    *data = (uint32_t*)malloc(ihdr.width * ihdr.height * sizeof(uint32_t));
+#endif
    if (!*data)
       GOTO_END_ERROR();
 

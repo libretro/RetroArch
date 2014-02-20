@@ -73,16 +73,16 @@ unsigned gx_old_width, gx_old_height;
 
 float verts[16] ATTRIBUTE_ALIGN(32) = {
    -1,  1, -0.5,
+    1,  1, -0.5,
    -1, -1, -0.5,
     1, -1, -0.5,
-    1,  1, -0.5,
 };
 
 float vertex_ptr[8] ATTRIBUTE_ALIGN(32) = {
    0, 0,
+   1, 0,
    0, 1,
    1, 1,
-   1, 0,
 };
 
 static void retrace_callback(u32 retrace_count)
@@ -398,8 +398,8 @@ static void init_vtx(void *data)
    GX_SetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLORNULL);
    GX_InvVtxCache();
 
-   GX_SetBlendMode(GX_BM_BLEND, GX_BL_ONE, GX_BL_INVSRCALPHA, 0);
-
+   //GX_SetBlendMode(GX_BM_BLEND, GX_BL_ONE, GX_BL_INVSRCALPHA, 0);
+   GX_SetBlendMode(GX_BM_BLEND, GX_BL_SRCALPHA, GX_BL_INVSRCALPHA, GX_LO_CLEAR);
    g_tex.data = memalign(32, 4 * 4 * 4);
    memset(g_tex.data, 0, 4 * 4 * 4);
    DCFlushRange(g_tex.data, 4 * 4 * 4);
@@ -411,7 +411,7 @@ static void build_disp_list(void)
 {
    DCInvalidateRange(display_list, sizeof(display_list));
    GX_BeginDispList(display_list, sizeof(display_list));
-   GX_Begin(GX_QUADS, GX_VTXFMT0, 4);
+   GX_Begin(GX_TRIANGLESTRIP, GX_VTXFMT0, 4);
    for (unsigned i = 0; i < 4; i++)
    {
       GX_Position1x8(i);
@@ -1117,8 +1117,8 @@ static bool gx_overlay_load(void *data, const struct texture_image *images, unsi
 
    for (i = 0; i < num_images; i++)
    {
-      struct gx_overlay_data *data = &gx->overlay[i];
-      GX_InitTexObj(&data->tex, images[i].pixels, images[i].width, images[i].height, GX_TF_RGBA8, GX_CLAMP, GX_CLAMP, GX_FALSE);
+      struct gx_overlay_data *o = &gx->overlay[i];
+      GX_InitTexObj(&o->tex, images[i].pixels, images[i].width, images[i].height, GX_TF_RGBA8, GX_CLAMP, GX_CLAMP, GX_FALSE);
       GX_InitTexObjFilterMode(&g_tex.obj, GX_LINEAR, GX_LINEAR);
       DCFlushRange(images[i].pixels, images[i].width * images[i].height * sizeof(uint32_t));
       gx_overlay_tex_geom(gx, i, 0, 0, 1, 1); // Default. Stretch to whole screen.
@@ -1145,6 +1145,16 @@ static void gx_overlay_vertex_geom(void *data, unsigned image, float x, float y,
 {
    gx_video_t *gx = (gx_video_t*)data;
    struct gx_overlay_data *o = &gx->overlay[image];
+
+   // Flipped, so we preserve top-down semantics.
+   y = 1.0f - y;
+   h = -h;
+
+   // expand from 0 - 1 to -1 - 1
+   x = (x * 2.0f) - 1.0f;
+   y = (y * 2.0f) - 1.0f;
+   w = (w * 2.0f);
+   h = (h * 2.0f);
 
    o->vertex_coord[0] = x;     o->vertex_coord[1] = y;
    o->vertex_coord[2] = x + w; o->vertex_coord[3] = y;
@@ -1187,17 +1197,17 @@ static void gx_render_overlay(void *data)
    {
       GX_LoadTexObj(&gx->overlay[i].tex, GX_TEXMAP0);
 
-      GX_Begin(GX_QUADS, GX_VTXFMT0, 4);
-        GX_Position3f32(gx->overlay[i].vertex_coord[0], gx->overlay[i].vertex_coord[1],  0);
+      GX_Begin(GX_TRIANGLESTRIP, GX_VTXFMT0, 4);
+        GX_Position3f32(gx->overlay[i].vertex_coord[0], gx->overlay[i].vertex_coord[1],  -0.5);
         GX_TexCoord2f32(gx->overlay[i].tex_coord[0], gx->overlay[i].tex_coord[1]);
 
-        GX_Position3f32(gx->overlay[i].vertex_coord[2], gx->overlay[i].vertex_coord[3],  0);
+        GX_Position3f32(gx->overlay[i].vertex_coord[2], gx->overlay[i].vertex_coord[3],  -0.5);
         GX_TexCoord2f32(gx->overlay[i].tex_coord[2], gx->overlay[i].tex_coord[3]);
 
-        GX_Position3f32(gx->overlay[i].vertex_coord[4], gx->overlay[i].vertex_coord[5],  0);
+        GX_Position3f32(gx->overlay[i].vertex_coord[4], gx->overlay[i].vertex_coord[5],  -0.5);
         GX_TexCoord2f32(gx->overlay[i].tex_coord[4], gx->overlay[i].tex_coord[5]);
 
-        GX_Position3f32(gx->overlay[i].vertex_coord[6], gx->overlay[i].vertex_coord[7],  0);
+        GX_Position3f32(gx->overlay[i].vertex_coord[6], gx->overlay[i].vertex_coord[7],  -0.5);
         GX_TexCoord2f32(gx->overlay[i].tex_coord[6], gx->overlay[i].tex_coord[7]);
      GX_End();
    }
