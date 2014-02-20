@@ -961,20 +961,20 @@ static bool gx_frame(void *data, const void *frame,
    GX_SetCurrentMtx(GX_PNMTX0);
    GX_LoadTexObj(&g_tex.obj, GX_TEXMAP0);
    GX_CallDispList(display_list, display_list_size);
-   GX_DrawDone();
 
    if (gx->rgui_texture_enable)
    {
       GX_SetCurrentMtx(GX_PNMTX1);
       GX_LoadTexObj(&menu_tex.obj, GX_TEXMAP0);
       GX_CallDispList(display_list, display_list_size);
-      GX_DrawDone();
    }
 
 #ifdef HAVE_OVERLAY
    if (gx->overlay_enable)
       gx_render_overlay(gx);
 #endif
+
+   GX_DrawDone();
 
    char fps_txt[128], fps_text_buf[128];
    bool fps_draw = g_settings.fps_show;
