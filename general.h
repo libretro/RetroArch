@@ -725,11 +725,15 @@ bool rarch_set_rumble_state(unsigned port, enum retro_rumble_effect effect, bool
 void rarch_init_autosave(void);
 void rarch_deinit_autosave(void);
 void rarch_take_screenshot(void);
-
 void rarch_load_state(void);
 void rarch_save_state(void);
 void rarch_state_slot_increase(void);
 void rarch_state_slot_decrease(void);
+
+#ifdef HAVE_FFMPEG
+void rarch_init_recording(void);
+void rarch_deinit_recording(void);
+#endif
 /////////
 
 // Public data structures

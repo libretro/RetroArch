@@ -696,6 +696,25 @@ retro_proc_address_t driver_get_proc_address(const char *sym)
       return NULL;
 }
 
+bool driver_update_system_av_info(const struct retro_system_av_info *info)
+{
+   g_extern.system.av_info = *info;
+   rarch_set_fullscreen(g_settings.video.fullscreen);
+   // Cannot continue recording with different parameters.
+   // Take the easiest route out and just restart the recording.
+#ifdef HAVE_FFMPEG
+   if (g_extern.recording)
+   {
+      static const char *msg = "Restarting FFmpeg recording due to driver reinit.";
+      msg_queue_push(g_extern.msg_queue, msg, 2, 180);
+      RARCH_WARN("%s\n", msg);
+      rarch_deinit_recording();
+      rarch_init_recording();
+   }
+#endif
+   return true;
+}
+
 // Only called once on init and deinit.
 // Video and input drivers need to be active (owned)
 // before retroarch core starts.

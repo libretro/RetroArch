@@ -210,8 +210,6 @@ static void readjust_audio_input_rate(void)
 }
 
 #ifdef HAVE_FFMPEG
-static void deinit_recording(void);
-
 static void recording_dump_frame(const void *data, unsigned width, unsigned height, size_t pitch)
 {
    struct ffemu_video_data ffemu_data = {0};
@@ -238,7 +236,7 @@ static void recording_dump_frame(const void *data, unsigned width, unsigned heig
          msg_queue_clear(g_extern.msg_queue);
          msg_queue_push(g_extern.msg_queue, msg, 1, 180);
 
-         deinit_recording();
+         rarch_deinit_recording();
          g_extern.recording = false;
          return;
       }
@@ -1369,9 +1367,8 @@ static inline void save_files(void)
    }
 }
 
-
 #ifdef HAVE_FFMPEG
-static void init_recording(void)
+void rarch_init_recording(void)
 {
    if (!g_extern.recording)
       return;
@@ -1413,10 +1410,10 @@ static void init_recording(void)
          return;
       }
 
-      params.out_width           = vp.width;
-      params.out_height          = vp.height;
-      params.fb_width            = next_pow2(vp.width);
-      params.fb_height           = next_pow2(vp.height);
+      params.out_width  = vp.width;
+      params.out_height = vp.height;
+      params.fb_width   = next_pow2(vp.width);
+      params.fb_height  = next_pow2(vp.height);
 
       if (g_settings.video.force_aspect && (g_extern.system.aspect_ratio > 0.0f))
          params.aspect_ratio  = g_extern.system.aspect_ratio;
@@ -1481,7 +1478,7 @@ static void init_recording(void)
    }
 }
 
-static void deinit_recording(void)
+void rarch_deinit_recording(void)
 {
    if (!g_extern.recording)
       return;
@@ -3059,7 +3056,7 @@ int rarch_main_init(int argc, char *argv[])
    init_controllers();
    
 #ifdef HAVE_FFMPEG
-   init_recording();
+   rarch_init_recording();
 #endif
 
 #ifdef HAVE_NETPLAY
@@ -3265,7 +3262,7 @@ void rarch_main_deinit(void)
 #endif
 
 #ifdef HAVE_FFMPEG
-   deinit_recording();
+   rarch_deinit_recording();
 #endif
 
    if (g_extern.use_sram)

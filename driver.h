@@ -633,6 +633,9 @@ bool driver_location_get_position(double *lat, double *lon, double *horiz_accura
 void driver_location_set_interval(unsigned interval_msecs, unsigned interval_distance);
 #endif
 
+// Used by RETRO_ENVIRONMENT_SET_SYSTEM_AV_INFO
+bool driver_update_system_av_info(const struct retro_system_av_info *info);
+
 extern driver_t driver;
 
 //////////////////////////////////////////////// Backends

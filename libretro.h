@@ -589,6 +589,24 @@ enum retro_mod
                                            // NOTE: libretro cores used to check GET_SYSTEM_DIRECTORY for similar things before.
                                            // They should still check GET_SYSTEM_DIRECTORY if they want to be backwards compatible.
                                            // The path here can be NULL. It should only be non-NULL if the frontend user has set a specific save path.
+                                           //
+#define RETRO_ENVIRONMENT_SET_SYSTEM_AV_INFO 32
+                                           // const struct retro_system_av_info * --
+                                           // Sets a new av_info structure. This can only be called from within retro_run().
+                                           // This should *only* be used if the core is completely altering the internal resolutions, aspect ratios, timings, etc.
+                                           // Calling this can require a full reinitialization of video/audio drivers in the frontend,
+                                           // so it is important to call it very sparingly, and usually only with the users explicit consent.
+                                           // An eventual driver reinit will happen so that video and audio callbacks
+                                           // happening after this call within the same retro_run() call will target the newly initialized driver.
+                                           //
+                                           // This callback makes it possible to support configurable resolutions in games, which can be useful to
+                                           // avoid setting the "worst case" in max_width/max_height.
+                                           //
+                                           // ***HIGHLY RECOMMENDED*** Do not call this callback every time resolution changes in an emulator core if it's
+                                           // expected to be a temporary change, for the reasons of possible driver reinit.
+                                           // This call is not a free pass for not trying to provide correct values in retro_get_system_av_info().
+                                           //
+                                           // If this returns false, the frontend does not acknowledge a changed av_info struct.
 
 enum retro_log_level
 {

@@ -897,6 +897,19 @@ bool rarch_environment_cb(unsigned cmd, void *data)
             return false;
          break;
 
+      case RETRO_ENVIRONMENT_GET_CONTENT_DIRECTORY:
+      {
+         const char **dir = (const char**)data;
+         *dir = *g_settings.content_directory ? g_settings.content_directory : NULL;
+         RARCH_LOG("Environ CONTENT_DIRECTORY: \"%s\".\n", g_settings.content_directory);
+         break;
+      }
+
+      case RETRO_ENVIRONMENT_SET_SYSTEM_AV_INFO:
+      {
+         return driver_update_system_av_info((const struct retro_system_av_info*)data);
+      }
+
       case RETRO_ENVIRONMENT_EXEC:
       case RETRO_ENVIRONMENT_EXEC_ESCAPE:
 
@@ -922,14 +935,6 @@ bool rarch_environment_cb(unsigned cmd, void *data)
             RARCH_LOG("Environ (Private) EXEC.\n");
 
          break;
-
-      case RETRO_ENVIRONMENT_GET_CONTENT_DIRECTORY:
-      {
-         const char **dir = (const char**)data;
-         *dir = *g_settings.content_directory ? g_settings.content_directory : NULL;
-         RARCH_LOG("Environ CONTENT_DIRECTORY: \"%s\".\n", g_settings.content_directory);
-         break;
-      }
 
       default:
          RARCH_LOG("Environ UNSUPPORTED (#%u).\n", cmd);
