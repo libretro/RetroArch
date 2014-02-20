@@ -18,6 +18,29 @@
 	__asm__ volatile ("stwbrx	%0,%1,%2" : : "r"(value), "b%"(index), "r"(base) : "memory")
 #endif
 
+#ifndef _sync
+#define _sync() asm volatile("sync")
+#endif
+
+#ifndef _nop
+#define _nop() asm volatile("nop")
+#endif
+
+#ifndef ppcsync
+#define ppcsync() asm volatile("sc")
+#endif
+
+#ifndef ppchalt
+#define ppchalt() ({					\
+	asm volatile("sync");				\
+	while(1) {							\
+		asm volatile("nop");			\
+		asm volatile("li 3,0");			\
+		asm volatile("nop");			\
+	}									\
+})
+#endif
+
 #ifdef GEKKO
 
 #ifndef _CPU_ISR_Enable

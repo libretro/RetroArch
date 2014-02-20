@@ -240,7 +240,7 @@ void gx_set_video_mode(void *data, unsigned fbWidth, unsigned lines)
    GX_SetFieldMode(gx_mode.field_rendering, (gx_mode.viHeight == 2 * gx_mode.xfbHeight) ? GX_ENABLE : GX_DISABLE);
    GX_SetPixelFmt(GX_PF_RGB8_Z24, GX_ZC_LINEAR);
    __GX_InvalidateTexAll(__gx);
-   GX_Flush();
+   __GX_Flush(__gx);
    _CPU_ISR_Restore(level);
 
    RARCH_LOG("GX Resolution: %dx%d (%s)\n", gx_mode.fbWidth, gx_mode.efbHeight, (gx_mode.viTVMode & 3) == VI_INTERLACE ? "interlaced" : "progressive");
@@ -337,16 +337,16 @@ static void init_texture(void *data, unsigned width, unsigned height)
    struct __gx_texobj *fb_ptr = (struct __gx_texobj*)&g_tex.obj;
    struct __gx_texobj *menu_ptr = (struct __gx_texobj*)&menu_tex.obj;
    __GX_InitTexObj(fb_ptr, g_tex.data, width, height, (gx->rgb32) ? GX_TF_RGBA8 : gx->rgui_texture_enable ? GX_TF_RGB5A3 : GX_TF_RGB565, GX_CLAMP, GX_CLAMP, GX_FALSE);
-   GX_InitTexObjFilterMode(&g_tex.obj, g_filter, g_filter);
+   __GX_InitTexObjFilterMode(fb_ptr, g_filter, g_filter);
    __GX_InitTexObj(menu_ptr, menu_tex.data, rgui_w, rgui_h, GX_TF_RGB5A3, GX_CLAMP, GX_CLAMP, GX_FALSE);
-   GX_InitTexObjFilterMode(&menu_tex.obj, g_filter, g_filter);
+   __GX_InitTexObjFilterMode(menu_ptr, g_filter, g_filter);
    __GX_InvalidateTexAll(__gx);
 }
 
-static void init_vtx(void *data)
+static void init_vtx(struct __gx_regdef *__gx, void *data)
 {
-   GX_SetCullMode(GX_CULL_NONE);
-   GX_SetClipMode(GX_CLIP_DISABLE);
+   __GX_SetCullMode(__gx, GX_CULL_NONE);
+   __GX_SetClipMode(GX_CLIP_DISABLE);
    GX_SetPixelFmt(GX_PF_RGB8_Z24, GX_ZC_LINEAR);
    GX_SetZMode(GX_ENABLE, GX_ALWAYS, GX_ENABLE);
    GX_SetColorUpdate(GX_TRUE);
@@ -380,7 +380,7 @@ static void init_vtx(void *data)
 
    DCFlushRange(g_tex.data, 4 * 4 * 4);
    init_texture(data, 4, 4); // for menu texture
-   GX_Flush();
+   GX_Flush(__gx);
 }
 
 static void build_disp_list(void)
@@ -439,6 +439,7 @@ static void gx_restart(void) { }
 static void *gx_init(const video_info_t *video,
       const input_driver_t **input, void **input_data)
 {
+   struct __gx_regdef *__gx = (struct __gx_regdef*)__gxregs;
    g_vsync = video->vsync;
 
    if (driver.video_data)
@@ -476,7 +477,7 @@ static void *gx_init(const video_info_t *video,
    GX_Init(gx_fifo, sizeof(gx_fifo));
 
    setup_video_mode(gx);
-   init_vtx(gx);
+   init_vtx(__gx, gx);
    build_disp_list();
 
    gx->vp.full_width = gx_mode.fbWidth;
@@ -976,7 +977,7 @@ static bool gx_frame(void *data, const void *frame,
    }
 
    __GX_CopyDisp(__gx, g_framebuf[g_current_framebuf], clear_efb);
-   GX_Flush();
+   __GX_Flush(__gx);
    VIDEO_SetNextFramebuffer(g_framebuf[g_current_framebuf]);
    VIDEO_Flush();
 

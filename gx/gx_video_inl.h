@@ -119,6 +119,8 @@ __gx->dispCopyWH = (__gx->dispCopyWH&~0xff000000)|(_SHIFTL(0x4a,24,8))
 __gx->dispCopyDst = (__gx->dispCopyDst&~0x3ff)|(_SHIFTR(wd,4,10)); \
 __gx->dispCopyDst = (__gx->dispCopyDst&~0xff000000)|(_SHIFTL(0x4d,24,8))
 
+#define __GX_SetClipMode(mode) GX_LOAD_XF_REG(0x1005,(mode&1))
+
 static inline void __GX_CopyDisp(struct __gx_regdef *__gx, void *dest,u8 clear)
 {
    u8 clflag;
@@ -517,6 +519,20 @@ static void __GX_SendFlushPrim(struct __gx_regdef *__gx)
    __gx->xfFlush = 1;
 }
 
+#define __GX_InitTexObjFilterMode(ptr, minfilt, magfilt) \
+{ \
+   static u8 GX2HWFiltConv[] = {0x00,0x04,0x01,0x05,0x02,0x06,0x00,0x00}; \
+   ptr->tex_filt = (ptr->tex_filt&~0x10)|(_SHIFTL((magfilt==GX_LINEAR?1:0),4,1)); \
+   ptr->tex_filt = (ptr->tex_filt&~0xe0)|(_SHIFTL(GX2HWFiltConv[minfilt],5,3)); \
+}
+
+#define __GX_SetCullMode(__gx, mode) \
+{ \
+   static u8 cm2hw[] = { 0, 2, 1, 3 }; \
+   __gx->genMode = (__gx->genMode&~0xC000)|(_SHIFTL(cm2hw[mode],14,2)); \
+   __gx->dirtyState |= 0x0004; \
+}
+
 #define __GX_CallDispList(__gx, list, nbytes) \
 	if(__gx->dirtyState) \
    { \
@@ -529,3 +545,16 @@ static void __GX_SendFlushPrim(struct __gx_regdef *__gx)
    FIFO_PUTU8(0x40); /*call displaylist */ \
    FIFO_PUTU32(MEM_VIRTUAL_TO_PHYSICAL(list)); \
    FIFO_PUTU32(nbytes)
+
+#define __GX_Flush(__gx) \
+   if(__gx->dirtyState) \
+      __GX_SetDirtyState(__gx); \
+   wgPipe->U32 = 0; \
+   wgPipe->U32 = 0; \
+   wgPipe->U32 = 0; \
+   wgPipe->U32 = 0; \
+   wgPipe->U32 = 0; \
+   wgPipe->U32 = 0; \
+   wgPipe->U32 = 0; \
+   wgPipe->U32 = 0; \
+   ppcsync()
