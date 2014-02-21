@@ -206,7 +206,7 @@ bool state_manager_pop(state_manager_t *state, void **data)
          out16+=numunchanged;
       }
    }
-   //End decompression code.
+   //End decompression code
 
    state->entries--;
 
@@ -240,9 +240,7 @@ bool state_manager_push_do(state_manager_t *state)
       const char* new=state->nextblock;
       char* compressed=state->head+sizeof(size_t);
 
-      //at the end, 'compressed' must point to the end of the compressed data
-      //do not include the next/prev pointers
-      //begin compression code
+      //Begin compression code; 'compressed' will point to the end of the compressed data (excluding the prev pointer).
       const uint16_t * old16=(const uint16_t*)old;
       const uint16_t * new16=(const uint16_t*)new;
       uint16_t * compressed16=(uint16_t*)compressed;
@@ -300,13 +298,15 @@ bool state_manager_push_do(state_manager_t *state)
 
          size_t changed;
          const uint16_t * old16prev=old16;
-         //comparing two or three words makes no real difference
-         //with two, the smaller blocks are less likely to be chopped up elsewhere due to 64KB
-         //with three, we get larger blocks which should be a minuscle bit faster to decompress, but probably a little slower to compress
+         //Comparing two or three words makes no real difference.
+         //With two, the smaller blocks are less likely to be chopped up elsewhere due to 64KB;
+         // with three, we get larger blocks which should be a minuscle bit faster to decompress,
+         // but probably a little slower to compress. Since compression is more bottleneck than decompression is, we favor that.
          while (old16[0]!=new16[0] || old16[1]!=new16[1])
          {
             old16++;
             new16++;
+            //Optimize this by only checking one at the time for as long as possible.
             while (*old16!=*new16)
             {
                old16++;
@@ -333,7 +333,7 @@ bool state_manager_push_do(state_manager_t *state)
       compressed16[1]=0;
       compressed16[2]=0;
       compressed=(char*)(compressed16+3);
-      //end compression code
+      //End compression code.
 
       if (compressed-state->data+state->maxcompsize > state->capacity)
       {
