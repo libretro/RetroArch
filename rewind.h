@@ -21,8 +21,6 @@
 
 typedef struct state_manager state_manager_t;
 
-// Always pass in at least 2-byte aligned data! Size can be anything.
-
 state_manager_t *state_manager_new(size_t state_size, size_t buffer_size);
 void state_manager_free(state_manager_t *state);
 bool state_manager_pop(state_manager_t *state, void **data);
