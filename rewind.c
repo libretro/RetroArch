@@ -44,7 +44,7 @@
 //Each size value is stored native endian if alignment is not enforced; if it is, they're little endian.
 //The start of the buffer contains a size pointing to the end of the buffer; the end points to its start.
 //Wrapping is handled by returning to the start of the buffer if the compressed data could potentially hit the edge;
-//if the compressed data could potentially overwrite the tail pointer, the tail retreats until it can no longer collide.
+// if the compressed data could potentially overwrite the tail pointer, the tail retreats until it can no longer collide.
 //This means that on average, ~2*maxcompsize is unused at any given moment.
 
 #if SIZE_MAX == 0xFFFFFFFF
@@ -96,15 +96,15 @@ static inline size_t read_size_t(uint16_t* ptr)
 struct state_manager {
    char * data;
    size_t capacity;
-   char * head;//read and write here
-   char * tail;//delete here if head is close
+   char * head;//Reading and writing is done here.
+   char * tail;//If head comes close to this, discard a frame.
 
    char * thisblock;
    char * nextblock;
    bool thisblock_valid;
 
-   size_t blocksize;//rounded up from reset::blocksize
-   size_t maxcompsize;//size_t+(blocksize+131071)/131072*(blocksize+u16+u16)+u16+u32+size_t
+   size_t blocksize;//This one is runded up from reset::blocksize.
+   size_t maxcompsize;//size_t+(blocksize+131071)/131072*(blocksize+u16+u16)+u16+u32+size_t (yes, the math is a bit ugly)
 
    unsigned int entries;
 };
@@ -135,9 +135,10 @@ state_manager_t *state_manager_new(size_t state_size, size_t buffer_size)
       free(state);
       return NULL;
    }
-   //force in a different byte at the end, so we don't need to look for the buffer end in the innermost loop
-   //there is also a large amount of data that's the same, to stop the other scan
-   //and finally some padding so we don't read outside the buffer end if we're reading in large blocks
+   //Force in a different byte at the end, so we don't need to check bounds in the innermost loop (it's expensive).
+   //There is also a large amount of data that's the same, to stop the other scan
+   //There is also some padding at the end. This is so we don't read outside the buffer end if we're reading in large blocks;
+   // it doesn't make any difference to us, but sacrificing 16 bytes to get Valgrind happy is worth it.
    *(uint16_t*)(state->thisblock+state->blocksize+sizeof(uint16_t)*3)=0xFFFF;
    *(uint16_t*)(state->nextblock+state->blocksize+sizeof(uint16_t)*3)=0x0000;
 
@@ -180,8 +181,8 @@ bool state_manager_pop(state_manager_t *state, void **data)
 
    const char * compressed=state->data+start+sizeof(size_t);
    char * out=state->thisblock;
-   //begin decompression code
-   //out is the previously returned state
+   //Begin decompression code
+   //out is the last pushed (or returned) state
    const uint16_t * compressed16=(const uint16_t*)compressed;
    uint16_t * out16=(uint16_t*)out;
    while (true)
@@ -190,8 +191,9 @@ bool state_manager_pop(state_manager_t *state, void **data)
       if (numchanged)
       {
          out16+=*(compressed16++);
-         //we could do memcpy, but it seems that function call overhead is high
-         // enough that memcpy's higher speed for large blocks won't matter
+         //We could do memcpy, but it seems that memcpy has a constant-per-call overhead that actually shows up.
+         //Our average size in here seems to be 8 or something.
+         //Therefore, we do something with lower overhead.
          for (int i=0;i<numchanged;i++) out16[i]=compressed16[i];
          compressed16+=numchanged;
          out16+=numchanged;
@@ -204,7 +206,7 @@ bool state_manager_pop(state_manager_t *state, void **data)
          out16+=numunchanged;
       }
    }
-   //end decompression code
+   //End decompression code.
 
    state->entries--;
 
