@@ -241,6 +241,9 @@ else ifeq ($(platform), ps3-cobra)
 	@echo "[DEPLOY PS3::] Copied shaders to PS3 shaders directory."
 endif
 
+shaders-convert-glsl:
+	$(PYTHON3) tools/cg2glsl.py $(SHADER_DIR) $(SHADER_GLSL_DIR)
+
 overlays-checkout:
 	@if test -d $(OVERLAY_DIR); then \
 		echo "[OVERLAY CHECKOUT::] Git pulling common-overlays..."; \
@@ -252,8 +255,6 @@ overlays-checkout:
       $(GIT) clone git://github.com/libretro/common-overlays.git $(OVERLAY_DIR); \
 	fi
 
-overlays-convert-glsl:
-	$(PYTHON3) tools/cg2glsl.py $(SHADER_DIR) $(SHADER_GLSL_DIR)
 
 clean:
 	rm -f $(EXT_TARGET)
