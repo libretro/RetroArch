@@ -99,13 +99,11 @@ extern rgui_handle_t *rgui;
 static void gx_render_overlay(void *data);
 static void gx_free_overlay(gx_video_t *gx)
 {
-#ifdef GX_OPTS
    struct __gx_regdef *__gx = (struct __gx_regdef*)__gxregs;
-#endif
    free(gx->overlay);
    gx->overlay = NULL;
    gx->overlays = 0;
-   GX_InvalidateTexAll();
+   __GX_InvalidateTexAll(__gx);
 }
 #endif
 
@@ -1112,9 +1110,7 @@ static bool gx_overlay_load(void *data, const struct texture_image *images, unsi
 {
    unsigned i;
    gx_video_t *gx = (gx_video_t*)data;
-#ifdef GX_OPTS
    struct __gx_regdef *__gx = (struct __gx_regdef*)__gxregs;
-#endif
 
    gx_free_overlay(gx);
    gx->overlay = (struct gx_overlay_data*)calloc(num_images, sizeof(*gx->overlay));
@@ -1134,7 +1130,7 @@ static bool gx_overlay_load(void *data, const struct texture_image *images, unsi
       gx->overlay[i].alpha_mod = 1.0f;
    }
 
-   GX_InvalidateTexAll();
+   __GX_InvalidateTexAll(__gx);
    return true;
 }
 
@@ -1191,41 +1187,39 @@ static void gx_overlay_set_alpha(void *data, unsigned image, float mod)
 static void gx_render_overlay(void *data)
 {
    gx_video_t *gx = (gx_video_t*)data;
-#ifdef GX_OPTS
    struct __gx_regdef *__gx = (struct __gx_regdef*)__gxregs;
-#endif
 
-   GX_SetCurrentMtx(GX_PNMTX1);
-   GX_SetVtxDesc(GX_VA_POS, GX_DIRECT);
-   GX_SetVtxDesc(GX_VA_TEX0, GX_DIRECT);
-   GX_SetVtxDesc(GX_VA_CLR0, GX_DIRECT);
+   __GX_SetCurrentMtx(__gx, GX_PNMTX1);
+   __GX_SetVtxDesc(__gx, GX_VA_POS, GX_DIRECT);
+   __GX_SetVtxDesc(__gx, GX_VA_TEX0, GX_DIRECT);
+   __GX_SetVtxDesc(__gx, GX_VA_CLR0, GX_DIRECT);
 
    for (unsigned i = 0; i < gx->overlays; i++)
    {
       GX_LoadTexObj(&gx->overlay[i].tex, GX_TEXMAP0);
 
       GX_Begin(GX_TRIANGLESTRIP, GX_VTXFMT0, 4);
-        GX_Position3f32(gx->overlay[i].vertex_coord[0], gx->overlay[i].vertex_coord[1],  -0.5);
-        GX_Color4u8(255, 255, 255, (u8)(gx->overlay[i].alpha_mod * 255.0f));
-        GX_TexCoord2f32(gx->overlay[i].tex_coord[0], gx->overlay[i].tex_coord[1]);
+      GX_Position3f32(gx->overlay[i].vertex_coord[0], gx->overlay[i].vertex_coord[1],  -0.5);
+      GX_Color4u8(255, 255, 255, (u8)(gx->overlay[i].alpha_mod * 255.0f));
+      GX_TexCoord2f32(gx->overlay[i].tex_coord[0], gx->overlay[i].tex_coord[1]);
 
-        GX_Position3f32(gx->overlay[i].vertex_coord[2], gx->overlay[i].vertex_coord[3],  -0.5);
-        GX_Color4u8(255, 255, 255, (u8)(gx->overlay[i].alpha_mod * 255.0f));
-        GX_TexCoord2f32(gx->overlay[i].tex_coord[2], gx->overlay[i].tex_coord[3]);
+      GX_Position3f32(gx->overlay[i].vertex_coord[2], gx->overlay[i].vertex_coord[3],  -0.5);
+      GX_Color4u8(255, 255, 255, (u8)(gx->overlay[i].alpha_mod * 255.0f));
+      GX_TexCoord2f32(gx->overlay[i].tex_coord[2], gx->overlay[i].tex_coord[3]);
 
-        GX_Position3f32(gx->overlay[i].vertex_coord[4], gx->overlay[i].vertex_coord[5],  -0.5);
-        GX_Color4u8(255, 255, 255, (u8)(gx->overlay[i].alpha_mod * 255.0f));
-        GX_TexCoord2f32(gx->overlay[i].tex_coord[4], gx->overlay[i].tex_coord[5]);
+      GX_Position3f32(gx->overlay[i].vertex_coord[4], gx->overlay[i].vertex_coord[5],  -0.5);
+      GX_Color4u8(255, 255, 255, (u8)(gx->overlay[i].alpha_mod * 255.0f));
+      GX_TexCoord2f32(gx->overlay[i].tex_coord[4], gx->overlay[i].tex_coord[5]);
 
-        GX_Position3f32(gx->overlay[i].vertex_coord[6], gx->overlay[i].vertex_coord[7],  -0.5);
-        GX_Color4u8(255, 255, 255, (u8)(gx->overlay[i].alpha_mod * 255.0f));
-        GX_TexCoord2f32(gx->overlay[i].tex_coord[6], gx->overlay[i].tex_coord[7]);
-     GX_End();
+      GX_Position3f32(gx->overlay[i].vertex_coord[6], gx->overlay[i].vertex_coord[7],  -0.5);
+      GX_Color4u8(255, 255, 255, (u8)(gx->overlay[i].alpha_mod * 255.0f));
+      GX_TexCoord2f32(gx->overlay[i].tex_coord[6], gx->overlay[i].tex_coord[7]);
+      GX_End();
    }
 
-   GX_SetVtxDesc(GX_VA_POS, GX_INDEX8);
-   GX_SetVtxDesc(GX_VA_TEX0, GX_INDEX8);
-   GX_SetVtxDesc(GX_VA_CLR0, GX_INDEX8);
+   __GX_SetVtxDesc(__gx, GX_VA_POS, GX_INDEX8);
+   __GX_SetVtxDesc(__gx, GX_VA_TEX0, GX_INDEX8);
+   __GX_SetVtxDesc(__gx, GX_VA_CLR0, GX_INDEX8);
 }
 
 static const video_overlay_interface_t gx_overlay_interface = {
