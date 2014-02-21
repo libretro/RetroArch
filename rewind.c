@@ -22,7 +22,7 @@
 //#define NO_UNALIGNED_MEM
 //Uncomment the above if alignment is enforced.
 
-//format per frame:
+//Format per frame:
 //size nextstart;
 //repeat {
 //  uint16 numchanged; // everything is counted in units of uint16
@@ -38,16 +38,14 @@
 //}
 //size thisstart;
 //
-//the start offsets point to 'nextstart' of any given compressed frame
-//each uint16 is stored native endian; anything that claims any other endianness refers to the endianness between each frame
+//The start offsets point to 'nextstart' of any given compressed frame.
+//Each uint16 is stored native endian; anything that claims any other endianness refers to the endianness of this specific item.
 //the uint32 is stored little endian
 //each size value is stored native endian if alignment is not enforced; if it is, they're little endian
 //the start of the buffer contains a size pointing to the end of the buffer; the end points to its start
 //wrapping is handled by returning to the start of the buffer if the compressed data could potentially hit the edge
 //if the compressed data could potentially overwrite the tail pointer, the tail retreats until it can no longer collide
 //so on average, ~2*maxcompsize is unused at any given moment
-//
-//if unaligned memory access is illegal, define NO_UNALIGNED_MEM
 
 #if SIZE_MAX == 0xFFFFFFFF
 extern char double_check_sizeof_size_t[(sizeof(size_t)==4)?1:-1];
