@@ -28,7 +28,7 @@ done
 
 cp -r ../media/rmenu/*.png ../ps3/iso/PS3_GAME/USRDIR/cores/borders/Menu/
 
-make -C ../ -f Makefile.shaders deploy-ps3-cobra
+make -C ../ -f Makefile.griffin platform=ps3-cobra shaders-deploy
 
 $SCETOOL_PATH $SCETOOL_FLAGS --encrypt ../retroarch-salamander_ps3.elf ../ps3/iso/PS3_GAME/USRDIR/EBOOT.BIN
 rm -rf ../retroarch-salamander_ps3.elf

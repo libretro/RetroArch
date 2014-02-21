@@ -27,7 +27,7 @@ done
 
 cp -r ../media/rmenu/*.png ../ps3/pkg/USRDIR/cores/borders/Menu/
 
-make -C ../ -f Makefile.shaders deploy-ps3
+make -C ../ -f Makefile.griffin platform=ps3 shaders-deploy
 
 $MAKE_FSELF_NPDRM ../retroarch-salamander_ps3.elf ../ps3/pkg/USRDIR/EBOOT.BIN
 rm -rf ../retroarch-salamander_ps3.elf
