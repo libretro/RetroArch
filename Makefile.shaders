@@ -1,8 +1,10 @@
 DOWNLOAD_SHADERS	= 1
-SHADER_DIR     := media/shaders
+DOWNLOAD_OVERLAYS = 1
+SHADER_DIR      := media/shaders
+OVERLAY_DIR     := media/overlays
 SHADER_GLSL_DIR := media/shaders_glsl
 
-SHADER_DEST_PS3_DIR := ps3/pkg/USRDIR/cores/shaders
+PLATFORM_MEDIA_SHADER_DIR := ps3/pkg/USRDIR/cores/shaders
 SHADER_DEST_PS3_COBRA_DIR := ps3/iso/PS3_GAME/USRDIR/cores/shaders
 
 # system platform
@@ -43,15 +45,28 @@ ifeq ($(DOWNLOAD_SHADERS),1)
 	fi
 endif
 
+checkout-overlays:
+ifeq ($(DOWNLOAD_OVERLAYS),1)
+	@if test -d $(OVERLAY_DIR); then \
+		echo "[OVERLAY CHECKOUT::] Git pulling common-overlays..."; \
+      cd $(OVERLAY_DIR); \
+		$(GIT) pull; \
+		cd ../../../../..; \
+	else \
+	echo "[OVERLAY CHECKOUT::] Git cloning common-overlays first..."; \
+      $(GIT) clone git://github.com/libretro/common-overlays.git $(OVERLAY_DIR); \
+	fi
+endif
+
 convert-xml:
 	$(PYTHON) tools/cg2glsl.py $(SHADER_DIR) $(SHADER_GLSL_DIR)
 
 deploy-ps3: checkout-shaders
-	@if test -d $(SHADER_DEST_PS3_DIR); then \
-		cp -r $(SHADER_DIR)/* $(SHADER_DEST_PS3_DIR); \
+	@if test -d $(PLATFORM_MEDIA_SHADER_DIR); then \
+		cp -r $(SHADER_DIR)/* $(PLATFORM_MEDIA_SHADER_DIR); \
 	else \
 	echo "[DEPLOY PS3::] Creating PS3 shader directory first..."; \
-		mkdir -p $(SHADER_DEST_PS3_DIR) || bin/true; \
+		mkdir -p $(PLATFORM_MEDIA_SHADER_DIR) || bin/true; \
 	fi
 	@echo "[DEPLOY PS3::] Copied shaders to PS3 shaders directory."
 	
