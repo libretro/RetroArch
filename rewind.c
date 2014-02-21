@@ -94,13 +94,13 @@ static inline size_t read_size_t(uint16_t* ptr)
 #endif
 
 struct state_manager {
-   char * data;
+   char *data;
    size_t capacity;
-   char * head;//Reading and writing is done here.
-   char * tail;//If head comes close to this, discard a frame.
+   char *head;//Reading and writing is done here.
+   char *tail;//If head comes close to this, discard a frame.
 
-   char * thisblock;
-   char * nextblock;
+   char *thisblock;
+   char *nextblock;
    bool thisblock_valid;
 
    size_t blocksize;//This one is runded up from reset::blocksize.
@@ -111,7 +111,7 @@ struct state_manager {
 
 state_manager_t *state_manager_new(size_t state_size, size_t buffer_size)
 {
-   state_manager_t * state=malloc(sizeof(*state));
+   state_manager_t *state=malloc(sizeof(*state));
 
    state->capacity=0;
    state->blocksize=0;
@@ -183,8 +183,8 @@ bool state_manager_pop(state_manager_t *state, void **data)
    char * out=state->thisblock;
    //Begin decompression code
    //out is the last pushed (or returned) state
-   const uint16_t * compressed16=(const uint16_t*)compressed;
-   uint16_t * out16=(uint16_t*)out;
+   const uint16_t *compressed16=(const uint16_t*)compressed;
+   uint16_t *out16=(uint16_t*)out;
    while (true)
    {
       uint16_t numchanged=*(compressed16++);
@@ -236,14 +236,14 @@ bool state_manager_push_do(state_manager_t *state)
          goto recheckcapacity;
       }
 
-      const char* old=state->thisblock;
-      const char* new=state->nextblock;
-      char* compressed=state->head+sizeof(size_t);
+      const char *old=state->thisblock;
+      const char *new=state->nextblock;
+      char *compressed=state->head+sizeof(size_t);
 
       //Begin compression code; 'compressed' will point to the end of the compressed data (excluding the prev pointer).
-      const uint16_t * old16=(const uint16_t*)old;
-      const uint16_t * new16=(const uint16_t*)new;
-      uint16_t * compressed16=(uint16_t*)compressed;
+      const uint16_t *old16=(const uint16_t*)old;
+      const uint16_t *new16=(const uint16_t*)new;
+      uint16_t *compressed16=(uint16_t*)compressed;
       size_t num16s=state->blocksize/sizeof(uint16_t);
       while (num16s)
       {
@@ -257,8 +257,8 @@ bool state_manager_push_do(state_manager_t *state)
          if (*old16==*new16)
 #endif
          {
-            const size_t* olds=(const size_t*)old16;
-            const size_t* news=(const size_t*)new16;
+            const size_t *olds=(const size_t*)old16;
+            const size_t *news=(const size_t*)new16;
 
             while (*olds==*news)
             {
@@ -297,7 +297,7 @@ bool state_manager_push_do(state_manager_t *state)
          }
 
          size_t changed;
-         const uint16_t * old16prev=old16;
+         const uint16_t *old16prev=old16;
          //Comparing two or three words makes no real difference.
          //With two, the smaller blocks are less likely to be chopped up elsewhere due to 64KB;
          // with three, we get larger blocks which should be a minuscle bit faster to decompress,
@@ -350,7 +350,7 @@ bool state_manager_push_do(state_manager_t *state)
       state->thisblock_valid=true;
    }
 
-   char * swap=state->thisblock;
+   char *swap=state->thisblock;
    state->thisblock=state->nextblock;
    state->nextblock=swap;
 
