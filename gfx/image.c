@@ -231,7 +231,7 @@ bool texture_image_load_argb_shift(const char *path, struct texture_image *out_i
 { \
    const uint16_t *tmp_src = src; \
    uint16_t *tmp_dst = dst; \
-   for (unsigned x = 0; x < width2 >> 2; x += 8, tmp_src += 32, tmp_dst += 128) \
+   for (unsigned x = 0; x < width2 >> 3; x++, tmp_src += 8, tmp_dst += 32) \
    { \
       tmp_dst[  0 + off] = tmp_src[0]; \
       tmp_dst[ 16 + off] = tmp_src[1]; \
@@ -241,30 +241,6 @@ bool texture_image_load_argb_shift(const char *path, struct texture_image *out_i
       tmp_dst[ 18 + off] = tmp_src[5]; \
       tmp_dst[  3 + off] = tmp_src[6]; \
       tmp_dst[ 19 + off] = tmp_src[7]; \
-      tmp_dst[ 32 + off] = tmp_src[8]; \
-      tmp_dst[ 48 + off] = tmp_src[9]; \
-      tmp_dst[ 33 + off] = tmp_src[10]; \
-      tmp_dst[ 49 + off] = tmp_src[11]; \
-      tmp_dst[ 34 + off] = tmp_src[12]; \
-      tmp_dst[ 50 + off] = tmp_src[13]; \
-      tmp_dst[ 35 + off] = tmp_src[14]; \
-      tmp_dst[ 51 + off] = tmp_src[15]; \
-      tmp_dst[ 64 + off] = tmp_src[16]; \
-      tmp_dst[ 80 + off] = tmp_src[17]; \
-      tmp_dst[ 65 + off] = tmp_src[18]; \
-      tmp_dst[ 81 + off] = tmp_src[19]; \
-      tmp_dst[ 66 + off] = tmp_src[20]; \
-      tmp_dst[ 82 + off] = tmp_src[21]; \
-      tmp_dst[ 67 + off] = tmp_src[22]; \
-      tmp_dst[ 83 + off] = tmp_src[23]; \
-      tmp_dst[ 96 + off] = tmp_src[24]; \
-      tmp_dst[112 + off] = tmp_src[25]; \
-      tmp_dst[ 97 + off] = tmp_src[26]; \
-      tmp_dst[113 + off] = tmp_src[27]; \
-      tmp_dst[ 98 + off] = tmp_src[28]; \
-      tmp_dst[114 + off] = tmp_src[29]; \
-      tmp_dst[ 99 + off] = tmp_src[30]; \
-      tmp_dst[115 + off] = tmp_src[31]; \
    } \
    src += tmp_pitch; \
 }
