@@ -53,7 +53,7 @@ extern char double_check_sizeof_size_t[(sizeof(size_t)==4)?1:-1];
 extern char double_check_sizeof_size_t[(sizeof(size_t)==8)?1:-1];
 #define USE_64BIT
 #else
-#error your compiler is insane.
+#error This item is only tested on 32bit and 64bit.
 #endif
 
 #ifdef NO_UNALIGNED_MEM
