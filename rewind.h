@@ -23,7 +23,7 @@ typedef struct state_manager state_manager_t;
 
 state_manager_t *state_manager_new(size_t state_size, size_t buffer_size);
 void state_manager_free(state_manager_t *state);
-bool state_manager_pop(state_manager_t *state, void **data);
+bool state_manager_pop(state_manager_t *state, const void **data);
 void state_manager_push_where(state_manager_t *state, void **data);
 void state_manager_push_do(state_manager_t *state);
 void state_manager_capacity(state_manager_t *state, unsigned int *entries, size_t *bytes, bool *full);

@@ -2160,7 +2160,7 @@ static void check_rewind(void)
    if (input_key_pressed_func(RARCH_REWIND))
    {
       msg_queue_clear(g_extern.msg_queue);
-      void *buf;
+      const void *buf;
       if (state_manager_pop(g_extern.state_manager, &buf))
       {
          g_extern.frame_is_reverse = true;

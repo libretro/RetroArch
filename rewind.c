@@ -161,7 +161,7 @@ void state_manager_free(state_manager_t *state)
    free(state);
 }
 
-bool state_manager_pop(state_manager_t *state, void **data)
+bool state_manager_pop(state_manager_t *state, const void **data)
 {
    *data = NULL;
 
@@ -219,8 +219,8 @@ void state_manager_push_where(state_manager_t *state, void **data)
    // end up applying a 'patch' to wrong savestate, and that'd blow up rather quickly.
    if (!state->thisblock_valid) 
    {
-      void *ignore;
-      if (state_manager_pop(state, &ignore))
+      const void *ignored;
+      if (state_manager_pop(state, &ignored))
       {
          state->thisblock_valid = true;
       }
