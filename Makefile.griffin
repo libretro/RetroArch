@@ -41,6 +41,14 @@ INCLUDE :=
 LDFLAGS :=
 LIBDIRS := 
 
+SHADER_DIR      := media/shaders
+OVERLAY_DIR     := media/overlays
+SHADER_GLSL_DIR := media/shaders_glsl
+
+PYTHON2		= python2$(EXE_EXT)
+PYTHON3		= python3$(EXE_EXT)
+GIT			= git$(EXE_EXT)
+
 ifeq ($(platform), ngc)
   CC = $(DEVKITPPC)/bin/powerpc-eabi-gcc$(EXE_EXT)
   CXX = $(DEVKITPPC)/bin/powerpc-eabi-g++$(EXE_EXT)
@@ -65,6 +73,12 @@ endif
   HAVE_ZLIB                := 1
   HAVE_RPNG                := 1
   HAVE_OVERLAY             := 1
+else ifeq ($(platform), ps3)
+	#TODO
+  MEDIA_SHADER_DIR := ps3/pkg/USRDIR/cores/shaders
+else ifeq ($(platform), ps3-cobra)
+	#TODO
+  MEDIA_SHADER_DIR := ps3/iso/PS3_GAME/USRDIR/cores/shaders
 else ifeq ($(platform), wii)
   CC = $(DEVKITPPC)/bin/powerpc-eabi-gcc$(EXE_EXT)
   CXX = $(DEVKITPPC)/bin/powerpc-eabi-g++$(EXE_EXT)
@@ -196,6 +210,50 @@ else ifeq ($(platform), ngc)
 else ifeq ($(platform), psp1)
 	psp-fixup-imports$(EXT) $(EXT_TARGET)
 endif
+
+shaders-checkout:
+	@if test -d $(SHADER_DIR); then \
+		echo "[SHADER CHECKOUT::] Git pulling common-shaders..."; \
+      cd $(SHADER_DIR); \
+		$(GIT) pull; \
+		cd ../../../../..; \
+	else \
+	echo "[SHADER CHECKOUT::] Git cloning common-shaders first..."; \
+      $(GIT) clone git://github.com/libretro/common-shaders.git $(SHADER_DIR); \
+	fi
+
+shaders-deploy:
+ifeq ($(platform), ps3)
+	@if test -d $(MEDIA_SHADER_DIR); then \
+		cp -r $(SHADER_DIR)/* $(MEDIA_SHADER_DIR); \
+	else \
+	echo "[DEPLOY PS3::] Creating PS3 shader directory first..."; \
+		mkdir -p $(MEDIA_SHADER_DIR) || bin/true; \
+	fi
+	@echo "[DEPLOY PS3::] Copied shaders to PS3 shaders directory."
+else ifeq ($(platform), ps3-cobra)
+	@if test -d $(MEDIA_SHADER_DIR); then \
+		cp -r $(SHADER_DIR)/* $(MEDIA_SHADER_DIR); \
+	else \
+	echo "[DEPLOY PS3::] Creating PS3 shader directory first..."; \
+		mkdir -p $(MEDIA_SHADER_DIR) || bin/true; \
+	fi
+	@echo "[DEPLOY PS3::] Copied shaders to PS3 shaders directory."
+endif
+
+overlays-checkout:
+	@if test -d $(OVERLAY_DIR); then \
+		echo "[OVERLAY CHECKOUT::] Git pulling common-overlays..."; \
+      cd $(OVERLAY_DIR); \
+		$(GIT) pull; \
+		cd ../../../../..; \
+	else \
+	echo "[OVERLAY CHECKOUT::] Git cloning common-overlays first..."; \
+      $(GIT) clone git://github.com/libretro/common-overlays.git $(OVERLAY_DIR); \
+	fi
+
+overlays-convert-glsl:
+	$(PYTHON3) tools/cg2glsl.py $(SHADER_DIR) $(SHADER_GLSL_DIR)
 
 clean:
 	rm -f $(EXT_TARGET)
