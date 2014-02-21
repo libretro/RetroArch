@@ -39,7 +39,9 @@
 //size thisstart;
 //
 //the start offsets point to 'nextstart' of any given compressed frame
-//multibyte values are stored native endian if alignment is not enforced; if it is, little endian
+//each uint16 is stored native endian; anything that claims any other endianness refers to the endianness between each frame
+//the uint32 is stored little endian
+//each size value is stored native endian if alignment is not enforced; if it is, they're little endian
 //the start of the buffer contains a size pointing to the end of the buffer; the end points to its start
 //wrapping is handled by returning to the start of the buffer if the compressed data could potentially hit the edge
 //if the compressed data could potentially overwrite the tail pointer, the tail retreats until it can no longer collide
