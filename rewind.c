@@ -40,12 +40,12 @@
 //
 //The start offsets point to 'nextstart' of any given compressed frame.
 //Each uint16 is stored native endian; anything that claims any other endianness refers to the endianness of this specific item.
-//the uint32 is stored little endian
-//each size value is stored native endian if alignment is not enforced; if it is, they're little endian
-//the start of the buffer contains a size pointing to the end of the buffer; the end points to its start
-//wrapping is handled by returning to the start of the buffer if the compressed data could potentially hit the edge
-//if the compressed data could potentially overwrite the tail pointer, the tail retreats until it can no longer collide
-//so on average, ~2*maxcompsize is unused at any given moment
+//The uint32 is stored little endian.
+//Each size value is stored native endian if alignment is not enforced; if it is, they're little endian.
+//The start of the buffer contains a size pointing to the end of the buffer; the end points to its start.
+//Wrapping is handled by returning to the start of the buffer if the compressed data could potentially hit the edge;
+//if the compressed data could potentially overwrite the tail pointer, the tail retreats until it can no longer collide.
+//This means that on average, ~2*maxcompsize is unused at any given moment.
 
 #if SIZE_MAX == 0xFFFFFFFF
 extern char double_check_sizeof_size_t[(sizeof(size_t)==4)?1:-1];
