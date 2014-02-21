@@ -1548,7 +1548,8 @@ void rarch_init_rewind(void)
    if (!g_extern.state_manager)
       RARCH_WARN("Failed to init rewind buffer. Rewinding will be disabled.\n");
 
-   void *state=state_manager_push_where(g_extern.state_manager);
+   void *state;
+   state_manager_push_where(g_extern.state_manager, &state);
    pretro_serialize(state, g_extern.state_size);
    state_manager_push_do(g_extern.state_manager);
 }
@@ -2186,7 +2187,8 @@ static void check_rewind(void)
       if (cnt == 0)
 #endif
       {
-         void *state=state_manager_push_where(g_extern.state_manager);
+         void *state;
+         state_manager_push_where(g_extern.state_manager, &state);
          pretro_serialize(state, g_extern.state_size);
          state_manager_push_do(g_extern.state_manager);
       }

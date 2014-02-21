@@ -213,7 +213,7 @@ bool state_manager_pop(state_manager_t *state, void **data)
    return true;
 }
 
-void *state_manager_push_where(state_manager_t *state)
+void state_manager_push_where(state_manager_t *state, void **data)
 {
    //We need to ensure we have an uncompressed copy of the last pushed state, or we could
    // end up applying a 'patch' to wrong savestate, and that'd blow up rather quickly.
@@ -226,14 +226,14 @@ void *state_manager_push_where(state_manager_t *state)
       }
    }
    
-   return state->nextblock;
+   *data=state->nextblock;
 }
 
-bool state_manager_push_do(state_manager_t *state)
+void state_manager_push_do(state_manager_t *state)
 {
    if (state->thisblock_valid)
    {
-      if (state->capacity<sizeof(size_t)+state->maxcompsize) return false;
+      if (state->capacity<sizeof(size_t)+state->maxcompsize) return;
 
    recheckcapacity:;
       size_t headpos = (state->head-state->data);
@@ -368,7 +368,7 @@ bool state_manager_push_do(state_manager_t *state)
 
    state->entries++;
 
-   return true;
+   return;
 }
 
 void state_manager_capacity(state_manager_t *state, unsigned int * entries, size_t * bytes, bool * full)
