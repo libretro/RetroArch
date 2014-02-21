@@ -22,12 +22,12 @@
 
 #define GX_LOAD_XF_REG(x, y) \
    FIFO_PUTU8(0x10); \
-   FIFO_PUTU32(((x)&0xffff)); \
+   FIFO_PUTU32(((x) & 0xffff)); \
    FIFO_PUTU32((y))
 
 #define GX_LOAD_XF_REGS(x, n) \
    FIFO_PUTU8(0x10); \
-   FIFO_PUTU32((((((n)&0xffff)-1)<<16)|((x)&0xffff)))
+   FIFO_PUTU32((((((n) & 0xffff)-1)<<16)|((x) & 0xffff)))
 
 #define _SHIFTL(v, s, w) ((u32) (((u32)(v) & ((0x01 << (w)) - 1)) << (s)))
 #define _SHIFTR(v, s, w) ((u32)(((u32)(v) >> (s)) & ((0x01 << (w)) - 1)))
@@ -115,65 +115,56 @@ struct __gx_texobj
 #define __GX_FlushTextureState(__gx) GX_LOAD_BP_REG(__gx->tevIndMask)
 
 #define __GX_SetDispCopySrc(__gx, left, top, wd, ht) \
-__gx->dispCopyTL = (__gx->dispCopyTL&~0x00ffffff)|XY(left,top); \
-__gx->dispCopyTL = (__gx->dispCopyTL&~0xff000000)|(_SHIFTL(0x49,24,8)); \
-__gx->dispCopyWH = (__gx->dispCopyWH&~0x00ffffff)|XY((wd-1),(ht-1)); \
-__gx->dispCopyWH = (__gx->dispCopyWH&~0xff000000)|(_SHIFTL(0x4a,24,8))
+__gx->dispCopyTL = (__gx->dispCopyTL & ~0x00ffffff) | XY(left,top); \
+__gx->dispCopyTL = (__gx->dispCopyTL & ~0xff000000) | (_SHIFTL(0x49,24,8)); \
+__gx->dispCopyWH = (__gx->dispCopyWH & ~0x00ffffff) | XY((wd-1),(ht-1)); \
+__gx->dispCopyWH = (__gx->dispCopyWH & ~0xff000000) | (_SHIFTL(0x4a,24,8))
 
 #define __GX_SetDispCopyDst(__gx, wd, ht) \
-__gx->dispCopyDst = (__gx->dispCopyDst&~0x3ff)|(_SHIFTR(wd,4,10)); \
-__gx->dispCopyDst = (__gx->dispCopyDst&~0xff000000)|(_SHIFTL(0x4d,24,8))
+__gx->dispCopyDst = (__gx->dispCopyDst & ~0x3ff) | (_SHIFTR(wd,4,10)); \
+__gx->dispCopyDst = (__gx->dispCopyDst & ~0xff000000) | (_SHIFTL(0x4d,24,8))
 
-#define __GX_SetClipMode(mode) GX_LOAD_XF_REG(0x1005,(mode&1))
+#define __GX_SetClipMode(mode) GX_LOAD_XF_REG(0x1005,(mode & 1))
 
-static inline void __GX_CopyDisp(struct __gx_regdef *__gx, void *dest,u8 clear)
-{
-   u8 clflag;
-   u32 val;
-
-   if(clear)
-   {
-      val= (__gx->peZMode&~0xf)|0xf;
-      GX_LOAD_BP_REG(val);
-      val = (__gx->peCMode0&~0x3);
-      GX_LOAD_BP_REG(val);
-   }
-
-   clflag = 0;
-   if(clear || (__gx->peCntrl&0x7)==0x0003)
-   {
-      if(__gx->peCntrl&0x40)
-      {
-         clflag = 1;
-         val = (__gx->peCntrl&~0x40);
-         GX_LOAD_BP_REG(val);
-      }
-   }
-
-   GX_LOAD_BP_REG(__gx->dispCopyTL); // set source top
-   GX_LOAD_BP_REG(__gx->dispCopyWH);
-
-   GX_LOAD_BP_REG(__gx->dispCopyDst);
-
-   val = 0x4b000000|(_SHIFTR(MEM_VIRTUAL_TO_PHYSICAL(dest),5,24));
-   GX_LOAD_BP_REG(val);
-
-   __gx->dispCopyCntrl = (__gx->dispCopyCntrl&~0x800)|(_SHIFTL(clear,11,1));
-   __gx->dispCopyCntrl = (__gx->dispCopyCntrl&~0x4000)|0x4000;
-   __gx->dispCopyCntrl = (__gx->dispCopyCntrl&~0xff000000)|(_SHIFTL(0x52,24,8));
-
-   GX_LOAD_BP_REG(__gx->dispCopyCntrl);
-
-   if(clear)
-   {
-      GX_LOAD_BP_REG(__gx->peZMode);
-      GX_LOAD_BP_REG(__gx->peCMode0);
-   }
-
-   if(clflag)
-   {
-      GX_LOAD_BP_REG(__gx->peCntrl);
-   }
+#define __GX_CopyDisp(__gx, dest, clear) \
+{ \
+   u8 clflag; \
+   u32 val; \
+   if(clear) \
+   { \
+      val= (__gx->peZMode & ~0xf) | 0xf; \
+      GX_LOAD_BP_REG(val); \
+      val = (__gx->peCMode0 & ~0x3); \
+      GX_LOAD_BP_REG(val); \
+   } \
+   clflag = 0; \
+   if (clear || (__gx->peCntrl & 0x7) == 0x0003) \
+   { \
+      if (__gx->peCntrl & 0x40) \
+      { \
+         clflag = 1; \
+         val = (__gx->peCntrl & ~0x40); \
+         GX_LOAD_BP_REG(val); \
+      } \
+   } \
+   GX_LOAD_BP_REG(__gx->dispCopyTL); /* set source top */ \
+   GX_LOAD_BP_REG(__gx->dispCopyWH); \
+   GX_LOAD_BP_REG(__gx->dispCopyDst); \
+   val = 0x4b000000 | (_SHIFTR(MEM_VIRTUAL_TO_PHYSICAL(dest),5,24)); \
+   GX_LOAD_BP_REG(val); \
+   __gx->dispCopyCntrl = (__gx->dispCopyCntrl & ~0x800) | (_SHIFTL(clear,11,1)); \
+   __gx->dispCopyCntrl = (__gx->dispCopyCntrl & ~0x4000) | 0x4000; \
+   __gx->dispCopyCntrl = (__gx->dispCopyCntrl & ~0xff000000) | (_SHIFTL(0x52,24,8)); \
+   GX_LOAD_BP_REG(__gx->dispCopyCntrl); \
+   if (clear) \
+   { \
+      GX_LOAD_BP_REG(__gx->peZMode); \
+      GX_LOAD_BP_REG(__gx->peCMode0); \
+   } \
+   if (clflag) \
+   { \
+      GX_LOAD_BP_REG(__gx->peCntrl); \
+   } \
 }
 
 static void __SETVCDATTR(struct __gx_regdef *__gx, u8 attr,u8 type)
@@ -181,16 +172,16 @@ static void __SETVCDATTR(struct __gx_regdef *__gx, u8 attr,u8 type)
    switch(attr)
    {
       case GX_VA_PTNMTXIDX:
-         __gx->vcdLo = (__gx->vcdLo&~0x1)|(type&0x1);
+         __gx->vcdLo = (__gx->vcdLo & ~0x1) | (type & 0x1);
          break;
       case GX_VA_TEX0MTXIDX:
-         __gx->vcdLo = (__gx->vcdLo&~0x2)|(_SHIFTL(type,1,1));
+         __gx->vcdLo = (__gx->vcdLo & ~0x2) | (_SHIFTL(type,1,1));
          break;
       case GX_VA_TEX1MTXIDX:
-         __gx->vcdLo = (__gx->vcdLo&~0x4)|(_SHIFTL(type,2,1));
+         __gx->vcdLo = (__gx->vcdLo & ~0x4)|(_SHIFTL(type,2,1));
          break;
       case GX_VA_TEX2MTXIDX:
-         __gx->vcdLo = (__gx->vcdLo&~0x8)|(_SHIFTL(type,3,1));
+         __gx->vcdLo = (__gx->vcdLo & ~0x8)|(_SHIFTL(type,3,1));
          break;
       case GX_VA_TEX3MTXIDX:
          __gx->vcdLo = (__gx->vcdLo&~0x10)|(_SHIFTL(type,4,1));
@@ -255,16 +246,16 @@ static void __SETVCDATTR(struct __gx_regdef *__gx, u8 attr,u8 type)
 #define YSHIFT 2
 
 #define __GX_InitTexObj(ptr, img_ptr, wd, ht, fmt, wrap_s, wrap_t, mipmap) \
-   ptr->tex_filt = (ptr->tex_filt&~0x03)|(wrap_s&3); \
-   ptr->tex_filt = (ptr->tex_filt&~0x0c)|(_SHIFTL(wrap_t,2,2)); \
-   ptr->tex_filt = (ptr->tex_filt&~0x10)|0x10; \
+   ptr->tex_filt = (ptr->tex_filt & ~0x03)|(wrap_s & 3); \
+   ptr->tex_filt = (ptr->tex_filt & ~0x0c)|(_SHIFTL(wrap_t,2,2)); \
+   ptr->tex_filt = (ptr->tex_filt & ~0x10)|0x10; \
    /* no mip-mapping */ \
-   ptr->tex_filt= (ptr->tex_filt&~0xE0)|0x0080; \
+   ptr->tex_filt= (ptr->tex_filt & ~0xE0)|0x0080; \
    ptr->tex_fmt = fmt; \
-   ptr->tex_size = (ptr->tex_size&~0x3ff)|((wd-1)&0x3ff); \
-   ptr->tex_size = (ptr->tex_size&~0xFFC00)|(_SHIFTL((ht-1),10,10)); \
-   ptr->tex_size = (ptr->tex_size&~0xF00000)|(_SHIFTL(fmt,20,4)); \
-   ptr->tex_maddr = (ptr->tex_maddr&~0x01ffffff)|(_SHIFTR(MEM_VIRTUAL_TO_PHYSICAL(img_ptr),5,24)); \
+   ptr->tex_size = (ptr->tex_size & ~0x3ff)|((wd-1) & 0x3ff); \
+   ptr->tex_size = (ptr->tex_size & ~0xFFC00)|(_SHIFTL((ht-1),10,10)); \
+   ptr->tex_size = (ptr->tex_size & ~0xF00000)|(_SHIFTL(fmt,20,4)); \
+   ptr->tex_maddr = (ptr->tex_maddr & ~0x01ffffff)|(_SHIFTR(MEM_VIRTUAL_TO_PHYSICAL(img_ptr),5,24)); \
    ptr->tex_tile_type = 2; \
    ptr->tex_tile_cnt = ((((wd+(1 << XSHIFT))-1) >> XSHIFT) * (((ht+(1 << YSHIFT))-1) >> YSHIFT)) & 0x7fff; \
    ptr->tex_flag |= 0x0002
@@ -277,18 +268,18 @@ static void __SETVCDATTR(struct __gx_regdef *__gx, u8 attr,u8 type)
 	GX_LOAD_BP_REG(__gx->tevIndMask)
 
 #define __GX_SetCurrentMtx(__gx, mtx) \
-	__gx->mtxIdxLo = (__gx->mtxIdxLo&~0x3f)|(mtx&0x3f); \
+	__gx->mtxIdxLo = (__gx->mtxIdxLo & ~0x3f)|(mtx & 0x3f); \
 	__gx->dirtyState |= 0x04000000
 
 #define __GX_SetVAT(__gx, setvtx) \
    for(s32 i = 0; i < 8;i++) \
    { \
       setvtx = (1<<i); \
-      if(__gx->VATTable&setvtx) \
+      if(__gx->VATTable & setvtx) \
       { \
-         GX_LOAD_CP_REG((0x70+(i&7)),__gx->VAT0reg[i]); \
-         GX_LOAD_CP_REG((0x80+(i&7)),__gx->VAT1reg[i]); \
-         GX_LOAD_CP_REG((0x90+(i&7)),__gx->VAT2reg[i]); \
+         GX_LOAD_CP_REG((0x70+(i & 7)),__gx->VAT0reg[i]); \
+         GX_LOAD_CP_REG((0x80+(i & 7)),__gx->VAT1reg[i]); \
+         GX_LOAD_CP_REG((0x90+(i & 7)),__gx->VAT2reg[i]); \
       } \
    } \
    __gx->VATTable = 0
@@ -297,21 +288,21 @@ static void __SETVCDATTR(struct __gx_regdef *__gx, u8 attr,u8 type)
 { \
    u32 nrms,texs,cols; \
    cols = 0; \
-   if(__gx->vcdLo&0x6000) cols++; \
-   if(__gx->vcdLo&0x18000) cols++; \
+   if(__gx->vcdLo & 0x6000) cols++; \
+   if(__gx->vcdLo & 0x18000) cols++; \
    nrms = 0; \
    if(__gx->vcdNrms==1) nrms = 1; \
    else if(__gx->vcdNrms==2) nrms = 2; \
    texs = 0; \
    if(__gx->vcdHi & 0x3) texs++; \
    if(__gx->vcdHi & 0xc) texs++; \
-   if(__gx->vcdHi&0x30) texs++; \
-   if(__gx->vcdHi&0xc0) texs++; \
-   if(__gx->vcdHi&0x300) texs++; \
-   if(__gx->vcdHi&0xc00) texs++; \
-   if(__gx->vcdHi&0x3000) texs++; \
-   if(__gx->vcdHi&0xc000) texs++; \
-   GX_LOAD_XF_REG(0x1008, ((_SHIFTL(texs,4,4))|(_SHIFTL(nrms,2,2))|(cols&0x3))); \
+   if(__gx->vcdHi & 0x30) texs++; \
+   if(__gx->vcdHi & 0xc0) texs++; \
+   if(__gx->vcdHi & 0x300) texs++; \
+   if(__gx->vcdHi & 0xc00) texs++; \
+   if(__gx->vcdHi & 0x3000) texs++; \
+   if(__gx->vcdHi & 0xc000) texs++; \
+   GX_LOAD_XF_REG(0x1008, ((_SHIFTL(texs,4,4))|(_SHIFTL(nrms,2,2))|(cols & 0x3))); \
 }
 
 #define __GX_SetVCD(__gx) \
@@ -323,7 +314,7 @@ static void __SETVCDATTR(struct __gx_regdef *__gx, u8 attr,u8 type)
 #define __GX_SetChanCntrl(__gx) \
 { \
    u32 i,chan,mask; \
-   if(__gx->dirtyState&0x01000000) \
+   if(__gx->dirtyState & 0x01000000) \
    { \
       GX_LOAD_XF_REG(0x1009,(_SHIFTR(__gx->genMode,4,3))); \
    } \
@@ -331,7 +322,7 @@ static void __SETVCDATTR(struct __gx_regdef *__gx, u8 attr,u8 type)
    chan = 0x100e; \
    mask = _SHIFTR(__gx->dirtyState,12,4); \
    while(mask) { \
-      if(mask&0x0001) \
+      if(mask & 0x0001) \
       { \
          GX_LOAD_XF_REG(chan,__gx->chnCntrl[i]); \
       } \
@@ -361,7 +352,7 @@ static inline void __GX_UpdateBPMask(struct __gx_regdef *__gx)
    for(i=0;i<nbmp;i++) {
       switch(i) {
          case GX_INDTEXSTAGE0:
-            ntexmap = __gx->tevRasOrder[2]&7;
+            ntexmap = __gx->tevRasOrder[2] & 7;
             break;
          case GX_INDTEXSTAGE1:
             ntexmap = _SHIFTR(__gx->tevRasOrder[2],6,3);
@@ -378,27 +369,27 @@ static inline void __GX_UpdateBPMask(struct __gx_regdef *__gx)
       }
       nres |= (1<<ntexmap);
    }
-   if((__gx->tevIndMask&0xff)!=nres) {
-      __gx->tevIndMask = (__gx->tevIndMask&~0xff)|(nres&0xff);
+   if((__gx->tevIndMask & 0xff)!=nres) {
+      __gx->tevIndMask = (__gx->tevIndMask & ~0xff)|(nres & 0xff);
       GX_LOAD_BP_REG(__gx->tevIndMask);
    }
 }
 #endif
 
 #define __GX_SetChanColor(__gx) \
-   if(__gx->dirtyState&0x0100) \
+   if(__gx->dirtyState & 0x0100) \
    { \
       GX_LOAD_XF_REG(0x100a,__gx->chnAmbColor[0]); \
    } \
-   if(__gx->dirtyState&0x0200) \
+   if(__gx->dirtyState & 0x0200) \
    { \
       GX_LOAD_XF_REG(0x100b,__gx->chnAmbColor[1]); \
    } \
-   if(__gx->dirtyState&0x0400) \
+   if(__gx->dirtyState & 0x0400) \
    { \
       GX_LOAD_XF_REG(0x100c,__gx->chnMatColor[0]); \
    } \
-   if(__gx->dirtyState&0x0800) \
+   if(__gx->dirtyState & 0x0800) \
    { \
       GX_LOAD_XF_REG(0x100d,__gx->chnMatColor[1]); \
    }
@@ -433,13 +424,13 @@ static void __SetSURegs(struct __gx_regdef *__gx, u8 texmap,u8 texcoord)
    u16 wd,ht;
    u8 wrap_s,wrap_t;
 
-   wd = __gx->texMapSize[texmap]&0x3ff;
+   wd = __gx->texMapSize[texmap] & 0x3ff;
    ht = _SHIFTR(__gx->texMapSize[texmap],10,10);
-   wrap_s = __gx->texMapWrap[texmap]&3;
+   wrap_s = __gx->texMapWrap[texmap] & 3;
    wrap_t = _SHIFTR(__gx->texMapWrap[texmap],2,2);
 
-   reg = (texcoord&0x7);
-   __gx->suSsize[reg] = (__gx->suSsize[reg]&~0x0000ffff)|wd;
+   reg = (texcoord & 0x7);
+   __gx->suSsize[reg] = (__gx->suSsize[reg] & ~0x0000ffff)|wd;
    __gx->suTsize[reg] = (__gx->suTsize[reg]&~0x0000ffff)|ht;
    __gx->suSsize[reg] = (__gx->suSsize[reg]&~0x00010000)|(_SHIFTL(wrap_s,16,1));
    __gx->suTsize[reg] = (__gx->suTsize[reg]&~0x00010000)|(_SHIFTL(wrap_t,16,1));
@@ -462,7 +453,7 @@ static inline void __GX_SetSUTexRegs(struct __gx_regdef *__gx)
    for(i=0;i<indtev;i++) {
       switch(i) {
          case GX_INDTEXSTAGE0:
-            texmap = __gx->tevRasOrder[2]&7;
+            texmap = __gx->tevRasOrder[2] & 7;
             texcoord = _SHIFTR(__gx->tevRasOrder[2],3,3);
             break;
          case GX_INDTEXSTAGE1:
@@ -484,21 +475,25 @@ static inline void __GX_SetSUTexRegs(struct __gx_regdef *__gx)
       }
 
       texcm = _SHIFTL(1,texcoord,1);
-      if(!(__gx->texCoordManually&texcm))
+      if(!(__gx->texCoordManually & texcm))
          __SetSURegs(__gx, texmap,texcoord);
    }
 
    //direct texture order
-   for(i=0;i<dirtev;i++) {
+   for(i=0;i<dirtev;i++)
+   {
       tevreg = 3+(_SHIFTR(i,1,3));
-      texmap = (__gx->tevTexMap[i]&0xff);
+      texmap = (__gx->tevTexMap[i] & 0xff);
 
-      if(i&1) texcoord = _SHIFTR(__gx->tevRasOrder[tevreg],15,3);
-      else texcoord = _SHIFTR(__gx->tevRasOrder[tevreg],3,3);
+      if(i & 1)
+         texcoord = _SHIFTR(__gx->tevRasOrder[tevreg],15,3);
+      else
+         texcoord = _SHIFTR(__gx->tevRasOrder[tevreg],3,3);
 
       tevm = _SHIFTL(1,i,1);
       texcm = _SHIFTL(1,texcoord,1);
-      if(texmap!=0xff && (__gx->tevTexCoordEnable&tevm) && !(__gx->texCoordManually&texcm)) {
+      if(texmap!=0xff && (__gx->tevTexCoordEnable&tevm) && !(__gx->texCoordManually & texcm))
+      {
          __SetSURegs(__gx, texmap,texcoord);
       }
    }
@@ -510,44 +505,44 @@ static inline void __GX_SetSUTexRegs(struct __gx_regdef *__gx)
 
 static void __GX_SetDirtyState(struct __gx_regdef *__gx)
 {
-   if(__gx->dirtyState&0x0001)
+   if(__gx->dirtyState & 0x0001)
    {
       __GX_SetSUTexRegs(__gx);
    }
 #ifdef HW_DOL
-   if(__gx->dirtyState&0x0002)
+   if(__gx->dirtyState & 0x0002)
    {
       __GX_UpdateBPMask(__gx);
    }
 #endif
-   if(__gx->dirtyState&0x0004)
+   if(__gx->dirtyState & 0x0004)
    {
       __GX_SetGenMode(__gx);
    }
-   if(__gx->dirtyState&0x0008)
+   if(__gx->dirtyState & 0x0008)
    {
       __GX_SetVCD(__gx);
    }
-   if(__gx->dirtyState&0x0010)
+   if(__gx->dirtyState & 0x0010)
    {
       u8 setvtx = 0;
       __GX_SetVAT(__gx, setvtx);
    }
-   if(__gx->dirtyState&~0xff)
+   if(__gx->dirtyState & ~0xff)
    {
-      if(__gx->dirtyState&0x0f00)
+      if(__gx->dirtyState & 0x0f00)
       {
          __GX_SetChanColor(__gx);
       }
-      if(__gx->dirtyState&0x0100f000)
+      if(__gx->dirtyState & 0x0100f000)
       {
          __GX_SetChanCntrl(__gx);
       }
-      if(__gx->dirtyState&0x02ff0000)
+      if(__gx->dirtyState & 0x02ff0000)
       {
          __GX_SetTexCoordGen(__gx);
       }
-      if(__gx->dirtyState&0x04000000)
+      if(__gx->dirtyState & 0x04000000)
       {
          __GX_SetMatrixIndex(__gx, 0);
          __GX_SetMatrixIndex(__gx, 5);
@@ -598,14 +593,14 @@ static void __GX_SendFlushPrim(struct __gx_regdef *__gx)
 #define __GX_InitTexObjFilterMode(ptr, minfilt, magfilt) \
 { \
    static u8 GX2HWFiltConv[] = {0x00,0x04,0x01,0x05,0x02,0x06,0x00,0x00}; \
-   ptr->tex_filt = (ptr->tex_filt&~0x10)|(_SHIFTL((magfilt==GX_LINEAR?1:0),4,1)); \
-   ptr->tex_filt = (ptr->tex_filt&~0xe0)|(_SHIFTL(GX2HWFiltConv[minfilt],5,3)); \
+   ptr->tex_filt = (ptr->tex_filt & ~0x10)|(_SHIFTL((magfilt==GX_LINEAR?1:0),4,1)); \
+   ptr->tex_filt = (ptr->tex_filt & ~0xe0)|(_SHIFTL(GX2HWFiltConv[minfilt],5,3)); \
 }
 
 #define __GX_SetCullMode(__gx, mode) \
 { \
    static u8 cm2hw[] = { 0, 2, 1, 3 }; \
-   __gx->genMode = (__gx->genMode&~0xC000)|(_SHIFTL(cm2hw[mode],14,2)); \
+   __gx->genMode = (__gx->genMode & ~0xC000)|(_SHIFTL(cm2hw[mode],14,2)); \
    __gx->dirtyState |= 0x0004; \
 }
 
@@ -637,7 +632,7 @@ static void __GX_SendFlushPrim(struct __gx_regdef *__gx)
 
 #define __GX_ClearVtxDesc(__gx) \
    __gx->vcdNrms = 0; \
-   __gx->vcdClear = ((__gx->vcdClear&~0x0600)|0x0200); \
+   __gx->vcdClear = ((__gx->vcdClear & ~0x0600)|0x0200); \
    __gx->vcdLo = __gx->vcdHi = 0; \
    __gx->dirtyState |= 0x0008
 
@@ -646,35 +641,35 @@ static void __GX_SendFlushPrim(struct __gx_regdef *__gx)
    __gx->dirtyState |= 0x0008
 
 #define __GX_SetBlendMode(__gx, type, src_fact, dst_fact, op) \
-   __gx->peCMode0 = (__gx->peCMode0&~0x1); \
+   __gx->peCMode0 = (__gx->peCMode0 & ~0x1); \
    if(type==GX_BM_BLEND || type==GX_BM_SUBTRACT) __gx->peCMode0 |= 0x1; \
-   __gx->peCMode0 = (__gx->peCMode0&~0x800); \
+   __gx->peCMode0 = (__gx->peCMode0 & ~0x800); \
    if(type==GX_BM_SUBTRACT) __gx->peCMode0 |= 0x800; \
-   __gx->peCMode0 = (__gx->peCMode0&~0x2); \
+   __gx->peCMode0 = (__gx->peCMode0 & ~0x2); \
    if(type==GX_BM_LOGIC) __gx->peCMode0 |= 0x2; \
-   __gx->peCMode0 = (__gx->peCMode0&~0xF000)|(_SHIFTL(op,12,4)); \
-   __gx->peCMode0 = (__gx->peCMode0&~0xE0)|(_SHIFTL(dst_fact,5,3)); \
-   __gx->peCMode0 = (__gx->peCMode0&~0x700)|(_SHIFTL(src_fact,8,3)); \
+   __gx->peCMode0 = (__gx->peCMode0 & ~0xF000)|(_SHIFTL(op,12,4)); \
+   __gx->peCMode0 = (__gx->peCMode0 & ~0xE0)|(_SHIFTL(dst_fact,5,3)); \
+   __gx->peCMode0 = (__gx->peCMode0 & ~0x700)|(_SHIFTL(src_fact,8,3)); \
    GX_LOAD_BP_REG(__gx->peCMode0)
 
 #define __GX_InvVtxCache() wgPipe->U8 = 0x48
 
-#define __GX_SetDispCopyGamma(__gx, gamma) __gx->dispCopyCntrl = (__gx->dispCopyCntrl&~0x180)|(_SHIFTL(gamma,7,2))
+#define __GX_SetDispCopyGamma(__gx, gamma) __gx->dispCopyCntrl = (__gx->dispCopyCntrl & ~0x180) | (_SHIFTL(gamma,7,2))
 
 #define __GX_SetColorUpdate(__gx, enable) \
-   __gx->peCMode0 = (__gx->peCMode0&~0x8)|(_SHIFTL(enable,3,1)); \
+   __gx->peCMode0 = (__gx->peCMode0 & ~0x8)|(_SHIFTL(enable,3,1)); \
    GX_LOAD_BP_REG(__gx->peCMode0)
 
 #define __GX_SetAlphaUpdate(__gx, enable) \
-   __gx->peCMode0 = (__gx->peCMode0&~0x10)|(_SHIFTL(enable,4,1)); \
+   __gx->peCMode0 = (__gx->peCMode0 & ~0x10)|(_SHIFTL(enable,4,1)); \
    GX_LOAD_BP_REG(__gx->peCMode0)
 
 #define __GX_SetNumChans(__gx, num) \
-   __gx->genMode = (__gx->genMode&~0x70)|(_SHIFTL(num,4,3)); \
+   __gx->genMode = (__gx->genMode & ~0x70)|(_SHIFTL(num,4,3)); \
    __gx->dirtyState |= 0x01000004
 
 #define __GX_SetNumTexGens(__gx, nr) \
-   __gx->genMode = (__gx->genMode&~0xf)|(nr&0xf); \
+   __gx->genMode = (__gx->genMode & ~0xf)|(nr & 0xf); \
    __gx->dirtyState |= 0x02000004
 
 #define __GX_Begin(__gx, primitve, vtxfmt, vtxcnt) \
@@ -690,25 +685,25 @@ static void __GX_SendFlushPrim(struct __gx_regdef *__gx)
 { \
    u32 regval; \
    regval = 0xc8000000|(_SHIFTL(x,2,10)); \
-   regval = (regval&~0x3FF000)|(_SHIFTL(y,12,10)); \
-   *(u32*)regval = _SHIFTL(color.a,24,8)|_SHIFTL(color.r,16,8)|_SHIFTL(color.g,8,8)|(color.b&0xff); \
+   regval = (regval & ~0x3FF000)|(_SHIFTL(y,12,10)); \
+   *(u32*)regval = _SHIFTL(color.a,24,8)|_SHIFTL(color.r,16,8)|_SHIFTL(color.g,8,8)|(color.b & 0xff); \
 }
 
 #define __GX_SetFieldMode(__gx, field_mode, half_aspect_ratio) \
-   __gx->lpWidth = (__gx->lpWidth&~0x400000)|(_SHIFTL(half_aspect_ratio,22,1)); \
+   __gx->lpWidth = (__gx->lpWidth & ~0x400000)|(_SHIFTL(half_aspect_ratio,22,1)); \
    GX_LOAD_BP_REG(__gx->lpWidth); \
    __GX_FlushTextureState(__gx); \
-   GX_LOAD_BP_REG(0x68000000|(field_mode&1)); \
+   GX_LOAD_BP_REG(0x68000000|(field_mode & 1)); \
    __GX_FlushTextureState(__gx)
 
 #define __GX_SetCopyClear(color, zvalue) \
 { \
    u32 val; \
-   val = (_SHIFTL(color.a,8,8))|(color.r&0xff); \
+   val = (_SHIFTL(color.a,8,8))|(color.r & 0xff); \
    GX_LOAD_BP_REG(0x4f000000|val); \
-   val = (_SHIFTL(color.g,8,8))|(color.b&0xff); \
+   val = (_SHIFTL(color.g,8,8))|(color.b & 0xff); \
    GX_LOAD_BP_REG(0x50000000|val); \
-   val = zvalue&0x00ffffff; \
+   val = zvalue & 0x00ffffff; \
    GX_LOAD_BP_REG(0x51000000|val); \
 }
 
