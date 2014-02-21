@@ -41,8 +41,6 @@
 })
 #endif
 
-#ifdef GEKKO
-
 #ifndef _CPU_ISR_Enable
 #define _CPU_ISR_Enable() \
 	{ register u32 _val = 0; \
@@ -84,10 +82,8 @@
 	: "0"((_isr_cookie)),"1" ((_enable_mask)) \
 	); \
   }
+#endif
 
 extern void __lwp_thread_stopmultitasking(void (*exitfunc)());
-#endif
-
-#endif
 
 #endif

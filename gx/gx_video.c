@@ -32,6 +32,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "ppc_asm.h"
 #include "gx_video_inl.h"
 
 #define SYSMEM1_SIZE 0x01800000

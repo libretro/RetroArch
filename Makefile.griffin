@@ -63,6 +63,8 @@ endif
 
   HAVE_THREADS             := 1
   HAVE_ZLIB                := 1
+  HAVE_RPNG                := 1
+  HAVE_OVERLAY             := 1
 else ifeq ($(platform), wii)
   CC = $(DEVKITPPC)/bin/powerpc-eabi-gcc$(EXE_EXT)
   CXX = $(DEVKITPPC)/bin/powerpc-eabi-g++$(EXE_EXT)

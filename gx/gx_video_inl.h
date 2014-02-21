@@ -29,6 +29,9 @@
    FIFO_PUTU8(0x10); \
    FIFO_PUTU32((((((n)&0xffff)-1)<<16)|((x)&0xffff)))
 
+#define _SHIFTL(v, s, w) ((u32) (((u32)(v) & ((0x01 << (w)) - 1)) << (s)))
+#define _SHIFTR(v, s, w) ((u32)(((u32)(v) >> (s)) & ((0x01 << (w)) - 1)))
+
 extern u8 __gxregs[];
 
 struct __gx_regdef
@@ -353,23 +356,21 @@ static inline void __GX_UpdateBPMask(struct __gx_regdef *__gx)
    u32 i;
    u32 nbmp,nres;
    u8 ntexmap;
-
-   nbmp = _SHIFTR(_gx[0xac],16,3);
-
+   nbmp = _SHIFTR(__gx->genMode,16,3);
    nres = 0;
    for(i=0;i<nbmp;i++) {
       switch(i) {
          case GX_INDTEXSTAGE0:
-            ntexmap = _gx[0xc2]&7;
+            ntexmap = __gx->tevRasOrder[2]&7;
             break;
          case GX_INDTEXSTAGE1:
-            ntexmap = _SHIFTR(_gx[0xc2],6,3);
+            ntexmap = _SHIFTR(__gx->tevRasOrder[2],6,3);
             break;
          case GX_INDTEXSTAGE2:
-            ntexmap = _SHIFTR(_gx[0xc2],12,3);
+            ntexmap = _SHIFTR(__gx->tevRasOrder[2],12,3);
             break;
          case GX_INDTEXSTAGE3:
-            ntexmap = _SHIFTR(_gx[0xc2],18,3);
+            ntexmap = _SHIFTR(__gx->tevRasOrder[2],18,3);
             break;
          default:
             ntexmap = 0;
@@ -377,11 +378,9 @@ static inline void __GX_UpdateBPMask(struct __gx_regdef *__gx)
       }
       nres |= (1<<ntexmap);
    }
-
-   if((_gx[0xaf]&0xff)!=nres)
-   {
-      _gx[0xaf] = (_gx[0xaf]&~0xff)|(nres&0xff);
-      GX_LOAD_BP_REG(_gx[0xaf]);
+   if((__gx->tevIndMask&0xff)!=nres) {
+      __gx->tevIndMask = (__gx->tevIndMask&~0xff)|(nres&0xff);
+      GX_LOAD_BP_REG(__gx->tevIndMask);
    }
 }
 #endif
