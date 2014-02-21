@@ -225,13 +225,105 @@ bool texture_image_load_argb_shift(const char *path, struct texture_image *out_i
 
 #endif
 
+#ifdef GEKKO
+
+#define GX_BLIT_LINE_32(off) \
+{ \
+   const uint16_t *tmp_src = src; \
+   uint16_t *tmp_dst = dst; \
+   for (unsigned x = 0; x < width2 >> 2; x += 8, tmp_src += 32, tmp_dst += 128) \
+   { \
+      tmp_dst[  0 + off] = tmp_src[0]; \
+      tmp_dst[ 16 + off] = tmp_src[1]; \
+      tmp_dst[  1 + off] = tmp_src[2]; \
+      tmp_dst[ 17 + off] = tmp_src[3]; \
+      tmp_dst[  2 + off] = tmp_src[4]; \
+      tmp_dst[ 18 + off] = tmp_src[5]; \
+      tmp_dst[  3 + off] = tmp_src[6]; \
+      tmp_dst[ 19 + off] = tmp_src[7]; \
+      tmp_dst[ 32 + off] = tmp_src[8]; \
+      tmp_dst[ 48 + off] = tmp_src[9]; \
+      tmp_dst[ 33 + off] = tmp_src[10]; \
+      tmp_dst[ 49 + off] = tmp_src[11]; \
+      tmp_dst[ 34 + off] = tmp_src[12]; \
+      tmp_dst[ 50 + off] = tmp_src[13]; \
+      tmp_dst[ 35 + off] = tmp_src[14]; \
+      tmp_dst[ 51 + off] = tmp_src[15]; \
+      tmp_dst[ 64 + off] = tmp_src[16]; \
+      tmp_dst[ 80 + off] = tmp_src[17]; \
+      tmp_dst[ 65 + off] = tmp_src[18]; \
+      tmp_dst[ 81 + off] = tmp_src[19]; \
+      tmp_dst[ 66 + off] = tmp_src[20]; \
+      tmp_dst[ 82 + off] = tmp_src[21]; \
+      tmp_dst[ 67 + off] = tmp_src[22]; \
+      tmp_dst[ 83 + off] = tmp_src[23]; \
+      tmp_dst[ 96 + off] = tmp_src[24]; \
+      tmp_dst[112 + off] = tmp_src[25]; \
+      tmp_dst[ 97 + off] = tmp_src[26]; \
+      tmp_dst[113 + off] = tmp_src[27]; \
+      tmp_dst[ 98 + off] = tmp_src[28]; \
+      tmp_dst[114 + off] = tmp_src[29]; \
+      tmp_dst[ 99 + off] = tmp_src[30]; \
+      tmp_dst[115 + off] = tmp_src[31]; \
+   } \
+   src += tmp_pitch; \
+}
+
+static bool gx_convert_texture32(struct texture_image *image)
+{
+   // memory allocation in libogc is extremely primitive so try to avoid gaps in memory when converting
+   // by copying over to temp buffer first then converting over into main buffer again
+   void *tmp = malloc(image->width * image->height * sizeof(uint32_t));
+
+   if (!tmp)
+   {
+      RARCH_ERR("Failed to create temp buffer for conversion.\n");
+      return false;
+   }
+
+   memcpy(tmp, image->pixels, image->width * image->height * sizeof(uint32_t));
+   unsigned tmp_pitch = (image->width * sizeof(uint32_t)) >> 1;
+   image->width &= ~3;
+   image->height &= ~3;
+   unsigned width2 = image->width << 1;
+
+   const uint16_t *src = (uint16_t *) tmp;
+   uint16_t *dst = (uint16_t *) image->pixels;
+   for (unsigned i = 0; i < image->height; i += 4, dst += 4 * width2)
+   {
+      GX_BLIT_LINE_32(0)
+      GX_BLIT_LINE_32(4)
+      GX_BLIT_LINE_32(8)
+      GX_BLIT_LINE_32(12)
+   }
+
+   free(tmp);
+   return true;
+}
+
+#endif
+
 bool texture_image_load(const char *path, struct texture_image *out_img)
 {
+   bool ret;
    // This interface "leak" is very ugly. FIXME: Fix this properly ...
    if (driver.gfx_use_rgba)
-      return texture_image_load_argb_shift(path, out_img, 24, 0, 8, 16);
+      ret = texture_image_load_argb_shift(path, out_img, 24, 0, 8, 16);
    else
-      return texture_image_load_argb_shift(path, out_img, 24, 16, 8, 0);
+      ret = texture_image_load_argb_shift(path, out_img, 24, 16, 8, 0);
+
+#ifdef GEKKO
+   if (ret)
+   {
+      if (!gx_convert_texture32(out_img))
+      {
+         texture_image_free(out_img);
+         ret = false;
+      }
+   }
+#endif
+
+   return ret;
 }
 
 void texture_image_free(struct texture_image *img)

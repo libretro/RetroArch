@@ -781,3 +781,4 @@ static void __GX_SetCopyFilter(u8 aa,u8 sample_pattern[12][2],u8 vf,u8 vfilter[7
 
 #define __GX_Position1x8(index) FIFO_PUTU8(index)
 #define __GX_TexCoord1x8(index) FIFO_PUTU8(index)
+#define __GX_Color1x8(index) FIFO_PUTU8(index)
