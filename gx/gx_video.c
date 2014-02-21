@@ -85,6 +85,13 @@ float vertex_ptr[8] ATTRIBUTE_ALIGN(32) = {
    1, 1,
 };
 
+u8 color_ptr[16] ATTRIBUTE_ALIGN(32)  = {
+   0xFF, 0xFF, 0xFF, 0xFF,
+   0xFF, 0xFF, 0xFF, 0xFF,
+   0xFF, 0xFF, 0xFF, 0xFF,
+   0xFF, 0xFF, 0xFF, 0xFF,
+};
+
 static void retrace_callback(u32 retrace_count)
 {
    (void)retrace_count;
@@ -386,19 +393,22 @@ static void init_vtx(void *data)
    GX_ClearVtxDesc();
    GX_SetVtxDesc(GX_VA_POS, GX_INDEX8);
    GX_SetVtxDesc(GX_VA_TEX0, GX_INDEX8);
+   GX_SetVtxDesc(GX_VA_CLR0, GX_INDEX8);
 
    GX_SetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_F32, 0);
    GX_SetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_F32, 0);
+   GX_SetVtxAttrFmt(GX_VTXFMT0, GX_VA_CLR0, GX_CLR_RGBA, GX_RGBA8, 0);
    GX_SetArray(GX_VA_POS, verts, 3 * sizeof(float));
    GX_SetArray(GX_VA_TEX0, vertex_ptr, 2 * sizeof(float));
+   GX_SetArray(GX_VA_CLR0, color_ptr, 4 * sizeof(u8));
 
    GX_SetNumTexGens(1);
-   GX_SetNumChans(0);
-   GX_SetTevOp(GX_TEVSTAGE0, GX_REPLACE);
-   GX_SetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLORNULL);
+   GX_SetNumChans(1);
+   GX_SetChanCtrl(GX_COLOR0A0, GX_DISABLE, GX_SRC_REG, GX_SRC_VTX, GX_LIGHTNULL, GX_DF_NONE, GX_AF_NONE);
+   GX_SetTevOp(GX_TEVSTAGE0, GX_MODULATE);
+   GX_SetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR0A0);
    GX_InvVtxCache();
 
-   //GX_SetBlendMode(GX_BM_BLEND, GX_BL_ONE, GX_BL_INVSRCALPHA, 0);
    GX_SetBlendMode(GX_BM_BLEND, GX_BL_SRCALPHA, GX_BL_INVSRCALPHA, GX_LO_CLEAR);
    g_tex.data = memalign(32, 4 * 4 * 4);
    memset(g_tex.data, 0, 4 * 4 * 4);
@@ -415,6 +425,7 @@ static void build_disp_list(void)
    for (unsigned i = 0; i < 4; i++)
    {
       GX_Position1x8(i);
+      GX_Color1x8(i);
       GX_TexCoord1x8(i);
    }
    GX_End();
@@ -1187,36 +1198,37 @@ static void gx_render_overlay(void *data)
    struct __gx_regdef *__gx = (struct __gx_regdef*)__gxregs;
 #endif
 
-   /*if (gx->overlay_full_screen)
-      glViewport(0, 0, gx->win_width, gx->win_height);*/
-
    GX_SetCurrentMtx(GX_PNMTX1);
    GX_SetVtxDesc(GX_VA_POS, GX_DIRECT);
    GX_SetVtxDesc(GX_VA_TEX0, GX_DIRECT);
+   GX_SetVtxDesc(GX_VA_CLR0, GX_DIRECT);
+
    for (unsigned i = 0; i < gx->overlays; i++)
    {
       GX_LoadTexObj(&gx->overlay[i].tex, GX_TEXMAP0);
 
       GX_Begin(GX_TRIANGLESTRIP, GX_VTXFMT0, 4);
         GX_Position3f32(gx->overlay[i].vertex_coord[0], gx->overlay[i].vertex_coord[1],  -0.5);
+        GX_Color4u8(255, 255, 255, (u8)(gx->overlay[i].alpha_mod * 255.0f));
         GX_TexCoord2f32(gx->overlay[i].tex_coord[0], gx->overlay[i].tex_coord[1]);
 
         GX_Position3f32(gx->overlay[i].vertex_coord[2], gx->overlay[i].vertex_coord[3],  -0.5);
+        GX_Color4u8(255, 255, 255, (u8)(gx->overlay[i].alpha_mod * 255.0f));
         GX_TexCoord2f32(gx->overlay[i].tex_coord[2], gx->overlay[i].tex_coord[3]);
 
         GX_Position3f32(gx->overlay[i].vertex_coord[4], gx->overlay[i].vertex_coord[5],  -0.5);
+        GX_Color4u8(255, 255, 255, (u8)(gx->overlay[i].alpha_mod * 255.0f));
         GX_TexCoord2f32(gx->overlay[i].tex_coord[4], gx->overlay[i].tex_coord[5]);
 
         GX_Position3f32(gx->overlay[i].vertex_coord[6], gx->overlay[i].vertex_coord[7],  -0.5);
+        GX_Color4u8(255, 255, 255, (u8)(gx->overlay[i].alpha_mod * 255.0f));
         GX_TexCoord2f32(gx->overlay[i].tex_coord[6], gx->overlay[i].tex_coord[7]);
      GX_End();
    }
 
    GX_SetVtxDesc(GX_VA_POS, GX_INDEX8);
    GX_SetVtxDesc(GX_VA_TEX0, GX_INDEX8);
-
-   /*if (gx->overlay_full_screen)
-      glViewport(gx->vp.x, gx->vp.y, gx->vp.width, gx->vp.height);*/
+   GX_SetVtxDesc(GX_VA_CLR0, GX_INDEX8);
 }
 
 static const video_overlay_interface_t gx_overlay_interface = {
