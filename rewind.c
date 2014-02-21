@@ -16,7 +16,6 @@
 #define __STDC_LIMIT_MACROS
 #include "rewind.h"
 #include <stdlib.h>
-#include <string.h>
 #include "msvc/msvc-stdint/stdint.h"
 
 //#define NO_UNALIGNED_MEM
