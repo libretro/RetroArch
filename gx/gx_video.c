@@ -246,7 +246,7 @@ void gx_set_video_mode(void *data, unsigned fbWidth, unsigned lines)
    VIDEO_SetBlack(false);
    VIDEO_Flush();
 
-   GX_SetViewport(0, 0, gx_mode.fbWidth, gx_mode.efbHeight, 0, 1);
+   __GX_SetViewportJitter(0, 0, gx_mode.fbWidth, gx_mode.efbHeight, 0, 1, 1);
    __GX_SetDispCopySrc(__gx, 0, 0, gx_mode.fbWidth, gx_mode.efbHeight);
 
    f32 y_scale = GX_GetYScaleFactor(gx_mode.efbHeight, gx_mode.xfbHeight);
@@ -386,9 +386,9 @@ static void init_vtx(struct __gx_regdef *__gx, void *data)
    GX_SetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_F32, 0);
    GX_SetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_F32, 0);
    GX_SetVtxAttrFmt(GX_VTXFMT0, GX_VA_CLR0, GX_CLR_RGBA, GX_RGBA8, 0);
-   GX_SetArray(GX_VA_POS, verts, 3 * sizeof(float));
-   GX_SetArray(GX_VA_TEX0, vertex_ptr, 2 * sizeof(float));
-   GX_SetArray(GX_VA_CLR0, color_ptr, 4 * sizeof(u8));
+   __GX_SetArray(__gx, GX_VA_POS, verts, 3 * sizeof(float));
+   __GX_SetArray(__gx, GX_VA_TEX0, vertex_ptr, 2 * sizeof(float));
+   __GX_SetArray(__gx, GX_VA_CLR0, color_ptr, 4 * sizeof(u8));
 
    __GX_SetNumTexGens(__gx, 1);
    __GX_SetNumChans(__gx, 1);
@@ -787,7 +787,7 @@ static void gx_resize(struct __gx_regdef *__gx, void *data)
    gx->vp.width  = width;
    gx->vp.height = height;
 
-   GX_SetViewport(x, y, width, height, 0, 1);
+   __GX_SetViewportJitter(x, y, width, height, 0, 1, 1);
 
    Mtx44 m1, m2;
    float top = 1, bottom = -1, left = -1, right = 1;
@@ -1199,7 +1199,7 @@ static void gx_render_overlay(void *data)
    {
       GX_LoadTexObj(&gx->overlay[i].tex, GX_TEXMAP0);
 
-      GX_Begin(GX_TRIANGLESTRIP, GX_VTXFMT0, 4);
+      __GX_Begin(__gx, GX_TRIANGLESTRIP, GX_VTXFMT0, 4);
       GX_Position3f32(gx->overlay[i].vertex_coord[0], gx->overlay[i].vertex_coord[1],  -0.5);
       GX_Color4u8(255, 255, 255, (u8)(gx->overlay[i].alpha_mod * 255.0f));
       GX_TexCoord2f32(gx->overlay[i].tex_coord[0], gx->overlay[i].tex_coord[1]);

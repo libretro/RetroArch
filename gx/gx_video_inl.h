@@ -341,6 +341,19 @@ static void __SETVCDATTR(struct __gx_regdef *__gx, u8 attr,u8 type)
       GX_LOAD_XF_REG(0x1019,__gx->mtxIdxHi); \
    }
 
+#define __GX_SetArray(__gx, attr, ptr, stride) \
+   if(attr>=GX_VA_POS && attr<=GX_LIGHTARRAY) \
+   { \
+      GX_LOAD_CP_REG((0xA0 +((attr) - GX_VA_POS)),(u32)MEM_VIRTUAL_TO_PHYSICAL(ptr)); \
+      GX_LOAD_CP_REG((0xB0 +((attr) - GX_VA_POS)),(u32)(stride)); \
+   }
+
+#define __GX_Begin(__vtx, primitive, vtxfmt, vtxcnt) \
+   if(__gx->dirtyState) \
+      __GX_SetDirtyState(__gx); \
+   wgPipe->U8 = primitive | (vtxfmt & 7); \
+   wgPipe->U16 = vtxcnt
+
 #ifdef HW_DOL
 static inline void __GX_UpdateBPMask(struct __gx_regdef *__gx)
 {
@@ -672,15 +685,6 @@ static void __GX_SendFlushPrim(struct __gx_regdef *__gx)
    __gx->genMode = (__gx->genMode & ~0xf)|(nr & 0xf); \
    __gx->dirtyState |= 0x02000004
 
-#define __GX_Begin(__gx, primitve, vtxfmt, vtxcnt) \
-{ \
-   u8 reg = primitve|(vtxfmt&7); \
-   if(__gx->dirtyState) \
-      __GX_SetDirtyState(__gx); \
-   wgPipe->U8 = reg; \
-   wgPipe->U16 = vtxcnt; \
-}
-
 #define __GX_PokeARGB(x, y, color) \
 { \
    u32 regval; \
@@ -712,6 +716,19 @@ static void __GX_SendFlushPrim(struct __gx_regdef *__gx)
    __gx->peZMode = (__gx->peZMode&~0xe)|(_SHIFTL(func,1,3)); \
    __gx->peZMode = (__gx->peZMode&~0x10)|(_SHIFTL(update_enable,4,1)); \
    GX_LOAD_BP_REG(__gx->peZMode)
+
+#define X_FACTOR 0.5
+#define Y_FACTOR 342.0
+#define ZFACTOR 16777215.0
+
+#define __GX_SetViewportJitter(xOrig, yOrig, wd, ht, nearZ, farZ, field) \
+   GX_LOAD_XF_REGS(0x101a,6); \
+   wgPipe->F32 = wd* X_FACTOR;                        /* x0 */ \
+   wgPipe->F32 = (-ht)* X_FACTOR;                     /* y0 */ \
+   wgPipe->F32 = (ZFACTOR * farZ)-(ZFACTOR * nearZ);  /* z  */ \
+   wgPipe->F32 = (xOrig+(wd * X_FACTOR))+ Y_FACTOR;   /* x1 */ \
+   wgPipe->F32 = (yOrig+(ht * X_FACTOR))+ Y_FACTOR;   /* y1 */ \
+   wgPipe->F32 = ZFACTOR * farZ                       /* f  */
 
 static void __GX_SetCopyFilter(u8 aa,u8 sample_pattern[12][2],u8 vf,u8 vfilter[7])
 {
