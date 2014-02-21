@@ -215,8 +215,8 @@ bool state_manager_pop(state_manager_t *state, void **data)
 
 void *state_manager_push_where(state_manager_t *state)
 {
-   //We need to ensure we have an uncompressed copy of the last pushed state, or we could end up
-   // applying a 'patch' to wrong savestate, and that'd blow up rather quickly.
+   //We need to ensure we have an uncompressed copy of the last pushed state, or we could
+   // end up applying a 'patch' to wrong savestate, and that'd blow up rather quickly.
    if (!state->thisblock_valid) 
    {
       void *ignore;
