@@ -326,7 +326,7 @@ bool state_manager_push_do(state_manager_t *state)
          num16s-=changed;
          *(compressed16++)=changed;
          *(compressed16++)=skip;
-         memcpy(compressed16, old16prev, changed*sizeof(uint16_t));
+         for (int i=0;i<changed;i++) compressed16[i]=old16prev[i];
          compressed16+=changed;
       }
       compressed16[0]=0;
