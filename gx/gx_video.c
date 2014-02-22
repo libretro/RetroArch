@@ -33,9 +33,7 @@
 #include <string.h>
 
 #include "ppc_asm.h"
-#ifdef GX_OPTS
 #include "gx_video_inl.h"
-#endif
 
 #define SYSMEM1_SIZE 0x01800000
 
@@ -347,9 +345,7 @@ static void setup_video_mode(void *data)
 static void init_texture(void *data, unsigned width, unsigned height)
 {
    unsigned g_filter, rgui_w, rgui_h;
-#ifdef GX_OPTS
    struct __gx_regdef *__gx = (struct __gx_regdef*)__gxregs;
-#endif
    gx_video_t *gx = (gx_video_t*)data;
 
    width &= ~3;
@@ -366,11 +362,11 @@ static void init_texture(void *data, unsigned width, unsigned height)
 
    struct __gx_texobj *fb_ptr = (struct __gx_texobj*)&g_tex.obj;
    struct __gx_texobj *menu_ptr = (struct __gx_texobj*)&menu_tex.obj;
-   GX_InitTexObj(fb_ptr, g_tex.data, width, height, (gx->rgb32) ? GX_TF_RGBA8 : gx->rgui_texture_enable ? GX_TF_RGB5A3 : GX_TF_RGB565, GX_CLAMP, GX_CLAMP, GX_FALSE);
-   GX_InitTexObjFilterMode(fb_ptr, g_filter, g_filter);
-   GX_InitTexObj(menu_ptr, menu_tex.data, rgui_w, rgui_h, GX_TF_RGB5A3, GX_CLAMP, GX_CLAMP, GX_FALSE);
-   GX_InitTexObjFilterMode(menu_ptr, g_filter, g_filter);
-   GX_InvalidateTexAll();
+   __GX_InitTexObj(fb_ptr, g_tex.data, width, height, (gx->rgb32) ? GX_TF_RGBA8 : gx->rgui_texture_enable ? GX_TF_RGB5A3 : GX_TF_RGB565, GX_CLAMP, GX_CLAMP, GX_FALSE);
+   __GX_InitTexObjFilterMode(fb_ptr, g_filter, g_filter);
+   __GX_InitTexObj(menu_ptr, menu_tex.data, rgui_w, rgui_h, GX_TF_RGB5A3, GX_CLAMP, GX_CLAMP, GX_FALSE);
+   __GX_InitTexObjFilterMode(menu_ptr, g_filter, g_filter);
+   __GX_InvalidateTexAll(__gx);
 }
 
 static void init_vtx(void *data)
@@ -896,9 +892,7 @@ static bool gx_frame(void *data, const void *frame,
       const char *msg)
 {
    gx_video_t *gx = (gx_video_t*)driver.video_data;
-#ifdef GX_OPTS
    struct __gx_regdef *__gx = (struct __gx_regdef*)__gxregs;
-#endif
    u8 clear_efb = GX_FALSE;
 
    (void)data;
@@ -948,7 +942,7 @@ static bool gx_frame(void *data, const void *frame,
       DCFlushRange(menu_tex.data, rgui->width * rgui->height * 2);
    }
 
-   GX_InvalidateTexAll();
+   __GX_InvalidateTexAll(__gx);
 
    GX_SetCurrentMtx(GX_PNMTX0);
    GX_LoadTexObj(&g_tex.obj, GX_TEXMAP0);
@@ -998,8 +992,8 @@ static bool gx_frame(void *data, const void *frame,
       clear_efb = GX_TRUE;
    }
 
-   GX_CopyDisp(g_framebuf[g_current_framebuf], clear_efb);
-   GX_Flush();
+   __GX_CopyDisp(__gx, g_framebuf[g_current_framebuf], clear_efb);
+   __GX_Flush(__gx);
    VIDEO_SetNextFramebuffer(g_framebuf[g_current_framebuf]);
    VIDEO_Flush();
 
