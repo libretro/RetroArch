@@ -19,5 +19,5 @@ for f in *_psp1.a ; do
    cp -f "$f" ../libretro_psp1.a
    make -C ../ -f Makefile.psp1 $whole_archive $big_stack -j3 || exit 1
    mv -f ../retroarchpsp.prx ../psp1/pkg/${name}_libretro_psp1.prx
-   rm -f ../retroarchpsp.prx
+   rm -f ../retroarchpsp.prx ../retroarchpsp.elf
 done
