@@ -149,6 +149,28 @@ static void reassign_bottom(state_manager_t *state)
 }
 
 #if __SSE2__
+
+#if defined(__GNUC__)
+static inline unsigned compat_ctz(uint32_t v)
+{
+   return __builtin_ctz(v);
+}
+#else
+// Only checks at nibble granularity, because that's what we need.
+static inline unsigned compat_ctz(uint32_t v)
+{
+   if (v & 0x000f)
+      return 0;
+   if (v & 0x00f0)
+      return 4;
+   if (v & 0x0f00)
+      return 8;
+   if (v & 0xf000)
+      return 12;
+   return 16;
+}
+#endif
+
 #include <emmintrin.h>
 // There's no equivalent in libc, you'd think so ... std::mismatch exists, but it's not optimized at all. :(
 static unsigned find_mismatch(const uint32_t *a, const uint32_t *b, unsigned samples)
@@ -162,7 +184,7 @@ static unsigned find_mismatch(const uint32_t *a, const uint32_t *b, unsigned sam
       __m128i c = _mm_cmpeq_epi32(v0, v1);
       uint32_t mask = _mm_movemask_epi8(c);
       if (mask != 0xffff) // Something has changed, figure out where.
-         return i + (__builtin_ctz(~mask) >> 2);
+         return i + (compat_ctz(~mask) >> 2);
    }
 
    for (; i < samples; i++)
