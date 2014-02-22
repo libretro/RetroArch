@@ -230,6 +230,63 @@ void state_manager_push_where(state_manager_t *state, void **data)
    *data=state->nextblock;
 }
 
+#if __SSE2__
+#include <emmintrin.h>
+// There's no equivalent in libc, you'd think so ... std::mismatch exists, but it's not optimized at all. :(
+static inline size_t find_change(const uint16_t * a, const uint16_t * b)
+{
+	const __m128i * a128=(const __m128i*)a;
+	const __m128i * b128=(const __m128i*)b;
+	
+	while (true)
+	{
+		__m128i v0 = _mm_loadu_si128(a128);
+		__m128i v1 = _mm_loadu_si128(b128);
+		__m128i c = _mm_cmpeq_epi32(v0, v1);
+		uint32_t mask = _mm_movemask_epi8(c);
+		if (mask != 0xffff) // Something has changed, figure out where.
+		{
+			size_t ret=(((char*)a128-(char*)a) | (__builtin_ctz(~mask))) >> 1;
+			return (ret | (a[ret]==b[ret]));
+		}
+		a128++;
+		b128++;
+	}
+}
+#else
+static inline size_t find_change(const uint16_t * a, const uint16_t * b)
+{
+	const uint16_t * a_org=a;
+#ifdef NO_UNALIGNED_MEM
+	while ((uintptr_t)a & (sizeof(size_t)-1) && *a==*b)
+	{
+		a++;
+		b++;
+	}
+	if (*a==*b)
+#endif
+	{
+		const size_t* a_big=(const size_t*)a;
+		const size_t* b_big=(const size_t*)b;
+		
+		while (*a_big==*b_big)
+		{
+			a_big++;
+			b_big++;
+		}
+		a=(const uint16_t*)a_big;
+		b=(const uint16_t*)b_big;
+		
+		while (*b==*a)
+		{
+			a++;
+			b++;
+		}
+	}
+	return a-a_org;
+}
+#endif
+
 void state_manager_push_do(state_manager_t *state)
 {
    if (state->thisblock_valid)
@@ -258,34 +315,7 @@ void state_manager_push_do(state_manager_t *state)
       size_t num16s = state->blocksize/sizeof(uint16_t);
       while (num16s)
       {
-         const uint16_t *oldprev = old16;
-#ifdef NO_UNALIGNED_MEM
-         while ((uintptr_t)old16 & (sizeof(size_t)-1) && *old16==*new16)
-         {
-            old16++;
-            new16++;
-         }
-         if (*old16==*new16)
-#endif
-         {
-            const size_t *olds = (const size_t*)old16;
-            const size_t *news = (const size_t*)new16;
-
-            while (*olds == *news)
-            {
-               olds++;
-               news++;
-            }
-            old16 = (const uint16_t*)olds;
-            new16 = (const uint16_t*)news;
-
-            while (*old16 == *new16)
-            {
-               old16++;
-               new16++;
-            }
-         }
-         size_t skip = (old16-oldprev);
+         size_t skip = find_change(old16, new16);
 
          if (skip >= num16s) break;
          num16s -= skip;
