@@ -223,6 +223,7 @@ void state_manager_push_where(state_manager_t *state, void **data)
       if (state_manager_pop(state, &ignored))
       {
          state->thisblock_valid = true;
+         state->entries++;
       }
    }
    
