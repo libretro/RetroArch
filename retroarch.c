@@ -1539,29 +1539,16 @@ void rarch_init_rewind(void)
       return;
    }
 
-   // Make sure we allocate at least 4-byte multiple.
-   size_t aligned_state_size = (g_extern.state_size + 3) & ~3;
-   g_extern.state_buf = calloc(1, aligned_state_size);
-
-   if (!g_extern.state_buf)
-   {
-      RARCH_ERR("Failed to allocate memory for rewind buffer.\n");
-      return;
-   }
-
-   if (!pretro_serialize(g_extern.state_buf, g_extern.state_size))
-   {
-      RARCH_ERR("Failed to perform initial serialization for rewind.\n");
-      free(g_extern.state_buf);
-      g_extern.state_buf = NULL;
-      return;
-   }
-
    RARCH_LOG("Initing rewind buffer with size: %u MB\n", (unsigned)(g_settings.rewind_buffer_size / 1000000));
-   g_extern.state_manager = state_manager_new(aligned_state_size, g_settings.rewind_buffer_size, g_extern.state_buf);
+   g_extern.state_manager = state_manager_new(g_extern.state_size, g_settings.rewind_buffer_size);
 
    if (!g_extern.state_manager)
       RARCH_WARN("Failed to init rewind buffer. Rewinding will be disabled.\n");
+
+   void *state;
+   state_manager_push_where(g_extern.state_manager, &state);
+   pretro_serialize(state, g_extern.state_size);
+   state_manager_push_do(g_extern.state_manager);
 }
 
 void rarch_deinit_rewind(void)
@@ -1569,9 +1556,6 @@ void rarch_deinit_rewind(void)
    if (g_extern.state_manager)
       state_manager_free(g_extern.state_manager);
    g_extern.state_manager = NULL;
-
-   free(g_extern.state_buf);
-   g_extern.state_buf = NULL;
 }
 
 #ifdef HAVE_BSV_MOVIE
@@ -2187,7 +2171,7 @@ static void check_rewind(void)
    if (input_key_pressed_func(RARCH_REWIND))
    {
       msg_queue_clear(g_extern.msg_queue);
-      void *buf;
+      const void *buf;
       if (state_manager_pop(g_extern.state_manager, &buf))
       {
          g_extern.frame_is_reverse = true;
@@ -2214,8 +2198,10 @@ static void check_rewind(void)
       if (cnt == 0)
 #endif
       {
-         pretro_serialize(g_extern.state_buf, g_extern.state_size);
-         state_manager_push(g_extern.state_manager, g_extern.state_buf);
+         void *state;
+         state_manager_push_where(g_extern.state_manager, &state);
+         pretro_serialize(state, g_extern.state_size);
+         state_manager_push_do(g_extern.state_manager);
       }
    }
 
