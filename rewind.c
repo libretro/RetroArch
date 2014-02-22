@@ -340,23 +340,35 @@ static inline size_t find_same(const uint16_t * a, const uint16_t * b)
 static inline size_t find_same(const uint16_t * a, const uint16_t * b)
 {
 	const uint16_t * a_org=a;
-	
-	//Comparing two or three words makes no real difference.
-	//With two, the smaller blocks are less likely to be chopped up elsewhere due to 64KB;
-	// with three, we get larger blocks which should be a minuscle bit faster to decompress,
-	// but probably a little slower to compress. Since compression is more bottleneck than decompression is, we favor that.
-	while (a[0]!=b[0] || a[1]!=b[1])
+#ifdef NO_UNALIGNED_MEM
+	if ((uintptr_t)a & (sizeof(uint32_t)-1) && *a!=*b)
 	{
 		a++;
 		b++;
-		//Optimize this by only checking one at the time for as long as possible.
-		while (*a!=*b)
+	}
+	if (*a!=*b)
+#endif
+	{
+		//With this, it's random whether two consecutive identical words are caught.
+		//Luckily, compression rate is the same for both cases, and three is always caught.
+		//(We prefer to miss two-word blocks, anyways; fewer iterations of the outer loop, as well as in the decompressor.)
+		const uint32_t* a_big=(const uint32_t*)a;
+		const uint32_t* b_big=(const uint32_t*)b;
+		
+		while (*a_big!=*b_big)
 		{
-			a++;
-			b++;
+			a_big++;
+			b_big++;
+		}
+		a=(const uint16_t*)a_big;
+		b=(const uint16_t*)b_big;
+		
+		if (a!=a_org && a[-1]==b[-1])
+		{
+			a--;
+			b--;
 		}
 	}
-	
 	return a-a_org;
 }
 #endif
