@@ -287,6 +287,60 @@ static inline size_t find_change(const uint16_t * a, const uint16_t * b)
 }
 #endif
 
+#if __SSE2__x // this is not a typo - do not fix unless you can show evidence that this version is faster
+#include <emmintrin.h>
+//This one can give different answers than the C version in some cases. However, the compression ratio remains unaffected.
+//It also appears to be slower. Probably due to the low average duration of this loop.
+static inline size_t find_same(const uint16_t * a, const uint16_t * b)
+{
+	if (a[0]==b[0] && a[1]==b[1]) return 0;
+	if (a[1]==b[1] && a[2]==b[2]) return 1;
+	if (a[2]==b[2] && a[3]==b[3]) return 2;
+	if (a[3]==b[3] && a[4]==b[4]) return 3;
+	
+	const __m128i * a128=((const __m128i*)a);
+	const __m128i * b128=((const __m128i*)b);
+	
+	while (true)
+	{
+		__m128i v0 = _mm_loadu_si128(a128);
+		__m128i v1 = _mm_loadu_si128(b128);
+		__m128i c = _mm_cmpeq_epi32(v0, v1);
+		uint32_t mask = _mm_movemask_epi8(c);
+		if (mask != 0x0000) // Something remains unchanged, figure out where.
+		{
+			size_t ret=(((char*)a128-(char*)a) | (__builtin_ctz(mask))) >> 1;
+			return (ret - (a[ret-1]==b[ret-1]));
+		}
+		a128++;
+		b128++;
+	}
+}
+#else
+static inline size_t find_same(const uint16_t * a, const uint16_t * b)
+{
+	const uint16_t * a_org=a;
+	
+	//Comparing two or three words makes no real difference.
+	//With two, the smaller blocks are less likely to be chopped up elsewhere due to 64KB;
+	// with three, we get larger blocks which should be a minuscle bit faster to decompress,
+	// but probably a little slower to compress. Since compression is more bottleneck than decompression is, we favor that.
+	while (a[0]!=b[0] || a[1]!=b[1])
+	{
+		a++;
+		b++;
+		//Optimize this by only checking one at the time for as long as possible.
+		while (*a!=*b)
+		{
+			a++;
+			b++;
+		}
+	}
+	
+	return a-a_org;
+}
+#endif
+
 void state_manager_push_do(state_manager_t *state)
 {
    if (state->thisblock_valid)
@@ -318,19 +372,17 @@ void state_manager_push_do(state_manager_t *state)
          size_t skip = find_change(old16, new16);
 
          if (skip >= num16s) break;
-         num16s -= skip;
+         old16+=skip;
+         new16+=skip;
+         num16s-=skip;
 
          if (skip > UINT16_MAX)
          {
             if (skip > UINT32_MAX)
             {
-               // This will make it scan the entire thing again, but it only hits on 8GB unchanged
-               // data anyways, and if you're doing that, you've got bigger problems.
-               old16 -= skip;
-               new16 -= skip;
+               //This will make it scan the entire thing again, but it only hits on 8GB unchanged
+               //data anyways, and if you're doing that, you've got bigger problems.
                skip = UINT32_MAX;
-               old16 += skip;
-               new16 += skip;
             }
             *(compressed16++) = 0;
             *(compressed16++) = skip;
@@ -339,38 +391,15 @@ void state_manager_push_do(state_manager_t *state)
             continue;
          }
 
-         size_t changed;
-         const uint16_t *old16prev = old16;
-         //Comparing two or three words makes no real difference.
-         //With two, the smaller blocks are less likely to be chopped up elsewhere due to 64KB;
-         // with three, we get larger blocks which should be a minuscle bit faster to decompress,
-         // but probably a little slower to compress. Since compression is more bottleneck than decompression is, we favor that.
-         while (old16[0] != new16[0] || old16[1] != new16[1])
-         {
-            old16++;
-            new16++;
-            //Optimize this by only checking one at the time for as long as possible.
-            while (*old16 != *new16)
-            {
-               old16++;
-               new16++;
-            }
-         }
-         changed = (old16-old16prev);
-         if (!changed) continue;
-         if (changed > UINT16_MAX)
-         {
-            old16 -= changed;
-            new16 -= changed;
-            changed = UINT16_MAX;
-            old16 += changed;
-            new16 += changed;
-         }
-         num16s -= changed;
-         *(compressed16++) = changed;
-         *(compressed16++) = skip;
-         for (int i=0;i<changed;i++) compressed16[i] = old16prev[i];
-         compressed16 += changed;
+         size_t changed=find_same(old16, new16);
+         if (changed>UINT16_MAX) changed=UINT16_MAX;
+         *(compressed16++)=changed;
+         *(compressed16++)=skip;
+         for (int i=0;i<changed;i++) compressed16[i]=old16[i];
+         old16+=changed;
+         new16+=changed;
+         compressed16+=changed;
+         num16s-=changed;
       }
       compressed16[0] = 0;
       compressed16[1] = 0;
