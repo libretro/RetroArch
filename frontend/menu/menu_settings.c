@@ -502,7 +502,18 @@ int menu_set_settings(void *data, unsigned setting, unsigned action)
             if (setting == RGUI_SETTINGS_SAVESTATE_SAVE)
                rarch_save_state();
             else
+            {
+               // Disallow savestate load when we absoluetely cannot change game state.
+#ifdef HAVE_BSV_MOVIE
+               if (g_extern.bsv.movie)
+                  break;
+#endif
+#ifdef HAVE_NETPLAY
+               if (g_extern.netplay)
+                  break;
+#endif
                rarch_load_state();
+            }
             g_extern.lifecycle_state |= (1ULL << MODE_GAME);
             return -1;
          }
