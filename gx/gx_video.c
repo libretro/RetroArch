@@ -246,7 +246,7 @@ void gx_set_video_mode(void *data, unsigned fbWidth, unsigned lines)
    VIDEO_SetBlack(false);
    VIDEO_Flush();
 
-   __GX_SetViewportJitter(0, 0, gx_mode.fbWidth, gx_mode.efbHeight, 0, 1, 1);
+   GX_SetViewportJitter(0, 0, gx_mode.fbWidth, gx_mode.efbHeight, 0, 1, 1);
    __GX_SetDispCopySrc(__gx, 0, 0, gx_mode.fbWidth, gx_mode.efbHeight);
 
    f32 y_scale = GX_GetYScaleFactor(gx_mode.efbHeight, gx_mode.xfbHeight);
@@ -757,7 +757,7 @@ static void gx_resize(struct __gx_regdef *__gx, void *data)
    gx->vp.width  = width;
    gx->vp.height = height;
 
-   __GX_SetViewportJitter(x, y, width, height, 0, 1, 1);
+   GX_SetViewportJitter(x, y, width, height, 0, 1, 1);
 
    Mtx44 m1, m2;
    float top = 1, bottom = -1, left = -1, right = 1;
