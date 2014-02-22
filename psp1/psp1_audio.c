@@ -24,11 +24,12 @@
 typedef struct psp1_audio
 {
    bool nonblocking;
-   bool running;
    uint32_t* buffer;
    uint32_t* zeroBuffer;
    SceUID thread;
    int rate;
+
+   volatile bool running;
    volatile uint16_t readPos;
    volatile uint16_t writePos;
 } psp1_audio_t;
@@ -189,7 +190,7 @@ static size_t psp_write_avail(void *data)
 {
    /* TODO */
    psp1_audio_t* psp = (psp1_audio_t*)data;
-   return ((uint16_t)(psp->writePos - psp->readPos) & AUDIO_BUFFER_SIZE_MASK);
+   return AUDIO_BUFFER_SIZE - ((uint16_t)(psp->writePos - psp->readPos) & AUDIO_BUFFER_SIZE_MASK);
 }
 
 static size_t psp_buffer_size(void *data)
@@ -208,6 +209,6 @@ const audio_driver_t audio_psp1 = {
    psp_audio_free,
    psp_audio_use_float,
    "psp1",
-//   psp_write_avail,
-//   psp_buffer_size,
+   psp_write_avail,
+   psp_buffer_size,
 };
