@@ -232,21 +232,21 @@ void state_manager_push_where(state_manager_t *state, void **data)
 
 #if __SSE2__
 #if defined(__GNUC__)
-static inline unsigned compat_ctz(uint32_t v)
+static inline int compat_ctz(unsigned int x)
 {
    return __builtin_ctz(v);
 }
 #else
 // Only checks at nibble granularity, because that's what we need.
-static inline unsigned compat_ctz(uint32_t v)
+static inline int compat_ctz(unsigned int x)
 {
-   if (v & 0x000f)
+   if (x & 0x000f)
       return 0;
-   if (v & 0x00f0)
+   if (x & 0x00f0)
       return 4;
-   if (v & 0x0f00)
+   if (x & 0x0f00)
       return 8;
-   if (v & 0xf000)
+   if (x & 0xf000)
       return 12;
    return 16;
 }
