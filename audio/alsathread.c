@@ -177,10 +177,14 @@ static void *alsa_thread_init(const char *device, unsigned rate, unsigned latenc
 
    TRY_ALSA(snd_pcm_hw_params(alsa->pcm, params));
 
-   snd_pcm_hw_params_get_period_size(params, &alsa->period_frames, NULL);
+   // Shouldn't have to bother with this, but some drivers are apparently broken.
+   if (snd_pcm_hw_params_get_period_size(params, &alsa->period_frames, NULL))
+      snd_pcm_hw_params_get_period_size_min(params, &alsa->period_frames, NULL);
    RARCH_LOG("ALSA: Period size: %d frames\n", (int)alsa->period_frames);
-   snd_pcm_hw_params_get_buffer_size(params, &buffer_size);
+   if (snd_pcm_hw_params_get_buffer_size(params, &buffer_size))
+      snd_pcm_hw_params_get_buffer_size_max(params, &buffer_size);
    RARCH_LOG("ALSA: Buffer size: %d frames\n", (int)buffer_size);
+
    alsa->buffer_size = snd_pcm_frames_to_bytes(alsa->pcm, buffer_size);
    alsa->period_size = snd_pcm_frames_to_bytes(alsa->pcm, alsa->period_frames);
 
