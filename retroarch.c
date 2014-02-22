@@ -2214,7 +2214,10 @@ static void check_rewind(void)
       if (cnt == 0)
 #endif
       {
+         RARCH_PERFORMANCE_INIT(rewind_serialize);
+         RARCH_PERFORMANCE_START(rewind_serialize);
          pretro_serialize(g_extern.state_buf, g_extern.state_size);
+         RARCH_PERFORMANCE_STOP(rewind_serialize);
          state_manager_push(g_extern.state_manager, g_extern.state_buf);
       }
    }
