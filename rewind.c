@@ -298,7 +298,7 @@ static inline size_t find_change(const uint16_t * a, const uint16_t * b)
 		a=(const uint16_t*)a_big;
 		b=(const uint16_t*)b_big;
 		
-		while (*b==*a)
+		while (*a==*b)
 		{
 			a++;
 			b++;
