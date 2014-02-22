@@ -75,7 +75,7 @@
 #define PSP_CTRL_L SCE_CTRL_L
 #define PSP_CTRL_R SCE_CTRL_R
 
-#define CtrlReadBufferPositive(port, pad_data, bufs) sceCtrlReadBufferPositive(port, pad_data, bufs)
+#define CtrlPeekBufferPositive(port, pad_data, bufs) sceCtrlPeekBufferPositive(port, pad_data, bufs)
 
 #elif defined(PSP)
 
@@ -90,7 +90,7 @@
 
 #define DEFAULT_SAMPLING_MODE (PSP_CTRL_MODE_ANALOG)
 
-#define CtrlReadBufferPositive(port, pad_data, bufs) sceCtrlReadBufferPositive(pad_data, bufs)
+#define CtrlPeekBufferPositive(port, pad_data, bufs) sceCtrlPeekBufferPositive(pad_data, bufs)
 #endif
 
 #endif
