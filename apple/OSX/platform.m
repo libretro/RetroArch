@@ -142,7 +142,9 @@ static char** waiting_argv;
    
    [[RAGameView get] setFrame: [[self.window contentView] bounds]];
    [[self.window contentView] setAutoresizesSubviews:YES];
+#if defined(IOS) || defined(MAC_OS_X_VERSION_10_6)
    [[self.window contentView] addSubview:RAGameView.get];
+#endif
    [self.window makeFirstResponder:[RAGameView get]];
    
    self.settingsWindow = [[[NSWindowController alloc] initWithWindowNibName:@"Settings"] autorelease];

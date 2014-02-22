@@ -431,12 +431,15 @@ didOutputSampleBuffer:(CMSampleBufferRef)sampleBuffer
 @end
 
 static RAScreen* get_chosen_screen(void)
-{      
-   if (g_settings.video.monitor_index >= RAScreen.screens.count)
+{
+#if defined(OSX) && !defined(MAC_OS_X_VERSION_10_6)
+#else
+   if ((g_settings.video.monitor_index) >= (RAScreen.screens.count))
    {
       RARCH_WARN("video_monitor_index is greater than the number of connected monitors; using main screen instead.\n");
       return [RAScreen mainScreen];
    }
+#endif
 	
    NSArray *screens = [RAScreen screens];
    return (RAScreen*)[screens objectAtIndex:g_settings.video.monitor_index];
