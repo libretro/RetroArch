@@ -1092,7 +1092,7 @@ static void *d3d_init(const video_info_t *info, const input_driver_t **input,
    vid->ctx_driver = d3d_get_context();
    if (!vid->ctx_driver)
    {
-      free(vid);
+      delete vid;
       return NULL;
    }
 
@@ -1113,7 +1113,7 @@ static void *d3d_init(const video_info_t *info, const input_driver_t **input,
    if (!d3d_construct(vid, info, input, input_data))
    {
       RARCH_ERR("[D3D]: Failed to init D3D.\n");
-      free(vid);
+      delete vid;
       return NULL;
    }
 
