@@ -231,6 +231,27 @@ void state_manager_push_where(state_manager_t *state, void **data)
 }
 
 #if __SSE2__
+#if defined(__GNUC__)
+static inline unsigned compat_ctz(uint32_t v)
+{
+   return __builtin_ctz(v);
+}
+#else
+// Only checks at nibble granularity, because that's what we need.
+static inline unsigned compat_ctz(uint32_t v)
+{
+   if (v & 0x000f)
+      return 0;
+   if (v & 0x00f0)
+      return 4;
+   if (v & 0x0f00)
+      return 8;
+   if (v & 0xf000)
+      return 12;
+   return 16;
+}
+#endif
+
 #include <emmintrin.h>
 // There's no equivalent in libc, you'd think so ... std::mismatch exists, but it's not optimized at all. :(
 static inline size_t find_change(const uint16_t * a, const uint16_t * b)
@@ -246,7 +267,7 @@ static inline size_t find_change(const uint16_t * a, const uint16_t * b)
 		uint32_t mask = _mm_movemask_epi8(c);
 		if (mask != 0xffff) // Something has changed, figure out where.
 		{
-			size_t ret=(((char*)a128-(char*)a) | (__builtin_ctz(~mask))) >> 1;
+			size_t ret=(((char*)a128-(char*)a) | (compat_ctz(~mask))) >> 1;
 			return (ret | (a[ret]==b[ret]));
 		}
 		a128++;
@@ -288,7 +309,6 @@ static inline size_t find_change(const uint16_t * a, const uint16_t * b)
 #endif
 
 #if __SSE2__x // this is not a typo - do not fix unless you can show evidence that this version is faster
-#include <emmintrin.h>
 //This one can give different answers than the C version in some cases. However, the compression ratio remains unaffected.
 //It also appears to be slower. Probably due to the low average duration of this loop.
 static inline size_t find_same(const uint16_t * a, const uint16_t * b)
