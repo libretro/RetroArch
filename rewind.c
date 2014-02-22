@@ -234,7 +234,7 @@ void state_manager_push_where(state_manager_t *state, void **data)
 #if defined(__GNUC__)
 static inline int compat_ctz(unsigned int x)
 {
-   return __builtin_ctz(v);
+   return __builtin_ctz(x);
 }
 #else
 // Only checks at nibble granularity, because that's what we need.
