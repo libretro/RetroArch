@@ -944,15 +944,15 @@ static bool gx_frame(void *data, const void *frame,
 
    __GX_InvalidateTexAll(__gx);
 
-   GX_SetCurrentMtx(GX_PNMTX0);
+   __GX_SetCurrentMtx(__gx, GX_PNMTX0);
    GX_LoadTexObj(&g_tex.obj, GX_TEXMAP0);
-   GX_CallDispList(display_list, display_list_size);
+   __GX_CallDispList(__gx, display_list, display_list_size);
 
    if (gx->rgui_texture_enable)
    {
-      GX_SetCurrentMtx(GX_PNMTX1);
+      __GX_SetCurrentMtx(__gx, GX_PNMTX1);
       GX_LoadTexObj(&menu_tex.obj, GX_TEXMAP0);
-      GX_CallDispList(display_list, display_list_size);
+      __GX_CallDispList(__gx, display_list, display_list_size);
    }
 
 #ifdef HAVE_OVERLAY
