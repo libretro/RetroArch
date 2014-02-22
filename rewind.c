@@ -124,8 +124,8 @@ state_manager_t *state_manager_new(size_t state_size, size_t buffer_size)
 
    state->data = (char*)malloc(buffer_size);
 
-   state->thisblock = (char*)calloc(state->blocksize+sizeof(uint16_t)*8, 1);
-   state->nextblock = (char*)calloc(state->blocksize+sizeof(uint16_t)*8, 1);
+   state->thisblock = (char*)calloc(state->blocksize+sizeof(uint16_t)*4+16, 1);
+   state->nextblock = (char*)calloc(state->blocksize+sizeof(uint16_t)*4+16, 1);
    if (!state->data || !state->thisblock || !state->nextblock)
    {
       free(state->data);
