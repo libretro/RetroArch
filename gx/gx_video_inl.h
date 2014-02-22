@@ -351,8 +351,8 @@ static void __SETVCDATTR(struct __gx_regdef *__gx, u8 attr,u8 type)
 #define __GX_Begin(__vtx, primitive, vtxfmt, vtxcnt) \
    if(__gx->dirtyState) \
       __GX_SetDirtyState(__gx); \
-   wgPipe->U8 = primitive | (vtxfmt & 7); \
-   wgPipe->U16 = vtxcnt
+   FIFO_PUTU8(primitive | (vtxfmt & 7)); \
+   FIFO_PUTU16(vtxcnt)
 
 #ifdef HW_DOL
 static inline void __GX_UpdateBPMask(struct __gx_regdef *__gx)
@@ -633,14 +633,14 @@ static void __GX_SendFlushPrim(struct __gx_regdef *__gx)
 #define __GX_Flush(__gx) \
    if(__gx->dirtyState) \
       __GX_SetDirtyState(__gx); \
-   wgPipe->U32 = 0; \
-   wgPipe->U32 = 0; \
-   wgPipe->U32 = 0; \
-   wgPipe->U32 = 0; \
-   wgPipe->U32 = 0; \
-   wgPipe->U32 = 0; \
-   wgPipe->U32 = 0; \
-   wgPipe->U32 = 0; \
+   FIFO_PUTU32(0); \
+   FIFO_PUTU32(0); \
+   FIFO_PUTU32(0); \
+   FIFO_PUTU32(0); \
+   FIFO_PUTU32(0); \
+   FIFO_PUTU32(0); \
+   FIFO_PUTU32(0); \
+   FIFO_PUTU32(0); \
    ppcsync()
 
 #define __GX_ClearVtxDesc(__gx) \
@@ -665,7 +665,7 @@ static void __GX_SendFlushPrim(struct __gx_regdef *__gx)
    __gx->peCMode0 = (__gx->peCMode0 & ~0x700)|(_SHIFTL(src_fact,8,3)); \
    GX_LOAD_BP_REG(__gx->peCMode0)
 
-#define __GX_InvVtxCache() wgPipe->U8 = 0x48
+#define __GX_InvVtxCache() FIFO_PUTU8(0x48)
 
 #define __GX_SetDispCopyGamma(__gx, gamma) __gx->dispCopyCntrl = (__gx->dispCopyCntrl & ~0x180) | (_SHIFTL(gamma,7,2))
 
@@ -721,14 +721,28 @@ static void __GX_SendFlushPrim(struct __gx_regdef *__gx)
 #define Y_FACTOR 342.0
 #define ZFACTOR 16777215.0
 
-#define __GX_SetViewportJitter(xOrig, yOrig, wd, ht, nearZ, farZ, field) \
-   GX_LOAD_XF_REGS(0x101a,6); \
-   wgPipe->F32 = wd* X_FACTOR;                        /* x0 */ \
-   wgPipe->F32 = (-ht)* X_FACTOR;                     /* y0 */ \
-   wgPipe->F32 = (ZFACTOR * farZ)-(ZFACTOR * nearZ);  /* z  */ \
-   wgPipe->F32 = (xOrig+(wd * X_FACTOR))+ Y_FACTOR;   /* x1 */ \
-   wgPipe->F32 = (yOrig+(ht * X_FACTOR))+ Y_FACTOR;   /* y1 */ \
-   wgPipe->F32 = ZFACTOR * farZ                       /* f  */
+static inline void __GX_SetViewportJitter(f32 xOrig,f32 yOrig,f32 wd,f32 ht,f32 nearZ,f32 farZ,u32 field)
+{
+   f32 x0,y0,x1,y1,n,f,z;
+   static f32 Xfactor = 0.5;
+   static f32 Yfactor = 342.0;
+   static f32 Zfactor = 16777215.0;
+   if(!field) yOrig -= Xfactor;
+   x0 = wd*Xfactor;
+   y0 = (-ht)*Xfactor;
+   x1 = (xOrig+(wd*Xfactor))+Yfactor;
+   y1 = (yOrig+(ht*Xfactor))+Yfactor;
+   n = Zfactor*nearZ;
+   f = Zfactor*farZ;
+   z = f-n;
+   GX_LOAD_XF_REGS(0x101a,6);
+   FIFO_PUTF32(x0);
+   FIFO_PUTF32(y0);
+   FIFO_PUTF32(z);
+   FIFO_PUTF32(x1);
+   FIFO_PUTF32(y1);
+   FIFO_PUTF32(f);
+}
 
 static void __GX_SetCopyFilter(u8 aa,u8 sample_pattern[12][2],u8 vf,u8 vfilter[7])
 {
