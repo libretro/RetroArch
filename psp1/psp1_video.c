@@ -71,8 +71,7 @@ typedef struct psp1_rgui_frame
    void* buffer;
 
    float alpha;
-   uint32_t alpha_source;
-   uint32_t alpha_dest;
+   uint16_t fragmentColor;
 
    bool active;
 
@@ -112,7 +111,7 @@ typedef struct psp1_video
 typedef struct psp1_vertex
 {
    int16_t u,v;
-   uint16_t color; // not used
+   uint16_t color;
    int16_t x,y,z;
 } psp1_vertex_t;
 
@@ -147,6 +146,8 @@ static void copy_frame_RGB5650_to_BGR5650(const void *in_frame, unsigned in_buff
    const uint16_t *in_p  = (const uint16_t*)in_frame;
    uint16_t *out_p = (uint16_t*)out_frame;
 
+   RARCH_PERFORMANCE_INIT(copy_frame_RGB5650_to_BGR5650_func);
+   RARCH_PERFORMANCE_START(copy_frame_RGB5650_to_BGR5650_func);
    for(y = 0; y < height; y++)
    {
       for (x = 0; x < width; x++)
@@ -157,25 +158,24 @@ static void copy_frame_RGB5650_to_BGR5650(const void *in_frame, unsigned in_buff
       in_p += in_buffer_width - width;
       out_p += out_buffer_width - width;
    }
+   RARCH_PERFORMANCE_STOP(copy_frame_RGB5650_to_BGR5650_func);
 }
 
 static void copy_frame_XBGR16(const void *in_frame, unsigned in_buffer_width,
                               void *out_frame, unsigned out_buffer_width,
                               unsigned width, unsigned height)
 {
-   int x,y;
-   const uint16_t *in_p  = (const uint16_t*)in_frame;
-   uint16_t *out_p = (uint16_t*)out_frame;
+   int y;
 
+   RARCH_PERFORMANCE_INIT(copy_frame_XBGR16_func);
+   RARCH_PERFORMANCE_START(copy_frame_XBGR16_func);
    for(y = 0; y < height; y++)
    {
-      for (x = 0; x < width; x++)
-      {
-         *out_p++ =*in_p++;
-      }
-      in_p += in_buffer_width - width;
-      out_p += out_buffer_width - width;
+      memcpy(out_frame, in_frame, width * 2);
+      in_frame += in_buffer_width * 2;
+      out_frame += out_buffer_width * 2;
    }
+   RARCH_PERFORMANCE_STOP(copy_frame_XBGR16_func);
 }
 
 static void *psp_init(const video_info_t *video,
@@ -238,9 +238,8 @@ static void *psp_init(const video_info_t *video,
    psp->rgui.buffer = TO_UNCACHED_PTR(psp->rgui.buffer);
 
    psp->rgui.active = false;
-   psp->rgui.alpha = 0.0;
-   psp->rgui.alpha_source = 0x00000000;
-   psp->rgui.alpha_dest = 0xFFFFFFFF;
+   psp->rgui.alpha = 1.0;
+   psp->rgui.fragmentColor = 0xF000;
 
    // need to invalidate cache before using uncached pointers, to avoid unwanted cache writebacks. TODO: check up/downsides of using sceKernelDcacheInvalidateRange here instead
    sceKernelDcacheWritebackInvalidateAll();
@@ -256,7 +255,7 @@ static void *psp_init(const video_info_t *video,
    sceGuScissor(0, 0, SCEGU_SCR_WIDTH, SCEGU_SCR_HEIGHT);
    sceGuEnable(GU_SCISSOR_TEST);
    sceGuTexMode(psp->pixel_format, 0, 0, GU_FALSE);
-   sceGuTexFunc(GU_TFX_REPLACE, GU_TCC_RGBA);
+   sceGuTexFunc(GU_TFX_ADD, GU_TCC_RGBA);
    sceGuTexFilter(GU_LINEAR, GU_LINEAR);  // TODO , move this to display list
    sceGuTexWrap (GU_CLAMP, GU_CLAMP);
 
@@ -325,15 +324,17 @@ static bool psp_frame(void *data, const void *frame,
    v[0].y = 0;
    v[0].u = 0;
    v[0].v = 0;
+   v[0].color = 0x0000;
 
    v[1].x = (SCEGU_SCR_WIDTH + width * SCEGU_SCR_HEIGHT / height) / 2;
    v[1].y = SCEGU_SCR_HEIGHT;
    v[1].u = width;
    v[1].v = height;
+   v[1].color = 0x0000;
 
    sceGuTexMode(psp->pixel_format, 0, 0, GU_FALSE);
    sceGuTexImage(0, psp->buffer_width, psp->buffer_Height, psp->buffer_width, psp->buffer);
-//      sceGuTexFilter(GU_LINEAR, GU_LINEAR);
+//   sceGuTexFilter(GU_LINEAR, GU_LINEAR);
 
    sceGuDisable(GU_BLEND);
    sceGuDrawArray(GU_SPRITES, GU_TEXTURE_16BIT | GU_COLOR_5650 | GU_VERTEX_16BIT | GU_TRANSFORM_2D, 2, NULL, v);
@@ -344,19 +345,22 @@ static bool psp_frame(void *data, const void *frame,
       v[2].y = 0;
       v[2].u = 0;
       v[2].v = 0;
+      v[2].color = psp->rgui.fragmentColor;
 
       v[3].x = SCEGU_SCR_WIDTH;
       v[3].y = SCEGU_SCR_HEIGHT;
       v[3].u = psp->rgui.width;
       v[3].v = psp->rgui.height;
+      v[3].color = psp->rgui.fragmentColor;
 
       sceGuTexMode(psp->rgui.pixel_format, 0, 0, GU_FALSE);
       sceGuTexImage(0, psp->rgui.buffer_width, psp->rgui.buffer_Height, psp->rgui.buffer_width, psp->rgui.buffer);
 //      sceGuTexFilter(GU_LINEAR, GU_LINEAR);
 
       sceGuEnable(GU_BLEND);
-      sceGuBlendFunc(GU_ADD, GU_FIX, GU_FIX, psp->rgui.alpha_source, psp->rgui.alpha_dest);
-      sceGuDrawArray(GU_SPRITES, GU_TEXTURE_16BIT | GU_COLOR_5650 | GU_VERTEX_16BIT | GU_TRANSFORM_2D, 2, NULL, v + 2);
+//      sceGuBlendFunc(GU_ADD, GU_SRC_ALPHA, GU_ONE_MINUS_SRC_ALPHA, 0, 0); // default blending
+      sceGuBlendFunc(GU_ADD, GU_FIX, GU_FIX, 0xF0F0F0F0, 0x0F0F0F0F);
+      sceGuDrawArray(GU_SPRITES, GU_TEXTURE_16BIT | GU_COLOR_4444 | GU_VERTEX_16BIT | GU_TRANSFORM_2D, 2, NULL, v + 2);
    }
    sceGuFinish();
 
@@ -431,12 +435,8 @@ static void psp_set_texture_frame(void *data, const void *frame, bool rgb32,
    psp->rgui.copy_frame(frame, width, psp->rgui.buffer, psp->rgui.buffer_width, width, height);
 
    psp->rgui.alpha = alpha;
-   uint32_t mask;
-   mask = alpha*255.0;
-   mask &= 0xFF;
-   psp->rgui.alpha_source = (mask << 24) | (mask << 16) | (mask << 8) | mask;
-   mask = 0xFF - mask;
-   psp->rgui.alpha_dest = (mask << 24) | (mask << 16) | (mask << 8) | mask;
+   psp->rgui.fragmentColor = alpha * 0xF000;
+   psp->rgui.fragmentColor &= 0xF000;
 
 }
 

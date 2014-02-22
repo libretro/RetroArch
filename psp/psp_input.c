@@ -97,7 +97,7 @@ static void psp_input_poll(void *data)
    sceCtrlSetSamplingCycle(0);
 #endif
    sceCtrlSetSamplingMode(DEFAULT_SAMPLING_MODE);
-   ret = CtrlReadBufferPositive(0, &state_tmp, 1);
+   ret = CtrlPeekBufferPositive(0, &state_tmp, 1);
    (void)ret;
 
    psp->analog_state[0][0][0] = psp->analog_state[0][0][1] = psp->analog_state[0][1][0] = psp->analog_state[0][1][1] = 0;
