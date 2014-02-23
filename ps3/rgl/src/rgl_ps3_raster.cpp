@@ -6,7 +6,6 @@
 
 #include "include/GmmAlloc.h"
 #include "include/rgl-typedefs.h"
-#include "include/rgl-externs.h"
 #include "include/rgl-inline.h"
 
 #include <Cg/cg.h>
