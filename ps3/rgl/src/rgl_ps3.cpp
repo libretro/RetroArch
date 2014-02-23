@@ -1,7 +1,6 @@
 #include <stdint.h>
 #include <stddef.h>
 #include "rgl.h"
-#include "rglp.h"
 
 #include <sdk_version.h>
 
