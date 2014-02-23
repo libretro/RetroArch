@@ -173,7 +173,7 @@ static void thread_reply(thread_video_t *thr, enum thread_cmd cmd)
 static void thread_loop(void *data)
 {
    thread_video_t *thr = (thread_video_t*)data;
-   unsigned i;
+   unsigned i = 0;
    (void)i;
 
    for (;;)
