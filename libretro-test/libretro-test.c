@@ -276,6 +276,11 @@ static void check_variables(void)
    retro_get_system_av_info(&info);
    if ((last != last_aspect && last != 0.0f) || (last_rate != last_sample_rate && last_rate != 0.0f))
    {
+      // SET_SYSTEM_AV_INFO can only be called within retro_run().
+      // check_variables() is called once in retro_load_game(), but the checks
+      // on last and last_rate ensures this path is never hit that early.
+      // last_aspect and last_sample_rate are not updated until retro_get_system_av_info(),
+      // which must come after retro_load_game().
       bool ret = environ_cb(RETRO_ENVIRONMENT_SET_SYSTEM_AV_INFO, &info);
       logging.log(RETRO_LOG_INFO, "SET_SYSTEM_AV_INFO = %u.\n", ret);
    }
