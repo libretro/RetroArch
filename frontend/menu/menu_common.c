@@ -731,7 +731,9 @@ static int menu_viewport_iterate(void *data, unsigned action)
          if (!g_settings.video.scale_integer)
          {
             rarch_viewport_t vp;
-            driver.video->viewport_info(driver.video_data, &vp);
+
+            if (driver.video && driver.video->viewport_info)
+               driver.video->viewport_info(driver.video_data, &vp);
 
             if (menu_type == RGUI_SETTINGS_CUSTOM_VIEWPORT)
             {
@@ -894,7 +896,9 @@ static int menu_settings_iterate(void *data, unsigned action)
 
             // Start with something sane.
             rarch_viewport_t *custom = &g_extern.console.screen.viewports.custom_vp;
-            driver.video->viewport_info(driver.video_data, custom);
+
+            if (driver.video && driver.video->viewport_info)
+               driver.video->viewport_info(driver.video_data, custom);
             aspectratio_lut[ASPECT_RATIO_CUSTOM].value =
                (float)custom->width / custom->height;
 

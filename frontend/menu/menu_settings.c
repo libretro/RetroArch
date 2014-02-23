@@ -1217,7 +1217,7 @@ int menu_set_settings(void *data, unsigned setting, unsigned action)
                g_extern.lifecycle_state &= ~(1ULL << MODE_VIDEO_PAL_TEMPORAL_ENABLE);
             }
 
-            if (driver.video->restart)
+            if (driver.video && driver.video->restart)
                driver.video->restart();
             if (menu_ctx && menu_ctx->free_assets)
                menu_ctx->free_assets(rgui);
@@ -1238,7 +1238,7 @@ int menu_set_settings(void *data, unsigned setting, unsigned action)
                   else
                      g_extern.lifecycle_state |= (1ULL << MODE_VIDEO_PAL_TEMPORAL_ENABLE);
 
-                  if (driver.video->restart)
+                  if (driver.video && driver.video->restart)
                      driver.video->restart();
                   if (menu_ctx && menu_ctx->free_assets)
                      menu_ctx->free_assets(rgui);
@@ -1251,7 +1251,7 @@ int menu_set_settings(void *data, unsigned setting, unsigned action)
                {
                   g_extern.lifecycle_state &= ~(1ULL << MODE_VIDEO_PAL_TEMPORAL_ENABLE);
 
-                  if (driver.video->restart)
+                  if (driver.video && driver.video->restart)
                      driver.video->restart();
                   if (menu_ctx && menu_ctx->free_assets)
                      menu_ctx->free_assets(rgui);
@@ -1518,7 +1518,7 @@ int menu_set_settings(void *data, unsigned setting, unsigned action)
          break;
       case RGUI_SETTINGS_SHADER_APPLY:
          {
-            if (!driver.video->set_shader || action != RGUI_ACTION_OK)
+            if (!driver.video || !driver.video->set_shader || action != RGUI_ACTION_OK)
                return 0;
 
             RARCH_LOG("Applying shader ...\n");
