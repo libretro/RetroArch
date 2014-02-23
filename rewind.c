@@ -61,7 +61,7 @@
 // The start of the buffer contains a size pointing to the end of the buffer; the end points to its start.
 // Wrapping is handled by returning to the start of the buffer if the compressed data could potentially hit the edge;
 // if the compressed data could potentially overwrite the tail pointer, the tail retreats until it can no longer collide.
-// This means that on average, ~2*maxcompsize is unused at any given moment.
+// This means that on average, ~2 * maxcompsize is unused at any given moment.
 
 // These are called very few constant times per frame, keep it as simple as possible.
 static inline void write_size_t(void *ptr, size_t val)
