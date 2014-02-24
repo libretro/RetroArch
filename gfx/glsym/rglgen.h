@@ -18,7 +18,6 @@
 #include <OpenGL/glext.h>
 #elif defined(HAVE_PSGL)
 #include <PSGL/psgl.h>
-#include <PSGL/psglu.h>
 #include <GLES/glext.h>
 #elif defined(HAVE_OPENGL_MODERN)
 #include <GL3/gl3.h>
