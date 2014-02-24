@@ -547,26 +547,6 @@ extern int audioAddData(uint32_t portNum, float *data, uint32_t frames, float vo
 #endif
 
 /*============================================================
-	GCM PROTOTYPES
-============================================================ */
-
-#ifdef __PSL1GHT__
-#define CELL_GCM_METHOD_HEADER_TEXTURE_OFFSET(unit, val) (((val) << (18)) | ((0x00001a00) + (unit) * 0x20))
-#define CELL_GCM_METHOD_DATA_TEXTURE_OFFSET(val) (val)
-#define CELL_GCM_METHOD_DATA_TEXTURE_CONTROL3(pitch, depth) ((pitch) | ((depth) << 20))
-#define CELL_GCM_METHOD_DATA_TEXTURE_IMAGE_RECT(height, width) ((height) | ((width) << 16))
-#define CELL_GCM_METHOD_DATA_TEXTURE_FILTER(bias, min, mag, filter) (((bias)) | ((filter) << 13) | ((min) << 16) | ((mag) << 24))
-#define CELL_GCM_METHOD_DATA_TEXTURE_CONTROL0(val0, minlod, maxlod, filter) (((minlod << 2) | (filter) << 4) | (maxlod << 7) | (minlod << 19) | (val0 << 31))
-#define CELL_GCM_METHOD_DATA_TEXTURE_ADDRESS(wraps, wrapt, wrapr,  unsignedremap, zfunc, gamma) ((wraps) | ((0) << 4) | ((wrapt) << 8) | (unsignedremap << 12) | ((wrapr) << 16) | (gamma << 20) | (zfunc << 28))
-#endif
-
-#define CELL_GCM_REMAP_MODE(order, inputA, inputR, inputG, inputB, outputA, outputR, outputG, outputB) \
-	(((order)<<16)|((inputA))|((inputR)<<2)|((inputG)<<4)|((inputB)<<6)|((outputA)<<8)|((outputR)<<10)|((outputG)<<12)|((outputB)<<14))
-
-#endif
-
-
-/*============================================================
 	NETWORK PROTOTYPES
 ============================================================ */
 
@@ -660,4 +640,6 @@ extern int audioAddData(uint32_t portNum, float *data, uint32_t frames, float vo
 #else
 #include <cell/sysmodule.h>
 #endif
+#endif
+
 #endif
