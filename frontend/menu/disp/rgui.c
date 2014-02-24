@@ -41,7 +41,11 @@
 #define HAVE_SHADER_MANAGER
 #endif
 
+#if defined(PSP)
+static uint16_t __attribute((aligned(64))) menu_framebuf[400 * 240];
+#else
 static uint16_t menu_framebuf[400 * 240];
+#endif
 
 #define TERM_START_X 15
 #define TERM_START_Y 27
