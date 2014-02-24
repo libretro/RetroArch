@@ -574,7 +574,7 @@ static void *lima_gfx_init(const video_info_t *video, const input_driver_t **inp
   vid->rgui_alpha = 1.0f;
 
   lima = calloc(1, sizeof(limare_data_t));
-  if (!lima) return NULL;
+  if (!lima) goto fail;
 
   /* Request the Exynos DRM backend for rendering. */
   limare_config.type = LIMARE_WINDOWSYS_DRM;
