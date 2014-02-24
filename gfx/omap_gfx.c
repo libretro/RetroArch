@@ -698,6 +698,7 @@ static void omap_gfx_free(void *data) {
   if (!vid) return;
 
   omapfb_free(vid->omap);
+  free(vid->omap);
 
   if (vid->font) vid->font_driver->free(vid->font);
 
@@ -791,17 +792,17 @@ static void *omap_gfx_init(const video_info_t *video, const input_driver_t **inp
   if (!vid) return NULL;
 
   vid->omap = calloc(1, sizeof(omapfb_data_t));
-  if (!vid->omap) return NULL;
+  if (!vid->omap) goto fail;
 
   vid->bytes_per_pixel = video->rgb32 ? 4 : 2;
 
   if (omapfb_init(vid->omap, vid->bytes_per_pixel) != 0) {
-    goto fail;
+    goto fail_omapfb;
   }
 
   if (omapfb_backup_state(vid->omap) != 0 ||
       omapfb_alloc_mem(vid->omap) != 0 ||
-      omapfb_mmap(vid->omap) != 0) goto fail;
+      omapfb_mmap(vid->omap) != 0) goto fail_omapfb;
 
   if (input && input_data) {
     *input = NULL;
@@ -811,9 +812,12 @@ static void *omap_gfx_init(const video_info_t *video, const input_driver_t **inp
 
   return vid;
 
+fail_omapfb:
+  omapfb_free(vid->omap);
+  free(vid->omap);
 fail:
+  free(vid);
   RARCH_ERR("video_omap: initialization failed\n");
-  omap_gfx_free(vid);
   return NULL;
 }
 
