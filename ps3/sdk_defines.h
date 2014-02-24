@@ -17,9 +17,7 @@
 #ifndef _PS3_SDK_DEFINES_H
 #define _PS3_SDK_DEFINES_H
 
-#if defined(__CELLOS_LV2__) && !defined(__PSL1GHT__)
 #include <sdk_version.h>
-#endif
 
 /*============================================================
 	AUDIO PROTOTYPES
