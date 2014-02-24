@@ -597,8 +597,8 @@ static void *lima_gfx_init(const video_info_t *video, const input_driver_t **inp
 
   lima->screen_aspect = get_screen_aspect(lima->state);
 
-  lima->font_height = 360;
-  lima->font_width = align_common((unsigned)(lima->screen_aspect * (float)lima->font_height), 4);
+  lima->font_height = 368;
+  lima->font_width = align_common((unsigned)(lima->screen_aspect * (float)lima->font_height), 16);
 
   lima->upload_format = video->rgb32 ?
     LIMA_TEXEL_FORMAT_RGBA_8888 : LIMA_TEXEL_FORMAT_BGR_565;
