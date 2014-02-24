@@ -17,10 +17,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-#ifndef __PSL1GHT__
 #include <sdk_version.h>
-#endif
-
 #include "../boolean.h"
 
 #include "sdk_defines.h"
