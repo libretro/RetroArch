@@ -60,7 +60,7 @@ static void find_and_set_first_file(void)
       RARCH_ERR("Failed last fallback - RetroArch Salamander will exit.\n");
 }
 
-static void salamander_init_settings(void)
+static void salamander_init(void)
 {
    XINPUT_STATE state;
    (void)state;
@@ -365,4 +365,7 @@ const frontend_ctx_driver_t frontend_ctx_xdk = {
    system_exec,                  /* exec */
    NULL,                         /* shutdown */
    "xdk",
+#ifdef IS_SALAMANDER
+   salamander_init,
+#endif
 };

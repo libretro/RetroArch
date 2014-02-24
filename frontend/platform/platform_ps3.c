@@ -69,7 +69,7 @@ static void find_and_set_first_file(void)
       RARCH_ERR("Failed last fallback - RetroArch Salamander will exit.\n");
 }
 
-static void salamander_init_settings(void)
+static void salamander_init(void)
 {
    CellPadData pad_data;
    cellPadInit(7);
@@ -462,4 +462,7 @@ const frontend_ctx_driver_t frontend_ctx_ps3 = {
    system_exec,                  /* exec */
    NULL,                         /* shutdown */
    "ps3",
+#ifdef IS_SALAMANDER
+   salamander_init,
+#endif
 };

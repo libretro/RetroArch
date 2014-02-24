@@ -39,6 +39,9 @@ typedef struct frontend_ctx_driver
 
    // Human readable string.
    const char *ident;
+#ifdef IS_SALAMANDER
+   void (*salamander_init)(void);
+#endif
 } frontend_ctx_driver_t;
 
 extern const frontend_ctx_driver_t frontend_ctx_gx;

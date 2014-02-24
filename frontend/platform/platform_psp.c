@@ -132,4 +132,7 @@ const frontend_ctx_driver_t frontend_ctx_psp = {
    NULL,                  	      /* exec */
    NULL,                         /* shutdown */
    "psp",
+#ifdef IS_SALAMANDER
+   NULL,
+#endif
 };

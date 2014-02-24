@@ -96,11 +96,16 @@ int main(int argc, char *argv[])
 
    if (frontend_ctx && frontend_ctx->init)
       frontend_ctx->init(args);
-   get_environment_settings(argc, argv, args);
-   salamander_init_settings();
+
+   if (frontend_ctx && frontend_ctx->environment_get)
+      frontend_ctx->environment_get(argc, argv, args);
+
+   if (frontend_ctx && frontend_ctx->salamander_init)
+      frontend_ctx->salamander_init();
 
    if (frontend_ctx && frontend_ctx->deinit)
       frontend_ctx->deinit(args);
+
    if (frontend_ctx && frontend_ctx->exitspawn)
       frontend_ctx->exitspawn();
 

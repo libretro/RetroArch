@@ -67,7 +67,7 @@ static void find_and_set_first_file(void)
       RARCH_ERR("Failed last fallback - RetroArch Salamander will exit.\n");
 }
 
-static void salamander_init_settings(void)
+static void salamander_init(void)
 {
    char tmp_str[512] = {0};
    bool config_file_exists;
@@ -376,4 +376,7 @@ const frontend_ctx_driver_t frontend_ctx_gx = {
    system_exec,                     /* exec */
    NULL,                            /* shutdown */
    "gx",
+#ifdef IS_SALAMANDER
+   salamander_init,
+#endif
 };
