@@ -1663,6 +1663,14 @@ int menu_set_settings(void *data, unsigned setting, unsigned action)
       case RGUI_SETTINGS_PAUSE_IF_WINDOW_FOCUS_LOST:
          g_settings.pause_nonactive = !g_settings.pause_nonactive;
          break;
+      case RGUI_SETTINGS_WINDOW_COMPOSITING_ENABLE:
+         g_settings.video.disable_composition = !g_settings.video.disable_composition;
+
+         if (!g_settings.video.disable_composition)
+         {
+            /* TODO/FIXME - implement toggling at runtime */
+         }
+         break;
       default:
          break;
    }
@@ -2032,6 +2040,9 @@ void menu_set_settings_label(char *type_str, size_t type_str_size, unsigned *w, 
          break;
       case RGUI_SETTINGS_PAUSE_IF_WINDOW_FOCUS_LOST:
          strlcpy(type_str, g_settings.pause_nonactive ? "ON" : "OFF", type_str_size);
+         break;
+      case RGUI_SETTINGS_WINDOW_COMPOSITING_ENABLE:
+         strlcpy(type_str, g_settings.video.disable_composition ? "OFF" : "ON", type_str_size);
          break;
       default:
          *type_str = '\0';
