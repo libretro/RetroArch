@@ -290,6 +290,7 @@ void config_set_defaults(void)
    g_settings.audio.volume = audio_volume;
    g_extern.audio_data.volume_db   = g_settings.audio.volume;
    g_extern.audio_data.volume_gain = db_to_gain(g_settings.audio.volume);
+   strlcpy(g_settings.audio.resampler, audio_resampler, sizeof(g_settings.audio.resampler));
 
    g_settings.rewind_enable = rewind_enable;
    g_settings.rewind_buffer_size = rewind_buffer_size;
@@ -892,6 +893,7 @@ bool config_load_file(const char *path, bool set_defaults)
    CONFIG_GET_BOOL(audio.rate_control, "audio_rate_control");
    CONFIG_GET_FLOAT(audio.rate_control_delta, "audio_rate_control_delta");
    CONFIG_GET_FLOAT(audio.volume, "audio_volume");
+   CONFIG_GET_STRING(audio.resampler, "audio_resampler");
    g_extern.audio_data.volume_db   = g_settings.audio.volume;
    g_extern.audio_data.volume_gain = db_to_gain(g_settings.audio.volume);
 
@@ -1271,6 +1273,7 @@ bool config_save_file(const char *path)
    config_set_int(conf, "audio_out_rate", g_settings.audio.out_rate);
 
    config_set_path(conf, "system_directory", *g_settings.system_directory ? g_settings.system_directory : "default");
+   config_set_string(conf, "audio_resampler", g_settings.audio.resampler);
    config_set_path(conf, "savefile_directory", *g_extern.savefile_dir ? g_extern.savefile_dir : "default");
    config_set_path(conf, "savestate_directory", *g_extern.savestate_dir ? g_extern.savestate_dir : "default");
    config_set_path(conf, "video_shader_dir", *g_settings.video.shader_dir ? g_settings.video.shader_dir : "default");

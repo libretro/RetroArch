@@ -442,6 +442,9 @@ static const int out_latency = 64;
 // Will sync audio. (recommended) 
 static const bool audio_sync = true;
 
+// Default resampler
+static const char *audio_resampler = "sinc";
+
 // Experimental rate control
 #if defined(GEKKO) || !defined(RARCH_CONSOLE)
 static const bool rate_control = true;
