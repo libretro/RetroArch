@@ -79,8 +79,8 @@ void find_resampler_driver(void)
    else
    {
       unsigned d;
-      RARCH_ERR("Couldn't find any OSK driver named \"%s\"\n", g_extern.audio_data.resampler->ident);
-      RARCH_LOG_OUTPUT("Available OSK drivers are:\n");
+      RARCH_ERR("Couldn't find any resampler driver named \"%s\"\n", g_extern.audio_data.resampler->ident);
+      RARCH_LOG_OUTPUT("Available resampler drivers are:\n");
       for (d = 0; backends[d]; d++)
          RARCH_LOG_OUTPUT("\t%s\n", backends[d]->ident);
 
