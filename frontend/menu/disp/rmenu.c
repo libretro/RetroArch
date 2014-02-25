@@ -112,6 +112,7 @@ static void rmenu_render_messagebox(void *data, const char *message)
    }
 
    render_normal = false;
+
 }
 
 
@@ -120,19 +121,6 @@ static void rmenu_render(void *data)
    if (!render_normal)
    {
       render_normal = true;
-      return;
-   }
-
-   if (!menu_texture && !menu_texture_inited)
-   {
-      if (g_extern.video_active && driver.video_data)
-      {
-         menu_texture = (struct texture_image*)calloc(1, sizeof(*menu_texture));
-         texture_image_load(g_extern.menu_texture_path, menu_texture);
-         rgui->width = menu_texture->width;
-         rgui->height = menu_texture->height;
-         rmenu_set_texture(rgui, true);
-      }
       return;
    }
   
@@ -409,23 +397,39 @@ void rmenu_set_texture(void *data, bool enable)
    }
 }
 
+static void rmenu_init_assets(void *data)
+{
+   rgui_handle_t *rgui = (rgui_handle_t*)data;
+
+   if (!rgui)
+      return;
+
+   menu_texture = (struct texture_image*)calloc(1, sizeof(*menu_texture));
+   texture_image_load(g_extern.menu_texture_path, menu_texture);
+   rgui->width = menu_texture->width;
+   rgui->height = menu_texture->height;
+
+   rmenu_set_texture(rgui, true);
+}
+
 static void *rmenu_init(void)
 {
    rgui_handle_t *rgui = (rgui_handle_t*)calloc(1, sizeof(*rgui));
 
-   if (!rgui)
-      return NULL;
+   rmenu_init_assets(rgui);
 
    return rgui;
 }
 
+static void rmenu_free_assets(void *data)
+{
+   texture_image_free(menu_texture);
+   menu_texture_inited = false;
+}
+
 static void rmenu_free(void *data)
 {
-   if (menu_texture)
-   {
-      texture_image_free(menu_texture);
-      menu_texture_inited = false;
-   }
+   rmenu_free_assets(data);
 }
 
 int rgui_input_postprocess(void *data, uint64_t old_state)
@@ -445,13 +449,15 @@ int rgui_input_postprocess(void *data, uint64_t old_state)
    return ret;
 }
 
+
 const menu_ctx_driver_t menu_ctx_rmenu = {
    rmenu_set_texture,
    rmenu_render_messagebox,
    rmenu_render,
    rmenu_init,
    rmenu_free,
-   NULL,
+   rmenu_init_assets,
+   rmenu_free_assets,
    NULL,
    NULL,
    "rmenu",
