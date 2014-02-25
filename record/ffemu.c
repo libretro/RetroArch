@@ -284,7 +284,7 @@ static bool ffemu_init_audio(ffemu_t *handle)
 
       rarch_resampler_realloc(&audio->resampler_data,
             &audio->resampler,
-            *g_settings.audio.resampler ? g_settings.audio.resampler : NULL,
+            g_settings.audio.resampler,
             audio->ratio);
    }
    else

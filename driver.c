@@ -1106,11 +1106,10 @@ void init_audio(void)
       g_extern.audio_data.src_ratio =
       (double)g_settings.audio.out_rate / g_settings.audio.in_rate;
 
-   const char *resampler = *g_settings.audio.resampler ? g_settings.audio.resampler : NULL;
    if (!rarch_resampler_realloc(&g_extern.audio_data.resampler_data, &g_extern.audio_data.resampler,
-         resampler, g_extern.audio_data.orig_src_ratio))
+         g_settings.audio.resampler, g_extern.audio_data.orig_src_ratio))
    {
-      RARCH_ERR("Failed to initialize resampler \"%s\".\n", resampler ? resampler : "(default)");
+      RARCH_ERR("Failed to initialize resampler \"%s\".\n", g_settings.audio.resampler);
       g_extern.audio_active = false;
    }
 
