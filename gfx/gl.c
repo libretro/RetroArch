@@ -628,7 +628,7 @@ void gl_init_fbo(void *data, unsigned width, unsigned height)
    gl->fbo_inited = true;
 }
 
-#ifndef HAVE_RGL
+#ifndef HAVE_GCMGL
 static void gl_deinit_hw_render(gl_t *gl)
 {
    if (gl->hw_render_fbo_init)
@@ -1647,7 +1647,7 @@ static void gl_free(void *data)
 
 #ifdef HAVE_FBO
    gl_deinit_fbo(gl);
-#ifndef HAVE_RGL
+#ifndef HAVE_GCMGL
    gl_deinit_hw_render(gl);
 #endif
 #endif
@@ -2190,7 +2190,7 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    // Set up render to texture.
    gl_init_fbo(gl, gl->tex_w, gl->tex_h);
 
-#ifndef HAVE_RGL
+#ifndef HAVE_GCMGL
    if (gl->hw_render_use && !gl_init_hw_render(gl, gl->tex_w, gl->tex_h))
    {
       context_destroy_func();
@@ -2335,7 +2335,7 @@ static bool gl_set_shader(void *data, enum rarch_shader_type type, const char *p
       unsigned textures = gl->shader->get_prev_textures() + 1;
       if (textures > gl->textures) // Have to reinit a bit.
       {
-#if defined(HAVE_FBO) && !defined(HAVE_RGL)
+#if defined(HAVE_FBO) && !defined(HAVE_GCMGL)
          gl_deinit_hw_render(gl);
 #endif
 
@@ -2350,7 +2350,7 @@ static bool gl_set_shader(void *data, enum rarch_shader_type type, const char *p
          gl_init_textures(gl, &gl->video_info);
          gl_init_textures_data(gl);
 
-#if defined(HAVE_FBO) && !defined(HAVE_RGL)
+#if defined(HAVE_FBO) && !defined(HAVE_GCMGL)
          if (gl->hw_render_use)
             gl_init_hw_render(gl, gl->tex_w, gl->tex_h);
 #endif

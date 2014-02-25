@@ -313,7 +313,7 @@ typedef struct gl
 #define NO_GL_READ_PIXELS
 
 // Performance hacks
-#ifdef HAVE_RGL
+#ifdef HAVE_GCMGL
 extern GLvoid* glMapBufferTextureReferenceRA( GLenum target, GLenum access );
 extern GLboolean glUnmapBufferTextureReferenceRA( GLenum target );
 extern void glBufferSubDataTextureReferenceRA( GLenum target, GLintptr offset, GLsizeiptr size, const GLvoid *data );

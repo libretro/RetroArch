@@ -12,7 +12,7 @@ RMENU_IMG_DIR  := media/rmenu
 DOWNLOAD_SHADERS	= 1
 STRIPPING_ENABLE	= 0
 DEBUG			      = 0
-HAVE_RGL		      = 1
+HAVE_GCMGL	      = 1
 HAVE_LOGGER		   = 0
 HAVE_FREETYPE	   = 0
 HAVE_RLAUNCH      = 0
@@ -75,8 +75,8 @@ endif
 
 DEFINES += -DHAVE_RMENU -DHAVE_MENU -DRARCH_INTERNAL
 
-ifeq ($(HAVE_RGL), 1)
-DEFINES			+= -DHAVE_RGL
+ifeq ($(HAVE_GCMGL), 1)
+DEFINES			+= -DHAVE_GCMGL
 GL_LIBS			:= -L. -lrgl_ps3
 else
 GL_LIBS			:= -L$(CELL_SDK)/target/ppu/lib/PSGL/RSX/ultra-opt -lPSGL -lPSGLcgc
