@@ -1880,9 +1880,6 @@ void menu_populate_entries(void *data, unsigned menu_type)
 #endif
       case RGUI_SETTINGS_VIDEO_OPTIONS:
          file_list_clear(rgui->selection_buf);
-#ifdef HAVE_SHADER_MANAGER
-         file_list_push(rgui->selection_buf, "Shader Options", RGUI_SETTINGS_SHADER_OPTIONS, 0);
-#endif
 #if defined(GEKKO) || defined(__CELLOS_LV2__)
          file_list_push(rgui->selection_buf, "Screen Resolution", RGUI_SETTINGS_VIDEO_RESOLUTION, 0);
 #endif
@@ -1940,6 +1937,9 @@ void menu_populate_entries(void *data, unsigned menu_type)
       case RGUI_SETTINGS_OPTIONS:
          file_list_clear(rgui->selection_buf);
          file_list_push(rgui->selection_buf, "Video Options", RGUI_SETTINGS_VIDEO_OPTIONS, 0);
+#ifdef HAVE_SHADER_MANAGER
+         file_list_push(rgui->selection_buf, "Shader Options", RGUI_SETTINGS_SHADER_OPTIONS, 0);
+#endif
          file_list_push(rgui->selection_buf, "Audio Options", RGUI_SETTINGS_AUDIO_OPTIONS, 0);
          file_list_push(rgui->selection_buf, "Input Options", RGUI_SETTINGS_INPUT_OPTIONS, 0);
          file_list_push(rgui->selection_buf, "Path Options", RGUI_SETTINGS_PATH_OPTIONS, 0);
