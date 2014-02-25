@@ -36,11 +36,12 @@ static int find_resampler_driver_index(const char *driver)
    return -1;
 }
 
-static void find_resampler_driver(void)
+// Resampler is used by multiple modules so avoid clobbering g_extern.audio_data.resampler here.
+static const rarch_resampler_t *find_resampler_driver(void)
 {
    int i = find_resampler_driver_index(g_settings.audio.resampler);
    if (i >= 0)
-      g_extern.audio_data.resampler = backends[i];
+      return backends[i];
    else
    {
       unsigned d;
@@ -48,8 +49,7 @@ static void find_resampler_driver(void)
       RARCH_LOG_OUTPUT("Available resampler drivers are:\n");
       for (d = 0; backends[d]; d++)
          RARCH_LOG_OUTPUT("\t%s\n", backends[d]->ident);
-
-      rarch_fail(1, "find_resampler_driver()");
+      return NULL;
    }
 }
 
@@ -79,8 +79,11 @@ bool rarch_resampler_realloc(void **re, const rarch_resampler_t **backend, const
    *re      = NULL;
    *backend = NULL;
 
-   find_resampler_driver();
-   *re = g_extern.audio_data.resampler->init(bw_ratio);
+   *backend = find_resampler_driver();
+   if (!*backend)
+      return false;
+
+   *re = (*backend)->init(bw_ratio);
 
    if (!*re)
    {
