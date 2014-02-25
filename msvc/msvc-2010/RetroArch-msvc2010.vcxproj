@@ -273,7 +273,7 @@
     </ClCompile>
     <ClCompile Include="..\..\gfx\gl.c">
     </ClCompile>
-    <ClCompile Include="..\..\gfx\image.c">
+    <ClCompile Include="..\..\gfx\image\image.c">
     </ClCompile>
     <ClCompile Include="..\..\gfx\math\matrix.c">
     </ClCompile>
