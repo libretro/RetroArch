@@ -1660,6 +1660,9 @@ int menu_set_settings(void *data, unsigned setting, unsigned action)
                break;
          }
          break;
+      case RGUI_SETTINGS_PAUSE_IF_WINDOW_FOCUS_LOST:
+         g_settings.pause_nonactive = !g_settings.pause_nonactive;
+         break;
       default:
          break;
    }
@@ -2026,6 +2029,9 @@ void menu_set_settings_label(char *type_str, size_t type_str_size, unsigned *w, 
 #endif
       case RGUI_SETTINGS_CUSTOM_BGM_CONTROL_ENABLE:
          strlcpy(type_str, (g_extern.lifecycle_state & (1ULL << MODE_AUDIO_CUSTOM_BGM_ENABLE)) ? "ON" : "OFF", type_str_size);
+         break;
+      case RGUI_SETTINGS_PAUSE_IF_WINDOW_FOCUS_LOST:
+         strlcpy(type_str, g_settings.pause_nonactive ? "ON" : "OFF", type_str_size);
          break;
       default:
          *type_str = '\0';
