@@ -165,6 +165,16 @@ static void rmenu_render(void *data)
 #endif
    else if (menu_type == RGUI_SETTINGS_AUDIO_OPTIONS)
       strlcpy(title, "AUDIO OPTIONS", sizeof(title));
+   else if (menu_type == RGUI_SETTINGS_OVERLAY_OPTIONS)
+      strlcpy(title, "OVERLAY OPTIONS", sizeof(title));
+   else if (menu_type == RGUI_SETTINGS_GENERAL_OPTIONS)
+      strlcpy(title, "GENERAL OPTIONS", sizeof(title));
+   else if (menu_type == RGUI_SETTINGS_PATH_OPTIONS)
+      strlcpy(title, "PATH OPTIONS", sizeof(title));
+   else if (menu_type == RGUI_SETTINGS_OPTIONS)
+      strlcpy(title, "SETTINGS", sizeof(title));
+   else if (menu_type == RGUI_SETTINGS_INPUT_OPTIONS)
+      strlcpy(title, "INPUT OPTIONS", sizeof(title));
    else if (menu_type == RGUI_SETTINGS_DISK_OPTIONS)
       strlcpy(title, "DISK OPTIONS", sizeof(title));
    else if (menu_type == RGUI_SETTINGS_CORE_OPTIONS)
