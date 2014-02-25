@@ -310,6 +310,8 @@ static void rgui_render(void *data)
    else if (menu_type == RGUI_SETTINGS_SHADER_OPTIONS)
       strlcpy(title, "SHADER OPTIONS", sizeof(title));
 #endif
+   else if (menu_type == RGUI_SETTINGS_GENERAL_OPTIONS)
+      strlcpy(title, "GENERAL OPTIONS", sizeof(title));
    else if (menu_type == RGUI_SETTINGS_AUDIO_OPTIONS)
       strlcpy(title, "AUDIO OPTIONS", sizeof(title));
    else if (menu_type == RGUI_SETTINGS_DISK_OPTIONS)
