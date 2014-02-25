@@ -296,6 +296,14 @@ static void rgui_render(void *data)
       snprintf(title, sizeof(title), "DISK APPEND %s", dir);
    else if (menu_type == RGUI_SETTINGS_VIDEO_OPTIONS)
       strlcpy(title, "VIDEO OPTIONS", sizeof(title));
+   else if (menu_type == RGUI_SETTINGS_INPUT_OPTIONS)
+      strlcpy(title, "INPUT OPTIONS", sizeof(title));
+   else if (menu_type == RGUI_SETTINGS_OVERLAY_OPTIONS)
+      strlcpy(title, "OVERLAY OPTIONS", sizeof(title));
+   else if (menu_type == RGUI_SETTINGS_PATH_OPTIONS)
+      strlcpy(title, "PATH OPTIONS", sizeof(title));
+   else if (menu_type == RGUI_SETTINGS_OPTIONS)
+      strlcpy(title, "SETTINGS", sizeof(title));
    else if (menu_type == RGUI_SETTINGS_DRIVERS)
       strlcpy(title, "DRIVER OPTIONS", sizeof(title));
 #ifdef HAVE_SHADER_MANAGER
