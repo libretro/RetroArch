@@ -1661,14 +1661,21 @@ int menu_set_settings(void *data, unsigned setting, unsigned action)
          }
          break;
       case RGUI_SETTINGS_PAUSE_IF_WINDOW_FOCUS_LOST:
-         g_settings.pause_nonactive = !g_settings.pause_nonactive;
+         if (action == RGUI_ACTION_OK || action == RGUI_ACTION_LEFT || action == RGUI_ACTION_RIGHT)
+            g_settings.pause_nonactive = !g_settings.pause_nonactive;
+         else if (action == RGUI_ACTION_START)
+            g_settings.pause_nonactive = false;
          break;
       case RGUI_SETTINGS_WINDOW_COMPOSITING_ENABLE:
-         g_settings.video.disable_composition = !g_settings.video.disable_composition;
-
-         if (!g_settings.video.disable_composition)
+         if (action == RGUI_ACTION_OK || action == RGUI_ACTION_LEFT || action == RGUI_ACTION_RIGHT)
          {
-            /* TODO/FIXME - implement toggling at runtime */
+            g_settings.video.disable_composition = !g_settings.video.disable_composition;
+            rarch_set_fullscreen(g_settings.video.fullscreen);
+         }
+         else if (action == RGUI_ACTION_START)
+         {
+            g_settings.video.disable_composition = false;
+            rarch_set_fullscreen(g_settings.video.fullscreen);
          }
          break;
       default:
