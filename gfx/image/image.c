@@ -14,17 +14,17 @@
  */
 
 #ifdef HAVE_CONFIG_H
-#include "../config.h"
+#include "../../config.h"
 #endif
 
 #include "image.h"
-#include "../file.h"
+#include "../../file.h"
 
 #include <stdlib.h>
 #include <string.h>
 #include <stddef.h>
-#include "../general.h"
-#include "rpng/rpng.h"
+#include "../../general.h"
+#include "../rpng/rpng.h"
 
 #ifdef HAVE_SDL_IMAGE
 

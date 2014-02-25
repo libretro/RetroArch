@@ -21,7 +21,7 @@
 #ifdef _XBOX1
 #include <xfont.h>
 #endif
-#include "../gfx/image.h"
+#include "../gfx/image/image.h"
 #include "../gfx/fonts/d3d_font.h"
 
 #include "../gfx/gfx_context.h"

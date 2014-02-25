@@ -14,8 +14,8 @@
  * If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../gfx/image.h"
-#include "xdk_d3d.h"
+#include "image.h"
+#include "../../xdk/xdk_d3d.h"
 
 bool texture_image_load(const char *path, struct texture_image *out_img)
 {
@@ -62,4 +62,3 @@ void texture_image_free(struct texture_image *img)
       img->pixels->Release();
    memset(img, 0, sizeof(*img));
 }
-

@@ -37,7 +37,6 @@
 #endif
 
 #include "../gl_common.h"
-#include "../image.h"
 
 #include "../gfx_context.h"
 #include "../fonts/gl_font.h"

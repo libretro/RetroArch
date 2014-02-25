@@ -24,7 +24,7 @@
 #include <stdint.h>
 #include "msvc/msvc_compat.h"
 #include "gfx/scaler/scaler.h"
-#include "gfx/image.h"
+#include "gfx/image/image.h"
 #include "input/overlay.h"
 
 #ifdef HAVE_CONFIG_H

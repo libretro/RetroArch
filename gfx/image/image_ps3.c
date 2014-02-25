@@ -15,17 +15,17 @@
  */
 
 #ifdef HAVE_CONFIG_H
-#include "../config.h"
+#include "../../config.h"
 #endif
 
-#include "../gfx/image.h"
+#include "image.h"
 
 #include <stdlib.h>
 #include <string.h>
 #include <stddef.h>
-#include "../general.h"
+#include "../../general.h"
 
-#include "sdk_defines.h"
+#include "../../ps3/sdk_defines.h"
 
 #ifdef __PSL1GHT__
 #include <ppu-asm.h>

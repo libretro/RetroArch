@@ -17,7 +17,7 @@
 #include "../general.h"
 #include "../driver.h"
 #include "../libretro.h"
-#include "../gfx/image.h"
+#include "../gfx/image/image.h"
 #include "../conf/config_file.h"
 #include "../compat/posix_string.h"
 #include "input_common.h"

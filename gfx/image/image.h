@@ -17,11 +17,11 @@
 #define __RARCH_IMAGE_H
 
 #include <stdint.h>
-#include "../boolean.h"
+#include "../../boolean.h"
 
 #ifdef _XBOX1
 #include <xtl.h>
-#include "../xdk/xdk_defines.h"
+#include "../../xdk/xdk_defines.h"
 #endif
 
 struct texture_image

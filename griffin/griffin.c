@@ -159,11 +159,11 @@ VIDEO IMAGE
 ============================================================ */
 
 #if defined(__CELLOS_LV2__)
-#include "../ps3/image.c"
+#include "../gfx/image/image_ps3.c"
 #elif defined(_XBOX1)
-#include "../xdk/image.c"
+#include "../gfx/image/image_xdk1.c"
 #else
-#include "../gfx/image.c"
+#include "../gfx/image/image.c"
 #endif
 
 #if defined(WANT_RPNG) || defined(RARCH_MOBILE)

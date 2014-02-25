@@ -35,7 +35,7 @@ OBJ = frontend/platform/platform_emscripten.o \
 		gfx/shader_parse.o \
 		gfx/fonts/fonts.o \
 		gfx/fonts/bitmapfont.o \
-		gfx/image.o \
+		gfx/image/image.o \
 		audio/resampler.o \
 		audio/sinc.o \
 		audio/null.o \

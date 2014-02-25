@@ -22,7 +22,7 @@
 #include "../driver.h"
 #include "../performance.h"
 #include "scaler/scaler.h"
-#include "image.h"
+#include "image/image.h"
 #include "../file.h"
 
 #include <stdint.h>

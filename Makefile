@@ -33,7 +33,7 @@ OBJ = frontend/frontend.o \
 		gfx/scaler/pixconv.o \
 		gfx/scaler/scaler_int.o \
 		gfx/scaler/filter.o \
-		gfx/image.o \
+		gfx/image/image.o \
 		gfx/fonts/fonts.o \
 		gfx/fonts/bitmapfont.o \
 		audio/resampler.o \
