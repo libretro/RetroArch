@@ -1065,6 +1065,12 @@ int menu_set_settings(void *data, unsigned setting, unsigned action)
          else if (action == RGUI_ACTION_RIGHT)
             find_next_audio_driver();
          break;
+      case RGUI_SETTINGS_DRIVER_AUDIO_RESAMPLER:
+         if (action == RGUI_ACTION_LEFT)
+            find_prev_resampler_driver();
+         else if (action == RGUI_ACTION_RIGHT)
+            find_next_resampler_driver();
+         break;
       case RGUI_SETTINGS_DRIVER_INPUT:
          if (action == RGUI_ACTION_LEFT)
             find_prev_input_driver();
@@ -1713,6 +1719,9 @@ void menu_set_settings_label(char *type_str, size_t type_str_size, unsigned *w, 
          break;
       case RGUI_SETTINGS_DRIVER_AUDIO:
          strlcpy(type_str, g_settings.audio.driver, type_str_size);
+         break;
+      case RGUI_SETTINGS_DRIVER_AUDIO_RESAMPLER:
+         strlcpy(type_str, g_settings.audio.resampler, type_str_size);
          break;
       case RGUI_SETTINGS_DRIVER_INPUT:
          strlcpy(type_str, g_settings.input.driver, type_str_size);

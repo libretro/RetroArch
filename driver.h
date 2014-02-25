@@ -583,12 +583,14 @@ void uninit_video_input(void);
 void init_audio(void);
 void uninit_audio(void);
 
+void find_prev_resampler_driver(void);
 void find_prev_video_driver(void);
 void find_prev_audio_driver(void);
 void find_prev_input_driver(void);
 void find_next_video_driver(void);
 void find_next_audio_driver(void);
 void find_next_input_driver(void);
+void find_next_resampler_driver(void);
 
 #ifdef HAVE_CAMERA
 void init_camera(void);

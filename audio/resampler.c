@@ -61,3 +61,47 @@ bool rarch_resampler_realloc(void **re, const rarch_resampler_t **backend, const
 
    return true;
 }
+
+static int find_resampler_driver_index(const char *driver)
+{
+   unsigned i;
+   for (i = 0; backends[i]; i++)
+      if (strcasecmp(driver, backends[i]->ident) == 0)
+         return i;
+   return -1;
+}
+
+void find_resampler_driver(void)
+{
+   int i = find_resampler_driver_index(g_settings.audio.resampler);
+   if (i >= 0)
+      g_extern.audio_data.resampler = backends[i];
+   else
+   {
+      unsigned d;
+      RARCH_ERR("Couldn't find any OSK driver named \"%s\"\n", g_extern.audio_data.resampler->ident);
+      RARCH_LOG_OUTPUT("Available OSK drivers are:\n");
+      for (d = 0; backends[d]; d++)
+         RARCH_LOG_OUTPUT("\t%s\n", backends[d]->ident);
+
+      rarch_fail(1, "find_resampler_driver()");
+   }
+}
+
+void find_prev_resampler_driver(void)
+{
+   int i = find_resampler_driver_index(g_settings.audio.resampler);
+   if (i > 0)
+      strlcpy(g_settings.audio.resampler, backends[i - 1]->ident, sizeof(g_settings.audio.resampler));
+   else
+      RARCH_WARN("Couldn't find any previous resampler driver (current one: \"%s\").\n", g_extern.audio_data.resampler->ident);
+}
+
+void find_next_resampler_driver(void)
+{
+   int i = find_resampler_driver_index(g_settings.audio.resampler);
+   if (i >= 0 && backends[i + 1])
+      strlcpy(g_settings.audio.resampler, backends[i + 1]->ident, sizeof(g_settings.audio.resampler));
+   else
+      RARCH_WARN("Couldn't find any next resampler driver (current one: \"%s\").\n", g_extern.audio_data.resampler->ident);
+}
