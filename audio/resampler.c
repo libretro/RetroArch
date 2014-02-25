@@ -24,43 +24,8 @@
 
 static const rarch_resampler_t *backends[] = {
    &sinc_resampler,
+   NULL,
 };
-
-bool rarch_resampler_realloc(void **re, const rarch_resampler_t **backend, const char *ident, double bw_ratio)
-{
-   if (*re && *backend)
-      (*backend)->free(*re);
-
-   *re      = NULL;
-   *backend = NULL;
-
-   if (ident)
-   {
-      for (unsigned i = 0; i < ARRAY_SIZE(backends); i++)
-      {
-         if (strcmp(backends[i]->ident, ident) == 0)
-         {
-            *backend = backends[i];
-            break;
-         }
-      }
-   }
-   else
-      *backend = backends[0];
-
-   if (!*backend)
-      return false;
-
-   *re = (*backend)->init(bw_ratio);
-
-   if (!*re)
-   {
-      *backend = NULL;
-      return false;
-   }
-
-   return true;
-}
 
 static int find_resampler_driver_index(const char *driver)
 {
@@ -71,7 +36,7 @@ static int find_resampler_driver_index(const char *driver)
    return -1;
 }
 
-void find_resampler_driver(void)
+static void find_resampler_driver(void)
 {
    int i = find_resampler_driver_index(g_settings.audio.resampler);
    if (i >= 0)
@@ -105,3 +70,24 @@ void find_next_resampler_driver(void)
    else
       RARCH_WARN("Couldn't find any next resampler driver (current one: \"%s\").\n", g_extern.audio_data.resampler->ident);
 }
+
+bool rarch_resampler_realloc(void **re, const rarch_resampler_t **backend, const char *ident, double bw_ratio)
+{
+   if (*re && *backend)
+      (*backend)->free(*re);
+
+   *re      = NULL;
+   *backend = NULL;
+
+   find_resampler_driver();
+   *re = g_extern.audio_data.resampler->init(bw_ratio);
+
+   if (!*re)
+   {
+      *backend = NULL;
+      return false;
+   }
+
+   return true;
+}
+
