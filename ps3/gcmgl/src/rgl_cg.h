@@ -13,10 +13,10 @@
 #include <Cg/CgProgramGroup.h>
 #include <Cg/cgc.h>
 
-#include "../include/export/RGL/rgl.h"
-#include "../include/RGL/private.h"
-#include "../include/RGL/Types.h"
-#include "../include/RGL/Utils.h"
+#include "../include/export/PSGL/psgl.h"
+#include "../include/PSGL/private.h"
+#include "../include/PSGL/Types.h"
+#include "../include/PSGL/Utils.h"
 #include "libelf/readelf.h"
 
 #include "cg/cgbtypes.h"

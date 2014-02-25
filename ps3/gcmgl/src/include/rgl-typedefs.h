@@ -1,8 +1,8 @@
 #ifndef _RGL_TYPEDEFS_H
 #define _RGL_TYPEDEFS_H
 
-#include "../include/export/RGL/rgl.h"
-#include "../include/RGL/Types.h"
+#include "../include/export/PSGL/psgl.h"
+#include "../include/PSGL/Types.h"
 
 typedef struct rglGcmRenderTargetEx rglGcmRenderTargetEx;
 

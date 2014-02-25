@@ -1,7 +1,7 @@
 #ifndef _RGL_PRIVATE_H
 #define _RGL_PRIVATE_H
 
-#include "../export/RGL/rgl.h"
+#include "../export/PSGL/psgl.h"
 #include "Types.h"
 #include "Utils.h"
 

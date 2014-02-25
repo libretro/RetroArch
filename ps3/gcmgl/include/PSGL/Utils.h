@@ -2,7 +2,7 @@
 #define _RGLUTILS_H_
 
 #include "Types.h"
-#include "../export/RGL/export.h"
+#include "../export/PSGL/export.h"
 
 #ifdef __cplusplus
 extern "C" {

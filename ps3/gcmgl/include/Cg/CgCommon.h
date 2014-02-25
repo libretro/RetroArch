@@ -3,8 +3,8 @@
 
 #include <Cg/cg.h>
 
-#include "../export/RGL/rgl.h"
-#include "../RGL/private.h"
+#include "../export/PSGL/psgl.h"
+#include "../PSGL/private.h"
 
 #include <string>
 

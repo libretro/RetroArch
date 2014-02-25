@@ -4,7 +4,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "../export/RGL/rgl.h"
+#include "../export/PSGL/psgl.h"
 #include "Types.h"
 #include "Base.h"
 

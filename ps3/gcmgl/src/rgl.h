@@ -18,11 +18,11 @@
 #ifndef _RGL_H
 #define _RGL_H
 
-#include "../include/export/RGL/rgl.h"
-#include "../include/RGL/Types.h"
-#include "../include/RGL/TypeUtils.h"
-#include "../include/RGL/private.h"
-#include "../include/RGL/Utils.h"
+#include "../include/export/PSGL/psgl.h"
+#include "../include/PSGL/Types.h"
+#include "../include/PSGL/TypeUtils.h"
+#include "../include/PSGL/private.h"
+#include "../include/PSGL/Utils.h"
 #include <string.h>
 #include <math.h>
 #include <limits.h>
