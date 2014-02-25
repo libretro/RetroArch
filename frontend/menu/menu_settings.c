@@ -80,6 +80,7 @@ unsigned menu_type_is(unsigned type)
       type == RGUI_SETTINGS_AUDIO_OPTIONS ||
       type == RGUI_SETTINGS_DISK_OPTIONS ||
       type == RGUI_SETTINGS_PATH_OPTIONS ||
+      type == RGUI_SETTINGS_OVERLAY_OPTIONS ||
       type == RGUI_SETTINGS_OPTIONS ||
       type == RGUI_SETTINGS_DRIVERS ||
       (type == RGUI_SETTINGS_INPUT_OPTIONS);
@@ -1904,6 +1905,7 @@ void menu_set_settings_label(char *type_str, size_t type_str_size, unsigned *w, 
       case RGUI_SETTINGS_DISK_APPEND:
       case RGUI_SETTINGS_INPUT_OPTIONS:
       case RGUI_SETTINGS_PATH_OPTIONS:
+      case RGUI_SETTINGS_OVERLAY_OPTIONS:
       case RGUI_SETTINGS_OPTIONS:
       case RGUI_SETTINGS_DRIVERS:
       case RGUI_SETTINGS_CUSTOM_BIND_ALL:

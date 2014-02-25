@@ -943,6 +943,7 @@ static int menu_settings_iterate(void *data, unsigned action)
       if (
                menu_type == RGUI_SETTINGS_INPUT_OPTIONS
             || menu_type == RGUI_SETTINGS_PATH_OPTIONS
+            || menu_type == RGUI_SETTINGS_OVERLAY_OPTIONS
             || menu_type == RGUI_SETTINGS_OPTIONS
             || menu_type == RGUI_SETTINGS_DRIVERS
             || menu_type == RGUI_SETTINGS_CORE_OPTIONS
@@ -1230,7 +1231,7 @@ static int menu_iterate_func(void *data, unsigned action)
                if (!driver.overlay)
                   RARCH_ERR("Failed to load overlay.\n");
 
-               menu_flush_stack_type(rgui, RGUI_SETTINGS_INPUT_OPTIONS);
+               menu_flush_stack_type(rgui, RGUI_SETTINGS_OPTIONS);
             }
 #endif
             else if (menu_type == RGUI_SETTINGS_DISK_APPEND)
@@ -1942,6 +1943,9 @@ void menu_populate_entries(void *data, unsigned menu_type)
 #endif
          file_list_push(rgui->selection_buf, "Audio Options", RGUI_SETTINGS_AUDIO_OPTIONS, 0);
          file_list_push(rgui->selection_buf, "Input Options", RGUI_SETTINGS_INPUT_OPTIONS, 0);
+#ifdef HAVE_OVERLAY
+         file_list_push(rgui->selection_buf, "Overlay Options", RGUI_SETTINGS_OVERLAY_OPTIONS, 0);
+#endif
          file_list_push(rgui->selection_buf, "Path Options", RGUI_SETTINGS_PATH_OPTIONS, 0);
          if (g_extern.main_is_init && !g_extern.libretro_dummy)
          {
@@ -1969,6 +1973,12 @@ void menu_populate_entries(void *data, unsigned menu_type)
          file_list_push(rgui->selection_buf, "Disk Index", RGUI_SETTINGS_DISK_INDEX, 0);
          file_list_push(rgui->selection_buf, "Disk Image Append", RGUI_SETTINGS_DISK_APPEND, 0);
          break;
+      case RGUI_SETTINGS_OVERLAY_OPTIONS:
+         file_list_clear(rgui->selection_buf);
+         file_list_push(rgui->selection_buf, "Overlay Preset", RGUI_SETTINGS_OVERLAY_PRESET, 0);
+         file_list_push(rgui->selection_buf, "Overlay Opacity", RGUI_SETTINGS_OVERLAY_OPACITY, 0);
+         file_list_push(rgui->selection_buf, "Overlay Scale", RGUI_SETTINGS_OVERLAY_SCALE, 0);
+         break;
       case RGUI_SETTINGS_PATH_OPTIONS:
          file_list_clear(rgui->selection_buf);
          file_list_push(rgui->selection_buf, "Content Directory", RGUI_BROWSER_DIR_PATH, 0);
@@ -1992,11 +2002,6 @@ void menu_populate_entries(void *data, unsigned menu_type)
          break;
       case RGUI_SETTINGS_INPUT_OPTIONS:
          file_list_clear(rgui->selection_buf);
-#ifdef HAVE_OVERLAY
-         file_list_push(rgui->selection_buf, "Overlay Preset", RGUI_SETTINGS_OVERLAY_PRESET, 0);
-         file_list_push(rgui->selection_buf, "Overlay Opacity", RGUI_SETTINGS_OVERLAY_OPACITY, 0);
-         file_list_push(rgui->selection_buf, "Overlay Scale", RGUI_SETTINGS_OVERLAY_SCALE, 0);
-#endif
          file_list_push(rgui->selection_buf, "Player", RGUI_SETTINGS_BIND_PLAYER, 0);
          file_list_push(rgui->selection_buf, "Device", RGUI_SETTINGS_BIND_DEVICE, 0);
          file_list_push(rgui->selection_buf, "Device Type", RGUI_SETTINGS_BIND_DEVICE_TYPE, 0);
