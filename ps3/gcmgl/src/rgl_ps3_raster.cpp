@@ -892,7 +892,7 @@ char *rglPlatformBufferObjectMap (void *data, GLenum access)
          unsigned int offset_bytes = 0;
          // must wait in order to read
          rglGcmSetInvalidateVertexCache(thisContext);
-         rglGcmFifoFinish(ref, offset_bytes);
+         rglGcmFifoFinish(fifo, ref, offset_bytes);
       }
 
       rglBuffer->mapAccess = access;
@@ -1203,39 +1203,6 @@ GLenum rglPlatformFramebufferCheckStatus (void *data)
 // maximum size for drawing data
 #define RGLGCM_MAX_VERTEX_BUFFER_SIZE (2 << 20)
 #define RGLGCM_MAX_INDEX_BUFFER_SIZE (1 << 20)
-
-// Initialize the driver and setup the fixed function pipeline 
-// shader and needed connections between GL state and the shader
-void *rglPlatformRasterInit (void)
-{
-   CellGcmContextData *thisContext = (CellGcmContextData*)gCellGcmCurrentContext;
-   rglGcmFifo *fifo = (rglGcmFifo*)&rglGcmState_i.fifo;
-   GLuint ref;
-   unsigned int offset_bytes = 0;
-
-   rglGcmSetInvalidateVertexCache(thisContext);
-   rglGcmFifoFinish(ref, offset_bytes);
-
-   rglGcmDriver *driver = (rglGcmDriver*)malloc(sizeof(rglGcmDriver));
-   memset(driver, 0, sizeof(rglGcmDriver));
-
-   driver->rt.yInverted = true;
-   driver->invalidateVertexCache = GL_FALSE;
-   driver->flushBufferCount = 0;
-
-   // [YLIN] Make it 16 byte align
-
-   return driver;
-}
-
-// Destroy the driver, and free all its used memory
-void rglPlatformRasterExit (void *data)
-{
-   rglGcmDriver *driver = (rglGcmDriver*)data;
-
-   if (driver)
-      free(driver);
-}
 
 void rglDumpFifo (char *name);
 
@@ -2449,26 +2416,6 @@ GLenum rglPlatformChooseInternalStorage (void *data, GLenum internalFormat )
    return GL_NO_ERROR;
 }
 
-static inline void textureReferences_pushBack(rglTexture *element)
-{
-   RGLcontext*	LContext = (RGLcontext*)_CurrentContext;
-   rglTexture *texture = (rglTexture*)rglGetCurrentTexture( LContext->CurrentImageUnit, GL_TEXTURE_2D );
-   rglBufferObject *bufferObject = (rglBufferObject*)LContext->bufferObjectNameSpace.data[LContext->TextureBuffer];
-   
-   uint32_t newCapacity = bufferObject->textureReferences.count + 1;
-
-   if (newCapacity > bufferObject->textureReferences.capacity)
-   {
-      if ( newCapacity > bufferObject->textureReferences.capacity )
-         newCapacity = ( newCapacity > bufferObject->textureReferences.capacity + bufferObject->textureReferences.increment ) ? newCapacity : ( bufferObject->textureReferences.capacity + bufferObject->textureReferences.increment );
-
-      bufferObject->textureReferences.array = (rglTexture**)realloc((void *)(bufferObject->textureReferences.array), sizeof(rglTexture) * newCapacity);
-      bufferObject->textureReferences.capacity = newCapacity;
-   }
-   new((void *)(bufferObject->textureReferences.array + bufferObject->textureReferences.count))rglTexture((const rglTexture&)element);
-   ++bufferObject->textureReferences.count;
-}
-
 GLAPI void APIENTRY glTextureReferenceSCE( GLenum target, GLuint levels,
       GLuint baseWidth, GLuint baseHeight, GLuint baseDepth, GLenum internalFormat, GLuint pitch, GLintptr offset )
 {
@@ -2543,7 +2490,18 @@ GLAPI void APIENTRY glTextureReferenceSCE( GLenum target, GLuint levels,
    texture->revalidate |= RGL_TEXTURE_REVALIDATE_PARAMETERS;
    rglTextureTouchFBOs( texture );
    
-   textureReferences_pushBack(texture);
+   uint32_t newCapacity = bufferObject->textureReferences.count + 1;
+
+   if (newCapacity > bufferObject->textureReferences.capacity)
+   {
+      if ( newCapacity > bufferObject->textureReferences.capacity )
+         newCapacity = ( newCapacity > bufferObject->textureReferences.capacity + bufferObject->textureReferences.increment ) ? newCapacity : ( bufferObject->textureReferences.capacity + bufferObject->textureReferences.increment );
+
+      bufferObject->textureReferences.array = (rglTexture**)realloc((void *)(bufferObject->textureReferences.array), sizeof(rglTexture) * newCapacity);
+      bufferObject->textureReferences.capacity = newCapacity;
+   }
+   new((void *)(bufferObject->textureReferences.array + bufferObject->textureReferences.count))rglTexture((const rglTexture&)texture);
+   ++bufferObject->textureReferences.count;
 
    texture->referenceBuffer = bufferObject;
    texture->offset = offset;

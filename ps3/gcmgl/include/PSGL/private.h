@@ -131,15 +131,12 @@ extern PSGLdeviceParameters * rglShadowDeviceParameters (void);
 extern GLboolean rglPlatformDeviceInit (void *data);
 extern void		rglPlatformDeviceExit (void);
 extern int		rglPlatformCreateDevice (void *data);
-extern void		rglPlatformDestroyDevice (void *data);
 extern void		rglPlatformSwapBuffers (void *data);
 extern const GLvoid*	rglPlatformGetProcAddress (const char *funcName);
 
 //----------------------------------------
 // Raster/.../PlatformRaster.c
 //----------------------------------------
-void*	rglPlatformRasterInit (void);
-void	rglPlatformRasterExit (void* data);
 void	rglPlatformRasterDestroyResources (void);
 GLboolean rglPlatformNeedsConversion (const rglAttributeState* as, GLuint index);
 void	rglInvalidateAttributes (void);

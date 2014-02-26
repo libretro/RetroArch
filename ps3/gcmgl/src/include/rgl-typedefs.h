@@ -52,7 +52,7 @@ typedef struct
    // double/triple buffering management
    GLuint drawBuffer;	// 0, 1, or 2
    GLuint scanBuffer;	// 0, 1, or 2
-   // resc buffers (maintain pointers for freeing in rglPlatformDestroyDevice)
+   // resc buffers
    GLuint RescColorBuffersId;
    GLuint RescVertexArrayId;
    GLuint RescFragmentShaderId;

@@ -21,7 +21,6 @@
 
 #include <cell/sysmodule.h>
 #include <cell/gcm.h>
-#include <cell/gcm/gcm_method_data.h>
 #include <cell/resc.h>
 
 static GLuint nvFenceCounter = 0;
@@ -890,10 +889,7 @@ static uint8_t gmmSizeToFreeIndex(uint32_t size)
       return 21;
 }
 
-static void gmmAddFree(
-      GmmAllocator *pAllocator,
-      GmmBlock *pBlock
-      )
+static void gmmAddFree(GmmAllocator *pAllocator, GmmBlock *pBlock)
 {
    uint8_t freeIndex = gmmSizeToFreeIndex(pBlock->base.size);
 
@@ -1428,7 +1424,7 @@ GLuint rglGcmFifoPutReference (void *data)
 
    if (( fifo->lastSWReferenceWritten & 0x7fffffff ) == 0 )
    {
-      rglGcmFifoFinish(ref, offset_bytes);
+      rglGcmFifoFinish(fifo, ref, offset_bytes);
    }
 
    return fifo->lastSWReferenceWritten;
@@ -1526,7 +1522,7 @@ GLboolean rglGcmInitFromRM( rglGcmResource *rmResource )
 
    rglGcmFifoInit( &rglGcmSt->fifo, rmResource->dmaControl, rmResource->dmaPushBufferOffset, (uint32_t*)rmResource->dmaPushBuffer, rmResource->dmaPushBufferSize );
 
-   rglGcmFifoFinish(ref, offset_bytes);
+   rglGcmFifoFinish(fifo, ref, offset_bytes);
 
    // Set the GPU to a known state
    // initialize the default OpenGL state
@@ -1571,7 +1567,7 @@ GLboolean rglGcmInitFromRM( rglGcmResource *rmResource )
 
    // wait for setup to complete
    offset_bytes = 0;
-   rglGcmFifoFinish(ref, offset_bytes);
+   rglGcmFifoFinish(fifo, ref, offset_bytes);
 
    return GL_TRUE;
 }
@@ -1678,44 +1674,6 @@ enable: 0,
 };
 
 static int rglInitCompleted = 0;
-
-void rglPsglPlatformInit (void *data)
-{
-   RGLinitOptions *options = (RGLinitOptions*)data;
-
-   if ( !rglInitCompleted )
-   {
-      cellSysmoduleLoadModule( CELL_SYSMODULE_GCM_SYS );
-      cellSysmoduleLoadModule( CELL_SYSMODULE_RESC );
-
-      rglDeviceInit( options );
-      _CurrentContext = NULL;
-      _CurrentDevice = NULL;
-   }
-
-   rglInitCompleted = 1;
-}
-
-void rglPsglPlatformExit(void)
-{
-   RGLcontext* LContext = _CurrentContext;
-   CellGcmContextData *thisContext = (CellGcmContextData*)gCellGcmCurrentContext;
-   rglGcmFifo * fifo = &rglGcmState_i.fifo;
-
-   if ( LContext )
-   {
-      unsigned int offset_bytes = 0;
-      rglGcmSetInvalidateVertexCache(thisContext);
-      rglGcmFifoFlush(fifo, offset_bytes);
-
-      psglMakeCurrent( NULL, NULL );
-      rglDeviceExit();
-
-      _CurrentContext = NULL; 
-
-      rglInitCompleted = 0;
-   }
-}
 
 RGL_EXPORT RGLdevice*	rglPlatformCreateDeviceAuto( GLenum colorFormat, GLenum depthFormat, GLenum multisamplingMode )
 {
@@ -2010,7 +1968,6 @@ GLboolean rglPlatformDeviceInit (void *data)
    return rglGcmInit( options, &rglGcmResource );
 }
 
-
 void rglPlatformDeviceExit (void)
 {
    rglGcmDestroy();
@@ -2098,7 +2055,7 @@ GLboolean rglGcmTryResizeTileRegion( GLuint address, GLuint size, void* data )
          rglGcmUtilWaitForIdle(); 
 
          retVal = cellGcmUnbindTile( region->id );
-         rglGcmFifoFinish(ref, offset_bytes);
+         rglGcmFifoFinish(fifo, ref, offset_bytes);
       }
       return GL_TRUE;
    }
@@ -2121,7 +2078,7 @@ GLboolean rglGcmTryResizeTileRegion( GLuint address, GLuint size, void* data )
    retVal = cellGcmBindTile( region->id ); 
 
    offset_bytes = 0;
-   rglGcmFifoFinish(ref, offset_bytes);
+   rglGcmFifoFinish(fifo, ref, offset_bytes);
    return GL_TRUE;
 }
 
@@ -2741,7 +2698,7 @@ int rglPlatformCreateDevice (void *data)
 
       cellGcmSetFlipMode( gcmDevice->vsync ? CELL_GCM_DISPLAY_VSYNC : CELL_GCM_DISPLAY_HSYNC );
       rglGcmSetInvalidateVertexCache(thisContext);
-      rglGcmFifoFinish(ref, offset_bytes);
+      rglGcmFifoFinish(fifo, ref, offset_bytes);
 
       for ( int i = 0; i < params->bufferingMode; ++i )
       {
@@ -2759,52 +2716,6 @@ int rglPlatformCreateDevice (void *data)
    gcmDevice->swapFifoRef2 = gcmDevice->swapFifoRef;  //used for triple buffering
 
    return 0;
-}
-
-void rglPlatformDestroyDevice (void *data)
-{
-   RGLdevice *device = (RGLdevice*)data;
-   rglGcmFifo *fifo = (rglGcmFifo*)&rglGcmState_i.fifo;
-   rglGcmDevice *gcmDevice = ( rglGcmDevice * )device->platformDevice;
-   RGLdeviceParameters *params = &device->deviceParameters;
-   CellGcmContextData *thisContext = (CellGcmContextData*)gCellGcmCurrentContext;
-   GLuint ref;
-   unsigned int offset_bytes = 0;
-
-   rglGcmSetInvalidateVertexCache(thisContext);
-   rglGcmFifoFinish(ref, offset_bytes);
-
-   // Stop flip callback
-   if ( rescIsEnabled( params ) )
-      cellRescSetFlipHandler(NULL);
-   else
-      cellGcmSetFlipHandler(NULL);
-
-   // Stop VBlank callback
-   if ( rescIsEnabled( &device->deviceParameters ) )
-      cellRescSetVBlankHandler(NULL);
-   else
-      cellGcmSetVBlankHandler(NULL);
-
-   // Destroy semaphore
-   int res = sys_semaphore_destroy(FlipSem);
-   (void)res;  // prevent unused variable warning in opt build
-
-   if ( rescIsEnabled( params ) )
-   {
-      cellRescExit();
-      rglGcmFreeTiledSurface(gcmDevice->RescColorBuffersId);
-      gmmFree(gcmDevice->RescVertexArrayId);
-      gmmFree(gcmDevice->RescFragmentShaderId);
-   }
-
-   rglDuringDestroyDevice = GL_TRUE;
-   for ( int i = 0; i < params->bufferingMode; ++i )
-   {
-      if ( gcmDevice->color[i].pool != RGLGCM_SURFACE_POOL_NONE )
-         rglGcmFreeTiledSurface( gcmDevice->color[i].dataId );
-   }
-   rglDuringDestroyDevice = GL_FALSE;
 }
 
 GLAPI void RGL_EXPORT psglSwap (void)
@@ -3857,7 +3768,7 @@ void RGL_EXPORT psglDestroyContext (void *data)
    if ( _CurrentContext == LContext )
    {
       rglGcmSetInvalidateVertexCache(thisContext);
-      rglGcmFifoFinish(ref, offset_bytes);
+      rglGcmFifoFinish(fifo, ref, offset_bytes);
    }
 
    while ( LContext->RGLcgContextHead != ( CGcontext )NULL )
@@ -4001,12 +3912,40 @@ GLAPI const GLubyte* APIENTRY glGetString( GLenum name )
 
 void psglInit (void *data)
 {
-   rglPsglPlatformInit((RGLinitOptions*)data);
+   RGLinitOptions *options = (RGLinitOptions*)data;
+
+   if ( !rglInitCompleted )
+   {
+      cellSysmoduleLoadModule( CELL_SYSMODULE_GCM_SYS );
+      cellSysmoduleLoadModule( CELL_SYSMODULE_RESC );
+
+      rglDeviceInit( options );
+      _CurrentContext = NULL;
+      _CurrentDevice = NULL;
+   }
+
+   rglInitCompleted = 1;
 }
 
 void psglExit(void)
 {
-   rglPsglPlatformExit();
+   RGLcontext* LContext = _CurrentContext;
+   CellGcmContextData *thisContext = (CellGcmContextData*)gCellGcmCurrentContext;
+   rglGcmFifo * fifo = &rglGcmState_i.fifo;
+
+   if ( LContext )
+   {
+      unsigned int offset_bytes = 0;
+      rglGcmSetInvalidateVertexCache(thisContext);
+      rglGcmFifoFlush(fifo, offset_bytes);
+
+      psglMakeCurrent( NULL, NULL );
+      rglDeviceExit();
+
+      _CurrentContext = NULL; 
+
+      rglInitCompleted = 0;
+   }
 }
 
 /*============================================================
@@ -4405,13 +4344,54 @@ RGL_EXPORT void psglGetRenderBufferDimensions (const RGLdevice * device, GLuint 
 RGL_EXPORT void psglDestroyDevice (void *data)
 {
    RGLdevice *device = (RGLdevice*)data;
+   rglGcmDriver *driver = (rglGcmDriver*)device->rasterDriver;
+   CellGcmContextData *thisContext = (CellGcmContextData*)gCellGcmCurrentContext;
+   rglGcmFifo *fifo = (rglGcmFifo*)&rglGcmState_i.fifo;
+   rglGcmDevice *gcmDevice = ( rglGcmDevice * )device->platformDevice;
+   RGLdeviceParameters *params = &device->deviceParameters;
+   GLuint ref;
+   unsigned int offset_bytes = 0;
+
    if (_CurrentDevice == device)
       psglMakeCurrent( NULL, NULL );
 
-   if (device->rasterDriver)
-      rglPlatformRasterExit( device->rasterDriver );
+   if (driver)
+      free(driver);
 
-   rglPlatformDestroyDevice( device );
+   rglGcmSetInvalidateVertexCache(thisContext);
+   rglGcmFifoFinish(fifo, ref, offset_bytes);
+
+   // Stop flip callback
+   if ( rescIsEnabled( params ) )
+      cellRescSetFlipHandler(NULL);
+   else
+      cellGcmSetFlipHandler(NULL);
+
+   // Stop VBlank callback
+   if ( rescIsEnabled( &device->deviceParameters ) )
+      cellRescSetVBlankHandler(NULL);
+   else
+      cellGcmSetVBlankHandler(NULL);
+
+   // Destroy semaphore
+   int res = sys_semaphore_destroy(FlipSem);
+   (void)res;  // prevent unused variable warning in opt build
+
+   if ( rescIsEnabled( params ) )
+   {
+      cellRescExit();
+      rglGcmFreeTiledSurface(gcmDevice->RescColorBuffersId);
+      gmmFree(gcmDevice->RescVertexArrayId);
+      gmmFree(gcmDevice->RescFragmentShaderId);
+   }
+
+   rglDuringDestroyDevice = GL_TRUE;
+   for ( int i = 0; i < params->bufferingMode; ++i )
+   {
+      if ( gcmDevice->color[i].pool != RGLGCM_SURFACE_POOL_NONE )
+         rglGcmFreeTiledSurface( gcmDevice->color[i].dataId );
+   }
+   rglDuringDestroyDevice = GL_FALSE;
 
    free( device );
 }
@@ -4427,7 +4407,24 @@ void RGL_EXPORT psglMakeCurrent (RGLcontext *context, RGLdevice *device)
       _CurrentDevice = device;
 
       if ( !device->rasterDriver )
-         device->rasterDriver = rglPlatformRasterInit();
+      {
+         CellGcmContextData *thisContext = (CellGcmContextData*)gCellGcmCurrentContext;
+         rglGcmFifo *fifo = (rglGcmFifo*)&rglGcmState_i.fifo;
+         GLuint ref;
+         unsigned int offset_bytes = 0;
+
+         rglGcmSetInvalidateVertexCache(thisContext);
+         rglGcmFifoFinish(fifo, ref, offset_bytes);
+
+         rglGcmDriver *driver = (rglGcmDriver*)malloc(sizeof(rglGcmDriver));
+         memset(driver, 0, sizeof(rglGcmDriver));
+
+         driver->rt.yInverted = true;
+         driver->invalidateVertexCache = GL_FALSE;
+         driver->flushBufferCount = 0;
+
+         device->rasterDriver = driver;
+      }
 
       //attach context
       if (!context->everAttached)

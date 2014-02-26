@@ -285,7 +285,7 @@
  gcm_emit_at(thisContext->current, 1, ((enable) | ((alphaToCoverage) << 4) | ((alphaToOne) << 8) | ((sampleMask) << 16))); \
  gcm_finish_n_commands(thisContext->current, 2);
 
-#define rglGcmFifoFinish(ref, offset_bytes) \
+#define rglGcmFifoFinish(fifo, ref, offset_bytes) \
  ref = rglGcmFifoPutReference( fifo ); \
  rglGcmFifoFlush( fifo, offset_bytes ); \
  while (rglGcmFifoReferenceInUse(fifo, ref));
