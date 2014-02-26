@@ -44,15 +44,19 @@ struct texture_image *menu_texture;
 static bool textures_inited =false;
 
 // thanks to https://github.com/DavidEGrayson/ahrs-visualizer/blob/master/png_texture.cpp
-static GLuint png_texture_load(const char * file_name, int * width, int * height)
+static GLuint png_texture_load(void *data, int * width, int * height)
 {
+   struct texture_image *menu_texture = (struct texture_image*)data;
    // Generate the OpenGL texture object
    GLuint texture;
    glGenTextures(1, &texture);
    glBindTexture(GL_TEXTURE_2D, texture);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, menu_texture->width, menu_texture->height, 0, GL_RGB, GL_UNSIGNED_BYTE, menu_texture->pixels);
-   glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-   glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
    return texture;
 }
@@ -642,9 +646,9 @@ static void lakka_init_assets(void *data)
       return;
 
    menu_texture = (struct texture_image*)calloc(1, sizeof(*menu_texture));
-   texture_image_load("/usr/share/retroarch/cavestory.png", menu_texture);
+   texture_image_load("/home/squarepusher/1391666767568.png", menu_texture);
 
-   texid = png_texture_load("/usr/share/retroarch/cavestory.png", &dim, &dim);
+   texid = png_texture_load(menu_texture, &dim, &dim);
 
    lakka_set_texture(rgui, true);
 }
