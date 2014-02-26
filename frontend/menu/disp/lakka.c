@@ -277,7 +277,7 @@ void lakka_draw_background(void *data)
 
    gl->coords.tex_coord = gl->tex_coords;
    gl->coords.color = background_color;
-   glBindTexture(GL_TEXTURE_2D, NULL);
+   glBindTexture(GL_TEXTURE_2D, 0);
 
    if (gl->shader)
       gl->shader->use(GL_SHADER_STOCK_BLEND);
@@ -642,7 +642,7 @@ static void lakka_init_assets(void *data)
       return;
 
    menu_texture = (struct texture_image*)calloc(1, sizeof(*menu_texture));
-   texture_image_load(g_extern.menu_texture_path, menu_texture);
+   texture_image_load("/usr/share/retroarch/cavestory.png", menu_texture);
 
    texid = png_texture_load("/usr/share/retroarch/cavestory.png", &dim, &dim);
 
@@ -682,7 +682,6 @@ static void *lakka_init(void)
 static void lakka_free_assets(void *data)
 {
    texture_image_free(menu_texture);
-   menu_texture_inited = false;
 }
 
 static void lakka_free(void *data)
