@@ -3564,68 +3564,6 @@ void rglImageFreeCPUStorage(void *data)
    image->dataState &= ~RGL_IMAGE_DATASTATE_HOST;
 }
 
-static void rglSetImage(void *data, GLint internalFormat, GLsizei width, GLsizei height, GLsizei depth, GLsizei alignment, GLenum format, GLenum type, const void *pixels )
-{
-   rglImage *image = (rglImage*)data;
-
-   image->width = width;
-   image->height = height;
-   image->depth = depth;
-   image->alignment = alignment;
-
-   image->xblk = 0;
-   image->yblk = 0;
-
-   image->xstride = 0;
-   image->ystride = 0;
-   image->zstride = 0;
-
-   image->format = 0;
-   image->type = 0;
-   image->internalFormat = 0;
-
-   rglPlatformChooseInternalStorage( image, internalFormat);
-
-   image->data = NULL;
-   image->mallocData = NULL;
-   image->mallocStorageSize = 0;
-
-   image->isSet = GL_TRUE;
-
-   {
-      if ( image->xstride == 0 )
-         image->xstride = rglGetPixelSize( image->format, image->type );
-      if ( image->ystride == 0 )
-         image->ystride = image->width * image->xstride;
-      if ( image->zstride == 0 )
-         image->zstride = image->height * image->ystride;
-   }
-
-   if (pixels)
-   {
-      rglImageAllocCPUStorage( image );
-      if ( !image->data )
-         return;
-
-      rglRaster raster;
-      raster.format = format;
-      raster.type = type;
-      raster.width = width;
-      raster.height = height;
-      raster.depth = depth;
-      raster.data = (void*)pixels;
-
-      raster.xstride = rglGetPixelSize( raster.format, raster.type );
-      raster.ystride = (raster.width * raster.xstride + alignment - 1) / alignment * alignment;
-      raster.zstride = raster.height * raster.ystride;
-
-      rglRawRasterToImage( &raster, image, 0, 0, 0 );
-      image->dataState = RGL_IMAGE_DATASTATE_HOST;
-   }
-   else
-      image->dataState = RGL_IMAGE_DATASTATE_UNSET;
-}
-
 /*============================================================
   ENGINE
   ============================================================ */
@@ -4257,13 +4195,62 @@ GLAPI void APIENTRY glTexImage2D( GLenum target, GLint level, GLint internalForm
          (( const GLubyte* )pixels - ( const GLubyte* )NULL );
    }
 
-   rglSetImage(
-         image,
-         internalFormat,
-         width, height, 1,
-         LContext->unpackAlignment,
-         format, type,
-         pixels );
+   image->width = width;
+   image->height = height;
+   image->depth = 1;
+   image->alignment = LContext->unpackAlignment;
+
+   image->xblk = 0;
+   image->yblk = 0;
+
+   image->xstride = 0;
+   image->ystride = 0;
+   image->zstride = 0;
+
+   image->format = 0;
+   image->type = 0;
+   image->internalFormat = 0;
+
+   rglPlatformChooseInternalStorage( image, internalFormat);
+
+   image->data = NULL;
+   image->mallocData = NULL;
+   image->mallocStorageSize = 0;
+
+   image->isSet = GL_TRUE;
+
+   {
+      if ( image->xstride == 0 )
+         image->xstride = rglGetPixelSize( image->format, image->type );
+      if ( image->ystride == 0 )
+         image->ystride = image->width * image->xstride;
+      if ( image->zstride == 0 )
+         image->zstride = image->height * image->ystride;
+   }
+
+   if (pixels)
+   {
+      rglImageAllocCPUStorage( image );
+      if (image->data )
+      {
+         rglRaster raster;
+         raster.format  = format;
+         raster.type    = type;
+         raster.width   = width;
+         raster.height  = height;
+         raster.depth   = 1;
+         raster.data    = (void*)pixels;
+
+         raster.xstride = rglGetPixelSize( raster.format, raster.type );
+         raster.ystride = (raster.width * raster.xstride + LContext->unpackAlignment - 1) / LContext->unpackAlignment * LContext->unpackAlignment;
+         raster.zstride = raster.height * raster.ystride;
+
+         rglRawRasterToImage( &raster, image, 0, 0, 0 );
+         image->dataState = RGL_IMAGE_DATASTATE_HOST;
+      }
+   }
+   else
+      image->dataState = RGL_IMAGE_DATASTATE_UNSET;
 
 
    if ( LContext->PixelUnpackBuffer != 0 )

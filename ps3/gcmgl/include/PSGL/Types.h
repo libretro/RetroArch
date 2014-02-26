@@ -624,7 +624,7 @@ typedef struct
    GLuint	indexMax;		// 0==glDrawElements; 0!=glDrawRangeElements
    GLsizei	indexCount;
 
-   // internal draw parameters (set by rglPlatformRequiresSlowPath):
+   // internal draw parameters
    // client-side array transfer buffer params
    GLuint	xferTotalSize;
    GLuint	indexXferOffset;

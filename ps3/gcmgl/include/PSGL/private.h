@@ -142,11 +142,6 @@ void*	rglPlatformRasterInit (void);
 void	rglPlatformRasterExit (void* data);
 void	rglPlatformRasterDestroyResources (void);
 GLboolean rglPlatformNeedsConversion (const rglAttributeState* as, GLuint index);
-// [YLIN] Try to avoid LHS inside this function.
-//   In oringinal implementation, indexType and indexCount will be stored right before this function
-//   and since we will load them right after enter this function, there are LHS.
-GLboolean rglPlatformRequiresSlowPath (void *data, const GLenum indexType, uint32_t indexCount);
-void rglPlatformRasterGetIntegerv( GLenum pname, GLint* params );
 void	rglInvalidateAttributes (void);
 
 //----------------------------------------

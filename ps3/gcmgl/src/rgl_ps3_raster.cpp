@@ -945,9 +945,11 @@ GLboolean rglPlatformBufferObjectUnmap (void *data)
 extern "C" {
 #endif
 
-static void rglPlatformBufferObjectSetDataTextureReference(void *buf_data, GLintptr offset, GLsizeiptr size, const GLvoid *data, GLboolean tryImmediateCopy)
+GLAPI void APIENTRY glBufferSubDataTextureReferenceRA( GLenum target, GLintptr offset, GLsizeiptr size, const GLvoid *data )
 {
-   rglBufferObject *bufferObject = (rglBufferObject*)buf_data;
+   RGLcontext *LContext = (RGLcontext*)_CurrentContext;
+   GLuint name = LContext->TextureBuffer;
+   rglBufferObject* bufferObject = (rglBufferObject*)LContext->bufferObjectNameSpace.data[name];
    rglGcmDriver *driver = (rglGcmDriver*)_CurrentDevice->rasterDriver;
    rglGcmBufferObject *rglBuffer = ( rglGcmBufferObject * )bufferObject->platformBufferObject;
    CellGcmContextData *thisContext = (CellGcmContextData*)gCellGcmCurrentContext;
@@ -975,15 +977,6 @@ static void rglPlatformBufferObjectSetDataTextureReference(void *buf_data, GLint
       rglGcmTransferData(thisContext, rglBuffer->bufferId, offset, rglBuffer->pitch, id, 0, size, size, 1);
       gmmFree(id);
    }
-}
-
-GLAPI void APIENTRY glBufferSubDataTextureReferenceRA( GLenum target, GLintptr offset, GLsizeiptr size, const GLvoid *data )
-{
-   RGLcontext *LContext = (RGLcontext*)_CurrentContext;
-   GLuint name = LContext->TextureBuffer;
-
-   rglBufferObject* bufferObject = (rglBufferObject*)LContext->bufferObjectNameSpace.data[name];
-   rglPlatformBufferObjectSetDataTextureReference( bufferObject, offset, size, data, GL_FALSE );
 }
 
 char *rglPlatformBufferObjectMapTextureReference(void *data, GLenum access)
@@ -1018,83 +1011,6 @@ GLboolean rglPlatformBufferObjectUnmapTextureReference (void *data)
   ============================================================ */
 static void rglPlatformValidateTextureResources (void *data);
 
-void rglFramebuffer_validate (void *fb_data, void *data)
-{
-   rglFramebuffer *fb = (rglFramebuffer*)fb_data;
-   RGLcontext *LContext = (RGLcontext*)data;
-   fb->complete = (rglPlatformFramebufferCheckStatus(fb) == GL_FRAMEBUFFER_COMPLETE_OES);
-
-   if (!fb->complete)
-      return;
-
-   GLuint width  = CELL_GCM_MAX_RT_DIMENSION;
-   GLuint height = CELL_GCM_MAX_RT_DIMENSION;
-
-   // color
-   fb->rt.colorBufferCount = 0;
-   fb->rt.colorFormat = RGLGCM_NONE;
-   GLuint defaultPitch = 0;
-   GLuint defaultId = GMM_ERROR;
-   GLuint defaultIdOffset = 0;
-
-   for ( int i = 0; i < RGLGCM_SETRENDERTARGET_MAXCOUNT; ++i )
-   {
-      // get the texture and face
-      rglTexture* colorTexture = NULL;
-      GLuint face = 0;
-      rglFramebufferGetAttachmentTexture( LContext, &fb->color[i], &colorTexture, &face );
-
-      if (colorTexture == NULL)
-         continue;
-
-      rglGcmTexture* nvTexture = ( rglGcmTexture * )colorTexture->platformTexture;
-
-      // make sure texture is resident in a supported layout
-      //  Some restrictions are added if a texture is used as a
-      //  render target:
-      //
-      //  - no swizzled semifat or fat formats
-      //  - no swizzled smaller than 16x16
-      //  - no mipmapped cube maps in tiled memory
-      //  - no cube maps with height not a multiple of 16 in tiled
-      //    memory
-      //
-      //  We may need to reallocate the texture if any of these
-      //  are true.
-      //
-      //  TODO: Measure time spent here and optimize if indicated.
-      if ( !colorTexture->isRenderTarget )
-      {
-         colorTexture->isRenderTarget = GL_TRUE;
-         colorTexture->revalidate |= RGL_TEXTURE_REVALIDATE_LAYOUT;
-      }
-      rglPlatformValidateTextureResources( colorTexture );
-      colorTexture->image->dataState = RGL_IMAGE_DATASTATE_GPU;
-
-      // set the render target
-      fb->rt.colorId[i] = nvTexture->gpuAddressId;
-      fb->rt.colorIdOffset[i] = nvTexture->gpuAddressIdOffset;
-      fb->rt.colorPitch[i] = nvTexture->gpuLayout.pitch ? nvTexture->gpuLayout.pitch : nvTexture->gpuLayout.pixelBits * nvTexture->gpuLayout.baseWidth / 8;
-
-      width = MIN( width, nvTexture->gpuLayout.baseWidth );
-      height = MIN( height, nvTexture->gpuLayout.baseHeight );
-      fb->rt.colorFormat = nvTexture->gpuLayout.internalFormat;
-      fb->rt.colorBufferCount = i + 1;
-      defaultId               = fb->rt.colorId[i];
-      defaultIdOffset         = fb->rt.colorIdOffset[i];
-      defaultPitch            = fb->rt.colorPitch[i];
-   }
-
-   // framebuffer dimensions are the intersection of attachments
-   fb->rt.width = width;
-   fb->rt.height = height;
-
-   fb->rt.yInverted = false;
-   fb->rt.xOffset = 0;
-   fb->rt.yOffset = 0;
-   fb->needValidate = GL_FALSE;
-}
-
 GLAPI void APIENTRY glClear( GLbitfield mask )
 {
    unsigned int offset_bytes = 0;
@@ -1122,7 +1038,79 @@ GLAPI void APIENTRY glClear( GLbitfield mask )
          rglFramebuffer* framebuffer = (rglFramebuffer *)rglGetFramebuffer(LContext, LContext->framebuffer);
 
          if (framebuffer->needValidate)
-            rglFramebuffer_validate(framebuffer, LContext);
+         {
+            framebuffer->complete = (rglPlatformFramebufferCheckStatus(framebuffer) == GL_FRAMEBUFFER_COMPLETE_OES);
+
+            if (!framebuffer->complete)
+               return;
+
+            GLuint width  = CELL_GCM_MAX_RT_DIMENSION;
+            GLuint height = CELL_GCM_MAX_RT_DIMENSION;
+
+            // color
+            framebuffer->rt.colorBufferCount = 0;
+            framebuffer->rt.colorFormat = RGLGCM_NONE;
+            GLuint defaultPitch = 0;
+            GLuint defaultId = GMM_ERROR;
+            GLuint defaultIdOffset = 0;
+
+            for ( int i = 0; i < RGLGCM_SETRENDERTARGET_MAXCOUNT; ++i )
+            {
+               // get the texture and face
+               rglTexture* colorTexture = NULL;
+               GLuint face = 0;
+               rglFramebufferGetAttachmentTexture( LContext, &framebuffer->color[i], &colorTexture, &face );
+
+               if (colorTexture == NULL)
+                  continue;
+
+               rglGcmTexture* nvTexture = ( rglGcmTexture * )colorTexture->platformTexture;
+
+               // make sure texture is resident in a supported layout
+               //  Some restrictions are added if a texture is used as a
+               //  render target:
+               //
+               //  - no swizzled semifat or fat formats
+               //  - no swizzled smaller than 16x16
+               //  - no mipmapped cube maps in tiled memory
+               //  - no cube maps with height not a multiple of 16 in tiled
+               //    memory
+               //
+               //  We may need to reallocate the texture if any of these
+               //  are true.
+               //
+               //  TODO: Measure time spent here and optimize if indicated.
+               if ( !colorTexture->isRenderTarget )
+               {
+                  colorTexture->isRenderTarget = GL_TRUE;
+                  colorTexture->revalidate |= RGL_TEXTURE_REVALIDATE_LAYOUT;
+               }
+               rglPlatformValidateTextureResources( colorTexture );
+               colorTexture->image->dataState = RGL_IMAGE_DATASTATE_GPU;
+
+               // set the render target
+               framebuffer->rt.colorId[i] = nvTexture->gpuAddressId;
+               framebuffer->rt.colorIdOffset[i] = nvTexture->gpuAddressIdOffset;
+               framebuffer->rt.colorPitch[i] = nvTexture->gpuLayout.pitch ? nvTexture->gpuLayout.pitch : nvTexture->gpuLayout.pixelBits * nvTexture->gpuLayout.baseWidth / 8;
+
+               width = MIN( width, nvTexture->gpuLayout.baseWidth );
+               height = MIN( height, nvTexture->gpuLayout.baseHeight );
+               framebuffer->rt.colorFormat = nvTexture->gpuLayout.internalFormat;
+               framebuffer->rt.colorBufferCount = i + 1;
+               defaultId               = framebuffer->rt.colorId[i];
+               defaultIdOffset         = framebuffer->rt.colorIdOffset[i];
+               defaultPitch            = framebuffer->rt.colorPitch[i];
+            }
+
+            // framebuffer dimensions are the intersection of attachments
+            framebuffer->rt.width = width;
+            framebuffer->rt.height = height;
+
+            framebuffer->rt.yInverted = false;
+            framebuffer->rt.xOffset = 0;
+            framebuffer->rt.yOffset = 0;
+            framebuffer->needValidate = GL_FALSE;
+         }
 
          driver->rt = framebuffer->rt;
       }
@@ -1228,9 +1216,6 @@ GLenum rglPlatformFramebufferCheckStatus (void *data)
 
    return GL_FRAMEBUFFER_COMPLETE_OES;
 }
-
-
-
 
 /*============================================================
   PLATFORM RASTER
@@ -1624,6 +1609,7 @@ GLAPI void APIENTRY glDrawArrays (GLenum mode, GLint first, GLsizei count)
 {
    RGLcontext*	LContext = (RGLcontext*)_CurrentContext;
    CellGcmContextData *thisContext = (CellGcmContextData*)gCellGcmCurrentContext;
+   rglGcmDriver *driver = (rglGcmDriver*)_CurrentDevice->rasterDriver;
 
    if (RGL_UNLIKELY(!RGLBIT_GET(LContext->attribs->EnabledMask, RGL_ATTRIB_POSITION_INDEX)))
       return;
@@ -1642,10 +1628,40 @@ GLAPI void APIENTRY glDrawArrays (GLenum mode, GLint first, GLsizei count)
    if (LContext->needValidate)
       update_state_validation();
 
-   GLboolean slowPath = rglPlatformRequiresSlowPath( dparams, 0, 0);
-   (void)slowPath;
+   GLenum indexType = 0;
+   uint32_t indexCount = 0;
 
-   rglGcmDriver *driver = (rglGcmDriver*)_CurrentDevice->rasterDriver;
+   rglAttributeState *as = (rglAttributeState*)LContext->attribs;
+
+   // are any enabled attributes on the client-side?
+   const GLuint clientSideMask = as->EnabledMask & ~as->HasVBOMask;
+
+   if (RGL_UNLIKELY(clientSideMask))
+   {
+      // determine transfer buffer requirements for client-side attributes
+      for ( int i = 0; i < RGL_MAX_VERTEX_ATTRIBS; ++i )
+      {
+         if (clientSideMask & (1 << i))
+         {
+            rglAttribute* attrib = as->attrib + i;
+            const GLuint freq = attrib->frequency;
+            GLuint count = ( (dparams->firstVertex + dparams->vertexCount) + freq - 1 ) / freq;
+
+            const GLuint numBytes = attrib->clientStride * count;
+            dparams->attribXferOffset[i] = dparams->xferTotalSize;
+            dparams->attribXferSize[i] = numBytes;
+
+            const GLuint numBytesPadded = rglPad( numBytes, 128 );
+            dparams->xferTotalSize += numBytesPadded;
+            dparams->attribXferTotalSize += numBytesPadded;
+         }
+         else
+         {
+            dparams->attribXferOffset[i] = 0;
+            dparams->attribXferSize[i] = 0;
+         }
+      }
+   }
 
    if (RGL_UNLIKELY(!driver->rtValid))
       return;
@@ -1662,7 +1678,6 @@ GLAPI void APIENTRY glDrawArrays (GLenum mode, GLint first, GLsizei count)
 
    // validates attributes for specified draw paramaters
    // gpuOffset is pointer to index buffer
-   rglAttributeState* as = LContext->attribs;
 
    // allocate upload transfer buffer if necessary
    //  The higher level bounce buffer allocator is used, which means that
@@ -1838,46 +1853,6 @@ GLAPI void APIENTRY glDrawArrays (GLenum mode, GLint first, GLsizei count)
    }
 
    rglGcmSetDrawArrays(thisContext, gcmMode, dparams->firstVertex, dparams->vertexCount );
-}
-
-// must always call this before rglPlatformDraw() to setup rglDrawParams
-GLboolean rglPlatformRequiresSlowPath (void *data, const GLenum indexType, uint32_t indexCount)
-{
-   rglDrawParams *dparams = (rglDrawParams*)data;
-   RGLcontext* LContext = (RGLcontext*)_CurrentContext;
-   rglAttributeState* as = (rglAttributeState*)LContext->attribs;
-
-   // are any enabled attributes on the client-side?
-   const GLuint clientSideMask = as->EnabledMask & ~as->HasVBOMask;
-
-   if (RGL_UNLIKELY(clientSideMask))
-   {
-      // determine transfer buffer requirements for client-side attributes
-      for ( int i = 0; i < RGL_MAX_VERTEX_ATTRIBS; ++i )
-      {
-         if (clientSideMask & (1 << i))
-         {
-            rglAttribute* attrib = as->attrib + i;
-            const GLuint freq = attrib->frequency;
-            GLuint count = ( (dparams->firstVertex + dparams->vertexCount) + freq - 1 ) / freq;
-
-            const GLuint numBytes = attrib->clientStride * count;
-            dparams->attribXferOffset[i] = dparams->xferTotalSize;
-            dparams->attribXferSize[i] = numBytes;
-
-            const GLuint numBytesPadded = rglPad( numBytes, 128 );
-            dparams->xferTotalSize += numBytesPadded;
-            dparams->attribXferTotalSize += numBytesPadded;
-         }
-         else
-         {
-            dparams->attribXferOffset[i] = 0;
-            dparams->attribXferSize[i] = 0;
-         }
-      }
-   }
-
-   return GL_FALSE;	// we are finally qualified for the fast path
 }
 
 /*============================================================
@@ -2533,30 +2508,25 @@ GLAPI void APIENTRY glTextureReferenceSCE( GLenum target, GLuint levels,
    image->height = baseHeight;
    image->depth = 1;
    image->alignment = LContext->unpackAlignment;
-
    image->xblk = 0;
    image->yblk = 0;
-
    image->xstride = 0;
    image->ystride = 0;
    image->zstride = 0;
-
    image->format = 0;
    image->type = 0;
    image->internalFormat = 0;
+
    const GLenum status = rglPlatformChooseInternalStorage( image, internalFormat );
    (( void )status );
 
    image->data = NULL;
    image->mallocData = NULL;
    image->mallocStorageSize = 0;
-
    image->isSet = GL_TRUE;
-
    image->xstride = rglGetPixelSize( image->format, image->type );
    image->ystride = image->width * image->xstride;
    image->zstride = image->height * image->ystride;
-
    image->dataState = RGL_IMAGE_DATASTATE_UNSET;
 
    texture->maxLevel = 0;
