@@ -144,6 +144,7 @@ typedef struct thread_video
       unsigned height;
       unsigned pitch;
       bool updated;
+      bool within_thread;
       char msg[1024];
    } frame;
 
@@ -168,6 +169,41 @@ static void thread_reply(thread_video_t *thr, enum thread_cmd cmd)
    thr->send_cmd = CMD_NONE;
    scond_signal(thr->cond_cmd);
    slock_unlock(thr->lock);
+}
+
+static void thread_update_driver_state(thread_video_t *thr)
+{
+#if defined(HAVE_MENU)
+   if (thr->texture.frame_updated)
+   {
+      thr->poke->set_texture_frame(thr->driver_data,
+            thr->texture.frame, thr->texture.rgb32,
+            thr->texture.width, thr->texture.height,
+            thr->texture.alpha);
+      thr->texture.frame_updated = false;
+   }
+
+   if (thr->poke && thr->poke->set_texture_enable)
+      thr->poke->set_texture_enable(thr->driver_data, thr->texture.enable, thr->texture.full_screen);
+#endif
+
+#if defined(HAVE_OVERLAY)
+   slock_lock(thr->alpha_lock);
+   if (thr->alpha_update)
+   {
+      unsigned i;
+      for (i = 0; i < thr->alpha_mods; i++)
+         thr->overlay->set_alpha(thr->driver_data, i, thr->alpha_mod[i]);
+      thr->alpha_update = false;
+   }
+   slock_unlock(thr->alpha_lock);
+#endif
+
+   if (thr->apply_state_changes)
+   {
+      thr->poke->apply_state_changes(thr->driver_data);
+      thr->apply_state_changes = false;
+   }
 }
 
 static void thread_loop(void *data)
@@ -214,7 +250,12 @@ static void thread_loop(void *data)
             thr->driver->viewport_info(thr->driver_data, &vp);
             if (memcmp(&vp, &thr->read_vp, sizeof(vp)) == 0) // We can read safely
             {
+               // read_viewport() in GL driver calls rarch_render_cached_frame() to be able to read from back buffer.
+               // This means frame() callback in threaded wrapper will be called from this thread, causing a timeout, and no frame to be rendered.
+               // To avoid this, set a flag so wrapper can see if it's called in this "special" way.
+               thr->frame.within_thread = true;
                thr->cmd_data.b = thr->driver->read_viewport(thr->driver_data, (uint8_t*)thr->cmd_data.v);
+               thr->frame.within_thread = false;
                thread_reply(thr, CMD_READ_VIEWPORT);
             }
             else // Viewport dimensions changed right after main thread read the async value. Cannot read safely.
@@ -309,41 +350,11 @@ static void thread_loop(void *data)
       {
          slock_lock(thr->frame.lock);
 
-#if defined(HAVE_MENU)
-         if (thr->texture.frame_updated)
-         {
-            thr->poke->set_texture_frame(thr->driver_data,
-                  thr->texture.frame, thr->texture.rgb32,
-                  thr->texture.width, thr->texture.height,
-                  thr->texture.alpha);
-            thr->texture.frame_updated = false;
-         }
-
-         if (thr->poke && thr->poke->set_texture_enable)
-            thr->poke->set_texture_enable(thr->driver_data, thr->texture.enable, thr->texture.full_screen);
-#endif
-
-#if defined(HAVE_OVERLAY)
-         slock_lock(thr->alpha_lock);
-         if (thr->alpha_update)
-         {
-            unsigned i;
-            for (i = 0; i < thr->alpha_mods; i++)
-               thr->overlay->set_alpha(thr->driver_data, i, thr->alpha_mod[i]);
-            thr->alpha_update = false;
-         }
-         slock_unlock(thr->alpha_lock);
-#endif
-
-         if (thr->apply_state_changes)
-         {
-            thr->poke->apply_state_changes(thr->driver_data);
-            thr->apply_state_changes = false;
-         }
-
+         thread_update_driver_state(thr);
          bool ret = thr->driver->frame(thr->driver_data,
                thr->frame.buffer, thr->frame.width, thr->frame.height,
                thr->frame.pitch, *thr->frame.msg ? thr->frame.msg : NULL);
+
          slock_unlock(thr->frame.lock);
 
          bool alive = ret && thr->driver->alive(thr->driver_data);
@@ -410,10 +421,18 @@ static bool thread_focus(void *data)
 static bool thread_frame(void *data, const void *frame_,
       unsigned width, unsigned height, unsigned pitch, const char *msg)
 {
+   thread_video_t *thr = (thread_video_t*)data;
+
+   // If called from within read_viewport, we're actually in the driver thread, so just render directly.
+   if (thr->frame.within_thread)
+   {
+      thread_update_driver_state(thr);
+      return thr->driver->frame(thr->driver_data, frame_, width, height, pitch, msg);
+   }
+
    RARCH_PERFORMANCE_INIT(thread_frame);
    RARCH_PERFORMANCE_START(thread_frame);
 
-   thread_video_t *thr = (thread_video_t*)data;
    unsigned copy_stride = width * (thr->info.rgb32 ? sizeof(uint32_t) : sizeof(uint16_t));
 
    const uint8_t *src = (const uint8_t*)frame_;
