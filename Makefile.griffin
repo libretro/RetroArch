@@ -105,6 +105,7 @@ endif
   HAVE_ZLIB                := 1
   HAVE_RPNG                := 1
   HAVE_OVERLAY             := 1
+  HAVE_LIBSICKSAXIS			:= 0
 else ifeq ($(platform), psp1)
   CC = psp-gcc$(EXE_EXT)
   CXX = psp-g++$(EXE_EXT)
@@ -138,6 +139,10 @@ endif
 
 ifeq ($(HAVE_LIBRETRO_MANAGEMENT), 1)
 CFLAGS		+= -DHAVE_LIBRETRO_MANAGEMENT
+endif
+
+ifeq ($(HAVE_LIBSICKSAXIS), 1)
+CFLAGS		+= -DHAVE_LIBSICKSAXIS
 endif
 
 ifeq ($(HAVE_RPNG), 1)

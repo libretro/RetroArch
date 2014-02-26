@@ -301,6 +301,9 @@ enum input_devices
    DEVICE_WIIMOTE,
    DEVICE_NUNCHUK,
    DEVICE_CLASSIC,
+#ifdef HAVE_LIBSICKSAXIS
+   DEVICE_SIXAXIS,
+#endif
 #endif
 #elif defined(_XBOX)
    DEVICE_XBOX_PAD = 0,
