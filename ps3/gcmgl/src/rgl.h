@@ -44,7 +44,6 @@ RGL_EXPORT RGLdevice*	rglPlatformCreateDeviceExtended (const void *data);
 RGL_EXPORT GLfloat rglPlatformGetDeviceAspectRatio (const void *data);
 
 
-char *rglPlatformBufferObjectMapTextureReference(void *data, GLenum access);
 GLboolean rglPlatformBufferObjectUnmapTextureReference (void *data);
 GLboolean rglpCreateBufferObject (void *data);
 GLboolean rglGcmFifoReferenceInUse (void *data, GLuint reference);

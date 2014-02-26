@@ -2993,17 +2993,30 @@ GLAPI GLvoid* APIENTRY glMapBufferTextureReferenceRA( GLenum target, GLenum acce
    RGLcontext *LContext = _CurrentContext;
 
    rglBufferObject* bufferObject = (rglBufferObject*)LContext->bufferObjectNameSpace.data[LContext->TextureBuffer];
-   bufferObject->mapped = GL_TRUE;
+   rglGcmFifo *fifo = (rglGcmFifo*)&rglGcmState_i.fifo;
+   rglGcmBufferObject *rglBuffer = (rglGcmBufferObject*)bufferObject->platformBufferObject;
+   CellGcmContextData *thisContext = (CellGcmContextData*)gCellGcmCurrentContext;
 
-   return rglPlatformBufferObjectMapTextureReference(bufferObject, access);
+   bufferObject->mapped = GL_TRUE;
+   rglBuffer->mapAccess = access;
+
+   // only need to pin the first time we map
+   gmmPinId( rglBuffer->bufferId );
+
+   return gmmIdToAddress( rglBuffer->bufferId );
 }
 
 GLAPI GLboolean APIENTRY glUnmapBufferTextureReferenceRA( GLenum target )
 {
    RGLcontext *LContext = _CurrentContext;
    rglBufferObject* bufferObject = (rglBufferObject*)LContext->bufferObjectNameSpace.data[LContext->TextureBuffer];
+   rglGcmBufferObject *rglBuffer = ( rglGcmBufferObject * )bufferObject->platformBufferObject;
+
    bufferObject->mapped = GL_FALSE;
-   return rglPlatformBufferObjectUnmapTextureReference( bufferObject );
+   rglBuffer->mapAccess = GL_NONE;
+
+   gmmUnpinId( rglBuffer->bufferId );
+   return GL_TRUE;
 }
 
 #ifdef __cplusplus
