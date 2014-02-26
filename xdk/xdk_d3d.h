@@ -32,11 +32,10 @@
 
 typedef struct DrawVerticeFormats
 {
-#if defined(_XBOX1)
-   float x, y, z;
-   float rhw;
-#elif defined(_XBOX360)
    float x, y;
+#if defined(_XBOX1)
+   float z;
+   float rhw;
 #endif
    float u, v;
 } DrawVerticeFormats;
