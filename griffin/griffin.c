@@ -574,13 +574,22 @@ MENU
 
 #include "../file_list.c"
 
-#if defined(HAVE_RMENU)
+#ifdef HAVE_RMENU
 #include "../frontend/menu/disp/rmenu.c"
-#elif defined(HAVE_RGUI)
+#endif
+
+#ifdef HAVE_RGUI
 #include "../frontend/menu/disp/rgui.c"
-#elif defined(HAVE_RMENU_XUI)
+#endif
+
+#ifdef HAVE_RMENU_XUI
 #include "../frontend/menu/disp/rmenu_xui.cpp"
 #endif
+
+#if defined(HAVE_LAKKA) && defined(HAVE_OPENGL)
+#include "../frontend/menu/disp/lakka.c"
+#endif
+
 #endif
 
 #ifdef __cplusplus
