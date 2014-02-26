@@ -2111,7 +2111,7 @@ source:		RGLGCM_SURFACE_SOURCE_TEXTURE,
                   break;
             }
 
-            rglGcmSetTransferImage(gCellGcmCurrentContext, CELL_GCM_TRANSFER_LOCAL_TO_LOCAL, gmmIdToOffset(dst.dataId) + dst.dataIdOffset, dstPitch, 0, 0, gmmIdToOffset(src.dataId) + src.dataIdOffset, srcPitch, 0, 0, width, height, src.bpp);
+            rglGcmSetTransferImage(thisContext, CELL_GCM_TRANSFER_LOCAL_TO_LOCAL, gmmIdToOffset(dst.dataId) + dst.dataIdOffset, dstPitch, 0, 0, gmmIdToOffset(src.dataId) + src.dataIdOffset, srcPitch, 0, 0, width, height, src.bpp);
          }
 
          // free CPU copy of data

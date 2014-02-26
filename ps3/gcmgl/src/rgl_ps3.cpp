@@ -1005,7 +1005,7 @@ static inline void gmmLocalMemcpy(void *data, const uint32_t dstOffset,
    {
       while(sizeLeft >= dimension*dimension*4)
       {
-         rglGcmSetTransferImage(gCellGcmCurrentContext,
+         rglGcmSetTransferImage(thisContext,
                CELL_GCM_TRANSFER_LOCAL_TO_LOCAL,
                dstOffset+offset,
                dimension*4,
@@ -1031,7 +1031,7 @@ static inline void gmmLocalMemcpy(void *data, const uint32_t dstOffset,
 
    if (sizeLeft)
    {
-      rglGcmSetTransferImage(gCellGcmCurrentContext, 
+      rglGcmSetTransferImage(thisContext, 
             CELL_GCM_TRANSFER_LOCAL_TO_LOCAL,
             dstOffset+offset,
             sizeLeft,

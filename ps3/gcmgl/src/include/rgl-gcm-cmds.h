@@ -1,6 +1,10 @@
 #ifndef _GCM_CMDS_H
 #define _GCM_CMDS_H
 
+#define gcm_emit_at(buffer, location, word) ((buffer)[(location)] = (word))
+#define gcm_emit_method_at(buffer, location, method, n) gcm_emit_at((buffer),(location), (method) |((n) << 18))
+#define gcm_finish_n_commands(buffer, n) (buffer) += n
+
 #define rglGcmSetTextureAddress(thisContext, index, wraps, wrapt, wrapr, unsignedRemap, zfunc, gamma) \
  gcm_emit_method_at(thisContext->current, 0, CELL_GCM_NV4097_SET_TEXTURE_ADDRESS + 0x20 * ((index)), 1); \
  gcm_emit_at(thisContext->current, 1, (((wraps)) | ((0) << 4) | (((wrapt)) << 8) | (((unsignedRemap)) << 12) | (((wrapr)) << 16) | (((gamma)) << 20) |((0) << 24) | (((zfunc)) << 28))); \
@@ -611,6 +615,77 @@
    gcm_emit_method_at(thisContext->current, 0, CELL_GCM_NV0039_OFFSET_OUT, 1); \
    gcm_emit_at(thisContext->current, 1, 0); \
    gcm_finish_n_commands(thisContext->current, 2); \
+}
+
+#define rglGcmSetTransferImage(thisContext, mode, dstOffset, dstPitch, dstX, dstY, srcOffset, srcPitch, srcX, srcY, width, height, bytesPerPixel) \
+{ \
+   uint32_t srcFormat, dstFormat, x, y, finalDstX, finalDstY; \
+   gcm_emit_method_at(thisContext->current, 0, CELL_GCM_NV3062_SET_CONTEXT_DMA_IMAGE_DESTIN, 1); \
+   gcm_emit_at(thisContext->current, 1, CELL_GCM_CONTEXT_DMA_MEMORY_FRAME_BUFFER); \
+   gcm_finish_n_commands(thisContext->current, 2); \
+   gcm_emit_method_at(thisContext->current, 0, CELL_GCM_NV3089_SET_CONTEXT_DMA_IMAGE, 1); \
+   gcm_emit_at(thisContext->current, 1, CELL_GCM_CONTEXT_DMA_MEMORY_FRAME_BUFFER); \
+   gcm_finish_n_commands(thisContext->current, 2); \
+   gcm_emit_method_at(thisContext->current, 0, CELL_GCM_NV3089_SET_CONTEXT_SURFACE, 1); \
+   gcm_emit_at(thisContext->current, 1, 0x313371C3); \
+   gcm_finish_n_commands(thisContext->current, 2); \
+   srcFormat = 0; \
+   dstFormat = 0; \
+   switch (bytesPerPixel) \
+   { \
+      case 2: \
+         srcFormat = CELL_GCM_TRANSFER_SCALE_FORMAT_R5G6B5; \
+         dstFormat = CELL_GCM_TRANSFER_SURFACE_FORMAT_R5G6B5; \
+         break; \
+      case 4: \
+         srcFormat = CELL_GCM_TRANSFER_SCALE_FORMAT_A8R8G8B8; \
+         dstFormat = CELL_GCM_TRANSFER_SURFACE_FORMAT_A8R8G8B8; \
+         break; \
+   } \
+   finalDstX = dstX + width; \
+   finalDstY = dstY + height; \
+   for (y = dstY; y < finalDstY;) \
+   { \
+      uint32_t dstTop, dstBltHeight; \
+      dstTop = y & ~(BLOCKSIZE_MAX_DIMENSIONS - 1); \
+      dstBltHeight = (( (dstTop + BLOCKSIZE_MAX_DIMENSIONS) < finalDstY) ? (dstTop + BLOCKSIZE_MAX_DIMENSIONS) : finalDstY) - y; \
+      for (x = dstX; x < finalDstX;) \
+      { \
+         uint32_t dstLeft, dstRight, dstBltWidth, dstBlockOffset, srcBlockOffset, safeDstBltWidth; \
+         dstLeft = x & ~(BLOCKSIZE_MAX_DIMENSIONS - 1); \
+         dstRight = dstLeft + BLOCKSIZE_MAX_DIMENSIONS; \
+         dstBltWidth = ((dstRight < finalDstX) ? dstRight : finalDstX) - x; \
+         dstBlockOffset = bytesPerPixel * (dstLeft & ~(BLOCKSIZE_MAX_DIMENSIONS - 1)) + dstPitch * dstTop; \
+         srcBlockOffset = bytesPerPixel * (srcX + x-dstX) + srcPitch * (srcY + y-dstY); \
+         safeDstBltWidth = (dstBltWidth < 16) ? 16 : (dstBltWidth + 1) & ~1; \
+         gcm_emit_method_at(thisContext->current, 0, CELL_GCM_NV3062_SET_OFFSET_DESTIN, 1); \
+         gcm_emit_at(thisContext->current, 1, dstOffset + dstBlockOffset); \
+         gcm_finish_n_commands(thisContext->current, 2); \
+         gcm_emit_method_at(thisContext->current, 0, CELL_GCM_NV3062_SET_COLOR_FORMAT, 2); \
+         gcm_emit_at(thisContext->current, 1, dstFormat); \
+         gcm_emit_at(thisContext->current, 2, ((dstPitch) | ((dstPitch) << 16))); \
+         gcm_finish_n_commands(thisContext->current, 3); \
+         gcm_emit_method_at(thisContext->current, 0, CELL_GCM_NV3089_SET_COLOR_CONVERSION, 9); \
+         gcm_emit_at(thisContext->current, 1, CELL_GCM_TRANSFER_CONVERSION_TRUNCATE); \
+         gcm_emit_at(thisContext->current, 2, srcFormat); \
+         gcm_emit_at(thisContext->current, 3, CELL_GCM_TRANSFER_OPERATION_SRCCOPY); \
+         gcm_emit_at(thisContext->current, 4, (((y - dstTop) << 16) | (x - dstLeft))); \
+         gcm_emit_at(thisContext->current, 5, (((dstBltHeight) << 16) | (dstBltWidth))); \
+         gcm_emit_at(thisContext->current, 6, (((y - dstTop) << 16) | (x - dstLeft))); \
+         gcm_emit_at(thisContext->current, 7, (((dstBltHeight) << 16) | (dstBltWidth))); \
+         gcm_emit_at(thisContext->current, 8, 1048576); \
+         gcm_emit_at(thisContext->current, 9, 1048576); \
+         gcm_finish_n_commands(thisContext->current, 10); \
+         gcm_emit_method_at(thisContext->current, 0, CELL_GCM_NV3089_IMAGE_IN_SIZE, 4); \
+         gcm_emit_at(thisContext->current, 1, (((dstBltHeight) << 16) | (safeDstBltWidth))); \
+         gcm_emit_at(thisContext->current, 2, ((srcPitch) | ((CELL_GCM_TRANSFER_ORIGIN_CORNER) << 16) | ((CELL_GCM_TRANSFER_INTERPOLATOR_ZOH) << 24))); \
+         gcm_emit_at(thisContext->current, 3, (srcOffset + srcBlockOffset)); \
+         gcm_emit_at(thisContext->current, 4, 0); \
+         gcm_finish_n_commands(thisContext->current, 5); \
+         x += dstBltWidth; \
+      } \
+      y += dstBltHeight; \
+   } \
 }
 
 #endif
