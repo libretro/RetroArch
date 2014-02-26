@@ -65,6 +65,8 @@ endif
 
 DEFINES = -DHAVE_CONFIG_H -DHAVE_SCREENSHOTS -DRARCH_INTERNAL
 
+#HAVE_LAKKA = 1
+
 ifeq ($(GLOBAL_CONFIG_DIR),)
    GLOBAL_CONFIG_DIR = /etc
 endif
@@ -95,6 +97,10 @@ endif
 ifeq ($(HAVE_RGUI), 1)
    OBJ += frontend/menu/menu_common.o frontend/menu/menu_settings.o frontend/menu/menu_context.o file_list.o frontend/menu/disp/rgui.o frontend/menu/history.o
    DEFINES += -DHAVE_MENU
+ifeq ($(HAVE_LAKKA), 1)
+   OBJ += frontend/menu/disp/lakka.o
+   DEFINES += -DHAVE_LAKKA
+endif
 endif
 
 ifeq ($(HAVE_THREADS), 1)
