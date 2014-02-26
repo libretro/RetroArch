@@ -163,6 +163,13 @@ static int tsizecmd_tbl[8] = { 0xb8, 0xb9, 0xba, 0xbb, 0xbc, 0xbd, 0xbe, 0xbf };
    } \
 }
 
+#define __sceGuFinish_GU_DIRECT() \
+   sendCommandi(15,0); \
+   sendCommandiStall(12,0); \
+   /* go to parent list */ \
+   gu_curr_context = gu_list->parent_context; \
+   gu_list = &gu_contexts[gu_curr_context].list
+
 void sendCommandf(int cmd, float argument);
 
 void callbackSig(int id, void* arg);
