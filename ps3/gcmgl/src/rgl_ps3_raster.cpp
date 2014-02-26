@@ -533,9 +533,11 @@ void rglCreatePushBuffer(void *data)
                   if ( parameterEntry->flags & CGP_CONTIGUOUS )
                   {
                      memset( rglGcmCurrent, 0, 4*( 4*registerCount + 3 ) );
-                     CellGcmContextData gcmContext;
+                     CellGcmContextData gcmContext, *gcmContext_ptr;
                      gcmContext.current = (uint32_t*)rglGcmCurrent;
-                     rglGcmSetVertexProgramParameterBlock(&gcmContext, parameterResource->resource, registerCount, ( float* )rglGcmCurrent );
+                     float *v = ( float* )rglGcmCurrent;
+                     gcmContext_ptr = &gcmContext;
+                     rglGcmSetVertexProgramParameterBlock(gcmContext_ptr, parameterResource->resource, registerCount, v);
                      rglGcmCurrent = (typeof(rglGcmCurrent))gcmContext.current;
 
                      rtParameter->pushBufferPointer = rglGcmCurrent - 4 * registerCount;
@@ -550,9 +552,11 @@ void rglCreatePushBuffer(void *data)
                         if ( program->resources[resourceIndex] != 0xffff )
                         {
                            memset( rglGcmCurrent, 0, 4*( 4*registerStride + 3 ) );
-                           CellGcmContextData gcmContext;
+                           CellGcmContextData gcmContext, *gcmContext_ptr;
                            gcmContext.current = (uint32_t*)rglGcmCurrent;
-                           rglGcmSetVertexProgramParameterBlock(&gcmContext, program->resources[resourceIndex], registerStride, ( float* )rglGcmCurrent );
+                           gcmContext_ptr = &gcmContext;
+                           float *v= (float*)rglGcmCurrent;
+                           rglGcmSetVertexProgramParameterBlock(gcmContext_ptr, program->resources[resourceIndex], registerStride, v);
                            rglGcmCurrent = (typeof(rglGcmCurrent))gcmContext.current;
                            *( programPushBuffer++ ) = ( unsigned int* )( rglGcmCurrent - 4 * registerStride );
                         }
@@ -801,6 +805,7 @@ void rglPlatformBufferObjectSetData(void *buf_data, GLintptr offset, GLsizeiptr 
    rglBufferObject *bufferObject = (rglBufferObject*)buf_data;
    rglGcmDriver *driver = (rglGcmDriver*)_CurrentDevice->rasterDriver;
    rglGcmBufferObject *rglBuffer = ( rglGcmBufferObject * )bufferObject->platformBufferObject;
+   CellGcmContextData *thisContext = (CellGcmContextData*)gCellGcmCurrentContext;
 
    if ( size == bufferObject->size && tryImmediateCopy )
       memcpy( gmmIdToAddress( rglBuffer->bufferId ) + offset, data, size );
@@ -827,7 +832,8 @@ void rglPlatformBufferObjectSetData(void *buf_data, GLintptr offset, GLsizeiptr 
             //  STREAM and DYNAMIC buffers get transfer via a bounce buffer.
             // copy via bounce buffer
             // try allocating the whole block in the bounce buffer
-            rglGcmSend( rglBuffer->bufferId, offset, rglBuffer->pitch, ( const char * )data, size );
+            const char *dat = (const char*)data;
+            rglGcmSend(thisContext, rglBuffer->bufferId, offset, rglBuffer->pitch, dat, size );
          }
       }
 }
@@ -944,6 +950,7 @@ static void rglPlatformBufferObjectSetDataTextureReference(void *buf_data, GLint
    rglBufferObject *bufferObject = (rglBufferObject*)buf_data;
    rglGcmDriver *driver = (rglGcmDriver*)_CurrentDevice->rasterDriver;
    rglGcmBufferObject *rglBuffer = ( rglGcmBufferObject * )bufferObject->platformBufferObject;
+   CellGcmContextData *thisContext = (CellGcmContextData*)gCellGcmCurrentContext;
 
    if ( size >= bufferObject->size )
    {
@@ -965,7 +972,7 @@ static void rglPlatformBufferObjectSetDataTextureReference(void *buf_data, GLint
       // copy via bounce buffer
       GLuint id = gmmAlloc(size);
       memset(gmmIdToAddress(id), 0, size);
-      rglGcmTransferData(rglBuffer->bufferId, offset, rglBuffer->pitch, id, 0, size, size, 1);
+      rglGcmTransferData(thisContext, rglBuffer->bufferId, offset, rglBuffer->pitch, id, 0, size, size, 1);
       gmmFree(id);
    }
 }
@@ -1358,7 +1365,7 @@ static void update_state_validation(void)
       __dcbt(((uint8_t*)program->ucode)+256);
       __dcbt(((uint8_t*)program->ucode)+384);
 
-      CellCgbVertexProgramConfiguration conf;
+      CellCgbVertexProgramConfiguration conf, *conf_ptr;
       conf.instructionSlot = program->header.vertexProgram.instructionSlot;
       conf.instructionCount = program->header.instructionCount;
       conf.registerCount = program->header.vertexProgram.registerCount;
@@ -1373,7 +1380,8 @@ static void update_state_validation(void)
       if ( fifo->ctx.current + spaceInWords + 1024 > fifo->ctx.end )
          rglOutOfSpaceCallback( fifo, spaceInWords );
 
-      rglGcmSetVertexProgramLoad(thisContext, &conf, program->ucode );
+      conf_ptr = &conf;
+      rglGcmSetVertexProgramLoad(thisContext, conf_ptr, program->ucode );
       rglGcmSetUserClipPlaneControl(thisContext, 0, 0, 0, 0, 0, 0 );
 
       rglGcmInterpolantState *s = &rglGcmState_i.state.interpolant;
@@ -1455,7 +1463,8 @@ static void update_state_validation(void)
                   v2[13] = value[7];
                   v2[14] = value[11];
                   v2[15] = value[15];
-                  rglGcmSetVertexProgramParameterBlock(gCellGcmCurrentContext, parameterResource->resource, 4, v2 );
+                  const float*v = v2;
+                  rglGcmSetVertexProgramParameterBlock(gCellGcmCurrentContext, parameterResource->resource, 4, v);
                }
                break;
             case CG_FLOAT3x3:
@@ -1478,7 +1487,8 @@ static void update_state_validation(void)
                   v2[9] = value[5];
                   v2[10] = value[8];
                   v2[11] = 0;
-                  rglGcmSetVertexProgramParameterBlock(gCellGcmCurrentContext, parameterResource->resource, 3, v2 );
+                  const float*v = v2;
+                  rglGcmSetVertexProgramParameterBlock(gCellGcmCurrentContext, parameterResource->resource, 3, v);
                }
                break;
          }
@@ -1520,7 +1530,7 @@ static void update_state_validation(void)
       _CGprogram *program = LContext->BoundFragmentProgram;
 
       // params are set directly in the GPU memory, so there is nothing to be done here.
-      CellCgbFragmentProgramConfiguration conf;
+      CellCgbFragmentProgramConfiguration conf, *conf_ptr;
 
       conf.offset = gmmIdToOffset(program->loadProgramId) + program->loadProgramOffset;
 
@@ -1545,8 +1555,9 @@ static void update_state_validation(void)
       conf.fragmentControl &= ~CELL_GCM_MASK_SET_SHADER_CONTROL_CONTROL_TXP; 
       /* TODO - look into this */
       conf.fragmentControl |= 0 << CELL_GCM_SHIFT_SET_SHADER_CONTROL_CONTROL_TXP; 
+      conf_ptr = &conf;
 
-      rglGcmSetFragmentProgramLoad(thisContext, &conf, CELL_GCM_LOCATION_LOCAL);
+      rglGcmSetFragmentProgramLoad(thisContext, conf_ptr, CELL_GCM_LOCATION_LOCAL);
 
       bool cullNearFarEnable = (program->header.fragmentProgram.flags & CGF_DEPTHREPLACE ) ? false : true;
       rglGcmSetZMinMaxControl(thisContext, cullNearFarEnable, false, false );
@@ -2081,7 +2092,7 @@ source:		RGLGCM_SURFACE_SOURCE_TEXTURE,
 
          if (( srcPitch >= 0x10000 ) || ( dstPitch >= 0x10000 ) || bpp_1_transferdata )
          {
-            rglGcmTransferData( dst.dataId, dst.dataIdOffset, dstPitch,
+            rglGcmTransferData(thisContext, dst.dataId, dst.dataIdOffset, dstPitch,
                   src.dataId, src.dataIdOffset, srcPitch,
                   width * src.bpp, height );
          }

@@ -33,6 +33,7 @@ static int rglGcmGenerateProgram (void *data, int profileIndex, const CgProgramH
 {
    _CGprogram *program = (_CGprogram*)data;
    CGprofile profile = ( CGprofile )programHeader->profile;
+   CellGcmContextData *thisContext = (CellGcmContextData*)gCellGcmCurrentContext;
 
    int need_swapping = 0;
 
@@ -168,7 +169,7 @@ static int rglGcmGenerateProgram (void *data, int profileIndex, const CgProgramH
          program->loadProgramOffset = 0;
       }
 
-      rglGcmSend( program->loadProgramId, program->loadProgramOffset, 0, ( char* )program->ucode, ucodeSize );
+      rglGcmSend(thisContext, program->loadProgramId, program->loadProgramOffset, 0, ( char* )program->ucode, ucodeSize );
    }
 
    program->programGroup = NULL;
