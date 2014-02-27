@@ -36,8 +36,8 @@
 #define MAX_PADS 7
 #endif
 
-#define DEADZONE_LOW 55
-#define DEADZONE_HIGH 210
+#define DEADZONE_LOW 105
+#define DEADZONE_HIGH 145
 
 typedef struct
 {
@@ -170,6 +170,16 @@ static void ps3_input_set_keybinds(void *data, unsigned device,
    }
 }
 
+static void convert_u8_to_s16(int16_t *to, uint8_t *from, uint32_t samples)
+{
+   for (uint32_t ix = 0; ix < samples; ix++)
+   {
+      int16_t diff = (*from++ << 8);
+      diff -= INT16_MAX;
+      *to++ = diff;
+   }
+}
+
 static void ps3_input_poll(void *data)
 {
    CellPadInfo2 pad_info;
@@ -241,10 +251,28 @@ static void ps3_input_poll(void *data)
          *state_cur |= (state_tmp.button[CELL_PAD_BTN_OFFSET_DIGITAL2] & CELL_PAD_CTRL_L2) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_L2) : 0;
          *state_cur |= (state_tmp.button[CELL_PAD_BTN_OFFSET_DIGITAL2] & CELL_PAD_CTRL_L2) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_L2) : 0;
          //RARCH_LOG("lsx : %d (%hd) lsy : %d (%hd) rsx : %d (%hd) rsy : %d (%hd)\n", lsx, ls_x, lsy, ls_y, rsx, rs_x, rsy, rs_y);
-         ps3->analog_state[port][RETRO_DEVICE_INDEX_ANALOG_LEFT ][RETRO_DEVICE_ID_ANALOG_X] = (int16_t)(state_tmp.button[CELL_PAD_BTN_OFFSET_ANALOG_LEFT_X]  - 128) * 256;
-         ps3->analog_state[port][RETRO_DEVICE_INDEX_ANALOG_LEFT ][RETRO_DEVICE_ID_ANALOG_Y] = (int16_t)(state_tmp.button[CELL_PAD_BTN_OFFSET_ANALOG_LEFT_Y]  - 128) * 256;
-         ps3->analog_state[port][RETRO_DEVICE_INDEX_ANALOG_RIGHT][RETRO_DEVICE_ID_ANALOG_X] = (int16_t)(state_tmp.button[CELL_PAD_BTN_OFFSET_ANALOG_RIGHT_X] - 128) * 256;
-         ps3->analog_state[port][RETRO_DEVICE_INDEX_ANALOG_RIGHT][RETRO_DEVICE_ID_ANALOG_Y] = (int16_t)(state_tmp.button[CELL_PAD_BTN_OFFSET_ANALOG_RIGHT_Y] - 128) * 256;
+         uint8_t lsx = (uint8_t)(state_tmp.button[CELL_PAD_BTN_OFFSET_ANALOG_LEFT_X]);
+         uint8_t lsy = (uint8_t)(state_tmp.button[CELL_PAD_BTN_OFFSET_ANALOG_LEFT_Y]);
+         uint8_t rsx = (uint8_t)(state_tmp.button[CELL_PAD_BTN_OFFSET_ANALOG_RIGHT_X]);
+         uint8_t rsy = (uint8_t)(state_tmp.button[CELL_PAD_BTN_OFFSET_ANALOG_RIGHT_Y]);
+         int16_t lsx_s16, lsy_s16, rsx_s16, rsy_s16;
+         if (!(lsx < DEADZONE_LOW || DEADZONE_HIGH < lsx))
+            lsx = 128;
+         if (!(lsy < DEADZONE_LOW || DEADZONE_HIGH < lsy))
+            lsy = 128;
+         if (!(rsx < DEADZONE_LOW || DEADZONE_HIGH < rsx))
+            rsx = 128;
+         if (!(rsy < DEADZONE_LOW || DEADZONE_HIGH < rsy))
+            rsy = 128;
+         convert_u8_to_s16(&lsx_s16, &lsx, 1);
+         convert_u8_to_s16(&lsy_s16, &lsy, 1);
+         convert_u8_to_s16(&rsx_s16, &rsx, 1);
+         convert_u8_to_s16(&rsy_s16, &rsy, 1);
+         ps3->analog_state[port][RETRO_DEVICE_INDEX_ANALOG_LEFT ][RETRO_DEVICE_ID_ANALOG_X] = lsx_s16;
+         ps3->analog_state[port][RETRO_DEVICE_INDEX_ANALOG_LEFT ][RETRO_DEVICE_ID_ANALOG_Y] = lsy_s16;
+         ps3->analog_state[port][RETRO_DEVICE_INDEX_ANALOG_RIGHT][RETRO_DEVICE_ID_ANALOG_X] = rsx_s16;
+         ps3->analog_state[port][RETRO_DEVICE_INDEX_ANALOG_RIGHT][RETRO_DEVICE_ID_ANALOG_Y] = rsy_s16;
+
          ps3->accelerometer_state[port].x = state_tmp.button[CELL_PAD_BTN_OFFSET_SENSOR_X];
          ps3->accelerometer_state[port].y = state_tmp.button[CELL_PAD_BTN_OFFSET_SENSOR_Y];
          ps3->accelerometer_state[port].z = state_tmp.button[CELL_PAD_BTN_OFFSET_SENSOR_Z];
