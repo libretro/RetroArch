@@ -184,11 +184,6 @@ static void ps3_input_poll(void *data)
    ps3_input_t *ps3 = (ps3_input_t*)data;
    uint64_t *lifecycle_state = &g_extern.lifecycle_state;
 
-   ps3->analog_state[0][0][0] = ps3->analog_state[0][0][1] = ps3->analog_state[0][1][0] = ps3->analog_state[0][1][1] = 0;
-   ps3->analog_state[1][0][0] = ps3->analog_state[1][0][1] = ps3->analog_state[1][1][0] = ps3->analog_state[1][1][1] = 0;
-   ps3->analog_state[2][0][0] = ps3->analog_state[2][0][1] = ps3->analog_state[2][1][0] = ps3->analog_state[2][1][1] = 0;
-   ps3->analog_state[3][0][0] = ps3->analog_state[3][0][1] = ps3->analog_state[3][1][0] = ps3->analog_state[3][1][1] = 0;
-
    for (unsigned port = 0; port < MAX_PADS; port++)
    {
       static CellPadData state_tmp;
