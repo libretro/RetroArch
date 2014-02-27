@@ -170,14 +170,12 @@ static void ps3_input_set_keybinds(void *data, unsigned device,
    }
 }
 
-static void convert_u8_to_s16(int16_t *to, uint8_t *from, uint32_t samples)
+static inline int16_t convert_u8_to_s16(uint8_t val)
 {
-   for (uint32_t ix = 0; ix < samples; ix++)
-   {
-      int16_t diff = (*from++ << 8);
-      diff -= INT16_MAX;
-      *to++ = diff;
-   }
+   if (val == 0)
+      return -0x7fff;
+   else
+      return val * 0x0101 - 0x8000;
 }
 
 static void ps3_input_poll(void *data)
@@ -255,7 +253,7 @@ static void ps3_input_poll(void *data)
          uint8_t lsy = (uint8_t)(state_tmp.button[CELL_PAD_BTN_OFFSET_ANALOG_LEFT_Y]);
          uint8_t rsx = (uint8_t)(state_tmp.button[CELL_PAD_BTN_OFFSET_ANALOG_RIGHT_X]);
          uint8_t rsy = (uint8_t)(state_tmp.button[CELL_PAD_BTN_OFFSET_ANALOG_RIGHT_Y]);
-         int16_t lsx_s16, lsy_s16, rsx_s16, rsy_s16;
+#if 0
          if (!(lsx < DEADZONE_LOW || DEADZONE_HIGH < lsx))
             lsx = 128;
          if (!(lsy < DEADZONE_LOW || DEADZONE_HIGH < lsy))
@@ -264,14 +262,11 @@ static void ps3_input_poll(void *data)
             rsx = 128;
          if (!(rsy < DEADZONE_LOW || DEADZONE_HIGH < rsy))
             rsy = 128;
-         convert_u8_to_s16(&lsx_s16, &lsx, 1);
-         convert_u8_to_s16(&lsy_s16, &lsy, 1);
-         convert_u8_to_s16(&rsx_s16, &rsx, 1);
-         convert_u8_to_s16(&rsy_s16, &rsy, 1);
-         ps3->analog_state[port][RETRO_DEVICE_INDEX_ANALOG_LEFT ][RETRO_DEVICE_ID_ANALOG_X] = lsx_s16;
-         ps3->analog_state[port][RETRO_DEVICE_INDEX_ANALOG_LEFT ][RETRO_DEVICE_ID_ANALOG_Y] = lsy_s16;
-         ps3->analog_state[port][RETRO_DEVICE_INDEX_ANALOG_RIGHT][RETRO_DEVICE_ID_ANALOG_X] = rsx_s16;
-         ps3->analog_state[port][RETRO_DEVICE_INDEX_ANALOG_RIGHT][RETRO_DEVICE_ID_ANALOG_Y] = rsy_s16;
+#endif
+         ps3->analog_state[port][RETRO_DEVICE_INDEX_ANALOG_LEFT ][RETRO_DEVICE_ID_ANALOG_X] = convert_u8_to_s16(lsx);
+         ps3->analog_state[port][RETRO_DEVICE_INDEX_ANALOG_LEFT ][RETRO_DEVICE_ID_ANALOG_Y] = convert_u8_to_s16(lsy);
+         ps3->analog_state[port][RETRO_DEVICE_INDEX_ANALOG_RIGHT][RETRO_DEVICE_ID_ANALOG_X] = convert_u8_to_s16(rsx);
+         ps3->analog_state[port][RETRO_DEVICE_INDEX_ANALOG_RIGHT][RETRO_DEVICE_ID_ANALOG_Y] = convert_u8_to_s16(rsy);
 
          ps3->accelerometer_state[port].x = state_tmp.button[CELL_PAD_BTN_OFFSET_SENSOR_X];
          ps3->accelerometer_state[port].y = state_tmp.button[CELL_PAD_BTN_OFFSET_SENSOR_Y];
