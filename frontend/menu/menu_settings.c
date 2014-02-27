@@ -946,6 +946,7 @@ int menu_set_settings(void *data, unsigned setting, unsigned action)
       case RGUI_SETTINGS_BIND_R2:
       case RGUI_SETTINGS_BIND_L3:
       case RGUI_SETTINGS_BIND_R3:
+      case RGUI_SETTINGS_BIND_TURBO_ENABLE:
       case RGUI_SETTINGS_BIND_ANALOG_LEFT_X_PLUS:
       case RGUI_SETTINGS_BIND_ANALOG_LEFT_X_MINUS:
       case RGUI_SETTINGS_BIND_ANALOG_LEFT_Y_PLUS:
@@ -985,7 +986,6 @@ int menu_set_settings(void *data, unsigned setting, unsigned action)
       case RGUI_SETTINGS_BIND_DISK_NEXT:
       case RGUI_SETTINGS_BIND_GRAB_MOUSE_TOGGLE:
       case RGUI_SETTINGS_BIND_MENU_TOGGLE:
-      case RGUI_SETTINGS_BIND_MENU_TOGGLE+1:
          if (driver.input->set_keybinds && !driver.input->get_joypad_driver)
          {
             unsigned keybind_action = KEYBINDS_ACTION_NONE;
@@ -2056,6 +2056,7 @@ void menu_set_settings_label(char *type_str, size_t type_str_size, unsigned *w, 
       case RGUI_SETTINGS_BIND_R2:
       case RGUI_SETTINGS_BIND_L3:
       case RGUI_SETTINGS_BIND_R3:
+      case RGUI_SETTINGS_BIND_TURBO_ENABLE:
       case RGUI_SETTINGS_BIND_ANALOG_LEFT_X_PLUS:
       case RGUI_SETTINGS_BIND_ANALOG_LEFT_X_MINUS:
       case RGUI_SETTINGS_BIND_ANALOG_LEFT_Y_PLUS:
@@ -2095,7 +2096,6 @@ void menu_set_settings_label(char *type_str, size_t type_str_size, unsigned *w, 
       case RGUI_SETTINGS_BIND_DISK_NEXT:
       case RGUI_SETTINGS_BIND_GRAB_MOUSE_TOGGLE:
       case RGUI_SETTINGS_BIND_MENU_TOGGLE:
-      case RGUI_SETTINGS_BIND_MENU_TOGGLE+1:
          input_get_bind_string(type_str, &g_settings.input.binds[rgui->current_pad][type - RGUI_SETTINGS_BIND_BEGIN], type_str_size);
          break;
       case RGUI_SETTINGS_AUDIO_VOLUME_LEVEL:
