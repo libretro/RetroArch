@@ -273,38 +273,11 @@ static void menu_settings_create_menu_item_label_w(wchar_t *strwbuf, unsigned se
    mbstowcs(strwbuf, str, size / sizeof(wchar_t));
 }
 
-static void filebrowser_fetch_directory_entries(const char *path, uint64_t action)
-{
-#if 1
-   return;
-#else
-   //filebrowser_iterate(rgui->browser, action); 
-
-   mbstowcs(strw_buffer, path, sizeof(strw_buffer) / sizeof(wchar_t));
-   XuiTextElementSetText(m_menutitle, strw_buffer);
-
-   XuiListDeleteItems(m_menulist, 0, XuiListGetItemCount(m_menulist));
-   XuiListInsertItems(m_menulist, 0, rgui->browser->list->size);
-
-   for(unsigned i = 0; i < rgui->browser->list->size; i++)
-   {
-      char fname_tmp[256];
-      fill_pathname_base(fname_tmp, rgui->browser->list->elems[i].data, sizeof(fname_tmp));
-      mbstowcs(strw_buffer, fname_tmp, sizeof(strw_buffer) / sizeof(wchar_t));
-      XuiListSetText(m_menulist, i, strw_buffer);
-   }
-#endif
-}
-
 HRESULT CRetroArchFileBrowser::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
 {
    GetChildById(L"XuiMenuList", &m_menulist);
    GetChildById(L"XuiTxtTitle", &m_menutitle);
    GetChildById(L"XuiTxtBottom", &m_menutitlebottom);
-
-#if 0
-   filebrowser_fetch_directory_entries(default_paths.filebrowser_startup_dir, RGUI_ACTION_OK);
-#endif
 
    return 0;
 }
@@ -1056,10 +1029,6 @@ HRESULT CRetroArchShaderBrowser::OnInit(XUIMessageInit * pInitData, BOOL& bHandl
    GetChildById(L"XuiTxtTitle", &m_menutitle);
    GetChildById(L"XuiTxtBottom", &m_menutitlebottom);
 
-#if 0
-   filebrowser_fetch_directory_entries("game:\\media\\shaders", RGUI_ACTION_OK);
-#endif
-
    return 0;
 }
 
@@ -1069,21 +1038,6 @@ HRESULT CRetroArchShaderBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHand
    process_input_ret = 0;
 
    (void)path;
-
-   if(hObjPressed == m_menulist)
-   {
-#if 0
-      int index = XuiListGetCurSel(m_menulist, NULL);
-      if (path_file_exists(rgui->browser->list->elems[index].data))
-         wcstombs(str_buffer, (const wchar_t *)XuiListGetText(m_menulist, index), sizeof(str_buffer));
-      else if (rgui->browser->list->elems[index].attr.b)
-      {
-         wcstombs(str_buffer, (const wchar_t *)XuiListGetText(m_menulist, index), sizeof(str_buffer));
-         fill_pathname_join(path, rgui->browser->current_dir.directory_path, str_buffer, sizeof(path));
-         filebrowser_fetch_directory_entries(path, RGUI_ACTION_OK);
-      }
-#endif
-   }
 
    bHandled = TRUE;
 
@@ -1096,10 +1050,6 @@ HRESULT CRetroArchCoreBrowser::OnInit(XUIMessageInit * pInitData, BOOL& bHandled
    GetChildById(L"XuiTxtTitle", &m_menutitle);
    GetChildById(L"XuiTxtBottom", &m_menutitlebottom);
 
-#if 0
-   filebrowser_fetch_directory_entries("game:", RGUI_ACTION_OK);
-#endif
-
    return 0;
 }
 
@@ -1110,27 +1060,6 @@ HRESULT CRetroArchCoreBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHandle
    process_input_ret = 0;
 
    (void)path;
-
-   if(hObjPressed == m_menulist)
-   {
-#if 0
-      int index = XuiListGetCurSel(m_menulist, NULL);
-      wcstombs(str_buffer, (const wchar_t *)XuiListGetText(m_menulist, index), sizeof(str_buffer));
-      if(path_file_exists(rgui->browser->list->elems[index].data))
-      {
-         fill_pathname_join(path, rgui->browser->current_dir.directory_path, str_buffer, sizeof(path));
-         rarch_environment_cb(RETRO_ENVIRONMENT_SET_LIBRETRO_PATH, (void*)path);
-
-         g_extern.lifecycle_state |= (1ULL << MODE_EXITSPAWN);
-         process_input_ret = -1;
-      }
-      else if (rgui->browser->list->elems[index].attr.b)
-      {
-         fill_pathname_join(path, rgui->browser->current_dir.directory_path, str_buffer, sizeof(path));
-         filebrowser_fetch_directory_entries(path, RGUI_ACTION_OK);
-      }
-#endif
-   }
 
    bHandled = TRUE;
    return 0;
