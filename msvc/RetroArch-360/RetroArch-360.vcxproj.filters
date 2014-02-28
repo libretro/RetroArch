@@ -129,71 +129,17 @@
     <CustomBuild Include="..\..\media\360\Arial_12.rdf">
       <Filter>Source Files\media</Filter>
     </CustomBuild>
-    <CustomBuild Include="..\..\media\360\sd\rarch_filebrowser.xui">
-      <Filter>Source Files\media\sd</Filter>
-    </CustomBuild>
-    <CustomBuild Include="..\..\media\360\hd\rarch_filebrowser.xui">
-      <Filter>Source Files\media\hd</Filter>
-    </CustomBuild>
-    <CustomBuild Include="..\..\media\360\sd\rarch_libretrocore_browser.xui">
-      <Filter>Source Files\media\sd</Filter>
-    </CustomBuild>
-    <CustomBuild Include="..\..\media\360\hd\rarch_libretrocore_browser.xui">
-      <Filter>Source Files\media\hd</Filter>
-    </CustomBuild>
     <CustomBuild Include="..\..\media\360\sd\rarch_main.xui">
       <Filter>Source Files\media\sd</Filter>
     </CustomBuild>
     <CustomBuild Include="..\..\media\360\hd\rarch_main.xui">
       <Filter>Source Files\media\hd</Filter>
     </CustomBuild>
-    <CustomBuild Include="..\..\media\360\hd\rarch_video_options.xui">
-      <Filter>Source Files\media\hd</Filter>
-    </CustomBuild>
-    <CustomBuild Include="..\..\media\360\sd\rarch_video_options.xui">
-      <Filter>Source Files\media\sd</Filter>
-    </CustomBuild>
-    <CustomBuild Include="..\..\media\360\hd\rarch_audio_options.xui">
-      <Filter>Source Files\media\hd</Filter>
-    </CustomBuild>
-    <CustomBuild Include="..\..\media\360\sd\rarch_audio_options.xui">
-      <Filter>Source Files\media\sd</Filter>
-    </CustomBuild>
-    <CustomBuild Include="..\..\media\360\hd\rarch_core_options.xui">
-      <Filter>Source Files\media\hd</Filter>
-    </CustomBuild>
-    <CustomBuild Include="..\..\media\360\sd\rarch_core_options.xui">
-      <Filter>Source Files\media\sd</Filter>
-    </CustomBuild>
-    <CustomBuild Include="..\..\media\360\hd\rarch_settings.xui">
-      <Filter>Source Files\media\hd</Filter>
-    </CustomBuild>
-    <CustomBuild Include="..\..\media\360\sd\rarch_settings.xui">
-      <Filter>Source Files\media\sd</Filter>
-    </CustomBuild>
-    <CustomBuild Include="..\..\media\360\hd\rarch_load_game_history.xui">
-      <Filter>Source Files\media\hd</Filter>
-    </CustomBuild>
-    <CustomBuild Include="..\..\media\360\sd\rarch_load_game_history.xui">
-      <Filter>Source Files\media\sd</Filter>
-    </CustomBuild>
     <CustomBuild Include="..\..\media\360\rarch.ttf">
       <Filter>Source Files\media</Filter>
     </CustomBuild>
     <CustomBuild Include="..\..\media\360\rarch_scene_skin.xui">
       <Filter>Source Files\media</Filter>
-    </CustomBuild>
-    <CustomBuild Include="..\..\media\360\sd\rarch_shader_browser.xui">
-      <Filter>Source Files\media\sd</Filter>
-    </CustomBuild>
-    <CustomBuild Include="..\..\media\360\hd\rarch_shader_browser.xui">
-      <Filter>Source Files\media\hd</Filter>
-    </CustomBuild>
-    <CustomBuild Include="..\..\media\360\hd\rarch_controls.xui">
-      <Filter>Source Files\media\hd</Filter>
-    </CustomBuild>
-    <CustomBuild Include="..\..\media\360\sd\rarch_controls.xui">
-      <Filter>Source Files\media\sd</Filter>
     </CustomBuild>
   </ItemGroup>
 </Project>
