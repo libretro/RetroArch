@@ -445,7 +445,7 @@ static void* ps3_input_init(void)
 
 static bool ps3_input_key_pressed(void *data, int key)
 {
-   return (g_extern.lifecycle_state & (1ULL << key));
+   return (g_extern.lifecycle_state & (1ULL << key)) || input_joypad_pressed(&ps3_joypad, 0, g_settings.input.binds[0], key);
 }
 
 static uint64_t ps3_input_get_capabilities(void *data)

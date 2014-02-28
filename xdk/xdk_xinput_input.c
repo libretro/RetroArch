@@ -385,7 +385,7 @@ static void *xdk_input_init(void)
 
 static bool xdk_input_key_pressed(void *data, int key)
 {
-   return (g_extern.lifecycle_state & (1ULL << key));
+   return (g_extern.lifecycle_state & (1ULL << key)) || input_joypad_pressed(&xdk_joypad, 0, g_settings.input.binds[0], key);
 }
 
 static uint64_t xdk_input_get_capabilities(void *data)
