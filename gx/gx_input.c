@@ -614,10 +614,6 @@ static void gx_input_poll(void *data)
    gx->pad_state[1] = 0;
    gx->pad_state[2] = 0;
    gx->pad_state[3] = 0;
-   gx->analog_state[0][0][0] = gx->analog_state[0][0][1] = gx->analog_state[0][1][0] = gx->analog_state[0][1][1] = 0;
-   gx->analog_state[1][0][0] = gx->analog_state[1][0][1] = gx->analog_state[1][1][0] = gx->analog_state[1][1][1] = 0;
-   gx->analog_state[2][0][0] = gx->analog_state[2][0][1] = gx->analog_state[2][1][0] = gx->analog_state[2][1][1] = 0;
-   gx->analog_state[3][0][0] = gx->analog_state[3][0][1] = gx->analog_state[3][1][0] = gx->analog_state[3][1][1] = 0;
 
    uint8_t gcpad = PAD_ScanPads();
 
