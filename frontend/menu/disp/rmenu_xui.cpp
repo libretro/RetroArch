@@ -250,164 +250,6 @@ static void set_dpad_emulation_label(unsigned port, char *str, size_t sizeof_str
 {
 }
 
-static void rmenu_xui_populate_entries(void *data, unsigned menu_type)
-{
-   XuiListDeleteItems(m_menulist, 0, XuiListGetItemCount(m_menulist));
-
-   switch (menu_type)
-   {
-      case INGAME_MENU_CORE_OPTIONS_MODE:
-         if (g_extern.system.core_options)
-         {
-            size_t opts = core_option_size(g_extern.system.core_options);
-            for (size_t i = 0; i < opts; i++)
-            {
-               char label[256];
-               strlcpy(label, core_option_get_desc(g_extern.system.core_options, i),
-                     sizeof(label));
-               snprintf(label, sizeof(label), "%s : %s", label,
-                     core_option_get_val(g_extern.system.core_options, i));
-               mbstowcs(strw_buffer, label,
-                     sizeof(strw_buffer) / sizeof(wchar_t));
-               XuiListInsertItems(m_menulist, i, 1);
-               XuiListSetText(m_menulist, i, strw_buffer);
-            }
-         }
-         else
-         {
-            XuiListInsertItems(m_menulist, 0, 1);
-            XuiListSetText(m_menulist, 0, L"No options available.");
-         }
-         break;
-      case INGAME_MENU_LOAD_GAME_HISTORY_MODE:
-         {
-            size_t history_size = rom_history_size(rgui->history);
-
-            if (history_size)
-            {
-               size_t opts = history_size;
-               for (size_t i = 0; i < opts; i++)
-               {
-                  const char *path = NULL;
-                  const char *core_path = NULL;
-                  const char *core_name = NULL;
-
-                  rom_history_get_index(rgui->history, i,
-                        &path, &core_path, &core_name);
-
-                  char path_short[PATH_MAX];
-                  fill_pathname(path_short, path_basename(path), "", sizeof(path_short));
-
-                  char fill_buf[PATH_MAX];
-                  snprintf(fill_buf, sizeof(fill_buf), "%s (%s)",
-                        path_short, core_name);
-
-                  mbstowcs(strw_buffer, fill_buf, sizeof(strw_buffer) / sizeof(wchar_t));
-                  XuiListInsertItems(m_menulist, i, 1);
-                  XuiListSetText(m_menulist, i, strw_buffer);
-               }
-            }
-            else
-            {
-               XuiListInsertItems(m_menulist, 0, 1);
-               XuiListSetText(m_menulist, 0, L"No history available.");
-            }
-         }
-         break;
-      case INGAME_MENU_INPUT_OPTIONS_MODE:
-         {
-            unsigned i;
-            char buttons[RARCH_FIRST_META_KEY][128];
-            unsigned keybind_end = RETRO_DEVICE_ID_JOYPAD_R3 + 1;
-
-            for(i = 0; i < keybind_end; i++)
-            {
-               struct platform_bind key_label;
-               strlcpy(key_label.desc, "Unknown", sizeof(key_label.desc));
-               key_label.joykey = g_settings.input.binds[rgui->current_pad][i].joykey;
-
-               if (driver.input->set_keybinds)
-                  driver.input->set_keybinds(&key_label, 0, 0, 0, (1ULL << KEYBINDS_ACTION_GET_BIND_LABEL));
-
-               snprintf(buttons[i], sizeof(buttons[i]), "%s #%d: %s", 
-                     g_settings.input.binds[rgui->current_pad][i].desc,
-                     rgui->current_pad, key_label.desc);
-               mbstowcs(strw_buffer, buttons[i], sizeof(strw_buffer) / sizeof(wchar_t));
-               XuiListInsertItems(m_menulist, i, 1);
-               XuiListSetText(m_menulist, i, strw_buffer);
-            }
-
-            //set_dpad_emulation_label(rgui->current_pad, buttons[0], sizeof(buttons[0]));
-            //mbstowcs(strw_buffer, buttons[0], sizeof(strw_buffer) / sizeof(wchar_t));
-            XuiListInsertItems(m_menulist, keybind_end, 1);
-            //XuiListSetText(m_menulist, SETTING_CONTROLS_DPAD_EMULATION, strw_buffer);
-            XuiListSetText(m_menulist, SETTING_CONTROLS_DPAD_EMULATION, L"Stub");
-
-            XuiListInsertItems(m_menulist, keybind_end + 1, 1);
-            XuiListSetText(m_menulist, SETTING_CONTROLS_DEFAULT_ALL, L"Reset all buttons to default");
-         }
-         break;
-      case INGAME_MENU_SETTINGS_MODE:
-         XuiListInsertItems(m_menulist, INGAME_MENU_REWIND_ENABLED, 1);
-         XuiListSetText(m_menulist, INGAME_MENU_REWIND_ENABLED, g_settings.rewind_enable ? L"Rewind: ON" : L"Rewind: OFF");
-         menu_settings_create_menu_item_label_w(strw_buffer, S_LBL_REWIND_GRANULARITY, sizeof(strw_buffer));
-         XuiListInsertItems(m_menulist, INGAME_MENU_REWIND_GRANULARITY, 1);
-         XuiListSetText(m_menulist, INGAME_MENU_REWIND_GRANULARITY, strw_buffer);
-
-         XuiListInsertItems(m_menulist, SETTING_EMU_SHOW_DEBUG_INFO_MSG, 1);
-         XuiListSetText(m_menulist, SETTING_EMU_SHOW_DEBUG_INFO_MSG, (g_settings.fps_show) ? L"Show Framerate: ON" : L"Show Framerate: OFF");
-         break;
-      case INGAME_MENU_MAIN_MODE:
-         XuiListInsertItems(m_menulist, INGAME_MENU_CHANGE_LIBRETRO_CORE, 1);
-         XuiListSetText(m_menulist, INGAME_MENU_CHANGE_LIBRETRO_CORE, L"Core ...");
-
-         XuiListInsertItems(m_menulist, INGAME_MENU_LOAD_GAME_HISTORY_MODE, 1);
-         XuiListSetText(m_menulist, INGAME_MENU_LOAD_GAME_HISTORY_MODE, L"Load Game (History) ...");
-
-         XuiListInsertItems(m_menulist, INGAME_MENU_CHANGE_GAME, 1);
-         XuiListSetText(m_menulist, INGAME_MENU_CHANGE_GAME, L"Load Game ...");
-
-         XuiListInsertItems(m_menulist, INGAME_MENU_CORE_OPTIONS_MODE, 1);
-         XuiListSetText(m_menulist, INGAME_MENU_CORE_OPTIONS_MODE, L"Core Options ...");
-
-         XuiListInsertItems(m_menulist, INGAME_MENU_VIDEO_OPTIONS_MODE, 1);
-         XuiListSetText(m_menulist, INGAME_MENU_VIDEO_OPTIONS_MODE, L"Video Options ...");
-
-         XuiListInsertItems(m_menulist, INGAME_MENU_AUDIO_OPTIONS_MODE, 1);
-         XuiListSetText(m_menulist, INGAME_MENU_AUDIO_OPTIONS_MODE, L"Audio Options ...");
-
-         XuiListInsertItems(m_menulist, INGAME_MENU_INPUT_OPTIONS_MODE, 1);
-         XuiListSetText(m_menulist, INGAME_MENU_INPUT_OPTIONS_MODE, L"Input Options ...");
-
-         XuiListInsertItems(m_menulist, INGAME_MENU_PATH_OPTIONS_MODE, 1);
-         XuiListSetText(m_menulist, INGAME_MENU_PATH_OPTIONS_MODE, L"Path Options ...");
-
-         XuiListInsertItems(m_menulist, INGAME_MENU_SETTINGS_MODE, 1);
-         XuiListSetText(m_menulist, INGAME_MENU_SETTINGS_MODE, L"Settings ...");
-
-         menu_settings_create_menu_item_label_w(strw_buffer, S_LBL_LOAD_STATE_SLOT, sizeof(strw_buffer));
-         XuiListInsertItems(m_menulist, INGAME_MENU_LOAD_STATE, 1);
-         XuiListSetText(m_menulist, INGAME_MENU_LOAD_STATE, strw_buffer);
-
-         menu_settings_create_menu_item_label_w(strw_buffer, S_LBL_SAVE_STATE_SLOT, sizeof(strw_buffer));
-         XuiListInsertItems(m_menulist, INGAME_MENU_SAVE_STATE, 1);
-         XuiListSetText(m_menulist, INGAME_MENU_SAVE_STATE, strw_buffer);
-
-         XuiListInsertItems(m_menulist, INGAME_MENU_SCREENSHOT_MODE, 1);
-         XuiListSetText(m_menulist, INGAME_MENU_SCREENSHOT_MODE, L"Take Screenshot");
-
-         XuiListInsertItems(m_menulist, INGAME_MENU_RETURN_TO_GAME, 1);
-         XuiListSetText(m_menulist, INGAME_MENU_RETURN_TO_GAME, L"Resume Game");
-
-         XuiListInsertItems(m_menulist, INGAME_MENU_RESET, 1);
-         XuiListSetText(m_menulist, INGAME_MENU_RESET, L"Restart Game");
-
-         XuiListInsertItems(m_menulist, INGAME_MENU_QUIT_RETROARCH, 1);
-         XuiListSetText(m_menulist, INGAME_MENU_QUIT_RETROARCH, L"Quit RetroArch");
-         break;
-   }
-}
-
 static unsigned xui_input_to_rmenu_xui_action(unsigned input)
 {
    switch (input)
@@ -432,8 +274,6 @@ HRESULT CRetroArchMain::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
    GetChildById(L"XuiMenuList", &m_menulist);
    GetChildById(L"XuiTxtTitle", &m_menutitle);
    GetChildById(L"XuiTxtBottom", &m_menutitlebottom);
-
-   rmenu_xui_populate_entries(NULL, INGAME_MENU_MAIN_MODE);
 
    mbstowcs(strw_buffer, g_extern.title_buf, sizeof(strw_buffer) / sizeof(wchar_t));
    XuiTextElementSetText(m_menutitlebottom, strw_buffer);
@@ -561,14 +401,6 @@ static void ingame_menu_resize (void)
 void rmenu_xui_iterate(void *data, unsigned action)
 {
    (void)data;
-
-   if (action == RGUI_ACTION_OK)
-   {
-      XuiSceneNavigateBack(current_menu, root_menu, XUSER_INDEX_ANY);
-      current_menu = root_menu;
-      XuiElementGetChildById(current_menu, L"XuiMenuList", &m_menulist);
-      rmenu_xui_populate_entries(NULL, INGAME_MENU_MAIN_MODE);
-   }
 }
 
 bool menu_iterate_xui(void)
@@ -908,7 +740,7 @@ const menu_ctx_driver_t menu_ctx_rmenu_xui = {
    rmenu_xui_free,
    NULL,
    NULL,
-   rmenu_xui_populate_entries,
+   NULL,
    rmenu_xui_iterate,
    rmenu_xui_input_postprocess,
    "rmenu_xui",
