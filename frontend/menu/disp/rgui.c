@@ -571,7 +571,7 @@ static void rgui_free(void *data)
       free((uint8_t*)rgui->font);
 }
 
-int rgui_input_postprocess(void *data, uint64_t old_state)
+static int rgui_input_postprocess(void *data, uint64_t old_state)
 {
    (void)data;
 
@@ -607,5 +607,6 @@ const menu_ctx_driver_t menu_ctx_rgui = {
    NULL,
    NULL,
    NULL,
+   rgui_input_postprocess,
    "rgui",
 };

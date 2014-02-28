@@ -695,7 +695,7 @@ static void lakka_free(void *data)
       free((uint8_t*)rgui->font);
 }
 
-int lakka_input_postprocess(void *data, uint64_t old_state)
+static int lakka_input_postprocess(void *data, uint64_t old_state)
 {
    (void)data;
 
@@ -723,5 +723,6 @@ const menu_ctx_driver_t menu_ctx_lakka = {
    lakka_free_assets,
    NULL,
    NULL,
+   lakka_input_postprocess,
    "lakka",
 };

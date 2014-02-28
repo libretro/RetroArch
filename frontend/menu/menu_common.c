@@ -1408,8 +1408,10 @@ bool menu_iterate(void)
    static bool initial_held = true;
    static bool first_held = false;
    uint64_t input_state = 0;
-   int input_entry_ret = 0;
-   int ret;
+   int32_t input_entry_ret, ret;
+      
+   input_entry_ret = 0;
+   ret = 0;
 
    if (g_extern.lifecycle_state & (1ULL << MODE_MENU_PREINIT))
    {
@@ -1507,7 +1509,8 @@ bool menu_iterate(void)
       driver.video_poke->set_texture_enable(driver.video_data, false,
             MENU_TEXTURE_FULLSCREEN);
 
-   ret = rgui_input_postprocess(rgui, rgui->old_input_state);
+   if (menu_ctx && menu_ctx->input_postprocess)
+      ret = menu_ctx->input_postprocess(rgui, rgui->old_input_state);
 
    if (ret < 0)
    {

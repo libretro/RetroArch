@@ -442,7 +442,7 @@ static void rmenu_free(void *data)
    rmenu_free_assets(data);
 }
 
-int rgui_input_postprocess(void *data, uint64_t old_state)
+static int rmenu_input_postprocess(void *data, uint64_t old_state)
 {
    (void)data;
 
@@ -470,5 +470,6 @@ const menu_ctx_driver_t menu_ctx_rmenu = {
    rmenu_free_assets,
    NULL,
    NULL,
+   rmenu_input_postprocess,
    "rmenu",
 };

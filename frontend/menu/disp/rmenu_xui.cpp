@@ -1447,7 +1447,7 @@ bool menu_iterate_xui(void)
    return true;
 }
 
-int rgui_input_postprocess(void *data, uint64_t old_state)
+static int rmenu_xui_input_postprocess(void *data, uint64_t old_state)
 {
    rgui_handle_t *rgui = (rgui_handle_t*)data;
    bool quit = false;
@@ -1486,5 +1486,6 @@ const menu_ctx_driver_t menu_ctx_rmenu_xui = {
    NULL,
    rmenu_xui_populate_entries,
    rmenu_xui_iterate,
+   rmenu_xui_input_postprocess,
    "rmenu_xui",
 };
