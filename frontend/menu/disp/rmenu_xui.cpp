@@ -1476,10 +1476,286 @@ static int rmenu_xui_input_postprocess(void *data, uint64_t old_state)
    return process_input_ret_old;
 }
 
+static void blit_line(rgui_handle_t *rgui,
+int x, int y, const char *message, bool green)
+{
+}
+
+static void rmenu_xui_render_background(rgui_handle_t *rgui)
+{
+   (void)rgui;
+}
+
+static void rmenu_xui_render_messagebox(void *data, const char *message)
+{
+   (void)data;
+   (void)message;
+}
+
+static void rmenu_xui_render(void *data)
+{
+   rgui_handle_t *rgui = (rgui_handle_t*)data;
+
+   if (rgui->need_refresh && 
+         (g_extern.lifecycle_state & (1ULL << MODE_MENU))
+         && !rgui->msg_force)
+      return;
+
+   size_t begin = rgui->selection_ptr >= 0;
+   size_t end = rgui->selection_buf->size;
+
+   rmenu_xui_render_background(rgui);
+
+   char title[256];
+   const char *dir = NULL;
+   unsigned menu_type = 0;
+   file_list_get_last(rgui->menu_stack, &dir, &menu_type);
+
+   if (menu_type == RGUI_SETTINGS_CORE)
+      snprintf(title, sizeof(title), "CORE SELECTION %s", dir);
+   else if (menu_type == RGUI_SETTINGS_DEFERRED_CORE)
+      snprintf(title, sizeof(title), "DETECTED CORES %s", dir);
+   else if (menu_type == RGUI_SETTINGS_CONFIG)
+      snprintf(title, sizeof(title), "CONFIG %s", dir);
+   else if (menu_type == RGUI_SETTINGS_DISK_APPEND)
+      snprintf(title, sizeof(title), "DISK APPEND %s", dir);
+   else if (menu_type == RGUI_SETTINGS_VIDEO_OPTIONS)
+      strlcpy(title, "VIDEO OPTIONS", sizeof(title));
+   else if (menu_type == RGUI_SETTINGS_INPUT_OPTIONS)
+      strlcpy(title, "INPUT OPTIONS", sizeof(title));
+   else if (menu_type == RGUI_SETTINGS_OVERLAY_OPTIONS)
+      strlcpy(title, "OVERLAY OPTIONS", sizeof(title));
+   else if (menu_type == RGUI_SETTINGS_PATH_OPTIONS)
+      strlcpy(title, "PATH OPTIONS", sizeof(title));
+   else if (menu_type == RGUI_SETTINGS_OPTIONS)
+      strlcpy(title, "SETTINGS", sizeof(title));
+   else if (menu_type == RGUI_SETTINGS_DRIVERS)
+      strlcpy(title, "DRIVER OPTIONS", sizeof(title));
+#ifdef HAVE_SHADER_MANAGER
+   else if (menu_type == RGUI_SETTINGS_SHADER_OPTIONS)
+      strlcpy(title, "SHADER OPTIONS", sizeof(title));
+#endif
+   else if (menu_type == RGUI_SETTINGS_GENERAL_OPTIONS)
+      strlcpy(title, "GENERAL OPTIONS", sizeof(title));
+   else if (menu_type == RGUI_SETTINGS_AUDIO_OPTIONS)
+      strlcpy(title, "AUDIO OPTIONS", sizeof(title));
+   else if (menu_type == RGUI_SETTINGS_DISK_OPTIONS)
+      strlcpy(title, "DISK OPTIONS", sizeof(title));
+   else if (menu_type == RGUI_SETTINGS_CORE_OPTIONS)
+      strlcpy(title, "CORE OPTIONS", sizeof(title));
+#ifdef HAVE_SHADER_MANAGER
+   else if (menu_type_is(menu_type) == RGUI_SETTINGS_SHADER_OPTIONS)
+      snprintf(title, sizeof(title), "SHADER %s", dir);
+#endif
+   else if ((menu_type == RGUI_SETTINGS_INPUT_OPTIONS) ||
+         (menu_type == RGUI_SETTINGS_PATH_OPTIONS) ||
+         (menu_type == RGUI_SETTINGS_OPTIONS) ||
+         (menu_type == RGUI_SETTINGS_CUSTOM_VIEWPORT || menu_type == RGUI_SETTINGS_CUSTOM_VIEWPORT_2) ||
+         menu_type == RGUI_SETTINGS_CUSTOM_BIND ||
+         menu_type == RGUI_START_SCREEN ||
+         menu_type == RGUI_SETTINGS)
+      snprintf(title, sizeof(title), "MENU %s", dir);
+   else if (menu_type == RGUI_SETTINGS_OPEN_HISTORY)
+      strlcpy(title, "LOAD HISTORY", sizeof(title));
+#ifdef HAVE_OVERLAY
+   else if (menu_type == RGUI_SETTINGS_OVERLAY_PRESET)
+      snprintf(title, sizeof(title), "OVERLAY %s", dir);
+#endif
+   else if (menu_type == RGUI_BROWSER_DIR_PATH)
+      snprintf(title, sizeof(title), "BROWSER DIR %s", dir);
+#ifdef HAVE_SCREENSHOTS
+   else if (menu_type == RGUI_SCREENSHOT_DIR_PATH)
+      snprintf(title, sizeof(title), "SCREENSHOT DIR %s", dir);
+#endif
+   else if (menu_type == RGUI_SHADER_DIR_PATH)
+      snprintf(title, sizeof(title), "SHADER DIR %s", dir);
+   else if (menu_type == RGUI_SAVESTATE_DIR_PATH)
+      snprintf(title, sizeof(title), "SAVESTATE DIR %s", dir);
+#ifdef HAVE_DYNAMIC
+   else if (menu_type == RGUI_LIBRETRO_DIR_PATH)
+      snprintf(title, sizeof(title), "LIBRETRO DIR %s", dir);
+#endif
+   else if (menu_type == RGUI_CONFIG_DIR_PATH)
+      snprintf(title, sizeof(title), "CONFIG DIR %s", dir);
+   else if (menu_type == RGUI_SAVEFILE_DIR_PATH)
+      snprintf(title, sizeof(title), "SAVEFILE DIR %s", dir);
+#ifdef HAVE_OVERLAY
+   else if (menu_type == RGUI_OVERLAY_DIR_PATH)
+      snprintf(title, sizeof(title), "OVERLAY DIR %s", dir);
+#endif
+   else if (menu_type == RGUI_SYSTEM_DIR_PATH)
+      snprintf(title, sizeof(title), "SYSTEM DIR %s", dir);
+   else
+   {
+      if (rgui->defer_core)
+         snprintf(title, sizeof(title), "CONTENT %s", dir);
+      else
+      {
+         const char *core_name = rgui->info.library_name;
+         if (!core_name)
+            core_name = g_extern.system.info.library_name;
+         if (!core_name)
+            core_name = "No Core";
+         snprintf(title, sizeof(title), "CONTENT (%s) %s", core_name, dir);
+      }
+   }
+
+   char title_buf[256];
+   snprintf(title_buf, sizeof(title_buf), title);
+//   menu_ticker_line(title_buf, RGUI_TERM_WIDTH - 3, g_extern.frame_count / 15, title, true);
+//   blit_line(rgui, RGUI_TERM_START_X + 15, 15, title_buf, true);
+
+   char title_msg[64];
+   const char *core_name = rgui->info.library_name;
+   if (!core_name)
+      core_name = g_extern.system.info.library_name;
+   if (!core_name)
+      core_name = "No Core";
+
+   const char *core_version = rgui->info.library_version;
+   if (!core_version)
+      core_version = g_extern.system.info.library_version;
+   if (!core_version)
+      core_version = "";
+
+   //snprintf(title_msg, sizeof(title_msg), "%s - %s %s", PACKAGE_VERSION, core_name, core_version);
+   //blit_line(rgui, RGUI_TERM_START_X + 15, (RGUI_TERM_HEIGHT * FONT_HEIGHT_STRIDE) + RGUI_TERM_START_Y + 2, title_msg, true);
+
+   unsigned x, y;
+   size_t i;
+
+   //x = RGUI_TERM_START_X;
+   //y = RGUI_TERM_START_Y;
+
+   for (i = begin; i < end; i++/*, y += FONT_HEIGHT_STRIDE */)
+   {
+      const char *path = 0;
+      unsigned type = 0;
+      file_list_get_at_offset(rgui->selection_buf, i, &path, &type);
+      char message[256];
+      char type_str[256];
+
+      unsigned w = 19;
+      if (menu_type == RGUI_SETTINGS_INPUT_OPTIONS || menu_type == RGUI_SETTINGS_CUSTOM_BIND)
+         w = 21;
+      else if (menu_type == RGUI_SETTINGS_PATH_OPTIONS)
+         w = 24;
+
+#ifdef HAVE_SHADER_MANAGER
+      if (type >= RGUI_SETTINGS_SHADER_FILTER &&
+            type <= RGUI_SETTINGS_SHADER_LAST)
+      {
+         // HACK. Work around that we're using the menu_type as dir type to propagate state correctly.
+         if ((menu_type_is(menu_type) == RGUI_SETTINGS_SHADER_OPTIONS)
+               && (menu_type_is(type) == RGUI_SETTINGS_SHADER_OPTIONS))
+         {
+            type = RGUI_FILE_DIRECTORY;
+            strlcpy(type_str, "(DIR)", sizeof(type_str));
+            w = 5;
+         }
+         else if (type == RGUI_SETTINGS_SHADER_OPTIONS || type == RGUI_SETTINGS_SHADER_PRESET)
+            strlcpy(type_str, "...", sizeof(type_str));
+         else if (type == RGUI_SETTINGS_SHADER_FILTER)
+            snprintf(type_str, sizeof(type_str), "%s",
+                  g_settings.video.smooth ? "Linear" : "Nearest");
+         else
+            shader_manager_get_str(&rgui->shader, type_str, sizeof(type_str), type);
+      }
+      else
+#endif
+      // Pretty-print libretro cores from menu.
+      if (menu_type == RGUI_SETTINGS_CORE || menu_type == RGUI_SETTINGS_DEFERRED_CORE)
+      {
+         if (type == RGUI_FILE_PLAIN)
+         {
+            strlcpy(type_str, "(CORE)", sizeof(type_str));
+            file_list_get_alt_at_offset(rgui->selection_buf, i, &path);
+            w = 6;
+         }
+         else
+         {
+            strlcpy(type_str, "(DIR)", sizeof(type_str));
+            type = RGUI_FILE_DIRECTORY;
+            w = 5;
+         }
+      }
+      else if (menu_type == RGUI_SETTINGS_CONFIG ||
+#ifdef HAVE_OVERLAY
+            menu_type == RGUI_SETTINGS_OVERLAY_PRESET ||
+#endif
+            menu_type == RGUI_SETTINGS_DISK_APPEND ||
+            menu_type_is(menu_type) == RGUI_FILE_DIRECTORY)
+      {
+         if (type == RGUI_FILE_PLAIN)
+         {
+            strlcpy(type_str, "(FILE)", sizeof(type_str));
+            w = 6;
+         }
+         else if (type == RGUI_FILE_USE_DIRECTORY)
+         {
+            *type_str = '\0';
+            w = 0;
+         }
+         else
+         {
+            strlcpy(type_str, "(DIR)", sizeof(type_str));
+            type = RGUI_FILE_DIRECTORY;
+            w = 5;
+         }
+      }
+      else if (menu_type == RGUI_SETTINGS_OPEN_HISTORY)
+      {
+         *type_str = '\0';
+         w = 0;
+      }
+      else if (type >= RGUI_SETTINGS_CORE_OPTION_START)
+         strlcpy(type_str,
+               core_option_get_val(g_extern.system.core_options, type - RGUI_SETTINGS_CORE_OPTION_START),
+               sizeof(type_str));
+      else
+         menu_set_settings_label(type_str, sizeof(type_str), &w, type);
+
+      char entry_title_buf[256];
+      char type_str_buf[64];
+      bool selected = i == rgui->selection_ptr;
+
+      strlcpy(entry_title_buf, path, sizeof(entry_title_buf));
+      strlcpy(type_str_buf, type_str, sizeof(type_str_buf));
+
+/*
+      if ((type == RGUI_FILE_PLAIN || type == RGUI_FILE_DIRECTORY))
+         menu_ticker_line(entry_title_buf, RGUI_TERM_WIDTH - (w + 1 + 2), g_extern.frame_count / 15, path, selected);
+      else
+         menu_ticker_line(type_str_buf, w, g_extern.frame_count / 15, type_str, selected);
+
+      snprintf(message, sizeof(message), "%c %-*.*s %-*s",
+            selected ? '>' : ' ',
+            //RGUI_TERM_WIDTH - (w + 1 + 2), RGUI_TERM_WIDTH - (w + 1 + 2),
+			20,
+            entry_title_buf,
+            w,
+            type_str_buf);
+*/
+
+      blit_line(rgui, x, y, message, selected);
+   }
+
+   if (rgui->keyboard.display)
+   {
+      char msg[1024];
+      const char *str = *rgui->keyboard.buffer;
+      if (!str)
+         str = "";
+      snprintf(msg, sizeof(msg), "%s\n%s", rgui->keyboard.label, str);
+      rmenu_xui_render_messagebox(rgui, msg);
+   }
+}
+
+
 const menu_ctx_driver_t menu_ctx_rmenu_xui = {
    NULL,
    NULL,
-   NULL,
+   rmenu_xui_render,
    rmenu_xui_init,
    rmenu_xui_free,
    NULL,
