@@ -255,8 +255,10 @@ static void get_environment_settings(int argc, char *argv[], void *args)
       fill_pathname_join(config_path, default_paths.port_dir, "retroarch.cfg",  sizeof(config_path));
 #else
       fill_pathname_join(g_extern.overlay_dir, default_paths.core_dir, "overlays", sizeof(g_extern.overlay_dir));
+#ifdef HAVE_RMENU
       fill_pathname_join(g_extern.menu_texture_path, default_paths.core_dir, "borders/Menu/main-menu_1080p.png",
             sizeof(g_extern.menu_texture_path));
+#endif
       fill_pathname_join(g_extern.config_path, default_paths.port_dir, "retroarch.cfg",  sizeof(g_extern.config_path));
 #endif
    }
