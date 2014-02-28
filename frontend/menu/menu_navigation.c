@@ -26,6 +26,10 @@
 #include "menu_common.h"
 #include "menu_navigation.h"
 
+#ifdef HAVE_RMENU_XUI
+extern HXUIOBJ m_menulist;
+#endif
+
 void menu_clear_navigation(void *data)
 {
    rgui_handle_t *rgui = (rgui_handle_t*)data;
