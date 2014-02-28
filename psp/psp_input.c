@@ -318,7 +318,7 @@ static void* psp_input_initialize(void)
 
 static bool psp_input_key_pressed(void *data, int key)
 {
-   return (g_extern.lifecycle_state & (1ULL << key));
+   return (g_extern.lifecycle_state & (1ULL << key)) || input_joypad_pressed(&psp_joypad, 0, g_settings.input.binds[0], key);
 }
 
 static uint64_t psp_input_get_capabilities(void *data)
