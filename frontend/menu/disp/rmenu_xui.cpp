@@ -27,85 +27,12 @@
 #include "../../../message_queue.h"
 #include "../../../general.h"
 
-enum
-{
-   SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_B = 0,
-   SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_Y,
-   SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_SELECT,
-   SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_START,
-   SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_UP,
-   SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_DOWN,
-   SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_LEFT,
-   SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_RIGHT,
-   SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_A,
-   SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_X,
-   SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_L,
-   SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_R,
-   SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_L2,
-   SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_R2,
-   SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_L3,
-   SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_R3,
-   SETTING_CONTROLS_DPAD_EMULATION,
-   SETTING_CONTROLS_DEFAULT_ALL
-};
-
-enum
-{
-   INPUT_LOOP_NONE = 0,
-   INPUT_LOOP_RESIZE_MODE,
-   INPUT_LOOP_FILEBROWSER
-};
-
-enum
-{
-    INGAME_MENU_CHANGE_LIBRETRO_CORE = 0,
-    INGAME_MENU_LOAD_GAME_HISTORY_MODE,
-    INGAME_MENU_CHANGE_GAME,
-    INGAME_MENU_CORE_OPTIONS_MODE,
-    INGAME_MENU_VIDEO_OPTIONS_MODE,
-    INGAME_MENU_AUDIO_OPTIONS_MODE,
-    INGAME_MENU_INPUT_OPTIONS_MODE,
-    INGAME_MENU_PATH_OPTIONS_MODE,
-    INGAME_MENU_SETTINGS_MODE,
-    INGAME_MENU_LOAD_STATE,
-    INGAME_MENU_SAVE_STATE,
-    INGAME_MENU_SCREENSHOT_MODE,
-    INGAME_MENU_RETURN_TO_GAME,
-    INGAME_MENU_RESET,
-    INGAME_MENU_QUIT_RETROARCH,
-    INGAME_MENU_MAIN_MODE,
-};
-
 #define XUI_CONTROL_NAVIGATE_OK (XUI_CONTROL_NAVIGATE_RIGHT + 1)
 
-enum {
-   MENU_XUI_ITEM_HW_TEXTURE_FILTER = 0,
-   MENU_XUI_ITEM_GAMMA_CORRECTION_ENABLED,
-   MENU_XUI_ITEM_ASPECT_RATIO,
-   MENU_XUI_ITEM_RESIZE_MODE,
-   MENU_XUI_ITEM_ORIENTATION,
-};
-
-enum {
-   MENU_XUI_ITEM_AUDIO_MUTE_AUDIO = 0,
-};
-
-enum
-{
-   INGAME_MENU_REWIND_ENABLED = 0,
-   INGAME_MENU_REWIND_GRANULARITY,
-   SETTING_EMU_SHOW_DEBUG_INFO_MSG,
-};
-
-enum
-{
-   S_LBL_ASPECT_RATIO = 0,
-   S_LBL_RARCH_VERSION,
-   S_LBL_ROTATION,
-   S_LBL_LOAD_STATE_SLOT,
-   S_LBL_SAVE_STATE_SLOT,
-   S_LBL_REWIND_GRANULARITY,
-};
+#define RXUI_TERM_START_X 15
+#define RXUI_TERM_START_Y 27
+#define RXUI_TERM_WIDTH (((rgui->width - RXUI_TERM_START_X - 15) / (FONT_WIDTH_STRIDE)))
+#define RXUI_TERM_HEIGHT (((rgui->height - RXUI_TERM_START_Y - 15) / (FONT_HEIGHT_STRIDE)) - 1)
 
 HXUIOBJ m_menulist;
 HXUIOBJ m_menutitle;
@@ -217,58 +144,6 @@ HRESULT CRetroArch::UnregisterXuiClasses (void)
    return 0;
 }
 
-static void menu_settings_create_menu_item_label_w(wchar_t *strwbuf, unsigned setting, size_t size)
-{
-   char str[PATH_MAX];
-
-   switch (setting)
-   {
-      case S_LBL_ASPECT_RATIO:
-         snprintf(str, size, "Aspect Ratio: %s", aspectratio_lut[g_settings.video.aspect_ratio_idx].name);
-         break;
-      case S_LBL_RARCH_VERSION:
-         snprintf(str, size, "RetroArch %s", PACKAGE_VERSION);
-         break;
-      case S_LBL_ROTATION:
-         snprintf(str, size, "Rotation: %s", rotation_lut[g_settings.video.rotation]);
-         break;
-      case S_LBL_LOAD_STATE_SLOT:
-         snprintf(str, size, "Load State #%d", g_extern.state_slot);
-         break;
-      case S_LBL_SAVE_STATE_SLOT:
-         snprintf(str, size, "Save State #%d", g_extern.state_slot);
-         break;
-      case S_LBL_REWIND_GRANULARITY:
-         snprintf(str, size, "Rewind granularity: %d", g_settings.rewind_granularity);
-         break;
-   }
-
-   mbstowcs(strwbuf, str, size / sizeof(wchar_t));
-}
-
-static void set_dpad_emulation_label(unsigned port, char *str, size_t sizeof_str)
-{
-}
-
-static unsigned xui_input_to_rmenu_xui_action(unsigned input)
-{
-   switch (input)
-   {
-      case XUI_CONTROL_NAVIGATE_LEFT:
-         return RGUI_ACTION_LEFT;
-      case XUI_CONTROL_NAVIGATE_RIGHT:
-         return RGUI_ACTION_RIGHT;
-      case XUI_CONTROL_NAVIGATE_UP:
-         return RGUI_ACTION_UP;
-      case XUI_CONTROL_NAVIGATE_DOWN:
-         return RGUI_ACTION_DOWN;
-      case XUI_CONTROL_NAVIGATE_OK:
-         return RGUI_ACTION_OK;
-   }
-
-   return RGUI_ACTION_NOOP;
-}
-
 HRESULT CRetroArchMain::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
 {
    GetChildById(L"XuiMenuList", &m_menulist);
@@ -277,7 +152,9 @@ HRESULT CRetroArchMain::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
 
    mbstowcs(strw_buffer, g_extern.title_buf, sizeof(strw_buffer) / sizeof(wchar_t));
    XuiTextElementSetText(m_menutitlebottom, strw_buffer);
-   menu_settings_create_menu_item_label_w(strw_buffer, S_LBL_RARCH_VERSION, sizeof(strw_buffer));
+   char str[PATH_MAX];
+   snprintf(str, size, "RetroArch %s", PACKAGE_VERSION);
+   mbstowcs(strw_buffer, str, sizeof(strw_buffer) / sizeof(wchar_t));
    XuiTextElementSetText(m_menutitle, strw_buffer);
 
    return 0;
@@ -292,13 +169,6 @@ HRESULT CRetroArchMain::OnControlNavigate(XUIMessageControlNavigate *pControlNav
 
 HRESULT CRetroArchMain::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled )
 {
-   if ( hObjPressed == m_menulist)
-   {
-      XUIMessageControlNavigate controls;
-      controls.nControlNavigate = (XUI_CONTROL_NAVIGATE)XUI_CONTROL_NAVIGATE_OK;
-      OnControlNavigate(&controls, bHandled);
-   }
-
    bHandled = TRUE;
    return 0;
 }
@@ -394,15 +264,6 @@ static void rmenu_xui_free(void *data)
    app.Uninit();
 }
 
-static void ingame_menu_resize (void)
-{
-}
-
-void rmenu_xui_iterate(void *data, unsigned action)
-{
-   (void)data;
-}
-
 bool menu_iterate_xui(void)
 {
    xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
@@ -491,79 +352,79 @@ static void rmenu_xui_render(void *data)
    unsigned menu_type = 0;
    file_list_get_last(rgui->menu_stack, &dir, &menu_type);
 
-   if (menu_type == RGUI_SETTINGS_CORE)
+   if (menu_type == RXUI_SETTINGS_CORE)
       snprintf(title, sizeof(title), "CORE SELECTION %s", dir);
-   else if (menu_type == RGUI_SETTINGS_DEFERRED_CORE)
+   else if (menu_type == RXUI_SETTINGS_DEFERRED_CORE)
       snprintf(title, sizeof(title), "DETECTED CORES %s", dir);
-   else if (menu_type == RGUI_SETTINGS_CONFIG)
+   else if (menu_type == RXUI_SETTINGS_CONFIG)
       snprintf(title, sizeof(title), "CONFIG %s", dir);
-   else if (menu_type == RGUI_SETTINGS_DISK_APPEND)
+   else if (menu_type == RXUI_SETTINGS_DISK_APPEND)
       snprintf(title, sizeof(title), "DISK APPEND %s", dir);
-   else if (menu_type == RGUI_SETTINGS_VIDEO_OPTIONS)
+   else if (menu_type == RXUI_SETTINGS_VIDEO_OPTIONS)
       strlcpy(title, "VIDEO OPTIONS", sizeof(title));
-   else if (menu_type == RGUI_SETTINGS_INPUT_OPTIONS)
+   else if (menu_type == RXUI_SETTINGS_INPUT_OPTIONS)
       strlcpy(title, "INPUT OPTIONS", sizeof(title));
-   else if (menu_type == RGUI_SETTINGS_OVERLAY_OPTIONS)
+   else if (menu_type == RXUI_SETTINGS_OVERLAY_OPTIONS)
       strlcpy(title, "OVERLAY OPTIONS", sizeof(title));
-   else if (menu_type == RGUI_SETTINGS_PATH_OPTIONS)
+   else if (menu_type == RXUI_SETTINGS_PATH_OPTIONS)
       strlcpy(title, "PATH OPTIONS", sizeof(title));
-   else if (menu_type == RGUI_SETTINGS_OPTIONS)
+   else if (menu_type == RXUI_SETTINGS_OPTIONS)
       strlcpy(title, "SETTINGS", sizeof(title));
-   else if (menu_type == RGUI_SETTINGS_DRIVERS)
+   else if (menu_type == RXUI_SETTINGS_DRIVERS)
       strlcpy(title, "DRIVER OPTIONS", sizeof(title));
 #ifdef HAVE_SHADER_MANAGER
-   else if (menu_type == RGUI_SETTINGS_SHADER_OPTIONS)
+   else if (menu_type == RXUI_SETTINGS_SHADER_OPTIONS)
       strlcpy(title, "SHADER OPTIONS", sizeof(title));
 #endif
-   else if (menu_type == RGUI_SETTINGS_GENERAL_OPTIONS)
+   else if (menu_type == RXUI_SETTINGS_GENERAL_OPTIONS)
       strlcpy(title, "GENERAL OPTIONS", sizeof(title));
-   else if (menu_type == RGUI_SETTINGS_AUDIO_OPTIONS)
+   else if (menu_type == RXUI_SETTINGS_AUDIO_OPTIONS)
       strlcpy(title, "AUDIO OPTIONS", sizeof(title));
-   else if (menu_type == RGUI_SETTINGS_DISK_OPTIONS)
+   else if (menu_type == RXUI_SETTINGS_DISK_OPTIONS)
       strlcpy(title, "DISK OPTIONS", sizeof(title));
-   else if (menu_type == RGUI_SETTINGS_CORE_OPTIONS)
+   else if (menu_type == RXUI_SETTINGS_CORE_OPTIONS)
       strlcpy(title, "CORE OPTIONS", sizeof(title));
 #ifdef HAVE_SHADER_MANAGER
-   else if (menu_type_is(menu_type) == RGUI_SETTINGS_SHADER_OPTIONS)
+   else if (menu_type_is(menu_type) == RXUI_SETTINGS_SHADER_OPTIONS)
       snprintf(title, sizeof(title), "SHADER %s", dir);
 #endif
-   else if ((menu_type == RGUI_SETTINGS_INPUT_OPTIONS) ||
-         (menu_type == RGUI_SETTINGS_PATH_OPTIONS) ||
-         (menu_type == RGUI_SETTINGS_OPTIONS) ||
-         (menu_type == RGUI_SETTINGS_CUSTOM_VIEWPORT || menu_type == RGUI_SETTINGS_CUSTOM_VIEWPORT_2) ||
-         menu_type == RGUI_SETTINGS_CUSTOM_BIND ||
-         menu_type == RGUI_START_SCREEN ||
-         menu_type == RGUI_SETTINGS)
+   else if ((menu_type == RXUI_SETTINGS_INPUT_OPTIONS) ||
+         (menu_type == RXUI_SETTINGS_PATH_OPTIONS) ||
+         (menu_type == RXUI_SETTINGS_OPTIONS) ||
+         (menu_type == RXUI_SETTINGS_CUSTOM_VIEWPORT || menu_type == RXUI_SETTINGS_CUSTOM_VIEWPORT_2) ||
+         menu_type == RXUI_SETTINGS_CUSTOM_BIND ||
+         menu_type == RXUI_START_SCREEN ||
+         menu_type == RXUI_SETTINGS)
       snprintf(title, sizeof(title), "MENU %s", dir);
-   else if (menu_type == RGUI_SETTINGS_OPEN_HISTORY)
+   else if (menu_type == RXUI_SETTINGS_OPEN_HISTORY)
       strlcpy(title, "LOAD HISTORY", sizeof(title));
 #ifdef HAVE_OVERLAY
-   else if (menu_type == RGUI_SETTINGS_OVERLAY_PRESET)
+   else if (menu_type == RXUI_SETTINGS_OVERLAY_PRESET)
       snprintf(title, sizeof(title), "OVERLAY %s", dir);
 #endif
-   else if (menu_type == RGUI_BROWSER_DIR_PATH)
+   else if (menu_type == RXUI_BROWSER_DIR_PATH)
       snprintf(title, sizeof(title), "BROWSER DIR %s", dir);
 #ifdef HAVE_SCREENSHOTS
-   else if (menu_type == RGUI_SCREENSHOT_DIR_PATH)
+   else if (menu_type == RXUI_SCREENSHOT_DIR_PATH)
       snprintf(title, sizeof(title), "SCREENSHOT DIR %s", dir);
 #endif
-   else if (menu_type == RGUI_SHADER_DIR_PATH)
+   else if (menu_type == RXUI_SHADER_DIR_PATH)
       snprintf(title, sizeof(title), "SHADER DIR %s", dir);
-   else if (menu_type == RGUI_SAVESTATE_DIR_PATH)
+   else if (menu_type == RXUI_SAVESTATE_DIR_PATH)
       snprintf(title, sizeof(title), "SAVESTATE DIR %s", dir);
 #ifdef HAVE_DYNAMIC
-   else if (menu_type == RGUI_LIBRETRO_DIR_PATH)
+   else if (menu_type == RXUI_LIBRETRO_DIR_PATH)
       snprintf(title, sizeof(title), "LIBRETRO DIR %s", dir);
 #endif
-   else if (menu_type == RGUI_CONFIG_DIR_PATH)
+   else if (menu_type == RXUI_CONFIG_DIR_PATH)
       snprintf(title, sizeof(title), "CONFIG DIR %s", dir);
-   else if (menu_type == RGUI_SAVEFILE_DIR_PATH)
+   else if (menu_type == RXUI_SAVEFILE_DIR_PATH)
       snprintf(title, sizeof(title), "SAVEFILE DIR %s", dir);
 #ifdef HAVE_OVERLAY
-   else if (menu_type == RGUI_OVERLAY_DIR_PATH)
+   else if (menu_type == RXUI_OVERLAY_DIR_PATH)
       snprintf(title, sizeof(title), "OVERLAY DIR %s", dir);
 #endif
-   else if (menu_type == RGUI_SYSTEM_DIR_PATH)
+   else if (menu_type == RXUI_SYSTEM_DIR_PATH)
       snprintf(title, sizeof(title), "SYSTEM DIR %s", dir);
    else
    {
@@ -581,9 +442,8 @@ static void rmenu_xui_render(void *data)
    }
 
    char title_buf[256];
-   snprintf(title_buf, sizeof(title_buf), title);
-//   menu_ticker_line(title_buf, RGUI_TERM_WIDTH - 3, g_extern.frame_count / 15, title, true);
-//   blit_line(rgui, RGUI_TERM_START_X + 15, 15, title_buf, true);
+   menu_ticker_line(title_buf, RXUI_TERM_WIDTH - 3, g_extern.frame_count / 15, title, true);
+   blit_line(rgui, RXUI_TERM_START_X + 15, 15, title_buf, true);
 
    char title_msg[64];
    const char *core_name = rgui->info.library_name;
@@ -598,14 +458,14 @@ static void rmenu_xui_render(void *data)
    if (!core_version)
       core_version = "";
 
-   //snprintf(title_msg, sizeof(title_msg), "%s - %s %s", PACKAGE_VERSION, core_name, core_version);
-   //blit_line(rgui, RGUI_TERM_START_X + 15, (RGUI_TERM_HEIGHT * FONT_HEIGHT_STRIDE) + RGUI_TERM_START_Y + 2, title_msg, true);
+   snprintf(title_msg, sizeof(title_msg), "%s - %s %s", PACKAGE_VERSION, core_name, core_version);
+   blit_line(rgui, RXUI_TERM_START_X + 15, (RXUI_TERM_HEIGHT * FONT_HEIGHT_STRIDE) + RXUI_TERM_START_Y + 2, title_msg, true);
 
    unsigned x, y;
    size_t i;
 
-   //x = RGUI_TERM_START_X;
-   //y = RGUI_TERM_START_Y;
+   x = RXUI_TERM_START_X;
+   y = RXUI_TERM_START_Y;
 
    for (i = begin; i < end; i++/*, y += FONT_HEIGHT_STRIDE */)
    {
@@ -616,26 +476,26 @@ static void rmenu_xui_render(void *data)
       char type_str[256];
 
       unsigned w = 19;
-      if (menu_type == RGUI_SETTINGS_INPUT_OPTIONS || menu_type == RGUI_SETTINGS_CUSTOM_BIND)
+      if (menu_type == RXUI_SETTINGS_INPUT_OPTIONS || menu_type == RXUI_SETTINGS_CUSTOM_BIND)
          w = 21;
-      else if (menu_type == RGUI_SETTINGS_PATH_OPTIONS)
+      else if (menu_type == RXUI_SETTINGS_PATH_OPTIONS)
          w = 24;
 
 #ifdef HAVE_SHADER_MANAGER
-      if (type >= RGUI_SETTINGS_SHADER_FILTER &&
-            type <= RGUI_SETTINGS_SHADER_LAST)
+      if (type >= RXUI_SETTINGS_SHADER_FILTER &&
+            type <= RXUI_SETTINGS_SHADER_LAST)
       {
          // HACK. Work around that we're using the menu_type as dir type to propagate state correctly.
-         if ((menu_type_is(menu_type) == RGUI_SETTINGS_SHADER_OPTIONS)
-               && (menu_type_is(type) == RGUI_SETTINGS_SHADER_OPTIONS))
+         if ((menu_type_is(menu_type) == RXUI_SETTINGS_SHADER_OPTIONS)
+               && (menu_type_is(type) == RXUI_SETTINGS_SHADER_OPTIONS))
          {
-            type = RGUI_FILE_DIRECTORY;
+            type = RXUI_FILE_DIRECTORY;
             strlcpy(type_str, "(DIR)", sizeof(type_str));
             w = 5;
          }
-         else if (type == RGUI_SETTINGS_SHADER_OPTIONS || type == RGUI_SETTINGS_SHADER_PRESET)
+         else if (type == RXUI_SETTINGS_SHADER_OPTIONS || type == RXUI_SETTINGS_SHADER_PRESET)
             strlcpy(type_str, "...", sizeof(type_str));
-         else if (type == RGUI_SETTINGS_SHADER_FILTER)
+         else if (type == RXUI_SETTINGS_SHADER_FILTER)
             snprintf(type_str, sizeof(type_str), "%s",
                   g_settings.video.smooth ? "Linear" : "Nearest");
          else
@@ -644,9 +504,9 @@ static void rmenu_xui_render(void *data)
       else
 #endif
       // Pretty-print libretro cores from menu.
-      if (menu_type == RGUI_SETTINGS_CORE || menu_type == RGUI_SETTINGS_DEFERRED_CORE)
+      if (menu_type == RXUI_SETTINGS_CORE || menu_type == RXUI_SETTINGS_DEFERRED_CORE)
       {
-         if (type == RGUI_FILE_PLAIN)
+         if (type == RXUI_FILE_PLAIN)
          {
             strlcpy(type_str, "(CORE)", sizeof(type_str));
             file_list_get_alt_at_offset(rgui->selection_buf, i, &path);
@@ -655,23 +515,23 @@ static void rmenu_xui_render(void *data)
          else
          {
             strlcpy(type_str, "(DIR)", sizeof(type_str));
-            type = RGUI_FILE_DIRECTORY;
+            type = RXUI_FILE_DIRECTORY;
             w = 5;
          }
       }
-      else if (menu_type == RGUI_SETTINGS_CONFIG ||
+      else if (menu_type == RXUI_SETTINGS_CONFIG ||
 #ifdef HAVE_OVERLAY
-            menu_type == RGUI_SETTINGS_OVERLAY_PRESET ||
+            menu_type == RXUI_SETTINGS_OVERLAY_PRESET ||
 #endif
-            menu_type == RGUI_SETTINGS_DISK_APPEND ||
-            menu_type_is(menu_type) == RGUI_FILE_DIRECTORY)
+            menu_type == RXUI_SETTINGS_DISK_APPEND ||
+            menu_type_is(menu_type) == RXUI_FILE_DIRECTORY)
       {
-         if (type == RGUI_FILE_PLAIN)
+         if (type == RXUI_FILE_PLAIN)
          {
             strlcpy(type_str, "(FILE)", sizeof(type_str));
             w = 6;
          }
-         else if (type == RGUI_FILE_USE_DIRECTORY)
+         else if (type == RXUI_FILE_USE_DIRECTORY)
          {
             *type_str = '\0';
             w = 0;
@@ -679,18 +539,18 @@ static void rmenu_xui_render(void *data)
          else
          {
             strlcpy(type_str, "(DIR)", sizeof(type_str));
-            type = RGUI_FILE_DIRECTORY;
+            type = RXUI_FILE_DIRECTORY;
             w = 5;
          }
       }
-      else if (menu_type == RGUI_SETTINGS_OPEN_HISTORY)
+      else if (menu_type == RXUI_SETTINGS_OPEN_HISTORY)
       {
          *type_str = '\0';
          w = 0;
       }
-      else if (type >= RGUI_SETTINGS_CORE_OPTION_START)
+      else if (type >= RXUI_SETTINGS_CORE_OPTION_START)
          strlcpy(type_str,
-               core_option_get_val(g_extern.system.core_options, type - RGUI_SETTINGS_CORE_OPTION_START),
+               core_option_get_val(g_extern.system.core_options, type - RXUI_SETTINGS_CORE_OPTION_START),
                sizeof(type_str));
       else
          menu_set_settings_label(type_str, sizeof(type_str), &w, type);
@@ -702,20 +562,17 @@ static void rmenu_xui_render(void *data)
       strlcpy(entry_title_buf, path, sizeof(entry_title_buf));
       strlcpy(type_str_buf, type_str, sizeof(type_str_buf));
 
-/*
-      if ((type == RGUI_FILE_PLAIN || type == RGUI_FILE_DIRECTORY))
-         menu_ticker_line(entry_title_buf, RGUI_TERM_WIDTH - (w + 1 + 2), g_extern.frame_count / 15, path, selected);
+      if ((type == RXUI_FILE_PLAIN || type == RXUI_FILE_DIRECTORY))
+         menu_ticker_line(entry_title_buf, RXUI_TERM_WIDTH - (w + 1 + 2), g_extern.frame_count / 15, path, selected);
       else
          menu_ticker_line(type_str_buf, w, g_extern.frame_count / 15, type_str, selected);
 
       snprintf(message, sizeof(message), "%c %-*.*s %-*s",
             selected ? '>' : ' ',
-            //RGUI_TERM_WIDTH - (w + 1 + 2), RGUI_TERM_WIDTH - (w + 1 + 2),
-			20,
+            RXUI_TERM_WIDTH - (w + 1 + 2), RXUI_TERM_WIDTH - (w + 1 + 2),
             entry_title_buf,
             w,
             type_str_buf);
-*/
 
       blit_line(rgui, x, y, message, selected);
    }
@@ -741,7 +598,7 @@ const menu_ctx_driver_t menu_ctx_rmenu_xui = {
    NULL,
    NULL,
    NULL,
-   rmenu_xui_iterate,
+   NULL,
    rmenu_xui_input_postprocess,
    "rmenu_xui",
 };
