@@ -75,11 +75,9 @@ void file_list_pop(file_list_t *list, size_t *directory_ptr)
 
    if (directory_ptr)
    {
-#ifdef HAVE_RMENU_XUI
-      *directory_ptr = 0;
-      XuiListSetCurSel(m_menulist, 0);
-#else
       *directory_ptr = list->list[list->size].directory_ptr;
+#ifdef HAVE_RMENU_XUI
+      XuiListSetCurSel(m_menulist, *directory_ptr);
 #endif
    }
 }

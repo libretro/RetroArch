@@ -20,10 +20,8 @@
 #include <string.h>
 #include <limits.h>
 #include <ctype.h>
-#ifdef HAVE_RMENU_XUI
-#include <xui.h>
-#endif
 #include "menu_common.h"
+#include "menu_navigation.h"
 
 #include "../../gfx/gfx_common.h"
 #include "../../performance.h"
@@ -37,10 +35,6 @@
 
 rgui_handle_t *rgui;
 const menu_ctx_driver_t *menu_ctx;
-
-#ifdef HAVE_RMENU_XUI
-extern HXUIOBJ m_menulist;
-#endif
 
 //forward decl
 static int menu_iterate_func(void *data, unsigned action);
@@ -416,7 +410,7 @@ void menu_init(void)
    rgui->menu_stack = (file_list_t*)calloc(1, sizeof(file_list_t));
    rgui->selection_buf = (file_list_t*)calloc(1, sizeof(file_list_t));
    file_list_push(rgui->menu_stack, "", RGUI_SETTINGS, 0);
-   rgui->selection_ptr = 0;
+   menu_clear_navigation(rgui);
    rgui->push_start_screen = g_settings.rgui_show_start_screen;
    g_settings.rgui_show_start_screen = false;
    menu_populate_entries(rgui, RGUI_SETTINGS);
@@ -853,16 +847,16 @@ static int menu_settings_iterate(void *data, unsigned action)
    {
       case RGUI_ACTION_UP:
          if (rgui->selection_ptr > 0)
-            rgui->selection_ptr--;
+            menu_decrement_navigation(rgui);
          else
-            rgui->selection_ptr = rgui->selection_buf->size - 1;
+            menu_set_navigation(rgui, rgui->selection_buf->size - 1);
          break;
 
       case RGUI_ACTION_DOWN:
          if (rgui->selection_ptr + 1 < rgui->selection_buf->size)
-            rgui->selection_ptr++;
+            menu_increment_navigation(rgui);
          else
-            rgui->selection_ptr = 0;
+            menu_clear_navigation(rgui);
          break;
 
       case RGUI_ACTION_CANCEL:
@@ -882,19 +876,19 @@ static int menu_settings_iterate(void *data, unsigned action)
          {
             rgui->defer_core = type == RGUI_SETTINGS_OPEN_FILEBROWSER_DEFERRED_CORE;
             file_list_push(rgui->menu_stack, g_settings.rgui_content_directory, RGUI_FILE_DIRECTORY, rgui->selection_ptr);
-            rgui->selection_ptr = 0;
+            menu_clear_navigation(rgui);
             rgui->need_refresh = true;
          }
          else if ((type == RGUI_SETTINGS_OPEN_HISTORY || menu_type_is(type) == RGUI_FILE_DIRECTORY) && action == RGUI_ACTION_OK)
          {
             file_list_push(rgui->menu_stack, "", type, rgui->selection_ptr);
-            rgui->selection_ptr = 0;
+            menu_clear_navigation(rgui);
             rgui->need_refresh = true;
          }
          else if ((menu_type_is(type) == RGUI_SETTINGS || type == RGUI_SETTINGS_CORE || type == RGUI_SETTINGS_CONFIG || type == RGUI_SETTINGS_DISK_APPEND) && action == RGUI_ACTION_OK)
          {
             file_list_push(rgui->menu_stack, label, type, rgui->selection_ptr);
-            rgui->selection_ptr = 0;
+            menu_clear_navigation(rgui);
             rgui->need_refresh = true;
          }
          else if (type == RGUI_SETTINGS_CUSTOM_VIEWPORT && action == RGUI_ACTION_OK)
@@ -923,7 +917,7 @@ static int menu_settings_iterate(void *data, unsigned action)
          break;
 
       case RGUI_ACTION_REFRESH:
-         rgui->selection_ptr = 0;
+         menu_clear_navigation(rgui);
          rgui->need_refresh = true;
          break;
 
@@ -976,34 +970,6 @@ static int menu_settings_iterate(void *data, unsigned action)
    }
 
    return 0;
-}
-
-static inline void menu_descend_alphabet(void *data, size_t *ptr_out)
-{
-   rgui_handle_t *rgui = (rgui_handle_t*)data;
-   if (!rgui->scroll_indices_size)
-      return;
-   size_t ptr = *ptr_out;
-   if (ptr == 0)
-      return;
-   size_t i = rgui->scroll_indices_size - 1;
-   while (i && rgui->scroll_indices[i - 1] >= ptr)
-      i--;
-   *ptr_out = rgui->scroll_indices[i - 1];
-}
-
-static inline void menu_ascend_alphabet(void *data, size_t *ptr_out)
-{
-   rgui_handle_t *rgui = (rgui_handle_t*)data;
-   if (!rgui->scroll_indices_size)
-      return;
-   size_t ptr = *ptr_out;
-   if (ptr == rgui->scroll_indices[rgui->scroll_indices_size - 1])
-      return;
-   size_t i = 0;
-   while (i < rgui->scroll_indices_size - 1 && rgui->scroll_indices[i + 1] <= ptr)
-      i++;
-   *ptr_out = rgui->scroll_indices[i + 1];
 }
 
 static void menu_flush_stack_type(void *data, unsigned final_type)
@@ -1081,29 +1047,23 @@ static int menu_iterate_func(void *data, unsigned action)
    {
       case RGUI_ACTION_UP:
          if (rgui->selection_ptr >= scroll_speed)
-            rgui->selection_ptr -= scroll_speed;
+            menu_set_navigation(rgui, rgui->selection_ptr - scroll_speed);
          else
-            rgui->selection_ptr = rgui->selection_buf->size - 1;
-#ifdef HAVE_RMENU_XUI
-         XuiListSetCurSelVisible(m_menulist, rgui->selection_ptr);
-#endif
+            menu_set_navigation(rgui, rgui->selection_buf->size - 1);
          break;
 
       case RGUI_ACTION_DOWN:
          if (rgui->selection_ptr + scroll_speed < rgui->selection_buf->size)
-            rgui->selection_ptr += scroll_speed;
+            menu_set_navigation(rgui, rgui->selection_ptr + scroll_speed);
          else
-            rgui->selection_ptr = 0;
-#ifdef HAVE_RMENU_XUI
-         XuiListSetCurSelVisible(m_menulist, rgui->selection_ptr);
-#endif
+            menu_clear_navigation(rgui);
          break;
 
       case RGUI_ACTION_LEFT:
          if (rgui->selection_ptr > fast_scroll_speed)
-            rgui->selection_ptr -= fast_scroll_speed;
+            menu_set_navigation(rgui, rgui->selection_ptr - fast_scroll_speed);
          else
-            rgui->selection_ptr = 0;
+            menu_clear_navigation(rgui);
          break;
 
       case RGUI_ACTION_RIGHT:
@@ -1115,15 +1075,9 @@ static int menu_iterate_func(void *data, unsigned action)
 
       case RGUI_ACTION_SCROLL_UP:
          menu_descend_alphabet(rgui, &rgui->selection_ptr);
-#ifdef HAVE_RMENU_XUI
-         XuiListSetCurSelVisible(m_menulist, rgui->selection_ptr);
-#endif
          break;
       case RGUI_ACTION_SCROLL_DOWN:
          menu_ascend_alphabet(rgui, &rgui->selection_ptr);
-#ifdef HAVE_RMENU_XUI
-         XuiListSetCurSelVisible(m_menulist, rgui->selection_ptr);
-#endif
          break;
       
       case RGUI_ACTION_CANCEL:
@@ -1131,9 +1085,6 @@ static int menu_iterate_func(void *data, unsigned action)
          {
             rgui->need_refresh = true;
             file_list_pop(rgui->menu_stack, &rgui->selection_ptr);
-#ifdef HAVE_RMENU_XUI
-            XuiListSetCurSelVisible(m_menulist, rgui->selection_ptr);
-#endif
          }
          break;
 
@@ -1159,7 +1110,7 @@ static int menu_iterate_func(void *data, unsigned action)
             fill_pathname_join(cat_path, dir, path, sizeof(cat_path));
 
             file_list_push(rgui->menu_stack, cat_path, type, rgui->selection_ptr);
-            rgui->selection_ptr = 0;
+            menu_clear_navigation(rgui);
             rgui->need_refresh = true;
          }
          else
@@ -1239,7 +1190,7 @@ static int menu_iterate_func(void *data, unsigned action)
                rgui->msg_force = true;
                if (menu_replace_config(config))
                {
-                  rgui->selection_ptr = 0; // Menu can shrink.
+                  menu_clear_navigation(rgui);
                   ret = -1;
                }
             }
@@ -1365,7 +1316,7 @@ static int menu_iterate_func(void *data, unsigned action)
                   else // Present a selection.
                   {
                      file_list_push(rgui->menu_stack, rgui->libretro_dir, RGUI_SETTINGS_DEFERRED_CORE, rgui->selection_ptr);
-                     rgui->selection_ptr = 0;
+                     menu_clear_navigation(rgui);
                      rgui->need_refresh = true;
                   }
                }
@@ -1384,7 +1335,7 @@ static int menu_iterate_func(void *data, unsigned action)
       }
 
       case RGUI_ACTION_REFRESH:
-         rgui->selection_ptr = 0;
+         menu_clear_navigation(rgui);
          rgui->need_refresh = true;
          break;
 
@@ -2347,9 +2298,9 @@ void menu_parse_and_resolve(void *data, unsigned menu_type)
    // Before a refresh, we could have deleted a file on disk, causing
    // selection_ptr to suddendly be out of range. Ensure it doesn't overflow.
    if (rgui->selection_ptr >= rgui->selection_buf->size && rgui->selection_buf->size)
-      rgui->selection_ptr = rgui->selection_buf->size - 1;
+      menu_set_navigation(rgui, rgui->selection_buf->size - 1);
    else if (!rgui->selection_buf->size)
-      rgui->selection_ptr = 0;
+      menu_clear_navigation(rgui);
 }
 
 void menu_init_core_info(void *data)
