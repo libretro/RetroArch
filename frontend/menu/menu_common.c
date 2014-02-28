@@ -1085,7 +1085,7 @@ static int menu_iterate_func(void *data, unsigned action)
          else
             rgui->selection_ptr = rgui->selection_buf->size - 1;
 #ifdef HAVE_RMENU_XUI
-         XuiListSetCurSel(m_menulist, rgui->selection_ptr);
+         XuiListSetCurSelVisible(m_menulist, rgui->selection_ptr);
 #endif
          break;
 
@@ -1095,7 +1095,7 @@ static int menu_iterate_func(void *data, unsigned action)
          else
             rgui->selection_ptr = 0;
 #ifdef HAVE_RMENU_XUI
-         XuiListSetCurSel(m_menulist, rgui->selection_ptr);
+         XuiListSetCurSelVisible(m_menulist, rgui->selection_ptr);
 #endif
          break;
 
@@ -1116,13 +1116,13 @@ static int menu_iterate_func(void *data, unsigned action)
       case RGUI_ACTION_SCROLL_UP:
          menu_descend_alphabet(rgui, &rgui->selection_ptr);
 #ifdef HAVE_RMENU_XUI
-         XuiListSetCurSel(m_menulist, rgui->selection_ptr);
+         XuiListSetCurSelVisible(m_menulist, rgui->selection_ptr);
 #endif
          break;
       case RGUI_ACTION_SCROLL_DOWN:
          menu_ascend_alphabet(rgui, &rgui->selection_ptr);
 #ifdef HAVE_RMENU_XUI
-         XuiListSetCurSel(m_menulist, rgui->selection_ptr);
+         XuiListSetCurSelVisible(m_menulist, rgui->selection_ptr);
 #endif
          break;
       
@@ -1132,7 +1132,7 @@ static int menu_iterate_func(void *data, unsigned action)
             rgui->need_refresh = true;
             file_list_pop(rgui->menu_stack, &rgui->selection_ptr);
 #ifdef HAVE_RMENU_XUI
-            XuiListSetCurSel(m_menulist, rgui->selection_ptr);
+            XuiListSetCurSelVisible(m_menulist, rgui->selection_ptr);
 #endif
          }
          break;
