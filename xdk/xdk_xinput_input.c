@@ -407,6 +407,7 @@ static bool xdk_input_set_rumble(void *data, unsigned port, enum retro_rumble_ef
    bool val = false;
 
   
+#if 0
 #if defined(_XBOX360)
    XINPUT_VIBRATION rumble_state;
 
@@ -424,6 +425,7 @@ static bool xdk_input_set_rumble(void *data, unsigned port, enum retro_rumble_ef
    else if (effect == RETRO_RUMBLE_WEAK)
       rumble_state.Rumble.wRightMotorSpeed = strength;
    val = XInputSetState(xdk->gamepads[port], &rumble_state) == ERROR_SUCCESS;
+#endif
 #endif
 #endif
    return val;
