@@ -19,6 +19,7 @@
 #include <string.h>
 #include "../../file.h"
 #include "menu_common.h"
+#include "menu_navigation.h"
 #include "../../gfx/gfx_common.h"
 #include "../../input/input_common.h"
 #include "../../config.def.h"
@@ -204,7 +205,7 @@ static int shader_manager_toggle_setting(void *data, unsigned setting, unsigned 
       {
          case RGUI_ACTION_OK:
             file_list_push(rgui->menu_stack, g_settings.video.shader_dir, setting, rgui->selection_ptr);
-            rgui->selection_ptr = 0;
+            menu_clear_navigation(rgui);
             rgui->need_refresh = true;
             break;
 
@@ -677,7 +678,7 @@ int menu_set_settings(void *data, unsigned setting, unsigned action)
          {
             case RGUI_ACTION_OK:
                file_list_push(rgui->menu_stack, g_extern.overlay_dir, setting, rgui->selection_ptr);
-               rgui->selection_ptr = 0;
+               menu_clear_navigation(rgui);
                rgui->need_refresh = true;
                break;
 
