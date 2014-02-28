@@ -20,6 +20,9 @@
 #include <string.h>
 #include <limits.h>
 #include <ctype.h>
+#ifdef HAVE_RMENU_XUI
+#include <xui.h>
+#endif
 #include "menu_common.h"
 
 #include "../../gfx/gfx_common.h"
@@ -34,6 +37,10 @@
 
 rgui_handle_t *rgui;
 const menu_ctx_driver_t *menu_ctx;
+
+#ifdef HAVE_RMENU_XUI
+extern HXUIOBJ m_menulist;
+#endif
 
 //forward decl
 static int menu_iterate_func(void *data, unsigned action);
