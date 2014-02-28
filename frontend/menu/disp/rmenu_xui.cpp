@@ -566,6 +566,7 @@ static void rmenu_xui_render(void *data)
       strlcpy(entry_title_buf, path, sizeof(entry_title_buf));
       strlcpy(type_str_buf, type_str, sizeof(type_str_buf));
 
+
       if ((type == RGUI_FILE_PLAIN || type == RGUI_FILE_DIRECTORY))
          menu_ticker_line(entry_title_buf, RXUI_TERM_WIDTH - (w + 1 + 2), g_extern.frame_count / 15, path, selected);
       else
@@ -578,6 +579,9 @@ static void rmenu_xui_render(void *data)
             w,
             type_str_buf);
 
+      wchar_t msg_w[256];
+      mbstowcs(msg_w, message, sizeof(msg_w) / sizeof(wchar_t));
+      XuiListSetText(m_menulist, selected, msg_w);
       blit_line(rgui, x, y, message, selected);
    }
 
