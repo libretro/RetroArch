@@ -48,7 +48,7 @@
 #define POSITION_EDGE_CENTER (425)
 #define POSITION_OFFSET 30
 #define POSITION_RENDER_OFFSET 128
-#define TERM_WIDTH 45
+#define RMENU_TERM_WIDTH 45
 #define FONT_SIZE_NORMAL 21
 #elif defined(__CELLOS_LV2__)
 #define ENTRIES_HEIGHT 20
@@ -59,7 +59,7 @@
 #define POSITION_RENDER_OFFSET 0.20f
 #define POSITION_OFFSET 0.03f
 #define FONT_SIZE_NORMAL 0.95f
-#define TERM_WIDTH 60
+#define RMENU_TERM_WIDTH 60
 #endif
 
 struct texture_image *menu_texture;
@@ -93,13 +93,13 @@ static void rmenu_render_messagebox(void *data, const char *message)
    {
       char *msg = list->elems[i].data;
       unsigned msglen = strlen(msg);
-      if (msglen > TERM_WIDTH)
+      if (msglen > RMENU_TERM_WIDTH)
       {
-         msg[TERM_WIDTH - 2] = '.';
-         msg[TERM_WIDTH - 1] = '.';
-         msg[TERM_WIDTH - 0] = '.';
-         msg[TERM_WIDTH + 1] = '\0';
-         msglen = TERM_WIDTH;
+         msg[RMENU_TERM_WIDTH - 2] = '.';
+         msg[RMENU_TERM_WIDTH - 1] = '.';
+         msg[RMENU_TERM_WIDTH - 0] = '.';
+         msg[RMENU_TERM_WIDTH + 1] = '\0';
+         msglen = RMENU_TERM_WIDTH;
       }
 
       font_parms.x = POSITION_EDGE_MIN + POSITION_OFFSET;
@@ -237,7 +237,7 @@ static void rmenu_render(void *data)
    }
 
    char title_buf[256];
-   menu_ticker_line(title_buf, TERM_WIDTH, g_extern.frame_count / 15, title, true);
+   menu_ticker_line(title_buf, RMENU_TERM_WIDTH, g_extern.frame_count / 15, title, true);
 
    font_parms.x = POSITION_EDGE_MIN + POSITION_OFFSET;
    font_parms.y = POSITION_EDGE_MIN + POSITION_RENDER_OFFSET - (POSITION_OFFSET*2);
@@ -370,7 +370,7 @@ static void rmenu_render(void *data)
       strlcpy(type_str_buf, type_str, sizeof(type_str_buf));
 
       if ((type == RGUI_FILE_PLAIN || type == RGUI_FILE_DIRECTORY))
-         menu_ticker_line(entry_title_buf, TERM_WIDTH - (w + 1 + 2), g_extern.frame_count / 15, path, selected);
+         menu_ticker_line(entry_title_buf, RMENU_TERM_WIDTH - (w + 1 + 2), g_extern.frame_count / 15, path, selected);
       else
          menu_ticker_line(type_str_buf, w, g_extern.frame_count / 15, type_str, selected);
 

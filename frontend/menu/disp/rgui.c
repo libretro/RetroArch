@@ -47,10 +47,10 @@ static uint16_t __attribute((aligned(64))) menu_framebuf[400 * 240];
 static uint16_t menu_framebuf[400 * 240];
 #endif
 
-#define TERM_START_X 15
-#define TERM_START_Y 27
-#define TERM_WIDTH (((rgui->width - TERM_START_X - 15) / (FONT_WIDTH_STRIDE)))
-#define TERM_HEIGHT (((rgui->height - TERM_START_Y - 15) / (FONT_HEIGHT_STRIDE)) - 1)
+#define RGUI_TERM_START_X 15
+#define RGUI_TERM_START_Y 27
+#define RGUI_TERM_WIDTH (((rgui->width - RGUI_TERM_START_X - 15) / (FONT_WIDTH_STRIDE)))
+#define RGUI_TERM_HEIGHT (((rgui->height - RGUI_TERM_START_Y - 15) / (FONT_HEIGHT_STRIDE)) - 1)
 
 static void rgui_copy_glyph(uint8_t *glyph, const uint8_t *buf)
 {
@@ -173,7 +173,7 @@ static bool rguidisp_init_font(void *data)
    return ret;
 }
 
-static void render_background(rgui_handle_t *rgui)
+static void rgui_render_background(rgui_handle_t *rgui)
 {
    fill_rect(rgui->frame_buf, rgui->frame_buf_pitch,
          0, 0, rgui->width, rgui->height, gray_filler);
@@ -214,13 +214,13 @@ static void rgui_render_messagebox(void *data, const char *message)
    {
       char *msg = list->elems[i].data;
       unsigned msglen = strlen(msg);
-      if (msglen > TERM_WIDTH)
+      if (msglen > RGUI_TERM_WIDTH)
       {
-         msg[TERM_WIDTH - 2] = '.';
-         msg[TERM_WIDTH - 1] = '.';
-         msg[TERM_WIDTH - 0] = '.';
-         msg[TERM_WIDTH + 1] = '\0';
-         msglen = TERM_WIDTH;
+         msg[RGUI_TERM_WIDTH - 2] = '.';
+         msg[RGUI_TERM_WIDTH - 1] = '.';
+         msg[RGUI_TERM_WIDTH - 0] = '.';
+         msg[RGUI_TERM_WIDTH + 1] = '\0';
+         msglen = RGUI_TERM_WIDTH;
       }
 
       unsigned line_width = msglen * FONT_WIDTH_STRIDE - 1 + 6 + 10;
@@ -267,19 +267,19 @@ static void rgui_render(void *data)
          && !rgui->msg_force)
       return;
 
-   size_t begin = rgui->selection_ptr >= TERM_HEIGHT / 2 ?
-      rgui->selection_ptr - TERM_HEIGHT / 2 : 0;
-   size_t end = rgui->selection_ptr + TERM_HEIGHT <= rgui->selection_buf->size ?
-      rgui->selection_ptr + TERM_HEIGHT : rgui->selection_buf->size;
+   size_t begin = rgui->selection_ptr >= RGUI_TERM_HEIGHT / 2 ?
+      rgui->selection_ptr - RGUI_TERM_HEIGHT / 2 : 0;
+   size_t end = rgui->selection_ptr + RGUI_TERM_HEIGHT <= rgui->selection_buf->size ?
+      rgui->selection_ptr + RGUI_TERM_HEIGHT : rgui->selection_buf->size;
    
    // Do not scroll if all items are visible.
-   if (rgui->selection_buf->size <= TERM_HEIGHT)
+   if (rgui->selection_buf->size <= RGUI_TERM_HEIGHT)
       begin = 0;
 
-   if (end - begin > TERM_HEIGHT)
-      end = begin + TERM_HEIGHT;
+   if (end - begin > RGUI_TERM_HEIGHT)
+      end = begin + RGUI_TERM_HEIGHT;
 
-   render_background(rgui);
+   rgui_render_background(rgui);
 
    char title[256];
    const char *dir = NULL;
@@ -376,8 +376,8 @@ static void rgui_render(void *data)
    }
 
    char title_buf[256];
-   menu_ticker_line(title_buf, TERM_WIDTH - 3, g_extern.frame_count / 15, title, true);
-   blit_line(rgui, TERM_START_X + 15, 15, title_buf, true);
+   menu_ticker_line(title_buf, RGUI_TERM_WIDTH - 3, g_extern.frame_count / 15, title, true);
+   blit_line(rgui, RGUI_TERM_START_X + 15, 15, title_buf, true);
 
    char title_msg[64];
    const char *core_name = rgui->info.library_name;
@@ -393,13 +393,13 @@ static void rgui_render(void *data)
       core_version = "";
 
    snprintf(title_msg, sizeof(title_msg), "%s - %s %s", PACKAGE_VERSION, core_name, core_version);
-   blit_line(rgui, TERM_START_X + 15, (TERM_HEIGHT * FONT_HEIGHT_STRIDE) + TERM_START_Y + 2, title_msg, true);
+   blit_line(rgui, RGUI_TERM_START_X + 15, (RGUI_TERM_HEIGHT * FONT_HEIGHT_STRIDE) + RGUI_TERM_START_Y + 2, title_msg, true);
 
    unsigned x, y;
    size_t i;
 
-   x = TERM_START_X;
-   y = TERM_START_Y;
+   x = RGUI_TERM_START_X;
+   y = RGUI_TERM_START_Y;
 
    for (i = begin; i < end; i++, y += FONT_HEIGHT_STRIDE)
    {
@@ -497,13 +497,13 @@ static void rgui_render(void *data)
       strlcpy(type_str_buf, type_str, sizeof(type_str_buf));
 
       if ((type == RGUI_FILE_PLAIN || type == RGUI_FILE_DIRECTORY))
-         menu_ticker_line(entry_title_buf, TERM_WIDTH - (w + 1 + 2), g_extern.frame_count / 15, path, selected);
+         menu_ticker_line(entry_title_buf, RGUI_TERM_WIDTH - (w + 1 + 2), g_extern.frame_count / 15, path, selected);
       else
          menu_ticker_line(type_str_buf, w, g_extern.frame_count / 15, type_str, selected);
 
       snprintf(message, sizeof(message), "%c %-*.*s %-*s",
             selected ? '>' : ' ',
-            TERM_WIDTH - (w + 1 + 2), TERM_WIDTH - (w + 1 + 2),
+            RGUI_TERM_WIDTH - (w + 1 + 2), RGUI_TERM_WIDTH - (w + 1 + 2),
             entry_title_buf,
             w,
             type_str_buf);
