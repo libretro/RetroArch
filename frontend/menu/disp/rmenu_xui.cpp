@@ -1501,7 +1501,7 @@ static void rmenu_xui_render(void *data)
          && !rgui->msg_force)
       return;
 
-   size_t begin = rgui->selection_ptr >= 0;
+   size_t begin = rgui->selection_ptr;
    size_t end = rgui->selection_buf->size;
 
    rmenu_xui_render_background(rgui);
