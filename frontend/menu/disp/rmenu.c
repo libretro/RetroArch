@@ -66,7 +66,7 @@ struct texture_image *menu_texture;
 static bool render_normal = true;
 static bool menu_texture_inited =false;
 
-static void render_background(rgui_handle_t *rgui)
+static void rmenu_render_background(rgui_handle_t *rgui)
 {
 }
 
@@ -115,7 +115,6 @@ static void rmenu_render_messagebox(void *data, const char *message)
 
 }
 
-
 static void rmenu_render(void *data)
 {
    if (!render_normal)
@@ -140,7 +139,7 @@ static void rmenu_render(void *data)
    if (end - begin > ENTRIES_HEIGHT)
       end = begin + ENTRIES_HEIGHT;
    
-   render_background(rgui);
+   rmenu_render_background(rgui);
 
    char title[256];
    const char *dir = NULL;
