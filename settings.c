@@ -308,6 +308,7 @@ void config_set_defaults(void)
    g_settings.network_cmd_port     = network_cmd_port;
    g_settings.stdin_cmd_enable     = stdin_cmd_enable;
    g_settings.game_history_size    = game_history_size;
+   g_settings.libretro_log_level   = libretro_log_level;
 
 #ifdef HAVE_MENU
    g_settings.rgui_show_start_screen = rgui_show_start_screen;
@@ -941,6 +942,7 @@ bool config_load_file(const char *path, bool set_defaults)
       *g_settings.rgui_config_directory = '\0';
    CONFIG_GET_BOOL(rgui_show_start_screen, "rgui_show_start_screen");
 #endif
+   CONFIG_GET_INT(libretro_log_level, "libretro_log_level");
 
 #ifdef HAVE_OVERLAY
    CONFIG_GET_PATH_EXTERN(overlay_dir, "overlay_directory");
@@ -1362,6 +1364,7 @@ bool config_save_file(const char *path)
       save_keybinds_player(conf, i);
 
    config_set_bool(conf, "core_specific_config", g_settings.core_specific_config);
+   config_set_int(conf, "libretro_log_level", g_settings.libretro_log_level);
 
    bool ret = config_file_write(conf, path);
    config_file_free(conf);

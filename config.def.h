@@ -515,6 +515,9 @@ static const unsigned game_history_size = 100;
 // Show RGUI start-up screen on boot.
 static const bool rgui_show_start_screen = true;
 
+// Log level for libretro cores (GET_LOG_INTERFACE).
+static const unsigned libretro_log_level = 0;
+
 
 ////////////////////
 // Keybinds, Joypad

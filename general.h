@@ -277,6 +277,7 @@ struct settings
    unsigned game_history_size;
 
    char libretro[PATH_MAX];
+   unsigned libretro_log_level;
    char libretro_info_path[PATH_MAX];
    char cheat_database[PATH_MAX];
    char cheat_settings_path[PATH_MAX];

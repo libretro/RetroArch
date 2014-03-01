@@ -484,6 +484,9 @@ void dylib_close(dylib_t lib)
 
 static void rarch_log_libretro(enum retro_log_level level, const char *fmt, ...)
 {
+   if ((unsigned)level < g_settings.libretro_log_level)
+      return;
+
    va_list vp;
    va_start(vp, fmt);
 
