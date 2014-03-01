@@ -429,38 +429,6 @@
     </CustomBuild>
   </ItemGroup>
   <ItemGroup>
-    <CustomBuild Include="..\..\media\360\a.png">
-      <FileType>Document</FileType>
-      <Command Condition="'$(Configuration)|$(Platform)'=='CodeAnalysis|Xbox 360'">copy %(FullPath) $(OutDir)media\a.png</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Xbox 360'">copy %(FullPath) $(OutDir)media\a.png</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Profile|Xbox 360'">copy %(FullPath) $(OutDir)media\a.png</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Profile_FastCap|Xbox 360'">copy %(FullPath) $(OutDir)media\a.png</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Xbox 360'">copy %(FullPath) $(OutDir)media\a.png</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release_LTCG|Xbox 360'">copy %(FullPath) $(OutDir)media\a.png</Command>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='CodeAnalysis|Xbox 360'">$(OutDir)media\a.png;%(Outputs)</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Xbox 360'">$(OutDir)media\a.png;%(Outputs)</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Profile|Xbox 360'">$(OutDir)media\a.png;%(Outputs)</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Profile_FastCap|Xbox 360'">$(OutDir)media\a.png;%(Outputs)</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Xbox 360'">$(OutDir)media\a.png;%(Outputs)</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release_LTCG|Xbox 360'">$(OutDir)media\a.png;%(Outputs)</Outputs>
-    </CustomBuild>
-    <CustomBuild Include="..\..\media\360\b.png">
-      <FileType>Document</FileType>
-      <Command Condition="'$(Configuration)|$(Platform)'=='CodeAnalysis|Xbox 360'">copy %(FullPath) $(OutDir)media\b.png</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Xbox 360'">copy %(FullPath) $(OutDir)media\b.png</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Profile|Xbox 360'">copy %(FullPath) $(OutDir)media\b.png</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Profile_FastCap|Xbox 360'">copy %(FullPath) $(OutDir)media\b.png</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Xbox 360'">copy %(FullPath) $(OutDir)media\b.png</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release_LTCG|Xbox 360'">copy %(FullPath) $(OutDir)media\b.png</Command>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='CodeAnalysis|Xbox 360'">$(OutDir)media\b.png;%(Outputs)</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Xbox 360'">$(OutDir)media\b.png;%(Outputs)</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Profile|Xbox 360'">$(OutDir)media\b.png;%(Outputs)</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Profile_FastCap|Xbox 360'">$(OutDir)media\b.png;%(Outputs)</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Xbox 360'">$(OutDir)media\b.png;%(Outputs)</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release_LTCG|Xbox 360'">$(OutDir)media\b.png;%(Outputs)</Outputs>
-    </CustomBuild>
-  </ItemGroup>
-  <ItemGroup>
     <CustomBuild Include="..\..\media\360\Arial_12.rdf">
       <FileType>Document</FileType>
       <Command Condition="'$(Configuration)|$(Platform)'=='CodeAnalysis|Xbox 360'">Bundler %(FullPath) /o $(OutDir)media\Arial_12.xpr</Command>

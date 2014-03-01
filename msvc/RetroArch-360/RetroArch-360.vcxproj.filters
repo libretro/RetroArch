@@ -120,12 +120,6 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <CustomBuild Include="..\..\media\360\a.png">
-      <Filter>Source Files\media</Filter>
-    </CustomBuild>
-    <CustomBuild Include="..\..\media\360\b.png">
-      <Filter>Source Files\media</Filter>
-    </CustomBuild>
     <CustomBuild Include="..\..\media\360\Arial_12.rdf">
       <Filter>Source Files\media</Filter>
     </CustomBuild>
