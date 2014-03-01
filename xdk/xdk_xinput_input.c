@@ -169,10 +169,6 @@ static void xdk_input_poll(void *data)
    unsigned int dwInsertions, dwRemovals;
    XGetDeviceChanges(XDEVICE_TYPE_GAMEPAD, reinterpret_cast<PDWORD>(&dwInsertions), reinterpret_cast<PDWORD>(&dwRemovals));
 #endif
-   xdk->analog_state[0][0][0] = xdk->analog_state[0][0][1] = xdk->analog_state[0][1][0] = xdk->analog_state[0][1][1] = 0;
-   xdk->analog_state[1][0][0] = xdk->analog_state[1][0][1] = xdk->analog_state[1][1][0] = xdk->analog_state[1][1][1] = 0;
-   xdk->analog_state[2][0][0] = xdk->analog_state[2][0][1] = xdk->analog_state[2][1][0] = xdk->analog_state[2][1][1] = 0;
-   xdk->analog_state[3][0][0] = xdk->analog_state[3][0][1] = xdk->analog_state[3][1][0] = xdk->analog_state[3][1][1] = 0;
 
    for (unsigned port = 0; port < MAX_PADS; port++)
    {
