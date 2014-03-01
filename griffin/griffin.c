@@ -575,8 +575,7 @@ MENU
 #include "../frontend/menu/menu_context.c"
 #include "../frontend/menu/menu_settings.c"
 #include "../frontend/menu/history.c"
-
-#include "../file_list.c"
+#include "../frontend/menu/file_list.c"
 
 #ifdef HAVE_RMENU
 #include "../frontend/menu/disp/rmenu.c"

@@ -7,7 +7,7 @@
     <ClCompile Include="..\..\core_options.c" />
     <ClCompile Include="..\..\file_extract.c" />
     <ClCompile Include="..\..\frontend\menu\history.c" />
-    <ClCompile Include="..\..\file_list.c" />
+    <ClCompile Include="..\..\frontend\menu\file_list.c" />
     <ClCompile Include="..\..\performance.c" />
     <ClCompile Include="..\..\command.c" />
     <ClCompile Include="..\..\conf\config_file.c" />
