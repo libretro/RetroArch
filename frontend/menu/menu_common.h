@@ -24,7 +24,7 @@
 #endif
 
 #include "../../performance.h"
-#include "../../core_info.h"
+#include "../info/core_info.h"
 #include "menu_context.h"
 
 #ifdef HAVE_RGUI

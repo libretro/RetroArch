@@ -84,7 +84,6 @@ CONFIG FILE
 
 #include "../conf/config_file.c"
 #include "../core_options.c"
-#include "../core_info.c"
 
 /*============================================================
 CHEATS
@@ -522,6 +521,8 @@ FRONTEND
 #elif defined(ANDROID)
 #include "../frontend/platform/platform_android.c"
 #endif
+
+#include "../frontend/info/core_info.c"
 
 /*============================================================
 MAIN
