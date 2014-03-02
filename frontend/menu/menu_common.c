@@ -945,6 +945,7 @@ static int menu_settings_iterate(void *data, unsigned action)
                menu_type == RGUI_SETTINGS_INPUT_OPTIONS
             || menu_type == RGUI_SETTINGS_PATH_OPTIONS
             || menu_type == RGUI_SETTINGS_OVERLAY_OPTIONS
+            || menu_type == RGUI_SETTINGS_NETPLAY_OPTIONS
             || menu_type == RGUI_SETTINGS_OPTIONS
             || menu_type == RGUI_SETTINGS_DRIVERS
             || menu_type == RGUI_SETTINGS_CORE_OPTIONS
@@ -1943,6 +1944,9 @@ void menu_populate_entries(void *data, unsigned menu_type)
 #ifdef HAVE_OVERLAY
          file_list_push(rgui->selection_buf, "Overlay Options", RGUI_SETTINGS_OVERLAY_OPTIONS, 0);
 #endif
+#ifdef HAVE_NETPLAY
+         file_list_push(rgui->selection_buf, "Netplay Options (WIP)", RGUI_SETTINGS_NETPLAY_OPTIONS, 0);
+#endif
          file_list_push(rgui->selection_buf, "Path Options", RGUI_SETTINGS_PATH_OPTIONS, 0);
          if (g_extern.main_is_init && !g_extern.libretro_dummy)
          {
@@ -1961,6 +1965,18 @@ void menu_populate_entries(void *data, unsigned menu_type)
          file_list_push(rgui->selection_buf, "Overlay Opacity", RGUI_SETTINGS_OVERLAY_OPACITY, 0);
          file_list_push(rgui->selection_buf, "Overlay Scale", RGUI_SETTINGS_OVERLAY_SCALE, 0);
          break;
+#ifdef HAVE_NETPLAY
+      case RGUI_SETTINGS_NETPLAY_OPTIONS:
+         file_list_clear(rgui->selection_buf);
+         file_list_push(rgui->selection_buf, "Netplay Enable", RGUI_SETTINGS_NETPLAY_ENABLE, 0);
+         file_list_push(rgui->selection_buf, "Netplay Mode", RGUI_SETTINGS_NETPLAY_MODE, 0);
+         file_list_push(rgui->selection_buf, "Spectator Mode Enable", RGUI_SETTINGS_NETPLAY_SPECTATOR_MODE_ENABLE, 0);
+         file_list_push(rgui->selection_buf, "Host IP Address", RGUI_SETTINGS_NETPLAY_HOST_IP_ADDRESS, 0);
+         file_list_push(rgui->selection_buf, "TCP/UDP Port", RGUI_SETTINGS_NETPLAY_TCP_UDP_PORT, 0);
+         file_list_push(rgui->selection_buf, "Delay Frames", RGUI_SETTINGS_NETPLAY_DELAY_FRAMES, 0);
+         file_list_push(rgui->selection_buf, "Nickname", RGUI_SETTINGS_NETPLAY_NICKNAME, 0);
+         break;
+#endif
       case RGUI_SETTINGS_PATH_OPTIONS:
          file_list_clear(rgui->selection_buf);
          file_list_push(rgui->selection_buf, "Content Directory", RGUI_BROWSER_DIR_PATH, 0);

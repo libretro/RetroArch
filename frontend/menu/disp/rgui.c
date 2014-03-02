@@ -300,6 +300,8 @@ static void rgui_render(void *data)
       strlcpy(title, "INPUT OPTIONS", sizeof(title));
    else if (menu_type == RGUI_SETTINGS_OVERLAY_OPTIONS)
       strlcpy(title, "OVERLAY OPTIONS", sizeof(title));
+   else if (menu_type == RGUI_SETTINGS_NETPLAY_OPTIONS)
+      strlcpy(title, "NETPLAY OPTIONS", sizeof(title));
    else if (menu_type == RGUI_SETTINGS_PATH_OPTIONS)
       strlcpy(title, "PATH OPTIONS", sizeof(title));
    else if (menu_type == RGUI_SETTINGS_OPTIONS)

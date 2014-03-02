@@ -97,6 +97,7 @@ unsigned menu_type_is(unsigned type)
       type == RGUI_SETTINGS_DISK_OPTIONS ||
       type == RGUI_SETTINGS_PATH_OPTIONS ||
       type == RGUI_SETTINGS_OVERLAY_OPTIONS ||
+      type == RGUI_SETTINGS_NETPLAY_OPTIONS ||
       type == RGUI_SETTINGS_OPTIONS ||
       type == RGUI_SETTINGS_DRIVERS ||
       (type == RGUI_SETTINGS_INPUT_OPTIONS);
@@ -1724,6 +1725,52 @@ int menu_set_settings(void *data, unsigned setting, unsigned action)
             rarch_set_fullscreen(g_settings.video.fullscreen);
          }
          break;
+#ifdef HAVE_NETPLAY
+      case RGUI_SETTINGS_NETPLAY_ENABLE:
+         if (action == RGUI_ACTION_OK || action == RGUI_ACTION_LEFT || action == RGUI_ACTION_RIGHT)
+         {
+            g_extern.netplay_enable = !g_extern.netplay_enable;
+            /* TODO/FIXME - toggle netplay on/off */
+         }
+         else if (action == RGUI_ACTION_START)
+         {
+            g_extern.netplay_enable = false;
+            /* TODO/FIXME - toggle netplay on/off */
+         }
+         break;
+      case RGUI_SETTINGS_NETPLAY_HOST_IP_ADDRESS:
+         //strlcpy(type_str, g_extern.netplay_server, type_str_size);
+         break;
+      case RGUI_SETTINGS_NETPLAY_DELAY_FRAMES:
+         if (action == RGUI_ACTION_LEFT)
+         {
+            if (g_extern.state_slot >= 0)
+               g_extern.netplay_sync_frames--;
+         }
+         else if (action == RGUI_ACTION_RIGHT)
+            g_extern.netplay_sync_frames++;
+         else if (action == RGUI_ACTION_START)
+            g_extern.netplay_sync_frames = 0;
+         break;
+      case RGUI_SETTINGS_NETPLAY_TCP_UDP_PORT:
+         //snprintf(type_str, type_str_size, "%d", g_extern.netplay_port ? g_extern.netplay_port : RARCH_DEFAULT_PORT);
+         break;
+      case RGUI_SETTINGS_NETPLAY_NICKNAME:
+         //snprintf(type_str, type_str_size, "%s", g_extern.netplay_nick);
+         break;
+      case RGUI_SETTINGS_NETPLAY_MODE:
+         if (action == RGUI_ACTION_OK || action == RGUI_ACTION_LEFT || action == RGUI_ACTION_RIGHT)
+            g_extern.netplay_is_client = !g_extern.netplay_is_client;
+         else if (action == RGUI_ACTION_START)
+            g_extern.netplay_is_client = false;
+         break;
+      case RGUI_SETTINGS_NETPLAY_SPECTATOR_MODE_ENABLE:
+         if (action == RGUI_ACTION_OK || action == RGUI_ACTION_LEFT || action == RGUI_ACTION_RIGHT)
+            g_extern.netplay_is_spectate = !g_extern.netplay_is_spectate;
+         else if (action == RGUI_ACTION_START)
+            g_extern.netplay_is_spectate = false;
+         break;
+#endif
       default:
          break;
    }
@@ -1731,6 +1778,9 @@ int menu_set_settings(void *data, unsigned setting, unsigned action)
    return 0;
 }
 
+#ifndef RARCH_DEFAULT_PORT
+#define RARCH_DEFAULT_PORT 55435
+#endif
 
 void menu_set_settings_label(char *type_str, size_t type_str_size, unsigned *w, unsigned type)
 {
@@ -1972,6 +2022,7 @@ void menu_set_settings_label(char *type_str, size_t type_str_size, unsigned *w, 
       case RGUI_SETTINGS_INPUT_OPTIONS:
       case RGUI_SETTINGS_PATH_OPTIONS:
       case RGUI_SETTINGS_OVERLAY_OPTIONS:
+      case RGUI_SETTINGS_NETPLAY_OPTIONS:
       case RGUI_SETTINGS_OPTIONS:
       case RGUI_SETTINGS_DRIVERS:
       case RGUI_SETTINGS_CUSTOM_BIND_ALL:
@@ -2128,6 +2179,29 @@ void menu_set_settings_label(char *type_str, size_t type_str_size, unsigned *w, 
       case RGUI_SETTINGS_WINDOW_COMPOSITING_ENABLE:
          strlcpy(type_str, g_settings.video.disable_composition ? "OFF" : "ON", type_str_size);
          break;
+#ifdef HAVE_NETPLAY
+      case RGUI_SETTINGS_NETPLAY_ENABLE:
+         strlcpy(type_str, g_extern.netplay_enable ? "ON" : "OFF", type_str_size);
+         break;
+      case RGUI_SETTINGS_NETPLAY_HOST_IP_ADDRESS:
+         strlcpy(type_str, g_extern.netplay_server, type_str_size);
+         break;
+      case RGUI_SETTINGS_NETPLAY_DELAY_FRAMES:
+         snprintf(type_str, type_str_size, "%d", g_extern.netplay_sync_frames);
+         break;
+      case RGUI_SETTINGS_NETPLAY_TCP_UDP_PORT:
+         snprintf(type_str, type_str_size, "%d", g_extern.netplay_port ? g_extern.netplay_port : RARCH_DEFAULT_PORT);
+         break;
+      case RGUI_SETTINGS_NETPLAY_NICKNAME:
+         snprintf(type_str, type_str_size, "%s", g_extern.netplay_nick);
+         break;
+      case RGUI_SETTINGS_NETPLAY_MODE:
+         snprintf(type_str, type_str_size, g_extern.netplay_is_client ? "Client" : "Server");
+         break;
+      case RGUI_SETTINGS_NETPLAY_SPECTATOR_MODE_ENABLE:
+         snprintf(type_str, type_str_size, g_extern.netplay_is_spectate ? "ON" : "OFF");
+         break;
+#endif
       default:
          *type_str = '\0';
          *w = 0;
