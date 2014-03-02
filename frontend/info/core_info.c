@@ -229,7 +229,7 @@ bool core_info_list_get_info(core_info_list_t *core_info_list, core_info_t *out_
    for (i = 0; i < core_info_list->count; i++)
    {
       const core_info_t *info = &core_info_list->list[i];
-      if (!strcmp(path_basename(info->path), path_basename(path)) && info->display_name)
+      if (!strcmp(path_basename(info->path), path_basename(path)))
       {
          *out_info = *info;
          return true;
