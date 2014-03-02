@@ -383,7 +383,7 @@ int menu_settings_toggle_setting(void *data, unsigned setting, unsigned action, 
 }
 
 #ifdef HAVE_OSK
-static bool osk_callback_enter_rsound(void *data)
+static bool osk_callback_enter_audio_device(void *data)
 {
    if (g_extern.lifecycle_state & (1ULL << MODE_OSK_ENTRY_SUCCESS)
          && driver.osk && driver.osk->get_text_buf)
@@ -407,7 +407,7 @@ do_exit:
    return true;
 }
 
-static bool osk_callback_enter_rsound_init(void *data)
+static bool osk_callback_enter_audio_device_init(void *data)
 {
    if (!driver.osk)
       return false;
@@ -415,7 +415,7 @@ static bool osk_callback_enter_rsound_init(void *data)
    if (driver.osk->write_initial_msg)
       driver.osk->write_initial_msg(driver.osk_data, L"192.168.1.1");
    if (driver.osk->write_msg)
-      driver.osk->write_msg(driver.osk_data, L"Enter IP address for the RSound Server.");
+      driver.osk->write_msg(driver.osk_data, L"Enter Audio Device / IP address for audio driver.");
    if (driver.osk->start)
       driver.osk->start(driver.osk_data);
 
@@ -1188,6 +1188,22 @@ int menu_set_settings(void *data, unsigned setting, unsigned action)
          else if (action == RGUI_ACTION_RIGHT)
             find_next_audio_driver();
          break;
+      case RGUI_SETTINGS_DRIVER_AUDIO_DEVICE:
+         if (action == RGUI_ACTION_OK)
+         {
+#ifdef HAVE_OSK
+            if (g_settings.osk.enable)
+            {
+               g_extern.osk.cb_init     = osk_callback_enter_audio_device_init;
+               g_extern.osk.cb_callback = osk_callback_enter_audio_device;
+            }
+            else
+#endif
+               menu_key_start_line(rgui, "Audio Device Name / IP: ", audio_device_callback);
+         }
+         else if (action == RGUI_ACTION_START)
+            *g_settings.audio.device = '\0';
+         break;
       case RGUI_SETTINGS_DRIVER_AUDIO_RESAMPLER:
          if (action == RGUI_ACTION_LEFT)
             find_prev_resampler_driver();
@@ -1636,22 +1652,6 @@ int menu_set_settings(void *data, unsigned setting, unsigned action)
          rgui->need_refresh = true;
 #endif
          break;
-      case RGUI_SETTINGS_RSOUND_SERVER_IP_ADDRESS:
-#ifdef HAVE_RSOUND
-         if (action == RGUI_ACTION_OK)
-         {
-#ifdef HAVE_OSK
-            if (g_settings.osk.enable)
-            {
-               g_extern.osk.cb_init     = osk_callback_enter_rsound_init;
-               g_extern.osk.cb_callback = osk_callback_enter_rsound;
-            }
-            else
-#endif
-               menu_key_start_line(rgui, "Server IP Address: ", rsound_ipaddress_callback);
-         }
-#endif
-         break;
       case RGUI_SETTINGS_SHADER_APPLY:
       {
          if (!driver.video || !driver.video->set_shader || action != RGUI_ACTION_OK)
@@ -1678,6 +1678,20 @@ int menu_set_settings(void *data, unsigned setting, unsigned action)
          }
          break;
       }
+      case RGUI_SETTINGS_SHADER_PRESET_SAVE:
+         if (action == RGUI_ACTION_OK)
+         {
+#ifdef HAVE_OSK
+            if (g_settings.osk.enable)
+            {
+               g_extern.osk.cb_init = osk_callback_enter_filename_init;
+               g_extern.osk.cb_callback = osk_callback_enter_filename;
+            }
+            else
+#endif
+               menu_key_start_line(rgui, "Preset Filename: ", preset_filename_callback);
+         }
+         break;
 #endif
 #ifdef _XBOX1
       case RGUI_SETTINGS_FLICKER_FILTER:
@@ -1713,20 +1727,6 @@ int menu_set_settings(void *data, unsigned setting, unsigned action)
          }
          break;
 #endif
-      case RGUI_SETTINGS_SHADER_PRESET_SAVE:
-         if (action == RGUI_ACTION_OK)
-         {
-#ifdef HAVE_OSK
-            if (g_settings.osk.enable)
-            {
-               g_extern.osk.cb_init = osk_callback_enter_filename_init;
-               g_extern.osk.cb_callback = osk_callback_enter_filename;
-            }
-            else
-#endif
-               menu_key_start_line(rgui, "Preset Filename: ", preset_filename_callback);
-         }
-         break;
       case RGUI_SETTINGS_CUSTOM_BGM_CONTROL_ENABLE:
          switch (action)
          {
@@ -1891,6 +1891,9 @@ void menu_set_settings_label(char *type_str, size_t type_str_size, unsigned *w, 
          break;
       case RGUI_SETTINGS_DRIVER_AUDIO:
          strlcpy(type_str, g_settings.audio.driver, type_str_size);
+         break;
+      case RGUI_SETTINGS_DRIVER_AUDIO_DEVICE:
+         strlcpy(type_str, g_settings.audio.device, type_str_size);
          break;
       case RGUI_SETTINGS_DRIVER_AUDIO_RESAMPLER:
          strlcpy(type_str, g_settings.audio.resampler, type_str_size);
@@ -2213,9 +2216,6 @@ void menu_set_settings_label(char *type_str, size_t type_str_size, unsigned *w, 
 #endif
       case RGUI_SETTINGS_AUDIO_VOLUME:
          snprintf(type_str, type_str_size, "%.1f dB", g_extern.audio_data.volume_db);
-         break;
-      case RGUI_SETTINGS_RSOUND_SERVER_IP_ADDRESS:
-         strlcpy(type_str, g_settings.audio.device, type_str_size);
          break;
 #ifdef _XBOX1
       case RGUI_SETTINGS_FLICKER_FILTER:

@@ -27,7 +27,7 @@ void menu_key_start_line(rgui_handle_t *rgui, const char *label, input_keyboard_
 void netplay_port_callback(void *userdata, const char *str);
 void netplay_ipaddress_callback(void *userdata, const char *str);
 void netplay_nickname_callback(void *userdata, const char *str);
-void rsound_ipaddress_callback(void *userdata, const char *str);
+void audio_device_callback(void *userdata, const char *str);
 void preset_filename_callback(void *userdata, const char *str);
 
 #endif

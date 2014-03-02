@@ -1999,14 +1999,12 @@ void menu_populate_entries(void *data, unsigned menu_type)
 #else
          file_list_push(rgui->selection_buf, "Volume Level", RGUI_SETTINGS_AUDIO_VOLUME, 0);
 #endif
-#ifdef HAVE_RSOUND
-         file_list_push(rgui->selection_buf, "RSound Server IP Address", RGUI_SETTINGS_RSOUND_SERVER_IP_ADDRESS, 0);
-#endif
          break;
       case RGUI_SETTINGS_DRIVERS:
          file_list_clear(rgui->selection_buf);
          file_list_push(rgui->selection_buf, "Video Driver", RGUI_SETTINGS_DRIVER_VIDEO, 0);
          file_list_push(rgui->selection_buf, "Audio Driver", RGUI_SETTINGS_DRIVER_AUDIO, 0);
+         file_list_push(rgui->selection_buf, "Audio Device", RGUI_SETTINGS_DRIVER_AUDIO_DEVICE, 0);
          file_list_push(rgui->selection_buf, "Audio Resampler", RGUI_SETTINGS_DRIVER_AUDIO_RESAMPLER, 0);
          file_list_push(rgui->selection_buf, "Input Driver", RGUI_SETTINGS_DRIVER_INPUT, 0);
 #ifdef HAVE_CAMERA

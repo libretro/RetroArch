@@ -82,8 +82,7 @@ void netplay_nickname_callback(void *userdata, const char *str)
 }
 #endif
 
-#ifdef HAVE_RSOUND
-void rsound_ipaddress_callback(void *userdata, const char *str)
+void audio_device_callback(void *userdata, const char *str)
 {
    rgui_handle_t *rgui = (rgui_handle_t*)userdata;
 
@@ -91,7 +90,6 @@ void rsound_ipaddress_callback(void *userdata, const char *str)
       strlcpy(g_settings.audio.device, str, sizeof(g_settings.audio.device));
    menu_key_end_line(rgui);
 }
-#endif
 
 #ifdef HAVE_SHADER_MANAGER
 void preset_filename_callback(void *userdata, const char *str)
