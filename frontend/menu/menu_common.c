@@ -29,7 +29,6 @@
 #include "../../file.h"
 #include "../../file_ext.h"
 #include "../../input/input_common.h"
-#include "../../input/keyboard_line.h"
 
 #include "../../compat/posix_string.h"
 
@@ -1734,31 +1733,6 @@ bool menu_poll_find_trigger(struct rgui_bind_state *state, struct rgui_bind_stat
       }
    }
    return false;
-}
-
-static void menu_search_callback(void *userdata, const char *str)
-{
-   rgui_handle_t *rgui = (rgui_handle_t*)userdata;
-
-   if (str && *str)
-      file_list_search(rgui->selection_buf, str, &rgui->selection_ptr);
-   rgui->keyboard.display = false;
-   rgui->keyboard.label = NULL;
-   rgui->old_input_state = -1ULL; // Avoid triggering states on pressing return.
-}
-
-void menu_key_event(bool down, unsigned keycode, uint32_t character, uint16_t mod)
-{
-   (void)down;
-   (void)keycode;
-   (void)mod;
-
-   if (character == '/')
-   {
-      rgui->keyboard.display = true;
-      rgui->keyboard.label = "Search:";
-      rgui->keyboard.buffer = input_keyboard_start_line(rgui, menu_search_callback);
-   }
 }
 
 static inline int menu_list_get_first_char(file_list_t *buf, unsigned offset)

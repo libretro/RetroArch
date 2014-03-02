@@ -24,6 +24,7 @@
 frontend_ctx_driver_t *frontend_ctx;
 
 #if defined(HAVE_MENU)
+#include "menu/menu_input_line_cb.h"
 #include "menu/menu_common.h"
 #endif
 
