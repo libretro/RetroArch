@@ -76,10 +76,10 @@ void file_list_pop(file_list_t *list, size_t *directory_ptr)
    if (directory_ptr)
    {
       *directory_ptr = list->list[list->size].directory_ptr;
-#ifdef HAVE_RMENU_XUI
-      XuiListSetCurSel(m_menulist, *directory_ptr);
-#endif
    }
+#ifdef HAVE_RMENU_XUI
+   XuiListSetCurSel(m_menulist, list->list[list->size].directory_ptr);
+#endif
 }
 
 void file_list_free(file_list_t *list)
