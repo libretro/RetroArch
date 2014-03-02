@@ -314,6 +314,20 @@ int menu_settings_toggle_setting(void *data, unsigned setting, unsigned action, 
    return menu_set_settings(rgui, setting, action);
 }
 
+static void rsound_ipaddress_callback(void *userdata, const char *str)
+{
+   rgui_handle_t *rgui = (rgui_handle_t*)userdata;
+
+   if (str && *str)
+   {
+      strlcpy(g_settings.audio.device, str, sizeof(g_settings.audio.device));
+   }
+   rgui->keyboard.display = false;
+   rgui->keyboard.label = NULL;
+   rgui->old_input_state = -1ULL; // Avoid triggering states on pressing return.
+   g_extern.system.key_event = menu_key_event;
+}
+
 #ifdef HAVE_OSK
 static bool osk_callback_enter_rsound(void *data)
 {
@@ -1643,6 +1657,10 @@ int menu_set_settings(void *data, unsigned setting, unsigned action)
             else
 #endif
             {
+               g_extern.system.key_event = NULL;
+               rgui->keyboard.display = true;
+               rgui->keyboard.label = "Server IP Address: ";
+               rgui->keyboard.buffer = input_keyboard_start_line(rgui, rsound_ipaddress_callback);
             }
          }
 #endif
