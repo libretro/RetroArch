@@ -17,7 +17,7 @@
 #define CORE_INFO_H_
 
 #include "../../conf/config_file.h"
-#include "../file.h"
+#include "../../file.h"
 #include <stddef.h>
 
 #ifdef __cplusplus
