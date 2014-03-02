@@ -30,7 +30,6 @@
 
 void menu_key_start_line(rgui_handle_t *rgui, const char *label, input_keyboard_line_complete_t cb)
 {
-   g_extern.system.key_event = NULL;
    rgui->keyboard.display = true;
    rgui->keyboard.label = label;
    rgui->keyboard.buffer = input_keyboard_start_line(rgui, cb);
@@ -41,7 +40,6 @@ static void menu_key_end_line(rgui_handle_t *rgui)
    rgui->keyboard.display = false;
    rgui->keyboard.label = NULL;
    rgui->old_input_state = -1ULL; // Avoid triggering states on pressing return.
-   g_extern.system.key_event = menu_key_event;
 }
 
 static void menu_search_callback(void *userdata, const char *str)
