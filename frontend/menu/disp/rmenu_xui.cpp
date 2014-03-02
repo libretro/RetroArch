@@ -57,9 +57,6 @@ class class_type: public CXuiSceneImpl \
 { \
    public: \
       HRESULT OnInit( XUIMessageInit* pInitData, int & bHandled ); \
-      HRESULT OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled ); \
-      HRESULT OnControlNavigate (XUIMessageControlNavigate *pControlNavigateData, BOOL& bHandled); \
- \
       HRESULT DispatchMessageMap(XUIMessage *pMessage) \
       { \
          if (pMessage->dwMessage == XM_INIT) \
@@ -148,19 +145,6 @@ HRESULT CRetroArchMain::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
    mbstowcs(strw_buffer, str, sizeof(strw_buffer) / sizeof(wchar_t));
    XuiTextElementSetText(m_menutitlebottom, strw_buffer);
 
-   return 0;
-}
-
-HRESULT CRetroArchMain::OnControlNavigate(XUIMessageControlNavigate *pControlNavigateData, BOOL& bHandled)
-{
-   bHandled = FALSE;
-
-   return 0;
-}
-
-HRESULT CRetroArchMain::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled )
-{
-   bHandled = FALSE;
    return 0;
 }
 
