@@ -130,7 +130,7 @@ static void *sl_init(const char *device, unsigned rate, unsigned latency)
    else
       sl->buf_size = next_pow2(32 * latency);
 
-   sl->buf_count = (latency * 4 * out_rate + 500) / 1000;
+   sl->buf_count = (latency * 4 * rate + 500) / 1000;
    sl->buf_count = (sl->buf_count + sl->buf_size / 2) / sl->buf_size;
 
    sl->buffer = (uint8_t**)calloc(sizeof(uint8_t*), sl->buf_count);
