@@ -20,9 +20,11 @@
 #include "../../file.h"
 #include "menu_common.h"
 #include "menu_navigation.h"
+#include "menu_input_line_cb.h"
 #include "../../gfx/gfx_common.h"
 #include "../../input/input_common.h"
 #include "../../config.def.h"
+#include "../../input/keyboard_line.h"
 
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
@@ -401,6 +403,48 @@ static bool osk_callback_enter_filename_init(void *data)
    return true;
 }
 
+#endif
+
+#ifdef HAVE_NETPLAY
+static void netplay_port_callback(void *userdata, const char *str)
+{
+   rgui_handle_t *rgui = (rgui_handle_t*)userdata;
+
+   if (str && *str)
+      g_extern.netplay_port = atoi(str);
+   rgui->keyboard.display = false;
+   rgui->keyboard.label = NULL;
+   rgui->old_input_state = -1ULL; // Avoid triggering states on pressing return.
+   g_extern.system.key_event = menu_key_event;
+}
+
+static void netplay_ipaddress_callback(void *userdata, const char *str)
+{
+   rgui_handle_t *rgui = (rgui_handle_t*)userdata;
+
+   if (str && *str)
+      strlcpy(g_extern.netplay_server, str, sizeof(g_extern.netplay_server));
+   rgui->keyboard.display = false;
+   rgui->keyboard.label = NULL;
+   rgui->old_input_state = -1ULL; // Avoid triggering states on pressing return.
+   g_extern.system.key_event = menu_key_event;
+}
+
+static void netplay_nickname_callback(void *userdata, const char *str)
+{
+   rgui_handle_t *rgui = (rgui_handle_t*)userdata;
+
+   if (str && *str)
+      strlcpy(g_extern.netplay_nick, str, sizeof(g_extern.netplay_nick));
+   rgui->keyboard.display = false;
+   rgui->keyboard.label = NULL;
+   rgui->old_input_state = -1ULL; // Avoid triggering states on pressing return.
+   g_extern.system.key_event = menu_key_event;
+}
+#endif
+
+#ifndef RARCH_DEFAULT_PORT
+#define RARCH_DEFAULT_PORT 55435
 #endif
 
 int menu_set_settings(void *data, unsigned setting, unsigned action)
@@ -1739,7 +1783,16 @@ int menu_set_settings(void *data, unsigned setting, unsigned action)
          }
          break;
       case RGUI_SETTINGS_NETPLAY_HOST_IP_ADDRESS:
-         //strlcpy(type_str, g_extern.netplay_server, type_str_size);
+         if (action == RGUI_ACTION_OK)
+         {
+            g_extern.system.key_event = NULL;
+            rgui->keyboard.display = true;
+            rgui->keyboard.label = "IP Address: ";
+            rgui->keyboard.buffer = input_keyboard_start_line(rgui, netplay_ipaddress_callback);
+         }
+         else if (action == RGUI_ACTION_START)
+         {
+         }
          break;
       case RGUI_SETTINGS_NETPLAY_DELAY_FRAMES:
          if (action == RGUI_ACTION_LEFT)
@@ -1753,10 +1806,29 @@ int menu_set_settings(void *data, unsigned setting, unsigned action)
             g_extern.netplay_sync_frames = 0;
          break;
       case RGUI_SETTINGS_NETPLAY_TCP_UDP_PORT:
-         //snprintf(type_str, type_str_size, "%d", g_extern.netplay_port ? g_extern.netplay_port : RARCH_DEFAULT_PORT);
+         if (action == RGUI_ACTION_OK)
+         {
+            g_extern.system.key_event = NULL;
+            rgui->keyboard.display = true;
+            rgui->keyboard.label = "TCP/UDP Port: ";
+            rgui->keyboard.buffer = input_keyboard_start_line(rgui, netplay_port_callback);
+         }
+         else if (action == RGUI_ACTION_START)
+         {
+            g_extern.netplay_port = RARCH_DEFAULT_PORT;
+         }
          break;
       case RGUI_SETTINGS_NETPLAY_NICKNAME:
-         //snprintf(type_str, type_str_size, "%s", g_extern.netplay_nick);
+         if (action == RGUI_ACTION_OK)
+         {
+            g_extern.system.key_event = NULL;
+            rgui->keyboard.display = true;
+            rgui->keyboard.label = "Nickname: ";
+            rgui->keyboard.buffer = input_keyboard_start_line(rgui, netplay_nickname_callback);
+         }
+         else if (action == RGUI_ACTION_START)
+         {
+         }
          break;
       case RGUI_SETTINGS_NETPLAY_MODE:
          if (action == RGUI_ACTION_OK || action == RGUI_ACTION_LEFT || action == RGUI_ACTION_RIGHT)
@@ -1777,10 +1849,6 @@ int menu_set_settings(void *data, unsigned setting, unsigned action)
 
    return 0;
 }
-
-#ifndef RARCH_DEFAULT_PORT
-#define RARCH_DEFAULT_PORT 55435
-#endif
 
 void menu_set_settings_label(char *type_str, size_t type_str_size, unsigned *w, unsigned type)
 {

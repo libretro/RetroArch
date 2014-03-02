@@ -1919,7 +1919,7 @@ void menu_populate_entries(void *data, unsigned menu_type)
          file_list_push(rgui->selection_buf, "Overlay Options", RGUI_SETTINGS_OVERLAY_OPTIONS, 0);
 #endif
 #ifdef HAVE_NETPLAY
-         file_list_push(rgui->selection_buf, "Netplay Options (WIP)", RGUI_SETTINGS_NETPLAY_OPTIONS, 0);
+         file_list_push(rgui->selection_buf, "Netplay Options", RGUI_SETTINGS_NETPLAY_OPTIONS, 0);
 #endif
          file_list_push(rgui->selection_buf, "Path Options", RGUI_SETTINGS_PATH_OPTIONS, 0);
          if (g_extern.main_is_init && !g_extern.libretro_dummy)
