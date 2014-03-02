@@ -55,6 +55,11 @@ extern "C" {
 #include "../config.h"
 #endif
 
+#if LIBAVUTIL_VERSION_INT <= AV_VERSION_INT(52, 9, 0)
+#define av_frame_alloc avcodec_alloc_frame
+#define av_frame_free avcodec_free_frame
+#endif
+
 struct ff_video_info
 {
    AVCodecContext *codec;
