@@ -1806,10 +1806,8 @@ void menu_populate_entries(void *data, unsigned menu_type)
          file_list_push(rgui->selection_buf, "Default Filter", RGUI_SETTINGS_SHADER_FILTER, 0);
          file_list_push(rgui->selection_buf, "Load Shader Preset",
                RGUI_SETTINGS_SHADER_PRESET, 0);
-#ifdef HAVE_OSK
-         file_list_push(rgui->selection_buf, "Save Shader Preset",
+         file_list_push(rgui->selection_buf, "Save As Shader Preset",
                RGUI_SETTINGS_SHADER_PRESET_SAVE, 0);
-#endif
          file_list_push(rgui->selection_buf, "Shader Passes",
                RGUI_SETTINGS_SHADER_PASSES, 0);
 

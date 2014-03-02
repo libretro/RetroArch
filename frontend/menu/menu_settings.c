@@ -405,6 +405,30 @@ static bool osk_callback_enter_filename_init(void *data)
 
 #endif
 
+static void preset_filename_callback(void *userdata, const char *str)
+{
+   rgui_handle_t *rgui = (rgui_handle_t*)userdata;
+
+   if (str && *str)
+   {
+      char filepath[PATH_MAX];
+
+      fill_pathname_join(filepath, g_settings.video.shader_dir, str, sizeof(filepath));
+      strlcat(filepath, ".cgp", sizeof(filepath));
+      config_file_t *conf = config_file_new(NULL);
+      if (conf)
+      {
+         gfx_shader_write_conf_cgp(conf, &rgui->shader);
+         config_file_write(conf, filepath);
+         config_file_free(conf);
+      }
+   }
+   rgui->keyboard.display = false;
+   rgui->keyboard.label = NULL;
+   rgui->old_input_state = -1ULL; // Avoid triggering states on pressing return.
+   g_extern.system.key_event = menu_key_event;
+}
+
 #ifdef HAVE_NETPLAY
 static void netplay_port_callback(void *userdata, const char *str)
 {
@@ -1739,6 +1763,10 @@ int menu_set_settings(void *data, unsigned setting, unsigned action)
             else
 #endif
             {
+               g_extern.system.key_event = NULL;
+               rgui->keyboard.display = true;
+               rgui->keyboard.label = "Preset Filename: ";
+               rgui->keyboard.buffer = input_keyboard_start_line(rgui, preset_filename_callback);
             }
          }
          break;
