@@ -171,6 +171,74 @@ static enum rarch_shader_type shader_manager_get_type(const struct gfx_shader *s
    return type;
 }
 
+void shader_manager_save_preset(void *data, const char *basename, bool apply)
+{
+   rgui_handle_t *rgui = (rgui_handle_t*)data;
+   enum rarch_shader_type type = shader_manager_get_type(&rgui->shader);
+   if (type == RARCH_SHADER_NONE)
+      return;
+
+   const char *conf_path = NULL;
+   char buffer[PATH_MAX];
+   if (basename)
+   {
+      strlcpy(buffer, basename, sizeof(buffer));
+      // Append extension automatically as appropriate.
+      if (!strstr(basename, ".cgp") && !strstr(basename, ".glslp"))
+      {
+         if (type == RARCH_SHADER_GLSL)
+            strlcat(buffer, ".glslp", sizeof(buffer));
+         else if (type == RARCH_SHADER_CG)
+            strlcat(buffer, ".cgp", sizeof(buffer));
+      }
+      conf_path = buffer;
+   }
+   else
+      conf_path = type == RARCH_SHADER_GLSL ? rgui->default_glslp : rgui->default_cgp;
+
+   char config_directory[PATH_MAX];
+   if (*g_extern.config_path)
+      fill_pathname_basedir(config_directory, g_extern.config_path, sizeof(config_directory));
+   else
+      *config_directory = '\0';
+
+   char cgp_path[PATH_MAX];
+   const char *dirs[] = {
+      g_settings.video.shader_dir,
+      g_settings.rgui_config_directory,
+      config_directory,
+   };
+
+   config_file_t *conf = config_file_new(NULL);
+   if (!conf)
+      return;
+   gfx_shader_write_conf_cgp(conf, &rgui->shader);
+
+   bool ret = false;
+   unsigned d;
+   for (d = 0; d < ARRAY_SIZE(dirs); d++)
+   {
+      if (!*dirs[d])
+         continue;
+
+      fill_pathname_join(cgp_path, dirs[d], conf_path, sizeof(cgp_path));
+      if (config_file_write(conf, cgp_path))
+      {
+         RARCH_LOG("Saved shader preset to %s.\n", cgp_path);
+         if (apply)
+            shader_manager_set_preset(NULL, type, cgp_path);
+         ret = true;
+         break;
+      }
+      else
+         RARCH_LOG("Failed writing shader preset to %s.\n", cgp_path);
+   }
+
+   config_file_free(conf);
+   if (!ret)
+      RARCH_ERR("Failed to save shader preset. Make sure config directory and/or shader dir are writable.\n");
+}
+
 static int shader_manager_toggle_setting(void *data, unsigned setting, unsigned action)
 {
    unsigned dist_shader, dist_filter, dist_scale;
@@ -1585,74 +1653,31 @@ int menu_set_settings(void *data, unsigned setting, unsigned action)
 #endif
          break;
       case RGUI_SETTINGS_SHADER_APPLY:
+      {
+         if (!driver.video || !driver.video->set_shader || action != RGUI_ACTION_OK)
+            return 0;
+
+         RARCH_LOG("Applying shader ...\n");
+
+         enum rarch_shader_type type = shader_manager_get_type(&rgui->shader);
+
+         if (rgui->shader.passes && type != RARCH_SHADER_NONE)
+            shader_manager_save_preset(rgui, NULL, true);
+         else
          {
-            if (!driver.video || !driver.video->set_shader || action != RGUI_ACTION_OK)
-               return 0;
-
-            RARCH_LOG("Applying shader ...\n");
-
-            enum rarch_shader_type type = shader_manager_get_type(&rgui->shader);
-
-            if (rgui->shader.passes && type != RARCH_SHADER_NONE)
+            type = gfx_shader_parse_type("", DEFAULT_SHADER_TYPE);
+            if (type == RARCH_SHADER_NONE)
             {
-               const char *conf_path = type == RARCH_SHADER_GLSL ? rgui->default_glslp : rgui->default_cgp;
-
-               char config_directory[PATH_MAX];
-               if (*g_extern.config_path)
-                  fill_pathname_basedir(config_directory, g_extern.config_path, sizeof(config_directory));
-               else
-                  *config_directory = '\0';
-
-               char cgp_path[PATH_MAX];
-               const char *dirs[] = {
-                  g_settings.video.shader_dir,
-                  g_settings.rgui_config_directory,
-                  config_directory,
-               };
-
-               config_file_t *conf = config_file_new(NULL);
-               if (!conf)
-                  return 0;
-               gfx_shader_write_conf_cgp(conf, &rgui->shader);
-
-               bool ret = false;
-               unsigned d;
-               for (d = 0; d < ARRAY_SIZE(dirs); d++)
-               {
-                  if (!*dirs[d])
-                     continue;
-
-                  fill_pathname_join(cgp_path, dirs[d], conf_path, sizeof(cgp_path));
-                  if (config_file_write(conf, cgp_path))
-                  {
-                     RARCH_LOG("Saved shader preset to %s.\n", cgp_path);
-                     shader_manager_set_preset(NULL, type, cgp_path);
-                     ret = true;
-                     break;
-                  }
-                  else
-                     RARCH_LOG("Failed writing shader preset to %s.\n", cgp_path);
-               }
-
-               config_file_free(conf);
-               if (!ret)
-                  RARCH_ERR("Failed to save shader preset. Make sure config directory and/or shader dir are writable.\n");
-            }
-            else
-            {
-               type = gfx_shader_parse_type("", DEFAULT_SHADER_TYPE);
-               if (type == RARCH_SHADER_NONE)
-               {
 #if defined(HAVE_GLSL)
-                  type = RARCH_SHADER_GLSL;
+               type = RARCH_SHADER_GLSL;
 #elif defined(HAVE_CG) || defined(HAVE_HLSL)
-                  type = RARCH_SHADER_CG;
+               type = RARCH_SHADER_CG;
 #endif
-               }
-               shader_manager_set_preset(NULL, type, NULL);
             }
+            shader_manager_set_preset(NULL, type, NULL);
          }
          break;
+      }
 #endif
 #ifdef _XBOX1
       case RGUI_SETTINGS_FLICKER_FILTER:

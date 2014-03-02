@@ -93,26 +93,15 @@ void rsound_ipaddress_callback(void *userdata, const char *str)
 }
 #endif
 
+#ifdef HAVE_SHADER_MANAGER
 void preset_filename_callback(void *userdata, const char *str)
 {
    rgui_handle_t *rgui = (rgui_handle_t*)userdata;
 
-   if (str && *str)
-   {
-      char filepath[PATH_MAX];
-
-      fill_pathname_join(filepath, g_settings.video.shader_dir, str, sizeof(filepath));
-      strlcat(filepath, ".cgp", sizeof(filepath));
-      config_file_t *conf = config_file_new(NULL);
-      if (conf)
-      {
-         gfx_shader_write_conf_cgp(conf, &rgui->shader);
-         config_file_write(conf, filepath);
-         config_file_free(conf);
-      }
-   }
+   shader_manager_save_preset(rgui, str && *str ? str : NULL, false);
    menu_key_end_line(rgui);
 }
+#endif
 
 void menu_key_event(bool down, unsigned keycode, uint32_t character, uint16_t mod)
 {

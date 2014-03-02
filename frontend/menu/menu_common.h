@@ -414,6 +414,7 @@ void shader_manager_get_str(struct gfx_shader *shader,
       char *type_str, size_t type_str_size, unsigned type);
 void shader_manager_set_preset(struct gfx_shader *shader,
       enum rarch_shader_type type, const char *path);
+void shader_manager_save_preset(void *data, const char *basename, bool apply);
 #endif
 
 void menu_ticker_line(char *buf, size_t len, unsigned tick, const char *str, bool selected);
