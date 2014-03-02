@@ -17,8 +17,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include "file_list.h"
-#include "compat/strcasestr.h"
-#include "msvc/msvc_compat.h"
+#include "../../compat/strcasestr.h"
+#include "../../msvc/msvc_compat.h"
 #ifdef HAVE_RMENU_XUI
 #include <xui.h>
 #endif

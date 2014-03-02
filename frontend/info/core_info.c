@@ -14,14 +14,14 @@
  */
 
 #include "core_info.h"
-#include "general.h"
-#include "file.h"
-#include "file_ext.h"
-#include "file_extract.h"
-#include "config.def.h"
+#include "../../general.h"
+#include "../../file.h"
+#include "../../file_ext.h"
+#include "../../file_extract.h"
+#include "../../config.def.h"
 
 #ifdef HAVE_CONFIG_H
-#include "config.h"
+#include "../../config.h"
 #endif
 
 static void core_info_list_resolve_all_extensions(core_info_list_t *core_info_list)

@@ -15,6 +15,7 @@
  */
 
 #include "../../driver.h"
+#include "../gfx_common.h"
 
 #ifdef _XBOX
 #include "../../xdk/xdk_d3d.h"
