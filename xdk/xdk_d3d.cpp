@@ -167,7 +167,8 @@ static void xdk_d3d_free(void *data)
    if (!d3d)
       return;
 
-   d3d->font_ctx->deinit(d3d);
+   if (d3d->font_ctx && d3d->font_ctx->deinit)
+      d3d->font_ctx->deinit(d3d);
 
 #ifdef HAVE_HLSL
    if (d3d->shader)
@@ -210,7 +211,7 @@ static void xdk_d3d_set_viewport(bool force_full)
    width = 0;
    height = 0;
 
-   if (d3d->ctx_driver)
+   if (d3d->ctx_driver && d3d->ctx_driver->get_video_size)
       d3d->ctx_driver->get_video_size(&width, &height);
 
    m_viewport_x_temp = 0;
@@ -585,12 +586,13 @@ static void *xdk_d3d_init(const video_info_t *video, const input_driver_t **inpu
    }
 #endif
 
-   if (d3d->ctx_driver)
+   if (d3d->ctx_driver && d3d->ctx_driver->get_video_size)
       d3d->ctx_driver->get_video_size(&d3d->win_width, &d3d->win_height);
 
    RARCH_LOG("Detecting screen resolution: %ux%u.\n", d3d->win_width, d3d->win_height);
 
-   d3d->ctx_driver->swap_interval(d3d->vsync ? 1 : 0);
+   if (d3d->ctx_driver && d3d->ctx_driver->swap_interval)
+      d3d->ctx_driver->swap_interval(d3d->vsync ? 1 : 0);
 
 #ifdef HAVE_HLSL
    if (!hlsl_shader_init())
@@ -807,14 +809,14 @@ static bool xdk_d3d_frame(void *data, const void *frame,
    }
 
 #ifdef HAVE_HLSL
-   if (d3d->shader)
+   if (d3d->shader && d3d->shader->set_mvp)
       d3d->shader->set_mvp(NULL);
 #endif
 
    RD3DDevice_SetTexture(d3dr, 0, d3d->lpTexture);
 
 #ifdef HAVE_HLSL
-   if (d3d->shader)
+   if (d3d->shader && d3d->shader->use)
       d3d->shader->use(1);
 #endif
 
@@ -822,7 +824,7 @@ static bool xdk_d3d_frame(void *data, const void *frame,
    if (d3d->fbo_inited)
    {
 #ifdef HAVE_HLSL
-      if (d3d->shader)
+      if (d3d->shader && d3d->shader->set_params)
          d3d->shader->set_params(width, height, d3d->tex_w, d3d->tex_h, g_settings.video.fbo.scale_x * width,
                g_settings.video.fbo.scale_y * height, g_extern.frame_count);
 #endif
@@ -840,7 +842,7 @@ static bool xdk_d3d_frame(void *data, const void *frame,
    {
 #ifdef HAVE_HLSL
 
-      if (d3d->shader)
+      if (d3d->shader && d3d->shader->set_params)
          d3d->shader->set_params(width, height, d3d->tex_w, d3d->tex_h, d3d->win_width,
                d3d->win_height, g_extern.frame_count,
       /* TODO - missing a bunch of params at the end */
@@ -889,9 +891,10 @@ NULL, NULL, NULL, 0);
       RD3DDevice_SetTexture(d3dr, 0, &d3d->lpTexture_ot_as16srgb);
 
 #ifdef HAVE_HLSL
-      hlsl_use(2);
+      if (d3d->shader && d3d->shader->use)
+         d3d->shader->use(2);
 
-      if (d3d->shader)
+      if (d3d->shader && d3d->shader->set_params)
          d3d->shader->set_params(g_settings.video.fbo.scale_x * width, g_settings.video.fbo.scale_y * height, g_settings.video.fbo.scale_x * d3d->tex_w, g_settings.video.fbo.scale_y * d3d->tex_h, d3d->win_width,
                d3d->win_height, g_extern.frame_count);
 #endif
@@ -1011,7 +1014,7 @@ static void xdk_d3d_set_osd_msg(void *data, const char *msg, void *userdata)
    xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
    font_params_t *params = (font_params_t*)userdata;
 
-   if (d3d->font_ctx)
+   if (d3d->font_ctx && d3d->font_ctx->render_msg)
       d3d->font_ctx->render_msg(d3d, msg, params);
 }
 
