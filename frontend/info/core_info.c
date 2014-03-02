@@ -221,6 +221,24 @@ bool core_info_list_get_display_name(core_info_list_t *core_info_list, const cha
    return false;
 }
 
+bool core_info_list_get_info(core_info_list_t *core_info_list, core_info_t *out_info, const char *path)
+{
+   size_t i;
+   memset(out_info, 0, sizeof(*out_info));
+
+   for (i = 0; i < core_info_list->count; i++)
+   {
+      const core_info_t *info = &core_info_list->list[i];
+      if (!strcmp(path_basename(info->path), path_basename(path)) && info->display_name)
+      {
+         *out_info = *info;
+         return true;
+      }
+   }
+
+   return false;
+}
+
 bool core_info_does_support_any_file(const core_info_t *core, const struct string_list *list)
 {
    size_t i;

@@ -35,6 +35,37 @@
 rgui_handle_t *rgui;
 const menu_ctx_driver_t *menu_ctx;
 
+#ifdef HAVE_DYNAMIC
+static void menu_update_system_info(void *data, bool *load_no_rom)
+{
+   rgui_handle_t *rgui = (rgui_handle_t*)data;
+
+   libretro_free_system_info(&rgui->info);
+   if (!path_is_directory(g_settings.libretro))
+   {
+      libretro_get_system_info(g_settings.libretro, &rgui->info, load_no_rom);
+      // Keep track of info for the currently selected core.
+      if (rgui->core_info)
+      {
+         if (core_info_list_get_info(rgui->core_info, &rgui->core_info_current, g_settings.libretro))
+         {
+            const core_info_t *info = &rgui->core_info_current;
+
+            RARCH_LOG("[Core Info]:\n");
+            if (info->display_name)
+               RARCH_LOG("  Display Name: %s\n", info->display_name);
+            if (info->supported_extensions)
+               RARCH_LOG("  Supported Extensions: %s\n", info->supported_extensions);
+            if (info->authors)
+               RARCH_LOG("  Authors: %s\n", info->authors);
+            if (info->permissions)
+               RARCH_LOG("  Permissions: %s\n", info->permissions);
+         }
+      }
+   }
+}
+#endif
+
 //forward decl
 static int menu_iterate_func(void *data, unsigned action);
 
@@ -291,8 +322,7 @@ void load_menu_game_history(unsigned game_index)
    rarch_environment_cb(RETRO_ENVIRONMENT_EXEC, (void*)path);
 
 #if defined(HAVE_DYNAMIC)
-   libretro_free_system_info(&rgui->info);
-   libretro_get_system_info(g_settings.libretro, &rgui->info, NULL);
+   menu_update_system_info(rgui, NULL);
 #endif
 }
 
@@ -323,28 +353,25 @@ static void menu_init_history(void)
 static void menu_update_libretro_info(void)
 {
    *rgui->libretro_dir = '\0';
-#ifdef HAVE_DYNAMIC
-   libretro_free_system_info(&rgui->info);
-#endif
 
    if (path_is_directory(g_settings.libretro))
       strlcpy(rgui->libretro_dir, g_settings.libretro, sizeof(rgui->libretro_dir));
    else if (*g_settings.libretro)
-   {
       fill_pathname_basedir(rgui->libretro_dir, g_settings.libretro, sizeof(rgui->libretro_dir));
-#ifdef HAVE_DYNAMIC
-      libretro_get_system_info(g_settings.libretro, &rgui->info, NULL);
-#endif
-   }
 
 #ifndef HAVE_DYNAMIC
    retro_get_system_info(&rgui->info);
 #endif
 
+   memset(&rgui->core_info_current, 0, sizeof(rgui->core_info_current));
    core_info_list_free(rgui->core_info);
    rgui->core_info = NULL;
    if (*rgui->libretro_dir)
       rgui->core_info = core_info_list_new(rgui->libretro_dir);
+
+#ifdef HAVE_DYNAMIC
+   menu_update_system_info(rgui, NULL);
+#endif
 }
 
 void load_menu_game_prepare_dummy(void)
@@ -989,10 +1016,7 @@ static void menu_flush_stack_type(void *data, unsigned final_type)
 void load_menu_game_new_core(void)
 {
 #ifdef HAVE_DYNAMIC
-   libretro_free_system_info(&rgui->info);
-   libretro_get_system_info(g_settings.libretro, &rgui->info,
-         &rgui->load_no_rom);
-
+   menu_update_system_info(rgui, &rgui->load_no_rom);
    g_extern.lifecycle_state |= (1ULL << MODE_LOAD_GAME);
 #else
    rarch_environment_cb(RETRO_ENVIRONMENT_SET_LIBRETRO_PATH, (void*)g_settings.libretro);
@@ -1151,9 +1175,7 @@ static int menu_iterate_func(void *data, unsigned action)
             {
 #if defined(HAVE_DYNAMIC)
                fill_pathname_join(g_settings.libretro, dir, path, sizeof(g_settings.libretro));
-               libretro_free_system_info(&rgui->info);
-               libretro_get_system_info(g_settings.libretro, &rgui->info,
-                     &rgui->load_no_rom);
+               menu_update_system_info(rgui, &rgui->load_no_rom);
 
                // No ROM needed for this core, load game immediately.
                if (rgui->load_no_rom)
@@ -1300,9 +1322,7 @@ static int menu_iterate_func(void *data, unsigned action)
                      strlcpy(g_settings.libretro, info->path, sizeof(g_settings.libretro));
 
 #ifdef HAVE_DYNAMIC
-                     libretro_free_system_info(&rgui->info);
-                     libretro_get_system_info(g_settings.libretro, &rgui->info,
-                           &rgui->load_no_rom);
+                     menu_update_system_info(rgui, &rgui->load_no_rom);
                      g_extern.lifecycle_state |= (1ULL << MODE_LOAD_GAME);
 #else
                      rarch_environment_cb(RETRO_ENVIRONMENT_SET_LIBRETRO_PATH, (void*)g_settings.libretro);

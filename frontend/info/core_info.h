@@ -24,13 +24,15 @@
 extern "C" {
 #endif
 
-typedef struct {
+typedef struct
+{
    char *path;
    char *desc;
    bool missing; // Set once to avoid opening the same file several times.
 } core_info_firmware_t;
 
-typedef struct {
+typedef struct
+{
    char *path;
    config_file_t *data;
    char *display_name;
@@ -45,7 +47,8 @@ typedef struct {
    size_t firmware_count;
 } core_info_t;
 
-typedef struct {
+typedef struct
+{
    core_info_t *list;
    size_t count;
    char *all_ext;
@@ -67,6 +70,9 @@ void core_info_list_get_supported_cores(core_info_list_t *core_info_list, const 
 void core_info_list_get_missing_firmware(core_info_list_t *core_info_list,
       const char *core, const char *systemdir,
       const core_info_firmware_t **firmware, size_t *num_firmware);
+
+// Shallow-copies internal state. Data in *info is invalidated when the core_info_list is freed.
+bool core_info_list_get_info(core_info_list_t *core_info_list, core_info_t *info, const char *path);
 
 const char *core_info_list_get_all_extensions(core_info_list_t *core_info_list);
 

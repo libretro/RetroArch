@@ -366,6 +366,7 @@ typedef struct
    bool push_start_screen;
 
    core_info_list_t *core_info;
+   core_info_t core_info_current;
    bool defer_core;
    char deferred_path[PATH_MAX];
 
