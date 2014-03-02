@@ -108,7 +108,7 @@ void menu_key_event(bool down, unsigned keycode, uint32_t character, uint16_t mo
    if (character == '/')
    {
       rgui->keyboard.display = true;
-      rgui->keyboard.label = "Search:";
+      rgui->keyboard.label = "Search: ";
       rgui->keyboard.buffer = input_keyboard_start_line(rgui, menu_search_callback);
    }
 }
