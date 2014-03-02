@@ -13,6 +13,11 @@
  *  You should have received a copy of the GNU General Public License along with RetroArch.
  *  If not, see <http://www.gnu.org/licenses/>.
  */
+
+#ifdef HAVE_CONFIG_H
+#include "../../config.h"
+#endif
+
 #include <stdint.h>
 #include <stddef.h>
 #include <stdlib.h>
@@ -21,6 +26,23 @@
 #include <ctype.h>
 #include "menu_common.h"
 #include "../../input/keyboard_line.h"
+#include "menu_input_line_cb.h"
+
+void menu_key_start_line(rgui_handle_t *rgui, const char *label, input_keyboard_line_complete_t cb)
+{
+   g_extern.system.key_event = NULL;
+   rgui->keyboard.display = true;
+   rgui->keyboard.label = label;
+   rgui->keyboard.buffer = input_keyboard_start_line(rgui, cb);
+}
+
+static void menu_key_end_line(rgui_handle_t *rgui)
+{
+   rgui->keyboard.display = false;
+   rgui->keyboard.label = NULL;
+   rgui->old_input_state = -1ULL; // Avoid triggering states on pressing return.
+   g_extern.system.key_event = menu_key_event;
+}
 
 static void menu_search_callback(void *userdata, const char *str)
 {
@@ -28,9 +50,68 @@ static void menu_search_callback(void *userdata, const char *str)
 
    if (str && *str)
       file_list_search(rgui->selection_buf, str, &rgui->selection_ptr);
-   rgui->keyboard.display = false;
-   rgui->keyboard.label = NULL;
-   rgui->old_input_state = -1ULL; // Avoid triggering states on pressing return.
+   menu_key_end_line(rgui);
+}
+
+#ifdef HAVE_NETPLAY
+void netplay_port_callback(void *userdata, const char *str)
+{
+   rgui_handle_t *rgui = (rgui_handle_t*)userdata;
+
+   if (str && *str)
+      g_extern.netplay_port = strtoul(str, NULL, 0);
+   menu_key_end_line(rgui);
+}
+
+void netplay_ipaddress_callback(void *userdata, const char *str)
+{
+   rgui_handle_t *rgui = (rgui_handle_t*)userdata;
+
+   if (str && *str)
+      strlcpy(g_extern.netplay_server, str, sizeof(g_extern.netplay_server));
+   menu_key_end_line(rgui);
+}
+
+void netplay_nickname_callback(void *userdata, const char *str)
+{
+   rgui_handle_t *rgui = (rgui_handle_t*)userdata;
+
+   if (str && *str)
+      strlcpy(g_extern.netplay_nick, str, sizeof(g_extern.netplay_nick));
+   menu_key_end_line(rgui);
+}
+#endif
+
+#ifdef HAVE_RSOUND
+void rsound_ipaddress_callback(void *userdata, const char *str)
+{
+   rgui_handle_t *rgui = (rgui_handle_t*)userdata;
+
+   if (str && *str)
+      strlcpy(g_settings.audio.device, str, sizeof(g_settings.audio.device));
+   menu_key_end_line(rgui);
+}
+#endif
+
+void preset_filename_callback(void *userdata, const char *str)
+{
+   rgui_handle_t *rgui = (rgui_handle_t*)userdata;
+
+   if (str && *str)
+   {
+      char filepath[PATH_MAX];
+
+      fill_pathname_join(filepath, g_settings.video.shader_dir, str, sizeof(filepath));
+      strlcat(filepath, ".cgp", sizeof(filepath));
+      config_file_t *conf = config_file_new(NULL);
+      if (conf)
+      {
+         gfx_shader_write_conf_cgp(conf, &rgui->shader);
+         config_file_write(conf, filepath);
+         config_file_free(conf);
+      }
+   }
+   menu_key_end_line(rgui);
 }
 
 void menu_key_event(bool down, unsigned keycode, uint32_t character, uint16_t mod)
@@ -46,3 +127,4 @@ void menu_key_event(bool down, unsigned keycode, uint32_t character, uint16_t mo
       rgui->keyboard.buffer = input_keyboard_start_line(rgui, menu_search_callback);
    }
 }
+

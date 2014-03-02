@@ -314,20 +314,6 @@ int menu_settings_toggle_setting(void *data, unsigned setting, unsigned action, 
    return menu_set_settings(rgui, setting, action);
 }
 
-static void rsound_ipaddress_callback(void *userdata, const char *str)
-{
-   rgui_handle_t *rgui = (rgui_handle_t*)userdata;
-
-   if (str && *str)
-   {
-      strlcpy(g_settings.audio.device, str, sizeof(g_settings.audio.device));
-   }
-   rgui->keyboard.display = false;
-   rgui->keyboard.label = NULL;
-   rgui->old_input_state = -1ULL; // Avoid triggering states on pressing return.
-   g_extern.system.key_event = menu_key_event;
-}
-
 #ifdef HAVE_OSK
 static bool osk_callback_enter_rsound(void *data)
 {
@@ -417,68 +403,6 @@ static bool osk_callback_enter_filename_init(void *data)
    return true;
 }
 
-#endif
-
-static void preset_filename_callback(void *userdata, const char *str)
-{
-   rgui_handle_t *rgui = (rgui_handle_t*)userdata;
-
-   if (str && *str)
-   {
-      char filepath[PATH_MAX];
-
-      fill_pathname_join(filepath, g_settings.video.shader_dir, str, sizeof(filepath));
-      strlcat(filepath, ".cgp", sizeof(filepath));
-      config_file_t *conf = config_file_new(NULL);
-      if (conf)
-      {
-         gfx_shader_write_conf_cgp(conf, &rgui->shader);
-         config_file_write(conf, filepath);
-         config_file_free(conf);
-      }
-   }
-   rgui->keyboard.display = false;
-   rgui->keyboard.label = NULL;
-   rgui->old_input_state = -1ULL; // Avoid triggering states on pressing return.
-   g_extern.system.key_event = menu_key_event;
-}
-
-#ifdef HAVE_NETPLAY
-static void netplay_port_callback(void *userdata, const char *str)
-{
-   rgui_handle_t *rgui = (rgui_handle_t*)userdata;
-
-   if (str && *str)
-      g_extern.netplay_port = atoi(str);
-   rgui->keyboard.display = false;
-   rgui->keyboard.label = NULL;
-   rgui->old_input_state = -1ULL; // Avoid triggering states on pressing return.
-   g_extern.system.key_event = menu_key_event;
-}
-
-static void netplay_ipaddress_callback(void *userdata, const char *str)
-{
-   rgui_handle_t *rgui = (rgui_handle_t*)userdata;
-
-   if (str && *str)
-      strlcpy(g_extern.netplay_server, str, sizeof(g_extern.netplay_server));
-   rgui->keyboard.display = false;
-   rgui->keyboard.label = NULL;
-   rgui->old_input_state = -1ULL; // Avoid triggering states on pressing return.
-   g_extern.system.key_event = menu_key_event;
-}
-
-static void netplay_nickname_callback(void *userdata, const char *str)
-{
-   rgui_handle_t *rgui = (rgui_handle_t*)userdata;
-
-   if (str && *str)
-      strlcpy(g_extern.netplay_nick, str, sizeof(g_extern.netplay_nick));
-   rgui->keyboard.display = false;
-   rgui->keyboard.label = NULL;
-   rgui->old_input_state = -1ULL; // Avoid triggering states on pressing return.
-   g_extern.system.key_event = menu_key_event;
-}
 #endif
 
 #ifndef RARCH_DEFAULT_PORT
@@ -1651,17 +1575,12 @@ int menu_set_settings(void *data, unsigned setting, unsigned action)
 #ifdef HAVE_OSK
             if (g_settings.osk.enable)
             {
-            g_extern.osk.cb_init     = osk_callback_enter_rsound_init;
-            g_extern.osk.cb_callback = osk_callback_enter_rsound;
+               g_extern.osk.cb_init     = osk_callback_enter_rsound_init;
+               g_extern.osk.cb_callback = osk_callback_enter_rsound;
             }
             else
 #endif
-            {
-               g_extern.system.key_event = NULL;
-               rgui->keyboard.display = true;
-               rgui->keyboard.label = "Server IP Address: ";
-               rgui->keyboard.buffer = input_keyboard_start_line(rgui, rsound_ipaddress_callback);
-            }
+               menu_key_start_line(rgui, "Server IP Address: ", rsound_ipaddress_callback);
          }
 #endif
          break;
@@ -1780,12 +1699,7 @@ int menu_set_settings(void *data, unsigned setting, unsigned action)
             }
             else
 #endif
-            {
-               g_extern.system.key_event = NULL;
-               rgui->keyboard.display = true;
-               rgui->keyboard.label = "Preset Filename: ";
-               rgui->keyboard.buffer = input_keyboard_start_line(rgui, preset_filename_callback);
-            }
+               menu_key_start_line(rgui, "Preset Filename: ", preset_filename_callback);
          }
          break;
       case RGUI_SETTINGS_CUSTOM_BGM_CONTROL_ENABLE:
@@ -1844,20 +1758,14 @@ int menu_set_settings(void *data, unsigned setting, unsigned action)
          break;
       case RGUI_SETTINGS_NETPLAY_HOST_IP_ADDRESS:
          if (action == RGUI_ACTION_OK)
-         {
-            g_extern.system.key_event = NULL;
-            rgui->keyboard.display = true;
-            rgui->keyboard.label = "IP Address: ";
-            rgui->keyboard.buffer = input_keyboard_start_line(rgui, netplay_ipaddress_callback);
-         }
+            menu_key_start_line(rgui, "IP Address: ", netplay_ipaddress_callback);
          else if (action == RGUI_ACTION_START)
-         {
-         }
+            *g_extern.netplay_server = '\0';
          break;
       case RGUI_SETTINGS_NETPLAY_DELAY_FRAMES:
          if (action == RGUI_ACTION_LEFT)
          {
-            if (g_extern.state_slot >= 0)
+            if (g_extern.netplay_sync_frames >= 0)
                g_extern.netplay_sync_frames--;
          }
          else if (action == RGUI_ACTION_RIGHT)
@@ -1867,28 +1775,15 @@ int menu_set_settings(void *data, unsigned setting, unsigned action)
          break;
       case RGUI_SETTINGS_NETPLAY_TCP_UDP_PORT:
          if (action == RGUI_ACTION_OK)
-         {
-            g_extern.system.key_event = NULL;
-            rgui->keyboard.display = true;
-            rgui->keyboard.label = "TCP/UDP Port: ";
-            rgui->keyboard.buffer = input_keyboard_start_line(rgui, netplay_port_callback);
-         }
+            menu_key_start_line(rgui, "TCP/UDP Port: ", netplay_port_callback);
          else if (action == RGUI_ACTION_START)
-         {
             g_extern.netplay_port = RARCH_DEFAULT_PORT;
-         }
          break;
       case RGUI_SETTINGS_NETPLAY_NICKNAME:
          if (action == RGUI_ACTION_OK)
-         {
-            g_extern.system.key_event = NULL;
-            rgui->keyboard.display = true;
-            rgui->keyboard.label = "Nickname: ";
-            rgui->keyboard.buffer = input_keyboard_start_line(rgui, netplay_nickname_callback);
-         }
+            menu_key_start_line(rgui, "Nickname: ", netplay_nickname_callback);
          else if (action == RGUI_ACTION_START)
-         {
-         }
+            *g_extern.netplay_nick = '\0';
          break;
       case RGUI_SETTINGS_NETPLAY_MODE:
          if (action == RGUI_ACTION_OK || action == RGUI_ACTION_LEFT || action == RGUI_ACTION_RIGHT)
