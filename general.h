@@ -210,6 +210,7 @@ struct settings
    struct
    {
       char driver[32];
+      bool enable;
    } osk;
 #endif
 

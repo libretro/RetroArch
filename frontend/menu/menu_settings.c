@@ -1607,11 +1607,19 @@ int menu_set_settings(void *data, unsigned setting, unsigned action)
 #endif
          break;
       case RGUI_SETTINGS_RSOUND_SERVER_IP_ADDRESS:
-#if defined(HAVE_RSOUND) && defined(HAVE_OSK)
+#ifdef HAVE_RSOUND
          if (action == RGUI_ACTION_OK)
          {
+#ifdef HAVE_OSK
+            if (g_settings.osk.enable)
+            {
             g_extern.osk.cb_init     = osk_callback_enter_rsound_init;
             g_extern.osk.cb_callback = osk_callback_enter_rsound;
+            }
+            else
+#endif
+            {
+            }
          }
 #endif
          break;
@@ -1723,9 +1731,15 @@ int menu_set_settings(void *data, unsigned setting, unsigned action)
          if (action == RGUI_ACTION_OK)
          {
 #ifdef HAVE_OSK
-            g_extern.osk.cb_init = osk_callback_enter_filename_init;
-            g_extern.osk.cb_callback = osk_callback_enter_filename;
+            if (g_settings.osk.enable)
+            {
+               g_extern.osk.cb_init = osk_callback_enter_filename_init;
+               g_extern.osk.cb_callback = osk_callback_enter_filename;
+            }
+            else
 #endif
+            {
+            }
          }
          break;
       case RGUI_SETTINGS_CUSTOM_BGM_CONTROL_ENABLE:
@@ -1841,6 +1855,14 @@ int menu_set_settings(void *data, unsigned setting, unsigned action)
             g_extern.netplay_is_spectate = !g_extern.netplay_is_spectate;
          else if (action == RGUI_ACTION_START)
             g_extern.netplay_is_spectate = false;
+         break;
+#endif
+#ifdef HAVE_OSK
+      case RGUI_SETTINGS_ONSCREEN_KEYBOARD_ENABLE:
+         if (action == RGUI_ACTION_OK || action == RGUI_ACTION_LEFT || action == RGUI_ACTION_RIGHT)
+            g_settings.osk.enable = !g_settings.osk.enable;
+         else if (action == RGUI_ACTION_START)
+            g_settings.osk.enable = false;
          break;
 #endif
       default:
@@ -2268,6 +2290,11 @@ void menu_set_settings_label(char *type_str, size_t type_str_size, unsigned *w, 
          break;
       case RGUI_SETTINGS_NETPLAY_SPECTATOR_MODE_ENABLE:
          snprintf(type_str, type_str_size, g_extern.netplay_is_spectate ? "ON" : "OFF");
+         break;
+#endif
+#ifdef HAVE_OSK
+      case RGUI_SETTINGS_ONSCREEN_KEYBOARD_ENABLE:
+         snprintf(type_str, type_str_size, g_settings.osk.enable ? "ON" : "OFF");
          break;
 #endif
       default:
