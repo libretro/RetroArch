@@ -154,12 +154,10 @@ HRESULT CRetroArchMain::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
    GetChildById(L"XuiTxtTitle", &m_menutitle);
    GetChildById(L"XuiTxtBottom", &m_menutitlebottom);
 
-   mbstowcs(strw_buffer, g_extern.title_buf, sizeof(strw_buffer) / sizeof(wchar_t));
-   XuiTextElementSetText(m_menutitlebottom, strw_buffer);
    char str[PATH_MAX];
-   snprintf(str, sizeof(str), "RetroArch %s", PACKAGE_VERSION);
+   snprintf(str, sizeof(str), "%s - %s", PACKAGE_VERSION, g_extern.title_buf);
    mbstowcs(strw_buffer, str, sizeof(strw_buffer) / sizeof(wchar_t));
-   XuiTextElementSetText(m_menutitle, strw_buffer);
+   XuiTextElementSetText(m_menutitlebottom, strw_buffer);
 
    return 0;
 }
@@ -446,6 +444,9 @@ static void rmenu_xui_render(void *data)
          snprintf(title, sizeof(title), "CONTENT (%s) %s", core_name, dir);
       }
    }
+
+   mbstowcs(strw_buffer, title, sizeof(strw_buffer) / sizeof(wchar_t));
+   XuiTextElementSetText(m_menutitle, strw_buffer);
 
    char title_buf[256];
    menu_ticker_line(title_buf, RXUI_TERM_WIDTH - 3, g_extern.frame_count / 15, title, true);
