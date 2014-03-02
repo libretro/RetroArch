@@ -67,17 +67,6 @@ class class_type: public CXuiSceneImpl \
             XUIMessageInit *pData = (XUIMessageInit *) pMessage->pvData; \
             return OnInit(pData, pMessage->bHandled); \
          } \
-         if (pMessage->dwMessage == XM_CONTROL_NAVIGATE) \
-         { \
-           XUIMessageControlNavigate *pData = (XUIMessageControlNavigate *)pMessage->pvData; \
-           return OnControlNavigate(pData, pMessage->bHandled); \
-         } \
-         if (pMessage->dwMessage == XM_NOTIFY) \
-         { \
-            XUINotify *pNotify = (XUINotify *) pMessage->pvData; \
-            if (pNotify->dwNotify == XN_PRESS) \
-               return OnNotifyPress(pNotify->hObjSource, pMessage->bHandled); \
-         } \
          return __super::DispatchMessageMap(pMessage); \
       } \
  \
@@ -164,14 +153,14 @@ HRESULT CRetroArchMain::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
 
 HRESULT CRetroArchMain::OnControlNavigate(XUIMessageControlNavigate *pControlNavigateData, BOOL& bHandled)
 {
-   bHandled = TRUE;
+   bHandled = FALSE;
 
    return 0;
 }
 
 HRESULT CRetroArchMain::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled )
 {
-   bHandled = TRUE;
+   bHandled = FALSE;
    return 0;
 }
 
