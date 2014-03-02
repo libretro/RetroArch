@@ -23,6 +23,7 @@ extern "C" {
 #include <libavutil/avutil.h>
 #include <libavutil/avstring.h>
 #include <libavutil/opt.h>
+#include <libavutil/version.h>
 #include <libavformat/avformat.h>
 #include <libavutil/avconfig.h>
 #include <libavutil/pixdesc.h>
@@ -441,7 +442,7 @@ static bool ffemu_init_video(ffemu_t *handle)
 
    size_t size = avpicture_get_size(video->pix_fmt, param->out_width, param->out_height);
    video->conv_frame_buf = (uint8_t*)av_malloc(size);
-   video->conv_frame = avcodec_alloc_frame();
+   video->conv_frame = av_frame_alloc();
    avpicture_fill((AVPicture*)video->conv_frame, video->conv_frame_buf, video->pix_fmt,
          param->out_width, param->out_height);
 
@@ -676,7 +677,7 @@ void ffemu_free(ffemu_t *handle)
       av_free(handle->video.codec);
    }
 
-   av_free(handle->video.conv_frame);
+   av_frame_free(&handle->video.conv_frame);
    av_free(handle->video.conv_frame_buf);
 
    scaler_ctx_gen_reset(&handle->video.scaler);
@@ -932,7 +933,7 @@ static bool encode_audio(ffemu_t *handle, AVPacket *pkt, bool dry)
    pkt->data = handle->audio.outbuf;
    pkt->size = handle->audio.outbuf_size;
 
-   AVFrame *frame = avcodec_alloc_frame();
+   AVFrame *frame = av_frame_alloc();
    if (!frame)
       return false;
 
@@ -956,7 +957,7 @@ static bool encode_audio(ffemu_t *handle, AVPacket *pkt, bool dry)
    if (avcodec_encode_audio2(handle->audio.codec,
             pkt, dry ? NULL : frame, &got_packet) < 0)
    {
-      avcodec_free_frame(&frame);
+      av_frame_free(&frame);
       return false;
    }
 
@@ -965,7 +966,7 @@ static bool encode_audio(ffemu_t *handle, AVPacket *pkt, bool dry)
       pkt->size = 0;
       pkt->pts = AV_NOPTS_VALUE;
       pkt->dts = AV_NOPTS_VALUE;
-      avcodec_free_frame(&frame);
+      av_frame_free(&frame);
       return true;
    }
 
@@ -983,7 +984,7 @@ static bool encode_audio(ffemu_t *handle, AVPacket *pkt, bool dry)
             handle->muxer.astream->time_base);
    }
 
-   avcodec_free_frame(&frame);
+   av_frame_free(&frame);
 
    pkt->stream_index = handle->muxer.astream->index;
    return true;
