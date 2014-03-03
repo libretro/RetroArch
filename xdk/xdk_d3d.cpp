@@ -300,6 +300,25 @@ static bool xdk_d3d_set_shader(void *data, enum rarch_shader_type type, const ch
 {
    /* TODO - stub */
    xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)data;
+
+   switch (type)
+   {
+      case RARCH_SHADER_CG:
+#ifdef HAVE_HLSL
+         d3d->shader = &hlsl_backend;
+         break;
+#endif
+      default:
+         d3d->shader = NULL;
+         break;
+   }
+
+   if (!d3d->shader)
+   {
+      RARCH_ERR("[D3D]: Cannot find shader core for path: %s.\n", path);
+      return false;
+   }
+
    return true;
 }
 
