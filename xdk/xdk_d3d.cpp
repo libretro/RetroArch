@@ -300,6 +300,25 @@ static bool xdk_d3d_set_shader(void *data, enum rarch_shader_type type, const ch
 {
    /* TODO - stub */
    xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)data;
+
+   switch (type)
+   {
+      case RARCH_SHADER_CG:
+#ifdef HAVE_HLSL
+         d3d->shader = &hlsl_backend;
+         break;
+#endif
+      default:
+         d3d->shader = NULL;
+         break;
+   }
+
+   if (!d3d->shader)
+   {
+      RARCH_ERR("[D3D]: Cannot find shader core for path: %s.\n", path);
+      return false;
+   }
+
    return true;
 }
 
@@ -895,8 +914,10 @@ static void xdk_d3d_set_osd_msg(void *data, const char *msg, void *userdata)
 
 static const video_poke_interface_t d3d_poke_interface = {
    xdk_d3d_set_filtering,
+#ifdef HAVE_FBO
    NULL,
    NULL,
+#endif
    xdk_d3d_set_aspect_ratio,
    xdk_d3d_apply_state_changes,
 #ifdef HAVE_MENU
@@ -940,11 +961,7 @@ const video_driver_t video_xdk_d3d = {
    xdk_d3d_set_nonblock_state,
    xdk_d3d_alive,
    xdk_d3d_focus,
-#if defined(HAVE_HLSL)
    xdk_d3d_set_shader,
-#else
-   NULL,
-#endif
    xdk_d3d_free,
    "xdk_d3d",
    xdk_d3d_restart,
