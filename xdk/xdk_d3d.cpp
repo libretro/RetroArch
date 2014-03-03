@@ -125,9 +125,9 @@ static void check_window(void *data)
 }
 
 #ifdef HAVE_HLSL
-static bool hlsl_shader_init(void)
+static bool d3d_init_shader(void *data)
 {
-   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
+   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)data;
    const gl_shader_backend_t *backend = NULL;
 
    const char *shader_path = g_settings.video.shader_path;
@@ -592,9 +592,9 @@ static void *xdk_d3d_init(const video_info_t *video, const input_driver_t **inpu
       d3d->ctx_driver->swap_interval(d3d->vsync ? 1 : 0);
 
 #ifdef HAVE_HLSL
-   if (!hlsl_shader_init())
+   if (!d3d_init_shader(d3d))
    {
-      RARCH_ERR("Shader init failed.\n");
+      RARCH_ERR("Failed to initialize HLSL.\n");
       d3d->ctx_driver->destroy();
       free(d3d);
       return NULL;
@@ -882,10 +882,6 @@ static bool xdk_d3d_frame(void *data, const void *frame,
       /* TODO - missing a bunch of params at the end */
 NULL, NULL, NULL, 0);
 #endif
-   }
-
-   if (frame)
-   {
    }
 
    unsigned filter = g_settings.video.smooth ? D3DTEXF_LINEAR : D3DTEXF_POINT;
