@@ -1950,7 +1950,7 @@ void menu_populate_entries(void *data, unsigned menu_type)
                core_info_list_update_missing_firmware(rgui->core_info, rgui->core_info_current.path,
                      g_settings.system_directory);
 
-			   file_list_push(rgui->selection_buf, "Firmware: ", RGUI_SETTINGS_CORE_INFO_NONE, 0);
+               file_list_push(rgui->selection_buf, "Firmware: ", RGUI_SETTINGS_CORE_INFO_NONE, 0);
                for (i = 0; i < rgui->core_info_current.firmware_count; i++)
                {
                   if (rgui->core_info_current.firmware[i].desc)
