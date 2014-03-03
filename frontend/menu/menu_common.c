@@ -1926,7 +1926,6 @@ void menu_populate_entries(void *data, unsigned menu_type)
             file_list_push(rgui->selection_buf, "No options available.", RGUI_SETTINGS_CORE_OPTION_NONE, 0);
          break;		 
       case RGUI_SETTINGS_CORE_INFO:
-<<<<<<< HEAD
          file_list_clear(rgui->selection_buf);
          if (rgui->core_info_current.data)
          {
