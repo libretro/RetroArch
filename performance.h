@@ -26,7 +26,9 @@ extern "C" {
 #endif
 
 #ifdef __ARM_NEON__
+#ifndef HAVE_NEON
 #define HAVE_NEON
+#endif
 #endif
 
 #include "boolean.h"
