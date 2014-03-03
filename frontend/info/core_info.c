@@ -57,6 +57,8 @@ static void core_info_list_resolve_all_firmware(core_info_list_t *core_info_list
 {
    size_t i;
    unsigned c;
+   
+   
    for (i = 0; i < core_info_list->count; i++)
    {
       core_info_t *info = &core_info_list->list[i];
@@ -71,7 +73,8 @@ static void core_info_list_resolve_all_firmware(core_info_list_t *core_info_list
       info->firmware = (core_info_firmware_t*)calloc(count, sizeof(*info->firmware));
       if (!info->firmware)
          continue;
-
+	  
+	  
       for (c = 0; c < count; c++)
       {
          char path_key[64], desc_key[64];
@@ -81,6 +84,7 @@ static void core_info_list_resolve_all_firmware(core_info_list_t *core_info_list
          config_get_string(info->data, path_key, &info->firmware[c].path);
          config_get_string(info->data, desc_key, &info->firmware[c].desc);
       }
+	  
    }
 }
 
@@ -359,18 +363,17 @@ void core_info_list_update_missing_firmware(core_info_list_t *core_info_list,
    size_t i;
    char path[PATH_MAX];
 
-   core_info_firmware_t *firmware = NULL;
-
    core_info_t *info = find_core_info(core_info_list, core);
    if (!info)
       return;
 
-   firmware = info->firmware;
-
    for (i = 0; i < info->firmware_count; i++)
    {
-      fill_pathname_join(path, systemdir, info->firmware[i].path, sizeof(path));
-      info->firmware[i].missing = !path_file_exists(path);
+	  if(info->firmware[i].path)
+	  {
+		fill_pathname_join(path, systemdir, info->firmware[i].path, sizeof(path));
+		info->firmware[i].missing = !path_file_exists(path);
+	  }
    }
 
 }
@@ -391,7 +394,7 @@ void core_info_list_get_missing_firmware(core_info_list_t *core_info_list,
 
    *firmware = info->firmware;
 
-   for (i = 0; i < info->firmware_count; i++)
+   for (i = 1; i < info->firmware_count; i++)
    {
       fill_pathname_join(path, systemdir, info->firmware[i].path, sizeof(path));
       info->firmware[i].missing = !path_file_exists(path);
