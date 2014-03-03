@@ -77,12 +77,18 @@ static void core_info_list_resolve_all_firmware(core_info_list_t *core_info_list
 	  
       for (c = 0; c < count; c++)
       {
-         char path_key[64], desc_key[64];
+         char path_key[64], desc_key[64], opt_key[64];
+		 
+		 
          snprintf(path_key, sizeof(path_key), "firmware%u_path", c);
          snprintf(desc_key, sizeof(desc_key), "firmware%u_desc", c);
+		 snprintf(opt_key, sizeof(opt_key), "firmware%u_opt", c);
 
          config_get_string(info->data, path_key, &info->firmware[c].path);
          config_get_string(info->data, desc_key, &info->firmware[c].desc);
+		 config_get_bool(info->data, opt_key , &info->firmware[c].optional);
+		 
+		 
       }
 	  
    }
