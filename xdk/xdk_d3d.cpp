@@ -197,74 +197,76 @@ static void xdk_convert_texture_to_as16_srgb( D3DTexture *pTexture )
 }
 #endif
 
-static void xdk_d3d_set_viewport(bool force_full)
+static void xdk_d3d_set_viewport(void *data, int x, int y, unsigned width, unsigned height)
 {
+   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)data;
+   D3DVIEWPORT viewport;
 
+   // D3D doesn't support negative X/Y viewports ...
+   if (x < 0)
+      x = 0;
+   if (y < 0)
+      y = 0;
+
+   viewport.Width  = width;
+   viewport.Height = height;
+   viewport.X      = x;
+   viewport.Y      = y;
+   viewport.MinZ   = 0.0f;
+   viewport.MaxZ   = 1.0f;
+   RD3DDevice_SetViewport(d3d->d3d_render_device, &viewport);
+
+#ifdef _XBOX1
+   font_x = viewport.X;
+   font_y = viewport.Y;
+#endif
+}
+
+static void xdk_d3d_set_viewport(bool keep)
+{
    xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
    LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)d3d->d3d_render_device;
+   float desired_aspect = g_settings.video.aspect_ratio;
+   unsigned width, height;
 
    RD3DDevice_Clear(d3dr, 0, NULL, D3DCLEAR_TARGET, 0xff000000, 1.0f, 0);
-
-   unsigned width, height;      // Set the viewport based on the current resolution
-   int m_viewport_x_temp, m_viewport_y_temp, m_viewport_width_temp, m_viewport_height_temp;
-   float m_zNear, m_zFar;
-   width = 0;
-   height = 0;
 
    if (d3d->ctx_driver && d3d->ctx_driver->get_video_size)
       d3d->ctx_driver->get_video_size(&width, &height);
 
-   m_viewport_x_temp = 0;
-   m_viewport_y_temp = 0;
-   m_viewport_width_temp = width;
-   m_viewport_height_temp = height;
-   m_zNear = 0.0f;
-   m_zFar = 1.0f;
-
-   if (!force_full)
+   if (g_settings.video.scale_integer)
    {
-      float desired_aspect = g_settings.video.aspect_ratio;
+      struct rarch_viewport vp = {0};
+      gfx_scale_integer(&vp, width, height, desired_aspect, keep);
+      xdk_d3d_set_viewport(d3d, vp.x, vp.y, vp.width, vp.height);
+   }
+   else if (!keep)
+   {
       float device_aspect = (float)width / height;
-      float delta;
 
       // If the aspect ratios of screen and desired aspect ratio are sufficiently equal (floating point stuff), 
       if (g_settings.video.aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
       {
-         delta = (desired_aspect / device_aspect - 1.0) / 2.0 + 0.5;
-         m_viewport_x_temp = g_extern.console.screen.viewports.custom_vp.x;
-         m_viewport_y_temp = g_extern.console.screen.viewports.custom_vp.y;
-         m_viewport_width_temp = g_extern.console.screen.viewports.custom_vp.width;
-         m_viewport_height_temp = g_extern.console.screen.viewports.custom_vp.height;
-      }
-      else if (device_aspect > desired_aspect)
-      {
-         delta = (desired_aspect / device_aspect - 1.0) / 2.0 + 0.5;
-         m_viewport_x_temp = (int)(width * (0.5 - delta));
-         m_viewport_width_temp = (int)(2.0 * width * delta);
-         width = (unsigned)(2.0 * width * delta);
+         const rarch_viewport_t &custom = g_extern.console.screen.viewports.custom_vp;
+         xdk_d3d_set_viewport(d3d, custom.x, custom.y, custom.width, custom.height);
       }
       else
       {
-         delta = (device_aspect / desired_aspect - 1.0) / 2.0 + 0.5;
-         m_viewport_y_temp = (int)(height * (0.5 - delta));
-         m_viewport_height_temp = (int)(2.0 * height * delta);
-         height = (unsigned)(2.0 * height * delta);
+         float device_aspect = static_cast<float>(width) / static_cast<float>(height);
+         if (fabsf(device_aspect - desired_aspect) < 0.0001f)
+            xdk_d3d_set_viewport(d3d, 0, 0, width, height);
+         else if (device_aspect > desired_aspect)
+         {
+            float delta = (desired_aspect / device_aspect - 1.0f) / 2.0f + 0.5f;
+            xdk_d3d_set_viewport(d3d, int(roundf(width * (0.5f - delta))), 0, unsigned(roundf(2.0f * width * delta)), height);
+         }
+         else
+         {
+            float delta = (device_aspect / desired_aspect - 1.0f) / 2.0f + 0.5f;
+            xdk_d3d_set_viewport(d3d, 0, int(roundf(height * (0.5f - delta))), width, unsigned(roundf(2.0f * height * delta)));
+         }
       }
    }
-
-   D3DVIEWPORT vp = {0};
-   vp.Width  = m_viewport_width_temp;
-   vp.Height = m_viewport_height_temp;
-   vp.X      = m_viewport_x_temp;
-   vp.Y      = m_viewport_y_temp;
-   vp.MinZ   = m_zNear;
-   vp.MaxZ   = m_zFar;
-   RD3DDevice_SetViewport(d3d->d3d_render_device, &vp);
-
-#ifdef _XBOX1
-   font_x = vp.X;
-   font_y = vp.Y;
-#endif
 }
 
 static void xdk_d3d_set_rotation(void *data, unsigned orientation)
@@ -610,6 +612,8 @@ static void *xdk_d3d_init(const video_info_t *video, const input_driver_t **inpu
    xdk_d3d_init_fbo(d3d);
 #endif
 
+   d3d->video_info = *video;
+
    if (input && input_data)
       d3d->ctx_driver->input_driver(input, input_data);
 
@@ -934,7 +938,8 @@ NULL, NULL, NULL, 0);
       d3d->font_ctx->render_msg(d3d, msg, &font_parms);
    }
 
-   gfx_ctx_xdk_swap_buffers();
+   if (d3d && d3d->ctx_driver && d3d->ctx_driver->swap_buffers)
+      d3d->ctx_driver->swap_buffers();
 
    g_extern.frame_count++;
 
@@ -945,11 +950,10 @@ static void xdk_d3d_set_nonblock_state(void *data, bool state)
 {
    xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)data;
 
-   if (d3d->vsync)
-   {
-      RARCH_LOG("D3D Vsync => %s\n", state ? "off" : "on");
-      gfx_ctx_xdk_set_swap_interval(state ? 0 : 1);
-   }
+   d3d->video_info.vsync = !state;
+
+   RARCH_LOG("D3D Vsync => %s\n", state ? "off" : "on");
+   gfx_ctx_xdk_set_swap_interval(state ? 0 : 1);
 }
 
 static bool xdk_d3d_alive(void *data)
@@ -978,6 +982,7 @@ static void xdk_d3d_set_aspect_ratio(void *data, unsigned aspect_ratio_idx)
       gfx_set_config_viewport();
 
    g_settings.video.aspect_ratio = aspectratio_lut[aspect_ratio_idx].value;
+   d3d->video_info.force_aspect = true;
    d3d->should_resize = true;
 }
 

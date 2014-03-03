@@ -75,6 +75,7 @@ typedef struct xdk_d3d_video
    D3DFORMAT texture_fmt;
    unsigned base_size;
    LPDIRECT3DSURFACE lpSurface;
+   video_info_t video_info;
 } xdk_d3d_video_t;
 
 extern void xdk_d3d_generate_pp(D3DPRESENT_PARAMETERS *d3dpp, const video_info_t *video);
