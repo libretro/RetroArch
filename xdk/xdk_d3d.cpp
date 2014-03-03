@@ -124,7 +124,6 @@ static void check_window(void *data)
       d3d->should_resize = true;
 }
 
-#ifdef HAVE_HLSL
 static bool d3d_init_shader(void *data)
 {
    xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)data;
@@ -135,12 +134,12 @@ static bool d3d_init_shader(void *data)
    
    switch (type)
    {
-#ifdef HAVE_HLSL
       case RARCH_SHADER_HLSL:
+#ifdef HAVE_HLSL
          RARCH_LOG("[D3D]: Using HLSL shader backend.\n");
          backend = &hlsl_backend;
-         break;
 #endif
+         break;
    }
 
    if (!backend)
@@ -153,7 +152,6 @@ static bool d3d_init_shader(void *data)
    d3d->shader = backend;
    return d3d->shader->init(shader_path);
 }
-#endif
 
 static void xdk_d3d_free(void *data)
 {
@@ -170,11 +168,9 @@ static void xdk_d3d_free(void *data)
    if (d3d->font_ctx && d3d->font_ctx->deinit)
       d3d->font_ctx->deinit(d3d);
 
-#ifdef HAVE_HLSL
    if (d3d->shader)
       d3d->shader->deinit();
    d3d->shader = NULL;
-#endif
 
    d3d->ctx_driver->destroy();
 
@@ -749,10 +745,8 @@ static bool xdk_d3d_frame(void *data, const void *frame,
       d3d->last_height = height;
    }
 
-#ifdef HAVE_HLSL
    if (d3d->shader && d3d->shader->set_mvp)
       d3d->shader->set_mvp(NULL);
-#endif
 
    // Insert black frame first, so we can screenshot, etc.
    if (g_settings.video.black_frame_insertion)
@@ -763,20 +757,14 @@ static bool xdk_d3d_frame(void *data, const void *frame,
 
    RD3DDevice_SetTexture(d3dr, 0, d3d->lpTexture);
 
-#ifdef HAVE_HLSL
    if (d3d->shader && d3d->shader->use)
       d3d->shader->use(1);
-#endif
 
    {
-#ifdef HAVE_HLSL
-
       if (d3d->shader && d3d->shader->set_params)
          d3d->shader->set_params(width, height, d3d->tex_w, d3d->tex_h, d3d->win_width,
                d3d->win_height, g_extern.frame_count,
-      /* TODO - missing a bunch of params at the end */
-NULL, NULL, NULL, 0);
-#endif
+               NULL, NULL, NULL, 0);
    }
 
    unsigned filter = g_settings.video.smooth ? D3DTEXF_LINEAR : D3DTEXF_POINT;
