@@ -974,7 +974,7 @@ static int menu_settings_iterate(void *data, unsigned action)
             || menu_type == RGUI_SETTINGS_NETPLAY_OPTIONS
             || menu_type == RGUI_SETTINGS_OPTIONS
             || menu_type == RGUI_SETTINGS_DRIVERS
-			|| menu_type == RGUI_SETTINGS_CORE_INFO
+            || menu_type == RGUI_SETTINGS_CORE_INFO
             || menu_type == RGUI_SETTINGS_CORE_OPTIONS
             || menu_type == RGUI_SETTINGS_AUDIO_OPTIONS
             || menu_type == RGUI_SETTINGS_DISK_OPTIONS
@@ -1910,7 +1910,7 @@ void menu_populate_entries(void *data, unsigned menu_type)
          file_list_push(rgui->selection_buf, "Crop Overscan (reload)", RGUI_SETTINGS_VIDEO_CROP_OVERSCAN, 0);
          file_list_push(rgui->selection_buf, "Estimated Monitor FPS", RGUI_SETTINGS_VIDEO_REFRESH_RATE_AUTO, 0);
          break;
-		 case RGUI_SETTINGS_CORE_OPTIONS:
+      case RGUI_SETTINGS_CORE_OPTIONS:
          file_list_clear(rgui->selection_buf);
 
          if (g_extern.system.core_options)
@@ -1926,54 +1926,49 @@ void menu_populate_entries(void *data, unsigned menu_type)
             file_list_push(rgui->selection_buf, "No options available.", RGUI_SETTINGS_CORE_OPTION_NONE, 0);
          break;		 
       case RGUI_SETTINGS_CORE_INFO:
-	     
-		 if(rgui->core_info_current.data)
-		 {
-			
-			
-			file_list_clear(rgui->selection_buf);
-			snprintf(tmp, sizeof(tmp), "Core name: %s", rgui->core_info_current.display_name ? rgui->core_info_current.display_name : ""); 
-			file_list_push(rgui->selection_buf, tmp, RGUI_SETTINGS_CORE_INFO_NONE, 0);
-			snprintf(tmp, sizeof(tmp), "Authors: %s", rgui->core_info_current.authors ? rgui->core_info_current.authors : "");
-			file_list_push(rgui->selection_buf, tmp, RGUI_SETTINGS_CORE_INFO_NONE, 0);
-			snprintf(tmp, sizeof(tmp), "Permissions: %s", rgui->core_info_current.permissions ? rgui->core_info_current.permissions : "");
-			file_list_push(rgui->selection_buf, tmp, RGUI_SETTINGS_CORE_INFO_NONE, 0);						
-			snprintf(tmp, sizeof(tmp), "Supported extensions: %s", rgui->core_info_current.supported_extensions ? rgui->core_info_current.supported_extensions : "");
-			file_list_push(rgui->selection_buf, tmp, RGUI_SETTINGS_CORE_INFO_NONE, 0);			
-					
-			if(rgui->core_info_current.firmware_count>0)
-			{
-				
-				core_info_list_update_missing_firmware(rgui->core_info, rgui->core_info_current.path,  g_settings.system_directory);
-			
-				file_list_push(rgui->selection_buf, "Required firmware:", RGUI_SETTINGS_CORE_INFO_NONE, 0);
-				for(i=0;i<rgui->core_info_current.firmware_count;i++)
-				{
-					if(rgui->core_info_current.firmware[i].desc)
-					{
-						snprintf(tmp, sizeof(tmp), "	Name: %s, %s", rgui->core_info_current.firmware[i].desc ? rgui->core_info_current.firmware[i].desc : "",rgui->core_info_current.firmware[i].missing ? "missing" : "present");
-						file_list_push(rgui->selection_buf, tmp, RGUI_SETTINGS_CORE_INFO_NONE, 0);			
-					}
-				}
-			}
-			if(rgui->core_info_current.notes)
-			{
-				snprintf(tmp, sizeof(tmp), "Core notes: ");
-				file_list_push(rgui->selection_buf, tmp, RGUI_SETTINGS_CORE_INFO_NONE, 0);
+         file_list_clear(rgui->selection_buf);
+         if (rgui->core_info_current.data)
+         {
+            snprintf(tmp, sizeof(tmp), "Core name: %s", rgui->core_info_current.display_name ? rgui->core_info_current.display_name : "");
+            file_list_push(rgui->selection_buf, tmp, RGUI_SETTINGS_CORE_INFO_NONE, 0);
+            snprintf(tmp, sizeof(tmp), "Authors: %s", rgui->core_info_current.authors ? rgui->core_info_current.authors : "");
+            file_list_push(rgui->selection_buf, tmp, RGUI_SETTINGS_CORE_INFO_NONE, 0);
+            snprintf(tmp, sizeof(tmp), "Permissions: %s", rgui->core_info_current.permissions ? rgui->core_info_current.permissions : "");
+            file_list_push(rgui->selection_buf, tmp, RGUI_SETTINGS_CORE_INFO_NONE, 0);
+            snprintf(tmp, sizeof(tmp), "Supported extensions: %s", rgui->core_info_current.supported_extensions ? rgui->core_info_current.supported_extensions : "");
+            file_list_push(rgui->selection_buf, tmp, RGUI_SETTINGS_CORE_INFO_NONE, 0);
 
-				for(i=0;i<rgui->core_info_current.note_list->size;i++)
-				{
-					snprintf(tmp, sizeof(tmp), " %s", rgui->core_info_current.note_list->elems[i].data);
-					file_list_push(rgui->selection_buf, tmp, RGUI_SETTINGS_CORE_INFO_NONE, 0);			
-				}	
-			}
-			
-		}
-		else
-		{
-			file_list_clear(rgui->selection_buf);
-			file_list_push(rgui->selection_buf, "No information available.", RGUI_SETTINGS_CORE_OPTION_NONE, 0);		 
-        } 
+            if (rgui->core_info_current.firmware_count > 0)
+            {
+               core_info_list_update_missing_firmware(rgui->core_info, rgui->core_info_current.path,  g_settings.system_directory);
+
+               file_list_push(rgui->selection_buf, "Required firmware:", RGUI_SETTINGS_CORE_INFO_NONE, 0);
+               for (i = 0; i < rgui->core_info_current.firmware_count; i++)
+               {
+                  if (rgui->core_info_current.firmware[i].desc)
+                  {
+                     snprintf(tmp, sizeof(tmp), "	Name: %s, %s",
+                           rgui->core_info_current.firmware[i].desc ? rgui->core_info_current.firmware[i].desc : "",
+                           rgui->core_info_current.firmware[i].missing ? "missing" : "present");
+                     file_list_push(rgui->selection_buf, tmp, RGUI_SETTINGS_CORE_INFO_NONE, 0);
+                  }
+               }
+            }
+
+            if (rgui->core_info_current.notes)
+            {
+               snprintf(tmp, sizeof(tmp), "Core notes: ");
+               file_list_push(rgui->selection_buf, tmp, RGUI_SETTINGS_CORE_INFO_NONE, 0);
+
+               for (i = 0; i < rgui->core_info_current.note_list->size; i++)
+               {
+                  snprintf(tmp, sizeof(tmp), " %s", rgui->core_info_current.note_list->elems[i].data);
+                  file_list_push(rgui->selection_buf, tmp, RGUI_SETTINGS_CORE_INFO_NONE, 0);
+               }
+            }
+         }
+         else
+            file_list_push(rgui->selection_buf, "No information available.", RGUI_SETTINGS_CORE_OPTION_NONE, 0);
          break;			 
       case RGUI_SETTINGS_OPTIONS:
          file_list_clear(rgui->selection_buf);

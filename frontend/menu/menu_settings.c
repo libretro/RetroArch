@@ -2066,6 +2066,7 @@ void menu_set_settings_label(char *type_str, size_t type_str_size, unsigned *w, 
       case RGUI_SETTINGS_OPEN_FILEBROWSER_DEFERRED_CORE:
       case RGUI_SETTINGS_OPEN_HISTORY:
       case RGUI_SETTINGS_CORE_OPTIONS:
+      case RGUI_SETTINGS_CORE_INFO:
       case RGUI_SETTINGS_CUSTOM_VIEWPORT:
       case RGUI_SETTINGS_TOGGLE_FULLSCREEN:
       case RGUI_SETTINGS_VIDEO_OPTIONS:

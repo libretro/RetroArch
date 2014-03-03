@@ -57,8 +57,7 @@ static void core_info_list_resolve_all_firmware(core_info_list_t *core_info_list
 {
    size_t i;
    unsigned c;
-   
-   
+
    for (i = 0; i < core_info_list->count; i++)
    {
       core_info_t *info = &core_info_list->list[i];
@@ -73,8 +72,7 @@ static void core_info_list_resolve_all_firmware(core_info_list_t *core_info_list
       info->firmware = (core_info_firmware_t*)calloc(count, sizeof(*info->firmware));
       if (!info->firmware)
          continue;
-	  
-	  
+
       for (c = 0; c < count; c++)
       {
          char path_key[64], desc_key[64];
@@ -84,7 +82,6 @@ static void core_info_list_resolve_all_firmware(core_info_list_t *core_info_list
          config_get_string(info->data, path_key, &info->firmware[c].path);
          config_get_string(info->data, desc_key, &info->firmware[c].desc);
       }
-	  
    }
 }
 
@@ -136,10 +133,10 @@ core_info_list_t *core_info_list_new(const char *modules_path)
 
       if (core_info[i].data)
       {
-		 unsigned count=0;
+         unsigned count = 0;
          config_get_string(core_info[i].data, "display_name", &core_info[i].display_name);
-		 config_get_uint(core_info[i].data, "firmware_count", &count);
-		 core_info[i].firmware_count=count;
+         config_get_uint(core_info[i].data, "firmware_count", &count);
+         core_info[i].firmware_count = count;
          if (config_get_string(core_info[i].data, "supported_extensions", &core_info[i].supported_extensions) &&
                core_info[i].supported_extensions)
             core_info[i].supported_extensions_list = string_split(core_info[i].supported_extensions, "|");
@@ -151,9 +148,9 @@ core_info_list_t *core_info_list_new(const char *modules_path)
          if (config_get_string(core_info[i].data, "permissions", &core_info[i].permissions) &&
                core_info[i].permissions)
             core_info[i].permissions_list = string_split(core_info[i].permissions, "|");
-		 if (config_get_string(core_info[i].data, "notes", &core_info[i].notes) &&
+         if (config_get_string(core_info[i].data, "notes", &core_info[i].notes) &&
                core_info[i].notes)
-			   core_info[i].note_list = string_split(core_info[i].notes, "|");
+            core_info[i].note_list = string_split(core_info[i].notes, "|");
       }
 
       if (!core_info[i].display_name)
@@ -188,10 +185,10 @@ void core_info_list_free(core_info_list_t *core_info_list)
       free(info->supported_extensions);
       free(info->authors);
       free(info->permissions);
-	  free(info->notes);
+      free(info->notes);
       string_list_free(info->supported_extensions_list);
       string_list_free(info->authors_list);
-	  string_list_free(info->note_list);
+      string_list_free(info->note_list);
       string_list_free(info->permissions_list);
       config_file_free(info->data);
 
@@ -320,7 +317,7 @@ void core_info_list_get_supported_cores(core_info_list_t *core_info_list, const 
 #ifdef HAVE_ZLIB
             && !core_info_does_support_any_file(core, list)
 #endif
-            )
+         )
          break;
    }
 
@@ -369,13 +366,12 @@ void core_info_list_update_missing_firmware(core_info_list_t *core_info_list,
 
    for (i = 0; i < info->firmware_count; i++)
    {
-	  if(info->firmware[i].path)
-	  {
-		fill_pathname_join(path, systemdir, info->firmware[i].path, sizeof(path));
-		info->firmware[i].missing = !path_file_exists(path);
-	  }
+      if (info->firmware[i].path)
+      {
+         fill_pathname_join(path, systemdir, info->firmware[i].path, sizeof(path));
+         info->firmware[i].missing = !path_file_exists(path);
+      }
    }
-
 }
 
 void core_info_list_get_missing_firmware(core_info_list_t *core_info_list,
