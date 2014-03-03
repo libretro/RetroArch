@@ -812,6 +812,13 @@ static bool xdk_d3d_frame(void *data, const void *frame,
       d3d->shader->set_mvp(NULL);
 #endif
 
+   // Insert black frame first, so we can screenshot, etc.
+   if (g_settings.video.black_frame_insertion)
+   {
+      d3dr->Present(NULL, NULL, NULL, NULL);
+      d3dr->Clear(0, 0, D3DCLEAR_TARGET, 0, 1, 0);
+   }
+
    RD3DDevice_SetTexture(d3dr, 0, d3d->lpTexture);
 
 #ifdef HAVE_HLSL
