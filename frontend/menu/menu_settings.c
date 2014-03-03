@@ -93,7 +93,7 @@ unsigned menu_type_is(unsigned type)
       type == RGUI_SETTINGS ||
       type == RGUI_SETTINGS_GENERAL_OPTIONS ||
       type == RGUI_SETTINGS_CORE_OPTIONS ||
-	  type == RGUI_SETTINGS_CORE_INFO ||	  
+      type == RGUI_SETTINGS_CORE_INFO ||
       type == RGUI_SETTINGS_VIDEO_OPTIONS ||
       type == RGUI_SETTINGS_SHADER_OPTIONS ||
       type == RGUI_SETTINGS_AUDIO_OPTIONS ||
