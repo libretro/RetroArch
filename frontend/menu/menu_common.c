@@ -1930,6 +1930,7 @@ void menu_populate_entries(void *data, unsigned menu_type)
 		 if(rgui->core_info_current.data)
 		 {
 			
+			
 			file_list_clear(rgui->selection_buf);
 			snprintf(tmp, sizeof(tmp), "Core name: %s", rgui->core_info_current.display_name ? rgui->core_info_current.display_name : ""); 
 			file_list_push(rgui->selection_buf, tmp, RGUI_SETTINGS_CORE_INFO_NONE, 0);
@@ -1942,6 +1943,9 @@ void menu_populate_entries(void *data, unsigned menu_type)
 					
 			if(rgui->core_info_current.firmware_count>0)
 			{
+				
+				core_info_list_update_missing_firmware(rgui->core_info, rgui->core_info_current.path,  g_settings.system_directory);
+			
 				file_list_push(rgui->selection_buf, "Required firmware:", RGUI_SETTINGS_CORE_INFO_NONE, 0);
 				for(i=0;i<rgui->core_info_current.firmware_count;i++)
 				{
