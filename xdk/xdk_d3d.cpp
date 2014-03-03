@@ -727,6 +727,34 @@ static void xdk_d3d_draw_texture(void *data)
 }
 #endif
 
+static void clear_texture(void *data)
+{
+   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)data;
+   D3DLOCKED_RECT d3dlr;
+   D3DTexture_LockRect(d3d->lpTexture, 0, &d3dlr, NULL, D3DLOCK_NOSYSLOCK);
+   memset(d3dlr.pBits, 0, d3d->tex_w * d3dlr.Pitch);
+}
+
+static void blit_to_texture(void *data, const void *frame,
+   unsigned width, unsigned height, unsigned pitch)
+{
+   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)data;
+
+   if (d3d->last_width != width || d3d->last_height != height)
+      clear_texture(data);
+
+      unsigned base_size = d3d->base_size;
+   D3DLOCKED_RECT d3dlr;
+   D3DTexture_LockRect(d3d->lpTexture, 0, &d3dlr, NULL, D3DLOCK_NOSYSLOCK);
+
+   for (unsigned y = 0; y < height; y++)
+   {
+      const uint8_t *in = (const uint8_t*)frame + y * pitch;
+      uint8_t *out = (uint8_t*)d3dlr.pBits + y * d3dlr.Pitch;
+      memcpy(out, in, width * base_size);
+   }
+}
+
 static bool xdk_d3d_frame(void *data, const void *frame,
       unsigned width, unsigned height, unsigned pitch, const char *msg)
 {
@@ -740,13 +768,23 @@ static bool xdk_d3d_frame(void *data, const void *frame,
    D3DSurface* pRenderTarget0;
 #endif
 
+   if (!frame)
+      return true;
+
+   if (d3d->should_resize)
+   {
+#ifdef _XBOX1
+      d3dr->SetFlickerFilter(g_extern.console.screen.flicker_filter_index);
+      d3dr->SetSoftDisplayFilter(g_extern.lifecycle_state & (1ULL << MODE_VIDEO_SOFT_FILTER_ENABLE));
+#endif
+      xdk_d3d_calculate_rect(d3d, d3d->win_width, d3d->win_height, d3d->video_info.force_aspect, g_extern.system.aspect_ratio);
+      d3d->should_resize = false;
+   }
+
+   blit_to_texture(d3d, frame, width, height, pitch);
+
    if (d3d->last_width != width || d3d->last_height != height)
    {
-      D3DLOCKED_RECT d3dlr;
-
-      D3DTexture_LockRect(d3d->lpTexture, 0, &d3dlr, NULL, D3DLOCK_NOSYSLOCK);
-      memset(d3dlr.pBits, 0, d3d->tex_w * d3dlr.Pitch);
-
 #if defined(_XBOX1)
       float tex_w = width;
       float tex_h = height;
@@ -796,16 +834,6 @@ static bool xdk_d3d_frame(void *data, const void *frame,
       d3dr->SetRenderTarget(0, d3d->lpSurface);
    }
 #endif
-
-   if (d3d->should_resize)
-   {
-#ifdef _XBOX1
-      d3dr->SetFlickerFilter(g_extern.console.screen.flicker_filter_index);
-      d3dr->SetSoftDisplayFilter(g_extern.lifecycle_state & (1ULL << MODE_VIDEO_SOFT_FILTER_ENABLE));
-#endif
-      xdk_d3d_calculate_rect(d3d, d3d->win_width, d3d->win_height, d3d->video_info.force_aspect, g_extern.system.aspect_ratio);
-      d3d->should_resize = false;
-   }
 
 #ifdef HAVE_HLSL
    if (d3d->shader && d3d->shader->set_mvp)
@@ -858,16 +886,6 @@ NULL, NULL, NULL, 0);
 
    if (frame)
    {
-      unsigned base_size = d3d->base_size;
-      D3DLOCKED_RECT d3dlr;
-      D3DTexture_LockRect(d3d->lpTexture, 0, &d3dlr, NULL, D3DLOCK_NOSYSLOCK);
-
-      for (unsigned y = 0; y < height; y++)
-      {
-         const uint8_t *in = (const uint8_t*)frame + y * pitch;
-         uint8_t *out = (uint8_t*)d3dlr.pBits + y * d3dlr.Pitch;
-         memcpy(out, in, width * base_size);
-      }
    }
 
    unsigned filter = g_settings.video.smooth ? D3DTEXF_LINEAR : D3DTEXF_POINT;
