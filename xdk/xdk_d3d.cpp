@@ -961,11 +961,7 @@ const video_driver_t video_xdk_d3d = {
    xdk_d3d_set_nonblock_state,
    xdk_d3d_alive,
    xdk_d3d_focus,
-#if defined(HAVE_HLSL)
    xdk_d3d_set_shader,
-#else
-   NULL,
-#endif
    xdk_d3d_free,
    "xdk_d3d",
    xdk_d3d_restart,
