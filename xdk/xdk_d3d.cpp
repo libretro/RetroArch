@@ -222,17 +222,13 @@ static void xdk_d3d_set_viewport(void *data, int x, int y, unsigned width, unsig
 #endif
 }
 
-static void xdk_d3d_set_viewport(bool keep)
+static void xdk_d3d_calculate_rect(void *data, unsigned width, unsigned height,
+   bool keep, float desired_aspect)
 {
    xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
    LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)d3d->d3d_render_device;
-   float desired_aspect = g_settings.video.aspect_ratio;
-   unsigned width, height;
 
    RD3DDevice_Clear(d3dr, 0, NULL, D3DCLEAR_TARGET, 0xff000000, 1.0f, 0);
-
-   if (d3d->ctx_driver && d3d->ctx_driver->get_video_size)
-      d3d->ctx_driver->get_video_size(&width, &height);
 
    if (g_settings.video.scale_integer)
    {
@@ -241,10 +237,9 @@ static void xdk_d3d_set_viewport(bool keep)
       xdk_d3d_set_viewport(d3d, vp.x, vp.y, vp.width, vp.height);
    }
    else if (!keep)
+      xdk_d3d_set_viewport(d3d, 0, 0, width, height);
+   else
    {
-      float device_aspect = (float)width / height;
-
-      // If the aspect ratios of screen and desired aspect ratio are sufficiently equal (floating point stuff), 
       if (g_settings.video.aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
       {
          const rarch_viewport_t &custom = g_extern.console.screen.viewports.custom_vp;
@@ -808,7 +803,7 @@ static bool xdk_d3d_frame(void *data, const void *frame,
       d3dr->SetFlickerFilter(g_extern.console.screen.flicker_filter_index);
       d3dr->SetSoftDisplayFilter(g_extern.lifecycle_state & (1ULL << MODE_VIDEO_SOFT_FILTER_ENABLE));
 #endif
-      xdk_d3d_set_viewport(false);
+      xdk_d3d_calculate_rect(d3d, d3d->win_width, d3d->win_height, d3d->video_info.force_aspect, g_extern.system.aspect_ratio);
       d3d->should_resize = false;
    }
 
@@ -975,13 +970,14 @@ static void xdk_d3d_set_aspect_ratio(void *data, unsigned aspect_ratio_idx)
    xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
 
    if (aspect_ratio_idx == ASPECT_RATIO_SQUARE)
-      gfx_set_square_pixel_viewport(g_extern.frame_cache.width, g_extern.frame_cache.height);
+      gfx_set_square_pixel_viewport(g_extern.system.av_info.geometry.base_width, g_extern.system.av_info.geometry.base_height);
    else if (aspect_ratio_idx == ASPECT_RATIO_CORE)
       gfx_set_core_viewport();
    else if (aspect_ratio_idx == ASPECT_RATIO_CONFIG)
       gfx_set_config_viewport();
 
    g_settings.video.aspect_ratio = aspectratio_lut[aspect_ratio_idx].value;
+   g_extern.system.aspect_ratio  = aspectratio_lut[aspect_ratio_idx].value;
    d3d->video_info.force_aspect = true;
    d3d->should_resize = true;
 }
