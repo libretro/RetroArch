@@ -300,68 +300,6 @@ static void xdk_d3d_set_rotation(void *data, unsigned orientation)
 #endif
 }
 
-#ifdef HAVE_FBO
-void xdk_d3d_deinit_fbo(void *data)
-{
-#if 0
-   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)data;
-
-   if (d3d->fbo_inited)
-   {
-      RARCH_LOG("[xdk_d3d_deinit_fbo::] Deiniting FBO.\n");
-      if (d3d->lpTexture_ot)
-      {
-         d3d->lpTexture_ot->Release();
-         d3d->lpTexture_ot = NULL;
-      }
-
-      if (d3d->lpSurface)
-      {
-         d3d->lpSurface->Release();
-         d3d->lpSurface = NULL;
-      }
-
-      d3d->fbo_inited = false;
-   }
-#endif
-}
-
-void xdk_d3d_init_fbo(void *data)
-{
-   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)data;
-
-#if 0
-   xdk_d3d_deinit_fbo(d3d);
-
-   ret = d3d->d3d_render_device->CreateTexture(d3d->tex_w * g_settings.video.fbo.scale_x, d3d->tex_h * g_settings.video.fbo.scale_y,
-         1, 0, g_extern.console.screen.gamma_correction ? ( D3DFORMAT )MAKESRGBFMT( D3DFMT_X8R8G8B8 ) : D3DFMT_X8R8G8B8,
-         0, &d3d->lpTexture_ot, NULL);
-
-   if (ret != S_OK)
-   {
-      RARCH_ERR("[xdk_d3d_init_fbo::] Failed at CreateTexture.\n");
-      return;
-   }
-
-   ret = d3d->d3d_render_device->CreateRenderTarget(d3d->tex_w * g_settings.video.fbo.scale_x, d3d->tex_h * g_settings.video.fbo.scale_y,
-         g_extern.console.screen.gamma_correction ? ( D3DFORMAT )MAKESRGBFMT( D3DFMT_X8R8G8B8 ) : D3DFMT_X8R8G8B8, D3DMULTISAMPLE_NONE, 
-         0, 0, &d3d->lpSurface, NULL);
-
-   if (ret != S_OK)
-   {
-      RARCH_ERR("[xdk_d3d_init_fbo::] Failed at CreateRenderTarget.\n");
-      return;
-   }
-
-   d3d->lpTexture_ot_as16srgb = *d3d->lpTexture_ot;
-   xdk_convert_texture_to_as16_srgb(d3d->lpTexture);
-   xdk_convert_texture_to_as16_srgb(&d3d->lpTexture_ot_as16srgb);
-
-   d3d->fbo_inited = true;
-#endif
-}
-#endif
-
 static bool xdk_d3d_set_shader(void *data, enum rarch_shader_type type, const char *path)
 {
    /* TODO - stub */
@@ -448,17 +386,8 @@ static void xdk_d3d_reinit_textures(void *data, const video_info_t *video)
             d3d->tex_h, d3d->base_size * CHAR_BIT);
 
       xdk_d3d_init_textures(d3d, video);
-
-#if 0 /* ifdef HAVE_FBO */
-      if (d3d->tex_w > old_width || d3d->tex_h > old_height)
-      {
-         RARCH_LOG("Reiniting FBO.\n");
-         xdk_d3d_init_fbo(d3d);
-      }
-#endif
-   }
-   else
       RARCH_LOG("Reinitializing textures skipped.\n");
+   }
 }
 
 static void *xdk_d3d_init(const video_info_t *video, const input_driver_t **input, void **input_data)
@@ -601,10 +530,6 @@ static void *xdk_d3d_init(const video_info_t *video, const input_driver_t **inpu
    }
 
    RARCH_LOG("D3D: Loaded %u program(s).\n", d3d->shader->num_shaders());
-#endif
-
-#if 0 /* ifdef HAVE_FBO */
-   xdk_d3d_init_fbo(d3d);
 #endif
 
    d3d->video_info = *video;
@@ -764,9 +689,6 @@ static bool xdk_d3d_frame(void *data, const void *frame,
 #endif
    xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)data;
    LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)d3d->d3d_render_device;
-#if 0 /* ifdef HAVE_FBO */
-   D3DSurface* pRenderTarget0;
-#endif
 
    if (!frame)
       return true;
@@ -827,14 +749,6 @@ static bool xdk_d3d_frame(void *data, const void *frame,
       d3d->last_height = height;
    }
 
-#if 0 /* ifdef HAVE_FBO */
-   if (d3d->fbo_inited)
-   {
-      d3dr->GetRenderTarget(0, &pRenderTarget0);
-      d3dr->SetRenderTarget(0, d3d->lpSurface);
-   }
-#endif
-
 #ifdef HAVE_HLSL
    if (d3d->shader && d3d->shader->set_mvp)
       d3d->shader->set_mvp(NULL);
@@ -854,25 +768,6 @@ static bool xdk_d3d_frame(void *data, const void *frame,
       d3d->shader->use(1);
 #endif
 
-#if 0 /* ifdef HAVE_FBO */
-   if (d3d->fbo_inited)
-   {
-#ifdef HAVE_HLSL
-      if (d3d->shader && d3d->shader->set_params)
-         d3d->shader->set_params(width, height, d3d->tex_w, d3d->tex_h, g_settings.video.fbo.scale_x * width,
-               g_settings.video.fbo.scale_y * height, g_extern.frame_count);
-#endif
-      D3DVIEWPORT vp = {0};
-      vp.Width  = g_settings.video.fbo.scale_x * width;
-      vp.Height = g_settings.video.fbo.scale_y * height;
-      vp.X      = 0;
-      vp.Y      = 0;
-      vp.MinZ   = 0.0f;
-      vp.MaxZ   = 1.0f;
-      RD3DDevice_SetViewport(d3dr, &vp);
-   }
-   else
-#endif
    {
 #ifdef HAVE_HLSL
 
@@ -899,36 +794,6 @@ NULL, NULL, NULL, 0);
    D3DDevice_SetStreamSource_Inline(d3dr, 0, d3d->vertex_buf, 0, sizeof(DrawVerticeFormats));
 #endif
    RD3DDevice_DrawPrimitive(d3dr, D3DPT_TRIANGLESTRIP, 0, 2);
-
-#if 0 /* ifdef HAVE_FBO */
-   if (d3d->fbo_inited)
-   {
-      d3dr->Resolve(D3DRESOLVE_RENDERTARGET0, NULL, d3d->lpTexture_ot,
-            NULL, 0, 0, NULL, 0, 0, NULL);
-
-      d3dr->SetRenderTarget(0, pRenderTarget0);
-      pRenderTarget0->Release();
-      RD3DDevice_SetTexture(d3dr, 0, &d3d->lpTexture_ot_as16srgb);
-
-#ifdef HAVE_HLSL
-      if (d3d->shader && d3d->shader->use)
-         d3d->shader->use(2);
-
-      if (d3d->shader && d3d->shader->set_params)
-         d3d->shader->set_params(g_settings.video.fbo.scale_x * width, g_settings.video.fbo.scale_y * height, g_settings.video.fbo.scale_x * d3d->tex_w, g_settings.video.fbo.scale_y * d3d->tex_h, d3d->win_width,
-               d3d->win_height, g_extern.frame_count);
-#endif
-      xdk_d3d_set_viewport(false);
-
-      RD3DDevice_SetSamplerState_MinFilter(d3dr, D3DSAMP_MINFILTER, g_settings.video.second_pass_smooth ? D3DTEXF_LINEAR : D3DTEXF_POINT);
-      RD3DDevice_SetSamplerState_MagFilter(d3dr, D3DSAMP_MAGFILTER, g_settings.video.second_pass_smooth ? D3DTEXF_LINEAR : D3DTEXF_POINT);
-      RD3DDevice_SetSamplerState_AddressU(d3dr, D3DSAMP_ADDRESSU, D3DTADDRESS_BORDER);
-      RD3DDevice_SetSamplerState_AddressV(d3dr, D3DSAMP_ADDRESSV, D3DTADDRESS_BORDER);
-      D3DDevice_SetVertexDeclaration(d3dr, d3d->v_decl);
-      Direct3DDevice_SetStreamSource_Inline(d3dr, 0, d3d->vertex_buf, 0, sizeof(DrawVerticeFormats));
-      RD3DDevice_DrawPrimitive(d3dr, D3DPT_TRIANGLESTRIP, 0, 2);
-   }
-#endif
 
 #ifdef HAVE_MENU
    if (d3d && d3d->rgui_texture_enable)
@@ -1042,10 +907,8 @@ static void xdk_d3d_set_osd_msg(void *data, const char *msg, void *userdata)
 
 static const video_poke_interface_t d3d_poke_interface = {
    xdk_d3d_set_filtering,
-#ifdef HAVE_FBO
    NULL,
    NULL,
-#endif
    xdk_d3d_set_aspect_ratio,
    xdk_d3d_apply_state_changes,
 #ifdef HAVE_MENU

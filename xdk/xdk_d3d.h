@@ -46,9 +46,6 @@ typedef struct xdk_d3d_video
 {
    const gfx_ctx_driver_t *ctx_driver;
    const gl_shader_backend_t *shader;
-#ifdef HAVE_FBO
-   bool fbo_inited;
-#endif
    bool should_resize;
    bool quitting;
    bool vsync;
