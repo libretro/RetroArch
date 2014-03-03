@@ -292,16 +292,16 @@ static bool gfx_ctx_init(void)
       goto error;
 
    g_egl_dpy = eglGetDisplay((EGLNativeDisplayType)g_dpy);
-   if (!g_egl_dpy)
+   if (g_egl_dpy == EGL_NO_DISPLAY)
    {
-      RARCH_ERR("[X/EGL]: EGL display not available.\n");
+      RARCH_ERR("[X/EGL]: EGL display not available (Error: 0x%x).\n", (unsigned)eglGetError());
       goto error;
    }
 
    EGLint egl_major, egl_minor;
    if (!eglInitialize(g_egl_dpy, &egl_major, &egl_minor))
    {
-      RARCH_ERR("[X/EGL]: Unable to initialize EGL.\n");
+      RARCH_ERR("[X/EGL]: Unable to initialize EGL (Error: 0x%x).\n", (unsigned)eglGetError());
       goto error;
    }
 
@@ -310,7 +310,7 @@ static bool gfx_ctx_init(void)
    EGLint num_configs;
    if (!eglChooseConfig(g_egl_dpy, attrib_ptr, &g_config, 1, &num_configs))
    {
-      RARCH_ERR("[X/EGL]: eglChooseConfig failed with %x.\n", eglGetError());
+      RARCH_ERR("[X/EGL]: eglChooseConfig failed with 0x%x.\n", eglGetError());
       goto error;
    }
 
