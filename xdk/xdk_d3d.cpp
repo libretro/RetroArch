@@ -895,8 +895,10 @@ static void xdk_d3d_set_osd_msg(void *data, const char *msg, void *userdata)
 
 static const video_poke_interface_t d3d_poke_interface = {
    xdk_d3d_set_filtering,
+#ifdef HAVE_FBO
    NULL,
    NULL,
+#endif
    xdk_d3d_set_aspect_ratio,
    xdk_d3d_apply_state_changes,
 #ifdef HAVE_MENU
