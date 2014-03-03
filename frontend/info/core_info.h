@@ -39,6 +39,8 @@ typedef struct
    char *supported_extensions;
    char *authors;
    char *permissions;
+   char *notes;
+   struct string_list *note_list;   
    struct string_list *supported_extensions_list;
    struct string_list *authors_list;
    struct string_list *permissions_list;
