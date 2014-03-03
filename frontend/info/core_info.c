@@ -353,6 +353,28 @@ static int core_info_firmware_cmp(const void *a_, const void *b_)
       return strcasecmp(a->path, b->path);
 }
 
+void core_info_list_update_missing_firmware(core_info_list_t *core_info_list,
+      const char *core, const char *systemdir)
+{
+   size_t i;
+   char path[PATH_MAX];
+
+   core_info_firmware_t *firmware = NULL;
+
+   core_info_t *info = find_core_info(core_info_list, core);
+   if (!info)
+      return;
+
+   firmware = info->firmware;
+
+   for (i = 0; i < info->firmware_count; i++)
+   {
+      fill_pathname_join(path, systemdir, info->firmware[i].path, sizeof(path));
+      info->firmware[i].missing = !path_file_exists(path);
+   }
+
+}
+
 void core_info_list_get_missing_firmware(core_info_list_t *core_info_list,
       const char *core, const char *systemdir,
       const core_info_firmware_t **firmware, size_t *num_firmware)

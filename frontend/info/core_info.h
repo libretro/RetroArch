@@ -73,6 +73,9 @@ void core_info_list_get_missing_firmware(core_info_list_t *core_info_list,
       const char *core, const char *systemdir,
       const core_info_firmware_t **firmware, size_t *num_firmware);
 
+void core_info_list_update_missing_firmware(core_info_list_t *core_info_list,
+      const char *core, const char *systemdir);	  
+	  
 // Shallow-copies internal state. Data in *info is invalidated when the core_info_list is freed.
 bool core_info_list_get_info(core_info_list_t *core_info_list, core_info_t *info, const char *path);
 
