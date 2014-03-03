@@ -1949,8 +1949,11 @@ void menu_populate_entries(void *data, unsigned menu_type)
 				file_list_push(rgui->selection_buf, "Required firmware:", RGUI_SETTINGS_CORE_INFO_NONE, 0);
 				for(i=0;i<rgui->core_info_current.firmware_count;i++)
 				{
-					snprintf(tmp, sizeof(tmp), "	Name: %s, %s", rgui->core_info_current.firmware[i].desc ? rgui->core_info_current.firmware[i].desc : "",rgui->core_info_current.firmware[i].missing ? "missing" : "present");
-					file_list_push(rgui->selection_buf, tmp, RGUI_SETTINGS_CORE_INFO_NONE, 0);			
+					if(rgui->core_info_current.firmware[i].desc)
+					{
+						snprintf(tmp, sizeof(tmp), "	Name: %s, %s", rgui->core_info_current.firmware[i].desc ? rgui->core_info_current.firmware[i].desc : "",rgui->core_info_current.firmware[i].missing ? "missing" : "present");
+						file_list_push(rgui->selection_buf, tmp, RGUI_SETTINGS_CORE_INFO_NONE, 0);			
+					}
 				}
 			}
 			if(rgui->core_info_current.notes)
