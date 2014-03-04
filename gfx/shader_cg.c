@@ -401,8 +401,6 @@ static void gl_cg_deinit(void)
    gl_cg_deinit_context_state();
 }
 
-static bool gl_cg_init(const char *path);
-
 #define SET_LISTING(type) \
 { \
    const char *list = cgGetLastListing(cgCtx); \
