@@ -7,7 +7,6 @@
     <ClCompile Include="..\..\file_extract.c" />
     <ClCompile Include="..\..\frontend\menu\history.c" />
     <ClCompile Include="..\..\frontend\menu\file_list.c" />
-    <ClCompile Include="..\..\frontend\info\core_info.c" />
     <ClCompile Include="..\..\performance.c" />
     <ClCompile Include="..\..\command.c" />
     <ClCompile Include="..\..\conf\config_file.c" />
@@ -110,9 +109,6 @@
     </ClCompile>
     <ClCompile Include="..\..\gfx\rpng\rpng.c">
       <Filter>gfx\rpng</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\gfx\image.c">
-      <Filter>gfx</Filter>
     </ClCompile>
     <ClCompile Include="..\..\input\input_common.c">
       <Filter>input</Filter>
@@ -225,6 +221,16 @@
     <ClCompile Include="..\..\input\overlay.c">
       <Filter>input</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\gfx\image\image.c" />
+    <ClCompile Include="..\..\frontend\menu\menu_input_line_cb.c">
+      <Filter>frontend\menu</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\frontend\menu\menu_navigation.c">
+      <Filter>frontend\menu</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\frontend\info\core_info.c">
+      <Filter>frontend\menu\info</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="resource.h" />
@@ -286,6 +292,9 @@
     </Filter>
     <Filter Include="deps\zlib">
       <UniqueIdentifier>{cf7c2fb9-ca3c-468e-af4f-74c652b3e5fe}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="frontend\menu\info">
+      <UniqueIdentifier>{bc290b55-620e-4351-b3b8-4d7a0a3b8792}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
 </Project>
