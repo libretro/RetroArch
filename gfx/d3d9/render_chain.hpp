@@ -135,6 +135,8 @@ class RenderChain
             unsigned input_w, unsigned input_h,
             unsigned tex_w, unsigned tex_h,
             unsigned vp_w, unsigned vp_h);
+      void bind_tracker(Pass &pass, unsigned pass_index);
+      bool init_shader_fvf(Pass &pass);
 #endif
       void set_mvp(CGprogram &vPrg,
             unsigned vp_width, unsigned vp_height,
@@ -168,10 +170,8 @@ class RenderChain
       void bind_orig(Pass &pass);
       void bind_prev(Pass &pass);
       void bind_pass(Pass &pass, unsigned pass_index);
-      void bind_tracker(Pass &pass, unsigned pass_index);
       void unbind_all();
 
-      bool init_fvf(Pass &pass);
 };
 
 #endif

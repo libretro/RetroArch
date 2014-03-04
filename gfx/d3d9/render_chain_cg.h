@@ -188,4 +188,152 @@ void RenderChain::set_shader_params(Pass &pass,
    set_cg_param(pass.vPrg, "IN.frame_count", frame_cnt);
 }
 
+
+void RenderChain::bind_tracker(Pass &pass, unsigned pass_index)
+{
+   if (!tracker)
+      return;
+
+   if (pass_index == 1)
+      uniform_cnt = state_get_uniform(tracker, uniform_info, MAX_VARIABLES, frame_count);
+
+   for (unsigned i = 0; i < uniform_cnt; i++)
+   {
+      set_cg_param(pass.fPrg, uniform_info[i].id, uniform_info[i].value);
+      set_cg_param(pass.vPrg, uniform_info[i].id, uniform_info[i].value);
+   }
+}
+
+#define DECL_FVF_POSITION(stream) \
+   { (WORD)(stream), 0 * sizeof(float), D3DDECLTYPE_FLOAT3, D3DDECLMETHOD_DEFAULT, \
+      D3DDECLUSAGE_POSITION, 0 }
+#define DECL_FVF_TEXCOORD(stream, offset, index) \
+   { (WORD)(stream), (WORD)(offset * sizeof(float)), D3DDECLTYPE_FLOAT2, D3DDECLMETHOD_DEFAULT, \
+      D3DDECLUSAGE_TEXCOORD, (BYTE)(index) }
+#define DECL_FVF_COLOR(stream, offset, index) \
+   { (WORD)(stream), (WORD)(offset * sizeof(float)), D3DDECLTYPE_FLOAT4, D3DDECLMETHOD_DEFAULT, \
+      D3DDECLUSAGE_COLOR, (BYTE)(index) } \
+
+
+bool RenderChain::init_shader_fvf(Pass &pass)
+{
+   static const D3DVERTEXELEMENT decl_end = D3DDECL_END();
+   static const D3DVERTEXELEMENT position_decl = DECL_FVF_POSITION(0);
+   static const D3DVERTEXELEMENT tex_coord0 = DECL_FVF_TEXCOORD(1, 3, 0);
+   static const D3DVERTEXELEMENT tex_coord1 = DECL_FVF_TEXCOORD(2, 5, 1);
+   static const D3DVERTEXELEMENT color = DECL_FVF_COLOR(3, 7, 0);
+
+   D3DVERTEXELEMENT decl[MAXD3DDECLLENGTH] = {{0}};
+   if (cgD3D9GetVertexDeclaration(pass.vPrg, decl) == CG_FALSE)
+      return false;
+
+   unsigned count;
+   for (count = 0; count < MAXD3DDECLLENGTH; count++)
+   {
+      if (memcmp(&decl_end, &decl[count], sizeof(decl_end)) == 0)
+         break;
+   }
+
+   // This is completely insane.
+   // We do not have a good and easy way of setting up our
+   // attribute streams, so we have to do it ourselves, yay!
+   // Stream 0 => POSITION
+   // Stream 1 => TEXCOORD0
+   // Stream 2 => TEXCOORD1
+   // Stream 3 => COLOR // Not really used for anything.
+   // Stream {4..N} => Texture coord streams for varying resources which have no semantics.
+
+   std::vector<bool> indices(count);
+   bool texcoord0_taken = false;
+   bool texcoord1_taken = false;
+   bool stream_taken[4] = {false};
+
+   CGparameter param = find_param_from_semantic(pass.vPrg, "POSITION");
+   if (!param)
+      param = find_param_from_semantic(pass.vPrg, "POSITION0");
+   if (param)
+   {
+      stream_taken[0] = true;
+      RARCH_LOG("[FVF]: POSITION semantic found.\n");
+      unsigned index = cgGetParameterResourceIndex(param);
+      decl[index] = position_decl;
+      indices[index] = true;
+   }
+
+   param = find_param_from_semantic(pass.vPrg, "TEXCOORD");
+   if (!param)
+      param = find_param_from_semantic(pass.vPrg, "TEXCOORD0");
+   if (param)
+   {
+      stream_taken[1] = true;
+      texcoord0_taken = true;
+      RARCH_LOG("[FVF]: TEXCOORD0 semantic found.\n");
+      unsigned index = cgGetParameterResourceIndex(param);
+      decl[index] = tex_coord0;
+      indices[index] = true;
+   }
+
+   param = find_param_from_semantic(pass.vPrg, "TEXCOORD1");
+   if (param)
+   {
+      stream_taken[2] = true;
+      texcoord1_taken = true;
+      RARCH_LOG("[FVF]: TEXCOORD1 semantic found.\n");
+      unsigned index = cgGetParameterResourceIndex(param);
+      decl[index] = tex_coord1;
+      indices[index] = true;
+   }
+
+   param = find_param_from_semantic(pass.vPrg, "COLOR");
+   if (!param)
+      param = find_param_from_semantic(pass.vPrg, "COLOR0");
+   if (param)
+   {
+      stream_taken[3] = true;
+      RARCH_LOG("[FVF]: COLOR0 semantic found.\n");
+      unsigned index = cgGetParameterResourceIndex(param);
+      decl[index] = color;
+      indices[index] = true;
+   }
+
+   // Stream {0, 1, 2, 3} might be already taken. Find first vacant stream.
+   unsigned index;
+   for (index = 0; index < 4 && stream_taken[index]; index++);
+
+   // Find first vacant texcoord declaration.
+   unsigned tex_index = 0;
+   if (texcoord0_taken && texcoord1_taken)
+      tex_index = 2;
+   else if (texcoord1_taken && !texcoord0_taken)
+      tex_index = 0;
+   else if (texcoord0_taken && !texcoord1_taken)
+      tex_index = 1;
+
+   for (unsigned i = 0; i < count; i++)
+   {
+      if (indices[i])
+         pass.attrib_map.push_back(0);
+      else
+      {
+         pass.attrib_map.push_back(index);
+         D3DVERTEXELEMENT elem = DECL_FVF_TEXCOORD(index, 3, tex_index);
+         decl[i] = elem;
+
+         // Find next vacant stream.
+         index++;
+         while (index < 4 && stream_taken[index]) index++;
+
+         // Find next vacant texcoord declaration.
+         tex_index++;
+         if (tex_index == 1 && texcoord1_taken)
+            tex_index++;
+      }
+   }
+
+   if (FAILED(dev->CreateVertexDeclaration(decl, &pass.vertex_decl)))
+      return false;
+
+   return true;
+}
+
 #endif
