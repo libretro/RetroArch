@@ -48,7 +48,7 @@ bool RenderChain::init(const LinkInfo &info, PixelFormat fmt)
    return true;
 }
 
-void RenderChain::clear()
+void RenderChain::clear(void)
 {
    for (unsigned i = 0; i < Textures; i++)
    {
@@ -191,7 +191,7 @@ void RenderChain::add_state_tracker(state_tracker_t *tracker)
    this->tracker = tracker;
 }
 
-void RenderChain::start_render()
+void RenderChain::start_render(void)
 {
    passes[0].tex = prev.tex[prev.ptr];
    passes[0].vertex_buf = prev.vertex_buf[prev.ptr];
@@ -199,7 +199,7 @@ void RenderChain::start_render()
    passes[0].last_height = prev.last_height[prev.ptr];
 }
 
-void RenderChain::end_render()
+void RenderChain::end_render(void)
 {
    prev.last_width[prev.ptr] = passes[0].last_width;
    prev.last_height[prev.ptr] = passes[0].last_height;
@@ -803,58 +803,6 @@ void RenderChain::unbind_all()
    bound_vert.clear();
 }
 
-static inline bool validate_param_name(const char *name)
-{
-   static const char *illegal[] = {
-      "PREV.",
-      "PREV1.",
-      "PREV2.",
-      "PREV3.",
-      "PREV4.",
-      "PREV5.",
-      "PREV6.",
-      "ORIG.",
-      "IN.",
-      "PASS",
-   };
-
-   for (unsigned i = 0; i < sizeof(illegal) / sizeof(illegal[0]); i++)
-      if (strstr(name, illegal[i]) == name)
-         return false;
-
-   return true;
-}
-
-static inline CGparameter find_param_from_semantic(CGparameter param, const std::string &sem)
-{
-   while (param)
-   {
-      if (cgGetParameterType(param) == CG_STRUCT)
-      {
-         CGparameter ret = find_param_from_semantic(cgGetFirstStructParameter(param), sem);
-         if (ret)
-            return ret;
-      }
-      else
-      {
-         if (cgGetParameterSemantic(param) &&
-               sem == cgGetParameterSemantic(param) &&
-               cgGetParameterDirection(param) == CG_IN &&
-               cgGetParameterVariability(param) == CG_VARYING &&
-               validate_param_name(cgGetParameterName(param)))
-            return param;
-      }
-      param = cgGetNextParameter(param);
-   }
-
-   return NULL;
-}
-
-static inline CGparameter find_param_from_semantic(CGprogram prog, const std::string &sem)
-{
-   return find_param_from_semantic(cgGetFirstParameter(prog, CG_PROGRAM), sem);
-}
-
 #define DECL_FVF_POSITION(stream) \
    { (WORD)(stream), 0 * sizeof(float), D3DDECLTYPE_FLOAT3, D3DDECLMETHOD_DEFAULT, \
       D3DDECLUSAGE_POSITION, 0 }
@@ -1000,4 +948,3 @@ void RenderChain::bind_tracker(Pass &pass, unsigned pass_index)
       set_cg_param(pass.vPrg, uniform_info[i].id, uniform_info[i].value);
    }
 }
-

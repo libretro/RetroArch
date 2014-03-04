@@ -25,6 +25,58 @@ static const char *stock_program =
     "   return color * tex2D(s0, tex);"
     "}";
 
+static inline bool validate_param_name(const char *name)
+{
+   static const char *illegal[] = {
+      "PREV.",
+      "PREV1.",
+      "PREV2.",
+      "PREV3.",
+      "PREV4.",
+      "PREV5.",
+      "PREV6.",
+      "ORIG.",
+      "IN.",
+      "PASS",
+   };
+
+   for (unsigned i = 0; i < sizeof(illegal) / sizeof(illegal[0]); i++)
+      if (strstr(name, illegal[i]) == name)
+         return false;
+
+   return true;
+}
+
+static inline CGparameter find_param_from_semantic(CGparameter param, const std::string &sem)
+{
+   while (param)
+   {
+      if (cgGetParameterType(param) == CG_STRUCT)
+      {
+         CGparameter ret = find_param_from_semantic(cgGetFirstStructParameter(param), sem);
+         if (ret)
+            return ret;
+      }
+      else
+      {
+         if (cgGetParameterSemantic(param) &&
+               sem == cgGetParameterSemantic(param) &&
+               cgGetParameterDirection(param) == CG_IN &&
+               cgGetParameterVariability(param) == CG_VARYING &&
+               validate_param_name(cgGetParameterName(param)))
+            return param;
+      }
+      param = cgGetNextParameter(param);
+   }
+
+   return NULL;
+}
+
+static inline CGparameter find_param_from_semantic(CGprogram prog, const std::string &sem)
+{
+   return find_param_from_semantic(cgGetFirstParameter(prog, CG_PROGRAM), sem);
+}
+
 bool RenderChain::compile_shaders(CGprogram &fPrg, CGprogram &vPrg, const std::string &shader)
 {
    CGprofile vertex_profile = cgD3D9GetLatestVertexProfile();
