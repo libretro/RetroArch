@@ -127,7 +127,8 @@ class RenderChain
       bool create_first_pass(const LinkInfo &info, PixelFormat fmt);
 #if defined(HAVE_CG)
       bool compile_shaders(CGprogram &fPrg, CGprogram &vPrg, const std::string &shader);
-      void destroy_stock_shaders(void);
+      void destroy_stock_shader(void);
+      void destroy_shader(int i);
       void set_shaders(CGprogram &fPrg, CGprogram &vPrg);
       void set_shader_mvp(CGprogram &vPrg, D3DXMATRIX &tmp);
       void set_shader_params(Pass &pass,
