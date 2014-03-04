@@ -127,11 +127,17 @@ class RenderChain
       bool create_first_pass(const LinkInfo &info, PixelFormat fmt);
 #if defined(HAVE_CG)
       bool compile_shaders(CGprogram &fPrg, CGprogram &vPrg, const std::string &shader);
+      void destroy_stock_shaders(void);
       void set_shaders(CGprogram &fPrg, CGprogram &vPrg);
-      void set_cg_mvp(CGprogram &vPrg,
+      void set_shader_mvp(CGprogram &vPrg, D3DXMATRIX &tmp);
+      void set_shader_params(Pass &pass,
+            unsigned input_w, unsigned input_h,
+            unsigned tex_w, unsigned tex_h,
+            unsigned vp_w, unsigned vp_h);
+#endif
+      void set_mvp(CGprogram &vPrg,
             unsigned vp_width, unsigned vp_height,
             unsigned rotation);
-#endif
 
       void set_vertices(Pass &pass,
             unsigned width, unsigned height,
@@ -139,11 +145,6 @@ class RenderChain
             unsigned vp_width, unsigned vp_height,
             unsigned rotation);
       void set_viewport(const D3DVIEWPORT &vp);
-
-      void set_cg_params(Pass &pass,
-            unsigned input_w, unsigned input_h,
-            unsigned tex_w, unsigned tex_h,
-            unsigned vp_w, unsigned vp_h);
 
       void clear_texture(Pass &pass);
 
