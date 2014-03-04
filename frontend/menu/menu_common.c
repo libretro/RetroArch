@@ -1950,15 +1950,19 @@ void menu_populate_entries(void *data, unsigned menu_type)
                core_info_list_update_missing_firmware(rgui->core_info, rgui->core_info_current.path,
                      g_settings.system_directory);
 
-               file_list_push(rgui->selection_buf, "Required firmware:", RGUI_SETTINGS_CORE_INFO_NONE, 0);
+               file_list_push(rgui->selection_buf, "Firmware: ", RGUI_SETTINGS_CORE_INFO_NONE, 0);
                for (i = 0; i < rgui->core_info_current.firmware_count; i++)
                {
                   if (rgui->core_info_current.firmware[i].desc)
-                  {
-                     snprintf(tmp, sizeof(tmp), "	Name: %s, %s",
-                           rgui->core_info_current.firmware[i].desc ? rgui->core_info_current.firmware[i].desc : "",
-                           rgui->core_info_current.firmware[i].missing ? "missing" : "present");
-                     file_list_push(rgui->selection_buf, tmp, RGUI_SETTINGS_CORE_INFO_NONE, 0);
+                  {					 
+					snprintf(tmp, sizeof(tmp), "	name: %s",
+						rgui->core_info_current.firmware[i].desc ? rgui->core_info_current.firmware[i].desc : "");
+					file_list_push(rgui->selection_buf, tmp, RGUI_SETTINGS_CORE_INFO_NONE, 0);								
+					
+					snprintf(tmp, sizeof(tmp), "	status: %s, %s",
+						rgui->core_info_current.firmware[i].missing ? "missing" : "present",
+						rgui->core_info_current.firmware[i].optional ? "optional" : "required");
+					file_list_push(rgui->selection_buf, tmp, RGUI_SETTINGS_CORE_INFO_NONE, 0);					 
                   }
                }
             }

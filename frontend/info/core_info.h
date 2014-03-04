@@ -29,6 +29,7 @@ typedef struct
    char *path;
    char *desc;
    bool missing; // Set once to avoid opening the same file several times.
+   bool optional;
 } core_info_firmware_t;
 
 typedef struct
