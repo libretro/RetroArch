@@ -1933,17 +1933,26 @@ void menu_populate_entries(void *data, unsigned menu_type)
                   rgui->core_info_current.display_name ? rgui->core_info_current.display_name : "");
             file_list_push(rgui->selection_buf, tmp, RGUI_SETTINGS_CORE_INFO_NONE, 0);
 
-            snprintf(tmp, sizeof(tmp), "Authors: %s",
-                  rgui->core_info_current.authors ? rgui->core_info_current.authors : "");
-            file_list_push(rgui->selection_buf, tmp, RGUI_SETTINGS_CORE_INFO_NONE, 0);
+            if (rgui->core_info_current.authors_list)
+            {
+               strlcpy(tmp, "Authors: ", sizeof(tmp));
+               string_list_join_concat(tmp, sizeof(tmp), rgui->core_info_current.authors_list, ", ");
+               file_list_push(rgui->selection_buf, tmp, RGUI_SETTINGS_CORE_INFO_NONE, 0);
+            }
 
-            snprintf(tmp, sizeof(tmp), "Permissions: %s",
-                  rgui->core_info_current.permissions ? rgui->core_info_current.permissions : "");
-            file_list_push(rgui->selection_buf, tmp, RGUI_SETTINGS_CORE_INFO_NONE, 0);
+            if (rgui->core_info_current.permissions_list)
+            {
+               strlcpy(tmp, "Permissions: ", sizeof(tmp));
+               string_list_join_concat(tmp, sizeof(tmp), rgui->core_info_current.permissions_list, ", ");
+               file_list_push(rgui->selection_buf, tmp, RGUI_SETTINGS_CORE_INFO_NONE, 0);
+            }
 
-            snprintf(tmp, sizeof(tmp), "Supported extensions: %s",
-                  rgui->core_info_current.supported_extensions ? rgui->core_info_current.supported_extensions : "");
-            file_list_push(rgui->selection_buf, tmp, RGUI_SETTINGS_CORE_INFO_NONE, 0);
+            if (rgui->core_info_current.supported_extensions_list)
+            {
+               strlcpy(tmp, "Supported extensions: ", sizeof(tmp));
+               string_list_join_concat(tmp, sizeof(tmp), rgui->core_info_current.supported_extensions_list, ", ");
+               file_list_push(rgui->selection_buf, tmp, RGUI_SETTINGS_CORE_INFO_NONE, 0);
+            }
 
             if (rgui->core_info_current.firmware_count > 0)
             {

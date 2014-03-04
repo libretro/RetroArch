@@ -60,6 +60,7 @@ struct string_list *string_split(const char *str, const char *delim);
 struct string_list *string_list_new(void);
 bool string_list_append(struct string_list *list, const char *elem, union string_list_elem_attr attr);
 void string_list_free(struct string_list *list);
+void string_list_join_concat(char *buffer, size_t size, const struct string_list *list, const char *sep);
 
 bool path_is_directory(const char *path);
 bool path_file_exists(const char *path);
