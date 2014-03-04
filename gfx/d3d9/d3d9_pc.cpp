@@ -95,8 +95,10 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT message,
 bool d3d_process_shader(void *data)
 {
    D3DVideo *d3d = reinterpret_cast<D3DVideo*>(data);
+#ifdef HAVE_FBO
    if (strcmp(path_get_extension(d3d->cg_shader.c_str()), "cgp") == 0)
       return d3d_init_multipass(d3d);
+#endif
 
    return d3d_init_singlepass(d3d);
 }
@@ -195,42 +197,6 @@ void d3d_recompute_pass_sizes(void *data)
    }
 }
 
-bool d3d_init_shader(void *data)
-{
-   D3DVideo *d3d = reinterpret_cast<D3DVideo*>(data);
-   (void)d3d;
-#ifdef HAVE_CG
-   d3d->cgCtx = cgCreateContext();
-   if (d3d->cgCtx == NULL)
-      return false;
-#endif
-
-   RARCH_LOG("[D3D]: Created shader context.\n");
-
-#ifdef HAVE_CG
-   HRESULT ret = cgD3D9SetDevice(d3d->dev);
-   if (FAILED(ret))
-      return false;
-#endif
-
-   return true;
-}
-
-void d3d_deinit_shader(void *data)
-{
-   D3DVideo *d3d = reinterpret_cast<D3DVideo*>(data);
-   (void)d3d;
-#ifdef HAVE_CG
-   if (!d3d->cgCtx)
-      return;
-
-   cgD3D9UnloadAllPrograms();
-   cgD3D9SetDevice(NULL);
-   cgDestroyContext(d3d->cgCtx);
-   d3d->cgCtx = NULL;
-#endif
-}
-
 bool d3d_init_singlepass(void *data)
 {
    D3DVideo *d3d = reinterpret_cast<D3DVideo*>(data);
@@ -295,7 +261,7 @@ bool d3d_init_luts(void *data)
    return true;
 }
 
-#ifdef HAVE_CG
+#ifdef HAVE_FBO
 bool d3d_init_multipass(void *data)
 {
    D3DVideo *d3d = reinterpret_cast<D3DVideo*>(data);

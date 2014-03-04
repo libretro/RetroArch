@@ -1,5 +1,5 @@
-#ifndef _RENDER_CHAIN_CG
-#define _RENDER_CHAIN_CG
+#ifndef _D3D_CG
+#define _D3D_CG
 
 static const char *stock_program =
     "void main_vertex"
@@ -334,6 +334,34 @@ bool RenderChain::init_shader_fvf(Pass &pass)
       return false;
 
    return true;
+}
+
+bool d3d_init_shader(void *data)
+{
+   D3DVideo *d3d = reinterpret_cast<D3DVideo*>(data);
+   d3d->cgCtx = cgCreateContext();
+   if (!d3d->cgCtx)
+      return false;
+
+   RARCH_LOG("[D3D]: Created shader context.\n");
+
+   HRESULT ret = cgD3D9SetDevice(d3d->dev);
+   if (FAILED(ret))
+      return false;
+
+   return true;
+}
+
+void d3d_deinit_shader(void *data)
+{
+   D3DVideo *d3d = reinterpret_cast<D3DVideo*>(data);
+   if (!d3d->cgCtx)
+      return;
+
+   cgD3D9UnloadAllPrograms();
+   cgD3D9SetDevice(NULL);
+   cgDestroyContext(d3d->cgCtx);
+   d3d->cgCtx = NULL;
 }
 
 #endif
