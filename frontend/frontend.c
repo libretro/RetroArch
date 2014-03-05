@@ -47,46 +47,6 @@ static void rarch_get_environment_console(void)
    init_libretro_sym(false);
    rarch_init_system_info();
 
-#ifdef HAVE_LIBRETRO_MANAGEMENT
-   char basename[PATH_MAX];
-   char basename_new[PATH_MAX];
-   char old_path[PATH_MAX];
-   char new_path[PATH_MAX];
-
-   strlcpy(basename, "CORE", sizeof(basename));
-   strlcat(basename, DEFAULT_EXE_EXT, sizeof(basename));
-   fill_pathname_join(old_path, default_paths.core_dir, basename, sizeof(old_path));
-
-   libretro_get_current_core_pathname(basename_new, sizeof(basename_new));
-   strlcat(basename_new, DEFAULT_EXE_EXT, sizeof(basename_new));
-   fill_pathname_join(new_path, default_paths.core_dir, basename_new, sizeof(new_path));
-
-   if (path_file_exists(old_path))
-   {
-      // Rename core filename executable (old_path) to a more sane name (new_path).
-
-      if (path_file_exists(new_path))
-      {
-         /* If new_path already exists, we are upgrading the core - 
-          * delete existing file first. */
-
-         if (remove(new_path) < 0)
-            RARCH_ERR("Failed to remove file: %s.\n", new_path);
-         else
-            RARCH_LOG("Removed temporary ROM file: %s.\n", new_path);
-      }
-
-      /* Now attempt the renaming of the core. */
-      if (rename(old_path, new_path) < 0)
-         RARCH_ERR("Failed to rename core.\n");
-      else
-      {
-         rarch_environment_cb(RETRO_ENVIRONMENT_SET_LIBRETRO_PATH, (void*)new_path);
-         RARCH_LOG("Renamed core successfully to: %s.\n", new_path);
-      }
-   }
-#endif
-
    global_init_drivers();
 }
 #endif
