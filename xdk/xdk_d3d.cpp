@@ -422,7 +422,7 @@ static void *xdk_d3d_init(const video_info_t *video, const input_driver_t **inpu
       D3DPRESENT_PARAMETERS d3dpp;
       xdk_d3d_generate_pp(&d3dpp, video);
 
-      ret = d3d->d3d_device->CreateDevice(0, D3DDEVTYPE_HAL, NULL, D3DCREATE_HARDWARE_VERTEXPROCESSING,
+      ret = d3d->g_pD3D->CreateDevice(0, D3DDEVTYPE_HAL, NULL, D3DCREATE_HARDWARE_VERTEXPROCESSING,
             &d3dpp, &d3d->dev);
 
       if (ret != S_OK)

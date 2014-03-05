@@ -366,8 +366,8 @@ static bool gfx_ctx_xdk_init(void)
 {
    xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
 
-   d3d->d3d_device = direct3d_create_ctx(D3D_SDK_VERSION);
-   if (!d3d->d3d_device)
+   d3d->g_pD3D = direct3d_create_ctx(D3D_SDK_VERSION);
+   if (!d3d->g_pD3D)
    {
       RARCH_ERR("Could not create Direct3D context.\n");
       free(d3d);
@@ -394,9 +394,9 @@ static void gfx_ctx_xdk_destroy(void)
       d3d->dev->Release();
    d3d->dev = 0;
 
-   if (d3d->d3d_device)
-      d3d->d3d_device->Release();
-   d3d->d3d_device = 0;
+   if (d3d->g_pD3D)
+      d3d->g_pD3D->Release();
+   d3d->g_pD3D = 0;
 }
 
 static void gfx_ctx_xdk_input_driver(const input_driver_t **input, void **input_data)
