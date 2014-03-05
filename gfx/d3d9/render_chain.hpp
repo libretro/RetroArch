@@ -136,7 +136,11 @@ class RenderChain
             unsigned tex_w, unsigned tex_h,
             unsigned vp_w, unsigned vp_h);
       void bind_tracker(Pass &pass, unsigned pass_index);
+      void bind_orig(Pass &pass);
+      void bind_prev(Pass &pass);
+      void bind_pass(Pass &pass, unsigned pass_index);
       bool init_shader_fvf(Pass &pass);
+      void bind_luts(Pass &pass);
 #endif
       void set_mvp(CGprogram &vPrg,
             unsigned vp_width, unsigned vp_height,
@@ -166,10 +170,6 @@ class RenderChain
 
       std::vector<unsigned> bound_tex;
       std::vector<unsigned> bound_vert;
-      void bind_luts(Pass &pass);
-      void bind_orig(Pass &pass);
-      void bind_prev(Pass &pass);
-      void bind_pass(Pass &pass, unsigned pass_index);
       void unbind_all();
 
 };
