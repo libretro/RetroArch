@@ -30,26 +30,21 @@
 #define EXT_EXECUTABLES "self|SELF|bin|BIN"
 #define SALAMANDER_FILE "EBOOT.BIN"
 #define PLATFORM_NAME   "ps3"
-#define DEFAULT_EXE_EXT ".SELF"
 #elif defined(PSP)
 #define EXT_EXECUTABLES "pbp|PBP"
 #define SALAMANDER_FILE "EBOOT.PBP"
 #define PLATFORM_NAME   "psp"
-#define DEFAULT_EXE_EXT ".PBP"
 #elif defined(_XBOX1)
 #define EXT_EXECUTABLES "xbe|XBE"
 #define SALAMANDER_FILE "default.xbe"
-#define DEFAULT_EXE_EXT ".xbe"
 #define PLATFORM_NAME   "xdk1"
 #elif defined(_XBOX360)
 #define EXT_EXECUTABLES "xex|XEX"
 #define SALAMANDER_FILE "default.xex"
-#define DEFAULT_EXE_EXT ".xex"
 #define PLATFORM_NAME   "xdk360"
 #elif defined(GEKKO)
 #define EXT_EXECUTABLES "dol|DOL"
 #define SALAMANDER_FILE "boot.dol"
-#define DEFAULT_EXE_EXT ".dol"
 #ifdef HW_RVL
 #define PLATFORM_NAME   "wii"
 #else
