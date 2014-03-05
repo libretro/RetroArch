@@ -109,21 +109,6 @@ const DWORD g_MapLinearToSrgbGpuFormat[] =
 };
 #endif
 
-static void check_window(void *data)
-{
-   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)data;
-
-   bool quit, resize;
-
-   d3d->ctx_driver->check_window(&quit,
-         &resize, NULL, NULL, g_extern.frame_count);
-
-   if (quit)
-      d3d->quitting = true;
-   else if (resize)
-      d3d->should_resize = true;
-}
-
 static bool d3d_init_shader(void *data)
 {
    xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)data;
@@ -677,7 +662,6 @@ static void blit_to_texture(void *data, const void *frame,
    if (d3d->last_width != width || d3d->last_height != height)
       clear_texture(data);
 
-      unsigned base_size = d3d->base_size;
    D3DLOCKED_RECT d3dlr;
    D3DTexture_LockRect(d3d->lpTexture, 0, &d3dlr, NULL, D3DLOCK_NOSYSLOCK);
 
@@ -685,34 +669,13 @@ static void blit_to_texture(void *data, const void *frame,
    {
       const uint8_t *in = (const uint8_t*)frame + y * pitch;
       uint8_t *out = (uint8_t*)d3dlr.pBits + y * d3dlr.Pitch;
-      memcpy(out, in, width * base_size);
+      memcpy(out, in, width * d3d->base_size);
    }
 }
 
-static bool xdk_d3d_frame(void *data, const void *frame,
-      unsigned width, unsigned height, unsigned pitch, const char *msg)
+static void set_vertices(void *d3d, unsigned pass, unsigned width, unsigned height)
 {
-#ifndef _XBOX1
-   DWORD fetchConstant;
-   UINT64 pendingMask3;
-#endif
    xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)data;
-   LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)d3d->d3d_render_device;
-
-   if (!frame)
-      return true;
-
-   if (d3d->should_resize)
-   {
-#ifdef _XBOX1
-      d3dr->SetFlickerFilter(g_extern.console.screen.flicker_filter_index);
-      d3dr->SetSoftDisplayFilter(g_extern.lifecycle_state & (1ULL << MODE_VIDEO_SOFT_FILTER_ENABLE));
-#endif
-      xdk_d3d_calculate_rect(d3d, d3d->win_width, d3d->win_height, d3d->video_info.force_aspect, g_extern.system.aspect_ratio);
-      d3d->should_resize = false;
-   }
-
-   blit_to_texture(d3d, frame, width, height, pitch);
 
    if (d3d->last_width != width || d3d->last_height != height)
    {
@@ -758,32 +721,31 @@ static bool xdk_d3d_frame(void *data, const void *frame,
       d3d->last_height = height;
    }
 
-   if (d3d->shader && d3d->shader->set_mvp)
-      d3d->shader->set_mvp(NULL);
-
-   // Insert black frame first, so we can screenshot, etc.
-   if (g_settings.video.black_frame_insertion)
+   if (d3d->shader)
    {
-      d3dr->Present(NULL, NULL, NULL, NULL);
-      d3dr->Clear(0, 0, D3DCLEAR_TARGET, 0, 1, 0);
-   }
-
-   RD3DDevice_SetTexture(d3dr, 0, d3d->lpTexture);
-
-   if (d3d->shader && d3d->shader->use)
-      d3d->shader->use(1);
-
-   {
-      if (d3d->shader && d3d->shader->set_params)
+      if (d3d->shader->set_mvp)
+         d3d->shader->set_mvp(NULL);
+      if (d3d->shader->use)
+         d3d->shader->use(pass);
+      if (d3d->shader->set_params)
          d3d->shader->set_params(width, height, d3d->tex_w, d3d->tex_h, d3d->win_width,
                d3d->win_height, g_extern.frame_count,
                NULL, NULL, NULL, 0);
    }
+}
 
-   unsigned filter = g_settings.video.smooth ? D3DTEXF_LINEAR : D3DTEXF_POINT;
+static void render_pass(void *data, unsigned pass_index)
+{
+   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)data;
+   LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)d3d->d3d_render_device;
+#ifndef _XBOX1
+   DWORD fetchConstant;
+   UINT64 pendingMask3;
+#endif
 
-   RD3DDevice_SetSamplerState_MinFilter(d3dr, 0, filter);
-   RD3DDevice_SetSamplerState_MagFilter(d3dr, 0, filter);
+   RD3DDevice_SetTexture(d3dr, 0, d3d->lpTexture);
+   RD3DDevice_SetSamplerState_MinFilter(d3dr, 0, g_settings.video.smooth ? D3DTEXF_LINEAR : D3DTEXF_POINT);
+   RD3DDevice_SetSamplerState_MagFilter(d3dr, 0, g_settings.video.smooth ? D3DTEXF_LINEAR : D3DTEXF_POINT);
    RD3DDevice_SetSamplerState_AddressU(d3dr, D3DSAMP_ADDRESSU, D3DTADDRESS_BORDER);
    RD3DDevice_SetSamplerState_AddressV(d3dr, D3DSAMP_ADDRESSV, D3DTADDRESS_BORDER);
 
@@ -795,6 +757,38 @@ static bool xdk_d3d_frame(void *data, const void *frame,
    D3DDevice_SetStreamSource_Inline(d3dr, 0, d3d->vertex_buf, 0, sizeof(DrawVerticeFormats));
 #endif
    RD3DDevice_DrawPrimitive(d3dr, D3DPT_TRIANGLESTRIP, 0, 2);
+}
+
+static bool xdk_d3d_frame(void *data, const void *frame,
+      unsigned width, unsigned height, unsigned pitch, const char *msg)
+{
+   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)data;
+   LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)d3d->d3d_render_device;
+
+   if (!frame)
+      return true;
+
+   if (d3d->should_resize)
+   {
+#ifdef _XBOX1
+      d3dr->SetFlickerFilter(g_extern.console.screen.flicker_filter_index);
+      d3dr->SetSoftDisplayFilter(g_extern.lifecycle_state & (1ULL << MODE_VIDEO_SOFT_FILTER_ENABLE));
+#endif
+      xdk_d3d_calculate_rect(d3d, d3d->win_width, d3d->win_height, d3d->video_info.force_aspect, g_extern.system.aspect_ratio);
+      d3d->should_resize = false;
+   }
+
+   blit_to_texture(d3d, frame, width, height, pitch);
+   set_vertices(d3d, 1, width, height);
+
+   // Insert black frame first, so we can screenshot, etc.
+   if (g_settings.video.black_frame_insertion)
+   {
+      d3dr->Present(NULL, NULL, NULL, NULL);
+      d3dr->Clear(0, 0, D3DCLEAR_TARGET, 0, 1, 0);
+   }
+
+   render_pass(d3d, 1);
 
 #ifdef HAVE_MENU
    if (d3d && d3d->rgui_texture_enable)
@@ -841,7 +835,15 @@ static void xdk_d3d_set_nonblock_state(void *data, bool state)
 static bool xdk_d3d_alive(void *data)
 {
    xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)data;
-   check_window(d3d);
+   bool quit, resize;
+
+   d3d->ctx_driver->check_window(&quit,
+         &resize, NULL, NULL, g_extern.frame_count);
+
+   if (quit)
+      d3d->quitting = true;
+   else if (resize)
+      d3d->should_resize = true;
    return !d3d->quitting;
 }
 
