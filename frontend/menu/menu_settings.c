@@ -1119,7 +1119,6 @@ int menu_set_settings(void *data, unsigned setting, unsigned action)
          if (action == RGUI_ACTION_START)
             *g_extern.savestate_dir = '\0';
          break;
-#ifdef HAVE_DYNAMIC
       case RGUI_LIBRETRO_DIR_PATH:
          if (action == RGUI_ACTION_START)
          {
@@ -1127,7 +1126,6 @@ int menu_set_settings(void *data, unsigned setting, unsigned action)
             menu_init_core_info(rgui);
          }
          break;
-#endif
       case RGUI_LIBRETRO_INFO_DIR_PATH:
          if (action == RGUI_ACTION_START)
          {

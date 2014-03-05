@@ -1277,13 +1277,13 @@ static int menu_iterate_func(void *data, unsigned action)
                strlcpy(g_extern.savestate_dir, dir, sizeof(g_extern.savestate_dir));
                menu_flush_stack_type(rgui, RGUI_SETTINGS_PATH_OPTIONS);
             }
-#ifdef HAVE_DYNAMIC
             else if (menu_type == RGUI_LIBRETRO_DIR_PATH)
             {
                strlcpy(rgui->libretro_dir, dir, sizeof(rgui->libretro_dir));
                menu_init_core_info(rgui);
                menu_flush_stack_type(rgui, RGUI_SETTINGS_PATH_OPTIONS);
             }
+#ifdef HAVE_DYNAMIC
             else if (menu_type == RGUI_CONFIG_DIR_PATH)
             {
                strlcpy(g_settings.rgui_config_directory, dir, sizeof(g_settings.rgui_config_directory));
@@ -2043,8 +2043,8 @@ void menu_populate_entries(void *data, unsigned menu_type)
          file_list_push(rgui->selection_buf, "Content Directory", RGUI_BROWSER_DIR_PATH, 0);
 #ifdef HAVE_DYNAMIC
          file_list_push(rgui->selection_buf, "Config Directory", RGUI_CONFIG_DIR_PATH, 0);
-         file_list_push(rgui->selection_buf, "Core Directory", RGUI_LIBRETRO_DIR_PATH, 0);
 #endif
+         file_list_push(rgui->selection_buf, "Core Directory", RGUI_LIBRETRO_DIR_PATH, 0);
          file_list_push(rgui->selection_buf, "Core Info Directory", RGUI_LIBRETRO_INFO_DIR_PATH, 0);
 #ifdef HAVE_SHADER_MANAGER
          file_list_push(rgui->selection_buf, "Shader Directory", RGUI_SHADER_DIR_PATH, 0);
