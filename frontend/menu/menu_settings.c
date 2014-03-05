@@ -2211,7 +2211,7 @@ void menu_set_settings_label(char *type_str, size_t type_str_size, unsigned *w, 
       case RGUI_SETTINGS_BIND_MENU_TOGGLE:
          input_get_bind_string(type_str, &g_settings.input.binds[rgui->current_pad][type - RGUI_SETTINGS_BIND_BEGIN], type_str_size);
          break;
-      case RGUI_SETTINGS_AUDIO_VOLUME_LEVEL:
+      case RGUI_SETTINGS_AUDIO_DSP_EFFECT:
 #ifdef RARCH_CONSOLE
          strlcpy(type_str, (g_extern.console.sound.volume_level) ? "Loud" : "Normal", type_str_size);
          break;
