@@ -2026,11 +2026,9 @@ void menu_set_settings_label(char *type_str, size_t type_str_size, unsigned *w, 
       case RGUI_SAVESTATE_DIR_PATH:
          strlcpy(type_str, *g_extern.savestate_dir ? g_extern.savestate_dir : "<ROM dir>", type_str_size);
          break;
-#ifdef HAVE_DYNAMIC
       case RGUI_LIBRETRO_DIR_PATH:
          strlcpy(type_str, *rgui->libretro_dir ? rgui->libretro_dir : "<None>", type_str_size);
          break;
-#endif
       case RGUI_LIBRETRO_INFO_DIR_PATH:
          strlcpy(type_str, *g_settings.libretro_info_path ? g_settings.libretro_info_path : "<Core dir>", type_str_size);
          break;
