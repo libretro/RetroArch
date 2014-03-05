@@ -36,9 +36,7 @@
 
 #include "../xdk/xdk_resources.h"
 
-#if defined(_XBOX1)
-unsigned font_x, font_y;
-#elif defined(_XBOX360)
+#if defined(_XBOX360)
 
 const DWORD g_MapLinearToSrgbGpuFormat[] = 
 {
@@ -196,11 +194,6 @@ static void xdk_d3d_set_viewport(void *data, int x, int y, unsigned width, unsig
    viewport.MinZ   = 0.0f;
    viewport.MaxZ   = 1.0f;
    RD3DDevice_SetViewport(d3d->dev, &viewport);
-
-#ifdef _XBOX1
-   font_x = viewport.X;
-   font_y = viewport.Y;
-#endif
 }
 
 static void xdk_d3d_calculate_rect(void *data, unsigned width, unsigned height,
@@ -519,10 +512,7 @@ static void *xdk_d3d_init(const video_info_t *video, const input_driver_t **inpu
    if (input && input_data)
       d3d->ctx_driver->input_driver(input, input_data);
 
-#if defined(_XBOX1)
-   font_x = 0;
-   font_y = 0;
-#elif defined(_XBOX360)
+#if defined(_XBOX360)
    strlcpy(g_settings.video.font_path, "game:\\media\\Arial_12.xpr", sizeof(g_settings.video.font_path));
 #endif
    d3d->font_ctx = d3d_font_init_first(d3d, g_settings.video.font_path, 0 /* font size - fixed/unused */);
