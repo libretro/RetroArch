@@ -599,6 +599,7 @@ static void d3d_viewport_info(void *data, struct rarch_viewport *vp)
 static bool d3d_read_viewport(void *data, uint8_t *buffer)
 {
    D3DVideo *d3d = reinterpret_cast<D3DVideo*>(data);
+   LPDIRECT3DDEVICE d3dr = d3d->dev;
 
    RARCH_PERFORMANCE_INIT(d3d_read_viewport);
    RARCH_PERFORMANCE_START(d3d_read_viewport);
@@ -606,13 +607,13 @@ static bool d3d_read_viewport(void *data, uint8_t *buffer)
    LPDIRECT3DSURFACE target = NULL;
    LPDIRECT3DSURFACE dest   = NULL;
 
-   if (FAILED(d3d->d3d_err = d3d->dev->GetRenderTarget(0, &target)))
+   if (FAILED(d3d->d3d_err = d3dr->GetRenderTarget(0, &target)))
    {
       ret = false;
       goto end;
    }
 
-   if (FAILED(d3d->d3d_err = d3d->dev->CreateOffscreenPlainSurface(d3d->screen_width,
+   if (FAILED(d3d->d3d_err = d3dr->CreateOffscreenPlainSurface(d3d->screen_width,
         d3d->screen_height,
         D3DFMT_X8R8G8B8, D3DPOOL_SYSTEMMEM,
         &dest, NULL)))
@@ -621,7 +622,7 @@ static bool d3d_read_viewport(void *data, uint8_t *buffer)
       goto end;
    }
 
-   if (FAILED(d3d->d3d_err = d3d->dev->GetRenderTargetData(target, dest)))
+   if (FAILED(d3d->d3d_err = d3dr->GetRenderTargetData(target, dest)))
    {
       ret = false;
       goto end;

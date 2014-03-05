@@ -37,12 +37,9 @@ extern bool d3d_restore(void *data);
 
 static void d3d_resize(unsigned new_width, unsigned new_height)
 {
-#ifdef _XBOX
-   D3DVideo *d3d = reinterpret_cast<D3DVideo*>(driver.video_data);
-#else
    D3DVideo *d3d = reinterpret_cast<D3DVideo*>(curD3D);
-#endif
-   if (!d3d->dev)
+   LPDIRECT3DDEVICE d3dr = d3d->dev;
+   if (!d3dr)
       return;
 
    RARCH_LOG("[D3D]: Resize %ux%u.\n", new_width, new_height);
@@ -106,7 +103,8 @@ bool d3d_process_shader(void *data)
 static void gfx_ctx_d3d_swap_buffers(void)
 {
    D3DVideo *d3d = reinterpret_cast<D3DVideo*>(driver.video_data);
-   if (d3d->dev->Present(NULL, NULL, NULL, NULL) != D3D_OK)
+   LPDIRECT3DDEVICE d3dr = d3d->dev;
+   if (d3dr->Present(NULL, NULL, NULL, NULL) != D3D_OK)
    {
       d3d->needs_restore = true;
       RARCH_ERR("[D3D]: Present() failed.\n");
@@ -319,6 +317,7 @@ bool d3d_init_multipass(void *data)
 bool d3d_init_chain(void *data, const video_info_t *video_info)
 {
    D3DVideo *d3d = reinterpret_cast<D3DVideo*>(data);
+   LPDIRECT3DDEVICE d3dr = d3d->dev;
    // Setup information for first pass.
    LinkInfo link_info = {0};
 
@@ -328,7 +327,7 @@ bool d3d_init_chain(void *data, const video_info_t *video_info)
    delete d3d->chain;
    d3d->chain = new RenderChain(
          &d3d->video_info,
-         d3d->dev, d3d->cgCtx,
+         d3dr, d3d->cgCtx,
          d3d->final_viewport);
 
    if (!d3d->chain->init(link_info,

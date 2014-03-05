@@ -88,6 +88,7 @@ void RenderChain::set_final_viewport(const D3DVIEWPORT& final_viewport)
 
 bool RenderChain::set_pass_size(unsigned pass_index, unsigned width, unsigned height)
 {
+   LPDIRECT3DDEVICE d3dr = dev;
    Pass &pass = passes[pass_index];
    if (width != pass.info.tex_w || height != pass.info.tex_h)
    {
@@ -95,17 +96,17 @@ bool RenderChain::set_pass_size(unsigned pass_index, unsigned width, unsigned he
       pass.info.tex_w = width;
       pass.info.tex_h = height;
 
-      if (FAILED(dev->CreateTexture(width, height, 1,
+      if (FAILED(d3dr->CreateTexture(width, height, 1,
          D3DUSAGE_RENDERTARGET,
          passes.back().info.pass->fbo.fp_fbo ? D3DFMT_A32B32G32R32F : D3DFMT_A8R8G8B8,
          D3DPOOL_DEFAULT,
          &pass.tex, NULL)))
          return false;
 
-      dev->SetTexture(0, pass.tex);
-      dev->SetSamplerState(0, D3DSAMP_ADDRESSU, D3DTADDRESS_BORDER);
-      dev->SetSamplerState(0, D3DSAMP_ADDRESSV, D3DTADDRESS_BORDER);
-      dev->SetTexture(0, NULL);
+      d3dr->SetTexture(0, pass.tex);
+      d3dr->SetSamplerState(0, D3DSAMP_ADDRESSU, D3DTADDRESS_BORDER);
+      d3dr->SetSamplerState(0, D3DSAMP_ADDRESSV, D3DTADDRESS_BORDER);
+      d3dr->SetTexture(0, NULL);
    }
 
    return true;
@@ -113,6 +114,7 @@ bool RenderChain::set_pass_size(unsigned pass_index, unsigned width, unsigned he
 
 bool RenderChain::add_pass(const LinkInfo &info)
 {
+   LPDIRECT3DDEVICE d3dr = dev;
    Pass pass;
    pass.info = info;
    pass.last_width = 0;
@@ -122,26 +124,26 @@ bool RenderChain::add_pass(const LinkInfo &info)
    if (!init_shader_fvf(pass))
       return false;
 
-   if (FAILED(dev->CreateVertexBuffer(
+   if (FAILED(d3dr->CreateVertexBuffer(
                4 * sizeof(Vertex),
-               dev->GetSoftwareVertexProcessing() ? D3DUSAGE_SOFTWAREPROCESSING : 0,
+               d3dr->GetSoftwareVertexProcessing() ? D3DUSAGE_SOFTWAREPROCESSING : 0,
                0,
                D3DPOOL_DEFAULT,
                &pass.vertex_buf,
                NULL)))
       return false;
 
-   if (FAILED(dev->CreateTexture(info.tex_w, info.tex_h, 1,
+   if (FAILED(d3dr->CreateTexture(info.tex_w, info.tex_h, 1,
                D3DUSAGE_RENDERTARGET,
                passes.back().info.pass->fbo.fp_fbo ? D3DFMT_A32B32G32R32F : D3DFMT_A8R8G8B8,
                D3DPOOL_DEFAULT,
                &pass.tex, NULL)))
       return false;
 
-   dev->SetTexture(0, pass.tex);
-   dev->SetSamplerState(0, D3DSAMP_ADDRESSU, D3DTADDRESS_BORDER);
-   dev->SetSamplerState(0, D3DSAMP_ADDRESSV, D3DTADDRESS_BORDER);
-   dev->SetTexture(0, NULL);
+   d3dr->SetTexture(0, pass.tex);
+   d3dr->SetSamplerState(0, D3DSAMP_ADDRESSU, D3DTADDRESS_BORDER);
+   d3dr->SetSamplerState(0, D3DSAMP_ADDRESSV, D3DTADDRESS_BORDER);
+   d3dr->SetTexture(0, NULL);
 
    passes.push_back(pass);
 
@@ -154,11 +156,12 @@ bool RenderChain::add_lut(const std::string &id,
       bool smooth)
 {
    LPDIRECT3DTEXTURE lut;
+   LPDIRECT3DDEVICE d3dr = dev;
 
    RARCH_LOG("[D3D]: Loading LUT texture: %s.\n", path.c_str());
 
    if (FAILED(D3DXCreateTextureFromFileExA(
-               dev,
+               d3dr,
                path.c_str(),
                D3DX_DEFAULT_NONPOW2,
                D3DX_DEFAULT_NONPOW2,
@@ -174,10 +177,10 @@ bool RenderChain::add_lut(const std::string &id,
                &lut)))
       return false;
 
-   dev->SetTexture(0, lut);
-   dev->SetSamplerState(0, D3DSAMP_ADDRESSU, D3DTADDRESS_BORDER);
-   dev->SetSamplerState(0, D3DSAMP_ADDRESSV, D3DTADDRESS_BORDER);
-   dev->SetTexture(0, NULL);
+   d3dr->SetTexture(0, lut);
+   d3dr->SetSamplerState(0, D3DSAMP_ADDRESSU, D3DTADDRESS_BORDER);
+   d3dr->SetSamplerState(0, D3DSAMP_ADDRESSV, D3DTADDRESS_BORDER);
+   d3dr->SetTexture(0, NULL);
 
    lut_info info = { lut, id, smooth };
    luts.push_back(info);
@@ -209,6 +212,7 @@ void RenderChain::end_render(void)
 bool RenderChain::render(const void *data,
       unsigned width, unsigned height, unsigned pitch, unsigned rotation)
 {
+   LPDIRECT3DDEVICE d3dr = dev;
    start_render();
 
    unsigned current_width = width, current_height = height;
@@ -220,7 +224,7 @@ bool RenderChain::render(const void *data,
 
    // Grab back buffer.
    LPDIRECT3DSURFACE back_buffer;
-   dev->GetRenderTarget(0, &back_buffer);
+   d3dr->GetRenderTarget(0, &back_buffer);
 
    // In-between render target passes.
    for (unsigned i = 0; i < passes.size() - 1; i++)
@@ -230,7 +234,7 @@ bool RenderChain::render(const void *data,
 
       LPDIRECT3DSURFACE target;
       to_pass.tex->GetSurfaceLevel(0, &target);
-      dev->SetRenderTarget(0, target);
+      d3dr->SetRenderTarget(0, target);
 
       convert_geometry(from_pass.info,
             out_width, out_height,
@@ -242,8 +246,8 @@ bool RenderChain::render(const void *data,
       viewport.Height = to_pass.info.tex_h;
       viewport.MinZ = 0.0f;
       viewport.MaxZ = 1.0f;
-      dev->SetViewport(&viewport);
-      dev->Clear(0, 0, D3DCLEAR_TARGET, 0, 1, 0);
+      d3dr->SetViewport(&viewport);
+      d3dr->Clear(0, 0, D3DCLEAR_TARGET, 0, 1, 0);
       
       viewport.Width = out_width;
       viewport.Height = out_height;
@@ -262,7 +266,7 @@ bool RenderChain::render(const void *data,
    }
 
    // Final pass
-   dev->SetRenderTarget(0, back_buffer);
+   d3dr->SetRenderTarget(0, back_buffer);
    Pass &last_pass = passes.back();
 
    convert_geometry(last_pass.info,
@@ -303,8 +307,9 @@ bool RenderChain::create_first_pass(const LinkInfo &info, PixelFormat fmt)
 {
    D3DXMATRIX ident;
    D3DXMatrixIdentity(&ident);
-   dev->SetTransform(D3DTS_WORLD, &ident);
-   dev->SetTransform(D3DTS_VIEW, &ident);
+   LPDIRECT3DDEVICE d3dr = dev;
+   d3dr->SetTransform(D3DTS_WORLD, &ident);
+   d3dr->SetTransform(D3DTS_VIEW, &ident);
 
    Pass pass;
    pass.info = info;
@@ -317,9 +322,9 @@ bool RenderChain::create_first_pass(const LinkInfo &info, PixelFormat fmt)
       prev.last_width[i] = 0;
       prev.last_height[i] = 0;
 
-      if (FAILED(dev->CreateVertexBuffer(
+      if (FAILED(d3dr->CreateVertexBuffer(
                   4 * sizeof(Vertex),
-                  dev->GetSoftwareVertexProcessing() ? D3DUSAGE_SOFTWAREPROCESSING : 0,
+                  d3dr->GetSoftwareVertexProcessing() ? D3DUSAGE_SOFTWAREPROCESSING : 0,
                   0,
                   D3DPOOL_DEFAULT,
                   &prev.vertex_buf[i],
@@ -328,7 +333,7 @@ bool RenderChain::create_first_pass(const LinkInfo &info, PixelFormat fmt)
          return false;
       }
 
-      if (FAILED(dev->CreateTexture(info.tex_w, info.tex_h, 1, 0,
+      if (FAILED(d3dr->CreateTexture(info.tex_w, info.tex_h, 1, 0,
                   fmt == RGB565 ? D3DFMT_R5G6B5 : D3DFMT_X8R8G8B8,
                   D3DPOOL_MANAGED,
                   &prev.tex[i], NULL)))
@@ -336,14 +341,14 @@ bool RenderChain::create_first_pass(const LinkInfo &info, PixelFormat fmt)
          return false;
       }
 
-      dev->SetTexture(0, prev.tex[i]);
-      dev->SetSamplerState(0, D3DSAMP_MINFILTER,
+      d3dr->SetTexture(0, prev.tex[i]);
+      d3dr->SetSamplerState(0, D3DSAMP_MINFILTER,
             translate_filter(info.pass->filter));
-      dev->SetSamplerState(0, D3DSAMP_MAGFILTER,
+      d3dr->SetSamplerState(0, D3DSAMP_MAGFILTER,
             translate_filter(info.pass->filter));
-      dev->SetSamplerState(0, D3DSAMP_ADDRESSU, D3DTADDRESS_BORDER);
-      dev->SetSamplerState(0, D3DSAMP_ADDRESSV, D3DTADDRESS_BORDER);
-      dev->SetTexture(0, NULL);
+      d3dr->SetSamplerState(0, D3DSAMP_ADDRESSU, D3DTADDRESS_BORDER);
+      d3dr->SetSamplerState(0, D3DSAMP_ADDRESSV, D3DTADDRESS_BORDER);
+      d3dr->SetTexture(0, NULL);
    }
 
    compile_shaders(pass.fPrg, pass.vPrg, info.pass->source.cg);
@@ -424,7 +429,8 @@ void RenderChain::set_vertices(Pass &pass,
 
 void RenderChain::set_viewport(const D3DVIEWPORT &vp)
 {
-   dev->SetViewport(&vp);
+   LPDIRECT3DDEVICE d3dr = dev;
+   d3dr->SetViewport(&vp);
 }
 
 void RenderChain::set_mvp(CGprogram &vPrg,
@@ -515,16 +521,17 @@ void RenderChain::blit_to_texture(const void *frame,
 
 void RenderChain::render_pass(Pass &pass, unsigned pass_index)
 {
+   LPDIRECT3DDEVICE d3dr = dev;
    set_shaders(pass.fPrg, pass.vPrg);
-   dev->SetTexture(0, pass.tex);
-   dev->SetSamplerState(0, D3DSAMP_MINFILTER,
+   d3dr->SetTexture(0, pass.tex);
+   d3dr->SetSamplerState(0, D3DSAMP_MINFILTER,
          translate_filter(pass.info.pass->filter));
-   dev->SetSamplerState(0, D3DSAMP_MAGFILTER,
+   d3dr->SetSamplerState(0, D3DSAMP_MAGFILTER,
          translate_filter(pass.info.pass->filter));
 
-   dev->SetVertexDeclaration(pass.vertex_decl);
+   d3dr->SetVertexDeclaration(pass.vertex_decl);
    for (unsigned i = 0; i < 4; i++)
-      dev->SetStreamSource(i, pass.vertex_buf, 0, sizeof(Vertex));
+      d3dr->SetStreamSource(i, pass.vertex_buf, 0, sizeof(Vertex));
 
    bind_orig(pass);
    bind_prev(pass);
@@ -532,17 +539,17 @@ void RenderChain::render_pass(Pass &pass, unsigned pass_index)
    bind_luts(pass);
    bind_tracker(pass, pass_index);
 
-   if (SUCCEEDED(dev->BeginScene()))
+   if (SUCCEEDED(d3dr->BeginScene()))
    {
-      dev->DrawPrimitive(D3DPT_TRIANGLESTRIP, 0, 2);
-      dev->EndScene();
+      d3dr->DrawPrimitive(D3DPT_TRIANGLESTRIP, 0, 2);
+      d3dr->EndScene();
    }
 
    // So we don't render with linear filter into render targets,
    // which apparently looked odd (too blurry).
-   dev->SetSamplerState(0, D3DSAMP_MINFILTER,
+   d3dr->SetSamplerState(0, D3DSAMP_MINFILTER,
          D3DTEXF_POINT);
-   dev->SetSamplerState(0, D3DSAMP_MAGFILTER,
+   d3dr->SetSamplerState(0, D3DSAMP_MAGFILTER,
          D3DTEXF_POINT);
 
    unbind_all();
@@ -591,19 +598,20 @@ void RenderChain::log_info(const LinkInfo &info)
 
 void RenderChain::unbind_all()
 {
+   LPDIRECT3DDEVICE d3dr = dev;
    // Have to be a bit anal about it.
    // Render targets hate it when they have filters apparently.
    for (unsigned i = 0; i < bound_tex.size(); i++)
    {
-      dev->SetSamplerState(bound_tex[i], D3DSAMP_MAGFILTER,
+      d3dr->SetSamplerState(bound_tex[i], D3DSAMP_MAGFILTER,
             D3DTEXF_POINT);
-      dev->SetSamplerState(bound_tex[i], D3DSAMP_MINFILTER,
+      d3dr->SetSamplerState(bound_tex[i], D3DSAMP_MINFILTER,
             D3DTEXF_POINT);
-      dev->SetTexture(bound_tex[i], NULL);
+      d3dr->SetTexture(bound_tex[i], NULL);
    }
 
    for (unsigned i = 0; i < bound_vert.size(); i++)
-      dev->SetStreamSource(bound_vert[i], 0, 0, 0);
+      d3dr->SetStreamSource(bound_vert[i], 0, 0, 0);
 
    bound_tex.clear();
    bound_vert.clear();
