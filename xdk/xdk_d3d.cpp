@@ -673,7 +673,7 @@ static void blit_to_texture(void *data, const void *frame,
    }
 }
 
-static void set_vertices(void *d3d, unsigned pass, unsigned width, unsigned height)
+static void set_vertices(void *data, unsigned pass, unsigned width, unsigned height)
 {
    xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)data;
 
