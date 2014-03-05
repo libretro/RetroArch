@@ -861,8 +861,7 @@ static bool xdk_d3d_focus(void *data)
 
 static void xdk_d3d_set_aspect_ratio(void *data, unsigned aspect_ratio_idx)
 {
-   (void)data;
-   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
+   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)data;
 
    if (aspect_ratio_idx == ASPECT_RATIO_SQUARE)
       gfx_set_square_pixel_viewport(g_extern.system.av_info.geometry.base_width, g_extern.system.av_info.geometry.base_height);
@@ -907,7 +906,7 @@ static void xdk_d3d_set_texture_enable(void *data, bool state, bool full_screen)
 
 static void xdk_d3d_set_osd_msg(void *data, const char *msg, void *userdata)
 {
-   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
+   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)data;
    font_params_t *params = (font_params_t*)userdata;
 
    if (d3d->font_ctx && d3d->font_ctx->render_msg)
