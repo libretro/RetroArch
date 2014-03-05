@@ -626,10 +626,7 @@ extern bool menu_iterate_xui(void);
 static void xdk_d3d_draw_texture(void *data)
 {
    xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)data;
-
-#if defined(HAVE_RMENU_XUI)
-   menu_iterate_xui();
-#elif defined(HAVE_RMENU)
+#if defined(HAVE_RMENU)
    menu_texture->x = 0;
    menu_texture->y = 0;
 
@@ -791,6 +788,11 @@ static bool xdk_d3d_frame(void *data, const void *frame,
    render_pass(d3d, 1);
 
 #ifdef HAVE_MENU
+#ifdef HAVE_RMENU_XUI
+   if (g_extern.lifecycle_state & (1ULL << MODE_MENU))
+      menu_iterate_xui();
+#endif
+
    if (d3d && d3d->rgui_texture_enable)
       xdk_d3d_draw_texture(d3d);
 #endif
