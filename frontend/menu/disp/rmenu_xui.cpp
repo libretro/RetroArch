@@ -244,8 +244,8 @@ bool menu_iterate_xui(void)
    xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
    LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)d3d->d3d_render_device;
 
-   app.RunFrame(); /* Update XUI */
-
+   app.RunFrame();
+   XuiTimersRun();
    XuiRenderBegin( app.GetDC(), D3DCOLOR_ARGB( 255, 0, 0, 0 ) );
 
    D3DXMATRIX matOrigView;
@@ -259,7 +259,6 @@ bool menu_iterate_xui(void)
    XuiRenderSetViewTransform( app.GetDC(), &matOrigView );
 
    XuiRenderEnd( app.GetDC() );
-   XuiTimersRun();
    return true;
 }
 
