@@ -35,15 +35,16 @@
 rgui_handle_t *rgui;
 const menu_ctx_driver_t *menu_ctx;
 
-#ifdef HAVE_DYNAMIC
 static void menu_update_system_info(void *data, bool *load_no_rom)
 {
    rgui_handle_t *rgui = (rgui_handle_t*)data;
 
+#ifdef HAVE_DYNAMIC
    libretro_free_system_info(&rgui->info);
    if (!path_is_directory(g_settings.libretro))
    {
       libretro_get_system_info(g_settings.libretro, &rgui->info, load_no_rom);
+#endif
       // Keep track of info for the currently selected core.
       if (rgui->core_info)
       {
@@ -62,9 +63,10 @@ static void menu_update_system_info(void *data, bool *load_no_rom)
                RARCH_LOG("  Permissions: %s\n", info->permissions);
          }
       }
+#ifdef HAVE_DYNAMIC
    }
-}
 #endif
+}
 
 //forward decl
 static int menu_iterate_func(void *data, unsigned action);
@@ -369,9 +371,7 @@ static void menu_update_libretro_info(void)
    if (*rgui->libretro_dir)
       rgui->core_info = core_info_list_new(rgui->libretro_dir);
 
-#ifdef HAVE_DYNAMIC
    menu_update_system_info(rgui, NULL);
-#endif
 }
 
 void load_menu_game_prepare_dummy(void)
