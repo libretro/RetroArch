@@ -73,6 +73,7 @@ typedef struct xdk_d3d_video
    const d3d_font_renderer_t *font_ctx;
    D3DFORMAT internal_fmt;
    D3DFORMAT texture_fmt;
+   D3DVIEWPORT final_viewport;
    unsigned base_size;
    LPDIRECT3DSURFACE lpSurface;
    video_info_t video_info;

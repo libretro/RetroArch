@@ -196,7 +196,7 @@ static void xdk_d3d_set_viewport(void *data, int x, int y, unsigned width, unsig
    viewport.Y      = y;
    viewport.MinZ   = 0.0f;
    viewport.MaxZ   = 1.0f;
-   RD3DDevice_SetViewport(d3d->dev, &viewport);
+   d3d->final_viewport = viewport;
 }
 
 static void xdk_d3d_calculate_rect(void *data, unsigned width, unsigned height,
@@ -628,7 +628,9 @@ static void xdk_d3d_draw_texture(void *data)
 static void clear_texture(void *data)
 {
    xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)data;
+   LPDIRECT3DDEVICE d3dr = d3d->dev;
    D3DLOCKED_RECT d3dlr;
+
    D3DTexture_LockRect(d3d->lpTexture, 0, &d3dlr, NULL, D3DLOCK_NOSYSLOCK);
    memset(d3dlr.pBits, 0, d3d->tex_w * d3dlr.Pitch);
 }
@@ -713,7 +715,8 @@ static void set_vertices(void *data, unsigned pass, unsigned width, unsigned hei
    }
 }
 
-static void render_pass(void *data, unsigned pass_index)
+static void render_pass(void *data, const void *frame, unsigned width, unsigned height,
+                        unsigned pitch, unsigned rotation)
 {
    xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)data;
    LPDIRECT3DDEVICE d3dr = d3d->dev;
@@ -722,7 +725,11 @@ static void render_pass(void *data, unsigned pass_index)
    UINT64 pendingMask3;
 #endif
 
+   blit_to_texture(d3d, frame, width, height, pitch);
+   set_vertices(d3d, 1, width, height);
+
    RD3DDevice_SetTexture(d3dr, 0, d3d->lpTexture);
+   RD3DDevice_SetViewport(d3d->dev, &d3d->final_viewport);
    RD3DDevice_SetSamplerState_MinFilter(d3dr, 0, g_settings.video.smooth ? D3DTEXF_LINEAR : D3DTEXF_POINT);
    RD3DDevice_SetSamplerState_MagFilter(d3dr, 0, g_settings.video.smooth ? D3DTEXF_LINEAR : D3DTEXF_POINT);
    RD3DDevice_SetSamplerState_AddressU(d3dr, D3DSAMP_ADDRESSU, D3DTADDRESS_BORDER);
@@ -757,8 +764,16 @@ static bool xdk_d3d_frame(void *data, const void *frame,
       d3d->should_resize = false;
    }
 
-   blit_to_texture(d3d, frame, width, height, pitch);
-   set_vertices(d3d, 1, width, height);
+   // render_chain() only clears out viewport, clear out everything
+   D3DVIEWPORT screen_vp;
+   screen_vp.X = 0;
+   screen_vp.Y = 0;
+   screen_vp.MinZ = 0;
+   screen_vp.MaxZ = 1;
+   screen_vp.Width = d3d->screen_width;
+   screen_vp.Height = d3d->screen_height;
+   d3dr->SetViewport(&screen_vp);
+   d3dr->Clear(0, 0, D3DCLEAR_TARGET, 0, 1, 0);
 
    // Insert black frame first, so we can screenshot, etc.
    if (g_settings.video.black_frame_insertion)
@@ -767,7 +782,7 @@ static bool xdk_d3d_frame(void *data, const void *frame,
       d3dr->Clear(0, 0, D3DCLEAR_TARGET, 0, 1, 0);
    }
 
-   render_pass(d3d, 1);
+   render_pass(d3d, frame, width, height, pitch, d3d->dev_rotation);
 
 #ifdef HAVE_MENU
 #ifdef HAVE_RMENU_XUI
