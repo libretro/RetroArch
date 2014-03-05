@@ -814,8 +814,8 @@ static void xdk_d3d_set_nonblock_state(void *data, bool state)
 
    RARCH_LOG("D3D Vsync => %s\n", state ? "off" : "on");
 
-   if (d3d->ctx_driver && d3d->ctx_driver->set_swap_interval)
-      d3d->ctx_driver->set_swap_interval(state ? 0 : 1);
+   if (d3d->ctx_driver && d3d->ctx_driver->swap_interval)
+      d3d->ctx_driver->swap_interval(state ? 0 : 1);
 }
 
 static bool xdk_d3d_alive(void *data)
@@ -823,7 +823,7 @@ static bool xdk_d3d_alive(void *data)
    xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)data;
    bool quit, resize;
 
-   if (d3d->ctx_driver && d3d->ctx_driver>check_window)
+   if (d3d->ctx_driver && d3d->ctx_driver->check_window)
       d3d->ctx_driver->check_window(&quit,
             &resize, NULL, NULL, g_extern.frame_count);
 
