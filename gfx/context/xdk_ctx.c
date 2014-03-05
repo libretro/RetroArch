@@ -262,9 +262,7 @@ static void gfx_ctx_xdk_update_window_title(void)
       msg_queue_push(g_extern.msg_queue, buffer_fps, 1, 1);
    }
 
-#ifndef _XBOX
    g_extern.frame_count++;
-#endif
 }
 
 static void gfx_ctx_xdk_get_video_size(unsigned *width, unsigned *height)

@@ -828,8 +828,6 @@ static bool xdk_d3d_frame(void *data, const void *frame,
    if (d3d && d3d->ctx_driver && d3d->ctx_driver->swap_buffers)
       d3d->ctx_driver->swap_buffers();
 
-   g_extern.frame_count++;
-
    return true;
 }
 
