@@ -150,12 +150,15 @@ static void xdk_d3d_free(void *data)
 
    if (d3d->font_ctx && d3d->font_ctx->deinit)
       d3d->font_ctx->deinit(d3d);
+   d3d->font_ctx = NULL;
 
-   if (d3d->shader)
+   if (d3d->shader && d3d->shader->deinit)
       d3d->shader->deinit();
    d3d->shader = NULL;
 
-   d3d->ctx_driver->destroy();
+   if (d3d->ctx_driver && d3d->ctx_driver->destroy)
+      d3d->ctx_driver->destroy();
+   d3d->ctx_driver = NULL;
 
    free(d3d);
 }
@@ -403,7 +406,10 @@ static void *xdk_d3d_init(const video_info_t *video, const input_driver_t **inpu
             &d3dpp, &d3d->dev);
 
       if (ret != S_OK)
+      {
          RARCH_ERR("Failed at CreateDevice.\n");
+         return NULL;
+      }
       RD3DDevice_Clear(d3d->dev, 0, NULL, D3DCLEAR_TARGET, 0xff000000, 1.0f, 0);
    }
    else
@@ -807,7 +813,9 @@ static void xdk_d3d_set_nonblock_state(void *data, bool state)
    d3d->video_info.vsync = !state;
 
    RARCH_LOG("D3D Vsync => %s\n", state ? "off" : "on");
-   gfx_ctx_xdk_set_swap_interval(state ? 0 : 1);
+
+   if (d3d->ctx_driver && d3d->ctx_driver->set_swap_interval)
+      d3d->ctx_driver->set_swap_interval(state ? 0 : 1);
 }
 
 static bool xdk_d3d_alive(void *data)
@@ -815,8 +823,9 @@ static bool xdk_d3d_alive(void *data)
    xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)data;
    bool quit, resize;
 
-   d3d->ctx_driver->check_window(&quit,
-         &resize, NULL, NULL, g_extern.frame_count);
+   if (d3d->ctx_driver && d3d->ctx_driver>check_window)
+      d3d->ctx_driver->check_window(&quit,
+            &resize, NULL, NULL, g_extern.frame_count);
 
    if (quit)
       d3d->quitting = true;
