@@ -244,6 +244,15 @@ bool menu_iterate_xui(void)
    xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
    LPDIRECT3DDEVICE d3dr = d3d->dev;
 
+   D3DVIEWPORT vp_full;
+   vp_full.X = 0;
+   vp_full.Y = 0;
+   vp_full.Width = d3d->screen_width;
+   vp_full.Height = d3d->screen_height;
+   vp_full.MinZ = 0.0f;
+   vp_full.MaxZ = 1.0f;
+   d3dr->SetViewport(&vp_full);
+
    app.RunFrame();
    XuiTimersRun();
    XuiRenderBegin( app.GetDC(), D3DCOLOR_ARGB( 255, 0, 0, 0 ) );
@@ -259,6 +268,8 @@ bool menu_iterate_xui(void)
    XuiRenderSetViewTransform( app.GetDC(), &matOrigView );
 
    XuiRenderEnd( app.GetDC() );
+
+   d3dr->SetViewport(&d3d->final_viewport);
    return true;
 }
 
