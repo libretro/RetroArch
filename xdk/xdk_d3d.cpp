@@ -294,7 +294,7 @@ static void xdk_d3d_init_textures(void *data, const video_info_t *video)
 
    D3DPRESENT_PARAMETERS d3dpp;
    D3DVIEWPORT vp = {0};
-   xdk_d3d_generate_pp(&d3dpp, video);
+   d3d_make_d3dpp(d3d, video, &d3dpp);
 
    d3d->texture_fmt = video->rgb32 ? D3DFMT_LIN_X8R8G8B8 : D3DFMT_LIN_R5G6B5;
    d3d->base_size   = video->rgb32 ? sizeof(uint32_t) : sizeof(uint16_t);
@@ -368,6 +368,22 @@ static void xdk_d3d_reinit_textures(void *data, const video_info_t *video)
    }
 }
 
+static const gfx_ctx_driver_t *d3d_get_context(void *data)
+{
+   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)data;
+   enum gfx_ctx_api api;
+   unsigned major, minor;
+#if defined(_XBOX1)
+   api = GFX_CTX_DIRECT3D8_API;
+   major = 8;
+#elif defined(_XBOX360)
+   api = GFX_CTX_DIRECT3D9_API;
+   major = 9;
+#endif
+   minor = 0;
+   return d3d->ctx_driver = gfx_ctx_init_first(api, major, minor);
+}
+
 static void *xdk_d3d_init(const video_info_t *video, const input_driver_t **input, void **input_data)
 {
    HRESULT ret;
@@ -392,15 +408,16 @@ static void *xdk_d3d_init(const video_info_t *video, const input_driver_t **inpu
    d3d->tex_w = RARCH_SCALE_BASE * video->input_scale;
    d3d->tex_h = RARCH_SCALE_BASE * video->input_scale;
 
-#if defined(_XBOX1)
-   d3d->ctx_driver = gfx_ctx_init_first(GFX_CTX_DIRECT3D8_API, 8, 0);
-#elif defined(_XBOX360)
-   d3d->ctx_driver = gfx_ctx_init_first(GFX_CTX_DIRECT3D9_API, 9, 0);
-#endif
-   if (d3d->ctx_driver)
+   d3d->ctx_driver = d3d_get_context(d3d);
+   if (!d3d->ctx_driver)
+   {
+      free(d3d);
+      return NULL;
+   }
+
    {
       D3DPRESENT_PARAMETERS d3dpp;
-      xdk_d3d_generate_pp(&d3dpp, video);
+      d3d_make_d3dpp(d3d, video, &d3dpp);
 
       ret = d3d->g_pD3D->CreateDevice(0, D3DDEVTYPE_HAL, NULL, D3DCREATE_HARDWARE_VERTEXPROCESSING,
             &d3dpp, &d3d->dev);
@@ -411,11 +428,6 @@ static void *xdk_d3d_init(const video_info_t *video, const input_driver_t **inpu
          return NULL;
       }
       RD3DDevice_Clear(d3d->dev, 0, NULL, D3DCLEAR_TARGET, 0xff000000, 1.0f, 0);
-   }
-   else
-   {
-      free(d3d);
-      return NULL;
    }
 
    RARCH_LOG("Found D3D context: %s\n", d3d->ctx_driver->ident);
@@ -947,7 +959,7 @@ static void xdk_d3d_restart(void)
    video_info.input_scale = 2;
    video_info.fullscreen = true;
    video_info.rgb32 = (d3d->base_size == sizeof(uint32_t)) ? true : false;
-   xdk_d3d_generate_pp(&d3dpp, &video_info);
+   d3d_make_d3dpp(d3d, &video_info, &d3dpp);
 
    d3dr->Reset(&d3dpp);
 }

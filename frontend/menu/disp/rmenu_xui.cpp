@@ -159,7 +159,7 @@ static void* rmenu_xui_init (void)
       return NULL;
    }
 
-   xdk_d3d_video_t *device_ptr = (xdk_d3d_video_t*)driver.video_data;
+   xdk_d3d_video_t *d3d= (xdk_d3d_video_t*)driver.video_data;
 
    bool hdmenus_allowed = (g_extern.lifecycle_state & (1ULL << MODE_MENU_HD));
 
@@ -176,9 +176,9 @@ static void* rmenu_xui_init (void)
    video_info.fullscreen = true;
    video_info.rgb32 = false;
 
-   xdk_d3d_generate_pp(&d3dpp, &video_info);
+   d3d_make_d3dpp(d3d, &video_info, &d3dpp);
 
-   hr = app.InitShared(device_ptr->dev, &d3dpp, XuiPNGTextureLoader);
+   hr = app.InitShared(d3d->dev, &d3dpp, XuiPNGTextureLoader);
 
    if (hr != S_OK)
    {

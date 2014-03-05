@@ -36,19 +36,19 @@
 #define XBOX_PRESENTATIONINTERVAL D3DRS_PRESENTINTERVAL
 #endif
 
-void xdk_d3d_generate_pp(D3DPRESENT_PARAMETERS *d3dpp, const video_info_t *video)
+void d3d_make_d3dpp(void *data, const video_info_t *info, D3DPRESENT_PARAMETERS *d3dpp)
 {
-   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
+   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)data;
 
    memset(d3dpp, 0, sizeof(*d3dpp));
 
 #ifdef _XBOX
    d3dpp->Windowed = false;
 #else
-   d3dpp->Windowed = g_settings.video.windowed_fullscreen || !video->fullscreen;
+   d3dpp->Windowed = g_settings.video.windowed_fullscreen || !info->fullscreen;
 #endif
 
-   if (video->vsync)
+   if (info->vsync)
    {
       switch (g_settings.video.swap_interval)
       {
@@ -92,8 +92,8 @@ void xdk_d3d_generate_pp(D3DPRESENT_PARAMETERS *d3dpp, const video_info_t *video
    d3dpp->MultiSampleType         = D3DMULTISAMPLE_NONE;
    d3dpp->EnableAutoDepthStencil  = FALSE;
 
-   d3d->texture_fmt = video->rgb32 ? D3DFMT_X8R8G8B8 : D3DFMT_LIN_R5G6B5;
-   d3d->base_size   = video->rgb32 ? sizeof(uint32_t) : sizeof(uint16_t);
+   d3d->texture_fmt = info->rgb32 ? D3DFMT_X8R8G8B8 : D3DFMT_LIN_R5G6B5;
+   d3d->base_size   = info->rgb32 ? sizeof(uint32_t) : sizeof(uint16_t);
 
 #if defined(_XBOX1)
    // Get the "video mode"
