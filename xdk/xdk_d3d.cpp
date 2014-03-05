@@ -345,6 +345,10 @@ static void xdk_d3d_init_textures(void *data, const video_info_t *video)
    d3d->last_width = d3d->tex_w;
    d3d->last_height = d3d->tex_h;
 
+#ifdef _XBOX1
+   d3d->d3d_render_device->SetRenderState(D3DRS_LIGHTING, FALSE);
+#endif
+
    vp.Width  = d3d->win_width;
    vp.Height = d3d->win_height;
 
