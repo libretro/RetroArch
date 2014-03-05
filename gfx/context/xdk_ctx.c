@@ -85,8 +85,8 @@ void xdk_d3d_generate_pp(D3DPRESENT_PARAMETERS *d3dpp, const video_info_t *video
       if (d3d->ctx_driver && d3d->ctx_driver->get_video_size)
          d3d->ctx_driver->get_video_size(&width, &height);
 
-      d3dpp->BackBufferWidth  = d3d->win_width = width;
-      d3dpp->BackBufferHeight = d3d->win_height = height;
+      d3dpp->BackBufferWidth  = d3d->screen_width = width;
+      d3dpp->BackBufferHeight = d3d->screen_height = height;
    }
 
    d3dpp->MultiSampleType         = D3DMULTISAMPLE_NONE;

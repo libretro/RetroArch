@@ -349,8 +349,8 @@ static void xdk_d3d_init_textures(void *data, const video_info_t *video)
    d3d->dev->SetRenderState(D3DRS_LIGHTING, FALSE);
 #endif
 
-   vp.Width  = d3d->win_width;
-   vp.Height = d3d->win_height;
+   vp.Width  = d3d->screen_width;
+   vp.Height = d3d->screen_height;
 
    d3d->dev->SetRenderState(D3DRS_CULLMODE, D3DCULL_NONE);
    d3d->dev->SetRenderState(D3DRS_ZENABLE, FALSE);
@@ -511,9 +511,9 @@ static void *xdk_d3d_init(const video_info_t *video, const input_driver_t **inpu
 #endif
 
    if (d3d->ctx_driver && d3d->ctx_driver->get_video_size)
-      d3d->ctx_driver->get_video_size(&d3d->win_width, &d3d->win_height);
+      d3d->ctx_driver->get_video_size(&d3d->screen_width, &d3d->screen_height);
 
-   RARCH_LOG("Detecting screen resolution: %ux%u.\n", d3d->win_width, d3d->win_height);
+   RARCH_LOG("Detecting screen resolution: %ux%u.\n", d3d->screen_width, d3d->screen_height);
 
    if (d3d->ctx_driver && d3d->ctx_driver->swap_interval)
       d3d->ctx_driver->swap_interval(d3d->vsync ? 1 : 0);
@@ -729,8 +729,8 @@ static void set_vertices(void *data, unsigned pass, unsigned width, unsigned hei
       if (d3d->shader->use)
          d3d->shader->use(pass);
       if (d3d->shader->set_params)
-         d3d->shader->set_params(width, height, d3d->tex_w, d3d->tex_h, d3d->win_width,
-               d3d->win_height, g_extern.frame_count,
+         d3d->shader->set_params(width, height, d3d->tex_w, d3d->tex_h, d3d->screen_width,
+               d3d->screen_height, g_extern.frame_count,
                NULL, NULL, NULL, 0);
    }
 }
@@ -775,7 +775,7 @@ static bool xdk_d3d_frame(void *data, const void *frame,
       d3dr->SetFlickerFilter(g_extern.console.screen.flicker_filter_index);
       d3dr->SetSoftDisplayFilter(g_extern.lifecycle_state & (1ULL << MODE_VIDEO_SOFT_FILTER_ENABLE));
 #endif
-      xdk_d3d_calculate_rect(d3d, d3d->win_width, d3d->win_height, d3d->video_info.force_aspect, g_extern.system.aspect_ratio);
+      xdk_d3d_calculate_rect(d3d, d3d->screen_width, d3d->screen_height, d3d->video_info.force_aspect, g_extern.system.aspect_ratio);
       d3d->should_resize = false;
    }
 

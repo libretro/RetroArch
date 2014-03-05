@@ -53,8 +53,8 @@ typedef struct xdk_d3d_video
    bool vsync;
    unsigned last_width;
    unsigned last_height;
-   unsigned win_width;
-   unsigned win_height;
+   unsigned screen_width;
+   unsigned screen_height;
    unsigned tex_w, tex_h;
    LPDIRECT3D g_pD3D;
    LPDIRECT3DDEVICE dev;
