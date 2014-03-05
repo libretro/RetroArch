@@ -8,7 +8,7 @@
 <Id>XuiScene1</Id>
 <Width>824.000061</Width>
 <Height>496.000061</Height>
-<Position>80.519997,110.438545,0.000000</Position>
+<Position>226.769989,123.938545,0.000000</Position>
 <ClassOverride>RetroArchMain</ClassOverride>
 </Properties>
 <XuiText>
@@ -30,6 +30,18 @@
 <Height>367.040009</Height>
 <Position>44.880005,64.959991,0.000000</Position>
 </Properties>
+<XuiListItem>
+<Properties>
+<Id>control_ListItem</Id>
+<Width>226.000000</Width>
+<Height>45.000000</Height>
+<Position>7.000000,22.000000,0.000000</Position>
+<Anchor>5</Anchor>
+<Show>false</Show>
+<Visual>XuiButton</Visual>
+<InterItemSpacing>0.000000,10.000000,0.000000</InterItemSpacing>
+</Properties>
+</XuiListItem>
 <XuiListItem>
 <Properties>
 <Id>control_ListItem</Id>
