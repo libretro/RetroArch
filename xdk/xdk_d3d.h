@@ -57,7 +57,7 @@ typedef struct xdk_d3d_video
    unsigned win_height;
    unsigned tex_w, tex_h;
    LPDIRECT3D d3d_device;
-   LPDIRECT3DDEVICE d3d_render_device;
+   LPDIRECT3DDEVICE dev;
    LPDIRECT3DVERTEXBUFFER vertex_buf;
    LPDIRECT3DTEXTURE lpTexture;
 #ifdef HAVE_D3D9

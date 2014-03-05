@@ -122,7 +122,7 @@ static HRESULT xdk360_video_font_create_shaders (xdk360_video_font_t * font)
          };
 
          xdk_d3d_video_t *vid = (xdk_d3d_video_t*)driver.video_data;
-         LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)vid->d3d_render_device;
+         LPDIRECT3DDEVICE d3dr = vid->dev;
 
          hr = d3dr->CreateVertexDeclaration( decl, &s_FontLocals.m_pFontVertexDecl );
 
@@ -273,7 +273,7 @@ void xdk_render_msg_post(xdk360_video_font_t * font)
 {
    // Cache the global pointer into a register
    xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
-   LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)d3d->d3d_render_device;
+   LPDIRECT3DDEVICE d3dr = d3d->dev;
 
    d3dr->SetTexture(0, NULL);
    d3dr->SetVertexDeclaration(NULL);
@@ -285,7 +285,7 @@ void xdk_render_msg_post(xdk360_video_font_t * font)
 static void xdk_render_msg_pre(xdk360_video_font_t * font)
 {
    xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
-   LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)d3d->d3d_render_device;
+   LPDIRECT3DDEVICE d3dr = d3d->dev;
 
    // Save state
    d3dr->GetRenderState( D3DRS_VIEWPORTENABLE, &font->m_dwSavedState );
@@ -318,7 +318,7 @@ static void xdk_video_font_draw_text(xdk360_video_font_t *font,
       float x, float y, const wchar_t * strText)
 {
    xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
-   LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)d3d->d3d_render_device;
+   LPDIRECT3DDEVICE d3dr = d3d->dev;
 
    // Set the color as a vertex shader constant
    float vColor[4];

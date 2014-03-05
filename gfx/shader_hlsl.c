@@ -351,9 +351,9 @@ static bool hlsl_init(const char *path)
    for(unsigned i = 1; i <= cg_shader->passes; i++)
       set_program_attributes(i);
 
-   d3d_device_ptr = d3d->d3d_render_device;
-   d3d->d3d_render_device->SetVertexShader(prg[1].vprg);
-   d3d->d3d_render_device->SetPixelShader(prg[1].fprg);
+   d3d_device_ptr = d3d->dev;
+   d3d->dev->SetVertexShader(prg[1].vprg);
+   d3d->dev->SetPixelShader(prg[1].fprg);
 
    hlsl_active = true;
    return true;

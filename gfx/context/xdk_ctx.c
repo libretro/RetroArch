@@ -143,7 +143,7 @@ static void gfx_ctx_xdk_set_swap_interval(unsigned interval)
 {
 #ifdef _XBOX
    xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
-   LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)d3d->d3d_render_device;
+   LPDIRECT3DDEVICE d3dr = d3d->dev;
 
    if (interval)
       d3dr->SetRenderState(XBOX_PRESENTATIONINTERVAL, D3DPRESENT_INTERVAL_ONE);
@@ -214,7 +214,7 @@ static void gfx_ctx_xdk_set_resize(unsigned width, unsigned height)
 static void gfx_ctx_xdk_swap_buffers(void)
 {
    xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
-   LPDIRECT3DDEVICE d3dr = d3d->d3d_render_device;
+   LPDIRECT3DDEVICE d3dr = d3d->dev;
 
 #ifdef _XBOX
    RD3DDevice_Present(d3dr);
@@ -390,9 +390,9 @@ static void gfx_ctx_xdk_destroy(void)
 {
    xdk_d3d_video_t * d3d = (xdk_d3d_video_t*)driver.video_data;
 
-   if (d3d->d3d_render_device)
-      d3d->d3d_render_device->Release();
-   d3d->d3d_render_device = 0;
+   if (d3d->dev)
+      d3d->dev->Release();
+   d3d->dev = 0;
 
    if (d3d->d3d_device)
       d3d->d3d_device->Release();

@@ -37,7 +37,7 @@ bool screenshot_dump(const char *folder, const void *frame,
    snprintf(filename, sizeof(filename), "%s\\%s", g_settings.screenshot_directory, shotname);
    
    D3DSurface *surf = NULL;
-   d3d->d3d_render_device->GetBackBuffer(-1, D3DBACKBUFFER_TYPE_MONO, &surf);
+   d3d->dev->GetBackBuffer(-1, D3DBACKBUFFER_TYPE_MONO, &surf);
    ret = XGWriteSurfaceToFile(surf, filename);
    surf->Release();
 

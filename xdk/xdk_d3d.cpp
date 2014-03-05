@@ -195,7 +195,7 @@ static void xdk_d3d_set_viewport(void *data, int x, int y, unsigned width, unsig
    viewport.Y      = y;
    viewport.MinZ   = 0.0f;
    viewport.MaxZ   = 1.0f;
-   RD3DDevice_SetViewport(d3d->d3d_render_device, &viewport);
+   RD3DDevice_SetViewport(d3d->dev, &viewport);
 
 #ifdef _XBOX1
    font_x = viewport.X;
@@ -207,7 +207,7 @@ static void xdk_d3d_calculate_rect(void *data, unsigned width, unsigned height,
    bool keep, float desired_aspect)
 {
    xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
-   LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)d3d->d3d_render_device;
+   LPDIRECT3DDEVICE d3dr = d3d->dev;
 
    RD3DDevice_Clear(d3dr, 0, NULL, D3DCLEAR_TARGET, 0xff000000, 1.0f, 0);
 
@@ -325,7 +325,7 @@ static void xdk_d3d_init_textures(void *data, const video_info_t *video)
       d3d->lpTexture = NULL;
    }
 
-   ret = d3d->d3d_render_device->CreateTexture(d3d->tex_w, d3d->tex_h, 1, 0, d3d->texture_fmt,
+   ret = d3d->dev->CreateTexture(d3d->tex_w, d3d->tex_h, 1, 0, d3d->texture_fmt,
          0, &d3d->lpTexture
 #ifdef _XBOX360
          , NULL
@@ -346,18 +346,18 @@ static void xdk_d3d_init_textures(void *data, const video_info_t *video)
    d3d->last_height = d3d->tex_h;
 
 #ifdef _XBOX1
-   d3d->d3d_render_device->SetRenderState(D3DRS_LIGHTING, FALSE);
+   d3d->dev->SetRenderState(D3DRS_LIGHTING, FALSE);
 #endif
 
    vp.Width  = d3d->win_width;
    vp.Height = d3d->win_height;
 
-   d3d->d3d_render_device->SetRenderState(D3DRS_CULLMODE, D3DCULL_NONE);
-   d3d->d3d_render_device->SetRenderState(D3DRS_ZENABLE, FALSE);
+   d3d->dev->SetRenderState(D3DRS_CULLMODE, D3DCULL_NONE);
+   d3d->dev->SetRenderState(D3DRS_ZENABLE, FALSE);
 
    vp.MinZ   = 0.0f;
    vp.MaxZ   = 1.0f;
-   RD3DDevice_SetViewport(d3d->d3d_render_device, &vp);
+   RD3DDevice_SetViewport(d3d->dev, &vp);
 
    if (g_extern.console.screen.viewports.custom_vp.width == 0)
       g_extern.console.screen.viewports.custom_vp.width = vp.Width;
@@ -423,11 +423,11 @@ static void *xdk_d3d_init(const video_info_t *video, const input_driver_t **inpu
       xdk_d3d_generate_pp(&d3dpp, video);
 
       ret = d3d->d3d_device->CreateDevice(0, D3DDEVTYPE_HAL, NULL, D3DCREATE_HARDWARE_VERTEXPROCESSING,
-            &d3dpp, &d3d->d3d_render_device);
+            &d3dpp, &d3d->dev);
 
       if (ret != S_OK)
          RARCH_ERR("Failed at CreateDevice.\n");
-      RD3DDevice_Clear(d3d->d3d_render_device, 0, NULL, D3DCLEAR_TARGET, 0xff000000, 1.0f, 0);
+      RD3DDevice_Clear(d3d->dev, 0, NULL, D3DCLEAR_TARGET, 0xff000000, 1.0f, 0);
    }
    else
    {
@@ -444,14 +444,14 @@ static void *xdk_d3d_init(const video_info_t *video, const input_driver_t **inpu
    D3DXMATRIX mat;
    D3DXMatrixOrthoOffCenterLH(&mat, 0,  d3d->win_width ,  d3d->win_height , 0, 0.0f, 1.0f);
 
-   d3d->d3d_render_device->SetTransform(D3DTS_PROJECTION, &mat);
+   d3d->dev->SetTransform(D3DTS_PROJECTION, &mat);
 
    // use an identity matrix for the world and view matrices
    D3DXMatrixIdentity(&mat);
-   d3d->d3d_render_device->SetTransform(D3DTS_WORLD, &mat);
-   d3d->d3d_render_device->SetTransform(D3DTS_VIEW, &mat);
+   d3d->dev->SetTransform(D3DTS_WORLD, &mat);
+   d3d->dev->SetTransform(D3DTS_VIEW, &mat);
 
-   ret = d3d->d3d_render_device->CreateVertexBuffer(4 * sizeof(DrawVerticeFormats), 
+   ret = d3d->dev->CreateVertexBuffer(4 * sizeof(DrawVerticeFormats), 
          D3DUSAGE_WRITEONLY, D3DFVF_CUSTOMVERTEX, D3DPOOL_MANAGED, &d3d->vertex_buf);
 
    if (ret != S_OK)
@@ -474,7 +474,7 @@ static void *xdk_d3d_init(const video_info_t *video, const input_driver_t **inpu
 
    RD3DDevice_SetVertexShader(d3d->d3d_render_device, D3DFVF_XYZ | D3DFVF_TEX1);
 #elif defined(_XBOX360)
-   ret = d3d->d3d_render_device->CreateVertexBuffer(4 * sizeof(DrawVerticeFormats), 
+   ret = d3d->dev->CreateVertexBuffer(4 * sizeof(DrawVerticeFormats), 
          0, 0, 0, &d3d->vertex_buf, NULL);
 
    if (ret != S_OK)
@@ -502,7 +502,7 @@ static void *xdk_d3d_init(const video_info_t *video, const input_driver_t **inpu
       D3DDECL_END()
    };
 
-   ret = d3d->d3d_render_device->CreateVertexDeclaration(VertexElements, &d3d->v_decl);
+   ret = d3d->dev->CreateVertexDeclaration(VertexElements, &d3d->v_decl);
 
    if (ret != S_OK)
    {
@@ -590,19 +590,19 @@ static bool texture_image_render(struct texture_image *out_img,
 
    RD3DVertexBuffer_Unlock(out_img->vertex_buf);
 
-   d3d->d3d_render_device->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE);
-   d3d->d3d_render_device->SetRenderState(D3DRS_SRCBLEND,  D3DBLEND_SRCALPHA);
-   d3d->d3d_render_device->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
+   d3d->dev->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE);
+   d3d->dev->SetRenderState(D3DRS_SRCBLEND,  D3DBLEND_SRCALPHA);
+   d3d->dev->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
 
    // also blend the texture with the set alpha value
-   d3d->d3d_render_device->SetTextureStageState(0, D3DTSS_ALPHAOP, D3DTOP_MODULATE);
-   d3d->d3d_render_device->SetTextureStageState(0, D3DTSS_ALPHAARG1, D3DTA_DIFFUSE);
-   d3d->d3d_render_device->SetTextureStageState(0, D3DTSS_ALPHAARG2, D3DTA_TEXTURE);
+   d3d->dev->SetTextureStageState(0, D3DTSS_ALPHAOP, D3DTOP_MODULATE);
+   d3d->dev->SetTextureStageState(0, D3DTSS_ALPHAARG1, D3DTA_DIFFUSE);
+   d3d->dev->SetTextureStageState(0, D3DTSS_ALPHAARG2, D3DTA_TEXTURE);
 
    // draw the quad
-   RD3DDevice_SetTexture(d3d->d3d_render_device, 0, out_img->pixels);
-   IDirect3DDevice8_SetStreamSource(d3d->d3d_render_device, 0, out_img->vertex_buf, sizeof(DrawVerticeFormats));
-   RD3DDevice_SetVertexShader(d3d->d3d_render_device, D3DFVF_CUSTOMVERTEX);
+   RD3DDevice_SetTexture(d3d->dev, 0, out_img->pixels);
+   IDirect3DDevice8_SetStreamSource(d3d->dev, 0, out_img->vertex_buf, sizeof(DrawVerticeFormats));
+   RD3DDevice_SetVertexShader(d3d->dev, D3DFVF_CUSTOMVERTEX);
 
    if (force_fullscreen)
    {
@@ -636,12 +636,12 @@ static void xdk_d3d_draw_texture(void *data)
 
    if (d3d->rgui_texture_enable)
    {
-      d3d->d3d_render_device->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_ONE);
-      d3d->d3d_render_device->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
-      d3d->d3d_render_device->SetRenderState(D3DRS_ALPHABLENDENABLE, true);
+      d3d->dev->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_ONE);
+      d3d->dev->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
+      d3d->dev->SetRenderState(D3DRS_ALPHABLENDENABLE, true);
       texture_image_render(menu_texture, menu_texture->x, menu_texture->y,
          d3d->win_width, d3d->win_height, true);
-      d3d->d3d_render_device->SetRenderState(D3DRS_ALPHABLENDENABLE, false);
+      d3d->dev->SetRenderState(D3DRS_ALPHABLENDENABLE, false);
    }
 #endif
 }
@@ -738,7 +738,7 @@ static void set_vertices(void *data, unsigned pass, unsigned width, unsigned hei
 static void render_pass(void *data, unsigned pass_index)
 {
    xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)data;
-   LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)d3d->d3d_render_device;
+   LPDIRECT3DDEVICE d3dr = d3d->dev;
 #ifndef _XBOX1
    DWORD fetchConstant;
    UINT64 pendingMask3;
@@ -764,7 +764,7 @@ static bool xdk_d3d_frame(void *data, const void *frame,
       unsigned width, unsigned height, unsigned pitch, const char *msg)
 {
    xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)data;
-   LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)d3d->d3d_render_device;
+   LPDIRECT3DDEVICE d3dr = d3d->dev;
 
    if (!frame)
       return true;
@@ -937,7 +937,7 @@ static void d3d_get_poke_interface(void *data, const video_poke_interface_t **if
 static void xdk_d3d_restart(void)
 {
    xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
-   LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)d3d->d3d_render_device;
+   LPDIRECT3DDEVICE d3dr = d3d->dev;
 
    if (!d3d)
       return;

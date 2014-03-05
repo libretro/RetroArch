@@ -26,7 +26,7 @@ bool texture_image_load(const char *path, struct texture_image *out_img)
    out_img->pixels      = NULL;
    out_img->vertex_buf  = NULL;
 
-   HRESULT ret = D3DXCreateTextureFromFileExA(d3d->d3d_render_device,
+   HRESULT ret = D3DXCreateTextureFromFileExA(d3d->dev,
          path, D3DX_DEFAULT, D3DX_DEFAULT, D3DX_DEFAULT, 0, D3DFMT_A8R8G8B8,
          D3DPOOL_MANAGED, D3DX_DEFAULT, D3DX_DEFAULT, 0, &m_imageInfo, NULL,
          &out_img->pixels);
@@ -38,7 +38,7 @@ bool texture_image_load(const char *path, struct texture_image *out_img)
    }
 
    // create a vertex buffer for the quad that will display the texture
-   ret = d3d->d3d_render_device->CreateVertexBuffer(4 * sizeof(DrawVerticeFormats),
+   ret = d3d->dev->CreateVertexBuffer(4 * sizeof(DrawVerticeFormats),
          D3DUSAGE_WRITEONLY, D3DFVF_CUSTOMVERTEX, D3DPOOL_MANAGED, &out_img->vertex_buf);
 
    if (FAILED(ret))

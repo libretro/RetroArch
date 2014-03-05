@@ -178,7 +178,7 @@ static void* rmenu_xui_init (void)
 
    xdk_d3d_generate_pp(&d3dpp, &video_info);
 
-   hr = app.InitShared(device_ptr->d3d_render_device, &d3dpp, XuiPNGTextureLoader);
+   hr = app.InitShared(device_ptr->dev, &d3dpp, XuiPNGTextureLoader);
 
    if (hr != S_OK)
    {
@@ -242,7 +242,7 @@ static void rmenu_xui_free(void *data)
 bool menu_iterate_xui(void)
 {
    xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
-   LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)d3d->d3d_render_device;
+   LPDIRECT3DDEVICE d3dr = d3d->dev;
 
    app.RunFrame();
    XuiTimersRun();
