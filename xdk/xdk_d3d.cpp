@@ -245,35 +245,19 @@ static void xdk_d3d_calculate_rect(void *data, unsigned width, unsigned height,
    }
 }
 
-static void xdk_d3d_set_rotation(void *data, unsigned orientation)
+static void xdk_d3d_set_rotation(void *data, unsigned rot)
 {
    (void)data;
    xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)data;
-   FLOAT angle = 0;
-
-   switch(orientation)
-   {
-      case ORIENTATION_NORMAL:
-         angle = M_PI * 0 / 180;
-         break;
-      case ORIENTATION_FLIPPED_ROTATED:
-         angle = M_PI * 90 / 180;
-         break;
-      case ORIENTATION_FLIPPED:
-         angle = M_PI * 180 / 180;
-         break;
-      case ORIENTATION_VERTICAL:
-         angle = M_PI * 270 / 180;
-         break;
-   }
+   d3d->dev_rotation = rot;
 
 #if defined(HAVE_HLSL)
    /* TODO: Move to D3DXMATRIX here */
-   hlsl_set_proj_matrix(XMMatrixRotationZ(angle));
+   hlsl_set_proj_matrix(XMMatrixRotationZ(d3d->dev_rotation * (M_PI / 2.0)));
 #elif defined(_XBOX1)
    D3DXMATRIX p_out, p_rotate;
    D3DXMatrixIdentity(&p_out);
-   D3DXMatrixRotationZ(&p_rotate, angle);
+   D3DXMatrixRotationZ(&p_rotate, d3d->dev_rotation * (M_PI / 2.0));
 
    RD3DDevice_SetTransform(d3d->d3d_render_device, D3DTS_WORLD, &p_rotate);
    RD3DDevice_SetTransform(d3d->d3d_render_device, D3DTS_VIEW, &p_out);
@@ -442,7 +426,7 @@ static void *xdk_d3d_init(const video_info_t *video, const input_driver_t **inpu
 #if defined(_XBOX1)
    // use an orthogonal matrix for the projection matrix
    D3DXMATRIX mat;
-   D3DXMatrixOrthoOffCenterLH(&mat, 0,  d3d->win_width ,  d3d->win_height , 0, 0.0f, 1.0f);
+   D3DXMatrixOrthoOffCenterLH(&mat, 0,  d3d->screen_width ,  d3d->screen_height , 0, 0.0f, 1.0f);
 
    d3d->dev->SetTransform(D3DTS_PROJECTION, &mat);
 
@@ -534,8 +518,6 @@ static void *xdk_d3d_init(const video_info_t *video, const input_driver_t **inpu
 
    if (input && input_data)
       d3d->ctx_driver->input_driver(input, input_data);
-
-   xdk_d3d_set_rotation(d3d, g_settings.video.rotation);
 
 #if defined(_XBOX1)
    font_x = 0;
@@ -640,7 +622,7 @@ static void xdk_d3d_draw_texture(void *data)
       d3d->dev->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
       d3d->dev->SetRenderState(D3DRS_ALPHABLENDENABLE, true);
       texture_image_render(menu_texture, menu_texture->x, menu_texture->y,
-         d3d->win_width, d3d->win_height, true);
+         d3d->screen_width, d3d->screen_height, true);
       d3d->dev->SetRenderState(D3DRS_ALPHABLENDENABLE, false);
    }
 #endif

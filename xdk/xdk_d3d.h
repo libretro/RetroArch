@@ -55,6 +55,7 @@ typedef struct xdk_d3d_video
    unsigned last_height;
    unsigned screen_width;
    unsigned screen_height;
+   unsigned dev_rotation;
    unsigned tex_w, tex_h;
    LPDIRECT3D g_pD3D;
    LPDIRECT3DDEVICE dev;
