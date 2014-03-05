@@ -360,12 +360,6 @@ static void xdk_d3d_init_textures(void *data, const video_info_t *video)
    d3d->last_width = d3d->tex_w;
    d3d->last_height = d3d->tex_h;
 
-#if defined(_XBOX1)
-   d3d->d3d_render_device->SetRenderState(D3DRS_LIGHTING, FALSE);
-#elif defined(_XBOX360)
-   RD3DDevice_Clear(d3d->d3d_render_device, 0, NULL, D3DCLEAR_TARGET,
-         0xff000000, 1.0f, 0);
-#endif
    vp.Width  = d3d->win_width;
    vp.Height = d3d->win_height;
 
