@@ -18,7 +18,11 @@ The original Lima driver suffers from a similar problem as the blob, since it ca
 
 [lima-drm repository](https://github.com/tobiasjakobi/lima-drm)
 
-The Lima video driver for RetroArch only works with this version. Proceed with the usual steps to install limare from the repository onto your system. After that compile RetroArch against the resulting limare library.
+The Lima video driver for RetroArch only works with this version. Proceed with the usual steps to install limare from the repository onto your system. Make sure that you have a recent version of [libdrm](http://cgit.freedesktop.org/mesa/drm/) installed on your system, and that Exynos API support is enabled in libdrm. If you're compiling libdrm from source, then use
+
+    ./configure --enable-exynos-experimental-api
+
+to enable the Exynos API. After finishing the limare build, compile RetroArch against the resulting limare library (*liblimare.so*). I usually just skip the make install step and manually place the library and header (which is *limare.h*) in *$HOME/local/lib/* and *$HOME/local/include/* respectively (this requires adjustements for *LD_LIBRARY_PATH* and *CFLAGS*).
 
 The video driver name is 'lima'. It honors the following video settings:
 
@@ -35,3 +39,4 @@ The driver still suffers from some issues.
 
    - The aspect ratio is wrong. The dimensions of the emulator framebuffer on the screen are not computed correctly at the moment.
    - Limare should be able to handle a custom pitch, when uploading texture pixel data. This would save some memcpy for emulator cores which don't provide the framebuffer with full pitch (snes9x-next for example).
+   - Font rendering is kinda inefficient, since the whole font texture is invalidated each frame. It would be better to introduce something like an invalidated rectangle, which tracks the region which needs to be updated.
