@@ -434,7 +434,7 @@ static void *xdk_d3d_init(const video_info_t *video, const input_driver_t **inpu
          RARCH_ERR("Failed at CreateDevice.\n");
          return NULL;
       }
-      RD3DDevice_Clear(d3d->dev, 0, NULL, D3DCLEAR_TARGET, 0xff000000, 1.0f, 0);
+      d3d->dev->Clear(0, NULL, D3DCLEAR_TARGET, 0xff000000, 1.0f, 0);
    }
 
    RARCH_LOG("Found D3D context: %s\n", d3d->ctx_driver->ident);
@@ -473,12 +473,12 @@ static void *xdk_d3d_init(const video_info_t *video, const input_driver_t **inpu
    void *verts_ptr;
 #endif
 
-   RD3DVertexBuffer_Lock(d3d->vertex_buf, 0, 0, &verts_ptr, 0);
+   d3d->vertex_buf->Lock(0, 0, &verts_ptr, 0);
    memcpy(verts_ptr, init_verts, sizeof(init_verts));
-   RD3DVertexBuffer_Unlock(d3d->vertex_buf);
+   d3d->vertex_buf->Unlock();
 
 #if defined(_XBOX1)
-   RD3DDevice_SetVertexShader(d3d->d3d_render_device, D3DFVF_XYZ | D3DFVF_TEX1);
+   d3d->dev->SetVertexShader(D3DFVF_XYZ | D3DFVF_TEX1);
 #elif defined(_XBOX360)
    static const D3DVERTEXELEMENT VertexElements[] =
    {
@@ -537,6 +537,7 @@ static bool texture_image_render(struct texture_image *out_img,
                           int x, int y, int w, int h, bool force_fullscreen)
 {
    xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
+   LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)d3d->dev;
 
    if (out_img->pixels == NULL || out_img->vertex_buf == NULL)
       return false;
@@ -567,8 +568,7 @@ static bool texture_image_render(struct texture_image *out_img,
 
    // copy the new verts over the old verts
    memcpy(pCurVerts, newVerts, 4 * sizeof(DrawVerticeFormats));
-
-   RD3DVertexBuffer_Unlock(out_img->vertex_buf);
+   out_img->vertex_buf->Unlock();
 
    d3d->dev->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE);
    d3d->dev->SetRenderState(D3DRS_SRCBLEND,  D3DBLEND_SRCALPHA);
@@ -580,9 +580,9 @@ static bool texture_image_render(struct texture_image *out_img,
    d3d->dev->SetTextureStageState(0, D3DTSS_ALPHAARG2, D3DTA_TEXTURE);
 
    // draw the quad
-   RD3DDevice_SetTexture(d3d->dev, 0, out_img->pixels);
-   IDirect3DDevice8_SetStreamSource(d3d->dev, 0, out_img->vertex_buf, sizeof(DrawVerticeFormats));
-   RD3DDevice_SetVertexShader(d3d->dev, D3DFVF_CUSTOMVERTEX);
+   d3dr->SetTexture(0, out_img->pixels);
+   d3dr->SetStreamSource(0, out_img->vertex_buf, sizeof(DrawVerticeFormats));
+   d3dr->SetVertexShader(D3DFVF_CUSTOMVERTEX);
 
    if (force_fullscreen)
    {
@@ -593,9 +593,9 @@ static bool texture_image_render(struct texture_image *out_img,
       vp.Y      = 0;
       vp.MinZ   = 0.0f;
       vp.MaxZ   = 1.0f;
-      RD3DDevice_SetViewport(d3dr, &vp);
+      d3dr->SetViewport(&vp);
    }
-   RD3DDevice_DrawPrimitive(d3d->d3d_render_device, D3DPT_QUADLIST, 0, 1);
+   d3dr->DrawPrimitive(D3DPT_QUADLIST, 0, 1);
 
    return true;
 }
