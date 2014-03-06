@@ -357,35 +357,6 @@
     <ClCompile Include="..\..\griffin\griffin.c" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\360\menu.h" />
-    <ClInclude Include="..\..\360\msvc_compat.h" />
-    <ClInclude Include="..\..\360\xdk360_audio.h" />
-    <ClInclude Include="..\..\audio\utils.h" />
-    <ClInclude Include="..\..\autosave.h" />
-    <ClInclude Include="..\..\boolean.h" />
-    <ClInclude Include="..\..\bps.h" />
-    <ClInclude Include="..\..\cheats.h" />
-    <ClInclude Include="..\..\compat\getopt_rarch.h" />
-    <ClInclude Include="..\..\compat\posix_string.h" />
-    <ClInclude Include="..\..\compat\strl.h" />
-    <ClInclude Include="..\..\config.def.h" />
-    <ClInclude Include="..\..\config.features.h" />
-    <ClInclude Include="..\..\conf\config_file.h" />
-    <ClInclude Include="..\..\driver.h" />
-    <ClInclude Include="..\..\dynamic.h" />
-    <ClInclude Include="..\..\fifo_buffer.h" />
-    <ClInclude Include="..\..\file.h" />
-    <ClInclude Include="..\..\general.h" />
-    <ClInclude Include="..\..\libretro.hpp" />
-    <ClInclude Include="..\..\message_queue.h" />
-    <ClInclude Include="..\..\netplay.h" />
-    <ClInclude Include="..\..\rewind.h" />
-    <ClInclude Include="..\..\screenshot.h" />
-    <ClInclude Include="..\..\sha256.h" />
-    <ClInclude Include="..\..\thread.h" />
-    <ClInclude Include="..\..\ups.h" />
-  </ItemGroup>
-  <ItemGroup>
     <CustomBuild Include="..\..\media\360\rarch.ttf">
       <FileType>Document</FileType>
       <Command Condition="'$(Configuration)|$(Platform)'=='Release|Xbox 360'">copy %(FullPath) $(OutDir)media\rarch.ttf</Command>

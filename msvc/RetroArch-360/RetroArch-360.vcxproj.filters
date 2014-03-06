@@ -1,28 +1,12 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <Filter Include="Header Files">
-      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
-      <Extensions>h;hpp;hxx;hm;inl;inc;xsd</Extensions>
-    </Filter>
-    <Filter Include="Header Files\360">
-      <UniqueIdentifier>{740056e8-6476-4e8c-b9cb-767bebdb5c60}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Header Files\audio">
-      <UniqueIdentifier>{747ac5fa-bd8a-4e60-9246-7a8fb0d38b85}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Source Files">
       <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
       <Extensions>cpp;c;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
     </Filter>
-    <Filter Include="Header Files\conf">
-      <UniqueIdentifier>{755ce6db-d242-40fb-9c8b-c14154fc94e1}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Source Files\media">
       <UniqueIdentifier>{b7d54b1f-ffda-45f9-8175-7bf67010253d}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Header Files\compat">
-      <UniqueIdentifier>{cf25b88e-c7b2-4823-876a-ed0dd8020821}</UniqueIdentifier>
     </Filter>
     <Filter Include="Source Files\media\sd">
       <UniqueIdentifier>{d50021e0-79f4-42c0-b190-1c31fa4fe2b2}</UniqueIdentifier>
@@ -35,89 +19,6 @@
     <ClCompile Include="..\..\griffin\griffin.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="..\..\ups.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\autosave.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\boolean.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\bps.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\cheats.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\config.def.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\config.features.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\driver.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\dynamic.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\fifo_buffer.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\file.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\general.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\message_queue.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\netplay.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\rewind.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\screenshot.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\sha256.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\thread.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\360\xdk360_audio.h">
-      <Filter>Header Files\360</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\360\msvc_compat.h">
-      <Filter>Header Files\360</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\audio\utils.h">
-      <Filter>Header Files\audio</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\conf\config_file.h">
-      <Filter>Header Files\conf</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\360\menu.h">
-      <Filter>Header Files\360</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\compat\strl.h">
-      <Filter>Header Files\compat</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\compat\posix_string.h">
-      <Filter>Header Files\compat</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\compat\getopt_rarch.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\libretro.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="..\..\media\360\Arial_12.rdf">
