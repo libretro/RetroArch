@@ -1882,6 +1882,8 @@ void menu_populate_entries(void *data, unsigned menu_type)
 #endif
 #ifdef HW_RVL
          file_list_push(rgui->selection_buf, "VI Trap filtering", RGUI_SETTINGS_VIDEO_SOFT_FILTER, 0);
+#endif
+#if defined(HW_RVL) || defined(_XBOX360)
          file_list_push(rgui->selection_buf, "Gamma", RGUI_SETTINGS_VIDEO_GAMMA, 0);
 #endif
 #ifdef _XBOX1
