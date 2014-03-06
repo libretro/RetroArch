@@ -462,7 +462,9 @@ void menu_free(void)
    if (menu_ctx && menu_ctx->free)
       menu_ctx->free(rgui);
 
+#ifdef HAVE_DYNAMIC
    libretro_free_system_info(&rgui->info);
+#endif
 
    file_list_free(rgui->menu_stack);
    file_list_free(rgui->selection_buf);
