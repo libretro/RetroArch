@@ -309,11 +309,7 @@ static unsigned aspect_ratio_idx = ASPECT_RATIO_CONFIG; // Use g_settings.video.
 #endif
 
 // Save configuration file on exit
-#if defined(RARCH_CONSOLE) || defined(RARCH_MOBILE)
 static bool config_save_on_exit = true;
-#else
-static bool config_save_on_exit = false;
-#endif
 
 #ifdef HAVE_OVERLAY
 // Default overlay directory
