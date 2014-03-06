@@ -648,12 +648,19 @@ static void blit_to_texture(void *data, const void *frame,
    D3DLOCKED_RECT d3dlr;
    D3DTexture_LockRect(d3d->lpTexture, 0, &d3dlr, NULL, D3DLOCK_NOSYSLOCK);
 
+#if defined(_XBOX360)
+   D3DSURFACE_DESC desc;
+   d3d->lpTexture->GetLevelDesc(0, &desc);
+      XGCopySurface(d3dlr.pBits, d3dlr.Pitch, width, height, desc.Format, NULL, frame,
+                                        pitch, desc.Format, NULL, 0, 0);
+#elif defined(_XBOX1)
    for (unsigned y = 0; y < height; y++)
    {
       const uint8_t *in = (const uint8_t*)frame + y * pitch;
       uint8_t *out = (uint8_t*)d3dlr.pBits + y * d3dlr.Pitch;
       memcpy(out, in, width * d3d->base_size);
    }
+#endif
 }
 
 static void set_vertices(void *data, unsigned pass, unsigned width, unsigned height)
