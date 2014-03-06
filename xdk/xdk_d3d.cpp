@@ -455,11 +455,6 @@ static void *xdk_d3d_init(const video_info_t *video, const input_driver_t **inpu
    };
 
    BYTE *verts_ptr;
-   RD3DVertexBuffer_Lock(d3d->vertex_buf, 0, 0, &verts_ptr, 0);
-   memcpy(verts_ptr, init_verts, sizeof(init_verts));
-   RD3DVertexBuffer_Unlock(d3d->vertex_buf);
-
-   RD3DDevice_SetVertexShader(d3d->d3d_render_device, D3DFVF_XYZ | D3DFVF_TEX1);
 #elif defined(_XBOX360)
    static const DrawVerticeFormats init_verts[] = {
       { -1.0f, -1.0f, 0.0f, 1.0f },
@@ -469,10 +464,15 @@ static void *xdk_d3d_init(const video_info_t *video, const input_driver_t **inpu
    };
 
    void *verts_ptr;
+#endif
+
    RD3DVertexBuffer_Lock(d3d->vertex_buf, 0, 0, &verts_ptr, 0);
    memcpy(verts_ptr, init_verts, sizeof(init_verts));
    RD3DVertexBuffer_Unlock(d3d->vertex_buf);
 
+#if defined(_XBOX1)
+   RD3DDevice_SetVertexShader(d3d->d3d_render_device, D3DFVF_XYZ | D3DFVF_TEX1);
+#elif defined(_XBOX360)
    static const D3DVERTEXELEMENT VertexElements[] =
    {
       { 0, 0 * sizeof(float), D3DDECLTYPE_FLOAT2, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_POSITION, 0 },
