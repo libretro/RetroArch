@@ -247,11 +247,11 @@ static void xdk_d3d_set_rotation(void *data, unsigned rot)
    xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)data;
    d3d->dev_rotation = rot;
 
-#if defined(HAVE_HLSL)
-   /* TODO: Move to D3DXMATRIX here */
+#if defined(_XBOX360) && defined(HAVE_HLSL)
    hlsl_set_proj_matrix(XMMatrixRotationZ(d3d->dev_rotation * (M_PI / 2.0)));
 #elif defined(_XBOX1)
-   D3DXMATRIX p_out, p_rotate;
+   D3DXMATRIX p_out, p_rotate, mat;
+   D3DXMatrixOrthoOffCenterLH(&mat, 0,  d3d->screen_width ,  d3d->screen_height , 0, 0.0f, 1.0f);
    D3DXMatrixIdentity(&p_out);
    D3DXMatrixRotationZ(&p_rotate, d3d->dev_rotation * (M_PI / 2.0));
 
@@ -434,27 +434,19 @@ static void *xdk_d3d_init(const video_info_t *video, const input_driver_t **inpu
 
    xdk_d3d_init_textures(d3d, video);
 
-#if defined(_XBOX1)
-   // use an orthogonal matrix for the projection matrix
-   D3DXMATRIX mat;
-   D3DXMatrixOrthoOffCenterLH(&mat, 0,  d3d->screen_width ,  d3d->screen_height , 0, 0.0f, 1.0f);
-
-   d3d->dev->SetTransform(D3DTS_PROJECTION, &mat);
-
-   // use an identity matrix for the world and view matrices
-   D3DXMatrixIdentity(&mat);
-   d3d->dev->SetTransform(D3DTS_WORLD, &mat);
-   d3d->dev->SetTransform(D3DTS_VIEW, &mat);
-
    ret = d3d->dev->CreateVertexBuffer(4 * sizeof(DrawVerticeFormats), 
-         D3DUSAGE_WRITEONLY, D3DFVF_CUSTOMVERTEX, D3DPOOL_MANAGED, &d3d->vertex_buf);
+         D3DUSAGE_WRITEONLY, D3DFVF_CUSTOMVERTEX, D3DPOOL_MANAGED, &d3d->vertex_buf
+#ifdef _XBOX360
+         ,NULL
+#endif
+         );
 
    if (ret != S_OK)
    {
       RARCH_ERR("[xdk_d3d_init::] Failed at CreateVertexBuffer.\n");
       return NULL;
    }
-
+#if defined(_XBOX1)
    const DrawVerticeFormats init_verts[] = {
       { -1.0f, -1.0f, 1.0f, 0.0f, 1.0f },
       {  1.0f, -1.0f, 1.0f, 1.0f, 1.0f },
@@ -469,15 +461,6 @@ static void *xdk_d3d_init(const video_info_t *video, const input_driver_t **inpu
 
    RD3DDevice_SetVertexShader(d3d->d3d_render_device, D3DFVF_XYZ | D3DFVF_TEX1);
 #elif defined(_XBOX360)
-   ret = d3d->dev->CreateVertexBuffer(4 * sizeof(DrawVerticeFormats), 
-         0, 0, 0, &d3d->vertex_buf, NULL);
-
-   if (ret != S_OK)
-   {
-      RARCH_ERR("[xdk_d3d_init::] Failed at CreateVertexBuffer.\n");
-      return NULL;
-   }
-
    static const DrawVerticeFormats init_verts[] = {
       { -1.0f, -1.0f, 0.0f, 1.0f },
       {  1.0f, -1.0f, 1.0f, 1.0f },
