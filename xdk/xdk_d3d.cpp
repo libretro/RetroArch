@@ -736,16 +736,15 @@ static void render_pass(void *data, const void *frame, unsigned width, unsigned 
    DWORD fetchConstant;
    UINT64 pendingMask3;
 #endif
-
+#ifdef _XBOX1
+   d3dr->SetFlickerFilter(g_extern.console.screen.flicker_filter_index);
+   d3dr->SetSoftDisplayFilter(g_extern.lifecycle_state & (1ULL << MODE_VIDEO_SOFT_FILTER_ENABLE));
+#endif
    blit_to_texture(d3d, frame, width, height, pitch);
    set_vertices(d3d, 1, width, height);
 
    RD3DDevice_SetTexture(d3dr, 0, d3d->lpTexture);
    RD3DDevice_SetViewport(d3d->dev, &d3d->final_viewport);
-#ifdef _XBOX1
-   d3dr->SetFlickerFilter(g_extern.console.screen.flicker_filter_index);
-   d3dr->SetSoftDisplayFilter(g_extern.lifecycle_state & (1ULL << MODE_VIDEO_SOFT_FILTER_ENABLE));
-#endif
    RD3DDevice_SetSamplerState_MinFilter(d3dr, 0, g_settings.video.smooth ? D3DTEXF_LINEAR : D3DTEXF_POINT);
    RD3DDevice_SetSamplerState_MagFilter(d3dr, 0, g_settings.video.smooth ? D3DTEXF_LINEAR : D3DTEXF_POINT);
    RD3DDevice_SetSamplerState_AddressU(d3dr, D3DSAMP_ADDRESSU, D3DTADDRESS_BORDER);
