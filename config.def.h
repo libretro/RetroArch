@@ -361,7 +361,7 @@ static const char *default_libretro_info_path = "/data/data/com.retroarch/info/"
 #elif defined(__QNX__)
 static const char *default_libretro_info_path = "/app/native/info/";
 #elif defined(_XBOX360)
-static const char *default_libretro_info_path = "game:\\";
+static const char *default_libretro_info_path = "game:";
 #else
 static const char *default_libretro_info_path = NULL;
 #endif
@@ -371,7 +371,7 @@ static const char *default_libretro_path = "/data/data/com.retroarch/cores/";
 #elif defined(__QNX__)
 static const char *default_libretro_path = "/app/native/lib/";
 #elif defined(_XBOX360)
-static const char *default_libretro_path = "game:\\";
+static const char *default_libretro_path = "game:";
 #else
 static const char *default_libretro_path = NULL;
 #endif
