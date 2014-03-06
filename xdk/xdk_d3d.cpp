@@ -742,6 +742,10 @@ static void render_pass(void *data, const void *frame, unsigned width, unsigned 
 
    RD3DDevice_SetTexture(d3dr, 0, d3d->lpTexture);
    RD3DDevice_SetViewport(d3d->dev, &d3d->final_viewport);
+#ifdef _XBOX1
+   d3dr->SetFlickerFilter(g_extern.console.screen.flicker_filter_index);
+   d3dr->SetSoftDisplayFilter(g_extern.lifecycle_state & (1ULL << MODE_VIDEO_SOFT_FILTER_ENABLE));
+#endif
    RD3DDevice_SetSamplerState_MinFilter(d3dr, 0, g_settings.video.smooth ? D3DTEXF_LINEAR : D3DTEXF_POINT);
    RD3DDevice_SetSamplerState_MagFilter(d3dr, 0, g_settings.video.smooth ? D3DTEXF_LINEAR : D3DTEXF_POINT);
    RD3DDevice_SetSamplerState_AddressU(d3dr, D3DSAMP_ADDRESSU, D3DTADDRESS_BORDER);
@@ -768,10 +772,6 @@ static bool xdk_d3d_frame(void *data, const void *frame,
 
    if (d3d->should_resize)
    {
-#ifdef _XBOX1
-      d3dr->SetFlickerFilter(g_extern.console.screen.flicker_filter_index);
-      d3dr->SetSoftDisplayFilter(g_extern.lifecycle_state & (1ULL << MODE_VIDEO_SOFT_FILTER_ENABLE));
-#endif
       xdk_d3d_calculate_rect(d3d, d3d->screen_width, d3d->screen_height, d3d->video_info.force_aspect, g_extern.system.aspect_ratio);
       d3d->should_resize = false;
    }
