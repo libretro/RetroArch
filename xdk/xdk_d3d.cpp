@@ -246,18 +246,25 @@ static void xdk_d3d_set_rotation(void *data, unsigned rot)
    (void)data;
    xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)data;
    d3d->dev_rotation = rot;
+}
 
+static void set_mvp(void *data, unsigned vp_width, unsigned vp_height, unsigned rotation)
+{
+   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)data;
+   LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)d3d->dev;
 #if defined(_XBOX360) && defined(HAVE_HLSL)
-   hlsl_set_proj_matrix(XMMatrixRotationZ(d3d->dev_rotation * (M_PI / 2.0)));
+   hlsl_set_proj_matrix(XMMatrixRotationZ(rotation * (M_PI / 2.0)));
+   if (d3d->shader->set_mvp)
+      d3d->shader->set_mvp(NULL);
 #elif defined(_XBOX1)
    D3DXMATRIX p_out, p_rotate, mat;
-   D3DXMatrixOrthoOffCenterLH(&mat, 0,  d3d->screen_width ,  d3d->screen_height , 0, 0.0f, 1.0f);
+   D3DXMatrixOrthoOffCenterLH(&mat, 0, vp_width,  vp_height, 0, 0.0f, 1.0f);
    D3DXMatrixIdentity(&p_out);
-   D3DXMatrixRotationZ(&p_rotate, d3d->dev_rotation * (M_PI / 2.0));
+   D3DXMatrixRotationZ(&p_rotate, rotation * (M_PI / 2.0));
 
-   RD3DDevice_SetTransform(d3d->d3d_render_device, D3DTS_WORLD, &p_rotate);
-   RD3DDevice_SetTransform(d3d->d3d_render_device, D3DTS_VIEW, &p_out);
-   RD3DDevice_SetTransform(d3d->d3d_render_device, D3DTS_PROJECTION, &p_out);
+   RD3DDevice_SetTransform(d3dr, D3DTS_WORLD, &p_rotate);
+   RD3DDevice_SetTransform(d3dr, D3DTS_VIEW, &p_out);
+   RD3DDevice_SetTransform(d3dr, D3DTS_PROJECTION, &p_out);
 #endif
 }
 
@@ -699,8 +706,7 @@ static void set_vertices(void *data, unsigned pass, unsigned width, unsigned hei
 
    if (d3d->shader)
    {
-      if (d3d->shader->set_mvp)
-         d3d->shader->set_mvp(NULL);
+      set_mvp(d3d, d3d->screen_width, d3d->screen_height, d3d->dev_rotation);
       if (d3d->shader->use)
          d3d->shader->use(pass);
       if (d3d->shader->set_params)
@@ -748,6 +754,10 @@ static void render_pass(void *data, const void *frame, unsigned width, unsigned 
    D3DDevice_SetStreamSource_Inline(d3dr, 0, d3d->vertex_buf, 0, sizeof(DrawVerticeFormats));
 #endif
    RD3DDevice_DrawPrimitive(d3dr, D3DPT_TRIANGLESTRIP, 0, 2);
+
+   g_extern.frame_count++;
+
+   set_mvp(d3d, d3d->screen_width, d3d->screen_height, d3d->dev_rotation);
 }
 
 static bool xdk_d3d_frame(void *data, const void *frame,
