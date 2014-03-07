@@ -126,7 +126,7 @@ static void gfx_ctx_d3d_update_title(void)
    {
 #ifndef _XBOX
       std::string title = buffer;
-      title += " || Direct3D9";
+      title += " || Direct3D";
       SetWindowText(d3d->hWnd, title.c_str());
 #endif
    }

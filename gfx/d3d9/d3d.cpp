@@ -494,7 +494,7 @@ static bool d3d_frame(void *data, const void *frame,
       font_parms.y = msg_height;
       font_parms.scale = 21;
 #endif
-      d3d->font_ctx->render_msg(d3d, msg, &font_params);
+      d3d->font_ctx->render_msg(d3d, msg, &font_parms);
    }
 
 #ifdef HAVE_MENU
@@ -1135,6 +1135,7 @@ static const gfx_ctx_driver_t *d3d_get_context(void)
    api = GFX_CTX_DIRECT3D9_API;
    major = 9;
 #endif
+   minor = 0;
    return gfx_ctx_init_first(api, major, minor);
 }
 
