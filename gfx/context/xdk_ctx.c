@@ -265,7 +265,7 @@ static void gfx_ctx_d3d_update_window_title(void)
 
 static void gfx_ctx_d3d_get_video_size(unsigned *width, unsigned *height)
 {
-#ifndef _XBOX
+#ifdef _XBOX
    (void)width;
    (void)height;
 #if defined(_XBOX360)

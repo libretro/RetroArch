@@ -386,7 +386,7 @@ static const gfx_ctx_driver_t *d3d_get_context(void *data)
    major = 9;
 #endif
    minor = 0;
-   return d3d->ctx_driver = gfx_ctx_init_first(api, major, minor);
+   return gfx_ctx_init_first(api, major, minor);
 }
 
 static bool d3d_init_base(void *data, const video_info_t *info)
