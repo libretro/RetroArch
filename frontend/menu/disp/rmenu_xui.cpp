@@ -159,7 +159,7 @@ static void* rmenu_xui_init(void *video_data)
       return NULL;
    }
 
-   xdk_d3d_video_t *d3d= (xdk_d3d_video_t*)video_data;
+   d3d_video_t *d3d= (d3d_video_t*)video_data;
 
    bool hdmenus_allowed = (g_extern.lifecycle_state & (1ULL << MODE_MENU_HD));
 
@@ -241,8 +241,8 @@ static void rmenu_xui_free(void *data)
 
 bool menu_iterate_xui(void)
 {
-   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
-   LPDIRECT3DDEVICE d3dr = d3d->dev;
+   d3d_video_t *d3d = (d3d_video_t*)driver.video_data;
+   LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)d3d->dev;
 
    D3DVIEWPORT vp_full;
    vp_full.X = 0;

@@ -48,7 +48,7 @@ typedef struct DrawVerticeFormats
 
 typedef struct gl_shader_backend gl_shader_backend_t;
 
-typedef struct xdk_d3d_video
+typedef struct d3d_video
 {
    const gfx_ctx_driver_t *ctx_driver;
    const gl_shader_backend_t *shader;
@@ -82,7 +82,7 @@ typedef struct xdk_d3d_video
    LPDIRECT3DSURFACE lpSurface;
    video_info_t video_info;
    HRESULT d3d_err;
-} xdk_d3d_video_t;
+} d3d_video_t;
 
 extern void d3d_make_d3dpp(void *data, const video_info_t *info, D3DPRESENT_PARAMETERS *d3dpp);
 extern bool texture_image_render(struct texture_image *out_img);

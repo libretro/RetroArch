@@ -108,7 +108,7 @@ static Font_Locals_t s_FontLocals;
 static HRESULT xdk360_video_font_create_shaders (void *data, xdk360_video_font_t * font)
 {
    HRESULT hr;
-   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)data;
+   d3d_video_t *d3d = (d3d_video_t*)data;
    LPDIRECT3DDEVICE d3dr = d3d->dev;
 
    if (!s_FontLocals.m_pFontVertexDecl)
@@ -183,7 +183,7 @@ static bool xdk_init_font(void *data, const char *font_path, unsigned font_size)
 
    // Create the font
    xdk360_video_font_t *font = &m_Font;
-   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)data;
+   d3d_video_t *d3d = (d3d_video_t*)data;
 
    font->m_pFontTexture = NULL;
    font->m_dwNumGlyphs = 0L;
@@ -272,7 +272,7 @@ static void xdk_deinit_font(void *data)
 static void xdk_render_msg_post(xdk360_video_font_t * font, void *video_data)
 {
    // Cache the global pointer into a register
-   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)video_data;
+   d3d_video_t *d3d = (d3d_video_t*)video_data;
    LPDIRECT3DDEVICE d3dr = d3d->dev;
 
    d3dr->SetTexture(0, NULL);
@@ -284,7 +284,7 @@ static void xdk_render_msg_post(xdk360_video_font_t * font, void *video_data)
 
 static void xdk_render_msg_pre(xdk360_video_font_t * font, void *video_data)
 {
-   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)video_data;
+   d3d_video_t *d3d = (d3d_video_t*)video_data;
    LPDIRECT3DDEVICE d3dr = d3d->dev;
 
    // Save state
@@ -317,7 +317,7 @@ static void xdk_render_msg_pre(xdk360_video_font_t * font, void *video_data)
 static void xdk_video_font_draw_text(xdk360_video_font_t *font, void *video_data,
       float x, float y, const wchar_t * strText)
 {
-   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)video_data;
+   d3d_video_t *d3d = (d3d_video_t*)video_data;
    LPDIRECT3DDEVICE d3dr = d3d->dev;
 
    // Set the color as a vertex shader constant
@@ -437,7 +437,7 @@ static void xdk_video_font_draw_text(xdk360_video_font_t *font, void *video_data
 
 static void xdk_render_msg(void *data, const char *str_msg, void *parms)
 {
-   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)data;
+   d3d_video_t *d3d = (d3d_video_t*)data;
    xdk360_video_font_t *font = &m_Font;
    font_params_t *params = (font_params_t*)parms;
    wchar_t msg[PATH_MAX];

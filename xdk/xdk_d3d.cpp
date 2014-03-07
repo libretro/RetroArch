@@ -20,7 +20,7 @@
 #endif
 
 #include "../driver.h"
-#include "xdk_d3d.h"
+#include "d3d.h"
 
 #ifdef HAVE_HLSL
 #include "../gfx/shader_hlsl.h"
@@ -109,7 +109,7 @@ const DWORD g_MapLinearToSrgbGpuFormat[] =
 
 static bool d3d_init_shader(void *data)
 {
-   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)data;
+   d3d_video_t *d3d = (d3d_video_t*)data;
    const gl_shader_backend_t *backend = NULL;
 
    const char *shader_path = g_settings.video.shader_path;
@@ -136,14 +136,14 @@ static bool d3d_init_shader(void *data)
    return d3d->shader->init(d3d, shader_path);
 }
 
-static void xdk_d3d_free(void *data)
+static void d3d_free(void *data)
 {
 #ifdef RARCH_CONSOLE
    if (driver.video_data)
       return;
 #endif
 
-   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)data;
+   d3d_video_t *d3d = (d3d_video_t*)data;
 
    if (!d3d)
       return;
@@ -179,9 +179,9 @@ static void xdk_convert_texture_to_as16_srgb( D3DTexture *pTexture )
 }
 #endif
 
-static void xdk_d3d_set_viewport(void *data, int x, int y, unsigned width, unsigned height)
+static void d3d_set_viewport(void *data, int x, int y, unsigned width, unsigned height)
 {
-   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)data;
+   d3d_video_t *d3d = (d3d_video_t*)data;
    D3DVIEWPORT viewport;
 
    // D3D doesn't support negative X/Y viewports ...
@@ -202,53 +202,53 @@ static void xdk_d3d_set_viewport(void *data, int x, int y, unsigned width, unsig
 static void d3d_calculate_rect(void *data, unsigned width, unsigned height,
    bool keep, float desired_aspect)
 {
-   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)data;
+   d3d_video_t *d3d = (d3d_video_t*)data;
    LPDIRECT3DDEVICE d3dr = d3d->dev;
 
    if (g_settings.video.scale_integer)
    {
       struct rarch_viewport vp = {0};
       gfx_scale_integer(&vp, width, height, desired_aspect, keep);
-      xdk_d3d_set_viewport(d3d, vp.x, vp.y, vp.width, vp.height);
+      d3d_set_viewport(d3d, vp.x, vp.y, vp.width, vp.height);
    }
    else if (!keep)
-      xdk_d3d_set_viewport(d3d, 0, 0, width, height);
+      d3d_set_viewport(d3d, 0, 0, width, height);
    else
    {
       if (g_settings.video.aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
       {
          const rarch_viewport_t &custom = g_extern.console.screen.viewports.custom_vp;
-         xdk_d3d_set_viewport(d3d, custom.x, custom.y, custom.width, custom.height);
+         d3d_set_viewport(d3d, custom.x, custom.y, custom.width, custom.height);
       }
       else
       {
          float device_aspect = static_cast<float>(width) / static_cast<float>(height);
          if (fabsf(device_aspect - desired_aspect) < 0.0001f)
-            xdk_d3d_set_viewport(d3d, 0, 0, width, height);
+            d3d_set_viewport(d3d, 0, 0, width, height);
          else if (device_aspect > desired_aspect)
          {
             float delta = (desired_aspect / device_aspect - 1.0f) / 2.0f + 0.5f;
-            xdk_d3d_set_viewport(d3d, int(roundf(width * (0.5f - delta))), 0, unsigned(roundf(2.0f * width * delta)), height);
+            d3d_set_viewport(d3d, int(roundf(width * (0.5f - delta))), 0, unsigned(roundf(2.0f * width * delta)), height);
          }
          else
          {
             float delta = (device_aspect / desired_aspect - 1.0f) / 2.0f + 0.5f;
-            xdk_d3d_set_viewport(d3d, 0, int(roundf(height * (0.5f - delta))), width, unsigned(roundf(2.0f * height * delta)));
+            d3d_set_viewport(d3d, 0, int(roundf(height * (0.5f - delta))), width, unsigned(roundf(2.0f * height * delta)));
          }
       }
    }
 }
 
-static void xdk_d3d_set_rotation(void *data, unsigned rot)
+static void d3d_set_rotation(void *data, unsigned rot)
 {
    (void)data;
-   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)data;
+   d3d_video_t *d3d = (d3d_video_t*)data;
    d3d->dev_rotation = rot;
 }
 
 static void set_mvp(void *data, unsigned vp_width, unsigned vp_height, unsigned rotation)
 {
-   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)data;
+   d3d_video_t *d3d = (d3d_video_t*)data;
    LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)d3d->dev;
 #if defined(_XBOX360) && defined(HAVE_HLSL)
    hlsl_set_proj_matrix(XMMatrixRotationZ(rotation * (M_PI / 2.0)));
@@ -266,10 +266,10 @@ static void set_mvp(void *data, unsigned vp_width, unsigned vp_height, unsigned 
 #endif
 }
 
-static bool xdk_d3d_set_shader(void *data, enum rarch_shader_type type, const char *path)
+static bool d3d_set_shader(void *data, enum rarch_shader_type type, const char *path)
 {
    /* TODO - stub */
-   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)data;
+   d3d_video_t *d3d = (d3d_video_t*)data;
 
    switch (type)
    {
@@ -292,10 +292,10 @@ static bool xdk_d3d_set_shader(void *data, enum rarch_shader_type type, const ch
    return true;
 }
 
-static void xdk_d3d_init_textures(void *data, const video_info_t *video)
+static void d3d_init_textures(void *data, const video_info_t *video)
 {
    HRESULT ret;
-   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)data;
+   d3d_video_t *d3d = (d3d_video_t*)data;
 
    D3DPRESENT_PARAMETERS d3dpp;
    D3DVIEWPORT vp = {0};
@@ -319,7 +319,7 @@ static void xdk_d3d_init_textures(void *data, const video_info_t *video)
 
    if (ret != S_OK)
    {
-      RARCH_ERR("[xdk_d3d_init_textures::] failed at CreateTexture.\n");
+      RARCH_ERR("[d3d_init_textures::] failed at CreateTexture.\n");
       return;
    }
 
@@ -351,9 +351,9 @@ static void xdk_d3d_init_textures(void *data, const video_info_t *video)
       g_extern.console.screen.viewports.custom_vp.height = vp.Height;
 }
 
-static void xdk_d3d_reinit_textures(void *data, const video_info_t *video)
+static void d3d_reinit_textures(void *data, const video_info_t *video)
 {
-   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)data;
+   d3d_video_t *d3d = (d3d_video_t*)data;
 
    unsigned old_base_size = d3d->base_size;
    unsigned old_width     = d3d->tex_w;
@@ -368,14 +368,14 @@ static void xdk_d3d_reinit_textures(void *data, const video_info_t *video)
       RARCH_LOG("Reinitializing textures (%u x %u @ %u bpp)\n", d3d->tex_w,
             d3d->tex_h, d3d->base_size * CHAR_BIT);
 
-      xdk_d3d_init_textures(d3d, video);
+      d3d_init_textures(d3d, video);
       RARCH_LOG("Reinitializing textures skipped.\n");
    }
 }
 
 static const gfx_ctx_driver_t *d3d_get_context(void *data)
 {
-   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)data;
+   d3d_video_t *d3d = (d3d_video_t*)data;
    enum gfx_ctx_api api;
    unsigned major, minor;
 #if defined(_XBOX1)
@@ -391,7 +391,7 @@ static const gfx_ctx_driver_t *d3d_get_context(void *data)
 
 static bool d3d_init_base(void *data, const video_info_t *info)
 {
-   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)data;
+   d3d_video_t *d3d = (d3d_video_t*)data;
    D3DPRESENT_PARAMETERS d3dpp;
    d3d_make_d3dpp(d3d, info, &d3dpp);
 
@@ -420,10 +420,10 @@ static bool d3d_init_base(void *data, const video_info_t *info)
 static bool d3d_init_chain(void *data, const video_info_t *info)
 {
    HRESULT ret;
-   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)data;
+   d3d_video_t *d3d = (d3d_video_t*)data;
    LPDIRECT3DDEVICE d3dr = d3d->dev;
 
-   xdk_d3d_init_textures(d3d, info);
+   d3d_init_textures(d3d, info);
 
    ret = d3d->dev->CreateVertexBuffer(4 * sizeof(DrawVerticeFormats), 
          D3DUSAGE_WRITEONLY, D3DFVF_CUSTOMVERTEX, D3DPOOL_MANAGED, &d3d->vertex_buf
@@ -434,7 +434,7 @@ static bool d3d_init_chain(void *data, const video_info_t *info)
 
    if (ret != S_OK)
    {
-      RARCH_ERR("[xdk_d3d_init::] Failed at CreateVertexBuffer.\n");
+      RARCH_ERR("[d3d_init::] Failed at CreateVertexBuffer.\n");
       return false;
    }
 #if defined(_XBOX1)
@@ -475,7 +475,7 @@ static bool d3d_init_chain(void *data, const video_info_t *info)
 
    if (ret != S_OK)
    {
-      RARCH_ERR("[xdk_d3d_init::] Failed at CreateVertexDeclaration.\n");
+      RARCH_ERR("[d3d_init::] Failed at CreateVertexDeclaration.\n");
    }
 #endif
 
@@ -484,7 +484,7 @@ static bool d3d_init_chain(void *data, const video_info_t *info)
 
 static bool d3d_initialize(void *data, const video_info_t *info)
 {
-   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)data;
+   d3d_video_t *d3d = (d3d_video_t*)data;
    bool ret = true;
 
    if (!d3d->g_pD3D)
@@ -529,7 +529,7 @@ static bool d3d_initialize(void *data, const video_info_t *info)
 static bool d3d_construct(void *data, const video_info_t *info, const input_driver_t **input,
                           void **input_data)
 {
-   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)data;
+   d3d_video_t *d3d = (d3d_video_t*)data;
    d3d->should_resize = false;
 
    unsigned full_x, full_y;
@@ -551,17 +551,17 @@ static bool d3d_construct(void *data, const video_info_t *info, const input_driv
    return true;
 }
 
-static void *xdk_d3d_init(const video_info_t *vid, const input_driver_t **input, void **input_data)
+static void *d3d_init(const video_info_t *vid, const input_driver_t **input, void **input_data)
 {
    if (driver.video_data)
    {
-      xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
+      d3d_video_t *d3d = (d3d_video_t*)driver.video_data;
       // Reinitialize textures as we might have changed pixel formats.
-      xdk_d3d_reinit_textures(d3d, vid);
+      d3d_reinit_textures(d3d, vid);
       return driver.video_data;
    }
 
-   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)calloc(1, sizeof(xdk_d3d_video_t));
+   d3d_video_t *d3d = (d3d_video_t*)calloc(1, sizeof(d3d_video_t));
    if (!d3d)
       return NULL;
 
@@ -599,7 +599,7 @@ extern struct texture_image *menu_texture;
 static bool texture_image_render(void *data, struct texture_image *out_img,
                           int x, int y, int w, int h, bool force_fullscreen)
 {
-   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)data;
+   d3d_video_t *d3d = (d3d_video_t*)data;
    LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)d3d->dev;
 
    if (out_img->pixels == NULL || out_img->vertex_buf == NULL)
@@ -670,9 +670,9 @@ static bool texture_image_render(void *data, struct texture_image *out_img,
 extern bool menu_iterate_xui(void);
 #endif
 
-static void xdk_d3d_draw_texture(void *data)
+static void d3d_draw_texture(void *data)
 {
-   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)data;
+   d3d_video_t *d3d = (d3d_video_t*)data;
 #if defined(HAVE_RMENU)
    menu_texture->x = 0;
    menu_texture->y = 0;
@@ -692,7 +692,7 @@ static void xdk_d3d_draw_texture(void *data)
 
 static void clear_texture(void *data)
 {
-   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)data;
+   d3d_video_t *d3d = (d3d_video_t*)data;
    LPDIRECT3DDEVICE d3dr = d3d->dev;
    D3DLOCKED_RECT d3dlr;
 
@@ -703,7 +703,7 @@ static void clear_texture(void *data)
 static void blit_to_texture(void *data, const void *frame,
    unsigned width, unsigned height, unsigned pitch)
 {
-   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)data;
+   d3d_video_t *d3d = (d3d_video_t*)data;
 
    if (d3d->last_width != width || d3d->last_height != height)
       clear_texture(data);
@@ -728,7 +728,7 @@ static void blit_to_texture(void *data, const void *frame,
 
 static void set_vertices(void *data, unsigned pass, unsigned width, unsigned height)
 {
-   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)data;
+   d3d_video_t *d3d = (d3d_video_t*)data;
 
    if (d3d->last_width != width || d3d->last_height != height)
    {
@@ -789,7 +789,7 @@ static void set_vertices(void *data, unsigned pass, unsigned width, unsigned hei
 static void render_pass(void *data, const void *frame, unsigned width, unsigned height,
                         unsigned pitch, unsigned rotation)
 {
-   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)data;
+   d3d_video_t *d3d = (d3d_video_t*)data;
    LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)d3d->dev;
 #ifndef _XBOX1
    DWORD fetchConstant;
@@ -830,10 +830,10 @@ static void render_pass(void *data, const void *frame, unsigned width, unsigned 
    set_mvp(d3d, d3d->screen_width, d3d->screen_height, d3d->dev_rotation);
 }
 
-static bool xdk_d3d_frame(void *data, const void *frame,
+static bool d3d_frame(void *data, const void *frame,
       unsigned width, unsigned height, unsigned pitch, const char *msg)
 {
-   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)data;
+   d3d_video_t *d3d = (d3d_video_t*)data;
    LPDIRECT3DDEVICE d3dr = d3d->dev;
 
    if (!frame)
@@ -872,7 +872,7 @@ static bool xdk_d3d_frame(void *data, const void *frame,
 #endif
 
    if (d3d && d3d->rgui_texture_enable)
-      xdk_d3d_draw_texture(d3d);
+      d3d_draw_texture(d3d);
 #endif
 
    if (d3d && d3d->ctx_driver && d3d->ctx_driver->update_window_title)
@@ -900,9 +900,9 @@ static bool xdk_d3d_frame(void *data, const void *frame,
    return true;
 }
 
-static void xdk_d3d_set_nonblock_state(void *data, bool state)
+static void d3d_set_nonblock_state(void *data, bool state)
 {
-   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)data;
+   d3d_video_t *d3d = (d3d_video_t*)data;
 
    d3d->video_info.vsync = !state;
 
@@ -912,9 +912,9 @@ static void xdk_d3d_set_nonblock_state(void *data, bool state)
       d3d->ctx_driver->swap_interval(state ? 0 : 1);
 }
 
-static bool xdk_d3d_alive(void *data)
+static bool d3d_alive(void *data)
 {
-   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)data;
+   d3d_video_t *d3d = (d3d_video_t*)data;
    bool quit, resize;
 
    if (d3d->ctx_driver && d3d->ctx_driver->check_window)
@@ -928,15 +928,15 @@ static bool xdk_d3d_alive(void *data)
    return !d3d->quitting;
 }
 
-static bool xdk_d3d_focus(void *data)
+static bool d3d_focus(void *data)
 {
-   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)data;
+   d3d_video_t *d3d = (d3d_video_t*)data;
    return d3d->ctx_driver->has_focus();
 }
 
-static void xdk_d3d_set_aspect_ratio(void *data, unsigned aspect_ratio_idx)
+static void d3d_set_aspect_ratio(void *data, unsigned aspect_ratio_idx)
 {
-   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)data;
+   d3d_video_t *d3d = (d3d_video_t*)data;
 
    if (aspect_ratio_idx == ASPECT_RATIO_SQUARE)
       gfx_set_square_pixel_viewport(g_extern.system.av_info.geometry.base_width, g_extern.system.av_info.geometry.base_height);
@@ -951,16 +951,16 @@ static void xdk_d3d_set_aspect_ratio(void *data, unsigned aspect_ratio_idx)
    d3d->should_resize = true;
 }
 
-static void xdk_d3d_set_filtering(void *data, unsigned index, bool set_smooth) { }
+static void d3d_set_filtering(void *data, unsigned index, bool set_smooth) { }
 
-static void xdk_d3d_apply_state_changes(void *data)
+static void d3d_apply_state_changes(void *data)
 {
-   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)data;
+   d3d_video_t *d3d = (d3d_video_t*)data;
    d3d->should_resize = true;
 }
 
 #ifdef HAVE_MENU
-static void xdk_d3d_set_texture_frame(void *data,
+static void d3d_set_texture_frame(void *data,
    const void *frame, bool rgb32, unsigned width, unsigned height,
    float alpha)
 {
@@ -971,17 +971,17 @@ static void xdk_d3d_set_texture_frame(void *data,
    (void)alpha;
 }
 
-static void xdk_d3d_set_texture_enable(void *data, bool state, bool full_screen)
+static void d3d_set_texture_enable(void *data, bool state, bool full_screen)
 {
-   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)data;
+   d3d_video_t *d3d = (d3d_video_t*)data;
    d3d->rgui_texture_enable = state;
    d3d->rgui_texture_full_screen = full_screen;
 }
 #endif
 
-static void xdk_d3d_set_osd_msg(void *data, const char *msg, void *userdata)
+static void d3d_set_osd_msg(void *data, const char *msg, void *userdata)
 {
-   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)data;
+   d3d_video_t *d3d = (d3d_video_t*)data;
    font_params_t *params = (font_params_t*)userdata;
 
    if (d3d->font_ctx && d3d->font_ctx->render_msg)
@@ -989,18 +989,18 @@ static void xdk_d3d_set_osd_msg(void *data, const char *msg, void *userdata)
 }
 
 static const video_poke_interface_t d3d_poke_interface = {
-   xdk_d3d_set_filtering,
+   d3d_set_filtering,
 #ifdef HAVE_FBO
    NULL,
    NULL,
 #endif
-   xdk_d3d_set_aspect_ratio,
-   xdk_d3d_apply_state_changes,
+   d3d_set_aspect_ratio,
+   d3d_apply_state_changes,
 #ifdef HAVE_MENU
-   xdk_d3d_set_texture_frame,
-   xdk_d3d_set_texture_enable,
+   d3d_set_texture_frame,
+   d3d_set_texture_enable,
 #endif
-   xdk_d3d_set_osd_msg,
+   d3d_set_osd_msg,
 };
 
 static void d3d_get_poke_interface(void *data, const video_poke_interface_t **iface)
@@ -1009,9 +1009,9 @@ static void d3d_get_poke_interface(void *data, const video_poke_interface_t **if
    *iface = &d3d_poke_interface;
 }
 
-static void xdk_d3d_restart(void)
+static void d3d_restart(void)
 {
-   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
+   d3d_video_t *d3d = (d3d_video_t*)driver.video_data;
    LPDIRECT3DDEVICE d3dr = d3d->dev;
 
    if (!d3d)
@@ -1031,17 +1031,17 @@ static void xdk_d3d_restart(void)
    d3dr->Reset(&d3dpp);
 }
 
-const video_driver_t video_xdk_d3d = {
-   xdk_d3d_init,
-   xdk_d3d_frame,
-   xdk_d3d_set_nonblock_state,
-   xdk_d3d_alive,
-   xdk_d3d_focus,
-   xdk_d3d_set_shader,
-   xdk_d3d_free,
-   "xdk_d3d",
-   xdk_d3d_restart,
-   xdk_d3d_set_rotation,
+const video_driver_t video_d3d = {
+   d3d_init,
+   d3d_frame,
+   d3d_set_nonblock_state,
+   d3d_alive,
+   d3d_focus,
+   d3d_set_shader,
+   d3d_free,
+   "d3d",
+   d3d_restart,
+   d3d_set_rotation,
    NULL, /* viewport_info */
    NULL, /* read_viewport */
 #ifdef HAVE_OVERLAY

@@ -38,7 +38,7 @@
 
 void d3d_make_d3dpp(void *data, const video_info_t *info, D3DPRESENT_PARAMETERS *d3dpp)
 {
-   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)data;
+   d3d_video_t *d3d = (d3d_video_t*)data;
 
    memset(d3dpp, 0, sizeof(*d3dpp));
 
@@ -142,7 +142,7 @@ void d3d_make_d3dpp(void *data, const video_info_t *info, D3DPRESENT_PARAMETERS 
 static void gfx_ctx_xdk_set_swap_interval(unsigned interval)
 {
 #ifdef _XBOX
-   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
+   d3d_video_t *d3d = (d3d_video_t*)driver.video_data;
    LPDIRECT3DDEVICE d3dr = d3d->dev;
 
    if (interval)
@@ -156,7 +156,7 @@ static void gfx_ctx_xdk_check_window(bool *quit,
       bool *resize, unsigned *width, unsigned *height, unsigned frame_count)
 {
 #ifdef _XBOX
-   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
+   d3d_video_t *d3d = (d3d_video_t*)driver.video_data;
    *quit = false;
    *resize = false;
 
@@ -179,7 +179,7 @@ static void gfx_ctx_xdk_check_window(bool *quit,
 static void d3d_restore(void)
 {
 #ifndef _XBOX
-   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
+   d3d_video_t *d3d = (d3d_video_t*)driver.video_data;
 
    d3d_deinit();
    d3d->needs_restore = !d3d_init(&d3d->video_info);
@@ -194,7 +194,7 @@ static void d3d_restore(void)
 static void gfx_ctx_xdk_set_resize(unsigned width, unsigned height)
 {
 #ifndef _XBOX
-   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
+   d3d_video_t *d3d = (d3d_video_t*)driver.video_data;
    LPDIRECT3DDEVICE d3dr = d3d->d3d_render_device;
 
    if (!d3dr)
@@ -213,7 +213,7 @@ static void gfx_ctx_xdk_set_resize(unsigned width, unsigned height)
 
 static void gfx_ctx_xdk_swap_buffers(void)
 {
-   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
+   d3d_video_t *d3d = (d3d_video_t*)driver.video_data;
    LPDIRECT3DDEVICE d3dr = d3d->dev;
 
 #ifdef _XBOX
@@ -374,7 +374,7 @@ static bool gfx_ctx_xdk_set_video_mode(
 
 static void gfx_ctx_xdk_destroy(void)
 {
-   xdk_d3d_video_t * d3d = (xdk_d3d_video_t*)driver.video_data;
+   d3d_video_t * d3d = (d3d_video_t*)driver.video_data;
 
    if (d3d->dev)
       d3d->dev->Release();

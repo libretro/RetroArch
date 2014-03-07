@@ -19,7 +19,7 @@
 
 bool texture_image_load(const char *path, struct texture_image *out_img)
 {
-   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
+   d3d_video_t *d3d = (d3d_video_t*)driver.video_data;
 
    D3DXIMAGE_INFO m_imageInfo;
 

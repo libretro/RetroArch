@@ -28,7 +28,7 @@ bool screenshot_dump(const char *folder, const void *frame,
    (void)pitch;
    (void)bgr24;
 
-   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
+   d3d_video_t *d3d = (d3d_video_t*)driver.video_data;
    HRESULT ret = S_OK;
    char filename[PATH_MAX];
    char shotname[PATH_MAX];

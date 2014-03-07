@@ -108,7 +108,7 @@ static void hlsl_set_params(void *data, unsigned width, unsigned height,
       const struct gl_tex_info *prev_info,
       const struct gl_tex_info *fbo_info, unsigned fbo_info_cnt)
 {
-   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)data;
+   d3d_video_t *d3d = (d3d_video_t*)data;
    LPDIRECT3DDEVICE d3d_device_ptr = (LPDIRECT3DDEVICE)d3d->dev;
    if (!hlsl_active)
       return;
@@ -139,7 +139,7 @@ static void hlsl_set_params(void *data, unsigned width, unsigned height,
 
 static bool load_program(void *data, unsigned index, const char *prog, bool path_is_file)
 {
-   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)data;
+   d3d_video_t *d3d = (d3d_video_t*)data;
    LPDIRECT3DDEVICE d3d_device_ptr = (LPDIRECT3DDEVICE)d3d->dev;
    HRESULT ret, ret_fp, ret_vp;
    ID3DXBuffer *listing_f = NULL;
@@ -337,7 +337,7 @@ static bool load_preset(void *data, const char *path)
 
 static bool hlsl_init(void *data, const char *path)
 {
-   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)data;
+   d3d_video_t *d3d = (d3d_video_t*)data;
 
    if (path && strcmp(path_get_extension(path), ".cgp") == 0)
    {
@@ -371,7 +371,7 @@ static void hlsl_deinit(void)
 
 static void hlsl_use(void *data, unsigned index)
 {
-   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)data;
+   d3d_video_t *d3d = (d3d_video_t*)data;
    LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)d3d->dev;
    if (hlsl_active && prg[index].vprg && prg[index].fprg)
    {
@@ -417,7 +417,7 @@ static void hlsl_shader_scale(unsigned index, struct gfx_fbo_scale *scale)
 
 static bool hlsl_set_mvp(void *data, const math_matrix *mat)
 {
-   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)data;
+   d3d_video_t *d3d = (d3d_video_t*)data;
    LPDIRECT3DDEVICE d3d_device_ptr = (LPDIRECT3DDEVICE)d3d->dev;
 
    if(hlsl_active && prg[active_index].mvp)
