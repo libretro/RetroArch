@@ -417,7 +417,11 @@ void d3d_make_d3dpp(void *data, const video_info_t *info, D3DPRESENT_PARAMETERS 
    d3d_video_t *d3d = (d3d_video_t*)data;
    memset(d3dpp, 0, sizeof(*d3dpp));
 
+#ifdef _XBOX
+   d3dpp->Windowed = false;
+#else
    d3dpp->Windowed = g_settings.video.windowed_fullscreen || !info->fullscreen;
+#endif
 
    if (info->vsync)
    {
@@ -436,13 +440,80 @@ void d3d_make_d3dpp(void *data, const video_info_t *info, D3DPRESENT_PARAMETERS 
    d3dpp->SwapEffect = D3DSWAPEFFECT_DISCARD;
    d3dpp->hDeviceWindow = d3d->hWnd;
    d3dpp->BackBufferCount = 2;
+#ifdef _XBOX
+   d3dpp->BackBufferFormat = 
+#ifdef _XBOX360
+      g_extern.console.screen.gamma_correction ? (D3DFORMAT)MAKESRGBFMT(info->rgb32 ? D3DFMT_X8R8G8B8 : D3DFMT_LIN_R5G6B5) :
+#endif
+      info->rgb32 ? D3DFMT_X8R8G8B8 : D3DFMT_LIN_R5G6B5;
+#else
    d3dpp->BackBufferFormat = !d3dpp->Windowed ? D3DFMT_X8R8G8B8 : D3DFMT_UNKNOWN;
+#endif
 
    if (!d3dpp->Windowed)
    {
+#ifdef _XBOX
+      unsigned width, height;
+      width = 0;
+      height = 0;
+
+      if (d3d->ctx_driver && d3d->ctx_driver->get_video_size)
+         d3d->ctx_driver->get_video_size(&width, &height);
+
+      d3dpp->BackBufferWidth  = d3d->screen_width = width;
+      d3dpp->BackBufferHeight = d3d->screen_height = height;
+#else
       d3dpp->BackBufferWidth = d3d->screen_width;
       d3dpp->BackBufferHeight = d3d->screen_height;
+#endif
    }
+
+#ifdef _XBOX
+   d3dpp->MultiSampleType         = D3DMULTISAMPLE_NONE;
+   d3dpp->EnableAutoDepthStencil  = FALSE;
+#if defined(_XBOX1)
+
+   // Get the "video mode"
+   DWORD video_mode = XGetVideoFlags();
+
+   // Check if we are able to use progressive mode
+   if (video_mode & XC_VIDEO_FLAGS_HDTV_480p)
+      d3dpp->Flags = D3DPRESENTFLAG_PROGRESSIVE;
+   else
+      d3dpp->Flags = D3DPRESENTFLAG_INTERLACED;
+
+   // Only valid in PAL mode, not valid for HDTV modes!
+   if (XGetVideoStandard() == XC_VIDEO_STANDARD_PAL_I)
+   {
+      if (video_mode & XC_VIDEO_FLAGS_PAL_60Hz)
+         d3dpp->FullScreen_RefreshRateInHz = 60;
+      else
+         d3dpp->FullScreen_RefreshRateInHz = 50;
+   }
+
+   if (XGetAVPack() == XC_AV_PACK_HDTV)
+   {
+      if (video_mode & XC_VIDEO_FLAGS_HDTV_480p)
+         d3dpp->Flags = D3DPRESENTFLAG_PROGRESSIVE;
+      else if (video_mode & XC_VIDEO_FLAGS_HDTV_720p)
+         d3dpp->Flags = D3DPRESENTFLAG_PROGRESSIVE;
+      else if (video_mode & XC_VIDEO_FLAGS_HDTV_1080i)
+         d3dpp->Flags = D3DPRESENTFLAG_INTERLACED;
+   }
+
+   if (g_extern.lifecycle_state & MODE_MENU_WIDESCREEN)
+      d3dpp->Flags |= D3DPRESENTFLAG_WIDESCREEN;
+#elif defined(_XBOX360)
+   if (!(g_extern.lifecycle_state & (1ULL << MODE_MENU_WIDESCREEN)))
+      d3dpp->Flags |= D3DPRESENTFLAG_NO_LETTERBOX;
+
+   if (g_extern.console.screen.gamma_correction)
+      d3dpp->FrontBufferFormat       = (D3DFORMAT)MAKESRGBFMT(D3DFMT_LE_X8R8G8B8);
+   else
+      d3dpp->FrontBufferFormat       = D3DFMT_LE_X8R8G8B8;
+   d3dpp->MultiSampleQuality      = 0;
+#endif
+#endif
 }
 
 static void gfx_ctx_d3d_check_window(bool *quit,
