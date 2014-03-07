@@ -191,7 +191,7 @@ static void rgui_render_background(rgui_handle_t *rgui)
          rgui->width - 10, 5, 5, rgui->height - 10, green_filler);
 }
 
-static void rgui_render_messagebox(void *data, const char *message)
+static void rgui_render_messagebox(void *data, void *video_data, const char *message)
 {
    rgui_handle_t *rgui = (rgui_handle_t*)data;
    size_t i;
@@ -258,7 +258,7 @@ static void rgui_render_messagebox(void *data, const char *message)
    string_list_free(list);
 }
 
-static void rgui_render(void *data)
+static void rgui_render(void *data, void *video_data)
 {
    rgui_handle_t *rgui = (rgui_handle_t*)data;
 
@@ -526,7 +526,7 @@ static void rgui_render(void *data)
    else
       message_queue = driver.current_msg;
 
-   rgui_render_messagebox(rgui, message_queue);
+   rgui_render_messagebox(rgui, video_data, message_queue);
 #endif
 
    if (rgui->keyboard.display)
@@ -536,11 +536,11 @@ static void rgui_render(void *data)
       if (!str)
          str = "";
       snprintf(msg, sizeof(msg), "%s\n%s", rgui->keyboard.label, str);
-      rgui_render_messagebox(rgui, msg);
+      rgui_render_messagebox(rgui, video_data, msg);
    }
 }
 
-static void *rgui_init(void)
+static void *rgui_init(void *video_data)
 {
    uint16_t *framebuf = menu_framebuf;
    size_t framebuf_pitch;
@@ -592,12 +592,12 @@ static int rgui_input_postprocess(void *data, uint64_t old_state)
    return ret;
 }
 
-void rgui_set_texture(void *data, bool enable)
+void rgui_set_texture(void *data, void *video_data, bool enable)
 {
    rgui_handle_t *rgui = (rgui_handle_t*)data;
 
    if (driver.video_poke && driver.video_poke->set_texture_enable)
-      driver.video_poke->set_texture_frame(driver.video_data, menu_framebuf,
+      driver.video_poke->set_texture_frame(video_data, menu_framebuf,
             enable, rgui->width, rgui->height, 1.0f);
 }
 

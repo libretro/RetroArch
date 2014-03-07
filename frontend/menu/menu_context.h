@@ -26,12 +26,12 @@
 
 typedef struct menu_ctx_driver
 {
-   void  (*set_texture)(void*, bool);
-   void  (*render_messagebox)(void*, const char*);
-   void  (*render)(void*);
-   void* (*init)(void);
+   void  (*set_texture)(void*, void*, bool);
+   void  (*render_messagebox)(void*, void*, const char*);
+   void  (*render)(void*, void*);
+   void* (*init)(void*);
    void  (*free)(void*);
-   void  (*init_assets)(void*);
+   void  (*init_assets)(void*, void*);
    void  (*free_assets)(void*);
    void  (*populate_entries)(void*, unsigned);
    void  (*iterate)(void*, unsigned);
@@ -47,7 +47,7 @@ extern const menu_ctx_driver_t menu_ctx_rgui;
 extern const menu_ctx_driver_t menu_ctx_lakka;
 
 const menu_ctx_driver_t *menu_ctx_find_driver(const char *ident); // Finds driver with ident. Does not initialize.
-bool menu_ctx_init_first(const menu_ctx_driver_t **driver, void **handle); // Finds first suitable driver and initializes.
+bool menu_ctx_init_first(const menu_ctx_driver_t **driver, void **handle, void *video_data); // Finds first suitable driver and initializes.
 void find_prev_menu_driver(void);
 void find_next_menu_driver(void);
 

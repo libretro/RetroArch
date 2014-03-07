@@ -148,7 +148,7 @@ HRESULT CRetroArchMain::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
    return 0;
 }
 
-static void* rmenu_xui_init (void)
+static void* rmenu_xui_init(void *video_data)
 {
    HRESULT hr;
 
@@ -159,7 +159,7 @@ static void* rmenu_xui_init (void)
       return NULL;
    }
 
-   xdk_d3d_video_t *d3d= (xdk_d3d_video_t*)driver.video_data;
+   xdk_d3d_video_t *d3d= (xdk_d3d_video_t*)video_data;
 
    bool hdmenus_allowed = (g_extern.lifecycle_state & (1ULL << MODE_MENU_HD));
 
@@ -227,7 +227,7 @@ static void* rmenu_xui_init (void)
    }
 
    if (driver.video_poke && driver.video_poke->set_texture_enable)
-      driver.video_poke->set_texture_frame(driver.video_data, NULL,
+      driver.video_poke->set_texture_frame(video_data, NULL,
             true, 0, 0, 1.0f);
 
    return rgui;
@@ -307,18 +307,20 @@ int x, int y, const char *message, bool green)
 {
 }
 
-static void rmenu_xui_render_background(rgui_handle_t *rgui)
-{
-   (void)rgui;
-}
-
-static void rmenu_xui_render_messagebox(void *data, const char *message)
+static void rmenu_xui_render_background(void *data, void *video_data)
 {
    (void)data;
+   (void)video_data;
+}
+
+static void rmenu_xui_render_messagebox(void *data, void *video_data, const char *message)
+{
+   (void)data;
+   (void)video_data;
    (void)message;
 }
 
-static void rmenu_xui_render(void *data)
+static void rmenu_xui_render(void *data, void *video_data)
 {
    rgui_handle_t *rgui = (rgui_handle_t*)data;
 
@@ -330,7 +332,7 @@ static void rmenu_xui_render(void *data)
    size_t begin = rgui->selection_ptr;
    size_t end = rgui->selection_buf->size;
 
-   rmenu_xui_render_background(rgui);
+   rmenu_xui_render_background(rgui, video_data);
 
    char title[256];
    const char *dir = NULL;
@@ -578,7 +580,7 @@ static void rmenu_xui_render(void *data)
       if (!str)
          str = "";
       snprintf(msg, sizeof(msg), "%s\n%s", rgui->keyboard.label, str);
-      rmenu_xui_render_messagebox(rgui, msg);
+      rmenu_xui_render_messagebox(rgui, video_data, msg);
    }
 }
 

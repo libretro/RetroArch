@@ -155,7 +155,7 @@ int main_entry_iterate(signature(), args_type() args)
    }
    else if (g_extern.lifecycle_state & (1ULL << MODE_LOAD_GAME))
    {
-      load_menu_game_prepare();
+      load_menu_game_prepare(driver.video_data);
 
       if (load_menu_game())
       {
@@ -225,7 +225,7 @@ int main_entry_iterate(signature(), args_type() args)
    }
    else if (g_extern.lifecycle_state & (1ULL << MODE_MENU))
    {
-      if (menu_iterate())
+      if (menu_iterate(driver.video_data))
       {
          if (frontend_ctx && frontend_ctx->process_events)
             frontend_ctx->process_events(args);
@@ -256,7 +256,7 @@ void main_exit(args_type() args)
 #ifdef HAVE_MENU
    g_extern.system.shutdown = false;
 
-   menu_free();
+   menu_free(driver.video_data);
 
    if (g_extern.config_save_on_exit && *g_extern.config_path)
    {
@@ -334,7 +334,7 @@ returntype main_entry(signature())
 
 #if defined(HAVE_MENU)
    if (menu_init_enable)
-      menu_init();
+      menu_init(driver.video_data);
 
    if (frontend_ctx && frontend_ctx->process_args)
       frontend_ctx->process_args(argc, argv, args);

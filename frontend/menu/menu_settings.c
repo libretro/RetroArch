@@ -240,7 +240,7 @@ void shader_manager_save_preset(void *data, const char *basename, bool apply)
       RARCH_ERR("Failed to save shader preset. Make sure config directory and/or shader dir are writable.\n");
 }
 
-static int shader_manager_toggle_setting(void *data, unsigned setting, unsigned action)
+static int shader_manager_toggle_setting(void *data, void *video_data, unsigned setting, unsigned action)
 {
    unsigned dist_shader, dist_filter, dist_scale;
    rgui_handle_t *rgui = (rgui_handle_t*)data;
@@ -267,7 +267,7 @@ static int shader_manager_toggle_setting(void *data, unsigned setting, unsigned 
       }
    }
    else if (setting == RGUI_SETTINGS_SHADER_APPLY || setting == RGUI_SETTINGS_SHADER_PASSES)
-      return menu_set_settings(rgui, setting, action);
+      return menu_set_settings(rgui, video_data, setting, action);
    else if ((dist_shader % 3) == 0 || setting == RGUI_SETTINGS_SHADER_PRESET)
    {
       dist_shader /= 3;
@@ -370,17 +370,17 @@ static int menu_core_setting_toggle(unsigned setting, unsigned action)
    return 0;
 }
 
-int menu_settings_toggle_setting(void *data, unsigned setting, unsigned action, unsigned menu_type)
+int menu_settings_toggle_setting(void *data, void *video_data, unsigned setting, unsigned action, unsigned menu_type)
 {
    rgui_handle_t *rgui = (rgui_handle_t*)data;
 #ifdef HAVE_SHADER_MANAGER
    if (setting >= RGUI_SETTINGS_SHADER_FILTER && setting <= RGUI_SETTINGS_SHADER_LAST)
-      return shader_manager_toggle_setting(rgui, setting, action);
+      return shader_manager_toggle_setting(rgui, video_data, setting, action);
 #endif
    if (setting >= RGUI_SETTINGS_CORE_OPTION_START)
       return menu_core_setting_toggle(setting, action);
 
-   return menu_set_settings(rgui, setting, action);
+   return menu_set_settings(rgui, video_data, setting, action);
 }
 
 #ifdef HAVE_OSK
@@ -478,7 +478,7 @@ static bool osk_callback_enter_filename_init(void *data)
 #define RARCH_DEFAULT_PORT 55435
 #endif
 
-int menu_set_settings(void *data, unsigned setting, unsigned action)
+int menu_set_settings(void *data, void *video_data, unsigned setting, unsigned action)
 {
    rgui_handle_t *rgui = (rgui_handle_t*)data;
    unsigned port = rgui->current_pad;
@@ -1172,7 +1172,7 @@ int menu_set_settings(void *data, unsigned setting, unsigned action)
             g_settings.video.smooth = !g_settings.video.smooth;
 
          if (driver.video_poke && driver.video_poke->set_filtering)
-            driver.video_poke->set_filtering(driver.video_data, 1, g_settings.video.smooth);
+            driver.video_poke->set_filtering(video_data, 1, g_settings.video.smooth);
          break;
 
       case RGUI_SETTINGS_DRIVER_VIDEO:
@@ -1244,7 +1244,7 @@ int menu_set_settings(void *data, unsigned setting, unsigned action)
          {
             g_extern.console.screen.gamma_correction = 0;
             if (driver.video_poke && driver.video_poke->apply_state_changes)
-               driver.video_poke->apply_state_changes(driver.video_data);
+               driver.video_poke->apply_state_changes(video_data);
          }
          else if (action == RGUI_ACTION_LEFT)
          {
@@ -1252,7 +1252,7 @@ int menu_set_settings(void *data, unsigned setting, unsigned action)
             {
                g_extern.console.screen.gamma_correction--;
                if (driver.video_poke && driver.video_poke->apply_state_changes)
-                  driver.video_poke->apply_state_changes(driver.video_data);
+                  driver.video_poke->apply_state_changes(video_data);
             }
          }
          else if (action == RGUI_ACTION_RIGHT)
@@ -1261,7 +1261,7 @@ int menu_set_settings(void *data, unsigned setting, unsigned action)
             {
                g_extern.console.screen.gamma_correction++;
                if (driver.video_poke && driver.video_poke->apply_state_changes)
-                  driver.video_poke->apply_state_changes(driver.video_data);
+                  driver.video_poke->apply_state_changes(video_data);
             }
          }
          break;
@@ -1275,7 +1275,7 @@ int menu_set_settings(void *data, unsigned setting, unsigned action)
             g_settings.video.scale_integer = !g_settings.video.scale_integer;
 
          if (driver.video_poke && driver.video_poke->apply_state_changes)
-            driver.video_poke->apply_state_changes(driver.video_data);
+            driver.video_poke->apply_state_changes(video_data);
          break;
 
       case RGUI_SETTINGS_VIDEO_ASPECT_RATIO:
@@ -1293,7 +1293,7 @@ int menu_set_settings(void *data, unsigned setting, unsigned action)
          }
 
          if (driver.video_poke && driver.video_poke->set_aspect_ratio)
-            driver.video_poke->set_aspect_ratio(driver.video_data, g_settings.video.aspect_ratio_idx);
+            driver.video_poke->set_aspect_ratio(video_data, g_settings.video.aspect_ratio_idx);
          break;
 
       case RGUI_SETTINGS_TOGGLE_FULLSCREEN:
@@ -1308,7 +1308,7 @@ int menu_set_settings(void *data, unsigned setting, unsigned action)
             if(rgui_current_gx_resolution > 0)
             {
                rgui_current_gx_resolution--;
-               gx_set_video_mode(driver.video_data, rgui_gx_resolutions[rgui_current_gx_resolution][0], rgui_gx_resolutions[rgui_current_gx_resolution][1]);
+               gx_set_video_mode(video_data, rgui_gx_resolutions[rgui_current_gx_resolution][0], rgui_gx_resolutions[rgui_current_gx_resolution][1]);
             }
          }
          else if (action == RGUI_ACTION_RIGHT)
@@ -1322,7 +1322,7 @@ int menu_set_settings(void *data, unsigned setting, unsigned action)
 #endif
 
                rgui_current_gx_resolution++;
-               gx_set_video_mode(driver.video_data, rgui_gx_resolutions[rgui_current_gx_resolution][0],
+               gx_set_video_mode(video_data, rgui_gx_resolutions[rgui_current_gx_resolution][0],
                      rgui_gx_resolutions[rgui_current_gx_resolution][1]);
             }
          }
@@ -1366,7 +1366,7 @@ int menu_set_settings(void *data, unsigned setting, unsigned action)
             if (menu_ctx && menu_ctx->free_assets)
                menu_ctx->free_assets(rgui);
             if (menu_ctx && menu_ctx->init_assets)
-               menu_ctx->init_assets(rgui);
+               menu_ctx->init_assets(rgui, video_data);
          }
          break;
       case RGUI_SETTINGS_VIDEO_PAL60:
@@ -1387,7 +1387,7 @@ int menu_set_settings(void *data, unsigned setting, unsigned action)
                   if (menu_ctx && menu_ctx->free_assets)
                      menu_ctx->free_assets(rgui);
                   if (menu_ctx && menu_ctx->init_assets)
-                     menu_ctx->init_assets(rgui);
+                     menu_ctx->init_assets(rgui, video_data);
                }
                break;
             case RGUI_ACTION_START:
@@ -1400,7 +1400,7 @@ int menu_set_settings(void *data, unsigned setting, unsigned action)
                   if (menu_ctx && menu_ctx->free_assets)
                      menu_ctx->free_assets(rgui);
                   if (menu_ctx && menu_ctx->init_assets)
-                     menu_ctx->init_assets(rgui);
+                     menu_ctx->init_assets(rgui, video_data);
                }
                break;
          }
@@ -1414,7 +1414,7 @@ int menu_set_settings(void *data, unsigned setting, unsigned action)
             g_extern.lifecycle_state |= (1ULL << MODE_VIDEO_SOFT_FILTER_ENABLE);
 
          if (driver.video_poke && driver.video_poke->apply_state_changes)
-            driver.video_poke->apply_state_changes(driver.video_data);
+            driver.video_poke->apply_state_changes(video_data);
          break;
 #endif
 
@@ -1564,7 +1564,7 @@ int menu_set_settings(void *data, unsigned setting, unsigned action)
 
          g_settings.video.swap_interval = min(g_settings.video.swap_interval, 4);
          g_settings.video.swap_interval = max(g_settings.video.swap_interval, 1);
-         if (old != g_settings.video.swap_interval && driver.video && driver.video_data)
+         if (old != g_settings.video.swap_interval && driver.video && video_data)
             video_set_nonblock_state_func(false); // This will update the current swap interval. Since we're in RGUI now, always apply VSync.
 
          break;

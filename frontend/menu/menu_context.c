@@ -83,7 +83,7 @@ void find_next_menu_driver(void)
       RARCH_WARN("Couldn't find any next menu driver (current one: \"%s\").\n", g_settings.menu.driver);
 }
 
-bool menu_ctx_init_first(const menu_ctx_driver_t **driver, void **data)
+bool menu_ctx_init_first(const menu_ctx_driver_t **driver, void **data, void *video_data)
 {
    unsigned i;
    rgui_handle_t **handle = (rgui_handle_t**)data;
@@ -93,7 +93,7 @@ bool menu_ctx_init_first(const menu_ctx_driver_t **driver, void **data)
 
    for (i = 0; menu_ctx_drivers[i]; i++)
    {
-      void *h = menu_ctx_drivers[i]->init();
+      void *h = menu_ctx_drivers[i]->init(video_data);
       if (h)
       {
          *driver = menu_ctx_drivers[i];
