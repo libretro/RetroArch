@@ -244,7 +244,7 @@ static bool load_plain(void *data, const char *path)
    {
       RARCH_LOG("Loading Cg/HLSL file: %s\n", path);
       strlcpy(cg_shader->pass[0].source.cg, path, sizeof(cg_shader->pass[0].source.cg));
-      if (!load_program(1, path, true))
+      if (!load_program(data, 1, path, true))
          return false;
    }
    else

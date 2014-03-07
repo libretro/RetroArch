@@ -253,7 +253,7 @@ static void set_mvp(void *data, unsigned vp_width, unsigned vp_height, unsigned 
 #if defined(_XBOX360) && defined(HAVE_HLSL)
    hlsl_set_proj_matrix(XMMatrixRotationZ(rotation * (M_PI / 2.0)));
    if (d3d->shader && d3d->shader->set_mvp)
-      d3d->shader->set_mvp(NULL);
+      d3d->shader->set_mvp(d3d, NULL);
 #elif defined(_XBOX1)
    D3DXMATRIX p_out, p_rotate, mat;
    D3DXMatrixOrthoOffCenterLH(&mat, 0, vp_width,  vp_height, 0, 0.0f, 1.0f);

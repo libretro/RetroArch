@@ -230,7 +230,7 @@ static bool xdk_init_font(void *data, const char *font_path, unsigned font_size)
    }
 
    // Create the vertex and pixel shaders for rendering the font
-   if (FAILED(xdk360_video_font_create_shaders(font)))
+   if (FAILED(xdk360_video_font_create_shaders(d3d, font)))
    {
       RARCH_ERR( "Could not create font shaders.\n" );
       goto error;
