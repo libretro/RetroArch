@@ -871,7 +871,7 @@ error:
    return false;
 }
 
-static void gl_glsl_set_params(unsigned width, unsigned height, 
+static void gl_glsl_set_params(void *data, unsigned width, unsigned height, 
       unsigned tex_width, unsigned tex_height, 
       unsigned out_width, unsigned out_height,
       unsigned frame_count,
@@ -879,6 +879,7 @@ static void gl_glsl_set_params(unsigned width, unsigned height,
       const struct gl_tex_info *prev_info, 
       const struct gl_tex_info *fbo_info, unsigned fbo_info_cnt)
 {
+   (void)data;
    // We enforce a certain layout for our various texture types in the texunits.
    // - Regular frame (Texture) (always bound).
    // - LUT textures (always bound).
@@ -1077,8 +1078,9 @@ static void gl_glsl_set_params(unsigned width, unsigned height,
    }
 }
 
-static bool gl_glsl_set_mvp(const math_matrix *mat)
+static bool gl_glsl_set_mvp(void *data, const math_matrix *mat)
 {
+   (void)data;
    if (!glsl_enable || !glsl_shader->modern)
       return false;
 
@@ -1162,8 +1164,9 @@ static bool gl_glsl_set_coords(const struct gl_coords *coords)
    return true;
 }
 
-static void gl_glsl_use(unsigned index)
+static void gl_glsl_use(void *data, unsigned index)
 {
+   (void)data;
    if (glsl_enable)
    {
       gl_glsl_reset_attrib();

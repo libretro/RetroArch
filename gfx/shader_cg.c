@@ -155,8 +155,9 @@ static void gl_cg_reset_attrib(void)
    cg_attrib_index = 0;
 }
 
-static bool gl_cg_set_mvp(const math_matrix *mat)
+static bool gl_cg_set_mvp(void *data, const math_matrix *mat)
 {
+   (void)data;
    if (cg_active && prg[active_index].mvp)
    {
       cgGLSetMatrixParameterfc(prg[active_index].mvp, mat->data);
@@ -193,7 +194,7 @@ static bool gl_cg_set_coords(const struct gl_coords *coords)
 #define set_param_1f(param, x) \
    if (param) cgGLSetParameter1f(param, x)
 
-static void gl_cg_set_params(unsigned width, unsigned height, 
+static void gl_cg_set_params(void *data, unsigned width, unsigned height, 
       unsigned tex_width, unsigned tex_height,
       unsigned out_width, unsigned out_height,
       unsigned frame_count,
@@ -202,6 +203,7 @@ static void gl_cg_set_params(unsigned width, unsigned height,
       const struct gl_tex_info *fbo_info,
       unsigned fbo_info_cnt)
 {
+   (void)data;
    unsigned i;
    if (!cg_active || (active_index == 0) || (active_index == GL_SHADER_STOCK_BLEND))
       return;
@@ -871,8 +873,10 @@ error:
    return false;
 }
 
-static void gl_cg_use(unsigned index)
+static void gl_cg_use(void *data, unsigned index)
 {
+   (void)data;
+
    if (cg_active && prg[index].vprg && prg[index].fprg)
    {
       gl_cg_reset_attrib();

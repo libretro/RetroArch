@@ -330,7 +330,7 @@ void gl_shader_set_coords(void *data, const struct gl_coords *coords, const math
    if (gl->shader)
       ret_coords = gl->shader->set_coords(coords);
    if (gl->shader)
-      ret_mvp = gl->shader->set_mvp(mat);
+      ret_mvp = gl->shader->set_mvp(gl, mat);
 
    // Fall back to FF-style if needed and possible.
 #ifndef NO_GL_FF_VERTEX
@@ -932,7 +932,7 @@ static void gl_frame_fbo(void *data, const struct gl_tex_info *tex_info)
       glBindFramebuffer(GL_FRAMEBUFFER, gl->fbo[i]);
 
       if (gl->shader)
-         gl->shader->use(i + 1);
+         gl->shader->use(gl, i + 1);
       glBindTexture(GL_TEXTURE_2D, gl->fbo_texture[i - 1]);
 
       glClear(GL_COLOR_BUFFER_BIT);
@@ -940,7 +940,7 @@ static void gl_frame_fbo(void *data, const struct gl_tex_info *tex_info)
       // Render to FBO with certain size.
       gl_set_viewport(gl, rect->img_width, rect->img_height, true, false);
       if (gl->shader)
-         gl->shader->set_params(prev_rect->img_width, prev_rect->img_height, 
+         gl->shader->set_params(gl, prev_rect->img_width, prev_rect->img_height, 
             prev_rect->width, prev_rect->height, 
             gl->vp.width, gl->vp.height, g_extern.frame_count, 
             tex_info, gl->prev_info, fbo_tex_info, fbo_tex_info_cnt);
@@ -961,7 +961,7 @@ static void gl_frame_fbo(void *data, const struct gl_tex_info *tex_info)
    // Render our FBO texture to back buffer.
    gl_bind_backbuffer();
    if (gl->shader)
-      gl->shader->use(gl->fbo_pass + 1);
+      gl->shader->use(gl, gl->fbo_pass + 1);
 
    glBindTexture(GL_TEXTURE_2D, gl->fbo_texture[gl->fbo_pass - 1]);
 
@@ -969,7 +969,7 @@ static void gl_frame_fbo(void *data, const struct gl_tex_info *tex_info)
    gl_set_viewport(gl, gl->win_width, gl->win_height, false, true);
 
    if (gl->shader)
-      gl->shader->set_params(prev_rect->img_width, prev_rect->img_height, 
+      gl->shader->set_params(gl, prev_rect->img_width, prev_rect->img_height, 
          prev_rect->width, prev_rect->height, 
          gl->vp.width, gl->vp.height, g_extern.frame_count, 
          tex_info, gl->prev_info, fbo_tex_info, fbo_tex_info_cnt);
@@ -1305,7 +1305,7 @@ static inline void gl_set_shader_viewport(void *data, unsigned shader)
 {
    gl_t *gl = (gl_t*)data;
    if (gl->shader)
-      gl->shader->use(shader);
+      gl->shader->use(gl, shader);
    gl_set_viewport(gl, gl->win_width, gl->win_height, false, true);
 }
 
@@ -1356,7 +1356,7 @@ static inline void gl_draw_texture(void *data)
    glBindTexture(GL_TEXTURE_2D, gl->rgui_texture);
 
    if (gl->shader)
-      gl->shader->use(GL_SHADER_STOCK_BLEND);
+      gl->shader->use(gl, GL_SHADER_STOCK_BLEND);
    gl_shader_set_coords(gl, &gl->coords, &gl->mvp_no_rot);
 
    glEnable(GL_BLEND);
@@ -1391,7 +1391,7 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
 #endif
 
    if (gl->shader)
-      gl->shader->use(1);
+      gl->shader->use(gl, 1);
 
 #ifdef IOS // Apparently the viewport is lost each frame, thanks apple.
    gl_set_viewport(gl, gl->win_width, gl->win_height, false, true);
@@ -1478,7 +1478,7 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
    }
 
    if (gl->shader)
-      gl->shader->set_params(width, height,
+      gl->shader->set_params(gl, width, height,
          gl->tex_w, gl->tex_h,
          gl->vp.width, gl->vp.height,
          g_extern.frame_count, 
@@ -1516,7 +1516,7 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
    if (gl->hw_render_fbo_init)
    {
       if (gl->shader)
-         gl->shader->use(0);
+         gl->shader->use(gl, 0);
       glBindTexture(GL_TEXTURE_2D, 0);
 #ifndef NO_GL_FF_VERTEX
       gl_disable_client_arrays(gl);
@@ -2574,7 +2574,7 @@ static void gl_render_overlay(void *data)
    {
       // Ensure that we reset the attrib array.
       if (gl->shader)
-         gl->shader->use(GL_SHADER_STOCK_BLEND);
+         gl->shader->use(gl, GL_SHADER_STOCK_BLEND);
 
       glBindTexture(GL_TEXTURE_2D, gl->overlay[i].tex);
       for (j = 0; j < 4; j++)

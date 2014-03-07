@@ -100,7 +100,7 @@ void hlsl_set_proj_matrix(XMMATRIX rotation_value)
 #define set_param_1f(param, x, constanttable) \
    if (param) constanttable->SetFloat(d3d_device_ptr, param, x)
 
-static void hlsl_set_params(unsigned width, unsigned height,
+static void hlsl_set_params(void *data, unsigned width, unsigned height,
       unsigned tex_width, unsigned tex_height,
       unsigned out_width, unsigned out_height,
       unsigned frame_counter,
@@ -108,7 +108,7 @@ static void hlsl_set_params(unsigned width, unsigned height,
       const struct gl_tex_info *prev_info,
       const struct gl_tex_info *fbo_info, unsigned fbo_info_cnt)
 {
-   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
+   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)data;
    LPDIRECT3DDEVICE d3d_device_ptr = (LPDIRECT3DDEVICE)d3d->dev;
    if (!hlsl_active)
       return;
@@ -137,9 +137,9 @@ static void hlsl_set_params(unsigned width, unsigned height,
    /* TODO - set lookup textures/FBO textures/state parameters/etc */
 }
 
-static bool load_program(unsigned index, const char *prog, bool path_is_file)
+static bool load_program(void *data, unsigned index, const char *prog, bool path_is_file)
 {
-   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
+   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)data;
    LPDIRECT3DDEVICE d3d_device_ptr = (LPDIRECT3DDEVICE)d3d->dev;
    HRESULT ret, ret_fp, ret_vp;
    ID3DXBuffer *listing_f = NULL;
@@ -188,9 +188,9 @@ end:
    return ret;
 }
 
-static bool load_stock(void)
+static bool load_stock(void *data)
 {
-   if (!load_program(0, stock_hlsl_program, false))
+   if (!load_program(data, 0, stock_hlsl_program, false))
    {
       RARCH_ERR("Failed to compile passthrough shader, is something wrong with your environment?\n");
       return false;
@@ -215,7 +215,7 @@ static void set_program_attributes(unsigned i)
    prg[i].mvp_val     = XMMatrixIdentity();
 }
 
-static bool load_shader(const char *cgp_path, unsigned i)
+static bool load_shader(void *data, const char *cgp_path, unsigned i)
 {
    char path_buf[PATH_MAX];
    fill_pathname_resolve_relative(path_buf, cgp_path,
@@ -223,15 +223,15 @@ static bool load_shader(const char *cgp_path, unsigned i)
 
    RARCH_LOG("Loading Cg/HLSL shader: \"%s\".\n", path_buf);
 
-   if (!load_program(i + 1, path_buf, true))
+   if (!load_program(data, i + 1, path_buf, true))
       return false;
 
    return true;
 }
 
-static bool load_plain(const char *path)
+static bool load_plain(void *data, const char *path)
 {
-   if (!load_stock())
+   if (!load_stock(data))
       return false;
 
    cg_shader = (struct gfx_shader*)calloc(1, sizeof(*cg_shader));
@@ -288,9 +288,9 @@ static void hlsl_deinit_state(void)
    cg_shader = NULL;
 }
 
-static bool load_preset(const char *path)
+static bool load_preset(void *data, const char *path)
 {
-   if (!load_stock())
+   if (!load_stock(data))
       return false;
 
    RARCH_LOG("Loading Cg meta-shader: %s\n", path);
@@ -323,7 +323,7 @@ static bool load_preset(const char *path)
    }
    for (unsigned i = 0; i < cg_shader->passes; i++)
    {
-      if (!load_shader(path, i))
+      if (!load_shader(data, path, i))
       {
          RARCH_ERR("Failed to load shaders ...\n");
          return false;
@@ -341,12 +341,12 @@ static bool hlsl_init(void *data, const char *path)
 
    if (path && strcmp(path_get_extension(path), ".cgp") == 0)
    {
-      if (!load_preset(path))
+      if (!load_preset(d3d, path))
          return false;
    }
    else
    {
-      if (!load_plain(path))
+      if (!load_plain(d3d, path))
          return false;
    }
 
@@ -369,9 +369,9 @@ static void hlsl_deinit(void)
    hlsl_deinit_state();
 }
 
-static void hlsl_use(unsigned index)
+static void hlsl_use(void *data, unsigned index)
 {
-   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
+   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)data;
    LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)d3d->dev;
    if (hlsl_active && prg[index].vprg && prg[index].fprg)
    {
@@ -415,9 +415,9 @@ static void hlsl_shader_scale(unsigned index, struct gfx_fbo_scale *scale)
       scale->valid = false;
 }
 
-static bool hlsl_set_mvp(const math_matrix *mat)
+static bool hlsl_set_mvp(void *data, const math_matrix *mat)
 {
-   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
+   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)data;
    LPDIRECT3DDEVICE d3d_device_ptr = (LPDIRECT3DDEVICE)d3d->dev;
 
    if(hlsl_active && prg[active_index].mvp)
