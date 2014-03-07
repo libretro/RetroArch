@@ -360,16 +360,6 @@ static void gfx_ctx_xdk_get_video_size(unsigned *width, unsigned *height)
 
 static bool gfx_ctx_xdk_init(void)
 {
-   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
-
-   d3d->g_pD3D = direct3d_create_ctx(D3D_SDK_VERSION);
-   if (!d3d->g_pD3D)
-   {
-      RARCH_ERR("Could not create Direct3D context.\n");
-      free(d3d);
-      return false;
-   }
-
    return true;
 }
 

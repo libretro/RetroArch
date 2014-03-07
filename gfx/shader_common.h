@@ -34,7 +34,7 @@
 
 struct gl_shader_backend
 {
-   bool (*init)(const char *path);
+   bool (*init)(void *data, const char *path);
    void (*deinit)(void);
    void (*set_params)(unsigned width, unsigned height, 
          unsigned tex_width, unsigned tex_height, 

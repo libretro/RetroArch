@@ -705,9 +705,10 @@ static void gl_glsl_deinit(void)
    memset(&glsl_vbo, 0, sizeof(glsl_vbo));
 }
 
-static bool gl_glsl_init(const char *path)
+static bool gl_glsl_init(void *data, const char *path)
 {
    unsigned i;
+   (void)data;
 #ifndef HAVE_OPENGLES2
    RARCH_LOG("Checking GLSL shader support ...\n");
    bool shader_support = glCreateProgram && glUseProgram && glCreateShader

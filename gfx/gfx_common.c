@@ -147,6 +147,8 @@ void gfx_scale_integer(struct rarch_viewport *vp, unsigned width, unsigned heigh
    {
       // Use system reported sizes as these define the geometry for the "normal" case.
       unsigned base_height = g_extern.system.av_info.geometry.base_height;
+      if (base_height == 0)
+         base_height = 1;
       // Account for non-square pixels.
       // This is sort of contradictory with the goal of integer scale,
       // but it is desirable in some cases.

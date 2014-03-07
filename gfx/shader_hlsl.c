@@ -18,6 +18,7 @@
 #include "shader_parse.h"
 #ifdef _XBOX
 #include <xtl.h>
+#include "../xdk/xdk_d3d.h"
 #endif
 
 static const char *stock_hlsl_program =
@@ -82,7 +83,6 @@ struct hlsl_program
    XMMATRIX mvp_val;   /* TODO: Move to D3DXMATRIX here */
 };
 
-static LPDIRECT3DDEVICE d3d_device_ptr;
 static struct hlsl_program prg[RARCH_HLSL_MAX_SHADERS] = {0};
 static bool hlsl_active = false;
 static unsigned active_index = 0;
@@ -108,6 +108,8 @@ static void hlsl_set_params(unsigned width, unsigned height,
       const struct gl_tex_info *prev_info,
       const struct gl_tex_info *fbo_info, unsigned fbo_info_cnt)
 {
+   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
+   LPDIRECT3DDEVICE d3d_device_ptr = (LPDIRECT3DDEVICE)d3d->dev;
    if (!hlsl_active)
       return;
 
@@ -137,6 +139,8 @@ static void hlsl_set_params(unsigned width, unsigned height,
 
 static bool load_program(unsigned index, const char *prog, bool path_is_file)
 {
+   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
+   LPDIRECT3DDEVICE d3d_device_ptr = (LPDIRECT3DDEVICE)d3d->dev;
    HRESULT ret, ret_fp, ret_vp;
    ID3DXBuffer *listing_f = NULL;
    ID3DXBuffer *listing_v = NULL;
@@ -280,8 +284,6 @@ static void hlsl_deinit_state(void)
    hlsl_deinit_progs();
    memset(prg, 0, sizeof(prg));
 
-   d3d_device_ptr = NULL;
-
    free(cg_shader);
    cg_shader = NULL;
 }
@@ -333,9 +335,9 @@ static bool load_preset(const char *path)
    return true;
 }
 
-static bool hlsl_init(const char *path)
+static bool hlsl_init(void *data, const char *path)
 {
-   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
+   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)data;
 
    if (path && strcmp(path_get_extension(path), ".cgp") == 0)
    {
@@ -351,7 +353,6 @@ static bool hlsl_init(const char *path)
    for(unsigned i = 1; i <= cg_shader->passes; i++)
       set_program_attributes(i);
 
-   d3d_device_ptr = d3d->dev;
    d3d->dev->SetVertexShader(prg[1].vprg);
    d3d->dev->SetPixelShader(prg[1].fprg);
 
@@ -370,15 +371,17 @@ static void hlsl_deinit(void)
 
 static void hlsl_use(unsigned index)
 {
+   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
+   LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)d3d->dev;
    if (hlsl_active && prg[index].vprg && prg[index].fprg)
    {
       active_index = index;
 #ifdef _XBOX
-      D3DDevice_SetVertexShader(d3d_device_ptr, prg[index].vprg);
-      D3DDevice_SetPixelShader(d3d_device_ptr, prg[index].fprg);
+      D3DDevice_SetVertexShader(d3dr, prg[index].vprg);
+      D3DDevice_SetPixelShader(d3dr, prg[index].fprg);
 #else
-      d3d_device_ptr->SetVertexShader(prg[index].vprg);
-      d3d_device_ptr->SetPixelShader(prg[index].fprg);
+      d3dr->SetVertexShader(prg[index].vprg);
+      d3dr->SetPixelShader(prg[index].fprg);
 #endif
    }
 }
@@ -414,7 +417,9 @@ static void hlsl_shader_scale(unsigned index, struct gfx_fbo_scale *scale)
 
 static bool hlsl_set_mvp(const math_matrix *mat)
 {
-   /* TODO: Move to D3DXMATRIX here */
+   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
+   LPDIRECT3DDEVICE d3d_device_ptr = (LPDIRECT3DDEVICE)d3d->dev;
+
    if(hlsl_active && prg[active_index].mvp)
    {
       prg[active_index].v_ctable->SetMatrix(d3d_device_ptr, prg[active_index].mvp, (D3DXMATRIX*)&prg[active_index].mvp_val);

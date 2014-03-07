@@ -133,7 +133,7 @@ static bool d3d_init_shader(void *data)
 
 
    d3d->shader = backend;
-   return d3d->shader->init(shader_path);
+   return d3d->shader->init(d3d, shader_path);
 }
 
 static void xdk_d3d_free(void *data)
@@ -199,13 +199,11 @@ static void xdk_d3d_set_viewport(void *data, int x, int y, unsigned width, unsig
    d3d->final_viewport = viewport;
 }
 
-static void xdk_d3d_calculate_rect(void *data, unsigned width, unsigned height,
+static void d3d_calculate_rect(void *data, unsigned width, unsigned height,
    bool keep, float desired_aspect)
 {
-   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
+   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)data;
    LPDIRECT3DDEVICE d3dr = d3d->dev;
-
-   RD3DDevice_Clear(d3dr, 0, NULL, D3DCLEAR_TARGET, 0xff000000, 1.0f, 0);
 
    if (g_settings.video.scale_integer)
    {
@@ -254,7 +252,7 @@ static void set_mvp(void *data, unsigned vp_width, unsigned vp_height, unsigned 
    LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)d3d->dev;
 #if defined(_XBOX360) && defined(HAVE_HLSL)
    hlsl_set_proj_matrix(XMMatrixRotationZ(rotation * (M_PI / 2.0)));
-   if (d3d->shader->set_mvp)
+   if (d3d->shader && d3d->shader->set_mvp)
       d3d->shader->set_mvp(NULL);
 #elif defined(_XBOX1)
    D3DXMATRIX p_out, p_rotate, mat;
@@ -391,55 +389,41 @@ static const gfx_ctx_driver_t *d3d_get_context(void *data)
    return d3d->ctx_driver = gfx_ctx_init_first(api, major, minor);
 }
 
-static void *xdk_d3d_init(const video_info_t *video, const input_driver_t **input, void **input_data)
+static bool d3d_init_base(void *data, const video_info_t *info)
+{
+   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)data;
+   D3DPRESENT_PARAMETERS d3dpp;
+   d3d_make_d3dpp(d3d, info, &d3dpp);
+
+   d3d->g_pD3D = direct3d_create_ctx(D3D_SDK_VERSION);
+   if (!d3d->g_pD3D)
+   {
+      RARCH_ERR("Failed to create D3D interface.\n");
+      return false;
+   }
+
+   if (d3d->d3d_err = d3d->g_pD3D->CreateDevice(0,
+            D3DDEVTYPE_HAL,
+            NULL,
+            D3DCREATE_HARDWARE_VERTEXPROCESSING,
+            &d3dpp,
+            &d3d->dev) != S_OK)
+   {
+      RARCH_ERR("[D3D]: Failed to initialize device.\n");
+      return false;
+   }
+
+
+   return true;
+}
+
+static bool d3d_init_chain(void *data, const video_info_t *info)
 {
    HRESULT ret;
+   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)data;
+   LPDIRECT3DDEVICE d3dr = d3d->dev;
 
-   if (driver.video_data)
-   {
-      xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
-      // Reinitialize textures as we might have changed pixel formats.
-      xdk_d3d_reinit_textures(d3d, video);
-      return driver.video_data;
-   }
-
-   //we'll just use driver.video_data throughout here because it needs to
-   //exist when we delegate initing to the context file
-   driver.video_data = (xdk_d3d_video_t*)calloc(1, sizeof(xdk_d3d_video_t));
-   if (!driver.video_data)
-      return NULL;
-
-   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
-
-   d3d->vsync = video->vsync;
-   d3d->tex_w = RARCH_SCALE_BASE * video->input_scale;
-   d3d->tex_h = RARCH_SCALE_BASE * video->input_scale;
-
-   d3d->ctx_driver = d3d_get_context(d3d);
-   if (!d3d->ctx_driver)
-   {
-      free(d3d);
-      return NULL;
-   }
-
-   {
-      D3DPRESENT_PARAMETERS d3dpp;
-      d3d_make_d3dpp(d3d, video, &d3dpp);
-
-      ret = d3d->g_pD3D->CreateDevice(0, D3DDEVTYPE_HAL, NULL, D3DCREATE_HARDWARE_VERTEXPROCESSING,
-            &d3dpp, &d3d->dev);
-
-      if (ret != S_OK)
-      {
-         RARCH_ERR("Failed at CreateDevice.\n");
-         return NULL;
-      }
-      d3d->dev->Clear(0, NULL, D3DCLEAR_TARGET, 0xff000000, 1.0f, 0);
-   }
-
-   RARCH_LOG("Found D3D context: %s\n", d3d->ctx_driver->ident);
-
-   xdk_d3d_init_textures(d3d, video);
+   xdk_d3d_init_textures(d3d, info);
 
    ret = d3d->dev->CreateVertexBuffer(4 * sizeof(DrawVerticeFormats), 
          D3DUSAGE_WRITEONLY, D3DFVF_CUSTOMVERTEX, D3DPOOL_MANAGED, &d3d->vertex_buf
@@ -451,7 +435,7 @@ static void *xdk_d3d_init(const video_info_t *video, const input_driver_t **inpu
    if (ret != S_OK)
    {
       RARCH_ERR("[xdk_d3d_init::] Failed at CreateVertexBuffer.\n");
-      return NULL;
+      return false;
    }
 #if defined(_XBOX1)
    const DrawVerticeFormats init_verts[] = {
@@ -495,35 +479,114 @@ static void *xdk_d3d_init(const video_info_t *video, const input_driver_t **inpu
    }
 #endif
 
-   if (d3d->ctx_driver && d3d->ctx_driver->get_video_size)
-      d3d->ctx_driver->get_video_size(&d3d->screen_width, &d3d->screen_height);
+   return true;
+}
 
-   RARCH_LOG("Detecting screen resolution: %ux%u.\n", d3d->screen_width, d3d->screen_height);
+static bool d3d_initialize(void *data, const video_info_t *info)
+{
+   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)data;
+   bool ret = true;
 
-   if (d3d->ctx_driver && d3d->ctx_driver->swap_interval)
-      d3d->ctx_driver->swap_interval(d3d->vsync ? 1 : 0);
+   if (!d3d->g_pD3D)
+      ret = d3d_init_base(d3d, info);
+   else
+   {
+   }
+
+   if (!ret)
+      return ret;
+
+   d3d_calculate_rect(d3d, d3d->screen_width, d3d->screen_height, info->force_aspect,g_extern.system.aspect_ratio);
 
 #ifdef HAVE_HLSL
    if (!d3d_init_shader(d3d))
    {
       RARCH_ERR("Failed to initialize HLSL.\n");
-      d3d->ctx_driver->destroy();
-      free(d3d);
-      return NULL;
+      return false;
    }
-
-   RARCH_LOG("D3D: Loaded %u program(s).\n", d3d->shader->num_shaders());
 #endif
 
-   d3d->video_info = *video;
-
-   if (input && input_data)
-      d3d->ctx_driver->input_driver(input, input_data);
+   if (!d3d_init_chain(d3d, info))
+   {
+      RARCH_ERR("Failed to initialize render chain.\n");
+      return false;
+   }
 
 #if defined(_XBOX360)
    strlcpy(g_settings.video.font_path, "game:\\media\\Arial_12.xpr", sizeof(g_settings.video.font_path));
 #endif
-   d3d->font_ctx = d3d_font_init_first(d3d, g_settings.video.font_path, 0 /* font size - fixed/unused */);
+   d3d->font_ctx = d3d_font_init_first(d3d, g_settings.video.font_path, 0);
+   if (!d3d->font_ctx)
+   {
+      RARCH_ERR("Failed to initialize font.\n");
+      return false;
+   }
+
+   return true;
+}
+
+// Delay constructor due to lack of exceptions.
+static bool d3d_construct(void *data, const video_info_t *info, const input_driver_t **input,
+                          void **input_data)
+{
+   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)data;
+   d3d->should_resize = false;
+
+   unsigned full_x, full_y;
+
+   if (d3d->ctx_driver && d3d->ctx_driver->get_video_size)
+      d3d->ctx_driver->get_video_size(&full_x, &full_y);
+
+   d3d->screen_width  = info->fullscreen ? full_x : info->width;
+   d3d->screen_height = info->fullscreen ? full_y : info->height;
+
+   d3d->video_info = *info;
+   if (!d3d_initialize(d3d, &d3d->video_info))
+      return false;
+
+   if (input && input_data)
+      d3d->ctx_driver->input_driver(input, input_data);
+
+   RARCH_LOG("[D3D]: Init complete.\n");
+   return true;
+}
+
+static void *xdk_d3d_init(const video_info_t *vid, const input_driver_t **input, void **input_data)
+{
+   if (driver.video_data)
+   {
+      xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
+      // Reinitialize textures as we might have changed pixel formats.
+      xdk_d3d_reinit_textures(d3d, vid);
+      return driver.video_data;
+   }
+
+   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)calloc(1, sizeof(xdk_d3d_video_t));
+   if (!d3d)
+      return NULL;
+
+   d3d->ctx_driver = d3d_get_context(d3d);
+   if (!d3d->ctx_driver)
+   {
+      free(d3d);
+      return NULL;
+   }
+
+   //default values
+   d3d->g_pD3D               = NULL;
+   d3d->dev                  = NULL;
+   d3d->dev_rotation         = 0;
+   d3d->should_resize        = false;
+   d3d->vsync                = vid->vsync;
+   d3d->tex_w                = RARCH_SCALE_BASE * vid->input_scale;
+   d3d->tex_h                = RARCH_SCALE_BASE * vid->input_scale;
+
+   if (!d3d_construct(d3d, vid, input, input_data))
+   {
+      RARCH_ERR("[D3D]: Failed to init D3D.\n");
+      delete d3d;
+      return NULL;
+   }
 
    return d3d;
 }
@@ -533,10 +596,10 @@ extern struct texture_image *menu_texture;
 #endif
 
 #ifdef _XBOX1
-static bool texture_image_render(struct texture_image *out_img,
+static bool texture_image_render(void *data, struct texture_image *out_img,
                           int x, int y, int w, int h, bool force_fullscreen)
 {
-   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
+   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)data;
    LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)d3d->dev;
 
    if (out_img->pixels == NULL || out_img->vertex_buf == NULL)
@@ -619,7 +682,7 @@ static void xdk_d3d_draw_texture(void *data)
       d3d->dev->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_ONE);
       d3d->dev->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
       d3d->dev->SetRenderState(D3DRS_ALPHABLENDENABLE, true);
-      texture_image_render(menu_texture, menu_texture->x, menu_texture->y,
+      texture_image_render(d3d, menu_texture, menu_texture->x, menu_texture->y,
          d3d->screen_width, d3d->screen_height, true);
       d3d->dev->SetRenderState(D3DRS_ALPHABLENDENABLE, false);
    }
@@ -727,7 +790,7 @@ static void render_pass(void *data, const void *frame, unsigned width, unsigned 
                         unsigned pitch, unsigned rotation)
 {
    xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)data;
-   LPDIRECT3DDEVICE d3dr = d3d->dev;
+   LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)d3d->dev;
 #ifndef _XBOX1
    DWORD fetchConstant;
    UINT64 pendingMask3;
@@ -745,8 +808,8 @@ static void render_pass(void *data, const void *frame, unsigned width, unsigned 
 #elif defined _XBOX360
       d3dr->SetTextureFetchConstant(0, d3d->lpTexture);
 #endif
-   else 
-   RD3DDevice_SetTexture(d3dr, 0, d3d->lpTexture);
+   else if (d3d->lpTexture) 
+      RD3DDevice_SetTexture(d3dr, 0, d3d->lpTexture);
    RD3DDevice_SetViewport(d3d->dev, &d3d->final_viewport);
    RD3DDevice_SetSamplerState_MinFilter(d3dr, 0, g_settings.video.smooth ? D3DTEXF_LINEAR : D3DTEXF_POINT);
    RD3DDevice_SetSamplerState_MagFilter(d3dr, 0, g_settings.video.smooth ? D3DTEXF_LINEAR : D3DTEXF_POINT);
@@ -760,7 +823,7 @@ static void render_pass(void *data, const void *frame, unsigned width, unsigned 
    D3DDevice_SetVertexDeclaration(d3dr, d3d->v_decl);
    D3DDevice_SetStreamSource_Inline(d3dr, 0, d3d->vertex_buf, 0, sizeof(DrawVerticeFormats));
 #endif
-   RD3DDevice_DrawPrimitive(d3dr, D3DPT_TRIANGLESTRIP, 0, 2);
+   d3dr->DrawPrimitive(D3DPT_TRIANGLESTRIP, 0, 2);
 
    g_extern.frame_count++;
 
@@ -778,7 +841,7 @@ static bool xdk_d3d_frame(void *data, const void *frame,
 
    if (d3d->should_resize)
    {
-      xdk_d3d_calculate_rect(d3d, d3d->screen_width, d3d->screen_height, d3d->video_info.force_aspect, g_extern.system.aspect_ratio);
+      d3d_calculate_rect(d3d, d3d->screen_width, d3d->screen_height, d3d->video_info.force_aspect, g_extern.system.aspect_ratio);
       d3d->should_resize = false;
    }
 

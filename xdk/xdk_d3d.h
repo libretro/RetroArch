@@ -81,6 +81,7 @@ typedef struct xdk_d3d_video
    unsigned base_size;
    LPDIRECT3DSURFACE lpSurface;
    video_info_t video_info;
+   HRESULT d3d_err;
 } xdk_d3d_video_t;
 
 extern void d3d_make_d3dpp(void *data, const video_info_t *info, D3DPRESENT_PARAMETERS *d3dpp);

@@ -798,9 +798,10 @@ static void set_program_attributes(unsigned i)
    }
 }
 
-static bool gl_cg_init(const char *path)
+static bool gl_cg_init(void *data, const char *path)
 {
    unsigned i;
+   (void)data;
 #ifdef HAVE_CG_RUNTIME_COMPILER
    cgRTCgcInit();
 #endif
