@@ -265,6 +265,7 @@ static void gfx_ctx_xdk_update_window_title(void)
 
 static void gfx_ctx_xdk_get_video_size(unsigned *width, unsigned *height)
 {
+#ifndef _XBOX
    (void)width;
    (void)height;
 #if defined(_XBOX360)
@@ -356,19 +357,11 @@ static void gfx_ctx_xdk_get_video_size(unsigned *width, unsigned *height)
       }
    }
 #endif
+#endif
 }
 
 static bool gfx_ctx_xdk_init(void)
 {
-   return true;
-}
-
-static bool gfx_ctx_xdk_set_video_mode(
-      unsigned width, unsigned height, bool fullscreen)
-{
-   (void)width;
-   (void)height;
-   (void)fullscreen;
    return true;
 }
 
@@ -411,7 +404,7 @@ const gfx_ctx_driver_t gfx_ctx_xdk = {
    gfx_ctx_xdk_destroy,
    gfx_ctx_xdk_bind_api,
    gfx_ctx_xdk_set_swap_interval,
-   gfx_ctx_xdk_set_video_mode,
+   NULL,
    gfx_ctx_xdk_get_video_size,
    NULL,
    gfx_ctx_xdk_update_window_title,

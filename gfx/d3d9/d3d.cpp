@@ -1138,7 +1138,7 @@ const video_driver_t video_d3d = {
    d3d_focus,
    d3d_set_shader,
    d3d_free,
-   "d3d9",
+   "d3d",
 #ifdef HAVE_MENU
    NULL,
 #endif
