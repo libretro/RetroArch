@@ -105,9 +105,11 @@ typedef struct {
 
 static Font_Locals_t s_FontLocals;
 
-static HRESULT xdk360_video_font_create_shaders (xdk360_video_font_t * font)
+static HRESULT xdk360_video_font_create_shaders (void *data, xdk360_video_font_t * font)
 {
    HRESULT hr;
+   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)data;
+   LPDIRECT3DDEVICE d3dr = d3d->dev;
 
    if (!s_FontLocals.m_pFontVertexDecl)
    {
@@ -121,8 +123,6 @@ static HRESULT xdk360_video_font_create_shaders (xdk360_video_font_t * font)
             D3DDECL_END()
          };
 
-         xdk_d3d_video_t *vid = (xdk_d3d_video_t*)driver.video_data;
-         LPDIRECT3DDEVICE d3dr = vid->dev;
 
          hr = d3dr->CreateVertexDeclaration( decl, &s_FontLocals.m_pFontVertexDecl );
 
@@ -180,10 +180,10 @@ static HRESULT xdk360_video_font_create_shaders (xdk360_video_font_t * font)
 static bool xdk_init_font(void *data, const char *font_path, unsigned font_size)
 {
    (void)font_size;
-   (void)data;
 
    // Create the font
    xdk360_video_font_t *font = &m_Font;
+   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)data;
 
    font->m_pFontTexture = NULL;
    font->m_dwNumGlyphs = 0L;
@@ -435,9 +435,9 @@ static void xdk_video_font_draw_text(xdk360_video_font_t *font,
    d3dr->EndVertices();
 }
 
-static void xdk_render_msg(void *driver, const char *str_msg, void *parms)
+static void xdk_render_msg(void *data, const char *str_msg, void *parms)
 {
-   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver;
+   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)data;
    xdk360_video_font_t *font = &m_Font;
    font_params_t *params = (font_params_t*)parms;
    wchar_t msg[PATH_MAX];
