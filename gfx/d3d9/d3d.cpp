@@ -234,11 +234,11 @@ bool d3d_restore(void *data)
 }
 
 #ifdef HAVE_OVERLAY
-static void d3d_overlay_render(void *data, overlay_t &overlay)
+static void d3d_overlay_render(void *data, overlay_t *overlay)
 {
    D3DVideo *d3d = reinterpret_cast<D3DVideo*>(data);
 
-   if (!overlay.tex)
+   if (!overlay || !overlay->tex)
       return;
 
    struct overlay_vertex
@@ -248,7 +248,7 @@ static void d3d_overlay_render(void *data, overlay_t &overlay)
       float r, g, b, a;
    } vert[4];
 
-   if (!overlay.vert_buf)
+   if (!overlay->vert_buf)
    {
       d3d->dev->CreateVertexBuffer(
             sizeof(vert),
@@ -259,7 +259,7 @@ static void d3d_overlay_render(void *data, overlay_t &overlay)
 #endif
             0,
             D3DPOOL_MANAGED,
-            &overlay.vert_buf,
+            &overlay->vert_buf,
             NULL);
    }
 
@@ -267,29 +267,29 @@ static void d3d_overlay_render(void *data, overlay_t &overlay)
    {
       vert[i].z = 0.5f;
       vert[i].r = vert[i].g = vert[i].b = 1.0f;
-      vert[i].a = overlay.alpha_mod;
+      vert[i].a = overlay->alpha_mod;
    }
 
    float overlay_width = d3d->final_viewport.Width;
    float overlay_height = d3d->final_viewport.Height;
 
-   vert[0].x = overlay.vert_coords.x * overlay_width;
-   vert[1].x = (overlay.vert_coords.x + overlay.vert_coords.w) * overlay_width;
-   vert[2].x = overlay.vert_coords.x * overlay_width;
-   vert[3].x = (overlay.vert_coords.x + overlay.vert_coords.w) * overlay_width;
-   vert[0].y = overlay.vert_coords.y * overlay_height;
-   vert[1].y = overlay.vert_coords.y * overlay_height;
-   vert[2].y = (overlay.vert_coords.y + overlay.vert_coords.h) * overlay_height;
-   vert[3].y = (overlay.vert_coords.y + overlay.vert_coords.h) * overlay_height;
+   vert[0].x = overlay->vert_coords.x * overlay_width;
+   vert[1].x = (overlay->vert_coords.x + overlay->vert_coords.w) * overlay_width;
+   vert[2].x = overlay->vert_coords.x * overlay_width;
+   vert[3].x = (overlay->vert_coords.x + overlay->vert_coords.w) * overlay_width;
+   vert[0].y = overlay->vert_coords.y * overlay_height;
+   vert[1].y = overlay->vert_coords.y * overlay_height;
+   vert[2].y = (overlay->vert_coords.y + overlay->vert_coords.h) * overlay_height;
+   vert[3].y = (overlay->vert_coords.y + overlay->vert_coords.h) * overlay_height;
 
-   vert[0].u = overlay.tex_coords.x;
-   vert[1].u = overlay.tex_coords.x + overlay.tex_coords.w;
-   vert[2].u = overlay.tex_coords.x;
-   vert[3].u = overlay.tex_coords.x + overlay.tex_coords.w;
-   vert[0].v = overlay.tex_coords.y;
-   vert[1].v = overlay.tex_coords.y;
-   vert[2].v = overlay.tex_coords.y + overlay.tex_coords.h;
-   vert[3].v = overlay.tex_coords.y + overlay.tex_coords.h;
+   vert[0].u = overlay->tex_coords.x;
+   vert[1].u = overlay->tex_coords.x + overlay->tex_coords.w;
+   vert[2].u = overlay->tex_coords.x;
+   vert[3].u = overlay->tex_coords.x + overlay->tex_coords.w;
+   vert[0].v = overlay->tex_coords.y;
+   vert[1].v = overlay->tex_coords.y;
+   vert[2].v = overlay->tex_coords.y + overlay->tex_coords.h;
+   vert[3].v = overlay->tex_coords.y + overlay->tex_coords.h;
 
    // Align texels and vertices.
    for (unsigned i = 0; i < 4; i++)
@@ -299,9 +299,9 @@ static void d3d_overlay_render(void *data, overlay_t &overlay)
    }
 
    void *verts;
-   overlay.vert_buf->Lock(0, sizeof(vert), &verts, 0);
+   overlay->vert_buf->Lock(0, sizeof(vert), &verts, 0);
    memcpy(verts, vert, sizeof(vert));
-   overlay.vert_buf->Unlock();
+   overlay->vert_buf->Unlock();
 
    // enable alpha
    d3d->dev->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE);
@@ -320,9 +320,9 @@ static void d3d_overlay_render(void *data, overlay_t &overlay)
    d3d->dev->SetVertexDeclaration(vertex_decl);
    vertex_decl->Release();
 
-   d3d->dev->SetStreamSource(0, overlay.vert_buf, 0, sizeof(overlay_vertex));
+   d3d->dev->SetStreamSource(0, overlay->vert_buf, 0, sizeof(overlay_vertex));
 
-   if (overlay.fullscreen)
+   if (overlay->fullscreen)
    {
       // set viewport to full window
       D3DVIEWPORT vp_full;
@@ -336,7 +336,7 @@ static void d3d_overlay_render(void *data, overlay_t &overlay)
    }
 
    // render overlay
-   d3d->dev->SetTexture(0, overlay.tex);
+   d3d->dev->SetTexture(0, overlay->tex);
    d3d->dev->SetSamplerState(0, D3DSAMP_ADDRESSU, D3DTADDRESS_BORDER);
    d3d->dev->SetSamplerState(0, D3DSAMP_ADDRESSV, D3DTADDRESS_BORDER);
    d3d->dev->SetSamplerState(0, D3DSAMP_MINFILTER, D3DTEXF_LINEAR);
@@ -439,7 +439,7 @@ static bool d3d_frame(void *data, const void *frame,
    if (d3d->should_resize)
    {
       d3d_calculate_rect(d3d, d3d->screen_width, d3d->screen_height, d3d->video_info.force_aspect, g_extern.system.aspect_ratio);
-      d3d->chain->set_final_viewport(d3d->final_viewport);
+      renderchain_set_final_viewport(d3d->chain, &d3d->final_viewport);
       d3d_recompute_pass_sizes(d3d);
 
       d3d->should_resize = false;
@@ -468,7 +468,7 @@ static bool d3d_frame(void *data, const void *frame,
       d3d->dev->Clear(0, 0, D3DCLEAR_TARGET, 0, 1, 0);
    }
 
-   if (!d3d->chain->render(frame, width, height, pitch, d3d->dev_rotation))
+   if (!renderchain_render(d3d->chain, frame, width, height, pitch, d3d->dev_rotation))
    {
       RARCH_ERR("[D3D]: Failed to render scene.\n");
       return false;
@@ -478,7 +478,7 @@ static bool d3d_frame(void *data, const void *frame,
       d3d->font_ctx->render_msg(d3d, msg, NULL);
 
 #ifdef HAVE_MENU
-   if (d3d->rgui.enabled)
+   if (d3d->rgui && d3d->rgui->enabled)
       d3d_overlay_render(d3d, d3d->rgui);
 #endif
 
@@ -486,7 +486,7 @@ static bool d3d_frame(void *data, const void *frame,
    if (d3d->overlays_enabled)
    {
       for (unsigned i = 0; i < d3d->overlays.size(); i++)
-         d3d_overlay_render(d3d, d3d->overlays[i]);
+         d3d_overlay_render(d3d, &d3d->overlays[i]);
    }
 #endif
 
@@ -564,7 +564,7 @@ static void d3d_free(void *data)
    d3d_free_overlays(d3d);
 #endif
 #ifdef HAVE_MENU
-   d3d_free_overlay(d3d, &d3d->rgui);
+   d3d_free_overlay(d3d, d3d->rgui);
 #endif
    if (d3d->dev)
       d3d->dev->Release();
@@ -864,27 +864,27 @@ static void d3d_set_rgui_texture_frame(void *data,
 {
    D3DVideo *d3d = reinterpret_cast<D3DVideo*>(data);
 
-   if (!d3d->rgui.tex || d3d->rgui.tex_w != width || d3d->rgui.tex_h != height)
+   if (!d3d->rgui->tex || d3d->rgui->tex_w != width || d3d->rgui->tex_h != height)
    {
-      if (d3d->rgui.tex)
-         d3d->rgui.tex->Release();
+      if (d3d->rgui && d3d->rgui->tex)
+         d3d->rgui->tex->Release();
       if (FAILED(d3d->dev->CreateTexture(width, height, 1,
                   0, D3DFMT_A8R8G8B8,
                   D3DPOOL_MANAGED,
-                  &d3d->rgui.tex, NULL)))
+                  &d3d->rgui->tex, NULL)))
       {
          RARCH_ERR("[D3D]: Failed to create rgui texture\n");
          return;
       }
-      d3d->rgui.tex_w = width;
-      d3d->rgui.tex_h = height;
+      d3d->rgui->tex_w = width;
+      d3d->rgui->tex_h = height;
    }
 
-   d3d->rgui.alpha_mod = alpha;
+   d3d->rgui->alpha_mod = alpha;
 
 
    D3DLOCKED_RECT d3dlr;
-   if (SUCCEEDED(d3d->rgui.tex->LockRect(0, &d3dlr, NULL, D3DLOCK_NOSYSLOCK)))
+   if (SUCCEEDED(d3d->rgui->tex->LockRect(0, &d3dlr, NULL, D3DLOCK_NOSYSLOCK)))
    {
       if (rgb32)
       {
@@ -918,15 +918,20 @@ static void d3d_set_rgui_texture_frame(void *data,
          }
       }
 
-      d3d->rgui.tex->UnlockRect(0);
+      if (d3d->rgui)
+         d3d->rgui->tex->UnlockRect(0);
    }
 }
 
 static void d3d_set_rgui_texture_enable(void *data, bool state, bool full_screen)
 {
    D3DVideo *d3d = reinterpret_cast<D3DVideo*>(data);
-   d3d->rgui.enabled = state;
-   d3d->rgui.fullscreen = full_screen;
+
+   if (!d3d || !d3d->rgui)
+      return;
+
+   d3d->rgui->enabled = state;
+   d3d->rgui->fullscreen = full_screen;
 }
 #endif
 
@@ -964,15 +969,18 @@ static bool d3d_construct(void *data, const video_info_t *info, const input_driv
 #endif
 
 #ifdef HAVE_MENU
-   memset(&d3d->rgui, 0, sizeof(d3d->rgui));
-   d3d->rgui.tex_coords.x = 0;
-   d3d->rgui.tex_coords.y = 0;
-   d3d->rgui.tex_coords.w = 1;
-   d3d->rgui.tex_coords.h = 1;
-   d3d->rgui.vert_coords.x = 0;
-   d3d->rgui.vert_coords.y = 1;
-   d3d->rgui.vert_coords.w = 1;
-   d3d->rgui.vert_coords.h = -1;
+   if (d3d->rgui)
+      free(d3d->rgui);
+
+   d3d->rgui = (overlay_t*)calloc(1, sizeof(overlay_t));
+   d3d->rgui->tex_coords.x = 0;
+   d3d->rgui->tex_coords.y = 0;
+   d3d->rgui->tex_coords.w = 1;
+   d3d->rgui->tex_coords.h = 1;
+   d3d->rgui->vert_coords.x = 0;
+   d3d->rgui->vert_coords.y = 1;
+   d3d->rgui->vert_coords.w = 1;
+   d3d->rgui->vert_coords.h = -1;
 #endif
 
 #ifdef HAVE_WINDOW

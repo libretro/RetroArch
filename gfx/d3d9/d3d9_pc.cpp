@@ -167,7 +167,7 @@ void d3d_recompute_pass_sizes(void *data)
    unsigned out_width = 0;
    unsigned out_height = 0;
 
-   if (!d3d->chain->set_pass_size(0, current_width, current_height))
+   if (!renderchain_set_pass_size(d3d->chain, 0, current_width, current_height))
    {
       RARCH_ERR("[D3D]: Failed to set pass size.\n");
       return;
@@ -175,14 +175,14 @@ void d3d_recompute_pass_sizes(void *data)
 
    for (unsigned i = 1; i < d3d->shader.passes; i++)
    {
-      RenderChain::convert_geometry(link_info,
+      renderchain_convert_geometry(d3d->chain, &link_info,
             out_width, out_height,
-            current_width, current_height, d3d->final_viewport);
+            current_width, current_height, &d3d->final_viewport);
 
       link_info.tex_w = next_pow2(out_width);
       link_info.tex_h = next_pow2(out_height);
 
-      if (!d3d->chain->set_pass_size(i, link_info.tex_w, link_info.tex_h))
+      if (!renderchain_set_pass_size(d3d->chain, i, link_info.tex_w, link_info.tex_h))
       {
          RARCH_ERR("[D3D]: Failed to set pass size.\n");
          return;
@@ -238,7 +238,7 @@ bool d3d_init_imports(void *data)
       return false;
    }
 
-   d3d->chain->add_state_tracker(state_tracker);
+   renderchain_add_state_tracker(d3d->chain, state_tracker);
    return true;
 }
 
@@ -247,7 +247,7 @@ bool d3d_init_luts(void *data)
    D3DVideo *d3d = reinterpret_cast<D3DVideo*>(data);
    for (unsigned i = 0; i < d3d->shader.luts; i++)
    {
-      bool ret = d3d->chain->add_lut(d3d->shader.lut[i].id, d3d->shader.lut[i].path,
+      bool ret = renderchain_add_lut(d3d->chain, d3d->shader.lut[i].id, d3d->shader.lut[i].path,
          d3d->shader.lut[i].filter == RARCH_FILTER_UNSPEC ?
             g_settings.video.smooth :
             (d3d->shader.lut[i].filter == RARCH_FILTER_LINEAR));
@@ -324,14 +324,14 @@ bool d3d_init_chain(void *data, const video_info_t *video_info)
    link_info.pass = &d3d->shader.pass[0];
    link_info.tex_w = link_info.tex_h = video_info->input_scale * RARCH_SCALE_BASE;
 
-   delete d3d->chain;
-   d3d->chain = new RenderChain(
-         &d3d->video_info,
-         d3dr, d3d->cgCtx,
-         d3d->final_viewport);
+   if (d3d->chain)
+      free(d3d->chain);
+   d3d->chain = (renderchain_t*)calloc(1, sizeof(renderchain_t));
+   if (!d3d->chain)
+      return false;
 
-   if (!d3d->chain->init(link_info,
-            d3d->video_info.rgb32 ? RenderChain::ARGB : RenderChain::RGB565))
+   if (!renderchain_init(d3d->chain, &d3d->video_info, d3dr, d3d->cgCtx, &d3d->final_viewport, &link_info,
+            d3d->video_info.rgb32 ? ARGB : RGB565))
    {
       RARCH_ERR("[D3D9]: Failed to init render chain.\n");
       return false;
@@ -344,9 +344,9 @@ bool d3d_init_chain(void *data, const video_info_t *video_info)
 
    for (unsigned i = 1; i < d3d->shader.passes; i++)
    {
-      RenderChain::convert_geometry(link_info,
+      renderchain_convert_geometry(d3d->chain, &link_info,
             out_width, out_height,
-            current_width, current_height, d3d->final_viewport);
+            current_width, current_height, &d3d->final_viewport);
 
       link_info.pass = &d3d->shader.pass[i];
       link_info.tex_w = next_pow2(out_width);
@@ -355,7 +355,7 @@ bool d3d_init_chain(void *data, const video_info_t *video_info)
       current_width = out_width;
       current_height = out_height;
 
-      if (!d3d->chain->add_pass(link_info))
+      if (!renderchain_add_pass(d3d->chain, &link_info))
       {
          RARCH_ERR("[D3D9]: Failed to add pass.\n");
          return false;

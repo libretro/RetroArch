@@ -130,10 +130,9 @@ struct D3DVideo
 #endif
 
 #ifdef HAVE_MENU
-      overlay_t rgui;
+      overlay_t *rgui;
 #endif
-
-      RenderChain *chain;
+      void *chain;
 };
 
 #ifndef _XBOX
