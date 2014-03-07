@@ -89,7 +89,6 @@ const char *config_get_default_video(void)
       case VIDEO_XENON360:
          return "xenon360";
       case VIDEO_XDK_D3D:
-         return "xdk_d3d";
       case VIDEO_D3D9:
          return "d3d";
       case VIDEO_PSP1:
