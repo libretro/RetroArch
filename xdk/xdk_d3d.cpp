@@ -20,7 +20,7 @@
 #endif
 
 #include "../driver.h"
-#include "d3d.h"
+#include "xdk_d3d.h"
 
 #ifdef HAVE_HLSL
 #include "../gfx/shader_hlsl.h"
