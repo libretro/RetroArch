@@ -19,21 +19,23 @@
 #include "render_chain.hpp"
 
 #include "../gfx_common.h"
+
 #ifndef _XBOX
 #include "../context/win32_common.h"
+#define HAVE_MONITOR
+#define HAVE_WINDOW
 #endif
 
 #include "../../compat/posix_string.h"
 #include "../../performance.h"
 
-#ifndef _XBOX
-#define HAVE_MONITOR
-#define HAVE_WINDOW
-#endif
-
 #ifdef HAVE_MONITOR
 #define IDI_ICON 1
 #define MAX_MONITORS 9
+
+#ifdef HAVE_RMENU_XUI
+extern bool menu_iterate_xui(void);
+#endif
 
 namespace Monitor
 {
@@ -211,6 +213,9 @@ static bool d3d_initialize(void *data, const video_info_t *info)
       return false;
    }
 
+#if defined(_XBOX360)
+   strlcpy(g_settings.video.font_path, "game:\\media\\Arial_12.xpr", sizeof(g_settings.video.font_path));
+#endif
    d3d->font_ctx = d3d_font_init_first(d3d, g_settings.video.font_path, g_settings.video.font_size);
    if (!d3d->font_ctx)
    {
@@ -475,7 +480,22 @@ static bool d3d_frame(void *data, const void *frame,
    }
 
    if (d3d->font_ctx && d3d->font_ctx->render_msg)
-      d3d->font_ctx->render_msg(d3d, msg, NULL);
+   {
+      font_params_t font_parms = {0};
+#ifdef _XBOX
+#if defined(_XBOX1)
+      float msg_width  = 60;
+      float msg_height = 365;
+#elif defined(_XBOX360)
+      float msg_width  = (g_extern.lifecycle_state & (1ULL << MODE_MENU_HD)) ? 160 : 100;
+      float msg_height = 120;
+#endif
+      font_parms.x = msg_width;
+      font_parms.y = msg_height;
+      font_parms.scale = 21;
+#endif
+      d3d->font_ctx->render_msg(d3d, msg, &font_params);
+   }
 
 #ifdef HAVE_MENU
    if (d3d->rgui && d3d->rgui->enabled)
@@ -492,6 +512,13 @@ static bool d3d_frame(void *data, const void *frame,
 
    RARCH_PERFORMANCE_STOP(d3d_frame);
 
+#ifdef HAVE_MENU
+#ifdef HAVE_RMENU_XUI
+   if (g_extern.lifecycle_state & (1ULL << MODE_MENU))
+      menu_iterate_xui();
+#endif
+#endif
+
    if (d3d && d3d->ctx_driver && d3d->ctx_driver->update_window_title)
       d3d->ctx_driver->update_window_title();
 
@@ -505,7 +532,12 @@ static void d3d_set_nonblock_state(void *data, bool state)
 {
    d3d_video_t *d3d = (d3d_video_t*)data;
    d3d->video_info.vsync = !state;
+
+   if (d3d->ctx_driver && d3d->ctx_driver->swap_interval)
+      d3d->ctx_driver->swap_interval(state ? 0 : 1);
+#ifndef _XBOX
    d3d_restore(d3d);
+#endif
 }
 
 static bool d3d_alive(void *data)
@@ -1002,7 +1034,6 @@ static bool d3d_construct(void *data, const video_info_t *info, const input_driv
 
 #ifdef HAVE_MONITOR
    RECT mon_rect = d3d_monitor_rect(d3d);
-#endif
 
    bool windowed_full = g_settings.video.windowed_fullscreen;
 
@@ -1012,6 +1043,15 @@ static bool d3d_construct(void *data, const video_info_t *info, const input_driv
 
    d3d->screen_width  = info->fullscreen ? full_x : info->width;
    d3d->screen_height = info->fullscreen ? full_y : info->height;
+#else
+   unsigned full_x, full_y;
+
+   if (d3d->ctx_driver && d3d->ctx_driver->get_video_size)
+      d3d->ctx_driver->get_video_size(&full_x, &full_y);
+
+   d3d->screen_width  = info->fullscreen ? full_x : info->width;
+   d3d->screen_height = info->fullscreen ? full_y : info->height;
+#endif
 
    unsigned win_width  = d3d->screen_width;
    unsigned win_height = d3d->screen_height;
@@ -1045,7 +1085,6 @@ static bool d3d_construct(void *data, const video_info_t *info, const input_driv
    driver.video_display = 0;
    driver.video_window  = (uintptr_t)d3d->hWnd;
 
-#ifdef HAVE_WINDOW
    if (d3d && d3d->ctx_driver && d3d->ctx_driver->show_mouse)
       d3d->ctx_driver->show_mouse(!info->fullscreen
 #ifdef HAVE_OVERLAY
@@ -1053,6 +1092,7 @@ static bool d3d_construct(void *data, const video_info_t *info, const input_driv
 #endif
    );
 
+#ifdef HAVE_WINDOW
    ShowWindow(d3d->hWnd, SW_RESTORE);
    UpdateWindow(d3d->hWnd);
    SetForegroundWindow(d3d->hWnd);
@@ -1086,9 +1126,15 @@ static bool d3d_construct(void *data, const video_info_t *info, const input_driv
 static const gfx_ctx_driver_t *d3d_get_context(void)
 {
    // TODO: GL core contexts through ANGLE?
-   enum gfx_ctx_api api = GFX_CTX_DIRECT3D9_API;
-   unsigned major = 0;
-   unsigned minor = 0;
+   enum gfx_ctx_api api;
+   unsigned major, minor;
+#if defined(_XBOX1)
+   api = GFX_CTX_DIRECT3D8_API;
+   major = 8;
+#else
+   api = GFX_CTX_DIRECT3D9_API;
+   major = 9;
+#endif
    return gfx_ctx_init_first(api, major, minor);
 }
 

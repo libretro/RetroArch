@@ -243,7 +243,7 @@ bool renderchain_render(void *chain_data, const void *data,
       unsigned width, unsigned height, unsigned pitch, unsigned rotation)
 {
    renderchain_t *chain = (renderchain_t*)chain_data;
-   LPDIRECT3DDEVICE d3dr = chain->dev;
+   LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)chain->dev;
    renderchain_start_render(chain);
 
    unsigned current_width = width;
@@ -252,6 +252,10 @@ bool renderchain_render(void *chain_data, const void *data,
    unsigned out_height = 0;
    renderchain_convert_geometry(chain, &chain->passes[0].info, out_width, out_height,
          current_width, current_height, chain->final_viewport);
+#ifdef _XBOX1
+   d3dr->SetFlickerFilter(g_extern.console.screen.flicker_filter_index);
+   d3dr->SetSoftDisplayFilter(g_extern.lifecycle_state & (1ULL << MODE_VIDEO_SOFT_FILTER_ENABLE));
+#endif
    renderchain_blit_to_texture(chain, data, width, height, pitch);
 
    // Grab back buffer.
@@ -476,13 +480,17 @@ void renderchain_set_mvp(void *data, CGprogram &vPrg,
 
 void renderchain_clear_texture(void *data, Pass &pass)
 {
-   renderchain_t *chain = (renderchain_t*)data;
    D3DLOCKED_RECT d3dlr;
+#ifdef _XBOX
+   D3DTexture_LockRect(pass.tex, 0, &d3dlr, NULL, D3DLOCK_NOSYSLOCK);
+   memset(d3dlr.pBits, 0, pass.info.tex_h * d3dlr.Pitch);
+#else
    if (SUCCEEDED(pass.tex->LockRect(0, &d3dlr, NULL, D3DLOCK_NOSYSLOCK)))
    {
       memset(d3dlr.pBits, 0, pass.info.tex_h * d3dlr.Pitch);
       pass.tex->UnlockRect(0);
    }
+#endif
 }
 
 void renderchain_convert_geometry(void *data, const LinkInfo *info,
@@ -532,17 +540,26 @@ void renderchain_blit_to_texture(void *data, const void *frame,
       renderchain_clear_texture(chain, first);
 
    D3DLOCKED_RECT d3dlr;
+#ifdef _XBOX360
+   D3DSURFACE_DESC desc;
+   D3DTexture_LockRect(first.tex, 0, &d3dlr, NULL, D3DLOCK_NOSYSLOCK);
+   first.tex->GetLevelDesc(0, &desc);
+      XGCopySurface(d3dlr.pBits, d3dlr.Pitch, width, height, desc.Format, NULL, frame,
+                                        pitch, desc.Format, NULL, 0, 0);
+
+#else
    if (SUCCEEDED(first.tex->LockRect(0, &d3dlr, NULL, D3DLOCK_NOSYSLOCK)))
    {
       for (unsigned y = 0; y < height; y++)
       {
-         const uint8_t *in = reinterpret_cast<const uint8_t*>(frame) + y * pitch;
-         uint8_t *out = reinterpret_cast<uint8_t*>(d3dlr.pBits) + y * d3dlr.Pitch;
+         const uint8_t *in = (const uint8_t*)frame + y * pitch;
+         uint8_t *out =(uint8_t*)d3dlr.pBits + y * d3dlr.Pitch;
          memcpy(out, in, width * chain->pixel_size);
       }
 
       first.tex->UnlockRect(0);
    }
+#endif
 }
 
 void renderchain_render_pass(void *data, Pass &pass, unsigned pass_index)
@@ -550,13 +567,28 @@ void renderchain_render_pass(void *data, Pass &pass, unsigned pass_index)
    renderchain_t *chain = (renderchain_t*)data;
    LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)chain->dev;
    renderchain_set_shaders(chain, pass.fPrg, pass.vPrg);
+#ifdef _XBOX
+   if (g_extern.frame_count)
+   {
+#if defined(_XBOX1)
+      d3dr->SwitchTexture(0, pass.tex);
+#elif defined(_XBOX360)
+      d3dr->SetTextureFetchConstant(0, pass.tex);
+#endif
+   }
+   else if(pass.tex)
+#endif
    d3dr->SetTexture(0, pass.tex);
    d3dr->SetSamplerState(0, D3DSAMP_MINFILTER,
          translate_filter(pass.info.pass->filter));
    d3dr->SetSamplerState(0, D3DSAMP_MAGFILTER,
          translate_filter(pass.info.pass->filter));
 
+#ifdef _XBOX1
+   d3dr->SetVertexShader(D3DFVF_XYZ | D3DFVF_TEX1);
+#else
    d3dr->SetVertexDeclaration(pass.vertex_decl);
+#endif
    for (unsigned i = 0; i < 4; i++)
       d3dr->SetStreamSource(i, pass.vertex_buf, 0, sizeof(Vertex));
 
@@ -626,7 +658,7 @@ void renderchain_log_info(void *data, const LinkInfo *info)
 void renderchain_unbind_all(void *data)
 {
    renderchain_t *chain = (renderchain_t*)data;
-   LPDIRECT3DDEVICE d3dr = chain->dev;
+   LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)chain->dev;
    // Have to be a bit anal about it.
    // Render targets hate it when they have filters apparently.
    for (unsigned i = 0; i < chain->bound_tex.size(); i++)
