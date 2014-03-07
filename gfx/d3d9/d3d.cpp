@@ -51,7 +51,7 @@ static BOOL CALLBACK monitor_enum_proc(HMONITOR hMonitor, HDC hdcMonitor, LPRECT
 // Multi-monitor support.
 RECT d3d_monitor_rect(void *data)
 {
-   D3DVideo *d3d = reinterpret_cast<D3DVideo*>(data);
+   d3d_video_t *d3d = (d3d_video_t*)data;
    Monitor::num_mons = 0;
    EnumDisplayMonitors(NULL, NULL, monitor_enum_proc, 0);
 
@@ -88,7 +88,7 @@ RECT d3d_monitor_rect(void *data)
 
 static void d3d_deinitialize(void *data)
 {
-   D3DVideo *d3d = reinterpret_cast<D3DVideo*>(data);
+   d3d_video_t *d3d = (d3d_video_t*)data;
 
    if (d3d->font_ctx && d3d->font_ctx->deinit)
       d3d->font_ctx->deinit(d3d);
@@ -107,7 +107,7 @@ extern LRESULT CALLBACK WindowProc(HWND hWnd, UINT message,
 
 static bool d3d_init_base(void *data, const video_info_t *info)
 {
-   D3DVideo *d3d = reinterpret_cast<D3DVideo*>(data);
+   d3d_video_t *d3d = (d3d_video_t*)data;
    D3DPRESENT_PARAMETERS d3dpp;
    d3d_make_d3dpp(d3d, info, &d3dpp);
 
@@ -150,7 +150,7 @@ static void d3d_calculate_rect(void *data, unsigned width, unsigned height,
 
 static bool d3d_initialize(void *data, const video_info_t *info)
 {
-   D3DVideo *d3d = reinterpret_cast<D3DVideo*>(data);
+   d3d_video_t *d3d = (d3d_video_t*)data;
    bool ret = true;
    if (!d3d->g_pD3D)
       ret = d3d_init_base(d3d, info);
@@ -223,7 +223,7 @@ static bool d3d_initialize(void *data, const video_info_t *info)
 
 bool d3d_restore(void *data)
 {
-   D3DVideo *d3d = reinterpret_cast<D3DVideo*>(data);
+   d3d_video_t *d3d = (d3d_video_t*)data;
    d3d_deinitialize(d3d);
    d3d->needs_restore = !d3d_initialize(d3d, &d3d->video_info);
 
@@ -236,7 +236,7 @@ bool d3d_restore(void *data)
 #ifdef HAVE_OVERLAY
 static void d3d_overlay_render(void *data, overlay_t *overlay)
 {
-   D3DVideo *d3d = reinterpret_cast<D3DVideo*>(data);
+   d3d_video_t *d3d = (d3d_video_t*)data;
 
    if (!overlay || !overlay->tex)
       return;
@@ -355,7 +355,7 @@ static void d3d_overlay_render(void *data, overlay_t *overlay)
 
 static void d3d_set_viewport(void *data, int x, int y, unsigned width, unsigned height)
 {
-   D3DVideo *d3d = reinterpret_cast<D3DVideo*>(data);
+   d3d_video_t *d3d = (d3d_video_t*)data;
    D3DVIEWPORT viewport;
 
    // D3D doesn't support negative X/Y viewports ...
@@ -379,7 +379,7 @@ static void d3d_set_viewport(void *data, int x, int y, unsigned width, unsigned 
 static void d3d_calculate_rect(void *data, unsigned width, unsigned height,
    bool keep, float desired_aspect)
 {
-   D3DVideo *d3d = reinterpret_cast<D3DVideo*>(data);
+   d3d_video_t *d3d = (d3d_video_t*)data;
 
    if (g_settings.video.scale_integer)
    {
@@ -419,7 +419,7 @@ static bool d3d_frame(void *data, const void *frame,
       unsigned width, unsigned height, unsigned pitch,
       const char *msg)
 {
-   D3DVideo *d3d = reinterpret_cast<D3DVideo*>(data);
+   d3d_video_t *d3d = (d3d_video_t*)data;
 
   if (!frame)
       return true;
@@ -503,14 +503,14 @@ static bool d3d_frame(void *data, const void *frame,
 
 static void d3d_set_nonblock_state(void *data, bool state)
 {
-   D3DVideo *d3d = reinterpret_cast<D3DVideo*>(data);
+   d3d_video_t *d3d = (d3d_video_t*)data;
    d3d->video_info.vsync = !state;
    d3d_restore(d3d);
 }
 
 static bool d3d_alive(void *data)
 {
-   D3DVideo *d3d = reinterpret_cast<D3DVideo*>(data);
+   d3d_video_t *d3d = (d3d_video_t*)data;
    bool quit = false, resize = false;
 
    if (d3d->ctx_driver && d3d->ctx_driver->check_window)
@@ -525,7 +525,7 @@ static bool d3d_alive(void *data)
 
 static bool d3d_focus(void *data)
 {
-   D3DVideo *d3d = reinterpret_cast<D3DVideo*>(data);
+   d3d_video_t *d3d = (d3d_video_t*)data;
    if (d3d && d3d->ctx_driver && d3d->ctx_driver->has_focus)
       return d3d->ctx_driver->has_focus();
    return false;
@@ -533,14 +533,14 @@ static bool d3d_focus(void *data)
 
 static void d3d_set_rotation(void *data, unsigned rot)
 {
-   D3DVideo *d3d = reinterpret_cast<D3DVideo*>(data);
+   d3d_video_t *d3d = (d3d_video_t*)data;
    d3d->dev_rotation = rot;
 }
 
 #ifdef HAVE_OVERLAY
 void d3d_free_overlay(void *data, overlay_t *overlay)
 {
-   D3DVideo *d3d = reinterpret_cast<D3DVideo*>(data);
+   d3d_video_t *d3d = (d3d_video_t*)data;
    if (overlay->tex)
       overlay->tex->Release();
    if (overlay->vert_buf)
@@ -549,7 +549,7 @@ void d3d_free_overlay(void *data, overlay_t *overlay)
 
 void d3d_free_overlays(void *data)
 {
-   D3DVideo *d3d = reinterpret_cast<D3DVideo*>(data);
+   d3d_video_t *d3d = (d3d_video_t*)data;
    for (unsigned i = 0; i < d3d->overlays.size(); i++)
       d3d_free_overlay(d3d, &d3d->overlays[i]);
    d3d->overlays.clear();
@@ -558,7 +558,7 @@ void d3d_free_overlays(void *data)
 
 static void d3d_free(void *data)
 {
-   D3DVideo *d3d = reinterpret_cast<D3DVideo*>(data);
+   d3d_video_t *d3d = (d3d_video_t*)data;
    d3d_deinitialize(d3d);
 #ifdef HAVE_OVERLAY
    d3d_free_overlays(d3d);
@@ -576,7 +576,8 @@ static void d3d_free(void *data)
 #endif
    DestroyWindow(d3d->hWnd);
 
-   delete d3d;
+   if (d3d)
+      free(d3d);
 
 #ifndef _XBOX
    UnregisterClass("RetroArch", GetModuleHandle(NULL));
@@ -585,7 +586,7 @@ static void d3d_free(void *data)
 
 static void d3d_viewport_info(void *data, struct rarch_viewport *vp)
 {
-   D3DVideo *d3d = reinterpret_cast<D3DVideo*>(data);
+   d3d_video_t *d3d = (d3d_video_t*)data;
 
    vp->x           = d3d->final_viewport.X;
    vp->y           = d3d->final_viewport.Y;
@@ -598,7 +599,7 @@ static void d3d_viewport_info(void *data, struct rarch_viewport *vp)
 
 static bool d3d_read_viewport(void *data, uint8_t *buffer)
 {
-   D3DVideo *d3d = reinterpret_cast<D3DVideo*>(data);
+   d3d_video_t *d3d = (d3d_video_t*)data;
    LPDIRECT3DDEVICE d3dr = d3d->dev;
 
    RARCH_PERFORMANCE_INIT(d3d_read_viewport);
@@ -663,7 +664,7 @@ end:
 
 static bool d3d_set_shader(void *data, enum rarch_shader_type type, const char *path)
 {
-   D3DVideo *d3d = reinterpret_cast<D3DVideo*>(data);
+   d3d_video_t *d3d = (d3d_video_t*)data;
    std::string shader = "";
    if (path && type == RARCH_SHADER_CG)
       shader = path;
@@ -698,7 +699,7 @@ static void d3d_overlay_tex_geom(void *data,
       float x, float y,
       float w, float h)
 {
-   D3DVideo *d3d = reinterpret_cast<D3DVideo*>(data);
+   d3d_video_t *d3d = (d3d_video_t*)data;
 
    d3d->overlays[index].tex_coords.x = x;
    d3d->overlays[index].tex_coords.y = y;
@@ -711,7 +712,7 @@ static void d3d_overlay_vertex_geom(void *data,
       float x, float y,
       float w, float h)
 {
-   D3DVideo *d3d = reinterpret_cast<D3DVideo*>(data);
+   d3d_video_t *d3d = (d3d_video_t*)data;
 
    y = 1.0f - y;
    h = -h;
@@ -723,7 +724,7 @@ static void d3d_overlay_vertex_geom(void *data,
 
 static bool d3d_overlay_load(void *data, const texture_image *images, unsigned num_images)
 {
-   D3DVideo *d3d = reinterpret_cast<D3DVideo*>(data);
+   d3d_video_t *d3d = (d3d_video_t*)data;
    d3d_free_overlays(data);
    d3d->overlays.resize(num_images);
 
@@ -764,7 +765,7 @@ static bool d3d_overlay_load(void *data, const texture_image *images, unsigned n
 
 static void d3d_overlay_enable(void *data, bool state)
 {
-   D3DVideo *d3d = reinterpret_cast<D3DVideo*>(data);
+   d3d_video_t *d3d = (d3d_video_t*)data;
 
    for (unsigned i = 0; i < d3d->overlays.size(); i++)
       d3d->overlays_enabled = state;
@@ -775,7 +776,7 @@ static void d3d_overlay_enable(void *data, bool state)
 
 static void d3d_overlay_full_screen(void *data, bool enable)
 {
-   D3DVideo *d3d = reinterpret_cast<D3DVideo*>(data);
+   d3d_video_t *d3d = (d3d_video_t*)data;
 
    for (unsigned i = 0; i < d3d->overlays.size(); i++)
       d3d->overlays[i].fullscreen = enable;
@@ -783,7 +784,7 @@ static void d3d_overlay_full_screen(void *data, bool enable)
 
 static void d3d_overlay_set_alpha(void *data, unsigned index, float mod)
 {
-   D3DVideo *d3d = reinterpret_cast<D3DVideo*>(data);
+   d3d_video_t *d3d = (d3d_video_t*)data;
    d3d->overlays[index].alpha_mod = mod;
 }
 
@@ -805,7 +806,7 @@ static void d3d_get_overlay_interface(void *data, const video_overlay_interface_
 
 static void d3d_set_aspect_ratio(void *data, unsigned aspect_ratio_idx)
 {
-   D3DVideo *d3d = reinterpret_cast<D3DVideo*>(data);
+   d3d_video_t *d3d = (d3d_video_t*)data;
 
    switch (aspect_ratio_idx)
    {
@@ -833,14 +834,14 @@ static void d3d_set_aspect_ratio(void *data, unsigned aspect_ratio_idx)
 
 static void d3d_apply_state_changes(void *data)
 {
-   D3DVideo *d3d = reinterpret_cast<D3DVideo*>(data);
+   d3d_video_t *d3d = (d3d_video_t*)data;
    d3d->should_resize = true;
 }
 
 static void d3d_set_osd_msg(void *data, const char *msg, void *userdata)
 {
    font_params_t *params = (font_params_t*)userdata;
-   D3DVideo *d3d = reinterpret_cast<D3DVideo*>(data);
+   d3d_video_t *d3d = (d3d_video_t*)data;
 
    if (params)
       d3d_set_font_rect(d3d, params);
@@ -851,7 +852,7 @@ static void d3d_set_osd_msg(void *data, const char *msg, void *userdata)
 
 static void d3d_show_mouse(void *data, bool state)
 {
-   D3DVideo *d3d = reinterpret_cast<D3DVideo*>(data);
+   d3d_video_t *d3d = (d3d_video_t*)data;
 
    if (d3d && d3d->ctx_driver && d3d->ctx_driver->show_mouse)
       d3d->ctx_driver->show_mouse(state);
@@ -862,7 +863,7 @@ static void d3d_set_rgui_texture_frame(void *data,
       const void *frame, bool rgb32, unsigned width, unsigned height,
       float alpha)
 {
-   D3DVideo *d3d = reinterpret_cast<D3DVideo*>(data);
+   d3d_video_t *d3d = (d3d_video_t*)data;
 
    if (!d3d->rgui->tex || d3d->rgui->tex_w != width || d3d->rgui->tex_h != height)
    {
@@ -925,7 +926,7 @@ static void d3d_set_rgui_texture_frame(void *data,
 
 static void d3d_set_rgui_texture_enable(void *data, bool state, bool full_screen)
 {
-   D3DVideo *d3d = reinterpret_cast<D3DVideo*>(data);
+   d3d_video_t *d3d = (d3d_video_t*)data;
 
    if (!d3d || !d3d->rgui)
       return;
@@ -962,7 +963,7 @@ static void d3d_get_poke_interface(void *data, const video_poke_interface_t **if
 static bool d3d_construct(void *data, const video_info_t *info, const input_driver_t **input,
       void **input_data)
 {
-   D3DVideo *d3d = reinterpret_cast<D3DVideo*>(data);
+   d3d_video_t *d3d = (d3d_video_t*)data;
    d3d->should_resize = false;
 #ifndef _XBOX
    gfx_set_dwm();
@@ -1094,14 +1095,14 @@ static const gfx_ctx_driver_t *d3d_get_context(void)
 static void *d3d_init(const video_info_t *info, const input_driver_t **input,
       void **input_data)
 {
-   D3DVideo *vid = new D3DVideo;
+   d3d_video_t *vid = (d3d_video_t*)calloc(1, sizeof(d3d_video_t));
    if (!vid)
       return NULL;
 
    vid->ctx_driver = d3d_get_context();
    if (!vid->ctx_driver)
    {
-      delete vid;
+      free(vid);
       return NULL;
    }
 
@@ -1122,7 +1123,7 @@ static void *d3d_init(const video_info_t *info, const input_driver_t **input,
    if (!d3d_construct(vid, info, input, input_data))
    {
       RARCH_ERR("[D3D]: Failed to init D3D.\n");
-      delete vid;
+      free(vid);
       return NULL;
    }
 

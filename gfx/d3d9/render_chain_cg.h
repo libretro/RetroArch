@@ -542,7 +542,7 @@ void renderchain_bind_pass(void *data, Pass &pass, unsigned pass_index)
 
 bool d3d_init_shader(void *data)
 {
-   D3DVideo *d3d = reinterpret_cast<D3DVideo*>(data);
+   d3d_video_t *d3d = (d3d_video_t*)data;
    d3d->cgCtx = cgCreateContext();
    if (!d3d->cgCtx)
       return false;
@@ -558,7 +558,7 @@ bool d3d_init_shader(void *data)
 
 void d3d_deinit_shader(void *data)
 {
-   D3DVideo *d3d = reinterpret_cast<D3DVideo*>(data);
+   d3d_video_t *d3d = (d3d_video_t*)data;
    if (!d3d->cgCtx)
       return;
 

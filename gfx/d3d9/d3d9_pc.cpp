@@ -29,7 +29,7 @@
 #endif
 #endif
 
-static D3DVideo *curD3D = NULL;
+static d3d_video_t *curD3D = NULL;
 static bool d3d_quit = false;
 static void *dinput;
 
@@ -37,8 +37,8 @@ extern bool d3d_restore(void *data);
 
 static void d3d_resize(unsigned new_width, unsigned new_height)
 {
-   D3DVideo *d3d = reinterpret_cast<D3DVideo*>(curD3D);
-   LPDIRECT3DDEVICE d3dr = d3d->dev;
+   d3d_video_t *d3d = (d3d_video_t*)curD3D;
+   LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)d3d->dev;
    if (!d3dr)
       return;
 
@@ -61,7 +61,7 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT message,
         case WM_CREATE:
 			LPCREATESTRUCT p_cs;
 			p_cs = (LPCREATESTRUCT)lParam;
-			curD3D = (D3DVideo*)p_cs->lpCreateParams;
+			curD3D = (d3d_video_t*)p_cs->lpCreateParams;
 			break;
 
         case WM_CHAR:
@@ -91,7 +91,7 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT message,
 
 bool d3d_process_shader(void *data)
 {
-   D3DVideo *d3d = reinterpret_cast<D3DVideo*>(data);
+   d3d_video_t *d3d = (d3d_video_t*)data;
 #ifdef HAVE_FBO
    if (strcmp(path_get_extension(d3d->cg_shader.c_str()), "cgp") == 0)
       return d3d_init_multipass(d3d);
@@ -102,8 +102,8 @@ bool d3d_process_shader(void *data)
 
 static void gfx_ctx_d3d_swap_buffers(void)
 {
-   D3DVideo *d3d = reinterpret_cast<D3DVideo*>(driver.video_data);
-   LPDIRECT3DDEVICE d3dr = d3d->dev;
+   d3d_video_t *d3d = (d3d_video_t*)driver.video_data;
+   LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)d3d->dev;
    if (d3dr->Present(NULL, NULL, NULL, NULL) != D3D_OK)
    {
       d3d->needs_restore = true;
@@ -113,7 +113,7 @@ static void gfx_ctx_d3d_swap_buffers(void)
 
 static void gfx_ctx_d3d_update_title(void)
 {
-   D3DVideo *d3d = reinterpret_cast<D3DVideo*>(driver.video_data);
+   d3d_video_t *d3d = (d3d_video_t*)driver.video_data;
    char buffer[128], buffer_fps[128];
    bool fps_draw = g_settings.fps_show;
    if (gfx_get_fps(buffer, sizeof(buffer), fps_draw ? buffer_fps : NULL, sizeof(buffer_fps)))
@@ -131,7 +131,7 @@ static void gfx_ctx_d3d_update_title(void)
 
 void d3d_set_font_rect(void *data, font_params_t *params)
 {
-   D3DVideo *d3d = reinterpret_cast<D3DVideo*>(data);
+   d3d_video_t *d3d = (d3d_video_t*)data;
    float pos_x = g_settings.video.msg_pos_x;
    float pos_y = g_settings.video.msg_pos_y;
    float font_size = g_settings.video.font_size;
@@ -157,7 +157,7 @@ void d3d_set_font_rect(void *data, font_params_t *params)
 
 void d3d_recompute_pass_sizes(void *data)
 {
-   D3DVideo *d3d = reinterpret_cast<D3DVideo*>(data);
+   d3d_video_t *d3d = (d3d_video_t*)data;
    LinkInfo link_info = {0};
    link_info.pass = &d3d->shader.pass[0];
    link_info.tex_w = link_info.tex_h = d3d->video_info.input_scale * RARCH_SCALE_BASE;
@@ -197,7 +197,7 @@ void d3d_recompute_pass_sizes(void *data)
 
 bool d3d_init_singlepass(void *data)
 {
-   D3DVideo *d3d = reinterpret_cast<D3DVideo*>(data);
+   d3d_video_t *d3d = (d3d_video_t*)data;
    memset(&d3d->shader, 0, sizeof(d3d->shader));
    d3d->shader.passes = 1;
    gfx_shader_pass &pass = d3d->shader.pass[0];
@@ -211,7 +211,7 @@ bool d3d_init_singlepass(void *data)
 
 bool d3d_init_imports(void *data)
 {
-   D3DVideo *d3d = reinterpret_cast<D3DVideo*>(data);
+   d3d_video_t *d3d = (d3d_video_t*)data;
    if (!d3d->shader.variables)
       return true;
 
@@ -244,7 +244,7 @@ bool d3d_init_imports(void *data)
 
 bool d3d_init_luts(void *data)
 {
-   D3DVideo *d3d = reinterpret_cast<D3DVideo*>(data);
+   d3d_video_t *d3d = (d3d_video_t*)data;
    for (unsigned i = 0; i < d3d->shader.luts; i++)
    {
       bool ret = renderchain_add_lut(d3d->chain, d3d->shader.lut[i].id, d3d->shader.lut[i].path,
@@ -262,7 +262,7 @@ bool d3d_init_luts(void *data)
 #ifdef HAVE_FBO
 bool d3d_init_multipass(void *data)
 {
-   D3DVideo *d3d = reinterpret_cast<D3DVideo*>(data);
+   d3d_video_t *d3d = (d3d_video_t*)data;
    config_file_t *conf = config_file_new(d3d->cg_shader.c_str());
    if (!conf)
    {
@@ -316,8 +316,8 @@ bool d3d_init_multipass(void *data)
 
 bool d3d_init_chain(void *data, const video_info_t *video_info)
 {
-   D3DVideo *d3d = reinterpret_cast<D3DVideo*>(data);
-   LPDIRECT3DDEVICE d3dr = d3d->dev;
+   d3d_video_t *d3d = (d3d_video_t*)data;
+   LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)d3d->dev;
    // Setup information for first pass.
    LinkInfo link_info = {0};
 
@@ -379,8 +379,9 @@ bool d3d_init_chain(void *data, const video_info_t *video_info)
 
 void d3d_deinit_chain(void *data)
 {
-   D3DVideo *d3d = reinterpret_cast<D3DVideo*>(data);
-   delete d3d->chain;
+   d3d_video_t *d3d = (d3d_video_t*)data;
+   if (d3d->chain)
+      free(d3d->chain);
    d3d->chain = NULL;
 }
 
@@ -396,7 +397,7 @@ static void gfx_ctx_d3d_show_mouse(bool state)
 
 void d3d_make_d3dpp(void *data, const video_info_t *info, D3DPRESENT_PARAMETERS *d3dpp)
 {
-   D3DVideo *d3d = reinterpret_cast<D3DVideo*>(data);
+   d3d_video_t *d3d = (d3d_video_t*)data;
    memset(d3dpp, 0, sizeof(*d3dpp));
 
    d3dpp->Windowed = g_settings.video.windowed_fullscreen || !info->fullscreen;
@@ -430,7 +431,7 @@ void d3d_make_d3dpp(void *data, const video_info_t *info, D3DPRESENT_PARAMETERS 
 static void gfx_ctx_d3d_check_window(bool *quit,
    bool *resize, unsigned *width, unsigned *height, unsigned frame_count)
 {
-   D3DVideo *d3d = reinterpret_cast<D3DVideo*>(driver.video_data);
+   d3d_video_t *d3d = (d3d_video_t*)driver.video_data;
    *quit = false;
    *resize = false;
 
@@ -452,7 +453,7 @@ static bool gfx_ctx_d3d_has_focus(void)
 #ifdef _XBOX
    return true;
 #else
-   D3DVideo *d3d = reinterpret_cast<D3DVideo*>(driver.video_data);
+   d3d_video_t *d3d = (d3d_video_t*)driver.video_data;
    return GetFocus() == d3d->hWnd;
 #endif
 }
