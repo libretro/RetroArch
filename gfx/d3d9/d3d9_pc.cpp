@@ -510,7 +510,7 @@ static void gfx_ctx_d3d_input_driver(const input_driver_t **input, void **input_
 
 static void gfx_ctx_d3d_get_video_size(unsigned *width, unsigned *height)
 {
-#ifndef _XBOX
+#ifdef _XBOX
    (void)width;
    (void)height;
 #if defined(_XBOX360)
@@ -634,5 +634,5 @@ const gfx_ctx_driver_t gfx_ctx_d3d9 = {
    gfx_ctx_d3d_input_driver,
    NULL,
    gfx_ctx_d3d_show_mouse,
-   "d3d9",
+   "d3d",
 };
