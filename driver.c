@@ -104,10 +104,7 @@ static const video_driver_t *video_drivers[] = {
 #ifdef XENON
    &video_xenon360,
 #endif
-#if defined(_XBOX) && (defined(HAVE_D3D8) || defined(HAVE_D3D9))
-   &video_xdk_d3d,
-#endif
-#if defined(HAVE_WIN32_D3D9)
+#if defined(_XBOX) && (defined(HAVE_D3D8) || defined(HAVE_D3D9)) || defined(HAVE_WIN32_D3D9)
    &video_d3d,
 #endif
 #ifdef SN_TARGET_PSP2
