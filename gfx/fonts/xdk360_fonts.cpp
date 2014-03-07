@@ -269,10 +269,10 @@ static void xdk_deinit_font(void *data)
       m_xprResource.Destroy();
 }
 
-void xdk_render_msg_post(xdk360_video_font_t * font)
+static void xdk_render_msg_post(xdk360_video_font_t * font, void *video_data)
 {
    // Cache the global pointer into a register
-   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
+   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)video_data;
    LPDIRECT3DDEVICE d3dr = d3d->dev;
 
    d3dr->SetTexture(0, NULL);
@@ -282,9 +282,9 @@ void xdk_render_msg_post(xdk360_video_font_t * font)
    d3dr->SetRenderState( D3DRS_VIEWPORTENABLE, font->m_dwSavedState );
 }
 
-static void xdk_render_msg_pre(xdk360_video_font_t * font)
+static void xdk_render_msg_pre(xdk360_video_font_t * font, void *video_data)
 {
-   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
+   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)video_data;
    LPDIRECT3DDEVICE d3dr = d3d->dev;
 
    // Save state
@@ -314,10 +314,10 @@ static void xdk_render_msg_pre(xdk360_video_font_t * font)
    d3dr->SetVertexShaderConstantF( 2, vTexScale, 1 );
 }
 
-static void xdk_video_font_draw_text(xdk360_video_font_t *font, 
+static void xdk_video_font_draw_text(xdk360_video_font_t *font, void *video_data,
       float x, float y, const wchar_t * strText)
 {
-   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
+   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)video_data;
    LPDIRECT3DDEVICE d3dr = d3d->dev;
 
    // Set the color as a vertex shader constant
@@ -458,9 +458,9 @@ static void xdk_render_msg(void *data, const char *str_msg, void *parms)
 
    if (msg || msg[0] != L'\0')
    {
-      xdk_render_msg_pre(font);
-      xdk_video_font_draw_text(font, x, y, msg);
-      xdk_render_msg_post(font);
+      xdk_render_msg_pre(font, d3d);
+      xdk_video_font_draw_text(font, d3d, x, y, msg);
+      xdk_render_msg_post(font, d3d);
    }
 }
 
