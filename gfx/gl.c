@@ -259,7 +259,7 @@ static bool gl_shader_init(void *data)
    if (!ret)
    {
       RARCH_ERR("[GL]: Failed to init shader, falling back to stock.\n");
-      ret = gl->shader->init(NULL);
+      ret = gl->shader->init(gl, NULL);
    }
 
    return ret;
@@ -2319,10 +2319,10 @@ static bool gl_set_shader(void *data, enum rarch_shader_type type, const char *p
    glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
 #endif
 
-   if (!gl->shader->init(path))
+   if (!gl->shader->init(gl, path))
    {
       RARCH_WARN("[GL]: Failed to set multipass shader. Falling back to stock.\n");
-      bool ret = gl->shader->init(NULL);
+      bool ret = gl->shader->init(gl, NULL);
       if (!ret)
          gl->shader = NULL;
       return false;
