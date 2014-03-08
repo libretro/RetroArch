@@ -1329,6 +1329,7 @@ static void init_filter(bool rgb32)
    unsigned pow2_x  = 0;
    unsigned pow2_y  = 0;
    unsigned maxsize = 0;
+   unsigned fbufsize = 0;
 
    g_extern.filter.psize = 
       (void (*)(unsigned*, unsigned*))dylib_proc(g_extern.filter.lib, "filter_size");
@@ -1351,8 +1352,13 @@ static void init_filter(bool rgb32)
    maxsize = pow2_x > pow2_y ? pow2_x : pow2_y; 
    g_extern.filter.scale = maxsize / RARCH_SCALE_BASE;
 
-   g_extern.filter.buffer = (uint32_t*)malloc(RARCH_SCALE_BASE * RARCH_SCALE_BASE *
-         g_extern.filter.scale * g_extern.filter.scale * sizeof(uint32_t));
+   fbufsize = RARCH_SCALE_BASE * RARCH_SCALE_BASE *
+         g_extern.filter.scale * g_extern.filter.scale * sizeof(uint32_t);
+#if defined(_POSIX_C_SOURCE) && (_POSIX_C_SOURCE >= 200112L)
+   posix_memalign((void**)&g_extern.filter.buffer, 16, fbufsize);
+#else
+   g_extern.filter.buffer = (uint32_t*)malloc(fbufsize);
+#endif
    if (!g_extern.filter.buffer)
       goto error;
 
