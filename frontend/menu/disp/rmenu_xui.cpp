@@ -584,6 +584,11 @@ static void rmenu_xui_render(void *data, void *video_data)
    }
 }
 
+static void rmenu_xui_populate_entries(void *data, unsigned i)
+{
+   rgui_handle_t *rgui = (rgui_handle_t*)data;
+   XuiListSetCurSelVisible(m_menulist, rgui->selection_ptr);
+}
 
 const menu_ctx_driver_t menu_ctx_rmenu_xui = {
    NULL,
@@ -593,7 +598,7 @@ const menu_ctx_driver_t menu_ctx_rmenu_xui = {
    rmenu_xui_free,
    NULL,
    NULL,
-   NULL,
+   rmenu_xui_populate_entries,
    NULL,
    rmenu_xui_input_postprocess,
    "rmenu_xui",
