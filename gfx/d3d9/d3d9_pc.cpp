@@ -15,8 +15,15 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+
+#ifdef _XBOX
+#include "../../xdk/xdk_d3d.h"
+#else
 #include "d3d9.hpp"
 #include "../context/win32_common.h"
+#endif
+
+#include "../gfx_common.h"
 
 #ifdef _MSC_VER
 #ifndef _XBOX
@@ -25,6 +32,13 @@
 #pragma comment( lib, "cgd3d9" )
 #pragma comment( lib, "dxguid" )
 #endif
+#endif
+
+#if defined(_XBOX1)
+#define XBOX_PRESENTATIONINTERVAL D3DRS_PRESENTATIONINTERVAL
+#define PresentationInterval FullScreen_PresentationInterval
+#elif defined(_XBOX360)
+#define XBOX_PRESENTATIONINTERVAL D3DRS_PRESENTINTERVAL
 #endif
 
 static d3d_video_t *curD3D = NULL;
@@ -171,7 +185,6 @@ void d3d_make_d3dpp(void *data, const video_info_t *info, D3DPRESENT_PARAMETERS 
       d3dpp->PresentationInterval = D3DPRESENT_INTERVAL_IMMEDIATE;
 
    d3dpp->SwapEffect = D3DSWAPEFFECT_DISCARD;
-   d3dpp->hDeviceWindow = d3d->hWnd;
    d3dpp->BackBufferCount = 2;
 #ifdef _XBOX
    d3dpp->BackBufferFormat = 
@@ -180,6 +193,7 @@ void d3d_make_d3dpp(void *data, const video_info_t *info, D3DPRESENT_PARAMETERS 
 #endif
       info->rgb32 ? D3DFMT_X8R8G8B8 : D3DFMT_LIN_R5G6B5;
 #else
+   d3dpp->hDeviceWindow = d3d->hWnd;
    d3dpp->BackBufferFormat = !d3dpp->Windowed ? D3DFMT_X8R8G8B8 : D3DFMT_UNKNOWN;
 #endif
 
