@@ -392,6 +392,9 @@ uint64_t rarch_get_cpu_features(void)
 #elif defined(PSP)
    cpu |= RETRO_SIMD_VFPU;
    RARCH_LOG("[CPUID]: VFPU: %u\n", !!(cpu & RETRO_SIMD_VFPU));
+#elif defined(GEKKO)
+   cpu |= RETRO_SIMD_PS;
+   RARCH_LOG("[CPUID]: PS: %u\n", !!(cpu & RETRO_SIMD_PS));
 #endif
 
    return cpu;
