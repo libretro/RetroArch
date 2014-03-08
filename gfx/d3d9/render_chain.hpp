@@ -19,8 +19,6 @@
 #include "d3d9.hpp"
 #include "../state_tracker.h"
 #include "../shader_parse.h"
-#include <map>
-#include <utility>
 
 struct Vertex
 {
