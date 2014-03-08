@@ -15,12 +15,11 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-
 #ifdef _XBOX
 #include "../../xdk/xdk_d3d.h"
 #else
-#include "d3d9.hpp"
-#include "../context/win32_common.h"
+#include "../d3d9/d3d9.hpp"
+#include "win32_common.h"
 #endif
 
 #include "../gfx_common.h"

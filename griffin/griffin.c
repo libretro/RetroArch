@@ -100,7 +100,7 @@ VIDEO CONTEXT
 #if defined(__CELLOS_LV2__)
 #include "../gfx/context/ps3_ctx.c"
 #elif defined(_XBOX)
-#include "../gfx/d3d9/d3d9_pc.cpp"
+#include "../gfx/context/d3d_ctx.c"
 #elif defined(ANDROID)
 #include "../gfx/context/androidegl_ctx.c"
 #elif defined(__BLACKBERRY_QNX__)
