@@ -2328,6 +2328,9 @@ static void menu_parse_and_resolve(void *data, unsigned menu_type)
                      is_dir ? menu_type : RGUI_FILE_PLAIN, 0);
             }
 
+            if (menu_ctx && menu_ctx->populate_entries)
+               menu_ctx->populate_entries(rgui, menu_type);
+
             string_list_free(list);
          }
    }
