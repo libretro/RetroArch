@@ -66,6 +66,15 @@ void menu_set_navigation(void *data, size_t i)
 #endif
 }
 
+void menu_set_navigation_last(void *data)
+{
+   rgui_handle_t *rgui = (rgui_handle_t*)data;
+   rgui->selection_ptr = rgui->selection_buf->size - 1;
+#ifdef HAVE_RMENU_XUI
+   XuiListSetCurSelVisible(m_menulist, rgui->selection_ptr);
+#endif
+}
+
 void menu_descend_alphabet(void *data, size_t *ptr_out)
 {
    rgui_handle_t *rgui = (rgui_handle_t*)data;

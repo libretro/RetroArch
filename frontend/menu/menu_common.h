@@ -420,8 +420,6 @@ void shader_manager_save_preset(void *data, const char *basename, bool apply);
 
 void menu_ticker_line(char *buf, size_t len, unsigned tick, const char *str, bool selected);
 
-void menu_parse_and_resolve(void *data, unsigned menu_type);
-
 void menu_init_core_info(void *data);
 
 void load_menu_game_prepare(void *video_data);

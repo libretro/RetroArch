@@ -35,6 +35,8 @@
 rgui_handle_t *rgui;
 const menu_ctx_driver_t *menu_ctx;
 
+static void menu_parse_and_resolve(void *data, unsigned menu_type);
+
 static void menu_update_system_info(void *data, bool *load_no_rom)
 {
    rgui_handle_t *rgui = (rgui_handle_t*)data;
@@ -1093,9 +1095,9 @@ static int menu_iterate_func(void *data, void *video_data, unsigned action)
 
       case RGUI_ACTION_RIGHT:
          if (rgui->selection_ptr + fast_scroll_speed < rgui->selection_buf->size)
-            rgui->selection_ptr += fast_scroll_speed;
+            menu_set_navigation(rgui, rgui->selection_ptr + fast_scroll_speed);
          else
-            rgui->selection_ptr = rgui->selection_buf->size - 1;
+            menu_set_navigation_last(rgui);
          break;
 
       case RGUI_ACTION_SCROLL_UP:
@@ -1108,8 +1110,8 @@ static int menu_iterate_func(void *data, void *video_data, unsigned action)
       case RGUI_ACTION_CANCEL:
          if (rgui->menu_stack->size > 1)
          {
-            rgui->need_refresh = true;
             file_list_pop(rgui->menu_stack, &rgui->selection_ptr);
+            rgui->need_refresh = true;
          }
          break;
 
@@ -2157,7 +2159,7 @@ void menu_populate_entries(void *data, unsigned menu_type)
       menu_ctx->populate_entries(rgui, menu_type);
 }
 
-void menu_parse_and_resolve(void *data, unsigned menu_type)
+static void menu_parse_and_resolve(void *data, unsigned menu_type)
 {
    const core_info_t *info = NULL;
    const char *dir;

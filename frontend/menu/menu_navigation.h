@@ -21,6 +21,7 @@ void menu_clear_navigation(void *data);
 void menu_decrement_navigation(void *data);
 void menu_increment_navigation(void *data);
 void menu_set_navigation(void *data, size_t i);
+void menu_set_navigation_last(void *data);
 void menu_descend_alphabet(void *data, size_t *ptr_out);
 void menu_ascend_alphabet(void *data, size_t *ptr_out);
 
