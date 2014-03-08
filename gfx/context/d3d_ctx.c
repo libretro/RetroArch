@@ -312,6 +312,21 @@ static bool gfx_ctx_d3d_init(void)
    return true;
 }
 
+static void gfx_ctx_d3d_destroy(void)
+{
+#ifdef _XBOX
+   d3d_video_t * d3d = (d3d_video_t*)driver.video_data;
+
+   if (d3d->dev)
+      d3d->dev->Release();
+   d3d->dev = 0;
+
+   if (d3d->g_pD3D)
+      d3d->g_pD3D->Release();
+   d3d->g_pD3D = 0;
+#endif
+}
+
 static void gfx_ctx_d3d_input_driver(const input_driver_t **input, void **input_data)
 {
 #ifdef _XBOX
@@ -437,10 +452,10 @@ static void gfx_ctx_d3d_swap_interval(unsigned interval)
 
 const gfx_ctx_driver_t gfx_ctx_d3d9 = {
    gfx_ctx_d3d_init,
-   NULL,							// gfx_ctx_destroy
+   gfx_ctx_d3d_destroy,
    gfx_ctx_d3d_bind_api,
    gfx_ctx_d3d_swap_interval,
-   NULL,							// gfx_ctx_set_video_mode
+   NULL,
    gfx_ctx_d3d_get_video_size,
    NULL,							
    gfx_ctx_d3d_update_title,
