@@ -903,10 +903,7 @@ static bool d3d_frame(void *data, const void *frame,
 static void d3d_set_nonblock_state(void *data, bool state)
 {
    d3d_video_t *d3d = (d3d_video_t*)data;
-
    d3d->video_info.vsync = !state;
-
-   RARCH_LOG("D3D Vsync => %s\n", state ? "off" : "on");
 
    if (d3d->ctx_driver && d3d->ctx_driver->swap_interval)
       d3d->ctx_driver->swap_interval(state ? 0 : 1);
@@ -945,7 +942,6 @@ static void d3d_set_aspect_ratio(void *data, unsigned aspect_ratio_idx)
    else if (aspect_ratio_idx == ASPECT_RATIO_CONFIG)
       gfx_set_config_viewport();
 
-   g_settings.video.aspect_ratio = aspectratio_lut[aspect_ratio_idx].value;
    g_extern.system.aspect_ratio  = aspectratio_lut[aspect_ratio_idx].value;
    d3d->video_info.force_aspect = true;
    d3d->should_resize = true;

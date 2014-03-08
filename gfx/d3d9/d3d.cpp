@@ -88,6 +88,167 @@ RECT d3d_monitor_rect(void *data)
 }
 #endif
 
+void d3d_recompute_pass_sizes(void *data)
+{
+   d3d_video_t *d3d = (d3d_video_t*)data;
+   LinkInfo link_info = {0};
+   link_info.pass = &d3d->shader.pass[0];
+   link_info.tex_w = link_info.tex_h = d3d->video_info.input_scale * RARCH_SCALE_BASE;
+
+   unsigned current_width = link_info.tex_w;
+   unsigned current_height = link_info.tex_h;
+   unsigned out_width = 0;
+   unsigned out_height = 0;
+
+   if (!renderchain_set_pass_size(d3d->chain, 0, current_width, current_height))
+   {
+      RARCH_ERR("[D3D]: Failed to set pass size.\n");
+      return;
+   }
+
+   for (unsigned i = 1; i < d3d->shader.passes; i++)
+   {
+      renderchain_convert_geometry(d3d->chain, &link_info,
+            out_width, out_height,
+            current_width, current_height, &d3d->final_viewport);
+
+      link_info.tex_w = next_pow2(out_width);
+      link_info.tex_h = next_pow2(out_height);
+
+      if (!renderchain_set_pass_size(d3d->chain, i, link_info.tex_w, link_info.tex_h))
+      {
+         RARCH_ERR("[D3D]: Failed to set pass size.\n");
+         return;
+      }
+
+      current_width = out_width;
+      current_height = out_height;
+
+      link_info.pass = &d3d->shader.pass[i];
+   }
+}
+
+bool d3d_init_imports(void *data)
+{
+   d3d_video_t *d3d = (d3d_video_t*)data;
+   if (!d3d->shader.variables)
+      return true;
+
+   state_tracker_info tracker_info = {0};
+
+   tracker_info.wram = (uint8_t*)pretro_get_memory_data(RETRO_MEMORY_SYSTEM_RAM);
+   tracker_info.info = d3d->shader.variable;
+   tracker_info.info_elem = d3d->shader.variables;
+
+#ifdef HAVE_PYTHON
+   if (*d3d->shader.script_path)
+   {
+      tracker_info.script = d3d->shader.script_path;
+      tracker_info.script_is_file = true;
+   }
+
+   tracker_info.script_class = *d3d->shader.script_class ? d3d->shader.script_class : NULL;
+#endif
+
+   state_tracker_t *state_tracker = state_tracker_init(&tracker_info);
+   if (!state_tracker)
+   {
+      RARCH_ERR("Failed to initialize state tracker.\n");
+      return false;
+   }
+
+   renderchain_add_state_tracker(d3d->chain, state_tracker);
+   return true;
+}
+
+bool d3d_init_chain(void *data, const video_info_t *video_info)
+{
+   d3d_video_t *d3d = (d3d_video_t*)data;
+   LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)d3d->dev;
+   // Setup information for first pass.
+   LinkInfo link_info = {0};
+
+   link_info.pass = &d3d->shader.pass[0];
+   link_info.tex_w = link_info.tex_h = video_info->input_scale * RARCH_SCALE_BASE;
+
+   if (d3d->chain)
+      free(d3d->chain);
+   d3d->chain = (renderchain_t*)calloc(1, sizeof(renderchain_t));
+   if (!d3d->chain)
+      return false;
+
+   if (!renderchain_init(d3d->chain, &d3d->video_info, d3dr, d3d->cgCtx, &d3d->final_viewport, &link_info,
+            d3d->video_info.rgb32 ? ARGB : RGB565))
+   {
+      RARCH_ERR("[D3D9]: Failed to init render chain.\n");
+      return false;
+   }
+
+   unsigned current_width = link_info.tex_w;
+   unsigned current_height = link_info.tex_h;
+   unsigned out_width = 0;
+   unsigned out_height = 0;
+
+   for (unsigned i = 1; i < d3d->shader.passes; i++)
+   {
+      renderchain_convert_geometry(d3d->chain, &link_info,
+            out_width, out_height,
+            current_width, current_height, &d3d->final_viewport);
+
+      link_info.pass = &d3d->shader.pass[i];
+      link_info.tex_w = next_pow2(out_width);
+      link_info.tex_h = next_pow2(out_height);
+
+      current_width = out_width;
+      current_height = out_height;
+
+      if (!renderchain_add_pass(d3d->chain, &link_info))
+      {
+         RARCH_ERR("[D3D9]: Failed to add pass.\n");
+         return false;
+      }
+   }
+
+   if (!d3d_init_luts(d3d))
+   {
+      RARCH_ERR("[D3D9]: Failed to init LUTs.\n");
+      return false;
+   }
+
+   if (!d3d_init_imports(d3d))
+   {
+      RARCH_ERR("[D3D9]: Failed to init imports.\n");
+      return false;
+   }
+
+   return true;
+}
+
+bool d3d_init_luts(void *data)
+{
+   d3d_video_t *d3d = (d3d_video_t*)data;
+   for (unsigned i = 0; i < d3d->shader.luts; i++)
+   {
+      bool ret = renderchain_add_lut(d3d->chain, d3d->shader.lut[i].id, d3d->shader.lut[i].path,
+         d3d->shader.lut[i].filter == RARCH_FILTER_UNSPEC ?
+            g_settings.video.smooth :
+            (d3d->shader.lut[i].filter == RARCH_FILTER_LINEAR));
+
+      if (!ret)
+         return ret;
+   }
+
+   return true;
+}
+
+void d3d_deinit_chain(void *data)
+{
+   d3d_video_t *d3d = (d3d_video_t*)data;
+   if (d3d->chain)
+      free(d3d->chain);
+   d3d->chain = NULL;
+}
+
 static void d3d_deinitialize(void *data)
 {
    d3d_video_t *d3d = (d3d_video_t*)data;
