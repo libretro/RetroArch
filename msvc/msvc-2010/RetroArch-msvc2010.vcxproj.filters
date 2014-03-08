@@ -146,9 +146,6 @@
     <ClCompile Include="..\..\input\autoconf\builtin_win.c">
       <Filter>input\autoconf</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\gfx\d3d9\d3d9_pc.cpp">
-      <Filter>gfx\d3d9</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\gfx\d3d9\d3d.cpp">
       <Filter>gfx\d3d9</Filter>
     </ClCompile>
@@ -230,6 +227,9 @@
     </ClCompile>
     <ClCompile Include="..\..\frontend\info\core_info.c">
       <Filter>frontend\menu\info</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\gfx\context\d3d_ctx.c">
+      <Filter>gfx\context</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
