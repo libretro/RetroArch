@@ -20,7 +20,14 @@
 #include "../../file.h"
 #include "../gfx_common.h"
 
-#ifndef _XBOX
+#ifdef _XBOX
+
+#ifdef HAVE_RMENU_XUI
+extern bool menu_iterate_xui(void);
+#endif
+
+#else
+
 #include "../context/win32_common.h"
 #define HAVE_MONITOR
 #define HAVE_WINDOW
@@ -29,13 +36,13 @@
 #include "../../compat/posix_string.h"
 #include "../../performance.h"
 
+#if defined(HAVE_CG)
+#define HAVE_SHADERS
+#endif
+
 #ifdef HAVE_MONITOR
 #define IDI_ICON 1
 #define MAX_MONITORS 9
-
-#ifdef HAVE_RMENU_XUI
-extern bool menu_iterate_xui(void);
-#endif
 
 namespace Monitor
 {
@@ -128,7 +135,8 @@ void d3d_recompute_pass_sizes(void *data)
    }
 }
 
-bool d3d_init_imports(void *data)
+#ifndef DONT_HAVE_STATE_TRACKER
+static bool d3d_init_imports(void *data)
 {
    d3d_video_t *d3d = (d3d_video_t*)data;
    if (!d3d->shader.variables)
@@ -160,6 +168,7 @@ bool d3d_init_imports(void *data)
    renderchain_add_state_tracker(d3d->chain, state_tracker);
    return true;
 }
+#endif
 
 bool d3d_init_chain(void *data, const video_info_t *video_info)
 {
@@ -215,19 +224,19 @@ bool d3d_init_chain(void *data, const video_info_t *video_info)
       return false;
    }
 
+#ifndef DONT_HAVE_STATE_TRACKER
    if (!d3d_init_imports(d3d))
    {
       RARCH_ERR("[D3D9]: Failed to init imports.\n");
       return false;
    }
+#endif
 
    return true;
 }
 
-
-
 #ifdef HAVE_FBO
-bool d3d_init_multipass(void *data)
+static bool d3d_init_multipass(void *data)
 {
    d3d_video_t *d3d = (d3d_video_t*)data;
    config_file_t *conf = config_file_new(d3d->cg_shader.c_str());
@@ -283,6 +292,7 @@ bool d3d_init_multipass(void *data)
 
 void d3d_set_font_rect(void *data, font_params_t *params)
 {
+#ifndef _XBOX
    d3d_video_t *d3d = (d3d_video_t*)data;
    float pos_x = g_settings.video.msg_pos_x;
    float pos_y = g_settings.video.msg_pos_y;
@@ -305,9 +315,10 @@ void d3d_set_font_rect(void *data, font_params_t *params)
    d3d->font_rect_shifted.right -= 2;
    d3d->font_rect_shifted.top += 2;
    d3d->font_rect_shifted.bottom += 2;
+#endif
 }
 
-bool d3d_init_singlepass(void *data)
+static bool d3d_init_singlepass(void *data)
 {
    d3d_video_t *d3d = (d3d_video_t*)data;
    memset(&d3d->shader, 0, sizeof(d3d->shader));
@@ -364,7 +375,7 @@ static void d3d_deinitialize(void *data)
    if (d3d->font_ctx && d3d->font_ctx->deinit)
       d3d->font_ctx->deinit(d3d);
    d3d_deinit_chain(d3d);
-#ifdef HAVE_CG
+#ifdef HAVE_SHADERS
    d3d_deinit_shader(d3d);
 #endif
 
@@ -468,10 +479,10 @@ static bool d3d_initialize(void *data, const video_info_t *info)
 
    d3d_calculate_rect(d3d, d3d->screen_width, d3d->screen_height, info->force_aspect, g_extern.system.aspect_ratio);
 
-#ifdef HAVE_CG
+#ifdef HAVE_SHADERS
    if (!d3d_init_shader(d3d))
    {
-      RARCH_ERR("Failed to initialize Cg.\n");
+      RARCH_ERR("Failed to initialize shader subsystem.\n");
       return false;
    }
 #endif
@@ -1368,10 +1379,10 @@ static bool d3d_construct(void *data, const video_info_t *info, const input_driv
    SetFocus(d3d->hWnd);
 #endif
 
+#ifdef HAVE_SHADERS
    // This should only be done once here
    // to avoid set_shader() to be overridden
    // later.
-#ifdef HAVE_CG
    enum rarch_shader_type type = gfx_shader_parse_type(g_settings.video.shader_path, RARCH_SHADER_NONE);
    if (g_settings.video.shader_enable && type == RARCH_SHADER_CG)
       d3d->cg_shader = g_settings.video.shader_path;
@@ -1446,6 +1457,30 @@ static void *d3d_init(const video_info_t *info, const input_driver_t **input,
    return vid;
 }
 
+static void d3d_restart(void)
+{
+#ifdef _XBOX
+   d3d_video_t *d3d = (d3d_video_t*)driver.video_data;
+   LPDIRECT3DDEVICE d3dr = d3d->dev;
+
+   if (!d3d)
+      return;
+
+   D3DPRESENT_PARAMETERS d3dpp;
+   video_info_t video_info = {0};
+
+   video_info.vsync = g_settings.video.vsync;
+   video_info.force_aspect = false;
+   video_info.smooth = g_settings.video.smooth;
+   video_info.input_scale = 2;
+   video_info.fullscreen = true;
+   video_info.rgb32 = (d3d->base_size == sizeof(uint32_t)) ? true : false;
+   d3d_make_d3dpp(d3d, &video_info, &d3dpp);
+
+   d3dr->Reset(&d3dpp);
+#endif
+}
+
 const video_driver_t video_d3d = {
    d3d_init,
    d3d_frame,
@@ -1456,7 +1491,7 @@ const video_driver_t video_d3d = {
    d3d_free,
    "d3d",
 #ifdef HAVE_MENU
-   NULL,
+   d3d_restart,
 #endif
    d3d_set_rotation,
    d3d_viewport_info,
