@@ -44,6 +44,7 @@ HXUIOBJ m_menutitlebottom;
 HXUIOBJ m_back;
 HXUIOBJ root_menu;
 HXUIOBJ current_menu;
+static msg_queue_t *xui_msg_queue;
 
 class CRetroArch : public CXuiModule
 {
@@ -230,6 +231,8 @@ static void* rmenu_xui_init(void *video_data)
       driver.video_poke->set_texture_frame(video_data, NULL,
             true, 0, 0, 1.0f);
 
+   xui_msg_queue = msg_queue_new(16);
+
    return rgui;
 }
 
@@ -237,6 +240,52 @@ static void rmenu_xui_free(void *data)
 {
    (void)data;
    app.Uninit();
+
+   if (xui_msg_queue)
+      msg_queue_free(xui_msg_queue);
+}
+
+static void xui_render_message(const char *msg)
+{
+	font_params_t font_parms;
+	size_t i, j;
+
+	struct string_list *list = string_split(msg, "\n");
+	if (!list)
+		return;
+
+	if (list->elems == 0)
+	{
+		string_list_free(list);
+		return;
+	}
+
+	j = 0;
+	for (i = 0; i < list->size; i++, j++)
+	{
+		char *msg = list->elems[i].data;
+		unsigned msglen = strlen(msg);
+	#if 0
+		if (msglen > RMENU_TERM_WIDTH)
+		{
+			msg[RMENU_TERM_WIDTH - 2] = '.';
+			msg[RMENU_TERM_WIDTH - 1] = '.';
+			msg[RMENU_TERM_WIDTH - 0] = '.';
+			msg[RMENU_TERM_WIDTH + 1] = '\0';
+			msglen = RMENU_TERM_WIDTH;
+		}
+	#endif
+		float msg_width  = (g_extern.lifecycle_state & (1ULL << MODE_MENU_HD)) ? 160 : 100;
+		float msg_height = 120;
+		float msg_offset = 32;
+
+		font_parms.x = msg_width;
+		font_parms.y = msg_height + (msg_offset * j);
+		font_parms.scale = 21;
+
+		if (driver.video_poke && driver.video_poke->set_osd_msg)
+			driver.video_poke->set_osd_msg(driver.video_data, msg, &font_parms);
+	}
 }
 
 bool menu_iterate_xui(void)
@@ -266,6 +315,17 @@ bool menu_iterate_xui(void)
    XuiSendMessage( app.GetRootObj(), &msg );
 
    XuiRenderSetViewTransform( app.GetDC(), &matOrigView );
+
+   const char *message = msg_queue_pull(xui_msg_queue);
+
+   if (message)
+      xui_render_message(message);
+   else
+   {
+      const char *message = msg_queue_pull(g_extern.msg_queue);
+      if (message)
+         xui_render_message(message);
+   }
 
    XuiRenderEnd( app.GetDC() );
 
@@ -315,9 +375,8 @@ static void rmenu_xui_render_background(void *data, void *video_data)
 
 static void rmenu_xui_render_messagebox(void *data, void *video_data, const char *message)
 {
-   (void)data;
-   (void)video_data;
-   (void)message;
+   msg_queue_clear(xui_msg_queue);
+   msg_queue_push(xui_msg_queue, message, 2, 1);
 }
 
 static void rmenu_xui_render(void *data, void *video_data)
@@ -592,7 +651,7 @@ static void rmenu_xui_populate_entries(void *data, unsigned i)
 
 const menu_ctx_driver_t menu_ctx_rmenu_xui = {
    NULL,
-   NULL,
+   rmenu_xui_render_messagebox,
    rmenu_xui_render,
    rmenu_xui_init,
    rmenu_xui_free,
