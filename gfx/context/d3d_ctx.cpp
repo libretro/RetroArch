@@ -46,8 +46,9 @@ static void *dinput;
 
 extern bool d3d_restore(void *data);
 
-static void d3d_resize(unsigned new_width, unsigned new_height)
+static void d3d_resize(void *data, unsigned new_width, unsigned new_height)
 {
+   (void)data;
 #ifndef _XBOX
    d3d_video_t *d3d = (d3d_video_t*)curD3D;
    LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)d3d->dev;
@@ -93,7 +94,7 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT message,
 			new_height = HIWORD(lParam);
 
 			if (new_width && new_height)
-				d3d_resize(new_width, new_height);
+				d3d_resize(driver.video_data, new_width, new_height);
 			return 0;
     }
     if (dinput_handle_message(dinput, message, wParam, lParam))

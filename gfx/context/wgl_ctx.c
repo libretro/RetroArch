@@ -55,8 +55,7 @@ static bool g_resized;
 static bool g_restore_desktop;
 
 static void monitor_info(MONITORINFOEX *mon, HMONITOR *hm_to_use);
-static void gfx_ctx_get_video_size(unsigned *width, unsigned *height);
-static void gfx_ctx_destroy(void);
+static void gfx_ctx_destroy(void *data);
 
 static BOOL (APIENTRY *p_swap_interval)(int);
 
@@ -467,7 +466,7 @@ static bool gfx_ctx_set_video_mode(void *data,
 
    p_swap_interval = (BOOL (APIENTRY *)(int))wglGetProcAddress("wglSwapIntervalEXT");
 
-   gfx_ctx_swap_interval(g_interval);
+   gfx_ctx_swap_interval(data, g_interval);
 
    driver.display_type  = RARCH_DISPLAY_WIN32;
    driver.video_display = 0;
