@@ -76,8 +76,9 @@ static void sighandler(int sig)
    g_quit = 1;
 }
 
-static void gfx_ctx_swap_interval(unsigned interval)
+static void gfx_ctx_swap_interval(void *data, unsigned interval)
 {
+   (void)data;
    // Can be called before initialization.
    // Some contexts require that swap interval is known at startup time.
    g_interval = interval;
@@ -85,9 +86,10 @@ static void gfx_ctx_swap_interval(unsigned interval)
       eglSwapInterval(g_egl_dpy, interval);
 }
 
-static void gfx_ctx_check_window(bool *quit,
+static void gfx_ctx_check_window(void *data, bool *quit,
       bool *resize, unsigned *width, unsigned *height, unsigned frame_count)
 {
+   (void)data;
    (void)frame_count;
    (void)width;
    (void)height;
@@ -96,19 +98,22 @@ static void gfx_ctx_check_window(bool *quit,
    *quit   = g_quit;
 }
 
-static void gfx_ctx_swap_buffers(void)
+static void gfx_ctx_swap_buffers(void *data)
 {
+   (void)data;
    eglSwapBuffers(g_egl_dpy, g_egl_surf);
 }
 
-static void gfx_ctx_set_resize(unsigned width, unsigned height)
+static void gfx_ctx_set_resize(void *data, unsigned width, unsigned height)
 {
+   (void)data;
    (void)width;
    (void)height;
 }
 
-static void gfx_ctx_update_window_title(void)
+static void gfx_ctx_update_window_title(void *data)
 {
+   (void)data;
    char buf[128], buf_fps[128];
    bool fps_draw = g_settings.fps_show;
    gfx_get_fps(buf, sizeof(buf), fps_draw ? buf_fps : NULL, sizeof(buf_fps));
@@ -117,15 +122,16 @@ static void gfx_ctx_update_window_title(void)
       msg_queue_push(g_extern.msg_queue, buf_fps, 1, 1);
 }
 
-static void gfx_ctx_get_video_size(unsigned *width, unsigned *height)
+static void gfx_ctx_get_video_size(void *data, unsigned *width, unsigned *height)
 {
+   (void)data;
    *width  = g_fb_width;
    *height = g_fb_height;
 }
 
-static void gfx_ctx_destroy(void);
+static void gfx_ctx_destroy(void *data);
 
-static bool gfx_ctx_init(void)
+static bool gfx_ctx_init(void *data)
 {
    RARCH_LOG("[VC/EGL]: Initializing...\n");
    if (g_inited)
@@ -223,11 +229,11 @@ static bool gfx_ctx_init(void)
    return true;
 
 error:
-   gfx_ctx_destroy();
+   gfx_ctx_destroy(data);
    return false;
 }
 
-static bool gfx_ctx_set_video_mode(
+static bool gfx_ctx_set_video_mode(void *data,
       unsigned width, unsigned height,
       bool fullscreen)
 {
@@ -241,14 +247,15 @@ static bool gfx_ctx_set_video_mode(
    sigaction(SIGINT, &sa, NULL);
    sigaction(SIGTERM, &sa, NULL);
 
-   gfx_ctx_swap_interval(g_interval);
+   gfx_ctx_swap_interval(data, g_interval);
 
    g_inited = true;
    return true;
 }
 
-static bool gfx_ctx_bind_api(enum gfx_ctx_api api, unsigned major, unsigned minor)
+static bool gfx_ctx_bind_api(void *data, enum gfx_ctx_api api, unsigned major, unsigned minor)
 {
+   (void)data;
    (void)major;
    (void)minor;
    g_api = api;
@@ -265,8 +272,9 @@ static bool gfx_ctx_bind_api(enum gfx_ctx_api api, unsigned major, unsigned mino
    }
 }
 
-static void gfx_ctx_destroy(void)
+static void gfx_ctx_destroy(void *data)
 {
+   (void)data;
    unsigned i;
    if (g_egl_dpy)
    {
@@ -335,14 +343,16 @@ static void gfx_ctx_destroy(void)
    }
 }
 
-static void gfx_ctx_input_driver(const input_driver_t **input, void **input_data)
+static void gfx_ctx_input_driver(void *data, const input_driver_t **input, void **input_data)
 {
+   (void)data;
    *input = NULL;
    *input_data = NULL;
 }
 
-static bool gfx_ctx_has_focus(void)
+static bool gfx_ctx_has_focus(void *data)
 {
+   (void)data;
    return g_inited;
 }
 
@@ -351,8 +361,9 @@ static gfx_ctx_proc_t gfx_ctx_get_proc_address(const char *symbol)
    return eglGetProcAddress(symbol);
 }
 
-static float gfx_ctx_translate_aspect(unsigned width, unsigned height)
+static float gfx_ctx_translate_aspect(void *data, unsigned width, unsigned height)
 {
+   (void)data;
    // check for SD televisions: they should always be 4:3.
    if ((width == 640 || width == 720) && (height == 480 || height == 576))
       return 4.0f / 3.0f;
@@ -360,8 +371,9 @@ static float gfx_ctx_translate_aspect(unsigned width, unsigned height)
       return (float)width / height;
 }
 
-static bool gfx_ctx_init_egl_image_buffer(const video_info_t *video)
+static bool gfx_ctx_init_egl_image_buffer(void *data, const video_info_t *video)
 {
+   (void)data;
    if (g_api == GFX_CTX_OPENVG_API) // don't bother, we just use VGImages for our EGLImage anyway
    {
       return false;
@@ -434,8 +446,9 @@ fail:
    return false;
 }
 
-static bool gfx_ctx_write_egl_image(const void *frame, unsigned width, unsigned height, unsigned pitch, bool rgb32, unsigned index, void **image_handle)
+static bool gfx_ctx_write_egl_image(void *data, const void *frame, unsigned width, unsigned height, unsigned pitch, bool rgb32, unsigned index, void **image_handle)
 {
+   (void)data;
    bool ret = false;
 
    if (index >= MAX_EGLIMAGE_TEXTURES)

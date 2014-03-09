@@ -102,8 +102,9 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT message,
 }
 #endif
 
-static void gfx_ctx_d3d_swap_buffers(void)
+static void gfx_ctx_d3d_swap_buffers(void *data)
 {
+   (void)data;
    d3d_video_t *d3d = (d3d_video_t*)driver.video_data;
    LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)d3d->dev;
 
@@ -118,8 +119,9 @@ static void gfx_ctx_d3d_swap_buffers(void)
 #endif
 }
 
-static void gfx_ctx_d3d_update_title(void)
+static void gfx_ctx_d3d_update_title(void *data)
 {
+   (void)data;
    d3d_video_t *d3d = (d3d_video_t*)driver.video_data;
    char buffer[128], buffer_fps[128];
    bool fps_draw = g_settings.fps_show;
@@ -148,8 +150,9 @@ static void gfx_ctx_d3d_update_title(void)
    g_extern.frame_count++;
 }
 
-static void gfx_ctx_d3d_show_mouse(bool state)
+static void gfx_ctx_d3d_show_mouse(void *data, bool state)
 {
+   (void)data;
 #ifdef HAVE_WINDOW
    if (state)
       while (ShowCursor(TRUE) < 0);
@@ -262,9 +265,10 @@ void d3d_make_d3dpp(void *data, const video_info_t *info, D3DPRESENT_PARAMETERS 
 #endif
 }
 
-static void gfx_ctx_d3d_check_window(bool *quit,
+static void gfx_ctx_d3d_check_window(void *data, bool *quit,
    bool *resize, unsigned *width, unsigned *height, unsigned frame_count)
 {
+   (void)data;
    d3d_video_t *d3d = (d3d_video_t*)driver.video_data;
    *quit = false;
    *resize = false;
@@ -285,8 +289,9 @@ static void gfx_ctx_d3d_check_window(bool *quit,
 #endif
 }
 
-static bool gfx_ctx_d3d_has_focus(void)
+static bool gfx_ctx_d3d_has_focus(void *data)
 {
+   (void)data;
 #ifdef _XBOX
    return true;
 #else
@@ -295,8 +300,9 @@ static bool gfx_ctx_d3d_has_focus(void)
 #endif
 }
 
-static bool gfx_ctx_d3d_bind_api(enum gfx_ctx_api api, unsigned major, unsigned minor)
+static bool gfx_ctx_d3d_bind_api(void *data, enum gfx_ctx_api api, unsigned major, unsigned minor)
 {
+   (void)data;
    (void)major;
    (void)minor;
    (void)api;
@@ -307,13 +313,15 @@ static bool gfx_ctx_d3d_bind_api(enum gfx_ctx_api api, unsigned major, unsigned 
 #endif
 }
 
-static bool gfx_ctx_d3d_init(void)
+static bool gfx_ctx_d3d_init(void *data)
 {
+   (void)data;
    return true;
 }
 
-static void gfx_ctx_d3d_destroy(void)
+static void gfx_ctx_d3d_destroy(void *data)
 {
+   (void)data;
 #ifdef _XBOX
    d3d_video_t * d3d = (d3d_video_t*)driver.video_data;
 
@@ -327,8 +335,9 @@ static void gfx_ctx_d3d_destroy(void)
 #endif
 }
 
-static void gfx_ctx_d3d_input_driver(const input_driver_t **input, void **input_data)
+static void gfx_ctx_d3d_input_driver(void *data, const input_driver_t **input, void **input_data)
 {
+   (void)data;
 #ifdef _XBOX
    void *xinput = input_xinput.init();
    *input = xinput ? (const input_driver_t*)&input_xinput : NULL;
@@ -340,8 +349,9 @@ static void gfx_ctx_d3d_input_driver(const input_driver_t **input, void **input_
 #endif
 }
 
-static void gfx_ctx_d3d_get_video_size(unsigned *width, unsigned *height)
+static void gfx_ctx_d3d_get_video_size(void *data, unsigned *width, unsigned *height)
 {
+   (void)data;
 #ifdef _XBOX
    (void)width;
    (void)height;
@@ -437,8 +447,9 @@ static void gfx_ctx_d3d_get_video_size(unsigned *width, unsigned *height)
 #endif
 }
 
-static void gfx_ctx_d3d_swap_interval(unsigned interval)
+static void gfx_ctx_d3d_swap_interval(void *data, unsigned interval)
 {
+   (void)data;
 #ifdef _XBOX
    d3d_video_t *d3d = (d3d_video_t*)driver.video_data;
    LPDIRECT3DDEVICE d3dr = d3d->dev;

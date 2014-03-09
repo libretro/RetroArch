@@ -28,9 +28,10 @@
 
 #include "../../apple/common/rarch_wrapper.h"
 
-static void gfx_ctx_check_window(bool *quit,
+static void gfx_ctx_check_window(void *data, bool *quit,
       bool *resize, unsigned *width, unsigned *height, unsigned frame_count)
 {
+   (void)data;
    (void)frame_count;
 
    *quit = false;
@@ -45,14 +46,16 @@ static void gfx_ctx_check_window(bool *quit,
    }
 }
 
-static void gfx_ctx_set_resize(unsigned width, unsigned height)
+static void gfx_ctx_set_resize(void *data, unsigned width, unsigned height)
 {
+   (void)data;
    (void)width;
    (void)height;
 }
 
-static void gfx_ctx_input_driver(const input_driver_t **input, void **input_data)
+static void gfx_ctx_input_driver(void *data, const input_driver_t **input, void **input_data)
 {
+   (void)data;
    *input = NULL;
    *input_data = NULL;
 }

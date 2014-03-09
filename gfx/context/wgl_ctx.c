@@ -236,8 +236,9 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT message,
    return DefWindowProc(hwnd, message, wparam, lparam);
 }
 
-static void gfx_ctx_swap_interval(unsigned interval)
+static void gfx_ctx_swap_interval(void *data, unsigned interval)
 {
+   (void)data;
    g_interval = interval;
 
    if (g_hrc && p_swap_interval)
@@ -248,9 +249,10 @@ static void gfx_ctx_swap_interval(unsigned interval)
    }
 }
 
-static void gfx_ctx_check_window(bool *quit,
+static void gfx_ctx_check_window(void *data, bool *quit,
       bool *resize, unsigned *width, unsigned *height, unsigned frame_count)
 {
+   (void)data;
    (void)frame_count;
 
    MSG msg;
@@ -270,19 +272,22 @@ static void gfx_ctx_check_window(bool *quit,
    }
 }
 
-static void gfx_ctx_swap_buffers(void)
+static void gfx_ctx_swap_buffers(void *data)
 {
+   (void)data;
    SwapBuffers(g_hdc);
 }
 
-static void gfx_ctx_set_resize(unsigned width, unsigned height)
+static void gfx_ctx_set_resize(void *data, unsigned width, unsigned height)
 {
+   (void)data;
    (void)width;
    (void)height;
 }
 
-static void gfx_ctx_update_window_title(void)
+static void gfx_ctx_update_window_title(void *data)
 {
+   (void)data;
    char buf[128], buf_fps[128];
    bool fps_draw = g_settings.fps_show;
    if (gfx_get_fps(buf, sizeof(buf), fps_draw ? buf_fps : NULL, sizeof(buf_fps)))
@@ -292,8 +297,9 @@ static void gfx_ctx_update_window_title(void)
       msg_queue_push(g_extern.msg_queue, buf_fps, 1, 1);
 }
 
-static void gfx_ctx_get_video_size(unsigned *width, unsigned *height)
+static void gfx_ctx_get_video_size(void *data, unsigned *width, unsigned *height)
 {
+   (void)data;
    if (!g_hwnd)
    {
       HMONITOR hm_to_use = NULL;
@@ -317,8 +323,9 @@ static BOOL CALLBACK monitor_enum_proc(HMONITOR hMonitor, HDC hdcMonitor, LPRECT
    return TRUE;
 }
 
-static bool gfx_ctx_init(void)
+static bool gfx_ctx_init(void *data)
 {
+   (void)data;
    if (g_inited)
       return false;
 
@@ -380,7 +387,7 @@ static void monitor_info(MONITORINFOEX *mon, HMONITOR *hm_to_use)
    GetMonitorInfo(*hm_to_use, (MONITORINFO*)mon);
 }
 
-static bool gfx_ctx_set_video_mode(
+static bool gfx_ctx_set_video_mode(void *data,
       unsigned width, unsigned height,
       bool fullscreen)
 {
@@ -469,12 +476,13 @@ static bool gfx_ctx_set_video_mode(
    return true;
 
 error:
-   gfx_ctx_destroy();
+   gfx_ctx_destroy(data);
    return false;
 }
 
-static void gfx_ctx_destroy(void)
+static void gfx_ctx_destroy(void *data)
 {
+   (void)data;
    if (g_hrc)
    {
       glFinish();
@@ -516,15 +524,17 @@ static void gfx_ctx_destroy(void)
    p_swap_interval = NULL;
 }
 
-static void gfx_ctx_input_driver(const input_driver_t **input, void **input_data)
+static void gfx_ctx_input_driver(void *data, const input_driver_t **input, void **input_data)
 {
+   (void)data;
    dinput = input_dinput.init();
    *input       = dinput ? &input_dinput : NULL;
    *input_data  = dinput;
 }
 
-static bool gfx_ctx_has_focus(void)
+static bool gfx_ctx_has_focus(void *data)
 {
+   (void)data;
    if (!g_inited)
       return false;
 
@@ -536,15 +546,17 @@ static gfx_ctx_proc_t gfx_ctx_get_proc_address(const char *symbol)
    return (gfx_ctx_proc_t)wglGetProcAddress(symbol);
 }
 
-static bool gfx_ctx_bind_api(enum gfx_ctx_api api, unsigned major, unsigned minor)
+static bool gfx_ctx_bind_api(void *data, enum gfx_ctx_api api, unsigned major, unsigned minor)
 {
+   (void)data;
    g_major = major;
    g_minor = minor;
    return api == GFX_CTX_OPENGL_API;
 }
 
-static void gfx_ctx_show_mouse(bool state)
+static void gfx_ctx_show_mouse(void *data, bool state)
 {
+   (void)data;
    show_cursor(state);
 }
 
