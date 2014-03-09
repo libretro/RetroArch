@@ -136,7 +136,7 @@ void d3d_recompute_pass_sizes(void *data)
 }
 
 #ifndef DONT_HAVE_STATE_TRACKER
-static bool d3d_init_imports(void *data)
+bool d3d_init_imports(void *data)
 {
    d3d_video_t *d3d = (d3d_video_t*)data;
    if (!d3d->shader.variables)
@@ -236,7 +236,7 @@ bool d3d_init_chain(void *data, const video_info_t *video_info)
 }
 
 #ifdef HAVE_FBO
-static bool d3d_init_multipass(void *data)
+bool d3d_init_multipass(void *data)
 {
    d3d_video_t *d3d = (d3d_video_t*)data;
    config_file_t *conf = config_file_new(d3d->cg_shader.c_str());
@@ -318,7 +318,7 @@ void d3d_set_font_rect(void *data, font_params_t *params)
 #endif
 }
 
-static bool d3d_init_singlepass(void *data)
+bool d3d_init_singlepass(void *data)
 {
    d3d_video_t *d3d = (d3d_video_t*)data;
    memset(&d3d->shader, 0, sizeof(d3d->shader));

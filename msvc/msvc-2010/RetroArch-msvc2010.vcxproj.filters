@@ -228,7 +228,7 @@
     <ClCompile Include="..\..\frontend\info\core_info.c">
       <Filter>frontend\menu\info</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\gfx\context\d3d_ctx.c">
+    <ClCompile Include="..\..\gfx\context\d3d_ctx.cpp">
       <Filter>gfx\context</Filter>
     </ClCompile>
   </ItemGroup>

@@ -225,7 +225,7 @@
     <ClCompile Include="..\..\frontend\menu\menu_context.c" />
     <ClCompile Include="..\..\frontend\info\core_info.c" />
     <ClCompile Include="..\..\gfx\d3d9\d3d.cpp" />
-    <ClCompile Include="..\..\gfx\context\d3d_ctx.c" />
+    <ClCompile Include="..\..\gfx\context\d3d_ctx.cpp" />
     <ClCompile Include="..\..\gfx\d3d9\render_chain.cpp" />
     <ClCompile Include="..\..\gfx\fonts\bitmapfont.c" />
     <ClCompile Include="..\..\gfx\fonts\d3d_font.c" />
