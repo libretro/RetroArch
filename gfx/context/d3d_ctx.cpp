@@ -106,7 +106,7 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT message,
 static void gfx_ctx_d3d_swap_buffers(void *data)
 {
    (void)data;
-   d3d_video_t *d3d = (d3d_video_t*)driver.video_data;
+   d3d_video_t *d3d = (d3d_video_t*)data;
    LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)d3d->dev;
 
 #ifdef _XBOX
@@ -122,8 +122,7 @@ static void gfx_ctx_d3d_swap_buffers(void *data)
 
 static void gfx_ctx_d3d_update_title(void *data)
 {
-   (void)data;
-   d3d_video_t *d3d = (d3d_video_t*)driver.video_data;
+   d3d_video_t *d3d = (d3d_video_t*)data;
    char buffer[128], buffer_fps[128];
    bool fps_draw = g_settings.fps_show;
 
@@ -270,7 +269,7 @@ static void gfx_ctx_d3d_check_window(void *data, bool *quit,
    bool *resize, unsigned *width, unsigned *height, unsigned frame_count)
 {
    (void)data;
-   d3d_video_t *d3d = (d3d_video_t*)driver.video_data;
+   d3d_video_t *d3d = (d3d_video_t*)data;
    *quit = false;
    *resize = false;
 
@@ -292,11 +291,10 @@ static void gfx_ctx_d3d_check_window(void *data, bool *quit,
 
 static bool gfx_ctx_d3d_has_focus(void *data)
 {
-   (void)data;
 #ifdef _XBOX
    return true;
 #else
-   d3d_video_t *d3d = (d3d_video_t*)driver.video_data;
+   d3d_video_t *d3d = (d3d_video_t*)data;
    return GetFocus() == d3d->hWnd;
 #endif
 }
@@ -324,7 +322,7 @@ static void gfx_ctx_d3d_destroy(void *data)
 {
    (void)data;
 #ifdef _XBOX
-   d3d_video_t * d3d = (d3d_video_t*)driver.video_data;
+   d3d_video_t * d3d = (d3d_video_t*)data;
 
    if (d3d->dev)
       d3d->dev->Release();
@@ -452,7 +450,7 @@ static void gfx_ctx_d3d_swap_interval(void *data, unsigned interval)
 {
    (void)data;
 #ifdef _XBOX
-   d3d_video_t *d3d = (d3d_video_t*)driver.video_data;
+   d3d_video_t *d3d = (d3d_video_t*)data;
    LPDIRECT3DDEVICE d3dr = d3d->dev;
 
    if (interval)
