@@ -208,7 +208,7 @@ void d3d_make_d3dpp(void *data, const video_info_t *info, D3DPRESENT_PARAMETERS 
       height = 0;
 
       if (d3d->ctx_driver && d3d->ctx_driver->get_video_size)
-         d3d->ctx_driver->get_video_size(&width, &height);
+         d3d->ctx_driver->get_video_size(d3d, &width, &height);
 
       d3dpp->BackBufferWidth  = d3d->screen_width = width;
       d3dpp->BackBufferHeight = d3d->screen_height = height;

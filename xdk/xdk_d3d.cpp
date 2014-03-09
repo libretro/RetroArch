@@ -86,7 +86,7 @@ static void d3d_free(void *data)
    d3d->shader = NULL;
 
    if (d3d->ctx_driver && d3d->ctx_driver->destroy)
-      d3d->ctx_driver->destroy();
+      d3d->ctx_driver->destroy(d3d);
    d3d->ctx_driver = NULL;
 
    free(d3d);
@@ -299,7 +299,7 @@ static const gfx_ctx_driver_t *d3d_get_context(void *data)
    major = 9;
 #endif
    minor = 0;
-   return gfx_ctx_init_first(api, major, minor);
+   return gfx_ctx_init_first(d3d, api, major, minor);
 }
 
 static bool d3d_init_base(void *data, const video_info_t *info)
@@ -448,7 +448,7 @@ static bool d3d_construct(void *data, const video_info_t *info, const input_driv
    unsigned full_x, full_y;
 
    if (d3d->ctx_driver && d3d->ctx_driver->get_video_size)
-      d3d->ctx_driver->get_video_size(&full_x, &full_y);
+      d3d->ctx_driver->get_video_size(d3d, &full_x, &full_y);
 
    d3d->screen_width  = info->fullscreen ? full_x : info->width;
    d3d->screen_height = info->fullscreen ? full_y : info->height;
@@ -458,7 +458,7 @@ static bool d3d_construct(void *data, const video_info_t *info, const input_driv
       return false;
 
    if (input && input_data)
-      d3d->ctx_driver->input_driver(input, input_data);
+      d3d->ctx_driver->input_driver(d3d, input, input_data);
 
    RARCH_LOG("[D3D]: Init complete.\n");
    return true;
@@ -789,7 +789,7 @@ static bool d3d_frame(void *data, const void *frame,
 #endif
 
    if (d3d && d3d->ctx_driver && d3d->ctx_driver->update_window_title)
-      d3d->ctx_driver->update_window_title();
+      d3d->ctx_driver->update_window_title(d3d);
 
    if (msg)
    {
@@ -808,7 +808,7 @@ static bool d3d_frame(void *data, const void *frame,
    }
 
    if (d3d && d3d->ctx_driver && d3d->ctx_driver->swap_buffers)
-      d3d->ctx_driver->swap_buffers();
+      d3d->ctx_driver->swap_buffers(d3d);
 
    return true;
 }
@@ -819,7 +819,7 @@ static void d3d_set_nonblock_state(void *data, bool state)
    d3d->video_info.vsync = !state;
 
    if (d3d->ctx_driver && d3d->ctx_driver->swap_interval)
-      d3d->ctx_driver->swap_interval(state ? 0 : 1);
+      d3d->ctx_driver->swap_interval(d3d, state ? 0 : 1);
 }
 
 static bool d3d_alive(void *data)
@@ -828,7 +828,7 @@ static bool d3d_alive(void *data)
    bool quit, resize;
 
    if (d3d->ctx_driver && d3d->ctx_driver->check_window)
-      d3d->ctx_driver->check_window(&quit,
+      d3d->ctx_driver->check_window(d3d, &quit,
             &resize, NULL, NULL, g_extern.frame_count);
 
    if (quit)
@@ -841,7 +841,7 @@ static bool d3d_alive(void *data)
 static bool d3d_focus(void *data)
 {
    d3d_video_t *d3d = (d3d_video_t*)data;
-   return d3d->ctx_driver->has_focus();
+   return d3d->ctx_driver->has_focus(d3d);
 }
 
 static void d3d_set_aspect_ratio(void *data, unsigned aspect_ratio_idx)
