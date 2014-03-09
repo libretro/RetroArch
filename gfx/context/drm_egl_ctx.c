@@ -84,7 +84,7 @@ struct drm_fb
 };
 
 static struct drm_fb *drm_fb_get_from_bo(struct gbm_bo *bo);
-static void gfx_ctx_destroy(void);
+static void gfx_ctx_destroy(void *data);
 
 static void sighandler(int sig)
 {
@@ -92,16 +92,18 @@ static void sighandler(int sig)
    g_quit = 1;
 }
 
-static void gfx_ctx_swap_interval(unsigned interval)
+static void gfx_ctx_swap_interval(void *data, unsigned interval)
 {
+   (void)data;
    g_interval = interval;
    if (interval > 1)
       RARCH_WARN("[KMS/EGL]: Swap intervals > 1 currently not supported. Will use swap interval of 1.\n");
 }
 
-static void gfx_ctx_check_window(bool *quit,
+static void gfx_ctx_check_window(void *data, bool *quit,
       bool *resize, unsigned *width, unsigned *height, unsigned frame_count)
 {
+   (void)data;
    (void)frame_count;
    (void)width;
    (void)height;
@@ -187,8 +189,9 @@ static void queue_flip(void)
    waiting_for_flip = true;
 }
 
-static void gfx_ctx_swap_buffers(void)
+static void gfx_ctx_swap_buffers(void *data)
 {
+   (void)data;
    eglSwapBuffers(g_egl_dpy, g_egl_surf);
 
    // I guess we have to wait for flip to have taken place before another flip can be queued up.
@@ -209,14 +212,16 @@ static void gfx_ctx_swap_buffers(void)
    }
 }
 
-static void gfx_ctx_set_resize(unsigned width, unsigned height)
+static void gfx_ctx_set_resize(void *data, unsigned width, unsigned height)
 {
+   (void)data;
    (void)width;
    (void)height;
 }
 
-static void gfx_ctx_update_window_title(void)
+static void gfx_ctx_update_window_title(void *data)
 {
+   (void)data;
    char buf[128], buf_fps[128];
    bool fps_draw = g_settings.fps_show;
    gfx_get_fps(buf, sizeof(buf), fps_draw ? buf_fps : NULL, sizeof(buf_fps));
@@ -225,13 +230,14 @@ static void gfx_ctx_update_window_title(void)
       msg_queue_push(g_extern.msg_queue, buf_fps, 1, 1);
 }
 
-static void gfx_ctx_get_video_size(unsigned *width, unsigned *height)
+static void gfx_ctx_get_video_size(void *data, unsigned *width, unsigned *height)
 {
+   (void)data;
    *width  = g_fb_width;
    *height = g_fb_height;
 }
 
-static bool gfx_ctx_init(void)
+static bool gfx_ctx_init(void *data)
 {
    int i;
    if (g_inited)
@@ -316,7 +322,7 @@ static bool gfx_ctx_init(void)
    return true;
 
 error:
-   gfx_ctx_destroy();
+   gfx_ctx_destroy(data);
    return false;
 }
 
@@ -358,7 +364,7 @@ static struct drm_fb *drm_fb_get_from_bo(struct gbm_bo *bo)
    return fb;
 }
 
-static bool gfx_ctx_set_video_mode(
+static bool gfx_ctx_set_video_mode(void *data,
       unsigned width, unsigned height,
       bool fullscreen)
 {
@@ -476,12 +482,13 @@ static bool gfx_ctx_set_video_mode(
    return true;
 
 error:
-   gfx_ctx_destroy();
+   gfx_ctx_destroy(data);
    return false;
 }
 
-void gfx_ctx_destroy(void)
+void gfx_ctx_destroy(void *data)
 {
+   (void)data;
    // Make sure we acknowledge all page-flips.
    if (waiting_for_flip)
       wait_flip(true);
@@ -558,14 +565,16 @@ void gfx_ctx_destroy(void)
    g_inited = false;
 }
 
-static void gfx_ctx_input_driver(const input_driver_t **input, void **input_data)
+static void gfx_ctx_input_driver(void *data, const input_driver_t **input, void **input_data)
 {
+   (void)data;
    *input = NULL;
    *input_data = NULL;
 }
 
-static bool gfx_ctx_has_focus(void)
+static bool gfx_ctx_has_focus(void *data)
 {
+   (void)data;
    return g_inited;
 }
 
@@ -574,8 +583,9 @@ static gfx_ctx_proc_t gfx_ctx_get_proc_address(const char *symbol)
    return eglGetProcAddress(symbol);
 }
 
-static bool gfx_ctx_bind_api(enum gfx_ctx_api api, unsigned major, unsigned minor)
+static bool gfx_ctx_bind_api(void *data, enum gfx_ctx_api api, unsigned major, unsigned minor)
 {
+   (void)data;
    g_major = major;
    g_minor = minor;
    g_api = api;
@@ -596,16 +606,6 @@ static bool gfx_ctx_bind_api(enum gfx_ctx_api api, unsigned major, unsigned mino
    }
 }
 
-static bool gfx_ctx_init_egl_image_buffer(const video_info_t *video)
-{
-   return false;
-}
-
-static bool gfx_ctx_write_egl_image(const void *frame, unsigned width, unsigned height, unsigned pitch, bool rgb32, unsigned index, void **image_handle)
-{
-   return false;
-}
-
 const gfx_ctx_driver_t gfx_ctx_drm_egl = {
    gfx_ctx_init,
    gfx_ctx_destroy,
@@ -621,8 +621,8 @@ const gfx_ctx_driver_t gfx_ctx_drm_egl = {
    gfx_ctx_swap_buffers,
    gfx_ctx_input_driver,
    gfx_ctx_get_proc_address,
-   gfx_ctx_init_egl_image_buffer,
-   gfx_ctx_write_egl_image,
+   NULL,
+   NULL,
    NULL,
    "kms-egl",
 };

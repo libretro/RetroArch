@@ -76,8 +76,8 @@ static int nul_handler(Display *dpy, XErrorEvent *event)
    return 0;
 }
 
-static void gfx_ctx_get_video_size(unsigned *width, unsigned *height);
-static void gfx_ctx_destroy(void);
+static void gfx_ctx_get_video_size(void *data, unsigned *width, unsigned *height);
+static void gfx_ctx_destroy(void *data);
 
 static void egl_report_error(void)
 {
@@ -109,8 +109,9 @@ static void egl_report_error(void)
    RARCH_ERR("[X/EGL]: #0x%x, %s\n", (unsigned)error, str);
 }
 
-static void gfx_ctx_swap_interval(unsigned interval)
+static void gfx_ctx_swap_interval(void *data, unsigned interval)
 {
+   (void)data;
    g_interval = interval;
    if (g_egl_dpy && eglGetCurrentContext())
    {
@@ -123,13 +124,13 @@ static void gfx_ctx_swap_interval(unsigned interval)
    }
 }
 
-static void gfx_ctx_check_window(bool *quit,
+static void gfx_ctx_check_window(void *data, bool *quit,
       bool *resize, unsigned *width, unsigned *height, unsigned frame_count)
 {
    (void)frame_count;
 
    unsigned new_width = *width, new_height = *height;
-   gfx_ctx_get_video_size(&new_width, &new_height);
+   gfx_ctx_get_video_size(data, &new_width, &new_height);
 
    if (new_width != *width || new_height != *height)
    {
@@ -173,19 +174,22 @@ static void gfx_ctx_check_window(bool *quit,
    *quit = g_quit;
 }
 
-static void gfx_ctx_swap_buffers(void)
+static void gfx_ctx_swap_buffers(void *data)
 {
+   (void)data;
    eglSwapBuffers(g_egl_dpy, g_egl_surf);
 }
 
-static void gfx_ctx_set_resize(unsigned width, unsigned height)
+static void gfx_ctx_set_resize(void *data, unsigned width, unsigned height)
 {
+   (void)data;
    (void)width;
    (void)height;
 }
 
-static void gfx_ctx_update_window_title(void)
+static void gfx_ctx_update_window_title(void *data)
 {
+   (void)data;
    char buf[128], buf_fps[128];
    bool fps_draw = g_settings.fps_show;
    if (gfx_get_fps(buf, sizeof(buf), fps_draw ? buf_fps : NULL, sizeof(buf_fps)))
@@ -195,8 +199,9 @@ static void gfx_ctx_update_window_title(void)
       msg_queue_push(g_extern.msg_queue, buf_fps, 1, 1);
 }
 
-static void gfx_ctx_get_video_size(unsigned *width, unsigned *height)
+static void gfx_ctx_get_video_size(void *data, unsigned *width, unsigned *height)
 {
+   (void)data;
    if (!g_dpy || g_win == None)
    {
       Display *dpy = XOpenDisplay(NULL);
@@ -223,7 +228,7 @@ static void gfx_ctx_get_video_size(unsigned *width, unsigned *height)
    }
 }
 
-static bool gfx_ctx_init(void)
+static bool gfx_ctx_init(void *data)
 {
    if (g_inited)
       return false;
@@ -294,14 +299,16 @@ static bool gfx_ctx_init(void)
    g_egl_dpy = eglGetDisplay((EGLNativeDisplayType)g_dpy);
    if (g_egl_dpy == EGL_NO_DISPLAY)
    {
-      RARCH_ERR("[X/EGL]: EGL display not available (Error: 0x%x).\n", (unsigned)eglGetError());
+      RARCH_ERR("[X/EGL]: EGL display not available.\n");
+      egl_report_error();
       goto error;
    }
 
    EGLint egl_major, egl_minor;
    if (!eglInitialize(g_egl_dpy, &egl_major, &egl_minor))
    {
-      RARCH_ERR("[X/EGL]: Unable to initialize EGL (Error: 0x%x).\n", (unsigned)eglGetError());
+      RARCH_ERR("[X/EGL]: Unable to initialize EGL.\n");
+      egl_report_error();
       goto error;
    }
 
@@ -323,11 +330,11 @@ static bool gfx_ctx_init(void)
    return true;
 
 error:
-   gfx_ctx_destroy();
+   gfx_ctx_destroy(data);
    return false;
 }
 
-static bool gfx_ctx_set_video_mode(
+static bool gfx_ctx_set_video_mode(void *data,
       unsigned width, unsigned height,
       bool fullscreen)
 {
@@ -464,7 +471,7 @@ static bool gfx_ctx_set_video_mode(
    if (g_quit_atom)
       XSetWMProtocols(g_dpy, g_win, &g_quit_atom, 1);
 
-   gfx_ctx_swap_interval(g_interval);
+   gfx_ctx_swap_interval(data, g_interval);
 
    // This can blow up on some drivers. It's not fatal, so override errors for this call.
    old_handler = XSetErrorHandler(nul_handler);
@@ -490,12 +497,13 @@ error:
    if (vi)
       XFree(vi);
 
-   gfx_ctx_destroy();
+   gfx_ctx_destroy(data);
    return false;
 }
 
-static void gfx_ctx_destroy(void)
+static void gfx_ctx_destroy(void *data)
 {
+   (void)data;
    x11_destroy_input_context(&g_xim, &g_xic);
    if (g_egl_dpy)
    {
@@ -559,15 +567,17 @@ static void gfx_ctx_destroy(void)
    g_inited = false;
 }
 
-static void gfx_ctx_input_driver(const input_driver_t **input, void **input_data)
+static void gfx_ctx_input_driver(void *data, const input_driver_t **input, void **input_data)
 {
+   (void)data;
    void *xinput = input_x.init();
    *input       = xinput ? &input_x : NULL;
    *input_data  = xinput;
 }
 
-static bool gfx_ctx_has_focus(void)
+static bool gfx_ctx_has_focus(void *data)
 {
+   (void)data;
    if (!g_inited)
       return false;
 
@@ -583,8 +593,9 @@ static gfx_ctx_proc_t gfx_ctx_get_proc_address(const char *symbol)
    return eglGetProcAddress(symbol);
 }
 
-static bool gfx_ctx_bind_api(enum gfx_ctx_api api, unsigned major, unsigned minor)
+static bool gfx_ctx_bind_api(void *data, enum gfx_ctx_api api, unsigned major, unsigned minor)
 {
+   (void)data;
    g_major = major;
    g_minor = minor;
    g_api = api;
@@ -605,18 +616,9 @@ static bool gfx_ctx_bind_api(enum gfx_ctx_api api, unsigned major, unsigned mino
    }
 }
 
-static bool gfx_ctx_init_egl_image_buffer(const video_info_t *video)
+static void gfx_ctx_show_mouse(void *data, bool state)
 {
-   return false;
-}
-
-static bool gfx_ctx_write_egl_image(const void *frame, unsigned width, unsigned height, unsigned pitch, bool rgb32, unsigned index, void **image_handle)
-{
-   return false;
-}
-
-static void gfx_ctx_show_mouse(bool state)
-{
+   (void)data;
    x11_show_mouse(g_dpy, g_win, state);
 }
 
@@ -635,8 +637,8 @@ const gfx_ctx_driver_t gfx_ctx_x_egl = {
    gfx_ctx_swap_buffers,
    gfx_ctx_input_driver,
    gfx_ctx_get_proc_address,
-   gfx_ctx_init_egl_image_buffer,
-   gfx_ctx_write_egl_image,
+   NULL,
+   NULL,
    gfx_ctx_show_mouse,
    "x-egl",
 };

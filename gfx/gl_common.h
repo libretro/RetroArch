@@ -37,25 +37,24 @@
 
 #include "glsym/glsym.h"
 
-#define context_get_video_size_func(win, height)     gl->ctx_driver->get_video_size(win, height)
-#define context_update_window_title_func()           gl->ctx_driver->update_window_title()
-#define context_destroy_func()                       gl->ctx_driver->destroy()
-#define context_translate_aspect_func(width, height) gl->ctx_driver->translate_aspect(width, height)
-#define context_set_resize_func(width, height)       gl->ctx_driver->set_resize(width, height)
-#define context_swap_buffers_func()                  gl->ctx_driver->swap_buffers()
-#define context_post_render_func(gl)                 gl->ctx_driver->post_render(gl)
-#define context_swap_interval_func(var)              gl->ctx_driver->swap_interval(var)
-#define context_has_focus_func()                     gl->ctx_driver->has_focus()
-#define context_check_window_func(quit, resize, width, height, frame_count) \
-   gl->ctx_driver->check_window(quit, resize, width, height, frame_count)
+#define context_get_video_size_func(gl, win, height)     gl->ctx_driver->get_video_size(gl, win, height)
+#define context_update_window_title_func(gl)             gl->ctx_driver->update_window_title(gl)
+#define context_destroy_func(gl)                         gl->ctx_driver->destroy(gl)
+#define context_translate_aspect_func(gl, width, height) gl->ctx_driver->translate_aspect(gl, width, height)
+#define context_set_resize_func(gl, width, height)       gl->ctx_driver->set_resize(gl, width, height)
+#define context_swap_buffers_func(gl)                    gl->ctx_driver->swap_buffers(gl)
+#define context_swap_interval_func(gl, var)              gl->ctx_driver->swap_interval(gl, var)
+#define context_has_focus_func(gl)                       gl->ctx_driver->has_focus(gl)
+#define context_check_window_func(gl, quit, resize, width, height, frame_count) \
+   gl->ctx_driver->check_window(gl, quit, resize, width, height, frame_count)
 
-#define context_set_video_mode_func(width, height, fullscreen) gl->ctx_driver->set_video_mode(width, height, fullscreen)
-#define context_input_driver_func(input, input_data) gl->ctx_driver->input_driver(input, input_data)
+#define context_set_video_mode_func(gl, width, height, fullscreen) gl->ctx_driver->set_video_mode(gl, width, height, fullscreen)
+#define context_input_driver_func(gl, input, input_data) gl->ctx_driver->input_driver(gl, input, input_data)
 
 #ifdef HAVE_EGL
-#define context_init_egl_image_buffer_func(video)    gl->ctx_driver->init_egl_image_buffer(video)
-#define context_write_egl_image_func(frame, width, height, pitch, base_size, tex_index, img) \
-   gl->ctx_driver->write_egl_image(frame, width, height, pitch, base_size, tex_index,img)
+#define context_init_egl_image_buffer_func(gl, video)    gl->ctx_driver->init_egl_image_buffer(gl, video)
+#define context_write_egl_image_func(gl, frame, width, height, pitch, base_size, tex_index, img) \
+   gl->ctx_driver->write_egl_image(gl, frame, width, height, pitch, base_size, tex_index,img)
 #endif
 
 static inline bool gl_check_error(void)
