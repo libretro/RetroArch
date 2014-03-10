@@ -70,7 +70,7 @@ int apple_rarch_load_content(int argc, char* argv[])
    if (rarch_main_init(argc, argv))
       return 1;
    
-   menu_init();
+   menu_init(driver.video_data);
    
    if (!g_extern.libretro_dummy)
       menu_rom_history_push_current();   

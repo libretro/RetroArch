@@ -31,13 +31,12 @@
 static void gfx_ctx_check_window(void *data, bool *quit,
       bool *resize, unsigned *width, unsigned *height, unsigned frame_count)
 {
-   (void)data;
    (void)frame_count;
 
    *quit = false;
 
    unsigned new_width, new_height;
-   apple_gfx_ctx_get_video_size(&new_width, &new_height);
+   apple_gfx_ctx_get_video_size(data, &new_width, &new_height);
    if (new_width != *width || new_height != *height)
    {
       *width  = new_width;
