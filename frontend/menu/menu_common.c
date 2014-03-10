@@ -358,11 +358,7 @@ static void menu_update_libretro_info(void)
 {
    *rgui->libretro_dir = '\0';
 
-#if defined(_XBOX360)
-   strlcpy(rgui->libretro_dir, "game:", sizeof(rgui->libretro_dir));
-#elif defined(_XBOX1)
-   strlcpy(rgui->libretro_dir, "D:", sizeof(rgui->libretro_dir));
-#elif defined(RARCH_CONSOLE)
+#if defined(RARCH_CONSOLE)
    strlcpy(rgui->libretro_dir, default_paths.core_dir, sizeof(rgui->libretro_dir));
 #else
    if (path_is_directory(g_settings.libretro))
