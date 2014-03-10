@@ -434,7 +434,7 @@ static RAScreen* get_chosen_screen(void)
 {
 #if defined(OSX) && !defined(MAC_OS_X_VERSION_10_6)
 #else
-   if ((g_settings.video.monitor_index) >= (RAScreen.screens.count))
+   if (g_settings.video.monitor_index >= RAScreen.screens.count)
    {
       RARCH_WARN("video_monitor_index is greater than the number of connected monitors; using main screen instead.\n");
       return [RAScreen mainScreen];
