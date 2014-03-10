@@ -358,10 +358,16 @@ static void menu_update_libretro_info(void)
 {
    *rgui->libretro_dir = '\0';
 
+#if defined(_XBOX360)
+   strlcpy(rgui->libretro_dir, "game:", sizeof(rgui->libretro_dir));
+#elif defined(_XBOX1)
+   strlcpy(rgui->libretro_dir, "D:", sizeof(rgui->libretro_dir));
+#else
    if (path_is_directory(g_settings.libretro))
       strlcpy(rgui->libretro_dir, g_settings.libretro, sizeof(rgui->libretro_dir));
    else if (*g_settings.libretro)
       fill_pathname_basedir(rgui->libretro_dir, g_settings.libretro, sizeof(rgui->libretro_dir));
+#endif
 
 #ifndef HAVE_DYNAMIC
    retro_get_system_info(&rgui->info);
