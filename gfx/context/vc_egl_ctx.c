@@ -297,7 +297,7 @@ static void gfx_ctx_destroy(void *data)
 
       if (g_egl_ctx)
       {
-         gfx_ctx_bind_api(g_api, 0, 0);
+         gfx_ctx_bind_api(data, g_api, 0, 0);
          eglMakeCurrent(g_egl_dpy, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
          eglDestroyContext(g_egl_dpy, g_egl_ctx);
       }
@@ -311,7 +311,7 @@ static void gfx_ctx_destroy(void *data)
 
       if (g_egl_surf)
       {
-         gfx_ctx_bind_api(g_api, 0, 0);
+         gfx_ctx_bind_api(data, g_api, 0, 0);
          eglDestroySurface(g_egl_dpy, g_egl_surf);
       }
 
@@ -323,7 +323,7 @@ static void gfx_ctx_destroy(void *data)
 
       eglBindAPI(EGL_OPENVG_API);
       eglMakeCurrent(g_egl_dpy, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
-      gfx_ctx_bind_api(g_api, 0, 0);
+      gfx_ctx_bind_api(data, g_api, 0, 0);
       eglMakeCurrent(g_egl_dpy, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
       eglTerminate(g_egl_dpy);
    }
@@ -373,7 +373,6 @@ static float gfx_ctx_translate_aspect(void *data, unsigned width, unsigned heigh
 
 static bool gfx_ctx_init_egl_image_buffer(void *data, const video_info_t *video)
 {
-   (void)data;
    if (g_api == GFX_CTX_OPENVG_API) // don't bother, we just use VGImages for our EGLImage anyway
    {
       return false;
@@ -421,7 +420,7 @@ static bool gfx_ctx_init_egl_image_buffer(void *data, const video_info_t *video)
       goto fail;
    }
 
-   gfx_ctx_bind_api(g_api, 0, 0);
+   gfx_ctx_bind_api(data, g_api, 0, 0);
    eglMakeCurrent(g_egl_dpy, g_egl_surf, g_egl_surf, g_egl_ctx);
 
    g_smooth = video->smooth;
@@ -440,7 +439,7 @@ fail:
       g_pbuff_surf = EGL_NO_CONTEXT;
    }
 
-   gfx_ctx_bind_api(g_api, 0, 0);
+   gfx_ctx_bind_api(data, g_api, 0, 0);
    eglMakeCurrent(g_egl_dpy, g_egl_surf, g_egl_surf, g_egl_ctx);
 
    return false;
