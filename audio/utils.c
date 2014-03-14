@@ -163,6 +163,104 @@ static void audio_convert_float_to_s16_neon(int16_t *out, const float *in, size_
    audio_convert_float_to_s16_C(out + aligned_samples, in + aligned_samples,
          samples - aligned_samples);
 }
+#elif defined(_MIPS_ARCH_ALLEGREX)
+void audio_convert_s16_to_float_ALLEGREX(float *out,
+      const int16_t *in, size_t samples, float gain)
+{
+
+#ifdef DEBUG
+//   make sure the buffer is 16 byte aligned, this should be the default behaviour of malloc in the PSPSDK
+   rarch_assert(((uint32_t)out & 0xF) == 0);
+#endif
+   size_t i;
+   gain = gain / 0x8000;
+   __asm__ (
+   ".set    push                    \n"
+   ".set    noreorder               \n"
+   "mtv     %0, s200                \n"
+   ".set    pop                     \n"
+   ::"r"(gain)
+   );
+
+   for (i = 0; (i+16) <= samples; i+=16)
+   {
+      __asm__ (
+      ".set    push                 \n"
+      ".set    noreorder            \n"
+
+      "lv.s    s100,  0(%0)         \n"
+      "lv.s    s101,  4(%0)         \n"
+      "lv.s    s110,  8(%0)         \n"
+      "lv.s    s111, 12(%0)         \n"
+      "lv.s    s120, 16(%0)         \n"
+      "lv.s    s121, 20(%0)         \n"
+      "lv.s    s130, 24(%0)         \n"
+      "lv.s    s131, 28(%0)         \n"
+
+      "vs2i.p  c100, c100           \n"
+      "vs2i.p  c110, c110           \n"
+      "vs2i.p  c120, c120           \n"
+      "vs2i.p  c130, c130           \n"
+
+      "vi2f.q  c100, c100, 16       \n"
+      "vi2f.q  c110, c110, 16       \n"
+      "vi2f.q  c120, c120, 16       \n"
+      "vi2f.q  c130, c130, 16       \n"
+
+      "vmscl.q e100, e100, s200     \n"
+
+      "sv.q    c100,  0(%1)         \n"
+      "sv.q    c110, 16(%1)         \n"
+      "sv.q    c120, 32(%1)         \n"
+      "sv.q    c130, 48(%1)         \n"
+
+      ".set    pop                  \n"
+      ::"r"(in+i),"r"(out+i)
+      );
+   }
+
+   for (;i != samples; i++)
+      out[i] = (float)in[i] * gain;
+}
+
+void audio_convert_float_to_s16_ALLEGREX(int16_t *out,
+      const float *in, size_t samples)
+{
+#ifdef DEBUG
+//   make sure the buffers are 16 byte aligned, this should be the default behaviour of malloc in the PSPSDK
+   rarch_assert(((uint32_t)in  & 0xF) == 0);
+   rarch_assert(((uint32_t)out & 0xF) == 0);
+#endif
+
+   size_t i;
+   for (i = 0; (i+8) <= samples; i+=8)
+   {
+      __asm__ (
+      ".set    push                 \n"
+      ".set    noreorder            \n"
+
+      "lv.q    c100,  0(%0)         \n"
+      "lv.q    c110,  16(%0)        \n"
+
+      "vf2in.q c100, c100, 31       \n"
+      "vf2in.q c110, c110, 31       \n"
+      "vi2s.q  c100, c100           \n"
+      "vi2s.q  c102, c110           \n"
+
+      "sv.q    c100,  0(%1)         \n"
+
+      ".set    pop                  \n"
+      ::"r"(in+i),"r"(out+i)
+      );
+   }
+
+   for (;i != samples; i++)
+   {
+      int32_t val = (int32_t)(in[i] * 0x8000);
+      out[i] = (val > 0x7FFF) ? 0x7FFF : (val < -0x8000 ? -0x8000 : (int16_t)val);
+   }
+
+}
 #endif
 
 void audio_convert_init_simd(void)

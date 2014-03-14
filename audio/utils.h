@@ -51,7 +51,14 @@ void (*audio_convert_s16_to_float_arm)(float *out,
       const int16_t *in, size_t samples, float gain);
 void (*audio_convert_float_to_s16_arm)(int16_t *out,
       const float *in, size_t samples);
+#elif defined(_MIPS_ARCH_ALLEGREX)
+#define audio_convert_s16_to_float audio_convert_s16_to_float_ALLEGREX
+#define audio_convert_float_to_s16 audio_convert_float_to_s16_ALLEGREX
 
+void audio_convert_s16_to_float_ALLEGREX(float *out,
+      const int16_t *in, size_t samples, float gain);
+void audio_convert_float_to_s16_ALLEGREX(int16_t *out,
+      const float *in, size_t samples);
 #else
 #define audio_convert_s16_to_float audio_convert_s16_to_float_C
 #define audio_convert_float_to_s16 audio_convert_float_to_s16_C
