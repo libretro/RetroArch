@@ -27,7 +27,7 @@
 #include "../../psp/sdk_defines.h"
 
 PSP_MODULE_INFO("RetroArch PSP", 0, 1, 1);
-PSP_MAIN_THREAD_ATTR(THREAD_ATTR_USER);
+PSP_MAIN_THREAD_ATTR(THREAD_ATTR_USER|THREAD_ATTR_VFPU);
 PSP_HEAP_SIZE_MAX();
 
 static int exit_callback(int arg1, int arg2, void *common)

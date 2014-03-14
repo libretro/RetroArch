@@ -447,7 +447,11 @@ static const int out_latency = 64;
 static const bool audio_sync = true;
 
 // Default resampler
+#if defined(PSP)
+static const char *audio_resampler = "CC";
+#else
 static const char *audio_resampler = "sinc";
+#endif
 
 // Experimental rate control
 #if defined(GEKKO) || !defined(RARCH_CONSOLE)
