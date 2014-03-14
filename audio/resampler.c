@@ -24,6 +24,9 @@
 
 static const rarch_resampler_t *backends[] = {
    &sinc_resampler,
+#if defined(PSP)
+   &CC_resampler,
+#endif
    NULL,
 };
 

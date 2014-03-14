@@ -358,6 +358,9 @@ AUDIO RESAMPLER
 ============================================================ */
 #include "../audio/resampler.c"
 #include "../audio/sinc.c"
+#ifdef PSP
+#include "../audio/cc_resampler.c"
+#endif
 
 /*============================================================
 CAMERA
