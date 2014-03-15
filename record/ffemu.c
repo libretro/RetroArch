@@ -27,7 +27,6 @@ extern "C" {
 #include <libavformat/avformat.h>
 #include <libavutil/avconfig.h>
 #include <libavutil/pixdesc.h>
-#include <libavutil/channel_layout.h>
 #include <libswscale/swscale.h>
 #ifdef __cplusplus
 }
