@@ -447,7 +447,6 @@ fail:
 
 static bool gfx_ctx_write_egl_image(void *data, const void *frame, unsigned width, unsigned height, unsigned pitch, bool rgb32, unsigned index, void **image_handle)
 {
-   (void)data;
    bool ret = false;
 
    if (index >= MAX_EGLIMAGE_TEXTURES)
@@ -469,7 +468,7 @@ static bool gfx_ctx_write_egl_image(void *data, const void *frame, unsigned widt
    vgImageSubData(g_egl_vgimage[index], frame, pitch, (rgb32 ? VG_sXRGB_8888 : VG_sRGB_565), 0, 0, width, height);
    *image_handle = eglBuffer[index];
 
-   gfx_ctx_bind_api(g_api, 0, 0);
+   gfx_ctx_bind_api(data, g_api, 0, 0);
    eglMakeCurrent(g_egl_dpy, g_egl_surf, g_egl_surf, g_egl_ctx);
 
    return ret;
