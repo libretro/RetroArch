@@ -183,6 +183,9 @@ if [ "$HAVE_THREADS" != 'no' ]; then
       check_pkgconf AVCODEC libavcodec 54
       check_pkgconf AVFORMAT libavformat 54
       check_pkgconf AVUTIL libavutil 51
+      if [ "$HAVE_AVUTIL" = 'yes' ]; then
+	  check_header AVUTIL_CHANNEL_LAYOUT libavutil/channel_layout.h
+      fi
       check_pkgconf SWSCALE libswscale 2.1
       ( [ "$HAVE_FFMPEG" = 'auto' ] && ( [ "$HAVE_AVCODEC" = 'no' ] || [ "$HAVE_AVFORMAT" = 'no' ] || [ "$HAVE_AVUTIL" = 'no' ] || [ "$HAVE_SWSCALE" = 'no' ] ) && HAVE_FFMPEG='no' ) || HAVE_FFMPEG='yes'
    fi
