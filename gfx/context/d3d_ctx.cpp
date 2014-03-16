@@ -86,7 +86,11 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT message,
 			return win32_handle_keyboard_event(hWnd, message, wParam, lParam);
 
         case WM_DESTROY:
-			d3d_quit = true;
+			//TODO - We can't set d3d_quit to true here since WM_DESTROY might be invoked
+			//on tear-down/setup, and we would exit straight away immediately
+			//
+			//Right now, quit button of window is broken because of this.
+			//d3d_quit = true;
 			return 0;
         case WM_SIZE:
 			unsigned new_width, new_height;
