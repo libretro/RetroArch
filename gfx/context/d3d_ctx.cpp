@@ -133,9 +133,7 @@ static void gfx_ctx_d3d_update_title(void *data)
    if (gfx_get_fps(buffer, sizeof(buffer), fps_draw ? buffer_fps : NULL, sizeof(buffer_fps)))
    {
 #ifndef _XBOX
-      std::string title = buffer;
-      title += " || Direct3D";
-      SetWindowText(d3d->hWnd, title.c_str());
+      SetWindowText(d3d->hWnd, buffer);
 #endif
    }
 
