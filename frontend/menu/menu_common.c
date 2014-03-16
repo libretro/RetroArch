@@ -854,15 +854,7 @@ static int menu_settings_iterate(void *data, void *video_data, unsigned action)
       file_list_get_at_offset(rgui->selection_buf, rgui->selection_ptr, &label, &type);
 
    if (type == RGUI_SETTINGS_CORE)
-   {
-#if defined(HAVE_DYNAMIC)
       label = rgui->libretro_dir;
-#elif defined(HAVE_LIBRETRO_MANAGEMENT)
-      label = default_paths.core_dir;
-#else
-      label = ""; // Shouldn't happen ...
-#endif
-   }
    else if (type == RGUI_SETTINGS_CONFIG)
       label = g_settings.rgui_config_directory;
    else if (type == RGUI_SETTINGS_DISK_APPEND)
