@@ -77,9 +77,12 @@ typedef struct __attribute__((packed)) psp1_sprite
 typedef struct psp1_rgui_frame
 {
    void* dList;
-   psp1_sprite_t* frame_coords;
+   void* frame;
+   psp1_sprite_t* frame_coords;   
 
    bool active;
+
+   PspGeContext context_storage;
 
 } psp1_rgui_frame_t;
 
@@ -125,15 +128,18 @@ static void *psp_init(const video_info_t *video,
       sceGuInit();
 
 
-      psp->main_dList   = memalign(16,64 * 1024);   // TODO: use a better approximation of maximum display list size
-      psp->frame_dList  = memalign(16,64 * 1024);
-      psp->rgui.dList   = memalign(16,64 * 1024);
-      psp->frame_coords = memalign(64, 2 * sizeof(psp1_sprite_t));
+      psp->main_dList         = memalign(16, 256); // make sure to allocate more space if bigger display lists are needed.
+      psp->frame_dList        = memalign(16, 256);
+      psp->rgui.dList         = memalign(16, 256);
+      psp->rgui.frame         = memalign(16,  2 * 480 * 272);
+      psp->frame_coords       = memalign(64,  1 * sizeof(psp1_sprite_t));
+      psp->rgui.frame_coords  = memalign(64, 16 * sizeof(psp1_sprite_t));
 
-      memset(psp->frame_coords, 0, 2 * sizeof(psp1_sprite_t));
+      memset(psp->frame_coords      , 0,  1 * sizeof(psp1_sprite_t));
+      memset(psp->rgui.frame_coords , 0, 16 * sizeof(psp1_sprite_t));
       sceKernelDcacheWritebackInvalidateAll();
-      psp->frame_coords = TO_UNCACHED_PTR(psp->frame_coords);
-      psp->rgui.frame_coords = psp->frame_coords + 1;
+      psp->frame_coords       = TO_UNCACHED_PTR(psp->frame_coords);
+      psp->rgui.frame_coords  = TO_UNCACHED_PTR(psp->rgui.frame_coords);;
 
       psp->frame_coords->v0.x = 60;
       psp->frame_coords->v0.y = 0;
@@ -276,7 +282,7 @@ error:
    return (void*)-1;
 }
 
-//#define DISPLAY_FPS
+#define DISPLAY_FPS
 
 static bool psp_frame(void *data, const void *frame,
       unsigned width, unsigned height, unsigned pitch, const char *msg)
@@ -289,6 +295,9 @@ static bool psp_frame(void *data, const void *frame,
    static float fps=0.0;
    static int frames;
 #endif
+
+   if (!width || !height)
+      return false;
 
    sceGuSync(0, 0);
 
@@ -312,6 +321,8 @@ static bool psp_frame(void *data, const void *frame,
    if (psp->vsync)
       sceDisplayWaitVblankStart();
 
+
+
 #ifdef DISPLAY_FPS
    frames++;
    sceRtcGetCurrentTick(&currentTick);
@@ -330,10 +341,6 @@ static bool psp_frame(void *data, const void *frame,
    psp->draw_buffer = FROM_GU_POINTER(sceGuSwapBuffers());
    g_extern.frame_count++;
 
-   /* frame dupes. */
-   if (frame == NULL)
-      return true;
-
    psp->frame_coords->v0.x = (SCEGU_SCR_WIDTH - width * SCEGU_SCR_HEIGHT / height) / 2;
 //   psp->frame_coords->v0.y = 0;
 //   psp->frame_coords->v0.u = 0;
@@ -346,17 +353,31 @@ static bool psp_frame(void *data, const void *frame,
 
    sceGuStart(GU_DIRECT, psp->main_dList);
 
-   sceKernelDcacheWritebackRange(frame,pitch * height);
-   sceGuCopyImage(GU_PSM_5650, ((u32)frame & 0xF) >> psp->bpp_log2, 0, width, height, pitch >> psp->bpp_log2, (void*)((u32)frame & ~0xF), 0, 0, width, psp->texture);
+   if ((uint32_t)frame&0x04000000) // frame in VRAM ? texture/palette was set in core so draw directly
+   {
+      sceGuClear(GU_COLOR_BUFFER_BIT);
+      sceGuDrawArray(GU_SPRITES, GU_TEXTURE_16BIT | GU_COLOR_4444 | GU_VERTEX_16BIT | GU_TRANSFORM_2D, 2, NULL, (void*)(psp->frame_coords));
+   }
+   else
+   {
+      if (frame!=NULL)
+      {
+         sceKernelDcacheWritebackRange(frame,pitch * height);
+         sceGuCopyImage(GU_PSM_5650, ((u32)frame & 0xF) >> psp->bpp_log2, 0, width, height, pitch >> psp->bpp_log2, (void*)((u32)frame & ~0xF), 0, 0, width, psp->texture);
+      }
 
-   sceGuClear(GU_COLOR_BUFFER_BIT);
-   sceGuTexImage(0, next_pow2(width), next_pow2(height), width, psp->texture);
-   sceGuCallList(psp->frame_dList);
-
-   if(psp->rgui.active)
-      sceGuCallList(psp->rgui.dList);
+      sceGuClear(GU_COLOR_BUFFER_BIT);
+      sceGuTexImage(0, next_pow2(width), next_pow2(height), width, psp->texture);
+      sceGuCallList(psp->frame_dList);
+   }
 
    sceGuFinish();
+
+   if(psp->rgui.active)
+   {
+      sceGuSendList(GU_TAIL, psp->rgui.dList, &(psp->rgui.context_storage));
+      sceGuSync(0, 0);
+   }
 
    return true;
 }
@@ -395,9 +416,13 @@ static void psp_free(void *data)
    if (psp->frame_dList)
       free(psp->frame_dList);
    if (psp->frame_coords)
-      free(psp->frame_coords);
+      free(TO_CACHED_PTR(psp->frame_coords));
+   if (psp->rgui.frame_coords)
+      free(TO_CACHED_PTR(psp->rgui.frame_coords));
    if (psp->rgui.dList)
       free(psp->rgui.dList);
+   if (psp->rgui.frame)
+      free(psp->rgui.frame);
 
    memset(psp, 0, sizeof(psp1_video_t));
 
@@ -416,31 +441,53 @@ static void psp_set_rotation(void *data, unsigned rotation)
 static void psp_set_texture_frame(void *data, const void *frame, bool rgb32,
                                unsigned width, unsigned height, float alpha)
 {
-   psp1_video_t *psp = (psp1_video_t*)data;
    (void) rgb32;
    (void) alpha;
 
-   psp->rgui.frame_coords->v0.x = 0;
-   psp->rgui.frame_coords->v0.y = 0;
-   psp->rgui.frame_coords->v0.u = 0;
-   psp->rgui.frame_coords->v0.v = 0;
+   int i;
+   psp1_video_t *psp = (psp1_video_t*)data;
 
-   psp->rgui.frame_coords->v1.x = SCEGU_SCR_WIDTH;
-   psp->rgui.frame_coords->v1.y = SCEGU_SCR_HEIGHT;
-   psp->rgui.frame_coords->v1.u = width;
-   psp->rgui.frame_coords->v1.v = height;
+#ifdef DEBUG
+   rarch_assert((width*height) < (480 * 272));  // psp->rgui.frame buffer size is (480 * 272)*2 Bytes
+#endif
+
+   // rendering the rgui frame as a single sprite is slow
+   // so we render it as 16 vertical stripes instead
+
+   for (i=0;i<16;i++)
+   {
+      psp->rgui.frame_coords[i].v0.x = (i)   * SCEGU_SCR_WIDTH / 16 ;
+      psp->rgui.frame_coords[i].v1.x = (i+1) * SCEGU_SCR_WIDTH / 16 ;
+
+//      psp->rgui.frame_coords[i].v0.y = 0;
+      psp->rgui.frame_coords[i].v1.y = SCEGU_SCR_HEIGHT ;
+
+
+      psp->rgui.frame_coords[i].v0.u = (i)   * width / 16 ;
+      psp->rgui.frame_coords[i].v1.u = (i+1) * width / 16 ;
+
+//      psp->rgui.frame_coords[i].v0.v = 0;
+      psp->rgui.frame_coords[i].v1.v = height;
+   }
+
 
    sceKernelDcacheWritebackRange(frame,width * height * 2);
 
-   sceGuStart(GU_CALL, psp->rgui.dList);
+   sceGuStart(GU_DIRECT, psp->main_dList);
+   sceGuCopyImage(GU_PSM_4444, 0, 0, width, height, width, (void*)frame, 0, 0, width, psp->rgui.frame);
+   sceGuFinish();
 
+   sceGuStart(GU_SEND, psp->rgui.dList);
+   sceGuTexSync();
    sceGuTexMode(GU_PSM_4444, 0, 0, GU_FALSE);
-   sceGuTexImage(0, next_pow2(width), next_pow2(height), width, frame);
+   sceGuTexFunc(GU_TFX_REPLACE, GU_TCC_RGB);
+   sceGuTexImage(0, next_pow2(width), next_pow2(height), width, psp->rgui.frame);
    sceGuEnable(GU_BLEND);
+
 //   sceGuBlendFunc(GU_ADD, GU_SRC_ALPHA, GU_ONE_MINUS_SRC_ALPHA, 0, 0); // default blending
    sceGuBlendFunc(GU_ADD, GU_FIX, GU_FIX, 0xF0F0F0F0, 0x0F0F0F0F);
-   sceGuDrawArray(GU_SPRITES, GU_TEXTURE_16BIT | GU_COLOR_4444 | GU_VERTEX_16BIT | GU_TRANSFORM_2D, 2, NULL, psp->rgui.frame_coords);
-   sceGuSync(GU_SYNC_LIST, 0);
+;
+   sceGuDrawArray(GU_SPRITES, GU_TEXTURE_16BIT | GU_COLOR_4444 | GU_VERTEX_16BIT | GU_TRANSFORM_2D, 32, NULL, psp->rgui.frame_coords);
    sceGuFinish();
 
 }
