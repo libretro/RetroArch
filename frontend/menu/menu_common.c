@@ -1412,8 +1412,8 @@ bool menu_iterate(void *video_data)
       rgui->old_input_state |= 1ULL << RARCH_MENU_TOGGLE;
    }
 
-   rarch_check_block_hotkey();
    rarch_input_poll();
+   rarch_check_block_hotkey();
 #ifdef HAVE_OVERLAY
    rarch_check_overlay();
 #endif
@@ -1425,7 +1425,7 @@ bool menu_iterate(void *video_data)
    if (input_key_pressed_func(RARCH_QUIT_KEY) || !video_alive_func())
    {
       g_extern.lifecycle_state |= (1ULL << MODE_GAME);
-      goto deinit;
+      return false;
    }
 
    input_state = menu_input();
@@ -1522,12 +1522,9 @@ bool menu_iterate(void *video_data)
    }
 
    if (ret || input_entry_ret)
-      goto deinit;
+      return false;
 
    return true;
-
-deinit:
-   return false;
 }
 #endif
 

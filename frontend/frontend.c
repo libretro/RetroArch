@@ -217,7 +217,7 @@ int main_entry_iterate(signature(), args_type() args)
       if (driver.audio_data)
          audio_stop_func();
 
-      rgui->need_refresh= true;
+      rgui->need_refresh = true;
       rgui->old_input_state |= 1ULL << RARCH_MENU_TOGGLE;
 
       g_extern.lifecycle_state &= ~(1ULL << MODE_MENU_PREINIT);
@@ -242,6 +242,10 @@ int main_entry_iterate(signature(), args_type() args)
          }
 
          g_extern.lifecycle_state |= (1ULL << MODE_CLEAR_INPUT);
+
+         // If QUIT state came from command interface, we'll only see it once due to MODE_CLEAR_INPUT.
+         if (input_key_pressed_func(RARCH_QUIT_KEY) || !video_alive_func())
+            return 1;
       }
    }
 #endif

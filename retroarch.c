@@ -598,6 +598,11 @@ void rarch_input_poll(void)
    if (driver.overlay) // Poll overlay state
       input_poll_overlay();
 #endif
+
+#ifdef HAVE_COMMAND
+   if (driver.command)
+      rarch_cmd_poll(driver.command);
+#endif
 }
 
 #ifndef RARCH_CONSOLE
@@ -3176,11 +3181,6 @@ bool rarch_main_iterate(void)
       return false;
    }
 
-#ifdef HAVE_COMMAND
-   if (driver.command)
-      rarch_cmd_pre_frame(driver.command);
-#endif
-
    // Checks for stuff like fullscreen, save states, etc.
    do_state_checks();
 
@@ -3364,11 +3364,6 @@ int rarch_main_init_wrap(const struct rarch_main_wrap *args)
 
 bool rarch_main_idle_iterate(void)
 {
-#ifdef HAVE_COMMAND
-   if (driver.command)
-      rarch_cmd_pre_frame(driver.command);
-#endif
-
    if (input_key_pressed_func(RARCH_QUIT_KEY) || !video_alive_func())
       return false;
 
