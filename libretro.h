@@ -607,6 +607,30 @@ enum retro_mod
                                            // This call is not a free pass for not trying to provide correct values in retro_get_system_av_info().
                                            //
                                            // If this returns false, the frontend does not acknowledge a changed av_info struct.
+#define RETRO_ENVIRONMENT_SET_PROC_ADDRESS_CALLBACK 33
+                                           // const struct retro_get_proc_address_interface * --
+                                           // Allows a libretro core to announce support for the get_proc_address() interface.
+                                           // This interface allows for a standard way to extend libretro where use of environment calls are too indirect,
+                                           // e.g. for cases where the frontend wants to call directly into the core.
+                                           //
+                                           // If a core wants to expose this interface, SET_PROC_ADDRESS_CALLBACK **MUST** be called from within retro_set_environment().
+
+typedef void (*retro_proc_address_t)(void);
+
+// libretro API extension functions:
+// (None here so far).
+//////
+
+// Get a symbol from a libretro core.
+// Cores should only return symbols which are actual extensions to the libretro API.
+// Frontends should not use this to obtain symbols to standard libretro entry points (static linking or dlsym).
+// The symbol name must be equal to the function name, e.g. if void retro_foo(void); exists, the symbol must be called "retro_foo".
+// The returned function pointer must be cast to the corresponding type.
+typedef retro_proc_address_t (*retro_get_proc_address_t)(const char *sym);
+struct retro_get_proc_address_interface
+{
+   retro_get_proc_address_t get_proc_address;
+};
 
 enum retro_log_level
 {
@@ -890,7 +914,6 @@ typedef void (*retro_hw_context_reset_t)(void);
 typedef uintptr_t (*retro_hw_get_current_framebuffer_t)(void);
 
 // Get a symbol from HW context.
-typedef void (*retro_proc_address_t)(void);
 typedef retro_proc_address_t (*retro_hw_get_proc_address_t)(const char *sym);
 
 enum retro_hw_context_type
