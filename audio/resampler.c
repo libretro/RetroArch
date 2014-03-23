@@ -23,10 +23,10 @@
 #include "../general.h"
 
 static const rarch_resampler_t *backends[] = {
-   &sinc_resampler,
-#if defined(PSP)
+#ifdef HAVE_CC_RESAMPLER
    &CC_resampler,
 #endif
+   &sinc_resampler,
    NULL,
 };
 
@@ -42,6 +42,9 @@ static int find_resampler_driver_index(const char *driver)
 // Resampler is used by multiple modules so avoid clobbering g_extern.audio_data.resampler here.
 static const rarch_resampler_t *find_resampler_driver(const char *ident)
 {
+   if (!ident)
+      return backends[0];
+
    int i = find_resampler_driver_index(ident);
    if (i >= 0)
       return backends[i];
@@ -56,6 +59,7 @@ static const rarch_resampler_t *find_resampler_driver(const char *ident)
    }
 }
 
+#ifndef RESAMPLER_TEST
 void find_prev_resampler_driver(void)
 {
    int i = find_resampler_driver_index(g_settings.audio.resampler);
@@ -73,6 +77,7 @@ void find_next_resampler_driver(void)
    else
       RARCH_WARN("Couldn't find any next resampler driver (current one: \"%s\").\n", g_extern.audio_data.resampler->ident);
 }
+#endif
 
 bool rarch_resampler_realloc(void **re, const rarch_resampler_t **backend, const char *ident, double bw_ratio)
 {

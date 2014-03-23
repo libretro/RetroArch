@@ -358,7 +358,7 @@ AUDIO RESAMPLER
 ============================================================ */
 #include "../audio/resampler.c"
 #include "../audio/sinc.c"
-#ifdef PSP
+#ifdef HAVE_CC_RESAMPLER
 #include "../audio/cc_resampler.c"
 #endif
 

@@ -51,9 +51,7 @@ typedef struct rarch_resampler
 } rarch_resampler_t;
 
 extern const rarch_resampler_t sinc_resampler;
-#if defined(PSP)
 extern const rarch_resampler_t CC_resampler;
-#endif
 
 // Reallocs resampler. Will free previous handle before allocating a new one.
 // If ident is NULL, first resampler will be used.
