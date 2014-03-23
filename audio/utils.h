@@ -71,10 +71,5 @@ void audio_convert_float_to_s16_C(int16_t *out,
 
 void audio_convert_init_simd(void);
 
-#ifdef HAVE_RSOUND
-bool rarch_rsound_start(const char *ip);
-void rarch_rsound_stop(void);
-#endif
-
 #endif
 
