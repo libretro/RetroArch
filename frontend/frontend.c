@@ -155,12 +155,12 @@ int main_entry_iterate(signature(), args_type() args)
    }
    else if (g_extern.lifecycle_state & (1ULL << MODE_LOAD_GAME))
    {
-      load_menu_game_prepare(driver.video_data);
+      load_menu_game_prepare();
 
       if (load_menu_game())
       {
          g_extern.lifecycle_state |= (1ULL << MODE_GAME);
-         if (driver.video_poke && driver.video_poke->set_aspect_ratio)
+         if (driver.video_data && driver.video_poke && driver.video_poke->set_aspect_ratio)
             driver.video_poke->set_aspect_ratio(driver.video_data, g_settings.video.aspect_ratio_idx);
       }
       else
@@ -225,7 +225,7 @@ int main_entry_iterate(signature(), args_type() args)
    }
    else if (g_extern.lifecycle_state & (1ULL << MODE_MENU))
    {
-      if (menu_iterate(driver.video_data))
+      if (menu_iterate())
       {
          if (frontend_ctx && frontend_ctx->process_events)
             frontend_ctx->process_events(args);
@@ -260,7 +260,7 @@ void main_exit(args_type() args)
 #ifdef HAVE_MENU
    g_extern.system.shutdown = false;
 
-   menu_free(driver.video_data);
+   menu_free();
 
    if (g_extern.config_save_on_exit && *g_extern.config_path)
    {
@@ -338,7 +338,7 @@ returntype main_entry(signature())
 
 #if defined(HAVE_MENU)
    if (menu_init_enable)
-      menu_init(driver.video_data);
+      menu_init();
 
    if (frontend_ctx && frontend_ctx->process_args)
       frontend_ctx->process_args(argc, argv, args);

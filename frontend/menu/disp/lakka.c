@@ -199,7 +199,7 @@ static void lakka_render_background(rgui_handle_t *rgui)
          rgui->width - 10, 5, 5, rgui->height - 10, green_filler);
 }
 
-static void lakka_render_messagebox(void *data, void *video_data, const char *message)
+static void lakka_render_messagebox(void *data, const char *message)
 {
    rgui_handle_t *rgui = (rgui_handle_t*)data;
    size_t i;
@@ -351,11 +351,11 @@ void lakka_draw_icon(void *data, GLuint texture, float x, float y, float alpha, 
    gl_set_viewport(gl, gl->win_width, gl->win_height, 0, 0);
 }
 
-static void lakka_render(void *data, void *video_data)
+static void lakka_render(void *data)
 {
    rgui_handle_t *rgui = (rgui_handle_t*)data;
 
-   gl_t *gl = (gl_t*)video_data;
+   gl_t *gl = (gl_t*)driver.video_data;
 
    gl_set_viewport(gl, gl->win_width, gl->win_height, 0, 0);
 
@@ -625,16 +625,16 @@ static void lakka_render(void *data, void *video_data)
       if (!str)
          str = "";
       snprintf(msg, sizeof(msg), "%s\n%s", rgui->keyboard.label, str);
-      lakka_render_messagebox(rgui, video_data, msg);
+      lakka_render_messagebox(rgui, msg);
    }
 }
 
-static void lakka_set_texture(void *data, void *video_data, bool enable)
+static void lakka_set_texture(void *data, bool enable)
 {
    rgui_handle_t *rgui = (rgui_handle_t*)data;
 
-   if (driver.video_poke && driver.video_poke->set_texture_enable)
-      driver.video_poke->set_texture_frame(video_data, menu_framebuf,
+   if (driver.video_data && driver.video_poke && driver.video_poke->set_texture_enable)
+      driver.video_poke->set_texture_frame(driver.video_data, menu_framebuf,
             enable, rgui->width, rgui->height, 1.0f);
 }
 
@@ -653,7 +653,7 @@ static void lakka_init_assets(void *data)
    lakka_set_texture(rgui, true);
 }
 
-static void *lakka_init(void *video_data)
+static void *lakka_init(void)
 {
    uint16_t *framebuf = menu_framebuf;
    size_t framebuf_pitch;

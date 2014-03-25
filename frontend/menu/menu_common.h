@@ -405,9 +405,9 @@ typedef struct
 
 extern rgui_handle_t *rgui;
 
-void menu_init(void *data);
-bool menu_iterate(void *data);
-void menu_free(void *data);
+void menu_init(void);
+bool menu_iterate(void);
+void menu_free(void);
 
 #ifdef HAVE_SHADER_MANAGER
 void shader_manager_init(void *data);
@@ -422,7 +422,7 @@ void menu_ticker_line(char *buf, size_t len, unsigned tick, const char *str, boo
 
 void menu_init_core_info(void *data);
 
-void load_menu_game_prepare(void *video_data);
+void load_menu_game_prepare(void);
 void load_menu_game_prepare_dummy(void);
 bool load_menu_game(void);
 void load_menu_game_history(unsigned game_index);
@@ -435,8 +435,8 @@ bool menu_replace_config(const char *path);
 
 bool menu_save_new_config(void);
 
-int menu_settings_toggle_setting(void *data, void *video_data, unsigned setting, unsigned action, unsigned menu_type);
-int menu_set_settings(void *data, void *video_data, unsigned setting, unsigned action);
+int menu_settings_toggle_setting(void *data, unsigned setting, unsigned action, unsigned menu_type);
+int menu_set_settings(void *data, unsigned setting, unsigned action);
 void menu_set_settings_label(char *type_str, size_t type_str_size, unsigned *w, unsigned type);
 
 void menu_populate_entries(void *data, unsigned menu_type);

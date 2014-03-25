@@ -149,7 +149,7 @@ HRESULT CRetroArchMain::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
    return 0;
 }
 
-static void* rmenu_xui_init(void *video_data)
+static void* rmenu_xui_init(void)
 {
    HRESULT hr;
 
@@ -160,7 +160,7 @@ static void* rmenu_xui_init(void *video_data)
       return NULL;
    }
 
-   d3d_video_t *d3d= (d3d_video_t*)video_data;
+   d3d_video_t *d3d= (d3d_video_t*)driver.video_data;
 
    bool hdmenus_allowed = (g_extern.lifecycle_state & (1ULL << MODE_MENU_HD));
 
@@ -227,8 +227,8 @@ static void* rmenu_xui_init(void *video_data)
       return NULL;
    }
 
-   if (driver.video_poke && driver.video_poke->set_texture_enable)
-      driver.video_poke->set_texture_frame(video_data, NULL,
+   if (driver.video_data && driver.video_poke && driver.video_poke->set_texture_enable)
+      driver.video_poke->set_texture_frame(driver.video_data, NULL,
             true, 0, 0, 1.0f);
 
    xui_msg_queue = msg_queue_new(16);
@@ -367,19 +367,18 @@ int x, int y, const char *message, bool green)
 {
 }
 
-static void rmenu_xui_render_background(void *data, void *video_data)
+static void rmenu_xui_render_background(void *data)
 {
    (void)data;
-   (void)video_data;
 }
 
-static void rmenu_xui_render_messagebox(void *data, void *video_data, const char *message)
+static void rmenu_xui_render_messagebox(void *data, const char *message)
 {
    msg_queue_clear(xui_msg_queue);
    msg_queue_push(xui_msg_queue, message, 2, 1);
 }
 
-static void rmenu_xui_render(void *data, void *video_data)
+static void rmenu_xui_render(void *data)
 {
    rgui_handle_t *rgui = (rgui_handle_t*)data;
 
@@ -391,7 +390,7 @@ static void rmenu_xui_render(void *data, void *video_data)
    size_t begin = rgui->selection_ptr;
    size_t end = rgui->selection_buf->size;
 
-   rmenu_xui_render_background(rgui, video_data);
+   rmenu_xui_render_background(rgui);
 
    char title[256];
    const char *dir = NULL;
@@ -639,7 +638,7 @@ static void rmenu_xui_render(void *data, void *video_data)
       if (!str)
          str = "";
       snprintf(msg, sizeof(msg), "%s\n%s", rgui->keyboard.label, str);
-      rmenu_xui_render_messagebox(rgui, video_data, msg);
+      rmenu_xui_render_messagebox(rgui, msg);
    }
 }
 
