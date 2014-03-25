@@ -71,7 +71,7 @@ static void menu_update_system_info(void *data, bool *load_no_rom)
 }
 
 //forward decl
-static int menu_iterate_func(void *data, void *video_data, unsigned action);
+static int menu_iterate_func(void *data, unsigned action);
 
 #ifdef HAVE_SHADER_MANAGER
 void shader_manager_init(void *data)
@@ -261,7 +261,7 @@ void menu_rom_history_push_current(void)
             g_extern.system.info.library_name);
 }
 
-void load_menu_game_prepare(void *video_data)
+void load_menu_game_prepare(void)
 {
    if (*g_extern.fullpath || rgui->load_no_rom)
    {
@@ -290,18 +290,18 @@ void load_menu_game_prepare(void *video_data)
    rgui->msg_force = true;
 
    if (menu_ctx)
-      menu_iterate_func(rgui, video_data, RGUI_ACTION_NOOP);
+      menu_iterate_func(rgui, RGUI_ACTION_NOOP);
 #endif
 
    // Draw frame for loading message
-   if (video_data && driver.video_poke && driver.video_poke->set_texture_enable)
-      driver.video_poke->set_texture_enable(video_data, rgui->frame_buf_show, MENU_TEXTURE_FULLSCREEN);
+   if (driver.video_data && driver.video_poke && driver.video_poke->set_texture_enable)
+      driver.video_poke->set_texture_enable(driver.video_data, rgui->frame_buf_show, MENU_TEXTURE_FULLSCREEN);
 
    if (driver.video)
       rarch_render_cached_frame();
 
-   if (video_data && driver.video_poke && driver.video_poke->set_texture_enable)
-      driver.video_poke->set_texture_enable(video_data, false,
+   if (driver.video_data && driver.video_poke && driver.video_poke->set_texture_enable)
+      driver.video_poke->set_texture_enable(driver.video_data, false,
             MENU_TEXTURE_FULLSCREEN);
 }
 
@@ -431,9 +431,9 @@ bool load_menu_game(void)
    }
 }
 
-void menu_init(void *video_data)
+void menu_init(void)
 {
-   if (!menu_ctx_init_first(&menu_ctx, ((void**)&rgui), video_data))
+   if (!menu_ctx_init_first(&menu_ctx, (void**)&rgui))
    {
       RARCH_ERR("Could not initialize menu.\n");
       rarch_fail(1, "menu_init()");
@@ -463,7 +463,7 @@ void menu_init(void *video_data)
    rgui->last_time = rarch_get_time_usec();
 }
 
-void menu_free(void *video_data)
+void menu_free(void)
 {
    if (menu_ctx && menu_ctx->free)
       menu_ctx->free(rgui);
@@ -567,19 +567,19 @@ uint64_t menu_input(void)
 
 // This only makes sense for PC so far.
 // Consoles use set_keybind callbacks instead.
-static int menu_custom_bind_iterate(void *data, void *video_data, unsigned action)
+static int menu_custom_bind_iterate(void *data, unsigned action)
 {
    rgui_handle_t *rgui = (rgui_handle_t*)data;
    (void)action; // Have to ignore action here. Only bind that should work here is Quit RetroArch or something like that.
 
-   if (video_data && menu_ctx && menu_ctx->render)
-      menu_ctx->render(rgui, video_data);
+   if (driver.video_data && menu_ctx && menu_ctx->render)
+      menu_ctx->render(rgui);
 
    char msg[256];
    snprintf(msg, sizeof(msg), "[%s]\npress joypad\n(RETURN to skip)", input_config_bind_map[rgui->binds.begin - RGUI_SETTINGS_BIND_BEGIN].desc);
 
-   if (video_data && menu_ctx && menu_ctx->render_messagebox)
-      menu_ctx->render_messagebox(rgui, video_data, msg);
+   if (driver.video_data && menu_ctx && menu_ctx->render_messagebox)
+      menu_ctx->render_messagebox(rgui, msg);
 
    struct rgui_bind_state binds = rgui->binds;
    menu_poll_bind_state(&binds);
@@ -600,14 +600,14 @@ static int menu_custom_bind_iterate(void *data, void *video_data, unsigned actio
    return 0;
 }
 
-static int menu_start_screen_iterate(void *data, void *video_data, unsigned action)
+static int menu_start_screen_iterate(void *data, unsigned action)
 {
    unsigned i;
    char msg[1024];
    rgui_handle_t *rgui = (rgui_handle_t*)data;
 
-   if (video_data && menu_ctx && menu_ctx->render)
-      menu_ctx->render(rgui, video_data);
+   if (driver.video_data && menu_ctx && menu_ctx->render)
+      menu_ctx->render(rgui);
 
    char desc[6][64];
    static const unsigned binds[] = {
@@ -661,15 +661,15 @@ static int menu_start_screen_iterate(void *data, void *video_data, unsigned acti
          "Press Accept/OK to continue.",
          desc[0], desc[1], desc[2], desc[3], desc[4], desc[5]);
 
-   if (video_data && menu_ctx && menu_ctx->render_messagebox)
-      menu_ctx->render_messagebox(rgui, video_data, msg);
+   if (driver.video_data && menu_ctx && menu_ctx->render_messagebox)
+      menu_ctx->render_messagebox(rgui, msg);
 
    if (action == RGUI_ACTION_OK)
       file_list_pop(rgui->menu_stack, &rgui->selection_ptr);
    return 0;
 }
 
-static int menu_viewport_iterate(void *data, void *video_data, unsigned action)
+static int menu_viewport_iterate(void *data, unsigned action)
 {
    rgui_handle_t *rgui = (rgui_handle_t*)data;
    rarch_viewport_t *custom = &g_extern.console.screen.viewports.custom_vp;
@@ -694,8 +694,8 @@ static int menu_viewport_iterate(void *data, void *video_data, unsigned action)
          else if (custom->height >= (unsigned)stride_y)
             custom->height -= stride_y;
 
-         if (video_data && driver.video_poke && driver.video_poke->apply_state_changes)
-            driver.video_poke->apply_state_changes(video_data);
+         if (driver.video_data && driver.video_poke && driver.video_poke->apply_state_changes)
+            driver.video_poke->apply_state_changes(driver.video_data);
          break;
 
       case RGUI_ACTION_DOWN:
@@ -708,8 +708,8 @@ static int menu_viewport_iterate(void *data, void *video_data, unsigned action)
          else
             custom->height += stride_y;
 
-         if (video_data && driver.video_poke && driver.video_poke->apply_state_changes)
-            driver.video_poke->apply_state_changes(video_data);
+         if (driver.video_data && driver.video_poke && driver.video_poke->apply_state_changes)
+            driver.video_poke->apply_state_changes(driver.video_data);
          break;
 
       case RGUI_ACTION_LEFT:
@@ -721,8 +721,8 @@ static int menu_viewport_iterate(void *data, void *video_data, unsigned action)
          else if (custom->width >= (unsigned)stride_x)
             custom->width -= stride_x;
 
-         if (video_data && driver.video_poke && driver.video_poke->apply_state_changes)
-            driver.video_poke->apply_state_changes(video_data);
+         if (driver.video_data && driver.video_poke && driver.video_poke->apply_state_changes)
+            driver.video_poke->apply_state_changes(driver.video_data);
          break;
 
       case RGUI_ACTION_RIGHT:
@@ -735,8 +735,8 @@ static int menu_viewport_iterate(void *data, void *video_data, unsigned action)
          else
             custom->width += stride_x;
 
-         if (video_data && driver.video_poke && driver.video_poke->apply_state_changes)
-            driver.video_poke->apply_state_changes(video_data);
+         if (driver.video_data && driver.video_poke && driver.video_poke->apply_state_changes)
+            driver.video_poke->apply_state_changes(driver.video_data);
          break;
 
       case RGUI_ACTION_CANCEL:
@@ -765,8 +765,8 @@ static int menu_viewport_iterate(void *data, void *video_data, unsigned action)
          {
             rarch_viewport_t vp;
 
-            if (video_data && driver.video && driver.video->viewport_info)
-               driver.video->viewport_info(video_data, &vp);
+            if (driver.video_data && driver.video && driver.video->viewport_info)
+               driver.video->viewport_info(driver.video_data, &vp);
 
             if (menu_type == RGUI_SETTINGS_CUSTOM_VIEWPORT)
             {
@@ -781,8 +781,8 @@ static int menu_viewport_iterate(void *data, void *video_data, unsigned action)
                custom->height = vp.full_height - custom->y;
             }
 
-            if (video_data && driver.video_poke && driver.video_poke->apply_state_changes)
-               driver.video_poke->apply_state_changes(video_data);
+            if (driver.video_data && driver.video_poke && driver.video_poke->apply_state_changes)
+               driver.video_poke->apply_state_changes(driver.video_data);
          }
          break;
 
@@ -796,8 +796,8 @@ static int menu_viewport_iterate(void *data, void *video_data, unsigned action)
 
    file_list_get_last(rgui->menu_stack, NULL, &menu_type);
 
-   if (video_data && menu_ctx && menu_ctx->render)
-      menu_ctx->render(rgui, video_data);
+   if (driver.video_data && menu_ctx && menu_ctx->render)
+      menu_ctx->render(rgui);
 
    const char *base_msg = NULL;
    char msg[64];
@@ -827,8 +827,8 @@ static int menu_viewport_iterate(void *data, void *video_data, unsigned action)
             base_msg, custom->x, custom->y, custom->width, custom->height); 
    }
 
-   if (video_data && menu_ctx && menu_ctx->render_messagebox)
-      menu_ctx->render_messagebox(rgui, video_data, msg);
+   if (driver.video_data && menu_ctx && menu_ctx->render_messagebox)
+      menu_ctx->render_messagebox(rgui, msg);
 
    if (!custom->width)
       custom->width = stride_x;
@@ -838,13 +838,13 @@ static int menu_viewport_iterate(void *data, void *video_data, unsigned action)
    aspectratio_lut[ASPECT_RATIO_CUSTOM].value =
       (float)custom->width / custom->height;
 
-   if (video_data && driver.video_poke && driver.video_poke->apply_state_changes)
-      driver.video_poke->apply_state_changes(video_data);
+   if (driver.video_data && driver.video_poke && driver.video_poke->apply_state_changes)
+      driver.video_poke->apply_state_changes(driver.video_data);
 
    return 0;
 }
 
-static int menu_settings_iterate(void *data, void *video_data, unsigned action)
+static int menu_settings_iterate(void *data, unsigned action)
 {
    rgui_handle_t *rgui = (rgui_handle_t*)data;
    rgui->frame_buf_pitch = rgui->width * 2;
@@ -922,19 +922,18 @@ static int menu_settings_iterate(void *data, void *video_data, unsigned action)
             // Start with something sane.
             rarch_viewport_t *custom = &g_extern.console.screen.viewports.custom_vp;
 
-            if (video_data && driver.video && driver.video->viewport_info)
+            if (driver.video_data && driver.video && driver.video->viewport_info)
                driver.video->viewport_info(driver.video_data, custom);
-            aspectratio_lut[ASPECT_RATIO_CUSTOM].value =
-               (float)custom->width / custom->height;
+            aspectratio_lut[ASPECT_RATIO_CUSTOM].value = (float)custom->width / custom->height;
 
             g_settings.video.aspect_ratio_idx = ASPECT_RATIO_CUSTOM;
-            if (video_data && driver.video_poke && driver.video_poke->set_aspect_ratio)
+            if (driver.video_data && driver.video_poke && driver.video_poke->set_aspect_ratio)
                driver.video_poke->set_aspect_ratio(driver.video_data,
                      g_settings.video.aspect_ratio_idx);
          }
          else
          {
-            int ret = menu_settings_toggle_setting(rgui, video_data, type, action, menu_type);
+            int ret = menu_settings_toggle_setting(rgui, type, action, menu_type);
             if (ret)
                return ret;
          }
@@ -985,8 +984,8 @@ static int menu_settings_iterate(void *data, void *video_data, unsigned action)
          menu_populate_entries(rgui, RGUI_SETTINGS);
    }
 
-   if (video_data && menu_ctx && menu_ctx->render)
-      menu_ctx->render(rgui, video_data);
+   if (driver.video_data && menu_ctx && menu_ctx->render)
+      menu_ctx->render(rgui);
 
    // Have to defer it so we let settings refresh.
    if (rgui->push_start_screen)
@@ -1023,7 +1022,7 @@ void load_menu_game_new_core(void)
 #endif
 }
 
-static int menu_iterate_func(void *data, void *video_data, unsigned action)
+static int menu_iterate_func(void *data, unsigned action)
 {
    rgui_handle_t *rgui = (rgui_handle_t*)data;
 
@@ -1032,8 +1031,8 @@ static int menu_iterate_func(void *data, void *video_data, unsigned action)
    file_list_get_last(rgui->menu_stack, &dir, &menu_type);
    int ret = 0;
 
-   if (video_data && menu_ctx && menu_ctx->set_texture)
-      menu_ctx->set_texture(rgui, video_data, false);
+   if (driver.video_data && menu_ctx && menu_ctx->set_texture)
+      menu_ctx->set_texture(rgui, false);
 
 #ifdef HAVE_OSK
    // process pending osk init callback
@@ -1052,13 +1051,13 @@ static int menu_iterate_func(void *data, void *video_data, unsigned action)
 #endif
 
    if (menu_type == RGUI_START_SCREEN)
-      return menu_start_screen_iterate(rgui, video_data, action);
+      return menu_start_screen_iterate(rgui, action);
    else if (menu_type_is(menu_type) == RGUI_SETTINGS)
-      return menu_settings_iterate(rgui, video_data, action);
+      return menu_settings_iterate(rgui, action);
    else if (menu_type == RGUI_SETTINGS_CUSTOM_VIEWPORT || menu_type == RGUI_SETTINGS_CUSTOM_VIEWPORT_2)
-      return menu_viewport_iterate(rgui, video_data, action);
+      return menu_viewport_iterate(rgui, action);
    else if (menu_type == RGUI_SETTINGS_CUSTOM_BIND)
-      return menu_custom_bind_iterate(rgui, video_data, action);
+      return menu_custom_bind_iterate(rgui, action);
 
    if (rgui->need_refresh && action != RGUI_ACTION_MESSAGE)
       action = RGUI_ACTION_NOOP;
@@ -1387,13 +1386,13 @@ static int menu_iterate_func(void *data, void *video_data, unsigned action)
    if (menu_ctx && menu_ctx->iterate)
       menu_ctx->iterate(rgui, action);
 
-   if (video_data && menu_ctx && menu_ctx->render)
-      menu_ctx->render(rgui, video_data);
+   if (driver.video_data && menu_ctx && menu_ctx->render)
+      menu_ctx->render(rgui);
 
    return ret;
 }
 
-bool menu_iterate(void *video_data)
+bool menu_iterate(void)
 {
    retro_time_t time, delta, target_msec, sleep_msec;
    unsigned action;
@@ -1418,9 +1417,6 @@ bool menu_iterate(void *video_data)
    rarch_check_overlay();
 #endif
    rarch_check_fullscreen();
-
-   // video_data can have changed here ...
-   video_data = driver.video_data;
 
    if (input_key_pressed_func(RARCH_QUIT_KEY) || !video_alive_func())
    {
@@ -1484,13 +1480,10 @@ bool menu_iterate(void *video_data)
       action = RGUI_ACTION_START;
 
    if (menu_ctx)
-      input_entry_ret = menu_iterate_func(rgui, video_data, action);
+      input_entry_ret = menu_iterate_func(rgui, action);
 
-   // video_data can have changed here ...
-   video_data = driver.video_data;
-
-   if (video_data && driver.video_poke && driver.video_poke->set_texture_enable)
-      driver.video_poke->set_texture_enable(video_data, rgui->frame_buf_show, MENU_TEXTURE_FULLSCREEN);
+   if (driver.video_data && driver.video_poke && driver.video_poke->set_texture_enable)
+      driver.video_poke->set_texture_enable(driver.video_data, rgui->frame_buf_show, MENU_TEXTURE_FULLSCREEN);
 
    rarch_render_cached_frame();
 
@@ -1503,8 +1496,8 @@ bool menu_iterate(void *video_data)
       rarch_sleep((unsigned int)sleep_msec);
    rgui->last_time = rarch_get_time_usec();
 
-   if (video_data && driver.video_poke && driver.video_poke->set_texture_enable)
-      driver.video_poke->set_texture_enable(video_data, false,
+   if (driver.video_data && driver.video_poke && driver.video_poke->set_texture_enable)
+      driver.video_poke->set_texture_enable(driver.video_data, false,
             MENU_TEXTURE_FULLSCREEN);
 
    if (menu_ctx && menu_ctx->input_postprocess)

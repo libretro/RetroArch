@@ -70,7 +70,7 @@ static void rmenu_render_background(rgui_handle_t *rgui)
 {
 }
 
-static void rmenu_render_messagebox(void *data, void *video_data, const char *message)
+static void rmenu_render_messagebox(void *data, const char *message)
 {
    font_params_t font_parms;
 
@@ -107,14 +107,14 @@ static void rmenu_render_messagebox(void *data, void *video_data, const char *me
       font_parms.scale = FONT_SIZE_NORMAL;
       font_parms.color = WHITE;
 
-      if (driver.video_poke && driver.video_poke->set_osd_msg)
-         driver.video_poke->set_osd_msg(video_data, msg, &font_parms);
+      if (driver.video_data && driver.video_poke && driver.video_poke->set_osd_msg)
+         driver.video_poke->set_osd_msg(driver.video_data, msg, &font_parms);
    }
 
    render_normal = false;
 }
 
-static void rmenu_render(void *data, void *video_data)
+static void rmenu_render(void *data)
 {
    if (!render_normal)
    {
@@ -246,8 +246,8 @@ static void rmenu_render(void *data, void *video_data)
    font_parms.scale = FONT_SIZE_NORMAL;
    font_parms.color = WHITE;
 
-   if (driver.video_poke && driver.video_poke->set_osd_msg)
-      driver.video_poke->set_osd_msg(video_data, title_buf, &font_parms);
+   if (driver.video_data && driver.video_poke && driver.video_poke->set_osd_msg)
+      driver.video_poke->set_osd_msg(driver.video_data, title_buf, &font_parms);
 
    char title_msg[64];
    const char *core_name = rgui->info.library_name;
@@ -269,8 +269,8 @@ static void rmenu_render(void *data, void *video_data)
 
    snprintf(title_msg, sizeof(title_msg), "%s - %s %s", PACKAGE_VERSION, core_name, core_version);
 
-   if (driver.video_poke && driver.video_poke->set_osd_msg)
-      driver.video_poke->set_osd_msg(video_data, title_msg, &font_parms);
+   if (driver.video_data && driver.video_poke && driver.video_poke->set_osd_msg)
+      driver.video_poke->set_osd_msg(driver.video_data, title_msg, &font_parms);
 
    size_t i, j;
 
@@ -384,32 +384,32 @@ static void rmenu_render(void *data, void *video_data)
       font_parms.scale = FONT_SIZE_NORMAL;
       font_parms.color = WHITE;
 
-      if (driver.video_poke && driver.video_poke->set_osd_msg)
-         driver.video_poke->set_osd_msg(video_data, message, &font_parms);
+      if (driver.video_data && driver.video_poke && driver.video_poke->set_osd_msg)
+         driver.video_poke->set_osd_msg(driver.video_data, message, &font_parms);
 
       font_parms.x = POSITION_EDGE_CENTER + POSITION_OFFSET;
 
-      if (driver.video_poke && driver.video_poke->set_osd_msg)
-         driver.video_poke->set_osd_msg(video_data, type_str_buf, &font_parms);
+      if (driver.video_data && driver.video_poke && driver.video_poke->set_osd_msg)
+         driver.video_poke->set_osd_msg(driver.video_data, type_str_buf, &font_parms);
    }
 }
 
-void rmenu_set_texture(void *data, void *video_data, bool enable)
+void rmenu_set_texture(void *data, bool enable)
 {
    rgui_handle_t *rgui = (rgui_handle_t*)data;
 
    if (menu_texture_inited)
       return;
 
-   if (driver.video_poke && driver.video_poke->set_texture_enable)
+   if (driver.video_data && driver.video_poke && driver.video_poke->set_texture_enable)
    {
-      driver.video_poke->set_texture_frame(video_data, menu_texture->pixels,
+      driver.video_poke->set_texture_frame(driver.video_data, menu_texture->pixels,
             enable, rgui->width, rgui->height, 1.0f);
       menu_texture_inited = true;
    }
 }
 
-static void rmenu_init_assets(void *data, void *video_data)
+static void rmenu_init_assets(void *data)
 {
    rgui_handle_t *rgui = (rgui_handle_t*)data;
 
@@ -421,14 +421,14 @@ static void rmenu_init_assets(void *data, void *video_data)
    rgui->width = menu_texture->width;
    rgui->height = menu_texture->height;
 
-   rmenu_set_texture(rgui, video_data, true);
+   rmenu_set_texture(rgui, true);
 }
 
-static void *rmenu_init(void *video_data)
+static void *rmenu_init(void)
 {
    rgui_handle_t *rgui = (rgui_handle_t*)calloc(1, sizeof(*rgui));
 
-   rmenu_init_assets(rgui, video_data);
+   rmenu_init_assets(rgui);
 
    return rgui;
 }
