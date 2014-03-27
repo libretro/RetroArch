@@ -37,6 +37,7 @@
 #endif
 
 #include "retroarch_logger.h"
+#include <limits.h>
 
 // Some platforms do not set this value.
 // Just assume a value. It's usually 4KiB.
