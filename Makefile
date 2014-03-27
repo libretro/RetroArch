@@ -409,6 +409,8 @@ RARCH_RETROLAUNCH_OBJ := $(addprefix $(OBJDIR)/,$(RETROLAUNCH_OBJ))
 
 all: $(TARGET) config.mk
 
+-include $(RARCH_OBJ:.o=.d) $(RARCH_JOYCONFIG_OBJ:.o=.d) $(RARCH_RETROLAUNCH_OBJ:.o=.d)
+
 config.mk: configure qb/*
 	@echo "config.mk is outdated or non-existing. Run ./configure again."
 	@exit 1
@@ -429,37 +431,37 @@ tools/retrolaunch/retrolaunch: $(RARCH_RETROLAUNCH_OBJ)
 	@$(if $(Q), $(shell echo echo LD $@),)
 	$(Q)$(LD) -o $@ $(RARCH_RETROLAUNCH_OBJ) $(LIBS) $(LDFLAGS) $(LIBRARY_DIRS)
 
-$(OBJDIR)/%.o: %.c config.h config.mk $(HEADERS)
+$(OBJDIR)/%.o: %.c config.h config.mk
 	@mkdir -p $(dir $@)
 	@$(if $(Q), $(shell echo echo CC $<),)
-	$(Q)$(CC) $(CFLAGS) $(DEFINES) -c -o $@ $<
+	$(Q)$(CC) $(CFLAGS) $(DEFINES) -MMD -c -o $@ $<
 
 .FORCE:
 
 $(OBJDIR)/git_version.o: git_version.c .FORCE
 	@mkdir -p $(dir $@)
 	@$(if $(Q), $(shell echo echo CC $<),)
-	$(Q)$(CC) $(CFLAGS) $(DEFINES) -c -o $@ $<
+	$(Q)$(CC) $(CFLAGS) $(DEFINES) -MMD -c -o $@ $<
 
-$(OBJDIR)/tools/linuxraw_joypad.o: input/linuxraw_joypad.c $(HEADERS)
+$(OBJDIR)/tools/linuxraw_joypad.o: input/linuxraw_joypad.c
 	@mkdir -p $(dir $@)
 	@$(if $(Q), $(shell echo echo CC $<),)
-	$(Q)$(CC) $(CFLAGS) $(DEFINES) -DIS_JOYCONFIG -c -o $@ $<
+	$(Q)$(CC) $(CFLAGS) $(DEFINES) -MMD -DIS_JOYCONFIG -c -o $@ $<
 
-$(OBJDIR)/tools/udev_joypad.o: input/udev_joypad.c $(HEADERS)
+$(OBJDIR)/tools/udev_joypad.o: input/udev_joypad.c
 	@mkdir -p $(dir $@)
 	@$(if $(Q), $(shell echo echo CC $<),)
-	$(Q)$(CC) $(CFLAGS) $(DEFINES) -DIS_JOYCONFIG -c -o $@ $<
+	$(Q)$(CC) $(CFLAGS) $(DEFINES) -MMD -DIS_JOYCONFIG -c -o $@ $<
 
-$(OBJDIR)/tools/input_common_launch.o: input/input_common.c $(HEADERS)
+$(OBJDIR)/tools/input_common_launch.o: input/input_common.c
 	@mkdir -p $(dir $@)
 	@$(if $(Q), $(shell echo echo CC $<),)
-	$(Q)$(CC) $(CFLAGS) $(DEFINES) -DIS_RETROLAUNCH -c -o $@ $<
+	$(Q)$(CC) $(CFLAGS) $(DEFINES) -MMD -DIS_RETROLAUNCH -c -o $@ $<
 
-$(OBJDIR)/tools/input_common_joyconfig.o: input/input_common.c $(HEADERS)
+$(OBJDIR)/tools/input_common_joyconfig.o: input/input_common.c
 	@mkdir -p $(dir $@)
 	@$(if $(Q), $(shell echo echo CC $<),)
-	$(Q)$(CC) $(CFLAGS) $(DEFINES) -DIS_JOYCONFIG -c -o $@ $<
+	$(Q)$(CC) $(CFLAGS) $(DEFINES) -MMD -DIS_JOYCONFIG -c -o $@ $<
 
 $(OBJDIR)/%.o: %.S config.h config.mk $(HEADERS)
 	@mkdir -p $(dir $@)

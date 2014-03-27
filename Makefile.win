@@ -285,31 +285,33 @@ RARCH_JOBJ := $(addprefix $(OBJDIR)/,$(JOBJ))
 
 all: $(TARGET) $(JTARGET)
 
+-include $(RARCH_OBJ:.o=.d) $(RARCH_JOBJ:.o=.d)
+
 $(TARGET): $(RARCH_OBJ)
 	@$(if $(Q), $(shell echo echo LD $@),)
 	$(Q)$(CXX) -o $@ $(RARCH_OBJ) $(LIBS) $(LDFLAGS) $(LDCXXFLAGS)
 
-$(OBJDIR)/%.o: %.c $(HEADERS)
+$(OBJDIR)/%.o: %.c
 	@mkdir -p $(dir $@)
 	@$(if $(Q), $(shell echo echo CC $<),)
-	$(Q)$(CC) $(CFLAGS) $(DEFINES) -c -o $@ $<
+	$(Q)$(CC) $(CFLAGS) $(DEFINES) -MMD -c -o $@ $<
 
 .FORCE:
 
 $(OBJDIR)/git_version.o: git_version.c .FORCE
 	@mkdir -p $(dir $@)
 	@$(if $(Q), $(shell echo echo CC $<),)
-	$(Q)$(CC) $(CFLAGS) $(DEFINES) -c -o $@ $<
+	$(Q)$(CC) $(CFLAGS) $(DEFINES) -MMD -c -o $@ $<
 
-$(OBJDIR)/tools/input_common_joyconfig.o: input/input_common.c $(HEADERS)
+$(OBJDIR)/tools/input_common_joyconfig.o: input/input_common.c
 	@mkdir -p $(dir $@)
 	@$(if $(Q), $(shell echo echo CC $<),)
-	$(Q)$(CC) $(CFLAGS) $(DEFINES) -DIS_JOYCONFIG -c -o $@ $<
+	$(Q)$(CC) $(CFLAGS) $(DEFINES) -DIS_JOYCONFIG -MMD -c -o $@ $<
 
-$(OBJDIR)/%.o: %.cpp $(HEADERS)
+$(OBJDIR)/%.o: %.cpp
 	@mkdir -p $(dir $@)
 	@$(if $(Q), $(shell echo echo CXX $<),)
-	$(Q)$(CXX) $(CXXFLAGS) $(DEFINES) -c -o $@ $<
+	$(Q)$(CXX) $(CXXFLAGS) $(DEFINES) -MMD -c -o $@ $<
 
 $(OBJDIR)/%.o: %.rc $(HEADERS)
 	@mkdir -p $(dir $@)
