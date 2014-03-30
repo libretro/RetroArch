@@ -48,7 +48,9 @@ extern "C" {
 
 #include "history.h"
 
-#define RGUI_MAX_SHADERS 8
+#ifndef GFX_MAX_SHADERS
+#define GFX_MAX_SHADERS 16
+#endif
 
 typedef enum
 {
@@ -95,7 +97,7 @@ typedef enum
    RGUI_SETTINGS_SHADER_0,
    RGUI_SETTINGS_SHADER_0_FILTER,
    RGUI_SETTINGS_SHADER_0_SCALE,
-   RGUI_SETTINGS_SHADER_LAST = RGUI_SETTINGS_SHADER_0_SCALE + (3 * (RGUI_MAX_SHADERS - 1)),
+   RGUI_SETTINGS_SHADER_LAST = RGUI_SETTINGS_SHADER_0_SCALE + (3 * (GFX_MAX_SHADERS - 1)),
    RGUI_SETTINGS_SHADER_PRESET_SAVE,
 
    // settings options are done here too
