@@ -15,6 +15,10 @@
 
 #include "../msvc/msvc_compat.h"
 
+#ifdef HAVE_CONFIG_H
+#include "../config.h"
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -25,6 +29,9 @@ extern "C" {
 #include <libavutil/opt.h>
 #include <libavutil/version.h>
 #include <libavformat/avformat.h>
+#ifdef HAVE_AV_CHANNEL_LAYOUT
+#include <libavutil/channel_layout.h>
+#endif
 #include <libavutil/avconfig.h>
 #include <libavutil/pixdesc.h>
 #include <libswscale/swscale.h>
@@ -48,10 +55,6 @@ extern "C" {
 
 #ifdef FFEMU_PERF
 #include <time.h>
-#endif
-
-#ifdef HAVE_CONFIG_H
-#include "../config.h"
 #endif
 
 #if LIBAVUTIL_VERSION_INT <= AV_VERSION_INT(52, 9, 0)
