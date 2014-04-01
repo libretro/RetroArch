@@ -577,7 +577,6 @@ MENU
 #include "../frontend/menu/menu_input_line_cb.c"
 #include "../frontend/menu/menu_common.c"
 #include "../frontend/menu/menu_navigation.c"
-#include "../frontend/menu/menu_context.c"
 #include "../frontend/menu/menu_settings.c"
 #include "../frontend/menu/history.c"
 #include "../frontend/menu/file_list.c"

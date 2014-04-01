@@ -38,9 +38,6 @@
     <ClCompile Include="..\..\frontend\menu\menu_common.c">
       <Filter>frontend\menu</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\frontend\menu\menu_context.c">
-      <Filter>frontend\menu</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\frontend\menu\menu_settings.c">
       <Filter>frontend\menu</Filter>
     </ClCompile>

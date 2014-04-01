@@ -1647,5 +1647,92 @@ void uninit_video_input(void)
    compute_monitor_fps_statistics();
 }
 
+#ifdef HAVE_MENU
+static const menu_ctx_driver_t *menu_ctx_drivers[] = {
+#if defined(HAVE_RMENU)
+   &menu_ctx_rmenu,
+#endif
+#if defined(HAVE_RMENU_XUI)
+   &menu_ctx_rmenu_xui,
+#endif
+#if defined(HAVE_RGUI)
+   &menu_ctx_rgui,
+#endif
+#if defined(HAVE_LAKKA)
+   &menu_ctx_lakka,
+#endif
+   NULL // zero length array is not valid
+};
+
+const void *menu_ctx_find_driver(const char *ident)
+{
+   unsigned i;
+   for (i = 0; menu_ctx_drivers[i]; i++)
+   {
+      if (strcmp(menu_ctx_drivers[i]->ident, ident) == 0)
+         return menu_ctx_drivers[i];
+   }
+
+   return NULL;
+}
+
+static int find_menu_driver_index(const char *driver)
+{
+   unsigned i;
+   for (i = 0; menu_ctx_drivers[i]; i++)
+      if (strcasecmp(driver, menu_ctx_drivers[i]->ident) == 0)
+         return i;
+   return -1;
+}
+
+void find_prev_menu_driver(void)
+{
+   int i = find_menu_driver_index(g_settings.menu.driver);
+   if (i > 0)
+   {
+      strlcpy(g_settings.menu.driver, menu_ctx_drivers[i - 1]->ident, sizeof(g_settings.menu.driver));
+      driver.menu_ctx = (menu_ctx_driver_t*)menu_ctx_drivers[i - 1];
+   }
+   else
+      RARCH_WARN("Couldn't find any previous menu driver (current one: \"%s\").\n", g_settings.menu.driver);
+}
+
+void find_next_menu_driver(void)
+{
+   int i = find_menu_driver_index(g_settings.menu.driver);
+   if (i >= 0 && menu_ctx_drivers[i + 1])
+   {
+      strlcpy(g_settings.menu.driver, menu_ctx_drivers[i + 1]->ident, sizeof(g_settings.menu.driver));
+      driver.menu_ctx = (menu_ctx_driver_t*)menu_ctx_drivers[i + 1];
+   }
+   else
+      RARCH_WARN("Couldn't find any next menu driver (current one: \"%s\").\n", g_settings.menu.driver);
+}
+
+bool menu_ctx_init_first(const void **driver_data, void **data)
+{
+   unsigned i;
+   const menu_ctx_driver_t **driver = (const menu_ctx_driver_t**)driver_data;
+
+   if (!menu_ctx_drivers[0])
+      return false;
+
+   for (i = 0; menu_ctx_drivers[i]; i++)
+   {
+      void *h = menu_ctx_drivers[i]->init();
+
+      if (h)
+      {
+         *driver = menu_ctx_drivers[i];
+         *data = (void*)h;
+         strlcpy(g_settings.menu.driver, menu_ctx_drivers[i]->ident, sizeof(g_settings.menu.driver));
+         return true;
+      }
+   }
+
+   return false;
+}
+#endif
+
 driver_t driver;
 
