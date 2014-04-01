@@ -84,7 +84,6 @@ bool menu_ctx_init_first(const void **driver_data, void **data)
 {
    unsigned i;
    const menu_ctx_driver_t **driver = (const menu_ctx_driver_t**)driver_data;
-   rgui_handle_t **handle = (rgui_handle_t**)data;
 
    if (!menu_ctx_drivers[0])
       return false;
@@ -92,10 +91,11 @@ bool menu_ctx_init_first(const void **driver_data, void **data)
    for (i = 0; menu_ctx_drivers[i]; i++)
    {
       void *h = menu_ctx_drivers[i]->init();
+
       if (h)
       {
          *driver = menu_ctx_drivers[i];
-         *handle = (rgui_handle_t*)h;
+         *data = (void*)h;
          strlcpy(g_settings.menu.driver, menu_ctx_drivers[i]->ident, sizeof(g_settings.menu.driver));
          return true;
       }
