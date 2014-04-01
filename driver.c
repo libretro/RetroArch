@@ -1709,10 +1709,9 @@ void find_next_menu_driver(void)
       RARCH_WARN("Couldn't find any next menu driver (current one: \"%s\").\n", g_settings.menu.driver);
 }
 
-bool menu_ctx_init_first(const void **driver_data, void **data)
+bool menu_ctx_init_first(const menu_ctx_driver_t **driver, void **data)
 {
    unsigned i;
-   const menu_ctx_driver_t **driver = (const menu_ctx_driver_t**)driver_data;
 
    if (!menu_ctx_drivers[0])
       return false;
@@ -1724,7 +1723,7 @@ bool menu_ctx_init_first(const void **driver_data, void **data)
       if (h)
       {
          *driver = menu_ctx_drivers[i];
-         *data = (void*)h;
+         *data = h;
          strlcpy(g_settings.menu.driver, menu_ctx_drivers[i]->ident, sizeof(g_settings.menu.driver));
          return true;
       }
