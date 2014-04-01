@@ -433,7 +433,8 @@ bool load_menu_game(void)
 
 void menu_init(void)
 {
-   if (!menu_ctx_init_first(&menu_ctx, (void**)&rgui))
+   const void **menuctx = (const void**)&menu_ctx;
+   if (!menu_ctx_init_first(menuctx, (void**)&rgui))
    {
       RARCH_ERR("Could not initialize menu.\n");
       rarch_fail(1, "menu_init()");

@@ -14,13 +14,11 @@
  */
 
 #include "menu_context.h"
-#include <string.h>
+#include "menu_common.h"
 
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
 #endif
-
-#include "menu_common.h"
 
 static const menu_ctx_driver_t *menu_ctx_drivers[] = {
 #if defined(HAVE_RMENU)
@@ -38,7 +36,7 @@ static const menu_ctx_driver_t *menu_ctx_drivers[] = {
    NULL // zero length array is not valid
 };
 
-const menu_ctx_driver_t *menu_ctx_find_driver(const char *ident)
+const void *menu_ctx_find_driver(const char *ident)
 {
    unsigned i;
    for (i = 0; menu_ctx_drivers[i]; i++)
@@ -83,9 +81,10 @@ void find_next_menu_driver(void)
       RARCH_WARN("Couldn't find any next menu driver (current one: \"%s\").\n", g_settings.menu.driver);
 }
 
-bool menu_ctx_init_first(const menu_ctx_driver_t **driver, void **data)
+bool menu_ctx_init_first(const void **driver_data, void **data)
 {
    unsigned i;
+   const menu_ctx_driver_t **driver = (const menu_ctx_driver_t**)driver_data;
    rgui_handle_t **handle = (rgui_handle_t**)data;
 
    if (!menu_ctx_drivers[0])
