@@ -20,18 +20,9 @@
 #include "../../file.h"
 #include "../gfx_common.h"
 
-#ifdef _XBOX
-
-#ifdef HAVE_RMENU_XUI
-extern bool menu_iterate_xui(void);
-#endif
-
-#else
-
 #include "../context/win32_common.h"
 #define HAVE_MONITOR
 #define HAVE_WINDOW
-#endif
 
 #include "../../compat/posix_string.h"
 #include "../../performance.h"
@@ -793,10 +784,8 @@ static bool d3d_frame(void *data, const void *frame,
    RARCH_PERFORMANCE_STOP(d3d_frame);
 
 #ifdef HAVE_MENU
-#ifdef HAVE_RMENU_XUI
-   if (g_extern.lifecycle_state & (1ULL << MODE_MENU))
-      menu_iterate_xui();
-#endif
+   if (g_extern.lifecycle_state & (1ULL << MODE_MENU) && driver.menu_ctx && driver.menu_ctx->frame)
+      driver.menu_ctx->frame(d3d);
 #endif
 
    if (d3d && d3d->ctx_driver && d3d->ctx_driver->update_window_title)
