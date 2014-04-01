@@ -1259,6 +1259,8 @@ bool config_save_file(const char *path)
    config_set_bool(conf, "video_hard_sync", g_settings.video.hard_sync);
    config_set_int(conf, "video_hard_sync_frames", g_settings.video.hard_sync_frames);
    config_set_bool(conf, "video_black_frame_insertion", g_settings.video.black_frame_insertion);
+   config_set_bool(conf, "video_disable_composition", g_settings.video.disable_composition);
+   config_set_bool(conf, "pause_nonactive", g_settings.pause_nonactive);
    config_set_int(conf, "video_swap_interval", g_settings.video.swap_interval);
    config_set_bool(conf, "video_gpu_screenshot", g_settings.video.gpu_screenshot);
    config_set_int(conf, "video_rotation", g_settings.video.rotation);
