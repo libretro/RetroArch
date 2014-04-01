@@ -716,6 +716,7 @@ const menu_ctx_driver_t menu_ctx_lakka = {
    lakka_set_texture,
    lakka_render_messagebox,
    lakka_render,
+   NULL,
    lakka_init,
    lakka_free,
    lakka_init_assets,

@@ -465,6 +465,7 @@ const menu_ctx_driver_t menu_ctx_rmenu = {
    rmenu_set_texture,
    rmenu_render_messagebox,
    rmenu_render,
+   NULL,
    rmenu_init,
    rmenu_free,
    rmenu_init_assets,

@@ -288,9 +288,9 @@ static void xui_render_message(const char *msg)
 	}
 }
 
-bool menu_iterate_xui(void)
+static void rmenu_xui_render(void *data)
 {
-   d3d_video_t *d3d = (d3d_video_t*)driver.video_data;
+   d3d_video_t *d3d = (d3d_video_t*)data;
    LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)d3d->dev;
 
    D3DVIEWPORT vp_full;
@@ -652,6 +652,7 @@ const menu_ctx_driver_t menu_ctx_rmenu_xui = {
    NULL,
    rmenu_xui_render_messagebox,
    rmenu_xui_render,
+   rmenu_xui_frame,
    rmenu_xui_init,
    rmenu_xui_free,
    NULL,

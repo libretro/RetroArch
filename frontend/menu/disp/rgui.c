@@ -604,6 +604,7 @@ const menu_ctx_driver_t menu_ctx_rgui = {
    rgui_set_texture,
    rgui_render_messagebox,
    rgui_render,
+   NULL,
    rgui_init,
    rgui_free,
    NULL,

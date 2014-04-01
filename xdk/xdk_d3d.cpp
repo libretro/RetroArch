@@ -579,10 +579,6 @@ static bool texture_image_render(void *data, struct texture_image *out_img,
 
 #ifdef HAVE_MENU
 
-#ifdef HAVE_RMENU_XUI
-extern bool menu_iterate_xui(void);
-#endif
-
 static void d3d_draw_texture(void *data)
 {
    d3d_video_t *d3d = (d3d_video_t*)data;
@@ -779,10 +775,8 @@ static bool d3d_frame(void *data, const void *frame,
    render_pass(d3d, frame, width, height, pitch, d3d->dev_rotation);
 
 #ifdef HAVE_MENU
-#ifdef HAVE_RMENU_XUI
-   if (g_extern.lifecycle_state & (1ULL << MODE_MENU))
-      menu_iterate_xui();
-#endif
+   if (g_extern.lifecycle_state & (1ULL << MODE_MENU) && driver.menu_ctx && driver.menu_ctx->frame)
+      driver.menu_ctx->frame(d3d);
 
    if (d3d && d3d->rgui_texture_enable)
       d3d_draw_texture(d3d);
