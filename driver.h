@@ -480,6 +480,23 @@ typedef struct video_driver
    void (*poke_interface)(void *data, const video_poke_interface_t **iface);
 } video_driver_t;
 
+typedef struct menu_ctx_driver
+{
+   void  (*set_texture)(void*, bool);
+   void  (*render_messagebox)(void*, const char*);
+   void  (*render)(void*);
+   void* (*init)(void);
+   void  (*free)(void*);
+   void  (*init_assets)(void*);
+   void  (*free_assets)(void*);
+   void  (*populate_entries)(void*, unsigned);
+   void  (*iterate)(void*, unsigned);
+   int   (*input_postprocess)(void *, uint64_t);
+
+   // Human readable string.
+   const char *ident;
+} menu_ctx_driver_t;
+
 enum rarch_display_type
 {
    RARCH_DISPLAY_NONE = 0, // Non-bindable types like consoles, KMS, VideoCore, etc.
@@ -508,6 +525,9 @@ typedef struct driver
    void *audio_data;
    void *video_data;
    void *input_data;
+#ifdef HAVE_MENU
+   const menu_ctx_driver_t *menu_ctx;
+#endif
 
    bool threaded_video;
 
@@ -638,6 +658,13 @@ bool driver_location_get_position(double *lat, double *lon, double *horiz_accura
 void driver_location_set_interval(unsigned interval_msecs, unsigned interval_distance);
 #endif
 
+#ifdef HAVE_MENU
+const void *menu_ctx_find_driver(const char *ident); // Finds driver with ident. Does not initialize.
+bool menu_ctx_init_first(const void **driver, void **handle); // Finds first suitable driver and initializes.
+void find_prev_menu_driver(void);
+void find_next_menu_driver(void);
+#endif
+
 // Used by RETRO_ENVIRONMENT_SET_SYSTEM_AV_INFO
 bool driver_update_system_av_info(const struct retro_system_av_info *info);
 
@@ -698,6 +725,11 @@ extern const camera_driver_t camera_ios;
 extern const location_driver_t location_apple;
 extern const location_driver_t location_android;
 extern const input_osk_driver_t input_ps3_osk;
+
+extern const menu_ctx_driver_t menu_ctx_rmenu;
+extern const menu_ctx_driver_t menu_ctx_rmenu_xui;
+extern const menu_ctx_driver_t menu_ctx_rgui;
+extern const menu_ctx_driver_t menu_ctx_lakka;
 
 #include "driver_funcs.h"
 

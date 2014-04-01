@@ -13,7 +13,6 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "menu_context.h"
 #include "menu_common.h"
 
 #ifdef HAVE_CONFIG_H
@@ -63,7 +62,7 @@ void find_prev_menu_driver(void)
    if (i > 0)
    {
       strlcpy(g_settings.menu.driver, menu_ctx_drivers[i - 1]->ident, sizeof(g_settings.menu.driver));
-      menu_ctx = menu_ctx_drivers[i - 1];
+      driver.menu_ctx = (menu_ctx_driver_t*)menu_ctx_drivers[i - 1];
    }
    else
       RARCH_WARN("Couldn't find any previous menu driver (current one: \"%s\").\n", g_settings.menu.driver);
@@ -75,7 +74,7 @@ void find_next_menu_driver(void)
    if (i >= 0 && menu_ctx_drivers[i + 1])
    {
       strlcpy(g_settings.menu.driver, menu_ctx_drivers[i + 1]->ident, sizeof(g_settings.menu.driver));
-      menu_ctx = menu_ctx_drivers[i + 1];
+      driver.menu_ctx = (menu_ctx_driver_t*)menu_ctx_drivers[i + 1];
    }
    else
       RARCH_WARN("Couldn't find any next menu driver (current one: \"%s\").\n", g_settings.menu.driver);

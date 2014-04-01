@@ -25,7 +25,6 @@
 
 #include "../../performance.h"
 #include "../info/core_info.h"
-#include "menu_context.h"
 
 #ifdef HAVE_RGUI
 #define MENU_TEXTURE_FULLSCREEN false
@@ -445,8 +444,6 @@ void menu_populate_entries(void *data, unsigned menu_type);
 unsigned menu_type_is(unsigned type);
 
 uint64_t menu_input(void);
-
-extern const menu_ctx_driver_t *menu_ctx;
 
 #ifdef __cplusplus
 }

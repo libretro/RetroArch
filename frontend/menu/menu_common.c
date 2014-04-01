@@ -33,7 +33,6 @@
 #include "../../compat/posix_string.h"
 
 rgui_handle_t *rgui;
-const menu_ctx_driver_t *menu_ctx;
 
 static void menu_parse_and_resolve(void *data, unsigned menu_type);
 
@@ -289,7 +288,7 @@ void load_menu_game_prepare(void)
    rgui->do_held = false;
    rgui->msg_force = true;
 
-   if (menu_ctx)
+   if (driver.menu_ctx)
       menu_iterate_func(rgui, RGUI_ACTION_NOOP);
 #endif
 
@@ -433,7 +432,7 @@ bool load_menu_game(void)
 
 void menu_init(void)
 {
-   const void **menuctx = (const void**)&menu_ctx;
+   const void **menuctx = (const void**)&driver.menu_ctx;
    if (!menu_ctx_init_first(menuctx, (void**)&rgui))
    {
       RARCH_ERR("Could not initialize menu.\n");
@@ -466,8 +465,8 @@ void menu_init(void)
 
 void menu_free(void)
 {
-   if (menu_ctx && menu_ctx->free)
-      menu_ctx->free(rgui);
+   if (driver.menu_ctx && driver.menu_ctx->free)
+      driver.menu_ctx->free(rgui);
 
 #ifdef HAVE_DYNAMIC
    libretro_free_system_info(&rgui->info);
@@ -573,14 +572,14 @@ static int menu_custom_bind_iterate(void *data, unsigned action)
    rgui_handle_t *rgui = (rgui_handle_t*)data;
    (void)action; // Have to ignore action here. Only bind that should work here is Quit RetroArch or something like that.
 
-   if (driver.video_data && menu_ctx && menu_ctx->render)
-      menu_ctx->render(rgui);
+   if (driver.video_data && driver.menu_ctx && driver.menu_ctx->render)
+      driver.menu_ctx->render(rgui);
 
    char msg[256];
    snprintf(msg, sizeof(msg), "[%s]\npress joypad\n(RETURN to skip)", input_config_bind_map[rgui->binds.begin - RGUI_SETTINGS_BIND_BEGIN].desc);
 
-   if (driver.video_data && menu_ctx && menu_ctx->render_messagebox)
-      menu_ctx->render_messagebox(rgui, msg);
+   if (driver.video_data && driver.menu_ctx && driver.menu_ctx->render_messagebox)
+      driver.menu_ctx->render_messagebox(rgui, msg);
 
    struct rgui_bind_state binds = rgui->binds;
    menu_poll_bind_state(&binds);
@@ -607,8 +606,8 @@ static int menu_start_screen_iterate(void *data, unsigned action)
    char msg[1024];
    rgui_handle_t *rgui = (rgui_handle_t*)data;
 
-   if (driver.video_data && menu_ctx && menu_ctx->render)
-      menu_ctx->render(rgui);
+   if (driver.video_data && driver.menu_ctx && driver.menu_ctx->render)
+      driver.menu_ctx->render(rgui);
 
    char desc[6][64];
    static const unsigned binds[] = {
@@ -662,8 +661,8 @@ static int menu_start_screen_iterate(void *data, unsigned action)
          "Press Accept/OK to continue.",
          desc[0], desc[1], desc[2], desc[3], desc[4], desc[5]);
 
-   if (driver.video_data && menu_ctx && menu_ctx->render_messagebox)
-      menu_ctx->render_messagebox(rgui, msg);
+   if (driver.video_data && driver.menu_ctx && driver.menu_ctx->render_messagebox)
+      driver.menu_ctx->render_messagebox(rgui, msg);
 
    if (action == RGUI_ACTION_OK)
       file_list_pop(rgui->menu_stack, &rgui->selection_ptr);
@@ -797,8 +796,8 @@ static int menu_viewport_iterate(void *data, unsigned action)
 
    file_list_get_last(rgui->menu_stack, NULL, &menu_type);
 
-   if (driver.video_data && menu_ctx && menu_ctx->render)
-      menu_ctx->render(rgui);
+   if (driver.video_data && driver.menu_ctx && driver.menu_ctx->render)
+      driver.menu_ctx->render(rgui);
 
    const char *base_msg = NULL;
    char msg[64];
@@ -828,8 +827,8 @@ static int menu_viewport_iterate(void *data, unsigned action)
             base_msg, custom->x, custom->y, custom->width, custom->height); 
    }
 
-   if (driver.video_data && menu_ctx && menu_ctx->render_messagebox)
-      menu_ctx->render_messagebox(rgui, msg);
+   if (driver.video_data && driver.menu_ctx && driver.menu_ctx->render_messagebox)
+      driver.menu_ctx->render_messagebox(rgui, msg);
 
    if (!custom->width)
       custom->width = stride_x;
@@ -985,8 +984,8 @@ static int menu_settings_iterate(void *data, unsigned action)
          menu_populate_entries(rgui, RGUI_SETTINGS);
    }
 
-   if (driver.video_data && menu_ctx && menu_ctx->render)
-      menu_ctx->render(rgui);
+   if (driver.video_data && driver.menu_ctx && driver.menu_ctx->render)
+      driver.menu_ctx->render(rgui);
 
    // Have to defer it so we let settings refresh.
    if (rgui->push_start_screen)
@@ -1032,8 +1031,8 @@ static int menu_iterate_func(void *data, unsigned action)
    file_list_get_last(rgui->menu_stack, &dir, &menu_type);
    int ret = 0;
 
-   if (driver.video_data && menu_ctx && menu_ctx->set_texture)
-      menu_ctx->set_texture(rgui, false);
+   if (driver.video_data && driver.menu_ctx && driver.menu_ctx->set_texture)
+      driver.menu_ctx->set_texture(rgui, false);
 
 #ifdef HAVE_OSK
    // process pending osk init callback
@@ -1384,11 +1383,11 @@ static int menu_iterate_func(void *data, unsigned action)
       menu_parse_and_resolve(rgui, menu_type);
    }
 
-   if (menu_ctx && menu_ctx->iterate)
-      menu_ctx->iterate(rgui, action);
+   if (driver.menu_ctx && driver.menu_ctx->iterate)
+      driver.menu_ctx->iterate(rgui, action);
 
-   if (driver.video_data && menu_ctx && menu_ctx->render)
-      menu_ctx->render(rgui);
+   if (driver.video_data && driver.menu_ctx && driver.menu_ctx->render)
+      driver.menu_ctx->render(rgui);
 
    return ret;
 }
@@ -1480,7 +1479,7 @@ bool menu_iterate(void)
    else if (rgui->trigger_state & (1ULL << RETRO_DEVICE_ID_JOYPAD_START))
       action = RGUI_ACTION_START;
 
-   if (menu_ctx)
+   if (driver.menu_ctx)
       input_entry_ret = menu_iterate_func(rgui, action);
 
    if (driver.video_data && driver.video_poke && driver.video_poke->set_texture_enable)
@@ -1501,8 +1500,8 @@ bool menu_iterate(void)
       driver.video_poke->set_texture_enable(driver.video_data, false,
             MENU_TEXTURE_FULLSCREEN);
 
-   if (menu_ctx && menu_ctx->input_postprocess)
-      ret = menu_ctx->input_postprocess(rgui, rgui->old_input_state);
+   if (driver.menu_ctx && driver.menu_ctx->input_postprocess)
+      ret = driver.menu_ctx->input_postprocess(rgui, rgui->old_input_state);
 
    if (ret < 0)
    {
@@ -2148,8 +2147,8 @@ void menu_populate_entries(void *data, unsigned menu_type)
          break;
    }
 
-   if (menu_ctx && menu_ctx->populate_entries)
-      menu_ctx->populate_entries(rgui, menu_type);
+   if (driver.menu_ctx && driver.menu_ctx->populate_entries)
+      driver.menu_ctx->populate_entries(rgui, menu_type);
 }
 
 static void menu_parse_and_resolve(void *data, unsigned menu_type)
@@ -2321,8 +2320,8 @@ static void menu_parse_and_resolve(void *data, unsigned menu_type)
                      is_dir ? menu_type : RGUI_FILE_PLAIN, 0);
             }
 
-            if (menu_ctx && menu_ctx->populate_entries)
-               menu_ctx->populate_entries(rgui, menu_type);
+            if (driver.menu_ctx && driver.menu_ctx->populate_entries)
+               driver.menu_ctx->populate_entries(rgui, menu_type);
 
             string_list_free(list);
          }
