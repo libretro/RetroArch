@@ -17,6 +17,9 @@
 
 #include <stdint.h>
 #include <string.h>
+#include <libintl.h>
+#include <locale.h>
+
 #include "../../file.h"
 #include "menu_common.h"
 #include "menu_navigation.h"
@@ -37,6 +40,9 @@
 #include <sysutil/sysutil_bgmplayback.h>
 #endif
 #endif
+
+#define _(x) gettext(x)
+#define gettext_noop(x) x
 
 #ifdef GEKKO
 #define MAX_GAMMA_SETTING 2
@@ -225,19 +231,19 @@ void shader_manager_save_preset(void *data, const char *basename, bool apply)
       fill_pathname_join(cgp_path, dirs[d], conf_path, sizeof(cgp_path));
       if (config_file_write(conf, cgp_path))
       {
-         RARCH_LOG("Saved shader preset to %s.\n", cgp_path);
+         RARCH_LOG(_("Saved shader preset to %s.\n"), cgp_path);
          if (apply)
             shader_manager_set_preset(NULL, type, cgp_path);
          ret = true;
          break;
       }
       else
-         RARCH_LOG("Failed writing shader preset to %s.\n", cgp_path);
+         RARCH_LOG(_("Failed writing shader preset to %s.\n"), cgp_path);
    }
 
    config_file_free(conf);
    if (!ret)
-      RARCH_ERR("Failed to save shader preset. Make sure config directory and/or shader dir are writable.\n");
+      RARCH_ERR(_("Failed to save shader preset. Make sure config directory and/or shader dir are writable.\n"));
 }
 
 static int shader_manager_toggle_setting(void *data, unsigned setting, unsigned action)
@@ -389,7 +395,7 @@ static bool osk_callback_enter_audio_device(void *data)
    if (g_extern.lifecycle_state & (1ULL << MODE_OSK_ENTRY_SUCCESS)
          && driver.osk && driver.osk->get_text_buf)
    {
-      RARCH_LOG("OSK - Applying input data.\n");
+      RARCH_LOG(_("OSK - Applying input data.\n"));
       char tmp_str[256];
       wchar_t *text_buf = (wchar_t*)driver.osk->get_text_buf(driver.osk_data);
       int num = wcstombs(tmp_str, text_buf, sizeof(tmp_str));
@@ -416,7 +422,7 @@ static bool osk_callback_enter_audio_device_init(void *data)
    if (driver.osk->write_initial_msg)
       driver.osk->write_initial_msg(driver.osk_data, L"192.168.1.1");
    if (driver.osk->write_msg)
-      driver.osk->write_msg(driver.osk_data, L"Enter Audio Device / IP address for audio driver.");
+      driver.osk->write_msg(driver.osk_data, _("Enter Audio Device / IP address for audio driver."));
    if (driver.osk->start)
       driver.osk->start(driver.osk_data);
 
@@ -430,7 +436,7 @@ static bool osk_callback_enter_filename(void *data)
 
    if (g_extern.lifecycle_state & (1ULL << MODE_OSK_ENTRY_SUCCESS))
    {
-      RARCH_LOG("OSK - Applying input data.\n");
+      RARCH_LOG(_("OSK - Applying input data.\n"));
       char tmp_str[256];
       char filepath[PATH_MAX];
       int num = wcstombs(tmp_str, driver.osk->get_text_buf(driver.osk_data), sizeof(tmp_str));
@@ -438,7 +444,7 @@ static bool osk_callback_enter_filename(void *data)
 
       fill_pathname_join(filepath, g_settings.video.shader_dir, tmp_str, sizeof(filepath));
       strlcat(filepath, ".cgp", sizeof(filepath));
-      RARCH_LOG("[osk_callback_enter_filename]: filepath is: %s.\n", filepath);
+      RARCH_LOG(_("[osk_callback_enter_filename]: filepath is: %s.\n"), filepath);
       config_file_t *conf = config_file_new(NULL);
       if (!conf)
          return false;
@@ -463,9 +469,9 @@ static bool osk_callback_enter_filename_init(void *data)
       return false;
 
    if (driver.osk->write_initial_msg)
-      driver.osk->write_initial_msg(driver.osk_data, L"Save Preset");
+      driver.osk->write_initial_msg(driver.osk_data, _("Save Preset"));
    if (driver.osk->write_msg)
-      driver.osk->write_msg(driver.osk_data, L"Enter filename for preset.");
+      driver.osk->write_msg(driver.osk_data, _("Enter filename for preset."));
    if (driver.osk->start)
       driver.osk->start(driver.osk_data);
 
@@ -1198,7 +1204,7 @@ int menu_set_settings(void *data, unsigned setting, unsigned action)
             }
             else
 #endif
-               menu_key_start_line(rgui, "Audio Device Name / IP: ", audio_device_callback);
+               menu_key_start_line(rgui, _("Audio Device Name / IP: "), audio_device_callback);
          }
          else if (action == RGUI_ACTION_START)
             *g_settings.audio.device = '\0';
@@ -1658,7 +1664,7 @@ int menu_set_settings(void *data, unsigned setting, unsigned action)
          if (!driver.video || !driver.video->set_shader || action != RGUI_ACTION_OK)
             return 0;
 
-         RARCH_LOG("Applying shader ...\n");
+         RARCH_LOG(_("Applying shader ...\n"));
 
          enum rarch_shader_type type = shader_manager_get_type(&rgui->shader);
 
@@ -1690,7 +1696,7 @@ int menu_set_settings(void *data, unsigned setting, unsigned action)
             }
             else
 #endif
-               menu_key_start_line(rgui, "Preset Filename: ", preset_filename_callback);
+               menu_key_start_line(rgui, _("Preset Filename: "), preset_filename_callback);
          }
          break;
 #endif
@@ -1784,7 +1790,7 @@ int menu_set_settings(void *data, unsigned setting, unsigned action)
          break;
       case RGUI_SETTINGS_NETPLAY_HOST_IP_ADDRESS:
          if (action == RGUI_ACTION_OK)
-            menu_key_start_line(rgui, "IP Address: ", netplay_ipaddress_callback);
+            menu_key_start_line(rgui, _("IP Address: "), netplay_ipaddress_callback);
          else if (action == RGUI_ACTION_START)
             *g_extern.netplay_server = '\0';
          break;
@@ -1801,13 +1807,13 @@ int menu_set_settings(void *data, unsigned setting, unsigned action)
          break;
       case RGUI_SETTINGS_NETPLAY_TCP_UDP_PORT:
          if (action == RGUI_ACTION_OK)
-            menu_key_start_line(rgui, "TCP/UDP Port: ", netplay_port_callback);
+            menu_key_start_line(rgui, _("TCP/UDP Port: "), netplay_port_callback);
          else if (action == RGUI_ACTION_START)
             g_extern.netplay_port = RARCH_DEFAULT_PORT;
          break;
       case RGUI_SETTINGS_NETPLAY_NICKNAME:
          if (action == RGUI_ACTION_OK)
-            menu_key_start_line(rgui, "Nickname: ", netplay_nickname_callback);
+            menu_key_start_line(rgui, _("Nickname: "), netplay_nickname_callback);
          else if (action == RGUI_ACTION_START)
             *g_extern.netplay_nick = '\0';
          break;
@@ -1853,27 +1859,27 @@ void menu_set_settings_label(char *type_str, size_t type_str_size, unsigned *w, 
          break;
       case RGUI_SETTINGS_VIDEO_FILTER:
          if (g_settings.video.smooth)
-            strlcpy(type_str, "Bilinear filtering", type_str_size);
+            strlcpy(type_str, _("Bilinear filtering"), type_str_size);
          else
-            strlcpy(type_str, "Point filtering", type_str_size);
+            strlcpy(type_str, _("Point filtering"), type_str_size);
          break;
       case RGUI_SETTINGS_VIDEO_GAMMA:
          snprintf(type_str, type_str_size, "%d", g_extern.console.screen.gamma_correction);
          break;
       case RGUI_SETTINGS_VIDEO_VSYNC:
-         strlcpy(type_str, g_settings.video.vsync ? "ON" : "OFF", type_str_size);
+         strlcpy(type_str, g_settings.video.vsync ? _("ON") : _("OFF"), type_str_size);
          break;
       case RGUI_SETTINGS_VIDEO_HARD_SYNC:
-         strlcpy(type_str, g_settings.video.hard_sync ? "ON" : "OFF", type_str_size);
+         strlcpy(type_str, g_settings.video.hard_sync ? _("ON") : _("OFF"), type_str_size);
          break;
       case RGUI_SETTINGS_VIDEO_BLACK_FRAME_INSERTION:
-         strlcpy(type_str, g_settings.video.black_frame_insertion ? "ON" : "OFF", type_str_size);
+         strlcpy(type_str, g_settings.video.black_frame_insertion ? _("ON") : _("OFF"), type_str_size);
          break;
       case RGUI_SETTINGS_VIDEO_SWAP_INTERVAL:
          snprintf(type_str, type_str_size, "%u", g_settings.video.swap_interval);
          break;
       case RGUI_SETTINGS_VIDEO_THREADED:
-         strlcpy(type_str, g_settings.video.threaded ? "ON" : "OFF", type_str_size);
+         strlcpy(type_str, g_settings.video.threaded ? _("ON") : _("OFF"), type_str_size);
          break;
       case RGUI_SETTINGS_VIDEO_WINDOW_SCALE_X:
          snprintf(type_str, type_str_size, "%.1fx", g_settings.video.xscale);
@@ -1882,7 +1888,7 @@ void menu_set_settings_label(char *type_str, size_t type_str_size, unsigned *w, 
          snprintf(type_str, type_str_size, "%.1fx", g_settings.video.yscale);
          break;
       case RGUI_SETTINGS_VIDEO_CROP_OVERSCAN:
-         strlcpy(type_str, g_settings.video.crop_overscan ? "ON" : "OFF", type_str_size);
+         strlcpy(type_str, g_settings.video.crop_overscan ? _("ON") : _("OFF"), type_str_size);
          break;
       case RGUI_SETTINGS_VIDEO_HARD_SYNC_FRAMES:
          snprintf(type_str, type_str_size, "%u", g_settings.video.hard_sync_frames);
@@ -1923,13 +1929,13 @@ void menu_set_settings_label(char *type_str, size_t type_str_size, unsigned *w, 
             double deviation = 0.0;
             unsigned sample_points = 0;
             if (driver_monitor_fps_statistics(&refresh_rate, &deviation, &sample_points))
-               snprintf(type_str, type_str_size, "%.3f Hz (%.1f%% dev, %u samples)", refresh_rate, 100.0 * deviation, sample_points);
+               snprintf(type_str, type_str_size, _("%.3f Hz (%.1f%% dev, %u samples)"), refresh_rate, 100.0 * deviation, sample_points);
             else
-               strlcpy(type_str, "N/A", type_str_size);
+               strlcpy(type_str, _("N/A"), type_str_size);
             break;
          }
       case RGUI_SETTINGS_VIDEO_INTEGER_SCALE:
-         strlcpy(type_str, g_settings.video.scale_integer ? "ON" : "OFF", type_str_size);
+         strlcpy(type_str, g_settings.video.scale_integer ? _("ON") : _("OFF"), type_str_size);
          break;
       case RGUI_SETTINGS_VIDEO_ASPECT_RATIO:
          strlcpy(type_str, aspectratio_lut[g_settings.video.aspect_ratio_idx].name, type_str_size);
@@ -1948,50 +1954,50 @@ void menu_set_settings_label(char *type_str, size_t type_str_size, unsigned *w, 
          break;
       case RGUI_SETTINGS_VIDEO_PAL60:
          if (g_extern.lifecycle_state & (1ULL << MODE_VIDEO_PAL_TEMPORAL_ENABLE))
-            strlcpy(type_str, "ON", type_str_size);
+            strlcpy(type_str, _("ON"), type_str_size);
          else
-            strlcpy(type_str, "OFF", type_str_size);
+            strlcpy(type_str, _("OFF"), type_str_size);
          break;
 #endif
       case RGUI_FILE_PLAIN:
-         strlcpy(type_str, "(FILE)", type_str_size);
+         strlcpy(type_str, _("(FILE)"), type_str_size);
          *w = 6;
          break;
       case RGUI_FILE_DIRECTORY:
-         strlcpy(type_str, "(DIR)", type_str_size);
+         strlcpy(type_str, _("(DIR)"), type_str_size);
          *w = 5;
          break;
       case RGUI_SETTINGS_REWIND_ENABLE:
-         strlcpy(type_str, g_settings.rewind_enable ? "ON" : "OFF", type_str_size);
+         strlcpy(type_str, g_settings.rewind_enable ? _("ON") : _("OFF"), type_str_size);
          break;
 #ifdef HAVE_SCREENSHOTS
       case RGUI_SETTINGS_GPU_SCREENSHOT:
-         strlcpy(type_str, g_settings.video.gpu_screenshot ? "ON" : "OFF", type_str_size);
+         strlcpy(type_str, g_settings.video.gpu_screenshot ? _("ON") : _("OFF"), type_str_size);
          break;
 #endif
       case RGUI_SETTINGS_REWIND_GRANULARITY:
          snprintf(type_str, type_str_size, "%u", g_settings.rewind_granularity);
          break;
       case RGUI_SETTINGS_CONFIG_SAVE_ON_EXIT:
-         strlcpy(type_str, g_extern.config_save_on_exit ? "ON" : "OFF", type_str_size);
+         strlcpy(type_str, g_extern.config_save_on_exit ? _("ON") : _("OFF"), type_str_size);
          break;
       case RGUI_SETTINGS_SAVESTATE_AUTO_SAVE:
-         strlcpy(type_str, g_settings.savestate_auto_save ? "ON" : "OFF", type_str_size);
+         strlcpy(type_str, g_settings.savestate_auto_save ? _("ON") : _("OFF"), type_str_size);
          break;
       case RGUI_SETTINGS_SAVESTATE_AUTO_LOAD:
-         strlcpy(type_str, g_settings.savestate_auto_load ? "ON" : "OFF", type_str_size);
+         strlcpy(type_str, g_settings.savestate_auto_load ? _("ON") : _("OFF"), type_str_size);
          break;
       case RGUI_SETTINGS_BLOCK_SRAM_OVERWRITE:
-         strlcpy(type_str, g_settings.block_sram_overwrite ? "ON" : "OFF", type_str_size);
+         strlcpy(type_str, g_settings.block_sram_overwrite ? _("ON") : _("OFF"), type_str_size);
          break;
       case RGUI_SETTINGS_PER_CORE_CONFIG:
-         strlcpy(type_str, g_settings.core_specific_config ? "ON" : "OFF", type_str_size);
+         strlcpy(type_str, g_settings.core_specific_config ? _("ON") : _("OFF"), type_str_size);
          break;
       case RGUI_SETTINGS_SRAM_AUTOSAVE:
          if (g_settings.autosave_interval)
-            snprintf(type_str, type_str_size, "%u seconds", g_settings.autosave_interval);
+            snprintf(type_str, type_str_size, _("%u seconds"), g_settings.autosave_interval);
          else
-            strlcpy(type_str, "OFF", type_str_size);
+            strlcpy(type_str, _("OFF"), type_str_size);
          break;
       case RGUI_SETTINGS_SAVESTATE_SAVE:
       case RGUI_SETTINGS_SAVESTATE_LOAD:
@@ -2001,47 +2007,47 @@ void menu_set_settings_label(char *type_str, size_t type_str_size, unsigned *w, 
             snprintf(type_str, type_str_size, "%d", g_extern.state_slot);
          break;
       case RGUI_SETTINGS_AUDIO_MUTE:
-         strlcpy(type_str, g_extern.audio_data.mute ? "ON" : "OFF", type_str_size);
+         strlcpy(type_str, g_extern.audio_data.mute ? _("ON") : _("OFF"), type_str_size);
          break;
       case RGUI_SETTINGS_AUDIO_CONTROL_RATE_DELTA:
          snprintf(type_str, type_str_size, "%.3f", g_settings.audio.rate_control_delta);
          break;
       case RGUI_SETTINGS_DEBUG_TEXT:
-         snprintf(type_str, type_str_size, (g_settings.fps_show) ? "ON" : "OFF");
+         snprintf(type_str, type_str_size, (g_settings.fps_show) ? _("ON") : _("OFF"));
          break;
       case RGUI_BROWSER_DIR_PATH:
-         strlcpy(type_str, *g_settings.rgui_content_directory ? g_settings.rgui_content_directory : "<default>", type_str_size);
+         strlcpy(type_str, *g_settings.rgui_content_directory ? g_settings.rgui_content_directory : _("<default>"), type_str_size);
          break;
 #ifdef HAVE_SCREENSHOTS
       case RGUI_SCREENSHOT_DIR_PATH:
-         strlcpy(type_str, *g_settings.screenshot_directory ? g_settings.screenshot_directory : "<ROM dir>", type_str_size);
+         strlcpy(type_str, *g_settings.screenshot_directory ? g_settings.screenshot_directory : _("<ROM dir>"), type_str_size);
          break;
 #endif
       case RGUI_SAVEFILE_DIR_PATH:
-         strlcpy(type_str, *g_extern.savefile_dir ? g_extern.savefile_dir : "<ROM dir>", type_str_size);
+         strlcpy(type_str, *g_extern.savefile_dir ? g_extern.savefile_dir : _("<ROM dir>"), type_str_size);
          break;
 #ifdef HAVE_OVERLAY
       case RGUI_OVERLAY_DIR_PATH:
-         strlcpy(type_str, *g_extern.overlay_dir ? g_extern.overlay_dir : "<default>", type_str_size);
+         strlcpy(type_str, *g_extern.overlay_dir ? g_extern.overlay_dir : _("<default>"), type_str_size);
          break;
 #endif
       case RGUI_SAVESTATE_DIR_PATH:
-         strlcpy(type_str, *g_extern.savestate_dir ? g_extern.savestate_dir : "<ROM dir>", type_str_size);
+         strlcpy(type_str, *g_extern.savestate_dir ? g_extern.savestate_dir : _("<ROM dir>"), type_str_size);
          break;
       case RGUI_LIBRETRO_DIR_PATH:
-         strlcpy(type_str, *rgui->libretro_dir ? rgui->libretro_dir : "<None>", type_str_size);
+         strlcpy(type_str, *rgui->libretro_dir ? rgui->libretro_dir : _("<None>"), type_str_size);
          break;
       case RGUI_LIBRETRO_INFO_DIR_PATH:
-         strlcpy(type_str, *g_settings.libretro_info_path ? g_settings.libretro_info_path : "<Core dir>", type_str_size);
+         strlcpy(type_str, *g_settings.libretro_info_path ? g_settings.libretro_info_path : _("<Core dir>"), type_str_size);
          break;
       case RGUI_CONFIG_DIR_PATH:
-         strlcpy(type_str, *g_settings.rgui_config_directory ? g_settings.rgui_config_directory : "<default>", type_str_size);
+         strlcpy(type_str, *g_settings.rgui_config_directory ? g_settings.rgui_config_directory : _("<default>"), type_str_size);
          break;
       case RGUI_SHADER_DIR_PATH:
-         strlcpy(type_str, *g_settings.video.shader_dir ? g_settings.video.shader_dir : "<default>", type_str_size);
+         strlcpy(type_str, *g_settings.video.shader_dir ? g_settings.video.shader_dir : _("<default>"), type_str_size);
          break;
       case RGUI_SYSTEM_DIR_PATH:
-         strlcpy(type_str, *g_settings.system_directory ? g_settings.system_directory : "<ROM dir>", type_str_size);
+         strlcpy(type_str, *g_settings.system_directory ? g_settings.system_directory : _("<ROM dir>"), type_str_size);
          break;
       case RGUI_SETTINGS_DISK_INDEX:
          {
@@ -2049,7 +2055,7 @@ void menu_set_settings_label(char *type_str, size_t type_str_size, unsigned *w, 
             unsigned images = control->get_num_images();
             unsigned current = control->get_image_index();
             if (current >= images)
-               strlcpy(type_str, "No Disk", type_str_size);
+               strlcpy(type_str, _("No Disk"), type_str_size);
             else
                snprintf(type_str, type_str_size, "%u", current + 1);
             break;
@@ -2058,7 +2064,7 @@ void menu_set_settings_label(char *type_str, size_t type_str_size, unsigned *w, 
          if (*g_extern.config_path)
             fill_pathname_base(type_str, g_extern.config_path, type_str_size);
          else
-            strlcpy(type_str, "<default>", type_str_size);
+            strlcpy(type_str, _("<default>"), type_str_size);
          break;
       case RGUI_SETTINGS_OPEN_FILEBROWSER:
       case RGUI_SETTINGS_OPEN_FILEBROWSER_DEFERRED_CORE:
@@ -2111,22 +2117,22 @@ void menu_set_settings_label(char *type_str, size_t type_str_size, unsigned *w, 
             if (*device_name)
                strlcpy(type_str, device_name, type_str_size);
             else
-               snprintf(type_str, type_str_size, "N/A (port #%u)", map);
+               snprintf(type_str, type_str_size, _("N/A (port #%u)"), map);
          }
          else
-            strlcpy(type_str, "Disabled", type_str_size);
+            strlcpy(type_str, _("Disabled"), type_str_size);
          break;
       }
       case RGUI_SETTINGS_BIND_ANALOG_MODE:
       {
          static const char *modes[] = {
-            "None",
-            "Left Analog",
-            "Right Analog",
-            "Dual Analog",
+            gettext_noop("None"),
+            gettext_noop("Left Analog"),
+            gettext_noop("Right Analog"),
+            gettext_noop("Dual Analog"),
          };
 
-         strlcpy(type_str, modes[g_settings.input.analog_dpad_mode[rgui->current_pad] % ANALOG_DPAD_LAST], type_str_size);
+         strlcpy(type_str, _(modes[g_settings.input.analog_dpad_mode[rgui->current_pad] % ANALOG_DPAD_LAST]), type_str_size);
          break;
       }
       case RGUI_SETTINGS_BIND_DEVICE_TYPE:
@@ -2134,22 +2140,22 @@ void menu_set_settings_label(char *type_str, size_t type_str_size, unsigned *w, 
          const char *name;
          switch (g_settings.input.libretro_device[rgui->current_pad])
          {
-            case RETRO_DEVICE_NONE: name = "None"; break;
-            case RETRO_DEVICE_JOYPAD: name = "Joypad"; break;
-            case RETRO_DEVICE_ANALOG: name = "Joypad w/ Analog"; break;
-            case RETRO_DEVICE_JOYPAD_MULTITAP: name = "Multitap"; break;
-            case RETRO_DEVICE_MOUSE: name = "Mouse"; break;
-            case RETRO_DEVICE_LIGHTGUN_JUSTIFIER: name = "Justifier"; break;
-            case RETRO_DEVICE_LIGHTGUN_JUSTIFIERS: name = "Justifiers"; break;
-            case RETRO_DEVICE_LIGHTGUN_SUPER_SCOPE: name = "SuperScope"; break;
-            default: name = "Unknown"; break;
+            case RETRO_DEVICE_NONE: name = _("None"); break;
+            case RETRO_DEVICE_JOYPAD: name = _("Joypad"); break;
+            case RETRO_DEVICE_ANALOG: name = _("Joypad w/ Analog"); break;
+            case RETRO_DEVICE_JOYPAD_MULTITAP: name = _("Multitap"); break;
+            case RETRO_DEVICE_MOUSE: name = _("Mouse"); break;
+            case RETRO_DEVICE_LIGHTGUN_JUSTIFIER: name = _("Justifier"); break;
+            case RETRO_DEVICE_LIGHTGUN_JUSTIFIERS: name = _("Justifiers"); break;
+            case RETRO_DEVICE_LIGHTGUN_SUPER_SCOPE: name = _("SuperScope"); break;
+            default: name = _("Unknown"); break;
          }
 
          strlcpy(type_str, name, type_str_size);
          break;
       }
       case RGUI_SETTINGS_DEVICE_AUTODETECT_ENABLE:
-         strlcpy(type_str, g_settings.input.autodetect_enable ? "ON" : "OFF", type_str_size);
+         strlcpy(type_str, g_settings.input.autodetect_enable ? _("ON") : _("OFF"), type_str_size);
          break;
       case RGUI_SETTINGS_BIND_UP:
       case RGUI_SETTINGS_BIND_DOWN:
@@ -2211,7 +2217,7 @@ void menu_set_settings_label(char *type_str, size_t type_str_size, unsigned *w, 
          break;
       case RGUI_SETTINGS_AUDIO_DSP_EFFECT:
 #ifdef RARCH_CONSOLE
-         strlcpy(type_str, (g_extern.console.sound.volume_level) ? "Loud" : "Normal", type_str_size);
+         strlcpy(type_str, (g_extern.console.sound.volume_level) ? _("Loud") : _("Normal"), type_str_size);
          break;
 #endif
       case RGUI_SETTINGS_AUDIO_VOLUME:
@@ -2223,21 +2229,21 @@ void menu_set_settings_label(char *type_str, size_t type_str_size, unsigned *w, 
          break;
       case RGUI_SETTINGS_SOFT_DISPLAY_FILTER:
          snprintf(type_str, type_str_size,
-               (g_extern.lifecycle_state & (1ULL << MODE_VIDEO_SOFT_FILTER_ENABLE)) ? "ON" : "OFF");
+               (g_extern.lifecycle_state & (1ULL << MODE_VIDEO_SOFT_FILTER_ENABLE)) ? _("ON") : _("OFF"));
          break;
 #endif
       case RGUI_SETTINGS_CUSTOM_BGM_CONTROL_ENABLE:
-         strlcpy(type_str, (g_extern.lifecycle_state & (1ULL << MODE_AUDIO_CUSTOM_BGM_ENABLE)) ? "ON" : "OFF", type_str_size);
+         strlcpy(type_str, (g_extern.lifecycle_state & (1ULL << MODE_AUDIO_CUSTOM_BGM_ENABLE)) ? _("ON") : _("OFF"), type_str_size);
          break;
       case RGUI_SETTINGS_PAUSE_IF_WINDOW_FOCUS_LOST:
-         strlcpy(type_str, g_settings.pause_nonactive ? "ON" : "OFF", type_str_size);
+         strlcpy(type_str, g_settings.pause_nonactive ? _("ON") : _("OFF"), type_str_size);
          break;
       case RGUI_SETTINGS_WINDOW_COMPOSITING_ENABLE:
-         strlcpy(type_str, g_settings.video.disable_composition ? "OFF" : "ON", type_str_size);
+         strlcpy(type_str, g_settings.video.disable_composition ? _("OFF") : _("ON"), type_str_size);
          break;
 #ifdef HAVE_NETPLAY
       case RGUI_SETTINGS_NETPLAY_ENABLE:
-         strlcpy(type_str, g_extern.netplay_enable ? "ON" : "OFF", type_str_size);
+         strlcpy(type_str, g_extern.netplay_enable ? _("ON") : _("OFF"), type_str_size);
          break;
       case RGUI_SETTINGS_NETPLAY_HOST_IP_ADDRESS:
          strlcpy(type_str, g_extern.netplay_server, type_str_size);
@@ -2252,15 +2258,15 @@ void menu_set_settings_label(char *type_str, size_t type_str_size, unsigned *w, 
          snprintf(type_str, type_str_size, "%s", g_extern.netplay_nick);
          break;
       case RGUI_SETTINGS_NETPLAY_MODE:
-         snprintf(type_str, type_str_size, g_extern.netplay_is_client ? "Client" : "Server");
+         snprintf(type_str, type_str_size, g_extern.netplay_is_client ? _("Client") : _("Server"));
          break;
       case RGUI_SETTINGS_NETPLAY_SPECTATOR_MODE_ENABLE:
-         snprintf(type_str, type_str_size, g_extern.netplay_is_spectate ? "ON" : "OFF");
+         snprintf(type_str, type_str_size, g_extern.netplay_is_spectate ? _("ON") : _("OFF"));
          break;
 #endif
 #ifdef HAVE_OSK
       case RGUI_SETTINGS_ONSCREEN_KEYBOARD_ENABLE:
-         snprintf(type_str, type_str_size, g_settings.osk.enable ? "ON" : "OFF");
+         snprintf(type_str, type_str_size, g_settings.osk.enable ? _("ON") : _("OFF"));
          break;
 #endif
       default:
