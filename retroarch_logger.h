@@ -52,7 +52,8 @@
 #define RARCH_LOG_V(tag, fmt, vp) __android_log_vprint(ANDROID_LOG_INFO, "RetroArch: " tag, fmt, vp)
 #elif defined(IS_SALAMANDER)
 #define RARCH_LOG(...) do { \
-      fprintf(LOG_FILE, "RetroArch Salamander: " __VA_ARGS__); \
+      fputs("RetroArch Salamander: ", LOG_FILE); \
+      fprintf(LOG_FILE, __VA_ARGS__); \
       fflush(LOG_FILE); \
    } while (0)
 #define RARCH_LOG_V(tag, fmt, vp) do { \
@@ -64,7 +65,8 @@
 #define RARCH_LOG(...) do { \
       if (RARCH_LOG_VERBOSE) \
       { \
-         fprintf(LOG_FILE, "RetroArch: " __VA_ARGS__); \
+		 fputs("RetroArch: ", LOG_FILE); \
+         fprintf(LOG_FILE, __VA_ARGS__); \
          fflush(LOG_FILE); \
       } \
    } while (0)
@@ -104,7 +106,8 @@
 #define RARCH_ERR_V(tag, fmt, vp) __android_log_vprint(ANDROID_LOG_INFO, "RetroArch [ERROR] :: " tag, fmt, vp)
 #elif defined(IS_SALAMANDER)
 #define RARCH_ERR(...) do { \
-      fprintf(LOG_FILE, "RetroArch Salamander [ERROR] :: " __VA_ARGS__); \
+      fputs("RetroArch Salamander [ERROR] :: ", LOG_FILE); \
+      fprintf(LOG_FILE, __VA_ARGS__); \
       fflush(LOG_FILE); \
    } while (0)
 #define RARCH_ERR_V(tag, fmt, vp) do { \
@@ -114,7 +117,8 @@
    } while (0)
 #else
 #define RARCH_ERR(...) do { \
-      fprintf(LOG_FILE, "RetroArch [ERROR] :: " __VA_ARGS__); \
+      fputs("RetroArch [ERROR] :: ", LOG_FILE); \
+      fprintf(LOG_FILE, __VA_ARGS__); \
       fflush(LOG_FILE); \
    } while (0)
 #define RARCH_ERR_V(tag, fmt, vp) do { \
@@ -132,7 +136,8 @@
 #define RARCH_WARN_V(tag, fmt, vp) __android_log_print(ANDROID_LOG_INFO, "RetroArch [WARN] :: " tag, fmt, vp)
 #elif defined(IS_SALAMANDER)
 #define RARCH_WARN(...) do { \
-      fprintf(LOG_FILE, "RetroArch Salamander [WARN] :: " __VA_ARGS__); \
+      fputs("RetroArch Salamander [WARN] :: ", LOG_FILE); \
+      fprintf(LOG_FILE, __VA_ARGS__); \
       fflush(LOG_FILE); \
    } while (0)
 #define RARCH_WARN_V(tag, fmt, vp) do { \
@@ -142,7 +147,8 @@
    } while (0)
 #else
 #define RARCH_WARN(...) do { \
-      fprintf(LOG_FILE, "RetroArch [WARN] :: " __VA_ARGS__); \
+      fputs("RetroArch [WARN] :: ", LOG_FILE); \
+      fprintf(LOG_FILE, __VA_ARGS__); \
       fflush(LOG_FILE); \
    } while (0)
 #define RARCH_WARN_V(tag, fmt, vp) do { \
