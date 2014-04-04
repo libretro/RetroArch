@@ -1722,6 +1722,7 @@ void rarch_deinit_autosave(void)
    for (i = 0; i < g_extern.num_autosave; i++)
       autosave_free(g_extern.autosave[i]);
    free(g_extern.autosave);
+   g_extern.autosave = NULL;
    g_extern.num_autosave = 0;
 }
 #endif
