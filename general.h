@@ -286,6 +286,8 @@ struct settings
    char screenshot_directory[PATH_MAX];
    char system_directory[PATH_MAX];
 
+   char extraction_directory[PATH_MAX];
+
    bool rewind_enable;
    size_t rewind_buffer_size;
    unsigned rewind_granularity;
@@ -314,15 +316,6 @@ struct settings
    bool fps_show;
 
    bool core_specific_config;
-};
-
-enum rarch_game_type
-{
-   RARCH_CART_NORMAL = 0,
-   RARCH_CART_SGB,
-   RARCH_CART_BSX,
-   RARCH_CART_BSX_SLOTTED,
-   RARCH_CART_SUFAMI
 };
 
 typedef struct rarch_resolution
@@ -358,9 +351,8 @@ struct global
 #endif
    bool force_fullscreen;
 
-   bool rom_file_temporary;
-   char last_rom[PATH_MAX];
-   enum rarch_game_type game_type;
+   struct string_list *temporary_roms;
+
    uint32_t cart_crc;
 
    char gb_rom_path[PATH_MAX];
@@ -386,11 +378,15 @@ struct global
    
    char basename[PATH_MAX];
    char fullpath[PATH_MAX];
-   char savefile_name_srm[PATH_MAX];
-   char savefile_name_rtc[PATH_MAX]; // Make sure that fill_pathname has space.
-   char savefile_name_psrm[PATH_MAX];
-   char savefile_name_asrm[PATH_MAX];
-   char savefile_name_bsrm[PATH_MAX];
+
+   // A list of save types and associated paths for all ROMs.
+   struct string_list *savefiles;
+
+   // For --subsystem ROMs.
+   char subsystem[256];
+   struct string_list *subsystem_fullpaths;
+
+   char savefile_name[PATH_MAX];
    char savestate_name[PATH_MAX];
 
    // Used on reentrancy to use a savestate dir.
@@ -448,6 +444,9 @@ struct global
       retro_usec_t frame_time_last;
 
       core_option_manager_t *core_options;
+
+      struct retro_subsystem_info *special;
+      unsigned num_special;
    } system;
 
    struct
@@ -563,7 +562,8 @@ struct global
    unsigned turbo_count;
 
    // Autosave support.
-   autosave_t *autosave[2];
+   autosave_t **autosave;
+   unsigned num_autosave;
 
    // Netplay.
 #ifdef HAVE_NETPLAY

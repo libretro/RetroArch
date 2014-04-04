@@ -8,7 +8,7 @@ retroarch \- The reference frontend for the libretro API.
 
 .SH SYNOPSIS
 
-\fBretroarch\fR [rom file] [OPTIONS]...
+\fBretroarch\fR [rom file(s)] [OPTIONS]...
 
 .SH "DESCRIPTION"
 
@@ -117,28 +117,11 @@ Multiple config files are delimited by ','.
 Every config file will be appended in order where the key-value pairs of the next config file takes priority over the old ones.
 
 .TP
-\fB--gameboy PATH, -g PATH\fR
-Path to a Nintendo Game Boy ROM. If this flag is set, the Super Game Boy subsystem will be activated. The Super Game Boy BIOS needs to be loaded as the normal rom.
-
-.TP
-\fB--bsx PATH, -b PATH\fR
-Path to BS-X rom. Load BS-X BIOS as the regular rom.
-When using BS-X, save ram paths will be inferred from the BS-X BIOS path, not BS-X rom path.
-
-.TP
-\fB--bsxslot PATH, -B PATH\fR
-Path to BS-X slotted rom. Load BS-X BIOS as the regular rom.
-When using BS-X, save ram paths will be inferred from the BS-X BIOS path, not BS-X rom path.
-
-.TP
-\fB--sufamiA PATH\fR
-Path to A slot in Sufami Turbo. Load Sufami Turbo BIOS as regular rom.
-When using Sufami, save ram paths will be inferred from the Sufami BIOS path, not slot paths.
-
-.TP
-\fB--sufamiB PATH\fR
-Path to B slot in Sufami Turbo. Load Sufami Turbo BIOS as regular rom.
-When using Sufami, save ram paths will be inferred from the Sufami BIOS path, not slot paths.
+\fB--subsystem SUBSYSTEM\fR
+Use a subsystem of the loaded libretro core. Multiple ROMs are loaded as multiple arguments.
+If a ROM is skipped, use a blank ("") command line argument.
+ROMs must be loaded in an order which depends on the particular subsystem used.
+See verbose log output to learn how a particular subsystem wants ROMs to be loaded.
 
 .TP
 \fB--mouse PORT, -m PORT\fR

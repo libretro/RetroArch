@@ -211,6 +211,12 @@ bool string_list_append(struct string_list *list, const char *elem, union string
    return true;
 }
 
+void string_list_set(struct string_list *list, unsigned index, const char *str)
+{
+   free(list->elems[index].data);
+   rarch_assert(list->elems[index].data = strdup(str));
+}
+
 void string_list_join_concat(char *buffer, size_t size, const struct string_list *list, const char *sep)
 {
    size_t len = strlen(buffer);

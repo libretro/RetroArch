@@ -376,6 +376,7 @@ void config_set_defaults(void)
    *g_settings.cheat_settings_path = '\0';
    *g_settings.screenshot_directory = '\0';
    *g_settings.system_directory = '\0';
+   *g_settings.extraction_directory = '\0';
    *g_settings.input.autoconfig_dir = '\0';
    *g_settings.input.overlay = '\0';
    *g_settings.content_directory = '\0';
@@ -929,6 +930,7 @@ bool config_load_file(const char *path, bool set_defaults)
       }
    }
 
+   CONFIG_GET_PATH(extraction_directory, "extraction_directory");
    CONFIG_GET_PATH(content_directory, "content_directory");
    if (!strcmp(g_settings.content_directory, "default"))
       *g_settings.content_directory = '\0';
@@ -1009,8 +1011,8 @@ bool config_load_file(const char *path, bool set_defaults)
       else if (path_is_directory(tmp_str))
       {
          strlcpy(g_extern.savefile_dir, tmp_str, sizeof(g_extern.savefile_dir));
-         strlcpy(g_extern.savefile_name_srm, tmp_str, sizeof(g_extern.savefile_name_srm));
-         fill_pathname_dir(g_extern.savefile_name_srm, g_extern.basename, ".srm", sizeof(g_extern.savefile_name_srm));
+         strlcpy(g_extern.savefile_name, tmp_str, sizeof(g_extern.savefile_name));
+         fill_pathname_dir(g_extern.savefile_name, g_extern.basename, ".srm", sizeof(g_extern.savefile_name));
       }
       else
          RARCH_WARN("savefile_directory is not a directory, ignoring ...\n");
@@ -1276,6 +1278,7 @@ bool config_save_file(const char *path)
    config_set_int(conf, "audio_out_rate", g_settings.audio.out_rate);
 
    config_set_path(conf, "system_directory", *g_settings.system_directory ? g_settings.system_directory : "default");
+   config_set_path(conf, "extraction_directory", g_settings.extraction_directory);
    config_set_string(conf, "audio_resampler", g_settings.audio.resampler);
    config_set_path(conf, "savefile_directory", *g_extern.savefile_dir ? g_extern.savefile_dir : "default");
    config_set_path(conf, "savestate_directory", *g_extern.savestate_dir ? g_extern.savestate_dir : "default");
