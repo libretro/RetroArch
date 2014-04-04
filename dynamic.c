@@ -185,7 +185,7 @@ void libretro_free_system_info(struct retro_system_info *info)
    memset(info, 0, sizeof(*info));
 }
 
-const struct retro_game_special_info *libretro_find_subsystem_info(const struct retro_game_special_info *info, unsigned num_info,
+const struct retro_subsystem_info *libretro_find_subsystem_info(const struct retro_subsystem_info *info, unsigned num_info,
       const char *ident)
 {
    unsigned i;
@@ -930,11 +930,11 @@ bool rarch_environment_cb(unsigned cmd, void *data)
          return driver_update_system_av_info((const struct retro_system_av_info*)data);
       }
 
-      case RETRO_ENVIRONMENT_SET_SPECIAL_GAME_TYPES:
+      case RETRO_ENVIRONMENT_SET_SUBSYSTEM_INFO:
       {
-         RARCH_LOG("Environ SET_SPECIAL_GAME_TYPES.\n");
+         RARCH_LOG("Environ SET_SUBSYSTEM_INFO.\n");
          unsigned i, j;
-         const struct retro_game_special_info *info = (const struct retro_game_special_info*)data;
+         const struct retro_subsystem_info *info = (const struct retro_subsystem_info*)data;
          for (i = 0; info[i].ident; i++)
          {
             RARCH_LOG("Special game type: %s\n", info[i].desc);
@@ -949,11 +949,12 @@ bool rarch_environment_cb(unsigned cmd, void *data)
          }
 
          free(g_extern.system.special);
-         g_extern.system.special = (struct retro_game_special_info*)calloc(i, sizeof(*g_extern.system.special));
+         g_extern.system.special = (struct retro_subsystem_info*)calloc(i, sizeof(*g_extern.system.special));
          if (!g_extern.system.special)
             return false;
 
          memcpy(g_extern.system.special, info, i * sizeof(*g_extern.system.special));
+         g_extern.system.num_special = i;
          break;
       }
 

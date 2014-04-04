@@ -443,7 +443,7 @@ struct global
 
       core_option_manager_t *core_options;
 
-      struct retro_game_special_info *special;
+      struct retro_subsystem_info *special;
       unsigned num_special;
    } system;
 

@@ -902,6 +902,7 @@ static void parse_input(int argc, char *argv[])
    g_extern.has_set_save_path = false;
    g_extern.has_set_state_path = false;
    g_extern.has_set_libretro = false;
+   *g_extern.subsystem = '\0';
 
    if (argc < 2)
    {
@@ -1782,10 +1783,11 @@ static void fill_pathnames(void)
    if (*g_extern.subsystem)
    {
       unsigned i;
-      const struct retro_game_special_info *info = libretro_find_subsystem_info(g_extern.system.special, g_extern.system.num_special, g_extern.subsystem);
+      const struct retro_subsystem_info *info = libretro_find_subsystem_info(g_extern.system.special, g_extern.system.num_special, g_extern.subsystem);
 
       // We'll handle this error gracefully later.
-      unsigned num_roms = info ? info->num_roms : 0;
+      unsigned num_roms = min(info ? info->num_roms : 0, g_extern.subsystem_fullpaths ? g_extern.subsystem_fullpaths->size : 0);
+
       bool use_sram_dir = path_is_directory(g_extern.savefile_name);
 
       for (i = 0; i < num_roms; i++)
@@ -1793,7 +1795,7 @@ static void fill_pathnames(void)
          unsigned j;
          for (j = 0; j < info->roms[i].num_memory; j++)
          {
-            const struct retro_game_special_memory_info *mem = &info->roms[i].memory[j];
+            const struct retro_subsystem_memory_info *mem = &info->roms[i].memory[j];
             union string_list_elem_attr attr;
 
             char path[PATH_MAX];

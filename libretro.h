@@ -600,8 +600,8 @@ enum retro_mod
                                            //
                                            // If a core wants to expose this interface, SET_PROC_ADDRESS_CALLBACK **MUST** be called from within retro_set_environment().
                                            //
-#define RETRO_ENVIRONMENT_SET_SPECIAL_GAME_TYPES 34
-                                           // const struct retro_game_special_info * --
+#define RETRO_ENVIRONMENT_SET_SUBSYSTEM_INFO 34
+                                           // const struct retro_subsystem_info * --
                                            // This environment call introduces the concept of libretro "subsystems".
                                            // A subsystem is a variant of a libretro core which supports different kinds of games.
                                            // The purpose of this is to support e.g. emulators which might have special needs, e.g. Super Nintendos Super GameBoy, Sufami Turbo.
@@ -613,41 +613,41 @@ enum retro_mod
                                            //
                                            // If a core wants to use this functionality, SET_SPECIAL_GAME_TYPES **MUST** be called from within retro_set_environment().
 
-struct retro_game_special_memory_info
+struct retro_subsystem_memory_info
 {
    const char *extension; // The extension associated with a memory type, e.g. "psram".
    unsigned type; // The memory type for retro_get_memory(). This should be at least 0x100 to avoid conflict with standardized libretro memory types.
 };
 
-struct retro_game_special_rom_info
+struct retro_subsystem_rom_info
 {
-    const char *desc; // Describes what the ROM is (SGB bios, GB rom, etc).
-    const char *valid_extensions; // Same definition as retro_get_system_info().
-    bool need_fullpath; // Same definition as retro_get_system_info().
-    bool block_extract; // Same definition as retro_get_system_info().
-    bool required; // This is set if the ROM is required to load a game. If this is set to false, a zeroed-out retro_game_info can be passed.
+   const char *desc; // Describes what the ROM is (SGB bios, GB rom, etc).
+   const char *valid_extensions; // Same definition as retro_get_system_info().
+   bool need_fullpath; // Same definition as retro_get_system_info().
+   bool block_extract; // Same definition as retro_get_system_info().
+   bool required; // This is set if the ROM is required to load a game. If this is set to false, a zeroed-out retro_game_info can be passed.
 
-    // ROMs can have multiple associated persistent memory types (retro_get_memory()).
-    const struct retro_game_special_memory_info *memory;
-    unsigned num_memory;
+   // ROMs can have multiple associated persistent memory types (retro_get_memory()).
+   const struct retro_subsystem_memory_info *memory;
+   unsigned num_memory;
 };
 
-struct retro_game_special_info
+struct retro_subsystem_info
 {
-    const char *desc; // Human-readable string of the subsystem type, e.g. "Super GameBoy"
-    // A computer friendly short string identifier for the subsystem type.
-    // This name must be [a-z].
-    // E.g. if desc is "Super GameBoy", this can be "sgb".
-    // This identifier can be used for command-line interfaces, etc.
-    const char *ident;
+   const char *desc; // Human-readable string of the subsystem type, e.g. "Super GameBoy"
+   // A computer friendly short string identifier for the subsystem type.
+   // This name must be [a-z].
+   // E.g. if desc is "Super GameBoy", this can be "sgb".
+   // This identifier can be used for command-line interfaces, etc.
+   const char *ident;
 
-    // Infos for each ROM. The first entry is assumed to be the "most significant" ROM for frontend purposes.
-    // E.g. with Super GameBoy, the first ROM should be the GameBoy ROM, as it is the most "significant" ROM to a user.
-    // If a frontend creates new file paths based on the ROM used (e.g. savestates), it should use the path for the first ROM to do so.
-    const struct retro_game_special_rom_info *roms;
+   // Infos for each ROM. The first entry is assumed to be the "most significant" ROM for frontend purposes.
+   // E.g. with Super GameBoy, the first ROM should be the GameBoy ROM, as it is the most "significant" ROM to a user.
+   // If a frontend creates new file paths based on the ROM used (e.g. savestates), it should use the path for the first ROM to do so.
+   const struct retro_subsystem_rom_info *roms;
 
-    unsigned num_roms; // Number of ROMs associated with a subsystem.
-    unsigned id; // The type passed to retro_load_game_special().
+   unsigned num_roms; // Number of ROMs associated with a subsystem.
+   unsigned id; // The type passed to retro_load_game_special().
 };
 
 typedef void (*retro_proc_address_t)(void);

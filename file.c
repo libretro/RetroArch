@@ -321,7 +321,7 @@ void save_ram_file(const char *path, int type)
    }
 }
 
-static bool load_roms(const struct retro_game_special_info *special, const struct string_list *roms)
+static bool load_roms(const struct retro_subsystem_info *special, const struct string_list *roms)
 {
    unsigned i;
    bool ret = true;
@@ -388,7 +388,7 @@ bool init_rom_file(void)
    if (!g_extern.temporary_roms)
       return false;
 
-   const struct retro_game_special_info *special = NULL;
+   const struct retro_subsystem_info *special = NULL;
 
    if (*g_extern.subsystem)
    {

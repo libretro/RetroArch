@@ -64,7 +64,7 @@ void libretro_free_system_info(struct retro_system_info *info);
 // Transforms a library id to a name suitable as a pathname.
 void libretro_get_current_core_pathname(char *name, size_t size);
 
-const struct retro_game_special_info *libretro_find_subsystem_info(const struct retro_game_special_info *info, unsigned num_info, const char *ident);
+const struct retro_subsystem_info *libretro_find_subsystem_info(const struct retro_subsystem_info *info, unsigned num_info, const char *ident);
 
 extern void (*pretro_init)(void);
 extern void (*pretro_deinit)(void);
