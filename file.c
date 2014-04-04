@@ -462,7 +462,8 @@ bool init_rom_file(void)
       {
          char temporary_rom[PATH_MAX];
          strlcpy(temporary_rom, roms->elems[i].data, sizeof(temporary_rom));
-         if (!zlib_extract_first_rom(temporary_rom, sizeof(temporary_rom), valid_ext))
+         if (!zlib_extract_first_rom(temporary_rom, sizeof(temporary_rom), valid_ext,
+                  *g_settings.extraction_directory ? g_settings.extraction_directory : NULL))
          {
             RARCH_ERR("Failed to extract ROM from zipped file: %s.\n", temporary_rom);
             string_list_free(roms);

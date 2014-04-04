@@ -286,6 +286,8 @@ struct settings
    char screenshot_directory[PATH_MAX];
    char system_directory[PATH_MAX];
 
+   char extraction_directory[PATH_MAX];
+
    bool rewind_enable;
    size_t rewind_buffer_size;
    unsigned rewind_granularity;
