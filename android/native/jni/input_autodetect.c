@@ -231,6 +231,8 @@ void input_autodetect_setup(void *data, char *msg, size_t sizeof_msg, unsigned p
       port = 0; // Shield is always player 1.
       *primary = true;
    }
+   else if (strstr(name_buf, "Samsung Game Pad EI-GP20"))
+      device = DEVICE_SAMSUNG_GAMEPAD_EIGP20;
 
    if (strstr(current_ime, "net.obsidianx.android.mogaime"))
    {
