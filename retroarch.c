@@ -22,6 +22,8 @@
 #include <string.h>
 #include <ctype.h>
 #include <errno.h>
+#include <libintl.h>
+#include <locale.h>
 #include "driver.h"
 #include "file.h"
 #include "general.h"
@@ -49,6 +51,8 @@
 #endif
 #include "msvc/msvc_compat.h"
 #endif
+
+#define _(x) gettext(x)
 
 // To avoid continous switching if we hold the button down, we require that the button must go from pressed,
 // unpressed back to pressed to be able to toggle between then.
@@ -164,18 +168,18 @@ void rarch_take_screenshot(void)
    else if (g_extern.frame_cache.data && (g_extern.frame_cache.data != RETRO_HW_FRAME_BUFFER_VALID))
       ret = take_screenshot_raw();
    else
-      RARCH_ERR("Cannot take screenshot. GPU rendering is used and read_viewport is not supported.\n");
+      RARCH_ERR(_("Cannot take screenshot. GPU rendering is used and read_viewport is not supported.\n"));
 
    const char *msg = NULL;
    if (ret)
    {
-      RARCH_LOG("Taking screenshot.\n");
-      msg = "Taking screenshot.";
+      RARCH_LOG(_("Taking screenshot.\n"));
+      msg = _("Taking screenshot.");
    }
    else
    {
-      RARCH_WARN("Failed to take screenshot ...\n");
-      msg = "Failed to take screenshot.";
+      RARCH_WARN(_("Failed to take screenshot ...\n"));
+      msg = _("Failed to take screenshot.");
    }
 
    if (g_extern.is_paused)
@@ -220,7 +224,7 @@ static void recording_dump_frame(const void *data, unsigned width, unsigned heig
       video_viewport_info_func(&vp);
       if (!vp.width || !vp.height)
       {
-         RARCH_WARN("Viewport size calculation failed! Will continue using raw data. This will probably not work right ...\n");
+         RARCH_WARN(_("Viewport size calculation failed! Will continue using raw data. This will probably not work right ...\n"));
          free(g_extern.record_gpu_buffer);
          g_extern.record_gpu_buffer = NULL;
 
@@ -231,11 +235,11 @@ static void recording_dump_frame(const void *data, unsigned width, unsigned heig
       // User has resized. We're kinda fucked now.
       if (vp.width != g_extern.record_gpu_width || vp.height != g_extern.record_gpu_height)
       {
-         static const char msg[] = "Recording terminated due to resize.";
-         RARCH_WARN("%s\n", msg);
+         char msg[100];
+         snprintf(msg, sizeof(msg), _("Recording terminated due to resize."));
+         RARCH_WARN(msg);
          msg_queue_clear(g_extern.msg_queue);
          msg_queue_push(g_extern.msg_queue, msg, 1, 180);
-
          rarch_deinit_recording();
          g_extern.recording = false;
          return;
@@ -428,7 +432,7 @@ static bool audio_flush(const int16_t *data, size_t samples)
    {
       if (audio_write_func(output_data, output_frames * sizeof(float) * 2) < 0)
       {
-         RARCH_ERR("Audio backend failed to write. Will continue without sound.\n");
+         RARCH_ERR(_("Audio backend failed to write. Will continue without sound.\n"));
          return false;
       }
    }
@@ -442,7 +446,7 @@ static bool audio_flush(const int16_t *data, size_t samples)
 
       if (audio_write_func(g_extern.audio_data.conv_outsamples, output_frames * sizeof(int16_t) * 2) < 0)
       {
-         RARCH_ERR("Audio backend failed to write. Will continue without sound.\n");
+         RARCH_ERR(_("Audio backend failed to write. Will continue without sound.\n"));
          return false;
       }
    }
@@ -682,21 +686,21 @@ static int16_t input_state(unsigned port, unsigned device, unsigned index, unsig
 }
 
 #ifdef _WIN32
-#define RARCH_DEFAULT_CONF_PATH_STR "\n\t\tDefaults to retroarch.cfg in same directory as retroarch.exe.\n\t\tIf a default config is not found, RetroArch will attempt to create one."
+#define RARCH_DEFAULT_CONF_PATH_STR _("\n\t\tDefaults to retroarch.cfg in same directory as retroarch.exe.\n\t\tIf a default config is not found, RetroArch will attempt to create one.")
 #else
 #ifndef GLOBAL_CONFIG_DIR
 #define GLOBAL_CONFIG_DIR "/etc"
 #endif
-#define RARCH_DEFAULT_CONF_PATH_STR "\n\t\tBy default looks for config in $XDG_CONFIG_HOME/retroarch/retroarch.cfg,\n\t\t$HOME/.config/retroarch/retroarch.cfg,\n\t\tand $HOME/.retroarch.cfg.\n\t\tIf a default config is not found, RetroArch will attempt to create one based on the skeleton config (" GLOBAL_CONFIG_DIR "/retroarch.cfg)."
+#define RARCH_DEFAULT_CONF_PATH_STR (_("\n\t\tBy default looks for config in $XDG_CONFIG_HOME/retroarch/retroarch.cfg,\n\t\t$HOME/.config/retroarch/retroarch.cfg,\n\t\tand $HOME/.retroarch.cfg.\n\t\tIf a default config is not found, RetroArch will attempt to create one based on the skeleton config (\"%s/retroarch.cfg\")."), GLOBAL_CONFIG_DIR)
 #endif
 
 #include "config.features.h"
 
-#define _PSUPP(var, name, desc) printf("\t%s:\n\t\t%s: %s\n", name, desc, _##var##_supp ? "yes" : "no")
+#define _PSUPP(var, name, desc) printf("\t%s:\n\t\t%s: %s\n", name, desc, _##var##_supp ? _("yes") : _("no"))
 static void print_features(void)
 {
    puts("");
-   puts("Features:");
+   puts(_("Features:"));
    _PSUPP(sdl, "SDL", "SDL drivers");
    _PSUPP(thread, "Threads", "Threading support");
    _PSUPP(opengl, "OpenGL", "OpenGL driver");
@@ -730,7 +734,7 @@ static void print_features(void)
 
 static void print_compiler(FILE *file)
 {
-   fprintf(file, "\nCompiler: ");
+   fprintf(file, _("\nCompiler: "));
 #if defined(_MSC_VER)
    fprintf(file, "MSVC (%d) %u-bit\n", _MSC_VER, (unsigned)(CHAR_BIT * sizeof(size_t)));
 #elif defined(__SNC__)
@@ -746,84 +750,84 @@ static void print_compiler(FILE *file)
    fprintf(file, "GCC (%d.%d.%d) %u-bit\n",
       __GNUC__, __GNUC_MINOR__, __GNUC_PATCHLEVEL__, (unsigned)(CHAR_BIT * sizeof(size_t)));
 #else
-   fprintf(file, "Unknown compiler %u-bit\n",
+   fprintf(file, _("Unknown compiler %u-bit\n"),
       (unsigned)(CHAR_BIT * sizeof(size_t)));
 #endif
-   fprintf(file, "Built: %s\n", __DATE__);
+   fprintf(file, _("Built: %s\n"), __DATE__);
 }
 
 static void print_help(void)
 {
    puts("===================================================================");
 #ifdef HAVE_GIT_VERSION
-   printf("RetroArch: Frontend for libretro -- v" PACKAGE_VERSION " -- %s --\n", rarch_git_version);
+   printf(_("RetroArch: Frontend for libretro -- v%s -- %s --\n"), PACKAGE_VERSION, rarch_git_version);
 #else
-   puts("RetroArch: Frontend for libretro -- v" PACKAGE_VERSION " --");
+   printf(_("RetroArch: Frontend for libretro -- v%s --\n"), PACKAGE_VERSION);
 #endif
    print_compiler(stdout);
    puts("===================================================================");
-   puts("Usage: retroarch [rom file] [options...]");
-   puts("\t-h/--help: Show this help message.");
-   puts("\t--menu: Do not require ROM or libretro core to be loaded, starts directly in menu.");
-   puts("\t\tIf no arguments are passed to RetroArch, it is equivalent to using --menu as only argument.");
-   puts("\t--features: Prints available features compiled into RetroArch.");
-   puts("\t-s/--save: Path for save file (*.srm).");
-   puts("\t-f/--fullscreen: Start RetroArch in fullscreen regardless of config settings.");
-   puts("\t-S/--savestate: Path to use for save states. If not selected, *.state will be assumed.");
-   puts("\t-c/--config: Path for config file." RARCH_DEFAULT_CONF_PATH_STR);
-   puts("\t--appendconfig: Extra config files are loaded in, and take priority over config selected in -c (or default).");
-   puts("\t\tMultiple configs are delimited by ','.");
+   puts(_("Usage: retroarch [rom file] [options...]"));
+   puts(_("\t-h/--help: Show this help message."));
+   puts(_("\t--menu: Do not require ROM or libretro core to be loaded, starts directly in menu."));
+   puts(_("\t\tIf no arguments are passed to RetroArch, it is equivalent to using --menu as only argument."));
+   puts(_("\t--features: Prints available features compiled into RetroArch."));
+   puts(_("\t-s/--save: Path for save file (*.srm)."));
+   puts(_("\t-f/--fullscreen: Start RetroArch in fullscreen regardless of config settings."));
+   puts(_("\t-S/--savestate: Path to use for save states. If not selected, *.state will be assumed."));
+   printf(_("\t-c/--config: Path for config file. %s\n"), RARCH_DEFAULT_CONF_PATH_STR);
+   puts(_("\t--appendconfig: Extra config files are loaded in, and take priority over config selected in -c (or default)."));
+   puts(_("\t\tMultiple configs are delimited by ','."));
 #ifdef HAVE_DYNAMIC
-   puts("\t-L/--libretro: Path to libretro implementation. Overrides any config setting.");
+   puts(_("\t-L/--libretro: Path to libretro implementation. Overrides any config setting."));
 #endif
-   puts("\t-g/--gameboy: Path to Gameboy ROM. Load SuperGameBoy as the regular rom.");
-   puts("\t-b/--bsx: Path to BSX rom. Load BSX BIOS as the regular rom.");
-   puts("\t-B/--bsxslot: Path to BSX slotted rom. Load BSX BIOS as the regular rom.");
-   puts("\t--sufamiA: Path to A slot of Sufami Turbo. Load Sufami base cart as regular rom.");
-   puts("\t--sufamiB: Path to B slot of Sufami Turbo.");
+   puts(_("\t-g/--gameboy: Path to Gameboy ROM. Load SuperGameBoy as the regular rom."));
+   puts(_("\t-b/--bsx: Path to BSX rom. Load BSX BIOS as the regular rom."));
+   puts(_("\t-B/--bsxslot: Path to BSX slotted rom. Load BSX BIOS as the regular rom."));
+   puts(_("\t--sufamiA: Path to A slot of Sufami Turbo. Load Sufami base cart as regular rom."));
+   puts(_("\t--sufamiB: Path to B slot of Sufami Turbo."));
 
-   printf("\t-N/--nodevice: Disconnects controller device connected to port (1 to %d).\n", MAX_PLAYERS);
-   printf("\t-A/--dualanalog: Connect a DualAnalog controller to port (1 to %d).\n", MAX_PLAYERS);
-   printf("\t-m/--mouse: Connect a mouse into port of the device (1 to %d).\n", MAX_PLAYERS); 
-   puts("\t-p/--scope: Connect a virtual SuperScope into port 2. (SNES specific).");
-   puts("\t-j/--justifier: Connect a virtual Konami Justifier into port 2. (SNES specific).");
-   puts("\t-J/--justifiers: Daisy chain two virtual Konami Justifiers into port 2. (SNES specific).");
-   puts("\t-4/--multitap: Connect a SNES multitap to port 2. (SNES specific).");
+   printf(_("\t-N/--nodevice: Disconnects controller device connected to port (1 to %d).\n"), MAX_PLAYERS);
+   printf(_("\t-A/--dualanalog: Connect a DualAnalog controller to port (1 to %d).\n"), MAX_PLAYERS);
+   printf(_("\t-m/--mouse: Connect a mouse into port of the device (1 to %d).\n"), MAX_PLAYERS); 
+   puts(_("\t-p/--scope: Connect a virtual SuperScope into port 2. (SNES specific)."));
+   puts(_("\t-j/--justifier: Connect a virtual Konami Justifier into port 2. (SNES specific)."));
+   puts(_("\t-J/--justifiers: Daisy chain two virtual Konami Justifiers into port 2. (SNES specific)."));
+   puts(_("\t-4/--multitap: Connect a SNES multitap to port 2. (SNES specific)."));
 
 #ifdef HAVE_BSV_MOVIE
-   puts("\t-P/--bsvplay: Playback a BSV movie file.");
-   puts("\t-R/--bsvrecord: Start recording a BSV movie file from the beginning.");
-   puts("\t-M/--sram-mode: Takes an argument telling how SRAM should be handled in the session.");
+   puts(_("\t-P/--bsvplay: Playback a BSV movie file."));
+   puts(_("\t-R/--bsvrecord: Start recording a BSV movie file from the beginning."));
+   puts(_("\t-M/--sram-mode: Takes an argument telling how SRAM should be handled in the session."));
 #endif
-   puts("\t\t{no,}load-{no,}save describes if SRAM should be loaded, and if SRAM should be saved.");
-   puts("\t\tDo note that noload-save implies that save files will be deleted and overwritten.");
+   puts(_("\t\t{no,}load-{no,}save describes if SRAM should be loaded, and if SRAM should be saved."));
+   puts(_("\t\tDo note that noload-save implies that save files will be deleted and overwritten."));
 
 #ifdef HAVE_NETPLAY
-   puts("\t-H/--host: Host netplay as player 1.");
-   puts("\t-C/--connect: Connect to netplay as player 2.");
-   puts("\t--port: Port used to netplay. Default is 55435.");
-   puts("\t-F/--frames: Sync frames when using netplay.");
-   puts("\t--spectate: Netplay will become spectating mode.");
-   puts("\t\tHost can live stream the game content to players that connect.");
-   puts("\t\tHowever, the client will not be able to play. Multiple clients can connect to the host.");
-   puts("\t--nick: Picks a nickname for use with netplay. Not mandatory.");
+   puts(_("\t-H/--host: Host netplay as player 1."));
+   puts(_("\t-C/--connect: Connect to netplay as player 2."));
+   puts(_("\t--port: Port used to netplay. Default is 55435."));
+   puts(_("\t-F/--frames: Sync frames when using netplay."));
+   puts(_("\t--spectate: Netplay will become spectating mode."));
+   puts(_("\t\tHost can live stream the game content to players that connect."));
+   puts(_("\t\tHowever, the client will not be able to play. Multiple clients can connect to the host."));
+   puts(_("\t--nick: Picks a nickname for use with netplay. Not mandatory."));
 #endif
 #ifdef HAVE_NETWORK_CMD
-   puts("\t--command: Sends a command over UDP to an already running RetroArch process.");
-   puts("\t\tAvailable commands are listed if command is invalid.");
+   puts(_("\t--command: Sends a command over UDP to an already running RetroArch process."));
+   puts(_("\t\tAvailable commands are listed if command is invalid."));
 #endif
 
 #ifdef HAVE_FFMPEG
-   puts("\t-r/--record: Path to record video file.\n\t\tUsing .mkv extension is recommended.");
-   puts("\t--recordconfig: Path to settings used during recording.");
-   puts("\t--size: Overrides output video size when recording with FFmpeg (format: WIDTHxHEIGHT).");
+   puts(_("\t-r/--record: Path to record video file.\n\t\tUsing .mkv extension is recommended."));
+   puts(_("\t--recordconfig: Path to settings used during recording."));
+   puts(_("\t--size: Overrides output video size when recording with FFmpeg (format: WIDTHxHEIGHT)."));
 #endif
-   puts("\t-v/--verbose: Verbose logging.");
-   puts("\t-U/--ups: Specifies path for UPS patch that will be applied to ROM.");
-   puts("\t--bps: Specifies path for BPS patch that will be applied to ROM.");
-   puts("\t--ips: Specifies path for IPS patch that will be applied to ROM.");
-   puts("\t--no-patch: Disables all forms of rom patching.");
-   puts("\t-D/--detach: Detach RetroArch from the running console. Not relevant for all platforms.\n");
+   puts(_("\t-v/--verbose: Verbose logging."));
+   puts(_("\t-U/--ups: Specifies path for UPS patch that will be applied to ROM."));
+   puts(_("\t--bps: Specifies path for BPS patch that will be applied to ROM."));
+   puts(_("\t--ips: Specifies path for IPS patch that will be applied to ROM."));
+   puts(_("\t--no-patch: Disables all forms of rom patching."));
+   puts(_("\t-D/--detach: Detach RetroArch from the running console. Not relevant for all platforms.\n"));
 }
 
 static void set_basename(const char *path)
@@ -848,12 +852,12 @@ static void set_paths(const char *path)
    if (path_is_directory(g_extern.savefile_name_srm))
    {
       fill_pathname_dir(g_extern.savefile_name_srm, g_extern.basename, ".srm", sizeof(g_extern.savefile_name_srm));
-      RARCH_LOG("Redirecting save file to \"%s\".\n", g_extern.savefile_name_srm);
+      RARCH_LOG(_("Redirecting save file to \"%s\".\n"), g_extern.savefile_name_srm);
    }
    if (path_is_directory(g_extern.savestate_name))
    {
       fill_pathname_dir(g_extern.savestate_name, g_extern.basename, ".state", sizeof(g_extern.savestate_name));
-      RARCH_LOG("Redirecting save state to \"%s\".\n", g_extern.savestate_name);
+      RARCH_LOG(_("Redirecting save state to \"%s\".\n"), g_extern.savestate_name);
    }
 
    // If this is already set,
@@ -996,7 +1000,7 @@ static void parse_input(int argc, char *argv[])
             port = strtol(optarg, NULL, 0);
             if (port < 1 || port > MAX_PLAYERS)
             {
-               RARCH_ERR("Connect dualanalog to a valid port.\n");
+               RARCH_ERR(_("Connect dualanalog to a valid port.\n"));
                print_help();
                rarch_fail(1, "parse_input()");
             }
@@ -1051,7 +1055,7 @@ static void parse_input(int argc, char *argv[])
             port = strtol(optarg, NULL, 0);
             if (port < 1 || port > MAX_PLAYERS)
             {
-               RARCH_ERR("Connect mouse to a valid port.\n");
+               RARCH_ERR(_("Connect mouse to a valid port.\n"));
                print_help();
                rarch_fail(1, "parse_input()");
             }
@@ -1063,7 +1067,7 @@ static void parse_input(int argc, char *argv[])
             port = strtol(optarg, NULL, 0);
             if (port < 1 || port > MAX_PLAYERS)
             {
-               RARCH_ERR("Disconnect device from a valid port.\n");
+               RARCH_ERR(_("Disconnect device from a valid port.\n"));
                print_help();
                rarch_fail(1, "parse_input()");
             }
@@ -1115,7 +1119,7 @@ static void parse_input(int argc, char *argv[])
                g_extern.sram_save_disable = true;
             else if (strcmp(optarg, "load-save") != 0)
             {
-               RARCH_ERR("Invalid argument in --sram-mode.\n");
+               RARCH_ERR(_("Invalid argument in --sram-mode.\n"));
                print_help();
                rarch_fail(1, "parse_input()");
             }
@@ -1201,7 +1205,7 @@ static void parse_input(int argc, char *argv[])
                {
                   if (sscanf(optarg, "%ux%u", &g_extern.record_width, &g_extern.record_height) != 2)
                   {
-                     RARCH_ERR("Wrong format for --size.\n");
+                     RARCH_ERR(_("Wrong format for --size.\n"));
                      print_help();
                      rarch_fail(1, "parse_input()");
                   }
@@ -1226,7 +1230,7 @@ static void parse_input(int argc, char *argv[])
             rarch_fail(1, "parse_input()");
 
          default:
-            RARCH_ERR("Error parsing arguments.\n");
+            RARCH_ERR(_("Error parsing arguments.\n"));
             rarch_fail(1, "parse_input()");
       }
    }
@@ -1235,7 +1239,7 @@ static void parse_input(int argc, char *argv[])
    {
       if (optind < argc)
       {
-         RARCH_ERR("--menu was used, but ROM file was passed as well.\n");
+         RARCH_ERR(_("--menu was used, but ROM file was passed as well.\n"));
          rarch_fail(1, "parse_input()");
       }
    }
@@ -1267,31 +1271,31 @@ static void init_controllers(void)
       switch (device)
       {
          case RETRO_DEVICE_NONE:
-            RARCH_LOG("Disconnecting device from port %u.\n", i + 1);
+            RARCH_LOG(_("Disconnecting device from port %u.\n"), i + 1);
             break;
 
          case RETRO_DEVICE_ANALOG:
-            RARCH_LOG("Connecting dualanalog to port %u.\n", i + 1);
+            RARCH_LOG(_("Connecting dualanalog to port %u.\n"), i + 1);
             break;
 
          case RETRO_DEVICE_MOUSE:
-            RARCH_LOG("Connecting mouse to port %u.\n", i + 1);
+            RARCH_LOG(_("Connecting mouse to port %u.\n"), i + 1);
             break;
 
          case RETRO_DEVICE_LIGHTGUN_JUSTIFIER:
-            RARCH_LOG("Connecting Justifier to port %u.\n", i + 1);
+            RARCH_LOG(_("Connecting Justifier to port %u.\n"), i + 1);
             break;
 
          case RETRO_DEVICE_LIGHTGUN_JUSTIFIERS:
-            RARCH_LOG("Connecting Justifiers to port %u.\n", i + 1);
+            RARCH_LOG(_("Connecting Justifiers to port %u.\n"), i + 1);
             break;
 
          case RETRO_DEVICE_JOYPAD_MULTITAP:
-            RARCH_LOG("Connecting Multitap to port %u.\n", i + 1);
+            RARCH_LOG(_("Connecting Multitap to port %u.\n"), i + 1);
             break;
 
          case RETRO_DEVICE_LIGHTGUN_SUPER_SCOPE:
-            RARCH_LOG("Connecting scope to port %u.\n", i + 1);
+            RARCH_LOG(_("Connecting scope to port %u.\n"), i + 1);
             break;
 
          default:
@@ -1335,7 +1339,7 @@ static inline void save_files(void)
    switch (g_extern.game_type)
    {
       case RARCH_CART_NORMAL:
-         RARCH_LOG("Saving regular SRAM.\n");
+         RARCH_LOG(_("Saving regular SRAM.\n"));
          RARCH_LOG("SRM: %s\n", g_extern.savefile_name_srm);
          RARCH_LOG("RTC: %s\n", g_extern.savefile_name_rtc);
          save_ram_file(g_extern.savefile_name_srm, RETRO_MEMORY_SAVE_RAM);
@@ -1343,7 +1347,7 @@ static inline void save_files(void)
          break;
 
       case RARCH_CART_SGB:
-         RARCH_LOG("Saving Gameboy SRAM.\n");
+         RARCH_LOG(_("Saving Gameboy SRAM.\n"));
          RARCH_LOG("SRM: %s\n", g_extern.savefile_name_srm);
          RARCH_LOG("RTC: %s\n", g_extern.savefile_name_rtc);
          save_ram_file(g_extern.savefile_name_srm, RETRO_MEMORY_SNES_GAME_BOY_RAM);
@@ -1352,7 +1356,7 @@ static inline void save_files(void)
 
       case RARCH_CART_BSX:
       case RARCH_CART_BSX_SLOTTED:
-         RARCH_LOG("Saving BSX (P)RAM.\n");
+         RARCH_LOG(_("Saving BSX (P)RAM.\n"));
          RARCH_LOG("SRM:  %s\n", g_extern.savefile_name_srm);
          RARCH_LOG("PSRM: %s\n", g_extern.savefile_name_psrm);
          save_ram_file(g_extern.savefile_name_srm, RETRO_MEMORY_SNES_BSX_RAM);
@@ -1360,7 +1364,7 @@ static inline void save_files(void)
          break;
 
       case RARCH_CART_SUFAMI:
-         RARCH_LOG("Saving Sufami turbo A/B RAM.\n");
+         RARCH_LOG(_("Saving Sufami turbo A/B RAM.\n"));
          RARCH_LOG("ASRM: %s\n", g_extern.savefile_name_asrm);
          RARCH_LOG("BSRM: %s\n", g_extern.savefile_name_bsrm);
          save_ram_file(g_extern.savefile_name_asrm, RETRO_MEMORY_SNES_SUFAMI_TURBO_A_RAM);
@@ -1380,14 +1384,14 @@ void rarch_init_recording(void)
 
    if (!g_settings.video.gpu_record && g_extern.system.hw_render_callback.context_type)
    {
-      RARCH_WARN("Libretro core is hardware rendered. Must use post-shaded FFmpeg recording as well.\n");
+      RARCH_WARN(_("Libretro core is hardware rendered. Must use post-shaded FFmpeg recording as well.\n"));
       g_extern.recording = false;
       return;
    }
 
    double fps = g_extern.system.av_info.timing.fps;
    double samplerate = g_extern.system.av_info.timing.sample_rate;
-   RARCH_LOG("Custom timing given: FPS: %.4f, Sample rate: %.4f\n", (float)fps, (float)samplerate);
+   RARCH_LOG(_("Custom timing given: FPS: %.4f, Sample rate: %.4f\n"), (float)fps, (float)samplerate);
 
    struct ffemu_params params = {0};
    const struct retro_system_av_info *info = &g_extern.system.av_info;
@@ -1409,8 +1413,8 @@ void rarch_init_recording(void)
 
       if (!vp.width || !vp.height)
       {
-         RARCH_ERR("Failed to get viewport information from video driver. "
-               "Cannot start recording ...\n");
+         RARCH_ERR(_("Failed to get viewport information from video driver. " \
+               "Cannot start recording ...\n"));
          g_extern.recording = false;
          return;
       }
@@ -1429,13 +1433,13 @@ void rarch_init_recording(void)
       g_extern.record_gpu_width  = vp.width;
       g_extern.record_gpu_height = vp.height;
 
-      RARCH_LOG("Detected viewport of %u x %u\n",
+      RARCH_LOG(_("Detected viewport of %u x %u\n"),
             vp.width, vp.height);
 
       g_extern.record_gpu_buffer = (uint8_t*)malloc(vp.width * vp.height * 3);
       if (!g_extern.record_gpu_buffer)
       {
-         RARCH_ERR("Failed to allocate GPU record buffer.\n");
+         RARCH_ERR(_("Failed to allocate GPU record buffer.\n"));
          g_extern.recording = false;
          return;
       }
@@ -1466,7 +1470,7 @@ void rarch_init_recording(void)
       }
    }
 
-   RARCH_LOG("Recording with FFmpeg to %s @ %ux%u. (FB size: %ux%u pix_fmt: %u)\n",
+   RARCH_LOG(_("Recording with FFmpeg to %s @ %ux%u. (FB size: %ux%u pix_fmt: %u)\n"),
          g_extern.record_path,
          params.out_width, params.out_height,
          params.fb_width, params.fb_height,
@@ -1475,7 +1479,7 @@ void rarch_init_recording(void)
    g_extern.rec = ffemu_new(&params);
    if (!g_extern.rec)
    {
-      RARCH_ERR("Failed to start FFmpeg recording.\n");
+      RARCH_ERR(_("Failed to start FFmpeg recording.\n"));
       g_extern.recording = false;
 
       free(g_extern.record_gpu_buffer);
@@ -1533,22 +1537,22 @@ void rarch_init_rewind(void)
 
    if (g_extern.system.audio_callback.callback)
    {
-      RARCH_ERR("Implementation uses threaded audio. Cannot use rewind.\n");
+      RARCH_ERR(_("Implementation uses threaded audio. Cannot use rewind.\n"));
       return;
    }
 
    g_extern.state_size = pretro_serialize_size();
    if (!g_extern.state_size)
    {
-      RARCH_ERR("Implementation does not support save states. Cannot use rewind.\n");
+      RARCH_ERR(_("Implementation does not support save states. Cannot use rewind.\n"));
       return;
    }
 
-   RARCH_LOG("Initing rewind buffer with size: %u MB\n", (unsigned)(g_settings.rewind_buffer_size / 1000000));
+   RARCH_LOG(_("Initing rewind buffer with size: %u MB\n"), (unsigned)(g_settings.rewind_buffer_size / 1000000));
    g_extern.state_manager = state_manager_new(g_extern.state_size, g_settings.rewind_buffer_size);
 
    if (!g_extern.state_manager)
-      RARCH_WARN("Failed to init rewind buffer. Rewinding will be disabled.\n");
+      RARCH_WARN(_("Failed to init rewind buffer. Rewinding will be disabled.\n"));
 
    void *state;
    state_manager_push_where(g_extern.state_manager, &state);
@@ -1571,33 +1575,33 @@ static void init_movie(void)
       g_extern.bsv.movie = bsv_movie_init(g_extern.bsv.movie_start_path, RARCH_MOVIE_PLAYBACK);
       if (!g_extern.bsv.movie)
       {
-         RARCH_ERR("Failed to load movie file: \"%s\".\n", g_extern.bsv.movie_start_path);
+         RARCH_ERR(_("Failed to load movie file: \"%s\".\n"), g_extern.bsv.movie_start_path);
          rarch_fail(1, "init_movie()");
       }
 
       g_extern.bsv.movie_playback = true;
-      msg_queue_push(g_extern.msg_queue, "Starting movie playback.", 2, 180);
-      RARCH_LOG("Starting movie playback.\n");
+      msg_queue_push(g_extern.msg_queue, _("Starting movie playback."), 2, 180);
+      RARCH_LOG(_("Starting movie playback.\n"));
       g_settings.rewind_granularity = 1;
    }
    else if (g_extern.bsv.movie_start_recording)
    {
       char msg[PATH_MAX];
-      snprintf(msg, sizeof(msg), "Starting movie record to \"%s\".",
+      snprintf(msg, sizeof(msg), _("Starting movie record to \"%s\"."),
             g_extern.bsv.movie_start_path);
 
       g_extern.bsv.movie = bsv_movie_init(g_extern.bsv.movie_start_path, RARCH_MOVIE_RECORD);
       msg_queue_clear(g_extern.msg_queue);
       msg_queue_push(g_extern.msg_queue,
-            g_extern.bsv.movie ? msg : "Failed to start movie record.", 1, 180);
+            g_extern.bsv.movie ? msg : _("Failed to start movie record."), 1, 180);
 
       if (g_extern.bsv.movie)
       {
-         RARCH_LOG("Starting movie record to \"%s\".\n", g_extern.bsv.movie_start_path);
+         RARCH_LOG(_("Starting movie record to \"%s\".\n"), g_extern.bsv.movie_start_path);
          g_settings.rewind_granularity = 1;
       }
       else
-         RARCH_ERR("Failed to start movie record.\n");
+         RARCH_ERR(_("Failed to start movie record.\n"));
    }
 }
 
@@ -1619,7 +1623,7 @@ static void init_netplay(void)
 #ifdef HAVE_BSV_MOVIE
    if (g_extern.bsv.movie_start_playback)
    {
-      RARCH_WARN("Movie playback has started. Cannot start netplay.\n");
+      RARCH_WARN(_("Movie playback has started. Cannot start netplay.\n"));
       return;
    }
 #endif
@@ -1632,11 +1636,11 @@ static void init_netplay(void)
 
    if (*g_extern.netplay_server)
    {
-      RARCH_LOG("Connecting to netplay host...\n");
+      RARCH_LOG(_("Connecting to netplay host...\n"));
       g_extern.netplay_is_client = true;
    }
    else
-      RARCH_LOG("Waiting for client...\n");
+      RARCH_LOG(_("Waiting for client...\n"));
 
    g_extern.netplay = netplay_new(g_extern.netplay_is_client ? g_extern.netplay_server : NULL,
          g_extern.netplay_port ? g_extern.netplay_port : RARCH_DEFAULT_PORT,
@@ -1646,12 +1650,12 @@ static void init_netplay(void)
    if (!g_extern.netplay)
    {
       g_extern.netplay_is_client = false;
-      RARCH_WARN("Failed to init netplay ...\n");
+      RARCH_WARN(_("Failed to init netplay ...\n"));
 
       if (g_extern.msg_queue)
       {
          msg_queue_push(g_extern.msg_queue,
-               "Failed to init netplay ...",
+               _("Failed to init netplay ..."),
                0, 180);
       }
    }
@@ -1672,15 +1676,15 @@ static void init_command(void)
 
    if (g_settings.stdin_cmd_enable && driver.stdin_claimed)
    {
-      RARCH_WARN("stdin command interface is desired, but input driver has already claimed stdin.\n"
-            "Cannot use this command interface.\n");
+      RARCH_WARN(_("stdin command interface is desired, but input driver has already claimed stdin.\n" \
+            "Cannot use this command interface.\n"));
    }
 
    driver.command = rarch_cmd_new(g_settings.stdin_cmd_enable && !driver.stdin_claimed,
          g_settings.network_cmd_enable, g_settings.network_cmd_port);
 
    if (!driver.command)
-      RARCH_ERR("Failed to initialize command interface.\n");
+      RARCH_ERR(_("Failed to initialize command interface.\n"));
 }
 
 static void deinit_command(void)
@@ -1773,7 +1777,7 @@ void rarch_init_autosave(void)
                   pretro_get_memory_size(ram_types[i]), 
                   g_settings.autosave_interval);
             if (!g_extern.autosave[i])
-               RARCH_WARN("Could not initialize autosave.\n");
+               RARCH_WARN(_("Could not initialize autosave.\n"));
          }
       }
    }
@@ -1833,7 +1837,7 @@ static void set_savestate_auto_index(void)
    dir_list_free(dir_list);
 
    g_extern.state_slot = max_index;
-   RARCH_LOG("Found last state slot: #%u\n", g_extern.state_slot);
+   RARCH_LOG(_("Found last state slot: #%u\n"), g_extern.state_slot);
 }
 
 static void fill_pathnames(void)
@@ -1861,7 +1865,7 @@ static void fill_pathnames(void)
 
       case RARCH_CART_SUFAMI:
          if (g_extern.has_set_save_path && *g_extern.sufami_rom_path[0] && *g_extern.sufami_rom_path[1])
-            RARCH_WARN("Sufami Turbo SRAM paths will be inferred from their respective paths to avoid conflicts.\n");
+            RARCH_WARN(_("Sufami Turbo SRAM paths will be inferred from their respective paths to avoid conflicts.\n"));
 
          // SUFAMI ARAM
          fill_pathname(g_extern.savefile_name_asrm,
@@ -1936,11 +1940,11 @@ static void load_auto_state(void)
 
    if (path_file_exists(savestate_name_auto))
    {
-      RARCH_LOG("Found auto savestate in: %s\n", savestate_name_auto);
+      RARCH_LOG(_("Found auto savestate in: %s\n"), savestate_name_auto);
       bool ret = load_state(savestate_name_auto);
 
       char msg[PATH_MAX];
-      snprintf(msg, sizeof(msg), "Auto-loading savestate from \"%s\" %s.", savestate_name_auto, ret ? "succeeded" : "failed");
+      snprintf(msg, sizeof(msg), _("Auto-loading savestate from \"%s\" %s."), savestate_name_auto, ret ? _("succeeded") : _("failed"));
       msg_queue_push(g_extern.msg_queue, msg, 1, 180);
       RARCH_LOG("%s\n", msg);
    }
@@ -1956,7 +1960,7 @@ static void save_auto_state(void)
          ".auto", sizeof(savestate_name_auto));
 
    bool ret = save_state(savestate_name_auto);
-   RARCH_LOG("Auto save state to \"%s\" %s.\n", savestate_name_auto, ret ? "succeeded" : "failed");
+   RARCH_LOG(_("Auto save state to \"%s\" %s.\n"), savestate_name_auto, ret ? _("succeeded") : _("failed"));
 }
 
 void rarch_load_state(void)
@@ -1978,15 +1982,15 @@ void rarch_load_state(void)
       if (load_state(load_path))
       {
          if (g_extern.state_slot < 0)
-            snprintf(msg, sizeof(msg), "Loaded state from slot #-1 (auto).");
+            snprintf(msg, sizeof(msg), _("Loaded state from slot #-1 (auto)."));
          else
-            snprintf(msg, sizeof(msg), "Loaded state from slot #%d.", g_extern.state_slot);
+            snprintf(msg, sizeof(msg), _("Loaded state from slot #%d."), g_extern.state_slot);
       }
       else
-         snprintf(msg, sizeof(msg), "Failed to load state from \"%s\".", load_path);
+         snprintf(msg, sizeof(msg), _("Failed to load state from \"%s\"."), load_path);
    }
    else
-      strlcpy(msg, "Core does not support save states.", sizeof(msg));
+      strlcpy(msg, _("Core does not support save states."), sizeof(msg));
 
    msg_queue_clear(g_extern.msg_queue);
    msg_queue_push(g_extern.msg_queue, msg, 2, 180);
@@ -2015,15 +2019,15 @@ void rarch_save_state(void)
       if (save_state(save_path))
       {
          if (g_extern.state_slot < 0)
-            snprintf(msg, sizeof(msg), "Saved state to slot #-1 (auto).");
+            snprintf(msg, sizeof(msg), _("Saved state to slot #-1 (auto)."));
          else
-            snprintf(msg, sizeof(msg), "Saved state to slot #%u.", g_extern.state_slot);
+            snprintf(msg, sizeof(msg), _("Saved state to slot #%u."), g_extern.state_slot);
       }
       else
-         snprintf(msg, sizeof(msg), "Failed to save state to \"%s\".", save_path);
+         snprintf(msg, sizeof(msg), _("Failed to save state to \"%s\"."), save_path);
    }
    else
-      strlcpy(msg, "Core does not support save states.", sizeof(msg));
+      strlcpy(msg, _("Core does not support save states."), sizeof(msg));
 
    msg_queue_clear(g_extern.msg_queue);
    msg_queue_push(g_extern.msg_queue, msg, 2, 180);
@@ -2090,7 +2094,7 @@ void rarch_state_slot_increase(void)
       msg_queue_clear(g_extern.msg_queue);
    char msg[256];
 
-   snprintf(msg, sizeof(msg), "State slot: %u", g_extern.state_slot);
+   snprintf(msg, sizeof(msg), _("State slot: %u"), g_extern.state_slot);
 
    if (g_extern.msg_queue)
       msg_queue_push(g_extern.msg_queue, msg, 1, 180);
@@ -2108,7 +2112,7 @@ void rarch_state_slot_decrease(void)
 
    char msg[256];
 
-   snprintf(msg, sizeof(msg), "State slot: %u", g_extern.state_slot);
+   snprintf(msg, sizeof(msg), _("State slot: %u"), g_extern.state_slot);
 
    if (g_extern.msg_queue)
       msg_queue_push(g_extern.msg_queue, msg, 1, 180);
@@ -2182,7 +2186,7 @@ static void check_rewind(void)
          g_extern.frame_is_reverse = true;
          setup_rewind_audio();
 
-         msg_queue_push(g_extern.msg_queue, "Rewinding.", 0, g_extern.is_paused ? 1 : 30);
+         msg_queue_push(g_extern.msg_queue, _("Rewinding."), 0, g_extern.is_paused ? 1 : 30);
          pretro_unserialize(buf, g_extern.state_size);
 
 #ifdef HAVE_BSV_MOVIE
@@ -2191,7 +2195,7 @@ static void check_rewind(void)
 #endif
       }
       else
-         msg_queue_push(g_extern.msg_queue, "Reached end of rewind buffer.", 0, 30);
+         msg_queue_push(g_extern.msg_queue, _("Reached end of rewind buffer."), 0, 30);
    }
    else
    {
@@ -2227,7 +2231,7 @@ static void check_slowmotion(void)
    if (g_extern.is_slowmotion)
    {
       msg_queue_clear(g_extern.msg_queue);
-      msg_queue_push(g_extern.msg_queue, g_extern.frame_is_reverse ? "Slow motion rewind." : "Slow motion.", 0, 30);
+      msg_queue_push(g_extern.msg_queue, g_extern.frame_is_reverse ? _("Slow motion rewind.") : _("Slow motion."), 0, 30);
    }
 }
 
@@ -2237,8 +2241,8 @@ static void movie_record_toggle(void)
    if (g_extern.bsv.movie)
    {
       msg_queue_clear(g_extern.msg_queue);
-      msg_queue_push(g_extern.msg_queue, "Stopping movie record.", 2, 180);
-      RARCH_LOG("Stopping movie record.\n");
+      msg_queue_push(g_extern.msg_queue, _("Stopping movie record."), 2, 180);
+      RARCH_LOG(_("Stopping movie record.\n"));
       bsv_movie_free(g_extern.bsv.movie);
       g_extern.bsv.movie = NULL;
    }
@@ -2259,16 +2263,16 @@ static void movie_record_toggle(void)
       }
 
       char msg[PATH_MAX];
-      snprintf(msg, sizeof(msg), "Starting movie record to \"%s\".", path);
+      snprintf(msg, sizeof(msg), _("Starting movie record to \"%s\"."), path);
 
       g_extern.bsv.movie = bsv_movie_init(path, RARCH_MOVIE_RECORD);
       msg_queue_clear(g_extern.msg_queue);
-      msg_queue_push(g_extern.msg_queue, g_extern.bsv.movie ? msg : "Failed to start movie record.", 1, 180);
+      msg_queue_push(g_extern.msg_queue, g_extern.bsv.movie ? msg : _("Failed to start movie record."), 1, 180);
 
       if (g_extern.bsv.movie)
-         RARCH_LOG("Starting movie record to \"%s\".\n", path);
+         RARCH_LOG(_("Starting movie record to \"%s\".\n"), path);
       else
-         RARCH_ERR("Failed to start movie record.\n");
+         RARCH_ERR(_("Failed to start movie record.\n"));
    }
 }
 
@@ -2282,8 +2286,8 @@ static void check_movie_playback(bool pressed)
 {
    if (g_extern.bsv.movie_end || pressed)
    {
-      msg_queue_push(g_extern.msg_queue, "Movie playback ended.", 1, 180);
-      RARCH_LOG("Movie playback ended.\n");
+      msg_queue_push(g_extern.msg_queue, _("Movie playback ended."), 1, 180);
+      RARCH_LOG(_("Movie playback ended.\n"));
 
       bsv_movie_free(g_extern.bsv.movie);
       g_extern.bsv.movie = NULL;
@@ -2327,18 +2331,18 @@ static void check_pause(void)
 
       if (g_extern.is_paused)
       {
-         RARCH_LOG("Paused.\n");
+         RARCH_LOG(_("Paused.\n"));
          if (driver.audio_data)
             audio_stop_func();
       }
       else 
       {
-         RARCH_LOG("Unpaused.\n");
+         RARCH_LOG(_("Unpaused.\n"));
          if (driver.audio_data)
          {
             if (!g_extern.audio_data.mute && !audio_start_func())
             {
-               RARCH_ERR("Failed to resume audio driver. Will continue without audio.\n");
+               RARCH_ERR(_("Failed to resume audio driver. Will continue without audio.\n"));
                g_extern.audio_active = false;
             }
          }
@@ -2346,17 +2350,17 @@ static void check_pause(void)
    }
    else if (focus && !old_focus)
    {
-      RARCH_LOG("Unpaused.\n");
+      RARCH_LOG(_("Unpaused.\n"));
       g_extern.is_paused = false;
       if (driver.audio_data && !g_extern.audio_data.mute && !audio_start_func())
       {
-         RARCH_ERR("Failed to resume audio driver. Will continue without audio.\n");
+         RARCH_ERR(_("Failed to resume audio driver. Will continue without audio.\n"));
          g_extern.audio_active = false;
       }
    }
    else if (!focus && old_focus)
    {
-      RARCH_LOG("Paused.\n");
+      RARCH_LOG(_("Paused.\n"));
       g_extern.is_paused = true;
       if (driver.audio_data)
          audio_stop_func();
@@ -2382,9 +2386,9 @@ static void check_oneshot(void)
 
 void rarch_game_reset(void)
 {
-   RARCH_LOG("Resetting game.\n");
+   RARCH_LOG(_("Resetting game.\n"));
    msg_queue_clear(g_extern.msg_queue);
-   msg_queue_push(g_extern.msg_queue, "Reset.", 1, 120);
+   msg_queue_push(g_extern.msg_queue, _("Reset."), 1, 120);
    pretro_reset();
    init_controllers(); // bSNES since v073r01 resets controllers to JOYPAD after a reset, so just enforce it here.
 }
@@ -2466,12 +2470,12 @@ static void check_shader_dir(void)
       msg_queue_clear(g_extern.msg_queue);
 
       char msg[512];
-      snprintf(msg, sizeof(msg), "Shader #%u: \"%s\".", (unsigned)g_extern.shader_dir.ptr, shader);
+      snprintf(msg, sizeof(msg), _("Shader #%u: \"%s\"."), (unsigned)g_extern.shader_dir.ptr, shader);
       msg_queue_push(g_extern.msg_queue, msg, 1, 120);
-      RARCH_LOG("Applying shader \"%s\".\n", shader);
+      RARCH_LOG(_("Applying shader \"%s\".\n"), shader);
 
       if (!video_set_shader_func(type, shader))
-         RARCH_WARN("Failed to apply shader.\n");
+         RARCH_WARN(_("Failed to apply shader.\n"));
    }
 
    old_pressed_next = pressed_next;
@@ -2521,7 +2525,7 @@ void rarch_disk_control_append_image(const char *path)
    rarch_disk_control_set_index(new_index);
 
    char msg[512];
-   snprintf(msg, sizeof(msg), "Appended disk: %s", path);
+   snprintf(msg, sizeof(msg), _("Appended disk: %s"), path);
    RARCH_LOG("%s\n", msg);
    msg_queue_clear(g_extern.msg_queue);
    msg_queue_push(g_extern.msg_queue, msg, 0, 180);
@@ -2556,11 +2560,11 @@ void rarch_disk_control_set_eject(bool new_state, bool log)
    *msg = '\0';
 
    if (control->set_eject_state(new_state))
-      snprintf(msg, sizeof(msg), "%s virtual disk tray.", new_state ? "Ejected" : "Closed");
+      snprintf(msg, sizeof(msg), _("%s virtual disk tray."), new_state ? _("Ejected") : _("Closed"));
    else
    {
       error = true;
-      snprintf(msg, sizeof(msg), "Failed to %s virtual disk tray.", new_state ? "eject" : "close");
+      snprintf(msg, sizeof(msg), _("Failed to %s virtual disk tray."), new_state ? _("eject") : _("close"));
    }
 
    if (*msg)
@@ -2593,16 +2597,16 @@ void rarch_disk_control_set_index(unsigned next_index)
    if (control->set_image_index(next_index))
    {
       if (next_index < num_disks)
-         snprintf(msg, sizeof(msg), "Setting disk %u of %u in tray.", next_index + 1, num_disks);
+         snprintf(msg, sizeof(msg), _("Setting disk %u of %u in tray."), next_index + 1, num_disks);
       else
-         strlcpy(msg, "Removed disk from tray.", sizeof(msg));
+         strlcpy(msg, _("Removed disk from tray."), sizeof(msg));
    }
    else
    {
       if (next_index < num_disks)
-         snprintf(msg, sizeof(msg), "Failed to set disk %u of %u.", next_index + 1, num_disks);
+         snprintf(msg, sizeof(msg), _("Failed to set disk %u of %u."), next_index + 1, num_disks);
       else
-         strlcpy(msg, "Failed to remove disk from tray.", sizeof(msg));
+         strlcpy(msg, _("Failed to remove disk from tray."), sizeof(msg));
       error = true;
    }
 
@@ -2645,7 +2649,7 @@ static void check_disk(void)
          rarch_disk_control_set_index(next_index);
       }
       else
-         RARCH_ERR("Got invalid disk index from libretro.\n");
+         RARCH_ERR(_("Got invalid disk index from libretro.\n"));
    }
 
    old_pressed_eject = pressed_eject;
@@ -2690,7 +2694,7 @@ static void check_mute(void)
    {
       g_extern.audio_data.mute = !g_extern.audio_data.mute;
 
-      const char *msg = g_extern.audio_data.mute ? "Audio muted." : "Audio unmuted.";
+      const char *msg = g_extern.audio_data.mute ? _("Audio muted.") : _("Audio unmuted.");
       msg_queue_clear(g_extern.msg_queue);
       msg_queue_push(g_extern.msg_queue, msg, 1, 180);
 
@@ -2700,7 +2704,7 @@ static void check_mute(void)
             audio_stop_func();
          else if (!audio_start_func())
          {
-            RARCH_ERR("Failed to unmute audio.\n");
+            RARCH_ERR(_("Failed to unmute audio.\n"));
             g_extern.audio_active = false;
          }
       }
@@ -2792,7 +2796,7 @@ static void check_grab_mouse_toggle(void)
    if (pressed && !old_pressed)
    {
       grab_mouse_state = !grab_mouse_state;
-      RARCH_LOG("Grab mouse state: %s.\n", grab_mouse_state ? "yes" : "no");
+      RARCH_LOG(_("Grab mouse state: %s.\n"), grab_mouse_state ? _("yes") : _("no"));
       driver.input->grab_mouse(driver.input_data, grab_mouse_state);
 
       if (driver.video_poke && driver.video_poke->show_mouse)
@@ -2910,7 +2914,7 @@ void rarch_init_system_info(void)
    pretro_get_system_info(info);
 
    if (!info->library_name)
-      info->library_name = "Unknown";
+      info->library_name = _("Unknown");
    if (!info->library_version)
       info->library_version = "v0";
 
@@ -2935,10 +2939,10 @@ static void init_system_av_info(void)
 
 static void verify_api_version(void)
 {
-   RARCH_LOG("Version of libretro API: %u\n", pretro_api_version());
-   RARCH_LOG("Compiled against API: %u\n", RETRO_API_VERSION);
+   RARCH_LOG(_("Version of libretro API: %u\n"), pretro_api_version());
+   RARCH_LOG(_("Compiled against API: %u\n"), RETRO_API_VERSION);
    if (pretro_api_version() != RETRO_API_VERSION)
-      RARCH_WARN("RetroArch is compiled against a different version of libretro than this libretro implementation.\n");
+      RARCH_WARN(_("RetroArch is compiled against a different version of libretro than this libretro implementation.\n"));
 }
 
 // Make sure we haven't compiled for something we cannot run.
@@ -2949,7 +2953,7 @@ static void validate_cpu_features(void)
    (void)cpu;
 
 #define FAIL_CPU(simd_type) do { \
-   RARCH_ERR(simd_type " code is compiled in, but CPU does not support this feature. Cannot continue.\n"); \
+   RARCH_ERR(_("%s code is compiled in, but CPU does not support this feature. Cannot continue.\n"), simd_type); \
    rarch_fail(1, "validate_cpu_features()"); \
 } while(0)
 
@@ -2974,7 +2978,7 @@ int rarch_main_init(int argc, char *argv[])
    int sjlj_ret;
    if ((sjlj_ret = setjmp(g_extern.error_sjlj_context)) > 0)
    {
-      RARCH_ERR("Fatal error received in: \"%s\"\n", g_extern.error_string); 
+      RARCH_ERR(_("Fatal error received in: \"%s\"\n"), g_extern.error_string); 
       return sjlj_ret;
    }
    g_extern.error_in_init = true;
@@ -2982,9 +2986,9 @@ int rarch_main_init(int argc, char *argv[])
 
    if (g_extern.verbose)
    {
-      RARCH_LOG_OUTPUT("=== Build =======================================");
+      RARCH_LOG_OUTPUT(_("=== Build ======================================="));
       print_compiler(stderr);
-      RARCH_LOG_OUTPUT("Version: %s\n", PACKAGE_VERSION);
+      RARCH_LOG_OUTPUT(_("Version: %s\n"), PACKAGE_VERSION);
 #ifdef HAVE_GIT_VERSION
       RARCH_LOG_OUTPUT("Git: %s\n", rarch_git_version);
 #endif
@@ -3023,7 +3027,7 @@ int rarch_main_init(int argc, char *argv[])
       if (!g_extern.sram_load_disable)
          load_save_files();
       else
-         RARCH_LOG("Skipping SRAM load.\n");
+         RARCH_LOG(_("Skipping SRAM load.\n"));
 
       load_auto_state();
 
@@ -3062,7 +3066,7 @@ int rarch_main_init(int argc, char *argv[])
 #endif
 
    if (!g_extern.use_sram)
-      RARCH_LOG("SRAM will not be saved.\n");
+      RARCH_LOG(_("SRAM will not be saved.\n"));
 
 #if defined(HAVE_THREADS)
    if (g_extern.use_sram)
@@ -3280,9 +3284,9 @@ void rarch_main_deinit(void)
 
    if (g_extern.rom_file_temporary)
    {
-      RARCH_LOG("Removing temporary ROM file: %s.\n", g_extern.last_rom);
+      RARCH_LOG(_("Removing temporary ROM file: %s.\n"), g_extern.last_rom);
       if (remove(g_extern.last_rom) < 0)
-         RARCH_ERR("Failed to remove temporary file: %s.\n", g_extern.last_rom);
+         RARCH_ERR(_("Failed to remove temporary file: %s.\n"), g_extern.last_rom);
       g_extern.rom_file_temporary = false;
    }
 
@@ -3293,6 +3297,10 @@ void rarch_main_deinit(void)
 
 int rarch_main_init_wrap(const struct rarch_main_wrap *args)
 {
+   setlocale(LC_ALL, "");
+   bindtextdomain("retroarch", "/usr/share/locale");
+   textdomain("retroarch");
+
    unsigned i;
    if (g_extern.main_is_init)
       rarch_main_deinit();
@@ -3307,12 +3315,12 @@ int rarch_main_init_wrap(const struct rarch_main_wrap *args)
    {
       if (args->rom_path)
       {
-         RARCH_LOG("Using ROM: %s.\n", args->rom_path);
+         RARCH_LOG(_("Using ROM: %s.\n"), args->rom_path);
          argv[argc++] = strdup(args->rom_path);
       }
       else
       {
-         RARCH_LOG("No ROM, starting dummy core.\n");
+         RARCH_LOG(_("No ROM, starting dummy core.\n"));
          argv[argc++] = strdup("--menu");
       }
    }
@@ -3348,7 +3356,7 @@ int rarch_main_init_wrap(const struct rarch_main_wrap *args)
 
 #ifdef HAVE_FILE_LOGGER
    for (i = 0; i < argc; i++)
-      RARCH_LOG("arg #%d: %s\n", i, argv[i]);
+      RARCH_LOG(_("arg #%d: %s\n"), i, argv[i]);
 #endif
 
    // The pointers themselves are not const, and can be messed around with by getopt_long().

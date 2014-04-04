@@ -23,10 +23,14 @@
 #include <stdlib.h>
 #include <string.h>
 #include <limits.h>
+#include <libintl.h>
+#include <locale.h>
 #include <ctype.h>
 #include "menu_common.h"
 #include "../../input/keyboard_line.h"
 #include "menu_input_line_cb.h"
+
+#define _(x) gettext(x)
 
 void menu_key_start_line(rgui_handle_t *rgui, const char *label, input_keyboard_line_complete_t cb)
 {
@@ -108,8 +112,7 @@ void menu_key_event(bool down, unsigned keycode, uint32_t character, uint16_t mo
    if (character == '/')
    {
       rgui->keyboard.display = true;
-      rgui->keyboard.label = "Search: ";
+      rgui->keyboard.label = _("Search: ");
       rgui->keyboard.buffer = input_keyboard_start_line(rgui, menu_search_callback);
    }
 }
-

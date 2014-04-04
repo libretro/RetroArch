@@ -19,6 +19,9 @@
 #include <xui.h>
 #include <xuiapp.h>
 
+#include <libintl.h>
+#include <locale.h>
+
 #include "../menu_common.h"
 
 #include "../../../gfx/gfx_common.h"
@@ -26,6 +29,8 @@
 
 #include "../../../message_queue.h"
 #include "../../../general.h"
+
+#define _(x) gettext(x)
 
 #define XUI_CONTROL_NAVIGATE_OK (XUI_CONTROL_NAVIGATE_RIGHT + 1)
 
@@ -156,7 +161,7 @@ static void* rmenu_xui_init(void)
    rgui_handle_t *rgui = (rgui_handle_t*)calloc(1, sizeof(*rgui));
    if (rgui == NULL)
    {
-      RARCH_ERR("Could not allocate RGUI handle.\n");
+      RARCH_ERR(_("Could not allocate RGUI handle.\n"));
       return NULL;
    }
 
@@ -165,7 +170,7 @@ static void* rmenu_xui_init(void)
    bool hdmenus_allowed = (g_extern.lifecycle_state & (1ULL << MODE_MENU_HD));
 
    if (hdmenus_allowed)
-      RARCH_LOG("HD menus enabled.\n");
+      RARCH_LOG(_("HD menus enabled.\n"));
 
    D3DPRESENT_PARAMETERS d3dpp;
    video_info_t video_info = {0};
@@ -183,7 +188,7 @@ static void* rmenu_xui_init(void)
 
    if (hr != S_OK)
    {
-      RARCH_ERR("Failed initializing XUI application.\n");
+      RARCH_ERR(_("Failed initializing XUI application.\n"));
       free(rgui);
       return NULL;
    }
@@ -197,7 +202,7 @@ static void* rmenu_xui_init(void)
    hr = XuiRegisterTypeface( &typeface, TRUE );
    if (hr != S_OK)
    {
-      RARCH_ERR("Failed to register default typeface.\n");
+      RARCH_ERR(_("Failed to register default typeface.\n"));
       free(rgui);
       return NULL;
    }
@@ -205,7 +210,7 @@ static void* rmenu_xui_init(void)
    hr = XuiLoadVisualFromBinary( L"file://game:/media/rarch_scene_skin.xur", NULL);
    if (hr != S_OK)
    {
-      RARCH_ERR("Failed to load skin.\n");
+      RARCH_ERR(_("Failed to load skin.\n"));
       free(rgui);
       return NULL;
    }
@@ -213,7 +218,7 @@ static void* rmenu_xui_init(void)
    hr = XuiSceneCreate(hdmenus_allowed ? L"file://game:/media/hd/" : L"file://game:/media/sd/", L"rarch_main.xur", NULL, &root_menu);
    if (hr != S_OK)
    {
-      RARCH_ERR("Failed to create scene 'rarch_main.xur'.\n");
+      RARCH_ERR(_("Failed to create scene 'rarch_main.xur'.\n"));
       free(rgui);
       return NULL;
    }
@@ -222,7 +227,7 @@ static void* rmenu_xui_init(void)
    hr = XuiSceneNavigateFirst(app.GetRootObj(), current_menu, XUSER_INDEX_FOCUS);
    if (hr != S_OK)
    {
-      RARCH_ERR("XuiSceneNavigateFirst failed.\n");
+      RARCH_ERR(_("XuiSceneNavigateFirst failed.\n"));
       free(rgui);
       return NULL;
    }
@@ -398,44 +403,44 @@ static void rmenu_xui_render(void *data)
    file_list_get_last(rgui->menu_stack, &dir, &menu_type);
 
    if (menu_type == RGUI_SETTINGS_CORE)
-      snprintf(title, sizeof(title), "CORE SELECTION %s", dir);
+      snprintf(title, sizeof(title), _("CORE SELECTION %s"), dir);
    else if (menu_type == RGUI_SETTINGS_DEFERRED_CORE)
-      snprintf(title, sizeof(title), "DETECTED CORES %s", dir);
+      snprintf(title, sizeof(title), _("DETECTED CORES %s"), dir);
    else if (menu_type == RGUI_SETTINGS_CONFIG)
-      snprintf(title, sizeof(title), "CONFIG %s", dir);
+      snprintf(title, sizeof(title), _("CONFIG %s"), dir);
    else if (menu_type == RGUI_SETTINGS_DISK_APPEND)
-      snprintf(title, sizeof(title), "DISK APPEND %s", dir);
+      snprintf(title, sizeof(title), _("DISK APPEND %s"), dir);
    else if (menu_type == RGUI_SETTINGS_VIDEO_OPTIONS)
-      strlcpy(title, "VIDEO OPTIONS", sizeof(title));
+      strlcpy(title, _("VIDEO OPTIONS"), sizeof(title));
    else if (menu_type == RGUI_SETTINGS_INPUT_OPTIONS)
-      strlcpy(title, "INPUT OPTIONS", sizeof(title));
+      strlcpy(title, _("INPUT OPTIONS"), sizeof(title));
    else if (menu_type == RGUI_SETTINGS_OVERLAY_OPTIONS)
-      strlcpy(title, "OVERLAY OPTIONS", sizeof(title));
+      strlcpy(title, _("OVERLAY OPTIONS"), sizeof(title));
    else if (menu_type == RGUI_SETTINGS_NETPLAY_OPTIONS)
-      strlcpy(title, "NETPLAY OPTIONS", sizeof(title));
+      strlcpy(title, _("NETPLAY OPTIONS"), sizeof(title));
    else if (menu_type == RGUI_SETTINGS_PATH_OPTIONS)
-      strlcpy(title, "PATH OPTIONS", sizeof(title));
+      strlcpy(title, _("PATH OPTIONS"), sizeof(title));
    else if (menu_type == RGUI_SETTINGS_OPTIONS)
-      strlcpy(title, "SETTINGS", sizeof(title));
+      strlcpy(title, _("SETTINGS"), sizeof(title));
    else if (menu_type == RGUI_SETTINGS_DRIVERS)
-      strlcpy(title, "DRIVER OPTIONS", sizeof(title));
+      strlcpy(title, _("DRIVER OPTIONS"), sizeof(title));
 #ifdef HAVE_SHADER_MANAGER
    else if (menu_type == RGUI_SETTINGS_SHADER_OPTIONS)
-      strlcpy(title, "SHADER OPTIONS", sizeof(title));
+      strlcpy(title, _("SHADER OPTIONS"), sizeof(title));
 #endif
    else if (menu_type == RGUI_SETTINGS_GENERAL_OPTIONS)
-      strlcpy(title, "GENERAL OPTIONS", sizeof(title));
+      strlcpy(title, _("GENERAL OPTIONS"), sizeof(title));
    else if (menu_type == RGUI_SETTINGS_AUDIO_OPTIONS)
-      strlcpy(title, "AUDIO OPTIONS", sizeof(title));
+      strlcpy(title, _("AUDIO OPTIONS"), sizeof(title));
    else if (menu_type == RGUI_SETTINGS_DISK_OPTIONS)
-      strlcpy(title, "DISK OPTIONS", sizeof(title));
+      strlcpy(title, _("DISK OPTIONS"), sizeof(title));
    else if (menu_type == RGUI_SETTINGS_CORE_OPTIONS)
-      strlcpy(title, "CORE OPTIONS", sizeof(title));
+      strlcpy(title, _("CORE OPTIONS"), sizeof(title));
    else if (menu_type == RGUI_SETTINGS_CORE_INFO)
-      strlcpy(title, "CORE INFO", sizeof(title));		  
+      strlcpy(title, _("CORE INFO"), sizeof(title));		  
 #ifdef HAVE_SHADER_MANAGER
    else if (menu_type_is(menu_type) == RGUI_SETTINGS_SHADER_OPTIONS)
-      snprintf(title, sizeof(title), "SHADER %s", dir);
+      snprintf(title, sizeof(title), _("SHADER %s"), dir);
 #endif
    else if ((menu_type == RGUI_SETTINGS_INPUT_OPTIONS) ||
          (menu_type == RGUI_SETTINGS_PATH_OPTIONS) ||
@@ -444,49 +449,49 @@ static void rmenu_xui_render(void *data)
          menu_type == RGUI_SETTINGS_CUSTOM_BIND ||
          menu_type == RGUI_START_SCREEN ||
          menu_type == RGUI_SETTINGS)
-      snprintf(title, sizeof(title), "MENU %s", dir);
+      snprintf(title, sizeof(title), _("MENU %s"), dir);
    else if (menu_type == RGUI_SETTINGS_OPEN_HISTORY)
-      strlcpy(title, "LOAD HISTORY", sizeof(title));
+      strlcpy(title, _("LOAD HISTORY"), sizeof(title));
 #ifdef HAVE_OVERLAY
    else if (menu_type == RGUI_SETTINGS_OVERLAY_PRESET)
-      snprintf(title, sizeof(title), "OVERLAY %s", dir);
+      snprintf(title, sizeof(title), _("OVERLAY %s"), dir);
 #endif
    else if (menu_type == RGUI_BROWSER_DIR_PATH)
-      snprintf(title, sizeof(title), "BROWSER DIR %s", dir);
+      snprintf(title, sizeof(title), _("BROWSER DIR %s"), dir);
 #ifdef HAVE_SCREENSHOTS
    else if (menu_type == RGUI_SCREENSHOT_DIR_PATH)
-      snprintf(title, sizeof(title), "SCREENSHOT DIR %s", dir);
+      snprintf(title, sizeof(title), _("SCREENSHOT DIR %s"), dir);
 #endif
    else if (menu_type == RGUI_SHADER_DIR_PATH)
-      snprintf(title, sizeof(title), "SHADER DIR %s", dir);
+      snprintf(title, sizeof(title), _("SHADER DIR %s"), dir);
    else if (menu_type == RGUI_SAVESTATE_DIR_PATH)
-      snprintf(title, sizeof(title), "SAVESTATE DIR %s", dir);
+      snprintf(title, sizeof(title), _("SAVESTATE DIR %s"), dir);
 #ifdef HAVE_DYNAMIC
    else if (menu_type == RGUI_LIBRETRO_DIR_PATH)
-      snprintf(title, sizeof(title), "LIBRETRO DIR %s", dir);
+      snprintf(title, sizeof(title), _("LIBRETRO DIR %s"), dir);
 #endif
    else if (menu_type == RGUI_CONFIG_DIR_PATH)
-      snprintf(title, sizeof(title), "CONFIG DIR %s", dir);
+      snprintf(title, sizeof(title), _("CONFIG DIR %s"), dir);
    else if (menu_type == RGUI_SAVEFILE_DIR_PATH)
-      snprintf(title, sizeof(title), "SAVEFILE DIR %s", dir);
+      snprintf(title, sizeof(title), _("SAVEFILE DIR %s"), dir);
 #ifdef HAVE_OVERLAY
    else if (menu_type == RGUI_OVERLAY_DIR_PATH)
-      snprintf(title, sizeof(title), "OVERLAY DIR %s", dir);
+      snprintf(title, sizeof(title), _("OVERLAY DIR %s"), dir);
 #endif
    else if (menu_type == RGUI_SYSTEM_DIR_PATH)
-      snprintf(title, sizeof(title), "SYSTEM DIR %s", dir);
+      snprintf(title, sizeof(title), _("SYSTEM DIR %s"), dir);
    else
    {
       if (rgui->defer_core)
-         snprintf(title, sizeof(title), "CONTENT %s", dir);
+         snprintf(title, sizeof(title), _("CONTENT %s"), dir);
       else
       {
          const char *core_name = rgui->info.library_name;
          if (!core_name)
             core_name = g_extern.system.info.library_name;
          if (!core_name)
-            core_name = "No Core";
-         snprintf(title, sizeof(title), "CONTENT (%s) %s", core_name, dir);
+            core_name = _("No Core");
+         snprintf(title, sizeof(title), _("CONTENT (%s) %s"), core_name, dir);
       }
    }
 
@@ -502,7 +507,7 @@ static void rmenu_xui_render(void *data)
    if (!core_name)
       core_name = g_extern.system.info.library_name;
    if (!core_name)
-      core_name = "No Core";
+      core_name = _("No Core");
 
    const char *core_version = rgui->info.library_version;
    if (!core_version)
@@ -542,14 +547,14 @@ static void rmenu_xui_render(void *data)
                && (menu_type_is(type) == RGUI_SETTINGS_SHADER_OPTIONS))
          {
             type = RGUI_FILE_DIRECTORY;
-            strlcpy(type_str, "(DIR)", sizeof(type_str));
+            strlcpy(type_str, _("(DIR)"), sizeof(type_str));
             w = 5;
          }
          else if (type == RGUI_SETTINGS_SHADER_OPTIONS || type == RGUI_SETTINGS_SHADER_PRESET)
             strlcpy(type_str, "...", sizeof(type_str));
          else if (type == RGUI_SETTINGS_SHADER_FILTER)
             snprintf(type_str, sizeof(type_str), "%s",
-                  g_settings.video.smooth ? "Linear" : "Nearest");
+                  g_settings.video.smooth ? _("Linear") : _("Nearest"));
          else
             shader_manager_get_str(&rgui->shader, type_str, sizeof(type_str), type);
       }
@@ -560,13 +565,13 @@ static void rmenu_xui_render(void *data)
       {
          if (type == RGUI_FILE_PLAIN)
          {
-            strlcpy(type_str, "(CORE)", sizeof(type_str));
+            strlcpy(type_str, _("(CORE)"), sizeof(type_str));
             file_list_get_alt_at_offset(rgui->selection_buf, i, &path);
             w = 6;
          }
          else
          {
-            strlcpy(type_str, "(DIR)", sizeof(type_str));
+            strlcpy(type_str, _("(DIR)"), sizeof(type_str));
             type = RGUI_FILE_DIRECTORY;
             w = 5;
          }
@@ -580,7 +585,7 @@ static void rmenu_xui_render(void *data)
       {
          if (type == RGUI_FILE_PLAIN)
          {
-            strlcpy(type_str, "(FILE)", sizeof(type_str));
+            strlcpy(type_str, _("(FILE)"), sizeof(type_str));
             w = 6;
          }
          else if (type == RGUI_FILE_USE_DIRECTORY)
@@ -590,7 +595,7 @@ static void rmenu_xui_render(void *data)
          }
          else
          {
-            strlcpy(type_str, "(DIR)", sizeof(type_str));
+            strlcpy(type_str, _("(DIR)"), sizeof(type_str));
             type = RGUI_FILE_DIRECTORY;
             w = 5;
          }
