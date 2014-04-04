@@ -622,7 +622,6 @@ struct retro_game_special_memory_info
 struct retro_game_special_rom_info
 {
     const char *desc; // Describes what the ROM is (SGB bios, GB rom, etc).
-    const char *ident; // A computer friendly short string identifier for the ROM type. Must be [a-z].
     const char *valid_extensions; // Same definition as retro_get_system_info().
     bool need_fullpath; // Same definition as retro_get_system_info().
     bool block_extract; // Same definition as retro_get_system_info().

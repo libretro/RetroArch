@@ -933,10 +933,20 @@ bool rarch_environment_cb(unsigned cmd, void *data)
       case RETRO_ENVIRONMENT_SET_SPECIAL_GAME_TYPES:
       {
          RARCH_LOG("Environ SET_SPECIAL_GAME_TYPES.\n");
-         unsigned i;
+         unsigned i, j;
          const struct retro_game_special_info *info = (const struct retro_game_special_info*)data;
          for (i = 0; info[i].ident; i++)
-            RARCH_LOG("Special game type: %s (ident: %s)\n", info[i].desc, info[i].ident);
+         {
+            RARCH_LOG("Special game type: %s\n", info[i].desc);
+            RARCH_LOG("  Ident: %s\n", info[i].ident);
+            RARCH_LOG("  ID: %u\n", info[i].id);
+            RARCH_LOG("  ROMs:\n");
+            for (j = 0; j < info[i].num_roms; j++)
+            {
+               RARCH_LOG("    %s (%s)\n",
+                     info[i].roms[j].desc, info[i].roms[j].required ? "required" : "optional");
+            }
+         }
 
          free(g_extern.system.special);
          g_extern.system.special = (struct retro_game_special_info*)calloc(i, sizeof(*g_extern.system.special));
