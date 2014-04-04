@@ -203,6 +203,13 @@ bool save_state(const char *path)
    return ret;
 }
 
+struct sram_block
+{
+   unsigned type;
+   void *data;
+   size_t size;
+};
+
 bool load_state(const char *path)
 {
    unsigned i;
@@ -220,78 +227,55 @@ bool load_state(const char *path)
    bool ret = true;
    RARCH_LOG("State size: %u bytes.\n", (unsigned)size);
 
-#if 0
-   void *block_buf[2] = {NULL, NULL};
-   int block_type[2] = {-1, -1};
-   size_t block_size[2] = {0};
+   struct sram_block *blocks = NULL;
+   unsigned num_blocks = 0;
 
-   if (g_settings.block_sram_overwrite)
+   if (g_settings.block_sram_overwrite && g_extern.savefiles && g_extern.savefiles->size)
    {
       RARCH_LOG("Blocking SRAM overwrite.\n");
-      switch (g_extern.game_type)
+      blocks = (struct sram_block*)calloc(g_extern.savefiles->size, sizeof(*blocks));
+      if (blocks)
       {
-         case RARCH_CART_NORMAL:
-            block_type[0] = RETRO_MEMORY_SAVE_RAM;
-            block_type[1] = RETRO_MEMORY_RTC;
-            break;
-
-         case RARCH_CART_BSX:
-         case RARCH_CART_BSX_SLOTTED:
-            block_type[0] = RETRO_MEMORY_SNES_BSX_RAM;
-            block_type[1] = RETRO_MEMORY_SNES_BSX_PRAM;
-            break;
-
-         case RARCH_CART_SUFAMI:
-            block_type[0] = RETRO_MEMORY_SNES_SUFAMI_TURBO_A_RAM;
-            block_type[1] = RETRO_MEMORY_SNES_SUFAMI_TURBO_B_RAM;
-            break;
-
-         case RARCH_CART_SGB:
-            block_type[0] = RETRO_MEMORY_SNES_GAME_BOY_RAM;
-            block_type[1] = RETRO_MEMORY_SNES_GAME_BOY_RTC;
-            break;
+         num_blocks = g_extern.savefiles->size;
+         for (i = 0; i < num_blocks; i++)
+            blocks[i].type = g_extern.savefiles->elems[i].attr.i;
       }
    }
 
-   for (i = 0; i < 2; i++)
-      if (block_type[i] != -1)
-         block_size[i] = pretro_get_memory_size(block_type[i]);
+   for (i = 0; i < num_blocks; i++)
+      blocks[i].size = pretro_get_memory_size(blocks[i].type);
 
-   for (i = 0; i < 2; i++)
-      if (block_size[i])
-         block_buf[i] = malloc(block_size[i]);
+   for (i = 0; i < num_blocks; i++)
+      if (blocks[i].size)
+         blocks[i].data = malloc(blocks[i].size);
 
    // Backup current SRAM which is overwritten by unserialize.
-   for (i = 0; i < 2; i++)
+   for (i = 0; i < num_blocks; i++)
    {
-      if (block_buf[i])
+      if (blocks[i].data)
       {
-         const void *ptr = pretro_get_memory_data(block_type[i]);
+         const void *ptr = pretro_get_memory_data(blocks[i].type);
          if (ptr)
-            memcpy(block_buf[i], ptr, block_size[i]);
+            memcpy(blocks[i].data, ptr, blocks[i].size);
       }
    }
 
    ret = pretro_unserialize(buf, size);
 
    // Flush back :D
-   for (i = 0; i < 2 && ret; i++)
+   for (i = 0; i < num_blocks; i++)
    {
-      if (block_buf[i])
+      if (blocks[i].data)
       {
-         void *ptr = pretro_get_memory_data(block_type[i]);
+         void *ptr = pretro_get_memory_data(blocks[i].type);
          if (ptr)
-            memcpy(ptr, block_buf[i], block_size[i]);
+            memcpy(ptr, blocks[i].data, blocks[i].size);
       }
    }
 
-   for (i = 0; i < 2; i++)
-      if (block_buf[i])
-         free(block_buf[i]);
-#endif
-   ret = pretro_unserialize(buf, size);
-
-   free(buf);
+   for (i = 0; i < num_blocks; i++)
+      free(blocks[i].data);
+   free(blocks);
    return ret;
 }
 
