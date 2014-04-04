@@ -368,7 +368,7 @@ static bool load_roms(const struct retro_subsystem_info *special, const struct s
    if (special)
       ret = pretro_load_game_special(special->id, info, roms->size);
    else
-      ret = pretro_load_game(info);
+      ret = pretro_load_game(*roms->elems[0].data ? info : NULL);
 
    if (!ret)
       RARCH_ERR("Failed to load game.\n");
@@ -441,7 +441,7 @@ bool init_rom_file(void)
       attr.i  = g_extern.system.info.block_extract;
       attr.i |= g_extern.system.info.need_fullpath << 1;
       attr.i |= (!g_extern.system.no_game) << 2;
-      string_list_append(roms, g_extern.fullpath, attr);
+      string_list_append(roms, g_extern.libretro_no_rom ? "" : g_extern.fullpath, attr);
    }
 
 #ifdef HAVE_ZLIB
