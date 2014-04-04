@@ -122,6 +122,9 @@ void autosave_unlock(autosave_t *handle)
 
 void autosave_free(autosave_t *handle)
 {
+   if (!handle)
+      return;
+
    slock_lock(handle->cond_lock);
    handle->quit = true;
    slock_unlock(handle->cond_lock);
@@ -139,7 +142,7 @@ void autosave_free(autosave_t *handle)
 void lock_autosave(void)
 {
    unsigned i;
-   for (i = 0; i < ARRAY_SIZE(g_extern.autosave); i++)
+   for (i = 0; i < g_extern.num_autosave; i++)
    {
       if (g_extern.autosave[i])
          autosave_lock(g_extern.autosave[i]);
@@ -149,7 +152,7 @@ void lock_autosave(void)
 void unlock_autosave(void)
 {
    unsigned i;
-   for (i = 0; i < ARRAY_SIZE(g_extern.autosave); i++)
+   for (i = 0; i < g_extern.num_autosave; i++)
    {
       if (g_extern.autosave[i])
          autosave_unlock(g_extern.autosave[i]);

@@ -776,11 +776,10 @@ static void print_help(void)
 #ifdef HAVE_DYNAMIC
    puts("\t-L/--libretro: Path to libretro implementation. Overrides any config setting.");
 #endif
-   puts("\t-g/--gameboy: Path to Gameboy ROM. Load SuperGameBoy as the regular rom.");
-   puts("\t-b/--bsx: Path to BSX rom. Load BSX BIOS as the regular rom.");
-   puts("\t-B/--bsxslot: Path to BSX slotted rom. Load BSX BIOS as the regular rom.");
-   puts("\t--sufamiA: Path to A slot of Sufami Turbo. Load Sufami base cart as regular rom.");
-   puts("\t--sufamiB: Path to B slot of Sufami Turbo.");
+   puts("\t--subsystem: Use a subsystem of the libretro core. Multiple ROMs are loaded as multiple arguments.");
+   puts("\t\tIf a ROM is skipped, use a blank (\"\") command line argument");
+   puts("\t\tROMs must be loaded in an order which depends on the particular subsystem used.");
+   puts("\t\tSee verbose log output to learn how a particular subsystem wants ROMs to be loaded.");
 
    printf("\t-N/--nodevice: Disconnects controller device connected to port (1 to %d).\n", MAX_PLAYERS);
    printf("\t-A/--dualanalog: Connect a DualAnalog controller to port (1 to %d).\n", MAX_PLAYERS);
@@ -836,19 +835,53 @@ static void set_basename(const char *path)
       *dst = '\0';
 }
 
+static void set_special_paths(char **argv, unsigned roms)
+{
+   unsigned i;
+
+   // First ROM is the significant one.
+   set_basename(argv[0]);
+
+   g_extern.subsystem_fullpaths = string_list_new();
+   rarch_assert(g_extern.subsystem_fullpaths);
+
+   union string_list_elem_attr attr;
+   attr.i = 0;
+
+   for (i = 0; i < roms; i++)
+      string_list_append(g_extern.subsystem_fullpaths, argv[i], attr);
+
+   // We defer SRAM path updates until we can resolve it.
+   // It is more complicated for special game types.
+
+   if (!g_extern.has_set_state_path)
+      fill_pathname_noext(g_extern.savestate_name, g_extern.basename, ".state", sizeof(g_extern.savestate_name));
+
+   if (path_is_directory(g_extern.savestate_name))
+   {
+      fill_pathname_dir(g_extern.savestate_name, g_extern.basename, ".state", sizeof(g_extern.savestate_name));
+      RARCH_LOG("Redirecting save state to \"%s\".\n", g_extern.savestate_name);
+   }
+
+   // If this is already set,
+   // do not overwrite it as this was initialized before in a menu or otherwise.
+   if (!*g_settings.system_directory)
+      fill_pathname_basedir(g_settings.system_directory, argv[0], sizeof(g_settings.system_directory));
+}
+
 static void set_paths(const char *path)
 {
    set_basename(path);
 
    if (!g_extern.has_set_save_path)
-      fill_pathname_noext(g_extern.savefile_name_srm, g_extern.basename, ".srm", sizeof(g_extern.savefile_name_srm));
+      fill_pathname_noext(g_extern.savefile_name, g_extern.basename, ".srm", sizeof(g_extern.savefile_name));
    if (!g_extern.has_set_state_path)
       fill_pathname_noext(g_extern.savestate_name, g_extern.basename, ".state", sizeof(g_extern.savestate_name));
 
-   if (path_is_directory(g_extern.savefile_name_srm))
+   if (path_is_directory(g_extern.savefile_name))
    {
-      fill_pathname_dir(g_extern.savefile_name_srm, g_extern.basename, ".srm", sizeof(g_extern.savefile_name_srm));
-      RARCH_LOG("Redirecting save file to \"%s\".\n", g_extern.savefile_name_srm);
+      fill_pathname_dir(g_extern.savefile_name, g_extern.basename, ".srm", sizeof(g_extern.savefile_name));
+      RARCH_LOG("Redirecting save file to \"%s\".\n", g_extern.savefile_name);
    }
    if (path_is_directory(g_extern.savestate_name))
    {
@@ -869,6 +902,7 @@ static void parse_input(int argc, char *argv[])
    g_extern.has_set_save_path = false;
    g_extern.has_set_state_path = false;
    g_extern.has_set_libretro = false;
+   *g_extern.subsystem = '\0';
 
    if (argc < 2)
    {
@@ -895,7 +929,6 @@ static void parse_input(int argc, char *argv[])
       { "size", 1, &val, 's' },
 #endif
       { "verbose", 0, NULL, 'v' },
-      { "gameboy", 1, NULL, 'g' },
       { "config", 1, NULL, 'c' },
       { "appendconfig", 1, &val, 'C' },
       { "mouse", 1, NULL, 'm' },
@@ -905,11 +938,7 @@ static void parse_input(int argc, char *argv[])
       { "justifiers", 0, NULL, 'J' },
       { "dualanalog", 1, NULL, 'A' },
       { "savestate", 1, NULL, 'S' },
-      { "bsx", 1, NULL, 'b' },
-      { "bsxslot", 1, NULL, 'B' },
       { "multitap", 0, NULL, '4' },
-      { "sufamiA", 1, NULL, 'Y' },
-      { "sufamiB", 1, NULL, 'Z' },
 #ifdef HAVE_BSV_MOVIE
       { "bsvplay", 1, NULL, 'P' },
       { "bsvrecord", 1, NULL, 'R' },
@@ -932,6 +961,7 @@ static void parse_input(int argc, char *argv[])
       { "no-patch", 0, &val, 'n' },
       { "detach", 0, NULL, 'D' },
       { "features", 0, &val, 'f' },
+      { "subsystem", 1, NULL, 'Z' },
       { NULL, 0, NULL, 0 }
    };
 
@@ -959,7 +989,7 @@ static void parse_input(int argc, char *argv[])
 #define BSV_MOVIE_ARG
 #endif
 
-   const char *optstring = "hs:fvS:m:p4jJA:g:b:c:B:Y:Z:U:DN:" BSV_MOVIE_ARG NETPLAY_ARG DYNAMIC_ARG FFMPEG_RECORD_ARG;
+   const char *optstring = "hs:fvS:m:p4jJA:c:U:DN:" BSV_MOVIE_ARG NETPLAY_ARG DYNAMIC_ARG FFMPEG_RECORD_ARG;
 
    for (;;)
    {
@@ -969,7 +999,6 @@ static void parse_input(int argc, char *argv[])
 
       if (c == -1)
          break;
-
 
       switch (c)
       {
@@ -992,6 +1021,10 @@ static void parse_input(int argc, char *argv[])
             g_extern.has_set_libretro_device[1] = true;
             break;
 
+         case 'Z':
+            strlcpy(g_extern.subsystem, optarg, sizeof(g_extern.subsystem));
+            break;
+
          case 'A':
             port = strtol(optarg, NULL, 0);
             if (port < 1 || port > MAX_PLAYERS)
@@ -1005,37 +1038,12 @@ static void parse_input(int argc, char *argv[])
             break;
 
          case 's':
-            strlcpy(g_extern.savefile_name_srm, optarg, sizeof(g_extern.savefile_name_srm));
+            strlcpy(g_extern.savefile_name, optarg, sizeof(g_extern.savefile_name));
             g_extern.has_set_save_path = true;
             break;
 
          case 'f':
             g_extern.force_fullscreen = true;
-            break;
-
-         case 'g':
-            strlcpy(g_extern.gb_rom_path, optarg, sizeof(g_extern.gb_rom_path));
-            g_extern.game_type = RARCH_CART_SGB;
-            break;
-
-         case 'b':
-            strlcpy(g_extern.bsx_rom_path, optarg, sizeof(g_extern.bsx_rom_path));
-            g_extern.game_type = RARCH_CART_BSX;
-            break;
-
-         case 'B':
-            strlcpy(g_extern.bsx_rom_path, optarg, sizeof(g_extern.bsx_rom_path));
-            g_extern.game_type = RARCH_CART_BSX_SLOTTED;
-            break;
-
-         case 'Y':
-            strlcpy(g_extern.sufami_rom_path[0], optarg, sizeof(g_extern.sufami_rom_path[0]));
-            g_extern.game_type = RARCH_CART_SUFAMI;
-            break;
-
-         case 'Z':
-            strlcpy(g_extern.sufami_rom_path[1], optarg, sizeof(g_extern.sufami_rom_path[1]));
-            g_extern.game_type = RARCH_CART_SUFAMI;
             break;
 
          case 'S':
@@ -1239,14 +1247,16 @@ static void parse_input(int argc, char *argv[])
          rarch_fail(1, "parse_input()");
       }
    }
-   else if (optind < argc)
+   else if (!*g_extern.subsystem && optind < argc)
       set_paths(argv[optind]);
+   else if (*g_extern.subsystem && optind < argc)
+      set_special_paths(argv + optind, argc - optind);
    else
       g_extern.libretro_no_rom = true;
 
    // Copy SRM/state dirs used, so they can be reused on reentrancy.
-   if (g_extern.has_set_save_path && path_is_directory(g_extern.savefile_name_srm))
-      strlcpy(g_extern.savefile_dir, g_extern.savefile_name_srm, sizeof(g_extern.savefile_dir));
+   if (g_extern.has_set_save_path && path_is_directory(g_extern.savefile_name))
+      strlcpy(g_extern.savefile_dir, g_extern.savefile_name, sizeof(g_extern.savefile_dir));
    if (g_extern.has_set_state_path && path_is_directory(g_extern.savestate_name))
       strlcpy(g_extern.savestate_dir, g_extern.savestate_name, sizeof(g_extern.savestate_dir));
 }
@@ -1302,73 +1312,26 @@ static void init_controllers(void)
 
 static inline void load_save_files(void)
 {
-   switch (g_extern.game_type)
-   {
-      case RARCH_CART_NORMAL:
-         load_ram_file(g_extern.savefile_name_srm, RETRO_MEMORY_SAVE_RAM);
-         load_ram_file(g_extern.savefile_name_rtc, RETRO_MEMORY_RTC);
-         break;
+   unsigned i;
+   if (!g_extern.savefiles)
+      return;
 
-      case RARCH_CART_SGB:
-         load_ram_file(g_extern.savefile_name_srm, RETRO_MEMORY_SNES_GAME_BOY_RAM);
-         load_ram_file(g_extern.savefile_name_rtc, RETRO_MEMORY_SNES_GAME_BOY_RTC);
-         break;
-
-      case RARCH_CART_BSX:
-      case RARCH_CART_BSX_SLOTTED:
-         load_ram_file(g_extern.savefile_name_srm, RETRO_MEMORY_SNES_BSX_RAM);
-         load_ram_file(g_extern.savefile_name_psrm, RETRO_MEMORY_SNES_BSX_PRAM);
-         break;
-
-      case RARCH_CART_SUFAMI:
-         load_ram_file(g_extern.savefile_name_asrm, RETRO_MEMORY_SNES_SUFAMI_TURBO_A_RAM);
-         load_ram_file(g_extern.savefile_name_bsrm, RETRO_MEMORY_SNES_SUFAMI_TURBO_B_RAM);
-         break;
-
-      default:
-         break;
-   }
+   for (i = 0; i < g_extern.savefiles->size; i++)
+      load_ram_file(g_extern.savefiles->elems[i].data, g_extern.savefiles->elems[i].attr.i);
 }
 
 static inline void save_files(void)
 {
-   switch (g_extern.game_type)
+   unsigned i;
+   if (!g_extern.savefiles)
+      return;
+
+   for (i = 0; i < g_extern.savefiles->size; i++)
    {
-      case RARCH_CART_NORMAL:
-         RARCH_LOG("Saving regular SRAM.\n");
-         RARCH_LOG("SRM: %s\n", g_extern.savefile_name_srm);
-         RARCH_LOG("RTC: %s\n", g_extern.savefile_name_rtc);
-         save_ram_file(g_extern.savefile_name_srm, RETRO_MEMORY_SAVE_RAM);
-         save_ram_file(g_extern.savefile_name_rtc, RETRO_MEMORY_RTC);
-         break;
-
-      case RARCH_CART_SGB:
-         RARCH_LOG("Saving Gameboy SRAM.\n");
-         RARCH_LOG("SRM: %s\n", g_extern.savefile_name_srm);
-         RARCH_LOG("RTC: %s\n", g_extern.savefile_name_rtc);
-         save_ram_file(g_extern.savefile_name_srm, RETRO_MEMORY_SNES_GAME_BOY_RAM);
-         save_ram_file(g_extern.savefile_name_rtc, RETRO_MEMORY_SNES_GAME_BOY_RTC);
-         break;
-
-      case RARCH_CART_BSX:
-      case RARCH_CART_BSX_SLOTTED:
-         RARCH_LOG("Saving BSX (P)RAM.\n");
-         RARCH_LOG("SRM:  %s\n", g_extern.savefile_name_srm);
-         RARCH_LOG("PSRM: %s\n", g_extern.savefile_name_psrm);
-         save_ram_file(g_extern.savefile_name_srm, RETRO_MEMORY_SNES_BSX_RAM);
-         save_ram_file(g_extern.savefile_name_psrm, RETRO_MEMORY_SNES_BSX_PRAM);
-         break;
-
-      case RARCH_CART_SUFAMI:
-         RARCH_LOG("Saving Sufami turbo A/B RAM.\n");
-         RARCH_LOG("ASRM: %s\n", g_extern.savefile_name_asrm);
-         RARCH_LOG("BSRM: %s\n", g_extern.savefile_name_bsrm);
-         save_ram_file(g_extern.savefile_name_asrm, RETRO_MEMORY_SNES_SUFAMI_TURBO_A_RAM);
-         save_ram_file(g_extern.savefile_name_bsrm, RETRO_MEMORY_SNES_SUFAMI_TURBO_B_RAM);
-         break;
-
-      default:
-         break;
+      unsigned type = g_extern.savefiles->elems[i].attr.i;
+      const char *path = g_extern.savefiles->elems[i].data;
+      RARCH_LOG("Saving RAM type #%u to \"%s\".\n", type, path);
+      save_ram_file(path, type);
    }
 }
 
@@ -1727,54 +1690,29 @@ static void init_libretro_cbs(void)
 #if defined(HAVE_THREADS)
 void rarch_init_autosave(void)
 {
-   int ram_types[2] = {-1, -1};
-   const char *ram_paths[2] = {NULL, NULL};
+   if (g_settings.autosave_interval < 1 || !g_extern.savefiles)
+      return;
 
-   switch (g_extern.game_type)
+   g_extern.autosave = (autosave_t**)calloc(g_extern.savefiles->size, sizeof(*g_extern.autosave));
+   if (!g_extern.autosave)
+      return;
+
+   g_extern.num_autosave = g_extern.savefiles->size;
+
+   unsigned i;
+   for (i = 0; i < g_extern.savefiles->size; i++)
    {
-      case RARCH_CART_BSX:
-      case RARCH_CART_BSX_SLOTTED:
-         ram_types[0] = RETRO_MEMORY_SNES_BSX_RAM;
-         ram_types[1] = RETRO_MEMORY_SNES_BSX_PRAM;
-         ram_paths[0] = g_extern.savefile_name_srm;
-         ram_paths[1] = g_extern.savefile_name_psrm;
-         break;
+      const char *path = g_extern.savefiles->elems[i].data;
+      unsigned type = g_extern.savefiles->elems[i].attr.i;
 
-      case RARCH_CART_SUFAMI:
-         ram_types[0] = RETRO_MEMORY_SNES_SUFAMI_TURBO_A_RAM;
-         ram_types[1] = RETRO_MEMORY_SNES_SUFAMI_TURBO_B_RAM;
-         ram_paths[0] = g_extern.savefile_name_asrm;
-         ram_paths[1] = g_extern.savefile_name_bsrm;
-         break;
-
-      case RARCH_CART_SGB:
-         ram_types[0] = RETRO_MEMORY_SNES_GAME_BOY_RAM;
-         ram_types[1] = RETRO_MEMORY_SNES_GAME_BOY_RTC;
-         ram_paths[0] = g_extern.savefile_name_srm;
-         ram_paths[1] = g_extern.savefile_name_rtc;
-         break;
-
-      default:
-         ram_types[0] = RETRO_MEMORY_SAVE_RAM;
-         ram_types[1] = RETRO_MEMORY_RTC;
-         ram_paths[0] = g_extern.savefile_name_srm;
-         ram_paths[1] = g_extern.savefile_name_rtc;
-   }
-
-   if (g_settings.autosave_interval > 0)
-   {
-      unsigned i;
-      for (i = 0; i < sizeof(g_extern.autosave) / sizeof(g_extern.autosave[0]); i++)
+      if (pretro_get_memory_size(type) > 0)
       {
-         if (ram_paths[i] && *ram_paths[i] && pretro_get_memory_size(ram_types[i]) > 0)
-         {
-            g_extern.autosave[i] = autosave_new(ram_paths[i], 
-                  pretro_get_memory_data(ram_types[i]), 
-                  pretro_get_memory_size(ram_types[i]), 
-                  g_settings.autosave_interval);
-            if (!g_extern.autosave[i])
-               RARCH_WARN("Could not initialize autosave.\n");
-         }
+         g_extern.autosave[i] = autosave_new(path, 
+               pretro_get_memory_data(type), 
+               pretro_get_memory_size(type), 
+               g_settings.autosave_interval);
+         if (!g_extern.autosave[i])
+            RARCH_WARN("Could not initialize autosave.\n");
       }
    }
 }
@@ -1782,12 +1720,11 @@ void rarch_init_autosave(void)
 void rarch_deinit_autosave(void)
 {
    unsigned i;
-   for (i = 0; i < ARRAY_SIZE(g_extern.autosave); i++)
-   {
-      if (g_extern.autosave[i])
-         autosave_free(g_extern.autosave[i]);
-      g_extern.autosave[i] = NULL;
-   }
+   for (i = 0; i < g_extern.num_autosave; i++)
+      autosave_free(g_extern.autosave[i]);
+   free(g_extern.autosave);
+   g_extern.autosave = NULL;
+   g_extern.num_autosave = 0;
 }
 #endif
 
@@ -1838,84 +1775,86 @@ static void set_savestate_auto_index(void)
 
 static void fill_pathnames(void)
 {
-   switch (g_extern.game_type)
+   string_list_free(g_extern.savefiles);
+   g_extern.savefiles = string_list_new();
+   rarch_assert(g_extern.savefiles);
+
+   // For subsystems, we know exactly which RAM types are supported.
+   if (*g_extern.subsystem)
    {
-      case RARCH_CART_BSX:
-      case RARCH_CART_BSX_SLOTTED:
-         // BSX PSRM
-         if (!g_extern.has_set_save_path)
+      unsigned i;
+      const struct retro_subsystem_info *info = libretro_find_subsystem_info(g_extern.system.special, g_extern.system.num_special, g_extern.subsystem);
+
+      // We'll handle this error gracefully later.
+      unsigned num_roms = min(info ? info->num_roms : 0, g_extern.subsystem_fullpaths ? g_extern.subsystem_fullpaths->size : 0);
+
+      bool use_sram_dir = path_is_directory(g_extern.savefile_name);
+
+      for (i = 0; i < num_roms; i++)
+      {
+         unsigned j;
+         for (j = 0; j < info->roms[i].num_memory; j++)
          {
-            fill_pathname(g_extern.savefile_name_srm,
-                  g_extern.bsx_rom_path, ".srm", sizeof(g_extern.savefile_name_srm));
+            const struct retro_subsystem_memory_info *mem = &info->roms[i].memory[j];
+            union string_list_elem_attr attr;
+
+            char path[PATH_MAX];
+            char ext[32];
+
+            snprintf(ext, sizeof(ext), ".%s", mem->extension);
+
+            if (use_sram_dir)
+            {
+               // Redirect ROM fullpath to save directory.
+               strlcpy(path, g_extern.savefile_name, sizeof(path));
+               fill_pathname_dir(path, g_extern.subsystem_fullpaths->elems[i].data, ext,
+                     sizeof(path));
+            }
+            else
+            {
+               fill_pathname(path, g_extern.subsystem_fullpaths->elems[i].data,
+                     ext, sizeof(path));
+            }
+
+            attr.i = mem->type;
+            string_list_append(g_extern.savefiles, path, attr);
          }
+      }
 
-         fill_pathname(g_extern.savefile_name_psrm,
-               g_extern.savefile_name_srm, ".psrm", sizeof(g_extern.savefile_name_psrm));
+      // Let other relevant paths be inferred from the main SRAM location.
+      if (!g_extern.has_set_save_path)
+         fill_pathname_noext(g_extern.savefile_name, g_extern.basename, ".srm", sizeof(g_extern.savefile_name));
+      if (path_is_directory(g_extern.savefile_name))
+      {
+         fill_pathname_dir(g_extern.savefile_name, g_extern.basename, ".srm", sizeof(g_extern.savefile_name));
+         RARCH_LOG("Redirecting save file to \"%s\".\n", g_extern.savefile_name);
+      }
+   }
+   else
+   {
+      union string_list_elem_attr attr;
+      attr.i = RETRO_MEMORY_SAVE_RAM;
+      string_list_append(g_extern.savefiles, g_extern.savefile_name, attr);
 
-         if (!g_extern.has_set_state_path)
-         {
-            fill_pathname(g_extern.savestate_name,
-                  g_extern.bsx_rom_path, ".state", sizeof(g_extern.savestate_name));
-         }
-         break;
-
-      case RARCH_CART_SUFAMI:
-         if (g_extern.has_set_save_path && *g_extern.sufami_rom_path[0] && *g_extern.sufami_rom_path[1])
-            RARCH_WARN("Sufami Turbo SRAM paths will be inferred from their respective paths to avoid conflicts.\n");
-
-         // SUFAMI ARAM
-         fill_pathname(g_extern.savefile_name_asrm,
-               g_extern.sufami_rom_path[0], ".srm", sizeof(g_extern.savefile_name_asrm));
-
-         // SUFAMI BRAM
-         fill_pathname(g_extern.savefile_name_bsrm,
-               g_extern.sufami_rom_path[1], ".srm", sizeof(g_extern.savefile_name_bsrm));
-
-         if (!g_extern.has_set_state_path)
-         {
-            fill_pathname(g_extern.savestate_name,
-                  *g_extern.sufami_rom_path[0] ?
-                     g_extern.sufami_rom_path[0] : g_extern.sufami_rom_path[1],
-                     ".state", sizeof(g_extern.savestate_name));
-         }
-         break;
-
-      case RARCH_CART_SGB:
-         if (!g_extern.has_set_save_path)
-         {
-            fill_pathname(g_extern.savefile_name_srm,
-                  g_extern.gb_rom_path, ".srm", sizeof(g_extern.savefile_name_srm));
-         }
-
-         if (!g_extern.has_set_state_path)
-         {
-            fill_pathname(g_extern.savestate_name,
-                  g_extern.gb_rom_path, ".state", sizeof(g_extern.savestate_name));
-         }
-
-         fill_pathname(g_extern.savefile_name_rtc,
-               g_extern.savefile_name_srm, ".rtc", sizeof(g_extern.savefile_name_rtc));
-         break;
-
-      default:
-         // Infer .rtc save path from save ram path.
-         fill_pathname(g_extern.savefile_name_rtc,
-               g_extern.savefile_name_srm, ".rtc", sizeof(g_extern.savefile_name_rtc));
+      // Infer .rtc save path from save ram path.
+      char savefile_name_rtc[PATH_MAX];
+      attr.i = RETRO_MEMORY_RTC;
+      fill_pathname(savefile_name_rtc,
+            g_extern.savefile_name, ".rtc", sizeof(savefile_name_rtc));
+      string_list_append(g_extern.savefiles, savefile_name_rtc, attr);
    }
 
 #ifdef HAVE_BSV_MOVIE
-   fill_pathname(g_extern.bsv.movie_path, g_extern.savefile_name_srm, "", sizeof(g_extern.bsv.movie_path));
+   fill_pathname(g_extern.bsv.movie_path, g_extern.savefile_name, "", sizeof(g_extern.bsv.movie_path));
 #endif
 
    if (*g_extern.basename)
    {
-      if (!(*g_extern.ups_name))
+      if (!*g_extern.ups_name)
          fill_pathname_noext(g_extern.ups_name, g_extern.basename, ".ups", sizeof(g_extern.ups_name));
-
-      if (!(*g_extern.bps_name))
+      if (!*g_extern.bps_name)
          fill_pathname_noext(g_extern.bps_name, g_extern.basename, ".bps", sizeof(g_extern.bps_name));
-
-      if (!(*g_extern.ips_name))
+      if (!*g_extern.ips_name)
          fill_pathname_noext(g_extern.ips_name, g_extern.basename, ".ips", sizeof(g_extern.ips_name));
    }
 }
@@ -2530,19 +2469,22 @@ void rarch_disk_control_append_image(const char *path)
    rarch_deinit_autosave();
 #endif
 
-   // Update paths for our new image.
-   // If we actually use append_image,
-   // we assume that we started out in a single disk case,
-   // and that this way of doing it makes the most sense.
-   set_paths(path);
-   fill_pathnames();
+   // TODO: Need to figure out what to do with subsystems case.
+   if (!*g_extern.subsystem)
+   {
+      // Update paths for our new image.
+      // If we actually use append_image,
+      // we assume that we started out in a single disk case,
+      // and that this way of doing it makes the most sense.
+      set_paths(path);
+      fill_pathnames();
+   }
 
 #if defined(HAVE_THREADS)
    rarch_init_autosave();
 #endif
 
    rarch_disk_control_set_eject(false, false);
-
 }
 
 void rarch_disk_control_set_eject(bool new_state, bool log)
@@ -2874,7 +2816,6 @@ static void init_state(void)
 {
    g_extern.video_active = true;
    g_extern.audio_active = true;
-   g_extern.game_type = RARCH_CART_NORMAL;
 }
 
 static void init_state_first(void)
@@ -3007,18 +2948,17 @@ int rarch_main_init(int argc, char *argv[])
 
    if (g_extern.libretro_no_rom && !g_extern.libretro_dummy)
    {
-      if (!init_rom_file(g_extern.game_type))
+      if (!init_rom_file())
          goto error;
    }
    else if (!g_extern.libretro_dummy)
    {
       fill_pathnames();
 
-      if (!init_rom_file(g_extern.game_type))
+      if (!init_rom_file())
          goto error;
 
       set_savestate_auto_index();
-
 
       if (!g_extern.sram_load_disable)
          load_save_files();
@@ -3278,13 +3218,24 @@ void rarch_main_deinit(void)
    pretro_deinit();
    uninit_libretro_sym();
 
-   if (g_extern.rom_file_temporary)
+   if (g_extern.temporary_roms)
    {
-      RARCH_LOG("Removing temporary ROM file: %s.\n", g_extern.last_rom);
-      if (remove(g_extern.last_rom) < 0)
-         RARCH_ERR("Failed to remove temporary file: %s.\n", g_extern.last_rom);
-      g_extern.rom_file_temporary = false;
+      unsigned i;
+      for (i = 0; i < g_extern.temporary_roms->size; i++)
+      {
+         const char *path = g_extern.temporary_roms->elems[i].data;
+         RARCH_LOG("Removing temporary ROM file: %s.\n", path);
+         if (remove(path) < 0)
+            RARCH_ERR("Failed to remove temporary file: %s.\n", path);
+      }
    }
+   string_list_free(g_extern.temporary_roms);
+   g_extern.temporary_roms = NULL;
+
+   string_list_free(g_extern.subsystem_fullpaths);
+   string_list_free(g_extern.savefiles);
+   g_extern.subsystem_fullpaths = NULL;
+   g_extern.savefiles = NULL;
 
    g_extern.main_is_init = false;
 }

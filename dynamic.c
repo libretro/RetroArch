@@ -185,6 +185,21 @@ void libretro_free_system_info(struct retro_system_info *info)
    memset(info, 0, sizeof(*info));
 }
 
+const struct retro_subsystem_info *libretro_find_subsystem_info(const struct retro_subsystem_info *info, unsigned num_info,
+      const char *ident)
+{
+   unsigned i;
+   for (i = 0; i < num_info; i++)
+   {
+      if (!strcmp(info[i].ident, ident))
+         return &info[i];
+      else if (!strcmp(info[i].desc, ident)) // Doesn't hurt
+         return &info[i];
+   }
+
+   return NULL;
+}
+
 static bool find_first_libretro(char *path, size_t size,
       const char *dir, const char *rom_path)
 {
@@ -417,6 +432,7 @@ void uninit_libretro_sym(void)
    }
 
    // No longer valid.
+   free(g_extern.system.special);
    memset(&g_extern.system, 0, sizeof(g_extern.system));
 #ifdef HAVE_CAMERA
    g_extern.camera_active = false;
@@ -912,6 +928,34 @@ bool rarch_environment_cb(unsigned cmd, void *data)
       {
          RARCH_LOG("Environ SET_SYSTEM_AV_INFO.\n");
          return driver_update_system_av_info((const struct retro_system_av_info*)data);
+      }
+
+      case RETRO_ENVIRONMENT_SET_SUBSYSTEM_INFO:
+      {
+         RARCH_LOG("Environ SET_SUBSYSTEM_INFO.\n");
+         unsigned i, j;
+         const struct retro_subsystem_info *info = (const struct retro_subsystem_info*)data;
+         for (i = 0; info[i].ident; i++)
+         {
+            RARCH_LOG("Special game type: %s\n", info[i].desc);
+            RARCH_LOG("  Ident: %s\n", info[i].ident);
+            RARCH_LOG("  ID: %u\n", info[i].id);
+            RARCH_LOG("  ROMs:\n");
+            for (j = 0; j < info[i].num_roms; j++)
+            {
+               RARCH_LOG("    %s (%s)\n",
+                     info[i].roms[j].desc, info[i].roms[j].required ? "required" : "optional");
+            }
+         }
+
+         free(g_extern.system.special);
+         g_extern.system.special = (struct retro_subsystem_info*)calloc(i, sizeof(*g_extern.system.special));
+         if (!g_extern.system.special)
+            return false;
+
+         memcpy(g_extern.system.special, info, i * sizeof(*g_extern.system.special));
+         g_extern.system.num_special = i;
+         break;
       }
 
       case RETRO_ENVIRONMENT_EXEC:

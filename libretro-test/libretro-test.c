@@ -115,6 +115,21 @@ void retro_set_environment(retro_environment_t cb)
 
    if (!cb(RETRO_ENVIRONMENT_GET_LOG_INTERFACE, &logging))
       logging.log = fallback_log;
+
+   static const struct retro_subsystem_memory_info mem1[] = {{ "ram1", 0x400 }, { "ram2", 0x401 }};
+   static const struct retro_subsystem_memory_info mem2[] = {{ "ram3", 0x402 }, { "ram4", 0x403 }};
+
+   static const struct retro_subsystem_rom_info roms[] = {
+      { "Test Rom #1", "bin", false, false, true, mem1, 2, },
+      { "Test Rom #2", "bin", false, false, true, mem2, 2, },
+   };
+
+   static const struct retro_subsystem_info types[] = {
+      { "Foo", "foo", roms, 2, 0x200, },
+      { NULL },
+   };
+
+   cb(RETRO_ENVIRONMENT_SET_SUBSYSTEM_INFO, (void*)types);
 }
 
 void retro_set_audio_sample(retro_audio_sample_t cb)
@@ -370,10 +385,11 @@ unsigned retro_get_region(void)
 
 bool retro_load_game_special(unsigned type, const struct retro_game_info *info, size_t num)
 {
-   (void)type;
-   (void)info;
-   (void)num;
-   return false;
+   if (type != 0x200)
+      return false;
+   if (num != 2)
+      return false;
+   return retro_load_game(NULL);
 }
 
 size_t retro_serialize_size(void)
