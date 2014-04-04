@@ -776,11 +776,10 @@ static void print_help(void)
 #ifdef HAVE_DYNAMIC
    puts("\t-L/--libretro: Path to libretro implementation. Overrides any config setting.");
 #endif
-   puts("\t-g/--gameboy: Path to Gameboy ROM. Load SuperGameBoy as the regular rom.");
-   puts("\t-b/--bsx: Path to BSX rom. Load BSX BIOS as the regular rom.");
-   puts("\t-B/--bsxslot: Path to BSX slotted rom. Load BSX BIOS as the regular rom.");
-   puts("\t--sufamiA: Path to A slot of Sufami Turbo. Load Sufami base cart as regular rom.");
-   puts("\t--sufamiB: Path to B slot of Sufami Turbo.");
+   puts("\t--subsystem: Use a subsystem of the libretro core. Multiple ROMs are loaded as multiple arguments.");
+   puts("\t\tIf a ROM is skipped, use a blank (\"\") command line argument");
+   puts("\t\tROMs must be loaded in an order which depends on the particular subsystem used.");
+   puts("\t\tSee verbose log output to learn how a particular subsystem wants ROMs to be loaded.");
 
    printf("\t-N/--nodevice: Disconnects controller device connected to port (1 to %d).\n", MAX_PLAYERS);
    printf("\t-A/--dualanalog: Connect a DualAnalog controller to port (1 to %d).\n", MAX_PLAYERS);

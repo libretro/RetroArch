@@ -484,7 +484,7 @@ bool init_rom_file(void)
             string_list_free(roms);
             return false;
          }
-
+         string_list_set(roms, i, temporary_rom);
          string_list_append(g_extern.temporary_roms, temporary_rom, attr);
       }
    }
