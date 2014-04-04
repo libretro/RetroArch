@@ -1009,8 +1009,8 @@ bool config_load_file(const char *path, bool set_defaults)
       else if (path_is_directory(tmp_str))
       {
          strlcpy(g_extern.savefile_dir, tmp_str, sizeof(g_extern.savefile_dir));
-         strlcpy(g_extern.savefile_name_srm, tmp_str, sizeof(g_extern.savefile_name_srm));
-         fill_pathname_dir(g_extern.savefile_name_srm, g_extern.basename, ".srm", sizeof(g_extern.savefile_name_srm));
+         strlcpy(g_extern.savefile_name, tmp_str, sizeof(g_extern.savefile_name));
+         fill_pathname_dir(g_extern.savefile_name, g_extern.basename, ".srm", sizeof(g_extern.savefile_name));
       }
       else
          RARCH_WARN("savefile_directory is not a directory, ignoring ...\n");

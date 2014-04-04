@@ -162,7 +162,7 @@ extern "C" {
 
 // Regular save ram. This ram is usually found on a game cartridge, backed up by a battery.
 // If save game data is too complex for a single memory buffer,
-// the SYSTEM_DIRECTORY environment callback can be used.
+// the SAVE_DIRECTORY (preferably) or SYSTEM_DIRECTORY environment callback can be used.
 #define RETRO_MEMORY_SAVE_RAM    0
 
 // Some games have a built-in clock to keep track of time.
@@ -174,21 +174,6 @@ extern "C" {
 
 // Video ram lets a frontend peek into a game systems video RAM (VRAM).
 #define RETRO_MEMORY_VIDEO_RAM   3
-
-// Special memory types.
-#define RETRO_MEMORY_SNES_BSX_RAM             ((1 << 8) | RETRO_MEMORY_SAVE_RAM)
-#define RETRO_MEMORY_SNES_BSX_PRAM            ((2 << 8) | RETRO_MEMORY_SAVE_RAM)
-#define RETRO_MEMORY_SNES_SUFAMI_TURBO_A_RAM  ((3 << 8) | RETRO_MEMORY_SAVE_RAM)
-#define RETRO_MEMORY_SNES_SUFAMI_TURBO_B_RAM  ((4 << 8) | RETRO_MEMORY_SAVE_RAM)
-#define RETRO_MEMORY_SNES_GAME_BOY_RAM        ((5 << 8) | RETRO_MEMORY_SAVE_RAM)
-#define RETRO_MEMORY_SNES_GAME_BOY_RTC        ((6 << 8) | RETRO_MEMORY_RTC)
-
-// Special game types passed into retro_load_game_special().
-// Only used when multiple ROMs are required.
-#define RETRO_GAME_TYPE_BSX             0x101
-#define RETRO_GAME_TYPE_BSX_SLOTTED     0x102
-#define RETRO_GAME_TYPE_SUFAMI_TURBO    0x103
-#define RETRO_GAME_TYPE_SUPER_GAME_BOY  0x104
 
 // Keysyms used for ID in input state callback when polling RETRO_KEYBOARD.
 enum retro_key
@@ -614,9 +599,59 @@ enum retro_mod
                                            // e.g. for cases where the frontend wants to call directly into the core.
                                            //
                                            // If a core wants to expose this interface, SET_PROC_ADDRESS_CALLBACK **MUST** be called from within retro_set_environment().
+                                           //
+#define RETRO_ENVIRONMENT_SET_SPECIAL_GAME_TYPES 34
+                                           // const struct retro_game_special_info * --
+                                           // This environment call introduces the concept of libretro "subsystems".
+                                           // A subsystem is a variant of a libretro core which supports different kinds of games.
+                                           // The purpose of this is to support e.g. emulators which might have special needs, e.g. Super Nintendos Super GameBoy, Sufami Turbo.
+                                           // It can also be used to pick among subsystems in an explicit way if the libretro implementation is a multi-system emulator itself.
+                                           //
+                                           // Loading a game via a subsystem is done with retro_load_game_special(),
+                                           // and this environment call allows a libretro core to expose which subsystems are supported for use with retro_load_game_special().
+                                           // A core passes an array of retro_game_special_info which is terminated with a zeroed out retro_game_special_info struct.
+                                           //
+                                           // If a core wants to use this functionality, SET_SPECIAL_GAME_TYPES **MUST** be called from within retro_set_environment().
+
+struct retro_game_special_memory_info
+{
+   const char *extension; // The extension associated with a memory type, e.g. "psram".
+   unsigned type; // The memory type for retro_get_memory(). This should be at least 0x100 to avoid conflict with standardized libretro memory types.
+};
+
+struct retro_game_special_rom_info
+{
+    const char *desc; // Describes what the ROM is (SGB bios, GB rom, etc).
+    const char *ident; // A computer friendly short string identifier for the ROM type. Must be [a-z].
+    const char *valid_extensions; // Same definition as retro_get_system_info().
+    bool need_fullpath; // Same definition as retro_get_system_info().
+    bool block_extract; // Same definition as retro_get_system_info().
+    bool required; // This is set if the ROM is required to load a game. If this is set to false, a zeroed-out retro_game_info can be passed.
+
+    // ROMs can have multiple associated persistent memory types (retro_get_memory()).
+    const struct retro_game_special_memory_info *memory;
+    unsigned num_memory;
+};
+
+struct retro_game_special_info
+{
+    const char *desc; // Human-readable string of the subsystem type, e.g. "Super GameBoy"
+    // A computer friendly short string identifier for the subsystem type.
+    // This name must be [a-z].
+    // E.g. if desc is "Super GameBoy", this can be "sgb".
+    // This identifier can be used for command-line interfaces, etc.
+    const char *ident;
+
+    // Infos for each ROM. The first entry is assumed to be the "most significant" ROM for frontend purposes.
+    // E.g. with Super GameBoy, the first ROM should be the GameBoy ROM, as it is the most "significant" ROM to a user.
+    // If a frontend creates new file paths based on the ROM used (e.g. savestates), it should use the path for the first ROM to do so.
+    const struct retro_game_special_rom_info *roms;
+
+    unsigned num_roms; // Number of ROMs associated with a subsystem.
+    unsigned id; // The type passed to retro_load_game_special().
+};
 
 typedef void (*retro_proc_address_t)(void);
-
 // libretro API extension functions:
 // (None here so far).
 //////
