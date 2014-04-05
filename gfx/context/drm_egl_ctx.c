@@ -345,6 +345,14 @@ nextgpu:
 
    g_drm_mode = &g_connector->modes[0];
 
+   for (i = 0; i < g_connector->count_modes; i++)
+   {
+      RARCH_LOG("[KMS/EGL]: Mode %d: (%s) %d x %d, %u Hz\n", i,
+            g_connector->modes[i].name,
+            g_connector->modes[i].hdisplay, g_connector->modes[i].vdisplay,
+            g_connector->modes[i].vrefresh);
+   }
+
    g_crtc_id   = g_encoder->crtc_id;
    g_orig_crtc = drmModeGetCrtc(g_drm_fd, g_crtc_id);
    if (!g_orig_crtc)
