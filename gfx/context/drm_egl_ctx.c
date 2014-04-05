@@ -21,6 +21,7 @@
 #include "../gfx_context.h"
 #include "../gl_common.h"
 #include "../gfx_common.h"
+#include "../../file_path.h"
 
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
@@ -45,7 +46,6 @@
 #include <sys/stat.h>
 #include <sys/poll.h>
 #include <fcntl.h>
-#include <glob.h>
 
 static EGLContext g_egl_ctx;
 static EGLSurface g_egl_surf;
@@ -242,19 +242,19 @@ static bool gfx_ctx_init(void *data)
 {
    int i;
    int gpu_index = 0;
+   char *gpu;
    if (g_inited)
       return false;
 
-   glob_t *globbuf;
-   globbuf->gl_offs = 1;
-   glob("/dev/dri/card*", NULL, NULL, globbuf);
+   struct string_list *gpu_descriptors = dir_list_new("/dev/dri", NULL, false);
 nextgpu:
-   if (gpu_index == globbuf->gl_pathc)
+   if (gpu_index == gpu_descriptors->size)
    {
+      dir_list_free(gpu_descriptors);
       RARCH_ERR("[KMS/EGL]: Couldn't find a suitable DRM device.\n");
       goto error;
    }
-   char *gpu = globbuf->gl_pathv[gpu_index++];
+   gpu = list->elems[gpu_index++].data;
 
    g_drm_fd = open(gpu, O_RDWR);
    if (g_drm_fd < 0)
@@ -335,7 +335,7 @@ nextgpu:
    return true;
 
 error:
-   globfree(globbuf);
+   dir_list_free(gpu_descriptors);
    gfx_ctx_destroy(data);
    return false;
 }
