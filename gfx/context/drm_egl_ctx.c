@@ -21,6 +21,7 @@
 #include "../gfx_context.h"
 #include "../gl_common.h"
 #include "../gfx_common.h"
+#include "../../file_path.h"
 
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
@@ -240,21 +241,33 @@ static void gfx_ctx_get_video_size(void *data, unsigned *width, unsigned *height
 static bool gfx_ctx_init(void *data)
 {
    int i;
+   int gpu_index = 0;
+   char *gpu;
    if (g_inited)
       return false;
 
-   g_drm_fd = open("/dev/dri/card0", O_RDWR);
+   struct string_list *gpu_descriptors = dir_list_new("/dev/dri", NULL, false);
+nextgpu:
+   if (gpu_index == gpu_descriptors->size)
+   {
+      dir_list_free(gpu_descriptors);
+      RARCH_ERR("[KMS/EGL]: Couldn't find a suitable DRM device.\n");
+      goto error;
+   }
+   gpu = list->elems[gpu_index++].data;
+
+   g_drm_fd = open(gpu, O_RDWR);
    if (g_drm_fd < 0)
    {
-      RARCH_ERR("[KMS/EGL]: Couldn't open DRM device.\n");
-      goto error;
+      RARCH_WARN("[KMS/EGL]: Couldn't open DRM device.\n");
+      goto nextgpu;
    }
 
    g_resources = drmModeGetResources(g_drm_fd);
    if (!g_resources)
    {
-      RARCH_ERR("[KMS/EGL]: Couldn't get device resources.\n");
-      goto error;
+      RARCH_WARN("[KMS/EGL]: Couldn't get device resources.\n");
+      goto nextgpu;
    }
 
    for (i = 0; i < g_resources->count_connectors; i++)
@@ -272,8 +285,8 @@ static bool gfx_ctx_init(void *data)
 
    if (!g_connector)
    {
-      RARCH_ERR("[KMS/EGL]: Couldn't get device connector.\n");
-      goto error;
+      RARCH_WARN("[KMS/EGL]: Couldn't get device connector.\n");
+      goto nextgpu;
    }
 
    for (i = 0; i < g_resources->count_encoders; i++)
@@ -291,8 +304,8 @@ static bool gfx_ctx_init(void *data)
 
    if (!g_encoder)
    {
-      RARCH_ERR("[KMS/EGL]: Couldn't find DRM encoder.\n");
-      goto error;
+      RARCH_WARN("[KMS/EGL]: Couldn't find DRM encoder.\n");
+      goto nextgpu;
    }
 
    g_drm_mode = &g_connector->modes[0];
@@ -315,13 +328,14 @@ static bool gfx_ctx_init(void *data)
 
    if (!g_gbm_surface)
    {
-      RARCH_ERR("[KMS/EGL]: Couldn't create GBM surface.\n");
-      goto error;
+      RARCH_WARN("[KMS/EGL]: Couldn't create GBM surface.\n");
+      goto nextgpu;
    }
 
    return true;
 
 error:
+   dir_list_free(gpu_descriptors);
    gfx_ctx_destroy(data);
    return false;
 }
