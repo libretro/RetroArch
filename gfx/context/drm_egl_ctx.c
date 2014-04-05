@@ -250,11 +250,10 @@ static bool gfx_ctx_init(void *data)
 nextgpu:
    if (gpu_index == gpu_descriptors->size)
    {
-      dir_list_free(gpu_descriptors);
       RARCH_ERR("[KMS/EGL]: Couldn't find a suitable DRM device.\n");
       goto error;
    }
-   gpu = list->elems[gpu_index++].data;
+   gpu = gpu_descriptors->elems[gpu_index++].data;
 
    g_drm_fd = open(gpu, O_RDWR);
    if (g_drm_fd < 0)
@@ -332,6 +331,7 @@ nextgpu:
       goto nextgpu;
    }
 
+   dir_list_free(gpu_descriptors);
    return true;
 
 error:
