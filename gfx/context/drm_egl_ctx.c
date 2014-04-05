@@ -238,17 +238,53 @@ static void gfx_ctx_get_video_size(void *data, unsigned *width, unsigned *height
    *height = g_fb_height;
 }
 
+static void free_drm_resources(void)
+{
+   if (g_gbm_surface)
+      gbm_surface_destroy(g_gbm_surface);
+
+   if (g_gbm_dev)
+      gbm_device_destroy(g_gbm_dev);
+
+   if (g_encoder)
+      drmModeFreeEncoder(g_encoder);
+
+   if (g_connector)
+      drmModeFreeConnector(g_connector);
+
+   if (g_resources)
+      drmModeFreeResources(g_resources);
+
+   if (g_orig_crtc)
+      drmModeFreeCrtc(g_orig_crtc);
+
+   if (g_drm_fd >= 0)
+      close(g_drm_fd);
+
+   g_gbm_surface = NULL;
+   g_gbm_dev     = NULL;
+   g_encoder     = NULL;
+   g_connector   = NULL;
+   g_resources   = NULL;
+   g_orig_crtc   = NULL;
+   g_drm_fd      = -1;
+}
+
 static bool gfx_ctx_init(void *data)
 {
    int i;
    int gpu_index = 0;
-   char *gpu;
+   const char *gpu;
    if (g_inited)
       return false;
 
+   g_drm_fd = -1;
    struct string_list *gpu_descriptors = dir_list_new("/dev/dri", NULL, false);
+
 nextgpu:
-   if (gpu_index == gpu_descriptors->size)
+   free_drm_resources();
+
+   if (!gpu_descriptors || gpu_index == gpu_descriptors->size)
    {
       RARCH_ERR("[KMS/EGL]: Couldn't find a suitable DRM device.\n");
       goto error;
@@ -536,32 +572,11 @@ void gfx_ctx_destroy(void *data)
             g_orig_crtc->x,
             g_orig_crtc->y,
             &g_connector_id, 1, &g_orig_crtc->mode);
-
-      drmModeFreeCrtc(g_orig_crtc);
    }
 
-   if (g_gbm_surface)
-      gbm_surface_destroy(g_gbm_surface);
+   free_drm_resources();
 
-   if (g_gbm_dev)
-      gbm_device_destroy(g_gbm_dev);
-
-   if (g_encoder)
-      drmModeFreeEncoder(g_encoder);
-
-   if (g_connector)
-      drmModeFreeConnector(g_connector);
-
-   if (g_resources)
-      drmModeFreeResources(g_resources);
-
-   g_gbm_surface = NULL;
-   g_gbm_dev     = NULL;
-   g_encoder     = NULL;
-   g_connector   = NULL;
-   g_resources   = NULL;
-   g_orig_crtc   = NULL;
-   g_drm_mode    = NULL;
+   g_drm_mode = NULL;
 
    g_quit         = 0;
    g_crtc_id      = 0;
@@ -573,9 +588,6 @@ void gfx_ctx_destroy(void *data)
    g_bo      = NULL;
    g_next_bo = NULL;
 
-   if (g_drm_fd >= 0)
-      close(g_drm_fd);
-   g_drm_fd = -1;
    g_inited = false;
 }
 
