@@ -254,7 +254,7 @@ nextgpu:
       RARCH_ERR("[KMS/EGL]: Couldn't find a suitable DRM device.\n");
       goto error;
    }
-   gpu = list->elems[gpu_index++].data;
+   gpu = gpu_descriptors->elems[gpu_index++].data;
 
    g_drm_fd = open(gpu, O_RDWR);
    if (g_drm_fd < 0)
