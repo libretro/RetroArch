@@ -388,18 +388,14 @@ nextgpu:
 
    g_connector_id = g_connector->connector_id;
 
-   g_fb_width  = g_drm_mode->hdisplay;
-   g_fb_height = g_drm_mode->vdisplay;
+   // First mode is assumed to be the "optimal" one for get_video_size() purposes.
+   g_fb_width  = g_connector->modes[0].hdisplay;
+   g_fb_height = g_connector->modes[0].vdisplay;
 
-   g_gbm_dev     = gbm_create_device(g_drm_fd);
-   g_gbm_surface = gbm_surface_create(g_gbm_dev,
-         g_fb_width, g_fb_height,
-         GBM_FORMAT_XRGB8888,
-         GBM_BO_USE_SCANOUT | GBM_BO_USE_RENDERING);
-
-   if (!g_gbm_surface)
+   g_gbm_dev = gbm_create_device(g_drm_fd);
+   if (!g_gbm_dev)
    {
-      RARCH_WARN("[KMS/EGL]: Couldn't create GBM surface.\n");
+      RARCH_WARN("[KMS/EGL]: Couldn't create GBM device.\n");
       goto nextgpu;
    }
 
@@ -457,6 +453,7 @@ static bool gfx_ctx_set_video_mode(void *data,
    if (g_inited)
       return false;
 
+   int i;
    int ret = 0;
    struct drm_fb *fb = NULL;
 
@@ -526,6 +523,43 @@ static bool gfx_ctx_set_video_mode(void *data,
          break;
       default:
          attrib_ptr = NULL;
+   }
+
+   // Find desired video mode, and use that.
+   if (width == 0 && height == 0)
+      g_drm_mode = &g_connector->modes[0];
+   else
+   {
+      // Find first match.
+      for (i = 0; i < g_connector->count_modes; i++)
+      {
+         if (width == g_connector->modes[i].hdisplay && height == g_connector->modes[i].vdisplay)
+         {
+            g_drm_mode = &g_connector->modes[i];
+            break;
+         }
+      }
+   }
+
+   if (!g_drm_mode)
+   {
+      RARCH_ERR("[KMS/EGL]: Did not find suitable video mode for %u x %u.\n", width, height);
+      goto error;
+   }
+
+   g_fb_width = g_drm_mode->hdisplay;
+   g_fb_height = g_drm_mode->vdisplay;
+
+   // Create GBM surface.
+   g_gbm_surface = gbm_surface_create(g_gbm_dev,
+         g_fb_width, g_fb_height,
+         GBM_FORMAT_XRGB8888,
+         GBM_BO_USE_SCANOUT | GBM_BO_USE_RENDERING);
+
+   if (!g_gbm_surface)
+   {
+      RARCH_ERR("[KMS/EGL]: Couldn't create GBM surface.\n");
+      goto error;
    }
 
    g_egl_dpy = eglGetDisplay((EGLNativeDisplayType)g_gbm_dev);
