@@ -1612,7 +1612,7 @@ int menu_set_settings(void *data, unsigned setting, unsigned action)
             case RGUI_ACTION_LEFT:
                if (g_settings.video.monitor_index)
                {
-                  g_settings.video.monitor_index++;
+                  g_settings.video.monitor_index--;
                   rarch_set_fullscreen(g_settings.video.fullscreen);
                }
                break;
