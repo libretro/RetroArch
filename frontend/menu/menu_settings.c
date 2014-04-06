@@ -1595,6 +1595,33 @@ int menu_set_settings(void *data, unsigned setting, unsigned action)
          }
          break;
 
+      case RGUI_SETTINGS_VIDEO_MONITOR_INDEX:
+         switch (action)
+         {
+            case RGUI_ACTION_START:
+               g_settings.video.monitor_index = 0;
+               rarch_set_fullscreen(g_settings.video.fullscreen);
+               break;
+
+            case RGUI_ACTION_OK:
+            case RGUI_ACTION_RIGHT:
+               g_settings.video.monitor_index++;
+               rarch_set_fullscreen(g_settings.video.fullscreen);
+               break;
+
+            case RGUI_ACTION_LEFT:
+               if (g_settings.video.monitor_index)
+               {
+                  g_settings.video.monitor_index++;
+                  rarch_set_fullscreen(g_settings.video.fullscreen);
+               }
+               break;
+
+            default:
+               break;
+         }
+         break;
+
       case RGUI_SETTINGS_VIDEO_REFRESH_RATE_AUTO:
          switch (action)
          {
@@ -1917,6 +1944,12 @@ void menu_set_settings_label(char *type_str, size_t type_str_size, unsigned *w, 
          strlcpy(type_str, g_settings.menu.driver, type_str_size);
          break;
 #endif
+      case RGUI_SETTINGS_VIDEO_MONITOR_INDEX:
+         if (g_settings.video.monitor_index)
+            snprintf(type_str, type_str_size, "%u", g_settings.video.monitor_index);
+         else
+            strlcpy(type_str, "0 (Auto)", type_str_size);
+         break;
       case RGUI_SETTINGS_VIDEO_REFRESH_RATE_AUTO:
          {
             double refresh_rate = 0.0;

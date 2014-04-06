@@ -1900,6 +1900,7 @@ void menu_populate_entries(void *data, unsigned menu_type)
          file_list_push(rgui->selection_buf, "Windowed Scale (Y)", RGUI_SETTINGS_VIDEO_WINDOW_SCALE_Y, 0);
 #endif
          file_list_push(rgui->selection_buf, "Crop Overscan (reload)", RGUI_SETTINGS_VIDEO_CROP_OVERSCAN, 0);
+         file_list_push(rgui->selection_buf, "Monitor Index", RGUI_SETTINGS_VIDEO_MONITOR_INDEX, 0);
          file_list_push(rgui->selection_buf, "Estimated Monitor FPS", RGUI_SETTINGS_VIDEO_REFRESH_RATE_AUTO, 0);
          break;
       case RGUI_SETTINGS_CORE_OPTIONS:

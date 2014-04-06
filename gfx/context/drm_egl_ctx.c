@@ -524,7 +524,8 @@ static bool gfx_ctx_set_video_mode(void *data,
    }
 
    // Find desired video mode, and use that.
-   if (width == 0 && height == 0)
+   // If not fullscreen, we get desired windowed size, which is not appropriate.
+   if ((width == 0 && height == 0) || !fullscreen)
       g_drm_mode = &g_connector->modes[0];
    else
    {
