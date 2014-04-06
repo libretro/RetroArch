@@ -273,7 +273,10 @@ static void free_drm_resources(void)
 static bool gfx_ctx_init(void *data)
 {
    int i;
+   unsigned monitor_index;
    int gpu_index = 0;
+   unsigned monitor = max(g_settings.video.monitor_index, 1);
+
    const char *gpu;
    if (g_inited)
       return false;
@@ -305,6 +308,27 @@ nextgpu:
       goto nextgpu;
    }
 
+   // Enumerate all connectors.
+   monitor_index = 0;
+   RARCH_LOG("[KMS/EGL]: Found %d connectors.\n", g_resources->count_connectors);
+   for (i = 0; i < g_resources->count_connectors; i++)
+   {
+      drmModeConnectorPtr conn = drmModeGetConnector(g_drm_fd, g_resources->connectors[i]);
+      if (conn)
+      {
+         bool connected = conn->connection == DRM_MODE_CONNECTED;
+         RARCH_LOG("[KMS/EGL]: Connector %d connected: %s\n", i, connected ? "yes" : "no");
+         RARCH_LOG("[KMS/EGL]: Connector %d has %d modes.\n", i, conn->count_modes);
+         if (connected && conn->count_modes > 0)
+         {
+            monitor_index++;
+            RARCH_LOG("[KMS/EGL]: Connector %d assigned to monitor index: #%u.\n", i, monitor_index);
+         }
+         drmModeFreeConnector(conn);
+      }
+   }
+
+   monitor_index = 0;
    for (i = 0; i < g_resources->count_connectors; i++)
    {
       g_connector = drmModeGetConnector(g_drm_fd, g_resources->connectors[i]);
@@ -312,7 +336,11 @@ nextgpu:
       if (!g_connector)
          continue;
       if (g_connector->connection == DRM_MODE_CONNECTED && g_connector->count_modes > 0)
-         break;
+      {
+         monitor_index++;
+         if (monitor_index == monitor)
+            break;
+      }
 
       drmModeFreeConnector(g_connector);
       g_connector = NULL;
