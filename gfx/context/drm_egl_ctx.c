@@ -274,7 +274,7 @@ static bool gfx_ctx_init(void *data)
 {
    int i;
    unsigned monitor_index;
-   int gpu_index = 0;
+   unsigned gpu_index = 0;
    unsigned monitor = max(g_settings.video.monitor_index, 1);
 
    const char *gpu;
@@ -370,8 +370,6 @@ nextgpu:
       RARCH_WARN("[KMS/EGL]: Couldn't find DRM encoder.\n");
       goto nextgpu;
    }
-
-   g_drm_mode = &g_connector->modes[0];
 
    for (i = 0; i < g_connector->count_modes; i++)
    {
@@ -530,13 +528,29 @@ static bool gfx_ctx_set_video_mode(void *data,
       g_drm_mode = &g_connector->modes[0];
    else
    {
-      // Find first match.
+      // Try to match g_settings.video.refresh_rate as closely as possible.
+      // Lower resolutions tend to have multiple supported refresh rates as well.
+      float minimum_fps_diff = 0.0f;
+
+      // Find best match.
       for (i = 0; i < g_connector->count_modes; i++)
       {
-         if (width == g_connector->modes[i].hdisplay && height == g_connector->modes[i].vdisplay)
+         if (width != g_connector->modes[i].hdisplay || height != g_connector->modes[i].vdisplay)
+            continue;
+
+         if (!g_drm_mode)
          {
             g_drm_mode = &g_connector->modes[i];
-            break;
+            minimum_fps_diff = g_drm_mode->vrefresh - g_settings.video.refresh_rate;
+         }
+         else
+         {
+            float diff = g_connector->modes[i].vrefresh - g_settings.video.refresh_rate;
+            if (diff < minimum_fps_diff)
+            {
+               g_drm_mode = &g_connector->modes[i];
+               minimum_fps_diff = diff;
+            }
          }
       }
    }
