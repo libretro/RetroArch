@@ -192,6 +192,7 @@ struct settings
    {
       char driver[32];
       char device[PATH_MAX];
+      bool allow;
       unsigned width;
       unsigned height;
    } camera;
@@ -201,6 +202,7 @@ struct settings
    struct
    {
       char driver[32];
+      bool allow;
       int update_interval_ms;
       int update_interval_distance;
    } location;

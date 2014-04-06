@@ -313,6 +313,14 @@ void config_set_defaults(void)
    g_settings.rgui_show_start_screen = rgui_show_start_screen;
 #endif
 
+#ifdef HAVE_LOCATION
+   g_settings.location.allow = false;
+#endif
+
+#ifdef HAVE_CAMERA
+   g_settings.camera.allow = false;
+#endif
+
    rarch_assert(sizeof(g_settings.input.binds[0]) >= sizeof(retro_keybinds_1));
    rarch_assert(sizeof(g_settings.input.binds[1]) >= sizeof(retro_keybinds_rest));
    memcpy(g_settings.input.binds[0], retro_keybinds_1, sizeof(retro_keybinds_1));
@@ -900,6 +908,11 @@ bool config_load_file(const char *path, bool set_defaults)
 
 #ifdef HAVE_CAMERA
    CONFIG_GET_STRING(camera.device, "camera_device");
+   CONFIG_GET_BOOL(camera.allow, "camera_allow");
+#endif
+
+#ifdef HAVE_LOCATION
+   CONFIG_GET_BOOL(location.allow, "location_allow");
 #endif
 
    CONFIG_GET_STRING(video.driver, "video_driver");

@@ -99,6 +99,7 @@ unsigned menu_type_is(unsigned type)
       type == RGUI_SETTINGS_AUDIO_OPTIONS ||
       type == RGUI_SETTINGS_DISK_OPTIONS ||
       type == RGUI_SETTINGS_PATH_OPTIONS ||
+      type == RGUI_SETTINGS_PRIVACY_OPTIONS ||
       type == RGUI_SETTINGS_OVERLAY_OPTIONS ||
       type == RGUI_SETTINGS_NETPLAY_OPTIONS ||
       type == RGUI_SETTINGS_OPTIONS ||
@@ -1859,6 +1860,22 @@ int menu_set_settings(void *data, unsigned setting, unsigned action)
             g_settings.osk.enable = false;
          break;
 #endif
+#ifdef HAVE_CAMERA
+      case RGUI_SETTINGS_PRIVACY_CAMERA_ALLOW:
+         if (action == RGUI_ACTION_OK || action == RGUI_ACTION_LEFT || action == RGUI_ACTION_RIGHT)
+            g_settings.camera.allow = !g_settings.camera.allow;
+         else if (action == RGUI_ACTION_START)
+            g_settings.camera.allow = false;
+         break;
+#endif
+#ifdef HAVE_LOCATION
+      case RGUI_SETTINGS_PRIVACY_LOCATION_ALLOW:
+         if (action == RGUI_ACTION_OK || action == RGUI_ACTION_LEFT || action == RGUI_ACTION_RIGHT)
+            g_setttings.location.allow = !g_settings.location.allow;
+         else if (action == RGUI_ACTION_START)
+            g_settings.location.allow = false;
+         break;
+#endif
       default:
          break;
    }
@@ -2115,6 +2132,7 @@ void menu_set_settings_label(char *type_str, size_t type_str_size, unsigned *w, 
       case RGUI_SETTINGS_PATH_OPTIONS:
       case RGUI_SETTINGS_OVERLAY_OPTIONS:
       case RGUI_SETTINGS_NETPLAY_OPTIONS:
+      case RGUI_SETTINGS_PRIVACY_OPTIONS:
       case RGUI_SETTINGS_OPTIONS:
       case RGUI_SETTINGS_DRIVERS:
       case RGUI_SETTINGS_CUSTOM_BIND_ALL:
@@ -2289,6 +2307,16 @@ void menu_set_settings_label(char *type_str, size_t type_str_size, unsigned *w, 
          break;
       case RGUI_SETTINGS_NETPLAY_SPECTATOR_MODE_ENABLE:
          snprintf(type_str, type_str_size, g_extern.netplay_is_spectate ? "ON" : "OFF");
+         break;
+#endif
+#ifdef HAVE_CAMERA
+      case RGUI_SETTINGS_PRIVACY_CAMERA_ALLOW:
+         snprintf(type_str, type_str_size, g_settings.camera.allow ? "ON" : "OFF");
+         break;
+#endif
+#ifdef HAVE_LOCATION
+      case RGUI_SETTINGS_PRIVACY_LOCATION_ALLOW:
+         snprintf(type_str, type_str_size, g_settings.location.allow ? "ON" : "OFF");
          break;
 #endif
 #ifdef HAVE_OSK

@@ -969,6 +969,7 @@ static int menu_settings_iterate(void *data, unsigned action)
             || menu_type == RGUI_SETTINGS_CORE_OPTIONS
             || menu_type == RGUI_SETTINGS_AUDIO_OPTIONS
             || menu_type == RGUI_SETTINGS_DISK_OPTIONS
+            || menu_type == RGUI_SETTINGS_PRIVACY_OPTIONS
             || menu_type == RGUI_SETTINGS_GENERAL_OPTIONS 
             || menu_type == RGUI_SETTINGS_VIDEO_OPTIONS 
             || menu_type == RGUI_SETTINGS_SHADER_OPTIONS
@@ -2005,6 +2006,16 @@ void menu_populate_entries(void *data, unsigned menu_type)
             if (g_extern.system.disk_control.get_num_images)
                file_list_push(rgui->selection_buf, "Disk Options", RGUI_SETTINGS_DISK_OPTIONS, 0);
          }
+         file_list_push(rgui->selection_buf, "Privacy Options", RGUI_SETTINGS_PRIVACY_OPTIONS, 0);
+         break;
+      case RGUI_SETTINGS_PRIVACY_OPTIONS:
+         file_list_clear(rgui->selection_buf);
+#ifdef HAVE_CAMERA
+         file_list_push(rgui->selection_buf, "Allow Camera", RGUI_SETTINGS_PRIVACY_CAMERA_ALLOW, 0);
+#endif
+#ifdef HAVE_LOCATION
+         file_list_push(rgui->selection_buf, "Allow Location Services", RGUI_SETTINGS_PRIVACY_LOCATION_ALLOW, 0);
+#endif
          break;
       case RGUI_SETTINGS_DISK_OPTIONS:
          file_list_clear(rgui->selection_buf);

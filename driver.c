@@ -615,7 +615,7 @@ float driver_sensor_get_input(unsigned port, unsigned id)
 #ifdef HAVE_CAMERA
 bool driver_camera_start(void)
 {
-   if (driver.camera && driver.camera_data)
+   if (driver.camera && driver.camera_data && g_settings.camera.allow)
       return driver.camera->start(driver.camera_data);
    else
       return false;
@@ -641,7 +641,7 @@ void driver_camera_poll(void)
 #ifdef HAVE_LOCATION
 bool driver_location_start(void)
 {
-   if (driver.location && driver.location_data)
+   if (driver.location && driver.location_data && g_settings.location.allow)
       return driver.location->start(driver.location_data);
    else
       return false;
