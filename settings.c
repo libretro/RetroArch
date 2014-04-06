@@ -1256,6 +1256,8 @@ bool config_save_file(const char *path)
    config_set_bool(conf, "video_threaded", g_settings.video.threaded);
    config_set_bool(conf, "video_fullscreen", g_settings.video.fullscreen);
    config_set_float(conf, "video_refresh_rate", g_settings.video.refresh_rate);
+   config_set_int(conf, "video_fullscreen_x", g_settings.video.fullscreen_x);
+   config_set_int(conf, "video_fullscreen_y", g_settings.video.fullscreen_y);
    config_set_string(conf, "video_driver", g_settings.video.driver);
    config_set_bool(conf, "video_vsync", g_settings.video.vsync);
    config_set_bool(conf, "video_hard_sync", g_settings.video.hard_sync);
