@@ -972,6 +972,7 @@ static int menu_settings_iterate(void *data, unsigned action)
             || menu_type == RGUI_SETTINGS_PRIVACY_OPTIONS
             || menu_type == RGUI_SETTINGS_GENERAL_OPTIONS 
             || menu_type == RGUI_SETTINGS_VIDEO_OPTIONS 
+            || menu_type == RGUI_SETTINGS_FONT_OPTIONS
             || menu_type == RGUI_SETTINGS_SHADER_OPTIONS
             )
          menu_populate_entries(rgui, menu_type);
@@ -1904,6 +1905,12 @@ void menu_populate_entries(void *data, unsigned menu_type)
          file_list_push(rgui->selection_buf, "Monitor Index", RGUI_SETTINGS_VIDEO_MONITOR_INDEX, 0);
          file_list_push(rgui->selection_buf, "Estimated Monitor FPS", RGUI_SETTINGS_VIDEO_REFRESH_RATE_AUTO, 0);
          break;
+      case RGUI_SETTINGS_FONT_OPTIONS:
+         file_list_clear(rgui->selection_buf);
+         file_list_push(rgui->selection_buf, "OSD Font Enable", RGUI_SETTINGS_FONT_ENABLE, 0);
+         file_list_push(rgui->selection_buf, "OSD Font Scale to Window", RGUI_SETTINGS_FONT_SCALE, 0);
+         file_list_push(rgui->selection_buf, "OSD Font Size", RGUI_SETTINGS_FONT_SIZE, 0);
+         break;
       case RGUI_SETTINGS_CORE_OPTIONS:
          file_list_clear(rgui->selection_buf);
 
@@ -1992,6 +1999,7 @@ void menu_populate_entries(void *data, unsigned menu_type)
 #ifdef HAVE_SHADER_MANAGER
          file_list_push(rgui->selection_buf, "Shader Options", RGUI_SETTINGS_SHADER_OPTIONS, 0);
 #endif
+         file_list_push(rgui->selection_buf, "Font Options", RGUI_SETTINGS_FONT_OPTIONS, 0);
          file_list_push(rgui->selection_buf, "Audio Options", RGUI_SETTINGS_AUDIO_OPTIONS, 0);
          file_list_push(rgui->selection_buf, "Input Options", RGUI_SETTINGS_INPUT_OPTIONS, 0);
 #ifdef HAVE_OVERLAY

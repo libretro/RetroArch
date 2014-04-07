@@ -95,6 +95,7 @@ unsigned menu_type_is(unsigned type)
       type == RGUI_SETTINGS_CORE_OPTIONS ||
       type == RGUI_SETTINGS_CORE_INFO ||
       type == RGUI_SETTINGS_VIDEO_OPTIONS ||
+      type == RGUI_SETTINGS_FONT_OPTIONS ||
       type == RGUI_SETTINGS_SHADER_OPTIONS ||
       type == RGUI_SETTINGS_AUDIO_OPTIONS ||
       type == RGUI_SETTINGS_DISK_OPTIONS ||
@@ -1876,6 +1877,29 @@ int menu_set_settings(void *data, unsigned setting, unsigned action)
             g_settings.location.allow = false;
          break;
 #endif
+      case RGUI_SETTINGS_FONT_ENABLE:
+         if (action == RGUI_ACTION_OK || action == RGUI_ACTION_LEFT || action == RGUI_ACTION_RIGHT)
+            g_settings.video.font_enable = !g_settings.video.font_enable;
+         else if (action == RGUI_ACTION_START)
+            g_settings.video.font_enable = true;
+         break;
+      case RGUI_SETTINGS_FONT_SCALE:
+         if (action == RGUI_ACTION_OK || action == RGUI_ACTION_LEFT || action == RGUI_ACTION_RIGHT)
+            g_settings.video.font_scale = !g_settings.video.font_scale;
+         else if (action == RGUI_ACTION_START)
+            g_settings.video.font_scale = true;
+         break;
+      case RGUI_SETTINGS_FONT_SIZE:
+         if (action == RGUI_ACTION_LEFT)
+         {
+            if (g_settings.video.font_size >= 0)
+               g_settings.video.font_size--;
+         }
+         else if (action == RGUI_ACTION_RIGHT)
+            g_settings.video.font_size++;
+         else if (action == RGUI_ACTION_START)
+            g_settings.video.font_size = 0;
+         break;
       default:
          break;
    }
@@ -2118,6 +2142,7 @@ void menu_set_settings_label(char *type_str, size_t type_str_size, unsigned *w, 
       case RGUI_SETTINGS_CUSTOM_VIEWPORT:
       case RGUI_SETTINGS_TOGGLE_FULLSCREEN:
       case RGUI_SETTINGS_VIDEO_OPTIONS:
+      case RGUI_SETTINGS_FONT_OPTIONS:
       case RGUI_SETTINGS_AUDIO_OPTIONS:
       case RGUI_SETTINGS_DISK_OPTIONS:
 #ifdef HAVE_SHADER_MANAGER
@@ -2324,6 +2349,15 @@ void menu_set_settings_label(char *type_str, size_t type_str_size, unsigned *w, 
          snprintf(type_str, type_str_size, g_settings.osk.enable ? "ON" : "OFF");
          break;
 #endif
+      case RGUI_SETTINGS_FONT_ENABLE:
+         snprintf(type_str, type_str_size, g_settings.video.font_enable ? "ON" : "OFF");
+         break;
+      case RGUI_SETTINGS_FONT_SCALE:
+         snprintf(type_str, type_str_size, g_settings.video.font_scale ? "ON" : "OFF");
+         break;
+      case RGUI_SETTINGS_FONT_SIZE:
+         snprintf(type_str, type_str_size, "%.1f", g_settings.video.font_size);
+         break;
       default:
          *type_str = '\0';
          *w = 0;

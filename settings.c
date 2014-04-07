@@ -1298,6 +1298,10 @@ bool config_save_file(const char *path)
    config_set_bool(conf, "location_allow", g_settings.location.allow);
 #endif
 
+   config_set_bool(conf,  "video_font_scale", g_settings.video.font_scale);
+   config_set_float(conf, "video_font_size", g_settings.video.font_size);
+   config_set_bool(conf,  "video_font_enable", g_settings.video.font_enable);
+
    config_set_path(conf, "system_directory", *g_settings.system_directory ? g_settings.system_directory : "default");
    config_set_path(conf, "extraction_directory", g_settings.extraction_directory);
    config_set_string(conf, "audio_resampler", g_settings.audio.resampler);
