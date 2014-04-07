@@ -185,20 +185,6 @@ void libretro_free_system_info(struct retro_system_info *info)
    memset(info, 0, sizeof(*info));
 }
 
-const struct retro_subsystem_info *libretro_find_subsystem_info(const struct retro_subsystem_info *info, unsigned num_info,
-      const char *ident)
-{
-   unsigned i;
-   for (i = 0; i < num_info; i++)
-   {
-      if (!strcmp(info[i].ident, ident))
-         return &info[i];
-      else if (!strcmp(info[i].desc, ident)) // Doesn't hurt
-         return &info[i];
-   }
-
-   return NULL;
-}
 
 static bool find_first_libretro(char *path, size_t size,
       const char *dir, const char *rom_path)
@@ -252,6 +238,21 @@ static bool find_first_libretro(char *path, size_t size,
    return ret;
 }
 #endif
+
+const struct retro_subsystem_info *libretro_find_subsystem_info(const struct retro_subsystem_info *info, unsigned num_info,
+      const char *ident)
+{
+   unsigned i;
+   for (i = 0; i < num_info; i++)
+   {
+      if (!strcmp(info[i].ident, ident))
+         return &info[i];
+      else if (!strcmp(info[i].desc, ident)) // Doesn't hurt
+         return &info[i];
+   }
+
+   return NULL;
+}
 
 static void load_symbols(bool is_dummy)
 {
