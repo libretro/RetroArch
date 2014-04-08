@@ -166,6 +166,8 @@ static void rmenu_render(void *data)
       strlcpy(title, "OVERLAY OPTIONS", sizeof(title));
    else if (menu_type == RGUI_SETTINGS_NETPLAY_OPTIONS)
       strlcpy(title, "NETPLAY OPTIONS", sizeof(title));
+   else if (menu_type == RGUI_SETTINGS_FONT_OPTIONS)
+      strlcpy(title, "FONT OPTIONS", sizeof(title));
    else if (menu_type == RGUI_SETTINGS_GENERAL_OPTIONS)
       strlcpy(title, "GENERAL OPTIONS", sizeof(title));
    else if (menu_type == RGUI_SETTINGS_PATH_OPTIONS)
