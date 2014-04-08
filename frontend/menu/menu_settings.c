@@ -1872,7 +1872,7 @@ int menu_set_settings(void *data, unsigned setting, unsigned action)
 #ifdef HAVE_LOCATION
       case RGUI_SETTINGS_PRIVACY_LOCATION_ALLOW:
          if (action == RGUI_ACTION_OK || action == RGUI_ACTION_LEFT || action == RGUI_ACTION_RIGHT)
-            g_setttings.location.allow = !g_settings.location.allow;
+            g_settings.location.allow = !g_settings.location.allow;
          else if (action == RGUI_ACTION_START)
             g_settings.location.allow = false;
          break;
