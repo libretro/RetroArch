@@ -1895,7 +1895,7 @@ int menu_set_settings(void *data, unsigned setting, unsigned action)
          else if (action == RGUI_ACTION_RIGHT)
             g_settings.video.font_size += 1.0f;
          else if (action == RGUI_ACTION_START)
-            g_settings.video.font_size = 0.0f;
+            g_settings.video.font_size = font_size;
          g_settings.video.font_size = roundf(max(g_settings.video.font_size, 1.0f));
          break;
       default:
