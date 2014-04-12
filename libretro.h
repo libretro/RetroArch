@@ -46,7 +46,7 @@ extern "C" {
 // It is not incremented for compatible changes to the API.
 #define RETRO_API_VERSION         1
 
-// 
+//
 // Libretros fundamental device abstractions.
 /////////
 //
@@ -553,12 +553,12 @@ enum retro_mod
                                            // If this interface is not used, libretro cores should log to stderr as desired.
 #define RETRO_ENVIRONMENT_GET_PERF_INTERFACE 28
                                            // struct retro_perf_callback * --
-                                           // Gets an interface for performance counters. This is useful for performance logging in a 
+                                           // Gets an interface for performance counters. This is useful for performance logging in a
                                            // cross-platform way and for detecting architecture-specific features, such as SIMD support.
 #define RETRO_ENVIRONMENT_GET_LOCATION_INTERFACE 29
                                            // struct retro_location_callback * --
                                            // Gets access to the location interface.
-                                           // The purpose of this interface is to be able to retrieve location-based information from the host device, 
+                                           // The purpose of this interface is to be able to retrieve location-based information from the host device,
                                            // such as current latitude / longitude.
                                            //
 #define RETRO_ENVIRONMENT_GET_CONTENT_DIRECTORY 30
@@ -624,7 +624,7 @@ enum retro_mod
                                            // controller types are recognized in calls to retro_set_controller_port_device().
                                            //
                                            // Some emulators such as Super Nintendo
-                                           // support multiple lightgun types which must be specifically selected from. 
+                                           // support multiple lightgun types which must be specifically selected from.
                                            // It is therefore sometimes necessary for a frontend to be able to tell
                                            // the core about a special kind of input device which is not covered by the
                                            // libretro input API.
@@ -872,7 +872,7 @@ typedef void (*retro_camera_frame_raw_framebuffer_t)(const uint32_t *buffer, uns
 //
 // texture_target is the texture target for the GL texture.
 // These can include e.g. GL_TEXTURE_2D, GL_TEXTURE_RECTANGLE, and possibly more depending on extensions.
-// 
+//
 // affine points to a packed 3x3 column-major matrix used to apply an affine transform to texture coordinates. (affine_matrix * vec3(coord_x, coord_y, 1.0))
 // After transform, normalized texture coord (0, 0) should be bottom-left and (1, 1) should be top-right (or (width, height) for RECTANGLE).
 //
@@ -900,7 +900,7 @@ struct retro_camera_callback
 };
 
 // Sets the interval of time and/or distance at which to update/poll location-based data.
-// To ensure compatibility with all location-based implementations, values for both 
+// To ensure compatibility with all location-based implementations, values for both
 // interval_ms and interval_distance should be provided.
 // interval_ms is the interval expressed in milliseconds.
 // interval_distance is the distance interval expressed in meters.
@@ -928,7 +928,7 @@ struct retro_location_callback
    retro_location_start_t         start;
    retro_location_stop_t          stop;
    retro_location_get_position_t  get_position;
-   retro_location_set_interval_t  set_interval; 
+   retro_location_set_interval_t  set_interval;
 
    retro_location_lifetime_status_t initialized;
    retro_location_lifetime_status_t deinitialized;
@@ -1020,7 +1020,7 @@ struct retro_hw_render_callback
    unsigned version_minor; // Minor version number for core GL context.
 
    bool cache_context; // If this is true, the frontend will go very far to avoid resetting context in scenarios like toggling fullscreen, etc.
-   // The reset callback might still be called in extreme situations such as if the context is lost beyond recovery. 
+   // The reset callback might still be called in extreme situations such as if the context is lost beyond recovery.
    // For optimal stability, set this to false, and allow context to be reset at any time.
    retro_hw_context_reset_t context_destroy; // A callback to be called before the context is destroyed. Resources can be deinitialized at this step. This can be set to NULL, in which resources will just be destroyed without any notification.
    bool debug_context; // Creates a debug context.
