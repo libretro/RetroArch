@@ -969,7 +969,7 @@ bool rarch_environment_cb(unsigned cmd, void *data)
          const struct retro_controller_info *info = (const struct retro_controller_info*)data;
          for (i = 0; info[i].types; i++)
          {
-            RARCH_LOG("Controller port: %u\n", i);
+            RARCH_LOG("Controller port: %u\n", i + 1);
             for (j = 0; j < info[i].num_types; j++)
                RARCH_LOG("   %s (ID: %u)\n", info[i].types[j].desc, info[i].types[j].id);
          }
