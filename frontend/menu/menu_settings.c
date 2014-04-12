@@ -934,10 +934,6 @@ int menu_set_settings(void *data, unsigned setting, unsigned action)
                RETRO_DEVICE_JOYPAD,
                RETRO_DEVICE_ANALOG,
                RETRO_DEVICE_MOUSE,
-               RETRO_DEVICE_JOYPAD_MULTITAP,
-               RETRO_DEVICE_LIGHTGUN_SUPER_SCOPE,
-               RETRO_DEVICE_LIGHTGUN_JUSTIFIER,
-               RETRO_DEVICE_LIGHTGUN_JUSTIFIERS,
             };
 
             unsigned current_device, current_index, i;
@@ -2211,11 +2207,7 @@ void menu_set_settings_label(char *type_str, size_t type_str_size, unsigned *w, 
             case RETRO_DEVICE_NONE: name = "None"; break;
             case RETRO_DEVICE_JOYPAD: name = "Joypad"; break;
             case RETRO_DEVICE_ANALOG: name = "Joypad w/ Analog"; break;
-            case RETRO_DEVICE_JOYPAD_MULTITAP: name = "Multitap"; break;
             case RETRO_DEVICE_MOUSE: name = "Mouse"; break;
-            case RETRO_DEVICE_LIGHTGUN_JUSTIFIER: name = "Justifier"; break;
-            case RETRO_DEVICE_LIGHTGUN_JUSTIFIERS: name = "Justifiers"; break;
-            case RETRO_DEVICE_LIGHTGUN_SUPER_SCOPE: name = "SuperScope"; break;
             default: name = "Unknown"; break;
          }
 

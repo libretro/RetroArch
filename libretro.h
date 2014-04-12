@@ -46,8 +46,22 @@ extern "C" {
 // It is not incremented for compatible changes to the API.
 #define RETRO_API_VERSION         1
 
-// Libretro's fundamental device abstractions.
-#define RETRO_DEVICE_MASK         0xff
+// 
+// Libretros fundamental device abstractions.
+/////////
+//
+// Libretros input system consists of some standardized device types such as a joypad (with/without analog),
+// mouse, keyboard, lightgun and a pointer. The functionality of these devices are fixed, and individual cores map
+// their own concept of a controller to libretros abstractions.
+// This makes it possible for frontends to map the abstract types to a real input device,
+// and not having to worry about binding input correctly to arbitrary controller layouts.
+
+
+#define RETRO_DEVICE_TYPE_SHIFT         8
+#define RETRO_DEVICE_MASK               ((1 << RETRO_DEVICE_TYPE_SHIFT) - 1)
+#define RETRO_DEVICE_SUBCLASS(base, id) (((id + 1) << RETRO_DEVICE_TYPE_SHIFT) | base)
+
+// Input disabled.
 #define RETRO_DEVICE_NONE         0
 
 // The JOYPAD is called RetroPad. It is essentially a Super Nintendo controller,
@@ -62,6 +76,7 @@ extern "C" {
 
 // KEYBOARD device lets one poll for raw key pressed.
 // It is poll based, so input callback will return with the current pressed state.
+// For event/text based keyboard input, see RETRO_ENVIRONMENT_SET_KEYBOARD_CALLBACK.
 #define RETRO_DEVICE_KEYBOARD     3
 
 // Lightgun X/Y coordinates are reported relatively to last poll, similar to mouse.
@@ -87,7 +102,7 @@ extern "C" {
 //
 // To check if the pointer coordinates are valid (e.g. a touch display actually being touched),
 // PRESSED returns 1 or 0.
-// If using a mouse, PRESSED will usually correspond to the left mouse button.
+// If using a mouse on a desktop, PRESSED will usually correspond to the left mouse button, but this is a frontend decision.
 // PRESSED will only return 1 if the pointer is inside the game screen.
 //
 // For multi-touch, the index variable can be used to successively query more presses.
@@ -95,16 +110,6 @@ extern "C" {
 // with _X, _Y for index = 0. One can then query _PRESSED, _X, _Y with index = 1, and so on.
 // Eventually _PRESSED will return false for an index. No further presses are registered at this point.
 #define RETRO_DEVICE_POINTER      6
-
-// These device types are specializations of the base types above.
-// They should only be used in retro_set_controller_type() to inform libretro implementations
-// about use of a very specific device type.
-//
-// In input state callback, however, only the base type should be used in the 'device' field.
-#define RETRO_DEVICE_JOYPAD_MULTITAP        ((1 << 8) | RETRO_DEVICE_JOYPAD)
-#define RETRO_DEVICE_LIGHTGUN_SUPER_SCOPE   ((1 << 8) | RETRO_DEVICE_LIGHTGUN)
-#define RETRO_DEVICE_LIGHTGUN_JUSTIFIER     ((2 << 8) | RETRO_DEVICE_LIGHTGUN)
-#define RETRO_DEVICE_LIGHTGUN_JUSTIFIERS    ((3 << 8) | RETRO_DEVICE_LIGHTGUN)
 
 // Buttons for the RetroPad (JOYPAD).
 // The placement of these is equivalent to placements on the Super Nintendo controller.
@@ -611,7 +616,47 @@ enum retro_mod
                                            // and this environment call allows a libretro core to expose which subsystems are supported for use with retro_load_game_special().
                                            // A core passes an array of retro_game_special_info which is terminated with a zeroed out retro_game_special_info struct.
                                            //
-                                           // If a core wants to use this functionality, SET_SPECIAL_GAME_TYPES **MUST** be called from within retro_set_environment().
+                                           // If a core wants to use this functionality, SET_SUBSYSTEM_INFO **MUST** be called from within retro_set_environment().
+                                           //
+#define RETRO_ENVIRONMENT_SET_CONTROLLER_INFO 35
+                                           // const struct retro_controller_info * --
+                                           // This environment call lets a libretro core tell the frontend which
+                                           // controller types are recognized in calls to retro_set_controller_port_device().
+                                           //
+                                           // Some emulators such as Super Nintendo
+                                           // support multiple lightgun types which must be specifically selected from. 
+                                           // It is therefore sometimes necessary for a frontend to be able to tell
+                                           // the core about a special kind of input device which is not covered by the
+                                           // libretro input API.
+                                           //
+                                           // In order for a frontend to understand the workings of an input device,
+                                           // it must be a specialized type
+                                           // of the generic device types already defined in the libretro API.
+                                           //
+                                           // Which devices are supported can vary per input port.
+                                           // The core must pass an array of const struct retro_controller_info which is terminated with
+                                           // a blanked out struct. Each element of the struct corresponds to an ascending port index to retro_set_controller_port_device().
+                                           // Even if special device types are set in the libretro core, libretro should only poll input based on the base input device types.
+
+struct retro_controller_description
+{
+   // Human-readable description of the controller. Even if using a generic input device type, this can be
+   // set to the particular device type the core uses.
+   const char *desc;
+
+   // A computer-friendly short string identifier ([a-z]).
+   const char *ident;
+
+   // Device type passed to retro_set_controller_port_device(). If the device type is a sub-class of a generic input device type,
+   // use the RETRO_DEVICE_SUBCLASS macro to create an ID. E.g. RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_JOYPAD, 1).
+   unsigned id;
+};
+
+struct retro_controller_info
+{
+   const struct retro_controller_description *types;
+   unsigned num_types;
+};
 
 struct retro_subsystem_memory_info
 {
@@ -1208,6 +1253,8 @@ void retro_get_system_info(struct retro_system_info *info);
 void retro_get_system_av_info(struct retro_system_av_info *info);
 
 // Sets device to be used for player 'port'.
+// By default, RETRO_DEVICE_JOYPAD is assumed to be plugged into all available ports.
+// Setting a particular device type is not a guarantee that libretro cores will only poll input based on that particular device type. It is only a hint to the libretro core when a core cannot automatically detect the appropriate input device type on its own. It is also relevant when a core can change its behavior depending on device type.
 void retro_set_controller_port_device(unsigned port, unsigned device);
 
 // Resets the current game.

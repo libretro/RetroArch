@@ -783,11 +783,9 @@ static void print_help(void)
 
    printf("\t-N/--nodevice: Disconnects controller device connected to port (1 to %d).\n", MAX_PLAYERS);
    printf("\t-A/--dualanalog: Connect a DualAnalog controller to port (1 to %d).\n", MAX_PLAYERS);
-   printf("\t-m/--mouse: Connect a mouse into port of the device (1 to %d).\n", MAX_PLAYERS); 
-   puts("\t-p/--scope: Connect a virtual SuperScope into port 2. (SNES specific).");
-   puts("\t-j/--justifier: Connect a virtual Konami Justifier into port 2. (SNES specific).");
-   puts("\t-J/--justifiers: Daisy chain two virtual Konami Justifiers into port 2. (SNES specific).");
-   puts("\t-4/--multitap: Connect a SNES multitap to port 2. (SNES specific).");
+   printf("\t-m/--mouse: Connect a mouse into controller port (1 to %d).\n", MAX_PLAYERS); 
+   printf("\t-d/--device: Connect a generic device into port of the device (1 to %d).\n", MAX_PLAYERS);
+   puts("\t\tFormat is port:ID, where ID is an unsigned number corresponding to the particular device.\n");
 
 #ifdef HAVE_BSV_MOVIE
    puts("\t-P/--bsvplay: Playback a BSV movie file.");
@@ -933,12 +931,9 @@ static void parse_input(int argc, char *argv[])
       { "appendconfig", 1, &val, 'C' },
       { "mouse", 1, NULL, 'm' },
       { "nodevice", 1, NULL, 'N' },
-      { "scope", 0, NULL, 'p' },
-      { "justifier", 0, NULL, 'j' },
-      { "justifiers", 0, NULL, 'J' },
       { "dualanalog", 1, NULL, 'A' },
+      { "device", 1, NULL, 'd' },
       { "savestate", 1, NULL, 'S' },
-      { "multitap", 0, NULL, '4' },
 #ifdef HAVE_BSV_MOVIE
       { "bsvplay", 1, NULL, 'P' },
       { "bsvrecord", 1, NULL, 'R' },
@@ -989,7 +984,7 @@ static void parse_input(int argc, char *argv[])
 #define BSV_MOVIE_ARG
 #endif
 
-   const char *optstring = "hs:fvS:m:p4jJA:c:U:DN:" BSV_MOVIE_ARG NETPLAY_ARG DYNAMIC_ARG FFMPEG_RECORD_ARG;
+   const char *optstring = "hs:fvS:m:A:c:U:DN:d:" BSV_MOVIE_ARG NETPLAY_ARG DYNAMIC_ARG FFMPEG_RECORD_ARG;
 
    for (;;)
    {
@@ -1006,24 +1001,27 @@ static void parse_input(int argc, char *argv[])
             print_help();
             exit(0);
 
-         case '4':
-            g_settings.input.libretro_device[1] = RETRO_DEVICE_JOYPAD_MULTITAP;
-            g_extern.has_set_libretro_device[1] = true;
-            break;
-
-         case 'j':
-            g_settings.input.libretro_device[1] = RETRO_DEVICE_LIGHTGUN_JUSTIFIER;
-            g_extern.has_set_libretro_device[1] = true;
-            break;
-
-         case 'J':
-            g_settings.input.libretro_device[1] = RETRO_DEVICE_LIGHTGUN_JUSTIFIERS;
-            g_extern.has_set_libretro_device[1] = true;
-            break;
-
          case 'Z':
             strlcpy(g_extern.subsystem, optarg, sizeof(g_extern.subsystem));
             break;
+
+         case 'd':
+         {
+            struct string_list *list = string_split(optarg, ":");
+            port = (list && list->size == 2) ? strtol(list->elems[0].data, NULL, 0) : 0;
+            unsigned id = (list && list->size == 2) ? strtoul(list->elems[1].data, NULL, 0) : 0;
+            string_list_free(list);
+
+            if (port < 1 || port > MAX_PLAYERS)
+            {
+               RARCH_ERR("Connect device to a valid port.\n");
+               print_help();
+               rarch_fail(1, "parse_input()");
+            }
+            g_settings.input.libretro_device[port - 1] = id;
+            g_extern.has_set_libretro_device[port - 1] = true;
+            break;
+         }
 
          case 'A':
             port = strtol(optarg, NULL, 0);
@@ -1077,11 +1075,6 @@ static void parse_input(int argc, char *argv[])
             }
             g_settings.input.libretro_device[port - 1] = RETRO_DEVICE_NONE;
             g_extern.has_set_libretro_device[port - 1] = true;
-            break;
-
-         case 'p':
-            g_settings.input.libretro_device[1] = RETRO_DEVICE_LIGHTGUN_SUPER_SCOPE;
-            g_extern.has_set_libretro_device[1] = true;
             break;
 
          case 'c':
@@ -1274,39 +1267,26 @@ static void init_controllers(void)
 
       pretro_set_controller_port_device(i, device);
 
-      switch (device)
+      const struct retro_controller_description *desc = NULL;
+      if (i < g_extern.system.num_ports)
+         desc = libretro_find_controller_description(&g_extern.system.ports[i], device);
+
+      const char *ident = desc ? desc->desc : NULL;
+
+      if (!ident)
       {
-         case RETRO_DEVICE_NONE:
-            RARCH_LOG("Disconnecting device from port %u.\n", i + 1);
-            break;
-
-         case RETRO_DEVICE_ANALOG:
-            RARCH_LOG("Connecting dualanalog to port %u.\n", i + 1);
-            break;
-
-         case RETRO_DEVICE_MOUSE:
-            RARCH_LOG("Connecting mouse to port %u.\n", i + 1);
-            break;
-
-         case RETRO_DEVICE_LIGHTGUN_JUSTIFIER:
-            RARCH_LOG("Connecting Justifier to port %u.\n", i + 1);
-            break;
-
-         case RETRO_DEVICE_LIGHTGUN_JUSTIFIERS:
-            RARCH_LOG("Connecting Justifiers to port %u.\n", i + 1);
-            break;
-
-         case RETRO_DEVICE_JOYPAD_MULTITAP:
-            RARCH_LOG("Connecting Multitap to port %u.\n", i + 1);
-            break;
-
-         case RETRO_DEVICE_LIGHTGUN_SUPER_SCOPE:
-            RARCH_LOG("Connecting scope to port %u.\n", i + 1);
-            break;
-
-         default:
-            break;
+         switch (device)
+         {
+            case RETRO_DEVICE_MOUSE: ident = "mouse"; break;
+            case RETRO_DEVICE_ANALOG: ident = "analog"; break;
+            default: ident = "Unknown"; break;
+         }
       }
+
+      if (device == RETRO_DEVICE_NONE)
+         RARCH_LOG("Disconnecting device from port %u.\n", i + 1);
+      else
+         RARCH_LOG("Connecting %s to port %u.\n", ident, i + 1);
    }
 }
 

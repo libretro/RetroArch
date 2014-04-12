@@ -254,6 +254,18 @@ const struct retro_subsystem_info *libretro_find_subsystem_info(const struct ret
    return NULL;
 }
 
+const struct retro_controller_description *libretro_find_controller_description(const struct retro_controller_info *info, unsigned id)
+{
+   unsigned i;
+   for (i = 0; i < info->num_types; i++)
+   {
+      if (info->types[i].id == id)
+         return &info->types[i];
+   }
+
+   return NULL;
+}
+
 static void load_symbols(bool is_dummy)
 {
    if (is_dummy)
@@ -434,6 +446,7 @@ void uninit_libretro_sym(void)
 
    // No longer valid.
    free(g_extern.system.special);
+   free(g_extern.system.ports);
    memset(&g_extern.system, 0, sizeof(g_extern.system));
 #ifdef HAVE_CAMERA
    g_extern.camera_active = false;
@@ -907,16 +920,6 @@ bool rarch_environment_cb(unsigned cmd, void *data)
          break;
       }
 
-      // Private extensions for internal use, not part of libretro API.
-      case RETRO_ENVIRONMENT_SET_LIBRETRO_PATH:
-         RARCH_LOG("Environ (Private) SET_LIBRETRO_PATH.\n");
-
-         if (path_file_exists((const char*)data))
-            strlcpy(g_settings.libretro, (const char*)data, sizeof(g_settings.libretro));
-         else
-            return false;
-         break;
-
       case RETRO_ENVIRONMENT_GET_CONTENT_DIRECTORY:
       {
          const char **dir = (const char**)data;
@@ -958,6 +961,38 @@ bool rarch_environment_cb(unsigned cmd, void *data)
          g_extern.system.num_special = i;
          break;
       }
+
+      case RETRO_ENVIRONMENT_SET_CONTROLLER_INFO:
+      {
+         RARCH_LOG("Environ SET_CONTROLLER_INFO.\n");
+         unsigned i, j;
+         const struct retro_controller_info *info = (const struct retro_controller_info*)data;
+         for (i = 0; info[i].types; i++)
+         {
+            RARCH_LOG("Controller port: %u\n", i);
+            for (j = 0; j < info[i].num_types; j++)
+               RARCH_LOG("   %s (ident: %s, ID: %u)\n", info[i].types[j].desc, info[i].types[j].ident, info[i].types[j].id);
+         }
+
+         free(g_extern.system.ports);
+         g_extern.system.ports = (struct retro_controller_info*)calloc(i, sizeof(*g_extern.system.ports));
+         if (!g_extern.system.ports)
+            return false;
+
+         memcpy(g_extern.system.ports, info, i * sizeof(*g_extern.system.ports));
+         g_extern.system.num_ports = i;
+         break;
+      }
+
+      // Private extensions for internal use, not part of libretro API.
+      case RETRO_ENVIRONMENT_SET_LIBRETRO_PATH:
+         RARCH_LOG("Environ (Private) SET_LIBRETRO_PATH.\n");
+
+         if (path_file_exists((const char*)data))
+            strlcpy(g_settings.libretro, (const char*)data, sizeof(g_settings.libretro));
+         else
+            return false;
+         break;
 
       case RETRO_ENVIRONMENT_EXEC:
       case RETRO_ENVIRONMENT_EXEC_ESCAPE:
