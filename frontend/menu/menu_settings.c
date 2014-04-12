@@ -929,19 +929,30 @@ int menu_set_settings(void *data, unsigned setting, unsigned action)
          break;
       case RGUI_SETTINGS_BIND_DEVICE_TYPE:
          {
-            static const unsigned device_types[] = {
-               RETRO_DEVICE_NONE,
-               RETRO_DEVICE_JOYPAD,
-               RETRO_DEVICE_ANALOG,
-               RETRO_DEVICE_MOUSE,
-            };
-
             unsigned current_device, current_index, i;
+            unsigned types = 0;
+            unsigned devices[128];
+
+            devices[types++] = RETRO_DEVICE_NONE;
+            devices[types++] = RETRO_DEVICE_JOYPAD;
+            devices[types++] = RETRO_DEVICE_ANALOG;
+
+            const struct retro_controller_info *desc = port < g_extern.system.num_ports ? &g_extern.system.ports[port] : NULL;
+            if (desc)
+            {
+               for (i = 0; i < desc->num_types; i++)
+               {
+                  unsigned id = desc->types[i].id;
+                  if (types < ARRAY_SIZE(devices) && id != RETRO_DEVICE_NONE && id != RETRO_DEVICE_JOYPAD && id != RETRO_DEVICE_ANALOG)
+                     devices[types++] = id;
+               }
+            }
+
             current_device = g_settings.input.libretro_device[port];
             current_index = 0;
-            for (i = 0; i < ARRAY_SIZE(device_types); i++)
+            for (i = 0; i < types; i++)
             {
-               if (current_device == device_types[i])
+               if (current_device == devices[i])
                {
                   current_index = i;
                   break;
@@ -956,12 +967,12 @@ int menu_set_settings(void *data, unsigned setting, unsigned action)
                   break;
 
                case RGUI_ACTION_LEFT:
-                  current_device = device_types[(current_index + ARRAY_SIZE(device_types) - 1) % ARRAY_SIZE(device_types)];
+                  current_device = devices[(current_index + types - 1) % types];
                   break;
 
                case RGUI_ACTION_RIGHT:
                case RGUI_ACTION_OK:
-                  current_device = device_types[(current_index + 1) % ARRAY_SIZE(device_types)];
+                  current_device = devices[(current_index + 1) % types];
                   break;
 
                default:
@@ -2216,7 +2227,6 @@ void menu_set_settings_label(char *type_str, size_t type_str_size, unsigned *w, 
                case RETRO_DEVICE_NONE: name = "None"; break;
                case RETRO_DEVICE_JOYPAD: name = "Joypad"; break;
                case RETRO_DEVICE_ANALOG: name = "Joypad w/ Analog"; break;
-               case RETRO_DEVICE_MOUSE: name = "Mouse"; break;
                default: name = "Unknown"; break;
             }
          }

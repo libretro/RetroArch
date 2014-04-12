@@ -783,7 +783,6 @@ static void print_help(void)
 
    printf("\t-N/--nodevice: Disconnects controller device connected to port (1 to %d).\n", MAX_PLAYERS);
    printf("\t-A/--dualanalog: Connect a DualAnalog controller to port (1 to %d).\n", MAX_PLAYERS);
-   printf("\t-m/--mouse: Connect a mouse into controller port (1 to %d).\n", MAX_PLAYERS);
    printf("\t-d/--device: Connect a generic device into port of the device (1 to %d).\n", MAX_PLAYERS);
    puts("\t\tFormat is port:ID, where ID is an unsigned number corresponding to the particular device.\n");
 
@@ -929,7 +928,6 @@ static void parse_input(int argc, char *argv[])
       { "verbose", 0, NULL, 'v' },
       { "config", 1, NULL, 'c' },
       { "appendconfig", 1, &val, 'C' },
-      { "mouse", 1, NULL, 'm' },
       { "nodevice", 1, NULL, 'N' },
       { "dualanalog", 1, NULL, 'A' },
       { "device", 1, NULL, 'd' },
@@ -984,7 +982,7 @@ static void parse_input(int argc, char *argv[])
 #define BSV_MOVIE_ARG
 #endif
 
-   const char *optstring = "hs:fvS:m:A:c:U:DN:d:" BSV_MOVIE_ARG NETPLAY_ARG DYNAMIC_ARG FFMPEG_RECORD_ARG;
+   const char *optstring = "hs:fvS:A:c:U:DN:d:" BSV_MOVIE_ARG NETPLAY_ARG DYNAMIC_ARG FFMPEG_RECORD_ARG;
 
    for (;;)
    {
@@ -1051,18 +1049,6 @@ static void parse_input(int argc, char *argv[])
 
          case 'v':
             g_extern.verbose = true;
-            break;
-
-         case 'm':
-            port = strtol(optarg, NULL, 0);
-            if (port < 1 || port > MAX_PLAYERS)
-            {
-               RARCH_ERR("Connect mouse to a valid port.\n");
-               print_help();
-               rarch_fail(1, "parse_input()");
-            }
-            g_settings.input.libretro_device[port - 1] = RETRO_DEVICE_MOUSE;
-            g_extern.has_set_libretro_device[port - 1] = true;
             break;
 
          case 'N':
@@ -1277,7 +1263,6 @@ static void init_controllers(void)
       {
          switch (device)
          {
-            case RETRO_DEVICE_MOUSE: ident = "mouse"; break;
             case RETRO_DEVICE_ANALOG: ident = "analog"; break;
             default: ident = "Unknown"; break;
          }

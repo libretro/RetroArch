@@ -133,10 +133,11 @@ void retro_set_environment(retro_environment_t cb)
    static const struct retro_controller_description controllers[] = {
       { "Dummy Controller #1", RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_JOYPAD, 0) },
       { "Dummy Controller #2", RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_JOYPAD, 1) },
+      { "Augmented Joypad", RETRO_DEVICE_JOYPAD }, // Test overriding generic description in UI.
    };
 
    static const struct retro_controller_info ports[] = {
-      { controllers, 2 },
+      { controllers, 3 },
       { NULL, 0 },
    };
 
