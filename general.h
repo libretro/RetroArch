@@ -449,6 +449,9 @@ struct global
 
       struct retro_subsystem_info *special;
       unsigned num_special;
+
+      struct retro_controller_info *ports;
+      unsigned num_ports;
    } system;
 
    struct
