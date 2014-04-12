@@ -2,7 +2,7 @@
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2014 - Daniel De Matteis
  *  Copyright (C) 2012-2014 - Michael Lelli
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -132,7 +132,7 @@ static bool take_screenshot_raw(void)
    // Negative pitch is needed as screenshot takes bottom-up,
    // but we use top-down.
    return screenshot_dump(screenshot_dir,
-         (const uint8_t*)data + (height - 1) * pitch, 
+         (const uint8_t*)data + (height - 1) * pitch,
          width, height, -pitch, false);
 }
 
@@ -318,7 +318,7 @@ static void video_frame(const void *data, unsigned width, unsigned height, size_
       unsigned owidth = width;
       unsigned oheight = height;
       g_extern.filter.psize(&owidth, &oheight);
-      g_extern.filter.prender(g_extern.filter.colormap, g_extern.filter.buffer, 
+      g_extern.filter.prender(g_extern.filter.colormap, g_extern.filter.buffer,
             g_extern.filter.pitch, g_extern.filter.scaler_out, scaler->out_stride, width, height);
 
 #ifdef HAVE_FFMPEG
@@ -515,7 +515,7 @@ static inline void input_poll_overlay(void)
       input_overlay_poll(driver.overlay, &polled_data, x, y);
 
       driver.overlay_state.buttons |= polled_data.buttons;
-      
+
       for (j = 0; j < ARRAY_SIZE(driver.overlay_state.keys); j++)
          driver.overlay_state.keys[j] |= polled_data.keys[j];
 
@@ -543,7 +543,7 @@ static inline void input_poll_overlay(void)
       {
          uint32_t orig_bits = old_key_state.keys[i];
          uint32_t new_bits = driver.overlay_state.keys[i];
-         
+
          for (j = 0; j < 32; j++)
             if ((orig_bits & (1 << j)) != (new_bits & (1 << j)))
                input_keyboard_event(new_bits & (1 << j), i * 32 + j, 0, key_mod);
@@ -783,7 +783,7 @@ static void print_help(void)
 
    printf("\t-N/--nodevice: Disconnects controller device connected to port (1 to %d).\n", MAX_PLAYERS);
    printf("\t-A/--dualanalog: Connect a DualAnalog controller to port (1 to %d).\n", MAX_PLAYERS);
-   printf("\t-m/--mouse: Connect a mouse into controller port (1 to %d).\n", MAX_PLAYERS); 
+   printf("\t-m/--mouse: Connect a mouse into controller port (1 to %d).\n", MAX_PLAYERS);
    printf("\t-d/--device: Connect a generic device into port of the device (1 to %d).\n", MAX_PLAYERS);
    puts("\t\tFormat is port:ID, where ID is an unsigned number corresponding to the particular device.\n");
 
@@ -1286,7 +1286,7 @@ static void init_controllers(void)
       if (device == RETRO_DEVICE_NONE)
          RARCH_LOG("Disconnecting device from port %u.\n", i + 1);
       else
-         RARCH_LOG("Connecting %s to port %u.\n", ident, i + 1);
+         RARCH_LOG("Connecting %s (ID: %u) to port %u.\n", ident, device, i + 1);
    }
 }
 
@@ -1687,9 +1687,9 @@ void rarch_init_autosave(void)
 
       if (pretro_get_memory_size(type) > 0)
       {
-         g_extern.autosave[i] = autosave_new(path, 
-               pretro_get_memory_data(type), 
-               pretro_get_memory_size(type), 
+         g_extern.autosave[i] = autosave_new(path,
+               pretro_get_memory_data(type),
+               pretro_get_memory_size(type),
                g_settings.autosave_interval);
          if (!g_extern.autosave[i])
             RARCH_WARN("Could not initialize autosave.\n");
@@ -2250,7 +2250,7 @@ static void check_pause(void)
          if (driver.audio_data)
             audio_stop_func();
       }
-      else 
+      else
       {
          RARCH_LOG("Unpaused.\n");
          if (driver.audio_data)
@@ -2678,7 +2678,7 @@ void rarch_check_block_hotkey(void)
 {
    driver.block_hotkey = driver.block_input;
 
-   // If we haven't bound anything to this, 
+   // If we haven't bound anything to this,
    // always allow hotkeys.
    static const struct retro_keybind *bind = &g_settings.input.binds[0][RARCH_ENABLE_HOTKEY];
    if (!driver.block_hotkey && bind->key == RETROK_UNKNOWN && bind->joykey == NO_BTN && bind->joyaxis == AXIS_NONE)
@@ -2773,7 +2773,7 @@ static void do_state_checks(void)
 #ifdef HAVE_BSV_MOVIE
       check_movie();
 #endif
-     
+
       check_shader_dir();
       check_cheats();
       check_disk();
@@ -2895,7 +2895,7 @@ int rarch_main_init(int argc, char *argv[])
    int sjlj_ret;
    if ((sjlj_ret = setjmp(g_extern.error_sjlj_context)) > 0)
    {
-      RARCH_ERR("Fatal error received in: \"%s\"\n", g_extern.error_string); 
+      RARCH_ERR("Fatal error received in: \"%s\"\n", g_extern.error_string);
       return sjlj_ret;
    }
    g_extern.error_in_init = true;
@@ -2968,9 +2968,9 @@ int rarch_main_init(int argc, char *argv[])
    if (!g_extern.netplay)
 #endif
       rarch_init_rewind();
-      
+
    init_controllers();
-   
+
 #ifdef HAVE_FFMPEG
    rarch_init_recording();
 #endif
@@ -2988,7 +2988,7 @@ int rarch_main_init(int argc, char *argv[])
    if (g_extern.use_sram)
       rarch_init_autosave();
 #endif
-      
+
 #ifdef HAVE_NETPLAY
    allow_cheats &= !g_extern.netplay;
 #endif
@@ -3044,7 +3044,7 @@ static inline void update_frame_time(void)
 #ifdef HAVE_FFMPEG
    is_locked_fps |= g_extern.recording;
 #endif
-   
+
    if (!g_extern.system.frame_time_last || is_locked_fps)
       delta = g_extern.system.frame_time.reference;
    else
