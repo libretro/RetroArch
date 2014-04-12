@@ -2,7 +2,7 @@
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2014 - Daniel De Matteis
  *  Copyright (C) 2012-2014 - Michael Lelli
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -89,7 +89,7 @@ unsigned menu_type_is(unsigned type)
    unsigned ret = 0;
    bool type_found;
 
-   type_found = 
+   type_found =
       type == RGUI_SETTINGS ||
       type == RGUI_SETTINGS_GENERAL_OPTIONS ||
       type == RGUI_SETTINGS_CORE_OPTIONS ||
@@ -273,7 +273,7 @@ static int shader_manager_toggle_setting(void *data, unsigned setting, unsigned 
    else if ((dist_shader % 3) == 0 || setting == RGUI_SETTINGS_SHADER_PRESET)
    {
       dist_shader /= 3;
-      struct gfx_shader_pass *pass = setting == RGUI_SETTINGS_SHADER_PRESET ? 
+      struct gfx_shader_pass *pass = setting == RGUI_SETTINGS_SHADER_PRESET ?
          &rgui->shader.pass[dist_shader] : NULL;
       switch (action)
       {
@@ -558,7 +558,7 @@ int menu_set_settings(void *data, unsigned setting, unsigned action)
             g_settings.block_sram_overwrite = false;
          break;
       case RGUI_SETTINGS_PER_CORE_CONFIG:
-         if (action == RGUI_ACTION_OK || action == RGUI_ACTION_RIGHT 
+         if (action == RGUI_ACTION_OK || action == RGUI_ACTION_RIGHT
                || action == RGUI_ACTION_LEFT)
             g_settings.core_specific_config = !g_settings.core_specific_config;
          else if (action == RGUI_ACTION_START)
@@ -1071,7 +1071,7 @@ int menu_set_settings(void *data, unsigned setting, unsigned action)
             // FIXME: The array indices here look totally wrong ... Fixed it so it looks kind of sane for now.
             if (keybind_action != KEYBINDS_ACTION_NONE)
                driver.input->set_keybinds(driver.input_data, g_settings.input.device[port], port,
-                     setting - RGUI_SETTINGS_BIND_BEGIN, keybind_action); 
+                     setting - RGUI_SETTINGS_BIND_BEGIN, keybind_action);
          }
          else
          {
@@ -1334,17 +1334,17 @@ int menu_set_settings(void *data, unsigned setting, unsigned action)
             if (g_extern.console.screen.resolutions.current.idx)
             {
                g_extern.console.screen.resolutions.current.idx--;
-               g_extern.console.screen.resolutions.current.id = 
+               g_extern.console.screen.resolutions.current.id =
                   g_extern.console.screen.resolutions.list[g_extern.console.screen.resolutions.current.idx];
             }
          }
          else if (action == RGUI_ACTION_RIGHT)
          {
-            if (g_extern.console.screen.resolutions.current.idx + 1 < 
+            if (g_extern.console.screen.resolutions.current.idx + 1 <
                   g_extern.console.screen.resolutions.count)
             {
                g_extern.console.screen.resolutions.current.idx++;
-               g_extern.console.screen.resolutions.current.id = 
+               g_extern.console.screen.resolutions.current.id =
                   g_extern.console.screen.resolutions.list[g_extern.console.screen.resolutions.current.idx];
             }
          }
@@ -2201,14 +2201,24 @@ void menu_set_settings_label(char *type_str, size_t type_str_size, unsigned *w, 
       }
       case RGUI_SETTINGS_BIND_DEVICE_TYPE:
       {
-         const char *name;
-         switch (g_settings.input.libretro_device[rgui->current_pad])
+         const struct retro_controller_description *desc = NULL;
+         if (rgui->current_pad < g_extern.system.num_ports)
          {
-            case RETRO_DEVICE_NONE: name = "None"; break;
-            case RETRO_DEVICE_JOYPAD: name = "Joypad"; break;
-            case RETRO_DEVICE_ANALOG: name = "Joypad w/ Analog"; break;
-            case RETRO_DEVICE_MOUSE: name = "Mouse"; break;
-            default: name = "Unknown"; break;
+            desc = libretro_find_controller_description(&g_extern.system.ports[rgui->current_pad],
+                  g_settings.input.libretro_device[rgui->current_pad]);
+         }
+
+         const char *name = desc ? desc->desc : NULL;
+         if (!name) // Find generic name.
+         {
+            switch (g_settings.input.libretro_device[rgui->current_pad])
+            {
+               case RETRO_DEVICE_NONE: name = "None"; break;
+               case RETRO_DEVICE_JOYPAD: name = "Joypad"; break;
+               case RETRO_DEVICE_ANALOG: name = "Joypad w/ Analog"; break;
+               case RETRO_DEVICE_MOUSE: name = "Mouse"; break;
+               default: name = "Unknown"; break;
+            }
          }
 
          strlcpy(type_str, name, type_str_size);

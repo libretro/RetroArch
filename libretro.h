@@ -644,9 +644,6 @@ struct retro_controller_description
    // set to the particular device type the core uses.
    const char *desc;
 
-   // A computer-friendly short string identifier ([a-z]).
-   const char *ident;
-
    // Device type passed to retro_set_controller_port_device(). If the device type is a sub-class of a generic input device type,
    // use the RETRO_DEVICE_SUBCLASS macro to create an ID. E.g. RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_JOYPAD, 1).
    unsigned id;
