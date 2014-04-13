@@ -652,6 +652,28 @@ static void rmenu_xui_populate_entries(void *data, unsigned i)
    XuiListSetCurSelVisible(m_menulist, rgui->selection_ptr);
 }
 
+static void rmenu_xui_navigation_clear(void *data)
+{
+   rgui_handle_t *rgui = (rgui_handle_t*)data;
+   XuiListSetCurSelVisible(m_menulist, rgui->selection_ptr);
+}
+
+static void rmenu_xui_navigation_set_visible(void *data)
+{
+   rgui_handle_t *rgui = (rgui_handle_t*)data;
+   XuiListSetCurSelVisible(m_menulist, rgui->selection_ptr);
+}
+
+static void rmenu_xui_navigation_alphabet(void *data, size_t *ptr_out)
+{
+   XuiListSetCurSelVisible(m_menulist, *ptr_out);
+}
+
+static void rmenu_xui_navigation_alphabet(void *data, size_t *ptr_out)
+{
+   XuiListSetCurSelVisible(m_menulist, *ptr_out);
+}
+
 const menu_ctx_driver_t menu_ctx_rmenu_xui = {
    NULL,
    rmenu_xui_render_messagebox,
@@ -664,5 +686,12 @@ const menu_ctx_driver_t menu_ctx_rmenu_xui = {
    rmenu_xui_populate_entries,
    NULL,
    rmenu_xui_input_postprocess,
+   rmenu_xui_navigation_clear,
+   rmenu_xui_navigation_set_visible,
+   rmenu_xui_navigation_set_visible,
+   rmenu_xui_navigation_set_visible,
+   rmenu_xui_navigation_set_visible,
+   rmenu_xui_navigation_alphabet,
+   rmenu_xui_navigation_alphabet,
    "rmenu_xui",
 };

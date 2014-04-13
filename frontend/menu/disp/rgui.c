@@ -617,5 +617,12 @@ const menu_ctx_driver_t menu_ctx_rgui = {
    NULL,
    NULL,
    rgui_input_postprocess,
+   NULL,
+   NULL,
+   NULL,
+   NULL,
+   NULL,
+   NULL,
+   NULL,
    "rgui",
 };
