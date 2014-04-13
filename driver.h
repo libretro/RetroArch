@@ -645,6 +645,11 @@ bool driver_set_rumble_state(unsigned port, enum retro_rumble_effect effect, uin
 bool driver_set_sensor_state(unsigned port, enum retro_sensor_action action, unsigned rate);
 float driver_sensor_get_input(unsigned port, unsigned action);
 
+#ifdef HAVE_DYLIB
+void rarch_deinit_filter(void);
+void rarch_init_filter(bool rgb32);
+#endif
+
 // Used by RETRO_ENVIRONMENT_GET_CAMERA_INTERFACE
 #ifdef HAVE_CAMERA
 bool driver_camera_start(void);

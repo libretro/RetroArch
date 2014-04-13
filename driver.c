@@ -1282,7 +1282,7 @@ void uninit_audio(void)
 }
 
 #ifdef HAVE_DYLIB
-static void deinit_filter(void)
+void rarch_deinit_filter(void)
 {
    g_extern.filter.active = false;
 
@@ -1301,7 +1301,7 @@ static void deinit_filter(void)
    memset(&g_extern.filter.scaler, 0, sizeof(g_extern.filter.scaler));
 }
 
-static void init_filter(bool rgb32)
+void rarch_init_filter(bool rgb32)
 {
    unsigned i;
    if (g_extern.filter.active)
@@ -1390,7 +1390,7 @@ static void init_filter(bool rgb32)
 
 error:
    RARCH_ERR("CPU filter init failed.\n");
-   deinit_filter();
+   rarch_deinit_filter();
 }
 #endif
 
@@ -1457,7 +1457,7 @@ static bool init_video_pixel_converter(unsigned size)
 void init_video_input(void)
 {
 #ifdef HAVE_DYLIB
-   init_filter(g_extern.system.pix_fmt == RETRO_PIXEL_FORMAT_XRGB8888);
+   rarch_init_filter(g_extern.system.pix_fmt == RETRO_PIXEL_FORMAT_XRGB8888);
 #endif
 
    init_shader_dir();
@@ -1640,7 +1640,7 @@ void uninit_video_input(void)
    deinit_pixel_converter();
 
 #ifdef HAVE_DYLIB
-   deinit_filter();
+   rarch_deinit_filter();
 #endif
 
    deinit_shader_dir();
