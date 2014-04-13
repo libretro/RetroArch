@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2014 - Daniel De Matteis
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -29,6 +29,7 @@
 #include "../../file.h"
 #include "../../file_ext.h"
 #include "../../input/input_common.h"
+#include "../../input/keyboard_line.h"
 
 #include "../../compat/posix_string.h"
 
@@ -594,6 +595,55 @@ static int menu_custom_bind_iterate(void *data, unsigned action)
    return 0;
 }
 
+bool menu_custom_bind_keyboard_cb(void *data, unsigned code)
+{
+   rgui_handle_t *rgui = (rgui_handle_t*)data;
+   rgui->binds.target->key = code;
+   rgui->binds.begin++;
+   rgui->binds.target++;
+   rgui->binds.timeout_end = rarch_get_time_usec() + RGUI_KEYBOARD_BIND_TIMEOUT_SECONDS * 1000000;
+   return rgui->binds.begin <= rgui->binds.last;
+}
+
+static int menu_custom_bind_iterate_keyboard(void *data, unsigned action)
+{
+   rgui_handle_t *rgui = (rgui_handle_t*)data;
+   (void)action; // Have to ignore action here.
+
+   if (driver.video_data && driver.menu_ctx && driver.menu_ctx->render)
+      driver.menu_ctx->render(rgui);
+
+   int64_t current = rarch_get_time_usec();
+   int timeout = (rgui->binds.timeout_end - current) / 1000000;
+
+   char msg[256];
+   snprintf(msg, sizeof(msg), "[%s]\npress keyboard\n(timeout %d seconds)",
+         input_config_bind_map[rgui->binds.begin - RGUI_SETTINGS_BIND_BEGIN].desc, timeout);
+
+   if (driver.video_data && driver.menu_ctx && driver.menu_ctx->render_messagebox)
+      driver.menu_ctx->render_messagebox(rgui, msg);
+
+   if (timeout <= 0)
+   {
+      rgui->binds.begin++;
+      rgui->binds.target->key = RETROK_UNKNOWN; // Could be unsafe, but whatever.
+      rgui->binds.target++;
+      rgui->binds.timeout_end = rarch_get_time_usec() + RGUI_KEYBOARD_BIND_TIMEOUT_SECONDS * 1000000;
+   }
+
+   // binds.begin is updated in keyboard_press callback.
+   if (rgui->binds.begin > rgui->binds.last)
+   {
+      file_list_pop(rgui->menu_stack, &rgui->selection_ptr);
+
+      // Avoid new binds triggering things right away.
+      rgui->trigger_state = 0;
+      rgui->old_input_state = -1ULL;
+      input_keyboard_wait_keys_cancel();
+   }
+   return 0;
+}
+
 static int menu_start_screen_iterate(void *data, unsigned action)
 {
    unsigned i;
@@ -808,7 +858,7 @@ static int menu_viewport_iterate(void *data, unsigned action)
             base_msg,
             custom->width, custom->height,
             custom->width / geom->base_width,
-            custom->height / geom->base_height); 
+            custom->height / geom->base_height);
    }
    else
    {
@@ -818,7 +868,7 @@ static int menu_viewport_iterate(void *data, unsigned action)
          base_msg = "Set Bottom-Right Corner";
 
       snprintf(msg, sizeof(msg), "%s (%d, %d : %4ux%4u)",
-            base_msg, custom->x, custom->y, custom->width, custom->height); 
+            base_msg, custom->x, custom->y, custom->width, custom->height);
    }
 
    if (driver.video_data && driver.menu_ctx && driver.menu_ctx->render_messagebox)
@@ -970,8 +1020,8 @@ static int menu_settings_iterate(void *data, unsigned action)
             || menu_type == RGUI_SETTINGS_AUDIO_OPTIONS
             || menu_type == RGUI_SETTINGS_DISK_OPTIONS
             || menu_type == RGUI_SETTINGS_PRIVACY_OPTIONS
-            || menu_type == RGUI_SETTINGS_GENERAL_OPTIONS 
-            || menu_type == RGUI_SETTINGS_VIDEO_OPTIONS 
+            || menu_type == RGUI_SETTINGS_GENERAL_OPTIONS
+            || menu_type == RGUI_SETTINGS_VIDEO_OPTIONS
             || menu_type == RGUI_SETTINGS_FONT_OPTIONS
             || menu_type == RGUI_SETTINGS_SHADER_OPTIONS
             )
@@ -1054,6 +1104,8 @@ static int menu_iterate_func(void *data, unsigned action)
       return menu_viewport_iterate(rgui, action);
    else if (menu_type == RGUI_SETTINGS_CUSTOM_BIND)
       return menu_custom_bind_iterate(rgui, action);
+   else if (menu_type == RGUI_SETTINGS_CUSTOM_BIND_KEYBOARD)
+      return menu_custom_bind_iterate_keyboard(rgui, action);
 
    if (rgui->need_refresh && action != RGUI_ACTION_MESSAGE)
       action = RGUI_ACTION_NOOP;
@@ -1097,7 +1149,7 @@ static int menu_iterate_func(void *data, unsigned action)
       case RGUI_ACTION_SCROLL_DOWN:
          menu_ascend_alphabet(rgui, &rgui->selection_ptr);
          break;
-      
+
       case RGUI_ACTION_CANCEL:
          if (rgui->menu_stack->size > 1)
          {
@@ -1367,7 +1419,7 @@ static int menu_iterate_func(void *data, unsigned action)
 
    if (rgui->need_refresh && (menu_type == RGUI_FILE_DIRECTORY ||
             menu_type_is(menu_type) == RGUI_SETTINGS_SHADER_OPTIONS ||
-            menu_type_is(menu_type) == RGUI_FILE_DIRECTORY || 
+            menu_type_is(menu_type) == RGUI_FILE_DIRECTORY ||
             menu_type == RGUI_SETTINGS_OVERLAY_PRESET ||
             menu_type == RGUI_SETTINGS_DEFERRED_CORE ||
             menu_type == RGUI_SETTINGS_CORE ||
@@ -1396,7 +1448,7 @@ bool menu_iterate(void)
    static bool first_held = false;
    uint64_t input_state = 0;
    int32_t input_entry_ret, ret;
-      
+
    input_entry_ret = 0;
    ret = 0;
 
@@ -1700,7 +1752,7 @@ static bool menu_poll_find_trigger_pad(struct rgui_bind_state *state, struct rgu
          state->target->joykey = NO_BTN;
 
          // Lock the current axis.
-         new_state->axis_state[p].locked_axes[a] = n->axes[a] > 0 ? 0x7fff : -0x7fff; 
+         new_state->axis_state[p].locked_axes[a] = n->axes[a] > 0 ? 0x7fff : -0x7fff;
          return true;
       }
 
@@ -1751,7 +1803,7 @@ static inline int menu_list_get_first_char(file_list_t *buf, unsigned offset)
    const char *path = NULL;
    file_list_get_alt_at_offset(buf, offset, &path);
    int ret = tolower(*path);
-  
+
    // "Normalize" non-alphabetical entries so they are lumped together for purposes of jumping.
    if (ret < 'a')
       ret = 'a' - 1;
@@ -1925,7 +1977,7 @@ void menu_populate_entries(void *data, unsigned menu_type)
          }
          else
             file_list_push(rgui->selection_buf, "No options available.", RGUI_SETTINGS_CORE_OPTION_NONE, 0);
-         break;		 
+         break;
       case RGUI_SETTINGS_CORE_INFO:
          file_list_clear(rgui->selection_buf);
          if (rgui->core_info_current.data)
@@ -1964,7 +2016,7 @@ void menu_populate_entries(void *data, unsigned menu_type)
                for (i = 0; i < rgui->core_info_current.firmware_count; i++)
                {
                   if (rgui->core_info_current.firmware[i].desc)
-                  {					 
+                  {
                      snprintf(tmp, sizeof(tmp), "	name: %s",
                            rgui->core_info_current.firmware[i].desc ? rgui->core_info_current.firmware[i].desc : "");
                      file_list_push(rgui->selection_buf, tmp, RGUI_SETTINGS_CORE_INFO_NONE, 0);
@@ -1991,7 +2043,7 @@ void menu_populate_entries(void *data, unsigned menu_type)
          }
          else
             file_list_push(rgui->selection_buf, "No information available.", RGUI_SETTINGS_CORE_OPTION_NONE, 0);
-         break;			 
+         break;
       case RGUI_SETTINGS_OPTIONS:
          file_list_clear(rgui->selection_buf);
          file_list_push(rgui->selection_buf, "General Options", RGUI_SETTINGS_GENERAL_OPTIONS, 0);
@@ -2136,7 +2188,7 @@ void menu_populate_entries(void *data, unsigned menu_type)
          }
 
          file_list_push(rgui->selection_buf, "Core Options", RGUI_SETTINGS_CORE_OPTIONS, 0);
-         file_list_push(rgui->selection_buf, "Core Information", RGUI_SETTINGS_CORE_INFO, 0);	
+         file_list_push(rgui->selection_buf, "Core Information", RGUI_SETTINGS_CORE_INFO, 0);
          file_list_push(rgui->selection_buf, "Settings", RGUI_SETTINGS_OPTIONS, 0);
          file_list_push(rgui->selection_buf, "Drivers", RGUI_SETTINGS_DRIVERS, 0);
 

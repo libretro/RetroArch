@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2014 - Daniel De Matteis
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -249,6 +249,7 @@ typedef enum
    RGUI_SETTINGS_BIND_GRAB_MOUSE_TOGGLE,
    RGUI_SETTINGS_BIND_MENU_TOGGLE,
    RGUI_SETTINGS_CUSTOM_BIND,
+   RGUI_SETTINGS_CUSTOM_BIND_KEYBOARD,
    RGUI_SETTINGS_CUSTOM_BIND_ALL,
    RGUI_SETTINGS_CUSTOM_BIND_DEFAULT_ALL,
    RGUI_SETTINGS_ONSCREEN_KEYBOARD_ENABLE,
@@ -294,9 +295,11 @@ struct rgui_bind_axis_state
    int16_t locked_axes[RGUI_MAX_AXES];
 };
 
+#define RGUI_KEYBOARD_BIND_TIMEOUT_SECONDS 3
 struct rgui_bind_state
 {
    struct retro_keybind *target;
+   int64_t timeout_end; // For keyboard binding.
    unsigned begin;
    unsigned last;
    unsigned player;
@@ -308,6 +311,7 @@ struct rgui_bind_state
 void menu_poll_bind_get_rested_axes(struct rgui_bind_state *state);
 void menu_poll_bind_state(struct rgui_bind_state *state);
 bool menu_poll_find_trigger(struct rgui_bind_state *state, struct rgui_bind_state *new_state);
+bool menu_custom_bind_keyboard_cb(void *data, unsigned code);
 
 #ifdef GEKKO
 enum
@@ -337,12 +341,12 @@ enum
    GX_RESOLUTIONS_448_448,
    GX_RESOLUTIONS_480_448,
    GX_RESOLUTIONS_512_448,
-   GX_RESOLUTIONS_576_448, 
-   GX_RESOLUTIONS_608_448, 
-   GX_RESOLUTIONS_640_448, 
-   GX_RESOLUTIONS_340_464, 
-   GX_RESOLUTIONS_512_464, 
-   GX_RESOLUTIONS_512_472, 
+   GX_RESOLUTIONS_576_448,
+   GX_RESOLUTIONS_608_448,
+   GX_RESOLUTIONS_640_448,
+   GX_RESOLUTIONS_340_464,
+   GX_RESOLUTIONS_512_464,
+   GX_RESOLUTIONS_512_472,
    GX_RESOLUTIONS_384_480,
    GX_RESOLUTIONS_512_480,
    GX_RESOLUTIONS_530_480,

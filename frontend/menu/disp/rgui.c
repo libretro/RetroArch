@@ -2,7 +2,7 @@
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2014 - Daniel De Matteis
  *  Copyright (C) 2012-2014 - Michael Lelli
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -230,7 +230,7 @@ static void rgui_render_messagebox(void *data, const char *message)
    unsigned height = FONT_HEIGHT_STRIDE * list->size + 6 + 10;
    int x = (rgui->width - width) / 2;
    int y = (rgui->height - height) / 2;
-   
+
    fill_rect(rgui->frame_buf, rgui->frame_buf_pitch,
          x + 5, y + 5, width - 10, height - 10, gray_filler);
 
@@ -261,7 +261,7 @@ static void rgui_render(void *data)
 {
    rgui_handle_t *rgui = (rgui_handle_t*)data;
 
-   if (rgui->need_refresh && 
+   if (rgui->need_refresh &&
          (g_extern.lifecycle_state & (1ULL << MODE_MENU))
          && !rgui->msg_force)
       return;
@@ -270,7 +270,7 @@ static void rgui_render(void *data)
       rgui->selection_ptr - RGUI_TERM_HEIGHT / 2 : 0;
    size_t end = rgui->selection_ptr + RGUI_TERM_HEIGHT <= rgui->selection_buf->size ?
       rgui->selection_ptr + RGUI_TERM_HEIGHT : rgui->selection_buf->size;
-   
+
    // Do not scroll if all items are visible.
    if (rgui->selection_buf->size <= RGUI_TERM_HEIGHT)
       begin = 0;
@@ -295,7 +295,9 @@ static void rgui_render(void *data)
       snprintf(title, sizeof(title), "DISK APPEND %s", dir);
    else if (menu_type == RGUI_SETTINGS_VIDEO_OPTIONS)
       strlcpy(title, "VIDEO OPTIONS", sizeof(title));
-   else if (menu_type == RGUI_SETTINGS_INPUT_OPTIONS)
+   else if (menu_type == RGUI_SETTINGS_INPUT_OPTIONS ||
+         menu_type == RGUI_SETTINGS_CUSTOM_BIND ||
+         menu_type == RGUI_SETTINGS_CUSTOM_BIND_KEYBOARD)
       strlcpy(title, "INPUT OPTIONS", sizeof(title));
    else if (menu_type == RGUI_SETTINGS_OVERLAY_OPTIONS)
       strlcpy(title, "OVERLAY OPTIONS", sizeof(title));
@@ -322,18 +324,17 @@ static void rgui_render(void *data)
    else if (menu_type == RGUI_SETTINGS_CORE_OPTIONS)
       strlcpy(title, "CORE OPTIONS", sizeof(title));
    else if (menu_type == RGUI_SETTINGS_CORE_INFO)
-      strlcpy(title, "CORE INFO", sizeof(title));		  
+      strlcpy(title, "CORE INFO", sizeof(title));
    else if (menu_type == RGUI_SETTINGS_PRIVACY_OPTIONS)
-      strlcpy(title, "PRIVACY OPTIONS", sizeof(title)); 	  
+      strlcpy(title, "PRIVACY OPTIONS", sizeof(title));
 #ifdef HAVE_SHADER_MANAGER
    else if (menu_type_is(menu_type) == RGUI_SETTINGS_SHADER_OPTIONS)
       snprintf(title, sizeof(title), "SHADER %s", dir);
 #endif
-   else if ((menu_type == RGUI_SETTINGS_INPUT_OPTIONS) ||
-         (menu_type == RGUI_SETTINGS_PATH_OPTIONS) ||
-         (menu_type == RGUI_SETTINGS_OPTIONS) ||
-         (menu_type == RGUI_SETTINGS_CUSTOM_VIEWPORT || menu_type == RGUI_SETTINGS_CUSTOM_VIEWPORT_2) ||
-         menu_type == RGUI_SETTINGS_CUSTOM_BIND ||
+   else if (menu_type == RGUI_SETTINGS_PATH_OPTIONS ||
+         menu_type == RGUI_SETTINGS_OPTIONS ||
+         menu_type == RGUI_SETTINGS_CUSTOM_VIEWPORT ||
+         menu_type == RGUI_SETTINGS_CUSTOM_VIEWPORT_2 ||
          menu_type == RGUI_START_SCREEN ||
          menu_type == RGUI_SETTINGS)
       snprintf(title, sizeof(title), "MENU %s", dir);
@@ -417,7 +418,7 @@ static void rgui_render(void *data)
       char type_str[256];
 
       unsigned w = 19;
-      if (menu_type == RGUI_SETTINGS_INPUT_OPTIONS || menu_type == RGUI_SETTINGS_CUSTOM_BIND)
+      if (menu_type == RGUI_SETTINGS_INPUT_OPTIONS || menu_type == RGUI_SETTINGS_CUSTOM_BIND || menu_type == RGUI_SETTINGS_CUSTOM_BIND_KEYBOARD)
          w = 21;
       else if (menu_type == RGUI_SETTINGS_PATH_OPTIONS)
          w = 24;
