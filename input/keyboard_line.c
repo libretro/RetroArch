@@ -134,8 +134,11 @@ void input_keyboard_event(bool down, unsigned code, uint32_t character, uint16_t
 
    if (deferred_wait_keys)
    {
-      input_keyboard_wait_keys_cancel();
-      deferred_wait_keys = false;
+      if (!down)
+      {
+         input_keyboard_wait_keys_cancel();
+         deferred_wait_keys = false;
+      }
    }
    else if (g_keyboard_press_cb)
    {
