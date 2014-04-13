@@ -130,10 +130,17 @@ void input_keyboard_wait_keys_cancel(void)
 
 void input_keyboard_event(bool down, unsigned code, uint32_t character, uint16_t mod)
 {
-   if (g_keyboard_press_cb)
+   static bool deferred_wait_keys;
+
+   if (deferred_wait_keys)
+   {
+      input_keyboard_wait_keys_cancel();
+      deferred_wait_keys = false;
+   }
+   else if (g_keyboard_press_cb)
    {
       if (down && code != RETROK_UNKNOWN && !g_keyboard_press_cb(g_keyboard_press_data, code))
-         input_keyboard_wait_keys_cancel();
+         deferred_wait_keys = true;
    }
    else if (g_keyboard_line)
    {

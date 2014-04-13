@@ -623,12 +623,14 @@ static int menu_custom_bind_iterate_keyboard(void *data, unsigned action)
    if (driver.video_data && driver.menu_ctx && driver.menu_ctx->render_messagebox)
       driver.menu_ctx->render_messagebox(rgui, msg);
 
+   bool timed_out = false;
    if (timeout <= 0)
    {
       rgui->binds.begin++;
       rgui->binds.target->key = RETROK_UNKNOWN; // Could be unsafe, but whatever.
       rgui->binds.target++;
       rgui->binds.timeout_end = rarch_get_time_usec() + RGUI_KEYBOARD_BIND_TIMEOUT_SECONDS * 1000000;
+      timed_out = true;
    }
 
    // binds.begin is updated in keyboard_press callback.
@@ -639,7 +641,10 @@ static int menu_custom_bind_iterate_keyboard(void *data, unsigned action)
       // Avoid new binds triggering things right away.
       rgui->trigger_state = 0;
       rgui->old_input_state = -1ULL;
-      input_keyboard_wait_keys_cancel();
+
+      // We won't be getting any key events, so just cancel early.
+      if (timed_out)
+         input_keyboard_wait_keys_cancel();
    }
    return 0;
 }
