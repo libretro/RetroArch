@@ -996,23 +996,26 @@ int menu_set_settings(void *data, unsigned setting, unsigned action)
             rgui->bind_mode_keyboard = !rgui->bind_mode_keyboard;
          break;
       case RGUI_SETTINGS_CUSTOM_BIND_ALL:
-         if (rgui->bind_mode_keyboard)
+         if (action == RGUI_ACTION_OK)
          {
-            rgui->binds.target = &g_settings.input.binds[port][0];
-            rgui->binds.begin = RGUI_SETTINGS_BIND_BEGIN;
-            rgui->binds.last = RGUI_SETTINGS_BIND_LAST;
-            file_list_push(rgui->menu_stack, "", RGUI_SETTINGS_CUSTOM_BIND_KEYBOARD, rgui->selection_ptr);
-            rgui->binds.timeout_end = rarch_get_time_usec() + RGUI_KEYBOARD_BIND_TIMEOUT_SECONDS * 1000000;
-            input_keyboard_wait_keys(rgui, menu_custom_bind_keyboard_cb);
-         }
-         else
-         {
-            rgui->binds.target = &g_settings.input.binds[port][0];
-            rgui->binds.begin = RGUI_SETTINGS_BIND_BEGIN;
-            rgui->binds.last = RGUI_SETTINGS_BIND_LAST;
-            file_list_push(rgui->menu_stack, "", RGUI_SETTINGS_CUSTOM_BIND, rgui->selection_ptr);
-            menu_poll_bind_get_rested_axes(&rgui->binds);
-            menu_poll_bind_state(&rgui->binds);
+            if (rgui->bind_mode_keyboard)
+            {
+               rgui->binds.target = &g_settings.input.binds[port][0];
+               rgui->binds.begin = RGUI_SETTINGS_BIND_BEGIN;
+               rgui->binds.last = RGUI_SETTINGS_BIND_LAST;
+               file_list_push(rgui->menu_stack, "", RGUI_SETTINGS_CUSTOM_BIND_KEYBOARD, rgui->selection_ptr);
+               rgui->binds.timeout_end = rarch_get_time_usec() + RGUI_KEYBOARD_BIND_TIMEOUT_SECONDS * 1000000;
+               input_keyboard_wait_keys(rgui, menu_custom_bind_keyboard_cb);
+            }
+            else
+            {
+               rgui->binds.target = &g_settings.input.binds[port][0];
+               rgui->binds.begin = RGUI_SETTINGS_BIND_BEGIN;
+               rgui->binds.last = RGUI_SETTINGS_BIND_LAST;
+               file_list_push(rgui->menu_stack, "", RGUI_SETTINGS_CUSTOM_BIND, rgui->selection_ptr);
+               menu_poll_bind_get_rested_axes(&rgui->binds);
+               menu_poll_bind_state(&rgui->binds);
+            }
          }
          break;
       case RGUI_SETTINGS_CUSTOM_BIND_DEFAULT_ALL:
