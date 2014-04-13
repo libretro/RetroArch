@@ -991,17 +991,12 @@ int menu_set_settings(void *data, unsigned setting, unsigned action)
          if (action == RGUI_ACTION_OK)
             g_settings.input.autodetect_enable = !g_settings.input.autodetect_enable;
          break;
+      case RGUI_SETTINGS_CUSTOM_BIND_MODE:
+         if (action == RGUI_ACTION_OK || action == RGUI_ACTION_LEFT || action == RGUI_ACTION_RIGHT)
+            rgui->bind_mode_keyboard = !rgui->bind_mode_keyboard;
+         break;
       case RGUI_SETTINGS_CUSTOM_BIND_ALL:
-         if (action == RGUI_ACTION_OK)
-         {
-            rgui->binds.target = &g_settings.input.binds[port][0];
-            rgui->binds.begin = RGUI_SETTINGS_BIND_BEGIN;
-            rgui->binds.last = RGUI_SETTINGS_BIND_LAST;
-            file_list_push(rgui->menu_stack, "", RGUI_SETTINGS_CUSTOM_BIND, rgui->selection_ptr);
-            menu_poll_bind_get_rested_axes(&rgui->binds);
-            menu_poll_bind_state(&rgui->binds);
-         }
-         else if (action == RGUI_ACTION_RIGHT) // Hack
+         if (rgui->bind_mode_keyboard)
          {
             rgui->binds.target = &g_settings.input.binds[port][0];
             rgui->binds.begin = RGUI_SETTINGS_BIND_BEGIN;
@@ -1010,18 +1005,33 @@ int menu_set_settings(void *data, unsigned setting, unsigned action)
             rgui->binds.timeout_end = rarch_get_time_usec() + RGUI_KEYBOARD_BIND_TIMEOUT_SECONDS * 1000000;
             input_keyboard_wait_keys(rgui, menu_custom_bind_keyboard_cb);
          }
+         else
+         {
+            rgui->binds.target = &g_settings.input.binds[port][0];
+            rgui->binds.begin = RGUI_SETTINGS_BIND_BEGIN;
+            rgui->binds.last = RGUI_SETTINGS_BIND_LAST;
+            file_list_push(rgui->menu_stack, "", RGUI_SETTINGS_CUSTOM_BIND, rgui->selection_ptr);
+            menu_poll_bind_get_rested_axes(&rgui->binds);
+            menu_poll_bind_state(&rgui->binds);
+         }
          break;
       case RGUI_SETTINGS_CUSTOM_BIND_DEFAULT_ALL:
          if (action == RGUI_ACTION_OK)
          {
             unsigned i;
             struct retro_keybind *target = &g_settings.input.binds[port][0];
+            const struct retro_keybind *def_binds = port ? retro_keybinds_rest : retro_keybinds_1;
             rgui->binds.begin = RGUI_SETTINGS_BIND_BEGIN;
             rgui->binds.last = RGUI_SETTINGS_BIND_LAST;
             for (i = RGUI_SETTINGS_BIND_BEGIN; i <= RGUI_SETTINGS_BIND_LAST; i++, target++)
             {
-               target->joykey = NO_BTN;
-               target->joyaxis = AXIS_NONE;
+               if (rgui->bind_mode_keyboard)
+                  target->key = def_binds[i - RGUI_SETTINGS_BIND_BEGIN].key;
+               else
+               {
+                  target->joykey = NO_BTN;
+                  target->joyaxis = AXIS_NONE;
+               }
             }
          }
          break;
@@ -1096,31 +1106,38 @@ int menu_set_settings(void *data, unsigned setting, unsigned action)
          else
          {
             struct retro_keybind *bind = &g_settings.input.binds[port][setting - RGUI_SETTINGS_BIND_BEGIN];
-            // FIXME: Hack, use RIGHT action to signal keyboard bind. Need something more sane.
-            if (action == RGUI_ACTION_OK || action == RGUI_ACTION_RIGHT)
+            if (action == RGUI_ACTION_OK)
             {
                rgui->binds.begin = setting;
                rgui->binds.last = setting;
                rgui->binds.target = bind;
                rgui->binds.player = port;
                file_list_push(rgui->menu_stack, "",
-                     action == RGUI_ACTION_OK ? RGUI_SETTINGS_CUSTOM_BIND : RGUI_SETTINGS_CUSTOM_BIND_KEYBOARD, rgui->selection_ptr);
+                     rgui->bind_mode_keyboard ? RGUI_SETTINGS_CUSTOM_BIND_KEYBOARD : RGUI_SETTINGS_CUSTOM_BIND, rgui->selection_ptr);
 
-               if (action == RGUI_ACTION_OK)
-               {
-                  menu_poll_bind_get_rested_axes(&rgui->binds);
-                  menu_poll_bind_state(&rgui->binds);
-               }
-               else
+               if (rgui->bind_mode_keyboard)
                {
                   rgui->binds.timeout_end = rarch_get_time_usec() + RGUI_KEYBOARD_BIND_TIMEOUT_SECONDS * 1000000;
                   input_keyboard_wait_keys(rgui, menu_custom_bind_keyboard_cb);
                }
+               else
+               {
+                  menu_poll_bind_get_rested_axes(&rgui->binds);
+                  menu_poll_bind_state(&rgui->binds);
+               }
             }
             else if (action == RGUI_ACTION_START)
             {
-               bind->joykey = NO_BTN;
-               bind->joyaxis = AXIS_NONE;
+               if (rgui->bind_mode_keyboard)
+               {
+                  const struct retro_keybind *def_binds = port ? retro_keybinds_rest : retro_keybinds_1;
+                  bind->key = def_binds[setting - RGUI_SETTINGS_BIND_BEGIN].key;
+               }
+               else
+               {
+                  bind->joykey = NO_BTN;
+                  bind->joyaxis = AXIS_NONE;
+               }
             }
          }
          break;
@@ -2256,6 +2273,9 @@ void menu_set_settings_label(char *type_str, size_t type_str_size, unsigned *w, 
       }
       case RGUI_SETTINGS_DEVICE_AUTODETECT_ENABLE:
          strlcpy(type_str, g_settings.input.autodetect_enable ? "ON" : "OFF", type_str_size);
+         break;
+      case RGUI_SETTINGS_CUSTOM_BIND_MODE:
+         strlcpy(type_str, rgui->bind_mode_keyboard ? "Keyboard" : "Joypad", type_str_size);
          break;
       case RGUI_SETTINGS_BIND_UP:
       case RGUI_SETTINGS_BIND_DOWN:

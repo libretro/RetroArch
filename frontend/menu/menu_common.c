@@ -2134,6 +2134,7 @@ void menu_populate_entries(void *data, unsigned menu_type)
          file_list_push(rgui->selection_buf, "Analog D-pad Mode", RGUI_SETTINGS_BIND_ANALOG_MODE, 0);
          file_list_push(rgui->selection_buf, "Autodetect enable", RGUI_SETTINGS_DEVICE_AUTODETECT_ENABLE, 0);
 
+         file_list_push(rgui->selection_buf, "Bind Mode", RGUI_SETTINGS_CUSTOM_BIND_MODE, 0);
          file_list_push(rgui->selection_buf, "Configure All (RetroPad)", RGUI_SETTINGS_CUSTOM_BIND_ALL, 0);
          file_list_push(rgui->selection_buf, "Default All (RetroPad)", RGUI_SETTINGS_CUSTOM_BIND_DEFAULT_ALL, 0);
 #ifdef HAVE_OSK

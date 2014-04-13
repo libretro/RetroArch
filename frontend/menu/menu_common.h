@@ -248,6 +248,7 @@ typedef enum
    RGUI_SETTINGS_BIND_DISK_NEXT,
    RGUI_SETTINGS_BIND_GRAB_MOUSE_TOGGLE,
    RGUI_SETTINGS_BIND_MENU_TOGGLE,
+   RGUI_SETTINGS_CUSTOM_BIND_MODE,
    RGUI_SETTINGS_CUSTOM_BIND,
    RGUI_SETTINGS_CUSTOM_BIND_KEYBOARD,
    RGUI_SETTINGS_CUSTOM_BIND_ALL,
@@ -415,6 +416,8 @@ typedef struct
       const char *label;
       bool display;
    } keyboard;
+
+   bool bind_mode_keyboard;
 } rgui_handle_t;
 
 extern rgui_handle_t *rgui;
