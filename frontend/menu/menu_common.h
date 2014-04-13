@@ -296,7 +296,7 @@ struct rgui_bind_axis_state
    int16_t locked_axes[RGUI_MAX_AXES];
 };
 
-#define RGUI_KEYBOARD_BIND_TIMEOUT_SECONDS 3
+#define RGUI_KEYBOARD_BIND_TIMEOUT_SECONDS 5
 struct rgui_bind_state
 {
    struct retro_keybind *target;
