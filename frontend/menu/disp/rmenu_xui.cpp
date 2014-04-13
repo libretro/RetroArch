@@ -674,6 +674,34 @@ static void rmenu_xui_navigation_alphabet(void *data, size_t *ptr_out)
    XuiListSetCurSelVisible(m_menulist, *ptr_out);
 }
 
+static void rmenu_xui_list_insert(void *data, const char *path, size_t list_size)
+{
+   (void)data;
+   wchar_t buf[PATH_MAX];
+
+   XuiListInsertItems(m_menulist, list_size, 1);
+   mbstowcs(buf, path, sizeof(buf) / sizeof(wchar_t));
+   XuiListSetText(m_menulist, list_size, buf);
+}
+
+static void rmenu_xui_list_delete(void *data, size_t list_size)
+{
+   (void)data;
+   XuiListDeleteItems(m_menulist, 0, list_size);
+}
+
+static void rmenu_xui_list_clear(void *data)
+{
+   (void)data;
+   XuiListDeleteItems(m_menulist, 0, XuiListGetItemCount(m_menulist));
+}
+
+static void rmenu_xui_list_set_selection(void *data)
+{
+   file_list_t *list = (file_list_t*)data;
+   XuiListSetCurSel(m_menulist, list->list[list->size].directory_ptr);
+}
+
 const menu_ctx_driver_t menu_ctx_rmenu_xui = {
    NULL,
    rmenu_xui_render_messagebox,
@@ -693,5 +721,9 @@ const menu_ctx_driver_t menu_ctx_rmenu_xui = {
    rmenu_xui_navigation_set_visible,
    rmenu_xui_navigation_alphabet,
    rmenu_xui_navigation_alphabet,
+   rmenu_xui_list_insert,
+   rmenu_xui_list_delete,
+   rmenu_xui_list_clear,
+   rmenu_xui_list_set_selection,
    "rmenu_xui",
 };

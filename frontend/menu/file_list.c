@@ -17,11 +17,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include "file_list.h"
+#include "../../driver.h"
 #include "../../compat/strcasestr.h"
 #include "../../msvc/msvc_compat.h"
-#ifdef HAVE_RMENU_XUI
-#include <xui.h>
-#endif
 
 struct item_file
 {
@@ -30,10 +28,6 @@ struct item_file
    unsigned type;
    size_t directory_ptr;
 };
-
-#ifdef HAVE_RMENU_XUI
-extern HXUIOBJ m_menulist;
-#endif
 
 void file_list_push(file_list_t *list,
       const char *path, unsigned type, size_t directory_ptr)
@@ -48,12 +42,8 @@ void file_list_push(file_list_t *list,
       list->list = (struct item_file*)realloc(list->list, list->capacity * sizeof(struct item_file));
    }
 
-#ifdef HAVE_RMENU_XUI
-   wchar_t buf[PATH_MAX];
-   XuiListInsertItems(m_menulist, list->size, 1);
-   mbstowcs(buf, path, sizeof(buf) / sizeof(wchar_t));
-   XuiListSetText(m_menulist, list->size, buf);
-#endif
+   if (driver.menu_ctx && driver.menu_ctx->list_insert)
+      driver.menu_ctx->list_insert(list, path, list->size);
 
    list->list[list->size].path = strdup(path);
    list->list[list->size].alt = NULL;
@@ -67,9 +57,8 @@ void file_list_pop(file_list_t *list, size_t *directory_ptr)
 {
    if (!(list->size == 0))
    {
-#ifdef HAVE_RMENU_XUI
-      XuiListDeleteItems(m_menulist, 0, list->size);
-#endif
+      if (driver.menu_ctx && driver.menu_ctx->list_delete)
+         driver.menu_ctx->list_delete(list, list->size);
       free(list->list[--list->size].path);
    }
 
@@ -77,9 +66,9 @@ void file_list_pop(file_list_t *list, size_t *directory_ptr)
    {
       *directory_ptr = list->list[list->size].directory_ptr;
    }
-#ifdef HAVE_RMENU_XUI
-   XuiListSetCurSel(m_menulist, list->list[list->size].directory_ptr);
-#endif
+
+   if (driver.menu_ctx && driver.menu_ctx->list_set_selection)
+      driver.menu_ctx->list_set_selection(list);
 }
 
 void file_list_free(file_list_t *list)
@@ -99,9 +88,9 @@ void file_list_clear(file_list_t *list)
       free(list->list[i].path);
       free(list->list[i].alt);
    }
-#ifdef HAVE_RMENU_XUI
-   XuiListDeleteItems(m_menulist, 0, XuiListGetItemCount(m_menulist));
-#endif
+
+   if (driver.menu_ctx && driver.menu_ctx->list_clear)
+      driver.menu_ctx->list_clear(list);
    list->size = 0;
 }
 
