@@ -21,7 +21,7 @@
 
 #include "softfilter.h"
 
-#define RARCH_CPU_FILTER_THREADS_AUTO 0
+#define RARCH_SOFTFILTER_THREADS_AUTO 0
 typedef struct rarch_softfilter rarch_softfilter_t;
 
 rarch_softfilter_t *rarch_softfilter_new(const char *filter_path,

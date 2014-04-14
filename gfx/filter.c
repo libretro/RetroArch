@@ -27,8 +27,10 @@ struct rarch_softfilter
    void *impl_data;
 
    unsigned max_width, max_height;
-   unsigned threads;
    enum retro_pixel_format pix_fmt, out_pix_fmt;
+
+   struct softfilter_work_packet *packets;
+   unsigned threads;
 };
 
 rarch_softfilter_t *rarch_softfilter_new(const char *filter_path,
@@ -56,12 +58,32 @@ rarch_softfilter_t *rarch_softfilter_new(const char *filter_path,
    if (!filt->impl)
       goto error;
 
+   // Simple assumptions.
+   unsigned input_fmt = in_pixel_format == RETRO_PIXEL_FORMAT_XRGB8888 ?
+      SOFTFILTER_FMT_XRGB8888 : SOFTFILTER_FMT_RGB565;
+   unsigned input_fmts = filt->impl->query_input_formats();
+   if (!(input_fmt & input_fmts))
+      goto error;
+
+   unsigned output_fmts = filt->impl->query_output_formats(input_fmt);
+   if (!(output_fmts & input_fmt))
+      goto error;
+
    filt->max_width = max_width;
    filt->max_height = max_height;
    filt->pix_fmt = in_pixel_format;
-   filt->threads = threads;
-
    filt->out_pix_fmt = in_pixel_format;
+
+   filt->impl_data = filt->impl->create(input_fmt, input_fmt, max_width, max_height,
+         threads != RARCH_SOFTFILTER_THREADS_AUTO ? threads : 1, cpu_features);
+   if (!filt->impl_data)
+      goto error;
+
+   threads = filt->impl->query_num_threads(filt->impl_data);
+   filt->packets = (struct softfilter_work_packet*)calloc(threads, sizeof(*filt->packets));
+   if (!filt->packets)
+      goto error;
+   filt->threads = threads;
 
    return filt;
 
@@ -75,6 +97,7 @@ void rarch_softfilter_free(rarch_softfilter_t *filt)
    if (!filt)
       return;
 
+   free(filt->packets);
    if (filt->impl && filt->impl_data)
       filt->impl->destroy(filt->impl_data);
    if (filt->lib)
@@ -104,5 +127,12 @@ void rarch_softfilter_process(rarch_softfilter_t *filt,
       void *output, size_t output_stride,
       const void *input, unsigned width, unsigned height, size_t input_stride)
 {
+   unsigned i;
+   filt->impl->process(filt->impl_data, filt->packets,
+         output, output_stride, input, width, height, input_stride);
+   
+   // TODO: Move to worker threads.
+   for (i = 0; i < filt->threads; i++)
+      filt->packets[i].work(filt->impl_data, filt->packets[i].thread_data);
 }
 

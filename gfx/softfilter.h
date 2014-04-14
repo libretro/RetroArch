@@ -62,11 +62,10 @@ typedef unsigned (*softfilter_query_input_formats_t)(void);
 typedef unsigned (*softfilter_query_output_formats_t)(unsigned input_format);
 
 // In softfilter_process_t, the softfilter implementation submits work units to a worker thread pool.
-typedef void (*softfilter_work_t)(void *userdata, void *thread_data);
+typedef void (*softfilter_work_t)(void *data, void *thread_data);
 struct softfilter_work_packet
 {
    softfilter_work_t work;
-   void *userdata;
    void *thread_data;
 };
 
@@ -100,7 +99,7 @@ typedef unsigned (*softfilter_query_num_threads_t)(void *data);
 struct softfilter_implementation
 {
    softfilter_query_input_formats_t query_input_formats;
-   softfilter_query_output_formats_t query_output_format;
+   softfilter_query_output_formats_t query_output_formats;
 
    softfilter_create_t create;
    softfilter_destroy_t destroy;
