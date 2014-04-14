@@ -560,7 +560,7 @@ uint64_t menu_input(void)
 bool menu_custom_bind_keyboard_cb(void *data, unsigned code)
 {
    rgui_handle_t *rgui = (rgui_handle_t*)data;
-   rgui->binds.target->key = (retro_key)code;
+   rgui->binds.target->key = (unsigned)code;
    rgui->binds.begin++;
    rgui->binds.target++;
    rgui->binds.timeout_end = rarch_get_time_usec() + RGUI_KEYBOARD_BIND_TIMEOUT_SECONDS * 1000000;
