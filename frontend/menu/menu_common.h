@@ -456,10 +456,13 @@ int menu_settings_toggle_setting(void *data, unsigned setting, unsigned action, 
 int menu_set_settings(void *data, unsigned setting, unsigned action);
 void menu_set_settings_label(char *type_str, size_t type_str_size, unsigned *w, unsigned type);
 
-void menu_populate_entries(void *data, unsigned menu_type);
 unsigned menu_type_is(unsigned type);
 
 uint64_t menu_input(void);
+
+void menu_flush_stack_type(void *data, unsigned final_type);
+void menu_update_system_info(void *data, bool *load_no_rom);
+void menu_build_scroll_indices(void *data, file_list_t *buf);
 
 #ifdef __cplusplus
 }

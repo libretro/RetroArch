@@ -481,6 +481,13 @@ typedef struct video_driver
    void (*poke_interface)(void *data, const video_poke_interface_t **iface);
 } video_driver_t;
 
+typedef struct menu_ctx_driver_backend
+{
+   void  (*entries_init)(void*, unsigned);
+   int   (*iterate)(void *, unsigned);
+   const char *ident;
+} menu_ctx_driver_backend_t;
+
 typedef struct menu_ctx_driver
 {
    void  (*set_texture)(void*, bool);
@@ -506,6 +513,7 @@ typedef struct menu_ctx_driver
    void  (*list_clear)(void *);
    void  (*list_set_selection)(void *);
 
+   const menu_ctx_driver_backend_t *backend;
    // Human readable string.
    const char *ident;
 } menu_ctx_driver_t;
@@ -748,6 +756,8 @@ extern const menu_ctx_driver_t menu_ctx_rmenu;
 extern const menu_ctx_driver_t menu_ctx_rmenu_xui;
 extern const menu_ctx_driver_t menu_ctx_rgui;
 extern const menu_ctx_driver_t menu_ctx_lakka;
+
+extern const menu_ctx_driver_backend_t menu_ctx_backend_common;
 
 #include "driver_funcs.h"
 

@@ -725,5 +725,6 @@ const menu_ctx_driver_t menu_ctx_rmenu_xui = {
    rmenu_xui_list_delete,
    rmenu_xui_list_clear,
    rmenu_xui_list_set_selection,
+   &menu_ctx_backend_common,
    "rmenu_xui",
 };

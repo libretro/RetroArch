@@ -95,7 +95,7 @@ ifneq ($(findstring Linux,$(OS)),)
 endif
 
 ifeq ($(HAVE_RGUI), 1)
-   OBJ += frontend/menu/menu_input_line_cb.o frontend/menu/menu_common.o frontend/menu/menu_navigation.o frontend/menu/menu_settings.o frontend/menu/file_list.o frontend/menu/disp/rgui.o frontend/menu/history.o
+   OBJ += frontend/menu/menu_input_line_cb.o frontend/menu/menu_common.o frontend/menu/menu_navigation.o frontend/menu/menu_settings.o frontend/menu/file_list.o frontend/menu/disp/rgui.o frontend/menu/backend/menu_common_backend.o frontend/menu/history.o 
    DEFINES += -DHAVE_MENU
 ifeq ($(HAVE_LAKKA), 1)
    OBJ += frontend/menu/disp/lakka.o

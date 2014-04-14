@@ -628,5 +628,6 @@ const menu_ctx_driver_t menu_ctx_rgui = {
    NULL,
    NULL,
    NULL,
+   &menu_ctx_backend_common,
    "rgui",
 };

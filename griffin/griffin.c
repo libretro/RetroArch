@@ -581,6 +581,10 @@ MENU
 #include "../frontend/menu/history.c"
 #include "../frontend/menu/file_list.c"
 
+#if defined(HAVE_RMENU) || defined(HAVE_RGUI) || defined(HAVE_RMENU_XUI)
+#include "../frontend/menu/backend/menu_common_backend.c"
+#endif
+
 #ifdef HAVE_RMENU
 #include "../frontend/menu/disp/rmenu.c"
 #endif
