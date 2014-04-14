@@ -34,6 +34,7 @@
 #include "performance.h"
 #include "core_options.h"
 #include "miscellaneous.h"
+#include "gfx/filter.h"
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -504,6 +505,8 @@ struct global
 
    struct
    {
+      rarch_softfilter_t *filter;
+
       bool active;
       uint32_t *buffer;
       uint32_t *colormap;

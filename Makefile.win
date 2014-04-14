@@ -194,6 +194,7 @@ endif
 
 ifeq ($(HAVE_DYLIB), 1)
    DEFINES += -DHAVE_DYLIB
+   OBJ += gfx/filter.o
 endif
 
 ifeq ($(HAVE_STDIN_CMD), 1)
