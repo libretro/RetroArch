@@ -35,7 +35,7 @@ static void apple_gamecontroller_poll(GCController* controller)
    if (!controller || controller.playerIndex == MAX_PLAYERS)
       return;
  
-   uint32_t slot = controller.playerIndex;
+   uint32_t slot = (uint32_t)controller.playerIndex;
    g_current_input_data.pad_buttons[slot] = 0;
    memset(g_current_input_data.pad_axis[slot], 0, sizeof(g_current_input_data.pad_axis[0]));
  
@@ -118,7 +118,7 @@ void apple_gamecontroller_disconnect(GCController* controller)
    if (controller.playerIndex == GCControllerPlayerIndexUnset)
       return;
    
-   apple_joypad_disconnect(controller.playerIndex);
+   apple_joypad_disconnect((uint32_t)(controller.playerIndex));
 }
 
 void apple_gamecontroller_init(void)
