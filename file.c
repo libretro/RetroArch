@@ -422,6 +422,8 @@ bool init_rom_file(void)
    }
 
    union string_list_elem_attr attr;
+   attr.i = 0;
+
    struct string_list *roms = string_list_new();
    if (!roms)
       return false;
