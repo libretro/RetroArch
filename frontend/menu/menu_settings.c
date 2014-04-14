@@ -1945,6 +1945,12 @@ int menu_set_settings(void *data, unsigned setting, unsigned action)
             g_settings.video.font_size = font_size;
          g_settings.video.font_size = roundf(max(g_settings.video.font_size, 1.0f));
          break;
+      case RGUI_SETTINGS_LOAD_DUMMY_ON_CORE_SHUTDOWN:
+         if (action == RGUI_ACTION_OK || action == RGUI_ACTION_LEFT || action == RGUI_ACTION_RIGHT)
+            g_settings.load_dummy_on_core_shutdown = !g_settings.load_dummy_on_core_shutdown;
+         else if (action == RGUI_ACTION_START)
+            g_settings.load_dummy_on_core_shutdown = load_dummy_on_core_shutdown;
+         break;
       default:
          break;
    }
@@ -2410,6 +2416,9 @@ void menu_set_settings_label(char *type_str, size_t type_str_size, unsigned *w, 
          break;
       case RGUI_SETTINGS_FONT_SIZE:
          snprintf(type_str, type_str_size, "%.1f", g_settings.video.font_size);
+         break;
+      case RGUI_SETTINGS_LOAD_DUMMY_ON_CORE_SHUTDOWN:
+         snprintf(type_str, type_str_size, g_settings.load_dummy_on_core_shutdown ? "ON" : "OFF");
          break;
       default:
          *type_str = '\0';

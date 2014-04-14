@@ -117,12 +117,6 @@ static void rarch_get_environment_console(void)
 #define attempt_load_game_fails (1ULL << MODE_EXIT)
 #endif
 
-#if defined(RARCH_CONSOLE) || defined(__APPLE__)
-#define load_dummy_on_core_shutdown false
-#else
-#define load_dummy_on_core_shutdown true
-#endif
-
 #define frontend_init_enable true
 #define menu_init_enable true
 #define initial_lifecycle_state_preinit false
@@ -136,7 +130,7 @@ int main_entry_iterate(signature(), args_type() args)
    {
 #ifdef HAVE_MENU
       // Load dummy core instead of exiting RetroArch completely.
-      if (load_dummy_on_core_shutdown)
+      if (g_settings.load_dummy_on_core_shutdown)
          load_menu_game_prepare_dummy();
       else
 #endif

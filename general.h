@@ -316,6 +316,7 @@ struct settings
    bool rgui_show_start_screen;
 #endif
    bool fps_show;
+   bool load_dummy_on_core_shutdown;
 
    bool core_specific_config;
 };
