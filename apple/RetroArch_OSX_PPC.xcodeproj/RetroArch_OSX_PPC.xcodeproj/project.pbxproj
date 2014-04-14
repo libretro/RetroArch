@@ -298,7 +298,9 @@
 					"-DWANT_MINIZ,",
 					"-DHAVE_ZLIB,",
 					"-DRARCH_INTERNAL,",
-					"-DOSX",
+					"-DOSX,",
+					"-DHAVE_GLSL,",
+					"-DHAVE_RGUI",
 				);
 				PREBINDING = NO;
 				PRECOMPS_INCLUDE_HEADERS_FROM_BUILT_PRODUCTS_DIR = NO;
@@ -323,7 +325,9 @@
 					"-DWANT_MINIZ,",
 					"-DHAVE_ZLIB,",
 					"-DRARCH_INTERNAL,",
-					"-DOSX",
+					"-DOSX,",
+					"-DHAVE_GLSL,",
+					"-DHAVE_RGUI",
 				);
 				PREBINDING = NO;
 				PRECOMPS_INCLUDE_HEADERS_FROM_BUILT_PRODUCTS_DIR = NO;

@@ -220,7 +220,12 @@ NSWindowDelegate>
 
 - (id)tableView:(NSTableView *)tableView objectValueForTableColumn:(NSTableColumn *)tableColumn row:(NSInteger)row
 {
+#if defined(MAC_OS_X_VERSION_10_6)
    return objc_getAssociatedObject([self.settings objectAtIndex:row], associated_name_tag);
+#else
+	/* FIXME - Rewrite this so that this is no longer an associated object - requires ObjC 2.0 runtime */
+	return 0; /* stub */
+#endif
 }
 
 - (void)tableViewSelectionDidChange:(NSNotification *)aNotification
@@ -257,9 +262,12 @@ NSWindowDelegate>
 
    if ([item isKindOfClass:[NSArray class]])
    {
+#ifdef MAC_OS_X_VERSION_10_6
+	  /* FIXME - Rewrite this so that this is no longer an associated object - requires ObjC 2.0 runtime */
       if ([[tableColumn identifier] isEqualToString:@"left"])
          return objc_getAssociatedObject(item, associated_name_tag);
       else
+#endif
          return @"";
    }
    else

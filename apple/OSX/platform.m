@@ -272,7 +272,10 @@ static char** waiting_argv;
       return;
 
    NSComboBox* cb = (NSComboBox*)[[self.coreSelectSheet contentView] viewWithTag:1];
+#if defined(MAC_OS_X_VERSION_10_6)
+	/* FIXME - Rewrite this so that this is no longer an associated object - requires ObjC 2.0 runtime */
    self.core = objc_getAssociatedObject([cb objectValueOfSelectedItem], associated_core_key);
+#endif
 
    [self runCore];
 }
