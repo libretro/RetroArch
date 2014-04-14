@@ -27,29 +27,7 @@
 #include "../config.h"
 #endif
 
-#if defined(IOS)
-#include <OpenGLES/ES2/gl.h>
-#include <OpenGLES/ES2/glext.h>
-#elif defined(__APPLE__) // Because they like to be "oh, so, special".
-#include <OpenGL/gl.h>
-#include <OpenGL/glext.h>
-#elif defined(HAVE_PSGL)
-#include <PSGL/psgl.h>
-#include <GLES/glext.h>
-#elif defined(HAVE_OPENGL_MODERN)
-#include <EGL/egl.h>
-#include <GL3/gl3.h>
-#include <GL3/gl3ext.h>
-#elif defined(HAVE_OPENGLES2)
-#include <GLES2/gl2.h>
-#elif defined(HAVE_OPENGLES1)
-#include <GLES/gl.h>
-#include <GLES/glext.h>
-#else
-#define GL_GLEXT_PROTOTYPES
-#include <GL/gl.h>
-#include <GL/glext.h>
-#endif
+#include "glsym/glsym.h"
 
 #include "gfx_context.h"
 #include <stdlib.h>

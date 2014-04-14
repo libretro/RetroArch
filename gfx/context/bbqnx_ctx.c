@@ -48,8 +48,6 @@ screen_context_t screen_ctx;
 screen_window_t screen_win;
 static screen_display_t screen_disp;
 
-GLfloat _angle;
-
 static enum gfx_ctx_api g_api;
 
 static void gfx_ctx_set_swap_interval(void *data, unsigned interval)

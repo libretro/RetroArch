@@ -36,10 +36,7 @@ static EGLSurface g_egl_surf;
 static EGLDisplay g_egl_dpy;
 static EGLConfig g_config;
 static bool g_resize;
-
-GLfloat _angle;
-
-static enum gfx_ctx_api g_api;
+static bool g_es3;
 
 static void gfx_ctx_set_swap_interval(void *data, unsigned interval)
 {
@@ -98,8 +95,9 @@ static bool gfx_ctx_init(void *data)
    EGLint egl_version_major, egl_version_minor;
    EGLint format;
 
+   RARCH_LOG("Android EGL: GLES version = %d.\n", g_es3 ? 3 : 2);
    EGLint context_attributes[] = {
-      EGL_CONTEXT_CLIENT_VERSION, 2,
+      EGL_CONTEXT_CLIENT_VERSION, g_es3 ? 3 : 2,
       EGL_NONE
    };
 
@@ -239,9 +237,16 @@ static gfx_ctx_proc_t gfx_ctx_get_proc_address(const char *symbol)
 static bool gfx_ctx_bind_api(void *data, enum gfx_ctx_api api, unsigned major, unsigned minor)
 {
    (void)data;
-   (void)major;
-   (void)minor;
-   g_api = api;
+
+   unsigned version = major * 100 + minor;
+   if (version > 300)
+      return false;
+#ifdef HAVE_OPENGLES3
+   if (version < 300)
+      g_es3 = false;
+   else if (version == 300)
+      g_es3 = true;
+#endif
    return api == GFX_CTX_OPENGL_ES_API;
 }
 
