@@ -16,6 +16,7 @@
 #include "filter.h"
 #include "../dynamic.h"
 #include "../general.h"
+#include "../performance.h"
 #include <stdlib.h>
 
 struct rarch_softfilter
@@ -50,7 +51,8 @@ rarch_softfilter_t *rarch_softfilter_new(const char *filter_path,
       goto error;
    }
 
-   filt->impl = cb(0);
+   unsigned cpu_features = rarch_get_cpu_features();
+   filt->impl = cb(cpu_features);
    if (!filt->impl)
       goto error;
 
@@ -58,6 +60,8 @@ rarch_softfilter_t *rarch_softfilter_new(const char *filter_path,
    filt->max_height = max_height;
    filt->pix_fmt = in_pixel_format;
    filt->threads = threads;
+
+   filt->out_pix_fmt = in_pixel_format;
 
    return filt;
 
@@ -81,12 +85,14 @@ void rarch_softfilter_free(rarch_softfilter_t *filt)
 void rarch_softfilter_get_max_output_size(rarch_softfilter_t *filt,
       unsigned *width, unsigned *height)
 {
+   rarch_softfilter_get_output_size(filt, width, height, filt->max_width, filt->max_height);
 }
 
 void rarch_softfilter_get_output_size(rarch_softfilter_t *filt,
       unsigned *out_width, unsigned *out_height,
       unsigned width, unsigned height)
 {
+   filt->impl->query_output_size(filt->impl_data, out_width, out_height, width, height);
 }
 
 enum retro_pixel_format rarch_softfilter_get_output_format(rarch_softfilter_t *filt)
