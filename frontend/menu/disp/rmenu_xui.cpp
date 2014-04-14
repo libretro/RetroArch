@@ -288,7 +288,7 @@ static void xui_render_message(const char *msg)
 	}
 }
 
-static void rmenu_xui_render(void *data)
+static void rmenu_xui_frame(void *data)
 {
    d3d_video_t *d3d = (d3d_video_t*)data;
    LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)d3d->dev;
@@ -330,7 +330,6 @@ static void rmenu_xui_render(void *data)
    XuiRenderEnd( app.GetDC() );
 
    d3dr->SetViewport(&d3d->final_viewport);
-   return true;
 }
 
 static int rmenu_xui_input_postprocess(void *data, uint64_t old_state)
@@ -662,11 +661,6 @@ static void rmenu_xui_navigation_set_visible(void *data)
 {
    rgui_handle_t *rgui = (rgui_handle_t*)data;
    XuiListSetCurSelVisible(m_menulist, rgui->selection_ptr);
-}
-
-static void rmenu_xui_navigation_alphabet(void *data, size_t *ptr_out)
-{
-   XuiListSetCurSelVisible(m_menulist, *ptr_out);
 }
 
 static void rmenu_xui_navigation_alphabet(void *data, size_t *ptr_out)
