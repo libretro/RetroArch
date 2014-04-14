@@ -59,6 +59,8 @@ rarch_softfilter_t *rarch_softfilter_new(const char *filter_path,
       goto error;
 
    // Simple assumptions.
+   filt->pix_fmt = in_pixel_format;
+   filt->out_pix_fmt = in_pixel_format;
    unsigned input_fmt = in_pixel_format == RETRO_PIXEL_FORMAT_XRGB8888 ?
       SOFTFILTER_FMT_XRGB8888 : SOFTFILTER_FMT_RGB565;
    unsigned input_fmts = filt->impl->query_input_formats();
@@ -71,8 +73,6 @@ rarch_softfilter_t *rarch_softfilter_new(const char *filter_path,
 
    filt->max_width = max_width;
    filt->max_height = max_height;
-   filt->pix_fmt = in_pixel_format;
-   filt->out_pix_fmt = in_pixel_format;
 
    filt->impl_data = filt->impl->create(input_fmt, input_fmt, max_width, max_height,
          threads != RARCH_SOFTFILTER_THREADS_AUTO ? threads : 1, cpu_features);

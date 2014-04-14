@@ -297,7 +297,7 @@ static void video_frame(const void *data, unsigned width, unsigned height, size_
    // Slightly messy code,
    // but we really need to do processing before blocking on VSync for best possible scheduling.
 #ifdef HAVE_FFMPEG
-   if (g_extern.recording && (!g_extern.filter.active || !g_settings.video.post_filter_record || !data || g_extern.record_gpu_buffer))
+   if (g_extern.recording && (!g_extern.filter.filter || !g_settings.video.post_filter_record || !data || g_extern.record_gpu_buffer))
       recording_dump_frame(data, width, height, pitch);
 #endif
 
@@ -305,28 +305,26 @@ static void video_frame(const void *data, unsigned width, unsigned height, size_
    driver.current_msg = msg;
 
 #ifdef HAVE_DYLIB
-   if (g_extern.filter.active && data)
+   if (g_extern.filter.filter && data)
    {
-      struct scaler_ctx *scaler = &g_extern.filter.scaler;
-      scaler->in_width   = scaler->out_width = width;
-      scaler->in_height  = scaler->out_height = height;
-      scaler->in_stride  = pitch;
-      scaler->out_stride = width * sizeof(uint16_t);
+      unsigned owidth = 0;
+      unsigned oheight = 0;
+      unsigned opitch = 0;
+      rarch_softfilter_get_output_size(g_extern.filter.filter,
+            &owidth, &oheight, width, height);
 
-      scaler_ctx_scale(scaler, g_extern.filter.scaler_out, data);
+      opitch = owidth * g_extern.filter.out_bpp;
 
-      unsigned owidth = width;
-      unsigned oheight = height;
-      g_extern.filter.psize(&owidth, &oheight);
-      g_extern.filter.prender(g_extern.filter.colormap, g_extern.filter.buffer,
-            g_extern.filter.pitch, g_extern.filter.scaler_out, scaler->out_stride, width, height);
+      rarch_softfilter_process(g_extern.filter.filter,
+            g_extern.filter.buffer, opitch,
+            data, width, height, pitch);
 
 #ifdef HAVE_FFMPEG
       if (g_extern.recording && g_settings.video.post_filter_record)
-         recording_dump_frame(g_extern.filter.buffer, owidth, oheight, g_extern.filter.pitch);
+         recording_dump_frame(g_extern.filter.buffer, owidth, oheight, opitch);
 #endif
 
-      if (!video_frame_func(g_extern.filter.buffer, owidth, oheight, g_extern.filter.pitch, msg))
+      if (!video_frame_func(g_extern.filter.buffer, owidth, oheight, opitch, msg))
          g_extern.video_active = false;
    }
    else if (!video_frame_func(data, width, height, pitch, msg))
