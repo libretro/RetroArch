@@ -158,14 +158,17 @@ static char** waiting_argv;
    for (int i = 0; cores && i != cores->count; i ++)
    {
       NSString* desc = BOXSTRING(cores->list[i].display_name);
+#if defined(MAC_OS_X_VERSION_10_6)
+	  /* FIXME - Rewrite this so that this is no longer an associated object - requires ObjC 2.0 runtime */
       objc_setAssociatedObject(desc, associated_core_key, apple_get_core_id(&cores->list[i]), OBJC_ASSOCIATION_RETAIN_NONATOMIC);
-      [cb addItemWithObjectValue:desc];
+#endif
+	   [cb addItemWithObjectValue:desc];
    }
 
    if ([cb numberOfItems])
       [cb selectItemAtIndex:0];
    else
-      apple_display_alert(@"No libretro cores were found.\nSelect \"Go->Cores Directory\" from the menu and place libretro dylib files there.", @"RetroArch");
+      apple_display_alert(BOXSTRING("No libretro cores were found.\nSelect \"Go->Cores Directory\" from the menu and place libretro dylib files there."), BOXSTRING("RetroArch"));
    
    if (waiting_argc)
    {
@@ -225,6 +228,7 @@ static char** waiting_argv;
 - (void)openDocument:(id)sender
 {
    NSOpenPanel* panel = [NSOpenPanel openPanel];
+#if defined(MAC_OS_X_VERSION_10_6)
    [panel beginSheetModalForWindow:self.window completionHandler:^(NSInteger result)
    {
       [[NSApplication sharedApplication] stopModal];
@@ -235,6 +239,9 @@ static char** waiting_argv;
          [self performSelector:@selector(chooseCore) withObject:nil afterDelay:.5f];
       }
    }];
+#else
+	[panel beginSheetForDirectory:nil file:nil modalForWindopw:[self window] modalDelegate:self didEndSelector:@selector(didEndSaveSheet:returnCode:contextInfo:) contextInfo:NULL];
+#endif
    [[NSApplication sharedApplication] runModalForWindow:panel];
 }
 

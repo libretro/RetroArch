@@ -88,9 +88,12 @@ static void* const associated_name_tag = (void*)&associated_name_tag;
 @end
 
 
-@interface RASettingsDelegate : NSObject<NSTableViewDataSource,   NSTableViewDelegate,
-                                         NSOutlineViewDataSource, NSOutlineViewDelegate,
-                                         NSWindowDelegate>
+@interface RASettingsDelegate : NSObject
+#ifdef MAC_OS_X_VERSION_10_6
+<NSTableViewDataSource,   NSTableViewDelegate,
+NSOutlineViewDataSource, NSOutlineViewDelegate,
+NSWindowDelegate>
+#endif
 {
    RAInputBinder* _binderWindow;
    NSButtonCell* _booleanCell;
@@ -150,7 +153,10 @@ static void* const associated_name_tag = (void*)&associated_name_tag;
          case ST_GROUP:
          {
             thisGroup = [NSMutableArray array];
+#if defined(MAC_OS_X_VERSION_10_6)
+			/* FIXME - Rewrite this so that this is no longer an associated object - requires ObjC 2.0 runtime */
             objc_setAssociatedObject(thisGroup, associated_name_tag, [NSString stringWithFormat:@"%s", setting_data[i].name], OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+#endif
             break;
          }
          
@@ -165,7 +171,10 @@ static void* const associated_name_tag = (void*)&associated_name_tag;
          case ST_SUB_GROUP:
          {
             thisSubGroup = [NSMutableArray array];
+#if defined(MAC_OS_X_VERSION_10_6)
+			 /* FIXME - Rewrite this so that this is no longer an associated object - requires ObjC 2.0 runtime */
             objc_setAssociatedObject(thisSubGroup, associated_name_tag, [NSString stringWithFormat:@"%s", setting_data[i].name], OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+#endif
             break;
          }
          
@@ -184,14 +193,20 @@ static void* const associated_name_tag = (void*)&associated_name_tag;
          }
       }
    }
-   
+	
+#ifdef MAC_OS_X_VERSION_10_6
+   /* FIXME - fix for 10.5.8 and lower */
    setting_data_load_config_path(setting_data_get_list(), [apple_platform.globalConfigFile UTF8String]);
+#endif
    apple_stop_iteration();
 }
 
 - (void)windowWillClose:(NSNotification *)notification
 {
+#ifdef MAC_OS_X_VERSION_10_6
+	/* FIXME - fix for 10.5.8 and lower */
    setting_data_save_config_path(setting_data_get_list(), [apple_platform.globalConfigFile UTF8String]);
+#endif
    [NSApp stopModal];
 
    apple_start_iteration();
