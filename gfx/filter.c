@@ -58,18 +58,37 @@ rarch_softfilter_t *rarch_softfilter_new(const char *filter_path,
    if (!filt->impl)
       goto error;
 
+   RARCH_LOG("Loaded softfilter \"%s\".\n", filt->impl->ident);
+
+   if (filt->impl->api_version != SOFTFILTER_API_VERSION)
+   {
+      RARCH_ERR("Softfilter ABI mismatch.\n");
+      goto error;
+   }
+
    // Simple assumptions.
    filt->pix_fmt = in_pixel_format;
-   filt->out_pix_fmt = in_pixel_format;
    unsigned input_fmt = in_pixel_format == RETRO_PIXEL_FORMAT_XRGB8888 ?
       SOFTFILTER_FMT_XRGB8888 : SOFTFILTER_FMT_RGB565;
    unsigned input_fmts = filt->impl->query_input_formats();
    if (!(input_fmt & input_fmts))
+   {
+      RARCH_ERR("Softfilter does not support input format.\n");
       goto error;
+   }
 
    unsigned output_fmts = filt->impl->query_output_formats(input_fmt);
-   if (!(output_fmts & input_fmt))
+   if (output_fmts & input_fmt) // If we have a match of input/output formats, use that.
+      filt->out_pix_fmt = in_pixel_format;
+   else if (output_fmts & SOFTFILTER_FMT_XRGB8888)
+      filt->out_pix_fmt = RETRO_PIXEL_FORMAT_XRGB8888;
+   else if (output_fmts & SOFTFILTER_FMT_RGB565)
+      filt->out_pix_fmt = RETRO_PIXEL_FORMAT_RGB565;
+   else
+   {
+      RARCH_ERR("Did not find suitable output format for softfilter.\n");
       goto error;
+   }
 
    filt->max_width = max_width;
    filt->max_height = max_height;
@@ -77,14 +96,26 @@ rarch_softfilter_t *rarch_softfilter_new(const char *filter_path,
    filt->impl_data = filt->impl->create(input_fmt, input_fmt, max_width, max_height,
          threads != RARCH_SOFTFILTER_THREADS_AUTO ? threads : 1, cpu_features);
    if (!filt->impl_data)
+   {
+      RARCH_ERR("Failed to create softfilter state.\n");
       goto error;
+   }
 
    threads = filt->impl->query_num_threads(filt->impl_data);
+   if (!threads)
+   {
+      RARCH_ERR("Invalid number of threads.\n");
+      goto error;
+   }
+
    filt->packets = (struct softfilter_work_packet*)calloc(threads, sizeof(*filt->packets));
    if (!filt->packets)
+   {
+      RARCH_ERR("Failed to allocate softfilter packets.\n");
       goto error;
-   filt->threads = threads;
+   }
 
+   filt->threads = threads;
    return filt;
 
 error:
@@ -128,7 +159,7 @@ void rarch_softfilter_process(rarch_softfilter_t *filt,
       const void *input, unsigned width, unsigned height, size_t input_stride)
 {
    unsigned i;
-   filt->impl->process(filt->impl_data, filt->packets,
+   filt->impl->get_work_packets(filt->impl_data, filt->packets,
          output, output_stride, input, width, height, input_stride);
    
    // TODO: Move to worker threads.

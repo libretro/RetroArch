@@ -82,11 +82,10 @@ typedef void (*softfilter_query_output_size_t)(void *data,
       unsigned *out_width, unsigned *out_height,
       unsigned width, unsigned height);
 
-// Process a frame. The filter submits work by filling in the packets array.
+// First step of processing a frame. The filter submits work by filling in the packets array.
 // The number of elements in the array is as returned by query_num_threads.
 // The processing itself happens in worker threads after this returns.
-// The filter can ignore the process callback.
-typedef void (*softfilter_process_t)(void *data,
+typedef void (*softfilter_get_work_packets_t)(void *data,
       struct softfilter_work_packet *packets,
       void *output, size_t output_stride,
       const void *input, unsigned width, unsigned height, size_t input_stride);
@@ -106,7 +105,7 @@ struct softfilter_implementation
 
    softfilter_query_num_threads_t query_num_threads;
    softfilter_query_output_size_t query_output_size;
-   softfilter_process_t process;
+   softfilter_get_work_packets_t get_work_packets;
 
    const char *ident; // Human readable identifier of implementation.
    unsigned api_version; // Must be SOFTFILTER_API_VERSION
