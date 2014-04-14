@@ -1414,10 +1414,10 @@ int menu_set_settings(void *data, unsigned setting, unsigned action)
 
             if (driver.video && driver.video->restart)
                driver.video->restart();
-            if (menu_ctx && menu_ctx->free_assets)
-               menu_ctx->free_assets(rgui);
-            if (menu_ctx && menu_ctx->init_assets)
-               menu_ctx->init_assets(rgui);
+            if (driver.menu_ctx && driver.menu_ctx->free_assets)
+               driver.menu_ctx->free_assets(rgui);
+            if (driver.menu_ctx && driver.menu_ctx->init_assets)
+               driver.menu_ctx->init_assets(rgui);
          }
          break;
       case RGUI_SETTINGS_VIDEO_PAL60:
@@ -1435,10 +1435,10 @@ int menu_set_settings(void *data, unsigned setting, unsigned action)
 
                   if (driver.video && driver.video->restart)
                      driver.video->restart();
-                  if (menu_ctx && menu_ctx->free_assets)
-                     menu_ctx->free_assets(rgui);
-                  if (menu_ctx && menu_ctx->init_assets)
-                     menu_ctx->init_assets(rgui);
+                  if (driver.menu_ctx && driver.menu_ctx->free_assets)
+                     driver.menu_ctx->free_assets(rgui);
+                  if (driver.menu_ctx && driver.menu_ctx->init_assets)
+                     driver.menu_ctx->init_assets(rgui);
                }
                break;
             case RGUI_ACTION_START:
@@ -1448,10 +1448,10 @@ int menu_set_settings(void *data, unsigned setting, unsigned action)
 
                   if (driver.video && driver.video->restart)
                      driver.video->restart();
-                  if (menu_ctx && menu_ctx->free_assets)
-                     menu_ctx->free_assets(rgui);
-                  if (menu_ctx && menu_ctx->init_assets)
-                     menu_ctx->init_assets(rgui);
+                  if (driver.menu_ctx && driver.menu_ctx->free_assets)
+                     driver.menu_ctx->free_assets(rgui);
+                  if (driver.menu_ctx && driver.menu_ctx->init_assets)
+                     driver.menu_ctx->init_assets(rgui);
                }
                break;
          }
