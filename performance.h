@@ -55,6 +55,7 @@ static inline void rarch_perf_stop(struct retro_perf_counter *perf)
 }
 
 uint64_t rarch_get_cpu_features(void);
+unsigned rarch_get_cpu_cores(void);
 
 // Used internally by RetroArch.
 #if defined(PERF_TEST) || !defined(RARCH_INTERNAL)

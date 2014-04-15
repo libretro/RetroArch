@@ -71,6 +71,10 @@
 #include <emscripten.h>
 #endif
 
+#if defined(BSD) || defined(__APPLE__)
+#include <sys/sysctl.h>
+#endif
+
 #include <string.h>
 
 #define MAX_COUNTERS 64
@@ -288,6 +292,40 @@ static void arm_enable_runfast_mode(void)
         );
 }
 #endif
+
+unsigned rarch_get_cpu_cores(void)
+{
+#if defined(_WIN32) && !defined(_XBOX) // Win32
+   SYSTEM_INFO sysinfo;
+   GetSystemInfo(&sysinfo);
+   return sysinfo.dwNumberOfProcessors;
+#elif defined(_SC_NPROCESSORS_ONLN) // Linux, most unix-likes.
+   long ret = sysconf(_SC_NPROCESSORS_ONLN);
+   if (ret <= 0)
+      return 1;
+   return ret;
+#elif defined(BSD) || defined(__APPLE__) // BSD
+   // Copypasta from stackoverflow, dunno if it works.
+   int num_cpu = 0;
+   int mib[4];
+   size_t len = sizeof(num_cpu);
+
+   mib[0] = CTL_HW;
+   mib[1] = HW_AVAILCPU;
+   sysctl(mib, 2, &num_cpu, &len, NULL, 0);
+   if (num_cpu < 1)
+   {
+      mib[1] = HW_NCPU;
+      sysctl(mib, 2, &num_cpu, &len, NULL, 0);
+      if (num_cpu < 1)
+         num_cpu = 1;
+   }
+   return num_cpu;
+#else
+   // No idea, assume single core.
+   return 1;
+#endif
+}
 
 uint64_t rarch_get_cpu_features(void)
 {

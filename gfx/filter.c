@@ -156,7 +156,7 @@ rarch_softfilter_t *rarch_softfilter_new(const char *filter_path,
    filt->max_height = max_height;
 
    filt->impl_data = filt->impl->create(input_fmt, input_fmt, max_width, max_height,
-         threads != RARCH_SOFTFILTER_THREADS_AUTO ? threads : 1, cpu_features);
+         threads != RARCH_SOFTFILTER_THREADS_AUTO ? threads : rarch_get_cpu_cores(), cpu_features);
    if (!filt->impl_data)
    {
       RARCH_ERR("Failed to create softfilter state.\n");
@@ -169,6 +169,8 @@ rarch_softfilter_t *rarch_softfilter_new(const char *filter_path,
       RARCH_ERR("Invalid number of threads.\n");
       goto error;
    }
+
+   RARCH_LOG("Using %u threads for softfilter.\n", threads);
 
    filt->packets = (struct softfilter_work_packet*)calloc(threads, sizeof(*filt->packets));
    if (!filt->packets)
