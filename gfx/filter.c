@@ -64,7 +64,7 @@ static void filter_thread_loop(void *data)
 
 struct rarch_softfilter
 {
-   dylib_t *lib;
+   dylib_t lib;
 
    const struct softfilter_implementation *impl;
    void *impl_data;
