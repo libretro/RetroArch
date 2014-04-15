@@ -18,12 +18,12 @@
 #include "softfilter.h"
 #include <stdlib.h>
 
-static unsigned impl_input_fmts(void)
+static unsigned darken_input_fmts(void)
 {
    return SOFTFILTER_FMT_XRGB8888 | SOFTFILTER_FMT_RGB565;
 }
 
-static unsigned impl_output_fmts(unsigned input_fmts)
+static unsigned darken_output_fmts(unsigned input_fmts)
 {
    return input_fmts;
 }
@@ -45,13 +45,13 @@ struct filter_data
    unsigned in_fmt;
 };
 
-static unsigned impl_threads(void *data)
+static unsigned darken_threads(void *data)
 {
    struct filter_data *filt = (struct filter_data*)data;
    return filt->threads;;
 }
 
-static void *impl_create(unsigned in_fmt, unsigned out_fmt,
+static void *darken_create(unsigned in_fmt, unsigned out_fmt,
       unsigned max_width, unsigned max_height,
       unsigned threads, softfilter_simd_mask_t simd)
 {
@@ -71,14 +71,14 @@ static void *impl_create(unsigned in_fmt, unsigned out_fmt,
    return filt;
 }
 
-static void impl_output(void *data, unsigned *out_width, unsigned *out_height,
+static void darken_output(void *data, unsigned *out_width, unsigned *out_height,
       unsigned width, unsigned height)
 {
    *out_width = width;
    *out_height = height;
 }
 
-static void impl_destroy(void *data)
+static void darken_destroy(void *data)
 {
    struct filter_data *filt = (struct filter_data*)data;
    free(filt->workers);
@@ -108,10 +108,10 @@ static void work_cb_rgb565(void *data, void *thread_data)
 
    for (unsigned y = 0; y < height; y++, input += thr->in_pitch >> 1, output += thr->out_pitch >> 1)
       for (unsigned x = 0; x < width; x++)
-         output[x] = (input[x] >> 1) & (0x3f * 0x00101010);
+         output[x] = (input[x] >> 1) & (0x1f * 0x00101010);
 }
 
-static void impl_packets(void *data,
+static void darken_packets(void *data,
       struct softfilter_work_packet *packets,
       void *output, size_t output_stride,
       const void *input, unsigned width, unsigned height, size_t input_stride)
@@ -137,16 +137,16 @@ static void impl_packets(void *data,
    }
 }
 
-static const struct softfilter_implementation impl = {
-   impl_input_fmts,
-   impl_output_fmts,
+static const struct softfilter_implementation darken = {
+   darken_input_fmts,
+   darken_output_fmts,
 
-   impl_create,
-   impl_destroy,
+   darken_create,
+   darken_destroy,
 
-   impl_threads,
-   impl_output,
-   impl_packets,
+   darken_threads,
+   darken_output,
+   darken_packets,
    "Dark",
    SOFTFILTER_API_VERSION,
 };
@@ -154,5 +154,5 @@ static const struct softfilter_implementation impl = {
 const struct softfilter_implementation *softfilter_get_implementation(softfilter_simd_mask_t simd)
 {
    (void)simd;
-   return &impl;
+   return &darken;
 }
