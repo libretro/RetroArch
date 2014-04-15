@@ -1323,9 +1323,9 @@ void rarch_init_filter(enum retro_pixel_format colfmt)
       return;
    }
 
-   rarch_softfilter_get_max_output_size(g_extern.filter.filter, &pow2_x, &pow2_y);
-   pow2_x  = next_pow2(pow2_x);
-   pow2_y  = next_pow2(pow2_y);
+   rarch_softfilter_get_max_output_size(g_extern.filter.filter, &width, &height);
+   pow2_x  = next_pow2(width);
+   pow2_y  = next_pow2(height);
    maxsize = max(pow2_x, pow2_y); 
    g_extern.filter.scale = maxsize / RARCH_SCALE_BASE;
 
