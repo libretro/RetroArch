@@ -20,6 +20,10 @@
 #include "softfilter.h"
 #include <stdlib.h>
 
+#ifdef RARCH_INTERNAL
+#define softfilter_get_implementation darken_get_implementation
+#endif
+
 static unsigned darken_input_fmts(void)
 {
    return SOFTFILTER_FMT_XRGB8888 | SOFTFILTER_FMT_RGB565;

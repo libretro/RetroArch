@@ -18,6 +18,10 @@
 #include "softfilter.h"
 #include <stdlib.h>
 
+#ifdef RARCH_INTERNAL
+#define softfilter_get_implementation scale2x_get_implementation
+#endif
+
 #define SCALE2X_SCALE 2
 
 #define SCALE2X_GENERIC(width, height, first, last, src, src_stride, dst, dst_stride) \

@@ -18,6 +18,10 @@
 #include "softfilter.h"
 #include <stdlib.h>
 
+#ifdef RARCH_INTERNAL
+#define softfilter_get_implementation twoxbr_get_implementation
+#endif
+
 #define TWOXBR_SCALE 2
 
 static uint8_t initialized = 0;
