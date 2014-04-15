@@ -20,48 +20,53 @@
 
 #define SCALE2X_SCALE 2
 
+#define SCALE2X_GENERIC(width, height, first, last, src, src_stride, dst, dst_stride) \
+   unsigned x, y; \
+   TYPENAME *out0 = (TYPENAME*)dst; \
+   TYPENAME *out1 = (TYPENAME*)(dst + dst_stride); \
+   \
+   for (y = 0; y < height; ++y) \
+   { \
+      const int prevline = ((y == 0) && first) ? 0 : src_stride; \
+      const int nextline = ((y == height - 1) && last) ? 0 : src_stride; \
+      \
+      for (x = 0; x < width; ++x) \
+      { \
+         const TYPENAME A = *(src - prevline); \
+         const TYPENAME B = (x > 0) ? *(src - 1) : *src; \
+         const TYPENAME C = *src; \
+         const TYPENAME D = (x < width - 1) ? *(src + 1) : *src; \
+         const TYPENAME E = *(src++ + nextline); \
+         \
+         if (A != E && B != D) \
+         { \
+            *out0++ = (A == B ? A : C); \
+            *out0++ = (A == D ? A : C); \
+            *out1++ = (E == B ? E : C); \
+            *out1++ = (E == D ? E : C); \
+         } \
+         else \
+         { \
+            *out0++ = C; \
+            *out0++ = C; \
+            *out1++ = C; \
+            *out1++ = C; \
+         } \
+      } \
+      \
+      src += src_stride - width; \
+      out0 += dst_stride + dst_stride - (width * SCALE2X_SCALE); \
+      out1 += dst_stride + dst_stride - (width * SCALE2X_SCALE); \
+   }
+
 static void scale2x_generic_rgb565(unsigned width, unsigned height,
       int first, int last,
       const uint16_t *src, unsigned src_stride,
       uint16_t *dst, unsigned dst_stride)
 {
-   unsigned x, y;
-   uint16_t *out0 = (uint16_t*)dst;
-   uint16_t *out1 = (uint16_t*)(dst + dst_stride);
-
-   for (y = 0; y < height; ++y)
-   {
-      const int prevline = ((y == 0) && first) ? 0 : src_stride;
-      const int nextline = ((y == height - 1) && last) ? 0 : src_stride;
-
-      for (x = 0; x < width; ++x)
-      {
-         const uint16_t A = *(src - prevline);
-         const uint16_t B = (x > 0) ? *(src - 1) : *src;
-         const uint16_t C = *src;
-         const uint16_t D = (x < width - 1) ? *(src + 1) : *src;
-         const uint16_t E = *(src++ + nextline);
-
-         if (A != E && B != D)
-         {
-            *out0++ = (A == B ? A : C);
-            *out0++ = (A == D ? A : C);
-            *out1++ = (E == B ? E : C);
-            *out1++ = (E == D ? E : C);
-         }
-         else
-         {
-            *out0++ = C;
-            *out0++ = C;
-            *out1++ = C;
-            *out1++ = C;
-         }
-      }
-
-      src += src_stride - width;
-      out0 += dst_stride + dst_stride - (width * SCALE2X_SCALE);
-      out1 += dst_stride + dst_stride - (width * SCALE2X_SCALE);
-   }
+#define TYPENAME uint16_t
+   SCALE2X_GENERIC(width, height, first, last, src, src_stride, dst, dst_stride);
+#undef TYPENAME
 }
 
 static void scale2x_generic_xrgb8888(unsigned width, unsigned height,
@@ -69,43 +74,9 @@ static void scale2x_generic_xrgb8888(unsigned width, unsigned height,
       const uint32_t *src, unsigned src_stride,
       uint32_t *dst, unsigned dst_stride)
 {
-   unsigned x, y;
-   uint32_t *out0 = (uint32_t*)dst;
-   uint32_t *out1 = (uint32_t*)(dst + dst_stride);
-
-   for (y = 0; y < height; ++y)
-   {
-      const int prevline = ((y == 0) && first) ? 0 : src_stride;
-      const int nextline = ((y == height - 1) && last) ? 0 : src_stride;
-
-      for (x = 0; x < width; ++x)
-      {
-         const uint32_t A = *(src - prevline);
-         const uint32_t B = (x > 0) ? *(src - 1) : *src;
-         const uint32_t C = *src;
-         const uint32_t D = (x < width - 1) ? *(src + 1) : *src;
-         const uint32_t E = *(src++ + nextline);
-
-         if (A != E && B != D)
-         {
-            *out0++ = (A == B ? A : C);
-            *out0++ = (A == D ? A : C);
-            *out1++ = (E == B ? E : C);
-            *out1++ = (E == D ? E : C);
-         }
-         else
-         {
-            *out0++ = C;
-            *out0++ = C;
-            *out1++ = C;
-            *out1++ = C;
-         }
-      }
-
-      src += src_stride - width;
-      out0 += dst_stride + dst_stride - (width * SCALE2X_SCALE);
-      out1 += dst_stride + dst_stride - (width * SCALE2X_SCALE);
-   }
+#define TYPENAME uint32_t
+   SCALE2X_GENERIC(width, height, first, last, src, src_stride, dst, dst_stride);
+#undef TYPENAME
 }
 
 static unsigned scale2x_generic_input_fmts(void)
