@@ -471,7 +471,7 @@ const rarch_setting_t* setting_data_get_list()
          CONFIG_BOOL(g_settings.savestate_auto_index,       "savestate_auto_index",       "Save State Auto Index",      savestate_auto_index)
          CONFIG_BOOL(g_settings.savestate_auto_save,        "savestate_auto_save",        "Auto Save State",            savestate_auto_save)
          CONFIG_BOOL(g_settings.savestate_auto_load,        "savestate_auto_load",        "Auto Load State",            savestate_auto_load)
-         CONFIG_UINT(g_extern.state_slot,                   "state_slot",                 "State Slot",                 0)
+         CONFIG_INT(g_extern.state_slot,                   "state_slot",                 "State Slot",                 0)
       END_SUB_GROUP()
    END_GROUP()
 

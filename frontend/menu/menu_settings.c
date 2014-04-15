@@ -1888,7 +1888,7 @@ int menu_set_settings(void *data, unsigned setting, unsigned action)
       case RGUI_SETTINGS_NETPLAY_DELAY_FRAMES:
          if (action == RGUI_ACTION_LEFT)
          {
-            if (g_extern.netplay_sync_frames >= 0)
+            if (g_extern.netplay_sync_frames != 0)
                g_extern.netplay_sync_frames--;
          }
          else if (action == RGUI_ACTION_RIGHT)
