@@ -783,8 +783,8 @@ int menu_set_settings(void *data, unsigned setting, unsigned action)
                rgui->need_refresh = true;
                break;
             case RGUI_ACTION_START:
-               rarch_deinit_filter();
                strlcpy(g_settings.video.filter_path, "", sizeof(g_settings.video.filter_path));
+               rarch_set_fullscreen(g_settings.video.fullscreen);
                break;
             default:
                break;
