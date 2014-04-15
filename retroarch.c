@@ -1379,14 +1379,13 @@ void rarch_init_recording(void)
       else
          params.aspect_ratio = (float)params.out_width / params.out_height;
 
-      if (g_settings.video.post_filter_record && g_extern.filter.active)
+      if (g_settings.video.post_filter_record && g_extern.filter.filter)
       {
-         g_extern.filter.psize(&params.out_width, &params.out_height);
-         params.pix_fmt = FFEMU_PIX_ARGB8888;
+         params.pix_fmt = g_extern.filter.out_rgb32 ? FFEMU_PIX_ARGB8888 : FFEMU_PIX_RGB565;
 
-         unsigned max_width  = params.fb_width;
-         unsigned max_height = params.fb_height;
-         g_extern.filter.psize(&max_width, &max_height);
+         unsigned max_width  = 0;
+         unsigned max_height = 0;
+         rarch_softfilter_get_max_output_size(g_extern.filter.filter, &max_width, &max_height);
          params.fb_width  = next_pow2(max_width);
          params.fb_height = next_pow2(max_height);
       }
