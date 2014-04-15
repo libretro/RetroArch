@@ -299,6 +299,8 @@ unsigned rarch_get_cpu_cores(void)
    SYSTEM_INFO sysinfo;
    GetSystemInfo(&sysinfo);
    return sysinfo.dwNumberOfProcessors;
+#elif defined(ANDROID)
+   return android_getCpuCount();
 #elif defined(_SC_NPROCESSORS_ONLN) // Linux, most unix-likes.
    long ret = sysconf(_SC_NPROCESSORS_ONLN);
    if (ret <= 0)
@@ -321,6 +323,8 @@ unsigned rarch_get_cpu_cores(void)
          num_cpu = 1;
    }
    return num_cpu;
+#elif defined(_XBOX360)
+   return 3;
 #else
    // No idea, assume single core.
    return 1;
