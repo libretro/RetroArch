@@ -13,7 +13,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-// Compile: gcc -o dark.so -shared dark.c -std=c99 -O3 -Wall -pedantic -fPIC
+// Compile: gcc -o darken.so -shared darken.c -std=c99 -O3 -Wall -pedantic -fPIC
 
 #include "softfilter.h"
 #include <stdlib.h>
@@ -147,7 +147,7 @@ static const struct softfilter_implementation darken = {
    darken_threads,
    darken_output,
    darken_packets,
-   "Dark",
+   "Darken",
    SOFTFILTER_API_VERSION,
 };
 
