@@ -19,8 +19,9 @@
 #include <stdlib.h>
 
 static void scale2x_generic_rgb565(unsigned width, unsigned height,
-      const uint16_t *__restrict__ src, unsigned src_stride,
-      uint16_t * __restrict__ dst, unsigned dst_stride)
+      int first, int last,
+      const uint16_t *src, unsigned src_stride,
+      uint16_t *dst, unsigned dst_stride)
 {
    unsigned x, y;
    uint16_t *out0 = (uint16_t*)dst;
@@ -28,8 +29,8 @@ static void scale2x_generic_rgb565(unsigned width, unsigned height,
 
    for (y = 0; y < height; ++y)
    {
-      const int prevline = (y == 0 ? 0 : src_stride);
-      const int nextline = (y == height - 1 ? 0 : src_stride);
+      const int prevline = ((y == 0) && first) ? 0 : src_stride;
+      const int nextline = ((y == height - 1) && last) ? 0 : src_stride;
 
       for (x = 0; x < width; ++x)
       {
@@ -62,8 +63,9 @@ static void scale2x_generic_rgb565(unsigned width, unsigned height,
 }
 
 static void scale2x_generic_xrgb8888(unsigned width, unsigned height,
-      const uint32_t *__restrict__ src, unsigned src_stride,
-      uint32_t * __restrict__ dst, unsigned dst_stride)
+      int first, int last,
+      const uint32_t *src, unsigned src_stride,
+      uint32_t *dst, unsigned dst_stride)
 {
    unsigned x, y;
    uint32_t *out0 = (uint32_t*)dst;
@@ -71,8 +73,8 @@ static void scale2x_generic_xrgb8888(unsigned width, unsigned height,
 
    for (y = 0; y < height; ++y)
    {
-      const int prevline = (y == 0 ? 0 : src_stride);
-      const int nextline = (y == height - 1 ? 0 : src_stride);
+      const int prevline = ((y == 0) && first) ? 0 : src_stride;
+      const int nextline = ((y == height - 1) && last) ? 0 : src_stride;
 
       for (x = 0; x < width; ++x)
       {
@@ -116,12 +118,14 @@ static unsigned scale2x_generic_output_fmts(unsigned input_fmts)
 
 struct thread_data
 {
-   uint32_t *out_data;
-   const uint32_t *in_data;
+   void *out_data;
+   const void *in_data;
    size_t out_pitch;
    size_t in_pitch;
    unsigned width;
    unsigned height;
+
+   int first, last;
 };
 
 struct filter_data
@@ -134,7 +138,7 @@ struct filter_data
 static unsigned scale2x_generic_threads(void *data)
 {
    struct filter_data *filt = (struct filter_data*)data;
-   return filt->threads;;
+   return filt->threads;
 }
 
 static void *scale2x_generic_create(unsigned in_fmt, unsigned out_fmt,
@@ -146,7 +150,7 @@ static void *scale2x_generic_create(unsigned in_fmt, unsigned out_fmt,
    struct filter_data *filt = (struct filter_data*)calloc(1, sizeof(*filt));
    if (!filt)
       return NULL;
-   filt->workers = calloc(threads, sizeof(struct thread_data));
+   filt->workers = (struct thread_data*)calloc(threads, sizeof(struct thread_data));
    filt->threads = threads;
    filt->in_fmt  = in_fmt;
    if (!filt->workers)
@@ -179,7 +183,8 @@ static void work_cb_xrgb8888(void *data, void *thread_data)
    unsigned width = thr->width;
    unsigned height = thr->height;
 
-   scale2x_generic_xrgb8888(width, height, input, thr->in_pitch, output, thr->out_pitch);
+   scale2x_generic_xrgb8888(width, height,
+         thr->first, thr->last, input, thr->in_pitch >> 2, output, thr->out_pitch >> 2);
 }
 
 static void work_cb_rgb565(void *data, void *thread_data)
@@ -190,7 +195,8 @@ static void work_cb_rgb565(void *data, void *thread_data)
    unsigned width = thr->width;
    unsigned height = thr->height;
 
-   scale2x_generic_rgb565(width, height, input, thr->in_pitch, output, thr->out_pitch);
+   scale2x_generic_rgb565(width, height,
+         thr->first, thr->last, input, thr->in_pitch >> 1, output, thr->out_pitch >> 1);
 }
 
 static void scale2x_generic_packets(void *data,
@@ -199,17 +205,23 @@ static void scale2x_generic_packets(void *data,
       const void *input, unsigned width, unsigned height, size_t input_stride)
 {
    struct filter_data *filt = (struct filter_data*)data;
-   for (unsigned i = 0; i < filt->threads; i++)
+   unsigned i;
+   for (i = 0; i < filt->threads; i++)
    {
-      struct thread_data *thr = (struct thread_data*)&filt->workers[i];
+      struct thread_data *thr = &filt->workers[i];
+
       unsigned y_start = (height * i) / filt->threads;
       unsigned y_end = (height * (i + 1)) / filt->threads;
-      thr->out_data = (uint32_t*)output + y_start * (output_stride >> 2);
-      thr->in_data = (const uint32_t*)input + y_start * (input_stride >> 2);
+      thr->out_data = (uint8_t*)output + y_start * 2 * output_stride;
+      thr->in_data = (const uint8_t*)input + y_start * input_stride;
       thr->out_pitch = output_stride;
       thr->in_pitch = input_stride;
       thr->width = width;
       thr->height = y_end - y_start;
+
+      // Workers need to know if they can access pixels outside their given buffer.
+      thr->first = y_start;
+      thr->last = y_end == height;
 
       if (filt->in_fmt == SOFTFILTER_FMT_XRGB8888)
          packets[i].work = work_cb_xrgb8888;

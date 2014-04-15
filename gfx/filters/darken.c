@@ -15,6 +15,8 @@
 
 // Compile: gcc -o darken.so -shared darken.c -std=c99 -O3 -Wall -pedantic -fPIC
 
+// Useless filter, just nice as a reference for other filters.
+
 #include "softfilter.h"
 #include <stdlib.h>
 
@@ -30,8 +32,8 @@ static unsigned darken_output_fmts(unsigned input_fmts)
 
 struct thread_data
 {
-   uint32_t *out_data;
-   const uint32_t *in_data;
+   void *out_data;
+   const void *in_data;
    size_t out_pitch;
    size_t in_pitch;
    unsigned width;
@@ -48,7 +50,7 @@ struct filter_data
 static unsigned darken_threads(void *data)
 {
    struct filter_data *filt = (struct filter_data*)data;
-   return filt->threads;;
+   return filt->threads;
 }
 
 static void *darken_create(unsigned in_fmt, unsigned out_fmt,
@@ -93,8 +95,9 @@ static void work_cb_xrgb8888(void *data, void *thread_data)
    unsigned width = thr->width;
    unsigned height = thr->height;
 
-   for (unsigned y = 0; y < height; y++, input += thr->in_pitch >> 2, output += thr->out_pitch >> 2)
-      for (unsigned x = 0; x < width; x++)
+   unsigned x, y;
+   for (y = 0; y < height; y++, input += thr->in_pitch >> 2, output += thr->out_pitch >> 2)
+      for (x = 0; x < width; x++)
          output[x] = (input[x] >> 2) & (0x3f * 0x01010101);
 }
 
@@ -106,9 +109,10 @@ static void work_cb_rgb565(void *data, void *thread_data)
    unsigned width = thr->width;
    unsigned height = thr->height;
 
-   for (unsigned y = 0; y < height; y++, input += thr->in_pitch >> 1, output += thr->out_pitch >> 1)
-      for (unsigned x = 0; x < width; x++)
-         output[x] = (input[x] >> 1) & (0x1f * 0x00101010);
+   unsigned x, y;
+   for (y = 0; y < height; y++, input += thr->in_pitch >> 1, output += thr->out_pitch >> 1)
+      for (x = 0; x < width; x++)
+         output[x] = (input[x] >> 2) & ((0x7 << 0) | (0xf << 5) | (0x7 << 11));
 }
 
 static void darken_packets(void *data,
@@ -116,14 +120,15 @@ static void darken_packets(void *data,
       void *output, size_t output_stride,
       const void *input, unsigned width, unsigned height, size_t input_stride)
 {
+   unsigned i;
    struct filter_data *filt = (struct filter_data*)data;
-   for (unsigned i = 0; i < filt->threads; i++)
+   for (i = 0; i < filt->threads; i++)
    {
       struct thread_data *thr = (struct thread_data*)&filt->workers[i];
       unsigned y_start = (height * i) / filt->threads;
       unsigned y_end = (height * (i + 1)) / filt->threads;
-      thr->out_data = (uint32_t*)output + y_start * (output_stride >> 2);
-      thr->in_data = (const uint32_t*)input + y_start * (input_stride >> 2);
+      thr->out_data = (uint8_t*)output + y_start * output_stride;
+      thr->in_data = (const uint8_t*)input + y_start * input_stride;
       thr->out_pitch = output_stride;
       thr->in_pitch = input_stride;
       thr->width = width;
