@@ -34,6 +34,7 @@
 #include "performance.h"
 #include "core_options.h"
 #include "miscellaneous.h"
+#include "gfx/filter.h"
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -504,20 +505,12 @@ struct global
 
    struct
    {
-      bool active;
-      uint32_t *buffer;
-      uint32_t *colormap;
-      unsigned pitch;
-      dylib_t lib;
+      rarch_softfilter_t *filter;
+
+      void *buffer;
       unsigned scale;
-
-      void (*psize)(unsigned *width, unsigned *height);
-      void (*prender)(uint32_t *colormap, uint32_t *output, unsigned outpitch,
-            const uint16_t *input, unsigned pitch, unsigned width, unsigned height);
-
-      // CPU filters only work on *XRGB1555*. We have to convert to XRGB1555 first.
-      struct scaler_ctx scaler;
-      uint16_t *scaler_out;
+      unsigned out_bpp;
+      bool out_rgb32;
    } filter;
 
    msg_queue_t *msg_queue;

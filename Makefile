@@ -299,6 +299,7 @@ endif
 
 ifeq ($(HAVE_DYLIB), 1)
    LIBS += $(DYLIB_LIB)
+   OBJ += gfx/filter.o
 endif
 
 ifeq ($(HAVE_FREETYPE), 1)
