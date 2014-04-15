@@ -473,6 +473,9 @@ DYNAMIC
 ============================================================ */
 #include "../dynamic.c"
 #include "../dynamic_dummy.c"
+#ifdef HAVE_DYLIB
+#include "../gfx/filter.c"
+#endif
 
 /*============================================================
 FILE
