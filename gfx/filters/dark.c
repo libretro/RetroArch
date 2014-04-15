@@ -20,7 +20,7 @@
 
 static unsigned impl_input_fmts(void)
 {
-   return SOFTFILTER_FMT_XRGB8888;
+   return SOFTFILTER_FMT_XRGB8888 | SOFTFILTER_FMT_RGB565;
 }
 
 static unsigned impl_output_fmts(unsigned input_fmts)
@@ -42,6 +42,7 @@ struct filter_data
 {
    unsigned threads;
    struct thread_data *workers;
+   unsigned in_fmt;
 };
 
 static unsigned impl_threads(void *data)
@@ -56,14 +57,12 @@ static void *impl_create(unsigned in_fmt, unsigned out_fmt,
 {
    (void)simd;
 
-   if (in_fmt != SOFTFILTER_FMT_XRGB8888 || out_fmt != SOFTFILTER_FMT_XRGB8888)
-      return NULL;
-
    struct filter_data *filt = (struct filter_data*)calloc(1, sizeof(*filt));
    if (!filt)
       return NULL;
    filt->workers = calloc(threads, sizeof(struct thread_data));
    filt->threads = threads;
+   filt->in_fmt  = in_fmt;
    if (!filt->workers)
    {
       free(filt);
@@ -86,17 +85,30 @@ static void impl_destroy(void *data)
    free(filt);
 }
 
-static void work_cb(void *data, void *thread_data)
+static void work_cb_xrgb8888(void *data, void *thread_data)
 {
-   struct thread_data *thr = thread_data;
-   const uint32_t *input = thr->in_data;
-   uint32_t *output = thr->out_data;
+   struct thread_data *thr = (struct thread_data*)thread_data;
+   const uint32_t *input = (const uint32_t*)thr->in_data;
+   uint32_t *output = (uint32_t*)thr->out_data;
    unsigned width = thr->width;
    unsigned height = thr->height;
 
    for (unsigned y = 0; y < height; y++, input += thr->in_pitch >> 2, output += thr->out_pitch >> 2)
       for (unsigned x = 0; x < width; x++)
          output[x] = (input[x] >> 2) & (0x3f * 0x01010101);
+}
+
+static void work_cb_rgb565(void *data, void *thread_data)
+{
+   struct thread_data *thr = (struct thread_data*)thread_data;
+   const uint16_t *input = (const uint16_t*)thr->in_data;
+   uint16_t *output = (uint16_t*)thr->out_data;
+   unsigned width = thr->width;
+   unsigned height = thr->height;
+
+   for (unsigned y = 0; y < height; y++, input += thr->in_pitch >> 1, output += thr->out_pitch >> 1)
+      for (unsigned x = 0; x < width; x++)
+         output[x] = (input[x] >> 1) & (0x3f * 0x00101010);
 }
 
 static void impl_packets(void *data,
@@ -117,7 +129,10 @@ static void impl_packets(void *data,
       thr->width = width;
       thr->height = y_end - y_start;
 
-      packets[i].work = work_cb;
+      if (filt->in_fmt == SOFTFILTER_FMT_XRGB8888)
+         packets[i].work = work_cb_xrgb8888;
+      else if (filt->in_fmt == SOFTFILTER_FMT_RGB565)
+         packets[i].work = work_cb_rgb565;
       packets[i].thread_data = thr;
    }
 }
