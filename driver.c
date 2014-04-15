@@ -1289,7 +1289,7 @@ void rarch_deinit_filter(void)
    memset(&g_extern.filter, 0, sizeof(g_extern.filter));
 }
 
-void rarch_init_filter(bool rgb32)
+void rarch_init_filter(enum retro_pixel_format colfmt)
 {
    unsigned i;
    rarch_deinit_filter();
@@ -1311,9 +1311,7 @@ void rarch_init_filter(bool rgb32)
 
    RARCH_LOG("Loading softfilter from \"%s\"\n", g_settings.video.filter_path);
    g_extern.filter.filter = rarch_softfilter_new(g_settings.video.filter_path,
-         RARCH_SOFTFILTER_THREADS_AUTO,
-         rgb32 ? RETRO_PIXEL_FORMAT_XRGB8888 : RETRO_PIXEL_FORMAT_RGB565,
-         width, height);
+         RARCH_SOFTFILTER_THREADS_AUTO, colfmt, width, height);
 
    if (!g_extern.filter.filter)
    {
@@ -1407,7 +1405,7 @@ static bool init_video_pixel_converter(unsigned size)
 void init_video_input(void)
 {
 #ifdef HAVE_DYLIB
-   rarch_init_filter(g_extern.system.pix_fmt == RETRO_PIXEL_FORMAT_XRGB8888);
+   rarch_init_filter(g_extern.system.pix_fmt);
 #endif
 
    init_shader_dir();
