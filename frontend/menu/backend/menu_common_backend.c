@@ -920,7 +920,7 @@ static void menu_parse_and_resolve(void *data, unsigned menu_type)
             else if (menu_type_is(menu_type) == RGUI_SETTINGS_SHADER_OPTIONS)
                exts = "cg|glsl";
             else if (menu_type == RGUI_SETTINGS_VIDEO_SOFTFILTER)
-               exts = "so";
+               exts = EXT_EXECUTABLES;
             else if (menu_type == RGUI_SETTINGS_OVERLAY_PRESET)
                exts = "cfg";
             else if (menu_type_is(menu_type) == RGUI_FILE_DIRECTORY)

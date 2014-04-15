@@ -393,6 +393,7 @@ void config_set_defaults(void)
    *g_settings.video.shader_path = '\0';
    *g_settings.video.shader_dir = '\0';
    *g_settings.video.filter_dir = '\0';
+   *g_settings.video.filter_path = '\0';
 #ifdef HAVE_MENU
    *g_settings.rgui_content_directory = '\0';
    *g_settings.rgui_config_directory = '\0';
@@ -1320,6 +1321,7 @@ bool config_save_file(const char *path)
    config_set_path(conf, "savefile_directory", *g_extern.savefile_dir ? g_extern.savefile_dir : "default");
    config_set_path(conf, "savestate_directory", *g_extern.savestate_dir ? g_extern.savestate_dir : "default");
    config_set_path(conf, "video_shader_dir", *g_settings.video.shader_dir ? g_settings.video.shader_dir : "default");
+   config_set_path(conf, "video_filter", g_settings.video.filter_path);
    config_set_path(conf, "video_filter_dir", *g_settings.video.filter_dir ? g_settings.video.filter_dir : "default");
 
    config_set_path(conf, "content_directory", *g_settings.content_directory ? g_settings.content_directory : "default");

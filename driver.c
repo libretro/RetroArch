@@ -1296,6 +1296,10 @@ void rarch_init_filter(enum retro_pixel_format colfmt)
    if (!*g_settings.video.filter_path)
       return;
 
+   // Deprecated format. Gets pre-converted.
+   if (colfmt == RETRO_PIXEL_FORMAT_0RGB1555)
+      colfmt = RETRO_PIXEL_FORMAT_RGB565;
+
    if (g_extern.system.hw_render_callback.context_type)
    {
       RARCH_WARN("Cannot use CPU filters when hardware rendering is used.\n");
@@ -1318,7 +1322,6 @@ void rarch_init_filter(enum retro_pixel_format colfmt)
       RARCH_ERR("Failed to load filter \"%s\"\n", g_settings.video.filter_path);
       return;
    }
-
 
    rarch_softfilter_get_max_output_size(g_extern.filter.filter, &pow2_x, &pow2_y);
    pow2_x  = next_pow2(pow2_x);
