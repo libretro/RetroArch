@@ -392,6 +392,7 @@ void config_set_defaults(void)
    *g_settings.content_directory = '\0';
    *g_settings.video.shader_path = '\0';
    *g_settings.video.shader_dir = '\0';
+   *g_settings.video.filter_dir = '\0';
 #ifdef HAVE_MENU
    *g_settings.rgui_content_directory = '\0';
    *g_settings.rgui_config_directory = '\0';
@@ -441,6 +442,9 @@ void config_set_defaults(void)
 
    if (default_shader_dir)
       fill_pathname_expand_special(g_settings.video.shader_dir, default_shader_dir, sizeof(g_settings.video.shader_dir));
+
+   if (default_filter_dir)
+      fill_pathname_expand_special(g_settings.video.filter_dir, default_filter_dir, sizeof(g_settings.video.filter_dir));
 
    if (default_libretro_path && !g_extern.has_set_libretro)
       fill_pathname_expand_special(g_settings.libretro, default_libretro_path, sizeof(g_settings.libretro));
@@ -874,6 +878,10 @@ bool config_load_file(const char *path, bool set_defaults)
    CONFIG_GET_PATH(video.shader_dir, "video_shader_dir");
    if (!strcmp(g_settings.video.shader_dir, "default"))
       *g_settings.video.shader_dir = '\0';
+
+   CONFIG_GET_PATH(video.filter_dir, "video_filter_dir");
+   if (!strcmp(g_settings.video.filter_dir, "default"))
+      *g_settings.video.filter_dir = '\0';
 
    CONFIG_GET_FLOAT(input.axis_threshold, "input_axis_threshold");
    CONFIG_GET_BOOL(input.netplay_client_swap_input, "netplay_client_swap_input");
@@ -1312,6 +1320,7 @@ bool config_save_file(const char *path)
    config_set_path(conf, "savefile_directory", *g_extern.savefile_dir ? g_extern.savefile_dir : "default");
    config_set_path(conf, "savestate_directory", *g_extern.savestate_dir ? g_extern.savestate_dir : "default");
    config_set_path(conf, "video_shader_dir", *g_settings.video.shader_dir ? g_settings.video.shader_dir : "default");
+   config_set_path(conf, "video_filter_dir", *g_settings.video.filter_dir ? g_settings.video.filter_dir : "default");
 
    config_set_path(conf, "content_directory", *g_settings.content_directory ? g_settings.content_directory : "default");
 #ifdef HAVE_MENU

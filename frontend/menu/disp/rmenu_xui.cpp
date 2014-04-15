@@ -462,6 +462,8 @@ static void rmenu_xui_render(void *data)
 #endif
    else if (menu_type == RGUI_SHADER_DIR_PATH)
       snprintf(title, sizeof(title), "SHADER DIR %s", dir);
+   else if (menu_type == RGUI_FILTER_DIR_PATH)
+      snprintf(title, sizeof(title), "FILTER DIR %s", dir);
    else if (menu_type == RGUI_SAVESTATE_DIR_PATH)
       snprintf(title, sizeof(title), "SAVESTATE DIR %s", dir);
 #ifdef HAVE_DYNAMIC

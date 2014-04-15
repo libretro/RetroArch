@@ -126,6 +126,7 @@ unsigned menu_type_is(unsigned type)
 
    type_found = type == RGUI_BROWSER_DIR_PATH ||
       type == RGUI_SHADER_DIR_PATH ||
+      type == RGUI_FILTER_DIR_PATH ||
       type == RGUI_SAVESTATE_DIR_PATH ||
       type == RGUI_LIBRETRO_DIR_PATH ||
       type == RGUI_LIBRETRO_INFO_DIR_PATH ||
@@ -773,6 +774,22 @@ int menu_set_settings(void *data, unsigned setting, unsigned action)
                break;
          }
          break;
+      case RGUI_SETTINGS_VIDEO_SOFTFILTER:
+         switch (action)
+         {
+            case RGUI_ACTION_OK:
+               file_list_push(rgui->menu_stack, g_settings.video.filter_dir, setting, rgui->selection_ptr);
+               menu_clear_navigation(rgui);
+               rgui->need_refresh = true;
+               break;
+            case RGUI_ACTION_START:
+               rarch_deinit_filter();
+               strlcpy(g_settings.video.filter_path, "", sizeof(g_settings.video.filter_path));
+               break;
+            default:
+               break;
+         }
+         break;
 
       case RGUI_SETTINGS_OVERLAY_OPACITY:
          {
@@ -1185,6 +1202,10 @@ int menu_set_settings(void *data, unsigned setting, unsigned action)
       case RGUI_CONFIG_DIR_PATH:
          if (action == RGUI_ACTION_START)
             *g_settings.rgui_config_directory = '\0';
+         break;
+      case RGUI_FILTER_DIR_PATH:
+         if (action == RGUI_ACTION_START)
+            *g_settings.video.filter_dir = '\0';
          break;
       case RGUI_SHADER_DIR_PATH:
          if (action == RGUI_ACTION_START)
@@ -2162,6 +2183,9 @@ void menu_set_settings_label(char *type_str, size_t type_str_size, unsigned *w, 
       case RGUI_CONFIG_DIR_PATH:
          strlcpy(type_str, *g_settings.rgui_config_directory ? g_settings.rgui_config_directory : "<default>", type_str_size);
          break;
+      case RGUI_FILTER_DIR_PATH:
+         strlcpy(type_str, *g_settings.video.filter_dir ? g_settings.video.filter_dir : "<default>", type_str_size);
+         break;
       case RGUI_SHADER_DIR_PATH:
          strlcpy(type_str, *g_settings.video.shader_dir ? g_settings.video.shader_dir : "<default>", type_str_size);
          break;
@@ -2214,6 +2238,9 @@ void menu_set_settings_label(char *type_str, size_t type_str_size, unsigned *w, 
       case RGUI_SETTINGS_CUSTOM_BIND_ALL:
       case RGUI_SETTINGS_CUSTOM_BIND_DEFAULT_ALL:
          strlcpy(type_str, "...", type_str_size);
+         break;
+      case RGUI_SETTINGS_VIDEO_SOFTFILTER:
+         strlcpy(type_str, path_basename(g_settings.video.filter_path), type_str_size);
          break;
 #ifdef HAVE_OVERLAY
       case RGUI_SETTINGS_OVERLAY_PRESET:

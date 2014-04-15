@@ -160,6 +160,7 @@ struct settings
       float refresh_rate;
       bool threaded;
 
+      char filter_dir[PATH_MAX];
       char shader_dir[PATH_MAX];
 
       char font_path[PATH_MAX];
@@ -606,6 +607,12 @@ struct global
       struct string_list *list;
       size_t ptr;
    } shader_dir;
+
+   struct
+   {
+      struct string_list *list;
+      size_t ptr;
+   } filter_dir;
 
    char sha256[64 + 1];
 

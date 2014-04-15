@@ -92,6 +92,7 @@ static void menu_common_entries_init(void *data, unsigned menu_type)
 #if defined(GEKKO) || defined(__CELLOS_LV2__)
          file_list_push(rgui->selection_buf, "Screen Resolution", RGUI_SETTINGS_VIDEO_RESOLUTION, 0);
 #endif
+         file_list_push(rgui->selection_buf, "Soft Filter", RGUI_SETTINGS_VIDEO_SOFTFILTER, 0);
 #if defined(__CELLOS_LV2__)
          file_list_push(rgui->selection_buf, "PAL60 Mode", RGUI_SETTINGS_VIDEO_PAL60, 0);
 #endif
@@ -284,6 +285,9 @@ static void menu_common_entries_init(void *data, unsigned menu_type)
 #endif
          file_list_push(rgui->selection_buf, "Core Directory", RGUI_LIBRETRO_DIR_PATH, 0);
          file_list_push(rgui->selection_buf, "Core Info Directory", RGUI_LIBRETRO_INFO_DIR_PATH, 0);
+#ifdef HAVE_DYLIB
+         file_list_push(rgui->selection_buf, "Filter Directory", RGUI_FILTER_DIR_PATH, 0);
+#endif
 #ifdef HAVE_SHADER_MANAGER
          file_list_push(rgui->selection_buf, "Shader Directory", RGUI_SHADER_DIR_PATH, 0);
 #endif
@@ -577,6 +581,7 @@ static int menu_settings_iterate(void *data, unsigned action)
    if (rgui->need_refresh && !(menu_type == RGUI_FILE_DIRECTORY ||
             menu_type_is(menu_type) == RGUI_SETTINGS_SHADER_OPTIONS||
             menu_type_is(menu_type) == RGUI_FILE_DIRECTORY ||
+            menu_type == RGUI_SETTINGS_VIDEO_SOFTFILTER ||
             menu_type == RGUI_SETTINGS_OVERLAY_PRESET ||
             menu_type == RGUI_SETTINGS_CORE ||
             menu_type == RGUI_SETTINGS_CONFIG ||
@@ -914,6 +919,8 @@ static void menu_parse_and_resolve(void *data, unsigned menu_type)
                exts = "cgp|glslp";
             else if (menu_type_is(menu_type) == RGUI_SETTINGS_SHADER_OPTIONS)
                exts = "cg|glsl";
+            else if (menu_type == RGUI_SETTINGS_VIDEO_SOFTFILTER)
+               exts = "so";
             else if (menu_type == RGUI_SETTINGS_OVERLAY_PRESET)
                exts = "cfg";
             else if (menu_type_is(menu_type) == RGUI_FILE_DIRECTORY)
@@ -1204,6 +1211,7 @@ static int menu_common_iterate(void *data, unsigned action)
                menu_type_is(type) == RGUI_SETTINGS_SHADER_OPTIONS ||
                menu_type_is(type) == RGUI_FILE_DIRECTORY ||
                type == RGUI_SETTINGS_OVERLAY_PRESET ||
+               type == RGUI_SETTINGS_VIDEO_SOFTFILTER ||
                type == RGUI_SETTINGS_CORE ||
                type == RGUI_SETTINGS_CONFIG ||
                type == RGUI_SETTINGS_DISK_APPEND ||
@@ -1350,6 +1358,15 @@ static int menu_common_iterate(void *data, unsigned action)
                menu_flush_stack_type(rgui, RGUI_SETTINGS_PATH_OPTIONS);
             }
 #endif
+            else if (menu_type == RGUI_SETTINGS_VIDEO_SOFTFILTER)
+            {
+               fill_pathname_join(g_settings.video.filter_path, dir, path, sizeof(g_settings.video.filter_path));
+#ifdef HAVE_DYLIB
+               rarch_deinit_filter();
+               rarch_init_filter(g_extern.system.pix_fmt);
+#endif
+               menu_flush_stack_type(rgui, RGUI_SETTINGS_VIDEO_OPTIONS);
+            }
             else if (menu_type == RGUI_SAVESTATE_DIR_PATH)
             {
                strlcpy(g_extern.savestate_dir, dir, sizeof(g_extern.savestate_dir));
@@ -1377,6 +1394,11 @@ static int menu_common_iterate(void *data, unsigned action)
             else if (menu_type == RGUI_SHADER_DIR_PATH)
             {
                strlcpy(g_settings.video.shader_dir, dir, sizeof(g_settings.video.shader_dir));
+               menu_flush_stack_type(rgui, RGUI_SETTINGS_PATH_OPTIONS);
+            }
+            else if (menu_type == RGUI_FILTER_DIR_PATH)
+            {
+               strlcpy(g_settings.video.filter_dir, dir, sizeof(g_settings.video.filter_dir));
                menu_flush_stack_type(rgui, RGUI_SETTINGS_PATH_OPTIONS);
             }
             else if (menu_type == RGUI_SYSTEM_DIR_PATH)
@@ -1454,6 +1476,7 @@ static int menu_common_iterate(void *data, unsigned action)
             menu_type_is(menu_type) == RGUI_SETTINGS_SHADER_OPTIONS ||
             menu_type_is(menu_type) == RGUI_FILE_DIRECTORY ||
             menu_type == RGUI_SETTINGS_OVERLAY_PRESET ||
+            menu_type == RGUI_SETTINGS_VIDEO_SOFTFILTER ||
             menu_type == RGUI_SETTINGS_DEFERRED_CORE ||
             menu_type == RGUI_SETTINGS_CORE ||
             menu_type == RGUI_SETTINGS_CONFIG ||

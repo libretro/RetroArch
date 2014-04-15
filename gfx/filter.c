@@ -116,8 +116,18 @@ rarch_softfilter_t *rarch_softfilter_new(const char *filter_path,
 
    // Simple assumptions.
    filt->pix_fmt = in_pixel_format;
-   unsigned input_fmt = in_pixel_format == RETRO_PIXEL_FORMAT_XRGB8888 ?
-      SOFTFILTER_FMT_XRGB8888 : SOFTFILTER_FMT_RGB565;
+   unsigned input_fmt;
+   switch (in_pixel_format)
+   {
+      case RETRO_PIXEL_FORMAT_XRGB8888:
+         input_fmt = SOFTFILTER_FMT_XRGB8888;
+         break;
+      case RETRO_PIXEL_FORMAT_RGB565:
+      default:
+         input_fmt = SOFTFILTER_FMT_RGB565;
+         break;
+   }
+
    unsigned input_fmts = filt->impl->query_input_formats();
    if (!(input_fmt & input_fmts))
    {
