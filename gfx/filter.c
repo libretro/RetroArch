@@ -86,6 +86,9 @@ rarch_softfilter_t *rarch_softfilter_new(const char *filter_path,
       unsigned max_width, unsigned max_height)
 {
    unsigned i;
+   unsigned cpu_features, output_fmts, input_fmts, input_fmt;
+   softfilter_get_implementation_t cb;
+
    rarch_softfilter_t *filt = (rarch_softfilter_t*)calloc(1, sizeof(*filt));
    if (!filt)
       return NULL;
@@ -94,14 +97,14 @@ rarch_softfilter_t *rarch_softfilter_new(const char *filter_path,
    if (!filt->lib)
       goto error;
 
-   softfilter_get_implementation_t cb = (softfilter_get_implementation_t)dylib_proc(filt->lib, "softfilter_get_implementation");
+   cb = (softfilter_get_implementation_t)dylib_proc(filt->lib, "softfilter_get_implementation");
    if (!cb)
    {
       RARCH_ERR("Couldn't find softfilter symbol.\n");
       goto error;
    }
 
-   unsigned cpu_features = rarch_get_cpu_features();
+   cpu_features = rarch_get_cpu_features();
    filt->impl = cb(cpu_features);
    if (!filt->impl)
       goto error;
@@ -116,26 +119,27 @@ rarch_softfilter_t *rarch_softfilter_new(const char *filter_path,
 
    // Simple assumptions.
    filt->pix_fmt = in_pixel_format;
-   unsigned input_fmt;
+   input_fmts = filt->impl->query_input_formats();
+
    switch (in_pixel_format)
    {
       case RETRO_PIXEL_FORMAT_XRGB8888:
          input_fmt = SOFTFILTER_FMT_XRGB8888;
          break;
       case RETRO_PIXEL_FORMAT_RGB565:
-      default:
          input_fmt = SOFTFILTER_FMT_RGB565;
          break;
+      default:
+         goto error;
    }
 
-   unsigned input_fmts = filt->impl->query_input_formats();
    if (!(input_fmt & input_fmts))
    {
       RARCH_ERR("Softfilter does not support input format.\n");
       goto error;
    }
 
-   unsigned output_fmts = filt->impl->query_output_formats(input_fmt);
+   output_fmts = filt->impl->query_output_formats(input_fmt);
    if (output_fmts & input_fmt) // If we have a match of input/output formats, use that.
       filt->out_pix_fmt = in_pixel_format;
    else if (output_fmts & SOFTFILTER_FMT_XRGB8888)
