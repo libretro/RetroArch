@@ -1,3 +1,18 @@
+/*  RetroArch - A frontend for libretro.
+ *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
+ *
+ *  RetroArch is free software: you can redistribute it and/or modify it under the terms
+ *  of the GNU General Public License as published by the Free Software Found-
+ *  ation, either version 3 of the License, or (at your option) any later version.
+ *
+ *  RetroArch is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+ *  without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+ *  PURPOSE.  See the GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License along with RetroArch.
+ *  If not, see <http://www.gnu.org/licenses/>.
+ */
+
 // Compile: gcc -o dark.so -shared dark.c -std=c99 -O3 -Wall -pedantic -fPIC
 
 #include "softfilter.h"
@@ -31,7 +46,7 @@ struct filter_data
 
 static unsigned impl_threads(void *data)
 {
-   struct filter_data *filt = data;
+   struct filter_data *filt = (struct filter_data*)data;
    return filt->threads;;
 }
 
@@ -44,7 +59,7 @@ static void *impl_create(unsigned in_fmt, unsigned out_fmt,
    if (in_fmt != SOFTFILTER_FMT_XRGB8888 || out_fmt != SOFTFILTER_FMT_XRGB8888)
       return NULL;
 
-   struct filter_data *filt = calloc(1, sizeof(*filt));
+   struct filter_data *filt = (struct filter_data*)calloc(1, sizeof(*filt));
    if (!filt)
       return NULL;
    filt->workers = calloc(threads, sizeof(struct thread_data));
@@ -66,7 +81,7 @@ static void impl_output(void *data, unsigned *out_width, unsigned *out_height,
 
 static void impl_destroy(void *data)
 {
-   struct filter_data *filt = data;
+   struct filter_data *filt = (struct filter_data*)data;
    free(filt->workers);
    free(filt);
 }
@@ -89,10 +104,10 @@ static void impl_packets(void *data,
       void *output, size_t output_stride,
       const void *input, unsigned width, unsigned height, size_t input_stride)
 {
-   struct filter_data *filt = data;
+   struct filter_data *filt = (struct filter_data*)data;
    for (unsigned i = 0; i < filt->threads; i++)
    {
-      struct thread_data *thr = &filt->workers[i];
+      struct thread_data *thr = (struct thread_data*)&filt->workers[i];
       unsigned y_start = (height * i) / filt->threads;
       unsigned y_end = (height * (i + 1)) / filt->threads;
       thr->out_data = (uint32_t*)output + y_start * (output_stride >> 2);
@@ -108,16 +123,17 @@ static void impl_packets(void *data,
 }
 
 static const struct softfilter_implementation impl = {
-   .query_input_formats = impl_input_fmts,
-   .query_output_formats = impl_output_fmts,
-   .create = impl_create,
-   .destroy = impl_destroy,
-   .query_num_threads = impl_threads,
-   .query_output_size = impl_output,
-   .get_work_packets = impl_packets,
+   impl_input_fmts,
+   impl_output_fmts,
 
-   .ident = "Dark",
-   .api_version = SOFTFILTER_API_VERSION,
+   impl_create,
+   impl_destroy,
+
+   impl_threads,
+   impl_output,
+   impl_packets,
+   "Dark",
+   SOFTFILTER_API_VERSION,
 };
 
 const struct softfilter_implementation *softfilter_get_implementation(softfilter_simd_mask_t simd)
