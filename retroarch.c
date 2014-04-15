@@ -315,9 +315,12 @@ static void video_frame(const void *data, unsigned width, unsigned height, size_
 
       opitch = owidth * g_extern.filter.out_bpp;
 
+      RARCH_PERFORMANCE_INIT(softfilter_process);
+      RARCH_PERFORMANCE_START(softfilter_process);
       rarch_softfilter_process(g_extern.filter.filter,
             g_extern.filter.buffer, opitch,
             data, width, height, pitch);
+      RARCH_PERFORMANCE_STOP(softfilter_process);
 
 #ifdef HAVE_FFMPEG
       if (g_extern.recording && g_settings.video.post_filter_record)
