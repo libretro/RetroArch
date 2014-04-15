@@ -344,6 +344,8 @@ static void rgui_render(void *data)
    else if (menu_type == RGUI_SETTINGS_OVERLAY_PRESET)
       snprintf(title, sizeof(title), "OVERLAY %s", dir);
 #endif
+   else if (menu_type == RGUI_SETTINGS_VIDEO_SOFTFILTER)
+      snprintf(title, sizeof(title), "FILTER %s", dir);
    else if (menu_type == RGUI_BROWSER_DIR_PATH)
       snprintf(title, sizeof(title), "BROWSER DIR %s", dir);
 #ifdef HAVE_SCREENSHOTS
@@ -467,6 +469,7 @@ static void rgui_render(void *data)
 #ifdef HAVE_OVERLAY
             menu_type == RGUI_SETTINGS_OVERLAY_PRESET ||
 #endif
+            menu_type == RGUI_SETTINGS_VIDEO_SOFTFILTER ||
             menu_type == RGUI_SETTINGS_DISK_APPEND ||
             menu_type_is(menu_type) == RGUI_FILE_DIRECTORY)
       {
