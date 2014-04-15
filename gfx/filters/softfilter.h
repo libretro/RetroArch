@@ -54,6 +54,9 @@ const struct softfilter_implementation *softfilter_get_implementation(softfilter
 #define SOFTFILTER_FMT_RGB565 (1 << 0)
 #define SOFTFILTER_FMT_XRGB8888 (1 << 1)
 
+#define SOFTFILTER_BPP_RGB565 2
+#define SOFTFILTER_BPP_XRGB8888 4
+
 // Softfilter implementation.
 // Returns a bitmask of supported input formats.
 typedef unsigned (*softfilter_query_input_formats_t)(void);

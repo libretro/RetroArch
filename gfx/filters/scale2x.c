@@ -18,6 +18,8 @@
 #include "softfilter.h"
 #include <stdlib.h>
 
+#define SCALE2X_SCALE 2
+
 static void scale2x_generic_rgb565(unsigned width, unsigned height,
       int first, int last,
       const uint16_t *src, unsigned src_stride,
@@ -57,8 +59,8 @@ static void scale2x_generic_rgb565(unsigned width, unsigned height,
       }
 
       src += src_stride - width;
-      out0 += dst_stride + dst_stride - (width << 1);
-      out1 += dst_stride + dst_stride - (width << 1);
+      out0 += dst_stride + dst_stride - (width * SCALE2X_SCALE);
+      out1 += dst_stride + dst_stride - (width * SCALE2X_SCALE);
    }
 }
 
@@ -101,8 +103,8 @@ static void scale2x_generic_xrgb8888(unsigned width, unsigned height,
       }
 
       src += src_stride - width;
-      out0 += dst_stride + dst_stride - (width << 1);
-      out1 += dst_stride + dst_stride - (width << 1);
+      out0 += dst_stride + dst_stride - (width * SCALE2X_SCALE);
+      out1 += dst_stride + dst_stride - (width * SCALE2X_SCALE);
    }
 }
 
@@ -164,8 +166,8 @@ static void *scale2x_generic_create(unsigned in_fmt, unsigned out_fmt,
 static void scale2x_generic_output(void *data, unsigned *out_width, unsigned *out_height,
       unsigned width, unsigned height)
 {
-   *out_width = width * 2;
-   *out_height = height * 2;
+   *out_width = width * SCALE2X_SCALE;
+   *out_height = height * SCALE2X_SCALE;
 }
 
 static void scale2x_generic_destroy(void *data)
@@ -184,7 +186,7 @@ static void work_cb_xrgb8888(void *data, void *thread_data)
    unsigned height = thr->height;
 
    scale2x_generic_xrgb8888(width, height,
-         thr->first, thr->last, input, thr->in_pitch >> 2, output, thr->out_pitch >> 2);
+         thr->first, thr->last, input, thr->in_pitch / SOFTFILTER_BPP_XRGB8888, output, thr->out_pitch / SOFTFILTER_BPP_XRGB8888);
 }
 
 static void work_cb_rgb565(void *data, void *thread_data)
@@ -196,7 +198,7 @@ static void work_cb_rgb565(void *data, void *thread_data)
    unsigned height = thr->height;
 
    scale2x_generic_rgb565(width, height,
-         thr->first, thr->last, input, thr->in_pitch >> 1, output, thr->out_pitch >> 1);
+         thr->first, thr->last, input, thr->in_pitch / SOFTFILTER_BPP_RGB565, output, thr->out_pitch / SOFTFILTER_BPP_RGB565);
 }
 
 static void scale2x_generic_packets(void *data,
@@ -212,7 +214,7 @@ static void scale2x_generic_packets(void *data,
 
       unsigned y_start = (height * i) / filt->threads;
       unsigned y_end = (height * (i + 1)) / filt->threads;
-      thr->out_data = (uint8_t*)output + y_start * 2 * output_stride;
+      thr->out_data = (uint8_t*)output + y_start * SCALE2X_SCALE * output_stride;
       thr->in_data = (const uint8_t*)input + y_start * input_stride;
       thr->out_pitch = output_stride;
       thr->in_pitch = input_stride;
