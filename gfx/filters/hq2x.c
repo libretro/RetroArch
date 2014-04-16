@@ -82,7 +82,7 @@ static void hq2x_generic_destroy(void *data)
 #define HQ2X_565_SHIFT (16)
 #define HQ2X_4444_SHIFT (16)
 
-static uint32_t *yuvTable;
+static uint32_t yuvTable[32768];
 static uint8_t rotate[256];
 
 const static uint8_t hqTable[256] = {
@@ -110,9 +110,6 @@ static void initialize(void)
    static int initialized = 0;
 
    if (initialized)
-      return;
-
-   if (posix_memalign((void**)&yuvTable, 16, 32768 * sizeof(uint32_t)))
       return;
 
    for (i = 0; i < 32768; ++i)
