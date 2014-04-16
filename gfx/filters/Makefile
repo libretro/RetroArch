@@ -1,7 +1,7 @@
 compiler    := gcc
 extra_flags :=
 use_neon    := 0
-release		:= debug
+release		:= release
 
 ifndef platform
 platform := $(shell $(compiler) -dumpmachine)
