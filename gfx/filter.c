@@ -107,10 +107,25 @@ static softfilter_get_implementation_t softfilter_get_implementation_from_idx(un
 
 const char *rarch_softfilter_get_name(rarch_softfilter_t *filt)
 {
+#ifdef HAVE_FILTERS_BUILTIN
+   unsigned cpu_features;
+   const struct softfilter_implementation *impl;
+   softfilter_get_implementation_t cb = softfilter_get_implementation_from_idx(g_settings.video.filter_idx);
+   if (cb)
+   {
+      cpu_features = rarch_get_cpu_features();
+      impl = (const struct softfilter_implementation *)cb(cpu_features);
+      if (impl)
+         return impl->ident;
+   }
+
+   return NULL;
+#else
    if (!filt || !filt->impl)
       return NULL;
 
    return filt->impl->ident;
+#endif
 }
 
 rarch_softfilter_t *rarch_softfilter_new(const char *filter_path,
