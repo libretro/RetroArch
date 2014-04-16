@@ -2256,15 +2256,11 @@ void menu_set_settings_label(char *type_str, size_t type_str_size, unsigned *w, 
          strlcpy(type_str, "...", type_str_size);
          break;
       case RGUI_SETTINGS_VIDEO_SOFTFILTER:
-         {
-            const char *filter_name = rarch_softfilter_get_name(g_extern.filter.filter);
-
-            if (filter_name != NULL)
-                  strlcpy(type_str, filter_name, type_str_size);
-            else
-               strlcpy(type_str, "N/A", type_str_size);
-         }
+      {
+         const char *filter_name = rarch_softfilter_get_name(g_extern.filter.filter);
+         strlcpy(type_str, filter_name ? filter_name : "N/A", type_str_size);
          break;
+      }
 #ifdef HAVE_OVERLAY
       case RGUI_SETTINGS_OVERLAY_PRESET:
          strlcpy(type_str, path_basename(g_settings.input.overlay), type_str_size);
