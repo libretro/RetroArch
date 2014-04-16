@@ -166,7 +166,8 @@ static void SetupFormat(void)
 }
 
 void filter_2xBR(unsigned width, unsigned height,
-      int first, int last,
+      int first,        int last,
+      int first_second, int last_second,
       const uint16_t *src, unsigned src_stride,
       uint16_t *dst, unsigned dst_stride)
 {
@@ -242,11 +243,12 @@ void filter_2xBR(unsigned width, unsigned height,
 }
 
 static void twoxbr_generic_rgb565(unsigned width, unsigned height,
-      int first, int last,
+      int first,        int last,
+      int first_second, int last_second,
       const uint16_t *src, unsigned src_stride,
       uint16_t *dst, unsigned dst_stride)
 {
-   filter_2xBR(width, height, first, last, src, src_stride, dst, dst_stride);
+   filter_2xBR(width, height, first, last, first_second, last_second, src, src_stride, dst, dst_stride);
 }
 
 static unsigned twoxbr_generic_input_fmts(void)
@@ -308,7 +310,7 @@ static void twoxbr_work_cb_rgb565(void *data, void *thread_data)
    unsigned height = thr->height;
 
    twoxbr_generic_rgb565(width, height,
-         thr->first, thr->last, input, thr->in_pitch / SOFTFILTER_BPP_RGB565, output, thr->out_pitch / SOFTFILTER_BPP_RGB565);
+         thr->first, thr->last, thr->first_second, thr->last_second, input, thr->in_pitch / SOFTFILTER_BPP_RGB565, output, thr->out_pitch / SOFTFILTER_BPP_RGB565);
 }
 
 static void twoxbr_generic_packets(void *data,
@@ -334,6 +336,9 @@ static void twoxbr_generic_packets(void *data,
       // Workers need to know if they can access pixels outside their given buffer.
       thr->first = y_start;
       thr->last = y_end == height;
+      // TODO/FIXME
+      thr->first_second = 0;
+      thr->last_second  = 0;
 
       if (filt->in_fmt == SOFTFILTER_FMT_RGB565)
          packets[i].work = twoxbr_work_cb_rgb565;

@@ -113,7 +113,9 @@ struct softfilter_thread_data
    unsigned width;
    unsigned height;
    int first;
+   int first_second;
    int last;
+   int last_second;
 };
 
 struct filter_data
