@@ -219,6 +219,8 @@ static uint16_t blend(unsigned colfmt, unsigned rule, uint16_t E, uint16_t A,
 {
    unsigned shift;
    uint32_t mask;
+
+   mask = 0;
    switch (colfmt)
    {
       case SOFTFILTER_FMT_RGB565:

@@ -97,6 +97,8 @@ static softfilter_get_implementation_t softfilter_get_implementation_from_idx(un
          return darken_get_implementation;
       case SOFTFILTER_TWOXSAI:
          return twoxsai_get_implementation;
+      case SOFTFILTER_SUPERTWOXSAI:
+         return supertwoxsai_get_implementation;
       case SOFTFILTER_HQ2X:
          return hq2x_get_implementation;
       case SOFTFILTER_SCALE2X:

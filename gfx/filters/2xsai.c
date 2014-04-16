@@ -152,9 +152,8 @@ static inline int result2_rgb565(uint16_t A, uint16_t B, uint16_t C, uint16_t D)
    return r;
 }
 
-static void write2_rgb565(uint16_t *out, uint16_t val0, uint16_t val1)
+static void twoxsai_write2_rgb565(uint16_t *out, uint16_t val0, uint16_t val1)
 {
-   /* TODO: swap this for big endian */
    *((uint32_t*)out) = ((uint32_t)(val0) | ((uint32_t)(val1) << 16));
 }
 
@@ -286,8 +285,8 @@ static void twoxsai_generic_rgb565(unsigned width, unsigned height,
                product1 = interpolate_rgb565(colorA, colorC);
          }
 
-         write2_rgb565(out, colorA, product);
-         write2_rgb565(out + dst_stride, product1, product2);
+         twoxsai_write2_rgb565(out, colorA, product);
+         twoxsai_write2_rgb565(out + dst_stride, product1, product2);
 
          ++in;
          out += 2;
