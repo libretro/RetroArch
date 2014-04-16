@@ -44,5 +44,20 @@ void rarch_softfilter_process(rarch_softfilter_t *filt,
       void *output, size_t output_stride,
       const void *input, unsigned width, unsigned height, size_t input_stride);
 
+enum
+{
+   SOFTFILTER_NONE = 0,
+   //SOFTFILTER_2XBR,
+   SOFTFILTER_DARKEN,
+   SOFTFILTER_SCALE2X,
+   SOFTFILTER_LAST,
+};
+
+#ifdef HAVE_FILTERS_BUILTIN
+const struct softfilter_implementation *twoxbr_get_implementation(softfilter_simd_mask_t simd);
+const struct softfilter_implementation *darken_get_implementation(softfilter_simd_mask_t simd);
+const struct softfilter_implementation *scale2x_get_implementation(softfilter_simd_mask_t simd);
+#endif
+
 #endif
 

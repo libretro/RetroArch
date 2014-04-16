@@ -777,14 +777,32 @@ int menu_set_settings(void *data, unsigned setting, unsigned action)
       case RGUI_SETTINGS_VIDEO_SOFTFILTER:
          switch (action)
          {
-#ifdef HAVE_DYLIB
+#if defined(HAVE_FILTERS_BUILTIN)
+            case RGUI_ACTION_LEFT:
+               if (g_settings.video.filter_idx > 0)
+                  g_settings.video.filter_idx--;
+               break;
+            case RGUI_ACTION_RIGHT:
+               if ((g_settings.video.filter_idx + 1) != SOFTFILTER_LAST)
+                  g_settings.video.filter_idx++;
+               break;
+#endif
             case RGUI_ACTION_OK:
+#if defined(HAVE_FILTERS_BUILTIN)
+               rarch_set_fullscreen(g_settings.video.fullscreen);
+               rgui->need_refresh = true;
+#if defined(HAVE_DYLIB)
                file_list_push(rgui->menu_stack, g_settings.video.filter_dir, setting, rgui->selection_ptr);
                menu_clear_navigation(rgui);
                rgui->need_refresh = true;
+#endif
                break;
             case RGUI_ACTION_START:
+#if defined(HAVE_FILTERS_BUILTIN)
+               g_settings.video.filter_idx = SOFTFILTER_NONE;
+#else
                strlcpy(g_settings.video.filter_path, "", sizeof(g_settings.video.filter_path));
+#endif
                rarch_set_fullscreen(g_settings.video.fullscreen);
                break;
             default:
@@ -2242,7 +2260,24 @@ void menu_set_settings_label(char *type_str, size_t type_str_size, unsigned *w, 
          strlcpy(type_str, "...", type_str_size);
          break;
       case RGUI_SETTINGS_VIDEO_SOFTFILTER:
-         strlcpy(type_str, path_basename(g_settings.video.filter_path), type_str_size);
+         {
+#ifdef HAVE_FILTERS_BUILTIN
+            unsigned cpu_features;
+            const struct softfilter_implementation *impl;
+            softfilter_get_implementation_t cb = softfilter_get_implementation_from_idx(g_settings.video.filter_idx);
+            if (cb)
+            {
+               cpu_features = rarch_get_cpu_features();
+               impl = (const struct softfilter_implementation *)cb(cpu_features);
+               if (impl)
+                  strlcpy(type_str, impl->ident, type_str_size);
+            }
+            else
+               strlcpy(type_str, "N/A", type_str_size);
+#else
+            strlcpy(type_str, path_basename(g_settings.video.filter_path), type_str_size);
+#endif
+         }
          break;
 #ifdef HAVE_OVERLAY
       case RGUI_SETTINGS_OVERLAY_PRESET:

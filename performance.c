@@ -301,6 +301,8 @@ unsigned rarch_get_cpu_cores(void)
    return sysinfo.dwNumberOfProcessors;
 #elif defined(ANDROID)
    return android_getCpuCount();
+#elif defined(GEKKO)
+   return 1;
 #elif defined(_SC_NPROCESSORS_ONLN) // Linux, most unix-likes.
    long ret = sysconf(_SC_NPROCESSORS_ONLN);
    if (ret <= 0)

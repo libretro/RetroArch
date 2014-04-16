@@ -156,6 +156,9 @@ struct settings
       char shader_path[PATH_MAX];
       bool shader_enable;
 
+#ifdef HAVE_FILTERS_BUILTIN
+      unsigned filter_idx;
+#endif
       char filter_path[PATH_MAX];
       float refresh_rate;
       bool threaded;

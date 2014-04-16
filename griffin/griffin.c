@@ -14,6 +14,10 @@
 * If not, see <http://www.gnu.org/licenses/>.
 */
 
+#ifndef HAVE_DYLIB
+#define HAVE_FILTERS_BUILTIN
+#endif
+
 #if defined(_XBOX)
 #include "../msvc/msvc_compat.h"
 #endif
@@ -471,7 +475,8 @@ SCALERS
 /*============================================================
 FILTERS
 ============================================================ */
-#ifndef HAVE_DYLIB
+
+#ifdef HAVE_FILTERS_BUILTIN
 #include "../gfx/filters/2xbr.c"
 #include "../gfx/filters/darken.c"
 #include "../gfx/filters/scale2x.c"

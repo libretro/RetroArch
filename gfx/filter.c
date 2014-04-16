@@ -14,6 +14,7 @@
  */
 
 #include "filter.h"
+#include "filters/softfilter.h"
 #include "../dynamic.h"
 #include "../general.h"
 #include "../performance.h"
@@ -64,7 +65,7 @@ static void filter_thread_loop(void *data)
 
 struct rarch_softfilter
 {
-#ifdef HAVE_DYLIB
+#if !defined(HAVE_FILTERS_BUILTIN) && defined(HAVE_DYLIB)
    dylib_t lib;
 #endif
 
@@ -82,6 +83,26 @@ struct rarch_softfilter
 #endif
 };
 
+#ifdef HAVE_FILTERS_BUILTIN
+static softfilter_get_implementation_t softfilter_get_implementation_from_idx(unsigned idx)
+{
+   switch (idx)
+   {
+#if 0
+      case SOFTFILTER_2XBR:
+         return twoxbr_get_implementation;
+         break;
+#endif
+      case SOFTFILTER_DARKEN:
+         return darken_get_implementation;
+      case SOFTFILTER_SCALE2X:
+         return scale2x_get_implementation;
+   }
+
+   return NULL;
+}
+#endif
+
 rarch_softfilter_t *rarch_softfilter_new(const char *filter_path,
       unsigned threads,
       enum retro_pixel_format in_pixel_format,
@@ -95,15 +116,14 @@ rarch_softfilter_t *rarch_softfilter_new(const char *filter_path,
    if (!filt)
       return NULL;
 
-   (void)cb;
-#ifdef HAVE_DYLIB
+#if defined(HAVE_FILTERS_BUILTIN)
+   cb = softfilter_get_implementation_from_idx(g_settings.video.filter_idx);
+#elif defined(HAVE_DYLIB)
    filt->lib = dylib_load(filter_path);
    if (!filt->lib)
       goto error;
 
    cb = (softfilter_get_implementation_t)dylib_proc(filt->lib, "softfilter_get_implementation");
-#else
-   // FIXME - TODO - implement for non-HAVE_DYLIB
 #endif
    if (!cb)
    {
@@ -225,7 +245,7 @@ void rarch_softfilter_free(rarch_softfilter_t *filt)
    free(filt->packets);
    if (filt->impl && filt->impl_data)
       filt->impl->destroy(filt->impl_data);
-#ifdef HAVE_DYLIB
+#if !defined(HAVE_FILTERS_BUILTIN) && defined(HAVE_DYLIB)
    if (filt->lib)
       dylib_close(filt->lib);
 #endif

@@ -1291,7 +1291,11 @@ void rarch_deinit_filter(void)
 void rarch_init_filter(enum retro_pixel_format colfmt)
 {
    rarch_deinit_filter();
+#ifdef HAVE_FILTERS_BUILTIN
+   if (!g_settings.video.filter_idx)
+#else
    if (!*g_settings.video.filter_path)
+#endif
       return;
 
    // Deprecated format. Gets pre-converted.
@@ -1311,13 +1315,21 @@ void rarch_init_filter(enum retro_pixel_format colfmt)
    unsigned pow2_y  = 0;
    unsigned maxsize = 0;
 
+#ifdef HAVE_FILTERS_BUILTIN
+   RARCH_LOG("Loading softfilter %d\n", g_settings.video.filter_idx);
+#else
    RARCH_LOG("Loading softfilter from \"%s\"\n", g_settings.video.filter_path);
+#endif
    g_extern.filter.filter = rarch_softfilter_new(g_settings.video.filter_path,
          RARCH_SOFTFILTER_THREADS_AUTO, colfmt, width, height);
 
    if (!g_extern.filter.filter)
    {
+#ifdef HAVE_FILTERS_BUILTIN
+      RARCH_LOG("Loading softfilter %d\n", g_settings.video.filter_idx);
+#else
       RARCH_ERR("Failed to load filter \"%s\"\n", g_settings.video.filter_path);
+#endif
       return;
    }
 
