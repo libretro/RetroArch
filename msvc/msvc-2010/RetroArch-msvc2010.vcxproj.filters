@@ -131,7 +131,7 @@
     <ClCompile Include="..\..\gfx\scaler\scaler_int.c">
       <Filter>gfx\scaler</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\gfx\scaler\filter.c">
+    <ClCompile Include="..\..\gfx\scaler\scaler_filter.c">
       <Filter>gfx\scaler</Filter>
     </ClCompile>
     <ClCompile Include="..\..\gfx\d3d9\render_chain.cpp">

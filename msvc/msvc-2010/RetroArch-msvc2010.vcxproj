@@ -282,7 +282,7 @@
     </ClCompile>
     <ClCompile Include="..\..\gfx\math\matrix_3x3.c">
     </ClCompile>
-    <ClCompile Include="..\..\gfx\scaler\filter.c">
+    <ClCompile Include="..\..\gfx\scaler\scaler_filter.c">
     </ClCompile>
     <ClCompile Include="..\..\gfx\scaler\pixconv.c">
     </ClCompile>

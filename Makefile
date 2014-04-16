@@ -32,7 +32,7 @@ OBJ = frontend/frontend.o \
 		gfx/shader_parse.o \
 		gfx/scaler/pixconv.o \
 		gfx/scaler/scaler_int.o \
-		gfx/scaler/filter.o \
+		gfx/scaler/scaler_filter.o \
 		gfx/image/image.o \
 		gfx/fonts/fonts.o \
 		gfx/fonts/bitmapfont.o \
