@@ -228,6 +228,10 @@
     <ClCompile Include="..\..\gfx\context\d3d_ctx.cpp">
       <Filter>gfx\context</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\frontend\menu\backend\menu_common_backend.c" />
+    <ClCompile Include="..\..\gfx\filter.c">
+      <Filter>gfx</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="resource.h" />
