@@ -105,6 +105,14 @@ static softfilter_get_implementation_t softfilter_get_implementation_from_idx(un
 }
 #endif
 
+const char *rarch_softfilter_get_name(rarch_softfilter_t *filt)
+{
+   if (!filt || !filt->impl)
+      return NULL;
+
+   return filt->impl->ident;
+}
+
 rarch_softfilter_t *rarch_softfilter_new(const char *filter_path,
       unsigned threads,
       enum retro_pixel_format in_pixel_format,

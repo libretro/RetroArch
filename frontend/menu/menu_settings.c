@@ -2257,22 +2257,12 @@ void menu_set_settings_label(char *type_str, size_t type_str_size, unsigned *w, 
          break;
       case RGUI_SETTINGS_VIDEO_SOFTFILTER:
          {
-#ifdef HAVE_FILTERS_BUILTIN
-            unsigned cpu_features;
-            const struct softfilter_implementation *impl;
-            softfilter_get_implementation_t cb = softfilter_get_implementation_from_idx(g_settings.video.filter_idx);
-            if (cb)
-            {
-               cpu_features = rarch_get_cpu_features();
-               impl = (const struct softfilter_implementation *)cb(cpu_features);
-               if (impl)
-                  strlcpy(type_str, impl->ident, type_str_size);
-            }
+            const char *filter_name = rarch_softfilter_get_name(g_extern.filter.filter);
+
+            if (filter_name != NULL)
+                  strlcpy(type_str, filter_name, type_str_size);
             else
                strlcpy(type_str, "N/A", type_str_size);
-#else
-            strlcpy(type_str, path_basename(g_settings.video.filter_path), type_str_size);
-#endif
          }
          break;
 #ifdef HAVE_OVERLAY
