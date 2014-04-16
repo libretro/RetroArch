@@ -777,6 +777,7 @@ int menu_set_settings(void *data, unsigned setting, unsigned action)
       case RGUI_SETTINGS_VIDEO_SOFTFILTER:
          switch (action)
          {
+#ifdef HAVE_DYLIB
             case RGUI_ACTION_OK:
                file_list_push(rgui->menu_stack, g_settings.video.filter_dir, setting, rgui->selection_ptr);
                menu_clear_navigation(rgui);
@@ -788,6 +789,7 @@ int menu_set_settings(void *data, unsigned setting, unsigned action)
                break;
             default:
                break;
+#endif
          }
          break;
 

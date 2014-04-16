@@ -469,13 +469,20 @@ SCALERS
 #include "../gfx/scaler/scaler_int.c"
 
 /*============================================================
+FILTERS
+============================================================ */
+#ifndef HAVE_DYLIB
+#include "../gfx/filters/2xbr.c"
+#include "../gfx/filters/darken.c"
+#include "../gfx/filters/scale2x.c"
+#endif
+/*============================================================
 DYNAMIC
 ============================================================ */
 #include "../dynamic.c"
 #include "../dynamic_dummy.c"
-#ifdef HAVE_DYLIB
 #include "../gfx/filter.c"
-#endif
+
 
 /*============================================================
 FILE

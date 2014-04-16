@@ -259,25 +259,6 @@ static unsigned twoxbr_generic_output_fmts(unsigned input_fmts)
    return input_fmts;
 }
 
-struct thread_data
-{
-   void *out_data;
-   const void *in_data;
-   size_t out_pitch;
-   size_t in_pitch;
-   unsigned width;
-   unsigned height;
-
-   int first, last;
-};
-
-struct filter_data
-{
-   unsigned threads;
-   struct thread_data *workers;
-   unsigned in_fmt;
-};
-
 static unsigned twoxbr_generic_threads(void *data)
 {
    struct filter_data *filt = (struct filter_data*)data;
@@ -293,7 +274,7 @@ static void *twoxbr_generic_create(unsigned in_fmt, unsigned out_fmt,
    struct filter_data *filt = (struct filter_data*)calloc(1, sizeof(*filt));
    if (!filt)
       return NULL;
-   filt->workers = (struct thread_data*)calloc(threads, sizeof(struct thread_data));
+   filt->workers = (struct softfilter_thread_data*)calloc(threads, sizeof(struct softfilter_thread_data));
    filt->threads = threads;
    filt->in_fmt  = in_fmt;
    if (!filt->workers)
@@ -318,9 +299,9 @@ static void twoxbr_generic_destroy(void *data)
    free(filt);
 }
 
-static void work_cb_rgb565(void *data, void *thread_data)
+static void twoxbr_work_cb_rgb565(void *data, void *thread_data)
 {
-   struct thread_data *thr = (struct thread_data*)thread_data;
+   struct softfilter_thread_data *thr = (struct softfilter_thread_data*)thread_data;
    const uint16_t *input = (const uint16_t*)thr->in_data;
    uint16_t *output = (uint16_t*)thr->out_data;
    unsigned width = thr->width;
@@ -339,7 +320,7 @@ static void twoxbr_generic_packets(void *data,
    unsigned i;
    for (i = 0; i < filt->threads; i++)
    {
-      struct thread_data *thr = &filt->workers[i];
+      struct softfilter_thread_data *thr = (struct softfilter_thread_data*)&filt->workers[i];
 
       unsigned y_start = (height * i) / filt->threads;
       unsigned y_end = (height * (i + 1)) / filt->threads;
@@ -355,7 +336,7 @@ static void twoxbr_generic_packets(void *data,
       thr->last = y_end == height;
 
       if (filt->in_fmt == SOFTFILTER_FMT_RGB565)
-         packets[i].work = work_cb_rgb565;
+         packets[i].work = twoxbr_work_cb_rgb565;
       packets[i].thread_data = thr;
    }
 }
@@ -379,3 +360,7 @@ const struct softfilter_implementation *softfilter_get_implementation(softfilter
    (void)simd;
    return &twoxbr_generic;
 }
+
+#ifdef RARCH_INTERNAL
+#undef softfilter_get_implementation
+#endif

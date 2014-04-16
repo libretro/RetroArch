@@ -98,6 +98,25 @@ typedef void (*softfilter_get_work_packets_t)(void *data,
 typedef unsigned (*softfilter_query_num_threads_t)(void *data);
 /////
 
+struct softfilter_thread_data
+{
+   void *out_data;
+   const void *in_data;
+   size_t out_pitch;
+   size_t in_pitch;
+   unsigned width;
+   unsigned height;
+   int first;
+   int last;
+};
+
+struct filter_data
+{
+   unsigned threads;
+   struct softfilter_thread_data *workers;
+   unsigned in_fmt;
+};
+
 struct softfilter_implementation
 {
    softfilter_query_input_formats_t query_input_formats;

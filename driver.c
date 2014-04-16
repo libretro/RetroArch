@@ -1281,7 +1281,6 @@ void uninit_audio(void)
    compute_audio_buffer_statistics();
 }
 
-#ifdef HAVE_DYLIB
 void rarch_deinit_filter(void)
 {
    rarch_softfilter_free(g_extern.filter.filter);
@@ -1291,7 +1290,6 @@ void rarch_deinit_filter(void)
 
 void rarch_init_filter(enum retro_pixel_format colfmt)
 {
-   unsigned i;
    rarch_deinit_filter();
    if (!*g_settings.video.filter_path)
       return;
@@ -1343,7 +1341,6 @@ error:
    RARCH_ERR("Softfilter init failed.\n");
    rarch_deinit_filter();
 }
-#endif
 
 static void deinit_shader_dir(void)
 {
@@ -1407,9 +1404,7 @@ static bool init_video_pixel_converter(unsigned size)
 
 void init_video_input(void)
 {
-#ifdef HAVE_DYLIB
    rarch_init_filter(g_extern.system.pix_fmt);
-#endif
 
    init_shader_dir();
 
@@ -1590,9 +1585,7 @@ void uninit_video_input(void)
 
    deinit_pixel_converter();
 
-#ifdef HAVE_DYLIB
    rarch_deinit_filter();
-#endif
 
    deinit_shader_dir();
    compute_monitor_fps_statistics();

@@ -64,7 +64,9 @@ static void filter_thread_loop(void *data)
 
 struct rarch_softfilter
 {
+#ifdef HAVE_DYLIB
    dylib_t lib;
+#endif
 
    const struct softfilter_implementation *impl;
    void *impl_data;
@@ -93,11 +95,16 @@ rarch_softfilter_t *rarch_softfilter_new(const char *filter_path,
    if (!filt)
       return NULL;
 
+   (void)cb;
+#ifdef HAVE_DYLIB
    filt->lib = dylib_load(filter_path);
    if (!filt->lib)
       goto error;
 
    cb = (softfilter_get_implementation_t)dylib_proc(filt->lib, "softfilter_get_implementation");
+#else
+   // FIXME - TODO - implement for non-HAVE_DYLIB
+#endif
    if (!cb)
    {
       RARCH_ERR("Couldn't find softfilter symbol.\n");
@@ -218,8 +225,10 @@ void rarch_softfilter_free(rarch_softfilter_t *filt)
    free(filt->packets);
    if (filt->impl && filt->impl_data)
       filt->impl->destroy(filt->impl_data);
+#ifdef HAVE_DYLIB
    if (filt->lib)
       dylib_close(filt->lib);
+#endif
 #ifdef HAVE_THREADS
    for (i = 0; i < filt->threads; i++)
    {

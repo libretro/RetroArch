@@ -304,7 +304,6 @@ static void video_frame(const void *data, unsigned width, unsigned height, size_
    const char *msg = msg_queue_pull(g_extern.msg_queue);
    driver.current_msg = msg;
 
-#ifdef HAVE_DYLIB
    if (g_extern.filter.filter && data)
    {
       unsigned owidth = 0;
@@ -332,10 +331,6 @@ static void video_frame(const void *data, unsigned width, unsigned height, size_
    }
    else if (!video_frame_func(data, width, height, pitch, msg))
       g_extern.video_active = false;
-#else
-   if (!video_frame_func(data, width, height, pitch, msg))
-      g_extern.video_active = false;
-#endif
 }
 
 void rarch_render_cached_frame(void)
