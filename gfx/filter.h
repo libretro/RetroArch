@@ -54,6 +54,7 @@ enum
    SOFTFILTER_HQ2X,
    SOFTFILTER_TWOXSAI,
    SOFTFILTER_SUPERTWOXSAI,
+   SOFTFILTER_SUPEREAGLE,
    SOFTFILTER_SCALE2X,
    SOFTFILTER_LAST,
 };
@@ -61,6 +62,7 @@ enum
 #ifdef HAVE_FILTERS_BUILTIN
 const struct softfilter_implementation *hq2x_get_implementation(softfilter_simd_mask_t simd);
 const struct softfilter_implementation *twoxsai_get_implementation(softfilter_simd_mask_t simd);
+const struct softfilter_implementation *supereagle_get_implementation(softfilter_simd_mask_t simd);
 const struct softfilter_implementation *supertwoxsai_get_implementation(softfilter_simd_mask_t simd);
 const struct softfilter_implementation *twoxbr_get_implementation(softfilter_simd_mask_t simd);
 const struct softfilter_implementation *darken_get_implementation(softfilter_simd_mask_t simd);
