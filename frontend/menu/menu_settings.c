@@ -774,10 +774,11 @@ int menu_set_settings(void *data, unsigned setting, unsigned action)
                break;
          }
          break;
+#endif
       case RGUI_SETTINGS_VIDEO_SOFTFILTER:
          switch (action)
          {
-#if defined(HAVE_FILTERS_BUILTIN)
+#ifdef HAVE_FILTERS_BUILTIN
             case RGUI_ACTION_LEFT:
                if (g_settings.video.filter_idx > 0)
                   g_settings.video.filter_idx--;
@@ -790,12 +791,11 @@ int menu_set_settings(void *data, unsigned setting, unsigned action)
             case RGUI_ACTION_OK:
 #if defined(HAVE_FILTERS_BUILTIN)
                rarch_set_fullscreen(g_settings.video.fullscreen);
-               rgui->need_refresh = true;
-#if defined(HAVE_DYLIB)
+#elif defined(HAVE_DYLIB)
                file_list_push(rgui->menu_stack, g_settings.video.filter_dir, setting, rgui->selection_ptr);
                menu_clear_navigation(rgui);
-               rgui->need_refresh = true;
 #endif
+               rgui->need_refresh = true;
                break;
             case RGUI_ACTION_START:
 #if defined(HAVE_FILTERS_BUILTIN)
@@ -805,9 +805,6 @@ int menu_set_settings(void *data, unsigned setting, unsigned action)
 #endif
                rarch_set_fullscreen(g_settings.video.fullscreen);
                break;
-            default:
-               break;
-#endif
          }
          break;
 
@@ -880,7 +877,6 @@ int menu_set_settings(void *data, unsigned setting, unsigned action)
                      g_settings.input.overlay_scale);
             break;
          }
-#endif
          // controllers
       case RGUI_SETTINGS_BIND_PLAYER:
          if (action == RGUI_ACTION_START)
