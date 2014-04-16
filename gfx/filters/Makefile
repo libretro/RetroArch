@@ -1,6 +1,7 @@
 compiler    := gcc
 extra_flags :=
 use_neon    := 0
+release		:= debug
 
 ifndef platform
 platform := $(shell $(compiler) -dumpmachine)
@@ -37,7 +38,7 @@ ASMFLAGS := -INEON/asm
 asflags += -mfpu=neon
 endif
            
-objects += 2xsai.so 2xbr.so darken.so scale2x.so
+objects += 2xsai.so 2xbr.so darken.so hq2x.so scale2x.so
 
 all: build;
 

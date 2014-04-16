@@ -104,6 +104,7 @@ struct softfilter_thread_data
    const void *in_data;
    size_t out_pitch;
    size_t in_pitch;
+   unsigned colfmt;
    unsigned width;
    unsigned height;
    int first;
