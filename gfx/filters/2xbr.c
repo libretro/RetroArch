@@ -193,9 +193,9 @@ void filter_2xBR(unsigned width, unsigned height,
    for (y = 0; y < height; ++y)
    {
       const int prevline  = (((y == 0) && first) ? 0 : src_stride);
-      const int prevline2 = (((y <= 1) && first) ? 0 : src_stride);
+      const int prevline2 = (((y <= 1) && first_second) ? 0 : src_stride);
       const int nextline  = (((y == height - 1) && last) ? 0 : src_stride);
-      const int nextline2 = (((y >= height - 2) && last) ? 0 : src_stride);
+      const int nextline2 = (((y >= height - 2) && last_second) ? 0 : src_stride);
 
       for (x = 0; x < width; ++x)
       {
