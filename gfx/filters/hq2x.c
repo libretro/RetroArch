@@ -228,12 +228,10 @@ static uint16_t blend(unsigned colfmt, unsigned rule, uint16_t E, uint16_t A,
          mask = HQ2X_565_MASK;
          shift = HQ2X_565_SHIFT;
          break;
-#if 0
       case SOFTFILTER_FMT_RGB4444:
          mask = HQ2X_4444_MASK;
          shift = HQ2X_4444_SHIFT;
          break;
-#endif
    }
 
    switch (rule)
@@ -346,7 +344,7 @@ static void hq2x_16bit_generic(unsigned width, unsigned height,
    }
 }
 
-static void hq2x_work_cb_rgb565(void *data, void *thread_data)
+static void hq2x_work_cb_16bit(void *data, void *thread_data)
 {
    struct softfilter_thread_data *thr = (struct softfilter_thread_data*)thread_data;
    uint16_t *input = (uint16_t*)thr->in_data;
@@ -384,8 +382,11 @@ static void hq2x_generic_packets(void *data,
       thr->last = y_end == height;
       thr->colfmt = SOFTFILTER_FMT_RGB565;
 
-      if (filt->in_fmt == SOFTFILTER_FMT_RGB565)
-         packets[i].work = hq2x_work_cb_rgb565;
+      if (
+            filt->in_fmt == SOFTFILTER_FMT_RGB565 ||
+            filt->in_fmt == SOFTFILTER_FMT_RGB4444
+            )
+         packets[i].work = hq2x_work_cb_16bit;
       packets[i].thread_data = thr;
    }
 }

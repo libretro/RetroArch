@@ -48,13 +48,18 @@ typedef const struct softfilter_implementation *(*softfilter_get_implementation_
 // The same SIMD mask argument is forwarded to create() callback as well to avoid having to keep lots of state around.
 const struct softfilter_implementation *softfilter_get_implementation(softfilter_simd_mask_t simd);
 
-#define SOFTFILTER_API_VERSION 1
+#define SOFTFILTER_API_VERSION  1
 
-#define SOFTFILTER_FMT_NONE 0
-#define SOFTFILTER_FMT_RGB565 (1 << 0)
+// Required base color formats
+
+#define SOFTFILTER_FMT_NONE     0
+#define SOFTFILTER_FMT_RGB565   (1 << 0)
 #define SOFTFILTER_FMT_XRGB8888 (1 << 1)
 
-#define SOFTFILTER_BPP_RGB565 2
+// Optional color formats
+#define SOFTFILTER_FMT_RGB4444  (1 << 2)
+
+#define SOFTFILTER_BPP_RGB565   2
 #define SOFTFILTER_BPP_XRGB8888 4
 
 // Softfilter implementation.
