@@ -157,12 +157,29 @@ static void twoxsai_write2_rgb565(uint16_t *out, uint16_t val0, uint16_t val1)
    *((uint32_t*)out) = ((uint32_t)(val0) | ((uint32_t)(val1) << 16));
 }
 
+#define twoxsai_declare_variables(typename_t, in, nextline) \
+         typename_t product, product1, product2; \
+         typename_t colorI = *(in - nextline - 1); \
+         typename_t colorE = *(in - nextline + 0); \
+         typename_t colorF = *(in - nextline + 1); \
+         typename_t colorJ = *(in - nextline + 2); \
+         typename_t colorG = *(in - 1); \
+         typename_t colorA = *(in + 0); \
+         typename_t colorB = *(in + 1); \
+         typename_t colorK = *(in + 2); \
+         typename_t colorH = *(in + nextline - 1); \
+         typename_t colorC = *(in + nextline + 0); \
+         typename_t colorD = *(in + nextline + 1); \
+         typename_t colorL = *(in + nextline + 2); \
+         typename_t colorM = *(in + nextline + nextline - 1); \
+         typename_t colorN = *(in + nextline + nextline + 0); \
+         typename_t colorO = *(in + nextline + nextline + 1); \
+         //typename_t colorP = *(in + nextline + nextline + 2);
+
 static void twoxsai_generic_rgb565(unsigned width, unsigned height,
       int first, int last, uint16_t *src, 
       unsigned src_stride, uint16_t *dst, unsigned dst_stride)
 {
-   typedef uint16_t typename_t;
-   typedef uint16_t* typename_pointer_t;
    const unsigned nextline = (last) ? 0 : src_stride;
 
    for (; height; height--)
@@ -172,33 +189,13 @@ static void twoxsai_generic_rgb565(unsigned width, unsigned height,
 
       for (unsigned finish = width; finish; finish -= 1)
       {
-         typename_t product, product1, product2;
+         twoxsai_declare_variables(uint16_t, in, nextline);
 
          //---------------------------------------
          // Map of the pixels:           I|E F|J
          //                              G|A B|K
          //                              H|C D|L
          //                              M|N O|P
-
-         typename_t colorI = *(in - nextline - 1);
-         typename_t colorE = *(in - nextline + 0);
-         typename_t colorF = *(in - nextline + 1);
-         typename_t colorJ = *(in - nextline + 2);
-
-         typename_t colorG = *(in - 1);
-         typename_t colorA = *(in + 0);
-         typename_t colorB = *(in + 1);
-         typename_t colorK = *(in + 2);
-
-         typename_t colorH = *(in + nextline - 1);
-         typename_t colorC = *(in + nextline + 0);
-         typename_t colorD = *(in + nextline + 1);
-         typename_t colorL = *(in + nextline + 2);
-
-         typename_t colorM = *(in + nextline + nextline - 1);
-         typename_t colorN = *(in + nextline + nextline + 0);
-         typename_t colorO = *(in + nextline + nextline + 1);
-         //typename_t colorP = *(in + nextline + nextline + 2);
 
          if (colorA == colorD && colorB != colorC)
          {

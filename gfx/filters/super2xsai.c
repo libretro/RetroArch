@@ -135,11 +135,29 @@ static void supertwoxsai_write2_rgb565(uint16_t *out, uint16_t val0, uint16_t va
    *((uint32_t*)out) = ((uint32_t)(val0) | ((uint32_t)(val1) << 16));
 }
 
+#define supertwoxsai_declare_variables(typename_t, in, nextline) \
+         typename_t product1a, product1b, product2a, product2b; \
+         const typename_t colorB0 = *(in - nextline - 1); \
+         const typename_t colorB1 = *(in - nextline + 0); \
+         const typename_t colorB2 = *(in - nextline + 1); \
+         const typename_t colorB3 = *(in - nextline + 2); \
+         const typename_t color4  = *(in - 1); \
+         const typename_t color5  = *(in + 0); \
+         const typename_t color6  = *(in + 1); \
+         const typename_t colorS2 = *(in + 2); \
+         const typename_t color1  = *(in + nextline - 1); \
+         const typename_t color2  = *(in + nextline + 0); \
+         const typename_t color3  = *(in + nextline + 1); \
+         const typename_t colorS1 = *(in + nextline + 2); \
+         const typename_t colorA0 = *(in + nextline + nextline - 1); \
+         const typename_t colorA1 = *(in + nextline + nextline + 0); \
+         const typename_t colorA2 = *(in + nextline + nextline + 1); \
+         const typename_t colorA3 = *(in + nextline + nextline + 2)
+
 static void supertwoxsai_generic_rgb565(unsigned width, unsigned height,
       int first, int last, uint16_t *src, 
       unsigned src_stride, uint16_t *dst, unsigned dst_stride)
 {
-   typedef uint16_t typename_t;
    const unsigned nextline = (last) ? 0 : src_stride;
 
    for (; height; height--)
@@ -149,34 +167,14 @@ static void supertwoxsai_generic_rgb565(unsigned width, unsigned height,
 
       for (unsigned finish = width; finish; finish -= 1)
       {
-         typename_t product1a, product1b, product2a, product2b;
+         supertwoxsai_declare_variables(uint16_t, in, nextline);
 
          //---------------------------    B1 B2
          //                             4  5  6 S2
          //                             1  2  3 S1
          //                               A1 A2
-
-         const typename_t colorB0 = *(in - nextline - 1);
-         const typename_t colorB1 = *(in - nextline + 0);
-         const typename_t colorB2 = *(in - nextline + 1);
-         const typename_t colorB3 = *(in - nextline + 2);
-
-         const typename_t color4  = *(in - 1);
-         const typename_t color5  = *(in + 0);
-         const typename_t color6  = *(in + 1);
-         const typename_t colorS2 = *(in + 2);
-
-         const typename_t color1  = *(in + nextline - 1);
-         const typename_t color2  = *(in + nextline + 0);
-         const typename_t color3  = *(in + nextline + 1);
-         const typename_t colorS1 = *(in + nextline + 2);
-
-         const typename_t colorA0 = *(in + nextline + nextline - 1);
-         const typename_t colorA1 = *(in + nextline + nextline + 0);
-         const typename_t colorA2 = *(in + nextline + nextline + 1);
-         const typename_t colorA3 = *(in + nextline + nextline + 2);
-
          //--------------------------------------
+         
          if (color2 == color6 && color5 != color3)
             product2b = product1b = color2;
          else if (color5 == color3 && color2 != color6)
