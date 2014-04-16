@@ -49,11 +49,13 @@ enum
    SOFTFILTER_NONE = 0,
    //SOFTFILTER_2XBR,
    SOFTFILTER_DARKEN,
+   SOFTFILTER_TWOXSAI,
    SOFTFILTER_SCALE2X,
    SOFTFILTER_LAST,
 };
 
 #ifdef HAVE_FILTERS_BUILTIN
+const struct softfilter_implementation *twoxsai_get_implementation(softfilter_simd_mask_t simd);
 const struct softfilter_implementation *twoxbr_get_implementation(softfilter_simd_mask_t simd);
 const struct softfilter_implementation *darken_get_implementation(softfilter_simd_mask_t simd);
 const struct softfilter_implementation *scale2x_get_implementation(softfilter_simd_mask_t simd);

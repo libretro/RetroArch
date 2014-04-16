@@ -477,6 +477,7 @@ FILTERS
 ============================================================ */
 
 #ifdef HAVE_FILTERS_BUILTIN
+#include "../gfx/filters/2xsai.c"
 #include "../gfx/filters/2xbr.c"
 #include "../gfx/filters/darken.c"
 #include "../gfx/filters/scale2x.c"

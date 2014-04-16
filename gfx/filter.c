@@ -95,6 +95,8 @@ static softfilter_get_implementation_t softfilter_get_implementation_from_idx(un
 #endif
       case SOFTFILTER_DARKEN:
          return darken_get_implementation;
+      case SOFTFILTER_TWOXSAI:
+         return twoxsai_get_implementation;
       case SOFTFILTER_SCALE2X:
          return scale2x_get_implementation;
    }
