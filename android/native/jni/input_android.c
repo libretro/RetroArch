@@ -2110,6 +2110,11 @@ static float android_input_get_sensor_input(void *data, unsigned port, unsigned 
    return 0;
 }
 
+unsigned android_input_devices_size(void *data)
+{
+   return DEVICE_LAST;
+}
+
 const input_driver_t input_android = {
    android_input_init,
    android_input_poll,
@@ -2120,5 +2125,6 @@ const input_driver_t input_android = {
    android_input_set_sensor_state,
    android_input_get_sensor_input,
    android_input_get_capabilities,
+   android_input_devices_size,
    "android_input",
 };

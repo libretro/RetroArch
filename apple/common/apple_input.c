@@ -24,6 +24,16 @@
 
 #include "keycode.inc"
 
+enum input_devices
+{
+   DEVICE_NONE = 0,
+#if defined(IOS)
+   DEVICE_WIIMOTE,
+   DEVICE_SIXAXIS,
+#endif
+   DEVICE_LAST
+};
+
 extern const rarch_joypad_driver_t apple_joypad;
 static const rarch_joypad_driver_t* const g_joydriver = &apple_joypad;
 
@@ -432,9 +442,14 @@ static uint64_t apple_input_get_capabilities(void *data)
    return caps;
 }
 
+unsigned apple_get_device_last_idx(void *data)
+{
+   return DEVICE_LAST;
+}
+
 const rarch_joypad_driver_t *apple_get_joypad_driver(void *data)
 {
-    return g_joydriver;
+   return g_joydriver;
 }
 
 const input_driver_t input_apple = {
@@ -447,6 +462,8 @@ const input_driver_t input_apple = {
    NULL,
    NULL,
    apple_input_get_capabilities,
+   NULL,
+   apple_get_device_last_idx,
    "apple_input",
    NULL,
    apple_input_set_rumble,

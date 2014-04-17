@@ -283,6 +283,7 @@ const input_driver_t input_sdl = {
    NULL,
    NULL,
    sdl_get_capabilities,
+   NULL,
    "sdl",
    NULL,
    sdl_set_rumble,

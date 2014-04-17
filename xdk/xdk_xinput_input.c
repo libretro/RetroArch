@@ -21,12 +21,17 @@
 #include <xtl.h>
 #endif
 
-#define MAX_PADS 4
-#define DEADZONE (16000)
-
 #include "../driver.h"
 #include "../general.h"
 #include "../libretro.h"
+
+#define MAX_PADS 4
+
+enum input_devices
+{
+   DEVICE_XBOX_PAD = 0,
+   DEVICE_LAST
+};
 
 typedef struct xdk_input
 {
@@ -432,6 +437,11 @@ static const rarch_joypad_driver_t *xdk_input_get_joypad_driver(void *data)
    return &xdk_joypad;
 }
 
+static unsigned xdk_input_devices_size(void *data)
+{
+   return DEVICE_LAST;
+}
+
 const input_driver_t input_xinput = 
 {
    xdk_input_init,
@@ -443,6 +453,7 @@ const input_driver_t input_xinput =
    NULL,
    NULL,
    xdk_input_get_capabilities,
+   xdk_input_devices_size,
    "xinput",
 
    NULL,

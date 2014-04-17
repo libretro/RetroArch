@@ -37,6 +37,12 @@
 
 #define MAX_PADS 1
 
+enum input_devices
+{
+   DEVICE_PSP = 0,
+   DEVICE_LAST
+};
+
 const struct platform_bind platform_keys[] = {
    { PSP_GAMEPAD_CIRCLE, "Circle button" },
    { PSP_GAMEPAD_CROSS, "Cross button" },
@@ -336,6 +342,11 @@ static const rarch_joypad_driver_t *psp_input_get_joypad_driver(void *data)
    return &psp_joypad;
 }
 
+static unsigned psp_input_devices_size(void *data)
+{
+   return DEVICE_LAST;
+}
+
 const input_driver_t input_psp = {
    psp_input_initialize,
    psp_input_poll,
@@ -346,6 +357,7 @@ const input_driver_t input_psp = {
    NULL,
    NULL,
    psp_input_get_capabilities,
+   psp_input_devices_size,
    "psp",
 
    NULL,

@@ -39,6 +39,12 @@
 #define DEADZONE_LOW 105
 #define DEADZONE_HIGH 145
 
+enum input_devices
+{
+   DEVICE_SIXAXIS = 0,
+   DEVICE_LAST
+};
+
 typedef struct
 {
    float x;
@@ -511,6 +517,11 @@ static const rarch_joypad_driver_t *ps3_input_get_joypad_driver(void *data)
    return &ps3_joypad;
 }
 
+static unsigned ps3_input_devices_size(void *data)
+{
+   return DEVICE_LAST;
+}
+
 const input_driver_t input_ps3 = {
    ps3_input_init,
    ps3_input_poll,
@@ -521,6 +532,7 @@ const input_driver_t input_ps3 = {
    ps3_input_set_sensor_state,
    NULL,
    ps3_input_get_capabilities,
+   ps3_input_devices_size,
    "ps3",
 
    NULL,

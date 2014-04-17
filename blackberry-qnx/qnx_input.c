@@ -30,6 +30,17 @@
 #define MAX_TOUCH 4
 #endif
 
+enum input_devices
+{
+   DEVICE_NONE,
+   DEVICE_WIIMOTE,
+   DEVICE_KEYBOARD,
+   DEVICE_IPEGA,
+   DEVICE_KEYPAD,
+   DEVICE_UNKNOWN,
+   DEVICE_LAST
+};
+
 struct touches
 {
    int16_t x, y;
@@ -854,6 +865,11 @@ static uint64_t qnx_input_get_capabilities(void *data)
    return caps;
 }
 
+unsigned qnx_input_devices_size(void *data)
+{
+   return DEVICE_LAST;
+}
+
 const input_driver_t input_qnx = {
    qnx_input_init,
    qnx_input_poll,
@@ -864,5 +880,6 @@ const input_driver_t input_qnx = {
    NULL,
    NULL,
    qnx_input_get_capabilities,
+   qnx_input_devices_size,
    "qnx_input",
 };

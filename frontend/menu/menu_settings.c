@@ -900,9 +900,10 @@ int menu_set_settings(void *data, unsigned setting, unsigned action)
       case RGUI_SETTINGS_BIND_DEVICE:
          // If set_keybinds is supported, we do it more fancy, and scroll through
          // a list of supported devices directly.
-         if (driver.input->set_keybinds)
+         if (driver.input->set_keybinds && driver.input->devices_size)
          {
-            g_settings.input.device[port] += DEVICE_LAST;
+            unsigned device_last = driver.input->devices_size(driver.input_data);
+            g_settings.input.device[port] += device_last;
             if (action == RGUI_ACTION_START)
                g_settings.input.device[port] = 0;
             else if (action == RGUI_ACTION_LEFT)
@@ -910,12 +911,12 @@ int menu_set_settings(void *data, unsigned setting, unsigned action)
             else if (action == RGUI_ACTION_RIGHT)
                g_settings.input.device[port]++;
 
-            // DEVICE_LAST can be 0, avoid modulo.
-            if (g_settings.input.device[port] >= DEVICE_LAST)
-               g_settings.input.device[port] -= DEVICE_LAST;
+            // device_last can be 0, avoid modulo.
+            if (g_settings.input.device[port] >= device_last)
+               g_settings.input.device[port] -= device_last;
             // needs to be checked twice, in case we go right past the end of the list
-            if (g_settings.input.device[port] >= DEVICE_LAST)
-               g_settings.input.device[port] -= DEVICE_LAST;
+            if (g_settings.input.device[port] >= device_last)
+               g_settings.input.device[port] -= device_last;
 
             unsigned keybind_action = (1ULL << KEYBINDS_ACTION_SET_DEFAULT_BINDS);
 
