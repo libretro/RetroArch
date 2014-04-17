@@ -442,7 +442,7 @@ static uint64_t apple_input_get_capabilities(void *data)
    return caps;
 }
 
-unsigned apple_get_device_last_idx(void *data)
+static unsigned apple_devices_size(void *data)
 {
    return DEVICE_LAST;
 }
@@ -462,8 +462,7 @@ const input_driver_t input_apple = {
    NULL,
    NULL,
    apple_input_get_capabilities,
-   NULL,
-   apple_get_device_last_idx,
+   apple_devices_size,
    "apple_input",
    NULL,
    apple_input_set_rumble,

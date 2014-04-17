@@ -142,6 +142,8 @@ rarch_softfilter_t *rarch_softfilter_new(const char *filter_path,
    unsigned i;
    unsigned cpu_features, output_fmts, input_fmts, input_fmt;
    softfilter_get_implementation_t cb;
+    
+   (void)i;
 
    rarch_softfilter_t *filt = (rarch_softfilter_t*)calloc(1, sizeof(*filt));
    if (!filt)
@@ -270,6 +272,7 @@ error:
 void rarch_softfilter_free(rarch_softfilter_t *filt)
 {
    unsigned i;
+   (void)i;
    if (!filt)
       return;
 
