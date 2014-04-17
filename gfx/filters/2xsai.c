@@ -80,11 +80,6 @@ static void twoxsai_generic_destroy(void *data)
 
 #define twoxsai_result1_rgb565(A, B, C, D) (((A) != (C) || (A) != (D)) - ((B) != (C) || (B) != (D)));
 
-static void twoxsai_write2_rgb565(uint16_t *out, uint16_t val0, uint16_t val1)
-{
-   *((uint32_t*)out) = ((uint32_t)(val0) | ((uint32_t)(val1) << 16));
-}
-
 #define twoxsai_declare_variables(typename_t, in, nextline) \
          typename_t product, product1, product2; \
          typename_t colorI = *(in - nextline - 1); \
@@ -127,36 +122,36 @@ static void twoxsai_generic_rgb565(unsigned width, unsigned height,
 
          if (colorA == colorD && colorB != colorC)
          {
-            if ((colorA == colorE && colorB == colorL) ||
-                  (colorA == colorC && colorA == colorF &&
-                   colorB != colorE && colorB == colorJ))
+            if ((colorA == colorE && colorB == colorL) || (colorA == colorC && colorA == colorF && colorB != colorE && colorB == colorJ))
                product = colorA;
             else
+            {
                product = twoxsai_interpolate_rgb565(colorA, colorB);
+            }
 
-            if ((colorA == colorG && colorC == colorO) ||
-                  (colorA == colorB && colorA == colorH &&
-                   colorG != colorC && colorC == colorM))
+            if ((colorA == colorG && colorC == colorO) || (colorA == colorB && colorA == colorH && colorG != colorC && colorC == colorM))
                product1 = colorA;
             else
+            {
                product1 = twoxsai_interpolate_rgb565(colorA, colorC);
+            }
 
             product2 = colorA;
          } else if (colorB == colorC && colorA != colorD)
          {
-            if ((colorB == colorF && colorA == colorH) ||
-                  (colorB == colorE && colorB == colorD &&
-                   colorA != colorF && colorA == colorI))
+            if ((colorB == colorF && colorA == colorH) || (colorB == colorE && colorB == colorD && colorA != colorF && colorA == colorI))
                product = colorB;
             else
+            {
                product = twoxsai_interpolate_rgb565(colorA, colorB);
+            }
 
-            if ((colorC == colorH && colorA == colorF) ||
-                  (colorC == colorG && colorC == colorD &&
-                   colorA != colorH && colorA == colorI))
+            if ((colorC == colorH && colorA == colorF) || (colorC == colorG && colorC == colorD && colorA != colorH && colorA == colorI))
                product1 = colorC;
             else
+            {
                product1 = twoxsai_interpolate_rgb565(colorA, colorC);
+            }
 
             product2 = colorB;
          }
@@ -184,34 +179,38 @@ static void twoxsai_generic_rgb565(unsigned width, unsigned height,
                else if (r < 0)
                   product2 = colorB;
                else
+               {
                   product2 = twoxsai_interpolate2_rgb565(colorA, colorB, colorC, colorD);
+               }
             }
          }
          else
          {
             product2 = twoxsai_interpolate2_rgb565(colorA, colorB, colorC, colorD);
 
-            if (colorA == colorC && colorA == colorF &&
-                  colorB != colorE && colorB == colorJ)
+            if (colorA == colorC && colorA == colorF && colorB != colorE && colorB == colorJ)
                product = colorA;
-            else if (colorB == colorE && colorB == colorD &&
-                  colorA != colorF && colorA == colorI)
+            else if (colorB == colorE && colorB == colorD && colorA != colorF && colorA == colorI)
                product = colorB;
             else
+            {
                product = twoxsai_interpolate_rgb565(colorA, colorB);
+            }
 
-            if (colorA == colorB && colorA == colorH &&
-                  colorG != colorC && colorC == colorM)
+            if (colorA == colorB && colorA == colorH && colorG != colorC && colorC == colorM)
                product1 = colorA;
-            else if (colorC == colorG && colorC == colorD &&
-                  colorA != colorH && colorA == colorI)
+            else if (colorC == colorG && colorC == colorD && colorA != colorH && colorA == colorI)
                product1 = colorC;
             else
+            {
                product1 = twoxsai_interpolate_rgb565(colorA, colorC);
+            }
          }
 
-         twoxsai_write2_rgb565(out, colorA, product);
-         twoxsai_write2_rgb565(out + dst_stride, product1, product2);
+         out[0] = colorA;
+         out[1] = product;
+         out[dst_stride] = product1;
+         out[dst_stride + 1] = product2;
 
          ++in;
          out += 2;

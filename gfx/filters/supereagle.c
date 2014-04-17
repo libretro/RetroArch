@@ -80,11 +80,6 @@ static void supereagle_generic_destroy(void *data)
 
 #define supereagle_result1_rgb565(A, B, C, D) (((A) != (C) || (A) != (D)) - ((B) != (C) || (B) != (D)));
 
-static void supereagle_write2_rgb565(uint16_t *out, uint16_t val0, uint16_t val1)
-{
-   *((uint32_t*)out) = ((uint32_t)(val0) | ((uint32_t)(val1) << 16));
-}
-
 #define supereagle_declare_variables(typename_t, in, nextline) \
          typename_t product1a, product1b, product2a, product2b; \
          const typename_t colorB1 = *(in - nextline + 0); \
@@ -190,8 +185,10 @@ static void supereagle_generic_rgb565(unsigned width, unsigned height,
             product1b = supereagle_interpolate2_rgb565(color6, color6, color6, product1b);
          }
 
-         supereagle_write2_rgb565(out, product1a,  product1b);
-         supereagle_write2_rgb565(out + dst_stride, product2a, product2b);
+         out[0] = product1a;
+         out[1] = product1b;
+         out[dst_stride] = product2a;
+         out[dst_stride + 1] = product2b;
 
          ++in;
          out += 2;

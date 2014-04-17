@@ -74,37 +74,15 @@ static void supertwoxsai_generic_destroy(void *data)
    free(filt);
 }
 
-static inline uint32_t supertwoxsai_interpolate_xrgb8888(uint32_t A, uint32_t B)
-{
-   return (((A & 0xFEFEFEFE) >> 1) + ((B & 0xFEFEFEFE) >> 1) + (A & B & 0x01010101));
-}
+#define supertwoxsai_interpolate_xrgb8888(A, B) ((((A) & 0xFEFEFEFE) >> 1) + (((B) & 0xFEFEFEFE) >> 1) + ((A) & (B) & 0x01010101))
 
-static inline uint32_t supertwoxsai_interpolate2_xrgb8888(uint32_t A, uint32_t B, uint32_t C, uint32_t D)
-{
-   return (((A & 0xFCFCFCFC) >> 2) + ((B & 0xFCFCFCFC) >> 2) + ((C & 0xFCFCFCFC) >> 2) + ((D & 0xFCFCFCFC) >> 2)
-+ ((((A & 0x03030303) + (B & 0x03030303) + (C & 0x03030303) + (D & 0x03030303)) >> 2) & 0x03030303));
-}
-
-static inline int supertwoxsai_result1_xrgb8888(uint32_t A, uint32_t B, uint32_t C, uint32_t D)
-{
-   return ((A != C || A != D) - (B != C || B != D));
-}
-
-static inline void supertwoxsai_write2_rgb565(uint16_t *out, uint16_t val0, uint16_t val1)
-{
-   *((uint32_t*)out) = ((uint32_t)(val0) | ((uint32_t)(val1) << 16));
-}
-
-static void supertwoxsai_write2_xrgb8888(uint32_t *out, uint32_t val0, uint32_t val1)
-{
-   *(out) = val0 | val1;
-}
+#define supertwoxsai_interpolate2_xrgb8888(A, B, C, D) ((((A) & 0xFCFCFCFC) >> 2) + (((B) & 0xFCFCFCFC) >> 2) + (((C) & 0xFCFCFCFC) >> 2) + (((D) & 0xFCFCFCFC) >> 2) + (((((A) & 0x03030303) + ((B) & 0x03030303) + ((C) & 0x03030303) + ((D) & 0x03030303)) >> 2) & 0x03030303))
 
 #define supertwoxsai_interpolate_rgb565(A, B) ((((A) & 0xF7DE) >> 1) + (((B) & 0xF7DE) >> 1) + ((A) & (B) & 0x0821));
 
 #define supertwoxsai_interpolate2_rgb565(A, B, C, D) ((((A) & 0xE79C) >> 2) + (((B) & 0xE79C) >> 2) + (((C) & 0xE79C) >> 2) + (((D) & 0xE79C) >> 2)  + (((((A) & 0x1863) + ((B) & 0x1863) + ((C) & 0x1863) + ((D) & 0x1863)) >> 2) & 0x1863))
 
-#define supertwoxsai_result1_rgb565(A, B, C, D) (((A) != (C) || (A) != (D)) - ((B) != (C) || (B) != (D)));
+#define supertwoxsai_result1(A, B, C, D) (((A) != (C) || (A) != (D)) - ((B) != (C) || (B) != (D)))
 
 #ifndef supertwoxsai_declare_variables
 #define supertwoxsai_declare_variables(typename_t, in, nextline) \
@@ -128,7 +106,7 @@ static void supertwoxsai_write2_xrgb8888(uint32_t *out, uint32_t val0, uint32_t 
 #endif
 
 #ifndef supertwoxsai_function
-#define supertwoxsai_function(result1_cb, interpolate_cb, interpolate2_cb, write2_cb) \
+#define supertwoxsai_function(result1_cb, interpolate_cb, interpolate2_cb) \
          if (color2 == color6 && color5 != color3) \
             product2b = product1b = color2; \
          else if (color5 == color3 && color2 != color6) \
@@ -182,8 +160,10 @@ static void supertwoxsai_write2_xrgb8888(uint32_t *out, uint32_t val0, uint32_t 
          } \
          else \
             product1a = color5; \
-         write2_cb(out, product1a,  product1b); \
-         write2_cb(out + dst_stride, product2a, product2b); \
+         out[0] = product1a; \
+         out[1] = product1b; \
+         out[dst_stride] = product2a; \
+         out[dst_stride + 1] = product2b; \
          ++in; \
          out += 2
 #endif
@@ -209,7 +189,7 @@ static void supertwoxsai_generic_xrgb8888(unsigned width, unsigned height,
          //                               A1 A2
          //--------------------------------------
          
-         supertwoxsai_function(supertwoxsai_result1_xrgb8888, supertwoxsai_interpolate_xrgb8888, supertwoxsai_interpolate2_xrgb8888, supertwoxsai_write2_xrgb8888);
+         supertwoxsai_function(supertwoxsai_result1, supertwoxsai_interpolate_xrgb8888, supertwoxsai_interpolate2_xrgb8888);
       }
 
       src += src_stride;
@@ -238,7 +218,7 @@ static void supertwoxsai_generic_rgb565(unsigned width, unsigned height,
          //                               A1 A2
          //--------------------------------------
          
-         supertwoxsai_function(supertwoxsai_result1_rgb565, supertwoxsai_interpolate_rgb565, supertwoxsai_interpolate2_rgb565, supertwoxsai_write2_rgb565);
+         supertwoxsai_function(supertwoxsai_result1, supertwoxsai_interpolate_rgb565, supertwoxsai_interpolate2_rgb565);
       }
 
       src += src_stride;
