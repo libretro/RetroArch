@@ -74,37 +74,62 @@ static void supertwoxsai_generic_destroy(void *data)
    free(filt);
 }
 
+#ifndef result1_body
+#define result1_body(A, B, C, D, x, y) \
+   if (A == C) \
+      x += 1; \
+   else if (B == C) \
+      y += 1; \
+   if (A == D) \
+      x += 1; \
+   else if (B == D) \
+      y += 1; \
+   if (x <= 1) \
+      r += 1; \
+   if (y <= 1) \
+      r -= 1
+#endif
+
+#ifndef interpolate_body
+#define interpolate_body(A, B, r, pack_color) \
+   A |= (A << 16); /* unpack */ \
+   A &= pack_color; \
+   B |= (B << 16); \
+   B &= pack_color; \
+   r = (A + B) >> 1; /* mix */ \
+   r &= pack_color /* repack */
+#endif
+
+#ifndef interpolate2_body
+#define interpolate2_body(A, B, C, D, r, pack_color) \
+   A |= (A << 16); /* unpack */ \
+   A &= pack_color; \
+   B |= (B << 16); \
+   B &= pack_color; \
+   C |= (C << 16); \
+   C &= pack_color; \
+   D |= (D << 16); \
+   D &= pack_color; \
+   r = (A + B + C + D) >> 2; /* mix */ \
+   r &= pack_color /* repack */
+#endif
+
 static inline uint16_t supertwoxsai_interpolate_rgb565(uint32_t A, uint32_t B)
 {
    uint32_t r;
+   
+   interpolate_body(A, B, r, 0x7e0f81f);
 
-   A |= (A << 16); /* unpack */
-   A &= 0x7e0f81f;
-   B |= (B << 16);
-   B &= 0x7e0f81f;
-
-   r = (A + B) >> 1; /* mix */
-
-   r &= 0x7e0f81f; /* repack */
    return (r | (r >> 16));
 }
+
 
 static inline uint16_t supertwoxsai_interpolate2_rgb565(uint32_t A, uint32_t B, uint32_t C, uint32_t D)
 {
    uint32_t r;
 
-   A |= (A << 16); /* unpack */
-   A &= 0x7e0f81f;
-   B |= (B << 16);
-   B &= 0x7e0f81f;
-   C |= (C << 16);
-   C &= 0x7e0f81f;
-   D |= (D << 16);
-   D &= 0x7e0f81f;
+   interpolate2_body(A, B, C, D, r, 0x7e0f81f);
 
-   r = (A + B + C + D) >> 2; /* mix */
-
-   r &= 0x7e0f81f; /* repack */
    return (r | (r >> 16));
 }
 
@@ -115,18 +140,8 @@ static inline int supertwoxsai_result1_rgb565(uint16_t A, uint16_t B, uint16_t C
    y = 0;
    r = 0;
 
-   if (A == C)
-      x += 1;
-   else if (B == C)
-      y += 1;
-   if (A == D)
-      x += 1;
-   else if (B == D)
-      y += 1;
-   if (x <= 1)
-      r += 1;
-   if (y <= 1)
-      r -= 1;
+   result1_body(A, B, C, D, x, y);
+
    return r;
 }
 
@@ -135,6 +150,7 @@ static void supertwoxsai_write2_rgb565(uint16_t *out, uint16_t val0, uint16_t va
    *((uint32_t*)out) = ((uint32_t)(val0) | ((uint32_t)(val1) << 16));
 }
 
+#ifndef supertwoxsai_declare_variables
 #define supertwoxsai_declare_variables(typename_t, in, nextline) \
          typename_t product1a, product1b, product2a, product2b; \
          const typename_t colorB0 = *(in - nextline - 1); \
@@ -153,6 +169,60 @@ static void supertwoxsai_write2_rgb565(uint16_t *out, uint16_t val0, uint16_t va
          const typename_t colorA1 = *(in + nextline + nextline + 0); \
          const typename_t colorA2 = *(in + nextline + nextline + 1); \
          const typename_t colorA3 = *(in + nextline + nextline + 2)
+#endif
+
+#ifndef supertwoxsai_function
+#define supertwoxsai_function(result1_cb, interpolate_cb, interpolate2_cb, write2_cb) \
+         if (color2 == color6 && color5 != color3) \
+            product2b = product1b = color2; \
+         else if (color5 == color3 && color2 != color6) \
+            product2b = product1b = color5; \
+         else if (color5 == color3 && color2 == color6) \
+         { \
+            int r = 0; \
+            r += result1_cb(color6, color5, color1, colorA1); \
+            r += result1_cb(color6, color5, color4, colorB1); \
+            r += result1_cb(color6, color5, colorA2, colorS1); \
+            r += result1_cb(color6, color5, colorB2, colorS2); \
+            if (r > 0) \
+               product2b = product1b = color6; \
+            else if (r < 0) \
+               product2b = product1b = color5; \
+            else \
+               product2b = product1b = interpolate_cb(color5, color6); \
+         } \
+         else \
+         { \
+            if (color6 == color3 && color3 == colorA1 && color2 != colorA2 && color3 != colorA0) \
+               product2b = interpolate2_cb(color3, color3, color3, color2); \
+            else if ((color5 == color2 && color2 == colorA2) & (colorA1 != color3 && color2 != colorA3)) \
+               product2b = interpolate2_cb(color2, color2, color2, color3); \
+            else \
+               product2b = interpolate_cb(color2, color3); \
+            if (color6 == color3 && color6 == colorB1 && color5 != colorB2 && color6 != colorB0) \
+               product1b = interpolate2_cb(color6, color6, color6, color5); \
+            else if (color5 == color2 && color5 == colorB2 && colorB1 != color6 && color5 != colorB3) \
+               product1b = interpolate2_cb(color6, color5, color5, color5); \
+            else \
+               product1b = interpolate_cb(color5, color6); \
+         } \
+         if (color5 == color3 && color2 != color6 && color4 == color5 && color5 != colorA2) \
+            product2a = interpolate_cb(color2, color5); \
+         else if (color5 == color1 && color6 == color5 && color4 != color2 && color5 != colorA0) \
+            product2a = interpolate_cb(color2, color5); \
+         else \
+            product2a = color2; \
+         if (color2 == color6 && color5 != color3 && color1 == color2 && color2 != colorB2) \
+            product1a = interpolate_cb(color2, color5); \
+         else if (color4 == color2 && color3 == color2 && color1 != color5 && color2 != colorB0) \
+            product1a = interpolate_cb(color2, color5); \
+         else \
+            product1a = color5; \
+         write2_cb(out, product1a,  product1b); \
+         write2_cb(out + dst_stride, product2a, product2b); \
+         ++in; \
+         out += 2
+#endif
 
 static void supertwoxsai_generic_rgb565(unsigned width, unsigned height,
       int first, int last, uint16_t *src, 
@@ -175,70 +245,7 @@ static void supertwoxsai_generic_rgb565(unsigned width, unsigned height,
          //                               A1 A2
          //--------------------------------------
          
-         if (color2 == color6 && color5 != color3)
-            product2b = product1b = color2;
-         else if (color5 == color3 && color2 != color6)
-            product2b = product1b = color5;
-         else if (color5 == color3 && color2 == color6)
-         {
-            int r = 0;
-
-            r += supertwoxsai_result1_rgb565(color6, color5, color1, colorA1);
-            r += supertwoxsai_result1_rgb565(color6, color5, color4, colorB1);
-            r += supertwoxsai_result1_rgb565(color6, color5, colorA2, colorS1);
-            r += supertwoxsai_result1_rgb565(color6, color5, colorB2, colorS2);
-
-            if (r > 0)
-               product2b = product1b = color6;
-            else if (r < 0)
-               product2b = product1b = color5;
-            else
-               product2b = product1b = supertwoxsai_interpolate_rgb565(color5, color6);
-         }
-         else
-         {
-            if (color6 == color3 && color3 == colorA1 &&
-                  color2 != colorA2 && color3 != colorA0)
-               product2b = supertwoxsai_interpolate2_rgb565(color3, color3, color3, color2);
-            else if ((color5 == color2 && color2 == colorA2) &
-                  (colorA1 != color3 && color2 != colorA3))
-               product2b = supertwoxsai_interpolate2_rgb565(color2, color2, color2, color3);
-            else
-               product2b = supertwoxsai_interpolate_rgb565(color2, color3);
-
-            if (color6 == color3 && color6 == colorB1 &&
-                  color5 != colorB2 && color6 != colorB0)
-               product1b = supertwoxsai_interpolate2_rgb565(color6, color6, color6, color5);
-            else if (color5 == color2 && color5 == colorB2 &&
-                  colorB1 != color6 && color5 != colorB3)
-               product1b = supertwoxsai_interpolate2_rgb565(color6, color5, color5, color5);
-            else
-               product1b = supertwoxsai_interpolate_rgb565(color5, color6);
-         }
-
-         if (color5 == color3 && color2 != color6 &&
-               color4 == color5 && color5 != colorA2)
-            product2a = supertwoxsai_interpolate_rgb565(color2, color5);
-         else if (color5 == color1 && color6 == color5 &&
-               color4 != color2 && color5 != colorA0)
-            product2a = supertwoxsai_interpolate_rgb565(color2, color5);
-         else
-            product2a = color2;
-
-         if (color2 == color6 && color5 != color3 &&
-               color1 == color2 && color2 != colorB2)
-            product1a = supertwoxsai_interpolate_rgb565(color2, color5);
-         else if (color4 == color2 && color3 == color2 &&
-               color1 != color5 && color2 != colorB0)
-            product1a = supertwoxsai_interpolate_rgb565(color2, color5);
-         else
-            product1a = color5;
-
-         supertwoxsai_write2_rgb565(out, product1a,  product1b);
-         supertwoxsai_write2_rgb565(out + dst_stride, product2a, product2b);
-
-         ++in;
-         out += 2;
+         supertwoxsai_function(supertwoxsai_result1_rgb565, supertwoxsai_interpolate_rgb565, supertwoxsai_interpolate2_rgb565, supertwoxsai_write2_rgb565);
       }
 
       src += src_stride;
