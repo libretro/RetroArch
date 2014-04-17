@@ -26,7 +26,7 @@
 
 static unsigned supertwoxsai_generic_input_fmts(void)
 {
-   return SOFTFILTER_FMT_RGB565;
+   return SOFTFILTER_FMT_RGB565 | SOFTFILTER_FMT_XRGB8888;
 }
 
 static unsigned supertwoxsai_generic_output_fmts(unsigned input_fmts)
@@ -74,80 +74,46 @@ static void supertwoxsai_generic_destroy(void *data)
    free(filt);
 }
 
-#ifndef result1_body
-#define result1_body(A, B, C, D, x, y) \
-   if (A == C) \
-      x += 1; \
-   else if (B == C) \
-      y += 1; \
-   if (A == D) \
-      x += 1; \
-   else if (B == D) \
-      y += 1; \
-   if (x <= 1) \
-      r += 1; \
-   if (y <= 1) \
-      r -= 1
-#endif
-
-#ifndef interpolate_body
-#define interpolate_body(A, B, r, pack_color) \
-   A |= (A << 16); /* unpack */ \
-   A &= pack_color; \
-   B |= (B << 16); \
-   B &= pack_color; \
-   r = (A + B) >> 1; /* mix */ \
-   r &= pack_color /* repack */
-#endif
-
-#ifndef interpolate2_body
-#define interpolate2_body(A, B, C, D, r, pack_color) \
-   A |= (A << 16); /* unpack */ \
-   A &= pack_color; \
-   B |= (B << 16); \
-   B &= pack_color; \
-   C |= (C << 16); \
-   C &= pack_color; \
-   D |= (D << 16); \
-   D &= pack_color; \
-   r = (A + B + C + D) >> 2; /* mix */ \
-   r &= pack_color /* repack */
-#endif
-
 static inline uint16_t supertwoxsai_interpolate_rgb565(uint32_t A, uint32_t B)
 {
-   uint32_t r;
-   
-   interpolate_body(A, B, r, 0x7e0f81f);
-
-   return (r | (r >> 16));
+   return (((A & 0xF7DE) >> 1) + ((B & 0xF7DE) >> 1) + (A & B & 0x0821));
 }
 
+static inline uint32_t supertwoxsai_interpolate_xrgb8888(uint32_t A, uint32_t B)
+{
+   return (((A & 0xFEFEFEFE) >> 1) + ((B & 0xFEFEFEFE) >> 1) + (A & B & 0x01010101));
+}
+
+static inline uint32_t supertwoxsai_interpolate2_xrgb8888(uint32_t A, uint32_t B, uint32_t C, uint32_t D)
+{
+   return (((A & 0xFCFCFCFC) >> 2) + ((B & 0xFCFCFCFC) >> 2) + ((C & 0xFCFCFCFC) >> 2) + ((D & 0xFCFCFCFC) >> 2)
++ ((((A & 0x03030303) + (B & 0x03030303) + (C & 0x03030303) + (D & 0x03030303)) >> 2) & 0x03030303));
+}
 
 static inline uint16_t supertwoxsai_interpolate2_rgb565(uint32_t A, uint32_t B, uint32_t C, uint32_t D)
 {
-   uint32_t r;
-
-   interpolate2_body(A, B, C, D, r, 0x7e0f81f);
-
-   return (r | (r >> 16));
+   return (((A & 0xE79C) >> 2) + ((B & 0xE79C) >> 2) + ((C & 0xE79C) >> 2) + ((D & 0xE79C) >> 2) 
+         + ((((A & 0x1863) + (B & 0x1863) + (C & 0x1863) + (D & 0x1863)) >> 2) & 0x1863));
 }
 
 static inline int supertwoxsai_result1_rgb565(uint16_t A, uint16_t B, uint16_t C, uint16_t D)
 {
-   int x, y, r;
-   x = 0;
-   y = 0;
-   r = 0;
+   return ((A != C || A != D) - (B != C || B != D));
+}
 
-   result1_body(A, B, C, D, x, y);
-
-   return r;
+static inline int supertwoxsai_result1_xrgb8888(uint32_t A, uint32_t B, uint32_t C, uint32_t D)
+{
+   return ((A != C || A != D) - (B != C || B != D));
 }
 
 static void supertwoxsai_write2_rgb565(uint16_t *out, uint16_t val0, uint16_t val1)
 {
    *((uint32_t*)out) = ((uint32_t)(val0) | ((uint32_t)(val1) << 16));
+}
+
+static void supertwoxsai_write2_xrgb8888(uint32_t *out, uint32_t val0, uint32_t val1)
+{
+   *(out) = val0 | val1;
 }
 
 #ifndef supertwoxsai_declare_variables
@@ -224,6 +190,35 @@ static void supertwoxsai_write2_rgb565(uint16_t *out, uint16_t val0, uint16_t va
          out += 2
 #endif
 
+static void supertwoxsai_generic_xrgb8888(unsigned width, unsigned height,
+      int first, int last, uint32_t *src, 
+      unsigned src_stride, uint32_t *dst, unsigned dst_stride)
+{
+   const unsigned nextline = (last) ? 0 : src_stride;
+
+   for (; height; height--)
+   {
+      uint32_t *in  = (uint32_t*)src;
+      uint32_t *out = (uint32_t*)dst;
+
+      for (unsigned finish = width; finish; finish -= 1)
+      {
+         supertwoxsai_declare_variables(uint32_t, in, nextline);
+
+         //---------------------------    B1 B2
+         //                             4  5  6 S2
+         //                             1  2  3 S1
+         //                               A1 A2
+         //--------------------------------------
+         
+         supertwoxsai_function(supertwoxsai_result1_xrgb8888, supertwoxsai_interpolate_xrgb8888, supertwoxsai_interpolate2_xrgb8888, supertwoxsai_write2_xrgb8888);
+      }
+
+      src += src_stride;
+      dst += 2 * dst_stride;
+   }
+}
+
 static void supertwoxsai_generic_rgb565(unsigned width, unsigned height,
       int first, int last, uint16_t *src, 
       unsigned src_stride, uint16_t *dst, unsigned dst_stride)
@@ -265,6 +260,18 @@ static void supertwoxsai_work_cb_rgb565(void *data, void *thread_data)
          thr->first, thr->last, input, thr->in_pitch / SOFTFILTER_BPP_RGB565, output, thr->out_pitch / SOFTFILTER_BPP_RGB565);
 }
 
+static void supertwoxsai_work_cb_xrgb8888(void *data, void *thread_data)
+{
+   struct softfilter_thread_data *thr = (struct softfilter_thread_data*)thread_data;
+   uint32_t *input = (uint32_t*)thr->in_data;
+   uint32_t *output = (uint32_t*)thr->out_data;
+   unsigned width = thr->width;
+   unsigned height = thr->height;
+
+   supertwoxsai_generic_xrgb8888(width, height,
+         thr->first, thr->last, input, thr->in_pitch / SOFTFILTER_BPP_XRGB8888, output, thr->out_pitch / SOFTFILTER_BPP_XRGB8888);
+}
+
 static void supertwoxsai_generic_packets(void *data,
       struct softfilter_work_packet *packets,
       void *output, size_t output_stride,
@@ -291,6 +298,8 @@ static void supertwoxsai_generic_packets(void *data,
 
       if (filt->in_fmt == SOFTFILTER_FMT_RGB565)
          packets[i].work = supertwoxsai_work_cb_rgb565;
+      else if (filt->in_fmt == SOFTFILTER_FMT_XRGB8888)
+         packets[i].work = supertwoxsai_work_cb_xrgb8888;
       packets[i].thread_data = thr;
    }
 }
