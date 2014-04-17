@@ -82,6 +82,9 @@ static void twoxsai_generic_destroy(void *data)
 
 #define twoxsai_interpolate2_rgb565(A, B, C, D) ((((A) & 0xE79C) >> 2) + (((B) & 0xE79C) >> 2) + (((C) & 0xE79C) >> 2) + (((D) & 0xE79C) >> 2)  + (((((A) & 0x1863) + ((B) & 0x1863) + ((C) & 0x1863) + ((D) & 0x1863)) >> 2) & 0x1863))
 
+#define twoxsai_interpolate_4444(A, B) (((A & 0xEEEE) >> 1) + ((B & 0xEEEE) >> 1) + (A & B & 0x1111))
+#define twoxsai_interpolate2_4444(A, B, C, D) (((A & 0xCCCC) >> 2) + ((B & 0xCCCC) >> 2) + ((C & 0xCCCC) >> 2) + ((D & 0xCCCC) >> 2) + ((((A & 0x3333) + (B & 0x3333) + (C & 0x3333) + (D & 0x3333)) >> 2) & 0x3333))
+
 #define twoxsai_result(A, B, C, D) (((A) != (C) || (A) != (D)) - ((B) != (C) || (B) != (D)));
 
 #define twoxsai_declare_variables(typename_t, in, nextline) \
@@ -299,6 +302,8 @@ static void twoxsai_generic_packets(void *data,
 
       if (filt->in_fmt == SOFTFILTER_FMT_RGB565)
          packets[i].work = twoxsai_work_cb_rgb565;
+      //else if (filt->in_fmt == SOFTFILTER_FMT_RGB4444)
+         //packets[i].work = twoxsai_work_cb_rgb4444;
       else if (filt->in_fmt == SOFTFILTER_FMT_XRGB8888)
          packets[i].work = twoxsai_work_cb_xrgb8888;
       packets[i].thread_data = thr;
