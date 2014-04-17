@@ -167,6 +167,7 @@ __gx->dispCopyDst = (__gx->dispCopyDst & ~0xff000000) | (_SHIFTL(0x4d,24,8))
    } \
 }
 
+#if 0
 static void __SETVCDATTR(struct __gx_regdef *__gx, u8 attr,u8 type)
 {
    switch(attr)
@@ -241,6 +242,7 @@ static void __SETVCDATTR(struct __gx_regdef *__gx, u8 attr,u8 type)
          break;
    }
 }
+#endif
 
 #define XSHIFT 2
 #define YSHIFT 2
@@ -649,9 +651,11 @@ static void __GX_SendFlushPrim(struct __gx_regdef *__gx)
    __gx->vcdLo = __gx->vcdHi = 0; \
    __gx->dirtyState |= 0x0008
 
+#if 0
 #define __GX_SetVtxDesc(__gx, attr, type) \
    __SETVCDATTR(__gx, attr,type); \
    __gx->dirtyState |= 0x0008
+#endif
 
 #define __GX_SetBlendMode(__gx, type, src_fact, dst_fact, op) \
    __gx->peCMode0 = (__gx->peCMode0 & ~0x1); \
@@ -744,6 +748,7 @@ static inline void __GX_SetViewportJitter(f32 xOrig,f32 yOrig,f32 wd,f32 ht,f32 
    FIFO_PUTF32(f);
 }
 
+#if 0
 static void __GX_SetCopyFilter(u8 aa,u8 sample_pattern[12][2],u8 vf,u8 vfilter[7])
 {
    u32 reg01=0,reg02=0,reg03=0,reg04=0,reg53=0,reg54=0;
@@ -803,6 +808,7 @@ static void __GX_SetCopyFilter(u8 aa,u8 sample_pattern[12][2],u8 vf,u8 vfilter[7
    GX_LOAD_BP_REG(reg53);
    GX_LOAD_BP_REG(reg54);
 }
+#endif
 
 #define __GX_Position1x8(index) FIFO_PUTU8(index)
 #define __GX_TexCoord1x8(index) FIFO_PUTU8(index)
