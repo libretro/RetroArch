@@ -101,8 +101,8 @@ static softfilter_get_implementation_t softfilter_get_implementation_from_idx(un
          return supertwoxsai_get_implementation;
       case SOFTFILTER_SUPEREAGLE:
          return supereagle_get_implementation;
-      case SOFTFILTER_HQ2X:
-         return hq2x_get_implementation;
+      case SOFTFILTER_EPX:
+         return epx_get_implementation;
       case SOFTFILTER_SCALE2X:
          return scale2x_get_implementation;
    }

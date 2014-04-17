@@ -38,7 +38,7 @@ ASMFLAGS := -INEON/asm
 asflags += -mfpu=neon
 endif
            
-objects += 2xsai.so super2xsai.so supereagle.so 2xbr.so darken.so hq2x.so scale2x.so
+objects += epx.so 2xsai.so super2xsai.so supereagle.so 2xbr.so darken.so scale2x.so
 
 all: build;
 

@@ -482,7 +482,7 @@ FILTERS
 #include "../gfx/filters/supereagle.c"
 #include "../gfx/filters/2xbr.c"
 #include "../gfx/filters/darken.c"
-#include "../gfx/filters/hq2x.c"
+#include "../gfx/filters/epx.c"
 #include "../gfx/filters/scale2x.c"
 #endif
 /*============================================================
