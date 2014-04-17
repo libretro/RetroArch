@@ -48,6 +48,7 @@ enum input_devices
 #ifdef HAVE_LIBSICKSAXIS
    DEVICE_SIXAXIS,
 #endif
+#endif
    DEVICE_LAST
 };
 
