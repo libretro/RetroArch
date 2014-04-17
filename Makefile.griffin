@@ -49,6 +49,11 @@ PYTHON2		= python2$(EXE_EXT)
 PYTHON3		= python3$(EXE_EXT)
 GIT			= git$(EXE_EXT)
 
+ifeq ($(WHOLE_ARCHIVE_LINK), 1)
+   WHOLE_START := -Wl,--whole-archive
+   WHOLE_END := -Wl,--no-whole-archive
+endif
+
 ifeq ($(platform), ngc)
   CC = $(DEVKITPPC)/bin/powerpc-eabi-gcc$(EXE_EXT)
   CXX = $(DEVKITPPC)/bin/powerpc-eabi-g++$(EXE_EXT)
@@ -120,10 +125,6 @@ else ifeq ($(platform), psp1)
 endif
 
 CFLAGS += -Wall -std=gnu99 $(MACHDEP) $(INCLUDE)
-ifeq ($(WHOLE_ARCHIVE_LINK), 1)
-   WHOLE_START := -Wl,--whole-archive
-   WHOLE_END := -Wl,--no-whole-archive
-endif
 
 OBJ = griffin/griffin.o  $(PLATOBJS)
 

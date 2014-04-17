@@ -12,9 +12,10 @@ mkdir -p ../msvc/RetroArch-Xbox1/Release
 mkdir -p ../msvc/RetroArch-Xbox1/Release_LTCG
 
 for f in *_xdk.lib ; do
-   name=`echo "$f" | sed 's/\(_libretro\|\)_xdk.lib$//'`
+   name=`echo "$f" | sed 's/\(_libretro_xdk\|\).lib$//'`
    echo $name
    if [ $name = "tyrquake" ] || [ $name = "genesis_plus_gx" ] ; then
+      echo "Applying whole archive linking for this core..."
    	cp -f "$f" ../msvc/RetroArch-Xbox1/Release_LTCG_BigStack/libretro_xdk.lib
    	cmd.exe /k xdk1_env_bigstack.bat ${name}_libretro_xdk1
    else

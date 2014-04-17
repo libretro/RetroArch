@@ -3,13 +3,15 @@
 make -C ../ -f Makefile.griffin platform=ngc clean || exit 1
 
 for f in *_ngc.a ; do
-   name=`echo "$f" | sed 's/\(_libretro\|\)_ngc.a$//'`
+   name=`echo "$f" | sed 's/\(_libretro_ngc\|\).a$//'`
    whole_archive=
    big_stack=
    if [ $name = "nxengine" ] ; then
+      echo "NXEngine found, applying whole archive linking..."
       whole_archive="WHOLE_ARCHIVE_LINK=1"
    fi
    if [ $name = "tyrquake" ] ; then
+      echo "Tyrquake found, applying big stack..."
       big_stack="BIG_STACK=1"
    fi
    cp -f "$f" ../libretro_ngc.a

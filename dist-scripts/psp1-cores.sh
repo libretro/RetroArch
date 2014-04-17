@@ -7,13 +7,15 @@ make -C ../ -f Makefile.psp1 clean || exit 1
 make -C ../ -f Makefile.psp1 || exit 1
 
 for f in *_psp1.a ; do
-   name=`echo "$f" | sed 's/\(_libretro\|\)_psp1.a$//'`
+   name=`echo "$f" | sed 's/\(_libretro_psp1\|\).a$//'`
    whole_archive=
    big_stack=
    if [ $name = "nxengine" ] ; then
+      echo "NXEngine found, applying whole archive linking..."
       whole_archive="WHOLE_ARCHIVE_LINK=1"
    fi
    if [ $name = "tyrquake" ] ; then
+      echo "Tyrquake found, applying big stack..."
       big_stack="BIG_STACK=1"
    fi
    cp -f "$f" ../libretro_psp1.a

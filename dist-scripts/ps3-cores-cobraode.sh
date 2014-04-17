@@ -13,9 +13,10 @@ SCETOOL_PATH=/cygdrive/c/Users/aaa801/ps3tools/ps3tools/tools/scetool/scetool.ex
 SCETOOL_FLAGS="--sce-type SELF --compress-data FALSE --self-type APP --key-revision 0004 --self-fw-version 0003004100000000 --self-app-version 0001000000000000 --self-auth-id 1010000001000003 --self-vendor-id 01000002 --self-cap-flags 00000000000000000000000000000000000000000000003b0000000100040000"
 
 for f in *_ps3.a ; do
-   name=`echo "$f" | sed 's/\(_libretro\|\)_ps3.a$//'`
+   name=`echo "$f" | sed 's/\(_libretro_ps3\|\).a$//'`
    whole_archive=
    if [ $name = "nxengine" ] ; then
+      echo "NXEngine found, applying whole archive linking..."
       whole_archive="WHOLE_ARCHIVE_LINK=1"
       echo $name yes
    fi
