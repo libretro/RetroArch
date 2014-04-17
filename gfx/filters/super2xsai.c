@@ -82,7 +82,7 @@ static void supertwoxsai_generic_destroy(void *data)
 
 #define supertwoxsai_interpolate2_rgb565(A, B, C, D) ((((A) & 0xE79C) >> 2) + (((B) & 0xE79C) >> 2) + (((C) & 0xE79C) >> 2) + (((D) & 0xE79C) >> 2)  + (((((A) & 0x1863) + ((B) & 0x1863) + ((C) & 0x1863) + ((D) & 0x1863)) >> 2) & 0x1863))
 
-#define supertwoxsai_result1(A, B, C, D) (((A) != (C) || (A) != (D)) - ((B) != (C) || (B) != (D)))
+#define supertwoxsai_result(A, B, C, D) (((A) != (C) || (A) != (D)) - ((B) != (C) || (B) != (D)))
 
 #ifndef supertwoxsai_declare_variables
 #define supertwoxsai_declare_variables(typename_t, in, nextline) \
@@ -106,7 +106,7 @@ static void supertwoxsai_generic_destroy(void *data)
 #endif
 
 #ifndef supertwoxsai_function
-#define supertwoxsai_function(result1_cb, interpolate_cb, interpolate2_cb) \
+#define supertwoxsai_function(result_cb, interpolate_cb, interpolate2_cb) \
          if (color2 == color6 && color5 != color3) \
             product2b = product1b = color2; \
          else if (color5 == color3 && color2 != color6) \
@@ -114,10 +114,10 @@ static void supertwoxsai_generic_destroy(void *data)
          else if (color5 == color3 && color2 == color6) \
          { \
             int r = 0; \
-            r += result1_cb(color6, color5, color1, colorA1); \
-            r += result1_cb(color6, color5, color4, colorB1); \
-            r += result1_cb(color6, color5, colorA2, colorS1); \
-            r += result1_cb(color6, color5, colorB2, colorS2); \
+            r += result_cb(color6, color5, color1, colorA1); \
+            r += result_cb(color6, color5, color4, colorB1); \
+            r += result_cb(color6, color5, colorA2, colorS1); \
+            r += result_cb(color6, color5, colorB2, colorS2); \
             if (r > 0) \
                product2b = product1b = color6; \
             else if (r < 0) \
@@ -189,7 +189,7 @@ static void supertwoxsai_generic_xrgb8888(unsigned width, unsigned height,
          //                               A1 A2
          //--------------------------------------
          
-         supertwoxsai_function(supertwoxsai_result1, supertwoxsai_interpolate_xrgb8888, supertwoxsai_interpolate2_xrgb8888);
+         supertwoxsai_function(supertwoxsai_result, supertwoxsai_interpolate_xrgb8888, supertwoxsai_interpolate2_xrgb8888);
       }
 
       src += src_stride;
@@ -218,7 +218,7 @@ static void supertwoxsai_generic_rgb565(unsigned width, unsigned height,
          //                               A1 A2
          //--------------------------------------
          
-         supertwoxsai_function(supertwoxsai_result1, supertwoxsai_interpolate_rgb565, supertwoxsai_interpolate2_rgb565);
+         supertwoxsai_function(supertwoxsai_result, supertwoxsai_interpolate_rgb565, supertwoxsai_interpolate2_rgb565);
       }
 
       src += src_stride;
