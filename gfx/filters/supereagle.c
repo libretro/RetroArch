@@ -74,61 +74,11 @@ static void supereagle_generic_destroy(void *data)
    free(filt);
 }
 
-static inline uint16_t supereagle_interpolate_rgb565(uint32_t A, uint32_t B)
-{
-   uint32_t r;
+#define supereagle_interpolate_rgb565(A, B) ((((A) & 0xF7DE) >> 1) + (((B) & 0xF7DE) >> 1) + ((A) & (B) & 0x0821));
 
-   A |= (A << 16); /* unpack */
-   A &= 0x7e0f81f;
-   B |= (B << 16);
-   B &= 0x7e0f81f;
+#define supereagle_interpolate2_rgb565(A, B, C, D) ((((A) & 0xE79C) >> 2) + (((B) & 0xE79C) >> 2) + (((C) & 0xE79C) >> 2) + (((D) & 0xE79C) >> 2)  + (((((A) & 0x1863) + ((B) & 0x1863) + ((C) & 0x1863) + ((D) & 0x1863)) >> 2) & 0x1863))
 
-   r = (A + B) >> 1; /* mix */
-
-   r &= 0x7e0f81f; /* repack */
-   return (r | (r >> 16));
-}
-
-static inline uint16_t supereagle_interpolate2_rgb565(uint32_t A, uint32_t B, uint32_t C, uint32_t D)
-{
-   uint32_t r;
-
-   A |= (A << 16); /* unpack */
-   A &= 0x7e0f81f;
-   B |= (B << 16);
-   B &= 0x7e0f81f;
-   C |= (C << 16);
-   C &= 0x7e0f81f;
-   D |= (D << 16);
-   D &= 0x7e0f81f;
-
-   r = (A + B + C + D) >> 2; /* mix */
-
-   r &= 0x7e0f81f; /* repack */
-   return (r | (r >> 16));
-}
-
-static inline int supereagle_result1_rgb565(uint16_t A, uint16_t B, uint16_t C, uint16_t D)
-{
-   int x, y, r;
-   x = 0;
-   y = 0;
-   r = 0;
-
-   if (A == C)
-      x += 1;
-   else if (B == C)
-      y += 1;
-   if (A == D)
-      x += 1;
-   else if (B == D)
-      y += 1;
-   if (x <= 1)
-      r += 1;
-   if (y <= 1)
-      r -= 1;
-   return r;
-}
+#define supereagle_result1_rgb565(A, B, C, D) (((A) != (C) || (A) != (D)) - ((B) != (C) || (B) != (D)));
 
 static void supereagle_write2_rgb565(uint16_t *out, uint16_t val0, uint16_t val1)
 {

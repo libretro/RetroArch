@@ -74,11 +74,6 @@ static void supertwoxsai_generic_destroy(void *data)
    free(filt);
 }
 
-static inline uint16_t supertwoxsai_interpolate_rgb565(uint32_t A, uint32_t B)
-{
-   return (((A & 0xF7DE) >> 1) + ((B & 0xF7DE) >> 1) + (A & B & 0x0821));
-}
-
 static inline uint32_t supertwoxsai_interpolate_xrgb8888(uint32_t A, uint32_t B)
 {
    return (((A & 0xFEFEFEFE) >> 1) + ((B & 0xFEFEFEFE) >> 1) + (A & B & 0x01010101));
@@ -90,23 +85,12 @@ static inline uint32_t supertwoxsai_interpolate2_xrgb8888(uint32_t A, uint32_t B
 + ((((A & 0x03030303) + (B & 0x03030303) + (C & 0x03030303) + (D & 0x03030303)) >> 2) & 0x03030303));
 }
 
-static inline uint16_t supertwoxsai_interpolate2_rgb565(uint32_t A, uint32_t B, uint32_t C, uint32_t D)
-{
-   return (((A & 0xE79C) >> 2) + ((B & 0xE79C) >> 2) + ((C & 0xE79C) >> 2) + ((D & 0xE79C) >> 2) 
-         + ((((A & 0x1863) + (B & 0x1863) + (C & 0x1863) + (D & 0x1863)) >> 2) & 0x1863));
-}
-
-static inline int supertwoxsai_result1_rgb565(uint16_t A, uint16_t B, uint16_t C, uint16_t D)
-{
-   return ((A != C || A != D) - (B != C || B != D));
-}
-
 static inline int supertwoxsai_result1_xrgb8888(uint32_t A, uint32_t B, uint32_t C, uint32_t D)
 {
    return ((A != C || A != D) - (B != C || B != D));
 }
 
-static void supertwoxsai_write2_rgb565(uint16_t *out, uint16_t val0, uint16_t val1)
+static inline void supertwoxsai_write2_rgb565(uint16_t *out, uint16_t val0, uint16_t val1)
 {
    *((uint32_t*)out) = ((uint32_t)(val0) | ((uint32_t)(val1) << 16));
 }
@@ -115,6 +99,12 @@ static void supertwoxsai_write2_xrgb8888(uint32_t *out, uint32_t val0, uint32_t 
 {
    *(out) = val0 | val1;
 }
+
+#define supertwoxsai_interpolate_rgb565(A, B) ((((A) & 0xF7DE) >> 1) + (((B) & 0xF7DE) >> 1) + ((A) & (B) & 0x0821));
+
+#define supertwoxsai_interpolate2_rgb565(A, B, C, D) ((((A) & 0xE79C) >> 2) + (((B) & 0xE79C) >> 2) + (((C) & 0xE79C) >> 2) + (((D) & 0xE79C) >> 2)  + (((((A) & 0x1863) + ((B) & 0x1863) + ((C) & 0x1863) + ((D) & 0x1863)) >> 2) & 0x1863))
+
+#define supertwoxsai_result1_rgb565(A, B, C, D) (((A) != (C) || (A) != (D)) - ((B) != (C) || (B) != (D)));
 
 #ifndef supertwoxsai_declare_variables
 #define supertwoxsai_declare_variables(typename_t, in, nextline) \
@@ -173,15 +163,23 @@ static void supertwoxsai_write2_xrgb8888(uint32_t *out, uint32_t val0, uint32_t 
                product1b = interpolate_cb(color5, color6); \
          } \
          if (color5 == color3 && color2 != color6 && color4 == color5 && color5 != colorA2) \
+         { \
             product2a = interpolate_cb(color2, color5); \
+         } \
          else if (color5 == color1 && color6 == color5 && color4 != color2 && color5 != colorA0) \
+         { \
             product2a = interpolate_cb(color2, color5); \
+         } \
          else \
             product2a = color2; \
          if (color2 == color6 && color5 != color3 && color1 == color2 && color2 != colorB2) \
+         { \
             product1a = interpolate_cb(color2, color5); \
+         } \
          else if (color4 == color2 && color3 == color2 && color1 != color5 && color2 != colorB0) \
+         { \
             product1a = interpolate_cb(color2, color5); \
+         } \
          else \
             product1a = color5; \
          write2_cb(out, product1a,  product1b); \
