@@ -148,6 +148,8 @@ static inline uint8_t same(uint16_t x, uint16_t y)
 
 static inline uint8_t diff(uint32_t x, uint16_t y)
 {
+   if (y < 32768)
+      return 0;
    return ((x - yuvTable[y]) & DIFF_MASK);
 }
 
