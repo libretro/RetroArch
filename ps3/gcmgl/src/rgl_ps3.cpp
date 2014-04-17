@@ -3096,6 +3096,15 @@ GLAPI void APIENTRY glBlendFunc( GLenum sfactor, GLenum dfactor )
    LContext->needValidate |= RGL_VALIDATE_BLENDING;
 }
 
+GLAPI void APIENTRY glBlendEquation( GLenum func )
+{
+   RGLcontext*	LContext = (RGLcontext*)_CurrentContext;
+
+   LContext->BlendEquationRGB = func;
+   LContext->BlendEquationAlpha = func;
+   LContext->needValidate |= RGL_VALIDATE_BLENDING;
+}
+
 /*============================================================
   FRAMEBUFFER OBJECTS
   ============================================================ */

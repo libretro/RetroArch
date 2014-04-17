@@ -1458,6 +1458,7 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
       glDisable(GL_DITHER);
       glDisable(GL_BLEND);
       glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+      glBlendEquation(GL_FUNC_ADD);
       glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
    }
 #endif
@@ -2070,6 +2071,7 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
 #endif
 
    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+   glBlendEquation(GL_FUNC_ADD);
 
    if (!resolve_extensions(gl))
    {
