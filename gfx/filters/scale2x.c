@@ -24,11 +24,7 @@
 
 #define SCALE2X_SCALE 2
 
-#define SCALE2X_GENERIC(typename_t, width, height, first, last, src, src_stride, dst, dst_stride) \
-   unsigned x, y; \
-   typename_t *out0 = (typename_t*)dst; \
-   typename_t *out1 = (typename_t*)(dst + dst_stride); \
-   \
+#define SCALE2X_GENERIC(typename_t, width, height, first, last, src, src_stride, dst, dst_stride, out0, out1) \
    for (y = 0; y < height; ++y) \
    { \
       const int prevline = ((y == 0) && first) ? 0 : src_stride; \
@@ -68,7 +64,11 @@ static void scale2x_generic_rgb565(unsigned width, unsigned height,
       const uint16_t *src, unsigned src_stride,
       uint16_t *dst, unsigned dst_stride)
 {
-   SCALE2X_GENERIC(uint16_t, width, height, first, last, src, src_stride, dst, dst_stride);
+   unsigned x, y;
+   uint16_t *out0, *out1;
+   out0 = (uint16_t*)dst;
+   out1 = (uint16_t*)(dst + dst_stride);
+   SCALE2X_GENERIC(uint16_t, width, height, first, last, src, src_stride, dst, dst_stride, out0, out1);
 }
 
 static void scale2x_generic_xrgb8888(unsigned width, unsigned height,
@@ -76,7 +76,11 @@ static void scale2x_generic_xrgb8888(unsigned width, unsigned height,
       const uint32_t *src, unsigned src_stride,
       uint32_t *dst, unsigned dst_stride)
 {
-   SCALE2X_GENERIC(uint32_t, width, height, first, last, src, src_stride, dst, dst_stride);
+   unsigned x, y;
+   uint32_t *out0, *out1;
+   out0 = (uint32_t*)dst;
+   out1 = (uint32_t*)(dst + dst_stride);
+   SCALE2X_GENERIC(uint32_t, width, height, first, last, src, src_stride, dst, dst_stride, out0, out1);
 }
 
 static unsigned scale2x_generic_input_fmts(void)
