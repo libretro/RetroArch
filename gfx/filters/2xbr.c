@@ -121,7 +121,7 @@ uint16_t pg_lbmask;
      {\
           e = (df(PE,PC)+df(PE,PG)+df(PI,H5)+df(PI,F4))+(df(PH,PF)<<2); \
           i = (df(PH,PD)+df(PH,I5)+df(PF,I4)+df(PF,PB))+(df(PE,PI)<<2); \
-          if ((e<i)  && ( !eq(PF,PB) && !eq(PH,PD) || eq(PE,PI) && (!eq(PF,I4) && !eq(PH,I5)) || eq(PE,PG) || eq(PE,PC)) )\
+          if ((e<i)  && ((!eq(PF,PB) && !eq(PH,PD)) || (eq(PE,PI) && (!eq(PF,I4) && !eq(PH,I5))) || eq(PE,PG) || eq(PE,PC)) )\
           {\
               ke=df(PF,PG); ki=df(PH,PC); \
               ex2 = (PE!=PC && PB!=PC); ex3 = (PE!=PG && PD!=PG); px = (df(PE,PF) <= df(PE,PH)) ? PF : PH; \

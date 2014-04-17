@@ -189,14 +189,15 @@ static void supereagle_generic_xrgb8888(unsigned width, unsigned height,
       int first, int last, uint32_t *src, 
       unsigned src_stride, uint32_t *dst, unsigned dst_stride)
 {
-   const unsigned nextline = (last) ? 0 : src_stride;
+   unsigned finish, nextline;
+   nextline = (last) ? 0 : src_stride;
 
    for (; height; height--)
    {
       uint32_t *in  = (uint32_t*)src;
       uint32_t *out = (uint32_t*)dst;
 
-      for (unsigned finish = width; finish; finish -= 1)
+      for (finish = width; finish; finish -= 1)
       {
          supereagle_declare_variables(uint32_t, in, nextline);
 
@@ -212,14 +213,15 @@ static void supereagle_generic_rgb565(unsigned width, unsigned height,
       int first, int last, uint16_t *src, 
       unsigned src_stride, uint16_t *dst, unsigned dst_stride)
 {
-   const unsigned nextline = (last) ? 0 : src_stride;
+   unsigned nextline, finish;
+   nextline = (last) ? 0 : src_stride;
 
    for (; height; height--)
    {
       uint16_t *in  = (uint16_t*)src;
       uint16_t *out = (uint16_t*)dst;
 
-      for (unsigned finish = width; finish; finish -= 1)
+      for (finish = width; finish; finish -= 1)
       {
          supereagle_declare_variables(uint16_t, in, nextline);
 
