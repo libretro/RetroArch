@@ -58,7 +58,7 @@ ifeq ($(platform), ngc)
   EXT_INTER_TARGET := $(TARGET_NAME)_ngc.elf
   INCLUDE += -I. -I$(DEVKITPRO)/libogc/include -Ideps/rzlib
   LIBDIRS += -L$(DEVKITPRO)/libogc/lib/cube -L.
-  MACHDEP := -DGEKKO -DHW_DOL -mogc -mcpu=750 -meabi -mhard-float
+  MACHDEP := -DGEKKO -DHW_DOL -mogc -mcpu=750 -meabi -mhard-float -DMSB_FIRST
   LDFLAGS += $(MACHDEP) -Wl,-Map,$(notdir $(EXT_INTER_TARGET)).map
 ifeq ($(BIG_STACK), 1)
    LDFLAGS += -T gx/ld/ogc.ld
@@ -88,7 +88,7 @@ else ifeq ($(platform), wii)
   EXT_INTER_TARGET := $(TARGET_NAME)_wii.elf
   INCLUDE += -I. -I$(DEVKITPRO)/libogc/include -Ideps/rzlib
   LIBDIRS += -L$(DEVKITPRO)/libogc/lib/wii -L.
-  MACHDEP := -DGEKKO -DHW_RVL -mrvl -mcpu=750 -meabi -mhard-float
+  MACHDEP := -DGEKKO -DHW_RVL -mrvl -mcpu=750 -meabi -mhard-float -DMSB_FIRST
   LDFLAGS += $(MACHDEP) -Wl,-Map,$(notdir $(EXT_INTER_TARGET)).map,-wrap,malloc,-wrap,free,-wrap,memalign,-wrap,calloc,-wrap,realloc,-wrap,strdup,-wrap,strndup,-wrap,malloc_usable_size
 ifeq ($(BIG_STACK), 1)
    LDFLAGS += -T gx/ld/rvl.ld
