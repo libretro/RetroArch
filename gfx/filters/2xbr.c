@@ -272,9 +272,9 @@ float df8(uint32_t A, uint32_t B, uint32_t pg_red_mask, uint32_t pg_green_mask, 
    uint32_t r, g, b;
    uint32_t y, u, v;
 
-   b = abs(((A & pg_blue_mask  )>>16) - ((B & pg_blue_mask  )>> 16));
-   g = abs(((A & pg_green_mask)>>8  ) - ((B & pg_green_mask )>>  8));
-   r = abs(( A & pg_red_mask        ) - ( B & pg_red_mask         ));
+   b = abs((int)(((A & pg_blue_mask  )>>16) - ((B & pg_blue_mask  )>> 16)));
+   g = abs((int)(((A & pg_green_mask)>>8  ) - ((B & pg_green_mask )>>  8)));
+   r = abs((int)(((A & pg_red_mask        ) -  (B & pg_red_mask         ))));
 
    y = abs(0.299*r + 0.587*g + 0.114*b);
    u = abs(-0.169*r - 0.331*g + 0.500*b);
@@ -288,9 +288,9 @@ int eq8(uint32_t A, uint32_t B, uint32_t pg_red_mask, uint32_t pg_green_mask, ui
     uint32_t r, g, b;
     uint32_t y, u, v;
    
-    b = abs(((A & pg_blue_mask  )>>16) - ((B & pg_blue_mask  )>> 16));
-    g = abs(((A & pg_green_mask)>>8  ) - ((B & pg_green_mask )>>  8));
-    r = abs(( A & pg_red_mask        ) - ( B & pg_red_mask         ));
+    b = abs((int)(((A & pg_blue_mask  )>>16) - ((B & pg_blue_mask  )>> 16)));
+    g = abs((int)(((A & pg_green_mask)>>8  ) - ((B & pg_green_mask )>>  8)));
+    r = abs((int)(( A & pg_red_mask        ) - ( B & pg_red_mask         )));
    
     y = abs(0.299*r + 0.587*g + 0.114*b);
     u = abs(-0.169*r - 0.331*g + 0.500*b);
@@ -474,12 +474,13 @@ static void twoxbr_generic_rgb565(unsigned width, unsigned height,
       int first, int last, uint16_t *src,
       unsigned src_stride, uint16_t *dst, unsigned dst_stride)
 {
-   uint16_t pg_red_mask   = RED_MASK565;
-   uint16_t pg_green_mask = GREEN_MASK565;
-   uint16_t pg_blue_mask  = BLUE_MASK565;
-   uint16_t pg_lbmask     = PG_LBMASK565;
-   uint16_t pg_alpha_mask;
+   uint16_t pg_red_mask, pg_green_mask, pg_blue_mask, pg_lbmask;
    unsigned nextline, finish;
+
+   pg_red_mask   = RED_MASK565;
+   pg_green_mask = GREEN_MASK565;
+   pg_blue_mask  = BLUE_MASK565;
+   pg_lbmask     = PG_LBMASK565;
    nextline = (last) ? 0 : src_stride;
    
    if (!initialized)
