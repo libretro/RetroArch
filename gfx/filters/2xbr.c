@@ -103,17 +103,24 @@ const static uint16_t tbl_6_to_8[64]={0, 4, 8, 12, 16, 20, 24,  28, 32, 36, 40, 
 //---------------------------------------------------------------------------------------------------------------------------
  
  
- 
-#define RED_MASK565   0xF800
-#define GREEN_MASK565 0x07E0
-#define BLUE_MASK565  0x001F
-#define PG_LBMASK565 0xF7DE
+ #define RED_MASK565   0xF800
+ #define GREEN_MASK565 0x07E0
+ #define BLUE_MASK565  0x001F
+ #define PG_LBMASK565 0xF7DE
 
-#define RED_MASK8888   0x000000FF
-#define GREEN_MASK8888 0x0000FF00
-#define BLUE_MASK8888  0x00FF0000
-#define PG_LBMASK8888  0xFEFEFEFE
-#define ALPHA_MASK8888 0xFF000000
+#ifdef MSB_FIRST
+ #define RED_MASK8888   0xFF000000
+ #define GREEN_MASK8888 0x00FF0000
+ #define BLUE_MASK8888  0x0000FF00
+ #define PG_LBMASK8888  0xFEFEFEFE
+ #define ALPHA_MASK8888 0x000000FF
+#else
+ #define RED_MASK8888   0x000000FF
+ #define GREEN_MASK8888 0x0000FF00
+ #define BLUE_MASK8888  0x00FF0000
+ #define PG_LBMASK8888  0xFEFEFEFE
+ #define ALPHA_MASK8888 0xFF000000
+#endif
 
  
 #define ALPHA_BLEND_128_W(dst, src) dst = ((src & pg_lbmask) >> 1) + ((dst & pg_lbmask) >> 1)
@@ -272,9 +279,15 @@ float df8(uint32_t A, uint32_t B, uint32_t pg_red_mask, uint32_t pg_green_mask, 
    uint32_t r, g, b;
    uint32_t y, u, v;
 
+#ifdef MSB_FIRST
+   r = abs((int)(((A & pg_red_mask  )>>24) - ((B & pg_red_mask  )>> 24)));
+   g = abs((int)(((A & pg_green_mask  )>>16) - ((B & pg_green_mask  )>> 16)));
+   b = abs((int)(((A & pg_blue_mask  )>>8 ) - ((B & pg_blue_mask  )>> 8 )));
+#else
    b = abs((int)(((A & pg_blue_mask  )>>16) - ((B & pg_blue_mask  )>> 16)));
    g = abs((int)(((A & pg_green_mask)>>8  ) - ((B & pg_green_mask )>>  8)));
    r = abs((int)(((A & pg_red_mask        ) -  (B & pg_red_mask         ))));
+#endif
 
    y = abs(0.299*r + 0.587*g + 0.114*b);
    u = abs(-0.169*r - 0.331*g + 0.500*b);
@@ -288,9 +301,15 @@ int eq8(uint32_t A, uint32_t B, uint32_t pg_red_mask, uint32_t pg_green_mask, ui
     uint32_t r, g, b;
     uint32_t y, u, v;
    
-    b = abs((int)(((A & pg_blue_mask  )>>16) - ((B & pg_blue_mask  )>> 16)));
-    g = abs((int)(((A & pg_green_mask)>>8  ) - ((B & pg_green_mask )>>  8)));
-    r = abs((int)(( A & pg_red_mask        ) - ( B & pg_red_mask         )));
+#ifdef MSB_FIRST
+   r = abs((int)(((A & pg_red_mask  )>>24) - ((B & pg_red_mask  )>> 24)));
+   g = abs((int)(((A & pg_green_mask  )>>16) - ((B & pg_green_mask  )>> 16)));
+   b = abs((int)(((A & pg_blue_mask  )>>8 ) - ((B & pg_blue_mask  )>> 8 )));
+#else
+   b = abs((int)(((A & pg_blue_mask  )>>16) - ((B & pg_blue_mask  )>> 16)));
+   g = abs((int)(((A & pg_green_mask)>>8  ) - ((B & pg_green_mask )>>  8)));
+   r = abs((int)(((A & pg_red_mask        ) -  (B & pg_red_mask         ))));
+#endif
    
     y = abs(0.299*r + 0.587*g + 0.114*b);
     u = abs(-0.169*r - 0.331*g + 0.500*b);
