@@ -49,7 +49,7 @@ const char *rarch_softfilter_get_name(rarch_softfilter_t *filt);
 enum
 {
    SOFTFILTER_NONE = 0,
-   //SOFTFILTER_2XBR,
+   SOFTFILTER_TWOXBR,
    SOFTFILTER_DARKEN,
    SOFTFILTER_EPX,
    SOFTFILTER_TWOXSAI,
@@ -60,6 +60,7 @@ enum
 };
 
 #ifdef HAVE_FILTERS_BUILTIN
+const struct softfilter_implementation *twoxbr_get_implementation(softfilter_simd_mask_t simd);
 const struct softfilter_implementation *epx_get_implementation(softfilter_simd_mask_t simd);
 const struct softfilter_implementation *twoxsai_get_implementation(softfilter_simd_mask_t simd);
 const struct softfilter_implementation *supereagle_get_implementation(softfilter_simd_mask_t simd);

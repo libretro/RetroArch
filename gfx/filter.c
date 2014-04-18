@@ -88,11 +88,9 @@ static softfilter_get_implementation_t softfilter_get_implementation_from_idx(un
 {
    switch (idx)
    {
-#if 0
-      case SOFTFILTER_2XBR:
+      case SOFTFILTER_TWOXBR:
          return twoxbr_get_implementation;
          break;
-#endif
       case SOFTFILTER_DARKEN:
          return darken_get_implementation;
       case SOFTFILTER_TWOXSAI:
