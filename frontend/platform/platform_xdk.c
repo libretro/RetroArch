@@ -18,7 +18,6 @@
 
 #include <stddef.h>
 #include <stdint.h>
-#include <string>
 
 #include "platform_xdk.h"
 
