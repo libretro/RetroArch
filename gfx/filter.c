@@ -90,7 +90,6 @@ static softfilter_get_implementation_t softfilter_get_implementation_from_idx(un
    {
       case SOFTFILTER_TWOXBR:
          return twoxbr_get_implementation;
-         break;
       case SOFTFILTER_DARKEN:
          return darken_get_implementation;
       case SOFTFILTER_TWOXSAI:
@@ -137,10 +136,10 @@ rarch_softfilter_t *rarch_softfilter_new(const char *filter_path,
       enum retro_pixel_format in_pixel_format,
       unsigned max_width, unsigned max_height)
 {
-   unsigned i;
-   unsigned cpu_features, output_fmts, input_fmts, input_fmt;
+   unsigned i, cpu_features, output_fmts, input_fmts, input_fmt;
    softfilter_get_implementation_t cb;
     
+   i = 0;
    (void)i;
 
    rarch_softfilter_t *filt = (rarch_softfilter_t*)calloc(1, sizeof(*filt));
@@ -270,6 +269,7 @@ error:
 void rarch_softfilter_free(rarch_softfilter_t *filt)
 {
    unsigned i;
+   i = 0;
    (void)i;
    if (!filt)
       return;
