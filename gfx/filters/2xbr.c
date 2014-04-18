@@ -16,7 +16,7 @@
 /*
    Hyllian's 2xBR v3.3a
    
-   Copyright (C) 2011, 2012 Hyllian/Jararaca - sergiogdb@gmail.com
+   Copyright (C) 2011, 2014 Hyllian/Jararaca - sergiogdb@gmail.com
  
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License
@@ -47,7 +47,7 @@
  
 static unsigned twoxbr_generic_input_fmts(void)
 {
-   return SOFTFILTER_FMT_RGB565;
+   return SOFTFILTER_FMT_RGB565 | SOFTFILTER_FMT_XRGB8888;
 }
  
 static unsigned twoxbr_generic_output_fmts(unsigned input_fmts)
@@ -103,23 +103,18 @@ const static uint16_t tbl_6_to_8[64]={0, 4, 8, 12, 16, 20, 24,  28, 32, 36, 40, 
 //---------------------------------------------------------------------------------------------------------------------------
  
  
-uint16_t pg_red_mask;
-uint16_t pg_green_mask;
-uint16_t pg_blue_mask;
-uint16_t pg_lbmask;
- 
  
 #define RED_MASK565   0xF800
 #define GREEN_MASK565 0x07E0
 #define BLUE_MASK565  0x001F
- 
-#define RED_MASK555 0x7C00
-#define GREEN_MASK555 0x03E0
-#define BLUE_MASK555 0x001F
- 
 #define PG_LBMASK565 0xF7DE
-#define PG_LBMASK555 0x7BDE
- 
+
+#define RED_MASK8888   0x000000FF
+#define GREEN_MASK8888 0x0000FF00
+#define BLUE_MASK8888  0x00FF0000
+#define PG_LBMASK8888  0xFEFEFEFE
+#define ALPHA_MASK8888 0xFF000000
+
  
 #define ALPHA_BLEND_128_W(dst, src) dst = ((src & pg_lbmask) >> 1) + ((dst & pg_lbmask) >> 1)
  
@@ -135,6 +130,21 @@ uint16_t pg_lbmask;
         ((((src & pg_blue_mask) - \
         (dst & pg_blue_mask))) >>3))) )
  
+
+#define ALPHA_BLEND_8888_32_W(dst, src) \
+	dst = ( \
+    (pg_red_mask & ((dst & pg_red_mask) + \
+        ((((src & pg_red_mask) - \
+        (dst & pg_red_mask))) >>3))) | \
+    (pg_green_mask & ((dst & pg_green_mask) + \
+        ((((src & pg_green_mask) - \
+        (dst & pg_green_mask))) >>3))) | \
+    (pg_blue_mask & ((dst & pg_blue_mask) + \
+        ((((src & pg_blue_mask) - \
+        (dst & pg_blue_mask))) >>3))) ) +\
+        pg_alpha_mask
+
+
 #define ALPHA_BLEND_64_W(dst, src) \
         dst = ( \
     (pg_red_mask & ((dst & pg_red_mask) + \
@@ -147,6 +157,20 @@ uint16_t pg_lbmask;
         ((((src & pg_blue_mask) - \
         (dst & pg_blue_mask))) >>2))) )
  
+#define ALPHA_BLEND_8888_64_W(dst, src) \
+	dst = ( \
+    (pg_red_mask & ((dst & pg_red_mask) + \
+        ((((src & pg_red_mask) - \
+        (dst & pg_red_mask))) >>2))) | \
+    (pg_green_mask & ((dst & pg_green_mask) + \
+        ((((src & pg_green_mask) - \
+        (dst & pg_green_mask))) >>2))) | \
+    (pg_blue_mask & ((dst & pg_blue_mask) + \
+        ((((src & pg_blue_mask) - \
+        (dst & pg_blue_mask))) >>2))) ) +\
+        pg_alpha_mask
+
+
 #define ALPHA_BLEND_192_W(dst, src) \
         dst = ( \
     (pg_red_mask & ((dst & pg_red_mask) + \
@@ -159,6 +183,20 @@ uint16_t pg_lbmask;
         ((((src & pg_blue_mask) - \
         (dst & pg_blue_mask)) * 192) >>8))) )
        
+
+#define ALPHA_BLEND_8888_192_W(dst, src) \
+	dst = ( \
+    (pg_red_mask & ((dst & pg_red_mask) + \
+        ((((src & pg_red_mask) - \
+        (dst & pg_red_mask)) * 192) >>8))) | \
+    (pg_green_mask & ((dst & pg_green_mask) + \
+        ((((src & pg_green_mask) - \
+        (dst & pg_green_mask)) * 192) >>8))) | \
+    (pg_blue_mask & ((dst & pg_blue_mask) + \
+        ((((src & pg_blue_mask) - \
+        (dst & pg_blue_mask)) * 192) >>8))) ) +\
+        pg_alpha_mask
+
 #define ALPHA_BLEND_224_W(dst, src) \
         dst = ( \
     (pg_red_mask & ((dst & pg_red_mask) + \
@@ -170,8 +208,21 @@ uint16_t pg_lbmask;
     (pg_blue_mask & ((dst & pg_blue_mask) + \
         ((((src & pg_blue_mask) - \
         (dst & pg_blue_mask)) * 224) >>8))) );
- 
- 
+
+#define ALPHA_BLEND_8888_224_W(dst, src) \
+	dst = ( \
+    (pg_red_mask & ((dst & pg_red_mask) + \
+        ((((src & pg_red_mask) - \
+        (dst & pg_red_mask)) * 224) >>8))) | \
+    (pg_green_mask & ((dst & pg_green_mask) + \
+        ((((src & pg_green_mask) - \
+        (dst & pg_green_mask)) * 224) >>8))) | \
+    (pg_blue_mask & ((dst & pg_blue_mask) + \
+        ((((src & pg_blue_mask) - \
+        (dst & pg_blue_mask)) * 224) >>8))) ) +\
+        pg_alpha_mask
+
+
 #define LEFT_UP_2_2X(N3, N2, N1, PIXEL)\
              ALPHA_BLEND_224_W(E[N3], PIXEL); \
              ALPHA_BLEND_64_W( E[N2], PIXEL); \
@@ -189,14 +240,67 @@ uint16_t pg_lbmask;
 #define DIA_2X(N3, PIXEL)\
              ALPHA_BLEND_128_W(E[N3], PIXEL); \
  
+
+#define LEFT_UP_2_8888_2X(N3, N2, N1, PIXEL)\
+             ALPHA_BLEND_8888_224_W(E[N3], PIXEL); \
+             ALPHA_BLEND_8888_64_W( E[N2], PIXEL); \
+             E[N1] = E[N2]; \
+ 
+       
+#define LEFT_2_8888_2X(N3, N2, PIXEL)\
+             ALPHA_BLEND_8888_192_W(E[N3], PIXEL); \
+             ALPHA_BLEND_8888_64_W( E[N2], PIXEL); \
+ 
+#define UP_2_8888_2X(N3, N1, PIXEL)\
+             ALPHA_BLEND_8888_192_W(E[N3], PIXEL); \
+             ALPHA_BLEND_8888_64_W( E[N1], PIXEL); \
+ 
+#define DIA_8888_2X(N3, PIXEL)\
+             ALPHA_BLEND_128_W(E[N3], PIXEL); \
+
+
 #define df(A, B)\
         abs(RGBtoYUV[A] - RGBtoYUV[B])\
  
 #define eq(A, B)\
         (df(A, B) < 155)\
  
- 
-#define FILTRO_RGB565(PE, PI, PH, PF, PG, PC, PD, PB, PA, G5, C4, G0, D0, C1, B1, F4, I4, H5, I5, A0, A1, N0, N1, N2, N3) \
+
+
+float df8(uint32_t A, uint32_t B, uint32_t pg_red_mask, uint32_t pg_green_mask, uint32_t pg_blue_mask)
+{
+   uint32_t r, g, b;
+   uint32_t y, u, v;
+
+   b = abs(((A & pg_blue_mask  )>>16) - ((B & pg_blue_mask  )>> 16));
+   g = abs(((A & pg_green_mask)>>8  ) - ((B & pg_green_mask )>>  8));
+   r = abs(( A & pg_red_mask        ) - ( B & pg_red_mask         ));
+
+   y = abs(0.299*r + 0.587*g + 0.114*b);
+   u = abs(-0.169*r - 0.331*g + 0.500*b);
+   v = abs(0.500*r - 0.419*g - 0.081*b);
+
+   return 48*y + 7*u + 6*v;
+}
+
+int eq8(uint32_t A, uint32_t B, uint32_t pg_red_mask, uint32_t pg_green_mask, uint32_t pg_blue_mask)
+{
+    uint32_t r, g, b;
+    uint32_t y, u, v;
+   
+    b = abs(((A & pg_blue_mask  )>>16) - ((B & pg_blue_mask  )>> 16));
+    g = abs(((A & pg_green_mask)>>8  ) - ((B & pg_green_mask )>>  8));
+    r = abs(( A & pg_red_mask        ) - ( B & pg_red_mask         ));
+   
+    y = abs(0.299*r + 0.587*g + 0.114*b);
+    u = abs(-0.169*r - 0.331*g + 0.500*b);
+    v = abs(0.500*r - 0.419*g - 0.081*b);
+
+    return ((48 >= y) && (7 >= u) && (6 >= v)) ? 1 : 0;
+}
+
+
+#define FILTRO_RGB565(PE, PI, PH, PF, PG, PC, PD, PB, PA, G5, C4, G0, D0, C1, B1, F4, I4, H5, I5, A0, A1, N0, N1, N2, N3, pg_red_mask, pg_green_mask, pg_blue_mask) \
      ex   = (PE!=PH && PE!=PF); \
      if ( ex )\
      {\
@@ -229,6 +333,40 @@ uint16_t pg_lbmask;
           }\
      }\
  
+#define FILTRO_RGB8888(PE, PI, PH, PF, PG, PC, PD, PB, PA, G5, C4, G0, D0, C1, B1, F4, I4, H5, I5, A0, A1, N0, N1, N2, N3, pg_red_mask, pg_green_mask, pg_blue_mask) \
+     ex   = (PE!=PH && PE!=PF); \
+     if ( ex )\
+     {\
+          e = (df8(PE,PC, pg_red_mask, pg_green_mask, pg_blue_mask ) + df8(PE,PG, pg_red_mask, pg_green_mask, pg_blue_mask) + \
+                df8(PI,H5, pg_red_mask, pg_green_mask, pg_blue_mask ) + df8(PI,F4, pg_red_mask, pg_green_mask, pg_blue_mask))+(4 * (df8(PH,PF, pg_red_mask, pg_green_mask, pg_blue_mask))); \
+          i = (df8(PH,PD, pg_red_mask, pg_green_mask, pg_blue_mask) + df8(PH,I5, pg_red_mask, pg_green_mask, pg_blue_mask) + \
+                df8(PF,I4, pg_red_mask, pg_green_mask, pg_blue_mask) + df8(PF,PB, pg_red_mask, pg_green_mask, pg_blue_mask))+(4 * (df8(PE,PI, pg_red_mask, pg_green_mask, pg_blue_mask))); \
+          if ((e<i)  && ( (!eq8(PF,PB, pg_red_mask, pg_green_mask, pg_blue_mask) && !eq8(PF,PC, pg_red_mask, pg_green_mask, pg_blue_mask)) || (!eq8(PH,PD, pg_red_mask, pg_green_mask, pg_blue_mask) && !eq8(PH,PG, pg_red_mask, pg_green_mask, pg_blue_mask)) || (eq8(PE,PI, pg_red_mask, pg_green_mask, pg_blue_mask) && ((!eq8(PF,F4, pg_red_mask, pg_green_mask, pg_blue_mask) && !eq8(PF,I4, pg_red_mask, pg_green_mask, pg_blue_mask)) || (!eq8(PH,H5, pg_red_mask, pg_green_mask,pg_blue_mask) && !eq8(PH,I5, pg_red_mask, pg_green_mask, pg_blue_mask)))) || eq8(PE,PG, pg_red_mask, pg_green_mask, pg_blue_mask) || eq8(PE,PC, pg_red_mask, pg_green_mask, pg_blue_mask)) )\
+          {\
+              ke=df8(PF,PG, pg_red_mask, pg_green_mask, pg_blue_mask); ki=df8(PH,PC, pg_red_mask, pg_green_mask, pg_blue_mask); \
+              ex2 = (PE!=PC && PB!=PC); ex3 = (PE!=PG && PD!=PG); px = (df8(PE,PF, pg_red_mask, pg_green_mask, pg_blue_mask) <= df8(PE,PH, pg_red_mask, pg_green_mask, pg_blue_mask)) ? PF : PH; \
+              if ( ((ke<<1)<=ki) && ex3 && (ke>=(ki<<1)) && ex2 ) \
+              {\
+                     LEFT_UP_2_8888_2X(N3, N2, N1, px)\
+              }\
+              else if ( ((ke<<1)<=ki) && ex3 ) \
+              {\
+                     LEFT_2_8888_2X(N3, N2, px);\
+              }\
+              else if ( (ke>=(ki<<1)) && ex2 ) \
+              {\
+                     UP_2_8888_2X(N3, N1, px);\
+              }\
+              else \
+              {\
+                     DIA_8888_2X(N3, px);\
+              }\
+          }\
+          else if (e<=i)\
+          {\
+               ALPHA_BLEND_128_W( E[N3], ((df8(PE,PF, pg_red_mask, pg_green_mask, pg_blue_mask) <= df8(PE,PH, pg_red_mask, pg_green_mask, pg_blue_mask)) ? PF : PH)); \
+          }\
+     }\
  
  
  
@@ -260,10 +398,10 @@ uint16_t pg_lbmask;
 #ifndef twoxbr_function
 #define twoxbr_function(FILTRO) \
             E[0] = E[1] = E[2] = E[3] = PE;\
-            FILTRO(PE, PI, PH, PF, PG, PC, PD, PB, PA, G5, C4, G0, D0, C1, B1, F4, I4, H5, I5, A0, A1, 0, 1, 2, 3);\
-            FILTRO(PE, PC, PF, PB, PI, PA, PH, PD, PG, I4, A1, I5, H5, A0, D0, B1, C1, F4, C4, G5, G0, 2, 0, 3, 1);\
-            FILTRO(PE, PA, PB, PD, PC, PG, PF, PH, PI, C1, G0, C4, F4, G5, H5, D0, A0, B1, A1, I4, I5, 3, 2, 1, 0);\
-            FILTRO(PE, PG, PD, PH, PA, PI, PB, PF, PC, A0, I5, A1, B1, I4, F4, H5, G5, D0, G0, C1, C4, 1, 3, 0, 2);\
+            FILTRO(PE, PI, PH, PF, PG, PC, PD, PB, PA, G5, C4, G0, D0, C1, B1, F4, I4, H5, I5, A0, A1, 0, 1, 2, 3, pg_red_mask, pg_green_mask, pg_blue_mask);\
+            FILTRO(PE, PC, PF, PB, PI, PA, PH, PD, PG, I4, A1, I5, H5, A0, D0, B1, C1, F4, C4, G5, G0, 2, 0, 3, 1, pg_red_mask, pg_green_mask, pg_blue_mask);\
+            FILTRO(PE, PA, PB, PD, PC, PG, PF, PH, PI, C1, G0, C4, F4, G5, H5, D0, A0, B1, A1, I4, I5, 3, 2, 1, 0, pg_red_mask, pg_green_mask, pg_blue_mask);\
+            FILTRO(PE, PG, PD, PH, PA, PI, PB, PF, PC, A0, I5, A1, B1, I4, F4, H5, G5, D0, G0, C1, C4, 1, 3, 0, 2, pg_red_mask, pg_green_mask, pg_blue_mask);\
          out[0] = E[0]; \
          out[1] = E[1]; \
          out[dst_stride] = E[2]; \
@@ -290,13 +428,23 @@ static void SetupFormat(void)
 }
  
  
-#if 0
 static void twoxbr_generic_xrgb8888(unsigned width, unsigned height,
       int first, int last, uint32_t *src,
       unsigned src_stride, uint32_t *dst, unsigned dst_stride)
 {
+   uint32_t pg_red_mask      = RED_MASK8888;
+   uint32_t pg_green_mask    = GREEN_MASK8888;
+   uint32_t pg_blue_mask     = BLUE_MASK8888;
+   uint32_t pg_lbmask        = PG_LBMASK8888;
+   uint32_t pg_alpha_mask    = ALPHA_MASK8888;
    unsigned nextline, finish;
    nextline = (last) ? 0 : src_stride;
+   
+   if (!initialized)
+   {
+      initialized = 1;
+   }
+
  
    for (; height; height--)
    {
@@ -321,24 +469,24 @@ static void twoxbr_generic_xrgb8888(unsigned width, unsigned height,
       dst += 2 * dst_stride;
    }
 }
-#endif
  
 static void twoxbr_generic_rgb565(unsigned width, unsigned height,
       int first, int last, uint16_t *src,
       unsigned src_stride, uint16_t *dst, unsigned dst_stride)
 {
+   uint16_t pg_red_mask   = RED_MASK565;
+   uint16_t pg_green_mask = GREEN_MASK565;
+   uint16_t pg_blue_mask  = BLUE_MASK565;
+   uint16_t pg_lbmask     = PG_LBMASK565;
+   uint16_t pg_alpha_mask;
    unsigned nextline, finish;
    nextline = (last) ? 0 : src_stride;
    
    if (!initialized)
-    {
-                 pg_red_mask   = RED_MASK565;
-                 pg_green_mask = GREEN_MASK565;
-                 pg_blue_mask  = BLUE_MASK565;
-                 pg_lbmask     = PG_LBMASK565;
-                 SetupFormat();
-       initialized = 1;
-    }
+   {
+      SetupFormat();
+      initialized = 1;
+   }
  
    for (; height; height--)
    {
@@ -376,7 +524,6 @@ static void twoxbr_work_cb_rgb565(void *data, void *thread_data)
          thr->first, thr->last, input, thr->in_pitch / SOFTFILTER_BPP_RGB565, output, thr->out_pitch / SOFTFILTER_BPP_RGB565);
 }
  
-#if 0
 static void twoxbr_work_cb_xrgb8888(void *data, void *thread_data)
 {
    struct softfilter_thread_data *thr = (struct softfilter_thread_data*)thread_data;
@@ -388,7 +535,6 @@ static void twoxbr_work_cb_xrgb8888(void *data, void *thread_data)
    twoxbr_generic_xrgb8888(width, height,
          thr->first, thr->last, input, thr->in_pitch / SOFTFILTER_BPP_XRGB8888, output, thr->out_pitch / SOFTFILTER_BPP_XRGB8888);
 }
-#endif
  
 static void twoxbr_generic_packets(void *data,
       struct softfilter_work_packet *packets,
@@ -418,8 +564,8 @@ static void twoxbr_generic_packets(void *data,
          packets[i].work = twoxbr_work_cb_rgb565;
       //else if (filt->in_fmt == SOFTFILTER_FMT_RGB4444)
          //packets[i].work = twoxbr_work_cb_rgb4444;
-      //else if (filt->in_fmt == SOFTFILTER_FMT_XRGB8888)
-         //packets[i].work = twoxbr_work_cb_xrgb8888;
+      else if (filt->in_fmt == SOFTFILTER_FMT_XRGB8888)
+         packets[i].work = twoxbr_work_cb_xrgb8888;
       packets[i].thread_data = thr;
    }
 }
